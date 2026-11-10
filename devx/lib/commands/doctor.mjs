@@ -9,7 +9,7 @@ async function doctor() {
   t("node>=24", Number(process.versions.node.split(".")[0]) >= 24, process.versions.node);
   t("git", run("git", ["--version"]).code === 0, "");
   const g = resolveGodot(); t("godot", !!g, g ?? "set TL_GODOT or .tl/local.json {\"godot\": ...}");
-  t("foreman deps", fs.existsSync(path.join(FOREMAN, "node_modules")), "run `npm ci` in foreman/");
+  const deps = fs.existsSync(path.join(FOREMAN, "node_modules")); t("foreman deps", deps, deps ? "present" : "run `npm ci` in foreman/");
   t("ffmpeg (optional)", true, run("ffmpeg", ["-version"]).code === 0 ? "present" : "absent: only `tl.sh seeds sheet` needs it");
   return printVerdict("doctor", steps);
 }
