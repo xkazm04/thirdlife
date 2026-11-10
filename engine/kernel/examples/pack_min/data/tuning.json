@@ -1,0 +1,8 @@
+{
+  "balls": 5,
+  "ball_radius": 0.3,
+  "ball_material": "rubber",
+  "ramp_material": "wood",
+  "ramp_angle_degrees": 18.0,
+  "finish_x": 12.0
+}

@@ -1,0 +1,27 @@
+; Third Life kit lab (WP2): kits, rigs and style. Everything visible is generated from GDScript at load time.
+config_version=5
+
+[application]
+
+config/name="Third Life kitlab (WP2: kit, rigs, style)"
+run/main_scene="res://lab/lab.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/vsync/vsync_mode=0
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+
+[rendering]
+
+rendering_device/driver.windows="d3d12"
+anti_aliasing/quality/msaa_3d=2
+lights_and_shadows/directional_shadow/size=8192
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
+environment/defaults/default_clear_color=Color(0.9, 0.7, 0.6, 1)

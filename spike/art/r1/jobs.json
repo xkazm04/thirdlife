@@ -1,0 +1,53 @@
+{
+  "style": "Output a single polished 16:9 game screenshot / key-art frame. No UI text, no logos, no watermarks, no HUD numbers. Same scene content as described, only the ART DIRECTION differs. The image must look like something a small team could plausibly ship as a real-time game, with believable rendering cost (no impossible detail density).",
+  "jobs": [
+    {
+      "name": "A_lowpoly",
+      "track": "art direction A: faceted low-poly flat-shaded",
+      "refs": [],
+      "prompt": "Game key art for a sandbox game called 'Third Life'. SCENE (identical for every art direction): third-person camera slightly behind and above a small player avatar standing on a grassy ridge at golden hour, holding a glowing holographic tablet (the 'designer'). Below in the valley: (1) an ICE-HOCKEY ARENA UNDER CONSTRUCTION - half-built roof ribs, scaffolding, cranes, and a dozen small glowing builder-robot agents working, with unfinished sections shown as translucent holographic blueprint wireframe; (2) a winding RACE CIRCUIT with two cars, one spitting a nitro flame, a concrete barrier section crumbling into chunks; (3) a modest player-built wooden house with a half-finished extension. ART DIRECTION A: faceted LOW-POLY, flat shaded polygons with no textures, soft gradient sky, simple ambient occlusion, limited harmonious palette, very readable silhouettes (think Monument Valley meets modern low-poly strategy art)."
+    },
+    {
+      "name": "B_toon_ink",
+      "track": "art direction B: cel-shaded toon with ink outlines",
+      "refs": [],
+      "prompt": "Game key art for a sandbox game called 'Third Life'. SCENE (identical for every art direction): third-person camera slightly behind and above a small player avatar standing on a grassy ridge at golden hour, holding a glowing holographic tablet (the 'designer'). Below in the valley: (1) an ICE-HOCKEY ARENA UNDER CONSTRUCTION - half-built roof ribs, scaffolding, cranes, and a dozen small glowing builder-robot agents working, with unfinished sections shown as translucent holographic blueprint wireframe; (2) a winding RACE CIRCUIT with two cars, one spitting a nitro flame, a concrete barrier section crumbling into chunks; (3) a modest player-built wooden house with a half-finished extension. ART DIRECTION B: CEL-SHADED TOON look with clean ink outlines on silhouettes and creases, two or three flat shading bands, hatched shadow accents, saturated but controlled palette (think Wind Waker / Borderlands lineage, hand-inked comic feel)."
+    },
+    {
+      "name": "C_voxel",
+      "track": "art direction C: high-res voxel, destructible",
+      "refs": [],
+      "prompt": "Game key art for a sandbox game called 'Third Life'. SCENE (identical for every art direction): third-person camera slightly behind and above a small player avatar standing on a grassy ridge at golden hour, holding a glowing holographic tablet (the 'designer'). Below in the valley: (1) an ICE-HOCKEY ARENA UNDER CONSTRUCTION - half-built roof ribs, scaffolding, cranes, and a dozen small glowing builder-robot agents working, with unfinished sections shown as translucent holographic blueprint wireframe; (2) a winding RACE CIRCUIT with two cars, one spitting a nitro flame, a concrete barrier section crumbling into chunks; (3) a modest player-built wooden house with a half-finished extension. ART DIRECTION C: HIGH-RESOLUTION VOXEL world (everything is made of small cubes, like Teardown), with strong ray-traced-looking lighting, soft shadows, volumetric dust and light shafts, and the crumbling barrier breaking into individual voxel debris."
+    },
+    {
+      "name": "D_clay_diorama",
+      "track": "art direction D: clay / toy miniature diorama",
+      "refs": [],
+      "prompt": "Game key art for a sandbox game called 'Third Life'. SCENE (identical for every art direction): third-person camera slightly behind and above a small player avatar standing on a grassy ridge at golden hour, holding a glowing holographic tablet (the 'designer'). Below in the valley: (1) an ICE-HOCKEY ARENA UNDER CONSTRUCTION - half-built roof ribs, scaffolding, cranes, and a dozen small glowing builder-robot agents working, with unfinished sections shown as translucent holographic blueprint wireframe; (2) a winding RACE CIRCUIT with two cars, one spitting a nitro flame, a concrete barrier section crumbling into chunks; (3) a modest player-built wooden house with a half-finished extension. ART DIRECTION D: TOY / CLAY MINIATURE DIORAMA - everything looks like handmade matte plasticine and painted wood toys on a tabletop-scale landscape, soft studio-like lighting, subtle tilt-shift depth of field, fingerprints-level surface softness but simple rounded shapes (think Kirby's Epic Yarn / LittleBigPlanet / Astro Bot materials)."
+    },
+    {
+      "name": "E_painterly_gouache",
+      "track": "art direction E: painterly flat-shape gouache",
+      "refs": [],
+      "prompt": "Game key art for a sandbox game called 'Third Life'. SCENE (identical for every art direction): third-person camera slightly behind and above a small player avatar standing on a grassy ridge at golden hour, holding a glowing holographic tablet (the 'designer'). Below in the valley: (1) an ICE-HOCKEY ARENA UNDER CONSTRUCTION - half-built roof ribs, scaffolding, cranes, and a dozen small glowing builder-robot agents working, with unfinished sections shown as translucent holographic blueprint wireframe; (2) a winding RACE CIRCUIT with two cars, one spitting a nitro flame, a concrete barrier section crumbling into chunks; (3) a modest player-built wooden house with a half-finished extension. ART DIRECTION E: PAINTERLY GOUACHE - big flat simplified shapes with visible brush texture, gradient skies, atmospheric haze layers and strong colour-temperature lighting, almost no small detail (think Sable / Firewatch / Alto's Odyssey), detail is suggested not modelled."
+    },
+    {
+      "name": "F_stylized_pbr",
+      "track": "art direction F: clean stylized PBR",
+      "refs": [],
+      "prompt": "Game key art for a sandbox game called 'Third Life'. SCENE (identical for every art direction): third-person camera slightly behind and above a small player avatar standing on a grassy ridge at golden hour, holding a glowing holographic tablet (the 'designer'). Below in the valley: (1) an ICE-HOCKEY ARENA UNDER CONSTRUCTION - half-built roof ribs, scaffolding, cranes, and a dozen small glowing builder-robot agents working, with unfinished sections shown as translucent holographic blueprint wireframe; (2) a winding RACE CIRCUIT with two cars, one spitting a nitro flame, a concrete barrier section crumbling into chunks; (3) a modest player-built wooden house with a half-finished extension. ART DIRECTION F: CLEAN STYLIZED PBR - smooth chunky simplified shapes with clean saturated materials, glossy-but-simple shaders, bloom, soft global illumination, rounded bevels (think Fortnite / Overwatch / Astro Bot / Rocket League production polish), minimal texture detail, materials do the work."
+    },
+    {
+      "name": "G_isometric_hd2d",
+      "track": "art direction G: isometric HD-2D pixel diorama",
+      "refs": [],
+      "prompt": "Game key art for a sandbox game called 'Third Life'. SCENE (identical for every art direction): a player avatar standing on a grassy ridge at golden hour, holding a glowing holographic tablet (the 'designer'). Below in the valley: (1) an ICE-HOCKEY ARENA UNDER CONSTRUCTION - half-built roof ribs, scaffolding, cranes, and a dozen small glowing builder-robot agents working, with unfinished sections shown as translucent holographic blueprint wireframe; (2) a winding RACE CIRCUIT with two cars, one spitting a nitro flame, a concrete barrier section crumbling into chunks; (3) a modest player-built wooden house with a half-finished extension. ART DIRECTION G: ISOMETRIC / angled HD-2D - detailed pixel-art sprites and tiles standing in a 3D-lit tilt-shifted diorama with depth-of-field blur, bloom and volumetric light (think Octopath Traveler / Triangle Strategy HD-2D). Fixed angled camera instead of free third-person."
+    },
+    {
+      "name": "H_hyperreal_control",
+      "track": "art direction H: hyper-realistic control (expected infeasible)",
+      "refs": [],
+      "prompt": "Game key art for a sandbox game called 'Third Life'. SCENE (identical for every art direction): third-person camera slightly behind and above a small player avatar standing on a grassy ridge at golden hour, holding a glowing holographic tablet (the 'designer'). Below in the valley: (1) an ICE-HOCKEY ARENA UNDER CONSTRUCTION - half-built roof ribs, scaffolding, cranes, and a dozen small glowing builder-robot agents working, with unfinished sections shown as translucent holographic blueprint wireframe; (2) a winding RACE CIRCUIT with two cars, one spitting a nitro flame, a concrete barrier section crumbling into chunks; (3) a modest player-built wooden house with a half-finished extension. ART DIRECTION H (CONTROL): HYPER-REALISTIC AAA photoreal PBR rendering, ray-traced global illumination, photogrammetry-grade materials, individual blades of grass and weathering. This is the control image: it shows the ceiling we expect NOT to be able to afford."
+    }
+  ]
+}

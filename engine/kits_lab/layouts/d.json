@@ -1,0 +1,813 @@
+{
+ "schema": "tl.layout/1",
+ "name": "d",
+ "seed": 23,
+ "spawn": {
+  "p": [
+   0,
+   0
+  ]
+ },
+ "terrain": {
+  "ridges": [
+   {
+    "a": [
+     -50,
+     20.8
+    ],
+    "b": [
+     20,
+     18.8
+    ],
+    "fall": 8
+   }
+  ],
+  "pads": [
+   {
+    "c": [
+     86,
+     -34
+    ],
+    "r": 50,
+    "blend": 10,
+    "h": -15
+   },
+   {
+    "c": [
+     -30,
+     -59
+    ],
+    "r": 36,
+    "blend": 12,
+    "h": -14,
+    "dirt": true
+   },
+   {
+    "c": [
+     30,
+     -30
+    ],
+    "r": 8,
+    "blend": 6,
+    "h": -13
+   }
+  ],
+  "mesas": [
+   {
+    "c": [
+     -170,
+     -420
+    ],
+    "r": 80,
+    "h": 58
+   },
+   {
+    "c": [
+     120,
+     -430
+    ],
+    "r": 85,
+    "h": 64
+   },
+   {
+    "c": [
+     50,
+     -96
+    ],
+    "r": 9,
+    "h": 13,
+    "blend": 15,
+    "noise": 3
+   }
+  ]
+ },
+ "circuits": [
+  {
+   "id": "track",
+   "points": [
+    [
+     50.0,
+     -59.0
+    ],
+    [
+     73.4,
+     -63.8
+    ],
+    [
+     86.9,
+     -84.0
+    ],
+    [
+     83.5,
+     -106.9
+    ],
+    [
+     70.1,
+     -123.6
+    ],
+    [
+     50.0,
+     -133.0
+    ],
+    [
+     26.6,
+     -128.2
+    ],
+    [
+     13.1,
+     -108.0
+    ],
+    [
+     16.5,
+     -85.1
+    ],
+    [
+     29.9,
+     -68.4
+    ]
+   ],
+   "y": -12.5
+  }
+ ],
+ "walls": [
+  {
+   "id": "wall",
+   "circuit": "track",
+   "at": [
+    44,
+    -55
+   ],
+   "blocks": 10
+  }
+ ],
+ "actors": [
+  {
+   "id": "avatar",
+   "rig": "biped",
+   "p": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "car_a",
+   "rig": "vehicle",
+   "on": {
+    "circuit": "track",
+    "near": [
+     44,
+     -55
+    ],
+    "ds": 6.0,
+    "side": 1,
+    "off": 1.9
+   },
+   "params": {
+    "colors": {
+     "body": "car_blue",
+     "stripe": "car_white"
+    }
+   }
+  },
+  {
+   "id": "car_b",
+   "rig": "vehicle",
+   "on": {
+    "circuit": "track",
+    "near": [
+     44,
+     -55
+    ],
+    "ds": 13.0,
+    "side": -1,
+    "off": 1.9
+   },
+   "params": {
+    "colors": {
+     "body": "car_red",
+     "stripe": "car_white"
+    }
+   }
+  }
+ ],
+ "arenas": [
+  {
+   "id": "arena",
+   "c": [
+    -30,
+    -14,
+    -70
+   ],
+   "rink": {
+    "length": 30,
+    "width": 15,
+    "corner_r": 4.5
+   },
+   "stands": [
+    {
+     "side": -1,
+     "rows": 4
+    }
+   ],
+   "ribs": {
+    "count": 6,
+    "built": 3,
+    "dx": 5,
+    "apex": 9
+   },
+   "scaffolds": [
+    {
+     "p": [
+      -12,
+      10.5
+     ],
+     "bays": 2,
+     "levels": 2,
+     "decks": [
+      1,
+      2
+     ]
+    },
+    {
+     "p": [
+      3,
+      10.5
+     ],
+     "bays": 2,
+     "levels": 3,
+     "decks": [
+      1,
+      2,
+      3
+     ]
+    }
+   ],
+   "bots": [
+    {
+     "p": [
+      -10.8,
+      2.12,
+      11.1
+     ],
+     "clip": "weld",
+     "yaw": 90
+    },
+    {
+     "p": [
+      4.2,
+      4.12,
+      11.1
+     ],
+     "clip": "weld",
+     "yaw": 90
+    },
+    {
+     "p": [
+      7,
+      0,
+      13
+     ],
+     "clip": "weld"
+    },
+    {
+     "p": [
+      12,
+      0,
+      14
+     ],
+     "clip": "idle",
+     "yaw": 160
+    },
+    {
+     "p": [
+      -4,
+      0,
+      22
+     ],
+     "clip": "idle",
+     "yaw": 180
+    },
+    {
+     "p": [
+      6,
+      0,
+      24
+     ],
+     "clip": "idle",
+     "yaw": 200
+    },
+    {
+     "p": [
+      16,
+      0,
+      30
+     ],
+     "clip": "weld",
+     "yaw": 150
+    }
+   ]
+  }
+ ],
+ "cranes": [
+  {
+   "p": [
+    -48,
+    -82
+   ],
+   "yaw": 20,
+   "trolley": 0.6,
+   "h": 30,
+   "jib": 26
+  }
+ ],
+ "houses": [
+  {
+   "p": [
+    30,
+    -13,
+    -30
+   ],
+   "yaw": -60,
+   "frame": false
+  }
+ ],
+ "trees": [
+  {
+   "p": [
+    -5.5,
+    -2.6
+   ],
+   "species": "hero"
+  }
+ ],
+ "rocks": [
+  {
+   "p": [
+    8.5,
+    -5.5
+   ],
+   "size": 1.5,
+   "squash": 0.62,
+   "seed": 41
+  },
+  {
+   "p": [
+    -3.8,
+    3.6
+   ],
+   "size": 1.4,
+   "squash": 0.7,
+   "seed": 42
+  },
+  {
+   "p": [
+    -11,
+    2.0
+   ],
+   "size": 1.2,
+   "squash": 0.65,
+   "seed": 43
+  }
+ ],
+ "forest": {
+  "density": 1.2,
+  "edges": [
+   [
+    -112,
+    -72,
+    -110,
+    -20,
+    120
+   ],
+   [
+    6,
+    100,
+    -178,
+    -142,
+    150
+   ]
+  ],
+  "clear": [
+   [
+    -66,
+    34,
+    -44,
+    -4
+   ],
+   [
+    20,
+    140,
+    -60,
+    0
+   ]
+  ]
+ },
+ "props": [
+  {
+   "kind": "watch_tower",
+   "p": [
+    21,
+    -47
+   ],
+   "yaw": 180,
+   "params": {
+    "height": 10
+   }
+  },
+  {
+   "kind": "light_mast",
+   "p": [
+    -50,
+    -84
+   ],
+   "yaw": 130,
+   "params": {
+    "height": 11
+   }
+  },
+  {
+   "kind": "light_mast",
+   "p": [
+    -10,
+    -84
+   ],
+   "yaw": -130,
+   "params": {
+    "height": 11
+   }
+  },
+  {
+   "kind": "light_mast",
+   "p": [
+    -50,
+    -36
+   ],
+   "yaw": 50,
+   "params": {
+    "height": 11
+   }
+  },
+  {
+   "kind": "light_mast",
+   "p": [
+    -8,
+    -34
+   ],
+   "yaw": -50,
+   "params": {
+    "height": 11
+   }
+  },
+  {
+   "kind": "cabin",
+   "p": [
+    -58,
+    -42
+   ],
+   "yaw": 10
+  },
+  {
+   "kind": "lumber",
+   "p": [
+    -8,
+    -62
+   ],
+   "yaw": 80,
+   "params": {
+    "length": 3.2,
+    "width": 1.0,
+    "layers": 5
+   }
+  },
+  {
+   "kind": "lumber",
+   "p": [
+    -54,
+    -50
+   ],
+   "yaw": 15,
+   "params": {
+    "length": 3.0,
+    "width": 1.0,
+    "layers": 4
+   }
+  },
+  {
+   "kind": "pallet",
+   "p": [
+    -9,
+    -70
+   ],
+   "yaw": 10,
+   "params": {
+    "rows": 3
+   }
+  },
+  {
+   "kind": "pallet",
+   "p": [
+    -52,
+    -66
+   ],
+   "yaw": -15,
+   "params": {
+    "rows": 2
+   }
+  },
+  {
+   "kind": "barricade",
+   "p": [
+    -12,
+    -54
+   ],
+   "yaw": 85
+  },
+  {
+   "kind": "barricade",
+   "p": [
+    -12,
+    -44
+   ],
+   "yaw": 95
+  },
+  {
+   "kind": "cone",
+   "p": [
+    -11.5,
+    -50.5
+   ]
+  },
+  {
+   "kind": "cone",
+   "p": [
+    -11.5,
+    -49
+   ]
+  },
+  {
+   "kind": "cone",
+   "p": [
+    -11.5,
+    -47.5
+   ]
+  },
+  {
+   "kind": "sign",
+   "p": [
+    -40,
+    -36
+   ],
+   "yaw": 20,
+   "params": {
+    "color": "sign"
+   }
+  },
+  {
+   "kind": "flag",
+   "p": [
+    -48,
+    -34
+   ],
+   "params": {
+    "height": 7,
+    "color": "flag_a"
+   }
+  },
+  {
+   "kind": "flag",
+   "p": [
+    -14,
+    -34
+   ],
+   "params": {
+    "height": 7,
+    "color": "flag_b"
+   }
+  },
+  {
+   "kind": "fence",
+   "p": [
+    -62,
+    -36
+   ],
+   "to": [
+    -62,
+    -58
+   ],
+   "params": {
+    "style": "mesh"
+   }
+  },
+  {
+   "kind": "scoreboard",
+   "p": [
+    -30,
+    -84.5
+   ]
+  },
+  {
+   "kind": "tyre_stack",
+   "on": {
+    "circuit": "track",
+    "s": 0,
+    "side": -1
+   },
+   "params": {
+    "columns": 6
+   }
+  },
+  {
+   "kind": "tyre_stack",
+   "on": {
+    "circuit": "track",
+    "s": 60,
+    "side": -1
+   },
+   "params": {
+    "columns": 5
+   }
+  },
+  {
+   "kind": "tyre_stack",
+   "on": {
+    "circuit": "track",
+    "s": 170,
+    "side": -1
+   },
+   "params": {
+    "columns": 5
+   }
+  },
+  {
+   "kind": "marshal_post",
+   "on": {
+    "circuit": "track",
+    "s": 200,
+    "side": -1,
+    "off": 10.5
+   }
+  },
+  {
+   "kind": "flag",
+   "on": {
+    "circuit": "track",
+    "s": 20,
+    "side": -1,
+    "off": 8.5
+   },
+   "params": {
+    "height": 5,
+    "color": "flag_b"
+   }
+  },
+  {
+   "kind": "sign",
+   "on": {
+    "circuit": "track",
+    "s": 215,
+    "side": -1,
+    "off": 9.0
+   },
+   "params": {
+    "color": "hazard_red"
+   }
+  },
+  {
+   "kind": "fence",
+   "p": [
+    20,
+    -36
+   ],
+   "to": [
+    26,
+    -41
+   ]
+  },
+  {
+   "kind": "fence",
+   "p": [
+    26,
+    -41
+   ],
+   "to": [
+    34,
+    -41
+   ]
+  },
+  {
+   "kind": "stones",
+   "p": [
+    35,
+    -22
+   ],
+   "params": {
+    "count": 4
+   }
+  },
+  {
+   "kind": "lumber",
+   "p": [
+    24,
+    -21
+   ],
+   "yaw": 30,
+   "params": {
+    "length": 3.0,
+    "width": 1.0,
+    "layers": 3
+   }
+  }
+ ],
+ "ponds": [
+  {
+   "p": [
+    86,
+    -34
+   ],
+   "rx": 46,
+   "rz": 26,
+   "surface": "water"
+  },
+  {
+   "p": [
+    -30,
+    -48
+   ],
+   "rx": 15,
+   "rz": 7.5,
+   "surface": "ice"
+  }
+ ],
+ "cams": {
+  "hero": {
+   "pos": [
+    2.2,
+    2.9,
+    4.4
+   ],
+   "look": [
+    12.0,
+    -9.8,
+    -54.0
+   ],
+   "fov": 62
+  },
+  "site": {
+   "pos": [
+    -6,
+    -10.5,
+    -44
+   ],
+   "look": [
+    -30,
+    -13,
+    -64
+   ],
+   "fov": 56
+  },
+  "track": {
+   "pos": [
+    35,
+    -10.4,
+    -50
+   ],
+   "look": [
+    52,
+    -12.8,
+    -63
+   ],
+   "fov": 62
+  },
+  "crumble": {
+   "pos": [
+    35,
+    -10.4,
+    -50
+   ],
+   "look": [
+    52,
+    -12.8,
+    -63
+   ],
+   "fov": 62
+  },
+  "avatar": {
+   "pos": [
+    -2.7,
+    1.35,
+    2.0
+   ],
+   "look": [
+    0.15,
+    0.88,
+    -0.15
+   ],
+   "fov": 41.0
+  }
+ },
+ "_port_notes": [
+  "bots[].mobile dropped: a walking bot is behaviour, not layout",
+  "cars are placed actors: the lane-B sim (driving, nitro pass) is not part of the kit",
+  "ported from spike/lab/b/data by tools/convert_laneb.py"
+ ]
+}

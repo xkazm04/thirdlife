@@ -1,0 +1,11 @@
+{
+  "id": "example.shuffle",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Primitive example: pucks on an ice lane",
+  "capabilities": ["physics", "ball", "camera"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_shuffle.gd"],
+  "cameras": ["lane"]
+}

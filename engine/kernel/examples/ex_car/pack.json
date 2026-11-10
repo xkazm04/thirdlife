@@ -1,0 +1,11 @@
+{
+  "id": "example.car",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Primitive example: a box car on a slalom, then ice",
+  "capabilities": ["physics", "vehicle", "input", "rules", "camera", "ai", "ui", "vfx", "audio"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_slalom.gd"],
+  "cameras": ["chase", "overview"]
+}

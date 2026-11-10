@@ -1,0 +1,11 @@
+{
+  "id": "example.pack_min",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Minimal pack: balls on a ramp",
+  "capabilities": ["physics", "camera", "input"],
+  "entry": "scripts/main.gd",
+  "assets": ["gen/layout.gd"],
+  "tests": ["tests/bot_roll.gd"],
+  "cameras": ["hero"]
+}

@@ -1,0 +1,440 @@
+{
+ "name": "overcast",
+ "sun": {
+  "color": "#cfd8f0",
+  "energy": 0.55,
+  "elev": 38.0,
+  "azim": -30.0,
+  "shadow_max": 300.0,
+  "shadow_blur": 4.0,
+  "shadow_bias": 0.05
+ },
+ "toon": {
+  "shade": "#5c6a92",
+  "shade_k": 0.42,
+  "band_hi": 0.45,
+  "band_lo": 0.22,
+  "band_soft": 0.12,
+  "wrap": 0.5,
+  "amb_sky": "#b4c2e0",
+  "amb_ground": "#8a8f9c",
+  "amb_energy": 0.85,
+  "hatch": 0.2,
+  "hatch_px": 8.0,
+  "hatch_fade_near": 22.0,
+  "hatch_fade_far": 80.0,
+  "rim": "#c0d0f0",
+  "rim_k": 0.18,
+  "mottle": 0.1,
+  "shade_ground": "#6c7486",
+  "shade_grad": 0.75,
+  "bounce": "#b8c0c8",
+  "bounce_k": 0.15
+ },
+ "env": {
+  "tonemap": "filmic",
+  "exposure": 1.0,
+  "white": 6.0,
+  "glow": 0.2,
+  "glow_threshold": 1.0,
+  "glow_bloom": 0.04
+ },
+ "fog": {
+  "color": "#b8c4d6",
+  "density": 0.0042,
+  "sun_scatter": 0.0,
+  "height": -6.0,
+  "height_density": 0.02,
+  "height_falloff": 0.06,
+  "aerial": 0.75,
+  "sky_affect": 0.5
+ },
+ "sky": {
+  "zenith": "#8a9cb8",
+  "upper": "#a4b2c6",
+  "mid": "#bcc6d2",
+  "horizon": "#d6dce0",
+  "ground": "#aab4bc",
+  "glow": "#e8ecf0",
+  "glow_k": 0.25,
+  "disc": "#ffd35e",
+  "disc_r": 0.0,
+  "disc_soft": 0.004,
+  "cloud": "#c8d0d8",
+  "cloud_shade": "#8a96a8",
+  "cloud_cover": 0.92,
+  "cloud_scale": 2.2,
+  "cloud_high": 0.15
+ },
+ "ink": {
+  "ink": "#23283a",
+  "outer_px": 2.6,
+  "inner_px": 0.9,
+  "inner_alpha": 0.55,
+  "fade_near": 60.0,
+  "fade_far": 260.0,
+  "outer_fade_far": 900.0,
+  "fog_mix": 0.7,
+  "wobble": 1.0,
+  "outer_far": 0.5,
+  "thin_near": 25,
+  "thin_far": 110
+ },
+ "grade": {
+  "shadows": "#38486c",
+  "highlights": "#e8f0f8",
+  "split": 0.1,
+  "sat": 0.95,
+  "contrast": 1.02,
+  "vignette": 0.22,
+  "grain": 0.018,
+  "lift": 0.02,
+  "gamma": 1.0,
+  "paper": 0.024
+ },
+ "holo": {
+  "holo": "#2ad8ff",
+  "edge": "#5beaff",
+  "alpha": 0.12,
+  "edge_k": 1.15,
+  "scan": 0.35
+ },
+ "water": {
+  "deep": "#4a6a8c",
+  "shallow": "#7aa0b0",
+  "sky": "#c8d4e0",
+  "stripe": "#d8f4ff",
+  "sky_k": 0.1
+ },
+ "palette": {
+  "white": "#ffffff",
+  "grass": "#7fa650",
+  "grass_dry": "#a8a860",
+  "grass_dark": "#5e8c3e",
+  "dirt": "#c99568",
+  "sand": "#dcb88a",
+  "rock": "#a8998f",
+  "rock_dark": "#7a6a80",
+  "rock_warm": "#b2917f",
+  "cliff": "#a0806e",
+  "tarmac": "#6f6773",
+  "tarmac_light": "#857c88",
+  "curb_red": "#dc4238",
+  "curb_white": "#f3e8dc",
+  "line_white": "#efe6dc",
+  "concrete": "#cbbdb4",
+  "concrete_dark": "#9c8f98",
+  "barrier": "#d4c8bf",
+  "barrier_dark": "#a89aa2",
+  "steel": "#8a85a0",
+  "steel_dark": "#4f4a60",
+  "steel_light": "#b6b0c8",
+  "black": "#2b2532",
+  "yellow": "#f2b230",
+  "yellow_dark": "#c98720",
+  "orange": "#e8742c",
+  "hazard_red": "#d8452e",
+  "wood": "#b9794a",
+  "wood_light": "#e2b472",
+  "wood_dark": "#7c4a30",
+  "plank": "#d9a868",
+  "roof": "#98443c",
+  "roof_slate": "#5c4c6c",
+  "stone": "#aa9e98",
+  "stone_dark": "#7e7480",
+  "window": "#ffc462",
+  "leaf": "#6c9a3c",
+  "leaf_light": "#a9c243",
+  "pine": "#2f6b4c",
+  "pine_light": "#4c8c58",
+  "trunk": "#6c4a3b",
+  "skin": "#eab294",
+  "hair": "#8a4a2c",
+  "jacket": "#d24a3a",
+  "jacket_trim": "#f2e4d4",
+  "pants": "#4c405a",
+  "boots": "#6c4a38",
+  "pack": "#8c8272",
+  "strap": "#4a3f4a",
+  "bot_body": "#f4c43a",
+  "bot_white": "#f4f0ea",
+  "bot_dark": "#3a3446",
+  "bot_visor": "#5af2ff",
+  "car_red": "#da3a30",
+  "car_blue": "#3a6cda",
+  "car_white": "#f6f0e6",
+  "car_glass": "#2e364a",
+  "tire": "#2b2731",
+  "rim_metal": "#c8c4d6",
+  "ice": "#e2f2ff",
+  "rink_red": "#d94242",
+  "rink_blue": "#4274d9",
+  "boards": "#eee6de",
+  "boards_kick": "#d9484a",
+  "glass": "#b4def0",
+  "cyan": "#52f2ff",
+  "hot": "#ff9a3a",
+  "flame_core": "#fff4b8",
+  "dust": "#aaa39b",
+  "spark": "#ffe08a",
+  "smoke": "#f4ebe6",
+  "terrain": "#ffffff",
+  "goal_red": "#e04040",
+  "goal_net": "#d9d0dc",
+  "seat": "#4a66c8",
+  "seat_alt": "#e2b062",
+  "rib_built": "#8f8ca6",
+  "rib_steel": "#6d6a85",
+  "cone": "#f0702c",
+  "hazard_white": "#f3ece6",
+  "grass_blade": "#8cb054",
+  "water": "#4a8ac0",
+  "nitro_hot": "#ff8a2a",
+  "nitro_core": "#fff2b0",
+  "tail_light": "#ff4a3a",
+  "head_light": "#fff2c0",
+  "bot_body2": "#3fb6ae",
+  "hat_a": "#f6f2ea",
+  "hat_b": "#f07a2a",
+  "hat_c": "#e24a3a",
+  "beacon": "#ffb030",
+  "cabin": "#e3e8ea",
+  "cabin_trim": "#3f6fb0",
+  "sign": "#f4d23c",
+  "rebar": "#70402c",
+  "flag_a": "#e8483a",
+  "flag_b": "#3a78d8",
+  "fall_a": "#c4d6de",
+  "fall_b": "#eef2f4",
+  "pond_ice": "#d5e2e8"
+ },
+ "mat": {
+  "window": {
+   "emit": 1.6
+  },
+  "cyan": {
+   "emit": 2.2
+  },
+  "bot_visor": {
+   "emit": 2.0
+  },
+  "steel": {
+   "metal": 0.35,
+   "class": "steel"
+  },
+  "steel_light": {
+   "metal": 0.6,
+   "class": "steel"
+  },
+  "yellow": {
+   "metal": 0.25,
+   "class": "steel"
+  },
+  "car_red": {
+   "metal": 0.8
+  },
+  "car_blue": {
+   "metal": 0.8
+  },
+  "car_glass": {
+   "metal": 1.0
+  },
+  "rim_metal": {
+   "metal": 0.8
+  },
+  "glass": {
+   "shader": "glass",
+   "base_a": 0.1,
+   "fres_a": 0.5
+  },
+  "ice": {
+   "ice": 1.0,
+   "metal": 0.6
+  },
+  "grass": {
+   "mottle": 0.2
+  },
+  "grass_dry": {
+   "mottle": 0.22
+  },
+  "tarmac": {
+   "mottle": 0.07,
+   "class": "tarmac"
+  },
+  "tarmac_light": {
+   "mottle": 0.07
+  },
+  "rib_built": {
+   "dissolve": 1.0,
+   "metal": 0.25,
+   "class": "steel"
+  },
+  "rib_steel": {
+   "dissolve": 1.0,
+   "metal": 0.25,
+   "class": "steel"
+  },
+  "terrain": {
+   "mottle": 0.04,
+   "no_hatch": 0.0,
+   "class": "ground"
+  },
+  "goal_net": {
+   "mottle": 0.0
+  },
+  "grass_blade": {
+   "sway": 0.22,
+   "no_hatch": 1.0,
+   "mottle": 0.0
+  },
+  "water": {
+   "shader": "water"
+  },
+  "nitro_hot": {
+   "emit": 2.6,
+   "mottle": 0.0
+  },
+  "nitro_core": {
+   "emit": 3.6,
+   "mottle": 0.0
+  },
+  "tail_light": {
+   "emit": 1.8
+  },
+  "head_light": {
+   "emit": 2.0
+  },
+  "barrier": {
+   "mottle": 0.05,
+   "class": "concrete"
+  },
+  "dust": {
+   "mottle": 0.0,
+   "no_hatch": 1.0
+  },
+  "smoke": {
+   "mottle": 0.0,
+   "no_hatch": 1.0
+  },
+  "wood": {
+   "class": "wood"
+  },
+  "wood_light": {
+   "class": "wood"
+  },
+  "wood_dark": {
+   "class": "wood"
+  },
+  "plank": {
+   "class": "wood"
+  },
+  "concrete": {
+   "class": "concrete"
+  },
+  "concrete_dark": {
+   "class": "concrete"
+  },
+  "barrier_dark": {
+   "class": "concrete"
+  },
+  "steel_dark": {
+   "class": "steel"
+  },
+  "yellow_dark": {
+   "class": "steel"
+  },
+  "orange": {
+   "class": "steel"
+  },
+  "rock": {
+   "class": "rock"
+  },
+  "rock_dark": {
+   "class": "rock"
+  },
+  "rock_warm": {
+   "class": "rock"
+  },
+  "cliff": {
+   "class": "rock"
+  },
+  "roof": {
+   "class": "roof"
+  },
+  "roof_slate": {
+   "class": "roof"
+  },
+  "jacket": {
+   "class": "fabric",
+   "dk": 1.0
+  },
+  "pants": {
+   "class": "fabric",
+   "dk": 0.3,
+   "dscale": 0.6
+  },
+  "pack": {
+   "class": "fabric",
+   "dk": 0.55,
+   "dscale": 0.8
+  },
+  "stone": {
+   "class": "masonry"
+  },
+  "stone_dark": {
+   "class": "masonry"
+  },
+  "beacon": {
+   "emit": 3.0
+  },
+  "rebar": {
+   "class": "steel",
+   "dk": 0.0
+  },
+  "cabin": {
+   "class": "steel",
+   "dk": 0.5
+  },
+  "fall_a": {
+   "emit": 0.45,
+   "no_hatch": 1.0,
+   "mottle": 0.0
+  },
+  "fall_b": {
+   "emit": 0.6,
+   "no_hatch": 1.0,
+   "mottle": 0.0
+  },
+  "pond_ice": {
+   "metal": 0.5,
+   "mottle": 0.1,
+   "no_hatch": 1.0
+  }
+ },
+ "detail": {
+  "k": 1.0,
+  "fade_near": 60.0,
+  "fade_far": 260.0,
+  "dark": 0.46,
+  "macro": 2.0,
+  "macro_near": 18.0,
+  "macro_far": 90.0,
+  "tone_end": 420.0,
+  "strata": 0.8,
+  "strata_m": 2.6,
+  "strata_tone": 0.24,
+  "strata_crack": 0.55
+ },
+ "lights": {
+  "window": 1.7,
+  "window_range": 9.0,
+  "mast": 1.3,
+  "pool_outer": 0.05,
+  "pool_inner": 0.42,
+  "pool_soft": 0.14,
+  "pool_smooth": 0.4
+ },
+ "fx": {
+  "dust_alpha": 0.5
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "sides": ["car"],
+  "laps_to_win": 3,
+  "checkpoints": 4,
+  "time_limit_seconds": 90
+}

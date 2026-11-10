@@ -1,0 +1,11 @@
+{
+  "id": "example.bad_schema",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Deliberately bad pack: unknown manifest key",
+  "capabilities": ["physics"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "author": "nobody",
+  "tests": ["tests/bot.gd"]
+}

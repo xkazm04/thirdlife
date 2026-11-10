@@ -1,0 +1,10 @@
+{
+  "id": "example.bad_budget",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Deliberately bad pack: a body that falls for ever",
+  "capabilities": ["physics"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot.gd"]
+}

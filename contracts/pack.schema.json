@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tl.pack/0.1",
+  "title": "Third Life pack manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "kernelApi", "title", "capabilities", "entry", "assets", "tests"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "kernelApi": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["physics", "input", "ui", "audio", "vfx", "camera", "rules", "ai", "spawn", "fracture", "vehicle", "biped", "ball", "kit", "style"]
+      }
+    },
+    "entry": { "type": "string", "pattern": "^scripts/[A-Za-z0-9_/]+\\.gd$" },
+    "assets": { "type": "array", "items": { "type": "string", "pattern": "^gen/[A-Za-z0-9_/]+\\.gd$" } },
+    "tests": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^tests/[A-Za-z0-9_/]+\\.gd$" } },
+    "requires": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$" } },
+    "cameras": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" } }
+  }
+}

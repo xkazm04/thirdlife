@@ -1,0 +1,8 @@
+{
+  "_note": "four lanes, 14 m apart along z; every floor and prop is a kit part",
+  "ice": {"start_speed": 3.0, "push_frame": 30},
+  "wall": {"blocks": 2, "cells": 8, "shot_frame": 60, "shot_speed": 12.0},
+  "crate": {"size": 1.0, "cells": 6, "shot_speed": 10.0},
+  "biped": {"go_frame": 30, "coast_frame": 150},
+  "car": {"go_frame": 30, "steer_frame": 150, "brake_frame": 190}
+}

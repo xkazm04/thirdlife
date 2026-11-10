@@ -1,0 +1,1 @@
+Moved 2026-11-10 (WP4): kits/, rigs/, style/ -> engine/ (same res:// paths); lab/ -> engine/kits_lab/; tools/*.gd, convert_laneb.py -> engine/kits_lab/tools/; tools/k.sh -> engine/tools/k.sh. JOURNAL.md, captures/ and project.godot stay here as history.

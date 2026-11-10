@@ -1,0 +1,17 @@
+.godot/
+captures/
+*.avi
+*.import
+__pycache__/
+.venv/
+spike/art/r1/jobs/
+node_modules/
+.ai/*.local.jsonl
+site/
+dist/
+
+# working notes of the spark loop (not version-controlled)
+.spark/
+# lane C voxel binaries: 92 MB, rebuilt by spike/lab/c/gen/build.py
+spike/lab/c/assets/*.vxm
+spike/lab/c/assets/*.bin

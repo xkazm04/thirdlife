@@ -1,0 +1,10 @@
+{
+  "id": "example.bad_size",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Deliberately bad pack: a script over the size limit",
+  "capabilities": ["physics"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot.gd"]
+}

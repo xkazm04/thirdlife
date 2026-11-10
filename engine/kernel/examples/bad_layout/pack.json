@@ -1,0 +1,10 @@
+{
+  "id": "example.bad_layout",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Deliberately bad pack: files where they do not belong",
+  "capabilities": ["physics"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot.gd", "tests/missing.gd"]
+}

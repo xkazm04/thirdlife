@@ -1,0 +1,31 @@
+{
+  "_note": "Lengths in metres, speeds in m/s, impulses in N*s (mass x speed).",
+  "player": {
+    "_note": "any tuning member of TLBiped",
+    "walk_speed": 2.6,
+    "run_speed": 6.0
+  },
+  "balls": {
+    "_note": "a pool: the oldest ball comes back to the player's hands. 8 kg at 19 m/s is an impact of about 150 N*s.",
+    "count": 5,
+    "radius": 0.18,
+    "mass": 8.0,
+    "color": "car_red"
+  },
+  "throw": {
+    "speed": 19.0,
+    "lift": 2.2,
+    "reload_seconds": 0.6,
+    "carry_at": [0.0, 1.15, -0.75]
+  },
+  "wall": {
+    "_note": "per block. An impact of J N*s above `threshold` T takes 100 x (J - T) / T health: here about 150 a throw, so a block of 320 falls to the third hit. hp_spread 0.15 = each block is up to 15 % tougher or weaker, drawn from the run's seed.",
+    "hp": 320.0,
+    "hp_spread": 0.15,
+    "threshold": 60.0,
+    "kick": 0.5,
+    "scatter": 0.9,
+    "down_distance": 0.6
+  },
+  "camera": {"distance": 9.0, "pitch": 35.0, "yaw": 0.0, "look_height": 1.2}
+}

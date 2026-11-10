@@ -1,0 +1,10 @@
+{
+  "id": "example.bad_bot",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Deliberately bad pack: a bot that never finishes",
+  "capabilities": ["physics"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot.gd"]
+}

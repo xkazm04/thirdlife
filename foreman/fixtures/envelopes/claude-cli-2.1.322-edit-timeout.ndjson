@@ -1,0 +1,1 @@
+{"type":"system","subtype":"init","tools":["Edit","Glob","Grep","Read","Write"],"mcp_servers":[],"model":"claude-sonnet-5-5","permissionMode":"acceptEdits","apiKeySource":"none","claude_code_version":"2.1.322"}

@@ -1,0 +1,45 @@
+{
+  "schema": "tl.layout/1",
+  "name": "paddle_court",
+  "seed": 11,
+  "_about": "A walled ice court 21 x 10 m on a flat pad. Long axis x; the player defends -x, the rival +x. The script looks up the ids ball, paddle_player and paddle_rival; everything else is scenery.",
+  "terrain": {
+    "base_y": -4,
+    "pads": [{"c": [0, 0], "r": 40, "blend": 16, "h": -0.05}],
+    "mesas": [{"c": [-70, -210], "r": 60, "h": 52}, {"c": [80, -240], "r": 80, "h": 60}]
+  },
+  "forest": {"density": 1.0, "clear": [[-45, 45, -40, 45]]},
+  "walls": [
+    {"id": "wall_far", "p": [0, -5.4], "yaw": 0, "blocks": 9},
+    {"id": "wall_near", "p": [0, 5.4], "yaw": 0, "blocks": 9},
+    {"id": "wall_player", "p": [-10.9, 0], "yaw": 90, "blocks": 5},
+    {"id": "wall_rival", "p": [10.9, 0], "yaw": 90, "blocks": 5}
+  ],
+  "props": [
+    {"id": "floor", "kind": "ground_patch", "p": [0, 0, 0], "params": {"size_x": 22.6, "size_z": 11.6, "thickness": 0.3, "surface": "ice"}},
+    {"id": "ball", "kind": "ball", "p": [0, 0, 0], "params": {"radius": 0.25, "color": "sign"}},
+    {"id": "paddle_player", "kind": "paddle", "p": [-8, 0.04, 0], "yaw": 90, "params": {"length": 2.0, "height": 0.6, "depth": 0.4, "color": "car_blue"}},
+    {"id": "paddle_rival", "kind": "paddle", "p": [8, 0.04, 0], "yaw": 90, "params": {"length": 2.0, "height": 0.6, "depth": 0.4, "color": "car_red"}},
+    {"kind": "stands", "p": [0, -8.5], "params": {"length": 14, "rows": 5}},
+    {"kind": "scoreboard", "p": [0, -16]},
+    {"kind": "flag", "p": [-12.5, -7], "params": {"height": 7, "color": "flag_b"}},
+    {"kind": "flag", "p": [12.5, -7], "params": {"height": 7, "color": "flag_a"}},
+    {"kind": "light_mast", "p": [-13, 8], "yaw": 45, "params": {"height": 10}},
+    {"kind": "light_mast", "p": [13, 8], "yaw": 135, "params": {"height": 10}},
+    {"kind": "sign", "p": [-14, -3], "yaw": 60},
+    {"kind": "tyre_stack", "p": [14.5, 3], "yaw": 80, "params": {"columns": 3}},
+    {"kind": "lumber", "p": [16, -4], "yaw": 20},
+    {"kind": "cabin", "p": [-19, -12], "yaw": 25}
+  ],
+  "trees": [
+    {"p": [-22, 6], "species": "pine", "height": 10},
+    {"p": [21, -10], "species": "broadleaf", "height": 8, "seed": 5},
+    {"p": [24, 9], "species": "pine", "height": 12, "seed": 3}
+  ],
+  "rocks": [{"p": [-17, 10], "size": 1.4, "seed": 4}],
+  "houses": [{"id": "house", "p": [26, -0.05, -22], "yaw": -30, "frame": false}],
+  "cams": {
+    "court": {"pos": [3, 12, 15.5], "look": [0, 0, -0.5], "fov": 50},
+    "baseline": {"pos": [-17, 5.2, 2.5], "look": [0, 0.3, 0], "fov": 55}
+  }
+}

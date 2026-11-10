@@ -1,0 +1,18 @@
+{
+  "schema": "tl.surfaces/1",
+  "_doc": "Surface rules: pairwise overrides of the default pair law (friction = lower of the two, restitution = sum, at most 1). Order of a and b does not matter. Omit a column to keep the default for it.",
+  "pairs": [
+    {"a": "rubber", "b": "ice",     "friction": 0.10, "restitution": 0.30},
+    {"a": "rubber", "b": "asphalt", "friction": 1.00},
+    {"a": "rubber", "b": "concrete","friction": 0.90},
+    {"a": "rubber", "b": "grass",   "friction": 0.45},
+    {"a": "rubber", "b": "dirt",    "friction": 0.55},
+    {"a": "rubber", "b": "snow",    "friction": 0.25},
+    {"a": "rubber", "b": "water",   "friction": 0.30},
+    {"a": "steel",  "b": "ice",     "friction": 0.015},
+    {"a": "plastic","b": "ice",     "friction": 0.02, "restitution": 0.20},
+    {"a": "rubber", "b": "wood",    "restitution": 0.60},
+    {"a": "rubber", "b": "glass",   "restitution": 0.65},
+    {"a": "steel",  "b": "steel",   "friction": 0.40, "restitution": 0.35}
+  ]
+}

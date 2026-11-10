@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["brief", "estimate"],
+  "properties": {
+    "brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rules", "arena", "ai", "controls", "mood"],
+      "properties": {
+        "rules": { "type": "string", "minLength": 1 },
+        "arena": { "type": "string", "minLength": 1 },
+        "ai": { "type": "string", "minLength": 1 },
+        "controls": { "type": "string", "minLength": 1 },
+        "mood": { "type": "string", "minLength": 1 }
+      }
+    },
+    "estimate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packages", "wallMinutes", "tokens"],
+      "properties": {
+        "packages": { "type": "integer", "minimum": 1 },
+        "wallMinutes": { "type": "number", "minimum": 0 },
+        "tokens": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

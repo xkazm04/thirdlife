@@ -1,0 +1,21 @@
+{
+  "schema": "tl.materials/1",
+  "_doc": "Law table. density kg/m3; friction 0..1.5 (a pair uses the lower one unless surfaces.json overrides); restitution 0..1 is this material's contribution (a pair bounces with the sum, at most 1, unless overridden); hardness 0..10 (Mohs-like; sets the impulse a body takes before damage); flammability 0..1; sound = contact sound set; breaks_into = material id of the debris.",
+  "impulse_per_hardness": 40.0,
+  "materials": {
+    "ice":      {"density": 917,  "friction": 0.03, "restitution": 0.05, "hardness": 1.5, "flammability": 0.0, "sound": "ice",      "breaks_into": "ice"},
+    "concrete": {"density": 2400, "friction": 0.75, "restitution": 0.10, "hardness": 6.5, "flammability": 0.0, "sound": "concrete", "breaks_into": "stone"},
+    "steel":    {"density": 7850, "friction": 0.45, "restitution": 0.25, "hardness": 8.0, "flammability": 0.0, "sound": "metal",    "breaks_into": "steel"},
+    "wood":     {"density": 650,  "friction": 0.50, "restitution": 0.20, "hardness": 2.5, "flammability": 0.8, "sound": "wood",     "breaks_into": "wood"},
+    "rubber":   {"density": 1100, "friction": 1.00, "restitution": 0.55, "hardness": 1.0, "flammability": 0.4, "sound": "rubber",   "breaks_into": "rubber"},
+    "asphalt":  {"density": 2300, "friction": 0.80, "restitution": 0.08, "hardness": 5.0, "flammability": 0.1, "sound": "asphalt",  "breaks_into": "stone"},
+    "grass":    {"density": 1300, "friction": 0.55, "restitution": 0.05, "hardness": 0.8, "flammability": 0.5, "sound": "grass",    "breaks_into": "dirt"},
+    "dirt":     {"density": 1500, "friction": 0.60, "restitution": 0.04, "hardness": 1.0, "flammability": 0.0, "sound": "dirt",     "breaks_into": "dirt"},
+    "glass":    {"density": 2500, "friction": 0.35, "restitution": 0.15, "hardness": 5.5, "flammability": 0.0, "sound": "glass",    "breaks_into": "glass"},
+    "plastic":  {"density": 950,  "friction": 0.35, "restitution": 0.30, "hardness": 2.0, "flammability": 0.6, "sound": "plastic",  "breaks_into": "plastic"},
+    "snow":     {"density": 300,  "friction": 0.20, "restitution": 0.01, "hardness": 0.3, "flammability": 0.0, "sound": "snow",     "breaks_into": "snow"},
+    "water":    {"density": 1000, "friction": 0.05, "restitution": 0.00, "hardness": 0.0, "flammability": 0.0, "sound": "water",    "breaks_into": "water"},
+    "stone":    {"density": 2700, "friction": 0.70, "restitution": 0.12, "hardness": 6.0, "flammability": 0.0, "sound": "stone",    "breaks_into": "stone"},
+    "fabric":   {"density": 400,  "friction": 0.65, "restitution": 0.02, "hardness": 0.5, "flammability": 0.9, "sound": "fabric",   "breaks_into": "fabric"}
+  }
+}

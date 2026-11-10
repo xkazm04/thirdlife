@@ -1,0 +1,4 @@
+{
+  "sides": ["player", "rival"],
+  "score_to_win": 5
+}

@@ -1,0 +1,5 @@
+{
+  "sides": ["player"],
+  "score_to_win": 40,
+  "time_limit_seconds": 60
+}

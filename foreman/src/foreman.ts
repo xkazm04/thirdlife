@@ -1,0 +1,1287 @@
+// The package loop: packages in dependency order, up to N at once, each in ws/<package>/.
+// builder run -> verification -> (failure: report back, next round) -> merge in-scope files -> whole pack V0..V2.
+// Everything that happens is an event in job.jsonl first; a kill at any line resumes from the log.
+import fs from "node:fs";
+import path from "node:path";
+import type { Acceptance, BudgetPolicy, Cause, JobEvent, Milestone, PackageSpec } from "./events.js";
+import { JobLog, type JobState, type PackageView } from "./joblog.js";
+import type { Builder, RunResult } from "./builder/types.js";
+import { deriveBashAllowlist } from "./builder/allowlist.js";
+import type { Verifier, VerifyResult } from "./verifier.js";
+import { BudgetGate, budgetVerdict } from "./budget.js";
+import { copyDir, hashFile, listFiles, matchesAny, pruneEmptyDirs, snapshot } from "./scope.js";
+import { engineWritable, promotePack, readManifest } from "./promoter.js";
+import { existingText, prepareReference, referenceText, type Reference } from "./reference.js";
+import { PKG_ROOT, REPO_ROOT, toPosix } from "./paths.js";
+import { MANIFEST_FILE, composeManifest, depClosure, dependants, manifestText } from "./manifest.js";
+import { critic, replanPackages, DEFAULT_RUBRIC, type GenerateCall, type Generated, type ReplanInput } from "./designer.js";
+
+export class ForemanError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForemanError";
+  }
+}
+
+export interface ForemanOptions {
+  jobDir: string;
+  builder: Builder;
+  verifier: Verifier;
+  /** Packages built at once. Default 2. */
+  parallel?: number;
+  /** Rounds per package before it fails. Default 4 (JOB.md). */
+  roundLimit?: number;
+  builderTimeoutMs?: number;
+  model?: string;
+  budget?: BudgetPolicy;
+  now?: () => Date;
+  sleep?: (ms: number) => Promise<void>;
+  isPlaying?: () => boolean;
+  /** Text of the pack contract given to builders. Default: contracts/PACK.md. */
+  packContract?: string;
+  /** Promote the finished pack. Default true. */
+  promote?: boolean;
+  /**
+   * Where a promoted pack is written: "job" (default) is <job>/promoted/<pack id>/, so a job ends `promoted` without
+   * touching the engine; "engine" is <engineDir>/packs/<pack id>/, and falls back to "job" when that is not writable.
+   */
+  promoteTo?: "job" | "engine";
+  /** Put failed packages back in the queue at round 1 before running. */
+  retryFailed?: boolean;
+  rateLimitRetries?: number;
+  rateLimitBackoffMs?: number;
+  /** Re-plans per job before it fails. Default 3 (JOB.md). */
+  maxReplans?: number;
+  /** Most packages a re-plan may leave in the plan (the same limit the first plan had). */
+  maxPackages?: number;
+  /** Test seam and override: who answers a re-plan. Default: the Planner prompt through `builder` in generate mode. */
+  replanner?: (input: ReplanInput) => Promise<Generated<{ packages: PackageSpec[] }>>;
+  /** Run the V5 critic on milestone captures. Default true. */
+  critic?: boolean;
+  /** Model for job-level generate calls made by the loop (re-plan, critic). Default: `model`. */
+  plannerModel?: string;
+  criticModel?: string;
+  /** Milestone captures: resolution and the physics frames to render for each declared camera. */
+  captureRes?: string;
+  /** Fixed capture frames. Default: 25 % and 75 % of the first bot's finish frame in its last passing report (120 and 480 without one). */
+  captureFrames?: number[];
+  /**
+   * Reference material for builders: the kernel's API.md and example packs. They are COPIED into <job>/ref/ once
+   * and that copy is what a builder may read (--add-dir): the engine directory itself is never opened to a builder.
+   */
+  reference?: Reference;
+  /** Test seam: called after every durable append; throwing simulates a kill at that exact event. */
+  afterAppend?: (ev: JobEvent) => void;
+  onEvent?: (ev: JobEvent) => void;
+}
+
+/** Causes after which a failed package goes back to the Planner (a refusal, a budget stop or a cancel do not). */
+const REPLAN_CAUSES: Cause[] = ["verify_failed", "builder_error", "builder_timeout", "builder_truncated", "no_visible_change"];
+
+/** Fixed starts of the `detail` of a package sent back after its merge; the feedback and the resume read them. */
+export const NO_VISIBLE_CHANGE = "NO VISIBLE CHANGE";
+export const CRITIC_ROUND = "critic (V5) NOT ok, one extra round";
+
+/**
+ * The deviations a builder states in its answer: everything under a line `DEVIATIONS:` up to a `QUESTION:` line or
+ * the end. "none" (or nothing) means there are none.
+ */
+export function parseDeviations(text: string | undefined): string | undefined {
+  if (!text) return undefined;
+  const lines = text.split(/\r?\n/);
+  let start = -1;
+  let first = "";
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^[\s#>*_-]*DEVIATIONS\**\s*:?\**\s*(.*)$/.exec(lines[i] as string);
+    if (m) {
+      start = i;
+      first = m[1] ?? "";
+    }
+  }
+  if (start < 0) return undefined;
+  const body = [first];
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^\s*QUESTION:/.test(lines[i] as string)) break;
+    body.push(lines[i] as string);
+  }
+  const out = body.join("\n").trim();
+  if (out === "" || /^[-*\s]*(none|no deviations?|nothing|n\/a)[.!]?\s*$/i.test(out)) return undefined;
+  return clip(out, 4000);
+}
+
+const BUILDER_CAUSE: Record<Exclude<RunResult["outcome"], "ok">, Cause> = {
+  timeout: "builder_timeout",
+  truncated: "builder_truncated",
+  error: "builder_error",
+  refused: "builder_error",
+};
+
+/** Whole-pack verification after every merge: V0 to V2. */
+const PACK_GATE: Acceptance[] = [
+  { level: "V1", verb: "lint", args: [] },
+  { level: "V2", verb: "smoke", args: [] },
+];
+
+function render(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
+}
+
+function clip(s: string, n: number): string {
+  return s.length <= n ? s : `${s.slice(0, n)}\n... (${s.length - n} more characters cut)`;
+}
+
+function listDetail(label: string, files: string[]): string {
+  const shown = files.slice(0, 20).join(", ");
+  return `${label}: ${shown}${files.length > 20 ? ` (+${files.length - 20} more)` : ""}`;
+}
+
+/**
+   * What a builder did with its tools, read from the adapter's envelope (claude-cli stream-json events): how often
+   * each tool was used, the shell commands it ran, and what the permission system refused. Evidence for the report
+   * and the site, never an input to a verdict.
+   */
+export function builderConduct(raw: unknown): { tools: Record<string, number>; bash: string[]; denials: string[]; notes: string[] } {
+  const out = { tools: {} as Record<string, number>, bash: [] as string[], denials: [] as string[], notes: [] as string[] };
+  const events = (raw as { events?: unknown } | null)?.events;
+  if (!Array.isArray(events)) return out;
+  for (const ev of events as Record<string, unknown>[]) {
+    if (ev?.["type"] === "assistant") {
+      const content = (ev["message"] as { content?: unknown } | undefined)?.content;
+      if (!Array.isArray(content)) continue;
+      for (const c of content as Record<string, unknown>[]) {
+        if (c?.["type"] !== "tool_use" || typeof c["name"] !== "string") continue;
+        out.tools[c["name"]] = (out.tools[c["name"]] ?? 0) + 1;
+        const cmd = (c["input"] as { command?: unknown } | undefined)?.command;
+        if (c["name"] === "Bash" && typeof cmd === "string") out.bash.push(cmd.length > 600 ? `${cmd.slice(0, 600)}...` : cmd);
+      }
+    } else if (ev?.["type"] === "result" && Array.isArray(ev["permission_denials"])) {
+      for (const d of ev["permission_denials"] as Record<string, unknown>[]) {
+        const input = d?.["tool_input"] as Record<string, unknown> | undefined;
+        const what = typeof input?.["command"] === "string" ? input["command"] : typeof input?.["file_path"] === "string" ? input["file_path"] : "";
+        out.denials.push(`${String(d?.["tool_name"] ?? "?")}: ${String(what).slice(0, 300)}`);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * True when a failed verification could be the machine's load and not the pack: the watchdog tripped on a time
+ * limit (not on its frame-counted or error-counted reasons), or the only failed check is the physics time budget.
+ */
+export function restsOnAClock(vr: VerifyResult): boolean {
+  const r = vr.report;
+  if (!r || vr.flags.length > 0 || vr.ok) return false;
+  const failed = r.checks.filter((c) => !c.ok);
+  if (r.outcome === "watchdog") {
+    const detail = failed.find((c) => c.id === "smoke.watchdog")?.detail ?? "";
+    return /tick_timeout|did not return/.test(detail);
+  }
+  return failed.length > 0 && failed.every((c) => c.id === "invariants.frame_budget");
+}
+
+export class Foreman {
+  private readonly o: Required<Pick<ForemanOptions, "parallel" | "roundLimit" | "builderTimeoutMs" | "promote" | "rateLimitRetries" | "rateLimitBackoffMs" | "maxReplans">> &
+    ForemanOptions;
+  /** Milestones are worked one at a time (captures and the critic take seconds; the merge chain waits for them). */
+  private milestoneBusy: Promise<void> = Promise.resolve();
+  private log!: JobLog;
+  private gate!: BudgetGate;
+  private mergeChain: Promise<unknown> = Promise.resolve();
+  private readonly jobDir: string;
+  private readonly template: string;
+  private readonly packContract: string;
+
+  constructor(opts: ForemanOptions) {
+    this.o = {
+      parallel: 2,
+      roundLimit: 4,
+      builderTimeoutMs: 30 * 60_000,
+      promote: true,
+      rateLimitRetries: 5,
+      rateLimitBackoffMs: 60_000,
+      maxReplans: 3,
+      ...opts,
+    };
+    this.jobDir = path.resolve(opts.jobDir);
+    this.template = fs.readFileSync(path.join(PKG_ROOT, "prompts", "builder.md"), "utf8");
+    this.packContract = opts.packContract ?? fs.readFileSync(path.join(REPO_ROOT, "contracts", "PACK.md"), "utf8");
+  }
+
+  private get s(): JobState {
+    return this.log.state;
+  }
+  private dir(...parts: string[]): string {
+    return path.join(this.jobDir, ...parts);
+  }
+  private rel(abs: string): string {
+    return toPosix(path.relative(this.jobDir, abs));
+  }
+  private append(body: Parameters<JobLog["append"]>[0]): JobEvent {
+    const ev = this.log.append(body);
+    this.o.onEvent?.(ev);
+    return ev;
+  }
+  /** Report and transcript names carry the next seq, so a re-run never overwrites what an earlier event points at. */
+  private reportPath(stem: string): string {
+    return this.dir("reports", `${stem}-s${this.s.lastSeq + 1}.json`);
+  }
+
+  /** Runs (or resumes) the job to its end. Returns the final derived state. */
+  async run(): Promise<JobState> {
+    this.log = JobLog.open(this.jobDir, {
+      ...(this.o.now ? { now: this.o.now } : {}),
+      ...(this.o.afterAppend ? { afterAppend: this.o.afterAppend } : {}),
+    });
+    try {
+      return await this.runOpen();
+    } finally {
+      this.log.close();
+    }
+  }
+
+  private async runOpen(): Promise<JobState> {
+    if (this.s.plan.length === 0) throw new ForemanError(`job ${this.s.job} has no plan_set yet (run \`foreman plan\`)`);
+    if (this.s.jobState?.state === "done") return this.s;
+    // A cancelled job stays cancelled unless the caller explicitly asks for its failed packages to be retried.
+    if (this.s.jobState?.state === "cancelled" && !this.o.retryFailed) return this.s;
+    for (const d of ["pack", "ws", "reports", "captures"]) fs.mkdirSync(this.dir(d), { recursive: true });
+    const now = this.o.now ?? (() => new Date());
+    const sleep = this.o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+    const before = this.s.jobState;
+    this.append({ type: "job_state", state: "running", reason: before ? `resumed (was ${before.state})` : "started" });
+
+    // The player's budget policy lives in the log: one given now is recorded, one recorded earlier still holds.
+    const logged = this.s.budget;
+    const isReal = (p: BudgetPolicy): boolean => p.kind !== "tokens_per_hour" || p.limit !== undefined;
+    const policy = this.o.budget ?? (logged && isReal(logged.policy) ? logged.policy : undefined);
+    const deps = { now, sleep, ...(this.o.isPlaying ? { isPlaying: this.o.isPlaying } : {}) };
+    if (this.o.budget && JSON.stringify(logged?.policy) !== JSON.stringify(this.o.budget)) {
+      this.append({ type: "budget", policy: this.o.budget, state: "running", reason: "policy set" });
+    } else if (logged?.state === "paused" && budgetVerdict(policy, this.s, deps).allowed) {
+      // Killed while paused, and the reason for the pause is gone: say so, or the log would stay paused for ever.
+      this.append({ type: "budget", policy: logged.policy, state: "running", reason: "allowed again after a restart" });
+    }
+    this.gate = new BudgetGate(policy, this.log, deps);
+
+    // pack/ is state on disk that the log cannot rebuild: if merged files are gone, continuing would be a lie.
+    const lost: string[] = [];
+    for (const id of this.s.order) {
+      const p = this.pkg(id);
+      if (p.state !== "promoted") continue;
+      for (const f of p.mergedFiles ?? []) if (!fs.existsSync(this.dir("pack", f))) lost.push(`${id}: ${f}`);
+    }
+    if (lost.length > 0) {
+      this.endJob("failed", clip(`pack/ no longer holds files the log says were merged (${lost.join(", ")}); restore pack/ or start a new job`, 400));
+      return this.s;
+    }
+    for (const id of this.s.order) {
+      if (!this.pkg(id).announced) this.append({ type: "package_state", package: id, state: "queued", round: 1 });
+    }
+    if (this.o.retryFailed) {
+      for (const id of this.s.order) {
+        const p = this.pkg(id);
+        if (p.state === "failed" || (p.state === "blocked" && p.cause === "dependency")) {
+          this.append({ type: "package_state", package: id, state: "queued", round: 1, detail: "retry requested" });
+        }
+      }
+    }
+
+    // Billing is in the log before the first builder_run, from the probe, in the real environment.
+    const probe = await this.o.builder.probe();
+    const b = this.s.billing;
+    if (!b || b.adapter !== probe.adapter || b.mode !== probe.billing.mode || b.evidence !== probe.billing.evidence) {
+      this.append({ type: "billing", adapter: probe.adapter, mode: probe.billing.mode, evidence: probe.billing.evidence });
+    }
+    if (!probe.ok) {
+      this.endJob("failed", `builder ${probe.adapter} is not available: ${probe.notes.join("; ")}`);
+      return this.s;
+    }
+
+    this.prepareReference();
+
+    for (;;) {
+      // A milestone whose last merge is in the log but whose `milestone` event is not (a kill in between).
+      await this.catchUpMilestones();
+      this.requeueNoVisibleChange();
+      await this.schedule();
+      const views = this.s.order.map((id) => this.pkg(id));
+      if (views.every((p) => p.state === "promoted")) {
+        await this.catchUpMilestones();
+        await this.finish();
+        break;
+      }
+      if (views.some((p) => p.state === "blocked" && p.cause === "question") && !views.some((p) => p.state === "failed")) {
+        const waiting = views.filter((p) => p.state === "blocked" && p.cause === "question").map((p) => p.id);
+        this.append({ type: "job_state", state: "paused", reason: `waiting for answers: ${waiting.join(", ")}` });
+        break;
+      }
+      // Failed after the round limit: back to the Planner, once per package, at most maxReplans times per job.
+      const re = await this.tryReplan();
+      if (re.replanned) continue;
+      const failed = views.filter((p) => p.state === "failed").map((p) => `${p.id} (${p.cause ?? "?"})`);
+      const blocked = views.filter((p) => p.state === "blocked").map((p) => `${p.id} (${p.cause ?? "?"})`);
+      this.endJob("failed", clip([failed.length ? `failed: ${failed.join(", ")}` : "", blocked.length ? `blocked: ${blocked.join(", ")}` : "", re.reason].filter(Boolean).join("; "), 600));
+      break;
+    }
+    return this.s;
+  }
+
+  // ---------- reference material ----------
+
+  private refDir(): string {
+    return this.dir("ref");
+  }
+
+  /** Copies the reference (API, law tables, examples, seeds, kit/rig/style documents) into <job>/ref/ (once). */
+  private prepareReference(): void {
+    prepareReference(this.refDir(), this.o.reference);
+  }
+
+  private referenceText(): string {
+    return referenceText(this.refDir());
+  }
+
+  private kernelApiText(): string | undefined {
+    const api = path.join(this.refDir(), "API.md");
+    return fs.existsSync(api) ? fs.readFileSync(api, "utf8") : undefined;
+  }
+
+  // ---------- re-plan on failure ----------
+
+  private logGenerateCalls(calls: GenerateCall[], model: string | undefined): void {
+    for (const c of calls) {
+      const file = this.dir("reports", `${c.role}-a${c.attempt}-s${this.s.lastSeq + 1}.json`);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(
+        file,
+        JSON.stringify(
+          {
+            schema: "tl.foreman.transcript/1",
+            adapter: this.o.builder.name,
+            role: c.role,
+            attempt: c.attempt,
+            mode: "generate",
+            prompt: c.prompt,
+            problems: c.problems,
+            result: { ok: c.result.ok, outcome: c.result.outcome, text: c.result.text, json: c.result.json, error: c.result.error, tokensIn: c.result.tokensIn, tokensOut: c.result.tokensOut, durationMs: c.result.durationMs, observed: c.result.observed },
+            raw: c.result.raw,
+          },
+          null,
+          1,
+        ) + "\n",
+      );
+      this.append({
+        type: "builder_run",
+        adapter: this.o.builder.name,
+        mode: "generate",
+        model: c.result.model ?? model ?? "default",
+        outcome: c.result.outcome,
+        durationMs: Math.max(0, Math.round(c.result.durationMs)),
+        ...(c.result.tokensIn !== undefined ? { tokensIn: c.result.tokensIn } : {}),
+        ...(c.result.tokensOut !== undefined ? { tokensOut: c.result.tokensOut } : {}),
+        ...(c.result.tokensCacheRead !== undefined ? { tokensCacheRead: c.result.tokensCacheRead } : {}),
+        transcript: this.rel(file),
+      });
+    }
+  }
+
+  /**
+   * JOB.md: a package that fails after the round limit goes back to the Planner once (a `replan` covering it and
+   * its dependants); at most `maxReplans` re-plans per job. Returns why nothing was re-planned when that is the case.
+   */
+  private async tryReplan(): Promise<{ replanned: boolean; reason: string }> {
+    const s = this.s;
+    const views = s.order.map((id) => this.pkg(id));
+    const allFailed = views.filter((p) => p.state === "failed");
+    if (allFailed.length === 0) return { replanned: false, reason: "" };
+    const cannot = allFailed.filter((p) => !REPLAN_CAUSES.includes(p.cause as Cause) || (p.detail ?? "").startsWith("builder refused"));
+    if (cannot.length > 0) return { replanned: false, reason: `no re-plan: ${cannot.map((p) => `${p.id} (${p.cause ?? "?"})`).join(", ")} is not a failure a new plan can fix` };
+    const resumed = s.pendingReplan !== undefined;
+    if (!resumed) {
+      const again = allFailed.filter((p) => s.replanned.includes(p.id));
+      if (again.length > 0) return { replanned: false, reason: `no re-plan: ${again.map((p) => p.id).join(", ")} already went back to the Planner once` };
+      if (s.replans >= this.o.maxReplans) return { replanned: false, reason: `no re-plan: the limit of ${this.o.maxReplans} re-plan(s) for this job is used up` };
+    }
+    if (!s.brief || !s.sentence || !s.packId || !s.title) return { replanned: false, reason: "no re-plan: the log has no brief" };
+
+    const failedIds = new Set(allFailed.map((p) => p.id));
+    const depIds = new Set(allFailed.flatMap((p) => dependants(s.plan, p.id)).filter((id) => !failedIds.has(id) && this.pkg(id).state !== "promoted"));
+    const kept = s.plan.filter((p) => !failedIds.has(p.id) && !depIds.has(p.id));
+    const input: ReplanInput = {
+      sentence: s.sentence,
+      packId: s.packId,
+      title: s.title,
+      brief: s.brief,
+      packContract: this.packContract,
+      ...(this.kernelApiText() !== undefined ? { kernelApi: this.kernelApiText() as string } : {}),
+      existing: existingText(this.refDir()),
+      builderTimeoutMs: this.o.builderTimeoutMs,
+      kept,
+      failed: allFailed.map((p) => {
+        const report = p.lastVerify && !p.lastVerify.ok ? this.readClipped(this.dir(p.lastVerify.report), 4000) : undefined;
+        return { spec: this.spec(p.id), cause: p.cause ?? "?", detail: p.detail ?? "", ...(report !== undefined ? { lastReport: report } : {}) };
+      }),
+      dependants: s.plan.filter((p) => depIds.has(p.id)),
+    };
+    const model = this.o.plannerModel ?? this.o.model;
+    const res = this.o.replanner
+      ? await this.o.replanner(input)
+      : await replanPackages(this.o.builder, input, { ...(model ? { model } : {}), ...(this.o.maxPackages !== undefined ? { maxPackages: this.o.maxPackages } : {}) });
+    this.logGenerateCalls(res.calls, model);
+    if (!res.ok) return { replanned: false, reason: `re-plan failed: ${clip(res.reason, 300)}` };
+
+    const fresh = res.value.packages;
+    const oldIds = new Set(s.order);
+    const freshIds = new Set(fresh.map((p) => p.id));
+    if (!resumed) {
+      this.append({
+        type: "replan",
+        reason: clip(`failed after ${this.o.roundLimit} round(s): ${allFailed.map((p) => `${p.id} (${p.cause ?? "?"})`).join(", ")}`, 300),
+        added: [...freshIds].filter((x) => !oldIds.has(x)),
+        removed: [...failedIds, ...depIds].filter((x) => !freshIds.has(x)),
+        changed: [...freshIds].filter((x) => oldIds.has(x)),
+      });
+    }
+    this.append({ type: "plan_set", packages: [...kept, ...fresh] });
+    for (const p of fresh) this.append({ type: "package_state", package: p.id, state: "queued", round: 1, detail: "replanned" });
+    return { replanned: true, reason: "" };
+  }
+
+  private readClipped(file: string, n: number): string | undefined {
+    try {
+      return clip(fs.readFileSync(file, "utf8"), n);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private pkg(id: string): PackageView {
+    const p = this.s.packages[id];
+    if (!p) throw new ForemanError(`unknown package ${id}`);
+    return p;
+  }
+  private spec(id: string): PackageSpec {
+    const p = this.s.plan.find((x) => x.id === id);
+    if (!p) throw new ForemanError(`unknown package ${id}`);
+    return p;
+  }
+
+  // ---------- scheduling ----------
+
+  private async schedule(): Promise<void> {
+    const running = new Map<string, Promise<void>>();
+    let fatal: unknown;
+    const dead = (p: PackageView): boolean => p.state === "failed" || (p.state === "blocked" && p.cause === "dependency");
+    for (;;) {
+      if (fatal === undefined) {
+        // A package whose dependency can no longer be built is blocked, and says which one.
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const id of this.s.order) {
+            const p = this.pkg(id);
+            if (running.has(id) || p.state === "promoted" || dead(p)) continue;
+            const bad = p.deps.find((d) => dead(this.pkg(d)));
+            if (bad !== undefined) {
+              this.append({ type: "package_state", package: id, state: "blocked", round: p.round, cause: "dependency", detail: `depends on ${bad}, which is ${this.pkg(bad).state}` });
+              changed = true;
+            }
+          }
+        }
+        for (const id of this.s.order) {
+          if (running.size >= this.o.parallel) break;
+          const p = this.pkg(id);
+          if (running.has(id) || p.state === "promoted" || p.state === "failed") continue;
+          if (p.state === "blocked" && p.cause === "question" && p.openQuestion !== undefined) continue;
+          if (!p.deps.every((d) => this.pkg(d).state === "promoted")) continue;
+          const task = this.runPackage(id)
+            .catch((e: unknown) => {
+              if (fatal === undefined) fatal = e;
+            })
+            .finally(() => {
+              running.delete(id);
+            });
+          running.set(id, task);
+        }
+      }
+      if (running.size === 0) break;
+      await Promise.race(running.values());
+    }
+    if (fatal !== undefined) throw fatal;
+  }
+
+  // ---------- one package ----------
+
+  private wsDir(id: string): string {
+    return this.dir("ws", id);
+  }
+  private baselineFile(id: string): string {
+    return this.dir("ws", `${id}.baseline.json`);
+  }
+
+  /** Plan-order specs of the given package ids. */
+  private specsOf(ids: Set<string>): PackageSpec[] {
+    return this.s.plan.filter((p) => ids.has(p.id));
+  }
+  /**
+   * The packages whose files are in pack/: the promoted ones, and one that was merged and then sent back for another
+   * round (no visible change, the critic's extra round). Its files stay in pack/ until its next merge, so its
+   * registers stay in the manifest too; otherwise another package merging meanwhile would be verified against a
+   * manifest that does not match the files.
+   */
+  private promotedIds(): Set<string> {
+    return new Set(this.s.order.filter((x) => this.pkg(x).state === "promoted" || (this.pkg(x).mergedFiles ?? []).length > 0));
+  }
+
+  /**
+   * A package that was merged, sent back, and then failed for good: its files leave pack/ again (scopes are
+   * disjoint, so every file it merged is its own) and the manifest is composed without it. Logged as a `merge`
+   * with no files and everything in `removed`. pack/ is then what it was before the package's first merge.
+   */
+  private unmerge(id: string): void {
+    const files = this.pkg(id).mergedFiles ?? [];
+    if (files.length === 0) return;
+    const packDir = this.dir("pack");
+    for (const f of files) fs.rmSync(path.join(packDir, f), { force: true });
+    pruneEmptyDirs(packDir);
+    this.append({ type: "merge", package: id, files: [], removed: files });
+    fs.mkdirSync(packDir, { recursive: true });
+    fs.writeFileSync(path.join(packDir, MANIFEST_FILE), this.packManifestText());
+  }
+  private jobIdentity(): { packId: string; title: string } {
+    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled" };
+  }
+  /**
+   * The manifest a package's workspace is verified with: the package itself plus everything it depends on. It does
+   * not depend on what else happened to be merged when the workspace was cut, so it is the same after a resume.
+   */
+  private wsManifestText(id: string): string {
+    return manifestText(composeManifest(this.jobIdentity(), this.specsOf(depClosure(this.s.plan, id))));
+  }
+  /** The manifest of pack/ once `id` is merged: every promoted package plus this one. */
+  private packManifestText(plus?: string): string {
+    const ids = this.promotedIds();
+    if (plus !== undefined) ids.add(plus);
+    return manifestText(composeManifest(this.jobIdentity(), this.specsOf(ids)));
+  }
+
+  private ensureWs(id: string, fresh: boolean): void {
+    const ws = this.wsDir(id);
+    const base = this.baselineFile(id);
+    if (!fresh && fs.existsSync(ws) && fs.existsSync(base)) return;
+    fs.rmSync(ws, { recursive: true, force: true });
+    copyDir(this.dir("pack"), ws);
+    // pack.json is composed by the Foreman (JOB.md): the builder finds it in place and never owns it.
+    fs.mkdirSync(ws, { recursive: true });
+    fs.writeFileSync(path.join(ws, MANIFEST_FILE), this.wsManifestText(id));
+    fs.writeFileSync(base, JSON.stringify(snapshot(ws), null, 1));
+  }
+
+  /**
+   * Splits what the builder changed into in-scope and out-of-scope. Out-of-scope files are removed from the
+   * workspace (or put back to what pack/ has) before anything is verified, and returned so they can be recorded.
+   */
+  private dropOutOfScope(id: string): string[] {
+    const ws = this.wsDir(id);
+    const spec = this.spec(id);
+    const baseline = JSON.parse(fs.readFileSync(this.baselineFile(id), "utf8")) as Record<string, string>;
+    const packDir = this.dir("pack");
+    const dropped: string[] = [];
+    const present = new Set(listFiles(ws));
+    // The manifest first: whatever the builder did to it, the composed text is put back before anything is verified.
+    const wanted = this.wsManifestText(id);
+    const manifestAbs = path.join(ws, MANIFEST_FILE);
+    const had = fs.existsSync(manifestAbs) ? fs.readFileSync(manifestAbs, "utf8") : undefined;
+    if (had !== wanted) {
+      fs.writeFileSync(manifestAbs, wanted);
+      dropped.push(`${MANIFEST_FILE} (${had === undefined ? "deleted" : "edited"} by the builder; the Foreman's composed manifest was put back)`);
+    }
+    for (const f of present) {
+      if (f === MANIFEST_FILE) continue;
+      if (matchesAny(spec.scope, f)) continue;
+      if (baseline[f] === hashFile(path.join(ws, f))) continue;
+      const inPack = path.join(packDir, f);
+      if (fs.existsSync(inPack)) {
+        if (hashFile(inPack) === hashFile(path.join(ws, f))) continue;
+        fs.copyFileSync(inPack, path.join(ws, f));
+      } else fs.rmSync(path.join(ws, f), { force: true });
+      dropped.push(f);
+    }
+    for (const f of Object.keys(baseline)) {
+      // A file of another package deleted by this builder: put it back.
+      if (f === MANIFEST_FILE || present.has(f) || matchesAny(spec.scope, f)) continue;
+      const inPack = path.join(packDir, f);
+      if (fs.existsSync(inPack)) {
+        fs.mkdirSync(path.dirname(path.join(ws, f)), { recursive: true });
+        fs.copyFileSync(inPack, path.join(ws, f));
+        dropped.push(`${f} (deletion undone)`);
+      }
+    }
+    pruneEmptyDirs(ws);
+    return dropped.sort();
+  }
+
+  /**
+   * What this package contributes: in-scope files of the workspace that are new or changed since the workspace was
+   * cut from pack/. Measured against the baseline, not against pack/, so a merge redone after a kill lists the
+   * same files again instead of an empty set.
+   */
+  private mergeSet(id: string): string[] {
+    const ws = this.wsDir(id);
+    const spec = this.spec(id);
+    const baseline = JSON.parse(fs.readFileSync(this.baselineFile(id), "utf8")) as Record<string, string>;
+    return listFiles(ws).filter((f) => f !== MANIFEST_FILE && matchesAny(spec.scope, f) && baseline[f] !== hashFile(path.join(ws, f)));
+  }
+
+  /** In-scope files the package deleted: they were in the workspace when it was cut and are gone now. */
+  private removedSet(id: string): string[] {
+    const ws = this.wsDir(id);
+    const spec = this.spec(id);
+    const baseline = JSON.parse(fs.readFileSync(this.baselineFile(id), "utf8")) as Record<string, string>;
+    return Object.keys(baseline)
+      .filter((f) => f !== MANIFEST_FILE && matchesAny(spec.scope, f) && !fs.existsSync(path.join(ws, f)))
+      .sort();
+  }
+
+  private async runPackage(id: string): Promise<void> {
+    const spec = this.spec(id);
+    const first = this.pkg(id);
+    let round = first.round;
+    // Left running or verifying by a kill: the same round restarts and the log says so.
+    let resumed = first.state === "running" || first.state === "verifying";
+    const wsThere = fs.existsSync(this.wsDir(id)) && fs.existsSync(this.baselineFile(id));
+    // If the builder already answered ok for this round, its work is in ws/: verify it, do not pay for it twice.
+    let skipBuilder = resumed && first.builtRounds.includes(round) && wsThere;
+
+    for (;;) {
+      if (!skipBuilder) {
+        await this.gate.wait((reason) => {
+          this.append({ type: "package_state", package: id, state: "blocked", round, cause: "budget", detail: reason });
+        });
+        const cur = this.pkg(id);
+        const fresh = round === 1 && !resumed && cur.state === "queued";
+        this.ensureWs(id, fresh);
+        this.append({ type: "package_state", package: id, state: "running", round, ...(resumed ? { detail: "resumed" } : {}) });
+        resumed = false;
+        const res = await this.callBuilder(id, spec, round);
+        if (res.outcome === "ok") this.recordNote(id, round, res.text);
+        if (res.outcome === "ok" && this.raiseQuestion(id, round, res.text)) return;
+        if (res.outcome !== "ok") {
+          const cause: Cause = res.error?.kind === "rate_limit" ? "budget" : BUILDER_CAUSE[res.outcome];
+          const why = `builder ${res.outcome}: ${clip(res.error?.message ?? "no detail", 300)}`;
+          if (await this.keepAfterCriticRound(id, round, why)) return;
+          if (res.outcome === "refused" || cause === "budget" || round >= this.o.roundLimit) {
+            this.append({ type: "package_state", package: id, state: "failed", round, cause, detail: why });
+            this.unmerge(id);
+            return;
+          }
+          round += 1;
+          continue;
+        }
+      }
+
+      // Resumed after the builder answered: if that answer was a question the kill cut off before it was logged,
+      // it is still in the transcript, and it still has to be asked.
+      if (skipBuilder) this.recordNote(id, round, this.loggedAnswer(id, round));
+      if (skipBuilder && this.raiseQuestion(id, round, this.loggedAnswer(id, round))) return;
+      const dropped = this.dropOutOfScope(id);
+      const details = [skipBuilder && resumed ? "resumed" : "", dropped.length > 0 ? listDetail("dropped out-of-scope files", dropped) : ""].filter(Boolean);
+      this.append({ type: "package_state", package: id, state: "verifying", round, ...(details.length > 0 ? { detail: details.join("; ") } : {}) });
+      skipBuilder = false;
+      resumed = false;
+
+      let failure: VerifyResult | undefined;
+      for (const a of spec.acceptance) {
+        const vr = await this.verifyLogged(a, this.wsDir(id), `${id}-r${round}-${a.verb}`, { package: id, round });
+        if (!vr.ok) {
+          failure = vr;
+          break;
+        }
+      }
+      if (!failure) failure = await this.serialMerge(() => this.mergeAndGate(id, round));
+      if (!failure) return;
+      if (await this.keepAfterCriticRound(id, round, `${failure.verb} (${failure.level}): ${clip(failure.summary, 200)}`)) return;
+      if (round >= this.o.roundLimit) {
+        this.append({
+          type: "package_state",
+          package: id,
+          state: "failed",
+          round,
+          cause: "verify_failed",
+          detail: clip(`${failure.verb} (${failure.level}) did not pass after ${round} rounds: ${failure.summary}`, 400),
+        });
+        this.unmerge(id);
+        return;
+      }
+      round += 1;
+    }
+  }
+
+  /**
+   * One verification, written to the log. A verdict that rests on a CLOCK is not believed on one run: RUNNER.md
+   * names three limits that read wall time (a tick over 250 ms, a setup call over 10 s, the physics p99 budget).
+   * Observed on 2026-11-10 with the real engine under CPU load: `smoke` on a 120-frame pack ended as `watchdog`
+   * (tick_timeout) in 3 of 10 runs and as its true result in the other 7. So such a result is run once more; both
+   * runs are `verify` events, and the second one decides. A real runaway script simply trips twice.
+   */
+  private async verifyLogged(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<VerifyResult> {
+    let vr: VerifyResult | undefined;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      vr = await this.o.verifier.run({ verb: a.verb, args: a.args, packDir, reportFile: this.reportPath(attempt === 1 ? stem : `${stem}-again`) });
+      this.append({
+        type: "verify",
+        ...(where.package !== undefined ? { package: where.package } : {}),
+        round: where.round,
+        level: vr.level,
+        verb: vr.verb,
+        ok: vr.ok,
+        report: this.rel(vr.reportFile),
+        ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}),
+        ...(where.after !== undefined ? { after: where.after } : {}),
+      });
+      if (vr.ok || !restsOnAClock(vr)) break;
+      if (attempt === 2) vr = { ...vr, summary: `${vr.summary}. This is the second run with the same clock-based result (the first run is in the log too)` };
+    }
+    return vr as VerifyResult;
+  }
+
+  /** A builder that ends its answer with a `QUESTION:` line is not done: the package waits for the player. */
+  private raiseQuestion(id: string, round: number, text: string | undefined): boolean {
+    const question = /^QUESTION:\s*(.+)$/m.exec(text ?? "")?.[1]?.trim();
+    if (!question) return false;
+    // Already asked and answered (the answer is newer than this run): do not ask again.
+    const events = this.log.events;
+    const runAt = [...events].reverse().find((e) => e.type === "builder_run" && e.package === id && e.round === round && e.outcome === "ok")?.seq ?? 0;
+    if (events.some((e) => e.type === "answer" && e.package === id && e.seq > runAt)) return false;
+    if (!events.some((e) => e.type === "question" && e.package === id && e.seq > runAt)) this.append({ type: "question", package: id, text: question });
+    this.append({ type: "package_state", package: id, state: "blocked", round, cause: "question", detail: clip(question, 200) });
+    return true;
+  }
+
+  /** The text of the last ok builder answer for a round, read back from its transcript. */
+  private loggedAnswer(id: string, round: number): string | undefined {
+    const run = [...this.log.events].reverse().find((e) => e.type === "builder_run" && e.package === id && e.round === round && e.outcome === "ok");
+    if (!run || run.type !== "builder_run" || run.transcript === undefined) return undefined;
+    try {
+      const t = JSON.parse(fs.readFileSync(this.dir(run.transcript), "utf8")) as { result?: { text?: unknown } };
+      return typeof t.result?.text === "string" ? t.result.text : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Merges are one at a time: the candidate that is verified is exactly what pack/ becomes. */
+  private serialMerge<T>(fn: () => Promise<T>): Promise<T> {
+    const next = this.mergeChain.then(fn, fn);
+    this.mergeChain = next.catch(() => {});
+    return next;
+  }
+
+  /**
+   * Builds the candidate (pack/ plus this package's in-scope files), verifies it at V0 to V2, and only then
+   * copies the files into pack/ and writes `merge` and `promoted`. pack/ never holds unverified files.
+   */
+  private async mergeAndGate(id: string, round: number): Promise<VerifyResult | undefined> {
+    const files = this.mergeSet(id);
+    const ws = this.wsDir(id);
+    // Files this package merged in an earlier round (a round after a milestone sent it back) and has deleted since
+    // are removed too: the baseline predates them, so removedSet alone would leave them in pack/.
+    const dropped = (this.pkg(id).mergedFiles ?? []).filter((f) => !fs.existsSync(path.join(ws, f)));
+    const removed = [...new Set([...this.removedSet(id), ...dropped])].sort().filter((f) => fs.existsSync(path.join(this.dir("pack"), f)));
+    const packDir = this.dir("pack");
+    const candidate = this.dir("ws", `_candidate_${id}`);
+    const manifest = this.packManifestText(id);
+    fs.rmSync(candidate, { recursive: true, force: true });
+    copyDir(packDir, candidate);
+    for (const f of files) {
+      fs.mkdirSync(path.dirname(path.join(candidate, f)), { recursive: true });
+      fs.copyFileSync(path.join(ws, f), path.join(candidate, f));
+    }
+    for (const f of removed) fs.rmSync(path.join(candidate, f), { force: true });
+    fs.writeFileSync(path.join(candidate, MANIFEST_FILE), manifest);
+    try {
+      for (const a of PACK_GATE) {
+        const vr = await this.verifyLogged(a, candidate, `${id}-r${round}-pack-${a.verb}`, { round, after: id });
+        if (!vr.ok) return vr;
+        // The pack the runner loaded must be the pack this job was created for, from the first merge on.
+        const seen = vr.report?.["pack"];
+        if (a.verb === "lint" && typeof seen === "string" && seen !== this.s.packId) {
+          return { ...vr, ok: false, summary: `the runner reports pack id "${seen}" but this job was created for "${this.s.packId ?? "?"}": the merge is refused` };
+        }
+      }
+    } finally {
+      fs.rmSync(candidate, { recursive: true, force: true });
+    }
+    for (const f of files) {
+      fs.mkdirSync(path.dirname(path.join(packDir, f)), { recursive: true });
+      fs.copyFileSync(path.join(ws, f), path.join(packDir, f));
+    }
+    for (const f of removed) fs.rmSync(path.join(packDir, f), { force: true });
+    pruneEmptyDirs(packDir);
+    fs.mkdirSync(packDir, { recursive: true });
+    fs.writeFileSync(path.join(packDir, MANIFEST_FILE), manifest);
+    this.append({ type: "merge", package: id, files, ...(removed.length > 0 ? { removed } : {}) });
+    this.append({ type: "package_state", package: id, state: "promoted", round });
+    await this.maybeMilestone(this.spec(id).milestone, id);
+    return undefined;
+  }
+
+  // ---------- milestones: captures, then the V5 critic, then the event ----------
+
+  /**
+   * The PREVIOUS milestone (the last one in the log), when every capture here is byte-identical to its capture of
+   * the same camera and frame (JOB.md, second round). Different frames or cameras cannot be compared and do not count.
+   */
+  private identicalToPrevious(m: Milestone, captures: string[]): string | undefined {
+    if (captures.length === 0) return undefined;
+    const prev = this.s.milestones[this.s.milestones.length - 1];
+    if (!prev || prev.captures.length !== captures.length) return undefined;
+    const tail = (rel: string, milestone: string): string => path.basename(rel).slice(milestone.length);
+    const same = captures.every((c) => {
+      const twin = prev.captures.find((p) => tail(p, prev.milestone) === tail(c, m));
+      return twin !== undefined && fs.existsSync(this.dir(twin)) && hashFile(this.dir(twin)) === hashFile(this.dir(c));
+    });
+    return same ? prev.milestone : undefined;
+  }
+
+  /**
+   * JOB.md (second round): captures are taken at 25 % and 75 % of the frame at which the first bot finished in its
+   * last passing report, so the image shows the game in play; 120 and 480 when there is no such report.
+   */
+  captureFramesFor(bot: string | undefined): number[] {
+    if (this.o.captureFrames) return this.o.captureFrames;
+    if (bot !== undefined) {
+      for (const e of [...this.log.events].reverse()) {
+        if (e.type !== "verify" || e.verb !== "bot" || !e.ok) continue;
+        try {
+          const r = JSON.parse(fs.readFileSync(this.dir(e.report), "utf8")) as { bot?: { test?: unknown; done?: unknown; frames?: unknown } };
+          const f = r.bot?.frames;
+          if (r.bot?.test !== bot || r.bot?.done !== true || typeof f !== "number" || !Number.isFinite(f) || f < 4) continue;
+          return [Math.max(1, Math.round(f * 0.25)), Math.max(2, Math.round(f * 0.75))];
+        } catch {
+          /* an unreadable report is not a passing report */
+        }
+      }
+    }
+    return [120, 480];
+  }
+
+  /** A package left `failed` with cause no_visible_change and rounds to spare (a kill between the two events): next round. */
+  private requeueNoVisibleChange(): void {
+    for (const id of this.s.order) {
+      const p = this.pkg(id);
+      if (p.state === "failed" && p.cause === "no_visible_change" && p.round < this.o.roundLimit) {
+        this.append({ type: "package_state", package: id, state: "queued", round: p.round + 1, detail: p.detail ?? NO_VISIBLE_CHANGE });
+      }
+    }
+  }
+
+  private isCriticRound(id: string, round: number): boolean {
+    return this.log.events.some((e) => e.type === "package_state" && e.package === id && e.round === round && e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND));
+  }
+
+  /**
+   * JOB.md: after the critic's extra round the job continues whatever happens. If that round does not produce a
+   * verified merge, the package stays as it was merged before it (pack/ never changed), and the milestone is written.
+   */
+  private async keepAfterCriticRound(id: string, round: number, why: string): Promise<boolean> {
+    if (!this.isCriticRound(id, round)) return false;
+    this.append({ type: "package_state", package: id, state: "promoted", round, detail: clip(`the extra round after the critic did not pass (${why}); the files merged before it stay in pack/`, 400) });
+    await this.maybeMilestone(this.spec(id).milestone, id);
+    return true;
+  }
+
+  /** The deviations a builder states under `DEVIATIONS:` become a `note` event (once per builder run). */
+  private recordNote(id: string, round: number, text: string | undefined): void {
+    const note = parseDeviations(text);
+    if (note === undefined) return;
+    const events = this.log.events;
+    const runAt = [...events].reverse().find((e) => e.type === "builder_run" && e.package === id && e.round === round && e.outcome === "ok")?.seq ?? 0;
+    if (events.some((e) => e.type === "note" && e.package === id && e.round === round && e.seq > runAt)) return;
+    this.append({ type: "note", package: id, round, text: note });
+  }
+
+  /** The notes of every package this one depends on (directly or through another): part of its brief. */
+  private depNotesText(id: string): string {
+    const deps = depClosure(this.s.plan, id);
+    deps.delete(id);
+    const notes = this.s.notes.filter((n) => deps.has(n.package));
+    if (notes.length === 0) return "None stated: build against the contracts as written.";
+    return [
+      "The builders of these packages said they did NOT follow their contract to the letter. Where a note and a contract disagree, the note is what the files in your working directory really do:",
+      ...notes.map((n) => `- ${n.package} (round ${n.round}): ${clip(n.text, 3000).replace(/\n/g, "\n  ")}`),
+    ].join("\n");
+  }
+
+  private async catchUpMilestones(): Promise<void> {
+    const seen = new Set<string>();
+    for (const p of this.s.plan) {
+      if (seen.has(p.milestone)) continue;
+      seen.add(p.milestone);
+      const members = this.s.plan.filter((x) => x.milestone === p.milestone);
+      const last = [...members].reverse().find((x) => this.pkg(x.id).state === "promoted");
+      if (last) await this.maybeMilestone(p.milestone, last.id);
+    }
+  }
+
+  private maybeMilestone(m: Milestone, lastPackage: string): Promise<void> {
+    const next = this.milestoneBusy.then(() => this.runMilestone(m, lastPackage));
+    this.milestoneBusy = next.catch(() => {});
+    return next;
+  }
+
+  /**
+   * JOB.md: when the last package of a milestone is merged, `capture` for each declared camera (with the first bot
+   * playing), then the V5 critic on those images, then `milestone` with the capture paths. A capture that fails is
+   * tried once more (the window can die in the graphics driver under GPU load); the critic does not gate the job.
+   */
+  private async runMilestone(m: Milestone, lastPackage: string): Promise<void> {
+    if (this.s.milestones.some((x) => x.milestone === m)) return;
+    const members = this.s.plan.filter((p) => p.milestone === m).map((p) => p.id);
+    if (members.length === 0 || !members.every((x) => this.pkg(x).state === "promoted")) return;
+    const packDir = this.dir("pack");
+    let cameras: string[] = [];
+    let tests: string[] = [];
+    try {
+      const mf = readManifest(packDir);
+      cameras = mf.cameras;
+      tests = mf.tests;
+    } catch {
+      /* no manifest: no captures */
+    }
+    const captures: string[] = [];
+    const notes: string[] = [];
+    const bot = tests[0];
+    const frames = this.captureFramesFor(bot);
+    for (const cam of cameras) {
+      for (const frame of frames) {
+        const out = this.dir("captures", `${m}-${cam}-f${frame}.png`);
+        let ok = false;
+        for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
+          fs.mkdirSync(path.dirname(out), { recursive: true });
+          fs.rmSync(out, { force: true });
+          const vr = await this.o.verifier.run({
+            verb: "capture",
+            args: [`--cam=${cam}`, `--frame=${frame}`, `--out=${toPosix(out)}`, `--res=${this.o.captureRes ?? "1280x720"}`, ...(bot !== undefined ? [`--test=${bot}`] : [])],
+            packDir,
+            reportFile: this.reportPath(`milestone-${m}-capture-${cam}-f${frame}`),
+          });
+          ok = vr.ok && fs.existsSync(out);
+          this.append({
+            type: "verify",
+            round: 1,
+            level: vr.level,
+            verb: vr.verb,
+            ok,
+            report: this.rel(vr.reportFile),
+            ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}),
+            after: lastPackage,
+          });
+          if (!ok) notes.push(`capture ${cam} frame ${frame}, attempt ${attempt} of 2, failed: ${clip(vr.summary, 160)}`);
+        }
+        if (ok) captures.push(this.rel(out));
+      }
+    }
+    if (cameras.length === 0) notes.push("the pack declares no camera, so there is nothing to capture");
+    // Rendering is deterministic, so a milestone that changed nothing a camera can see gives the very same bytes
+    // as the milestone before it. Seen in the first real job: an art pass that passed V0 to V3 and drew nothing.
+    const sameAs = this.identicalToPrevious(m, captures);
+    if (sameAs !== undefined && m === "art_pass") {
+      // JOB.md: an art pass that changed nothing a camera can see fails that round; its packages go to the next one
+      // with this as the feedback. No `milestone` event is written: the milestone has not been reached.
+      const detail = `${NO_VISIBLE_CHANGE}: every capture of the art_pass milestone (${captures.map((c) => path.basename(c)).join(", ")}) is byte-identical to the "${sameAs}" milestone's capture of the same camera and frame. An art pass must change what the camera sees.`;
+      for (const id of members) {
+        const round = this.pkg(id).round;
+        this.append({ type: "package_state", package: id, state: "failed", round, cause: "no_visible_change", detail: clip(detail, 600) });
+        if (round < this.o.roundLimit) this.append({ type: "package_state", package: id, state: "queued", round: round + 1, detail: clip(detail, 600) });
+        else this.unmerge(id);
+      }
+      return;
+    }
+    if (sameAs !== undefined) notes.push(`NO VISIBLE CHANGE: every capture is byte-identical to the "${sameAs}" milestone's (same camera, same frame)`);
+
+    let verdict = "critic not run";
+    if (captures.length > 0 && this.o.critic !== false) {
+      const model = this.o.criticModel ?? this.o.model;
+      const res = await critic(this.o.builder, captures.map((c) => this.dir(c)), DEFAULT_RUBRIC, {
+        ...(model ? { model } : {}),
+        context: [`Game: ${this.s.title ?? ""} (${this.s.sentence ?? ""})`, `Mood asked for: ${this.s.brief?.mood ?? "(none)"}`, bot !== undefined ? `The bot ${bot} was playing while the frames were taken.` : "No bot was playing."].join("\n"),
+      });
+      this.logGenerateCalls(res.calls, model);
+      const file = this.reportPath(`critic-${m}`);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.critique/1", milestone: m, captures, rubric: DEFAULT_RUBRIC, ...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes } : { error: res.reason }) }, null, 1) + "\n");
+      verdict = res.ok
+        ? `critic (V5) ${res.value.ok ? "ok" : "NOT ok"}: ${Object.entries(res.value.scores).map(([k, v]) => `${k} ${v}`).join(", ")}; ${clip(res.value.notes.join(" | "), 500)} [${this.rel(file)}]`
+        : `critic (V5) gave no usable answer: ${clip(res.reason, 200)} [${this.rel(file)}]`;
+      // JOB.md: "NOT ok" gives the milestone's packages ONE extra round with the critic's notes as feedback. After
+      // that round the milestone is written whatever the verdict.
+      const hadRound = this.log.events.some((e) => e.type === "package_state" && members.includes(e.package) && e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND));
+      if (res.ok && !res.value.ok && !hadRound) {
+        const detail = `${CRITIC_ROUND}: ${Object.entries(res.value.scores).map(([k, v]) => `${k} ${v}`).join(", ")}. Critic's notes: ${res.value.notes.join(" | ")} [${this.rel(file)}]`;
+        for (const id of members) this.append({ type: "package_state", package: id, state: "queued", round: this.pkg(id).round + 1, detail: clip(detail, 1500) });
+        return;
+      }
+      if (hadRound) verdict += " (the verdict after the one extra round that the critic's first NOT ok gave)";
+    }
+    this.append({
+      type: "milestone",
+      milestone: m,
+      captures,
+      summary: clip([`all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`, `${captures.length} capture(s)`, verdict, ...notes].join("; "), 1500),
+    });
+  }
+
+  // ---------- builder calls ----------
+
+  /** What goes back to the builder as the next round's prompt, derived from the log alone. */
+  private feedback(id: string, round: number): string {
+    const parts: string[] = [];
+    const p = this.pkg(id);
+    if (p.lastAnswer !== undefined) parts.push(`Answer to your question: ${p.lastAnswer}`);
+    // Sent back after a merge: no visible change (art pass), or the critic's one extra round.
+    const sentBack = [...this.log.events]
+      .reverse()
+      .find((e) => e.type === "package_state" && e.package === id && e.round === round && e.state === "queued" && ((e.detail ?? "").startsWith(CRITIC_ROUND) || (e.detail ?? "").startsWith(NO_VISIBLE_CHANGE)));
+    if (sentBack && sentBack.type === "package_state") {
+      parts.push(
+        `Round ${round - 1} passed the Verifier and was merged, but the package was sent back: ${sentBack.detail ?? ""}\n` +
+          "Your files from that round are still in the working directory. Change them so that the milestone captures (the pack's declared cameras, taken while the bot plays) show the difference. Passing the same checks again without a visible change is not enough.",
+      );
+    }
+    if (round > 1) {
+      const prev = round - 1;
+      const events = this.log.events;
+      const lastRun = [...events].reverse().find((e) => e.type === "builder_run" && e.package === id && e.round === prev);
+      if (lastRun && lastRun.type === "builder_run" && lastRun.outcome !== "ok") {
+        parts.push(
+          `Your previous run (round ${prev}) ended with outcome "${lastRun.outcome}"` +
+            (lastRun.outcome === "truncated" ? ": the answer was cut off. Your files are still in the working directory; continue from them." : ".") +
+            (lastRun.outcome === "timeout" ? " It ran out of time. Your files are still in the working directory; finish the remaining work." : ""),
+        );
+      }
+      const packPrefix = `reports/${id}-r${prev}-pack-`;
+      const failing = [...events]
+        .reverse()
+        .find((e) => e.type === "verify" && !e.ok && e.round === prev && (e.package === id || (e.package === undefined && e.report.startsWith(packPrefix))));
+      if (failing && failing.type === "verify") {
+        const reportAbs = this.dir(failing.report);
+        const verdictAbs = reportAbs.endsWith(".verdict.json") ? reportAbs : reportAbs.replace(/\.json$/i, "") + ".verdict.json";
+        let notes = "";
+        try {
+          const v = JSON.parse(fs.readFileSync(verdictAbs, "utf8")) as { notes?: string[]; flags?: string[] };
+          notes = [...(v.flags?.length ? [`flags: ${v.flags.join(", ")}`] : []), ...(v.notes ?? [])].join(". ");
+        } catch {
+          /* the verdict file is a convenience; the report below is the substance */
+        }
+        let body = "(report file missing)";
+        try {
+          body = fs.readFileSync(reportAbs, "utf8");
+        } catch {
+          /* keep the placeholder */
+        }
+        parts.push(
+          `The Verifier did not pass round ${prev}: ${failing.verb} (${failing.level})` +
+            `${failing.package === undefined ? " on the whole pack with your files merged in" : " on your workspace"}.` +
+            `${notes ? `\nVerifier notes: ${notes}` : ""}\nReport (tl.verify/1):\n${clip(body, 12_000)}\nFix the cause; do not work around the check.`,
+        );
+      }
+    }
+    return parts.length > 0 ? parts.join("\n\n") : round === 1 ? "First round: nothing to report yet." : "No report is available for the previous round.";
+  }
+
+  private buildPrompt(id: string, spec: PackageSpec, round: number, selfCheck: string[]): string {
+    const s = this.s;
+    const brief = s.brief ? Object.entries(s.brief).map(([k, v]) => `- ${k}: ${v}`).join("\n") : "(no brief in the log)";
+    return render(this.template, {
+      packId: s.packId ?? "",
+      title: s.title ?? "",
+      brief,
+      packageId: id,
+      packageTitle: spec.title,
+      milestone: spec.milestone,
+      deps: spec.deps.length > 0 ? spec.deps.join(", ") : "none",
+      contract: spec.contract,
+      scope: spec.scope.map((g) => `- ${g}`).join("\n"),
+      acceptance:
+        [...spec.acceptance.map((a) => `- ${a.verb} (${a.level}) ${a.args.join(" ")}`.trimEnd()), "- then, with your files merged: lint and smoke on the whole pack"].join("\n"),
+      selfCheck:
+        selfCheck.length > 0
+          ? `You may run exactly these commands yourself to check your work (nothing else is allowed in the shell):\n${selfCheck.map((c) => `    ${c}`).join("\n")}`
+          : "",
+      round: String(round),
+      roundLimit: String(Math.max(round, this.o.roundLimit)),
+      depNotes: this.depNotesText(id),
+      timeLimit: `${Math.max(1, Math.round(this.o.builderTimeoutMs / 60_000))} minutes`,
+      feedback: this.feedback(id, round),
+      packContract: this.packContract,
+      manifest: this.wsManifestText(id).trimEnd(),
+      registers: JSON.stringify(spec.registers ?? {}),
+      reference: this.referenceText(),
+    });
+  }
+
+  private async callBuilder(id: string, spec: PackageSpec, round: number): Promise<RunResult> {
+    const ws = this.wsDir(id);
+    const derived = deriveBashAllowlist(this.o.verifier.location, spec.acceptance, ws, this.dir("reports", `self-${id}`));
+    for (let attempt = 1; ; attempt++) {
+      const prompt = this.buildPrompt(id, spec, round, derived.commands);
+      const refBefore = fs.existsSync(this.refDir()) ? snapshot(this.refDir()) : undefined;
+      fs.mkdirSync(this.dir("reports", `self-${id}`), { recursive: true });
+      const res = await this.o.builder.run({
+        prompt,
+        mode: "edit",
+        cwd: ws,
+        timeoutMs: this.o.builderTimeoutMs,
+        ...(this.o.model ? { model: this.o.model } : {}),
+        ...(derived.allow.length > 0 ? { bash: { allow: derived.allow, deny: derived.deny } } : {}),
+        ...(refBefore ? { addDirs: [this.refDir()] } : {}),
+        meta: { role: "builder", package: id, round },
+      });
+      // The reference copy is outside the workspace but inside the builder's reach: a write there is recorded.
+      const refTouched = refBefore && JSON.stringify(refBefore) !== JSON.stringify(snapshot(this.refDir()));
+      const conduct = builderConduct(res.raw);
+      if (refTouched) {
+        // Put the reference copy back as it was, so the next builder reads the real thing.
+        conduct.notes.push("the builder changed files under ref/ (outside its workspace); the reference copy was restored");
+        fs.rmSync(this.refDir(), { recursive: true, force: true });
+        this.prepareReference();
+      }
+      const transcript = this.reportPath(`${id}-r${round}-builder`);
+      fs.mkdirSync(path.dirname(transcript), { recursive: true });
+      fs.writeFileSync(
+        transcript,
+        JSON.stringify(
+          {
+            schema: "tl.foreman.transcript/1",
+            adapter: this.o.builder.name,
+            package: id,
+            round,
+            attempt,
+            mode: "edit",
+            cwd: ws,
+            timeoutMs: this.o.builderTimeoutMs,
+            bash: { allow: derived.allow, deny: derived.deny, rejected: derived.rejected },
+            conduct,
+            prompt,
+            result: { ok: res.ok, outcome: res.outcome, text: res.text, json: res.json, error: res.error, tokensIn: res.tokensIn, tokensOut: res.tokensOut, durationMs: res.durationMs, observed: res.observed },
+            raw: res.raw,
+          },
+          null,
+          1,
+        ) + "\n",
+      );
+      this.append({
+        type: "builder_run",
+        package: id,
+        round,
+        adapter: this.o.builder.name,
+        mode: "edit",
+        model: res.model ?? this.o.model ?? "default",
+        outcome: res.outcome,
+        durationMs: Math.max(0, Math.round(res.durationMs)),
+        ...(res.tokensIn !== undefined ? { tokensIn: res.tokensIn } : {}),
+        ...(res.tokensOut !== undefined ? { tokensOut: res.tokensOut } : {}),
+        ...(res.tokensCacheRead !== undefined ? { tokensCacheRead: res.tokensCacheRead } : {}),
+        transcript: this.rel(transcript),
+      });
+      // What the child itself reports beats what we inferred from outside: a contradiction is logged at once.
+      const seen = res.observed?.billingMode;
+      if (seen !== undefined && this.s.billing && seen !== this.s.billing.mode) {
+        this.append({
+          type: "billing",
+          adapter: this.o.builder.name,
+          mode: seen,
+          evidence: `the CLI's own init event reports apiKeySource=${res.observed?.apiKeySource ?? "?"}, which contradicts the probe`,
+        });
+      }
+      if (res.outcome === "error" && res.error?.kind === "rate_limit" && attempt <= this.o.rateLimitRetries) {
+        const waitMs = res.error.retryAfterMs ?? this.o.rateLimitBackoffMs * 2 ** (attempt - 1);
+        const reason = `rate_limit: ${clip(res.error.message, 200)}`;
+        this.append({ type: "package_state", package: id, state: "blocked", round, cause: "budget", detail: reason });
+        await this.gate.pauseFor(reason, waitMs);
+        await this.gate.wait();
+        this.append({ type: "package_state", package: id, state: "running", round, detail: "retry after rate limit" });
+        continue;
+      }
+      return res;
+    }
+  }
+
+  // ---------- the end of a job ----------
+
+  private async finish(): Promise<void> {
+    if (this.s.promoted) {
+      this.endJob("done", "all packages promoted");
+      return;
+    }
+    const packDir = this.dir("pack");
+    let tests: string[] = [];
+    try {
+      tests = readManifest(packDir).tests;
+    } catch {
+      /* lint below reports a broken manifest */
+    }
+    // The whole pack once more, now through V4: every bot the manifest lists must play the game to its end.
+    const final: Acceptance[] = [
+      ...PACK_GATE,
+      { level: "V3", verb: "invariants", args: [] },
+      ...tests.map((t): Acceptance => ({ level: "V4", verb: "bot", args: [`--test=${t}`] })),
+    ];
+    for (const a of final) {
+      const stem = a.verb === "bot" ? `final-bot-${path.basename(a.args[0] ?? "x", ".gd")}` : `final-${a.verb}`;
+      const vr = await this.verifyLogged(a, packDir, stem, { round: 1 });
+      if (!vr.ok) {
+        this.endJob("failed", clip(`final verification failed at ${a.verb} (${vr.level}): ${vr.summary}`, 400));
+        return;
+      }
+    }
+    if (this.o.promote) {
+      // JOB.md (second round): promotion goes to <job>/promoted/<pack id>/ by default, and also when the engine
+      // directory was asked for but cannot be written, so a job can always end `promoted`.
+      const engineDir = this.o.verifier.location.engineDir;
+      const asked = this.o.promoteTo ?? "job";
+      const toEngine = asked === "engine" && engineWritable(engineDir);
+      let pr;
+      try {
+        pr = toEngine ? promotePack(packDir, engineDir, this.s.packId) : promotePack(packDir, this.jobDir, this.s.packId, "promoted");
+      } catch (e) {
+        this.endJob("failed", clip(`promotion refused: ${e instanceof Error ? e.message : String(e)}`, 400));
+        return;
+      }
+      this.append({ type: "promoted", packId: pr.packId, version: pr.version, dest: pr.dest });
+      const where = toEngine ? "into the engine (packs/)" : `under the job directory (${pr.dest})${asked === "engine" ? "; the engine directory is not writable" : ""}`;
+      this.endJob("done", `pack verified V0 to V4 and promoted ${where}`);
+    } else {
+      this.endJob("done", "pack verified V0 to V4; promotion was not requested");
+    }
+  }
+
+  /** The end of a job. The reducer closes the budget's derived state on this event (joblog.ts). */
+  private endJob(state: "done" | "failed", reason: string): void {
+    this.append({ type: "job_state", state, reason });
+  }
+
+  /**
+   * Dry check: the builder prompt of every package of the plan, assembled exactly as a run would assemble it for the
+   * package's current round (reference copy prepared, composed manifest, notes of dependencies, self-check
+   * commands). No builder is called and no event is written.
+   */
+  previewBuilderPrompts(only?: string): { package: string; round: number; prompt: string }[] {
+    this.log = JobLog.open(this.jobDir, this.o.now ? { now: this.o.now } : {});
+    try {
+      if (this.s.plan.length === 0) throw new ForemanError(`job ${this.s.job} has no plan_set yet (run \`foreman plan\`)`);
+      this.prepareReference();
+      return this.s.plan
+        .filter((p) => only === undefined || p.id === only)
+        .map((p) => {
+          const round = this.pkg(p.id).round;
+          const derived = deriveBashAllowlist(this.o.verifier.location, p.acceptance, this.wsDir(p.id), this.dir("reports", `self-${p.id}`));
+          return { package: p.id, round, prompt: this.buildPrompt(p.id, p, round, derived.commands) };
+        });
+    } finally {
+      this.log.close();
+    }
+  }
+}

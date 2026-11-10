@@ -1,0 +1,250 @@
+# WP1 journal (law kernel, host, runner)
+
+Resume point. Newest entry last. Times are CEST from `date` or from file times (entries before 19:29 were first
+written with estimated times that ran ahead of the clock; corrected at 19:29).
+
+- 18:53 start. Read brief, contracts, FEASIBILITY 4-6, spike patterns (sim.gd, player.gd, g.sh).
+- 18:56 created engine/ skeleton: project.godot (Jolt, 60 Hz, Forward+), packs/.gitkeep.
+- 18:59 probed: Logger subclass + OS.add_logger works in 4.7.2 (file, line, error type, script backtraces), load()
+  of an absolute-path .gd works, --log-file works, headless start about 0.4 s.
+- 19:03 law tables written (kernel/data/materials.json, surfaces.json).
+- 19:09 spine up: host.gd (supervisor) + runner/{manifest,lint,logger,worker}.gd, api/{tl_context,tl_input,tl_laws,
+  tl_cameras,tl_chase_cam,tl_orbit_cam,tl_bodies,tl_trigger,tl_contact,tl_damage}.gd, standin/, tools/tl.sh,
+  examples/pack_min. lint and smoke passed on pack_min on the first run.
+- 19:11 all five verbs pass on pack_min (lint, smoke 3600 x2 same hash, seed 2 differs, invariants, bot, capture).
+  invariants caught a real defect in my own pack_min (balls rolled off the floor, below y = -50): kerbs added.
+- 19:13 11 bad packs written under kernel/examples/bad_*; tools/selftest.sh written.
+- 19:17 capture workers crashed at engine start about 70 % of the time (access violation inside amdxc64.dll while the
+  Vulkan window opens; another Godot process was running). Not our code: the worker had not printed its first line.
+  Fix: supervisor restarts a worker that died before "[tl] worker start"; windowed order default, d3d12, d3d12,
+  default (TL_RENDER_DRIVERS overrides). d3d12 was 12 of 12.
+- 19:20 law example ex_slide passes: measured friction within 6 % of the table (rubber on ice 4.57 m against 4.59 m
+  expected, rubber on asphalt 0.43 m, wood on ice 15.28 m, wood on asphalt 0.89 m from 3 m/s). Needed
+  physics/3d/default_linear_damp=0 in project.godot (the engine default 0.1 added a drag the table does not know).
+- 19:23 wrote api/{tl_ball,tl_rules,tl_spawner,tl_fracture,tl_biped,tl_vehicle}.gd. ex_wall (ball + damage +
+  fracture) passed its bot on the first run.
+- 19:26 ex_walker (biped walk/run/skate, crate push, triggers, rules lap, orbit cam) and ex_car (vehicle slalom by
+  input actions, nitro, brake test: asphalt 10.1 m against ice 96.0 m from 14 m/s = grip 0.99 and 0.104; law 1.0
+  and 0.1) pass. Captures of car, walker and wall looked at; walker room enlarged (camera was behind a wall).
+- 19:29 ex_bounce (restitution by pair law incl. overrides at the first touch, spawner, trigger, score): measured
+  0.65 / 0.60 / 0.30 / 0.55 against law 0.65 / 0.60 / 0.30 / 0.55. selftest: 43 passed, 0 failed (47 s).
+  Next: priority 7 (TLSteer, TLHud, TLVfx, TLAudio stand-ins), tl.sh play, hardening pass, API.md, final selftest,
+  report.
+- 19:34 priority 7 done as stand-ins: api/{tl_steer,tl_hud,tl_vfx,tl_vfx_node,tl_audio}.gd; ex_car now also runs an AI
+  pace car (TLSteer.keep_lane: 143 of 147 m, at most 1.27 m off the line), a HUD, a nitro flame, a finish horn.
+  ctx.pack_state() added (bots read game state through ctx, not through the tree). capture accepts --test=<bot>
+  (kernel extension: a bot plays up to the captured frame). tl.sh play added (interactive, not a verify verb).
+- 19:37 more bad packs: bad_error_storm (exit 3, script_errors), bad_setup_loop (exit 3 after 10 s), bad_size,
+  bad_bypass/gen/part.gd (kit_parts_added 1). Watchdog errors now name the script; the engine's "Failed to load
+  script" echo of a parse error is dropped. Worker ends itself when its supervisor is gone (--parent).
+  NOTE: the Bash tool halves doubled backslashes in commands; edit regex strings with the Edit tool only.
+  Next: API.md, final selftest, line counts, report.
+- 19:40 kernel/API.md written (17 sections + runner notes). TLBall.hold/release (possession), TLRules.standings,
+  capability check in TLSteer.
+- 19:43 ex_shuffle (puck at 30 m/s against a 0.2 m rail and through a 0.3 m trigger; hold/release; slide 4.66 m =
+  friction 0.099 against law 0.10). It found a real defect: the thin trigger missed the fast puck once. Fixed in
+  TLTrigger with a swept test of every TLBall's last step.
+- 19:46 full selftest found my own regression: OS.is_process_running() only knows child processes, so the new
+  "supervisor gone" check ended every worker that ran longer than a second. Replaced with an alive file the
+  supervisor rewrites (worker gives up after 60 s of silence). Temp file removal now retries (logs were left
+  behind after a killed worker).
+- 19:48 extra checks, all pass: pack outside the project in a path with spaces (lint, smoke, invariants, bot,
+  capture), direct invocation as in RUNNER.md, cold start with no .godot (supervisor imports, 3.9 s), four
+  invariants runs at once (8 workers, one hash).
+  Next: final full selftest, line counts, report.
+- 19:50 full selftest: 52 passed, 0 failed (67 s). (Times of the four entries above corrected from the clock.)
+- 19:52 Director's amendments folded in: TLBall.create({part = ...}) and TLBodies.from_part() accept kit parts in
+  the dynamic-prop convention (tl_dynamic, tl_shape, tl_shape_offset, tl_material, tl_mass_hint); TLStandin.dynamic_part
+  makes one for tests; ex_shuffle uses both (puck 0.17 kg and paddle 1.5 kg from the mass hint). TLBiped sends the
+  rig its mode in _ready, not before it is in the tree. lint level was already "V1"; unknown sockets already
+  tolerated (TLVfx.attach(null) returns null). Next: API.md update, final selftest, line counts, report.
+- 19:54 final selftest after the amendments: 52 passed, 0 failed (76 s). No Godot process of mine left running.
+  Work complete against the brief's list; report returned to the Director as the final message.
+
+# WP4: kit into the engine, then three seed packs (builder journal)
+
+- 19:59 start (clock from `date`). Read the brief, the four contracts, API.md, ex_car, tl.sh, selftest.sh, KIT.md,
+  LAYOUT.md, RIGS.md, STYLE.md, k.sh and the Director sections of the WP1 and WP2 reports.
+- 20:01 moved the kit lab project's kits/, rigs/ and style/ -> engine/ (same res:// paths); its lab/ -> engine/kits_lab/;
+  its tools/{selftest,validate,gen_docs}.gd + convert_laneb.py -> engine/kits_lab/tools/; k.sh -> engine/tools/k.sh
+  (paths fixed: res://lab -> res://kits_lab, captures -> kits_lab/captures). MOVED.md written in the old directory.
+  project.godot: added the kit lab's rendering block (d3d12 driver, msaa, shadow size, clear colour).
+  `bash engine/tools/k.sh selftest`: 86 passed, 0 failed (26 s). `k.sh validate`: 7 files, 0 failed.
+- 20:04 `bash engine/tools/tl.sh selftest` with the kit installed, before any kernel change: 52 passed, 0 failed (62 s).
+  The examples now get real rigs through TLStandin.rig (ex_car braking on ice 96.2 m, was 96.0 with the stand-in).
+  Next: kernel fixes (bot budget -> exit 1; d3d12 default; vehicle steer sign: kernel +1 = right, rig +1 = left),
+  then example pack ex_kit with the four new selftest cases, then captures.
+- 20:08 Step 1 kernel changes (the list for the report):
+  1. kernel/runner/worker.gd (~l.227): a bot not done within --frames no longer trips the watchdog; it collects the
+     bot result and ends the run. kernel/host/host.gd (~l.148): `bot.completed` false + error kind `bot`
+     "frame_budget: ..." -> outcome failed, exit 1 (Director's decision 1). tools/selftest.sh bad.bot_never_done: 3 -> 1.
+  2. kernel/host/host.gd (~l.320): windowed worker driver order is d3d12 x3 (was default, d3d12, d3d12, default);
+     project.godot also sets rendering_device/driver.windows=d3d12 (Director's decision 5).
+  3. kernel/api/tl_vehicle.gd (~l.266): sends -steer to the rig (controller + = right, RIGS.md + = left);
+     kernel/standin/tl_standin_rig.gd (~l.111): stand-in wheel yaw follows the rig's sign. Found by reading
+     RIGS.md; ex_kit now measures it (steering right gives a negative wheel yaw and a right turn).
+  4. kernel/standin/tl_standin.gd: new `standin_rig(family, params)` so the fallback stays testable now that
+     TLRigs is installed.
+  5. New example kernel/examples/ex_kit (pack + bot) and 9 selftest cases: kit.lint, kit.bot,
+     kit.ball_on_ice_slides_by_law (friction 0.1005 against law 0.1), kit.wall_and_crate_break (16 and 6 pieces),
+     rig.biped_walks_and_skates (29 bones, 2.30 m/s, leg swing 0.57, skate 9.5 m/s), rig.vehicle_drives,
+     standin.fallback_still_works, kit.invariants. `tl.sh selftest kit`: 9 of 9.
+  6. kernel/API.md: section 14 (kit installed: what happens by default), 15/16 (bot budget exit 1), 18 (d3d12), table.
+  Nothing else needed changing: laws on kit bodies, TLBall/from_part on kit dynamic props, TLFracture on kit
+  Intact/Pieces and the rig seam (metrics, set_locomotion, play, set_param, tick) worked as written.
+- 20:07 looked at five windowed frames of ex_kit (ice, wall, walker, skater, car; d3d12): lane-B look installed
+  (painted sky, ink lines, toon bands), real biped mid-stride on kit concrete, skater on the ice lane, kit wall
+  cracked into pieces with the steel ball in it, coupe on tarmac with shadow. Kernel-made balls are plain black.
+  Next: full selftest, then seeds (paddle, drive, wall).
+- 20:10 full `tl.sh selftest` after the kernel changes: 60 passed, 0 failed (52 old + 8 new: kit.lint, kit.bot, five
+  claims, kit.invariants). STEP 1 PROVEN: both selftests pass in one project, frames looked at.
+- 20:12 kernel gap found while designing seed.paddle: the kit `paddle` is "a part the game moves", TLBodies.from_part
+  makes a free rigid body for it, and the kernel has no door to move a body under control or keep it on a rail.
+  Added (kernel change 7): option `lock` (world axes x y z rx ry rz) on TLBodies.make and from_part, and
+  `TLBodies.drive(body, velocity, max_accel)`. tl_bodies.gd +30 lines; API.md section 4. For the Director to bless.
+  Next: seeds/seed_paddle.
+- 20:16 seed.paddle (engine/seeds/seed_paddle) done: lint 0 bypasses (128 script + 33 test lines, kit_parts_added 0),
+  smoke, invariants (hash bc93a9a4c892f2ab twice at seed 1; seed 2 gives 000eda488e72f0fe), bot wins 5:0 at seeds
+  1, 2, 3 (6,775 frames at seed 1). Venue is one tl.layout/1 file with terrain. Captures paddle_court_f400/f2400,
+  paddle_baseline_f520/f2000 looked at: lane-B look holds (forest, mountains, cabin, stands, ink lines).
+  Kernel change 8: lint allows README.md at the pack root (the brief wants one per seed; PACK.md does not list it).
+  Mistakes so far: a bot variable named `scores` counted as a bypass; a rolling ball loses speed when re-shot, so the
+  court is ice and the ball `planar`; the rival was unbeatable at 3.6 m/s. README files still to write.
+  Next: seed.drive.
+- 20:22 seed.drive (engine/seeds/seed_drive) done: lint 0 bypasses (130 script + 46 test lines), smoke, invariants
+  (b9adbb1967e36108 twice at seed 1; seed 2 e6662471f07f7d94: cone jitter comes from ctx.rng), bot: 3 laps in 58.6 s of
+  90, pad 3 times, 3 nitro bursts, at most 1.2 m off the line. Captures drive_chase_f300/f1560, drive_overview_f420/
+  f1500 looked at (coupe on the kerbed loop, forest, cabin, tyre stacks). Mistakes: bot variable `laps` = bypass;
+  9 m look-ahead was too short to brake for a bend (ran wide, left the road), fixed with a second, speed-scaled
+  point `far`; nitro toggled 254 times without hysteresis. Kit gap: `cone` is static only; the seed re-tags it
+  as a dynamic prop by hand (_loose_cone). Next: seed.wall.
+- 20:29 seed.wall (engine/seeds/seed_wall) done: lint 0 bypasses (131 script + 51 test lines), smoke, invariants
+  (da4bdc3f65cc07ae twice at seed 1; seed 2 4b2de68d7beff849: block toughness is drawn from ctx.rng), bot wins by
+  score at seeds 1-4 (40-45 pieces down in 18.5-21.2 s of 60, 15-17 throws). Captures looked at (walker carrying a
+  ball, rubble, crane, cabin, mesa). Mistakes: the bot saw "over" one frame before the pack had handled its queued
+  `finished` event (events are now handled at the end of _pack_tick); every bounce puffed white stand-in dust
+  (now only wall hits, tinted); score target 44 of 48 was too tight for some seeds (now 40).
+  TLVfx stand-in particles are unlit white squares: they do not match the lane-B look (kernel gap, not fixed).
+  New tool engine/tools/seeds.sh (all verbs on all seeds; `seeds.sh sheet` rebuilds the contact sheet).
+  Next: seeds.sh run, sheet, README files, final selftests, report.
+- 20:33 README.md written for each seed and engine/seeds/README.md (how to write a pack; ten mistakes).
+  engine/seeds/captures/seeds_sheet.png built by `seeds.sh sheet` (12 frames: 3 seeds x 2 cameras x 2 frames) and
+  looked at. `seeds.sh`: 24 passed, 0 failed.
+- 20:36 FOUND: seed.wall's bot run was not repeatable (seed 1 gave 19.8 s / 15 throws in 8 runs and 20.3 s / 16
+  throws in 3). Cause: TLContact took the pair law from the FIRST colliding body the physics engine reported; with a
+  ball against rubble and ground at once that order differs between runs. Kernel change 9 (tl_contact.gd ~l.37):
+  choose the pair with the lowest friction, alphabetical on a tie. After the fix 10 of 10 runs gave the same hash
+  (6366b88f838e, 20.3 s). `invariants` did not catch it because smoke presses nothing, so nothing breaks.
+  Also: no literal mention of the old kit lab directory is left under engine/ (journal reworded, three comments).
+  Next: final tl.sh selftest, k.sh selftest, seeds.sh, 5 repeated bot runs per seed, re-capture the sheet, report.
+- 20:41 final checks after the last kernel edit (tl_contact.gd): `tl.sh selftest` 60 passed, 0 failed;
+  `k.sh selftest` 86 passed, 0 failed; `k.sh validate` 7 files, 0 failed; `seeds.sh` 24 passed, 0 failed;
+  5 repeated bot runs per seed at seed 2 gave one state_hash each (paddle 944b605a62d5, drive f443d2e59a7f,
+  wall 0dd2cd09aec1).
+- 20:54 seed.wall: a ball taken back into the hands no longer queues a "hit" (cosmetic); wall verbs re-run (8 of 8),
+  bot at seeds 1-5 wins by score (40-45 pieces, 18.5-21.2 s). Sheet rebuilt with the final code and looked at:
+  engine/seeds/captures/seeds_sheet.png (the stray squares near the walker are particles of the kernel's stand-in
+  dust burst flying wide). `k.sh cap main hero` run once in the engine project: the moved lab scene captures
+  (kits_lab/captures/wp4_check_main_hero.png).
+  Not done: `tl.sh play` was not run on any seed (no interactive window allowed); the HUD was never seen (captures
+  hide it; bots check its text); sound was checked by the event log only.
+  No Godot process of mine is left (the three running belong to the other builder's engine snapshot).
+- 20:56 WP4 complete against the brief; report returned as the final message. 57 minutes from 19:59.
+
+# WP5: close-out fixes before the second real job (builder journal)
+
+- 21:14 start (clock from `date`). Read the brief, contracts (second-round amendments), WP4 Director verification,
+  this journal, API.md, tl.sh. Time-box ends 22:10.
+- 21:15 item 1 reproduced: `tl.sh capture` of the marble pack (course, bot_race, f1000) ->
+  engine/seeds/captures/wp5/marble_before_f1000.png, looked at: near-black course and marbles on the painted sky, no
+  ground. Cause found by reading style/tl_style.gd + toon.gdshader: the style's environment has BLACK ambient (the toon
+  shader is `ambient_light_disabled` and adds its own hemisphere ambient), and its sun sits 11.5 degrees above the
+  horizon, so a plain StandardMaterial3D (TLStandin.material, used by TLBodies.make / TLBall) gets no ambient and a
+  grazing sun. The sun IS installed (shadows show). Also: the pack's own gen/look.gd never ran (item 5), so its own
+  sun/environment were never added. Plan: TLStyle.flat_material (toon, any colour), TLStandin.material uses it,
+  style ambient for foreign materials, a style-owned default ground when the pack built no kit ground.
+- 21:19 item 1 fix in, first after-capture looked at (engine/seeds/captures/wp5/marble_after_f1000.png): course is
+  orange wood with ink lines and toon bands, ice plate pale lavender, red and steel marbles readable, long sun
+  shadows on a grass ground to the horizon. Changes: style/tl_style.gd `flat_material(color, metal)` (toon shader
+  with a private 1-column lookup texture), `ground(y, key, half)` (visual only), `_apply_world` ambient = mean of
+  toon amb_sky/amb_ground (only reaches non-style materials: every style shader is ambient_light_disabled or
+  unshaded); kernel/standin/tl_standin.gd `material(color, material_id)` asks TLStyle.flat_material,
+  `install_default_ground(host, world)`; kernel/api/tl_bodies.gd + tl_ball.gd pass the material id;
+  kernel/runner/worker.gd calls install_default_ground after _pack_setup (windowed only).
+  Still to prove: a pack's own StandardMaterial3D (scratch pack), seed hashes unchanged.
+- 21:21 item 2 built: kernel/host/host.gd `invariants` replays the manifest's first bot twice (option --bot-frames,
+  default 36000), check `invariants.bot_deterministic`, metrics bot_state_hash / bot_frames (/ bot_state_hash_b).
+  New bad pack kernel/examples/bad_bot_nondeterminism (idle hash equal twice, bot hashes differ: exit 1) and selftest
+  case bad.bot_nondeterminism; min.invariants now also requires bot_deterministic ok. Hand runs: pack_min exit 0
+  (bot hash 7dd11b8e after 228 frames twice), bad_bot_nondeterminism exit 1 with determinism ok + bot_deterministic
+  false, bad_nondeterminism exit 1. Next: StandardMaterial3D proof, item 3 (TLVfx through style fx).
+- 21:23 item 1, own StandardMaterial3D proven: scratch copy of pack_min + four meshes with the pack's own
+  StandardMaterial3D -> engine/seeds/captures/wp5/plain_standardmaterial_after.png, looked at: orange, pale blue and
+  red cubes lit with a clear light and shade side, the metallic sphere mirrors the sky; kernel floor/ramp in toon.
+  (Kernel rubber balls are near-black: that is rubber's stand-in colour 0.14, not a lighting fault.)
+- 21:25 item 3 built: style/tl_style_fx.gd `TLStyleFx.preset(name, opts)` + `preset_names()` (soft discs in palette
+  colours, additive discs, inked toon chips for debris), kernel/api/tl_vfx.gd `_style_particles` uses it when
+  TLStyle + TLStyleFx are installed (lifetime in frames stays the kernel's, headless unchanged: no particles).
+  Captures engine/seeds/captures/wp5/wall_{yard_f330,player_f200}_{before,after}.png looked at: before = white unlit
+  squares on the wall and beside the walker; after = small soft round dust puffs in the pack's tint and one small
+  inked grey chip, no squares. (My first apply appended the fx block twice -> 23 parse errors, capture exit 3;
+  duplicate removed, both captures then exit 0 with 0 errors.)
+- 21:28 item 5 found and built (small): the marble pack's gen/look.gd does add_child(dress) then dress.set_script(s);
+  the engine switches _physics_process on only when a node becomes ready, so a script attached afterwards never
+  runs and prints nothing. kernel/runner/worker.gd `_find_idle_scripts` (after _pack_setup) lists pack scripts that
+  define _process/_physics_process on a node that is not processing; result key `warnings`; kernel/host/host.gd puts
+  them in the `smoke.loads` detail ("pack loaded; WARNING: scripts/look_dress.gd on node 'World/LookDress' never
+  runs (_physics_process is off) ..."). Fails nothing. Marble smoke: warning shown, exit 0; seed_wall: no warning.
+  Limit: a script with only _ready cannot be detected; a pack that switches its own processing off gets the warning.
+- 21:29 item 4 docs: kernel/API.md new section "0. Start here" (7 points), look note under TLBodies, TLVfx text,
+  section 14 (toon material for kernel visuals, default ground is a picture), section 16 (invariants = 4 runs,
+  --bot-frames, warnings), section 17, generator note in section 1; seeds/README.md ("Kit first, boxes second,
+  materials never", mistakes 11-13, invariants line); kits/KIT.md ("In a pack" paragraph above the generated
+  tables); style/STYLE.md (flat_material, ground, plain ambient, TLStyleFx.preset).
+  Preliminary `tl.sh selftest` started 21:28 in the background. Next: final battery (tl.sh selftest, k.sh selftest,
+  seeds, seeds x3 hashes, marble lint/smoke/invariants/bot, final marble capture), then the report.
+- 21:30 two small robustness edits (the last code edits): TLStandin.script_has caches its answer; worker
+  _find_idle_scripts only looks at GDScript. Preliminary selftest before them: 61 passed, 0 failed.
+- 21:38 FINAL BATTERY, all run after the last code edit (21:30:11):
+  `bash engine/tools/tl.sh selftest`: 61 passed, 0 failed (60 old + bad.bot_nondeterminism), 101 s.
+  `bash engine/tools/k.sh selftest`: 86 passed, 0 failed. `k.sh validate`: 7 files, 0 failed.
+  `bash engine/tools/tl.sh seeds`: 24 passed, 0 failed.
+  Seeds, seed 1: smoke hash paddle bc93a9a4c892f2ab, drive b9adbb1967e36108, wall da4bdc3f65cc07ae (= the WP4
+  table: unchanged); bot three times each gave one hash: paddle cadd1cd9fffac7b1 (5:0, 6775 frames), drive
+  36635c049bc6acd8 (3 laps, 58.6 s), wall 6366b88f838e3e78 (40 pieces, 20.3 s; = WP4). Bot at seed 2: paddle
+  944b605a62d5, drive f443d2e59a7f, wall 0dd2cd09aec1 (= WP4 20:41 entry). NO SEED HASH CHANGED.
+  Marble pack (site/marble-run-three-marbles-20261110-1/pack, read only): lint exit 0 (bypasses []), smoke exit 0
+  (0f952b383d4a1e63), invariants exit 0 (bot_deterministic ok, bot hash dda2bb9e488d2ac3 = the Director's hash on
+  the live engine), bot_race exit 0 (ranking steel, wood, rubber), bot_audio exit 0; every report carries the
+  look_dress.gd WARNING.
+  Captures re-made with the final code and looked at (engine/seeds/captures/wp5/): marble_after_f1000.png and
+  marble_after_f300.png (lit orange chute, pale ice plate, three marbles readable, shadows on the grass ground),
+  excar_nitro_f60_after.png (car on the kernel floor, small additive violet-white streak at the left exhaust
+  beside the rig's own two flame cones; default ground to the horizon), wall_yard_f330_after.png (soft puffs).
+  engine/seeds/captures/seeds_sheet.png rebuilt by `tl.sh seeds sheet` and looked at: no white squares left.
+  Not verified: the kernel without TLStyle/TLStyleFx installed (stand-in fallbacks of material / VFX / ground);
+  style_overcast.json in a capture; `tl.sh play`; a "broke" burst at its peak frame (debris chips seen only as one
+  small chip in a seed; all nine presets were then drawn in a scratch pack, see the next entry).
+- 21:39 all nine TLVfx presets fired at once in a scratch copy of pack_min (plus attached nitro_flame and smoke):
+  smoke verb passed, captures at f112 and f135 had 0 script and 0 engine errors, looked at
+  (engine/seeds/captures/wp5/fx_presets_f112.png, fx_presets_f135.png): round soft puffs, small round dots, inked
+  debris chips, pastel confetti, a bright additive flame; no squares. Additive sparks wash out on the bright floor.
+  `--bot-frames=100` on pack_min: bot_deterministic ok after 100 frames; `--bot-frames=abc`: not_run with a message.
+- 21:39 WP5 complete against the brief; report returned as the final message. No code edit after 21:30:11.
+- 21:47 WP5b (Director's follow-up on question 1, time-box 12 minutes): lint counts look and geometry made by hand.
+  kernel/runner/lint.gd: BYPASS_STYLE (StandardMaterial3D / ShaderMaterial / ORMMaterial3D / DirectionalLight3D /
+  OmniLight3D / SpotLight3D / WorldEnvironment / Environment `.new()` -> primitive `style`, in scripts/, gen/, tests/)
+  and BYPASS_GEOMETRY (Box/Sphere/Cylinder/Capsule/Plane/Prism/Quad/Torus/Text/Point/Array/Immediate `Mesh.new()` and
+  `MeshInstance3D.new()` -> primitive `kit`, in scripts/ and tests/ only; gen/ stays in kit_parts_added). The pattern
+  label is the matched text. Same blanked-comments-and-strings text as the other patterns. Never a pass/fail.
+  kernel/examples/bad_bypass: scripts/main.gd `_dress()` (lines 28-35: one material, one light, one mesh, one
+  MeshInstance3D), gen/part.gd line 9 (a ShaderMaterial in a generator). tools/selftest.sh: bad.bypass_look and
+  bad.bypass_gen_not_double_counted. kernel/API.md: bypass list in section 16, one line in "Start here" point 4.
+  (My first try wrote the regex through a shell heredoc, which halves doubled backslashes: it failed before
+  writing anything; redone with the Edit tool.)
+- 21:53 after the last edit: `tl.sh selftest` 63 passed, 0 failed; `tl.sh seeds` 24 passed, 0 failed. Lint by hand:
+  seed_paddle, seed_drive, seed_wall, pack_min, ex_slide, ex_bounce, ex_shuffle, ex_wall, ex_walker, ex_car, ex_kit
+  all exit 0 with bypasses [] ; bad_bypass 10 bypasses, kit_parts_added 1; marble pack exit 0 with 7 bypasses
+  (course_build.gd lines 14, 11, 9; look_dress.gd lines 38, 57, 64, 70), kit_parts_added 0.
+  Not re-run after this edit: k.sh selftest (kits/rigs/style untouched), captures, the seeds' three-run hashes
+  (lint is text only and runs in the supervisor; no worker code changed).

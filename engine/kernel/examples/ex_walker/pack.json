@@ -1,0 +1,11 @@
+{
+  "id": "example.walker",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Primitive example: a walker in a room, a skater on ice",
+  "capabilities": ["physics", "biped", "input", "rules", "camera"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_walk.gd"],
+  "cameras": ["orbit", "top"]
+}

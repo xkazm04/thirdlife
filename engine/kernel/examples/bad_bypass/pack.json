@@ -1,0 +1,10 @@
+{
+  "id": "example.bad_bypass",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Bypass example: kernel primitives re-done by hand",
+  "capabilities": ["physics", "rules", "input"],
+  "entry": "scripts/main.gd",
+  "assets": ["gen/part.gd"],
+  "tests": ["tests/bot.gd"]
+}

@@ -1,0 +1,743 @@
+{
+ "oak1": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 12128,
+  "tris": 6064,
+  "voxels": 4373,
+  "size_m": [
+   8.75,
+   9.5,
+   8.75
+  ],
+  "sec": 0.13
+ },
+ "pine1": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 13060,
+  "tris": 6530,
+  "voxels": 2429,
+  "size_m": [
+   5.75,
+   9.0,
+   5.75
+  ],
+  "sec": 0.02
+ },
+ "rock1": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 1168,
+  "tris": 584,
+  "voxels": 403,
+  "size_m": [
+   3.5,
+   2.75,
+   3.0
+  ],
+  "sec": 0.01
+ },
+ "oak2": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 10732,
+  "tris": 5366,
+  "voxels": 3767,
+  "size_m": [
+   8.75,
+   10.25,
+   8.75
+  ],
+  "sec": 0.11
+ },
+ "pine2": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 15532,
+  "tris": 7766,
+  "voxels": 2754,
+  "size_m": [
+   5.75,
+   10.25,
+   5.75
+  ],
+  "sec": 0.03
+ },
+ "rock2": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 1856,
+  "tris": 928,
+  "voxels": 820,
+  "size_m": [
+   4.0,
+   2.75,
+   4.75
+  ],
+  "sec": 0.01
+ },
+ "oak3": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 11764,
+  "tris": 5882,
+  "voxels": 3985,
+  "size_m": [
+   8.75,
+   11.0,
+   8.75
+  ],
+  "sec": 0.04
+ },
+ "pine3": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 16752,
+  "tris": 8376,
+  "voxels": 3143,
+  "size_m": [
+   5.75,
+   11.5,
+   5.75
+  ],
+  "sec": 0.03
+ },
+ "rock3": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 2976,
+  "tris": 1488,
+  "voxels": 1458,
+  "size_m": [
+   4.5,
+   3.25,
+   5.5
+  ],
+  "sec": 0.01
+ },
+ "oak4": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 9668,
+  "tris": 4834,
+  "voxels": 3059,
+  "size_m": [
+   8.75,
+   11.5,
+   8.75
+  ],
+  "sec": 0.12
+ },
+ "pine_far": {
+  "vs": 0.75,
+  "chunks": 1,
+  "verts": 1908,
+  "tris": 954,
+  "voxels": 260,
+  "size_m": [
+   7.5,
+   14.25,
+   7.5
+  ],
+  "sec": 0.01
+ },
+ "tuft1": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 132,
+  "tris": 66,
+  "voxels": 25,
+  "size_m": [
+   0.6,
+   0.7,
+   0.6
+  ],
+  "sec": 0.0
+ },
+ "tuft2": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 208,
+  "tris": 104,
+  "voxels": 28,
+  "size_m": [
+   0.6,
+   0.7,
+   0.6
+  ],
+  "sec": 0.0
+ },
+ "cloud1": {
+  "vs": 3.0,
+  "chunks": 1,
+  "verts": 260,
+  "tris": 130,
+  "voxels": 116,
+  "size_m": [
+   81.0,
+   12.0,
+   30.0
+  ],
+  "sec": 0.01
+ },
+ "cloud2": {
+  "vs": 3.0,
+  "chunks": 1,
+  "verts": 280,
+  "tris": 140,
+  "voxels": 124,
+  "size_m": [
+   81.0,
+   12.0,
+   30.0
+  ],
+  "sec": 0.0
+ },
+ "rib": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 7936,
+  "tris": 3968,
+  "voxels": 4608,
+  "size_m": [
+   2.0,
+   14.5,
+   46.5
+  ],
+  "sec": 0.06
+ },
+ "rib_holo": {
+  "vs": 0.125,
+  "chunks": 1,
+  "verts": 33608,
+  "tris": 16804,
+  "voxels": 7462,
+  "size_m": [
+   1.625,
+   14.625,
+   46.875
+  ],
+  "sec": 0.79
+ },
+ "rib_skin": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 1720,
+  "tris": 860,
+  "voxels": 4316,
+  "size_m": [
+   2.0,
+   14.5,
+   46.5
+  ],
+  "sec": 0.16
+ },
+ "purlin": {
+  "vs": 0.125,
+  "chunks": 1,
+  "verts": 40,
+  "tris": 20,
+  "voxels": 540,
+  "size_m": [
+   7.5,
+   0.625,
+   0.625
+  ],
+  "sec": 0.01
+ },
+ "boards": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 65856,
+  "tris": 32928,
+  "voxels": 68514,
+  "size_m": [
+   62.0,
+   3.2,
+   28.0
+  ],
+  "sec": 6.73
+ },
+ "ice": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 18280,
+  "tris": 9140,
+  "voxels": 449412,
+  "size_m": [
+   60.8,
+   0.3,
+   26.8
+  ],
+  "sec": 0.81
+ },
+ "goal": {
+  "vs": 0.05,
+  "chunks": 1,
+  "verts": 15012,
+  "tris": 7506,
+  "voxels": 1091,
+  "size_m": [
+   2.0,
+   1.4,
+   1.4
+  ],
+  "sec": 0.08
+ },
+ "stands": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 37192,
+  "tris": 18596,
+  "voxels": 98444,
+  "size_m": [
+   56.0,
+   5.75,
+   9.75
+  ],
+  "sec": 0.22
+ },
+ "bench": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 480,
+  "tris": 240,
+  "voxels": 440,
+  "size_m": [
+   4.4,
+   1.6,
+   1.4
+  ],
+  "sec": 0.04
+ },
+ "scaffold": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 1980,
+  "tris": 990,
+  "voxels": 1111,
+  "size_m": [
+   3.4,
+   7.2,
+   1.9
+  ],
+  "sec": 0.04
+ },
+ "scaffold_s": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 1080,
+  "tris": 540,
+  "voxels": 960,
+  "size_m": [
+   3.4,
+   5.2,
+   1.9
+  ],
+  "sec": 0.03
+ },
+ "crane_mast": {
+  "vs": 0.2,
+  "chunks": 1,
+  "verts": 22020,
+  "tris": 11010,
+  "voxels": 11352,
+  "size_m": [
+   8.0,
+   30.6,
+   8.0
+  ],
+  "sec": 0.22
+ },
+ "crane_head": {
+  "vs": 0.2,
+  "chunks": 1,
+  "verts": 23720,
+  "tris": 11860,
+  "voxels": 5066,
+  "size_m": [
+   43.6,
+   8.6,
+   4.0
+  ],
+  "sec": 0.3
+ },
+ "crane_load_a": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 72,
+  "tris": 36,
+  "voxels": 2405,
+  "size_m": [
+   3.6,
+   10.9,
+   2.0
+  ],
+  "sec": 0.05
+ },
+ "crane_load_b": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 96,
+  "tris": 48,
+  "voxels": 2006,
+  "size_m": [
+   3.6,
+   12.9,
+   2.0
+  ],
+  "sec": 0.07
+ },
+ "pallet_blocks": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 124,
+  "tris": 62,
+  "voxels": 6318,
+  "size_m": [
+   2.9,
+   1.5,
+   2.0
+  ],
+  "sec": 0.03
+ },
+ "crate": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 96,
+  "tris": 48,
+  "voxels": 729,
+  "size_m": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "sec": 0.0
+ },
+ "barrier_stripe": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 200,
+  "tris": 100,
+  "voxels": 124,
+  "size_m": [
+   1.8,
+   1.0,
+   0.4
+  ],
+  "sec": 0.01
+ },
+ "lumber": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 888,
+  "tris": 444,
+  "voxels": 414,
+  "size_m": [
+   2.4,
+   0.6,
+   1.0
+  ],
+  "sec": 0.01
+ },
+ "lamp": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 320,
+  "tris": 160,
+  "voxels": 257,
+  "size_m": [
+   1.4,
+   4.7,
+   1.0
+  ],
+  "sec": 0.01
+ },
+ "fence": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 72,
+  "tris": 36,
+  "voxels": 120,
+  "size_m": [
+   2.6,
+   1.1,
+   0.2
+  ],
+  "sec": 0.0
+ },
+ "house": {
+  "vs": 0.15,
+  "chunks": 1,
+  "verts": 71176,
+  "tris": 35588,
+  "voxels": 40707,
+  "size_m": [
+   11.4,
+   9.45,
+   10.65
+  ],
+  "sec": 0.37
+ },
+ "house_frame": {
+  "vs": 0.15,
+  "chunks": 1,
+  "verts": 6452,
+  "tris": 3226,
+  "voxels": 8230,
+  "size_m": [
+   7.05,
+   6.0,
+   6.9
+  ],
+  "sec": 0.09
+ },
+ "wall_block": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 664,
+  "tris": 332,
+  "voxels": 1916,
+  "size_m": [
+   2.4,
+   1.0,
+   0.8
+  ],
+  "sec": 0.0
+ },
+ "wall_debris0": {
+  "vs": 0.1,
+  "chunks": 9,
+  "verts": 5404,
+  "tris": 2702,
+  "voxels": 1916,
+  "sec": 0.06
+ },
+ "wall_debris1": {
+  "vs": 0.1,
+  "chunks": 9,
+  "verts": 5656,
+  "tris": 2828,
+  "voxels": 1917,
+  "sec": 0.07
+ },
+ "wall_debris2": {
+  "vs": 0.1,
+  "chunks": 9,
+  "verts": 3824,
+  "tris": 1912,
+  "voxels": 1920,
+  "sec": 0.08
+ },
+ "shard0": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 176,
+  "tris": 88,
+  "voxels": 38,
+  "size_m": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "sec": 0.0
+ },
+ "shard1": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 192,
+  "tris": 96,
+  "voxels": 59,
+  "size_m": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "sec": 0.02
+ },
+ "shard2": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 100,
+  "tris": 50,
+  "voxels": 43,
+  "size_m": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "sec": 0.02
+ },
+ "shard3": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 156,
+  "tris": 78,
+  "voxels": 47,
+  "size_m": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "sec": 0.01
+ },
+ "avatar": {
+  "vs": 0.06,
+  "chunks": 17,
+  "verts": 2404,
+  "tris": 1202,
+  "voxels": 1225,
+  "parts": [
+   "LeftUpperLeg",
+   "LeftLowerLeg",
+   "LeftFoot",
+   "RightUpperLeg",
+   "RightLowerLeg",
+   "RightFoot",
+   "Hips",
+   "Spine",
+   "Chest",
+   "Neck",
+   "Head",
+   "LeftUpperArm",
+   "LeftLowerArm",
+   "LeftHand",
+   "RightUpperArm",
+   "RightLowerArm",
+   "RightHand"
+  ],
+  "sec": 0.21
+ },
+ "tablet": {
+  "vs": 0.025,
+  "chunks": 1,
+  "verts": 956,
+  "tris": 478,
+  "voxels": 251,
+  "size_m": [
+   0.4,
+   0.1,
+   0.35
+  ],
+  "sec": 0.01
+ },
+ "bot": {
+  "vs": 0.04,
+  "chunks": 7,
+  "verts": 716,
+  "tris": 358,
+  "voxels": 990,
+  "parts": [
+   "LegL",
+   "LegR",
+   "Body",
+   "Head",
+   "ArmL",
+   "ArmR",
+   "Tool"
+  ],
+  "sec": 0.09
+ },
+ "car_red": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 4588,
+  "tris": 2294,
+  "voxels": 4734,
+  "size_m": [
+   2.5,
+   1.6,
+   5.1
+  ],
+  "sec": 0.02
+ },
+ "car_blue": {
+  "vs": 0.1,
+  "chunks": 1,
+  "verts": 4852,
+  "tris": 2426,
+  "voxels": 4755,
+  "size_m": [
+   2.5,
+   1.6,
+   5.1
+  ],
+  "sec": 0.03
+ },
+ "car_wheel": {
+  "vs": 0.05,
+  "chunks": 1,
+  "verts": 2036,
+  "tris": 1018,
+  "voxels": 1120,
+  "size_m": [
+   0.35,
+   0.9,
+   0.9
+  ],
+  "sec": 0.02
+ },
+ "terrain0": {
+  "vs": 0.5,
+  "chunks": 56,
+  "verts": 561412,
+  "tris": 280706,
+  "voxels": 6069592,
+  "size_m": [
+   230.0,
+   63.0,
+   195.0
+  ],
+  "origin": [
+   -120.0,
+   -23.0,
+   -150.0
+  ],
+  "sec": 11.4
+ },
+ "terrain1": {
+  "vs": 2.0,
+  "chunks": 35,
+  "verts": 766136,
+  "tris": 383068,
+  "voxels": 3184068,
+  "size_m": [
+   840.0,
+   96.0,
+   564.0
+  ],
+  "origin": [
+   -420.0,
+   -24.0,
+   -440.0
+  ],
+  "sec": 3.3
+ },
+ "oak_big": {
+  "vs": 0.5,
+  "chunks": 1,
+  "verts": 11360,
+  "tris": 5680,
+  "voxels": 3918,
+  "size_m": [
+   17.5,
+   19.0,
+   17.5
+  ],
+  "sec": 0.04
+ },
+ "roof_skin": {
+  "vs": 0.25,
+  "chunks": 1,
+  "verts": 16820,
+  "tris": 8410,
+  "voxels": 3150,
+  "size_m": [
+   7.5,
+   9.5,
+   46.5
+  ],
+  "sec": 0.77
+ }
+}

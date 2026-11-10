@@ -1,0 +1,764 @@
+{
+ "schema": "tl.layout/1",
+ "name": "two_rinks",
+ "seed": 31,
+ "_about": "What the lane-B schema could not express: two rinks side by side (different sizes, one roofed and half built, one open) and three houses.",
+ "spawn": {
+  "p": [
+   0,
+   0
+  ]
+ },
+ "terrain": {
+  "ridges": [
+   {
+    "a": [
+     -60,
+     19
+    ],
+    "b": [
+     14,
+     17
+    ],
+    "fall": 12
+   }
+  ],
+  "pads": [
+   {
+    "c": [
+     -17,
+     -80
+    ],
+    "r": 60,
+    "blend": 18,
+    "h": -14,
+    "dirt": true
+   },
+   {
+    "c": [
+     52,
+     -48
+    ],
+    "r": 24,
+    "blend": 14,
+    "h": -10
+   },
+   {
+    "c": [
+     -92,
+     -40
+    ],
+    "r": 16,
+    "blend": 12,
+    "h": -14
+   }
+  ],
+  "mesas": [
+   {
+    "c": [
+     -190,
+     -430
+    ],
+    "r": 70,
+    "h": 55
+   },
+   {
+    "c": [
+     60,
+     -470
+    ],
+    "r": 90,
+    "h": 62
+   },
+   {
+    "c": [
+     240,
+     -380
+    ],
+    "r": 60,
+    "h": 48
+   },
+   {
+    "c": [
+     40,
+     -250
+    ],
+    "r": 22,
+    "h": 44,
+    "blend": 14,
+    "noise": 5
+   }
+  ]
+ },
+ "arenas": [
+  {
+   "id": "rink_a",
+   "c": [
+    -38,
+    -14,
+    -80
+   ],
+   "yaw": 90,
+   "rink": {
+    "length": 60,
+    "width": 26,
+    "corner_r": 8.5
+   },
+   "stands": [
+    {
+     "side": -1,
+     "rows": 9
+    }
+   ],
+   "ribs": {
+    "count": 6,
+    "built": 4,
+    "dx": 9.5,
+    "apex": 13
+   },
+   "scaffolds": [
+    {
+     "p": [
+      14,
+      15
+     ],
+     "bays": 3,
+     "levels": 3,
+     "decks": [
+      1,
+      2,
+      3
+     ]
+    }
+   ],
+   "bots": [
+    {
+     "p": [
+      15,
+      2.12,
+      15.4
+     ],
+     "clip": "weld",
+     "yaw": 180
+    },
+    {
+     "p": [
+      18,
+      4.12,
+      15.4
+     ],
+     "clip": "work",
+     "yaw": 180
+    },
+    {
+     "p": [
+      24,
+      0,
+      19
+     ],
+     "clip": "carry",
+     "yaw": 120
+    },
+    {
+     "p": [
+      -33,
+      0,
+      17
+     ],
+     "clip": "idle"
+    }
+   ]
+  },
+  {
+   "id": "rink_b",
+   "c": [
+    4,
+    -14,
+    -80
+   ],
+   "yaw": 90,
+   "rink": {
+    "length": 52,
+    "width": 24,
+    "corner_r": 7.0,
+    "glass_h": 1.2
+   },
+   "stands": [
+    {
+     "side": 1,
+     "rows": 6
+    }
+   ]
+  }
+ ],
+ "houses": [
+  {
+   "id": "house_1",
+   "p": [
+    42,
+    -10,
+    -42
+   ],
+   "yaw": -60,
+   "frame": false
+  },
+  {
+   "id": "house_2",
+   "p": [
+    55,
+    -10,
+    -58
+   ],
+   "yaw": -100,
+   "frame": false,
+   "params": {
+    "width": 10,
+    "depth": 6.4,
+    "roof_rise": 3.2
+   }
+  },
+  {
+   "id": "house_3",
+   "p": [
+    64,
+    -10,
+    -40
+   ],
+   "yaw": -30,
+   "ext_side": -1
+  }
+ ],
+ "cranes": [
+  {
+   "id": "crane_1",
+   "p": [
+    -70,
+    -108
+   ],
+   "h": 34,
+   "jib": 30,
+   "yaw": 35,
+   "trolley": 0.6
+  }
+ ],
+ "walls": [
+  {
+   "id": "wall_yard",
+   "p": [
+    -17,
+    -38
+   ],
+   "yaw": 0,
+   "blocks": 8
+  }
+ ],
+ "ponds": [
+  {
+   "id": "pond",
+   "p": [
+    -92,
+    -40
+   ],
+   "rx": 13,
+   "rz": 9,
+   "surface": "water"
+  }
+ ],
+ "trees": [
+  {
+   "p": [
+    -17,
+    1.5
+   ],
+   "species": "hero"
+  },
+  {
+   "p": [
+    34,
+    -52
+   ],
+   "species": "pine",
+   "height": 11
+  },
+  {
+   "p": [
+    40,
+    -60
+   ],
+   "species": "broadleaf",
+   "height": 8,
+   "seed": 7
+  }
+ ],
+ "rocks": [
+  {
+   "p": [
+    15,
+    -5
+   ],
+   "size": 1.6,
+   "squash": 0.62,
+   "seed": 11
+  },
+  {
+   "p": [
+    -4.2,
+    3.4
+   ],
+   "size": 1.5,
+   "squash": 0.7,
+   "seed": 12
+  }
+ ],
+ "forest": {
+  "density": 1.2,
+  "clear": [
+   [
+    -80,
+    40,
+    -150,
+    -20
+   ]
+  ]
+ },
+ "props": [
+  {
+   "kind": "light_mast",
+   "p": [
+    -58,
+    -48
+   ],
+   "yaw": -40
+  },
+  {
+   "kind": "light_mast",
+   "p": [
+    22,
+    -48
+   ],
+   "yaw": -140
+  },
+  {
+   "kind": "light_mast",
+   "p": [
+    -17,
+    -116
+   ],
+   "yaw": 0,
+   "params": {
+    "height": 16
+   }
+  },
+  {
+   "kind": "scoreboard",
+   "p": [
+    -38,
+    -116
+   ],
+   "yaw": 0
+  },
+  {
+   "kind": "scoreboard",
+   "p": [
+    4,
+    -112
+   ],
+   "yaw": 0
+  },
+  {
+   "kind": "flag",
+   "p": [
+    -17,
+    -46
+   ],
+   "params": {
+    "height": 9,
+    "color": "flag_a"
+   }
+  },
+  {
+   "kind": "flag",
+   "p": [
+    -13,
+    -46
+   ],
+   "params": {
+    "height": 9,
+    "color": "flag_b"
+   }
+  },
+  {
+   "kind": "entrance",
+   "p": [
+    -17,
+    -44
+   ],
+   "yaw": 0
+  },
+  {
+   "kind": "fence",
+   "p": [
+    32,
+    -34
+   ],
+   "to": [
+    70,
+    -26
+   ]
+  },
+  {
+   "kind": "fence",
+   "p": [
+    -8,
+    -40
+   ],
+   "to": [
+    18,
+    -42
+   ],
+   "params": {
+    "style": "mesh"
+   }
+  },
+  {
+   "kind": "lumber",
+   "p": [
+    -22,
+    -52
+   ],
+   "yaw": 10,
+   "params": {
+    "length": 3.4,
+    "width": 1.1,
+    "layers": 5
+   }
+  },
+  {
+   "kind": "pallet",
+   "p": [
+    -12,
+    -54
+   ],
+   "yaw": -8
+  },
+  {
+   "kind": "crate",
+   "p": [
+    -9,
+    -51
+   ],
+   "yaw": 20
+  },
+  {
+   "kind": "crate",
+   "p": [
+    -9.2,
+    -49.6
+   ],
+   "yaw": -12,
+   "params": {
+    "size": 0.8,
+    "seed": 9
+   }
+  },
+  {
+   "kind": "cabin",
+   "p": [
+    30,
+    -100
+   ],
+   "yaw": 90
+  },
+  {
+   "kind": "tyre_stack",
+   "p": [
+    -17,
+    -60
+   ],
+   "yaw": 90,
+   "params": {
+    "columns": 6
+   }
+  },
+  {
+   "kind": "cone",
+   "p": [
+    -20,
+    -66
+   ]
+  },
+  {
+   "kind": "cone",
+   "p": [
+    -14,
+    -66
+   ]
+  },
+  {
+   "kind": "sign",
+   "p": [
+    -24,
+    -44
+   ],
+   "yaw": 0,
+   "params": {
+    "color": "sign"
+   }
+  },
+  {
+   "kind": "watch_tower",
+   "p": [
+    -88,
+    -70
+   ],
+   "yaw": 20
+  },
+  {
+   "kind": "puck",
+   "p": [
+    -37.6,
+    -13.95,
+    -76.0
+   ]
+  },
+  {
+   "kind": "puck",
+   "p": [
+    4.5,
+    -13.95,
+    -84.0
+   ]
+  }
+ ],
+ "actors": [
+  {
+   "id": "avatar",
+   "rig": "biped",
+   "p": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "a_skater_1",
+   "rig": "biped",
+   "p": [
+    -38,
+    -13.95,
+    -75
+   ],
+   "yaw": 0,
+   "clip": "shoot",
+   "params": {
+    "mode": "skate",
+    "stick": true,
+    "backpack": false,
+    "colors": {
+     "top": "car_blue",
+     "trim": "car_white",
+     "legs": "bot_dark",
+     "boots": "black"
+    }
+   }
+  },
+  {
+   "id": "a_skater_2",
+   "rig": "biped",
+   "p": [
+    -33,
+    -13.95,
+    -88
+   ],
+   "yaw": 150,
+   "clip": "skate",
+   "params": {
+    "mode": "skate",
+    "stick": true,
+    "backpack": false,
+    "colors": {
+     "top": "car_red",
+     "trim": "car_white",
+     "legs": "bot_dark",
+     "boots": "black"
+    }
+   }
+  },
+  {
+   "id": "a_skater_3",
+   "rig": "biped",
+   "p": [
+    -43,
+    -13.95,
+    -96
+   ],
+   "yaw": -30,
+   "clip": "pass",
+   "params": {
+    "mode": "skate",
+    "stick": true,
+    "backpack": false,
+    "colors": {
+     "top": "car_blue",
+     "trim": "car_white",
+     "legs": "bot_dark",
+     "boots": "black"
+    }
+   }
+  },
+  {
+   "id": "a_skater_4",
+   "rig": "biped",
+   "p": [
+    -36,
+    -13.95,
+    -62
+   ],
+   "yaw": 200,
+   "clip": "skate_stop",
+   "params": {
+    "mode": "skate",
+    "stick": true,
+    "backpack": false,
+    "colors": {
+     "top": "car_red",
+     "trim": "car_white",
+     "legs": "bot_dark",
+     "boots": "black"
+    }
+   }
+  },
+  {
+   "id": "b_skater_1",
+   "rig": "biped",
+   "p": [
+    4,
+    -13.95,
+    -83
+   ],
+   "yaw": 10,
+   "clip": "skate",
+   "params": {
+    "mode": "skate",
+    "stick": true,
+    "backpack": false,
+    "colors": {
+     "top": "yellow",
+     "trim": "car_white",
+     "legs": "bot_dark",
+     "boots": "black"
+    }
+   }
+  },
+  {
+   "id": "b_skater_2",
+   "rig": "biped",
+   "p": [
+    9,
+    -13.95,
+    -70
+   ],
+   "yaw": 160,
+   "clip": "cheer",
+   "params": {
+    "mode": "skate",
+    "stick": true,
+    "backpack": false,
+    "colors": {
+     "top": "yellow",
+     "trim": "car_white",
+     "legs": "bot_dark",
+     "boots": "black"
+    }
+   }
+  },
+  {
+   "id": "b_skater_3",
+   "rig": "biped",
+   "p": [
+    0,
+    -13.95,
+    -95
+   ],
+   "yaw": 40,
+   "clip": "fall",
+   "params": {
+    "mode": "skate",
+    "stick": true,
+    "backpack": false,
+    "colors": {
+     "top": "car_red",
+     "trim": "car_white",
+     "legs": "bot_dark",
+     "boots": "black"
+    }
+   }
+  }
+ ],
+ "cams": {
+  "hero": {
+   "pos": [
+    2.3,
+    4.4,
+    6.6
+   ],
+   "look": [
+    2,
+    -12,
+    -62
+   ],
+   "fov": 62
+  },
+  "site": {
+   "pos": [
+    -17,
+    2,
+    -30
+   ],
+   "look": [
+    -17,
+    -14,
+    -80
+   ],
+   "fov": 68
+  },
+  "rink_a": {
+   "pos": [
+    -34,
+    -10.2,
+    -63
+   ],
+   "look": [
+    -38,
+    -13.2,
+    -80
+   ],
+   "fov": 58
+  },
+  "top": {
+   "pos": [
+    -17,
+    95,
+    -60
+   ],
+   "look": [
+    -17,
+    -14,
+    -82
+   ],
+   "fov": 50
+  },
+  "houses": {
+   "pos": [
+    30,
+    -2,
+    -22
+   ],
+   "look": [
+    55,
+    -9,
+    -48
+   ],
+   "fov": 55
+  }
+ }
+}

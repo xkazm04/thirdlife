@@ -1,0 +1,271 @@
+{
+ "materials": [
+  {
+   "name": "grass",
+   "tag": "soil"
+  },
+  {
+   "name": "grass_dark",
+   "tag": "soil"
+  },
+  {
+   "name": "dirt",
+   "tag": "soil"
+  },
+  {
+   "name": "stone",
+   "tag": "stone"
+  },
+  {
+   "name": "stone_dark",
+   "tag": "stone"
+  },
+  {
+   "name": "sand",
+   "tag": "soil"
+  },
+  {
+   "name": "snow",
+   "tag": "snow"
+  },
+  {
+   "name": "leaves",
+   "tag": "organic"
+  },
+  {
+   "name": "leaves_pine",
+   "tag": "organic"
+  },
+  {
+   "name": "bark",
+   "tag": "wood"
+  },
+  {
+   "name": "wood_plank",
+   "tag": "wood"
+  },
+  {
+   "name": "wood_log",
+   "tag": "wood"
+  },
+  {
+   "name": "wood_frame",
+   "tag": "wood"
+  },
+  {
+   "name": "concrete",
+   "tag": "concrete"
+  },
+  {
+   "name": "concrete_dark",
+   "tag": "concrete"
+  },
+  {
+   "name": "asphalt",
+   "tag": "asphalt"
+  },
+  {
+   "name": "curb_red",
+   "tag": "concrete"
+  },
+  {
+   "name": "curb_white",
+   "tag": "concrete"
+  },
+  {
+   "name": "ice",
+   "tag": "ice"
+  },
+  {
+   "name": "line_red",
+   "tag": "paint"
+  },
+  {
+   "name": "line_blue",
+   "tag": "paint"
+  },
+  {
+   "name": "boards_white",
+   "tag": "plastic"
+  },
+  {
+   "name": "glass",
+   "tag": "glass",
+   "cls": "trans"
+  },
+  {
+   "name": "metal_yellow",
+   "tag": "metal"
+  },
+  {
+   "name": "metal_grey",
+   "tag": "metal"
+  },
+  {
+   "name": "metal_dark",
+   "tag": "metal"
+  },
+  {
+   "name": "shingle",
+   "tag": "stone"
+  },
+  {
+   "name": "brick",
+   "tag": "stone"
+  },
+  {
+   "name": "window_glow",
+   "tag": "glass"
+  },
+  {
+   "name": "cloth_red",
+   "tag": "cloth"
+  },
+  {
+   "name": "cloth_dark",
+   "tag": "cloth"
+  },
+  {
+   "name": "skin",
+   "tag": "flesh"
+  },
+  {
+   "name": "hair",
+   "tag": "flesh"
+  },
+  {
+   "name": "pack_tan",
+   "tag": "cloth"
+  },
+  {
+   "name": "holo_cyan",
+   "tag": "holo"
+  },
+  {
+   "name": "water",
+   "tag": "water",
+   "cls": "trans"
+  },
+  {
+   "name": "car_red",
+   "tag": "metal"
+  },
+  {
+   "name": "car_blue",
+   "tag": "metal"
+  },
+  {
+   "name": "car_white",
+   "tag": "metal"
+  },
+  {
+   "name": "lamp_glow",
+   "tag": "glass"
+  },
+  {
+   "name": "bot_white",
+   "tag": "plastic"
+  },
+  {
+   "name": "bot_screen",
+   "tag": "glass"
+  },
+  {
+   "name": "flame",
+   "tag": "fire"
+  },
+  {
+   "name": "seat_red",
+   "tag": "plastic"
+  },
+  {
+   "name": "seat_grey",
+   "tag": "plastic"
+  },
+  {
+   "name": "rust",
+   "tag": "metal"
+  },
+  {
+   "name": "cloud",
+   "tag": "gas"
+  },
+  {
+   "name": "grass_tuft",
+   "tag": "organic"
+  },
+  {
+   "name": "moss",
+   "tag": "organic"
+  },
+  {
+   "name": "road_line",
+   "tag": "paint"
+  },
+  {
+   "name": "net",
+   "tag": "cloth"
+  },
+  {
+   "name": "tire",
+   "tag": "rubber"
+  },
+  {
+   "name": "headlight",
+   "tag": "glass"
+  },
+  {
+   "name": "gold",
+   "tag": "metal"
+  },
+  {
+   "name": "mountain",
+   "tag": "stone"
+  },
+  {
+   "name": "hologlass",
+   "tag": "holo",
+   "cls": "trans"
+  },
+  {
+   "name": "shirt_dark",
+   "tag": "cloth"
+  },
+  {
+   "name": "boots",
+   "tag": "cloth"
+  },
+  {
+   "name": "wood_dark",
+   "tag": "wood"
+  },
+  {
+   "name": "pole",
+   "tag": "metal"
+  },
+  {
+   "name": "car_glass",
+   "tag": "glass"
+  },
+  {
+   "name": "bot_dark",
+   "tag": "plastic"
+  },
+  {
+   "name": "bot_yellow",
+   "tag": "plastic"
+  },
+  {
+   "name": "smoke",
+   "tag": "gas"
+  },
+  {
+   "name": "plank_light",
+   "tag": "wood"
+  },
+  {
+   "name": "hologrid",
+   "tag": "holo"
+  }
+ ]
+}

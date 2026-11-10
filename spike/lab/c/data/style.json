@@ -1,0 +1,995 @@
+{
+ "name": "golden_hour",
+ "sun": {
+  "color": "#ffb064",
+  "energy": 3.1,
+  "elev_deg": 11.0,
+  "azim_deg": 0.0,
+  "dir_from": [
+   -0.55,
+   0.2,
+   -0.81
+  ],
+  "shadow_max": 260.0,
+  "shadow_blur": 1.6
+ },
+ "sky": {
+  "top": "#4a68b0",
+  "horizon": "#ff9d6b",
+  "ground": "#6a5658",
+  "curve": 0.12,
+  "sun_angle_max": 22.0,
+  "energy": 1.0
+ },
+ "ambient": {
+  "energy": 0.85,
+  "sky_contribution": 1.0,
+  "color": "#a8b8e8"
+ },
+ "fog": {
+  "color": "#f0a47c",
+  "density": 0.0016,
+  "sun_scatter": 0.35,
+  "aerial": 0.7,
+  "vol_density": 0.01,
+  "vol_albedo": "#ffc8a0",
+  "vol_anisotropy": 0.78,
+  "vol_length": 220.0,
+  "vol_emission": 0.0
+ },
+ "post": {
+  "exposure": 1.0,
+  "white": 5.5,
+  "tonemap": "aces",
+  "glow": 0.55,
+  "glow_threshold": 1.0,
+  "saturation": 1.12,
+  "contrast": 1.05,
+  "ssao_radius": 1.1,
+  "ssao_intensity": 2.0,
+  "ssil": 0.0,
+  "sdfgi_energy": 1.0
+ },
+ "voxel": {
+  "edge": 0.11,
+  "tex": 0.045,
+  "ao_strength": 0.62,
+  "bevel": 0.16
+ },
+ "holo": {
+  "color": "#38e8ff",
+  "edge": 2.4,
+  "fill": 0.1,
+  "scan": 0.35
+ },
+ "clouds": {
+  "material": "cloud",
+  "count": 14
+ },
+ "materials": {
+  "grass": {
+   "ramp": [
+    "#668e21",
+    "#689827",
+    "#6aa22e",
+    "#6cac35",
+    "#6db63d"
+   ],
+   "rough": 0.92,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "grass_dark": {
+   "ramp": [
+    "#446619",
+    "#47701e",
+    "#4a7a24",
+    "#4d842a",
+    "#4f8e31"
+   ],
+   "rough": 0.92,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "dirt": {
+   "ramp": [
+    "#66412b",
+    "#704b31",
+    "#7a5638",
+    "#84613f",
+    "#8e6d47"
+   ],
+   "rough": 0.95,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "stone": {
+   "ramp": [
+    "#76726e",
+    "#827e7a",
+    "#8d8a86",
+    "#989692",
+    "#a4a29f"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "stone_dark": {
+   "ramp": [
+    "#554f4d",
+    "#615b58",
+    "#6c6764",
+    "#777370",
+    "#837f7c"
+   ],
+   "rough": 0.92,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "sand": {
+   "ramp": [
+    "#b79a6a",
+    "#c0a572",
+    "#c9b17a",
+    "#d2bd83",
+    "#dbc88b"
+   ],
+   "rough": 0.95,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "snow": {
+   "ramp": [
+    "#e5e9f0",
+    "#ebeef4",
+    "#f1f3f8",
+    "#f7f8fc",
+    "#fdfdff"
+   ],
+   "rough": 0.8,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "leaves": {
+   "ramp": [
+    "#578020",
+    "#5b8d27",
+    "#5f9a2f",
+    "#63a738",
+    "#67b342"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "leaves_pine": {
+   "ramp": [
+    "#225321",
+    "#285f29",
+    "#2f6a34",
+    "#377540",
+    "#40814d"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "bark": {
+   "ramp": [
+    "#58341e",
+    "#613c22",
+    "#6a4527",
+    "#734e2c",
+    "#7c5831"
+   ],
+   "rough": 0.95,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "wood_plank": {
+   "ramp": [
+    "#945e33",
+    "#9d6938",
+    "#a6743e",
+    "#af7f44",
+    "#b88b4a"
+   ],
+   "rough": 0.85,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "wood_log": {
+   "ramp": [
+    "#764525",
+    "#804f2b",
+    "#8a5a30",
+    "#946536",
+    "#9e713c"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "wood_frame": {
+   "ramp": [
+    "#c48e56",
+    "#cb995c",
+    "#d3a463",
+    "#dbaf6a",
+    "#e2bb71"
+   ],
+   "rough": 0.85,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "wood_dark": {
+   "ramp": [
+    "#4c2b18",
+    "#53321c",
+    "#5b3a20",
+    "#634224",
+    "#6a4a29"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "concrete": {
+   "ramp": [
+    "#9a9691",
+    "#a19e99",
+    "#a9a6a1",
+    "#b1aea9",
+    "#b8b6b1"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "concrete_dark": {
+   "ramp": [
+    "#76726e",
+    "#7d7a76",
+    "#85827e",
+    "#8d8a86",
+    "#94928e"
+   ],
+   "rough": 0.92,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "asphalt": {
+   "ramp": [
+    "#404046",
+    "#45454b",
+    "#4a4a50",
+    "#4f4f55",
+    "#55545a"
+   ],
+   "rough": 0.7,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "curb_red": {
+   "ramp": [
+    "#bb2324",
+    "#c22b27",
+    "#c8352b",
+    "#ce3f2f",
+    "#d54a34"
+   ],
+   "rough": 0.7,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "curb_white": {
+   "ramp": [
+    "#e4dfd6",
+    "#e8e3db",
+    "#ece8e0",
+    "#f0ede5",
+    "#f4f1ea"
+   ],
+   "rough": 0.7,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "ice": {
+   "ramp": [
+    "#d2e5f0",
+    "#d7e8f3",
+    "#dcecf6",
+    "#e1f0f9",
+    "#e7f3fc"
+   ],
+   "rough": 0.08,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "line_red": {
+   "ramp": [
+    "#cb272a",
+    "#cd2d2a",
+    "#d0362e",
+    "#d33f32",
+    "#d54936"
+   ],
+   "rough": 0.15,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "line_blue": {
+   "ramp": [
+    "#2867c3",
+    "#2b64c5",
+    "#2f62c8",
+    "#3360cb",
+    "#365ecd"
+   ],
+   "rough": 0.15,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "boards_white": {
+   "ramp": [
+    "#e8e5e0",
+    "#eceae5",
+    "#f0eeea",
+    "#f4f2ef",
+    "#f8f7f4"
+   ],
+   "rough": 0.45,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "glass": {
+   "ramp": [
+    "#b4e1ed",
+    "#b9e3ef",
+    "#bfe4f2",
+    "#c5e6f5",
+    "#cae8f7"
+   ],
+   "rough": 0.05,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 0.3,
+   "tex": 1.0
+  },
+  "metal_yellow": {
+   "ramp": [
+    "#d78e21",
+    "#de9b25",
+    "#e6a82a",
+    "#eeb62f",
+    "#f5c434"
+   ],
+   "rough": 0.5,
+   "metal": 0.2,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "metal_grey": {
+   "ramp": [
+    "#8d9499",
+    "#939aa0",
+    "#9aa0a6",
+    "#a1a6ac",
+    "#a8acb3"
+   ],
+   "rough": 0.45,
+   "metal": 0.45,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "metal_dark": {
+   "ramp": [
+    "#40464c",
+    "#454b51",
+    "#4a4f56",
+    "#4f545b",
+    "#545860"
+   ],
+   "rough": 0.5,
+   "metal": 0.4,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "shingle": {
+   "ramp": [
+    "#5a5963",
+    "#66646f",
+    "#72707a",
+    "#7e7c85",
+    "#8a8891"
+   ],
+   "rough": 0.85,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "brick": {
+   "ramp": [
+    "#8e3b2d",
+    "#984533",
+    "#a2503a",
+    "#ac5c41",
+    "#b66849"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "window_glow": {
+   "ramp": [
+    "#f2b863",
+    "#f9c369",
+    "#ffcf70",
+    "#ffd574",
+    "#ffdb78"
+   ],
+   "rough": 0.3,
+   "metal": 0.0,
+   "emit": 2.6,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "cloth_red": {
+   "ramp": [
+    "#a1232a",
+    "#aa282b",
+    "#b3302e",
+    "#bc3b34",
+    "#c5473a"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "cloth_dark": {
+   "ramp": [
+    "#303a49",
+    "#364050",
+    "#3d4658",
+    "#444c60",
+    "#4b5267"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "skin": {
+   "ramp": [
+    "#dea282",
+    "#e3ab88",
+    "#e8b48f",
+    "#edbd96",
+    "#f2c69d"
+   ],
+   "rough": 0.8,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "hair": {
+   "ramp": [
+    "#502617",
+    "#5d2f1c",
+    "#6a3a22",
+    "#774528",
+    "#84522f"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "pack_tan": {
+   "ramp": [
+    "#be9b74",
+    "#c5a67c",
+    "#cdb084",
+    "#d5ba8c",
+    "#dcc594"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "holo_cyan": {
+   "ramp": [
+    "#2ceaf2",
+    "#32e9f9",
+    "#38e8ff",
+    "#3de2ff",
+    "#42dcff"
+   ],
+   "rough": 0.2,
+   "metal": 0.0,
+   "emit": 3.2,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "water": {
+   "ramp": [
+    "#338bbb",
+    "#398dc2",
+    "#3f8fc8",
+    "#4591ce",
+    "#4c93d5"
+   ],
+   "rough": 0.04,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 0.78,
+   "tex": 1.0
+  },
+  "car_red": {
+   "ramp": [
+    "#c61a1f",
+    "#cb201e",
+    "#d02a22",
+    "#d53426",
+    "#da3f2a"
+   ],
+   "rough": 0.28,
+   "metal": 0.3,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "car_blue": {
+   "ramp": [
+    "#1c54ae",
+    "#1f53b3",
+    "#2352b8",
+    "#2751bd",
+    "#2b50c2"
+   ],
+   "rough": 0.28,
+   "metal": 0.3,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "car_white": {
+   "ramp": [
+    "#e0e1eb",
+    "#e6e6ed",
+    "#ececf0",
+    "#f2f2f3",
+    "#f5f5f5"
+   ],
+   "rough": 0.3,
+   "metal": 0.25,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "lamp_glow": {
+   "ramp": [
+    "#f7c784",
+    "#fbcf8a",
+    "#ffd890",
+    "#ffdd94",
+    "#ffe298"
+   ],
+   "rough": 0.3,
+   "metal": 0.0,
+   "emit": 3.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "bot_white": {
+   "ramp": [
+    "#e4e0d8",
+    "#e8e4dd",
+    "#ece9e2",
+    "#f0ede7",
+    "#f4f2ec"
+   ],
+   "rough": 0.5,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "bot_screen": {
+   "ramp": [
+    "#32f0f7",
+    "#36edfb",
+    "#3beaff",
+    "#3fe3ff",
+    "#43ddff"
+   ],
+   "rough": 0.2,
+   "metal": 0.0,
+   "emit": 3.4,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "flame": {
+   "ramp": [
+    "#d95b19",
+    "#ec7921",
+    "#ff9a2a",
+    "#ffb030",
+    "#ffc437"
+   ],
+   "rough": 0.3,
+   "metal": 0.0,
+   "emit": 4.5,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "seat_red": {
+   "ramp": [
+    "#99222c",
+    "#a0262c",
+    "#a82a2c",
+    "#b0312f",
+    "#b73b33"
+   ],
+   "rough": 0.8,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "seat_grey": {
+   "ramp": [
+    "#5e656f",
+    "#666c76",
+    "#6d727c",
+    "#757982",
+    "#7c8089"
+   ],
+   "rough": 0.8,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "rust": {
+   "ramp": [
+    "#88462d",
+    "#915033",
+    "#9a5a38",
+    "#a3643e",
+    "#ac6f44"
+   ],
+   "rough": 0.8,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "cloud": {
+   "ramp": [
+    "#f5d0c3",
+    "#fad8c9",
+    "#ffe0d0",
+    "#ffe3d3",
+    "#ffe6d5"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.9,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "grass_tuft": {
+   "ramp": [
+    "#7c9e2a",
+    "#80ab32",
+    "#84b83a",
+    "#87c543",
+    "#8bd24d"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "moss": {
+   "ramp": [
+    "#56782f",
+    "#5b8134",
+    "#5f8a3a",
+    "#639340",
+    "#689c46"
+   ],
+   "rough": 0.95,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "road_line": {
+   "ramp": [
+    "#e3dbd0",
+    "#e5e0d6",
+    "#e8e4dc",
+    "#ebe8e2",
+    "#edece8"
+   ],
+   "rough": 0.6,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "net": {
+   "ramp": [
+    "#dce5eb",
+    "#e2e8ed",
+    "#e8ecf0",
+    "#eef0f3",
+    "#f4f5f5"
+   ],
+   "rough": 0.8,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "tire": {
+   "ramp": [
+    "#1b1d20",
+    "#1e2024",
+    "#222428",
+    "#26282c",
+    "#2a2b30"
+   ],
+   "rough": 0.8,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "headlight": {
+   "ramp": [
+    "#fae7b5",
+    "#fcecba",
+    "#fff2c0",
+    "#fff5c4",
+    "#fff8c8"
+   ],
+   "rough": 0.2,
+   "metal": 0.0,
+   "emit": 3.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "gold": {
+   "ramp": [
+    "#d69d30",
+    "#dda935",
+    "#e3b53a",
+    "#e9c13f",
+    "#f0cd44"
+   ],
+   "rough": 0.35,
+   "metal": 0.5,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "mountain": {
+   "ramp": [
+    "#6a606c",
+    "#746a76",
+    "#7f7580",
+    "#8a808a",
+    "#948b94"
+   ],
+   "rough": 0.95,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "hologlass": {
+   "ramp": [
+    "#2ff1fa",
+    "#34ecfc",
+    "#38e8ff",
+    "#3ce1ff",
+    "#40dbff"
+   ],
+   "rough": 0.1,
+   "metal": 0.0,
+   "emit": 1.4,
+   "alpha": 0.18,
+   "tex": 1.0
+  },
+  "shirt_dark": {
+   "ramp": [
+    "#6b1c22",
+    "#722023",
+    "#7a2424",
+    "#822b28",
+    "#89332d"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "boots": {
+   "ramp": [
+    "#3d281e",
+    "#442e22",
+    "#4a3426",
+    "#503b2a",
+    "#57412f"
+   ],
+   "rough": 0.9,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "pole": {
+   "ramp": [
+    "#32373e",
+    "#363a42",
+    "#3a3e46",
+    "#3e424a",
+    "#43464e"
+   ],
+   "rough": 0.5,
+   "metal": 0.4,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "car_glass": {
+   "ramp": [
+    "#203242",
+    "#233446",
+    "#26364a",
+    "#29384e",
+    "#2c3a52"
+   ],
+   "rough": 0.06,
+   "metal": 0.1,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "bot_dark": {
+   "ramp": [
+    "#2b2f36",
+    "#2f323a",
+    "#33363e",
+    "#373a42",
+    "#3b3d46"
+   ],
+   "rough": 0.5,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "bot_yellow": {
+   "ramp": [
+    "#e69c1f",
+    "#eba824",
+    "#f0b428",
+    "#f5c02d",
+    "#facc31"
+   ],
+   "rough": 0.5,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "smoke": {
+   "ramp": [
+    "#c9c4be",
+    "#d0cbc5",
+    "#d6d2cc",
+    "#dcd9d3",
+    "#e3e0da"
+   ],
+   "rough": 0.95,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "plank_light": {
+   "ramp": [
+    "#b5824e",
+    "#be8e55",
+    "#c79a5c",
+    "#d0a663",
+    "#d9b26b"
+   ],
+   "rough": 0.85,
+   "metal": 0.0,
+   "emit": 0.0,
+   "alpha": 1.0,
+   "tex": 1.0
+  },
+  "hologrid": {
+   "ramp": [
+    "#2feff7",
+    "#33ebfb",
+    "#38e8ff",
+    "#3ce1ff",
+    "#40dbff"
+   ],
+   "rough": 0.2,
+   "metal": 0.0,
+   "emit": 2.6,
+   "alpha": 1.0,
+   "tex": 1.0
+  }
+ }
+}

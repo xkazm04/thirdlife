@@ -1,0 +1,11 @@
+{
+  "id": "example.wall",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Primitive example: a wall that breaks",
+  "capabilities": ["physics", "ball", "fracture", "camera"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_wall.gd"],
+  "cameras": ["side"]
+}

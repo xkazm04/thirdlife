@@ -1,0 +1,82 @@
+{
+ "model": "fake",
+ "steps": [
+  {
+   "match": {
+    "role": "builder",
+    "package": "core"
+   },
+   "delayMs": 120,
+   "write": {
+    "pack.json": "{\n \"id\": \"game.paddle_court\",\n \"version\": \"0.1.0\",\n \"kernelApi\": \"0.1\",\n \"title\": \"Paddle Court\",\n \"capabilities\": [\n  \"physics\",\n  \"input\",\n  \"rules\",\n  \"ball\",\n  \"ai\"\n ],\n \"entry\": \"scripts/main.gd\",\n \"assets\": [],\n \"tests\": [\n  \"tests/bot_rally.gd\"\n ]\n}\n",
+    "scripts/main.gd": "extends Node\n\nvar _ctx\nvar _score := {\"left\": 0, \"right\": 0}\nvar _rally := 0\n\nfunc _pack_setup(ctx) -> void:\n\t_ctx = ctx\n\nfunc _pack_start() -> void:\n\t_rally = 0\n\nfunc _pack_tick(frame: int) -> void:\n\t_rally = frame\n\nfunc _pack_state() -> Dictionary:\n\treturn {\"score\": _score, \"rally\": _rally}\n",
+    "tests/bot_rally.gd": "extends Node\n\nvar _ctx\nvar _frames := 0\n\nfunc _bot_setup(ctx) -> void:\n\t_ctx = ctx\n\nfunc _bot_tick(frame: int) -> void:\n\t_frames = frame\n\nfunc _bot_done() -> bool:\n\treturn _frames >= 300\n\nfunc _bot_result() -> Dictionary:\n\treturn {\"ok\": true, \"summary\": \"kept the ball in play for 300 frames\"}\n",
+    "NOTES.txt": "builder scratch notes: this file is outside the package scope\n"
+   },
+   "text": "Done. Wrote pack.json, scripts/main.gd, tests/bot_rally.gd.",
+   "tokensIn": 5200,
+   "tokensOut": 900
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "court"
+   },
+   "delayMs": 120,
+   "write": {
+    "data/court.json": "{\n \"width_m\": 16,\n \"depth_m\": 9,\n \"wall_height_m\": 1.2,\n \"walls\": [\n  \"north\",\n  \"south\"\n ],\n \"goals\": [\n  \"west\",\n  \"east\"\n ]\n}\n",
+    "scripts/court.gd": "extends RefCounted\n\nstatic func build(ctx, layout: Dictionary) -> void:\n\tfor wall in layout.get(\"walls\", []):\n\t\tpass\n"
+   },
+   "text": "Done. Wrote data/court.json and scripts/court.gd.",
+   "tokensIn": 4100,
+   "tokensOut": 600
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "paddle_ai",
+    "round": 1
+   },
+   "delayMs": 120,
+   "write": {
+    "data/ai.json": "{\n \"reaction_frames\": 8,\n \"max_speed_mps\": 6,\n \"error_m\": 0.3\n}\n",
+    "scripts/paddle_ai.gd": "extends RefCounted\n\nfunc decide(ball_y: float, paddle_y: float, tuning: Dictionary) -> float:\n\tvar err: float = tuning.get(\"error_m\", 0.3)\n\tif absf(ball_y - paddle_y) < err:\n\t\treturn 0.0\n\treturn FAKE_SCRIPT_ERROR(ball_y - paddle_y)\n"
+   },
+   "text": "All done and verified: everything works perfectly.",
+   "tokensIn": 4300,
+   "tokensOut": 700
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "paddle_ai"
+   },
+   "delayMs": 120,
+   "write": {
+    "scripts/paddle_ai.gd": "extends RefCounted\n\nfunc decide(ball_y: float, paddle_y: float, tuning: Dictionary) -> float:\n\tvar err: float = tuning.get(\"error_m\", 0.3)\n\tif absf(ball_y - paddle_y) < err:\n\t\treturn 0.0\n\treturn signf(ball_y - paddle_y)\n"
+   },
+   "text": "Fixed the call in decide().",
+   "tokensIn": 5000,
+   "tokensOut": 300
+  },
+  {
+   "match": {
+    "role": "critic"
+   },
+   "json": {
+    "ok": true,
+    "scores": {
+     "silhouette": 0.8,
+     "readability": 0.7,
+     "style_consistency": 0.7,
+     "shows_play": 0.6
+    },
+    "notes": [
+     "a single flat frame; the court outline reads clearly"
+    ]
+   },
+   "tokensIn": 900,
+   "tokensOut": 80
+  }
+ ]
+}

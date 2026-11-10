@@ -1,0 +1,28 @@
+{
+  "_note": "Everything a designer would turn. Lengths in metres, speeds in m/s, angles in degrees.",
+  "court": {
+    "_note": "inner half width of the court in court.json (wall centre 5.4 minus half the wall depth 0.4)",
+    "half_width": 5.0,
+    "goal_depth": 1.2
+  },
+  "ball": {
+    "serve_speed": 10.0,
+    "speed_step": 0.8,
+    "max_speed": 18.0,
+    "max_angle": 55.0,
+    "serve_spread": 25.0,
+    "serve_delay_seconds": 1.0,
+    "dead_ball_speed": 1.5,
+    "dead_ball_seconds": 2.0
+  },
+  "paddle": {
+    "mass": 40.0,
+    "speed": 8.0,
+    "accel": 80.0
+  },
+  "rival": {
+    "_note": "the AI paddle is slower than the player's: that is the whole difficulty setting",
+    "speed": 2.3,
+    "slow_radius": 0.6
+  }
+}

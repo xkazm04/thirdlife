@@ -1,0 +1,1151 @@
+{
+ "schema": "tl.job/1",
+ "note": "Generated from foreman/src/events.ts by scripts/write-event-schema.mjs. One JSON schema per event type; a line of job.jsonl must match the schema of its `type`. Rules a schema cannot say (seq = line number, one job id per file, cause only with failed or blocked, plan graph checks) are in src/events.ts and src/joblog.ts.",
+ "events": {
+  "job_created": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "sentence",
+    "packId",
+    "title"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "job_created"
+    },
+    "sentence": {
+     "type": "string",
+     "minLength": 1
+    },
+    "packId": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "title": {
+     "type": "string",
+     "minLength": 1
+    }
+   }
+  },
+  "brief_set": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "brief",
+    "estimate"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "brief_set"
+    },
+    "brief": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "rules",
+      "arena",
+      "ai",
+      "controls",
+      "mood"
+     ],
+     "properties": {
+      "rules": {
+       "type": "string",
+       "minLength": 1
+      },
+      "arena": {
+       "type": "string",
+       "minLength": 1
+      },
+      "ai": {
+       "type": "string",
+       "minLength": 1
+      },
+      "controls": {
+       "type": "string",
+       "minLength": 1
+      },
+      "mood": {
+       "type": "string",
+       "minLength": 1
+      }
+     }
+    },
+    "estimate": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "packages",
+      "wallMinutes",
+      "tokens"
+     ],
+     "properties": {
+      "packages": {
+       "type": "integer",
+       "minimum": 1
+      },
+      "wallMinutes": {
+       "type": "number",
+       "minimum": 0
+      },
+      "tokens": {
+       "type": "integer",
+       "minimum": 0
+      }
+     }
+    }
+   }
+  },
+  "brief_approved": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "by"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "brief_approved"
+    },
+    "by": {
+     "enum": [
+      "player",
+      "auto"
+     ]
+    }
+   }
+  },
+  "plan_set": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "packages"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "plan_set"
+    },
+    "packages": {
+     "type": "array",
+     "minItems": 1,
+     "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+       "id",
+       "title",
+       "milestone",
+       "deps",
+       "scope",
+       "contract",
+       "acceptance"
+      ],
+      "properties": {
+       "registers": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+         "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+           "enum": [
+            "physics",
+            "input",
+            "ui",
+            "audio",
+            "vfx",
+            "camera",
+            "rules",
+            "ai",
+            "spawn",
+            "fracture",
+            "vehicle",
+            "biped",
+            "ball",
+            "kit",
+            "style"
+           ]
+          }
+         },
+         "assets": {
+          "type": "array",
+          "items": {
+           "type": "string",
+           "pattern": "^gen/[A-Za-z0-9_/]+.gd$"
+          }
+         },
+         "tests": {
+          "type": "array",
+          "items": {
+           "type": "string",
+           "pattern": "^tests/[A-Za-z0-9_/]+.gd$"
+          }
+         },
+         "cameras": {
+          "type": "array",
+          "items": {
+           "type": "string",
+           "pattern": "^[a-z][a-z0-9_]*$"
+          }
+         }
+        }
+       },
+       "id": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+       },
+       "title": {
+        "type": "string",
+        "minLength": 1
+       },
+       "milestone": {
+        "enum": [
+         "blockout",
+         "greybox",
+         "art_pass",
+         "tuned"
+        ]
+       },
+       "deps": {
+        "type": "array",
+        "items": {
+         "type": "string",
+         "pattern": "^[a-z][a-z0-9_]*$"
+        }
+       },
+       "scope": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+         "type": "string",
+         "minLength": 1,
+         "pattern": "^(?![A-Za-z]:|/|\\\\)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+        }
+       },
+       "contract": {
+        "type": "string",
+        "minLength": 1
+       },
+       "acceptance": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "level",
+          "verb",
+          "args"
+         ],
+         "properties": {
+          "level": {
+           "enum": [
+            "V0",
+            "V1",
+            "V2",
+            "V3",
+            "V4",
+            "V5",
+            "V6"
+           ]
+          },
+          "verb": {
+           "enum": [
+            "lint",
+            "smoke",
+            "invariants",
+            "bot",
+            "capture"
+           ]
+          },
+          "args": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "package_state": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "package",
+    "state",
+    "round"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "package_state"
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "state": {
+     "enum": [
+      "queued",
+      "running",
+      "blocked",
+      "verifying",
+      "promoted",
+      "failed"
+     ]
+    },
+    "round": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "cause": {
+     "enum": [
+      "verify_failed",
+      "builder_error",
+      "builder_timeout",
+      "builder_truncated",
+      "budget",
+      "dependency",
+      "question",
+      "cancelled",
+      "no_visible_change"
+     ]
+    },
+    "detail": {
+     "type": "string"
+    }
+   }
+  },
+  "builder_run": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "adapter",
+    "mode",
+    "model",
+    "outcome",
+    "durationMs"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "builder_run"
+    },
+    "adapter": {
+     "enum": [
+      "claude-cli",
+      "messages-api",
+      "fake"
+     ]
+    },
+    "mode": {
+     "enum": [
+      "generate",
+      "readonly-scan",
+      "edit"
+     ]
+    },
+    "model": {
+     "type": "string"
+    },
+    "outcome": {
+     "enum": [
+      "ok",
+      "timeout",
+      "truncated",
+      "error",
+      "refused"
+     ]
+    },
+    "durationMs": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "round": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "tokensIn": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "tokensOut": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "tokensCacheRead": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "transcript": {
+     "type": "string",
+     "minLength": 1,
+     "pattern": "^(?![A-Za-z]:|/|\\\\)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+    }
+   }
+  },
+  "verify": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "round",
+    "level",
+    "verb",
+    "ok",
+    "report"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "verify"
+    },
+    "round": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "level": {
+     "enum": [
+      "V0",
+      "V1",
+      "V2",
+      "V3",
+      "V4",
+      "V5",
+      "V6"
+     ]
+    },
+    "verb": {
+     "enum": [
+      "lint",
+      "smoke",
+      "invariants",
+      "bot",
+      "capture"
+     ]
+    },
+    "ok": {
+     "type": "boolean"
+    },
+    "report": {
+     "type": "string",
+     "minLength": 1,
+     "pattern": "^(?![A-Za-z]:|/|\\\\)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "exitCode": {
+     "type": "integer"
+    },
+    "after": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    }
+   }
+  },
+  "merge": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "package",
+    "files"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "merge"
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "files": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:|/|\\\\)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+     }
+    },
+    "removed": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:|/|\\\\)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+     }
+    }
+   }
+  },
+  "note": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "package",
+    "round",
+    "text"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "note"
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "round": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "text": {
+     "type": "string",
+     "minLength": 1
+    }
+   }
+  },
+  "question": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "package",
+    "text"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "question"
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "text": {
+     "type": "string",
+     "minLength": 1
+    }
+   }
+  },
+  "answer": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "package",
+    "text",
+    "by"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "answer"
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "text": {
+     "type": "string",
+     "minLength": 1
+    },
+    "by": {
+     "type": "string",
+     "minLength": 1
+    }
+   }
+  },
+  "milestone": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "milestone",
+    "captures",
+    "summary"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "milestone"
+    },
+    "milestone": {
+     "enum": [
+      "blockout",
+      "greybox",
+      "art_pass",
+      "tuned"
+     ]
+    },
+    "captures": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:|/|\\\\)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+     }
+    },
+    "summary": {
+     "type": "string"
+    }
+   }
+  },
+  "comment": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "milestone",
+    "text",
+    "by"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "comment"
+    },
+    "milestone": {
+     "enum": [
+      "blockout",
+      "greybox",
+      "art_pass",
+      "tuned"
+     ]
+    },
+    "text": {
+     "type": "string",
+     "minLength": 1
+    },
+    "by": {
+     "enum": [
+      "player"
+     ]
+    }
+   }
+  },
+  "replan": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "reason",
+    "added",
+    "removed",
+    "changed"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "replan"
+    },
+    "reason": {
+     "type": "string",
+     "minLength": 1
+    },
+    "added": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     }
+    },
+    "removed": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     }
+    },
+    "changed": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     }
+    }
+   }
+  },
+  "budget": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "policy",
+    "state",
+    "reason"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "budget"
+    },
+    "policy": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "kind"
+     ],
+     "properties": {
+      "kind": {
+       "enum": [
+        "tokens_per_hour",
+        "only_while_playing",
+        "overnight"
+       ]
+      },
+      "limit": {
+       "type": [
+        "number",
+        "string"
+       ]
+      }
+     }
+    },
+    "state": {
+     "enum": [
+      "running",
+      "paused"
+     ]
+    },
+    "reason": {
+     "type": "string"
+    }
+   }
+  },
+  "billing": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "adapter",
+    "mode",
+    "evidence"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "billing"
+    },
+    "adapter": {
+     "enum": [
+      "claude-cli",
+      "messages-api",
+      "fake"
+     ]
+    },
+    "mode": {
+     "enum": [
+      "subscription",
+      "api_key",
+      "none"
+     ]
+    },
+    "evidence": {
+     "type": "string",
+     "minLength": 1
+    }
+   }
+  },
+  "promoted": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "packId",
+    "version",
+    "dest"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "promoted"
+    },
+    "packId": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "version": {
+     "type": "string",
+     "minLength": 1
+    },
+    "dest": {
+     "type": "string",
+     "minLength": 1
+    }
+   }
+  },
+  "job_state": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "state"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "job_state"
+    },
+    "state": {
+     "enum": [
+      "running",
+      "paused",
+      "done",
+      "failed",
+      "cancelled"
+     ]
+    },
+    "reason": {
+     "type": "string"
+    }
+   }
+  }
+ }
+}

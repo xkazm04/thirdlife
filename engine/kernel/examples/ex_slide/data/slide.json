@@ -1,0 +1,9 @@
+{
+  "start_speed": 3.0,
+  "lanes": [
+    {"name": "rubber_on_ice",     "slider": "rubber", "surface": "ice",     "track": true},
+    {"name": "rubber_on_asphalt", "slider": "rubber", "surface": "asphalt", "track": true},
+    {"name": "wood_on_ice",       "slider": "wood",   "surface": "ice",     "track": false},
+    {"name": "wood_on_asphalt",   "slider": "wood",   "surface": "asphalt", "track": false}
+  ]
+}

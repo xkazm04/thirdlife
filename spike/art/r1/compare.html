@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Third Life - art directions r1</title>
+<style>
+:root{--bg:#14161a;--fg:#e8eaee;--mut:#9aa1ad;--card:#1d2026;--line:#2c313a;--ok:#5ec27a;--mid:#e6b94d;--bad:#e5645c}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,Segoe UI,sans-serif}
+main{max-width:1500px;margin:0 auto;padding:20px 16px 60px}
+h1{margin:0 0 4px;font-size:22px} p.lead{color:var(--mut);margin:0 0 18px;max-width:80ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card img{display:block;width:100%;height:auto;cursor:zoom-in}
+.body{padding:12px 14px}
+.body h2{margin:0 0 6px;font-size:16px}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);margin-right:6px;color:var(--mut)}
+.ok{color:var(--ok)}.mid{color:var(--mid)}.bad{color:var(--bad)}
+table{border-collapse:collapse;width:100%;margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13.5px;vertical-align:top}
+th{color:var(--mut);font-weight:600}
+dialog{border:0;padding:0;background:transparent;max-width:96vw}dialog::backdrop{background:#000d}dialog img{max-width:96vw;max-height:94vh}
+</style></head><body><main>
+<h1>Third Life - art directions, round 1</h1>
+<p class="lead">Same scene, eight directions: player with a "designer" tablet, a hockey arena under construction with builder agents and holographic blueprint, a race circuit with nitro and crumbling barrier, a player house. These are concept renders: real in-engine frames will carry less detail than any of them. Assessments below are the Director's estimates from the measured gtai-3d-spike costs, not measurements.</p>
+<div class="grid" id="g"></div>
+<table><thead><tr><th>Direction</th><th>LLM can author geometry</th><th>Texture burden</th><th>Animation burden</th><th>Render / post cost</th><th>Destruction fit</th><th>Identity</th><th>Verdict</th></tr></thead><tbody id="t"></tbody></table>
+</main>
+<dialog id="d"><img id="di"></dialog>
+<script>
+const items=[
+["A_lowpoly","A. Faceted low-poly","Primitives + flat shading: the cheapest thing an LLM can build reliably from Blender-Python box/cyl calls. Reads clean, but generic on its own.","ok","none","low (rigid parts)","trivial","good (break into facets)","medium","Cheapest floor. Good geometry budget."],
+["B_toon_ink","B. Toon + ink outline","Flat bands, hatched shadows, ink on every crease. Shaders already exist (gtai-3d-spike toon/ink_post). Shape does the work: every modelled crease becomes a line.","ok","none (procedural wear)","low-mid","cheap post pass","good","HIGH","Best identity per effort. Reuse proven shaders."],
+["C_voxel","C. High-res voxel","Beautiful lit, and destruction reads well, but in an objects+tables world the voxel look must be authored as voxel meshes; GI/light shafts cost more in Godot; characters limited.","mid","none","low (blocky rigs)","mid-high (GI, volumetrics)","excellent","high but crowded (Minecraft/Teardown)","Strong, but locks the look and fights the chosen world model."],
+["D_clay_diorama","D. Clay / toy diorama","Charming and forgiving of simple shapes, but soft fuzzy/plasticine surfaces need shader and texture work; tilt-shift DOF; wool/fur is the costly bit.","mid","mid-high","mid","mid","ok","high","Great mood; materials cost is the risk."],
+["E_painterly_gouache","E. Painterly gouache","Almost no small detail: big shapes, colour-temperature lighting, haze layers. Sells 'high quality' with the least modelled detail. Needs a painterly post shader and disciplined palette/lighting.","ok","low","low","low-mid (post + fog)","ok","high","Best look-per-asset for ENVIRONMENT; combine with B for characters."],
+["F_stylized_pbr","F. Clean stylized PBR","Looks most 'shipped game', but density here (waterfalls, props, foliage, glossy materials) is exactly what costs authoring time and QA; many assets must hold up.","mid","mid","mid-high","mid-high (GI, bloom, glossy)","good","medium (Fortnite-like)","Highest perceived polish, highest cost to sustain."],
+["G_isometric_hd2d","G. Isometric HD-2D","Gorgeous, but sprite animation for every LLM-made character/vehicle is the hardest thing to automate, and it contradicts the chosen chase camera.","bad","high (sprites)","very high (frames)","mid","poor","high","Out: conflicts with camera and animation economics."],
+["H_hyperreal_control","H. Hyper-real (control)","The ceiling we cannot afford: photoreal materials, vegetation density and car/character rigs per game. Included to calibrate the gap.","bad","very high","very high","very high","hard","none (generic)","Out, as you predicted."]
+];
+const g=document.getElementById('g'),t=document.getElementById('t');
+for(const [f,n,note,c,tx,an,rd,ds,id,v] of items){
+ g.insertAdjacentHTML('beforeend',`<div class="card"><img src="out/${f}.png" alt="${n}" loading="lazy"><div class="body"><h2>${n}</h2><span class="tag ${c}">authoring: ${c==='ok'?'cheap':c==='mid'?'moderate':'expensive'}</span><p style="margin:8px 0 0;color:var(--mut)">${note}</p></div></div>`);
+ t.insertAdjacentHTML('beforeend',`<tr><td><b>${n}</b></td><td class="${c}">${c==='ok'?'yes, primitives':c==='mid'?'with effort':'heavy'}</td><td>${tx}</td><td>${an}</td><td>${rd}</td><td>${ds}</td><td>${id}</td><td>${v}</td></tr>`);
+}
+const d=document.getElementById('d'),di=document.getElementById('di');
+g.addEventListener('click',e=>{if(e.target.tagName==='IMG'){di.src=e.target.src;d.showModal()}});
+d.addEventListener('click',()=>d.close());
+</script></body></html>

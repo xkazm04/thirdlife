@@ -1,0 +1,6 @@
+{
+  "sides": ["walker"],
+  "laps_to_win": 1,
+  "checkpoints": 2,
+  "time_limit_seconds": 60
+}

@@ -1,0 +1,303 @@
+{
+ "schema": "tl.capabilities/1",
+ "note": "Dated observations, not constants. An adapter reads its flags from the entry matching the probed version; an unknown version falls back to the newest entry and the probe says so. Each block says how it was established: `observed` (seen in a live run on the date), `help` (read from --help only, never exercised), `tested` (the adapter's own unit tests).",
+ "adapters": {
+  "claude-cli": [
+   {
+    "version": "2.1.322",
+    "observedOn": "2026-11-10",
+    "platform": "win32 (Windows 11), native claude.exe, started from inside another Claude Code session (CLAUDECODE and CLAUDE_CODE_* inherited untouched)",
+    "method": "claude --help; claude auth status --json; four live runs through this adapter (generate with a schema, edit, edit with a 1 s timeout, Designer generate). Reduced envelopes: fixtures/envelopes/. WP3b (same day): one image probe, two edit-mode permission preflights (scripts/live-preflight.mjs), the first live Planner call, and the builder runs of the job site/marble-run-three-marbles-20261110-1.",
+    "promptChannel": {
+     "how": "stdin with -p and --input-format text; never argv",
+     "status": "observed"
+    },
+    "outputFormats": {
+     "available": [
+      "text",
+      "json",
+      "stream-json"
+     ],
+     "used": "stream-json",
+     "usedNeeds": [
+      "--verbose"
+     ],
+     "eventsSeen": [
+      "system/init",
+      "system/ui_invalidate",
+      "system/thinking_tokens",
+      "assistant",
+      "user",
+      "rate_limit_event",
+      "result/success"
+     ],
+     "noiseOnStdout": "none seen (0 non-JSON lines in 4 runs); stderr empty",
+     "status": "observed"
+    },
+    "schema": {
+     "flag": "--json-schema",
+     "resultField": "structured_output",
+     "behaviour": "the CLI adds one tool named StructuredOutput even with --tools \"\"; the run takes 2 turns and the result's stop_reason is \"tool_use\", not \"end_turn\"; `result` holds the same JSON as text",
+     "status": "observed"
+    },
+    "toolRestriction": {
+     "toolSet": "--tools (\"\" disables all built-in tools; init then lists only StructuredOutput when a schema is given)",
+     "editObserved": "--restricted --permission-mode acceptEdits --tools Read,Glob,Grep,Edit,Write: init tools were exactly [Edit, Glob, Grep, Read, Write], permissionMode acceptEdits, a Write inside cwd succeeded without a prompt, the model reported having no shell tool, permission_denials was empty",
+     "allowDeny": "permissions.allow and permissions.deny in a per-call --settings file (accepted by the CLI together with --safe-mode and --restricted)",
+     "notExercised": [
+      "a write outside cwd and outside every --add-dir directory being refused by --restricted",
+      "readonly-scan mode (--restricted --tools Read,Glob,Grep): not needed, the critic takes its images in generate mode"
+     ],
+     "unattended": "--permission-prompts none (anything that would prompt is denied)",
+     "customizationsOff": "--safe-mode: mcp_servers was 0 and the first-turn context was about 2.7k tokens in generate mode; init still listed built-in agents, skills and plugins, so `off` means user customizations, not built-ins",
+     "enforcementClass": "policy inside the CLI, not an operating-system sandbox",
+     "status": "observed (allow, deny, add-dir); see notExercised",
+     "addDir": "--restricted confines the file tools to cwd plus --add-dir directories (help). The Foreman passes one --add-dir per reference directory (a copy of API.md and example packs inside the job directory, never the engine itself).",
+     "bashAllowObserved": "2026-11-10, edit mode, --restricted --permission-mode acceptEdits --permission-prompts none --tools Read,Glob,Grep,Edit,Write,Bash with permissions.allow = [\"Bash(<godot> --headless --path <engine> res://kernel/host/host.tscn -- lint:*)\"] in the per-call --settings file: the granted runner call ran from the builder's shell; the same runner with another verb (-- smoke) was DENIED; `env | grep -c ...` was DENIED; `curl --version` was DENIED (deny rule); a refusal comes back at once as a tool error and is listed in the result's permission_denials (no hang). `echo hello` and `node --version` RAN without a grant: the CLI lets a class of harmless read-only commands through by itself, so the allowlist is not the whole truth about the shell.",
+     "addDirObserved": "2026-11-10: with --add-dir <dir> the Read tool reads files there, and the Write tool WRITES there too in acceptEdits mode (not refused). So a directory given to a builder for reference is writable by it: the Foreman gives a copy (<job>/ref), hashes it around every run, records a change and restores it."
+    },
+    "ceilings": {
+     "wallClock": "none offered by the CLI: the Foreman's timeoutMs with a process-tree kill (taskkill /T /F) is the only wall clock. Observed: a 1000 ms timeout ended the run at 1.2 s with only the init event received and no process left behind.",
+     "spend": "--max-budget-usd exists (help); not used",
+     "turns": "no --max-turns in --help of this version; the result carries num_turns and terminal_reason (\"completed\" seen)",
+     "idle": "unknown: no run was long enough to meet one",
+     "status": "observed (wall clock), help (spend), unknown (idle)"
+    },
+    "auth": {
+     "zeroTokenProbe": "claude auth status --json (loggedIn, authMethod, subscriptionType); observed 0.4 s for version + status",
+     "billingFlip": [
+      "ANTHROPIC_API_KEY",
+      "ANTHROPIC_AUTH_TOKEN",
+      "CLAUDE_CODE_USE_BEDROCK",
+      "CLAUDE_CODE_USE_VERTEX",
+      "CLAUDE_CODE_USE_FOUNDRY"
+     ],
+     "billingFlipStatus": "help and documentation only: no key was set in this environment, so the flip itself was not observed",
+     "childReport": "apiKeySource in the init event; \"none\" observed on a claude.ai subscription login",
+     "rateLimitReport": "every run carries rate_limit_event {rate_limit_info: {status: \"allowed\", resetsAt: <epoch seconds>, rateLimitType: \"five_hour\"}}; the result has api_error_status (null on success). A rejected status was not observed.",
+     "avoid": "--bare (reads only ANTHROPIC_API_KEY or apiKeyHelper: a subscription login is never used)",
+     "status": "observed (subscription path only)"
+    },
+    "tokens": {
+     "source": "usage in the result event",
+     "in": [
+      "input_tokens",
+      "cache_creation_input_tokens",
+      "cache_read_input_tokens"
+     ],
+     "out": [
+      "output_tokens"
+     ],
+     "alsoPresent": [
+      "total_cost_usd (a notional figure on a subscription login)",
+      "modelUsage",
+      "duration_ms",
+      "num_turns"
+     ],
+     "onTimeout": "no result event, so no token count: a killed run reports none",
+     "status": "observed"
+    },
+    "liveRuns": [
+     {
+      "check": "generate + schema",
+      "model": "claude-sonnet-5-5 (alias sonnet)",
+      "outcome": "ok",
+      "seconds": 2.6,
+      "tokensIn": 2715,
+      "tokensOut": 54,
+      "costUsdNotional": 0.0114
+     },
+     {
+      "check": "edit, one file",
+      "model": "claude-sonnet-5-5",
+      "outcome": "ok",
+      "seconds": 4.2,
+      "tokensIn": 11240,
+      "tokensOut": 206,
+      "costUsdNotional": 0.0106
+     },
+     {
+      "check": "edit, timeoutMs 1000",
+      "model": "claude-sonnet-5-5",
+      "outcome": "timeout",
+      "seconds": 1.2
+     },
+     {
+      "check": "Designer generate + schema",
+      "model": "claude-sonnet-5-5",
+      "outcome": "ok",
+      "seconds": 10.6,
+      "tokensIn": 3893,
+      "tokensOut": 987,
+      "costUsdNotional": 0.0254
+     },
+     {
+      "check": "image hand-off probe (generate, stream-json user message with one 1920x1080 PNG)",
+      "model": "claude-sonnet-5-5",
+      "outcome": "ok",
+      "seconds": 2.7,
+      "tokensIn": 5007,
+      "tokensOut": 41
+     },
+     {
+      "check": "permission preflight 1 (edit: granted runner call, echo, Read and Write in --add-dir, Write in cwd)",
+      "model": "claude-sonnet-5-5",
+      "outcome": "ok",
+      "seconds": 18.1,
+      "tokensIn": 24806,
+      "tokensOut": 811
+     },
+     {
+      "check": "permission preflight 2 (edit: node --version, ungranted verb, env, curl, granted runner call)",
+      "model": "claude-sonnet-5-5",
+      "outcome": "ok",
+      "seconds": 21.4,
+      "tokensIn": 49998,
+      "tokensOut": 774
+     },
+     {
+      "check": "Designer (job marble-run)",
+      "model": "claude-sonnet-5-5",
+      "outcome": "ok",
+      "seconds": 15.9,
+      "tokensIn": 3925,
+      "tokensOut": 1067
+     },
+     {
+      "check": "Planner, first live call (prompt with PACK.md and the kernel API.md, --json-schema, --max-packages 3)",
+      "model": "claude-sonnet-5-5",
+      "outcome": "ok, valid on the first attempt",
+      "seconds": 83.7,
+      "tokensIn": 55684,
+      "tokensOut": 12160
+     }
+    ],
+    "flags": {
+     "common": [
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--input-format",
+      "text",
+      "--no-session-persistence",
+      "--permission-prompts",
+      "none",
+      "--safe-mode",
+      "--strict-mcp-config"
+     ],
+     "model": [
+      "--model",
+      "{model}"
+     ],
+     "schema": [
+      "--json-schema",
+      "{schema}"
+     ],
+     "generate": [
+      "--tools",
+      ""
+     ],
+     "readonly-scan": [
+      "--restricted",
+      "--tools",
+      "Read,Glob,Grep"
+     ],
+     "edit": [
+      "--restricted",
+      "--permission-mode",
+      "acceptEdits",
+      "--settings",
+      "{settingsFile}",
+      "--tools",
+      "{editTools}"
+     ],
+     "editTools": "Read,Glob,Grep,Edit,Write",
+     "editToolsWithShell": "Read,Glob,Grep,Edit,Write,Bash",
+     "imageInput": {
+      "remove": [
+       "--input-format",
+       "text"
+      ],
+      "add": [
+       "--input-format",
+       "stream-json"
+      ]
+     },
+     "addDir": [
+      "--add-dir",
+      "{dir}"
+     ]
+    },
+    "images": {
+     "how": "no image flag in --help. Observed: `--input-format stream-json` with ONE stdin line {\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"image\",\"source\":{\"type\":\"base64\",\"media_type\":\"image/png\",\"data\":\"...\"}},{\"type\":\"text\",\"text\":\"...\"}]}} works in generate mode with `--tools \"\"` (stdin is closed after the line; the run ends normally).",
+     "probe": "2026-11-10 20:04 CEST: one 1920x1080 PNG (300 kB), model sonnet, 2.7 s, in 5007 tokens (4356 cache create + 649 cache read + 2), out 41; the description matched the picture",
+     "fallback": "readonly-scan with the capture directory as cwd and the Read tool (not needed, not exercised)",
+     "status": "observed"
+    },
+    "environment": {
+     "rule": "edit and readonly-scan runs: variables whose names contain KEY, TOKEN, SECRET or PASSWORD are removed from the child environment, except ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN and CLAUDE_CODE_OAUTH_TOKEN (the adapter's own authentication). The subscription login is not in the environment, so nothing is lost.",
+     "status": "tested (unit); observed live in the WP3b job"
+    },
+    "tokenUsage": {
+     "resultField": "the final result event: usage.input_tokens, usage.cache_creation_input_tokens, usage.cache_read_input_tokens, usage.output_tokens",
+     "cacheReads": "usage.cache_read_input_tokens of the result event carries the cache reads (also present per assistant message in message.usage). The adapter reports tokensIn = input_tokens + cache_creation_input_tokens + cache_read_input_tokens and, since WP3c, tokensCacheRead = cache_read_input_tokens; the Foreman logs both raw and counts cache reads at weight 0.1 against a token policy.",
+     "evidence": "read on 2026-11-10 (WP3c, no new model call) from the transcripts of the real job site/marble-run-three-marbles-20261110-1/reports/*-builder-*.json (raw.events, type result) and fixtures/envelopes/",
+     "status": "observed (in recorded envelopes); the weighting itself is tested with the fake adapter only"
+    }
+   }
+  ],
+  "messages-api": [
+   {
+    "version": "stub",
+    "observedOn": "2026-11-10",
+    "method": "not called in Phase 0: the adapter refuses every run; with a named key variable set it still refuses and says it is a stub",
+    "outputFormats": {
+     "available": [],
+     "used": "none"
+    },
+    "schema": {
+     "status": "not implemented"
+    },
+    "toolRestriction": {
+     "status": "not applicable: no tools, generate mode only when implemented"
+    },
+    "ceilings": {
+     "status": "not implemented"
+    },
+    "auth": {
+     "billing": "api_key, always: per-token billing against the key in the variable the user names"
+    }
+   }
+  ],
+  "fake": [
+   {
+    "version": "fake-1",
+    "observedOn": "2026-11-10",
+    "method": "the adapter's own unit tests",
+    "outputFormats": {
+     "available": [
+      "text",
+      "json"
+     ],
+     "used": "in-process"
+    },
+    "schema": {
+     "status": "tested",
+     "how": "answers are validated against the request schema with ajv"
+    },
+    "toolRestriction": {
+     "status": "tested",
+     "how": "writes only the scripted files, only in edit mode, only inside cwd"
+    },
+    "ceilings": {
+     "wallClock": "honours timeoutMs (a scripted hang returns outcome timeout)",
+     "status": "tested"
+    },
+    "auth": {
+     "billing": "nothing is billed"
+    }
+   }
+  ]
+ }
+}
