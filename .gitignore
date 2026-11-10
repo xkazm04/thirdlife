@@ -27,3 +27,5 @@ engine/kernel/world/captures/*.png
 
 # per-machine devx overrides
 .tl/
+.claude/worktrees/
+.claude/settings.local.json

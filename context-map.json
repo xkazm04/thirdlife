@@ -1,0 +1,18 @@
+{
+  "schema": "tl.contextmap/1",
+  "note": "Partition of the repo for targeting (spark, scans, ownership). Globs match docs/OWNERSHIP.md.",
+  "contexts": [
+    {"name": "kernel", "group": "engine", "paths": ["engine/kernel/**", "engine/project.godot"], "touches": ["contracts/RUNNER.md", "contracts/PACK.md"]},
+    {"name": "kit", "group": "engine", "paths": ["engine/kits/**"], "touches": ["engine/kits/KIT.md", "assets/**"]},
+    {"name": "rigs", "group": "engine", "paths": ["engine/rigs/**"]},
+    {"name": "style", "group": "engine", "paths": ["engine/style/**"]},
+    {"name": "seeds", "group": "engine", "paths": ["engine/seeds/**"]},
+    {"name": "look", "group": "engine", "paths": ["engine/look/**"]},
+    {"name": "engine-tools", "group": "engine", "paths": ["engine/tools/**"]},
+    {"name": "foreman", "group": "foreman", "paths": ["foreman/**"], "touches": ["contracts/JOB.md"]},
+    {"name": "contracts", "group": "docs", "paths": ["contracts/**"]},
+    {"name": "devx", "group": "devx", "paths": ["devx/**", "assets/**", ".claude/**", "CLAUDE.md"]},
+    {"name": "docs", "group": "docs", "paths": ["docs/**", "reports/**", "research_notes/**", "briefs/**"]},
+    {"name": "frozen", "group": "history", "paths": ["spike/**", "kitlab/**"]}
+  ]
+}
