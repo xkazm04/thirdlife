@@ -1,0 +1,55 @@
+{
+  "schema": "tl.verbs/1",
+  "note": "The one list of the runner's verbs and options. host.gd's OPTIONS table must equal it (a selftest case checks that); the Foreman reads it instead of keeping a copy.",
+  "verbs": {
+    "lint": {
+      "level": "V1",
+      "options": {
+        "pack": {"type": "path", "required": true},
+        "report": {"type": "path", "required": true}
+      }
+    },
+    "smoke": {
+      "level": "V2",
+      "options": {
+        "pack": {"type": "path", "required": true},
+        "report": {"type": "path", "required": true},
+        "seed": {"type": "int", "default": 1},
+        "frames": {"type": "int", "default": 3600}
+      }
+    },
+    "invariants": {
+      "level": "V3",
+      "options": {
+        "pack": {"type": "path", "required": true},
+        "report": {"type": "path", "required": true},
+        "seed": {"type": "int", "default": 1},
+        "frames": {"type": "int", "default": 3600},
+        "bot-frames": {"type": "int", "default": 36000}
+      }
+    },
+    "bot": {
+      "level": "V4",
+      "options": {
+        "pack": {"type": "path", "required": true},
+        "report": {"type": "path", "required": true},
+        "seed": {"type": "int", "default": 1},
+        "frames": {"type": "int", "default": 36000},
+        "test": {"type": "string", "default": "<first entry of the manifest's tests>"}
+      }
+    },
+    "capture": {
+      "level": "V5",
+      "options": {
+        "pack": {"type": "path", "required": true},
+        "report": {"type": "path", "required": true},
+        "seed": {"type": "int", "default": 1},
+        "cam": {"type": "string", "default": "<first entry of the manifest's cameras>"},
+        "frame": {"type": "int", "default": 120},
+        "out": {"type": "path", "required": true},
+        "res": {"type": "string", "default": "1920x1080"},
+        "test": {"type": "string", "default": ""}
+      }
+    }
+  }
+}

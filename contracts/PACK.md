@@ -91,3 +91,21 @@ most 600 lines, the pack at most 6,000 lines of GDScript, `data/` at most 2 MB.
 - `README.md` is allowed at the pack root (optional). It and `pack.json` are the only files there.
 - A game need not use `ctx.rng`. "A different seed gives a different hash" is not a gate; "the same seed gives the
   same hash" is.
+
+## Amendments of 2026-11-11 (night plan): optional manifest fields
+
+`kernelApi` stays `0.1`. All five fields are optional; a pack that leaves one out behaves as before. The runner
+validates their shape (`engine/kernel/runner/manifest.gd`).
+
+| Field | Shape | Meaning | Read by |
+|---|---|---|---|
+| `footprint` | `{"size_m": [x, z], "height_m": h}` | the ground the pack needs, centred on its origin, in metres | the world mode, when it gives the pack a plot |
+| `params` | `[{"name", "file", "path", "min", "max", "step", "label"}]` | values a player may change without a build: `file` is a JSON file under `data/`, `path` a dotted path in it | the designer panel's sliders |
+| `on_leave` | `"bot"`, `"pause"` or `"end"` | what the game does when the player walks out of its plot | the world scheduler |
+| `subject` | a node name under the pack's `World` | the thing a picture of this game is about | capture (`subject_frac` metric), camera framing |
+| `moments` | `[{"name", "frame"}]` or `[{"name", "event"}]` | the frames worth a picture | capture, at milestones |
+
+The single list of runner verbs and options is `engine/kernel/runner/verbs.json` (`tl.verbs/1`). `RUNNER.md` describes
+them; the file is what tools read.
+
+A shareable item's card (`item.json`, `tl.item/1`) and package (`.tlitem`) are specified in `docs/SHARING.md`.
