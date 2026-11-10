@@ -1,0 +1,11 @@
+{
+  "id": "game.{{name}}",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "{{title}}",
+  "capabilities": ["physics", "camera", "input"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_{{name}}.gd"],
+  "cameras": ["hero"]
+}
