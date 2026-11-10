@@ -1,0 +1,22 @@
+{
+  "schema": "tl.arch.baseline/1",
+  "sizes": {
+    "engine/kernel/examples/bad_size/scripts/big.gd": 650,
+    "engine/kernel/runner/worker.gd": 603,
+    "engine/kits/tl_mesh.gd": 660,
+    "foreman/src/cli.ts": 772,
+    "foreman/src/foreman.ts": 1287,
+    "foreman/src/test/wp3b.test.ts": 808,
+    "spike/lab/b/src/mk.gd": 612
+  },
+  "grandfathered": {
+    "verbs-contract": [
+      "sh-opt:bot-frames"
+    ],
+    "schema-versions": [
+      "tl.materials/1",
+      "tl.state/1",
+      "tl.surfaces/1"
+    ]
+  }
+}

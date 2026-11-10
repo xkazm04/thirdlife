@@ -1,0 +1,22 @@
+{
+  "schema": "tl.arch.rules/1",
+  "note": "Architecture rules as data. `checker` names a function in devx/lib/arch/checkers.mjs; `params` tune it. severity error: any finding fails unless grandfathered in devx/arch.baseline.json; ratchet: the baseline holds the current level and it may only go down. Add a rule here and name an existing checker: no code edit.",
+  "rules": [
+    {"id": "module-walls", "severity": "error", "checker": "moduleWalls",
+     "description": "kits, rigs and style reference nothing outside themselves (KIT.md); packs, seeds and good examples use only public TL classes, never class_name, never StandardMaterial3D/lights/environments (mirrors lint.gd bypass 'style')"},
+    {"id": "class-prefixes", "severity": "error", "checker": "classPrefixes",
+     "description": "every engine class_name follows the prefix allocation (contracts/README.md, KIT-RIG-STYLE.md): TL for the kernel, TLKit/TLMesh in kits, TLRig in rigs, TLStyle in style; no duplicates"},
+    {"id": "uid-orphans", "severity": "error", "checker": "uidOrphans",
+     "description": "every .gd.uid has its .gd and every .gd has its .gd.uid"},
+    {"id": "verbs-contract", "severity": "error", "checker": "verbsContract",
+     "description": "verbs.json agrees with host.gd OPTIONS/LEVELS, contracts/RUNNER.md and the tl.sh usage header"},
+    {"id": "schema-versions", "severity": "error", "checker": "schemaVersions",
+     "description": "every tl.<name>/<n> schema string used in engine/, foreman/src and contracts/ is declared in a contracts/ doc"},
+    {"id": "size-ratchet", "severity": "ratchet", "checker": "sizeRatchet", "params": {"budget": 600},
+     "description": "no tracked .gd/.ts/.mjs file over 600 lines; files already over are held at their baseline size (may shrink, never grow)"},
+    {"id": "scope-claims", "severity": "error", "checker": "scopeClaims",
+     "description": ".claude/sessions.json scopes do not overlap between sessions (absent file passes)"},
+    {"id": "api-index-fresh", "severity": "error", "checker": "apiIndexFresh",
+     "description": "docs/generated/API-INDEX.md equals what `tl arch --index` generates from the GDScript sources"}
+  ]
+}
