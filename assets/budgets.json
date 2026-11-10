@@ -1,0 +1,42 @@
+{
+  "schema": "tl.assets.budgets/1",
+  "derivation": "kit_part.maxTris: measured max of the 36 engine kit parts at default params is 19688 (kit.stands), x1.25 headroom, rounded up to 25000. mesh/rig maxTris: the engine selftest budgets (biped 12000, bot 3000, vehicle 8000, layout 600000) set the scale; engine 50000, pack 20000, player_pack 12000 (one biped). Textures, audio, material, data and byte limits have nothing measured yet (the kit is generated, no imported file exists): they are policy numbers, tightening by tier, to be revised on the first real imports. maxBytes is per asset, owner.maxBytes is the sum over one owner's assets.",
+  "tiers": {
+    "engine": {
+      "owner": { "maxBytes": 536870912 },
+      "kinds": {
+        "kit_part": { "maxTris": 25000, "maxBytes": 1048576 },
+        "mesh": { "maxTris": 50000, "maxBytes": 33554432 },
+        "texture": { "maxPx": 4096, "maxBytes": 16777216 },
+        "audio": { "maxBytes": 8388608 },
+        "material": { "maxBytes": 1048576 },
+        "rig": { "maxTris": 50000, "maxBytes": 4194304 },
+        "data": { "maxBytes": 4194304 }
+      }
+    },
+    "pack": {
+      "owner": { "maxBytes": 67108864 },
+      "kinds": {
+        "kit_part": { "maxTris": 25000, "maxBytes": 1048576 },
+        "mesh": { "maxTris": 20000, "maxBytes": 8388608 },
+        "texture": { "maxPx": 2048, "maxBytes": 8388608 },
+        "audio": { "maxBytes": 4194304 },
+        "material": { "maxBytes": 524288 },
+        "rig": { "maxTris": 20000, "maxBytes": 2097152 },
+        "data": { "maxBytes": 1048576 }
+      }
+    },
+    "player_pack": {
+      "owner": { "maxBytes": 33554432 },
+      "kinds": {
+        "kit_part": { "maxTris": 25000, "maxBytes": 1048576 },
+        "mesh": { "maxTris": 12000, "maxBytes": 4194304 },
+        "texture": { "maxPx": 1024, "maxBytes": 4194304 },
+        "audio": { "maxBytes": 2097152 },
+        "material": { "maxBytes": 262144 },
+        "rig": { "maxTris": 12000, "maxBytes": 1048576 },
+        "data": { "maxBytes": 524288 }
+      }
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "tl.assets/1",
+  "title": "Third Life asset manifest (assets/manifest.json). Hand-validated in devx/lib/assets/model.mjs; this file is the reference.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "assets"],
+  "properties": {
+    "schema": { "const": "tl.assets/1" },
+    "assets": { "type": "array", "description": "Sorted by id, ids unique.", "items": { "$ref": "#/definitions/asset" } }
+  },
+  "definitions": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "source", "origin", "hash", "bytes", "license", "provenance", "owner"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$", "description": "Namespaced: kit.rink, pack.marble.ramp." },
+        "kind": { "enum": ["kit_part", "mesh", "texture", "audio", "material", "rig", "data"] },
+        "source": { "enum": ["procedural", "imported", "generated"] },
+        "origin": { "type": "string", "minLength": 1, "description": "procedural: '<generator>:<name>' (tlkit:rink). imported/generated: repo-relative file path inside assets/<owner>/." },
+        "params": { "type": "object", "description": "Generator parameters when not the defaults (procedural only)." },
+        "hash": { "type": "string", "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$", "description": "procedural: 40 hex TLKit.hash (SHA-1 of the built part). imported/generated: 64 hex SHA-256 of the file bytes." },
+        "bytes": { "type": "integer", "minimum": 0, "description": "File size; 0 for procedural." },
+        "tris": { "type": "integer", "minimum": 0, "description": "Required for kit_part and mesh." },
+        "px": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2, "description": "[width, height]; required for an imported or generated texture. Checked against a PNG header." },
+        "license": { "type": "string", "minLength": 1 },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tool", "author"],
+          "properties": {
+            "tool": { "type": "string", "minLength": 1 },
+            "model": { "type": "string", "minLength": 1 },
+            "prompt_hash": { "type": "string", "minLength": 1 },
+            "author": { "type": "string", "minLength": 1 }
+          }
+        },
+        "owner": { "type": "string", "pattern": "^(engine|[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+)$", "description": "'engine' or a pack id." },
+        "tier": { "enum": ["engine", "pack", "player_pack"], "description": "Budget tier. Default: engine for owner 'engine', else pack." }
+      }
+    }
+  }
+}
