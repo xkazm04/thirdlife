@@ -24,3 +24,6 @@ engine/look/sheet_before_after.png
 
 # world captures: the PNG originals stay local, JPEG copies are in docs/reports/img
 engine/kernel/world/captures/*.png
+
+# per-machine devx overrides
+.tl/
