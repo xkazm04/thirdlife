@@ -855,3 +855,99 @@ Brief `briefs/BRIEF-N5A-TIERS.md`. Started 01:55 CEST on 2026-11-11 in `site/_wo
   worst tick 205 ms, first frame 1390 ms. Last quiet line (8): walk30 worst frame 339 ms, tour6 258 ms.
 - 17:54 `tl check --tier full` again, on the final code.
 - 18:08 final `tl check --tier full`: GREEN (kernel.selftest 106, kit.selftest 87, seeds 24, foreman.test 174, devx.test 126; perf: mix30 and pile600 within tolerance of the last quiet baseline, machine quiet 44 %). item/ui selftests skipped in a worktree.
+
+## P14 the seam between the three, and the build the owner starts (2026-11-11, builder core-p14)
+
+- 18:23 start. Sanity pass of the merged tree (P11 + P12 + P13): import exit 0; `world.sh tour tour --headless` PASS
+  (6 of 6 same); `selftest.sh world.` 14 passed, 0 failed; windowed `world.sh tour tour` with proof PASS. Nothing was
+  broken by the merge.
+- 18:30 Instrument (view.gd, draw_base.gd): each frame carries what ran in it, as "what ms" notes (the world's ticks
+  timed from SceneTree.physics_frame to the viewer's own step, collider copy, replace_holder, set_tier, picture
+  collect/finish/cache, landscape arrive, shot read); the tour line's `slow_frames` are [tick, ms, notes, render cpu].
+- 18:30-18:33 Item 1, before (windowed, machine not quiet): tour cold worst 466 ms (a forced rebuild of the wall
+  when entered again, 413 ms), warm worst 55 ms; walk30 cold worst 128 ms, warm worst 188 ms. In every slow frame
+  after the first ten the view's part is 5 to 20 ms (colliders 5, replace 1 to 9, set_tier 2 to 6) and the rest is
+  the pack's own attach (load_ms.setup 18 to 96 ms in a window). PREMISE CORRECTED: after P13 the stand-in is no
+  longer built in the frame; the hitch is the pack's own `_pack_setup` in a window, not the view.
+- 18:35 Item 2: collider copy in slices (world_space.gd begin_pack/step_pack, 2 ms a frame, nearest plot first,
+  whole at once when the visitor is within 10 m of the plot's edge; view_seam.gd); the draw layer adopts an arrived
+  holder on the next tick (hidden until then). Rim cache: a directory is hashed once per process (PATCHES-P13 4).
+  `--render-thread separate` tried on walk30 (TL_WINDOW_ARGS): no change in the arrivals' cost.
+- 18:38 Item 5: KERNEL_API 1.1, P7 cases read the version from manifest.gd (`p7.api_next_refused` for the next
+  minor), item.sh line 303 per PATCHES-P11 1; `tl arch --index` (API-V1.json 1.1); `tl arch` PASS;
+  `selftest.sh p7.api` 6 of 6.
+- 18:39 Item 4: one lock, `thirdlife_window.lock`, for world.sh, view.sh and tl perf (scenarios.mjs withWindowLock
+  writes `win:<pid>`, its children get TL_WINDOW_LOCK=off; the shell's liveness check knows `win:` ids).
+- 18:40 Item 6: boot/village.json is the compact village with the hockey arena on its lot; export built.
+- 18:41 `export.sh check` PASS (compact village, 7 games, hashes equal in editor, exe, copied exe; W, mouse, E into
+  the kit court, Q, Esc). Pictures looked at.
+- 18:42 Item 3, before: exe first start (APPDATA\ThirdLife deleted) first frame 4621 ms, all seven games built
+  before it (rims missing); second start 1654 ms, all stood at 2573 ms.
+- 18:45-18:48 Item 3: caches in `PlotFile.cache_dir()` (TL_CACHE_DIR or user dir), rig recipes keyed by content
+  (jobs.gd `_recipe_file`), export.sh fills `cache/` with a windowed scripted run of the new exe (TL_EXE_WARM=1),
+  boot.gd copies what the user cache lacks on every start. First export attempt: the final move of the folder was
+  refused right after the cache run (Windows still held it); the old build was gone, the stage removed: a retry loop
+  added; rebuilt. After: first start 2674 ms to the first frame, all stood 2538 ms; second 1614 / 2171 ms.
+- 18:50 `export.sh check` PASS on the build with cache. Four pictures in engine/captures/p14/.
+- 18:51 Item 4 proof: windowed tour and `tl perf run --scenario load6` started together: the tour took the lock,
+  perf waited for it ("another test window is open (process 46737)") and took it after.
+- 18:52 `world.sh alone` seven games PASS (smoke hashes = P7's new column). 18:53 drawing check (`view.sh check`
+  three seeds + hockey) FAILED once with no drawn hashes at all (cause not found; the raw log was not kept); 18:56 the
+  same command with TL_RAW=1 PASS (4 of 4 drawn = headless = P7 values).
+- 18:59 the 25 runs of P7's table: 25 same, 0 different.
+- 19:01 `tl perf run --quiet-only --wait 900` started.
+- 19:02 quiet perf line 9 (use 11 %): tour6 worst frame 45.8 ms (line 8: 258), worst tick 51.2, first frame 624 ms;
+  walk30 worst frame 112.7 ms (339), worst tick 114.7, first frame 1061 ms (3458); `perf compare 8 -1`: 0 regressions.
+- 19:03 `tl check --tier full` started.
+- 19:16 full gate: every step PASS but kernel.selftest: `kit.score_bound` "no P13CASE line". Cause: the case's
+  `tr -d` held a literal line break (a carriage return in P13's text, turned into a line feed somewhere on the way
+  into this tree), which joined the engine's whole output into one line, so `grep '^P13CASE'` never matched. The
+  script itself prints "P13CASE ok shows 2:1 after three goals". Fixed as `tr -d ''`; the case PASS.
+- 19:18-19:20 item 1 after (windowed, machine at 5 to 21 %): tour cold worst 573 ms (the wall's forced rebuild on
+  entering it again, PATCHES-P14 2), warm 60 ms, 9 frames over 16.7; walk30 cold 135 ms, 34 frames; warm 135 ms, 33.
+- 19:21 `tl check --tier full` again.
+- 19:33 `tl check --tier full` GREEN: arch 9 rules (api-v1 at 1.1), devx 126, foreman 174, kernel.selftest 111,
+  kit 87, seeds 24, perf within tolerance (machine use 44 %); item/ui skipped in a worktree. No process of mine left.
+
+## P14b: road patches
+
+The exe's road ahead of the visitor (x about -20, z 2, looking east) showed hard angular patches of yellow-green and
+orange: the road's surface only in pieces. Reproduced in the editor with a scratch walk (the compact village, visitor
+from -34 to 66 on the road, an eye shot at tick 150 and two crane shots). Switched off one at a time: `soft_patches: 0`
+left the picture the same; the pads' worn rings (WorldPlotRings left out) left it the same. Cause: the road is three
+stacked strips (grass_dry verge half + 0.7 at 0.05 m, dirt half at 0.065, a dirt middle at 0.08), each sampled from the
+ground at its own corners. Where the graded land is curved across the road, the full-width verge strip under the road
+rose above the dirt strip between their corners (1.5 cm apart at the corners) and came through in big angular patches.
+Fix (`village_parts.gd` `strip`, two new optional arguments): the verge is now two bands beside the road only (`hole`),
+nothing under it; the middle stripe lies on the road's own surface (`on`: heights lerped between the road strip's
+corners) and 0.1 m up. One random draw per segment as before, so nothing scattered moves. The soft patches had a
+margin bug too (fixed with it): `is_free` measures to a road's middle line and to a plot's radius, so a patch could
+reach 2 m onto a road and lie on a pad's flat and ring; `soft_ground` now keeps r + PAD_EXTRA + 2.5 from a plot, and
+r + road half + verge + 2.5 from a road, asked at the centre and at twelve points of the rim (road_dist only knows
+13 m round a road). After: the road is whole in the eye shot and from the crane; patches still lie on the grass.
+`world.sh tour tour --headless` PASS, `selftest.sh world.compact` PASS, `tl arch` green (landscape.gd 592 lines).
+Not fixed: where a spur meets the main road their dirt strips overlap 5 mm apart (a small seam at junctions).
+
+## P14c: the drawing check
+
+`view.sh check --packs=seed_drive,seed_paddle,seed_wall,<hockey> --standins=auto --far=60 --stage=1` failed 3 of 3
+after P14 with four `drawn NO HASH` lines and nothing else. The windowed half run by hand with `TL_RAW=1` was healthy:
+the window started, ended by itself in 141 s, exit 0, and its log held the picture line, all four pack lines with the
+right hashes and the world line (0 leaks, 0 errors). Cause: the filter in `view_run`, `tr -d '<CR>'`, held a raw
+carriage return byte in P11's text; on its way into this tree (the P14 edit of `view_run`) that byte became a line
+feed, so `tr` deleted every newline of the log, the whole log became one line starting `Godot Engine`, and the
+`grep '^...'` after it matched nothing. The same accident P14 met in selftest's P13 case. Not a cache matter, not the
+lock, not the engine: it fails every time, cold or warm (the "pass on a repeat" P14 saw must have been before that
+edit). Fix (`view.sh` `view_run`): `tr -d '\r'`, the escape, which no editor can turn into a line break. And `check`
+now fails loudly: when the windowed half gives no pack hash it prints its exit code and the last 20 lines of the
+window's log (`TL_VIEW_TAIL`, a file `view_run` fills before it deletes the log), then FAIL. Tried with a stand-in
+binary whose window writes three lines and exits 3: `view.check: the windowed run gave no pack hash (exit 3); the last
+20 lines of its log:` and the three lines. Selftest case `world.tools_tr_filter` (P14c, static, no window: the
+drawing check itself needs about 150 s of window, too long for the selftest): no tool may hold a quoted line break
+after `tr -d`. No tool under engine/tools holds a raw CR byte now. No state hash moved: no engine file changed.
+Proof: five runs in a row, every one four `same` lines, drive b912bc471e4967a9 at 3517, paddle dff1a390470352e7 at
+4486, wall cb75fb26a1e80254 at 1221, hockey 7326d67aeb26ad7a at 8130, 0 gate leaks, 0 script and 0 engine errors.
+Run 1 on a cold cache (`TL_CACHE_DIR` = a new empty folder, not the shared user-dir cache other sessions read), run 2
+warm on that folder, runs 3 to 5 warm on the user-dir cache. `world.sh tour tour --headless` PASS, windowed tour
+PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built in 83 s, `export.sh check` PASS,
+`tl arch` green.

@@ -47,6 +47,7 @@ func _build_pictures(e: Dictionary, kinds: Array) -> void:
 	var accs: Array = _new_accs(e, kinds)
 	var jobs: Array = []
 	_collect_standin(holder, holder, accs, jobs)
+	_note("pic_collect", t0)
 	if pic_worker:
 		e["build"] = {"task": WorkerThreadPool.add_task(_run_jobs.bind(jobs)), "accs": accs, "jobs": jobs, "t0": t0,
 			"main_us": Time.get_ticks_usec() - t0}
@@ -158,11 +159,12 @@ func _finish_pictures(e: Dictionary, accs: Array, t0: int, main_us: int) -> void
 		(e["standin_info"] as Dictionary)[acc.kind] = info
 		if mi.mesh != null:
 			_cache_save(e, acc.kind, mi.mesh)
+	_note("pic_finish", t1)
 	var frame_ms: float = float(main_us + Time.get_ticks_usec() - t1) / 1000.0
 	stats["pic_main_ms_max"] = maxf(float(stats.get("pic_main_ms_max", 0.0)), snappedf(frame_ms, 0.01))
 
 
-## P13, the picture cache: `user://tl_cache/pictures/<key>_<kind>.res`, the key being the hash of the pack's directory
+## P13, the picture cache: `<cache>/pictures/<key>_<kind>.res` (P14: PlotFile.cache_dir), the key being the hash of the pack's directory
 ## (plotfile.gd `dir_hash`: its files' content), the plot's radius and rim and the picture rules. A plot whose pack is
 ## not built yet shows its last known picture from it; a pack that changed has another key. Written on a worker.
 func _cache_key(e: Dictionary) -> String:
@@ -192,7 +194,7 @@ func _hash_dir_async(dir: String) -> void:
 
 
 func _cache_path(key: String, kind: String) -> String:
-	return "%s/tl_cache/pictures/%s_%s.res" % [OS.get_user_data_dir(), key, kind]
+	return "%s/pictures/%s_%s.res" % [str(PlotFile.call("cache_dir")), key, kind]     # P14: TL_CACHE_DIR or the user directory
 
 
 func _cache_save(e: Dictionary, kind: String, mesh: ArrayMesh) -> void:
@@ -249,6 +251,7 @@ func _cache_load(e: Dictionary, kinds: Array) -> bool:
 			tris += mesh.surface_get_array_index_len(s) / 3
 		(e["standin_info"] as Dictionary)[k] = {"kind": k, "tris": tris, "from": "cache", "main_ms": snappedf(float(Time.get_ticks_usec() - t0) / 1000.0, 0.01)}
 	stats["pictures_from_cache"] = int(stats.get("pictures_from_cache", 0)) + 1
+	_note("pic_cache", t0)
 	return true
 
 

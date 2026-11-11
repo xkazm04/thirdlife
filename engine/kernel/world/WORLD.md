@@ -24,7 +24,7 @@ written, what a pack author must know, and what is not built.
 bash tools/world.sh tour tour --out-dir=<abs dir>       # window, numbered pictures, tier log, hash table, PASS / FAIL
 bash tools/world.sh tour tour --headless                # the same world without a window (the selftest case world.tour)
 bash tools/world.sh tour tour_views --out-dir=<abs dir> --pictures-only    # the three crane pictures
-bash tools/world.sh visit tour                          # a person walks it (WASD, E, Q / Esc). Not run by any test.
+bash tools/world.sh visit tour                          # a person walks it: W S along the view, A D step aside, the mouse looks, Shift runs, E enters, Q leaves, Esc quits (P11)
 ```
 
 ## How the pieces fit
@@ -79,7 +79,7 @@ N5a's format (TIERS.md) plus:
 | `"events"` | `{"t": 990, "e": "enter"}` (the plot he stands in; `"plot": "<id>"` names one), `{"t": 1440, "e": "leave"}`, `{"t": 1200, "e": "shot", "name": "on_stage_drive"}`, `{"t": 100, "e": "shot", "name": "overview", "cam": "crane", "from": [x, y, z], "to": [x, y, z]}` |
 | `"plots"[i]."radius"` | metres: the circle the pack is cut to and drawn in |
 | `"road"` | `[[x, z], ...]`: control points of the main road; every plot gets a spur and a gate |
-| `"landscape"` | `seed`, `road_half_m`, `trees`, `broadleaf`, `rocks`, `bushes`, `belt`, `tufts`, `mesas`, `haze` (factor on the style's fog, 0.4), `fence`, `gates`, `spurs`, `lots` (`[{"at": [x, z], "radius": m, "h": pad height}]`: fenced building sites with a crane, a scaffold and stacked timber, no game on them yet; no `h` = the land's own height there), P4: `pad_h` (per plot, the height of its pad: the SAME number as the plot's `origin` y, see PATCHES-P4 1), `river` (`{"path": [[x, z], ...], "half_m", "pond_m", "depth_m"}`: a river that ends in a pond at each end), `margin_m` (the heightfield reaches this far beyond the plots, roads and river), `cell_m` (3), `rim_band` (9: must equal the draw layer's) |
+| `"landscape"` | `seed`, `road_half_m`, `trees`, `broadleaf`, `rocks`, `bushes`, `belt`, `tufts`, `mesas`, `haze` (factor on the style's fog, 0.4), `fence`, `gates`, `spurs`, `lots` (`[{"at": [x, z], "radius": m, "h": pad height}]`: fenced building sites with a crane, a scaffold and stacked timber, no game on them yet; no `h` = the land's own height there), P4: `pad_h` (per plot, the height of its pad: the SAME number as the plot's `origin` y, see PATCHES-P4 1), `river` (`{"path": [[x, z], ...], "half_m", "pond_m", "depth_m"}`: a river that ends in a pond at each end), `margin_m` (the heightfield reaches this far beyond the plots, roads and river), `cell_m` (3), `rim_band` (9: must equal the draw layer's), P13: `soft_patches` (150: low patches of worn earth, darker grass and meadows; their own random generator), `edges_now` (false: build the pad edges in the frame instead of on a worker, to measure; `TL_LAND_NOW=1` does the same) |
 | `"plots"[i]."origin"` | `[x, y, z]`: P4: `y` is the height of the plot's PAD in the world (the draw layer lifts the pack by its own rim on top of it) |
 | `"visitor_probe"` | P4: a list of `{"name", "from": [x, z], "to": [x, z], "expect": "stop" or "pass"}` (and the element `"auto"`: a tree, a rock and the bridge's rail): the visitor's body is put at `from`, sent at `to`, and one `tl.view/1` line of kind `visitor_probe` says where it ended and what stopped it |
 | `"visitor_cam"` | options of the chase camera (`distance`, `height`, `look_height`, `fov`) |
@@ -280,9 +280,9 @@ the viewer's line. Reports: `docs/reports/P5-LOADING.md`, `docs/reports/P6-FAR.m
 
 ## Not built, not verified
 
-- **No person has walked it.** `world.sh visit` (WASD, E, Q / Esc, the stage pack's bot switched off and its input
-  opened to the devices) is written and has never been run: no interactive window was opened. P4: with a body the live
-  path writes `player_pos` from the body each tick; that too has not been run by a person.
+- P11 (PATCHES-P11 8): `world.sh visit tour`, a person walks it: W S along the view, A D step aside, the mouse looks,
+  Shift runs, E enters, Q leaves, Esc quits (kernel/runner/visit.gd; scripted and replayed by `world.sh visit-test` /
+  `visit-proof`). No person has yet walked it for long: the keys are proven by scripts.
 - P4, what is still wrong against the concept: the plots are still discs (a rink on a terrace is a round terrace); a
   bank is a smooth slope with a stone kerb at its lip, not a retaining wall or a cut rock face (the only real cliff is the
   bluff and the valley's walls); the far plain beyond the heightfield is flat and the mesas still stand on it like stacked
@@ -297,3 +297,14 @@ the viewer's line. Reports: `docs/reports/P5-LOADING.md`, `docs/reports/P6-FAR.m
 - A stand-in is not rebuilt when its pack changes, and shows no moving part.
 - The stage pack's HUD is on crane pictures taken while it is on stage.
 - No watchdog in the world host; a world file does not yet keep `visitor` state.
+
+## P14: an arrival in a window
+
+- The colliders of a pack that arrives while the world is drawn are copied into the visitor's space in slices of
+  2 ms a frame, nearest plot first (terrain/world_space.gd `begin_pack` / `step_pack`, draw/view_seam.gd). The rule:
+  before the visitor takes a step, every plot whose edge is within 10 m of him has all its colliders (copied whole at
+  once if it must be). Running at 9 m/s he needs 66 ticks for 10 m; a seed's whole copy takes 5 ms, three slices.
+- The draw layer adopts an arrived holder on the next tick, not in the arrival's own frame; the holder is hidden
+  until then (drawing only). A plot on stage is adopted at once.
+- The caches (rims, far pictures, rig recipes) live in `PlotFile.cache_dir()` (`<user dir>/tl_cache`, or
+  TL_CACHE_DIR); every key is a pack directory's content. The exe ships the caches of its games (docs/EXE.md).

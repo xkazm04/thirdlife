@@ -30,6 +30,14 @@ fi
 # P11: one test window at a time on this machine. Two windows on the same spot of the screen throttle each other to
 # about 270 ms a frame (P5, P6 re-runs), so a windowed run waits for a lock under the system's temporary folder that
 # holds the holder's process id; the lock of a holder that is gone is taken over. TL_WINDOW_LOCK=off skips it.
+# P14: the one lock of every test window (world.sh, view.sh, tl perf's windowed scenarios: devx/lib/perf/scenarios.mjs
+# withWindowLock). Its `pid` holds a Git Bash process id, or `win:<id>` when a node process holds it.
+lock_alive() {
+  case "$1" in
+    win:*) tasklist //FI "PID eq ${1#win:}" //NH 2>/dev/null | grep -q " ${1#win:} ";;
+    *) kill -0 "$1" 2>/dev/null;;
+  esac
+}
 win_lock() {
   [ "${TL_WINDOW_LOCK:-on}" = off ] && return 0
   local d="${TEMP:-${TMP:-/tmp}}" waited=0 holder
@@ -37,7 +45,7 @@ win_lock() {
   TL_LOCK_DIR="$d/thirdlife_window.lock"
   while ! mkdir "$TL_LOCK_DIR" 2>/dev/null; do
     holder="$(cat "$TL_LOCK_DIR/pid" 2>/dev/null)"
-    if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+    if [ -n "$holder" ] && ! lock_alive "$holder"; then
       echo "[lock] the holder ($holder) is gone: the window lock is taken over" >&2
       rm -rf "$TL_LOCK_DIR"; continue
     fi
@@ -126,8 +134,8 @@ view_run() {   # the tl.view/1 and tl.world/1 lines on stdout; a window that die
     echo "[view] the window died before it started (exit $code); attempt $attempt of 3" >&2
   done
   if [ -n "$TL_RAW" ]; then cat "$log"; rm -f "$log"; win_unlock; return $code; fi
-  tr -d '
-' < "$log" | grep -E '^(\{"schema":"tl\.(world|view)/1"|\[view\]|SCRIPT ERROR|ERROR|   at:)' | grep -v '^\[view\] start'
+  [ -n "$TL_VIEW_TAIL" ] && tail -n 20 "$log" 2>/dev/null | tr -d '\r' > "$TL_VIEW_TAIL"   # P14c: check's loud failure
+  tr -d '\r' < "$log" | grep -E '^(\{"schema":"tl\.(world|view)/1"|\[view\]|SCRIPT ERROR|ERROR|   at:)' | grep -v '^\[view\] start'
   rm -f "$log"
   win_unlock
   return $code
@@ -147,8 +155,15 @@ case "$1" in
     [ $has_out -eq 0 ] && rest+=("--out=$tmp/tl_view_check_$$.png")
     IFS=',' read -ra items <<< "$packs"
     head="$(bash "$HERE/world.sh" run "--packs=$packs" --mode=bot --frames=36000 | hashes_of)"
-    drawn_out="$(TL_VIEW_REALTIME=1 TL_VIEW_TIMEOUT="${TL_VIEW_TIMEOUT:-900}" view_run "--packs=$packs" "${rest[@]}" --until=end)"
+    tail_f="$tmp/tl_view_check_$$.tail"
+    drawn_out="$(TL_VIEW_TAIL="$tail_f" TL_VIEW_REALTIME=1 TL_VIEW_TIMEOUT="${TL_VIEW_TIMEOUT:-900}" view_run "--packs=$packs" "${rest[@]}" --until=end)"
+    vcode=$?
     drawn="$(echo "$drawn_out" | hashes_of)"
+    if [ -z "$drawn" ]; then   # P14c: a silent windowed half fails loudly with what the window did print
+      echo "view.check: the windowed run gave no pack hash (exit $vcode); the last 20 lines of its log:"
+      sed 's/^/  | /' "$tail_f" 2>/dev/null; rm -f "$tail_f"; echo "FAIL view.check"; exit 1
+    fi
+    rm -f "$tail_f"
     echo "$drawn_out" | grep '"schema":"tl.view/1"' | sed -E 's/.*"out":"([^"]*)".*"stage":([0-9]+).*"cam":"([^"]*)".*/picture: \1 (stage \2, cam \3)/'
     fail=0
     for i in "${!items[@]}"; do

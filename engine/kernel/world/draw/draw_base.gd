@@ -51,6 +51,13 @@ var _figure: ArrayMesh = null          # P13: the unit figure the mark of a rig 
 var _pal_cols: Dictionary = {}          # P6: palette column -> colour
 var _motion: Array = []                 # P13: camera keys [[world tick, from, to], ..] (TL_DRAW_CAMERA): the motion study
 var _motion_cam: Camera3D = null        # P13: the camera those keys drive; drawing only
+var notes: Array = []                   # P14: what this layer did in the frame ("what ms"), drained by view.gd per frame
+
+
+func _note(what: String, t0: int) -> void:
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+	if ms >= 1.0:
+		notes.append("%s %.1f" % [what, ms])
 var HIDDEN: Transform3D = Transform3D(Basis.from_scale(Vector3.ONE * 0.0001), Vector3(0.0, -20000.0, 0.0))
 var stats: Dictionary = {"a_instances": 0, "mirrors": 0, "light_mirrors": 0, "foreign": 0, "foreign_names": [], "late": 0}
 

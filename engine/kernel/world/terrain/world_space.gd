@@ -154,6 +154,85 @@ func add_pack(holder: Node3D, plot: Transform3D, radius: float, rim: float, band
 	_add_pack_walk(holder, holder, inv, plot, radius, rim, band)
 
 
+## P14: the same copy in slices, for a pack that arrives while the world is drawn. `begin_pack` only lists the pack's
+## static shapes (in the pack's own coordinates, read now: the pack's nodes may move or go later); `step_pack` copies
+## them until `budget_usec` is spent and returns true when the whole pack is in. The result is the one `add_pack` makes.
+func begin_pack(holder: Node3D, plot: Transform3D, radius: float, rim: float, band: float) -> Dictionary:
+	var items: Array = []
+	_list_static(holder, holder.global_transform.affine_inverse(), radius, items)
+	return {"items": items, "at": 0, "tri": 0, "out": PackedVector3Array(), "plot": plot, "radius": radius, "rim": rim,
+		"band": band, "tag": tag, "src": PackedVector3Array()}
+
+
+func _list_static(n: Node, inv: Transform3D, radius: float, items: Array) -> void:
+	if n is StaticBody3D:
+		for ch: Node in n.get_children():
+			if ch is CollisionShape3D and not (ch as CollisionShape3D).disabled and (ch as CollisionShape3D).shape != null:
+				var local: Transform3D = inv * (ch as CollisionShape3D).global_transform
+				var sh: Shape3D = (ch as CollisionShape3D).shape
+				if sh is ConcavePolygonShape3D or radius <= 0.0 or Vector2(local.origin.x, local.origin.z).length() <= radius + 2.0:
+					items.append([sh, local])
+	for c: Node in n.get_children():
+		_list_static(c, inv, radius, items)
+
+
+func step_pack(job: Dictionary, budget_usec: int) -> bool:
+	var t0: int = Time.get_ticks_usec()
+	var items: Array = job["items"]
+	var plot: Transform3D = job["plot"]
+	var radius: float = float(job["radius"])
+	var rim: float = float(job["rim"])
+	var band: float = float(job["band"])
+	tag = str(job["tag"])
+	while int(job["at"]) < items.size():
+		var it: Array = items[int(job["at"])]
+		var sh: Shape3D = it[0]
+		var local: Transform3D = it[1]
+		if sh is ConcavePolygonShape3D:
+			if int(job["tri"]) == 0 and (job["src"] as PackedVector3Array).is_empty():
+				job["src"] = (sh as ConcavePolygonShape3D).get_faces()
+				job["out"] = PackedVector3Array()
+			var src: PackedVector3Array = job["src"]
+			var out: PackedVector3Array = job["out"]
+			var r2: float = (radius + 4.0) * (radius + 4.0)
+			var t: int = int(job["tri"])
+			while t + 2 < src.size():
+				var a: Vector3 = local * src[t]
+				var b: Vector3 = local * src[t + 1]
+				var c: Vector3 = local * src[t + 2]
+				t += 3
+				var cx: float = (a.x + b.x + c.x) / 3.0
+				var cz: float = (a.z + b.z + c.z) / 3.0
+				if radius <= 0.0 or cx * cx + cz * cz <= r2:
+					out.append(plot * _bent(a, radius, rim, band))
+					out.append(plot * _bent(b, radius, rim, band))
+					out.append(plot * _bent(c, radius, rim, band))
+				if t % 1536 == 0 and Time.get_ticks_usec() - t0 > budget_usec:
+					job["tri"] = t
+					job["out"] = out
+					return false
+			if out.size() > 0:
+				var ns: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+				ns.backface_collision = true
+				ns.set_faces(out)
+				_keep.append(ns)
+				_static(ns, Transform3D.IDENTITY)
+				stats["pack_faces"] = int(stats["pack_faces"]) + out.size() / 3
+			job["tri"] = 0
+			job["src"] = PackedVector3Array()
+			job["out"] = PackedVector3Array()
+		else:
+			var lifted: Transform3D = local
+			if band > 0.0 and radius > 0.0:
+				lifted.origin = _bent(local.origin, radius, rim, band)
+			_static(sh, plot * lifted)
+			stats["pack_shapes"] = int(stats["pack_shapes"]) + 1
+		job["at"] = int(job["at"]) + 1
+		if Time.get_ticks_usec() - t0 > budget_usec:
+			break
+	return int(job["at"]) >= items.size()
+
+
 func _bent(p: Vector3, radius: float, rim: float, band: float) -> Vector3:
 	var r: float = Vector2(p.x, p.z).length()
 	if band > 0.0 and radius > 0.0:

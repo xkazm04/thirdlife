@@ -27,6 +27,7 @@ const Landscape: GDScript = preload("res://kernel/world/landscape.gd")
 const VisitorScript: GDScript = preload("res://kernel/world/visitor.gd")
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
 const VisitScript: GDScript = preload("res://kernel/runner/visit.gd")      # P11: the visitor's input, a record
+const Seam: GDScript = preload("res://kernel/world/draw/view_seam.gd")    # P14: rims, colliders in slices
 
 var opts: Dictionary = {}
 var world: Node
@@ -68,6 +69,18 @@ var _start_ms: int = 0
 var _enter_ms: int = 0                  # when `start` was called: the engine's own start is before it and is not this file's
 var _frame_tick: PackedInt32Array = PackedInt32Array()    # the world tick each frame time belongs to
 var _saves: Array = []                  # the tour's pictures being encoded on worker threads
+var _notes: Array = []                  # P14: what ran since the last frame ("what ms"); a slow frame carries them
+var _frame_notes: Dictionary = {}       # P14: frame index -> notes of that frame (only frames that have any)
+var _phys_t0: int = 0                   # P14: when this physics tick began (SceneTree.physics_frame)
+var _phys_usec: int = 0                 # P14: the world's ticks since the last frame, up to this node's own step
+var _late: Array = []                   # P14: [plot, tick] arrived packs the draw layer adopts on the next tick
+var _copies: Array = []                 # P14: colliders of arrived packs still being copied into the visitor's space
+
+
+func _note(what: String, t0: int) -> void:
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+	if ms >= 1.0:
+		_notes.append("%s %.1f" % [what, ms])
 
 
 func _ready() -> void:
@@ -160,7 +173,7 @@ func start(options: Dictionary) -> void:
 	for i: int in holders.size():
 		var r: float = float(rads[mini(i, rads.size() - 1)]) if not rads.is_empty() else 0.0
 		radii.append(r)
-		var rim: float = -float(lifts[i]) if i < lifts.size() else _rim_of(i, r)
+		var rim: float = -float(lifts[i]) if i < lifts.size() else Seam.rim_of(self, i, r)
 		if bool((holders[i] as Node).get("loaded")):
 			_arrived[i] = true
 		has_ground.append(not is_nan(rim))
@@ -172,7 +185,7 @@ func start(options: Dictionary) -> void:
 		p.origin.y += lift
 		plots[i] = p
 		lifted.append(snappedf(lift, 0.01))
-	_save_rims()
+	Seam.save_rims(self)
 	# the landscape between the plots: drawn once (the sky and the sun are the style's rig, installed once by the world host)
 	landscape = Node3D.new()
 	landscape.name = "TLLandscape"
@@ -226,40 +239,7 @@ func start(options: Dictionary) -> void:
 	_last = Time.get_ticks_usec()
 	_start_ms = Time.get_ticks_msec()
 	RenderingServer.frame_post_draw.connect(func() -> void: _first_frame_ms = Time.get_ticks_msec(), CONNECT_ONE_SHOT)
-
-
-## P5. The rim of plot `i` (draw.gd `edge_height`). A plot whose pack is not built yet takes it from the rim cache, a
-## file in the user directory keyed by the pack directory's content, the radius and the scenery; when it is not there
-## the pack is built now, before the first frame, and the cache learns it (the first visit of a world on a machine).
-func _rim_of(i: int, r: float) -> float:
-	var h: Node = (world.get("packs") as Array)[i]
-	if bool(h.get("loaded")) or world.get("jobs") == null or (h.get("manifest") as Dictionary).is_empty():
-		return float(DrawScript.call("edge_height", h, r))
-	if _rims.is_empty() and FileAccess.file_exists(_rims_path()):
-		var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(_rims_path()))
-		if typeof(j) == TYPE_DICTIONARY:
-			_rims = j
-	var key: String = "%s|%s|%s" % [str(PlotFile.call("dir_hash", str(h.get("pack_dir")))), str(r), str(opts.get("scenery", (world.get("walk") as Dictionary).get("scenery", "plot")))]
-	if not _rims.has(key) or OS.get_environment("TL_RIM_CACHE") == "off":
-		(world.get("jobs") as RefCounted).call("now", i)
-		var v: float = float(DrawScript.call("edge_height", (world.get("packs") as Array)[i], r))
-		_rims[key] = "none" if is_nan(v) else v
-		_rims_new += 1
-	return NAN if typeof(_rims[key]) == TYPE_STRING else float(_rims[key])
-
-
-func _rims_path() -> String:
-	return OS.get_user_data_dir() + "/tl_cache/rims.json"
-
-
-func _save_rims() -> void:
-	if _rims_new == 0:
-		return
-	DirAccess.make_dir_recursive_absolute(_rims_path().get_base_dir())
-	var f: FileAccess = FileAccess.open(_rims_path(), FileAccess.WRITE)
-	if f != null:
-		f.store_string(JSON.stringify(_rims, "", true))
-		f.close()
+	get_tree().physics_frame.connect(func() -> void: _phys_t0 = Time.get_ticks_usec())
 
 
 func _v3(text: String) -> Vector3:
@@ -360,7 +340,9 @@ func _on_plot_event(i: int, what: String, ev: Dictionary) -> void:
 			if to == "ledger":
 				draw.call("forget_nodes", i)
 			if _arrived.has(i) or (to != "backdrop" and to != "ledger"):
+				var tt: int = Time.get_ticks_usec()
 				draw.call("set_tier", i, to)                 # P5: a plot whose pack has not arrived has nothing to make a stand-in of
+				_note("tier p%d %s" % [i, to], tt)
 			if to == "stage":
 				_set_stage(i)
 		"rebuilt":
@@ -370,13 +352,31 @@ func _on_plot_event(i: int, what: String, ev: Dictionary) -> void:
 				var ws: Object = landscape.get_meta(&"tl_space")
 				var lc: Variant = (world.get("walk") as Dictionary).get("landscape", {})
 				ws.set("tag", "pack %d" % i)
-				ws.call("add_pack", (world.get("packs") as Array)[i], plots[i], float(radii[i]), float(rims[i]),
-					float((lc as Dictionary).get("rim_band", 9.0)) if typeof(lc) == TYPE_DICTIONARY else 9.0)
+				var tc: int = Time.get_ticks_usec()
+				# P14: listed now, copied in slices of 2 ms a frame (nearest plot first), and at once when he is near
+				_copies.append({"i": i, "job": ws.call("begin_pack", (world.get("packs") as Array)[i], plots[i], float(radii[i]),
+					float(rims[i]), float((lc as Dictionary).get("rim_band", 9.0)) if typeof(lc) == TYPE_DICTIONARY else 9.0)})
+				_note("colliders_list p%d" % i, tc)
 			_arrived[i] = true
-			draw.call("replace_holder", i, (world.get("packs") as Array)[i])
-			draw.call("set_tier", i, str((((world.get("sched") as RefCounted).get("plots") as Array)[i] as Dictionary)["tier"]))
-			if i == stage:
-				_set_stage(i)
+			if i == stage or not tour:
+				_adopt(i)
+			else:
+				# P14: the draw layer adopts the new holder on the next tick, not in the arrival's own frame (5 to 10 ms
+				# of a seed); until then the holder is hidden, so it is never seen at its simulated place
+				((world.get("packs") as Array)[i] as Node3D).visible = false
+				_late.append([i, Engine.get_physics_frames()])
+
+
+## The draw layer takes the holder of plot `i` (it arrived): placed, and drawn as its tier says.
+func _adopt(i: int) -> void:
+	var tr: int = Time.get_ticks_usec()
+	draw.call("replace_holder", i, (world.get("packs") as Array)[i])
+	_note("replace p%d" % i, tr)
+	tr = Time.get_ticks_usec()
+	draw.call("set_tier", i, str((((world.get("sched") as RefCounted).get("plots") as Array)[i] as Dictionary)["tier"]))
+	_note("set_tier p%d" % i, tr)
+	if i == stage:
+		_set_stage(i)
 
 
 ## Puts plot `i` on stage (its own camera, its HUD; the world is re-based on it) or, with -1, hands the picture back
@@ -454,7 +454,7 @@ func _on_world_ended(_bad: bool) -> void:
 			if _frame_usec[k] > 16700:
 				over += 1
 				if slow.size() < 40:
-					slow.append([_frame_tick[k], snappedf(float(_frame_usec[k]) / 1000.0, 0.1)])
+					slow.append([_frame_tick[k], snappedf(float(_frame_usec[k]) / 1000.0, 0.1), _frame_notes.get(k, []), snappedf(_cpu_ms[k], 0.1)])
 		var line: Dictionary = {"schema": "tl.view/1", "kind": "tour", "pictures": pictures.size(), "shots_asked": shots.size(),
 			"world_ticks": int(world.get("tick")), "stage_changes": _stage_changes, "landscape": land_stats,
 			"frame_ms_p50": snappedf(_p50(Array(_frame_usec.slice(_frame_usec.size() - n))) / 1000.0, 0.001),
@@ -475,11 +475,22 @@ func _on_world_ended(_bad: bool) -> void:
 # ------------------------------------------------------------------------------------------------ every frame
 func _process(_delta: float) -> void:
 	if landscape != null and landscape.has_meta(&"tl_land_rest"):     # P13: the landscape's parts made on a worker
+		var ta: int = Time.get_ticks_usec()
 		Landscape.call("arrive", landscape)                           # P13
+		_note("land_arrive", ta)
 	var now: int = Time.get_ticks_usec()
 	_frame_usec.append(now - _last)
 	_frame_tick.append(int(world.get("tick")) if world != null else -1)
 	_last = now
+	if draw != null:
+		_notes.append_array(draw.get("notes"))
+		(draw.get("notes") as Array).clear()
+	if _phys_usec >= 4000:
+		_notes.append("tick %.1f" % (float(_phys_usec) / 1000.0))     # the world's ticks of this frame, arrivals included
+	_phys_usec = 0
+	if not _notes.is_empty():
+		_frame_notes[_frame_usec.size() - 1] = _notes
+		_notes = []
 	var vp: RID = get_viewport().get_viewport_rid()
 	_cpu_ms.append(RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu())
 	_gpu_ms.append(RenderingServer.viewport_get_measured_render_time_gpu(vp))
@@ -488,6 +499,8 @@ func _process(_delta: float) -> void:
 func _physics_process(_delta: float) -> void:
 	if _done or world == null or draw == null:
 		return
+	if _phys_t0 > 0:
+		_phys_usec += Time.get_ticks_usec() - _phys_t0              # P14: the world host and every pack ran before this node
 	if tour:
 		var t: int = int(world.get("tick"))
 		if visit != null:
@@ -495,6 +508,14 @@ func _physics_process(_delta: float) -> void:
 			visit.call("steer", t)
 			if _done:
 				return
+		while not _late.is_empty() and int((_late[0] as Array)[1]) < Engine.get_physics_frames():
+			var li: int = int((_late.pop_front() as Array)[0])
+			if is_instance_valid((world.get("packs") as Array)[li]):
+				_adopt(li)
+		if not _copies.is_empty():                      # P14: colliders of arrived packs, in slices (view_seam.gd)
+			var cu: int = Seam.copy_colliders(_copies, landscape.get_meta(&"tl_space"), plots, radii, world.get("player_pos"))
+			if cu >= 1000:
+				_notes.append("colliders %.1f" % (float(cu) / 1000.0))
 		visitor.call("step", world.get("player_pos"), t)
 		if not _busy and _shot_i < shots.size() and t > int((shots[_shot_i] as Dictionary).get("t", 0)):
 			_busy = true
@@ -521,7 +542,9 @@ func _take(out: String, st: int, cam_name: String, shot: Dictionary = {}) -> voi
 		await RenderingServer.frame_post_draw
 	if _done:
 		return
+	var tg: int = Time.get_ticks_usec()
 	var img: Image = get_viewport().get_texture().get_image()
+	_note("shot_read", tg)
 	var err: Error = OK
 	if tour:
 		# P5: a 1920x1080 PNG takes 0.7 s to encode: off the main thread (it was the tour's worst frame). The end waits.

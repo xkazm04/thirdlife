@@ -321,15 +321,18 @@ p7_play() {
 }
 p7_res() { grep -o "\"$2\":\"\\?[^,\"}]*" "$OUT/$1.result.json" 2>/dev/null | head -1 | sed -E 's/^"[a-z_]+":"?//'; }
 
-# API version: a pack runs when its major equals the kernel's and its minor is not greater; "0.1" is the old name of 1.0
+# API version: a pack runs when its major equals the kernel's and its minor is not greater; "0.1" is the old name of 1.0.
+# P14: the kernel's version is read from the manifest code (kernel/runner/manifest.gd KERNEL_API), not held as text here.
+KAPI="$(grep -oE 'KERNEL_API: String = "[0-9]+\.[0-9]+"' "$HERE/../kernel/runner/manifest.gd" | grep -oE '[0-9]+\.[0-9]+')"
+KMAJ="${KAPI%%.*}"; KMIN="${KAPI#*.}"; KNEXT="$KMAJ.$((KMIN + 1))"
 if p7_on p7.api; then
-  p7_pack p7_api01 "s/x/x/"; p7_pack p7_api10 's#"kernelApi": "0.1"#"kernelApi": "1.0"#'; p7_pack p7_api20 's#"kernelApi": "0.1"#"kernelApi": "2.0"#'; p7_pack p7_api11 's#"kernelApi": "0.1"#"kernelApi": "1.1"#'
-  check p7.api_1_0_lint 0 lint "--pack=$OUT/p7_api10" -- '"kernelApi":"1.0"' '"id":"lint.schema","ok":true'
+  p7_pack p7_api01 "s/x/x/"; p7_pack p7_api10 's#"kernelApi": "0.1"#"kernelApi": "1.0"#'; p7_pack p7_api20 's#"kernelApi": "0.1"#"kernelApi": "2.0"#'; p7_pack p7_apinext "s#\"kernelApi\": \"0.1\"#\"kernelApi\": \"$KNEXT\"#"
+  check p7.api_1_0_lint 0 lint "--pack=$OUT/p7_api10" -- "\"kernelApi\":\"$KAPI\"" '"id":"lint.schema","ok":true'
   check p7.api_1_0_runs 0 smoke "--pack=$OUT/p7_api10" --frames=120 -- '"id":"smoke.loads","ok":true'
-  check p7.api_0_1_is_1_0 0 smoke "--pack=$OUT/p7_api01" --frames=120 -- '"kernelApi":"1.0"' '"id":"smoke.loads","ok":true'
-  check p7.api_2_0_refused 1 lint "--pack=$OUT/p7_api20" -- "kernelApi '2.0' cannot run on this kernel, which offers API 1.0: the pack was built for major version 2 and this kernel is major version 1"
+  check p7.api_0_1_is_1_0 0 smoke "--pack=$OUT/p7_api01" --frames=120 -- "\"kernelApi\":\"$KAPI\"" '"id":"smoke.loads","ok":true'
+  check p7.api_2_0_refused 1 lint "--pack=$OUT/p7_api20" -- "kernelApi '2.0' cannot run on this kernel, which offers API $KAPI: the pack was built for major version 2 and this kernel is major version $KMAJ"
   check p7.api_2_0_not_run 2 smoke "--pack=$OUT/p7_api20" --frames=120 -- 'the manifest is not valid'
-  check p7.api_1_1_refused 1 lint "--pack=$OUT/p7_api11" -- "the pack needs minor version 1 and this kernel has 0"
+  check p7.api_next_refused 1 lint "--pack=$OUT/p7_apinext" -- "kernelApi '$KNEXT' cannot run on this kernel, which offers API $KAPI: the pack needs minor version $((KMIN + 1)) and this kernel has $KMIN"
 fi
 
 # a bot's run saved as a record replays to the bot's hash, and the replay's own record is the same file
@@ -490,8 +493,7 @@ fi
 if [ -z "$FILTER" ] || [[ "kit.score_bound" == *"$FILTER"* ]]; then
   G13="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
   E13="$(cd "$HERE/.." && pwd)"; command -v cygpath >/dev/null 2>&1 && E13="$(cygpath -m "$E13")"
-  out="$(MSYS_NO_PATHCONV=1 "$G13" --headless --path "$E13" --script res://kernel/world/draw/p13_score_case.gd 2>&1 | tr -d '
-' | grep '^P13CASE')"
+  out="$(MSYS_NO_PATHCONV=1 "$G13" --headless --path "$E13" --script res://kernel/world/draw/p13_score_case.gd 2>&1 | tr -d '\015' | grep '^P13CASE')"      # P14: was a literal line break in tr (it joined every line, so the grep never matched)
   why=""; [[ "$out" == "P13CASE ok"* ]] || why="${out:-no P13CASE line}"
   verdict kit.score_bound "$why" "${out#P13CASE ok }"
 fi
@@ -560,6 +562,15 @@ if [ -z "$FILTER" ] || [[ "world.reload_script" == *"$FILTER"* ]]; then
   [ "$changed" != "$plain" ] || why="${why:+$why; }the changed script has no effect on the hash: the case proves nothing"
   [ -n "$(echo "$q" | hp2 b)" ] && [ "$(echo "$q" | hp2 b)" = "$(echo "$r" | hp2 b)" ] || why="${why:+$why; }pack_min differs from the undisturbed run"
   verdict world.reload_script "$why" "ex_slide's main.gd changed at tick 299, reloaded at 300: $af ticks, $ah = the changed pack alone, not $plain"
+fi
+
+# --- P14c ---
+# The tools' log filters drop carriage returns with tr. When an editor turned `tr -d '<CR>'` into a quoted line break,
+# view.sh deleted every newline of the window's log and `view.sh check` found no hash at all. No quoted line break
+# may follow `tr -d` in any tool; the escape `'\r'` is the safe spelling.
+if [ -z "$FILTER" ] || [[ "world.tools_tr_filter" == *"$FILTER"* ]]; then
+  bad_tr="$(grep -n "tr -d [\"']\$" "$HERE"/*.sh 2>/dev/null | tr '\n' ' ')"
+  verdict world.tools_tr_filter "${bad_tr:+a quoted line break after tr -d: $bad_tr}" "no tool deletes newlines from a log by a mangled tr -d"
 fi
 
 echo "selftest: $pass passed, $fail failed (reports in $OUT)"

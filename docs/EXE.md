@@ -17,7 +17,7 @@ bash engine/tools/export.sh probe                # the table "what an export nee
 |---|---|
 | where | `dist/ThirdLife/` at the repository root (`dist/` is ignored by git). The folder can be copied anywhere; it needs nothing from the repository |
 | start | double click `ThirdLife.exe`. `ThirdLife.pck` and the folder `games` must stay beside it. No arguments, no console |
-| what you see | a 1920 x 1080 window: the village of seven games along a dirt road, the visitor standing on the road looking east, one line with the keys at the bottom left |
+| what you see | (P14) a 1920 x 1080 window: the compact village of seven games close to one dirt road, the visitor standing on the road looking east into it (the drive track behind its fence at the left, the kit court and the paddle court's wall at the right, the wall yard's crane, three mesas), one line with the keys at the bottom left |
 | keys while walking | (P11) `W` / `S` walk forward and back where the camera looks, `A` / `D` step aside, the mouse turns the view (0.15 degrees a pixel: 600 pixels are a quarter turn; up and down within -10 to 60 degrees, so he stays in the picture), `Shift` run, `E` enter the game whose plot you stand in, `Esc` quit. The mouse is captured while you walk and free while a game is on stage or the window is not in front |
 | keys inside a game | `Q` or `Esc` leave the game; everything else belongs to the game (the paddle court says "A / D or the arrow keys move your paddle"). After `Q` you stand 5 m outside the plot at its gate, facing away from it, the camera behind you |
 | the games | each stands on a fenced plot with a gate and a spur to the road. Walk through the gate, stand inside the fence, press `E`: the picture becomes the game's own camera and you play instead of its bot |
@@ -34,10 +34,11 @@ What is in it (`BUILD.txt` in the build says the same, with the commit and the d
 | `ex_walker` | a walker in a room, a skater on ice | walker | `engine/kernel/examples/` |
 | `ex_kit` | kit parts under the laws | kit | `engine/kernel/examples/` |
 | `ex_car` | a box car on a slalom, then ice | car | `engine/kernel/examples/` |
-| `ice_hockey_three_against` | Ice hockey, three against three (0.1.1, the first night job) | hockey, east of the wall yard | `site/ice-hockey-three-against-20261111-1/promoted/` |
+| `ice_hockey_three_against` | Ice hockey, three against three (0.1.1, the first night job) | hockey, at the east end of the road, on the lot P13 left for it (radius 44) | `site/ice-hockey-three-against-20261111-1/promoted/` |
 
-Size: 105 MB (`ThirdLife.exe` 104 MB: the engine's release template; `ThirdLife.pck` 1.3 MB: every script, shader and
-JSON table of `engine/`; `games/` 217 KB). The export takes 10 to 18 s (class cache 3 s, export 5 s, copying), the
+Size: 124 MB (`ThirdLife.exe` 104 MB: the engine's release template; `ThirdLife.pck` 1.5 MB: every script, shader and
+JSON table of `engine/`; `games/` 217 KB; P14: `cache/` 19 MB, 20 files: the rims, the far pictures and the rig recipes
+of these seven games, see "The first start"). The export takes 10 to 18 s (class cache 3 s, export 5 s, copying), the
 check 1 min 20 s to 2 min, both with other builders loading the machine.
 
 ## What an export of this project needs (measured: `export.sh probe`, `engine/boot/probe.gd`)
@@ -71,7 +72,7 @@ absolute path exactly as the runner loads a pack directory today.
 | `engine/export_presets.cfg` | one preset, `ThirdLife`: Windows Desktop x86_64, all resources plus `*.json`, scripts as text, the pack file beside the exe (not embedded), no console wrapper, the feature tag `thirdlife_exe` |
 | `engine/project.godot` | one line added under `[application]`: `run/main_scene.thirdlife_exe="res://boot/boot.tscn"`. Only a build with that feature tag starts in the boot scene; the editor binary and every tool still start in `kernel/host/host.tscn` |
 | `engine/boot/boot.gd`, `boot.tscn` | the exe's door. No arguments: the village for a person. `-- check --out=<file>`: the scripted tour without a window. `-- probe --out=<file>`: the table above. It starts the same two nodes `host.gd` starts (`kernel/world/draw/view.gd` with `--live`, `kernel/world/world.gd`) with the same `start(options)` |
-| `engine/boot/village.json` | the walk (`tl.walk/1`): the six plots, road and landscape of `kernel/world/walks/tour.json`, the hockey rink as a seventh plot, and the scripted tour for the check (enter the track, the wall yard and the rink). `pack` is a folder name in `games/` |
+| `engine/boot/village.json` | the walk (`tl.walk/1`). P14: the compact village of P13 (`kernel/world/walks/compact_village.json`: six games about 4 m apart beyond their pads, both rows close to one road) with the hockey arena on the lot at its east end, and the scripted tour for the check (enter the kit court, the drive track and the hockey arena). `pack` is a folder name in `games/` |
 | `engine/boot/games.json` | which games `export.sh` copies into `games/`, and from where. An `optional` game that is not found is left out with a warning, and `boot.gd` leaves its plot out |
 | `engine/boot/probe.gd`, `probe/inner/` | the measurements of the table above; `inner` is a pack that travels inside the pack file, never run as a game |
 | `engine/boot/run_log.gd` | a logger: everything the exe prints, and every engine error, into `ThirdLife-last-run.log` beside the exe, anew on every start by a person. The engine's own `user://logs/godot.log` is shared with every other engine process on the machine (same project name) and was rotated away within seconds while other builders ran |
@@ -97,31 +98,71 @@ is `<file>.<plot>.<n>.json` beside it) and `ThirdLife.exe -- --input=<abs file>`
 and mouse are sampled once per world tick into one input of the world's own (`engine/kernel/runner/visit.gd`), and
 nothing below that line reads a device.
 
+## The first minute (P14)
+
+What a person sees and does, from the four pictures of P14 (`engine/captures/p14/`, taken from the exe by
+`TL_EXE_CAPTURE_AT` with scripted keys):
+1. Double click. After about 2.7 s on a first start (1.6 s on the next) the window shows the visitor from behind on
+   the dirt road, looking east into the village: the drive track behind its fence at the left, the kit court's wall
+   and the paddle court at the right, flags, a crane, mesas, an evening sky (`1_first_frame.png`). The key line is at
+   the bottom left. The games around him are already running (their bots play).
+2. `W` (and `Shift`) walks him along the road; the mouse turns him. After 10 s of walking the road runs on between the
+   track and the courts (`2_road_after_10s.png`).
+3. Turned south (600 pixels of mouse), `W` takes him through the gate into the kit court; `E` puts the game on stage:
+   the picture is the game's own camera, the key line says "Q or Esc leave the game" (`3_on_stage.png`; the kit example
+   is a test bench, an ice slab with a ball and broken wall pieces, not a game to play).
+4. `Q`: he stands at the court's gate, facing the road and the drive track across it (`4_after_leaving.png`). `Esc` quits.
+
+Known in that minute: entering a game that has ended by itself (the kit example ends after 332 ticks) restarts it,
+and that rebuild is done at once in the frame: 107 to 163 ms. The road shows hard-edged patches of a lighter tone where
+the soft ground patches meet it (`2_road_after_10s.png`). With vsync on, a frame is 16.7 to 17.0 ms, so the tour
+line's count of frames over 16.7 ms says nothing in the exe; its worst frames are below.
+
+## The first start (P14)
+
+Measured with the same scripted keys (W along the road, Esc at frame 700), `%APPDATA%\ThirdLife` deleted before the
+first start (it holds the user's cache and Godot's shader cache):
+
+| | first start, no shipped cache (build of 18:40) | second start | first start, cache shipped (build of 18:48) | second start |
+|---|---|---|---|---|
+| process start to first frame | 4621 ms | 1654 ms | 2674 ms | 1614 ms |
+| world start to first frame | 2635 ms | 606 ms | 640 ms | 613 ms |
+| all seven games stand | before the first frame (all built there, 1.86 s) | 2573 ms | 2538 ms | 2171 ms |
+| worst frames (the capture's own frame left out) | 82 ms (two far pictures made in the frame) | 41 ms | 56, 45, 39 ms | 38, 38, 36 ms |
+
+(The two left columns used the check's keys, the right two W along the road; the first-start figures are what the
+cache changes.) The cache: `export.sh` runs the new exe once in a window with `TL_EXE_WARM=1` and
+`TL_CACHE_DIR=<build>/cache` (the village's scripted tour, about 70 s); every start copies what the user's cache lacks
+from `cache/` beside the exe (`PlotFile.seed_cache`). Every key is a game folder's content (rims, pictures: P5/P13;
+rig recipes: P14, before their path), so a changed game gets new keys and is never served a stale entry. What a first
+start still costs: about 1 s more to the first frame (Godot's shader cache, which belongs to the driver and is not
+shipped, and copying 19 MB).
+
 ## Proof (`bash engine/tools/export.sh check`, the last run of 2026-11-11)
 
-Exit code 0, 1 min 19 s. The scripted tour (4000 world ticks; the visitor enters the track at tick 990, the wall yard
-at 2460 and the hockey rink at 3720; hashes shortened to 16 characters):
+P14, exit code 0, 1 min 10 s. The scripted tour of the compact village (4000 world ticks; the visitor enters the kit
+court at tick 450, the drive track at 1500 and the hockey arena at 3570; hashes shortened to 16 characters):
 
 | plot | game | own ticks | tiers seen | hash, editor binary | hash, exe | hash, exe copied elsewhere | verdict |
 |---|---|---|---|---|---|---|---|
-| drive | seed.drive | 2969 | backdrop,sideline,stage | 9a76c18a6c394508 | 9a76c18a6c394508 | 9a76c18a6c394508 | same |
-| wall | seed.wall | 1184 | backdrop,sideline,stage | 8478d42ca57a87b2 | 8478d42ca57a87b2 | 8478d42ca57a87b2 | same |
-| walker | example.walker | 371 | sideline,backdrop | 8d1831dc62dfe91a | 8d1831dc62dfe91a | 8d1831dc62dfe91a | same |
-| paddle | seed.paddle | 2445 | sideline,backdrop | 97868242bb563a09 | 97868242bb563a09 | 97868242bb563a09 | same |
-| kit | example.kit | 332 | backdrop,sideline | 34b19960cc4c5308 | 34b19960cc4c5308 | 34b19960cc4c5308 | same |
-| car | example.car | 1872 | backdrop,sideline | 9f4e65dac63e77ce | 9f4e65dac63e77ce | 9f4e65dac63e77ce | same |
-| hockey | game.ice_hockey_three_against | 2338 | backdrop,sideline,stage | 32f204c65a40d58e | 32f204c65a40d58e | 32f204c65a40d58e | same |
+| walker | example.walker | 371 | backdrop | f1c7b53757c34040 | f1c7b53757c34040 | f1c7b53757c34040 | same |
+| drive | seed.drive | 3062 | sideline,backdrop,stage | 386fa5c2b30abd28 | 386fa5c2b30abd28 | 386fa5c2b30abd28 | same |
+| wall | seed.wall | 1221 | backdrop,sideline | cb75fb26a1e80254 | cb75fb26a1e80254 | cb75fb26a1e80254 | same |
+| paddle | seed.paddle | 2057 | sideline,backdrop | d84d59860fd2b887 | d84d59860fd2b887 | d84d59860fd2b887 | same |
+| kit | example.kit | 332 | sideline,stage,backdrop | 6b270cedbf59690d | 6b270cedbf59690d | 6b270cedbf59690d | same |
+| car | example.car | 1872 | backdrop,sideline | 3a459d0fe25e7853 | 3a459d0fe25e7853 | 3a459d0fe25e7853 | same |
+| hockey | game.ice_hockey_three_against | 2476 | backdrop,sideline,stage | dc7b01fb9ad8e1da | dc7b01fb9ad8e1da | dc7b01fb9ad8e1da | same |
 
 ```
-editor binary: 4000 world ticks, 7 games, tick p50 1.889 ms, loaded in 4019 ms, 0 script errors, 0 engine errors, on stage: drive@990 wall@2460 hockey@3720
-exe: 4000 world ticks, 7 games, tick p50 1.607 ms, loaded in 3260 ms, 0 script errors, 0 engine errors, on stage: drive@990 wall@2460 hockey@3720
-exe copied elsewhere: 4000 world ticks, 7 games, tick p50 1.566 ms, loaded in 3360 ms, 0 script errors, 0 engine errors, on stage: drive@990 wall@2460 hockey@3720
+editor binary: 4000 world ticks, 7 games, tick p50 1.473 ms, loaded in 2192 ms, 0 script errors, 0 engine errors, on stage: kit@450 drive@1500 hockey@3570
+exe: 4000 world ticks, 7 games, tick p50 1.219 ms, loaded in 1733 ms, 0 script errors, 0 engine errors, on stage: kit@450 drive@1500 hockey@3570
+exe copied elsewhere: 4000 world ticks, 7 games, tick p50 1.211 ms, loaded in 1774 ms, 0 script errors, 0 engine errors, on stage: kit@450 drive@1500 hockey@3570
 export.sh check: 2. the exe with no arguments: one picture after 120 frames, then a clean end on request
-export.sh check:    picture: dist\ThirdLife-check\village.png (2201558 bytes; driver:d3d12,adapter:NVIDIA GeForce RTX 4090), exit code 0
-export.sh check: 3. the keys: Shift+W east along the road, W+D to turn, W into the paddle court, E at frame 720, Q at 1000, Esc at 1100 (nothing else ends this run)
-   W: the visitor ran 31.50 m in 210 frames of Shift+W (9 m/s would be 31.5 m), from [-95,0.15,1] to [-63.5,0.21,0.46]
-   E: a game was on stage from frame 750 to 990 (plot index 3; he stood at [-59.46,6.02,32.69]); Q: he was walking again at frame 1080
-export.sh check:    Esc ended the process by itself at frame 1101, exit code 0
+export.sh check:    picture: dist\ThirdLife-check\village.png (2411688 bytes; driver:d3d12,adapter:NVIDIA GeForce RTX 4090), exit code 0
+export.sh check: 3. the keys: Shift+W east along the road, the mouse turns him south, W into the kit court, E at frame 720, Q at 1000, Esc at 1100 (nothing else ends this run)
+   W: the visitor ran 31.50 m in 210 frames of Shift+W (9 m/s would be 31.5 m), from [-60,0.06,2] to [-28.5,0.05,2]
+   E: a game was on stage from frame 750 to 990 (plot index 4; he stood at [-24.88,2,33.37]); Q: he was walking again at frame 1080
+export.sh check:    Esc ended the process by itself at tick 1101, exit code 0
 export.sh check:    picture at frame 900: dist\ThirdLife-check\on_stage.png
 export.sh check: 4. no process of the build is left
 PASS export.check: the exe runs the same games to the same hashes as the editor binary, shows the village, obeys W and Esc, and leaves nothing behind (dist/ThirdLife-check)
@@ -135,11 +176,9 @@ seven games over 4000 world ticks (Jolt, the scheduler's tiers, three games ente
 state hashes are identical. One build, one machine, one run of each: not a proof for other machines or other
 processors.
 
-The pictures were looked at: `dist/ThirdLife-check/village.png` (the exe with no arguments at frame 120: the visitor
-seen from behind on the dirt road that runs east in front of him, his long shadow, grass and tufts, pines, the wall
-yard's crane, three mesas, the paddle court's wall and flags up on its bank at the right, clouds in an evening sky, the
-key line at the bottom left) and `dist/ThirdLife-check/on_stage.png` (frame 900
-of the key run: the paddle court from above with its own score and hint, and "Q or Esc leave the game").
+The pictures were looked at (P14): `dist/ThirdLife-check/village.png` (the exe with no arguments at frame 120: the
+same frame as `1_first_frame.png` above) and `dist/ThirdLife-check/on_stage.png` (frame 900 of the key run: the kit
+example's own camera, and "Q or Esc leave the game").
 
 ## Known not to work, and not verified
 
@@ -155,14 +194,15 @@ of the key run: the paddle court from above with its own score and hint, and "Q 
   `Q` in the track he stood at (0, -21), 5.0 m outside its edge at its gate, facing away from it. Steering by a
   person's hand, the feel of the mouse (sensitivity, no smoothing): not verified.
 - A fence stops him; the gate is where the spur from the road meets the plot. WORLD.md: the drive's hollow is too
-  steep to walk into (its rim is 40 to 60 degrees). Only the paddle court was entered through its gate by keys.
+  steep to walk into (its rim is 40 to 60 degrees). Only the kit court (P14; before it the paddle court) was entered through its gate by keys.
 - A game that ended by itself stays over (WORLD.md: the owner paused the next round). Nothing in the exe starts a game
   again but starting the exe again. What a finished game looks like to a person who then enters it was not looked at.
 - The window opens at 1920 x 1080 (the project's size; the project sets no stretch mode, so nothing scales the picture
   to another window size). On a smaller screen it does not fit. No fullscreen key, no settings. Nobody listened for sound.
 - The exe's vsync is switched on by `boot.gd` (the project runs without, for captures); frame time in the check's
   window was 16.7 ms.
-- The hockey plot has radius 46 m because a smaller one trips a fault in the draw layer (PATCHES-P9 5). If `site/` is
+- (P14) The hockey plot has radius 44 m, the arena's own (P13 placed the lot for it); the fault of PATCHES-P9 5 was not
+  seen in the compact village (the arena stands on its pad in every picture and the check enters it). If `site/` is
   not there when the build is made, the build has six games and says so.
 - Only Windows x86_64. No icon and no version resource in the exe: the preset has `application/modify_resources=false`
   (changing them needs `rcedit`, which this tool does not look for).

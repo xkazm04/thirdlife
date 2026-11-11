@@ -402,6 +402,7 @@ func _process(_delta: float) -> void:
 					_refresh_aabb(rec, rel)
 				j += 1
 	sync_usec.append(Time.get_ticks_usec() - t0)
+	_note("draw_frame", t0)
 
 
 # ------------------------------------------------------------------------------------------------ far stand-ins

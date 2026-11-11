@@ -300,7 +300,7 @@ if [ -z "$FILTER" ] || [[ "manifest" == *"$FILTER"* ]]; then
   manifest_case on_leave_word 1 "on_leave" 's#"entry"#"on_leave": "explode", "entry"#'
   manifest_case subject_shape 1 "subject" 's#"entry"#"subject": "../Host", "entry"#'
   manifest_case moments_frame_and_event 1 "moments\[0\]" 's#"entry"#"moments": [{"name": "a", "frame": 1, "event": "x"}], "entry"#'
-  manifest_case kernel_api_patch_level 1 "kernelApi" 's#"kernelApi": "0.1"#"kernelApi": "0.2"#'
+  manifest_case kernel_api_patch_level 1 "kernelApi" 's#"kernelApi": "1.0"#"kernelApi": "2.0"#'
   manifest_case params_file_missing 1 "listed in .params. but the file does not exist" 's#"entry"#"params": [{"name": "speed", "file": "data/nothing.json", "path": "a", "min": 1, "max": 9, "step": 1, "label": "x"}], "entry"#'
   manifest_case still_unknown_key 1 "unknown key .colour." 's#"entry"#"colour": "red", "entry"#'
 fi

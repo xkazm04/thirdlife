@@ -28,6 +28,10 @@ extends Node
 ## keys at physics frames (the same Input state a keyboard sets: this is how the keys were tested without a person);
 ## P11: `<frame>:~<dx>,<dy>` moves the mouse by that many pixels (the same event a mouse makes);
 ## TL_EXE_TRACE=<abs file> writes where the visitor is and who is on stage every 30 frames.
+## P14: the caches a build ships (`cache` beside the exe: rims, far pictures, rig recipes, keyed by each game's
+## content) are copied into the user's cache on every start when a file is missing there (PlotFile.seed_cache).
+## TL_EXE_WARM=1 (export.sh, with TL_CACHE_DIR): the window runs the village's scripted tour to its end, unattended,
+## which fills that cache for the games beside the exe.
 ## No global class name is declared here, and none of the kernel's is used by name.
 
 const WALK_RES: String = "res://boot/village.json"
@@ -37,6 +41,7 @@ const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel
 const KEYS_WALK: String = "W S  walk      A D  step aside      mouse  look      Shift  run      E  enter the game you stand in      Esc  quit"
 const KEYS_STAGE: String = "Q or Esc  leave the game"
 const CAPTURE_FRAME: int = 120
+const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
 
 var verb: String = ""
 var opts: Dictionary = {}
@@ -83,6 +88,10 @@ func _ready() -> void:
 		var rl: Logger = (load("res://boot/run_log.gd") as GDScript).new()
 		if bool(rl.call("open", OS.get_executable_path().get_base_dir().replace("\\", "/") + "/ThirdLife-last-run.log")):
 			OS.add_logger(rl)
+	if exported():
+		var seeded: int = int(PlotFile.call("seed_cache", OS.get_executable_path().get_base_dir().replace("\\", "/") + "/cache"))
+		if seeded > 0:
+			print("[boot] %d cache files of this build copied to %s" % [seeded, str(PlotFile.call("cache_dir"))])
 	match verb:
 		"":
 			_visit()
@@ -247,6 +256,8 @@ func _visit() -> void:
 	view.name = "WorldView"
 	add_child(view)
 	var vo: Dictionary = {"walk": path, "live": "true"}
+	if OS.get_environment("TL_EXE_WARM") == "1":
+		vo.erase("live")                           # P14: the scripted tour, to its end (export.sh fills the shipped cache)
 	for k: String in ["record", "input"]:
 		if opts.has(k):
 			vo[k] = opts[k]

@@ -62,6 +62,14 @@ fi
 # P11: one test window at a time on this machine. Two windows on the same spot of the screen throttle each other to
 # about 270 ms a frame (P5, P6 re-runs), so a windowed run waits for a lock under the system's temporary folder that
 # holds the holder's process id; the lock of a holder that is gone is taken over. TL_WINDOW_LOCK=off skips it.
+# P14: the one lock of every test window (world.sh, view.sh, tl perf's windowed scenarios: devx/lib/perf/scenarios.mjs
+# withWindowLock). Its `pid` holds a Git Bash process id, or `win:<id>` when a node process holds it.
+lock_alive() {
+  case "$1" in
+    win:*) tasklist //FI "PID eq ${1#win:}" //NH 2>/dev/null | grep -q " ${1#win:} ";;
+    *) kill -0 "$1" 2>/dev/null;;
+  esac
+}
 win_lock() {
   [ "${TL_WINDOW_LOCK:-on}" = off ] && return 0
   local d="${TEMP:-${TMP:-/tmp}}" waited=0 holder
@@ -69,7 +77,7 @@ win_lock() {
   TL_LOCK_DIR="$d/thirdlife_window.lock"
   while ! mkdir "$TL_LOCK_DIR" 2>/dev/null; do
     holder="$(cat "$TL_LOCK_DIR/pid" 2>/dev/null)"
-    if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+    if [ -n "$holder" ] && ! lock_alive "$holder"; then
       echo "[lock] the holder ($holder) is gone: the window lock is taken over" >&2
       rm -rf "$TL_LOCK_DIR"; continue
     fi
@@ -147,7 +155,7 @@ window_mode() {  # window_mode <mode> <args...>: as godot_mode, in a window; a w
     trip="$tmp/$tag.trip.json"
     extra=("--tag=$tag" "--trip=$trip")       # P11: --trip and --dead are options of world-view (PATCHES-P5 entry 1)
     [ -n "$dead" ] && extra+=("--dead=$dead")
-    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080 --rendering-driver d3d12 "${audio[@]}" --fixed-fps 60 --log-file "$log" --path "$E" res://kernel/host/host.tscn -- "$mode" "${args[@]}" "${extra[@]}" >/dev/null 2>&1 &
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080 --rendering-driver d3d12 "${audio[@]}" $TL_WINDOW_ARGS --fixed-fps 60 --log-file "$log" --path "$E" res://kernel/host/host.tscn -- "$mode" "${args[@]}" "${extra[@]}" >/dev/null 2>&1 &
     pid=$!
     waited=0
     while kill -0 $pid 2>/dev/null; do

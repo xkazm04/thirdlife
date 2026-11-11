@@ -82,26 +82,36 @@ function worldSh(ctx, args, { timeout = 600000, env = {} } = {}) {
   return r;
 }
 
-/** P12. One windowed measurement at a time on this machine: several windows on one spot of the screen throttle each
- * other to about 270 ms a frame (P5's verification). The lock is a directory in the system's temporary folder; a lock
- * older than `staleMs` is taken over (its holder died). The window goes to TL_PERF_WINDOW_POS when it is set. */
-export function withWindowLock(fn, { dir = path.join(os.tmpdir(), "tl_window.lock"), waitMs = 900000, staleMs = 900000 } = {}) {
+/** P12, P14: one test window at a time on this machine: several windows on one spot of the screen throttle each other
+ * to about 270 ms a frame (P5's verification). P14: this is THE lock of world.sh and view.sh (`win_lock`): the
+ * directory `thirdlife_window.lock` in the system's temporary folder with the holder's process id in `pid` (a Git
+ * Bash id, or `win:<id>` for this process). A holder that is gone is taken over; a holder whose id cannot be checked
+ * here (a shell's) is taken over after `staleMs`. While this process holds it, the shell tools it starts are told so
+ * (`TL_WINDOW_LOCK=off`, see `windowEnv`). The window goes to TL_PERF_WINDOW_POS when it is set. */
+export function withWindowLock(fn, { dir = path.join(os.tmpdir(), "thirdlife_window.lock"), waitMs = 900000, staleMs = 900000 } = {}) {
   const t0 = Date.now();
+  let told = false;
   for (;;) {
-    try { fs.mkdirSync(dir); break; } catch (e) {
+    try { fs.mkdirSync(dir); fs.writeFileSync(path.join(dir, "pid"), `win:${process.pid}\n`); break; } catch (e) {
       if (e?.code !== "EEXIST") throw e;
-      let age = 0;
+      let holder = "", age = 0;
+      try { holder = fs.readFileSync(path.join(dir, "pid"), "utf8").trim(); } catch { /* being written */ }
       try { age = Date.now() - fs.statSync(dir).mtimeMs; } catch { continue; }
-      if (age > staleMs) { try { fs.rmdirSync(dir); } catch { /* another waiter took it over */ } continue; }
-      if (Date.now() - t0 > waitMs) throw new Error(`another windowed measurement held ${dir} for ${Math.round(waitMs / 1000)} s`);
+      let gone = age > staleMs;
+      if (holder.startsWith("win:")) { try { process.kill(Number(holder.slice(4)), 0); gone = false; } catch { gone = true; } }
+      if (gone) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* another waiter took it over */ } continue; }
+      if (!told) { process.stderr.write(`[lock] another test window is open (process ${holder || "?"}): waiting for it\n`); told = true; }
+      if (Date.now() - t0 > waitMs) throw new Error(`another test window held ${dir} for ${Math.round(waitMs / 1000)} s`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
     }
   }
-  try { return fn(); } finally { try { fs.rmdirSync(dir); } catch { /* already gone */ } }
+  process.stderr.write(`[lock] window lock taken by win:${process.pid} after ${Math.round((Date.now() - t0) / 1000)}s\n`);
+  try { return fn(); } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* already gone */ } }
 }
 
 function windowEnv(env) {
-  return process.env.TL_PERF_WINDOW_POS ? { TL_WINDOW_POS: process.env.TL_PERF_WINDOW_POS, ...env } : env;
+  const e = { TL_WINDOW_LOCK: "off", ...env };            // P14: this process holds the one window lock (withWindowLock)
+  return process.env.TL_PERF_WINDOW_POS ? { TL_WINDOW_POS: process.env.TL_PERF_WINDOW_POS, ...e } : e;
 }
 
 /** Best (lowest) of the metric values over repeated runs: a busy moment only ever adds time. Counts are equal across runs. */
@@ -151,7 +161,7 @@ export const SCENARIOS = {
     describe: "the kit lab's hero view at 2560x1440 (engine/tools/k.sh stats main hero): draw calls and primitives",
     windowed: true,
     run(ctx) {
-      const r = ctx.bash(path.join(ctx.ENGINE, "tools", "k.sh"), ["stats", "main", "hero"], { cwd: ctx.REPO, timeout: 300000, env: { TMO: "240" } });
+      const r = withWindowLock(() => ctx.bash(path.join(ctx.ENGINE, "tools", "k.sh"), ["stats", "main", "hero"], { cwd: ctx.REPO, timeout: 300000, env: { TMO: "240" } }));
       return parseStats(r.stdout);
     },
   },

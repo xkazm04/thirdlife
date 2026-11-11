@@ -338,6 +338,7 @@ func _run() -> void:
 static func prepare(dir: String, m: Dictionary, scenery_: String) -> Array:
 	var files: PackedStringArray = PackedStringArray()
 	PlotFile.call("list_files", dir, "", files)
+	_recipe_file(dir)                           # P14: the directory's content hash, here on the worker, not at the attach
 	for rel: String in files:
 		if rel.get_extension() == "gd":
 			TLContext._load_fresh(dir + "/" + rel)   # compiled here; `_pack_setup` and `ctx.load_script` find it (P12: as it is on disk now)
@@ -366,12 +367,28 @@ static func prepare(dir: String, m: Dictionary, scenery_: String) -> Array:
 
 # ------------------------------------------------------------------- P12: rigs built ahead from the pack's last build
 ## Which rigs a pack builds is known only by building it: each attach records its `TLRigs.build` calls, kept in this
-## process and in `user://tl_cache/rigs/<md5 of the directory>.txt`, and the next preparation of the same directory
-## builds them ahead on the worker. A recipe that no longer fits (the pack changed) only costs the worker time: a rig
-## built ahead whose call does not come is freed after the attach. Static, so a measurement can call it anywhere.
-const RIGS_DIR: String = "user://tl_cache/rigs"
+## process and in `<cache>/rigs/<content hash of the directory>.txt` (P14: the directory's content, not its path, so
+## a changed game is never served a stale recipe and a build can ship the recipes of its games; PlotFile.cache_dir),
+## and the next preparation of the same directory builds them ahead on the worker. A recipe that no longer fits only
+## costs the worker time: a rig built ahead whose call does not come is freed after the attach. Static, so a
+## measurement can call it anywhere.
 static var _recipes: Dictionary = {}
 static var _recipes_lock: Mutex = Mutex.new()
+static var _dir_keys: Dictionary = {}    # P14: pack directory -> its content hash (read once per process, on the worker)
+
+
+## P14. The recipe file of a pack directory. The content hash is read on the worker (`prepare`); a pack attached with
+## no preparation (step mode, `now`) reads it on the main thread once.
+static func _recipe_file(dir: String) -> String:
+	_recipes_lock.lock()
+	var k: Variant = _dir_keys.get(dir, null)
+	_recipes_lock.unlock()
+	if k == null:
+		k = str(PlotFile.call("dir_hash", dir))
+		_recipes_lock.lock()
+		_dir_keys[dir] = k
+		_recipes_lock.unlock()
+	return str(PlotFile.call("cache_dir")) + "/rigs/" + str(k) + ".txt"
 
 
 static func rigs_of(dir: String) -> Array:
@@ -380,7 +397,7 @@ static func rigs_of(dir: String) -> Array:
 	_recipes_lock.unlock()
 	if got != null:
 		return got
-	var f: String = RIGS_DIR + "/" + dir.md5_text() + ".txt"
+	var f: String = _recipe_file(dir)
 	if not FileAccess.file_exists(f):
 		return []
 	var v: Variant = str_to_var(FileAccess.get_file_as_string(f))
@@ -406,8 +423,9 @@ static func remember_rigs(dir: String, rigs: Array, parts: Array = []) -> void:
 	_recipes_lock.unlock()
 	if same:
 		return
-	DirAccess.make_dir_recursive_absolute(RIGS_DIR)
-	var f: FileAccess = FileAccess.open(RIGS_DIR + "/" + dir.md5_text() + ".txt", FileAccess.WRITE)
+	var path: String = _recipe_file(dir)
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if f != null:
 		f.store_string(var_to_str(calls))
 		f.close()

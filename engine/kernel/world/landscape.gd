@@ -246,12 +246,12 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 					if bridge_a < 0:
 						bridge_a = i
 					bridge_b = i
-		Parts.strip(mk_road, terr, main_path.pts, half + 0.7, 0.05, "grass_dry", 1.0, rng, bridge_a, bridge_b)
+		Parts.strip(mk_road, terr, main_path.pts, half + 0.7, 0.05, "grass_dry", 1.0, rng, bridge_a, bridge_b, half)     # P14b: beside the road only
 		Parts.strip(mk_road, terr, main_path.pts, half, 0.065, "dirt", 1.0, rng, bridge_a, bridge_b)
-		Parts.strip(mk_road, terr, main_path.pts, half * 0.36, 0.08, "dirt", 0.9, rng, bridge_a, bridge_b)
+		Parts.strip(mk_road, terr, main_path.pts, half * 0.36, 0.1, "dirt", 0.9, rng, bridge_a, bridge_b, -1.0, half)     # P14b: on the road's plane
 		for sp: Array in spur_paths:
 			var spp: TLKitPath = sp[1]
-			Parts.strip(mk_road, terr, spp.pts, half * 0.8 + 0.5, 0.052, "grass_dry", 1.0, rng)
+			Parts.strip(mk_road, terr, spp.pts, half * 0.8 + 0.5, 0.052, "grass_dry", 1.0, rng, -1, -1, half * 0.8)
 			Parts.strip(mk_road, terr, spp.pts, half * 0.8, 0.07, "dirt", 0.97, rng)
 			road_pts.append_array(spp.pts)
 		var rmi: MeshInstance3D = mk_road.instance("WorldRoad")
@@ -407,7 +407,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			xs.append(Transform3D(b, Vector3(p.x, float(terr.call("gy", p.x, p.y)) + y_off, p.y)))
 		return xs
 	_lap(stats, "scatter_setup")
-	stats["soft_patches"] = Parts.soft_ground(parent, terr, int(cfg.get("seed", 7)), box, is_free, int(cfg.get("soft_patches", 150)))     # P13
+	stats["soft_patches"] = Parts.soft_ground(parent, terr, int(cfg.get("seed", 7)), box, is_free, int(cfg.get("soft_patches", 150)), PAD_EXTRA, half + 0.7)     # P13, P14b
 	var cams: Array = Parts.cameras(cfg.get("events", []))
 	ws.set("tag", "tree")
 	var probe: Dictionary = {}

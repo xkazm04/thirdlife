@@ -81,6 +81,32 @@ static func save(w: Node, path: String, records: Array) -> String:
 
 ## P12 (PATCHES-P9 entry 2, the world.gd half). In an exported game a pack name is also looked for in the folder
 ## `games` beside the executable (`<exe folder>/games/<name>`); `p` itself when it is not there, or in the editor.
+## P14. Where the world's caches live (the rims, the far pictures, the rig recipes; every key is a pack directory's
+## content): `<user dir>/tl_cache`, or TL_CACHE_DIR (export.sh fills the cache a build ships with it).
+static func cache_dir() -> String:
+	var env: String = OS.get_environment("TL_CACHE_DIR").replace("\\", "/").trim_suffix("/")
+	return env if not env.is_empty() else OS.get_user_data_dir().replace("\\", "/") + "/tl_cache"
+
+
+## P14. A build ships the caches export.sh computed for its games in `cache` beside the exe: each file that is not in
+## the user's cache yet is copied there (a changed game has other keys, so it is never served a stale one).
+## Returns how many files were copied.
+static func seed_cache(from: String, to: String = "") -> int:
+	if to.is_empty():
+		to = cache_dir()
+	if not DirAccess.dir_exists_absolute(from):
+		return 0
+	var files: PackedStringArray = PackedStringArray()
+	list_files(from, "", files)
+	var n: int = 0
+	for rel: String in files:
+		if not FileAccess.file_exists(to + "/" + rel):
+			DirAccess.make_dir_recursive_absolute((to + "/" + rel).get_base_dir())
+			if DirAccess.copy_absolute(from + "/" + rel, to + "/" + rel) == OK:
+				n += 1
+	return n
+
+
 static func beside_exe(p: String) -> String:
 	if OS.has_feature("editor") or p.is_empty() or p.is_absolute_path():
 		return p

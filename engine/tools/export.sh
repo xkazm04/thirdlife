@@ -16,7 +16,7 @@
 #       2. the exe with no arguments: a window, one picture after 120 frames (dist/ThirdLife-check/village.png), a
 #          clean end on request, exit code 0;
 #       3. the keys, pressed by a script through the engine's own input state: W walks the visitor, Esc ends the
-#          process by itself (these two decide); E enters the paddle court and Q leaves it (shown, not counted);
+#          process by itself (these two decide); E enters the kit court and Q leaves it (shown, not counted);
 #          P11: the turn south is 600 pixels of mouse (A and D step aside since P11)
 #       4. no process of the build is left.
 #   export.sh probe [--out <dir>]
@@ -132,6 +132,15 @@ for (const g of games) {
 for (const p of walk.plots) if (!games.some(g => g.name === p.pack)) { console.error(`export.sh: plot '${p.id}' of boot/village.json names the game '${p.pack}', which boot/games.json does not list`); process.exit(1); }
 fs.writeFileSync(path.join(stage, ".games.txt"), lines.join("\n") + "\n" + (missing.length ? "not in this build:\n" + missing.join("\n") + "\n" : ""));
 NODE
+  # P14: the caches of these games (rims, far pictures, rig recipes; keyed by each game's content), computed by the
+  # new exe itself: its window runs the village's scripted tour once with TL_CACHE_DIR=<build>/cache. The exe copies
+  # what a user's cache lacks from there on every start (boot.gd), so the first start on a machine finds them.
+  echo "export.sh: filling the build's cache (the scripted village in a window, about 80 s)"
+  rm -rf "$STAGE/cache"
+  TL_CACHE_DIR="$STAGE/cache" TL_EXE_WARM=1 TL_EXE_WINDOW_POS="$POS" limited 300 "$STAGE/ThirdLife.exe" >"$DIST/ThirdLife-warm.log" 2>&1; wcode=$?
+  rm -f "$STAGE/ThirdLife-last-run.log"
+  cache_files="$(find "$STAGE/cache" -type f 2>/dev/null | wc -l)"
+  [ $wcode -ne 0 ] && echo "export.sh: WARNING: the cache run ended with exit code $wcode ($DIST/ThirdLife-warm.log); the build ships $cache_files cache files"
   api="$(grep -oE 'KERNEL_API: String = "[^"]*"' "$E/kernel/runner/manifest.gd" | head -1 | cut -d'"' -f2)"
   size_kb="$(du -sk "$STAGE" | cut -f1)"
   {
@@ -141,6 +150,7 @@ NODE
     echo "engine: Godot $version, kernelApi ${api:-unknown}, release export template, Windows x86_64"
     echo "what it opens: res://boot/boot.tscn (engine/boot/boot.gd), the walk res://boot/village.json"
     echo "size: $(( size_kb / 1024 )) MB (ThirdLife.exe $(( $(stat -c %s "$STAGE/ThirdLife.exe") / 1048576 )) MB, ThirdLife.pck $(( $(stat -c %s "$STAGE/ThirdLife.pck") / 1024 )) KB, games $(du -sk "$STAGE/games" | cut -f1) KB)"
+    echo "cache: $cache_files files, $(du -sk "$STAGE/cache" 2>/dev/null | cut -f1) KB (rims, far pictures, rig recipes of these games; copied to the user's cache on start)"
     echo "games (folder in games/: id version, title, plot, where it came from):"
     cat "$STAGE/.games.txt"
   } > "$STAGE/BUILD.txt"
@@ -160,7 +170,9 @@ TXT
     rm -rf "$OUT" 2>/dev/null
     [ -e "$OUT" ] && die 1 "the old build $OUT could not be removed (a file in it is open?). It may be incomplete now; close what holds it and export again."
   fi
-  mv "$STAGE" "$OUT" || die 1 "could not move the new build to $OUT"
+  # P14: the cache run has just ended: Windows may hold the folder for a moment after the exe exits
+  for try in 1 2 3 4 5 6 7 8 9 10; do mv "$STAGE" "$OUT" 2>/dev/null && break; sleep 2; done
+  [ -e "$OUT" ] || die 1 "could not move the new build to $OUT"
   trap - EXIT
   sed -n '2,40p' "$OUT/BUILD.txt"
   echo "export.sh: built in $(( $(date +%s) - t0 )) s: $(cygpath -w "$OUT/ThirdLife.exe" 2>/dev/null || echo "$OUT/ThirdLife.exe")"
@@ -237,9 +249,9 @@ else
 fi
 
 # 3. the keys (pressed by boot.gd through the engine's input state; no person): Shift+W along the road, 600 pixels of
-#    mouse turn him south (P11), W through the gate of the paddle court, E, Q, Esc. W and Esc decide the check; E and Q are shown and not
+#    mouse turn him south (P11), W into the kit court (P14: the compact village), E, Q, Esc. W and Esc decide the check; E and Q are shown and not
 #    counted (the route depends on where the landscape puts the court's gate).
-note "3. the keys: Shift+W east along the road, the mouse turns him south, W into the paddle court, E at frame 720, Q at 1000, Esc at 1100 (nothing else ends this run)"
+note "3. the keys: Shift+W east along the road, the mouse turns him south, W into the kit court, E at frame 720, Q at 1000, Esc at 1100 (nothing else ends this run)"
 TL_EXE_KEYS="30:+Shift;30:+W;263:-Shift;263:-W;270:~600,0;280:+W;700:-W;720:+E;722:-E;1000:+Q;1002:-Q;1100:+Escape;1102:-Escape" TL_EXE_TRACE="$W/keys_trace.jsonl" TL_EXE_CAPTURE="$W/on_stage.png" TL_EXE_CAPTURE_AT=900 TL_EXE_WINDOW_POS="$POS" limited 240 "$OUT/ThirdLife.exe" >"$W/keys.log" 2>&1; ck=$?
 node -e '
   const fs = require("fs"); let rows = [];

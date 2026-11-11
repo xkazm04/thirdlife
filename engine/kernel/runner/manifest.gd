@@ -4,7 +4,7 @@ extends RefCounted
 
 ## P7: API version 1. The surface a pack may use is written down by a machine (docs/generated/API-V1.json, checked by
 ## `tl arch` rule api-v1): a signature that is removed or changed needs a new major, an addition a new minor.
-const KERNEL_API: String = "1.0"
+const KERNEL_API: String = "1.1"
 ## "0.1" was the name of this same surface before it was frozen: a pack that says 0.1 is run as a 1.0 pack.
 const LEGACY_API: Dictionary = {"0.1": "1.0"}
 const CAPABILITIES: Array = ["physics", "input", "ui", "audio", "vfx", "camera", "rules", "ai", "spawn", "fracture",

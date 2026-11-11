@@ -51,8 +51,21 @@ static func far_ground(parent: Node3D, t: RefCounted, key: String) -> void:
 
 
 ## A strip of road along `path`, every corner on the ground (`t.gy`) plus `dy`.
-static func strip(mk: TLMesh, t: RefCounted, path: PackedVector2Array, half: float, dy: float, key: String, tone: float, rng: RandomNumberGenerator, skip_from: int = -1, skip_to: int = -1) -> void:
+## P14b: `hole` > 0 leaves the middle out (a verge: two bands from `hole` to `half` beside the road, nothing under it);
+## `on` > 0 lays the strip on the surface of the strip `on` wide below it (heights lerped between that strip's corners,
+## not sampled from the ground). Stacked strips each sampled from the ground at their own corners crossed each other
+## where the land is curved across the road, and the verge under the road came through it in angular patches.
+static func strip(mk: TLMesh, t: RefCounted, path: PackedVector2Array, half: float, dy: float, key: String, tone: float, rng: RandomNumberGenerator, skip_from: int = -1, skip_to: int = -1, hole: float = -1.0, on: float = -1.0) -> void:
 	var n: int = path.size()
+	var at: Callable = func(q: Vector2, nrm: Vector2, s: float) -> Vector3:      # the corner `s` m to the side of q
+		var p: Vector2 = q + nrm * s
+		var h: float = float(t.call("gy", p.x, p.y))
+		if on > 0.0:
+			var l: Vector2 = q - nrm * on
+			var r: Vector2 = q + nrm * on
+			h = lerpf(float(t.call("gy", l.x, l.y)), float(t.call("gy", r.x, r.y)), (s + on) / (2.0 * on))
+		return Vector3(p.x, h + dy, p.y)
+	var bands: Array = [[-half, half]] if hole <= 0.0 else [[-half, -hole], [hole, half]]
 	for i: int in n - 1:
 		if i >= skip_from and i <= skip_to:
 			continue
@@ -60,15 +73,13 @@ static func strip(mk: TLMesh, t: RefCounted, path: PackedVector2Array, half: flo
 		var b: Vector2 = path[i + 1]
 		var ta: Vector2 = (path[mini(i + 1, n - 1)] - path[maxi(i - 1, 0)]).normalized()
 		var tb: Vector2 = (path[mini(i + 2, n - 1)] - path[i]).normalized()
-		var ra: Vector2 = Vector2(-ta.y, ta.x) * half
-		var rb: Vector2 = Vector2(-tb.y, tb.x) * half
-		var c: float = tone * (0.94 + 0.12 * rng.randf())
-		var pa0: Vector2 = a - ra
-		var pa1: Vector2 = a + ra
-		var pb1: Vector2 = b + rb
-		var pb0: Vector2 = b - rb
-		mk.quad_up(Vector3(pa0.x, float(t.call("gy", pa0.x, pa0.y)) + dy, pa0.y), Vector3(pa1.x, float(t.call("gy", pa1.x, pa1.y)) + dy, pa1.y),
-			Vector3(pb1.x, float(t.call("gy", pb1.x, pb1.y)) + dy, pb1.y), Vector3(pb0.x, float(t.call("gy", pb0.x, pb0.y)) + dy, pb0.y), key, Color(c, c, c))
+		var na: Vector2 = Vector2(-ta.y, ta.x)
+		var nb: Vector2 = Vector2(-tb.y, tb.x)
+		var c: float = tone * (0.94 + 0.12 * rng.randf())      # one draw per segment, as before (the scatter keeps its places)
+		for bd: Array in bands:
+			var s0: float = float(bd[0])
+			var s1: float = float(bd[1])
+			mk.quad_up(at.call(a, na, s0), at.call(a, na, s1), at.call(b, nb, s1), at.call(b, nb, s0), key, Color(c, c, c))
 
 
 static func smooth(ys: PackedFloat32Array, win: int) -> void:
@@ -362,7 +373,10 @@ static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Ar
 ## P13: soft ground. Low irregular patches lying on the land: worn earth near the roads and pads, darker grass in the
 ## hollows, and meadows with flowers (small flecks in four colours). One mesh, no collider, no shadow; a generator of
 ## its own, so nothing else moves. Skipped by plots, pads, roads and the river (`is_free`).
-static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2, is_free: Callable, count: int) -> int:
+## P14b: `pad_extra` (the flat of a pad and its worn ring beyond the plot's radius) and `road_half` (a road with its
+## verge) keep the patches off pads, rings, roads and gate paths: `is_free` measures to a plot's radius and to a road's
+## middle line on the 3 m grid (up to 2.2 m off), so the margins are added here with 2.5 m to spare.
+static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2, is_free: Callable, count: int, pad_extra: float = 10.5, road_half: float = 3.7) -> int:
 	if count <= 0:
 		return 0
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -375,7 +389,13 @@ static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2
 		tries += 1
 		var p: Vector2 = box.position + Vector2(rng.randf() * box.size.x, rng.randf() * box.size.y)
 		var r: float = rng.randf_range(4.0, 12.0)
-		if not bool(is_free.call(p, r + 2.0, r + 1.5, r + 2.0)) or float(terr.call("slope", p.x, p.y)) > 0.18:
+		if not bool(is_free.call(p, r + pad_extra + 2.5, r + road_half + 2.5, r + 2.0)) or float(terr.call("slope", p.x, p.y)) > 0.18:
+			continue
+		var near_road: bool = false        # road_dist knows only 13 m round a road: its rim is asked too, all twelve points
+		for k: int in 12:
+			var e: Vector2 = p + Vector2.from_angle(TAU * float(k) / 12.0) * r
+			near_road = near_road or float(terr.call("road_dist", e.x, e.y)) < road_half + 2.5
+		if near_road:
 			continue
 		var road: float = float(terr.call("road_dist", p.x, p.y))
 		var conv: float = float(terr.call("h", p.x, p.y)) - 0.25 * (float(terr.call("h", p.x + 10.0, p.y)) + float(terr.call("h", p.x - 10.0, p.y)) + float(terr.call("h", p.x, p.y + 10.0)) + float(terr.call("h", p.x, p.y - 10.0)))
