@@ -300,3 +300,14 @@ static func validate_layout(layout: Dictionary) -> PackedStringArray:
 
 static func build_layout(layout: Dictionary, parent: Node3D) -> Dictionary:
 	return TLKitLayout.build(layout, parent)
+
+
+## P5. Builds a layout ahead of the `build_layout` call that will ask for it (off the scene tree; safe on a worker
+## thread). The next `build_layout` of an equal layout only attaches the result. Returns its key ("" = not valid).
+static func build_layout_ahead(layout: Dictionary) -> String:
+	return TLKitLayout.build_ahead(layout)
+
+
+## P5. Frees a layout built ahead that nobody asked for. Main thread.
+static func drop_layout_ahead(key: String) -> bool:
+	return TLKitLayout.drop_ahead(key)

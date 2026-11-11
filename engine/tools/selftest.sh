@@ -410,5 +410,48 @@ if p7_on p7.fence; then
   verdict p7.fence_handler_switched_off "$why" "a pack's _unhandled_input got none of 3 device events"
 fi
 
+# ---------------------------------------------------------------- P5: loading is not simulation
+# One plot's pack is replaced by a freshly loaded copy of the same directory inside a running world, after a value in
+# its data/ changed (the walk's `edits` copies a file at a world tick: a scripted "the designer saved a tuned value";
+# its `reload` event follows). The reloaded game is the CHANGED pack alone for its own ticks, it is not the unchanged
+# one, and the two other games hash as in a run that nobody disturbed.
+if [ -z "$FILTER" ] || [[ "world.reload" == *"$FILTER"* ]]; then
+  WR="$OUT/world_reload"; rm -rf "$WR"; mkdir -p "$WR"
+  command -v cygpath >/dev/null 2>&1 && WR="$(cygpath -m "$WR")"
+  cp -r "$EX/ex_slide" "$WR/slide"
+  sed 's/"start_speed": *[0-9.]*/"start_speed": 4.5/' "$EX/ex_slide/data/slide.json" > "$WR/tuned.json"
+  walk_of() {   # walk_of <file> <events and edits, or nothing>
+    printf '{"schema":"tl.walk/1","name":"reload","ticks":600,"mode":"smoke","plots":[{"id":"a","pack":"%s","origin":[0,0,0],"seed":1},{"id":"b","pack":"pack_min","origin":[60,0,0],"seed":1},{"id":"c","pack":"ex_wall","origin":[-60,0,0],"seed":1}],"player":[[0,[0,0,0]]]%s}\n' "$WR/slide" "$2" > "$1"
+  }
+  walk_of "$WR/quiet.json" ""
+  walk_of "$WR/reload.json" ",\"events\":[{\"t\":300,\"e\":\"reload\",\"plot\":\"a\"}],\"edits\":[[299,\"$WR/slide/data/slide.json\",\"$WR/tuned.json\"]]"
+  hp() { grep '"kind":"pack"' | grep "\"plot\":\"$1\"" | sed -E 's/.*"frames":([0-9]+).*"state_hash":"([0-9a-f]{16}).*/\1 \2/'; }
+  q="$(TL_JSON=1 bash "$HERE/world.sh" walk "$WR/quiet.json" 2>&1)"
+  r="$(TL_JSON=1 bash "$HERE/world.sh" walk "$WR/reload.json" "--log=$WR/log.json" 2>&1)"
+  rp="$(TL_JSON=1 bash "$HERE/world.sh" replay "$WR/log.json" 2>&1)"
+  af="$(echo "$r" | hp a | cut -d' ' -f1)"; ah="$(echo "$r" | hp a | cut -d' ' -f2)"
+  hx() { grep '"kind":"pack"' | sed -E 's/.*"state_hash":"([0-9a-f]{16}).*/\1/' | tr '\n' ' '; }
+  tuned="$(bash "$HERE/world.sh" run "--packs=$WR/slide" --frames="${af:-0}" | hx)"
+  plain="$(bash "$HERE/world.sh" run "--packs=$EX/ex_slide" --frames="${af:-0}" | hx)"
+  why=""
+  echo "$r" | grep -q '"e":"reload","plot":"a"' || why="no reload event"
+  echo "$r" | grep -q '"t":300,"e":"built","plot":"a"' || why="${why:+$why; }the reloaded pack did not arrive at tick 300"
+  grep -q '4.5' "$WR/slide/data/slide.json" || why="${why:+$why; }the data file was not changed at tick 299"
+  [ -n "$ah" ] && [ "$ah " = "$tuned" ] || why="${why:+$why; }the reloaded game [$af ticks $ah] is not the changed pack alone [$tuned]"
+  [ "$tuned" != "$plain" ] || why="${why:+$why; }the changed value has no effect on the hash: the case proves nothing"
+  [ -n "$(echo "$q" | hp b)" ] && [ "$(echo "$q" | hp b)" = "$(echo "$r" | hp b)" ] && [ "$(echo "$q" | hp c)" = "$(echo "$r" | hp c)" ] || why="${why:+$why; }the other games differ from the undisturbed run: b [$(echo "$q" | hp b)] [$(echo "$r" | hp b)], c [$(echo "$q" | hp c)] [$(echo "$r" | hp c)]"
+  [ "$(echo "$r" | hp a)" = "$(echo "$rp" | hp a)" ] && [ "$(echo "$r" | hp b)" = "$(echo "$rp" | hp b)" ] || why="${why:+$why; }the log does not replay to the same"
+  verdict world.reload "$why" "ex_slide reloaded at tick 300 with start_speed 4.5: $af ticks, $ah = the changed pack alone, not $plain; pack_min and ex_wall as undisturbed ($(echo "$r" | hp b | cut -d' ' -f2) $(echo "$r" | hp c | cut -d' ' -f2)); the log replays"
+fi
+# The build queue with its worker thread, without a window (walks/queue.json: `load.mode` wait): three seeds are
+# prepared on the worker (scripts, layouts built ahead by the kit), one per tick, waited for. Every pack hashes as
+# it does alone for the same number of its own ticks, and the log (with its `built` events) replays to the same.
+if [ -z "$FILTER" ] || [[ "world.queue" == *"$FILTER"* ]]; then
+  out="$(bash "$HERE/world.sh" proof queue 2>&1)"
+  why=""; echo "$out" | grep -q '^PASS world.proof' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror' | head -3 | tr '\n' ' ')"
+  [ "$(echo "$out" | grep -c 'e:built')" = 3 ] || why="${why:+$why; }expected 3 built events, got $(echo "$out" | grep -c 'e:built')"
+  verdict world.queue "$why" "3 seeds built by the worker, arrived at ticks $(echo "$out" | grep 'e:built' | sed -E 's/^tick ([0-9]+).*plot:([a-z]+).*/\2 \1/' | tr '\n' ' '); walk = alone = replay"
+fi
+
 echo "selftest: $pass passed, $fail failed (reports in $OUT)"
 [ $fail -eq 0 ]

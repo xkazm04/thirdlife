@@ -322,3 +322,87 @@ the game (pack_min's bot is "past the finish line" at tick 1 when the pack stand
   proofs `ledger`, `leave` and `tickets` were not re-run after this change.
 - `scenery = "plot"` is the world host's default; `world.sh proof` and `tour` share one table (`prove` in world.sh).
 
+## P5: loading is not simulation (the build queue)
+
+Code: `kernel/world/jobs.gd` (the queue), `tiers.gd` (`unbuilt`, the events `built` and `reload`), `world.gd` (the
+hooks), `pack.gd` (`stub`), `kits/tl_kit_layout.gd` (`build_ahead`), `draw/view.gd` (plots without a pack, the rim
+cache), `tiers.json` `load`. Walks: `walks/walk30.json`. Selftest: `world.reload`.
+
+### Where a load goes (measured before anything was changed; 11 November 13:24, headless, scenery plot)
+
+| part | seed_drive | seed_wall | seed_paddle | hockey | ex_bounce | where it may run |
+|---|---|---|---|---|---|---|
+| the entry script, first time in the process / later | 342 / 0.2 ms | 31 / 0.2 | 24 / 0.2 | 28 / 0.1 | 14 / 0.2 | a worker thread (`load`) |
+| `_pack_setup`, whole | 358 | 371 | 413 | 771 | 1.5 | |
+| of it: `TLKit.build_layout` (the venue: meshes, bodies, rigs of the layout) | 354 | 274 | 398 | 18 + 155 | none | a worker thread: it builds off the scene tree and the kit references nothing outside itself |
+| of it: the rest (bodies, rigs and parts the pack makes itself, HUD, cameras) | 4 | 97 | 15 | about 600 | 1.5 | the main thread only: `TLContext.current` is one static, `_ready` and the physics space need the tree |
+| attaching a built venue to the tree (its bodies enter the space) | 13 to 23 | 13 | 13 to 14 | 0.1 | | the main thread; one call, not sliced |
+| the laws on the finished tree | 0.1 | 0.2 | 0.3 | 0.2 | 0.04 | main thread |
+| the first physics steps after the attach (two) | 0.1 | 0.15 | 0.13 | 0.03 | | main thread |
+
+First draw: the first drawn frame of a world costs 52 to 55 ms (every pipeline, with the landscape). The frame in which
+a pack arrives costs its attach; nothing above the run-to-run noise was seen on top of it (no quiet run: see below).
+
+The worker-thread build of a layout was compared with the main-thread build of the same file: the same counts of
+nodes, bodies and mesh instances, the same `Static` mesh hash, no error, 5 to 35 % slower, the main thread running on.
+
+### What the queue does
+
+A pack of a scheduled world is built in two halves. PREPARE, on the queue's one worker thread: every script of the pack
+is loaded and every `tl.layout/1` file under its `data/` is built ahead (`TLKit.build_layout_ahead`; the result waits
+under the hash of the layout's JSON text). ATTACH, on the main thread at a tick boundary: the holder, `_pack_setup`
+(whose `build_layout` finds the venue built ahead and only attaches it), the laws. Until then the plot holds a STUB
+(`pack.gd` `stub`: directory, manifest, plot record; for everything else a pack in the ledger).
+
+- **Order**: tier first (stage, sideline, backdrop), then distance to the player. A plot in `ledger` is not built; a
+  job whose plot goes to the ledger is dropped and what was built ahead for it is freed.
+- **The scheduler** treats a pack that has not arrived as not there: a plot is `unbuilt` from the start, after
+  `restart`, after `reload` and after a return from the ledger, until its `built` event; `due` leaves it out. Tiers,
+  the valve and the budget do not look at it, so the tier log of a walk is what it was, plus the `built` lines.
+- **The log says when it arrived**: `{"t": N, "e": "built", "plot": id}`. The pack's first tick is N + 1 (the one-tick
+  rest of N7). A replay attaches at the same tick: when the worker is not done it waits for it.
+- **Rebuild, next round, back from the ledger** go through the same queue. The pack that is over stays (and stays
+  drawn) until the new one is attached.
+- **Modes** (`tiers.json` `load.mode`, a walk's `tiers.load.mode`, `TL_WORLD_LOAD` for a window): `queue` attaches
+  what is ready, at least one pack per tick, more while this tick's attaches used less than `load.budget_ms` (4);
+  `step` builds one pack per world tick in queue order, whole, on the main thread (the worker would only be waited
+  for), so the arrival ticks are a pure function of the walk (time is physics frames: scripted runs without a window)
+  and a run costs what it did before; `wait` is `step` with the worker's prepare, waited for (the selftest case
+  `world.queue`: a run without a window is over before a worker is done); `auto` (shipped) is `queue` in a window and
+  `step` without one. What a `step`, `wait` or replayed tick spends on a build is taken out of the tick's time and
+  counted as `load_ms`; `block` makes no queue (every pack before the first tick, no `built` events: as before P5).
+  The mode a run used is in its log, so a windowed run replays headless.
+- **Reload** (`{"t": N, "e": "reload", "plot": id}` in a walk's `events`): the plot's pack is replaced by a freshly
+  loaded copy of the same directory; what the pack saves itself (`_pack_save`) is handed on, its tick count goes on.
+  A walk's `edits` (`[[tick, file, replacement file]]`) copies a file at a world tick: a scripted "the designer saved a
+  tuned value". Changed `data/*.json` takes effect; a changed `.gd` does not (the engine's script cache: `PATCHES-P5.md`
+  entry 2b).
+
+### What it buys, and what still stands in the way (11 November, 13:40 to 14:00; four other builders on the machine, no run was quiet)
+
+| | before | after |
+|---|---|---|
+| in a window: world start to the first tick, six games (`load_ms`, tour) | 1.7 to 1.9 s | 15 to 25 ms |
+| in a window: world start to the first drawn frame, six games (one run each, machine busy) | 5.8 s | 2.3 s, of it the landscape 2.1 s |
+| in a window: the same, thirty games (`walk30`) | 15.7 s | 6.4 s, of it the landscape 6.1 s |
+| without a window (`step`): loading, 30 games (`mix30` `load_ms`, machine busy) | 9.8 to 15.8 s before the first tick | 16.2 s, one pack per tick over the first 30 ticks: the same work, not a saving |
+| the frame in which a seed arrives or is rebuilt | 762 to 921 ms | 17 to 37 ms (drive, paddle, car), 75 to 120 ms (wall) |
+| the frame in which `ex_walker` / `ex_kit` arrives | 165 / 190 ms | the same: no layout, all of it is `_pack_setup` on the main thread |
+| the frame in which the hockey game arrives | about 770 ms | about 600 ms: six skaters' rigs and its own parts |
+| the frame of a `shot` (a 1920x1080 PNG) | 690 to 850 ms | not a slow frame: the PNG is encoded on a worker thread |
+| the tour's hashes | | tour = alone = replay, in a window with real arrivals (ticks 73 to 572 in different runs) and headless |
+| `tl perf run`, tour6 (ledger line 7, machine BUSY) | worst frame 762 to 838 ms (quiet) | worst frame 286 ms, frame p99 10.4 ms |
+| `tl perf run`, walk30 (ledger line 7, machine BUSY) | did not exist | worst frame 359 ms, frame p99 7.6 ms, tick p50 2.9 ms, six games built 8.0 s after the world started |
+
+- **Not hitch-free.** The half that is left on the main thread is over a frame for every pack measured: the attach of
+  a venue's bodies (13 to 23 ms in one call) and everything a pack builds outside its layout. `PATCHES-P5.md` entries
+  2a and 5 say what it takes (a thread-local `TLContext.current`, rigs built ahead).
+- **The worker waits for the main thread.** A call from the worker into the rendering or physics server that returns
+  a value is run by the main thread, once per frame. In a window a prepare took 0.65 to 1.1 s instead of 0.4 s (a
+  few hundred frames at 2 to 3 ms); at 60 frames per second with vertical sync it would be seconds. A main thread that
+  only sleeps while it waits for the worker waits for ever: `jobs.gd` `attach` flushes both servers in its wait loop.
+- **A plot's rim is needed before the landscape is built** (the hole for a pack's own ground, the lift). `view.gd`
+  keeps a rim cache (`user://tl_cache/rims.json`, keyed by the pack directory's content hash, the radius and the
+  scenery); a pack whose rim is not in it is built before the first frame, once per machine (`TL_RIM_CACHE=off`
+  measures again).
+- **The time to the first frame is now the landscape**: 1.3 to 1.4 s for the six-game village, 3.8 s for thirty.

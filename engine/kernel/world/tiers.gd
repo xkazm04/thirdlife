@@ -50,6 +50,10 @@ var _out: Array = []
 var visitor: bool = false
 var _visits: Array = []                 # [{t, e: "enter" | "leave", plot (index or -1: the plot he stands in)}]
 var _requests: Array = []               # asked for since the last `decide`
+# P5: loading is not simulation. With a build queue (`load.mode` queue, step or wait) a plot is `unbuilt` from the start,
+# after a `restart`, a `reload` and a return from the ledger, until its `built` event; `due` leaves it out.
+var queued: bool = false
+var _reloads: Array = []                # [{t, plot (index)}]: the walk's `reload` events
 
 
 static func load_config(path: String, overrides: Dictionary = {}) -> Dictionary:
@@ -101,6 +105,8 @@ static func _v3(a: Variant) -> Vector3:
 ## `plot_list`: [{id, pack, origin: Vector3, yaw, size: Vector2, on_leave}]; `tickets`: [{tick, plot (id), tier, ticks}].
 func setup(config: Dictionary, plot_list: Array, tickets: Array = [], visits: Array = []) -> void:
 	cfg = config
+	var lc: Variant = cfg.get("load", {})
+	queued = typeof(lc) == TYPE_DICTIONARY and ["queue", "step", "wait"].has(str((lc as Dictionary).get("mode", "block")))
 	slice = int((cfg["slice"] as Dictionary)["min"])
 	slice_max_seen = slice
 	var model: Dictionary = cfg["cost_model_ms"]
@@ -110,7 +116,7 @@ func setup(config: Dictionary, plot_list: Array, tickets: Array = [], visits: Ar
 			"tier": "", "since": 0, "ticket_tier": "", "ticket_until": 0, "valve_until": 0, "held": false, "over": false,
 			"cost": float(model.get(str(src.get("pack", "")), model.get("default", 0.5))), "dist": 0.0, "changes": 0,
 			"ticks": 0, "last_due": -1, "max_gap": 0, "by_tier": {"stage": 0, "sideline": 0, "backdrop": 0, "ledger": 0},
-			"seen": {}}
+			"seen": {}, "unbuilt": queued}
 		plots.append(p)
 	var gap_max: float = float(cfg["adjacent_gap_m"])
 	for i: int in plots.size():
@@ -126,6 +132,8 @@ func setup(config: Dictionary, plot_list: Array, tickets: Array = [], visits: Ar
 	for v: Variant in visits:
 		if typeof(v) == TYPE_DICTIONARY and (str((v as Dictionary).get("e", "")) == "enter" or str((v as Dictionary).get("e", "")) == "leave"):
 			_visits.append({"t": int((v as Dictionary).get("t", 0)), "e": str((v as Dictionary)["e"]), "plot": index_of(str((v as Dictionary).get("plot", "")))})
+		elif typeof(v) == TYPE_DICTIONARY and str((v as Dictionary).get("e", "")) == "reload" and index_of(str((v as Dictionary).get("plot", ""))) >= 0:
+			_reloads.append({"t": int((v as Dictionary).get("t", 0)), "plot": index_of(str((v as Dictionary)["plot"]))})
 
 
 ## N7. A live player asks to enter the plot he stands in (or `plot`), or to leave the stage plot. Answered by the
@@ -198,6 +206,7 @@ func apply(ev: Dictionary) -> void:
 				stage = i
 			if str(ev.get("from", "")) == "ledger":
 				p["rest_until"] = t + 1           # N7: rebuilt on this tick boundary, first tick on the next (see `due`)
+				p["unbuilt"] = queued             # P5: with a queue it arrives with its own `built` event
 			p["tier"] = to
 			p["since"] = t
 			(p["seen"] as Dictionary)[to] = true
@@ -228,6 +237,15 @@ func apply(ev: Dictionary) -> void:
 			if i >= 0:
 				(plots[i] as Dictionary)["over"] = false
 				(plots[i] as Dictionary)["rest_until"] = t + 1
+				(plots[i] as Dictionary)["unbuilt"] = queued
+		"reload":
+			if i >= 0:                        # P5: a fresh copy of the same directory takes the plot
+				(plots[i] as Dictionary)["rest_until"] = t + 1
+				(plots[i] as Dictionary)["unbuilt"] = queued
+		"built":
+			if i >= 0:                        # P5: attached on this tick boundary, first tick on the next
+				(plots[i] as Dictionary)["unbuilt"] = false
+				(plots[i] as Dictionary)["rest_until"] = t + 1
 
 
 func _active(p: Dictionary) -> bool:
@@ -252,6 +270,9 @@ func decide(tick: int, pos: Vector3) -> Array:
 	for tk: Dictionary in _tickets:
 		if int(tk["tick"]) == tick:
 			_emit({"t": tick, "e": "ticket", "plot": (plots[int(tk["plot"])] as Dictionary)["id"], "tier": tk["tier"], "ticks": tk["ticks"]})
+	for r: Dictionary in _reloads:
+		if int(r["t"]) == tick and str((plots[int(r["plot"])] as Dictionary)["tier"]) != "ledger":
+			_emit({"t": tick, "e": "reload", "plot": (plots[int(r["plot"])] as Dictionary)["id"]})
 	var inside: int = -1
 	for i: int in plots.size():
 		var p: Dictionary = plots[i]
@@ -428,7 +449,7 @@ func due(tick: int) -> Array:
 		# N7: a pack that was built again on this tick boundary (next round, back from the ledger) gets its first tick
 		# on the next one. Its nodes entered the tree inside this physics frame and the scene tree would not tick them
 		# in it, while the kernel's own calls and the physics step would run: its first tick would be half a tick.
-		if int(p.get("rest_until", 0)) > tick:
+		if int(p.get("rest_until", 0)) > tick or bool(p.get("unbuilt", false)):
 			continue
 		if str(p["tier"]) == "stage" or str(p["tier"]) == "sideline":
 			front.append(i)
@@ -464,6 +485,13 @@ func due(tick: int) -> Array:
 			p["max_gap"] = maxi(int(p["max_gap"]), tick - int(p["last_due"]))
 		p["last_due"] = tick
 	return out
+
+
+## P5. Called by the world's build queue when the pack of plot `i` is attached at this tick boundary.
+func mark_built(tick: int, i: int) -> Dictionary:
+	var ev: Dictionary = {"t": tick, "e": "built", "plot": (plots[i] as Dictionary)["id"]}
+	apply(ev)
+	return ev
 
 
 ## Called by the world when a pack's game has ended by itself (its bot is done).

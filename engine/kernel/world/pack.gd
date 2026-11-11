@@ -20,6 +20,7 @@ extends Node3D
 
 const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
 const WorkerScript: GDScript = preload("res://kernel/runner/worker.gd")
+const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")   # P5: the pack directory's hash, the world file
 
 const CENSUS_EVERY: int = 10            # the worker's rhythm: late-tagged bodies get their law on these frames
 
@@ -37,6 +38,7 @@ class Mark extends Node:
 		if opens:
 			t_usec = Time.get_ticks_usec()
 		elif mate != null and pack != null:
+			pack.call("contact_pass")       # P5: after every node of the pack, before its physics step
 			pack.set("tree_usec", Time.get_ticks_usec() - mate.t_usec)
 
 	func _process(_delta: float) -> void:
@@ -110,6 +112,8 @@ var _kept_data: Variant = null
 var load_ms: Dictionary = {}            # where the loading time went: scripts, setup, laws, bot (milliseconds)
 var ledgered: bool = false              # unloaded: only the plot record is left
 var bot_off: bool = false               # N7: a person plays this pack (its bot waits); never set in a scripted run
+var manifest: Dictionary = {}           # P5: the pack's manifest; a stub has it before the pack is built
+var _tracker: Node = null               # P5: the pack's contact pass (TLContact.Tracker) as it stood when this tick began
 
 
 # ------------------------------------------------------------------------------------------------------ loading
@@ -150,6 +154,7 @@ func load_pack(dir_arg: String, options: Dictionary) -> bool:
 		load_errors.append_array(mres["errors"])
 		return false
 	var m: Dictionary = mres["manifest"]
+	manifest = m
 	ctx = TLContext.new()
 	ctx.manifest = m
 	ctx.pack_dir = pack_dir
@@ -326,6 +331,10 @@ func set_running(on: bool) -> void:
 ## One tick of the pack's own clock: the kernel's calls into the pack for its frame `frames_done`.
 func tick(world_tick: int) -> void:
 	var t0: int = Time.get_ticks_usec()
+	# P5 (PATCHES-P2 entry 1), the order of a tick in code: these calls, the pack's nodes, `contact_pass`, the physics step
+	_tracker = ctx.get_meta(&"tl_tracker") if ctx.has_meta(&"tl_tracker") and is_instance_valid(ctx.get_meta(&"tl_tracker")) else null
+	if _tracker != null and _tracker.is_physics_processing():
+		_tracker.set_physics_process(false)        # this holder calls it by name from now on
 	_enter()
 	if not started:
 		started = true
@@ -350,6 +359,13 @@ func tick(world_tick: int) -> void:
 		# as the single-pack worker does: a bot run ends on the tick the bot says it is done, before that tick's step
 		bot_info["done"] = true
 		finish(world_tick)
+
+
+## P5. The pack's contact pass of this tick; the closing mark calls it after every node of the pack. A tracker made
+## during this tick has its first pass on the next one, as it had when the scene tree called it (priority 100).
+func contact_pass() -> void:
+	if _tracker != null and is_instance_valid(_tracker):
+		_tracker.call("_physics_process", 0.0)
 
 
 ## Ends the pack's run: final census, state hash, `_pack_state`, teardown. The pack stays in memory, switched off.
@@ -497,8 +513,19 @@ func result(index: int) -> Dictionary:
 	return res
 
 
-func _exit_tree() -> void:
-	pass
+## P5. A plot whose pack is not built yet (the world's build queue, kernel/world/jobs.gd, builds it later): only the
+## directory, the manifest and the plot record. For everything else it is a pack in the ledger.
+func stub(dir_arg: String) -> Node:
+	pack_dir = Manifest.resolve_dir(dir_arg)
+	var mres: Dictionary = Manifest.read(pack_dir) if not pack_dir.is_empty() else {"ok": false, "errors": [{"kind": "load", "file": "", "message": "pack directory not found: " + dir_arg}]}
+	if mres["ok"]:
+		manifest = mres["manifest"]
+	else:
+		load_errors.append_array(mres["errors"])
+	ledgered = bool(mres["ok"])
+	finished = true
+	running = false
+	return self
 
 
 # ------------------------------------------------------------------------------------------------ N5a: the plot
@@ -557,33 +584,6 @@ func restore(data: Variant) -> bool:
 	return true
 
 
-## SHA-256 over the pack's files (relative path and bytes, sorted): tells a world file that the pack changed.
-static func dir_hash(dir: String) -> String:
-	var files: PackedStringArray = PackedStringArray()
-	_list_files(dir, "", files)
-	files.sort()
-	var hc: HashingContext = HashingContext.new()
-	hc.start(HashingContext.HASH_SHA256)
-	for rel: String in files:
-		hc.update(rel.to_utf8_buffer())
-		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(dir + "/" + rel)
-		if not bytes.is_empty():
-			hc.update(bytes)
-	return hc.finish().hex_encode()
-
-
-static func _list_files(dir: String, rel: String, out: PackedStringArray) -> void:
-	var d: DirAccess = DirAccess.open(dir + ("/" + rel if not rel.is_empty() else ""))
-	if d == null:
-		return
-	for f: String in d.get_files():
-		if not f.ends_with(".uid") and not f.ends_with(".import"):
-			out.append(rel + "/" + f if not rel.is_empty() else f)
-	for sub: String in d.get_directories():
-		if not sub.begins_with("."):
-			_list_files(dir, rel + "/" + sub if not rel.is_empty() else sub, out)
-
-
 ## N5a, `ledger`: takes the pack out of memory (nodes and physics space) and returns what the world keeps of it.
 ## The holder stays as a stub so the world's list keeps its shape; `world.gd` builds a new holder on the way back.
 func unload() -> Dictionary:
@@ -607,11 +607,11 @@ func unload() -> Dictionary:
 
 ## One entry of a world file's `plots` (tl.world/1). The same record is what `ledger` keeps of an unloaded pack.
 func plot_record() -> Dictionary:
-	var m: Dictionary = ctx.manifest if ctx != null else {}
+	var m: Dictionary = manifest
 	var fp: Variant = m.get("footprint", null)
 	var rec: Dictionary = {"id": plot_id if not plot_id.is_empty() else String(name),
 		"origin": [plot_origin.x, plot_origin.y, plot_origin.z], "yaw": plot_yaw, "footprint": fp,
-		"pack": {"dir": pack_dir, "uid": str(m.get("id", "")), "version": str(m.get("version", "")), "hash": dir_hash(pack_dir)},
+		"pack": {"dir": pack_dir, "uid": str(m.get("id", "")), "version": str(m.get("version", "")), "hash": str(PlotFile.call("dir_hash", pack_dir))},
 		"seed": seed_value, "ticks": ticks_before + frames_done, "summary": summary()}
 	var d: Variant = saved_data()
 	if d != null:

@@ -14,6 +14,8 @@
   "slice": {"min": 2, "max": 16},
   "slice_note": "OWNER, 2026-11-11: a far game never runs slower than one sixteenth of real time (max 16). When the far tier needs more than that, the valve slows the whole world instead.",
   "valve": {"every_ticks": 30, "hold_ticks": 600, "recover": 0.7, "speed_step_pm": 100, "speed_min_pm": 100},
+  "load": {"mode": "auto", "budget_ms": 4.0},
+  "load_note": "P5, the build queue (kernel/world/jobs.gd). mode: queue = a pack is prepared on a worker thread and attached at a tick boundary when it is ready, nearest first (a world somebody looks at); step = one pack per world tick in the same order, built whole on the main thread (the arrival tick is a pure function of the walk); wait = as step but prepared on the worker and waited for (tests of the worker's path); auto = queue in a window, step without one; block = every pack before the first tick, no queue (as before P5). budget_ms: in queue mode a second pack is attached in the same tick only while the attaches of this tick used less than this.",
   "cost": "model",
   "cost_note": "model: a pack tick costs cost_model_ms (a run is then a pure function of its walk script). measured: the world's own clock, smoothed (ema_shift: 1/2^n per tick).",
   "ema_shift": 4,

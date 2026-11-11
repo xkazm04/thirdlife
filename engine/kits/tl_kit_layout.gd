@@ -308,8 +308,72 @@ static func v2(a: Array) -> Vector2:
 
 
 static func build(layout: Dictionary, parent: Node3D) -> Dictionary:
+	var got: Dictionary = take_ahead(key_of(layout)) if _ahead_count > 0 else {}
+	if not got.is_empty():
+		var tmp: Node = got["_tmp"]          # P5: built ahead on a worker thread, attached here
+		got.erase("_tmp")
+		tmp.remove_child(got["root"])
+		tmp.free()
+		parent.add_child(got["root"])
+		return got
 	var errs: PackedStringArray = validate(layout)
 	if errs.size() > 0:
 		return {"ok": false, "errors": errs, "nodes": {}}
 	var b: TLKitLayoutBuild = TLKitLayoutBuild.new()
 	return b.run(layout, parent)
+
+
+# ---- P5: a layout built ahead of the call that asks for it --------------------------------------------------------
+# `TLKitLayoutBuild.run` builds the whole venue under a root that is not in the scene tree and attaches it last, and
+# the kit references nothing outside itself: so the build may run on a worker thread. `build_ahead(layout)` does
+# exactly what `build` does, under a parent of its own, and keeps the result; the next `build` of an EQUAL layout
+# (same keys and values) takes it and only attaches it. One result serves one `build` call: nothing is shared.
+static var _ahead: Dictionary = {}       # key -> Array of results (each with its temporary parent under "_tmp")
+static var _ahead_count: int = 0
+static var _ahead_lock: Mutex = Mutex.new()
+
+
+## The identity of a layout: its JSON text with sorted keys, hashed.
+static func key_of(layout: Dictionary) -> String:
+	return JSON.stringify(layout, "", true).sha1_text()
+
+
+## Builds `layout` now, off the scene tree, for a later `build`. Safe on a worker thread. Returns the key, "" when the
+## layout is not valid (the later `build` then reports the errors as it always did).
+static func build_ahead(layout: Dictionary) -> String:
+	var key: String = key_of(layout)
+	if validate(layout).size() > 0:
+		return ""
+	var tmp: Node3D = Node3D.new()
+	var res: Dictionary = TLKitLayoutBuild.new().run(layout, tmp)
+	res["_tmp"] = tmp
+	_ahead_lock.lock()
+	if not _ahead.has(key):
+		_ahead[key] = []
+	(_ahead[key] as Array).append(res)
+	_ahead_count += 1
+	_ahead_lock.unlock()
+	return key
+
+
+## Takes one result built ahead for `key`; {} when there is none.
+static func take_ahead(key: String) -> Dictionary:
+	var res: Dictionary = {}
+	_ahead_lock.lock()
+	if _ahead.has(key):
+		var list: Array = _ahead[key]
+		res = list.pop_front()
+		_ahead_count -= 1
+		if list.is_empty():
+			_ahead.erase(key)
+	_ahead_lock.unlock()
+	return res
+
+
+## Frees one result built ahead that no `build` asked for (main thread). True when there was one.
+static func drop_ahead(key: String) -> bool:
+	var res: Dictionary = take_ahead(key)
+	if res.is_empty():
+		return false
+	(res["_tmp"] as Node).free()
+	return true

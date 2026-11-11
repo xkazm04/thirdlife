@@ -244,7 +244,9 @@ Consts: `MATERIALS`, `PARTS`
 
 - `static func build(kind: String, params: Dictionary = {}) -> Node3D`
 - `static func build_layout(layout: Dictionary, parent: Node3D) -> Dictionary`
+- `static func build_layout_ahead(layout: Dictionary) -> String`
 - `static func check_params(what: String, table: Dictionary, params: Dictionary) -> PackedStringArray`
+- `static func drop_layout_ahead(key: String) -> bool`
 - `static func expand_spec(row: Array) -> Dictionary`
 - `static func hash(node: Node) -> String`
 - `static func list() -> PackedStringArray`
@@ -287,7 +289,11 @@ Consts: `MATERIALS`, `PARTS`
 Consts: `NEAR`
 
 - `static func build(layout: Dictionary, parent: Node3D) -> Dictionary`
+- `static func build_ahead(layout: Dictionary) -> String`
+- `static func drop_ahead(key: String) -> bool`
+- `static func key_of(layout: Dictionary) -> String`
 - `static func schema() -> Dictionary`
+- `static func take_ahead(key: String) -> Dictionary`
 - `static func v2(a: Array) -> Vector2`
 - `static func validate(layout: Dictionary) -> PackedStringArray`
 

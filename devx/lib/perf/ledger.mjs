@@ -7,7 +7,7 @@ export const SCHEMA = "tl.perf/1";
 
 /** Every metric a scenario may report. All are "lower is better" except bodies_awake, which is information. */
 export const METRICS = ["sim_tick_ms_p50", "sim_tick_ms_p99", "worst_tick_ms", "frame_ms_p50", "frame_ms_p99", "worst_frame_ms",
-  "gpu_ms", "render_cpu_ms", "draw_calls", "primitives", "load_ms", "bodies_awake"];
+  "gpu_ms", "render_cpu_ms", "draw_calls", "primitives", "load_ms", "first_frame_ms", "six_built_ms", "bodies_awake"];
 
 /**
  * The tolerance of the gate: a metric regresses when it is above baseline * (1 + rel) + abs. Chosen from the spread of
@@ -29,6 +29,8 @@ export const TOLERANCE = {
   draw_calls: { rel: 0.02, abs: 2 },
   primitives: { rel: 0.02, abs: 100 },
   load_ms: { rel: 0.30, abs: 150 },
+  first_frame_ms: { rel: 0.30, abs: 300 },   // P5: the world's start to the first drawn frame (the landscape is in it, the engine's start is not)
+  six_built_ms: { rel: 0.50, abs: 500 },     // P5: world start until the sixth pack is attached (a worker thread: moves with the machine)
 };
 
 export function readLedger(file) {
