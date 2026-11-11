@@ -130,13 +130,17 @@ func discard(job_dir: String) -> String:
 	return _start(job_dir, "discard", [["cancel", job_dir, "--reason", "discarded by the player"]])
 
 
-func answer(job_dir: String, package: String, text: String, change_package: String) -> String:
+## `foreman_running`: a Foreman holds this job. The answer then goes through its inbox and it continues by itself;
+## a `resume` step would only collide with its lock.
+func answer(job_dir: String, package: String, text: String, change_package: String, foreman_running: bool = false) -> String:
 	var t: String = clean_text(text)
 	if t.is_empty():
 		return "write the answer first"
 	var a: Array = ["answer", job_dir, package, t]
 	if not change_package.is_empty():
 		a.append_array(["--change", change_package])
+	if foreman_running:
+		return _start(job_dir, "answer", [a])
 	return _start(job_dir, "answer", [a, ["resume", job_dir] + _flags("resume")])
 
 

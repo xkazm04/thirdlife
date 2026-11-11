@@ -5,111 +5,33 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Acceptance, BudgetPolicy, Cause, JobEvent, Milestone, PackageSpec } from "./events.js";
 import { CHANGE_REASON_RE, JobLog, changeReason, type JobState, type PackageView } from "./joblog.js";
-import type { Builder, RunResult } from "./builder/types.js";
+import type { RunResult } from "./builder/types.js";
 import { deriveBashAllowlist } from "./builder/allowlist.js";
-import type { Verifier, VerifyResult } from "./verifier.js";
+import type { VerifyResult } from "./verifier.js";
 import { BudgetGate, budgetVerdict } from "./budget.js";
 import { copyDir, hashFile, listFiles, matchesAny, pruneEmptyDirs, snapshot } from "./scope.js";
 import { engineWritable, promotePack, readManifest } from "./promoter.js";
-import { existingText, prepareReference, referenceText, type Reference } from "./reference.js";
+import { existingText, prepareReference, referenceText } from "./reference.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
-import { critic, replanPackages, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type Generated, type PackageLine, type ReplanInput } from "./designer.js";
+import { critic, replanPackages, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
+import { drainInbox } from "./inbox.js";
+import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls } from "./p10.js";
+export { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls };
+// P10b: the options type and the pure functions live in their own modules; everything that was exported here still is.
+import type { ForemanOptions } from "./options.js";
+import { MACHINE_BUSY, NOT_LOAD, PACK_STALL, classifyStalls, clockDetail, diedSilently, frameFigures, medianOverHalfBudget, restsOnAClock, stallOf, type GateFailure, type Stall, type Verified } from "./machine.js";
+import { FOREMAN_NOTE, builderConduct, clip, countKitUse, parseDeviations, statesKitReason, type KitFigures } from "./conduct.js";
+import { packTest, packTestsFor, finalLimit, finalSent, sendBackFinal, type GateHost } from "./p10gate.js";
+export type { ForemanOptions, KitFigures, Stall };
+export { FOREMAN_NOTE, MACHINE_BUSY, NOT_LOAD, PACK_STALL, builderConduct, classifyStalls, clockDetail, countKitUse, diedSilently, frameFigures, medianOverHalfBudget, parseDeviations, restsOnAClock, stallOf, statesKitReason };
 
 export class ForemanError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ForemanError";
   }
-}
-
-export interface ForemanOptions {
-  jobDir: string;
-  builder: Builder;
-  verifier: Verifier;
-  /** Packages built at once. Default 2. */
-  parallel?: number;
-  /** Rounds per package before it fails. Default 4 (JOB.md). */
-  roundLimit?: number;
-  builderTimeoutMs?: number;
-  model?: string;
-  budget?: BudgetPolicy;
-  now?: () => Date;
-  sleep?: (ms: number) => Promise<void>;
-  isPlaying?: () => boolean;
-  /** Text of the pack contract given to builders. Default: contracts/PACK.md. */
-  packContract?: string;
-  /** Promote the finished pack. Default true. */
-  promote?: boolean;
-  /**
-   * Where a promoted pack is written: "job" (default) is <job>/promoted/<pack id>/, so a job ends `promoted` without
-   * touching the engine; "engine" is <engineDir>/packs/<pack id>/, and falls back to "job" when that is not writable.
-   */
-  promoteTo?: "job" | "engine";
-  /** Put failed packages back in the queue at round 1 before running. */
-  retryFailed?: boolean;
-  rateLimitRetries?: number;
-  rateLimitBackoffMs?: number;
-  /** Re-plans per job before it fails. Default 3 (JOB.md). */
-  maxReplans?: number;
-  /** Most packages a re-plan may leave in the plan (the same limit the first plan had). */
-  maxPackages?: number;
-  /** Test seam and override: who answers a re-plan. Default: the Planner prompt through `builder` in generate mode. */
-  replanner?: (input: ReplanInput) => Promise<Generated<{ packages: PackageSpec[] }>>;
-  /** Run the V5 critic on milestone captures. Default true. */
-  critic?: boolean;
-  /** Model for job-level generate calls made by the loop (re-plan, critic). Default: `model`. */
-  plannerModel?: string;
-  criticModel?: string;
-  /** Milestone captures: resolution and the physics frames to render for each declared camera. */
-  captureRes?: string;
-  /** Fixed capture frames. Default: 25 % and 75 % of the first bot's finish frame in its last passing report (120 and 480 without one). */
-  captureFrames?: number[];
-  /**
-   * Reference material for builders: the kernel's API.md and example packs. They are COPIED into <job>/ref/ once
-   * and that copy is what a builder may read (--add-dir): the engine directory itself is never opened to a builder.
-   */
-  reference?: Reference;
-  /**
-   * The runner's verbs and options. Default: read from the runner that will be started (verbs.ts verbsFor: the
-   * engine's kernel/runner/verbs.json). A missing file is an error when the run starts.
-   */
-  verbs?: RunnerVerbs;
-  /**
-   * Which optional manifest fields (footprint, params, on_leave, subject, moments) builders may write. Default: the
-   * ones the engine's kernel/runner/manifest.gd names (all five for the bundled fake runner). A field the engine
-   * does not accept is never asked for and is removed if a builder writes it, because lint would refuse the pack.
-   */
-  carriedFields?: string[];
-  /**
-   * N3b: how often a clock-based failure that the machine explains (the engine's reference pack fails its clock too)
-   * is tried again before the round is recorded as inconclusive. Default 3.
-   */
-  clockRetries?: number;
-  /** N3b: the pause before each of those tries, in ms; the last value repeats. Default [20000, 40000, 80000]. */
-  clockPausesMs?: number[];
-  /** N3b: the known-good pack the machine is measured with. Default <engine>/kernel/examples/pack_min. */
-  referencePack?: string;
-  /**
-   * N3b: the reference pack's frame p99 (ms) from which the machine counts as busy even though the reference pack
-   * still passed. Default 2. Measured in the real hockey job: a calm run has p99 about 1.7 x p50 (1.0 ms against
-   * 0.6 ms on a 289-node pack); under load p50 stays and p99 jumps to 13..33 ms. The reference pack is tiny, so it
-   * rarely breaks the 8 ms budget itself: its p99 is the gauge.
-   */
-  referenceBusyP99Ms?: number;
-  /**
-   * N3b: the reference pack's slowest single tick (ms, `tick_ms_max` of its smoke report) from which the machine
-   * counts as busy. Default 2. Measured on the real runner 2026-11-11 02:04 with pack_min: 0.10 ms in two runs,
-   * 4.46 ms in the one run that another process cut into. The reference run is short (about 1.3 s), so one
-   * interrupted tick is the sensitive sign; its p99 moves much less than a big pack's.
-   */
-  referenceBusyTickMs?: number;
-  /** N3 item 3: compare kit use and bypasses before and after every round. Default true (`--no-kit-gate` turns it off). */
-  kitGate?: boolean;
-  /** Test seam: called after every durable append; throwing simulates a kill at that exact event. */
-  afterAppend?: (ev: JobEvent) => void;
-  onEvent?: (ev: JobEvent) => void;
 }
 
 /** Causes after which a failed package goes back to the Planner (a refusal, a budget stop or a cancel do not). */
@@ -122,144 +44,6 @@ export const CRITIC_ROUND = "critic (V5) NOT ok, one extra round";
 export const CHANGE_ROUND = "CHANGE REQUEST";
 export const DEP_CHANGED = "DEPENDENCY CHANGED";
 export const KIT_REGRESSION = "KIT REGRESSION";
-/**
- * The start of a `note` the Foreman writes itself (a fallback of the critic's round, a stated kit reason, the
- * pictures after a change). Builders' own notes (their DEVIATIONS) do not start with it; only those are handed to
- * the builders of dependent packages.
- */
-export const FOREMAN_NOTE = "[foreman] ";
-
-/** The figures a round may not make worse without saying why (N3 item 3). */
-export interface KitFigures {
-  /** `composability.bypasses.length` of the pack's lint report: places that do by hand what a primitive exists for. */
-  bypasses: number;
-  /**
-   * Kit parts used, counted by the Foreman because the lint report has no such figure: `"kind": "..."` entries in
-   * the pack's data/*.json (layout props and actors) plus `TLKit.` / `TLRigs.` call sites in its scripts.
-   */
-  kitUse: number;
-}
-
-/** Counts kit use in a pack directory (see KitFigures.kitUse). Comments in scripts do not count. */
-export function countKitUse(packDir: string): number {
-  let n = 0;
-  for (const f of listFiles(packDir)) {
-    const abs = path.join(packDir, f);
-    if (f.startsWith("data/") && f.endsWith(".json")) n += (fs.readFileSync(abs, "utf8").match(/"kind"\s*:\s*"/g) ?? []).length;
-    else if (f.endsWith(".gd") && !f.startsWith("tests/")) {
-      for (const line of fs.readFileSync(abs, "utf8").split(/\r?\n/)) n += (line.replace(/#.*$/, "").match(/\bTL(Kit|Rigs)\s*\./g) ?? []).length;
-    }
-  }
-  return n;
-}
-
-/** True when a builder's DEVIATIONS text says why kit use fell or a bypass was added (a `KIT:` line, or plain words). */
-export function statesKitReason(deviations: string | undefined, hints: string[] = []): boolean {
-  if (!deviations) return false;
-  if (/^\s*[-*]?\s*\**KIT\**\s*:/im.test(deviations)) return true;
-  if (/\b(kit|bypass\w*|TLKit|TLRigs|by hand|hand[- ]built|hand[- ]made|kernel primitive)\b/i.test(deviations)) return true;
-  return hints.some((h) => h.length >= 4 && deviations.toLowerCase().includes(h.toLowerCase()));
-}
-
-/** A verification result with what the Foreman concluded on top: a kit regression, or "machine busy, no verdict". */
-type Verified = VerifyResult & { inconclusive?: string };
-type GateFailure = Verified & { kitRegression?: string };
-
-/** N3b: the fixed start of the `detail` of a round whose clock-based failure was the machine's, not the pack's. */
-export const MACHINE_BUSY = "inconclusive: machine busy";
-/** N3b: the start of the note (after FOREMAN_NOTE) that says a repeated clock failure is the pack's own. */
-export const NOT_LOAD = "machine not shown busy";
-/** N3c: the start of the note that says the watchdog stopped two runs at the same frame: the pack's own stall. */
-export const PACK_STALL = "the same stall twice";
-
-/** Where the watchdog stopped a run, read from the report's error message as the runner writes it ("... (frame N)"). */
-export interface Stall {
-  frame?: number;
-  /** The callback that did not return: `_pack_tick`, `_bot_tick`, `_pack_setup`, ... */
-  callback?: string;
-  file?: string;
-  message: string;
-}
-
-export function stallOf(vr: VerifyResult): Stall | undefined {
-  const r = vr.report;
-  if (!r || r.outcome !== "watchdog") return undefined;
-  const err = r.errors.find((e) => e.kind === "watchdog");
-  const message = err?.message ?? r.checks.find((c) => c.id === "smoke.watchdog" && !c.ok)?.detail ?? "";
-  if (!/tick_timeout|setup_timeout|did not return/.test(message)) return undefined;
-  const frame = /\(frame (\d+)\)/.exec(message)?.[1];
-  const callback = /(?:tick_timeout|setup_timeout): (\w+)/.exec(message)?.[1];
-  return { ...(frame !== undefined ? { frame: Number(frame) } : {}), ...(callback !== undefined ? { callback } : {}), ...(err?.file !== undefined ? { file: err.file } : {}), message };
-}
-
-/** The frame times a failing run still reported (median and p99), in words; undefined when no run reported any. */
-export function frameFigures(runs: VerifyResult[]): string | undefined {
-  for (const vr of [...runs].reverse()) {
-    const m = (vr.report?.["metrics"] ?? {}) as { frame_ms_p50?: unknown; frame_ms_p99?: unknown };
-    if (typeof m.frame_ms_p50 !== "number" || typeof m.frame_ms_p99 !== "number") continue;
-    const small = m.frame_ms_p99 < 8;
-    return `the frames it did run were ${small ? "ordinary" : "slow at the tail"}: median ${m.frame_ms_p50} ms, p99 ${m.frame_ms_p99} ms${small && vr.report?.outcome === "watchdog" ? ", so single ticks blew the watchdog's limit while the frames around them stayed far under the 8 ms budget" : ""}`;
-  }
-  return undefined;
-}
-
-/**
- * N3c: what the runs of ONE check on the SAME files say together when the watchdog stopped each of them.
- * A pack is deterministic: a stall that its own code causes comes at the same frame, in the same callback, every
- * time. Stalls at different places are the machine (the scheduler took the processor away for longer than the
- * limit); a short reference run seldom catches such a moment, so it is not asked. Without a frame number in every
- * report the runs decide nothing and the gauge is used.
- */
-export function classifyStalls(runs: VerifyResult[]): { verdict: "machine_load" | "pack" | "undecided"; text: string } {
-  const stalls = runs.map(stallOf);
-  if (runs.length < 2) return { verdict: "undecided", text: "one run only, nothing to compare" };
-  if (stalls.some((s) => s === undefined || s.frame === undefined)) return { verdict: "undecided", text: "the reports do not all name the frame at which the run stalled, so the runs cannot be compared" };
-  const all = stalls as (Stall & { frame: number })[];
-  const place = (s: Stall): string => `frame ${s.frame}${s.callback ? ` in ${s.callback}` : ""}${s.file ? ` (${s.file})` : ""}`;
-  const distinct = new Set(all.map((s) => `${s.frame}|${s.callback ?? ""}`)).size;
-  const times = frameFigures(runs);
-  const tail = times ? ` Of the frame times a failing run still reported, ${times}.` : "";
-  if (distinct === all.length) {
-    return {
-      verdict: "machine_load",
-      text: `the watchdog stopped ${all.length} runs of the same check on the same files at ${all.length} DIFFERENT places (${all.map(place).join("; ")}). A deterministic pack that stalls in its own code stalls at the same frame every time, so this is the machine (something else held the processor longer than the time limit), whatever a reference run says afterwards.${tail}`,
-    };
-  }
-  if (distinct === 1) {
-    return {
-      verdict: "pack",
-      text: `the watchdog stopped ${all.length} runs of the same check on the same files at the SAME place, ${place(all[0] as Stall)}. A stall that repeats at the same frame is in the pack's own code: look at what ${all[0]?.callback ?? "the script"} does at frame ${all[0]?.frame}.${tail}`,
-    };
-  }
-  return { verdict: "undecided", text: `the watchdog stopped ${all.length} runs at ${all.map(place).join("; ")}: some places repeat and some do not` };
-}
-
-/**
- * The deviations a builder states in its answer: everything under a line `DEVIATIONS:` up to a `QUESTION:` line or
- * the end. "none" (or nothing) means there are none.
- */
-export function parseDeviations(text: string | undefined): string | undefined {
-  if (!text) return undefined;
-  const lines = text.split(/\r?\n/);
-  let start = -1;
-  let first = "";
-  for (let i = 0; i < lines.length; i++) {
-    const m = /^[\s#>*_-]*DEVIATIONS\**\s*:?\**\s*(.*)$/.exec(lines[i] as string);
-    if (m) {
-      start = i;
-      first = m[1] ?? "";
-    }
-  }
-  if (start < 0) return undefined;
-  const body = [first];
-  for (let i = start + 1; i < lines.length; i++) {
-    if (/^\s*QUESTION:/.test(lines[i] as string)) break;
-    body.push(lines[i] as string);
-  }
-  const out = body.join("\n").trim();
-  if (out === "" || /^[-*\s]*(none|no deviations?|nothing|n\/a)[.!]?\s*$/i.test(out)) return undefined;
-  return clip(out, 4000);
-}
 
 const BUILDER_CAUSE: Record<Exclude<RunResult["outcome"], "ok">, Cause> = {
   timeout: "builder_timeout",
@@ -278,85 +62,9 @@ function render(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
 }
 
-function clip(s: string, n: number): string {
-  return s.length <= n ? s : `${s.slice(0, n)}\n... (${s.length - n} more characters cut)`;
-}
-
 function listDetail(label: string, files: string[]): string {
   const shown = files.slice(0, 20).join(", ");
   return `${label}: ${shown}${files.length > 20 ? ` (+${files.length - 20} more)` : ""}`;
-}
-
-/**
-   * What a builder did with its tools, read from the adapter's envelope (claude-cli stream-json events): how often
-   * each tool was used, the shell commands it ran, and what the permission system refused. Evidence for the report
-   * and the site, never an input to a verdict.
-   */
-export function builderConduct(raw: unknown): { tools: Record<string, number>; bash: string[]; denials: string[]; notes: string[] } {
-  const out = { tools: {} as Record<string, number>, bash: [] as string[], denials: [] as string[], notes: [] as string[] };
-  const events = (raw as { events?: unknown } | null)?.events;
-  if (!Array.isArray(events)) return out;
-  for (const ev of events as Record<string, unknown>[]) {
-    if (ev?.["type"] === "assistant") {
-      const content = (ev["message"] as { content?: unknown } | undefined)?.content;
-      if (!Array.isArray(content)) continue;
-      for (const c of content as Record<string, unknown>[]) {
-        if (c?.["type"] !== "tool_use" || typeof c["name"] !== "string") continue;
-        out.tools[c["name"]] = (out.tools[c["name"]] ?? 0) + 1;
-        const cmd = (c["input"] as { command?: unknown } | undefined)?.command;
-        if (c["name"] === "Bash" && typeof cmd === "string") out.bash.push(cmd.length > 600 ? `${cmd.slice(0, 600)}...` : cmd);
-      }
-    } else if (ev?.["type"] === "result" && Array.isArray(ev["permission_denials"])) {
-      for (const d of ev["permission_denials"] as Record<string, unknown>[]) {
-        const input = d?.["tool_input"] as Record<string, unknown> | undefined;
-        const what = typeof input?.["command"] === "string" ? input["command"] : typeof input?.["file_path"] === "string" ? input["file_path"] : "";
-        out.denials.push(`${String(d?.["tool_name"] ?? "?")}: ${String(what).slice(0, 300)}`);
-      }
-    }
-  }
-  return out;
-}
-
-/**
- * True when a failed verification could be the machine's load and not the pack: the watchdog tripped on a time
- * limit (not on its frame-counted or error-counted reasons), or the only failed check is the physics time budget.
- */
-export function restsOnAClock(vr: VerifyResult): boolean {
-  const r = vr.report;
-  if (!r || vr.flags.length > 0 || vr.ok) return false;
-  const failed = r.checks.filter((c) => !c.ok);
-  if (r.outcome === "watchdog") {
-    const detail = failed.find((c) => c.id === "smoke.watchdog")?.detail ?? "";
-    return /tick_timeout|setup_timeout|did not return/.test(detail);
-  }
-  return failed.length > 0 && failed.every((c) => c.id === "invariants.frame_budget");
-}
-
-/**
- * When the ONLY failed check is the frame budget and the median frame alone is over half of it, the words that say
- * so; undefined otherwise. Such a pack is slow in every frame, which load does not explain.
- */
-export function medianOverHalfBudget(vr: VerifyResult): string | undefined {
-  const failed = (vr.report?.checks ?? []).filter((c) => !c.ok);
-  if (vr.report?.outcome === "watchdog" || failed.length === 0 || !failed.every((c) => c.id === "invariants.frame_budget")) return undefined;
-  const p50 = (vr.report?.["metrics"] as { frame_ms_p50?: unknown } | undefined)?.frame_ms_p50;
-  const budget = Number(/budget (\d+(?:\.\d+)?) ms/.exec(failed[0]?.detail ?? "")?.[1] ?? "8");
-  if (typeof p50 !== "number" || !(p50 > budget / 2)) return undefined;
-  return `The median frame alone is ${p50} ms, over half of the ${budget} ms budget: the pack is slow in every frame, which machine load does not explain`;
-}
-
-/** The words of a clock-based failure: the failed checks' details (the p99 figure, the watchdog's reason). */
-export function clockDetail(vr: VerifyResult): string {
-  const failed = (vr.report?.checks ?? []).filter((c) => !c.ok && (c.id === "invariants.frame_budget" || c.id === "smoke.watchdog"));
-  return failed.map((c) => c.detail ?? c.id).join("; ") || vr.summary;
-}
-
-/**
- * True when the runner exited by itself with NO output at all (not a timeout, not a spawn failure): it was killed
- * from outside or crashed before its first line. That is not a verdict about the pack.
- */
-export function diedSilently(vr: VerifyResult): boolean {
-  return !vr.ok && vr.flags.includes("stdout_not_json") && !vr.flags.includes("runner_timeout") && !vr.flags.includes("spawn_error") && vr.summary.includes('stdout is not JSON: ""');
 }
 
 export class Foreman {
@@ -404,6 +112,26 @@ export class Foreman {
     this.o.onEvent?.(ev);
     return ev;
   }
+  /** P10b: what p10gate.ts needs of this Foreman (its functions were methods here). State and log are read live. */
+  private get gateHost(): GateHost {
+    const log = (): JobLog => this.log;
+    const state = (): JobState => this.s;
+    return {
+      o: this.o,
+      get s() {
+        return state();
+      },
+      get events() {
+        return log().events;
+      },
+      dir: (...parts) => this.dir(...parts),
+      rel: (abs) => this.rel(abs),
+      pkg: (id) => this.pkg(id),
+      append: (body) => this.append(body),
+      reopen: (id, reason, detail) => this.reopen(id, reason, detail),
+      verifyLogged: (a, packDir, stem, where) => this.verifyLogged(a, packDir, stem, where),
+    };
+  }
   /** Report and transcript names carry the next seq, so a re-run never overwrites what an earlier event points at. */
   private reportPath(stem: string): string {
     return this.dir("reports", `${stem}-s${this.s.lastSeq + 1}.json`);
@@ -416,10 +144,41 @@ export class Foreman {
       ...(this.o.afterAppend ? { afterAppend: this.o.afterAppend } : {}),
     });
     try {
-      return await this.runOpen();
+      let s = await this.runOpen();
+      // P10 item 4: something was put into the inbox while the job was ending (an answer to the question it paused
+      // for, a change request on the pack it just promoted): the same process goes on with it, as a resume would.
+      for (let again = 0; again < 20 && s.jobState?.state !== "cancelled" && this.takeInbox() > 0; again++) s = await this.runOpen();
+      return s;
     } finally {
       this.log.close();
     }
+  }
+
+  /**
+   * P10 item 4: writes what waits in <job>/inbox.jsonl into the log, each entry as the event it would have been
+   * (`answer`, `change_requested`). Synchronous, so it cannot fall between two events of a package. Returns the
+   * number of events written.
+   */
+  private takeInbox(): number {
+    const r = drainInbox(this.jobDir, () => this.log.events, () => this.s, (body) => this.append(body));
+    return r.appended.length;
+  }
+
+  /** P10: the Planner's answer to "which package owns this change request", by the request's seq (this run only). */
+  private readonly askedOwners = new Map<number, { owner: string; how: string }>();
+
+  /**
+   * True when a pending change request could be applied now: its package (named, or already chosen by the Planner)
+   * is finished, merged and idle. One that names none and has not been asked about yet is ready to be asked.
+   */
+  private changeReady(c: { seq?: number; package?: string }, running?: ReadonlyMap<string, unknown>): boolean {
+    // No builder is in flight (the start of a run, or the scheduler has returned): as before P10, whatever state
+    // the package is in. `foreman change --package X` on a job that failed on X is how X is asked to try again.
+    if (running === undefined) return true;
+    const id = c.package ?? (c.seq !== undefined ? this.askedOwners.get(c.seq)?.owner : undefined);
+    if (id === undefined) return true;
+    const p = this.s.packages[id];
+    return p !== undefined && p.state === "promoted" && (p.mergedFiles ?? []).length > 0 && !(running?.has(id) ?? false);
   }
 
   private async runOpen(): Promise<JobState> {
@@ -489,6 +248,7 @@ export class Foreman {
     }
 
     this.prepareReference();
+    this.takeInbox();
     this.requeueReopened();
     await this.applyChangeRequests();
 
@@ -498,10 +258,16 @@ export class Foreman {
       this.requeueReopened();
       this.requeueNoVisibleChange();
       await this.schedule();
+      // P10 item 4: what arrived while the last builders ran, before anything is decided about the job.
+      const took = this.takeInbox();
+      if ((await this.applyChangeRequests()) > 0) continue;
+      // An answer that arrived just now: the scheduler looks at its package again.
+      if (took > 0) continue;
       const views = this.s.order.map((id) => this.pkg(id));
       if (views.every((p) => p.state === "promoted")) {
         await this.catchUpMilestones();
-        await this.finish();
+        // P10 item 2: a failed final verification after a change sends the failure back to a package.
+        if (await this.finish()) continue;
         break;
       }
       const held = (p: PackageView): boolean => p.state === "blocked" && (p.cause === "question" || p.cause === "machine_busy");
@@ -673,7 +439,16 @@ export class Foreman {
     const running = new Map<string, Promise<void>>();
     let fatal: unknown;
     const dead = (p: PackageView): boolean => p.state === "failed" || (p.state === "blocked" && p.cause === "dependency");
+    const pollMs = Math.max(20, this.o.inboxPollMs ?? 1000);
     for (;;) {
+      if (fatal === undefined) {
+        // P10 item 4: the safe point. Between two awaits nothing else runs, so an `answer` or a `change_requested`
+        // written here cannot fall into the middle of a package's round. An answered package is started below, in
+        // this same pass, while the other packages go on building. A change request re-opens its package only
+        // when that package is finished and idle; until then it waits in the log as `pending`.
+        this.takeInbox();
+        if (this.s.changes.some((c) => c.state === "pending" && this.changeReady(c, running))) await this.applyChangeRequests(running);
+      }
       if (fatal === undefined) {
         // A package whose dependency can no longer be built is blocked, and says which one.
         let changed = true;
@@ -707,7 +482,14 @@ export class Foreman {
         }
       }
       if (running.size === 0) break;
-      await Promise.race(running.values());
+      // Wakes when a package ends, or after `inboxPollMs` to look into the inbox (a real timer: `sleep` is a test seam
+      // for the pauses the Foreman takes on purpose, and may return at once).
+      let timer: NodeJS.Timeout | undefined;
+      const tick = new Promise<void>((r) => {
+        timer = setTimeout(r, pollMs);
+      });
+      await Promise.race([...running.values(), tick]);
+      clearTimeout(timer);
     }
     if (fatal !== undefined) throw fatal;
   }
@@ -888,9 +670,19 @@ export class Foreman {
     return manifestText(composeManifest(this.jobIdentity(), this.specsOf(ids), carried));
   }
 
-  /** The last round a package may use: the round limit counts from its last re-opening (N3). */
+  /**
+   * The last round a package may use: the round limit counts from its last re-opening (N3). A package re-opened by
+   * a failed final verification (P10 item 2) gets ONE round per re-opening: the limit on those is counted per job
+   * (`finalRounds`), so a change that cannot be made costs at most that many builder runs.
+   */
   private cap(id: string): number {
-    return (this.pkg(id).roundBase ?? 1) + this.o.roundLimit - 1;
+    const p = this.pkg(id);
+    if (p.roundBase !== undefined && this.lastReopenReason(id).startsWith(FINAL_FAILED)) return p.roundBase;
+    return (p.roundBase ?? 1) + this.o.roundLimit - 1;
+  }
+  private lastReopenReason(id: string): string {
+    const e = [...this.log.events].reverse().find((x) => x.type === "reopened" && x.package === id);
+    return e && e.type === "reopened" ? e.reason : "";
   }
 
   private ensureWs(id: string, fresh: boolean): void {
@@ -1059,7 +851,9 @@ export class Foreman {
         const cur = this.pkg(id);
         const fresh = round === 1 && !resumed && cur.state === "queued";
         this.ensureWs(id, fresh);
-        this.append({ type: "package_state", package: id, state: "running", round, ...(resumed ? { detail: "resumed" } : {}) });
+        // P10 item 5: starved calls the engine counted in the round before (a round that failed for another reason).
+        const before = [resumed ? "resumed" : "", this.starvedDetail(id).replace(/ of this round:/, ` of round ${round - 1}:`)].filter(Boolean).join("; ");
+        this.append({ type: "package_state", package: id, state: "running", round, ...(before ? { detail: before } : {}) });
         resumed = false;
         const res = await this.callBuilder(id, spec, round);
         if (res.outcome === "ok") this.recordNote(id, round, res.text);
@@ -1104,6 +898,7 @@ export class Foreman {
         // N3b: no verdict. The round is not lost, the builder gets no feedback for it, and nothing is merged: the
         // package waits (blocked, cause machine_busy) and the job pauses; `resume` verifies the same files again.
         this.busyThisRun.add(id);
+        this.starvedByPackage.delete(id);
         this.append({ type: "package_state", package: id, state: "blocked", round, cause: "machine_busy", detail: clip(failure.inconclusive, 900) });
         return;
       }
@@ -1132,7 +927,7 @@ export class Foreman {
           state: "failed",
           round,
           cause: "verify_failed",
-          detail: clip(`${failure.verb} (${failure.level}) did not pass after ${round} rounds: ${failure.summary}`, 400),
+          detail: clip([`${failure.verb} (${failure.level}) did not pass after ${round} rounds: ${failure.summary}`, this.starvedDetail(id)].filter(Boolean).join(". "), 600),
         });
         this.unmerge(id);
         return;
@@ -1150,6 +945,7 @@ export class Foreman {
    */
   private async verifyLogged(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<Verified> {
     const vr = await this.verifyTwice(a, packDir, stem, where);
+    if (!vr.ok && isStarved(vr)) return this.starvedVerdict(a, packDir, stem, where, vr);
     if (vr.ok || !restsOnAClock(vr)) return vr;
     // The same check failed on a clock twice. Before a builder hears of it, the Foreman asks whether it was the
     // machine (N3b, N3c; the real hockey job of 2026-11-11):
@@ -1200,8 +996,40 @@ export class Foreman {
       this.append({ type: "note", package: who, round, text: `${FOREMAN_NOTE}${MACHINE_BUSY}. ${figures}. Waiting ${Math.round(pause / 1000)} s, then try ${n} of ${tries}.` });
       await sleep(pause);
       last = await this.verifyOnce(a, packDir, `${stem}-retry${n}`, where);
+      if (!last.ok && isStarved(last)) return this.starvedVerdict(a, packDir, `${stem}-retry${n}`, where, last);
       if (last.ok || !restsOnAClock(last)) return last;
       runs.push(last);
+    }
+  }
+
+  /**
+   * P10 item 5: the runner itself says the machine starved the run (after its own two re-runs of 90 s each). That is
+   * the engine's verdict, not a guess of the Foreman's: no reference run, no comparison of frames. The check is tried
+   * again after the usual pauses (`clockRetries`, `clockPausesMs`); a run that then gives a real verdict decides.
+   * If it stays starved the round is inconclusive: nothing goes to a builder, no round is spent, the package waits
+   * with cause `machine_busy` and the job pauses.
+   */
+  private async starvedVerdict(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }, first: VerifyResult): Promise<Verified> {
+    const who = where.package ?? where.after ?? (this.s.order[0] as string);
+    const round = this.s.packages[who]?.round ?? 1;
+    const tries = Math.max(0, this.o.clockRetries ?? 3);
+    const pauses = this.o.clockPausesMs && this.o.clockPausesMs.length > 0 ? this.o.clockPausesMs : [20_000, 40_000, 80_000];
+    const sleep = this.o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+    const what = `${a.verb} on ${where.package !== undefined ? `the workspace of ${where.package}` : "the whole pack"}`;
+    const said = (vr: VerifyResult): string => clip(vr.report?.errors.find((e) => e.kind === "engine" && /^starved:/.test(e.message))?.message ?? "starved", 240);
+    let last = first;
+    for (let n = 1; ; n++) {
+      const figures = `${STARVED}: ${what} ended exit ${last.exitCode ?? "?"}, not_run, and the engine says why: "${said(last)}" [${this.rel(last.reportFile)}]`;
+      if (n > tries) {
+        const text = `${MACHINE_BUSY}. ${figures}. Tried ${tries} more time(s) with pauses; the machine stayed busy. This is NOT a verdict about the pack: nothing was sent to the builder and no round was spent. Free the machine and run \`foreman resume\`: the same files are verified again.`;
+        this.append({ type: "note", package: who, round, text: `${FOREMAN_NOTE}${text}` });
+        return { ...last, inconclusive: text, summary: text };
+      }
+      const pause = pauses[Math.min(n - 1, pauses.length - 1)] as number;
+      this.append({ type: "note", package: who, round, text: `${FOREMAN_NOTE}${MACHINE_BUSY}. ${figures}. Waiting ${Math.round(pause / 1000)} s, then try ${n} of ${tries}.` });
+      await sleep(pause);
+      last = await this.verifyOnce(a, packDir, `${stem}-starved${n}`, where);
+      if (last.ok || !isStarved(last)) return last;
     }
   }
 
@@ -1236,6 +1064,7 @@ export class Foreman {
 
   private async verifyOnce(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<VerifyResult> {
     const vr = await this.o.verifier.run({ verb: a.verb, args: a.args, packDir, reportFile: this.reportPath(stem) });
+    this.countStarved(where.package ?? where.after, vr);
     this.append({
       type: "verify",
       ...(where.package !== undefined ? { package: where.package } : {}),
@@ -1255,6 +1084,7 @@ export class Foreman {
     let first: VerifyResult | undefined;
     for (let attempt = 1; attempt <= 2; attempt++) {
       vr = await this.o.verifier.run({ verb: a.verb, args: a.args, packDir, reportFile: this.reportPath(attempt === 1 ? stem : `${stem}-again`) });
+      this.countStarved(where.package ?? where.after, vr);
       this.append({
         type: "verify",
         ...(where.package !== undefined ? { package: where.package } : {}),
@@ -1349,6 +1179,11 @@ export class Foreman {
           if (worse !== undefined) return { ...vr, ok: false, summary: worse, kitRegression: worse };
         }
       }
+      // P10 item 1: after a change, every test of the pack runs on the candidate before it becomes pack/.
+      for (const t of packTestsFor(this.gateHost, id, candidate, hadMerged)) {
+        const bad = await packTest(this.gateHost, id, round, t, candidate);
+        if (bad !== undefined) return bad;
+      }
     } finally {
       fs.rmSync(candidate, { recursive: true, force: true });
     }
@@ -1361,11 +1196,29 @@ export class Foreman {
     fs.mkdirSync(packDir, { recursive: true });
     fs.writeFileSync(path.join(packDir, MANIFEST_FILE), manifest);
     this.append({ type: "merge", package: id, files, ...(removed.length > 0 ? { removed } : {}) });
-    this.append({ type: "package_state", package: id, state: "promoted", round });
+    const starved = this.starvedDetail(id);
+    this.append({ type: "package_state", package: id, state: "promoted", round, ...(starved ? { detail: starved } : {}) });
     // N3: a package that was merged before and is merged again has changed under the packages that depend on it.
     if (hadMerged) await this.reverifyDependants(id);
     await this.maybeMilestone(this.spec(id).milestone, id);
     return undefined;
+  }
+
+  // ---------- P10 item 5: what the machine did to a round ----------
+
+  private readonly starvedByPackage = new Map<string, { stalls: number; ms: number; runs: number }>();
+  private countStarved(id: string | undefined, vr: VerifyResult): void {
+    const s = starvedStalls(vr);
+    if (id === undefined || s.stalls <= 0) return;
+    const had = this.starvedByPackage.get(id) ?? { stalls: 0, ms: 0, runs: 0 };
+    this.starvedByPackage.set(id, { stalls: had.stalls + s.stalls, ms: had.ms + s.ms, runs: had.runs + 1 });
+  }
+  /** The words for a round's `detail` when the engine counted starved calls in its checks; "" when it counted none. */
+  private starvedDetail(id: string): string {
+    const s = this.starvedByPackage.get(id);
+    this.starvedByPackage.delete(id);
+    if (!s || s.stalls <= 0) return "";
+    return `starved_stalls ${s.stalls}${s.ms > 0 ? ` (${Math.round(s.ms)} ms)` : ""} in ${s.runs} check run(s) of this round: the machine held the processor back; the engine's limits count processor time, so nothing failed for it`;
   }
 
   // ---------- N3: re-opening a finished package ----------
@@ -1386,7 +1239,7 @@ export class Foreman {
       const reason = last && last.type === "reopened" ? last.reason : "";
       const m = CHANGE_REASON_RE.exec(reason);
       const change = m ? this.s.changes.find((c) => c.seq === Number(m[1])) : undefined;
-      const detail = change ? `${CHANGE_ROUND}: ${change.text}` : reason.startsWith(CRITIC_ROUND) ? reason : `${DEP_CHANGED}: ${reason}`;
+      const detail = change ? `${CHANGE_ROUND}: ${change.text}` : reason.startsWith(CRITIC_ROUND) || reason.startsWith(FINAL_FAILED) ? reason : `${DEP_CHANGED}: ${reason}`;
       this.append({ type: "package_state", package: id, state: "queued", round: p.roundBase, detail: clip(detail, 1500) });
     }
   }
@@ -1405,24 +1258,34 @@ export class Foreman {
    * re-opened: the text joins its brief, it runs its normal rounds, and after its merge every package that depends
    * on it is verified again (reverifyDependants).
    */
-  private async applyChangeRequests(): Promise<void> {
+  private async applyChangeRequests(running?: ReadonlyMap<string, unknown>): Promise<number> {
+    let applied = 0;
     for (const c of this.s.changes.filter((x) => x.state === "pending")) {
+      // P10 item 4: a request that arrives while its package is being built waits until that package is finished.
+      if (!this.changeReady(c, running)) continue;
       let owner = c.package;
       let how = "the request names the package";
       if (owner === undefined) {
-        const model = this.o.plannerModel ?? this.o.model;
-        const res = await whoOwns(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: this.packageLines() }, model ? { model } : {});
-        this.logGenerateCalls(res.calls, model);
-        if (res.ok) {
-          owner = res.value.package;
-          how = `the Planner names the package: ${clip(res.value.reason, 200)}`;
-        } else {
-          owner = this.s.plan.find((p) => p.deps.length === 0)?.id ?? (this.s.order[0] as string);
-          how = `the Planner gave no usable answer (${clip(res.reason, 160)}), so the root package takes it`;
+        // The Planner is asked ONCE per request in a run; the answer is kept while the request waits for its package.
+        let known = this.askedOwners.get(c.seq);
+        if (known === undefined) {
+          const model = this.o.plannerModel ?? this.o.model;
+          const res = await whoOwns(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: this.packageLines() }, model ? { model } : {});
+          this.logGenerateCalls(res.calls, model);
+          known = res.ok
+            ? { owner: res.value.package, how: `the Planner names the package: ${clip(res.value.reason, 200)}` }
+            : { owner: this.s.plan.find((p) => p.deps.length === 0)?.id ?? (this.s.order[0] as string), how: `the Planner gave no usable answer (${clip(res.reason, 160)}), so the root package takes it` };
+          this.askedOwners.set(c.seq, known);
         }
+        owner = known.owner;
+        how = known.how;
+        // Asked while other packages ran: the package it names must be finished and idle as well, or the request waits.
+        if (!this.changeReady(c, running)) continue;
       }
       this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(c.text, 300)}`, `${CHANGE_ROUND}: ${c.text}`);
+      applied += 1;
     }
+    return applied;
   }
 
   /**
@@ -1805,6 +1668,20 @@ export class Foreman {
     if (depChanged !== undefined) {
       parts.push(`This package was finished and merged, and has been re-opened:\n${depChanged}\nThe changed files of that package are in your working directory now. Adapt your own files to them (the report is below); do not try to change the other package.`);
     }
+    // P10 item 2: re-opened because the final verification of the whole pack failed after this package merged.
+    const fin = queuedAs([FINAL_FAILED]);
+    if (fin !== undefined) {
+      const rel = /\[report: ([^\]]+)\]/.exec(fin)?.[1];
+      const body = rel !== undefined ? this.readClipped(this.dir(rel), 12_000) : undefined;
+      parts.push(
+        `This package was finished and merged, and the WHOLE pack then failed its final verification, so nothing was promoted:\n${fin}\n` +
+          "The other packages' files are in your working directory as the pack holds them now. Change your own files so that the check passes again, without undoing what a change request asked for (see the change requests above, if any). You have ONE round for this: your acceptance runs, then every test of the pack with your files merged in, then the final verification again. Say what you changed under DEVIATIONS." +
+          (body !== undefined ? `\nReport of the failed check (tl.verify/1):\n${body}` : ""),
+      );
+    }
+    // P10 item 1: the round before was refused because a test of the pack failed with its files merged in.
+    const packTest = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && n.text.startsWith(`${FOREMAN_NOTE}${PACK_TEST_FAILED}`));
+    if (packTest) parts.push(`${packTest.text.slice(FOREMAN_NOTE.length)}\nEvery test of the pack must pass with your files in, not only your own acceptance: the report of the failed test is below. Change YOUR files; you cannot change the other package or its test.`);
     // N3b: a clock-based failure reaches the builder only after the machine was measured; say so.
     const notLoad = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && (n.text.startsWith(`${FOREMAN_NOTE}${NOT_LOAD}`) || n.text.startsWith(`${FOREMAN_NOTE}${PACK_STALL}`)));
     if (notLoad) parts.push(`${notLoad.text.startsWith(`${FOREMAN_NOTE}${PACK_STALL}`) ? "The Foreman compared the two runs before reporting this" : "The Foreman measured the machine before reporting this"}: ${notLoad.text.slice(FOREMAN_NOTE.length)}`);
@@ -1833,7 +1710,7 @@ export class Foreman {
       const packPrefix = `reports/${id}-r${prev}-pack-`;
       // A failed run that a later run of the same check overruled (the second run of a clock-based verdict, a retry
       // after "machine busy") is not feedback: only a failure that still stands goes back to the builder (N3b).
-      const base = (report: string): string => report.replace(/(\.verdict)?\.json$/i, "").replace(/-s\d+$/, "").replace(/-(again|retry\d+)$/, "");
+      const base = (report: string): string => report.replace(/(\.verdict)?\.json$/i, "").replace(/-s\d+$/, "").replace(/(-(again|retry\d+|starved\d+))+$/, "");
       const mine = events.filter((e): e is Extract<JobEvent, { type: "verify" }> => e.type === "verify" && e.round === prev && (e.package === id || (e.package === undefined && e.report.startsWith(packPrefix))));
       const failing = [...mine].reverse().find((e) => !e.ok && !mine.some((x) => x.ok && x.seq > e.seq && base(x.report) === base(e.report)));
       // N3c: the runs of that check, read again from their reports. If the watchdog stopped them at different frames
@@ -1903,7 +1780,7 @@ export class Foreman {
       roundLimit: String(Math.max(round, this.cap(id))),
       changes:
         (this.pkg(id).changes ?? []).length > 0
-          ? `\n## Change requests from the player (made after this package was first finished; they are part of your brief, newest last, and win over the contract where the two disagree)\n${(this.pkg(id).changes ?? []).map((c, i) => `${i + 1}. ${c}`).join("\n")}\n`
+          ? `\n## Change requests from the player (made after this package was first finished; they are part of your brief, newest last, and win over the contract where the two disagree)\n${(this.pkg(id).changes ?? []).map((c, i) => `${i + 1}. ${c}`).join("\n")}\n${this.presentValues(id, spec)}`
           : "",
       depNotes: this.depNotesText(id),
       timeLimit: `${Math.max(1, Math.round(this.o.builderTimeoutMs / 60_000))} minutes`,
@@ -1914,6 +1791,13 @@ export class Foreman {
       optionalFields: this.optionalFieldsText(),
       reference: this.referenceText(),
     });
+  }
+
+  /** P10 item 3: the values a change request is measured against, read from the package's workspace (or pack/). */
+  private presentValues(id: string, spec: PackageSpec): string {
+    const ws = this.wsDir(id);
+    const text = presentValuesText(fs.existsSync(path.join(ws, MANIFEST_FILE)) ? ws : this.dir("pack"), spec.scope);
+    return text === "" ? "" : `\n${text}\n`;
   }
 
   private async callBuilder(id: string, spec: PackageSpec, round: number): Promise<RunResult> {
@@ -2005,13 +1889,13 @@ export class Foreman {
 
   // ---------- the end of a job ----------
 
-  private async finish(): Promise<void> {
+  private async finish(): Promise<boolean> {
     // Promoted already and pack/ has not changed since: nothing to verify or promote again. A merge after the last
     // promotion (a change request) goes through the whole final verification and a NEW promotion.
     if (this.s.promoted && !this.s.mergedSincePromotion) {
       const unmade = this.s.changes.length > 0 ? "; no merge since the last promotion (a change that was asked for was not made: see the package's detail)" : "";
       this.endJob("done", `all packages promoted${unmade}`);
-      return;
+      return false;
     }
     const nth = this.s.promotions.length + 1;
     const packDir = this.dir("pack");
@@ -2033,11 +1917,20 @@ export class Foreman {
       if (!vr.ok && vr.inconclusive !== undefined) {
         // N3b: the machine was busy during the final verification: the job waits, it has not failed.
         this.append({ type: "job_state", state: "paused", reason: clip(`machine busy: the final verification (${a.verb}) was inconclusive; resume when the machine is free. ${vr.inconclusive}`, 600) });
-        return;
+        return false;
       }
       if (!vr.ok) {
+        // P10 item 2: after a change (an earlier promotion exists) the failure goes back to a package while rounds
+        // are left; when they are spent the change was not made and the job ends on the earlier promotion.
+        const back = sendBackFinal(this.gateHost, a, vr);
+        if (back === "sent") return true;
+        if (back === "spent") {
+          const p = this.s.promoted;
+          this.endJob("done", clip(`the change was NOT made: the final verification still fails at ${a.verb} (${vr.level}) after ${finalSent(this.gateHost)} round(s) that it sent back to a package (limit ${finalLimit(this.gateHost)}); the job ends on the earlier promotion ${p?.packId ?? "?"} ${p?.version ?? "?"} (${p?.dest ?? "?"}), which is untouched and still the pack to play. pack/ holds the unpromoted files of the change. Last failure: ${vr.summary}`, 700));
+          return false;
+        }
         this.endJob("failed", clip(`final verification failed at ${a.verb} (${vr.level}): ${vr.summary}`, 400));
-        return;
+        return false;
       }
     }
     // N3: a pack that is promoted AGAIN (after a change request) is photographed first, so that whoever asked for the
@@ -2064,7 +1957,7 @@ export class Foreman {
         pr = toEngine ? promotePack(packDir, engineDir, this.s.packId) : promotePack(packDir, this.jobDir, this.s.packId, "promoted", dirName);
       } catch (e) {
         this.endJob("failed", clip(`promotion refused: ${e instanceof Error ? e.message : String(e)}`, 400));
-        return;
+        return false;
       }
       this.append({ type: "promoted", packId: pr.packId, version: pr.version, dest: pr.dest });
       const where = toEngine ? "into the engine (packs/)" : `under the job directory (${pr.dest})${asked === "engine" ? "; the engine directory is not writable" : ""}`;
@@ -2072,6 +1965,7 @@ export class Foreman {
     } else {
       this.endJob("done", "pack verified V0 to V4; promotion was not requested");
     }
+    return false;
   }
 
   /**

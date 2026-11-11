@@ -134,11 +134,11 @@ export type EventBody =
   | { type: "merge"; package: string; files: string[]; removed?: string[] }
   | { type: "note"; package: string; round: number; text: string }
   /** N3: the player (or an answer with --change) asks for a change to a finished package. `package` when it was named. */
-  | { type: "change_requested"; text: string; package?: string }
+  | { type: "change_requested"; text: string; package?: string; /** P10: the id of the inbox entry this event was written from. */ inbox?: string }
   /** N3: a promoted package goes back to work: a change request, the critic naming it, or a dependency that changed. */
   | { type: "reopened"; package: string; reason: string }
   | { type: "question"; package: string; text: string }
-  | { type: "answer"; package: string; text: string; by: string }
+  | { type: "answer"; package: string; text: string; by: string; /** P10: the id of the inbox entry this event was written from. */ inbox?: string }
   | { type: "milestone"; milestone: Milestone; captures: string[]; summary: string }
   | { type: "comment"; milestone: Milestone; text: string; by: "player" }
   | { type: "replan"; reason: string; added: string[]; removed: string[]; changed: string[] }
@@ -240,10 +240,10 @@ const SPECS: Record<EventType, Spec> = {
   },
   merge: { required: { package: pkgId, files: { type: "array", items: relPath } }, optional: { removed: { type: "array", items: relPath } } },
   note: { required: { package: pkgId, round: int1, text: nonEmpty } },
-  change_requested: { required: { text: nonEmpty }, optional: { package: pkgId } },
+  change_requested: { required: { text: nonEmpty }, optional: { package: pkgId, inbox: nonEmpty } },
   reopened: { required: { package: pkgId, reason: nonEmpty } },
   question: { required: { package: pkgId, text: nonEmpty } },
-  answer: { required: { package: pkgId, text: nonEmpty, by: nonEmpty } },
+  answer: { required: { package: pkgId, text: nonEmpty, by: nonEmpty }, optional: { inbox: nonEmpty } },
   milestone: { required: { milestone: { enum: MILESTONES }, captures: { type: "array", items: relPath }, summary: str } },
   comment: { required: { milestone: { enum: MILESTONES }, text: nonEmpty, by: { enum: ["player"] } } },
   replan: { required: { reason: nonEmpty, added: pkgIdList, removed: pkgIdList, changed: pkgIdList } },
