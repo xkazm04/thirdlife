@@ -77,3 +77,12 @@ static func save(w: Node, path: String, records: Array) -> String:
 		return "could not rename %s to %s (error %d); the world file was not touched" % [tmp, path, err]
 	print("[tl] world saved: %s rev %d, %d plot(s)" % [path, rev + 1, records.size()])
 	return ""
+
+
+## P12 (PATCHES-P9 entry 2, the world.gd half). In an exported game a pack name is also looked for in the folder
+## `games` beside the executable (`<exe folder>/games/<name>`); `p` itself when it is not there, or in the editor.
+static func beside_exe(p: String) -> String:
+	if OS.has_feature("editor") or p.is_empty() or p.is_absolute_path():
+		return p
+	var beside: String = OS.get_executable_path().get_base_dir().replace("\\", "/") + "/games/" + p
+	return beside if DirAccess.dir_exists_absolute(beside) else p

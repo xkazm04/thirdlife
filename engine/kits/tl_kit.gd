@@ -227,6 +227,89 @@ static func with_defaults(table: Dictionary, params: Dictionary) -> Dictionary:
 
 
 static func build(kind: String, params: Dictionary = {}) -> Node3D:
+	var main: bool = OS.get_thread_caller_id() == OS.get_main_thread_id()
+	var n: Node3D = null
+	if main:
+		_depth += 1
+		if _depth == 1:
+			if _recording:
+				_record.append([kind, params.duplicate(true)])
+			if _ahead_count > 0:
+				n = _take_ahead(_key_of(kind, params))
+	if n == null:
+		n = _build_part(kind, params)
+	if main:
+		_depth -= 1
+	return n
+
+
+## P12: nesting depth of `build` on the main thread (only the outermost call is recorded or taken ahead).
+static var _depth: int = 0
+
+
+# ---- P12: a part built ahead of the `build` call that will ask for it (as the layouts, P5, and TLRigs) -------------
+# The kernel's loader records the outermost `build` calls of a pack's build on the main thread (`record`) and builds
+# the same calls ahead on its worker the next time; the next `build` of the same kind and EQUAL params on the main
+# thread takes the part instead of building it. One result serves one call. Same kind and params give the same part.
+static var _ahead: Dictionary = {}       # key -> Array of parts
+static var _ahead_count: int = 0
+static var _ahead_lock: Mutex = Mutex.new()
+static var _recording: bool = false
+static var _record: Array = []
+
+
+## The identity of a call: kind and params (equal params give the same key).
+static func _key_of(kind: String, params: Dictionary) -> String:
+	return kind + "|" + var_to_str(params)
+
+
+## Builds a part ahead (any thread). Returns its key ("" when the params are not valid).
+static func _part_ahead(kind: String, params: Dictionary) -> String:
+	if validate(kind, params).size() > 0:
+		return ""
+	var n: Node3D = _build_part(kind, params)
+	var key: String = _key_of(kind, params)
+	_ahead_lock.lock()
+	if not _ahead.has(key):
+		_ahead[key] = []
+	(_ahead[key] as Array).append(n)
+	_ahead_count += 1
+	_ahead_lock.unlock()
+	return key
+
+
+static func _take_ahead(key: String) -> Node3D:
+	var n: Node3D = null
+	_ahead_lock.lock()
+	if _ahead.has(key):
+		var list: Array = _ahead[key]
+		n = list.pop_front()
+		_ahead_count -= 1
+		if list.is_empty():
+			_ahead.erase(key)
+	_ahead_lock.unlock()
+	return n
+
+
+## Frees one part built ahead that no `build` asked for (main thread). True when there was one.
+static func _drop_part(key: String) -> bool:
+	var n: Node3D = _take_ahead(key)
+	if n == null:
+		return false
+	n.free()
+	return true
+
+
+## Main thread. `_record_parts(true)` starts noting every outermost `build` call; `_record_parts(false)` stops and returns the calls
+## as [[kind, params], ...] in call order.
+static func _record_parts(on: bool) -> Array:
+	_recording = on
+	var out: Array = _record
+	_record = []
+	return out
+
+
+static func _build_part(kind: String, params: Dictionary) -> Node3D:
 	var errs: PackedStringArray = validate(kind, params)
 	if errs.size() > 0:
 		push_error("TLKit.build: " + "; ".join(errs))

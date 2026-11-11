@@ -192,3 +192,14 @@ games are built; 50 % + 500 ms). No line of round 2 was taken on a quiet machine
 afternoon. Builder's figures under load: worst frame of the tour 286 ms against 762 to 838 ms in the last
 quiet line; the target of no frame over 16.7 ms is not met (`docs/reports/P5-LOADING.md`).
 
+
+## 7. Round 3 (2026-11-11, P12): one windowed measurement at a time
+
+- The windowed scenarios (`tour6`, `walk30`, `load6`) take a lock before they open their window: the directory
+  `tl_window.lock` in the system's temporary folder. A second `tl perf run` waits for it (up to 15 minutes; a lock
+  older than 15 minutes is taken over). Several windows on one spot of the screen throttle each other to about 270 ms
+  a frame, and a figure taken so says nothing about the code. `world.sh` itself does not take the lock (PATCHES-P12
+  entry 4 has the three lines for `window_mode`).
+- `TL_PERF_WINDOW_POS=<x,y>` puts the scenario's window at a position of its own (passed on as `TL_WINDOW_POS`).
+- The build queue's preparation no longer depends on the frame rate (`kernel/world/TIERS.md`, section P12): before,
+  a throttled window or vertical sync made a game arrive seconds to tens of seconds late.

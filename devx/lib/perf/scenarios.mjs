@@ -82,6 +82,28 @@ function worldSh(ctx, args, { timeout = 600000, env = {} } = {}) {
   return r;
 }
 
+/** P12. One windowed measurement at a time on this machine: several windows on one spot of the screen throttle each
+ * other to about 270 ms a frame (P5's verification). The lock is a directory in the system's temporary folder; a lock
+ * older than `staleMs` is taken over (its holder died). The window goes to TL_PERF_WINDOW_POS when it is set. */
+export function withWindowLock(fn, { dir = path.join(os.tmpdir(), "tl_window.lock"), waitMs = 900000, staleMs = 900000 } = {}) {
+  const t0 = Date.now();
+  for (;;) {
+    try { fs.mkdirSync(dir); break; } catch (e) {
+      if (e?.code !== "EEXIST") throw e;
+      let age = 0;
+      try { age = Date.now() - fs.statSync(dir).mtimeMs; } catch { continue; }
+      if (age > staleMs) { try { fs.rmdirSync(dir); } catch { /* another waiter took it over */ } continue; }
+      if (Date.now() - t0 > waitMs) throw new Error(`another windowed measurement held ${dir} for ${Math.round(waitMs / 1000)} s`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
+    }
+  }
+  try { return fn(); } finally { try { fs.rmdirSync(dir); } catch { /* already gone */ } }
+}
+
+function windowEnv(env) {
+  return process.env.TL_PERF_WINDOW_POS ? { TL_WINDOW_POS: process.env.TL_PERF_WINDOW_POS, ...env } : env;
+}
+
 /** Best (lowest) of the metric values over repeated runs: a busy moment only ever adds time. Counts are equal across runs. */
 export function bestOf(runs) {
   const out = {};
@@ -99,7 +121,7 @@ export const SCENARIOS = {
     run(ctx) {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tl_perf_tour_"));
       try {
-        const r = worldSh(ctx, ["tour", "tour", `--out-dir=${dir}`, "--pictures-only"], { env: { TL_VIEW_TIMEOUT: "420" } });
+        const r = withWindowLock(() => worldSh(ctx, ["tour", "tour", `--out-dir=${dir}`, "--pictures-only"], { env: windowEnv({ TL_VIEW_TIMEOUT: "420" }) }));
         return parseTour(r.stdout);
       } finally { fs.rmSync(dir, { recursive: true, force: true }); }
     },
@@ -110,7 +132,7 @@ export const SCENARIOS = {
     run(ctx) {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tl_perf_walk30_"));
       try {
-        const r = worldSh(ctx, ["tour", "walk30", `--out-dir=${dir}`, "--pictures-only"], { env: { TL_VIEW_TIMEOUT: "540" } });
+        const r = withWindowLock(() => worldSh(ctx, ["tour", "walk30", `--out-dir=${dir}`, "--pictures-only"], { env: windowEnv({ TL_VIEW_TIMEOUT: "540" }) }));
         return parseTour(r.stdout);
       } finally { fs.rmSync(dir, { recursive: true, force: true }); }
     },
@@ -139,7 +161,7 @@ export const SCENARIOS = {
     run(ctx) {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tl_perf_load_"));
       try {
-        const r = worldSh(ctx, ["tour", "tour", `--out-dir=${dir}`, "--pictures-only", "--ticks=40"], { env: { TL_VIEW_TIMEOUT: "300" } });
+        const r = withWindowLock(() => worldSh(ctx, ["tour", "tour", `--out-dir=${dir}`, "--pictures-only", "--ticks=40"], { env: windowEnv({ TL_VIEW_TIMEOUT: "300" }) }));
         const lines = jsonLines(r.stdout);
         const w = lines.find((l) => l.kind === "world"), t = lines.find((l) => l.kind === "tour");
         if (!w) throw new Error("no world line in the output");

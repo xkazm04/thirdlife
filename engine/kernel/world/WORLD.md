@@ -266,6 +266,18 @@ the viewer's line. Reports: `docs/reports/P5-LOADING.md`, `docs/reports/P6-FAR.m
 - Everything else in `_pack_setup` still runs on the main thread: keep it small.
 - A world may replace your pack by a fresh copy of its directory at any tick (`reload`). What `_pack_save` returns is handed to `_pack_load`; nothing else survives. Keep no state in `static var`.
 
+### What changed for a pack author (P12)
+
+- Nothing you write changes. Rigs (`TLRigs.build`, also through `TLBiped.create` and `TLVehicle`) and kit parts
+  (`TLKit.build`) your `_pack_setup` makes are built ahead on another thread from the second arrival of your pack on a
+  machine on: the world remembers which calls your setup made and with which params. A call with params that differ
+  from last time is built in your setup as before.
+- A reload sees a changed `.gd` too: the entry script and every script it loads through `ctx.load_script` are taken as
+  they are on disk at the reload.
+- In a window, a game the visitor walks into (or that a walk event puts on stage) is there when he arrives, even if
+  its preparation is not finished: the world builds it at once, and that frame is long.
+- tl.world/1, world line `load` (queue mode): `forced`, `forced_ms`, `forced_list` as `[plot, world tick, ms, "stage" | "end"]`.
+
 ## Not built, not verified
 
 - **No person has walked it.** `world.sh visit` (WASD, E, Q / Esc, the stage pack's bot switched off and its input

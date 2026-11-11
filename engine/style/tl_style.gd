@@ -45,6 +45,9 @@ static var _ghost: Dictionary = {}      # global shader parameters this process 
 static var _shaders: Dictionary = {}
 static var _stub: ShaderMaterial        # headless: a ShaderMaterial with no shader (answers set_shader_parameter, costs nothing)
 static var _flat: Dictionary = {}       # WP5: flat-colour toon materials by "rrggbb|metal" (flat_material)
+## P12: the lazily filled tables above are written by the main thread and by the world's build queue (a worker thread
+## that builds layouts and rigs ahead). One lock (Godot's Mutex is recursive) around every lazy fill.
+static var _lock: Mutex = Mutex.new()
 
 
 static func headless() -> bool:
@@ -62,7 +65,10 @@ static func set_headless(on: bool) -> void:
 
 static func ensure() -> void:
 	if not _loaded:
-		load_style(DEFAULT_PATH)
+		_lock.lock()
+		if not _loaded:
+			load_style(DEFAULT_PATH)
+		_lock.unlock()
 
 
 ## Loads and validates a style file. Returns readable messages: hard errors (the file is then NOT applied and the
@@ -195,6 +201,13 @@ static func _shader(sname: String) -> Shader:
 ## texture through a vertex channel written by TLMesh). `glass`, `water`, `holo`, `fx_add`, `fx_mix` are their own.
 static func material(key: StringName) -> Material:
 	ensure()
+	_lock.lock()
+	var m: Material = _material(key)
+	_lock.unlock()
+	return m
+
+
+static func _material(key: StringName) -> Material:
 	if headless():
 		if _stub == null:
 			_stub = ShaderMaterial.new()
@@ -220,6 +233,13 @@ static func material(key: StringName) -> Material:
 ## One material per colour (8 bits per channel) and metal value; headless: the stub.
 static func flat_material(c: Color, metal: float = 0.0) -> Material:
 	ensure()
+	_lock.lock()
+	var m: Material = _flat_material(c, metal)
+	_lock.unlock()
+	return m
+
+
+static func _flat_material(c: Color, metal: float) -> Material:
 	if headless():
 		if _stub == null:
 			_stub = ShaderMaterial.new()

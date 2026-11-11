@@ -64,7 +64,13 @@ static func create(opts: Dictionary = {}) -> TLBiped:
 		else:
 			push_error("TLBiped: the rig cannot be used (%s); using the stand-in" % "; ".join(problems))
 	if b.rig == null:
-		b.rig = TLStandin.rig(&"biped", opts.get("rig_params", {}))
+		# P12: the rig is built in the controller's mode (walk or skate) at once; built in walk and told "skate" at
+		# `_ready` it rebuilt its whole skinned mesh for the helmet on the main thread (about 50 ms a skater)
+		var rp: Dictionary = (opts["rig_params"] as Dictionary).duplicate() if typeof(opts.get("rig_params")) == TYPE_DICTIONARY else {}
+		var md: String = str(opts.get("mode", "walk"))
+		if not rp.has("mode") and (md == "walk" or md == "skate"):
+			rp["mode"] = md
+		b.rig = TLStandin.rig(&"biped", rp)
 	b._metrics = b.rig.call("metrics")
 	var h: float = float(b._metrics.get("height", 1.8))
 	var r: float = float(b._metrics.get("radius", 0.3))
