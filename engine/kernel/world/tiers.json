@@ -1,0 +1,18 @@
+{
+  "schema": "tl.tiers/1",
+  "note": "N5a. Every threshold of the world scheduler (kernel/world/tiers.gd). Distances are metres from the player to the nearest edge of a plot's footprint (0 = inside). A walk script may override any key under its own \"tiers\". kernel/world/TIERS.md says what each one does and what was measured.",
+  "sideline_m": 100,
+  "backdrop_m": 0,
+  "backdrop_note": "outer edge of backdrop; beyond it a pack goes to ledger (unloaded, summary only). 0 = no pack is unloaded for distance.",
+  "margin_m": {"stage": 2, "sideline": 10, "backdrop": 40},
+  "adjacent_gap_m": 8,
+  "dwell_ticks": 120,
+  "default_footprint_m": [40, 40],
+  "budget_ms": {"front": 6.0, "backdrop": 2.0},
+  "slice": {"min": 2, "max": 30},
+  "valve": {"every_ticks": 30, "hold_ticks": 600, "recover": 0.7, "speed_step_pm": 100, "speed_min_pm": 100},
+  "cost": "model",
+  "cost_note": "model: a pack tick costs cost_model_ms (a run is then a pure function of its walk script). measured: the world's own clock, smoothed (ema_shift: 1/2^n per tick).",
+  "ema_shift": 4,
+  "cost_model_ms": {"default": 0.5, "seed.paddle": 0.25, "seed.wall": 0.4, "seed.drive": 0.8, "world.pile": 4.0}
+}

@@ -98,6 +98,26 @@ static func _make(preset: StringName, opts: Dictionary, one_shot: bool) -> TLVfx
 	return fx
 
 
+## N5a. Squash and stretch on a VISUAL node (a rig, a mesh, a kit part without a body): the seam onto the style's
+## helper (`TLStyleFx.squash`). Visual only; frame-counted. Without the style layer nothing happens.
+static func squash(visual: Node3D, amount: float = 0.25, frames: int = 18, axis: Vector3 = Vector3.UP) -> void:
+	TLContext.require("vfx", "TLVfx.squash")
+	var fxs: GDScript = TLStandin.ext("TLStyleFx")
+	if visual == null or fxs == null or not TLStandin.script_has(fxs, "squash"):
+		return
+	fxs.call("squash", visual, amount, frames, axis)
+
+
+## N5a. A ribbon that follows `target` and fades behind it: the seam onto `TLStyleFx.trail`. Options `width`,
+## `frames`, `color`, `offset`. Returns the trail node (free it to stop), or null without a target or the style layer.
+static func trail(target: Node3D, opts: Dictionary = {}) -> Node3D:
+	TLContext.require("vfx", "TLVfx.trail")
+	var fxs: GDScript = TLStandin.ext("TLStyleFx")
+	if target == null or fxs == null or not TLStandin.script_has(fxs, "trail"):
+		return null
+	return fxs.call("trail", target, opts) as Node3D
+
+
 ## WP5 (KIT-RIG-STYLE.md, second round): with the style installed a preset is drawn by the style layer's effects
 ## (`TLStyleFx.preset`), so it matches the look; null when the style is absent or does not know the preset.
 ## The lifetime stays the kernel's (frames), so a headless run and a windowed run free the effect on the same frame.

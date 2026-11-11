@@ -27,7 +27,7 @@ const OPTIONS: Dictionary = {
 ## N2: the world modes (kernel/world/). They are not verify verbs: no tl.verify/1 report, no --pack, no level.
 ## kernel/runner/verbs.json lists them under "modes"; a selftest case compares both tables with that file.
 const MODE_OPTIONS: Dictionary = {
-	"world": ["packs", "frames", "seeds", "at", "spacing", "every", "pause", "mode", "space", "trace", "hold", "state", "out"],
+	"world": ["packs", "frames", "seeds", "at", "spacing", "every", "pause", "mode", "space", "trace", "hold", "state", "out", "walk", "replay", "log", "tiers", "cost", "ticks", "world", "save", "name", "seed", "plot-spacing", "scenery"],   # N5a: the scheduled world, the world file
 	"world-bench": ["only", "quick", "out-dir"],
 }
 const BUDGET_FRAME_MS_P99: float = 8.0
@@ -83,7 +83,7 @@ func _start_mode(bad_args: PackedStringArray) -> void:
 	for k: String in opts.keys():
 		if not (MODE_OPTIONS[verb] as Array).has(k):
 			problem = "unknown option --%s for '%s' (allowed: %s)" % [k, verb, ", ".join(PackedStringArray(MODE_OPTIONS[verb]))]
-	for k: String in ["out", "out-dir"]:
+	for k: String in ["out", "out-dir", "walk", "replay", "log", "tiers", "world", "save"]:
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if problem.is_empty():

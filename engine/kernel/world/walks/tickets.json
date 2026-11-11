@@ -1,0 +1,19 @@
+{
+  "schema": "tl.walk/1",
+  "name": "tickets",
+  "note": "N5a: tickets. The player stands still in a. b is 300 m away (backdrop by distance): a ticket pins it at sideline from world tick 100 for 300 ticks, then it falls back. c is 60 m away (sideline by distance): a ticket pins it at backdrop from tick 200 for 200 ticks, then it comes back at once. d is far: a ticket sends it to ledger from tick 300 for 250 ticks (unloaded, then rebuilt from its seed).",
+  "ticks": 900,
+  "mode": "smoke",
+  "plots": [
+    {"id": "a", "pack": "pack_min", "origin": [0, 0, 0], "seed": 1},
+    {"id": "b", "pack": "ex_wall", "origin": [320, 0, 0], "seed": 1},
+    {"id": "c", "pack": "ex_slide", "origin": [0, 0, 80], "seed": 1},
+    {"id": "d", "pack": "ex_wall", "origin": [-400, 0, 0], "seed": 2}
+  ],
+  "player": [[0, [0, 0, 0]]],
+  "tickets": [
+    {"tick": 100, "plot": "b", "tier": "sideline", "ticks": 300},
+    {"tick": 200, "plot": "c", "tier": "backdrop", "ticks": 200},
+    {"tick": 300, "plot": "d", "tier": "ledger", "ticks": 250}
+  ]
+}

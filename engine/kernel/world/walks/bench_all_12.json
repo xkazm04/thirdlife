@@ -1,0 +1,149 @@
+{
+ "schema": "tl.walk/1",
+ "name": "bench_all_12",
+ "ticks": 600,
+ "mode": "bot",
+ "scenery": "plot",
+ "plots": [
+  {
+   "id": "p00",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p01",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p02",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p03",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    0
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  },
+  {
+   "id": "p04",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p05",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p06",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p07",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    60
+   ],
+   "seed": 10060,
+   "mode": "smoke"
+  },
+  {
+   "id": "p08",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p09",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p10",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p11",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    120
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  }
+ ],
+ "player": [
+  [
+   0,
+   [
+    60,
+    0,
+    60
+   ]
+  ]
+ ],
+ "tiers": {
+  "sideline_m": 100000,
+  "budget_ms": {
+   "front": 100000,
+   "backdrop": 100000
+  }
+ }
+}

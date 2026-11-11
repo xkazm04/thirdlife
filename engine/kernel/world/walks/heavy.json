@@ -1,0 +1,18 @@
+{
+  "schema": "tl.walk/1",
+  "name": "heavy",
+  "note": "N5a item 3. A world that is too heavy for its budget: six piles (cost model 4 ms a tick each) within sideline range of a player who stands still, against a front budget of 6 ms and a backdrop budget of 2 ms. The valve must demote the farthest sideline packs first, then slow the whole world, and every pack must keep getting ticks.",
+  "ticks": 1200,
+  "mode": "smoke",
+  "tiers": {"slice": {"min": 2, "max": 4}},
+  "plots": [
+    {"id": "home", "pack": "w_pile", "origin": [0, 0, 0], "seed": 30},
+    {"id": "n1", "pack": "w_pile", "origin": [60, 0, 0], "seed": 31},
+    {"id": "n2", "pack": "w_pile", "origin": [-70, 0, 0], "seed": 32},
+    {"id": "n3", "pack": "w_pile", "origin": [0, 0, 80], "seed": 33},
+    {"id": "n4", "pack": "w_pile", "origin": [0, 0, -90], "seed": 34},
+    {"id": "n5", "pack": "w_pile", "origin": [100, 0, 100], "seed": 35},
+    {"id": "far", "pack": "pack_min", "origin": [900, 0, 0], "seed": 1}
+  ],
+  "player": [[0, [0, 0, 0]]]
+}

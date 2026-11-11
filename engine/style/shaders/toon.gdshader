@@ -29,6 +29,31 @@ global uniform vec4 g_detail;    // x strength, y fade near (m), z fade far (m),
 global uniform vec4 g_strata;    // pass 4, drawn strata on steep terrain: x line strength, y layer height (m), z per-layer tone, w vertical crack strength
 global uniform vec4 g_detail2;   // x extra tone contrast at distance, y from (m), z to (m), w distance at which tone finally fades (m)
 instance uniform float build = 1.0;
+// N5b: the plot of the pack this instance belongs to, relative to the stage pack: xyz = offset (m), w = yaw (rad).
+// Set once per GeometryInstance3D by the world's draw layer (kernel/world/draw/draw.gd); all zero = drawn where it is
+// simulated (a single pack, or the stage pack), and then the engine's own model-view matrix is left untouched.
+instance uniform vec4 tl_plot = vec4(0.0);
+// N5b: the pack's plot. x = radius (m) around the pack's own origin, 0 = the whole pack is drawn; y = the height of
+// the world's ground at the plot edge, in the pack's own coordinates; z = width (m) of the band inside the edge over
+// which the pack's ground is bent to that height (0 = no bending); w = 1 on the pack's terrain sheets (set by the draw
+// layer, which knows them by their size), 0 on everything else.
+// A pack brings scenery of its own far beyond its venue (terrain, forest, cliffs); in a world the landscape is drawn
+// once, so each pack is cut to its plot: an instance whose origin lies outside (a tree of a forest, a far prop) is
+// dropped in vertex(), a large mesh (the terrain) is cut 3 m further out in fragment(). In the band a terrain sheet is
+// bent per vertex, and an instance that stands on it with an origin of its own (a tree of a forest, a placed prop) is
+// moved as a whole by the height of that origin, so that the pack's ground arrives at the world's ground: no step
+// where the plot ends. A mesh merged in pack coordinates (origin at the pack's origin, not a terrain sheet) is not
+// moved: bending it per vertex shears whatever part of it stands in the band (seen: a house, a crane).
+instance uniform vec4 tl_clip = vec4(0.0);
+// N5b: the world's own ground (a private material of this shader, kernel/world/draw/view.gd): the plots are cut out
+// of it, so a pack whose venue lies lower than its rim is not buried. xy = plot centre in the ground's own plane
+// (its part-local x and z), z = radius. Every other material leaves the count at 0.
+uniform int tl_hole_n = 0;
+uniform vec4 tl_holes[32];
+mat4 tl_plot_mat() {
+	float cy = cos(tl_plot.w); float sy = sin(tl_plot.w);
+	return mat4(vec4(cy, 0.0, -sy, 0.0), vec4(0.0, 1.0, 0.0, 0.0), vec4(sy, 0.0, cy, 0.0), vec4(tl_plot.xyz, 1.0));
+}
 
 varying vec3 wpos;
 varying float vdepth;
@@ -220,9 +245,33 @@ void vertex() {
 		VERTEX.x += s * sway * COLOR.a;
 		VERTEX.z += s * sway * 0.5 * COLOR.a;
 	}
+	float rim_dy = 0.0;
+	if (tl_clip.x > 0.0) {
+		vec3 org = MODEL_MATRIX[3].xyz;
+		float ro = length(org.xz);
+		if (ro > tl_clip.x) {
+			VERTEX = vec3(0.0);   // every vertex on one point: nothing is drawn
+		} else if (tl_clip.z > 0.0) {
+			bool sheet = tl_clip.w > 0.5;
+			float rr = sheet ? length(wpos.xz) : ro;
+			float hh = sheet ? wpos.y : org.y;
+			rim_dy = (tl_clip.y - hh) * smoothstep(tl_clip.x - tl_clip.z, tl_clip.x, rr);
+		}
+	}
+	if (any(notEqual(tl_plot, vec4(0.0))) || rim_dy != 0.0) {   // N5b: draw this pack at its plot (world space; shadow pass included)
+		mat4 pm = tl_plot_mat();
+		pm[3].y += rim_dy;
+		MODELVIEW_MATRIX = VIEW_MATRIX * pm * MODEL_MATRIX;
+		MODELVIEW_NORMAL_MATRIX = mat3(VIEW_MATRIX) * mat3(pm) * MODEL_NORMAL_MATRIX;
+		vdepth = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z;   // the distance fades follow the drawn place
+	}
 }
 
 void fragment() {
+	if (tl_clip.x > 0.0 && length(wpos.xz) > tl_clip.x + 3.0) { discard; }
+	for (int hi = 0; hi < tl_hole_n; hi++) {
+		if (length(lp.xz - tl_holes[hi].xy) < tl_holes[hi].z) { discard; }
+	}
 	vec3 c = m0.rgb * COLOR.rgb;
 	int mclass = int(m1.z + 0.5);
 	vec3 wn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);

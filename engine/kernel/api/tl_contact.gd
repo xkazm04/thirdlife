@@ -33,6 +33,12 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	# N5a: a sleeping body touches nothing new and moves nowhere: its surface, its material override and its last
+	# velocity (zero) all stand. Skipping the contact scan and the ray makes an asleep pack cheap (N2: 300 asleep
+	# boxes 2.21 ms -> 0.16 ms per tick). `_pm != null`: a body that starts asleep still gets its law once.
+	if body.sleeping and _pm != null:
+		_prev_velocity = body.linear_velocity
+		return
 	material = TLLaws.material_of(body)
 	if material.is_empty():
 		_prev_velocity = body.linear_velocity

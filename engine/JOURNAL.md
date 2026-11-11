@@ -320,3 +320,107 @@ written with estimated times that ran ahead of the clock; corrected at 19:29).
   pack.gd now also has (the two agree: the hashes are equal); tests 10 to 18 of the layering report.
 - 01:06 to 01:09 the full selftests once more on the final files, quiet machine: `tl.sh selftest` 66 passed,
   0 failed; `k.sh selftest` 86 passed, 0 failed. N2 ends here (66 minutes of the 90).
+
+## N5a: the world's clock (tiers, the scheduler, the world file)
+
+Brief `briefs/BRIEF-N5A-TIERS.md`. Started 01:55 CEST on 2026-11-11 in `site/_work/n5a/engine/`. The machine is shared
+(13 Godot processes at 02:07, mine among them).
+
+- 01:56 item 1. `TLContact._physics_process` returns at once for a sleeping body (`if body.sleeping and _pm != null`:
+  the extra condition lets a body that starts asleep get its law once). First check: three seeds idle
+  bc93a9a4 / b9adbb19 / da4bdc3f, by bot cadd1cd9 at 6776 / 36635c04 at 3516 / 6366b88f at 1221: unchanged.
+  One world process of mine hung at start (two world runs started in the same second, one of them refreshing the
+  class cache); I killed it (PID 33660, mine) and the same command then ran in 16 s. Do not start two engine runs at
+  once right after editing a kernel script.
+- 02:02 item 2. `kernel/world/tiers.json` (every threshold) and `kernel/world/tiers.gd` (the scheduler: `decide`,
+  `apply`, `due`; no node, no clock). Every decision is an event; `due` is a pure function of the events applied, so
+  a log replays.
+- 02:07 `kernel/world/pack.gd`: plot id and origin, `summary()` (TLRules: phase, score, clock), `saved_data()` /
+  `restore()` (`_pack_save` / `_pack_load`), `plot_record()`, `unload()`, the time the tree spends in the pack's nodes.
+  `kernel/world/world.gd`: `--walk`, `--replay`, `--log`, `--world`, `--save`; host.gd MODE_OPTIONS and verbs.json
+  follow. `tools/world.sh walk|replay|proof|save|load`.
+- 02:11 first walks: `world.sh walk boundary` (a and b 0 tier changes in 2400 ticks of zigzag along their common
+  line, c one change) and `world.sh walk heavy` (valve: 4 demotions farthest first, slice 4, speed 800 per mille;
+  every pack keeps ticking, longest wait 6 world ticks).
+- 02:12 item 3, the proof: `world.sh proof proof --tiers-all` PASS. Three seeds 300 m apart, the player walks
+  a -> b -> c and back (2700 world ticks, bots play): paddle 1880 own ticks 59c7f07b, drive 1814 ticks 2962e912,
+  wall 1221 ticks 6366b88f (its bot won: the known bot hash). Each equals the same pack alone for the same ticks,
+  and the replay of the world log.
+- 02:13 item 5: `world.sh save` / `load` work; rename over the old file works on Windows; a file cut to 700 bytes is
+  refused with exit 2 and left as it is, `<file>.prev` loads. `_pack_save` / `_pack_load` example in
+  `kernel/examples/ex_bounce` (a seed is outside my scope: the seed patch is in PATCHES-N5A.md).
+  Found: `--spacing` moves the SIMULATION (N2's way a) and pack_min's bot then ends at tick 1; the world file needs
+  plot origins that do not move the simulation: new option `--plot-spacing`.
+- 02:14 ledger: `world.sh proof ledger`: two packs unloaded for distance and rebuilt from their seed on the way back;
+  ex_wall hashes as a fresh run of its new ticks, ex_bounce gets its score back (so it is not comparable, and the
+  proof says so instead of failing... after the next edit).
+- 02:16 item 4, loading: per pack `load_ms` {assets, script, enter_tree, setup, laws, bot}. ALL of it is the pack's own
+  `_pack_setup`: paddle 2.4 to 2.5 s, drive 3.6 to 4.3 s, wall 2.1 s; the second copy of the same seed is as slow as
+  the first (nothing is shared); scripts cost 0.4 s once per process, then 0.3 ms; laws 0.3 ms; the bot 4 ms;
+  w_pile (305 bodies, no kit) loads in 21 ms; the first world iteration of 8 packs 25 ms.
+- 02:19 selftest cases `world.walk_proof`, `world.walk_valve`, `world.walk_boundary`, `world.file`; the last three
+  PASS alone. First gates on item 1 (while I was editing and testing beside them): `tl.sh selftest` 73 passed, 0
+  failed; `k.sh selftest` 86 passed; `tl.sh seeds` 23 passed, 1 failed (`seed.drive.smoke_seed2`: the 250 ms
+  wall-clock watchdog at frame 499, under load): to be run again alone.
+- 02:21 the watchdog failure looked at: `tl.sh seeds drive.smoke` (three cases) twice with the sleeping-body return
+  in: 5 of 6 cases stopped by the 250 ms watchdog, at frames 2864, 534, 759, 3418, 2477 (never the same frame);
+  twice with the return switched off (`if false and ...`): 1 of 6 stopped. The watchdog guards the call into
+  `_pack_tick` only, which the return is not part of, and the hashes are equal, so the cause is the machine (13
+  Godot processes, CPU at 100 %), not the change; the sample is too small to say more. To be run again at the end.
+- 02:23 item 6: lint `composability` has `kit_parts_used`, `kit_kinds_used`, `kit_build_calls`, `world_coordinates`,
+  `world_coordinates_by` (seed_drive 19 parts / 6 world-coordinate reads, seed_paddle 14 / 12, seed_wall 23 / 7,
+  pack_min 0 / 2); `TLVfx.squash` and `TLVfx.trail` (seams onto `TLStyleFx`); the worker already refuses
+  `--mode=play` for a pack that fails lint (the Director applied N4's patch 4).
+- 02:25 loading, inside `_pack_setup` (an instrumented scratch copy of the engine, deleted afterwards): paddle
+  2140 ms = nature 1076 + terrain 783 + walls 188 + props 42; drive 3550 ms = nature 2286 + terrain 1099 + road 42 +
+  props 50; wall 2064 ms = terrain 1011 + nature 819 + props 91 + actors 15. Building the ArrayMeshes is 53 to 71 ms,
+  the content hashes 27 to 40 ms of that.
+- 02:27 the experiment: scratch copies of the three seeds with `forest.scatter` false: setup 921 / 1158 / 1077 ms;
+  also `terrain.far` false: 688 / 392 / 392 ms; the bot hashes stay cadd1cd9 / 36635c04 / 6366b88f. Built in scope:
+  `ctx.scenery` and the world option `--scenery=plot` (`ctx.read_json` hands a `tl.layout/1` file out with both
+  switches off): three seeds by bot load in 2.1 s instead of 9.7 s, same hashes.
+- 02:28 first bench (full scenery, w_pile awake): 12 packs all ticking p50 4.7 ms, 30 packs 11.9 ms, 60 packs
+  31.6 ms (load 122 s). In `bench_mix_30` the valve engaged for real (4 demotions, speed 600 per mille): measured
+  cost under a machine at 100 % CPU. One stalled iteration moved every estimate; `_measure` now lets a sample count
+  for at most four times the estimate. Bench stopped (my processes only) and started again with plot scenery.
+- 02:30 to 02:33 second bench with `"scenery": "plot"` (12 packs load in 6 s, 60 in 26 s): all at sideline, world
+  tick p50 5.1 / 11.9 / 30.5 ms for 12 / 30 / 60 packs; the mix (1 stage, 4 sideline, the rest backdrop, measured
+  cost) 4.6 / 3.7 / 3.8 ms, slowest pack 0.28 / 0.14 / 0.057 of the world's ticks. All under load (CPU 100 %).
+- 02:32 `world.sh proof leave`: `pause` (430 ticks = 145 + 285, none in between), `end` (ended at 545, built again at
+  1060, 440 fresh ticks), `bot`: all three equal their solo runs and the replay. PASS.
+- 02:33 item 1, the asleep figure: 10 / 30 / 60 packs of 30 sleeping boxes, every space active: 0.17 to 0.26 / 0.62
+  to 0.78 / 1.57 to 1.60 ms per world tick (N2: 2.0 / 6.1 / 13.8): about 0.027 ms per asleep pack instead of 0.2.
+  One pack of 300 sleeping boxes: 0.11 ms (N2: 2.21).
+- 02:34 the cost estimate: the first 16 samples of a pack are a plain mean (the model's figure for a pile, 4 ms, had
+  kept the slice of a 60-pack world at 29 for hundreds of ticks). Mix again: 4.0 / 4.2 / 4.1 ms, slowest 0.47 /
+  0.11 / 0.064.
+- 02:36 a sliced tick costs more than a continuous one (the two switches around it): 12 seed packs, per round of 12
+  pack ticks, 4.7 to 5.3 ms at every tick, 6.4 ms at one in 2, 5.5 ms at one in 8.
+- 02:37 `kernel/world/TIERS.md`, `PATCHES-N5A.md`, API.md section 20; the final gates started (no kernel file is
+  edited after this line).
+- 02:37 to 02:45 final gates in this copy, on the final kernel files, machine at 64 to 100 % CPU from other sessions:
+  `tl.sh selftest` 76 passed, 1 failed (`ex.slide.bot`: exit 3, the wall-clock watchdog); the four new cases pass
+  (`world.walk_proof`, `world.walk_valve`, `world.walk_boundary`, `world.file`), `verbs.json_matches_host` passes;
+  `k.sh selftest` 86 passed, 0 failed; `item.sh selftest` 91 passed, 0 failed; `tl.sh seeds` 19 passed, 5 failed:
+  `seed.paddle.bot`, `seed.drive.smoke`, `.hash` (no hash, because smoke was stopped), `.invariants`, `.bot`, every
+  one the 250 ms watchdog ("_pack_tick took 264 ms", "did not return within 250 ms"), at frames 3004, 1461, 1349, 798.
+  Seed hashes where a run finished: bc93a9a4, b9adbb19, da4bdc3f: unchanged.
+- 02:45 to 02:48 is it the sleeping-body return? Two scratch copies of this engine, A as it is, B with the return
+  switched off, `tl.sh seeds drive.smoke` (three cases) in turn, four rounds: A 2 of 12 cases stopped by the
+  watchdog, B 7 of 12. The stalls are the machine's, and they are there without the change. (Scratch copies deleted.)
+- 02:48 the failed cases again, alone: `ex.slide.bot` PASS twice; `seed.paddle.bot` PASS twice (`bot_seed2` once
+  PASS, once the watchdog); `tl.sh seeds drive.` 8 passed, 0 failed, twice (hash b9adbb19 twice, seed 2 e6662471).
+- 02:51 to 02:53 `tl.sh seeds` once more, whole, on the final files: 24 passed, 0 failed. Hashes bc93a9a4 / b9adbb19 /
+  da4bdc3f (seed 2: 000eda48 / e6662471 / 4b2de68d), each twice: unchanged.
+- 02:53 `world.sh proof bench_mix_12`: a walk scheduled from the measured clock, 12 packs loaded with plot scenery:
+  all 12 hash as they do alone (loaded with FULL scenery) for the same ticks, and as in the replay. PASS.
+- 02:57 tickets had not been run by any walk: `walks/tickets.json`, `world.sh proof tickets`: b pinned at sideline
+  for 300 ticks, c pinned at backdrop for 200, d sent to ledger for 250 and rebuilt; own ticks 900 / 600 / 800 / 175,
+  all four equal their solo runs and the replay. PASS.
+- 02:56 to 02:59 `tl.sh selftest` once more, whole, on the final files: 77 passed, 0 failed. So the last full run of
+  each gate in this copy: `tl.sh selftest` 77 / 0, `k.sh selftest` 86 / 0, `tl.sh seeds` 24 / 0, `item.sh selftest`
+  91 / 0. The 02:37 round had 1 + 5 wall-clock watchdog failures under load (see above).
+- Not done, for whoever continues: the watchdog in the world host; the player's real input routed to the stage pack;
+  the next round of a game that ended by itself; ledger promotion without blocking the world; tickets asked for by
+  a pack or the player; anything with a window (the distances in tiers.json are first values); `world.sh bench`
+  (N2's) was not run again; the kit-side loading fixes (PATCHES-N5A.md entry 3). N5a ends here.

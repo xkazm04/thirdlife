@@ -35,6 +35,10 @@ var audio_events: Array = []           ## TLAudio's record of this pack: [{frame
 var huds: Array = []                   ## the TLHud layers this pack made
 var ball_group: StringName = &"tl_ball"   ## the scene-tree group of this pack's TLBalls (unique per pack in a world)
 var _warned: Dictionary = {}           ## warn-once keys of the kernel primitives ("audio|preset", "laws|id", ...)
+## N5a: "full" (a pack alone: its layout's far terrain and scattered forest are built) or "plot" (a world may ask for
+## this: the landscape around a plot is the world's, so a `tl.layout/1` file is handed out with `forest.scatter` and
+## `terrain.far` off; that is 70 to 90 % of a seed's loading time and no body of the simulation).
+var scenery: String = "full"
 
 var _cap_warned: Dictionary = {}
 var _entry: Node = null
@@ -117,6 +121,13 @@ func read_json(rel: String) -> Variant:
 	if json.parse(FileAccess.get_file_as_string(full)) != OK:
 		push_error("ctx.read_json('%s'): %s line %d: %s" % [rel, p, json.get_error_line() + 1, json.get_error_message()])
 		return null
+	if scenery == "plot" and typeof(json.data) == TYPE_DICTIONARY and str((json.data as Dictionary).get("schema", "")).begins_with("tl.layout/"):
+		var layout: Dictionary = json.data
+		var forest: Dictionary = layout.get("forest", {}) if typeof(layout.get("forest")) == TYPE_DICTIONARY else {}
+		forest["scatter"] = false
+		layout["forest"] = forest
+		if typeof(layout.get("terrain")) == TYPE_DICTIONARY:
+			(layout["terrain"] as Dictionary)["far"] = false
 	return json.data
 
 

@@ -398,6 +398,11 @@ defender.move(TLSteer.pursue(defender.global_position, defender.speed(), puck.gl
 right bottom_left bottom bottom_right`. Captures hide the HUD. Widget ids for `text_of` / `set_text`: `score_<side>`,
 `clock`, `speed`, and the id you gave to `add_label` or `add_bound`.
 
+**`TLVfx`** also has two motion helpers that sit on the style layer (N5a; they do nothing when it is absent):
+`TLVfx.squash(visual, amount = 0.25, frames = 18, axis = Vector3.UP)` (squash and stretch on a VISUAL node, never a
+body) and `TLVfx.trail(target, opts) -> Node3D` (a fading ribbon behind a node; `width`, `frames`, `color`, `offset`;
+free the returned node to stop it).
+
 **`TLVfx`** (presets; nothing is drawn headless): `TLVfx.burst(preset, position, parent, opts)`,
 `TLVfx.attach(preset, node, opts) -> Node3D` (continuous; `stop()` it), `TLVfx.presets()`. Presets: `dust`, `sparks`,
 `smoke`, `ice_spray`, `debris`, `nitro_flame`, `confetti`, `splash`, `goal_flash`. Options `direction`, `scale`, `color`.
@@ -634,4 +639,38 @@ What a pack author has to know:
 - **A node of yours with a `process_physics_priority` other than 0** is ticked outside the bracket that names your
   pack (the kernel's own `TLContact` is, and asks `TLContext.of`). Keep the default priority.
 - **Not in a world yet**: the watchdog thread (a runaway `_pack_tick` hangs the whole world), windowed play and
-  capture (one camera, one HUD on screen), `on_leave`, `footprint`.
+  capture (one camera, one HUD on screen). `on_leave` and `footprint` are read by the scheduled world: section 20.
+
+## 20. A world with a clock: tiers, `on_leave`, save and load (N5a)
+
+`bash tools/world.sh walk <script>` runs a SCHEDULED world: every pack stands on a plot (`origin`, `footprint`), the
+player's position comes from the script, and the scheduler (`kernel/world/tiers.gd`, thresholds in
+`kernel/world/tiers.json`) decides every world tick which packs get it. The model, the proof and the numbers are in
+`kernel/world/TIERS.md`. What a pack author has to know:
+
+- **Your game is never switched off, but it may run slower.** `stage` (the player is in your plot) and `sideline`
+  (near) get every world tick; `backdrop` (far) gets one tick in `slice` (2 to 30); when the whole world is too
+  heavy every pack gets fewer ticks, equally. Each tick you get is a full 1/60 s step. You see only your own tick
+  count (`frame`), as section 19 says; a game that is slowed plays exactly the same game, later.
+- **`on_leave`** in `pack.json` says what happens when the player walks out of your plot: `"bot"` (your first test
+  takes the player's side; the default, because every pack has a test), `"pause"` (the game holds: no ticks until
+  the player is back) or `"end"` (the run ends there; when the player returns the pack is built again from its seed).
+- **`footprint`** (`{"size_m": [x, z], "height_m": h}`) is your plot, centred on your origin. Without it the world
+  assumes 40 x 40 m. The player is "inside" when he stands on it; he has left when he is 2 m outside it.
+- **`_pack_save() -> Dictionary` and `_pack_load(data: Dictionary)`** (both optional, both or neither). A world file
+  (`world.sh save`, `tl.world/1`) and the `ledger` tier (a pack that is not in memory) keep of your game only: its
+  seed, its tick count, a summary (phase, score and clock of your `TLRules`, if you have one) and what `_pack_save`
+  returns (plain data: numbers, strings, arrays, dictionaries). On the way back the pack is BUILT AGAIN FROM ITS
+  SEED: bodies, positions and velocities start as on the first tick. Then `_pack_start()` is called, then
+  `_pack_load(data)`. Without the two functions the game simply starts again. `kernel/examples/ex_bounce` is the
+  example (the score survives, the balls do not).
+- **Scenery.** A world may load you with `scenery = "plot"` (`ctx.scenery`): a `tl.layout/1` file read through
+  `ctx.read_json` then comes with `forest.scatter` and `terrain.far` off. Do not look scenery nodes up by name.
+- **`TLVfx.squash` and `TLVfx.trail`** (section 13) are new; lint's `composability` now also reports
+  `kit_parts_used`, `kit_kinds_used`, `kit_build_calls` and `world_coordinates` (how often your scripts read
+  `global_position`, `global_transform`, `to_global(` or `look_at(`: each is a place that breaks when a pack is not
+  simulated at its own origin). Figures, never findings.
+
+Commands: `world.sh walk <script> [--log=<file>] [--cost=model|measured]`, `world.sh replay <log>`,
+`world.sh proof <script>`, `world.sh save <file> --packs=...`, `world.sh load <file>`. Formats: a walk script is
+`tl.walk/1` (`kernel/world/walks/*.json`), a world log `tl.worldlog/1`, a world file `tl.world/1` (TIERS.md).

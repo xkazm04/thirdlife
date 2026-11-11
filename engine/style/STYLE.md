@@ -84,3 +84,19 @@ not steep one colour and one normal per grid vertex, so its triangles no longer 
 `TLStyleFx.trail(target, {width, frames, color, offset})`: squash and stretch on a visual node (never a body) and a
 fading ribbon behind a moving node. Frame-counted, visual only. A pack cannot reach them yet (there is no `TLVfx`
 seam for them): see the N1 report.
+
+## N5b: a world of several packs (kernel/world/draw/DRAW.md)
+
+Three parameters were added for the world's draw layer; a single pack never sets them and is drawn as before.
+
+- `instance uniform vec4 tl_plot` in toon, glass, water, holo, fx_add, fx_mix: xyz = offset (m), w = yaw (rad) of
+  the pack's plot relative to the stage pack. Not zero: `vertex()` draws the instance at `plot * MODEL_MATRIX`
+  (shadow pass included). World-anchored noise (`wpos`) stays in the pack's own coordinates.
+- `instance uniform vec4 tl_clip` in toon: x = plot radius (0 = no cut), y = height of the world's ground at the
+  plot edge in pack coordinates, z = width of the band in which the pack's ground is bent to it, w = 1 on terrain
+  sheets. Outside the radius an instance is dropped (by its origin) or cut (per fragment, 3 m further out).
+- `uniform int tl_hole_n`, `uniform vec4 tl_holes[32]` in toon: only on the world ground's own material; the plots
+  are cut out of it (xy = centre in the ground's part-local x and z, z = radius).
+
+A new style shader that packs can reach must declare `instance uniform vec4 tl_plot` and apply it in `vertex()`,
+or the draw layer treats its geometry as foreign and mirrors it (correct place, per-frame cost, no plot cut).

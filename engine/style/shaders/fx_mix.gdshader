@@ -2,10 +2,20 @@ shader_type spatial;
 render_mode unshaded, blend_mix, cull_disabled, depth_draw_never;
 // Billboard particle, alpha blended (dust, smoke). Flat disc with a soft edge.
 uniform float soft = 0.7;
+// N5b: the plot of the pack this instance belongs to, relative to the stage pack: xyz = offset (m), w = yaw (rad).
+// Set once per GeometryInstance3D by the world's draw layer (kernel/world/draw/draw.gd); all zero = drawn where it is
+// simulated (a single pack, or the stage pack), and then the engine's own model-view matrix is left untouched.
+instance uniform vec4 tl_plot = vec4(0.0);
+mat4 tl_plot_mat() {
+	float cy = cos(tl_plot.w); float sy = sin(tl_plot.w);
+	return mat4(vec4(cy, 0.0, -sy, 0.0), vec4(0.0, 1.0, 0.0, 0.0), vec4(sy, 0.0, cy, 0.0), vec4(tl_plot.xyz, 1.0));
+}
 void vertex() {
 	float sx = length(MODEL_MATRIX[0].xyz);
 	float sy = length(MODEL_MATRIX[1].xyz);
-	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0] * sx, INV_VIEW_MATRIX[1] * sy, INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+	vec4 at = MODEL_MATRIX[3];
+	if (any(notEqual(tl_plot, vec4(0.0)))) { at = tl_plot_mat() * at; }   // N5b: the billboard stands at its pack's plot
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0] * sx, INV_VIEW_MATRIX[1] * sy, INV_VIEW_MATRIX[2], at);
 }
 void fragment() {
 	float d = length(UV - 0.5) * 2.0;

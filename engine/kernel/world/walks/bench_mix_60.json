@@ -1,0 +1,638 @@
+{
+ "schema": "tl.walk/1",
+ "name": "bench_mix_60",
+ "ticks": 1200,
+ "mode": "bot",
+ "scenery": "plot",
+ "plots": [
+  {
+   "id": "p00",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p01",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p02",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p03",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    0
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  },
+  {
+   "id": "p04",
+   "pack": "seed_paddle",
+   "origin": [
+    240,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p05",
+   "pack": "seed_drive",
+   "origin": [
+    300,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p06",
+   "pack": "seed_wall",
+   "origin": [
+    360,
+    0,
+    0
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p07",
+   "pack": "w_pile",
+   "origin": [
+    420,
+    0,
+    0
+   ],
+   "seed": 10060,
+   "mode": "smoke"
+  },
+  {
+   "id": "p08",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p09",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p10",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p11",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    60
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  },
+  {
+   "id": "p12",
+   "pack": "seed_paddle",
+   "origin": [
+    240,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p13",
+   "pack": "seed_drive",
+   "origin": [
+    300,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p14",
+   "pack": "seed_wall",
+   "origin": [
+    360,
+    0,
+    60
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p15",
+   "pack": "w_pile",
+   "origin": [
+    420,
+    0,
+    60
+   ],
+   "seed": 10060,
+   "mode": "smoke"
+  },
+  {
+   "id": "p16",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p17",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p18",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p19",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    120
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  },
+  {
+   "id": "p20",
+   "pack": "seed_paddle",
+   "origin": [
+    240,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p21",
+   "pack": "seed_drive",
+   "origin": [
+    300,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p22",
+   "pack": "seed_wall",
+   "origin": [
+    360,
+    0,
+    120
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p23",
+   "pack": "w_pile",
+   "origin": [
+    420,
+    0,
+    120
+   ],
+   "seed": 10060,
+   "mode": "smoke"
+  },
+  {
+   "id": "p24",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    180
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p25",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    180
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p26",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    180
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p27",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    180
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  },
+  {
+   "id": "p28",
+   "pack": "seed_paddle",
+   "origin": [
+    240,
+    0,
+    180
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p29",
+   "pack": "seed_drive",
+   "origin": [
+    300,
+    0,
+    180
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p30",
+   "pack": "seed_wall",
+   "origin": [
+    360,
+    0,
+    180
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p31",
+   "pack": "w_pile",
+   "origin": [
+    420,
+    0,
+    180
+   ],
+   "seed": 10060,
+   "mode": "smoke"
+  },
+  {
+   "id": "p32",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    240
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p33",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    240
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p34",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    240
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p35",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    240
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  },
+  {
+   "id": "p36",
+   "pack": "seed_paddle",
+   "origin": [
+    240,
+    0,
+    240
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p37",
+   "pack": "seed_drive",
+   "origin": [
+    300,
+    0,
+    240
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p38",
+   "pack": "seed_wall",
+   "origin": [
+    360,
+    0,
+    240
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p39",
+   "pack": "w_pile",
+   "origin": [
+    420,
+    0,
+    240
+   ],
+   "seed": 10060,
+   "mode": "smoke"
+  },
+  {
+   "id": "p40",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    300
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p41",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    300
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p42",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    300
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p43",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    300
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  },
+  {
+   "id": "p44",
+   "pack": "seed_paddle",
+   "origin": [
+    240,
+    0,
+    300
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p45",
+   "pack": "seed_drive",
+   "origin": [
+    300,
+    0,
+    300
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p46",
+   "pack": "seed_wall",
+   "origin": [
+    360,
+    0,
+    300
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p47",
+   "pack": "w_pile",
+   "origin": [
+    420,
+    0,
+    300
+   ],
+   "seed": 10060,
+   "mode": "smoke"
+  },
+  {
+   "id": "p48",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    360
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p49",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    360
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p50",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    360
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p51",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    360
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  },
+  {
+   "id": "p52",
+   "pack": "seed_paddle",
+   "origin": [
+    240,
+    0,
+    360
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p53",
+   "pack": "seed_drive",
+   "origin": [
+    300,
+    0,
+    360
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p54",
+   "pack": "seed_wall",
+   "origin": [
+    360,
+    0,
+    360
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p55",
+   "pack": "w_pile",
+   "origin": [
+    420,
+    0,
+    360
+   ],
+   "seed": 10060,
+   "mode": "smoke"
+  },
+  {
+   "id": "p56",
+   "pack": "seed_paddle",
+   "origin": [
+    0,
+    0,
+    420
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p57",
+   "pack": "seed_drive",
+   "origin": [
+    60,
+    0,
+    420
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p58",
+   "pack": "seed_wall",
+   "origin": [
+    120,
+    0,
+    420
+   ],
+   "seed": 1
+  },
+  {
+   "id": "p59",
+   "pack": "w_pile",
+   "origin": [
+    180,
+    0,
+    420
+   ],
+   "seed": 60,
+   "mode": "smoke"
+  }
+ ],
+ "player": [
+  [
+   0,
+   [
+    60,
+    0,
+    60
+   ]
+  ]
+ ],
+ "tiers": {
+  "sideline_m": 50,
+  "cost": "measured"
+ }
+}

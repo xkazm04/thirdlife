@@ -1,0 +1,16 @@
+{
+  "schema": "tl.walk/1",
+  "name": "boundary",
+  "note": "N5a item 3. Two plots that touch (a at x 0, b at x 40, both 40 m wide: the line between them is x = 20), a third 150 m away whose sideline boundary (100 m) the player also walks along. The player zigzags 1.5 m either side of the line x = 20 for 1200 ticks, then 5 m either side of the point (x = -10, still inside a) where c is exactly 100 m away. a and b never change tier; c changes once, when the player first comes within 100 m.",
+  "ticks": 2400,
+  "mode": "smoke",
+  "plots": [
+    {"id": "a", "pack": "pack_min", "origin": [0, 0, 0], "seed": 1},
+    {"id": "b", "pack": "pack_min", "origin": [40, 0, 0], "seed": 2},
+    {"id": "c", "pack": "ex_bounce", "origin": [-130, 0, 0], "seed": 1}
+  ],
+  "player": [[0, [18.5, 0, -15]], [100, [21.5, 0, -12]], [200, [18.5, 0, -9]], [300, [21.5, 0, -6]], [400, [18.5, 0, -3]], [500, [21.5, 0, 0]],
+             [600, [18.5, 0, 3]], [700, [21.5, 0, 6]], [800, [18.5, 0, 9]], [900, [21.5, 0, 12]], [1000, [18.5, 0, 15]], [1200, [-5, 0, 0]],
+             [1300, [-15, 0, 0]], [1400, [-5, 0, 0]], [1500, [-15, 0, 0]], [1600, [-5, 0, 0]], [1700, [-15, 0, 0]], [1800, [-5, 0, 0]],
+             [1900, [-15, 0, 0]], [2000, [-5, 0, 0]], [2100, [-15, 0, 0]], [2200, [-5, 0, 0]], [2400, [-5, 0, 0]]]
+}

@@ -28,9 +28,16 @@ const CENSUS_EVERY: int = 10            # the worker's rhythm: late-tagged bodie
 class Mark extends Node:
 	var ctx: TLContext
 	var opens: bool = true
+	var pack: Node = null           # N5a: the holder; the closing mark tells it how long its nodes took this tick
+	var mate: Mark = null
+	var t_usec: int = 0
 
 	func _physics_process(_delta: float) -> void:
 		TLContext.current = ctx if opens else null
+		if opens:
+			t_usec = Time.get_ticks_usec()
+		elif mate != null and pack != null:
+			pack.set("tree_usec", Time.get_ticks_usec() - mate.t_usec)
 
 	func _process(_delta: float) -> void:
 		TLContext.current = ctx if opens else null
@@ -90,6 +97,18 @@ var toggles: int = 0
 var finished_at_world_tick: int = -1
 var _has_tick: bool = false
 var _before: TLContext = null
+# N5a: the plot this pack stands on in a scheduled world, and what a world file keeps of it
+var plot_id: String = ""
+var plot_origin: Vector3 = Vector3.ZERO  # where the plot is in the world (the pack itself is simulated at its own origin)
+var plot_yaw: float = 0.0
+var ticks_before: int = 0               # ticks this plot's game had before this pack was (re)built from its seed
+var restored: bool = false              # `_pack_load(data)` was called with saved data
+var tree_usec: int = 0                  # how long the scene tree spent in this pack's nodes on its last tick
+var _begin_mark: Mark = null
+var _kept_summary: Dictionary = {}
+var _kept_data: Variant = null
+var load_ms: Dictionary = {}            # where the loading time went: scripts, setup, laws, bot (milliseconds)
+var ledgered: bool = false              # unloaded: only the plot record is left
 
 
 # ------------------------------------------------------------------------------------------------------ loading
@@ -144,6 +163,7 @@ func load_pack(dir_arg: String, options: Dictionary) -> bool:
 	ctx.holder = self
 	ctx.origin = options.get("at", Vector3.ZERO)
 	ctx.ball_group = StringName("tl_ball@" + String(name))
+	ctx.scenery = str(options.get("scenery", "full"))
 	set_meta(&"tl_ctx", ctx)
 	position = ctx.origin
 	if own_space:
@@ -158,6 +178,7 @@ func load_pack(dir_arg: String, options: Dictionary) -> bool:
 	var begin: Mark = Mark.new()
 	begin.name = "_Begin"
 	begin.ctx = ctx
+	_begin_mark = begin
 	add_child(begin)
 	pack_node = Node3D.new()
 	pack_node.name = "TLPack"
@@ -183,12 +204,21 @@ func load_pack(dir_arg: String, options: Dictionary) -> bool:
 	done.name = "_End"
 	done.ctx = ctx
 	done.opens = false
+	done.pack = self
+	done.mate = _begin_mark
 	add_child(done)
 	loaded = ok
 	return ok
 
 
+func _lap(key: String, t0: int) -> int:
+	var now: int = Time.get_ticks_usec()
+	load_ms[key] = snappedf(float(load_ms.get(key, 0.0)) + float(now - t0) / 1000.0, 0.01)
+	return now
+
+
 func _load_scripts(m: Dictionary, options: Dictionary) -> bool:
+	var t: int = Time.get_ticks_usec()
 	for gen: String in m["assets"]:
 		var gs: GDScript = _load_script(gen)
 		if gs == null:
@@ -196,9 +226,11 @@ func _load_scripts(m: Dictionary, options: Dictionary) -> bool:
 		if not _script_has(gs, "generate"):
 			return _fail(gen, "an asset generator needs `static func generate(ctx) -> void`")
 		gs.call("generate", ctx)
+	t = _lap("assets", t)
 	var es: GDScript = _load_script(str(m["entry"]))
 	if es == null:
 		return false
+	t = _lap("script", t)
 	var inst: Variant = es.new()
 	if not (inst is Node):
 		return _fail(str(m["entry"]), "the entry script must extend Node")
@@ -212,8 +244,11 @@ func _load_scripts(m: Dictionary, options: Dictionary) -> bool:
 	_has_tick = entry.has_method("_pack_tick")
 	ctx._entry = entry
 	pack_node.add_child(entry)
+	t = _lap("enter_tree", t)
 	entry.call("_pack_setup", ctx)
+	t = _lap("setup", t)
 	TLLaws.apply_tree(pack_node)
+	t = _lap("laws", t)
 	if mode == "bot":
 		var test: String = str(options.get("test", ""))
 		if test.is_empty():
@@ -236,6 +271,7 @@ func _load_scripts(m: Dictionary, options: Dictionary) -> bool:
 		add_child(bot)
 		bot.call("_bot_setup", ctx)
 		bot_info = {"test": test, "done": false, "frames": 0}
+		t = _lap("bot", t)
 	return true
 
 
@@ -318,6 +354,14 @@ func tick(world_tick: int) -> void:
 func finish(world_tick: int) -> void:
 	if finished:
 		return
+	if not started:
+		# N5a: a pack that never had a tick (a world loaded and saved again, `--frames=0`) has no run to hash
+		finished = true
+		finished_at_world_tick = world_tick
+		due = false
+		set_running(false)
+		return
+	_kept_data = saved_data()           # N5a: while the pack can still answer `_pack_save`
 	_enter()
 	if bot != null:
 		bot_info["frames"] = frames_done
@@ -328,6 +372,7 @@ func finish(world_tick: int) -> void:
 			bot_info["result"] = {"ok": false, "summary": "_bot_result() did not return {ok: bool, summary: String}"}
 	_census()
 	final_hash = state_hash()
+	_kept_summary = summary()
 	if entry != null and entry.has_method("_pack_state"):
 		pack_state = WorkerScript.call("_plain", entry.call("_pack_state"))
 	if entry != null and entry.has_method("_pack_teardown"):
@@ -430,6 +475,13 @@ func result(index: int) -> Dictionary:
 		"probe_idle_calls": probe.idle_calls if probe != null else 0,
 		"gate_leaks": probe.leaks if probe != null else 0, "wrong_pack_calls": probe.wrong_pack if probe != null else 0,
 		"toggles": toggles, "finished_at_world_tick": finished_at_world_tick, "own_space": space.is_valid()}
+	res["load_ms"] = load_ms
+	if not plot_id.is_empty():
+		res["plot"] = plot_id
+		res["plot_origin"] = [plot_origin.x, plot_origin.y, plot_origin.z]
+		res["ticks"] = ticks_before + frames_done
+		res["restored"] = restored
+		res["ledgered"] = ledgered
 	if ctx != null:
 		res["audio_events"] = ctx.audio_events.size()
 	if not load_errors.is_empty():
@@ -445,6 +497,124 @@ func result(index: int) -> Dictionary:
 
 func _exit_tree() -> void:
 	pass
+
+
+# ------------------------------------------------------------------------------------------------ N5a: the plot
+func _find_rules(n: Node) -> TLRules:
+	if n is TLRules:
+		return n as TLRules
+	for c: Node in n.get_children():
+		var r: TLRules = _find_rules(c)
+		if r != null:
+			return r
+	return null
+
+
+## The small summary a world keeps of a game it does not hold in memory: score, clock and phase from the pack's
+## TLRules when it has one; always the tick count.
+func summary() -> Dictionary:
+	if finished and not _kept_summary.is_empty():
+		var kept: Dictionary = _kept_summary.duplicate()
+		return kept
+	var s: Dictionary = {"ticks": ticks_before + frames_done, "over": bool(bot_info.get("done", false))}
+	var rules: TLRules = _find_rules(pack_node) if pack_node != null and not finished else null
+	if rules != null:
+		s["phase"] = String(rules.state)
+		s["score"] = rules.scores.duplicate()
+		s["clock"] = rules.clock_text()
+		s["clock_frames"] = rules.total_frames
+		s["over"] = bool(s["over"]) or rules.is_over()
+		if not rules.winner.is_empty():
+			s["winner"] = rules.winner
+	return s
+
+
+## What the pack itself wants kept (`_pack_save() -> Dictionary`, optional), as plain JSON data; null without it.
+func saved_data() -> Variant:
+	if finished:
+		return _kept_data
+	if entry == null or not started or not entry.has_method("_pack_save") or not entry.has_method("_pack_load"):
+		return null
+	_enter()
+	var d: Variant = WorkerScript.call("_plain", entry.call("_pack_save"))
+	_leave()
+	return d
+
+
+## Hands saved data back to a pack that was just rebuilt from its seed (`_pack_load(data)`, optional).
+func restore(data: Variant) -> bool:
+	if data == null or entry == null or not entry.has_method("_pack_load") or not entry.has_method("_pack_save"):
+		return false
+	_enter()
+	if not started:
+		started = true
+		entry.call("_pack_start")
+	entry.call("_pack_load", data)
+	_leave()
+	restored = true
+	return true
+
+
+## SHA-256 over the pack's files (relative path and bytes, sorted): tells a world file that the pack changed.
+static func dir_hash(dir: String) -> String:
+	var files: PackedStringArray = PackedStringArray()
+	_list_files(dir, "", files)
+	files.sort()
+	var hc: HashingContext = HashingContext.new()
+	hc.start(HashingContext.HASH_SHA256)
+	for rel: String in files:
+		hc.update(rel.to_utf8_buffer())
+		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(dir + "/" + rel)
+		if not bytes.is_empty():
+			hc.update(bytes)
+	return hc.finish().hex_encode()
+
+
+static func _list_files(dir: String, rel: String, out: PackedStringArray) -> void:
+	var d: DirAccess = DirAccess.open(dir + ("/" + rel if not rel.is_empty() else ""))
+	if d == null:
+		return
+	for f: String in d.get_files():
+		if not f.ends_with(".uid") and not f.ends_with(".import"):
+			out.append(rel + "/" + f if not rel.is_empty() else f)
+	for sub: String in d.get_directories():
+		if not sub.begins_with("."):
+			_list_files(dir, rel + "/" + sub if not rel.is_empty() else sub, out)
+
+
+## N5a, `ledger`: takes the pack out of memory (nodes and physics space) and returns what the world keeps of it.
+## The holder stays as a stub so the world's list keeps its shape; `world.gd` builds a new holder on the way back.
+func unload() -> Dictionary:
+	var rec: Dictionary = plot_record()
+	_kept_summary = rec["summary"]
+	ticks_before += frames_done
+	frames_done = 0
+	for c: Node in get_children():
+		c.free()
+	pack_node = null
+	entry = null
+	bot = null
+	probe = null
+	release_space()
+	ledgered = true
+	finished = true
+	due = false
+	running = false
+	return rec
+
+
+## One entry of a world file's `plots` (tl.world/1). The same record is what `ledger` keeps of an unloaded pack.
+func plot_record() -> Dictionary:
+	var m: Dictionary = ctx.manifest if ctx != null else {}
+	var fp: Variant = m.get("footprint", null)
+	var rec: Dictionary = {"id": plot_id if not plot_id.is_empty() else String(name),
+		"origin": [plot_origin.x, plot_origin.y, plot_origin.z], "yaw": plot_yaw, "footprint": fp,
+		"pack": {"dir": pack_dir, "uid": str(m.get("id", "")), "version": str(m.get("version", "")), "hash": dir_hash(pack_dir)},
+		"seed": seed_value, "ticks": ticks_before + frames_done, "summary": summary()}
+	var d: Variant = saved_data()
+	if d != null:
+		rec["data"] = d
+	return rec
 
 
 ## Frees the pack's physics space (after its nodes are gone).

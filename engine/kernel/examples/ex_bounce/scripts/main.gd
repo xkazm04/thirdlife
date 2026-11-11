@@ -68,6 +68,20 @@ func _pack_tick(_frame: int) -> void:
 			d["peak"] = maxf(float(d["peak"]), (d["ball"] as TLBall).global_position.y - float(d["floor"]))
 
 
+## Optional (N5a): what a world keeps of this game when it saves or unloads it. Plain data only. The world rebuilds
+## the pack from its seed and then calls `_pack_load` with this, after `_pack_start`. The balls start again from
+## their seed; only the score survives.
+func _pack_save() -> Dictionary:
+	return {"scores": rules.scores.duplicate()}
+
+
+func _pack_load(saved: Dictionary) -> void:
+	var kept: Dictionary = saved.get("scores", {})
+	for side: String in kept.keys():
+		if rules.scores.has(side):
+			rules.scores[side] = int(kept[side])
+
+
 func _pack_state() -> Dictionary:
 	var s: Dictionary = rules.snapshot()
 	s["spawned"] = spawner.total

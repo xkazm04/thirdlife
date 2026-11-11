@@ -1,0 +1,14 @@
+{
+  "schema": "tl.walk/1",
+  "name": "ledger",
+  "note": "N5a item 5. Ledger by distance (backdrop_m is 0 in tiers.json, so no pack is unloaded for distance unless a world says so, as here). The player walks away from b and c until they are more than 250 + 40 m off: both are unloaded (ticks, summary and what the pack saved itself are kept), then he walks back and both are rebuilt from their seed. c (ex_wall) has no _pack_save: it starts its game again and hashes as a fresh run of its new ticks. b (ex_bounce) has _pack_save/_pack_load: its score comes back, so it is not comparable with a run from the seed.",
+  "ticks": 1500,
+  "mode": "bot",
+  "tiers": {"backdrop_m": 250},
+  "plots": [
+    {"id": "a", "pack": "pack_min", "origin": [0, 0, 0], "seed": 1},
+    {"id": "b", "pack": "ex_bounce", "origin": [400, 0, 0], "seed": 1},
+    {"id": "c", "pack": "ex_wall", "origin": [400, 0, 100], "seed": 1}
+  ],
+  "player": [[0, [200, 0, 0]], [200, [200, 0, 0]], [500, [0, 0, 0]], [800, [0, 0, 0]], [1100, [200, 0, 0]], [1500, [200, 0, 0]]]
+}

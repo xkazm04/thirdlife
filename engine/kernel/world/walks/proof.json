@@ -1,0 +1,14 @@
+{
+  "schema": "tl.walk/1",
+  "name": "proof",
+  "note": "N5a item 3. Three seeds 300 m apart; the player walks A -> B -> C and back, so every seed is stage, sideline and backdrop, and comes back. world.sh proof runs it, each pack alone for the same number of its own ticks, and the replay of its log.",
+  "ticks": 2700,
+  "mode": "bot",
+  "plots": [
+    {"id": "a", "pack": "seed_paddle", "origin": [0, 0, 0], "seed": 1},
+    {"id": "b", "pack": "seed_drive", "origin": [300, 0, 0], "seed": 1},
+    {"id": "c", "pack": "seed_wall", "origin": [600, 0, 0], "seed": 1}
+  ],
+  "player": [[0, [0, 0, 0]], [200, [0, 0, 0]], [500, [300, 0, 0]], [700, [300, 0, 0]], [1000, [600, 0, 0]], [1300, [600, 0, 0]],
+             [1600, [300, 0, 0]], [1800, [300, 0, 0]], [2100, [0, 0, 0]], [2700, [0, 0, 0]]]
+}

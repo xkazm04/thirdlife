@@ -12,8 +12,21 @@ float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32);
 float vn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(h21(i), h21(i + vec2(1,0)), f.x), mix(h21(i + vec2(0,1)), h21(i + vec2(1,1)), f.x), f.y); }
 varying vec3 wp;
+// N5b: the plot of the pack this instance belongs to, relative to the stage pack: xyz = offset (m), w = yaw (rad).
+// Set once per GeometryInstance3D by the world's draw layer (kernel/world/draw/draw.gd); all zero = drawn where it is
+// simulated (a single pack, or the stage pack), and then the engine's own model-view matrix is left untouched.
+instance uniform vec4 tl_plot = vec4(0.0);
+mat4 tl_plot_mat() {
+	float cy = cos(tl_plot.w); float sy = sin(tl_plot.w);
+	return mat4(vec4(cy, 0.0, -sy, 0.0), vec4(0.0, 1.0, 0.0, 0.0), vec4(sy, 0.0, cy, 0.0), vec4(tl_plot.xyz, 1.0));
+}
 void vertex() {
 	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	if (any(notEqual(tl_plot, vec4(0.0)))) {   // N5b: draw this pack at its plot (world space; shadow pass included)
+		mat4 pm = tl_plot_mat();
+		MODELVIEW_MATRIX = VIEW_MATRIX * pm * MODEL_MATRIX;
+		MODELVIEW_NORMAL_MATRIX = mat3(VIEW_MATRIX) * mat3(pm) * MODEL_NORMAL_MATRIX;
+	}
 }
 void fragment() {
 	float across = abs(UV.y * 2.0 - 1.0);

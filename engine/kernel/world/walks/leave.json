@@ -1,0 +1,13 @@
+{
+  "schema": "tl.walk/1",
+  "name": "leave",
+  "note": "N5a: on_leave. Three plots in a row, 100 m apart; the plot entries override the packs' own on_leave. a (pause): holds while the player is away, goes on when he is back. b (end): its run ends when he leaves; when he returns it is built again from its seed. c (bot, the default): plays on. The player visits a, b, a, b.",
+  "ticks": 1500,
+  "mode": "bot",
+  "plots": [
+    {"id": "a", "pack": "ex_wall", "origin": [0, 0, 0], "seed": 1, "on_leave": "pause"},
+    {"id": "b", "pack": "ex_slide", "origin": [100, 0, 0], "seed": 1, "on_leave": "end"},
+    {"id": "c", "pack": "ex_wall", "origin": [200, 0, 0], "seed": 2}
+  ],
+  "player": [[0, [0, 0, 0]], [100, [0, 0, 0]], [300, [100, 0, 0]], [500, [100, 0, 0]], [700, [0, 0, 0]], [900, [0, 0, 0]], [1100, [100, 0, 0]], [1500, [100, 0, 0]]]
+}

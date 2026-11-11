@@ -68,7 +68,19 @@
         "trace": {"type": "int", "default": 0, "note": "record a state hash every N pack ticks"},
         "hold": {"type": "int", "default": 0, "note": "world ticks to keep running after every pack has finished (all switched off)"},
         "state": {"type": "flag", "default": false, "note": "include each pack's _pack_state in its line"},
-        "out": {"type": "path", "default": "", "note": "also write the lines to this file"}
+        "out": {"type": "path", "default": "", "note": "also write the lines to this file"},
+        "walk": {"type": "path", "default": "", "note": "N5a. a walk script (tl.walk/1): plots, the player's scripted positions, tickets; the scheduler (kernel/world/tiers.gd) decides who ticks; replaces --packs"},
+        "replay": {"type": "path", "default": "", "note": "N5a. a world log (tl.worldlog/1) written by --log: the same walk, the logged decisions instead of new ones"},
+        "log": {"type": "path", "default": "", "note": "N5a. write the world log of a walk to this file"},
+        "tiers": {"type": "path", "default": "<engine>/kernel/world/tiers.json", "note": "N5a. the thresholds of the scheduler"},
+        "cost": {"type": "string", "default": "<tiers.json: model>", "note": "N5a. model (a pack tick costs what tiers.json says) or measured (the world's clock)"},
+        "ticks": {"type": "int", "default": "<the walk script's>", "note": "N5a. world ticks of a walk"},
+        "world": {"type": "path", "default": "", "note": "N5a. load a world file (tl.world/1); replaces --packs; --frames defaults to 0 then"},
+        "save": {"type": "path", "default": "", "note": "N5a. write the world file when the run ends (temporary file, read back, rename; rev counted up)"},
+        "name": {"type": "string", "default": "world", "note": "N5a. the world's name in a saved file"},
+        "seed": {"type": "int", "default": 1, "note": "N5a. the world's own seed, kept in the world file"},
+        "plot-spacing": {"type": "float", "default": 0, "note": "N5a. with --packs: plot i lies at (i * spacing, 0, 0) in the world; the pack is still simulated at its own origin (unlike --spacing and --at, which move the simulation)"},
+        "scenery": {"type": "string", "default": "full", "note": "N5a. full, or plot: a pack's layout is built without its far terrain and scattered forest (the landscape around a plot is the world's); 70 to 90 % of a seed's loading time, no body of the simulation"}
       }
     },
     "world-bench": {

@@ -313,6 +313,7 @@ static func run(pack_dir: String) -> Dictionary:
 			lay.append({"kind": "layout", "file": str(r[1]), "message": "listed in '%s' but the file does not exist" % str(r[0])})
 	var data_files: Array = []
 	_list_files(pack_dir + "/data", "data/", data_files)
+	var kit_kinds: Dictionary = {}          # N5a: kit part kind -> how many times the pack uses it (layouts and TLKit.build)
 	var data_bytes: int = 0
 	for f: String in data_files:
 		if f.get_file().begins_with("."):
@@ -325,6 +326,8 @@ static func run(pack_dir: String) -> Dictionary:
 		var j: JSON = JSON.new()
 		if j.parse(text) != OK:
 			lay.append({"kind": "layout", "file": f, "line": j.get_error_line() + 1, "message": "not valid JSON: " + j.get_error_message()})
+		elif typeof(j.data) == TYPE_DICTIONARY and str((j.data as Dictionary).get("schema", "")).begins_with("tl.layout/"):
+			_count_kinds(j.data, kit_kinds)       # N5a: the kit parts a layout places
 	var gd_files: Array = []
 	for sd: String in SCRIPT_DIRS:
 		var found: Array = []
@@ -377,6 +380,13 @@ static func run(pack_dir: String) -> Dictionary:
 	for cap: String in CAPABILITY_USE.keys():
 		cap_re[cap] = RegEx.create_from_string(CAPABILITY_USE[cap])
 	var load_re: RegEx = RegEx.create_from_string("(?<![\\w])(load|preload)\\s*\\(\\s*")
+	# N5a: figures, never findings. A pack that reads world coordinates breaks when it is not simulated at its own
+	# origin (kernel/world/BENCH.md, test 5); the count tells the Foreman how far a pack is from being movable.
+	var world_re: RegEx = RegEx.create_from_string("(?<![\\w])(global_position|global_transform|to_global\\s*\\(|look_at\\s*\\()")
+	var kit_build_re: RegEx = RegEx.create_from_string("TLKit\\s*\\.\\s*build\\s*\\(\\s*\"([a-z0-9_]+)\"")
+	var kit_call_re: RegEx = RegEx.create_from_string("TLKit\\s*\\.\\s*build\\s*\\(")
+	var world_uses: Dictionary = {"global_position": 0, "global_transform": 0, "to_global": 0, "look_at": 0}
+	var kit_build_calls: int = 0
 	var geo_re: RegEx = RegEx.create_from_string(GEOMETRY_RE)
 	var pack_res: String = ProjectSettings.localize_path(pack_dir)
 	for rel: String in gd_files:
@@ -425,6 +435,12 @@ static func run(pack_dir: String) -> Dictionary:
 					"message": "uses '%s' but the manifest does not declare the capability '%s'" % [hit.get_string().strip_edges(), cap]})
 		if top_dir == "gen" and geo_re.search(code) != null:
 			kit_parts_added += 1
+		for hit: RegExMatch in world_re.search_all(code):
+			var wk: String = hit.get_string(1).replace("(", "").strip_edges()
+			world_uses[wk] = int(world_uses[wk]) + 1
+		kit_build_calls += kit_call_re.search_all(code).size()
+		for hit: RegExMatch in kit_build_re.search_all(src):      # the kind is a string literal: read it from the source text
+			kit_kinds[hit.get_string(1)] = int(kit_kinds.get(hit.get_string(1), 0)) + 1
 	if total_lines > MAX_PACK_LINES:
 		size_err.append({"kind": "size", "file": "scripts/", "message": "%d lines of GDScript in the pack; at most %d" % [total_lines, MAX_PACK_LINES]})
 	if data_bytes > MAX_DATA_BYTES:
@@ -436,7 +452,35 @@ static func run(pack_dir: String) -> Dictionary:
 	checks.append({"id": "lint.capabilities", "ok": caps_err.is_empty(), "detail": _detail(caps_err, "every kernel capability used is declared")})
 	checks.append({"id": "lint.size", "ok": size_err.is_empty(), "detail": _detail(size_err, "%d lines of GDScript, %d bytes of data" % [total_lines, data_bytes])})
 	return {"manifest": m, "checks": checks, "errors": errors,
-		"composability": {"gdscript_lines": lines, "kit_parts_added": kit_parts_added, "bypasses": bypasses}}
+		"composability": {"gdscript_lines": lines, "kit_parts_added": kit_parts_added, "bypasses": bypasses,
+			"kit_parts_used": _sum(kit_kinds), "kit_kinds_used": _sorted_keys(kit_kinds), "kit_build_calls": kit_build_calls,
+			"world_coordinates": _sum(world_uses), "world_coordinates_by": world_uses}}
+
+
+## N5a. Every object of a layout that names a kit part (`"kind": "<part>"`), counted by kind.
+static func _count_kinds(v: Variant, into: Dictionary) -> void:
+	if typeof(v) == TYPE_DICTIONARY:
+		var d: Dictionary = v
+		if typeof(d.get("kind")) == TYPE_STRING:
+			into[str(d["kind"])] = int(into.get(str(d["kind"]), 0)) + 1
+		for k: Variant in d.keys():
+			_count_kinds(d[k], into)
+	elif typeof(v) == TYPE_ARRAY:
+		for item: Variant in (v as Array):
+			_count_kinds(item, into)
+
+
+static func _sum(d: Dictionary) -> int:
+	var n: int = 0
+	for k: Variant in d.keys():
+		n += int(d[k])
+	return n
+
+
+static func _sorted_keys(d: Dictionary) -> Array:
+	var keys: Array = d.keys()
+	keys.sort()
+	return keys
 
 
 static func _detail(errs: Array, ok_text: String) -> String:
