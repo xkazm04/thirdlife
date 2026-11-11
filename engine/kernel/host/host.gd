@@ -31,12 +31,12 @@ const OPTIONS: Dictionary = {
 ## N2: the world modes (kernel/world/). They are not verify verbs: no tl.verify/1 report, no --pack, no level.
 ## kernel/runner/verbs.json lists them under "modes"; a selftest case compares both tables with that file.
 const MODE_OPTIONS: Dictionary = {
-	"world": ["packs", "frames", "seeds", "at", "spacing", "every", "pause", "mode", "space", "trace", "hold", "state", "out", "walk", "replay", "log", "tiers", "cost", "ticks", "world", "save", "name", "seed", "plot-spacing", "scenery", "child", "trip", "dead"],   # N5a: the scheduled world, the world file; P1: child, trip, dead belong to the supervisor of the world
+	"world": ["packs", "frames", "seeds", "at", "spacing", "every", "pause", "mode", "space", "trace", "hold", "state", "out", "walk", "replay", "log", "tiers", "cost", "ticks", "world", "save", "name", "seed", "plot-spacing", "scenery", "child", "trip", "dead", "load"],   # N5a: the scheduled world, the world file; P1: child, trip, dead belong to the supervisor of the world
 	"world-bench": ["only", "quick", "out-dir"],
 	# N7 (N5b patch 4): a world in a window (kernel/world/draw/view.gd). With --packs: pictures of a world of packs
 	# (tools/view.sh shot). With --walk: the scheduled world with its visitor, landscape and tour pictures
 	# (tools/world.sh tour, visit). One line: tools/selftest.sh reads this table.
-	"world-view": ["packs", "at", "yaw", "spacing", "radius", "lift", "band", "stage", "cam", "crane", "frame", "out", "also", "settle", "until", "mech", "cull", "standins", "far", "mode", "frames", "seeds", "ground", "ground-key", "hud", "measure", "tag", "scenery", "walk", "log", "tiers", "cost", "ticks", "out-dir", "live", "landscape"],
+	"world-view": ["packs", "at", "yaw", "spacing", "radius", "lift", "band", "stage", "cam", "crane", "frame", "out", "also", "settle", "until", "mech", "cull", "standins", "far", "mode", "frames", "seeds", "ground", "ground-key", "hud", "measure", "tag", "scenery", "walk", "log", "tiers", "cost", "ticks", "out-dir", "live", "landscape", "load", "trip", "dead", "picture", "record", "input", "devices"],
 }
 const STARVED_RETRIES: int = 2          # P1: a run the machine starved (watchdog reason "starved") is started again, this many times
 const RELAY_LINES: int = 120
@@ -93,7 +93,7 @@ func _start_mode(bad_args: PackedStringArray) -> void:
 	for k: String in opts.keys():
 		if not (MODE_OPTIONS[verb] as Array).has(k):
 			problem = "unknown option --%s for '%s' (allowed: %s)" % [k, verb, ", ".join(PackedStringArray(MODE_OPTIONS[verb]))]
-	for k: String in ["out", "out-dir", "walk", "replay", "log", "tiers", "world", "save"]:   # --also is fixed by tools/view.sh
+	for k: String in ["out", "out-dir", "walk", "replay", "log", "tiers", "world", "save", "trip", "record", "input", "devices"]:   # --also is fixed by tools/view.sh
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if problem.is_empty():
@@ -356,9 +356,9 @@ func _newest_script(dir: String) -> int:
 	return newest
 
 
-## Global classes (TLBall, ...) are resolved through .godot/global_script_class_cache.cfg. Refresh it when it is
-## missing or older than a script. Returns "" or an error.
+## The class cache (.godot/global_script_class_cache.cfg) is refreshed when missing or older than a script. "" or an error.
 func _ensure_import() -> String:
+	if not OS.has_feature("editor"): return ""     # P11 (PATCHES-P9 1): an export carries its cache in the pack file; no second start
 	var engine_dir: String = ProjectSettings.globalize_path("res://").trim_suffix("/")
 	var cache: String = engine_dir + "/.godot/global_script_class_cache.cfg"
 	var fresh: bool = FileAccess.file_exists(cache)

@@ -1,7 +1,7 @@
 {
   "id": "seed.drive",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Drive-around: three laps against the clock",
   "capabilities": ["physics", "vehicle", "rules", "input", "camera", "spawn", "ai", "ui", "kit"],
   "entry": "scripts/main.gd",

@@ -1,7 +1,7 @@
 {
   "id": "example.kit",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Kit meets kernel: kit parts under the laws, real rigs under the controllers",
   "capabilities": ["physics", "ball", "fracture", "biped", "vehicle", "camera", "kit"],
   "entry": "scripts/main.gd",

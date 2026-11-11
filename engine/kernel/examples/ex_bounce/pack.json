@@ -1,7 +1,7 @@
 {
   "id": "example.bounce",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Primitive example: bouncing balls, a spawner and a score",
   "capabilities": ["physics", "ball", "spawn", "rules", "camera"],
   "entry": "scripts/main.gd",

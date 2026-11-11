@@ -17,6 +17,7 @@
 #          clean end on request, exit code 0;
 #       3. the keys, pressed by a script through the engine's own input state: W walks the visitor, Esc ends the
 #          process by itself (these two decide); E enters the paddle court and Q leaves it (shown, not counted);
+#          P11: the turn south is 600 pixels of mouse (A and D step aside since P11)
 #       4. no process of the build is left.
 #   export.sh probe [--out <dir>]
 #       what works inside the build and what needs files on disk, measured in the editor binary and in the exe
@@ -235,11 +236,11 @@ else
   grep -E "^\[boot\]|^\[view\]|ERROR" "$W/window.log" | head -8
 fi
 
-# 3. the keys (pressed by boot.gd through the engine's input state; no person): Shift+W along the road, W+D turns him
-#    south, W through the gate of the paddle court, E, Q, Esc. W and Esc decide the check; E and Q are shown and not
+# 3. the keys (pressed by boot.gd through the engine's input state; no person): Shift+W along the road, 600 pixels of
+#    mouse turn him south (P11), W through the gate of the paddle court, E, Q, Esc. W and Esc decide the check; E and Q are shown and not
 #    counted (the route depends on where the landscape puts the court's gate).
-note "3. the keys: Shift+W east along the road, W+D to turn, W into the paddle court, E at frame 720, Q at 1000, Esc at 1100 (nothing else ends this run)"
-TL_EXE_KEYS="30:+Shift;30:+W;263:-Shift;263:+D;323:-D;700:-W;720:+E;722:-E;1000:+Q;1002:-Q;1100:+Escape;1102:-Escape" TL_EXE_TRACE="$W/keys_trace.jsonl" TL_EXE_CAPTURE="$W/on_stage.png" TL_EXE_CAPTURE_AT=900 TL_EXE_WINDOW_POS="$POS" limited 240 "$OUT/ThirdLife.exe" >"$W/keys.log" 2>&1; ck=$?
+note "3. the keys: Shift+W east along the road, the mouse turns him south, W into the paddle court, E at frame 720, Q at 1000, Esc at 1100 (nothing else ends this run)"
+TL_EXE_KEYS="30:+Shift;30:+W;263:-Shift;263:-W;270:~600,0;280:+W;700:-W;720:+E;722:-E;1000:+Q;1002:-Q;1100:+Escape;1102:-Escape" TL_EXE_TRACE="$W/keys_trace.jsonl" TL_EXE_CAPTURE="$W/on_stage.png" TL_EXE_CAPTURE_AT=900 TL_EXE_WINDOW_POS="$POS" limited 240 "$OUT/ThirdLife.exe" >"$W/keys.log" 2>&1; ck=$?
 node -e '
   const fs = require("fs"); let rows = [];
   try { rows = fs.readFileSync(process.argv[1], "utf8").split("\n").filter(l => l.startsWith("{")).map(l => JSON.parse(l)); } catch (e) {}
@@ -251,7 +252,7 @@ node -e '
   console.log(on.length ? `   E: a game was on stage from frame ${on[0].frame} to ${on[on.length - 1].frame} (plot index ${on[0].stage}; he stood at [${on[0].feet}]); Q: ${end && end.stage < 0 ? "he was walking again at frame 1080" : "NOT SHOWN, a game was still on stage at frame 1080"}`
     : `   E and Q: NOT SHOWN (no game came on stage; he stood at [${(rows.find(r => r.frame === 720) || last).feet}] when E was pressed). Not counted.`);
   process.exit(d > 5 && last.frame <= 1110 ? 0 : 1);' "$W/keys_trace.jsonl" || { note "   FAILED: W did not walk the visitor, or the run went on after Esc"; fail=1; }
-if [ $ck -eq 0 ] && grep -q "^\[boot\] ending the world at frame 110[0-9]" "$W/keys.log"; then note "   Esc ended the process by itself at $(grep -o "frame 110[0-9]" "$W/keys.log" | head -1), exit code 0"
+if [ $ck -eq 0 ] && grep -q "^\[visit\] the visitor quit at tick 110[0-9]" "$W/keys.log"; then note "   Esc ended the process by itself at $(grep -o "tick 110[0-9]" "$W/keys.log" | head -1), exit code 0"
 else note "   FAILED: Esc did not end the process cleanly (exit code $ck; see $W/keys.log)"; fail=1; fi
 [ -s "$W/on_stage.png" ] && note "   picture at frame 900: $(cygpath -w "$W/on_stage.png" 2>/dev/null || echo "$W/on_stage.png")"
 

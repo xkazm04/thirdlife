@@ -1,7 +1,7 @@
 {
   "id": "example.bad_script_error",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Deliberately bad pack: a runtime error that Godot only prints",
   "capabilities": ["physics"],
   "entry": "scripts/main.gd",

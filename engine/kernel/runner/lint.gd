@@ -130,7 +130,8 @@ const FENCE: Array = [
 	["\\b(Java(?!ScriptBridge\\b)\\w+|JNISingleton|EngineDebugger)\\b", "JavaClassWrapper/EngineDebugger", "N4"],
 	["\\b(FileDialog|LinkButton)\\b", "FileDialog/LinkButton", "a pack opens no file chooser and no web address (N4)"],
 	# ---- P7 (2026-11-11): the fence follows the seam: no device read past ctx.input, no clock but the tick count, no other pack's nodes
-	["\\bInputEvent\\w+", "InputEvent*", "a device event read past ctx.input is not in the input record (P7)"],
+	["\\bInputEvent\\w*", "InputEvent*", "a device event read past ctx.input is not in the input record (P7)"],
+	["(?m)^[ \\t]*func\\s+_(unhandled_)?input\\s*\\(", "_input handler", "input goes through ctx.input (P7; an error since P11)"],
 	["(?m)^[ \\t]*func\\s+_(unhandled_key_input|shortcut_input|gui_input)\\s*\\(", "_gui_input handler", "input goes through ctx.input (P7)"],
 	["\\bset_process_(unhandled_key_|unhandled_|shortcut_)?input\\b", "set_process_input", "the kernel switches a pack's event handlers off; input goes through ctx.input (P7)"],
 	["\\b(get_(global|local)_mouse_position|warp_mouse|get_mouse_position)\\b", "mouse position", "the pointer is ctx.input (TLInput.LOOK_X, LOOK_Y, ZOOM) (P7)"],
@@ -160,7 +161,6 @@ const BYPASS: Array = [
 	["\\.\\s*apply_(central_|torque_)?impulse\\s*\\(", "TLBodies.push / TLBall.shoot", "apply_impulse"],
 	["\\.\\s*apply_(central_)?force\\s*\\(", "TLBodies.push / TLVehicle", "apply_force"],
 	["\\bmove_and_slide\\s*\\(", "TLBiped", "move_and_slide"],
-	["(?m)^[ \\t]*func\\s+_(unhandled_)?input\\s*\\(", "TLInput (ctx.input)", "_input handler"],
 ]
 ## WP5b (Director's decision of 2026-11-10): look and geometry made by hand. The kernel and the style give materials,
 ## light and environment (primitive `style`, counted in scripts/, gen/ and tests/); geometry comes from the kit or from

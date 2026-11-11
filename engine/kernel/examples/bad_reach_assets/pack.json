@@ -1,7 +1,7 @@
 {
   "id": "example.bad_reach_assets",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Deliberately bad pack: fenced code hidden in assets/",
   "capabilities": [],
   "entry": "scripts/main.gd",

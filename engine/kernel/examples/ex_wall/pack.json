@@ -1,7 +1,7 @@
 {
   "id": "example.wall",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Primitive example: a wall that breaks",
   "capabilities": ["physics", "ball", "fracture", "camera"],
   "entry": "scripts/main.gd",

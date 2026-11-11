@@ -21,8 +21,8 @@ func _pack_start() -> void:
 	body.apply_central_impulse(Vector3(1, 0, 0))    # BYPASS: TLBodies.push
 
 
-func _input(_event: InputEvent) -> void:           # BYPASS: ctx.input
-	score += 1
+# P11: an `_input` handler stood here. Since P11 it is a fence error, not a counted bypass (selftest case
+# p11.input_handler_fence puts it back into a copy of this pack and lint fails on it).
 
 
 func _dress() -> void:                              # look and geometry made by hand (never called)

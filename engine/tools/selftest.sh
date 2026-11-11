@@ -91,7 +91,7 @@ if [ -z "$FILTER" ] || [[ "bad.fence_each_line" == *"$FILTER"* ]]; then
 fi
 check bad.capability 1 lint "--pack=$EX/bad_capability" -- '"id":"lint.capabilities","ok":false' '"kind":"capability","file":"scripts/main.gd","line":6'
 check bad.capability_run 1 smoke "--pack=$EX/bad_capability" --frames=10 -- '"kind":"script_error","file":"scripts/main.gd","line":6,"message":"TLBodies needs the capability .physics.'
-check bad.bypass 0 lint "--pack=$EX/bad_bypass" -- '"primitive":"TLRules","file":"scripts/main.gd","line":4' '"file":"scripts/main.gd","line":10,"pattern":"RigidBody3D.new\(\)"' '"line":16,"pattern":"Area3D.new\(\)"' '"line":21,"pattern":"apply_impulse"' '"line":24,"pattern":"_input handler"'
+check bad.bypass 0 lint "--pack=$EX/bad_bypass" -- '"primitive":"TLRules","file":"scripts/main.gd","line":4' '"file":"scripts/main.gd","line":10,"pattern":"RigidBody3D.new\(\)"' '"line":16,"pattern":"Area3D.new\(\)"' '"line":21,"pattern":"apply_impulse"'
 check bad.bypass_kit_part 0 lint "--pack=$EX/bad_bypass" -- '"kit_parts_added":1,'
 # look and geometry made by hand (WP5b): materials and lights are `style` bypasses in scripts/, gen/ and tests/; meshes
 # are `kit` bypasses in scripts/ and tests/; a generator's geometry stays in kit_parts_added and is not counted twice
@@ -313,7 +313,7 @@ SEEDS_DIR="$HERE/../seeds"
 OUTW="$OUT"; command -v cygpath >/dev/null 2>&1 && OUTW="$(cygpath -m "$OUT")"
 p7_on() { [ -z "$FILTER" ] || [[ "$1" == *"$FILTER"* ]] || [[ "p7" == "$FILTER" ]]; }
 # p7_pack <name> [sed expression for pack.json]: a copy of pack_min under $OUT
-p7_pack() { rm -rf "$OUT/$1"; cp -r "$EX/pack_min" "$OUT/$1"; [ -n "$2" ] && sed -i "$2" "$OUT/$1/pack.json"; return 0; }
+p7_pack() { rm -rf "$OUT/$1"; cp -r "$EX/pack_min" "$OUT/$1"; [ -n "$2" ] && sed -i -E 's/"kernelApi": "[0-9.]+"/"kernelApi": "0.1"/' "$OUT/$1/pack.json" && sed -i "$2" "$OUT/$1/pack.json"; return 0; }
 # p7_play <name> <pack dir> <frames> <devices json text> [record file]: a scripted interactive session without a window
 p7_play() {
   echo "$4" > "$OUT/$1.devices.json"; rm -f "$OUT/$1.result.json"
@@ -323,10 +323,10 @@ p7_res() { grep -o "\"$2\":\"\\?[^,\"}]*" "$OUT/$1.result.json" 2>/dev/null | he
 
 # API version: a pack runs when its major equals the kernel's and its minor is not greater; "0.1" is the old name of 1.0
 if p7_on p7.api; then
-  p7_pack p7_api10 's#"kernelApi": "0.1"#"kernelApi": "1.0"#'; p7_pack p7_api20 's#"kernelApi": "0.1"#"kernelApi": "2.0"#'; p7_pack p7_api11 's#"kernelApi": "0.1"#"kernelApi": "1.1"#'
+  p7_pack p7_api01 "s/x/x/"; p7_pack p7_api10 's#"kernelApi": "0.1"#"kernelApi": "1.0"#'; p7_pack p7_api20 's#"kernelApi": "0.1"#"kernelApi": "2.0"#'; p7_pack p7_api11 's#"kernelApi": "0.1"#"kernelApi": "1.1"#'
   check p7.api_1_0_lint 0 lint "--pack=$OUT/p7_api10" -- '"kernelApi":"1.0"' '"id":"lint.schema","ok":true'
   check p7.api_1_0_runs 0 smoke "--pack=$OUT/p7_api10" --frames=120 -- '"id":"smoke.loads","ok":true'
-  check p7.api_0_1_is_1_0 0 smoke "--pack=$EX/pack_min" --frames=120 -- '"kernelApi":"1.0"' '"id":"smoke.loads","ok":true'
+  check p7.api_0_1_is_1_0 0 smoke "--pack=$OUT/p7_api01" --frames=120 -- '"kernelApi":"1.0"' '"id":"smoke.loads","ok":true'
   check p7.api_2_0_refused 1 lint "--pack=$OUT/p7_api20" -- "kernelApi '2.0' cannot run on this kernel, which offers API 1.0: the pack was built for major version 2 and this kernel is major version 1"
   check p7.api_2_0_not_run 2 smoke "--pack=$OUT/p7_api20" --frames=120 -- 'the manifest is not valid'
   check p7.api_1_1_refused 1 lint "--pack=$OUT/p7_api11" -- "the pack needs minor version 1 and this kernel has 0"
@@ -403,11 +403,12 @@ if p7_on p7.fence; then
   fi
   # a pack script's own event handler is switched off by the kernel: it sees no device event (lint counts it as a bypass)
   p7_pack p7_handler
-  printf '%s\n' '' 'func _unhandled_input(_event) -> void:' '	push_error("a pack handler saw a device event")' >> "$OUT/p7_handler/scripts/main.gd"
-  p7_play p7_handler "$OUT/p7_handler" 60 '[[10,"drag",5,5],[11,"drag",5,5],[12,"wheel",1,0]]'
-  why=""; [ "$(p7_res p7_handler frames_run)" = 60 ] || why="the session did not run"
-  [ "$(p7_res p7_handler script_errors)" = 0 ] || why="${why:+$why; }the pack's _unhandled_input ran ($(p7_res p7_handler script_errors) errors)"
-  verdict p7.fence_handler_switched_off "$why" "a pack's _unhandled_input got none of 3 device events"
+  # P11: the handler is a fence error now and `play` refuses the pack, so the net behind the fence is proven in a
+  # smoke run (no lint): the pack itself sends a device event at its tick 10 and says at 20 whether its handler is on
+  printf '%s\n' '' 'var _p11_n: int = 0' 'func _unhandled_input(_event) -> void:' '	push_error("a pack handler saw a device event")' \
+    'func _physics_process(_d: float) -> void:' '	_p11_n += 1' '	if _p11_n == 10:' '		var ev = InputEventMouseMotion.new()' '		ev.relative = Vector2(5, 5)' \
+    '		Input.parse_input_event(ev)' '	if _p11_n == 20 and is_processing_unhandled_input():' '		push_error("the handler is still switched on")' >> "$OUT/p7_handler/scripts/main.gd"
+  check p7.fence_handler_switched_off 0 smoke "--pack=$OUT/p7_handler" --frames=60 -- '"id":"smoke.no_script_errors","ok":true'
 fi
 
 # ---------------------------------------------------------------- P5: loading is not simulation
@@ -451,6 +452,36 @@ if [ -z "$FILTER" ] || [[ "world.queue" == *"$FILTER"* ]]; then
   why=""; echo "$out" | grep -q '^PASS world.proof' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror' | head -3 | tr '\n' ' ')"
   [ "$(echo "$out" | grep -c 'e:built')" = 3 ] || why="${why:+$why; }expected 3 built events, got $(echo "$out" | grep -c 'e:built')"
   verdict world.queue "$why" "3 seeds built by the worker, arrived at ticks $(echo "$out" | grep 'e:built' | sed -E 's/^tick ([0-9]+).*plot:([a-z]+).*/\2 \1/' | tr '\n' ' '); walk = alone = replay"
+fi
+
+# --- P11 ---
+# The world joins the contract: a pack in a world hashes as the runner hashes it alone; a pack script's event handler
+# is off in a world too; an _input handler is a fence error; the visitor's walk is an input record that replays.
+p11_on() { [ -z "$FILTER" ] || [[ "$1" == *"$FILTER"* ]] || [[ "p11" == "$FILTER" ]]; }
+if p11_on p11.world_alone; then
+  out="$(bash "$HERE/world.sh" alone --packs=seed_paddle,ex_kit,ex_walker --mode=bot --frames=6000 2>&1)"
+  why=""; echo "$out" | grep -q '^PASS world.alone' || why="$(echo "$out" | grep -E 'DIFFERENT|FAIL|exit' | head -3 | tr '\n' ' ')"
+  verdict p11.world_alone "$why" "$(echo "$out" | grep ' | bot | ' | cut -d'|' -f1,3,4 | tr -s ' ' | tr '\n' ';')"
+fi
+if p11_on p11.world_handler_off; then
+  rm -rf "$OUT/p11_wh"; cp -r "$EX/pack_min" "$OUT/p11_wh"
+  # the handler would push an error for every device event; the pack itself sends one at its tick 10 and reports at 20
+  # whether the kernel left the handler on. (A fixture: this pack would fail lint; a world does not lint.)
+  printf '%s\n' '' 'var _p11_n: int = 0' 'func _unhandled_input(_event) -> void:' '	push_error("a pack handler saw a device event")' \
+    'func _physics_process(_d: float) -> void:' '	_p11_n += 1' '	if _p11_n == 10:' '		var ev = InputEventMouseMotion.new()' '		ev.relative = Vector2(5, 5)' \
+    '		Input.parse_input_event(ev)' '	if _p11_n == 20 and is_processing_unhandled_input():' '		push_error("the handler is still switched on")' >> "$OUT/p11_wh/scripts/main.gd"
+  # the engine's own lines (TL_RAW): the world's error count does not attribute every error (two packs: 0 although both fired)
+  out="$(TL_RAW=1 bash "$HERE/world.sh" run "--packs=$OUTW/p11_wh,seed_wall" --frames=60 2>&1)"
+  why=""; echo "$out" | grep -q '"kind":"world"' || why="the world did not finish"
+  echo "$out" | grep -q 'world done: packs=2 ticks=60' || why="${why:+$why; }the world did not run 60 ticks"
+  echo "$out" | grep -qE 'a pack handler saw a device event|the handler is still switched on' && why="${why:+$why; }the pack's handler was on or ran in a world: $(echo "$out" | grep -oE 'a pack handler saw a device event|the handler is still switched on' | sort -u | tr '\n' ';')"
+  verdict p11.world_handler_off "$why" "a pack's _unhandled_input in a world: switched off at ready, got no device event"
+fi
+if p11_on p11.input_handler_fence; then
+  rm -rf "$OUT/p11_bb"; cp -r "$EX/bad_bypass" "$OUT/p11_bb"
+  printf '%s\n' '' '' 'func _input(_event: InputEvent) -> void:' '	score += 1' >> "$OUT/p11_bb/scripts/main.gd"
+  n="$(wc -l < "$OUT/p11_bb/scripts/main.gd" | tr -d ' ')"; n=$((n - 1))
+  check p11.input_handler_fence 1 lint "--pack=$OUT/p11_bb" -- '"id":"lint.fence","ok":false' "\"file\":\"scripts/main.gd\",\"line\":$n,\"message\":\"._input handler. is outside"
 fi
 
 echo "selftest: $pass passed, $fail failed (reports in $OUT)"

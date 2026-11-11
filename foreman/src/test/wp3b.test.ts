@@ -42,7 +42,7 @@ test("1 manifest: pack.json is composed from packId, title, version and the regi
   assert.deepEqual(seen[0], {
     id: "game.paddle_court",
     version: "0.1.0",
-    kernelApi: "0.1",
+    kernelApi: "1.0",          // P11: the Foreman writes KERNEL_API, now 1.0
     title: "Paddle Court",
     capabilities: ["physics", "input", "rules", "ball", "ai", "camera"],
     entry: ENTRY_SCRIPT,
