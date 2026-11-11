@@ -135,3 +135,11 @@ Style, section "sky": optional `cloud_puff` (size of a cloud clump, 1), `cloud_l
 `cloud_cover`, `cloud_scale`, `cloud_high` keep their names and now drive drawn clumps on the dome instead of streaks.
 Cameras: `TLChaseCam` defaults are now `follow` 0.18, `aim` 0.3, `stiffness` 0.07 (were 0.3, 0.5, 0.12). `TL_LOOK_CAM=<file>` writes one line per frame
 (`[cam] f= p= d=`) of the active camera for motion review.
+
+### Added with the core run (2026-11-11, P13): the scoreboard can tell the truth
+
+The kit's `scoreboard` part shows fixed digits unless it is bound: `TLKitSite.bind_scoreboard(board, source)` gives
+it a face with the first two sides' score (0 to 9) of `source` (an object with the rules' score list and its
+`score_changed` signal), redrawn when the score changes. The kit stays duck-typed: it references nothing outside
+itself. In a world the draw layer lays the real score over an unbound board and leaves a bound one alone. This
+method is the first addition to the frozen API: kernel API version 1.1.

@@ -162,3 +162,25 @@ A game reaches the engine through the kernel API and its recorded input, nothing
 **At a distance (P6).** Beyond the sideline a pack is drawn as a merged picture of its static venue plus signs of life. Every body that is not static and not frozen, and every rig, is drawn as a box in its main colour, moved when the pack ticks. Up to two standing smoke emitters and four lights are kept. Anything shorter than 2.5 m is not drawn from the sideline on, anything shorter than 5 m or thinner than 0.1 m from about 270 m on. What a far visitor must see has to be tall, large or moving.
 
 **The scoreboard (P6).** A kit `scoreboard` shows fixed digits. In a world, when the pack has a `TLRules`, the world draws the first two sides of `rules.scores` (0 to 9) over it at every distance.
+
+## Amendments of 2026-11-11 (core run, round 3: P11, P12, P13)
+
+**Input handlers (P11).** `func _input` and `func _unhandled_input` in a pack are fence errors, no longer counted
+bypasses. The kernel still switches any pack script's event handlers off, in a single run and in a world. Packs and
+the Foreman write `"kernelApi": "1.0"`; `"0.1"` is still read as 1.0.
+
+**The hash in a world (P11).** A pack in a world at its own origin is hashed by the runner's hash code and hashes as
+`smoke` or `bot` hashes it alone after the same number of its own ticks.
+
+**Arriving (P12).**
+
+- Nothing a pack author writes changes.
+- The rigs and kit parts a `_pack_setup` makes are built ahead on a worker from the pack's second arrival on a
+  machine on. A build call whose parameters differ from the recorded ones is built in the setup as before.
+- A reload sees changed `.gd` files as well as changed data.
+- In a window, a game the visitor walks into is there when he arrives; if it was not ready, it is built at once and
+  that frame is long.
+
+**At a distance (P13).** Beyond the sideline a pack's moving bodies are drawn as marks that move smoothly between
+the pack's ticks, one tick interval behind the game; a pack whose moving bodies are mostly rigs shows slim figures.
+A far game's pictures are kept on disk by its directory's content.

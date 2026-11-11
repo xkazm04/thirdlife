@@ -124,3 +124,18 @@ Additions to the verb table and the report, in the builder's wording (`docs/repo
 - The hash changed once on 2026-11-11 (P7). Hashes from before are not comparable.
 
 Check ids added: `replay.complete`, `record.written`.
+
+## Amendments of 2026-11-11 (core run, round 3: P11, P12)
+
+- A pack's state hash in a world is the runner's hash (`kernel/host/statehash.gd`: bodies relative to its origin,
+  `_pack_state`, generator, input). `world.sh alone` proves it for a list of packs: the world, then each pack alone
+  for the same number of its own ticks.
+- `world-view` options: `load`, `trip`, `dead`, `picture`, `record`, `input`, `devices`. `world` takes `load`.
+- A person's visit is an input record in the same format as a game's: `pack` is the walk's name, `mode` is `"play"`;
+  a game played on stage during the visit is written beside it as `<record>.<plot>.<n>.json`. A recorded visit
+  replays to the same path. It replays to the same game results only on a fixed schedule (`--cost=model
+  --load=block`): in a live window the measured cost and the build queue follow the wall clock.
+- The world line's `load` block, queue mode: `forced`, `forced_ms` and `forced_list` (`[plot, world tick, ms,
+  "stage" | "end"]`) count the games that were needed before they were built and were built at once.
+- Windowed test runs (`world.sh tour`, `visit-test`, `visit-proof`, `view.sh`) take a machine-wide lock so that two
+  never overlap, and start with the engine's silent sound driver.
