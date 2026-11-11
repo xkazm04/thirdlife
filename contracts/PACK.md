@@ -124,3 +124,14 @@ A shareable item's card (`item.json`, `tl.item/1`) and package (`.tlitem`) are s
   that proves each rule: `engine/kernel/share/SHARE.md` section 6.
 - `tl.sh play` lints first. Starting the worker directly still skips lint.
 - This is a guardrail against accidents, not a security boundary: `SHARE.md` section 1 lists what stays reachable.
+
+### Added with the core run (2026-11-11)
+
+- A pack's tracked dynamic bodies are updated by one kernel pass per tick, in the order the bodies entered the
+  tree. Do not rely on a per-body `TLContact` callback. A body that needs no surface laws and no hit signals
+  should be made with `track = false`.
+- Budgets (`contracts/RUNNER.md`, amendments of 2026-11-11): a game on stage may cost 4 ms a frame at the 99th
+  percentile; as one of many, 1 ms at the median with a target of 0.5 ms.
+- In a world a pack stands on a level pad at its plot's height and the world's ground meets its rim. A copy of
+  its static colliders is made in the world's own physics space for the visitor; the pack's bodies are never
+  touched. A pack whose own ground is a hollow is not walkable from outside yet.

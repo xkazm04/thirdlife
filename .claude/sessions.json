@@ -15,9 +15,15 @@
         "devx/lib/gate/steps/perf.mjs",
         "engine/export_presets.cfg",
         "briefs/BRIEF-P*.md",
-        "docs/PERF.md"
+        "docs/PERF.md",
+        "foreman/**",
+        "devx/lib/perf/**",
+        "devx/lib/arch/**",
+        "engine/ui/**",
+        "docs/generated/**",
+        "contracts/**"
       ],
-      "note": "spark core-perfection: perfect the core (measurement, hot path, look 2, relief; then loading, far games, contract, exe). Day and night of 2026-11-11, lands on main per round. Builders work in .claude/worktrees/core-p*."
+      "note": "spark core-perfection: round 1 landed (measurement, hot path, look 2, relief). Round 2 building in .claude/worktrees/core-p5, p6, p7, p8, p10: loading, far games, API v1 and recorded input, a process spike, the Foreman's change path. Then the exe. Night of 2026-11-11 to 12; lands on main per round."
     }
   ]
 }

@@ -16,7 +16,10 @@ export const METRICS = ["sim_tick_ms_p50", "sim_tick_ms_p99", "worst_tick_ms", "
  */
 export const TOLERANCE = {
   sim_tick_ms_p50: { rel: 0.20, abs: 0.05 },
-  sim_tick_ms_p99: { rel: 0.30, abs: 0.30 },
+  // 0.30 at first. Two quiet runs of tour6 on the merged round 1 gave 11.8 and 17.0 ms: the 99th percentile there is a
+  // handful of ticks in which a pack is built (worst tick 762 to 838 ms). Until the loading package removes those
+  // ticks this metric is noise above its median; tighten it again when worst_tick_ms is under a frame.
+  sim_tick_ms_p99: { rel: 0.60, abs: 0.30 },
   worst_tick_ms: { rel: 0.60, abs: 2.0 },
   frame_ms_p50: { rel: 0.20, abs: 0.10 },
   frame_ms_p99: { rel: 0.30, abs: 0.50 },

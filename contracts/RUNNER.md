@@ -103,3 +103,13 @@ pack that prints an error and carries on fails V2.
   `bot_state_hash_b` when the two bot runs differ.
 - A `smoke.loads` detail may end with `; WARNING: ...` (for example a pack script that never runs because it was
   attached after `add_child`). A warning fails nothing.
+
+## Amendments of 2026-11-11 (core run, P1): limits, budgets, the supervised world
+
+These paragraphs replace what earlier sections say about wall-clock limits.
+
+**Limits count processor time.** A single `_pack_tick` / `_bot_tick` of 250 ms and a setup call of 10 s are limits on the processor time the worker used, read by the worker's watchdog thread from the operating system. A call that used its limit is a runaway script: `watchdog.reason = "tick_timeout"`, with `cpu_ms` and `wall_ms`, exit 3, outcome `watchdog`, the pack's failure. A call that ran over its limit in wall time and used less processor time was starved by the machine: it is counted in `metrics.starved_stalls` and `starved_ms` and the run continues. A call that the machine starved for 90 s of wall time ends with `watchdog.reason = "starved"`; the runner starts the same run again, twice at most; if it starves a third time the verb ends exit 2, outcome `not_run`, with one error of kind `engine` whose message begins `starved:`. A starved run is never the pack's failure. `metrics.starved_reruns` counts the re-runs. Where no process-time source exists (not Windows, no PowerShell, `TL_NO_CPUCLOCK=1`) the limits count wall time as before and the report says so.
+
+**Frame budget (V3).** Judged on each frame's best time over the idle runs of `invariants` (the same pack and seed do the same work in frame i). Two runs are taken; if the budget is not met, up to two more. The check detail names the number of runs. Stage budget: frame p99 at most 4 ms (check `invariants.frame_budget`). One of many: frame p50 at most 1.0 ms, target 0.5 ms (new check `invariants.many_budget`; its detail says "above the target" past 0.5 ms). Nodes (5,000) and bodies (600) are unchanged. A pack cannot raise any of them.
+
+**World mode.** A `world` run is supervised: the process the caller starts runs the world in a child. A pack whose tick uses 250 ms of processor time ends the child and leaves a trip record; the supervisor runs the world again without that pack (unloaded, never ticked, its line carries `"tripped": true`). The world line carries `trips` (records) and `restarts`; an event line `{"kind": "event", "e": "pack_tripped", "record": {...}}` is printed. The exit code is 1. A starved world is run again as it was, twice at most. Options `--child`, `--trip=<file>` and `--dead=<i,j>` belong to the supervisor; `TL_WORLD_UNSUPERVISED=1` runs the world unsupervised.

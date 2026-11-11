@@ -120,3 +120,18 @@ Biped at most 12,000 triangles and 30 bones; bot at most 3,000; vehicle at most 
 - **Effects.** `TLVfx` presets render through the style layer's effects when the style is installed.
 - Recorded kit gaps, not built: layout `markers[]` (`{id, p | on, yaw, r}`) for game places, and a `loose` parameter
   that makes a small prop dynamic.
+
+### Added with the core run (2026-11-11, P3): rig parameters, style keys, camera defaults
+
+Rigs, section "biped":
+> Params added in P3: `prop` (`auto` | `none` | `stick` | `hammer`, default `auto`: the hockey stick in skate mode, nothing in walk mode; `stick = true` is the
+> same as `prop = stick`) and `headgear` (`auto` | `none` | `helmet`, default `auto`: in skate mode a helmet in the `top` colour with a white stripe, a white hem band
+> and a white number patch on the back; hair in walk mode). Metrics (`height`, `radius`, `eye_height`) and clip durations are unchanged;
+> `triangles` grows by about 350 in skate mode.
+> The walk and run locomotion blend scales the swing of legs and arms with the ground speed (0.62 at walking speed to 0.78 at a run) so that a planted foot
+> stands still on the floor; the named clips `walk`, `run` and `carry` played with `play()` keep their authored swing.
+Style, section "toon": optional `rim2` (colour) and `rim2_k` (0..1): a cool rim on the side facing away from the sun (global `g_rim2`).
+Style, section "sky": optional `cloud_puff` (size of a cloud clump, 1), `cloud_line` (0..1, contour on the shade side) and `cloud_ink` (colour); `cloud`, `cloud_shade`,
+`cloud_cover`, `cloud_scale`, `cloud_high` keep their names and now drive drawn clumps on the dome instead of streaks.
+Cameras: `TLChaseCam` defaults are now `follow` 0.18, `aim` 0.3, `stiffness` 0.07 (were 0.3, 0.5, 0.12). `TL_LOOK_CAM=<file>` writes one line per frame
+(`[cam] f= p= d=`) of the active camera for motion review.

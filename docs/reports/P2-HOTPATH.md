@@ -173,6 +173,11 @@ still running the engine.
 - Asleep packs cost 10 to 20 percent more than before. The safe fix (kernel wake paths tell the tracker) is small and
   goes to round 2 with the loading package, which owns the pack's tick.
 
+### On a quiet machine (the merged tree, 13:19)
+
+The ledger's first two quiet runs of `pile600` (600 awake bodies) give a median tick of 2.45 and 2.44 ms. The same scenario on the
+engine before this package gave 4.52 and 4.54 ms (recorded as busy). The 2.5 ms target is met.
+
 ### What is not verified
 
 The tour's world tick before and after; `invariants` on every example with the final code (the selftest covers the

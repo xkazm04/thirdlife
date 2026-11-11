@@ -208,6 +208,13 @@ The builder added one correction after its report: it ran `git diff --stat` once
 Director's scores on this material (5 = the concept): lines 4, colour 4, scale 4, ground 3.5, light 3, sky and far
 scenery 3.5, characters 3.5, motion 3 (from strips, not from watching), "shipped indie game" 3.5.
 
+### One hash did change (found on the merged tree, 13:12)
+
+The kit example `ex_kit` gives `34b19960...` on this package's engine where it gave `16db2bf1...` before. The cause is the
+example, not simulation: its `_pack_state` records measurements of the rig's pose (bone count, the leg's swing) as part of its
+state, and this package changed both. The Director ran `ex_kit` on the engines of all four packages: only this one differs. Seeds
+and the hockey game are unchanged. The hash quoted for `ex_kit` in `engine/kernel/world/draw/DRAW.md` section 6 is the old one.
+
 ### What is not verified
 
 Interactive play and a display above 60 Hz (the builder's patch 1, physics interpolation, needs a person to look

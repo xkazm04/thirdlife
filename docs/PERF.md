@@ -111,9 +111,12 @@ A metric a scenario does not measure is left out. `load` is the evidence for `qu
 
 **`quiet` is measured.** Before the first scenario and after the last, `devx/lib/perf/quiet.mjs` samples the whole
 machine for 1.5 s with nothing of ours running: processor use of all logical processors (from `os.cpus()` times) and a probe (one
-thread spinning, its processor time over its wall time). The run is quiet when the worse window shows at most 25 % use and
-the probe got at least 0.90 of a processor. A busy run is recorded with `quiet: false` and is never a baseline;
+thread spinning, its processor time over its wall time). The run is quiet when the worse window shows at most 45 % use and
+the probe got at least 0.95 of a processor. A busy run is recorded with `quiet: false` and is never a baseline;
 `--quiet-only` waits up to `--wait` seconds (120) for a quiet window and records nothing if the machine got busy during the run.
+The limits were 25 % and 0.90 at first. On this 16-thread machine other sessions idle at 27 to 41 % of all processors, so no run was
+ever quiet; two runs taken at that level agreed within 1.5 % on every median and the probe stayed at 0.98 to 1.0. The Director
+moved the use limit to 45 % and tightened the probe to 0.95 on 2026-11-11.
 
 **Tolerances** (`TOLERANCE` in `devx/lib/perf/ledger.mjs`): a metric regresses when it is above `baseline * (1 + rel) + abs`.
 Chosen from the spread of repeated runs of the same scripted scenario (a deterministic run moves a few percent at the median, much more

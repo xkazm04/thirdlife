@@ -3,8 +3,9 @@
 // fixed single-thread probe gets at least PROBE_MIN of a processor. Both figures go into the ledger line (`load`).
 import os from "node:os";
 
-export const QUIET_UTIL = 0.25;     // share of all logical processors in use by anybody
-export const PROBE_MIN = 0.90;      // share of a processor that one busy thread is given
+export const QUIET_UTIL = 0.45;     // share of all logical processors in use by anybody (was 0.25: on this 16-thread machine other
+                                    // sessions idle at 27 to 41 %, and two runs taken there agreed within 1.5 % on every median: 2026-11-11)
+export const PROBE_MIN = 0.95;      // share of a processor that one busy thread is given (was 0.90; the probe is the stricter witness)
 
 function cpuTimes() {
   let idle = 0, total = 0;
