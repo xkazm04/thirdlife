@@ -82,3 +82,65 @@ Gates started in the background at 00:23 (scratchpad gates1.log).
 - Result (00:57): selftest 63 passed 0 failed, seeds 24 passed 0 failed, kit selftest 86 passed 0 failed.
   Hashes bc93a9a4c892f2ab / b9adbb1967e36108 / da4bdc3f65cc07ae: unchanged. Nothing edited after this run.
 - End 00:57 (54 minutes from 00:03:32). Report written as the final message.
+
+# P3 look journal (second pass, with motion)
+
+Start 2026-11-11 10:25 (time-box ends 12:15; gates and report from 11:55). Worktree core-p3, branch core-p3-look2.
+
+## Step 1: a way to judge motion (10:26 to 10:47)
+- Before set taken first, from the untouched tree: `look/p3/before/` (12 seed shots + lab hero, village crane views `village/01..03`, hockey arena `hockey_arena.png`)
+  and `look/p3/clips_before/` (walk, run, skate, shoot, car, drive chase, wall orbit, village tour, hockey: mp4 + 8-frame strip each).
+- `look.sh clip <what> <out.mp4> [frames]`: Godot's movie writer (`--write-movie`, `--fixed-fps 60`, 1280x720, window at 0,1440) then ffmpeg
+  -> mp4 + `_strip.png` (8 frames). `what` = paddle|drive|wall (worker in bot mode, the pack's own camera), tour (world-view --walk=tour),
+  hockey (site pack), `rig:<kind>:<speed>:<turn>:<view>` = engine/rigs/review/review.tscn (a rig on a marked floor with a tracking camera).
+  `look.sh slip <speed> [mode]` = headless foot-slide numbers (a planted foot's ground speed along travel).
+- Seed workers segfault when `--quit-after` ends a run inside the movie writer (exit code 139 AFTER the movie is closed); the clips are complete.
+- Written down before fixing (from the strips): the biped has a face already (pass 4 reached rigs: eyes with highlights, smile, blink) but at game
+  scale it is 3 pixels; head and hands are small; the hockey pack's skaters hold no stick (`stick` defaults false and the pack never passes it);
+  the sky is a magenta wash with jagged cloud shards; mesas are one flat brown; grass is one lime; walking feet slide (see Step 3).
+
+## Step 2: characters (10:48 to 11:00)
+- Found: pass 4's face DID reach `engine/rigs/` (eyes with highlights, brows, a half-ellipse smile, a blink every 204 frames). Not a face problem:
+  the head was 0.37 m on 2.0 m and the whole face is 3 px at game scale. The hockey pack (`site/ice-hockey-three-against.../scripts/main.gd:53`)
+  builds skaters with `mode = skate` and colours only: `stick` defaults to false, so there was never a stick.
+- `tl_rig_biped_mesh.gd`: head x1.24 about the base of the head and dropped 9.5 cm onto the collar (top stays at 2.0 m, `HEAD_K`,
+  `final_bones()` moves the face bones with it), hands x1.38 about the wrist, bigger eyes/brows. Hockey kit when `headgear` resolves to helmet:
+  team-colour helmet shell with a white stripe, brim and ear guards, white hem band and back number patch.
+- `tl_rig_biped.gd`: new params `prop` (auto | none | stick | hammer) and `headgear` (auto | none | helmet); auto = stick + helmet in skate mode, so
+  existing hockey packs get both without a change. Stick: shaft 0.05 x 0.065 (was 0.035 x 0.05), light wood, blade 0.38 long x 0.13 (was 0.30 x 0.08).
+  Hammer prop for the work clip. Metrics height unchanged; triangles +about 350.
+- Looked at: `look/p3/wip_skate_close_strip.png`, `look/p3/wip_face70.png`, `look/p3/wip/hockey_a.png` (stick and helmet read from above at 55 px).
+
+## Step 3: motion (11:00 to 11:20)
+- Foot slide, measured (`look.sh slip <v> walk`, planted foot ground speed along travel, stance frames only, mean m/s; ideal 0):
+  before 0.88 at 1.0 m/s, 1.18 at 1.4, 1.64 at 2.2, signed mean -0.9 .. -1.6 (the planted foot moved BACKWARD: moonwalk, the swing was too large for the cadence).
+  The fix is the swing amplitude as a function of speed (`_stride_amp`, 0.62 .. 0.78): after 0.30 / 0.42 / 0.61, signed mean about +0.05 .. +0.08.
+- Chase camera: follow 0.3 -> 0.18, aim 0.5 -> 0.3, stiffness 0.12 -> 0.07. Measured with the new `TL_LOOK_CAM=<file>` log (drive seed, 1800 frames):
+  position jerk p95 116 -> 89 m/s3, max 239 -> 157; the car stays 0.158 .. 0.254 of the frame height (was 0.166 .. 0.279).
+  Orbit camera (wall seed) was already smooth: position jerk p95 116 m/s3, aim steady.
+- Vehicle rig: the drawn steering, body roll, throttle pitch, brake pitch and the flame ease toward what the controller asks (steer 0.3 / frame, nitro 0.35 up and 0.12 down).
+- Effects (`look.sh clip rig:fx`, `look/p3/wip/fx_before_strip.png`): dust and smoke were nearly invisible on pale ground; sparks, flame and goal flash appeared
+  at full size on their first frame. Dust alpha up, dust and smoke bigger, the three flashes grow in (`_hump`).
+
+## Step 4 and 5 and 6 and 7: lines, sky, far cliffs, grass, light (11:00 to 11:16)
+- ink: outer_px 3.4 -> 4.0, near_px 4.4 -> 4.8, bold_far 80 -> 140, thin_near 25 -> 60, thin_far 110 -> 220, outer_far 0.5 -> 0.7 (mid distance keeps its width).
+- sky.gdshader: the clouds are drawn clumps on the dome (azimuth, elevation), three flat tones from the slope towards the sun and an ink contour on the
+  shade side; the gradient reaches mauve and blue sooner; new palette (horizon #ffc07c, mid #f2907c, upper #8468b8, zenith #4e56b2); less broad sun glow.
+- toon.gdshader class rock: far strata (bands of world height with a tone each, ink seams never thinner than a pixel, vertical streaks) so mesas and cliffs
+  keep their drawing at 300 m; palette.cliff #8c7088 (purple grey, was pinkish brown).
+- grass: two-scale soft patches from warm olive-yellow to cool blue-green; the crisp patch edge of N1 made soft.
+- light: cool rim on the shade side (`toon.rim2`, `rim2_k`, global `g_rim2`), bounce_k 0.3 -> 0.42.
+- Hashes after all of this: bc93a9a4c892f2ab / b9adbb1967e36108 / da4bdc3f65cc07ae (unchanged).
+
+## Step 5: second round and the final set (11:16 to 11:50)
+- Clouds were pale and ghostly against the peach sky: warmer gold body, mauve underside, stronger contour (`cloud` #ffcc98, `cloud_shade` #9a54a8, `cloud_line` 0.7).
+  Looked at `look/p3/wip/02_overview_hill.png`. Kept.
+- Grass patches strengthened (scale 0.034, warm 1.18/1.05/0.56, cool 0.70/0.95/0.90) after the first pass read as one lime from the hill (`look/p3/wip/hockey_b.png`,
+  `03_overview_high.png`: soft olive and blue-green patches, no hard edges from the shader). The yellow and dark-green HARD polygons in `03_overview_high.png` are the
+  world's own landscape patches (`engine/kernel/world/landscape.gd`, not mine): they are the angular mottle seen from above; see PATCHES-P3.md item 4.
+- Rig helmet rebuild guarded (`_helmet_built`): a runtime `mode` change rebuilds the mesh only when the headgear actually changes.
+- Gate chores: `node devx/bin/tl.mjs arch --index` (docs/generated/API-INDEX.md was stale after the mesh constants and the headgear arguments changed; a generated file),
+  `bash engine/tools/k.sh docs` (RIGS.md and KIT.md generated tables: new `prop` / `headgear` rows).
+- Final set: `look/p3/after/`, `look/p3/clips_after/`, `look/p3/sheet_before_after.png` (the N1 sheet layout, my before and after), `look/p3/sheet_p3_concept.jpg`
+  (concept, hero before, hero after, village before, village after, hockey after), `look/p3/pair_hockey_before_after.png`, `look/p3/crop_crane_before_after.png`.
+  Three captures failed once under load (`FAIL` line of look.sh shots) and were retaken alone.

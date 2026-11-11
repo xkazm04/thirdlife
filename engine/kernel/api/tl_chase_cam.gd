@@ -9,9 +9,9 @@ var target: Node3D
 var distance: float = 7.0        ## metres behind the target
 var height: float = 3.0          ## metres above the target
 var look_height: float = 1.0     ## the point looked at, above the target's origin
-var stiffness: float = 0.12      ## 0..1 share of the remaining heading change covered each frame
-var follow: float = 0.3          ## 0..1 share of the remaining distance to the wanted place covered each frame
-var aim: float = 0.5             ## 0..1 share of the remaining way to the point looked at covered each frame
+var stiffness: float = 0.07      ## 0..1 share of the remaining heading change covered each frame
+var follow: float = 0.18          ## 0..1 share of the remaining distance to the wanted place covered each frame
+var aim: float = 0.3             ## 0..1 share of the remaining way to the point looked at covered each frame
 var use_velocity: bool = false   ## true: stay behind the direction of travel instead of the target's facing
 var _heading: Vector3 = Vector3.FORWARD
 var _last_pos: Vector3 = Vector3.ZERO

@@ -100,3 +100,15 @@ Three parameters were added for the world's draw layer; a single pack never sets
 
 A new style shader that packs can reach must declare `instance uniform vec4 tl_plot` and apply it in `vertex()`,
 or the draw layer treats its geometry as foreign and mirrors it (correct place, per-frame cost, no plot cut).
+
+
+## P3 look pass (second pass, with motion)
+- Sky: clouds are drawn clumps on the dome (azimuth, elevation) with flat bases and bumpy tops, three flat tones from the slope towards the sun, an ink contour on the
+  shade side. Style keys (section `sky`): `cloud`, `cloud_shade`, `cloud_cover` (0..1 share of cells with a cloud), `cloud_scale` (clumps per radian), `cloud_high`
+  (raises them), `cloud_puff` (size), `cloud_line` (contour strength), `cloud_ink`. The gradient reaches mauve and blue sooner, and the horizon is gold, not pink.
+- Far cliffs and mesas (palette class `rock`): drawn strata at any distance: bands of world height (`detail.strata_m` x 2) with a tone each, ink seams that stay at least
+  one pixel wide, vertical streaks, warm light on the sun side. `palette.cliff` is a purple grey.
+- Grass: broad soft patches from a warm olive-yellow to a cool blue-green in two scales (in `toon.gdshader`, ground class, grass only); the N1 crisp patch edge is soft.
+- Ink: `outer_px` 4.0, `near_px` 4.8, `bold_far` 140, `thin_near` 60, `thin_far` 220, `outer_far` 0.7: contours at 30 to 120 m keep their weight.
+- Light: `toon.rim2` / `toon.rim2_k` = a cool rim on the side that faces away from the sun (global `g_rim2`); `toon.bounce_k` 0.42.
+- Effects (`TLStyleFx.preset`): dust and smoke are larger and more opaque; sparks, nitro flame and goal flash grow in over their first frames instead of appearing at full size.

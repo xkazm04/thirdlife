@@ -278,8 +278,8 @@ static func preset(pname: String, opts: Dictionary = {}) -> CPUParticles3D:
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	match pname:
 		"dust":
-			var a: float = clampf(float((TLStyle.data.get("fx", {}) as Dictionary).get("dust_alpha", 0.2)) * 2.2, 0.3, 0.6)
-			_shape(p, _disc(0.0), 12, 70.0, Vector3(0, 0.35, 0), 0.3 * s, 1.4 * s, 0.7 * s, 1.3 * s, _curve(0.3, 1.0))
+			var a: float = clampf(float((TLStyle.data.get("fx", {}) as Dictionary).get("dust_alpha", 0.2)) * 3.0, 0.45, 0.85)   # P3: was 2.2 x, 0.3..0.6: invisible on pale ground
+			_shape(p, _disc(0.0), 14, 70.0, Vector3(0, 0.35, 0), 0.4 * s, 1.8 * s, 0.9 * s, 1.7 * s, _curve(0.3, 1.0))
 			p.damping_min = 1.6
 			p.damping_max = 3.0
 			p.lifetime_randomness = 0.3
@@ -287,10 +287,10 @@ static func preset(pname: String, opts: Dictionary = {}) -> CPUParticles3D:
 			p.emission_sphere_radius = 0.25 * s
 			p.color_ramp = _fade(tint if has_tint else _pk("dust"), [0.0, a, a * 0.45, 0.0])
 		"smoke":
-			_shape(p, _disc(0.0), 16, 12.0, Vector3(0.16, 0.3, 0), 0.6 * s, 1.1 * s, 0.6 * s, 1.1 * s, _curve(0.3, 1.0))
-			p.color_ramp = _fade(tint if has_tint else _pk("smoke"), [0.0, 0.4, 0.22, 0.0])
+			_shape(p, _disc(0.0), 16, 12.0, Vector3(0.16, 0.3, 0), 0.6 * s, 1.1 * s, 0.9 * s, 1.5 * s, _curve(0.3, 1.0))
+			p.color_ramp = _fade(tint if has_tint else _pk("smoke"), [0.0, 0.6, 0.38, 0.0])
 		"sparks":
-			_shape(p, _disc(0.55, true), 30, 60.0, Vector3(0, -7.0, 0), 1.8 * s, 5.0 * s, 0.05 * s, 0.12 * s, _curve(1.0, 0.2))
+			_shape(p, _disc(0.55, true), 30, 60.0, Vector3(0, -7.0, 0), 1.8 * s, 5.0 * s, 0.07 * s, 0.16 * s, _hump(0.1, 0.45))
 			p.color_ramp = _ramp([_pk("flame_core"), _pk("spark"), _pk("hot", 0.9), _pk("hot", 0.0)])
 			if has_tint:
 				p.color = tint
@@ -304,7 +304,7 @@ static func preset(pname: String, opts: Dictionary = {}) -> CPUParticles3D:
 			dc.a = 1.0
 			p.color = dc
 		"nitro_flame":
-			_shape(p, _disc(0.55, true), 48, 6.0, Vector3.ZERO, 1.0 * s, 3.0 * s, 0.22 * s, 0.4 * s, _curve(1.0, 0.2))
+			_shape(p, _disc(0.55, true), 48, 6.0, Vector3.ZERO, 1.0 * s, 3.0 * s, 0.26 * s, 0.5 * s, _hump(0.12, 0.5))
 			p.color_ramp = _ramp([_pk("flame_core"), _pk("hot"), Color(0.75, 0.3, 1.0, 0.8), Color(0.3, 0.4, 1.0, 0.0)])
 			if has_tint:
 				p.color = tint
@@ -321,7 +321,7 @@ static func preset(pname: String, opts: Dictionary = {}) -> CPUParticles3D:
 			_shape(p, _disc(0.4), 30, 70.0, Vector3(0, -9.8, 0), 2.0 * s, 4.5 * s, 0.08 * s, 0.18 * s, _curve(1.0, 0.4))
 			p.color_ramp = _fade(tint if has_tint else _pk("water").lerp(Color.WHITE, 0.5), [0.9, 0.7, 0.0])
 		"goal_flash":
-			_shape(p, _disc(0.3, true), 40, 180.0, Vector3.ZERO, 3.0 * s, 8.0 * s, 0.15 * s, 0.4 * s, _curve(1.0, 0.1))
+			_shape(p, _disc(0.3, true), 40, 180.0, Vector3.ZERO, 3.0 * s, 8.0 * s, 0.2 * s, 0.5 * s, _hump(0.1, 0.4))
 			p.damping_min = 4.0
 			p.damping_max = 6.0
 			p.color_ramp = _ramp([_pk("flame_core"), _pk("spark"), _pk("hot", 0.6), _pk("hot", 0.0)])

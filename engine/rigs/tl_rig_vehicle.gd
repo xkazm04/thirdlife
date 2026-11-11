@@ -155,12 +155,26 @@ func _param_changed(pname: String, _value: Variant) -> void:
 		_rebuild_body()
 
 
+# P3: what is DRAWN eases toward what the controller asks (a bang-bang steering input used to snap the wheels, the body roll and
+# the flame from one frame to the next). Frame-counted; the params themselves are untouched.
+var _steer_s: float = 0.0
+var _throttle_s: float = 0.0
+var _brake_s: float = 0.0
+var _nitro_s: float = 0.0
+
+
 func tick(frame_no: int) -> void:
 	frame = frame_no
-	var steer: float = clampf(float(params.get("steer", 0.0)), -1.0, 1.0)
-	var throttle: float = clampf(float(params.get("throttle", 0.0)), 0.0, 1.0)
+	_steer_s += (clampf(float(params.get("steer", 0.0)), -1.0, 1.0) - _steer_s) * 0.3
+	_throttle_s += (clampf(float(params.get("throttle", 0.0)), 0.0, 1.0) - _throttle_s) * 0.15
+	_brake_s += (clampf(float(params.get("brake", 0.0)), 0.0, 1.0) - _brake_s) * 0.35
+	var nt: float = clampf(float(params.get("nitro", 0.0)), 0.0, 1.0)
+	_nitro_s += (nt - _nitro_s) * (0.35 if nt > _nitro_s else 0.12)   # the flame lights fast and dies slowly
+	var steer: float = _steer_s
+	var throttle: float = _throttle_s
 	var brake: float = clampf(float(params.get("brake", 0.0)), 0.0, 1.0)
-	var nitro: float = clampf(float(params.get("nitro", 0.0)), 0.0, 1.0)
+	var brake_roll: float = _brake_s
+	var nitro: float = _nitro_s if _nitro_s > 0.02 else 0.0
 	var sus: Array = [0.0, 0.0, 0.0, 0.0]
 	var sv: Variant = params.get("suspension", null)
 	if sv is Array and (sv as Array).size() == 4:
@@ -173,7 +187,7 @@ func tick(frame_no: int) -> void:
 		piv.rotation.y = deg_to_rad(steer * MAX_STEER_DEG) if i < 2 else 0.0
 		(piv.get_child(0) as Node3D).rotation.x = -_spin                  # rolling forward (-Z)
 	# the chassis answers the driver's feet a little, on top of whatever the physics body does
-	_chassis.rotation.x = deg_to_rad(1.6 * throttle - 2.2 * brake) * -1.0
+	_chassis.rotation.x = deg_to_rad(1.6 * throttle - 2.2 * brake_roll) * -1.0
 	_chassis.rotation.z = deg_to_rad(-2.5 * steer * clampf(absf(float(params.get("wheel_spin", 0.0))) / 40.0, 0.0, 1.0))
 	_chassis.position.y = 0.006 * sin(float(frame) * 0.9) * (0.3 + throttle)   # engine shake, keyed to the frame
 	_brake.visible = brake > 0.05

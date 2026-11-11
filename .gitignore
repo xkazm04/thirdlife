@@ -29,3 +29,5 @@ engine/kernel/world/captures/*.png
 .tl/
 .claude/worktrees/
 .claude/settings.local.json
+# P3 look captures (about 300 MB of frames and clips; evidence copies are in docs/reports/img)
+engine/look/p3/

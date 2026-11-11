@@ -64,12 +64,25 @@ puck-contact test). The left hand is posed near the butt of the stick by hand-tu
 `throttle`, `brake` (brake lights; both pitch the chassis a little), `nitro` (0..1: flame size, flicker keyed to
 the frame, light). Node tree: `Chassis` (Body mesh, Nitro, BrakeLights, sockets), `WheelFL|FR|RL|RR` / `Spin`.
 
+## P3: what a rig looks like at game scale
+- The biped's head is 1.24 times larger and its hands 1.38 times (same 2.0 m of height; `TLRigBipedMesh.HEAD_K`, `HAND_K`). The face of pass 4 (eyes with
+  highlights, brows, a smile, a blink every 204 frames) is unchanged; it is simply larger on the screen.
+- `prop`: what `hand_r` holds. `auto` = the hockey stick in `skate` mode, nothing in `walk` mode; `stick = true` is the same as `prop = stick`; `hammer` goes with `work`.
+  A pack that built skaters with `mode = skate` and nothing else now gets a stick without any change. `headgear`: `auto` = in `skate` mode a helmet in the `top` colour
+  with a white stripe, plus a white hem band and a number patch on the jersey (the team reads from above and from behind); `none` keeps the hair; `helmet` forces it.
+- Foot slide: in locomotion the swing of legs and arms follows the ground speed (`_stride_amp`: 0.62 at walking speed, 0.78 at a run) so that a planted foot stands
+  still on the floor. Measured with `bash engine/tools/look.sh slip <speed> walk` (planted foot's ground speed along travel, m/s): mean 0.30 / 0.42 / 0.61 at 1.0 / 1.4 / 2.0 m/s
+  (was 0.88 / 1.18 / 1.64). Clips played by name (`play(&"walk")`) keep their authored swing; clip durations and `metrics()` are unchanged.
+- The vehicle's drawn steering, body roll, throttle and brake pitch and nitro flame ease toward the controller's values (frame-counted).
+- Review a rig in motion: `bash engine/tools/look.sh clip rig:<walk|run|skate|shoot|pass|idle|work|car|bot|fx>:<speed>:<turn deg/s>:<side|three|front|high|close|face|top> <out.mp4>`
+  (`engine/rigs/review/review.gd`, a scene that is not part of any pack).
+
 <!-- generated below: do not edit by hand -->
 
 ## `biped`
 Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work.
 
-Metrics at scale 1: `{"bones":29,"eye_height":1.765,"height":2.0,"radius":0.3,"triangles":9652}`
+Metrics at scale 1: `{"bones":29,"eye_height":1.765,"height":2.0,"radius":0.3,"triangles":10296}`
 
 Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work
 
@@ -80,7 +93,9 @@ Build params (also the initial values of the runtime params of the same name):
 | `scale` | float | `1.0` | 0.5..2.0 | uniform scale (1 = 2.0 m tall with hair) |
 | `colors` | dict | `{}` | keys: skin, hair, top, trim, legs, boots, pack, strap, stick | palette key per part; absent parts keep the default look |
 | `mode` | string | `"walk"` | walk, skate | locomotion mode: walk = idle / walk / run by speed; skate = glide / stride by speed, skate blades shown |
-| `stick` | bool | `false` |  | show a hockey stick in hand_r; arms take the two-handed hold |
+| `stick` | bool | `false` |  | show a hockey stick in hand_r; arms take the two-handed hold (same as prop = stick) |
+| `prop` | string | `"auto"` | auto, none, stick, hammer | what hand_r holds: auto = the stick in skate mode, nothing in walk mode; hammer goes with the work clip |
+| `headgear` | string | `"auto"` | auto, none, helmet | auto = a team helmet in the top colour and the hockey kit (white hem band, number patch) in skate mode, hair in walk mode |
 | `backpack` | bool | `true` |  | the lane-B backpack (build time only) |
 | `expression` | string | `"happy"` | happy, focus, blink | face |
 | `lean` | float | `0.0` | -1.0..1.0 | side lean of the locomotion pose, + = right |

@@ -8,7 +8,17 @@
 #   look.sh px [frames]                        TLCameras.subject_px of each seed's main actor in its play camera, sampled
 #                                              every 30 frames of a bot run (headless): min / median / max per seed
 #   look.sh one <pack> <cam> <frame> <out.png> one capture with the seed's bot (pack = paddle | drive | wall)
-# Env: TL_GODOT (Godot console exe), RES (1920x1080).
+#   look.sh clip <what> <out.mp4> [frames]     P3: a few seconds of motion written with the engine's movie writer
+#                                              (--write-movie, 60 fps, 1280x720) and turned into <out>.mp4 and a strip of 8
+#                                              frames <out>_strip.png (ffmpeg). <what> =
+#                                                paddle | drive | wall   the seed played by its bot, in its own play camera
+#                                                tour                    the village tour (world-view --walk=tour)
+#                                                hockey                  the hockey pack of site/ (HOCKEY_PACK=<dir> to override)
+#                                                rig:<kind>[:<speed>[:<turn>[:<view>]]]  a rig on a marked floor, tracking camera,
+#                                                  kind = walk | run | skate | shoot | pass | idle | work | car | bot | fx (all nine effect presets); speed m/s, turn deg/s,
+#                                                  view = side | three | front | high   (engine/rigs/review/review.gd)
+#   look.sh slip <speed> [mode]                foot slide of a walking or skating biped at <speed> (headless, prints mean/max m/s)
+# Env: TL_GODOT (Godot console exe), RES (1920x1080), CLIP_RES (1280x720), GPOS (window position, 0,1440).
 HERE="$(cd "$(dirname "$0")" && pwd)"
 TL="$HERE/tl.sh"
 K="$HERE/k.sh"
@@ -76,6 +86,56 @@ case "$1" in
   done
   fc="$fc;[top]$rows vstack=$((r + 1)),format=rgb24"
   ffmpeg -y -loglevel error "${inputs[@]}" -filter_complex "$fc" "$O" && ls -la "$O";;
+
+ clip)
+  what="$2"; out="$3"; nfr="${4:-}"
+  [ -z "$out" ] && { echo "usage: look.sh clip <paddle|drive|wall|tour|hockey|rig:...> <out.mp4> [frames]"; exit 2; }
+  mkdir -p "$(dirname "$out")"; out="$(w "$(cd "$(dirname "$out")" && pwd)")/$(basename "$out")"
+  base="${out%.mp4}"; avi="$base.avi"; rm -f "$avi"
+  G="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"; G="$(w "$G")"
+  CR="${CLIP_RES:-1280x720}"; GP="${GPOS:-0,1440}"; E="$(w "$ENGINE")"
+  common=(--position "$GP" --resolution "$CR" --rendering-driver d3d12 --fixed-fps 60 --write-movie "$avi" --path "$E")
+  case "$what" in
+   paddle|drive|wall)
+    nfr="${nfr:-300}"
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" "${common[@]}" --quit-after "$nfr" res://kernel/host/host.tscn -- worker --mode=bot "--pack=$(w "$SEEDS")/seed_$what" "--test=$(bot_of "$what")" "--frames=$nfr" "--report=$(w "${TMPDIR:-${TEMP:-/tmp}}")/look_clip_$$.json" >/dev/null 2>&1;;
+   tour)
+    nfr="${nfr:-600}"; tdir="$(w "${TMPDIR:-${TEMP:-/tmp}}")/look_tour_$$"; mkdir -p "$tdir"
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" "${common[@]}" --quit-after "$nfr" res://kernel/host/host.tscn -- world-view "--walk=$(w "$ENGINE/kernel/world/walks/tour.json")" "--out-dir=$tdir" >/dev/null 2>&1
+    rm -rf "$tdir";;
+   hockey)
+    nfr="${nfr:-480}"; hp="${HOCKEY_PACK:-$(w "$ENGINE/../../../../site/ice-hockey-three-against-20261111-1/promoted/game.ice_hockey_three_against@0.1.1")}"
+    [ -d "$hp" ] || hp="C:/Users/kazda/kiro/third-life/site/ice-hockey-three-against-20261111-1/promoted/game.ice_hockey_three_against@0.1.1"
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" "${common[@]}" --quit-after "$nfr" res://kernel/host/host.tscn -- world-view "--packs=$hp" --stage=0 --cam=arena --radius=0 --frame=$((nfr + 600)) "--out=$(w "${TMPDIR:-${TEMP:-/tmp}}")/look_clip_$$.png" >/dev/null 2>&1;;
+   rig:*)
+    nfr="${nfr:-300}"; IFS=: read -r _ kind rspeed rturn rview <<< "$what"
+    case "$kind" in
+     walk) ra=(--what=biped --mode=walk --speed="${rspeed:-1.4}");;
+     idle) ra=(--what=biped --mode=walk --speed=0.0);;
+     work) ra=(--what=biped --mode=walk --speed=0.0 --prop=hammer --clip=work --clip-at=20);;
+     run) ra=(--what=biped --mode=walk --speed="${rspeed:-4.2}");;
+     skate) ra=(--what=biped --mode=skate --speed="${rspeed:-5}");;
+     shoot|pass) ra=(--what=biped --mode=skate --speed="${rspeed:-4}" --clip="$kind" --clip-at=90);;
+     car) ra=(--what=car --speed="${rspeed:-14}");;
+     bot) ra=(--what=bot --speed="${rspeed:-1.2}");;
+     fx) ra=(--what=fx);;
+     *) echo "unknown rig kind $kind"; exit 2;;
+    esac
+    ra+=(--turn="${rturn:-0}" --view="${rview:-side}" --frames="$nfr")
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" "${common[@]}" --quit-after "$nfr" res://rigs/review/review.tscn -- "${ra[@]}" >/dev/null 2>&1;;
+   *) echo "look.sh clip: unknown <what> '$what'"; exit 2;;
+  esac
+  if [ ! -s "$avi" ]; then echo "FAIL clip $out (no movie written)"; exit 1; fi
+  ffmpeg -y -loglevel error -i "$avi" -c:v libx264 -pix_fmt yuv420p -crf 20 -r 60 "$out" || exit 1
+  n="$(ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 "$avi" 2>/dev/null)"; n="${n:-300}"
+  # 8 frames, evenly spaced, in two rows of four
+  step=$(( n / 8 > 0 ? n / 8 : 1 ))
+  ffmpeg -y -loglevel error -i "$avi" -vf "select=eq(mod(n\,$step)\,0),scale=640:360,tile=4x2" -frames:v 1 -update 1 "${base}_strip.png"
+  rm -f "$avi"; echo "clip $out ($n frames) strip ${base}_strip.png";;
+
+ slip)
+  G="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"; G="$(w "$G")"
+  MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --headless --fixed-fps 60 --path "$(w "$ENGINE")" res://rigs/review/review.tscn --quit-after 420 -- --what=biped "--mode=${3:-walk}" "--speed=$2" --frames=400 --slip=1 ${SLIP_K:+--k=$SLIP_K} ${SLIP_A:+--a=$SLIP_A} 2>&1 | grep -a "\[review\]\|SCRIPT ERROR";;
 
  px)
   frames="${2:-1500}"
