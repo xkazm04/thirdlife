@@ -31,3 +31,5 @@ One AskUserQuestion call of up to 4 questions.
 
 ## Skill improvement log
 - 2026-11-11 devx-foundation: a bash heredoc with many quoted passages failed to parse as one command; write brief files with the Write tool, not heredocs.
+- 2026-11-11 devx-foundation: a gate step that reports only the tail of a failing run loses the one fact needed (which test); every step must name the failing unit and keep the full output. `foreman.test` failed once in six full runs under load and passed five times; the test is still unidentified.
+- 2026-11-11 devx-foundation: parallel builders on one branch worked with auto-discovered files (commands, gate steps) and no shared registry; keep that shape for any future fan-out.
