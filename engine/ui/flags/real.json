@@ -1,0 +1,11 @@
+{
+ "name": "claude-cli sonnet",
+ "note": "The settings the N3 report recommends for a real job (docs/reports/N3-FOREMAN.md). These CALL A MODEL. Never used by the selftest, the captures or the live fake session.",
+ "flags": {
+  "new": ["--adapter", "claude-cli", "--model", "sonnet"],
+  "plan": ["--adapter", "claude-cli", "--model", "sonnet", "--max-packages", "4", "--builder-timeout-ms", "900000"],
+  "run": ["--adapter", "claude-cli", "--allow-edit", "--model", "sonnet", "--round-limit", "4", "--timeout-ms", "900000", "--max-replans", "1", "--max-packages", "4", "--parallel", "2", "--budget", "tokens_per_hour:4000000"],
+  "resume": ["--adapter", "claude-cli", "--allow-edit", "--model", "sonnet", "--round-limit", "4", "--timeout-ms", "900000", "--max-replans", "1", "--max-packages", "4", "--parallel", "2", "--budget", "tokens_per_hour:4000000"],
+  "change": ["--adapter", "claude-cli", "--allow-edit", "--model", "sonnet", "--round-limit", "4", "--timeout-ms", "900000", "--max-replans", "1", "--max-packages", "4", "--parallel", "2", "--budget", "tokens_per_hour:4000000"]
+ }
+}
