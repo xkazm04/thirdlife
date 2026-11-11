@@ -15,6 +15,12 @@ export const steps = [
     async run(ctx) {
       const r = npm(ctx, ["test", "--silent"], 10 * 60 * 1000);
       const m = (k) => (r.stdout.match(new RegExp(`^(?:#|ℹ) ${k} (\\d+)`, "m")) ?? [])[1];
-      return r.code === 0 ? { ok: true, detail: `${m("pass") ?? "?"} pass, ${m("fail") ?? "?"} fail` } : { ok: false, detail: tail(r) };
+      if (r.code === 0) return { ok: true, detail: `${m("pass") ?? "?"} pass, ${m("fail") ?? "?"} fail` };
+      // A failure names the failing tests and keeps the whole output: a red line that does not say which test is useless.
+      const log = path.join(ctx.REPO, ".tl", "last", "foreman.test.log");
+      try { fs.mkdirSync(path.dirname(log), { recursive: true }); fs.writeFileSync(log, r.stdout + "\n" + r.stderr); } catch { /* the verdict still stands */ }
+      const failed = [...new Set((r.stdout.match(/^\s*(?:✖|not ok \d+ -) .+$/gm) ?? []).map((l) => l.trim().replace(/\s*\(\d+(\.\d+)?ms\)$/, "")))];
+      const names = failed.length ? failed.slice(0, 5).join(" | ").slice(0, 400) : tail(r);
+      return { ok: false, detail: `${m("fail") ?? "?"} failed: ${names} (full output: .tl/last/foreman.test.log)` };
     } },
 ];
