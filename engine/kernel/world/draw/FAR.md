@@ -77,12 +77,15 @@ Three things the study found that the brief did not ask:
 2. **Three pictures.** Near: all of it. Middle: every form of 2.5 m and more, no clutter, plus signs of life (marks,
    smoke, the strongest lights, the score). Far: the forms of 5 m and more in flat tones with one outline, its
    ground coarse, plus the marks (larger) and the smoke.
-3. **A mark is a box in the body's colour.** A figure becomes a slim upright box of its height (not its rest pose
-   with arms out), anything else the box of its meshes; never smaller than 0.45 m (a ball, a puck). In the far
-   picture marks are 1.6 times larger: a 3 px speck is at the edge of seeing, a 5 px one is not.
-4. **The picture moves at the game's own pace.** Marks are moved when the pack has ticked, not per frame: a backdrop
-   game that gets one tick in sixteen is seen to move at that pace. A game in the ledger (not in memory) keeps its
-   last marks: it is a still.
+3. **A mark is the body's shape in its colour** (P13). A figure (a body with a rig) is a slim figure of its height:
+   legs, a body to the shoulders, a head; anything else is the box of its meshes; never smaller than 0.45 m (a ball,
+   a puck). A mark grows smoothly with the distance from the plot edge, from its own size at 150 m to 1.6 times at
+   450 m: a 3 px speck is at the edge of seeing, a 5 px one is not. It casts a shadow only nearer than 120 m.
+4. **The picture moves smoothly, one interval behind the game** (P13, the Director's decision of P6 question 2).
+   Every drawn frame a mark is drawn between the last two places the pack's ticks left it at, by the share of the
+   pack's own tick interval that has passed: a backdrop game ticked one tick in eight moves smoothly, eight frames
+   late. It never feeds back into the game. A pack with more than 96 moving bodies still steps (round robin). A game
+   in the ledger (not in memory) keeps its last marks: it is a still.
 5. **One score at every distance.** Where a pack placed a kit scoreboard and has rules, the board shows the pack's
    real score, near, middle and far. It is the only text of a venue that is kept.
 6. **Smoke is the last sign of life to go**, so it is kept in both far pictures (a copy of up to two standing
@@ -94,12 +97,17 @@ Three things the study found that the brief did not ask:
    triangle whose longest edge is under 0.4 m (at 270 m both are a third of a pixel), so a rail, a net, a lattice
    vanish as a thing instead of breaking into dashes. A venue is mostly ONE merged mesh, so the rule per triangle
    is the one that saves anything (section 4).
-9. **Far forms are flat shapes with one outline.** In the far picture every normal leans half-way to straight up:
-   walls and roofs take nearly one tone, and the ink pass, which draws creases from normals, leaves the contour.
-   Its own shadow is off (it lies beyond the style's shadow distance).
+9. **Far forms keep the middle picture's tone and shadow** (P13; P6 leaned every normal half-way up and switched the
+   shadow off). Watched in motion, both made the change of picture the one thing that popped: the wall went from
+   pink-grey to blue-violet and its shadow band on the grass vanished in one frame (`captures/p13/motion/
+   swap_before.jpg`). The style's shadow reaches 300 m from the CAMERA, the change happens 210 to 270 m from the plot
+   EDGE: the far picture is inside the shadow. Now `far_flat` is 0 and the far picture casts its shadow (the engine
+   draws none beyond 300 m anyway).
 10. **The change between middle and far must not be seen**: it happens at 240 m from the plot edge with 30 m of
-    margin both ways (far beyond 270 m, middle again inside 210 m), where a metre is 4 pixels and the two pictures
-    differ by less than the haze.
+    margin both ways (far beyond 270 m, middle again inside 210 m). The two pictures have the same tone and shadow,
+    the marks the same size at that moment (rule 3); what still changes is the thin members (rule 8: a mast's lattice,
+    under half a pixel there). No cross-fade: the toon shader is opaque and is not this package's, and with equal
+    tone and shadow there was nothing left to fade.
 11. **The camera decides between middle and far, the scheduler between near and not near.** Near is the tier
     (`stage`, `sideline`); which far picture is the camera's distance, so a crane high above the village sees
     silhouettes and a visitor at a fence sees the middle picture of the next plot.
@@ -221,3 +229,40 @@ The land (`landscape.gd`, pictures `captures/p6/land_before/`, `land_after/`, `o
 - The village was not made more compact: plots belong to the walks.
 - Against the concept the middle ground is still thin: trees and bushes along the roads are all that was added;
   there are no huts, no workers, no carts between the venues.
+
+
+## 6. P13: the far picture in motion
+
+**The tool.** `node engine/kernel/world/draw/far_study.mjs motion <hockey|drive|paddle> <abs out dir> --hockey=<dir>
+--label=<name>`: one game alone on the study ground, ticked as a backdrop; the draw layer's own camera
+(`TL_DRAW_CAMERA`, a file of keys [tick, from, to]) runs three times 90 consecutive frames: approach 320 -> 180 m
+(far -> middle at 210 m), stand at 260 m while the game plays, retreat 180 -> 320 m (middle -> far at 270 m). Godot's
+movie writer records every frame (one frame = one tick); ffmpeg cuts a 15-cell sheet (every 6th frame, the middle half
+of the frame at full resolution) and an mp4 per run. Pictures: `captures/p13/motion/` (`before_*`, `after_*`,
+`swap_before.jpg`, `swap_after.jpg`: eight consecutive frames around the change).
+
+**What was seen (before):**
+- The change far -> middle popped, three things at once: the wall changed its tone (normals leaned up in the far
+  picture), the shadow band of the wall appeared, and the marks shrank from 1.6 times to their size.
+- The marks were tall red and blue boxes (doors, not players) at 200 m.
+- Standing at 260 m, the rink changed only every second frame (frame-to-frame difference of the rink region in the
+  mp4: large on every other frame, codec noise between): the marks stepped with the pack's ticks.
+- The thin members (mast lattice) appear at the change: under half a pixel; left as it is.
+
+**After:** tone and shadow equal (rule 9), marks a slim figure that grows smoothly (rule 3), drawn between ticks
+(rule 4): the rink region changes on every frame (`after_hockey_still.mp4`). The middle picture at 50 m
+(`captures/p13/study/mid50_hockey.jpg`) shows figures in their team colour on the ice: acceptable, not pretty.
+
+**Pictures are built off the frame and kept** (`draw_pictures.gd`): the walk over the pack's nodes on the main thread
+only lists what goes where; the surface arrays are read and merged on a worker; the meshes are made when it is done
+(a pack is drawn in full until then: `far_pending`). The merged meshes are written to
+`user://tl_cache/pictures/<key>_<kind>.res`, the key being the content hash of the pack's directory (read on a worker
+from the start), the plot's radius and rim, and the picture rules (`PIC_VERSION`). A plot whose game is not built yet
+shows its last known picture from that cache; a holder with no pack and no cached picture is never made far.
+`TL_PICTURE_WORKER=off` and `TL_PICTURE_CACHE=off` give P6's behaviour for measuring.
+
+| the frame in which a pack first goes far (6 packs, view.sh shot, `far_start_ms_max`, busy machine) | ms |
+|---|---|
+| P6: both pictures built in the frame (`TL_PICTURE_WORKER=off`) | 108 (97 of it the build) |
+| P13: listed in the frame, merged on a worker (cache not yet known) | 7.6 to 9.5, plus 4 to 20 ms in the later frame that makes the meshes |
+| P13: from the picture cache | 11.8 (two meshes loaded) |

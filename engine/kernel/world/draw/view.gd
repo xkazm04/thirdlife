@@ -181,9 +181,10 @@ func start(options: Dictionary) -> void:
 	landscape.name = "TLLandscape"
 	add_child(landscape)
 	if tour and str(opts.get("landscape", "on")) != "off":
-		var lcfg: Dictionary = walk.get("landscape", {}) if typeof(walk.get("landscape")) == TYPE_DICTIONARY else {}
+		var lcfg: Dictionary = (walk.get("landscape", {}) as Dictionary).duplicate() if typeof(walk.get("landscape")) == TYPE_DICTIONARY else {}     # P13: a copy
 		if not lcfg.has("road") and walk.has("road"):
 			lcfg["road"] = walk["road"]
+		lcfg["events"] = walk.get("events", [])               # P13: trees give way to the walk's crane shots
 		land_stats = Landscape.call("build", landscape, plots, radii, has_ground, lcfg)
 		land_stats["haze"] = float(lcfg.get("haze", 0.4))
 		Landscape.call("tone_haze", world, float(land_stats["haze"]))
@@ -509,6 +510,8 @@ func _on_world_ended(_bad: bool) -> void:
 
 # ------------------------------------------------------------------------------------------------ every frame
 func _process(_delta: float) -> void:
+	if landscape != null and landscape.has_meta(&"tl_land_rest"):     # P13: the landscape's parts made on a worker
+		Landscape.call("arrive", landscape)                           # P13
 	var now: int = Time.get_ticks_usec()
 	_frame_usec.append(now - _last)
 	_frame_tick.append(int(world.get("tick")) if world != null else -1)

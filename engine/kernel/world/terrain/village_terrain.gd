@@ -29,6 +29,7 @@ var ponds: Array = []                # {c: Vector2, r: float, y: float}
 var road_d: PackedFloat32Array = PackedFloat32Array()      # per grid vertex: distance to the nearest road sample
 var river_d: PackedFloat32Array = PackedFloat32Array()
 var build_ms: int = 0
+var skip_near: PackedVector3Array = PackedVector3Array()     # P13: (x, z, radius) of plots `collision_faces` may skip
 var relief: float = 1.0              # P6: scale of the land's own height (0 = a flat study ground; pads, roads and river still stamp)
 var _nl: FastNoiseLite = FastNoiseLite.new()
 var _nm: FastNoiseLite = FastNoiseLite.new()
@@ -106,29 +107,19 @@ func build_grid() -> void:
 	road_y.resize(count)
 	var river_y: PackedFloat32Array = PackedFloat32Array()
 	river_y.resize(count)
-	# 1. the land and the pads
-	for j: int in nz + 1:
-		var z: float = z0 + float(j) * cell
-		for i: int in w:
-			var x: float = x0 + float(i) * cell
-			var h: float = base_h(x, z)
-			for pd: Dictionary in pads:
-				var c: Vector2 = pd["c"]
-				var dx: float = x - c.x
-				var dz: float = z - c.y
-				var r: float = float(pd["r"])
-				var lim: float = r + 24.0
-				if absf(dx) > lim or absf(dz) > lim:
-					continue
-				var d: float = sqrt(dx * dx + dz * dz)
-				if d <= r:
-					h = float(pd["h"])
-				elif d < lim:
-					var ph: float = float(pd["h"])
-					var bw: float = clampf(absf(ph - h) * (0.7 if ph < h else 1.1), 3.5, 22.0)
-					if d < r + bw:
-						h = lerpf(ph, h, smoothstep(0.0, 1.0, (d - r) / bw))
-			heights[j * w + i] = h
+	# 1. the land and the pads. P13: in bands of rows on workers (each band its own array, joined in order: the same
+	# numbers as one loop); it was a third of the time to the first frame of a village of thirty games.
+	var bands: int = clampi(OS.get_processor_count() - 1, 1, 8)
+	var per: int = int(ceil(float(nz + 1) / float(bands)))
+	var out: Array = []
+	for b: int in bands:
+		out.append(PackedFloat32Array())
+	var task: int = WorkerThreadPool.add_group_task(func(b: int) -> void: out[b] = _land_rows(b * per, mini((b + 1) * per, nz + 1)), bands)
+	WorkerThreadPool.wait_for_group_task_completion(task)
+	var joined: PackedFloat32Array = PackedFloat32Array()
+	for b: int in bands:
+		joined.append_array(out[b])
+	heights = joined
 	# 2. stamps
 	for rd: Dictionary in roads:
 		_stamp(rd["pts"], rd["ys"], float(rd["half"]) + 10.0, road_d, road_y)
@@ -166,6 +157,36 @@ func build_grid() -> void:
 					var k2: int = j * w + i
 					heights[k2] = lerpf(heights[k2], float(pn["y"]) - 1.2, 1.0 - smoothstep(pr * 0.7, pr + 7.0, d2))
 	build_ms = Time.get_ticks_msec() - t0
+
+
+## Heights of the land and the pads for rows j0 .. j1 - 1 (runs on a worker: reads only).
+func _land_rows(j0: int, j1: int) -> PackedFloat32Array:
+	var w: int = nx + 1
+	var rows: PackedFloat32Array = PackedFloat32Array()
+	rows.resize(maxi(0, j1 - j0) * w)
+	for j: int in range(j0, j1):
+		var z: float = z0 + float(j) * cell
+		for i: int in w:
+			var x: float = x0 + float(i) * cell
+			var h: float = base_h(x, z)
+			for pd: Dictionary in pads:
+				var c: Vector2 = pd["c"]
+				var dx: float = x - c.x
+				var dz: float = z - c.y
+				var r: float = float(pd["r"])
+				var lim: float = r + 24.0
+				if absf(dx) > lim or absf(dz) > lim:
+					continue
+				var d: float = sqrt(dx * dx + dz * dz)
+				if d <= r:
+					h = float(pd["h"])
+				elif d < lim:
+					var ph: float = float(pd["h"])
+					var bw: float = clampf(absf(ph - h) * (0.7 if ph < h else 1.1), 3.5, 22.0)
+					if d < r + bw:
+						h = lerpf(ph, h, smoothstep(0.0, 1.0, (d - r) / bw))
+			rows[(j - j0) * w + i] = h
+	return rows
 
 
 func _stamp(pts: PackedVector2Array, ys: PackedFloat32Array, reach: float, dist: PackedFloat32Array, yy: PackedFloat32Array) -> void:
@@ -324,22 +345,43 @@ func build_mesh(mat: Material, name_: String = "WorldTerrain") -> MeshInstance3D
 ## Triangles of the heightfield for the visitor's collider (world coordinates, GROUND_Y included). `skip` is a Callable
 ## (centre x, centre z) -> bool: true leaves the triangle out (a plot whose own ground carries the visitor there).
 func collision_faces(skip: Callable) -> PackedVector3Array:
+	# P13: the same triangles in the same order as P4's loop, without an Array per cell, and `skip` asked only for
+	# cells near a plot whose own ground carries the visitor (`skip_near`: centres and radii; empty = ask everywhere)
 	var faces: PackedVector3Array = PackedVector3Array()
+	faces.resize(nx * nz * 6)
+	var n: int = 0
+	var near: bool = not skip_near.is_empty()
 	for j: int in nz:
+		var za: float = z0 + float(j) * cell
 		for i: int in nx:
 			var xa: float = x0 + float(i) * cell
-			var za: float = z0 + float(j) * cell
 			var a: Vector3 = Vector3(xa, heights[_v(i, j)] + GROUND_Y, za)
 			var b: Vector3 = Vector3(xa + cell, heights[_v(i + 1, j)] + GROUND_Y, za)
 			var c: Vector3 = Vector3(xa + cell, heights[_v(i + 1, j + 1)] + GROUND_Y, za + cell)
 			var d: Vector3 = Vector3(xa, heights[_v(i, j + 1)] + GROUND_Y, za + cell)
-			var tris: Array = [[a, b, c], [a, c, d]] if (i + j) % 2 == 0 else [[a, b, d], [b, c, d]]
-			for t: Array in tris:
-				var cx: float = ((t[0] as Vector3).x + (t[1] as Vector3).x + (t[2] as Vector3).x) / 3.0
-				var cz: float = ((t[0] as Vector3).z + (t[1] as Vector3).z + (t[2] as Vector3).z) / 3.0
-				if bool(skip.call(cx, cz)):
-					continue
-				faces.append(t[0])
-				faces.append(t[2])
-				faces.append(t[1])
+			var ask: bool = true
+			if near:
+				ask = false
+				for q: Vector3 in skip_near:
+					if absf(xa + cell * 0.5 - q.x) < q.z + cell and absf(za + cell * 0.5 - q.y) < q.z + cell:
+						ask = true
+						break
+			var even: bool = (i + j) % 2 == 0
+			var t0a: Vector3 = a
+			var t0b: Vector3 = b
+			var t0c: Vector3 = c if even else d
+			var t1a: Vector3 = a if even else b
+			var t1b: Vector3 = c
+			var t1c: Vector3 = d
+			if not ask or not bool(skip.call((t0a.x + t0b.x + t0c.x) / 3.0, (t0a.z + t0b.z + t0c.z) / 3.0)):
+				faces[n] = t0a
+				faces[n + 1] = t0c
+				faces[n + 2] = t0b
+				n += 3
+			if not ask or not bool(skip.call((t1a.x + t1b.x + t1c.x) / 3.0, (t1a.z + t1b.z + t1c.z) / 3.0)):
+				faces[n] = t1a
+				faces[n + 1] = t1c
+				faces[n + 2] = t1b
+				n += 3
+	faces.resize(n)
 	return faces

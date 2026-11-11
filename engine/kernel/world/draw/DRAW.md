@@ -308,3 +308,11 @@ turned as a whole, and its shadows still fall the way the world's sun says.
 - Do not use instance shader parameters, node metas or `custom_aabb` named `tl_plot`, `tl_clip`, `tl_draw`: the world
   writes them on your visuals. Do not read `visible` of your own nodes to decide game state: a far pack is hidden.
 - Your HUD and your cameras are shown only while the player is in your pack.
+
+
+## 11. P13
+The far picture was watched in motion (FAR.md section 6). Marks are drawn every frame between the pack's last two
+ticks, as slim figures for rigs; the far picture keeps the middle picture's tone and shadow; both pictures are merged
+on a worker and cached on disk by the pack directory's hash; an unbuilt plot shows its cached picture.
+`TL_DRAW_CAMERA=<json>` gives the layer a camera on keys (the motion study only). The kit's scoreboard can be bound
+to the rules by the pack itself (`TLKitSite.bind_scoreboard`); the layer leaves such a board alone.

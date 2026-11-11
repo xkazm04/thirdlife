@@ -64,6 +64,19 @@ The part is then a valid `props[].kind` in every layout with no schema change.
 | `tl_kit_path.gd`, `tl_kit_terrain.gd` | spline and terrain (layouts only) |
 | `tl_kit_layout.gd`, `tl_kit_layout_build.gd`, `LAYOUT.md` | `tl.layout/1` validator, builder and contract |
 
+## The scoreboard tells the truth (P13)
+The part `scoreboard` draws fixed digits ("2 : 1"): decoration. To show the game's real score, bind the placed board
+to the pack's rules once, after both exist:
+```gdscript
+var board: Node3D = TLKit.build("scoreboard", {})
+ctx.root.add_child(board)
+TLKitSite.bind_scoreboard(board, rules)   # rules: TLRules (any object with `scores` and a `score_changed` signal)
+```
+A face with the first two sides' score (0 to 9 each) is laid over the fixed digits and drawn again on every
+`score_changed`; it is drawing only and reads nothing back, so no state hash moves. A board bound this way is left
+alone by the world's draw layer, which otherwise lays the same face over every kit scoreboard of a pack that has a
+`TLRules` (draw/FAR.md rule 5). New in P13 (`TLKitSite.bind_scoreboard`): the API version is settled at the merge.
+
 <!-- generated below: do not edit by hand -->
 
 ## Parts (36)
