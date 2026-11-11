@@ -27,6 +27,7 @@ var _pitch_s: float = 35.0
 var _dist_s: float = 6.5
 var _input: TLInput
 var _bind: Dictionary = {}
+var _door: TLInput               # the pack's ctx.input (the pointer's actions), found on the first frame
 
 
 func setup(target_: Node3D, opts: Dictionary = {}) -> void:
@@ -75,20 +76,6 @@ func yaw_basis() -> Basis:
 	return Basis(Vector3.UP, deg_to_rad(yaw))
 
 
-## Interactive play only: drag with the right mouse button to orbit, wheel to zoom. Verify runs never get here.
-func _unhandled_input(event: InputEvent) -> void:
-	var ctx: TLContext = TLContext.of(self)   # an engine callback: in a world no pack is current here
-	if ctx == null or ctx.input == null or not ctx.input.accept_devices or not current:
-		return
-	if event is InputEventMouseMotion and (event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_RIGHT:
-		orbit_by(-(event as InputEventMouseMotion).relative.x * 0.2, (event as InputEventMouseMotion).relative.y * 0.15)
-	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
-		if (event as InputEventMouseButton).button_index == MOUSE_BUTTON_WHEEL_UP:
-			zoom_by(-0.4)
-		elif (event as InputEventMouseButton).button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			zoom_by(0.4)
-
-
 func _strength(key: String) -> float:
 	return _input.strength(_bind[key]) if _bind.has(key) else 0.0
 
@@ -104,6 +91,19 @@ func _place() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	# P7: the mouse comes through ctx.input like every device (TLInput.LOOK_X, LOOK_Y, ZOOM: latched once per frame and
+	# part of the input record). The camera on screen turns 0.2 degrees per pixel of a right-button drag (0.15 of
+	# pitch) and moves 0.4 m per wheel notch, as it did when it read the mouse itself.
+	if _door == null:
+		var ctx: TLContext = TLContext.of(self)
+		_door = ctx.input if ctx != null else null
+	if _door != null and current:
+		var look: Vector2 = Vector2(_door.strength(TLInput.LOOK_X), _door.strength(TLInput.LOOK_Y))
+		var wheel: float = _door.strength(TLInput.ZOOM)
+		if look != Vector2.ZERO:
+			orbit_by(-look.x * 0.2, look.y * 0.15)
+		if wheel != 0.0:
+			zoom_by(0.4 * wheel)
 	if _input != null:
 		orbit_by((_strength("yaw_right") - _strength("yaw_left")) * yaw_rate,
 			(_strength("pitch_up") - _strength("pitch_down")) * pitch_rate)

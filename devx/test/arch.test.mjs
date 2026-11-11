@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { runRules, loadRules, computeBaseline, diffBaseline } from "../lib/arch/core.mjs";
 import { generateIndex, INDEX_FILE } from "../lib/arch/apiindex.mjs";
+import { generateApi, judgeApi, writeApi, extendsSignature, makeBrokenTree, API_FILE } from "../lib/arch/apicontract.mjs";
 import { globsOverlap } from "../lib/arch/hygiene.mjs";
 import { parseGdArrayDict } from "../lib/arch/contracts.mjs";
 import { stripGd } from "../lib/arch/util.mjs";
@@ -40,17 +41,19 @@ const base = () => ({
   "engine/kernel/runner/verbs.json": JSON.stringify(VERBS),
   "engine/kernel/host/host.gd": HOST,
   "engine/kernel/host/host.gd.uid": "uid://h\n",
+  "engine/kernel/runner/manifest.gd": 'extends RefCounted\nconst KERNEL_API: String = "1.0"\n',
+  "engine/kernel/runner/manifest.gd.uid": "uid://m\n",
   "contracts/RUNNER.md": "| `lint` | V1 |\n| `smoke` | V2 | `--seed=<int>` |\nschema tl.verbs/1 tl.job/1\n",
   "engine/tools/tl.sh": "#!/bin/bash\n#   tl.sh lint  --pack=<dir>\n#   tl.sh smoke --pack=<dir> [--seed=1]\n",
   "foreman/src/a.ts": 'const s = "tl.job/1";\n',
 });
-const withIndex = (files) => { const root = fixture(files); fs.mkdirSync(path.join(root, "docs/generated"), { recursive: true }); fs.writeFileSync(path.join(root, INDEX_FILE), generateIndex(runRules({ root, rules, only: [] }).io)); return root; };
+const withIndex = (files) => { const root = fixture(files); fs.mkdirSync(path.join(root, "docs/generated"), { recursive: true }); const io = runRules({ root, rules, only: [] }).io; fs.writeFileSync(path.join(root, INDEX_FILE), generateIndex(io)); fs.writeFileSync(path.join(root, API_FILE), generateApi(io)); return root; };
 
 test("clean fixture passes every rule", () => {
   const root = withIndex(base());
   const { results } = runRules({ root, rules });
   for (const r of results) assert.ok(r.ok, `${r.rule.id}: ${msgs(r)}`);
-  assert.equal(results.length, 8);
+  assert.equal(results.length, 9);
 });
 
 test("1 module-walls: kit referencing a kernel class, an outside res:// path, a ../ load", () => {
@@ -202,6 +205,76 @@ test("8 index: multi-line signatures and private members", () => {
   const t = generateIndex(io);
   assert.ok(t.includes("`static func many(a: int, b: Dictionary = {x: 1}, c: Array[String] = []) -> Array[String]`"), t);
   assert.ok(t.includes("`func one()`")); assert.ok(!t.includes("_hidden")); assert.ok(!t.includes("_P"));
+});
+
+// ---- P7: the kernel API contract (docs/generated/API-V1.json, rule api-v1)
+const setApi = (root, v) => fs.writeFileSync(path.join(root, "engine/kernel/runner/manifest.gd"), `extends RefCounted\nconst KERNEL_API: String = "${v}"\n`);
+const tlA = (root, text) => fs.writeFileSync(path.join(root, "engine/kernel/api/tl_a.gd"), text);
+const A0 = "class_name TLA\nextends RefCounted\n## First line.\nsignal done(n: int)\nconst K = 1\nvar speed: float = 1.0\nstatic func go(x: int) -> int:\n\treturn x\n";
+const apiRoot = () => { const f = base(); f["engine/kernel/api/tl_a.gd"] = A0; return withIndex(f); };
+
+test("9 api-v1: a method that lost a parameter fails and is named; so do a removed signal, a retyped property, a removed constant", () => {
+  const root = apiRoot();
+  assert.ok(one(root, "api-v1").ok);
+  tlA(root, A0.replace("static func go(x: int) -> int:", "static func go() -> int:"));
+  const lost = one(root, "api-v1");
+  assert.equal(lost.ok, false);
+  assert.match(msgs(lost), /method TLA\.go changed: it was `static func go\(x: int\) -> int`, it is `static func go\(\) -> int`/);
+  assert.match(msgs(lost), /raise the major version/);
+  assert.deepEqual(lost.findings.map((f) => f.key), ["break:TLA.go"]);
+  assert.equal(writeApi(runRules({ root, rules, only: [] }).io, root).ok, false, "regenerating does not launder a break");
+  tlA(root, A0.replace("signal done(n: int)\n", "").replace("var speed: float", "var speed: int").replace("const K = 1\n", ""));
+  const three = msgs(one(root, "api-v1"));
+  assert.match(three, /signal TLA\.done was removed/); assert.match(three, /property TLA\.speed changed/); assert.match(three, /constant TLA\.K was removed/);
+  fs.rmSync(path.join(root, "engine/kernel/api/tl_a.gd")); fs.rmSync(path.join(root, "engine/kernel/api/tl_a.gd.uid"));
+  assert.match(msgs(one(root, "api-v1")), /class TLA was removed/);
+});
+
+test("9 api-v1: an addition needs a new minor; a new major takes a changed signature; a version never goes back", () => {
+  const root = apiRoot();
+  const io = () => runRules({ root, rules, only: [] }).io;
+  tlA(root, A0 + "func more() -> void:\n\tpass\n");
+  const add = one(root, "api-v1");
+  assert.equal(add.ok, false); assert.match(msgs(add), /new method TLA\.more.*An addition needs a new minor version: set KERNEL_API to "1\.1"/s);
+  assert.equal(writeApi(io(), root).ok, false);
+  setApi(root, "1.1");
+  assert.equal(judgeApi(io()).state, "stale");
+  assert.equal(writeApi(io(), root).ok, true);
+  assert.ok(one(root, "api-v1").ok); assert.equal(JSON.parse(fs.readFileSync(path.join(root, API_FILE), "utf8")).version, "1.1");
+  // a parameter with a default at the end is an addition, not a break
+  tlA(root, (A0 + "func more() -> void:\n\tpass\n").replace("go(x: int)", "go(x: int, y: int = 0)"));
+  assert.match(msgs(one(root, "api-v1")), /TLA\.go gained parameters with defaults/);
+  assert.ok(extendsSignature("func f(a: int) -> void", "func f(a: int, b: Dictionary = {x: 1}) -> void"));
+  assert.ok(!extendsSignature("func f(a: int) -> void", "func f(a: int, b: int) -> void"));
+  assert.ok(!extendsSignature("func f(a: int) -> void", "func f(a: float, b: int = 0) -> void"));
+  // a break under a new major is written down as the new contract
+  tlA(root, A0.replace("go(x: int)", "go()"));
+  setApi(root, "2.0");
+  assert.equal(judgeApi(io()).state, "stale"); assert.equal(writeApi(io(), root).ok, true); assert.ok(one(root, "api-v1").ok);
+  setApi(root, "1.9");
+  assert.match(msgs(one(root, "api-v1")), /a version never goes back/);
+  // --freeze writes whatever is there (the first freeze of a surface that was never released)
+  setApi(root, "2.0"); tlA(root, A0);
+  assert.equal(writeApi(io(), root).ok, false); assert.equal(writeApi(io(), root, { freeze: true }).ok, true); assert.ok(one(root, "api-v1").ok);
+  // the baseline can never hold an API break
+  tlA(root, A0.replace("go(x: int)", "go()"));
+  assert.equal(computeBaseline({ root, rules }).next.grandfathered["api-v1"], undefined);
+});
+
+test("9 api-v1: the description is deterministic and lists signals, properties, constants; the demo tree fails on TLBall.shoot", async () => {
+  const root = apiRoot();
+  const io = runRules({ root, rules, only: [] }).io;
+  const a = generateApi(io);
+  assert.equal(a, generateApi(io)); assert.ok(!a.includes("\r"));
+  const c = JSON.parse(a);
+  assert.deepEqual([c.schema, c.version], ["tl.api/1", "1.0"]);
+  assert.deepEqual(c.classes.TLA, { file: "engine/kernel/api/tl_a.gd", extends: "RefCounted", consts: ["K"], signals: ["done(n: int)"], props: ["var speed: float"], funcs: ["static func go(x: int) -> int"] });
+  const real = runRules({ root: REPO, only: [] }).io;
+  assert.equal(fs.readFileSync(path.join(REPO, API_FILE), "utf8").replace(/\r\n/g, "\n"), generateApi(real), "the checked-in API description is what the sources say");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tl-api-broken-"));
+  makeBrokenTree(real, REPO, dir);
+  const r = one(dir, "api-v1");
+  assert.equal(r.ok, false); assert.match(msgs(r), /method TLBall\.shoot changed: it was `func shoot\(impulse: Vector3\) -> void`, it is `func shoot\(\) -> void`/);
 });
 
 test("rules are data: an unknown checker name fails loudly, a new rule needs no code", () => {

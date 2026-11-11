@@ -17,6 +17,8 @@
     {"id": "scope-claims", "severity": "error", "checker": "scopeClaims",
      "description": ".claude/sessions.json scopes do not overlap between sessions (absent file passes)"},
     {"id": "api-index-fresh", "severity": "error", "checker": "apiIndexFresh",
-     "description": "docs/generated/API-INDEX.md equals what `tl arch --index` generates from the GDScript sources"}
+     "description": "docs/generated/API-INDEX.md equals what `tl arch --index` generates from the GDScript sources"},
+    {"id": "api-v1", "severity": "error", "checker": "apiContract",
+     "description": "docs/generated/API-V1.json is the kernel API contract: a class, method, signal, property or constant in it may not be removed or changed without a new major version (KERNEL_API in manifest.gd), and an addition needs a new minor; the finding names the member"}
   ]
 }

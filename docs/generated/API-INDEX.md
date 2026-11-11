@@ -3,6 +3,7 @@
 
 Public surface of the kernel API, kits, rigs and style, read from the GDScript sources by `tl arch --index`.
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
+The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
 Classes: 41
 
@@ -13,6 +14,8 @@ Classes: 41
 > Sound presets by name, with stand-in implementations: short synthesised tones (no audio files exist yet).
 
 Consts: `MAX_EVENTS`, `PRESETS`
+
+Properties: `static events: Array`
 
 - `static func contact(struck_material: String, impulse: float, position: Vector3, of_pack: TLContext = null) -> void`
 - `static func count(preset: StringName) -> int`
@@ -26,6 +29,10 @@ Consts: `MAX_EVENTS`, `PRESETS`
 > A ball or a puck: slides, rolls and bounces by the material laws (surface rules included, first touch included).
 
 Consts: `OPTIONS`
+
+Signals: `bounced(other: Node, speed: float)`, `held(holder: Node3D)`, `released(holder: Node3D)`, `stopped()`
+
+Properties: `contact: TLContact`, `height: float`, `kind: StringName`, `material_id: String`, `max_speed: float`, `radius: float`
 
 - `static func create(opts: Dictionary = {}) -> TLBall`
 - `func hold(holder: Node3D, offset: Vector3 = Vector3.ZERO) -> void`
@@ -46,6 +53,10 @@ Consts: `OPTIONS`
 > A character on two legs: walks, runs, and skates. The controller owns the physics body and drives a rig through
 
 Consts: `OPTIONS`
+
+Signals: `mode_changed(mode: StringName)`, `pushed(body: RigidBody3D, impulse: float)`
+
+Properties: `accel: float`, `blade_material: String`, `body_mass: float`, `grounded: bool`, `jump_speed: float`, `mode: StringName`, `push_strength: float`, `rig: Node3D`, `run_speed: float`, `skate_accel: float`, `skate_brake: float`, `skate_lateral_grip: float`, `skate_speed: float`, `skate_turn_rate: float`, `sole_material: String`, `surface: String`, `turn_rate: float`, `walk_speed: float`
 
 - `func brake(on: bool = true) -> void`
 - `static func create(opts: Dictionary = {}) -> TLBiped`
@@ -80,6 +91,8 @@ Consts: `OPTIONS`
 
 > Cameras: fixed named capture views (what `capture --cam=<name>` renders), a chase camera and an orbit camera.
 
+Properties: `active: Camera3D`
+
 - `func activate(view_name: StringName) -> bool`
 - `func add_view(view: StringName, position: Vector3, target: Vector3, fov: float = 60.0) -> Camera3D`
 - `func chase(target: Node3D, opts: Dictionary = {}, view: StringName = &"chase") -> TLChaseCam`
@@ -99,6 +112,8 @@ Consts: `OPTIONS`
 
 > Follows a target from behind and above; frame-counted smoothing (no wall clock). Capability: `camera`.
 
+Properties: `aim: float`, `distance: float`, `follow: float`, `height: float`, `look_height: float`, `stiffness: float`, `target: Node3D`, `use_velocity: bool`
+
 - `func setup(target_: Node3D, opts: Dictionary = {}) -> void`
 - `func snap() -> void`
 
@@ -110,6 +125,10 @@ Consts: `OPTIONS`
 
 Consts: `MATERIAL_REFRESH`
 
+Signals: `hit(other: Node, impulse: float, speed: float)`
+
+Properties: `body: RigidBody3D`, `material: String`, `min_hit_speed: float`, `surface: String`
+
 - `static func tracker_of(c: TLContext) -> Tracker`
 
 ## TLContext
@@ -117,6 +136,8 @@ Consts: `MATERIAL_REFRESH`
 `engine/kernel/api/tl_context.gd` extends `RefCounted`
 
 > The kernel's context object, handed to `_pack_setup(ctx)`, `generate(ctx)` and `_bot_setup(ctx)`.
+
+Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras`, `static current: TLContext`, `frame: int`, `headless: bool`, `holder: Node`, `huds: Array`, `input: TLInput`, `instance: String`, `manifest: Dictionary`, `max_frames: int`, `mode: String`, `on_stage: bool`, `origin: Vector3`, `pack_dir: String`, `pack_id: String`, `rng: RandomNumberGenerator`, `root: Node3D`, `scenery: String`, `seed: int`, `space: RID`
 
 - `static func enter(ctx: TLContext) -> TLContext`
 - `static func first_time(key: String, ctx: TLContext = null) -> bool`
@@ -140,6 +161,10 @@ Consts: `MATERIAL_REFRESH`
 
 > Contact damage for one target: impacts above a threshold set by the material's hardness take health away.
 
+Signals: `broken(by: Node)`, `damaged(amount: float, by: Node, hp_left: float)`
+
+Properties: `hp: float`, `is_broken: bool`, `last_impulse: float`, `max_hp: float`, `target: Node3D`, `threshold: float`
+
 - `static func attach(target_: Node3D, opts: Dictionary = {}) -> TLDamage`
 - `func hurt(amount: float, by: Node = null) -> void`
 - `func impact(impulse: float, by: Node = null, material_id: String = "") -> void`
@@ -154,6 +179,10 @@ Consts: `MATERIAL_REFRESH`
 
 Consts: `OPTIONS`
 
+Signals: `broke(by: Node)`, `settled(frames: int)`
+
+Properties: `bake: StringName`, `damage: TLDamage`, `kick: float`, `max_awake_frames: int`, `part: Node3D`, `pieces: Array`, `scatter: float`, `state: StringName`
+
 - `static func attach(part_: Node3D, opts: Dictionary = {}) -> TLFracture`
 - `func awake_count() -> int`
 - `func break_now(push: Vector3 = Vector3.ZERO, at: Variant = null, by: Node = null) -> void`
@@ -165,6 +194,8 @@ Consts: `OPTIONS`
 > HUD widgets: score, clock, speed and free labels, bound to live sources and refreshed every frame.
 
 Consts: `ANCHORS`
+
+Properties: `font_size: int`
 
 - `func add_bound(id: StringName, source: Callable, anchor: StringName = &"top_left") -> void`
 - `func add_clock(rules: TLRules, anchor: StringName = &"top") -> void`
@@ -182,11 +213,18 @@ Consts: `ANCHORS`
 
 > Named actions: the one door for input. A pack declares actions; the player presses keys, a bot injects, and the
 
+Consts: `LOOK_X`, `LOOK_Y`, `STEP`, `ZOOM`
+
+Signals: `action_pressed(action: StringName)`, `action_released(action: StringName)`
+
+Properties: `accept_devices: bool`
+
 - `func axis(negative: StringName, positive: StringName) -> float`
 - `func declare(action: StringName, keys: Array = []) -> void`
 - `func declared() -> PackedStringArray`
 - `func just_pressed(action: StringName) -> bool`
 - `func just_released(action: StringName) -> bool`
+- `func keys_taken() -> bool`
 - `func press(action: StringName, value: float = 1.0) -> void`
 - `func pressed(action: StringName) -> bool`
 - `func release(action: StringName) -> void`
@@ -259,6 +297,8 @@ Consts: `NEAR`
 
 > Builds a validated tl.layout/1 dictionary under a parent node (ported from spike/lab/b/src/world.gd, grown to lists).
 
+Properties: `L: Dictionary`, `circuits: Dictionary`, `errors: PackedStringArray`, `nodes: Dictionary`, `parts: Node3D`, `river_paths: Array`, `root: Node3D`, `terrain: TLKitTerrain`, `water_y: float`
+
 - `func ground(x: float, z: float) -> Vector3`
 - `func run(layout: Dictionary, parent: Node3D) -> Dictionary`
 
@@ -302,6 +342,8 @@ Consts: `DENSITY`, `SURFACE_KEY`
 > Kit part: a planar Catmull-Rom path (closed or open) resampled at even spacing, with a spatial hash for
 
 Consts: `CELL`
+
+Properties: `closed: bool`, `length: float`, `pts: PackedVector2Array`, `s: PackedFloat32Array`, `spacing: float`, `tang: PackedVector2Array`, `ys: PackedFloat32Array`
 
 - `func at(u: float) -> Dictionary`
 - `func count() -> int`
@@ -356,6 +398,8 @@ Consts: `CELL`
 
 Consts: `CELL`, `FAR_CELL`, `FAR_HALF`, `NNX`, `NNZ`, `NX0`, `NZ0`
 
+Properties: `base_y: float`, `heights: PackedFloat32Array`, `mesas: Array`, `n_forest: FastNoiseLite`, `n_hi: FastNoiseLite`, `n_low: FastNoiseLite`, `n_mid: FastNoiseLite`, `n_mnt: FastNoiseLite`, `n_patch: FastNoiseLite`, `pads: Array`, `ridges: Array`, `rivers: Array`, `roads: Array`
+
 - `func build_far() -> MeshInstance3D`
 - `func build_grid() -> void`
 - `func build_near() -> MeshInstance3D`
@@ -381,6 +425,8 @@ Consts: `CELL`, `FAR_CELL`, `FAR_HALF`, `NNX`, `NNZ`, `NX0`, `NZ0`
 
 Consts: `COLUMNS`, `FALLBACK`, `MATERIALS_PATH`, `SURFACES_PATH`
 
+Properties: `static impulse_per_hardness: float`
+
 - `static func apply(body: CollisionObject3D, id: String = "") -> void`
 - `static func apply_tree(root: Node) -> int`
 - `static func has(id: String) -> bool`
@@ -402,6 +448,8 @@ Consts: `COLUMNS`, `FALLBACK`, `MATERIALS_PATH`, `SURFACES_PATH`
 
 Consts: `PITCH_MAX`, `PITCH_MIN`
 
+Properties: `distance: float`, `distance_max: float`, `distance_min: float`, `look_height: float`, `pitch: float`, `pitch_rate: float`, `smooth: float`, `target: Node3D`, `yaw: float`, `yaw_rate: float`, `zoom_rate: float`
+
 - `func bind_actions(input: TLInput, actions: Dictionary) -> void`
 - `func orbit_by(yaw_degrees: float, pitch_degrees: float) -> void`
 - `func setup(target_: Node3D, opts: Dictionary = {}) -> void`
@@ -416,6 +464,8 @@ Consts: `PITCH_MAX`, `PITCH_MIN`
 > The standard biped: 29 bones on Godot humanoid names (+ Backpack, Hair and five face bones), rigid-weighted toy
 
 Consts: `CROUCH`, `UPPER`
+
+Properties: `amp_override: float`, `stride_k: float`
 
 - `func setup(p: Dictionary) -> void`
 
@@ -449,6 +499,8 @@ Consts: `BASE_SCALE`, `BONES`
 > Base of every rig (kernelApi 0.1, contracts/KIT-RIG-STYLE.md). A rig is VISUAL ONLY: the kernel's controller owns the
 
 Consts: `DT`
+
+Properties: `clip: StringName`, `clip_t: float`, `family: StringName`, `frame: int`, `params: Dictionary`
 
 - `func add_clip(cname: String, dur: float, loop: bool, fn: Callable, upper: bool = false, hold: bool = false) -> void`
 - `static func add_pose(a: Dictionary, b: Dictionary) -> Dictionary`
@@ -498,6 +550,10 @@ Consts: `BIPED_COLORS`, `FAMILIES`, `RUNTIME`
 
 Consts: `KEYS`
 
+Signals: `checkpoint_passed(who: String, index: int)`, `finished(winner: String, reason: String)`, `lap_completed(who: String, lap: int, lap_frames: int)`, `period_ended(period: int)`, `period_started(period: int)`, `score_changed(side: String, score: int)`, `state_changed(from: StringName, to: StringName)`
+
+Properties: `best_lap_frames: Dictionary`, `checkpoints: int`, `clock_frames: int`, `intermission_frames: int`, `laps: Dictionary`, `laps_to_win: int`, `last_lap_frames: Dictionary`, `next_checkpoint: Dictionary`, `period: int`, `period_frames: int`, `periods: int`, `reason: String`, `score_to_win: int`, `scores: Dictionary`, `sides: PackedStringArray`, `state: StringName`, `sudden_death: bool`, `time_limit_frames: int`, `total_frames: int`, `winner: String`
+
 - `func add_score(side: String, points: int = 1) -> void`
 - `func add_side(side: String) -> void`
 - `func clock_text() -> String`
@@ -524,6 +580,10 @@ Consts: `KEYS`
 > Spawns things over time from a factory, with limits, from the seeded generator. Capability: `spawn`.
 
 Consts: `OPTIONS`
+
+Signals: `despawned(node: Node3D)`, `spawned(node: Node3D)`
+
+Properties: `active: bool`, `every_frames: int`, `factory: Callable`, `jitter: Vector3`, `kill_below_y: float`, `lifetime_frames: int`, `max_alive: int`, `max_total: int`, `order: StringName`, `points: Array`, `start_delay_frames: int`, `total: int`
 
 - `func alive() -> Array`
 - `func clear() -> void`
@@ -555,6 +615,8 @@ Consts: `OPTIONS`
 > The look as data (kernelApi 0.1, contracts/KIT-RIG-STYLE.md). All state is static: no autoload, no project setting.
 
 Consts: `CLASSES`, `DEFAULT_PATH`, `MAT_KEYS`, `RANGES`, `REQUIRED`, `RIG_NODE`, `SECTIONS`, `SHADER_DIR`, `SPECIAL`
+
+Properties: `static data: Dictionary`, `static style_name: String`, `static style_path: String`
 
 - `static func check(d: Dictionary) -> PackedStringArray`
 - `static func color(key: String) -> Color`
@@ -597,6 +659,10 @@ Consts: `CLASSES`, `DEFAULT_PATH`, `MAT_KEYS`, `RANGES`, `REQUIRED`, `RIG_NODE`,
 
 > A trigger volume: tells you when bodies enter and leave (a goal mouth, a checkpoint, a pickup, a kill zone).
 
+Signals: `entered(body: Node3D)`, `left(body: Node3D)`
+
+Properties: `enter_count: int`, `group_filter: StringName`
+
 - `func has_inside(body: Node3D) -> bool`
 - `func inside() -> Array`
 
@@ -607,6 +673,10 @@ Consts: `CLASSES`, `DEFAULT_PATH`, `MAT_KEYS`, `RANGES`, `REQUIRED`, `RIG_NODE`,
 > A four-wheeled vehicle on raycast wheels. Sizes come from the rig's `metrics()`; grip comes from the surface
 
 Consts: `OPTIONS`
+
+Signals: `nitro_ended()`, `nitro_started()`
+
+Properties: `air_drag: float`, `anti_roll: float`, `body_material: String`, `brake_force: float`, `brake_input: float`, `contact: TLContact`, `drive: StringName`, `engine_force: float`, `lateral_grip: float`, `max_steer_degrees: float`, `min_steer_degrees: float`, `nitro_active: bool`, `nitro_charge: float`, `nitro_force: float`, `nitro_frames: int`, `nitro_recharge_frames: int`, `reverse_speed: float`, `rig: Node3D`, `rolling_resistance: float`, `steer: float`, `suspension_damping: float`, `suspension_travel: float`, `throttle: float`, `top_speed: float`, `tyre_material: String`, `wheel_compression: PackedFloat32Array`, `wheel_grounded: Array`, `wheel_surface: PackedStringArray`
 
 - `static func create(opts: Dictionary = {}) -> TLVehicle`
 - `func drive_from_input(input: TLInput, map: Dictionary) -> void`
@@ -637,5 +707,7 @@ Consts: `PRESETS`
 `engine/kernel/api/tl_vfx_node.gd` extends `Node3D`
 
 > One running effect made by TLVfx. Frees itself after `frames_left` physics frames (one-shot effects).
+
+Properties: `frames_left: int`, `one_shot: bool`, `particles: CPUParticles3D`, `preset: StringName`
 
 - `func stop() -> void`

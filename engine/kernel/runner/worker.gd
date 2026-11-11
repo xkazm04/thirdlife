@@ -11,6 +11,7 @@ const LoggerScript: GDScript = preload("res://kernel/runner/logger.gd")
 const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
 const CpuClock: GDScript = preload("res://kernel/host/cpuclock.gd")
 const StateHash: GDScript = preload("res://kernel/host/statehash.gd")
+const Session: GDScript = preload("res://kernel/runner/session.gd")   # P7: the input record (tl.input/1), replay, --devices
 
 const TICK_LIMIT_MS: int = 250          # RUNNER.md: one _pack_tick or _bot_tick
 const SETUP_LIMIT_MS: int = 10000       # kernel addition: generators, _pack_setup, _pack_start, _bot_setup, teardown
@@ -60,6 +61,8 @@ var _wd_frame: int = -1
 var _wd_stop: bool = false
 var _wd_tripped: bool = false
 var cpu: RefCounted                      # P1: processor time of this process (kernel/host/cpuclock.gd)
+var session: RefCounted                  # P7: this run's input record, kept or fed back (kernel/runner/session.gd)
+var _cut: bool = false                   # the run ended inside its last frame, before the physics step (a bot that was done)
 
 
 func start(options: Dictionary) -> void:
@@ -75,7 +78,9 @@ func start(options: Dictionary) -> void:
 			return
 	frames_target = int(opts.get("frames", 3600))
 	if mode == "play":
-		frames_target = 1 << 40        # interactive: until Esc or the window closes
+		frames_target = int(opts.get("frames", 1 << 40))   # interactive: until Esc or the window closes (--frames: a scripted session)
+	session = Session.new()
+	session.call("begin", self)        # P7: --record, --input (mode replay: seed and length come from the record), --devices
 	print("[tl] worker start: mode=%s" % mode)
 	process_physics_priority = -100000
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -137,6 +142,8 @@ func _load_pack() -> bool:
 	ctx.cameras = TLCameras.new()
 	ctx.cameras.name = "TLCameras"
 	add_child(ctx.cameras)
+	if not bool(session.call("attach", ctx)):
+		return false
 	TLStandin.prepare_style(ctx.headless)
 	if not ctx.headless:
 		TLStandin.install_look(self)
@@ -239,9 +246,28 @@ func _script_has(s: GDScript, method: String) -> bool:
 
 
 func _on_node_added(n: Node) -> void:
+	# P7: a pack script's own event handlers (_input, _unhandled_input, ...) would read a device past ctx.input, and
+	# so past the input record: the kernel switches them off when the node is ready (lint counts the handler as a bypass).
+	var sc: Script = n.get_script() as Script
+	if sc != null and not n.is_node_ready() and (sc.resource_path.begins_with(pack_dir) or sc.resource_path.begins_with(ProjectSettings.localize_path(pack_dir))) \
+			and not n.ready.is_connected(_mute_events.bind(n)):
+		n.ready.connect(_mute_events.bind(n), CONNECT_ONE_SHOT)
 	if n is CollisionObject3D and n.has_meta(&"tl_material") and not n.has_meta(&"tl_law_applied") and pack_node != null \
 			and pack_node.is_ancestor_of(n):
 		TLLaws.apply(n as CollisionObject3D)
+
+
+func _mute_events(n: Node) -> void:
+	n.set_process_input(false)
+	n.set_process_unhandled_input(false)
+	n.set_process_unhandled_key_input(false)
+	n.set_process_shortcut_input(false)
+
+
+## P7: a person who closes the window ends the session as Esc does, so that its record (--record) is still written.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and mode == "play" and loaded and not finished:
+		_end_run()
 
 
 # ------------------------------------------------------------------------------------------------------ frames
@@ -257,7 +283,7 @@ func _physics_process(_delta: float) -> void:
 		_guard_begin("_pack_start", SETUP_LIMIT_MS)
 		entry.call("_pack_start")
 		_guard_end()
-	if mode == "play" and Input.is_physical_key_pressed(KEY_ESCAPE):
+	if mode == "play" and bool(session.call("ends_now")):     # Esc, unless the designer panel is open (ui/PATCHES.md 2)
 		_end_run()
 		return
 	if frame >= frames_target:
@@ -279,6 +305,9 @@ func _physics_process(_delta: float) -> void:
 		bot.call("_bot_tick", frame)
 		if not _guard_end():
 			return
+	session.call("pre_sample", frame)
+	if finished:                       # a scripted "close" ended the run
+		return
 	ctx.input._sample()
 	if _has_tick:
 		_guard_begin("_pack_tick", TICK_LIMIT_MS)
@@ -293,8 +322,11 @@ func _physics_process(_delta: float) -> void:
 			return
 	if frame % HASH_TRACE_EVERY == 0:
 		hash_trace.append([frame, _state_hash().substr(0, 16)])
-	if bot != null and mode == "bot" and bool(bot.call("_bot_done")):
-		_collect_bot(true)
+	var bot_done: bool = bot != null and mode == "bot" and bool(bot.call("_bot_done"))
+	if bot_done or frame == int(session.get("cut_frame")):      # P7: a replay of such a run stops inside the same frame
+		if bot_done:
+			_collect_bot(true)
+		_cut = true
 		frame += 1
 		_end_run()
 		return
@@ -344,74 +376,20 @@ func _census_node(n: Node, counts: Array) -> void:
 
 
 # ------------------------------------------------------------------------------------------------------ hashing
-## SHA-256 over every physics body under the pack and the canonical form of entry._pack_state() (kernel/host/statehash.gd).
+## SHA-256 over every physics body under the pack, the canonical form of entry._pack_state(), the seeded generator and
+## the input state (kernel/host/statehash.gd).
 func _state_hash() -> String:
 	var tail: String = _canon(entry.call("_pack_state")) if entry != null and entry.has_method("_pack_state") else ""
-	return StateHash.call("hash", pack_node, tail)
+	return StateHash.call("hash", pack_node, tail, ctx.rng, ctx.input)
 
 
 static func _canon(v: Variant) -> String:
-	match typeof(v):
-		TYPE_NIL:
-			return "null"
-		TYPE_BOOL:
-			return "true" if v else "false"
-		TYPE_INT:
-			return str(v)
-		TYPE_FLOAT:
-			return "%.4f" % float(v)
-		TYPE_STRING, TYPE_STRING_NAME, TYPE_NODE_PATH:
-			return "\"" + str(v) + "\""
-		TYPE_VECTOR2:
-			return "[%.4f,%.4f]" % [v.x, v.y]
-		TYPE_VECTOR3:
-			return "[%.4f,%.4f,%.4f]" % [v.x, v.y, v.z]
-		TYPE_DICTIONARY:
-			var keys: Array = []
-			for k: Variant in (v as Dictionary).keys():
-				keys.append(str(k))
-			keys.sort()
-			var by_name: Dictionary = {}
-			for k: Variant in (v as Dictionary).keys():
-				by_name[str(k)] = (v as Dictionary)[k]
-			var parts: PackedStringArray = PackedStringArray()
-			for k: String in keys:
-				parts.append("\"" + k + "\":" + _canon(by_name[k]))
-			return "{" + ",".join(parts) + "}"
-		TYPE_ARRAY, TYPE_PACKED_FLOAT32_ARRAY, TYPE_PACKED_FLOAT64_ARRAY, TYPE_PACKED_INT32_ARRAY, TYPE_PACKED_INT64_ARRAY, \
-		TYPE_PACKED_STRING_ARRAY, TYPE_PACKED_VECTOR2_ARRAY, TYPE_PACKED_VECTOR3_ARRAY:
-			var items: PackedStringArray = PackedStringArray()
-			for item: Variant in v:
-				items.append(_canon(item))
-			return "[" + ",".join(items) + "]"
-	return "\"<" + type_string(typeof(v)) + ">\""
+	return StateHash.call("canon", v)
 
 
 ## A JSON-safe copy of a pack-provided value (vectors become arrays, objects become their type name).
 static func _plain(v: Variant) -> Variant:
-	match typeof(v):
-		TYPE_NIL, TYPE_BOOL, TYPE_INT, TYPE_STRING:
-			return v
-		TYPE_FLOAT:
-			return snappedf(float(v), 0.0001)
-		TYPE_STRING_NAME, TYPE_NODE_PATH:
-			return str(v)
-		TYPE_VECTOR2:
-			return [snappedf(v.x, 0.0001), snappedf(v.y, 0.0001)]
-		TYPE_VECTOR3:
-			return [snappedf(v.x, 0.0001), snappedf(v.y, 0.0001), snappedf(v.z, 0.0001)]
-		TYPE_DICTIONARY:
-			var d: Dictionary = {}
-			for k: Variant in (v as Dictionary).keys():
-				d[str(k)] = _plain((v as Dictionary)[k])
-			return d
-		TYPE_ARRAY, TYPE_PACKED_FLOAT32_ARRAY, TYPE_PACKED_FLOAT64_ARRAY, TYPE_PACKED_INT32_ARRAY, TYPE_PACKED_INT64_ARRAY, \
-		TYPE_PACKED_STRING_ARRAY, TYPE_PACKED_VECTOR2_ARRAY, TYPE_PACKED_VECTOR3_ARRAY:
-			var a: Array = []
-			for item: Variant in v:
-				a.append(_plain(item))
-			return a
-	return "<" + type_string(typeof(v)) + ">"
+	return StateHash.call("plain", v)
 
 
 # ------------------------------------------------------------------------------------------------------ capture
@@ -563,9 +541,12 @@ func _end_run() -> void:
 	set_physics_process(false)
 	var state_hash: String = ""
 	var pack_state: Variant = null
+	var parts: Dictionary = {}       # P7: the hash by what it covers, for the day two runs differ (result file only)
 	if loaded:
 		_census()
 		state_hash = _state_hash()
+		parts = {"bodies_and_state": str(StateHash.call("hash", pack_node, _canon(entry.call("_pack_state")) if entry.has_method("_pack_state") else "")).substr(0, 16),
+			"rng_state": str(ctx.rng.state), "input_frames": int(ctx.input.get("_ticks"))}
 		if entry != null and entry.has_method("_pack_state"):
 			pack_state = _plain(entry.call("_pack_state"))
 		if entry != null and entry.has_method("_pack_teardown"):
@@ -589,6 +570,8 @@ func _end_run() -> void:
 	if opts.has("series"):         # P1: every frame's time, for the supervisor's best-of-runs budget
 		res["frame_us"] = Array(frame_usec)
 	res["hash_trace"] = hash_trace
+	if not parts.is_empty():
+		res["hash_parts"] = parts
 	if not warnings.is_empty():
 		res["warnings"] = warnings
 	res["below_count"] = below_count
@@ -600,6 +583,9 @@ func _end_run() -> void:
 		res["bot"] = bot_info
 	if not capture_info.is_empty():
 		res["capture"] = capture_info
+	var rec_info: Dictionary = session.call("finish", frame, _cut) if loaded else {}
+	if not rec_info.is_empty():
+		res["record"] = rec_info
 	_store(res)
 	_wd_mutex.lock()
 	_wd_stop = true

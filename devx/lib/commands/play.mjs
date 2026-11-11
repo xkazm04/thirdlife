@@ -1,4 +1,4 @@
-export const summary = "play a seed or a pack interactively: `tl play [<seed-name>|<path>]` (no argument lists the seeds)";
+export const summary = "play a seed or a pack interactively: `tl play [<seed-name>|<path>] [--record=<file>] [--seed=<n>]` (no argument lists the seeds; --record writes the session's input, tl.input/1, for `tl.sh replay`)";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -22,7 +22,8 @@ export async function run(args) {
   if (!pack) { console.error(`tl play: no pack '${spec}' (looked for a path, engine/seeds/${spec}, engine/seeds/seed_${spec}). Run \`tl play\` to list seeds.`); return 2; }
   const godot = resolveGodot();
   if (!godot) { console.error("tl play: Godot not found. Run `tl doctor`."); return 2; }
-  const child = spawn(bashExe(), [path.join(REPO, "engine", "tools", "tl.sh"), "play", `--pack=${pack}`], {
+  const extra = args.slice(1).filter((a) => /^--(record|seed)=/.test(a));     // P7: the session's input record
+  const child = spawn(bashExe(), [path.join(REPO, "engine", "tools", "tl.sh"), "play", `--pack=${pack}`, ...extra], {
     cwd: REPO, stdio: "inherit", env: { ...process.env, TL_GODOT: godot },
   });
   return await new Promise((resolve) => { child.on("error", () => resolve(2)); child.on("close", (c) => resolve(c ?? 2)); });

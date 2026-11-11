@@ -2,7 +2,11 @@ extends RefCounted
 ## V0: pack.json checks. A hand-written mirror of contracts/pack.schema.json (tl.pack/0.1); unknown keys are errors.
 ## No global class names are used here: the supervisor loads this before the class cache is known to exist.
 
-const KERNEL_API: String = "0.1"
+## P7: API version 1. The surface a pack may use is written down by a machine (docs/generated/API-V1.json, checked by
+## `tl arch` rule api-v1): a signature that is removed or changed needs a new major, an addition a new minor.
+const KERNEL_API: String = "1.0"
+## "0.1" was the name of this same surface before it was frozen: a pack that says 0.1 is run as a 1.0 pack.
+const LEGACY_API: Dictionary = {"0.1": "1.0"}
 const CAPABILITIES: Array = ["physics", "input", "ui", "audio", "vfx", "camera", "rules", "ai", "spawn", "fracture",
 	"vehicle", "biped", "ball", "kit", "style"]
 const ID_RE: String = "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
@@ -111,15 +115,26 @@ static func read(pack_dir: String) -> Dictionary:
 				_check_string(key + "[]", item, rule, line, errors)
 	if errors.is_empty() and not api_compatible(str(m["kernelApi"])):
 		errors.append({"kind": "schema", "file": "pack.json", "line": _line_of(text, "kernelApi"),
-			"message": "kernelApi '%s' does not match this kernel (%s)" % [str(m["kernelApi"]), KERNEL_API]})
+			"message": "kernelApi '%s' cannot run on this kernel, which offers API %s: %s" % [str(m["kernelApi"]), KERNEL_API, api_reason(str(m["kernelApi"]))]})
 	return {"ok": errors.is_empty(), "manifest": m, "errors": errors}
 
 
-## A pack fits this kernel when major and minor agree; a patch number on either side is not compared.
+## A pack runs when its major equals the kernel's and its minor is not greater ("0.1" is read as "1.0", see LEGACY_API).
 static func api_compatible(v: String) -> bool:
-	var a: PackedStringArray = v.split(".")
+	return api_reason(v).is_empty()
+
+
+## "" when a pack built against API `v` runs on this kernel; otherwise the reason, for the manifest error.
+static func api_reason(v: String) -> String:
+	var a: PackedStringArray = str(LEGACY_API.get(v, v)).split(".")
 	var b: PackedStringArray = KERNEL_API.split(".")
-	return a.size() >= 2 and b.size() >= 2 and a[0] == b[0] and a[1] == b[1]
+	if a.size() != 2 or not a[0].is_valid_int() or not a[1].is_valid_int():
+		return "kernelApi is written major.minor"
+	if int(a[0]) != int(b[0]):
+		return "the pack was built for major version %d and this kernel is major version %d (a new major removes or changes signatures)" % [int(a[0]), int(b[0])]
+	if int(a[1]) > int(b[1]):
+		return "the pack needs minor version %d and this kernel has %d (the pack uses additions this kernel does not have yet)" % [int(a[1]), int(b[1])]
+	return ""
 
 
 static func _is_num(v: Variant) -> bool:

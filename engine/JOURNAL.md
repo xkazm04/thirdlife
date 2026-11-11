@@ -584,3 +584,88 @@ Brief `briefs/BRIEF-N5A-TIERS.md`. Started 01:55 CEST on 2026-11-11 in `site/_wo
 - Not done: a native extension (see the report: scons, MSVC 2022 and cargo are on the machine, no godot-cpp sources and
   no network); the sleeping pack path (2 reads per sleeping body per tick, 10 to 20 % dearer than the old per-node early
   return in the asleep bench); the tour's world tick before and after (not measured).
+
+## P7: the simulation contract (builder, worktree core-p7, started 2026-11-11 13:22)
+
+- 13:22 start. Brief: `briefs/BRIEF-P7-CONTRACT.md`. Read API.md, the index, PACK.md, RUNNER.md, lint.gd, manifest.gd,
+  tl_input.gd, tl_context.gd, tl_orbit_cam.gd, worker.gd, statehash.gd, ui/PATCHES.md, devx/lib/arch.
+- 13:26 old hashes taken before any engine file was touched: 12 packs (3 seeds, 8 examples, hockey) x (smoke, every bot),
+  25 runs, all exit 0 (table in the report).
+- 13:30 found: `world/pack.gd` (not mine) has its own copy of the hash; `host.gd` and `worker.gd` are held by the size
+  ratchet (610 lines each), so the record, the replay verb and the device script live in a new file,
+  `kernel/runner/session.gd`; `_canon` / `_plain` moved into `host/statehash.gd` (worker keeps one-line delegates,
+  `world/pack.gd` calls them). worker.gd 610 -> 570 lines, host.gd 610 -> 601.
+- 13:33 `TLInput`: the latch is the record. `_sample()` writes every value that is not zero as [frame, action, value];
+  `_feed()` replaces devices and injection by a record; the pointer is three kernel actions (`tl.look_x`, `tl.look_y`,
+  `tl.zoom`) filled from `_unhandled_input` and read by `TLOrbitCam` in its physics frame (its own mouse handler is gone).
+- 13:34 first record of the paddle bot did not read back: a float written as decimal text is not the same double after
+  Godot's JSON reader. Decision: a sample is a multiple of 0.001, rounded at the latch (`TLInput.STEP`), so a record
+  holds exactly what the game read. Cost: bots that steer with analogue values play a slightly different game (paddle
+  bot: won 5:0 in 6776 frames before, 4486 after). All bots are run again below.
+- 13:36 paddle: `bot --record` -> `replay` -> the same hash (a6e8ba23c43f088c), and `replay --record` writes the same
+  file byte for byte. `kernelApi` is 1.0; "0.1" is read as 1.0 (manifest.gd LEGACY_API), 2.0 and 1.1 are refused.
+- 13:37 wall seed, a scripted interactive session without a window (`play --headless --frames=600 --devices=<file>`):
+  30 frames of right-button drag, two wheel notches, W, Space, D. Hash c37d26423744c653; its record replayed:
+  c37d26423744c653. The same keys without the mouse: ba1fabb0de04d5a1 (the mouse changes the game, through the record).
+- 13:38 ui/PATCHES.md 1 and 2: a text field with focus takes the keys (pack_min, Space held 10..79, field 30..59: the
+  record has `nudge` in 10..29 and 60..79 only); Esc with the panel open at frame 20 does not end, Esc at 50 with the
+  panel closed ends the run (51 frames).
+- 13:40 item 1: `devx/lib/arch/apicontract.mjs`, rule `api-v1`, `docs/generated/API-V1.json` (41 classes, 581 members,
+  version 1.0; two runs of `tl arch --index`: unchanged). `tl arch --broken-demo <dir>` builds a tree in which
+  `TLBall.shoot` lost its parameter and judges it: FAIL, `method TLBall.shoot changed: it was func shoot(impulse:
+  Vector3) -> void, it is func shoot() -> void`. The index also lists signals and properties now. 22 arch tests pass.
+- 13:43 FOUND BY THE THREE-FOLD PROOF: the first new hashes were stable for 24 of 25 rows; hockey smoke gave another
+  hash in 1 run of 3. 30 more runs with `hash_parts` in the result: 29 alike, 1 other, and in that one the bodies-and-state
+  part (b0ddd31f0f70beeb, the old hash) and the generator's state were the same. Cause: MINE. `_hash_into` sorted the
+  action names as StringNames, and StringNames sort by their address in memory. Now sorted as text. All 25 rows three
+  times again and 30 hockey smoke runs: one hash each (table in the report). The first set of new hashes is void.
+- 13:45 item 4, the fence: 16 new rows in lint.gd (device reads past ctx.input, clocks that are not the tick,
+  another pack's nodes and the kernel's side of ctx); no seed, example or promoted pack (hockey, marble run, paddle
+  court) uses any. `func _input` stays a bypass (PACK.md; `bad_bypass` passes lint with it), so the worker switches a
+  pack script's event handlers off when the node is ready. Control: without that line the case
+  `p7.fence_handler_switched_off` fails (the handler ran 3 times), with it it passes. lint.gd is 600 lines (budget 600).
+- 13:48 selftest: 19 new cases `p7.*` pass. `devx/arch.baseline.json`: four findings held until the contract text is in
+  (`tl.input/1`, `replay`, `--input`, `--record` are not in contracts/ yet); host.gd 610 -> 601, worker.gd leaves the list.
+- 13:52 the same device script in a real window (`tl.sh play` without `--headless`, events through
+  `Input.parse_input_event`): the same record byte for byte and the same hash as headless and as the replay
+  (a9e62096879b5a5a).
+- 13:53 `tl check --tier fast`: 5 steps green (arch 9 rules, devx.test 126 pass). Patches for files of other owners:
+  `kernel/api/PATCHES-P7.md` (the world's own hash in pack.gd, handlers in a world, the visitor's keys, foreman's
+  KERNEL_API, bad_bypass).
+- 13:55 the handler switch-off narrowed to scripts of the pack (by path, a pack inside or outside the engine directory:
+  both checked) and connected once per node. A session that ends because the window is closed writes its record too
+  (`worker._notification`, device kind `close`, case `p7.keys_window_closed_keeps_record`; not tried with a real click).
+- 13:57 hockey: lint 0, invariants 0 (eed5cf0dec85f89e), capture 0 (picture looked at: the rink, six skaters), both bots
+  recorded and replayed to their own hashes (7326d67aeb26ad7a, de74f3a77315f9a5); seed_drive and seed_wall bots too
+  (b912bc471e4967a9, cb75fb26a1e80254). World proofs on the final hash code: `world.same`, `world.proof`, `world.tour` PASS.
+- 14:10 lint with the new rows on every pack there is: 3 seeds, 8 examples, hockey (both copies), marble run, paddle
+  court, w_pile: fence ok. `w_pile_x` fails lint on `get_parent(` (an N4 rule, not a P7 one; it is a world bench pack
+  and the world does not lint).
+- 14:12 the first full gate was started at 13:53 and I changed worker.gd, session.gd and selftest.sh while its
+  `kernel.selftest` ran: stopped (my own processes only, none left) and started again on the final files.
+- Not done: item 6 (the visitor's keys through the record). The keys are read in `world/draw/view.gd`, another
+  builder's file; `visitor.gd` reads none. Proposal in `kernel/api/PATCHES-P7.md` section 3.
+- 14:14 measured what the pointer costs a pack nobody points at (`_sample()` 100,000 times, best of 5, machine busy):
+  with the three pointer actions in the same loop as the declared ones 4.2 us per frame for a pack with no action, 10.7 us
+  with six: for 30 packs that is 0.1 to 0.3 ms of a world tick. Changed: the pointer's three are sampled only while one of
+  them is alive (a drag, an injected value, a replay, a value on its way back to zero), declared actions are walked in a
+  kept list, the replay's table is made only in a replay. After: 0.49 us with no action, 2.9 us with six. The second
+  full gate (3 minutes old) was stopped for it and the gate started a third time; all 25 runs taken once more against
+  the table.
+- 14:18 after the fast path: all 25 runs once more, every hash equal to the table; the windowed session and its replay
+  again a9e62096879b5a5a with the same record file.
+- 14:38 third full gate (22 minutes): 11 steps green, `kernel.selftest` red with 1 of 101 cases:
+  `p1.world_runaway: the world line has no trip record`. MINE: I had moved `host._intify` into session.gd and
+  `host/world_supervisor.gd` (not my file) calls `h._intify`. Put back as a one-line delegate (host.gd 605 lines, the
+  baseline held it at 610 before P7); the case passes. `item.selftest` and `ui.selftest` are skipped in a worktree
+  (they need site/ of the main checkout): their fence cases that my lint rows could touch were run by hand
+  (each fenced line of the five bad_reach packs reported once; `play` refuses a pack that fails lint; marble and
+  paddle court pass lint).
+- 14:31 `devx/lib/gate/godot-step.mjs`: the wall-clock limit of a script step 15 -> 30 minutes (kernel.selftest took
+  13.3 minutes tonight with 20 more cases and four other builders on the machine).
+- 14:40 fourth full gate started on the final files.
+- 14:40 one `_sample()` before P7 against now, one process, alternating, best of 7 x 100,000 (machine busy): no action
+  0.37 -> 0.55 us, two 1.45 -> 1.49 us, six 4.30 -> 4.81 us. For 30 packs that is 5 to 15 us of a world tick.
+- 15:01 fourth full gate, final files: exit 0. arch 9 rules, devx.test 126, foreman.test 158, kernel.selftest 101 cases
+  (12.2 minutes), kit.selftest 87, seeds 24; perf measured but not judged (machine BUSY, use 100 %); item.selftest and
+  ui.selftest skipped in a worktree. End of the package; the report is the final message.

@@ -38,15 +38,25 @@ export function describeClass(src, file) {
     if (t.startsWith("##")) { if (!doc) doc = t.replace(/^##+\s?/, "").trim(); continue; }
     break;
   }
-  const funcs = [], consts = [];
+  const funcs = [], consts = [], signals = [], props = [];
   lines.forEach((l, i) => {
     const f = /^(?:static\s+)?func\s+([A-Za-z]\w*)\s*\(/.exec(l);
     if (f) { const r = readFunc(lines, i); if (r) funcs.push(r); return; }
     const c = /^const\s+([A-Za-z]\w*)/.exec(l);
-    if (c) consts.push(c[1]);
+    if (c) { consts.push(c[1]); return; }
+    // P7: signals and properties are part of the surface a pack may use (docs/generated/API-V1.json)
+    const code = stripGd(l, true).trimEnd();
+    const sg = /^signal\s+([A-Za-z_]\w*)\s*(\(.*\))?/.exec(code);
+    if (sg) { signals.push({ name: sg[1], sig: `${sg[1]}${(sg[2] ?? "()").replace(/\s+/g, " ").replace(/\( /g, "(").replace(/ \)/g, ")")}` }); return; }
+    const v = /^(?:@\w+(?:\([^)]*\))?\s+)*(static\s+)?var\s+([A-Za-z_]\w*)\s*(.*)$/.exec(code);
+    if (v) {
+      const rest = v[3].trim();
+      const type = rest.startsWith(":=") || !rest.startsWith(":") ? "" : rest.slice(1).split("=")[0].replace(/:\s*$/, "").trim();
+      props.push({ name: v[2], sig: `${v[1] ? "static " : ""}var ${v[2]}${type ? ": " + type : ""}` });
+    }
   });
   const byName = (a, b) => (a.name ?? a) < (b.name ?? b) ? -1 : (a.name ?? a) > (b.name ?? b) ? 1 : 0;
-  return { name: cn?.name ?? file.replace(/^.*\//, "").replace(/\.gd$/, ""), file, ext, doc, funcs: funcs.sort(byName), consts: consts.sort(byName) };
+  return { name: cn?.name ?? file.replace(/^.*\//, "").replace(/\.gd$/, ""), file, ext, doc, funcs: funcs.sort(byName), consts: consts.sort(byName), signals: signals.sort(byName), props: props.sort(byName) };
 }
 
 export function generateIndex(io) {
@@ -58,6 +68,7 @@ export function generateIndex(io) {
     "",
     "Public surface of the kernel API, kits, rigs and style, read from the GDScript sources by `tl arch --index`.",
     "`tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.",
+    "The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.",
     "",
     `Classes: ${classes.length}`,
     "",
@@ -67,6 +78,10 @@ export function generateIndex(io) {
     if (c.doc) out.push(`> ${c.doc}`, "");
     const pubConsts = c.consts.filter((n) => !n.startsWith("_"));
     if (pubConsts.length) out.push(`Consts: ${pubConsts.map((n) => `\`${n}\``).join(", ")}`, "");
+    const pubSignals = c.signals.filter((x) => !x.name.startsWith("_"));
+    if (pubSignals.length) out.push(`Signals: ${pubSignals.map((x) => `\`${x.sig}\``).join(", ")}`, "");
+    const pubProps = c.props.filter((x) => !x.name.startsWith("_"));
+    if (pubProps.length) out.push(`Properties: ${pubProps.map((x) => `\`${x.sig.replace(/^var /, "").replace(/^static var /, "static ")}\``).join(", ")}`, "");
     const pub = c.funcs.filter((f) => !f.name.startsWith("_"));
     if (pub.length) { for (const f of pub) out.push(`- \`${f.sig}\``); out.push(""); }
   }

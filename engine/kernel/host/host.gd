@@ -17,13 +17,15 @@ const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
 const Lint: GDScript = preload("res://kernel/runner/lint.gd")
 const Inv: GDScript = preload("res://kernel/host/invariants.gd")           # P1: the V3 checks and budgets (host.gd may not grow)
 const WorldSup: GDScript = preload("res://kernel/host/world_supervisor.gd")   # P1: runs a world again without a pack that ran away
+const Session: GDScript = preload("res://kernel/runner/session.gd")         # P7: the input record (tl.input/1) and the `replay` verb
 
-const LEVELS: Dictionary = {"lint": "V1", "smoke": "V2", "invariants": "V3", "bot": "V4", "capture": "V5"}
+const LEVELS: Dictionary = {"lint": "V1", "smoke": "V2", "invariants": "V3", "bot": "V4", "capture": "V5", "replay": "V2"}
 const OPTIONS: Dictionary = {
 	"lint": ["pack", "report"],
 	"smoke": ["pack", "report", "seed", "frames"],
 	"invariants": ["pack", "report", "seed", "frames", "bot-frames"],   # --bot-frames: budget of the bot replays (WP5)
-	"bot": ["pack", "report", "seed", "frames", "test"],
+	"bot": ["pack", "report", "seed", "frames", "test", "record"],
+	"replay": ["pack", "report", "input", "record"],   # P7: a recorded session (tl.input/1) again, headless; seed and length are the record's
 	"capture": ["pack", "report", "seed", "cam", "frame", "out", "res", "test"],   # --test: kernel extension, see API.md
 }
 ## N2: the world modes (kernel/world/). They are not verify verbs: no tl.verify/1 report, no --pack, no level.
@@ -121,7 +123,7 @@ func _supervise(bad_args: PackedStringArray) -> void:
 	_inv.set("h", self)
 	_inv.set("report", report)
 	if not LEVELS.has(verb):
-		return _not_run("engine", "unknown verb '%s'; verbs: lint, smoke, invariants, bot, capture" % verb)
+		return _not_run("engine", "unknown verb '%s'; verbs: lint, smoke, invariants, bot, capture, replay" % verb)
 	if not bad_args.is_empty():
 		return _not_run("engine", "unexpected argument(s): %s (options are --name=value)" % " ".join(bad_args))
 	for k: String in opts.keys():
@@ -130,7 +132,7 @@ func _supervise(bad_args: PackedStringArray) -> void:
 	for k: String in ["seed", "frames", "frame", "bot-frames"]:
 		if opts.has(k) and not str(opts[k]).is_valid_int():
 			return _not_run("engine", "--%s must be an integer" % k)
-	for k: String in ["report", "out", "pack"]:
+	for k: String in ["report", "out", "pack", "input", "record"]:
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if opts.has("report") and not str(opts["report"]).is_absolute_path():
@@ -163,6 +165,8 @@ func _supervise(bad_args: PackedStringArray) -> void:
 		return _not_run("engine", imp)
 
 	match verb:
+		"replay":
+			await Session.replay(self, mres["manifest"])
 		"smoke":
 			var frames: int = int(opts.get("frames", "3600"))
 			report["frames"] = frames
@@ -211,9 +215,10 @@ func _supervise(bad_args: PackedStringArray) -> void:
 			report["frames"] = frames
 			var tests: Array = (mres["manifest"] as Dictionary)["tests"]
 			var test: String = str(opts.get("test", tests[0]))
-			var run: Dictionary = await _run_worker("bot", {"seed": seed_value, "frames": frames, "test": test}, "")
+			var run: Dictionary = await _run_worker("bot", Session.extra(opts, {"seed": seed_value, "frames": frames, "test": test}), "")
 			if _smoke_checks(run, frames):
 				report["metrics"] = _metrics(run)
+				Session.record_check(self, run)
 			var res: Dictionary = run.get("result", {})
 			var bot: Dictionary = res.get("bot", {})
 			if not bot.is_empty():
@@ -460,7 +465,7 @@ func _run_worker_once(mode: String, extra: Dictionary, window_res: String, drive
 	if FileAccess.file_exists(result_path):
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(result_path))
 		if typeof(parsed) == TYPE_DICTIONARY:
-			result = _intify(parsed)
+			result = Session.intify(parsed)
 			has_result = true
 		_remove(result_path)
 	var log_text: String = ""
@@ -502,18 +507,8 @@ func _touch(path: String) -> void:
 		f.close()
 
 
-## JSON has one number type; whole numbers read back from the worker become ints again.
-func _intify(v: Variant) -> Variant:
-	match typeof(v):
-		TYPE_FLOAT:
-			return int(v) if float(v) == floor(float(v)) and absf(float(v)) < 9.0e15 else v
-		TYPE_DICTIONARY:
-			for k: Variant in (v as Dictionary).keys():
-				(v as Dictionary)[k] = _intify((v as Dictionary)[k])
-		TYPE_ARRAY:
-			for i: int in (v as Array).size():
-				(v as Array)[i] = _intify((v as Array)[i])
-	return v
+func _intify(v: Variant) -> Variant:     # kernel/host/world_supervisor.gd calls it; the body moved to runner/session.gd
+	return Session.intify(v)
 
 
 ## Adds the V2 checks for one worker run. Returns false when the run cannot be used any further.

@@ -1,4 +1,8 @@
-# Third Life kernel API (kernelApi 0.1)
+# Third Life kernel API (kernelApi 1.0)
+
+**Version 1.0 (P7, 2026-11-11).** Every class, method, signal, property and constant a pack may use is written down by
+a machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.0"` in `pack.json`
+(`"0.1"`, the name this same surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -286,7 +290,9 @@ counts as 0.9). Measured in `ex_car`: braking from 14 m/s takes 10.1 m on asphal
 
 ## 8. `TLInput` (capability `input`), reached as `ctx.input`
 
-One door for the player, for bots and for replays. Values are latched once per frame.
+One door for the player, for bots and for replays. Values are latched once per frame, and **the latch is the
+record**: what a game read in a session can be written as a `tl.input/1` file and fed back (section 22). A value is a
+multiple of 0.001 (`TLInput.STEP`): `press(&"left", 0.4567)` reads back as `0.457`.
 
 | Member | Meaning |
 |---|---|
@@ -295,9 +301,12 @@ One door for the player, for bots and for replays. Values are latched once per f
 | `axis(negative, positive) -> float`, `vector(left, right, up, down) -> Vector2` | y = down - up, as `Input.get_vector` |
 | `press(action, value = 1.0)`, `release(action)`, `tap(action, frames = 1)`, `set_axis(negative, positive, value)`, `release_all()` | **injection**: what a bot calls in `_bot_tick` |
 | signals `action_pressed(action)`, `action_released(action)`; `declared() -> PackedStringArray` | |
+| `TLInput.LOOK_X`, `TLInput.LOOK_Y`, `TLInput.ZOOM` | **the pointer**: three actions the kernel declares in every pack. `strength()` gives the pixels of a right-button drag in this frame (x to the right, y down) and the wheel notches (+ is out); any value, each lasts one frame. A bot injects them with `press(TLInput.LOOK_X, 12.0)`. `TLOrbitCam` reads them by itself |
+| `keys_taken() -> bool` | true while a text field has the keyboard (the designer panel): the game gets no key then |
 
-Real keys are read only in interactive play (`tools/tl.sh play`); verify runs ignore every device, so a stray key
-press cannot change a result. Using an undeclared action is an error. AI opponents do not need actions: give them
+Real keys and the mouse are read only in interactive play (`tools/tl.sh play`); verify runs ignore every device, so a
+stray key press cannot change a result. A pack never reads a device itself: no `Input`, no `InputEvent`, no
+`_input` handler (the kernel switches a pack script's event handlers off), no mouse position. Using an undeclared action is an error. AI opponents do not need actions: give them
 intents directly (`biped.move()`, `vehicle.set_controls()`).
 
 ## 9. `TLRules` (capability `rules`): score, clock, periods, laps, win conditions
@@ -359,7 +368,7 @@ a part in the same convention from boxes.
 | `ctx.cameras.subject_px(subject) -> float` | how much of the frame height `subject` covers now in the active view: the height of the screen rectangle around its visible meshes, clipped to the frame; 0 when off screen or behind the camera. 0.08 is a small actor, 0.2 a clear one, 0.35 a portrait |
 | `ctx.cameras.set_subject(view, subject)`, `subject_of(view) -> Node3D` | names the main actor of a view without moving it (a fixed view that must keep a whole court in sight) |
 | `ctx.cameras.shake(amount, frames)` | impact shake on the active view: `amount` metres at the lens (0.05 a tap, 0.3 a crash), fading over `frames` physics frames. A stronger shake still running is kept |
-| `TLOrbitCam.orbit_by(yaw_deg, pitch_deg)`, `zoom_by(metres)`, `bind_actions(input, {yaw_left, yaw_right, pitch_up, pitch_down, zoom_in, zoom_out})`, `yaw_basis() -> Basis` | in interactive play it also takes right-button mouse drag and the wheel |
+| `TLOrbitCam.orbit_by(yaw_deg, pitch_deg)`, `zoom_by(metres)`, `bind_actions(input, {yaw_left, yaw_right, pitch_up, pitch_down, zoom_in, zoom_out})`, `yaw_basis() -> Basis` | the camera on screen also turns with the pointer actions of `ctx.input` (`TLInput.LOOK_X`, `LOOK_Y`, `ZOOM`: right-button drag, 0.2 degrees of yaw and 0.15 of pitch per pixel; the wheel, 0.4 m per notch). They are input like any key: latched per frame, recorded, replayed |
 | `TLChaseCam.snap()`, `TLOrbitCam.snap()` | puts the camera where it wants to be at once (after a teleport, a cut, or a change of `distance`) |
 
 **Everything here is visual only.** `frame`, `shake`, `follow`, `aim` and `smooth` move or offset cameras; none of them
@@ -499,9 +508,10 @@ Decide `ok` from game state, and put the numbers that prove it in the result. A 
 bash engine/tools/tl.sh lint       --pack=<dir>
 bash engine/tools/tl.sh smoke      --pack=<dir> [--seed=1] [--frames=3600]
 bash engine/tools/tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600] [--bot-frames=36000]
-bash engine/tools/tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000]
+bash engine/tools/tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000] [--record=<file.json>]
+bash engine/tools/tl.sh replay     --pack=<dir> --input=<file.json> [--record=<file.json>]   (a recorded session again; section 22)
 bash engine/tools/tl.sh capture    --pack=<dir> --cam=<name> --out=<abs.png> [--frame=120] [--res=1920x1080] [--test=tests/x.gd]
-bash engine/tools/tl.sh play       --pack=<dir>          (a window and real keys; Esc quits; not a verify verb)
+bash engine/tools/tl.sh play       --pack=<dir> [--record=<file.json>]   (a window and real keys; Esc quits; not a verify verb)
 bash engine/tools/tl.sh selftest   [filter]
 bash engine/tools/tl.sh seeds      [filter | sheet]      (every verb on the three seed packs in engine/seeds/)
 ```
@@ -723,3 +733,61 @@ What a pack author has to know:
 Commands: `world.sh tour <walk> --out-dir=<abs dir> [--pictures-only]`, `world.sh tour <walk> --headless`,
 `world.sh visit <walk>`; `tools/view.sh shot / check` (pictures of a world of packs, every pack ticked every frame)
 start the same host mode.
+
+## 22. The contract: API version 1, the input record, the state hash (P7)
+
+A game reaches the engine through two things only: the kernel API of this file, and its input as the kernel latched
+it. Both are written down so that a game's code can later run somewhere else (another thread, another process,
+another machine) without the game being rewritten.
+
+**API version.** `kernelApi` in `pack.json` is `major.minor`. A pack runs when its major equals the kernel's and its
+minor is not greater. `"0.1"` is the name this surface had before it was frozen and is read as `"1.0"`. Anything else
+is refused by lint and by every verb with a sentence that says why (`kernelApi '2.0' cannot run on this kernel, which
+offers API 1.0: the pack was built for major version 2 and this kernel is major version 1 ...`).
+`docs/generated/API-V1.json` lists every public class of `kernel/api`, the kit, the rigs and the style:
+what it extends, its methods with their full signatures, signals, properties and constants. `node devx/bin/tl.mjs arch`
+(rule `api-v1`) fails when one of them is removed or changed while the major is the same, and names it; an addition
+(a new member, or parameters with defaults at the end of a method) needs a new minor. `tl arch --index` regenerates
+the file and refuses to write over a break. Names that start with `_` are the kernel's side and no part of the contract.
+
+**The input record, `tl.input/1`.**
+```
+{"schema": "tl.input/1", "pack": "seed.paddle", "seed": 1, "mode": "bot", "max_frames": 36000,
+ "length": 4486, "end": "tick", "frames": [[110, "left", 1], [111, "left", 1], [112, "left", 0.42], ...]}
+```
+`frames` has one entry for every action whose value was not zero in a frame, in frame order (a key held for a second
+is sixty entries; the pointer is `tl.look_x`, `tl.look_y`, `tl.zoom`). `length` is the number of frames the session
+ticked; `end` is `"step"` when it stopped after the physics step of its last frame (play, Esc) and `"tick"` when it
+stopped inside its last frame (a bot that said it was done); `mode` and `max_frames` are what `ctx.mode` and
+`ctx.max_frames` were, and a replay sets them again. All eight keys are required, unknown keys are errors.
+- `tl.sh play --pack=<dir> --record=<file>` writes a person's session; `tl.sh bot --pack=<dir> --record=<file>` a bot's.
+- `tl.sh replay --pack=<dir> --input=<file>` runs it again without a window: the record's samples and nothing else
+  (no bot is loaded, no device is read), the record's seed and length. A `tl.verify/1` report: the V2 checks,
+  `replay.complete`, and `metrics.state_hash`, which is the hash of the recorded session. `--record` writes the
+  replay's own input, which is the same file.
+- For tests there is a scripted session without a window: `tl.sh play --pack=<dir> --headless --frames=N
+  --devices=<file> [--record=<file>] [--result=<file>]`, where the devices file is a JSON list of
+  `[frame, kind, a, b]`: `key` (name, 1 or 0), `drag` (dx, dy with the right button), `wheel` (1 out, -1 in),
+  `field` (1: a text field takes the keyboard, 0: gives it back), `panel` (1: the designer panel is open), `close`
+  (the window's close button). The events go through the engine's own input path.
+- A session ends with Esc or when the window is closed; the record is written either way.
+
+**The state hash** covers every physics body under the pack, `_pack_state()`, the seeded generator (`ctx.rng`: seed
+and state) and the input state (every action's value in this frame and the one before). Two runs that look alike and
+would differ in their next random number, or in a key that is held, do not hash alike. (The world's own hash of a
+pack, `kernel/world/pack.gd`, does not cover the generator and the input yet: `kernel/api/PATCHES-P7.md`.) The
+worker's result file (`--result`) also has `hash_parts`: the bodies-and-state hash alone, the generator's state and
+the number of input frames, for the day two runs differ and one wants to know in what.
+
+**The fence follows the seam** (lint, since P7): besides everything in section 16, a pack may not
+- read a device past `ctx.input`: `InputEventKey` and its siblings, `_gui_input` / `_unhandled_key_input` /
+  `_shortcut_input` handlers, `set_process_input`, mouse positions, controls that take clicks or keys (`Button.new()`,
+  `LineEdit.new()`, ...), `accept_devices`. (`_input` and `_unhandled_input` handlers are still counted as bypasses,
+  as the pack contract says, and the kernel switches them off: they never run.)
+- take time from anywhere but the tick count: `func _process(` (it runs once per drawn picture), `Timer`,
+  `create_tween` / `Tween`, `AnimationPlayer`, `get_process_delta_time`.
+- reach another pack or the kernel's side: `get_world_3d()`, `ctx.holder`, `get_nodes_in_group`, `TLContext.current`,
+  any member of `ctx`, `ctx.input` or `ctx.cameras` whose name starts with `_`.
+
+**Keys and the panel.** While a `LineEdit` or `TextEdit` has focus, the game gets no key (`ctx.input.keys_taken()`);
+Esc does not end an interactive run while a `CanvasLayer` named `TLDesigner` is visible under the worker.

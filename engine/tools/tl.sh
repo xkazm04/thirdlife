@@ -4,10 +4,14 @@
 #   tl.sh lint       --pack=<dir>
 #   tl.sh smoke      --pack=<dir> [--seed=1] [--frames=3600]
 #   tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600] [--bot-frames=36000]
-#   tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000]
+#   tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000] [--record=<file.json>]
+#   tl.sh replay     --pack=<dir> --input=<file.json> [--record=<file.json>]   a recorded session (tl.input/1) again,
+#                                              headless: the same samples, no bot, no device; prints the state hash
 #   tl.sh capture    --pack=<dir> --cam=<name> --out=<file.png> [--frame=120] [--res=1920x1080]
-#   tl.sh play       --pack=<dir> [--seed=1]   interactive: a window, real keys, Esc to quit (not a verify verb);
-#                                              lints first and refuses a pack that fails (items: tools/item.sh)
+#   tl.sh play       --pack=<dir> [--seed=1] [--record=<file.json>]   interactive: a window, real keys, Esc to quit
+#                                              (not a verify verb); lints first and refuses a pack that fails (items:
+#                                              tools/item.sh). --record writes the session's input (tl.input/1) for
+#                                              `replay`. Scripted sessions (tests): --frames=N --headless --devices=<file>
 #   tl.sh selftest   every verb on the good example pack and each bad pack: one PASS/FAIL line per case
 #   tl.sh seeds      every verb on the three seed packs (tools/seeds.sh; `seeds sheet` rebuilds the contact sheet)
 #   tl.sh import     rebuild the class cache (the runner also does this by itself when scripts changed)
@@ -26,7 +30,7 @@ fi
 fix_arg() {
   local a="$1"
   case "$a" in
-    --pack=*|--report=*|--out=*)
+    --pack=*|--report=*|--out=*|--input=*|--record=*|--devices=*|--result=*)
       local k="${a%%=*}" v="${a#*=}"
       case "$v" in
         res://*) ;;
@@ -55,11 +59,14 @@ run_verb() {
 
 case "$1" in
   ""|help|-h|--help)
-    sed -n '2,18p' "$0"; exit 2;;
+    sed -n '2,22p' "$0"; exit 2;;
   play)
     # interactive play: the worker directly, windowed, in real time, with devices on; no report
-    shift; pargs=(); pack_arg=""
-    for a in "$@"; do pargs+=("$(fix_arg "$a")"); case "$a" in --pack=*) pack_arg="$a";; esac; done
+    shift; pargs=(); pack_arg=""; win=(--position "${TL_WINDOW_POS:-0,1440}")
+    for a in "$@"; do
+      case "$a" in --headless) win=(--headless --fixed-fps 60); continue;; --pack=*) pack_arg="$a";; esac
+      pargs+=("$(fix_arg "$a")")
+    done
     # N4: the fence is a lint check and nothing else, so play lints first and refuses a pack that fails it
     ptmp="${TMPDIR:-${TEMP:-/tmp}}"; command -v cygpath >/dev/null 2>&1 && ptmp="$(cygpath -m "$ptmp")"
     prep="$ptmp/tl_play_lint_$$.json"
@@ -71,7 +78,7 @@ case "$1" in
       rm -f "$prep"; exit $lint_code
     fi
     rm -f "$prep"
-    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --path "$E" res://kernel/host/host.tscn -- worker --mode=play "${pargs[@]}"
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" "${win[@]}" --path "$E" res://kernel/host/host.tscn -- worker --mode=play "${pargs[@]}"
     exit $?;;
   import)
     "$G" --headless --path "$E" --import 2>&1 | grep -i -E "error|fail" | head -30; exit 0;;
