@@ -13,7 +13,7 @@ Everything is generated from GDScript at load time. No Blender, no imported asse
 `ice`, `concrete`, `steel`, `wood`, `rubber`, `asphalt`, `grass`, `dirt`, `glass`, `plastic`, `snow`, `water`, `stone`,
 `fabric`.
 
-The kernel owns the table (`res://kernel/data/materials.json`: density, friction, restitution, hardness, flammability,
+The kernel owns the table (`res://kernel/data/materials.json`, schema `tl.materials/1`, with the pairwise overrides in `res://kernel/data/surfaces.json`, schema `tl.surfaces/1`: density, friction, restitution, hardness, flammability,
 sound set, breaks-into). The kit only **tags**: every collision body a kit part returns has metadata `tl_material` set
 to one of these ids. The kernel turns the tag into physics properties and contact sounds.
 

@@ -9,14 +9,5 @@
     "foreman/src/test/wp3b.test.ts": 808,
     "spike/lab/b/src/mk.gd": 612
   },
-  "grandfathered": {
-    "verbs-contract": [
-      "sh-opt:bot-frames"
-    ],
-    "schema-versions": [
-      "tl.materials/1",
-      "tl.state/1",
-      "tl.surfaces/1"
-    ]
-  }
+  "grandfathered": {}
 }

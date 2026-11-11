@@ -8,7 +8,7 @@ Foreman and the world. Nothing about a job's progress may exist only in memory.
 ```
 site/<job_id>/
   job.jsonl        append-only event log, one JSON object per line; the single source of truth
-  state.json       derived; rebuilt from job.jsonl by rebuildState(); safe to delete
+  state.json       derived (schema `tl.state/1`); rebuilt from job.jsonl by rebuildState(); safe to delete
   pack/            the game's pack as verified so far (merged package outputs only)
   ws/<package_id>/ a builder's scratch copy of the pack for one package
   reports/         tl.verify/1 files and builder transcripts, referenced from events by relative path

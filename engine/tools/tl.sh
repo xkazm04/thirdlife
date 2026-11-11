@@ -3,7 +3,7 @@
 #
 #   tl.sh lint       --pack=<dir>
 #   tl.sh smoke      --pack=<dir> [--seed=1] [--frames=3600]
-#   tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600]
+#   tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600] [--bot-frames=36000]
 #   tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000]
 #   tl.sh capture    --pack=<dir> --cam=<name> --out=<file.png> [--frame=120] [--res=1920x1080]
 #   tl.sh play       --pack=<dir> [--seed=1]   interactive: a window, real keys, Esc to quit (not a verify verb);
