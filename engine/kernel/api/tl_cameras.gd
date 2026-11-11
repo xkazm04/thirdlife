@@ -87,7 +87,9 @@ func activate(view_name: StringName) -> bool:
 		push_error("ctx.cameras.activate('%s'): no such view (registered: %s)" % [view_name, ", ".join(_order)])
 		return false
 	active = cam
-	cam.current = true
+	var pack: TLContext = TLContext.of(self)
+	if pack == null or pack.on_stage:
+		cam.current = true
 	return true
 
 

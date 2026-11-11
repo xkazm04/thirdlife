@@ -27,6 +27,7 @@ var damage: TLDamage
 var pieces: Array = []                  ## the RigidBody3D pieces while broken
 var _broken_frames: int = 0
 var _pending: Array = []
+var _ctx: TLContext = null              # N2: the pack this part belongs to (its seeded generator scatters the pieces)
 
 
 ## Options: hp (default 100), threshold (N*s; default from the material's hardness), bake, max_awake_frames, kick, scatter.
@@ -35,6 +36,7 @@ static func attach(part_: Node3D, opts: Dictionary = {}) -> TLFracture:
 	var f: TLFracture = TLFracture.new()
 	f.name = "TLFracture"
 	f.part = part_
+	f._ctx = TLContext.current
 	var dopts: Dictionary = {}
 	for k: String in opts.keys():
 		if k == "hp" or k == "threshold":
@@ -85,7 +87,9 @@ func break_now(push: Vector3 = Vector3.ZERO, at: Variant = null, by: Node = null
 	_disable(intact)
 	holder.visible = true
 	var origin: Vector3 = at if at != null else part.global_position
-	var rng: RandomNumberGenerator = TLContext.current.rng if TLContext.current != null else RandomNumberGenerator.new()
+	if _ctx == null:
+		_ctx = TLContext.of(self)
+	var rng: RandomNumberGenerator = _ctx.rng if _ctx != null else RandomNumberGenerator.new()
 	for child: Node in holder.get_children():
 		if not (child is MeshInstance3D) or not child.has_meta(&"tl_shape"):
 			continue

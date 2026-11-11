@@ -15,6 +15,7 @@ var min_hit_speed: float = 0.5       ## slower contacts are not reported as hits
 var _prev_velocity: Vector3 = Vector3.ZERO
 var _pm: PhysicsMaterial
 var _reach: float = 0.5
+var _ctx: TLContext = null           # N2: the pack this body belongs to
 
 
 func _ready() -> void:
@@ -27,6 +28,7 @@ func _ready() -> void:
 	body.max_contacts_reported = maxi(body.max_contacts_reported, 6)
 	body.body_entered.connect(_on_body_entered)
 	process_physics_priority = 100
+	_ctx = TLContext.of(self)
 	_reach = maxf(0.05, pow(maxf(TLLaws.volume_of(body), 0.0001), 1.0 / 3.0))
 
 
@@ -54,7 +56,7 @@ func _physics_process(_delta: float) -> void:
 		var dirs: Array = [Vector3.DOWN * (_reach + 0.1)]
 		if v.length() > 0.5:
 			dirs.push_front(v.normalized() * (_reach + v.length() / 20.0))
-		var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
+		var space: PhysicsDirectSpaceState3D = TLContext.space_state_of(body, _ctx)   # N2: the pack's own space
 		for d: Vector3 in dirs:
 			var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(body.global_position, body.global_position + d)
 			q.exclude = [body.get_rid()]
@@ -100,7 +102,10 @@ func _on_body_entered(other: Node) -> void:
 		return
 	var m_eff: float = body.mass if is_inf(other_mass) else body.mass * other_mass / (body.mass + other_mass)
 	var impulse: float = m_eff * speed
+	# N2: this is an engine callback (no kernel call is on the stack): name the pack before pack code hears of it
+	var before: TLContext = TLContext.enter(_ctx if _ctx != null else TLContext.of(self))
 	hit.emit(other, impulse, speed)
 	TLAudio.contact(TLLaws.material_of(other), impulse, body.global_position)
 	TLDamage.report(other, impulse, body)
 	TLDamage.report(body, impulse, other)
+	TLContext.leave(before)

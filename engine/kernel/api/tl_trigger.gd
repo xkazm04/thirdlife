@@ -13,6 +13,7 @@ var enter_count: int = 0             ## how many entries so far
 var _inside: Array = []
 var _half: Vector3 = Vector3.ZERO          # half extents of the volume in local space (set by TLBodies.trigger)
 var _round: bool = false                   # sphere: test the distance instead of the box
+var _ctx: TLContext = null                 # N2: the pack this trigger belongs to (found once it is in the tree)
 
 
 func _init() -> void:
@@ -26,24 +27,38 @@ func _passes(body: Node3D) -> bool:
 	return group_filter == &"" or body.is_in_group(group_filter)
 
 
+## N2: the pack this trigger belongs to. The overlap signals arrive from the physics server, outside any kernel
+## call, so the trigger names its pack itself before it hands them to pack code.
+func _pack() -> TLContext:
+	if _ctx == null and is_inside_tree():
+		_ctx = TLContext.of(self)
+	return _ctx
+
+
 func _on_in(body: Node3D) -> void:
 	if _passes(body) and not _inside.has(body):
 		_inside.append(body)
 		enter_count += 1
+		var before: TLContext = TLContext.enter(_pack())
 		entered.emit(body)
+		TLContext.leave(before)
 
 
 func _on_out(body: Node3D) -> void:
 	if _inside.has(body):
 		_inside.erase(body)
+		var before: TLContext = TLContext.enter(_pack())
 		left.emit(body)
+		TLContext.leave(before)
 
 
 func _physics_process(_delta: float) -> void:
 	if _half == Vector3.ZERO or not is_inside_tree():
 		return
 	var to_local: Transform3D = global_transform.affine_inverse()
-	for ball: Node in get_tree().get_nodes_in_group(&"tl_ball"):
+	var pack: TLContext = _pack()
+	# N2: only the balls of this trigger's own pack (the group is per pack in a world), never the whole tree's
+	for ball: Node in get_tree().get_nodes_in_group(pack.ball_group if pack != null else &"tl_ball"):
 		if _inside.has(ball) or not _passes(ball as Node3D):
 			continue
 		var step: Array = (ball as TLBall).last_step()
@@ -54,8 +69,10 @@ func _physics_process(_delta: float) -> void:
 			continue                       # it starts or ends inside: the physics engine reports that overlap itself
 		if _segment_hits(a, b, grow):
 			enter_count += 1
+			var before: TLContext = TLContext.enter(pack)
 			entered.emit(ball)
 			left.emit(ball)
+			TLContext.leave(before)
 
 
 func _contains(p: Vector3, grow: float) -> bool:

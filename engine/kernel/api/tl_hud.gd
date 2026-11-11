@@ -20,7 +20,7 @@ const ANCHORS: Dictionary = {
 	&"bottom_right": [Control.PRESET_BOTTOM_RIGHT, Vector2(-24, -16)],
 }
 
-static var _all: Array = []
+# N2: no static list any more; a pack's HUD layers are in its context (`ctx.huds`).
 
 var font_size: int = 36
 var _widgets: Dictionary = {}      # id -> {label: Label, source: Callable or null}
@@ -31,13 +31,17 @@ static func create() -> TLHud:
 	TLContext.require("ui", "TLHud")
 	var h: TLHud = TLHud.new()
 	h.name = "TLHud"
-	_all.append(h)
+	if TLContext.current != null:
+		TLContext.current.huds.append(h)
 	return h
 
 
-## Hides every HUD (the kernel does this for captures).
-static func hide_all() -> void:
-	for h: Variant in _all:
+## Hides every HUD of one pack (the kernel does this for captures); without an argument, of the pack being called.
+static func hide_all(of_pack: TLContext = null) -> void:
+	var ctx: TLContext = of_pack if of_pack != null else TLContext.current
+	if ctx == null:
+		return
+	for h: Variant in ctx.huds:
 		if is_instance_valid(h):
 			(h as TLHud).visible = false
 

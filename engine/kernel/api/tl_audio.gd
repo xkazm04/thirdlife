@@ -39,9 +39,13 @@ const PRESETS: Dictionary = {
 }
 const MAX_EVENTS: int = 200
 
-static var events: Array = []          ## [{frame, preset, position?}], the last MAX_EVENTS
-static var _streams: Dictionary = {}
-static var _warned: Dictionary = {}
+## [{frame, preset, position?}], the last MAX_EVENTS of the pack being called (N2: the record lives in the pack's
+## context, `ctx.audio_events`; this name still reads it, so `TLAudio.events` in a bot or a pack is unchanged).
+static var events: Array:
+	get:
+		return TLContext.current.audio_events if TLContext.current != null else _loose_events
+static var _loose_events: Array = []   # calls with no pack on the stack (kernel tools)
+static var _streams: Dictionary = {}   # shared and read-only once made: preset -> generated stream (fixed seed)
 
 
 static func presets() -> PackedStringArray:
@@ -67,27 +71,27 @@ static func count(preset: StringName) -> int:
 
 
 ## Kernel door for contact sounds (called by TLContact). Silent when the pack does not declare `audio`.
-static func contact(struck_material: String, impulse: float, position: Vector3) -> void:
-	var ctx: TLContext = TLContext.current
+static func contact(struck_material: String, impulse: float, position: Vector3, of_pack: TLContext = null) -> void:
+	var ctx: TLContext = of_pack if of_pack != null else TLContext.current
 	if ctx == null or not ctx.has_capability("audio") or struck_material.is_empty():
 		return
 	var set_name: String = str(TLLaws.material(struck_material).get("sound", "concrete"))
-	_play(StringName("hit_" + set_name), position, clampf(linear_to_db(clampf(impulse / 200.0, 0.05, 1.0)), -26.0, 0.0))
+	_play(StringName("hit_" + set_name), position, clampf(linear_to_db(clampf(impulse / 200.0, 0.05, 1.0)), -26.0, 0.0), ctx)
 
 
-static func _play(preset: StringName, position: Variant, volume_db: float) -> void:
+static func _play(preset: StringName, position: Variant, volume_db: float, of_pack: TLContext = null) -> void:
+	var ctx: TLContext = of_pack if of_pack != null else TLContext.current
 	if not PRESETS.has(preset):
-		if not _warned.has(preset):
-			_warned[preset] = true
+		if TLContext.first_time("audio|" + String(preset), ctx):
 			push_error("TLAudio: unknown preset '%s' (presets: %s)" % [preset, ", ".join(presets())])
 		return
-	var ctx: TLContext = TLContext.current
 	var e: Dictionary = {"frame": ctx.frame if ctx != null else 0, "preset": String(preset)}
 	if position != null:
 		e["position"] = position
-	events.append(e)
-	if events.size() > MAX_EVENTS:
-		events.pop_front()
+	var record: Array = ctx.audio_events if ctx != null else _loose_events
+	record.append(e)
+	if record.size() > MAX_EVENTS:
+		record.pop_front()
 	if ctx == null or ctx.headless or ctx.root == null:
 		return
 	var stream: AudioStreamWAV = _stream(preset)

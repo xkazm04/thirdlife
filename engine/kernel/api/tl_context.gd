@@ -3,8 +3,13 @@ extends RefCounted
 ## The kernel's context object, handed to `_pack_setup(ctx)`, `generate(ctx)` and `_bot_setup(ctx)`.
 ## Capability: none (always available). See kernel/API.md.
 
-## The one live context of this process (a process runs one pack). Kernel primitives use it; packs keep their own `ctx`.
+## N2: the pack the kernel is calling right now. The kernel sets it around every call into a pack (setup, start,
+## ticks, the bot, engine callbacks that kernel primitives hand on) and, in a world of several packs, clears it
+## afterwards. It is NOT "the pack of this process" any more: a kernel node that needs its pack outside such a call
+## asks `TLContext.of(node)`. Packs keep their own `ctx`.
 static var current: TLContext = null
+## Warn-once keys of calls made with no pack on the stack (kernel tools, tests).
+static var _loose_warned: Dictionary = {}
 
 var root: Node3D                       ## the pack builds its scene under this node
 var rng: RandomNumberGenerator         ## seeded; the only source of randomness a pack may use
@@ -18,6 +23,18 @@ var manifest: Dictionary = {}          ## the parsed pack.json
 var mode: String = "smoke"             ## "smoke", "bot", "capture" or "play"
 var input: TLInput                     ## named actions (capability `input`)
 var cameras: TLCameras                 ## named views, chase and orbit cameras (capability `camera`)
+
+
+# ---- N2: everything a running pack owns hangs off its context ------------------------------------------------------
+var instance: String = ""              ## the pack's name inside a world ("" in a single-pack run)
+var holder: Node = null                ## the node every node of this pack lives under (the kernel's, not the pack's)
+var origin: Vector3 = Vector3.ZERO     ## where the pack stands in the world (ctx.root's world position)
+var on_stage: bool = true              ## false for a pack of a world the player is not in: its views do not take the viewport's camera
+var space: RID = RID()                 ## the pack's own physics space; an invalid RID means the viewport's default space
+var audio_events: Array = []           ## TLAudio's record of this pack: [{frame, preset, position?}]
+var huds: Array = []                   ## the TLHud layers this pack made
+var ball_group: StringName = &"tl_ball"   ## the scene-tree group of this pack's TLBalls (unique per pack in a world)
+var _warned: Dictionary = {}           ## warn-once keys of the kernel primitives ("audio|preset", "laws|id", ...)
 
 var _cap_warned: Dictionary = {}
 var _entry: Node = null
@@ -39,6 +56,48 @@ static func require(cap: String, who: String) -> void:
 	if not c._cap_warned.has(key):
 		c._cap_warned[key] = true
 		push_error("%s needs the capability '%s', which pack.json does not declare" % [who, cap])
+
+
+## N2. The context of the pack a node belongs to: the nearest ancestor that carries one (the kernel tags the pack's
+## holder node). A node that is not in a pack's tree yet (a factory is still building it) gets `current`.
+static func of(node: Node) -> TLContext:
+	var n: Node = node
+	while n != null:
+		if n.has_meta(&"tl_ctx"):
+			return n.get_meta(&"tl_ctx") as TLContext
+		n = n.get_parent()
+	return current
+
+
+## N2. Kernel side: makes `ctx` the pack being called and returns the one before, for `leave`. Kernel primitives
+## use the pair around signals they hand to pack code from an engine callback (a contact, a trigger).
+static func enter(ctx: TLContext) -> TLContext:
+	var before: TLContext = current
+	current = ctx
+	return before
+
+
+static func leave(before: TLContext) -> void:
+	current = before
+
+
+## N2. The physics queries of the pack `node` belongs to: its own space in a world, the viewport's space otherwise.
+static func space_state_of(node: Node3D, ctx: TLContext = null) -> PhysicsDirectSpaceState3D:
+	var c: TLContext = ctx if ctx != null else of(node)
+	if c != null and c.space.is_valid():
+		return PhysicsServer3D.space_get_direct_state(c.space)
+	return node.get_world_3d().direct_space_state
+
+
+## N2. True the first time `key` is seen by the pack being called (by the process when no pack is on the stack).
+## The kernel's "log this error once" tables are per pack, so a second pack is told about its own mistake.
+static func first_time(key: String, ctx: TLContext = null) -> bool:
+	var c: TLContext = ctx if ctx != null else current
+	var table: Dictionary = c._warned if c != null else _loose_warned
+	if table.has(key):
+		return false
+	table[key] = true
+	return true
 
 
 ## Reads a JSON file of the pack, by default from data/: `ctx.read_json("tuning.json")` reads `<pack>/data/tuning.json`.

@@ -248,3 +248,75 @@ written with estimated times that ran ahead of the clock; corrected at 19:29).
   (course_build.gd lines 14, 11, 9; look_dress.gd lines 38, 57, 64, 70), kit_parts_added 0.
   Not re-run after this edit: k.sh selftest (kits/rigs/style untouched), captures, the seeds' three-run hashes
   (lint is text only and runs in the supervisor; no worker code changed).
+
+## N2: many games alive in one process (builder copy site/_work/n2/engine, started 2026-11-11 00:03)
+
+- 00:08 baseline in this copy before any change: smoke hashes bc93a9a4 (paddle), b9adbb19 (drive), da4bdc3f (wall).
+- 00:12 item 1, the pack instance. `TLContext` now owns what was static: `audio_events` (was `TLAudio.events`),
+  `huds` (was `TLHud._all`), `ball_group` (was the tree-wide group `tl_ball`), `_warned` (was `TLAudio._warned`,
+  `TLVfx._warned`, `TLLaws._warned`), plus `instance`, `holder`, `origin`, `space`. `TLContext.current` is now "the
+  pack the kernel is calling"; `TLContext.of(node)` finds a node's pack through its holder (meta `tl_ctx`).
+  Kernel nodes that are called by the engine, not by the kernel (TLContact.body_entered, TLTrigger overlaps), name
+  their pack with `TLContext.enter/leave` before pack code hears the signal. TLFracture and TLSpawner take the
+  seeded generator of their own pack (before: of `current`, which in a world would have been nobody's inside a
+  physics callback: an unseeded generator). Ray queries of TLContact, TLVehicle, TLLaws.surface_under go to the
+  pack's own space (`TLContext.space_state_of`).
+- 00:17 items 3 and 4, first proof. `kernel/world/pack.gd` (the holder of one pack) and `kernel/world/world.gd`
+  (the host), `tools/world.sh run|same|bench`, host.gd routes the modes `world` and `world-bench`. Each seed alone
+  through the world host, in its OWN physics space, gives the single-pack worker's hash exactly: bc93a9a4,
+  b9adbb19, da4bdc3f. `world.sh same --packs=seed_paddle,seed_drive,seed_wall` and `--packs=seed_wall,seed_wall`:
+  PASS, three runs each (idle runs).
+- 00:20 bot runs (the wall really breaks, the car really laps): each seed alone through the world host ends in the
+  worker's bot hash and frame count (paddle cadd1cd9 at 6776, drive 36635c04 at 3516, wall 6366b88f at 1221);
+  `world.sh same --packs=seed_paddle,seed_drive,seed_wall,seed_wall --mode=bot --frames=36000`: PASS, three runs.
+- 00:22 item 2, the proof. The mechanism: the holder's `process_mode` (DISABLED when the pack does not get the world
+  tick) together with `space_set_active(false)`; every collision object of the pack is set to
+  DISABLE_MODE_KEEP_ACTIVE when it enters the tree, so disabling the holder does not take bodies out of the space.
+  Paused mid-play (`--pause=0:600:60;1:1000:3600;2:5:1`) and sliced (`--every=2,8,30`), every seed's bot run ends
+  in the same hash and frame count as the continuous run; the probe node in each pack counted 0 calls on a tick the
+  pack did not get.
+- 00:23 item 3, way (a) measured: a holder at 64 m, 1000 m or (2000, 0, 3000) changes the hash of all three seeds,
+  and seed_drive's and seed_paddle's bots no longer finish. Cause: pack code reads world coordinates
+  (`global_position` in `_pack_state`), not rounding: `ex_bounce`, which does not, keeps its hash at 1000 m.
+  Way (b), bodies at the pack-local origin, is what every other run here is: all packs of a world stand at the
+  origin of their own space, on top of each other, and never meet.
+- 00:26 item 6: `verbs.json` has a `modes` block (`world`, `world-bench`), host.gd a `MODE_OPTIONS` table, and
+  `tl.sh selftest` three new cases: `verbs.json_matches_host` (text comparison of both tables with the file, both
+  ways), `world.same`, `world.sliced_and_paused`.
+- 00:28 a bench pack, `kernel/world/packs/w_pile` (the seed is the body count). First figures: 600 awake boxes cost
+  7.1 ms per tick; 300 boxes ASLEEP still cost 2.4 ms per tick. Sleeping is not cheap in this kernel: every dynamic
+  body carries a TLContact whose `_physics_process` runs a ray query every tick, asleep or not.
+- 00:31 `kernel/world/bench.gd` (`world.sh bench`), `kernel/world/PATCHES.md`, API.md section 19.
+- 00:31 to 00:54 item 5: `bash tools/world.sh bench`, 73 world processes, 1393 s (most of it loading: 20 seed packs
+  take about 65 s to load, about 3 s each). `kernel/world/BENCH.md` and `bench.json`. Timed tests ran on a machine
+  shared with other sessions; from 00:46 the gates below ran beside the bench's hash tests (no timing in those).
+  What it says: a seed pack costs 0.19 to 0.82 ms per tick (20 mixed: 0.5 ms each); 600 awake bodies 7.5 ms;
+  a pack ASLEEP still 0.2 ms (35 bodies), so 60 asleep packs cost 13.8 ms, not the report's 0.2 ms; a pack switched
+  off 0.001 ms; hashes identical against neighbours in other spaces (3 orders, 3 runs), after a pause of 1, 60 and
+  3600 ticks mid-play, and at one world tick in 2, 8 and 30; 0 probe calls on a tick a pack did not get in 588,018
+  pack ticks; 0 engine warnings. In ONE shared space a neighbour 300 m away changed ex_bounce's hash.
+- 00:56 item 3 settled with a pack that has no world coordinate in its code (`w_pile`): standing 64 m from the
+  origin its hash differs within 60 ticks (300 awake boxes, and 100 boxes settling); at 1000 m and beyond the
+  starting positions already round to another millimetre. Way (a) is not hash-stable at any distance tried.
+- 00:57 an experiment, NOT kept: `TLContact._physics_process` returning at once while its body sleeps
+  (`if body.sleeping: _prev_velocity = body.linear_velocity; return`). 300 asleep boxes: 2.21 ms -> 0.16 ms per
+  tick. Hashes unchanged in the 11 runs compared (three seeds idle and by bot, ex_bounce idle and by bot, ex_wall by
+  bot, w_pile). tl_contact.gd was restored byte for byte (copy kept during the test); the change is a
+  recommendation for the Director, because it touches every pack's physics path and the full gates were not run on it.
+- 00:46 gates in this copy: `tl.sh selftest` 66 passed, 0 failed; `k.sh selftest` 86 passed, 0 failed;
+  `tl.sh seeds` 23 passed, 1 failed (seed.drive.invariants: "frame p99 11.20 ms is over the 8 ms budget", the
+  wall-clock budget, while my own bench was running 8 packs beside it); `tl.sh seeds drive.invariants` alone at
+  00:55: PASS.
+- 01:00 test 5 of the bench measured again with the two `w_pile` columns (`world.sh bench --only=offset`, 7
+  processes, 146 s) and merged into BENCH.md and bench.json; BENCH.md got two hand-written sections at the end
+  ("What the numbers mean", "Measured by hand"), which a re-run of the bench overwrites. Loading measured:
+  about 3 s per seed pack, 65 s for 20, in one blocking call.
+- 01:01 to 01:06 final gates on a quiet machine: `tl.sh seeds` 24 passed, 0 failed (smoke hashes bc93a9a4,
+  b9adbb19, da4bdc3f: unchanged); `tl.sh selftest verbs.json` and `tl.sh selftest world.` 3 passed;
+  `world.sh same --packs=seed_paddle,seed_drive,seed_wall` and `--packs=seed_wall,seed_wall`: PASS.
+- Not done, for whoever continues: the watchdog in the world host; windowed worlds (camera and HUD ownership:
+  kernel/world/PATCHES.md 1 and 2); drawing a pack away from its simulation origin (way b's picture half: no
+  built-in mechanism found, see the report); worker.gd still carries its own copy of the load and hash code that
+  pack.gd now also has (the two agree: the hashes are equal); tests 10 to 18 of the layering report.
+- 01:06 to 01:09 the full selftests once more on the final files, quiet machine: `tl.sh selftest` 66 passed,
+  0 failed; `k.sh selftest` 86 passed, 0 failed. N2 ends here (66 minutes of the 90).

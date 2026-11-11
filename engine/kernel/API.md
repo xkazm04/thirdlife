@@ -569,7 +569,8 @@ finding. A capability counts as used when a script names one of its classes (`TL
   style layer since WP5.)
 - **Input**: keys only for the player (no gamepad, no mouse actions except the orbit camera in play), no rebinding.
 - **`requires`** in the manifest is checked for shape only; packs that need other packs are not loaded together.
-- **Saving, networking, more than one pack per process**: none.
+- **Saving, networking**: none. **More than one pack per process**: only through the world host (section 19),
+  headless, without the watchdog; the verify verbs still run one pack per process.
 - **Class cache**: the runner refreshes it (`--import`) when kernel, kit, rig or style scripts change; two runners
   doing that at the same moment in one engine directory is untested.
 
@@ -597,3 +598,40 @@ finding. A capability counts as used when a script names one of its classes (`TL
 - **If you kill the supervisor**, its worker ends by itself within about a minute (it watches a file the supervisor
   keeps fresh) or when its frames are done, whichever is first.
 - Environment: `TL_GODOT`, `TL_ENGINE_DIR` (used by `tools/tl.sh`), `TL_RENDER_DRIVERS`, `TL_QUIET`, `TL_SELFTEST_DIR`.
+
+## 19. A world of several packs (N2)
+
+`bash tools/world.sh run --packs=<a>,<b>,...` runs several packs in ONE process (`kernel/world/world.gd`, one holder
+per pack: `kernel/world/pack.gd`). It is a host mode, not a verify verb: it prints `tl.world/1` lines (one per pack
+with its state hash, one for the world), no `tl.verify/1` report. Its options are in `kernel/runner/verbs.json`
+under `modes`. `world.sh same` is the check that every pack hashes together as it does alone; `world.sh bench`
+writes `kernel/world/BENCH.md`.
+
+What a pack author has to know:
+
+- **Nothing changes in a pack that follows this document.** The three seeds and the examples run unchanged, with
+  the same hashes, alone and together.
+- **A pack has its own clock.** `frame` and `ctx.frame` count the ticks the pack has had, not the world's. The
+  kernel may give a pack fewer ticks than the world has (one in N, or none for a while); the pack then runs the
+  same game, later. Do not read any other clock.
+- **A pack has its own physics space**, its own input record (`ctx.input`), generator (`ctx.rng`), HUD layers,
+  sound record (`TLAudio.events`, `TLAudio.count`) and ball group. Another pack cannot see or touch them, and two
+  packs may stand on the same coordinates without meeting.
+- **Stay in pack coordinates.** Build under `ctx.root`, place with `position`. A pack is simulated at its own
+  origin today; code that reads `global_position` or passes a literal position to a call that wants a world
+  position works only while that holds (see `kernel/world/BENCH.md`, test 5).
+- **`TLContext.current` is "the pack the kernel is calling right now"**, not "the pack of the process". It is set
+  during `_pack_setup`, `_pack_start`, `_pack_tick`, the bot's calls, while the scene tree ticks the pack's nodes
+  (`_physics_process`, `_process`), and while a kernel primitive hands you a signal (`TLTrigger.entered`,
+  `TLContact.hit`, `TLBall.bounced`, `TLDamage.broken`, `TLRules` signals). In a world it is null everywhere else:
+  in a signal you connected yourself to a raw engine node (an `Area3D` or a `Timer` of your own, both bypasses), a
+  static kernel call such as `TLAudio.play` has no pack and is recorded for nobody. Kernel code uses
+  `TLContext.of(node)`.
+- **Engine nodes that query physics by themselves** (`RayCast3D`, `ShapeCast3D`, `SpringArm3D`) and
+  `get_world_3d().direct_space_state` look into the viewport's default space, where a world keeps no pack: they
+  find nothing. Ask the kernel (`TLLaws.surface_under`, a `TLTrigger`); kernel code uses
+  `TLContext.space_state_of(node)`. Joints were not tried in a world. No seed, example, kit or rig uses any of them.
+- **A node of yours with a `process_physics_priority` other than 0** is ticked outside the bracket that names your
+  pack (the kernel's own `TLContact` is, and asks `TLContext.of`). Keep the default priority.
+- **Not in a world yet**: the watchdog thread (a runaway `_pack_tick` hangs the whole world), windowed play and
+  capture (one camera, one HUD on screen), `on_leave`, `footprint`.

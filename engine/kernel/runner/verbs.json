@@ -51,5 +51,32 @@
         "test": {"type": "string", "default": ""}
       }
     }
+  },
+  "modes_note": "N2. World modes of the host (kernel/world/). They are not verify verbs: no tl.verify/1 report, no --pack, no level; they print tl.world/1 lines. host.gd's MODE_OPTIONS table must equal this list (the same selftest case). tools/world.sh is the wrapper.",
+  "modes": {
+    "world": {
+      "options": {
+        "packs": {"type": "paths", "required": true, "note": "comma-separated pack directories"},
+        "frames": {"type": "ints", "default": 3600, "note": "ticks of each pack's own clock; one value or one per pack"},
+        "seeds": {"type": "ints", "default": 1},
+        "at": {"type": "string", "default": "0:0:0", "note": "x:y:z per pack: where the pack stands in the world"},
+        "spacing": {"type": "float", "default": 0, "note": "pack i stands at (i * spacing, 0, 0) when --at is not given"},
+        "every": {"type": "ints", "default": 1, "note": "the pack gets one world tick in N"},
+        "pause": {"type": "string", "default": "", "note": "<pack index|all>:<from world tick>:<ticks>, several separated by ;"},
+        "mode": {"type": "string", "default": "smoke", "note": "smoke (nobody plays) or bot (each pack's first test plays it)"},
+        "space": {"type": "string", "default": "own", "note": "own (one physics space per pack) or shared (the default space; a measurement control)"},
+        "trace": {"type": "int", "default": 0, "note": "record a state hash every N pack ticks"},
+        "hold": {"type": "int", "default": 0, "note": "world ticks to keep running after every pack has finished (all switched off)"},
+        "state": {"type": "flag", "default": false, "note": "include each pack's _pack_state in its line"},
+        "out": {"type": "path", "default": "", "note": "also write the lines to this file"}
+      }
+    },
+    "world-bench": {
+      "options": {
+        "only": {"type": "string", "default": "", "note": "run only the tests whose name contains this"},
+        "quick": {"type": "flag", "default": false},
+        "out-dir": {"type": "path", "default": "<engine>/kernel/world"}
+      }
+    }
   }
 }

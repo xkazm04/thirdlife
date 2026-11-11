@@ -21,7 +21,7 @@ const PRESETS: Dictionary = {
 	&"goal_flash": {"color": Color(1.0, 0.95, 0.6), "amount": 50, "speed": 8.0, "spread": 180.0, "gravity": 0.0, "size": 0.12, "life": 30},
 }
 
-static var _warned: Dictionary = {}
+# N2: the warn-once table is per pack (TLContext.first_time).
 
 
 static func presets() -> PackedStringArray:
@@ -53,8 +53,7 @@ static func attach(preset: StringName, target: Node3D, opts: Dictionary = {}) ->
 static func _make(preset: StringName, opts: Dictionary, one_shot: bool) -> TLVfxNode:
 	TLContext.require("vfx", "TLVfx")
 	if not PRESETS.has(preset):
-		if not _warned.has(preset):
-			_warned[preset] = true
+		if TLContext.first_time("vfx|" + String(preset)):
 			push_error("TLVfx: unknown preset '%s' (presets: %s)" % [preset, ", ".join(presets())])
 		preset = &"dust"
 	for k: String in opts.keys():

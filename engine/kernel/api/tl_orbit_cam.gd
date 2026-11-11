@@ -77,7 +77,7 @@ func yaw_basis() -> Basis:
 
 ## Interactive play only: drag with the right mouse button to orbit, wheel to zoom. Verify runs never get here.
 func _unhandled_input(event: InputEvent) -> void:
-	var ctx: TLContext = TLContext.current
+	var ctx: TLContext = TLContext.of(self)   # an engine callback: in a world no pack is current here
 	if ctx == null or ctx.input == null or not ctx.input.accept_devices or not current:
 		return
 	if event is InputEventMouseMotion and (event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_RIGHT:

@@ -27,12 +27,14 @@ var total: int = 0
 var _alive: Array = []                # [node, born_frame]
 var _frame: int = 0
 var _next_point: int = 0
+var _ctx: TLContext = null            # N2: the pack this spawner belongs to (its seeded generator picks and jitters)
 
 
 static func create(factory_: Callable, opts: Dictionary = {}) -> TLSpawner:
 	TLContext.require("spawn", "TLSpawner")
 	var s: TLSpawner = TLSpawner.new()
 	s.factory = factory_
+	s._ctx = TLContext.current
 	for k: String in opts.keys():
 		if OPTIONS.has(k):
 			s.set(k, opts[k])
@@ -50,7 +52,9 @@ func spawn_now() -> Node3D:
 		push_error("TLSpawner: the factory must return a Node3D")
 		return null
 	var node: Node3D = made
-	var rng: RandomNumberGenerator = TLContext.current.rng if TLContext.current != null else RandomNumberGenerator.new()
+	if _ctx == null:
+		_ctx = TLContext.of(self)
+	var rng: RandomNumberGenerator = _ctx.rng if _ctx != null else RandomNumberGenerator.new()
 	var idx: int = _next_point % points.size()
 	if order == &"random":
 		idx = rng.randi_range(0, points.size() - 1)

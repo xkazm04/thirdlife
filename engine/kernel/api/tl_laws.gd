@@ -15,7 +15,8 @@ const FALLBACK: String = "concrete"
 static var _materials: Dictionary = {}
 static var _pairs: Dictionary = {}
 static var _loaded: bool = false
-static var _warned: Dictionary = {}
+# N2: _materials and _pairs are shared and read-only after load_tables(); the warn-once table is per pack
+# (TLContext.first_time).
 static var impulse_per_hardness: float = 40.0
 
 
@@ -90,8 +91,7 @@ static func material(id: String) -> Dictionary:
 	_ensure()
 	if _materials.has(id):
 		return _materials[id]
-	if not _warned.has(id):
-		_warned[id] = true
+	if TLContext.first_time("laws|" + id):
 		push_error("TLLaws: unknown material '%s' (known: %s); using %s" % [id, ", ".join(ids()), FALLBACK])
 	return _materials.get(FALLBACK, {"density": 2400.0, "friction": 0.75, "restitution": 0.1, "hardness": 6.5,
 		"flammability": 0.0, "sound": "concrete", "breaks_into": "stone"})
@@ -195,7 +195,7 @@ static func impact_threshold(id: String) -> float:
 ## `material` is "" for an untagged collider. `exclude` holds RIDs (a body's own `get_rid()`).
 static func surface_under(world_node: Node3D, from: Vector3, depth: float, exclude: Array = [],
 		down: Vector3 = Vector3.DOWN) -> Dictionary:
-	var space: PhysicsDirectSpaceState3D = world_node.get_world_3d().direct_space_state
+	var space: PhysicsDirectSpaceState3D = TLContext.space_state_of(world_node)   # N2: the pack's own space
 	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from + down * depth)
 	var rids: Array[RID] = []
 	for r: Variant in exclude:

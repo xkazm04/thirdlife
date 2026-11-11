@@ -146,6 +146,9 @@ func place(at: Vector3, facing: float = 0.0) -> void:
 	velocity = Vector3.ZERO
 
 
+var _ctx: TLContext = null
+
+
 func _physics_process(delta: float) -> void:
 	_frame += 1
 	grounded = is_on_floor()
@@ -207,4 +210,6 @@ func _physics_process(delta: float) -> void:
 				TLDamage.report(rb, impulse, self)
 	if rig != null:
 		rig.call("set_locomotion", global_transform.basis.inverse() * velocity, is_on_floor())
-		rig.call("tick", TLContext.current.frame if TLContext.current != null else _frame)
+		if _ctx == null:
+			_ctx = TLContext.of(self)        # N2: the pack this biped belongs to, not "the pack of the process"
+		rig.call("tick", _ctx.frame if _ctx != null else _frame)

@@ -64,6 +64,12 @@ func start(options: Dictionary) -> void:
 	mode = str(opts.get("mode", "smoke"))
 	result_path = str(opts.get("result", ""))
 	pack_dir = Manifest.resolve_dir(str(opts.get("pack", "")))
+	if str(opts.get("mode", "smoke")) == "play" and not pack_dir.is_empty():
+		var fence_errors: Array = (load("res://kernel/runner/lint.gd") as GDScript).run(pack_dir)["errors"]
+		if not fence_errors.is_empty():
+			print("[tl] play refused: lint did not pass (%d finding(s)); first: %s" % [fence_errors.size(), str(fence_errors[0])])
+			get_tree().quit(1)
+			return
 	frames_target = int(opts.get("frames", 3600))
 	if mode == "play":
 		frames_target = 1 << 40        # interactive: until Esc or the window closes
@@ -101,7 +107,9 @@ func _load_pack() -> bool:
 	for e: String in TLLaws.load_tables():
 		load_errors.append({"kind": "engine", "file": "res://kernel/data", "message": e})
 	ctx = TLContext.new()
-	TLContext.current = ctx
+	TLContext.current = ctx        # one pack in this process: it stays "the pack being called" for the whole run
+	ctx.holder = self              # N2: kernel nodes find their pack through the holder (TLContext.of)
+	set_meta(&"tl_ctx", ctx)
 	ctx.manifest = m
 	ctx.pack_dir = pack_dir
 	ctx.pack_id = str(m["id"])
@@ -451,7 +459,7 @@ func _capture() -> void:
 			"message": "no camera view '%s'; the pack registered: %s" % [cam_name, ", ".join(ctx.cameras.views())]})
 	else:
 		ctx.cameras.activate(cam_name)
-		TLHud.hide_all()                # captures are of the world, without the HUD
+		TLHud.hide_all(ctx)             # captures are of the world, without the HUD
 		get_tree().paused = true        # freeze the sim at exactly this physics frame while the image is drawn
 		for i: int in 3:
 			await RenderingServer.frame_post_draw

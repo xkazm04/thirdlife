@@ -175,6 +175,9 @@ func place(at: Vector3, facing: float = 0.0) -> void:
 		PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY, Vector3.ZERO)
 
 
+var _ctx: TLContext = null
+
+
 func _physics_process(delta: float) -> void:
 	_frame += 1
 	var wr: float = float(_metrics.get("wheel_radius", 0.34))
@@ -197,7 +200,9 @@ func _physics_process(delta: float) -> void:
 	var steer_angle: float = -steer * deg_to_rad(lerpf(max_steer_degrees, min_steer_degrees, speed_share))
 	var driven: Array = [drive != &"rear", drive != &"rear", drive != &"front", drive != &"front"]
 	var n_driven: float = 4.0 if drive == &"all" else 2.0
-	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	if _ctx == null:
+		_ctx = TLContext.of(self)            # N2: the pack this vehicle belongs to
+	var space: PhysicsDirectSpaceState3D = TLContext.space_state_of(self, _ctx)   # N2: the pack's own space
 	var ray_len: float = suspension_travel + wr
 	var com_world: Vector3 = xf * center_of_mass
 	for i: int in 4:
@@ -270,4 +275,4 @@ func _physics_process(delta: float) -> void:
 		rig.call("set_param", &"suspension", [wheel_compression[0] - suspension_travel * 0.5, wheel_compression[1] - suspension_travel * 0.5,
 			wheel_compression[2] - suspension_travel * 0.5, wheel_compression[3] - suspension_travel * 0.5])
 		rig.call("set_param", &"nitro", 1.0 if nitro_active else 0.0)
-		rig.call("tick", TLContext.current.frame if TLContext.current != null else _frame)
+		rig.call("tick", _ctx.frame if _ctx != null else _frame)

@@ -114,7 +114,7 @@ static func create(opts: Dictionary = {}) -> TLBall:
 		b.name = str(opts["name"])
 	if opts.has("group"):
 		b.add_to_group(str(opts["group"]))
-	b.add_to_group(&"tl_ball")
+	b.add_to_group(TLContext.current.ball_group if TLContext.current != null else &"tl_ball")   # N2: per pack
 	TLLaws.apply(b, b.material_id)
 	b.contact = TLContact.new()
 	b.contact.name = "TLContact"

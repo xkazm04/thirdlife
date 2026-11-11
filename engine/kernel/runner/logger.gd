@@ -12,6 +12,10 @@ var _script_errors: int = 0
 var _engine_errors: int = 0
 var _warnings: int = 0
 var frame: int = -1                # set by the worker; -1 while loading
+# N2 (a world of several packs): the host names the pack it is calling; errors are also counted under that name.
+var tag: String = ""
+var _by_tag: Dictionary = {}       # tag -> [script errors, engine errors]
+var _warning_texts: Array = []     # the first distinct engine warnings (a dropped-contact warning must be seen)
 
 
 func _log_error(function: String, file: String, line: int, code: String, rationale: String, _editor_notify: bool,
@@ -19,6 +23,9 @@ func _log_error(function: String, file: String, line: int, code: String, rationa
 	if error_type == ERROR_TYPE_WARNING:
 		_mutex.lock()
 		_warnings += 1
+		var wtext: String = rationale if not rationale.is_empty() else code
+		if _warning_texts.size() < 20 and not _warning_texts.has(wtext):
+			_warning_texts.append(wtext)
 		_mutex.unlock()
 		return
 	if error_type == ERROR_TYPE_SHADER:
@@ -58,6 +65,10 @@ func _log_error(function: String, file: String, line: int, code: String, rationa
 		_script_errors += 1
 	else:
 		_engine_errors += 1
+	if not tag.is_empty():
+		var counts: Array = _by_tag.get(tag, [0, 0])
+		counts[0 if kind == "script_error" else 1] = int(counts[0 if kind == "script_error" else 1]) + 1
+		_by_tag[tag] = counts
 	if _seen.has(key):
 		_seen[key] = int(_seen[key]) + 1
 	else:
@@ -66,6 +77,8 @@ func _log_error(function: String, file: String, line: int, code: String, rationa
 			var e: Dictionary = {"kind": kind, "file": rel, "line": where_line, "message": message, "function": function}
 			if frame >= 0:
 				e["frame"] = frame
+			if not tag.is_empty():
+				e["pack"] = tag
 			e["_key"] = key
 			_entries.append(e)
 	_mutex.unlock()
@@ -95,6 +108,21 @@ func _relative(file: String) -> String:
 			f = ProjectSettings.globalize_path(f)
 		return f.substr(pack_dir.length() + 1)
 	return f
+
+
+## N2: [script errors, engine errors] counted while the host had named `tag_` as the pack being called.
+func counts_of(tag_: String) -> Array:
+	_mutex.lock()
+	var c: Array = (_by_tag.get(tag_, [0, 0]) as Array).duplicate()
+	_mutex.unlock()
+	return c
+
+
+func warning_texts() -> Array:
+	_mutex.lock()
+	var w: Array = _warning_texts.duplicate()
+	_mutex.unlock()
+	return w
 
 
 ## Thread-safe copy: {errors: [...], script_errors, engine_errors, warnings}. `count` is added to repeated errors.

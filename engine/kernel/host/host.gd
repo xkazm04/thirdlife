@@ -24,6 +24,12 @@ const OPTIONS: Dictionary = {
 	"bot": ["pack", "report", "seed", "frames", "test"],
 	"capture": ["pack", "report", "seed", "cam", "frame", "out", "res", "test"],   # --test: kernel extension, see API.md
 }
+## N2: the world modes (kernel/world/). They are not verify verbs: no tl.verify/1 report, no --pack, no level.
+## kernel/runner/verbs.json lists them under "modes"; a selftest case compares both tables with that file.
+const MODE_OPTIONS: Dictionary = {
+	"world": ["packs", "frames", "seeds", "at", "spacing", "every", "pause", "mode", "space", "trace", "hold", "state", "out"],
+	"world-bench": ["only", "quick", "out-dir"],
+}
 const BUDGET_FRAME_MS_P99: float = 8.0
 const BUDGET_NODES: int = 5000
 const BUDGET_BODIES: int = 600
@@ -61,8 +67,36 @@ func _ready() -> void:
 		add_child(w)
 		w.call("start", opts)
 		return
+	if MODE_OPTIONS.has(verb):
+		_start_mode(bad_args)
+		return
 	_t0 = Time.get_ticks_msec()
 	_supervise(bad_args)
+
+
+# ------------------------------------------------------------------------------------------------- world modes
+## N2. `world` runs several packs in this process (kernel/world/world.gd); `world-bench` measures (bench.gd).
+func _start_mode(bad_args: PackedStringArray) -> void:
+	var problem: String = ""
+	if not bad_args.is_empty():
+		problem = "unexpected argument(s): %s (options are --name=value)" % " ".join(bad_args)
+	for k: String in opts.keys():
+		if not (MODE_OPTIONS[verb] as Array).has(k):
+			problem = "unknown option --%s for '%s' (allowed: %s)" % [k, verb, ", ".join(PackedStringArray(MODE_OPTIONS[verb]))]
+	for k: String in ["out", "out-dir"]:
+		if opts.has(k):
+			opts[k] = _win_path(str(opts[k]))
+	if problem.is_empty():
+		problem = _ensure_import()
+	if not problem.is_empty():
+		print(JSON.stringify({"schema": "tl.world/1", "kind": "world", "errors": [problem]}, "", false))
+		get_tree().quit(2)
+		return
+	var script: String = "res://kernel/world/world.gd" if verb == "world" else "res://kernel/world/bench.gd"
+	var w: Node = (load(script) as GDScript).new()
+	w.name = "World"
+	add_child(w)
+	w.call("start", opts)
 
 
 # ------------------------------------------------------------------------------------------------- supervisor
