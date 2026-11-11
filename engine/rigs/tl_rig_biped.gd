@@ -13,9 +13,14 @@ const CROUCH: float = 0.84   # two leg segments of 0.42 m: hips drop = CROUCH * 
 
 var _model: Node3D
 var _stick: Node3D
+var _hammer: Node3D
+var _helmet_built: bool = false
 var _skates: Array = []
 var _stick_on: bool = false
 var _tri_extra: int = 0
+var stride_k: float = 1.0   # stride-rate multiplier (review tool; 1 = shipped)
+var amp_override: float = -1.0   # swing amplitude override (review tool; < 0 = from speed)
+var _amp: float = 1.0   # swing amplitude of the walk and run pose functions (set from the speed by _loco_pose)
 
 
 func setup(p: Dictionary) -> void:
@@ -26,7 +31,7 @@ func setup(p: Dictionary) -> void:
 	_model.name = "Model"
 	_model.scale = Vector3.ONE * float(p["scale"])
 	add_child(_model)
-	var sk: Skeleton3D = make_skeleton(TLRigBipedMesh.BONES)
+	var sk: Skeleton3D = make_skeleton(TLRigBipedMesh.final_bones())
 	var s: float = float(p["scale"])
 	_metrics = {"height": 2.0 * s, "radius": 0.3 * s, "eye_height": 1.765 * s, "bones": sk.get_bone_count(), "triangles": 0}
 	_rebuild_mesh(sk)
@@ -34,7 +39,7 @@ func setup(p: Dictionary) -> void:
 		_upper[sk.find_bone(b)] = true
 	add_socket("hand_r", "RightHand", Vector3(0.29, 0.845, -0.03))
 	add_socket("hand_l", "LeftHand", Vector3(-0.29, 0.845, -0.03))
-	add_socket("head", "Head", Vector3(0, 2.0, 0))
+	add_socket("head", "Head", Vector3(0, 2.0 if not _helmet() else 2.0, 0))
 	add_socket("back", "UpperChest", Vector3(0, 1.35, 0.2))
 	add_socket("foot_r", "RightFoot", Vector3(0.11, 0.0, 0))
 	add_socket("foot_l", "LeftFoot", Vector3(-0.11, 0.0, 0))
@@ -51,6 +56,7 @@ func setup(p: Dictionary) -> void:
 	add_clip("fall", 1.0, false, _fall, false, true)
 	add_clip("carry", 0.9, true, _carry)
 	add_clip("work", 0.8, true, _work)
+	_build_hammer()
 	_param_changed("stick", p["stick"])
 	_param_changed("mode", p["mode"])
 	_face(1.0, 0.0)
@@ -60,21 +66,56 @@ func setup(p: Dictionary) -> void:
 func _rebuild_mesh(sk: Skeleton3D) -> void:
 	var look: Dictionary = TLRigBipedMesh.LOOK.duplicate()
 	look.merge(params.get("colors", {}), true)
-	var mk: TLMesh = TLRigBipedMesh.build_mesh(sk, look, bool(params["backpack"]))
+	_helmet_built = _helmet()
+	var mk: TLMesh = TLRigBipedMesh.build_mesh(sk, look, bool(params["backpack"]), _helmet_built)
 	attach_skinned(_model, sk, mk, "biped")
 	_metrics["triangles"] = mk.tri_count + _tri_extra
+
+
+## headgear "auto" = a team helmet (and the hockey kit) in skate mode, nothing in walk mode.
+func _helmet() -> bool:
+	var h: String = String(params.get("headgear", "auto"))
+	return h == "helmet" or (h == "auto" and String(params.get("mode", "walk")) == "skate")
+
+
+## prop "auto" = the stick in skate mode; `stick = true` still forces it; "hammer" goes with the `work` clip.
+func _prop() -> String:
+	var pr: String = String(params.get("prop", "auto"))
+	if bool(params.get("stick", false)) and pr in ["auto", "stick"]:
+		return "stick"
+	if pr == "auto":
+		return "stick" if String(params.get("mode", "walk")) == "skate" else "none"
+	return pr
+
+
+func _build_hammer() -> void:
+	_hammer = Node3D.new()
+	_hammer.name = "Hammer"
+	var mk: TLMesh = TLMesh.new(74)
+	mk.bar(Vector3(0, 0.12, 0), Vector3(0, -0.34, 0), 0.03, 0.04, "wood_light", Color.WHITE, 0.004)
+	mk.rbox(Vector3(0.09, 0.09, 0.26), "steel_dark", Color.WHITE, 0.025, Vector3(0, -0.34, -0.02))
+	mk.rbox(Vector3(0.095, 0.095, 0.07), "steel_light", Color.WHITE, 0.02, Vector3(0, -0.34, -0.17))
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.name = "HammerMesh"
+	mi.mesh = mk.build("hammer")
+	_hammer.add_child(mi)
+	_hammer.rotation_degrees = Vector3(0.0, 0.0, 0.0)
+	socket(&"hand_r").add_child(_hammer)
+	_hammer.visible = false
+	_tri_extra += mk.tri_count
+	_metrics["triangles"] = int(_metrics["triangles"]) + mk.tri_count
 
 
 func _build_stick() -> void:
 	_stick = Node3D.new()
 	_stick.name = "Stick"
 	var mk: TLMesh = TLMesh.new(72)
-	var key: String = String((params.get("colors", {}) as Dictionary).get("stick", "wood_dark"))
+	var key: String = String((params.get("colors", {}) as Dictionary).get("stick", "wood_light"))
 	# grip point at the origin; the shaft runs up to the butt and down to the blade, which lies across (towards -X)
-	mk.bar(Vector3(0, 0.55, 0), Vector3(0, -1.02, 0), 0.035, 0.05, key, Color.WHITE, 0.005)
-	mk.box(Vector3(0.05, 0.1, 0.04), "black", Color.WHITE, 0.01, Vector3(0, 0.51, 0))
-	mk.hull([Vector3(0.03, -1.02, -0.012), Vector3(0.03, -0.94, -0.012), Vector3(-0.30, -1.02, -0.012), Vector3(-0.30, -0.955, -0.012),
-		Vector3(0.03, -1.02, 0.012), Vector3(0.03, -0.94, 0.012), Vector3(-0.30, -1.02, 0.012), Vector3(-0.30, -0.955, 0.012)], "black")
+	mk.bar(Vector3(0, 0.55, 0), Vector3(0, -1.02, 0), 0.05, 0.065, key, Color.WHITE, 0.008)
+	mk.box(Vector3(0.07, 0.12, 0.06), "black", Color.WHITE, 0.01, Vector3(0, 0.50, 0))
+	mk.hull([Vector3(0.035, -1.03, -0.02), Vector3(0.035, -0.90, -0.02), Vector3(-0.38, -1.03, -0.02), Vector3(-0.38, -0.93, -0.02),
+		Vector3(0.035, -1.03, 0.02), Vector3(0.035, -0.90, 0.02), Vector3(-0.38, -1.03, 0.02), Vector3(-0.38, -0.93, 0.02)], "black")
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	mi.name = "StickMesh"
 	mi.mesh = mk.build("stick")
@@ -85,7 +126,7 @@ func _build_stick() -> void:
 	_metrics["triangles"] = int(_metrics["triangles"]) + mk.tri_count
 	var tip: Node3D = Node3D.new()
 	tip.name = "blade"
-	tip.position = Vector3(-0.13, -1.0, 0)
+	tip.position = Vector3(-0.17, -1.0, 0)
 	_stick.add_child(tip)
 	_sockets["stick_blade"] = tip
 
@@ -107,18 +148,30 @@ func _build_skates() -> void:
 
 func _param_changed(pname: String, value: Variant) -> void:
 	match pname:
-		"stick":
-			_stick_on = bool(value)
-			_stick.visible = _stick_on
+		"stick", "prop":
+			_apply_prop()
+		"headgear":
+			_rebuild_mesh(_sk)
 		"mode":
 			for s: MeshInstance3D in _skates:
 				s.visible = String(value) == "skate"
+			_apply_prop()
+			if _helmet() != _helmet_built:
+				_rebuild_mesh(_sk)
 			# on blades the body stands 5 cm higher
 			_model.position.y = 0.05 * float(params["scale"]) if String(value) == "skate" else 0.0
 		"colors":
 			_rebuild_mesh(_sk)
 		"expression":
 			_expr()
+
+
+func _apply_prop() -> void:
+	var pr: String = _prop()
+	_stick_on = pr == "stick"
+	_stick.visible = _stick_on
+	if _hammer != null:
+		_hammer.visible = pr == "hammer"
 
 
 func _expr() -> void:
@@ -155,7 +208,15 @@ func _advance() -> void:
 	else:
 		var w_run: float = smoothstep(2.6, 4.2, v)
 		rate = lerpf(clampf(v / 1.4, 0.6, 1.5) / 0.9, clampf(v / 4.5, 0.8, 1.4) / 0.6, w_run)
-	_phase = fposmod(_phase + rate * DT, 1.0)
+	_phase = fposmod(_phase + rate * stride_k * DT, 1.0)
+
+
+## Swing amplitude of the walk / run pose from the ground speed: a planted foot must move back at the speed of the body,
+## and the foot's backward speed is (cadence x swing), so the swing follows the speed at a fixed cadence (P3 foot-slide fix).
+## Measured with `look.sh slip` (a planted foot's ground speed, signed mean = 0 at the values below): 0.62 at 0.8 to 2 m/s, rising
+## to 0.78 at a run; below 0.8 m/s the cadence is already at its floor, so the swing follows the speed.
+func _stride_amp(v: float) -> float:
+	return 0.62 * clampf(v / 0.8, 0.4, 1.0) + 0.16 * smoothstep(1.6, 4.5, v)
 
 
 func _loco_pose() -> Dictionary:
@@ -170,11 +231,13 @@ func _loco_pose() -> Dictionary:
 	else:
 		var w_walk: float = smoothstep(0.15, 0.8, v)
 		var w_run: float = smoothstep(2.6, 4.2, v)
+		_amp = amp_override if amp_override >= 0.0 else _stride_amp(v)
 		out = _idle(t)
 		if w_walk > 0.0:
 			out = _mixe(out, _walk(_phase * 0.9), w_walk)
 		if w_run > 0.0:
 			out = _mixe(out, _run(_phase * 0.6), w_run)
+	_amp = 1.0   # the clips played by name (walk, carry, run) keep their authored swing
 	var lean: float = clampf(float(params.get("lean", 0.0)), -1.0, 1.0)
 	if lean != 0.0:
 		out = add_pose(out, {"Hips": Vector3(0, 0, -16.0 * lean), "Spine": Vector3(0, 0, -5.0 * lean)})
@@ -263,6 +326,7 @@ func _idle(t: float) -> Dictionary:
 
 
 func _walk(t: float) -> Dictionary:
+	var A: float = _amp
 	var p: float = TAU * t / 0.9
 	var s: float = sin(p)
 	var c: float = cos(p)
@@ -273,10 +337,10 @@ func _walk(t: float) -> Dictionary:
 		"Backpack": Vector3(3.5 * cos(2.0 * p - 1.0), 0, 2.0 * sin(p - 0.6)), "Hair": Vector3(4.0 * cos(2.0 * p - 1.4), 0, 0),
 		"LeftToes": Vector3(22.0 * maxf(0.0, -s), 0, 0), "RightToes": Vector3(22.0 * maxf(0.0, s), 0, 0),
 		"Spine": Vector3(-2.0, -5.0 * s, 0), "Chest": Vector3(-2.0, -6.0 * s, 0), "Neck": Vector3(2.0, 4.0 * s, 0), "Head": Vector3(3.0, 3.0 * s, 0),
-		"LeftUpperArm": Vector3(5.0 - 28.0 * s, 0, -6.0), "LeftLowerArm": Vector3(16.0 + 14.0 * maxf(0.0, -s), 0, 0), "LeftHand": Vector3(0, 0, 0),
-		"RightUpperArm": Vector3(5.0 + 28.0 * s, 0, 6.0), "RightLowerArm": Vector3(16.0 + 14.0 * maxf(0.0, s), 0, 0), "RightHand": Vector3(0, 0, 0),
-		"LeftUpperLeg": Vector3(3.0 + 30.0 * s, 0, 0), "LeftLowerLeg": Vector3(kl, 0, 0), "LeftFoot": Vector3(-(30.0 * s + kl) * 0.55, 0, 0),
-		"RightUpperLeg": Vector3(3.0 - 30.0 * s, 0, 0), "RightLowerLeg": Vector3(kr, 0, 0), "RightFoot": Vector3(-(-30.0 * s + kr) * 0.55, 0, 0),
+		"LeftUpperArm": Vector3(5.0 - 28.0 * (0.5 + 0.5 * A) * s, 0, -6.0), "LeftLowerArm": Vector3(16.0 + 14.0 * maxf(0.0, -s), 0, 0), "LeftHand": Vector3(0, 0, 0),
+		"RightUpperArm": Vector3(5.0 + 28.0 * (0.5 + 0.5 * A) * s, 0, 6.0), "RightLowerArm": Vector3(16.0 + 14.0 * maxf(0.0, s), 0, 0), "RightHand": Vector3(0, 0, 0),
+		"LeftUpperLeg": Vector3(3.0 + 30.0 * A * s, 0, 0), "LeftLowerLeg": Vector3(kl, 0, 0), "LeftFoot": Vector3(-(30.0 * A * s + kl) * 0.55, 0, 0),
+		"RightUpperLeg": Vector3(3.0 - 30.0 * A * s, 0, 0), "RightLowerLeg": Vector3(kr, 0, 0), "RightFoot": Vector3(-(-30.0 * A * s + kr) * 0.55, 0, 0),
 	}
 	if _stick_on:
 		out.merge(_stick_arms(-7.0, -4.0), true)
@@ -284,6 +348,7 @@ func _walk(t: float) -> Dictionary:
 
 
 func _run(t: float) -> Dictionary:
+	var A: float = _amp
 	var p: float = TAU * t / 0.6
 	var s: float = sin(p)
 	var c: float = cos(p)
@@ -294,10 +359,10 @@ func _run(t: float) -> Dictionary:
 		"Backpack": Vector3(7.0 * cos(2.0 * p - 1.0), 0, 3.0 * sin(p - 0.6)), "Hair": Vector3(9.0 * cos(2.0 * p - 1.4), 0, 0),
 		"LeftToes": Vector3(30.0 * maxf(0.0, -s), 0, 0), "RightToes": Vector3(30.0 * maxf(0.0, s), 0, 0),
 		"Spine": Vector3(-4.0, -7.0 * s, 0), "Chest": Vector3(-4.0, -9.0 * s, 0), "Neck": Vector3(8.0, 6.0 * s, 0), "Head": Vector3(8.0, 4.0 * s, 0),
-		"LeftUpperArm": Vector3(18.0 - 48.0 * s, 0, -8.0), "LeftLowerArm": Vector3(82.0, 0, 0), "LeftHand": Vector3(0, 0, 0),
-		"RightUpperArm": Vector3(18.0 + 48.0 * s, 0, 8.0), "RightLowerArm": Vector3(82.0, 0, 0), "RightHand": Vector3(0, 0, 0),
-		"LeftUpperLeg": Vector3(20.0 + 46.0 * s, 0, 0), "LeftLowerLeg": Vector3(kl, 0, 0), "LeftFoot": Vector3(-(46.0 * s + kl) * 0.4, 0, 0),
-		"RightUpperLeg": Vector3(20.0 - 46.0 * s, 0, 0), "RightLowerLeg": Vector3(kr, 0, 0), "RightFoot": Vector3(-(-46.0 * s + kr) * 0.4, 0, 0),
+		"LeftUpperArm": Vector3(18.0 - 48.0 * (0.5 + 0.5 * A) * s, 0, -8.0), "LeftLowerArm": Vector3(82.0, 0, 0), "LeftHand": Vector3(0, 0, 0),
+		"RightUpperArm": Vector3(18.0 + 48.0 * (0.5 + 0.5 * A) * s, 0, 8.0), "RightLowerArm": Vector3(82.0, 0, 0), "RightHand": Vector3(0, 0, 0),
+		"LeftUpperLeg": Vector3(20.0 + 46.0 * A * s, 0, 0), "LeftLowerLeg": Vector3(kl, 0, 0), "LeftFoot": Vector3(-(46.0 * A * s + kl) * 0.4, 0, 0),
+		"RightUpperLeg": Vector3(20.0 - 46.0 * A * s, 0, 0), "RightLowerLeg": Vector3(kr, 0, 0), "RightFoot": Vector3(-(-46.0 * A * s + kr) * 0.4, 0, 0),
 	}
 	if _stick_on:
 		out.merge(_stick_arms(-20.0, 0.0), true)

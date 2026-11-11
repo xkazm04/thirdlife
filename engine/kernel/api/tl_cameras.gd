@@ -15,10 +15,13 @@ var _shake_left: int = 0
 var _shake_cam: Camera3D = null
 var _tick: int = 0
 var _log_px: bool = false
+var _log_cam: FileAccess = null
 
 
 func _ready() -> void:
 	_log_px = OS.get_environment("TL_LOOK_PX") != ""
+	if OS.get_environment("TL_LOOK_CAM") != "":   # P3: TL_LOOK_CAM=<file>: one line per frame, the active camera's place and aim (motion review)
+		_log_cam = FileAccess.open(OS.get_environment("TL_LOOK_CAM"), FileAccess.WRITE)
 
 
 ## A fixed named view. List the name in pack.json `cameras` so the verifier knows it exists.
@@ -179,6 +182,10 @@ func _physics_process(_delta: float) -> void:
 		active.v_offset = k * sin(t * 3.17 + 1.9)
 		_shake_cam = active
 		_shake_left -= 1
+	if _log_cam != null and active != null and active.is_inside_tree():
+		var fw: Vector3 = -active.global_transform.basis.z
+		_log_cam.store_line("[cam] f=%d p=%.4f,%.4f,%.4f d=%.5f,%.5f,%.5f" % [_tick, active.global_position.x, active.global_position.y, active.global_position.z, fw.x, fw.y, fw.z])
+		_log_cam.flush()
 	if _log_px and _tick % 30 == 0:
 		for key: String in _subjects:
 			var s: Node3D = subject_of(StringName(key))

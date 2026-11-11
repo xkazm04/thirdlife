@@ -15,11 +15,40 @@ const BONES: Array = [
 	["LeftUpperLeg", "Hips", Vector3(-0.11, 0.94, 0)], ["LeftLowerLeg", "LeftUpperLeg", Vector3(-0.11, 0.52, 0)], ["LeftFoot", "LeftLowerLeg", Vector3(-0.11, 0.10, 0)], ["LeftToes", "LeftFoot", Vector3(-0.11, 0.03, -0.12)],
 	["RightUpperLeg", "Hips", Vector3(0.11, 0.94, 0)], ["RightLowerLeg", "RightUpperLeg", Vector3(0.11, 0.52, 0)], ["RightFoot", "RightLowerLeg", Vector3(0.11, 0.10, 0)], ["RightToes", "RightFoot", Vector3(0.11, 0.03, -0.12)],
 ]
+## P3: a larger head (the concept's characters are about four heads tall) and larger hands, in the same 2.0 m of height.
+## The head parts are scaled about the base of the head and dropped onto the collar, so the top stays at 2.0 m; the face
+## bones move with them (their pivots must stay on the eyes, the brows and the mouth).
+const HEAD_K: float = 1.24
+const HEAD_PIVOT: Vector3 = Vector3(0, 1.56, 0)
+const HEAD_DROP: float = 0.095
+const HAND_K: float = 1.38
+const HEAD_BONES: Array = ["Hair", "LeftEye", "RightEye", "Brows", "MouthCorners", "Glints"]
+
+
+static func head_pt(v: Vector3) -> Vector3:
+	return HEAD_PIVOT + (v - HEAD_PIVOT) * HEAD_K - Vector3(0, HEAD_DROP, 0)
+
+
+static func head_xf() -> Transform3D:
+	return Transform3D(Basis.from_scale(Vector3.ONE * HEAD_K), HEAD_PIVOT - HEAD_PIVOT * HEAD_K - Vector3(0, HEAD_DROP, 0))
+
+
+## BONES with the head's children moved to where the enlarged head puts them.
+static func final_bones() -> Array:
+	var out: Array = []
+	for b: Array in BONES:
+		if HEAD_BONES.has(String(b[0])):
+			out.append([b[0], b[1], head_pt(b[2])])
+		else:
+			out.append(b)
+	return out
+
+
 const LOOK: Dictionary = {"skin": "skin", "hair": "hair", "top": "jacket", "trim": "jacket_trim", "legs": "pants", "boots": "boots", "pack": "pack", "strap": "strap"}
 
 
 ## L = palette keys per part (LOOK overlaid with the rig's `colors`); pack = with the backpack.
-static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool) -> TLMesh:
+static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool, helmet: bool = false) -> TLMesh:
 	var mk: TLMesh = TLMesh.new(71)
 	mk.skinned = true
 	var B: Callable = func(n: String) -> void: mk.bone = sk.find_bone(n)
@@ -32,6 +61,12 @@ static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool) -> TLMesh:
 	mk.rbox(Vector3(0.41, 0.20, 0.265), L["top"], Color(0.94, 0.94, 0.94), 0.08, Vector3(0, 1.17, 0))
 	B.call("Chest")
 	mk.rbox(Vector3(0.48, 0.32, 0.30), L["top"], Color.WHITE, 0.12, Vector3(0, 1.38, 0))
+	if helmet:   # hockey kit: a white hem band and a back number patch, so a team reads from above and from behind
+		B.call("Spine")
+		mk.rbox(Vector3(0.425, 0.05, 0.275), "white", Color.WHITE, 0.02, Vector3(0, 1.10, 0), 1)
+		B.call("Chest")
+		mk.rbox(Vector3(0.20, 0.17, 0.02), "white", Color.WHITE, 0.01, Vector3(0, 1.36, 0.152), 1)
+		mk.rbox(Vector3(0.52, 0.045, 0.34), "white", Color.WHITE, 0.02, Vector3(0, 1.51, 0), 1)
 	B.call("UpperChest")
 	mk.rbox(Vector3(0.33, 0.11, 0.33), L["trim"], Color.WHITE, 0.05, Vector3(0, 1.52, 0), 1)
 	B.call("Chest")
@@ -51,21 +86,33 @@ static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool) -> TLMesh:
 		mk.box(Vector3(0.15, 0.15, 0.03), L["strap"], Color.WHITE, 0.02, Vector3(0, 1.40, 0.34))
 	B.call("Neck")
 	mk.capsule(Vector3(0, 1.49, 0), Vector3(0, 1.58, 0), 0.062, L["skin"], Color(0.9, 0.9, 0.9), 8, 1)
+	mk.push(head_xf())
 	B.call("Head")
 	mk.rbox(Vector3(0.37, 0.34, 0.35), L["skin"], Color.WHITE, 0.14, Vector3(0, 1.75, 0), 3)
-	# hair: a few large calm shapes on their own bone (cap, back, swept fringe, quiff)
-	B.call("Hair")
-	mk.rbox(Vector3(0.41, 0.17, 0.39), L["hair"], Color.WHITE, 0.085, Vector3(0, 1.895, 0.025))
-	mk.rbox(Vector3(0.40, 0.25, 0.14), L["hair"], Color(0.9, 0.9, 0.9), 0.065, Vector3(0, 1.80, 0.16))
-	mk.push_at(Vector3(0.02, 1.885, -0.165), Vector3(-14, 0, -7))
-	mk.rbox(Vector3(0.36, 0.09, 0.11), L["hair"], Color(1.1, 1.08, 1.0), 0.045)
-	mk.pop()
-	mk.push_at(Vector3(0.05, 2.0, -0.07), Vector3(-28, 0, -10))
-	mk.rbox(Vector3(0.24, 0.13, 0.22), L["hair"], Color(1.12, 1.1, 1.0), 0.06)
-	mk.pop()
-	mk.push_at(Vector3(-0.06, 1.99, 0.1), Vector3(22, 0, 12))
-	mk.rbox(Vector3(0.2, 0.1, 0.18), L["hair"], Color(1.0, 1.0, 1.0), 0.05)
-	mk.pop()
+	if helmet:
+		# hockey helmet: a shell in the top colour, a stripe, ear guards and a short brim, hair showing at the back only
+		B.call("Head")
+		mk.rbox(Vector3(0.43, 0.16, 0.42), L["top"], Color.WHITE, 0.07, Vector3(0, 1.905, 0.02), 2)
+		mk.rbox(Vector3(0.115, 0.175, 0.43), "white", Color.WHITE, 0.04, Vector3(0, 1.91, 0.02), 1)
+		mk.rbox(Vector3(0.40, 0.04, 0.10), L["top"], Color(0.85, 0.85, 0.85), 0.018, Vector3(0, 1.84, -0.17), 1)
+		for sx: float in [-1.0, 1.0]:
+			mk.rbox(Vector3(0.05, 0.13, 0.15), L["top"], Color(0.9, 0.9, 0.9), 0.02, Vector3(sx * 0.215, 1.77, 0.02), 1)
+		B.call("Hair")
+		mk.rbox(Vector3(0.36, 0.10, 0.10), L["hair"], Color(0.9, 0.9, 0.9), 0.04, Vector3(0, 1.76, 0.185))
+	else:
+		# hair: a few large calm shapes on their own bone (cap, back, swept fringe, quiff)
+		B.call("Hair")
+		mk.rbox(Vector3(0.41, 0.17, 0.39), L["hair"], Color.WHITE, 0.085, Vector3(0, 1.895, 0.025))
+		mk.rbox(Vector3(0.40, 0.25, 0.14), L["hair"], Color(0.9, 0.9, 0.9), 0.065, Vector3(0, 1.80, 0.16))
+		mk.push_at(Vector3(0.02, 1.885, -0.165), Vector3(-14, 0, -7))
+		mk.rbox(Vector3(0.36, 0.09, 0.11), L["hair"], Color(1.1, 1.08, 1.0), 0.045)
+		mk.pop()
+		mk.push_at(Vector3(0.05, 2.0, -0.07), Vector3(-28, 0, -10))
+		mk.rbox(Vector3(0.24, 0.13, 0.22), L["hair"], Color(1.12, 1.1, 1.0), 0.06)
+		mk.pop()
+		mk.push_at(Vector3(-0.06, 1.99, 0.1), Vector3(22, 0, 12))
+		mk.rbox(Vector3(0.2, 0.1, 0.18), L["hair"], Color(1.0, 1.0, 1.0), 0.05)
+		mk.pop()
 	# face: ears, cheeks, nose and the mouth bar on the head; eyes, brows and mouth corners on their own bones (set_face)
 	B.call("Head")
 	# pass 4: every face part is laid ON the head's curved surface (the head is a box inflated by a 0.14 m sphere, so only
@@ -81,17 +128,17 @@ static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool) -> TLMesh:
 		B.call(String(side[0]) + "Eye")
 		mk.push_at(Vector3(ex, 1.765, -0.1735), Vector3(-90, -float(side[1]) * 14.5, 0))
 		mk.push(Transform3D(Basis.from_scale(Vector3(0.9, 1.0, 1.1)), Vector3.ZERO))
-		mk.cyl(0.04, 0.012, 16, "black")
+		mk.cyl(0.040, 0.012, 16, "black")
 		mk.pop()
 		mk.pop()
 	B.call("Glints")   # eye highlights on their own bone, so a blink can remove them (pass 3 left a white sliver)
 	for sx: float in [-1.0, 1.0]:
 		mk.push_at(Vector3(sx * 0.0808 + sx * 0.013 - sx * 0.002, 1.781, -0.1735 - 0.0075), Vector3(-90, -sx * 14.5, 0))
-		mk.cyl(0.0115, 0.004, 10, "white")
+		mk.cyl(0.0125, 0.004, 10, "white")
 		mk.pop()
 	B.call("Brows")
 	for sx: float in [-1.0, 1.0]:
-		mk.capsule(Vector3(sx * 0.047, 1.829, -0.170), Vector3(sx * 0.126, 1.823, -0.1445), 0.0125, L["hair"], Color.WHITE, 8, 2)
+		mk.capsule(Vector3(sx * 0.047, 1.829, -0.170), Vector3(sx * 0.126, 1.823, -0.1445), 0.016, L["hair"], Color.WHITE, 8, 2)
 	B.call("MouthCorners")   # the mouth is one shape: a half-ellipse smile with a row of teeth, tilted to the chin's slope
 	mk.push_at(Vector3(0, 1.6485, -0.1590), Vector3(-30, 0, 0))
 	var mp: Array = []
@@ -102,6 +149,7 @@ static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool) -> TLMesh:
 	mk.hull(mp, "roof", Color(0.62, 0.55, 0.55))
 	mk.box(Vector3(0.076, 0.010, 0.004), "white", Color.WHITE, 0.0, Vector3(0, 0.0095, -0.0065))
 	mk.pop()
+	mk.pop()   # head_xf
 	# arms (mirrored), legs
 	for side: Array in [["Left", -1.0], ["Right", 1.0]]:
 		var sx: float = side[1]
@@ -115,8 +163,10 @@ static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool) -> TLMesh:
 		mk.capsule(Vector3(x, 1.14, 0), Vector3(x, 0.97, 0), 0.076, L["top"], Color(0.95, 0.95, 0.95), 8, 2, 0.068)
 		mk.cyl(0.08, 0.05, 8, L["trim"], Color.WHITE, -1.0, Vector3(x, 0.925, 0))
 		B.call(String(side[0]) + "Hand")
+		mk.push(Transform3D(Basis.from_scale(Vector3.ONE * HAND_K), Vector3(x, 0.925, 0) * (1.0 - HAND_K)))   # P3: larger hands, about the wrist
 		mk.rbox(Vector3(0.115, 0.15, 0.125), L["boots"], Color(0.8, 0.8, 0.8), 0.055, Vector3(x, 0.845, -0.005))
 		mk.capsule(Vector3(x - sx * 0.045, 0.885, -0.04), Vector3(x - sx * 0.085, 0.825, -0.065), 0.026, L["boots"], Color(0.88, 0.88, 0.88), 6, 1)
+		mk.pop()
 		var lx: float = sx * 0.11
 		B.call(String(side[0]) + "UpperLeg")
 		mk.rbox(Vector3(0.19, 0.46, 0.22), L["legs"], Color.WHITE, 0.085, Vector3(lx, 0.74, 0))

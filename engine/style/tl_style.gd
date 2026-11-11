@@ -341,6 +341,7 @@ static func _register_globals() -> void:
 	_g("g_rim", _v4(_lin(t["rim"]), float(t["rim_k"])))
 	_g("g_mottle", Vector4(t["mottle"], 0, 0, 0))
 	_g("g_shade2", _v4(_lin(t.get("shade_ground", t["shade"])), float(t.get("shade_grad", 0.0))))
+	_g("g_rim2", _v4(_lin(t.get("rim2", "#000000")), float(t.get("rim2_k", 0.0))))   # P3: cool rim on the shade side
 	_g("g_bounce", _v4(_lin(t.get("bounce", "#000000")), float(t.get("bounce_k", 0.0))))
 	var sd: Vector3 = Basis.from_euler(Vector3(deg_to_rad(-float(sun["elev"])), deg_to_rad(180.0 - float(sun["azim"])), 0.0)).z
 	_g("g_sun_dir", Vector4(sd.x, sd.y, sd.z, 0.0))

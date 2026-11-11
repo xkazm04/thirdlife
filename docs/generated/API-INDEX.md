@@ -420,9 +420,12 @@ Consts: `CROUCH`, `UPPER`
 
 > The biped's skinned mesh (ported from spike/lab/b/src/kit_biped.gd, pass 4): rounded toy forms, rigid weights,
 
-Consts: `BONES`, `LOOK`
+Consts: `BONES`, `HAND_K`, `HEAD_BONES`, `HEAD_DROP`, `HEAD_K`, `HEAD_PIVOT`, `LOOK`
 
-- `static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool) -> TLMesh`
+- `static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool, helmet: bool = false) -> TLMesh`
+- `static func final_bones() -> Array`
+- `static func head_pt(v: Vector3) -> Vector3`
+- `static func head_xf() -> Transform3D`
 
 ## TLRigBot
 

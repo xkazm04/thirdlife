@@ -12,6 +12,7 @@ global uniform vec4 g_amb_sky;
 global uniform vec4 g_amb_gnd;
 global uniform vec4 g_hatch;
 global uniform vec4 g_rim;
+global uniform vec4 g_rim2;      // P3: rgb = cool rim light on the side that faces away from the sun, a = strength
 global uniform vec4 g_mottle;
 global uniform vec4 g_haze;
 global uniform vec4 g_shade2;    // rgb = shade colour of walls and undersides (ground-lit), a = how much the shade follows the normal
@@ -160,7 +161,7 @@ vec2 surface_detail(int cls, vec3 P, int fax, int gax) {
 		// edge. The marks (tufts, pebbles, scratches) are ground_marks(), because they depend on grass or dirt.
 		tn = (vn2(q * 0.12) - 0.5) * 0.10;
 		float pn = vn2(q * 0.055) * 0.62 + vn2(q * 0.19 + 7.0) * 0.38;
-		float pfw = fwidth(pn) * 1.5 + 0.004;
+		float pfw = fwidth(pn) * 1.5 + 0.09;   // P3: soft patches (were a crisp wobbly edge)
 		tn += (smoothstep(0.5 - pfw, 0.5 + pfw, pn) - 0.5) * 0.15;
 	} else if (cls == 6) {     // rock: wobbly strata, per-layer tone
 		float sv = P.y * 1.5 + vn2(P.xz * 0.5) * 1.1 + vn2(q * 1.7) * 0.25;
@@ -297,6 +298,12 @@ void fragment() {
 			vec2 away = -INV_VIEW_MATRIX[2].xz;
 			away = length(away) > 0.01 ? normalize(away) : vec2(0.0, -1.0);
 			vec4 gk = ground_marks(lp.xz * m1.w, away) * fade * step(0.5, wn.y);
+			// P3: grass is not one lime: broad soft patches run from a warm olive-yellow to a cool blue-green, in two scales
+			float gpa = vn2(lp.xz * m1.w * 0.034 + 5.0) * 0.6 + vn2(lp.xz * m1.w * 0.11 + 2.0) * 0.4;
+			float gpb = vn2(lp.xz * m1.w * 0.21 + 9.0);
+			vec3 gtint = mix(vec3(0.70, 0.95, 0.90), vec3(1.18, 1.05, 0.56), smoothstep(0.30, 0.70, gpa));
+			gtint *= 1.0 + (gpb - 0.5) * 0.10;
+			c = mix(c, c * gtint, gm * 0.9);
 			c = mix(c, c * vec3(0.50, 0.74, 0.46), gk.x * gm);                    // tufts grow in grass only
 			c = mix(c, c * vec3(0.70, 0.62, 0.60), gk.w * (1.0 - gm) * 0.9);      // scratches and grit lie on dirt only
 			c = mix(c, c * 1.22 + 0.02, gk.y * (1.0 - gk.z));                     // pebbles lie anywhere: a light body ...
@@ -320,6 +327,25 @@ void fragment() {
 			}
 		} else {
 			c = mix(c, c * g_detail.w, dt.x * fade);
+			if (mclass == 6 && g_strata.y > 0.0) {
+				// P3: far cliffs and mesas keep drawn strata at any distance: bands of world height with a tone per band, ink seams
+				// that stay at least a pixel wide, and vertical erosion streaks. Near rock keeps its own pattern above.
+				float farw = smoothstep(g_detail.y * 0.4, g_detail.z, vdepth);
+				float band = g_strata.y * 2.0;
+				float fsv = wpos.y / band + vnoise(vec3(wpos.x * 0.045, 2.0, wpos.z * 0.045)) * 1.4 + vnoise(wpos * 0.31) * 0.12;
+				float fl = floor(fsv + 0.5);
+				float ffw = fwidth(fsv);
+				float fkeep = 1.0 - smoothstep(0.7, 1.4, ffw);
+				float fseam = (1.0 - smoothstep(max(0.02, ffw * 0.7), max(0.02, ffw * 0.7) + ffw * 1.3 + 0.002, abs(fract(fsv + 0.5) - 0.5))) * step(0.3, h21(vec2(fl, 6.0)));
+				float fu = (wpos.x * 0.8 + wpos.z) / 3.4 + h21(vec2(fl, 8.0)) * 7.0;
+				float fufw = fwidth(fu);
+				float fst = (1.0 - smoothstep(max(0.02, fufw * 0.6), max(0.02, fufw * 0.6) + fufw * 1.3 + 0.002, abs(fract(fu + 0.5) - 0.5))) * step(0.55, h21(vec2(floor(fu + 0.5), fl))) * (1.0 - smoothstep(0.5, 1.2, fufw));
+				float steepf = 1.0 - smoothstep(0.55, 0.85, wn.y);
+				c *= 1.0 + (h21(vec2(fl, 2.0)) - 0.5) * 0.30 * farw * steepf;
+				c = mix(c, c * vec3(0.55, 0.47, 0.66), max(fseam * 0.75, fst * 0.55) * farw * steepf * fkeep);
+				// the sunlit side of the mesa picks up the warm light; the top stays pale like a drawn cap
+				c = mix(c, c * vec3(1.14, 1.04, 0.92), farw * (1.0 - steepf) * 0.5);
+			}
 		}
 	}
 	if (m2.z > 0.5) {
@@ -392,5 +418,6 @@ void light() {
 	float fr = pow(1.0 - clamp(dot(N, VIEW), 0.0, 1.0), 2.5);
 	float back = clamp(ndl + 0.35, 0.0, 1.0);
 	SPECULAR_LIGHT += g_rim.rgb * g_rim.a * fr * back * smoothstep(0.1, 0.6, ATTENUATION);
+	SPECULAR_LIGHT += g_rim2.rgb * g_rim2.a * fr * smoothstep(0.1, -0.4, ndl);   // P3: the cool edge that turns a shape away from the light
 	}
 }

@@ -38,3 +38,9 @@ ctx.cameras.frame(car, 0.2)                           # seed_drive
 ctx.cameras.set_subject(&"court", paddles["player"])  # seed_paddle: a fixed view of the whole court
 ctx.cameras.shake(0.12, 14)                           # when a block breaks
 ```
+
+
+## P3
+- `TLChaseCam` defaults: `follow` 0.18 (was 0.3), `aim` 0.3 (was 0.5), `stiffness` 0.07 (was 0.12). Measured on seed_drive with the TL_LOOK_CAM log
+  (1800 frames of the lap bot): position jerk p95 116 -> 89 m/s3, max 239 -> 157; the car's size in the chase view 0.158 .. 0.254 of the frame height.
+- `TL_LOOK_CAM=<file>`: the active camera's place and aim, one line per frame (`[cam] f= p=x,y,z d=x,y,z`), for motion review (`python` over the file: speed, jerk, turn rate).
