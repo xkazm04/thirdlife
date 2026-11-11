@@ -35,7 +35,18 @@
         "report": {"type": "path", "required": true},
         "seed": {"type": "int", "default": 1},
         "frames": {"type": "int", "default": 36000},
-        "test": {"type": "string", "default": "<first entry of the manifest's tests>"}
+        "test": {"type": "string", "default": "<first entry of the manifest's tests>"},
+        "record": {"type": "path", "default": "", "note": "P7. write the run's input as a tl.input/1 record to this file"}
+      }
+    },
+    "replay": {
+      "level": "V2",
+      "note": "P7. A recorded session again, headless: the record's samples and nothing else (no bot, no device). Seed, length and mode are the record's.",
+      "options": {
+        "pack": {"type": "path", "required": true},
+        "report": {"type": "path", "required": true},
+        "input": {"type": "path", "required": true, "note": "a tl.input/1 record (play --record, bot --record)"},
+        "record": {"type": "path", "default": "", "note": "write the replay's own input as a record (it equals --input)"}
       }
     },
     "capture": {

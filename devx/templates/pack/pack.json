@@ -1,7 +1,7 @@
 {
   "id": "game.{{name}}",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "{{title}}",
   "capabilities": ["physics", "camera", "input"],
   "entry": "scripts/main.gd",

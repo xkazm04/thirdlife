@@ -5,7 +5,9 @@ import os from "node:os";
 import path from "node:path";
 import { classify } from "./flaky.mjs";
 
-const TIMEOUT_MS = 15 * 60 * 1000;
+// P7: 30 minutes (it was 15). This is a wall-clock limit on a script that grows with every package: with four other
+// builders on the machine kernel.selftest (now 20 cases longer) ran past 15 minutes without a single failing case.
+const TIMEOUT_MS = 30 * 60 * 1000;
 
 export function runScriptStep(ctx, script, label) {
   if (!ctx.resolveGodot()) return { ok: false, detail: "no Godot found: set TL_GODOT or .tl/local.json {\"godot\": ...} (tl doctor)" };

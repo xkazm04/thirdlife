@@ -1,15 +1,26 @@
-export const summary = "static architecture checks (walls, prefixes, uids, verbs, schemas, size ratchet, API index); no Godot";
+export const summary = "static architecture checks (walls, prefixes, uids, verbs, schemas, size ratchet, API index, API v1 contract); no Godot";
 import fs from "node:fs";
 import path from "node:path";
 import { REPO, printVerdict, step } from "../ctx.mjs";
 import { runRules, computeBaseline, diffBaseline, loadRules, BASELINE_REL } from "../arch/core.mjs";
 import { generateIndex, INDEX_FILE } from "../arch/apiindex.mjs";
+import { writeApi, makeBrokenTree, API_FILE } from "../arch/apicontract.mjs";
 import { makeIo } from "../arch/util.mjs";
 
-const USAGE = "tl arch [--rule <id>[,<id>]] [--verbose] | --index | --update-baseline | --list";
+const USAGE = "tl arch [--rule <id>[,<id>]] [--verbose] [--root <dir>] | --index [--freeze] | --broken-demo <empty dir> | --update-baseline | --list";
 
 export async function run(args, ctx = {}, root = REPO) {
   if (args.includes("--help")) { console.log(USAGE); return 0; }
+  const rooti = args.indexOf("--root");            // P7: judge another tree (a test tree, a merge candidate)
+  if (rooti >= 0) { root = path.resolve(args[rooti + 1] ?? ""); args = args.filter((_, i) => i !== rooti && i !== rooti + 1); if (!fs.existsSync(root)) { console.error(`tl arch: --root ${root} does not exist`); return 2; } }
+  const demo = args.indexOf("--broken-demo");      // P7: a copy of the API sources in which TLBall.shoot lost its parameter
+  if (demo >= 0) {
+    const dir = path.resolve(args[demo + 1] ?? "");
+    if (!args[demo + 1] || (fs.existsSync(dir) && fs.readdirSync(dir).length)) { console.error("tl arch --broken-demo <dir>: give a directory that is empty or does not exist"); return 2; }
+    const b = makeBrokenTree(makeIo(root), root, dir);
+    console.log(`test tree: ${dir}\nchanged ${b.victim}: \`${b.was}\` -> \`${b.now}\`\nnow: tl arch --root ${dir} --rule api-v1`);
+    return run(["--rule", "api-v1", "--verbose"], ctx, dir);
+  }
   const rules = loadRules();
   if (args.includes("--list")) { for (const r of rules) console.log(`${r.id.padEnd(16)} ${r.severity.padEnd(8)} ${r.description}`); return 0; }
   if (args.includes("--index")) {
@@ -19,7 +30,9 @@ export async function run(args, ctx = {}, root = REPO) {
     const before = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null;
     fs.writeFileSync(f, text);
     console.log(`${before === text ? "unchanged" : "wrote"} ${INDEX_FILE} (${text.split("\n").length - 1} lines)`);
-    return 0;
+    const api = writeApi(makeIo(root), root, { freeze: args.includes("--freeze") });
+    for (const l of api.lines) console.log(l);
+    return api.ok ? 0 : 1;
   }
   if (args.includes("--update-baseline")) {
     const { next, old } = computeBaseline({ root, rules });

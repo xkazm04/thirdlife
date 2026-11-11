@@ -129,6 +129,22 @@ const FENCE: Array = [
 	["\\b(UPNP\\w*|DTLSServer|SceneMultiplayer)\\b", "UPNP/DTLSServer/SceneMultiplayer", "N4"],
 	["\\b(Java(?!ScriptBridge\\b)\\w+|JNISingleton|EngineDebugger)\\b", "JavaClassWrapper/EngineDebugger", "N4"],
 	["\\b(FileDialog|LinkButton)\\b", "FileDialog/LinkButton", "a pack opens no file chooser and no web address (N4)"],
+	# ---- P7 (2026-11-11): the fence follows the seam: no device read past ctx.input, no clock but the tick count, no other pack's nodes
+	["\\bInputEvent\\w+", "InputEvent*", "a device event read past ctx.input is not in the input record (P7)"],
+	["(?m)^[ \\t]*func\\s+_(unhandled_key_input|shortcut_input|gui_input)\\s*\\(", "_gui_input handler", "input goes through ctx.input (P7)"],
+	["\\bset_process_(unhandled_key_|unhandled_|shortcut_)?input\\b", "set_process_input", "the kernel switches a pack's event handlers off; input goes through ctx.input (P7)"],
+	["\\b(get_(global|local)_mouse_position|warp_mouse|get_mouse_position)\\b", "mouse position", "the pointer is ctx.input (TLInput.LOOK_X, LOOK_Y, ZOOM) (P7)"],
+	["\\b(Button|CheckBox|CheckButton|OptionButton|MenuButton|TextureButton|LineEdit|TextEdit|CodeEdit|SpinBox|HSlider|VSlider|ItemList|TabBar|PopupMenu|ColorPicker\\w*)\\s*\\.\\s*new\\b", "a control that takes clicks or keys", "it reads a device past ctx.input; text and bars on screen are TLHud (P7)"],
+	["\\baccept_devices\\b", "accept_devices", "the kernel decides when devices are read (P7)"],
+	["(?m)^[ \\t]*func\\s+_process\\s*\\(", "_process", "it runs once per drawn picture, not once per tick: the game's code runs in _pack_tick (or _physics_process), 60 times a second (P7)"],
+	["\\bget_(physics_)?process_delta_time\\b", "get_process_delta_time", "time is ctx.frame (60 per second) (P7)"],
+	["\\b(create_tween|Tween|Tweener|AnimationPlayer|AnimationTree|SceneTreeTimer)\\b", "Tween/AnimationPlayer", "it runs on the engine's clock, not on the tick count; move things in _pack_tick (P7)"],
+	["\\bTimer\\b", "Timer", "it runs on the engine's clock; count frames, or use the clock of TLRules (P7)"],
+	["\\bget_world_3d\\b", "get_world_3d()", "the world belongs to every pack in it; ask TLLaws.surface_under or a TLTrigger (P7)"],
+	["\\.\\s*holder\\b(?!\\s*\\()", ".holder", "the node above the pack is the kernel's; the pack lives under ctx.root (P7)"],
+	["ctx\\s*\\.\\s*_\\w+|\\.\\s*(input|cameras)\\s*\\.\\s*_\\w+", "a private member of the kernel", "names that start with _ are the kernel's side of ctx (P7)"],
+	["\\bTLContext\\s*\\.\\s*(current|enter|leave)\\b", "TLContext.current", "the pack being called is the kernel's business; a pack keeps the ctx it was given (P7)"],
+	["\\b(get_nodes_in_group|get_first_node_in_group|get_node_count_in_group)\\b", "get_nodes_in_group", "a group spans every pack of the world; keep your own list (P7)"],
 ]
 
 ## [regex, primitive that exists for it, pattern label]
