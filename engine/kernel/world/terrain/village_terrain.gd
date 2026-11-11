@@ -29,6 +29,7 @@ var ponds: Array = []                # {c: Vector2, r: float, y: float}
 var road_d: PackedFloat32Array = PackedFloat32Array()      # per grid vertex: distance to the nearest road sample
 var river_d: PackedFloat32Array = PackedFloat32Array()
 var build_ms: int = 0
+var relief: float = 1.0              # P6: scale of the land's own height (0 = a flat study ground; pads, roads and river still stamp)
 var _nl: FastNoiseLite = FastNoiseLite.new()
 var _nm: FastNoiseLite = FastNoiseLite.new()
 var _nh: FastNoiseLite = FastNoiseLite.new()
@@ -84,7 +85,7 @@ func base_h(x: float, z: float) -> float:
 	var ledge: float = smoothstep(-3.0, 3.0, zc - z) * smoothstep(-300.0, -255.0, z) * smoothstep(-205.0, -120.0, x) * (1.0 - smoothstep(170.0, 260.0, x))
 	h += 9.5 * ledge
 	var m: float = smoothstep(0.0, 60.0, minf(minf(x - x0, x1() - x), minf(z - z0, z1() - z)))
-	return h * m
+	return h * m * relief
 
 
 func _v(i: int, j: int) -> int:

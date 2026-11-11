@@ -1,4 +1,4 @@
-extends Node3D
+extends "res://kernel/world/draw/draw_life.gd"
 ## N5b. The draw layer of a world: every pack is SIMULATED at the origin of its own physics space (N2), and DRAWN at
 ## its plot. This node never touches a physics body, a transform of a pack node, or anything a state hash reads.
 ##
@@ -18,51 +18,41 @@ extends Node3D
 ## into the never-culled class. "aabb" refreshes every box every frame (exact, one comparison per instance per frame),
 ## "margin" never culls anything of a non-stage pack.
 ##
-## Far packs (`far_mode` "auto" beyond `far_dist`, or "all"): the pack's holder is hidden and ONE merged mesh built
-## from its static style geometry at placement is shown instead (`_build_standin`).
-
-const NEVER: float = 16384.0
-const PLOT: StringName = &"tl_plot"
-const WATCH: int = 24
-const CLIP: StringName = &"tl_clip"
-
-var mech: String = "a"
-var cull: String = "auto"
-var far_mode: String = "off"            # off | auto | all
-var far_dist: float = 150.0
-var far_margin: float = 0.15            # hysteresis: far beyond dist * (1 + m), near again inside dist * (1 - m)
-var rim_band: float = 9.0                # metres inside the plot edge over which a pack's ground is bent to the world's
-var standin_min: float = 1.2            # metres: a mesh instance whose longest side is shorter is dropped
-var stage: int = 0
-var world: Node = null
-var entries: Array = []                 # one Dictionary per pack
-var scenario: RID
-var sync_usec: PackedInt64Array = PackedInt64Array()
-var _pending: Array = []
-var _shader_ok: Dictionary = {}         # Shader -> bool (declares tl_plot)
-var _pal: Material = null
-var stats: Dictionary = {"a_instances": 0, "mirrors": 0, "light_mirrors": 0, "foreign": 0, "foreign_names": [], "late": 0}
-
-
-## The clip parameter of a pack (toon.gdshader `tl_clip`): radius, rim height, width of the bent band.
-func _clip_v4(e: Dictionary, g: Node) -> Vector4:
-	if not e.has("sheets"):
-		var wide: Array = []
-		_wide_meshes(e["holder"], maxf(30.0, float(e["radius"])), wide)
-		e["sheets"] = wide
-	return Vector4(float(e["radius"]), float(e["rim"]), rim_band, 1.0 if (e["sheets"] as Array).has(g) else 0.0)
+## Far packs (`far_mode` "auto" beyond `far_dist`, or "all"; in a scheduled world the tiers `backdrop` and `ledger`):
+## the pack's holder is hidden and one of two merged PICTURES of it is shown instead (P6, draw/FAR.md):
+##   "mid"  the venue's large forms (instances shorter than `mid_min` dropped) plus signs of life: one mark per moving
+##          body (a box in the body's colour, one multimesh per pack, moved when the pack ticks), a copy of its smoke,
+##          a few of its lights;
+##   "far"  a silhouette: only forms of at least `far_min`, its own ground re-meshed coarsely, normals leaning up so
+##          it is drawn in flat tones with one outline; the marks stay (larger), so the picture still moves.
+## Which of the two is decided per frame by the camera's distance to the plot edge (`picture_far_m`, with a margin
+## both ways). "still" is N5b's stand-in (everything above 1.2 m, nothing moving), kept for comparison:
+## the env variable TL_DRAW_PICTURE=still|mid|far forces one picture on every far pack.
+## At every distance (near too) a kit scoreboard of the pack shows the pack's REAL score (`_build_boards`).
+##
+## P6: the layer is one class in four files (size rule of `tl arch`): draw_base.gd (constants, variables, helpers),
+## draw_pictures.gd (the merged pictures), draw_life.gd (which picture, marks, smoke, lights, score), this file (plots,
+## the stage rule, both offset mechanisms, culling, the per-frame loop, the report).
 
 
 func setup(world_node: Node, plots: Array, radii: Array, rims: Array, stage_index: int) -> void:
 	world = world_node
 	scenario = get_viewport().find_world_3d().scenario
 	_pal = TLStyle.material(&"white")
+	if force_picture.is_empty():              # the viewer may set it (PATCHES-P6 entry 2); until then the env variable
+		force_picture = OS.get_environment("TL_DRAW_PICTURE")
+	var wcfg: Variant = world.get("cfg")          # tiers.json as the world host read it: the loading builder's file
+	if typeof(wcfg) == TYPE_DICTIONARY:
+		picture_far_m = float((wcfg as Dictionary).get("picture_far_m", picture_far_m))
+		var wm: Variant = (wcfg as Dictionary).get("margin_m", {})
+		if typeof(wm) == TYPE_DICTIONARY:
+			picture_margin_m = float((wm as Dictionary).get("picture", picture_margin_m))
 	var holders: Array = world.get("packs")
 	for i: int in holders.size():
 		entries.append({"holder": holders[i], "plot": plots[i], "radius": float(radii[i]) if i < radii.size() else 0.0,
 			"rim": float(rims[i]) if i < rims.size() else 0.0,
 			"clipped": [], "rel": Transform3D.IDENTITY, "a": [], "mirrors": [],
-			"standin": null, "far": false, "placed": false, "standin_info": {}})
+			"pics": {}, "kind": "", "life": {}, "boards": {}, "far": false, "placed": false, "standin_info": {}})
 	get_tree().node_added.connect(_on_node_added)
 	stage = stage_index             # the caller places the world with set_stage()
 
@@ -82,8 +72,7 @@ func set_stage(index: int) -> void:
 			for h: Variant in ctx.huds:
 				if is_instance_valid(h):
 					(h as CanvasLayer).visible = i == stage
-		if e["standin"] != null:
-			_place_standin(e, e["standin"])
+		_place_own(e)
 		if i != stage:
 			_place(e)
 		elif float(e["radius"]) > 0.0:
@@ -111,6 +100,7 @@ func forget_nodes(i: int) -> void:
 	if i >= 0 and i < entries.size():
 		_unplace(entries[i])
 		(entries[i] as Dictionary).erase("sheets")
+		_drop_life(entries[i], false)         # the marks stay where they were: a still picture of a game that is not in memory
 
 
 ## N7. The pack of plot `i` was built again from its seed (next round, back from the ledger): a new holder with new
@@ -123,6 +113,7 @@ func replace_holder(i: int, holder: Node) -> void:
 	e["holder"] = holder
 	e.erase("sheets")
 	e["far"] = false                  # a new holder is visible
+	_drop_life(e, true)               # new nodes: marks, smoke, lights and boards are found again when needed
 	var ctx: TLContext = holder.get("ctx")
 	if ctx != null:
 		for h: Variant in ctx.huds:
@@ -164,14 +155,6 @@ func _walk(e: Dictionary, n: Node) -> void:
 		_walk(e, c)
 
 
-func _plot_v4(rel: Transform3D) -> Vector4:
-	var yaw: float = rel.basis.get_euler().y
-	var v: Vector4 = Vector4(rel.origin.x, rel.origin.y, rel.origin.z, yaw)
-	if v == Vector4.ZERO:
-		v.y = 0.000001          # a pack on the stage's own plot that is not the stage still takes the shifted path
-	return v
-
-
 func _adopt(e: Dictionary, n: VisualInstance3D) -> void:
 	if n.has_meta(&"tl_draw"):
 		return
@@ -196,58 +179,6 @@ func _adopt(e: Dictionary, n: VisualInstance3D) -> void:
 			if (stats["foreign_names"] as Array).size() < 12:
 				(stats["foreign_names"] as Array).append(String(n.get_path()).get_slice("/", 3) + "/.../" + String(n.name))
 	_mirror(e, n)
-
-
-## 1 = every material of the instance is a style shader that knows `tl_plot`; 0 = it carries something else (a pack's
-## own StandardMaterial3D, a default material, a label); the caller mirrors it, so it still stands at its plot.
-func _style_only(n: GeometryInstance3D) -> int:
-	if n.material_override != null:
-		return 1 if _mat_ok(n.material_override) else 0
-	var mesh: Mesh = null
-	if n is MeshInstance3D:
-		mesh = (n as MeshInstance3D).mesh
-		if mesh == null:
-			return 1
-		for s: int in mesh.get_surface_count():
-			if not _mat_ok((n as MeshInstance3D).get_active_material(s)):
-				return 0
-		return 1
-	if n is CPUParticles3D:
-		mesh = (n as CPUParticles3D).mesh
-	elif n is MultiMeshInstance3D and (n as MultiMeshInstance3D).multimesh != null:
-		mesh = (n as MultiMeshInstance3D).multimesh.mesh
-	else:
-		return 0
-	if mesh == null:
-		return 0
-	for s: int in mesh.get_surface_count():
-		if not _mat_ok(mesh.surface_get_material(s)):
-			return 0
-	return 1
-
-
-func _mat_ok(m: Material) -> bool:
-	if not (m is ShaderMaterial) or (m as ShaderMaterial).shader == null:
-		return false
-	var sh: Shader = (m as ShaderMaterial).shader
-	if not _shader_ok.has(sh):
-		_shader_ok[sh] = sh.code.contains("instance uniform vec4 tl_plot")
-	return _shader_ok[sh]
-
-
-## Candidate A culling: the engine culls (camera and every shadow cascade) with the instance's box, which stands where
-## the pack is simulated. `custom_aabb` is in the node's own space: T^-1 * rel * T * box. With no yaw it depends on
-## the node's rotation only, so a node that only slides never needs a refresh.
-func _refresh_aabb(rec: Dictionary, rel: Transform3D) -> void:
-	var g: GeometryInstance3D = rec["node"]
-	var t: Transform3D = g.global_transform
-	rec["t"] = t
-	var box: AABB = g.get_aabb()
-	if box.size == Vector3.ZERO:
-		box = AABB(Vector3(-0.5, -0.5, -0.5), Vector3.ONE)
-	if g is CPUParticles3D:
-		box = box.grow(6.0)
-	g.custom_aabb = t.affine_inverse() * (rel * (t * box))
 
 
 func _mirror(e: Dictionary, n: VisualInstance3D) -> void:
@@ -351,6 +282,8 @@ func _process(_delta: float) -> void:
 				elif bool(e["far"]) and d < far_dist * (1.0 - far_margin):
 					_set_far(e, false, false)
 	for i: int in entries.size():
+		_life(entries[i], i)              # P6: which far picture, marks on the pack's own ticks, the score on its boards
+	for i: int in entries.size():
 		if i == stage:
 			continue
 		var e: Dictionary = entries[i]
@@ -421,12 +354,12 @@ func _set_far(e: Dictionary, far: bool, force: bool) -> void:
 		return
 	e["far"] = far
 	if not is_instance_valid(e["holder"]):
+		_show(e)
 		return
 	var holder: Node3D = e["holder"]
-	if far and e["standin"] == null:
-		_build_standin(e)
-	if e["standin"] != null:
-		(e["standin"] as Node3D).visible = far
+	if far:
+		_ensure_pictures(e)
+	_show(e)
 	if holder.visible == far:
 		holder.visible = not far              # drawing only: no script of a pack is told, no body moves
 		for m: Dictionary in e["mirrors"]:
@@ -438,295 +371,34 @@ func _set_far(e: Dictionary, far: bool, force: bool) -> void:
 				RenderingServer.instance_set_visible((n as VisualInstance3D).get_instance(), false)
 
 
-func _is_triangles(mesh: Mesh, surface: int) -> bool:
-	if mesh is ArrayMesh:
-		return (mesh as ArrayMesh).surface_get_primitive_type(surface) == Mesh.PRIMITIVE_TRIANGLES
-	return mesh is PrimitiveMesh           # boxes, spheres, cylinders: triangles
-
-
-func _under_moving_body(n: Node, top: Node) -> bool:
-	var up: Node = n.get_parent()
-	while up != null and up != top:
-		if up is PhysicsBody3D and not (up is StaticBody3D) and not (up is RigidBody3D and (up as RigidBody3D).freeze):
-			return true
-		if up is Skeleton3D:
-			return true
-		up = up.get_parent()
-	return false
-
-
-## One merged mesh from the pack's static style geometry: palette columns, vertex colours and part-local coordinates
-## kept (so it is drawn by the same palette material, with the same drawn surface detail and the same ink lines);
-## instances smaller than `standin_min`, anything under a moving body or a skeleton, particles, glass and foreign
-## materials dropped.
-## What a stand-in is merged into (a class, not a Dictionary: packed arrays inside a Dictionary are copied on access).
-class Acc:
-	var v: PackedVector3Array = PackedVector3Array()
-	var n: PackedVector3Array = PackedVector3Array()
-	var c: PackedColorArray = PackedColorArray()
-	var uv: PackedVector2Array = PackedVector2Array()
-	var cu: PackedFloat32Array = PackedFloat32Array()
-	var ix: PackedInt32Array = PackedInt32Array()
-	var sheets: Array = []
-	var extra: Dictionary = {}          # Material -> Acc: one more surface per flat-colour toon material (kernel-made boxes)
-	var radius: float = 0.0
-	var rim: float = 0.0
-	var band: float = 0.0
-	var kept: int = 0
-	var dropped_small: int = 0
-	var dropped_moving: int = 0
-	var dropped_other: int = 0
-	var dropped_outside: int = 0
-	var src_tris: int = 0
-
-
-func _build_standin(e: Dictionary) -> void:
-	var t0: int = Time.get_ticks_msec()
-	var holder: Node3D = e["holder"]
-	var acc: Acc = Acc.new()
-	acc.radius = float(e["radius"])
-	acc.rim = float(e["rim"])
-	acc.band = rim_band
-	_clip_v4(e, holder)                       # makes sure e["sheets"] is there
-	acc.sheets = e["sheets"]
-	_collect_standin(holder, holder, acc)
-	var mi: MeshInstance3D = MeshInstance3D.new()
-	mi.name = "Standin_" + String(holder.name)
-	var mesh: ArrayMesh = ArrayMesh.new()
-	var parts: Array = [[acc, _pal]]
-	for mat: Variant in acc.extra:
-		parts.append([acc.extra[mat], mat])
-	var tris: int = 0
-	var verts: int = 0
-	for part: Array in parts:
-		var pa: Acc = part[0]
-		if pa.v.size() == 0:
-			continue
-		var arr: Array = []
-		arr.resize(Mesh.ARRAY_MAX)
-		arr[Mesh.ARRAY_VERTEX] = pa.v
-		arr[Mesh.ARRAY_NORMAL] = pa.n
-		arr[Mesh.ARRAY_COLOR] = pa.c
-		arr[Mesh.ARRAY_TEX_UV] = pa.uv
-		arr[Mesh.ARRAY_CUSTOM0] = pa.cu
-		arr[Mesh.ARRAY_INDEX] = pa.ix
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
-		mesh.surface_set_material(mesh.get_surface_count() - 1, part[1])
-		tris += pa.ix.size() / 3
-		verts += pa.v.size()
-		if pa != acc:
-			acc.src_tris += pa.src_tris
-	if mesh.get_surface_count() > 0:
-		mi.mesh = mesh
-	mi.visible = false
-	_place_standin(e, mi)
-	add_child(mi)
-	e["standin"] = mi
-	e["standin_info"] = {"tris": tris, "vertices": verts, "surfaces": mesh.get_surface_count(),
-		"kept": acc.kept, "dropped_small": acc.dropped_small, "dropped_moving": acc.dropped_moving,
-		"dropped_other": acc.dropped_other, "dropped_outside": acc.dropped_outside, "src_tris": acc.src_tris, "build_ms": Time.get_ticks_msec() - t0}
-
-
-## A stand-in is drawn like the pack it stands for: the node stays at the origin and the shader moves it (candidate A),
-## so the plot cut and the bent rim, which work in the pack's own coordinates, are the same as on the full pack.
-func _place_standin(e: Dictionary, mi: MeshInstance3D) -> void:
-	mi.transform = Transform3D.IDENTITY
-	mi.set_instance_shader_parameter(PLOT, _plot_v4(e["rel"]))
-	if float(e["radius"]) > 0.0:
-		mi.set_instance_shader_parameter(CLIP, Vector4(float(e["radius"]), float(e["rim"]), 0.0, 0.0))    # cut, not bent: the bend is baked
-	if mi.mesh != null:
-		mi.custom_aabb = (e["rel"] as Transform3D) * mi.mesh.get_aabb().grow(4.0)
-
-
-func _collect_standin(n: Node, holder: Node3D, acc: Acc) -> void:
-	if n is Node3D and not (n as Node3D).visible:
-		return
-	if n is MeshInstance3D and (n as MeshInstance3D).mesh != null:
-		var m: MeshInstance3D = n
-		if _under_moving_body(m, holder) or m.get_skin_reference() != null:
-			acc.dropped_moving += 1
-		elif m.mesh.get_aabb().size[m.mesh.get_aabb().get_longest_axis_index()] * m.global_basis.get_scale().x < standin_min:
-			acc.dropped_small += 1
-		elif acc.radius > 0.0 and Vector2(m.global_position.x, m.global_position.z).length() > acc.radius:
-			acc.dropped_outside += 1
-		else:
-			var xf: Transform3D = holder.global_transform.affine_inverse() * m.global_transform
-			for s: int in m.mesh.get_surface_count():
-				var target: Acc = _target(acc, m.get_active_material(s))
-				if target != null and _is_triangles(m.mesh, s):
-					_append(target, m.mesh.surface_get_arrays(s), xf, acc.sheets.has(m))
-					acc.kept += 1
-				else:
-					acc.dropped_other += 1
-	elif n is MultiMeshInstance3D and (n as MultiMeshInstance3D).multimesh != null and (n as MultiMeshInstance3D).multimesh.mesh != null:
-		var mmi: MultiMeshInstance3D = n
-		var mm: MultiMesh = mmi.multimesh
-		var base: Transform3D = holder.global_transform.affine_inverse() * mmi.global_transform
-		var count: int = mm.visible_instance_count if mm.visible_instance_count >= 0 else mm.instance_count
-		for s: int in mm.mesh.get_surface_count():
-			var mat: Material = mmi.material_override if mmi.material_override != null else mm.mesh.surface_get_material(s)
-			if mat != _pal or not _is_triangles(mm.mesh, s):
-				acc.dropped_other += 1
-				continue
-			var arrays: Array = mm.mesh.surface_get_arrays(s)
-			var longest: float = mm.mesh.get_aabb().size[mm.mesh.get_aabb().get_longest_axis_index()]
-			for i: int in count:
-				var it: Transform3D = mm.get_instance_transform(i)
-				if longest * it.basis.get_scale().y < standin_min or acc.v.size() > 600000:
-					acc.dropped_small += 1
-					continue
-				var io: Vector3 = (base * it).origin
-				if acc.radius > 0.0 and Vector2(io.x, io.z).length() > acc.radius:
-					acc.dropped_outside += 1
-					continue
-				_append(acc, arrays, base * it, false)
-				acc.kept += 1
-	for c: Node in n.get_children():
-		_collect_standin(c, holder, acc)
-
-
-## Where a surface of this material goes in the stand-in: the palette material into the first surface, another material
-## of the toon shader (TLStyle.flat_material: the kernel's boxes and balls, in one colour) into a surface of its own,
-## anything else (glass, water, a pack's own material) nowhere.
-func _target(acc: Acc, mat: Material) -> Acc:
-	if mat == _pal:
-		return acc
-	if mat is ShaderMaterial and (mat as ShaderMaterial).shader == (_pal as ShaderMaterial).shader:
-		if not acc.extra.has(mat):
-			var child: Acc = Acc.new()
-			child.radius = acc.radius
-			child.rim = acc.rim
-			child.band = acc.band
-			acc.extra[mat] = child
-		return acc.extra[mat]
-	return null
-
-
-func _append(acc: Acc, a: Array, xf: Transform3D, sheet: bool) -> void:
-	var v: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
-	var count: int = v.size()
-	if count == 0:
-		return
-	var nb: Basis = xf.basis.inverse().transposed()
-	var nrm: Variant = a[Mesh.ARRAY_NORMAL]
-	var col: Variant = a[Mesh.ARRAY_COLOR]
-	var uv: Variant = a[Mesh.ARRAY_TEX_UV]
-	var cu: Variant = a[Mesh.ARRAY_CUSTOM0]
-	var ix: Variant = a[Mesh.ARRAY_INDEX]
-	var has_n: bool = nrm is PackedVector3Array and (nrm as PackedVector3Array).size() == count
-	var has_c: bool = col is PackedColorArray and (col as PackedColorArray).size() == count
-	var has_uv: bool = uv is PackedVector2Array and (uv as PackedVector2Array).size() == count
-	var has_cu: bool = cu is PackedFloat32Array and (cu as PackedFloat32Array).size() == count * 4
-	var out_v: PackedVector3Array = xf * v
-	# the bent rim of toon.gdshader `tl_clip`, baked in: in the merged mesh the shader could not tell a terrain sheet
-	# (bent per vertex) from what stands on it (moved as a whole by the height of its own origin)
-	if acc.radius > 0.0 and acc.band > 0.0:
-		var ro: float = Vector2(xf.origin.x, xf.origin.z).length()
-		var whole: float = (acc.rim - xf.origin.y) * smoothstep(acc.radius - acc.band, acc.radius, ro)
-		if sheet:
-			for k: int in count:
-				var p: Vector3 = out_v[k]
-				p.y += (acc.rim - p.y) * smoothstep(acc.radius - acc.band, acc.radius, Vector2(p.x, p.z).length())
-				out_v[k] = p
-		elif whole != 0.0:
-			for k: int in count:
-				var q: Vector3 = out_v[k]
-				q.y += whole
-				out_v[k] = q
-	var src: PackedInt32Array = ix if (ix is PackedInt32Array and (ix as PackedInt32Array).size() > 0) else PackedInt32Array()
-	if src.is_empty():
-		src.resize(count)
-		for k: int in count:
-			src[k] = k
-	acc.src_tris += src.size() / 3
-	var r: float = acc.radius
-	var r2: float = (r + 3.0) * (r + 3.0)
-	var slot: PackedInt32Array = PackedInt32Array()       # source vertex -> its place in the stand-in, -1 = not used
-	slot.resize(count)
-	slot.fill(-1)
-	var t: int = 0
-	while t + 2 < src.size():
-		# the plot cut of toon.gdshader, per triangle: a triangle wholly outside the plot is not part of the stand-in
-		if r > 0.0:
-			var a0: Vector3 = out_v[src[t]]
-			var a1: Vector3 = out_v[src[t + 1]]
-			var a2: Vector3 = out_v[src[t + 2]]
-			if a0.x * a0.x + a0.z * a0.z > r2 and a1.x * a1.x + a1.z * a1.z > r2 and a2.x * a2.x + a2.z * a2.z > r2:
-				t += 3
-				continue
-		for c3: int in 3:
-			var k: int = src[t + c3]
-			if slot[k] < 0:
-				slot[k] = acc.v.size()
-				acc.v.append(out_v[k])
-				acc.n.append((nb * (nrm as PackedVector3Array)[k]).normalized() if has_n else Vector3.UP)
-				acc.c.append((col as PackedColorArray)[k] if has_c else Color.WHITE)
-				acc.uv.append((uv as PackedVector2Array)[k] if has_uv else Vector2.ZERO)
-				if has_cu:
-					var f: PackedFloat32Array = cu
-					acc.cu.append(f[k * 4])
-					acc.cu.append(f[k * 4 + 1])
-					acc.cu.append(f[k * 4 + 2])
-					acc.cu.append(f[k * 4 + 3])
-				else:
-					acc.cu.append_array(PackedFloat32Array([0.0, 0.0, 0.0, 0.0]))
-			acc.ix.append(slot[k])
-		t += 3
-
-
-## The height of a pack's own ground where its plot ends: the median height of its terrain sheets in a ring around
-## `radius` (the shader bends the ring to exactly this height). The viewer lifts the plot by minus this, so the rim of the pack's ground meets the world's ground.
-## NAN when the pack has no terrain sheet that reaches the ring.
-static func edge_height(holder: Node3D, radius: float) -> float:
-	if radius <= 0.0:
-		return NAN
-	var wide: Array = []
-	_wide_meshes(holder, maxf(30.0, radius), wide)
-	var ys: PackedFloat32Array = PackedFloat32Array()
-	var r_in: float = (radius - 3.0) * (radius - 3.0)
-	var r_out: float = (radius + 4.0) * (radius + 4.0)
-	for m: MeshInstance3D in wide:
-		var xf: Transform3D = holder.global_transform.affine_inverse() * m.global_transform
-		for s: int in m.mesh.get_surface_count():
-			var verts: PackedVector3Array = xf * (m.mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX] as PackedVector3Array)
-			for v: Vector3 in verts:
-				var d2: float = v.x * v.x + v.z * v.z
-				if d2 >= r_in and d2 <= r_out:
-					ys.append(v.y)
-	if ys.is_empty():
-		return NAN         # no ground of its own at the plot edge: the world's ground runs through under it
-	ys.sort()          # the median: a skirt under the far sheet or the foot of a cliff must not decide
-	return ys[ys.size() / 2]
-
-
-## Meshes at least `width` metres wide both ways and flat-ish (wider than tall): the terrain sheets of a pack.
-static func _wide_meshes(n: Node, width: float, out: Array) -> void:
-	if n is MeshInstance3D and (n as MeshInstance3D).mesh != null and (n as MeshInstance3D).visible:
-		var bb: AABB = (n as MeshInstance3D).mesh.get_aabb()
-		if minf(bb.size.x, bb.size.z) >= width and bb.size.y < minf(bb.size.x, bb.size.z):
-			out.append(n)
-	for c: Node in n.get_children():
-		_wide_meshes(c, width, out)
-
-
 # ------------------------------------------------------------------------------------------------ report, cleanup
 func report() -> Dictionary:
 	var far_count: int = 0
 	var standins: Array = []
 	var a_live: int = 0
 	var mirror_live: int = 0
+	var pictures: Dictionary = {}
+	var marks: int = 0
+	var boards: int = 0
 	for e: Dictionary in entries:
 		if bool(e["far"]):
 			far_count += 1
-		if not (e["standin_info"] as Dictionary).is_empty():
-			standins.append(e["standin_info"])
+		for k: String in (e["standin_info"] as Dictionary):
+			var info: Dictionary = ((e["standin_info"] as Dictionary)[k] as Dictionary).duplicate()
+			info["shown"] = bool(e["far"]) and str(e["kind"]) == k
+			standins.append(info)
+		var shown: String = str(e["kind"]) if bool(e["far"]) else "near"
+		pictures[shown] = int(pictures.get(shown, 0)) + 1
+		marks += ((e["life"] as Dictionary).get("movers", []) as Array).size()
+		boards += ((e["boards"] as Dictionary).get("list", []) as Array).size()
 		a_live += (e["a"] as Array).size()
 		mirror_live += (e["mirrors"] as Array).size()
 	var sorted: PackedInt64Array = sync_usec.duplicate()
 	sorted.sort()
 	var p50: float = float(sorted[sorted.size() / 2]) / 1000.0 if sorted.size() > 0 else 0.0
 	return {"mech": mech, "cull": cull, "stage": stage, "far_mode": far_mode, "far_packs": far_count, "a_instances_live": a_live,
-		"mirrors_live": mirror_live, "adopted": stats, "sync_ms_p50": snappedf(p50, 0.0001), "standins": standins}
+		"mirrors_live": mirror_live, "adopted": stats, "sync_ms_p50": snappedf(p50, 0.0001), "standins": standins,
+		"pictures": pictures, "marks": marks, "boards": boards, "picture_far_m": picture_far_m, "force_picture": force_picture}
 
 
 func clear() -> void:
@@ -737,6 +409,9 @@ func clear() -> void:
 			RenderingServer.free_rid(m["rid"])
 		(e["mirrors"] as Array).clear()
 		(e["a"] as Array).clear()
+		for rid: RID in (e["life"] as Dictionary).get("lights", []):
+			RenderingServer.free_rid(rid)
+		(e["life"] as Dictionary).erase("lights")
 	entries.clear()
 	world = null
 

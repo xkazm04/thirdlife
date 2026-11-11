@@ -71,3 +71,96 @@ Resume point. Newest entry last. Times are CEST from `date`.
   Resume point if cut off: read DRAW.md section 9 (limits); nothing is half-done in the code.
 - 02:59 third `view.sh check` on the final files: PASS, 5 of 5, same hashes at the same ticks. far_off / far_all /
   far_full_vs_standin_x3 re-shot with the final code (crane straight in the stand-in). Done; report follows.
+
+## P6 (11 November 2026): what a far game shows, and the land at a distance
+
+Brief: `briefs/BRIEF-P6-FAR.md`. Start 13:22. Resume point at the end of this section.
+
+- 13:26 first tour run in this worktree left an idle window: no class cache yet (`TLContext` not found in view.gd,
+  the same trap as N5b's 02:05). Stopped my own two processes by their tag (`tlworld_58881_14995`), built the cache
+  with `--headless --import`, went on. Lost four minutes.
+- 13:27 `landscape.gd` / `village_terrain.gd`: cfg key `relief` (scale of the land's own height; 0 = flat study
+  ground). `draw/far_study.mjs`: writes the study walks (3 games, 24 crane shots: eye and rise at 50, 150, 300,
+  600 m from the plot edge) and builds the sheets with ffmpeg.
+- 13:32 the study, before: `captures/p6/study/before_full/`, `before_still/`, sheets `before_<game>.jpg`. Looked at
+  all three sheets and four native crops. Findings: (1) beyond 150 m full and stand-in are the same picture at
+  screen size; (2) what is missing in the stand-in and SEEN at 50 to 150 m: skaters, cars, chimney smoke; (3) the
+  kit scoreboard shows "3 : 2" in every game at every distance, full or stand-in: it is a prop with fixed digits,
+  nobody could ever read who is winning from it; (4) from the eye on flat land a venue is a strip on the horizon
+  and only its tall forms read; from a rise the plan reads (oval, white ice, blue seats, the pad ring) out to 600 m.
+- 13:41 draw.gd: two pictures of a far pack instead of one ("mid", "far"), built in one walk; marks (one
+  multimesh per pack, a box per moving body in its colour, moved when the pack ticks); a copy of the pack's smoke;
+  the 4 strongest lights; the real score over every kit scoreboard, at every distance. `TL_DRAW_PICTURE` forces a
+  picture; "still" is N5b's stand-in, kept for comparison.
+- 13:43 first look: marks were boxes twice a skater's size (rest pose with arms out and a stick). Figures now get a
+  slim upright box. 13:46 boards not found: the search stopped at the hidden holder. Fixed.
+- 13:48 the far picture of the drive seed had lost its track, barn and trees: its merged static mesh is 114 m wide,
+  so it counts as a "sheet" and the coarse grid ate it. The grid is now only for the kit's terrain (`Terrain*`).
+- 13:50 score boards stay in the far picture too (one score at every distance).
+- 13:51 village before the land changes: `captures/p6/land_before/`.
+- 13:55 land: worn ring of a pad 2 to 8 m wide by noise, a rock edge on the side away from the gate (337 rocks
+  in the tour's world, fence 1888 m -> 1390 m), irregular lots, a grass foot and pines under and on every mesa,
+  pine clumps on the far plain (472 far trees), 44 trees and 70 bushes along the roads. Own generator (`rng6`), so
+  the scatter of P4 stands where it stood. `captures/p6/land_after/`.
+- 13:56 started: `world.sh tour tour --headless`, then `view.sh check` with the three seeds and the hockey game.
+- 13:57 `world.sh tour tour --headless`: PASS, six of six "same" (walk = alone = replay).
+- 14:00 `view.sh check` (drive, paddle, wall, hockey; stage paddle, stand-ins auto at 60 m): PASS. Seed hashes are
+  N5b's (36635c04 at 3516, cadd1cd9 at 6776, 6366b88f at 1221); hockey 5af10fbc23df0d76 at 4888, drawn = headless.
+- 14:01 `draw/FAR.md` (study table, rules, what is built), `PATCHES-P6.md` (4 entries), DRAW.md head note and
+  sections 9, 10. Started `draw/far_cost.sh` (12 runs: 6, 12, 30 packs x near, still, mid, far).
+  Resume point: after the cost runs fill FAR.md section 4 from `captures/p6/cost/`; then final study run
+  (`after_auto`), sheets `after_<game>_<eye|rise>.jpg`, `eye_walk.json` pictures, `overview_vs_concept.jpg`,
+  `tl perf run --scenario tour6 --no-record`, `tl check --tier full`.
+- 14:04 MEASURED, and a premise of mine was wrong: the far picture of a seed has 12,922 triangles against 13,072
+  for the middle one. The terrain is not where the triangles are (784 of 13,072 in `scenery = "plot"`); they are in
+  the venue's merged static mesh, 6 instances, so a size rule per instance drops nothing (0 dropped at 2.5 m for
+  the paddle seed) and the coarse ground saves 150 triangles. What the far picture saved so far is its shadow pass
+  (171,938 -> 142,932 primitives in the frame at 6 packs) and draw calls (80 -> 54). Next: a rule per TRIANGLE for
+  the far picture (thin members under 0.1 m, detail under 0.4 m), measured again; withdrawn if the sheets get worse.
+- 14:05 `tl check --tier fast --changed`: FAIL arch, size ratchet: draw.gd 1262 lines, may not grow past its 745.
+  Split the layer into four files that extend one another (draw_base < draw_pictures < draw_life < draw.gd: 166,
+  304, 411, 420 lines); no line of logic changed by the split (a script did it by function name).
+- 14:06 cost run 1 (`captures/p6/cost/cost_run1.txt`): 6 / 12 / 30 packs, near 493 / 953 / 2344 draw calls,
+  middle 80 / 111 / 225, far 54 / 59 / 109.
+- 14:07 the rule per triangle for the far picture is in (`far_thin` 0.1 m, `far_small` 0.4 m). Study run again on
+  the split files: 24 of 24 pictures, no error; sheets `study/after_<game>_<eye|rise>.jpg` looked at (hockey, paddle,
+  drive from the rise; hockey from the eye before the rule): the far pictures still read as the venue.
+- 14:11 started: far cost again (run 2), `eye_walk.json`, `tour_views` on the final code.
+- 14:12 cost run 2 (far rows after the rule per triangle): paddle seed's far picture 13,072 -> 4,487 triangles,
+  wall seed 13,704 -> 3,592; frame primitives at 6 / 12 / 30 packs 124,635 / 97,357 / 130,065 (middle: 171,938 /
+  182,492 / 273,394). The rule stays. FAR.md section 4 has the table and what it does not prove (the milliseconds).
+- 14:16 `captures/p6/eye/` (the visitor's eye and a rise: walker near, drive and paddle middle, wall and car far).
+- 14:17 `tl perf run --scenario tour6 --no-record`: machine BUSY, not recorded; 288 draw calls, 2,237,536
+  primitives against the ledger's 249 and 1,911,582. The 337 pad rocks in four shadow cascades were most of it:
+  their shadow and the road bushes' is off. 14:20 again: 280 draw calls, 1,977,056 primitives (+3.4 %).
+- 14:18 my `--import` (for the new scripts' uid files) had written 100 `.import` files beside my pictures: deleted,
+  `captures/p6/.gdignore` added. Frames converted to JPEG (202 MB of PNG is not for a commit).
+- 14:21 `tl check --tier full` started. Resume point: read its result; then the report. Nothing is half-done in
+  the code. Not done: style (item 3 through shaders), softer ground patches, a more compact village.
+- 14:23 landscape.gd had grown to 634 lines (the size rule allows 600): the three P6 loops (road trees and bushes,
+  plain clumps, the rocks of a fence span) moved to `terrain/village_parts.gd` as `road_side`, `plain_clumps`,
+  `edge_rocks`, same order of random draws; landscape.gd 597 lines. The gate that was running then is stale.
+- 14:24 started on the final files: `tour_views` into `captures/p6/land_check/` (must equal `land_after/`), then
+  `view.sh check` again. Then `tl check --tier full` once more.
+- 14:27 `view.sh check` on the final files: PASS, the same four hashes at the same ticks (36635c04, cadd1cd9,
+  6366b88f, hockey 5af10fbc), 0 gate leaks, 0 script errors, 0 engine errors. `tour_views` after the move drew the
+  same counts as before it (273 / 254 / 216 draw calls; 1,983,049 / 2,032,393 / 1,202,245 primitives).
+- 14:28 `tl check --tier fast` (all files): PASS (arch 8 rules, assets, cards, devx.test 123, foreman.typecheck).
+- 14:30 `world.sh tour tour --headless` on the final files: PASS, six of six "same".
+- 14:31 started the windowed tour with its proof and the `ledger` walk in a window (the draw layer's tier, rebuild
+  and forget paths with the new pictures). The full gate started 14:20 is still running; three other full gates
+  of other builders run on this machine at the same time.
+- 14:32 windowed `world.sh tour tour --out-dir=<scratch>` on the final files: 10 of 10 pictures, 4 stage changes,
+  PASS (six of six "same": walk = alone = replay), no script or engine error. `world.sh tour ledger` in a window
+  (a pack goes to the ledger and its nodes are freed while its pictures stay): PASS.
+- 14:40 the full gate started 14:20 ended: FAIL arch (landscape.gd 634 lines, fixed at 14:23) and devx.test
+  2 of 123 (the two tests that run `tl arch` on the real tree: the same cause); PASS foreman.typecheck,
+  foreman.test 158, kernel.selftest 81 cases, kit.selftest 87, seeds 24 cases, perf (machine BUSY: measured, not
+  judged), assets, cards; item.selftest and ui.selftest SKIPPED (need the main checkout's site/). It took 20 minutes
+  with three other full gates running on the machine.
+- 14:40 full gate started again on the final files (log in the session's scratch). Report next.
+  Resume point: nothing is half-done. If cut off: read the gate's result, write the report from this section.
+- 15:00 `tl check --tier full` on the final files: ok true. arch, assets, cards, devx.test 123, foreman.typecheck,
+  foreman.test 158, kernel.selftest 81 cases, kit.selftest 87, seeds 24 cases PASS; perf measured but not judged
+  (machine BUSY, use 100 %); item.selftest and ui.selftest SKIPPED (they need the main checkout's site/). 20 minutes.
+  P6 is done; the report is the final message. Nothing is half-done.
