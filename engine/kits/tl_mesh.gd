@@ -586,8 +586,8 @@ func aabb() -> AABB:
 
 
 static func _add_surface(mesh: ArrayMesh, s: Surf, mat: Material) -> void:
-	var arr: Array = []
-	arr.resize(Mesh.ARRAY_MAX)
+	var arr: Array = []; arr.resize(Mesh.ARRAY_MAX)
+	if OS.get_thread_caller_id() != OS.get_main_thread_id(): mesh.set_meta(&"tl_arrays", (mesh.get_meta(&"tl_arrays", []) as Array) + [arr])   # P12: `merge` reads these on a worker thread instead of waiting a frame for the renderer
 	arr[Mesh.ARRAY_VERTEX] = s.v
 	arr[Mesh.ARRAY_NORMAL] = s.n
 	arr[Mesh.ARRAY_COLOR] = s.c
@@ -625,7 +625,7 @@ static func merge(items: Array, mesh_name: String = "merged") -> ArrayMesh:
 		var nb: Basis = t.basis.inverse().transposed()
 		for si: int in m.get_surface_count():
 			var mat: Material = m.surface_get_material(si)
-			var arr: Array = m.surface_get_arrays(si)
+			var arr: Array = (m.get_meta(&"tl_arrays") as Array)[si] if m.has_meta(&"tl_arrays") else m.surface_get_arrays(si)   # P12
 			if not acc.has(mat):
 				acc[mat] = [PackedVector3Array(), PackedVector3Array(), PackedColorArray(), PackedVector2Array(), PackedFloat32Array()]
 			var d: Array = acc[mat]

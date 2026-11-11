@@ -143,11 +143,38 @@ func load_script(rel: String) -> GDScript:
 	if not FileAccess.file_exists(full):
 		push_error("ctx.load_script('%s'): not found in the pack" % rel)
 		return null
-	var s: GDScript = load(full) as GDScript
+	var s: GDScript = _load_fresh(full)
 	if s == null or not s.can_instantiate():
 		push_error("ctx.load_script('%s'): the script did not load" % rel)
 		return null
 	_script_cache[p] = s
+	return s
+
+
+## P12 (PATCHES-P5 2b). A pack's script by absolute path, as it is on disk NOW: the engine's cache (`load`) keeps the
+## first version for the whole process, so a world's `reload` saw a changed data file but not a changed `.gd`. Keyed by
+## path and content (MD5; a modified time has one-second steps): an unchanged file is the script loaded before, a
+## changed one is loaded again past the engine's cache (with what it preloads). Kernel side: pack.gd's loader, the
+## build queue's preparation and `load_script` use it; any thread.
+static var _fresh: Dictionary = {}       # absolute path -> [md5, GDScript]
+static var _fresh_lock: Mutex = Mutex.new()
+
+
+static func _load_fresh(full: String) -> GDScript:
+	var md5: String = FileAccess.get_md5(full)
+	_fresh_lock.lock()
+	var got: Variant = _fresh.get(full, null)
+	_fresh_lock.unlock()
+	if got != null and str((got as Array)[0]) == md5:
+		return (got as Array)[1]
+	var s: GDScript = null
+	if got == null:
+		s = load(full) as GDScript                # first time in this process: the engine's cache, as before
+	else:
+		s = ResourceLoader.load(full, "", ResourceLoader.CACHE_MODE_IGNORE_DEEP) as GDScript
+	_fresh_lock.lock()
+	_fresh[full] = [md5, s]
+	_fresh_lock.unlock()
 	return s
 
 

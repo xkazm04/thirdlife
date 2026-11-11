@@ -287,7 +287,7 @@ func _load_script(rel: String) -> GDScript:
 	if not FileAccess.file_exists(full):
 		_fail(rel, "file not found")
 		return null
-	var s: GDScript = load(full) as GDScript
+	var s: GDScript = TLContext._load_fresh(full)     # P12: a changed .gd is seen by a reload
 	if s == null or not s.can_instantiate():
 		_fail(rel, "the script did not load (parse error)")
 		return null

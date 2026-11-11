@@ -170,7 +170,7 @@ func _resolve(pack: String) -> String:
 		var full: String = ProjectSettings.globalize_path(base + "/" + p)
 		if DirAccess.dir_exists_absolute(full):
 			return full
-	return p
+	return str(PlotFile.call("beside_exe", p))      # P12 (PATCHES-P9 entry 2): the folder `games` beside the executable
 
 
 ## Builds the pack of plot `i` from its seed. `named`: the pack carries its plot id (scheduled worlds, world files).

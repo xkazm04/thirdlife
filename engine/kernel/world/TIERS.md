@@ -406,3 +406,71 @@ under the hash of the layout's JSON text). ATTACH, on the main thread at a tick 
   scenery); a pack whose rim is not in it is built before the first frame, once per machine (`TL_RIM_CACHE=off`
   measures again).
 - **The time to the first frame is now the landscape**: 1.3 to 1.4 s for the six-game village, 3.8 s for thirty.
+
+## P12: a game arrives without a hitch, second half
+
+### What one arrival costs the main thread (item 1)
+
+Measured with `kernel/world/arrival_probe.gd` (headless, scenery `plot`, output to a file: `print` into a pipe costs up
+to 15 ms a line and spoiled the first readings). The probe does what the queue does: PREPARE on a worker, waited for,
+then the holder and `load_pack` on the main thread. Milliseconds of the main-thread half; a second arrival of the same
+pack in the same process in brackets. The machine was busy (other builders, another project's window): not quiet.
+
+| game | before P12: whole | rigs | parts outside a layout | layout attach | rest (own bodies, HUD, laws, tree) | after P12: whole, first arrival ever | after, recipe known |
+|---|---|---|---|---|---|---|---|
+| seed_drive | 28.6 (26.4) | 6.1 | 0 | 17.0 | 5.5 | 72 | 29 (26) |
+| seed_wall | 70.3 (78.3) | 48.3 | 5.7 | 13.4 | 2.9 | 90 | 22 to 29 |
+| ex_walker | 146.8 (140.2) | 101.3 | 0 | 0 | 45.5 | 139 | 1.7 (2.0) |
+| seed_paddle | 16.2 (19.7) | 0 | 0 | 13.8 | 2.4 | 20.5 | 19.0 (19.4) |
+| ex_kit | 211.8 (224.4) | 133.6 | 18.3 | 0 | 59.9 | 231 | 3.0 |
+| ex_car | 19.2 (15.8) | 16.6 | 0 | 0 | 2.6 | 25.5 | 2.9 (2.6) |
+| hockey 0.1.1 | 594.6 (618.1) | 311.9 | 0.3 | 0.6 | 281.8 | 618 | 11.5 (8.3) |
+
+The split into rigs, parts and layout was taken with timers inside `TLRigs.build`, `TLKit.build` and
+`TLKitLayout.build`; they were removed again (kit, rigs and style may not read a clock: kit.selftest). On the final
+code, without them (17:38, busy, recipe known): seed_drive 20 to 31 ms, seed_wall 17 to 19, ex_walker 1.8,
+seed_paddle 23 to 29, ex_kit 4.0 to 4.4, ex_car 2.8 to 3.4, hockey 6.5 to 6.7.
+
+What was in the rows:
+- **rigs**: `TLRigs.build` on the main thread. Now built ahead on the queue's worker from a recipe: each attach records
+  the pack's `TLRigs.build` and outermost `TLKit.build` calls (`TLRigs.record`, `TLKit.record`), `jobs.gd` keeps them
+  in the process and in `user://tl_cache/rigs/<md5 of the directory>.txt`, and the next preparation of that directory
+  builds them ahead (`TLRigs.build_ahead`, `TLKit.build_ahead`); `build` with equal params takes one. The first arrival
+  ever of a pack on a machine has no recipe and pays as before.
+- **rest of ex_walker, ex_kit and hockey (45, 60, 282 ms)**: every TLBiped in `skate` mode rebuilt its rig's whole
+  skinned mesh at `_ready` (the rig was built in `walk` and the helmet came with `skate`), about 50 ms a skater.
+  `TLBiped.create` now builds the rig in the controller's mode. Hashes unchanged (P7 table, all 24 runs).
+- **layout attach (13 to 23 ms)**: adding a venue that was built ahead to the scene tree. Still on the main thread; it
+  is what is left of a seed's arrival.
+
+### The queue and the frame rate (item 2)
+
+`kernel/world/jobs_probe.gd` prepares one pack on a worker while the main thread holds frames of a fixed length.
+Before P12 the preparation took about 20 frames whatever their length: seed_paddle 621 ms with free frames and 4517 ms
+with 250 ms frames, seed_wall 744 / 5034 ms. The waiting calls were `ArrayMesh.surface_get_arrays` in `TLMesh.merge`
+(a value-returning call of the renderer; on a worker it waits for the main thread's next frame). After P12:
+seed_paddle 549 / 507 ms, seed_wall 547 / 478 ms, seed_drive 532 / 541 ms. Selftest `world.prepare_capped`.
+
+A game that is needed is there: in `queue` mode a plot on `stage` that is not built yet is built at once (the main
+thread blocks for it) and on the walk's last tick every game still wanted is built. Each is an ordinary `built` event
+(a replay does the same), counted in the world line's `load.forced`, `forced_ms` and `forced_list`. Selftest
+`world.needed_now`. `step` and `wait` need no such rule: their arrival ticks are fixed by the walk.
+
+### Asleep packs (item 5)
+
+`world.sh bench --only=asleep`, 60 copies of `w_pile` (2100 bodies, all asleep), median iteration of the last third,
+interleaved on a busy machine: before 1.259 and 1.177 ms, after 0.992 and 0.991 ms. The tracker's pass does the asleep
+body's case of `TLContact._step` inline: the same two reads (`sleeping`, `linear_velocity`) in the same order, no
+function call per body. No rule about who woke a body changed: a body woken by the pack itself (`apply_impulse`) is
+read exactly as before, so every hash stays (P7 table, 26 runs). The skip of a whole asleep pack (P2, withdrawn)
+was not brought back.
+
+### Windowed figures on the final code (busy: other builders' and another project's windows were open)
+
+| run | worst frame | frames over 16.7 ms | frame p99 | slowest arrival's attach |
+|---|---|---|---|---|
+| `world.sh tour walk30 --pictures-only` at 1920,1440 (17:10) | 295 ms (P5: 359) | 22 of 12,000 | 9.4 ms | 150 ms (layout seeds) |
+| `world.sh tour tour` with its proof at 1920,1440 (17:19) | 214 ms | 10 | 9.7 ms | 141 ms (seed_wall) |
+
+The slow frames are the arrivals of the layout seeds. The pack's own part of them is 19 to 30 ms in a window; the
+rest is what the view does on the `rebuilt` event (PATCHES-P12 entry 6).

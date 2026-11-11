@@ -60,7 +60,13 @@ class Tracker extends Node:
 		if dirty:
 			compact()
 		space = null
+		var b: RigidBody3D = null
 		for c: TLContact in entries:
+			# P12: the asleep body's case of `_step`, inline (the same two reads, the same result, no call per body)
+			b = c.body
+			if b.sleeping and c._pm != null:
+				c._prev_velocity = b.linear_velocity
+				continue
 			c._step(self)
 		pass_usec += Time.get_ticks_usec() - t0
 

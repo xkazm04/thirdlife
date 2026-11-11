@@ -33,6 +33,7 @@ var budget_us: int = 4000
 var scenery: String = "plot"
 var edits: Array = []                   # the walk's `edits`: [[tick, file, replacement file]], a scripted "the designer saved a value"
 var built: Array = []                   # [[plot id, world tick, ms since the world started, prepare ms, attach ms]]
+var forced: Array = []                  # P12: [[plot id, world tick, ms the main thread blocked, "stage" | "end"]]
 var _jobs: Dictionary = {}              # plot index -> job
 var _thread: Thread = null
 var _mutex: Mutex = Mutex.new()
@@ -137,6 +138,8 @@ func pump(tick: int) -> void:
 	_prioritise()
 	_sweep()
 	var sched: RefCounted = world.get("sched")
+	if mode == "queue":
+		_force_needed(tick, sched)
 	var used: int = 0
 	while used < budget_us:
 		var job: Dictionary = _best(["ready"] if mode == "queue" else ["ready", "queued", "preparing"])
@@ -147,6 +150,27 @@ func pump(tick: int) -> void:
 		used += Time.get_ticks_usec() - t
 		if mode != "queue":
 			break
+
+
+## P12. A game that is needed is there: in queue mode a plot on `stage` (the visitor entered it, a walk event put it
+## there) that is not built yet jumps the queue and is built now, and on the walk's last tick every game still
+## wanted is built (it arrives with no tick of its own, which the proof accepts). The main thread blocks for it:
+## counted in `forced` and `forced_ms`. Each is an ordinary `built` event, so a replay does the same.
+func _force_needed(tick: int, sched: RefCounted) -> void:
+	var last: bool = tick >= int(world.get("walk_ticks")) - 1
+	var plots: Array = sched.get("plots")
+	var need: Array = []
+	_mutex.lock()
+	for i: int in _jobs:
+		var j: Dictionary = _jobs[i]
+		if not bool(j["cancelled"]) and (last or str((plots[i] as Dictionary)["tier"]) == "stage"):
+			need.append(i)
+	_mutex.unlock()
+	need.sort()
+	for i: int in need:
+		var t: int = Time.get_ticks_usec()
+		world.call("_on_event", sched.call("mark_built", tick, i))
+		forced.append([str(((world.get("plot_defs") as Array)[i] as Dictionary)["id"]), tick, snappedf(float(Time.get_ticks_usec() - t) / 1000.0, 0.1), "end" if last else "stage"])
 
 
 ## Jobs that were cancelled and are not on the worker any more: what was built ahead for them is freed.
@@ -162,7 +186,7 @@ func _sweep() -> void:
 	_mutex.unlock()
 	for j: Dictionary in gone:
 		for k: String in j["keys"]:
-			TLKit.drop_layout_ahead(k)
+			drop_ahead(k)
 
 
 ## The main-thread half, at the tick boundary of the `built` event: waits for the worker when it is not done (a
@@ -198,11 +222,14 @@ func attach(i: int, tick: int) -> void:
 	var t: int = Time.get_ticks_usec()
 	var def: Dictionary = (world.get("plot_defs") as Array)[i]
 	def["go"] = true
+	TLRigs._record_rigs(true)
+	TLKit._record_parts(true)
 	world.call("_rebuild", i, job["rec"])
+	remember_rigs(str(job["dir"]), TLRigs._record_rigs(false), TLKit._record_parts(false))
 	def.erase("go")
 	var left: int = 0
 	for k: String in job["keys"]:
-		if TLKit.drop_layout_ahead(k):
+		if drop_ahead(k):
 			left += 1
 	_mutex.lock()
 	_jobs.erase(i)
@@ -246,7 +273,7 @@ func stop() -> void:
 	_thread = null
 	for i: int in _jobs:
 		for k: String in (_jobs[i] as Dictionary)["keys"]:
-			TLKit.drop_layout_ahead(k)
+			drop_ahead(k)
 	_jobs.clear()
 
 
@@ -261,6 +288,13 @@ func report() -> Dictionary:
 	prep_ms.sort()
 	var out: Dictionary = {"mode": mode, "budget_ms": float(budget_us) / 1000.0, "built": built.size(), "waited_ms": snappedf(_waited_ms, 0.1),
 		"never_built": _jobs.size(), "in_ticks_ms": snappedf(float(_step_usec) / 1000.0, 0.1), "arrivals": built}
+	if mode == "queue":
+		var f_ms: float = 0.0
+		for f: Array in forced:
+			f_ms += float(f[2])
+		out["forced"] = forced.size()
+		out["forced_ms"] = snappedf(f_ms, 0.1)
+		out["forced_list"] = forced
 	if not built.is_empty():
 		out["first_built_ms"] = (built[0] as Array)[2]
 		out["six_built_ms"] = (built[mini(5, built.size() - 1)] as Array)[2]
@@ -306,7 +340,7 @@ static func prepare(dir: String, m: Dictionary, scenery_: String) -> Array:
 	PlotFile.call("list_files", dir, "", files)
 	for rel: String in files:
 		if rel.get_extension() == "gd":
-			load(dir + "/" + rel)            # compiled once per process; `_pack_setup` and `ctx.load_script` find it cached
+			TLContext._load_fresh(dir + "/" + rel)   # compiled here; `_pack_setup` and `ctx.load_script` find it (P12: as it is on disk now)
 	var keys: Array = []
 	var probe: TLContext = TLContext.new()      # reads a data file exactly as the pack's own `ctx.read_json` will
 	probe.pack_dir = dir
@@ -322,4 +356,67 @@ static func prepare(dir: String, m: Dictionary, scenery_: String) -> Array:
 			var key: String = TLKit.build_layout_ahead(v)
 			if not key.is_empty():
 				keys.append(key)
+	for rc: Array in rigs_of(dir):              # P12: the rigs and parts this pack built the last time it was built
+		var part: bool = (rc as Array).size() == 3
+		var rk: String = TLKit._part_ahead(str(rc[0]), rc[1]) if part else TLRigs._rig_ahead(str(rc[0]), rc[1])
+		if not rk.is_empty():
+			keys.append(("part:" if part else "rig:") + rk)
 	return keys
+
+
+# ------------------------------------------------------------------- P12: rigs built ahead from the pack's last build
+## Which rigs a pack builds is known only by building it: each attach records its `TLRigs.build` calls, kept in this
+## process and in `user://tl_cache/rigs/<md5 of the directory>.txt`, and the next preparation of the same directory
+## builds them ahead on the worker. A recipe that no longer fits (the pack changed) only costs the worker time: a rig
+## built ahead whose call does not come is freed after the attach. Static, so a measurement can call it anywhere.
+const RIGS_DIR: String = "user://tl_cache/rigs"
+static var _recipes: Dictionary = {}
+static var _recipes_lock: Mutex = Mutex.new()
+
+
+static func rigs_of(dir: String) -> Array:
+	_recipes_lock.lock()
+	var got: Variant = _recipes.get(dir, null)
+	_recipes_lock.unlock()
+	if got != null:
+		return got
+	var f: String = RIGS_DIR + "/" + dir.md5_text() + ".txt"
+	if not FileAccess.file_exists(f):
+		return []
+	var v: Variant = str_to_var(FileAccess.get_file_as_string(f))
+	var out: Array = []
+	if typeof(v) == TYPE_ARRAY:
+		for c: Variant in v:
+			if typeof(c) == TYPE_ARRAY and (c as Array).size() in [2, 3] and typeof((c as Array)[1]) == TYPE_DICTIONARY:
+				out.append(c)
+	_recipes_lock.lock()
+	_recipes[dir] = out
+	_recipes_lock.unlock()
+	return out
+
+
+## `rigs`: TLRigs.record's [family, params] calls; `parts`: TLKit.record's [kind, params] calls (kept as [kind, params, "part"]).
+static func remember_rigs(dir: String, rigs: Array, parts: Array = []) -> void:
+	var calls: Array = rigs.duplicate()
+	for pc: Array in parts:
+		calls.append([pc[0], pc[1], "part"])
+	_recipes_lock.lock()
+	var same: bool = _recipes.has(dir) and var_to_str(_recipes[dir]) == var_to_str(calls)
+	_recipes[dir] = calls
+	_recipes_lock.unlock()
+	if same:
+		return
+	DirAccess.make_dir_recursive_absolute(RIGS_DIR)
+	var f: FileAccess = FileAccess.open(RIGS_DIR + "/" + dir.md5_text() + ".txt", FileAccess.WRITE)
+	if f != null:
+		f.store_string(var_to_str(calls))
+		f.close()
+
+
+## Frees one thing built ahead (a layout, a rig: key "rig:<key>", a part: "part:<key>"). Main thread. True when there was one.
+static func drop_ahead(k: String) -> bool:
+	if k.begins_with("rig:"):
+		return TLRigs._drop_rig(k.substr(4))
+	if k.begins_with("part:"):
+		return TLKit._drop_part(k.substr(5))
+	return TLKit.drop_layout_ahead(k)
