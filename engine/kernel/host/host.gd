@@ -15,6 +15,8 @@ extends Node
 
 const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
 const Lint: GDScript = preload("res://kernel/runner/lint.gd")
+const Inv: GDScript = preload("res://kernel/host/invariants.gd")           # P1: the V3 checks and budgets (host.gd may not grow)
+const WorldSup: GDScript = preload("res://kernel/host/world_supervisor.gd")   # P1: runs a world again without a pack that ran away
 
 const LEVELS: Dictionary = {"lint": "V1", "smoke": "V2", "invariants": "V3", "bot": "V4", "capture": "V5"}
 const OPTIONS: Dictionary = {
@@ -27,16 +29,14 @@ const OPTIONS: Dictionary = {
 ## N2: the world modes (kernel/world/). They are not verify verbs: no tl.verify/1 report, no --pack, no level.
 ## kernel/runner/verbs.json lists them under "modes"; a selftest case compares both tables with that file.
 const MODE_OPTIONS: Dictionary = {
-	"world": ["packs", "frames", "seeds", "at", "spacing", "every", "pause", "mode", "space", "trace", "hold", "state", "out", "walk", "replay", "log", "tiers", "cost", "ticks", "world", "save", "name", "seed", "plot-spacing", "scenery"],   # N5a: the scheduled world, the world file
+	"world": ["packs", "frames", "seeds", "at", "spacing", "every", "pause", "mode", "space", "trace", "hold", "state", "out", "walk", "replay", "log", "tiers", "cost", "ticks", "world", "save", "name", "seed", "plot-spacing", "scenery", "child", "trip", "dead"],   # N5a: the scheduled world, the world file; P1: child, trip, dead belong to the supervisor of the world
 	"world-bench": ["only", "quick", "out-dir"],
 	# N7 (N5b patch 4): a world in a window (kernel/world/draw/view.gd). With --packs: pictures of a world of packs
 	# (tools/view.sh shot). With --walk: the scheduled world with its visitor, landscape and tour pictures
 	# (tools/world.sh tour, visit). One line: tools/selftest.sh reads this table.
 	"world-view": ["packs", "at", "yaw", "spacing", "radius", "lift", "band", "stage", "cam", "crane", "frame", "out", "also", "settle", "until", "mech", "cull", "standins", "far", "mode", "frames", "seeds", "ground", "ground-key", "hud", "measure", "tag", "scenery", "walk", "log", "tiers", "cost", "ticks", "out-dir", "live", "landscape"],
 }
-const BUDGET_FRAME_MS_P99: float = 8.0
-const BUDGET_NODES: int = 5000
-const BUDGET_BODIES: int = 600
+const STARVED_RETRIES: int = 2          # P1: a run the machine starved (watchdog reason "starved") is started again, this many times
 const RELAY_LINES: int = 120
 
 var verb: String = ""
@@ -49,6 +49,10 @@ var engine_start_crashes: int = 0
 var _entry_file: String = ""
 var _test_file: String = ""
 var render_driver: String = "default"
+var starved_reruns: int = 0
+var starved_stalls: int = 0             # P1: guarded calls that ran over their limit in wall time only (the machine's doing)
+var starved_ms: float = 0.0
+var _inv: RefCounted = null
 
 
 func _ready() -> void:
@@ -96,6 +100,11 @@ func _start_mode(bad_args: PackedStringArray) -> void:
 		print(JSON.stringify({"schema": "tl.world/1", "kind": "world", "errors": [problem]}, "", false))
 		get_tree().quit(2)
 		return
+	if verb == "world" and not opts.has("child") and not OS.has_environment("TL_WORLD_UNSUPERVISED"):
+		var ws: RefCounted = WorldSup.new()
+		ws.set("h", self)
+		ws.call("run")
+		return
 	var script: String = {"world": "res://kernel/world/world.gd", "world-bench": "res://kernel/world/bench.gd",
 		"world-view": "res://kernel/world/draw/view.gd"}[verb]
 	var w: Node = (load(script) as GDScript).new()
@@ -108,6 +117,9 @@ func _start_mode(bad_args: PackedStringArray) -> void:
 func _supervise(bad_args: PackedStringArray) -> void:
 	report = {"schema": "tl.verify/1", "verb": verb, "level": str(LEVELS.get(verb, "V0")), "kernelApi": Manifest.KERNEL_API,
 		"ok": false, "outcome": "not_run", "checks": [], "errors": []}
+	_inv = Inv.new()
+	_inv.set("h", self)
+	_inv.set("report", report)
 	if not LEVELS.has(verb):
 		return _not_run("engine", "unknown verb '%s'; verbs: lint, smoke, invariants, bot, capture" % verb)
 	if not bad_args.is_empty():
@@ -161,13 +173,23 @@ func _supervise(bad_args: PackedStringArray) -> void:
 		"invariants":
 			var frames: int = int(opts.get("frames", "3600"))
 			report["frames"] = frames
-			var a: Dictionary = await _run_worker("smoke", {"seed": seed_value, "frames": frames}, "")
+			var idle_opts: Dictionary = {"seed": seed_value, "frames": frames, "series": 1}   # series: every frame's time, for the budget
+			var a: Dictionary = await _run_worker("smoke", idle_opts, "")
 			if not _smoke_checks(a, frames):
 				return _finish_by_checks()
-			var b: Dictionary = await _run_worker("smoke", {"seed": seed_value, "frames": frames}, "")
+			var b: Dictionary = await _run_worker("smoke", idle_opts, "")
 			if not _smoke_checks(b, frames, true):
 				return _finish_by_checks()
-			_invariant_checks(a["result"], b["result"])
+			# P1: the frame budget is judged on each frame's best time over the idle runs (see _robust_frame_p99).
+			# When the first two runs do not meet it, up to BUDGET_EXTRA_RUNS more idle runs are taken: a machine
+			# that is busy does not take the same frames from every run, a slow pack is slow in all of them.
+			var idle: Array = [a["result"], b["result"]]
+			while float(_inv.call("robust_frame_p99", idle)["p99"]) > Inv.BUDGET_FRAME_MS_P99 and idle.size() < 2 + Inv.BUDGET_EXTRA_RUNS:
+				var extra_run: Dictionary = await _run_worker("smoke", idle_opts, "")
+				if not _smoke_checks(extra_run, frames, true):
+					return _finish_by_checks()
+				idle.append(extra_run["result"])
+			_inv.call("_invariant_checks", a["result"], b["result"], idle)
 			# RUNNER.md (amended 2026-11-10, second round): the idle run presses nothing, so it cannot see
 			# non-determinism that needs input. Replay the pack's first bot twice with the same seed and compare.
 			var bot_test: String = str(((mres["manifest"] as Dictionary)["tests"] as Array)[0])
@@ -182,7 +204,7 @@ func _supervise(bad_args: PackedStringArray) -> void:
 			if not _smoke_checks(bb, bot_frames, true, " (second bot run)"):
 				_check("invariants.bot_deterministic", false, "the second bot run of %s could not be used; see errors" % bot_test)
 				return _finish_by_checks()
-			_bot_determinism_check(bot_test, ba["result"], bb["result"])
+			_inv.call("_bot_determinism_check", bot_test, ba["result"], bb["result"])
 			_finish_by_checks()
 		"bot":
 			var frames: int = int(opts.get("frames", "36000"))
@@ -385,6 +407,14 @@ func _run_worker(mode: String, extra: Dictionary, window_res: String) -> Diction
 			break
 		engine_start_crashes += 1
 		print("[tl] the worker crashed before it started (exit code %d, driver %s); attempt %d of %d" % [int(run["exit_code"]), render_driver, attempt + 1, drivers.size()])
+	# P1: a run that the machine starved (the worker gave up after a very long wall time with almost no processor time)
+	# says nothing about the pack: it is started again by the runner itself.
+	var again: int = 0
+	while again < STARVED_RETRIES and str(((run.get("result", {}) as Dictionary).get("watchdog", {}) as Dictionary).get("reason", "")) == "starved":
+		again += 1
+		starved_reruns += 1
+		print("[tl] the machine starved the worker (%s); run again (%d of %d)" % [str(((run["result"] as Dictionary)["watchdog"] as Dictionary).get("detail", "")), again, STARVED_RETRIES])
+		run = await _run_worker_once(mode, extra, window_res, render_driver)
 	return run
 
 
@@ -533,6 +563,14 @@ func _smoke_checks(run: Dictionary, frames: int, second: bool = false, second_ta
 	if not second or n_engine > 0:
 		_check("smoke.no_engine_errors", n_engine == 0, "%d engine errors%s" % [n_engine, tag])
 	var wd: Dictionary = res.get("watchdog", {})
+	var st: Dictionary = res.get("starved", {})
+	if not st.is_empty():
+		starved_stalls += int(st.get("count", 0))
+		starved_ms += float(st.get("wall_ms", 0.0))
+	if str(wd.get("reason", "")) == "starved":
+		_error("engine", "", "starved: %s (started again %d time(s); no verdict on the pack)" % [str(wd.get("detail", "")), starved_reruns])
+		report["outcome"] = "engine_failed"
+		return false
 	if not second or not wd.is_empty():
 		_check("smoke.watchdog", wd.is_empty(), ("no trip in %d frames" % int(res.get("frames_run", 0)) if wd.is_empty() else "%s: %s" % [str(wd.get("reason", "")), str(wd.get("detail", ""))]) + tag)
 	if not wd.is_empty():
@@ -559,75 +597,14 @@ func _metrics(run: Dictionary) -> Dictionary:
 	for k: String in ["state_hash", "frame_ms_p50", "frame_ms_p99", "entities_max", "bodies_max", "tick_ms_max"]:
 		if m.has(k):
 			out[k] = int(m[k]) if k.ends_with("_max") and k != "tick_ms_max" else m[k]
+	_add_starved(out)
 	return out
 
 
-func _invariant_checks(a: Dictionary, b: Dictionary) -> void:
-	var ma: Dictionary = a.get("metrics", {})
-	var mb: Dictionary = b.get("metrics", {})
-	var ha: String = str(ma.get("state_hash", ""))
-	var hb: String = str(mb.get("state_hash", ""))
-	var same: bool = not ha.is_empty() and ha == hb
-	var detail: String = "two runs, seed %d, %d frames: %s" % [int(report["seed"]), int(report["frames"]), ha.substr(0, 16)]
-	if not same:
-		var ta: Array = a.get("hash_trace", [])
-		var tb: Array = b.get("hash_trace", [])
-		var where: String = "after the last sampled frame"
-		for i: int in mini(ta.size(), tb.size()):
-			if str((ta[i] as Array)[1]) != str((tb[i] as Array)[1]):
-				where = "at or before frame %d" % int((ta[i] as Array)[0])
-				break
-		detail = "state_hash differs between two runs with seed %d (%s vs %s); first difference %s" % [int(report["seed"]), ha.substr(0, 16), hb.substr(0, 16), where]
-		_error("determinism", "", detail)
-	_check("invariants.determinism", same, detail)
-	var below: int = int(a.get("below_count", 0)) + int(b.get("below_count", 0))
-	var bd: Dictionary = a.get("below", b.get("below", {}))
-	var below_detail: String = "no physics body below y = -50"
-	if below > 0:
-		below_detail = "body '%s' at y = %s at frame %d" % [str(bd.get("node", "")), str(bd.get("y", "")), int(bd.get("frame", 0))]
-		_error("budget", "", "a physics body fell below y = -50: " + below_detail)
-	_check("invariants.below_ground", below == 0, below_detail)
-	# frame time is the one budget that reads a clock (the contract's 8 ms); the better of the two runs is judged
-	var p99: float = minf(float(ma.get("frame_ms_p99", 0.0)), float(mb.get("frame_ms_p99", 0.0)))
-	if p99 > BUDGET_FRAME_MS_P99:
-		_error("budget", "", "frame p99 %.2f ms is over the %.0f ms budget" % [p99, BUDGET_FRAME_MS_P99])
-	_check("invariants.frame_budget", p99 <= BUDGET_FRAME_MS_P99, "frame p99 %.3f ms (budget %.0f ms; scripts + physics step, headless, better of two runs)" % [p99, BUDGET_FRAME_MS_P99])
-	var nodes: int = maxi(int(ma.get("entities_max", 0)), int(mb.get("entities_max", 0)))
-	var bodies: int = maxi(int(ma.get("bodies_max", 0)), int(mb.get("bodies_max", 0)))
-	var ent_ok: bool = nodes <= BUDGET_NODES and bodies <= BUDGET_BODIES
-	if not ent_ok:
-		_error("budget", "", "%d nodes (budget %d), %d physics bodies (budget %d)" % [nodes, BUDGET_NODES, bodies, BUDGET_BODIES])
-	_check("invariants.entity_budget", ent_ok, "%d nodes (budget %d), %d physics bodies (budget %d)" % [nodes, BUDGET_NODES, bodies, BUDGET_BODIES])
-	var metrics: Dictionary = {"state_hash": ha, "frame_ms_p50": ma.get("frame_ms_p50", 0.0), "frame_ms_p99": p99,
-		"entities_max": nodes, "bodies_max": bodies}
-	if not same:
-		metrics["state_hash_b"] = hb
-	report["metrics"] = metrics
-
-
-## WP5: two bot runs of one test with one seed must end in the same state after the same number of frames.
-func _bot_determinism_check(test: String, a: Dictionary, b: Dictionary) -> void:
-	var ha: String = str((a.get("metrics", {}) as Dictionary).get("state_hash", ""))
-	var hb: String = str((b.get("metrics", {}) as Dictionary).get("state_hash", ""))
-	var fa: int = int(a.get("frames_run", 0))
-	var fb: int = int(b.get("frames_run", 0))
-	var same: bool = not ha.is_empty() and ha == hb and fa == fb
-	var detail: String = "bot %s twice, seed %d: %s after %d frames" % [test, int(report["seed"]), ha.substr(0, 16), fa]
-	if not same:
-		var ta: Array = a.get("hash_trace", [])
-		var tb: Array = b.get("hash_trace", [])
-		var where: String = "after the last sampled frame"
-		for i: int in mini(ta.size(), tb.size()):
-			if str((ta[i] as Array)[1]) != str((tb[i] as Array)[1]):
-				where = "at or before frame %d" % int((ta[i] as Array)[0])
-				break
-		detail = "two bot runs of %s with seed %d differ: %s after %d frames vs %s after %d frames; first difference %s" % [
-			test, int(report["seed"]), ha.substr(0, 16), fa, hb.substr(0, 16), fb, where]
-		_error("determinism", test, detail)
-	_check("invariants.bot_deterministic", same, detail)
-	var metrics: Dictionary = report.get("metrics", {})
-	metrics["bot_state_hash"] = ha
-	metrics["bot_frames"] = fa
-	if not same:
-		metrics["bot_state_hash_b"] = hb
-	report["metrics"] = metrics
+## P1: what the machine took from this run (guarded calls that were slow in wall time and not in processor time).
+func _add_starved(metrics: Dictionary) -> void:
+	if starved_stalls > 0:
+		metrics["starved_stalls"] = starved_stalls
+		metrics["starved_ms"] = snappedf(starved_ms, 0.1)
+	if starved_reruns > 0:
+		metrics["starved_reruns"] = starved_reruns

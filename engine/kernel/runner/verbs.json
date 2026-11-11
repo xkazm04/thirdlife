@@ -80,6 +80,9 @@
         "name": {"type": "string", "default": "world", "note": "N5a. the world's name in a saved file"},
         "seed": {"type": "int", "default": 1, "note": "N5a. the world's own seed, kept in the world file"},
         "plot-spacing": {"type": "float", "default": 0, "note": "N5a. with --packs: plot i lies at (i * spacing, 0, 0) in the world; the pack is still simulated at its own origin (unlike --spacing and --at, which move the simulation)"},
+        "child": {"type": "flag", "default": false, "note": "P1: set by the supervisor of the world (host.gd) on the world process it starts; a world started without it is supervised"},
+        "trip": {"type": "path", "default": "", "note": "P1: where the world's guard writes its trip record when a pack's tick uses 250 ms of processor time (the supervisor reads it)"},
+        "dead": {"type": "ints", "default": "", "note": "P1: indices of packs that ran away in an earlier run of this world: left unloaded and never ticked, reported tripped"},
         "scenery": {"type": "string", "default": "plot", "note": "N7: plot is the default for worlds. full, or plot: a pack's layout is built without its far terrain and scattered forest (the landscape around a plot is the world's); 70 to 90 % of a seed's loading time, no body of the simulation"}
       }
     },

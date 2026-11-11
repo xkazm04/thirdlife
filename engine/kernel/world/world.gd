@@ -38,6 +38,7 @@ const LoggerScript: GDScript = preload("res://kernel/runner/logger.gd")
 const Tiers: GDScript = preload("res://kernel/world/tiers.gd")
 const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel/world/packs", "res://packs"]
 const FOREVER: int = 1 << 40
+const GuardScript: GDScript = preload("res://kernel/host/guard.gd")   # P1: the watchdog of this host (processor time per pack tick)
 
 var opts: Dictionary = {}
 var logger: Object
@@ -78,6 +79,8 @@ var _save_error: String = ""
 # N7
 var quit_on_end: bool = true            # false: the host of this world (the viewer) ends the process
 var exit_code: int = 0
+var _guard: RefCounted = GuardScript.new()   # P1: ends the process on a runaway tick; host.gd runs the world again without that pack
+var _dead: PackedStringArray = PackedStringArray()   # P1: indices (as text) of packs that ran away in an earlier run: not loaded, never ticked
 var player_live: bool = false           # true: `player_pos` is set from outside every tick (a person walks)
 
 
@@ -100,6 +103,8 @@ func start(options: Dictionary) -> void:
 	set_physics_process(false)
 	logger = LoggerScript.new()
 	OS.add_logger(logger)
+	_guard.call("start", 250, str(opts.get("trip", "")))
+	_dead = str(opts.get("dead", "")).split(",", false)
 	for e: String in TLLaws.load_tables():
 		errors.append("kernel data: " + e)
 	var headless: bool = DisplayServer.get_name() == "headless"
@@ -144,6 +149,7 @@ func start(options: Dictionary) -> void:
 	if not refused.is_empty():
 		print(JSON.stringify({"schema": "tl.world/1", "kind": "world", "errors": [refused]}, "", false))
 		print("[tl] world refused: " + refused)
+		_guard.call("stop")
 		get_tree().quit(2)
 		return
 	_mem_loaded = OS.get_static_memory_usage()
@@ -179,6 +185,7 @@ func _spawn_plot(i: int, named: bool = true) -> Node:
 	p.set("plot_yaw", float(def.get("yaw", 0.0)))
 	p.set("ticks_before", int(def.get("ticks_before", 0)))
 	p.set_meta(&"tl_plot", {"id": str(def["id"]), "origin": def.get("origin", Vector3.ZERO), "yaw": float(def.get("yaw", 0.0))})
+	if _dead.has(str(i)): return p     # P1: it ran away in an earlier run of this world: left unloaded
 	var ok: bool = p.call("load_pack", dir, {"mode": str(def.get("mode", "smoke")), "seed": int(def.get("seed", 1)),
 		"frames": int(def.get("frames", 3600)), "every": int(def.get("every", 1)), "at": def.get("at", Vector3.ZERO),
 		"trace": int(def.get("trace", 0)), "own_space": bool(def.get("own_space", true)),
@@ -473,7 +480,7 @@ func _walk_tick(span_usec: int) -> void:
 		p.set("due", d)
 		p.call("set_running", d)
 		if d:
-			p.call("tick", tick)
+			_guard.call("tick", p, i, tick)    # P1
 			_last_ticked.append(i)
 			if bool(p.get("finished")):
 				_on_event(sched.call("mark_over", tick, i, int(p.get("frames_done"))))
@@ -548,7 +555,7 @@ func _physics_process(_delta: float) -> void:
 		p.set("due", d)
 		p.call("set_running", d)
 		if d:
-			p.call("tick", tick)
+			_guard.call("tick", p, i, tick)    # P1
 			due_count += 1
 	TLContext.current = null
 	_last_due = due_count
@@ -580,6 +587,7 @@ func _mean(values: PackedInt64Array) -> float:
 func _end() -> void:
 	_ended = true
 	set_physics_process(false)
+	_guard.call("stop")
 	TLContext.current = null
 	var lines: PackedStringArray = PackedStringArray()
 	if opts.has("save"):
@@ -592,6 +600,7 @@ func _end() -> void:
 	var wrong: int = 0
 	for i: int in packs.size():
 		var r: Dictionary = (packs[i] as Node).call("result", i)
+		if _dead.has(str(i)): r["tripped"] = true
 		if sched != null:
 			var pl: Dictionary = (sched.get("plots") as Array)[i]
 			r["tier"] = pl["tier"]
