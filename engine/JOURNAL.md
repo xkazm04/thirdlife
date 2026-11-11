@@ -584,3 +584,107 @@ Brief `briefs/BRIEF-N5A-TIERS.md`. Started 01:55 CEST on 2026-11-11 in `site/_wo
 - Not done: a native extension (see the report: scons, MSVC 2022 and cargo are on the machine, no godot-cpp sources and
   no network); the sleeping pack path (2 reads per sleeping body per tick, 10 to 20 % dearer than the old per-node early
   return in the asleep bench); the tour's world tick before and after (not measured).
+
+## P5: a world that loads without a hitch (builder, worktree core-p5, clock from `date`, started 2026-11-11 13:22)
+
+- 13:24 MEASURED before any change (headless, `world.sh run`, 8 packs, scenery plot): a seed's load is its `_pack_setup`
+  (drive 358 ms, wall 371, paddle 413, hockey 771 ms; `ex_bounce` 1.5 ms); the entry script costs 14 to 342 ms the first
+  time in a process and 0.2 ms the second; laws, tree entry and asset generators are under 2.5 ms together.
+- 13:26 experiment (scratch script, `-s`): `TLKit.build_layout` is 95 to 99 % of a seed's `_pack_setup` (drive 354 of
+  358 ms, wall 274 of 371, paddle 398 of 413; hockey 18 + 155 of 771). It builds the venue OFF the scene tree and attaches
+  it last, and the kit references nothing outside itself: the same build on a worker thread gave the same node, body and
+  mesh counts and the same `Static` mesh hash, no error, 5 to 35 % slower, while the main thread went on (65,000 to
+  111,000 idle frames). Attaching the built venue to the tree: 13 to 23 ms on the main thread (seeds with terrain), 0.1 ms
+  (hockey venue). First physics step after it: 0.1 ms.
+- 13:30 kit: `TLKit.build_layout_ahead(layout)` / `TLKitLayout.build_ahead` build a layout ahead and keep it by the hash
+  of its JSON text; the next `build_layout` of an equal layout only attaches it (one result serves one call).
+- 13:36 `kernel/world/jobs.gd`, the build queue: PREPARE on one worker thread (scripts loaded, layouts built ahead),
+  ATTACH on the main thread at a tick boundary (`_pack_setup`), event `built` in the world log, one-tick rest kept.
+  `tiers.gd`: a plot is `unbuilt` until its `built` event; `due` leaves it out; `restart`, `reload` and a return from the
+  ledger make it unbuilt again. `tiers.json` `load: {mode: auto, budget_ms: 4}`. `pack.gd`: `stub()`. `plotfile.gd`: the
+  world file writer and the directory hash moved out of `world.gd` / `pack.gd` (neither may grow: arch rule).
+- 13:39 FOUND: a main thread that sleeps while it waits for the worker waits for ever: the worker's calls into the
+  rendering and physics servers that return a value are run by the main thread (the servers' command queues). The wait
+  loop now calls `RenderingServer.force_sync()` and one physics server call each round.
+- 13:41 step mode (headless default: one pack per world tick, waited for, so arrival ticks are a pure function of the
+  walk): `world.sh proof proof --tiers-all`, `tour tour --headless`, `tour tour_next_round --headless`, `proof ledger`
+  all PASS (walk = alone = replay).
+- 13:46 window, queue mode: the tour runs, packs arrive at ticks 73 to 145. Main-thread attach 17 to 195 ms
+  (layout seeds 17 to 37 ms when the machine is free; `ex_walker` 165 and `ex_kit` 190 ms have no layout: all of their
+  setup is still on the main thread). FOUND: the tour's 700 to 850 ms frames are the ticks of its `shot` events (the PNG
+  of a 1920x1080 picture is encoded inside the frame), not only the rebuild. FOUND: in a window the worker's prepare took
+  1.1 s instead of 0.4 s: each of its server calls that returns a value waits for the main thread's next frame.
+- 13:50 `view.gd`: the tour's pictures are encoded on worker threads (the frames of the `shot` ticks are no longer slow);
+  the tour line carries `frame_ms_p99_all`, `frame_ms_max_all` (PATCHES-P1 entry 1; the first two frames, which are the
+  start itself, are left out and reported apart), `frames_over_16_7_ms`, `slow_frames` ([world tick, ms]) and the time
+  to the first frame; PATCHES-P4 entry 1 applied (a walk's `landscape.pad_h` is the plot's height; `rim_band`).
+  `world.sh` `window_mode` is supervised (PATCHES-P1 entry 2): trip record, start again with the pack left out.
+  FOUND: `host.gd` refuses options it does not list (`--trip`, `--dead`, `--load` for `world-view`): they go through the
+  environment (`TL_WORLD_TRIP`, `TL_WORLD_DEAD`, `TL_WORLD_LOAD`) until PATCHES-P5 entry 1 is applied.
+- 13:52 selftest `world.reload` PASS: `ex_slide` copied, its `start_speed` changed at tick 299 (the walk's `edits`),
+  `reload` at tick 300: 299 ticks, 838ccf3eb20d3d6b = the changed pack alone, not 53e7691203ce75fe; `pack_min` and
+  `ex_wall` hash as in the undisturbed run; the log replays.
+- 13:54 the tour in a window WITH the proof, queue mode, real arrivals: PASS, six packs tour = alone = replay.
+  FOUND: the visitor ended at y = -432 m: a pack that arrives after the landscape was built had no collider copies in
+  the visitor's space. `view.gd` now calls `world_space.add_pack` at a plot's first arrival; next run he ends at 6.49 m.
+- 13:55 `walks/walk30.json` (30 games, two rows along 1.5 km of road, games beyond 200 m in the ledger) ran in a window:
+  32 arrivals (30 and two returns), 184 of 12,000 frames over 16.7 ms. Arrival frames: 17 to 36 ms (seed_paddle, small
+  examples 3 to 7 ms on their second copy), 90 to 120 ms (seed_wall), 165 to 310 ms (ex_walker, ex_kit: no layout). The
+  machine stalled once for seconds (ticks 9791 to 9809, frames of 0.27 to 4.9 s, in step with another builder's window).
+- 13:57 PATCHES-P2 entry 1 in `pack.gd`: the holder calls the tracker's pass itself (`contact_pass`, from the closing
+  mark: after every node of the pack, before the physics step; a tracker made during a tick has its first pass on the
+  next, as the scene tree had it). A/B with an environment switch (removed again): 13 packs (3 seeds, 8 examples,
+  hockey, w_pile) x (smoke, bot) x 1500 frames, old order = new order, every hash.
+- 14:01 the hockey game with its two layouts built ahead: `_pack_setup` still about 600 ms on the main thread when the
+  machine is free (1.19 s measured under load): six skaters' rigs and its own parts. The layout was 173 of its 771 ms.
+- 14:04 docs: TIERS.md "P5: loading is not simulation", WORLD.md "Loading (P5)", PATCHES-P5.md (8 entries);
+  `docs/generated/API-INDEX.md` regenerated (`tl arch --index`: two new `TLKit` functions). Fast gate green.
+- 14:09 TWO BUGS OF MINE, found by a tour cut short with `--ticks=300` and fixed: (1) `jobs.gd` `stop()` joined the
+  worker while it was in the middle of a build, and the worker waited for the main thread to run its server calls: a
+  deadlock at the end of a world. It now flushes the servers until the worker is done. (2) `view.gd` handed
+  `img.save_png` to a worker without keeping the image: a Callable holds no reference, the image was freed when `_take`
+  returned, one run ended with exit code 139. The images are kept until the tasks are waited for.
+- 14:15 time from the world's start to the first drawn frame, `TL_WORLD_LOAD=block` against the queue, one run each,
+  the gate and four other builders on the machine: six games 5.83 s -> 2.28 s (landscape 2.08 s of it); thirty games
+  15.69 s -> 6.43 s (landscape 6.1 s of it). The tour line has `world_to_first_frame_ms` (the engine's own start, 4 to
+  14 s under this load, is before it and is not counted).
+- 14:17 `tl perf run --scenario tour6,walk30` recorded as line 7 of `perf/ledger.jsonl`, machine BUSY (use 99 %, probe
+  0.729), not quiet: tour6 worst frame 286 ms (quiet baseline 762 to 838), frame p99 10.4 ms, load 18 ms (1675 to 1937),
+  first frame 1.85 s after the world's start, six games built 4.1 s after it; walk30 worst frame 359 ms, frame p99
+  7.6 ms, tick p50 2.9 ms, first frame 6.0 s, six games built 8.0 s.
+- 14:18 FOUND before the gate could: in step mode the wait for a pack sat inside a world tick, so `mix30`'s worst tick
+  would have been a build (hundreds of ms against a baseline of 19 ms) and its `load_ms` 40 ms: the perf gate would
+  fail on a quiet machine for a cost that only moved. Now what a step, wait or replayed tick spends on a build is taken
+  out of the tick's time and added to `load_ms` (`jobs.gd` `take_spent`, world line `load.in_ticks_ms`).
+- 14:21 step mode no longer uses the worker (it was only waited for, 5 to 35 % slower than the main thread): it builds
+  one pack per tick, whole, on the main thread. `mix30` under load: `load_ms` 16.2 s (the ledger's busy rows before P5:
+  9.8 to 15.8 s), worst tick 90 ms, p99 13.7 ms. New mode `wait` (step order, prepared on the worker, waited for) for the
+  new selftest case `world.queue` (`walks/queue.json`): three seeds built ahead by the worker, arrived at ticks 0, 1, 2,
+  walk = alone = replay. A window-less run in `queue` mode is over before a worker is done (900 empty ticks in 35 ms).
+- 14:24 the supervised window, run once: a tour of `pack_min`, `bad_watchdog`, `ex_wall`: the guard tripped at world tick
+  21 (263 ms of processor time), `world.sh` started the window again without pack 1, the tour ran its 240 ticks, wrote
+  its picture, the two healthy packs have hashes, exit code 1 (a pack failed), no window left.
+- 14:25 two pictures looked at (walk30 half way, the tour's `far_and_near` from the windowed proof run): the visitor on
+  the road, the venues at their plots.
+- 14:24 full gate started on the final files (third start; the first two were stopped for the fixes above).
+- 14:28 `view.sh check` (seed_drive, seed_paddle, seed_wall, ex_kit, ex_walker; stage paddle): PASS, drawn = headless:
+  36635c049bc6acd8 at 3516, cadd1cd9fffac7b1 at 6776, 6366b88f838e3e78 at 1221, 34b19960cc4c5308 at 332,
+  8d1831dc62dfe91a at 371 (the three seeds' bot hashes are N5a's).
+- 14:32 hockey: `tl.sh smoke` b0ddd31f0f70beeb (3600 frames), `tl.sh bot` 5af10fbc23df0d76 (4888 frames): P2's figures.
+  The same pack in a world (`world.sh run`, the contact pass called by name) for 3600 smoke frames: b0ddd31f0f70beeb.
+  The same pack in a walk in `wait` mode (both its layouts built ahead on the worker, attached at tick 0), 3600 frames:
+  b0ddd31f0f70beeb.
+- `kernel/world/WORLD.md` was edited at 14:04 and put back at 14:26 (it is not in P5's scope): its text is PATCHES-P5
+  entry 9.
+- 14:42 `tl check --tier full` on the final code: GREEN. arch, assets, cards, devx.test (123), foreman.typecheck,
+  foreman.test (158), kernel.selftest (83 cases, 613 s; `world.reload` and `world.queue` are new), kit.selftest (87),
+  seeds (24), perf (machine BUSY: measured, not judged); item.selftest and ui.selftest SKIPPED (they need the main
+  checkout's `site/`). Only `.md` files were edited after its start.
+- 14:44 `tl perf run --scenario mix30,tour6,walk30 --quiet-only --wait 60`: the machine was not quiet, nothing recorded.
+- 14:46 `mix30` A/B in the same minutes (busy), two runs each: block (as before P5) `load_ms` 13.0 / 13.4 s, tick p50
+  3.8 / 3.9 ms, p99 11.4 / 12.2, worst 25.5 / 26.9 (the first iteration); step `load_ms` 13.5 / 14.0 s, p50 4.0 / 4.1,
+  p99 9.4 / 9.4, worst 15.6 / 36.5.
+- NOT DONE: the asleep-pack follow-up (kernel wake paths tell the tracker; `tl_bodies.gd`, `tl_contact.gd` untouched);
+  the 60-asleep-packs figure was not measured; warm-up of pipelines (nothing was built: the first drawn frame of a world
+  is 52 to 78 ms and is the start, and no first-use cost stood out above an arrival's own attach, but no run was quiet
+  enough to say "under a millisecond"); a stand-in cache on disk; the whole of `_pack_setup` off the main thread.

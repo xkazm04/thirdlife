@@ -1,0 +1,78 @@
+{
+  "schema": "tl.walk/1",
+  "name": "queue",
+  "note": "P5. Three seeds 120 m apart, built by the build queue's worker thread without a window (`load.mode` wait: scripts loaded and layouts built ahead on the worker, one pack per tick, waited for). world.sh proof runs it, each pack alone for the same number of its own ticks, and the replay of its log (selftest world.queue).",
+  "ticks": 900,
+  "mode": "bot",
+  "tiers": {
+    "load": {
+      "mode": "wait"
+    }
+  },
+  "plots": [
+    {
+      "id": "a",
+      "pack": "seed_paddle",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "seed": 1
+    },
+    {
+      "id": "b",
+      "pack": "seed_drive",
+      "origin": [
+        220,
+        0,
+        0
+      ],
+      "seed": 1
+    },
+    {
+      "id": "c",
+      "pack": "seed_wall",
+      "origin": [
+        -160,
+        0,
+        0
+      ],
+      "seed": 1
+    }
+  ],
+  "player": [
+    [
+      0,
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    [
+      300,
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    [
+      700,
+      [
+        220,
+        0,
+        0
+      ]
+    ],
+    [
+      900,
+      [
+        220,
+        0,
+        0
+      ]
+    ]
+  ]
+}

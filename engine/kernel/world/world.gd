@@ -36,6 +36,8 @@ signal ended(bad: bool)                                       # the run is over;
 const PackScript: GDScript = preload("res://kernel/world/pack.gd")
 const LoggerScript: GDScript = preload("res://kernel/runner/logger.gd")
 const Tiers: GDScript = preload("res://kernel/world/tiers.gd")
+const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")   # P5: the world file and a pack directory's hash (moved out: this file may not grow)
+const Jobs: GDScript = preload("res://kernel/world/jobs.gd")           # P5: the build queue
 const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel/world/packs", "res://packs"]
 const FOREVER: int = 1 << 40
 const GuardScript: GDScript = preload("res://kernel/host/guard.gd")   # P1: the watchdog of this host (processor time per pack tick)
@@ -82,6 +84,7 @@ var exit_code: int = 0
 var _guard: RefCounted = GuardScript.new()   # P1: ends the process on a runaway tick; host.gd runs the world again without that pack
 var _dead: PackedStringArray = PackedStringArray()   # P1: indices (as text) of packs that ran away in an earlier run: not loaded, never ticked
 var player_live: bool = false           # true: `player_pos` is set from outside every tick (a person walks)
+var jobs: RefCounted = null             # P5: the build queue (kernel/world/jobs.gd); null = every pack is built before the first tick
 
 
 func _list(key: String, fallback: String) -> PackedStringArray:
@@ -186,6 +189,7 @@ func _spawn_plot(i: int, named: bool = true) -> Node:
 	p.set("ticks_before", int(def.get("ticks_before", 0)))
 	p.set_meta(&"tl_plot", {"id": str(def["id"]), "origin": def.get("origin", Vector3.ZERO), "yaw": float(def.get("yaw", 0.0))})
 	if _dead.has(str(i)): return p     # P1: it ran away in an earlier run of this world: left unloaded
+	if jobs != null and not def.has("go"): return p.call("stub", dir)     # P5: the build queue builds it, later
 	var ok: bool = p.call("load_pack", dir, {"mode": str(def.get("mode", "smoke")), "seed": int(def.get("seed", 1)),
 		"frames": int(def.get("frames", 3600)), "every": int(def.get("every", 1)), "at": def.get("at", Vector3.ZERO),
 		"trace": int(def.get("trace", 0)), "own_space": bool(def.get("own_space", true)),
@@ -250,6 +254,17 @@ func _start_walk() -> void:
 		if opts.has("mode"):
 			walk["mode"] = str(opts["mode"])
 	walk_ticks = int(walk.get("ticks", 3600))
+	# P5: how the packs arrive (tiers.json `load`, TIERS.md "Loading"). The mode that was used is part of the log.
+	var lm: Dictionary = cfg.get("load", {}) if typeof(cfg.get("load")) == TYPE_DICTIONARY else {}
+	var load_mode: String = str(lm.get("mode", "block")) if is_replay else str(opts.get("load", lm.get("mode", "block")))
+	if load_mode == "auto":
+		load_mode = "step" if DisplayServer.get_name() == "headless" else "queue"
+	if not lm.is_empty() or load_mode != "block":
+		lm["mode"] = load_mode
+		cfg["load"] = lm
+	if load_mode != "block":
+		jobs = Jobs.new()
+		jobs.call("setup", self, lm, load_mode, str(opts.get("scenery", walk.get("scenery", "plot"))), walk.get("edits", []))
 	cost_measured = str(cfg.get("cost", "model")) == "measured"
 	player_script = walk.get("player", [])
 	var list: Array = []
@@ -262,7 +277,9 @@ func _start_walk() -> void:
 			"mode": str(sp.get("mode", walk.get("mode", "smoke"))), "frames": FOREVER, "ticks_before": int(sp.get("ticks", 0)), "data": sp.get("data", null)})
 		var p: Node = _spawn_plot(i)
 		packs.append(p)
-		var m: Dictionary = (p.get("ctx") as TLContext).manifest if p.get("ctx") != null else {}
+		var m: Dictionary = p.get("manifest")
+		if jobs != null and m.is_empty() and not _dead.has(str(i)):
+			errors.append("pack %d (%s) did not load" % [i, str((plot_defs[i] as Dictionary)["dir"])])
 		var size: Vector2 = Vector2(float(default_size[0]), float(default_size[1]))
 		var fp: Variant = sp.get("footprint", m.get("footprint", null))
 		if typeof(fp) == TYPE_DICTIONARY and typeof((fp as Dictionary).get("size_m")) == TYPE_ARRAY:
@@ -310,7 +327,7 @@ func _start_from_file() -> void:
 			"ticks_before": int(sp.get("ticks", 0)), "data": sp.get("data", null), "on_stage": i == 0})
 		var p: Node = _spawn_plot(i)
 		packs.append(p)
-		if bool(p.get("loaded")) and str(pk.get("hash", "")) != "" and str(PackScript.call("dir_hash", str(p.get("pack_dir")))) != str(pk["hash"]):
+		if bool(p.get("loaded")) and str(pk.get("hash", "")) != "" and str(PlotFile.call("dir_hash", str(p.get("pack_dir")))) != str(pk["hash"]):
 			errors.append("plot %s: the pack at %s has changed since the world was saved" % [str(sp["id"]), dir])
 	var pl: Variant = doc.get("player", {})
 	if typeof(pl) == TYPE_DICTIONARY and typeof((pl as Dictionary).get("position")) == TYPE_ARRAY:
@@ -327,50 +344,6 @@ func _plot_records() -> Array:
 	return out
 
 
-## Writes the world file whole to a temporary file, reads it back, keeps the revision before it as `<file>.prev`
-## and renames. Returns "" or what went wrong (the file that was there is then untouched).
-func _save_world(path: String, records: Array) -> String:
-	var rev: int = 0
-	var name_: String = str(opts.get("name", walk.get("name", world_in.get("name", "world"))))
-	if FileAccess.file_exists(path):
-		var json: JSON = JSON.new()
-		if json.parse(FileAccess.get_file_as_string(path)) == OK and typeof(json.data) == TYPE_DICTIONARY:
-			rev = int((json.data as Dictionary).get("rev", 0))
-			if not opts.has("name"):
-				name_ = str((json.data as Dictionary).get("name", name_))
-		else:
-			return "the world file at %s is not readable JSON; it was not overwritten (move it away first)" % path
-	elif not world_in.is_empty():
-		rev = int(world_in.get("rev", 0))
-	var stage_id: String = ""
-	if sched != null and int(sched.get("stage")) >= 0:
-		stage_id = str(((sched.get("plots") as Array)[int(sched.get("stage"))] as Dictionary)["id"])
-	elif not world_in.is_empty() and typeof(world_in.get("player")) == TYPE_DICTIONARY:
-		stage_id = str((world_in["player"] as Dictionary).get("plot", ""))
-	var doc: Dictionary = {"schema": "tl.world/1", "name": name_, "rev": rev + 1,
-		"device": OS.get_environment("COMPUTERNAME") if OS.has_environment("COMPUTERNAME") else OS.get_name(),
-		"seed": int(opts.get("seed", world_in.get("seed", 1))), "plots": records,
-		"player": {"plot": stage_id, "position": [player_pos.x, player_pos.y, player_pos.z]}}
-	var text: String = JSON.stringify(doc, "  ") + "\n"
-	var tmp: String = path + ".tmp"
-	var f: FileAccess = FileAccess.open(tmp, FileAccess.WRITE)
-	if f == null:
-		return "cannot write %s (error %d)" % [tmp, FileAccess.get_open_error()]
-	f.store_string(text)
-	f.close()
-	var back: JSON = JSON.new()
-	if FileAccess.get_file_as_string(tmp) != text or back.parse(text) != OK:
-		DirAccess.remove_absolute(tmp)
-		return "the temporary file %s did not read back whole; the world file was not touched" % tmp
-	if FileAccess.file_exists(path):
-		DirAccess.copy_absolute(path, path + ".prev")
-	var err: int = DirAccess.rename_absolute(tmp, path)
-	if err != OK:
-		return "could not rename %s to %s (error %d); the world file was not touched" % [tmp, path, err]
-	print("[tl] world saved: %s rev %d, %d plot(s)" % [path, rev + 1, records.size()])
-	return ""
-
-
 # -------------------------------------------------------------------------------------- N5a: the scheduled tick
 func _on_event(ev: Dictionary) -> void:
 	_event_lines.append(JSON.stringify({"schema": "tl.world/1", "kind": "event"}.merged(ev), "", false))
@@ -383,6 +356,9 @@ func _on_event(ev: Dictionary) -> void:
 			plot_event.emit(i, "before_tier", ev)
 			if str(ev["to"]) == "ledger" and not ledger.has(i):
 				ledger[i] = p.call("unload")
+				if jobs != null: jobs.call("cancel", i)
+			elif jobs != null:
+				jobs.call("want", i)               # P5: asked for once; it arrives with its own `built` event
 			elif str(ev.get("from", "")) == "ledger" and ledger.has(i):
 				_rebuild(i, ledger[i])
 			var c: TLContext = (packs[i] as Node).get("ctx")
@@ -392,8 +368,13 @@ func _on_event(ev: Dictionary) -> void:
 		"leave":
 			if str(ev.get("on_leave", "")) == "end" and not bool(p.get("finished")):
 				p.call("finish", tick)
-		"restart":
-			_rebuild(i, {"ticks": int(p.get("ticks_before")) + int(p.get("frames_done"))})
+		"restart", "reload":                   # reload (P5): a fresh copy of the same directory; what the pack saved itself is handed on
+			var rec: Dictionary = {"ticks": int(p.get("ticks_before")) + int(p.get("frames_done"))}
+			if str(ev["e"]) == "reload" and bool(p.get("loaded")) and p.call("saved_data") != null: rec["data"] = p.call("saved_data")
+			if jobs != null: jobs.call("want", i, true, rec)
+			else: _rebuild(i, rec)
+		"built":
+			if jobs != null: jobs.call("attach", i, tick)
 
 
 ## A pack comes back from its plot record: a new holder, built from the seed; the pack's own saved data, if any.
@@ -406,6 +387,7 @@ func _rebuild(i: int, rec: Dictionary) -> void:
 	var def: Dictionary = plot_defs[i]
 	def["ticks_before"] = int(rec.get("ticks", 0))
 	def["data"] = rec.get("data", null)
+	if jobs != null: def["on_stage"] = int(sched.get("stage")) == i
 	packs[i] = _spawn_plot(i)
 	ledger.erase(i)
 	plot_event.emit(i, "rebuilt", {})
@@ -470,6 +452,8 @@ func _walk_tick(span_usec: int) -> void:
 		events = sched.call("decide", tick, player_pos)
 	for ev: Dictionary in events:
 		_on_event(ev)
+	if jobs != null and not is_replay:
+		jobs.call("pump", tick)            # P5: the packs that arrive on this tick boundary (each a `built` event)
 	var due: Array = sched.call("due", tick)
 	_last_ticked = []
 	for i: int in packs.size():
@@ -514,9 +498,10 @@ func _physics_process(_delta: float) -> void:
 	if _ended:
 		return
 	var now: int = Time.get_ticks_usec()
-	var _span: int = now - _last_usec
+	# P5: what a step-mode tick (or a replay) waited for its pack is loading (`load_ms`), not the tick's time
+	var _span: int = now - _last_usec - (int(jobs.call("take_spent")) if jobs != null else 0)
 	if tick > 0:
-		var span: int = now - _last_usec          # the whole previous iteration: scripts, tree, every active space
+		var span: int = _span                     # the whole previous iteration: scripts, tree, every active space
 		if _last_due < 0:
 			_iter_hold.append(span)
 		else:
@@ -588,10 +573,12 @@ func _end() -> void:
 	_ended = true
 	set_physics_process(false)
 	_guard.call("stop")
+	var load_report: Dictionary = jobs.call("report") if jobs != null else {"mode": "block"}
+	if jobs != null: jobs.call("stop")
 	TLContext.current = null
 	var lines: PackedStringArray = PackedStringArray()
 	if opts.has("save"):
-		_save_error = _save_world(str(opts["save"]), _plot_records())
+		_save_error = str(PlotFile.call("save", self, str(opts["save"]), _plot_records()))
 		if not _save_error.is_empty():
 			errors.append(_save_error)
 	var bad: bool = not errors.is_empty()
@@ -625,7 +612,7 @@ func _end() -> void:
 		if low.contains("contact") or low.contains("body pair") or low.contains("max_bodies") or low.contains("maximum number of bodies"):
 			dropped += 1
 	var world_line: Dictionary = {"schema": "tl.world/1", "kind": "world", "packs": packs.size(), "world_ticks": tick,
-		"load_ms": _load_ms, "wall_ms": Time.get_ticks_msec() - _t_start,
+		"load_ms": _load_ms + int(float(load_report.get("in_ticks_ms", 0.0))), "wall_ms": Time.get_ticks_msec() - _t_start,
 		"iter_ms_p50_all_ticked": _pct(_iter_all, 0.5), "iter_ms_p99_all_ticked": _pct(_iter_all, 0.99),
 		"iter_ms_mean_all_ticked": _mean(_iter_all), "iters_all_ticked": _iter_all.size(),
 		"iter_ms_p50_last_third": _pct(_iter_all.slice(_iter_all.size() * 2 / 3), 0.5),
@@ -643,6 +630,7 @@ func _end() -> void:
 		"iter_ms_mean_settled": _mean(_iter_any.slice(mini(120, _iter_any.size()))),
 		"iter_ms_p99_settled": _pct(_iter_any.slice(mini(120, _iter_any.size())), 0.99)}
 	if sched != null:
+		world_line["load"] = load_report
 		world_line["walk"] = str(walk.get("name", ""))
 		world_line["replay"] = is_replay
 		world_line["cost"] = "measured" if cost_measured else "model"

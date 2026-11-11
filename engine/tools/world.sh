@@ -38,6 +38,12 @@
 #   world.sh tour <walk> --out-dir=<abs dir> --pictures-only     the window and the pictures, no proof
 #   world.sh visit <walk>                      the same world for a person: WASD, Shift, E enters, Q or Esc leaves;
 #       a window on the desktop that stays open until it is closed. NOT run by any test.
+#   P5 (kernel/world/TIERS.md "P5: loading is not simulation"): in a walk or a tour the packs are built by the world's
+#   build queue and arrive with a `built` event; `world.sh tour walk30 --out-dir=<abs dir> --pictures-only` is the
+#   village of 30 games that are built as the visitor approaches. A walk's `events` may hold
+#   {"t": N, "e": "reload", "plot": "<id>"}: that plot's pack is replaced by a freshly loaded copy of its directory.
+#   TL_WORLD_LOAD=queue|step|block says how packs arrive in a window (block = all before the first frame, as before P5).
+#   A windowed world is supervised: when a pack runs away the window is started again without it.
 #
 # Env: TL_GODOT (Godot console exe), TL_ENGINE_DIR (this engine/ directory), TL_RAW=1 (also print the engine's lines),
 #      TL_WINDOW_POS (default 0,1440), TL_VIEW_TIMEOUT (seconds, default 600; then this run's own window is stopped).
@@ -96,13 +102,18 @@ godot_mode() {   # godot_mode <mode> <args...>: the tl.world/1 lines on stdout; 
 
 window_mode() {  # window_mode <mode> <args...>: as godot_mode, in a window; a window that died before "[view] start" is started again
   local mode="$1"; shift
-  local args=() a attempt code=1 tmp log tag pid waited
+  local args=() a attempt code=1 tmp log tag pid waited dead="" trip idx extra
   for a in "$@"; do args+=("$(fix_arg "$a")"); done
   tmp="${TMPDIR:-${TEMP:-/tmp}}"; command -v cygpath >/dev/null 2>&1 && tmp="$(cygpath -m "$tmp")"
-  for attempt in 1 2 3; do
+  for attempt in 1 2 3 4 5 6; do
     tag="tlworld_$$_${RANDOM}"
     log="$tmp/$tag.log"
-    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080 --rendering-driver d3d12 --fixed-fps 60 --log-file "$log" --path "$E" res://kernel/host/host.tscn -- "$mode" "${args[@]}" "--tag=$tag" >/dev/null 2>&1 &
+    # P5 (docs/PATCHES-P1.md entry 2): a windowed world is supervised. The world's guard ends the process when a pack
+    # runs away and leaves a trip record; the window is then started again without that pack (--dead), as the
+    # headless supervisor does. The world is built again from its seeds: the visitor starts at the beginning of the walk.
+    trip="$tmp/$tag.trip.json"
+    extra=("--tag=$tag")       # --trip and --dead go through the environment: the host's option list for world-view has neither yet
+    TL_WORLD_TRIP="$trip" TL_WORLD_DEAD="$dead" MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080 --rendering-driver d3d12 --fixed-fps 60 --log-file "$log" --path "$E" res://kernel/host/host.tscn -- "$mode" "${args[@]}" "${extra[@]}" >/dev/null 2>&1 &
     pid=$!
     waited=0
     while kill -0 $pid 2>/dev/null; do
@@ -115,6 +126,12 @@ window_mode() {  # window_mode <mode> <args...>: as godot_mode, in a window; a w
       fi
     done
     wait $pid 2>/dev/null; code=$?
+    if [ -f "$trip" ]; then
+      idx="$(grep -o '"pack":[0-9]*' "$trip" | head -1 | cut -d: -f2)"
+      echo "[world] a pack ran away ($(cat "$trip")); the window starts again without pack ${idx:-?}" >&2
+      rm -f "$trip"
+      if [ -n "$idx" ] && [[ ",$dead," != *",$idx,"* ]]; then dead="${dead:+$dead,}$idx"; rm -f "$log"; continue; fi
+    fi
     if grep -q '^\[view\] start' "$log" 2>/dev/null; then break; fi
     echo "[world] the window died before it started (exit $code); attempt $attempt of 3" >&2
   done

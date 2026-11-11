@@ -52,6 +52,11 @@ export function parseTour(text) {
   // the frame tail is not in the tour line yet (docs/PATCHES-P1.md, patch 1): when it is, it is taken from there
   if (t.frame_ms_p99_all !== undefined) m.frame_ms_p99 = r3(t.frame_ms_p99_all);
   if (t.frame_ms_max_all !== undefined) m.worst_frame_ms = r3(t.frame_ms_max_all);
+  // P5: how a world arrives. Milliseconds from the moment the world starts to build (the engine's own start is before
+  // it) to the end of the first drawn frame, and from the start of the world until the sixth pack was attached (the
+  // build queue's own clock; absent when nothing is queued).
+  if (t.world_to_first_frame_ms !== undefined && Number(t.first_frame_ms) >= 0) m.first_frame_ms = Number(t.world_to_first_frame_ms);
+  if (w.load?.six_built_ms !== undefined) m.six_built_ms = r3(w.load.six_built_ms);
   const pics = lines.filter((l) => l.kind === "picture");
   if (pics.length) {
     m.draw_calls = Math.max(...pics.map((p) => Number(p.draw_calls)));
@@ -95,6 +100,17 @@ export const SCENARIOS = {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tl_perf_tour_"));
       try {
         const r = worldSh(ctx, ["tour", "tour", `--out-dir=${dir}`, "--pictures-only"], { env: { TL_VIEW_TIMEOUT: "420" } });
+        return parseTour(r.stdout);
+      } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+    },
+  },
+  walk30: {
+    describe: "a visitor runs through a village of 30 games that are built as he approaches (world.sh tour walk30), 1920x1080 window",
+    windowed: true,
+    run(ctx) {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tl_perf_walk30_"));
+      try {
+        const r = worldSh(ctx, ["tour", "walk30", `--out-dir=${dir}`, "--pictures-only"], { env: { TL_VIEW_TIMEOUT: "540" } });
         return parseTour(r.stdout);
       } finally { fs.rmSync(dir, { recursive: true, force: true }); }
     },

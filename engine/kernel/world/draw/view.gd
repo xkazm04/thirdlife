@@ -25,6 +25,7 @@ const WorldScript: GDScript = preload("res://kernel/world/world.gd")
 const DrawScript: GDScript = preload("res://kernel/world/draw/draw.gd")
 const Landscape: GDScript = preload("res://kernel/world/landscape.gd")
 const VisitorScript: GDScript = preload("res://kernel/world/visitor.gd")
+const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
 
 var opts: Dictionary = {}
 var world: Node
@@ -57,6 +58,15 @@ var _shot_i: int = 0
 var _busy: bool = false
 var _keys: Dictionary = {}
 var _stage_changes: int = 0
+# P5: packs arrive while the world is drawn (kernel/world/jobs.gd)
+var _arrived: Dictionary = {}           # plot index -> true: a built pack has stood there (a stand-in can be made of it)
+var _rims: Dictionary = {}              # the rim cache: "<pack directory hash>|<radius>|<scenery>" -> rim height, or "none"
+var _rims_new: int = 0
+var _first_frame_ms: int = -1           # milliseconds from the start of the process to the end of the first drawn frame
+var _start_ms: int = 0
+var _enter_ms: int = 0                  # when `start` was called: the engine's own start is before it and is not this file's
+var _frame_tick: PackedInt32Array = PackedInt32Array()    # the world tick each frame time belongs to
+var _saves: Array = []                  # the tour's pictures being encoded on worker threads
 
 
 func _ready() -> void:
@@ -78,6 +88,7 @@ func _ready() -> void:
 
 func start(options: Dictionary) -> void:
 	opts = options
+	_enter_ms = Time.get_ticks_msec()
 	print("[view] start")
 	tour = opts.has("walk")
 	if not tour and (not opts.has("packs") or not opts.has("out")):
@@ -101,9 +112,13 @@ func start(options: Dictionary) -> void:
 		live = opts.has("live")
 		out_dir = str(opts.get("out-dir", "")).replace("\\", "/").trim_suffix("/")
 		wopts["walk"] = opts["walk"]
-		for k: String in ["log", "tiers", "cost", "ticks", "scenery", "mode"]:
+		for k: String in ["log", "tiers", "cost", "ticks", "scenery", "mode", "load", "trip", "dead"]:
 			if opts.has(k):
 				wopts[k] = opts[k]
+			elif OS.has_environment("TL_WORLD_" + k.to_upper()) and ["load", "trip", "dead"].has(k):
+				# P5: the host does not let these three through for `world-view` yet (PATCHES-P5 entry 1);
+				# tools/world.sh hands them over in the environment
+				wopts[k] = OS.get_environment("TL_WORLD_" + k.to_upper())
 		if live and not opts.has("ticks"):
 			wopts["ticks"] = str(1 << 40)
 	else:
@@ -133,7 +148,11 @@ func start(options: Dictionary) -> void:
 		rads = PackedStringArray()
 		for i: int in defs.size():
 			var d: Dictionary = defs[i]
-			plots.append(Transform3D(Basis(Vector3.UP, deg_to_rad(float(d.get("yaw", 0.0)))), d.get("origin", Vector3.ZERO)))
+			var o: Vector3 = d.get("origin", Vector3.ZERO)
+			var pads: Array = (walk.get("landscape", {}) as Dictionary).get("pad_h", []) if typeof(walk.get("landscape")) == TYPE_DICTIONARY else []
+			if i < pads.size():
+				o.y = float(pads[i])           # PATCHES-P4 entry 1: a walk states a pad's height once
+			plots.append(Transform3D(Basis(Vector3.UP, deg_to_rad(float(d.get("yaw", 0.0)))), o))
 			var size: Vector2 = (sp[i] as Dictionary)["size"]
 			rads.append(str(float((src[i] as Dictionary).get("radius", minf(size.x, size.y) * 0.5))))
 	else:
@@ -144,7 +163,9 @@ func start(options: Dictionary) -> void:
 	for i: int in holders.size():
 		var r: float = float(rads[mini(i, rads.size() - 1)]) if not rads.is_empty() else 0.0
 		radii.append(r)
-		var rim: float = -float(lifts[i]) if i < lifts.size() else float(DrawScript.call("edge_height", holders[i], r))
+		var rim: float = -float(lifts[i]) if i < lifts.size() else _rim_of(i, r)
+		if bool((holders[i] as Node).get("loaded")):
+			_arrived[i] = true
 		has_ground.append(not is_nan(rim))
 		if is_nan(rim):
 			rim = 0.0
@@ -154,6 +175,7 @@ func start(options: Dictionary) -> void:
 		p.origin.y += lift
 		plots[i] = p
 		lifted.append(snappedf(lift, 0.01))
+	_save_rims()
 	# the landscape between the plots: drawn once (the sky and the sun are the style's rig, installed once by the world host)
 	landscape = Node3D.new()
 	landscape.name = "TLLandscape"
@@ -192,7 +214,7 @@ func start(options: Dictionary) -> void:
 	draw.set("cull", str(opts.get("cull", "auto")))
 	draw.set("far_mode", str(opts.get("standins", "off")))
 	draw.set("far_dist", float(opts.get("far", "150")))
-	draw.set("rim_band", float(opts.get("band", "9")))
+	draw.set("rim_band", float(opts.get("band", str(walk.get("rim_band", 9.0)))))
 	add_child(draw)
 	if tour:
 		draw.call("setup", world, plots, radii, rims, -1)
@@ -203,6 +225,42 @@ func start(options: Dictionary) -> void:
 		_apply_stage(st, str(opts.get("cam", "overview")))
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	_last = Time.get_ticks_usec()
+	_start_ms = Time.get_ticks_msec()
+	RenderingServer.frame_post_draw.connect(func() -> void: _first_frame_ms = Time.get_ticks_msec(), CONNECT_ONE_SHOT)
+
+
+## P5. The rim of plot `i` (draw.gd `edge_height`). A plot whose pack is not built yet takes it from the rim cache, a
+## file in the user directory keyed by the pack directory's content, the radius and the scenery; when it is not there
+## the pack is built now, before the first frame, and the cache learns it (the first visit of a world on a machine).
+func _rim_of(i: int, r: float) -> float:
+	var h: Node = (world.get("packs") as Array)[i]
+	if bool(h.get("loaded")) or world.get("jobs") == null or (h.get("manifest") as Dictionary).is_empty():
+		return float(DrawScript.call("edge_height", h, r))
+	if _rims.is_empty() and FileAccess.file_exists(_rims_path()):
+		var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(_rims_path()))
+		if typeof(j) == TYPE_DICTIONARY:
+			_rims = j
+	var key: String = "%s|%s|%s" % [str(PlotFile.call("dir_hash", str(h.get("pack_dir")))), str(r), str(opts.get("scenery", (world.get("walk") as Dictionary).get("scenery", "plot")))]
+	if not _rims.has(key) or OS.get_environment("TL_RIM_CACHE") == "off":
+		(world.get("jobs") as RefCounted).call("now", i)
+		var v: float = float(DrawScript.call("edge_height", (world.get("packs") as Array)[i], r))
+		_rims[key] = "none" if is_nan(v) else v
+		_rims_new += 1
+	return NAN if typeof(_rims[key]) == TYPE_STRING else float(_rims[key])
+
+
+func _rims_path() -> String:
+	return OS.get_user_data_dir() + "/tl_cache/rims.json"
+
+
+func _save_rims() -> void:
+	if _rims_new == 0:
+		return
+	DirAccess.make_dir_recursive_absolute(_rims_path().get_base_dir())
+	var f: FileAccess = FileAccess.open(_rims_path(), FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify(_rims, "", true))
+		f.close()
 
 
 func _v3(text: String) -> Vector3:
@@ -281,7 +339,7 @@ func _on_plot_event(i: int, what: String, ev: Dictionary) -> void:
 		return
 	match what:
 		"before_tier":
-			if str(ev.get("to", "")) == "ledger":
+			if str(ev.get("to", "")) == "ledger" and _arrived.has(i):
 				draw.call("set_tier", i, "ledger")           # its stand-in is built while its nodes are still there
 		"tier":
 			var to: String = str(ev.get("to", ""))
@@ -289,11 +347,22 @@ func _on_plot_event(i: int, what: String, ev: Dictionary) -> void:
 				_set_stage(-1)
 			if to == "ledger":
 				draw.call("forget_nodes", i)
-			draw.call("set_tier", i, to)
+			if _arrived.has(i) or (to != "backdrop" and to != "ledger"):
+				draw.call("set_tier", i, to)                 # P5: a plot whose pack has not arrived has nothing to make a stand-in of
 			if to == "stage":
 				_set_stage(i)
 		"rebuilt":
+			if not _arrived.has(i) and landscape != null and landscape.has_meta(&"tl_space") and float(radii[i]) > 0.0:
+				# P5: the first pack to stand on this plot arrived after the landscape was built: its static colliders
+				# are copied into the visitor's space now (landscape.gd does it at the start for the packs that are there)
+				var ws: Object = landscape.get_meta(&"tl_space")
+				var lc: Variant = (world.get("walk") as Dictionary).get("landscape", {})
+				ws.set("tag", "pack %d" % i)
+				ws.call("add_pack", (world.get("packs") as Array)[i], plots[i], float(radii[i]), float(rims[i]),
+					float((lc as Dictionary).get("rim_band", 9.0)) if typeof(lc) == TYPE_DICTIONARY else 9.0)
+			_arrived[i] = true
 			draw.call("replace_holder", i, (world.get("packs") as Array)[i])
+			draw.call("set_tier", i, str((((world.get("sched") as RefCounted).get("plots") as Array)[i] as Dictionary)["tier"]))
 			if i == stage:
 				_set_stage(i)
 
@@ -400,11 +469,35 @@ func _on_world_ended(_bad: bool) -> void:
 		draw.call("clear")
 	var code: int = int(world.get("exit_code"))
 	if tour:
+		for s: Array in _saves:
+			WorkerThreadPool.wait_for_task_completion(int(s[0]))
+		_saves.clear()
+		for pic: String in pictures:
+			if not FileAccess.file_exists(pic):
+				print("[view] the picture %s was not written" % pic)
+				code = maxi(code, 1)
 		var n: int = mini(600, _frame_usec.size())
+		# PATCHES-P1 entry 1, the frame tail. The first two frame times are the start itself (the build of the world and
+		# the first drawn frame): they are reported apart, as the time to the first frame.
+		var sorted_us: Array = Array(_frame_usec.slice(2))
+		sorted_us.sort()
+		var p99_us: float = float(sorted_us[clampi(int(ceil(0.99 * float(sorted_us.size()))) - 1, 0, sorted_us.size() - 1)]) if not sorted_us.is_empty() else 0.0
+		var max_us: float = float(sorted_us[sorted_us.size() - 1]) if not sorted_us.is_empty() else 0.0
+		var over: int = 0
+		var slow: Array = []                 # the frames over 16.7 ms: [world tick, ms], at most 40
+		for k: int in range(2, _frame_usec.size()):
+			if _frame_usec[k] > 16700:
+				over += 1
+				if slow.size() < 40:
+					slow.append([_frame_tick[k], snappedf(float(_frame_usec[k]) / 1000.0, 0.1)])
 		var line: Dictionary = {"schema": "tl.view/1", "kind": "tour", "pictures": pictures.size(), "shots_asked": shots.size(),
 			"world_ticks": int(world.get("tick")), "stage_changes": _stage_changes, "landscape": land_stats,
 			"frame_ms_p50": snappedf(_p50(Array(_frame_usec.slice(_frame_usec.size() - n))) / 1000.0, 0.001),
 			"frame_ms_p50_all": snappedf(_p50(Array(_frame_usec)) / 1000.0, 0.001),
+			"frame_ms_p99_all": snappedf(p99_us / 1000.0, 0.001), "frame_ms_max_all": snappedf(max_us / 1000.0, 0.001),
+			"frames": _frame_usec.size(), "frames_over_16_7_ms": over, "first_frame_ms": _first_frame_ms, "view_ready_ms": _start_ms, "world_to_first_frame_ms": _first_frame_ms - _enter_ms,
+			"first_two_frames_ms": [snappedf(float(_frame_usec[0]) / 1000.0, 0.01) if _frame_usec.size() > 0 else 0.0, snappedf(float(_frame_usec[1]) / 1000.0, 0.01) if _frame_usec.size() > 1 else 0.0],
+			"rims_measured": _rims_new, "slow_frames": slow,
 			"render_cpu_ms_p50": snappedf(_p50(Array(_cpu_ms)), 0.001), "render_gpu_ms_p50": snappedf(_p50(Array(_gpu_ms)), 0.001),
 			"draw": draw.call("report") if draw != null else {}}
 		print(JSON.stringify(line, "", false))
@@ -418,6 +511,7 @@ func _on_world_ended(_bad: bool) -> void:
 func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_usec()
 	_frame_usec.append(now - _last)
+	_frame_tick.append(int(world.get("tick")) if world != null else -1)
 	_last = now
 	var vp: RID = get_viewport().get_viewport_rid()
 	_cpu_ms.append(RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu())
@@ -458,7 +552,12 @@ func _take(out: String, st: int, cam_name: String, shot: Dictionary = {}) -> voi
 	if _done:
 		return
 	var img: Image = get_viewport().get_texture().get_image()
-	var err: Error = img.save_png(out)
+	var err: Error = OK
+	if tour:
+		# P5: a 1920x1080 PNG takes 0.7 s to encode: off the main thread (it was the tour's worst frame). The end waits.
+		_saves.append([WorkerThreadPool.add_task(img.save_png.bind(out)), img])     # the image must outlive the task: a Callable holds no reference
+	else:
+		err = img.save_png(out)
 	var n: int = mini(_measure, _frame_usec.size())
 	var line: Dictionary = {"schema": "tl.view/1", "out": out, "saved": err == OK, "stage": st, "cam": cam_name,
 		"world_tick": int(world.get("tick")), "packs": (world.get("packs") as Array).size(),
