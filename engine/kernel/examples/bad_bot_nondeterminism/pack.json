@@ -1,7 +1,7 @@
 {
   "id": "example.bad_bot_nondeterminism",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Deliberately bad pack: non-deterministic only when played",
   "capabilities": ["physics", "input"],
   "entry": "scripts/main.gd",

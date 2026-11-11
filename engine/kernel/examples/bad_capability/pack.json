@@ -1,7 +1,7 @@
 {
   "id": "example.bad_capability",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Deliberately bad pack: a capability used but not declared",
   "capabilities": ["input"],
   "entry": "scripts/main.gd",

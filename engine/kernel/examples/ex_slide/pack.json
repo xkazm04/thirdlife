@@ -1,7 +1,7 @@
 {
   "id": "example.slide",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Law example: sliding on ice and on asphalt",
   "capabilities": ["physics", "camera"],
   "entry": "scripts/main.gd",

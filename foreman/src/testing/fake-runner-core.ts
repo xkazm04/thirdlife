@@ -115,7 +115,7 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
   }
   const checks: Check[] = [];
   const errors: Err[] = [];
-  const report: Record<string, unknown> = { schema: "tl.verify/1", verb, level: VERB_LEVEL[verb] ?? "V0", kernelApi: "0.1" };
+  const report: Record<string, unknown> = { schema: "tl.verify/1", verb, level: VERB_LEVEL[verb] ?? "V0", kernelApi: "1.0" };
   let outcome: "passed" | "failed" | "not_run" | "watchdog" = "passed";
   let forceExit: number | undefined;
   let hang = false;

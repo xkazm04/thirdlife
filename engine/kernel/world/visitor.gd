@@ -31,6 +31,13 @@ var _reported: bool = false
 var _logged: int = 0
 var _frame_usec: PackedInt64Array = PackedInt64Array()      # the wall time of every frame while he walks (cost line)
 var _frame_last: int = 0
+# P11: a person steers (kernel/runner/visit.gd): he faces where the camera looks, A and D sidestep, the mouse turns
+# the view. A scripted walk keeps the N7 behaviour (he turns to where he moves and the camera follows his back).
+var steer: bool = false
+var look_yaw: float = 0.0               # where he and the camera look (radians, 0 = -z), changed only by `turn`
+var look_pitch: float = 0.0             # the camera's elevation above the point it looks at (radians)
+var _cam_dist: float = 8.5
+var _cam_look_h: float = 1.7
 
 
 func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary = {}) -> void:
@@ -64,6 +71,48 @@ func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary 
 	var o: Dictionary = {"distance": 8.5, "height": 3.6, "look_height": 1.7, "stiffness": 0.05, "fov": 60.0}
 	o.merge(cam_opts, true)
 	cam.setup(self, o)
+	_cam_dist = Vector2(float(o["distance"]), float(o["height"]) - float(o["look_height"])).length()
+	_cam_look_h = float(o["look_height"])
+	look_pitch = atan2(float(o["height"]) - float(o["look_height"]), float(o["distance"]))
+	look_yaw = _yaw
+
+
+## P11. A person's controls: from now on he faces `look_yaw` and the camera sits behind him at `look_pitch`, at once
+## (no smoothing: the view follows the mouse tick by tick).
+func steer_on() -> void:
+	steer = true
+	cam.stiffness = 1.0
+	cam.follow = 1.0
+	cam.aim = 1.0
+	_place_cam()
+
+
+## Turns the view: `dx` radians to the right (the mouse moved right), `dy` radians down; the pitch stays in its limits.
+func turn(dx: float, dy: float, pitch_min: float, pitch_max: float) -> void:
+	look_yaw = wrapf(look_yaw - dx, -PI, PI)
+	look_pitch = clampf(look_pitch + dy, pitch_min, pitch_max)
+	_place_cam()
+
+
+func _place_cam() -> void:
+	cam.distance = _cam_dist * cos(look_pitch)
+	cam.height = _cam_look_h + _cam_dist * sin(look_pitch)
+	cam.look_height = _cam_look_h
+
+
+## P11. Puts him at `at` (feet, x and z; the ground decides y) facing `yaw`, the camera behind him.
+func put(at: Vector3, yaw: float) -> void:
+	if space != null:
+		var g: float = space.call("ground_at", at.x, at.z, 200.0)
+		at.y = g if not is_nan(g) else feet.y
+		space.call("place", at)
+	feet = at
+	_last = at
+	position = at
+	_yaw = yaw
+	look_yaw = yaw
+	rotation.y = yaw
+	snap()
 
 
 func step(pos: Vector3, frame: int) -> void:
@@ -92,13 +141,17 @@ func step(pos: Vector3, frame: int) -> void:
 	var d: Vector3 = feet - _last
 	d.y = 0.0
 	speed = d.length() * 60.0
-	if speed > 0.2:
+	var local_v: Vector3 = Vector3(0.0, 0.0, -speed)
+	if steer:
+		_yaw = look_yaw
+		local_v = (d * 60.0).rotated(Vector3.UP, -_yaw)
+	elif speed > 0.2:
 		_yaw = lerp_angle(_yaw, atan2(-d.x, -d.z), 0.18)
 	position = feet
 	rotation.y = _yaw
 	_last = feet
 	if rig != null and visible:
-		rig.call("set_locomotion", Vector3(0.0, 0.0, -speed), true)
+		rig.call("set_locomotion", local_v, true)
 		rig.call("tick", frame)
 
 

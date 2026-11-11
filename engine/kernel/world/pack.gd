@@ -423,49 +423,31 @@ func _census_node(n: Node, counts: Array) -> void:
 
 
 # ------------------------------------------------------------------------------------------------------ hashing
-func _q(v: float) -> int:
-	return int(round(v * 1000.0))
-
-
-func _put_v3(buf: StreamPeerBuffer, v: Vector3) -> void:
-	buf.put_64(_q(v.x))
-	buf.put_64(_q(v.y))
-	buf.put_64(_q(v.z))
-
-
-func _hash_node(n: Node, buf: StreamPeerBuffer, shifted: bool) -> void:
-	if n is PhysicsBody3D:
-		var t: Transform3D = (n as PhysicsBody3D).global_transform
-		_put_v3(buf, t.origin - ctx.origin if shifted else t.origin)     # pack-local: the same pack hashes alike anywhere
-		var qt: Quaternion = t.basis.orthonormalized().get_rotation_quaternion()
-		if qt.w < 0.0:
-			qt = -qt
-		buf.put_64(_q(qt.x))
-		buf.put_64(_q(qt.y))
-		buf.put_64(_q(qt.z))
-		buf.put_64(_q(qt.w))
-		if n is RigidBody3D:
-			_put_v3(buf, (n as RigidBody3D).linear_velocity)
-			_put_v3(buf, (n as RigidBody3D).angular_velocity)
-		elif n is CharacterBody3D:
-			_put_v3(buf, (n as CharacterBody3D).velocity)
-	for c: Node in n.get_children():
-		_hash_node(c, buf, shifted)
-
-
-## The worker's state hash (SHA-256 over every physics body under the pack in tree order, then `_pack_state()`),
-## with body positions taken relative to the pack's origin.
+## P11 (PATCHES-P7 section 1): the worker's state hash (kernel/host/statehash.gd): every physics body under the pack with
+## positions relative to the pack's origin, `_pack_state()`, the seeded generator and the input state. A pack in a
+## world hashes as `tl.sh smoke` / `bot` hashes it alone after the same number of its own ticks.
 func state_hash() -> String:
-	var buf: StreamPeerBuffer = StreamPeerBuffer.new()
-	if pack_node != null:
-		_hash_node(pack_node, buf, ctx.origin != Vector3.ZERO)
-	if entry != null and entry.has_method("_pack_state"):
-		buf.put_data(str(WorkerScript.call("_canon", entry.call("_pack_state"))).to_utf8_buffer())
-	var hc: HashingContext = HashingContext.new()
-	hc.start(HashingContext.HASH_SHA256)
-	if buf.get_size() > 0:
-		hc.update(buf.data_array)
-	return hc.finish().hex_encode()
+	if ctx == null:
+		return (load("res://kernel/host/statehash.gd") as GDScript).call("hash", pack_node, "")
+	var tail: String = str(WorkerScript.call("_canon", entry.call("_pack_state"))) if entry != null and entry.has_method("_pack_state") else ""
+	return (load("res://kernel/host/statehash.gd") as GDScript).call("hash", pack_node, tail, ctx.rng, ctx.input, ctx.origin)
+
+
+## P11 (PATCHES-P7 section 2): a pack script's own event handlers (_input, _unhandled_input, ...) would read a device
+## past ctx.input, so past the input record: switched off when the node is ready, as the worker does. Only scripts of
+## this pack (by path), once per node. The holder enters the tree before `load_pack` makes any node.
+func _enter_tree() -> void:
+	get_tree().node_added.connect(func(n: Node) -> void:
+		var sc: Script = n.get_script() as Script
+		if sc == null or pack_dir.is_empty() or n.is_node_ready():
+			return
+		if not (sc.resource_path.begins_with(pack_dir) or sc.resource_path.begins_with(ProjectSettings.localize_path(pack_dir))):
+			return
+		n.ready.connect(func() -> void:
+			n.set_process_input(false)
+			n.set_process_unhandled_input(false)
+			n.set_process_unhandled_key_input(false)
+			n.set_process_shortcut_input(false), CONNECT_ONE_SHOT))
 
 
 # ------------------------------------------------------------------------------------------------------ result

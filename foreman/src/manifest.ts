@@ -9,7 +9,7 @@ import { stripBom } from "./paths.js";
 export const ENTRY_SCRIPT = "scripts/main.gd";
 export const MANIFEST_FILE = "pack.json";
 export const PACK_VERSION = "0.1.0";
-export const KERNEL_API = "0.1";
+export const KERNEL_API = "1.0";
 
 export interface Manifest {
   id: string;

@@ -1,7 +1,7 @@
 {
   "id": "example.bad_reach_reflection",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Deliberately bad pack: reflection past the fence",
   "capabilities": [],
   "entry": "scripts/main.gd",

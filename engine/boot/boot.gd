@@ -1,7 +1,10 @@
 extends Node
 ## P9. The door of the exported game (engine/tools/export.sh makes dist/ThirdLife/ThirdLife.exe; docs/EXE.md).
 ##
-##   ThirdLife.exe                              the village for a person: a window, WASD, Shift, E enters, Q leaves, Esc quits
+##   ThirdLife.exe [--record=<abs file>]        the village for a person: a window; W S walk along the view, A D step
+##                                              aside, the mouse looks, Shift runs, E enters, Q leaves, Esc quits
+##                                              (kernel/runner/visit.gd; --record writes the visit as tl.input/1)
+##   ThirdLife.exe --input=<abs file>           a recorded visit again (no device is read)
 ##   ThirdLife.exe --headless --fixed-fps 60 -- check --out=<abs file> [--ticks=N] [--games=<dir>]
 ##                                              the scripted tour of the same village without a window; one tl.world/1
 ##                                              line per pack (its state hash) in --out; `export.sh check` compares it
@@ -23,6 +26,7 @@ extends Node
 ## frames (TL_EXE_CAPTURE_AT=<frame> names another frame); TL_EXE_QUIT_AT=<frame> ends the world cleanly at that
 ## frame; TL_EXE_WINDOW_POS=x,y moves the window; TL_EXE_KEYS="60:+W;400:-W;420:+E;900:+Escape" presses and releases
 ## keys at physics frames (the same Input state a keyboard sets: this is how the keys were tested without a person);
+## P11: `<frame>:~<dx>,<dy>` moves the mouse by that many pixels (the same event a mouse makes);
 ## TL_EXE_TRACE=<abs file> writes where the visitor is and who is on stage every 30 frames.
 ## No global class name is declared here, and none of the kernel's is used by name.
 
@@ -30,7 +34,7 @@ const WALK_RES: String = "res://boot/village.json"
 const VIEW_SCRIPT: String = "res://kernel/world/draw/view.gd"
 const WORLD_SCRIPT: String = "res://kernel/world/world.gd"
 const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel/world/packs", "res://packs"]
-const KEYS_WALK: String = "W A S D  walk      Shift  run      E  enter the game you stand in      Esc  quit"
+const KEYS_WALK: String = "W S  walk      A D  step aside      mouse  look      Shift  run      E  enter the game you stand in      Esc  quit"
 const KEYS_STAGE: String = "Q or Esc  leave the game"
 const CAPTURE_FRAME: int = 120
 
@@ -42,13 +46,12 @@ var world: Node = null
 var dropped: Array = []                 # plots left out: [{id, pack, why}]
 var kept: Array = []                    # [{id, pack, dir}]
 var _frame: int = 0
-var _esc_was: bool = false
 var _hint: Label = null
 var _capture_path: String = ""
 var _capture_done: bool = false
 var _captured: bool = false
 var _capture_at: int = CAPTURE_FRAME
-var _keys: Dictionary = {}              # physics frame -> [[pressed, keycode], ...] (TL_EXE_KEYS)
+var _keys: Dictionary = {}              # physics frame -> [[pressed, keycode], ...] or [["move", Vector2]] (TL_EXE_KEYS)
 var _trace: FileAccess = null
 var _quit_at: int = -1
 var _walk_tmp: String = ""
@@ -67,7 +70,7 @@ func _ready() -> void:
 				opts[a.substr(2, eq - 2)] = a.substr(eq + 1)
 		elif verb.is_empty():
 			verb = a
-	for k: String in ["games", "out"]:
+	for k: String in ["games", "out", "record", "input"]:
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if opts.has("games"):
@@ -129,9 +132,9 @@ func _pack_dir(pack: String) -> String:
 
 
 ## Reads res://boot/village.json, points every plot at its folder, leaves out plots whose folder is missing (and
-## the pad height that belongs to them), and writes the result where the world host can read it. `live`: a person
-## walks, so the scripted events are left out (the world host ignores the scripted path while a person walks). Returns the file's path, or "" after `_stop`.
-func _make_walk(live: bool) -> String:
+## the pad height that belongs to them), and writes the result where the world host can read it. A person's walk
+## keeps the scripted events: the viewer runs none of them (P11). Returns the file's path, or "" after `_stop`.
+func _make_walk() -> String:
 	if not FileAccess.file_exists(WALK_RES):
 		_stop("the walk %s is not in this build" % WALK_RES, 2)
 		return ""
@@ -176,8 +179,6 @@ func _make_walk(live: bool) -> String:
 			if not gone:
 				evs.append(ev)
 		walk["events"] = evs
-	if live:
-		walk.erase("events")        # the scripted path stays: its first point is where he starts, its second where he looks
 	if opts.has("ticks") and str(opts["ticks"]).is_valid_int():
 		walk["ticks"] = int(opts["ticks"])
 	var dir_out: String = OS.get_user_data_dir().replace("\\", "/") + "/boot"
@@ -201,7 +202,7 @@ func _identity() -> Dictionary:
 	var v: Dictionary = Engine.get_version_info()
 	return {"schema": "thirdlife.exe/1", "kind": "boot", "verb": verb if not verb.is_empty() else "visit", "exported": exported(),
 		"godot": str(v.get("string", "")), "executable": OS.get_executable_path().replace("\\", "/"), "games": games_dir,
-		"display": DisplayServer.get_name(), "plots": kept, "left_out": dropped}
+		"display": DisplayServer.get_name(), "user_dir": OS.get_user_data_dir().replace("\\", "/"), "plots": kept, "left_out": dropped}
 
 
 # ------------------------------------------------------------------------------------------------ a person walks
@@ -213,6 +214,12 @@ func _visit() -> void:
 		_capture_at = int(OS.get_environment("TL_EXE_CAPTURE_AT"))
 	for part: String in OS.get_environment("TL_EXE_KEYS").split(";", false):
 		var f: PackedStringArray = part.strip_edges().split(":")
+		if f.size() == 2 and f[0].is_valid_int() and f[1].begins_with("~") and f[1].substr(1).split(",").size() == 2:
+			var xy: PackedStringArray = f[1].substr(1).split(",")
+			if not _keys.has(int(f[0])):
+				_keys[int(f[0])] = []
+			(_keys[int(f[0])] as Array).append(["move", Vector2(float(xy[0]), float(xy[1]))])
+			continue
 		var code: Key = OS.find_keycode_from_string(f[1].substr(1)) if f.size() == 2 and f[1].length() > 1 else KEY_NONE
 		if f.size() == 2 and f[0].is_valid_int() and code != KEY_NONE and (f[1][0] == "+" or f[1][0] == "-"):
 			if not _keys.has(int(f[0])):
@@ -231,7 +238,7 @@ func _visit() -> void:
 	get_window().title = "Third Life"
 	# the project runs windows without vsync (captures and benches); a person's window follows the screen
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
-	var path: String = _make_walk(true)
+	var path: String = _make_walk()
 	if path.is_empty():
 		return
 	print(JSON.stringify(_identity(), "", false))
@@ -239,7 +246,11 @@ func _visit() -> void:
 	view = (load(VIEW_SCRIPT) as GDScript).new()
 	view.name = "WorldView"
 	add_child(view)
-	view.call("start", {"walk": path, "live": "true"})
+	var vo: Dictionary = {"walk": path, "live": "true"}
+	for k: String in ["record", "input"]:
+		if opts.has(k):
+			vo[k] = opts[k]
+	view.call("start", vo)
 	world = view.get("world")
 	if view.get("draw") == null:
 		# the viewer said why on the log and asked the tree to quit; a person gets the reason in a box
@@ -292,6 +303,11 @@ func _end_world() -> void:
 func _physics_process(_delta: float) -> void:
 	_frame += 1
 	for k: Array in _keys.get(_frame, []):
+		if str(k[0]) == "move":
+			var mv: InputEventMouseMotion = InputEventMouseMotion.new()
+			mv.relative = k[1]
+			Input.parse_input_event(mv)
+			continue
 		var ev: InputEventKey = InputEventKey.new()
 		ev.keycode = k[1]
 		ev.physical_keycode = k[1]
@@ -302,17 +318,12 @@ func _physics_process(_delta: float) -> void:
 		var pos: Vector3 = world.get("player_pos")
 		var feet: Vector3 = (view.get("visitor") as Node3D).get("feet")
 		_trace.store_line(JSON.stringify({"frame": _frame, "world_tick": int(world.get("tick")), "stage": stage,
-			"pos": [snappedf(pos.x, 0.01), snappedf(pos.z, 0.01)], "feet": [snappedf(feet.x, 0.01), snappedf(feet.y, 0.01), snappedf(feet.z, 0.01)]}, "", false))
+			"pos": [snappedf(pos.x, 0.01), snappedf(pos.z, 0.01)], "feet": [snappedf(feet.x, 0.01), snappedf(feet.y, 0.01), snappedf(feet.z, 0.01)],
+			"yaw_deg": snappedf(rad_to_deg(float((view.get("visitor") as Node3D).get("look_yaw"))), 0.01)}, "", false))
 		_trace.flush()
 	if _hint != null:
 		_hint.text = KEYS_STAGE if stage >= 0 else KEYS_WALK
 		_hint.position.y = get_viewport().get_visible_rect().size.y - 58
-	var esc: bool = Input.is_physical_key_pressed(KEY_ESCAPE)
-	var pressed: bool = esc and not _esc_was
-	_esc_was = esc
-	if pressed and stage < 0:                      # on stage Esc leaves the game (the viewer's own key)
-		_end_world()
-		return
 	if not _capture_path.is_empty() and not _capture_done and _frame >= _capture_at:
 		_capture_done = true
 		_capture()
@@ -339,7 +350,7 @@ func _check() -> void:
 	if not opts.has("out") or not str(opts["out"]).is_absolute_path():
 		_stop("check: --out=<abs file> is required", 2)
 		return
-	var path: String = _make_walk(false)
+	var path: String = _make_walk()
 	if path.is_empty():
 		return
 	var id_line: String = JSON.stringify(_identity(), "", false)

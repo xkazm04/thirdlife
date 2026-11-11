@@ -1,7 +1,7 @@
 {
   "id": "seed.wall",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Knock the wall down: sixty seconds",
   "capabilities": ["physics", "ball", "biped", "fracture", "rules", "input", "camera", "vfx", "audio", "ui", "kit"],
   "entry": "scripts/main.gd",

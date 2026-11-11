@@ -1,7 +1,7 @@
 {
   "id": "example.bad_nondeterminism",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Deliberately bad pack: randomness that does not come from ctx.rng",
   "capabilities": ["physics"],
   "entry": "scripts/main.gd",

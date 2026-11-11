@@ -1,7 +1,7 @@
 {
   "id": "example.bad_schema",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Deliberately bad pack: unknown manifest key",
   "capabilities": ["physics"],
   "entry": "scripts/main.gd",

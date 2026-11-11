@@ -1,7 +1,7 @@
 {
   "id": "example.bad_watchdog",
   "version": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "title": "Deliberately bad pack: an endless loop",
   "capabilities": ["physics"],
   "entry": "scripts/main.gd",

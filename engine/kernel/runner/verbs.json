@@ -94,7 +94,8 @@
         "child": {"type": "flag", "default": false, "note": "P1: set by the supervisor of the world (host.gd) on the world process it starts; a world started without it is supervised"},
         "trip": {"type": "path", "default": "", "note": "P1: where the world's guard writes its trip record when a pack's tick uses 250 ms of processor time (the supervisor reads it)"},
         "dead": {"type": "ints", "default": "", "note": "P1: indices of packs that ran away in an earlier run of this world: left unloaded and never ticked, reported tripped"},
-        "scenery": {"type": "string", "default": "plot", "note": "N7: plot is the default for worlds. full, or plot: a pack's layout is built without its far terrain and scattered forest (the landscape around a plot is the world's); 70 to 90 % of a seed's loading time, no body of the simulation"}
+        "scenery": {"type": "string", "default": "plot", "note": "N7: plot is the default for worlds. full, or plot: a pack's layout is built without its far terrain and scattered forest (the landscape around a plot is the world's); 70 to 90 % of a seed's loading time, no body of the simulation"},
+        "load": {"type": "string", "default": "<the walk's tiers.load.mode>", "note": "P5/P11: queue, step or block: how packs arrive in a scheduled world (block = all before the first tick)"}
       }
     },
     "world-bench": {
@@ -141,8 +142,15 @@
         "cost": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
         "ticks": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
         "out-dir": {"type": "path", "note": "N7. with --walk: where the numbered pictures of the walk's shot events go"},
-        "live": {"type": "flag", "note": "N7. with --walk: a person walks (WASD, E to enter, Q or Esc to leave); the walk script only places the plots"},
-        "landscape": {"type": "string", "note": "N7. with --walk: on (default) or off: the road, the scatter, the plot edges and the mesas"}
+        "live": {"type": "flag", "note": "N7/P11. with --walk: a person walks (W S forward and back where the camera looks, A D sidestep, mouse looks, Shift runs, E enters, Q leaves, Esc quits when nobody is on stage); the walk script only places the plots; its scripted visits are not run"},
+        "landscape": {"type": "string", "note": "N7. with --walk: on (default) or off: the road, the scatter, the plot edges and the mesas"},
+        "load": {"type": "string", "note": "P11 (PATCHES-P5 entry 1): queue, step or block: how packs arrive (block = all before the first frame)"},
+        "trip": {"type": "path", "note": "P11 (PATCHES-P5 entry 1): where the world's guard writes its trip record (tools/world.sh supervises the window)"},
+        "dead": {"type": "ints", "note": "P11 (PATCHES-P5 entry 1): indices of packs that ran away in an earlier start of this window: left unloaded"},
+        "picture": {"type": "string", "note": "P11 (PATCHES-P6 entry 2): still, mid or far: one picture forced on every far game (a study)"},
+        "record": {"type": "path", "note": "P11. with --live: write the visitor's input as tl.input/1 (kernel/runner/visit.gd); a game played on stage is <record>.<plot>.<n>.json"},
+        "input": {"type": "path", "note": "P11. with --walk: replay a visit recorded with --record (no device is read); implies the person's controls"},
+        "devices": {"type": "path", "note": "P11. with --live: a device script for tests, [[tick, key|move|shot, a, b], ...], put into the engine's input path"}
       }
     }
   }

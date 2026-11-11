@@ -27,6 +27,30 @@ if command -v cygpath >/dev/null 2>&1; then
   G="$(cygpath -m "$G")"
 fi
 
+# P11: one test window at a time on this machine. Two windows on the same spot of the screen throttle each other to
+# about 270 ms a frame (P5, P6 re-runs), so a windowed run waits for a lock under the system's temporary folder that
+# holds the holder's process id; the lock of a holder that is gone is taken over. TL_WINDOW_LOCK=off skips it.
+win_lock() {
+  [ "${TL_WINDOW_LOCK:-on}" = off ] && return 0
+  local d="${TEMP:-${TMP:-/tmp}}" waited=0 holder
+  command -v cygpath >/dev/null 2>&1 && d="$(cygpath -u "$d")"
+  TL_LOCK_DIR="$d/thirdlife_window.lock"
+  while ! mkdir "$TL_LOCK_DIR" 2>/dev/null; do
+    holder="$(cat "$TL_LOCK_DIR/pid" 2>/dev/null)"
+    if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+      echo "[lock] the holder ($holder) is gone: the window lock is taken over" >&2
+      rm -rf "$TL_LOCK_DIR"; continue
+    fi
+    [ $waited -eq 0 ] && echo "[lock] another test window is open (process ${holder:-?}): waiting for it" >&2
+    sleep 2; waited=$((waited + 2))
+  done
+  echo "$TL_LOCK_PID" > "$TL_LOCK_DIR/pid"; TL_LOCK_HELD=1
+  echo "[lock] window lock taken by $TL_LOCK_PID after ${waited}s" >&2
+  trap win_unlock EXIT
+}
+win_unlock() { [ -n "$TL_LOCK_HELD" ] && rm -rf "$TL_LOCK_DIR"; TL_LOCK_HELD=""; return 0; }
+TL_LOCK_PID=$$
+
 resolve_pack() {
   local v="$1"
   case "$v" in res://*) echo "$v"; return;; esac
@@ -81,10 +105,11 @@ view_run() {   # the tl.view/1 and tl.world/1 lines on stdout; a window that die
   for a in "$@"; do args+=("$(fix_arg "$a")"); done
   tmp="${TMPDIR:-${TEMP:-/tmp}}"; command -v cygpath >/dev/null 2>&1 && tmp="$(cygpath -m "$tmp")"
   # N7: the viewer is the host mode `world-view` (kernel/host/host.gd), which builds the class cache like every verb
+  win_lock          # P11: one test window at a time on this machine; the window is silent (Dummy sound driver)
   for attempt in 1 2 3; do
     tag="tlview_$$_${RANDOM}"
     log="$tmp/$tag.log"
-    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080       --rendering-driver d3d12 $fixed --log-file "$log" --path "$E" res://kernel/host/host.tscn       -- world-view "${args[@]}" "--tag=$tag" >/dev/null 2>&1 &
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080       --rendering-driver d3d12 --audio-driver Dummy $fixed --log-file "$log" --path "$E" res://kernel/host/host.tscn       -- world-view "${args[@]}" "--tag=$tag" >/dev/null 2>&1 &
     pid=$!
     waited=0
     while kill -0 $pid 2>/dev/null; do
@@ -100,9 +125,11 @@ view_run() {   # the tl.view/1 and tl.world/1 lines on stdout; a window that die
     if grep -q '^\[view\] start' "$log" 2>/dev/null; then break; fi
     echo "[view] the window died before it started (exit $code); attempt $attempt of 3" >&2
   done
-  if [ -n "$TL_RAW" ]; then cat "$log"; rm -f "$log"; return $code; fi
-  tr -d '' < "$log" | grep -E '^(\{"schema":"tl\.(world|view)/1"|\[view\]|SCRIPT ERROR|ERROR|   at:)' | grep -v '^\[view\] start'
+  if [ -n "$TL_RAW" ]; then cat "$log"; rm -f "$log"; win_unlock; return $code; fi
+  tr -d '
+' < "$log" | grep -E '^(\{"schema":"tl\.(world|view)/1"|\[view\]|SCRIPT ERROR|ERROR|   at:)' | grep -v '^\[view\] start'
   rm -f "$log"
+  win_unlock
   return $code
 }
 

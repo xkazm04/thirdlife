@@ -18,8 +18,8 @@ bash engine/tools/export.sh probe                # the table "what an export nee
 | where | `dist/ThirdLife/` at the repository root (`dist/` is ignored by git). The folder can be copied anywhere; it needs nothing from the repository |
 | start | double click `ThirdLife.exe`. `ThirdLife.pck` and the folder `games` must stay beside it. No arguments, no console |
 | what you see | a 1920 x 1080 window: the village of seven games along a dirt road, the visitor standing on the road looking east, one line with the keys at the bottom left |
-| keys while walking | `W` walk, `S` walk back the other way, `A` / `D` turn (see "known not to work"), `Shift` run, `E` enter the game whose plot you stand in, `Esc` quit |
-| keys inside a game | `Q` or `Esc` leave the game; everything else belongs to the game (the paddle court says "A / D or the arrow keys move your paddle") |
+| keys while walking | (P11) `W` / `S` walk forward and back where the camera looks, `A` / `D` step aside, the mouse turns the view (0.15 degrees a pixel: 600 pixels are a quarter turn; up and down within -10 to 60 degrees, so he stays in the picture), `Shift` run, `E` enter the game whose plot you stand in, `Esc` quit. The mouse is captured while you walk and free while a game is on stage or the window is not in front |
+| keys inside a game | `Q` or `Esc` leave the game; everything else belongs to the game (the paddle court says "A / D or the arrow keys move your paddle"). After `Q` you stand 5 m outside the plot at its gate, facing away from it, the camera behind you |
 | the games | each stands on a fenced plot with a gate and a spur to the road. Walk through the gate, stand inside the fence, press `E`: the picture becomes the game's own camera and you play instead of its bot |
 | quit | `Esc` while walking, or the window's close button. Both end the world cleanly (exit code 0 when no game had an error) |
 | if the window closes at once | a message box should say why (for example: the folder `games` is not beside the exe; the box is written and was not seen: the same refusal was tested headless, where it is a log line and exit code 2). Everything the last start printed is in `ThirdLife-last-run.log` beside the exe |
@@ -78,8 +78,9 @@ absolute path exactly as the runner loads a pack directory today.
 | `engine/tools/export.sh` | build, check, probe |
 
 `boot.gd` reads `res://boot/village.json`, replaces each plot's `pack` by `<folder of the exe>/games/<name>`, drops
-plots whose folder is missing (and their pad height), drops the scripted events when a person walks, and writes the
-result to `%APPDATA%\Godot\app_userdata\Third Life Engine\boot\village_<pid>.json`, which the world host reads; the
+plots whose folder is missing (and their pad height), and writes the result to
+`%APPDATA%\ThirdLife\boot\village_<pid>.json` (P11: the exe has a user folder of its own, `%APPDATA%\ThirdLife`,
+by the feature `thirdlife_exe` in `project.godot`; the editor binary keeps `Godot\app_userdata\Third Life Engine`), which the world host reads; the
 file is removed when the process ends. `export.sh` builds into `dist/.ThirdLife.new.<pid>` and swaps at the end: a
 failed export leaves the build before it untouched. It refuses to replace a folder whose `BUILD.txt` it did not write
 (exit 3) and a build whose exe is running. It never runs git: the commit is `--commit <text>`, the first line of
@@ -88,9 +89,13 @@ export that say why), 2 could not run (no Godot, no export templates, no node), 
 
 For unattended starts `boot.gd` reads the environment: `TL_EXE_CAPTURE=<abs png>` (one picture after 120 physics
 frames; `TL_EXE_CAPTURE_AT=<frame>`), `TL_EXE_QUIT_AT=<frame>` (a clean end at that frame), `TL_EXE_WINDOW_POS=x,y`,
-`TL_EXE_KEYS="60:+W;240:-W;300:+Escape"` (keys pressed and released at physics frames through
-`Input.parse_input_event`: the same input state a keyboard sets), `TL_EXE_TRACE=<abs file>` (where the visitor's body
-is and who is on stage, every 30 frames).
+`TL_EXE_KEYS="60:+W;240:-W;270:~600,0;300:+Escape"` (keys pressed and released, and P11 mouse movements `~dx,dy` in
+pixels, at physics frames through `Input.parse_input_event`: the same input a keyboard and a mouse make),
+`TL_EXE_TRACE=<abs file>` (where the visitor's body is, where he looks and who is on stage, every 30 frames).
+P11: `ThirdLife.exe -- --record=<abs file>` writes the visit as an input record (`tl.input/1`; a game played on stage
+is `<file>.<plot>.<n>.json` beside it) and `ThirdLife.exe -- --input=<abs file>` plays it again: the visitor's keys
+and mouse are sampled once per world tick into one input of the world's own (`engine/kernel/runner/visit.gd`), and
+nothing below that line reads a device.
 
 ## Proof (`bash engine/tools/export.sh check`, the last run of 2026-11-11)
 
@@ -144,11 +149,11 @@ of the key run: the paddle court from above with its own score and hint, and "Q 
   watchdog's PowerShell helper ran as its child with no window (handle 0); the close button's message ended the process
   by itself, its log ends with `[tl] world done`, nothing was left. Nobody looked at that window. Steering by hand, the
   feel of the camera, playing a game with real keys: not verified.
-- **A and D do not sidestep.** They are "move relative to the camera", the visitor turns to where he moves and the
-  camera follows his back: a held `D` is a circle 3 m across, `W` + `D` a circle 5.6 m across (measured). Turn with a
-  tap of `A` or `D` while holding `W`. There is no mouse look. This is `kernel/world/draw/view.gd` as it is
-  (`world.sh visit` behaves the same); PATCHES-P9 4.
-- After `Q` the visitor stands where he pressed `E` (inside the venue, possibly among its bodies), not at the gate.
+- (P11, fixed) A and D sidestep, the mouse looks, after `Q` he stands at the gate. Measured in the exe with scripted
+  keys and mouse (`TL_EXE_KEYS`, trace every 30 frames): `W` 180 frames 13.50 m on one straight line; `D` 180 frames
+  13.50 m on a straight line at 90.0 degrees to it; 600 pixels of mouse turned him 90.00 degrees and -600 back; after
+  `Q` in the track he stood at (0, -21), 5.0 m outside its edge at its gate, facing away from it. Steering by a
+  person's hand, the feel of the mouse (sensitivity, no smoothing): not verified.
 - A fence stops him; the gate is where the spur from the road meets the plot. WORLD.md: the drive's hollow is too
   steep to walk into (its rim is 40 to 60 degrees). Only the paddle court was entered through its gate by keys.
 - A game that ended by itself stays over (WORLD.md: the owner paused the next round). Nothing in the exe starts a game
@@ -167,4 +172,9 @@ of the key run: the paddle court from above with its own score and hint, and "Q 
   with seven games (`world.sh tour`, while taking the hockey pictures; WORLD.md saw it once with six); engine errors 0,
   pictures fine. The logs of the exe's runs in the check hold no ERROR and no WARNING line.
 - `ThirdLife-last-run.log` is written beside the exe: a build in a folder that cannot be written (a read-only share)
-  runs without it. `boot.gd` also writes its walk to `%APPDATA%\Godot\app_userdata\Third Life Engine\boot\`.
+  runs without it. `boot.gd` also writes its walk to `%APPDATA%\ThirdLife\boot\` (P11; before: the editor's
+  folder `Godot\app_userdata\Third Life Engine`, shared with every engine run on the machine).
+- (P11) `host.gd` no longer starts the exe again when it looks for a class cache (`_ensure_import` returns at once
+  outside the editor binary), and `Manifest.resolve_dir` keeps a `res://` folder as it is in an export (a game inside
+  the pack file can be found). The host's verbs in the exe are still not tried: their worker command lines name
+  `--path <engine>`, which is empty there (PATCHES-P9 1, second half).

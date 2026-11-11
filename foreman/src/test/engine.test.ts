@@ -87,7 +87,7 @@ test("real engine: every verb passes on the good example packs, and the reports 
     for (const r of [lint, smoke, inv, b, cap]) {
       // Report file and last stdout line agreed (no flags above); every top-level key is one the contract fixes.
       for (const k of Object.keys(r.report ?? {})) assert.ok((REPORT_KEYS as readonly string[]).includes(k), `${name} ${r.verb}: top-level key ${k}`);
-      assert.equal(r.report?.["kernelApi"], "0.1");
+      assert.equal(r.report?.["kernelApi"], "1.0");
       assert.ok(fs.existsSync(r.reportFile) && fs.existsSync(r.verdictFile));
     }
     // Nothing of ours is left in the engine's example directory.

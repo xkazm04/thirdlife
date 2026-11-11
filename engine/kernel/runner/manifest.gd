@@ -41,6 +41,10 @@ const MAX_MOMENTS: int = 32
 ## Normalises a pack location to an absolute directory without a trailing slash ("" when it does not exist).
 static func resolve_dir(pack: String) -> String:
 	var p: String = pack.replace("\\", "/")
+	if p.begins_with("res://") and not OS.has_feature("editor"):
+		# P11 (PATCHES-P9 2): in an exported build res:// is the pack file, not a folder: a game inside it stays res://
+		p = p.trim_suffix("/")
+		return p if DirAccess.dir_exists_absolute(p) else ""
 	if p.begins_with("res://") or p.begins_with("user://"):
 		p = ProjectSettings.globalize_path(p)
 	p = p.simplify_path()

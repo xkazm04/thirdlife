@@ -26,6 +26,7 @@ const DrawScript: GDScript = preload("res://kernel/world/draw/draw.gd")
 const Landscape: GDScript = preload("res://kernel/world/landscape.gd")
 const VisitorScript: GDScript = preload("res://kernel/world/visitor.gd")
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
+const VisitScript: GDScript = preload("res://kernel/runner/visit.gd")      # P11: the visitor's input, a record
 
 var opts: Dictionary = {}
 var world: Node
@@ -47,7 +48,8 @@ var _last: int = 0
 var _measure: int = 120
 # N7: the tour
 var tour: bool = false
-var live: bool = false                  # a person walks (WASD, E, Q / Esc); not used by any scripted run
+var live: bool = false                  # a person walks (--live), or a recorded visit is replayed (--input): kernel/runner/visit.gd
+var visit: Node = null
 var visitor: Node3D = null
 var stage: int = -1                     # the plot on stage, -1 while the visitor walks
 var shots: Array = []                   # the walk's `shot` events, in order
@@ -56,7 +58,6 @@ var pictures: Array = []
 var land_stats: Dictionary = {}
 var _shot_i: int = 0
 var _busy: bool = false
-var _keys: Dictionary = {}
 var _stage_changes: int = 0
 # P5: packs arrive while the world is drawn (kernel/world/jobs.gd)
 var _arrived: Dictionary = {}           # plot index -> true: a built pack has stood there (a stand-in can be made of it)
@@ -109,16 +110,12 @@ func start(options: Dictionary) -> void:
 	world.connect("ended", _on_world_ended)
 	var wopts: Dictionary = {}
 	if tour:
-		live = opts.has("live")
+		live = opts.has("live") or opts.has("input")
 		out_dir = str(opts.get("out-dir", "")).replace("\\", "/").trim_suffix("/")
 		wopts["walk"] = opts["walk"]
 		for k: String in ["log", "tiers", "cost", "ticks", "scenery", "mode", "load", "trip", "dead"]:
 			if opts.has(k):
-				wopts[k] = opts[k]
-			elif OS.has_environment("TL_WORLD_" + k.to_upper()) and ["load", "trip", "dead"].has(k):
-				# P5: the host does not let these three through for `world-view` yet (PATCHES-P5 entry 1);
-				# tools/world.sh hands them over in the environment
-				wopts[k] = OS.get_environment("TL_WORLD_" + k.to_upper())
+				wopts[k] = opts[k]          # P11: load, trip and dead are listed options of the host (PATCHES-P5 entry 1)
 		if live and not opts.has("ticks"):
 			wopts["ticks"] = str(1 << 40)
 	else:
@@ -215,6 +212,7 @@ func start(options: Dictionary) -> void:
 	draw.set("far_mode", str(opts.get("standins", "off")))
 	draw.set("far_dist", float(opts.get("far", "150")))
 	draw.set("rim_band", float(opts.get("band", str(walk.get("rim_band", 9.0)))))
+	draw.set("force_picture", str(opts.get("picture", "")))     # P11 (PATCHES-P6 entry 2): still | mid | far, every far game
 	add_child(draw)
 	if tour:
 		draw.call("setup", world, plots, radii, rims, -1)
@@ -328,8 +326,21 @@ func _start_tour(walk: Dictionary) -> void:
 	if live:
 		world.set("player_live", true)
 		world.set("player_pos", at)
+		# PATCHES-P9 3b: a person's walk runs none of the walk's scripted visits (tiers.gd keeps them in `_visits`)
+		(world.get("sched") as RefCounted).set("_visits", [])
+		visit = VisitScript.new()
+		add_child(visit)
+		var why: String = visit.call("setup", self, opts)
+		if not why.is_empty():
+			print("[view] the visit cannot start: " + why)
+			world.call("_end")
+			return
+		visitor.call("steer_on")
+		shots = visit.get("shots") if not out_dir.is_empty() else []
 	if not out_dir.is_empty():
 		DirAccess.make_dir_recursive_absolute(out_dir)
+	else:
+		shots = []                                 # PATCHES-P9 3a: no folder, no pictures (not `/01_<name>.png`)
 
 
 ## A tier change, at the tick boundary it was decided on: the same event that changes a plot's ticks changes how it
@@ -371,17 +382,8 @@ func _on_plot_event(i: int, what: String, ev: Dictionary) -> void:
 ## to the visitor.
 func _set_stage(i: int) -> void:
 	var holders: Array = world.get("packs")
-	if live and stage >= 0 and stage != i:
-		var was: Node = holders[stage]
-		was.set("bot_off", false)
-		if was.get("ctx") != null and (was.get("ctx") as TLContext).input != null:
-			(was.get("ctx") as TLContext).input.accept_devices = false
-		if i < 0:                                        # back at the plot's edge, on the side he came from
-			var o: Vector3 = (plots[stage] as Transform3D).origin
-			var pos: Vector3 = world.get("player_pos")
-			var out: Vector3 = Vector3(pos.x - o.x, 0.0, pos.z - o.z)
-			out = out.normalized() if out.length() > 0.01 else Vector3.BACK
-			world.set("player_pos", Vector3(o.x, 0.0, o.z) + out * (float(radii[stage]) + 4.0))
+	if visit != null:
+		visit.call("stage", stage, i, holders, plots, radii)   # bot off, the game's input, after Q: at the plot's gate
 	stage = i
 	_stage_changes += 1
 	draw.call("set_stage", i)
@@ -398,46 +400,6 @@ func _set_stage(i: int) -> void:
 		ctx.cameras.active.make_current()
 	else:
 		vcam.make_current()                              # a game with no view of its own is watched from where he stands
-	if live:
-		(holders[i] as Node).set("bot_off", true)
-		if ctx != null and ctx.input != null:
-			ctx.input.accept_devices = true
-
-
-func _pressed(key: Key) -> bool:
-	var down: bool = Input.is_physical_key_pressed(key)
-	var was: bool = bool(_keys.get(key, false))
-	_keys[key] = down
-	return down and not was
-
-
-## A person walks: WASD relative to the camera, E enters the plot he stands in, Q or Esc leaves the game on stage.
-## NOT verified by any run (no interactive window was opened while this was built).
-func _live_input() -> void:
-	var sched: RefCounted = world.get("sched")
-	if stage >= 0:
-		if _pressed(KEY_Q) or _pressed(KEY_ESCAPE):
-			sched.call("request", "leave")
-		return
-	if _pressed(KEY_E):
-		sched.call("request", "enter")
-	var vcam: Camera3D = visitor.get("cam")
-	var fwd: Vector3 = -vcam.global_transform.basis.z
-	fwd.y = 0.0
-	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3.FORWARD
-	var right: Vector3 = Vector3(-fwd.z, 0.0, fwd.x)
-	var move: Vector3 = Vector3.ZERO
-	if Input.is_physical_key_pressed(KEY_W):
-		move += fwd
-	if Input.is_physical_key_pressed(KEY_S):
-		move -= fwd
-	if Input.is_physical_key_pressed(KEY_D):
-		move += right
-	if Input.is_physical_key_pressed(KEY_A):
-		move -= right
-	if move.length() > 0.01:
-		var pace: float = 9.0 if Input.is_physical_key_pressed(KEY_SHIFT) else 4.5
-		world.set("player_pos", (world.get("player_pos") as Vector3) + move.normalized() * pace / 60.0)
 
 
 func _tiers_now() -> Dictionary:
@@ -465,6 +427,8 @@ func _tour_shot(sh: Dictionary, number: int) -> void:
 
 func _on_world_ended(_bad: bool) -> void:
 	_done = true
+	if visit != null:
+		visit.call("finish")                             # P11: the visit's records
 	if draw != null:
 		draw.call("clear")
 	var code: int = int(world.get("exit_code"))
@@ -523,8 +487,11 @@ func _physics_process(_delta: float) -> void:
 		return
 	if tour:
 		var t: int = int(world.get("tick"))
-		if live:
-			_live_input()
+		if visit != null:
+			visit.call("sample", t)                      # the sampling line: no device is read below it
+			visit.call("steer", t)
+			if _done:
+				return
 		visitor.call("step", world.get("player_pos"), t)
 		if not _busy and _shot_i < shots.size() and t > int((shots[_shot_i] as Dictionary).get("t", 0)):
 			_busy = true

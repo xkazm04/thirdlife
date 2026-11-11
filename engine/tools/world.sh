@@ -36,13 +36,18 @@
 #       the tour (drawing on) = the same pack alone for the same number of its own ticks = the replay of the log.
 #   world.sh tour <walk> --headless            the same without a window and without pictures (the selftest case)
 #   world.sh tour <walk> --out-dir=<abs dir> --pictures-only     the window and the pictures, no proof
-#   world.sh visit <walk>                      the same world for a person: WASD, Shift, E enters, Q or Esc leaves;
-#       a window on the desktop that stays open until it is closed. NOT run by any test.
+#   world.sh visit-test <walk> (--devices=<f> --record=<f> | --input=<f>) [options]   P11: a scripted or replayed
+#       visit in a test window (kernel/runner/visit.gd); world.sh visit-proof [--out-dir=<abs dir>]: record + 2 replays
+#   world.sh alone --packs=<a>,.. [--mode=bot] [--frames=N]   P11: each pack in a world = the runner alone (tl.sh)
+#   world.sh visit <walk>                      the same world for a person: W S along the view, A D sidestep, mouse looks,
+#       Shift runs, E enters, Q leaves, Esc quits; a window on the desktop that stays open until it is closed.
 #   P5 (kernel/world/TIERS.md "P5: loading is not simulation"): in a walk or a tour the packs are built by the world's
 #   build queue and arrive with a `built` event; `world.sh tour walk30 --out-dir=<abs dir> --pictures-only` is the
 #   village of 30 games that are built as the visitor approaches. A walk's `events` may hold
 #   {"t": N, "e": "reload", "plot": "<id>"}: that plot's pack is replaced by a freshly loaded copy of its directory.
-#   TL_WORLD_LOAD=queue|step|block says how packs arrive in a window (block = all before the first frame, as before P5).
+#   --load=queue|step|block says how packs arrive (block = all before the first frame, as before P5); P11: an option of
+#   world-view too (the environment variables TL_WORLD_LOAD, TL_WORLD_TRIP, TL_WORLD_DEAD are gone). P11: a test window
+#   (tour, visit-test) waits for the machine-wide window lock and runs with the Dummy sound driver.
 #   A windowed world is supervised: when a pack runs away the window is started again without it.
 #
 # Env: TL_GODOT (Godot console exe), TL_ENGINE_DIR (this engine/ directory), TL_RAW=1 (also print the engine's lines),
@@ -53,6 +58,30 @@ if command -v cygpath >/dev/null 2>&1; then
   E="$(cygpath -m "$E")"
   G="$(cygpath -m "$G")"
 fi
+
+# P11: one test window at a time on this machine. Two windows on the same spot of the screen throttle each other to
+# about 270 ms a frame (P5, P6 re-runs), so a windowed run waits for a lock under the system's temporary folder that
+# holds the holder's process id; the lock of a holder that is gone is taken over. TL_WINDOW_LOCK=off skips it.
+win_lock() {
+  [ "${TL_WINDOW_LOCK:-on}" = off ] && return 0
+  local d="${TEMP:-${TMP:-/tmp}}" waited=0 holder
+  command -v cygpath >/dev/null 2>&1 && d="$(cygpath -u "$d")"
+  TL_LOCK_DIR="$d/thirdlife_window.lock"
+  while ! mkdir "$TL_LOCK_DIR" 2>/dev/null; do
+    holder="$(cat "$TL_LOCK_DIR/pid" 2>/dev/null)"
+    if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+      echo "[lock] the holder ($holder) is gone: the window lock is taken over" >&2
+      rm -rf "$TL_LOCK_DIR"; continue
+    fi
+    [ $waited -eq 0 ] && echo "[lock] another test window is open (process ${holder:-?}): waiting for it" >&2
+    sleep 2; waited=$((waited + 2))
+  done
+  echo "$TL_LOCK_PID" > "$TL_LOCK_DIR/pid"; TL_LOCK_HELD=1
+  echo "[lock] window lock taken by $TL_LOCK_PID after ${waited}s" >&2
+  trap win_unlock EXIT
+}
+win_unlock() { [ -n "$TL_LOCK_HELD" ] && rm -rf "$TL_LOCK_DIR"; TL_LOCK_HELD=""; return 0; }
+TL_LOCK_PID=$$
 
 resolve_pack() {
   local v="$1"
@@ -77,7 +106,7 @@ fix_arg() {
       IFS=',' read -ra items <<< "$v"
       for item in "${items[@]}"; do out="${out:+$out,}$(resolve_pack "$item")"; done
       echo "--packs=$out";;
-    --out=*|--out-dir=*|--log=*|--replay=*|--world=*|--save=*|--tiers=*|--walk=*)
+    --out=*|--out-dir=*|--log=*|--replay=*|--world=*|--save=*|--tiers=*|--walk=*|--record=*|--input=*|--devices=*)
       local k="${a%%=*}" v="${a#*=}"
       if command -v cygpath >/dev/null 2>&1; then
         case "$v" in /*|[A-Za-z]:*) v="$(cygpath -m "$v")";; *) v="$(cygpath -m "$PWD/$v")";; esac
@@ -105,6 +134,10 @@ window_mode() {  # window_mode <mode> <args...>: as godot_mode, in a window; a w
   local args=() a attempt code=1 tmp log tag pid waited dead="" trip idx extra
   for a in "$@"; do args+=("$(fix_arg "$a")"); done
   tmp="${TMPDIR:-${TEMP:-/tmp}}"; command -v cygpath >/dev/null 2>&1 && tmp="$(cygpath -m "$tmp")"
+  # P11: a test window waits for the machine's window lock and is silent (the engine's Dummy sound driver: a sound
+  # device error is the machine's, not the run's); a person's window (visit) takes no lock and keeps the sound
+  local audio=(--audio-driver Dummy)
+  if [ -n "$TL_WINDOW_PERSON" ]; then audio=(); else win_lock; fi
   for attempt in 1 2 3 4 5 6; do
     tag="tlworld_$$_${RANDOM}"
     log="$tmp/$tag.log"
@@ -112,8 +145,9 @@ window_mode() {  # window_mode <mode> <args...>: as godot_mode, in a window; a w
     # runs away and leaves a trip record; the window is then started again without that pack (--dead), as the
     # headless supervisor does. The world is built again from its seeds: the visitor starts at the beginning of the walk.
     trip="$tmp/$tag.trip.json"
-    extra=("--tag=$tag")       # --trip and --dead go through the environment: the host's option list for world-view has neither yet
-    TL_WORLD_TRIP="$trip" TL_WORLD_DEAD="$dead" MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080 --rendering-driver d3d12 --fixed-fps 60 --log-file "$log" --path "$E" res://kernel/host/host.tscn -- "$mode" "${args[@]}" "${extra[@]}" >/dev/null 2>&1 &
+    extra=("--tag=$tag" "--trip=$trip")       # P11: --trip and --dead are options of world-view (PATCHES-P5 entry 1)
+    [ -n "$dead" ] && extra+=("--dead=$dead")
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080 --rendering-driver d3d12 "${audio[@]}" --fixed-fps 60 --log-file "$log" --path "$E" res://kernel/host/host.tscn -- "$mode" "${args[@]}" "${extra[@]}" >/dev/null 2>&1 &
     pid=$!
     waited=0
     while kill -0 $pid 2>/dev/null; do
@@ -135,9 +169,10 @@ window_mode() {  # window_mode <mode> <args...>: as godot_mode, in a window; a w
     if grep -q '^\[view\] start' "$log" 2>/dev/null; then break; fi
     echo "[world] the window died before it started (exit $code); attempt $attempt of 3" >&2
   done
-  if [ -n "$TL_RAW" ]; then cat "$log"; rm -f "$log"; return $code; fi
+  if [ -n "$TL_RAW" ]; then cat "$log"; rm -f "$log"; win_unlock; return $code; fi
   tr -d '\r' < "$log" | grep -E '^(\{"schema":"tl\.(world|view|visitor)/1"|\[view\] [^s]|SCRIPT ERROR|ERROR|WARNING|   at:)'
   rm -f "$log"
+  win_unlock
   return $code
 }
 
@@ -242,6 +277,28 @@ case "$1" in
     done
     [ $fail -eq 0 ] && echo "PASS world.same: every pack hashes together as it does alone, three runs" || echo "FAIL world.same"
     exit $fail;;
+  alone)
+    # P11: a pack in a world hashes as the runner (tl.sh smoke / bot, the worker) hashes it alone after the same ticks
+    shift
+    packs=""; rest=(); mode=smoke; seeds=""
+    for a in "$@"; do case "$a" in --packs=*) packs="${a#*=}";; --mode=*) mode="${a#*=}"; rest+=("$a");; --seeds=*) seeds="${a#*=}"; rest+=("$a");; *) rest+=("$a");; esac; done
+    [ -z "$packs" ] && { echo "world.sh alone: --packs=<a>,<b>,... is required"; exit 2; }
+    IFS=',' read -ra items <<< "$packs"; IFS=',' read -ra sds <<< "${seeds:-1}"
+    out="$(godot_mode world "--packs=$packs" "${rest[@]}")"; code=$?
+    fail=0; [ $code -ne 0 ] && { echo "the world ended with exit code $code"; fail=1; }
+    echo "pack | mode | own ticks | hash in the world | runner alone (tl.sh $mode), same ticks | verdict"
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      idx="$(echo "$line" | jnum index)"; frames="$(echo "$line" | jnum frames)"; h="$(echo "$line" | jstr state_hash | cut -c1-16)"
+      sd="${sds[$idx]:-${sds[0]}}"
+      rep="$(TL_QUIET=1 bash "$(dirname "$0")/tl.sh" "$mode" "--pack=$(echo "$line" | jstr dir)" "--seed=$sd" "--frames=$frames" 2>/dev/null | tail -1)"
+      rh="$(echo "$rep" | jstr state_hash | cut -c1-16)"; rf="$(echo "$rep" | jnum frames)"
+      verdict="same"; { [ -z "$h" ] || [ "$h" != "$rh" ]; } && { verdict="DIFFERENT"; fail=1; }
+      echo "$(echo "$line" | jstr pack) | $mode | $frames | $h | $rh ($rf frames) | $verdict"
+    done <<< "$(echo "$out" | grep '"kind":"pack"')"
+    [ "$(echo "$out" | grep -c '"kind":"pack"')" -ne "${#items[@]}" ] && { echo "not every pack reported a hash"; fail=1; }
+    [ $fail -eq 0 ] && echo "PASS world.alone: every pack hashes in the world as the runner hashes it alone" || echo "FAIL world.alone"
+    exit $fail;;
   walk|replay)
     cmd="$1"; shift
     [ -z "$1" ] && { echo "world.sh $cmd: a file is required"; exit 2; }
@@ -297,11 +354,47 @@ case "$1" in
     rm -rf "$tmp"
     [ $fail -eq 0 ] && echo "PASS world.tour: every pack of the tour hashes as it does alone for the same ticks, and the log replays to the same" || echo "FAIL world.tour"
     exit $fail;;
+  visit-proof)
+    # P11: the visitor's input is a record. A scripted person (boot/visit_proof.devices.json: W, D, mouse, Shift, E,
+    # Q, Esc over 1,900 ticks of the tour's world) is recorded, then the record is replayed twice in a test window;
+    # PASS when his place at every 300th tick and every pack's ticks and hash agree in all three. --cost=model and
+    # --load=block: with the measured cost or the build queue a window's schedule follows the wall clock.
+    shift
+    od=""; for a in "$@"; do case "$a" in --out-dir=*) od="${a#*=}";; esac; done
+    tmp="${TMPDIR:-${TEMP:-/tmp}}/tl_visit_proof_$$"; mkdir -p "$tmp"; [ -z "$od" ] && od="$tmp"
+    mkdir -p "$od"
+    pat='"kind":"visit_path","tick":[0-9]*00,"feet":[^]]*\]|^pack .*|"kind":"visit_left".*'
+    fixed=(--cost=model --load=block --ticks=2400)
+    out="$(bash "$0" visit-test tour "--devices=$E/boot/visit_proof.devices.json" "--record=$od/visit.json" "--out-dir=$od" "${fixed[@]}" 2>&1)"
+    echo "$out" | grep -oE "$pat" | uniq > "$tmp/a.txt"     # a mark of the script can fall on a 300th tick: printed twice
+    echo "$out" | grep -E 'picture|SCRIPT ERROR|^ERROR' | grep -oE '"out":"[^"]*"|SCRIPT ERROR.*|^ERROR.*' | sed 's/^/  /'
+    fail=0
+    for r in 1 2; do
+      bash "$0" visit-test tour "--input=$od/visit.json" "${fixed[@]}" 2>&1 | grep -oE "$pat" | uniq > "$tmp/r$r.txt"
+      if diff -q "$tmp/a.txt" "$tmp/r$r.txt" >/dev/null; then echo "replay $r: the same path and the same hashes"; else echo "replay $r: DIFFERENT"; diff "$tmp/a.txt" "$tmp/r$r.txt" | head -8; fail=1; fi
+    done
+    echo "recorded visit ($od/visit.json, $(grep -o '"length":[0-9]*' "$od/visit.json" | head -1)):"; sed 's/^/  /' "$tmp/a.txt"
+    [ "$(grep -c '^pack ' "$tmp/a.txt")" -ge 1 ] && grep -q 'visit_left' "$tmp/a.txt" || { echo "no pack hash or no leave in the visit"; fail=1; }
+    grep -q '^pack [a-z]* ticks [0-9]* hash $' "$tmp/a.txt" && { echo "a pack has no hash"; fail=1; }
+    rm -rf "$tmp"
+    [ $fail -eq 0 ] && echo "PASS world.visit_proof: a recorded visit replays twice to the same path and the same pack hashes" || echo "FAIL world.visit_proof"
+    exit $fail;;
+  visit-test)
+    # P11: a scripted or replayed visit in a test window: --devices=<file> --record=<file> (a person's keys and mouse,
+    # scripted, recorded) or --input=<file> (the record fed back); prints where he was, the stage changes, every pack's hash
+    shift
+    [ -z "$1" ] && { echo "world.sh visit-test: a walk script is required"; exit 2; }
+    f="$(walk_file "$1")"; shift
+    out="$(window_mode world-view "--walk=$f" --live "$@")"; code=$?
+    echo "$out" | grep -E '"kind":"(visit_path|visit_left|visit_record|tour|picture)"|^\[view\] [^s]|SCRIPT ERROR|^ERROR'
+    echo "$out" | grep '"kind":"pack"' | sed -E 's/.*"frames":([0-9]+),"state_hash":"([0-9a-f]{0,16})[^"]*".*"plot":"([^"]*)".*/pack \3 ticks \1 hash \2/'
+    echo "$out" | grep '"kind":"event"' | grep -E '"e":"(enter|leave|refused)"' | sed -E 's/^\{"schema":"tl.world\/1","kind":"event",//; s/\}$//'
+    exit $code;;
   visit)
     shift
     [ -z "$1" ] && { echo "world.sh visit: a walk script is required"; exit 2; }
     f="$(walk_file "$1")"; shift
-    TL_WINDOW_POS="${TL_WINDOW_POS:-120,80}" TL_VIEW_TIMEOUT="${TL_VIEW_TIMEOUT:-86400}" window_mode world-view "--walk=$f" --live "$@"
+    TL_WINDOW_PERSON=1 TL_WINDOW_POS="${TL_WINDOW_POS:-120,80}" TL_VIEW_TIMEOUT="${TL_VIEW_TIMEOUT:-86400}" window_mode world-view "--walk=$f" --live "$@"
     exit $?;;
   save)
     shift
@@ -318,5 +411,5 @@ case "$1" in
     if [ -n "$TL_JSON" ]; then echo "$out"; else show_plots "$out"; fi
     exit $code;;
   *)
-    sed -n '2,45p' "$0"; exit 2;;
+    sed -n '2,54p' "$0"; exit 2;;
 esac
