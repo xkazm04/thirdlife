@@ -363,3 +363,50 @@ Resume point for WP3b. Times from `date` (CEST). Brief: briefs/BRIEF-WP3B-FOREMA
   branch) and the pictures after a change have also run on the real runner against snapshot3; nothing has run with a
   real model. Dry prompts: foreman/dry/n3-prompts-hockey.txt. The Director runs the real hockey job next; the command
   lines are in the final message.
+
+## N3b (same builder; follow-up from the Director after the real hockey job; start 01:57 CEST 2026-11-11, time-box 30 min)
+
+- 01:57 START. Read (only read) site/ice-hockey-three-against-20261111-1: job.jsonl (124 events, paused on hockey_ai's
+  question), reports/hockey_core-r5-lint-s122.json, pack/pack.json, ws/hockey_core/pack.json, the invariants
+  reports of events 67 to 72 and the frame figures of every run of the job.
+- 01:59 DEFECT 1, CAUSE: a workspace is a copy of the WHOLE pack/ (ensureWs copies pack/; since N3 refreshWs also
+  brings every out-of-scope file up to pack/ before each round), but the manifest it is verified with
+  (wsManifestText) was composed from the package's DEPENDENCY CLOSURE only. ws/hockey_core held scripts/fx/fx.gd
+  (hockey_fx) while ws/hockey_core/pack.json listed only hockey_core's capabilities and assets: lint.capabilities
+  failed on TLAudio/TLVfx. Before N3 the same hole existed for a sibling cut after another sibling had merged; N3's
+  refresh made the root hit it at every re-opening after a dependant with its own capability had merged.
+  FIX: the workspace manifest = dependency closure + every package whose merged files the workspace holds. The
+  list is written when the workspace is cut or refreshed (ws/<pkg>.members.json), so it is the same after a resume;
+  without the file (workspaces of the paused hockey job) it is derived: every package of which a merged file is
+  present in the workspace. The fake runner's lint now checks capabilities (marker FAKE_USES(<cap>)).
+  Test "N3b 1": root re-opened after a dependant that registered `audio` merged. With the fix switched off in
+  dist/ for one run it fails ("the workspace manifest lacks the capability of a package whose files it holds").
+- 02:01 DEFECT 2, WHAT THE FIGURES SAY (frame_ms_p50 / p99 of every run of the real job): calm p50 0.55..0.75,
+  p99 1.0..1.25 ms; under load p50 0.67..0.96 (unchanged), p99 8..33 ms. So load leaves the median alone and blows
+  up the tail. tick_timeout and the setup phase are ONE watchdog reason in the engine (worker.gd: "tick_timeout",
+  "<phase> did not return within N ms") and were already clock-based; `setup_timeout` added to the pattern anyway.
+  BUILT: verifyLogged = two runs as before; if both fail on a clock: (1) frame budget only AND the median frame is
+  over half the budget -> slow code, straight to the builder; (2) otherwise measure the MACHINE: `smoke` on the
+  engine's reference pack kernel/examples/pack_min. Busy when that trips a time limit, or its frame p99 >= 2 ms, or
+  its slowest tick >= 2 ms (measured on the real runner at 02:04 with the suite and three other builders running:
+  p99 0.38, 0.43, 0.81 ms; tick max 0.10, 0.10, 4.46 ms). Busy -> note "[foreman] inconclusive: machine busy ...",
+  wait 20 s / 40 s / 80 s, run the check again (reports *-retry<n>), measure again; cleared -> the round goes on, no
+  round spent; still busy after 3 tries -> package `blocked` cause `machine_busy` (new cause), job `paused`
+  (exit 3); `resume` verifies the same files again WITHOUT running the builder. Not busy -> the failure is the
+  pack's: note "[foreman] not machine load: ..." and the next round's prompt says the machine was measured.
+  feedback() no longer hands a builder a failed run that a later run of the same check overruled. Final
+  verification inconclusive -> job paused, not failed; re-verification of dependants inconclusive -> nobody is
+  re-opened. Builder prompt: new rule "A time limit can fail because the machine is busy" (no QUESTION, no
+  restructuring for it). Options: --clock-retries (3), --clock-pause-ms (20000, doubling twice), --reference-pack,
+  --reference-busy-p99-ms (2), --reference-busy-tick-ms (2). Tests "N3b 2" x4.
+  SLIP: I started the full suite, then changed code; I stopped the task and killed ITS process tree (pid 96608,
+  `node --test`, with its two test children and their Godot capture children on snapshot3: all started by me at
+  02:03..02:05). No other process was touched. No git command; no test of mine runs git (grep: 0 files).
+- 02:08 FINAL: `npx tsc --noEmit` exit 0; `npm test` ONCE, with TL_GODOT and TL_ENGINE_DIR=site/_engine_snapshot3,
+  after the last edit: 161 tests, 161 pass, 0 skipped, 146 s (156 before + 5 in src/test/n3b.test.ts).
+  data/job-events.schema.json regenerated (cause machine_busy). The run flags of the hockey job plus the four new
+  ones were accepted on a scratch fixture with the fake adapter. The hockey job directory was only read (0 files
+  changed there since 01:56; no lock file). No model call, no git. Nothing of mine is left running.
+  NOT VERIFIED: nothing of N3b has run with a real model or on the real job; the machine gauge has never seen the
+  load that broke hockey_ai (twelve Godot processes): its two limits (2 ms) come from three real runs of pack_min
+  under tonight's ordinary load and from the hockey job's figures.

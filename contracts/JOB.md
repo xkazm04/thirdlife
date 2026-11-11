@@ -146,3 +146,10 @@ Unknown `type` or unknown keys are errors when the log is read.
 - Notes the Foreman writes itself start with `[foreman] `.
 - Files in a job directory added by this: `ws/<pkg>.carried.json`, `ws/<pkg>.kit.json`, `captures/promotion<n>-*`.
 - Runner verbs and options come from `<engine>/kernel/runner/verbs.json`; a missing file is an error at start.
+- Added after N3b: failure cause `machine_busy`. A clock-based failure (frame budget, watchdog time limits) is run
+  twice; if both fail and the median frame is not itself over half the budget, the Foreman measures the machine with
+  `smoke` on the engine's reference pack (`kernel/examples/pack_min`), waits and retries (`--clock-retries`,
+  `--clock-pause-ms`), and only then blocks the package with `machine_busy` and pauses the job; `resume` verifies the
+  same files again without a builder run. A busy-machine failure is never sent to a builder as feedback.
+- `ws/<pkg>.members.json` lists the packages whose merged files a workspace holds; the workspace manifest is composed
+  from the dependency closure plus those.

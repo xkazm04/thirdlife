@@ -57,6 +57,13 @@ round is lost. Get the smallest thing that passes the acceptance working first, 
 - Use only what the kernel API document describes. Do not guess at kernel functions: open the document and the
   example packs. Data first, script second. Use kernel primitives; do not re-implement them.
 - Any error Godot prints fails verification, so does a bot that is not done inside its frame budget.
+- **A time limit can fail because the machine is busy.** `invariants.frame_budget` (frame p99 over 8 ms) and the
+  watchdog's `tick_timeout` measure wall-clock time, and other work runs on this machine. The Foreman checks that
+  itself before it reports such a failure to you (it runs the engine's reference pack beside yours). If your own
+  self-check shows a frame-time or tick-time failure on a pack that is otherwise correct, run that command once more
+  before you believe it. Do NOT ask a `QUESTION:` about it, do not blame another package's files for it, and do not
+  restructure working code for it; only if the Verifier's report in the next round says the reference pack PASSED
+  while yours failed is the time your pack's own.
 - **Kit use is measured every round.** After your round the Foreman compares the merged pack with the pack before
   it: the number of bypasses in the lint report (`composability.bypasses`: a `.new()` of a body, camera, material,
   timer or player, a direct `apply_impulse`, a hand-rolled score or clock, and so on) and the number of kit parts

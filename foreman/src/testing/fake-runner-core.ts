@@ -236,7 +236,19 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       });
     }
     checks.push({ id: "lint.fence", ok: fenceHits === 0, detail: `${fenceHits} fenced patterns` });
-    checks.push({ id: "lint.capabilities", ok: true, detail: "not checked by the fake runner" });
+    // FAKE_USES(<capability>) in a script stands for a kernel class of that capability: as in the real lint, the
+    // manifest must declare it (this is what a workspace manifest without a merged package's registrations trips on).
+    const capErrs: Err[] = [];
+    const declared = new Set(schemaOk && manifest && Array.isArray(manifest["capabilities"]) ? (manifest["capabilities"] as string[]) : []);
+    for (const f of gd) {
+      (text.get(f) ?? "").split(/\r?\n/).forEach((l, i) => {
+        for (const m of l.matchAll(/FAKE_USES\((\w+)\)/g)) {
+          if (!declared.has(m[1] as string)) capErrs.push({ kind: "capability", file: f, line: i + 1, message: `uses a kernel class of '${m[1]}' but the manifest does not declare the capability '${m[1]}'` });
+        }
+      });
+    }
+    errors.push(...capErrs);
+    checks.push({ id: "lint.capabilities", ok: capErrs.length === 0, detail: capErrs.length === 0 ? "every kernel capability used is declared" : `${capErrs.length} problem(s); first: ${capErrs[0]?.file ?? ""}:${capErrs[0]?.line ?? 0} ${capErrs[0]?.message ?? ""}` });
 
     const sizeErrs: Err[] = [];
     let total = 0;

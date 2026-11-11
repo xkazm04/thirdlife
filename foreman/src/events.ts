@@ -20,6 +20,8 @@ export const CAUSES = [
   "cancelled",
   "no_visible_change",
   "kit_regression",
+  /** N3b: a verification was inconclusive because the machine was busy (the engine's reference pack broke its clock too). */
+  "machine_busy",
 ] as const;
 export type Cause = (typeof CAUSES)[number];
 export const ADAPTERS = ["claude-cli", "messages-api", "fake"] as const;

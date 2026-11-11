@@ -413,7 +413,8 @@
       "question",
       "cancelled",
       "no_visible_change",
-      "kit_regression"
+      "kit_regression",
+      "machine_busy"
      ]
     },
     "detail": {

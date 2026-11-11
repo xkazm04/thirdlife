@@ -82,6 +82,15 @@ const HELP = `foreman <command>
                                          never inherit names containing KEY, TOKEN, SECRET or PASSWORD
             [--max-replans N] [--max-packages N]   re-plans per job (default 3), packages a re-plan may leave
             [--no-critic] [--capture-res WxH] [--no-reference] [--planner-model M] [--critic-model M]
+            [--clock-retries N] [--clock-pause-ms MS] [--reference-pack DIR] [--reference-busy-p99-ms X] [--reference-busy-tick-ms Y]
+                              a clock-based failure (frame budget, watchdog time limit) that repeats is checked
+                              against the machine: smoke runs on the engine's reference pack (default
+                              <engine>/kernel/examples/pack_min). If that trips a time limit too, or its frame p99
+                              is X ms or more (default 2; calm it is a few tenths), or one of its ticks took Y ms
+                              or more (default 2; calm about 0.1), the verdict is
+                              "inconclusive: machine busy": wait MS, 2 MS, 4 MS (default 20000) and try again, up to
+                              N times (default 3); then the package is blocked (cause machine_busy), the job pauses
+                              (exit 3) and "resume" verifies the same files again without running the builder
             [--no-kit-gate]   do not fail a round for more bypasses or less kit use (default: such a round fails
                               with cause kit_regression unless the builder's DEVIATIONS say why)
   resume <job> [same options as run]  continues from job.jsonl; promoted packages are never rebuilt
@@ -434,6 +443,11 @@ async function runJob(a: Args, out: (s: string) => void): Promise<number> {
       ...(!isEmptyReference(reference) ? { reference } : {}),
       critic: a.flags["no-critic"] !== true,
       kitGate: a.flags["no-kit-gate"] !== true,
+      ...(num(a, "clock-retries") !== undefined ? { clockRetries: Math.max(0, Math.floor(num(a, "clock-retries") as number)) } : {}),
+      ...(num(a, "clock-pause-ms") !== undefined ? { clockPausesMs: [1, 2, 4].map((k) => Math.max(0, Math.floor(num(a, "clock-pause-ms") as number)) * k) } : {}),
+      ...(num(a, "reference-busy-tick-ms") !== undefined ? { referenceBusyTickMs: num(a, "reference-busy-tick-ms") as number } : {}),
+      ...(num(a, "reference-busy-p99-ms") !== undefined ? { referenceBusyP99Ms: num(a, "reference-busy-p99-ms") as number } : {}),
+      ...(str(a, "reference-pack") !== undefined ? { referencePack: path.resolve(str(a, "reference-pack") as string) } : {}),
       promote: a.flags["no-promote"] !== true,
       promoteTo,
       retryFailed: a.flags["retry-failed"] === true,

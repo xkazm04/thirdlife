@@ -82,6 +82,29 @@ export interface ForemanOptions {
    * does not accept is never asked for and is removed if a builder writes it, because lint would refuse the pack.
    */
   carriedFields?: string[];
+  /**
+   * N3b: how often a clock-based failure that the machine explains (the engine's reference pack fails its clock too)
+   * is tried again before the round is recorded as inconclusive. Default 3.
+   */
+  clockRetries?: number;
+  /** N3b: the pause before each of those tries, in ms; the last value repeats. Default [20000, 40000, 80000]. */
+  clockPausesMs?: number[];
+  /** N3b: the known-good pack the machine is measured with. Default <engine>/kernel/examples/pack_min. */
+  referencePack?: string;
+  /**
+   * N3b: the reference pack's frame p99 (ms) from which the machine counts as busy even though the reference pack
+   * still passed. Default 2. Measured in the real hockey job: a calm run has p99 about 1.7 x p50 (1.0 ms against
+   * 0.6 ms on a 289-node pack); under load p50 stays and p99 jumps to 13..33 ms. The reference pack is tiny, so it
+   * rarely breaks the 8 ms budget itself: its p99 is the gauge.
+   */
+  referenceBusyP99Ms?: number;
+  /**
+   * N3b: the reference pack's slowest single tick (ms, `tick_ms_max` of its smoke report) from which the machine
+   * counts as busy. Default 2. Measured on the real runner 2026-11-11 02:04 with pack_min: 0.10 ms in two runs,
+   * 4.46 ms in the one run that another process cut into. The reference run is short (about 1.3 s), so one
+   * interrupted tick is the sensitive sign; its p99 moves much less than a big pack's.
+   */
+  referenceBusyTickMs?: number;
   /** N3 item 3: compare kit use and bypasses before and after every round. Default true (`--no-kit-gate` turns it off). */
   kitGate?: boolean;
   /** Test seam: called after every durable append; throwing simulates a kill at that exact event. */
@@ -138,7 +161,14 @@ export function statesKitReason(deviations: string | undefined, hints: string[] 
   return hints.some((h) => h.length >= 4 && deviations.toLowerCase().includes(h.toLowerCase()));
 }
 
-type GateFailure = VerifyResult & { kitRegression?: string };
+/** A verification result with what the Foreman concluded on top: a kit regression, or "machine busy, no verdict". */
+type Verified = VerifyResult & { inconclusive?: string };
+type GateFailure = Verified & { kitRegression?: string };
+
+/** N3b: the fixed start of the `detail` of a round whose clock-based failure was the machine's, not the pack's. */
+export const MACHINE_BUSY = "inconclusive: machine busy";
+/** N3b: the start of the note (after FOREMAN_NOTE) that says a repeated clock failure is the pack's own. */
+export const NOT_LOAD = "not machine load";
 
 /**
  * The deviations a builder states in its answer: everything under a line `DEVIATIONS:` up to a `QUESTION:` line or
@@ -233,9 +263,28 @@ export function restsOnAClock(vr: VerifyResult): boolean {
   const failed = r.checks.filter((c) => !c.ok);
   if (r.outcome === "watchdog") {
     const detail = failed.find((c) => c.id === "smoke.watchdog")?.detail ?? "";
-    return /tick_timeout|did not return/.test(detail);
+    return /tick_timeout|setup_timeout|did not return/.test(detail);
   }
   return failed.length > 0 && failed.every((c) => c.id === "invariants.frame_budget");
+}
+
+/**
+ * When the ONLY failed check is the frame budget and the median frame alone is over half of it, the words that say
+ * so; undefined otherwise. Such a pack is slow in every frame, which load does not explain.
+ */
+export function medianOverHalfBudget(vr: VerifyResult): string | undefined {
+  const failed = (vr.report?.checks ?? []).filter((c) => !c.ok);
+  if (vr.report?.outcome === "watchdog" || failed.length === 0 || !failed.every((c) => c.id === "invariants.frame_budget")) return undefined;
+  const p50 = (vr.report?.["metrics"] as { frame_ms_p50?: unknown } | undefined)?.frame_ms_p50;
+  const budget = Number(/budget (\d+(?:\.\d+)?) ms/.exec(failed[0]?.detail ?? "")?.[1] ?? "8");
+  if (typeof p50 !== "number" || !(p50 > budget / 2)) return undefined;
+  return `The median frame alone is ${p50} ms, over half of the ${budget} ms budget: the pack is slow in every frame, which machine load does not explain`;
+}
+
+/** The words of a clock-based failure: the failed checks' details (the p99 figure, the watchdog's reason). */
+export function clockDetail(vr: VerifyResult): string {
+  const failed = (vr.report?.checks ?? []).filter((c) => !c.ok && (c.id === "invariants.frame_budget" || c.id === "smoke.watchdog"));
+  return failed.map((c) => c.detail ?? c.id).join("; ") || vr.summary;
 }
 
 /**
@@ -255,6 +304,8 @@ export class Foreman {
   private gate!: BudgetGate;
   private mergeChain: Promise<unknown> = Promise.resolve();
   private verbs: RunnerVerbs | undefined;
+  /** N3b: packages whose round ended inconclusive (machine busy) in THIS run: not started again until the next run. */
+  private readonly busyThisRun = new Set<string>();
   private readonly jobDir: string;
   private readonly template: string;
   private readonly packContract: string;
@@ -389,9 +440,12 @@ export class Foreman {
         await this.finish();
         break;
       }
-      if (views.some((p) => p.state === "blocked" && p.cause === "question") && !views.some((p) => p.state === "failed")) {
+      const held = (p: PackageView): boolean => p.state === "blocked" && (p.cause === "question" || p.cause === "machine_busy");
+      if (views.some(held) && !views.some((p) => p.state === "failed")) {
         const waiting = views.filter((p) => p.state === "blocked" && p.cause === "question").map((p) => p.id);
-        this.append({ type: "job_state", state: "paused", reason: `waiting for answers: ${waiting.join(", ")}` });
+        const busy = views.filter((p) => p.state === "blocked" && p.cause === "machine_busy").map((p) => p.id);
+        const reasons = [waiting.length > 0 ? `waiting for answers: ${waiting.join(", ")}` : "", busy.length > 0 ? `machine busy: the verification of ${busy.join(", ")} was inconclusive (the engine's reference pack broke its time limits too); resume when the machine is free, the builder is not run again` : ""];
+        this.append({ type: "job_state", state: "paused", reason: reasons.filter(Boolean).join("; ") });
         break;
       }
       // Failed after the round limit: back to the Planner, once per package, at most maxReplans times per job.
@@ -576,6 +630,7 @@ export class Foreman {
           const p = this.pkg(id);
           if (running.has(id) || p.state === "promoted" || p.state === "failed") continue;
           if (p.state === "blocked" && p.cause === "question" && p.openQuestion !== undefined) continue;
+          if (this.busyThisRun.has(id)) continue;
           if (!p.deps.every((d) => this.pkg(d).state === "promoted")) continue;
           const task = this.runPackage(id)
             .catch((e: unknown) => {
@@ -726,7 +781,37 @@ export class Foreman {
    * depend on what else happened to be merged when the workspace was cut, so it is the same after a resume.
    */
   private wsManifestText(id: string, carried: Carried = this.wsCarried(id)): string {
-    return manifestText(composeManifest(this.jobIdentity(), this.specsOf(depClosure(this.s.plan, id)), carried));
+    const ids = depClosure(this.s.plan, id);
+    for (const x of this.wsMembers(id)) ids.add(x);
+    return manifestText(composeManifest(this.jobIdentity(), this.specsOf(ids), carried));
+  }
+
+  private membersFile(id: string): string {
+    return this.dir("ws", `${id}.members.json`);
+  }
+  /**
+   * N3b (defect 1 of the real hockey job): the packages whose merged files a workspace HOLDS, besides the package's
+   * own dependencies. A workspace is a copy of the whole pack/, so it also holds the files of packages that merely
+   * merged earlier (a sibling; for a re-opened root: its dependants). Their registrations belong in the manifest the
+   * workspace is verified with, or lint refuses their scripts ("uses 'TLAudio' but the manifest does not declare the
+   * capability 'audio'"). The list is written when the workspace is cut or refreshed, so it is the same after a
+   * resume. Without the file (a workspace from before this fix): every package of which a merged file is present.
+   */
+  private wsMembers(id: string): string[] {
+    const known = new Set(this.s.order);
+    try {
+      const list = JSON.parse(fs.readFileSync(this.membersFile(id), "utf8")) as unknown;
+      if (Array.isArray(list)) return list.filter((x): x is string => typeof x === "string" && known.has(x) && x !== id);
+    } catch {
+      /* no list: derive it from the files */
+    }
+    const ws = this.wsDir(id);
+    if (!fs.existsSync(ws)) return [...this.promotedIds()].filter((x) => x !== id);
+    return this.s.order.filter((x) => x !== id && (this.pkg(x).mergedFiles ?? []).some((f) => fs.existsSync(path.join(ws, f))));
+  }
+  private writeMembers(id: string): void {
+    fs.mkdirSync(this.dir("ws"), { recursive: true });
+    fs.writeFileSync(this.membersFile(id), JSON.stringify([...this.promotedIds()].filter((x) => x !== id)) + "\n");
   }
   /**
    * The manifest of pack/ once `id` is merged: every promoted package plus this one, with the optional fields of
@@ -756,6 +841,7 @@ export class Foreman {
     // pack.json is composed by the Foreman (JOB.md): the builder finds it in place and never owns it.
     fs.mkdirSync(ws, { recursive: true });
     const carried = this.packCarried();
+    this.writeMembers(id);
     fs.writeFileSync(this.carriedBaseFile(id), JSON.stringify(carried, null, 1) + "\n");
     fs.writeFileSync(path.join(ws, MANIFEST_FILE), this.wsManifestText(id, carried));
     fs.writeFileSync(base, JSON.stringify(snapshot(ws), null, 1));
@@ -793,6 +879,8 @@ export class Foreman {
       delete baseline[f];
       changed = true;
     }
+    // The workspace now holds what pack/ holds: the manifest names the same packages (N3b).
+    this.writeMembers(id);
     // The optional manifest fields: what the builder changed so far stays, the rest follows pack/.
     const theirs = this.packCarried();
     const merged = mergeCarried(this.carriedBase(id), this.wsCarried(id), theirs);
@@ -893,7 +981,8 @@ export class Foreman {
     const first = this.pkg(id);
     let round = first.round;
     // Left running or verifying by a kill: the same round restarts and the log says so.
-    let resumed = first.state === "running" || first.state === "verifying";
+    // N3b: a round that ended "machine busy" is verified again in the next run; its builder is not run again.
+    let resumed = first.state === "running" || first.state === "verifying" || (first.state === "blocked" && first.cause === "machine_busy");
     const wsThere = fs.existsSync(this.wsDir(id)) && fs.existsSync(this.baselineFile(id));
     // If the builder already answered ok for this round, its work is in ws/: verify it, do not pay for it twice.
     let skipBuilder = resumed && first.builtRounds.includes(round) && wsThere;
@@ -947,6 +1036,13 @@ export class Foreman {
       }
       if (!failure) failure = await this.serialMerge(() => this.mergeAndGate(id, round));
       if (!failure) return;
+      if (failure.inconclusive !== undefined) {
+        // N3b: no verdict. The round is not lost, the builder gets no feedback for it, and nothing is merged: the
+        // package waits (blocked, cause machine_busy) and the job pauses; `resume` verifies the same files again.
+        this.busyThisRun.add(id);
+        this.append({ type: "package_state", package: id, state: "blocked", round, cause: "machine_busy", detail: clip(failure.inconclusive, 900) });
+        return;
+      }
       if (failure.kitRegression !== undefined) {
         // N3 item 3: the round passed every check but made the kit figures worse without saying why. It is not
         // merged; the package gets the next round with the figures as feedback (a `failed`, then a `queued`).
@@ -988,7 +1084,91 @@ export class Foreman {
    * (tick_timeout) in 3 of 10 runs and as its true result in the other 7. So such a result is run once more; both
    * runs are `verify` events, and the second one decides. A real runaway script simply trips twice.
    */
-  private async verifyLogged(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<VerifyResult> {
+  private async verifyLogged(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<Verified> {
+    const vr = await this.verifyTwice(a, packDir, stem, where);
+    if (vr.ok || !restsOnAClock(vr)) return vr;
+    // N3b (defect 2 of the real hockey job): the same clock-based failure twice. Before the pack is blamed, the
+    // MACHINE is measured: the same verb on the engine's known-good reference pack. If that breaks a time limit as
+    // well, the verdict is "inconclusive: machine busy": wait, try again, with a growing pause; a builder never gets
+    // such a failure as feedback. If the reference pack passes, the failure is the pack's and goes to the builder.
+    // A pack whose TYPICAL frame is already slow is slow code, whatever the machine does: under load the median stays
+    // (hockey job: p50 0.9 ms calm and loaded) and only the p99 jumps. No measurement, no waiting.
+    const typical = medianOverHalfBudget(vr);
+    if (typical !== undefined) return { ...vr, summary: `${vr.summary}. ${typical}` };
+    const who = where.package ?? where.after ?? (this.s.order[0] as string);
+    const round = this.s.packages[who]?.round ?? 1;
+    const tries = Math.max(0, this.o.clockRetries ?? 3);
+    const pauses = this.o.clockPausesMs && this.o.clockPausesMs.length > 0 ? this.o.clockPausesMs : [20_000, 40_000, 80_000];
+    const sleep = this.o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+    let last: VerifyResult = vr;
+    for (let n = 1; ; n++) {
+      const ref = await this.measureMachine(a.verb);
+      if (ref === undefined) return { ...last, summary: `${last.summary}. The machine could not be measured (no reference pack ${toPosix(this.referencePack())}), so this stands as the pack's failure` };
+      if (!ref.busy) {
+        const text = `${NOT_LOAD}: ${a.verb} failed on a clock (${clip(clockDetail(last), 200)}) and the engine's reference pack, run right after it on the same machine, did not (${ref.what}; ${ref.report}). The time is this pack's own.`;
+        if (where.package !== undefined) this.append({ type: "note", package: where.package, round: where.round, text: `${FOREMAN_NOTE}${text}` });
+        return { ...last, summary: `${last.summary}. The machine is not the cause: the engine's reference pack passed the same verb just now (${ref.what}; ${ref.report}), so this is the pack's own time` };
+      }
+      const figures = `${a.verb} on ${where.package !== undefined ? `the workspace of ${where.package}` : "the whole pack"} failed on a clock (${clip(clockDetail(last), 200)}), and so did the engine's reference pack (${ref.what}; ${ref.report})`;
+      if (n > tries) {
+        const text = `${MACHINE_BUSY}. ${figures}. Tried ${tries} more time(s) with pauses; the machine stayed busy. This is NOT a verdict about the pack: nothing was sent to the builder. Free the machine and run \`foreman resume\`: the same files are verified again.`;
+        this.append({ type: "note", package: who, round, text: `${FOREMAN_NOTE}${text}` });
+        return { ...last, inconclusive: text, summary: text };
+      }
+      const pause = pauses[Math.min(n - 1, pauses.length - 1)] as number;
+      this.append({ type: "note", package: who, round, text: `${FOREMAN_NOTE}${MACHINE_BUSY}. ${figures}. Waiting ${Math.round(pause / 1000)} s, then try ${n} of ${tries}.` });
+      await sleep(pause);
+      last = await this.verifyOnce(a, packDir, `${stem}-retry${n}`, where);
+      if (last.ok || !restsOnAClock(last)) return last;
+    }
+  }
+
+  private referencePack(): string {
+    return this.o.referencePack ?? path.join(this.o.verifier.location.engineDir, "kernel", "examples", "pack_min");
+  }
+
+  /**
+   * Runs `verb` on the engine's reference pack. `busy` is true when that known-good pack breaks a time limit too.
+   * Not a `verify` event (it is not about this job's pack); the report stays in reports/ and is named in a note.
+   */
+  private async measureMachine(failed: Acceptance["verb"]): Promise<{ busy: boolean; what: string; report: string } | undefined> {
+    const pack = this.referencePack();
+    if (!fs.existsSync(path.join(pack, MANIFEST_FILE))) return undefined;
+    // `smoke` is the gauge whatever verb failed: it is the shortest run that reports frame times and can trip the watchdog.
+    const verb: Acceptance["verb"] = "smoke";
+    const r = await this.o.verifier.run({ verb, args: [], packDir: pack, reportFile: this.reportPath(`reference-${verb}-for-${failed}`) });
+    const report = this.rel(r.reportFile);
+    const limit = this.o.referenceBusyP99Ms ?? 2;
+    const m = (r.report?.["metrics"] ?? {}) as { frame_ms_p50?: unknown; frame_ms_p99?: unknown; tick_ms_max?: unknown };
+    const p99 = typeof m.frame_ms_p99 === "number" ? m.frame_ms_p99 : undefined;
+    const tickLimit = this.o.referenceBusyTickMs ?? 2;
+    if (r.ok && typeof m.tick_ms_max === "number" && m.tick_ms_max >= tickLimit) {
+      return { busy: true, what: `it passed, but one of its ticks took ${m.tick_ms_max} ms (calm: about 0.1 ms; from ${tickLimit} ms on, something else is taking the processor)`, report };
+    }
+    if (r.ok && p99 !== undefined && p99 >= limit) return { busy: true, what: `it passed, but its frame p99 was ${p99} ms (p50 ${String(m.frame_ms_p50)} ms; from ${limit} ms on this tiny pack the machine counts as busy)`, report };
+    if (r.ok) return { busy: false, what: `passed${p99 !== undefined ? `, frame p99 ${p99} ms` : ""}`, report };
+    if (restsOnAClock(r)) return { busy: true, what: clip(clockDetail(r), 200), report };
+    // The reference pack failed for another reason: that says nothing about load.
+    return { busy: false, what: `it failed for another reason: ${clip(r.summary, 160)}`, report };
+  }
+
+  private async verifyOnce(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<VerifyResult> {
+    const vr = await this.o.verifier.run({ verb: a.verb, args: a.args, packDir, reportFile: this.reportPath(stem) });
+    this.append({
+      type: "verify",
+      ...(where.package !== undefined ? { package: where.package } : {}),
+      round: where.round,
+      level: vr.level,
+      verb: vr.verb,
+      ok: vr.ok,
+      report: this.rel(vr.reportFile),
+      ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}),
+      ...(where.after !== undefined ? { after: where.after } : {}),
+    });
+    return vr;
+  }
+
+  private async verifyTwice(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<VerifyResult> {
     let vr: VerifyResult | undefined;
     for (let attempt = 1; attempt <= 2; attempt++) {
       vr = await this.o.verifier.run({ verb: a.verb, args: a.args, packDir, reportFile: this.reportPath(attempt === 1 ? stem : `${stem}-again`) });
@@ -1179,6 +1359,8 @@ export class Foreman {
           break;
         }
       }
+      // N3b: "machine busy" is no verdict; the final verification runs every check on the whole pack again.
+      if (failure && (failure as Verified).inconclusive !== undefined) continue;
       if (failure) {
         const why = `${failure.verb} (${failure.level}) now fails on the merged pack: ${clip(failure.summary, 300)}`;
         this.reopen(d, `its dependency ${id} was changed and merged again, and ${why}`, `${DEP_CHANGED}: package ${id}, which yours depends on, was changed and merged again after your package was finished. Your acceptance check ${why}`);
@@ -1539,6 +1721,9 @@ export class Foreman {
     if (depChanged !== undefined) {
       parts.push(`This package was finished and merged, and has been re-opened:\n${depChanged}\nThe changed files of that package are in your working directory now. Adapt your own files to them (the report is below); do not try to change the other package.`);
     }
+    // N3b: a clock-based failure reaches the builder only after the machine was measured; say so.
+    const notLoad = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && n.text.startsWith(`${FOREMAN_NOTE}${NOT_LOAD}`));
+    if (notLoad) parts.push(`The Foreman measured the machine before reporting this: ${notLoad.text.slice(FOREMAN_NOTE.length)}`);
     const kit = queuedAs([KIT_REGRESSION]);
     if (kit !== undefined) parts.push(`Round ${round - 1} passed its checks but was not merged:\n${kit}\nYour files from that round are still in the working directory.`);
     const sentBack = [...this.log.events]
@@ -1562,9 +1747,11 @@ export class Foreman {
         );
       }
       const packPrefix = `reports/${id}-r${prev}-pack-`;
-      const failing = [...events]
-        .reverse()
-        .find((e) => e.type === "verify" && !e.ok && e.round === prev && (e.package === id || (e.package === undefined && e.report.startsWith(packPrefix))));
+      // A failed run that a later run of the same check overruled (the second run of a clock-based verdict, a retry
+      // after "machine busy") is not feedback: only a failure that still stands goes back to the builder (N3b).
+      const base = (report: string): string => report.replace(/(\.verdict)?\.json$/i, "").replace(/-s\d+$/, "").replace(/-(again|retry\d+)$/, "");
+      const mine = events.filter((e): e is Extract<JobEvent, { type: "verify" }> => e.type === "verify" && e.round === prev && (e.package === id || (e.package === undefined && e.report.startsWith(packPrefix))));
+      const failing = [...mine].reverse().find((e) => !e.ok && !mine.some((x) => x.ok && x.seq > e.seq && base(x.report) === base(e.report)));
       if (failing && failing.type === "verify") {
         const reportAbs = this.dir(failing.report);
         const verdictAbs = reportAbs.endsWith(".verdict.json") ? reportAbs : reportAbs.replace(/\.json$/i, "") + ".verdict.json";
@@ -1741,6 +1928,11 @@ export class Foreman {
     for (const a of final) {
       const stem = a.verb === "bot" ? `final-bot-${path.basename(a.args[0] ?? "x", ".gd")}` : `final-${a.verb}`;
       const vr = await this.verifyLogged(a, packDir, stem, { round: 1 });
+      if (!vr.ok && vr.inconclusive !== undefined) {
+        // N3b: the machine was busy during the final verification: the job waits, it has not failed.
+        this.append({ type: "job_state", state: "paused", reason: clip(`machine busy: the final verification (${a.verb}) was inconclusive; resume when the machine is free. ${vr.inconclusive}`, 600) });
+        return;
+      }
       if (!vr.ok) {
         this.endJob("failed", clip(`final verification failed at ${a.verb} (${vr.level}): ${vr.summary}`, 400));
         return;
