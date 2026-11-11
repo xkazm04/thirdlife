@@ -1,0 +1,13 @@
+{
+  "schema": "thirdlife.exe.games/1",
+  "note": "P9: the games export.sh copies into dist/ThirdLife/games/ as plain folders. `name` is the folder's name there and the `pack` of a plot in village.json. `from` is relative to the repository root; `site/` is job output that exists only in the main checkout, so a path that is not found in a worktree is looked for in the main checkout too. An `optional` game that is not found is left out with a warning (boot.gd leaves its plot out); a game that is not optional and not found fails the export.",
+  "games": [
+    {"name": "seed_drive", "from": "engine/seeds/seed_drive"},
+    {"name": "seed_wall", "from": "engine/seeds/seed_wall"},
+    {"name": "seed_paddle", "from": "engine/seeds/seed_paddle"},
+    {"name": "ex_walker", "from": "engine/kernel/examples/ex_walker"},
+    {"name": "ex_kit", "from": "engine/kernel/examples/ex_kit"},
+    {"name": "ex_car", "from": "engine/kernel/examples/ex_car"},
+    {"name": "ice_hockey_three_against", "from": "site/ice-hockey-three-against-20261111-1/promoted/game.ice_hockey_three_against@0.1.1", "optional": true}
+  ]
+}

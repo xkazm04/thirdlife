@@ -5,6 +5,7 @@ config_version=5
 
 config/name="Third Life Engine"
 run/main_scene="res://kernel/host/host.tscn"
+run/main_scene.thirdlife_exe="res://boot/boot.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [debug]

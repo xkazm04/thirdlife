@@ -1,0 +1,9 @@
+{
+  "id": "probe.inner",
+  "version": "0.0.1",
+  "kernelApi": "0.1",
+  "title": "P9 probe: a pack inside the project (never run as a game)",
+  "capabilities": [],
+  "entry": "scripts/main.gd",
+  "tests": []
+}
