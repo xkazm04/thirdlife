@@ -2,21 +2,27 @@ class_name TLChaseCam
 extends Camera3D
 ## Follows a target from behind and above; frame-counted smoothing (no wall clock). Capability: `camera`.
 ## Make one with `ctx.cameras.chase(target, {distance = 7.0, height = 3.0})`.
+## N1: a deliberate lens (58 degrees instead of the engine's 75), the place follows faster than the heading turns
+## (`follow` against `stiffness`), so the target keeps its size at speed, and the point looked at is smoothed too.
 
 var target: Node3D
 var distance: float = 7.0        ## metres behind the target
 var height: float = 3.0          ## metres above the target
 var look_height: float = 1.0     ## the point looked at, above the target's origin
-var stiffness: float = 0.12      ## 0..1 share of the remaining distance covered each frame
+var stiffness: float = 0.12      ## 0..1 share of the remaining heading change covered each frame
+var follow: float = 0.3          ## 0..1 share of the remaining distance to the wanted place covered each frame
+var aim: float = 0.5             ## 0..1 share of the remaining way to the point looked at covered each frame
 var use_velocity: bool = false   ## true: stay behind the direction of travel instead of the target's facing
 var _heading: Vector3 = Vector3.FORWARD
 var _last_pos: Vector3 = Vector3.ZERO
+var _look: Vector3 = Vector3.ZERO
 
 
 func setup(target_: Node3D, opts: Dictionary = {}) -> void:
 	target = target_
+	fov = 58.0
 	for k: String in opts.keys():
-		if k in ["distance", "height", "look_height", "stiffness", "use_velocity", "fov"]:
+		if k in ["distance", "height", "look_height", "stiffness", "follow", "aim", "use_velocity", "fov"]:
 			set(k, opts[k])
 		else:
 			push_error("TLChaseCam: unknown option '%s'" % k)
@@ -24,8 +30,16 @@ func setup(target_: Node3D, opts: Dictionary = {}) -> void:
 	if is_instance_valid(target) and target.is_inside_tree():
 		_last_pos = target.global_position
 		_heading = _target_forward()
-		global_position = _wanted()
-		_aim()
+		snap()
+
+
+## Puts the camera at its wanted place at once (after a teleport, or after changing `distance` / `height`).
+func snap() -> void:
+	if not is_instance_valid(target) or not target.is_inside_tree() or not is_inside_tree():
+		return
+	global_position = _wanted()
+	_look = target.global_position + Vector3.UP * look_height
+	_aim()
 
 
 func _target_forward() -> Vector3:
@@ -39,9 +53,8 @@ func _wanted() -> Vector3:
 
 
 func _aim() -> void:
-	var at: Vector3 = target.global_position + Vector3.UP * look_height
-	if global_position.distance_to(at) > 0.01:
-		look_at(at, Vector3.UP)
+	if global_position.distance_to(_look) > 0.01:
+		look_at(_look, Vector3.UP)
 
 
 func _physics_process(_delta: float) -> void:
@@ -55,5 +68,6 @@ func _physics_process(_delta: float) -> void:
 			want_heading = step.normalized()
 	_last_pos = target.global_position
 	_heading = _heading.lerp(want_heading, stiffness).normalized() if _heading.lerp(want_heading, stiffness).length() > 0.001 else want_heading
-	global_position = global_position.lerp(_wanted(), stiffness)
+	global_position = global_position.lerp(_wanted(), clampf(follow, 0.01, 1.0))
+	_look = _look.lerp(target.global_position + Vector3.UP * look_height, clampf(aim, 0.01, 1.0))
 	_aim()

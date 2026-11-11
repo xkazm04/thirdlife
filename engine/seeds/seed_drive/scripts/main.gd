@@ -50,6 +50,7 @@ func _pack_setup(c) -> void:
 	ctx.root.add_child(car)
 	car.nitro_charge = 0.0                                   # empty until the pad
 	car.nitro_started.connect(func() -> void: nitro_starts += 1)
+	car.nitro_started.connect(func() -> void: ctx.cameras.shake(0.06, 18))        # the kick of the nitro (visual only)
 	car.contact.hit.connect(_on_car_hit)
 
 	# rules, and one round trigger per checkpoint. TLRules counts a checkpoint only in order.
@@ -89,7 +90,8 @@ func _pack_setup(c) -> void:
 
 	for action: Array in [[&"left", KEY_A], [&"right", KEY_D], [&"gas", KEY_W], [&"reverse", KEY_S], [&"brake", KEY_SPACE], [&"nitro", KEY_SHIFT]]:
 		ctx.input.declare(action[0], [action[1]])
-	ctx.cameras.chase(car, {"distance": 8.5, "height": 3.4, "look_height": 1.0})        # the view "chase"
+	ctx.cameras.chase(car, {"distance": 8.5, "height": 3.0, "look_height": 1.1, "fov": 58.0})        # the view "chase"
+	ctx.cameras.frame(car, 0.2)                                                          # the car covers a fifth of the frame height
 	for cam: String in built["cams"]:
 		var v: Dictionary = built["cams"][cam]
 		ctx.cameras.add_view(StringName(cam), v["pos"], v["look"], float(v["fov"]))

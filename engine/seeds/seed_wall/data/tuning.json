@@ -27,5 +27,6 @@
     "scatter": 0.9,
     "down_distance": 0.6
   },
-  "camera": {"distance": 9.0, "pitch": 35.0, "yaw": 0.0, "look_height": 1.2}
+  "camera": {"distance": 9.0, "pitch": 32.0, "yaw": 0.0, "look_height": 2.4, "fov": 50.0},
+  "camera_fill": 0.26
 }

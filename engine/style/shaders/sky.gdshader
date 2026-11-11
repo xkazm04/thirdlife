@@ -15,6 +15,8 @@ uniform float disc_soft = 0.004;
 uniform float cloud_cover = 0.5;
 uniform float cloud_scale = 2.0;
 uniform float cloud_high = 0.25;
+uniform float sun_draw_elev = 0.0;   // N1: degrees above the horizon at which the sun is PAINTED (0 = where the light is).
+                                     // The light stands higher than a sunset sun so that venues are lit, not shadowed.
 
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -36,6 +38,11 @@ void sky() {
 	col = mix(col, zenith, smoothstep(0.38, 0.95, t));
 	col = mix(col, ground, smoothstep(0.0, -0.25, h));
 	vec3 L = LIGHT0_DIRECTION;
+	if (sun_draw_elev > 0.0 && length(L.xz) > 0.001) {
+		vec2 hz = normalize(L.xz);
+		float el = radians(sun_draw_elev);
+		L = vec3(hz.x * cos(el), sin(el), hz.y * cos(el));
+	}
 	float sd = clamp(dot(d, L), -1.0, 1.0);
 	float g1 = pow(max(sd, 0.0), 6.0) * 0.45 + pow(max(sd, 0.0), 40.0) * 0.55;
 	col = mix(col, glow, clamp(g1 * glow_k, 0.0, 1.0));

@@ -342,3 +342,125 @@ static func _shape(p: CPUParticles3D, mesh: Mesh, amount: int, spread: float, gr
 	p.scale_amount_min = size_min
 	p.scale_amount_max = size_max
 	p.scale_amount_curve = size_curve
+
+
+# ---------------------------------------------------------------------------------------------- N1: motion helpers
+## Squash and stretch on a VISUAL node (a rig, a mesh, a kit part without a body): an impact flattens it along `axis`
+## and bulges it sideways, then it rings back to rest over `frames` physics frames. `amount` 0.25 is a firm bounce.
+## Visual only: never give it a body or a collision shape (scaling those would change the simulation); the node's
+## own scale is restored at the end. Frame-counted, no clock. A second call on the same node restarts it.
+static func squash(visual: Node3D, amount: float = 0.25, frames: int = 18, axis: Vector3 = Vector3.UP) -> void:
+	if visual == null or not is_instance_valid(visual) or visual is CollisionObject3D or visual is CollisionShape3D or frames <= 0:
+		return
+	var old: Node = visual.get_node_or_null("TLSquash")
+	var rest: Vector3 = visual.scale
+	if old != null:
+		rest = (old as TLSquashNode).rest
+		old.name = "TLSquashOld"
+		old.queue_free()
+	var n: TLSquashNode = TLSquashNode.new()
+	n.name = "TLSquash"
+	n.rest = rest
+	n.amount = clampf(amount, 0.0, 0.6)
+	n.frames = frames
+	n.axis = axis.abs().normalized() if axis.length() > 0.001 else Vector3.UP
+	visual.add_child(n)
+
+
+## A ribbon that follows `target` and fades behind it (a thrown ball, a puck, a car's tail lights). Options:
+## `width` (m, 0.25), `frames` (how many physics frames of path it keeps, 14), `color` (a palette key or a Color;
+## default "spark"), `offset` (Vector3 in the target's space). It lives beside the target's parent, frees itself when
+## the target goes, draws nothing headless, and never touches the target. Returns the trail node (free it to stop).
+static func trail(target: Node3D, opts: Dictionary = {}) -> Node3D:
+	var t: TLTrailNode = TLTrailNode.new()
+	t.name = "TLTrail"
+	t.target = target
+	t.width = float(opts.get("width", 0.25))
+	t.keep = clampi(int(opts.get("frames", 14)), 2, 120)
+	t.offset = opts.get("offset", Vector3.ZERO)
+	var c: Variant = opts.get("color", "spark")
+	t.color = c if c is Color else TLStyle.color(String(c))
+	if is_instance_valid(target) and target.get_parent() != null:
+		target.get_parent().add_child(t)
+	return t
+
+
+class TLSquashNode extends Node:
+	var rest: Vector3 = Vector3.ONE
+	var amount: float = 0.25
+	var frames: int = 18
+	var axis: Vector3 = Vector3.UP
+	var _t: int = 0
+
+	func _physics_process(_delta: float) -> void:
+		var host: Node3D = get_parent() as Node3D
+		if host == null:
+			queue_free()
+			return
+		_t += 1
+		if _t >= frames:
+			host.scale = rest
+			queue_free()
+			return
+		var u: float = float(_t) / float(frames)
+		var s: float = amount * exp(-4.0 * u) * cos(u * TAU * 1.5)      # flat first, then tall, then rest
+		var along: float = 1.0 - s
+		var across: float = 1.0 / sqrt(maxf(along, 0.2))                 # keeps the volume
+		host.scale = rest * (Vector3(across, across, across) + axis * (along - across))
+
+
+class TLTrailNode extends MeshInstance3D:
+	const CODE: String = "shader_type spatial;\nrender_mode unshaded, blend_add, cull_disabled, depth_draw_never, fog_disabled, shadows_disabled;\nvoid fragment() { float e = 1.0 - abs(UV.y * 2.0 - 1.0); ALBEDO = COLOR.rgb * COLOR.a * smoothstep(0.0, 0.5, e); ALPHA = 1.0; }\n"
+	static var _shader: Shader
+	var target: Node3D
+	var width: float = 0.25
+	var keep: int = 14
+	var offset: Vector3 = Vector3.ZERO
+	var color: Color = Color.WHITE
+	var _pts: PackedVector3Array = PackedVector3Array()
+
+	func _ready() -> void:
+		top_level = true
+		global_transform = Transform3D.IDENTITY
+		cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if TLStyle.headless():
+			return
+		mesh = ImmediateMesh.new()
+		if _shader == null:
+			_shader = Shader.new()
+			_shader.code = CODE
+		var m: ShaderMaterial = ShaderMaterial.new()
+		m.shader = _shader
+		material_override = m
+
+	func _physics_process(_delta: float) -> void:
+		if not is_instance_valid(target) or not target.is_inside_tree():
+			queue_free()
+			return
+		_pts.append(target.global_transform * offset)
+		if _pts.size() > keep:
+			_pts.remove_at(0)
+		if mesh == null:
+			return
+		var im: ImmediateMesh = mesh as ImmediateMesh
+		im.clear_surfaces()
+		if _pts.size() < 2:
+			return
+		var cam: Camera3D = get_viewport().get_camera_3d() if get_viewport() != null else null
+		im.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
+		var n: int = _pts.size()
+		for i: int in n:
+			var p: Vector3 = _pts[i]
+			var dir: Vector3 = (_pts[mini(i + 1, n - 1)] - _pts[maxi(i - 1, 0)])
+			var to_cam: Vector3 = (cam.global_position - p) if cam != null else Vector3.UP
+			var side: Vector3 = dir.cross(to_cam)
+			side = side.normalized() if side.length() > 0.0001 else Vector3.RIGHT
+			var k: float = float(i) / float(n - 1)                       # 0 at the tail, 1 at the target
+			var c: Color = Color(color.r, color.g, color.b, k * k)
+			im.surface_set_color(c)
+			im.surface_set_uv(Vector2(k, 0.0))
+			im.surface_add_vertex(p - side * width * 0.5 * (0.25 + 0.75 * k))
+			im.surface_set_color(c)
+			im.surface_set_uv(Vector2(k, 1.0))
+			im.surface_add_vertex(p + side * width * 0.5 * (0.25 + 0.75 * k))
+		im.surface_end()

@@ -61,6 +61,41 @@ float dots(vec2 q, float r) {   // one dot per unit cell, jittered
 	float fw = fwidth(q.x) + fwidth(q.y);
 	return (1.0 - smoothstep(r, r + fw, length(f - j))) * (1.0 - smoothstep(0.2, 0.5, fw));
 }
+// N1. Drawn marks on the ground, in the plane q (metres): x = grass tuft (three tapered strokes fanning from one
+// root), y = pebble body, z = pebble rim, w = dirt scratch (a short dash or two) and grit. All fade when sub-pixel.
+vec4 ground_marks(vec2 q, vec2 away) {
+	vec2 c = floor(q / 1.15); vec2 f = fract(q / 1.15) - 0.5;
+	float hh = h21(c);
+	vec2 d = f - (vec2(hh, h21(c + 5.1)) - 0.5) * 0.5;
+	// the tuft stands "up" on screen: its strokes point away from the camera along the ground (`away`, unit length)
+	vec2 r = vec2(d.x * away.y - d.y * away.x, d.x * away.x + d.y * away.y);
+	float fw = fwidth(q.x / 1.15) + fwidth(q.y / 1.15);
+	float keep = 1.0 - smoothstep(0.10, 0.34, fw);
+	float st = 0.0;
+	for (int i = -1; i <= 1; i++) {
+		float fi = float(i);
+		vec2 root = vec2(fi * 0.055, 0.0);
+		vec2 tip = vec2(fi * 0.035 + (hh - 0.75) * 0.08, 0.22 - abs(fi) * (0.05 + 0.06 * h21(c + 4.4 + fi)));
+		float t = clamp(dot(r - root, tip) / dot(tip, tip), 0.0, 1.0);
+		float w = 0.020 * (1.0 - t * 0.75);
+		st = max(st, 1.0 - smoothstep(w, w + fw * 0.9, length(r - root - tip * t)));
+	}
+	float tuft = st * step(0.5, hh) * keep;
+	float pr = 0.07 + 0.06 * h21(c + 9.1);
+	float pd = length(d * vec2(1.0, 1.35));
+	float peb = (1.0 - smoothstep(pr, pr + fw * 0.8, pd)) * step(hh, 0.16) * keep;
+	float rim = peb * smoothstep(pr * 0.55, pr * 0.9, pd + d.y * 0.4);
+	// scratches: one or two short dashes, lying mostly one way (the way things were dragged across the yard)
+	float a2 = 0.35 + (h21(c + 3.3) - 0.5) * 0.7;
+	vec2 r2 = vec2(d.x * cos(a2) - d.y * sin(a2), d.x * sin(a2) + d.y * cos(a2));
+	float len = 0.10 + 0.14 * h21(c + 6.1);
+	float dash = (1.0 - smoothstep(0.012, 0.012 + fw * 0.9, abs(r2.y))) * (1.0 - smoothstep(len, len + 0.02, abs(r2.x)));
+	dash = max(dash, (1.0 - smoothstep(0.010, 0.010 + fw * 0.9, abs(r2.y - 0.07))) * (1.0 - smoothstep(len * 0.6, len * 0.6 + 0.02, abs(r2.x + 0.05))) * step(0.55, h21(c + 8.8)));
+	dash *= step(0.16, hh) * step(hh, 0.62) * keep;
+	float grit = dots(q * 4.3, 0.07) * step(0.72, h21(floor(q * 4.3) + 1.7)) * 0.6;
+	return vec4(tuft, peb, rim, max(dash, grit));
+}
+
 // returns x = drawn line amount (0..1), y = tone offset (-1..1)
 vec2 surface_detail(int cls, vec3 P, int fax, int gax) {
 	vec2 q = fax == 0 ? P.zy : (fax == 1 ? P.xz : P.xy);
@@ -96,18 +131,12 @@ vec2 surface_detail(int cls, vec3 P, int fax, int gax) {
 		ln = max(ln, (1.0 - smoothstep(0.004, 0.012, cr)) * step(0.55, vn2(q * 0.09)) * 0.6);
 		tn = (vn2(q * 0.35) - 0.5) * 0.14 - smoothstep(0.62, 0.8, vn2(vec2((q.x + q.y) * 0.12, (q.x - q.y) * 1.6))) * 0.16
 			+ (vn2(q * 0.11) - 0.5) * 0.16;   // big resurfacing patches that still read from the ridge
-	} else if (cls == 5) {     // ground: clumps of short drawn strokes
-		vec2 c = floor(q / 0.9); vec2 f = fract(q / 0.9) - 0.5;
-		float hh = h21(c);
-		vec2 j = (vec2(hh, h21(c + 5.1)) - 0.5) * 0.6;
-		vec2 d = f - j;
-		float a = (hh - 0.5) * 1.2;
-		vec2 r = vec2(d.x * cos(a) - d.y * sin(a), d.x * sin(a) + d.y * cos(a));
-		float fw = fwidth(q.x / 0.9) + fwidth(q.y / 0.9);
-		float st = (1.0 - smoothstep(0.02, 0.02 + fw, abs(r.x))) * (1.0 - smoothstep(0.16, 0.2, abs(r.y)));
-		st = max(st, (1.0 - smoothstep(0.02, 0.02 + fw, abs(r.x - 0.12 - r.y * 0.3))) * (1.0 - smoothstep(0.10, 0.14, abs(r.y))));
-		ln = st * step(0.45, hh) * 0.55 * (1.0 - smoothstep(0.15, 0.45, fw));
+	} else if (cls == 5) {     // ground: tone only here (N1): soft mottling and two-tone drawn patches with a crisp wobbly
+		// edge. The marks (tufts, pebbles, scratches) are ground_marks(), because they depend on grass or dirt.
 		tn = (vn2(q * 0.12) - 0.5) * 0.10;
+		float pn = vn2(q * 0.055) * 0.62 + vn2(q * 0.19 + 7.0) * 0.38;
+		float pfw = fwidth(pn) * 1.5 + 0.004;
+		tn += (smoothstep(0.5 - pfw, 0.5 + pfw, pn) - 0.5) * 0.15;
 	} else if (cls == 6) {     // rock: wobbly strata, per-layer tone
 		float sv = P.y * 1.5 + vn2(P.xz * 0.5) * 1.1 + vn2(q * 1.7) * 0.25;
 		ln = seam(sv, 0.03) * 0.55 * step(0.3, h21(vec2(floor(sv + 0.5), 4.0)));
@@ -211,7 +240,21 @@ void fragment() {
 		float tone_k = g_detail.x * m2.x * (1.0 + g_detail2.x * smoothstep(g_detail2.y, g_detail2.z, vdepth)) * (1.0 - smoothstep(g_detail2.w * 0.6, g_detail2.w, vdepth));
 		c *= 1.0 + dt.y * tone_k;
 		if (mclass == 5) {   // ground: blade flecks one tone darker and greener, never ink-dark dashes
-			c = mix(c, c * vec3(0.80, 0.93, 0.66), dt.x * fade * smoothstep(0.0, 0.05, COLOR.g - COLOR.r));
+			// N1: marks are a darker, cooler tone of the ground itself (grass: deep green, dirt: brown), never ink black;
+			// where grass meets dirt the blend of the two vertex colours is cut by one wobbly drawn edge
+			float grassy = COLOR.g - COLOR.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
+			float gfw = fwidth(grassy) * 1.6 + 0.0015;
+			float gm = smoothstep(-gfw, gfw, grassy);
+			vec2 away = -INV_VIEW_MATRIX[2].xz;
+			away = length(away) > 0.01 ? normalize(away) : vec2(0.0, -1.0);
+			vec4 gk = ground_marks(lp.xz * m1.w, away) * fade * step(0.5, wn.y);
+			c = mix(c, c * vec3(0.50, 0.74, 0.46), gk.x * gm);                    // tufts grow in grass only
+			c = mix(c, c * vec3(0.70, 0.62, 0.60), gk.w * (1.0 - gm) * 0.9);      // scratches and grit lie on dirt only
+			c = mix(c, c * 1.22 + 0.02, gk.y * (1.0 - gk.z));                     // pebbles lie anywhere: a light body ...
+			c = mix(c, c * 0.52, gk.z * 0.9);                                     // ... with a dark rim on the shade side
+			float lip = (1.0 - smoothstep(0.0, gfw * 2.2, abs(grassy))) * (1.0 - smoothstep(0.2, 0.7, fwidth(lp.x) * 6.0));
+			c = mix(c, c * vec3(0.52, 0.50, 0.46), lip * 0.75 * g_detail.x);
+			c *= 1.0 + (gm - 0.5) * 0.10 * (1.0 - smoothstep(0.0, gfw * 30.0, abs(grassy)));
 			// pass 4: cliff faces carry drawn strata: wobbly layers in world height, a tone per layer, ink seams, broken by cracks
 			float steep = 1.0 - smoothstep(0.50, 0.74, wn.y);
 			if (steep > 0.0 && g_strata.y > 0.0) {

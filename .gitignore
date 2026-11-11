@@ -15,3 +15,9 @@ dist/
 # lane C voxel binaries: 92 MB, rebuilt by spike/lab/c/gen/build.py
 spike/lab/c/assets/*.vxm
 spike/lab/c/assets/*.bin
+
+# look captures (127 MB of frames; the sheet and the tool are tracked)
+engine/look/before/
+engine/look/after/
+engine/look/wip/
+engine/look/sheet_before_after.png

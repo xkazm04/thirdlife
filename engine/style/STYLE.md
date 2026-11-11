@@ -58,3 +58,29 @@ so any number of rinks of any size and yaw work. UV (0, 0) = plain ice (ponds, `
 ## Shaders (`style/shaders/`)
 `toon` (the one palette material: bands, hatching, drawn surface detail per material class, ice, dissolve, sway),
 `ink_post` (outline pass on depth and normals), `grade`, `sky`, `holo`, `glass`, `water`, `fx_add`, `fx_mix`.
+
+## N1 look pass (2026-11-11)
+New data keys (all optional; absent = the old behaviour, except where a default is named):
+- `ink.near_px`, `bold_near`, `bold_far`: contour width in px (at 1080) up close, and the metres over which it
+  falls to `outer_px`. `ink.even` 0..1 damps the width noise. `ink.thin_keep` 0..1: a member narrower than the line
+  keeps its colour and gets a hairline (`hair_alpha`) on its lower right side instead of a full contour.
+  `ink.inner_near`, `inner_far`: the crease line's own distance rule (full to, gone at; metres).
+- `ink.ao_k`, `ao_radius`, `ao_far`, `ao_color`: contact shade drawn by the ink pass (8 depth taps). The engine's SSAO
+  was measured and does nothing to the toon shader (it is `ambient_light_disabled` and writes its own light).
+- `env.line_aa`: `smaa` (default), `fxaa` or `off`: screen-space smoothing set on the host viewport by `install`.
+- `env.dof_far`, `dof_far_transition`, `dof_amount`: far blur for cameras without attributes. Shipped **off** (0):
+  at 0.06 and at 0.02 it blurred the far contours that the concept keeps crisp.
+- `sky.sun_draw_elev`: degrees above the horizon at which the sun disc and glow are painted; the light itself
+  (`sun.elev`) stands higher so that venues are lit and shadows are short.
+- Golden style values changed: sun `#ffd9a0` x 1.12 at 21 degrees, shade `#5a60c0` k 0.70, bounce 0.3, grade sat 1.24,
+  contrast 1.14, split 0.06, fog `#d9b6a8`, tarmac `#66666e`.
+
+Toon shader, class `ground`: tone patches with a crisp wobbly edge; `ground_marks()` draws tufts (grass only; they
+stand upright on screen), pebbles (anywhere), scratches and grit (dirt only), and one drawn edge where grass meets
+dirt. Grass or dirt is read from the vertex colour (green above red = grass). The kit's terrain gives ground that is
+not steep one colour and one normal per grid vertex, so its triangles no longer show.
+
+`TLStyleFx.squash(visual, amount = 0.25, frames = 18, axis = UP)` and
+`TLStyleFx.trail(target, {width, frames, color, offset})`: squash and stretch on a visual node (never a body) and a
+fading ribbon behind a moving node. Frame-counted, visual only. A pack cannot reach them yet (there is no `TLVfx`
+seam for them): see the N1 report.

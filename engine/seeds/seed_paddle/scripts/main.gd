@@ -75,6 +75,7 @@ func _pack_setup(c) -> void:
 	for cam: String in built["cams"]:
 		var v: Dictionary = built["cams"][cam]
 		ctx.cameras.add_view(StringName(cam), v["pos"], v["look"], float(v["fov"]))
+		ctx.cameras.set_subject(StringName(cam), paddles["player"])        # the main actor of both views: your paddle
 
 
 func _pack_start() -> void:
@@ -110,6 +111,7 @@ func _pack_tick(frame: int) -> void:
 
 	# 2. a goal: the other side scores, the ball goes back to the middle and is served to the side that conceded
 	if _conceded != "":
+		ctx.cameras.shake(0.08, 10)                    # a goal jolts the view (visual only)
 		if serve_frame < 0:
 			rules.add_score("rival" if _conceded == "player" else "player")
 			_next_serve(_conceded, frame)

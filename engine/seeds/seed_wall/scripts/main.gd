@@ -81,6 +81,7 @@ func _pack_setup(c) -> void:
 	for action: Array in [[&"left", KEY_A], [&"right", KEY_D], [&"forward", KEY_W], [&"back", KEY_S], [&"run", KEY_SHIFT], [&"throw", KEY_SPACE]]:
 		ctx.input.declare(action[0], [action[1]])
 	cam = ctx.cameras.orbit(player, tune["camera"], &"player")       # behind and above the walker
+	ctx.cameras.frame(player, float(tune["camera_fill"]))            # the walker covers this share of the frame height
 	for view: String in built["cams"]:
 		var v: Dictionary = built["cams"][view]
 		ctx.cameras.add_view(StringName(view), v["pos"], v["look"], float(v["fov"]))
@@ -134,6 +135,7 @@ func _handle_events() -> void:
 				TLVfx.burst(&"debris", at, ctx.root, {"color": dust.darkened(0.25)})
 				TLVfx.burst(&"dust", at, ctx.root, {"scale": 1.6, "color": dust})
 				TLAudio.play(&"break", at)
+				ctx.cameras.shake(0.12, 14)                               # the view takes the blow (visual only)
 			"hit":        # a hard hit on the wall or its rubble: a puff of dust (the contact sound is the kernel's own)
 				var other: Variant = event[1][2]
 				if float(event[1][1]) > 6.0 and is_instance_valid(other) and blocks.any(func(b: Dictionary) -> bool: return (b["part"] as Node).is_ancestor_of(other)):

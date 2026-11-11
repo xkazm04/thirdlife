@@ -25,6 +25,7 @@ const RANGES: Dictionary = {
 	"toon.shade_k": [0.2, 0.85], "toon.amb_energy": [0.0, 1.2], "toon.hatch": [0.0, 0.35], "toon.band_soft": [0.005, 0.2], "toon.mottle": [0.0, 0.3], "toon.rim_k": [0.0, 1.0], "toon.shade_grad": [0.0, 1.0], "toon.bounce_k": [0.0, 1.2],
 	"lights.window": [0.0, 6.0], "lights.mast": [0.0, 6.0], "lights.pool_outer": [0.005, 0.5], "lights.pool_inner": [0.02, 0.9], "lights.pool_soft": [0.002, 0.3],
 	"ink.outer_px": [0.0, 4.0], "ink.inner_px": [0.0, 2.5], "ink.inner_alpha": [0.0, 1.0],
+	"ink.near_px": [0.0, 6.0], "ink.even": [0.0, 1.0], "ink.thin_keep": [0.0, 1.0], "ink.hair_alpha": [0.0, 1.0],
 	"grade.sat": [0.6, 1.4], "grade.contrast": [0.85, 1.25], "grade.vignette": [0.0, 0.5], "grade.grain": [0.0, 0.05], "grade.paper": [0.0, 0.06], "grade.split": [0.0, 0.3],
 	"lights.pool_smooth": [0.0, 1.0], "detail.strata": [0.0, 1.0], "detail.strata_m": [0.5, 12.0], "detail.strata_tone": [0.0, 0.6], "detail.strata_crack": [0.0, 1.0],
 	"detail.k": [0.0, 1.6], "detail.macro": [0.0, 2.5], "detail.dark": [0.25, 0.9], "env.exposure": [0.6, 1.6], "env.glow": [0.0, 1.2],
@@ -410,6 +411,18 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 		rig.add_child(we)
 	push("sky", we.environment.sky.sky_material)
 	_apply_world(we.environment, sun)
+	# N1. Far blur for every camera that has no attributes of its own: `env.dof_far` = metres where it starts (0 = off)
+	var e0: Dictionary = data["env"]
+	if float(e0.get("dof_far", 0.0)) > 0.0:
+		var ca: CameraAttributesPractical = CameraAttributesPractical.new()
+		ca.dof_blur_far_enabled = true
+		ca.dof_blur_far_distance = float(e0["dof_far"])
+		ca.dof_blur_far_transition = float(e0.get("dof_far_transition", 150.0))
+		ca.dof_blur_amount = clampf(float(e0.get("dof_amount", 0.05)), 0.0, 0.3)
+		we.camera_attributes = ca
+	else:
+		we.camera_attributes = null
+	_apply_view(host)
 	var post: MeshInstance3D = rig.get_node_or_null("InkPost")
 	if bool(opt.get("ink", true)):
 		if post == null:
@@ -446,6 +459,21 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 		push("grade", (layer.get_node("Rect") as ColorRect).material)
 	elif layer != null:
 		layer.queue_free()
+
+
+## N1. Screen-space smoothing for the ink pass: the contour is drawn after the scene's multisampling, so its outer
+## side is a one-pixel stair. `env.line_aa` = "smaa" (default), "fxaa" or "off". Set on the host's viewport, because
+## the engine project file is not the style's to edit.
+static func _apply_view(host: Node) -> void:
+	if not host.is_inside_tree():
+		return
+	var vp: Viewport = host.get_viewport()
+	if vp == null:
+		return
+	match String((data.get("env", {}) as Dictionary).get("line_aa", "smaa")):
+		"smaa": vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_SMAA
+		"fxaa": vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+		_: vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 
 
 static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
@@ -488,3 +516,7 @@ static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	env.fog_height = float(f["height"])
 	env.fog_height_density = float(f["height_density"])
 	env.volumetric_fog_enabled = false
+	# N1. The engine's screen-space ambient occlusion was tried (intensity 2, light_affect 1) and changes nothing that
+	# can be seen: the toon shader is `ambient_light_disabled` and writes its own light. Contact shade is drawn by the
+	# ink pass instead (`ink.ao_k`).
+	env.ssao_enabled = false

@@ -198,8 +198,49 @@ func _tri(mk: TLMesh, a: Vector3, b: Vector3, c: Vector3, far: bool) -> void:
 	mk.tri(a, b, c, "terrain", col)
 
 
+## N1 (look): near ground that is not steep is drawn smooth: each grid vertex has one colour and one normal, so
+## the 4 m triangles no longer show as flat patches of different tone (the concept's ground is drawn, not faceted).
+## Steep faces (cliffs, banks) keep their own flat colour and normal: `steep` blends between the two.
+## Positions, triangle count and collision are unchanged.
+func _tri_smooth(mk: TLMesh, a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3,
+		ca: Color, cb: Color, cc: Color, far: bool) -> void:
+	var n: Vector3 = (b - a).cross(c - a)
+	if n.y < 0.0:
+		var t: Vector3 = b
+		b = c
+		c = t
+		var tn: Vector3 = nb
+		nb = nc
+		nc = tn
+		var tc: Color = cb
+		cb = cc
+		cc = tc
+		n = -n
+	if n.length_squared() < 1e-12:
+		return
+	n = n.normalized()
+	var steep: float = smoothstep(0.10, 0.26, 1.0 - n.y)
+	if steep >= 0.999:
+		_tri(mk, a, b, c, far)
+		return
+	var cen: Vector3 = (a + b + c) / 3.0
+	var fc: Color = _col(cen, n, far) if steep > 0.0 else Color.WHITE
+	mk.tri_n(a, b, c, na.lerp(n, steep).normalized(), nb.lerp(n, steep).normalized(), nc.lerp(n, steep).normalized(), "terrain",
+		ca.lerp(fc, steep), cb.lerp(fc, steep), cc.lerp(fc, steep))
+
+
 func build_near() -> MeshInstance3D:
 	var mk: TLMesh = TLMesh.new(11)
+	var w: int = NNX + 1
+	var vn: PackedVector3Array = PackedVector3Array()
+	var vc: PackedColorArray = PackedColorArray()
+	vn.resize(w * (NNZ + 1))
+	vc.resize(w * (NNZ + 1))
+	for j: int in NNZ + 1:
+		for i: int in w:
+			var nrm: Vector3 = Vector3(_gh(i - 1, j) - _gh(i + 1, j), 2.0 * CELL, _gh(i, j - 1) - _gh(i, j + 1)).normalized()
+			vn[j * w + i] = nrm
+			vc[j * w + i] = _col(Vector3(NX0 + i * CELL, _gh(i, j), NZ0 + j * CELL), nrm, false)
 	for j: int in NNZ:
 		for i: int in NNX:
 			var x0: float = NX0 + i * CELL
@@ -208,12 +249,16 @@ func build_near() -> MeshInstance3D:
 			var b: Vector3 = Vector3(x0 + CELL, _gh(i + 1, j), z0)
 			var c: Vector3 = Vector3(x0 + CELL, _gh(i + 1, j + 1), z0 + CELL)
 			var d: Vector3 = Vector3(x0, _gh(i, j + 1), z0 + CELL)
+			var ia: int = j * w + i
+			var ib: int = j * w + i + 1
+			var ic: int = (j + 1) * w + i + 1
+			var id: int = (j + 1) * w + i
 			if (i + j) % 2 == 0:
-				_tri(mk, a, b, c, false)
-				_tri(mk, a, c, d, false)
+				_tri_smooth(mk, a, b, c, vn[ia], vn[ib], vn[ic], vc[ia], vc[ib], vc[ic], false)
+				_tri_smooth(mk, a, c, d, vn[ia], vn[ic], vn[id], vc[ia], vc[ic], vc[id], false)
 			else:
-				_tri(mk, a, b, d, false)
-				_tri(mk, b, c, d, false)
+				_tri_smooth(mk, a, b, d, vn[ia], vn[ib], vn[id], vc[ia], vc[ib], vc[id], false)
+				_tri_smooth(mk, b, c, d, vn[ib], vn[ic], vn[id], vc[ib], vc[ic], vc[id], false)
 	# skirts hide the seam to the far mesh
 	var low: float = -40.0
 	var dark: Color = Color(0.12, 0.12, 0.12)
@@ -242,6 +287,18 @@ func build_far() -> MeshInstance3D:
 	for j: int in range(-FAR_HALF, FAR_HALF + 1):
 		for i: int in range(-FAR_HALF, FAR_HALF + 1):
 			hs[Vector2i(i, j)] = raw_h(i * FAR_CELL, j * FAR_CELL)
+	# N1: one normal and one colour per far vertex, as in build_near (rolling hills drawn smooth, cliffs stay faceted)
+	var fn: Dictionary = {}
+	var fcol: Dictionary = {}
+	for j: int in range(-FAR_HALF, FAR_HALF + 1):
+		for i: int in range(-FAR_HALF, FAR_HALF + 1):
+			var hl: float = hs[Vector2i(maxi(i - 1, -FAR_HALF), j)]
+			var hr: float = hs[Vector2i(mini(i + 1, FAR_HALF), j)]
+			var hd: float = hs[Vector2i(i, maxi(j - 1, -FAR_HALF))]
+			var hu: float = hs[Vector2i(i, mini(j + 1, FAR_HALF))]
+			var nrm: Vector3 = Vector3(hl - hr, 2.0 * FAR_CELL, hd - hu).normalized()
+			fn[Vector2i(i, j)] = nrm
+			fcol[Vector2i(i, j)] = _col(Vector3(i * FAR_CELL, hs[Vector2i(i, j)], j * FAR_CELL), nrm, true)
 	for j: int in range(-FAR_HALF, FAR_HALF):
 		for i: int in range(-FAR_HALF, FAR_HALF):
 			var x0: float = i * FAR_CELL
@@ -252,12 +309,16 @@ func build_far() -> MeshInstance3D:
 			var b: Vector3 = Vector3(x0 + FAR_CELL, hs[Vector2i(i + 1, j)], z0)
 			var c: Vector3 = Vector3(x0 + FAR_CELL, hs[Vector2i(i + 1, j + 1)], z0 + FAR_CELL)
 			var d: Vector3 = Vector3(x0, hs[Vector2i(i, j + 1)], z0 + FAR_CELL)
+			var ka: Vector2i = Vector2i(i, j)
+			var kb: Vector2i = Vector2i(i + 1, j)
+			var kc: Vector2i = Vector2i(i + 1, j + 1)
+			var kd: Vector2i = Vector2i(i, j + 1)
 			if (i + j) % 2 == 0:
-				_tri(mk, a, b, c, true)
-				_tri(mk, a, c, d, true)
+				_tri_smooth(mk, a, b, c, fn[ka], fn[kb], fn[kc], fcol[ka], fcol[kb], fcol[kc], true)
+				_tri_smooth(mk, a, c, d, fn[ka], fn[kc], fn[kd], fcol[ka], fcol[kc], fcol[kd], true)
 			else:
-				_tri(mk, a, b, d, true)
-				_tri(mk, b, c, d, true)
+				_tri_smooth(mk, a, b, d, fn[ka], fn[kb], fn[kd], fcol[ka], fcol[kb], fcol[kd], true)
+				_tri_smooth(mk, b, c, d, fn[kb], fn[kc], fn[kd], fcol[kb], fcol[kc], fcol[kd], true)
 	var mi: MeshInstance3D = mk.instance("terrain_far")
 	mi.name = "TerrainFar"
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

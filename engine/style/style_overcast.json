@@ -78,7 +78,19 @@
   "wobble": 1.0,
   "outer_far": 0.5,
   "thin_near": 25,
-  "thin_far": 110
+  "thin_far": 110,
+  "near_px": 3.8,
+  "bold_near": 8.0,
+  "bold_far": 60.0,
+  "even": 0.7,
+  "thin_keep": 1.0,
+  "hair_alpha": 0.75,
+  "inner_near": 22.0,
+  "inner_far": 120.0,
+  "ao_k": 0.38,
+  "ao_radius": 0.7,
+  "ao_far": 120.0,
+  "ao_color": "#20283c"
  },
  "grade": {
   "shadows": "#38486c",

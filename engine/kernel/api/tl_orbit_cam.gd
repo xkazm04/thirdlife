@@ -3,6 +3,9 @@ extends Camera3D
 ## Orbits a target: yaw is free, pitch is held to 30..60 degrees looking down, distance to a range.
 ## Capability: `camera`. Make one with `ctx.cameras.orbit(target, {distance = 6.5})`.
 ## Drive it with `orbit_by()` / `zoom_by()`, or bind input actions with `bind_actions()`.
+## N1: a deliberate lens (50 degrees instead of the engine's 75) and smoothing: the camera eases toward the place
+## that `yaw`, `pitch`, `distance` and the target ask for (`smooth` share per frame). `yaw`, `pitch`, `distance` and
+## `yaw_basis()` themselves are never smoothed, so camera-relative movement reads exactly what it read before.
 
 const PITCH_MIN: float = 30.0
 const PITCH_MAX: float = 60.0
@@ -17,20 +20,36 @@ var look_height: float = 1.2
 var yaw_rate: float = 2.0        ## degrees per frame at full action strength
 var pitch_rate: float = 1.0
 var zoom_rate: float = 0.1       ## metres per frame
+var smooth: float = 0.25         ## 0..1 share of the remaining way covered each frame (1 = rigid, as before N1)
+var _focus: Vector3 = Vector3.ZERO     # what is drawn: eased copies of the target point, yaw, pitch and distance
+var _yaw_s: float = 0.0
+var _pitch_s: float = 35.0
+var _dist_s: float = 6.5
 var _input: TLInput
 var _bind: Dictionary = {}
 
 
 func setup(target_: Node3D, opts: Dictionary = {}) -> void:
 	target = target_
+	fov = 50.0
 	for k: String in opts.keys():
-		if k in ["yaw", "pitch", "distance", "distance_min", "distance_max", "look_height", "yaw_rate", "pitch_rate", "zoom_rate", "fov"]:
+		if k in ["yaw", "pitch", "distance", "distance_min", "distance_max", "look_height", "yaw_rate", "pitch_rate", "zoom_rate", "fov", "smooth"]:
 			set(k, opts[k])
 		else:
 			push_error("TLOrbitCam: unknown option '%s'" % k)
 	far = 2000.0
 	pitch = clampf(pitch, PITCH_MIN, PITCH_MAX)
 	distance = clampf(distance, distance_min, distance_max)
+	snap()
+
+
+## Puts the camera where `yaw`, `pitch`, `distance` and the target ask at once (after a teleport or a cut).
+func snap() -> void:
+	_yaw_s = yaw
+	_pitch_s = pitch
+	_dist_s = distance
+	if is_instance_valid(target) and target.is_inside_tree():
+		_focus = target.global_position + Vector3.UP * look_height
 	_place()
 
 
@@ -77,10 +96,10 @@ func _strength(key: String) -> float:
 func _place() -> void:
 	if not is_instance_valid(target) or not target.is_inside_tree() or not is_inside_tree():
 		return
-	var at: Vector3 = target.global_position + Vector3.UP * look_height
-	var pr: float = deg_to_rad(pitch)
-	var yr: float = deg_to_rad(yaw)
-	global_position = at + Vector3(sin(yr) * cos(pr), sin(pr), cos(yr) * cos(pr)) * distance
+	var at: Vector3 = _focus
+	var pr: float = deg_to_rad(_pitch_s)
+	var yr: float = deg_to_rad(_yaw_s)
+	global_position = at + Vector3(sin(yr) * cos(pr), sin(pr), cos(yr) * cos(pr)) * _dist_s
 	look_at(at, Vector3.UP)
 
 
@@ -89,4 +108,10 @@ func _physics_process(_delta: float) -> void:
 		orbit_by((_strength("yaw_right") - _strength("yaw_left")) * yaw_rate,
 			(_strength("pitch_up") - _strength("pitch_down")) * pitch_rate)
 		zoom_by((_strength("zoom_out") - _strength("zoom_in")) * zoom_rate)
+	if is_instance_valid(target) and target.is_inside_tree():
+		var s: float = clampf(smooth, 0.01, 1.0)
+		_focus = _focus.lerp(target.global_position + Vector3.UP * look_height, s)
+		_yaw_s = rad_to_deg(lerp_angle(deg_to_rad(_yaw_s), deg_to_rad(yaw), s))
+		_pitch_s = lerpf(_pitch_s, pitch, s)
+		_dist_s = lerpf(_dist_s, distance, s)
 	_place()
