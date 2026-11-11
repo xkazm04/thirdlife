@@ -1,0 +1,63 @@
+{
+  "schema": "tl.card/1",
+  "id": "card.timed_drive",
+  "version": "0.1.0",
+  "title": "Drive a circuit: laps through checkpoints against a clock",
+  "summary": "One vehicle on a road loop built from data, checkpoints in order make a lap, N laps before the clock runs out. Covers time trials, kart circuits, delivery runs with gates, slaloms.",
+  "applies_when": [
+    "the player drives a vehicle along a road or course that closes into a loop or runs between gates",
+    "progress is passing checkpoints in order, and winning is laps or gates inside a time limit",
+    "pickups or pads on the road give a boost, and loose obstacles may be knocked over"
+  ],
+  "not_when": [
+    "several cars race each other for position (the seed has no opponent; a pace car by TLSteer.keep_lane is possible but ranking is not shown)",
+    "the vehicle leaves the road for open terrain or stunts"
+  ],
+  "seed": "seed_drive",
+  "capabilities": ["physics", "vehicle", "rules", "input", "camera", "spawn", "ai", "ui", "kit"],
+  "kit_parts": ["kerb", "cone", "tyre_stack", "barricade", "sign", "flag", "light_mast", "marshal_post", "scoreboard", "watch_tower"],
+  "swap_parts": ["road_spline", "bridge", "fence", "stands", "crate"],
+  "api": [
+    "TLKit.build_layout", "TLKit.build", "TLVehicle.create", "TLVehicle.drive_from_input", "TLBodies.trigger", "TLBodies.from_part",
+    "TLSpawner.create", "TLSteer.keep_lane", "TLRules.create", "TLRules.pass_checkpoint", "TLRules.snapshot", "TLHud.create"
+  ],
+  "rules_keys": ["sides", "laps_to_win", "checkpoints", "time_limit_seconds"],
+  "data_files": [
+    {"file": "data/track.json", "role": "the venue: one circuits[] entry whose control points are the road; the built road node carries its centre line, length and half width"},
+    {"file": "data/rules.json", "role": "laps to win, number of checkpoints, the time limit"},
+    {"file": "data/tuning.json", "role": "start place and checkpoint places as shares of the lap, cone places, every vehicle tuning member"}
+  ],
+  "do": [
+    "Place everything by distance along the centre line (s metres along, off metres to the side): start, checkpoints, pads, cones. Then moving the road moves the game.",
+    "Make each checkpoint a trigger across the road and report it with rules.pass_checkpoint; let the rules count laps.",
+    "Pass the vehicle tuning dictionary from JSON straight into TLVehicle.create; drive it with drive_from_input and an action map.",
+    "Use a spawner for anything that should come back (cones, pickups) and let its jitter draw from the seeded generator.",
+    "Register the chase camera first (it is what play shows) and one fixed overview.",
+    "Keep pads and the start on a straight."
+  ],
+  "dont": [
+    "Do not lay the road from boxes or planks: a circuit is data in the layout and the kit builds it.",
+    "Do not count laps or time in the script: laps_to_win, checkpoints and time_limit_seconds are the rules.",
+    "Do not place things by world coordinates copied from one layout: they break when the road changes.",
+    "Do not set the car's position or velocity to steer it: use its inputs, the same ones the bot uses.",
+    "Do not set a clock the bot cannot beat with margin: measure the bot's time first, then set the limit about half as long again."
+  ],
+  "bot": {
+    "template": "tests/bot_laps.gd",
+    "plays_by": "the player's own actions only: it steers toward a point ahead on the centre line (TLSteer.keep_lane), slows when the far point swings sideways, and uses nitro on straights.",
+    "wins_when": "the rules say state over, winner car, reason laps with the full lap count; a finish by reason time fails."
+  },
+  "acceptance": [
+    "The bot completes every lap with reason laps, never time, at seeds 1 and 2.",
+    "A car that does not move loses by time.",
+    "Checkpoints only count in order: driving the loop backwards completes no lap.",
+    "Lint reports 0 bypasses and 0 kit parts added.",
+    "The chase camera keeps the car in frame for the whole bot run and the HUD shows lap and clock."
+  ],
+  "variants": [
+    {"ask": "more laps, a tighter clock", "change": "one number each in rules.json; re-measure the bot before tightening the clock."},
+    {"ask": "a different circuit", "change": "move the control points in track.json; checkpoints, cones and the start follow because they are placed by s."},
+    {"ask": "a slalom or gate run", "change": "more checkpoints as narrow triggers, cones from the spawner beside each gate."},
+    {"ask": "icy or wet road", "change": "the road's surface in the layout: grip follows from the law table (asphalt 1.0 against ice 0.1), so lower the bot's cornering speed with it."}
+  ]
+}

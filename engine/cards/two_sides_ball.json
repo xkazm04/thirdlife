@@ -1,0 +1,64 @@
+{
+  "schema": "tl.card/1",
+  "id": "card.two_sides_ball",
+  "version": "0.1.0",
+  "title": "Two sides and a ball: score in the other side's goal",
+  "summary": "One ball, two ends, a goal behind each end, first to N points. Covers pong, air hockey, table football, a penalty duel: anything where a ball crossing a line is a point.",
+  "applies_when": [
+    "two sides (player against AI, or two AIs) defend opposite ends of one bounded court",
+    "a point is a ball or puck crossing a line or entering a goal",
+    "the player's piece moves on a rail or inside its own half and returns the ball by contact"
+  ],
+  "not_when": [
+    "players run freely with the ball and pass it (needs possession and team AI the seed does not show)",
+    "there is no opponent and the goal is a time or lap count: use card.timed_drive or card.knock_down"
+  ],
+  "seed": "seed_paddle",
+  "capabilities": ["physics", "ball", "rules", "input", "ai", "ui", "camera", "kit"],
+  "kit_parts": ["ball", "paddle", "ground_patch", "scoreboard", "stands", "light_mast", "flag"],
+  "swap_parts": ["puck", "rink", "goal", "barrier_wall", "fence"],
+  "api": [
+    "TLKit.build_layout", "TLBall.create", "TLBall.shoot_at", "TLBodies.from_part", "TLBodies.drive", "TLBodies.trigger",
+    "TLSteer.intercept_point", "TLSteer.arrive", "TLRules.create", "TLRules.add_score", "TLRules.is_over",
+    "TLRules.snapshot", "TLHud.create", "TLHud.add_score"
+  ],
+  "rules_keys": ["sides", "score_to_win"],
+  "data_files": [
+    {"file": "data/court.json", "role": "the venue as one tl.layout/1 file: floor, walls, the ball and both paddles as props with ids, scenery, cameras"},
+    {"file": "data/rules.json", "role": "the whole rule set: the two sides and the score that wins"},
+    {"file": "data/tuning.json", "role": "every number a designer turns: serve and top speed, angles, paddle speed, the rival's speed (the difficulty)"}
+  ],
+  "do": [
+    "Put the ball and both movers in the layout as kit props with ids; let the kernel make their bodies (TLBall.create with the part, TLBodies.from_part with axis locks).",
+    "Make each goal a trigger behind the defender that only sees the ball's group; in its signal handler set a flag and score in _pack_tick.",
+    "Choose the floor surface for the feel you want: the law table decides how the ball slides (ice keeps it fast; concrete stops it).",
+    "Give the AI intents (where the ball will be, how hard to go there) through TLSteer; make difficulty one tuning number: the rival's speed.",
+    "Serve with seeded randomness (ctx.pick for the side, ctx.rng for the angle) and add a dead-ball rule that re-serves a ball that stopped.",
+    "Raise the ball speed a little on every return so a rally always ends."
+  ],
+  "dont": [
+    "Do not build walls, goals or the floor from script boxes when a kit part exists (barrier_wall, goal, rink, ground_patch).",
+    "Do not write score or win logic in the script: sides and score_to_win in rules.json already are the rules.",
+    "Do not move the paddle by setting its position: drive it with a velocity so it still collides.",
+    "Do not create, free or move bodies inside a trigger or contact signal handler.",
+    "Do not make the rival as fast as the player: an unbeatable AI is a bot that never finishes."
+  ],
+  "bot": {
+    "template": "tests/bot_win.gd",
+    "plays_by": "the player's own actions only: it predicts where the ball crosses its line (mirrored at the side walls) and offers the paddle edge that sends the ball away from the rival.",
+    "wins_when": "the rules say state over, winner player, reason score, the player's score equals score_to_win and the HUD shows the win text."
+  },
+  "acceptance": [
+    "The bot wins by score at seeds 1, 2 and 3 inside the default bot frame budget.",
+    "A do-nothing player loses: the rival scores when nobody defends.",
+    "No rally lasts forever: ball speed grows per return or the dead-ball rule fires.",
+    "Lint reports 0 bypasses and 0 kit parts added.",
+    "Both registered cameras show the whole court and both scores are on the HUD."
+  ],
+  "variants": [
+    {"ask": "air hockey or ice hockey shoot-out", "change": "swap ball for puck and the court for a rink (its goals are child parts with tl_mouth for the goal trigger); keep planar on."},
+    {"ask": "two balls", "change": "a second TLBall in the same group; the goal triggers already count it."},
+    {"ask": "harder or easier", "change": "the rival's speed and the ball's max_speed in tuning.json; nothing else."},
+    {"ask": "a different surface feel", "change": "the floor's surface in the layout (ice, concrete, wood): friction and bounce follow from the law table."}
+  ]
+}

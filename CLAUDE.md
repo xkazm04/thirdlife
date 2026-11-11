@@ -16,6 +16,7 @@ tl play          play a seed interactively
 tl arch          architecture rules + generated API index (docs/generated/API-INDEX.md)
 tl assets        asset manifest: list | check | scan | add
 tl ledger        what Foreman jobs cost and how they ended
+tl cards         recipe cards per kind of game: list | check | show | brief (engine/cards, contracts/CARDS.md)
 tl hook install  pre-push gate
 ```
 Every command prints PASS/FAIL lines and a `tl.devx/1` JSON line last; exit 0 pass, 1 fail, 2 could not run.
@@ -50,6 +51,7 @@ The checkout is shared with other Claude sessions (a visual-look session and the
 | Kernel API | `engine/kernel/API.md`, `docs/generated/API-INDEX.md` |
 | Kit parts, rigs, look | `engine/kits/KIT.md`, `engine/rigs/RIGS.md`, `engine/style/STYLE.md` |
 | Foreman jobs | `contracts/JOB.md`, `foreman/` |
+| How to build a kind of game (recipe cards) | `contracts/CARDS.md`, `engine/cards/`, `tl cards brief <id>` |
 | Assets and budgets | `contracts/ASSETS.md`, `assets/` |
 | Sharing, world layering | `docs/SHARING.md`, `reports/` |
 | Player-facing content tooling ideas | `docs/PLAYER-CONTENT-IDEAS.md` |

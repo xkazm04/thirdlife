@@ -1,0 +1,64 @@
+{
+  "schema": "tl.card/1",
+  "id": "card.knock_down",
+  "version": "0.1.0",
+  "title": "Knock it down: a character throws things at breakable scenery against a clock",
+  "summary": "A walker carries and throws balls at fracturable kit parts; every piece knocked out of place is a point; reach the score before time runs out. Covers demolition, target throwing, a snowball fight against a fort, bowling-like games.",
+  "applies_when": [
+    "the player controls a character on foot who carries, throws or kicks an object",
+    "the targets are scenery that breaks into pieces or falls over, and points come from what was knocked down",
+    "the round ends by reaching a score or by a time limit"
+  ],
+  "not_when": [
+    "targets shoot back or move with intent (needs enemy AI the seed does not show)",
+    "the thing thrown must be caught or passed between characters"
+  ],
+  "seed": "seed_wall",
+  "capabilities": ["physics", "ball", "biped", "fracture", "rules", "input", "camera", "vfx", "audio", "ui", "kit"],
+  "kit_parts": ["barrier_wall", "ball", "barricade", "fence", "pallet", "scaffold", "cone", "sign", "flag", "light_mast"],
+  "swap_parts": ["crate", "tyre_stack", "lumber", "ground_patch"],
+  "api": [
+    "TLKit.build_layout", "TLKit.build", "TLFracture.attach", "TLBiped.create", "TLBiped.drive_from_input", "TLBall.create",
+    "TLBall.hold", "TLBall.release", "TLRules.create", "TLRules.add_score", "TLRules.snapshot", "TLVfx.burst",
+    "TLAudio.play", "TLAudio.count", "TLHud.create"
+  ],
+  "rules_keys": ["sides", "score_to_win", "time_limit_seconds"],
+  "data_files": [
+    {"file": "data/yard.json", "role": "the venue: the breakable props with ids the script finds by prefix, the spawn point, scenery, a fixed camera"},
+    {"file": "data/rules.json", "role": "the score that wins and the time limit"},
+    {"file": "data/tuning.json", "role": "walker speeds, the ball pool, throw speed and angle, block toughness, camera"}
+  ],
+  "do": [
+    "Use fracturable kit parts (barrier_wall, crate) as targets and attach TLFracture to each; the kit already prepared the pieces.",
+    "Let impacts do the damage: a TLBall reports its hits and the block's damage model does the arithmetic; tune hp and threshold, write no damage code.",
+    "Check that the thrown object can hurt the target at all: impulse is mass times speed and must exceed the material's threshold.",
+    "Queue events in signal handlers and act on the queue as the last step of _pack_tick.",
+    "Score pieces by how far they moved from their place, so the count means knocked down and not cracked.",
+    "Play rig clips from game events (carry, cheer) and mark breaks with one effect burst and one sound."
+  ],
+  "dont": [
+    "Do not build targets from script boxes: they would not fracture and would not wear the style.",
+    "Do not subtract health in the script on contact: TLDamage already does, from the real impulse.",
+    "Do not create the next ball inside the release or the break handler: do it in _pack_tick.",
+    "Do not let the rules say over before the pack reacted (HUD text, horn): the bot reads both.",
+    "Do not set score_to_win above what the bot knocks down with margin: measure first (the seed's bot gets 40 to 45 pieces)."
+  ],
+  "bot": {
+    "template": "tests/bot_knock.gd",
+    "plays_by": "the player's own actions only: it lines up with the nearest standing block at throwing distance, faces it and throws whenever it holds a ball; too close, it walks out and comes in again.",
+    "wins_when": "the rules say state over with reason score, the HUD shows the win text, one break sound per broken block and one horn were recorded; reason time fails."
+  },
+  "acceptance": [
+    "The bot wins by score, never by time, at seeds 1 to 3.",
+    "A player who never throws loses by time with a score of 0.",
+    "Every block can break: none has hp or threshold beyond what the thrown object delivers.",
+    "Lint reports 0 bypasses and 0 kit parts added.",
+    "The orbit camera keeps the walker and the targets in frame; HUD shows score and clock."
+  ],
+  "variants": [
+    {"ask": "kick instead of throw", "change": "the same release with a flat velocity from the feet; lower the hold offset."},
+    {"ask": "a bigger or taller wall", "change": "params of the block props in yard.json; raise score_to_win only after re-measuring the bot."},
+    {"ask": "crates or a tower instead of a wall", "change": "swap barrier_wall for crate (also fracturable) stacked by layout transforms."},
+    {"ask": "lighter ball, faster throws", "change": "lower the blocks' threshold with the ball's mass or nothing breaks (8 kg at 19 m/s is about 150 N*s; concrete's default threshold is 260)."}
+  ]
+}
