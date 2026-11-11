@@ -137,8 +137,12 @@ static func bridge(parent: Node3D, ws: RefCounted, terr: RefCounted, path: TLKit
 
 
 ## Far mesas: flat-topped cliffs on the skyline, one mesh (N7). Returns how many.
-static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, reach: float, count: int) -> int:
+## P6: every mesa has a grass foot (it rises from the plain instead of standing on it) and, in `trees_out`, the places
+## of pines at its foot and on its cap (Transform3D each; the caller draws them).
+static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, reach: float, count: int, trees_out: Array = []) -> int:
 	var mk_far: TLMesh = TLMesh.new(35)
+	var rng6: RandomNumberGenerator = RandomNumberGenerator.new()      # the mesas keep the shapes they had
+	rng6.seed = 6060
 	for i: int in count:
 		var a: float = TAU * (float(i) + rng.randf() * 0.7) / float(maxi(1, count))
 		var d: float = reach + 330.0 + rng.randf() * 420.0
@@ -146,7 +150,9 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 		var h: float = 34.0 + rng.randf() * 70.0
 		var at: Vector3 = Vector3(centre.x + cos(a) * d, -3.0, centre.y + sin(a) * d)
 		var tone: float = 0.9 + 0.2 * rng.randf()
-		mk_far.push_at(at, Vector3(0.0, rng.randf() * 360.0, 0.0), Vector3(1.0, 1.0, 0.6 + rng.randf() * 0.5))
+		var rot: float = rng.randf() * 360.0
+		var sz: float = 0.6 + rng.randf() * 0.5
+		mk_far.push_at(at, Vector3(0.0, rot, 0.0), Vector3(1.0, 1.0, sz))
 		# an uneven outline (still star-shaped), a scree foot, three strata of other tones, a grass cap
 		var sides: int = 9 + rng.randi_range(0, 3)
 		var unit: PackedVector2Array = PackedVector2Array()
@@ -158,6 +164,21 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 			for u: Vector2 in unit:
 				out.append(u * scale)
 			return out
+		mk_far.prism(outline.call(r * 2.5), 2.4, h * 0.2, "grass_dry", Color(0.86, 0.93, 0.8), 0.54, true, false)
+		var rb: Basis = Basis(Vector3.UP, deg_to_rad(rot))
+		for q: int in 9 + rng6.randi_range(0, 7):
+			var ta: float = rng6.randf() * TAU
+			var tr: float = r * rng6.randf_range(1.5, 2.35)
+			var ty: float = 2.4 + (h * 0.2 - 2.4) * clampf((2.5 * r - tr) / (1.15 * r), 0.0, 1.0) * 0.8
+			var ts: float = rng6.randf_range(1.6, 2.6)
+			trees_out.append(Transform3D(Basis(Vector3.UP, rng6.randf() * TAU).scaled(Vector3(ts, ts * rng6.randf_range(0.95, 1.2), ts)),
+				Vector3(at.x, at.y + ty - 0.4, at.z) + rb * Vector3(cos(ta) * tr, 0.0, sin(ta) * tr * sz)))
+		for q: int in 4 + rng6.randi_range(0, 4):
+			var ta: float = rng6.randf() * TAU
+			var tr: float = r * 0.81 * rng6.randf_range(0.15, 0.62)
+			var ts: float = rng6.randf_range(1.5, 2.3)
+			trees_out.append(Transform3D(Basis(Vector3.UP, rng6.randf() * TAU).scaled(Vector3(ts, ts, ts)),
+				Vector3(at.x, at.y + h * 1.3 + 2.2, at.z) + rb * Vector3(cos(ta) * tr, 0.0, sin(ta) * tr * sz)))
 		mk_far.prism(outline.call(r * 1.28), 0.0, h * 0.34, "cliff", Color(tone * 0.88, tone * 0.88, tone * 0.88), 0.82)
 		for k: int in 3:
 			var kt: float = tone * (0.9 + 0.1 * float((k + i) % 2)) * (0.94 + 0.06 * float(k))
@@ -175,3 +196,51 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 		far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(far)
 	return count
+
+
+## P6. Trees and bushes along the roads between the venues: never on a road, a pad or the river (`is_free` is the
+## landscape's own test), never on a steep bank. Returns [trees, bushes] (Transform3D each).
+static func road_side(rng: RandomNumberGenerator, terr: RefCounted, road_pts: PackedVector2Array, half: float, rv_half: float, is_free: Callable, want_trees: int, want_bushes: int) -> Array:
+	var trees: Array = []
+	var bushes: Array = []
+	if road_pts.is_empty():
+		return [trees, bushes]
+	var tries: int = 0
+	while (trees.size() < want_trees or bushes.size() < want_bushes) and tries < (want_trees + want_bushes) * 30:
+		tries += 1
+		var tree: bool = trees.size() < want_trees and (tries % 2 == 0 or bushes.size() >= want_bushes)
+		var q: Vector2 = road_pts[rng.randi_range(0, road_pts.size() - 1)]
+		var a: float = rng.randf() * TAU
+		var p: Vector2 = q + Vector2(cos(a), sin(a)) * (half + (6.5 + rng.randf() * 15.0 if tree else 1.6 + rng.randf() * 8.0))
+		if not bool(is_free.call(p, 9.0 if tree else 6.5, half + (4.5 if tree else 1.2), rv_half + 4.0)) or float(terr.call("slope", p.x, p.y)) > 0.26:
+			continue
+		var sc: float = rng.randf_range(0.75, 1.2) if tree else rng.randf_range(0.7, 1.3)
+		var x: Transform3D = Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.9, 1.15), sc)), Vector3(p.x, float(terr.call("gy", p.x, p.y)), p.y))
+		if tree:
+			trees.append(x)
+		else:
+			bushes.append(x)
+	return [trees, bushes]
+
+
+## P6. Clumps of pines on the far plain between the village's hills and the mesas, appended to `out`.
+static func plain_clumps(rng: RandomNumberGenerator, terr: RefCounted, centre: Vector2, reach: float, count: int, out: Array) -> void:
+	for k: int in count:
+		var ca: float = rng.randf() * TAU
+		var cc: Vector2 = centre + Vector2(cos(ca), sin(ca)) * (reach + 150.0 + rng.randf() * 420.0)
+		if bool(terr.call("inside", cc.x, cc.y, -40.0)):
+			continue
+		for q: int in rng.randi_range(5, 10):
+			var cp: Vector2 = cc + Vector2(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)) * 34.0
+			var cs: float = rng.randf_range(1.3, 2.2)
+			out.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(cs, cs * rng.randf_range(0.95, 1.2), cs)), Vector3(cp.x, -0.3, cp.y)))
+
+
+## P6. The rock edge of a pad: two or three rocks on one fence span (`a0`..`a1` round the pad's centre `f`, plot
+## radius `r`), larger where `big` (0..1) is: the middle of the arc. Appended to `out`.
+static func edge_rocks(rng: RandomNumberGenerator, f: Vector3, r: float, a0: float, a1: float, big: float, out: Array) -> void:
+	for q: int in 2 + int(rng.randi_range(0, 1)):
+		var qa: float = lerpf(a0, a1, (float(q) + rng.randf()) / 3.0)
+		var qs: float = (0.9 + 1.5 * big * rng.randf()) * rng.randf_range(0.8, 1.25)
+		var qp: Vector3 = f + Vector3(cos(qa), 0.0, sin(qa)) * (r + 3.4 + rng.randf() * 2.2)
+		out.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(qs, qs * rng.randf_range(0.8, 1.3), qs)), qp + Vector3(0.0, -0.3, 0.0)))

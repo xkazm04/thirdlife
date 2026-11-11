@@ -131,6 +131,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	var bz1: float = ceilf((hi.y + margin) / cell) * cell
 	var terr: RefCounted = VillageTerrain.new(int(cfg.get("seed", 7)), Rect2(bx0, bz0, bx1 - bx0, bz1 - bz0), cell)
 	terr.set("centre", (lo + hi) * 0.5)
+	terr.set("relief", float(cfg.get("relief", 1.0)))
 	for k: int in lots.size():
 		if lot_auto[k]:
 			var li: int = plots.size() + k
@@ -282,6 +283,16 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	var mk_edge: TLMesh = TLMesh.new(33)
 	var mk_ring: TLMesh = TLMesh.new(34)
 	var mk_kerb: TLMesh = TLMesh.new(37)
+	# P6: a pad is a place, not a disc: a worn ring 2 to 8 m wide (noise), rocks instead of fence on the side away
+	# from the gate (the visitor's wall stays). A generator of its own: the scatter below keeps the places it had.
+	var rng6: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng6.seed = int(cfg.get("seed", 7)) + 606
+	var edge_n: FastNoiseLite = FastNoiseLite.new()
+	edge_n.seed = int(cfg.get("seed", 7)) + 6
+	edge_n.frequency = 0.03
+	var edge_rocks: Array = []
+	var ring_out: Callable = func(c: Vector2, r: float, a: float) -> float:
+		return r + 2.0 + 6.2 * smoothstep(0.25, 0.8, edge_n.get_noise_2d(c.x + cos(a) * r, c.y + sin(a) * r) * 0.5 + 0.5)
 	for i: int in centres.size():
 		var r: float = float(rad[i])
 		if r <= 0.0:
@@ -293,6 +304,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var r1: float = r + 5.0
 		var gate: Variant = gates[i]
 		var gate_a: float = atan2((gate as Vector2).y, (gate as Vector2).x) if gate != null else 0.0
+		var rock_a: float = gate_a + PI + 0.6 * sin(float(i) * 2.1)
+		var rock_w: float = 0.8 if (gate != null and bool(cfg.get("pad_rocks", true))) else -1.0
 		var gate_w: float = (half * 0.8 + 1.6) / (r + 3.5)
 		if gate != null and bool(cfg.get("gates", true)):
 			# the gate: a flag on each side and a sign that faces the road
@@ -311,9 +324,11 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var d1: Vector3 = Vector3(cos(a1), 0.0, sin(a1))
 			var o: Vector3 = Vector3(c.x, H + 0.014, c.y)
 			var tone: float = 0.92 + 0.14 * rng.randf()
-			mk_ring.quad_up(o + d0 * r0, o + d0 * r1, o + d1 * r1, o + d1 * r0, "dirt", Color(tone, tone, tone))
+			var ra: float = maxf(r0 + 0.4, float(ring_out.call(c, r, a0)))
+			var rb: float = maxf(r0 + 0.4, float(ring_out.call(c, r, a1)))
+			mk_ring.quad_up(o + d0 * r0, o + d0 * ra, o + d1 * rb, o + d1 * r0, "dirt", Color(tone, tone, tone))
 			var og: Vector3 = Vector3(c.x, H + 0.008, c.y)
-			mk_ring.quad_up(og + d0 * r1, og + d0 * (r1 + 1.2), og + d1 * (r1 + 1.2), og + d1 * r1, "grass_dry", Color.WHITE)
+			mk_ring.quad_up(og + d0 * ra, og + d0 * (ra + 1.2), og + d1 * (rb + 1.2), og + d1 * rb, "grass_dry", Color.WHITE)
 			# the kerb: a low stone edge at the lip where the pad meets its bank, wherever the bank falls or rises by more than a step
 			var mid_pt: Vector2 = c + Vector2(cos((a0 + a1) * 0.5), sin((a0 + a1) * 0.5)) * (kerb_r + 4.0)
 			var out_h: float = float(terr.call("h", mid_pt.x, mid_pt.y))
@@ -331,8 +346,11 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 					run = PackedVector3Array()
 					continue
 				var f: Vector3 = Vector3(c.x, H, c.y)
-				TLKitSite.add_fence(mk_edge, f + d0 * (r + 3.6), f + d1 * (r + 3.6), 3.4)
-				stats["fence_m"] = float(stats["fence_m"]) + (d0 - d1).length() * (r + 3.6)
+				if rock_w > 0.0 and absf(angle_difference(mid, rock_a)) < rock_w:
+					Parts.edge_rocks(rng6, f, r, a0, a1, 1.0 - absf(angle_difference(mid, rock_a)) / rock_w, edge_rocks)
+				else:
+					TLKitSite.add_fence(mk_edge, f + d0 * (r + 3.6), f + d1 * (r + 3.6), 3.4)
+					stats["fence_m"] = float(stats["fence_m"]) + (d0 - d1).length() * (r + 3.6)
 				if run.is_empty():
 					run.append(f + d0 * (r + 3.6))
 				run.append(f + d1 * (r + 3.6))
@@ -350,7 +368,9 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var a1: float = TAU * float(q + 1) / float(segs)
 			var tone: float = 0.9 + 0.14 * rng.randf()
 			var o: Vector3 = base + Vector3(0.0, 0.014, 0.0)
-			mk_ring.quad_up(o, o + Vector3(cos(a0), 0.0, sin(a0)) * lr, o + Vector3(cos(a1), 0.0, sin(a1)) * lr, o, "dirt", Color(tone, tone, tone))
+			var la: float = lr * (0.86 + 0.24 * (edge_n.get_noise_2d(lc.x + cos(a0) * lr * 3.0, lc.y + sin(a0) * lr * 3.0) * 0.5 + 0.5))
+			var lb: float = lr * (0.86 + 0.24 * (edge_n.get_noise_2d(lc.x + cos(a1) * lr * 3.0, lc.y + sin(a1) * lr * 3.0) * 0.5 + 0.5))
+			mk_ring.quad_up(o, o + Vector3(cos(a0), 0.0, sin(a0)) * la, o + Vector3(cos(a1), 0.0, sin(a1)) * lb, o, "dirt", Color(tone, tone, tone))
 		var crane: Node3D = TLKitSite.crane(26.0, 2.0, 20.0, 8.0)
 		crane.name = "WorldLotCrane%d" % k
 		crane.position = base + Vector3(-lr * 0.38, 0.0, -lr * 0.22)
@@ -382,6 +402,15 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	parent.add_child(mk_edge.instance("WorldPlotFences"))
 	if mk_kerb.tri_count > 0:
 		parent.add_child(mk_kerb.instance("WorldPadKerbs"))
+	if not edge_rocks.is_empty():
+		_multi(parent, TLKitNature.rock(210, 1.3, 0.78), edge_rocks, "WorldPadRocks")
+		(parent.get_node("WorldPadRocks") as MultiMeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF      # 337 rocks in four cascades cost more than they showed
+		ws.set("tag", "rock")
+		for x: Transform3D in edge_rocks:
+			if x.basis.get_scale().x * 1.3 * 0.78 >= 0.9:
+				ws.call("add_trunk", x.origin, x.basis.get_scale().x * 1.1, 1.4)
+		ws.set("tag", "wall")
+	stats["pad_rocks"] = edge_rocks.size()
 	stats["fence_m"] = snappedf(float(stats["fence_m"]), 0.1)
 	# ---- scatter: follows the land. Never inside a plot (plus its pad), never on a road, never in the river.
 	var spread: float = float(cfg.get("spread_m", 70.0))
@@ -451,6 +480,18 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	var bushes: Array = place.call(int(cfg.get("bushes", 90)), box, 6.5, 3.4, 0.7, 1.4, 0.4, 0.0, "any", 0.2)
 	_multi(parent, TLKitNature.bush(300, 1.0), bushes, "WorldBushes")
 	stats["bushes"] = bushes.size()
+	var road_side: Array = Parts.road_side(rng6, terr, road_pts, half, rv_half, is_free, int(cfg.get("road_trees", 44)), int(cfg.get("road_bushes", 70)))
+	var road_trees: Array = road_side[0]            # P6: density where the eye goes: trees and bushes along the roads
+	var road_bushes: Array = road_side[1]
+	_multi(parent, TLKitNature.broadleaf(121, 6.5), road_trees, "WorldRoadTrees")
+	_multi(parent, TLKitNature.bush(301, 0.9), road_bushes, "WorldRoadBushes")
+	if not road_bushes.is_empty():
+		(parent.get_node("WorldRoadBushes") as MultiMeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ws.set("tag", "tree")
+	for x: Transform3D in road_trees:
+		ws.call("add_trunk", x.origin, 0.5 * x.basis.get_scale().x)
+	stats["trees"] = int(stats["trees"]) + road_trees.size()
+	stats["bushes"] = int(stats["bushes"]) + road_bushes.size()
 	var tufts: Array = []
 	var want_tufts: int = int(cfg.get("tufts", 1400)) if road_pts.size() > 0 else 0
 	var ttries: int = 0
@@ -497,7 +538,13 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			if bool(terr.call("inside", x.origin.x, x.origin.z)):
 				ws.call("add_trunk", x.origin, 0.5 * x.basis.get_scale().x)
 		stats["trees"] = int(stats["trees"]) + xs.size()
-	stats["mesas"] = Parts.mesas(parent, rng, centre, reach, int(cfg.get("mesas", 18)))
+	var mesa_trees: Array = []            # P6: the mesas stand ON the plain: a grass foot, pines at foot and cap, pine clumps before them
+	stats["mesas"] = Parts.mesas(parent, rng, centre, reach, int(cfg.get("mesas", 18)), mesa_trees)
+	Parts.plain_clumps(rng6, terr, centre, reach, int(cfg.get("plain_clumps", 16)), mesa_trees)
+	if not mesa_trees.is_empty():
+		_multi(parent, TLKitNature.pine(130, 10.0, 4, 2.6), mesa_trees, "WorldMesaPines")
+		(parent.get_node("WorldMesaPines") as MultiMeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	stats["far_trees"] = mesa_trees.size()
 	# ---- the visitor's collider: the terrain (left open where a plot's own ground carries him) and a copy of every
 	# pack's static colliders
 	var cs0: int = Time.get_ticks_msec()

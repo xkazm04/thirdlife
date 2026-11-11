@@ -1,5 +1,13 @@
 # N5b: drawing a world of many packs
 
+**P6 (11 November 2026): a far game has two pictures and stays alive.** `FAR.md` is the page: the distance study
+(three games, eye and rise, 50 to 600 m), the rules taken from it, and what `draw.gd` now does. In short: the
+stand-in of section 5 is replaced by a **middle** picture (forms of 2.5 m and more, plus a mark per moving body, a
+copy of the smoke, four lights) and a **far** picture (forms of 5 m and more in flat tones, coarse ground, larger
+marks); the camera's distance to the plot edge picks one (240 m, 30 m of margin); a kit scoreboard shows the pack's
+real score at every distance, near included. Section 5 below describes N5b's stand-in, which is still there as the
+picture "still" (`TL_DRAW_PICTURE=still`) for comparison; its cost table is N5b's. Sections 9 and 10 are updated.
+
 **N7:** the viewer is now the host mode `world-view` (same options; `tools/view.sh` starts it), the draw layer takes
 `set_stage(-1)` (nobody on stage), `set_tier(i, tier)` (the scheduler's tier decides full or stand-in),
 `forget_nodes(i)` and `replace_holder(i, holder)` (a pack built again from its seed), and the world's ground moved to
@@ -12,7 +20,8 @@ change). This directory draws them standing apart in one landscape, in one pictu
 
 | file | what it is |
 |---|---|
-| `draw.gd` | the draw layer: plots, the stage rule, both offset mechanisms, culling, the plot cut, far stand-ins |
+| `draw.gd` | the draw layer: plots, the stage rule, both offset mechanisms, culling, the plot cut, the per-frame loop. P6: one class in four files, each extends the one before: `draw_base.gd` (constants, variables, helpers), `draw_pictures.gd` (the merged pictures of a far pack), `draw_life.gd` (which picture, marks, smoke, lights, score), `draw.gd` (what a world instantiates) |
+| `FAR.md`, `far_study.mjs`, `far_cost.sh`, `PATCHES-P6.md` | P6: the distance study and its rules, the tool that takes its pictures and builds its sheets, the cost runs, patches for files that are not P6's |
 | `view.gd`, `view.tscn` | the viewer: N2's world host + the draw layer + the world's ground + a crane camera + pictures |
 | `../../../tools/view.sh` | `shot` (one or more pictures) and `check` (state hashes with drawing on against headless) |
 | `PATCHES.md` | patches to files that are not mine (none applied) |
@@ -269,8 +278,11 @@ turned as a whole, and its shadows still fall the way the world's sun says.
   the terrain under it was bent. Choose the radius beyond the venue.
 - Seen from far at a grazing angle, small ink marks appear along the bent rim of a plot (`far_off.png`, at the
   left plot): the bend makes small steep faces where the terrain was uneven.
-- Stand-ins: no moving parts, no lights, no particles, no decimation; the stand-in is not rebuilt when the pack
-  changes (a wall that was knocked down stands again at a distance).
+- Far pictures (P6): a moving body is a box, not its shape; a body that was frozen when the pictures were built
+  and moves later is in the merged mesh AND gets no mark (the pictures are built once); thin members inside a merged
+  mesh are not dropped; no real decimation (size rule per instance, a coarse grid for the kit's terrain only); marks
+  and score boards are not bent at the rim band with the ground under them (boards are lifted as a whole, like the
+  prop). `FAR.md` section 5 has the list.
 - A hidden far pack has `is_visible_in_tree() == false` on all its nodes; pack code that reads it would see that.
 - Lights of non-stage packs are followed once per drawn frame, not per tick.
 - The world host has no watchdog and quits the process when its last pack ends (PATCHES 3).
@@ -287,8 +299,12 @@ turned as a whole, and its shadows still fall the way the world's sun says.
   inside the radius, and keep 9 m free at the edge (your ground is bent there to meet the world's).
 - A material of your own is drawn at the right place, but it is not cut to the plot, it is missing from the far
   stand-in, and it costs the world work on every frame. It is counted.
-- At a distance your pack is one merged still picture of itself, taken when it was first far: no moving parts, no
-  lights, no particles. Do not put the one thing a far visitor should see on a moving body.
+- At a distance your pack is a merged picture of its venue, taken when it was first far, plus signs of life (P6,
+  `FAR.md`): every moving body (not static, not frozen) or rig is a box in its main colour, moved when your pack
+  ticks; up to two standing smoke emitters and four lights are kept; anything shorter than 2.5 m is gone from 100 m
+  on, anything shorter than 5 m from about 270 m on. What a far visitor should see must be tall, large or moving.
+- If you place the kit's `scoreboard` and use `TLRules`, the world shows your real score on it (first two sides of
+  `rules.scores`, 0 to 9) at every distance. In a single-pack run the board is still the prop with fixed digits.
 - Do not use instance shader parameters, node metas or `custom_aabb` named `tl_plot`, `tl_clip`, `tl_draw`: the world
   writes them on your visuals. Do not read `visible` of your own nodes to decide game state: a far pack is hidden.
 - Your HUD and your cameras are shown only while the player is in your pack.
