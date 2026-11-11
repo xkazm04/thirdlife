@@ -9,6 +9,10 @@ import { inProcessFakeRunner } from "../testing/fake-runner-core.js";
 import { Foreman, type ForemanOptions } from "../foreman.js";
 import { PKG_ROOT, FAKE_RUNNER } from "../paths.js";
 import type { JobEvent, PackageSpec } from "../events.js";
+import { FAKE_VERBS_FILE, readVerbsFile } from "../verbs.js";
+
+/** The verbs of the fake runner (fixtures/engine/kernel/runner/verbs.json): what plan checks in tests are given. */
+export const VERBS = readVerbsFile(FAKE_VERBS_FILE);
 
 export const FIXTURE = path.join(PKG_ROOT, "fixtures", "job-paddle");
 export { FAKE_RUNNER };

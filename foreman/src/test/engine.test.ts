@@ -1,5 +1,6 @@
 // Integration: the Foreman's own Verifier (and `foreman verify`) against the REAL engine.
-// Skipped when TL_GODOT is not set. The engine directory is TL_ENGINE_DIR, or site/_engine_snapshot; never the
+// Skipped when TL_GODOT is not set. The engine directory is TL_ENGINE_DIR, or site/_engine_snapshot3 (N3; the older
+// site/_engine_snapshot when that one is not there); never the
 // live engine/ (another builder may be changing it). Nothing is written into the engine directory by this test:
 // reports and captures go to temp directories.
 import { test, after } from "node:test";
@@ -8,7 +9,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { cleanup, tempDir, FAKE_RUNNER } from "./helpers.js";
 import { Verifier, REPORT_KEYS, type VerifyResult } from "../verifier.js";
-import { restsOnAClock } from "../foreman.js";
+import { Foreman, restsOnAClock } from "../foreman.js";
+import { FakeBuilder, type FakeStep } from "../builder/fake.js";
+import type { Builder } from "../builder/types.js";
+import { JobLog } from "../joblog.js";
+import { acceptedCarriedFields } from "../manifest.js";
+import { loadVerbs } from "../verbs.js";
+import { readEvents } from "./helpers.js";
+import type { PackageSpec } from "../events.js";
 import { inProcessFakeRunner } from "../testing/fake-runner-core.js";
 import { main } from "../cli.js";
 import { copyDir } from "../scope.js";
@@ -18,7 +26,7 @@ import type { Verb } from "../events.js";
 after(cleanup);
 
 const godot = process.env["TL_GODOT"];
-const engineDir = path.resolve(process.env["TL_ENGINE_DIR"] && process.env["TL_ENGINE_DIR"].length > 0 ? process.env["TL_ENGINE_DIR"] : path.join(REPO_ROOT, "site", "_engine_snapshot"));
+const engineDir = path.resolve(process.env["TL_ENGINE_DIR"] && process.env["TL_ENGINE_DIR"].length > 0 ? process.env["TL_ENGINE_DIR"] : fs.existsSync(path.join(REPO_ROOT, "site", "_engine_snapshot3")) ? path.join(REPO_ROOT, "site", "_engine_snapshot3") : path.join(REPO_ROOT, "site", "_engine_snapshot"));
 const examples = path.join(engineDir, "kernel", "examples");
 const skip = !godot ? "TL_GODOT is not set" : !fs.existsSync(godot) ? `TL_GODOT does not exist: ${godot}` : !fs.existsSync(examples) ? `no kernel/examples under ${engineDir}` : false;
 const opts = { skip, timeout: 600_000 };
@@ -172,3 +180,101 @@ test("real engine against the fake: same top-level keys and the same check ids f
     assert.deepEqual([b.exitCode, b.report?.outcome, checkIds(b)], [a.exitCode, a.report?.outcome, checkIds(a)], `${verb} ${args.join(" ")}`);
   }
 });
+
+// ---------------------------------------------------------------- N3 on the real runner (no model is called)
+
+const hasVerbs = fs.existsSync(path.join(engineDir, "kernel", "runner", "verbs.json"));
+test(
+  "real engine, N3: a Foreman job on the real runner reads verbs.json from the engine, the runner takes `invariants --bot-frames`, a change request re-opens the root and a second pack is promoted beside the first; optional manifest fields reach pack.json only when this engine's manifest check knows them",
+  { skip: skip || (!hasVerbs ? `no kernel/runner/verbs.json under ${engineDir} (an engine from before N3)` : false), timeout: 900_000 },
+  async (t) => {
+    const verbs = loadVerbs(engineDir);
+    assert.ok("bot-frames" in (verbs.verbs["invariants"]?.options ?? {}));
+    const root = tempDir("engine-job");
+    const jobDir = path.join(root, "site", "ramp-balls-20261111-1");
+    const src = ex("pack_min");
+    const files: Record<string, string> = {};
+    for (const f of ["scripts/main.gd", "data/tuning.json", "gen/layout.gd", "tests/bot_roll.gd"]) files[f] = fs.readFileSync(path.join(src, f), "utf8");
+    const plan: PackageSpec[] = [
+      {
+        id: "core",
+        title: "Balls on a ramp (the kernel's minimal example, as a builder's output)",
+        milestone: "blockout",
+        deps: [],
+        scope: ["scripts/**", "data/**", "gen/**", "tests/**"],
+        contract: "The kernel example pack_min, file for file.",
+        registers: { capabilities: ["physics", "camera", "input"], assets: ["gen/layout.gd"], tests: ["tests/bot_roll.gd"], cameras: ["hero"] },
+        acceptance: [
+          { level: "V1", verb: "lint", args: [] },
+          { level: "V2", verb: "smoke", args: ["--seed=1", "--frames=300"] },
+          { level: "V3", verb: "invariants", args: ["--seed=1", "--frames=300", "--bot-frames=3000"] },
+          { level: "V4", verb: "bot", args: ["--test=tests/bot_roll.gd", "--frames=3000"] },
+        ],
+      },
+    ];
+    const log = JobLog.open(jobDir);
+    try {
+      log.append({ type: "job_created", sentence: "balls roll down a ramp", packId: "game.ramp_balls", title: "Ramp balls" });
+      log.append({ type: "brief_set", brief: { rules: "r", arena: "a", ai: "none", controls: "none", mood: "plain" }, estimate: { packages: 1, wallMinutes: 5, tokens: 0 } });
+      log.append({ type: "brief_approved", by: "auto" });
+      log.append({ type: "plan_set", packages: plan });
+    } finally {
+      log.close();
+    }
+    const steps: FakeStep[] = [
+      { match: { role: "builder", package: "core", round: 1 }, write: files, text: "Done.\nDEVIATIONS: none" },
+      { match: { role: "builder", package: "core" }, write: { "data/tuning.json": files["data/tuning.json"]?.replace("{", '{\n  "_note": "changed by a change request",') ?? "{}" }, text: "Done.\nDEVIATIONS: none" },
+    ];
+    const inner = new FakeBuilder({ steps });
+    const param = { name: "balls", file: "data/tuning.json", path: "balls", min: 1, max: 12, step: 1, label: "Number of balls" };
+    const builder: Builder = {
+      name: "fake",
+      probe: () => inner.probe(),
+      run: async (req) => {
+        const res = await inner.run(req);
+        if (req.mode === "edit" && req.meta?.round === 1) {
+          const file = path.join(req.cwd, "pack.json");
+          const m = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
+          m["params"] = [param];
+          fs.writeFileSync(file, JSON.stringify(m, null, 1));
+        }
+        return res;
+      },
+    };
+    const make = (): Foreman => new Foreman({ jobDir, builder, verifier: real(), parallel: 1, roundLimit: 2, builderTimeoutMs: 10_000, critic: false, promoteTo: "job", packContract: "(pack contract omitted)" });
+    const first = await make().run();
+    const evs1 = readEvents(jobDir);
+    assert.equal(first.jobState?.state, "done", JSON.stringify(evs1.filter((e) => e.type === "verify" && !e.ok)) + JSON.stringify(first.jobState));
+    assert.ok(evs1.some((e) => e.type === "verify" && e.package === "core" && e.verb === "invariants" && e.ok && e.exitCode === 0), "the real runner accepted --bot-frames with invariants");
+    const accepted = acceptedCarriedFields(engineDir);
+    const manifest = JSON.parse(fs.readFileSync(path.join(jobDir, "promoted", "game.ramp_balls", "pack.json"), "utf8")) as Record<string, unknown>;
+    t.diagnostic(`optional manifest fields this engine accepts: ${accepted.join(", ") || "none"}`);
+    if (accepted.includes("params")) assert.deepEqual(manifest["params"], [param]);
+    else {
+      assert.equal(manifest["params"], undefined, "a field the engine does not know is kept out, so lint passes");
+      assert.ok(evs1.some((e) => e.type === "package_state" && e.state === "verifying" && /the builder wrote params; this engine's manifest check does not accept that field yet/.test(e.detail ?? "")));
+    }
+
+    const again = JobLog.open(jobDir);
+    try {
+      again.append({ type: "change_requested", text: "Add a note to the tuning file.", package: "core" });
+    } finally {
+      again.close();
+    }
+    const second = await make().run();
+    const evs2 = readEvents(jobDir).filter((e) => e.seq > first.lastSeq);
+    assert.equal(second.jobState?.state, "done", JSON.stringify(evs2.filter((e) => e.type === "verify" && !e.ok)) + JSON.stringify(second.jobState));
+    assert.deepEqual(evs2.filter((e) => e.type === "reopened").map((e) => (e.type === "reopened" ? e.package : "")), ["core"]);
+    assert.deepEqual(second.promotions.map((p) => `${p.version} ${p.dest}`), ["0.1.0 promoted/game.ramp_balls", "0.1.1 promoted/game.ramp_balls@0.1.1"]);
+    assert.match(fs.readFileSync(path.join(jobDir, "promoted", "game.ramp_balls@0.1.1", "data", "tuning.json"), "utf8"), /changed by a change request/);
+    assert.ok(!fs.readFileSync(path.join(jobDir, "promoted", "game.ramp_balls", "data", "tuning.json"), "utf8").includes("changed by a change request"));
+    // The re-promoted pack was photographed by the real runner (two frames of the camera `hero`), without a critic.
+    const shots = evs2.find((e) => e.type === "note" && /pictures of the pack as it is promoted the 2nd time/.test(e.text));
+    const pngs = (shots && shots.type === "note" ? shots.text : "").split(": ").at(-1)?.split(", ") ?? [];
+    assert.equal(pngs.length, 2, JSON.stringify(evs2.filter((e) => e.type === "verify" && e.verb === "capture")));
+    for (const f of pngs) assert.ok(isPng(path.join(jobDir, f)), f);
+    // The pack directory name with "@" in it loads in the real runner.
+    const v = await run(real(), path.join(jobDir, "promoted", "game.ramp_balls@0.1.1"), "lint", [], tempDir("engine-job-reports"));
+    assert.deepEqual([v.ok, v.report?.["pack"], v.report?.["packVersion"]], [true, "game.ramp_balls", "0.1.1"]);
+  },
+);

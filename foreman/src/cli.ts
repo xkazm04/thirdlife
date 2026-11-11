@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// foreman: probe | new | approve | plan | run | resume | status | verify | answer | cancel | init-fixture
+// foreman: probe | new | approve | plan | prompts | run | resume | change | follow | status | verify | answer | comment | cancel | init-fixture
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -18,6 +18,7 @@ import { schemaErrors } from "./builder/json.js";
 import { killAllChildren, type SpawnFn } from "./proc.js";
 import { LEDGER_FILE, ledgerSpawn, reapOrphans } from "./orphans.js";
 import { FAKE_RUNNER, PKG_ROOT, REPO_ROOT, toPosix } from "./paths.js";
+import { VerbsError, verbsFor, type RunnerVerbs } from "./verbs.js";
 
 export class UsageError extends Error {}
 
@@ -27,7 +28,7 @@ interface Args {
   flags: Record<string, string | true>;
 }
 
-const BOOLEAN_FLAGS = new Set(["auto-approve", "allow-edit", "no-promote", "retry-failed", "quiet", "json", "force-subscription", "help", "no-critic", "no-reference", "planner-only", "builder-only"]);
+const BOOLEAN_FLAGS = new Set(["auto-approve", "allow-edit", "no-promote", "retry-failed", "quiet", "json", "force-subscription", "help", "no-critic", "no-reference", "planner-only", "builder-only", "no-run", "no-kit-gate"]);
 
 export function parseArgs(argv: string[]): Args {
   const pos: string[] = [];
@@ -81,16 +82,32 @@ const HELP = `foreman <command>
                                          never inherit names containing KEY, TOKEN, SECRET or PASSWORD
             [--max-replans N] [--max-packages N]   re-plans per job (default 3), packages a re-plan may leave
             [--no-critic] [--capture-res WxH] [--no-reference] [--planner-model M] [--critic-model M]
+            [--no-kit-gate]   do not fail a round for more bypasses or less kit use (default: such a round fails
+                              with cause kit_regression unless the builder's DEVIATIONS say why)
   resume <job> [same options as run]  continues from job.jsonl; promoted packages are never rebuilt
+  change <job> "<text>" [--package ID] [--no-run] [same options as run]
+        a change request on a job with at least one merged package, also a finished (done) one. With --package that
+        package is re-opened; without it the Planner is asked which package owns the problem (one short call). The
+        owner runs its normal rounds with the text as part of its brief; every package that depends on it is then
+        verified again and rebuilt only if it now fails; the job ends done again with a NEW promotion beside the
+        earlier one (promoted/<pack id>@<version>/). --no-run only records the request (then: foreman resume).
+  follow <job> [--from SEQ] [--poll-ms N] [--idle-ms N]
+        prints every event of job.jsonl after SEQ as one JSON line, as it is appended, and exits 0 when the job
+        reaches a terminal state (done, failed, cancelled) in an event after SEQ. Holds no lock; a torn last line
+        is waited for, not printed. --idle-ms: give up (exit 4) when nothing new arrives for that long.
   status <job> [--json]              one row per package: state, round, last cause
   verify <pack dir> [--verbs all|lint,smoke,...] [--runner fake] [--reports DIR] [--<verb>-args "..."]
         default: all five verbs (every manifest test as a bot, every manifest camera as a capture)
-  answer <job> <package> "<text>"    answers a builder's question
+  answer <job> <package> "<text>" [--change PACKAGE]
+        answers a builder's question. --change turns the answer into a change request for PACKAGE as well ("yes,
+        that package may be changed"): PACKAGE is re-opened with the text when the job is resumed
   comment <job> <milestone> "<text>" the player's comment on a milestone the job has reached (a comment event)
   cancel <job> [--reason TEXT]       marks every unfinished package failed (cause cancelled) and the job cancelled
   init-fixture <dest dir>            copies the three-package fixture job to a fresh directory
 
 <job> is a job directory or a job id under --site (default: <repo>/site).
+The runner's verbs and options are read from <engine>/kernel/runner/verbs.json (tl.verbs/1); plan, run, resume,
+change and prompts stop with an error when that file is missing.
 Environment: TL_GODOT (runner executable; a .js file is run with node), TL_ENGINE_DIR, TL_CLAUDE_BIN,
 TL_PLAYING_FILE (only_while_playing: the player is in the world while this file exists).`;
 
@@ -176,6 +193,11 @@ function makeVerifier(a: Args, spawn?: SpawnFn, cfg: JobConfig = {}): Verifier {
   const r = resolveRunner(env, { fake: str(a, "runner") === "fake", ...(flagEngine ? { engineDir: flagEngine } : {}) });
   const t = num(a, "verify-timeout-ms");
   return new Verifier({ godot: r.godot, engineDir: r.engineDir, ...(t !== undefined ? { timeoutMs: t } : {}), ...(spawn ? { spawn } : {}) });
+}
+
+/** The runner's verbs for a job-level command (plan, prompts): from the runner this job would be verified with. */
+function verbsOf(a: Args, jobDir: string): RunnerVerbs {
+  return verbsFor(makeVerifier(a, undefined, readJobConfig(jobDir)).location);
 }
 
 /** The engine directory a job-level command (plan, prompts) reads its reference from: flag, job config, environment, default. */
@@ -293,7 +315,11 @@ function eventLine(ev: JobEvent): string {
     case "question":
       return `${head} ${ev.package}: ${ev.text}`;
     case "note":
-      return `${head} ${ev.package} r${ev.round} deviations: ${ev.text.replace(/\s+/g, " ").slice(0, 300)}`;
+      return `${head} ${ev.package} r${ev.round} ${ev.text.startsWith("[foreman] ") ? "" : "deviations: "}${ev.text.replace(/\s+/g, " ").slice(0, 300)}`;
+    case "change_requested":
+      return `${head} ${ev.package ?? "(owner to be named)"}: ${ev.text.replace(/\s+/g, " ").slice(0, 300)}`;
+    case "reopened":
+      return `${head} ${ev.package}: ${ev.reason.replace(/\s+/g, " ").slice(0, 300)}`;
     default:
       return head;
   }
@@ -307,7 +333,8 @@ export function statusTable(s: JobState): string {
   if (s.billing) lines.push(`billing  ${s.billing.adapter} ${s.billing.mode}: ${s.billing.evidence}`);
   if (s.budget) lines.push(`budget   ${s.budget.policy.kind}${s.budget.policy.limit !== undefined ? ` ${s.budget.policy.limit}` : ""} ${s.budget.state}: ${s.budget.reason}`);
   lines.push(`tokens   in ${s.tokens.in}  out ${s.tokens.out}${s.tokens.unreportedRuns > 0 ? `  (${s.tokens.unreportedRuns} runs reported none)` : ""}`);
-  if (s.promoted) lines.push(`promoted ${s.promoted.packId} ${s.promoted.version} -> ${s.promoted.dest}`);
+  if (s.promoted) lines.push(`promoted ${s.promoted.packId} ${s.promoted.version} -> ${s.promoted.dest}${s.promotions.length > 1 ? `  (promotion ${s.promotions.length}; earlier: ${s.promotions.slice(0, -1).map((p) => `${p.version} ${p.dest}`).join(", ")})` : ""}`);
+  for (const c of s.changes) lines.push(`change   #${c.seq} ${c.state}${c.owner ? ` -> ${c.owner}` : c.package ? ` (for ${c.package})` : ""}: ${c.text.replace(/\s+/g, " ").slice(0, 100)}`);
   if (s.replans > 0) lines.push(`replans  ${s.replans}${s.pendingReplan ? " (the last one has no plan_set yet)" : ""}`);
   for (const m of s.milestones) lines.push(`milestone ${m.milestone}: ${m.captures.length} capture(s)${m.captures.length > 0 ? ` (${m.captures.join(", ")})` : ""}`);
   const rows = s.order.map((id) => {
@@ -355,6 +382,129 @@ function parseBudget(v: string | undefined): BudgetPolicy | undefined {
     return { kind, limit: window };
   }
   return { kind };
+}
+
+/** `run` and `resume` (and the second half of `change`): runs the job in <job> to its end with the given options. */
+async function runJob(a: Args, out: (s: string) => void): Promise<number> {
+    const jobDir = jobDirOf(a);
+    const quiet = a.flags["quiet"] === true;
+    // Children of a Foreman that was killed hard may still be running in this job's workspaces: end them first.
+    // (Only when no other Foreman holds the job: JobLog.open refuses that case a moment later anyway.)
+    const ledger = path.join(jobDir, LEDGER_FILE);
+    if (!lockHolder(jobDir).alive) {
+      const reaped = reapOrphans(ledger);
+      if (!quiet && reaped.killed.length > 0) out(`orphans  killed ${reaped.killed.length} process(es) left by a previous Foreman: ${reaped.killed.join(", ")}`);
+    }
+    const spawnDoor = ledgerSpawn(ledger);
+    const builder = makeBuilder(a, jobDir, "fake", spawnDoor);
+    const verifier = makeVerifier(a, spawnDoor, readJobConfig(jobDir));
+    const budget = parseBudget(str(a, "budget"));
+    const playingFile = process.env["TL_PLAYING_FILE"];
+    if (!quiet) {
+      out(`runner   ${toPosix(verifier.location.exe)} ${verifier.location.preArgs.map(toPosix).join(" ")}`.trimEnd());
+      out(`engine   ${toPosix(verifier.location.engineDir)}`);
+      out(`adapter  ${builder.name}`);
+    }
+    const parallel = num(a, "parallel");
+    const roundLimit = num(a, "round-limit");
+    const timeoutMs = num(a, "timeout-ms");
+    const model = str(a, "model");
+    const maxReplans = num(a, "max-replans");
+    const maxPackages = num(a, "max-packages");
+    const plannerModel = str(a, "planner-model");
+    const criticModel = str(a, "critic-model");
+    const captureRes = str(a, "capture-res");
+    const promoteTo = str(a, "promote-to") ?? "job";
+    if (promoteTo !== "job" && promoteTo !== "engine") throw new UsageError(`--promote-to takes "job" (default: <job>/promoted/<pack id>/) or "engine" (<engine>/packs/<pack id>/), got "${promoteTo}"`);
+    const reference = a.flags["no-reference"] === true ? {} : referenceOf(verifier.location.engineDir);
+    const foreman = new Foreman({
+      jobDir,
+      builder,
+      verifier,
+      ...(parallel !== undefined ? { parallel: Math.max(1, Math.floor(parallel)) } : {}),
+      ...(roundLimit !== undefined ? { roundLimit: Math.max(1, Math.floor(roundLimit)) } : {}),
+      ...(timeoutMs !== undefined ? { builderTimeoutMs: timeoutMs } : {}),
+      ...(model ? { model } : {}),
+      ...(budget ? { budget } : {}),
+      ...(maxReplans !== undefined ? { maxReplans: Math.max(0, Math.floor(maxReplans)) } : {}),
+      ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}),
+      ...(plannerModel ? { plannerModel } : {}),
+      ...(criticModel ? { criticModel } : {}),
+      ...(captureRes ? { captureRes } : {}),
+      ...(!isEmptyReference(reference) ? { reference } : {}),
+      critic: a.flags["no-critic"] !== true,
+      kitGate: a.flags["no-kit-gate"] !== true,
+      promote: a.flags["no-promote"] !== true,
+      promoteTo,
+      retryFailed: a.flags["retry-failed"] === true,
+      isPlaying: () => (playingFile ? fs.existsSync(playingFile) : false),
+      ...(quiet ? {} : { onEvent: (ev: JobEvent) => out(eventLine(ev)) }),
+    });
+    const state = await foreman.run();
+    if (!quiet) out("\n" + statusTable(state));
+    return state.jobState?.state === "done" ? 0 : state.jobState?.state === "paused" ? 3 : 1;
+}
+
+/**
+ * `follow`: prints each event of a job log as one JSON line as it is appended, starting after `from`, and returns 0
+ * when an event after `from` puts the job in a terminal state and nothing follows it. It never opens the log for
+ * writing and holds no lock. Only complete lines are read: a torn last line (a write in progress, or one cut by a
+ * kill and later removed by the writer) is waited for, never printed. Each seq is printed at most once.
+ */
+export async function followLog(file: string, opts: { from?: number; pollMs?: number; idleMs?: number; out: (s: string) => void }): Promise<number> {
+  const pollMs = opts.pollMs ?? 150;
+  const from = opts.from ?? 0;
+  let offset = 0;
+  let printed = from;
+  let terminal = false;
+  let idleSince = Date.now();
+  for (;;) {
+    let size = 0;
+    try {
+      size = fs.statSync(file).size;
+    } catch {
+      size = 0;
+    }
+    // The writer cuts a torn tail off when it opens the log; we never read past a newline, so this only happens
+    // when the file was replaced. Start over: seq numbers keep every event from being printed twice.
+    if (size < offset) offset = 0;
+    if (size > offset) {
+      const fd = fs.openSync(file, "r");
+      let buf: Buffer;
+      try {
+        buf = Buffer.alloc(size - offset);
+        const n = fs.readSync(fd, buf, 0, buf.length, offset);
+        buf = buf.subarray(0, n);
+      } finally {
+        fs.closeSync(fd);
+      }
+      const lastNl = buf.lastIndexOf(0x0a);
+      if (lastNl >= 0) {
+        for (const raw of buf.subarray(0, lastNl).toString("utf8").split("\n")) {
+          const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+          if (line.length === 0) continue;
+          let ev: { seq?: unknown; type?: unknown; state?: unknown };
+          try {
+            ev = JSON.parse(line) as { seq?: unknown; type?: unknown; state?: unknown };
+          } catch {
+            process.stderr.write(`follow: a complete line of ${toPosix(file)} is not JSON; skipped\n`);
+            continue;
+          }
+          if (typeof ev.seq !== "number") continue;
+          terminal = ev.type === "job_state" && (ev.state === "done" || ev.state === "failed" || ev.state === "cancelled");
+          if (ev.seq > printed) {
+            opts.out(line);
+            printed = ev.seq;
+            idleSince = Date.now();
+          } else if (ev.seq <= from) terminal = false;
+        }
+        offset += lastNl + 1;
+      }
+    }
+    if (terminal && printed > from) return 0;
+    if (opts.idleMs !== undefined && Date.now() - idleSince > opts.idleMs) return 4;
+    await new Promise<void>((r) => setTimeout(r, pollMs));
+  }
 }
 
 export async function main(argv: string[], out: (s: string) => void = (s) => process.stdout.write(s + "\n")): Promise<number> {
@@ -453,7 +603,8 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         if (!s.briefApprovedBy) throw new UsageError("the brief is not approved yet (foreman approve <job>)");
         let packages: PackageSpec[];
         const maxPackages = num(a, "max-packages");
-        const limits = maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {};
+        // The runner's option list is read from the engine before anything else happens: no file, no plan.
+        const limits = { ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}), verbs: verbsOf(a, jobDir) };
         if (from !== undefined) {
           const doc = JSON.parse(fs.readFileSync(path.resolve(from), "utf8")) as unknown;
           const planSchema = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, "prompts", "plan.schema.json"), "utf8")) as object;
@@ -518,7 +669,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         out(
           renderPlannerPrompt(
             { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, ...ctx, ...(timeoutMs !== undefined ? { builderTimeoutMs: timeoutMs } : {}) },
-            maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {},
+            { ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}), verbs: verbsOf(a, jobDir) },
           ),
         );
       }
@@ -545,65 +696,39 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       return 0;
     }
 
-    case "run":
-    case "resume": {
+    case "change": {
+      // N3 item 1: record the request, then continue the job exactly as `resume` would (unless --no-run).
       const jobDir = jobDirOf(a);
-      const quiet = a.flags["quiet"] === true;
-      // Children of a Foreman that was killed hard may still be running in this job's workspaces: end them first.
-      // (Only when no other Foreman holds the job: JobLog.open refuses that case a moment later anyway.)
-      const ledger = path.join(jobDir, LEDGER_FILE);
-      if (!lockHolder(jobDir).alive) {
-        const reaped = reapOrphans(ledger);
-        if (!quiet && reaped.killed.length > 0) out(`orphans  killed ${reaped.killed.length} process(es) left by a previous Foreman: ${reaped.killed.join(", ")}`);
+      const text = a.pos[1];
+      if (!text || text.trim().length === 0) throw new UsageError('usage: foreman change <job> "<text>" [--package ID]');
+      const pkgId = str(a, "package");
+      const log = JobLog.open(jobDir);
+      try {
+        const s = log.state;
+        if (pkgId !== undefined && !s.packages[pkgId]) throw new UsageError(`unknown package ${pkgId} (the plan has: ${s.order.join(", ")})`);
+        if (!s.order.some((id) => (s.packages[id]?.mergedFiles ?? []).length > 0)) throw new UsageError("this job has no merged package yet: a change request needs something finished to change");
+        if (s.jobState?.state === "cancelled") throw new UsageError("this job is cancelled; a change request cannot re-open it");
+        const ev = log.append({ type: "change_requested", text: text.trim(), ...(pkgId !== undefined ? { package: pkgId } : {}) });
+        out(`change request recorded as event ${ev.seq}${pkgId !== undefined ? ` for package ${pkgId}` : " (the Planner will be asked which package owns it)"}`);
+      } finally {
+        log.close();
       }
-      const spawnDoor = ledgerSpawn(ledger);
-      const builder = makeBuilder(a, jobDir, "fake", spawnDoor);
-      const verifier = makeVerifier(a, spawnDoor, readJobConfig(jobDir));
-      const budget = parseBudget(str(a, "budget"));
-      const playingFile = process.env["TL_PLAYING_FILE"];
-      if (!quiet) {
-        out(`runner   ${toPosix(verifier.location.exe)} ${verifier.location.preArgs.map(toPosix).join(" ")}`.trimEnd());
-        out(`engine   ${toPosix(verifier.location.engineDir)}`);
-        out(`adapter  ${builder.name}`);
+      if (a.flags["no-run"] === true) {
+        out(`continue with: foreman resume ${path.basename(jobDir)}`);
+        return 0;
       }
-      const parallel = num(a, "parallel");
-      const roundLimit = num(a, "round-limit");
-      const timeoutMs = num(a, "timeout-ms");
-      const model = str(a, "model");
-      const maxReplans = num(a, "max-replans");
-      const maxPackages = num(a, "max-packages");
-      const plannerModel = str(a, "planner-model");
-      const criticModel = str(a, "critic-model");
-      const captureRes = str(a, "capture-res");
-      const promoteTo = str(a, "promote-to") ?? "job";
-      if (promoteTo !== "job" && promoteTo !== "engine") throw new UsageError(`--promote-to takes "job" (default: <job>/promoted/<pack id>/) or "engine" (<engine>/packs/<pack id>/), got "${promoteTo}"`);
-      const reference = a.flags["no-reference"] === true ? {} : referenceOf(verifier.location.engineDir);
-      const foreman = new Foreman({
-        jobDir,
-        builder,
-        verifier,
-        ...(parallel !== undefined ? { parallel: Math.max(1, Math.floor(parallel)) } : {}),
-        ...(roundLimit !== undefined ? { roundLimit: Math.max(1, Math.floor(roundLimit)) } : {}),
-        ...(timeoutMs !== undefined ? { builderTimeoutMs: timeoutMs } : {}),
-        ...(model ? { model } : {}),
-        ...(budget ? { budget } : {}),
-        ...(maxReplans !== undefined ? { maxReplans: Math.max(0, Math.floor(maxReplans)) } : {}),
-        ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}),
-        ...(plannerModel ? { plannerModel } : {}),
-        ...(criticModel ? { criticModel } : {}),
-        ...(captureRes ? { captureRes } : {}),
-        ...(!isEmptyReference(reference) ? { reference } : {}),
-        critic: a.flags["no-critic"] !== true,
-        promote: a.flags["no-promote"] !== true,
-        promoteTo,
-        retryFailed: a.flags["retry-failed"] === true,
-        isPlaying: () => (playingFile ? fs.existsSync(playingFile) : false),
-        ...(quiet ? {} : { onEvent: (ev: JobEvent) => out(eventLine(ev)) }),
-      });
-      const state = await foreman.run();
-      if (!quiet) out("\n" + statusTable(state));
-      return state.jobState?.state === "done" ? 0 : state.jobState?.state === "paused" ? 3 : 1;
+      return runJob({ ...a, cmd: "resume", pos: [a.pos[0] as string] }, out);
     }
+
+    case "follow": {
+      const jobDir = jobDirOf(a);
+      const idle = num(a, "idle-ms");
+      return followLog(path.join(jobDir, "job.jsonl"), { from: Math.max(0, Math.floor(num(a, "from") ?? 0)), pollMs: Math.max(10, num(a, "poll-ms") ?? 150), out, ...(idle !== undefined ? { idleMs: idle } : {}) });
+    }
+
+    case "run":
+    case "resume":
+      return runJob(a, out);
 
     case "status": {
       const jobDir = jobDirOf(a);
@@ -686,7 +811,14 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         const p = log.state.packages[pkgId];
         if (!p) throw new UsageError(`unknown package ${pkgId}`);
         if (p.openQuestion === undefined) throw new UsageError(`package ${pkgId} has no open question`);
+        const change = str(a, "change");
+        if (change !== undefined && !log.state.packages[change]) throw new UsageError(`--change: unknown package ${change} (the plan has: ${log.state.order.join(", ")})`);
         log.append({ type: "answer", package: pkgId, text, by: "player" });
+        // N3: "yes, that package may be changed" is an answer AND a change request for the package it names.
+        if (change !== undefined) {
+          const ev = log.append({ type: "change_requested", text, package: change });
+          out(`change request for ${change} recorded as event ${ev.seq}: it is re-opened with this text when the job is resumed`);
+        }
         out(`answered; continue with: foreman resume ${log.job}`);
         return 0;
       } finally {
@@ -764,7 +896,7 @@ if (invoked) {
     },
     (e: unknown) => {
       // Expected refusals (bad usage, a log that does not read, a job without a plan) are one line, not a stack.
-      if (e instanceof UsageError || e instanceof LogError || e instanceof ForemanError || e instanceof EventError) process.stderr.write(`${e.name === "Error" ? "" : `${e.name}: `}${e.message}\n`);
+      if (e instanceof UsageError || e instanceof LogError || e instanceof ForemanError || e instanceof EventError || e instanceof VerbsError) process.stderr.write(`${e.name === "Error" ? "" : `${e.name}: `}${e.message}\n`);
       else process.stderr.write(`${e instanceof Error ? (e.stack ?? e.message) : String(e)}\n`);
       process.exitCode = 2;
     },

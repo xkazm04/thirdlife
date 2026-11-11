@@ -115,6 +115,10 @@ test("cli: without a job config the runner comes from TL_GODOT and TL_ENGINE_DIR
   // A runner that does not exist fails verification (a typed result), it does not crash the Foreman.
   const job2 = tempJob("cli-env2");
   fs.rmSync(path.join(job2.jobDir, "foreman.config.json"));
+  // N3: the runner's option list is read from the engine at start, so this stand-in engine needs its verbs.json
+  // (without it the run stops before anything is verified: n3.test.ts, item 4).
+  fs.mkdirSync(path.join(job2.engineDir, "kernel", "runner"), { recursive: true });
+  fs.copyFileSync(path.join(PKG_ROOT, "fixtures", "engine", "kernel", "runner", "verbs.json"), path.join(job2.engineDir, "kernel", "runner", "verbs.json"));
   const bad = await cli(["run", job2.jobDir, "--adapter", "fake", "--round-limit", "1"], { TL_GODOT: path.join(job2.root, "no-such-godot.exe"), TL_ENGINE_DIR: job2.engineDir });
   assert.equal(bad.exitCode, 1);
   assert.match(bad.stdout, /core\s+failed\s+1\s+blockout\s+1\s+verify_failed/);

@@ -36,10 +36,11 @@ Brief:
   JSON keys and enum values this package provides and consumes. A builder sees only this, the pack contract and the
   kernel API. Name the kernel primitives to use (from the kernel API below); do not invent kernel functions.
 - `acceptance`: what the Verifier runs on the package's workspace, in order. Each entry is
-  `{ "level": "V1", "verb": "lint", "args": [] }`. Verbs and the ONLY options each takes:
-  `lint` (V1, no options), `smoke` (V2: `--seed=<int>`, `--frames=<int>`), `invariants` (V3: `--seed`, `--frames`),
-  `bot` (V4: `--test=tests/<file>.gd` required, `--seed`, `--frames=<max frames>`). Any other option makes the runner
-  refuse the run. Do not use `capture`: the Foreman takes captures itself at each milestone.
+  `{ "level": "V1", "verb": "lint", "args": [] }`. Verbs and the ONLY options each takes (this list is read from
+  the engine's own `kernel/runner/verbs.json`):
+{{verbOptions}}
+  Any other option makes the runner refuse the run. Do not use `capture`: the Foreman takes captures itself at each
+  milestone.
 - `registers`: what this package adds to the pack's manifest, as
   `{ "capabilities": [...], "assets": ["gen/x.gd"], "tests": ["tests/bot_x.gd"], "cameras": ["hero"] }` (each key
   optional). `capabilities` are the kernel capabilities its scripts use (a script that names a kernel class without

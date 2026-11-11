@@ -21,3 +21,8 @@ export const FAKE_RUNNER = path.join(PKG_ROOT, "dist", "testing", "fake-runner.j
 export function toPosix(p: string): string {
   return p.replace(/\\/g, "/");
 }
+
+/** A text without a leading byte-order mark (some editors on Windows write one in front of JSON). */
+export function stripBom(text: string): string {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}

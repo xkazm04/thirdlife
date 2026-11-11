@@ -5,7 +5,7 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { cleanup, tempDir, tempJob, foremanFor, readEvents, scriptWith, packFiles, fastVerifier, fixturePlan, fixtureScript, Kill, FAKE_RUNNER } from "./helpers.js";
+import { cleanup, tempDir, tempJob, foremanFor, readEvents, scriptWith, packFiles, fastVerifier, fixturePlan, fixtureScript, Kill, FAKE_RUNNER, VERBS } from "./helpers.js";
 import { FakeBuilder, type FakeStep } from "../builder/fake.js";
 import { ClaudeCliBuilder, withoutSecrets } from "../builder/claude-cli.js";
 import { Verifier, REPORT_KEYS } from "../verifier.js";
@@ -76,35 +76,35 @@ test("1 manifest: a later package's registers appear only once it is merged; a w
 
 test("1 manifest: no scope may hold pack.json, one root owns the entry script and a bot; the Planner prompt and schema say so", async () => {
   const plan = fixturePlan();
-  assert.deepEqual(planCheck(plan), []);
+  assert.deepEqual(planCheck(plan, { verbs: VERBS }), []);
   const owns = clone(plan);
   (owns[1] as PackageSpec).scope.push("pack.json");
-  assert.match(planCheck(owns).join("\n"), /package "court": scope must not include pack\.json/);
+  assert.match(planCheck(owns, { verbs: VERBS }).join("\n"), /package "court": scope must not include pack\.json/);
   const glob = clone(plan);
   (glob[1] as PackageSpec).scope = ["*.json"];
-  assert.match(planCheck(glob).join("\n"), /package "court": scope must not include pack\.json/);
+  assert.match(planCheck(glob, { verbs: VERBS }).join("\n"), /package "court": scope must not include pack\.json/);
   const twoRoots = clone(plan);
   (twoRoots[1] as PackageSpec).deps = [];
-  assert.match(planCheck(twoRoots).join("\n"), /exactly one package may have no dependencies/);
+  assert.match(planCheck(twoRoots, { verbs: VERBS }).join("\n"), /exactly one package may have no dependencies/);
   const noEntry = clone(plan);
   (noEntry[0] as PackageSpec).scope = ["scripts/start.gd", "tests/bot_rally.gd"];
-  assert.match(planCheck(noEntry).join("\n"), /root package "core" must have scripts\/main\.gd in its scope/);
+  assert.match(planCheck(noEntry, { verbs: VERBS }).join("\n"), /root package "core" must have scripts\/main\.gd in its scope/);
   const noBot = clone(plan);
   delete (noBot[0] as PackageSpec).registers?.tests;
-  assert.match(planCheck(noBot).join("\n"), /root package "core" must register at least one bot/);
+  assert.match(planCheck(noBot, { verbs: VERBS }).join("\n"), /root package "core" must register at least one bot/);
   const foreign = clone(plan);
   (foreign[1] as PackageSpec).registers = { tests: ["tests/bot_other.gd"] };
-  assert.match(planCheck(foreign).join("\n"), /package "court": registers "tests\/bot_other\.gd" but its scope does not contain that file/);
+  assert.match(planCheck(foreign, { verbs: VERBS }).join("\n"), /package "court": registers "tests\/bot_other\.gd" but its scope does not contain that file/);
   const unknownBot = clone(plan);
   (unknownBot[2] as PackageSpec).acceptance = [{ level: "V4", verb: "bot", args: ["--test=tests/bot_nobody.gd"] }];
-  assert.match(planCheck(unknownBot).join("\n"), /bot acceptance runs tests\/bot_nobody\.gd, which neither this package nor a package it depends on registers/);
+  assert.match(planCheck(unknownBot, { verbs: VERBS }).join("\n"), /bot acceptance runs tests\/bot_nobody\.gd, which neither this package nor a package it depends on registers/);
   // Options the real runner refuses (exit 2) are refused in the plan, before a round is spent on them.
   const badOpt = clone(plan);
   (badOpt[0] as PackageSpec).acceptance = [{ level: "V2", verb: "smoke", args: ["--speed=9"] }, { level: "V5", verb: "capture", args: ["--cam=hero"] }];
-  const probs = planCheck(badOpt).join("\n");
-  assert.match(probs, /smoke does not take --speed \(allowed: --seed, --frames\)/);
+  const probs = planCheck(badOpt, { verbs: VERBS }).join("\n");
+  assert.match(probs, /smoke does not take --speed \(allowed: --seed, --frames; from /);
   assert.match(probs, /acceptance verb "capture" is not allowed/);
-  assert.match(planCheck(plan, { maxPackages: 2 }).join("\n"), /the plan has 3 packages; the limit for this job is 2/);
+  assert.match(planCheck(plan, { maxPackages: 2, verbs: VERBS }).join("\n"), /the plan has 3 packages; the limit for this job is 2/);
 
   const promptText = fs.readFileSync(path.join(PKG_ROOT, "prompts", "planner.md"), "utf8");
   assert.match(promptText, /Nobody writes `pack\.json`/);
@@ -270,17 +270,17 @@ test("2 re-plan: replanPackages validates the answer together with the kept pack
   const kept = [plan[0] as PackageSpec];
   const input = { sentence: "s", packId: "game.x", title: "X", brief: { rules: "r", arena: "a", ai: "i", controls: "c", mood: "m" }, packContract: "(contract)", kept, failed: [{ spec: plan[1] as PackageSpec, cause: "verify_failed", detail: "smoke failed" }], dependants: [] };
   const good = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: [{ ...clone(plan[1] as PackageSpec), id: "court2" }] } }] });
-  const ok = await replanPackages(good, input, { maxPackages: 3 });
+  const ok = await replanPackages(good, input, { maxPackages: 3, verbs: VERBS });
   assert.ok(ok.ok && ok.value.packages.map((p) => p.id).join() === "court2");
   // Returning a kept package, or stepping on its files, is rejected with the reason and asked again once.
   const clash = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: [plan[0], { ...clone(plan[1] as PackageSpec), id: "court2", scope: ["scripts/main.gd"] }] } }] });
-  const no = await replanPackages(clash, input, {});
+  const no = await replanPackages(clash, input, { verbs: VERBS });
   assert.ok(!no.ok);
   assert.match(no.ok ? "" : no.reason, /package id "core" belongs to a kept package/);
   assert.equal(clash.calls.length, 2);
   assert.match(clash.calls[1]?.req.prompt ?? "", /Your previous answer was rejected/);
   const tooMany = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: [{ ...clone(plan[1] as PackageSpec), id: "court2" }, { ...clone(plan[2] as PackageSpec), id: "ai2" }] } }] });
-  const over = await replanPackages(tooMany, input, { maxPackages: 2 });
+  const over = await replanPackages(tooMany, input, { maxPackages: 2, verbs: VERBS });
   assert.match(over.ok ? "" : over.reason, /the limit for this job is 2/);
 });
 

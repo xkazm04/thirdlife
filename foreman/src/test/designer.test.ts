@@ -2,7 +2,7 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { FakeBuilder } from "../builder/fake.js";
 import { designBrief, planPackages, planCheck, critic } from "../designer.js";
-import { cleanup, fixturePlan } from "./helpers.js";
+import { cleanup, fixturePlan, VERBS } from "./helpers.js";
 import type { PackageSpec } from "../events.js";
 
 after(cleanup);
@@ -59,9 +59,9 @@ test("designer: a timeout or a truncated answer is not retried and is reported a
 
 test("planner: the fixture plan passes; graph and scope mistakes are named", async () => {
   const plan = fixturePlan();
-  assert.deepEqual(planCheck(plan), []);
+  assert.deepEqual(planCheck(plan, { verbs: VERBS }), []);
   const b = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: plan } }] });
-  const r = await planPackages(b, { sentence, packId: "game.paddle_court", title: "Paddle Court", brief, packContract: "(contract)" });
+  const r = await planPackages(b, { sentence, packId: "game.paddle_court", title: "Paddle Court", brief, packContract: "(contract)" }, { verbs: VERBS });
   assert.ok(r.ok);
   assert.equal(r.value.packages.length, 3);
   assert.match(b.calls[0]?.req.prompt ?? "", /Pack id: game\.paddle_court/);
@@ -69,28 +69,28 @@ test("planner: the fixture plan passes; graph and scope mistakes are named", asy
   const clone = (): PackageSpec[] => JSON.parse(JSON.stringify(plan)) as PackageSpec[];
   const overlap = clone();
   (overlap[1] as PackageSpec).scope.push("scripts/main.gd");
-  assert.match(planCheck(overlap).join("\n"), /"core" and "court" both claim scope "scripts\/main\.gd"/);
+  assert.match(planCheck(overlap, { verbs: VERBS }).join("\n"), /"core" and "court" both claim scope "scripts\/main\.gd"/);
   const inside = clone();
   (inside[2] as PackageSpec).scope = ["scripts/**"];
-  assert.match(planCheck(inside).join("\n"), /scope "scripts\/main\.gd" of package "core" lies inside scope "scripts\/\*\*" of package "paddle_ai"/);
+  assert.match(planCheck(inside, { verbs: VERBS }).join("\n"), /scope "scripts\/main\.gd" of package "core" lies inside scope "scripts\/\*\*" of package "paddle_ai"/);
   const cycle = clone();
   (cycle[0] as PackageSpec).deps = ["court"];
-  assert.match(planCheck(cycle).join("\n"), /dependency cycle/);
+  assert.match(planCheck(cycle, { verbs: VERBS }).join("\n"), /dependency cycle/);
   const noManifest = clone();
   (noManifest[0] as PackageSpec).scope = ["pack.json", "scripts/main.gd", "tests/bot_rally.gd"];
-  assert.match(planCheck(noManifest).join("\n"), /package "core": scope must not include pack\.json/);
+  assert.match(planCheck(noManifest, { verbs: VERBS }).join("\n"), /package "core": scope must not include pack\.json/);
   const botNoTest = clone();
   (botNoTest[2] as PackageSpec).acceptance = [{ level: "V4", verb: "bot", args: [] }];
-  assert.match(planCheck(botNoTest).join("\n"), /bot acceptance needs --test/);
+  assert.match(planCheck(botNoTest, { verbs: VERBS }).join("\n"), /bot acceptance needs --test/);
   const inject = clone();
   (inject[0] as PackageSpec).acceptance = [{ level: "V2", verb: "smoke", args: ["--seed=1; rm -rf ."] }];
-  assert.match(planCheck(inject).join("\n"), /is not a plain --key=value/);
+  assert.match(planCheck(inject, { verbs: VERBS }).join("\n"), /is not a plain --key=value/);
   const escape = clone();
   (escape[0] as PackageSpec).scope.push("../outside.gd");
-  assert.match(planCheck(escape).join("\n"), /leaves the pack/);
+  assert.match(planCheck(escape, { verbs: VERBS }).join("\n"), /leaves the pack/);
 
   const badPlanner = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: cycle } }] });
-  const bad = await planPackages(badPlanner, { sentence, packId: "game.paddle_court", title: "Paddle Court", brief, packContract: "(contract)" });
+  const bad = await planPackages(badPlanner, { sentence, packId: "game.paddle_court", title: "Paddle Court", brief, packContract: "(contract)" }, { verbs: VERBS });
   assert.equal(bad.ok, false);
   assert.equal(bad.calls.length, 2, "a plan that fails our checks is sent back once");
   assert.match(badPlanner.calls[1]?.req.prompt ?? "", /dependency cycle/);

@@ -412,7 +412,8 @@
       "dependency",
       "question",
       "cancelled",
-      "no_visible_change"
+      "no_visible_change",
+      "kit_regression"
      ]
     },
     "detail": {
@@ -684,6 +685,87 @@
      "minimum": 1
     },
     "text": {
+     "type": "string",
+     "minLength": 1
+    }
+   }
+  },
+  "change_requested": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "text"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "change_requested"
+    },
+    "text": {
+     "type": "string",
+     "minLength": 1
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    }
+   }
+  },
+  "reopened": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "v",
+    "seq",
+    "ts",
+    "job",
+    "type",
+    "package",
+    "reason"
+   ],
+   "properties": {
+    "v": {
+     "const": 1
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "ts": {
+     "type": "string",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$"
+    },
+    "job": {
+     "type": "string",
+     "minLength": 1
+    },
+    "type": {
+     "const": "reopened"
+    },
+    "package": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "reason": {
      "type": "string",
      "minLength": 1
     }

@@ -14,8 +14,8 @@ const line = (o: object): string => JSON.stringify(o) + "\n";
 
 test("events: every type in JOB.md is known, nothing else", () => {
   assert.deepEqual([...EVENT_TYPES].sort(), [
-    "answer", "billing", "brief_approved", "brief_set", "budget", "builder_run", "comment", "job_created", "job_state",
-    "merge", "milestone", "note", "package_state", "plan_set", "promoted", "question", "replan", "verify",
+    "answer", "billing", "brief_approved", "brief_set", "budget", "builder_run", "change_requested", "comment", "job_created",
+    "job_state", "merge", "milestone", "note", "package_state", "plan_set", "promoted", "question", "reopened", "replan", "verify",
   ]);
 });
 

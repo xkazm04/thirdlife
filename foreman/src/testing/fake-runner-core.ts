@@ -4,7 +4,8 @@
 // contradict itself:
 //   - by a marker string anywhere in the pack's files (so a scripted builder can cause it), or
 //   - by the environment variable FAKE_RUNNER_MODE = hang | garbage | disagree | noreport.
-// Markers: FAKE_SCRIPT_ERROR (smoke fails), FAKE_WATCHDOG (exit 3), FAKE_NONDETERMINISTIC (invariants fail),
+// Markers: FAKE_BYPASS (one lint bypass per line that holds it), FAKE_BOT_NEEDS(x)/FAKE_HAS(x) (the bot fails until some
+// file holds FAKE_HAS(x)), FAKE_SCRIPT_ERROR (smoke fails), FAKE_WATCHDOG (exit 3), FAKE_NONDETERMINISTIC (invariants fail),
 // FAKE_BOT_FAIL (bot reports ok=false), FAKE_BOT_NEVER_DONE (the bot does not finish), FAKE_CAPTURE_FAIL (no image),
 // FAKE_RUNNER_HANG, FAKE_RUNNER_GARBAGE, FAKE_RUNNER_DISAGREE, FAKE_RUNNER_NOREPORT.
 // FAKE_RUNNER_BOT_TIMEOUT=watchdog makes an unfinished bot end as the snapshot engine does (exit 3, outcome
@@ -30,6 +31,7 @@ import zlib from "node:zlib";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type { RunProcessRequest, RunProcessResult, SpawnFn } from "../proc.js";
 import { REPO_ROOT } from "../paths.js";
+import { FAKE_VERBS_FILE, VERBS_FILE, readVerbsFile } from "../verbs.js";
 
 export interface FakeRunnerOutput {
   exitCode: number;
@@ -39,13 +41,20 @@ export interface FakeRunnerOutput {
 
 const VERB_LEVEL: Record<string, string> = { lint: "V1", smoke: "V2", invariants: "V3", bot: "V4", capture: "V5" };
 const EXIT: Record<string, number> = { passed: 0, failed: 1, not_run: 2, watchdog: 3 };
-const OPTIONS: Record<string, string[]> = {
-  lint: ["pack", "report"],
-  smoke: ["pack", "report", "seed", "frames"],
-  invariants: ["pack", "report", "seed", "frames"],
-  bot: ["pack", "report", "seed", "frames", "test"],
-  capture: ["pack", "report", "seed", "cam", "frame", "out", "res", "test"],
-};
+/**
+ * The options each verb takes: read from the verbs file (tl.verbs/1) of the engine directory the runner was started
+ * with (`--path`), or, when that directory has none, from the fake engine's own file
+ * (fixtures/engine/kernel/runner/verbs.json). No list is kept in code (N3 item 4).
+ */
+function optionsOf(argv: string[]): Record<string, string[]> {
+  const at = argv.indexOf("--path");
+  const engine = at >= 0 ? argv[at + 1] : undefined;
+  const own = engine !== undefined ? path.join(engine, ...VERBS_FILE.split("/")) : undefined;
+  const verbs = readVerbsFile(own !== undefined && fs.existsSync(own) ? own : FAKE_VERBS_FILE).verbs;
+  return Object.fromEntries(Object.entries(verbs).map(([v, spec]) => [v, Object.keys(spec.options)]));
+}
+/** The optional manifest fields of PACK.md's last section: the real runner accepts them (manifest.gd), so does this one. */
+const OPTIONAL_MANIFEST_FIELDS = ["footprint", "params", "on_leave", "subject", "moments"];
 const LAYOUT = new Set(["pack.json", "scripts", "data", "gen", "assets", "tests", "examples"]);
 const FENCE = [
   "class_name", "@tool", "OS.", "FileAccess", "DirAccess", "ResourceSaver", "ProjectSettings.", "Engine.get_singleton",
@@ -95,7 +104,7 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
   const opts: Record<string, string> = {};
   let badOption: string | undefined;
   for (const a of rest.slice(1)) {
-    const m = /^--([a-z]+)=(.*)$/.exec(a);
+    const m = /^--([a-z][a-z0-9-]*)=(.*)$/.exec(a);
     if (m?.[1] !== undefined) opts[m[1]] = m[2] ?? "";
     else badOption ??= a;
   }
@@ -130,7 +139,7 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
     return finish();
   };
 
-  const allowed = OPTIONS[verb];
+  const allowed = optionsOf(argv)[verb];
   if (allowed === undefined) return notRun("engine", `unknown verb "${verb}"`);
   if (badOption !== undefined) return notRun("engine", `unknown argument ${badOption} for '${verb}'`);
   const unknown = Object.keys(opts).find((k) => !allowed.includes(k));
@@ -168,7 +177,11 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
     if (typeof manifest["version"] === "string") report["packVersion"] = manifest["version"];
     const ajv = new Ajv2020({ allErrors: true, strict: false });
     const validate = ajv.compile(packSchema());
-    if (!validate(manifest)) {
+    const known = Object.fromEntries(Object.entries(manifest).filter(([k]) => !OPTIONAL_MANIFEST_FIELDS.includes(k)));
+    for (const k of ["params", "moments"]) {
+      if (manifest[k] !== undefined && !Array.isArray(manifest[k])) schemaErrs.push({ kind: "schema", file: "pack.json", message: `'${k}' must be a list` });
+    }
+    if (!validate(known)) {
       for (const e of validate.errors ?? []) {
         const extra = e.keyword === "additionalProperties" ? `unknown key '${String((e.params as { additionalProperty?: string }).additionalProperty)}' (unknown keys are errors)` : `${e.instancePath || "/"} ${e.message ?? "invalid"}`;
         schemaErrs.push({ kind: "schema", file: "pack.json", message: extra });
@@ -236,10 +249,17 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
     errors.push(...sizeErrs);
     checks.push({ id: "lint.size", ok: sizeErrs.length === 0, detail: `${total} lines of GDScript` });
     const count = (prefix: string): number => gd.filter((f) => f.startsWith(prefix)).reduce((a, f) => a + lines(f), 0);
+    // A line holding the marker FAKE_BYPASS stands for one place where a script does by hand what a primitive exists for.
+    const bypasses: { primitive: string; file: string; line: number; pattern: string }[] = [];
+    for (const f of gd) {
+      (text.get(f) ?? "").split(/\r?\n/).forEach((l, i) => {
+        if (l.includes("FAKE_BYPASS")) bypasses.push({ primitive: "TLBodies.make", file: f, line: i + 1, pattern: "RigidBody3D.new()" });
+      });
+    }
     report["composability"] = {
       gdscript_lines: { scripts: count("scripts/"), gen: count("gen/"), tests: count("tests/") },
       kit_parts_added: 0,
-      bypasses: [],
+      bypasses,
     };
     if (checks.some((c) => !c.ok)) fail();
   } else {
@@ -306,6 +326,13 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       checks.push({ id: "invariants.below_ground", ok: true, detail: "no physics body below y = -50" });
       checks.push({ id: "invariants.frame_budget", ok: true, detail: "frame p99 0.400 ms (budget 8 ms)" });
       checks.push({ id: "invariants.entity_budget", ok: true, detail: "12 nodes (budget 5000), 3 physics bodies (budget 600)" });
+      // As the engine since WP5 (seen in the second real job's reports and in site/_engine_snapshot3): the first bot
+      // is played twice, for at most --bot-frames frames, and both runs must end in the same state.
+      if (tests[0] !== undefined) {
+        const h = stateHash(seed, opts["bot-frames"] ?? "36000");
+        checks.push({ id: "invariants.bot_deterministic", ok: !nd, detail: nd ? `bot ${tests[0]} twice, seed ${seed}: two different states` : `bot ${tests[0]} twice, seed ${seed}: ${h.slice(0, 16)} after 600 frames` });
+        Object.assign(report["metrics"] as Record<string, unknown>, { bot_state_hash: h, bot_frames: 600 });
+      }
       if (nd) {
         errors.push({ kind: "determinism", file: nd, message: "same seed gave two different state hashes" });
         (report["metrics"] as Record<string, unknown>)["state_hash_b"] = stateHash(`${seed}b`, frames);
@@ -315,7 +342,11 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       const ran = !loadProblem && !wd && test !== undefined;
       const body = ran ? (text.get(test as string) ?? "") : "";
       const never = ran && body.includes("FAKE_BOT_NEVER_DONE");
-      const botFail = ran && body.includes("FAKE_BOT_FAIL");
+      // FAKE_BOT_NEEDS(<token>) anywhere in the pack: the bot only succeeds when some file holds FAKE_HAS(<token>).
+      // This is how a test makes one package's change break another package's bot (and that package able to fix it).
+      const all = [...text.values()].join("\n");
+      const unmet = [...all.matchAll(/FAKE_BOT_NEEDS\((\w+)\)/g)].map((m) => m[1] as string).filter((t) => !all.includes(`FAKE_HAS(${t})`));
+      const botFail = ran && (body.includes("FAKE_BOT_FAIL") || unmet.length > 0);
       const done = ran && !never;
       checks.push({ id: "bot.completed", ok: done, detail: !ran ? "the bot did not run" : done ? "done at frame 600" : `not done within ${frames} frames` });
       checks.push({ id: "bot.ok", ok: done && !botFail, detail: !ran ? "the bot did not run" : never ? "never done" : botFail ? "bot reported ok=false" : "played to full time" });

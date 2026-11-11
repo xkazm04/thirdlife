@@ -250,6 +250,8 @@ export interface CritiqueResult {
   ok: boolean;
   scores: Record<string, number>;
   notes: string[];
+  /** N3: the package whose files most likely cause what the critic sees (one id of the list it was given). */
+  package?: string;
 }
 
 export const critiqueSchema = {
@@ -260,5 +262,6 @@ export const critiqueSchema = {
     ok: { type: "boolean" },
     scores: { type: "object", additionalProperties: { type: "number", minimum: 0, maximum: 1 } },
     notes: { type: "array", items: { type: "string" } },
+    package: { type: "string" },
   },
 } as const;

@@ -19,6 +19,7 @@ export const CAUSES = [
   "question",
   "cancelled",
   "no_visible_change",
+  "kit_regression",
 ] as const;
 export type Cause = (typeof CAUSES)[number];
 export const ADAPTERS = ["claude-cli", "messages-api", "fake"] as const;
@@ -130,6 +131,10 @@ export type EventBody =
     }
   | { type: "merge"; package: string; files: string[]; removed?: string[] }
   | { type: "note"; package: string; round: number; text: string }
+  /** N3: the player (or an answer with --change) asks for a change to a finished package. `package` when it was named. */
+  | { type: "change_requested"; text: string; package?: string }
+  /** N3: a promoted package goes back to work: a change request, the critic naming it, or a dependency that changed. */
+  | { type: "reopened"; package: string; reason: string }
   | { type: "question"; package: string; text: string }
   | { type: "answer"; package: string; text: string; by: string }
   | { type: "milestone"; milestone: Milestone; captures: string[]; summary: string }
@@ -233,6 +238,8 @@ const SPECS: Record<EventType, Spec> = {
   },
   merge: { required: { package: pkgId, files: { type: "array", items: relPath } }, optional: { removed: { type: "array", items: relPath } } },
   note: { required: { package: pkgId, round: int1, text: nonEmpty } },
+  change_requested: { required: { text: nonEmpty }, optional: { package: pkgId } },
+  reopened: { required: { package: pkgId, reason: nonEmpty } },
   question: { required: { package: pkgId, text: nonEmpty } },
   answer: { required: { package: pkgId, text: nonEmpty, by: nonEmpty } },
   milestone: { required: { milestone: { enum: MILESTONES }, captures: { type: "array", items: relPath }, summary: str } },

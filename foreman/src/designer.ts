@@ -9,6 +9,7 @@ import { globToRegExp, scopeProblems } from "./scope.js";
 import { critiqueSchema, type CritiqueResult } from "./verifier.js";
 import { PKG_ROOT, REPO_ROOT } from "./paths.js";
 import { ENTRY_SCRIPT, MANIFEST_FILE, depClosure } from "./manifest.js";
+import { acceptanceOptions, verbOptionsText, type RunnerVerbs } from "./verbs.js";
 
 const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "prompts", name), "utf8");
 const schema = (name: string): object => JSON.parse(prompt(name)) as object;
@@ -35,15 +36,12 @@ export interface GenerateOptions {
 export interface PlanLimits {
   /** Most packages a plan may hold. A Planner answer with more is sent back once with this limit. */
   maxPackages?: number;
+  /**
+   * The runner's verbs and options, read from the engine (verbs.ts: <engine>/kernel/runner/verbs.json). Required:
+   * the Foreman has no list of its own, and the real runner refuses an option it does not know with exit 2.
+   */
+  verbs: RunnerVerbs;
 }
-
-/** Runner options a package's acceptance may carry, per verb (the real runner refuses anything else with exit 2). */
-const ACCEPTANCE_OPTIONS: Record<string, string[]> = {
-  lint: [],
-  smoke: ["seed", "frames"],
-  invariants: ["seed", "frames"],
-  bot: ["test", "seed", "frames"],
-};
 
 async function generate<T>(
   builder: Builder,
@@ -103,7 +101,7 @@ export function designBrief(builder: Builder, sentence: string, opts: GenerateOp
 }
 
 /** Problems of a plan beyond its JSON shape: graph errors, scopes, the composed manifest, acceptance options. */
-export function planCheck(packages: PackageSpec[], limits: PlanLimits = {}): string[] {
+export function planCheck(packages: PackageSpec[], limits: PlanLimits): string[] {
   const out = [...planProblems(packages)];
   if (limits.maxPackages !== undefined && packages.length > limits.maxPackages) {
     out.push(`the plan has ${packages.length} packages; the limit for this job is ${limits.maxPackages}: merge concerns until it fits`);
@@ -154,16 +152,16 @@ export function planCheck(packages: PackageSpec[], limits: PlanLimits = {}): str
     const visible = graphOk ? [...depClosure(packages, p.id)] : [p.id];
     const tests = new Set(visible.flatMap((id) => packages.find((x) => x.id === id)?.registers?.tests ?? []));
     for (const acc of p.acceptance) {
-      const allowed = ACCEPTANCE_OPTIONS[acc.verb];
+      const allowed = acceptanceOptions(limits.verbs, acc.verb);
       if (allowed === undefined) {
         out.push(`package "${p.id}": acceptance verb "${acc.verb}" is not allowed (captures are taken by the Foreman at milestones)`);
         continue;
       }
       for (const x of acc.args) {
-        const m = /^--([a-z]+)=[^\s;&|<>`$]+$/.exec(x);
+        const m = /^--([a-z][a-z0-9-]*)=[^\s;&|<>`$]+$/.exec(x);
         if (!m) out.push(`package "${p.id}": acceptance argument ${JSON.stringify(x)} is not a plain --key=value`);
         else if (!allowed.includes(m[1] as string)) {
-          out.push(`package "${p.id}": ${acc.verb} does not take --${m[1]} (allowed: ${allowed.map((o) => `--${o}`).join(", ") || "no options"})`);
+          out.push(`package "${p.id}": ${acc.verb} does not take --${m[1]} (allowed: ${allowed.map((o) => `--${o}`).join(", ") || "no options"}; from ${limits.verbs.source})`);
         }
       }
       if (acc.verb === "bot") {
@@ -208,12 +206,13 @@ function plannerVars(input: PlannerInput, limits: PlanLimits, replan: string): R
     existing: input.existing ?? "Nothing but the kernel API below: no kit, no rigs, no style layer and no seed games were found for this job.",
     timeLimit: String(minutes),
     limit: limitLine(limits),
+    verbOptions: verbOptionsText(limits.verbs),
     replan,
   };
 }
 
 /** The Planner prompt exactly as the first attempt of `planPackages` sends it (dry check; no model is called). */
-export function renderPlannerPrompt(input: PlannerInput, limits: PlanLimits = {}): string {
+export function renderPlannerPrompt(input: PlannerInput, limits: PlanLimits): string {
   return render(prompt("planner.md"), { ...plannerVars(input, limits, ""), schema: JSON.stringify(schema("plan.schema.json"), null, 1), feedback: "" });
 }
 
@@ -221,7 +220,7 @@ function limitLine(limits: PlanLimits): string {
   return limits.maxPackages !== undefined ? `At most ${limits.maxPackages} packages in total for this job (a hard limit).` : "Three to eight packages for a mini-game.";
 }
 
-export function planPackages(builder: Builder, input: PlannerInput, opts: GenerateOptions & PlanLimits = {}): Promise<Generated<{ packages: PackageSpec[] }>> {
+export function planPackages(builder: Builder, input: PlannerInput, opts: GenerateOptions & PlanLimits): Promise<Generated<{ packages: PackageSpec[] }>> {
   return generate<{ packages: PackageSpec[] }>(
     builder,
     "planner",
@@ -246,7 +245,7 @@ export interface ReplanInput extends PlannerInput {
  * Re-plan after a failure: the Planner returns replacement packages for the failed ones and their dependants only.
  * The answer is validated together with the kept packages, so scopes, the graph and the limits hold for the whole plan.
  */
-export function replanPackages(builder: Builder, input: ReplanInput, opts: GenerateOptions & PlanLimits = {}): Promise<Generated<{ packages: PackageSpec[] }>> {
+export function replanPackages(builder: Builder, input: ReplanInput, opts: GenerateOptions & PlanLimits): Promise<Generated<{ packages: PackageSpec[] }>> {
   const keptIds = new Set(input.kept.map((p) => p.id));
   const room = opts.maxPackages !== undefined ? opts.maxPackages - input.kept.length : undefined;
   const replan = [
@@ -278,6 +277,51 @@ export function replanPackages(builder: Builder, input: ReplanInput, opts: Gener
   );
 }
 
+/** One line per package for the critic and for the "who owns this" question: id, title, milestone, deps, files. */
+export interface PackageLine {
+  id: string;
+  title: string;
+  milestone: string;
+  deps: string[];
+  /** The files the package owns in pack/ (what it merged), or its scope globs when it has merged nothing yet. */
+  files: string[];
+}
+
+export function packageLinesText(lines: PackageLine[]): string {
+  if (lines.length === 0) return "(no package list was given)";
+  return lines
+    .map((p) => `- ${p.id} (${p.milestone}${p.deps.length > 0 ? `, depends on ${p.deps.join(", ")}` : ", the root"}): ${p.title}. Files: ${p.files.slice(0, 30).join(", ") || "(none yet)"}`)
+    .join("\n");
+}
+
+export const ownerSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["package", "reason"],
+  properties: { package: { type: "string" }, reason: { type: "string" } },
+} as const;
+
+/**
+ * N3: which package owns the cause of a change request? One short generate call (role planner). The answer must
+ * name one of the listed packages; anything else is asked once more and then refused.
+ */
+export function whoOwns(
+  builder: Builder,
+  input: { sentence: string; title: string; text: string; packages: PackageLine[] },
+  opts: GenerateOptions = {},
+): Promise<Generated<{ package: string; reason: string }>> {
+  const ids = input.packages.map((p) => p.id);
+  return generate<{ package: string; reason: string }>(
+    builder,
+    "planner",
+    prompt("owner.md"),
+    { sentence: input.sentence, title: input.title, text: input.text, packages: packageLinesText(input.packages) },
+    ownerSchema,
+    (v) => (ids.includes((v as { package: string }).package) ? [] : [`"package" must be one of: ${ids.join(", ")}`]),
+    { timeoutMs: 3 * 60_000, ...opts },
+  );
+}
+
 export interface RubricItem {
   id: string;
   text: string;
@@ -305,7 +349,7 @@ export async function critic(
   builder: Builder,
   captures: string[],
   rubric: RubricItem[] = DEFAULT_RUBRIC,
-  opts: GenerateOptions & { threshold?: number; handOff?: "generate" | "readonly-scan"; context?: string } = {},
+  opts: GenerateOptions & { threshold?: number; handOff?: "generate" | "readonly-scan"; context?: string; packages?: PackageLine[] } = {},
 ): Promise<Generated<CritiqueResult>> {
   const threshold = opts.threshold ?? 0.6;
   const handOff = opts.handOff ?? "generate";
@@ -320,6 +364,7 @@ export async function critic(
           .map((cap, i) => (handOff === "readonly-scan" ? `- ${path.basename(cap)} (open it with your Read tool)` : `- image ${i + 1} of ${captures.length}, attached to this message: ${path.basename(cap)}`))
           .join("\n") || "(none)",
       context: opts.context ?? "(none given)",
+      packages: packageLinesText(opts.packages ?? []),
       rubric: rubric.map((r) => `- ${r.id}: ${r.text}`).join("\n"),
       threshold: String(threshold),
     },
@@ -342,5 +387,6 @@ export async function critic(
   const notes = [...res.value.notes];
   if (res.value.ok !== allPass) notes.push(`critic said ok=${res.value.ok}; scores against threshold ${threshold} give ok=${allPass}`);
   if (captures.length === 0) notes.push("no captures were given");
-  return { ok: true, value: { ok: allPass, scores: res.value.scores, notes }, calls: res.calls };
+  const named = typeof res.value.package === "string" && res.value.package.trim() !== "" ? res.value.package.trim() : undefined;
+  return { ok: true, value: { ok: allPass, scores: res.value.scores, notes, ...(named !== undefined ? { package: named } : {}) }, calls: res.calls };
 }

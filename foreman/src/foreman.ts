@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Acceptance, BudgetPolicy, Cause, JobEvent, Milestone, PackageSpec } from "./events.js";
-import { JobLog, type JobState, type PackageView } from "./joblog.js";
+import { CHANGE_REASON_RE, JobLog, changeReason, type JobState, type PackageView } from "./joblog.js";
 import type { Builder, RunResult } from "./builder/types.js";
 import { deriveBashAllowlist } from "./builder/allowlist.js";
 import type { Verifier, VerifyResult } from "./verifier.js";
@@ -12,9 +12,10 @@ import { BudgetGate, budgetVerdict } from "./budget.js";
 import { copyDir, hashFile, listFiles, matchesAny, pruneEmptyDirs, snapshot } from "./scope.js";
 import { engineWritable, promotePack, readManifest } from "./promoter.js";
 import { existingText, prepareReference, referenceText, type Reference } from "./reference.js";
-import { PKG_ROOT, REPO_ROOT, toPosix } from "./paths.js";
-import { MANIFEST_FILE, composeManifest, depClosure, dependants, manifestText } from "./manifest.js";
-import { critic, replanPackages, DEFAULT_RUBRIC, type GenerateCall, type Generated, type ReplanInput } from "./designer.js";
+import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
+import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
+import { critic, replanPackages, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type Generated, type PackageLine, type ReplanInput } from "./designer.js";
+import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
 
 export class ForemanError extends Error {
   constructor(message: string) {
@@ -70,17 +71,74 @@ export interface ForemanOptions {
    * and that copy is what a builder may read (--add-dir): the engine directory itself is never opened to a builder.
    */
   reference?: Reference;
+  /**
+   * The runner's verbs and options. Default: read from the runner that will be started (verbs.ts verbsFor: the
+   * engine's kernel/runner/verbs.json). A missing file is an error when the run starts.
+   */
+  verbs?: RunnerVerbs;
+  /**
+   * Which optional manifest fields (footprint, params, on_leave, subject, moments) builders may write. Default: the
+   * ones the engine's kernel/runner/manifest.gd names (all five for the bundled fake runner). A field the engine
+   * does not accept is never asked for and is removed if a builder writes it, because lint would refuse the pack.
+   */
+  carriedFields?: string[];
+  /** N3 item 3: compare kit use and bypasses before and after every round. Default true (`--no-kit-gate` turns it off). */
+  kitGate?: boolean;
   /** Test seam: called after every durable append; throwing simulates a kill at that exact event. */
   afterAppend?: (ev: JobEvent) => void;
   onEvent?: (ev: JobEvent) => void;
 }
 
 /** Causes after which a failed package goes back to the Planner (a refusal, a budget stop or a cancel do not). */
-const REPLAN_CAUSES: Cause[] = ["verify_failed", "builder_error", "builder_timeout", "builder_truncated", "no_visible_change"];
+const REPLAN_CAUSES: Cause[] = ["verify_failed", "builder_error", "builder_timeout", "builder_truncated", "no_visible_change", "kit_regression"];
 
 /** Fixed starts of the `detail` of a package sent back after its merge; the feedback and the resume read them. */
 export const NO_VISIBLE_CHANGE = "NO VISIBLE CHANGE";
 export const CRITIC_ROUND = "critic (V5) NOT ok, one extra round";
+/** N3: fixed starts of the `detail` of a package that goes back to work after it was finished. */
+export const CHANGE_ROUND = "CHANGE REQUEST";
+export const DEP_CHANGED = "DEPENDENCY CHANGED";
+export const KIT_REGRESSION = "KIT REGRESSION";
+/**
+ * The start of a `note` the Foreman writes itself (a fallback of the critic's round, a stated kit reason, the
+ * pictures after a change). Builders' own notes (their DEVIATIONS) do not start with it; only those are handed to
+ * the builders of dependent packages.
+ */
+export const FOREMAN_NOTE = "[foreman] ";
+
+/** The figures a round may not make worse without saying why (N3 item 3). */
+export interface KitFigures {
+  /** `composability.bypasses.length` of the pack's lint report: places that do by hand what a primitive exists for. */
+  bypasses: number;
+  /**
+   * Kit parts used, counted by the Foreman because the lint report has no such figure: `"kind": "..."` entries in
+   * the pack's data/*.json (layout props and actors) plus `TLKit.` / `TLRigs.` call sites in its scripts.
+   */
+  kitUse: number;
+}
+
+/** Counts kit use in a pack directory (see KitFigures.kitUse). Comments in scripts do not count. */
+export function countKitUse(packDir: string): number {
+  let n = 0;
+  for (const f of listFiles(packDir)) {
+    const abs = path.join(packDir, f);
+    if (f.startsWith("data/") && f.endsWith(".json")) n += (fs.readFileSync(abs, "utf8").match(/"kind"\s*:\s*"/g) ?? []).length;
+    else if (f.endsWith(".gd") && !f.startsWith("tests/")) {
+      for (const line of fs.readFileSync(abs, "utf8").split(/\r?\n/)) n += (line.replace(/#.*$/, "").match(/\bTL(Kit|Rigs)\s*\./g) ?? []).length;
+    }
+  }
+  return n;
+}
+
+/** True when a builder's DEVIATIONS text says why kit use fell or a bypass was added (a `KIT:` line, or plain words). */
+export function statesKitReason(deviations: string | undefined, hints: string[] = []): boolean {
+  if (!deviations) return false;
+  if (/^\s*[-*]?\s*\**KIT\**\s*:/im.test(deviations)) return true;
+  if (/\b(kit|bypass\w*|TLKit|TLRigs|by hand|hand[- ]built|hand[- ]made|kernel primitive)\b/i.test(deviations)) return true;
+  return hints.some((h) => h.length >= 4 && deviations.toLowerCase().includes(h.toLowerCase()));
+}
+
+type GateFailure = VerifyResult & { kitRegression?: string };
 
 /**
  * The deviations a builder states in its answer: everything under a line `DEVIATIONS:` up to a `QUESTION:` line or
@@ -180,6 +238,14 @@ export function restsOnAClock(vr: VerifyResult): boolean {
   return failed.length > 0 && failed.every((c) => c.id === "invariants.frame_budget");
 }
 
+/**
+ * True when the runner exited by itself with NO output at all (not a timeout, not a spawn failure): it was killed
+ * from outside or crashed before its first line. That is not a verdict about the pack.
+ */
+export function diedSilently(vr: VerifyResult): boolean {
+  return !vr.ok && vr.flags.includes("stdout_not_json") && !vr.flags.includes("runner_timeout") && !vr.flags.includes("spawn_error") && vr.summary.includes('stdout is not JSON: ""');
+}
+
 export class Foreman {
   private readonly o: Required<Pick<ForemanOptions, "parallel" | "roundLimit" | "builderTimeoutMs" | "promote" | "rateLimitRetries" | "rateLimitBackoffMs" | "maxReplans">> &
     ForemanOptions;
@@ -188,6 +254,7 @@ export class Foreman {
   private log!: JobLog;
   private gate!: BudgetGate;
   private mergeChain: Promise<unknown> = Promise.resolve();
+  private verbs: RunnerVerbs | undefined;
   private readonly jobDir: string;
   private readonly template: string;
   private readonly packContract: string;
@@ -242,14 +309,22 @@ export class Foreman {
 
   private async runOpen(): Promise<JobState> {
     if (this.s.plan.length === 0) throw new ForemanError(`job ${this.s.job} has no plan_set yet (run \`foreman plan\`)`);
-    if (this.s.jobState?.state === "done") return this.s;
+    // A finished job stays finished, unless a change request is waiting (N3): then it goes back to running.
+    const waiting = this.s.changes.some((c) => c.state === "pending") || this.s.order.some((id) => this.pkg(id).state !== "promoted");
+    if (this.s.jobState?.state === "done" && !waiting) return this.s;
     // A cancelled job stays cancelled unless the caller explicitly asks for its failed packages to be retried.
     if (this.s.jobState?.state === "cancelled" && !this.o.retryFailed) return this.s;
+    // The runner's option list comes from the engine. Without it nothing is started and nothing is written.
+    this.verbs = this.o.verbs ?? verbsFor(this.o.verifier.location);
     for (const d of ["pack", "ws", "reports", "captures"]) fs.mkdirSync(this.dir(d), { recursive: true });
     const now = this.o.now ?? (() => new Date());
     const sleep = this.o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
     const before = this.s.jobState;
-    this.append({ type: "job_state", state: "running", reason: before ? `resumed (was ${before.state})` : "started" });
+    this.append({
+      type: "job_state",
+      state: "running",
+      reason: before ? (before.state === "done" ? "reopened by a change request (was done)" : `resumed (was ${before.state})`) : "started",
+    });
 
     // The player's budget policy lives in the log: one given now is recorded, one recorded earlier still holds.
     const logged = this.s.budget;
@@ -299,10 +374,13 @@ export class Foreman {
     }
 
     this.prepareReference();
+    this.requeueReopened();
+    await this.applyChangeRequests();
 
     for (;;) {
       // A milestone whose last merge is in the log but whose `milestone` event is not (a kill in between).
       await this.catchUpMilestones();
+      this.requeueReopened();
       this.requeueNoVisibleChange();
       await this.schedule();
       const views = this.s.order.map((id) => this.pkg(id));
@@ -427,7 +505,11 @@ export class Foreman {
     const model = this.o.plannerModel ?? this.o.model;
     const res = this.o.replanner
       ? await this.o.replanner(input)
-      : await replanPackages(this.o.builder, input, { ...(model ? { model } : {}), ...(this.o.maxPackages !== undefined ? { maxPackages: this.o.maxPackages } : {}) });
+      : await replanPackages(this.o.builder, input, {
+          ...(model ? { model } : {}),
+          ...(this.o.maxPackages !== undefined ? { maxPackages: this.o.maxPackages } : {}),
+          verbs: this.verbs ?? verbsFor(this.o.verifier.location),
+        });
     this.logGenerateCalls(res.calls, model);
     if (!res.ok) return { replanned: false, reason: `re-plan failed: ${clip(res.reason, 300)}` };
 
@@ -549,33 +631,180 @@ export class Foreman {
     fs.mkdirSync(packDir, { recursive: true });
     fs.writeFileSync(path.join(packDir, MANIFEST_FILE), this.packManifestText());
   }
-  private jobIdentity(): { packId: string; title: string } {
-    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled" };
+  /**
+   * The pack's identity. The version is 0.1.0 until the first promotion and 0.1.<n> after the n-th: a change request
+   * on a finished job therefore builds, verifies and promotes a pack with a new version (N3).
+   */
+  private jobIdentity(): { packId: string; title: string; version: string } {
+    const n = this.s.promotions.length;
+    const version = n === 0 ? PACK_VERSION : PACK_VERSION.replace(/\d+$/, String(n));
+    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled", version };
+  }
+
+  // ---------- the manifest fields a builder owns (PACK.md, 2026-11-11): footprint, params, on_leave, subject, moments ----------
+
+  private readText(file: string): string | undefined {
+    try {
+      return fs.readFileSync(file, "utf8");
+    } catch {
+      return undefined;
+    }
+  }
+  private acceptedSet: Set<string> | undefined;
+  /** The optional manifest fields this engine accepts (see ForemanOptions.carriedFields). */
+  private accepted(): Set<string> {
+    this.acceptedSet ??= new Set(this.o.carriedFields ?? (isFakeRunner(this.o.verifier.location) ? [...CARRIED_FIELDS] : acceptedCarriedFields(this.o.verifier.location.engineDir)));
+    return this.acceptedSet;
+  }
+  private carried(text: string | undefined): Carried {
+    const all = carriedOf(text);
+    const ok = this.accepted();
+    return Object.fromEntries(Object.entries(all).filter(([k]) => ok.has(k))) as Carried;
+  }
+  /** The paragraph of the builder prompt about the optional manifest fields: only what this engine accepts. */
+  private optionalFieldsText(): string {
+    const ok = this.accepted();
+    const dataRule =
+      "Keep every value a player might want to tune (a speed, a size, a count, a time or score limit, a difficulty, a colour strength) in a JSON file of yours under `data/` and read it through the kernel (`ctx.read_json`); do NOT write such values as constants in a script.";
+    if (ok.size === 0) {
+      return [
+        "**Values a player may tune.** " + dataRule,
+        "The engine you are verified with does not accept the optional manifest fields (`params`, `footprint`, `on_leave`, `subject`, `moments`) yet: do NOT add them to `pack.json`, lint would refuse the pack. Instead end your answer's file list with one line per tunable value: `TUNABLE: <data file> <dotted path> <min> <max> <step> <label>`.",
+      ].join("\n");
+    }
+    const lines = [
+      `There is ONE exception: ${ok.size === 1 ? "one optional field" : `${ok.size} optional fields`} of \`pack.json\` ${ok.size === 1 ? "is" : "are"} yours to write (${[...ok].map((k) => `\`${k}\``).join(", ")}), and the Foreman carries ${ok.size === 1 ? "it" : "them"} through unchanged (it puts back everything else). Add ${ok.size === 1 ? "it" : "them"} to the \`pack.json\` in your working directory; do not touch the other keys. The shape is in the pack contract below (last section) and lint checks it:`,
+    ];
+    if (ok.has("params")) {
+      lines.push(
+        "- `params`: **declare what a player may tune.** " +
+          dataRule +
+          ' For each such value add one entry `{"name", "file", "path", "min", "max", "step", "label"}`: `file` is the JSON file under `data/`, `path` the dotted path of the value in it, `label` a few plain words for a slider. Three to eight good entries are better than every number you have. Add your entries to the list that is there; never remove another package\'s entries.',
+      );
+    } else lines.push("- " + dataRule + " (This engine does not take `params` in the manifest yet: do not write that key.)");
+    const rest = (["subject", "moments", "footprint", "on_leave"] as const).filter((k) => ok.has(k));
+    const what: Record<string, string> = {
+      subject: "`subject` (the node under the pack's `World` that a picture of this game is about)",
+      moments: "`moments` (the frames or events worth a picture)",
+      footprint: "`footprint` (the ground the game needs)",
+      on_leave: "`on_leave` (what the game does when the player walks away)",
+    };
+    if (rest.length > 0) lines.push(`- ${rest.map((k) => what[k]).join(", ")}: write ${rest.length === 1 ? "it" : "them"} when your package is the one that knows (usually the root package).`);
+    const no = CARRIED_FIELDS.filter((k) => !ok.has(k));
+    if (no.length > 0) lines.push(`Do NOT write ${no.map((k) => `\`${k}\``).join(", ")}: this engine's manifest check does not accept ${no.length === 1 ? "it" : "them"} yet.`);
+    return lines.join("\n");
+  }
+  private carriedBaseFile(id: string): string {
+    return this.dir("ws", `${id}.carried.json`);
+  }
+  /** The carried fields pack/ holds now. */
+  private packCarried(): Carried {
+    return this.carried(this.readText(this.dir("pack", MANIFEST_FILE)));
+  }
+  /** The carried fields the package's workspace started with (written when the workspace was cut or refreshed). */
+  private carriedBase(id: string): Carried {
+    return this.carried(this.readText(this.carriedBaseFile(id)));
   }
   /**
-   * The manifest a package's workspace is verified with: the package itself plus everything it depends on. It does
-   * not depend on what else happened to be merged when the workspace was cut, so it is the same after a resume.
+   * The carried fields as the builder left them in its workspace's pack.json. A manifest that no longer parses (or
+   * was deleted) gives the fields the workspace started with: a broken file must not lose another package's params.
    */
-  private wsManifestText(id: string): string {
-    return manifestText(composeManifest(this.jobIdentity(), this.specsOf(depClosure(this.s.plan, id))));
+  private wsCarried(id: string): Carried {
+    const text = this.readText(path.join(this.wsDir(id), MANIFEST_FILE));
+    if (text === undefined) return fs.existsSync(this.wsDir(id)) ? this.carriedBase(id) : this.packCarried();
+    try {
+      JSON.parse(stripBom(text));
+    } catch {
+      return this.carriedBase(id);
+    }
+    return this.carried(text);
   }
-  /** The manifest of pack/ once `id` is merged: every promoted package plus this one. */
+
+  /**
+   * The manifest a package's workspace is verified with: the package itself plus everything it depends on (composed
+   * by the Foreman), plus the five optional fields exactly as the builder wrote them. The composed part does not
+   * depend on what else happened to be merged when the workspace was cut, so it is the same after a resume.
+   */
+  private wsManifestText(id: string, carried: Carried = this.wsCarried(id)): string {
+    return manifestText(composeManifest(this.jobIdentity(), this.specsOf(depClosure(this.s.plan, id)), carried));
+  }
+  /**
+   * The manifest of pack/ once `id` is merged: every promoted package plus this one, with the optional fields of
+   * pack/ and this package's changes to them (three-way, so another package's params survive a stale workspace).
+   */
   private packManifestText(plus?: string): string {
     const ids = this.promotedIds();
     if (plus !== undefined) ids.add(plus);
-    return manifestText(composeManifest(this.jobIdentity(), this.specsOf(ids)));
+    const carried = plus !== undefined ? mergeCarried(this.carriedBase(plus), this.wsCarried(plus), this.packCarried()) : this.packCarried();
+    return manifestText(composeManifest(this.jobIdentity(), this.specsOf(ids), carried));
+  }
+
+  /** The last round a package may use: the round limit counts from its last re-opening (N3). */
+  private cap(id: string): number {
+    return (this.pkg(id).roundBase ?? 1) + this.o.roundLimit - 1;
   }
 
   private ensureWs(id: string, fresh: boolean): void {
     const ws = this.wsDir(id);
     const base = this.baselineFile(id);
-    if (!fresh && fs.existsSync(ws) && fs.existsSync(base)) return;
+    if (!fresh && fs.existsSync(ws) && fs.existsSync(base)) {
+      this.refreshWs(id);
+      return;
+    }
     fs.rmSync(ws, { recursive: true, force: true });
     copyDir(this.dir("pack"), ws);
     // pack.json is composed by the Foreman (JOB.md): the builder finds it in place and never owns it.
     fs.mkdirSync(ws, { recursive: true });
-    fs.writeFileSync(path.join(ws, MANIFEST_FILE), this.wsManifestText(id));
+    const carried = this.packCarried();
+    fs.writeFileSync(this.carriedBaseFile(id), JSON.stringify(carried, null, 1) + "\n");
+    fs.writeFileSync(path.join(ws, MANIFEST_FILE), this.wsManifestText(id, carried));
     fs.writeFileSync(base, JSON.stringify(snapshot(ws), null, 1));
+  }
+
+  /**
+   * Before a new builder round in a workspace that already exists: every file OUTSIDE the package's scope is brought
+   * up to what pack/ holds now (a dependency may have been changed and merged again since the workspace was cut:
+   * a change request, the critic naming the root). The package's own files are not touched.
+   */
+  private refreshWs(id: string): void {
+    const ws = this.wsDir(id);
+    const spec = this.spec(id);
+    const packDir = this.dir("pack");
+    const baseline = JSON.parse(fs.readFileSync(this.baselineFile(id), "utf8")) as Record<string, string>;
+    const inPack = new Set(listFiles(packDir));
+    let changed = false;
+    for (const f of inPack) {
+      if (f === MANIFEST_FILE || matchesAny(spec.scope, f)) continue;
+      const h = hashFile(path.join(packDir, f));
+      const mine = path.join(ws, f);
+      if (!fs.existsSync(mine) || hashFile(mine) !== h) {
+        fs.mkdirSync(path.dirname(mine), { recursive: true });
+        fs.copyFileSync(path.join(packDir, f), mine);
+        changed = true;
+      }
+      if (baseline[f] !== h) {
+        baseline[f] = h;
+        changed = true;
+      }
+    }
+    for (const f of listFiles(ws)) {
+      if (f === MANIFEST_FILE || matchesAny(spec.scope, f) || inPack.has(f)) continue;
+      fs.rmSync(path.join(ws, f), { force: true });
+      delete baseline[f];
+      changed = true;
+    }
+    // The optional manifest fields: what the builder changed so far stays, the rest follows pack/.
+    const theirs = this.packCarried();
+    const merged = mergeCarried(this.carriedBase(id), this.wsCarried(id), theirs);
+    const wanted = this.wsManifestText(id, merged);
+    if (this.readText(path.join(ws, MANIFEST_FILE)) !== wanted) fs.writeFileSync(path.join(ws, MANIFEST_FILE), wanted);
+    if (JSON.stringify(this.carriedBase(id)) !== JSON.stringify(theirs)) fs.writeFileSync(this.carriedBaseFile(id), JSON.stringify(theirs, null, 1) + "\n");
+    if (changed) {
+      pruneEmptyDirs(ws);
+      fs.mkdirSync(ws, { recursive: true });
+      baseline[MANIFEST_FILE] = hashFile(path.join(ws, MANIFEST_FILE));
+      fs.writeFileSync(this.baselineFile(id), JSON.stringify(baseline, null, 1));
+    }
   }
 
   /**
@@ -590,12 +819,27 @@ export class Foreman {
     const dropped: string[] = [];
     const present = new Set(listFiles(ws));
     // The manifest first: whatever the builder did to it, the composed text is put back before anything is verified.
+    // The five optional fields (footprint, params, on_leave, subject, moments) are the builder's: they are carried
+    // through as written. Any other difference from the composed manifest is undone and recorded.
     const wanted = this.wsManifestText(id);
     const manifestAbs = path.join(ws, MANIFEST_FILE);
     const had = fs.existsSync(manifestAbs) ? fs.readFileSync(manifestAbs, "utf8") : undefined;
     if (had !== wanted) {
       fs.writeFileSync(manifestAbs, wanted);
-      dropped.push(`${MANIFEST_FILE} (${had === undefined ? "deleted" : "edited"} by the builder; the Foreman's composed manifest was put back)`);
+      let onlyCarried = false;
+      let refused: string[] = [];
+      try {
+        const doc = JSON.parse(stripBom(had ?? "")) as Record<string, unknown>;
+        const rest = Object.fromEntries(Object.entries(doc).filter(([k]) => !(CARRIED_FIELDS as readonly string[]).includes(k)));
+        const composed = JSON.parse(this.wsManifestText(id, {})) as Record<string, unknown>;
+        onlyCarried = JSON.stringify(rest) === JSON.stringify(composed);
+        refused = CARRIED_FIELDS.filter((k) => doc[k] !== undefined && !this.accepted().has(k));
+      } catch {
+        /* not JSON: it was edited beyond the fields a builder owns */
+      }
+      // A field PACK.md describes but this engine's manifest check does not know yet would make lint refuse the pack.
+      if (onlyCarried && refused.length > 0) dropped.push(`${MANIFEST_FILE} (the builder wrote ${refused.join(", ")}; this engine's manifest check does not accept ${refused.length === 1 ? "that field" : "those fields"} yet, so ${refused.length === 1 ? "it was" : "they were"} removed)`);
+      else if (!onlyCarried) dropped.push(`${MANIFEST_FILE} (${had === undefined ? "deleted" : "edited"} by the builder; the Foreman's composed manifest was put back)`);
     }
     for (const f of present) {
       if (f === MANIFEST_FILE) continue;
@@ -671,7 +915,9 @@ export class Foreman {
           const cause: Cause = res.error?.kind === "rate_limit" ? "budget" : BUILDER_CAUSE[res.outcome];
           const why = `builder ${res.outcome}: ${clip(res.error?.message ?? "no detail", 300)}`;
           if (await this.keepAfterCriticRound(id, round, why)) return;
-          if (res.outcome === "refused" || cause === "budget" || round >= this.o.roundLimit) {
+          if (this.isCriticKitRetry(id, round) && (await this.keepEarlier(id, round, why))) return;
+          if (res.outcome === "refused" || cause === "budget" || round >= this.cap(id)) {
+            if (await this.keepEarlier(id, round, why)) return;
             this.append({ type: "package_state", package: id, state: "failed", round, cause, detail: why });
             this.unmerge(id);
             return;
@@ -691,7 +937,7 @@ export class Foreman {
       skipBuilder = false;
       resumed = false;
 
-      let failure: VerifyResult | undefined;
+      let failure: GateFailure | undefined;
       for (const a of spec.acceptance) {
         const vr = await this.verifyLogged(a, this.wsDir(id), `${id}-r${round}-${a.verb}`, { package: id, round });
         if (!vr.ok) {
@@ -701,8 +947,25 @@ export class Foreman {
       }
       if (!failure) failure = await this.serialMerge(() => this.mergeAndGate(id, round));
       if (!failure) return;
+      if (failure.kitRegression !== undefined) {
+        // N3 item 3: the round passed every check but made the kit figures worse without saying why. It is not
+        // merged; the package gets the next round with the figures as feedback (a `failed`, then a `queued`).
+        this.append({ type: "package_state", package: id, state: "failed", round, cause: "kit_regression", detail: clip(failure.kitRegression, 900) });
+        // The critic's extra round gets exactly ONE more round for a kit regression; after that the job goes on.
+        if (this.isCriticKitRetry(id, round) && (await this.keepEarlier(id, round, "kit_regression again in the one more round"))) return;
+        if (round < this.cap(id)) {
+          this.append({ type: "package_state", package: id, state: "queued", round: round + 1, detail: clip(failure.kitRegression, 900) });
+          round += 1;
+          continue;
+        }
+        if (await this.keepEarlier(id, round, "kit_regression")) return;
+        this.unmerge(id);
+        return;
+      }
       if (await this.keepAfterCriticRound(id, round, `${failure.verb} (${failure.level}): ${clip(failure.summary, 200)}`)) return;
-      if (round >= this.o.roundLimit) {
+      if (this.isCriticKitRetry(id, round) && (await this.keepEarlier(id, round, `${failure.verb} (${failure.level}): ${clip(failure.summary, 200)}`))) return;
+      if (round >= this.cap(id) && (await this.keepEarlier(id, round, `${failure.verb} (${failure.level}): ${clip(failure.summary, 200)}`))) return;
+      if (round >= this.cap(id)) {
         this.append({
           type: "package_state",
           package: id,
@@ -740,8 +1003,14 @@ export class Foreman {
         ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}),
         ...(where.after !== undefined ? { after: where.after } : {}),
       });
-      if (vr.ok || !restsOnAClock(vr)) break;
-      if (attempt === 2) vr = { ...vr, summary: `${vr.summary}. This is the second run with the same clock-based result (the first run is in the log too)` };
+      // N3: a runner that ended without printing anything says nothing about the pack. Seen 2026-11-11 under CPU load:
+      // when a Foreman's process tree is killed, the runner child dies a few milliseconds before the Foreman, which
+      // then logged a failed verification (exit 1, empty stdout) and started the next round before it died itself.
+      // Such a result is run once more as well; if the Foreman is being killed, it dies during that second run and
+      // the resume simply verifies again.
+      const silent = diedSilently(vr);
+      if (vr.ok || !(restsOnAClock(vr) || silent)) break;
+      if (attempt === 2) vr = { ...vr, summary: `${vr.summary}. This is the second run with the same ${silent ? "result (the runner ended without output both times)" : "clock-based result"} (the first run is in the log too)` };
     }
     return vr as VerifyResult;
   }
@@ -782,9 +1051,10 @@ export class Foreman {
    * Builds the candidate (pack/ plus this package's in-scope files), verifies it at V0 to V2, and only then
    * copies the files into pack/ and writes `merge` and `promoted`. pack/ never holds unverified files.
    */
-  private async mergeAndGate(id: string, round: number): Promise<VerifyResult | undefined> {
+  private async mergeAndGate(id: string, round: number): Promise<GateFailure | undefined> {
     const files = this.mergeSet(id);
     const ws = this.wsDir(id);
+    const hadMerged = (this.pkg(id).mergedFiles ?? []).length > 0;
     // Files this package merged in an earlier round (a round after a milestone sent it back) and has deleted since
     // are removed too: the baseline predates them, so removedSet alone would leave them in pack/.
     const dropped = (this.pkg(id).mergedFiles ?? []).filter((f) => !fs.existsSync(path.join(ws, f)));
@@ -800,6 +1070,7 @@ export class Foreman {
     }
     for (const f of removed) fs.rmSync(path.join(candidate, f), { force: true });
     fs.writeFileSync(path.join(candidate, MANIFEST_FILE), manifest);
+    const kitBefore = this.kitBefore(id, round);
     try {
       for (const a of PACK_GATE) {
         const vr = await this.verifyLogged(a, candidate, `${id}-r${round}-pack-${a.verb}`, { round, after: id });
@@ -808,6 +1079,10 @@ export class Foreman {
         const seen = vr.report?.["pack"];
         if (a.verb === "lint" && typeof seen === "string" && seen !== this.s.packId) {
           return { ...vr, ok: false, summary: `the runner reports pack id "${seen}" but this job was created for "${this.s.packId ?? "?"}": the merge is refused` };
+        }
+        if (a.verb === "lint") {
+          const worse = this.kitRegression(id, round, kitBefore, vr, candidate);
+          if (worse !== undefined) return { ...vr, ok: false, summary: worse, kitRegression: worse };
         }
       }
     } finally {
@@ -823,8 +1098,178 @@ export class Foreman {
     fs.writeFileSync(path.join(packDir, MANIFEST_FILE), manifest);
     this.append({ type: "merge", package: id, files, ...(removed.length > 0 ? { removed } : {}) });
     this.append({ type: "package_state", package: id, state: "promoted", round });
+    // N3: a package that was merged before and is merged again has changed under the packages that depend on it.
+    if (hadMerged) await this.reverifyDependants(id);
     await this.maybeMilestone(this.spec(id).milestone, id);
     return undefined;
+  }
+
+  // ---------- N3: re-opening a finished package ----------
+
+  /** A promoted package goes back to work: `reopened`, then `queued` at the next round with the reason as feedback. */
+  private reopen(id: string, reason: string, detail: string): void {
+    const round = this.pkg(id).round + 1;
+    this.append({ type: "reopened", package: id, reason: clip(reason, 600) });
+    this.append({ type: "package_state", package: id, state: "queued", round, detail: clip(detail, 1500) });
+  }
+
+  /** A `reopened` whose `queued` is missing (a kill between the two events): write the `queued` now. */
+  private requeueReopened(): void {
+    for (const id of this.s.order) {
+      const p = this.pkg(id);
+      if (p.roundBase === undefined || p.roundBase !== p.round + 1 || p.state === "queued" || p.state === "running" || p.state === "verifying") continue;
+      const last = [...this.log.events].reverse().find((e) => e.type === "reopened" && e.package === id);
+      const reason = last && last.type === "reopened" ? last.reason : "";
+      const m = CHANGE_REASON_RE.exec(reason);
+      const change = m ? this.s.changes.find((c) => c.seq === Number(m[1])) : undefined;
+      const detail = change ? `${CHANGE_ROUND}: ${change.text}` : reason.startsWith(CRITIC_ROUND) ? reason : `${DEP_CHANGED}: ${reason}`;
+      this.append({ type: "package_state", package: id, state: "queued", round: p.roundBase, detail: clip(detail, 1500) });
+    }
+  }
+
+  /** One line per package for the critic and the "who owns this" question. */
+  private packageLines(): PackageLine[] {
+    return this.s.plan.map((p) => {
+      const merged = this.pkg(p.id).mergedFiles ?? [];
+      return { id: p.id, title: p.title, milestone: p.milestone, deps: p.deps, files: merged.length > 0 ? merged : p.scope };
+    });
+  }
+
+  /**
+   * N3 item 1: every change request that has no `reopened` yet. With a package named, that package is the owner;
+   * without one the Planner is asked which package owns the problem (one short generate call). The owner is
+   * re-opened: the text joins its brief, it runs its normal rounds, and after its merge every package that depends
+   * on it is verified again (reverifyDependants).
+   */
+  private async applyChangeRequests(): Promise<void> {
+    for (const c of this.s.changes.filter((x) => x.state === "pending")) {
+      let owner = c.package;
+      let how = "the request names the package";
+      if (owner === undefined) {
+        const model = this.o.plannerModel ?? this.o.model;
+        const res = await whoOwns(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: this.packageLines() }, model ? { model } : {});
+        this.logGenerateCalls(res.calls, model);
+        if (res.ok) {
+          owner = res.value.package;
+          how = `the Planner names the package: ${clip(res.value.reason, 200)}`;
+        } else {
+          owner = this.s.plan.find((p) => p.deps.length === 0)?.id ?? (this.s.order[0] as string);
+          how = `the Planner gave no usable answer (${clip(res.reason, 160)}), so the root package takes it`;
+        }
+      }
+      this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(c.text, 300)}`, `${CHANGE_ROUND}: ${c.text}`);
+    }
+  }
+
+  /**
+   * After a finished package was merged AGAIN: the acceptance of every promoted package that depends on it is run
+   * once more, now on the merged pack. One that still passes is left alone; one that fails is re-opened with the
+   * failing report as feedback, and only then rebuilt.
+   */
+  private async reverifyDependants(id: string): Promise<void> {
+    const packDir = this.dir("pack");
+    for (const d of dependants(this.s.plan, id)) {
+      const p = this.pkg(d);
+      if (p.state !== "promoted") continue;
+      let failure: VerifyResult | undefined;
+      for (const a of this.spec(d).acceptance) {
+        const vr = await this.verifyLogged(a, packDir, `${d}-r${p.round}-reverify-${a.verb}`, { package: d, round: p.round });
+        if (!vr.ok) {
+          failure = vr;
+          break;
+        }
+      }
+      if (failure) {
+        const why = `${failure.verb} (${failure.level}) now fails on the merged pack: ${clip(failure.summary, 300)}`;
+        this.reopen(d, `its dependency ${id} was changed and merged again, and ${why}`, `${DEP_CHANGED}: package ${id}, which yours depends on, was changed and merged again after your package was finished. Your acceptance check ${why}`);
+      }
+    }
+  }
+
+  /**
+   * A package that was finished, went back to work (a change request, the critic, a changed dependency) and did not
+   * pass within its rounds: the job is not thrown away for it. The files merged before stay in pack/ (they were
+   * verified), the package is `promoted` again, and the `detail` says that the change was not made.
+   */
+  private async keepEarlier(id: string, round: number, why: string): Promise<boolean> {
+    const p = this.pkg(id);
+    const sentBack = p.roundBase !== undefined || this.log.events.some((e) => e.type === "package_state" && e.package === id && e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND));
+    if (!sentBack || (p.mergedFiles ?? []).length === 0) return false;
+    this.append({ type: "package_state", package: id, state: "promoted", round, detail: clip(`re-opened, but no round passed (${why}); the files merged before it stay in pack/ and the change was NOT made`, 500) });
+    await this.maybeMilestone(this.spec(id).milestone, id);
+    return true;
+  }
+
+  // ---------- N3 item 3: kit use cannot fall silently ----------
+
+  private kitFile(id: string): string {
+    return this.dir("ws", `${id}.kit.json`);
+  }
+
+  /**
+   * The figures of pack/ as it is now: bypasses from the whole-pack lint report that gated its last merge, kit use
+   * counted from its files. Nothing before the first merge: an empty pack has nothing to fall from.
+   */
+  private packFigures(): KitFigures | undefined {
+    if (!this.s.order.some((x) => (this.pkg(x).mergedFiles ?? []).length > 0)) return undefined;
+    let bypasses: number | undefined;
+    const events = this.log.events;
+    const lastMerge = [...events].reverse().find((e) => e.type === "merge" && e.files.length > 0)?.seq ?? 0;
+    for (const e of [...events].reverse()) {
+      if (e.seq > lastMerge || e.type !== "verify" || e.verb !== "lint" || !e.ok || e.package !== undefined) continue;
+      try {
+        const r = JSON.parse(fs.readFileSync(this.dir(e.report), "utf8")) as { composability?: { bypasses?: unknown } };
+        if (Array.isArray(r.composability?.bypasses)) bypasses = r.composability.bypasses.length;
+      } catch {
+        /* an unreadable report gives no figure */
+      }
+      break;
+    }
+    if (bypasses === undefined) return undefined;
+    return { bypasses, kitUse: countKitUse(this.dir("pack")) };
+  }
+
+  /**
+   * Compares the candidate (pack/ with this round's files merged in) with pack/ before the round. More bypasses or
+   * less kit use is a regression unless the builder's DEVIATIONS for this round say why; then it passes and the
+   * reason is recorded as a `note`. Returns the feedback text when the round fails for it.
+   */
+  private kitBefore(id: string, round: number): KitFigures | undefined {
+    if (this.o.kitGate === false) return undefined;
+    // The figures before the round are kept beside the workspace: a merge redone after a kill compares with the
+    // same "before" and not with a pack/ that already holds this round's files.
+    try {
+      const kept = JSON.parse(fs.readFileSync(this.kitFile(id), "utf8")) as { round?: number; before?: KitFigures };
+      if (kept.round === round && kept.before) return kept.before;
+    } catch {
+      /* none kept */
+    }
+    const before = this.packFigures();
+    if (before) fs.writeFileSync(this.kitFile(id), JSON.stringify({ round, before }, null, 1) + "\n");
+    return before;
+  }
+
+  private kitRegression(id: string, round: number, before: KitFigures | undefined, lint: VerifyResult, candidate: string): string | undefined {
+    if (!before) return undefined;
+    const list = (lint.report?.["composability"] as { bypasses?: unknown } | undefined)?.bypasses;
+    if (!Array.isArray(list)) return undefined;
+    const after: KitFigures = { bypasses: list.length, kitUse: countKitUse(candidate) };
+    const worse: string[] = [];
+    if (after.bypasses > before.bypasses) {
+      const shown = (list as { file?: string; line?: number; pattern?: string; primitive?: string }[]).slice(-Math.min(6, after.bypasses - before.bypasses + 3)).map((b) => `${b.file ?? "?"}:${b.line ?? "?"} ${b.pattern ?? ""} (primitive: ${b.primitive ?? "?"})`);
+      worse.push(`bypasses rose from ${before.bypasses} to ${after.bypasses} (the pack's lint report, composability.bypasses; the newest: ${shown.join("; ")})`);
+    }
+    if (after.kitUse < before.kitUse) worse.push(`kit parts used fell from ${before.kitUse} to ${after.kitUse} ("kind" entries in data/*.json plus TLKit./TLRigs. calls in scripts)`);
+    if (worse.length === 0) return undefined;
+    const figures = worse.join("; ");
+    const said = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round && !n.text.startsWith(FOREMAN_NOTE))?.text;
+    const hints = (list as { pattern?: string; primitive?: string }[]).flatMap((b) => [b.pattern ?? "", b.primitive ?? ""]);
+    if (statesKitReason(said, hints)) {
+      const text = `${FOREMAN_NOTE}kit figures got worse in this round and the builder states why, so the round passes: ${figures}. Stated: ${clip(said ?? "", 1200)}`;
+      if (!this.log.events.some((e) => e.type === "note" && e.package === id && e.round === round && e.text.startsWith(`${FOREMAN_NOTE}kit figures got worse`))) this.append({ type: "note", package: id, round, text });
+      return undefined;
+    }
+    return `${KIT_REGRESSION}: ${figures}. The round passed its checks but was NOT merged. Use the kit parts and kernel primitives again (put back what was removed), or, if there is a real reason, state it under DEVIATIONS in a line that starts with "KIT:".`;
   }
 
   // ---------- milestones: captures, then the V5 critic, then the event ----------
@@ -871,10 +1316,19 @@ export class Foreman {
   private requeueNoVisibleChange(): void {
     for (const id of this.s.order) {
       const p = this.pkg(id);
-      if (p.state === "failed" && p.cause === "no_visible_change" && p.round < this.o.roundLimit) {
+      if (p.state === "failed" && (p.cause === "no_visible_change" || p.cause === "kit_regression") && p.round < this.cap(id)) {
         this.append({ type: "package_state", package: id, state: "queued", round: p.round + 1, detail: p.detail ?? NO_VISIBLE_CHANGE });
       }
     }
+  }
+
+  /**
+   * True for the round that follows a kit regression in the critic's extra round. JOB.md lets the critic cost one
+   * round; a kit regression in it gives one more (N3 item 3), and after that one the job continues whatever happens.
+   */
+  private isCriticKitRetry(id: string, round: number): boolean {
+    const kitRetry = this.log.events.some((e) => e.type === "package_state" && e.package === id && e.round === round && e.state === "queued" && (e.detail ?? "").startsWith(KIT_REGRESSION));
+    return kitRetry && this.isCriticRound(id, round - 1);
   }
 
   private isCriticRound(id: string, round: number): boolean {
@@ -906,7 +1360,7 @@ export class Foreman {
   private depNotesText(id: string): string {
     const deps = depClosure(this.s.plan, id);
     deps.delete(id);
-    const notes = this.s.notes.filter((n) => deps.has(n.package));
+    const notes = this.s.notes.filter((n) => deps.has(n.package) && !n.text.startsWith(FOREMAN_NOTE));
     if (notes.length === 0) return "None stated: build against the contracts as written.";
     return [
       "The builders of these packages said they did NOT follow their contract to the letter. Where a note and a contract disagree, the note is what the files in your working directory really do:",
@@ -940,6 +1394,10 @@ export class Foreman {
     if (this.s.milestones.some((x) => x.milestone === m)) return;
     const members = this.s.plan.filter((p) => p.milestone === m).map((p) => p.id);
     if (members.length === 0 || !members.every((x) => this.pkg(x).state === "promoted")) return;
+    // N3: the critic's extra round for this milestone went to another package (the one it named) and is not over
+    // yet: the second look waits for it.
+    const stillOut = this.log.events.some((e) => e.type === "reopened" && e.reason.startsWith(`${CRITIC_ROUND} (milestone ${m})`) && this.s.packages[e.package] !== undefined && !["promoted", "failed"].includes(this.pkg(e.package).state));
+    if (stillOut) return;
     const packDir = this.dir("pack");
     let cameras: string[] = [];
     let tests: string[] = [];
@@ -994,7 +1452,7 @@ export class Foreman {
       for (const id of members) {
         const round = this.pkg(id).round;
         this.append({ type: "package_state", package: id, state: "failed", round, cause: "no_visible_change", detail: clip(detail, 600) });
-        if (round < this.o.roundLimit) this.append({ type: "package_state", package: id, state: "queued", round: round + 1, detail: clip(detail, 600) });
+        if (round < this.cap(id)) this.append({ type: "package_state", package: id, state: "queued", round: round + 1, detail: clip(detail, 600) });
         else this.unmerge(id);
       }
       return;
@@ -1007,19 +1465,42 @@ export class Foreman {
       const res = await critic(this.o.builder, captures.map((c) => this.dir(c)), DEFAULT_RUBRIC, {
         ...(model ? { model } : {}),
         context: [`Game: ${this.s.title ?? ""} (${this.s.sentence ?? ""})`, `Mood asked for: ${this.s.brief?.mood ?? "(none)"}`, bot !== undefined ? `The bot ${bot} was playing while the frames were taken.` : "No bot was playing."].join("\n"),
+        packages: this.packageLines(),
       });
       this.logGenerateCalls(res.calls, model);
       const file = this.reportPath(`critic-${m}`);
       fs.mkdirSync(path.dirname(file), { recursive: true });
-      fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.critique/1", milestone: m, captures, rubric: DEFAULT_RUBRIC, ...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes } : { error: res.reason }) }, null, 1) + "\n");
+      fs.writeFileSync(
+        file,
+        JSON.stringify(
+          { schema: "tl.foreman.critique/1", milestone: m, captures, rubric: DEFAULT_RUBRIC, ...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}) } : { error: res.reason }) },
+          null,
+          1,
+        ) + "\n",
+      );
       verdict = res.ok
         ? `critic (V5) ${res.value.ok ? "ok" : "NOT ok"}: ${Object.entries(res.value.scores).map(([k, v]) => `${k} ${v}`).join(", ")}; ${clip(res.value.notes.join(" | "), 500)} [${this.rel(file)}]`
         : `critic (V5) gave no usable answer: ${clip(res.reason, 200)} [${this.rel(file)}]`;
       // JOB.md: "NOT ok" gives the milestone's packages ONE extra round with the critic's notes as feedback. After
       // that round the milestone is written whatever the verdict.
-      const hadRound = this.log.events.some((e) => e.type === "package_state" && members.includes(e.package) && e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND));
+      // N3 item 2: that round goes to the package the critic NAMES (the one whose files most likely cause what it
+      // sees), through the re-open path, and not to whichever package just merged. A missing or unknown name falls
+      // back to the milestone's own packages and is logged as a `note`.
+      const critiqueFor = `${CRITIC_ROUND} (milestone ${m})`;
+      const events = this.log.events;
+      const hadRound =
+        events.some((e) => e.type === "reopened" && e.reason.startsWith(critiqueFor)) ||
+        events.some((e, i) => e.type === "package_state" && members.includes(e.package) && e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND) && events[i - 1]?.type !== "reopened");
       if (res.ok && !res.value.ok && !hadRound) {
         const detail = `${CRITIC_ROUND}: ${Object.entries(res.value.scores).map(([k, v]) => `${k} ${v}`).join(", ")}. Critic's notes: ${res.value.notes.join(" | ")} [${this.rel(file)}]`;
+        const named = res.value.package;
+        const target = named !== undefined ? this.s.packages[named] : undefined;
+        if (named !== undefined && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
+          this.reopen(named, `${critiqueFor}: the critic names this package as the cause of what it sees${members.includes(named) ? "" : ` (the milestone's own package(s): ${members.join(", ")})`}`, detail);
+          return;
+        }
+        const why = named === undefined ? "the critic named no package" : !target ? `the critic named "${clip(named, 60)}", which is not a package of this plan` : `the critic named ${named}, which is not merged (state ${target.state})`;
+        this.append({ type: "note", package: lastPackage, round: this.pkg(lastPackage).round, text: `${FOREMAN_NOTE}${why}; the critic's extra round goes to the package(s) of the ${m} milestone: ${members.join(", ")}` });
         for (const id of members) this.append({ type: "package_state", package: id, state: "queued", round: this.pkg(id).round + 1, detail: clip(detail, 1500) });
         return;
       }
@@ -1041,6 +1522,25 @@ export class Foreman {
     const p = this.pkg(id);
     if (p.lastAnswer !== undefined) parts.push(`Answer to your question: ${p.lastAnswer}`);
     // Sent back after a merge: no visible change (art pass), or the critic's one extra round.
+    const queuedAs = (prefixes: string[]): string | undefined => {
+      const e = [...this.log.events].reverse().find((x) => x.type === "package_state" && x.package === id && x.round === round && x.state === "queued" && prefixes.some((pre) => (x.detail ?? "").startsWith(pre)));
+      return e && e.type === "package_state" ? (e.detail ?? "") : undefined;
+    };
+    // N3: re-opened after it was finished (a change request, a changed dependency), or not merged for a kit regression.
+    const change = queuedAs([CHANGE_ROUND]);
+    if (change !== undefined) {
+      parts.push(
+        `This package was finished and merged. The player now asks for a change, and this package owns the files that must change:\n${change}\n` +
+          "Your files are in the working directory as they were merged; the other packages' files are as the pack holds them now. Make the change inside your scope and keep everything else working: your acceptance runs again, and then the acceptance of every package that depends on yours. " +
+          "Where the change request and your contract disagree, the change request wins; say what you changed under DEVIATIONS, because the builders of dependent packages read that.",
+      );
+    }
+    const depChanged = queuedAs([DEP_CHANGED]);
+    if (depChanged !== undefined) {
+      parts.push(`This package was finished and merged, and has been re-opened:\n${depChanged}\nThe changed files of that package are in your working directory now. Adapt your own files to them (the report is below); do not try to change the other package.`);
+    }
+    const kit = queuedAs([KIT_REGRESSION]);
+    if (kit !== undefined) parts.push(`Round ${round - 1} passed its checks but was not merged:\n${kit}\nYour files from that round are still in the working directory.`);
     const sentBack = [...this.log.events]
       .reverse()
       .find((e) => e.type === "package_state" && e.package === id && e.round === round && e.state === "queued" && ((e.detail ?? "").startsWith(CRITIC_ROUND) || (e.detail ?? "").startsWith(NO_VISIBLE_CHANGE)));
@@ -1111,13 +1611,18 @@ export class Foreman {
           ? `You may run exactly these commands yourself to check your work (nothing else is allowed in the shell):\n${selfCheck.map((c) => `    ${c}`).join("\n")}`
           : "",
       round: String(round),
-      roundLimit: String(Math.max(round, this.o.roundLimit)),
+      roundLimit: String(Math.max(round, this.cap(id))),
+      changes:
+        (this.pkg(id).changes ?? []).length > 0
+          ? `\n## Change requests from the player (made after this package was first finished; they are part of your brief, newest last, and win over the contract where the two disagree)\n${(this.pkg(id).changes ?? []).map((c, i) => `${i + 1}. ${c}`).join("\n")}\n`
+          : "",
       depNotes: this.depNotesText(id),
       timeLimit: `${Math.max(1, Math.round(this.o.builderTimeoutMs / 60_000))} minutes`,
       feedback: this.feedback(id, round),
       packContract: this.packContract,
       manifest: this.wsManifestText(id).trimEnd(),
       registers: JSON.stringify(spec.registers ?? {}),
+      optionalFields: this.optionalFieldsText(),
       reference: this.referenceText(),
     });
   }
@@ -1212,10 +1717,14 @@ export class Foreman {
   // ---------- the end of a job ----------
 
   private async finish(): Promise<void> {
-    if (this.s.promoted) {
-      this.endJob("done", "all packages promoted");
+    // Promoted already and pack/ has not changed since: nothing to verify or promote again. A merge after the last
+    // promotion (a change request) goes through the whole final verification and a NEW promotion.
+    if (this.s.promoted && !this.s.mergedSincePromotion) {
+      const unmade = this.s.changes.length > 0 ? "; no merge since the last promotion (a change that was asked for was not made: see the package's detail)" : "";
+      this.endJob("done", `all packages promoted${unmade}`);
       return;
     }
+    const nth = this.s.promotions.length + 1;
     const packDir = this.dir("pack");
     let tests: string[] = [];
     try {
@@ -1237,6 +1746,15 @@ export class Foreman {
         return;
       }
     }
+    // N3: a pack that is promoted AGAIN (after a change request) is photographed first, so that whoever asked for the
+    // change can look at it: the declared cameras at the usual frames, into captures/promotion<n>-<cam>-f<frame>.png.
+    // No critic, no gate; the paths are in a `note` on the package that was re-opened last.
+    if (nth > 1) {
+      const last = [...this.log.events].reverse().find((e) => e.type === "reopened");
+      const owner = last && last.type === "reopened" && this.s.packages[last.package] ? last.package : (this.s.order[0] as string);
+      const shots = await this.captureSet(`promotion${nth}`, owner, tests[0]);
+      if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
+    }
     if (this.o.promote) {
       // JOB.md (second round): promotion goes to <job>/promoted/<pack id>/ by default, and also when the engine
       // directory was asked for but cannot be written, so a job can always end `promoted`.
@@ -1245,17 +1763,56 @@ export class Foreman {
       const toEngine = asked === "engine" && engineWritable(engineDir);
       let pr;
       try {
-        pr = toEngine ? promotePack(packDir, engineDir, this.s.packId) : promotePack(packDir, this.jobDir, this.s.packId, "promoted");
+        // N3: an earlier promotion under the job directory is never overwritten. The first goes to promoted/<pack id>/
+        // (as before), the n-th to promoted/<pack id>@<version>/ beside it; the last `promoted` event names the
+        // current one. The engine's packs/ holds one pack per id, so there the newer one replaces the older.
+        const dirName = nth > 1 ? `${this.s.packId ?? "pack"}@${this.jobIdentity().version}` : undefined;
+        pr = toEngine ? promotePack(packDir, engineDir, this.s.packId) : promotePack(packDir, this.jobDir, this.s.packId, "promoted", dirName);
       } catch (e) {
         this.endJob("failed", clip(`promotion refused: ${e instanceof Error ? e.message : String(e)}`, 400));
         return;
       }
       this.append({ type: "promoted", packId: pr.packId, version: pr.version, dest: pr.dest });
       const where = toEngine ? "into the engine (packs/)" : `under the job directory (${pr.dest})${asked === "engine" ? "; the engine directory is not writable" : ""}`;
-      this.endJob("done", `pack verified V0 to V4 and promoted ${where}`);
+      this.endJob("done", `pack verified V0 to V4 and promoted ${where}${nth > 1 ? ` (promotion ${nth} of this job; the earlier one is kept)` : ""}`);
     } else {
       this.endJob("done", "pack verified V0 to V4; promotion was not requested");
     }
+  }
+
+  /**
+   * Captures of pack/ for every declared camera at the usual frames, named <label>-<cam>-f<frame>.png. Each is a
+   * `verify` event (capture, V5); a capture that fails is tried once more and then left out. Returns the paths.
+   */
+  private async captureSet(label: string, after: string, bot: string | undefined): Promise<string[]> {
+    const packDir = this.dir("pack");
+    let cameras: string[] = [];
+    try {
+      cameras = readManifest(packDir).cameras;
+    } catch {
+      /* no manifest: no captures */
+    }
+    const out: string[] = [];
+    for (const cam of cameras) {
+      for (const frame of this.captureFramesFor(bot)) {
+        const file = this.dir("captures", `${label}-${cam}-f${frame}.png`);
+        let ok = false;
+        for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
+          fs.mkdirSync(path.dirname(file), { recursive: true });
+          fs.rmSync(file, { force: true });
+          const vr = await this.o.verifier.run({
+            verb: "capture",
+            args: [`--cam=${cam}`, `--frame=${frame}`, `--out=${toPosix(file)}`, `--res=${this.o.captureRes ?? "1280x720"}`, ...(bot !== undefined ? [`--test=${bot}`] : [])],
+            packDir,
+            reportFile: this.reportPath(`${label}-capture-${cam}-f${frame}`),
+          });
+          ok = vr.ok && fs.existsSync(file);
+          this.append({ type: "verify", round: 1, level: vr.level, verb: vr.verb, ok, report: this.rel(vr.reportFile), ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}), after });
+        }
+        if (ok) out.push(this.rel(file));
+      }
+    }
+    return out;
   }
 
   /** The end of a job. The reducer closes the budget's derived state on this event (joblog.ts). */

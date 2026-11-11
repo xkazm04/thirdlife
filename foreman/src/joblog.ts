@@ -121,7 +121,29 @@ export interface PackageView {
   tokensOut: number;
   openQuestion?: string;
   lastAnswer?: string;
+  /** N3: the round at which the package was last re-opened; its round limit counts from here. */
+  roundBase?: number;
+  /** N3: how often the package was re-opened (`reopened` events). */
+  reopens?: number;
+  /** N3: the texts of the change requests this package was re-opened for, oldest first: part of its brief. */
+  changes?: string[];
 }
+
+/** N3: one change request and what became of it. */
+export interface ChangeView {
+  /** seq of the `change_requested` event. */
+  seq: number;
+  text: string;
+  /** The package the request named, when it named one. */
+  package?: string;
+  /** The package that was re-opened for it (named, or chosen by the Planner). */
+  owner?: string;
+  state: "pending" | "reopened";
+}
+
+/** The fixed start of the `reason` of a `reopened` event that answers a change request: the reducer reads the seq. */
+export const CHANGE_REASON_RE = /^change request \(event (\d+)\)/;
+export const changeReason = (seq: number): string => `change request (event ${seq})`;
 
 export interface JobState {
   schema: "tl.state/1";
@@ -148,6 +170,12 @@ export interface JobState {
   budget?: { policy: BudgetPolicy; state: "running" | "paused" | "closed"; reason: string; open?: { state: "running" | "paused"; reason: string } };
   billing?: { adapter: string; mode: "subscription" | "api_key" | "none"; evidence: string };
   promoted?: { packId: string; version: string; dest: string };
+  /** N3: every promotion of this job, oldest first (`promoted` above is the last one). Earlier ones stay on disk. */
+  promotions: { packId: string; version: string; dest: string }[];
+  /** N3: true when a `merge` is in the log after the last `promoted`: pack/ is newer than what was promoted. */
+  mergedSincePromotion: boolean;
+  /** N3: change requests in log order. */
+  changes: ChangeView[];
   jobState?: { state: JobRunState; reason?: string };
   /** `cacheRead` is the part of `in` that came from the prompt cache (raw figure). */
   tokens: { in: number; out: number; cacheRead: number; unreportedRuns: number };
@@ -177,6 +205,9 @@ export function emptyState(job: string): JobState {
     plan: [],
     order: [],
     packages: {},
+    promotions: [],
+    mergedSincePromotion: false,
+    changes: [],
     tokens: { in: 0, out: 0, cacheRead: 0, unreportedRuns: 0 },
     tokenLedger: [],
     milestones: [],
@@ -224,7 +255,7 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
         const old = s.packages[p.id];
         const prev = old && recut.has(p.id) && old.state !== "promoted" ? undefined : old;
         if (old && !prev) {
-          next[p.id] = { id: p.id, title: p.title, milestone: p.milestone, deps: p.deps, state: "queued", announced: false, round: 1, builtRounds: [], builderRuns: old.builderRuns, tokensIn: old.tokensIn, tokensOut: old.tokensOut };
+          next[p.id] = { id: p.id, title: p.title, milestone: p.milestone, deps: p.deps, state: "queued", announced: false, round: 1, builtRounds: [], builderRuns: old.builderRuns, tokensIn: old.tokensIn, tokensOut: old.tokensOut, ...(old.changes ? { changes: old.changes } : {}) };
           continue;
         }
         // A replan keeps what the log already says about a surviving package (a promoted one stays promoted).
@@ -296,6 +327,24 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
       // A resumed merge may log a second, smaller list: what counts is everything merged so far.
       const gone = new Set(ev.removed ?? []);
       p.mergedFiles = [...new Set([...(p.mergedFiles ?? []), ...ev.files])].filter((f) => !gone.has(f)).sort();
+      s.mergedSincePromotion = true;
+      break;
+    }
+    case "change_requested":
+      if (ev.package !== undefined) need(s, ev.package, ev);
+      s.changes.push({ seq: ev.seq, text: ev.text, ...(ev.package !== undefined ? { package: ev.package } : {}), state: "pending" });
+      break;
+    case "reopened": {
+      const p = need(s, ev.package, ev);
+      p.roundBase = p.round + 1;
+      p.reopens = (p.reopens ?? 0) + 1;
+      const m = CHANGE_REASON_RE.exec(ev.reason);
+      const c = m ? s.changes.find((x) => x.seq === Number(m[1]) && x.state === "pending") : undefined;
+      if (c) {
+        c.state = "reopened";
+        c.owner = ev.package;
+        p.changes = [...(p.changes ?? []), c.text];
+      }
       break;
     }
     case "note":
@@ -329,6 +378,8 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
       break;
     case "promoted":
       s.promoted = { packId: ev.packId, version: ev.version, dest: ev.dest };
+      s.promotions.push({ packId: ev.packId, version: ev.version, dest: ev.dest });
+      s.mergedSincePromotion = false;
       break;
     case "job_state":
       s.jobState = ev.reason !== undefined ? { state: ev.state, reason: ev.reason } : { state: ev.state };

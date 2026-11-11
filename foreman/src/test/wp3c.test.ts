@@ -6,7 +6,7 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { cleanup, tempDir, tempJob, foremanFor, readEvents, scriptWith, fastVerifier, packFiles, type TempJob } from "./helpers.js";
+import { cleanup, tempDir, tempJob, foremanFor, readEvents, scriptWith, fastVerifier, packFiles, VERBS, type TempJob } from "./helpers.js";
 import { FakeBuilder, type FakeStep } from "../builder/fake.js";
 import { ClaudeCliBuilder } from "../builder/claude-cli.js";
 import { planPackages, renderPlannerPrompt } from "../designer.js";
@@ -158,7 +158,7 @@ test("2 planner: the prompt names what exists (kit parts, layout, rigs, style, s
   const ref = path.join(tempDir("plan-ref"), "ref");
   prepareReference(ref, referenceOf(liveEngine()));
   const input = { sentence: "ice hockey, three a side", packId: "game.hockey", title: "Hockey", brief: { rules: "r", arena: "a", ai: "i", controls: "c", mood: "m" }, packContract: "(pack contract)", kernelApi: "(api)" };
-  const text = renderPlannerPrompt({ ...input, existing: existingText(ref), builderTimeoutMs: 12 * 60_000 }, { maxPackages: 3 });
+  const text = renderPlannerPrompt({ ...input, existing: existingText(ref), builderTimeoutMs: 12 * 60_000 }, { maxPackages: 3, verbs: VERBS });
   assert.match(text, /# What already exists \(use it; do not plan to rebuild it\)/);
   assert.match(text, /\*\*The kit\*\* \(`TLKit`, document `ref\/kits\/KIT\.md`\): 3 ready-made venue parts: rink, stands, goal\./);
   assert.match(text, /\*\*The layout contract\*\* [^\n]*sections: terrain, arenas\[\], props\[\]/);
@@ -173,14 +173,14 @@ test("2 planner: the prompt names what exists (kit parts, layout, rigs, style, s
   assert.match(text, /At most 3 packages in total for this job \(a hard limit\)\./);
   assert.ok(!text.includes("{{"), "no placeholder is left unfilled");
   // The limit of packages and the time limit are parameters.
-  const other = renderPlannerPrompt({ ...input, builderTimeoutMs: 25 * 60_000 }, { maxPackages: 5 });
+  const other = renderPlannerPrompt({ ...input, builderTimeoutMs: 25 * 60_000 }, { maxPackages: 5, verbs: VERBS });
   assert.match(other, /At most 5 packages in total/);
   assert.match(other, /hard time limit of 25 minutes/);
   assert.match(other, /no kit, no rigs, no style layer and no seed games/);
-  assert.match(renderPlannerPrompt(input), /hard time limit of 30 minutes[^]*Three to eight packages/);
+  assert.match(renderPlannerPrompt(input, { verbs: VERBS }), /hard time limit of 30 minutes[^]*Three to eight packages/);
   // The prompt a real Planner call sends is this same text.
   const b = new FakeBuilder({ steps: [{ outcome: "error", error: { kind: "exit", message: "stop here" } }] });
-  await planPackages(b, { ...input, existing: existingText(ref), builderTimeoutMs: 12 * 60_000 }, { maxPackages: 3 });
+  await planPackages(b, { ...input, existing: existingText(ref), builderTimeoutMs: 12 * 60_000 }, { maxPackages: 3, verbs: VERBS });
   assert.equal(b.calls[0]?.req.prompt, text);
 });
 

@@ -13,6 +13,7 @@ Depends on (already built and present in your working directory): {{deps}}
 ## Contract (wire level: these names, types and values are fixed; other builders rely on them)
 {{contract}}
 
+{{changes}}
 ## What the packages you depend on did differently from their contracts
 {{depNotes}}
 
@@ -31,6 +32,8 @@ Your package registers this in it: {{registers}}
 So: the entry script is `scripts/main.gd`; a script that uses a kernel class whose capability is not in
 `capabilities` above fails lint; a bot or generator that is not listed above is not run. If you need a capability,
 test, generator or camera that is not listed, end with a `QUESTION:` line (see Rules) instead of editing pack.json.
+
+{{optionalFields}}
 
 ## Reference material (read before you write)
 {{reference}}
@@ -54,6 +57,13 @@ round is lost. Get the smallest thing that passes the acceptance working first, 
 - Use only what the kernel API document describes. Do not guess at kernel functions: open the document and the
   example packs. Data first, script second. Use kernel primitives; do not re-implement them.
 - Any error Godot prints fails verification, so does a bot that is not done inside its frame budget.
+- **Kit use is measured every round.** After your round the Foreman compares the merged pack with the pack before
+  it: the number of bypasses in the lint report (`composability.bypasses`: a `.new()` of a body, camera, material,
+  timer or player, a direct `apply_impulse`, a hand-rolled score or clock, and so on) and the number of kit parts
+  used (`"kind"` entries in `data/*.json` layouts, `TLKit.` and `TLRigs.` calls). A round that adds a bypass or
+  removes kit parts is NOT merged and costs you the round, unless you say why: under `DEVIATIONS:` write a line that
+  starts with `KIT:` and names what you built by hand or removed and the reason. Do not replace kit parts by script
+  boxes to make a picture read better; move, scale or re-parameterise the part instead.
 - If something you need is missing from the contract, end your answer with one line starting with
   `QUESTION:` and stop. Do not guess.
 - When done, answer with a short list of the files you wrote, and then, on its own line, the heading `DEVIATIONS:`

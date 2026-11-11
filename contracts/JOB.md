@@ -123,3 +123,26 @@ Unknown `type` or unknown keys are errors when the log is read.
 - Known gaps, accepted for the spike: captures are compared only for the same camera and frame; a package already
   building when its dependency is sent back keeps the older files until the merge gate; a second look at a milestone
   overwrites the first look's capture files.
+
+### Added after N3 (2026-11-11): change requests
+
+- Command: `foreman change <job> "<text>" [--package <id>]`. Works on a job in any state after its first promoted
+  package, including `done`; it refuses while another Foreman holds the job's lock.
+- Events: `change_requested {text, package?}`; `reopened {package, reason}`. A `reopened.reason` that comes from a
+  change request starts with `change request (event N)`, where N is the `seq` of the request. The reopened package is
+  then `queued` with a detail starting `CHANGE REQUEST: `.
+- After the owner merges again, every promoted dependant's acceptance runs on the merged pack (`verify` events whose
+  report names contain `-reverify-`); only a dependant that fails is re-opened.
+- A `done` job returns to `running` and ends `done` again. Each later promotion bumps the pack version to `0.1.<n>` and
+  goes to `promoted/<pack id>@<version>/`; earlier promotions are kept. The last `promoted` event names the current one.
+- A change that no round could make leaves the earlier verified files in place; the package is `promoted` again with a
+  detail that says the change was not made.
+- The critic's verdict may carry `package`: the package it holds responsible. Its extra round goes there through the
+  same re-open path; an unknown or missing name falls back to the milestone's own packages and writes a `note`.
+- Failure cause `kit_regression`: a round raised the bypass count or lowered kit use against the pack before the
+  round. A `KIT:` line under the builder's `DEVIATIONS:` lets the round pass and is recorded as a `note`.
+- `foreman follow <job> [--from <seq>]` prints each event as one JSON line as it is appended and exits 0 at a terminal
+  state. It holds no lock.
+- Notes the Foreman writes itself start with `[foreman] `.
+- Files in a job directory added by this: `ws/<pkg>.carried.json`, `ws/<pkg>.kit.json`, `captures/promotion<n>-*`.
+- Runner verbs and options come from `<engine>/kernel/runner/verbs.json`; a missing file is an error at start.

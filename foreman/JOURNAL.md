@@ -271,3 +271,95 @@ Resume point for WP3b. Times from `date` (CEST). Brief: briefs/BRIEF-WP3B-FOREMA
   STATE FOR A RESUME: all nine items are built and tested with the fake adapter and fake runner; nothing of
   items 1-8 has run with a real model or the live engine. The Director runs the second real job next; the command
   lines are in the final message. No real job was started in this pass.
+
+## N3 (new builder; brief briefs/BRIEF-N3-FOREMAN.md; start 00:03 CEST 2026-11-11, time-box until 01:23)
+
+- 00:03 START. Read the brief, JOB2-MARBLE.md, JOURNAL (WP3c), JOB.md, PACK.md (last section), the real job's log,
+  foreman.ts, designer.ts, events.ts, joblog.ts, cli.ts, manifest.ts, verifier.ts, fake.ts, fake-runner-core.ts.
+  foreman/README.md does not exist (the brief names it). Engine for tests: site/_engine_snapshot3 (has
+  kernel/runner/verbs.json, tl.verbs/1).
+  PREMISE CHECK item 3: the real lint report has NO `metrics`; the figures are under `composability`
+  ({gdscript_lines, kit_parts_added, bypasses[]}). There is no "kit parts used" figure at all. So: bypass count =
+  composability.bypasses.length from the pack lint report; kit use = counted by the Foreman from the merged files
+  (`"kind":` entries in data/*.json plus TLKit./TLRigs. call sites in *.gd).
+  PLAN (order): 4 verbs.json -> 1 change request (events change_requested/reopened, `foreman change`, answer
+  --change, re-verify dependants, second promotion beside the first) -> 2 critic names the package -> 3
+  kit_regression -> 5 follow -> 6 params prompt + manifest carry-through. Then tests src/test/n3.test.ts, dry
+  prompts, command lines.
+- 00:21 CODE IN for all six items, old suite green again after 4 intended test changes (EVENT_TYPES gets
+  change_requested + reopened; plan checks in tests are given the fake engine's verbs; the "runner does not exist"
+  cli test gives its stand-in engine a verbs.json; one message now ends "; from <verbs file>"). `tsc --noEmit` clean.
+  New: src/verbs.ts (readVerbsFile/loadVerbs/verbsFor/acceptanceOptions/verbOptionsText; ACCEPTANCE_OPTIONS and the
+  fake runner's OPTIONS table are gone; planner.md prints the list from the file), fixtures/engine/kernel/runner/
+  verbs.json (the FAKE runner's engine file, a copy of snapshot3's; a test compares the two), events
+  change_requested/reopened + cause kit_regression, joblog (roundBase/reopens/changes per package; promotions[],
+  mergedSincePromotion, changes[] per job), foreman.ts (applyChangeRequests, reopen, requeueReopened,
+  reverifyDependants, keepEarlier, refreshWs, cap(), kitBefore/kitRegression, critic names the package, version
+  0.1.<n> + promoted/<id>@<version> for later promotions, carried manifest fields), manifest.ts (CARRIED_FIELDS,
+  carriedOf, mergeCarried), designer.ts (whoOwns, packageLinesText, critic packages), prompts/owner.md (new),
+  critic.md, builder.md (params, KIT:, change requests), cli.ts (change, follow, answer --change, runJob).
+  NEXT: src/test/n3.test.ts.
+- 00:27 src/test/n3.test.ts: 21 tests named by item, all pass on the fake adapter + fake runner (the one failure on
+  the first run was the test's own fake step, not the code). The fake runner got FAKE_BYPASS (a lint bypass per
+  line) and FAKE_BOT_NEEDS(x)/FAKE_HAS(x) (one package's change breaks another's bot until that one adapts).
+- 00:29 PREMISE WRONG, item 6 (evidence): PACK.md (2026-11-11) says the runner validates footprint/params/on_leave/
+  subject/moments, but kernel/runner/manifest.gd in site/_engine_snapshot3 AND in engine/ (both dated 2026-11-10
+  18:59, "unknown keys are errors", KEYS has only id..cameras) knows none of them: a pack.json with `params` FAILS
+  lint there. Telling builders to write them would fail every round of tonight's job. BUILT INSTEAD: the Foreman
+  looks which of the five names the engine's manifest.gd contains (manifest.ts acceptedCarriedFields; the fake
+  runner accepts all five). Only accepted fields are asked for in the builder prompt and carried through; one a
+  builder writes anyway is removed and recorded in the round's `detail`. On an engine that accepts none the prompt
+  still says "keep tunable values in data/*.json" and asks for `TUNABLE:` lines in the answer. When another builder
+  lands manifest.gd support, the Foreman switches by itself (no flag). Test: "6 manifest: an engine whose manifest
+  check does not know the optional fields".
+  SLIP: a tool layer turned the text backslash-u-FEFF in my edits into a real byte-order-mark character inside three
+  regex literals; found by grep, replaced by paths.ts stripBom() (no BOM character is left in src/).
+  NEXT: real-engine N3 test (engine.test.ts, Foreman on the real runner against snapshot3), full suites, dry prompts.
+- 00:33 REAL ENGINE (snapshot3, no model): new test in engine.test.ts runs a Foreman job on the real runner: the
+  kernel example pack_min as one package's output, acceptance with `invariants --bot-frames=3000` (accepted by the
+  real runner), verbs.json read from the engine, a builder that writes `params` (removed on this engine, lint
+  passes), then a change request -> root re-opened -> second promotion promoted/game.ramp_balls@0.1.1 (the real
+  runner lints that directory: pack id and version 0.1.1). Passes in 28 to 34 s.
+- 00:35 full suite with TL_GODOT + TL_ENGINE_DIR=snapshot3: 1 failure, NOT from N3 code: "real engine against the
+  fake" compares check ids, and the engine since WP5 reports `invariants.bot_deterministic`, which the fake did not
+  (WP3c ran this test against the older site/_engine_snapshot). Fixed in the fake runner (the check plus
+  bot_state_hash/bot_frames metrics). engine.test.ts now defaults to site/_engine_snapshot3 when TL_ENGINE_DIR is
+  not set.
+- 00:36 dry prompts: foreman/dry/ice-hockey-three-against-20261111-0/job.jsonl (hand-written brief and 3-package
+  plan; no model) -> foreman/dry/n3-prompts-hockey.txt (5 parts: Planner, 3 builders round 1, the root after a
+  change request, critic + owner prompt, the manifest section for an engine that accepts the optional fields).
+  Notes the Foreman writes itself now start with "[foreman] " and are not handed to dependent builders as
+  deviations. A pack that is promoted again is photographed first (captures/promotion<n>-<cam>-f<frame>.png, no
+  critic), the paths in a note: so the Director can look at what a change did.
+- 00:41 both suites green: with TL_GODOT (snapshot3) 155/155, 0 skipped, 159 s; without 155 tests, 150 pass,
+  5 skipped (all "TL_GODOT is not set").
+- 00:42 BY HAND (scratch dir, fake adapter): init-fixture -> run (56 events, done) -> `follow --from 56` in the
+  background -> `change "<text>" --package core` -> exit 0, events 57..83, follow printed exactly those 27 lines and
+  exited 0; `status --json` shows changes[0] {state reopened, owner core}, two promotions, core round 2.
+- 00:44 a kit regression inside the critic's extra round gets ONE more round, then the earlier files stay
+  (isCriticKitRetry); `--no-kit-gate` / kitGate:false switches the comparison off. Test added (22 n3 tests + 1).
+  KNOWN GAPS (not built): `foreman change` refuses while another Foreman holds the lock (no inbox for a running
+  job); a kill during the re-verification of dependants is not resumed as such (the final verification still runs
+  everything on the whole pack); a change request does not re-run the milestone critic; `moments` are carried but
+  capture frames still come from the bot's finish frame.
+  NEXT: final tsc + both suites, probe, report with the hockey command lines.
+- 00:47 the full suite under load failed ONCE in an old test ("cli: kill the Foreman process mid-run, then resume":
+  court had 2 builder runs). Reproduced with a stress script (12 kill-and-resume runs under CPU load: 2 anomalies).
+  CAUSE (older than N3): when the Foreman's process tree is killed, the runner child dies a few ms before the
+  Foreman, which logged a failed verification (exit 1, EMPTY stdout, flag stdout_not_json) and started round 2
+  before it died itself. FIX: a verification whose runner ended without any output is run once more
+  (foreman.ts diedSilently, same place as the clock-based re-run); a Foreman that is being killed dies during that
+  second run and the resume verifies again. Stress again: 12 of 12 ok.
+- 00:57 FINAL, all after the last edit: `npx tsc --noEmit` exit 0. `npm test` with TL_GODOT and
+  TL_ENGINE_DIR=site/_engine_snapshot3: 156 tests, 156 pass, 0 skipped, 157 s. `npm test` without TL_GODOT: 156
+  tests, 151 pass, 5 skipped (all five: "TL_GODOT is not set"), 137 s. data/job-events.schema.json regenerated.
+  `foreman probe --adapter claude-cli`: 2.1.322, subscription (max), 0 tokens. No model was called in this pass.
+  No git command. No process of mine is left (checked the node and Godot process list; the Godot processes there
+  belong to other work: gtai-spike, site/_work/n4/engine, tl_seeds).
+  SIDE EFFECT TO KNOW: Godot itself created site/_engine_snapshot3/.godot/ (6 cache files, 00:32) the first time
+  it was run with --path there (my real-engine test); no source file of the snapshot changed. 0 files changed under
+  contracts/, engine/ was only read (manifest.gd, verbs.json), site/marble-run-three-marbles-20261110-2 only read.
+  STATE FOR A RESUME: all six items are built and tested; items 1 (root only), 4, 6 (the "engine does not accept"
+  branch) and the pictures after a change have also run on the real runner against snapshot3; nothing has run with a
+  real model. Dry prompts: foreman/dry/n3-prompts-hockey.txt. The Director runs the real hockey job next; the command
+  lines are in the final message.

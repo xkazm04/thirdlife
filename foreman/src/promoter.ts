@@ -26,20 +26,22 @@ export function readManifest(packDir: string): { id: string; version: string; te
  * Copies into a temporary sibling first and swaps it in, so the engine never sees a half-copied pack.
  * The caller has already verified `packDir`; this function does not judge anything.
  */
-export function promotePack(packDir: string, engineDir: string, expectedId?: string, sub = "packs"): Promotion {
+export function promotePack(packDir: string, engineDir: string, expectedId?: string, sub = "packs", dirName?: string): Promotion {
   const m = readManifest(packDir);
   if (expectedId !== undefined && m.id !== expectedId) {
     throw new Error(`pack.json id is "${m.id}" but the job was created for "${expectedId}"`);
   }
   const packs = path.join(path.resolve(engineDir), sub);
   fs.mkdirSync(packs, { recursive: true });
-  const destAbs = path.join(packs, m.id);
+  // `dirName` (N3): a later promotion of the same job is written beside the earlier one, never over it.
+  const name = dirName ?? m.id;
+  const destAbs = path.join(packs, name);
   const tmp = path.join(packs, `.${m.id}.incoming-${process.pid}`);
   fs.rmSync(tmp, { recursive: true, force: true });
   copyDir(packDir, tmp);
   fs.rmSync(destAbs, { recursive: true, force: true });
   fs.renameSync(tmp, destAbs);
-  return { packId: m.id, version: m.version, dest: `${sub}/${m.id}`, destAbs };
+  return { packId: m.id, version: m.version, dest: `${sub}/${name}`, destAbs };
 }
 
 /** True when a pack could be written under <dir>/packs/ (tried with a probe file; nothing is left behind). */
