@@ -264,16 +264,26 @@ if [ -z "$FILTER" ] || [[ "world.file" == *"$FILTER"* ]]; then
   verdict world.file "$why" "save = load ($(echo "$s1" | sed -E 's/^plot ([a-z0-9]+): pack ([a-z_.]+) .* ticks ([0-9]+)/\2 \3/' | tr '\n' ',' | sed 's/,$//')); rev 2 keeps rev 1; a cut file is refused with exit 2"
 fi
 # N7: one world you can walk through, in its headless form. Six games on plots; the visitor walks past two, enters the
-# track, leaves, walks on, enters the wall yard, leaves; games that ended start their next round. Every pack's hash in
-# the tour = the same pack alone for the same number of its own ticks = the replay of the world log.
+# track, leaves, walks on, enters the wall yard, leaves. Every pack's hash in the tour = the same pack alone for the same
+# number of its own ticks = the replay of the world log. A game that ended stays over: the owner paused the automatic
+# next round on 2026-11-11 (tiers.json ships restart_pause_ticks 0).
 if [ -z "$FILTER" ] || [[ "world.tour" == *"$FILTER"* ]]; then
   out="$(bash "$HERE/world.sh" tour tour --headless 2>&1)"
   why=""; echo "$out" | grep -q '^PASS world.tour' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror|no game' | head -3 | tr '\n' ' ')"
   echo "$out" | grep -q 'e:tier  plot:drive  from:sideline  to:stage  why:enter' || why="${why:+$why; }the track was not entered from the sideline"
   echo "$out" | grep -q 'e:tier  plot:wall  from:stage  to:sideline  why:leave' || why="${why:+$why; }the wall yard was not left"
-  echo "$out" | grep -q 'e:restart  plot:walker  why:next_round' || why="${why:+$why; }the walker room did not start a next round"
+  echo "$out" | grep -q 'why:next_round' && why="${why:+$why; }a game started a next round although restart_pause_ticks ships as 0"
   echo "$out" | grep -Eq 'gate leaks 0, wrong-pack calls 0, .*script errors 0, engine errors 0' || why="${why:+$why; }gate leaks or errors: $(echo "$out" | grep '^world ' | sed -E 's/.*(gate leaks.*)/\1/')"
-  verdict world.tour "$why" "6 games, 2 entered and left, $(echo "$out" | grep -c 'why:next_round') next rounds; tour = alone = replay: $(echo "$out" | grep -E '^[a-z]+ \| ' | grep -v '^plot | pack' | awk -F' [|] ' '{printf "%s %s ticks %s; ", $1, $3, $5}')"
+  verdict world.tour "$why" "6 games, 2 entered and left, no next round; tour = alone = replay: $(echo "$out" | grep -E '^[a-z]+ \| ' | grep -v '^plot | pack' | awk -F' [|] ' '{printf "%s %s ticks %s; ", $1, $3, $5}')"
+fi
+# The paused next-round path, kept under test: the same tour with restart_pause_ticks 180 in its own tiers. It is the
+# only case that rebuilds a pack inside a running world (the half-tick bug N7 found and fixed lives there).
+if [ -z "$FILTER" ] || [[ "world.next_round" == *"$FILTER"* ]]; then
+  out="$(bash "$HERE/world.sh" tour tour_next_round --headless 2>&1)"
+  why=""; echo "$out" | grep -q '^PASS world.tour' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror|no game' | head -3 | tr '\n' ' ')"
+  echo "$out" | grep -q 'e:restart  plot:walker  why:next_round' || why="${why:+$why; }the walker room did not start a next round"
+  echo "$out" | grep -Eq 'gate leaks 0, wrong-pack calls 0, .*script errors 0, engine errors 0' || why="${why:+$why; }gate leaks or errors"
+  verdict world.next_round "$why" "$(echo "$out" | grep -c 'why:next_round') next rounds, each pack rebuilt from its seed; tour = alone = replay"
 fi
 
 echo "selftest: $pass passed, $fail failed (reports in $OUT)"

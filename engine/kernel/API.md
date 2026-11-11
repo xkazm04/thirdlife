@@ -702,9 +702,9 @@ What a pack author has to know:
   (section 20). In a scripted run your bot plays before, during and after the visit, so a visit changes nothing in
   your game. When a person plays, your bot waits while he is in and takes over again when he leaves (`on_leave:
   "bot"`); this path has not been run by anyone yet.
-- **Next round.** When your game is over and nobody is in your plot, the world builds you again from your seed
-  after `restart_pause_ticks` (`kernel/world/tiers.json`, 180 = 3 s): `_pack_setup`, `_pack_start`, tick 0, nothing
-  carried over. On stage a finished game waits until the player leaves. Keep no state in `static var`.
+- **Next round (paused by the owner on 2026-11-11: `restart_pause_ticks` ships as 0, a finished game stays over).**
+  When the key is set, a game that is over with nobody in its plot is built again from its seed after that many world
+  ticks: `_pack_setup`, `_pack_start`, tick 0, nothing carried over. On stage a finished game waits until the player leaves. Keep no state in `static var`.
 - **Your plot.** Declare `"footprint": {"size_m": [x, z]}` in `pack.json`. You are cut to the circle inside it; the
   world draws its own ground, a road to your gate and a fence around you. Keep what matters inside, and leave the
   outer 9 m to your ground (it is bent to meet the world's).

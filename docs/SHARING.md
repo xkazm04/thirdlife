@@ -156,11 +156,13 @@ machines can check that they hold the same bytes before they start. Scripted ite
 the "code from another player" case of section 5, so playing a friend's scripted game needs either the isolation
 boundary or a host that runs the game and sends state.
 
-## 7. Open, for the owner (none blocks the first build)
+## 7. The owner's answers (2026-11-11)
 
-1. The default licence of a shared item: all rights reserved, or a Creative Commons licence that allows remixing.
-2. Whether a player's sentence (`provenance.sentence`) is shared by default or only when they choose.
-3. Whether the recipe route of section 5 is worth offering before isolation exists.
+1. The default licence of a shared item: **not decided yet.** `licence` stays `all-rights-reserved` until it is.
+2. A player's sentence (`provenance.sentence`): **shared by default during alpha and beta; not shared by default in
+   the final product.** The card keeps the field either way; what changes later is the default.
+3. No sharing option is offered to players now, and the recipe route of section 5 is not built. Sharing stays a
+   standard and a strategy until the owner opens it.
 
 ## Sources and what is unverified
 

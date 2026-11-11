@@ -1,5 +1,12 @@
 # N7: one world you can walk through
 
+> **Owner's rulings of 2026-11-11, after the night's build.** (1) A far game may run as slow as one sixteenth of real
+> time and no slower (`slice.max` 16). (2) A far game does not have to be shown in full: the next work on distance is to
+> learn what to abstract and what to hide without destroying the view. Today's stand-in (one merged still mesh, no
+> moving parts) is a first guess, not the answer. (3) In a world the land between venues belongs to the world; a pack
+> brings a venue, not a landscape. (4) The automatic next round is paused; starting and engaging in games is a chapter
+> of its own.
+
 Tonight's four pieces in one process and one window: many packs alive, each in its own physics space (N2,
 `BENCH.md`); a scheduler that gives each pack ticks by tier (N5a, `TIERS.md`); a drawing layer that shows every pack
 at its plot (N5b, `draw/DRAW.md`); the look (N1). This page says how they are joined, how a walk and a tour are
@@ -42,8 +49,10 @@ puts that plot on stage: the world is re-based on it once, the pack's active vie
 HUD is shown, the visitor's rig is hidden. `leave` hands the picture back. In a scripted run the stage pack is played
 by its bot, as before and after, so its inputs are the same as alone.
 
-**A game that ended by itself** and is not on stage is built again from its seed `restart_pause_ticks` (tiers.json:
-180) after it ended, or after the visitor left it; on stage it waits. A rebuilt pack gets its first tick on the NEXT
+**A game that ended by itself** stays over. (N7 built a next round: such a game, when not on stage, is built again
+from its seed `restart_pause_ticks` after it ended or after the visitor left it. The owner paused that idea on
+2026-11-11: `tiers.json` ships 0, and how games start and how a player engages with them will be designed as a chapter
+of its own. A walk may still set the key under its `tiers` to exercise the path.) A rebuilt pack gets its first tick on the NEXT
 tick boundary (`rest_until` in tiers.gd): its nodes entered the tree inside a physics frame, the scene tree would not
 tick them in it, and the first tick would be half a tick. This was a real difference tonight (three of six hashes)
 and it also covered N5a's return from `ledger` and from `on_leave: end`, which use the same rebuild.
@@ -58,7 +67,7 @@ N5a's format (TIERS.md) plus:
 
 | key | meaning |
 |---|---|
-| `"visitor": true` | the stage follows `enter` / `leave`, not the player's position; restarts are on |
+| `"visitor": true` | the stage follows `enter` / `leave`, not the player's position; next rounds are possible (off while `restart_pause_ticks` is 0) |
 | `"events"` | `{"t": 990, "e": "enter"}` (the plot he stands in; `"plot": "<id>"` names one), `{"t": 1440, "e": "leave"}`, `{"t": 1200, "e": "shot", "name": "on_stage_drive"}`, `{"t": 100, "e": "shot", "name": "overview", "cam": "crane", "from": [x, y, z], "to": [x, y, z]}` |
 | `"plots"[i]."radius"` | metres: the circle the pack is cut to and drawn in |
 | `"road"` | `[[x, z], ...]`: control points of the main road; every plot gets a spur and a gate |

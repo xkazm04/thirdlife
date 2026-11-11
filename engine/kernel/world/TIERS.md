@@ -73,7 +73,8 @@ at a tick boundary, and `due(tick)` is a pure function of the events applied so 
   [x, y, z]], ...] (straight lines between the pairs), tickets?: [{tick, plot, tier, ticks}]}`.
 - **tiers.json** (`tl.tiers/1`): `sideline_m` 100, `backdrop_m` 0, `margin_m` {stage 2, sideline 10, backdrop 40},
   `adjacent_gap_m` 8, `dwell_ticks` 120, `default_footprint_m` [40, 40], `budget_ms` {front 6, backdrop 2}, `slice`
-  {min 2, max 30}, `valve` {every_ticks 30, hold_ticks 600, recover 0.7, speed_step_pm 100, speed_min_pm 100}, `cost`
+  {min 2, max 16: the owner's floor of one sixteenth of real time for a far game, set 2026-11-11; it was 30 when the
+  numbers below were taken}, `valve` {every_ticks 30, hold_ticks 600, recover 0.7, speed_step_pm 100, speed_min_pm 100}, `cost`
   "model", `ema_shift` 4, `cost_model_ms` per pack id. The distances are first values, not measured ones: nothing
   was drawn in this work, so "where slow motion becomes visible" is still open (test 14 of the layering report).
 
@@ -312,7 +313,8 @@ the game (pack_min's bot is "past the finish line" at tick 1 when the pack stand
   `leave`, from the walk's `events` or from `request()`. A request that cannot be met is logged as `refused`. A plot
   that is left goes to `sideline` and gets its `leave` event with its `on_leave`, as before.
 - **Next round** (visitor worlds only): a plot whose game is `over`, that is not on stage, not held, not `ledger` and
-  not `on_leave: end`, gets a `restart` event `restart_pause_ticks` (tiers.json, 180) after it ended or was left.
+  not `on_leave: end`, gets a `restart` event `restart_pause_ticks` after it ended or was left. **Paused by the owner on 2026-11-11:
+  `tiers.json` now ships 0, so a finished game stays over.** The mechanism stays in the code, untested by the selftest.
 - **A rebuilt pack rests one tick** (every world): `restart`, and a `tier` event from `ledger`, set `rest_until =
   t + 1`; `due` skips the plot on tick `t`. Reason: the rebuild runs inside the world's `_physics_process`, the new
   nodes are not ticked by the scene tree in that frame, but the kernel's calls and the physics step would run. Seen
