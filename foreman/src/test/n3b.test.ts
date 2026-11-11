@@ -139,7 +139,7 @@ test("N3b 2: a clock failure that persists while the reference pack PASSES is th
   const note = ofType(evs, "note").find((n) => n.text.startsWith(`${FOREMAN_NOTE}${NOT_LOAD}`));
   assert.match(note?.text ?? "", /smoke failed on a clock \(tick_timeout[^]*the engine's reference pack, run right after it on the same machine, did not \(passed, frame p99 0\.4 ms; reports\/reference-smoke-for-smoke-s\d+\.json\)/);
   const p2 = promptsOf(builder, "core")[1] ?? "";
-  assert.match(p2, /The Foreman measured the machine before reporting this: not machine load: smoke failed on a clock/);
+  assert.match(p2, /The Foreman measured the machine before reporting this: machine not shown busy: smoke failed on a clock[^]*evidence about the moment AFTER the failure, not proof/);
   assert.match(p2, /The Verifier did not pass round 1: smoke \(V2\) on your workspace/);
   // One interrupted tick of the reference pack is the sensitive sign of a busy machine (the fake reports 0.03 ms).
   const job3 = tempJob("clock-tick-reference");

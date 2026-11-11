@@ -410,3 +410,30 @@ Resume point for WP3b. Times from `date` (CEST). Brief: briefs/BRIEF-WP3B-FOREMA
   NOT VERIFIED: nothing of N3b has run with a real model or on the real job; the machine gauge has never seen the
   load that broke hockey_ai (twelve Godot processes): its two limits (2 ms) come from three real runs of pack_min
   under tonight's ordinary load and from the hockey job's figures.
+
+## N3c (same builder; second follow-up from the Director; start 02:25 CEST 2026-11-11, time-box 20 min)
+
+- 02:25 START. Read (only read) the four reports of the hockey job: r2 bot s142 (frame 4885, _bot_tick), s143
+  (frame 6483, _pack_tick), r3 invariants s153 (frame 3522, "_pack_tick took 266 ms"), s154 (frame 1307, _bot_tick;
+  p50 0.715, p99 1.278). My N3b gauge ran the reference pack (p99 0.26 ms), called both rounds "not machine load ...
+  The time is this pack's own" (events 144, 155), and the builder lost rounds 3 and 4. The gauge was wrong: a 1.3 s
+  reference run seldom meets a 250 ms scheduler stall.
+- 02:28 BUILT: stallOf() reads "(frame N)" and the callback from the watchdog error; classifyStalls(runs): every
+  run stalled at a DIFFERENT place (frame or callback) -> machine load, the gauge is not even run; all at the SAME
+  place -> the pack's own, to the builder with the frame (note "[foreman] the same stall twice: ..."); a report
+  without a frame, or a mixed picture -> the gauge as before. Retries are added to the comparison. frameFigures():
+  the median and p99 a failing run still reported go into the note. Gauge wording: the note now starts "machine not
+  shown busy" and says a passing reference run is evidence about the moment AFTER, not proof. feedback(): the runs
+  of the failed check are re-read from their reports; stalls at different frames are told to the builder as machine
+  load and the report is NOT given as its pack's failure (this also covers logs written before the rule: checked on
+  a scratch copy of the real log, hockey_ai's round 4 prompt now says "Round 3 did not pass invariants (V3), but NOT
+  because of your pack: ... frame 3522 ... frame 1307 ..."). Fake runner: FAKE_STALL_AT(n) (same frame every run),
+  FAKE_RUNNER_LOAD_FRAMES (load trips at different frames). fixtures/hockey-stalls/ = the four real reports.
+  Tests: src/test/n3c.test.ts, 4 tests.
+- 02:32 FINAL: `npx tsc --noEmit` exit 0; `npm test` ONCE, with TL_GODOT and TL_ENGINE_DIR=site/_engine_snapshot3,
+  after the last edit: 165 tests, 165 pass, 0 skipped, 191 s (161 before + 4 in src/test/n3c.test.ts). The hockey
+  job directory was only read (0 files changed there; a scratch copy of its log and hockey_ai reports was used for
+  the prompt check). No model call, no git, no process of mine left.
+  NOT DECIDED / NOT VERIFIED: nothing has run with a real model; stalls that repeat at SOME frames and not at others
+  fall back to the gauge, which is the weak instrument; a frame-budget failure (p99 over 8 ms, no watchdog) has no
+  frame to compare and still depends on the gauge and on the median rule.

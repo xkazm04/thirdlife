@@ -168,7 +168,71 @@ type GateFailure = Verified & { kitRegression?: string };
 /** N3b: the fixed start of the `detail` of a round whose clock-based failure was the machine's, not the pack's. */
 export const MACHINE_BUSY = "inconclusive: machine busy";
 /** N3b: the start of the note (after FOREMAN_NOTE) that says a repeated clock failure is the pack's own. */
-export const NOT_LOAD = "not machine load";
+export const NOT_LOAD = "machine not shown busy";
+/** N3c: the start of the note that says the watchdog stopped two runs at the same frame: the pack's own stall. */
+export const PACK_STALL = "the same stall twice";
+
+/** Where the watchdog stopped a run, read from the report's error message as the runner writes it ("... (frame N)"). */
+export interface Stall {
+  frame?: number;
+  /** The callback that did not return: `_pack_tick`, `_bot_tick`, `_pack_setup`, ... */
+  callback?: string;
+  file?: string;
+  message: string;
+}
+
+export function stallOf(vr: VerifyResult): Stall | undefined {
+  const r = vr.report;
+  if (!r || r.outcome !== "watchdog") return undefined;
+  const err = r.errors.find((e) => e.kind === "watchdog");
+  const message = err?.message ?? r.checks.find((c) => c.id === "smoke.watchdog" && !c.ok)?.detail ?? "";
+  if (!/tick_timeout|setup_timeout|did not return/.test(message)) return undefined;
+  const frame = /\(frame (\d+)\)/.exec(message)?.[1];
+  const callback = /(?:tick_timeout|setup_timeout): (\w+)/.exec(message)?.[1];
+  return { ...(frame !== undefined ? { frame: Number(frame) } : {}), ...(callback !== undefined ? { callback } : {}), ...(err?.file !== undefined ? { file: err.file } : {}), message };
+}
+
+/** The frame times a failing run still reported (median and p99), in words; undefined when no run reported any. */
+export function frameFigures(runs: VerifyResult[]): string | undefined {
+  for (const vr of [...runs].reverse()) {
+    const m = (vr.report?.["metrics"] ?? {}) as { frame_ms_p50?: unknown; frame_ms_p99?: unknown };
+    if (typeof m.frame_ms_p50 !== "number" || typeof m.frame_ms_p99 !== "number") continue;
+    const small = m.frame_ms_p99 < 8;
+    return `the frames it did run were ${small ? "ordinary" : "slow at the tail"}: median ${m.frame_ms_p50} ms, p99 ${m.frame_ms_p99} ms${small && vr.report?.outcome === "watchdog" ? ", so single ticks blew the watchdog's limit while the frames around them stayed far under the 8 ms budget" : ""}`;
+  }
+  return undefined;
+}
+
+/**
+ * N3c: what the runs of ONE check on the SAME files say together when the watchdog stopped each of them.
+ * A pack is deterministic: a stall that its own code causes comes at the same frame, in the same callback, every
+ * time. Stalls at different places are the machine (the scheduler took the processor away for longer than the
+ * limit); a short reference run seldom catches such a moment, so it is not asked. Without a frame number in every
+ * report the runs decide nothing and the gauge is used.
+ */
+export function classifyStalls(runs: VerifyResult[]): { verdict: "machine_load" | "pack" | "undecided"; text: string } {
+  const stalls = runs.map(stallOf);
+  if (runs.length < 2) return { verdict: "undecided", text: "one run only, nothing to compare" };
+  if (stalls.some((s) => s === undefined || s.frame === undefined)) return { verdict: "undecided", text: "the reports do not all name the frame at which the run stalled, so the runs cannot be compared" };
+  const all = stalls as (Stall & { frame: number })[];
+  const place = (s: Stall): string => `frame ${s.frame}${s.callback ? ` in ${s.callback}` : ""}${s.file ? ` (${s.file})` : ""}`;
+  const distinct = new Set(all.map((s) => `${s.frame}|${s.callback ?? ""}`)).size;
+  const times = frameFigures(runs);
+  const tail = times ? ` Of the frame times a failing run still reported, ${times}.` : "";
+  if (distinct === all.length) {
+    return {
+      verdict: "machine_load",
+      text: `the watchdog stopped ${all.length} runs of the same check on the same files at ${all.length} DIFFERENT places (${all.map(place).join("; ")}). A deterministic pack that stalls in its own code stalls at the same frame every time, so this is the machine (something else held the processor longer than the time limit), whatever a reference run says afterwards.${tail}`,
+    };
+  }
+  if (distinct === 1) {
+    return {
+      verdict: "pack",
+      text: `the watchdog stopped ${all.length} runs of the same check on the same files at the SAME place, ${place(all[0] as Stall)}. A stall that repeats at the same frame is in the pack's own code: look at what ${all[0]?.callback ?? "the script"} does at frame ${all[0]?.frame}.${tail}`,
+    };
+  }
+  return { verdict: "undecided", text: `the watchdog stopped ${all.length} runs at ${all.map(place).join("; ")}: some places repeat and some do not` };
+}
 
 /**
  * The deviations a builder states in its answer: everything under a line `DEVIATIONS:` up to a `QUESTION:` line or
@@ -1087,12 +1151,16 @@ export class Foreman {
   private async verifyLogged(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<Verified> {
     const vr = await this.verifyTwice(a, packDir, stem, where);
     if (vr.ok || !restsOnAClock(vr)) return vr;
-    // N3b (defect 2 of the real hockey job): the same clock-based failure twice. Before the pack is blamed, the
-    // MACHINE is measured: the same verb on the engine's known-good reference pack. If that breaks a time limit as
-    // well, the verdict is "inconclusive: machine busy": wait, try again, with a growing pause; a builder never gets
-    // such a failure as feedback. If the reference pack passes, the failure is the pack's and goes to the builder.
-    // A pack whose TYPICAL frame is already slow is slow code, whatever the machine does: under load the median stays
-    // (hockey job: p50 0.9 ms calm and loaded) and only the p99 jumps. No measurement, no waiting.
+    // The same check failed on a clock twice. Before a builder hears of it, the Foreman asks whether it was the
+    // machine (N3b, N3c; the real hockey job of 2026-11-11):
+    //   1. only the frame budget, and the MEDIAN frame is over half of it: slow code, to the builder;
+    //   2. watchdog stalls with a frame number in every run: at DIFFERENT places -> the machine (a deterministic pack
+    //      that stalls in its own code stalls at the same frame every time), whatever a reference run says;
+    //      at the SAME place -> the pack, to the builder with the frame;
+    //   3. otherwise the gauge: smoke on the engine's reference pack, right after. Busy -> the machine; not busy ->
+    //      reported to the builder as measured (a passing reference run is evidence about the moment after, no proof).
+    // "The machine" means: a note, a pause, the check again, up to `clockRetries` times; then the round is
+    // inconclusive (package blocked with cause machine_busy, job paused). A builder never gets it as feedback.
     const typical = medianOverHalfBudget(vr);
     if (typical !== undefined) return { ...vr, summary: `${vr.summary}. ${typical}` };
     const who = where.package ?? where.after ?? (this.s.order[0] as string);
@@ -1100,16 +1168,29 @@ export class Foreman {
     const tries = Math.max(0, this.o.clockRetries ?? 3);
     const pauses = this.o.clockPausesMs && this.o.clockPausesMs.length > 0 ? this.o.clockPausesMs : [20_000, 40_000, 80_000];
     const sleep = this.o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+    const what = `${a.verb} on ${where.package !== undefined ? `the workspace of ${where.package}` : "the whole pack"}`;
+    const runs: VerifyResult[] = [...(vr.firstRun && restsOnAClock(vr.firstRun) ? [vr.firstRun] : []), vr];
     let last: VerifyResult = vr;
     for (let n = 1; ; n++) {
-      const ref = await this.measureMachine(a.verb);
-      if (ref === undefined) return { ...last, summary: `${last.summary}. The machine could not be measured (no reference pack ${toPosix(this.referencePack())}), so this stands as the pack's failure` };
-      if (!ref.busy) {
-        const text = `${NOT_LOAD}: ${a.verb} failed on a clock (${clip(clockDetail(last), 200)}) and the engine's reference pack, run right after it on the same machine, did not (${ref.what}; ${ref.report}). The time is this pack's own.`;
+      const stalls = classifyStalls(runs);
+      let figures: string;
+      if (stalls.verdict === "pack") {
+        const text = `${PACK_STALL}: ${what}: ${stalls.text}`;
         if (where.package !== undefined) this.append({ type: "note", package: where.package, round: where.round, text: `${FOREMAN_NOTE}${text}` });
-        return { ...last, summary: `${last.summary}. The machine is not the cause: the engine's reference pack passed the same verb just now (${ref.what}; ${ref.report}), so this is the pack's own time` };
+        return { ...last, summary: `${last.summary}. ${stalls.text}` };
       }
-      const figures = `${a.verb} on ${where.package !== undefined ? `the workspace of ${where.package}` : "the whole pack"} failed on a clock (${clip(clockDetail(last), 200)}), and so did the engine's reference pack (${ref.what}; ${ref.report})`;
+      if (stalls.verdict === "machine_load") figures = `${what}: ${stalls.text}`;
+      else {
+        const times = frameFigures(runs);
+        const ref = await this.measureMachine(a.verb);
+        if (ref === undefined) return { ...last, summary: `${last.summary}. The machine could not be measured (no reference pack ${toPosix(this.referencePack())}), so this is reported as it was measured` };
+        if (!ref.busy) {
+          const text = `${NOT_LOAD}: ${a.verb} failed on a clock (${clip(clockDetail(last), 200)}${times ? `; ${times}` : ""}) and the engine's reference pack, run right after it on the same machine, did not (${ref.what}; ${ref.report}). That is evidence about the moment AFTER the failure, not proof that the machine was free during it (${stalls.text}). Nothing else points at the machine, so the failure is reported as it was measured.`;
+          if (where.package !== undefined) this.append({ type: "note", package: where.package, round: where.round, text: `${FOREMAN_NOTE}${text}` });
+          return { ...last, summary: `${last.summary}. The engine's reference pack passed right after (${ref.what}; ${ref.report}): the machine was not shown to be busy, so this is reported as it was measured` };
+        }
+        figures = `${what} failed on a clock (${clip(clockDetail(last), 200)}${times ? `; ${times}` : ""}), and so did the engine's reference pack (${ref.what}; ${ref.report})`;
+      }
       if (n > tries) {
         const text = `${MACHINE_BUSY}. ${figures}. Tried ${tries} more time(s) with pauses; the machine stayed busy. This is NOT a verdict about the pack: nothing was sent to the builder. Free the machine and run \`foreman resume\`: the same files are verified again.`;
         this.append({ type: "note", package: who, round, text: `${FOREMAN_NOTE}${text}` });
@@ -1120,6 +1201,7 @@ export class Foreman {
       await sleep(pause);
       last = await this.verifyOnce(a, packDir, `${stem}-retry${n}`, where);
       if (last.ok || !restsOnAClock(last)) return last;
+      runs.push(last);
     }
   }
 
@@ -1168,8 +1250,9 @@ export class Foreman {
     return vr;
   }
 
-  private async verifyTwice(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<VerifyResult> {
+  private async verifyTwice(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<VerifyResult & { firstRun?: VerifyResult }> {
     let vr: VerifyResult | undefined;
+    let first: VerifyResult | undefined;
     for (let attempt = 1; attempt <= 2; attempt++) {
       vr = await this.o.verifier.run({ verb: a.verb, args: a.args, packDir, reportFile: this.reportPath(attempt === 1 ? stem : `${stem}-again`) });
       this.append({
@@ -1190,9 +1273,10 @@ export class Foreman {
       // the resume simply verifies again.
       const silent = diedSilently(vr);
       if (vr.ok || !(restsOnAClock(vr) || silent)) break;
+      if (attempt === 1) first = vr;
       if (attempt === 2) vr = { ...vr, summary: `${vr.summary}. This is the second run with the same ${silent ? "result (the runner ended without output both times)" : "clock-based result"} (the first run is in the log too)` };
     }
-    return vr as VerifyResult;
+    return { ...(vr as VerifyResult), ...(first !== undefined ? { firstRun: first } : {}) };
   }
 
   /** A builder that ends its answer with a `QUESTION:` line is not done: the package waits for the player. */
@@ -1722,8 +1806,8 @@ export class Foreman {
       parts.push(`This package was finished and merged, and has been re-opened:\n${depChanged}\nThe changed files of that package are in your working directory now. Adapt your own files to them (the report is below); do not try to change the other package.`);
     }
     // N3b: a clock-based failure reaches the builder only after the machine was measured; say so.
-    const notLoad = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && n.text.startsWith(`${FOREMAN_NOTE}${NOT_LOAD}`));
-    if (notLoad) parts.push(`The Foreman measured the machine before reporting this: ${notLoad.text.slice(FOREMAN_NOTE.length)}`);
+    const notLoad = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && (n.text.startsWith(`${FOREMAN_NOTE}${NOT_LOAD}`) || n.text.startsWith(`${FOREMAN_NOTE}${PACK_STALL}`)));
+    if (notLoad) parts.push(`${notLoad.text.startsWith(`${FOREMAN_NOTE}${PACK_STALL}`) ? "The Foreman compared the two runs before reporting this" : "The Foreman measured the machine before reporting this"}: ${notLoad.text.slice(FOREMAN_NOTE.length)}`);
     const kit = queuedAs([KIT_REGRESSION]);
     if (kit !== undefined) parts.push(`Round ${round - 1} passed its checks but was not merged:\n${kit}\nYour files from that round are still in the working directory.`);
     const sentBack = [...this.log.events]
@@ -1752,7 +1836,25 @@ export class Foreman {
       const base = (report: string): string => report.replace(/(\.verdict)?\.json$/i, "").replace(/-s\d+$/, "").replace(/-(again|retry\d+)$/, "");
       const mine = events.filter((e): e is Extract<JobEvent, { type: "verify" }> => e.type === "verify" && e.round === prev && (e.package === id || (e.package === undefined && e.report.startsWith(packPrefix))));
       const failing = [...mine].reverse().find((e) => !e.ok && !mine.some((x) => x.ok && x.seq > e.seq && base(x.report) === base(e.report)));
-      if (failing && failing.type === "verify") {
+      // N3c: the runs of that check, read again from their reports. If the watchdog stopped them at different frames
+      // it was the machine (also in a log written before this rule existed): the builder is told exactly that and
+      // is NOT given the report as a failure of its pack.
+      const sameCheck = failing ? mine.filter((e) => !e.ok && base(e.report) === base(failing.report)) : [];
+      const reread = sameCheck.map((e): VerifyResult | undefined => {
+        try {
+          const report = JSON.parse(fs.readFileSync(this.dir(e.report), "utf8")) as VerifyResult["report"];
+          return report && Array.isArray(report.checks) && Array.isArray(report.errors) ? { verb: e.verb, level: e.level, ok: false, report, reportFile: e.report, verdictFile: e.report, flags: [], summary: "", durationMs: 0 } : undefined;
+        } catch {
+          return undefined;
+        }
+      });
+      const stalled = reread.length >= 2 && reread.every((r) => r !== undefined) ? classifyStalls(reread as VerifyResult[]) : undefined;
+      if (failing && stalled?.verdict === "machine_load") {
+        parts.push(
+          `Round ${prev} did not pass ${failing.verb} (${failing.level}), but NOT because of your pack: ${stalled.text}\n` +
+            "Do not look for a stall in your code or in another package's files, do not ask a question about it and do not restructure anything for it. If an earlier message of the Foreman called this the pack's own time, that was wrong. Check that your files still meet your contract and finish; the same check will simply run again.",
+        );
+      } else if (failing && failing.type === "verify") {
         const reportAbs = this.dir(failing.report);
         const verdictAbs = reportAbs.endsWith(".verdict.json") ? reportAbs : reportAbs.replace(/\.json$/i, "") + ".verdict.json";
         let notes = "";

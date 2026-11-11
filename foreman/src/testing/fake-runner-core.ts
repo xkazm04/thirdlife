@@ -303,6 +303,15 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       loadProblem = { kind: "load", file: entry, message: `no camera view '${opts["cam"] ?? ""}'; the pack registered: ${cameras.join(", ")}` };
     }
     let wd = loadProblem ? undefined : has("FAKE_WATCHDOG");
+    // N3c: where the stall happened, as the real runner writes it at the end of the error message ("(frame N)").
+    // FAKE_STALL_AT(<n>) in a pack file: the pack stalls at frame n in EVERY run (its own code). A load trip
+    // (FAKE_RUNNER_LOAD_TRIPS) stalls at a different frame each time when FAKE_RUNNER_LOAD_FRAMES is set.
+    let wdFrame: number | undefined;
+    const fixed = loadProblem ? undefined : [...text.entries()].map(([f, body]) => [f, /FAKE_STALL_AT\((\d+)\)/.exec(body)?.[1]] as const).find(([, n]) => n !== undefined);
+    if (!wd && fixed) {
+      wd = fixed[0];
+      wdFrame = Number(fixed[1]);
+    }
     const loadTrips = Number(env["FAKE_RUNNER_LOAD_TRIPS"] ?? "0");
     if (!loadProblem && !wd && loadTrips > 0) {
       const counter = path.join(path.dirname(opts["report"] as string), ".fake-load-trips");
@@ -311,6 +320,7 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
         fs.mkdirSync(path.dirname(counter), { recursive: true });
         fs.writeFileSync(counter, String(n + 1));
         wd = entry;
+        if (env["FAKE_RUNNER_LOAD_FRAMES"]) wdFrame = 1307 + 1771 * n;
       }
     }
     const se = loadProblem ? [] : gd.filter((f) => (text.get(f) ?? "").includes("FAKE_SCRIPT_ERROR"));
@@ -325,7 +335,7 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
     checks.push({ id: "smoke.watchdog", ok: !wd, detail: wd ? "tick_timeout: _pack_tick did not return within 250 ms (runaway script); the process was stopped" : `no trip in ${loadProblem ? 0 : frames} frames` });
     if (wd) {
       outcome = "watchdog";
-      errors.push({ kind: "watchdog", file: wd, message: "tick_timeout: _pack_tick did not return within 250 ms (runaway script); the process was stopped" });
+      errors.push({ kind: "watchdog", file: wd, message: `tick_timeout: _pack_tick did not return within 250 ms (runaway script); the process was stopped${wdFrame !== undefined ? ` (frame ${wdFrame})` : ""}` });
     }
     if (loadProblem || se.length > 0) fail();
     if (!loadProblem && !wd && verb !== "capture") {
