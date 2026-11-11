@@ -4,25 +4,19 @@
     "engine/kernel/examples/bad_size/scripts/big.gd": 650,
     "engine/kernel/host/host.gd": 605,
     "engine/kernel/share/item.gd": 679,
-    "engine/kernel/world/draw/draw.gd": 745,
     "engine/kernel/world/pack.gd": 626,
-    "engine/kernel/world/world.gd": 684,
+    "engine/kernel/world/world.gd": 672,
     "engine/kits/tl_mesh.gd": 660,
-    "engine/ui/panel.gd": 1326,
-    "foreman/src/cli.ts": 918,
-    "foreman/src/foreman.ts": 2138,
+    "engine/ui/panel.gd": 1325,
+    "foreman/src/cli.ts": 906,
+    "foreman/src/foreman.ts": 2032,
     "foreman/src/test/n3.test.ts": 720,
     "foreman/src/test/wp3b.test.ts": 808,
     "spike/lab/b/src/mk.gd": 612
   },
   "grandfathered": {
-    "verbs-contract": [
-      "doc-opt:input",
-      "doc-opt:record",
-      "doc-verb:replay"
-    ],
     "schema-versions": [
-      "tl.input/1",
+      "tl.perf/1",
       "tl.tiers/1",
       "tl.view/1",
       "tl.walk/1",

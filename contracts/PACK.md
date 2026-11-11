@@ -1,4 +1,4 @@
-# Pack contract (kernelApi 0.1)
+# Pack contract (kernelApi 1.0)
 
 A **pack** is one game or one reusable bundle: the unit of build, verification, promotion and rollback. A game is one
 pack. The Foreman's **packages** are slices of a pack with disjoint file scopes (see `JOB.md`).
@@ -25,7 +25,7 @@ A pack may live anywhere on disk (a build workspace) or under `res://packs/<id>/
 |---|---|---|---|
 | `id` | string, `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$` | yes | namespaced id, for example `seed.paddle`, `game.hockey` |
 | `version` | string, semver | yes | pack version |
-| `kernelApi` | string, `"0.1"` | yes | kernel API the pack was built against; the loader refuses a mismatch in the major.minor |
+| `kernelApi` | string, `major.minor`, `"1.0"` today | yes | the kernel API the pack was built against. The pack runs when its major equals the kernel's and its minor is not greater. `"0.1"` is the name this surface had before it was frozen and is read as `"1.0"`. Anything else is a schema error that says which side is ahead. |
 | `title` | string | yes | shown on the site and in logs |
 | `capabilities` | string[] from the list below | yes | what the pack asks the kernel for; using an undeclared one is a V1 failure |
 | `entry` | string, path under `scripts/` | yes | entry script |
@@ -94,7 +94,7 @@ most 600 lines, the pack at most 6,000 lines of GDScript, `data/` at most 2 MB.
 
 ## Amendments of 2026-11-11 (night plan): optional manifest fields
 
-`kernelApi` stays `0.1`. All five fields are optional; a pack that leaves one out behaves as before. The runner
+`kernelApi` was `0.1` then; it is `1.0` since P7 (2026-11-11). All five fields are optional; a pack that leaves one out behaves as before. The runner
 validates their shape (`engine/kernel/runner/manifest.gd`).
 
 | Field | Shape | Meaning | Read by |
@@ -135,3 +135,30 @@ A shareable item's card (`item.json`, `tl.item/1`) and package (`.tlitem`) are s
 - In a world a pack stands on a level pad at its plot's height and the world's ground meets its rim. A copy of
   its static colliders is made in the world's own physics space for the visitor; the pack's bodies are never
   touched. A pack whose own ground is a hollow is not walkable from outside yet.
+
+## Amendments of 2026-11-11 (core run, P7): the simulation contract
+A game reaches the engine through the kernel API and its recorded input, nothing else.
+
+**API version.** `docs/generated/API-V1.json` (`tl.api/1`: `{schema, version, note, classes: {<Class>: {file, extends, consts[], signals[], props[], funcs[]}}}`) is generated from the sources and is the contract of the version in `engine/kernel/runner/manifest.gd`. Removing or changing a listed member needs a new major. Adding one needs a new minor; a method that gains parameters with defaults at its end is an addition. Names starting with `_` are not part of it. `tl arch` rule `api-v1` enforces this and names the member.
+
+**Input record `tl.input/1`.** `{"schema", "pack", "seed", "mode", "max_frames", "length", "end", "frames": [[frame, "action", value], ...]}`. All eight keys are required; unknown keys are errors. `frames` has one entry per action whose value was not zero in a frame, in frame order. `length` is the frames ticked. `end` is `"step"` (stopped after the last frame's physics step) or `"tick"` (stopped inside the last frame: a bot that was done). `mode` and `max_frames` are what `ctx` told the pack.
+
+**Input values** are multiples of 0.001, rounded when latched. The pointer is three kernel actions declared in every pack: `tl.look_x`, `tl.look_y` (pixels of a right-button drag in the frame) and `tl.zoom` (wheel notches, + is out).
+
+**State hash** covers every physics body under the pack, `_pack_state()`, the seeded generator (seed and state) and the input state (every action's value in this frame and the one before).
+
+**Fence, added.** Refused: `InputEvent*` subclasses, `_gui_input` / `_unhandled_key_input` / `_shortcut_input` handlers, `set_process_input`, mouse positions, controls that take clicks or keys, `accept_devices`; `func _process(`, `Timer`, `create_tween` / `Tween` / `AnimationPlayer`, `get_process_delta_time`; `get_world_3d`, `ctx.holder`, `get_nodes_in_group`, `TLContext.current`, any `_` member of `ctx`, `ctx.input` or `ctx.cameras`. `Timer.new()` was a counted bypass and is now refused. An `_input` / `_unhandled_input` handler is still a counted bypass and never runs: the kernel switches it off.
+
+## Amendments of 2026-11-11 (core run, P5 and P6): a pack in a world
+
+**Loading (P5).**
+
+- In a world your pack is built by a queue, nearest games first, and may arrive some ticks after the world started. Until then your plot shows its pad.
+- You are not ticked before you are there, and your tick count starts at 0 when you arrive. Nothing in a pack may depend on the world's tick.
+- The venue you build with `TLKit.build_layout(ctx.read_json(...), ctx.root)` is built ahead on another thread when the layout file lies under `data/` and you pass it on unchanged. A layout you change in code first is built in your `_pack_setup` as before, and costs the visitor a frame.
+- Everything else in `_pack_setup` still runs on the main thread: keep it small.
+- A world may replace your pack by a fresh copy of its directory at any tick (`reload`). What `_pack_save` returns is handed to `_pack_load`; nothing else survives. Keep no state in `static var`.
+
+**At a distance (P6).** Beyond the sideline a pack is drawn as a merged picture of its static venue plus signs of life. Every body that is not static and not frozen, and every rig, is drawn as a box in its main colour, moved when the pack ticks. Up to two standing smoke emitters and four lights are kept. Anything shorter than 2.5 m is not drawn from the sideline on, anything shorter than 5 m or thinner than 0.1 m from about 270 m on. What a far visitor must see has to be tall, large or moving.
+
+**The scoreboard (P6).** A kit `scoreboard` shows fixed digits. In a world, when the pack has a `TLRules`, the world draws the first two sides of `rules.scores` (0 to 9) over it at every distance.

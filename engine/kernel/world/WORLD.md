@@ -235,6 +235,37 @@ the track below him), `stage_looking_out` (from the drive on stage, out at the b
 | `tour/01` .. `10_*.jpg` | the tour's ten frames (JPEG copies; `world.sh tour` writes PNG) and `tour/world_log.json` |
 | `check_from_paddle.jpg` | `view.sh check` through the host mode: the paddle court as the stage pack |
 
+## Loading and far pictures (round 2 of the core run, 2026-11-11)
+
+What the loading package (P5) and the far-games package (P6) added to the walk, the world line, the log and
+the viewer's line. Reports: `docs/reports/P5-LOADING.md`, `docs/reports/P6-FAR.md`; details in `TIERS.md`
+(section P5) and `draw/FAR.md`.
+
+- **tl.walk/1:**
+  - `events` may hold `{"t": <world tick>, "e": "reload", "plot": "<plot id>"}`: the plot's pack is replaced by a freshly loaded copy of its directory; what `_pack_save` returns is handed to the new copy.
+  - `edits`: `[[<world tick>, "<file>", "<replacement file>"]]`, a test instrument.
+  - `tiers.load`: `{"mode": "auto" | "queue" | "step" | "wait" | "block", "budget_ms": <number>}`.
+- **tl.world/1 and tl.worldlog/1:**
+  - Event `{"t": N, "e": "built", "plot": id}`: the pack was attached at this tick boundary; its first tick is N + 1.
+  - The log's `tiers.load.mode` is the mode the run used.
+  - The world line has `load`: `mode`, `budget_ms`, `built`, `never_built`, `waited_ms`, `in_ticks_ms`, `first_built_ms`, `six_built_ms`, `all_built_ms`, `attach_ms_p50`, `attach_ms_max`, `prepare_ms_p50`, `prepare_ms_max`, and `arrivals` as `[plot, tick, ms since the world started, prepare ms, attach ms, layouts built ahead and not used]`.
+  - `load_ms` includes `in_ticks_ms`.
+- **tl.view/1, tour line:** `frame_ms_p99_all`, `frame_ms_max_all`, `frames`, `frames_over_16_7_ms`, `slow_frames` ([world tick, ms], at most 40), `first_frame_ms`, `view_ready_ms`, `world_to_first_frame_ms`, `first_two_frames_ms`, `rims_measured`.
+- **tl.perf/1:** metrics `first_frame_ms` and `six_built_ms`; scenario `walk30`.
+- **Kit:** `TLKit.build_layout_ahead(layout) -> String` and `TLKit.drop_layout_ahead(key) -> bool` belong to the kernel's loader; a pack has no use for them.
+
+**tiers schema:** optional `picture_far_m` (number > 0) and `margin_m.picture` (number >= 0); drawing only, never read by `decide()`.
+
+**Walk schema, block `landscape`:** optional `relief`, `pad_rocks`, `road_trees`, `road_bushes`, `plain_clumps`.
+
+### What a pack author must know about loading (P5)
+
+- In a world your pack is built by a queue, nearest games first, and may arrive some ticks after the world started. Until then your plot shows its pad.
+- You are not ticked before you are there, and your tick count starts at 0 when you arrive. Nothing in a pack may depend on the world's tick.
+- The venue you build with `TLKit.build_layout(ctx.read_json(...), ctx.root)` is built ahead on another thread when the layout file lies under `data/` and you pass it on unchanged. A layout you change in code first is built in your `_pack_setup` as before, and costs the visitor a frame.
+- Everything else in `_pack_setup` still runs on the main thread: keep it small.
+- A world may replace your pack by a fresh copy of its directory at any tick (`reload`). What `_pack_save` returns is handed to `_pack_load`; nothing else survives. Keep no state in `static var`.
+
 ## Not built, not verified
 
 - **No person has walked it.** `world.sh visit` (WASD, E, Q / Esc, the stage pack's bot switched off and its input

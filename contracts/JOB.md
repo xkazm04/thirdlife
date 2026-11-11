@@ -153,3 +153,55 @@ Unknown `type` or unknown keys are errors when the log is read.
   same files again without a builder run. A busy-machine failure is never sent to a builder as feedback.
 - `ws/<pkg>.members.json` lists the packages whose merged files a workspace holds; the workspace manifest is composed
   from the dependency closure plus those.
+
+### Added after P10 (2026-11-11): the change path, the inbox, the engine's verdicts, the player's check
+
+- **Pack tests at a merge.** For a package that was re-opened (a `reopened` event) or is merged again, the whole-pack
+  check before the merge runs, after `lint` and `smoke`, every test of the candidate's manifest that no package
+  depending on the merging one answers for (a dependant answers for a test it registers and for a test its acceptance
+  runs; those run right after the merge, in the dependants' re-verification). They are `verify` events without
+  `package`, with `after: <pkg>`, report `reports/<pkg>-r<round>-pack-bot-<test>-s<seq>.json`. When a test of another
+  package fails there, the same test is run on `pack/` without the round's files
+  (`reports/<pkg>-r<round>-control-bot-<test>-s<seq>.json`). Control passes: the merge is refused, the round fails as
+  for any failed check, and a note `[foreman] PACK TEST FAILED after the merge of <pkg> was tried: <test>, a test of
+  package <owner>, ...` names both packages. Control fails too: a note `[foreman] pack test fails without this merge
+  too: ...` and the merge goes on. `--pack-tests after_change|always|never`; default `after_change`.
+- **A failed final verification after a promotion does not end the job.** The failure goes to one package:
+  `reopened {package, reason}` whose reason starts `FINAL VERIFICATION FAILED (<n> of <limit>) at <verb> ...
+  [report: <path>]. Sent back to <pkg>: <evidence>`, then `queued` with the same text as detail. That package gets
+  ONE round. Which package: for a bot, the one that merged last after the state that the test's last passing run in
+  the log saw; when nothing merged since, or the log has no passing run, the package that registers the test; for
+  `lint`, `smoke` and `invariants` the package that merged last since the last promotion. Limit: `--final-rounds`
+  (default: the round limit), counted from the last `promoted` or `change_requested`. When it is spent the job ends
+  `job_state {state: "done"}` with a reason that starts `the change was NOT made:` and names the earlier promotion;
+  there is no new `promoted` event and `pack/` keeps the unpromoted files. A job without a promotion ends `failed`
+  as before.
+- **Present values.** The prompt of a package that carries change requests has, under the requests, a section
+  "The values as they are now": every `params` entry with its current value and range; the small values (numbers,
+  booleans, strings up to 40 characters, lists of up to four numbers) of every `data/*.json`; the numbers the
+  package's own scripts give to named keys. No model is asked and no event is written.
+- **Inbox.** `<job>/inbox.jsonl`: one JSON object per line, appended in one write.
+  `{id, ts, kind: "answer", package, text, by, change?}` or `{id, ts, kind: "change", text, package?}`; unknown keys
+  are errors; a last line without its newline is not read yet. `foreman answer` and `foreman change` write there
+  (exit 0; nothing is run) while another Foreman holds the job's lock, and write the log themselves otherwise, after
+  what the inbox still holds. The lock holder reads the inbox when it starts, every `--inbox-poll-ms` (default 1000)
+  while builders run, before it decides to pause, fail or finish, and once more before it releases the lock. Each
+  entry becomes the event it would have been, with the entry's id in `inbox` (`answer.inbox`,
+  `change_requested.inbox`: optional strings). An entry is taken when an event with its id exists; one that cannot
+  become an event (no open question, an unknown package, nothing merged yet) is appended to
+  `<job>/inbox.rejected.jsonl` with the reason and not tried again. An answered package is started again at once,
+  while the other packages go on building. A change request taken while builders run re-opens its package only
+  when that package is `promoted` and no builder is working on it; until then the request stays `pending` in the
+  log, and it is applied at the latest when no builder runs any more (as at the start of a run).
+  This replaces "it refuses while another Foreman holds the job's lock" in the section added after N3. `run`,
+  `resume` and `cancel` still refuse.
+- **Starved.** A runner result with exit 2, outcome `not_run` and an error of kind `engine` whose message begins
+  `starved:` is the machine's, never the pack's: a note `[foreman] inconclusive: machine busy. the machine starved
+  the run: ...`, the same pauses and retries as for a clock-based failure, then `blocked` with cause `machine_busy`
+  and the job `paused`. Nothing is sent to a builder and the round is not spent. When the checks of a round report
+  `metrics.starved_stalls`, the sum is in the `detail` of the `package_state` that ends the round (`promoted`,
+  `failed`) or of the next `running`: `starved_stalls <n> (<ms> ms) in <k> check run(s) ...`.
+- **Player check.** A plan in which a package registers the capability `input` must hold, in a contract, a line
+  `PLAYER CHECK: tests/<bot>.gd fails when <what the human-controlled side can no longer do>`; the bot must be in a
+  package's `registers.tests`. The plan check refuses a plan without it (first plan, re-plan, a hand-written plan).
+- Files in a job directory added by this: `inbox.jsonl`, `inbox.rejected.jsonl`.

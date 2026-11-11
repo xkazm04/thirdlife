@@ -1,4 +1,4 @@
-# Runner contract (kernelApi 0.1): how the engine is run from outside
+# Runner contract (kernelApi 1.0): how the engine is run from outside
 
 WP1 implements this. WP3 (the Foreman's Verifier) and every builder call it. It is the only door into the engine.
 
@@ -40,7 +40,7 @@ A bot that simply does not finish within `--frames` is exit `1`, outcome `failed
   "level": "V2",
   "pack": "seed.paddle",
   "packVersion": "0.1.0",
-  "kernelApi": "0.1",
+  "kernelApi": "1.0",
   "ok": true,
   "outcome": "passed",
   "seed": 1,
@@ -113,3 +113,14 @@ These paragraphs replace what earlier sections say about wall-clock limits.
 **Frame budget (V3).** Judged on each frame's best time over the idle runs of `invariants` (the same pack and seed do the same work in frame i). Two runs are taken; if the budget is not met, up to two more. The check detail names the number of runs. Stage budget: frame p99 at most 4 ms (check `invariants.frame_budget`). One of many: frame p50 at most 1.0 ms, target 0.5 ms (new check `invariants.many_budget`; its detail says "above the target" past 0.5 ms). Nodes (5,000) and bodies (600) are unchanged. A pack cannot raise any of them.
 
 **World mode.** A `world` run is supervised: the process the caller starts runs the world in a child. A pack whose tick uses 250 ms of processor time ends the child and leaves a trip record; the supervisor runs the world again without that pack (unloaded, never ticked, its line carries `"tripped": true`). The world line carries `trips` (records) and `restarts`; an event line `{"kind": "event", "e": "pack_tripped", "record": {...}}` is printed. The exit code is 1. A starved world is run again as it was, twice at most. Options `--child`, `--trip=<file>` and `--dead=<i,j>` belong to the supervisor; `TL_WORLD_UNSUPERVISED=1` runs the world unsupervised.
+
+## Amendments of 2026-11-11 (core run, P7): the input record and the replay verb
+
+Additions to the verb table and the report, in the builder's wording (`docs/reports/P7-CONTRACT.md`).
+
+- `bot`: add `--record=<file.json>` (writes the run's input as `tl.input/1`).
+- `replay` | V2 | `--input=<file.json>` (required), `--record=<file.json>` | runs a recorded session again: the record's seed, length, mode and samples; no bot is loaded and no device is read. Fails on any script error or watchdog trip, or when the run does not reach the record's length.
+- `play` (not a verify verb) takes `--record=<file.json>`; the record is written when the session ends by Esc or by closing the window. For tests: `--headless --frames=N --devices=<file> --result=<file>`, where the devices file is a list of `[frame, kind, a, b]` with kinds key, drag, wheel, field, panel, close.
+- The hash changed once on 2026-11-11 (P7). Hashes from before are not comparable.
+
+Check ids added: `replay.complete`, `record.written`.

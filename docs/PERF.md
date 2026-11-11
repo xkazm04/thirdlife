@@ -104,6 +104,7 @@ A metric a scenario does not measure is left out. `load` is the evidence for `qu
 | scenario | what | measured |
 |---|---|---|
 | `tour6` | `world.sh tour tour --pictures-only`: six packs, landscape, visitor, 1920x1080 window | world tick p50/p99/max, frame p50 (the viewer's tour line has no frame tail yet: patch 1), render cpu/gpu p50, draw calls, primitives (largest over the pictures), load |
+| `walk30` | `world.sh tour walk30 --pictures-only`: a village of 30 games, the visitor runs its road, games are built by the queue as he approaches | world tick p50/p99/max, frame p50/p99/max, time to the first frame, time until six games are built, render cpu/gpu, draw calls, primitives |
 | `mix30` | `world.sh walk bench_mix_30.json`: one stage, four sideline, the rest far; headless | world tick p50/p99/max, load |
 | `pile600` | `world.sh run --packs=w_pile --seeds=600 --frames=400`; headless | world tick p50/p99/max, load, bodies awake |
 | `hero1440` | `k.sh stats main hero`: the kit lab hero view at 2560x1440 | draw calls, primitives |
@@ -181,3 +182,13 @@ checkout only). In a worktree without `site/` `item.sh selftest` fails its case 
 gate's whole 10 minutes (Godot alive, no output) when `foreman/dist` existed, after passing in 22 s without it. The two steps therefore
 say "SKIPPED, not judged" and pass when the job folder is not found; run in the main checkout they judge. Whether the ui hang also occurs there
 was not tested.
+
+## 6. Round 2 (2026-11-11): the frame tail, the first frame, walk30
+
+`tour6` now reports `frame_ms_p99` and `worst_frame_ms`, both without the first two frames (they are the start
+itself and are reported apart). Two metrics were added: `first_frame_ms` (from the world's start to the first
+drawn frame; the engine's own start is not counted; tolerance 30 % + 300 ms) and `six_built_ms` (until six
+games are built; 50 % + 500 ms). No line of round 2 was taken on a quiet machine: six builders ran all
+afternoon. Builder's figures under load: worst frame of the tour 286 ms against 762 to 838 ms in the last
+quiet line; the target of no frame over 16.7 ms is not met (`docs/reports/P5-LOADING.md`).
+
