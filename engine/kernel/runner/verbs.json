@@ -80,7 +80,7 @@
         "name": {"type": "string", "default": "world", "note": "N5a. the world's name in a saved file"},
         "seed": {"type": "int", "default": 1, "note": "N5a. the world's own seed, kept in the world file"},
         "plot-spacing": {"type": "float", "default": 0, "note": "N5a. with --packs: plot i lies at (i * spacing, 0, 0) in the world; the pack is still simulated at its own origin (unlike --spacing and --at, which move the simulation)"},
-        "scenery": {"type": "string", "default": "full", "note": "N5a. full, or plot: a pack's layout is built without its far terrain and scattered forest (the landscape around a plot is the world's); 70 to 90 % of a seed's loading time, no body of the simulation"}
+        "scenery": {"type": "string", "default": "plot", "note": "N7: plot is the default for worlds. full, or plot: a pack's layout is built without its far terrain and scattered forest (the landscape around a plot is the world's); 70 to 90 % of a seed's loading time, no body of the simulation"}
       }
     },
     "world-bench": {
@@ -88,6 +88,47 @@
         "only": {"type": "string", "default": "", "note": "run only the tests whose name contains this"},
         "quick": {"type": "flag", "default": false},
         "out-dir": {"type": "path", "default": "<engine>/kernel/world"}
+      }
+    },
+    "world-view": {
+      "note": "N7. Needs a window (not --headless). tools/view.sh and tools/world.sh tour start it.",
+      "options": {
+        "packs": {"type": "paths", "note": "comma-separated pack directories (pictures of a world of packs; tools/view.sh shot)"},
+        "at": {"type": "string", "note": "x:y:z per pack: the PLOT of each pack (the packs are simulated at their own origin)"},
+        "yaw": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "spacing": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "radius": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "lift": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "band": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "stage": {"type": "int", "note": "with --packs: the pack drawn at zero offset, with its cameras and HUD"},
+        "cam": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "crane": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "frame": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "out": {"type": "path", "note": "with --packs: the picture (absolute png)"},
+        "also": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "settle": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "until": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "mech": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "cull": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "standins": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "far": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "mode": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "frames": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "seeds": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "ground": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "ground-key": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "hud": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "measure": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "tag": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "scenery": {"type": "string", "note": "plot (default) or full, as for the world mode"},
+        "walk": {"type": "path", "note": "N7. a walk script (tl.walk/1) with visitor = true: the scheduled world in a window, its visitor, landscape and tour pictures (tools/world.sh tour); replaces --packs"},
+        "log": {"type": "path", "note": "N7. with --walk: write the world log"},
+        "tiers": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "cost": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "ticks": {"type": "string", "note": "see tools/view.sh and kernel/world/draw/DRAW.md"},
+        "out-dir": {"type": "path", "note": "N7. with --walk: where the numbered pictures of the walk's shot events go"},
+        "live": {"type": "flag", "note": "N7. with --walk: a person walks (WASD, E to enter, Q or Esc to leave); the walk script only places the plots"},
+        "landscape": {"type": "string", "note": "N7. with --walk: on (default) or off: the road, the scatter, the plot edges and the mesas"}
       }
     }
   }

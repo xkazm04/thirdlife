@@ -1,0 +1,25 @@
+{
+  "schema": "tl.walk/1",
+  "name": "tour_views",
+  "note": "N7, item 5: the pictures for the owner from the tour's world. Plots, road and landscape are a copy of walks/tour.json (keep them the same). The visitor only stands on the road; the three shots are crane views: a far game and a near game in one view, the village from a low hill (the picture to put beside the concept), and the village from high up.",
+  "visitor": true,
+  "ticks": 230,
+  "mode": "bot",
+  "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+  "plots": [
+    {"id": "drive", "pack": "seed_drive", "origin": [0, 0, -72], "radius": 64, "footprint": {"size_m": [128, 128]}, "seed": 1},
+    {"id": "wall", "pack": "seed_wall", "origin": [110, 0, -46], "radius": 38, "footprint": {"size_m": [76, 76]}, "seed": 1},
+    {"id": "walker", "pack": "ex_walker", "origin": [-102, 0, -38], "radius": 30, "footprint": {"size_m": [60, 60]}, "seed": 1},
+    {"id": "paddle", "pack": "seed_paddle", "origin": [-40, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
+    {"id": "kit", "pack": "ex_kit", "origin": [48, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
+    {"id": "car", "pack": "ex_car", "origin": [136, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1}
+  ],
+  "road": [[-230, 10], [-150, 3], [-95, 1], [-40, 0], [0, 0], [60, 1], [104, -1], [160, 2], [240, -6]],
+  "landscape": {"seed": 7, "lots": [{"at": [-112, 52], "radius": 22}, {"at": [-62, -21], "radius": 9}], "road_half_m": 3.0, "trees": 150, "broadleaf": 46, "rocks": 60, "bushes": 110, "belt": 260, "mesas": 18, "haze": 0.4},
+  "player": [[0, [-95, 0, 1]], [230, [-80, 0, 1]]],
+  "events": [
+    {"t": 60, "e": "shot", "name": "far_and_near", "cam": "crane", "from": [-150, 12, 24], "to": [-20, 0, -45]},
+    {"t": 130, "e": "shot", "name": "overview_hill", "cam": "crane", "from": [-88, 16, 68], "to": [38, -4, -62]},
+    {"t": 190, "e": "shot", "name": "overview_high", "cam": "crane", "from": [-150, 120, 250], "to": [25, 0, -15]}
+  ]
+}

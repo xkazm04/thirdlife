@@ -304,3 +304,19 @@ the game (pack_min's bot is "past the finish line" at tick 1 when the pack stand
 - `world.sh bench` (N2's 23-minute bench) was not run again on these files; its hash tests are covered by the
   selftest cases `world.same` and `world.sliced_and_paused`, which pass.
 - The asleep figures and every other timing: under load, two runs at most.
+
+## N7: what changed in the scheduler
+
+- **A visitor** (walk script `"visitor": true`, WORLD.md): rule 1 is replaced. The stage does not follow the
+  player's position; it follows his requests: `enter` (he must stand inside the plot, within `margin_m.stage`) and
+  `leave`, from the walk's `events` or from `request()`. A request that cannot be met is logged as `refused`. A plot
+  that is left goes to `sideline` and gets its `leave` event with its `on_leave`, as before.
+- **Next round** (visitor worlds only): a plot whose game is `over`, that is not on stage, not held, not `ledger` and
+  not `on_leave: end`, gets a `restart` event `restart_pause_ticks` (tiers.json, 180) after it ended or was left.
+- **A rebuilt pack rests one tick** (every world): `restart`, and a `tier` event from `ledger`, set `rest_until =
+  t + 1`; `due` skips the plot on tick `t`. Reason: the rebuild runs inside the world's `_physics_process`, the new
+  nodes are not ticked by the scene tree in that frame, but the kernel's calls and the physics step would run. Seen
+  as three different hashes in the first headless tour (packs with self-ticking nodes: bipeds, vehicles). The
+  proofs `ledger`, `leave` and `tickets` were not re-run after this change.
+- `scenery = "plot"` is the world host's default; `world.sh proof` and `tour` share one table (`prove` in world.sh).
+

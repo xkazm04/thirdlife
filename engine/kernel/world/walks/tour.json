@@ -1,0 +1,37 @@
+{
+  "schema": "tl.walk/1",
+  "name": "tour",
+  "note": "N7. One world you can walk through: six games on plots along a dirt road. The visitor walks past the walker room and the paddle court, steps into the race track and enters it (its camera, HUD and bot take over), leaves, walks on east past the kit yard, enters the wall yard, leaves. `world.sh tour tour --out-dir=<abs dir>` runs it in a window, writes the numbered pictures of the `shot` events, then proves every pack's hash against the same pack alone and against the replay of the log. `world.sh tour tour --headless` is the same without the window (the selftest case).",
+  "visitor": true,
+  "ticks": 2900,
+  "mode": "bot",
+  "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+  "plots": [
+    {"id": "drive", "pack": "seed_drive", "origin": [0, 0, -72], "radius": 64, "footprint": {"size_m": [128, 128]}, "seed": 1},
+    {"id": "wall", "pack": "seed_wall", "origin": [110, 0, -46], "radius": 38, "footprint": {"size_m": [76, 76]}, "seed": 1},
+    {"id": "walker", "pack": "ex_walker", "origin": [-102, 0, -38], "radius": 30, "footprint": {"size_m": [60, 60]}, "seed": 1},
+    {"id": "paddle", "pack": "seed_paddle", "origin": [-40, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
+    {"id": "kit", "pack": "ex_kit", "origin": [48, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
+    {"id": "car", "pack": "ex_car", "origin": [136, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1}
+  ],
+  "road": [[-230, 10], [-150, 3], [-95, 1], [-40, 0], [0, 0], [60, 1], [104, -1], [160, 2], [240, -6]],
+  "landscape": {"seed": 7, "lots": [{"at": [-112, 52], "radius": 22}, {"at": [-62, -21], "radius": 9}], "road_half_m": 3.0, "trees": 150, "broadleaf": 46, "rocks": 60, "bushes": 110, "belt": 260, "mesas": 18, "haze": 0.4},
+  "player": [[0, [-95, 0, 1]], [60, [-95, 0, 1]], [560, [-37, 0, 0]], [860, [-2, 0, -2]], [960, [0, 0, -13]], [1500, [0, 0, -13]],
+             [1560, [4, 0, -1]], [2360, [104, 0, -1]], [2440, [108, 0, -13]], [2900, [108, 0, -13]]],
+  "events": [
+    {"t": 40, "e": "shot", "name": "on_the_road"},
+    {"t": 100, "e": "shot", "name": "overview", "cam": "crane", "from": [-150, 120, 250], "to": [25, 0, -15]},
+    {"t": 430, "e": "shot", "name": "walking_past"},
+    {"t": 940, "e": "shot", "name": "at_the_track_edge"},
+    {"t": 990, "e": "enter"},
+    {"t": 1200, "e": "shot", "name": "on_stage_drive"},
+    {"t": 1440, "e": "leave"},
+    {"t": 1470, "e": "shot", "name": "left_the_track"},
+    {"t": 1900, "e": "shot", "name": "far_and_near"},
+    {"t": 2460, "e": "enter"},
+    {"t": 2650, "e": "shot", "name": "on_stage_wall"},
+    {"t": 2800, "e": "leave"},
+    {"t": 2830, "e": "shot", "name": "left_the_wall"},
+    {"t": 2860, "e": "shot", "name": "overview_end", "cam": "crane", "from": [230, 95, 215], "to": [40, 0, -20]}
+  ]
+}

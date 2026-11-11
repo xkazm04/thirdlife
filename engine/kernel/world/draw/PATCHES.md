@@ -1,5 +1,11 @@
 # N5b: patches to files outside my scope
 
+**N7 (11 November, main tree): patches 1 to 4 are applied.** 1: `ctx.on_stage` is set in `pack.gd` `load_pack` from
+the option `on_stage`, and `world.gd` passes it (false for every plot of a walk: tier events set it). 2: as written.
+3: `world.gd` has `signal ended(bad)`, `quit_on_end` and `exit_code`; `ended` is emitted before the packs are freed.
+4: host mode `world-view` in `host.gd` and `verbs.json`; `view.gd` takes `start(options)`; `tools/view.sh` starts the
+host. 5 (`ctx.plot`) and 7 (lint) are still open; 6 is half done: the world reads `footprint`, no pack declares it.
+
 None of these files was edited in the copy `site/_work/n5b/engine`. The viewer (`kernel/world/draw/view.gd`) works
 with `kernel/world/world.gd`, `kernel/world/pack.gd` and the kernel API exactly as they are; each patch below removes
 a workaround the viewer carries today.

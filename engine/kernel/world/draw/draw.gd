@@ -67,10 +67,11 @@ func setup(world_node: Node, plots: Array, radii: Array, rims: Array, stage_inde
 	stage = stage_index             # the caller places the world with set_stage()
 
 
-## Re-bases the world on another stage pack: once, not per tick.
+## Re-bases the world on another stage pack: once, not per tick. N7: `-1` = nobody is on stage (the visitor walks):
+## every pack is drawn at its plot, in world coordinates.
 func set_stage(index: int) -> void:
-	stage = clampi(index, 0, maxi(0, entries.size() - 1))
-	var inv: Transform3D = (entries[stage]["plot"] as Transform3D).affine_inverse() if not entries.is_empty() else Transform3D.IDENTITY
+	stage = clampi(index, -1, entries.size() - 1)
+	var inv: Transform3D = (entries[stage]["plot"] as Transform3D).affine_inverse() if stage >= 0 else Transform3D.IDENTITY
 	for i: int in entries.size():
 		var e: Dictionary = entries[i]
 		_unplace(e)
@@ -87,7 +88,51 @@ func set_stage(index: int) -> void:
 			_place(e)
 		elif float(e["radius"]) > 0.0:
 			_clip_walk(e, e["holder"])        # the stage pack is cut to its plot too; nothing else of it is touched
-		_set_far(e, far_mode == "all" and i != stage, true)
+		_set_far(e, _wants_far(e) and i != stage, true)
+
+
+func _wants_far(e: Dictionary) -> bool:
+	return bool(e["tier_far"]) if e.get("tier_far", null) != null else far_mode == "all"
+
+
+## N7. The scheduler's tier decides how plot `i` is drawn: in full (`stage`, `sideline`) or as its stand-in
+## (`backdrop`, `ledger`). Called at a tick boundary; the stand-in is built the first time it is needed.
+func set_tier(i: int, tier: String) -> void:
+	if i < 0 or i >= entries.size():
+		return
+	var e: Dictionary = entries[i]
+	e["tier"] = tier
+	e["tier_far"] = tier == "backdrop" or tier == "ledger"
+	_set_far(e, bool(e["tier_far"]) and i != stage, false)
+
+
+## N7. Plot `i` lost its pack's nodes (`ledger`): only the stand-in is left to draw.
+func forget_nodes(i: int) -> void:
+	if i >= 0 and i < entries.size():
+		_unplace(entries[i])
+		(entries[i] as Dictionary).erase("sheets")
+
+
+## N7. The pack of plot `i` was built again from its seed (next round, back from the ledger): a new holder with new
+## nodes. The stand-in is kept: it is a still picture of the same venue.
+func replace_holder(i: int, holder: Node) -> void:
+	if i < 0 or i >= entries.size():
+		return
+	var e: Dictionary = entries[i]
+	_unplace(e)                       # the old nodes are gone: this frees the mirrors and forgets the rest
+	e["holder"] = holder
+	e.erase("sheets")
+	e["far"] = false                  # a new holder is visible
+	var ctx: TLContext = holder.get("ctx")
+	if ctx != null:
+		for h: Variant in ctx.huds:
+			if is_instance_valid(h):
+				(h as CanvasLayer).visible = i == stage
+	if i != stage:
+		_place(e)
+	elif float(e["radius"]) > 0.0:
+		_clip_walk(e, holder)
+	_set_far(e, _wants_far(e) and i != stage, true)
 
 
 # ------------------------------------------------------------------------------------------------ placing a pack
@@ -273,7 +318,7 @@ func _on_node_added(n: Node) -> void:
 
 func _entry_of(n: Node) -> Dictionary:
 	for e: Dictionary in entries:
-		if (e["holder"] as Node).is_ancestor_of(n):
+		if is_instance_valid(e["holder"]) and (e["holder"] as Node).is_ancestor_of(n):
 			return e
 	return {}
 
@@ -375,6 +420,8 @@ func _set_far(e: Dictionary, far: bool, force: bool) -> void:
 	if far == bool(e["far"]) and not force:
 		return
 	e["far"] = far
+	if not is_instance_valid(e["holder"]):
+		return
 	var holder: Node3D = e["holder"]
 	if far and e["standin"] == null:
 		_build_standin(e)

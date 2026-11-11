@@ -231,7 +231,7 @@ if [ -z "$FILTER" ] || [[ "world.walk_valve" == *"$FILTER"* ]]; then
   [ "$(echo "$out" | grep -c '^pack ')" = 7 ] || why="${why:+$why; }expected 7 packs"
   starved="$(echo "$out" | grep '^pack ' | sed -E 's/.*: ticks ([0-9]+) of.*longest wait ([0-9]+),.*/\1 \2/' | awk '$1 < 200 || $2 > 6' | wc -l | tr -d ' ')"
   [ "$starved" = 0 ] || why="${why:+$why; }$starved pack(s) got fewer than 200 ticks or waited more than 6 world ticks"
-  echo "$out" | grep -q 'gate leaks 0, script errors 0, engine errors 0' || why="${why:+$why; }leaks or errors"
+  echo "$out" | grep -Eq 'gate leaks 0, .*script errors 0, engine errors 0' || why="${why:+$why; }leaks or errors"
   verdict world.walk_valve "$why" "4 demotions farthest first, then speed 800 per mille; all 7 packs kept ticking, longest wait 6 world ticks"
 fi
 # a walk along two boundaries (the line between two plots that touch; the 100 m sideline line of a third): no flapping
@@ -262,6 +262,18 @@ if [ -z "$FILTER" ] || [[ "world.file" == *"$FILTER"* ]]; then
   l3="$(bash "$HERE/world.sh" load "$WF/world.json.prev" 2>&1)"
   [ "$l3" = "$s1" ] || why="${why:+$why; }the revision before does not load to the saved world"
   verdict world.file "$why" "save = load ($(echo "$s1" | sed -E 's/^plot ([a-z0-9]+): pack ([a-z_.]+) .* ticks ([0-9]+)/\2 \3/' | tr '\n' ',' | sed 's/,$//')); rev 2 keeps rev 1; a cut file is refused with exit 2"
+fi
+# N7: one world you can walk through, in its headless form. Six games on plots; the visitor walks past two, enters the
+# track, leaves, walks on, enters the wall yard, leaves; games that ended start their next round. Every pack's hash in
+# the tour = the same pack alone for the same number of its own ticks = the replay of the world log.
+if [ -z "$FILTER" ] || [[ "world.tour" == *"$FILTER"* ]]; then
+  out="$(bash "$HERE/world.sh" tour tour --headless 2>&1)"
+  why=""; echo "$out" | grep -q '^PASS world.tour' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror|no game' | head -3 | tr '\n' ' ')"
+  echo "$out" | grep -q 'e:tier  plot:drive  from:sideline  to:stage  why:enter' || why="${why:+$why; }the track was not entered from the sideline"
+  echo "$out" | grep -q 'e:tier  plot:wall  from:stage  to:sideline  why:leave' || why="${why:+$why; }the wall yard was not left"
+  echo "$out" | grep -q 'e:restart  plot:walker  why:next_round' || why="${why:+$why; }the walker room did not start a next round"
+  echo "$out" | grep -Eq 'gate leaks 0, wrong-pack calls 0, .*script errors 0, engine errors 0' || why="${why:+$why; }gate leaks or errors: $(echo "$out" | grep '^world ' | sed -E 's/.*(gate leaks.*)/\1/')"
+  verdict world.tour "$why" "6 games, 2 entered and left, $(echo "$out" | grep -c 'why:next_round') next rounds; tour = alone = replay: $(echo "$out" | grep -E '^[a-z]+ \| ' | grep -v '^plot | pack' | awk -F' [|] ' '{printf "%s %s ticks %s; ", $1, $3, $5}')"
 fi
 
 echo "selftest: $pass passed, $fail failed (reports in $OUT)"

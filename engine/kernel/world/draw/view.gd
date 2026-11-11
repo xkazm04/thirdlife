@@ -1,22 +1,30 @@
 extends Node
-## N5b. The world viewer: several packs alive in one process (N2's world host), drawn in one landscape, one picture.
+## The world in a window. Host mode `world-view` (kernel/host/host.gd; N5b patch 4), two uses:
 ##
+## N5b, pictures of a world of packs (tools/view.sh shot / check):
 ##   <godot> --position 0,1440 --resolution 1920x1080 --rendering-driver d3d12 --fixed-fps 60 --path <engine>
-##           res://kernel/world/draw/view.tscn -- shot --packs=<dir>,<dir>,... [--at=x:y:z,..] [--yaw=deg,..]
+##           res://kernel/host/host.tscn -- world-view --packs=<dir>,<dir>,... [--at=x:y:z,..] [--yaw=deg,..]
 ##           [--spacing=80] [--stage=0] [--cam=<view of the stage pack>|overview] [--frame=300] --out=<abs png>
 ##           [--mech=a|b] [--cull=auto|aabb|margin] [--standins=off|auto|all] [--far=150] [--until=end]
 ##           [--also=<stage>:<cam>:<abs png>;..] [--mode=bot|smoke] [--frames=36000] [--seeds=..] [--ground=on|off]
 ##           [--hud=on|off] [--measure=120] [--radius=40,..] [--lift=m,..] [--crane=x:y:z,x:y:z] [--settle=frames] [--band=9]
-##   (tools/view.sh shot does this.)
+##   The packs are loaded by the world host and stay at the origin of their own physics space: `--at` is the PLOT of
+##   each pack. Every pack is ticked on every frame. Output: one `tl.view/1` line per picture; with `--until=end` the
+##   world then runs to its end and prints its `tl.world/1` lines.
 ##
-## The packs are loaded by N2's world host and stay at the origin of their own physics space: `--at` is the PLOT of
-## each pack and is never given to the world host. The draw layer (draw.gd) puts every pack at its plot relative to
-## the stage pack. Output: one `tl.view/1` JSON line per picture (draw calls, primitives, frame times, what the draw
-## layer adopted); with `--until=end` the world then runs to its end and prints its own `tl.world/1` lines (one state
-## hash per pack), which tools/view.sh check compares with the headless run.
+## N7, one world you can walk through (tools/world.sh tour / visit):
+##   ... -- world-view --walk=<walk script> --out-dir=<abs dir> [--log=<file>] [--ticks=N] [--landscape=on|off] [--live]
+##   The SCHEDULED world (kernel/world/tiers.gd) in a window: the tier of each plot decides its ticks (world.gd) and
+##   its drawing (here): `stage` = zero offset, its cameras, its HUD; `sideline` = drawn in full at its plot;
+##   `backdrop` and `ledger` = its stand-in mesh. A tier change is applied at the tick boundary it happens on
+##   (`plot_event` of the world host). The visitor (kernel/world/visitor.gd) walks the world's landscape
+##   (kernel/world/landscape.gd); while he walks nobody is on stage. The walk's `shot` events become numbered pictures.
+##   kernel/world/WORLD.md has the whole picture.
 
 const WorldScript: GDScript = preload("res://kernel/world/world.gd")
 const DrawScript: GDScript = preload("res://kernel/world/draw/draw.gd")
+const Landscape: GDScript = preload("res://kernel/world/landscape.gd")
+const VisitorScript: GDScript = preload("res://kernel/world/visitor.gd")
 
 var opts: Dictionary = {}
 var world: Node
@@ -36,22 +44,44 @@ var _cpu_ms: PackedFloat32Array = PackedFloat32Array()
 var _gpu_ms: PackedFloat32Array = PackedFloat32Array()
 var _last: int = 0
 var _measure: int = 120
+# N7: the tour
+var tour: bool = false
+var live: bool = false                  # a person walks (WASD, E, Q / Esc); not used by any scripted run
+var visitor: Node3D = null
+var stage: int = -1                     # the plot on stage, -1 while the visitor walks
+var shots: Array = []                   # the walk's `shot` events, in order
+var out_dir: String = ""
+var pictures: Array = []
+var land_stats: Dictionary = {}
+var _shot_i: int = 0
+var _busy: bool = false
+var _keys: Dictionary = {}
+var _stage_changes: int = 0
 
 
 func _ready() -> void:
+	if get_parent() != get_tree().root:
+		return                                    # started by the host: `start(options)` follows
 	var verb: String = ""
+	var o: Dictionary = {}
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--"):
 			var eq: int = a.find("=")
 			if eq < 0:
-				opts[a.substr(2)] = "true"
+				o[a.substr(2)] = "true"
 			else:
-				opts[a.substr(2, eq - 2)] = a.substr(eq + 1)
+				o[a.substr(2, eq - 2)] = a.substr(eq + 1)
 		elif verb.is_empty():
 			verb = a
+	start(o)
+
+
+func start(options: Dictionary) -> void:
+	opts = options
 	print("[view] start")
-	if verb != "shot" or not opts.has("packs") or not opts.has("out"):
-		print("[view] usage: shot --packs=<a>,<b>,.. --out=<abs png> [--at=x:y:z,..] [--stage=i] [--cam=<name>|overview] [--frame=n]")
+	tour = opts.has("walk")
+	if not tour and (not opts.has("packs") or not opts.has("out")):
+		print("[view] usage: world-view --packs=<a>,<b>,.. --out=<abs png> [--at=x:y:z,..] [--stage=i] [--cam=<name>|overview] [--frame=n]  |  world-view --walk=<walk script> --out-dir=<abs dir>")
 		get_tree().quit(2)
 		return
 	if DisplayServer.get_name() == "headless":
@@ -63,11 +93,28 @@ func _ready() -> void:
 	process_physics_priority = 100000          # after the world host and after every pack node of this tick
 	world = WorldScript.new()
 	world.name = "World"
+	world.set("quit_on_end", false)            # this node ends the process (N5b patch 3)
 	add_child(world)
-	var wopts: Dictionary = {"packs": opts["packs"], "mode": str(opts.get("mode", "bot")), "frames": str(opts.get("frames", "36000"))}
-	if opts.has("seeds"):
-		wopts["seeds"] = opts["seeds"]
+	world.connect("ended", _on_world_ended)
+	var wopts: Dictionary = {}
+	if tour:
+		live = opts.has("live")
+		out_dir = str(opts.get("out-dir", "")).replace("\\", "/").trim_suffix("/")
+		wopts["walk"] = opts["walk"]
+		for k: String in ["log", "tiers", "cost", "ticks", "scenery", "mode"]:
+			if opts.has(k):
+				wopts[k] = opts[k]
+		if live and not opts.has("ticks"):
+			wopts["ticks"] = str(1 << 40)
+	else:
+		wopts = {"packs": opts["packs"], "mode": str(opts.get("mode", "bot")), "frames": str(opts.get("frames", "36000")),
+			"stage": str(opts.get("stage", "0"))}
+		for k: String in ["seeds", "scenery"]:
+			if opts.has(k):
+				wopts[k] = opts[k]
 	world.call("start", wopts)                 # no "at": every pack is simulated at its own origin
+	if not str(world.get("refused")).is_empty():
+		return                                 # the world host said why and ends the process with exit code 2
 	var holders: Array = world.get("packs")
 	var errs: Array = world.get("errors")
 	if holders.is_empty() or not errs.is_empty():
@@ -76,10 +123,23 @@ func _ready() -> void:
 			print("[view]   %s: %s" % [h.name, str(h.get("load_errors"))])
 		get_tree().quit(1)
 		return
-	_make_plots(holders.size())
-	# every pack is cut to its plot (--radius, metres; 0 = not cut) and lifted so that the rim of its own ground meets
-	# the world's ground (--lift overrides the measured value)
+	var walk: Dictionary = world.get("walk")
 	var rads: PackedStringArray = str(opts.get("radius", "40")).split(",", false)
+	if tour:
+		# plots and radii come from the walk script (a plot's `radius`, else the footprint's shorter side)
+		var defs: Array = world.get("plot_defs")
+		var sp: Array = (world.get("sched") as RefCounted).get("plots")
+		var src: Array = walk.get("plots", [])
+		rads = PackedStringArray()
+		for i: int in defs.size():
+			var d: Dictionary = defs[i]
+			plots.append(Transform3D(Basis(Vector3.UP, deg_to_rad(float(d.get("yaw", 0.0)))), d.get("origin", Vector3.ZERO)))
+			var size: Vector2 = (sp[i] as Dictionary)["size"]
+			rads.append(str(float((src[i] as Dictionary).get("radius", minf(size.x, size.y) * 0.5))))
+	else:
+		_make_plots(holders.size())
+	# every pack is cut to its plot (metres; 0 = not cut) and lifted so that the rim of its own ground meets the
+	# world's ground (--lift overrides the measured value)
 	var lifts: PackedStringArray = str(opts.get("lift", "")).split(",", false)
 	for i: int in holders.size():
 		var r: float = float(rads[mini(i, rads.size() - 1)]) if not rads.is_empty() else 0.0
@@ -94,31 +154,19 @@ func _ready() -> void:
 		p.origin.y += lift
 		plots[i] = p
 		lifted.append(snappedf(lift, 0.01))
-	var stage: int = clampi(int(opts.get("stage", "0")), 0, holders.size() - 1)
-	# the landscape between the plots: one ground under all of them, drawn once (the sky and the sun are the style's rig,
-	# installed once by the world host)
+	# the landscape between the plots: drawn once (the sky and the sun are the style's rig, installed once by the world host)
 	landscape = Node3D.new()
 	landscape.name = "TLLandscape"
 	add_child(landscape)
-	if str(opts.get("ground", "on")) != "off":
-		var ground: MeshInstance3D = TLStyle.ground(-0.06, str(opts.get("ground-key", "")), 3000.0)
-		landscape.add_child(ground)
-		# the plots are cut out of the world's ground (toon.gdshader `tl_holes`): its own material, same shader and palette
-		var pal: ShaderMaterial = TLStyle.material(&"white") as ShaderMaterial
-		if pal != null and pal.shader != null:
-			var gm: ShaderMaterial = ShaderMaterial.new()
-			gm.shader = pal.shader
-			gm.set_shader_parameter(&"pal_lut", pal.get_shader_parameter(&"pal_lut"))
-			var holes: Array = []
-			for i: int in plots.size():
-				if float(radii[i]) > 0.0 and bool(has_ground[i]) and holes.size() < 32:
-					holes.append(Vector4((plots[i] as Transform3D).origin.x, (plots[i] as Transform3D).origin.z, float(radii[i]) + 2.5, 0.0))
-			var n: int = holes.size()
-			while holes.size() < 32:
-				holes.append(Vector4.ZERO)
-			gm.set_shader_parameter(&"tl_holes", holes)
-			gm.set_shader_parameter(&"tl_hole_n", n)
-			ground.material_override = gm
+	if tour and str(opts.get("landscape", "on")) != "off":
+		var lcfg: Dictionary = walk.get("landscape", {}) if typeof(walk.get("landscape")) == TYPE_DICTIONARY else {}
+		if not lcfg.has("road") and walk.has("road"):
+			lcfg["road"] = walk["road"]
+		land_stats = Landscape.call("build", landscape, plots, radii, has_ground, lcfg)
+		land_stats["haze"] = float(lcfg.get("haze", 0.4))
+		Landscape.call("tone_haze", world, float(land_stats["haze"]))
+	elif str(opts.get("ground", "on")) != "off":
+		Landscape.call("ground", landscape, plots, radii, has_ground, str(opts.get("ground-key", "")))
 	overview = Camera3D.new()
 	overview.name = "Overview"
 	overview.fov = 50.0
@@ -146,8 +194,13 @@ func _ready() -> void:
 	draw.set("far_dist", float(opts.get("far", "150")))
 	draw.set("rim_band", float(opts.get("band", "9")))
 	add_child(draw)
-	draw.call("setup", world, plots, radii, rims, stage)
-	_apply_stage(stage, str(opts.get("cam", "overview")))
+	if tour:
+		draw.call("setup", world, plots, radii, rims, -1)
+		_start_tour(walk)
+	else:
+		var st: int = clampi(int(opts.get("stage", "0")), 0, holders.size() - 1)
+		draw.call("setup", world, plots, radii, rims, st)
+		_apply_stage(st, str(opts.get("cam", "overview")))
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	_last = Time.get_ticks_usec()
 
@@ -155,6 +208,11 @@ func _ready() -> void:
 func _v3(text: String) -> Vector3:
 	var f: PackedStringArray = text.split(":")
 	return Vector3(float(f[0]), float(f[1]), float(f[2])) if f.size() == 3 else Vector3.ZERO
+
+
+func _a3(a: Variant) -> Vector3:
+	var arr: Array = a
+	return Vector3(float(arr[0]), float(arr[1]), float(arr[2]))
 
 
 func _make_plots(count: int) -> void:
@@ -170,12 +228,13 @@ func _make_plots(count: int) -> void:
 		plots.append(Transform3D(Basis(Vector3.UP, yaw), at))
 
 
-## The stage pack keeps its own cameras and its HUD; everything else is drawn relative to it.
-func _apply_stage(stage: int, cam_name: String) -> void:
-	draw.call("set_stage", stage)
-	landscape.transform = (plots[stage] as Transform3D).affine_inverse()
+## N5b: the stage pack keeps its own cameras and its HUD; everything else is drawn relative to it.
+func _apply_stage(st: int, cam_name: String) -> void:
+	stage = st
+	draw.call("set_stage", st)
+	landscape.transform = (plots[st] as Transform3D).affine_inverse()
 	var holders: Array = world.get("packs")
-	var ctx: TLContext = (holders[stage] as Node).get("ctx")
+	var ctx: TLContext = (holders[st] as Node).get("ctx")
 	if str(opts.get("hud", "on")) == "off":
 		TLHud.hide_all(ctx)
 	if cam_name == "overview" or ctx == null or ctx.cameras == null:
@@ -187,6 +246,175 @@ func _apply_stage(stage: int, cam_name: String) -> void:
 		overview.make_current()
 
 
+# ------------------------------------------------------------------------------------------------ N7: the tour
+func _start_tour(walk: Dictionary) -> void:
+	draw.call("set_stage", -1)                 # nobody is on stage: every pack at its plot, every HUD hidden
+	landscape.transform = Transform3D.IDENTITY
+	world.connect("plot_event", _on_plot_event)
+	for ev: Variant in walk.get("events", []):
+		if typeof(ev) == TYPE_DICTIONARY and str((ev as Dictionary).get("e", "")) == "shot":
+			shots.append(ev)
+	shots.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.get("t", 0)) < int(b.get("t", 0)))
+	var script: Array = world.get("player_script")
+	var at: Vector3 = _a3((script[0] as Array)[1]) if not script.is_empty() else Vector3.ZERO
+	var facing: Vector3 = Vector3.FORWARD
+	for k: int in range(1, script.size()):
+		var d: Vector3 = _a3((script[k] as Array)[1]) - at
+		if d.length() > 0.5:
+			facing = d
+			break
+	visitor = VisitorScript.new()
+	landscape.add_child(visitor)               # a child of the landscape: re-based with it when a game takes the stage
+	visitor.call("setup", at, facing, walk.get("visitor_cam", {}) if typeof(walk.get("visitor_cam")) == TYPE_DICTIONARY else {})
+	(visitor.get("cam") as Camera3D).make_current()
+	if live:
+		world.set("player_live", true)
+		world.set("player_pos", at)
+	if not out_dir.is_empty():
+		DirAccess.make_dir_recursive_absolute(out_dir)
+
+
+## A tier change, at the tick boundary it was decided on: the same event that changes a plot's ticks changes how it
+## is drawn. A pack rebuilt from its seed (next round, back from the ledger) is adopted again.
+func _on_plot_event(i: int, what: String, ev: Dictionary) -> void:
+	if draw == null or _done:
+		return
+	match what:
+		"before_tier":
+			if str(ev.get("to", "")) == "ledger":
+				draw.call("set_tier", i, "ledger")           # its stand-in is built while its nodes are still there
+		"tier":
+			var to: String = str(ev.get("to", ""))
+			if stage == i and to != "stage":
+				_set_stage(-1)
+			if to == "ledger":
+				draw.call("forget_nodes", i)
+			draw.call("set_tier", i, to)
+			if to == "stage":
+				_set_stage(i)
+		"rebuilt":
+			draw.call("replace_holder", i, (world.get("packs") as Array)[i])
+			if i == stage:
+				_set_stage(i)
+
+
+## Puts plot `i` on stage (its own camera, its HUD; the world is re-based on it) or, with -1, hands the picture back
+## to the visitor.
+func _set_stage(i: int) -> void:
+	var holders: Array = world.get("packs")
+	if live and stage >= 0 and stage != i:
+		var was: Node = holders[stage]
+		was.set("bot_off", false)
+		if was.get("ctx") != null and (was.get("ctx") as TLContext).input != null:
+			(was.get("ctx") as TLContext).input.accept_devices = false
+		if i < 0:                                        # back at the plot's edge, on the side he came from
+			var o: Vector3 = (plots[stage] as Transform3D).origin
+			var pos: Vector3 = world.get("player_pos")
+			var out: Vector3 = Vector3(pos.x - o.x, 0.0, pos.z - o.z)
+			out = out.normalized() if out.length() > 0.01 else Vector3.BACK
+			world.set("player_pos", Vector3(o.x, 0.0, o.z) + out * (float(radii[stage]) + 4.0))
+	stage = i
+	_stage_changes += 1
+	draw.call("set_stage", i)
+	landscape.transform = (plots[i] as Transform3D).affine_inverse() if i >= 0 else Transform3D.IDENTITY
+	var vcam: Camera3D = visitor.get("cam")
+	if i < 0:
+		visitor.visible = true
+		visitor.call("snap")
+		vcam.make_current()
+		return
+	visitor.visible = false
+	var ctx: TLContext = (holders[i] as Node).get("ctx")
+	if ctx != null and ctx.cameras != null and ctx.cameras.active != null:
+		ctx.cameras.active.make_current()
+	else:
+		vcam.make_current()                              # a game with no view of its own is watched from where he stands
+	if live:
+		(holders[i] as Node).set("bot_off", true)
+		if ctx != null and ctx.input != null:
+			ctx.input.accept_devices = true
+
+
+func _pressed(key: Key) -> bool:
+	var down: bool = Input.is_physical_key_pressed(key)
+	var was: bool = bool(_keys.get(key, false))
+	_keys[key] = down
+	return down and not was
+
+
+## A person walks: WASD relative to the camera, E enters the plot he stands in, Q or Esc leaves the game on stage.
+## NOT verified by any run (no interactive window was opened while this was built).
+func _live_input() -> void:
+	var sched: RefCounted = world.get("sched")
+	if stage >= 0:
+		if _pressed(KEY_Q) or _pressed(KEY_ESCAPE):
+			sched.call("request", "leave")
+		return
+	if _pressed(KEY_E):
+		sched.call("request", "enter")
+	var vcam: Camera3D = visitor.get("cam")
+	var fwd: Vector3 = -vcam.global_transform.basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3.FORWARD
+	var right: Vector3 = Vector3(-fwd.z, 0.0, fwd.x)
+	var move: Vector3 = Vector3.ZERO
+	if Input.is_physical_key_pressed(KEY_W):
+		move += fwd
+	if Input.is_physical_key_pressed(KEY_S):
+		move -= fwd
+	if Input.is_physical_key_pressed(KEY_D):
+		move += right
+	if Input.is_physical_key_pressed(KEY_A):
+		move -= right
+	if move.length() > 0.01:
+		var pace: float = 9.0 if Input.is_physical_key_pressed(KEY_SHIFT) else 4.5
+		world.set("player_pos", (world.get("player_pos") as Vector3) + move.normalized() * pace / 60.0)
+
+
+func _tiers_now() -> Dictionary:
+	var out: Dictionary = {}
+	var sched: RefCounted = world.get("sched")
+	if sched != null:
+		for p: Dictionary in sched.get("plots"):
+			out[str(p["id"])] = str(p["tier"])
+	return out
+
+
+func _tour_shot(sh: Dictionary, number: int) -> void:
+	var file: String = "%s/%02d_%s.png" % [out_dir, number, str(sh.get("name", "shot"))]
+	var kind: String = str(sh.get("cam", ""))
+	var prev: Camera3D = get_viewport().get_camera_3d()
+	if kind == "crane" and sh.has("from") and sh.has("to"):
+		var from: Vector3 = _a3(sh["from"])
+		overview.transform = Transform3D(Basis.looking_at(_a3(sh["to"]) - from, Vector3.UP), from)     # local: world coordinates
+		overview.make_current()
+	await _take(file, stage, kind if not kind.is_empty() else ("stage" if stage >= 0 else "visitor"), sh)
+	if kind == "crane" and is_instance_valid(prev) and not _done:
+		prev.make_current()
+	_busy = false
+
+
+func _on_world_ended(_bad: bool) -> void:
+	_done = true
+	if draw != null:
+		draw.call("clear")
+	var code: int = int(world.get("exit_code"))
+	if tour:
+		var n: int = mini(600, _frame_usec.size())
+		var line: Dictionary = {"schema": "tl.view/1", "kind": "tour", "pictures": pictures.size(), "shots_asked": shots.size(),
+			"world_ticks": int(world.get("tick")), "stage_changes": _stage_changes, "landscape": land_stats,
+			"frame_ms_p50": snappedf(_p50(Array(_frame_usec.slice(_frame_usec.size() - n))) / 1000.0, 0.001),
+			"frame_ms_p50_all": snappedf(_p50(Array(_frame_usec)) / 1000.0, 0.001),
+			"render_cpu_ms_p50": snappedf(_p50(Array(_cpu_ms)), 0.001), "render_gpu_ms_p50": snappedf(_p50(Array(_gpu_ms)), 0.001),
+			"draw": draw.call("report") if draw != null else {}}
+		print(JSON.stringify(line, "", false))
+		if pictures.size() < shots.size():
+			print("[view] %d of %d pictures were taken (a shot must lie at least 10 ticks before the end of the walk)" % [pictures.size(), shots.size()])
+			code = maxi(code, 1)
+	get_tree().quit(code)
+
+
+# ------------------------------------------------------------------------------------------------ every frame
 func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_usec()
 	_frame_usec.append(now - _last)
@@ -194,22 +422,22 @@ func _process(_delta: float) -> void:
 	var vp: RID = get_viewport().get_viewport_rid()
 	_cpu_ms.append(RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu())
 	_gpu_ms.append(RenderingServer.viewport_get_measured_render_time_gpu(vp))
-	# a HUD a pack makes after loading: only the stage pack's is shown
-	if draw != null and world != null and not _done:
-		var holders: Array = world.get("packs")
-		var stage: int = int(draw.get("stage"))
-		for i: int in holders.size():
-			if i == stage or not is_instance_valid(holders[i]):
-				continue
-			var ctx: TLContext = (holders[i] as Node).get("ctx")
-			if ctx != null:
-				for h: Variant in ctx.huds:
-					if is_instance_valid(h) and (h as CanvasLayer).visible:
-						(h as CanvasLayer).visible = false
 
 
 func _physics_process(_delta: float) -> void:
-	if _shooting or _done or world == null:
+	if _done or world == null or draw == null:
+		return
+	if tour:
+		var t: int = int(world.get("tick"))
+		if live:
+			_live_input()
+		visitor.call("step", world.get("player_pos"), t)
+		if not _busy and _shot_i < shots.size() and t > int((shots[_shot_i] as Dictionary).get("t", 0)):
+			_busy = true
+			_shot_i += 1
+			_tour_shot(shots[_shot_i - 1], _shot_i)
+		return
+	if _shooting:
 		return
 	if int(world.get("tick")) >= shot_frame:
 		_shooting = true
@@ -224,13 +452,15 @@ func _p50(values: Array) -> float:
 	return float(s[s.size() / 2])
 
 
-func _take(out: String, stage: int, cam_name: String) -> void:
+func _take(out: String, st: int, cam_name: String, shot: Dictionary = {}) -> void:
 	for i: int in 3:
 		await RenderingServer.frame_post_draw
+	if _done:
+		return
 	var img: Image = get_viewport().get_texture().get_image()
 	var err: Error = img.save_png(out)
 	var n: int = mini(_measure, _frame_usec.size())
-	var line: Dictionary = {"schema": "tl.view/1", "out": out, "saved": err == OK, "stage": stage, "cam": cam_name,
+	var line: Dictionary = {"schema": "tl.view/1", "out": out, "saved": err == OK, "stage": st, "cam": cam_name,
 		"world_tick": int(world.get("tick")), "packs": (world.get("packs") as Array).size(),
 		"draw_calls": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 		"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
@@ -239,6 +469,15 @@ func _take(out: String, stage: int, cam_name: String) -> void:
 		"render_cpu_ms_p50": snappedf(_p50(Array(_cpu_ms.slice(_cpu_ms.size() - n))), 0.001),
 		"render_gpu_ms_p50": snappedf(_p50(Array(_gpu_ms.slice(_gpu_ms.size() - n))), 0.001),
 		"measured_frames": n, "radius": radii, "lift": lifted, "draw": draw.call("report")}
+	if tour:
+		var pos: Vector3 = world.get("player_pos")
+		line["kind"] = "picture"
+		line["name"] = str(shot.get("name", ""))
+		line["asked_tick"] = int(shot.get("t", 0))
+		line["stage_plot"] = str(((world.get("plot_defs") as Array)[st] as Dictionary)["id"]) if st >= 0 else ""
+		line["visitor"] = [snappedf(pos.x, 0.01), snappedf(pos.y, 0.01), snappedf(pos.z, 0.01)]
+		line["tiers"] = _tiers_now()
+		pictures.append(out)
 	print(JSON.stringify(line, "", false))
 
 
@@ -251,12 +490,7 @@ func _shoot() -> void:
 			for i: int in int(opts.get("settle", "0")):       # frames between pictures, so each has its own timings
 				await get_tree().process_frame
 			await _take(f[2], int(f[0]), f[1])
-	_done = true
 	if str(opts.get("until", "")) == "end":
-		return                       # the world runs on, drawn, to its own end and prints one state hash per pack
-	_shutdown()
-
-
-func _shutdown() -> void:
-	draw.call("clear")
-	world.call("_end")              # prints the world's lines (no final hashes: the packs were cut short), frees, quits
+		_shooting = true                 # the world runs on, drawn, to its own end and prints one state hash per pack
+		return
+	world.call("_end")                   # prints the world's lines (no final hashes: the packs were cut short); `ended` ends the process

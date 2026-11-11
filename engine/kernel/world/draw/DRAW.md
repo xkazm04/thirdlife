@@ -1,5 +1,12 @@
 # N5b: drawing a world of many packs
 
+**N7:** the viewer is now the host mode `world-view` (same options; `tools/view.sh` starts it), the draw layer takes
+`set_stage(-1)` (nobody on stage), `set_tier(i, tier)` (the scheduler's tier decides full or stand-in),
+`forget_nodes(i)` and `replace_holder(i, holder)` (a pack built again from its seed), and the world's ground moved to
+`kernel/world/landscape.gd`. A world host now loads packs with `scenery = "plot"` unless `--scenery=full` is given,
+so the pictures of this document (taken with full scenery) show more pack-owned trees than a run today.
+`kernel/world/WORLD.md` is the page for the joined world.
+
 Every pack of a world is simulated at the origin of its own physics space (N2: placed even 64 m away its results
 change). This directory draws them standing apart in one landscape, in one picture, without touching the simulation.
 

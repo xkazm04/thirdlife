@@ -109,6 +109,7 @@ var _kept_summary: Dictionary = {}
 var _kept_data: Variant = null
 var load_ms: Dictionary = {}            # where the loading time went: scripts, setup, laws, bot (milliseconds)
 var ledgered: bool = false              # unloaded: only the plot record is left
+var bot_off: bool = false               # N7: a person plays this pack (its bot waits); never set in a scripted run
 
 
 # ------------------------------------------------------------------------------------------------------ loading
@@ -162,6 +163,7 @@ func load_pack(dir_arg: String, options: Dictionary) -> bool:
 	ctx.instance = String(name)
 	ctx.holder = self
 	ctx.origin = options.get("at", Vector3.ZERO)
+	ctx.on_stage = bool(options.get("on_stage", true))     # N7 (N5b patch 1): known before the pack's scripts load
 	ctx.ball_group = StringName("tl_ball@" + String(name))
 	ctx.scenery = str(options.get("scenery", "full"))
 	set_meta(&"tl_ctx", ctx)
@@ -331,7 +333,7 @@ func tick(world_tick: int) -> void:
 	ctx.frame = frames_done
 	if world != null and world.get("logger") != null:
 		(world.get("logger") as Object).set("frame", frames_done)
-	if bot != null:
+	if bot != null and not bot_off:
 		bot.call("_bot_tick", frames_done)
 	ctx.input._sample()
 	if _has_tick:
@@ -340,7 +342,7 @@ func tick(world_tick: int) -> void:
 		_census()
 	if trace_every > 0 and frames_done % trace_every == 0:
 		hash_trace.append([frames_done, state_hash().substr(0, 16)])
-	var bot_done: bool = bot != null and bool(bot.call("_bot_done"))
+	var bot_done: bool = bot != null and not bot_off and bool(bot.call("_bot_done"))
 	_leave()
 	frames_done += 1
 	tick_usec.append(Time.get_ticks_usec() - t0)

@@ -638,8 +638,12 @@ What a pack author has to know:
   `TLContext.space_state_of(node)`. Joints were not tried in a world. No seed, example, kit or rig uses any of them.
 - **A node of yours with a `process_physics_priority` other than 0** is ticked outside the bracket that names your
   pack (the kernel's own `TLContact` is, and asks `TLContext.of`). Keep the default priority.
-- **Not in a world yet**: the watchdog thread (a runaway `_pack_tick` hangs the whole world), windowed play and
-  capture (one camera, one HUD on screen). `on_leave` and `footprint` are read by the scheduled world: section 20.
+- **Not in a world yet**: the watchdog thread (a runaway `_pack_tick` hangs the whole world). `on_leave` and
+  `footprint` are read by the scheduled world: section 20. A world in a window, with one camera and one HUD on
+  screen at a time: section 21.
+- **N7: `scenery = "plot"` is the default of the world host** in every mode (`world.sh run`, `walk`, `tour`, the
+  viewer): your layout is built without its far terrain and scattered forest. `--scenery=full` brings them back.
+  State hashes are the same either way (scenery has no body).
 
 ## 20. A world with a clock: tiers, `on_leave`, save and load (N5a)
 
@@ -664,8 +668,11 @@ player's position comes from the script, and the scheduler (`kernel/world/tiers.
   SEED: bodies, positions and velocities start as on the first tick. Then `_pack_start()` is called, then
   `_pack_load(data)`. Without the two functions the game simply starts again. `kernel/examples/ex_bounce` is the
   example (the score survives, the balls do not).
-- **Scenery.** A world may load you with `scenery = "plot"` (`ctx.scenery`): a `tl.layout/1` file read through
-  `ctx.read_json` then comes with `forest.scatter` and `terrain.far` off. Do not look scenery nodes up by name.
+- **Scenery.** A world loads you with `scenery = "plot"` (`ctx.scenery`; the default since N7): a `tl.layout/1`
+  file read through `ctx.read_json` then comes with `forest.scatter` and `terrain.far` off. Do not look scenery
+  nodes up by name.
+- **N7: a pack that is built again** (back from `ledger`, after `on_leave: end`, for its next round) gets its first
+  tick one world tick after it was built. You cannot see this: your own tick count starts at 0 as always.
 - **`TLVfx.squash` and `TLVfx.trail`** (section 13) are new; lint's `composability` now also reports
   `kit_parts_used`, `kit_kinds_used`, `kit_build_calls` and `world_coordinates` (how often your scripts read
   `global_position`, `global_transform`, `to_global(` or `look_at(`: each is a place that breaks when a pack is not
@@ -674,3 +681,34 @@ player's position comes from the script, and the scheduler (`kernel/world/tiers.
 Commands: `world.sh walk <script> [--log=<file>] [--cost=model|measured]`, `world.sh replay <log>`,
 `world.sh proof <script>`, `world.sh save <file> --packs=...`, `world.sh load <file>`. Formats: a walk script is
 `tl.walk/1` (`kernel/world/walks/*.json`), a world log `tl.worldlog/1`, a world file `tl.world/1` (TIERS.md).
+
+## 21. One world you can walk through: the visitor, entering and leaving, next rounds (N7)
+
+`bash tools/world.sh tour <walk> --out-dir=<abs dir>` runs a scheduled world in a window (host mode `world-view`,
+`kernel/world/draw/view.gd`): every pack on its plot in one landscape, a visitor who walks between them, numbered
+pictures, and the proof that every pack's state hash equals the same pack alone and the replay of the world log.
+`--headless` is the same world without the window. `kernel/world/WORLD.md` has the whole picture and the walk format.
+What a pack author has to know:
+
+- **The player is a visitor first.** While he walks the world nobody is on stage: no pack's camera, no pack's HUD,
+  no pack's input. Near packs run at full rate and are drawn in full; far ones run slower and are drawn as their
+  stand-in (sections 19, 20; `kernel/world/draw/DRAW.md`).
+- **Entering.** The visitor stands in your plot and presses E (a walk script: `{"t": N, "e": "enter"}`). From that
+  world tick `ctx.on_stage` is true, your HUD layers are visible and your active view (`ctx.cameras.active`: the
+  first view you registered, unless you activated another) is the picture. Before that, and from your very first
+  line of `_pack_setup`, `ctx.on_stage` is false and a HUD you make is created hidden: do not set `visible` on a
+  `TLHud` yourself, and do not make a camera current yourself (`Camera3D.current`, `make_current`): the kernel does.
+- **Leaving.** Q or Esc (`{"t": N, "e": "leave"}`): the picture goes back to the visitor and your `on_leave` applies
+  (section 20). In a scripted run your bot plays before, during and after the visit, so a visit changes nothing in
+  your game. When a person plays, your bot waits while he is in and takes over again when he leaves (`on_leave:
+  "bot"`); this path has not been run by anyone yet.
+- **Next round.** When your game is over and nobody is in your plot, the world builds you again from your seed
+  after `restart_pause_ticks` (`kernel/world/tiers.json`, 180 = 3 s): `_pack_setup`, `_pack_start`, tick 0, nothing
+  carried over. On stage a finished game waits until the player leaves. Keep no state in `static var`.
+- **Your plot.** Declare `"footprint": {"size_m": [x, z]}` in `pack.json`. You are cut to the circle inside it; the
+  world draws its own ground, a road to your gate and a fence around you. Keep what matters inside, and leave the
+  outer 9 m to your ground (it is bent to meet the world's).
+
+Commands: `world.sh tour <walk> --out-dir=<abs dir> [--pictures-only]`, `world.sh tour <walk> --headless`,
+`world.sh visit <walk>`; `tools/view.sh shot / check` (pictures of a world of packs, every pack ticked every frame)
+start the same host mode.

@@ -45,6 +45,11 @@ var _bcredit: int = 0
 var _fcursor: int = -1
 var _bcursor: int = -1
 var _out: Array = []
+# N7: the visitor. The stage does not follow the player: an `enter` request puts the plot he stands in on stage, a
+# `leave` request takes it off. Requests come from the walk script (`events`) or from a live key (`request`).
+var visitor: bool = false
+var _visits: Array = []                 # [{t, e: "enter" | "leave", plot (index or -1: the plot he stands in)}]
+var _requests: Array = []               # asked for since the last `decide`
 
 
 static func load_config(path: String, overrides: Dictionary = {}) -> Dictionary:
@@ -94,7 +99,7 @@ static func _v3(a: Variant) -> Vector3:
 
 
 ## `plot_list`: [{id, pack, origin: Vector3, yaw, size: Vector2, on_leave}]; `tickets`: [{tick, plot (id), tier, ticks}].
-func setup(config: Dictionary, plot_list: Array, tickets: Array = []) -> void:
+func setup(config: Dictionary, plot_list: Array, tickets: Array = [], visits: Array = []) -> void:
 	cfg = config
 	slice = int((cfg["slice"] as Dictionary)["min"])
 	slice_max_seen = slice
@@ -118,6 +123,15 @@ func setup(config: Dictionary, plot_list: Array, tickets: Array = []) -> void:
 		var idx: int = index_of(str(t.get("plot", "")))
 		if idx >= 0 and RANK.has(str(t.get("tier", ""))):
 			_tickets.append({"tick": int(t.get("tick", 0)), "plot": idx, "tier": str(t["tier"]), "ticks": int(t.get("ticks", 0))})
+	for v: Variant in visits:
+		if typeof(v) == TYPE_DICTIONARY and (str((v as Dictionary).get("e", "")) == "enter" or str((v as Dictionary).get("e", "")) == "leave"):
+			_visits.append({"t": int((v as Dictionary).get("t", 0)), "e": str((v as Dictionary)["e"]), "plot": index_of(str((v as Dictionary).get("plot", "")))})
+
+
+## N7. A live player asks to enter the plot he stands in (or `plot`), or to leave the stage plot. Answered by the
+## next `decide`, as events.
+func request(what: String, plot: int = -1) -> void:
+	_requests.append({"t": -1, "e": what, "plot": plot})
 
 
 func index_of(id: String) -> int:
@@ -179,8 +193,11 @@ func apply(ev: Dictionary) -> void:
 				valve_demotions += 1
 			if stage == i and to != "stage":
 				stage = -1
+				p["over_at"] = t                  # N7: the pause before its next round counts from here
 			if to == "stage":
 				stage = i
+			if str(ev.get("from", "")) == "ledger":
+				p["rest_until"] = t + 1           # N7: rebuilt on this tick boundary, first tick on the next (see `due`)
 			p["tier"] = to
 			p["since"] = t
 			(p["seen"] as Dictionary)[to] = true
@@ -206,9 +223,11 @@ func apply(ev: Dictionary) -> void:
 		"over":
 			if i >= 0:
 				(plots[i] as Dictionary)["over"] = true
+				(plots[i] as Dictionary)["over_at"] = t
 		"restart":
 			if i >= 0:
 				(plots[i] as Dictionary)["over"] = false
+				(plots[i] as Dictionary)["rest_until"] = t + 1
 
 
 func _active(p: Dictionary) -> bool:
@@ -239,9 +258,13 @@ func decide(tick: int, pos: Vector3) -> Array:
 		p["dist"] = distance(p, pos)
 		if inside < 0 and float(p["dist"]) == 0.0:
 			inside = i
-	# 1. the stage follows the player
+	# 1. the stage follows the player (N7, a world with a visitor: it follows his `enter` and `leave` instead)
 	var cur: int = stage
 	var want_stage: int = inside
+	if visitor:
+		_decide_visits(tick, inside, float(margin["stage"]))
+		cur = stage
+		want_stage = stage
 	if cur >= 0:
 		var pc: Dictionary = plots[cur]
 		if float(pc["dist"]) <= float(margin["stage"]):
@@ -310,6 +333,42 @@ func decide(tick: int, pos: Vector3) -> Array:
 	return _out
 
 
+## N7. The visitor's requests of this tick, then the next round of every game that ended by itself and is not on
+## stage (`restart_pause_ticks` after it ended, or after the visitor left it; 0 = never).
+func _decide_visits(tick: int, inside: int, stage_margin: float) -> void:
+	var asks: Array = _requests
+	_requests = []
+	for v: Dictionary in _visits:
+		if int(v["t"]) == tick:
+			asks.append(v)
+	for a: Dictionary in asks:
+		if str(a["e"]) == "leave":
+			if stage < 0:
+				_emit({"t": tick, "e": "refused", "ask": "leave", "why": "no game is on stage"})
+				continue
+			var pc: Dictionary = plots[stage]
+			_emit({"t": tick, "e": "tier", "plot": pc["id"], "from": "stage", "to": "sideline", "why": "leave"})
+			_emit({"t": tick, "e": "leave", "plot": pc["id"], "on_leave": pc["on_leave"]})
+		else:
+			var target: int = int(a["plot"]) if int(a["plot"]) >= 0 else inside
+			if stage >= 0 or target < 0 or float((plots[target] as Dictionary)["dist"]) > stage_margin:
+				_emit({"t": tick, "e": "refused", "ask": "enter", "plot": str((plots[target] as Dictionary)["id"]) if target >= 0 else "",
+					"why": "a game is on stage already" if stage >= 0 else ("the visitor stands in no plot" if target < 0 else "the visitor is outside that plot")})
+				continue
+			var pn: Dictionary = plots[target]
+			if bool(pn["held"]):
+				_emit({"t": tick, "e": "return", "plot": pn["id"]})
+			if bool(pn["over"]):
+				_emit({"t": tick, "e": "restart", "plot": pn["id"], "why": "enter"})
+			_emit({"t": tick, "e": "tier", "plot": pn["id"], "from": pn["tier"], "to": "stage", "why": "enter"})
+	var pause: int = int(cfg.get("restart_pause_ticks", 0))
+	if pause > 0:
+		for i: int in plots.size():
+			var p: Dictionary = plots[i]
+			if i != stage and bool(p["over"]) and not bool(p["held"]) and str(p["on_leave"]) != "end" and str(p["tier"]) != "ledger" 					and tick - int(p.get("over_at", tick)) >= pause:
+				_emit({"t": tick, "e": "restart", "plot": p["id"], "why": "next_round"})
+
+
 func _valve(tick: int, valve: Dictionary, budget: Dictionary) -> void:
 	var front: float = 0.0
 	var back: float = 0.0
@@ -365,6 +424,11 @@ func due(tick: int) -> Array:
 	for i: int in plots.size():
 		var p: Dictionary = plots[i]
 		if not _active(p):
+			continue
+		# N7: a pack that was built again on this tick boundary (next round, back from the ledger) gets its first tick
+		# on the next one. Its nodes entered the tree inside this physics frame and the scene tree would not tick them
+		# in it, while the kernel's own calls and the physics step would run: its first tick would be half a tick.
+		if int(p.get("rest_until", 0)) > tick:
 			continue
 		if str(p["tier"]) == "stage" or str(p["tier"]) == "sideline":
 			front.append(i)

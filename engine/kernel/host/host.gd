@@ -29,6 +29,10 @@ const OPTIONS: Dictionary = {
 const MODE_OPTIONS: Dictionary = {
 	"world": ["packs", "frames", "seeds", "at", "spacing", "every", "pause", "mode", "space", "trace", "hold", "state", "out", "walk", "replay", "log", "tiers", "cost", "ticks", "world", "save", "name", "seed", "plot-spacing", "scenery"],   # N5a: the scheduled world, the world file
 	"world-bench": ["only", "quick", "out-dir"],
+	# N7 (N5b patch 4): a world in a window (kernel/world/draw/view.gd). With --packs: pictures of a world of packs
+	# (tools/view.sh shot). With --walk: the scheduled world with its visitor, landscape and tour pictures
+	# (tools/world.sh tour, visit). One line: tools/selftest.sh reads this table.
+	"world-view": ["packs", "at", "yaw", "spacing", "radius", "lift", "band", "stage", "cam", "crane", "frame", "out", "also", "settle", "until", "mech", "cull", "standins", "far", "mode", "frames", "seeds", "ground", "ground-key", "hud", "measure", "tag", "scenery", "walk", "log", "tiers", "cost", "ticks", "out-dir", "live", "landscape"],
 }
 const BUDGET_FRAME_MS_P99: float = 8.0
 const BUDGET_NODES: int = 5000
@@ -83,7 +87,7 @@ func _start_mode(bad_args: PackedStringArray) -> void:
 	for k: String in opts.keys():
 		if not (MODE_OPTIONS[verb] as Array).has(k):
 			problem = "unknown option --%s for '%s' (allowed: %s)" % [k, verb, ", ".join(PackedStringArray(MODE_OPTIONS[verb]))]
-	for k: String in ["out", "out-dir", "walk", "replay", "log", "tiers", "world", "save"]:
+	for k: String in ["out", "out-dir", "walk", "replay", "log", "tiers", "world", "save"]:   # --also is fixed by tools/view.sh
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if problem.is_empty():
@@ -92,9 +96,10 @@ func _start_mode(bad_args: PackedStringArray) -> void:
 		print(JSON.stringify({"schema": "tl.world/1", "kind": "world", "errors": [problem]}, "", false))
 		get_tree().quit(2)
 		return
-	var script: String = "res://kernel/world/world.gd" if verb == "world" else "res://kernel/world/bench.gd"
+	var script: String = {"world": "res://kernel/world/world.gd", "world-bench": "res://kernel/world/bench.gd",
+		"world-view": "res://kernel/world/draw/view.gd"}[verb]
 	var w: Node = (load(script) as GDScript).new()
-	w.name = "World"
+	w.name = "World" if verb != "world-view" else "WorldView"
 	add_child(w)
 	w.call("start", opts)
 

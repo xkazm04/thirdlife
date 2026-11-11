@@ -21,3 +21,6 @@ engine/look/before/
 engine/look/after/
 engine/look/wip/
 engine/look/sheet_before_after.png
+
+# world captures: the PNG originals stay local, JPEG copies are in docs/reports/img
+engine/kernel/world/captures/*.png

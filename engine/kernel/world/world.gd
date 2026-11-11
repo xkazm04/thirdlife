@@ -26,6 +26,13 @@ extends Node
 ## replays to the same ticks and hashes. `--world=<file>` loads a world file (tl.world/1), `--save=<file>` writes
 ## one when the run ends. kernel/world/TIERS.md has the model, the proof and the numbers.
 
+## N7. A world with a VISITOR (walk script `"visitor": true`): nobody is on stage until the visitor enters a plot
+## (`events`: `enter`, `leave`), a game that ended by itself starts its next round after a pause, and whoever draws
+## the world listens to `plot_event` and `ended` (kernel/world/draw/view.gd). kernel/world/WORLD.md.
+
+signal plot_event(index: int, what: String, ev: Dictionary)   # "before_tier", "tier", "rebuilt": for whoever draws
+signal ended(bad: bool)                                       # the run is over; the packs are freed right after
+
 const PackScript: GDScript = preload("res://kernel/world/pack.gd")
 const LoggerScript: GDScript = preload("res://kernel/runner/logger.gd")
 const Tiers: GDScript = preload("res://kernel/world/tiers.gd")
@@ -68,6 +75,10 @@ var _last_ticked: Array = []
 var _event_lines: PackedStringArray = PackedStringArray()
 var _load_marks: Array = []             # [[pack name, ms]]: how long each pack took to load
 var _save_error: String = ""
+# N7
+var quit_on_end: bool = true            # false: the host of this world (the viewer) ends the process
+var exit_code: int = 0
+var player_live: bool = false           # true: `player_pos` is set from outside every tick (a person walks)
 
 
 func _list(key: String, fallback: String) -> PackedStringArray:
@@ -127,7 +138,8 @@ func start(options: Dictionary) -> void:
 			var plot_at: Vector3 = at if not opts.has("plot-spacing") else Vector3(float(opts["plot-spacing"]) * float(i), 0.0, 0.0)
 			plot_defs.append({"id": "p%d" % i, "dir": dirs[i], "seed": int(_item(seeds, i, "1")), "origin": plot_at, "yaw": 0.0,
 				"mode": str(opts.get("mode", "smoke")), "frames": int(_item(frames, i, "3600")), "every": int(_item(everys, i, "1")),
-				"at": at, "trace": int(opts.get("trace", "0")), "own_space": str(opts.get("space", "own")) != "shared"})
+				"at": at, "trace": int(opts.get("trace", "0")), "own_space": str(opts.get("space", "own")) != "shared",
+				"on_stage": i == int(opts.get("stage", "0"))})
 			packs.append(_spawn_plot(i, opts.has("save")))
 	if not refused.is_empty():
 		print(JSON.stringify({"schema": "tl.world/1", "kind": "world", "errors": [refused]}, "", false))
@@ -170,7 +182,9 @@ func _spawn_plot(i: int, named: bool = true) -> Node:
 	var ok: bool = p.call("load_pack", dir, {"mode": str(def.get("mode", "smoke")), "seed": int(def.get("seed", 1)),
 		"frames": int(def.get("frames", 3600)), "every": int(def.get("every", 1)), "at": def.get("at", Vector3.ZERO),
 		"trace": int(def.get("trace", 0)), "own_space": bool(def.get("own_space", true)),
-		"scenery": str(opts.get("scenery", walk.get("scenery", "full")))})
+		"on_stage": bool(def.get("on_stage", false)),
+		# N7 (decision of the Director): in a world a pack brings no far terrain and no forest of its own
+		"scenery": str(opts.get("scenery", walk.get("scenery", "plot")))})
 	if not ok:
 		errors.append("pack %d (%s) did not load" % [i, dir])
 	elif def.get("data", null) != null:
@@ -252,7 +266,8 @@ func _start_walk() -> void:
 		list.append({"id": (plot_defs[i] as Dictionary)["id"], "pack": str(m.get("id", "")), "origin": (plot_defs[i] as Dictionary)["origin"],
 			"yaw": (plot_defs[i] as Dictionary)["yaw"], "size": size, "on_leave": leave})
 	sched = Tiers.new()
-	sched.call("setup", cfg, list, walk.get("tickets", []))
+	sched.call("setup", cfg, list, walk.get("tickets", []), walk.get("events", []))
+	sched.set("visitor", bool(walk.get("visitor", false)))
 
 
 ## `--world=<file>`: a world file (tl.world/1). Every pack is rebuilt from its seed; its live state is NOT restored,
@@ -285,7 +300,7 @@ func _start_from_file() -> void:
 		var dir: String = _resolve(str(pk.get("dir", "")))
 		plot_defs.append({"id": str(sp["id"]), "dir": dir, "seed": int(sp["seed"]), "origin": Tiers.call("_v3", sp["origin"]),
 			"yaw": float(sp.get("yaw", 0.0)), "mode": str(opts.get("mode", "smoke")), "frames": int(opts.get("frames", "0")),
-			"ticks_before": int(sp.get("ticks", 0)), "data": sp.get("data", null)})
+			"ticks_before": int(sp.get("ticks", 0)), "data": sp.get("data", null), "on_stage": i == 0})
 		var p: Node = _spawn_plot(i)
 		packs.append(p)
 		if bool(p.get("loaded")) and str(pk.get("hash", "")) != "" and str(PackScript.call("dir_hash", str(p.get("pack_dir")))) != str(pk["hash"]):
@@ -358,6 +373,7 @@ func _on_event(ev: Dictionary) -> void:
 	var p: Node = packs[i]
 	match str(ev.get("e", "")):
 		"tier":
+			plot_event.emit(i, "before_tier", ev)
 			if str(ev["to"]) == "ledger" and not ledger.has(i):
 				ledger[i] = p.call("unload")
 			elif str(ev.get("from", "")) == "ledger" and ledger.has(i):
@@ -365,6 +381,7 @@ func _on_event(ev: Dictionary) -> void:
 			var c: TLContext = (packs[i] as Node).get("ctx")
 			if c != null:
 				c.on_stage = str(ev["to"]) == "stage"
+			plot_event.emit(i, "tier", ev)
 		"leave":
 			if str(ev.get("on_leave", "")) == "end" and not bool(p.get("finished")):
 				p.call("finish", tick)
@@ -384,6 +401,7 @@ func _rebuild(i: int, rec: Dictionary) -> void:
 	def["data"] = rec.get("data", null)
 	packs[i] = _spawn_plot(i)
 	ledger.erase(i)
+	plot_event.emit(i, "rebuilt", {})
 
 
 func _measure(span_usec: int) -> void:
@@ -433,7 +451,8 @@ func _walk_tick(span_usec: int) -> void:
 			p.call("set_running", false)
 		_end()
 		return
-	player_pos = Tiers.call("position_at", player_script, tick)
+	if not player_live:
+		player_pos = Tiers.call("position_at", player_script, tick)
 	var events: Array = []
 	if is_replay:
 		for ev: Dictionary in replay_events.get(tick, []):
@@ -645,9 +664,12 @@ func _end() -> void:
 			f.store_string("\n".join(lines) + "\n")
 			f.close()
 	print("[tl] world done: packs=%d ticks=%d" % [packs.size(), tick])
+	exit_code = 1 if bad else 0
+	ended.emit(bad)                 # whoever draws lets go of the packs' visuals now
 	# leave nothing behind: nodes first, then the spaces they lived in
 	for p: Node in packs:
 		for c: Node in p.get_children():
 			c.free()
 		p.call("release_space")
-	get_tree().quit(1 if bad else 0)
+	if quit_on_end:
+		get_tree().quit(exit_code)

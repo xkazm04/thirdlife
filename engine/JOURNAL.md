@@ -424,3 +424,78 @@ Brief `briefs/BRIEF-N5A-TIERS.md`. Started 01:55 CEST on 2026-11-11 in `site/_wo
   the next round of a game that ended by itself; ledger promotion without blocking the world; tickets asked for by
   a pack or the player; anything with a window (the distances in tiers.json are first values); `world.sh bench`
   (N2's) was not run again; the kit-side loading fixes (PATCHES-N5A.md entry 3). N5a ends here.
+
+## N7: one world you can walk through (builder, main tree)
+
+- 03:23 start (`date`). Brief `briefs/BRIEF-N7-WORLD.md`. A real job is verified on this machine until about 03:40:
+  reading only until then. Read: both reports with the Director's decisions, PATCHES (N5b 1 to 4, N5a 6), world.gd,
+  pack.gd, tiers.gd, draw.gd, view.gd, host.gd, both shell tools, the concept and tonight's overview.
+- 03:27 plan. (1) tiers.gd gets a VISITOR mode: the stage no longer follows the player, `enter` / `leave` requests do
+  (walk script `events`, or a live key); a game that is over and not on stage gets a `restart` event after
+  `restart_pause_ticks`. All of it is events, so a log replays. (2) world.gd: patches 1 and 3, signals for whoever
+  draws (`plot_event`, `ended`), scenery "plot" by default. (3) draw.gd: stage -1 (nobody on stage: every pack at its
+  plot), a tier decides full or stand-in, a rebuilt pack is re-adopted. (4) view.gd becomes the host mode
+  `world-view` (shot as before; with `--walk` the tour), landscape.gd and visitor.gd are new. (5) `world.sh tour`.
+- 03:38 everything of items 1 and 2 written (tiers.gd visitor mode, world.gd signals and patches 1 and 3, pack.gd,
+  tl_hud.gd patch 2, host.gd + verbs.json `world-view`, draw.gd stage -1 / set_tier / replace_holder, view.gd as a host
+  mode with the tour, landscape.gd, visitor.gd, walks/tour.json, world.sh tour / visit). First headless run of the
+  tour walk (400 ticks): loads, 0 errors.
+- 03:39 `world.sh tour tour --headless`: FAIL. drive, paddle, car same; wall, walker, kit DIFFERENT alone: exactly
+  the three packs that had been built again for a next round. Cause: `_rebuild` runs inside the world's
+  `_physics_process`; the new pack's nodes enter the tree inside that physics frame, the scene tree does not tick
+  them in it, but the kernel's calls (`_pack_tick`) and the physics step run: the pack's first tick is half a tick.
+  N5a's ledger return and `on_leave: end` return go through the same `_rebuild` (its proofs used packs whose nodes
+  do not tick themselves). Fix in tiers.gd: a `restart` (and a tier change from `ledger`) sets `rest_until = t + 1`;
+  `due` skips the plot on that tick. It is state of the schedule, so the replay does the same.
+- 03:40 `world.sh tour tour --headless`: PASS. Six packs, 2900 world ticks, 44 events, two games entered and left,
+  walker / kit / wall restarted for next rounds; in the walk = alone = replay for all six.
+- 03:41 `world.sh tour tour --out-dir=kernel/world/captures/tour`: first windowed run. PASS, the same six hashes
+  as headless, 10 of 10 pictures, 4 stage changes, 0 gate leaks, 0 script errors, 0 engine errors. Looked at all ten:
+  the visitor on the dirt road between fenced plots with the track's stand-in beyond; the track from its rim; ON
+  STAGE the drive's own chase camera and HUD with the world's fence, trees and mesas behind its rim; the wall yard
+  with its `player` view and HUD; both crane overviews. From the crane the village reads as a village, the picture
+  is hazy at the top and `ex_car`'s own floor is a plain beige disc.
+- 03:44 landscape, second pass: grass patches and tufts, road half width 3.0, mesas in three strata. New walk
+  `tour_views` (three crane views) and `world.sh tour --pictures-only`. `captures/views/02_overview_hill.png` is the
+  picture to put beside the concept: paddle court in front, the road, the track, the crane, mesas, the low sun.
+- 03:46 selftest case `world.tour` (headless form); the world line of `world.sh walk` now also prints wrong-pack
+  calls and kernel-call time (the `world.walk_valve` case's pattern follows). All gates started in one chain
+  (selftest, seeds, k, item, view.sh check); WORLD.md, API.md 19 / 20 / 21, notes in TIERS.md, DRAW.md, PATCHES.md.
+- 03:50 `tl.sh selftest` on these files: 78 passed, 0 failed (77 before + `world.tour`).
+- 03:51 while the other gates run (no second engine process): the next landscape pass is written as a script and
+  not applied yet (mesas with uneven outlines, flags and a sign at every gate, one fenced building lot with a crane).
+- 03:57 all gates on the files of 03:46 (one chain, 03:46 to 03:57, under load): `tl.sh selftest` 78 / 0;
+  `tl.sh seeds` 24 / 0 with hashes bc93a9a4 / b9adbb19 / da4bdc3f (seed 2: 000eda48 / e6662471 / 4b2de68d):
+  unchanged; `k.sh selftest` 86 / 0; `item.sh selftest` 91 / 0; `view.sh check` (five packs, stage paddle, through the
+  host mode `world-view`, scenery "plot"): PASS, 36635c04 at 3516, cadd1cd9 at 6776, 6366b88f at 1221, 16db2bf1 at
+  332, 8d1831dc at 371: the hashes of DRAW.md section 6; 0 gate leaks, 0 wrong-pack calls, 0 errors.
+- 03:57 landscape, third pass applied: mesas with uneven outlines in three strata, a flag on each side of every gate
+  and a sign, building lots (`landscape.lots`: a fenced lot with a crane, a scaffold, timber, pallets, barricades).
+  Looked at `views/` after each change; the hill view was moved twice.
+- 03:58 N5a's proofs again, because `rest_until` changes who ticks when: `world.sh proof ledger`, `leave`,
+  `tickets`: PASS, PASS, PASS (own ticks differ by one from N5a's figures where a pack was rebuilt, as intended).
+- 03:59 ledger in a window: a tiers file with `backdrop_m` 70, `world.sh tour tour --tiers=<it> --out-dir=<scratch>`:
+  wall, kit, car unloaded on tick 0 and built again when the visitor came near, walker and paddle unloaded later;
+  PASS (drive, wall, kit, car same; walker and paddle in the ledger at the end: nothing to hash); 10 pictures, looked
+  at four: the unloaded plots are drawn as their stand-ins.
+- 04:00 the live path (`--live`: WASD, E, Q) run for 200 ticks in the hidden window with no key pressed: no script
+  error. That is all the evidence for it; nobody has walked.
+- 04:01 the final tour once printed an engine warning with the trace `CreateJob (jolt_job_system.cpp:123)`; the text
+  was not kept (the tools filtered WARNING lines; they print them now). Engine errors 0, hashes equal. A headless run
+  right after: 0 warnings. Two more windowed runs: it did not come back.
+- 04:03 a second, small lot between the walker room and the track; final `world.sh tour tour
+  --out-dir=kernel/world/captures/tour`: PASS, 10 of 10 pictures, all ten looked at again. Hash table: drive 2750
+  ticks f3407ff7, wall 789 b292d651, walker 371 8d1831dc, paddle 2361 2ae96170, kit 8 0b8e9424, car 1864 bf2f98da:
+  tour = alone = replay. Owner pictures: `captures/world_overview.png`, `world_vs_concept.png`, `far_and_near.png`,
+  `world_from_above.jpg`; the tour frames kept as JPEG (21 MB in all instead of 48).
+- 04:08 on the final files: `tl.sh selftest world.` 7 / 0 (`world.walk_proof` with N5a's hashes 59c7f07b / 2962e912 /
+  6366b88f; `world.tour` with the table above), `tl.sh selftest verbs` 1 / 0 (5 verbs, 3 world modes), `view.sh check`
+  PASS with the same five hashes. The full `tl.sh selftest` (78 / 0), `tl.sh seeds` (24 / 0), `k.sh selftest` (86 / 0)
+  and `item.sh selftest` (91 / 0) are of 03:46 to 03:57; after them only landscape.gd, the two walk scripts,
+  world.sh (WARNING lines, a verdict's wording, `--pictures-only`), selftest.sh (the text of one verdict) and
+  documents changed.
+- 04:09 requests that cannot be met (a scratch walk): `enter` on the road, `leave` with nobody on stage, `enter` of a
+  named plot he is not in, `enter` while a game is on stage: four `refused` events with their reason.
+- 04:10 no engine process of mine is left (the six Godot processes running belong to other projects); no window.
+  Not done: a person walking it (`world.sh visit`); a body for the visitor; relief; `footprint` in the packs;
+  the foreman's copy of verbs.json; the text of the one Jolt warning. N7 ends here.

@@ -80,12 +80,11 @@ view_run() {   # the tl.view/1 and tl.world/1 lines on stdout; a window that die
   [ -n "$TL_VIEW_REALTIME" ] && fixed=""
   for a in "$@"; do args+=("$(fix_arg "$a")"); done
   tmp="${TMPDIR:-${TEMP:-/tmp}}"; command -v cygpath >/dev/null 2>&1 && tmp="$(cygpath -m "$tmp")"
-  # the viewer is its own main scene, so nothing has built the class cache for it (host.gd does that for the verbs)
-  [ -f "$E/.godot/global_script_class_cache.cfg" ] || "$G" --headless --path "$E" --import >/dev/null 2>&1
+  # N7: the viewer is the host mode `world-view` (kernel/host/host.gd), which builds the class cache like every verb
   for attempt in 1 2 3; do
     tag="tlview_$$_${RANDOM}"
     log="$tmp/$tag.log"
-    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080       --rendering-driver d3d12 $fixed --log-file "$log" --path "$E" res://kernel/world/draw/view.tscn       -- shot "${args[@]}" "--tag=$tag" >/dev/null 2>&1 &
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --resolution 1920x1080       --rendering-driver d3d12 $fixed --log-file "$log" --path "$E" res://kernel/host/host.tscn       -- world-view "${args[@]}" "--tag=$tag" >/dev/null 2>&1 &
     pid=$!
     waited=0
     while kill -0 $pid 2>/dev/null; do

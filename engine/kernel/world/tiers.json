@@ -7,6 +7,8 @@
   "margin_m": {"stage": 2, "sideline": 10, "backdrop": 40},
   "adjacent_gap_m": 8,
   "dwell_ticks": 120,
+  "restart_pause_ticks": 180,
+  "restart_note": "N7, worlds with a visitor: a game that ended by itself and is not on stage starts its next round this many world ticks after it ended (or after the visitor left it). 0 = it stays over.",
   "default_footprint_m": [40, 40],
   "budget_ms": {"front": 6.0, "backdrop": 2.0},
   "slice": {"min": 2, "max": 30},

@@ -33,6 +33,7 @@ static func create() -> TLHud:
 	h.name = "TLHud"
 	if TLContext.current != null:
 		TLContext.current.huds.append(h)
+		h.visible = TLContext.current.on_stage      # N7 (N5b patch 2): in a world only the stage pack's HUD is shown
 	return h
 
 
