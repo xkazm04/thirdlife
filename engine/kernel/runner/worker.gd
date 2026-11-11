@@ -9,6 +9,8 @@ extends Node
 
 const LoggerScript: GDScript = preload("res://kernel/runner/logger.gd")
 const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
+const CpuClock: GDScript = preload("res://kernel/host/cpuclock.gd")
+const StateHash: GDScript = preload("res://kernel/host/statehash.gd")
 
 const TICK_LIMIT_MS: int = 250          # RUNNER.md: one _pack_tick or _bot_tick
 const SETUP_LIMIT_MS: int = 10000       # kernel addition: generators, _pack_setup, _pack_start, _bot_setup, teardown
@@ -57,6 +59,7 @@ var _wd_phase: String = ""
 var _wd_frame: int = -1
 var _wd_stop: bool = false
 var _wd_tripped: bool = false
+var cpu: RefCounted                      # P1: processor time of this process (kernel/host/cpuclock.gd)
 
 
 func start(options: Dictionary) -> void:
@@ -80,6 +83,8 @@ func start(options: Dictionary) -> void:
 	logger = LoggerScript.new()
 	logger.pack_dir = pack_dir
 	OS.add_logger(logger)
+	cpu = CpuClock.new()
+	cpu.call("start", OS.get_process_id())
 	_wd_thread = Thread.new()
 	_wd_thread.start(_wd_run)
 	loaded = _load_pack()
@@ -339,49 +344,10 @@ func _census_node(n: Node, counts: Array) -> void:
 
 
 # ------------------------------------------------------------------------------------------------------ hashing
-func _q(v: float) -> int:
-	return int(round(v * 1000.0))
-
-
-func _put_v3(buf: StreamPeerBuffer, v: Vector3) -> void:
-	buf.put_64(_q(v.x))
-	buf.put_64(_q(v.y))
-	buf.put_64(_q(v.z))
-
-
-func _hash_node(n: Node, buf: StreamPeerBuffer) -> void:
-	if n is PhysicsBody3D:
-		var t: Transform3D = (n as PhysicsBody3D).global_transform
-		_put_v3(buf, t.origin)
-		var qt: Quaternion = t.basis.orthonormalized().get_rotation_quaternion()
-		if qt.w < 0.0:
-			qt = -qt
-		buf.put_64(_q(qt.x))
-		buf.put_64(_q(qt.y))
-		buf.put_64(_q(qt.z))
-		buf.put_64(_q(qt.w))
-		if n is RigidBody3D:
-			_put_v3(buf, (n as RigidBody3D).linear_velocity)
-			_put_v3(buf, (n as RigidBody3D).angular_velocity)
-		elif n is CharacterBody3D:
-			_put_v3(buf, (n as CharacterBody3D).velocity)
-	for c: Node in n.get_children():
-		_hash_node(c, buf)
-
-
-## SHA-256 over every physics body under the pack (position, rotation, velocities; quantised to 0.001) in tree
-## order, followed by the canonical form of entry._pack_state().
+## SHA-256 over every physics body under the pack and the canonical form of entry._pack_state() (kernel/host/statehash.gd).
 func _state_hash() -> String:
-	var buf: StreamPeerBuffer = StreamPeerBuffer.new()
-	if pack_node != null:
-		_hash_node(pack_node, buf)
-	if entry != null and entry.has_method("_pack_state"):
-		buf.put_data(_canon(entry.call("_pack_state")).to_utf8_buffer())
-	var hc: HashingContext = HashingContext.new()
-	hc.start(HashingContext.HASH_SHA256)
-	if buf.get_size() > 0:
-		hc.update(buf.data_array)
-	return hc.finish().hex_encode()
+	var tail: String = _canon(entry.call("_pack_state")) if entry != null and entry.has_method("_pack_state") else ""
+	return StateHash.call("hash", pack_node, tail)
 
 
 static func _canon(v: Variant) -> String:
@@ -484,10 +450,12 @@ func _guard_begin(phase: String, limit_ms: int) -> void:
 	_wd_mutex.unlock()
 
 
-## False when the call ran over its limit (the run is being stopped).
+## False when the call ran over its limit (the run is being stopped). P1: the limit counts processor time; a call that ran
+## over it in wall time only was starved by the machine: noted in cpu.stalls, the run goes on.
 func _guard_end() -> bool:
 	var now: int = Time.get_ticks_usec()
 	_wd_mutex.lock()
+	var started_at: int = _wd_start
 	var elapsed: int = now - _wd_start
 	var limit: int = _wd_limit
 	var phase: String = _wd_phase
@@ -500,7 +468,16 @@ func _guard_end() -> bool:
 	if phase.ends_with("_tick"):
 		tick_ms_max = maxf(tick_ms_max, float(elapsed) / 1000.0)
 	if elapsed > limit:
-		_trip("tick_timeout", "%s took %d ms (limit %d ms)" % [phase, elapsed / 1000, limit / 1000], phase)
+		var used: float = float(cpu.call("used_ms", started_at, now))
+		var wall_ms: float = float(elapsed) / 1000.0
+		if used >= 0.0 and used * 1000.0 < float(limit):
+			cpu.call("note_stall", phase, frame if started else -1, wall_ms, used)
+			return true
+		if used < 0.0 and not bool(cpu.get("gave_up")):
+			cpu.call("note_stall", phase, frame if started else -1, wall_ms, -1.0)      # the helper is still starting: no judgement yet
+			return true
+		_trip("tick_timeout", "%s took %d ms (limit %d ms)%s" % [phase, elapsed / 1000, limit / 1000,
+			(", %d ms of it processor time" % int(used)) if used >= 0.0 else " of wall time (no process-time source on this machine)"], phase)
 		return false
 	return true
 
@@ -515,28 +492,44 @@ func _wd_run() -> void:
 			# the supervisor rewrites this file every few seconds while it lives. Gone or a minute stale means the
 			# supervisor was killed by its caller: do not linger as an orphan. (Housekeeping, not a check.)
 			if not FileAccess.file_exists(alive) or Time.get_unix_time_from_system() - float(FileAccess.get_modified_time(alive)) > ORPHAN_AFTER_S:
+				cpu.call("stop")
 				OS.kill(OS.get_process_id())
 				return
 		_wd_mutex.lock()
 		var stop: bool = _wd_stop
-		var over: bool = _wd_start != 0 and Time.get_ticks_usec() - _wd_start > _wd_limit
+		var g_start: int = _wd_start
 		var phase: String = _wd_phase
 		var limit: int = _wd_limit
 		var at_frame: int = _wd_frame
-		if over:
-			_wd_tripped = true
 		_wd_mutex.unlock()
 		if stop:
 			return
-		if over:
-			# the main thread is stuck inside pack code: write the result from here and end the process
-			var res: Dictionary = {"loaded": at_frame >= 0, "frames_run": maxi(at_frame, 0), "load_errors": [],
-				"watchdog": {"reason": "tick_timeout", "phase": phase, "frame": at_frame,
-					"detail": "%s did not return within %d ms (runaway script); the process was stopped" % [phase, limit / 1000]}}
-			res.merge(logger.call("snapshot"))
-			_store(res)
-			OS.kill(OS.get_process_id())
-			return
+		var now: int = Time.get_ticks_usec()
+		var v: Dictionary = cpu.call("verdict", g_start, now, limit, phase) if g_start != 0 else {}   # P1: processor time decides (cpuclock.gd)
+		if v.is_empty():
+			continue
+		var reason: String = str(v["reason"])
+		var used: float = float(v["used"])
+		var detail: String = str(v["detail"])
+		var wall: int = now - g_start
+		_wd_mutex.lock()
+		if _wd_start == g_start:
+			_wd_tripped = true       # the main thread is still inside the call: it has not returned
+		else:
+			reason = ""              # the call returned meanwhile
+		_wd_mutex.unlock()
+		if reason.is_empty():
+			continue
+		# the main thread is stuck inside pack code: write the result from here and end the process
+		var wd: Dictionary = {"reason": reason, "phase": phase, "frame": at_frame, "detail": detail, "wall_ms": wall / 1000}
+		if used >= 0.0:
+			wd["cpu_ms"] = int(used)
+		var res: Dictionary = {"loaded": at_frame >= 0, "frames_run": maxi(at_frame, 0), "load_errors": [], "watchdog": wd}
+		res.merge(logger.call("snapshot"))
+		_store(res)
+		cpu.call("stop")
+		OS.kill(OS.get_process_id())
+		return
 
 
 func _trip(reason: String, detail: String, phase: String = "") -> void:
@@ -590,6 +583,11 @@ func _end_run() -> void:
 		metrics = {"state_hash": state_hash, "frame_ms_p50": _percentile(sorted, 0.5), "frame_ms_p99": _percentile(sorted, 0.99),
 			"entities_max": entities_max, "bodies_max": bodies_max, "tick_ms_max": snappedf(tick_ms_max, 0.001)}
 	res["metrics"] = metrics
+	var starved: Dictionary = cpu.call("starved_summary")
+	if not starved.is_empty():
+		res["starved"] = starved
+	if opts.has("series"):         # P1: every frame's time, for the supervisor's best-of-runs budget
+		res["frame_us"] = Array(frame_usec)
 	res["hash_trace"] = hash_trace
 	if not warnings.is_empty():
 		res["warnings"] = warnings
@@ -607,5 +605,6 @@ func _end_run() -> void:
 	_wd_stop = true
 	_wd_mutex.unlock()
 	_wd_thread.wait_to_finish()
+	cpu.call("stop")
 	print("[tl] worker done: mode=%s frames=%d" % [mode, frame])
 	get_tree().quit(0)

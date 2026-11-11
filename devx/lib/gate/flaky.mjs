@@ -5,7 +5,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export const CLOCK_MARKERS = [/"reason":"tick_timeout"/, /"id":"invariants\.frame_budget","ok":false/];
+// P1: a tick_timeout now means processor time (a runaway script); a run the machine starved is an engine error "starved: ..."
+// (outcome not_run). Both stay listed: a gate retry of either costs little and the report says which it was.
+export const CLOCK_MARKERS = [/"reason":"tick_timeout"/, /"id":"invariants\.frame_budget","ok":false/, /"message":"starved: /];
 
 export function failedCases(stdout) {
   return [...String(stdout).matchAll(/^FAIL ([^\s:]+)/gm)].map((m) => m[1]);
