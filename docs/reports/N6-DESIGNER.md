@@ -2,8 +2,8 @@
 
 Brief `briefs/BRIEF-N6-DESIGNER.md`. The builder started at 01:25 on 2026-11-11 in the engine copy
 `site/_work/n6/engine/`. Its journal ends at 01:55 with every item done; **it never sent a final report**: the agent
-went silent, no process of its own was running at 03:52, and a message asking for the report was not answered by
-04:05. What follows is the builder's own journal, unchanged, then the Director's verification from the files on disk.
+went silent, no process of its own was running at 03:45, and a message asking for the report was not answered by
+03:55. What follows is the builder's own journal, unchanged, then the Director's verification from the files on disk.
 The usual builder sections "what a player still cannot do" and "what I did not verify" are therefore missing; the
 Director's own list is at the end.
 
@@ -48,7 +48,7 @@ Resume point. Newest entry last. Times are CEST from `date`.
 
 ## Director verification
 
-Done 03:52 to 04:05 on 2026-11-11, from the files the builder left.
+Done 03:45 to 03:55 on 2026-11-11, from the files the builder left.
 
 ### What was re-run, and the result
 
