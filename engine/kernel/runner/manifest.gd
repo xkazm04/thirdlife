@@ -17,7 +17,21 @@ const KEYS: Dictionary = {
 	"tests": {"type": "array", "pattern": "^tests/[A-Za-z0-9_/]+\\.gd$", "min_items": 1, "required": true},
 	"requires": {"type": "array", "pattern": ID_RE},
 	"cameras": {"type": "array", "pattern": "^[a-z][a-z0-9_]*$"},
+	# optional fields of 2026-11-11 (contracts/PACK.md, last section); a pack without them behaves as before
+	"footprint": {"type": "shape"},
+	"params": {"type": "shape"},
+	"on_leave": {"type": "string", "pattern": "^(bot|pause|end)$"},
+	"subject": {"type": "string", "pattern": "^[A-Za-z0-9_]+(/[A-Za-z0-9_]+)*$", "max": 120},
+	"moments": {"type": "shape"},
 }
+const PARAM_KEYS: Array = ["name", "file", "path", "min", "max", "step", "label"]
+const PARAM_NAME_RE: String = "^[a-z][a-z0-9_]*$"
+const PARAM_FILE_RE: String = "^data/[A-Za-z0-9_/]+\\.json$"
+const PARAM_PATH_RE: String = "^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)*$"
+const MOMENT_NAME_RE: String = "^[a-z][a-z0-9_]*$"
+const MOMENT_EVENT_RE: String = "^[A-Za-z][A-Za-z0-9_.]*$"
+const MAX_PARAMS: int = 64
+const MAX_MOMENTS: int = 32
 
 
 ## Normalises a pack location to an absolute directory without a trailing slash ("" when it does not exist).
@@ -66,7 +80,9 @@ static func read(pack_dir: String) -> Dictionary:
 			errors.append({"kind": "schema", "file": "pack.json", "line": line,
 				"message": "'%s' is null (an absent value is an omitted key, never null)" % key})
 			continue
-		if rule["type"] == "string":
+		if rule["type"] == "shape":
+			_check_shape(key, v, line, errors)
+		elif rule["type"] == "string":
 			if typeof(v) != TYPE_STRING:
 				errors.append({"kind": "schema", "file": "pack.json", "line": line, "message": "'%s' must be a string" % key})
 				continue
@@ -99,8 +115,117 @@ static func read(pack_dir: String) -> Dictionary:
 	return {"ok": errors.is_empty(), "manifest": m, "errors": errors}
 
 
+## A pack fits this kernel when major and minor agree; a patch number on either side is not compared.
 static func api_compatible(v: String) -> bool:
-	return v == KERNEL_API
+	var a: PackedStringArray = v.split(".")
+	var b: PackedStringArray = KERNEL_API.split(".")
+	return a.size() >= 2 and b.size() >= 2 and a[0] == b[0] and a[1] == b[1]
+
+
+static func _is_num(v: Variant) -> bool:
+	return typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT
+
+
+static func _is_whole(v: Variant) -> bool:
+	return typeof(v) == TYPE_INT or (typeof(v) == TYPE_FLOAT and float(v) == floorf(float(v)))
+
+
+static func _matches(v: Variant, pattern: String) -> bool:
+	return typeof(v) == TYPE_STRING and RegEx.create_from_string(pattern).search(str(v)) != null
+
+
+## Exact key set of an object inside an optional field; every difference is one error.
+static func _keys(d: Dictionary, required: Array, allowed: Array, where: String, line: int, errors: Array) -> bool:
+	var ok: bool = true
+	for k: String in required:
+		if not d.has(k):
+			errors.append({"kind": "schema", "file": "pack.json", "line": line, "message": "%s: missing key '%s'" % [where, k]})
+			ok = false
+	for k: Variant in d.keys():
+		if not allowed.has(k):
+			errors.append({"kind": "schema", "file": "pack.json", "line": line, "message": "%s: unknown key '%s'" % [where, str(k)]})
+			ok = false
+	return ok
+
+
+## Shape checks of `footprint`, `params` and `moments` (contracts/PACK.md, amendments of 2026-11-11).
+static func _check_shape(key: String, v: Variant, line: int, errors: Array) -> void:
+	var bad: Callable = func(message: String) -> void:
+		errors.append({"kind": "schema", "file": "pack.json", "line": line, "message": message})
+	if key == "footprint":
+		if typeof(v) != TYPE_DICTIONARY:
+			bad.call("'footprint' must be an object {\"size_m\": [x, z], \"height_m\": h}")
+			return
+		var fp: Dictionary = v
+		if not _keys(fp, ["size_m", "height_m"], ["size_m", "height_m"], "footprint", line, errors):
+			return
+		var size: Variant = fp["size_m"]
+		if typeof(size) != TYPE_ARRAY or (size as Array).size() != 2 or not _is_num(size[0]) or not _is_num(size[1]) \
+				or float(size[0]) <= 0.0 or float(size[1]) <= 0.0:
+			bad.call("footprint.size_m must be [x, z]: two numbers above 0, in metres")
+		if not _is_num(fp["height_m"]) or float(fp["height_m"]) <= 0.0:
+			bad.call("footprint.height_m must be a number above 0, in metres")
+	elif key == "params":
+		if typeof(v) != TYPE_ARRAY:
+			bad.call("'params' must be an array of {name, file, path, min, max, step, label}")
+			return
+		var arr: Array = v
+		if arr.size() > MAX_PARAMS:
+			bad.call("'params' has %d entries; at most %d" % [arr.size(), MAX_PARAMS])
+		var names: Dictionary = {}
+		for i: int in arr.size():
+			var where: String = "params[%d]" % i
+			if typeof(arr[i]) != TYPE_DICTIONARY:
+				bad.call("%s must be an object" % where)
+				continue
+			var p: Dictionary = arr[i]
+			if not _keys(p, PARAM_KEYS, PARAM_KEYS, where, line, errors):
+				continue
+			if not _matches(p["name"], PARAM_NAME_RE):
+				bad.call("%s.name must match %s" % [where, PARAM_NAME_RE])
+			elif names.has(p["name"]):
+				bad.call("%s.name: '%s' twice" % [where, str(p["name"])])
+			names[p["name"]] = true
+			if not _matches(p["file"], PARAM_FILE_RE) or str(p["file"]).contains(".."):
+				bad.call("%s.file must be a JSON file under data/ (%s)" % [where, PARAM_FILE_RE])
+			if not _matches(p["path"], PARAM_PATH_RE):
+				bad.call("%s.path must be a dotted path such as ball.speed" % where)
+			if typeof(p["label"]) != TYPE_STRING or str(p["label"]).is_empty() or str(p["label"]).length() > 40:
+				bad.call("%s.label must be a string of 1 to 40 characters" % where)
+			if not _is_num(p["min"]) or not _is_num(p["max"]) or not _is_num(p["step"]):
+				bad.call("%s: min, max and step must be numbers" % where)
+			else:
+				if float(p["min"]) >= float(p["max"]):
+					bad.call("%s: min must be below max" % where)
+				if float(p["step"]) <= 0.0:
+					bad.call("%s: step must be above 0" % where)
+	elif key == "moments":
+		if typeof(v) != TYPE_ARRAY:
+			bad.call("'moments' must be an array of {name, frame} or {name, event}")
+			return
+		var arr2: Array = v
+		if arr2.size() > MAX_MOMENTS:
+			bad.call("'moments' has %d entries; at most %d" % [arr2.size(), MAX_MOMENTS])
+		var seen: Dictionary = {}
+		for i: int in arr2.size():
+			var where2: String = "moments[%d]" % i
+			if typeof(arr2[i]) != TYPE_DICTIONARY:
+				bad.call("%s must be an object" % where2)
+				continue
+			var mo: Dictionary = arr2[i]
+			if not _keys(mo, ["name"], ["name", "frame", "event"], where2, line, errors):
+				continue
+			if not _matches(mo["name"], MOMENT_NAME_RE):
+				bad.call("%s.name must match %s" % [where2, MOMENT_NAME_RE])
+			elif seen.has(mo["name"]):
+				bad.call("%s.name: '%s' twice" % [where2, str(mo["name"])])
+			seen[mo["name"]] = true
+			if mo.has("frame") == mo.has("event"):
+				bad.call("%s needs exactly one of 'frame' and 'event'" % where2)
+			elif mo.has("frame") and (not _is_whole(mo["frame"]) or float(mo["frame"]) < 0.0):
+				bad.call("%s.frame must be a whole number, 0 or above" % where2)
+			elif mo.has("event") and not _matches(mo["event"], MOMENT_EVENT_RE):
+				bad.call("%s.event must match %s" % [where2, MOMENT_EVENT_RE])
 
 
 static func _check_string(key: String, v: String, rule: Dictionary, line: int, errors: Array) -> void:

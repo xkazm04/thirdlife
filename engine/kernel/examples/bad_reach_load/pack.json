@@ -1,0 +1,10 @@
+{
+  "id": "example.bad_reach_load",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Deliberately bad pack: load paths the fence let through",
+  "capabilities": [],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot.gd"]
+}

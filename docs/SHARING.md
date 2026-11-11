@@ -1,7 +1,7 @@
 # Sharing: what a player can keep, move and give away
 
 Status: strategy and a draft standard, written 2026-11-10 by the Director for the owner's item (d) of the night plan.
-Nothing here is built yet. The parts planned for the first build are marked **[first build]**.
+The parts marked **[first build]** were built and verified on 2026-11-11 (`docs/reports/N4-ITEM.md`); the rest is strategy.
 
 Owner's rulings this rests on:
 - Sharing comes in two steps: first the player's own saved data through Steam Cloud, later a community store.
@@ -87,13 +87,15 @@ Rules:
 - `author` carries a handle and an optional display name. No e-mail address, no machine path, no account id.
 - Absent values: optional text fields are empty strings, optional lists are empty lists, `parent` is `null`. A key is
   never left out.
+- Evidence nobody has is `null`, never a guess: `provenance.human_code`, each entry of `verify.verbs`, `verify.bypasses`,
+  `verify.script_lines`. `verify.bot_state_hash` holds all 64 characters.
 - Not in the card: ratings, download counts, moderation labels, "safe" marks. Those are statements by a store about an
   item and belong to the store.
 - `signature` is reserved for the store step and does not exist before it.
 
 ## 3. The package: `.tlitem` **[first build]**
 
-One file per item: a zip with `item.json` at its root and the item's folder beside it. Entries are sorted by path,
+One file per item: a zip with `item.json` and the item's files at its root. Entries are sorted by path,
 carry a fixed timestamp and no extra fields, so the archive is reproducible. Godot's own `ZIPPacker` and `ZIPReader`
 are enough; no outside tool is needed.
 
@@ -168,4 +170,7 @@ boundary or a host that runs the game and sends state.
 - Workshop item fields, the 1 MB preview limit and the 5,000-byte developer metadata: Steamworks documentation,
   "ISteamUGC" (https://partner.steamgames.com/doc/api/ISteamUGC). The maximum size of an item's content was not found.
 - The isolation rule for installed third-party code: the registry subject `untrusted-extension-host`.
-- Unverified: that Godot's `ZIPPacker` can produce byte-reproducible archives; the cost of an isolated pack process.
+- Measured in N4 (2026-11-11): Godot's `ZIPPacker` stamps the wall clock and cannot make a reproducible archive, so the
+  engine has its own small writer and a strict reader (`engine/kernel/share/tlzip.gd`). Built: `engine/tools/item.sh`,
+  `engine/kernel/share/SHARE.md`.
+- Unverified: the cost of an isolated pack process.

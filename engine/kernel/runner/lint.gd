@@ -8,22 +8,36 @@ const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
 const MAX_SCRIPT_LINES: int = 600
 const MAX_PACK_LINES: int = 6000
 const MAX_DATA_BYTES: int = 2 * 1024 * 1024
-const TOP_LEVEL: Array = ["pack.json", "scripts", "data", "gen", "assets", "tests", "examples"]
+const TOP_LEVEL: Array = ["pack.json", "scripts", "data", "gen", "assets", "tests", "examples", "preview"]
+## Files allowed at the pack root. item.json is the sharing card (docs/SHARING.md); preview/ holds its pictures.
+const ROOT_FILES: Array = ["pack.json", "README.md", "item.json"]
 const SCRIPT_DIRS: Array = ["scripts", "gen", "tests", "examples"]
 const LOAD_PREFIXES: Array = ["res://kits/", "res://rigs/", "res://style/", "res://kernel/api/"]
+
+## N4: every file of a pack is classed, wherever it sits. The same table gives a shared item its tier
+## (kernel/share/item.gd): only inert files make a `data` item.
+##   script  .gd: read by the fence, in any directory
+##   inert   cannot carry code the engine would run: JSON, text, raster pictures
+##   ignored written by the engine or the version tool beside real files; never part of a pack's content
+##   other   everything else (scenes, resources, shaders, libraries, archives, unknown types): the fence cannot read
+##           it and the engine may execute it, so a pack may not hold it
+const INERT_EXT: Array = ["json", "md", "txt", "png", "jpg", "jpeg", "webp"]
+const IGNORED_NAMES: Array = [".gitkeep", ".gdignore"]
+const IGNORED_EXT: Array = ["uid", "import"]
+const NODE_PATH_CALLS: String = "(?<![\\w])(get_node|get_node_or_null|has_node|get_node_and_resource|NodePath)\\s*\\(\\s*|\\$\\s*"
 
 ## [regex, label, hint]. The first block is the contract's list (PACK.md); the block marked "kernel extension" closes
 ## obvious holes in the same spirit (other doors to the global random generator) and is listed in API.md.
 const FENCE: Array = [
 	["(?m)^[ \\t]*class_name\\b", "class_name", "pack scripts never declare a global class"],
 	["@tool\\b", "@tool", ""],
-	["(?<![\\w.])OS\\s*\\.", "OS.", ""],
+	["(?<![\\w.])OS\\b", "OS.", ""],                       # N4: the bare name too (`var o = OS`)
 	["\\bFileAccess\\b", "FileAccess", "read data/ with ctx.read_json()"],
 	["\\bDirAccess\\b", "DirAccess", ""],
 	["\\bResourceSaver\\b", "ResourceSaver", ""],
-	["\\bProjectSettings\\s*\\.", "ProjectSettings.", ""],
+	["\\bProjectSettings\\b", "ProjectSettings.", ""],    # N4: the bare name too
 	["\\bEngine\\s*\\.\\s*get_singleton\\b", "Engine.get_singleton", ""],
-	["\\bClassDB\\s*\\.", "ClassDB.", ""],
+	["\\bClassDB\\b", "ClassDB.", ""],                    # N4: the bare name too
 	["\\bHTTPRequest\\b", "HTTPRequest", ""],
 	["\\bHTTPClient\\b", "HTTPClient", ""],
 	["\\bStreamPeer\\w*", "StreamPeer", ""],
@@ -55,6 +69,66 @@ const FENCE: Array = [
 	["\\.\\s*shuffle\\s*\\(", ".shuffle(", "uses the global generator; use ctx.shuffle() (kernel extension of the fence)"],
 	["\\.\\s*pick_random\\s*\\(", ".pick_random(", "uses the global generator; use ctx.pick() (kernel extension of the fence)"],
 	["\\bWorkerThreadPool\\b", "WorkerThreadPool", "kernel extension of the fence"],
+	# ---- N4 (2026-11-11): the holes a scout found. No seed, kernel example or promoted pack needs any of these.
+	# reflection: a name in a string is invisible to a text check
+	["(?<![\\w])call\\b", "call(", "reflection: call the method by its name (N4)"],
+	["(?<![\\w])callv\\b", "callv(", "reflection: call the method by its name (N4)"],
+	["(?<![\\w])call_deferred\\b", "call_deferred(", "reflection: call the method by its name (N4)"],
+	["(?<![\\w])(call_group|call_group_flags|propagate_call|propagate_notification)\\b", "call_group(", "reflection (N4)"],
+	["(?<![\\w])Callable\\s*(\\(|\\.\\s*create\\b)", "Callable(", "reflection: write the method itself, obj.method (N4)"],
+	["\\.\\s*set\\b", ".set(", "reflection: assign the property, obj.name = value; d[key] = value for a Dictionary (N4)"],
+	["(?<![\\w])(set_deferred|set_indexed)\\b", "set_deferred(", "reflection: assign the property (N4)"],
+	["\\bset_script\\b", "set_script", "make the node from its script: ctx.load_script(path).new() (N4)"],
+	["\\.\\s*script\\s*=(?!=)", ".script =", "make the node from its script: ctx.load_script(path).new() (N4)"],
+	["\\.\\s*source_code\\b", ".source_code", "a script is a file of the pack, never text built at run time (N4)"],
+	["\\.\\s*reload\\b", ".reload(", "a script is a file of the pack, never text built at run time (N4)"],
+	["\\b(instance_from_id|dict_to_inst)\\b", "instance_from_id", "N4"],
+	# engine classes that read or write files, open the network, or reach past the kernel
+	["\\bResourceLoader\\b", "ResourceLoader", "use ctx.load_script() and ctx.read_json() (N4)"],
+	["\\bConfigFile\\b", "ConfigFile", "N4"],
+	["\\bZIP(Reader|Packer)\\b", "ZIPReader/ZIPPacker", "N4"],
+	["\\bPCKPacker\\b", "PCKPacker", "N4"],
+	["\\bXMLParser\\b", "XMLParser", "N4"],
+	["\\bload_from_file\\b", "load_from_file", "pictures are built in memory (Image.create) or come from the kit (N4)"],
+	["\\.\\s*(save_(png|jpg|exr|webp)\\w*|save_to_wav)\\b", "Image.save_*", "a pack writes no files (N4)"],
+	["\\bPackedScene\\b", "PackedScene", "a scene file can carry scripts lint cannot read (N4)"],
+	["\\bMarshalls\\b", "Marshalls", "N4"],
+	["\\bMultiplayer\\w+", "Multiplayer*", "N4"],
+	["\\bENetMultiplayerPeer\\b", "ENetMultiplayerPeer", "N4"],
+	["\\bWebRTC\\w*", "WebRTC*", "N4"],
+	["\\bget_multiplayer\\b|(?<![\\w])multiplayer\\s*\\.|(?<![\\w])rpc(_id)?\\s*\\(|@rpc\\b", "multiplayer", "N4"],
+	["\\b(Crypto\\w*|HashingContext|AESContext|HMACContext|X509Certificate|TLSOptions)\\b", "Crypto", "N4"],
+	["\\bDisplayServer\\b", "DisplayServer", "N4"],
+	["\\bRenderingServer\\b", "RenderingServer", "N4"],
+	["\\bRenderingDevice\\b", "RenderingDevice", "N4"],
+	["\\bPhysicsServer[23]D\\w*", "PhysicsServer", "bodies come from TLBodies (N4)"],
+	["\\bAudioServer\\b", "AudioServer", "sound goes through TLAudio (N4)"],
+	["\\bPerformance\\b", "Performance", "N4"],
+	["(?<![\\w.])Input\\b", "Input.", "input goes through ctx.input, the door a bot uses too (N4)"],
+	["(?<![\\w.])InputMap\\b", "InputMap", "input goes through ctx.input (N4)"],
+	["\\bEngine\\b(?!\\s*\\.\\s*get_singleton\\b)", "Engine.", "N4"],
+	["\\bTime\\s*\\.\\s*get_(datetime|date|time)\\w*", "Time.get_datetime", "time is ctx.frame (60 per second) (N4)"],
+	# the scene tree above the pack
+	["\\bget_tree\\b(?!\\s*\\(\\s*\\)\\s*\\.\\s*(root\\b|quit\\b|change_scene))", "get_tree()", "the pack lives under ctx.root (N4)"],
+	["\\bget_root\\b", "get_root(", "build under ctx.root (N4)"],
+	["\\b(get_parent|find_parent)\\b", "get_parent(", "a parent chain leaves ctx.root (N4)"],
+	["\\bget_(window|viewport)\\b", "get_window()/get_viewport()", "the window is the tree's root (N4)"],
+	# the same doors by another name: a singleton or a class kept in a variable, a method taken without calling it
+	["(?<![\\w.])Time\\b(?!\\s*\\.)", "Time (as a value)", "time is ctx.frame (N4)"],
+	["(=|\\(|,|\\[|\\breturn)\\s*GDScript\\b(?!\\s*\\.\\s*new\\b)", "GDScript (as a value)", "N4"],
+	# more engine classes that read files, record, or resolve names on the network
+	["(?<![\\w.])IP\\b", "IP", "N4"],
+	["\\bCamera(Server|Feed)\\b", "CameraServer", "N4"],
+	["\\bAudioStreamMicrophone\\b|\\bAudioEffect(Capture|Record)\\b", "microphone", "N4"],
+	["\\bGDExtension\\w*", "GDExtension", "N4"],
+	["\\b(GLTF|FBX)\\w+", "GLTF/FBX", "N4"],
+	["\\bload_(dynamic|bitmap)_font\\b", "load_dynamic_font", "N4"],
+	["(?<![\\w.])(load|preload)\\b(?!\\s*\\()", "load (as a value)", "N4"],
+	["\\bWebSocket(?!Peer\\b)\\w+", "WebSocket*", "N4"],
+	["\\bENet(?!Connection\\b|MultiplayerPeer\\b)\\w+", "ENet*", "N4"],
+	["\\b(UPNP\\w*|DTLSServer|SceneMultiplayer)\\b", "UPNP/DTLSServer/SceneMultiplayer", "N4"],
+	["\\b(Java(?!ScriptBridge\\b)\\w+|JNISingleton|EngineDebugger)\\b", "JavaClassWrapper/EngineDebugger", "N4"],
+	["\\b(FileDialog|LinkButton)\\b", "FileDialog/LinkButton", "a pack opens no file chooser and no web address (N4)"],
 ]
 
 ## [regex, primitive that exists for it, pattern label]
@@ -213,8 +287,8 @@ static func run(pack_dir: String) -> Dictionary:
 	if top != null:
 		for f: String in top.get_files():
 			# README.md: what the pack shows, for the next author (WP4 brief: every seed carries one)
-			if f != "pack.json" and f != "README.md" and not f.begins_with("."):
-				lay.append({"kind": "layout", "file": f, "message": "unexpected file at the pack root (allowed: pack.json, README.md and the directories %s)" % ", ".join(PackedStringArray(TOP_LEVEL.slice(1)))})
+			if not ROOT_FILES.has(f) and not f.begins_with("."):
+				lay.append({"kind": "layout", "file": f, "message": "unexpected file at the pack root (allowed: pack.json, README.md, item.json and the directories %s)" % ", ".join(PackedStringArray(TOP_LEVEL.slice(1)))})
 		for s: String in top.get_directories():
 			if not TOP_LEVEL.has(s) and not s.begins_with("."):
 				lay.append({"kind": "layout", "file": s + "/", "message": "unexpected directory at the pack root"})
@@ -229,6 +303,11 @@ static func run(pack_dir: String) -> Dictionary:
 			for p: Variant in m[key]:
 				if typeof(p) == TYPE_STRING:
 					refs.append([key, p])
+	# a slider's file must be there (optional field `params`, PACK.md amendments of 2026-11-11)
+	if typeof(m.get("params")) == TYPE_ARRAY:
+		for p: Variant in m["params"]:
+			if typeof(p) == TYPE_DICTIONARY and typeof((p as Dictionary).get("file")) == TYPE_STRING:
+				refs.append(["params", p["file"]])
 	for r: Array in refs:
 		if str(r[1]).contains("..") or not FileAccess.file_exists(pack_dir + "/" + str(r[1])):
 			lay.append({"kind": "layout", "file": str(r[1]), "message": "listed in '%s' but the file does not exist" % str(r[0])})
@@ -255,11 +334,25 @@ static func run(pack_dir: String) -> Dictionary:
 				gd_files.append(f)
 			elif sd != "examples" and f.get_extension() != "uid" and not f.get_file().begins_with("."):
 				lay.append({"kind": "layout", "file": f, "message": "%s/ holds GDScript only" % sd})
+	# N4: every file of the pack, hidden ones too. A script outside the four script directories (assets/, data/,
+	# preview/, a dot directory, the root) is read by the fence like any other; a file that is neither a script
+	# nor inert is refused, because the engine could run it and this check cannot read it.
+	var reach: Array = []
+	var all_files: Array = []
+	list_all(pack_dir, "", all_files)
+	for f: String in all_files:
+		var cls: String = file_class(f)
+		if cls == "script":
+			if not gd_files.has(f):
+				gd_files.append(f)
+		elif cls == "other":
+			reach.append({"kind": "fence", "file": f, "message": "a file of this type can carry code and lint cannot read it (a pack holds .gd scripts, and inert files: %s)" % ", ".join(PackedStringArray(INERT_EXT))})
 	errors.append_array(lay)
 	checks.append({"id": "lint.layout", "ok": lay.is_empty(), "detail": _detail(lay, "%d scripts, %d data files" % [gd_files.size(), data_files.size()])})
 
 	# ---- per-file text checks
-	var fence: Array = []
+	var fence: Array = reach
+	var node_re: RegEx = RegEx.create_from_string(NODE_PATH_CALLS)
 	var caps_err: Array = []
 	var size_err: Array = []
 	var bypasses: Array = []
@@ -288,7 +381,7 @@ static func run(pack_dir: String) -> Dictionary:
 	var pack_res: String = ProjectSettings.localize_path(pack_dir)
 	for rel: String in gd_files:
 		var src: String = FileAccess.get_file_as_string(pack_dir + "/" + rel).replace("\r\n", "\n")
-		var code: String = strip(src)
+		var code: String = strip(src).replace("\\\n", " \n")    # N4: a line continuation is white space to the patterns
 		var starts: PackedInt32Array = _line_starts(code)
 		var nlines: int = starts.size() - (1 if src.ends_with("\n") else 0)
 		var top_dir: String = rel.get_slice("/", 0)
@@ -303,10 +396,15 @@ static func run(pack_dir: String) -> Dictionary:
 				fence.append({"kind": "fence", "file": rel, "line": _line_at(starts, hit.get_start()),
 					"message": "'%s' is outside the fence%s" % [FENCE[k][1], "" if hint.is_empty() else ": " + hint]})
 		for hit: RegExMatch in load_re.search_all(code):
-			var problem: String = _load_problem(src, code, hit.get_end(), pack_res)
+			var problem: String = _load_problem(src, code, hit.get_end(), pack_res, hit.get_string(1))
 			if not problem.is_empty():
 				fence.append({"kind": "fence", "file": rel, "line": _line_at(starts, hit.get_start()),
 					"message": "%s( %s" % [hit.get_string(1), problem]})
+		for hit: RegExMatch in node_re.search_all(code):
+			var node_problem: String = _node_path_problem(src, code, hit.get_end(), hit.get_string().begins_with("$"))
+			if not node_problem.is_empty():
+				fence.append({"kind": "fence", "file": rel, "line": _line_at(starts, hit.get_start()),
+					"message": "node path %s (N4)" % node_problem})
 		for k: int in bypass_re.size():
 			if top_dir == "gen" and k >= geometry_from and k < geometry_to:
 				continue      # geometry built in a generator is the `kit_parts_added` figure, not also a bypass
@@ -351,8 +449,66 @@ static func _detail(errs: Array, ok_text: String) -> String:
 	return "%d problem(s); first: %s %s" % [errs.size(), where, str(first["message"])]
 
 
+## Every file under `dir`, hidden ones and dot directories included, as sorted relative paths.
+static func list_all(dir: String, rel: String, out: Array) -> void:
+	var d: DirAccess = DirAccess.open(dir)
+	if d == null:
+		return
+	d.include_hidden = true
+	d.include_navigational = false
+	var names: Array = Array(d.get_files())
+	names.sort()
+	for f: String in names:
+		out.append(rel + f)
+	var dirs: Array = Array(d.get_directories())
+	dirs.sort()
+	for s: String in dirs:
+		list_all(dir + "/" + s, rel + s + "/", out)
+
+
+## "script", "inert", "ignored" or "other" (see INERT_EXT above). Decided by the file name alone.
+static func file_class(rel: String) -> String:
+	var fname: String = rel.get_file()
+	var ext: String = fname.get_extension().to_lower() if fname.contains(".") else ""
+	if IGNORED_NAMES.has(fname) or (IGNORED_EXT.has(ext) and not fname.begins_with(".")):
+		return "ignored"
+	if ext == "gd":
+		return "script"
+	if INERT_EXT.has(ext) and not fname.begins_with("."):
+		return "inert"
+	return "other"
+
+
+## "" when the node path literal that starts at `at` stays inside the pack's own tree; otherwise the reason.
+## A path that is not a literal cannot be judged by a text check and is let through (SHARE.md lists it).
+static func _node_path_problem(src: String, code: String, at: int, dollar: bool = false) -> String:
+	var i: int = at
+	if i < code.length() and code[i] == "/":
+		return "'$/...' is absolute: the pack lives under ctx.root"
+	if i < code.length() and (code[i] == "&" or code[i] == "^"):
+		i += 1
+	if i >= code.length() or (code[i] != "\"" and code[i] != "'"):
+		if dollar:
+			return ""          # $Name/Child: a relative path written as names
+		return "that is not a literal cannot be checked: write the path as one plain string"
+	var e: int = code.find(code[i], i + 1)
+	if e < 0:
+		return "with an unterminated literal"
+	var path: String = src.substr(i + 1, e - i - 1)
+	var after: int = e + 1
+	while after < code.length() and (code[after] == " " or code[after] == "\t" or code[after] == "\n"):
+		after += 1
+	if not dollar and after < code.length() and code[after] != ")" and code[after] != ",":
+		return "built from pieces cannot be checked: write the path as one plain string"
+	if path.begins_with("/"):
+		return "'%s' is absolute: the pack lives under ctx.root" % path
+	if path.contains(".."):
+		return "'%s' climbs out with '..': the pack lives under ctx.root" % path
+	return ""
+
+
 ## "" when the load/preload argument that starts at `at` is allowed; otherwise the reason.
-static func _load_problem(src: String, code: String, at: int, pack_res: String) -> String:
+static func _load_problem(src: String, code: String, at: int, pack_res: String, fn: String = "preload") -> String:
 	var i: int = at
 	if i < code.length() and (code[i] == "&" or code[i] == "^" or code[i] == "r"):
 		i += 1
@@ -363,6 +519,12 @@ static func _load_problem(src: String, code: String, at: int, pack_res: String) 
 	if e < 0:
 		return "with an unterminated literal"
 	var path: String = src.substr(i + 1, e - i - 1)
+	# N4: the literal must be the whole argument ("res://kits/" + anything was let through on its first half)
+	var after: int = e + 1
+	while after < code.length() and (code[after] == " " or code[after] == "\t" or code[after] == "\n"):
+		after += 1
+	if after < code.length() and code[after] != ")" and code[after] != ",":
+		return "with a path built from pieces: only one plain literal can be checked"
 	if path.contains(".."):
 		return "of '%s': '..' is not allowed" % path
 	for p: String in LOAD_PREFIXES:
@@ -372,4 +534,7 @@ static func _load_problem(src: String, code: String, at: int, pack_res: String) 
 		return ""
 	if path.contains("://") or path.is_absolute_path():
 		return "of '%s': only the pack itself, res://kits/, res://rigs/, res://style/ and res://kernel/api/ may be loaded" % path
+	# N4: load() reads a relative path from res://, not from the pack (preload reads it beside the script)
+	if fn == "load":
+		return "of the relative path '%s': load() would read it from the engine's root; use ctx.load_script()" % path
 	return ""

@@ -6,7 +6,8 @@
 #   tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600]
 #   tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000]
 #   tl.sh capture    --pack=<dir> --cam=<name> --out=<file.png> [--frame=120] [--res=1920x1080]
-#   tl.sh play       --pack=<dir> [--seed=1]   interactive: a window, real keys, Esc to quit (not a verify verb)
+#   tl.sh play       --pack=<dir> [--seed=1]   interactive: a window, real keys, Esc to quit (not a verify verb);
+#                                              lints first and refuses a pack that fails (items: tools/item.sh)
 #   tl.sh selftest   every verb on the good example pack and each bad pack: one PASS/FAIL line per case
 #   tl.sh seeds      every verb on the three seed packs (tools/seeds.sh; `seeds sheet` rebuilds the contact sheet)
 #   tl.sh import     rebuild the class cache (the runner also does this by itself when scripts changed)
@@ -54,10 +55,22 @@ run_verb() {
 
 case "$1" in
   ""|help|-h|--help)
-    sed -n '2,17p' "$0"; exit 2;;
+    sed -n '2,18p' "$0"; exit 2;;
   play)
     # interactive play: the worker directly, windowed, in real time, with devices on; no report
-    shift; pargs=(); for a in "$@"; do pargs+=("$(fix_arg "$a")"); done
+    shift; pargs=(); pack_arg=""
+    for a in "$@"; do pargs+=("$(fix_arg "$a")"); case "$a" in --pack=*) pack_arg="$a";; esac; done
+    # N4: the fence is a lint check and nothing else, so play lints first and refuses a pack that fails it
+    ptmp="${TMPDIR:-${TEMP:-/tmp}}"; command -v cygpath >/dev/null 2>&1 && ptmp="$(cygpath -m "$ptmp")"
+    prep="$ptmp/tl_play_lint_$$.json"
+    run_verb lint "$pack_arg" "--report=$prep" >/dev/null 2>&1; lint_code=$?
+    if [ $lint_code -ne 0 ]; then
+      echo "[tl] play refused: lint did not pass (exit $lint_code). A pack is played only inside the fence."
+      grep -o '"kind":"[a-z_]*","file":"[^"]*"\(,"line":[0-9]*\)\?,"message":"[^"]*"' "$prep" 2>/dev/null | head -12 | sed 's/^/[tl]   /'
+      echo "[tl] all findings: tl.sh lint $pack_arg"
+      rm -f "$prep"; exit $lint_code
+    fi
+    rm -f "$prep"
     MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position "${TL_WINDOW_POS:-0,1440}" --path "$E" res://kernel/host/host.tscn -- worker --mode=play "${pargs[@]}"
     exit $?;;
   import)

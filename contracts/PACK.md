@@ -109,3 +109,18 @@ The single list of runner verbs and options is `engine/kernel/runner/verbs.json`
 them; the file is what tools read.
 
 A shareable item's card (`item.json`, `tl.item/1`) and package (`.tlitem`) are specified in `docs/SHARING.md`.
+
+### The fence after N4 (2026-11-11)
+
+- Lint reads every `.gd` file of a pack wherever it sits, and refuses any file that is neither a script nor inert
+  (`.json`, `.md`, `.txt`, `.png`, `.jpg`, `.jpeg`, `.webp`, each checked against its bytes). The same table decides
+  an item's tier (`docs/SHARING.md`).
+- Allowed at the pack root besides `pack.json` and `README.md`: `item.json`; a `preview/` folder for pictures.
+- Newly refused: reflection (`call`, `callv`, `call_deferred`, `Callable(`, `.set`, `set_script` and kin), the tree
+  above the pack (`get_tree`, `get_parent`, `get_root`, `get_window`, `get_viewport`, absolute or `..` node paths),
+  the engine's servers and devices (`Input`, `Engine`, `DisplayServer`, `RenderingServer`, `PhysicsServer3D`,
+  `AudioServer`, `Performance`), resource, archive, network, multiplayer and crypto classes, a `load(` whose argument
+  is not one whole literal. `OS`, `ProjectSettings` and `ClassDB` now match as bare words. The list with the bad pack
+  that proves each rule: `engine/kernel/share/SHARE.md` section 6.
+- `tl.sh play` lints first. Starting the worker directly still skips lint.
+- This is a guardrail against accidents, not a security boundary: `SHARE.md` section 1 lists what stays reachable.
