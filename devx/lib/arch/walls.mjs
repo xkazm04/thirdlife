@@ -21,6 +21,8 @@ export function moduleWalls(io, rule) {
   const p = { selfContained: ["engine/kits", "engine/rigs", "engine/style"], publicDirs: ["engine/kernel/api", "engine/kernel/standin", "engine/kits", "engine/rigs", "engine/style"], packGlobs: { seeds: true }, ...(rule.params ?? {}) };
   const findings = [];
   const own = classesIn(io, p.selfContained);
+  // inner classes (`class TLSquashNode extends Node:`) declared inside the three modules are their own too
+  for (const f of gdIn(io, p.selfContained)) for (const m of stripGd(io.read(f)).matchAll(/^[ \t]*class[ \t]+(TL[A-Za-z0-9_]*)/gm)) own.add(m[1]);
   // A: kits, rigs and style reference nothing outside themselves
   for (const f of gdIn(io, p.selfContained)) {
     const src = io.read(f);

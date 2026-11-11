@@ -65,6 +65,21 @@ test("1 module-walls: kit referencing a kernel class, an outside res:// path, a 
   assert.match(msgs(r), /relative \.\.\/ load/);
   assert.ok(r.findings.every((x) => x.line > 0));
 });
+test("1 module-walls: an inner class declared inside style is its own; the same name used from kits is still inside the three", () => {
+  const f = base();
+  f["engine/style/tl_style.gd"] += "func h():\n\tvar n: TLSquashNode = TLSquashNode.new()\n\nclass TLSquashNode extends Node:\n\tvar rest: Vector3\n";
+  assert.ok(one(fixture(f), "module-walls").ok, msgs(one(fixture(f), "module-walls")));
+  const g = base();   // an inner class in the kernel does not make the name the style's own
+  g["engine/kernel/api/tl_fx.gd"] = "class_name TLFx\nclass TLKernelInner extends Node:\n\tpass\n";
+  g["engine/style/tl_style.gd"] += "func h():\n\tvar n = TLKernelInner.new()\n";
+  assert.match(msgs(one(fixture(g), "module-walls")), /TLKernelInner is outside kits\/rigs\/style/);
+});
+test("5 schema-versions: a wrong schema string in a foreman test source is a fixture, not a use", () => {
+  const f = base(); f["foreman/src/test/x.test.ts"] = 'const bad = { schema: "tl.verbs/2" };\n';
+  assert.ok(one(fixture(f), "schema-versions").ok);
+  const g = base(); g["foreman/src/x.ts"] = 'const bad = { schema: "tl.verbs/2" };\n';
+  assert.equal(one(fixture(g), "schema-versions").ok, false);
+});
 test("1 module-walls: comments and strings never count", () => {
   assert.ok(one(fixture(base()), "module-walls").ok);
   assert.equal(stripGd('var a = "TLX" # TLY\n').includes("TL"), false);

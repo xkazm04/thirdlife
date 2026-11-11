@@ -2,12 +2,27 @@
   "schema": "tl.arch.baseline/1",
   "sizes": {
     "engine/kernel/examples/bad_size/scripts/big.gd": 650,
-    "engine/kernel/runner/worker.gd": 603,
+    "engine/kernel/host/host.gd": 633,
+    "engine/kernel/runner/worker.gd": 611,
+    "engine/kernel/share/item.gd": 679,
+    "engine/kernel/world/draw/draw.gd": 745,
+    "engine/kernel/world/pack.gd": 626,
+    "engine/kernel/world/world.gd": 675,
     "engine/kits/tl_mesh.gd": 660,
-    "foreman/src/cli.ts": 772,
-    "foreman/src/foreman.ts": 1287,
+    "engine/ui/panel.gd": 1326,
+    "foreman/src/cli.ts": 918,
+    "foreman/src/foreman.ts": 2138,
+    "foreman/src/test/n3.test.ts": 720,
     "foreman/src/test/wp3b.test.ts": 808,
     "spike/lab/b/src/mk.gd": 612
   },
-  "grandfathered": {}
+  "grandfathered": {
+    "schema-versions": [
+      "tl.tiers/1",
+      "tl.view/1",
+      "tl.walk/1",
+      "tl.world/1",
+      "tl.worldlog/1"
+    ]
+  }
 }

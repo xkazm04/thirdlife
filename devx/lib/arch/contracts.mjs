@@ -68,13 +68,14 @@ const TEXT_EXT = /\.(gd|ts|mjs|js|json|md|sh|py|tscn|tres|cfg)$/;
 
 /** Rule 5. Every `tl.<name>/<n>` in params.scan must also appear in a file under params.declared (contracts/). */
 export function schemaVersions(io, rule) {
-  const p = { scan: ["engine/", "foreman/src/", "contracts/"], declared: "contracts/", ...(rule.params ?? {}) };
+  // `ignore`: test sources write deliberately wrong schema strings (e.g. tl.verbs/2 to prove a loader refuses it)
+  const p = { scan: ["engine/", "foreman/src/", "contracts/"], ignore: ["foreman/src/test/"], declared: "contracts/", ...(rule.params ?? {}) };
   const re = /\btl\.([a-z][a-z0-9_]*)\/(\d+)\b/g;
   const declared = new Set();
   for (const f of io.files) if (f.startsWith(p.declared) && TEXT_EXT.test(f)) for (const m of io.read(f).matchAll(re)) declared.add(m[0]);
   const used = new Map();
   for (const f of io.files) {
-    if (!TEXT_EXT.test(f) || !p.scan.some((d) => f.startsWith(d))) continue;
+    if (!TEXT_EXT.test(f) || !p.scan.some((d) => f.startsWith(d)) || p.ignore.some((d) => f.startsWith(d))) continue;
     const src = io.read(f);
     for (const m of src.matchAll(re)) {
       if (!used.has(m[0])) used.set(m[0], []);

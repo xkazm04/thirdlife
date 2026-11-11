@@ -14,7 +14,7 @@ Classes: 41
 
 Consts: `MAX_EVENTS`, `PRESETS`
 
-- `static func contact(struck_material: String, impulse: float, position: Vector3) -> void`
+- `static func contact(struck_material: String, impulse: float, position: Vector3, of_pack: TLContext = null) -> void`
 - `static func count(preset: StringName) -> int`
 - `static func play(preset: StringName, position: Variant = null, volume_db: float = 0.0) -> void`
 - `static func presets() -> PackedStringArray`
@@ -83,8 +83,13 @@ Consts: `OPTIONS`
 - `func activate(view_name: StringName) -> bool`
 - `func add_view(view: StringName, position: Vector3, target: Vector3, fov: float = 60.0) -> Camera3D`
 - `func chase(target: Node3D, opts: Dictionary = {}, view: StringName = &"chase") -> TLChaseCam`
+- `func frame(subject: Node3D, fill: float = 0.35, view_name: StringName = &"") -> void`
 - `func has_view(view: StringName) -> bool`
 - `func orbit(target: Node3D, opts: Dictionary = {}, view: StringName = &"orbit") -> TLOrbitCam`
+- `func set_subject(view_name: StringName, subject: Node3D) -> void`
+- `func shake(amount: float, frames: int) -> void`
+- `func subject_of(view_name: StringName) -> Node3D`
+- `func subject_px(subject: Node3D) -> float`
 - `func view(view_name: StringName) -> Camera3D`
 - `func views() -> PackedStringArray`
 
@@ -95,6 +100,7 @@ Consts: `OPTIONS`
 > Follows a target from behind and above; frame-counted smoothing (no wall clock). Capability: `camera`.
 
 - `func setup(target_: Node3D, opts: Dictionary = {}) -> void`
+- `func snap() -> void`
 
 ## TLContact
 
@@ -108,16 +114,21 @@ Consts: `OPTIONS`
 
 > The kernel's context object, handed to `_pack_setup(ctx)`, `generate(ctx)` and `_bot_setup(ctx)`.
 
+- `static func enter(ctx: TLContext) -> TLContext`
+- `static func first_time(key: String, ctx: TLContext = null) -> bool`
 - `func frames(seconds_: float) -> int`
 - `func has_capability(cap: String) -> bool`
 - `func info(message: String) -> void`
+- `static func leave(before: TLContext) -> void`
 - `func load_script(rel: String) -> GDScript`
+- `static func of(node: Node) -> TLContext`
 - `func pack_state() -> Dictionary`
 - `func pick(items: Array) -> Variant`
 - `func read_json(rel: String) -> Variant`
 - `static func require(cap: String, who: String) -> void`
 - `func seconds(frame_count: int) -> float`
 - `func shuffle(items: Array) -> void`
+- `static func space_state_of(node: Node3D, ctx: TLContext = null) -> PhysicsDirectSpaceState3D`
 
 ## TLDamage
 
@@ -157,7 +168,7 @@ Consts: `ANCHORS`
 - `func add_score(rules: TLRules, side: String, anchor: StringName = &"top_left", caption: String = "") -> void`
 - `func add_speed(source: Callable, unit: String = "km/h", anchor: StringName = &"bottom_right") -> void`
 - `static func create() -> TLHud`
-- `static func hide_all() -> void`
+- `static func hide_all(of_pack: TLContext = null) -> void`
 - `func set_text(id: StringName, text: String) -> void`
 - `func text_of(id: StringName) -> String`
 
@@ -389,6 +400,7 @@ Consts: `PITCH_MAX`, `PITCH_MIN`
 - `func bind_actions(input: TLInput, actions: Dictionary) -> void`
 - `func orbit_by(yaw_degrees: float, pitch_degrees: float) -> void`
 - `func setup(target_: Node3D, opts: Dictionary = {}) -> void`
+- `func snap() -> void`
 - `func yaw_basis() -> Basis`
 - `func zoom_by(metres: float) -> void`
 
@@ -567,6 +579,8 @@ Consts: `CLASSES`, `DEFAULT_PATH`, `MAT_KEYS`, `RANGES`, `REQUIRED`, `RIG_NODE`,
 - `static func preset_names() -> PackedStringArray`
 - `static func smoke() -> CPUParticles3D`
 - `static func sparks() -> CPUParticles3D`
+- `static func squash(visual: Node3D, amount: float = 0.25, frames: int = 18, axis: Vector3 = Vector3.UP) -> void`
+- `static func trail(target: Node3D, opts: Dictionary = {}) -> Node3D`
 - `static func tyre_dust() -> CPUParticles3D`
 
 ## TLTrigger
@@ -607,6 +621,8 @@ Consts: `PRESETS`
 - `static func attach(preset: StringName, target: Node3D, opts: Dictionary = {}) -> Node3D`
 - `static func burst(preset: StringName, position: Vector3, parent: Node, opts: Dictionary = {}) -> Node3D`
 - `static func presets() -> PackedStringArray`
+- `static func squash(visual: Node3D, amount: float = 0.25, frames: int = 18, axis: Vector3 = Vector3.UP) -> void`
+- `static func trail(target: Node3D, opts: Dictionary = {}) -> Node3D`
 
 ## TLVfxNode
 
