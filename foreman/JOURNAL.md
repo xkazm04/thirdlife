@@ -437,3 +437,142 @@ Resume point for WP3b. Times from `date` (CEST). Brief: briefs/BRIEF-WP3B-FOREMA
   NOT DECIDED / NOT VERIFIED: nothing has run with a real model; stalls that repeat at SOME frames and not at others
   fall back to the gauge, which is the weak instrument; a frame-budget failure (p99 over 8 ms, no watchdog) has no
   frame to compare and still depends on the gauge and on the median rule.
+
+## P10 (new builder; brief briefs/BRIEF-P10-FOREMAN.md; start 13:22 CEST 2026-11-11, time-box until 14:52)
+
+Worktree `.claude/worktrees/core-p10`, scope `foreman/**`. No model calls, no git. Six items, in the brief's order of
+value; the plan written down before the first edit so a resume can continue:
+
+1. Pack tests at the merge gate (`mergeAndGate`): after a re-opened package's candidate passes lint and smoke, every
+   test of the pack that is not a dependant's own runs on the candidate. A failure is compared with a control run of
+   the same test on `pack/` without the round's files: control passes -> the merging package caused it (round fails,
+   a `[foreman] PACK TEST FAILED` note names the test's package and the merging package); control fails too -> not
+   this merge (note, the merge goes on).
+2. `finish()`: a failed final verification after a promotion re-opens ONE package for ONE round (`FINAL VERIFICATION
+   FAILED`), at most `roundLimit` times per change; then the job ends `done` on the earlier promotion and says the
+   change was not made. Who: the package that merged last since the failing test last passed in the log, else the
+   package that registers the test.
+3. Present values in the prompt of a package with change requests: `params` with their current values, then the small
+   scalars of `data/*.json`.
+4. Inbox: `<job>/inbox.jsonl`; `answer` and `change` write there when a Foreman holds the lock; the Foreman drains it
+   in the scheduling loop (poll), events carry `inbox: <id>` so nothing is logged twice.
+5. `starved` (exit 2, engine error `starved:`) = the machine; `metrics.starved_stalls` in the round's detail.
+6. Planner text and plan check: a `PLAYER CHECK: tests/<bot>.gd ...` line in a contract when the plan uses `input`.
+
+- 13:28 read: brief, JOB3-HOCKEY, foreman.ts, joblog.ts, cli.ts, designer.ts, fake runner, the real job's events 231..285.
+- 13:33 built, in this order: `src/inbox.ts` (new); `events.ts` (`inbox` on `answer` and `change_requested`);
+  `foreman.ts` (packTestsFor / packTest at the merge gate, sendBackFinal / blameFinal in finish(), cap() one round per
+  final re-open, presentValuesText, takeInbox in the scheduling loop with a poll timer, starvedVerdict, the
+  starved_stalls detail); `cli.ts` (answer and change go to the inbox when a Foreman holds the lock; flags
+  --pack-tests, --final-rounds, --inbox-poll-ms); `designer.ts` + `prompts/planner.md` (PLAYER CHECK line);
+  `prompts/builder.md` (the player's part; the clock paragraph says what the engine does since P1); the fake runner
+  (FAKE_RUNNER_STARVED, FAKE_STARVED, FAKE_RUNNER_STARVED_STALLS, FAKE_TEST_NEEDS(<bot>:<token>)).
+- 13:38 fixture `fixtures/job-hockey-change/` (generator `fixtures/make-hockey-fixture.mjs`): the real job's plan and
+  the events 232..279 of its log as a fake script. Paddle fixture: the root's contract names its PLAYER CHECK.
+- 13:43 first full run after the change: 11 old tests failed. 9 for the plan check (the fixture plan had no PLAYER
+  CHECK line: added to the fixture), 1 for the event schema file (regenerated), and 1 that was a real finding:
+  "1 change: a dependant whose verification now fails is re-opened and rebuilt". My first gate rule ("every test not
+  registered by a dependant") refused the OWNER's merge because the root's bot, which only a dependant's acceptance
+  runs, failed with the owner's change: but that is the case the change path is for (the dependant adapts). Rule
+  as built: the gate runs every test that no dependant ANSWERS for (registers it, or runs it in its acceptance);
+  the dependants' acceptance runs right after the merge. A package without dependants gets every test of the pack.
+- 13:44 `src/test/p10.test.ts`: 15 tests. Measured against the real pack (read only): the puck's size at the time of
+  the first request was in neither `params` nor `data/*.json`; it was a literal in `scripts/main.gd:40`. The table the
+  brief asked for would not have shown it, so presentValuesText lists a third source (numbers the owner's scripts give
+  to named keys). Written up in PATCHES-P10.md entry 4.
+- 13:46 dry prompt: `dry/night-street-race-20261111-0/job.jsonl` (hand-written brief, no model) ->
+  `dry/p10-prompts-racing.txt` (92 KB, Planner prompt only).
+- 13:48 second full run: 180 tests, 1 failed (`replanPackages validates the answer together with the kept packages`):
+  my sub-rule "the PLAYER CHECK bot must be run by some acceptance" refused a partial plan. Withdrawn: the final
+  verification runs every registered bot whatever the acceptance lists say. p10 + wp3b: 38 of 38.
+- 13:49 started the suite with TL_GODOT and TL_ENGINE_DIR = this worktree's engine (first run builds `.godot`).
+  `PATCHES-P10.md` written (door and panel, JOB.md, recipe cards, finding 12).
+- 13:53 with the real engine (TL_GODOT, TL_ENGINE_DIR = this worktree's engine): 180 tests, 179 pass, 0 skipped, 1 fail:
+  "real engine against the fake: same check ids". Not mine: since P1 the engine's `invariants` has a check
+  `invariants.many_budget` that the fake runner did not have (the suite was last run with the engine before P1).
+  Fake brought into line (many_budget, the new frame_budget detail, a starved report with the three smoke checks as
+  host.gd writes it). `tl check --tier fast --changed`: PASS (foreman.typecheck).
+- 13:54 by command line, no test harness: the hockey fixture copied to the scratchpad, `foreman run --adapter fake`,
+  then `foreman change "<the real first request>"`: 143 events, done, 0.1.1 beside 0.1.0; event 116 the owner's bot
+  FAILED on hockey_ai's candidate, 117 the control ok, 118 the PACK TEST FAILED note, 130/131 both bots ok on the
+  round-3 candidate, 137/138 the final bots ok. The owner's prompt (reports/hockey_core-r2-builder-s81.json) holds
+  "The values as they are now" with `puck.radius = 0.15`.
+- Proposed JOB.md text: in the P10 report ("Added after P10"). Summary in PATCHES-P10.md entry 2.
+- 13:57 suite with the real engine on the build with the fake brought into line: 180 tests, 178 pass, 0 fail,
+  2 skipped (two older tests that look for the marble job under this checkout's site/; a worktree has none), 222 s.
+  Then started `tl check --tier full` (detached, log in the scratchpad) and, by mistake at the same time, the suite
+  without the engine: two suites and the gate on a machine with four other builders. One old test failed in that
+  run, `spawn door: our timeout kills the process tree` (builder.test.ts:163): it gives a node child 1500 ms of wall
+  time to start and print one line. A wall-clock limit in the Foreman's own tests; not touched by P10.
+- 13:59 one more rule changed after reading my own diff: `changeReady` asked for a `promoted` package everywhere, so
+  `foreman change --package X` on a job that had FAILED on X would have waited for ever (before P10 it re-opened X,
+  which is how X is asked to try again). Now: while builders are in flight a request waits for its package to be
+  finished and idle; when none is in flight it is applied as before P10.
+- 14:04 the suite without the engine, run while the gate ran its own copy and four other builders used the machine:
+  180 tests, 172 pass, 1 fail (the spawn-door test above: "the grandchild kept running after the tree kill", 396 s
+  instead of 148 s). The two-process inbox test passed in that run.
+- 14:05 rebuilt with the `changeReady` correction and one more test for it; p10 + n3: 39 tests, 37 pass, 2 skipped
+  (the marble job is not under this checkout's site/).
+- 14:10 FINAL build, `node --test dist/test/*.test.js` without TL_GODOT: 181 tests, 174 pass, 0 fail, 7 skipped
+  (5: TL_GODOT is not set; 2: the marble job), 290 s beside the running gate. With the real engine (the build before
+  the last correction): 180 tests, 178 pass, 0 fail, 2 skipped, 222 s. `npx tsc --noEmit` clean.
+- `tl check --tier full` started 13:57; at 14:11 it had passed arch, assets, cards, devx.test, foreman.typecheck,
+  foreman.test (results are printed at the end) and was in kernel.selftest. Its end state is in the P10 report.
+- NOT done, by decision: no source of `engine/**`, `contracts/**`, `devx/**`, `docs/**` was edited (PATCHES-P10.md
+  has the four entries); none of the Foreman's second-line clock code was removed (the report says which parts no
+  longer fire with an engine that counts processor time, and what has to be true before they go).
+- If resumed: everything in the brief's list is built and tested. Open: the Director's answers to the questions in
+  the report (final rounds for a first build; `--pack-tests always` as the default; put pack/ back when a change is
+  not made), and PATCHES-P10.md entry 1 (the panel) before the inbox is of use to a player.
+- 14:26 `tl check --tier full` ended RED (28 min 42 s): arch (size-ratchet: cli.ts 975 > 918, foreman.ts 2611 > 2138,
+  p10.test.ts over 600), devx.test (2 cases that need a green arch), foreman.test (2 or 3 wall-clock process-kill
+  tests, under two suites at once: my mistake), kernel.selftest (0 failed, 77 passed, then the step's 15 minute limit:
+  the machine). PASS: assets, cards, foreman.typecheck, kit.selftest, perf (machine BUSY, not judged), seeds (24
+  cases); item.selftest and ui.selftest skipped (need the marble job, main checkout only).
+- 14:28 the size ratchet, as far as it could be done safely: `src/requests.ts` (new; `foreman change` / `answer`
+  and `lockHolder` moved out of cli.ts: 906 lines, under its 918), `src/p10.ts` (new; the pure helpers and the fixed
+  texts, re-exported by foreman.ts), `src/test/p10b.test.ts` (items 5 and 6). `tl arch`: ONE finding left,
+  foreman.ts 2477 > 2138. Not fixed: PATCHES-P10.md entry 5 (bump the number, or the split it describes).
+- 14:32 the split build, whole suite without TL_GODOT, run alone: 181 tests, 174 pass, 0 fail, 7 skipped, 198 s.
+  `npx tsc --noEmit` clean. Started `tl check --tier full --only foreman.typecheck,foreman.test` with the real
+  engine, alone this time; its result is in the report.
+- 14:36 `tl check --tier full --only foreman.typecheck,foreman.test`, alone: PASS, PASS ("174 pass, 0 fail", 210 s).
+  174 and not 179: the gate step runs the suite without TL_GODOT reaching it, so the five engine tests are skipped
+  there. Started `node --test dist/test/engine.test.js` with TL_GODOT on the final build; result in the report.
+  The gate as a whole stays RED on arch (foreman.ts 2477 > 2138) until PATCHES-P10.md entry 5 is decided.
+- 14:37 the five engine-backed tests on the final build (TL_GODOT, TL_ENGINE_DIR = this worktree's engine): 5 of 5
+  pass, 82 s. (Why the gate step showed 174 passes I did not look into; the count says the engine tests did not run
+  there.) P10 ends here: 75 minutes of the 90. State: all six items built and tested with fixtures; the gate RED on
+  one arch finding (the size of foreman.ts), which is the Director's to decide (PATCHES-P10.md entry 5).
+
+## P10b: the split (start 14:42 CEST 2026-11-11)
+
+PATCHES-P10.md entry 5, option 2: `foreman.ts` back under its grandfathered 2138 lines without changing behaviour.
+2477 -> 2032 lines. The baseline number was not touched.
+
+- The cut: first everything that needs nothing of the Foreman (zero risk: no `this` to rebind, text moved verbatim,
+  checked by a script against the old file), then the P10 methods the previous plan named, as free functions over a
+  host. The starved verdict (item 5) and the inbox stayed: they sit inside `verifyLogged` / `runOpen` and moving them
+  would have meant a second host for no needed lines.
+  - `src/options.ts` (108): the `ForemanOptions` interface.
+  - `src/machine.ts` (118): N3b/N3c machine-or-pack judgement: `restsOnAClock`, `medianOverHalfBudget`,
+    `clockDetail`, `diedSilently`, `stallOf`, `frameFigures`, `classifyStalls`, `MACHINE_BUSY`, `NOT_LOAD`,
+    `PACK_STALL`, `Stall`, and the internal types `Verified` / `GateFailure` (now exported for p10gate.ts).
+  - `src/conduct.ts` (105): `FOREMAN_NOTE`, `KitFigures`, `countKitUse`, `statesKitReason`, `parseDeviations`,
+    `builderConduct`, and `clip` (now exported; foreman.ts imports it).
+  - `src/p10gate.ts` (183): items 1 and 2: `testOwner`, `packTestsFor`, `packTest`, `finalLimit`, `finalSent`,
+    `testOfVerify`, `blameFinal`, `sendBackFinal`, each `fn(h: GateHost, ...)`; bodies unchanged except `this.` ->
+    `h.` (`this.log.events` -> `h.events`). The Foreman builds the host in the getter `gateHost` (state and log read
+    live through getters; `dir`, `rel`, `pkg`, `append`, `reopen`, `verifyLogged` delegate to the methods).
+- foreman.ts re-exports every name it exported before (tests and cli.ts import them from it unchanged).
+- Proof: `npx tsc --noEmit` clean. `npm test` alone, no TL_GODOT: 181 tests, 174 pass, 0 fail, 7 skipped (193 s),
+  the same count as before. With TL_GODOT and TL_ENGINE_DIR = this worktree's engine, alone: 181 tests, 179 pass,
+  0 fail, 2 skipped (both need a job folder under site/), 382 s. `tl arch`: all PASS (size-ratchet: "14 file(s) over
+  600 held at their baseline size").
+- PATCHES-P10.md entry 1 applied to engine/ui/panel.gd and engine/ui/foreman_door.gd as written. job_model.gd reads
+  events with `e.get(...)` and checks no key list, so `inbox` needs nothing there. `var working` in
+  `_question_block` is now unused (the patch keeps it; Godot only warns). `ui.sh selftest` cannot run in this
+  worktree: there is no site/marble-run-three-marbles-20261110-2, its marble checks FAIL, selftest.gd:67 then stops on
+  "Invalid access of index '0'" and the process never quits (the filtered ui.sh printed nothing in 300 s; killed).
+  `--check-only` on panel.gd and foreman_door.gd: clean. The selftest is owed on the main checkout.
+- 15:05 `tl arch` ok; `tl check --tier fast` ok (arch, assets, cards, devx.test 123 pass, foreman.typecheck).

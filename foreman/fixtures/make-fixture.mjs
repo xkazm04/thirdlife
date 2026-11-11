@@ -23,7 +23,8 @@ const packages = [
     contract:
       "The manifest is composed by the Foreman: entry scripts/main.gd, tests [tests/bot_rally.gd], one camera view (hero).\n" +
       "scripts/main.gd: _pack_setup(ctx), _pack_start(), _pack_tick(frame), _pack_state() -> {score: {left: int, right: int}, rally: int}.\n" +
-      "Input actions: paddle_up, paddle_down. tests/bot_rally.gd: holds the ball in play for 300 frames.",
+      "Input actions: paddle_up, paddle_down. tests/bot_rally.gd: holds the ball in play for 300 frames.\n" +
+      "PLAYER CHECK: tests/bot_rally.gd fails when the player's paddle (driven through paddle_up and paddle_down) never returned the ball.",
     acceptance: [
       { level: "V1", verb: "lint", args: [] },
       { level: "V2", verb: "smoke", args: ["--seed=1", "--frames=600"] },

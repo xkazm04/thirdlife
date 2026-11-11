@@ -1,0 +1,120 @@
+{
+ "model": "fake",
+ "steps": [
+  {
+   "match": {
+    "role": "planner",
+    "promptIncludes": "The player's change request"
+   },
+   "json": {
+    "package": "hockey_core",
+    "reason": "The puck's size and colour, and the camera framing of the rink and goals, are all defined in the root package's files (data/tuning.json, data/venue.json, scripts/main.gd)"
+   },
+   "tokensIn": 3498,
+   "tokensOut": 143
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "hockey_core",
+    "round": 1
+   },
+   "write": {
+    "scripts/main.gd": "extends Node\n\nvar _ctx\nvar _score := {\"blue\": 0, \"red\": 0}\n\nfunc _pack_setup(ctx) -> void:\n\t_ctx = ctx\n\tctx.cameras.add_view(\"arena\")\n\nfunc _pack_tick(frame: int) -> void:\n\tpass\n\nfunc _pack_state() -> Dictionary:\n\treturn {\"score\": _score}\n",
+    "scripts/rink_api.gd": "extends RefCounted\n\nfunc puck_pos() -> Vector3:\n\treturn Vector3.ZERO\n",
+    "data/venue.json": "{\n \"rink\": {\n  \"length_m\": 60,\n  \"width_m\": 30,\n  \"corner_radius_m\": 8.5\n },\n \"props\": [\n  {\n   \"kind\": \"rink\",\n   \"at\": [\n    0,\n    0,\n    0\n   ]\n  },\n  {\n   \"kind\": \"goal\",\n   \"at\": [\n    -26,\n    0,\n    0\n   ],\n   \"team\": \"blue\"\n  },\n  {\n   \"kind\": \"goal\",\n   \"at\": [\n    26,\n    0,\n    0\n   ],\n   \"team\": \"red\"\n  }\n ]\n}\n",
+    "data/tuning.json": "{\n \"rules\": {\n  \"score_to_win\": 3\n },\n \"skater\": {\n  \"skate_speed\": 7.5,\n  \"radius\": 0.45\n },\n \"shoot\": {\n  \"speed\": 18\n },\n \"puck\": {\n  \"radius\": 0.15,\n  \"height\": 0.05,\n  \"color\": [\n   0.25,\n   0.25,\n   0.28\n  ]\n },\n \"camera\": {\n  \"pos\": [\n   0,\n   38,\n   22\n  ],\n  \"fov\": 50\n }\n}\n",
+    "tests/bot_hockey.gd": "extends Node\n\nvar _frames := 0\n\nfunc _bot_tick(frame: int) -> void:\n\t_frames = frame\n\nfunc _bot_done() -> bool:\n\treturn _frames >= 600\n\nfunc _bot_result() -> Dictionary:\n\treturn {\"ok\": true, \"summary\": \"blue 3 : 0 red, the player took 5 shots\"}\n"
+   },
+   "text": "Built the rink, the puck, six skaters, two goals and the rule.\nDEVIATIONS: none"
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "hockey_core"
+   },
+   "write": {
+    "data/tuning.json": "{\n \"rules\": {\n  \"score_to_win\": 3\n },\n \"skater\": {\n  \"skate_speed\": 7.5,\n  \"radius\": 0.45\n },\n \"shoot\": {\n  \"speed\": 18\n },\n \"puck\": {\n  \"radius\": 0.35,\n  \"height\": 0.18,\n  \"color\": [\n   0.02,\n   0.02,\n   0.03\n  ]\n },\n \"camera\": {\n  \"pos\": [\n   0,\n   52,\n   14\n  ],\n  \"fov\": 50\n }\n}\n",
+    "scripts/main.gd": "extends Node\n\nvar _ctx\nvar _score := {\"blue\": 0, \"red\": 0}\n\nfunc _pack_setup(ctx) -> void:\n\t_ctx = ctx\n\tctx.cameras.add_view(\"arena\")\n\nfunc _pack_tick(frame: int) -> void:\n\tpass\n\nfunc _pack_state() -> Dictionary:\n\treturn {\"score\": _score}\n# the puck is 0.35 m now: FAKE_TEST_NEEDS(bot_hockey_ai:big_puck)\n"
+   },
+   "text": "Made the puck bigger and near-black and raised the camera.\nDEVIATIONS:\n- The puck is now radius 0.35 m, height 0.18 m and near-black. The contract said the default puck part, about 0.04 m radius, and the earlier build used 0.15 m. Dependent packages should not assume the small size for the puck's visuals, effects or reach.\n- The camera is now pos [0,52,14], so both goals and the whole rink are in view."
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "hockey_ai",
+    "round": 1
+   },
+   "write": {
+    "scripts/ai/brain.gd": "extends RefCounted\n\nfunc decide(team: String, i: int, api) -> Dictionary:\n\treturn {\"move\": Vector2.ZERO, \"shoot\": false}\n",
+    "gen/ai_hook.gd": "extends RefCounted\n\nstatic func build(ctx) -> void:\n\tpass # rink_api.set_ai(brain.decide)\n",
+    "data/ai.json": "{\n \"red_skill\": 0.9,\n \"chase_radius_m\": 30,\n \"yield_radius_m\": 0\n}\n",
+    "tests/bot_hockey_ai.gd": "extends Node\n\nvar _frames := 0\n\nfunc _bot_tick(frame: int) -> void:\n\t_frames = frame\n\nfunc _bot_done() -> bool:\n\treturn _frames >= 600\n\nfunc _bot_result() -> Dictionary:\n\treturn {\"ok\": true, \"summary\": \"both AI teams reached the puck; 2 goals\"}\n"
+   },
+   "text": "Wrote the brain for five skaters.\nDEVIATIONS: none"
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "hockey_ai",
+    "round": 2
+   },
+   "write": {
+    "scripts/ai/brain.gd": "extends RefCounted\n\nfunc decide(team: String, i: int, api) -> Dictionary:\n\treturn {\"move\": Vector2.ZERO, \"shoot\": false}\n# reach scaled to the big puck: FAKE_HAS(big_puck)\n# red forwards reach every loose puck first: FAKE_TEST_NEEDS(bot_hockey:player_gets_the_puck)\n",
+    "data/ai.json": "{\n \"red_skill\": 0.9,\n \"chase_radius_m\": 30,\n \"yield_radius_m\": 0\n}\n"
+   },
+   "text": "Adapted the skaters' reach to the bigger puck.\nDEVIATIONS:\n- Reach and stick radius follow puck.radius from data/tuning.json."
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "hockey_ai"
+   },
+   "write": {
+    "scripts/ai/brain.gd": "extends RefCounted\n\nfunc decide(team: String, i: int, api) -> Dictionary:\n\treturn {\"move\": Vector2.ZERO, \"shoot\": false}\n# reach scaled to the big puck: FAKE_HAS(big_puck)\n# blue teammates and red forwards yield while b0 is near the puck\n",
+    "data/ai.json": "{\n \"red_skill\": 0.6,\n \"chase_radius_m\": 30,\n \"yield_radius_m\": 4.5\n}\n"
+   },
+   "text": "The AI yields to the player's skater.\nDEVIATIONS:\n- `red_skill` is 0.6, not the contract default of 0.9.\n- Blue AI yields the puck to b0 when b0 is the nearest blue skater. Red non-back skaters hold back while b0 is within 4.5 m of the puck and they are more than 3 m away."
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "hockey_look"
+   },
+   "write": {
+    "gen/art_hook.gd": "extends RefCounted\n\nstatic func build(ctx) -> void:\n\tpass # stands, markings, light masts\n",
+    "data/venue_art.json": "{\n \"props\": [\n  {\n   \"kind\": \"stand\",\n   \"at\": [\n    0,\n    0,\n    -19\n   ]\n  },\n  {\n   \"kind\": \"stand\",\n   \"at\": [\n    0,\n    0,\n    19\n   ]\n  },\n  {\n   \"kind\": \"light_mast\",\n   \"at\": [\n    -30,\n    0,\n    -17\n   ]\n  }\n ]\n}\n"
+   },
+   "text": "Added stands and masts.\nDEVIATIONS: none"
+  },
+  {
+   "match": {
+    "role": "builder",
+    "package": "hockey_fx"
+   },
+   "write": {
+    "gen/fx_hook.gd": "extends RefCounted\n\nstatic func build(ctx) -> void:\n\tpass # fx.gd on rules.goal\n",
+    "scripts/fx/fx.gd": "extends RefCounted\n\nfunc on_goal(team: String) -> void:\n\tpass\n",
+    "data/fx.json": "{\n \"horn_volume_db\": -6,\n \"burst_size_m\": 2.5\n}\n"
+   },
+   "text": "Horn and burst on a goal.\nDEVIATIONS: none"
+  },
+  {
+   "match": {
+    "role": "critic"
+   },
+   "json": {
+    "ok": true,
+    "scores": {
+     "silhouette": 0.8,
+     "readability": 0.7,
+     "style_consistency": 0.7,
+     "shows_play": 0.7
+    },
+    "notes": [
+     "the rink and both goals read clearly"
+    ]
+   }
+  }
+ ]
+}

@@ -60,6 +60,18 @@ Brief:
   data says so, or the later package owns the file that calls into it).
 - A `bot` acceptance may only run a test that this package or a package it depends on registers.
 - A bot must finish (`_bot_done()` true) well inside its `--frames` budget, and decides `ok` from game state.
+- **The player's part is tested.** When the player takes part in the game (the brief's `controls` are not empty; some
+  package registers the capability `input`), ONE bot of the plan must FAIL when the human-controlled side has nothing
+  to do. That bot drives the player's input actions and its `ok` depends on what the player's side did, for example:
+  the player's side touched the ball or puck (took a shot, made a pass, crossed a checkpoint) at least N times; or the
+  result with the player's inputs differs from the result without them (the same seed, the bot idle). A bot that only
+  waits for the match to end proves nothing about the player: in the first real hockey job an AI package passed its
+  own bot while its skaters took the puck from the player every time. Name the check in the contract of the package
+  that owns that bot, in exactly one line of this form (the plan is refused without it, and builders read it):
+  `PLAYER CHECK: tests/<bot>.gd fails when <what the human-controlled side can no longer do>`
+  Register that bot in `registers.tests` and run it as a `bot` acceptance of its package. Every later package that
+  moves, steers or scores for anyone (an opponent's AI, teammates, a second mechanic) also runs it in its own
+  acceptance, so that a package which takes the game away from the player fails in its own round.
 - Declare a camera view (`registers.cameras`) in some package: the milestone capture and the visual critique need one.
 - **An `art_pass` package must change what the camera sees.** At each milestone the Foreman captures every declared
   camera while the first bot plays and compares the images, byte for byte, with the previous milestone's. An

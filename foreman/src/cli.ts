@@ -19,6 +19,8 @@ import { killAllChildren, type SpawnFn } from "./proc.js";
 import { LEDGER_FILE, ledgerSpawn, reapOrphans } from "./orphans.js";
 import { FAKE_RUNNER, PKG_ROOT, REPO_ROOT, toPosix } from "./paths.js";
 import { VerbsError, verbsFor, type RunnerVerbs } from "./verbs.js";
+import { RequestError, lockHolder, requestAnswer, requestChange } from "./requests.js";
+export { lockHolder };
 
 export class UsageError extends Error {}
 
@@ -93,6 +95,14 @@ const HELP = `foreman <command>
                               (exit 3) and "resume" verifies the same files again without running the builder
             [--no-kit-gate]   do not fail a round for more bypasses or less kit use (default: such a round fails
                               with cause kit_regression unless the builder's DEVIATIONS say why)
+            [--pack-tests after_change|always|never]   when every test of the pack runs on a merge candidate, besides
+                              the package's own acceptance (default after_change: for a package that was re-opened).
+                              A test of another package that fails with the files in and passes without them
+                              refuses the merge and goes back to the merging package
+            [--final-rounds N]   how often a failed final verification after a promotion sends the failure back to a
+                              package, one round each (default: the round limit); then the change was not made and
+                              the job ends done on the earlier promotion
+            [--inbox-poll-ms N]  how often <job>/inbox.jsonl is read while builders run (default 1000)
   resume <job> [same options as run]  continues from job.jsonl; promoted packages are never rebuilt
   change <job> "<text>" [--package ID] [--no-run] [same options as run]
         a change request on a job with at least one merged package, also a finished (done) one. With --package that
@@ -100,6 +110,8 @@ const HELP = `foreman <command>
         owner runs its normal rounds with the text as part of its brief; every package that depends on it is then
         verified again and rebuilt only if it now fails; the job ends done again with a NEW promotion beside the
         earlier one (promoted/<pack id>@<version>/). --no-run only records the request (then: foreman resume).
+        While another Foreman process is running the job, the request is written to <job>/inbox.jsonl instead and
+        that Foreman takes it at its next safe point (within about a second): nothing is refused, nothing is run here.
   follow <job> [--from SEQ] [--poll-ms N] [--idle-ms N]
         prints every event of job.jsonl after SEQ as one JSON line, as it is appended, and exits 0 when the job
         reaches a terminal state (done, failed, cancelled) in an event after SEQ. Holds no lock; a torn last line
@@ -109,7 +121,9 @@ const HELP = `foreman <command>
         default: all five verbs (every manifest test as a bot, every manifest camera as a capture)
   answer <job> <package> "<text>" [--change PACKAGE]
         answers a builder's question. --change turns the answer into a change request for PACKAGE as well ("yes,
-        that package may be changed"): PACKAGE is re-opened with the text when the job is resumed
+        that package may be changed"): PACKAGE is re-opened with the text when the job is resumed.
+        While another Foreman process is running the job, the answer goes through <job>/inbox.jsonl: that Foreman
+        logs it and starts the asking package again while its other packages keep building (no resume needed).
   comment <job> <milestone> "<text>" the player's comment on a milestone the job has reached (a comment event)
   cancel <job> [--reason TEXT]       marks every unfinished package failed (cause cancelled) and the job cancelled
   init-fixture <dest dir>            copies the three-package fixture job to a fresh directory
@@ -154,18 +168,13 @@ function makeBuilder(a: Args, jobDir?: string, fallback: AdapterName = "claude-c
   });
 }
 
-/** Who holds the job's single-writer lock, and whether that process still exists. */
-export function lockHolder(jobDir: string): { pid?: number; alive: boolean } {
-  const lockFile = path.join(jobDir, "foreman.lock");
-  if (!fs.existsSync(lockFile)) return { alive: false };
-  const pid = Number(fs.readFileSync(lockFile, "utf8").trim());
-  if (!Number.isInteger(pid)) return { alive: false };
-  if (pid === process.pid) return { pid, alive: false };
+/** A request the job cannot take (requests.ts) is a usage error of the command line. */
+function asUsage<T>(fn: () => T): T {
   try {
-    process.kill(pid, 0);
-    return { pid, alive: true };
+    return fn();
   } catch (e) {
-    return { pid, alive: (e as NodeJS.ErrnoException).code === "EPERM" };
+    if (e instanceof RequestError) throw new UsageError(e.message);
+    throw e;
   }
 }
 
@@ -426,6 +435,8 @@ async function runJob(a: Args, out: (s: string) => void): Promise<number> {
     const promoteTo = str(a, "promote-to") ?? "job";
     if (promoteTo !== "job" && promoteTo !== "engine") throw new UsageError(`--promote-to takes "job" (default: <job>/promoted/<pack id>/) or "engine" (<engine>/packs/<pack id>/), got "${promoteTo}"`);
     const reference = a.flags["no-reference"] === true ? {} : referenceOf(verifier.location.engineDir);
+    const packTests = str(a, "pack-tests");
+    if (packTests !== undefined && !["after_change", "always", "never"].includes(packTests)) throw new UsageError(`--pack-tests takes after_change (default), always or never, got "${packTests}"`);
     const foreman = new Foreman({
       jobDir,
       builder,
@@ -448,6 +459,9 @@ async function runJob(a: Args, out: (s: string) => void): Promise<number> {
       ...(num(a, "reference-busy-tick-ms") !== undefined ? { referenceBusyTickMs: num(a, "reference-busy-tick-ms") as number } : {}),
       ...(num(a, "reference-busy-p99-ms") !== undefined ? { referenceBusyP99Ms: num(a, "reference-busy-p99-ms") as number } : {}),
       ...(str(a, "reference-pack") !== undefined ? { referencePack: path.resolve(str(a, "reference-pack") as string) } : {}),
+      ...(packTests !== undefined ? { packTests: packTests as "after_change" | "always" | "never" } : {}),
+      ...(num(a, "final-rounds") !== undefined ? { finalRounds: Math.max(0, Math.floor(num(a, "final-rounds") as number)) } : {}),
+      ...(num(a, "inbox-poll-ms") !== undefined ? { inboxPollMs: Math.max(20, Math.floor(num(a, "inbox-poll-ms") as number)) } : {}),
       promote: a.flags["no-promote"] !== true,
       promoteTo,
       retryFailed: a.flags["retry-failed"] === true,
@@ -712,21 +726,11 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
 
     case "change": {
       // N3 item 1: record the request, then continue the job exactly as `resume` would (unless --no-run).
+      // P10 item 4: while another Foreman runs the job, the request goes into its inbox and nothing is run here.
       const jobDir = jobDirOf(a);
       const text = a.pos[1];
       if (!text || text.trim().length === 0) throw new UsageError('usage: foreman change <job> "<text>" [--package ID]');
-      const pkgId = str(a, "package");
-      const log = JobLog.open(jobDir);
-      try {
-        const s = log.state;
-        if (pkgId !== undefined && !s.packages[pkgId]) throw new UsageError(`unknown package ${pkgId} (the plan has: ${s.order.join(", ")})`);
-        if (!s.order.some((id) => (s.packages[id]?.mergedFiles ?? []).length > 0)) throw new UsageError("this job has no merged package yet: a change request needs something finished to change");
-        if (s.jobState?.state === "cancelled") throw new UsageError("this job is cancelled; a change request cannot re-open it");
-        const ev = log.append({ type: "change_requested", text: text.trim(), ...(pkgId !== undefined ? { package: pkgId } : {}) });
-        out(`change request recorded as event ${ev.seq}${pkgId !== undefined ? ` for package ${pkgId}` : " (the Planner will be asked which package owns it)"}`);
-      } finally {
-        log.close();
-      }
+      if (asUsage(() => requestChange(jobDir, text.trim(), str(a, "package"), out)) === "inbox") return 0;
       if (a.flags["no-run"] === true) {
         out(`continue with: foreman resume ${path.basename(jobDir)}`);
         return 0;
@@ -820,24 +824,8 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       const pkgId = a.pos[1];
       const text = a.pos[2];
       if (!pkgId || !text) throw new UsageError('usage: foreman answer <job> <package> "<text>"');
-      const log = JobLog.open(jobDirOf(a));
-      try {
-        const p = log.state.packages[pkgId];
-        if (!p) throw new UsageError(`unknown package ${pkgId}`);
-        if (p.openQuestion === undefined) throw new UsageError(`package ${pkgId} has no open question`);
-        const change = str(a, "change");
-        if (change !== undefined && !log.state.packages[change]) throw new UsageError(`--change: unknown package ${change} (the plan has: ${log.state.order.join(", ")})`);
-        log.append({ type: "answer", package: pkgId, text, by: "player" });
-        // N3: "yes, that package may be changed" is an answer AND a change request for the package it names.
-        if (change !== undefined) {
-          const ev = log.append({ type: "change_requested", text, package: change });
-          out(`change request for ${change} recorded as event ${ev.seq}: it is re-opened with this text when the job is resumed`);
-        }
-        out(`answered; continue with: foreman resume ${log.job}`);
-        return 0;
-      } finally {
-        log.close();
-      }
+      asUsage(() => requestAnswer(jobDirOf(a), pkgId, text, str(a, "change"), out));
+      return 0;
     }
 
     case "comment": {

@@ -1089,7 +1089,7 @@ func _question_block(box: VBoxContainer, j: Dictionary, q: Dictionary, busy: Str
 	v.add_child(_label("%s asks" % str(q["package"]), _col["ask"], FS_SMALL))
 	v.add_child(_para(str(q["text"]), 4, "q.%d" % int(q["seq"])))
 	var working: bool = phase in JobModel.LIVE_PHASES
-	var can: bool = door != null and door.available and not read_only and busy.is_empty() and not working
+	var can: bool = door != null and door.available and not read_only and busy.is_empty()
 	var field: LineEdit = _field("Your answer…", "AnswerField")
 	field.editable = can
 	v.add_child(field)
@@ -1114,12 +1114,11 @@ func _question_block(box: VBoxContainer, j: Dictionary, q: Dictionary, busy: Str
 	v.add_child(h)
 	if not can:
 		var why: String = "Read only here." if read_only else ("Sending…" if not busy.is_empty() else door.problem)
-		if working and busy.is_empty():
-			why = "The Foreman still works on other packages; it takes your answer when it pauses."
 		v.add_child(_label(why, _col["dim"], FS_SMALL))
 	var go: Callable = func() -> void:
 		var meta: Variant = pick.get_item_metadata(pick.selected) if pick.selected >= 0 else null
-		var e: String = door.answer(str(j["dir"]), str(q["package"]), field.text, str(meta) if meta != null else "")
+		var alive: bool = door.foreman_alive(str(j["dir"]), int(j.get("lock_pid", 0)))
+		var e: String = door.answer(str(j["dir"]), str(q["package"]), field.text, str(meta) if meta != null else "", alive)
 		action_started.emit("answer", e)
 		if e.is_empty():
 			field.text = ""

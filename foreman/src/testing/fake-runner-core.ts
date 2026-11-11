@@ -13,6 +13,11 @@
 // FAKE_RUNNER_CAPTURE_FAILS=<n> makes the first n capture calls (counted in a file beside the report) fail.
 // FAKE_RUNNER_LOAD_TRIPS=<n> makes the first n runs of pack code end as a false watchdog stop (tick_timeout), as
 // the real runner was seen to do under CPU load.
+// P10 (the engine's verdicts since P1, RUNNER.md "Limits count processor time"):
+// FAKE_RUNNER_STARVED=<n> makes the first n runs of pack code end as the real runner ends a run the machine starved:
+// exit 2, outcome not_run, one error of kind engine whose message begins "starved:". The marker FAKE_STARVED in a
+// pack file does the same in every run. FAKE_RUNNER_STARVED_STALLS=<k> (or the marker FAKE_STARVED_STALLS(<k>))
+// puts metrics.starved_stalls = k and starved_ms into the report of a run that finishes.
 //
 // What the real runner does and this fake now does too:
 //   - an invalid manifest: `lint` exit 1 with `schema` errors carrying file (and line); every other verb exit 2,
@@ -323,6 +328,27 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
         if (env["FAKE_RUNNER_LOAD_FRAMES"]) wdFrame = 1307 + 1771 * n;
       }
     }
+    let starvedNow = !loadProblem && [...text.values()].some((t) => /FAKE_STARVED(?![_A-Z])/.test(t));
+    const starveRuns = Number(env["FAKE_RUNNER_STARVED"] ?? "0");
+    if (!loadProblem && !starvedNow && starveRuns > 0) {
+      const counter = path.join(path.dirname(opts["report"] as string), ".fake-starved");
+      const n = fs.existsSync(counter) ? Number(fs.readFileSync(counter, "utf8")) : 0;
+      if (n < starveRuns) {
+        fs.mkdirSync(path.dirname(counter), { recursive: true });
+        fs.writeFileSync(counter, String(n + 1));
+        starvedNow = true;
+      }
+    }
+    if (starvedNow) {
+      // As host.gd writes it (_verify_run, then _finish_by_checks: outcome engine_failed -> not_run, exit 2): the three
+      // smoke checks that come before the watchdog's, one engine error, and metrics.starved_reruns. "Could not run",
+      // never the pack's failure.
+      checks.push({ id: "smoke.loads", ok: true, detail: "pack loaded" });
+      checks.push({ id: "smoke.no_script_errors", ok: true, detail: "0 errors in 0 frames" });
+      checks.push({ id: "smoke.no_engine_errors", ok: true, detail: "0 engine errors" });
+      report["metrics"] = { starved_reruns: 2 };
+      return notRun("engine", "starved: _pack_tick ran 90 s of wall time and the machine gave it 12 ms of processor time (limit 250 ms); the machine, not the pack, stopped it (started again 2 time(s); no verdict on the pack)");
+    }
     const se = loadProblem ? [] : gd.filter((f) => (text.get(f) ?? "").includes("FAKE_SCRIPT_ERROR"));
     checks.push({ id: "smoke.loads", ok: !loadProblem, detail: loadProblem ? `the pack did not load: ${loadProblem.message}` : "pack loaded" });
     if (loadProblem) errors.push(loadProblem);
@@ -340,13 +366,18 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
     if (loadProblem || se.length > 0) fail();
     if (!loadProblem && !wd && verb !== "capture") {
       report["metrics"] = { state_hash: stateHash(seed, frames), frame_ms_p50: 0.2, frame_ms_p99: 0.4, entities_max: 12, bodies_max: 3, tick_ms_max: 0.03 };
+      const stalls = Number(env["FAKE_RUNNER_STARVED_STALLS"] ?? [...text.values()].map((t) => /FAKE_STARVED_STALLS\((\d+)\)/.exec(t)?.[1]).find((x) => x !== undefined) ?? "0");
+      if (stalls > 0) Object.assign(report["metrics"] as Record<string, unknown>, { starved_stalls: stalls, starved_ms: 310.5 * stalls });
     }
 
     if (verb === "invariants" && !loadProblem && !wd) {
       const nd = has("FAKE_NONDETERMINISTIC");
       checks.push({ id: "invariants.determinism", ok: !nd, detail: nd ? "state_hash differs between two runs" : "two runs agree" });
       checks.push({ id: "invariants.below_ground", ok: true, detail: "no physics body below y = -50" });
-      checks.push({ id: "invariants.frame_budget", ok: true, detail: "frame p99 0.400 ms (budget 8 ms)" });
+      // P10: as kernel/host/invariants.gd since P1 (the stage budget on each frame's best time, and the budget of a
+      // pack in a world of many, on the median frame).
+      checks.push({ id: "invariants.frame_budget", ok: true, detail: "frame p99 0.400 ms (stage budget 4 ms; scripts + physics step, headless, each frame's best of 2 runs)" });
+      checks.push({ id: "invariants.many_budget", ok: true, detail: "frame p50 0.200 ms (budget 1.0 ms for one of many; target 0.5 ms)" });
       checks.push({ id: "invariants.entity_budget", ok: true, detail: "12 nodes (budget 5000), 3 physics bodies (budget 600)" });
       // As the engine since WP5 (seen in the second real job's reports and in site/_engine_snapshot3): the first bot
       // is played twice, for at most --bot-frames frames, and both runs must end in the same state.
@@ -368,6 +399,11 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       // This is how a test makes one package's change break another package's bot (and that package able to fix it).
       const all = [...text.values()].join("\n");
       const unmet = [...all.matchAll(/FAKE_BOT_NEEDS\((\w+)\)/g)].map((m) => m[1] as string).filter((t) => !all.includes(`FAKE_HAS(${t})`));
+      // P10: FAKE_TEST_NEEDS(<bot file name without .gd>:<token>) anywhere in the pack: only THAT bot fails until some
+      // file holds FAKE_HAS(<token>). This is how one package's files break another package's bot and not its own
+      // (the real hockey job: the rebuilt AI passed its own bot and made the player's bot lose 1 : 3).
+      const mine = ran ? path.basename(test as string, ".gd") : "";
+      unmet.push(...[...all.matchAll(/FAKE_TEST_NEEDS\((\w+):(\w+)\)/g)].filter((m) => m[1] === mine && !all.includes(`FAKE_HAS(${m[2] as string})`)).map((m) => m[2] as string));
       const botFail = ran && (body.includes("FAKE_BOT_FAIL") || unmet.length > 0);
       const done = ran && !never;
       checks.push({ id: "bot.completed", ok: done, detail: !ran ? "the bot did not run" : done ? "done at frame 600" : `not done within ${frames} frames` });
