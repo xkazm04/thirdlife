@@ -119,7 +119,7 @@ window_mode() {  # window_mode <mode> <args...>: as godot_mode, in a window; a w
     echo "[world] the window died before it started (exit $code); attempt $attempt of 3" >&2
   done
   if [ -n "$TL_RAW" ]; then cat "$log"; rm -f "$log"; return $code; fi
-  tr -d '\r' < "$log" | grep -E '^(\{"schema":"tl\.(world|view)/1"|\[view\] [^s]|SCRIPT ERROR|ERROR|WARNING|   at:)'
+  tr -d '\r' < "$log" | grep -E '^(\{"schema":"tl\.(world|view|visitor)/1"|\[view\] [^s]|SCRIPT ERROR|ERROR|WARNING|   at:)'
   rm -f "$log"
   return $code
 }
@@ -264,7 +264,9 @@ case "$1" in
     echo "$out" | grep -E '^(\[view\]|SCRIPT ERROR|ERROR|WARNING|   at:)'
     echo "$out" | grep '"kind":"picture"' | sed -E 's/.*"out":"([^"]*)".*"stage":(-?[0-9]+).*"cam":"([^"]*)".*"world_tick":([0-9]+).*"draw_calls":([0-9]+).*"primitives":([0-9]+).*"frame_ms_p50":([0-9.]+).*/picture: \1 (tick \4, stage \2, cam \3, \5 draw calls, \6 primitives, frame \7 ms)/'
     tl="$(echo "$out" | grep '"kind":"tour"')"
-    [ -n "$tl" ] && echo "window: $(echo "$tl" | jnum pictures) of $(echo "$tl" | jnum shots_asked) pictures, $(echo "$tl" | jnum stage_changes) stage changes, frame p50 $(echo "$tl" | jnum frame_ms_p50_all) ms (simulation and drawing), render cpu $(echo "$tl" | jnum render_cpu_ms_p50) ms gpu $(echo "$tl" | jnum render_gpu_ms_p50) ms, landscape built in $(echo "$tl" | jnum build_ms) ms"
+    [ -n "$tl" ] && echo "window: $(echo "$tl" | jnum pictures) of $(echo "$tl" | jnum shots_asked) pictures, $(echo "$tl" | jnum stage_changes) stage changes, frame p50 $(echo "$tl" | jnum frame_ms_p50_all) ms (simulation and drawing), render cpu $(echo "$tl" | jnum render_cpu_ms_p50) ms gpu $(echo "$tl" | jnum render_gpu_ms_p50) ms, landscape built in $(echo "$tl" | jnum build_ms) ms (terrain $(echo "$tl" | jnum terrain_ms) ms, colliders $(echo "$tl" | jnum space_ms) ms)"
+    echo "$out" | grep -E '"kind":"visitor' | sed -E 's/^\{"schema":"tl.view\/1",/visitor: /; s/,"space":.*$//; s/"//g; s/,/  /g'
+    echo "$out" | grep '"kind":"tour"' | grep -o '"landscape":{[^}]*' | sed -E 's/^"landscape":\{/landscape: /; s/"//g; s/,/  /g' | head -1
     fail=0; [ $code -ne 0 ] && { echo "the tour ended with exit code $code"; fail=1; }
     if [ $headless -eq 0 ] && [ -z "$tl" ]; then echo "the window did not report the end of the tour"; fail=1; fi
     [ -f "$tmp/log.json" ] && [ -n "$outdir" ] && cp "$tmp/log.json" "$outdir/world_log.json"

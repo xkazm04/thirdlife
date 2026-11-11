@@ -499,3 +499,46 @@ Brief `briefs/BRIEF-N5A-TIERS.md`. Started 01:55 CEST on 2026-11-11 in `site/_wo
 - 04:10 no engine process of mine is left (the six Godot processes running belong to other projects); no window.
   Not done: a person walking it (`world.sh visit`); a body for the visitor; relief; `footprint` in the packs;
   the foreman's copy of verbs.json; the text of the one Jolt warning. N7 ends here.
+
+## P4: land with relief, and a visitor with a body (core-p4-relief; clock from `date`, started 10:25)
+
+- 10:25 start. Read the brief, WORLD.md, DRAW.md, landscape.gd, visitor.gd, draw.gd, view.gd, the kit's terrain.
+  Premises checked: (a) the plot's height is already free: the walk's plot `origin` y goes through view.gd's lift
+  (`origin.y += -rim`), so a pad height is just the plot's y; no draw.gd / view.gd edit was needed. (b) the black rim
+  line of last night's pictures 04 / 06 is a step: the world's ground lay 6 cm under the pack's rim
+  (GROUND_Y -0.06) and the dirt ring 3.6 cm over it; ink draws a heavy line on a 6 cm step at a grazing angle.
+- 10:36 first baseline run (`world.sh tour tour --headless` in the worktree, cold cache) was still running after 30
+  minutes at 600 CPU seconds: stopped by me (my own process). Everything after it ran in 5 to 15 s: the first run in a
+  fresh worktree is not a measurement. Baseline taken from the main checkout's engine instead (read-only use,
+  `TL_ENGINE_DIR`), see the figures below.
+- 10:50 `terrain/village_terrain.gd` (heightfield 3 m cell, indexed mesh, 47,765 vertices, one surface of the palette
+  key "terrain": the style's ground class with tufts and the strata on steep faces) + `landscape.gd` rewritten around it.
+  Roads and the river are stamped into the grid (every sample marks the vertices round it) because a path query per
+  vertex (the kit's way) would have cost 18 s here. Built in 0.27 to 0.5 s. First windowed picture looked at: pads read
+  as terraces, the river was purple (grazing water), camouflage patches too strong (reduced), relief too weak
+  (pad heights raised to -2.5 / 4.5 / 7 / 6 / 3 / 0.5, land noise up).
+- 10:55 GROUND_Y 0.06 -> 0.0 (a pack's ground and the terrain at the same height under the dirt ring, ring +1.4 cm):
+  the black rim line is gone in picture 04; what remains is a real crest at the lip of a dipped plot.
+- 10:58 visitor body: `terrain/world_space.gd` (a PhysicsServer3D space of the world; kinematic capsule; test_motion
+  slide, 0.55 m step, slope limit 55 degrees) built by the landscape, found by the visitor through the landscape
+  node's meta `tl_space`. First run: he stuck on the steep bent rim of the drive's hollow (the 9 m band over a 7.6 m
+  drop is 40 to 60 degrees): the walk stops at the rim now (0, -26). Second: the wall plot's fence stopped him at
+  x 118 (the gate is at x 126): the walk was adjusted, as the brief allows. `visitor_probe` in a walk script runs
+  teleport-and-walk probes against fence (outside and inside), gate, tree, rock, bridge rail, the bluff:
+  8 of 8 as expected (a rock lower than a knee is walk-over by design; the first rock probe passed over a 0.3 m stone
+  and a sphere collider turned into a hill he could climb: rocks now have cylinder colliders).
+- 11:08 `tour`, `visitor_walk` and `p4_views` walks. Pictures looked at: bridge, river, bluff strata, rim.
+- 11:19 `world.sh tour tour --out-dir=captures/p4/tour` (window + proof): PASS; hash table (drive 2419 ticks 59366015,
+  wall 439 bb9ec8af, walker 371 8d1831dc, paddle 1894 c3b7779c, kit 332 16db2bf1, car 1573 9a0c139b): tour = alone =
+  replay. The visitor line: 0 blocked ticks, ends exactly where the script says (end_dev 0.0), at most 10 m behind the
+  script on the one fast stretch (raised the catch-up to 0.5 m a tick afterwards). The first run of that walk had the
+  wall yard's gate at the wrong x (118 for 126): he was stopped by the fence at z -21.2, `blocked_ticks` 475: the script
+  was adjusted, not the body.
+- 11:20 arch gate: a schema name of its own for the visitor's lines is a schema no contract declares (arch: schema-versions): the lines are `tl.view/1`
+  with kinds `visitor`, `visitor_probe`, `visitor_blocked` instead (proposed contract text in the report);
+  landscape.gd was 721 lines (budget 600): the far plain, the road strip, the bridge, the mesas and the scatter's
+  helpers moved to `terrain/village_parts.gd`; new .gd files need their .uid: `godot --headless --import` made them
+  (and a `.import` per capture picture, deleted again).
+- 11:25 cost, before (main's engine, this morning's tour) and after: WORLD.md "P4: what relief and a body cost".
+  `view.sh check` (five seeds, stage paddle): PASS, the five hashes of DRAW.md section 6 again.
+- 11:32 `tour_views` (another walk without pads or river) still builds and draws; `visitor_walk`: 8 of 8 probes.

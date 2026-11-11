@@ -7,6 +7,14 @@
 > brings a venue, not a landscape. (4) The automatic next round is paused; starting and engaging in games is a chapter
 > of its own.
 
+> **P4 (11 November, morning): the land has height and the visitor has a body.** The world's ground is a heightfield
+> (`terrain/village_terrain.gd`): rolling land, a ring of hills, a bluff with a cliff face, a low valley with a river
+> and two ponds. Every plot stands on a flat pad of its own height with a bank and a kerb round it; roads follow the
+> land with a spur and a gate to every plot; a bridge crosses the river; trees, rocks and bushes follow the land. The
+> visitor is a capsule in a physics space that belongs to the world (`terrain/world_space.gd`): he walks on the terrain,
+> stands on a plot's own ground inside the plot, and stops at fences, trees, rocks, walls and rails. Sections "Relief"
+> and "The visitor's body" below; `PATCHES-P4.md` has what is left for files that are not P4's.
+
 Tonight's four pieces in one process and one window: many packs alive, each in its own physics space (N2,
 `BENCH.md`); a scheduler that gives each pack ticks by tier (N5a, `TIERS.md`); a drawing layer that shows every pack
 at its plot (N5b, `draw/DRAW.md`); the look (N1). This page says how they are joined, how a walk and a tour are
@@ -28,8 +36,8 @@ bash tools/world.sh visit tour                          # a person walks it (WAS
 | the scheduler | `kernel/world/tiers.gd`, `tiers.json` | every decision about who ticks, as events: `tier`, `slice`, `speed`, `leave`, `return`, `over`, `restart`, `refused` |
 | the viewer | `kernel/world/draw/view.gd` | the window: listens to the world host, tells the draw layer, owns the stage switch, the cameras and the pictures |
 | the draw layer | `kernel/world/draw/draw.gd` | every pack at its plot (shader offset), the plot cut, the stand-ins; never touches simulation |
-| the landscape | `kernel/world/landscape.gd` | ground, road, plot edges, scatter, mesas, haze: built once, visual only |
-| the visitor | `kernel/world/visitor.gd` | a biped rig and a chase camera at the world's `player_pos`: visual only, no body |
+| the landscape | `kernel/world/landscape.gd`, `terrain/` | the heightfield, pads, roads, river, bridge, plot edges, scatter, mesas, haze: built once, visual; and the visitor's collider (`terrain/world_space.gd`) |
+| the visitor | `kernel/world/visitor.gd` | a biped rig, a chase camera and a BODY (a capsule in the world's own physics space); where he stands is drawn from the body |
 
 One world tick, in order: the world host asks the scheduler for this tick's events (`decide`, or the log's events in
 a replay) and applies them; each `tier` event is handed on as `plot_event` at that same tick boundary, so **the event
@@ -71,7 +79,9 @@ N5a's format (TIERS.md) plus:
 | `"events"` | `{"t": 990, "e": "enter"}` (the plot he stands in; `"plot": "<id>"` names one), `{"t": 1440, "e": "leave"}`, `{"t": 1200, "e": "shot", "name": "on_stage_drive"}`, `{"t": 100, "e": "shot", "name": "overview", "cam": "crane", "from": [x, y, z], "to": [x, y, z]}` |
 | `"plots"[i]."radius"` | metres: the circle the pack is cut to and drawn in |
 | `"road"` | `[[x, z], ...]`: control points of the main road; every plot gets a spur and a gate |
-| `"landscape"` | `seed`, `road_half_m`, `trees`, `broadleaf`, `rocks`, `bushes`, `belt`, `patches`, `tufts`, `mesas`, `haze` (factor on the style's fog, 0.4), `fence`, `gates`, `spurs`, `lots` (`[{"at": [x, z], "radius": m}]`: fenced building sites with a crane, a scaffold and stacked timber, no game on them yet) |
+| `"landscape"` | `seed`, `road_half_m`, `trees`, `broadleaf`, `rocks`, `bushes`, `belt`, `tufts`, `mesas`, `haze` (factor on the style's fog, 0.4), `fence`, `gates`, `spurs`, `lots` (`[{"at": [x, z], "radius": m, "h": pad height}]`: fenced building sites with a crane, a scaffold and stacked timber, no game on them yet; no `h` = the land's own height there), P4: `pad_h` (per plot, the height of its pad: the SAME number as the plot's `origin` y, see PATCHES-P4 1), `river` (`{"path": [[x, z], ...], "half_m", "pond_m", "depth_m"}`: a river that ends in a pond at each end), `margin_m` (the heightfield reaches this far beyond the plots, roads and river), `cell_m` (3), `rim_band` (9: must equal the draw layer's) |
+| `"plots"[i]."origin"` | `[x, y, z]`: P4: `y` is the height of the plot's PAD in the world (the draw layer lifts the pack by its own rim on top of it) |
+| `"visitor_probe"` | P4: a list of `{"name", "from": [x, z], "to": [x, z], "expect": "stop" or "pass"}` (and the element `"auto"`: a tree, a rock and the bridge's rail): the visitor's body is put at `from`, sent at `to`, and one `tl.view/1` line of kind `visitor_probe` says where it ended and what stopped it |
 | `"visitor_cam"` | options of the chase camera (`distance`, `height`, `look_height`, `fov`) |
 
 A request that cannot be met is an event too (`refused`, with `why`): an `enter` outside every plot, a `leave` with
@@ -94,6 +104,11 @@ tour = alone for the same number of its own ticks = replay of the world log**. T
   world builds you again from your seed 3 seconds later: `_pack_setup`, `_pack_start`, tick 0. Nothing is carried
   over (not even `_pack_save` data). Do not keep state in `static var`: the script is the same object in the next
   round.
+- **Your plot has a height.** P4: the world puts your plot on a flat pad at its own height (a bank and a kerb round it;
+  the ground of the world meets your ground at the same height at your rim, so there is no seam and no step). Your
+  rim height is measured as before and lifted on top of the pad. Standing on a pad is a rim, not a floor: a pack
+  whose own ground is a hollow (the drive seed, 7.6 m deep) has its rim ground bent over 9 m, which is 40 to 60
+  degrees at the steepest: the visitor's body stops at the top of it (see "The visitor's body").
 - **You bring a venue, not a landscape.** In a world your layout is built without its far terrain and its scattered
   forest. The world draws the ground, the road to your gate, a ring of worn ground and a fence 3.6 m outside your
   radius, the trees and the mesas. Declare `footprint` in `pack.json`; no seed or example does yet, so tonight's
@@ -101,6 +116,66 @@ tour = alone for the same number of its own ticks = replay of the world log**. T
 - **A big flat floor of your own reads as a disc from above** (`ex_car`): it is cut to your radius like everything.
 - **Far away you are a still picture and run slower** (TIERS.md, DRAW.md): the stand-in is taken when you are first
   far and is kept across your rounds.
+
+## Relief (P4)
+
+`terrain/village_terrain.gd` is one heightfield for the village, built once by `landscape.gd` (3 m cell, 696 x 612 m in
+the tour, 47,765 vertices, one indexed mesh with smooth normals, one surface of the palette key `terrain`: the style's
+ground class, so it has the tufts, pebbles and the drawn strata on steep faces like every pack's ground). Roads and the
+river are STAMPED into the grid (every sample of a path marks the vertices round it; the kit's way, a path query per
+vertex, would have cost 18 s). What is in it:
+
+| thing | how |
+|---|---|
+| land | simplex noise (4 m and 1 m amplitude), a ring of hills 24 m high from 300 m out, the border pulled down to the far plain's level |
+| a bluff | a 9.5 m step with a cliff face behind the northern venues (z about -205), a plateau on top |
+| pads | `pad_h` per plot: a flat disc of radius plot + 10.5 m at the plot's height, a bank round it (width 0.7 x height difference when cut into the land, 1.1 x when filled up, at least 3.5 m), a stone kerb at the lip wherever the bank falls or rises more than 0.9 m |
+| roads | the main road follows the land (the land's height along it, smoothed twice over 20 m); a spur from every plot's gate climbs from the pad's height to the road's; the ground is graded flat across the road (corridor 3 m + 9 m blend) |
+| water | `river`: a valley 5 m under the land round the river (36 m wide), a channel, the style's water material along it, a pond at each end |
+| bridge | where the main road is within 17 m of the river: a deck on the road's own profile, rails, three piers; the road strips stop under it |
+| scatter | trees stand on convex ground (tree lines on ridges), rocks on steep ground, none within the pad of a plot, on a road, in the river or on ground steeper than 17 to 19 degrees; 120 pines, 40 broadleaf, 46 rocks, 90 bushes, a belt of 180 on the hills (fewer than N7's 150 / 46 / 60 / 110 / 260) |
+
+Where the plots stand moved (the pads need room and the roads a margin): the tour's plots are 100 m apart in two rows
+either side of a road at z = 0 (`tour.json`). The dirt ring, the fence and the gate stand on the pad at its height;
+the pack's ground meets the pad at the same height (the world's ground used to lie 6 cm under it and the ring 3.6 cm
+over it: that step was the black rim line of last night's pictures 04 and 06).
+
+## The visitor's body (P4)
+
+What was chosen, and why. A pack's bodies live in a space of its own and must stay untouched; the visitor belongs to no
+game. So the WORLD owns a physics space (`PhysicsServer3D`, no nodes) and puts only static things in it, built once
+with the landscape:
+
+* the terrain's triangles (88,812; a triangle is left out where a plot's own ground carries him instead);
+* a wall (thin quads, 3 m high) along every plot's fence, with the gate left open; trunks of trees and tall rocks
+  (cylinders); the lots' cranes, scaffolds and timber piles; the bridge's deck, rails and piers;
+* for every plot a COPY of the pack's static colliders (`add_pack`): the shapes are shared (a shape belongs to no
+  space), the bodies are new bodies in this space, clipped to the plot's circle, bent at the rim exactly as the draw
+  layer bends the ground, moved to the plot's place and height. Only `StaticBody3D` (the venue's ground, walls,
+  stands); nothing a pack moves is copied. The pack's own bodies are not touched, and nothing in the pack's space
+  can see the visitor.
+
+His body is a kinematic capsule (0.35 m radius, 1.8 m) in that space, moved by the engine's own `test_motion`: it
+lifts by a step (0.55 m), slides along what it meets, follows the ground down, and refuses a move that ends on a slope
+steeper than 55 degrees. The space is not stepped (nothing in it moves; queries work).
+
+Scripted and live. The scheduler still reads the scripted position (`player_pos`) and `world.tour` still proves
+the same things (the body changes where the visitor is DRAWN, never what a pack is given). The body follows the script
+position (at most 0.3 m per tick) and cannot pass an obstacle, so a script that walks him through a fence leaves him
+at the fence; the `tl.view/1` line of kind `visitor` at the end of a walk says how many ticks he was held back
+(`blocked_ticks`) and how far from the script he ended (`end_dev_m`). When a person walks (`--live`), the body decides and
+`player_pos` is set from it. The tour's script was adjusted where it walked into things: the wall yard's gate is at x
+126, the drive's rim at (0, -26).
+
+Proof, `world.sh tour visitor_walk --out-dir=<abs dir> --pictures-only` (probes, no window needed for the result): the
+paddle plot's fence from outside and from inside (stops 0.34 m short of it: his radius), its gate (passes), the bluff's
+cliff face (stopped by slope 34 m short of the target), a tree, a tall rock and the bridge's rail (stopped by them), the
+road's verge (passes): 8 of 8 as expected. In the tour (script adjusted as said): 0 blocked ticks, and he ends at the script's last position (`end_dev_m` 0.0).
+
+Limits. A pack's static colliders are copied when the world is built: a wall a pack removes later is still there for
+the visitor. A pack's ground is a bowl he cannot walk into where it is steeper than 55 degrees (the drive seed's rim).
+Bushes, grass, flags and small rocks are walk-through. No jump, no swimming (the river is 1 m deep and he wades it).
+The world's space is built by the landscape, so a world without a window has no visitor.
 
 ## What it costs (11 November, 03:40 to 04:05, other jobs running on the machine: figures under load)
 
@@ -123,7 +198,33 @@ One windowed run of four printed an engine warning with the trace `CreateJob (mo
 jolt_job_system.cpp:123)`; its text was not kept (the tool now prints `WARNING` lines too). Engine errors were 0 and
 all six hashes were the same in that run. It did not come back.
 
+### P4: what relief and a body cost (11 November, 11:00 to 11:30, three other builders and other jobs on the machine: figures under load)
+
+Before = the main checkout's engine and tour script of this morning, after = this branch's, same machine, same half hour.
+
+| | before | after |
+|---|---|---|
+| headless tick (p50 / mean / p99 / worst), 2900 ticks, 6 games | 1.29 / 1.47 / 2.34 / 389 ms | 1.35 / 1.56 / 2.69 / 513 ms |
+| window, whole frame (median over the tour) | 3.13 ms | 2.45 ms (p99 9.3 ms, worst 921 ms) |
+| window, render CPU / GPU medians | 0.45 / 1.18 ms | 0.34 / 1.23 ms |
+| draw calls / primitives at the ten pictures | 159 to 454 / 0.9 to 1.6 M | 99 to 245 / 1.3 to 1.9 M |
+| landscape build (once) | 0.88 s | 1.38 s: terrain 0.34 s, colliders 0.32 s, the rest (roads, fences, scatter, mesas) 0.72 s |
+
+The simulation is not touched (the headless tick is the same within the noise: the plots stand elsewhere, so tiers
+change at other ticks). The one cost that is new is the landscape's build, 0.5 s more than N7's 0.9 s, once; 47,765
+terrain vertices (one draw call) and 88,812 collider triangles (a space that is not stepped). The worst frame (0.9 s)
+is a game built again from its seed (the wall yard on `enter`) inside one frame, as in N7; the "before" run was
+throttled to 270 ms a frame for its last 1400 frames by another builder's window at the same screen position, so only
+its median is comparable. The body costs about 5 `test_motion` calls a tick (not measurable against the frame).
+
 ## The pictures (`kernel/world/captures/`, all looked at)
+P4's are in `captures/p4/` (JPEG; `world.sh` writes PNG): `overview.jpg` and `vs_concept.jpg` (the concept and the
+overview side by side), `tour/01` .. `10_*.jpg` (the tour's ten frames again, from the run whose proof passed),
+`views/` (`slope_venue_above`, `slope_down_to_road`, `rim_venue_below` (the visitor at the lip of the drive's hollow,
+the track below him), `stage_looking_out` (from the drive on stage, out at the bluff), `bridge_close`,
+`valley_from_bridge`, `overview_high`, `standing_on_the_road`). N7's pictures follow.
+
+
 
 | file | what it shows |
 |---|---|
@@ -137,11 +238,14 @@ all six hashes were the same in that run. It did not come back.
 ## Not built, not verified
 
 - **No person has walked it.** `world.sh visit` (WASD, E, Q / Esc, the stage pack's bot switched off and its input
-  opened to the devices) is written and has never been run: no interactive window was opened.
-- The visitor has no body: he walks through fences, trees and buildings, and stands at y = 0 while a pack's own
-  ground dips or rises inside its plot (he hovers at the track's rim). There is no collision between the world and
-  a pack by design (separate spaces).
-- The ground is flat; there are no hills, no water, no bridge. Mesas are stacked prisms.
+  opened to the devices) is written and has never been run: no interactive window was opened. P4: with a body the live
+  path writes `player_pos` from the body each tick; that too has not been run by a person.
+- P4, what is still wrong against the concept: the plots are still discs (a rink on a terrace is a round terrace); a
+  bank is a smooth slope with a stone kerb at its lip, not a retaining wall or a cut rock face (the only real cliff is the
+  bluff and the valley's walls); the far plain beyond the heightfield is flat and the mesas still stand on it like stacked
+  prisms (the ring of hills hides them from inside the village, not from a crane); no cabin on a rise, no rock faces
+  between venues but the bluff; the river is one river with no falls; the venue ground that a pack brings (the drive's
+  bowl, the car's flat floor) is still the pack's.
 - Plots are circles, placed by hand in the walk script; yaw on plots is still not used (the sun is not turned).
 - `ledger` drawing (stand-in only) was run once in a window with a tiers file that unloads plots beyond 70 m
   (`world.sh tour tour --tiers=<file with backdrop_m 70>`): PASS, five packs unloaded and three built again, the

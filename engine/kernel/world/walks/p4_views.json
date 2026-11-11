@@ -1,0 +1,438 @@
+{
+ "schema": "tl.walk/1",
+ "name": "p4_views",
+ "note": "P4. The pictures of the relief: the visitor climbs the paddle plot's spur (a venue above him), stands at the track's rim (a venue below him), looks out at the land from a stage pack. `world.sh tour p4_views --out-dir=<abs dir> --pictures-only`.",
+ "visitor": true,
+ "ticks": 1500,
+ "mode": "bot",
+ "tiers": {
+  "sideline_m": 30,
+  "margin_m": {
+   "stage": 2,
+   "sideline": 8,
+   "backdrop": 40
+  },
+  "dwell_ticks": 90
+ },
+ "plots": [
+  {
+   "id": "drive",
+   "pack": "seed_drive",
+   "origin": [
+    0,
+    -2.5,
+    -90
+   ],
+   "radius": 64,
+   "footprint": {
+    "size_m": [
+     128,
+     128
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "wall",
+   "pack": "seed_wall",
+   "origin": [
+    126,
+    4.5,
+    -62
+   ],
+   "radius": 38,
+   "footprint": {
+    "size_m": [
+     76,
+     76
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "walker",
+   "pack": "ex_walker",
+   "origin": [
+    -118,
+    7.0,
+    -54
+   ],
+   "radius": 30,
+   "footprint": {
+    "size_m": [
+     60,
+     60
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "paddle",
+   "pack": "seed_paddle",
+   "origin": [
+    -60,
+    6.0,
+    64
+   ],
+   "radius": 40,
+   "footprint": {
+    "size_m": [
+     80,
+     80
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "kit",
+   "pack": "ex_kit",
+   "origin": [
+    44,
+    3.0,
+    64
+   ],
+   "radius": 40,
+   "footprint": {
+    "size_m": [
+     80,
+     80
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "car",
+   "pack": "ex_car",
+   "origin": [
+    148,
+    0.5,
+    64
+   ],
+   "radius": 40,
+   "footprint": {
+    "size_m": [
+     80,
+     80
+    ]
+   },
+   "seed": 1
+  }
+ ],
+ "road": [
+  [
+   -270,
+   10
+  ],
+  [
+   -200,
+   5
+  ],
+  [
+   -150,
+   3
+  ],
+  [
+   -100,
+   1
+  ],
+  [
+   -40,
+   0
+  ],
+  [
+   0,
+   0
+  ],
+  [
+   60,
+   1
+  ],
+  [
+   118,
+   -1
+  ],
+  [
+   170,
+   2
+  ],
+  [
+   245,
+   -6
+  ]
+ ],
+ "landscape": {
+  "seed": 7,
+  "pad_h": [
+   -2.5,
+   4.5,
+   7.0,
+   6.0,
+   3.0,
+   0.5
+  ],
+  "lots": [
+   {
+    "at": [
+     -146,
+     64
+    ],
+    "radius": 22
+   },
+   {
+    "at": [
+     205,
+     -34
+    ],
+    "radius": 8
+   }
+  ],
+  "river": {
+   "path": [
+    [
+     -196,
+     -200
+    ],
+    [
+     -214,
+     -130
+    ],
+    [
+     -210,
+     -30
+    ],
+    [
+     -212,
+     12
+    ],
+    [
+     -222,
+     80
+    ],
+    [
+     -206,
+     150
+    ]
+   ],
+   "half_m": 6.0,
+   "pond_m": 16
+  },
+  "margin_m": 90,
+  "road_half_m": 3.0,
+  "trees": 120,
+  "broadleaf": 40,
+  "rocks": 46,
+  "bushes": 90,
+  "belt": 180,
+  "mesas": 18,
+  "haze": 0.4
+ },
+ "player": [
+  [
+   0,
+   [
+    -60,
+    0,
+    2
+   ]
+  ],
+  [
+   60,
+   [
+    -60,
+    0,
+    2
+   ]
+  ],
+  [
+   300,
+   [
+    -60,
+    0,
+    24
+   ]
+  ],
+  [
+   380,
+   [
+    -60,
+    0,
+    24
+   ]
+  ],
+  [
+   470,
+   [
+    -60,
+    0,
+    2
+   ]
+  ],
+  [
+   900,
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  [
+   1000,
+   [
+    0,
+    0,
+    -26
+   ]
+  ],
+  [
+   1500,
+   [
+    0,
+    0,
+    -26
+   ]
+  ]
+ ],
+ "events": [
+  {
+   "t": 220,
+   "e": "shot",
+   "name": "slope_venue_above"
+  },
+  {
+   "t": 420,
+   "e": "shot",
+   "name": "slope_down_to_road"
+  },
+  {
+   "t": 1060,
+   "e": "shot",
+   "name": "rim_venue_below"
+  },
+  {
+   "t": 1100,
+   "e": "enter"
+  },
+  {
+   "t": 1250,
+   "e": "shot",
+   "name": "stage_looking_out",
+   "cam": "crane",
+   "from": [
+    0,
+    3.5,
+    -150
+   ],
+   "to": [
+    0,
+    12,
+    -260
+   ]
+  },
+  {
+   "t": 1300,
+   "e": "shot",
+   "name": "stage_looking_east",
+   "cam": "crane",
+   "from": [
+    60,
+    -6.5,
+    -80
+   ],
+   "to": [
+    200,
+    8,
+    -40
+   ]
+  },
+  {
+   "t": 1360,
+   "e": "leave"
+  },
+  {
+   "t": 1440,
+   "e": "shot",
+   "name": "bridge_close",
+   "cam": "crane",
+   "from": [
+    -196,
+    6,
+    -12
+   ],
+   "to": [
+    -212,
+    -3,
+    10
+   ]
+  },
+  {
+   "t": 1452,
+   "e": "shot",
+   "name": "cam_a_sw",
+   "cam": "crane",
+   "from": [
+    -190,
+    45,
+    140
+   ],
+   "to": [
+    40,
+    0,
+    -30
+   ]
+  },
+  {
+   "t": 1462,
+   "e": "shot",
+   "name": "cam_b_se",
+   "cam": "crane",
+   "from": [
+    230,
+    55,
+    150
+   ],
+   "to": [
+    0,
+    0,
+    -40
+   ]
+  },
+  {
+   "t": 1472,
+   "e": "shot",
+   "name": "cam_c_high",
+   "cam": "crane",
+   "from": [
+    -120,
+    110,
+    230
+   ],
+   "to": [
+    20,
+    0,
+    -20
+   ]
+  },
+  {
+   "t": 1482,
+   "e": "shot",
+   "name": "cam_d_valley",
+   "cam": "crane",
+   "from": [
+    -250,
+    14,
+    40
+   ],
+   "to": [
+    -60,
+    0,
+    -10
+   ]
+  }
+ ],
+ "visitor_cam": {
+  "distance": 5.5,
+  "height": 1.9,
+  "look_height": 1.6,
+  "fov": 62
+ }
+}

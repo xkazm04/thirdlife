@@ -7,17 +7,17 @@
   "mode": "bot",
   "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
   "plots": [
-    {"id": "drive", "pack": "seed_drive", "origin": [0, 0, -72], "radius": 64, "footprint": {"size_m": [128, 128]}, "seed": 1},
-    {"id": "wall", "pack": "seed_wall", "origin": [110, 0, -46], "radius": 38, "footprint": {"size_m": [76, 76]}, "seed": 1},
-    {"id": "walker", "pack": "ex_walker", "origin": [-102, 0, -38], "radius": 30, "footprint": {"size_m": [60, 60]}, "seed": 1},
-    {"id": "paddle", "pack": "seed_paddle", "origin": [-40, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
-    {"id": "kit", "pack": "ex_kit", "origin": [48, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
-    {"id": "car", "pack": "ex_car", "origin": [136, 0, 48], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1}
+    {"id": "drive", "pack": "seed_drive", "origin": [0, -2.5, -90], "radius": 64, "footprint": {"size_m": [128, 128]}, "seed": 1},
+    {"id": "wall", "pack": "seed_wall", "origin": [126, 4.5, -62], "radius": 38, "footprint": {"size_m": [76, 76]}, "seed": 1},
+    {"id": "walker", "pack": "ex_walker", "origin": [-118, 7.0, -54], "radius": 30, "footprint": {"size_m": [60, 60]}, "seed": 1},
+    {"id": "paddle", "pack": "seed_paddle", "origin": [-60, 6.0, 64], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
+    {"id": "kit", "pack": "ex_kit", "origin": [44, 3.0, 64], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
+    {"id": "car", "pack": "ex_car", "origin": [148, 0.5, 64], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1}
   ],
-  "road": [[-230, 10], [-150, 3], [-95, 1], [-40, 0], [0, 0], [60, 1], [104, -1], [160, 2], [240, -6]],
-  "landscape": {"seed": 7, "lots": [{"at": [-112, 52], "radius": 22}, {"at": [-62, -21], "radius": 9}], "road_half_m": 3.0, "trees": 150, "broadleaf": 46, "rocks": 60, "bushes": 110, "belt": 260, "mesas": 18, "haze": 0.4},
-  "player": [[0, [-95, 0, 1]], [60, [-95, 0, 1]], [560, [-37, 0, 0]], [860, [-2, 0, -2]], [960, [0, 0, -13]], [1500, [0, 0, -13]],
-             [1560, [4, 0, -1]], [2360, [104, 0, -1]], [2440, [108, 0, -13]], [2900, [108, 0, -13]]],
+  "road": [[-270, 10], [-200, 5], [-150, 3], [-100, 1], [-40, 0], [0, 0], [60, 1], [118, -1], [170, 2], [245, -6]],
+  "landscape": {"seed": 7, "pad_h": [-2.5, 4.5, 7.0, 6.0, 3.0, 0.5], "lots": [{"at": [-146, 64], "radius": 22}, {"at": [205, -34], "radius": 8}], "river": {"path": [[-196, -200], [-214, -130], [-210, -30], [-212, 12], [-222, 80], [-206, 150]], "half_m": 6.0, "pond_m": 16}, "margin_m": 90, "road_half_m": 3.0, "trees": 120, "broadleaf": 40, "rocks": 46, "bushes": 90, "belt": 180, "mesas": 18, "haze": 0.4},
+  "player": [[0, [-95, 0, 1]], [60, [-95, 0, 1]], [560, [-37, 0, 0]], [860, [-2, 0, -2]], [960, [0, 0, -26]], [1500, [0, 0, -26]],
+             [1560, [4, 0, -2]], [2360, [126, 0, -2]], [2440, [126, 0, -36]], [2900, [126, 0, -36]]],
   "events": [
     {"t": 40, "e": "shot", "name": "on_the_road"},
     {"t": 100, "e": "shot", "name": "overview", "cam": "crane", "from": [-150, 120, 250], "to": [25, 0, -15]},
