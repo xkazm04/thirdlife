@@ -299,6 +299,58 @@ static func add_scoreboard(mk: TLMesh, o: Vector3, yaw: float = 0.0) -> void:
 	mk.pop()
 
 
+## P13 (kit-internal; the draw layer uses it too). The face of a scoreboard showing a real score: a black panel and two seven-segment digits (0 to 9; b < 0 shows
+## one side only), in the proportions of `add_scoreboard`, drawn a little in front of its fixed digits.
+static func _score_face(a: int, b: int = -1) -> TLMesh:
+	var mk: TLMesh = TLMesh.new(2)
+	mk.box(Vector3(7.8, 3.4, 0.04), "black", Color.WHITE, 0.0, Vector3(0.0, 9.4, 0.35))
+	_score_digit(mk, -2.4, a, "window")
+	if b >= 0:
+		_score_digit(mk, 2.4, b, "cyan")
+		for yy: float in [9.75, 9.05]:
+			mk.box(Vector3(0.22, 0.22, 0.05), "hazard_red", Color.WHITE, 0.0, Vector3(0.0, yy, 0.39))
+	mk.box(Vector3(3.0, 0.16, 0.05), "hazard_red", Color.WHITE, 0.0, Vector3(0.0, 7.95, 0.39))
+	return mk
+
+
+static func _score_digit(mk: TLMesh, x: float, value: int, key: String) -> void:
+	var on: String = (["abcdef", "bc", "abged", "abgcd", "fgbc", "afgcd", "afgedc", "abc", "abcdefg", "abcdfg"] as Array)[clampi(value, 0, 9)]
+	var horiz: Dictionary = {"a": 10.3, "g": 9.4, "d": 8.5}
+	var vert: Dictionary = {"b": Vector2(0.55, 9.85), "c": Vector2(0.55, 8.95), "f": Vector2(-0.55, 9.85), "e": Vector2(-0.55, 8.95)}
+	for sg: String in horiz:
+		if on.contains(sg):
+			mk.box(Vector3(1.1, 0.2, 0.05), key, Color.WHITE, 0.0, Vector3(x, float(horiz[sg]), 0.39))
+	for sg: String in vert:
+		if on.contains(sg):
+			mk.box(Vector3(0.2, 0.9, 0.05), key, Color.WHITE, 0.0, Vector3(x + (vert[sg] as Vector2).x, (vert[sg] as Vector2).y, 0.39))
+
+
+## P13. Binds a placed scoreboard (the node of the kit part `scoreboard`, or any node standing where `add_scoreboard`
+## was drawn) to a score source: an object with a `scores` Dictionary (side -> int) and a `score_changed` signal, such
+## as the pack's rules. A face with the first two sides' real score is laid over the fixed digits and drawn again when
+## the score changes, so a single-pack run tells the truth too. Drawing only: nothing is read back. Returns the face.
+static func bind_scoreboard(board: Node3D, source: Object) -> MeshInstance3D:
+	var face: MeshInstance3D = MeshInstance3D.new()
+	face.name = "ScoreFace"
+	face.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	board.add_child(face)
+	board.set_meta(&"tl_score_bound", true)
+	var draw: Callable = func(_side: String = "", _score: int = 0) -> void:
+		if not is_instance_valid(face) or source == null:
+			return
+		var sc: Dictionary = source.get("scores") if typeof(source.get("scores")) == TYPE_DICTIONARY else {}
+		var sides: Array = sc.keys()
+		var text: String = "%d:%d" % [int(sc[sides[0]]) if sides.size() > 0 else 0, int(sc[sides[1]]) if sides.size() > 1 else -1]
+		if text == str(face.get_meta(&"tl_shown", "")):
+			return
+		face.set_meta(&"tl_shown", text)
+		face.mesh = _score_face(int(sc[sides[0]]) if sides.size() > 0 else 0, int(sc[sides[1]]) if sides.size() > 1 else -1).build("score_face")
+	draw.call()
+	if source.has_signal(&"score_changed"):
+		source.connect(&"score_changed", draw)
+	return face
+
+
 static func add_tyres(mk: TLMesh, o: Vector3, yaw: float = 0.0, cols: int = 5) -> void:
 	mk.push_at(o, Vector3(0, yaw, 0))
 	for c: int in cols:

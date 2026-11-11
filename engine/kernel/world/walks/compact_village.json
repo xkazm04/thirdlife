@@ -1,0 +1,27 @@
+{
+  "schema": "tl.walk/1",
+  "name": "compact_village",
+  "note": "P13, item 6: the tour's games in a more compact village (plots 4 m apart beyond their pads, short spurs, both rows close to one road). The seventh plot is a lot at the hockey arena's natural radius (44 m): `node engine/kernel/world/draw/far_study.mjs compact <out walk.json> --hockey=<pack dir>` writes the same walk with the arena on it (site/ is not in the repository). Shots: the village from a low hill and from high up (beside the concept image), and one from the visitor's eye on the road.",
+  "visitor": true,
+  "ticks": 330,
+  "mode": "bot",
+  "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+  "plots": [
+    {"id": "walker", "pack": "ex_walker", "origin": [-115, 4.0, -47], "radius": 30, "footprint": {"size_m": [60, 60]}, "seed": 1},
+    {"id": "drive", "pack": "seed_drive", "origin": [4, -2.5, -81], "radius": 64, "footprint": {"size_m": [128, 128]}, "seed": 1},
+    {"id": "wall", "pack": "seed_wall", "origin": [131, 3.0, -55], "radius": 38, "footprint": {"size_m": [76, 76]}, "seed": 1},
+    {"id": "paddle", "pack": "seed_paddle", "origin": [-125, 4.0, 57], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
+    {"id": "kit", "pack": "ex_kit", "origin": [-20, 2.0, 57], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
+    {"id": "car", "pack": "ex_car", "origin": [85, 0.5, 57], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1}
+  ],
+  "road": [[-270, 6], [-190, 3], [-100, 0], [0, 0], [100, 0], [190, 2], [290, 5]],
+  "landscape": {"seed": 7, "pad_h": [4.0, -2.5, 3.0, 4.0, 2.0, 0.5], "lots": [{"at": [194, 61], "radius": 44, "h": 1.0}],
+    "river": {"path": [[-236, -200], [-254, -130], [-250, -30], [-252, 12], [-262, 80], [-246, 150]], "half_m": 6.0, "pond_m": 16},
+    "margin_m": 90, "road_half_m": 3.0, "trees": 120, "broadleaf": 40, "rocks": 46, "bushes": 90, "belt": 180, "mesas": 18, "haze": 0.4},
+  "player": [[0, [-60, 0, 2]], [330, [-30, 0, 2]]],
+  "events": [
+    {"t": 120, "e": "shot", "name": "eye_on_the_road"},
+    {"t": 200, "e": "shot", "name": "overview_hill", "cam": "crane", "from": [-200, 34, 150], "to": [40, 0, -20]},
+    {"t": 260, "e": "shot", "name": "overview_high", "cam": "crane", "from": [-120, 120, 270], "to": [40, 0, -10]}
+  ]
+}

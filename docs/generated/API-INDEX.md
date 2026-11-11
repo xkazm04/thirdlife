@@ -392,6 +392,7 @@ Properties: `closed: bool`, `length: float`, `pts: PackedVector2Array`, `s: Pack
 - `static func add_site_fence(mk: TLMesh, a: Vector3, b: Vector3, gap: float = 2.6) -> void`
 - `static func add_tyres(mk: TLMesh, o: Vector3, yaw: float = 0.0, cols: int = 5) -> void`
 - `static func add_watch_tower(mk: TLMesh, o: Vector3, yaw: float = 0.0, h: float = 9.0) -> void`
+- `static func bind_scoreboard(board: Node3D, source: Object) -> MeshInstance3D`
 - `static func crane(height: float = 35.0, mast: float = 2.3, jib: float = 30.0, counter: float = 11.0) -> Node3D`
 - `static func lattice(mk: TLMesh, a: Vector3, b: Vector3, side: float, bay: float, chord_key: String, brace_key: String, ch_w: float = 0.2, br_w: float = 0.09) -> void`
 - `static func scaffold(bays: int = 2, levels: int = 2, bw: float = 2.4, bd: float = 1.3, lh: float = 2.0, deck_levels: Array = [1, 2]) -> TLMesh`

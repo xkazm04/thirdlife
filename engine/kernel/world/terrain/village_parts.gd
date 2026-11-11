@@ -244,3 +244,216 @@ static func edge_rocks(rng: RandomNumberGenerator, f: Vector3, r: float, a0: flo
 		var qs: float = (0.9 + 1.5 * big * rng.randf()) * rng.randf_range(0.8, 1.25)
 		var qp: Vector3 = f + Vector3(cos(qa), 0.0, sin(qa)) * (r + 3.4 + rng.randf() * 2.2)
 		out.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(qs, qs * rng.randf_range(0.8, 1.3), qs)), qp + Vector3(0.0, -0.3, 0.0)))
+
+
+## P13: the geometry of every pad's edge (worn ring, kerbs at the lip, fence, gate flags and sign), made off the main
+## thread: the TLMeshes are data until `edge_nodes` makes nodes of them, and the terrain is only read. The same
+## geometry as P6's loop in landscape.gd, from the tones and fence choices its main pass drew in P6's order.
+static func edge_geometry(t: Dictionary) -> void:
+	var terr: RefCounted = t["terr"]
+	var half: float = float(t["half"])
+	var noise: FastNoiseLite = t["noise"]
+	var mk_ring: TLMesh = t["ring"]
+	var mk_edge: TLMesh = t["edge"]
+	var mk_kerb: TLMesh = t["kerb"]
+	for job: Dictionary in t["jobs"]:
+		var tones: PackedFloat32Array = job["tones"]
+		var fences: PackedByteArray = job["fence"]
+		var c: Vector2 = job["c"]
+		var r: float = float(job["r"])
+		var H: float = float(job["H"])
+		var seg: int = int(job["seg"])
+		var r0: float = float(job["r0"])
+		var gate: Variant = job["gate"]
+		if gate != null:
+			var gd: Vector3 = Vector3((gate as Vector2).x, 0.0, (gate as Vector2).y)
+			var side: Vector3 = Vector3(-gd.z, 0.0, gd.x)
+			var gp: Vector3 = Vector3(c.x, H, c.y) + gd * (r + 3.6)
+			var flag: String = "flag_a" if int(job["i"]) % 2 == 0 else "flag_b"
+			TLKitSite.add_flag(mk_edge, gp + side * (half * 0.8 + 1.9), 5.5, flag)
+			TLKitSite.add_flag(mk_edge, gp - side * (half * 0.8 + 1.9), 5.5, flag)
+			TLKitSite.add_sign(mk_edge, gp + gd * 2.4 + side * (half * 0.8 + 3.6), rad_to_deg(atan2(gd.x, gd.z)))
+		var kerb_r: float = r + 10.5 - 0.4
+		for k: int in seg:
+			var a0: float = TAU * float(k) / float(seg)
+			var a1: float = TAU * float(k + 1) / float(seg)
+			var d0: Vector3 = Vector3(cos(a0), 0.0, sin(a0))
+			var d1: Vector3 = Vector3(cos(a1), 0.0, sin(a1))
+			var o: Vector3 = Vector3(c.x, H + 0.014, c.y)
+			var tone: float = tones[k]
+			var ra: float = maxf(r0 + 0.4, r + 2.0 + 6.2 * smoothstep(0.25, 0.8, noise.get_noise_2d(c.x + cos(a0) * r, c.y + sin(a0) * r) * 0.5 + 0.5))
+			var rb: float = maxf(r0 + 0.4, r + 2.0 + 6.2 * smoothstep(0.25, 0.8, noise.get_noise_2d(c.x + cos(a1) * r, c.y + sin(a1) * r) * 0.5 + 0.5))
+			mk_ring.quad_up(o + d0 * r0, o + d0 * ra, o + d1 * rb, o + d1 * r0, "dirt", Color(tone, tone, tone))
+			var og: Vector3 = Vector3(c.x, H + 0.008, c.y)
+			mk_ring.quad_up(og + d0 * ra, og + d0 * (ra + 1.2), og + d1 * (rb + 1.2), og + d1 * rb, "grass_dry", Color.WHITE)
+			var mid_pt: Vector2 = c + Vector2(cos((a0 + a1) * 0.5), sin((a0 + a1) * 0.5)) * (kerb_r + 4.0)
+			if absf(float(terr.call("h", mid_pt.x, mid_pt.y)) - H) > 0.9 and float(terr.call("road_dist", mid_pt.x, mid_pt.y)) > half + 3.0:
+				var kc: Vector3 = Vector3(c.x, H, c.y) + (d0 + d1).normalized() * kerb_r
+				mk_kerb.push_at(kc + Vector3(0.0, 0.2, 0.0), Vector3(0.0, rad_to_deg(-((a0 + a1) * 0.5)), 0.0))
+				mk_kerb.box(Vector3(0.9, 0.46, (d0 - d1).length() * kerb_r + 0.12), "stone", Color(0.95, 0.95, 0.95), 0.05)
+				mk_kerb.pop()
+			if fences[k] == 1:
+				var f: Vector3 = Vector3(c.x, H, c.y)
+				TLKitSite.add_fence(mk_edge, f + d0 * (r + 3.6), f + d1 * (r + 3.6), 3.4)
+	# the meshes are made here too (an ArrayMesh is a resource; making one off the main thread is allowed)
+	t["meshes"] = [mk_ring.build("WorldPlotRings"), mk_edge.build("WorldPlotFences"), mk_kerb.build("WorldPadKerbs") if mk_kerb.tri_count > 0 else null]
+
+
+## P13: the nodes of `edge_geometry`'s meshes (main thread), as P6 named them.
+static func edge_nodes(parent: Node3D, t: Dictionary) -> void:
+	var names: Array = ["WorldPlotRings", "WorldPlotFences", "WorldPadKerbs"]
+	for k: int in 3:
+		var mesh: Variant = (t["meshes"] as Array)[k]
+		if mesh == null:
+			continue
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.mesh = mesh
+		mi.name = names[k]
+		if k == 0:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		parent.add_child(mi)
+
+
+## The lots (moved here from landscape.gd in P13, unchanged): worn ground, a crane, a scaffold, stacked timber and
+## pallets: the next game is being built here.
+static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Array, pad_h: Array, gates: Array, rng: RandomNumberGenerator,
+		edge_n: FastNoiseLite, ws: RefCounted, mk_ring: TLMesh, mk_edge: TLMesh, stats: Dictionary) -> void:
+	for k: int in count:
+		var li: int = first + k
+		var lc: Vector2 = centres[li]
+		var lr: float = float(rad[li])
+		var base: Vector3 = Vector3(lc.x, float(pad_h[li]), lc.y)
+		var segs: int = 28
+		for q: int in segs:
+			var a0: float = TAU * float(q) / float(segs)
+			var a1: float = TAU * float(q + 1) / float(segs)
+			var tone: float = 0.9 + 0.14 * rng.randf()
+			var o: Vector3 = base + Vector3(0.0, 0.014, 0.0)
+			var la: float = lr * (0.86 + 0.24 * (edge_n.get_noise_2d(lc.x + cos(a0) * lr * 3.0, lc.y + sin(a0) * lr * 3.0) * 0.5 + 0.5))
+			var lb: float = lr * (0.86 + 0.24 * (edge_n.get_noise_2d(lc.x + cos(a1) * lr * 3.0, lc.y + sin(a1) * lr * 3.0) * 0.5 + 0.5))
+			mk_ring.quad_up(o, o + Vector3(cos(a0), 0.0, sin(a0)) * la, o + Vector3(cos(a1), 0.0, sin(a1)) * lb, o, "dirt", Color(tone, tone, tone))
+		var crane: Node3D = TLKitSite.crane(26.0, 2.0, 20.0, 8.0)
+		crane.name = "WorldLotCrane%d" % k
+		crane.position = base + Vector3(-lr * 0.38, 0.0, -lr * 0.22)
+		crane.rotation.y = rng.randf() * TAU
+		parent.add_child(crane)
+		ws.call("add_box", Transform3D(Basis(), crane.position + Vector3(0.0, 3.0, 0.0)), Vector3(4.0, 6.0, 4.0))
+		var sc: MeshInstance3D = TLKitSite.scaffold(3, 2).instance("WorldLotScaffold%d" % k)
+		sc.position = base + Vector3(lr * 0.05, 0.0, -lr * 0.4)
+		parent.add_child(sc)
+		ws.call("add_box", Transform3D(Basis(), sc.position + Vector3(3.6, 2.0, 0.0)), Vector3(7.4, 4.0, 1.6))
+		TLKitSite.add_lumber(mk_edge, base + Vector3(lr * 0.38, 0.0, lr * 0.2), 3.2, 1.0, 6, 20.0)
+		TLKitSite.add_lumber(mk_edge, base + Vector3(lr * 0.12, 0.0, lr * 0.5), 3.2, 1.0, 4, -35.0)
+		ws.call("add_box", Transform3D(Basis(), base + Vector3(lr * 0.38, 0.5, lr * 0.2)), Vector3(3.4, 1.2, 1.8))
+		for j: int in 3:
+			TLKitSite.add_pallet(mk_edge, base + Vector3(-lr * 0.15 + float(j) * 2.7, 0.0, lr * 0.08), 2 + j % 2, 12.0 * float(j))
+		var lg: Variant = gates[li]
+		if lg != null:
+			var gd: Vector3 = Vector3((lg as Vector2).x, 0.0, (lg as Vector2).y)
+			var side: Vector3 = Vector3(-gd.z, 0.0, gd.x)
+			var yaw: float = rad_to_deg(atan2(gd.x, gd.z))
+			TLKitSite.add_barricade(mk_edge, base + gd * (lr - 3.0) + side * 2.6, 1.8, yaw)
+			TLKitSite.add_barricade(mk_edge, base + gd * (lr - 3.0) - side * 2.6, 1.8, yaw)
+			for j: int in 4:
+				TLKitSite.add_cone(mk_edge, base + gd * (lr - 5.0 - float(j) * 1.6) + side * (1.4 if j % 2 == 0 else -1.4))
+		stats["lots"] = int(stats.get("lots", 0)) + 1
+
+
+## P13: soft ground. Low irregular patches lying on the land: worn earth near the roads and pads, darker grass in the
+## hollows, and meadows with flowers (small flecks in four colours). One mesh, no collider, no shadow; a generator of
+## its own, so nothing else moves. Skipped by plots, pads, roads and the river (`is_free`).
+static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2, is_free: Callable, count: int) -> int:
+	if count <= 0:
+		return 0
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_ + 1313
+	var mk: TLMesh = TLMesh.new(41)
+	var made: int = 0
+	var tries: int = 0
+	var flowers: Array = ["yellow", "white", "orange", "hazard_red"]
+	while made < count and tries < count * 30:
+		tries += 1
+		var p: Vector2 = box.position + Vector2(rng.randf() * box.size.x, rng.randf() * box.size.y)
+		var r: float = rng.randf_range(4.0, 12.0)
+		if not bool(is_free.call(p, r + 2.0, r + 1.5, r + 2.0)) or float(terr.call("slope", p.x, p.y)) > 0.18:
+			continue
+		var road: float = float(terr.call("road_dist", p.x, p.y))
+		var conv: float = float(terr.call("h", p.x, p.y)) - 0.25 * (float(terr.call("h", p.x + 10.0, p.y)) + float(terr.call("h", p.x - 10.0, p.y)) + float(terr.call("h", p.x, p.y + 10.0)) + float(terr.call("h", p.x, p.y - 10.0)))
+		var kind: String = "dirt" if road < 22.0 and rng.randf() < 0.7 else ("grass_dark" if conv < -0.15 or rng.randf() < 0.45 else "meadow")
+		var key: String = "grass_dark" if kind == "meadow" else kind
+		var tone: float = rng.randf_range(0.86, 1.0) if kind == "dirt" else rng.randf_range(0.8, 0.95)
+		var seg: int = 12
+		var radii: PackedFloat32Array = PackedFloat32Array()
+		for k: int in seg:
+			radii.append(r * rng.randf_range(0.55, 1.0))
+		var lift: float = 0.045 if kind == "dirt" else 0.04
+		var at: Callable = func(q: Vector2) -> Vector3:
+			return Vector3(q.x, float(terr.call("gy", q.x, q.y)) + lift, q.y)
+		for k: int in seg:
+			var a0: float = TAU * float(k) / float(seg)
+			var a1: float = TAU * float(k + 1) / float(seg)
+			var o0: Vector2 = p + Vector2(cos(a0), sin(a0)) * radii[k]
+			var o1: Vector2 = p + Vector2(cos(a1), sin(a1)) * radii[(k + 1) % seg]
+			var m0: Vector2 = p + Vector2(cos(a0), sin(a0)) * radii[k] * 0.5
+			var m1: Vector2 = p + Vector2(cos(a1), sin(a1)) * radii[(k + 1) % seg] * 0.5
+			var col: Color = Color(tone, tone, tone)
+			mk.quad_up(at.call(m0), at.call(o0), at.call(o1), at.call(m1), key, col)
+			_tri_up(mk, at.call(p), at.call(m1), at.call(m0), key, col)
+		if kind == "meadow":
+			for f: int in int(r * r * 0.6):
+				var fp: Vector2 = p + Vector2.from_angle(rng.randf() * TAU) * sqrt(rng.randf()) * r * 0.8
+				var c: Vector3 = at.call(fp) + Vector3(0.0, 0.03, 0.0)
+				var s: float = rng.randf_range(0.12, 0.22)
+				_tri_up(mk, c + Vector3(-s, 0.0, -s * 0.6), c + Vector3(0.0, 0.0, s), c + Vector3(s, 0.0, -s * 0.6), flowers[rng.randi_range(0, 3)], Color.WHITE)
+		made += 1
+	if made > 0:
+		var mi: MeshInstance3D = mk.instance("WorldSoftGround")
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		parent.add_child(mi)
+	return made
+
+
+static func _tri_up(mk: TLMesh, a: Vector3, b: Vector3, c: Vector3, key: String, col: Color) -> void:
+	if (b - a).cross(c - a).y >= 0.0:
+		mk.tri(a, b, c, key, col)        # TLMesh.quad_up's rule: (b - a) x (c - a) points up
+	else:
+		mk.tri(a, c, b, key, col)
+
+
+## P13: trees give way to the fixed cameras of a walk (its crane shots, `cameras` = [[from, to], ..]): a tree whose
+## crown stands in the near part of a camera's view line is left out, after it was placed (the random draws of the
+## scatter stay as they were, so no other tree moves). Returns the trees that stay.
+static func clear_views(trees: Array, cameras: Array) -> Array:
+	if cameras.is_empty():
+		return trees
+	var out: Array = []
+	for x: Transform3D in trees:
+		var crown: Vector3 = x.origin + Vector3(0.0, 5.0 * x.basis.get_scale().y, 0.0)
+		var keep: bool = true
+		for cam: Array in cameras:
+			var from: Vector3 = cam[0]
+			var to: Vector3 = cam[1]
+			var line: Vector3 = to - from
+			var along: float = (crown - from).dot(line.normalized())
+			if along < 0.0 or along > line.length() * 0.75:
+				continue
+			var side: float = ((crown - from) - line.normalized() * along).length()
+			if side < 5.0 + 0.1 * along:
+				keep = false
+				break
+		if keep:
+			out.append(x)
+	return out
+
+
+## P13: [from, to] of every crane shot of a walk's events.
+static func cameras(events: Variant) -> Array:
+	var out: Array = []
+	if typeof(events) != TYPE_ARRAY:
+		return out
+	for ev: Variant in events:
+		if typeof(ev) == TYPE_DICTIONARY and str((ev as Dictionary).get("cam", "")) == "crane" and (ev as Dictionary).has("from") and (ev as Dictionary).has("to"):
+			var f: Array = ev["from"]
+			var t: Array = ev["to"]
+			out.append([Vector3(float(f[0]), float(f[1]), float(f[2])), Vector3(float(t[0]), float(t[1]), float(t[2]))])
+	return out

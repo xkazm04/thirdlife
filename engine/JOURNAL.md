@@ -792,3 +792,18 @@ Brief `briefs/BRIEF-N5A-TIERS.md`. Started 01:55 CEST on 2026-11-11 in `site/_wo
 - 17:39 full gate 1: FAIL in two steps, both consequences of P11: foreman.test `wp3b` "1 manifest" expects the composed kernelApi "0.1" (the Foreman now writes 1.0; line 45 of foreman/src/test/wp3b.test.ts changed to "1.0", a fourth Foreman line beyond the three of PATCHES-P7 5); kernel.selftest `p7.fence_handler_switched_off` (play now refuses a pack with a handler, in tl.sh and in the worker): the case now proves the run-time net in a smoke run (the pack sends itself a device event); control with the worker's switch-off line removed: FAIL, restored: PASS. Everything else green (arch, devx 126, kit 87, seeds 24, 105 other kernel cases incl. world.tour, world.proof, world.reload, world.queue, p11.*).
 - 17:45 full gate 2 started.
 - 18:01 full gate 2: GREEN (exit 0). arch 9, devx.test 126, foreman.test 174, kernel.selftest 106 cases, kit 87, seeds 24; perf measured not judged (busy); item/ui skipped (worktree). End of P11 work 18:02.
+## P13: the far picture in motion, and what the land costs (2026-11-11, builder core-p13)
+- 16:39 start. Class cache imported. `far_study.mjs motion`: the draw layer's own camera on keys (TL_DRAW_CAMERA),
+  Godot's movie writer, ffmpeg sheet + mp4. Before: the far -> middle change popped (tone, shadow, mark size); marks
+  stepped every 2nd frame at 260 m; marks read as doors.
+- Marks: drawn every frame between the last two ticks; rigs get a slim figure mesh; size grows smoothly with
+  distance; shadow only nearer than 120 m. Far picture: far_flat 0, shadow on. After: the change shows only the
+  lattice masts; the rink moves every frame.
+- Pictures merged on a worker (surface arrays read there too) and cached under user://tl_cache/pictures by the pack
+  directory's hash (hashed on workers). First-far frame 108 ms -> 7.6 to 9.5 ms (+4 to 20 ms when the meshes are made);
+  from the cache 11.8 ms.
+- Land: laps per section. Before: tour 1.76 s to the first frame (edges 752, terrain 363, colliders 329 ms), walk30
+  4.54 s (edges 2018, grid 686, collision faces 808). Edges on a worker, land rows on a group task, collision faces
+  without per-cell arrays: tour 0.63 to 0.66 s, walk30 1.05 s.
+- Soft ground patches, trees give way to crane cameras, walks/compact_village.json (+ hockey via far_study compact).
+- Kit: TLKitSite.bind_scoreboard. API bump to 1.1 tried and taken back (four P7 cases hold "1.0" as text): arch api-v1 shows this one finding, PATCHES-P13 entry 2. Selftest block P13: kit.score_bound, world.compact (both PASS).

@@ -39,6 +39,8 @@ func setup(world_node: Node, plots: Array, radii: Array, rims: Array, stage_inde
 	world = world_node
 	scenario = get_viewport().find_world_3d().scenario
 	_pal = TLStyle.material(&"white")
+	if OS.get_environment("TL_PICTURE_WORKER") == "off":
+		pic_worker = false                    # P13: to measure the frame of P6's build in the frame
 	if force_picture.is_empty():              # the viewer may set it (PATCHES-P6 entry 2); until then the env variable
 		force_picture = OS.get_environment("TL_DRAW_PICTURE")
 	var wcfg: Variant = world.get("cfg")          # tiers.json as the world host read it: the loading builder's file
@@ -55,6 +57,51 @@ func setup(world_node: Node, plots: Array, radii: Array, rims: Array, stage_inde
 			"pics": {}, "kind": "", "life": {}, "boards": {}, "far": false, "placed": false, "standin_info": {}})
 	get_tree().node_added.connect(_on_node_added)
 	stage = stage_index             # the caller places the world with set_stage()
+	_motion_setup()
+	for e: Dictionary in entries:          # P13: the picture cache's keys are read on workers from the start
+		if is_instance_valid(e["holder"]) and OS.get_environment("TL_PICTURE_CACHE") != "off":
+			_hash_dir_async(str((e["holder"] as Node).get("pack_dir")))
+
+
+## P13: the motion study (far_study.mjs `motion`). TL_DRAW_CAMERA names a JSON file {"keys": [[tick, [x,y,z], [x,y,z]], ..]}:
+## between its first and last key a camera of this layer is the current one, moved every drawn frame along the keys
+## (linear, world coordinates). Drawing only: nothing of a pack or of the world host reads it.
+func _motion_setup() -> void:
+	var path: String = OS.get_environment("TL_DRAW_CAMERA")
+	if path.is_empty() or not FileAccess.file_exists(path):
+		return
+	var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(j) != TYPE_DICTIONARY or typeof((j as Dictionary).get("keys")) != TYPE_ARRAY:
+		return
+	_motion = (j as Dictionary)["keys"]
+	_motion_cam = Camera3D.new()
+	_motion_cam.name = "MotionStudy"
+	_motion_cam.fov = 50.0
+	_motion_cam.far = 4000.0
+	add_child(_motion_cam)
+
+
+func _motion_step() -> void:
+	var t: float = float(world.get("tick")) if world != null else 0.0
+	if t < float((_motion[0] as Array)[0]) or t > float((_motion[_motion.size() - 1] as Array)[0]):
+		return
+	var k: int = 0
+	while k < _motion.size() - 2 and t > float((_motion[k + 1] as Array)[0]):
+		k += 1
+	var a: Array = _motion[k]
+	var b: Array = _motion[mini(k + 1, _motion.size() - 1)]
+	var span: float = maxf(1.0, float(b[0]) - float(a[0]))
+	var f: float = clampf((t - float(a[0])) / span, 0.0, 1.0)
+	var from: Vector3 = _v(a[1]).lerp(_v(b[1]), f)
+	var to: Vector3 = _v(a[2]).lerp(_v(b[2]), f)
+	_motion_cam.global_transform = Transform3D(Basis.looking_at(to - from, Vector3.UP), from)
+	if not _motion_cam.current:
+		_motion_cam.make_current()
+		print("[draw] motion first tick %d frame %d" % [int(t), Engine.get_frames_drawn()])
+
+
+func _v(a: Variant) -> Vector3:
+	return Vector3(float((a as Array)[0]), float((a as Array)[1]), float((a as Array)[2]))
 
 
 ## Re-bases the world on another stage pack: once, not per tick. N7: `-1` = nobody is on stage (the visitor walks):
@@ -257,6 +304,8 @@ func _entry_of(n: Node) -> Dictionary:
 # ------------------------------------------------------------------------------------------------ every frame
 func _process(_delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
+	if not _motion.is_empty():
+		_motion_step()
 	if not _pending.is_empty():
 		var todo: Array = _pending
 		_pending = []
@@ -281,8 +330,15 @@ func _process(_delta: float) -> void:
 					_set_far(e, true, false)
 				elif bool(e["far"]) and d < far_dist * (1.0 - far_margin):
 					_set_far(e, false, false)
+	var retry: bool = Engine.get_process_frames() % 30 == 0
+	for e: Dictionary in entries:
+		if e.has("build") and _poll_pictures(e) and bool(e.get("far_pending", false)):
+			_set_far(e, true, true)          # P13: its pictures arrived from the worker
+		elif retry and not bool(e["far"]) and (e["pics"] as Dictionary).is_empty() and is_instance_valid(e["holder"]) 				and not bool((e["holder"] as Node).get("loaded")) and e.has("cache_tried"):
+			e.erase("cache_tried")             # P13: a plot whose game is not built yet: its cached picture, once its key is known
+			_set_far(e, false, false)
 	for i: int in entries.size():
-		_life(entries[i], i)              # P6: which far picture, marks on the pack's own ticks, the score on its boards
+		_life(entries[i], i)            # P6: which far picture, marks on the pack's own ticks, the score on its boards
 	for i: int in entries.size():
 		if i == stage:
 			continue
@@ -349,16 +405,31 @@ func _process(_delta: float) -> void:
 
 
 # ------------------------------------------------------------------------------------------------ far stand-ins
+## P13: a far pack whose pictures are still being merged on a worker is drawn in full until they are there
+## (`far_pending`); a holder with no pack yet shows its cached picture, or nothing of its own, and is never made far
+## with nothing to show.
 func _set_far(e: Dictionary, far: bool, force: bool) -> void:
+	e["far_pending"] = false
+	if is_instance_valid(e["holder"]) and not bool((e["holder"] as Node).get("loaded")):
+		if (e["pics"] as Dictionary).is_empty() and not e.has("cache_tried"):
+			e["cache_tried"] = true
+			_ensure_pictures(e)
+			if not (e["pics"] as Dictionary).is_empty():
+				_place_own(e)
+		far = not (e["pics"] as Dictionary).is_empty()      # its last known picture, or the empty pad: never an empty far tier
 	if far == bool(e["far"]) and not force:
 		return
-	e["far"] = far
 	if not is_instance_valid(e["holder"]):
+		e["far"] = far
 		_show(e)
 		return
 	var holder: Node3D = e["holder"]
 	if far:
 		_ensure_pictures(e)
+		if (e["pics"] as Dictionary).is_empty():
+			e["far_pending"] = e.has("build")
+			far = false
+	e["far"] = far
 	_show(e)
 	if holder.visible == far:
 		holder.visible = not far              # drawing only: no script of a pack is told, no body moves
@@ -404,6 +475,16 @@ func report() -> Dictionary:
 func clear() -> void:
 	if get_tree() != null and get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.disconnect(_on_node_added)
+	for e: Dictionary in entries:
+		if e.has("build"):                # P13: a worker still merges its pictures: it must end before this layer goes
+			WorkerThreadPool.wait_for_task_completion(int((e["build"] as Dictionary)["task"]))
+			e.erase("build")
+	for t: Variant in _cache_tasks:
+		WorkerThreadPool.wait_for_task_completion(int(t))
+	_cache_tasks.clear()
+	for dir: String in _dir_hashes:
+		WorkerThreadPool.wait_for_task_completion(int((_dir_hashes[dir] as Array)[0]))
+	_dir_hashes.clear()
 	for e: Dictionary in entries:
 		for m: Dictionary in e["mirrors"]:
 			RenderingServer.free_rid(m["rid"])

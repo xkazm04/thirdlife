@@ -37,11 +37,52 @@ class Acc:
 
 
 ## Builds the missing pictures of a pack in ONE walk over its nodes (each instance is appended to every picture that
-## keeps it).
+## keeps it). P13: the walk on the main thread only lists what goes where (`_collect_standin`: transforms, materials,
+## the surface arrays); the merging (`_append`, the long part) runs on a worker; `_poll_pictures` makes the meshes
+## when it is done, in a later frame. `pic_worker` false = all of it now, in this frame (as P6 did).
 func _build_pictures(e: Dictionary, kinds: Array) -> void:
-	var t0: int = Time.get_ticks_msec()
+	var t0: int = Time.get_ticks_usec()
 	var holder: Node3D = e["holder"]
 	_clip_v4(e, holder)                       # makes sure e["sheets"] is there
+	var accs: Array = _new_accs(e, kinds)
+	var jobs: Array = []
+	_collect_standin(holder, holder, accs, jobs)
+	if pic_worker:
+		e["build"] = {"task": WorkerThreadPool.add_task(_run_jobs.bind(jobs)), "accs": accs, "jobs": jobs, "t0": t0,
+			"main_us": Time.get_ticks_usec() - t0}
+		return
+	_run_jobs(jobs)
+	_finish_pictures(e, accs, t0, Time.get_ticks_usec() - t0)
+
+
+## Once per frame for a pack whose pictures are being merged on a worker: when the worker is done, the meshes are made
+## and the pack's far state is applied again (it was drawn in full meanwhile). Returns true when it finished now.
+func _poll_pictures(e: Dictionary) -> bool:
+	var b: Dictionary = e["build"]
+	if not WorkerThreadPool.is_task_completed(int(b["task"])):
+		return false
+	WorkerThreadPool.wait_for_task_completion(int(b["task"]))
+	e.erase("build")
+	_finish_pictures(e, b["accs"], int(b["t0"]), int(b["main_us"]))
+	return true
+
+
+## The merging of a picture (on a worker): a job is [picture, mesh, transform, sheet, terrain, picture counted, surface];
+## each mesh surface's arrays are read once, here, off the main thread (reading them was most of the main thread's share).
+func _run_jobs(jobs: Array) -> void:
+	var arrays: Dictionary = {}
+	for j: Array in jobs:
+		var target: Acc = j[0]
+		var before: int = target.ix.size()
+		var key: Array = [j[1], int(j[6])]
+		if not arrays.has(key):
+			arrays[key] = (j[1] as Mesh).surface_get_arrays(int(j[6]))
+		_append(target, arrays[key], j[2], bool(j[3]), bool(j[4]))
+		if bool(j[3]):
+			(j[5] as Acc).sheet_tris += (target.ix.size() - before) / 3
+
+
+func _new_accs(e: Dictionary, kinds: Array) -> Array:
 	var accs: Array = []
 	for k: String in kinds:
 		var acc: Acc = Acc.new()
@@ -55,10 +96,18 @@ func _build_pictures(e: Dictionary, kinds: Array) -> void:
 		acc.thin = far_thin if k == "far" else 0.0
 		acc.small = far_small if k == "far" else 0.0
 		accs.append(acc)
-	_collect_standin(holder, holder, accs)
+	return accs
+
+
+## The meshes of the merged pictures (main thread), placed, kept, and written to the picture cache (`_cache_save`).
+## `main_us`: the part of the walk that ran on the main thread in the frame the build started.
+func _finish_pictures(e: Dictionary, accs: Array, t0: int, main_us: int) -> void:
+	var t1: int = Time.get_ticks_usec()
+	var holder: Node3D = e["holder"] if is_instance_valid(e["holder"]) else null
+	var hname: String = String(holder.name) if holder != null else "plot"
 	for acc: Acc in accs:
 		var mi: MeshInstance3D = MeshInstance3D.new()
-		mi.name = "Picture_%s_%s" % [acc.kind, String(holder.name)]
+		mi.name = "Picture_%s_%s" % [acc.kind, hname]
 		var mesh: ArrayMesh = ArrayMesh.new()
 		var parts: Array = [[acc, _pal]]
 		for mat: Variant in acc.extra:
@@ -92,16 +141,115 @@ func _build_pictures(e: Dictionary, kinds: Array) -> void:
 		if mesh.get_surface_count() > 0:
 			mi.mesh = mesh
 		mi.visible = false
-		if acc.kind == "far":
-			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF      # beyond the style's shadow distance anyway
+		# P13: the far picture casts its shadow like the middle one. The style's shadow reaches 300 m from the camera,
+		# the change of picture happens at 210 to 270 m from the plot EDGE: without it the shadow switched off visibly
+		# (captures/p13/motion/before_*). Beyond 300 m the engine draws no shadow of it anyway.
 		_place_standin(e, mi)
 		add_child(mi)
+		var old: Variant = (e["pics"] as Dictionary).get(acc.kind)
+		if old != null and is_instance_valid(old):
+			(old as Node).queue_free()             # a picture from the cache, replaced by the one of the pack as it is now
 		(e["pics"] as Dictionary)[acc.kind] = mi
 		var info: Dictionary = {"kind": acc.kind, "tris": tris, "vertices": verts, "surfaces": mesh.get_surface_count(),
 			"kept": acc.kept, "dropped_small": acc.dropped_small, "dropped_moving": acc.dropped_moving,
 			"dropped_other": acc.dropped_other, "dropped_outside": acc.dropped_outside, "src_tris": acc.src_tris,
-			"sheet_tris": acc.sheet_tris, "dropped_tris": acc.dropped_tris, "build_ms": Time.get_ticks_msec() - t0}
+			"sheet_tris": acc.sheet_tris, "dropped_tris": acc.dropped_tris, "build_ms": snappedf(float(Time.get_ticks_usec() - t0) / 1000.0, 0.1),
+			"main_ms": snappedf(float(main_us + Time.get_ticks_usec() - t1) / 1000.0, 0.01), "from": "built"}
 		(e["standin_info"] as Dictionary)[acc.kind] = info
+		if mi.mesh != null:
+			_cache_save(e, acc.kind, mi.mesh)
+	var frame_ms: float = float(main_us + Time.get_ticks_usec() - t1) / 1000.0
+	stats["pic_main_ms_max"] = maxf(float(stats.get("pic_main_ms_max", 0.0)), snappedf(frame_ms, 0.01))
+
+
+## P13, the picture cache: `user://tl_cache/pictures/<key>_<kind>.res`, the key being the hash of the pack's directory
+## (plotfile.gd `dir_hash`: its files' content), the plot's radius and rim and the picture rules. A plot whose pack is
+## not built yet shows its last known picture from it; a pack that changed has another key. Written on a worker.
+func _cache_key(e: Dictionary) -> String:
+	if not is_instance_valid(e["holder"]):
+		return ""
+	var dir: String = str((e["holder"] as Node).get("pack_dir"))
+	if dir.is_empty() or dir == "<null>" or OS.get_environment("TL_PICTURE_CACHE") == "off":
+		return ""
+	if not _dir_hashes.has(dir):
+		_hash_dir_async(dir)
+		return ""
+	var slot: Array = _dir_hashes[dir]
+	if not WorkerThreadPool.is_task_completed(int(slot[0])) or slot.size() < 2:
+		return ""                      # its hash is still being read on a worker: no cache this time
+	var rules: String = "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [PIC_VERSION, mid_min, far_min, far_cell, far_flat, far_thin, far_small, standin_min, rim_band]
+	return ("%s|%s|%s|%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules]).md5_text()
+
+
+## The content hash of a pack directory reads every file of it (60 to 100 ms for the seeds): on a worker, never in a
+## frame. `_dir_hashes[dir]` = [task] while it runs, [task, hash] when it is done (waited for in `clear`).
+func _hash_dir_async(dir: String) -> void:
+	if dir.is_empty() or _dir_hashes.has(dir):
+		return
+	var slot: Array = []
+	slot.append(WorkerThreadPool.add_task(func() -> void: slot.append(str(PlotFile.call("dir_hash", dir)))))
+	_dir_hashes[dir] = slot
+
+
+func _cache_path(key: String, kind: String) -> String:
+	return "%s/tl_cache/pictures/%s_%s.res" % [OS.get_user_data_dir(), key, kind]
+
+
+func _cache_save(e: Dictionary, kind: String, mesh: ArrayMesh) -> void:
+	var key: String = _cache_key(e)
+	if key.is_empty() or FileAccess.file_exists(_cache_path(key, kind)):
+		return
+	# no material is written (a material in the file is a new material and costs a shader compile on loading): each
+	# surface notes "pal" or the colour and metal of its flat toon material, made again by TLStyle on loading
+	var copy: ArrayMesh = mesh.duplicate(false) as ArrayMesh
+	var mats: Array = []
+	for s: int in copy.get_surface_count():
+		var m: Material = copy.surface_get_material(s)
+		var lut: Variant = (m as ShaderMaterial).get_shader_parameter(&"pal_lut") if m is ShaderMaterial and m != _pal else null
+		if m == _pal:
+			mats.append("pal")
+		elif lut is Texture2D and (lut as Texture2D).get_image() != null:
+			var img: Image = (lut as Texture2D).get_image()
+			var c: Color = img.get_pixel(0, 0).linear_to_srgb()
+			mats.append([c.r, c.g, c.b, img.get_pixel(0, 1).r])
+		else:
+			return                     # a material that cannot be made again: this picture is not cached
+		copy.surface_set_material(s, null)
+	copy.set_meta(&"tl_mats", mats)
+	DirAccess.make_dir_recursive_absolute(_cache_path(key, kind).get_base_dir())
+	_cache_tasks.append(WorkerThreadPool.add_task(func() -> void: ResourceSaver.save(copy, _cache_path(key, kind))))
+
+
+## The cached pictures of a pack, made into this layer's pictures; false when one is missing.
+func _cache_load(e: Dictionary, kinds: Array) -> bool:
+	var key: String = _cache_key(e)
+	if key.is_empty():
+		return false
+	for k: String in kinds:
+		if not FileAccess.file_exists(_cache_path(key, k)):
+			return false
+	var t0: int = Time.get_ticks_usec()
+	for k: String in kinds:
+		var mesh: ArrayMesh = ResourceLoader.load(_cache_path(key, k), "", ResourceLoader.CACHE_MODE_IGNORE) as ArrayMesh
+		if mesh == null:
+			return false
+		var mats: Array = mesh.get_meta(&"tl_mats", [])
+		for s: int in mini(mats.size(), mesh.get_surface_count()):
+			var f: Variant = mats[s]
+			mesh.surface_set_material(s, _pal if typeof(f) == TYPE_STRING else TLStyle.flat_material(Color(float(f[0]), float(f[1]), float(f[2])), float(f[3])))
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.name = "Picture_%s_cached" % k
+		mi.mesh = mesh
+		mi.visible = false
+		_place_standin(e, mi)
+		add_child(mi)
+		(e["pics"] as Dictionary)[k] = mi
+		var tris: int = 0
+		for s: int in mesh.get_surface_count():
+			tris += mesh.surface_get_array_index_len(s) / 3
+		(e["standin_info"] as Dictionary)[k] = {"kind": k, "tris": tris, "from": "cache", "main_ms": snappedf(float(Time.get_ticks_usec() - t0) / 1000.0, 0.01)}
+	stats["pictures_from_cache"] = int(stats.get("pictures_from_cache", 0)) + 1
+	return true
 
 
 ## A stand-in is drawn like the pack it stands for: the node stays at the origin and the shader moves it (candidate A),
@@ -115,7 +263,7 @@ func _place_standin(e: Dictionary, mi: MeshInstance3D) -> void:
 		mi.custom_aabb = (e["rel"] as Transform3D) * mi.mesh.get_aabb().grow(4.0)
 
 
-func _collect_standin(n: Node, holder: Node3D, accs: Array) -> void:
+func _collect_standin(n: Node, holder: Node3D, accs: Array, jobs: Array) -> void:
 	if n is Node3D and not (n as Node3D).visible:
 		return
 	if n is MeshInstance3D and (n as MeshInstance3D).mesh != null:
@@ -136,14 +284,9 @@ func _collect_standin(n: Node, holder: Node3D, accs: Array) -> void:
 				for s: int in m.mesh.get_surface_count():
 					var target: Acc = _target(acc, m.get_active_material(s))
 					if target != null and _is_triangles(m.mesh, s):
-						if not arrays.has(s):
-							arrays[s] = m.mesh.surface_get_arrays(s)
-						var before: int = target.ix.size()
 						# only the kit's terrain is re-meshed for the far picture: a wide merged mesh of track and buildings
 						# is a "sheet" for the rim too, and a grid would eat it (seen: the drive seed lost its track)
-						_append(target, arrays[s], xf, sheet, sheet and String(m.name).begins_with("Terrain"))
-						if sheet:
-							acc.sheet_tris += (target.ix.size() - before) / 3
+						jobs.append([target, m.mesh, xf, sheet, sheet and String(m.name).begins_with("Terrain"), acc, s])
 						acc.kept += 1
 					else:
 						acc.dropped_other += 1
@@ -158,22 +301,21 @@ func _collect_standin(n: Node, holder: Node3D, accs: Array) -> void:
 				for acc: Acc in accs:
 					acc.dropped_other += 1
 				continue
-			var marrays: Array = mm.mesh.surface_get_arrays(s)
 			var mlongest: float = mm.mesh.get_aabb().size[mm.mesh.get_aabb().get_longest_axis_index()]
 			for i: int in count:
 				var it: Transform3D = mm.get_instance_transform(i)
 				var size: float = mlongest * it.basis.get_scale().y
 				var io: Vector3 = (base * it).origin
 				for acc: Acc in accs:
-					if size < acc.min_size or acc.v.size() > 600000:
+					if size < acc.min_size or acc.kept > 20000:
 						acc.dropped_small += 1
 					elif acc.radius > 0.0 and Vector2(io.x, io.z).length() > acc.radius:
 						acc.dropped_outside += 1
 					else:
-						_append(acc, marrays, base * it, false)
+						jobs.append([acc, mm.mesh, base * it, false, false, acc, s])
 						acc.kept += 1
 	for c: Node in n.get_children():
-		_collect_standin(c, holder, accs)
+		_collect_standin(c, holder, accs, jobs)
 
 
 ## Where a surface of this material goes in the stand-in: the palette material into the first surface, another material

@@ -20,7 +20,7 @@ var standin_min: float = 1.2            # metres: a mesh instance whose longest 
 var mid_min: float = 2.5                # "mid": instances shorter than this are clutter at 100 m and more
 var far_min: float = 5.0                # "far": only the forms that make the skyline and the plan
 var far_cell: float = 6.0               # "far": the pack's own ground is re-meshed on a grid of this size (0 = kept as it is)
-var far_flat: float = 0.5               # "far": how far every normal leans to straight up (0 = as built, 1 = one flat tone)
+var far_flat: float = 0.0               # "far": how far every normal leans to straight up (P6 had 0.5; P13: 0, the tone of the middle picture, so the change does not show)
 var far_thin: float = 0.1               # "far": a triangle narrower than this is a thin member (rail, wire, lattice): dropped (0 = kept)
 var far_small: float = 0.4              # "far": a triangle whose longest edge is shorter is small detail: dropped (0 = kept)
 var picture_far_m: float = 240.0        # camera to plot edge: beyond it the far picture (tiers.json `picture_far_m` when present)
@@ -29,6 +29,8 @@ var force_picture: String = ""          # "still" | "mid" | "far": every far pac
 var marks_max: int = 400                # moving bodies of one pack that get a mark
 var mark_min: float = 0.45              # metres: a mark is never smaller (a ball, a puck)
 var far_mark_scale: float = 1.6         # a mark in the far picture is this much larger, so it stays a visible fleck
+var far_shadow_m: float = 300.0        # P13: camera to plot edge: nearer, the far picture casts a shadow (style shadow_max)
+var mark_shadow_m: float = 120.0       # P13: camera to plot edge: nearer, the marks cast a shadow (a figure's is a few pixels)
 var mid_lights: int = 4                 # lights of a pack kept in its "mid" picture (the strongest)
 var smoke_max: int = 2                  # particle emitters of a pack copied into its far pictures
 var stage: int = 0
@@ -40,7 +42,15 @@ var _pending: Array = []
 var _shader_ok: Dictionary = {}         # Shader -> bool (declares tl_plot)
 var _pal: Material = null
 var _mark: ArrayMesh = null             # P6: the unit box every mark is an instance of
+const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
+const PIC_VERSION: int = 13             # P13: part of the picture cache's key; count it up when a picture's rules change
+var pic_worker: bool = true             # P13: pictures are merged on a worker (false: in the frame, as P6 did)
+var _dir_hashes: Dictionary = {}        # P13: pack directory -> content hash (the picture cache's key)
+var _cache_tasks: Array = []            # P13: picture cache writes in flight
+var _figure: ArrayMesh = null          # P13: the unit figure the mark of a rig is an instance of
 var _pal_cols: Dictionary = {}          # P6: palette column -> colour
+var _motion: Array = []                 # P13: camera keys [[world tick, from, to], ..] (TL_DRAW_CAMERA): the motion study
+var _motion_cam: Camera3D = null        # P13: the camera those keys drive; drawing only
 var HIDDEN: Transform3D = Transform3D(Basis.from_scale(Vector3.ONE * 0.0001), Vector3(0.0, -20000.0, 0.0))
 var stats: Dictionary = {"a_instances": 0, "mirrors": 0, "light_mirrors": 0, "foreign": 0, "foreign_names": [], "late": 0}
 
