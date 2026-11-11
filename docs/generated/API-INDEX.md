@@ -108,6 +108,10 @@ Consts: `OPTIONS`
 
 > Contact tracker for one dynamic body (it is a child of a RigidBody3D). Two jobs:
 
+Consts: `MATERIAL_REFRESH`
+
+- `static func tracker_of(c: TLContext) -> Tracker`
+
 ## TLContext
 
 `engine/kernel/api/tl_context.gd` extends `RefCounted`
@@ -386,6 +390,7 @@ Consts: `COLUMNS`, `FALLBACK`, `MATERIALS_PATH`, `SURFACES_PATH`
 - `static func material(id: String) -> Dictionary`
 - `static func material_of(node: Object) -> String`
 - `static func pair(a: String, b: String) -> Dictionary`
+- `static func pair_cached(a: String, b: String) -> Dictionary`
 - `static func surface_under(world_node: Node3D, from: Vector3, depth: float, exclude: Array = [], down: Vector3 = Vector3.DOWN) -> Dictionary`
 - `static func volume_of(body: CollisionObject3D) -> float`
 

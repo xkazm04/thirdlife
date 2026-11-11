@@ -15,6 +15,7 @@ const FALLBACK: String = "concrete"
 static var _materials: Dictionary = {}
 static var _pairs: Dictionary = {}
 static var _loaded: bool = false
+static var _pair_cache: Dictionary = {}     # P2: "a|b" -> pair(a, b); cleared when the tables are loaded again
 # N2: _materials and _pairs are shared and read-only after load_tables(); the warn-once table is per pack
 # (TLContext.first_time).
 static var impulse_per_hardness: float = 40.0
@@ -25,6 +26,7 @@ static func load_tables() -> PackedStringArray:
 	var errors: PackedStringArray = PackedStringArray()
 	_materials = {}
 	_pairs = {}
+	_pair_cache = {}
 	_loaded = true
 	var mj: Variant = JSON.parse_string(FileAccess.get_file_as_string(MATERIALS_PATH))
 	if typeof(mj) != TYPE_DICTIONARY or typeof((mj as Dictionary).get("materials")) != TYPE_DICTIONARY:
@@ -115,6 +117,18 @@ static func pair(a: String, b: String) -> Dictionary:
 		if (row as Dictionary).has("restitution"):
 			out["restitution"] = float((row as Dictionary)["restitution"])
 	return out
+
+
+## P2: `pair(a, b)` answered from a table that is filled on first use. The returned Dictionary is shared: read it, never
+## change it. For the per-tick loops of the kernel (TLContact); `pair` still builds a fresh one for pack code.
+static func pair_cached(a: String, b: String) -> Dictionary:
+	var k: String = a + "|" + b
+	var hit: Variant = _pair_cache.get(k)
+	if hit != null:
+		return hit as Dictionary
+	var p: Dictionary = pair(a, b)
+	_pair_cache[k] = p
+	return p
 
 
 ## The material id a collider is tagged with ("" when it has no tag).

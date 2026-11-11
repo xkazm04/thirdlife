@@ -1,0 +1,10 @@
+{
+  "id": "world.pile_x",
+  "version": "0.1.0",
+  "kernelApi": "0.1",
+  "title": "Bench pack: a pile of N boxes, with a profiling mode in the seed",
+  "capabilities": ["physics"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_wait.gd"]
+}
