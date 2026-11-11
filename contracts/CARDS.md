@@ -4,6 +4,9 @@ Written by the Director on 2026-11-11. A card is the tested, versioned form of "
 engine". It replaces advice written as prompt prose: the Planner picks the card or two that fit a request, the
 Builder's brief carries exactly those cards, and the acceptance list of the job comes from the card.
 
+Not to be confused with an **item's card** (`item.json`, `tl.item/1`, `docs/SHARING.md`): that one describes a finished
+thing a player shares; a recipe card describes how to build a kind of game.
+
 Cards live in `engine/cards/<name>.json` with id `card.<name>`. One card points at exactly one seed pack
 (`engine/seeds/<seed>/`), the worked example a builder copies.
 

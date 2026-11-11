@@ -8,6 +8,8 @@
     {"name": "style", "group": "engine", "paths": ["engine/style/**"]},
     {"name": "seeds", "group": "engine", "paths": ["engine/seeds/**"]},
     {"name": "look", "group": "engine", "paths": ["engine/look/**"]},
+    {"name": "ui", "group": "engine", "paths": ["engine/ui/**"], "touches": ["contracts/JOB.md"]},
+    {"name": "cards", "group": "engine", "paths": ["engine/cards/**"], "touches": ["contracts/CARDS.md", "engine/seeds/**"]},
     {"name": "engine-tools", "group": "engine", "paths": ["engine/tools/**"]},
     {"name": "foreman", "group": "foreman", "paths": ["foreman/**"], "touches": ["contracts/JOB.md"]},
     {"name": "contracts", "group": "docs", "paths": ["contracts/**"]},

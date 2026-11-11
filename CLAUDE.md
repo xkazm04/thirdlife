@@ -53,6 +53,9 @@ The checkout is shared with other Claude sessions (a visual-look session and the
 | Foreman jobs | `contracts/JOB.md`, `foreman/` |
 | How to build a kind of game (recipe cards) | `contracts/CARDS.md`, `engine/cards/`, `tl cards brief <id>` |
 | Assets and budgets | `contracts/ASSETS.md`, `assets/` |
+| Many games in one world | `engine/kernel/world/`, `engine/tools/world.sh`, `engine/tools/view.sh` |
+| Designer panel (describe, approve, watch, tune) | `engine/ui/`, `engine/tools/ui.sh` |
+| Shareable items (`item.json`, `.tlitem`) | `docs/SHARING.md`, `engine/kernel/share/`, `engine/tools/item.sh` |
 | Sharing, world layering | `docs/SHARING.md`, `reports/` |
 | Player-facing content tooling ideas | `docs/PLAYER-CONTENT-IDEAS.md` |
 | History and decisions | `engine/JOURNAL.md`, `foreman/JOURNAL.md`, `docs/reports/` |

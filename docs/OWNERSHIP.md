@@ -7,10 +7,12 @@ else, so a session says what it owns before it edits.
 
 | Area | Path globs | Owner role | Change rule |
 |---|---|---|---|
-| Kernel | `engine/kernel/**`, `engine/project.godot` | engine | selftest 63/63 stays green; API additions update `engine/kernel/API.md` |
+| Kernel | `engine/kernel/**`, `engine/project.godot` | engine | `engine/tools/selftest.sh` stays green; API additions update `engine/kernel/API.md` |
 | Kit, rigs, style | `engine/kits/**`, `engine/rigs/**`, `engine/style/**` | look | reference nothing outside; `tl arch` module-walls |
 | Seeds | `engine/seeds/**` | engine | every seed passes all verbs (`engine/tools/seeds.sh`) |
 | Look captures | `engine/look/**` | look | stills and journal only |
+| Designer panel | `engine/ui/**` | engine | `engine/tools/ui.sh selftest`; reads job directories as `contracts/JOB.md` defines them |
+| Recipe cards | `engine/cards/**` | Director | `tl cards check`; a card names only what its seed shows (`contracts/CARDS.md`) |
 | Foreman | `foreman/**` | foreman | typecheck + tests; JOB.md is the contract |
 | Contracts | `contracts/**` | Director only | builders propose in reports |
 | Dev tool | `devx/**`, `assets/**`, `.claude/**` | devx | `tl check --tier fast` |
