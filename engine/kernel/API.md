@@ -189,6 +189,17 @@ Signal `hit(other: Node, impulse: float, speed: float)` (impulse in N*s, an esti
 Members `material`, `surface` (material id it touches or is about to touch), `min_hit_speed` (default 0.5 m/s).
 It also keeps the body on the pair law (section 3) and plays the contact sound when the pack declares `audio`.
 
+**How it is ticked (P2).** A `TLContact` has no per-tick script of its own. A pack has ONE tracker (`TLContact.Tracker`,
+a node the kernel puts under the pack's `TLPack` node the first time a contact is made in the pack; do not touch it)
+that visits every tracked body once per physics frame, at process priority 100 (after every default-priority node,
+before the physics step), in the order the bodies entered the tree. For each awake body it reads the velocity, takes
+the tagged surface it touches from the engine's contact signals, and casts a ray (the look-ahead that makes the first
+touch right) when the body has moved about 15 % of its size since the last cast; a fast body (a puck) casts every
+frame. A sleeping body costs two reads. Consequences for a pack: keep using `TLBodies.make`, `TLBodies.contact(body)` and
+`TLBall`; a body made with `track = false` costs the physics engine only (no contact monitoring, no law lookup beyond
+the table value it was given), which is the thing to use for scenery that moves and never needs the pair overrides.
+Cost on the reference machine, one pack, bodies awake: 300 bodies about 1.2 ms a tick, 600 about 2.4 ms (was 3.8 and 7.4).
+
 ### `TLDamage`
 
 `TLDamage.attach(target, {hp = 100.0, threshold = <N*s>}) -> TLDamage`. Signals `damaged(amount, by, hp_left)`,
@@ -637,7 +648,7 @@ What a pack author has to know:
   find nothing. Ask the kernel (`TLLaws.surface_under`, a `TLTrigger`); kernel code uses
   `TLContext.space_state_of(node)`. Joints were not tried in a world. No seed, example, kit or rig uses any of them.
 - **A node of yours with a `process_physics_priority` other than 0** is ticked outside the bracket that names your
-  pack (the kernel's own `TLContact` is, and asks `TLContext.of`). Keep the default priority.
+  pack (the kernel's own contact pass, `TLContact.Tracker`, is, and asks `TLContext.of`). Keep the default priority.
 - **Not in a world yet**: the watchdog thread (a runaway `_pack_tick` hangs the whole world). `on_leave` and
   `footprint` are read by the scheduled world: section 20. A world in a window, with one camera and one HUD on
   screen at a time: section 21.

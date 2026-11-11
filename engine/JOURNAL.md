@@ -499,3 +499,46 @@ Brief `briefs/BRIEF-N5A-TIERS.md`. Started 01:55 CEST on 2026-11-11 in `site/_wo
 - 04:10 no engine process of mine is left (the six Godot processes running belong to other projects); no window.
   Not done: a person walking it (`world.sh visit`); a body for the visitor; relief; `footprint` in the packs;
   the foreman's copy of verbs.json; the text of the one Jolt warning. N7 ends here.
+
+## P2: the kernel's physics hot path (builder, worktree core-p2, started 2026-11-11 10:25)
+
+- 10:25 start. Brief: `briefs/BRIEF-P2-HOTPATH.md`. First engine run in the worktree builds the class cache; the machine
+  was at 100 % CPU (three other builders and a gate), so every figure of the morning is taken at least twice and
+  A/B pairs are run in one sitting by swapping the file (old `tl_contact.gd` kept in the scratch directory).
+- 10:30 a note on measuring: with other processes on all cores Jolt's worker threads are descheduled and a 300-body pile
+  that costs 3.8 ms quiet read 59 to 268 ms in the same minute. Figures from such a minute are thrown away; the
+  ones below are the quiet ones (`iter_ms_p50_all_ticked` of `world.sh run`, the lower of at least two).
+- 10:45 profile of 600 awake bodies (`w_pile`, seed 600, 400 frames; quiet machine, 554 awake of 600 at the end):
+  see the table in the report. In short: floor without trackers (bodies made with `track = false`) 0.87 ms; bodies
+  with a `TLContact` whose script work is switched off 1.75 ms (contact monitoring and the physics material, 0.9 ms);
+  the contact scripts themselves 2.4 to 3.4 ms (7.5 us per awake body per tick: 3.5 us the contact scan, 3.3 us the ray;
+  226,117 of 240,000 body ticks cast a ray, because a box resting on boxes has no tagged surface and so asks again).
+  Added bench pack `kernel/world/packs/w_pile_x` (the seed's hundred-thousands digit picks a profiling mode).
+- 10:55 first version: one `Tracker` node per pack (inner class of `tl_contact.gd`, a child of `TLPack`, process priority
+  100 as the contact nodes had) walks every tracked body in one loop; shared ray query object, space and `pair`
+  answers. `w_pile` 600: 5.06 -> 4.0 ms; hash 6a234137ab9c88b5 unchanged.
+- 11:00 second step: the surface comes from the engine's `body_entered` / `body_exited` signals (a set per body) instead
+  of `get_colliding_bodies()` every tick; a body casts its ray again only after it has moved 15 % of its reach (estimated
+  from its speed), so a puck at 30 m/s still casts every tick. `w_pile` 600: 2.4 ms, 300: 1.16 ms.
+  All 13 packs x (smoke, bot): old and new hashes identical (table in the report).
+- 11:20 hashes with the second step in: all 13 packs (3 seeds, 8 examples, hockey with both bots) x (smoke, bot): old and new
+  equal, 3 runs (a `watchdog` row is a time limit under load; re-run alone it passes).
+- 11:28 third step: a body whose contacts did not change and which has moved less than 15 % of its reach since its
+  last cast returns after two engine reads (`_step` fast path). `w_pile` 600 in one sitting, orig / second step / third:
+  6.3-7.2 / 3.7-4.7 / 3.1-3.6 ms (machine at 100 % CPU).
+- 11:40 WITHDRAWN: skipping the whole pass while every body of the pack is asleep (a count kept from
+  `sleeping_state_changed`). It made 60 asleep packs cost 0.5 ms instead of 1.5 ms, but the signal arrives after the
+  physics step, so a body woken by code in `_pack_tick` (`apply_impulse`, `sleeping = false`) was not stepped on its
+  first frame and its `_prev_velocity` was stale: the hockey hashes moved (smoke b0ddd31f0f70beeb -> 6e86f1425f8a6c6e,
+  bot 5af10fbc -> 821b6e7d). Without the skip they are the old ones again. The sleeping body costs two engine reads.
+- 11:45 pack author facts: nothing changed in `TLBodies.make`, `TLBodies.contact`, `TLBall`, `TLVehicle`, signals; a
+  `TLTracker` node appears under `TLPack`. `TLLaws.pair_cached` is new (kernel side).
+- 11:58 final code (`tl_contact.gd` without the withdrawn skip): 13 packs x (smoke, bot), old engine copy vs new, three
+  runs of the new one: every hash equal to the old one and to each other, hockey (both bots) included; `invariants` of
+  11 packs on the second-step code: determinism and bot_deterministic ok (ex_car and ex_wall fail `below_ground` at the
+  default 3600 frames on the OLD engine too: unrelated, the selftest runs them at 900 / 1200).
+- 12:02 `tl check --tier full` started at 11:50 on the final files (it runs `selftest.sh`, `seeds.sh`, `k.sh selftest`);
+  under load `kernel.selftest` alone takes more than ten minutes. Its result is in the report, not here.
+- Not done: a native extension (see the report: scons, MSVC 2022 and cargo are on the machine, no godot-cpp sources and
+  no network); the sleeping pack path (2 reads per sleeping body per tick, 10 to 20 % dearer than the old per-node early
+  return in the asleep bench); the tour's world tick before and after (not measured).
