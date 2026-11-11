@@ -14,6 +14,10 @@ TL="$ROOT/devx/bin/tl.mjs"
 if [ ! -f "$TL" ]; then echo "tl pre-push: $TL not found in this checkout; not gating"; exit 0; fi
 TIER="\${TL_PUSH_TIER:-fast}"
 echo "tl pre-push: node devx/bin/tl.mjs check --tier $TIER"
+# git exports GIT_DIR and friends to hooks; left set, every git call the gate makes in another directory
+# (temp repos in tests) would act on THIS repository. The gate finds its repo from its own path instead.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR
+cd "$ROOT" || exit 1
 node "$TL" check --tier "$TIER" || { echo "tl pre-push: gate FAILED, push stopped (override once: git push --no-verify)"; exit 1; }
 `;
 
