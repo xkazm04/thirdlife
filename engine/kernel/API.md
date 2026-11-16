@@ -49,6 +49,7 @@ Worked examples, all verified by `tools/tl.sh selftest`, are in `kernel/examples
 | `ex_pointer` | the aim (`ctx.input.declare_aim`): a stick that turns to the point on the ice under the cursor; its bot drives the aim with `set_aim` |
 | `ex_held` | a skater on a held, shaken `TLBall` steps off it at his own speed: a held ball is never a moving floor (K2) |
 | `ex_pointer_hand` | `TLHand` moves the aim as a person's cursor: a jumping, sliding target, a shot after each jump, one bot per profile (K4) |
+| `ex_hud` | `TLHud` plates, lines centred inside a plate, a bottom label that grows upwards, over a kit rink from the play camera (K5) |
 | `ex_held_big` | a puck shot from under a still 2.2-scaled skater carries him nowhere: no ball, held or loose, is a floor (K3) |
 | `ex_down` | `TLBiped.down` / `shove` / `stumble` with a key held through them, and two pairs of 2.2-scaled figures meeting with today's body and with `body_scale` (K2) |
 | `ex_car` | `TLVehicle` driven by input actions, nitro, grip per surface, `TLChaseCam`, AI with `TLSteer`, `TLHud`, `TLVfx`, `TLAudio` |
@@ -465,8 +466,19 @@ defender.move(TLSteer.pursue(defender.global_position, defender.speed(), puck.gl
 **`TLHud`** (a `CanvasLayer`; stand-in look): `TLHud.create()`, `add_score(rules, side, anchor, caption = "")`,
 `add_clock(rules, anchor)`, `add_speed(callable, unit, anchor)`, `add_label(id, text, anchor)`,
 `add_bound(id, callable, anchor)`, `set_text(id, text)`, `text_of(id)`. Anchors `top_left top top_right left center
-right bottom_left bottom bottom_right`. Captures hide the HUD. Widget ids for `text_of` / `set_text`: `score_<side>`,
-`clock`, `speed`, and the id you gave to `add_label` or `add_bound`.
+right bottom_left bottom bottom_right`. Captures hide the HUD (`capture --hud=on` keeps it). Widget ids for `text_of` /
+`set_text`: `score_<side>`, `clock`, `speed`, and the id you gave to `add_label` or `add_bound`.
+K5, text that reads over a busy picture (all additive; without these calls every HUD looks as it did):
+- `set_plate(id, on = true)`: a plate behind the widget: the HUD's ink (`TLHud.INK`, the outline colour of its letters)
+  at `PLATE_ALPHA` 0.62, round corners, `PLATE_MARGIN` (18, 8) px around the text. A group of lines is one label with
+  `\n` in its text: one plate around all of them. The HUD is a stand-in the style layer does not draw yet (STYLE.md has
+  no HUD section), so its colours are these constants.
+- `set_align(id, align)`: `&"left"` (default), `&"center"` or `&"right"`: where the lines of a label of several lines sit
+  inside it and its plate.
+- A label on a `bottom*` anchor keeps its bottom edge and grows upwards when its text gets more lines (before, it grew
+  downwards, off the screen). A plated label, or a bottom label of several lines, is fitted to its text whenever the text
+  changes (it shrinks again, keeping its bottom, right or middle edge by its anchor); a label of one line without a plate
+  is never moved, so existing pictures stay. Example: `examples/ex_hud`.
 
 **`TLVfx`** also has two motion helpers that sit on the style layer (N5a; they do nothing when it is absent):
 `TLVfx.squash(visual, amount = 0.25, frames = 18, axis = Vector3.UP)` (squash and stretch on a VISUAL node, never a
@@ -724,7 +736,7 @@ finding. A capability counts as used when a script names one of its classes (`TL
 - **Fracture**: needs a pre-fractured part; no run-time cutting; `bake = "mesh"` (one merged mesh) is not built.
 - **Flammability, sound sets beyond contact hits, `breaks_into`** are in the table but nothing reads them yet
   (`breaks_into` is not used by fracture: pieces carry their own material tag).
-- **HUD and audio are stand-ins**: plain labels, synthesised tones, no style applied. (VFX presets are drawn by the
+- **HUD and audio are stand-ins**: plain labels (with an optional plate, K5), synthesised tones, no style applied. (VFX presets are drawn by the
   style layer since WP5.)
 - **Input**: keys, the orbit camera's drag and wheel, and aims (the point on a ground plane under the cursor,
   `declare_aim`) for the player; mouse buttons as keys of a declared action (K2); no gamepad, no rebinding.

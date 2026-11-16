@@ -229,3 +229,31 @@ Acceptance:
   arch --index: api-v1 green, devx arch tests 22/0: status/k4_bump.sh).
 - tl check --tier fast --changed: arch and devx.test (3) fail on the unbumped version only; assets, cards pass; foreman.typecheck could not run.
 The cursor's numbers are reasoning (API.md), not measured on a person. Not run: the hockey pack with the aiming hand (that is H9).
+
+## K5 (started 05:04)
+SEEN 05:07 TLHud (tl_hud.gd): set_plate(id, on = true) (StyleBoxFlat behind the label: the HUD's ink INK at PLATE_ALPHA 0.62, corners font_size x 0.35, margin PLATE_MARGIN 18 x 8 px), set_align(id, &"left"|&"center"|&"right"); bottom anchors grow upwards (grow_vertical BEGIN), and a plated label or a bottom label of several lines is fitted to its text whenever the text changes (keeps its bottom / right / middle edge by anchor). A one-line label without a plate is never moved. Colours: STYLE.md has no HUD section (API.md says the HUD is a stand-in look), so the plate takes the HUD's own outline ink, named TLHud.INK.
+SEEN 05:08 stills (ex_hud, capture --hud=on, %TEMP%/k5/hud_f20.png and hud_f170.png), what I see: on the right a dark translucent plate with round corners holds "RULE DIAL / > Skate speed +0 / A/D choose W/S one step T close", the three lines centred; it sits over the right goal circle and a skater and the letters read cleanly, the circle and the skater show dimmed through the plate. On the left the same three lines without a plate cross the left goal circle and the boards: the red circle runs through "W/S one step", visibly harder to read. At the bottom, frame 20: one plated line "Level: Classic | Mode: Three against three" 16 px above the screen's bottom edge; frame 170: the same plate grown to four lines upwards, its bottom edge at the same height, lines 2..4 centred under the first; nothing runs off the screen.
+SEEN 05:10 an existing HUD picture unchanged: ex_down, near, frame 165, --hud=on, captured now = byte-identical to the K2 still (%TEMP%/k2_stills/near_down_hud.png, 1,992,405 bytes).
+SEEN 05:29 hashes after (status/k5-hashes-after.txt): the 3 seeds and every example identical to K4's; seeds.sh 30/30 (status/k5-seeds.txt); full selftest 145 passed 0 failed (status/k5-selftest.txt)
+
+READY K5 05:30
+Files (package): engine/kernel/api/tl_hud.gd (set_plate, set_align, INK / PLATE_ALPHA / PLATE_MARGIN, bottom labels grow upwards,
+fitting of plated and several-line bottom labels); engine/kernel/examples/ex_hud/** (new); engine/tools/selftest.sh block K5;
+engine/kernel/API.md (section 13 TLHud K5 lines, examples table, limits line); docs/generated/API-INDEX.md regenerated.
+New public members (API 1.4 -> 1.5): TLHud.set_plate(id: StringName, on: bool = true) -> void;
+TLHud.set_align(id: StringName, align: StringName) -> void; const TLHud.INK: Color; const TLHud.PLATE_ALPHA: float (0.62);
+const TLHud.PLATE_MARGIN: Vector2 (18, 8). Changed default: a bottom-anchored label of several lines grows upwards (it grew
+off the screen); a one-line label without a plate is never moved.
+Acceptance:
+- (1) plate behind a label / a group of lines: met (one label with several lines = one plate; still %TEMP%/k5/hud_f20.png).
+- (2) lines aligned inside the plate: met (set_align center; the same still).
+- (3) a bottom label grows upwards: met (hud_f170.png: four lines, bottom edge where the one line of frame 20 was).
+- two stills with capture --hud=on, looked at: met (what I see is in SEEN 05:08).
+- every existing pack's picture and hash stay: hashes met (3 seeds + every example identical); picture shown for one existing
+  HUD (ex_down, byte-identical still); not proven for every pack's picture (only by the code: no call, no change).
+- selftest 145 passed 0 failed; seeds 30/30: met.
+- tl arch green except the version rule: met (api-v1 lists the 5 members above; on a scratch copy with 1.5: api-v1 green,
+  devx arch tests 22/0, status/k5_bump.sh). tl check --tier fast --changed: arch and devx.test (3) fail on the unbumped
+  version only; assets, cards PASS; foreman.typecheck could not run.
+Not done: a plate behind several separate widgets at once (a group is one multi-line label); the plate's colour is the HUD's
+own ink, not a style palette key (the style has no HUD section).

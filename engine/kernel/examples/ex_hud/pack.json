@@ -1,0 +1,11 @@
+{
+  "id": "example.hud",
+  "version": "0.1.0",
+  "kernelApi": "1.5",
+  "title": "Primitive example: HUD text on a plate over a busy rink (K5)",
+  "capabilities": ["physics", "biped", "camera", "ui", "kit"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_hud.gd"],
+  "cameras": ["play"]
+}
