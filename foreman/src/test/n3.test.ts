@@ -477,13 +477,13 @@ test("4 verbs: the option list is read from kernel/runner/verbs.json; `--bot-fra
   }
 });
 
-test("4 verbs: the second real job's FIRST Planner output (it used --bot-frames=4000 and was refused) is accepted now", { skip: !fs.existsSync(path.join(MARBLE_JOB, "reports", "planner-a1-s6.json")) || !fs.existsSync(SNAPSHOT3) ? "site/marble-run-three-marbles-20261110-2 or site/_engine_snapshot3 is not there" : false }, () => {
+test("4 verbs: the second real job's FIRST Planner output (it used --bot-frames=4000 and was refused) passes the verb check now; the player-check rule (P10, a day later) is the one problem left", { skip: !fs.existsSync(path.join(MARBLE_JOB, "reports", "planner-a1-s6.json")) || !fs.existsSync(SNAPSHOT3) ? "site/marble-run-three-marbles-20261110-2 or site/_engine_snapshot3 is not there" : false }, () => {
   const t = JSON.parse(fs.readFileSync(path.join(MARBLE_JOB, "reports", "planner-a1-s6.json"), "utf8")) as { problems: string[]; result: { json: { packages: PackageSpec[] } } };
   assert.ok(t.problems.every((p) => /--bot-frames=4000" is not a plain --key=value/.test(p)) && t.problems.length === 3, "this is the answer the Foreman refused on 2026-11-10");
   const packages = t.result.json.packages;
   assert.ok(packages.some((p) => p.acceptance.some((a) => a.verb === "invariants" && a.args.includes("--bot-frames=4000"))));
-  assert.deepEqual(planCheck(packages, { maxPackages: 3, verbs: loadVerbs(SNAPSHOT3) }), []);
-  assert.deepEqual(planCheck(packages, { maxPackages: 3, verbs: VERBS }), []);
+  // It predates the player-check rule (5ff561a, 2026-11-11): refused today for that alone, never for a verb.
+  for (const verbs of [loadVerbs(SNAPSHOT3), VERBS]) { const p = planCheck(packages, { maxPackages: 3, verbs }); assert.ok(p.length === 1 && /no contract names a player check/.test(p[0] ?? ""), p.join("\n")); }
   // The fake runner's verbs file is the engine's file, word for word.
   assert.deepEqual(readVerbsFile(FAKE_VERBS_FILE).verbs, loadVerbs(SNAPSHOT3).verbs);
 });
