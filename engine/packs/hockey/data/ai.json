@@ -16,5 +16,7 @@
   "check_min_closing_blue": 6.5,
   "stuck_frames": 45,
   "mouth_half": 1.6,
-  "defend_radius": 12
+  "defend_radius": 12,
+  "reaction_frames": 0,
+  "aim_error_deg": 0
 }

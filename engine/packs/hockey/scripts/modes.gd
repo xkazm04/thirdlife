@@ -8,6 +8,23 @@ const VENUE_KEYS: Array = ["length", "width", "corner_r", "apron", "dress"]
 const ROSTER_KEYS: Array = ["id", "team", "role", "spawn"]
 
 
+const LEVEL_KEYS: Array = ["id", "label", "about", "ai"]
+
+
+## H5: a level file: id, label, about and "ai" keys that data/ai.json has (they apply to the opposing team only).
+func check_level(m: Dictionary, lid: String, ai_base: Dictionary) -> Array:
+	var errs: Array = []
+	for k: String in m.keys():
+		if not LEVEL_KEYS.has(k):
+			errs.append("unknown key '%s' (keys: %s)" % [k, ", ".join(PackedStringArray(LEVEL_KEYS))])
+	if str(m.get("id", "")) != lid:
+		errs.append("'id' must be '%s'" % lid)
+	for k: String in (m.get("ai", {}) as Dictionary).keys():
+		if not ai_base.has(k):
+			errs.append("unknown key 'ai.%s'" % k)
+	return errs
+
+
 ## A mode file: only known keys; a section's keys must be keys the pack already reads. -> errors (empty = valid).
 func check(m: Dictionary, mid: String, base_tune: Dictionary, ai_base: Dictionary) -> Array:
 	var errs: Array = []

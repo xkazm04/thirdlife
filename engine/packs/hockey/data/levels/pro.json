@@ -1,0 +1,14 @@
+{
+  "id": "pro",
+  "label": "Pro",
+  "about": "Reacts in 12 frames, skates a little slower than you, shoots from mid range with some spread.",
+  "ai": {
+    "reaction_frames": 24,
+    "red_skill": 0.72,
+    "shoot_range": 11,
+    "aim_error_deg": 14,
+    "check_min_closing_red": 6,
+    "pressure_radius": 2.5,
+    "open_radius": 3.5
+  }
+}

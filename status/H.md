@@ -206,3 +206,87 @@ READY H3 02:44
 Gate: `tl check --tier fast --changed`: arch, assets, cards, devx.test (135 pass) PASS; foreman.typecheck could not run (foreman/node_modules missing in the worktree). `tl arch` green, scope-claims included.
 Baseline after H3 (seed 1, base): smoke 23e9c11f7ec7ed4a @3600 | bot_hockey 48edec569f7e9ccc @1789, blue 3:0, 3 shots, WIN (guard added, otherwise unchanged; passes) | bot_hockey_ai 7effad7aa3864dd0 @5090, blue 3:1 (guard added; passes) | bot_reach 45c4b4becc534383 @2027 (guard added; 13/13, 9/10) | bot_match aa53e41c535ab4d4 @6001 (rink bounds from the state; blue 3 red 5 goals) | bot_check 3d49a796b734c86d @3791 (guard added; passes) | bot_modes 6ee0fa46f994d98a @12394 (new) | bot_dial 08403775492cd0f8 @2293 (new). Every hash moved in H3 because the state gained mode, periods, dial, rink and the rules now have periods. Script lines 2,472 (lint), data 10,154 bytes. invariants: bot_deterministic 48edec569f7e9ccc twice.
 FOR THE KERNEL (H3): (1) a value channel for a digital test action (or a test-only verb) would replace the keyless actions drill_<id> and mode_<id>; (2) TLHud is not in captures, so a HUD panel cannot be shown in a still; (3) building a dressed venue takes most of a 250 ms tick: a kernel way to build a layout over several frames, or off the tick, would let a pack change venues freely.
+
+## H4: the stick follows the cursor (started 02:47, branch at 22f6b25 with lanes K, B, T merged)
+SEEN 02:48 first, on the merged tree before any H4 change: `tl check --tier full --only packs` PASS "[1/1] found 1, completed 1; verb runs 10 of 10" and every hash equal to the H3 baseline (bot_hockey 48edec569f7e9ccc @1789, bot_hockey_ai 7effad7aa3864dd0 @5090, bot_reach 45c4b4becc534383 @2027, bot_match aa53e41c535ab4d4 @6001, bot_check 3d49a796b734c86d @3791, bot_modes 6ee0fa46f994d98a @12394, bot_dial 08403775492cd0f8 @2293, smoke 23e9c11f7ec7ed4a): the kernel's aim moves no hash of a pack that declares none. Confirmed.
+SEEN 02:50 the brief's premise "every H1 to H3 bot keeps its hash (they set no aim)" cannot hold: the input part of the hash covers every DECLARED aim, valid or not (engine/kernel/api/tl_input.gd:325-337: "|aim", its name, validity 0/1, x, z, every frame); only a pack that declares no aim hashes as before. Declaring the aim (and the one new drill action drill_pass_two) moves every hash with no change of play. Proof used instead, two halves: (1) a copy of the H4 pack with ONLY the declare_aim line and the call of _aim_stick removed (and drill_pass_two absent): every hash equal to H3 to the last digit (list below); (2) the H4 pack itself: every H1..H3 bot's frames and its whole result summary identical to that copy's. Counter-proposal FOR THE KERNEL: hash an aim only from the first frame it is valid (an aim that was never valid adds nothing), then a pack that adds an aim keeps every keyboard hash.
+SEEN 02:51 the biped rig turns only the neck and head (`look_at`); it has no upper-body or stick yaw, and TLBiped thrusts along its facing, so turning the whole figure to the aim would steer his skating. Chosen: a stick heading in the pack (the direction every stick action uses) turning toward the aim at 12 degrees a frame (720 deg/s: a half turn in 15 frames, 0.25 s), the head looking at the aim; the body keeps skating where W A S D send it. What a person sees of the stick today is the head turn and the shot's flight, not the stick: FOR THE KERNEL (rig param: upper-body / stick yaw).
+
+What changed (engine/packs/hockey): scripts/main.gd (declare_aim "aim" on the ice plane y 0.05, reach 200 m; `_aim_stick` each frame of human play; state key `stick` only while the aim is valid), scripts/rink_api.gd (`stick_dir`, `stick_of(id)`: the shot, the pass choice and its fallback direction use it; a poke with an aim reaches only inside a 60 degree cone along it), scripts/hits.gd (the cross-check's target is found along the stick), data/tuning.json `aim` {height 0.05, reach 200, stick_turn_deg_per_frame 12, poke_cone_deg 60}, data/drills.json `pass_two`, tests/bot_aim.gd (new), pack.json tests + bot_aim. The body check stays on the body's facing (it is a shoulder, not the stick). Possession does not read the aim (H1's rule).
+Mouse buttons: the kernel gives packs keys and the aim point, no mouse button as an action (API.md: "no mouse buttons as actions"). Shooting stays on Space, the pass on Q. FOR THE KERNEL: a mouse button as a declared action key (`declare(&"shoot", [MOUSE_BUTTON_LEFT])`, recorded and replayed like a key).
+
+| row (tests/bot_aim.gd, seed 1) | figure |
+|---|---|
+| skating east at 3.16 m/s, aim north (10 points from x -3 to +2.4 m, 8 m north), Space after 20 frames | 10 of 10 shots along the aim, angle error 0.00 degrees each (mean 0.00, worst 0.00) |
+| pass with mates NE (-2,-6) and SE (-2,6), both inside his facing's 50 degree cone; aim at one, alternating | 10 of 10 reached the mate aimed at |
+| aim on the figure itself (inside TLInput.AIM_DEAD) | stick [1, 0] = facing (1, 0); shot error 0.00 degrees from his facing |
+| aim north 20 frames, then clear_aim and Space on the same frame | stick in the state before [0, -1], after: absent; shot error 0.00 degrees from his facing |
+| deterministic | 629f5bad2d2ba5fe @895 twice |
+| record and replay (`tl.sh bot --record=<f>`, then `tl.sh replay --input=<f>`) | replay exit 0, 629f5bad2d2ba5fe @895 = the bot's; the record carries the aim as [f,"aim",1], [f,"aim@x",x], [f,"aim@z",z] (830 aim entries) |
+
+H1..H3 bots, the aim declared vs the aim-off copy (hash with aim | hash of the aim-off copy = H3 | frames | result summary identical):
+| bot | H4 pack | aim-off copy (= H3) | frames | summary |
+|---|---|---|---|---|
+| bot_hockey | ec5586c185a5054f | 48edec569f7e9ccc | 1789 = 1789 | identical |
+| bot_hockey_ai | 36feeb6995a0f2e7 | 7effad7aa3864dd0 | 5090 = 5090 | identical |
+| bot_reach | b93c90932b28c648 | 45c4b4becc534383 | 2027 = 2027 | identical |
+| bot_match | e2b14ef9146ca4b1 | aa53e41c535ab4d4 | 6001 = 6001 | identical |
+| bot_check | 6aee103f45f24417 | 3d49a796b734c86d | 3791 = 3791 | identical |
+| bot_modes | 632878160391774f | 6ee0fa46f994d98a | 12394 = 12394 | identical |
+| bot_dial | ccb5b31481eae245 | 08403775492cd0f8 | 2293 = 2293 | identical |
+| smoke | a41420379b23adf4 | 23e9c11f7ec7ed4a | 3600 | 0 errors both |
+
+Not seen with a real mouse: nobody moved a cursor. The one command that opens the game in a window: `node C:/Users/kazda/kiro/third-life/.claude/worktrees/jl-hockey/devx/bin/tl.mjs play hockey` (equivalently `bash engine/tools/tl.sh play --pack=engine/packs/hockey`).
+
+READY H4 02:56
+| acceptance line | verdict | figure |
+|---|---|---|
+| shot leaves along the aim while skating another way (angle error over 10 tries) | met | 10 of 10, 0.00 degrees each; turn rate 12 deg/frame |
+| pass goes to the mate the aim points at, 9 of 10 | met | 10 of 10 |
+| aim on the figure changes nothing | met | stick = facing, 0.00 degrees |
+| aim cleared returns to keyboard facing on the next frame | met | cleared and shot on the same frame: 0.00 degrees from facing |
+| deterministic twice; the record replays to the same hash | met | 629f5bad2d2ba5fe three times (bot, bot, replay) |
+| every H1..H3 bot unchanged to the hash | not met as written (premise refuted, see SEEN 02:50); met in substance | hashes move by the declared aim's input entry only; aim-off copy = H3 to the digit; results and frames identical |
+| four verbs green | met | `tl check --tier full --only packs`: found 1, completed 1, 11 of 11; invariants bot_deterministic ec5586c185a5054f twice |
+| 0 bypasses | met | bypasses [], 2,684 script lines |
+Gate: fast --changed: arch PASS (the only step the changed paths map to). Kernel members added: none (API 1.2 is lane K's).
+ASK 02:57 H4 line "every H1..H3 bot unchanged to the hash" is refuted by the kernel design (a declared aim is in every frame's input hash, valid or not; tl_input.gd:325-337). Accept the aim-off copy (= H3 to the digit) plus identical results as the proof, or should K2 stop hashing a never-valid aim? I go on with H5 meanwhile (nothing in H5 depends on the answer).
+
+## H5: three levels, each read through the hand it is meant for (started 02:57)
+SEEN 02:59 the port of bot_hockey onto TLHand (profile `perfect`: steer, tap, tick; the frozen branch steers to zero and ticks, no release_all) keeps result and hash, seeds 1..3, before and after the port on the same pack: 527bb281e2d052f3 (3:0 WIN, 1,788 f), 2614b4a7246cb249 (2:3 LOSE, 2,760 f), 0ce02eb63ccae541 (0:3 LOSE, 1,442 f). (These differ from H4's numbers only because H5 first added the keyless actions level_<id>: every declared action is in the hash.)
+SEEN 03:00 bot_match has no human seat (the autopilot puts the brain on b0), so it is not ported: the human-side match bot is bot_hockey alone.
+SEEN 03:00 the first levels were far too hard for a person's hand (20 seeds): rookie through newcomer 55 %, pro through regular 5 %, all-star through sharp 5 %. Tuned twice (data only).
+SEEN 03:08 pro_perfect seed 30 never ended: 0:0 for 36,000 frames, the human bot holding the puck pinned behind his own net, red unable to reach it there, and sudden death at a draw plays on without end. A match that cannot end is a defect: base rules now carry `time_limit_seconds` 300 (a draw after 5 minutes of play, TLRules' own key); 1 of 240 ladder runs ends by it. The stall itself (a carrier pinned behind his own net is out of everybody's reach) stays: lever = the red closer approaching round the net, or the bot leaving the net's back; not done tonight.
+SEEN 03:14 with NO level (data/ai.json as the opponents), a person loses: 20 seeds, bot_hockey (perfect) won 3, bot_hockey_regular 0 (0.3 goals for, 3.0 against, 1,352 frames a match), bot_hockey_newcomer 0 (0.1 : 3.0, 1,044 frames). The default level param is 0 = none (kept so every earlier bot keeps its result); for a person it is harder than all-star. Proposal for the Director: default `level` 2 (pro).
+SEEN 03:14 the Director's count, periods: with no level, a person's matches end inside period 1 on most seeds (regular: 18 of 20 never reach period 2; newcomer 19 of 20; perfect 10 of 20): they lose 0:3 within 36 s. Under the levels most matches reach period 2: rookie/newcomer 37 of 40, pro/regular 35 of 40, all-star/sharp 31 of 40. The lever (periods or score to win) is the Director's.
+
+What changed (engine/packs/hockey): tests/bot_hockey.gd ported onto TLHand (hand_profile, level, use_pass; it now also measures frames down, the period reached, passes and passes that reached a mate: read from the state, nothing pressed); tests/bot_hockey_regular.gd, bot_hockey_newcomer.gd (no level), bot_ladder_{rookie_newcomer, rookie_perfect, pro_regular, pro_perfect, allstar_sharp, allstar_perfect}.gd (new, extend bot_hockey.gd; named in pack.json after bot_hockey, so invariants still runs bot_hockey); data/levels/{rookie,pro,allstar}.json (new); data/ai.json `reaction_frames` 0, `aim_error_deg` 0 (no effect without a level); scripts/ai/brain.gd (a level's ai keys apply to red's decisions only: the puck seen `reaction_frames` late, red_skill, shoot range, a shot spread drawn from ctx.rng, check readiness, pressure and open radii); scripts/modes.gd `check_level` (unknown key = an error naming file and key); scripts/main.gd (levels loaded and validated, param `level` 0..3 = none, rookie, pro, all-star, keyless actions level_<id>, state key `level` only when a level is set); scripts/dial.gd (the dial moved out of main.gd, again the 600-line limit); data/tuning.json rules.time_limit_seconds 300, level, levels; pack.json param `level`.
+The levels (opponents only; every role still played): rookie: reacts 45 frames late, half speed (red_skill 0.5), shoots from 7 m with 25 degrees of spread, checks only from 8.5 m/s closing, marks loosely. pro: 24 frames, 0.72, 11 m, 14 degrees, checks from 6.0. all-star: 10 frames, 0.85, 15 m, 6 degrees, checks from 4.5. Honest note: a rookie at half speed and 0.75 s late is easy by slowness as much as by clumsiness; he never stands still or leaves his goal.
+
+The ladder (instrument: tests/bot_ladder_<level>_<hand>.gd = bot_hockey's decisions pressed through TLHand's profile; seeds 1..40 each; the human side = b0 through the hand + two AI mates; wins = matches blue won; 95 % interval by the normal approximation):
+| level | hand (instrument) | wins / 40 | win % (95 % interval) | target | goals for : against a match | human frames down after a hit | match length (mean frames) | reached period 2 | passes reaching a mate |
+|---|---|---|---|---|---|---|---|---|---|
+| rookie | newcomer (the hand it is meant for) | 32 | 80 % (68..92) | 80..90 % | 2.48 : 1.27 | 0.02 % | 4,573 | 37 / 40 | 19 of 36 |
+| rookie | perfect (beside it) | 39 | 98 % (93..100) | - | 2.90 : 0.60 | 0.04 % | 3,347 | 25 / 40 | 26 of 41 |
+| pro | regular (meant) | 21 | 53 % (37..68) | 45..55 % | 2.02 : 2.10 | 0.19 % | 4,321 | 35 / 40 | 19 of 48 |
+| pro | perfect | 33 | 83 % (71..94) | - | 2.58 : 1.05 | 0.11 % | 3,791 | 29 / 40 | 18 of 40 |
+| all-star | sharp (meant) | 9 | 23 % (10..35) | 20..30 % | 1.35 : 2.60 | 0.33 % | 3,021 | 31 / 40 | 10 of 32 |
+| all-star | perfect | 15 | 38 % (22..53) | - | 1.77 : 2.27 | 0.03 % | 3,059 | 25 / 40 | 19 of 36 |
+The gap a perfect-hand ladder would have hidden: 18 points at rookie, 30 at pro, 15 at all-star.
+Interval: the brief asks "within 10 points at 20 seeds": at 20 seeds a 50 % cell's 95 % interval is about +-22 points, at 40 about +-15; 10 points needs about 100 seeds a cell. The point estimates are inside all three bands at 40 seeds; the intervals are wider than the bands.
+Deterministic: every cell, seed 7, a separate run equals the ladder's run: rookie/newcomer 7f09759e956890d0, rookie/perfect 86b14f86bda5e38d, pro/regular d21e7e3e21ac5af8, pro/perfect 25663fc7beabd429, all-star/sharp f7e830a7a3663a7f, all-star/perfect b665a5aab019cb06. Ladder runner (not in the repo, %TEMP%/h0/ladder.mjs: 240 bot runs, 8 at a time, about 100 s on this busy machine, busy-labelled; raw rows %TEMP%/h0/ladder_last.json).
+Gate: `tl check --tier full --only packs` PASS "[1/1] found 1, completed 1; verb runs 19 of 19", 104 s (busy machine: decides nothing): every test in pack.json, one seed each. The 40-seed ladder is not a gate step: proposal: a `tl ladder --pack=<dir> [--seeds=40]` command (devx) that runs the bot_ladder_* tests over the seeds and prints this table; the gate keeps one seed of each (as now).
+
+FOR B (TLHand): (1) set_aim under a person's profile: the ladder bots play keyboard facing and set no aim, so H4's stick is not read through the hand tonight; for the pack the hand would need: the aim point lagging the wanted point by `aim_lag` frames (re-aimed only on a decision), resting `aim_miss` metres beside it (a draw per decision), held where it was during a lapse; then a person-hand row of bot_aim can be read. (2) `stats()` could count taps that were lost to a lapse (the ladder shows newcomer passes reaching a mate 19 of 36: lost or late taps are part of it, not separable today).
+FOR THE KERNEL (H5): none new.
+
+READY H5 03:17
+| acceptance line | verdict | figure |
+|---|---|---|
+| the perfect ports keep their hashes | met | bot_hockey seeds 1..3 equal before and after the port (527bb281..., 2614b4a7..., 0ce02eb6...) |
+| every cell deterministic (one seed twice) | met | seed 7 of all six cells, equal hashes (list above) |
+| the table with its instrument named in every row | met | table above, 40 seeds a cell |
+| three levels in their bands (or not met with figures) | met on the point estimates; the interval is wider than the band | rookie 80 % (band 80..90), pro 53 % (45..55), all-star 23 % (20..30); 95 % intervals 68..92, 37..68, 10..35 |
+| `tl check --tier full --only packs` green, found = completed, new tests included | met | 19 of 19 verb runs, 104 s |
+| 0 bypasses | met | bypasses [], 2,887 script lines |
+Baseline after H5 (seed 1): smoke 5aa520da8987ae64 | bot_hockey 527bb281e2d052f3 @1789 | bot_hockey_regular 1b4a807ee03871b6 @1234 | bot_hockey_newcomer 768e96683f575416 @2377 | ladder rookie/newcomer 7673e2163038f0af @2385, rookie/perfect 6bd83decaf027da5 @1762, pro/regular e3c73edc25204215 @6773, pro/perfect 5b626c9f2affb4a5 @3560, all-star/sharp 7c37e9a7422dd966 @4259, all-star/perfect 43fb55df9749b1e8 @1961 | bot_hockey_ai 179df21636c2d90b @5090 | bot_reach 1c4d1ba15af4ce17 @2027 | bot_match 8ad48f2390894809 @6001 | bot_check 50766640ab9d77b0 @3791 | bot_modes 9d7794ab20c8bd59 @12394 | bot_dial 89ad597a48962648 @2293 | bot_aim 0480e093a0d13367 @895. The old bots end on the same frames as in H4 (results not compared line by line; hashes moved by the level_<id> actions). Gate fast --changed: arch, assets, cards, devx.test (155 pass) PASS; foreman.typecheck could not run (no node_modules).

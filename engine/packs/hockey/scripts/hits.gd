@@ -78,9 +78,9 @@ func _vel(id: String) -> Vector3:
 
 
 ## The opponent nearest in his front cone inside `reach`, or "".
-func target(id: String, reach: float, cone_deg: float) -> String:
+func target(id: String, reach: float, cone_deg: float, stick: bool = false) -> String:
 	var me: Vector3 = api.pos_of(id)
-	var f: Vector3 = api.fwd_of(id)
+	var f: Vector3 = api.stick_of(id) if stick else api.fwd_of(id)
 	var best: String = ""
 	var best_d: float = reach
 	for oid: String in order:
@@ -167,7 +167,7 @@ func try_check(id: String) -> String:
 func try_cross(id: String) -> bool:
 	if not can_check(id):
 		return false
-	var v: String = target(id, _f("cross_reach"), _f("cross_cone_deg"))
+	var v: String = target(id, _f("cross_reach"), _f("cross_cone_deg"), true)
 	ready_at[id] = _now + int(_f("cross_cooldown_frames"))
 	if v == "":
 		return false

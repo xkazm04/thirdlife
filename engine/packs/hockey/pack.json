@@ -26,12 +26,21 @@
   ],
   "tests": [
     "tests/bot_hockey.gd",
+    "tests/bot_hockey_regular.gd",
+    "tests/bot_hockey_newcomer.gd",
+    "tests/bot_ladder_rookie_newcomer.gd",
+    "tests/bot_ladder_rookie_perfect.gd",
+    "tests/bot_ladder_pro_regular.gd",
+    "tests/bot_ladder_pro_perfect.gd",
+    "tests/bot_ladder_allstar_sharp.gd",
+    "tests/bot_ladder_allstar_perfect.gd",
     "tests/bot_hockey_ai.gd",
     "tests/bot_reach.gd",
     "tests/bot_match.gd",
     "tests/bot_check.gd",
     "tests/bot_modes.gd",
-    "tests/bot_dial.gd"
+    "tests/bot_dial.gd",
+    "tests/bot_aim.gd"
   ],
   "cameras": [
     "arena",
@@ -109,6 +118,15 @@
       "max": 4,
       "step": 1,
       "label": "Mode: 0 base 1 3v5 2 sudden 3 pond 4 big"
+    },
+    {
+      "name": "level",
+      "file": "data/tuning.json",
+      "path": "level",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "label": "Level: 0 none 1 rookie 2 pro 3 all-star"
     }
   ],
   "on_leave": "pause",

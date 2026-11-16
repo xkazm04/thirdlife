@@ -15,6 +15,7 @@ var modes: Dictionary = {}             # id -> mode file (validated)
 var mode_id: String = "base"
 var modes_lib                          # scripts/modes.gd
 var drill_lib                          # scripts/drills.gd
+var dial_lib                           # scripts/dial.gd
 var arena: Node3D                      # the match's own nodes (goal volumes, rules, HUD): rebuilt by every _build
 var venues: Dictionary = {}            # layout text -> its built rink and goals; out of the tree when not in use
 var dress_node: Node3D                 # stands, masts, signs (gen/art_hook): built once at setup
@@ -53,6 +54,9 @@ var dial_sel: int = 0
 var dial_used: Dictionary = {}         # period -> the change made in it
 var dial_refused: int = 0
 var rule_line: String = ""
+var levels: Dictionary = {}            # H5: id -> level file (validated); "none" = no level (as before H5)
+var level_id: String = "none"
+var stick_heading: Vector3 = Vector3.ZERO   # H4: the human's stick, turning toward the aim at a turn rate
 const DRILL_KEYS: Array = ["id", "place", "random_place", "move", "random_move", "puck", "puck_vel", "carrier", "script", "ai", "brace"]
 
 
@@ -62,6 +66,7 @@ func _pack_setup(c) -> void:
 	base_tune = ctx.read_json("tuning.json")
 	modes_lib = ctx.load_script("scripts/modes.gd").new()
 	drill_lib = ctx.load_script("scripts/drills.gd").new()
+	dial_lib = ctx.load_script("scripts/dial.gd").new()
 	ai_base = ctx.read_json("ai.json")
 	drills = ctx.read_json("drills.json")
 	for d: Dictionary in drills["drills"]:
@@ -79,6 +84,19 @@ func _pack_setup(c) -> void:
 			push_error("data/%s: %s" % [file, e])
 		if errs.is_empty():
 			modes[mid] = m
+	for lid: String in base_tune["levels"]:
+		if lid == "none":
+			continue
+		var lf: String = "levels/%s.json" % lid
+		var lv: Variant = ctx.read_json(lf)
+		var lerrs: Array = modes_lib.check_level(lv, lid, ai_base) if lv is Dictionary else ["the level file is missing or not an object"]
+		for e: String in lerrs:
+			push_error("data/%s: %s" % [lf, e])
+		if lerrs.is_empty():
+			levels[lid] = lv
+	var lvl_list: Array = base_tune["levels"]
+	var lpick: String = str(lvl_list[clampi(int(base_tune["level"]), 0, lvl_list.size() - 1)])
+	level_id = lpick if levels.has(lpick) else "none"
 	var list: Array = base_tune["modes"]
 	var pick: int = clampi(int(base_tune["mode"]), 0, list.size() - 1)
 	mode_id = str(list[pick]) if modes.has(str(list[pick])) else "base"
@@ -87,10 +105,14 @@ func _pack_setup(c) -> void:
 			[&"poke", KEY_E], [&"sprint", KEY_SHIFT], [&"check", KEY_F], [&"cross", KEY_C], [&"dial", KEY_T], [&"restart", KEY_R]]:
 		ctx.input.declare(a[0], [a[1]])
 	ctx.input.declare(&"autopilot", [])
+	var am: Dictionary = base_tune["aim"]
+	ctx.input.declare_aim(&"aim", float(am["height"]), float(am["reach"]))
 	for d: Dictionary in drills["drills"]:
 		ctx.input.declare(StringName("drill_" + str(d["id"])), [])
 	for mid: String in base_tune["modes"]:
 		ctx.input.declare(StringName("mode_" + mid), [])
+	for lid: String in base_tune["levels"]:
+		ctx.input.declare(StringName("level_" + lid), [])
 	if ctx.root.has_meta(&"hockey_ai"):
 		brain = ctx.load_script(str(ctx.root.get_meta(&"hockey_ai"))).new()
 		brain.setup(ctx, env)
@@ -235,6 +257,8 @@ func _build(mid: String) -> void:
 	hits.setup(tune, api, skaters, teams, order)
 	hits.enabled = bool(m.get("checks", true))
 	api.hits = hits
+	api.poke_cone_dot = cos(deg_to_rad(float(tune["aim"]["poke_cone_deg"])))
+	stick_heading = Vector3.ZERO
 	if ctx.root.has_meta(&"hockey_ring") and not skaters["b0"].has_node("ReachRing"):
 		var ring_script = ctx.load_script(str(ctx.root.get_meta(&"hockey_ring")))
 		ring_script.make_ring(skaters["b0"], api.reach, float(tune["carry"]["ring_width"]), "yellow")
@@ -259,7 +283,8 @@ func _build(mid: String) -> void:
 		"frozen": false, "api": api, "hits": hits, "tuning": tune, "rules": rules, "autopilot": autopilot, "drill": false}, true)
 	if brain != null:
 		brain.override(m.get("ai", {}))
-	_apply_dials()
+		brain.red_over = (levels[level_id]["ai"] as Dictionary).duplicate() if levels.has(level_id) else {}
+	dial_lib.apply(self)
 
 
 func _v3(a: Array) -> Vector3:
@@ -281,7 +306,7 @@ func _new_rules() -> void:
 	hud.add_clock(rules, &"top")
 	hud.add_bound(&"result", func() -> String: return result, &"center")
 	hud.add_bound(&"rule", func() -> String: return rule_line, &"bottom")
-	hud.add_bound(&"dial", _dial_text, &"right")
+	hud.add_bound(&"dial", func() -> String: return dial_lib.text(self), &"right")
 
 
 func _pack_start() -> void:
@@ -316,6 +341,11 @@ func _pack_tick(frame: int) -> void:
 			_start_match()
 			_flush_events(frame)
 			return
+	for lid: String in base_tune["levels"]:
+		if ctx.input.just_pressed(StringName("level_" + lid)):
+			level_id = lid if levels.has(lid) else "none"
+			if brain != null:
+				brain.red_over = (levels[level_id]["ai"] as Dictionary).duplicate() if levels.has(level_id) else {}
 	api.tick(frame)
 	hits.tick(frame)
 	if not autopilot and ctx.input.pressed(&"check"):
@@ -336,7 +366,7 @@ func _pack_tick(frame: int) -> void:
 			_restart()
 		_flush_events(frame)
 		return
-	if _dial_tick():
+	if dial_lib.tick(self):
 		env["frozen"] = true
 		_hold_all()
 		_flush_events(frame)
@@ -363,6 +393,7 @@ func _pack_tick(frame: int) -> void:
 			v = v.normalized()
 		player.brake(false)
 		player.move(v)
+		_aim_stick()
 		api.sprinting["b0"] = ctx.input.pressed(&"sprint")
 		if ctx.input.just_pressed(&"shoot"):
 			api.try_shoot("b0")
@@ -409,68 +440,30 @@ func _pack_tick(frame: int) -> void:
 	_flush_events(frame)
 
 
-## The rule dial (H3): T opens it once a period (the match pauses); A/D choose a dial, W/S move it one step for both
-## teams and close it; T again closes it unchanged. Bots never open it. -> true while it is open (nothing else runs).
-func _dial_tick() -> bool:
-	var names: Array = tune["dial"]["names"]
-	if not dial_open:
-		if ctx.input.just_pressed(&"dial"):
-			if dial_used.has(rules.period):
-				dial_refused += 1
-				rule_line = "One rule change a period: the next one in period %d" % (rules.period + 1)
-			elif rules.is_running() and not frozen:
-				dial_open = true
-				dial_sel = 0
-				rules.pause()
-				return true
-		return false
-	if ctx.input.just_pressed(&"dial"):
-		dial_open = false
-		rules.resume()
-		return false
-	if ctx.input.just_pressed(&"left"):
-		dial_sel = (dial_sel + names.size() - 1) % names.size()
-	if ctx.input.just_pressed(&"right"):
-		dial_sel = (dial_sel + 1) % names.size()
-	var step: int = 0
-	if ctx.input.just_pressed(&"up"):
-		step = 1
-	elif ctx.input.just_pressed(&"down"):
-		step = -1
-	if step != 0:
-		var n: String = str(names[dial_sel])
-		var now: int = clampi(int(dials[n]) + step, int(tune["dial"]["min"]), int(tune["dial"]["max"]))
-		if now != int(dials[n]):
-			dials[n] = now
-			dial_used[rules.period] = "%s %+d" % [n, step]
-			_apply_dials()
-			rule_line = "Period %d: %s %s for both teams (now %+d)" % [rules.period, str(tune["dial"]["labels"][dial_sel]), "up" if step > 0 else "down", now]
-		dial_open = false
-		rules.resume()
-	return dial_open
-
-
-func _dial_text() -> String:
-	if not dial_open:
-		return ""
-	var lines: Array = ["RULE DIAL (A/D choose, W/S one step, T close)"]
-	var names: Array = tune["dial"]["names"]
-	for i: int in names.size():
-		lines.append("%s %s %+d" % [">" if i == dial_sel else " ", str(tune["dial"]["labels"][i]), int(dials[str(names[i])])])
-	return "\n".join(lines)
-
-
-## The dials act on both teams: skate speed, shot speed, ice grip (sideways grip), bot sharpness.
-func _apply_dials() -> void:
-	var per: Array = tune["dial"]["per_step"]
-	var sk_speed: float = float(tune["skater"]["skate_speed"]) * (1.0 + float(per[0]) * int(dials["skate"]))
-	var grip: float = float(tune["skater"]["skate_lateral_grip"]) * (1.0 + float(per[2]) * int(dials["grip"]))
-	for id: String in order:
-		api.base_speed[id] = sk_speed
-		(skaters[id] as TLBiped).skate_lateral_grip = grip
-	api.speed = float(tune["shoot"]["speed"]) * (1.0 + float(per[1]) * int(dials["shot"]))
-	if brain != null:
-		brain.sharpness = float(per[3]) * int(dials["sharpness"])
+## H4: the stick follows the aim. Valid aim off the figure: the stick heading turns toward it at most
+## stick_turn_deg_per_frame; on the figure (TLInput.AIM_DEAD): held; invalid: none, and every stick action uses his
+## facing exactly as before H4. The rig has no upper-body or stick yaw (only the head's look_at): the head looks at
+## the aim, the body keeps skating where W A S D send it.
+func _aim_stick() -> void:
+	var player: TLBiped = skaters["b0"]
+	var at: Vector3 = player.global_position
+	if not ctx.input.aim_valid(&"aim"):
+		stick_heading = Vector3.ZERO
+		api.stick_dir.erase("b0")
+		if player.rig != null:
+			player.rig.set_param(&"look_at", null)
+		return
+	var fwd: Vector3 = api.fwd_of("b0")
+	if stick_heading == Vector3.ZERO:
+		stick_heading = fwd
+	var want: Vector3 = ctx.input.aim_direction(&"aim", at, Vector3.ZERO)
+	if want != Vector3.ZERO:
+		var turn: float = deg_to_rad(float(tune["aim"]["stick_turn_deg_per_frame"]))
+		var ang: float = stick_heading.signed_angle_to(want, Vector3.UP)
+		stick_heading = stick_heading.rotated(Vector3.UP, clampf(ang, -turn, turn)).normalized()
+	api.stick_dir["b0"] = stick_heading
+	if player.rig != null:
+		player.rig.set_param(&"look_at", ctx.input.aim(&"aim") + Vector3(0, 1.0, 0))
 
 
 func _hold_all() -> void:
@@ -516,6 +509,8 @@ func _p2(v: Vector3) -> Array:
 func _pack_state() -> Dictionary:
 	var s: Dictionary = rules.snapshot()
 	s["mode"] = mode_id
+	if level_id != "none":
+		s["level"] = level_id
 	s["periods"] = rules.periods
 	s["player"] = "b0"
 	s["puck"] = {"pos": _p2(puck.global_position), "vel": _p2(puck.linear_velocity)}
@@ -555,4 +550,6 @@ func _pack_state() -> Dictionary:
 	s["goals"] = {"blue": [float(g["blue"][0]), float(g["blue"][2])], "red": [float(g["red"][0]), float(g["red"][2])], "half_width": float(g["half_width"])}
 	s["rink"] = {"half_length": float(tune["rink"]["half_length"]), "half_width": float(tune["rink"]["half_width"])}
 	s["result"] = result
+	if api.stick_dir.has("b0"):
+		s["stick"] = _p2(api.stick_dir["b0"])       # H4: only while the aim is valid (absent: as before H4)
 	return s

@@ -1,5 +1,5 @@
 {
-  "rules": {"sides":["blue","red"],"score_to_win":3,"periods":3,"period_seconds":36,"intermission_seconds":2,"sudden_death":true},
+  "rules": {"sides":["blue","red"],"score_to_win":3,"periods":3,"period_seconds":36,"intermission_seconds":2,"sudden_death":true,"time_limit_seconds":300},
   "pause_s": 2,
   "skater": {"skate_speed":8,"skate_accel":12,"skate_lateral_grip":3,"skate_turn_rate":5,"body_mass":80},
   "skater_sprint_scale": 1.25,
@@ -20,6 +20,9 @@
   "hits": {"check_reach":1.7,"check_cone_deg":60,"check_cooldown_frames":40,"whiff_cooldown_frames":20,"bump_speed":3.0,"knock_speed":7.8,"bump_push":0.3,"stumble_push":0.6,"stumble_frames":40,"stumble_speed_scale":0.4,"down_frames_min":30,"down_frames_max":60,"down_frames_per_mps":12,"brace_speed":1.0,"brace_side_dot":0.5,"lunge_speed":1.5,"cross_reach":1.9,"cross_cone_deg":60,"cross_push_speed":3.5,"cross_cooldown_frames":45,"loose_puck_speed":2.0},
   "rink": {"half_length":30,"half_width":15,"corner_r":5,"margin":0.35},
   "faceoff_jitter": 0.4,
+  "aim": {"height":0.05,"reach":200,"stick_turn_deg_per_frame":12,"poke_cone_deg":60},
+  "level": 0,
+  "levels": ["none","rookie","pro","allstar"],
   "mode": 0,
   "modes": ["base","outnumbered","sudden_death","pond","big_ice"],
   "dial": {"names":["skate","shot","grip","sharpness"],"labels":["Skate speed","Shot speed","Ice grip","Bot sharpness"],"per_step":[0.08,0.1,0.25,0.05],"min":-3,"max":3}

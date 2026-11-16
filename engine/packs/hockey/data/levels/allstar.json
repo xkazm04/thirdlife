@@ -1,0 +1,12 @@
+{
+  "id": "allstar",
+  "label": "All-star",
+  "about": "Reacts in 4 frames, as fast as you, long range, accurate, checks readily, passes well.",
+  "ai": {
+    "reaction_frames": 10,
+    "red_skill": 0.85,
+    "shoot_range": 15,
+    "aim_error_deg": 6,
+    "check_min_closing_red": 4.5
+  }
+}

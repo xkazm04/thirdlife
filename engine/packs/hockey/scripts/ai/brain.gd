@@ -7,6 +7,9 @@ extends RefCounted
 ## H2: a closer arriving with speed checks the carrier (red from a lower closing speed than blue: red hits more).
 ## Yield to the human: blue mates leave a loose puck to b0 when he is as near; red does not poke b0 in his first
 ## `yield_frames` with the puck. Numbers in data/ai.json.
+## H5: a level (data/levels/<id>.json) overrides ai keys for the OPPOSING team (red) only: slower to react (red sees
+## the puck where it was reaction_frames ago), slower skating, shorter range, a wider shot (aim_error_deg, drawn
+## from ctx.rng), less ready to check, worse at finding an open mate. Never absent: a rookie still plays every role.
 
 var cfg: Dictionary = {}
 var base_cfg: Dictionary = {}          ## data/ai.json as read; a mode overrides some keys (H3)
@@ -14,9 +17,14 @@ var sharpness: float = 0.0             ## the rule dial (H3): added to speed_sca
 var _c: Dictionary = {}
 var _pos: Dictionary = {}
 var _frame_no: int = 0
+var red_over: Dictionary = {}          ## H5: the level's ai keys, for red's decisions only
+var _team: String = ""                 ## the team of the skater being decided (for red_over)
+var _seen: Array = []                  ## the puck's last positions, newest first (red's reaction)
+var _ctx = null
 
 
 func setup(ctx, _env) -> void:
+	_ctx = ctx
 	base_cfg = ctx.read_json("ai.json")
 	cfg = base_cfg.duplicate()
 
@@ -29,6 +37,8 @@ func override(over: Dictionary) -> void:
 
 
 func _f(k: String) -> float:
+	if _team == "red" and red_over.has(k):
+		return float(red_over[k])
 	if not _c.has(k):
 		_c[k] = float(cfg[k])
 	return _c[k]
@@ -36,6 +46,9 @@ func _f(k: String) -> float:
 
 func think(frame: int, env: Dictionary) -> void:
 	_frame_no = frame
+	_seen.push_front((env["api"]).puck_pos())
+	if _seen.size() > 40:
+		_seen.pop_back()
 	var skaters: Dictionary = env["skaters"]
 	_pos.clear()
 	for k: String in skaters:
@@ -48,11 +61,21 @@ func think(frame: int, env: Dictionary) -> void:
 			sk.move(Vector3.ZERO)
 			continue
 		var team: String = str(env["teams"][id])
+		_team = team
 		var sc: float = (_f("speed_scale") + sharpness) * (_f("red_skill") if team == "red" else 1.0)
 		var dir: Vector3 = _decide(id, team, env)
 		if dir.length() > 1.0:
 			dir = dir.normalized()
 		sk.move(dir * sc)
+	_team = ""
+
+
+## Where this skater sees the puck: now, or (red under a level) reaction_frames ago.
+func _puck_seen() -> Vector3:
+	var lag: int = int(_f("reaction_frames"))
+	if lag <= 0 or _seen.is_empty():
+		return _seen[0] if not _seen.is_empty() else Vector3.ZERO
+	return _seen[mini(lag, _seen.size() - 1)]
 
 
 func _flat(v: Vector3) -> Vector3:
@@ -70,7 +93,7 @@ func _human(env: Dictionary) -> bool:
 func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 	var api = env["api"]
 	var me: Vector3 = _pos[id]
-	var pp: Vector3 = api.puck_pos()
+	var pp: Vector3 = _puck_seen()
 	var opp_goal: Vector3 = _flat(env["goals"]["red" if team == "blue" else "blue"])
 	var own_goal: Vector3 = _flat(env["goals"][team])
 	var role: String = str(env["roles"][id])
@@ -159,7 +182,13 @@ func _carry(id: String, team: String, env: Dictionary, me: Vector3, opp_goal: Ve
 	var lined: bool = fwd.dot(from_puck.normalized()) > cos(tol)
 	var carried: int = _frame_no - int(api.carry_since)
 	if dgoal < _f("shoot_range") and lined and absf(me.z) < 11.0 and carried >= int(_f("min_carry_frames")):
-		api.try_shoot(id)
+		var err: float = _f("aim_error_deg")
+		if err > 0.0 and api.can_shoot(id):
+			api.stick_dir[id] = fwd.rotated(Vector3.UP, deg_to_rad(_ctx.rng.randf_range(-err, err)))
+			api.try_shoot(id)
+			api.stick_dir.erase(id)
+		else:
+			api.try_shoot(id)
 	elif pressed and carried >= int(_f("min_carry_frames")):
 		var mid: String = api.pass_target(id)
 		if mid != "" and _open(mid, team, env):

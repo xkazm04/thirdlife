@@ -1,16 +1,30 @@
 extends Node
-## Bot: plays blue b0 through ctx.input only. It gets behind the puck (far side from the red goal), dribbles
-## toward the goal around the red skaters, and shoots at the goal mouth when within ~12 m and lined up.
-## ok: the rules say over, blue won 3, the bot took at least 3 shots and the HUD result reads WIN.
+## Bot: plays blue b0. It gets behind the puck (far side from the red goal), dribbles toward the goal around the red
+## skaters, and shoots at the goal mouth when within reach and lined up.
+## H5: its keys go through TLHand (hand_profile, "perfect" here: the same calls as before the port, so the same hash).
+## A test that extends this file may set hand_profile (a person's hand), level (the opponents' level, chosen by the
+## keyless action level_<id> before play) and use_pass (pass on Q when pressed and a mate is ahead and open).
+## ok (perfect, no level): the rules say over, blue won 3, the bot took at least 3 shots and the HUD result reads WIN.
+## ok (a person's hand or a level): played to the end and the hand acted; who won is a number in the result.
 
+var hand_profile: String = "perfect"
+var level: String = ""
+var use_pass: bool = false
 var ctx
+var hand: TLHand
 var s: Dictionary = {}
 var done: bool = false
 var trace: Array = []
+var down_frames: int = 0               # frames b0 spent down after a hit
+var max_period: int = 1
+var passes_seen: int = 0
+var passes_reached: int = 0
+var pass_pending: bool = false
 
 
 func _bot_setup(c) -> void:
 	ctx = c
+	hand = TLHand.create(ctx, hand_profile)
 
 
 func _v(a: Array) -> Vector2:
@@ -23,10 +37,14 @@ func _bot_tick(frame: int) -> void:
 	if str(s.get("mode", "base")) != "base":
 		ctx.input.tap(&"mode_base")      # H3: this bot tests the base game; under another mode param it switches to it first
 		return
+	if level != "" and str(s.get("level", "none")) != level:
+		ctx.input.tap(StringName("level_" + level))   # H5: the test's set-up, not the person's play
+		return
+	_measure()
 	done = s["state"] == "over"
 	if done or bool(s["frozen"]):
-		ctx.input.set_axis(&"left", &"right", 0.0)
-		ctx.input.set_axis(&"up", &"down", 0.0)
+		hand.steer(&"left", &"right", &"up", &"down", Vector2.ZERO)
+		hand.tick()
 		return
 	var me: Dictionary = {}
 	var others: Array = []
@@ -77,8 +95,7 @@ func _bot_tick(frame: int) -> void:
 		if d.length() < 1.2 and d.length() > 0.01:
 			want += d.normalized() * (1.2 - d.length()) * 3.0
 	var dir: Vector2 = want.normalized() if want.length() > 0.05 else Vector2.ZERO
-	ctx.input.set_axis(&"left", &"right", dir.x)
-	ctx.input.set_axis(&"up", &"down", dir.y)
+	hand.steer(&"left", &"right", &"up", &"down", dir)
 	# shoot: puck close and in front, goal close enough, facing the goal mouth, clear lane
 	if bool(s["shoot_ready"]) and dgoal < 40.0 and face.x > 0.3 and face.dot((goal - puck).normalized()) > 0.97:
 		var zg: float = puck.y + face.y / face.x * (26.0 - puck.x)
@@ -88,7 +105,43 @@ func _bot_tick(frame: int) -> void:
 			if rel2.dot(face) > 0.0 and absf(rel2.cross(face)) < 1.0 and o.x < 25.0:
 				clear = false
 		if absf(zg) < 2.5 and clear:
-			ctx.input.tap(&"shoot")
+			hand.tap(&"shoot")
+	elif use_pass and bool(s.get("pass_ready", false)):
+		_maybe_pass(pos, face)
+	hand.tick()
+
+
+## A person's pass (ladder bots only): pressed by a red skater close in front, a blue mate ahead and open.
+func _maybe_pass(pos: Vector2, face: Vector2) -> void:
+	var pressed: bool = false
+	var mate_ok: bool = false
+	for k: Dictionary in s["skaters"]:
+		var p: Vector2 = _v(k["pos"])
+		if str(k["team"]) == "red" and (p - pos).length() < 2.5 and (p - pos).dot(face) > 0.0:
+			pressed = true
+		if str(k["team"]) == "blue" and k["id"] != "b0" and (p - pos).length() > 4.0 and (p - pos).normalized().dot(face) > 0.64:
+			var open: bool = true
+			for o: Dictionary in s["skaters"]:
+				if str(o["team"]) == "red" and (_v(o["pos"]) - p).length() < 3.0:
+					open = false
+			mate_ok = mate_ok or open
+	if pressed and mate_ok:
+		hand.tap(&"pass")
+
+
+func _measure() -> void:
+	max_period = maxi(max_period, int(s.get("period", 1)))
+	if (s["hits"].get("down", {}) as Dictionary).has("b0"):
+		down_frames += 1
+	var n: int = int(s["possession"]["passes"].get("b0", 0))
+	if n > passes_seen:
+		passes_seen = n
+		pass_pending = true
+	var h: String = str(s["puck"].get("holder", ""))
+	if pass_pending and h != "" and h != "b0":
+		pass_pending = false
+		if str(s["skaters"].filter(func(k): return k["id"] == h)[0]["team"]) == "blue":
+			passes_reached += 1
 
 
 func _bot_done() -> bool:
@@ -100,9 +153,13 @@ func _bot_result() -> Dictionary:
 	var mine: int = int(tally.get("blue", 0))
 	var theirs: int = int(tally.get("red", 0))
 	var shots: int = int(s.get("shots", {}).get("b0", 0))
+	var won: bool = done and str(s.get("winner", "")) == "blue"
 	var ok: bool = done and str(s.get("winner", "")) == "blue" and mine == 3 and shots >= 3 and str(s.get("result", "")) == "WIN"
+	if not hand.is_perfect() or level != "":
+		ok = done and (hand.is_perfect() or int(hand.stats()["decisions"]) > 0)
 	var dbg: String = ""
 	if s.has("skaters"):
 		dbg = " TRACE " + " | ".join(trace)
 	return {"ok": ok, "summary": "blue %d : %d red in %d frames, %d shots, result %s%s" % [mine, theirs, ctx.frame, shots, str(s.get("result", "")), dbg],
-		"frames": ctx.frame, "shots": shots, "goals": mine}
+		"frames": ctx.frame, "shots": shots, "goals": mine, "against": theirs, "won": won, "hand": hand.stats(), "level": level if level != "" else "none",
+		"down_frames": down_frames, "period_reached": max_period, "passes": passes_seen, "passes_reached": passes_reached}

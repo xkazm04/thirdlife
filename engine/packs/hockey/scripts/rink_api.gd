@@ -43,6 +43,8 @@ var sprinting: Dictionary = {}
 var _now: int = 0
 var _ready_at: Dictionary = {}
 var _poke_at: Dictionary = {}
+var stick_dir: Dictionary = {}          ## H4: id -> where his stick points (the human's aim); absent = his facing
+var poke_cone_dot: float = -1.0         ## H4: a poke with a stick direction reaches only inside this cone
 var hits = null                        ## scripts/hits.gd (H2): a man down or stumbling cannot take the puck
 
 
@@ -99,6 +101,13 @@ func pos_of(id: String) -> Vector3:
 
 func fwd_of(id: String) -> Vector3:
 	return _flat((skaters[id] as TLBiped).forward()).normalized()
+
+
+## H4: where a skater's stick points: the aim's heading when the human has one, else the way he faces (as before H4).
+func stick_of(id: String) -> Vector3:
+	if stick_dir.has(id):
+		return stick_dir[id]
+	return fwd_of(id)
 
 
 func puck_pos() -> Vector3:
@@ -220,7 +229,7 @@ func can_shoot(id: String) -> bool:
 func try_shoot(id: String) -> bool:
 	if not can_shoot(id):
 		return false
-	_release("shot", id, fwd_of(id) * speed)
+	_release("shot", id, stick_of(id) * speed)
 	_clip(id, &"shoot")
 	_ready_at[id] = _now + cooldown_frames
 	shots[id] = int(shots[id]) + 1
@@ -231,7 +240,7 @@ func try_shoot(id: String) -> bool:
 ## The mate nearest his facing inside the pass cone, or "".
 func pass_target(id: String) -> String:
 	var me: Vector3 = pos_of(id)
-	var f: Vector3 = fwd_of(id)
+	var f: Vector3 = stick_of(id)
 	var best: String = ""
 	var best_dot: float = pass_cone_dot
 	for mid: String in order:
@@ -263,7 +272,7 @@ func try_pass(id: String) -> bool:
 	if carrier != id:
 		return false
 	var mid: String = pass_target(id)
-	var dir: Vector3 = fwd_of(id)
+	var dir: Vector3 = stick_of(id)
 	if mid != "":
 		var to: Vector3 = lead_point(mid) - puck_pos()
 		if to.length() > 0.1:
@@ -314,6 +323,8 @@ func try_poke(id: String) -> bool:
 		return false
 	_poke_at[id] = _now + poke_cooldown_frames
 	if pos_of(id).distance_to(puck_pos()) > poke_reach:
+		return false
+	if stick_dir.has(id) and pos_of(id).distance_to(puck_pos()) > 0.05 and (stick_dir[id] as Vector3).dot((puck_pos() - pos_of(id)).normalized()) < poke_cone_dot:
 		return false
 	var victim: String = carrier
 	var dir: Vector3 = pos_of(id) - puck_pos()

@@ -1,0 +1,14 @@
+{
+  "id": "rookie",
+  "label": "Rookie",
+  "about": "Slow to react (25 frames), slower skating, shoots only from close and wide, checks only at speed, passes poorly. Plays every role.",
+  "ai": {
+    "reaction_frames": 45,
+    "red_skill": 0.5,
+    "shoot_range": 7,
+    "aim_error_deg": 25,
+    "check_min_closing_red": 8.5,
+    "pressure_radius": 1.5,
+    "open_radius": 5
+  }
+}
