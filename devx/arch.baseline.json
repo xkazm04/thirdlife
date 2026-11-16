@@ -4,7 +4,6 @@
     "engine/kernel/examples/bad_size/scripts/big.gd": 650,
     "engine/kernel/host/host.gd": 605,
     "engine/kernel/share/item.gd": 679,
-    "engine/kernel/world/pack.gd": 626,
     "engine/kernel/world/world.gd": 672,
     "engine/kits/tl_mesh.gd": 660,
     "engine/ui/panel.gd": 1325,
