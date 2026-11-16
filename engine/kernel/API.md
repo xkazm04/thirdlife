@@ -47,6 +47,8 @@ Worked examples, all verified by `tools/tl.sh selftest`, are in `kernel/examples
 | `ex_wall` | `TLBall`, contact damage by hardness, `TLFracture` (wake, sleep, bake) |
 | `ex_walker` | `TLBiped` walk, run and skate, pushing a crate, checkpoints and a lap in `TLRules`, `TLOrbitCam` |
 | `ex_pointer` | the aim (`ctx.input.declare_aim`): a stick that turns to the point on the ice under the cursor; its bot drives the aim with `set_aim` |
+| `ex_held` | a skater on a held, shaken `TLBall` steps off it at his own speed: a held ball is never a moving floor (K2) |
+| `ex_down` | `TLBiped.down` / `shove` / `stumble` with a key held through them, and two pairs of 2.2-scaled figures meeting with today's body and with `body_scale` (K2) |
 | `ex_car` | `TLVehicle` driven by input actions, nitro, grip per surface, `TLChaseCam`, AI with `TLSteer`, `TLHud`, `TLVfx`, `TLAudio` |
 | `ex_kit` | the kit and the rigs under the kernel: a `TLKit` ball on a `TLKit` ice patch, a `barrier_wall` and a `crate` through `TLFracture`, `TLBiped` and `TLVehicle` on the real `TLRigs` rigs, and the stand-in rigs given by hand |
 | `bad_*` | one deliberately bad pack per failure the runner detects |
@@ -256,13 +258,24 @@ default `TLRigs.build("biped")` when installed, else the stand-in), `rig_params`
 | `drive_from_input(input, map, view = Basis.IDENTITY)` | reads actions: map keys `left right forward back` and optionally `run brake jump`; `view` makes it camera-relative (`orbit_cam.yaw_basis()`) |
 | `forward() -> Vector3`, `speed() -> float`, `surface: String`, `grounded: bool`, `rig: Node3D` | |
 | signals `mode_changed(mode)`, `pushed(body, impulse)` | |
-| tuning | `walk_speed` 2.3, `run_speed` 6.0, `accel` 28, `turn_rate` 10, `skate_speed` 9.5, `skate_accel` 6.5, `skate_lateral_grip` 2.2, `skate_turn_rate` 2.8, `skate_brake` 9, `jump_speed` 4.5, `body_mass` 80, `push_strength` 1, `sole_material` rubber, `blade_material` steel |
+| `down(frames: int)`, `is_down() -> bool`, `down_frames_left() -> int`, signals `downed()`, `got_up()` | **K2: a figure on the ground.** He lies `frames` frames, then rises over `get_up_frames` (24); all that time `move`, `brake`, `jump` are ignored and he slides to a stop with the brake on. The TLRigs biped plays its `fall` clip (holds, flat on the front) and blends back to its locomotion while he rises; a rig without a fall clip (the kernel's stand-in capsule) is tipped flat and tipped back. `down` while down keeps the longer time; while rising he goes down again. In the state hash while down |
+| `shove(impulse: Vector3)` | moves him without a fall: `impulse` (N s) / `body_mass` is added to his velocity, also while down |
+| `stumble(frames: int, lean: float = 0.7)`, `is_stumbling() -> bool` | a short loss of control: a third of the intent reaches the legs, no brake, the rig leans to the side (`lean` -1 left .. 1 right, fading out). TLRigs biped: a side lean of the whole locomotion pose; the stand-in: nothing visible. Ignored while down |
+| `set_body_scale(scale: float)`, `body_radius() -> float`; create option `body_scale` | **K2: the body follows the figure.** The capsule is the rig's metrics (radius 0.3, height 2.0 for the TLRigs biped at scale 1) times the scale; give it the scale you give the rig (`rig.scale`). Default 1: the body every pack had |
+| tuning | `get_up_frames` 24, `walk_speed` 2.3, `run_speed` 6.0, `accel` 28, `turn_rate` 10, `skate_speed` 9.5, `skate_accel` 6.5, `skate_lateral_grip` 2.2, `skate_turn_rate` 2.8, `skate_brake` 9, `jump_speed` 4.5, `body_mass` 80, `push_strength` 1, `sole_material` rubber, `blade_material` steel |
 
 Walking: velocity moves toward the intent at `accel` x grip, where grip is the pair law of `sole_material` and the
 surface under the feet (walking on ice is slow to start and stop). Skating: thrust along the facing, the facing
 turns toward the intent at `skate_turn_rate`, sideways slip dies slowly (`skate_lateral_grip`), and the glide
 decelerates by the pair law of `blade_material` and the surface (steel on ice 0.015: a long glide). It pushes dynamic
 bodies it runs into (a puck, a ball, a crate) and reports the impact to `TLDamage`.
+
+**A held ball is never a floor (K2).** A ball held with `TLBall.hold` is moved by its holder every frame; standing on
+it, a biped would be carried by it and, leaving it, thrown at its speed (`CharacterBody3D` adds a platform's velocity
+on leaving). A biped whose feet touch a held ball (asked only when the floor under him moves) neither follows its
+motion nor takes its velocity when he steps off; his own `platform_floor_layers` and `platform_on_leave` come back
+when he stands on anything else. Measured in `ex_held`: 15.0 m/s after stepping off a shaken held ball before, 9.5
+(his own `skate_speed`) after.
 
 ```gdscript
 var skater: TLBiped = TLBiped.create({"mode": "skate", "position": Vector3(0, 0.05, 0)})
@@ -297,7 +310,7 @@ multiple of 0.001 (`TLInput.STEP`): `press(&"left", 0.4567)` reads back as `0.45
 
 | Member | Meaning |
 |---|---|
-| `declare(action: StringName, keys: Array = [])` | declare before use; `keys` are physical key codes (`KEY_W`, `KEY_SPACE`) for interactive play |
+| `declare(action: StringName, keys: Array = [], buttons: Array = [])` | declare before use; `keys` are physical key codes (`KEY_W`, `KEY_SPACE`) for interactive play; K2: `buttons` are mouse buttons (`MOUSE_BUTTON_LEFT`, `_RIGHT`, `_MIDDLE`) that press the action too (`declare(&"shoot", [KEY_SPACE], [MOUSE_BUTTON_LEFT])`): read, recorded and replayed as a key, never by the pack; a bot presses the action as before |
 | `strength(action) -> float`, `pressed(action)`, `just_pressed(action)`, `just_released(action)` | reading |
 | `axis(negative, positive) -> float`, `vector(left, right, up, down) -> Vector2` | y = down - up, as `Input.get_vector` |
 | `press(action, value = 1.0)`, `release(action)`, `tap(action, frames = 1)`, `set_axis(negative, positive, value)`, `release_all()` | **injection**: what a bot calls in `_bot_tick` |
@@ -322,7 +335,8 @@ bot's `set_aim`; in interactive play the cursor, through the camera on screen (`
 pose that camera has at that physics frame (chase and orbit cameras move in `_physics_process`) and its lens without
 the shake's `h_offset` / `v_offset` (the aim does not shake); otherwise it is invalid. So a verify run without a bot
 reads the aim invalid on every frame, never a stale or random point. In the state hash an aim is its validity and
-its x and z (only for a pack that declares one: other packs hash exactly as before). In a record (section 22) a
+its x and z from the first frame it was valid (K2: an aim never pointed adds nothing, so a keyboard run of a pack
+that declares an aim hashes as if it had none). In a record (section 22) a
 frame's valid aim is three entries: `[f, "<aim>", 1]`, `[f, "<aim>@x", x]`, `[f, "<aim>@z", z]`, the last two left out
 when 0; that, the resolved point, is all a session needs to replay its aim: not the cursor's pixels, the window's
 size or the camera. Example: `examples/ex_pointer` (a stick that turns to the aim; its bot drives the aim round a
@@ -599,7 +613,7 @@ bash engine/tools/tl.sh smoke      --pack=<dir> [--seed=1] [--frames=3600]
 bash engine/tools/tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600] [--bot-frames=36000]
 bash engine/tools/tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000] [--record=<file.json>]
 bash engine/tools/tl.sh replay     --pack=<dir> --input=<file.json> [--record=<file.json>]   (a recorded session again; section 22)
-bash engine/tools/tl.sh capture    --pack=<dir> --cam=<name> --out=<abs.png> [--frame=120] [--res=1920x1080] [--test=tests/x.gd]
+bash engine/tools/tl.sh capture    --pack=<dir> --cam=<name> --out=<abs.png> [--frame=120] [--res=1920x1080] [--test=tests/x.gd] [--hud=off|on]
 bash engine/tools/tl.sh play       --pack=<dir> [--record=<file.json>]   (a window and real keys; Esc quits; not a verify verb)
 bash engine/tools/tl.sh selftest   [filter]
 bash engine/tools/tl.sh seeds      [filter | sheet]      (every verb on the three seed packs in engine/seeds/)
@@ -624,6 +638,7 @@ What the kernel adds to `contracts/RUNNER.md` (all additive):
 - `metrics.tick_ms_max`, and `metrics.state_hash_b` when two runs differ;
 - `bot` without `--test` runs the first test of the manifest;
 - `capture --test=<bot>`: a bot plays up to the captured frame (without it the capture shows the game with no input);
+- `capture --hud=on` (K2): the still includes the pack's HUD (TLHud); by default (`off`) a capture is of the world alone;
 - a bot that is not done within the frame budget: `bot.completed` false, an error of kind `bot` starting with
   `frame_budget:`, outcome `failed`, exit code 1 (exit code 3 is only for a run the watchdog had to stop);
 - fence, beyond the contract's list: `randf_range(`, `randi_range(`, `randfn(`, `.shuffle(`, `.pick_random(`,
@@ -683,7 +698,7 @@ finding. A capability counts as used when a script names one of its classes (`TL
 - **HUD and audio are stand-ins**: plain labels, synthesised tones, no style applied. (VFX presets are drawn by the
   style layer since WP5.)
 - **Input**: keys, the orbit camera's drag and wheel, and aims (the point on a ground plane under the cursor,
-  `declare_aim`) for the player; no gamepad, no mouse buttons as actions, no rebinding.
+  `declare_aim`) for the player; mouse buttons as keys of a declared action (K2); no gamepad, no rebinding.
 - **`requires`** in the manifest is checked for shape only; packs that need other packs are not loaded together.
 - **Saving, networking**: none. **More than one pack per process**: only through the world host (section 19),
   headless, without the watchdog; the verify verbs still run one pack per process.
@@ -858,7 +873,7 @@ stopped inside its last frame (a bot that said it was done); `mode` and `max_fra
   replay's own input, which is the same file.
 - For tests there is a scripted session without a window: `tl.sh play --pack=<dir> --headless --frames=N
   --devices=<file> [--record=<file>] [--result=<file>]`, where the devices file is a JSON list of
-  `[frame, kind, a, b]`: `key` (name, 1 or 0), `drag` (dx, dy with the right button), `wheel` (1 out, -1 in),
+  `[frame, kind, a, b]`: `key` (name, 1 or 0), `button` (`left`, `right`, `middle`; 1 or 0; K2), `drag` (dx, dy with the right button), `wheel` (1 out, -1 in),
   `field` (1: a text field takes the keyboard, 0: gives it back), `panel` (1: the designer panel is open), `close`
   (the window's close button). The events go through the engine's own input path.
 - A session ends with Esc or when the window is closed; the record is written either way.

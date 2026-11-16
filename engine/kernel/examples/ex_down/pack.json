@@ -1,0 +1,11 @@
+{
+  "id": "example.down",
+  "version": "0.1.0",
+  "kernelApi": "1.3",
+  "title": "Primitive example: a figure goes down, is shoved, stumbles (K2)",
+  "capabilities": ["physics", "biped", "input", "camera", "ui"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_down.gd"],
+  "cameras": ["above", "near"]
+}

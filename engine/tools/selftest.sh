@@ -590,5 +590,48 @@ if [ -z "$FILTER" ] || [[ "k1.pointer" == *"$FILTER"* ]]; then
   verdict k1.pointer_replay_hash "$why" "ex_pointer: bot ${hb:0:16} = replay ${hr:0:16}; $(grep -o '"aim",1' "$KREC" 2>/dev/null | wc -l | tr -d ' ') frames with a valid aim"
 fi
 
+# --- K2a ---
+# A held ball is never a moving floor: ex_held's skater rides a held ball its carrier shakes at up to 18.6 m/s and
+# skates off it; his speed stays within his own skate_speed + 1 (before the cure: 15.0 m/s, the hockey pack saw 47).
+if [ -z "$FILTER" ] || [[ "k2.held" == *"$FILTER"* ]]; then
+  check k2.held_lint 0 lint "--pack=$EX/ex_held" -- '"id":"lint.fence","ok":true' '"bypasses":\[\]'
+  check k2.held_bot 0 bot "--pack=$EX/ex_held" -- '"id":"bot.ok","ok":true' '"ball_peak":18\.[0-9]+'
+fi
+
+# --- K2b ---
+# TLBiped down / shove / stumble and the body sized with the rig (ex_down): frames down, move ignored, signals, the
+# shove, the stumble, two 2.2-scaled figures with body_scale never closer than their bodies; deterministic.
+if [ -z "$FILTER" ] || [[ "k2.down" == *"$FILTER"* ]]; then
+  check k2.down_lint 0 lint "--pack=$EX/ex_down" -- '"id":"lint.fence","ok":true' '"bypasses":\[\]'
+  check k2.down_smoke 0 smoke "--pack=$EX/ex_down" --frames=600 -- '"id":"smoke.no_script_errors","ok":true'
+  check k2.down_bot 0 bot "--pack=$EX/ex_down" -- '"id":"bot.ok","ok":true' '"down_frames":113,' '"least_sized":1\.3[0-9]*,'
+  check k2.down_invariants 0 invariants "--pack=$EX/ex_down" --frames=600 -- '"id":"invariants.bot_deterministic","ok":true'
+fi
+
+# --- K2c ---
+# capture --hud=on keeps the pack's HUD in the still (default off: the world alone); a wrong value is refused.
+if [ -z "$FILTER" ] || [[ "k2.capture_hud" == *"$FILTER"* ]]; then
+  KH_ON="$OUTW/k2_hud_on.png"; KH_OFF="$OUTW/k2_hud_off.png"; rm -f "$KH_ON" "$KH_OFF"
+  check k2.capture_hud_on 0 capture "--pack=$EX/ex_down" --cam=near --frame=165 --test=tests/bot_down.gd --hud=on "--out=$KH_ON" --res=1280x720 -- '"id":"capture.written","ok":true'
+  check k2.capture_hud_off 0 capture "--pack=$EX/ex_down" --cam=near --frame=165 --test=tests/bot_down.gd "--out=$KH_OFF" --res=1280x720 -- '"id":"capture.written","ok":true'
+  check k2.capture_hud_bad 2 capture "--pack=$EX/ex_down" --cam=near --hud=yes "--out=$OUTW/k2_hud_bad.png" -- '--hud is on or off'
+  why=""; [ -s "$KH_ON" ] && [ -s "$KH_OFF" ] || why="a still is missing"
+  cmp -s "$KH_ON" "$KH_OFF" && why="${why:+$why; }the stills with and without the HUD are the same file"
+  verdict k2.capture_hud_differs "$why" "with the HUD $(wc -c < "$KH_ON" 2>/dev/null | tr -d ' ') bytes, without $(wc -c < "$KH_OFF" 2>/dev/null | tr -d ' ') bytes"
+fi
+
+# --- K2d ---
+# A mouse button as a declared action key: ex_down declares "knock" on K and the left button. In a scripted session
+# without a window the left button held frames 90..95 reaches the game as "knock" in exactly those frames (recorded
+# like a key), the right button (not declared) does not, and the K key still does.
+if [ -z "$FILTER" ] || [[ "k2.button" == *"$FILTER"* ]]; then
+  BREC="$OUTW/k2_button.input.json"; rm -f "$BREC"
+  p7_play k2_button "$EX/ex_down" 200 '[[90,"button","left",1],[96,"button","left",0],[120,"button","right",1],[126,"button","right",0],[150,"key","K",1],[153,"key","K",0]]' "$BREC"
+  got="$(grep -o '\[[0-9]*,"knock",1\]' "$BREC" 2>/dev/null | grep -o '^\[[0-9]*' | tr -d '[' | tr '\n' ' ')"
+  want="$( (seq 90 95; seq 150 152) | tr '\n' ' ')"
+  why=""; [ "$got" = "$want" ] || why="the game saw knock in frames [$got], expected 90..95 (left button) and 150..152 (K)"
+  verdict k2.button_is_a_key "$why" "ex_down: knock from the left button in 6 frames, not from the right button, from K in 3"
+fi
+
 echo "selftest: $pass passed, $fail failed (reports in $OUT)"
 [ $fail -eq 0 ]

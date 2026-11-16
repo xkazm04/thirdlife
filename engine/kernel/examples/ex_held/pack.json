@@ -1,0 +1,11 @@
+{
+  "id": "example.held",
+  "version": "0.1.0",
+  "kernelApi": "1.3",
+  "title": "Primitive example: a held ball is never a floor (K2)",
+  "capabilities": ["physics", "biped", "ball", "input", "camera"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_step_off.gd"],
+  "cameras": ["side"]
+}

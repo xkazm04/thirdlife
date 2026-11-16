@@ -26,7 +26,7 @@ const OPTIONS: Dictionary = {
 	"invariants": ["pack", "report", "seed", "frames", "bot-frames"],   # --bot-frames: budget of the bot replays (WP5)
 	"bot": ["pack", "report", "seed", "frames", "test", "record"],
 	"replay": ["pack", "report", "input", "record"],   # P7: a recorded session (tl.input/1) again, headless; seed and length are the record's
-	"capture": ["pack", "report", "seed", "cam", "frame", "out", "res", "test"],   # --test: kernel extension, see API.md
+	"capture": ["pack", "report", "seed", "cam", "frame", "out", "res", "test", "hud"],   # --test: kernel extension, see API.md
 }
 ## N2: the world modes (kernel/world/). They are not verify verbs: no tl.verify/1 report, no --pack, no level.
 ## kernel/runner/verbs.json lists them under "modes"; a selftest case compares both tables with that file.
@@ -250,9 +250,9 @@ func _supervise(bad_args: PackedStringArray) -> void:
 				return _not_run("engine", "--res must look like 1920x1080")
 			if FileAccess.file_exists(str(opts["out"])):
 				DirAccess.remove_absolute(str(opts["out"]))
-			var extra: Dictionary = {"seed": seed_value, "frames": at, "cam": cam, "out": str(opts["out"])}
-			if opts.has("test"):
-				extra["test"] = str(opts["test"])      # a bot plays up to the captured frame
+			var extra: Dictionary = {"seed": seed_value, "frames": at, "cam": cam, "out": str(opts["out"]), "hud": str(opts.get("hud", "off"))}   # K2: hud on = the HUD is in the still
+			if opts.has("test"): extra["test"] = str(opts["test"])      # a bot plays up to the captured frame
+			if opts.has("hud") and not ["on", "off"].has(str(opts["hud"])): return _not_run("engine", "--hud is on or off")
 			var run: Dictionary = await _run_worker("capture", extra, res_text)
 			_smoke_checks(run, at)
 			var res: Dictionary = run.get("result", {})

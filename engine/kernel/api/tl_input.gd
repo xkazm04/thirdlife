@@ -47,16 +47,18 @@ func _init() -> void:
 		_actions[a] = {"keys": [], "injected": 0.0, "hold": -1, "now": 0.0, "prev": 0.0, "analog": true}
 
 
-## Declares an action. `keys` are physical key codes (KEY_W, KEY_SPACE, ...); a bot needs none.
-func declare(action: StringName, keys: Array = []) -> void:
+## Declares an action. `keys` are physical key codes (KEY_W, KEY_SPACE, ...); K2: `buttons` are mouse buttons
+## (MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE) that press it too, in interactive play. A bot needs neither.
+func declare(action: StringName, keys: Array = [], buttons: Array = []) -> void:
 	TLContext.require("input", "ctx.input")
 	if _aims.has(action):
 		push_error("ctx.input.declare('%s'): the name is already an aim (declare_aim)" % action)
 		return
 	if _actions.has(action):
 		(_actions[action] as Dictionary)["keys"] = keys.duplicate()
+		(_actions[action] as Dictionary)["buttons"] = buttons.duplicate()
 		return
-	_actions[action] = {"keys": keys.duplicate(), "injected": 0.0, "hold": -1, "now": 0.0, "prev": 0.0}
+	_actions[action] = {"keys": keys.duplicate(), "buttons": buttons.duplicate(), "injected": 0.0, "hold": -1, "now": 0.0, "prev": 0.0}
 	_order.append(action)
 
 
@@ -322,11 +324,13 @@ func _hash_into(buf: StreamPeerBuffer) -> void:
 		buf.put_data(name.to_utf8_buffer())
 		buf.put_64(int(roundf(float(a["now"]) * 1000.0)))
 		buf.put_64(int(roundf(float(a["prev"]) * 1000.0)))
-	if _aims.is_empty():
-		return                            # K1: a pack without an aim hashes exactly as before aims existed
 	var aim_names: Array = []
 	for key: StringName in _aims.keys():
-		aim_names.append(String(key))
+		if bool((_aims[key] as Dictionary).get("ever", false)):
+			aim_names.append(String(key))
+	if aim_names.is_empty():
+		return                            # K1, K2: an aim that was never valid adds nothing: a pack that declares one and never
+		                                  # points it (every keyboard run) hashes exactly as before aims existed
 	aim_names.sort()
 	buf.put_data("|aim".to_utf8_buffer())
 	for name: String in aim_names:
@@ -376,6 +380,9 @@ func _sample() -> void:
 		var a: Dictionary = _actions[name]
 		var v: float = float(a["injected"])
 		if keys:
+			for b: Variant in (a.get("buttons", []) as Array):     # K2: a mouse button declared with the action
+				if Input.is_mouse_button_pressed(int(b)):
+					v = 1.0
 			for k: Variant in (a["keys"] as Array):
 				if Input.is_physical_key_pressed(int(k)):
 					v = 1.0
@@ -409,6 +416,8 @@ func _sample() -> void:
 		elif devices:
 			p = _cursor_on_plane(float(m["height"]), float(m["reach"]))
 		m["valid"] = p != null
+		if p != null:
+			m["ever"] = true                # K2: from now on the aim is part of the state hash
 		m["now"] = Vector3(roundf((p as Vector3).x * 1000.0) / 1000.0, float(m["height"]), roundf((p as Vector3).z * 1000.0) / 1000.0) \
 			if p != null else Vector3.ZERO
 		if _rec != null and p != null:

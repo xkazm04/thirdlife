@@ -54,19 +54,27 @@ Properties: `contact: TLContact`, `height: float`, `kind: StringName`, `material
 
 Consts: `OPTIONS`
 
-Signals: `mode_changed(mode: StringName)`, `pushed(body: RigidBody3D, impulse: float)`
+Signals: `downed()`, `got_up()`, `mode_changed(mode: StringName)`, `pushed(body: RigidBody3D, impulse: float)`
 
-Properties: `accel: float`, `blade_material: String`, `body_mass: float`, `grounded: bool`, `jump_speed: float`, `mode: StringName`, `push_strength: float`, `rig: Node3D`, `run_speed: float`, `skate_accel: float`, `skate_brake: float`, `skate_lateral_grip: float`, `skate_speed: float`, `skate_turn_rate: float`, `sole_material: String`, `surface: String`, `turn_rate: float`, `walk_speed: float`
+Properties: `accel: float`, `blade_material: String`, `body_mass: float`, `get_up_frames: int`, `grounded: bool`, `jump_speed: float`, `mode: StringName`, `push_strength: float`, `rig: Node3D`, `run_speed: float`, `skate_accel: float`, `skate_brake: float`, `skate_lateral_grip: float`, `skate_speed: float`, `skate_turn_rate: float`, `sole_material: String`, `surface: String`, `turn_rate: float`, `walk_speed: float`
 
+- `func body_radius() -> float`
 - `func brake(on: bool = true) -> void`
 - `static func create(opts: Dictionary = {}) -> TLBiped`
+- `func down(frames: int) -> void`
+- `func down_frames_left() -> int`
 - `func drive_from_input(input: TLInput, map: Dictionary, view: Basis = Basis.IDENTITY) -> void`
 - `func forward() -> Vector3`
+- `func is_down() -> bool`
+- `func is_stumbling() -> bool`
 - `func jump() -> void`
 - `func move(direction: Vector3, run: bool = false) -> void`
 - `func place(at: Vector3, facing: float = 0.0) -> void`
+- `func set_body_scale(scale_: float) -> void`
 - `func set_mode(mode_: StringName) -> void`
+- `func shove(impulse: Vector3) -> void`
 - `func speed() -> float`
+- `func stumble(frames: int, lean: float = 0.7) -> void`
 
 ## TLBodies
 
@@ -247,7 +255,7 @@ Properties: `accept_devices: bool`
 - `func aim_valid(action: StringName) -> bool`
 - `func axis(negative: StringName, positive: StringName) -> float`
 - `func clear_aim(action: StringName) -> void`
-- `func declare(action: StringName, keys: Array = []) -> void`
+- `func declare(action: StringName, keys: Array = [], buttons: Array = []) -> void`
 - `func declare_aim(action: StringName, height: float = 0.0, reach: float = 200.0) -> void`
 - `func declared() -> PackedStringArray`
 - `func just_pressed(action: StringName) -> bool`

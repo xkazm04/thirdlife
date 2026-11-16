@@ -34,6 +34,10 @@ static func _hash_node(n: Node, buf: StreamPeerBuffer, origin: Vector3) -> void:
 			_put_v3(buf, (n as RigidBody3D).angular_velocity)
 		elif n is CharacterBody3D:
 			_put_v3(buf, (n as CharacterBody3D).velocity)
+			if n.has_method("_down_text"):         # K2: a biped down, rising or stumbling (nothing while he stands)
+				var d: String = str(n.call("_down_text"))
+				if not d.is_empty():
+					buf.put_data(("|down" + d).to_utf8_buffer())
 	for c: Node in n.get_children():
 		_hash_node(c, buf, origin)
 
