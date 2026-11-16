@@ -6,6 +6,8 @@ extends Node
 ## H2: body check (F; held while standing = brace) and cross-check (C) in scripts/hits.gd.
 ## H3: modes are data (data/modes/<id>.json, chosen by the `mode` param or a keyless action mode_<id>); the match has
 ## periods (TLRules), and once a period the player may open the rule dial (T: pause; A/D choose, W/S move one step).
+## L1: what the player reads from the play camera is scripts/look.gd and data/tuning.json "look" and "camera": the puck's
+## drawn size and rim, his ring and the carrier's, the keys' lines, GOAL, play again, the scoreboards. Drawing only.
 
 var ctx
 var base_tune: Dictionary              # data/tuning.json as read
@@ -16,6 +18,7 @@ var mode_id: String = "base"
 var modes_lib                          # scripts/modes.gd
 var drill_lib                          # scripts/drills.gd
 var dial_lib                           # scripts/dial.gd
+var look                               # scripts/look.gd (L1)
 var arena: Node3D                      # the match's own nodes (goal volumes, rules, HUD): rebuilt by every _build
 var venues: Dictionary = {}            # layout text -> its built rink and goals; out of the tree when not in use
 var dress_node: Node3D                 # stands, masts, signs (gen/art_hook): built once at setup
@@ -67,6 +70,8 @@ func _pack_setup(c) -> void:
 	modes_lib = ctx.load_script("scripts/modes.gd").new()
 	drill_lib = ctx.load_script("scripts/drills.gd").new()
 	dial_lib = ctx.load_script("scripts/dial.gd").new()
+	look = ctx.load_script("scripts/look.gd").new()
+	look.cfg = base_tune["look"]
 	ai_base = ctx.read_json("ai.json")
 	drills = ctx.read_json("drills.json")
 	for d: Dictionary in drills["drills"]:
@@ -207,9 +212,11 @@ func _build(mid: String) -> void:
 
 	if puck == null:
 		var pk: Dictionary = tune["puck"]
-		puck = TLBall.create({"part": TLKit.build("puck", {"radius": float(pk.get("radius", 0.12)), "height": float(pk.get("height", 0.08))}), "planar": true, "color": Color(0.02, 0.02, 0.03), "group": "pucks", "max_speed": float(pk["max_speed"]),
+		var part: Node3D = TLKit.build("puck", {"radius": float(pk.get("radius", 0.12)), "height": float(pk.get("height", 0.08))})
+		puck = TLBall.create({"part": part, "planar": true, "color": Color(0.02, 0.02, 0.03), "group": "pucks", "max_speed": float(pk["max_speed"]),
 			"drag": float(pk["drag"]), "position": Vector3(0, 0.07, 0), "name": "Puck"})
 		ctx.root.add_child(puck)
+		look.dress_puck(self, part, puck)
 		puck.bounced.connect(_on_puck_bounced)
 	if puck.holder() != null:
 		puck.release()
@@ -268,10 +275,8 @@ func _build(mid: String) -> void:
 	api.hits = hits
 	api.poke_cone_dot = cos(deg_to_rad(float(tune["aim"]["poke_cone_deg"])))
 	stick_heading = Vector3.ZERO
-	if ctx.root.has_meta(&"hockey_ring") and not skaters["b0"].has_node("ReachRing"):
-		var ring_script = ctx.load_script(str(ctx.root.get_meta(&"hockey_ring")))
-		ring_script.make_ring(skaters["b0"], api.reach, float(tune["carry"]["ring_width"]), "yellow")
 	_new_rules()
+	look.setup(self)
 
 	var cam: Dictionary = tune["camera"]
 	if ctx.cameras.has_view(&"arena"):
@@ -313,7 +318,7 @@ func _new_rules() -> void:
 	hud.add_score(rules, "blue", &"top_left", "BLUE")
 	hud.add_score(rules, "red", &"top_right", "RED")
 	hud.add_clock(rules, &"top")
-	hud.add_bound(&"result", func() -> String: return result, &"center")
+	look.hud_lines(self)
 	hud.add_bound(&"rule", func() -> String: return rule_line, &"left")
 	hud.add_bound(&"game", _game_line, &"bottom_left")
 	hud.add_bound(&"dial", func() -> String: return dial_lib.text(self), &"right")
@@ -321,7 +326,7 @@ func _new_rules() -> void:
 
 ## H6: which game this is, on screen from the first frame: the level and the mode in one line.
 func _game_line() -> String:
-	var lv: String = str(levels[level_id]["label"]) if levels.has(level_id) else "None (data/ai.json as is)"
+	var lv: String = str(levels[level_id]["label"]) if levels.has(level_id) else str(base_tune["look"]["level_none"])
 	return "Level: %s | Mode: %s" % [lv, str(modes[mode_id].get("label", mode_id))]
 
 
@@ -512,6 +517,7 @@ func _flush_events(_frame: int) -> void:
 			fx.on_event(str(e[0]), e[1], str(e[2]))
 		fx.tick(_frame, env)
 	_events.clear()
+	look.tick(self)
 
 
 func _r3(x: float) -> float:

@@ -45,10 +45,11 @@ func tick(g) -> bool:
 func text(g) -> String:
 	if not g.dial_open:
 		return ""
-	var lines: Array = ["RULE DIAL (A/D choose, W/S one step, T close)"]
+	var lines: Array = ["RULE DIAL"]
 	var names: Array = g.tune["dial"]["names"]
 	for i: int in names.size():
 		lines.append("%s %s %+d" % [">" if i == g.dial_sel else " ", str(g.tune["dial"]["labels"][i]), int(g.dials[str(names[i])])])
+	lines.append("A/D choose   W/S one step   T close")
 	return "\n".join(lines)
 
 
