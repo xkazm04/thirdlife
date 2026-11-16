@@ -173,7 +173,8 @@ var _ctx: TLContext = null
 var _feet_query: PhysicsShapeQueryParameters3D = null
 
 
-## K2. True when a held ball (TLBall.hold) touches the bottom of the body.
+## K2, K3. True when a ball (TLBall: held, or loose and moving: a puck just shot or poked from under him) touches the
+## bottom of the body. K3: with a body of 0.66 m the rounded bottom reaches a puck 0.18 m from his centre (0.12 m at 0.3 m).
 func _held_under_feet() -> bool:
 	if _feet_query == null:
 		var s: SphereShape3D = SphereShape3D.new()
@@ -186,7 +187,7 @@ func _held_under_feet() -> bool:
 	_feet_query.transform = Transform3D(Basis.IDENTITY, global_position + up_direction * _body_radius())
 	for hit: Dictionary in get_world_3d().direct_space_state.intersect_shape(_feet_query, 8):
 		var o: Object = hit.get("collider")
-		if o is TLBall and (o as TLBall).holder() != null:
+		if o is TLBall:
 			return true
 	return false
 
@@ -364,7 +365,8 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= 9.8 * delta
 	_jump = false
 	var before: Vector3 = velocity
-	# K2: a held ball (TLBall.hold: kinematic, moved by its holder every frame) is never a moving floor. While he stood
+	# K2, K3: a ball (TLBall) is never a moving floor: held (kinematic, moved by its holder every frame) or loose (a puck
+	# released, shot or poked from under him, spinning: its contact velocity reached 88 m/s in the hockey pack). While he stood
 	# on one at the last step, its motion is not followed and leaving it adds nothing; the pack's own platform settings
 	# come back when he stands on anything else.
 	if _on_held != _was_on_held:
@@ -377,7 +379,7 @@ func _physics_process(delta: float) -> void:
 			platform_on_leave = int(_kept_platform[1]) as CharacterBody3D.PlatformOnLeave
 		_was_on_held = _on_held
 	move_and_slide()
-	# a moving floor under him (or one already left out): is it a held ball? (the floor found by snapping is in no
+	# a moving floor under him (or one already left out): is it a ball? (the floor found by snapping is in no
 	# slide collision, so the feet are asked directly; a still floor costs nothing)
 	_on_held = (get_platform_velocity().length_squared() > 0.000001 or _was_on_held) and is_on_floor() and _held_under_feet()
 	for i: int in get_slide_collision_count():

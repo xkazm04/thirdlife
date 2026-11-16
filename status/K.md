@@ -149,3 +149,48 @@ Acceptance:
 - tl check --tier fast --changed: arch FAIL (api-v1 + the RUNNER.md line), devx.test 3 fail (the unbumped API-V1.json, as in K1),
   foreman.typecheck could not run (no foreman/node_modules); assets, cards PASS.
 Windows: capture opens a window (the stills and the 2 selftest capture cases); everything else ran headless.
+
+## K3 (started 03:55)
+SEEN 03:58 hockey pack copied from this worktree (integration 9a1eb64) to %TEMP%/k3/line (as is) and %TEMP%/k3/noline (the platform_on_leave line removed); baseline hashes running (status/k3-hashes-before.txt)
+SEEN 04:01 K3 finding 1 reproduced on %TEMP%/k3/noline (the pack's platform line removed): bot_match seed 4, 378 skater-frames out. Trace (a temporary print in tl_biped, removed): frames 5597..5599 b0 stands on a HELD puck (excluded, platform 2..4 m/s); at 5600 the puck is no longer held (released/shot from under him) and still under his 0.66 m body: platform velocity (-5.0, 0, -13.1), not excluded (the K2 cure only knew held balls); at 5601 he leaves it and Godot adds its contact velocity: (-28.5, 5.6, 85.5) m/s; he crosses the side boards at frame 5623 (28.8 m/s). Why the scale matters: a 0.66 m capsule's round bottom rests on a 0.025 m puck up to 0.18 m from his centre (0.12 m at 0.3 m). Cure: any TLBall under the feet (held or loose) is never a moving floor. After: out-of-rink 0 on seeds 1..6 without the line (closest 1.219..1.248 m).
+SEEN 04:05 gated case ex_held_big (new example, so ex_held keeps its hash): a still skater with body_scale 2.2 over a held puck moved 0.14 m from his centre, the puck released at 25 m/s from under him. K2 kernel (tl_biped.gd as committed, swapped in for one run): the puck carried him 61.23 m away. K3 kernel: 0.00 m, top speed 0.00 (status/k3-held-big-before.json, -after.json)
+SEEN 04:03 K3 finding 2 measured (probe pack in %TEMP%/k3/probe, not in the repo): two body_scale 2.2 skaters closing head on at 7 m/s each: frame 107 1.377 m apart, frame 108 1.264 m (each moved exactly 0.056 m, the whole gap: both bodies were tested against where the other stood at the start of the step), 109 1.364 (pushed apart), then 1.330 at rest. Per speed (least, one step only): 4 m/s 1.281, 5 1.296, 6 1.311, 7 1.264, 8 1.210; at 1..3 m/s no overlap. Overlap <= the smaller of the two step motions (speed/60). A kernel cure would have to move bodies against each other inside the step (it moves every pack with two bipeds that touch); not built. The true guarantee is in API.md section 6 ("Two bodies that close in one step").
+SEEN 04:07 hashes after (status/k3-hashes-after.txt vs k3-hashes-before.txt): the 3 seeds and every example (ex_pointer, ex_held, ex_down included) identical, smoke and bot. The hockey copy moves: smoke and 12 of 17 bots (bot_hockey, _regular, _newcomer, the six ladder bots, bot_hockey_ai, bot_match, bot_modes); bot_reach, bot_check, bot_dial, bot_aim, bot_buttons equal. Cause: a loose puck under a skater is no longer a moving floor. All pass except bot_modes seed 1: its own floor "no mode ends inside 300 frames" sees sudden death end in 285 frames (1:0); seeds 2, 3, 4 of bot_modes pass (sudden death 657, 872, 1597 frames). A pack-side threshold, not a fault I can see: FOR H/L.
+SEEN 04:08 the pack's platform line is now redundant: bot_match seeds 1..6 give the SAME hash with the line and without it (48e7131b, bb38c691, 83acba8e, 5b7f7478, 7264c937, d66a0d71), out-of-rink 0, closest 1.219..1.248 m.
+SEEN 04:08 tl arch: 9/9 green (no new public member: API 1.3 unchanged). tl check --tier fast --changed: arch, assets, cards, devx.test 161/161 PASS; foreman.typecheck could not run (no foreman/node_modules).
+
+FOR H (K3)
+- (1) The platform line in scripts/main.gd can go: the kernel now leaves out ANY TLBall under the feet (held or loose). Your seed 4 case was a puck released/shot from under b0's 0.66 m body (frame 5600): its contact velocity was added as he left it ((-28.5, 5.6, 85.5) m/s at 5601); he crossed the side boards at 5623. With and without the line the 6 bot_match seeds now hash alike.
+- (2) The overlap is one step long and bounded by the smaller of the two bodies' motion in that step (API.md section 6). The kernel does not subtract a margin: the bodies rest 0.01 m outside the sum of their radii already; the 0.05..0.09 m is the closing step only.
+- bot_modes seed 1: sudden death now ends in 285 frames, under your floor of 300 (seeds 2..4: 657, 872, 1597).
+
+CONTRACT TEXT (K3): none required. If wanted, contracts/PACK.md beside the bypass list: "A pack never sets a biped's platform settings for balls: no TLBall, held or loose, carries or launches a biped (K3)."
+
+SEEN 04:19 seeds.sh 30 passed 0 failed (status/k3-seeds.txt); full selftest 131 passed 0 failed (status/k3-selftest.txt)
+
+READY K3 04:20
+Files (package): engine/kernel/api/tl_biped.gd (any TLBall under the feet, held or loose, is left out of platform following
+and of the velocity added on leaving); engine/kernel/examples/ex_held_big/** (new); engine/tools/selftest.sh block K3;
+engine/kernel/API.md (section 6: "K3: any ball, held or loose" and "Two bodies that close in one step: the true guarantee";
+examples table). No new public member (API stays 1.3; tl arch 9/9).
+Measuring tools, not package: status/k3_hashes.sh, k3_match.sh; probe pack in %TEMP%/k3/probe; k3-held-big-before/after.json.
+Acceptance:
+- finding 1 reproduced with figures: met. noline copy, bot_match seed 4: 378 skater-frames out; b0 on a puck released from under
+  his 0.66 m body at frame 5600 (platform velocity (-5.0, 0, -13.1)), (-28.5, 5.6, 85.5) m/s added as he left it at 5601,
+  through the side boards at 5623 at 28.8 m/s.
+- finding 1 cured: met. noline copy, out-of-rink 0 on seeds 1..6 (and the same 6 hashes with the pack's line as without it).
+- a gated case: met. ex_held_big + selftest k3.held_big_*: K2 kernel 61.23 m carried, K3 kernel 0.00 m.
+  The sentence for a pack author: "No TLBall ever carries or launches a biped, so a pack needs no platform_on_leave line of its own."
+- finding 2 measured, stated bound: met. Cause: within one physics step each biped's move is tested against where the other
+  stood at the start of the step, so two bodies closing in one step both take the whole gap; overlap for that one step <= the
+  smaller of the two step motions (speed/60); the next step separates them; at rest 0.01 m outside the radii. Probe: 7 m/s each
+  -> 1.264 / 1.364 / 1.330 m over three steps (radii 1.320). No cure (it would move every pack whose bipeds touch). Text in API.md.
+- seeds 30/30 by seeds.sh: met. selftest 131 passed 0 failed: met.
+- hashes that moved and why: the 3 seeds and every example keep their hashes (smoke and bot). The hockey copy (integration
+  9a1eb64) moves: smoke + 12 of 17 bots (bot_hockey, bot_hockey_regular, bot_hockey_newcomer, the six bot_ladder_*, bot_hockey_ai,
+  bot_match, bot_modes) because a loose puck under a skater no longer carries him. bot_reach, bot_check, bot_dial, bot_aim,
+  bot_buttons equal. Table: status/k3-hashes-before.txt vs status/k3-hashes-after.txt.
+- the hockey copy's bots all pass: NOT met for one: bot_modes seed 1 fails its own floor "no mode ends inside 300 frames":
+  sudden death now ends 1:0 in 285 frames. bot_modes seeds 2, 3, 4 pass (657, 872, 1597). Pack-side threshold: FOR H.
+- tl arch 9/9; tl check --tier fast --changed: arch, assets, cards, devx.test 161/161 PASS; foreman.typecheck could not run.
+No window was opened in K3 (no still was the proof).
