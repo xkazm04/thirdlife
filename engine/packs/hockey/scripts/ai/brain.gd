@@ -179,7 +179,7 @@ func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 			between.x += sgn * 4.0
 			between.z = lerpf(between.z, lane, 0.5)
 			out = _goto(me, between)
-	out += TLSteer.separate(me, others, 1.5) * 1.2
+	out += TLSteer.separate(me, others, 2.0) * 1.2
 	return out
 
 

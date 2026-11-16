@@ -4,11 +4,12 @@ extends Node
 ## H5: its keys go through TLHand (hand_profile, "perfect" here: the same calls as before the port, so the same hash).
 ## A test that extends this file may set hand_profile (a person's hand), level (the opponents' level, chosen by the
 ## keyless action level_<id> before play) and use_pass (pass on Q when pressed and a mate is ahead and open).
-## ok (perfect, no level): the rules say over, blue won 3, the bot took at least 3 shots and the HUD result reads WIN.
-## ok (a person's hand or a level): played to the end and the hand acted; who won is a number in the result.
+## ok (require_win, the perfect hand; level rookie since H7): over, blue won 3, at least 3 shots, the HUD reads WIN.
+## ok (the hand copies and the ladder): played to the end and the hand acted; who won is a number in the result.
 
 var hand_profile: String = "perfect"
-var level: String = "none"
+var level: String = "rookie"           # H7: this bot must win; it plays the default level (the perfect hand wins 95 % there)
+var require_win: bool = true           # false in the hand copies and the ladder: who won is a number there
 var use_pass: bool = false
 var ctx
 var hand: TLHand
@@ -155,7 +156,7 @@ func _bot_result() -> Dictionary:
 	var shots: int = int(s.get("shots", {}).get("b0", 0))
 	var won: bool = done and str(s.get("winner", "")) == "blue"
 	var ok: bool = done and str(s.get("winner", "")) == "blue" and mine == 3 and shots >= 3 and str(s.get("result", "")) == "WIN"
-	if not hand.is_perfect() or level != "none":
+	if not require_win or not hand.is_perfect():
 		ok = done and (hand.is_perfect() or int(hand.stats()["decisions"]) > 0)
 	var dbg: String = ""
 	if s.has("skaters"):

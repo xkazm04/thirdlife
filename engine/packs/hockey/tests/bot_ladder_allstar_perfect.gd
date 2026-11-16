@@ -7,3 +7,4 @@ func _init() -> void:
 	hand_profile = "perfect"
 	level = "allstar"
 	use_pass = true
+	require_win = false

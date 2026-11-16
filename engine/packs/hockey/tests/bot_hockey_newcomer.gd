@@ -7,3 +7,4 @@ func _init() -> void:
 	hand_profile = "newcomer"
 	level = "none"
 	use_pass = false
+	require_win = false

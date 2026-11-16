@@ -188,7 +188,7 @@ func update_possession() -> void:
 		var want: Vector3 = offset
 		if not _inside(_flat(tf * offset)):
 			var y: float = offset.y
-			for c: Vector3 in [Vector3(-offset.x, y, offset.z), Vector3(0.0, y, -0.6), Vector3(0.6, y, 0.0), Vector3(-0.6, y, 0.0), Vector3(0.0, y, 0.6)]:
+			for c: Vector3 in [Vector3(-offset.x, y, offset.z), Vector3(0.0, y, offset.z), Vector3(-offset.z, y, 0.0), Vector3(offset.z, y, 0.0), Vector3(0.0, y, -offset.z)]:
 				if _inside(_flat(tf * c)):
 					want = c
 					break

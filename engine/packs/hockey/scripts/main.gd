@@ -101,9 +101,17 @@ func _pack_setup(c) -> void:
 	var pick: int = clampi(int(base_tune["mode"]), 0, list.size() - 1)
 	mode_id = str(list[pick]) if modes.has(str(list[pick])) else "base"
 
-	for a: Array in [[&"up", KEY_W], [&"down", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"shoot", KEY_SPACE], [&"pass", KEY_Q],
-			[&"poke", KEY_E], [&"sprint", KEY_SHIFT], [&"check", KEY_F], [&"cross", KEY_C], [&"dial", KEY_T], [&"restart", KEY_R]]:
+	for a: Array in [[&"up", KEY_W], [&"down", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"poke", KEY_E], [&"sprint", KEY_SHIFT],
+			[&"dial", KEY_T], [&"restart", KEY_R]]:
 		ctx.input.declare(a[0], [a[1]])
+	# H7: the mouse as the jam's game had it. With the puck: left shoots, right passes; without: left cross-checks, right
+	# body-checks. Each verb is one action with its key AND its button; a button is two actions, and only the verb that
+	# fits his possession acts. Both actions of a button go down on the same frame, so a button held while the puck
+	# changes hands is never a new press: nothing happens until it is released and pressed again (tests/bot_buttons.gd).
+	ctx.input.declare(&"shoot", [KEY_SPACE], [MOUSE_BUTTON_LEFT])
+	ctx.input.declare(&"cross", [KEY_C], [MOUSE_BUTTON_LEFT])
+	ctx.input.declare(&"pass", [KEY_Q], [MOUSE_BUTTON_RIGHT])
+	ctx.input.declare(&"check", [KEY_F], [MOUSE_BUTTON_RIGHT])
 	ctx.input.declare(&"autopilot", [])
 	var am: Dictionary = base_tune["aim"]
 	ctx.input.declare_aim(&"aim", float(am["height"]), float(am["reach"]))
@@ -152,7 +160,7 @@ func _build(mid: String) -> void:
 	dial_sel = 0
 	dial_used = {}
 	dial_refused = 0
-	rule_line = str(m.get("label", mid))
+	rule_line = ""                         # H7: the mode is named by the game line; this line is the dial's
 
 	var layout: Dictionary = ctx.read_json("venue.json")
 	var g: Dictionary = tune["goals"]
@@ -224,9 +232,10 @@ func _build(mid: String) -> void:
 				"rig_params": {"colors": {"top": "car_blue" if team == "blue" else "car_red", "trim": "car_blue" if team == "blue" else "car_red", "legs": "car_blue" if team == "blue" else "car_red"}}})
 			var made: TLBiped = TLBiped.create(o)
 			if made.rig != null:
-				made.rig.scale = Vector3(2.2, 2.2, 2.2)
-			# a carried puck is a kinematic body moved every frame: under a skate it was a moving platform, and leaving
-			# it added its teleport speed to the skater (47 m/s on record, out through the boards). The kernel should own this.
+				var bs: float = float(opts["body_scale"])
+				made.rig.scale = Vector3(bs, bs, bs)      # H7: the body is the figure's size too (create option body_scale)
+			# H7: kept. The kernel no longer follows a held ball under the feet, but with body_scale 2.2 and without this line
+			# bot_match seed 4 had a skater leave the rink (378 skater-frames outside; b0 at (-90, 23) at frame 6000); with it: 0.
 			made.platform_on_leave = CharacterBody3D.PLATFORM_ON_LEAVE_DO_NOTHING
 			pool[pid] = made
 		var sk: TLBiped = pool[pid]
@@ -305,7 +314,7 @@ func _new_rules() -> void:
 	hud.add_score(rules, "red", &"top_right", "RED")
 	hud.add_clock(rules, &"top")
 	hud.add_bound(&"result", func() -> String: return result, &"center")
-	hud.add_bound(&"rule", func() -> String: return rule_line, &"bottom")
+	hud.add_bound(&"rule", func() -> String: return rule_line, &"left")
 	hud.add_bound(&"game", _game_line, &"bottom_left")
 	hud.add_bound(&"dial", func() -> String: return dial_lib.text(self), &"right")
 
@@ -516,6 +525,7 @@ func _p2(v: Vector3) -> Array:
 func _pack_state() -> Dictionary:
 	var s: Dictionary = rules.snapshot()
 	s["mode"] = mode_id
+	s["body_radius"] = snappedf((skaters["b0"] as TLBiped).body_radius(), 0.001)
 	s["game_line"] = _game_line()
 	if level_id != "none":
 		s["level"] = level_id

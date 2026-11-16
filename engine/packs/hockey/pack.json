@@ -40,7 +40,8 @@
     "tests/bot_check.gd",
     "tests/bot_modes.gd",
     "tests/bot_dial.gd",
-    "tests/bot_aim.gd"
+    "tests/bot_aim.gd",
+    "tests/bot_buttons.gd"
   ],
   "cameras": [
     "arena",

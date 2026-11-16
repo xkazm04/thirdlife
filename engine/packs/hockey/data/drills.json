@@ -2,9 +2,9 @@
   "about": "H1 practice drills: a set start for one situation (who stands where, facing [fx, fz], the puck, who carries it). Each drill is a declared action drill_<id> with no key: a test presses it, nobody's keyboard can. Skaters a drill does not place stand on the park spots and hold still unless the drill moves them; with ai true the brain plays them.",
   "park": [[-20, -12], [-20, 12], [20, -12], [20, 12], [-6, -13], [6, 13]],
   "drills": [
-    {"id": "still_beside", "place": {"b0": [0, 0, 1, 0]}, "puck": [0, 0.8]},
-    {"id": "behind", "place": {"b0": [0, 0, 1, 0]}, "puck": [-0.9, 0]},
-    {"id": "facing_away", "place": {"b0": [0, 0, -1, 0]}, "puck": [0.9, 0.3]},
+    {"id": "still_beside", "place": {"b0": [0, 0, 1, 0]}, "puck": [0, 1.05]},
+    {"id": "behind", "place": {"b0": [0, 0, 1, 0]}, "puck": [-1.15, 0]},
+    {"id": "facing_away", "place": {"b0": [0, 0, -1, 0]}, "puck": [1.1, 0.3]},
     {"id": "slides_from_behind", "place": {"b0": [0, 0, 1, 0]}, "puck": [-5, 0.4], "puck_vel": [3, 0]},
     {"id": "slides_from_side_facing_away", "place": {"b0": [0, 0, -1, 0]}, "puck": [0.5, 5], "puck_vel": [0, -4]},
     {"id": "through", "place": {"b0": [-12, 0, 1, 0]}, "puck": [0, 0.5]},
@@ -18,6 +18,7 @@
     {"id": "hit_braced", "place": {"b0": [-7, 0, 1, 0], "r0": [0, 0, 0, 1]}, "brace": ["r0"], "puck": [-14, 10]},
     {"id": "hit_as_carrier", "place": {"b0": [-7, 0, 1, 0], "r0": [0, 0, -1, 0]}, "puck": [-6.25, 0.3], "carrier": "b0"},
     {"id": "cross_carrier", "place": {"b0": [-3, 0, 1, 0], "r0": [0, 0, 1, 0]}, "puck": [0.75, 0.3], "carrier": "r0"},
-    {"id": "pass_two", "place": {"b0": [-10, 0, 1, 0], "b1": [-2, -6, 1, 0], "b2": [-2, 6, 1, 0]}, "puck": [-9.25, 0.3], "carrier": "b0"}
+    {"id": "pass_two", "place": {"b0": [-10, 0, 1, 0], "b1": [-2, -6, 1, 0], "b2": [-2, 6, 1, 0]}, "puck": [-9.25, 0.3], "carrier": "b0"},
+    {"id": "held_buttons", "place": {"b0": [0, 0, 1, 0], "r0": [2.6, 0.6, -1, 0]}, "puck": [-3, 0], "puck_vel": [3, 0], "script": [[60, "r0", "poke"]]}
   ]
 }
