@@ -62,3 +62,14 @@ test("a pack without ladder tests: found 0 cells is a FAIL", async () => {
   assert.equal(code, 1);
   assert.match(fakeCtx.last.steps[0].detail, /found 0 cells/);
 });
+
+test("H9 columns: taps lost and his shots are summed per cell from the bot result", async () => {
+  const dir = fakePack(["tests/bot_ladder_pro_regular.gd"]);
+  const runBot = async (c, seed) => report(true, { won: seed === 1, goals: 1, against: 1, frames: 900, shots: seed, taps_lost: 2 });
+  const code = await quiet(() => execute(["--pack", dir, "--seeds", "3"], { ctx: fakeCtx(dir), runBot }));
+  assert.equal(code, 0);
+  const cell = fakeCtx.last.extra.cells[0];
+  assert.equal(cell.taps_lost, 6);
+  assert.equal(cell.shots, 6);
+  assert.equal(cell.draws, 3);
+});
