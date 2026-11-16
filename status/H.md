@@ -521,3 +521,28 @@ READY H10 05:42
 | ladder.test.mjs with a row for the new columns | met | 7 of 7 |
 | the all-star draw: seed and what stalled | met (not cured) | seed 13; the puck loose inside his own net, never counted, unreachable; lever named |
 Gate: `tl check --tier full --only packs` [1/1] 20 of 20 verb runs; fast --changed: arch, assets, cards, devx.test (162) PASS, foreman.typecheck could not run (no node_modules in jl-hand); bypasses []. Files: engine/packs/hockey/tests/bot_hockey.gd (must_win), tests/bot_ladder_rookie_perfect.gd (must_win = true), devx/test/ladder.test.mjs (+1 test). Not touched: look.gd, dial.gd, main.gd.
+
+## H11: a puck inside a goal volume counts, however it got there (started 05:43)
+SEEN 05:43 the rule in scripts/main.gd (lines touched: the new function `_goal_by_position` above `_on_goal`, lines 346..355; and three lines before "a goal: acted on last", lines 461..464, in `_pack_tick`): each live tick (no goal pending, no pause after a goal, not frozen, the rules running) the puck's centre is tested against each goal volume (the trigger's box: 0 to 1.5 m behind the goal line, within the goal's half-width); inside the blue net red scores, inside the red net blue scores, held or loose. The trigger's enter event stays for a fast puck (it sweeps).
+SEEN 05:43 tests/bot_goals.gd (new; drills goal_carried, goal_own, goal_released, goal_lying, behind_net in data/drills.json): carried in on the blade: goal blue after 53 frames; carried into his own net: goal red (own goal) after 48; released just inside the line, rolling: goal blue after 1; lying at rest inside the net: goal blue after 1; on the blade behind the red net (b0 at x 29.2 along the end boards, the puck at x 27.96, outside the 26..27.5 volume): no goal in 151 frames, still his.
+SEEN 05:46 all-star / sharp after the rule: 15 % on 20 seeds (out of band 20..30). Retuned: all-star red_skill 0.835 -> 0.83 (reaction 13, spread 7, range 15, checks from 4.5 unchanged): 25 % on 40 seeds and on 20. The about text says the numbers.
+SEEN 05:55 a lint bypass I made and caught: tests/bot_goals.gd had a variable named `scored` (lint counts any variable beginning with "score" as a hand-rolled rule); renamed `goal_side`: bypasses [] again.
+Seed 13 of all-star / sharp (the stall): now ends by score, 0:3 in 1,608 frames.
+
+The ladder after H11 (`tl ladder --pack engine/packs/hockey --seeds 20`, 05:48): rookie/newcomer 90 % (77..100), rookie/perfect 100 %, pro/regular 50 % (28..72), pro/perfect 60 %, all-star/sharp 25 % (6..44), all-star/perfect 50 %. Five-minute draws: 0 of 120. Taps lost: newcomer 81, regular 28, sharp 1.
+Pass count, seeds 1..20, all 18 tests (17 + bot_goals): 20 of 20 each; bot_ladder_rookie_perfect won 20 of 20 (its must-win verdict).
+
+The world question (answered from the code, not run): yes, one thing in bot_hockey reads its frame number: since H6 it taps `level_<x>` when `frame == 0` (and when the state's level differs). Alone the bot's first tick is frame 0, so it spends that tick on the tap and plays from frame 1; in a world the bot is handed the frame the world gives it, and if that first frame is not 0 (and the world's default level already equals the bot's, rookie), it never taps and plays from its first tick: different input from the first frame, a different game. Nothing else in the pack or the bot reads the HUD's text, the camera or the cursor (bot_hockey sets no aim; the world headless has none); R is pressed only by bot_match. The pack's own `api.tick(frame)` / brain `_frame_no` use the frame `_pack_tick` gets, for cooldowns and the yield window: also a difference if a world passes world ticks instead of the pack's own (not checked).
+
+READY H11 05:58
+| acceptance line | verdict | figure |
+|---|---|---|
+| a puck inside a goal volume counts however it got there; a test row for each way and for behind the net | met | bot_goals 5 of 5 rows |
+| seed 13 of all-star / sharp ends by score | met | 0:3 in 1,608 frames |
+| five-minute draws over the six cells on 20 seeds | met | 0 of 120 |
+| the ladder again, retune only what left its band | met | all-star retuned (15 -> 25 %); 90 / 50 / 25 % through the meant hands |
+| bot_ladder_rookie_perfect 20 of 20 | met | 20 of 20 wins |
+| all tests 20 of 20 | met | 18 tests x 20 seeds |
+| packs gate green | met | [1/1] found 1, completed 1, verb runs 21 of 21 (05:58, after the rename); fast --changed: arch, assets, cards, devx.test (162) PASS, foreman.typecheck could not run (no node_modules) |
+| 0 bypasses | met after a fix | bypasses [] |
+Files: engine/packs/hockey/scripts/main.gd (the lines above), data/drills.json (+5 drills), data/levels/allstar.json, tests/bot_goals.gd (new), pack.json (+bot_goals). Not touched: look.gd, dial.gd.
