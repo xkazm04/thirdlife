@@ -30,12 +30,16 @@ export function resolveGodot() {
 export const ENGINE = path.join(REPO, "engine");
 export const FOREMAN = path.join(REPO, "foreman");
 
-/** Runs a command, returns {code, stdout, stderr, ms}. Never throws. */
+/** Runs a command, returns {code, stdout, stderr, ms, timedOut?, signal?}. Never throws.
+ *  timedOut: our own `timeout` option ran out and the child was killed; signal: the child ended on a signal (ours or anyone's).
+ *  A gate step reads both: a run that was cut short is never a pass (docs/GATE-HONESTY.md). */
 export function run(cmd, args, opts = {}) {
   const t0 = Date.now();
   const r = spawnSync(cmd, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, shell: false, ...opts,
     env: { ...process.env, ...(opts.env ?? {}) } });
-  return { code: r.status ?? (r.error ? 2 : 1), stdout: r.stdout ?? "", stderr: (r.stderr ?? "") + (r.error ? String(r.error) : ""), ms: Date.now() - t0 };
+  const timedOut = r.error?.code === "ETIMEDOUT";
+  return { code: r.status ?? (r.error ? 2 : 1), stdout: r.stdout ?? "", stderr: (r.stderr ?? "") + (r.error ? String(r.error) : ""), ms: Date.now() - t0,
+    ...(timedOut ? { timedOut: true } : {}), ...(r.signal ? { signal: r.signal } : {}) };
 }
 
 /** Runs a bash script from engine/tools with TL_GODOT set. Finds Git Bash on Windows. */
@@ -48,7 +52,7 @@ export function bash(script, args = [], opts = {}) {
 /** A step result: {id, ok, ms, detail}. `verdict` prints one line per step and the JSON as the last line. */
 export function step(id, ok, ms, detail = "") { return { id, ok, ms, detail }; }
 export function printVerdict(name, steps, extra = {}) {
-  for (const s of steps) console.log(`${s.ok ? "PASS" : "FAIL"}  ${s.id.padEnd(28)} ${String(s.ms).padStart(7)} ms  ${s.detail}`.trimEnd());
+  for (const s of steps) console.log(`${s.ok ? "PASS" : "FAIL"}  ${s.id.padEnd(28)} ${String(s.ms).padStart(7)} ms  ${s.found !== undefined ? `[${s.completed ?? "?"}/${s.found}] ` : ""}${s.detail}`.trimEnd());
   const ok = steps.every((s) => s.ok);
   console.log(JSON.stringify({ schema: "tl.devx/1", cmd: name, ok, steps, ...extra }));
   return ok ? 0 : 1;

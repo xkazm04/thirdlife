@@ -9,5 +9,5 @@ export const paths = ["engine/cards/**", "engine/seeds/**", "engine/kits/**", "e
 export async function run(ctx) {
   const { steps } = checkCards({ root: ctx?.REPO ?? REPO });
   const failed = steps.filter((s) => !s.ok);
-  return { ok: failed.length === 0, detail: failed.length ? failed.map((s) => `${s.id}: ${s.detail}`).join(" | ") : steps[0].detail };
+  return { ok: failed.length === 0, found: steps.length, completed: steps.length, detail: failed.length ? failed.map((s) => `${s.id}: ${s.detail}`).join(" | ") : steps[0]?.detail ?? "no checks" };
 }

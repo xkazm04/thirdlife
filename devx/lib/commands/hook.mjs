@@ -18,7 +18,10 @@ echo "tl pre-push: node devx/bin/tl.mjs check --tier $TIER"
 # (temp repos in tests) would act on THIS repository. The gate finds its repo from its own path instead.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR
 cd "$ROOT" || exit 1
-node "$TL" check --tier "$TIER" || { echo "tl pre-push: gate FAILED, push stopped (override once: git push --no-verify)"; exit 1; }
+node "$TL" check --tier "$TIER"; code=$?
+# exit 2 = a step COULD NOT RUN here (no Godot, no foreman deps, no input, machine too busy to judge): not a pass either
+[ "$code" = 2 ] && { echo "tl pre-push: gate COULD NOT RUN every step (exit 2, see the not_run steps), push stopped (override once: git push --no-verify)"; exit 1; }
+[ "$code" = 0 ] || { echo "tl pre-push: gate FAILED, push stopped (override once: git push --no-verify)"; exit 1; }
 `;
 
 export function hookPath(repo) {

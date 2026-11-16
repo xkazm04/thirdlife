@@ -9,5 +9,5 @@ export const paths = ["assets/**", "engine/kits/**", "contracts/ASSETS.md"];
 export async function run(ctx) {
   const { steps } = checkAssets({ root: ctx?.REPO ?? REPO });
   const failed = steps.filter((s) => !s.ok);
-  return { ok: failed.length === 0, detail: failed.length ? failed.map((s) => `${s.id}: ${s.detail}`).join(" | ") : `${steps.length} checks passed` };
+  return { ok: failed.length === 0, found: steps.length, completed: steps.length, detail: failed.length ? failed.map((s) => `${s.id}: ${s.detail}`).join(" | ") : `${steps.length} checks passed` };
 }
