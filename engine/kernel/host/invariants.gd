@@ -2,6 +2,10 @@ extends RefCounted
 ## P1. The V3 checks of `invariants` (moved out of host.gd, which may not grow): determinism, below ground, the frame budgets
 ## (stage p99, one of many p50), entity budget, and the bot replay. `h` is the host (the supervisor), `report` its report.
 ## No global class name is used (the supervisor works before the class cache exists).
+## A determinism failure is located by host/diverge.gd (three more runs, only after a mismatch), so both checks are
+## coroutines: host.gd awaits them.
+
+const Diverge: GDScript = preload("res://kernel/host/diverge.gd")
 
 ## P1 (measured: docs/PERF.md section 3, 11 packs, quiet machine). The 8 ms per pack budget was set for a world of one and
 ## lets one game eat half a frame; the heaviest real pack today (hockey) is 1.3 ms at p99 and 0.75 ms at p50.
@@ -60,7 +64,8 @@ func robust_frame_p99(runs: Array) -> Dictionary:
 	return {"p99": snappedf(float(best_us[p99i]) / 1000.0, 0.001), "p50": snappedf(float(best_us[n / 2]) / 1000.0, 0.001), "runs": series.size(), "per_frame": true}
 
 
-func _invariant_checks(a: Dictionary, b: Dictionary, idle: Array = []) -> void:
+## `run_opts`: the worker options of runs a and b (the locator runs the pack again with them).
+func _invariant_checks(a: Dictionary, b: Dictionary, idle: Array = [], run_opts: Dictionary = {}) -> void:
 	var ma: Dictionary = a.get("metrics", {})
 	var mb: Dictionary = b.get("metrics", {})
 	var ha: String = str(ma.get("state_hash", ""))
@@ -68,13 +73,9 @@ func _invariant_checks(a: Dictionary, b: Dictionary, idle: Array = []) -> void:
 	var same: bool = not ha.is_empty() and ha == hb
 	var detail: String = "two runs, seed %d, %d frames: %s" % [int(report["seed"]), int(report["frames"]), ha.substr(0, 16)]
 	if not same:
-		var ta: Array = a.get("hash_trace", [])
-		var tb: Array = b.get("hash_trace", [])
-		var where: String = "after the last sampled frame"
-		for i: int in mini(ta.size(), tb.size()):
-			if str((ta[i] as Array)[1]) != str((tb[i] as Array)[1]):
-				where = "at or before frame %d" % int((ta[i] as Array)[0])
-				break
+		var where: String = Diverge.window(a, b)
+		if not run_opts.is_empty():
+			where = await Diverge.locate(h, "smoke", run_opts, a, b)
 		detail = "state_hash differs between two runs with seed %d (%s vs %s); first difference %s" % [int(report["seed"]), ha.substr(0, 16), hb.substr(0, 16), where]
 		_error("determinism", "", detail)
 	_check("invariants.determinism", same, detail)
@@ -111,7 +112,7 @@ func _invariant_checks(a: Dictionary, b: Dictionary, idle: Array = []) -> void:
 
 
 ## WP5: two bot runs of one test with one seed must end in the same state after the same number of frames.
-func _bot_determinism_check(test: String, a: Dictionary, b: Dictionary) -> void:
+func _bot_determinism_check(test: String, a: Dictionary, b: Dictionary, run_opts: Dictionary = {}) -> void:
 	var ha: String = str((a.get("metrics", {}) as Dictionary).get("state_hash", ""))
 	var hb: String = str((b.get("metrics", {}) as Dictionary).get("state_hash", ""))
 	var fa: int = int(a.get("frames_run", 0))
@@ -119,13 +120,9 @@ func _bot_determinism_check(test: String, a: Dictionary, b: Dictionary) -> void:
 	var same: bool = not ha.is_empty() and ha == hb and fa == fb
 	var detail: String = "bot %s twice, seed %d: %s after %d frames" % [test, int(report["seed"]), ha.substr(0, 16), fa]
 	if not same:
-		var ta: Array = a.get("hash_trace", [])
-		var tb: Array = b.get("hash_trace", [])
-		var where: String = "after the last sampled frame"
-		for i: int in mini(ta.size(), tb.size()):
-			if str((ta[i] as Array)[1]) != str((tb[i] as Array)[1]):
-				where = "at or before frame %d" % int((ta[i] as Array)[0])
-				break
+		var where: String = Diverge.window(a, b)
+		if not run_opts.is_empty():
+			where = await Diverge.locate(h, "bot", run_opts, a, b)
 		detail = "two bot runs of %s with seed %d differ: %s after %d frames vs %s after %d frames; first difference %s" % [
 			test, int(report["seed"]), ha.substr(0, 16), fa, hb.substr(0, 16), fb, where]
 		_error("determinism", test, detail)

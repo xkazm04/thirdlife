@@ -193,7 +193,7 @@ func _supervise(bad_args: PackedStringArray) -> void:
 				if not _smoke_checks(extra_run, frames, true):
 					return _finish_by_checks()
 				idle.append(extra_run["result"])
-			_inv.call("_invariant_checks", a["result"], b["result"], idle)
+			await _inv.call("_invariant_checks", a["result"], b["result"], idle, idle_opts)
 			# RUNNER.md (amended 2026-11-10, second round): the idle run presses nothing, so it cannot see
 			# non-determinism that needs input. Replay the pack's first bot twice with the same seed and compare.
 			var bot_test: String = str(((mres["manifest"] as Dictionary)["tests"] as Array)[0])
@@ -208,7 +208,7 @@ func _supervise(bad_args: PackedStringArray) -> void:
 			if not _smoke_checks(bb, bot_frames, true, " (second bot run)"):
 				_check("invariants.bot_deterministic", false, "the second bot run of %s could not be used; see errors" % bot_test)
 				return _finish_by_checks()
-			_inv.call("_bot_determinism_check", bot_test, ba["result"], bb["result"])
+			await _inv.call("_bot_determinism_check", bot_test, ba["result"], bb["result"], bot_opts)
 			_finish_by_checks()
 		"bot":
 			var frames: int = int(opts.get("frames", "36000"))

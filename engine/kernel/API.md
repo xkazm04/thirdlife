@@ -674,6 +674,14 @@ What the kernel adds to `contracts/RUNNER.md` (all additive):
   error kind `determinism` with the bot's file). `--bot-frames` is the budget of each bot run (default 36000); a bot
   that is not done by then is still compared at that frame. Metrics `bot_state_hash`, `bot_frames`, and
   `bot_state_hash_b` when the two differ. A game that is only random once somebody plays it fails here;
+- when two runs of one seed differ (`invariants.determinism` or `invariants.bot_deterministic` fails), the check's
+  detail and the `determinism` error name **the first frame that differs and the first parts of the state that
+  differ**: `first difference at frame 437: body World/Crate`, or `at frame 200: _pack_state.flips` (parts: `body
+  <path under TLPack>` in tree order, `_pack_state.<key>`, `rng`, `input`; three named, the rest counted). A frame's
+  hash is taken after the pack's calls of that frame, before its physics step: frame F is the frame whose
+  `_pack_tick` (or bot tick, or the step before it) made the difference. Only a failing check pays for it: three more
+  runs of the same verb and seed (`kernel/host/diverge.gd`, never counted toward a budget). When those runs do not
+  differ, the detail keeps the sampled window (`at or before frame 600`) and says `not reproduced in the located re-run`;
 - warnings: the `smoke.loads` detail ends with `WARNING: ...` when a pack script sits on a node but never runs (it
   was attached with `set_script` after `add_child`, or switched its own processing off). A warning fails nothing;
 - `metrics.tick_ms_max`, and `metrics.state_hash_b` when two runs differ;
