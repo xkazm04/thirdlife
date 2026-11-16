@@ -6,6 +6,7 @@ import { runRules, computeBaseline, diffBaseline, loadRules, BASELINE_REL } from
 import { generateIndex, INDEX_FILE } from "../arch/apiindex.mjs";
 import { writeApi, makeBrokenTree, API_FILE } from "../arch/apicontract.mjs";
 import { makeIo } from "../arch/util.mjs";
+import { writeScopeMap } from "../arch/contextmap.mjs";
 
 const USAGE = "tl arch [--rule <id>[,<id>]] [--verbose] [--root <dir>] | --index [--freeze] | --broken-demo <empty dir> | --update-baseline | --list";
 
@@ -32,7 +33,9 @@ export async function run(args, ctx = {}, root = REPO) {
     console.log(`${before === text ? "unchanged" : "wrote"} ${INDEX_FILE} (${text.split("\n").length - 1} lines)`);
     const api = writeApi(makeIo(root), root, { freeze: args.includes("--freeze") });
     for (const l of api.lines) console.log(l);
-    return api.ok ? 0 : 1;
+    const scope = writeScopeMap(makeIo(root), root);   // docs/OWNERSHIP.md's scope map, from context-map.json
+    for (const l of scope.lines) console.log(l);
+    return api.ok && scope.ok ? 0 : 1;
   }
   if (args.includes("--update-baseline")) {
     const { next, old } = computeBaseline({ root, rules });

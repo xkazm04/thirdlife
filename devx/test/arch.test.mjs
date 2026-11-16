@@ -53,7 +53,7 @@ test("clean fixture passes every rule", () => {
   const root = withIndex(base());
   const { results } = runRules({ root, rules });
   for (const r of results) assert.ok(r.ok, `${r.rule.id}: ${msgs(r)}`);
-  assert.equal(results.length, 9);
+  assert.equal(results.length, 11);
 });
 
 test("1 module-walls: kit referencing a kernel class, an outside res:// path, a ../ load", () => {
@@ -313,7 +313,7 @@ test("real tree: green, under 5 s, grandfathered items are exactly the documente
 test("gate step: shape and a green real-tree run", async () => {
   const s = await import("../lib/gate/steps/arch.mjs");
   assert.equal(s.id, "arch"); assert.deepEqual(s.tiers, ["fast", "full"]);
-  assert.deepEqual(s.paths, ["engine/**", "contracts/**", "devx/**", "docs/generated/**"]);
+  assert.deepEqual(s.paths, ["engine/**", "contracts/**", "devx/**", "docs/generated/**", "context-map.json", "docs/OWNERSHIP.md"]);
   const r = await s.run({});
   assert.equal(r.ok, true, r.detail);
 });
