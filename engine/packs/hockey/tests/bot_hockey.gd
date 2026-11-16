@@ -10,6 +10,7 @@ extends Node
 
 var hand_profile: String = "perfect"
 var level: String = "rookie"           # H7: this bot must win; it plays the default level (the perfect hand wins 95 % there)
+var must_win: bool = false             # H10: the gate's verdict about the game: this cell must win (rookie, perfect hand)
 var require_win: bool = true           # false in the hand copies and the ladder: who won is a number there
 var use_pass: bool = false
 var use_aim: bool = false              # H9: aim with the cursor through the hand (the ladder); bot_hockey stays key-only
@@ -233,7 +234,9 @@ func _bot_result() -> Dictionary:
 	# out, is lined up less often for this bot's key-only shot rule): the proof that he played is that he took the puck.
 	var took: int = int(s.get("possession", {}).get("takes", {}).get("b0", 0))
 	var ok: bool = done and str(s.get("result", "")) in ["WIN", "LOSE", "DRAW"] and took >= 1
-	if not require_win or not hand.is_perfect():
+	if must_win:
+		ok = done and str(s.get("winner", "")) == "blue" and str(s.get("result", "")) == "WIN"
+	elif not require_win or not hand.is_perfect():
 		ok = done and (hand.is_perfect() or int(hand.stats()["decisions"]) > 0)
 	var dbg: String = ""
 	if s.has("skaters"):

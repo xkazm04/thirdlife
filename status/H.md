@@ -504,3 +504,20 @@ READY H9 05:38
 | 0 bypasses | met | bypasses [], 3,346 script lines |
 | the snap of a take (the Director's check) | met by construction, not measured | the kernel's hold has no easing; the pack eases over 8 frames |
 Not done: per-cell determinism twice was not re-run in H9 (invariants' bot_deterministic covers bot_hockey only); the cursor has not been seen with a real mouse.
+
+## H10: the gate's sharp edge, determinism per cell, the ladder test, the draw (started 05:38)
+SEEN 05:39 the gate's verdict about the game: tests/bot_ladder_rookie_perfect.gd now has `must_win` (bot_hockey.gd: ok = over, winner blue, HUD WIN). Seeds 1..20: 20 of 20 won. It is in the gate's packs step (one seed: seed 1, 3:0 in 1,363 frames, 3 shots, WIN; f50b4c90c8c019b8, unchanged by the flag: the flag changes the verdict, not the play).
+SEEN 05:39 the mirror is left out: bot_hockey_newcomer (newcomer hand, opponents "none"/Classic, key-only) won 2 of 20 on H9's run (0 of 20 was H5's, before the body, the blade and K3). bot_hockey_regular won 0 of 20 on the same run, but the Director asked for the newcomer, so neither is made a verdict.
+SEEN 05:40 determinism, seed 7, each cell run twice: rookie/newcomer 862aeb9583ff3719 = 862aeb9583ff3719 (1,818 f); rookie/perfect 24d9555dab1ffe6e = 24d9555dab1ffe6e (1,014); pro/regular d4a4848ad82bfe1b = d4a4848ad82bfe1b (3,095); pro/perfect 9185d61df5593bdc = 9185d61df5593bdc (2,879); all-star/sharp 8967274b9d49f53f = 8967274b9d49f53f (1,005); all-star/perfect 6e456ce25bc2974d = 6e456ce25bc2974d (2,562).
+SEEN 05:40 devx/test/ladder.test.mjs: a seventh test for the two H9 columns (taps lost and his shots summed per cell; a tie counted as a draw): `node --test devx/test/ladder.test.mjs` 7 of 7 pass.
+SEEN 05:40 the five-minute draw: all-star / sharp, seed 13: 0:0 at 18,241 frames, 0 shots. From frame 7,920 (and before) nothing moves: b0 at (-25, -2) facing his own net, the puck at (-27, -2), loose, inside his own net. Read: he carried it into his own net (a carried puck may enter the goal volume: H1 ignores a held puck there); released there (H9a's behind-net step), it lies inside the goal trigger, which counts a puck only when it ENTERS, so no goal is ever scored, and nobody reaches it through the frame (2 m from him, his ring 1.45). Not cured: it is not a one-line data change. Lever: count a loose puck that lies in the goal volume (not only one that enters it), or never carry the puck past a goal line (release it at the line). Until then the time limit ends such a match as a draw (1 of 120).
+
+READY H10 05:42
+| acceptance line | verdict | figure |
+|---|---|---|
+| one verdict about the game that holds on 20 of 20 | met | bot_ladder_rookie_perfect: blue wins, 20 of 20 (seeds 1..20) |
+| the mirror (newcomer vs none does not win), only if 20 of 20 | left out | it won 2 of 20 |
+| each of the six cells twice on seed 7: equal hashes | met | 6 of 6 equal (list above) |
+| ladder.test.mjs with a row for the new columns | met | 7 of 7 |
+| the all-star draw: seed and what stalled | met (not cured) | seed 13; the puck loose inside his own net, never counted, unreachable; lever named |
+Gate: `tl check --tier full --only packs` [1/1] 20 of 20 verb runs; fast --changed: arch, assets, cards, devx.test (162) PASS, foreman.typecheck could not run (no node_modules in jl-hand); bypasses []. Files: engine/packs/hockey/tests/bot_hockey.gd (must_win), tests/bot_ladder_rookie_perfect.gd (must_win = true), devx/test/ladder.test.mjs (+1 test). Not touched: look.gd, dial.gd, main.gd.
