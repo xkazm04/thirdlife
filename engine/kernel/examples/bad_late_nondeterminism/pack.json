@@ -1,0 +1,10 @@
+{
+  "id": "example.bad_late_nondeterminism",
+  "version": "0.1.0",
+  "kernelApi": "1.0",
+  "title": "Deliberately bad pack: global randomness late in the run",
+  "capabilities": ["physics", "input"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot.gd"]
+}

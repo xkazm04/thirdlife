@@ -969,3 +969,20 @@ PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built i
 - Proof: no state hash moved. Before and after, alone (`tl.sh smoke --frames=600` and `bot --frames=1500`) and in two
   worlds of all 18 seeds, examples and hockey (smoke and bot, 900 ticks): every hash equal. Selftest `life.` 8 cases
   (examples/bad_life alone and in a world, the one-owner scan, `runner/life_case.gd`): 0 of 6 new before, 8 of 8 after.
+
+## A determinism failure names its frame and its part (challenge 2026-11-16, card 1, worktree ch-1; 16 Nov, clock from `date`)
+
+- 11:20 `invariants` told a builder `first difference at or before frame 600` and two hash prefixes: a 300-frame
+  window (the worker samples its hash every 300 frames) and no subject. Now, only after two runs hashed differently,
+  `host/diverge.gd` runs the pack three more times with the failing check's verb, seed and frames: A traced every
+  frame, B against A's trace (it stops at the first differing frame F and keeps the parts of its state), C to F for
+  the same parts. The detail says `first difference at frame 437: body World/Crate (and 2 more)`. The parts come from
+  `statehash.gd parts()` (a digest per body, per `_pack_state` key, the generator, the input); `hash()` reads the
+  same body bytes through one `_put_body` and did not change. The trace moved to `runner/trace.gd` (the worker keeps a
+  hook: one call per frame, one result key, 431 -> 436 lines); the two checks are coroutines, host.gd awaits them
+  on the same two lines (605 lines, as before).
+  No report key was added: only the text of the determinism detail and error is richer.
+- New bad pack `examples/bad_late_nondeterminism`: idle runs agree for 437 frames, then the crate's velocity is set
+  with `randf()`; a bot press of `flip` at frame 200 adds `randi()` to `_pack_state().flips`. Selftest `diverge.` 4
+  cases (frame 437, `body World/Crate`, bot `frame 200: _pack_state.flips`, bad_nondeterminism `frame 0: body
+  World/...`): 0 of 4 before, 4 of 4 after.

@@ -20,26 +20,31 @@ static func _put_v3(buf: StreamPeerBuffer, v: Vector3) -> void:
 
 static func _hash_node(n: Node, buf: StreamPeerBuffer, origin: Vector3) -> void:
 	if n is PhysicsBody3D:
-		var t: Transform3D = (n as PhysicsBody3D).global_transform
-		_put_v3(buf, t.origin if origin == Vector3.ZERO else t.origin - origin)   # pack-local: the same pack hashes alike anywhere
-		var qt: Quaternion = t.basis.orthonormalized().get_rotation_quaternion()
-		if qt.w < 0.0:
-			qt = -qt
-		buf.put_64(_q(qt.x))
-		buf.put_64(_q(qt.y))
-		buf.put_64(_q(qt.z))
-		buf.put_64(_q(qt.w))
-		if n is RigidBody3D:
-			_put_v3(buf, (n as RigidBody3D).linear_velocity)
-			_put_v3(buf, (n as RigidBody3D).angular_velocity)
-		elif n is CharacterBody3D:
-			_put_v3(buf, (n as CharacterBody3D).velocity)
-			if n.has_method("_down_text"):         # K2: a biped down, rising or stumbling (nothing while he stands)
-				var d: String = str(n.call("_down_text"))
-				if not d.is_empty():
-					buf.put_data(("|down" + d).to_utf8_buffer())
+		_put_body(n as PhysicsBody3D, buf, origin)
 	for c: Node in n.get_children():
 		_hash_node(c, buf, origin)
+
+
+## The bytes of one body (position, rotation, velocities, a biped's down state): what hash() and parts() read of it.
+static func _put_body(n: PhysicsBody3D, buf: StreamPeerBuffer, origin: Vector3) -> void:
+	var t: Transform3D = n.global_transform
+	_put_v3(buf, t.origin if origin == Vector3.ZERO else t.origin - origin)   # pack-local: the same pack hashes alike anywhere
+	var qt: Quaternion = t.basis.orthonormalized().get_rotation_quaternion()
+	if qt.w < 0.0:
+		qt = -qt
+	buf.put_64(_q(qt.x))
+	buf.put_64(_q(qt.y))
+	buf.put_64(_q(qt.z))
+	buf.put_64(_q(qt.w))
+	if n is RigidBody3D:
+		_put_v3(buf, (n as RigidBody3D).linear_velocity)
+		_put_v3(buf, (n as RigidBody3D).angular_velocity)
+	elif n is CharacterBody3D:
+		_put_v3(buf, (n as CharacterBody3D).velocity)
+		if n.has_method("_down_text"):         # K2: a biped down, rising or stumbling (nothing while he stands)
+			var d: String = str(n.call("_down_text"))
+			if not d.is_empty():
+				buf.put_data(("|down" + d).to_utf8_buffer())
 
 
 ## `state_text`: the canonical form of entry._pack_state() ("" when the pack has none). `rng`: the pack's seeded
@@ -63,6 +68,55 @@ static func hash(pack_node: Node, state_text: String, rng: RandomNumberGenerator
 	if buf.get_size() > 0:
 		hc.update(buf.data_array)
 	return hc.finish().hex_encode()
+
+
+## The hash by what it covers, for the day two runs differ (host/diverge.gd names the first part that does): a list of
+## [part, 16-hex digest] in hash order: "body <path under TLPack>" for every body in tree order, "_pack_state.<key>"
+## for every top-level key of `_pack_state()` (sorted; "_pack_state" when it is not a Dictionary), "rng", "input".
+## `state` is the value `_pack_state()` returned (null: none). hash() is not built from these and does not change.
+static func parts(pack_node: Node, state: Variant, has_state: bool, rng: RandomNumberGenerator = null, input: Node = null, origin: Vector3 = Vector3.ZERO) -> Array:
+	var out: Array = []
+	if pack_node != null:
+		_body_parts(pack_node, pack_node, origin, out)
+	if has_state and typeof(state) == TYPE_DICTIONARY:
+		var keys: Array = []
+		for k: Variant in (state as Dictionary).keys():
+			keys.append(str(k))
+		keys.sort()
+		var by_name: Dictionary = {}
+		for k: Variant in (state as Dictionary).keys():
+			by_name[str(k)] = (state as Dictionary)[k]
+		for k: String in keys:
+			out.append(["_pack_state." + k, _digest(canon(by_name[k]).to_utf8_buffer())])
+	elif has_state:
+		out.append(["_pack_state", _digest(canon(state).to_utf8_buffer())])
+	if rng != null:
+		var rb: StreamPeerBuffer = StreamPeerBuffer.new()
+		rb.put_64(rng.seed)
+		rb.put_64(rng.state)
+		out.append(["rng", _digest(rb.data_array)])
+	if input != null:
+		var ib: StreamPeerBuffer = StreamPeerBuffer.new()
+		input.call("_hash_into", ib)
+		out.append(["input", _digest(ib.data_array)])
+	return out
+
+
+static func _body_parts(n: Node, pack_node: Node, origin: Vector3, out: Array) -> void:
+	if n is PhysicsBody3D:
+		var buf: StreamPeerBuffer = StreamPeerBuffer.new()
+		_put_body(n as PhysicsBody3D, buf, origin)
+		out.append(["body " + str(pack_node.get_path_to(n)), _digest(buf.data_array)])
+	for c: Node in n.get_children():
+		_body_parts(c, pack_node, origin, out)
+
+
+static func _digest(bytes: PackedByteArray) -> String:
+	var hc: HashingContext = HashingContext.new()
+	hc.start(HashingContext.HASH_SHA256)
+	if not bytes.is_empty():
+		hc.update(bytes)
+	return hc.finish().hex_encode().substr(0, 16)
 
 
 ## The canonical text of a pack-provided value (sorted keys, floats to four places): what the hash reads of `_pack_state()`.

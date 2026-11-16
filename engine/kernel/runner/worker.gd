@@ -13,6 +13,7 @@ const CpuClock: GDScript = preload("res://kernel/host/cpuclock.gd")
 const StateHash: GDScript = preload("res://kernel/host/statehash.gd")
 const Session: GDScript = preload("res://kernel/runner/session.gd")   # P7: the input record (tl.input/1), replay, --devices
 const PackLife = preload("res://kernel/runner/pack_life.gd")   # the lifecycle this worker shares with a world's holder
+const Trace: GDScript = preload("res://kernel/runner/trace.gd")   # the hash trace, and the determinism locator's stops
 
 const TICK_LIMIT_MS: int = 250          # RUNNER.md: one _pack_tick or _bot_tick
 const SETUP_LIMIT_MS: int = 10000       # kernel addition: generators, _pack_setup, _pack_start, _bot_setup, teardown
@@ -20,7 +21,6 @@ const MAX_ERRORS: int = 20              # RUNNER.md: more than this trips the wa
 const HARD_NODE_CAP: int = 50000        # runaway spawning (ten times the V3 budget)
 const HARD_MEMORY_CAP: int = 4 * 1024 * 1024 * 1024
 const CENSUS_EVERY: int = 10
-const HASH_TRACE_EVERY: int = 300
 const ORPHAN_AFTER_S: float = 60.0
 
 var opts: Dictionary = {}
@@ -44,6 +44,7 @@ var bot_info: Dictionary = {}
 var capture_info: Dictionary = {}
 var life: PackLife                       # the pack's lifecycle (runner/pack_life.gd): context, load, frame, census, verdict
 var hash_trace: Array = []
+var trace: RefCounted                    # runner/trace.gd: samples hash_trace; host/diverge.gd may stop the run at a frame
 var frame_usec: PackedInt64Array = PackedInt64Array()
 var tick_ms_max: float = 0.0
 var _last_frame_usec: int = 0
@@ -75,6 +76,7 @@ func start(options: Dictionary) -> void:
 	frames_target = int(opts.get("frames", 3600))
 	if mode == "play":
 		frames_target = int(opts.get("frames", 1 << 40))   # interactive: until Esc or the window closes (--frames: a scripted session)
+	trace = Trace.new(opts)
 	session = Session.new()
 	session.call("begin", self)        # P7: --record, --input (mode replay: seed and length come from the record), --devices
 	print("[tl] worker start: mode=%s" % mode)
@@ -188,8 +190,9 @@ func _physics_process(_delta: float) -> void:
 	if frame % CENSUS_EVERY == 0:
 		if not _census():
 			return
-	if frame % HASH_TRACE_EVERY == 0:
-		hash_trace.append([frame, _state_hash().substr(0, 16)])
+	if not bool(trace.call("sample", frame, life, hash_trace)):   # only a located re-run (host/diverge.gd) stops here
+		_end_run()
+		return
 	var bot_done: bool = life.bot_done(mode == "bot")
 	if bot_done or frame == int(session.get("cut_frame")):      # P7: a replay of such a run stops inside the same frame
 		if bot_done:
@@ -407,6 +410,8 @@ func _end_run() -> void:
 	res["hash_trace"] = hash_trace
 	if not parts.is_empty():
 		res["hash_parts"] = parts
+	if not (trace.get("found") as Dictionary).is_empty():
+		res["diverge"] = trace.get("found")
 	if not warnings.is_empty():
 		res["warnings"] = warnings
 	res["below_count"] = life.below_count if life != null else 0
