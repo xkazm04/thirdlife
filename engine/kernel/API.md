@@ -46,6 +46,7 @@ Worked examples, all verified by `tools/tl.sh selftest`, are in `kernel/examples
 | `ex_shuffle` | the puck kind of `TLBall`: 30 m/s against a thin rail and through a thin trigger, `hold` and `release` |
 | `ex_wall` | `TLBall`, contact damage by hardness, `TLFracture` (wake, sleep, bake) |
 | `ex_walker` | `TLBiped` walk, run and skate, pushing a crate, checkpoints and a lap in `TLRules`, `TLOrbitCam` |
+| `ex_pointer` | the aim (`ctx.input.declare_aim`): a stick that turns to the point on the ice under the cursor; its bot drives the aim with `set_aim` |
 | `ex_car` | `TLVehicle` driven by input actions, nitro, grip per surface, `TLChaseCam`, AI with `TLSteer`, `TLHud`, `TLVfx`, `TLAudio` |
 | `ex_kit` | the kit and the rigs under the kernel: a `TLKit` ball on a `TLKit` ice patch, a `barrier_wall` and a `crate` through `TLFracture`, `TLBiped` and `TLVehicle` on the real `TLRigs` rigs, and the stand-in rigs given by hand |
 | `bad_*` | one deliberately bad pack per failure the runner detects |
@@ -303,11 +304,28 @@ multiple of 0.001 (`TLInput.STEP`): `press(&"left", 0.4567)` reads back as `0.45
 | signals `action_pressed(action)`, `action_released(action)`; `declared() -> PackedStringArray` | |
 | `TLInput.LOOK_X`, `TLInput.LOOK_Y`, `TLInput.ZOOM` | **the pointer**: three actions the kernel declares in every pack. `strength()` gives the pixels of a right-button drag in this frame (x to the right, y down) and the wheel notches (+ is out); any value, each lasts one frame. A bot injects them with `press(TLInput.LOOK_X, 12.0)`. `TLOrbitCam` reads them by itself |
 | `keys_taken() -> bool` | true while a text field has the keyboard (the designer panel): the game gets no key then |
+| `declare_aim(action: StringName, height: float = 0.0, reach: float = 200.0)` | **the aim** (K1): an action whose value is a point, where the cursor meets the ground plane y = `height` through the camera on screen, at most `reach` metres from the camera. Declare it again to change height or reach; a name is either an action or an aim |
+| `aim_valid(action) -> bool`, `aim(action) -> Vector3` | this frame's aim: valid while the cursor is over the window and its ray meets the plane in front of the camera within `reach` (or a bot set it); the point lies on the plane, x and z multiples of `STEP`. Invalid: `aim()` is `Vector3.ZERO` |
+| `aim_direction(action, from: Vector3, fallback: Vector3 = Vector3.ZERO) -> Vector3` | the unit vector on the plane (y = 0) from `from` (a body's position) to the aim. When the aim is invalid or within `TLInput.AIM_DEAD` (0.05 m) of `from` on the plane, the cursor sitting on the figure, it returns `fallback` flattened and normalised (`Vector3.ZERO` when that has no length): pass the figure's facing and it keeps it. Never a division by zero |
+| `set_aim(action, point: Vector3)`, `clear_aim(action)` | **injection** of the aim: a bot's point (its y ignored) holds until `clear_aim` and wins over the cursor; `release_all()` clears aims too |
 
 Real keys and the mouse are read only in interactive play (`tools/tl.sh play`); verify runs ignore every device, so a
 stray key press cannot change a result. A pack never reads a device itself: no `Input`, no `InputEvent`, no
-`_input` handler (the kernel switches a pack script's event handlers off), no mouse position. Using an undeclared action is an error. AI opponents do not need actions: give them
+`_input` handler (the kernel switches a pack script's event handlers off), no mouse position: where the cursor
+points is an aim (`declare_aim`), a world position the kernel resolves. Using an undeclared action is an error. AI opponents do not need actions: give them
 intents directly (`biped.move()`, `vehicle.set_controls()`).
+
+**The aim and determinism.** An aim is latched with the other actions, once per physics frame, after the bot's tick
+and before the pack's tick. Its point comes from, in this order: a fed record (`replay`: the record alone decides); a
+bot's `set_aim`; in interactive play the cursor, through the camera on screen (`Viewport.get_camera_3d()`) with the
+pose that camera has at that physics frame (chase and orbit cameras move in `_physics_process`) and its lens without
+the shake's `h_offset` / `v_offset` (the aim does not shake); otherwise it is invalid. So a verify run without a bot
+reads the aim invalid on every frame, never a stale or random point. In the state hash an aim is its validity and
+its x and z (only for a pack that declares one: other packs hash exactly as before). In a record (section 22) a
+frame's valid aim is three entries: `[f, "<aim>", 1]`, `[f, "<aim>@x", x]`, `[f, "<aim>@z", z]`, the last two left out
+when 0; that, the resolved point, is all a session needs to replay its aim: not the cursor's pixels, the window's
+size or the camera. Example: `examples/ex_pointer` (a stick that turns to the aim; its bot drives the aim round a
+square, onto the figure and away).
 
 ## 9. `TLRules` (capability `rules`): score, clock, periods, laps, win conditions
 
@@ -593,7 +611,8 @@ finding. A capability counts as used when a script names one of its classes (`TL
   (`breaks_into` is not used by fracture: pieces carry their own material tag).
 - **HUD and audio are stand-ins**: plain labels, synthesised tones, no style applied. (VFX presets are drawn by the
   style layer since WP5.)
-- **Input**: keys only for the player (no gamepad, no mouse actions except the orbit camera in play), no rebinding.
+- **Input**: keys, the orbit camera's drag and wheel, and aims (the point on a ground plane under the cursor,
+  `declare_aim`) for the player; no gamepad, no mouse buttons as actions, no rebinding.
 - **`requires`** in the manifest is checked for shape only; packs that need other packs are not loaded together.
 - **Saving, networking**: none. **More than one pack per process**: only through the world host (section 19),
   headless, without the watchdog; the verify verbs still run one pack per process.
@@ -756,7 +775,8 @@ the file and refuses to write over a break. Names that start with `_` are the ke
  "length": 4486, "end": "tick", "frames": [[110, "left", 1], [111, "left", 1], [112, "left", 0.42], ...]}
 ```
 `frames` has one entry for every action whose value was not zero in a frame, in frame order (a key held for a second
-is sixty entries; the pointer is `tl.look_x`, `tl.look_y`, `tl.zoom`). `length` is the number of frames the session
+is sixty entries; the pointer is `tl.look_x`, `tl.look_y`, `tl.zoom`; a valid aim is `"<aim>"` with 1 and its point as
+`"<aim>@x"`, `"<aim>@z"`, section 8). `length` is the number of frames the session
 ticked; `end` is `"step"` when it stopped after the physics step of its last frame (play, Esc) and `"tick"` when it
 stopped inside its last frame (a bot that said it was done); `mode` and `max_frames` are what `ctx.mode` and
 `ctx.max_frames` were, and a replay sets them again. All eight keys are required, unknown keys are errors.
@@ -773,7 +793,7 @@ stopped inside its last frame (a bot that said it was done); `mode` and `max_fra
 - A session ends with Esc or when the window is closed; the record is written either way.
 
 **The state hash** covers every physics body under the pack, `_pack_state()`, the seeded generator (`ctx.rng`: seed
-and state) and the input state (every action's value in this frame and the one before). Two runs that look alike and
+and state) and the input state (every action's value in this frame and the one before; each aim's validity and point). Two runs that look alike and
 would differ in their next random number, or in a key that is held, do not hash alike. (The world's own hash of a
 pack, `kernel/world/pack.gd`, does not cover the generator and the input yet: `kernel/api/PATCHES-P7.md`.) The
 worker's result file (`--result`) also has `hash_parts`: the bodies-and-state hash alone, the generator's state and

@@ -213,14 +213,19 @@ Properties: `font_size: int`
 
 > Named actions: the one door for input. A pack declares actions; the player presses keys, a bot injects, and the
 
-Consts: `LOOK_X`, `LOOK_Y`, `STEP`, `ZOOM`
+Consts: `AIM_DEAD`, `LOOK_X`, `LOOK_Y`, `STEP`, `ZOOM`
 
 Signals: `action_pressed(action: StringName)`, `action_released(action: StringName)`
 
 Properties: `accept_devices: bool`
 
+- `func aim(action: StringName) -> Vector3`
+- `func aim_direction(action: StringName, from: Vector3, fallback: Vector3 = Vector3.ZERO) -> Vector3`
+- `func aim_valid(action: StringName) -> bool`
 - `func axis(negative: StringName, positive: StringName) -> float`
+- `func clear_aim(action: StringName) -> void`
 - `func declare(action: StringName, keys: Array = []) -> void`
+- `func declare_aim(action: StringName, height: float = 0.0, reach: float = 200.0) -> void`
 - `func declared() -> PackedStringArray`
 - `func just_pressed(action: StringName) -> bool`
 - `func just_released(action: StringName) -> bool`
@@ -229,6 +234,7 @@ Properties: `accept_devices: bool`
 - `func pressed(action: StringName) -> bool`
 - `func release(action: StringName) -> void`
 - `func release_all() -> void`
+- `func set_aim(action: StringName, point: Vector3) -> void`
 - `func set_axis(negative: StringName, positive: StringName, value: float) -> void`
 - `func strength(action: StringName) -> float`
 - `func tap(action: StringName, frames: int = 1) -> void`
