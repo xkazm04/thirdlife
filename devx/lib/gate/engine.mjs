@@ -7,10 +7,13 @@
 //     the engine FAILS the step on found == 0 or completed != found, whatever `ok` says.
 //   * notRun: the step could not run here (no Godot, no foreman/node_modules, no input, the machine too busy to judge, killed from
 //     outside). It is never a pass: the gate exits 2 ("could not run") when nothing failed and something could not run.
+//   * A counted step that found fewer units than its last green run of the same tier FAILS unless the run names it in
+//     --expect-drop (drops.mjs); the history row then records expected_drop, and the declared count is the next baseline.
 import { step as mkStep } from "../ctx.mjs";
 import { changedPaths, mapChanged } from "./changed.mjs";
 import { countProblem } from "./counts.mjs";
-import { appendHistory, loadFigure } from "./history.mjs";
+import { appendHistory, loadFigure, readHistory } from "./history.mjs";
+import { judge } from "./drops.mjs";
 
 export const FLAKY_LABEL = "flaky-retry-passed";
 export const NOT_RUN = "could not run";
@@ -75,11 +78,17 @@ export async function runGate(opts) {
   const { steps: all, broken = [], ctx, historyFile = null, log = () => {} } = opts;
   const sel = select(all, opts);
   if (sel.error) return { exit: 2, error: sel.error, results: [], extra: {} };
+  const expected = opts.expectDrop ?? [];
+  const stray = expected.filter((id) => !sel.selected.some((s) => s.id === id));
+  if (stray.length) return { exit: 2, error: `--expect-drop: ${stray.join(", ")} is not a selected step (selected: ${sel.selected.map((s) => s.id).join(", ") || "none"})`, usage: true, results: [], extra: {} };
   const t0 = Date.now();
-  const results = [];
+  let results = [];
   for (const b of broken) results.push({ ...mkStep(`gate:${b.file}`, false, 0, `${b.file}: ${b.message}`), retried: false });
   if (!sel.selected.length && !broken.length && !sel.nothingChanged) results.push({ ...mkStep("gate", false, 0, "found 0 steps to run: nothing was checked"), retried: false });
   for (const s of sel.selected) { log(`... ${s.id}`); results.push(await runStep(s, ctx)); }
+  // Count drops against the last green run of this tier (drops.mjs); read before this run is appended.
+  const judged = historyFile ? judge(results, readHistory(historyFile), { tier: opts.tier ?? "full", expected }) : { results, drops: [] };
+  results = judged.results;
   const load = await loadFigure();
   const flakyRetries = results.filter((r) => r.flaky).length;
   const notRun = results.filter((r) => r.not_run).map((r) => r.id);
@@ -87,8 +96,8 @@ export async function runGate(opts) {
   const extra = { tier: opts.tier ?? "full", ms: Date.now() - t0, load, flaky_retries: flakyRetries, note: sel.note || undefined,
     steps_found: sel.selected.length, steps_completed: sel.selected.filter((s) => results.some((r) => r.id === s.id)).length,
     units_found: counted.reduce((a, r) => a + r.found, 0), units_completed: counted.reduce((a, r) => a + (r.completed ?? 0), 0),
-    ...(notRun.length ? { not_run: notRun } : {}) };
-  if (historyFile) appendHistory(historyFile, { ts: new Date().toISOString(), tier: extra.tier, load, steps: results.map((r) => ({ id: r.id, ms: r.ms, ok: r.ok, retried: !!r.retried, ...tail(r) })) });
+    ...(notRun.length ? { not_run: notRun } : {}), ...(judged.drops.length ? { count_drops: judged.drops } : {}), ...(expected.length ? { expected_drop: expected } : {}) };
+  if (historyFile) appendHistory(historyFile, { ts: new Date().toISOString(), tier: extra.tier, load, ...(expected.length ? { expected_drop: expected } : {}), steps: results.map((r) => ({ id: r.id, ms: r.ms, ok: r.ok, retried: !!r.retried, ...tail(r) })) });
   const failed = results.some((r) => !r.ok && !r.not_run);
   return { exit: failed ? 1 : notRun.length ? 2 : 0, results, extra, note: sel.note };
 }

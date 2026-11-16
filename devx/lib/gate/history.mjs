@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { countTrend } from "./drops.mjs";
 
 /** posix: 1-minute load average. Windows has none: a 200 ms cpu-times sample, as busy-percent * logical cores. */
 export async function loadFigure() {
@@ -20,12 +21,13 @@ export function readHistory(file) {
 }
 export const median = (xs) => { if (!xs.length) return 0; const s = [...xs].sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); };
 
-/** -> [{id, n, median, last, slow}] over the last 10 appearances of each step; slow = last > 1.5x median and > 2 s. */
+/** -> [{id, n, median, last, slow, last_found?, green_found?, drop?}] over the last 10 appearances of each step; slow = last >
+ *  1.5x median and > 2 s. The counts: the step's latest counted run and the last green run of that tier before it (drops.mjs). */
 export function trend(entries, window = 10) {
-  const per = new Map();
+  const per = new Map(), counts = countTrend(entries);
   for (const e of entries) for (const s of e.steps ?? []) { if (!per.has(s.id)) per.set(s.id, []); per.get(s.id).push(s.ms); }
   return [...per].sort(([a], [b]) => a.localeCompare(b)).map(([id, all]) => {
     const w = all.slice(-window), med = median(w), last = w[w.length - 1];
-    return { id, n: w.length, median: med, last, slow: w.length >= 3 && last > med * 1.5 && last > 2000 };
+    return { id, n: w.length, median: med, last, slow: w.length >= 3 && last > med * 1.5 && last > 2000, ...(counts.get(id) ?? {}) };
   });
 }
