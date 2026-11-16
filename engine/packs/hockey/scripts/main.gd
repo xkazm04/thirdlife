@@ -316,7 +316,7 @@ func _new_rules() -> void:
 	hud.add_score(rules, "red", &"top_right", "RED")
 	hud.add_clock(rules, &"top")
 	look.hud_lines(self)
-	hud.add_bound(&"rule", func() -> String: return rule_line, &"left")
+	hud.add_bound(&"rule", func() -> String: return rule_line, &"top")
 	hud.add_bound(&"game", _game_line, &"bottom_left")
 	hud.add_bound(&"dial", func() -> String: return dial_lib.text(self), &"right")
 

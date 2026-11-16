@@ -192,3 +192,52 @@ often (8 times in 110 frames in bot_hockey, frames 619 to 728). A person's mouse
 aim is the cursor's ray on the ice at most `aim.reach` = 200 m from the camera; the camera is 108 m from the farthest
 corner (144 m on big ice), computed, not played. Sound. The world view (a visitor outside the game) and `tl play` in a
 window were not run.
+
+## L2 (16 Nov, 05:31 to 05:55): plates under the texts, lane H's blade re-read, the final sheet
+
+The pack changed under these pictures between L1 and L2 (lane H, `36ba652`): the puck is carried on the blade of the
+stick, a non-human carrier's ring shows after 20 frames of holding, the HUD names the result at full time; the kernel
+(API 1.5) gained `TLHud.set_plate`, `set_align` and bottom labels that grow upwards. The L1 table above describes the
+pack at `a37ca43`; its "puck not seen" rows are answered here.
+
+- `final_sheet.jpg` (546 KB): six stills of the game as a person meets it tonight.
+- `l2/*.jpg`: the 18 L2 stills (PNG originals in `%TEMP%/l1/cap/l2/`), `l2/z_C_at_boards_enlarged_x3.jpg`.
+
+### The texts (1)
+
+Every text that lies on the picture has the HUD's plate now, only while it has a text: the keys (one label of three
+centred lines under the clock: `l2/A`), GOAL (`l2/I`), the result with "R: play again" (one label, centred: `l2/K`), the
+rule dial (lines left: `l2/J`), the rule line after a dial change (`l2/L`). The rule line moved from the left edge at
+the height of the nets (905 pixels wide, its plate ran into the centre circle: `l2/L_rule_line_at_left.jpg`) to the top
+under the clock, on the north board's shadow strip; it can never meet the keys there (the keys go at his first input,
+and the rule line needs T). Not plated: the scores, the clock and the level line: they lie on the apron, which is calm.
+The keys stayed at the top: a centred block at the bottom would lie on the level line (750 to 975 pixels long).
+
+### Lane H's blade, by eye from the play camera (2)
+
+| still (bot, frame) | what it shows | reads? |
+|---|---|---|
+| `l2/B` (bot_hockey, 300) | the human carries in open ice | yes: the puck on his blade, clear of every figure, his ring wide |
+| `l2/C` (bot_hockey, 650) | the human carries at the south board | partly: the puck is pulled in to his skates on the board line, half under him; his stick is drawn through the board, the blade lies outside the rink on the apron (`l2/z_C...`) |
+| `l2/F` (bot_ladder_rookie_newcomer, 4212) | a mate carries in a scrum of five | partly: the puck's rim shows between the sticks; the mate's wide blue ring says whose it is |
+| `l2/D1`, `D2`, `D3` (bot_hockey, 226, 229, 236) | the take after a face-off: one frame before, 2 and 9 frames after | before: the puck is under the two centres, not seen; 2 frames after it lies on his blade 3.1 m from him. In stills it appears there; whether the jump of at least 1.6 m in a frame reads as a take is motion: not judged |
+| `l2/E1`, `E2` (bot_hockey, 1100, 1118) | a mate takes at the north board: 8 and 26 frames after | yes: at 8 frames no ring and the puck on his blade says it; at 26 the wide blue ring is there |
+| `l2/G` (ladder, 5555) | a pass from a mate to the human | yes |
+| `l2/H`, `H2` (ladder 3915; bot_modes 4612) | a knockdown | H: the downed mate is half under the red carrier; H2: the human down, stretched out, the puck loose: reads |
+
+What does not read, and whose it is:
+- **His ring no longer holds his puck.** The ring is his reach for a loose puck (1.45 m); the carried puck rides on the
+  blade at 3 m, outside it (B, D2, D3). It reads as "this is me, the puck is on my stick", which is true; the ring's
+  width still says he has it. Named, not changed: the radius is a rule value's picture (lane H).
+- **A stick through the board** (C): the rig's stick knows no board; at the boards the puck is pulled in (lane H's
+  fallback) but the blade is drawn outside the rink. Rigs.
+- **The take** (D1 to D2): motion, see the table.
+- **The face-off** (A): at frame 2 the human's blade lies across the dot with the puck on it: he has won the face-off
+  before a key is pressed (named in L1; lane H).
+- bot_hockey's first face-off: a shot at frame 1 from the dot is a goal at frame 98 (seen in the probe's event list;
+  lane H's to judge).
+
+### Nothing of the rules (L2)
+
+17 bots and smoke before L2 (`36ba652`) and after: results and summaries equal 18 of 18, hashes equal 18 of 18. No HUD
+value in `_pack_state` moved: `result` in the state is still WIN / LOSE / DRAW; "R: play again" is only in the label.
