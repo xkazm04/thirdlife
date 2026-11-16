@@ -22,17 +22,20 @@ extends RefCounted
 const PROFILES: Dictionary = {
 	"perfect": {},
 	"sharp": {"reaction": [4, 7], "tap": [4, 6], "release_late": [0, 2], "stick_chance": 0.02, "stick": [6, 12],
-		"overshoot": [1, 3], "lapses_per_minute": 1.0, "lapse": [8, 15], "aim_lag": [4, 8], "aim_miss": 0.15},
+		"overshoot": [1, 3], "lapses_per_minute": 1.0, "lapse": [8, 15], "aim_lag": [4, 8], "aim_miss": 0.15, "aim_speed": 40.0,
+		"aim_settle": 12.0, "aim_jump": 1.0},
 	"regular": {"reaction": [8, 13], "tap": [5, 8], "release_late": [2, 6], "stick_chance": 0.05, "stick": [10, 24],
-		"overshoot": [3, 7], "lapses_per_minute": 3.0, "lapse": [15, 30], "aim_lag": [8, 16], "aim_miss": 0.3},
+		"overshoot": [3, 7], "lapses_per_minute": 3.0, "lapse": [15, 30], "aim_lag": [8, 16], "aim_miss": 0.3, "aim_speed": 25.0,
+		"aim_settle": 8.0, "aim_jump": 1.0},
 	"newcomer": {"reaction": [14, 23], "tap": [6, 9], "release_late": [4, 10], "stick_chance": 0.12, "stick": [18, 40],
-		"overshoot": [6, 12], "lapses_per_minute": 6.0, "lapse": [24, 48], "aim_lag": [14, 26], "aim_miss": 0.6},
+		"overshoot": [6, 12], "lapses_per_minute": 6.0, "lapse": [24, 48], "aim_lag": [14, 26], "aim_miss": 0.6, "aim_speed": 15.0,
+		"aim_settle": 5.0, "aim_jump": 1.0},
 }
 ## A wish of strength at least ON presses a key; once pressed it stays wished until the strength falls below OFF.
 const ON: float = 0.35
 const OFF: float = 0.15
 const _RANGES: Array = ["reaction", "tap", "release_late", "stick", "overshoot", "lapse", "aim_lag"]
-const _NUMBERS: Array = ["stick_chance", "lapses_per_minute", "aim_miss"]
+const _NUMBERS: Array = ["stick_chance", "lapses_per_minute", "aim_miss", "aim_speed", "aim_settle", "aim_jump"]
 
 ## The profile's name ("perfect", "sharp", "regular", "newcomer").
 var profile: String = "perfect"
@@ -44,9 +47,12 @@ var _rng: RandomNumberGenerator = null
 var _keys: Dictionary = {}          # action -> {want, seen, down, queue: [[due, on, extra]], min_up, group}
 var _order: Array[StringName] = []  # actions in the order the bot first named them (the order the hand acts in)
 var _lapse_end: int = -1            # the hand is away until this frame (exclusive)
-var _aim: Variant = null            # FOR K: the last aim target the bot asked for
+var _aim: Variant = null            # the last aim target the bot asked for
+var _aims: Dictionary = {}          # K4: aim -> {want, wanted, seen, seen_any, cursor, shown, follow_at, miss}
+var _aim_order: Array[StringName] = []
 var _n: Dictionary = {"intents": 0, "decisions": 0, "presses": 0, "releases": 0, "taps": 0, "reaction_frames": 0,
-	"held_late_frames": 0, "sticks": 0, "overshoots": 0, "lapses": 0, "lapse_frames": 0, "lengthened": 0, "aims": 0, "stops": 0}
+	"held_late_frames": 0, "sticks": 0, "overshoots": 0, "lapses": 0, "lapse_frames": 0, "lengthened": 0, "aims": 0, "stops": 0,
+	"taps_lost": 0, "aim_targets": 0, "aim_lag_frames": 0}
 
 
 ## A hand for `ctx` with a named profile. `overrides` replaces profile numbers (same keys as PROFILES, plus `stream`:
@@ -115,6 +121,7 @@ func tap(action: StringName, frames: int = 1) -> void:
 		return
 	var k: Dictionary = _key(action)
 	if _away():
+		_n["taps_lost"] += 1                         # K4: counted (stats()["taps_lost"]): a tap a lapse swallowed
 		return                                       # not seen: the hand was somewhere else
 	var reaction: int = _draw("reaction")
 	var due: int = _after(k, int(_ctx.frame) + reaction)
@@ -167,15 +174,37 @@ func release_all() -> void:
 		_want(a, 0.0)
 
 
-## Where the bot wants to point an aim (a point on the ground). The seam for the kernel's pointer aim (lane K): under
-## `perfect` it goes straight to `ctx.input.set_aim` once the kernel has one; under a person's profile it is a no-op
-## today. FOR K: a person's aim reaches a new point `aim_lag` frames late and rests `aim_miss` metres beside it.
+## Where the bot wants to point an aim (a point on the ground; a declared aim, ctx.input.declare_aim). Call it every
+## tick the bot wants to point (a moving target: every tick). Under `perfect` it goes straight to `ctx.input.set_aim`
+## on the same tick. K4, under a person's profile the hand moves the game's aim as a cursor: a target that jumped more
+## than `aim_jump` metres is followed only after a reaction (`aim_lag` frames; the cursor stays where it was), then the
+## cursor travels at most `aim_speed` m/s on the ground and slows near its goal (it closes `aim_settle` of the rest
+## each second), and its goal is the target plus a miss drawn per target (up to `aim_miss` metres, any side). A target
+## that moves on without jumping is tracked with no new reaction (and no new miss). During a lapse the cursor stays.
 func set_aim(action: StringName, point: Vector3) -> void:
 	_n["intents"] += 1
 	_n["aims"] += 1
 	_aim = [action, point]
-	if is_perfect() and _ctx.input.has_method(&"set_aim"):
-		_ctx.input.call(&"set_aim", action, point)
+	if is_perfect():
+		_ctx.input.set_aim(action, point)
+		return
+	if not _aims.has(action):
+		_aims[action] = {"want": point, "wanted": true, "seen": Vector3.ZERO, "seen_any": false, "cursor": Vector3.ZERO,
+			"shown": false, "follow_at": 0, "miss": Vector3.ZERO}
+		_aim_order.append(action)
+	(_aims[action] as Dictionary)["want"] = point
+	(_aims[action] as Dictionary)["wanted"] = true
+
+
+## K4. The bot no longer points this aim: under `perfect` the game's aim is cleared on the same tick; a person's
+## hand takes the cursor away at its next look (not during a lapse).
+func clear_aim(action: StringName) -> void:
+	_n["intents"] += 1
+	if is_perfect():
+		_ctx.input.clear_aim(action)
+		return
+	if _aims.has(action):
+		(_aims[action] as Dictionary)["wanted"] = false
 
 
 # ---- the hand acts --------------------------------------------------------------------------------------------------
@@ -195,6 +224,8 @@ func tick() -> void:
 		_perceive(frame)
 	for a: StringName in _order:
 		_apply(a, _keys[a], frame)
+	for a: StringName in _aim_order:
+		_aim_step(a, _aims[a], frame, _away())
 
 
 ## What the hand did, for a bot's result: the proof that the mechanism ran (zeros under `perfect`, except intents).
@@ -202,6 +233,7 @@ func stats() -> Dictionary:
 	var out: Dictionary = _n.duplicate()
 	out["profile"] = profile
 	out["mean_reaction_frames"] = snappedf(float(_n["reaction_frames"]) / maxf(1.0, float(_n["decisions"])), 0.01)
+	out["mean_aim_lag_frames"] = snappedf(float(_n["aim_lag_frames"]) / maxf(1.0, float(_n["aim_targets"])), 0.01)
 	return out
 
 
@@ -275,6 +307,43 @@ func _perceive(frame: int) -> void:
 				extra += _draw("stick")
 				_n["sticks"] += 1
 		(k["queue"] as Array).append([_after(k, due + extra), bool(k["want"]), extra])
+
+
+## K4. One frame of a person's cursor for an aim (see set_aim).
+func _aim_step(a: StringName, m: Dictionary, frame: int, away: bool) -> void:
+	if not away:
+		if not bool(m["wanted"]):
+			if bool(m["shown"]):
+				_ctx.input.clear_aim(a)
+			m["shown"] = false
+			m["seen_any"] = false
+			return
+		var want: Vector3 = m["want"]
+		var seen: Vector3 = m["seen"]
+		if not bool(m["seen_any"]) or Vector2(want.x - seen.x, want.z - seen.z).length() > float(params["aim_jump"]):
+			var lag: int = _draw("aim_lag")              # a new target: seen, then followed a reaction later
+			m["follow_at"] = frame + lag
+			var ang: float = _rng.randf() * TAU
+			var rad: float = _rng.randf() * float(params["aim_miss"])
+			m["miss"] = Vector3(cos(ang) * rad, 0.0, sin(ang) * rad)
+			_n["aim_targets"] += 1
+			_n["aim_lag_frames"] += lag
+		m["seen"] = want
+		m["seen_any"] = true
+		if frame >= int(m["follow_at"]):
+			var goal: Vector3 = want + (m["miss"] as Vector3)
+			if not bool(m["shown"]):
+				m["cursor"] = goal                       # the first time: the cursor comes in where he looks
+				m["shown"] = true
+			else:
+				var cur: Vector3 = m["cursor"]
+				var d: Vector3 = Vector3(goal.x - cur.x, 0.0, goal.z - cur.z)
+				var dist: float = d.length()
+				if dist > 0.000001:
+					var speed: float = minf(float(params["aim_speed"]), float(params["aim_settle"]) * dist)
+					m["cursor"] = cur + d / dist * minf(dist, speed / 60.0)
+	if bool(m["shown"]):
+		_ctx.input.set_aim(a, m["cursor"])           # held while the hand is away: the cursor stays where it was
 
 
 func _apply(a: StringName, k: Dictionary, frame: int) -> void:

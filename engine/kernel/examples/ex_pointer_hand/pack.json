@@ -1,0 +1,11 @@
+{
+  "id": "example.pointer_hand",
+  "version": "0.1.0",
+  "kernelApi": "1.4",
+  "title": "Primitive example: a person's hand puts the aim on a moving target (K4)",
+  "capabilities": ["input", "camera"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_aim.gd", "tests/bot_aim_sharp.gd", "tests/bot_aim_regular.gd", "tests/bot_aim_newcomer.gd"],
+  "cameras": ["top"]
+}
