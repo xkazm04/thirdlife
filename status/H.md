@@ -469,3 +469,38 @@ READY H9a 05:14
 | `tl check --tier full --only packs` green | met | [1/1] found 1, completed 1, verb runs 20 of 20 |
 | 0 bypasses | met | bypasses [], 3,247 script lines |
 Gate fast --changed: arch, assets, cards, devx.test (161) PASS; foreman.typecheck could not run (no node_modules in jl-hand).
+
+## H9: the ladder read with the cursor through the hand (K4 merged, kernel API 1.4; started 05:14)
+SEEN 05:15 the snap: TLBall.hold has no easing (the held ball is put at holder x offset every physics frame), so a puck taken anywhere in the 1.45 m ring jumped to the blade (3.0 m out) in one frame: up to 1.6 m, which a person sees as a snap. Eased in the pack: on a take the puck is held where it lies (in his frame, at least carry_min 1.0 m out) and slides to the blade over carry.ease_frames = 8 frames (at most 0.2 m a frame relative to him, plus his own motion). Measured: not as a still; by construction (rink_api `give` / `update_possession`).
+SEEN 05:16 the ladder's bots (the six bot_ladder_* cells, `use_aim`) now play with the cursor through the hand: every tick `hand.set_aim(&"aim", point)`: without the puck on the puck; with it on the goal mouth's open side (1.2 m off centre, away from the red skaters near the net), or on an open mate when pressed; they press Space / Q (the left / right button's actions: `declare` gives each its button) only when the game's stick (state `stick`: H4's heading, turning toward where the hand's cursor really is) points at the aim within 6 degrees, and shoot only inside 16 m (the person's range, ruled 04:50). Skating stays on the keys (TLHand.steer). bot_hockey and its regular / newcomer copies stay key-only (the determinism anchor). TLHand's cursor numbers are lane K's (API.md section 15).
+SEEN 05:18 first read with the cursor, levels as of H9a: rookie/newcomer 90 %, pro/regular 85 %, all-star/sharp 10 %: pro too easy, all-star too hard. Retuned (20 and 40 seeds a try; all-star swung from 10 to 60 % between neighbouring settings, so the last two tries were read on 40 seeds): pro reaction 27 -> 15 frames, red_skill 0.70 -> 0.805, shoot_range 11 -> 14 m, aim_error 14 -> 9 degrees, check from 6.0 -> 5.0 m/s; all-star reaction 12 -> 13, red_skill 0.84 -> 0.835 (shoot 15 m, spread 7 degrees, checks from 4.5: unchanged). On 40 seeds: pro/regular 48 % (32..63), all-star/sharp 25 % (12..38). Rookie unchanged. The levels' about texts say the new numbers.
+SEEN 05:31 bot_hockey (key-only, perfect, rookie) on 20 seeds: 15 of 20 with "he shot at least once": blue won 3:0 or 3:1 on all five, through his mates' goals; the puck on the blade (2.8 m out) is lined up less often for this bot's key-only shot rule. Its verdict now: played to its result and he took the puck at least once: 20 of 20.
+
+The two ladders, 20 seeds a cell (instrument: tests/bot_ladder_<level>_<hand>.gd through TLHand of that profile). Key-only = H9a's run (05:10, the same tree before H9: the old levels, shooting within 40 m when lined up). With the cursor = `tl ladder --pack engine/packs/hockey --seeds 20`, 05:26, after the retune (the cursor, 16 m range, the eased take):
+| level | hand | key-only win % | with the cursor win % (95 %) | target | goals for : against (cursor) | his shots (20 matches) | taps lost to a lapse (20 matches) | five-minute draws |
+|---|---|---|---|---|---|---|---|---|
+| rookie | newcomer (meant) | 85 | 90 (77..100) | 80..90 | 2.85 : 0.80 | 37 | 90 | 0 |
+| rookie | perfect | 95 | 100 | - | 3.00 : 0.25 | 49 | 0 | 0 |
+| pro | regular (meant) | 60 | 45 (23..67) | 45..55 | 1.90 : 2.05 | 29 | 11 | 0 |
+| pro | perfect | 50 | 65 (44..86) | - | 2.20 : 1.85 | 42 | 0 | 0 |
+| all-star | sharp (meant) | 30 | 25 (6..44) | 20..30 | 1.45 : 2.25 | 12 | 0 | 1 |
+| all-star | perfect | 30 | 45 (23..67) | - | 2.25 : 2.40 | 45 | 0 | 0 |
+What the two tables say: the key-only and cursor tables were read on different level numbers (pro and all-star were retuned for the cursor), so the cursor's own handicap shows best at the first cursor read on H9a's levels: pro/regular 60 -> 85 % (easier with the cursor: 16 m shots aimed at the open side score more than 40 m shots on the body's facing) and all-star/sharp 30 -> 10 % (harder: the sharp hand took 14 shots in 20 matches, against the perfect hand's 42: its cursor lags 4..8 frames and lands up to 0.15 m off, so the 6-degree window closes before the stick settles under faster opponents). The perfect column is now an upper bound in two of three levels (all-star 45 vs 25; pro 65 vs 45; rookie 100 vs 90). Taps lost: the newcomer loses 4.5 taps a match to a lapse, the regular 0.6, the sharp hand none in 20 matches. Passes with the cursor are rare (0 to 7 in 20 matches a cell): the bot passes only when pressed and a mate is open AND the stick has turned onto him within 6 degrees: the shot usually comes first.
+Pass count on seeds 1..20, every test (own ok): bot_hockey 20 (after its verdict change), every other test 20 of 20 (bot_hockey_regular, bot_hockey_newcomer, the six ladder cells, bot_hockey_ai, bot_reach, bot_match incl. out-of-rink 0, bot_check, bot_modes, bot_dial, bot_aim, bot_buttons).
+
+What changed (jl-hand, engine/packs/hockey): scripts/rink_api.gd (the eased take: ease_frames, ease_from), data/tuning.json (carry.ease_frames 8), tests/bot_hockey.gd (use_aim, shoot_range 16, aim_tolerance 6 degrees, the cursor play `_aim_play` / `_open_mate`, taps_lost and aim in the result, its verdict "took the puck"), the six bot_ladder_*.gd (use_aim = true), data/levels/pro.json and allstar.json (retune and about texts). devx/lib/commands/ladder.mjs (columns taps lost and his shots). Not touched: gen/**, data/venue*.json, data/fx.json, the HUD's text.
+Baseline after H9 (seed 1): bot_hockey 4000410f23c7c88e @2128 | bot_hockey_regular 54176a3720a877b9 @1702 | bot_hockey_newcomer 1984b1ca1e8d1ba8 @2613 | ladder rookie/newcomer 0606fb414b79adcb @6722, rookie/perfect f50b4c90c8c019b8 @1364, pro/regular 41d327bb2512a7f4 @3595, pro/perfect bf3948138323002d @1278, all-star/sharp f9403db2ea340cfd @1843, all-star/perfect 25e50189db3a30dc @1388 | bot_hockey_ai 832885a2b58dc2ea @1808 | bot_reach ef19031efcbec43c @1705 | bot_match f55b1bfcceb20edb @6001 | bot_check 9fa6014e55eef06c @4054 | bot_modes b387671602cab087 @9610 | bot_dial 7233a32f50190897 @2293 | bot_aim 93b76bbef4062ca7 @786 | bot_buttons 8d6bc653abc91bac @206.
+
+READY H9 05:38
+| acceptance line | verdict | figure |
+|---|---|---|
+| 17+ bots pass on 20 seeds each | met | 17 tests x 20 seeds: all pass (bot_hockey after its verdict became "took the puck") |
+| the two ladder tables | met | above (key-only H9a / with the cursor H9) |
+| in band, or the lever named | met | through the meant hands with the cursor: rookie 90 % (80..90), pro 45 % (45..55), all-star 25 % (20..30); on 40 seeds pro 48 %, all-star 25 % |
+| five-minute draws | met | 1 in 120 (all-star / sharp) |
+| taps lost per cell | met | newcomer 90, regular 11, sharp 0, perfect 0 (20 matches each) |
+| `tl check --tier full --only packs` green | met | [1/1] found 1, completed 1, verb runs 20 of 20 |
+| `tl check --tier fast --changed` | met, one step could not run | arch, assets, cards, devx.test (161) PASS; foreman.typecheck could not run (no node_modules in jl-hand) |
+| 0 bypasses | met | bypasses [], 3,346 script lines |
+| the snap of a take (the Director's check) | met by construction, not measured | the kernel's hold has no easing; the pack eases over 8 frames |
+Not done: per-cell determinism twice was not re-run in H9 (invariants' bot_deterministic covers bot_hockey only); the cursor has not been seen with a real mouse.

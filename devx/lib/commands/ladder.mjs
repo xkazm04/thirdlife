@@ -44,7 +44,7 @@ export function readRun(stdout) {
   const v = JSON.parse(line), b = v.bot?.result ?? {};
   const done = (v.checks ?? []).some((c) => c.id === "bot.completed" && c.ok === true);
   return { done, won: b.won === true, gf: Number(b.goals) || 0, ga: Number(b.against) || 0, frames: Number(b.frames) || 0, period: Number(b.period_reached) || 0,
-    passes: Number(b.passes) || 0, reached: Number(b.passes_reached) || 0, down: Number(b.down_frames) || 0, hash: v.metrics?.state_hash?.slice(0, 16) };
+    passes: Number(b.passes) || 0, reached: Number(b.passes_reached) || 0, down: Number(b.down_frames) || 0, taps: Number(b.taps_lost) || 0, shots: Number(b.shots) || 0, hash: v.metrics?.state_hash?.slice(0, 16) };
 }
 
 /** Wins of n with a 95 % interval (normal approximation), in whole percent. */
@@ -66,7 +66,7 @@ export async function ladder(cells, seeds, par, runBot) {
     const runs = got.get(c.cell).sort((a, b) => a.seed - b.seed), ok = runs.filter((x) => x.r && x.r.done).map((x) => x.r);
     const n = ok.length, sum = (k) => ok.reduce((a, r) => a + r[k], 0), w = ok.filter((r) => r.won).length;
     return { ...c, found: seeds, completed: n, wins: w, ...interval(w, n), gf: n ? +(sum("gf") / n).toFixed(2) : 0, ga: n ? +(sum("ga") / n).toFixed(2) : 0,
-      frames: n ? Math.round(sum("frames") / n) : 0, draws: ok.filter((r) => r.gf === r.ga).length, period2: ok.filter((r) => r.period >= 2).length, passes: sum("passes"), reached: sum("reached"),
+      frames: n ? Math.round(sum("frames") / n) : 0, draws: ok.filter((r) => r.gf === r.ga).length, taps_lost: sum("taps"), shots: sum("shots"), period2: ok.filter((r) => r.period >= 2).length, passes: sum("passes"), reached: sum("reached"),
       down_pct: +(100 * sum("down") / Math.max(1, sum("frames"))).toFixed(2), missing: runs.filter((x) => !x.r || !x.r.done).map((x) => x.seed) };
   });
 }
@@ -96,9 +96,9 @@ export async function execute(args, deps = {}) {
   if (!deps.runBot && !ctx.resolveGodot()) { console.error("tl ladder: Godot not found (tl doctor)"); return 2; }
   const t0 = Date.now();
   const rows = cells.length ? await ladder(cells, o.seeds, o.par, deps.runBot ?? realRunBot(ctx, packDir)) : [];
-  console.log(`level      hand      wins          win % (95 %)   goals for:against  frames  period 2  passes reached  down %  draws`);
+  console.log(`level      hand      wins          win % (95 %)   goals for:against  frames  period 2  passes reached  down %  draws  taps lost  his shots`);
   for (const r of rows) console.log(`${r.level.padEnd(10)} ${r.hand.padEnd(9)} ${String(r.wins).padStart(3)} of ${String(r.completed).padEnd(4)}  ${String(r.pct).padStart(3)} (${r.lo}..${r.hi})`.padEnd(54) +
-    `${r.gf.toFixed(2)} : ${r.ga.toFixed(2)}`.padEnd(19) + `${String(r.frames).padStart(6)}  ${String(r.period2).padStart(3)}/${r.completed}   ${r.reached}/${r.passes}`.padEnd(30) + `${String(r.down_pct).padEnd(7)}${r.draws}`);
+    `${r.gf.toFixed(2)} : ${r.ga.toFixed(2)}`.padEnd(19) + `${String(r.frames).padStart(6)}  ${String(r.period2).padStart(3)}/${r.completed}   ${r.reached}/${r.passes}`.padEnd(30) + `${String(r.down_pct).padEnd(7)}${String(r.draws).padEnd(7)}${String(r.taps_lost).padEnd(11)}${r.shots}`);
   const steps = rows.map((r) => ({ id: `ladder:${r.cell}`, ok: r.completed === r.found, ms: 0, found: r.found, completed: r.completed,
     detail: `${r.wins} of ${r.completed} won (${r.pct} %, ${r.lo}..${r.hi}) through the ${r.hand} hand${r.missing.length ? `; seeds not completed: ${r.missing.join(",")}` : ""}` }));
   if (!steps.length) steps.push({ id: "ladder", ok: false, ms: 0, found: 0, completed: 0, detail: `no bot_ladder_* test in ${path.join(o.pack, "pack.json")}: found 0 cells` });

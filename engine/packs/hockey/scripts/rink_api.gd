@@ -35,6 +35,9 @@ var behind_frames: int = 0             ## H6: frames the carrier has stayed in t
 var behind_limit: int = 90
 var net_zone_half: float = 3.5
 var own_goal_x: Dictionary = {}         ## team -> x of its own goal line
+var ease_frames: int = 8               ## H9: a taken puck slides out to the blade over this many frames (no snap)
+var ease_left: int = 0
+var ease_from: Vector3 = Vector3.ZERO
 var carry_min: float = 1.0             ## H9a: the nearest the puck is carried to his centre (clear of his body)
 var hold_at: Vector3 = Vector3.ZERO      ## where on him the puck is held now (the stick side, or another side at the boards)
 var last_release: Dictionary = {}      ## {kind: shot|pass|poked|board, by, team, frame}; empty after a face-off
@@ -74,6 +77,7 @@ func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Arr
 	carry_speed_scale = float(c["carry_speed_scale"])
 	sprint_speed_scale = float(tune["skater_sprint_scale"])
 	carry_min = float(c["carry_min"])
+	ease_frames = int(c["ease_frames"])
 	behind_limit = int(c["behind_net_frames"])
 	net_zone_half = float(c["behind_net_half_width"])
 	own_goal_x = {"blue": float(tune["goals"]["blue"][0]), "red": float(tune["goals"]["red"][0])}
@@ -203,6 +207,11 @@ func update_possession() -> void:
 			var turn: float = fwd_of(carrier).signed_angle_to(stick_dir[carrier], Vector3.UP)
 			base = offset.rotated(Vector3.UP, turn)
 			base.y = y
+		if ease_left > 0:
+			# H9: the take eases the puck from where it was (inside his ring) out to the blade
+			base = ease_from.lerp(base, 1.0 - float(ease_left) / float(maxi(ease_frames, 1)))
+			base.y = y
+			ease_left -= 1
 		var want: Vector3 = base
 		if not _inside(_flat(tf * base)):
 			want = Vector3(0.0, y, carry_min)
@@ -236,8 +245,15 @@ func give(id: String) -> void:
 	carry_since = _now
 	behind_frames = 0
 	takes[id] = int(takes[id]) + 1
-	hold_at = offset
-	puck.hold(skaters[id], offset)
+	var local: Vector3 = (skaters[id] as Node3D).global_transform.affine_inverse() * puck.global_position
+	local.y = offset.y
+	if Vector2(local.x, local.z).length() < carry_min:
+		local = Vector3(local.x, offset.y, local.z).normalized() * carry_min if Vector2(local.x, local.z).length() > 0.01 else Vector3(0.0, offset.y, -carry_min)
+		local.y = offset.y
+	ease_from = local
+	ease_left = ease_frames
+	hold_at = local
+	puck.hold(skaters[id], local)
 	events.append(["take", id])
 
 
