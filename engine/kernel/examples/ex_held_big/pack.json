@@ -1,0 +1,11 @@
+{
+  "id": "example.held_big",
+  "version": "0.1.0",
+  "kernelApi": "1.3",
+  "title": "Primitive example: a puck shot from under a big skater is no floor (K3)",
+  "capabilities": ["physics", "biped", "ball", "camera"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_shot_from_under.gd"],
+  "cameras": ["side"]
+}

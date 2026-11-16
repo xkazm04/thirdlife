@@ -1,7 +1,7 @@
 {
   "id": "rookie",
   "label": "Rookie",
-  "about": "Slow to react (25 frames), slower skating, shoots only from close and wide, checks only at speed, passes poorly. Plays every role.",
+  "about": "Reacts 50 frames late, skates at 47 % of your speed, shoots only from 7 m with 28 degrees of spread, checks only from 8.5 m/s closing, marks loosely. Plays every role.",
   "ai": {
     "reaction_frames": 50,
     "red_skill": 0.47,

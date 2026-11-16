@@ -4,7 +4,8 @@ extends Node
 ## H5: its keys go through TLHand (hand_profile, "perfect" here: the same calls as before the port, so the same hash).
 ## A test that extends this file may set hand_profile (a person's hand), level (the opponents' level, chosen by the
 ## keyless action level_<id> before play) and use_pass (pass on Q when pressed and a mate is ahead and open).
-## ok (require_win, the perfect hand; level rookie since H7): over, blue won 3, at least 3 shots, the HUD reads WIN.
+## ok (require_win, the perfect hand; level rookie since H7): over, blue won (by score or at full time), at least 3 shots, the
+## HUD reads WIN.
 ## ok (the hand copies and the ladder): played to the end and the hand acted; who won is a number in the result.
 
 var hand_profile: String = "perfect"
@@ -155,7 +156,8 @@ func _bot_result() -> Dictionary:
 	var theirs: int = int(tally.get("red", 0))
 	var shots: int = int(s.get("shots", {}).get("b0", 0))
 	var won: bool = done and str(s.get("winner", "")) == "blue"
-	var ok: bool = done and str(s.get("winner", "")) == "blue" and mine == 3 and shots >= 3 and str(s.get("result", "")) == "WIN"
+	# H8: a win, not "3 goals": since H3 a match can be won at the end of its periods with fewer (seed 18: 2:1 at full time)
+	var ok: bool = done and str(s.get("winner", "")) == "blue" and mine > theirs and shots >= 3 and str(s.get("result", "")) == "WIN"
 	if not require_win or not hand.is_perfect():
 		ok = done and (hand.is_perfect() or int(hand.stats()["decisions"]) > 0)
 	var dbg: String = ""

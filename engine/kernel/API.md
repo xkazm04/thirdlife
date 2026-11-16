@@ -48,6 +48,7 @@ Worked examples, all verified by `tools/tl.sh selftest`, are in `kernel/examples
 | `ex_walker` | `TLBiped` walk, run and skate, pushing a crate, checkpoints and a lap in `TLRules`, `TLOrbitCam` |
 | `ex_pointer` | the aim (`ctx.input.declare_aim`): a stick that turns to the point on the ice under the cursor; its bot drives the aim with `set_aim` |
 | `ex_held` | a skater on a held, shaken `TLBall` steps off it at his own speed: a held ball is never a moving floor (K2) |
+| `ex_held_big` | a puck shot from under a still 2.2-scaled skater carries him nowhere: no ball, held or loose, is a floor (K3) |
 | `ex_down` | `TLBiped.down` / `shove` / `stumble` with a key held through them, and two pairs of 2.2-scaled figures meeting with today's body and with `body_scale` (K2) |
 | `ex_car` | `TLVehicle` driven by input actions, nitro, grip per surface, `TLChaseCam`, AI with `TLSteer`, `TLHud`, `TLVfx`, `TLAudio` |
 | `ex_kit` | the kit and the rigs under the kernel: a `TLKit` ball on a `TLKit` ice patch, a `barrier_wall` and a `crate` through `TLFracture`, `TLBiped` and `TLVehicle` on the real `TLRigs` rigs, and the stand-in rigs given by hand |
@@ -275,7 +276,22 @@ it, a biped would be carried by it and, leaving it, thrown at its speed (`Charac
 on leaving). A biped whose feet touch a held ball (asked only when the floor under him moves) neither follows its
 motion nor takes its velocity when he steps off; his own `platform_floor_layers` and `platform_on_leave` come back
 when he stands on anything else. Measured in `ex_held`: 15.0 m/s after stepping off a shaken held ball before, 9.5
-(his own `skate_speed`) after.
+(his own `skate_speed`) after. **K3: any ball, held or loose.** A puck released, shot or poked from under a skater is a
+moving floor too, and a big body finds it more often (the round bottom of a 0.66 m capsule rests on a 0.025 m puck up to
+0.18 m from its centre; 0.12 m for 0.3 m). In one sentence for a pack author: *no `TLBall` ever carries or launches a
+biped, so a pack needs no `platform_on_leave` line of its own.* Measured in `ex_held_big`: a puck shot at 25 m/s from
+under a still skater with `body_scale` 2.2 carried him 61 m before, 0 m after; in the hockey pack (its own
+`platform_on_leave` line removed) one skater left the rink at 28.8 m/s on seed 4 of `bot_match` before, none on seeds 1
+to 6 after.
+
+**Two bodies that close in one step (K3): the true guarantee.** A biped's body never rests inside another's: pushing
+into each other they settle about 0.01 m outside the sum of their radii. But two bipeds that close on each other in
+the same physics step can overlap **for that one step** by up to the smaller of the two distances they moved in it
+(each one's speed / 60, shoves and lunges included: 0.115 m for two skaters at 6.9 m/s), because within one step each
+body's motion is tested against where the other stood at the start of the step (both take the whole gap). The next
+step pushes them apart. Measured: two `body_scale` 2.2 skaters closing at 7 m/s each come to 1.264 m (1.320 m of radii)
+for one step, then 1.364, then rest at 1.330; the hockey pack's closest approach on 6 seeds, 1.219 to 1.248 m, fits
+the bound. Read "shoulder to shoulder" as true from the step after contact on.
 
 ```gdscript
 var skater: TLBiped = TLBiped.create({"mode": "skate", "position": Vector3(0, 0.05, 0)})

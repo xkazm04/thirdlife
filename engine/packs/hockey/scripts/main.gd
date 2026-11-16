@@ -241,9 +241,6 @@ func _build(mid: String) -> void:
 			if made.rig != null:
 				var bs: float = float(opts["body_scale"])
 				made.rig.scale = Vector3(bs, bs, bs)      # H7: the body is the figure's size too (create option body_scale)
-			# H7: kept. The kernel no longer follows a held ball under the feet, but with body_scale 2.2 and without this line
-			# bot_match seed 4 had a skater leave the rink (378 skater-frames outside; b0 at (-90, 23) at frame 6000); with it: 0.
-			made.platform_on_leave = CharacterBody3D.PLATFORM_ON_LEAVE_DO_NOTHING
 			pool[pid] = made
 		var sk: TLBiped = pool[pid]
 		ctx.root.add_child(sk)

@@ -385,3 +385,46 @@ READY H7 03:55
 | 0 bypasses | met | bypasses [], 3,105 script lines |
 Gate fast --changed: arch, assets, cards, devx.test (161), foreman.typecheck: all PASS (the Director's merge brought foreman/node_modules into reach). Kernel members added: none.
 ASK 03:56 two H7 lines are not met, each with its figure: (1) out-of-rink with the platform line removed: 378 skater-frames on seed 4; I kept the line (0 on 6 seeds). Is keeping it acceptable until the kernel covers this case, or should K2 look at it first? (2) closest approach 1.226..1.268 m against 1.320 m (probably the 2 x 0.04 m shape margins): accept, or should the kernel's body subtract its margin? Nothing else waits on these; L1 can start.
+
+## H8: the pack on the kernel's third package (worktree jl-hand, branch spark-jam/h8 = H7 9a1eb64 + K3 f300b9a; started 04:21)
+SEEN 04:23 on this tree before any change: `tl check --tier full --only packs` FAIL [0/1], verb runs 19 of 20: bot_modes (seed 1) failed: sudden death ended 1:0 in 285 frames, under the test's floor of 300. Every other bot passed; smoke 3d3de5fa38804b3c.
+SEEN 04:24 the floor. It was put there (H3) to catch a mode that ends before anyone could have played (a rule that ends the match at once). From the opening face-off the nearer goal is 26 m away; the quickest goal in play is a take and an 18 m/s shot, about 1.5 s (90 frames). 285 frames (4.75 s) is a breakaway goal from the face-off: hockey, and in sudden death the whole match. The floor was wrong, not the mode: FLOOR = 120 frames (2 s), and the mode must end by its rules (reason score or time). Sudden death keeps H3's 12 m shot range (the Director's word).
+SEEN 04:25 the platform line and its comment deleted from scripts/main.gd: bot_match on 6 seeds, skater-frames outside the rink 0, 0, 0, 0, 0, 0 (goals 2:6, 6:4, 5:5, 3:5, 8:4, 13:2): K3's cure holds without it.
+SEEN 04:30 the "must win" and gate tests over 20 seeds (seeds 1..20, each test alone, the pass = the bot's own ok): bot_hockey 19 of 20 (seed 18: blue won 2:1 at full time, but its ok demanded 3 goals: wrong since H3 gave the match periods): cured: ok = blue won (by score or at full time), at least 3 shots, HUD WIN: 20 of 20. bot_reach 10 of 20: a COIN. Its row "own pass to nobody, he chases it" failed on seeds 4, 6, 7, 9, 10, 15, 16, 18, 19, 20: the pass went straight along the drill's facing to the end boards and the rebound rolled into a parked opponent's reach (seed 4: r0 took it 237 frames after the pass), so the row never measured its bound. My H7 line "bot_reach 13 of 13" was true of seed 1 only. Cured: a drill of its own (own_pass: b0 at (0, 6) facing the side boards 9 m away, mates behind him, opponents parked at x -20 / +20) and the chase steers at the puck: 20 of 20. All the others 20 of 20.
+SEEN 04:32 the ladder on 20 seeds, on K3 (nobody rides a puck now): rookie/newcomer 85 %, pro/regular 40 % (band 45..55: out), all-star/sharp 30 %. Pro retuned: reaction 24 -> 27 frames, red_skill 0.72 -> 0.70: 50 %. The levels' `about` texts said old numbers; they now say the data's. Five-minute draws: 0 of 120 before and after.
+
+What changed (jl-hand, engine/packs/hockey; nothing in gen/**, data/venue*.json, data/fx.json or the HUD's text): scripts/main.gd (the platform line deleted), tests/bot_modes.gd (FLOOR 120 and the reason), tests/bot_hockey.gd (ok: a win, not three goals), tests/bot_reach.gd (the own-pass row on its own drill, the chase steers, the note names who took it meanwhile), data/drills.json (+ own_pass), data/levels/pro.json (retune), data/levels/{rookie,allstar}.json (about texts only).
+
+Per-test pass count, seeds 1..20 (instrument: the test file's own ok, one run per seed):
+| test | on K3, before H8 | after H8 | verdict |
+|---|---|---|---|
+| bot_hockey (must win, perfect, rookie) | 19 / 20 | 20 / 20 | was a 3-goal rule, now a win rule |
+| bot_reach (13 rows + 8 of 10 passes) | 10 / 20 | 20 / 20 | was a coin (the own-pass row), now its own drill |
+| bot_modes | 20 / 20 with the new floor (seed 1 failed under the old one) | 20 / 20 | |
+| bot_match, bot_check, bot_aim, bot_buttons, bot_dial, bot_hockey_ai, bot_hockey_regular, bot_hockey_newcomer | 20 / 20 each | (unchanged files) | |
+| ladder cells (ok = played) | - | always ok; their figures are the ladder table | |
+
+The ladder after H8 (`tl ladder --pack engine/packs/hockey --seeds 20`, 04:34):
+| level | hand | win % (95 %) | target | goals for : against | draws |
+|---|---|---|---|---|---|
+| rookie | newcomer | 85 (69..100) | 80..90 | 2.65 : 1.25 | 0 |
+| rookie | perfect | 100 | - | 2.90 : 0.30 | 0 |
+| pro | regular | 50 (28..72) | 45..55 | 2.05 : 2.05 | 0 |
+| pro | perfect | 70 | - | 2.55 : 1.45 | 0 |
+| all-star | sharp | 30 (10..50) | 20..30 | 1.40 : 2.45 | 0 |
+| all-star | perfect | 10 (0..23) | - | 1.40 : 2.85 | 0 |
+Note: all-star read through the perfect hand (10 %) is below the sharp hand (30 %) on these 20 seeds: inside the noise of 20 seeds (both intervals overlap), not explained further tonight.
+
+Hashes, seed 1 (H7 READY / on K3 before H8 / after H8). Everything moved on K3 (a TLBall never carries a biped now) except bot_reach, bot_aim, bot_buttons, bot_check, bot_dial; after H8 every hash moved again because data/drills.json gained the drill own_pass (a declared action drill_own_pass: every declared action is in the hash).
+bot_hockey 38cafb633924dd63 @3442 / c06b89c5ee18a798 @3344 / 6778bc5e41b43aa2 @3344 | bot_hockey_regular 9ccc65c2faccfcea @1666 / 89359428ba28af47 @2463 / 088df44d89a4d5d1 @2463 | bot_hockey_newcomer c10e63eb13306f1f @2458 / f92bb287acd4e3df @4281 / e58d62cb99411353 @4281 | ladder rookie/newcomer 6aaa4631fc05852d @1254 / 7846930435aa0767 @3784 / 9cda20fb15200f51 @3784 | rookie/perfect 22d7aeadbfbdb4b7 @5461 / 5a70fa087fea6978 @6226 / ed928df35f5d046d @6226 | pro/regular e41ab5e1f9c38f0f @3682 / 5fbb106922b15984 @3728 / 09664cab8565d7b9 @2051 (retuned) | pro/perfect 4f5b5255c3070fb9 @4318 / e4ae9566a1ff715a @8364 / 1aaf573f0f7159a0 @3795 (retuned) | all-star/sharp ab903dedfedda3b7 @3864 / 738c11e0d27d484b @3870 / eada187207b438f3 @3870 | all-star/perfect 4b62bc8ee8ca624c @4712 / dac9c642c13b4384 @1631 / b6444280c5b9b17b @1631 | bot_hockey_ai 30695e16d0eab1bc @3711 / 3d7a836cd29a1a61 @4302 / 112108cdf8142b6e @4302 | bot_reach 93820ed6ee806fad @1854 / 93820ed6ee806fad @1854 / 0702f490d22c925e @1752 | bot_match 5ad8a38c4de71bf9 @6001 / 48e7131b7c6b5603 @6001 / ccb57924c9ca4af5 @6001 | bot_check f358678f469e0743 @4049 / f358678f469e0743 @4049 / aba6a68991eb502f @4049 | bot_modes 77b4cc501349c1f4 @14875 / a5be1c4e9880628e @11040 FAILED / 3df2c5ef10846ce7 @11040 | bot_dial f20c531896533e46 @2293 / f20c531896533e46 @2293 / 37370858b7a1d4e5 @2293 | bot_aim eb2edf263a6de018 @876 / eb2edf263a6de018 @876 / 18c1cb85258304a1 @876 | bot_buttons 64badbbc2ce074e6 @206 / 64badbbc2ce074e6 @206 / 289e17d9bc747e55 @206 | smoke 5fd152fb240ca79b / 3d3de5fa38804b3c / 8f31f6956029d362.
+
+READY H8 04:38
+| acceptance line | verdict | figure |
+|---|---|---|
+| 17 of 17 bots pass (hash table H7 / on K3 / after H8) | met | all 17 PASS after H8 (on K3 before H8: bot_modes failed, the floor); table above |
+| out-of-rink 0 on 6 seeds with no platform line | met | 0 on seeds 1..6 |
+| the ladder on 20 seeds, in band or the lever named | met | 85 / 50 / 30 % through the meant hands (pro retuned from 40 %); 0 draws in 120 |
+| the per-test pass count over 20 seeds | met | table above; two coins found (bot_hockey 19/20, bot_reach 10/20) and cured to 20/20 |
+| `tl check --tier full --only packs` green | met | [1/1] found 1, completed 1, verb runs 20 of 20 |
+| `tl check --tier fast --changed` | met, one step could not run | arch, assets, cards, devx.test (161) PASS; foreman.typecheck could not run (no foreman/node_modules in jl-hand) |
+| 0 bypasses | met | bypasses [], 3,114 script lines |

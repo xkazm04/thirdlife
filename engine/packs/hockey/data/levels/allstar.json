@@ -1,7 +1,7 @@
 {
   "id": "allstar",
   "label": "All-star",
-  "about": "Reacts in 4 frames, as fast as you, long range, accurate, checks readily, passes well.",
+  "about": "Reacts 12 frames late, skates at 84 % of your speed, shoots from 15 m with 7 degrees of spread, checks from 4.5 m/s closing.",
   "ai": {
     "reaction_frames": 12,
     "red_skill": 0.84,

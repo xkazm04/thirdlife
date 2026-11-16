@@ -1,12 +1,17 @@
 extends Node
 ## Bot (H3): every mode plays to an end with bots on both sides. For each mode it presses mode_<id> (a declared
 ## action with no key: the match is rebuilt in that mode), switches the autopilot on and waits for the rules to say
-## over, at most CAP frames a mode. ok: every mode ended, none inside 300 frames, none over the cap.
+## over, at most CAP frames a mode. ok: every mode ended by its rules (score or time), none inside FLOOR frames, none over
+## the cap. FLOOR (H8) is there to catch a mode that ends before anyone could have played: from the opening face-off the
+## nearer goal is 26 m away; the fastest goal in play is a take and a shot at 18 m/s (about 1.5 s, 90 frames), so a mode
+## that ends inside 2 s ended without play. A sudden-death goal in 285 frames (4.75 s, a breakaway) is hockey: the old
+## floor of 300 frames called it a fault (seed 1 on the kernel's K3).
 
 var ctx
 var s: Dictionary = {}
 const MODES: Array = ["base", "outnumbered", "sudden_death", "pond", "big_ice"]
 const CAP: int = 7000
+const FLOOR: int = 120
 var i: int = 0
 var phase: String = "start"
 var t0: int = 0
@@ -50,7 +55,7 @@ func _bot_tick(frame: int) -> void:
 		var sc: Dictionary = s.get("scores", {})
 		var ended: bool = s["state"] == "over"
 		var n: int = (s["skaters"] as Array).size()
-		results.append({"mode": mid, "ok": ended and age > 300, "frames": age, "ended": ended, "winner": str(s.get("winner", "")),
+		results.append({"mode": mid, "ok": ended and age > FLOOR and str(s.get("reason", "")) in ["score", "time"], "frames": age, "ended": ended, "winner": str(s.get("winner", "")),
 			"reason": str(s.get("reason", "")), "score": "%d:%d" % [int(sc.get("blue", 0)), int(sc.get("red", 0))], "period": int(s.get("period", 0)), "skaters": n,
 			"hits": int((s["hits"]["given"]["blue"] as Dictionary).values().reduce(func(a, b): return a + b, 0)) + int((s["hits"]["given"]["red"] as Dictionary).values().reduce(func(a, b): return a + b, 0))})
 		_next()

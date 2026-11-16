@@ -1,10 +1,10 @@
 {
   "id": "pro",
   "label": "Pro",
-  "about": "Reacts in 12 frames, skates a little slower than you, shoots from mid range with some spread.",
+  "about": "Reacts 27 frames late, skates at 70 % of your speed, shoots from 11 m with 14 degrees of spread, checks from 6 m/s closing.",
   "ai": {
-    "reaction_frames": 24,
-    "red_skill": 0.72,
+    "reaction_frames": 27,
+    "red_skill": 0.7,
     "shoot_range": 11,
     "aim_error_deg": 14,
     "check_min_closing_red": 6,
