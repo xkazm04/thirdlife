@@ -59,7 +59,8 @@
         "frame": {"type": "int", "default": 120},
         "out": {"type": "path", "required": true},
         "res": {"type": "string", "default": "1920x1080"},
-        "test": {"type": "string", "default": ""}
+        "test": {"type": "string", "default": ""},
+        "hud": {"type": "string", "default": "off", "note": "K2: on = the still includes the pack's HUD (captures are of the world without it by default)"}
       }
     }
   },

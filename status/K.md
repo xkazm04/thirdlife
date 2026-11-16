@@ -60,3 +60,92 @@ Acceptance:
 - tl check --tier fast --changed green: not met as is: arch (api-v1) and devx.test (3 tests, all the unbumped API-V1.json) fail until the bump; foreman.typecheck could not run (no foreman/node_modules); assets, cards pass
 Not seen with a real mouse. To open it in a window (from the worktree):  bash engine/tools/tl.sh play --pack=engine/kernel/examples/ex_pointer
   (move the cursor over the ice: the stick turns to it; WASD moves the skater; cursor off the window: the stick holds)
+
+## K2 (started 02:47)
+SEEN 02:48 hockey pack copied from jl-hockey (newest file scripts/main.gd 02:37, branch ref 22f6b25) to %TEMP%/k2_hockey/hockey; baseline hashes running (status/k2-hashes-before.txt)
+SEEN 02:55 fault reproduced on the kernel before any K2 edit: ex_held bot (a skater on a held ball shaken by its carrier, then skating off) top speed after leaving 15.01 m/s against his own skate_speed 9.5 (status/k2-held-before.json)
+SEEN 02:53 cure 1 in TLBiped: a held ball under the feet (asked by a shape query only when the floor moves) is left out of platform following and leaving it adds nothing; pack's own platform settings restored after. ex_held: top speed after leaving 9.50 m/s (= skate_speed; was 15.01). A first try that looked only at slide collisions missed the floor found by snapping: 11.55 m/s
+SEEN 02:57 hashes after cure 1 (status/k2-hashes-cure1.txt): 3 seeds + 8 examples identical; the hockey copy changes (smoke and bot_hockey, bot_hockey_ai, bot_match, bot_modes; bot_reach, bot_check, bot_dial equal). Cause measured (a temporary print, removed): in the hockey smoke skater_b0 stands on HIS OWN carried puck frames 47..71 and that puck carried him at 6.1..6.6 m/s as a moving floor. The fault the brief names is live in the hockey pack today; curing it must change those hashes. Director's call: keep the cure (my advice) or I add an opt-out.
+SEEN 03:03 items 2-4 built (TLBiped down/shove/stumble/body_scale, statehash sees a biped down, capture --hud=on): hashes of every existing pack and the hockey copy identical to the cure-1 state (status/k2-hashes-after.txt): they add nothing to a pack that does not call them
+SEEN 03:05 stills (status/k2_stills.sh, capture opens a window: the brief asks for stills; %TEMP%/k2_stills): above_down.png from (0,52,14) fov 55, frame 165: the downed skater (TLRigs fall clip) lies flat on his front, arms forward, stick beside him: reads as lying even at scale 1 from the hockey camera. near_down_hud.png: same frame closer, with the HUD label 'skater DOWN frames down 74' top left (capture --hud=on). near_rising.png (frame 192): half up, crouched, stick on the ice. near_stumble.png (312): a deep sideways stride; the side lean is weak to my eye: a stumble reads as an odd stride, not as losing balance. Left pair (rig x2.2, today's body 0.3): one figure where two stand (centres 0.57 m apart). Right pair (body_scale 2.2): two figures one behind the other, centres 1.32 m apart (= 2 x 0.66): no overlap in the world; from this oblique camera they still cover each other in depth.
+SEEN 03:07 FOR H counter-proposal adopted: an aim that was never valid adds nothing to the hash (tl_input.gd: 'ever'); ex_pointer bot hash unchanged (4a378038), ex_pointer smoke hash changes (it never points: now hashes as a pack without an aim)
+SEEN 03:09 selftest blocks K2a (held), K2b (down), K2c (capture hud): all pass with K1's (16 k-cases)
+
+FOR H (answers to FOR THE KERNEL in jl-hockey/status/H.md, as of 03:15; everything below needs the Director's merge and API 1.3)
+- H2 (1) shove + down: built. `skater.down(frames)` (lies `frames`, rises over `get_up_frames` 24; move/brake/jump ignored, he
+  slides to a stop with the brake on; TLRigs `fall` clip, then a blend back to locomotion over the rise: a rise, not a snap),
+  `is_down()`, `down_frames_left()`, signals `downed` / `got_up`; `shove(impulse)` = impulse / body_mass added to velocity (no
+  fall; works while down); `stumble(frames, lean = 0.7)` = a third of the intent, no brake, the rig's side `lean` fading out.
+  You can drop the pack's own velocity writes and the brake-and-no-intent enforcement. The hash sees down/rise/stumble.
+- H2 (2) the held puck as a platform: cured in TLBiped for every pack (a held TLBall under the feet is never followed, leaving
+  it adds nothing). Your per-skater `platform_on_leave = DO_NOTHING` may stay (it is given back as you set it) or go.
+  Measured on a copy of your pack at 22f6b25: in plain smoke skater_b0 stood on his OWN carried puck frames 47..71 and was
+  carried by it at 6.1..6.6 m/s; so the hockey hashes change with the cure (smoke, bot_hockey, bot_hockey_ai, bot_match,
+  bot_modes; bot_reach, bot_check, bot_dial equal). All 7 bots still pass.
+- H2 (3) the body follows the figure: `TLBiped.create({..., "body_scale": 2.2})` or `skater.set_body_scale(2.2)` right after
+  `rig.scale = Vector3(2.2, 2.2, 2.2)`. The capsule becomes radius 0.66, height 4.4. From above the TLRigs biped at scale 1
+  spans x -0.38..0.79 and z -1.37..0.39 (mesh bounds in skate mode, the stick included): the torso is about 0.38 to each side,
+  so 0.3 x scale is a slightly thin body and 0.38 x scale the full shoulders; the stick is never body.
+- H2 (4) rig clips check / get_up / stumble: not mine (engine/rigs). What exists: `fall` (holds), the side `lean` param,
+  `skate_stop`. H2 (5) TLContact for character against character: not built.
+- H3 the HUD in captures: `tl.sh capture ... --hud=on` (default off); your dial panel can be shown in a still.
+- H4 aim hash: your counter-proposal is adopted: an aim enters the hash only from the first frame it is valid, so a keyboard
+  run of a pack that declares an aim hashes as if it had none. ex_pointer's bot hash is unchanged by it.
+- H4 mouse button: `ctx.input.declare(&"shoot", [KEY_SPACE], [MOUSE_BUTTON_LEFT])` (third parameter, mouse buttons): read in
+  play, recorded and replayed as the action, a bot presses the action as before. Proven by a scripted session (left button
+  held 6 frames = 6 frames of the action; right button not declared = none).
+- H4 upper-body / stick yaw rig param: not built (rigs are not in K2).
+- H1 (1) a set-situation channel, (2) a ring kit part, (3) a top-speed modifier: not built in K2.
+
+CONTRACT TEXT (lane K, K2) for the Director: proposed, not applied.
+1. contracts/RUNNER.md line 26, the `capture` row's options, append: `, --hud=off|on` (default off: the world alone; on: the
+   pack's HUD is in the still)`. This is the one finding `tl arch` (verbs-contract) has today: "option --hud is not documented
+   in contracts/RUNNER.md"; it is gone when the text is in.
+2. contracts/RUNNER.md line 123, the devices kinds: "kinds key, button (left, right or middle; 1 down, 0 up), drag, wheel,
+   field, panel, close."
+3. contracts/PACK.md, the K1 "Input kinds" paragraph: "actions (`declare`: a value per frame, 0..1, from keys or mouse buttons
+   the pack names, or a bot's `press` / `tap` / `set_axis`)"; and "an aim enters the state hash from the first frame it is valid".
+4. contracts/PACK.md, the state hash sentence: "... and, for a biped that is down, rising or stumbling, those counters".
+
+SEEN 03:30 final runs: k2-hashes-final.txt, seeds.sh 24/24 (k2-seeds-final.txt), full selftest 129 passed 0 failed (k2-selftest-final.txt)
+
+READY K2 03:31
+Files (package):
+- engine/kernel/api/tl_biped.gd: a held ball is never a floor (feet shape query only while the floor moves); down / is_down /
+  down_frames_left / downed / got_up / get_up_frames; shove; stumble / is_stumbling; set_body_scale / body_radius / option body_scale
+- engine/kernel/host/statehash.gd: a biped down, rising or stumbling adds its counters (nothing while he stands)
+- engine/kernel/api/tl_input.gd: declare(action, keys, buttons = []) mouse buttons; an aim enters the hash from its first valid frame
+- engine/kernel/runner/session.gd: devices kind `button`; verbs.json + host.gd + runner/worker.gd + tools/tl.sh: capture --hud=off|on
+- engine/kernel/examples/ex_held/** (new), engine/kernel/examples/ex_down/** (new); engine/tools/selftest.sh blocks K2a..K2d
+- engine/kernel/API.md (section 6 rows and "A held ball is never a floor", examples table, section 8 declare row and aim hash
+  sentence, limits line, capture --hud, devices kind button); docs/generated/API-INDEX.md regenerated
+Measuring tools, not package: status/k2_hashes.sh, k2_stills.sh, k2_bump.sh, k_rig_measure.gd.txt; k2-held-before.json
+New public members (API 1.2 -> needs 1.3; ex_held and ex_down say kernelApi "1.2": set "1.3" with the bump):
+  TLBiped: func down(frames: int) -> void; func is_down() -> bool; func down_frames_left() -> int; func shove(impulse: Vector3) -> void;
+  func stumble(frames: int, lean: float = 0.7) -> void; func is_stumbling() -> bool; func set_body_scale(scale_: float) -> void;
+  func body_radius() -> float; signal downed(); signal got_up(); var get_up_frames: int (24); create option body_scale.
+  TLInput: func declare(action: StringName, keys: Array = [], buttons: Array = []) -> void (parameter added with a default).
+  Runner: capture --hud=off|on (RUNNER.md line under CONTRACT TEXT K2).
+Acceptance:
+- item 1 fault reproduced before and cured after: met. ex_held before any K2 edit 15.01 m/s after stepping off (skate_speed 9.5,
+  ball shaken at up to 18.6 m/s); after 9.50 m/s; selftest k2.held_bot.
+- down / shove / is_down: met. ex_down bot: downed at tick 91, got_up at 204 (113 frames = 90 lying + rising), no speed rise and
+  no turn while down with "forward" held throughout, skating again at 9.50 m/s, shove moved the walker 4.4 m without a fall,
+  stumble did not fell; invariants.bot_deterministic true. Stills: %TEMP%/k2_stills/above_down.png (hockey camera) and
+  near_down_hud.png: he lies flat on his front (Director to look).
+- stumble: built; to my eye the TLRigs side lean reads as an odd stride, not as losing balance; the stand-in shows nothing.
+- sized body: met. least centre distance of two 2.2-scaled figures: today's body 0.57 m (overlap), body_scale 2.2: 1.32 m = 2 x 0.66.
+- capture with the HUD: met. near_down_hud.png has the label "skater DOWN frames down 74"; selftest: on and off stills differ, --hud=yes refused.
+- item 5 mouse buttons: met. scripted session: left button held frames 90..95 -> knock in exactly 90..95; right button (not
+  declared) -> none; K -> 150..152.
+- existing packs and the hockey copy, hashes equal before and after: met for the 3 seeds and 7 earlier examples, smoke and bot.
+  NOT met by design: ex_pointer smoke (c671 -> b4b1; the aim-hash change asked by H) and the hockey copy at 22f6b25: smoke,
+  bot_hockey, bot_hockey_ai, bot_match, bot_modes change (bot_reach, bot_check, bot_dial equal; all 7 pass). Cause measured:
+  skater_b0 rides his own carried puck at 6.1..6.6 m/s in frames 47..71 of plain smoke: the fault of item 1 is live there.
+  Table: status/k2-hashes-before.txt vs k2-hashes-final.txt.
+- tl arch green except the version rule: not met as is, one more finding: verbs-contract "option --hud is not documented in
+  contracts/RUNNER.md" (contract text is the Director's). On a scratch copy with KERNEL_API 1.3 and that RUNNER.md line: tl arch
+  all green, devx arch tests 22/0 (status/k2_bump.sh).
+- tl check --tier fast --changed: arch FAIL (api-v1 + the RUNNER.md line), devx.test 3 fail (the unbumped API-V1.json, as in K1),
+  foreman.typecheck could not run (no foreman/node_modules); assets, cards PASS.
+Windows: capture opens a window (the stills and the 2 selftest capture cases); everything else ran headless.

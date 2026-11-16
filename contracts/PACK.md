@@ -184,3 +184,11 @@ the Foreman write `"kernelApi": "1.0"`; `"0.1"` is still read as 1.0.
 **At a distance (P13).** Beyond the sideline a pack's moving bodies are drawn as marks that move smoothly between
 the pack's ticks, one tick interval behind the game; a pack whose moving bodies are mostly rigs shows slim figures.
 A far game's pictures are kept on disk by its directory's content.
+
+## Input kinds (kernel API 1.2 and 1.3)
+
+Through `ctx.input` a pack declares two kinds of input: **actions** (`declare`: a value per frame, 0..1, from keys or mouse buttons the pack names, or a bot's `press` / `tap` / `set_axis`) and **aims** (`declare_aim`: per frame either invalid or a point on the ground plane y = a height the pack gives, from the cursor through the camera on screen, or a bot's `set_aim`). The kernel declares the pointer actions `tl.look_x`, `tl.look_y`, `tl.zoom` in every pack. A pack reads no device and no cursor position itself; in a verify run without a bot an aim is invalid on every frame.
+
+In a `tl.input/1` record a valid aim in a frame is three entries: `[f, "<aim>", 1]`, `[f, "<aim>@x", x]`, `[f, "<aim>@z", z]` (x or z left out when 0); a frame without `"<aim>"` is an invalid aim. The point is what the game read, so a replay needs no cursor, window size or camera.
+
+The state hash covers every action's value; an aim enters it from the first frame it is valid; a biped that is down, rising or stumbling adds those counters.

@@ -23,7 +23,7 @@ WP1 implements this. WP3 (the Foreman's Verifier) and every builder call it. It 
 | `smoke` | V2 | `--seed=<int>` (default 1), `--frames=<int>` (default 3600) | loads the pack, runs the frames, fails on any script error or watchdog trip |
 | `invariants` | V3 | `--seed`, `--frames` | `smoke` twice with the same seed and compares `state_hash`; plus budgets below |
 | `bot` | V4 | `--test=<tests/x.gd>`, `--seed`, `--frames=<max>` (default 36000) | runs one bot to `_bot_done()` or the frame budget |
-| `capture` | V5 input | `--cam=<name>`, `--frame=<int>` (default 120), `--out=<file.png>`, `--res=1920x1080` | renders one named view at an exact physics frame |
+| `capture` | V5 input | `--cam=<name>`, `--frame=<int>` (default 120), `--out=<file.png>`, `--res=1920x1080`, `--hud=off|on` (default off: the world alone; on: the pack's HUD is in the still) | renders one named view at an exact physics frame |
 
 ## Exit codes
 
@@ -120,7 +120,7 @@ Additions to the verb table and the report, in the builder's wording (`docs/repo
 
 - `bot`: add `--record=<file.json>` (writes the run's input as `tl.input/1`).
 - `replay` | V2 | `--input=<file.json>` (required), `--record=<file.json>` | runs a recorded session again: the record's seed, length, mode and samples; no bot is loaded and no device is read. Fails on any script error or watchdog trip, or when the run does not reach the record's length.
-- `play` (not a verify verb) takes `--record=<file.json>`; the record is written when the session ends by Esc or by closing the window. For tests: `--headless --frames=N --devices=<file> --result=<file>`, where the devices file is a list of `[frame, kind, a, b]` with kinds key, drag, wheel, field, panel, close.
+- `play` (not a verify verb) takes `--record=<file.json>`; the record is written when the session ends by Esc or by closing the window. For tests: `--headless --frames=N --devices=<file> --result=<file>`, where the devices file is a list of `[frame, kind, a, b]` with kinds key, button (left, right or middle; 1 down, 0 up), drag, wheel, field, panel, close.
 - The hash changed once on 2026-11-11 (P7). Hashes from before are not comparable.
 
 Check ids added: `replay.complete`, `record.written`.

@@ -403,7 +403,7 @@ func _capture() -> void:
 			"message": "no camera view '%s'; the pack registered: %s" % [cam_name, ", ".join(ctx.cameras.views())]})
 	else:
 		ctx.cameras.activate(cam_name)
-		TLHud.hide_all(ctx)             # captures are of the world, without the HUD
+		if str(opts.get("hud", "off")) != "on": TLHud.hide_all(ctx)    # captures are of the world, without the HUD (K2: --hud=on keeps it)
 		get_tree().paused = true        # freeze the sim at exactly this physics frame while the image is drawn
 		for i: int in 3:
 			await RenderingServer.frame_post_draw

@@ -7,7 +7,7 @@
 #   tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000] [--record=<file.json>]
 #   tl.sh replay     --pack=<dir> --input=<file.json> [--record=<file.json>]   a recorded session (tl.input/1) again,
 #                                              headless: the same samples, no bot, no device; prints the state hash
-#   tl.sh capture    --pack=<dir> --cam=<name> --out=<file.png> [--frame=120] [--res=1920x1080]
+#   tl.sh capture    --pack=<dir> --cam=<name> --out=<file.png> [--frame=120] [--res=1920x1080] [--hud=off|on]
 #   tl.sh play       --pack=<dir> [--seed=1] [--record=<file.json>]   interactive: a window, real keys, Esc to quit
 #                                              (not a verify verb); lints first and refuses a pack that fails (items:
 #                                              tools/item.sh). --record writes the session's input (tl.input/1) for

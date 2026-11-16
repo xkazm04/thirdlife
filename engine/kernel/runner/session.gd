@@ -159,7 +159,7 @@ func attach(ctx: Object) -> bool:
 
 
 ## Before the input is sampled for `frame`: the scripted device events of a test (`--devices`), through the engine's
-## own input path. Kinds: key (name, 1 or 0), drag (dx, dy with the right button), wheel (1 out, -1 in),
+## own input path. Kinds: key (name, 1 or 0), button (left|right|middle, 1 or 0), drag (dx, dy with the right button), wheel (1 out, -1 in),
 ## field (1: a text field takes the keyboard, 0: gives it back), panel (1: the designer panel is open, 0: closed),
 ## close (the window's close button).
 func pre_sample(frame: int) -> void:
@@ -177,6 +177,11 @@ func pre_sample(frame: int) -> void:
 				k.keycode = k.physical_keycode
 				k.pressed = b != 0.0
 				Input.parse_input_event(k)
+			"button":                       # K2: a mouse button (left, right, middle; 1 down, 0 up)
+				var mb: InputEventMouseButton = InputEventMouseButton.new()
+				mb.button_index = {"left": MOUSE_BUTTON_LEFT, "right": MOUSE_BUTTON_RIGHT, "middle": MOUSE_BUTTON_MIDDLE}.get(str(a), MOUSE_BUTTON_LEFT)
+				mb.pressed = b != 0.0
+				Input.parse_input_event(mb)
 			"drag":
 				var m: InputEventMouseMotion = InputEventMouseMotion.new()
 				m.relative = Vector2(float(a), b)
@@ -209,7 +214,7 @@ func pre_sample(frame: int) -> void:
 				_w.get_tree().root.propagate_notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
 				return
 			_:
-				push_error("--devices: unknown kind '%s' (key, drag, wheel, field, panel, close)" % str(e[1]))
+				push_error("--devices: unknown kind '%s' (key, button, drag, wheel, field, panel, close)" % str(e[1]))
 	if any:
 		Input.flush_buffered_events()
 
