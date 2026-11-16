@@ -17,6 +17,8 @@ tl arch          architecture rules + generated API index (docs/generated/API-IN
 tl assets        asset manifest: list | check | scan | add
 tl ledger        what Foreman jobs cost and how they ended
 tl cards         recipe cards per kind of game: list | check | show | brief (engine/cards, contracts/CARDS.md)
+tl ladder        a pack's difficulty ladder: wins per level and per hand over N seeds (tests/bot_ladder_<level>_<hand>.gd)
+tl trees         worktrees: list (size, branch, merged, processes, links) | remove <name> (dry run unless --apply)
 tl hook install  pre-push gate
 ```
 Every command prints PASS/FAIL lines and a `tl.devx/1` JSON line last; exit 0 pass, 1 fail, 2 could not run.
@@ -33,6 +35,9 @@ New command = new file in `devx/lib/commands/`; new gate step = new file in `dev
 - **Packs use only the `TL*` API.** No hand-made materials, lights, environments (the runner counts them as bypasses). Look in `engine/kits/KIT.md` before making a mesh.
 - **kit, rigs, style reference nothing outside themselves.**
 - **Reuse before building**: kit part, seed pack, `engine/kernel/API.md` (generated index: `docs/generated/API-INDEX.md`).
+- **A stopped run is never a pass.** A gate step reports found and completed; found 0, fewer completed, a timeout or a kill is never PASS; "could not run" is exit 2 (`docs/GATE-HONESTY.md`).
+- **A bot with a perfect hand measures the game, not the player.** Quote a difficulty figure with the hand it was read through (`TLHand`: perfect, sharp, regular, newcomer; `tl ladder`).
+- **Never hand a worktree with a junction to `git worktree remove`** (it follows the link and empties the target): `tl trees remove` unlinks links first.
 - Windows 11 + Git Bash. Godot console exe via `TL_GODOT` or `.tl/local.json` (`tl doctor` says what it found). Other sessions load this machine: never kill a process you did not start; prefer `--headless`.
 
 ## Working in parallel with other sessions
@@ -48,6 +53,7 @@ The checkout is shared with other Claude sessions (a visual-look session and the
 | Need | Look at |
 |---|---|
 | What a pack is, how it runs | `contracts/PACK.md`, `contracts/RUNNER.md`, `engine/seeds/README.md` |
+| House games (tracked packs the gate runs; hockey) | `engine/packs/README.md`, `tl play hockey`, `tl check --tier full --only packs` |
 | Kernel API | `engine/kernel/API.md`, `docs/generated/API-INDEX.md` |
 | Kit parts, rigs, look | `engine/kits/KIT.md`, `engine/rigs/RIGS.md`, `engine/style/STYLE.md` |
 | Foreman jobs | `contracts/JOB.md`, `foreman/` |

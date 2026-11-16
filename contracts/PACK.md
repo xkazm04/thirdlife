@@ -192,3 +192,7 @@ Through `ctx.input` a pack declares two kinds of input: **actions** (`declare`: 
 In a `tl.input/1` record a valid aim in a frame is three entries: `[f, "<aim>", 1]`, `[f, "<aim>@x", x]`, `[f, "<aim>@z", z]` (x or z left out when 0); a frame without `"<aim>"` is an invalid aim. The point is what the game read, so a replay needs no cursor, window size or camera.
 
 The state hash covers every action's value; an aim enters it from the first frame it is valid; a biped that is down, rising or stumbling adds those counters.
+
+## Ladder tests
+
+A pack may carry a difficulty ladder: tests named `tests/bot_ladder_<level>_<hand>.gd`, each also listed in `tests`, one per level and hand profile (`TLHand`). `tl ladder --pack <dir>` runs every such cell over N seeds and prints wins per cell; the gate runs one seed of each. The cells are found by this name; the manifest has no key for them. A test read through a person's hand passes when it played to the end and the hand acted, not when it won.
