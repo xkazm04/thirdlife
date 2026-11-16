@@ -951,3 +951,21 @@ Run 1 on a cold cache (`TL_CACHE_DIR` = a new empty folder, not the shared user-
 warm on that folder, runs 3 to 5 warm on the user-dir cache. `world.sh tour tour --headless` PASS, windowed tour
 PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built in 83 s, `export.sh check` PASS,
 `tl arch` green.
+
+## One pack lifecycle (challenge 2026-11-16, card 0, worktree ch-0; 16 Nov, clock from `date`)
+
+- 10:20 the lone worker (`runner/worker.gd`, 596 lines of a 600 budget) and a world's holder (`world/pack.gd`, 608,
+  held at 626) each carried a copy of the load sequence, the frame order, the census, the bot verdict and the script
+  loader, and the copies had drifted: in a world a `_bot_result` without a summary passed, a body below y = -50 was
+  never counted, a script attached after `add_child` was never named. Now both drive `runner/pack_life.gd` (a
+  RefCounted, preloaded as a const; hooks `on_begin`/`on_end` for the worker's watchdog, `on_mark` for the holder's
+  laps). worker.gd 596 -> 431 lines, pack.gd 608 -> 507. The holder no longer preloads worker.gd for `_plain`/`_canon`
+  (the core's statics `plain`/`canon`). One loader for both: `TLContext._load_fresh`, which is `load()` on a path's
+  first use in a process, so a lone run loads as before.
+- Found on the way: the worker's idle-script warning compared `resource_path` with the absolute pack directory only,
+  so it never fired for a pack under `res://` (every seed, example and house pack): the core compares with the
+  localized path too, as the event-handler muting always did. Alone, such a pack's `smoke.loads` detail can now carry
+  a `WARNING:`; it fails nothing.
+- Proof: no state hash moved. Before and after, alone (`tl.sh smoke --frames=600` and `bot --frames=1500`) and in two
+  worlds of all 18 seeds, examples and hockey (smoke and bot, 900 ticks): every hash equal. Selftest `life.` 8 cases
+  (examples/bad_life alone and in a world, the one-owner scan, `runner/life_case.gd`): 0 of 6 new before, 8 of 8 after.
