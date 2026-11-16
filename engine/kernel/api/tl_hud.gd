@@ -22,6 +22,12 @@ const ANCHORS: Dictionary = {
 
 # N2: no static list any more; a pack's HUD layers are in its context (`ctx.huds`).
 
+## K5. The HUD's ink: the outline of its letters and the colour of a plate (set_plate). The HUD is a stand-in look the
+## style layer does not draw yet (engine/style/STYLE.md has no HUD section), so its colours live here.
+const INK: Color = Color(0.05, 0.05, 0.08)
+const PLATE_ALPHA: float = 0.62
+const PLATE_MARGIN: Vector2 = Vector2(18, 8)
+
 var font_size: int = 36
 var _widgets: Dictionary = {}      # id -> {label: Label, source: Callable or null}
 var _stacks: Dictionary = {}       # anchor -> count (widgets on one anchor stack up)
@@ -58,7 +64,7 @@ func _make(id: StringName, anchor: StringName, source: Callable) -> Label:
 	label.name = String(id)
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", Color(1, 1, 1))
-	label.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.08))
+	label.add_theme_color_override("font_outline_color", INK)
 	label.add_theme_constant_override("outline_size", 8)
 	add_child(label)
 	var stack: int = int(_stacks.get(anchor, 0))
@@ -69,8 +75,53 @@ func _make(id: StringName, anchor: StringName, source: Callable) -> Label:
 	label.position += (a[1] as Vector2) + Vector2(0, float(stack) * float(font_size + 10) * down)
 	label.grow_horizontal = Control.GROW_DIRECTION_BOTH if String(anchor) in ["top", "center", "bottom"] else (
 		Control.GROW_DIRECTION_BEGIN if String(anchor).ends_with("right") else Control.GROW_DIRECTION_END)
-	_widgets[id] = {"label": label, "source": source}
+	# K5: a label on a bottom anchor keeps its bottom edge and grows upwards when its text gets longer (a label of one
+	# line is where it always was); every other anchor grows downwards, as before
+	label.grow_vertical = Control.GROW_DIRECTION_BEGIN if down < 0.0 else Control.GROW_DIRECTION_END
+	_widgets[id] = {"label": label, "source": source, "anchor": anchor, "plate": false, "fitted": ""}
 	return label
+
+
+## K5. A plate behind a widget: the HUD's own ground under its text, so it reads over lines, circles and figures.
+## The plate is the HUD's ink (the outline colour of its letters) at PLATE_ALPHA, with round corners and a margin of
+## PLATE_MARGIN around the text; a label of several lines gets one plate around all of them (a group of lines is one
+## label). `on = false` takes it away. Default: no plate (the look every pack had).
+func set_plate(id: StringName, on: bool = true) -> void:
+	if not _widgets.has(id):
+		push_error("TLHud.set_plate: no widget '%s'" % id)
+		return
+	var label: Label = (_widgets[id] as Dictionary)["label"]
+	if not on:
+		label.remove_theme_stylebox_override("normal")
+		return
+	var box: StyleBoxFlat = StyleBoxFlat.new()
+	(_widgets[id] as Dictionary)["plate"] = true
+	(_widgets[id] as Dictionary)["fitted"] = ""
+	box.bg_color = Color(INK.r, INK.g, INK.b, PLATE_ALPHA)
+	box.set_corner_radius_all(int(round(float(font_size) * 0.35)))
+	box.content_margin_left = PLATE_MARGIN.x
+	box.content_margin_right = PLATE_MARGIN.x
+	box.content_margin_top = PLATE_MARGIN.y
+	box.content_margin_bottom = PLATE_MARGIN.y
+	label.add_theme_stylebox_override("normal", box)
+
+
+## K5. How the lines of a label of several lines sit inside it (and inside its plate): &"left", &"center" or &"right".
+## Default: left (as every label was).
+func set_align(id: StringName, align: StringName) -> void:
+	if not _widgets.has(id):
+		push_error("TLHud.set_align: no widget '%s'" % id)
+		return
+	var label: Label = (_widgets[id] as Dictionary)["label"]
+	match align:
+		&"left":
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		&"center":
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		&"right":
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_:
+			push_error("TLHud.set_align: '%s' is left, center or right" % align)
 
 
 ## A free label. Change it later with `set_text(id, text)`.
@@ -117,3 +168,26 @@ func _physics_process(_delta: float) -> void:
 		var source: Callable = w["source"]
 		if source.is_valid():
 			(w["label"] as Label).text = str(source.call())
+		_fit(w)
+
+
+## K5. Fits a plated label, or a label of several lines on a bottom anchor, to its text after the text changed: it
+## keeps its bottom edge on a bottom anchor (it grows upwards), its right edge on a right anchor, its middle on a
+## centred one. A label of one line without a plate is never touched (it stays where every pack had it).
+func _fit(w: Dictionary) -> void:
+	var label: Label = w["label"]
+	if label.text == str(w["fitted"]):
+		return
+	var bottom: bool = String(w["anchor"]).begins_with("bottom")
+	if not bool(w["plate"]) and not (bottom and label.text.contains("\n")):
+		return
+	w["fitted"] = label.text
+	var old: Rect2 = Rect2(label.position, label.size)
+	label.reset_size()
+	var s: Vector2 = label.size
+	var x: float = old.position.x
+	if label.grow_horizontal == Control.GROW_DIRECTION_BEGIN:
+		x = old.end.x - s.x
+	elif label.grow_horizontal == Control.GROW_DIRECTION_BOTH:
+		x = old.get_center().x - s.x * 0.5
+	label.position = Vector2(x, old.end.y - s.y if bottom else old.position.y)
