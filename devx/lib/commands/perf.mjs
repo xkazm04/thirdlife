@@ -4,6 +4,7 @@ import path from "node:path";
 import { appendLine, compareRows, formatCompare, formatTrend, readLedger, SCHEMA } from "../perf/ledger.mjs";
 import { judge, sample } from "../perf/quiet.mjs";
 import { SCENARIOS, bestOf } from "../perf/scenarios.mjs";
+import { usage, couldNotRun, emit } from "../verdict.mjs";
 
 export const summary = "performance ledger: run [--scenario id[,id]] [--quiet-only] [--repeat N] | compare <a> <b> | trend";
 
@@ -65,14 +66,14 @@ async function waitQuiet(o, log) {
 
 async function run(args, ctx) {
   let o;
-  try { o = parseRunArgs(args); } catch (e) { console.error(`tl perf: ${e.message}\n${USAGE}`); return 2; }
-  if (!ctx.resolveGodot()) { console.error("tl perf: no Godot found: set TL_GODOT or .tl/local.json (tl doctor)"); return 2; }
+  try { o = parseRunArgs(args); } catch (e) { return usage("perf run", `tl perf: ${e.message}\n${USAGE}`); }
+  if (!ctx.resolveGodot()) return couldNotRun("perf run", "tl perf: no Godot found: set TL_GODOT or .tl/local.json (tl doctor)");
   const ids = o.scenarios ?? Object.keys(SCENARIOS);
   const log = (m) => console.error(m);
   let pre;
   if (o.quietOnly) {
     pre = await waitQuiet(o, log);
-    if (!pre) { console.log(`FAIL  perf.run  the machine was not quiet within ${o.wait} s; nothing was run or recorded`); console.log(JSON.stringify({ schema: "tl.devx/1", cmd: "perf run", ok: false, steps: [] })); return 2; }
+    if (!pre) return ctx.printVerdict("perf run", [{ id: "perf.run", ok: false, not_run: true, ms: 0, detail: `the machine was not quiet within ${o.wait} s; nothing was run or recorded` }]);
   } else pre = await sample(1500);
   const steps = [], scenarios = {};
   for (const id of ids) {
@@ -101,13 +102,12 @@ async function run(args, ctx) {
 
 async function compare(args, ctx) {
   const rows = readLedger(ledgerFile(ctx));
-  if (args.length !== 2) { console.error(USAGE); return 2; }
+  if (args.length !== 2) return usage("perf compare", USAGE);
   const a = pick(rows, args[0]), b = pick(rows, args[1]);
-  if (!a || !b) { console.error(`tl perf compare: no such ledger line (${rows.length} line(s) in perf/ledger.jsonl)`); return 2; }
+  if (!a || !b) return couldNotRun("perf compare", `tl perf compare: no such ledger line (${rows.length} line(s) in perf/ledger.jsonl)`);
   const cmp = compareRows(a, b);
   console.log(formatCompare(a, b, cmp));
-  console.log(JSON.stringify({ schema: "tl.devx/1", cmd: "perf compare", ok: cmp.regressions === 0, regressions: cmp.regressions }));
-  return cmp.regressions === 0 ? 0 : 1;
+  return emit("perf compare", cmp.regressions === 0 ? 0 : 1, { regressions: cmp.regressions });
 }
 
 async function trendCmd(args, ctx) {
@@ -120,7 +120,6 @@ export async function runCommand(args, ctx) {
   if (sub === "run") return run(rest, ctx);
   if (sub === "compare") return compare(rest, ctx);
   if (sub === "trend") return trendCmd(rest, ctx);
-  console.error(USAGE);
-  return 2;
+  return usage("perf", USAGE);
 }
 export { runCommand as run };

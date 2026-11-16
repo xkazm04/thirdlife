@@ -7,6 +7,7 @@ import { runCycle, orderVerbs, VERB_ORDER } from "../loop/cycle.mjs";
 import { formatFinding } from "../loop/findings.mjs";
 import { newestPack } from "../loop/pack.mjs";
 import { startVerb, killTree } from "../loop/exec.mjs";
+import { usage, couldNotRun, emit } from "../verdict.mjs";
 
 const shown = (p) => { const r = path.relative(REPO, p).split(path.sep).join("/"); return r.startsWith("..") ? posix(p) : r; };
 const POLL_MS = 300;
@@ -28,10 +29,10 @@ function parseArgs(args) {
 
 export async function run(args) {
   let o;
-  try { o = parseArgs(args); o.verbs = orderVerbs(o.verbs); } catch (e) { console.error(`tl watch: ${e.message}`); return 2; }
+  try { o = parseArgs(args); o.verbs = orderVerbs(o.verbs); } catch (e) { return usage("watch", `tl watch: ${e.message}`); }
   if (o.help) { console.log("tl watch [--pack <dir>] [--verbs lint,smoke,bot] [--once]"); return 0; }
   const pack = o.pack ? path.resolve(o.pack) : newestPack([path.join(ENGINE, "seeds"), path.join(ENGINE, "kernel", "examples")]);
-  if (!pack || !fs.existsSync(path.join(pack, "pack.json"))) { console.error(`tl watch: no pack.json in '${pack ?? "(none found)"}'; pass --pack <dir>`); return 2; }
+  if (!pack || !fs.existsSync(path.join(pack, "pack.json"))) return couldNotRun("watch", `tl watch: no pack.json in '${pack ?? "(none found)"}'; pass --pack <dir>`);
 
   let current = null;       // the running child, so Ctrl-C can kill it
   let cancelled = false;
@@ -45,9 +46,8 @@ export async function run(args) {
       console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.verb.padEnd(28)} ${String(r.ms).padStart(7)} ms`);
       for (const f of r.findings) console.log(`      ${formatFinding(f)}`);
     }
-    const ok = res.ok;
-    console.log(JSON.stringify({ schema: "tl.devx/1", cmd: "watch", ok, steps, pack: posix(pack), findings: res.results.flatMap((r) => r.findings.map((f) => ({ verb: r.verb, ...f }))) }));
-    return res.results.length ? (ok ? 0 : 1) : 2;
+    // No verb ran (the cycle was cut short): could not run, exit 2, never a pass.
+    return emit("watch", res.results.length ? (res.ok ? 0 : 1) : 2, { steps, pack: posix(pack), findings: res.results.flatMap((r) => r.findings.map((f) => ({ verb: r.verb, ...f }))) });
   }
 
   const draw = (title, res, changed) => {

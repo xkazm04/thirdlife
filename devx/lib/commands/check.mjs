@@ -6,6 +6,7 @@ import { discoverSteps } from "../gate/discover.mjs";
 import { runGate } from "../gate/engine.mjs";
 import { readHistory, trend } from "../gate/history.mjs";
 import { diskReport } from "../disk.mjs";
+import { usage, couldNotRun, done } from "../verdict.mjs";
 
 export const summary = "the gate: run the checks (--tier fast|full, --only a,b, --changed [--base ref], --trend)";
 
@@ -35,26 +36,31 @@ export async function execute(args, deps = {}) {
   const ctx = deps.ctx ?? realCtx;
   const historyFile = deps.historyFile === undefined ? path.join(ctx.REPO, ".tl", "gate-history.jsonl") : deps.historyFile;
   let o;
-  try { o = parseArgs(args); } catch (e) { console.error(`tl check: ${e.message}\n${USAGE}`); return 2; }
-  if (o.trend) {
-    const rows = trend(readHistory(historyFile ?? ""));
-    if (!rows.length) { console.log("no gate history yet (.tl/gate-history.jsonl)"); return 0; }
-    console.log("step                          runs  median ms   last ms");
-    for (const r of rows) console.log(`${r.id.padEnd(28)} ${String(r.n).padStart(5)} ${String(r.median).padStart(10)} ${String(r.last).padStart(9)}${r.slow ? "  SLOWER than usual" : ""}`);
-    return 0;
-  }
+  try { o = parseArgs(args); } catch (e) { return usage("check", `tl check: ${e.message}\n${USAGE}`); }
+  if (o.trend) return trendReport(historyFile);
   // The disk floor says, it never stops anything (devx/lib/disk.mjs).
   const disk = (deps.disk ?? diskReport)(ctx.REPO);
   console.log(`# ${disk.line}`);
   let found = deps.steps ? { steps: deps.steps, broken: deps.broken ?? [] } : await discoverSteps(STEPS_DIR);
   const git = deps.git ?? ((a) => { const r = ctx.run("git", a, { cwd: ctx.REPO }); if (r.code !== 0) throw new Error(r.stderr.trim() || `git ${a.join(" ")} exited ${r.code}`); return r.stdout; });
   const res = await runGate({ ...o, steps: found.steps, broken: found.broken, git, ctx, historyFile, log: (m) => console.error(m) });
-  if (res.error) { console.error(`tl check: ${res.error}`); return 2; }
+  if (res.error) return couldNotRun("check", `tl check: ${res.error}`);
   if (res.note) console.log(`# ${res.note}`);
   const lines = res.results.map((r) => ({ ...r, detail: r.detail.split("\n")[0].slice(0, 300) }));
   const diskExtra = disk.error ? {} : { disk_free_gb: disk.free_gb, disk_floor_gb: disk.floor_gb, ...(disk.low ? { disk_low: true } : {}) };
-  ctx.printVerdict("check", lines, { ...res.extra, ...diskExtra });
+  ctx.printVerdict("check", lines, { ...res.extra, ...diskExtra, exit: res.exit });   // the engine's tri-state is the line's exit
   return res.exit;
+}
+
+/** --trend: per step, runs / median / last ms from the gate history; the rows ride in the JSON line as `trend`. */
+function trendReport(historyFile) {
+  const rows = trend(readHistory(historyFile ?? ""));
+  if (!rows.length) console.log("no gate history yet (.tl/gate-history.jsonl)");
+  else {
+    console.log("step                          runs  median ms   last ms");
+    for (const r of rows) console.log(`${r.id.padEnd(28)} ${String(r.n).padStart(5)} ${String(r.median).padStart(10)} ${String(r.last).padStart(9)}${r.slow ? "  SLOWER than usual" : ""}`);
+  }
+  return done("check", { mode: "trend", trend: rows });
 }
 
 export async function run(args, ctx) { return execute(args, { ctx }); }
