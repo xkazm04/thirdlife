@@ -343,6 +343,18 @@ func _on_puck_bounced(other: Node, speed: float) -> void:
 		_event("board", puck.global_position, "")
 
 
+## H11: the side that scores when the puck's centre lies in a goal volume (the trigger's box: 1.5 m deep behind the line,
+## the goal's width), else "".
+func _goal_by_position() -> String:
+	var p: Vector3 = puck.global_position
+	var g: Dictionary = tune["goals"]
+	for side: String in ["blue", "red"]:
+		var gx: float = float(g[side][0])
+		if absf(p.x - (gx + signf(gx) * 0.75)) <= 0.75 and absf(p.z) <= float(g["half_width"]):
+			return "red" if side == "blue" else "blue"
+	return ""
+
+
 func _on_goal(body: Node3D, side: String) -> void:
 	if body == puck and puck.holder() == null and _flag_goal == "" and reset_in <= 0 and not frozen and rules.is_running():
 		_flag_goal = "red" if side == "blue" else "blue"
@@ -446,6 +458,10 @@ func _pack_tick(frame: int) -> void:
 		reset_in -= 1
 		if reset_in == 0:
 			_faceoff()
+	# H11: a puck inside a goal volume counts however it got there (carried in on the blade, released there, lying
+	# loose; into his own net it is an own goal): its position is read each live tick, not only the trigger's enter event
+	if _flag_goal == "" and reset_in <= 0 and not frozen and rules.is_running():
+		_flag_goal = _goal_by_position()
 	# a goal: acted on last
 	if _flag_goal != "":
 		var side: String = _flag_goal
