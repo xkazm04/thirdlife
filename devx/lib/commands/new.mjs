@@ -1,4 +1,4 @@
-export const summary = "scaffold: `tl new pack <name> [--out dir]`, `tl new bot <name> [--pack dir]`, `tl new kitpart <kind>` (prints the recipe)";
+export const summary = "scaffold: `tl new pack <name> [--out dir]`, `tl new bot <name> [--pack dir] [--hand <profile>]`, `tl new kitpart <kind>` (prints the recipe)";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,15 +30,30 @@ export function scaffoldPack(name, dest) {
   return written;
 }
 
-/** Adds tests/bot_<name>.gd to an existing pack and registers it in the manifest `tests`. */
-export function scaffoldBot(name, packDir) {
+/** The profiles of TLHand, read from engine/kernel/api/tl_hand.gd (its PROFILES table) so this list cannot drift. */
+export function handProfiles() {
+  const f = path.join(ENGINE, "kernel", "api", "tl_hand.gd");
+  const text = fs.existsSync(f) ? fs.readFileSync(f, "utf8").replace(/\r/g, "") : "";
+  const block = text.match(/const PROFILES: Dictionary = \{\n([\s\S]*?)\n\}/);
+  return block ? [...block[1].matchAll(/^\t"(\w+)": \{/gm)].map((m) => m[1]) : [];
+}
+
+/** Adds tests/bot_<name>.gd to an existing pack and registers it in the manifest `tests`. With `hand` (a TLHand
+ *  profile) the bot presses through a person's hand (devx/templates/bot/bot_hand.gd). */
+export function scaffoldBot(name, packDir, hand = null) {
   const manifestPath = path.join(packDir, "pack.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  if (hand !== null) {
+    const known = handProfiles();
+    if (!known.includes(hand)) throw new Error(`--hand '${hand}' is not a TLHand profile (known: ${known.join(", ") || "none: engine/kernel/api/tl_hand.gd not found"})`);
+    if (!(manifest.capabilities ?? []).includes("input")) throw new Error(`a bot on TLHand needs the capability 'input' in ${posix(manifestPath)}`);
+  }
   const relTest = `tests/bot_${name}.gd`;
   const out = path.join(packDir, relTest);
   if (fs.existsSync(out)) throw new Error(`${posix(out)} already exists`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, fill(fs.readFileSync(path.join(TEMPLATES, "bot", "bot.gd"), "utf8"), { name }));
+  const template = hand === null ? "bot.gd" : "bot_hand.gd";
+  fs.writeFileSync(out, fill(fs.readFileSync(path.join(TEMPLATES, "bot", template), "utf8"), { name, profile: hand ?? "" }));
   manifest.tests = [...(manifest.tests ?? []), relTest];
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
   return relTest;
@@ -60,16 +75,18 @@ export function kitpartRecipe(kind) {
 
 export async function run(args) {
   const rest = [];
-  let out = null, packOpt = null;
+  let out = null, packOpt = null, hand = null;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === "--out") out = args[++i]; else if (a.startsWith("--out=")) out = a.slice(6);
     else if (a === "--pack") packOpt = args[++i]; else if (a.startsWith("--pack=")) packOpt = a.slice(7);
+    else if (a === "--hand") hand = args[++i] ?? ""; else if (a.startsWith("--hand=")) hand = a.slice(7);
     else rest.push(a);
   }
   const [kind, name] = rest;
-  const usage = "usage: tl new pack <name> [--out <dir>] | tl new bot <name> [--pack <dir>] | tl new kitpart <kind>";
+  const usage = "usage: tl new pack <name> [--out <dir>] | tl new bot <name> [--pack <dir>] [--hand <profile>] | tl new kitpart <kind>";
   if (!kind || !name) { console.error(usage); return 2; }
+  if (hand !== null && kind !== "bot") { console.error(`tl new: --hand is for 'tl new bot' only. ${usage}`); return 2; }
   if (!NAME_RE.test(name)) { console.error(`tl new: '${name}' must match ${NAME_RE} (lower snake case)`); return 2; }
   try {
     if (kind === "pack") {
@@ -82,8 +99,9 @@ export async function run(args) {
     if (kind === "bot") {
       const packDir = path.resolve(packOpt ?? ".");
       if (!fs.existsSync(path.join(packDir, "pack.json"))) { console.error(`tl new bot: no pack.json in ${posix(packDir)}; pass --pack <dir>`); return 2; }
-      const t = scaffoldBot(name, packDir);
-      console.log(`created ${t} and registered it in ${posix(path.join(packDir, "pack.json"))} (tests)\nrun it: bash engine/tools/tl.sh bot --pack=${posix(packDir)} --test=${t}`);
+      const t = scaffoldBot(name, packDir, hand);
+      const through = hand === null ? "" : ` (presses through TLHand, profile '${hand}')`;
+      console.log(`created ${t}${through} and registered it in ${posix(path.join(packDir, "pack.json"))} (tests)\nrun it: bash engine/tools/tl.sh bot --pack=${posix(packDir)} --test=${t}`);
       return 0;
     }
     if (kind === "kitpart") { console.log(kitpartRecipe(name)); return 0; }

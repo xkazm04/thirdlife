@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 41
+Classes: 42
 
 ## TLAudio
 
@@ -186,6 +186,29 @@ Properties: `bake: StringName`, `damage: TLDamage`, `kick: float`, `max_awake_fr
 - `static func attach(part_: Node3D, opts: Dictionary = {}) -> TLFracture`
 - `func awake_count() -> int`
 - `func break_now(push: Vector3 = Vector3.ZERO, at: Variant = null, by: Node = null) -> void`
+
+## TLHand
+
+`engine/kernel/api/tl_hand.gd` extends `RefCounted`
+
+> A person's hand for a bot. A bot decides what it wants (an intent) and tells the hand; the hand presses the pack's
+
+Consts: `OFF`, `ON`, `PROFILES`
+
+Properties: `params: Dictionary`, `profile: String`
+
+- `static func create(ctx: TLContext, profile_name: String = "regular", overrides: Dictionary = {}) -> TLHand`
+- `func is_perfect() -> bool`
+- `func press(action: StringName, value: float = 1.0) -> void`
+- `static func profiles() -> PackedStringArray`
+- `func release(action: StringName) -> void`
+- `func release_all() -> void`
+- `func set_aim(action: StringName, point: Vector3) -> void`
+- `func set_axis(negative: StringName, positive: StringName, value: float) -> void`
+- `func stats() -> Dictionary`
+- `func steer(left: StringName, right: StringName, up: StringName, down: StringName, direction: Vector2) -> void`
+- `func tap(action: StringName, frames: int = 1) -> void`
+- `func tick() -> void`
 
 ## TLHud
 
