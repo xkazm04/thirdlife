@@ -307,7 +307,8 @@ multiple of 0.001 (`TLInput.STEP`): `press(&"left", 0.4567)` reads back as `0.45
 Real keys and the mouse are read only in interactive play (`tools/tl.sh play`); verify runs ignore every device, so a
 stray key press cannot change a result. A pack never reads a device itself: no `Input`, no `InputEvent`, no
 `_input` handler (the kernel switches a pack script's event handlers off), no mouse position. Using an undeclared action is an error. AI opponents do not need actions: give them
-intents directly (`biped.move()`, `vehicle.set_controls()`).
+intents directly (`biped.move()`, `vehicle.set_controls()`). A bot that should press as a person does (late, in
+taps of human length, on keys instead of an analog axis) presses through `TLHand` (section 15).
 
 ## 9. `TLRules` (capability `rules`): score, clock, periods, laps, win conditions
 
@@ -501,6 +502,76 @@ func _bot_result() -> Dictionary:
 
 Decide `ok` from game state, and put the numbers that prove it in the result. A bot that is not done within
 `--frames` fails: `bot.completed` false, outcome `failed`, exit code 1 (`_bot_result()` is still collected and shown).
+
+### `TLHand` (capability `input`): a person's hand for a bot
+
+A bot that presses `ctx.input` directly is a perfect hand: every press on the frame it is decided, any analog value,
+no tap shorter than one frame, never away. What it measures holds for nobody. `TLHand` sits between a bot's decisions
+and `ctx.input` and presses the way a person does. The bot keeps its decisions; it hands them over as intents and calls
+`tick()` as the last line of `_bot_tick`.
+
+```gdscript
+var hand: TLHand
+
+func _bot_setup(c) -> void:
+    ctx = c
+    hand = TLHand.create(ctx, "regular")                 # "perfect", "sharp", "regular", "newcomer"
+
+func _bot_tick(_frame: int) -> void:
+    var s: Dictionary = ctx.pack_state()
+    hand.set_axis(&"left", &"right", wanted)             # intents, as often as you like
+    if s["puck_free"]:
+        hand.tap(&"shoot")
+    hand.tick()                                          # last: the hand acts on what is due
+```
+
+| Member | Meaning |
+|---|---|
+| `TLHand.create(ctx, profile = "regular", overrides = {}) -> TLHand` | a hand; `overrides` replaces profile numbers (keys of the table below) and takes `stream` (an int: a second hand in the same run draws its own numbers); an unknown profile or key is an error |
+| `TLHand.PROFILES`, `TLHand.profiles() -> PackedStringArray`, `TLHand.ON`, `TLHand.OFF` | the profiles as data; a wished strength of at least `ON` (0.35) presses a key, which stays wished until the strength falls below `OFF` (0.15) |
+| `profile: String`, `params: Dictionary`, `is_perfect() -> bool` | which hand, its numbers as used |
+| `press(action, value = 1.0)`, `release(action)`, `tap(action, frames = 1)`, `set_axis(negative, positive, value)`, `release_all()` | intents, named as `ctx.input`'s injection |
+| `steer(left, right, up, down, direction: Vector2)` | a direction (x right, y down) on four keys: quantised to 8 ways, a turn lets go of the old key late |
+| `set_aim(action, point: Vector3)` | where the bot wants to point an aim. The seam for the kernel's pointer aim (lane K): under `perfect` it goes to `ctx.input.set_aim` once the kernel has one; **under a person's profile a no-op today** (later: `aim_lag` frames late, resting `aim_miss` metres beside the point) |
+| `tick()` | the last line of `_bot_tick`: the hand sees this frame's intents (unless it is away) and presses or releases what is due |
+| `stats() -> Dictionary` | the proof that the hand ran, for `_bot_result()`: `decisions` (reactions), `mean_reaction_frames`, `stops` (feed-forward releases), `presses`, `releases`, `taps`, `lengthened` (a release postponed to a person's tap length), `sticks` (held through a change), `held_late_frames`, `overshoots`, `lapses`, `lapse_frames`, `intents`, `aims`, `profile` |
+
+What the hand does, per frame, under every profile but `perfect`:
+- **one decision, one reaction.** Everything the bot's intents changed since the hand last looked is one decision.
+  When a key is to go down (a start, or a turn) the decision is a reaction to something new: it is pressed `reaction`
+  frames later (one draw for all of it). A stop of a movement the hand made itself is feed-forward, as a person's is:
+  the key comes up `release_late` frames late, without a reaction. (Measured on `seed_paddle`: with every stop a full
+  reaction late, the bot's per-frame servo on its own paddle became a delayed on/off loop that oscillated, and a
+  `regular` hand lost 9 of 10 games against a rival a person beats.) A change is never pressed before one already queued.
+- **keys, not an analog axis.** `set_axis(-1..1)` becomes one key down or none (`ON` / `OFF`), `steer` one of 8 ways.
+- **human lengths.** A press lasts at least a `tap` (4 to 9 frames). A stop is let go `release_late` frames late; a
+  turn (one key of a pair or of W A S D goes down while another goes up) lets go of the old key `overshoot` frames
+  late instead, and the opposite key of a pair (left and right, up and down) goes down only once the old one is up:
+  a person does not hold both. With `stick_chance` a key stays down `stick` frames more: the button still held when
+  the situation changed.
+- **attention.** `lapses_per_minute` times a minute on average the hand is away for `lapse` frames: intents made then
+  are not seen (a tap is lost; a held wish is seen when it comes back).
+
+| Profile | reaction | tap | release_late | stick_chance, stick | overshoot | lapses / min, lapse | aim_lag, aim_miss (FOR K) |
+|---|---|---|---|---|---|---|---|
+| `perfect` | 0 (the call goes straight to `ctx.input`) | as asked | 0 | 0 | 0 | 0 | 0 |
+| `sharp` | 4..7 | 4..6 | 0..2 | 0.02, 6..12 | 1..3 | 1, 8..15 | 4..8, 0.15 |
+| `regular` | 8..13 | 5..8 | 2..6 | 0.05, 10..24 | 3..7 | 3, 15..30 | 8..16, 0.3 |
+| `newcomer` | 14..23 | 6..9 | 4..10 | 0.12, 18..40 | 6..12 | 6, 24..48 | 14..26, 0.6 |
+
+Why these numbers (frames at 60 Hz): a person's simple visual reaction is 200 to 250 ms (12 to 15 frames) and a choice
+under pressure is longer; somebody new to a game reads the screen first (about 300 ms: `newcomer` centres on 18), a
+player who knows the game anticipates part of it (about 170 ms: `regular` 10), a sharp player reacts on cues before the
+event (about 85 ms: `sharp` 5). A finger's quickest deliberate tap on a keyboard is 60 to 150 ms, so 4 to 9 frames.
+The late release and the overshoot are a quarter to a half of the reaction (letting go is quicker than deciding); the
+stick and lapse numbers are guesses to be tuned against recorded sessions (`tl.sh play --record`), and are said to be.
+
+Determinism: the hand draws from its own generator, seeded from `ctx.seed`, the profile and `stream`; it never draws
+from `ctx.rng`, so the game's own seeded choices are the same under every hand. Same pack, seed, frames and profile
+give the same `state_hash`. `perfect` draws nothing: a bot ported onto `TLHand.create(ctx, "perfect")` keeps its
+result and its hash (`seed_paddle/tests/bot_win.gd`, seeds 1 to 10). Scaffold a bot on the hand with
+`node devx/bin/tl.mjs new bot <name> --pack <dir> --hand regular`. When to read a result through a hand:
+`engine/seeds/README.md`, "A bot is not a person".
 
 ## 16. Running and verifying
 
