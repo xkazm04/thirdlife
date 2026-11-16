@@ -1,0 +1,10 @@
+{
+  "id": "example.bad_life",
+  "version": "0.1.0",
+  "kernelApi": "1.0",
+  "title": "Deliberately bad pack: three defects a world reports as alone",
+  "capabilities": ["physics"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot.gd"]
+}
