@@ -13,7 +13,7 @@
 #                                              frames <out>_strip.png (ffmpeg). <what> =
 #                                                paddle | drive | wall   the seed played by its bot, in its own play camera
 #                                                tour                    the village tour (world-view --walk=tour)
-#                                                hockey                  the hockey pack of site/ (HOCKEY_PACK=<dir> to override)
+#                                                hockey                  the house game engine/packs/hockey (HOCKEY_PACK=<dir> to override)
 #                                                rig:<kind>[:<speed>[:<turn>[:<view>]]]  a rig on a marked floor, tracking camera,
 #                                                  kind = walk | run | skate | shoot | pass | idle | work | car | bot | fx (all nine effect presets); speed m/s, turn deg/s,
 #                                                  view = side | three | front | high   (engine/rigs/review/review.gd)
@@ -104,8 +104,7 @@ case "$1" in
     MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" "${common[@]}" --quit-after "$nfr" res://kernel/host/host.tscn -- world-view "--walk=$(w "$ENGINE/kernel/world/walks/tour.json")" "--out-dir=$tdir" >/dev/null 2>&1
     rm -rf "$tdir";;
    hockey)
-    nfr="${nfr:-480}"; hp="${HOCKEY_PACK:-$(w "$ENGINE/../../../../site/ice-hockey-three-against-20261111-1/promoted/game.ice_hockey_three_against@0.1.1")}"
-    [ -d "$hp" ] || hp="C:/Users/kazda/kiro/third-life/site/ice-hockey-three-against-20261111-1/promoted/game.ice_hockey_three_against@0.1.1"
+    nfr="${nfr:-480}"; hp="${HOCKEY_PACK:-$(w "$ENGINE/packs/hockey")}"
     MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" "${common[@]}" --quit-after "$nfr" res://kernel/host/host.tscn -- world-view "--packs=$hp" --stage=0 --cam=arena --radius=0 --frame=$((nfr + 600)) "--out=$(w "${TMPDIR:-${TEMP:-/tmp}}")/look_clip_$$.png" >/dev/null 2>&1;;
    rig:*)
     nfr="${nfr:-300}"; IFS=: read -r _ kind rspeed rturn rview <<< "$what"

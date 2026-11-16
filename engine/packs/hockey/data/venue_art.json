@@ -1,0 +1,23 @@
+{
+  "schema": "tl.layout/1",
+  "name": "hockey_dress",
+  "props": [
+    {"id": "stands_n", "kind": "stands", "p": [0, -19.5], "yaw": 0, "params": {"length": 52, "rows": 8}},
+    {"id": "stands_s", "kind": "stands", "p": [0, 19.5], "yaw": 180, "params": {"length": 52, "rows": 8}},
+    {"id": "mast_nw", "kind": "light_mast", "p": [-34, -19], "params": {"height": 14}},
+    {"id": "mast_ne", "kind": "light_mast", "p": [34, -19], "params": {"height": 14}},
+    {"id": "mast_sw", "kind": "light_mast", "p": [-34, 19], "params": {"height": 14}},
+    {"id": "mast_se", "kind": "light_mast", "p": [34, 19], "params": {"height": 14}},
+    {"id": "scoreboard_w", "kind": "scoreboard", "p": [-36, 0], "yaw": 90},
+    {"id": "scoreboard_e", "kind": "scoreboard", "p": [36, 0], "yaw": -90},
+    {"id": "sign_w1", "kind": "sign", "p": [-34, -7], "yaw": 90},
+    {"id": "sign_w2", "kind": "sign", "p": [-34, 7], "yaw": 90},
+    {"id": "sign_e1", "kind": "sign", "p": [34, -7], "yaw": -90},
+    {"id": "sign_e2", "kind": "sign", "p": [34, 7], "yaw": -90},
+    {"id": "flag_blue1", "kind": "flag", "p": [-33, -12], "params": {"height": 7, "color": "car_blue"}},
+    {"id": "flag_blue2", "kind": "flag", "p": [-33, 12], "params": {"height": 7, "color": "car_blue"}},
+    {"id": "flag_red1", "kind": "flag", "p": [33, -12], "params": {"height": 7, "color": "car_red"}},
+    {"id": "flag_red2", "kind": "flag", "p": [33, 12], "params": {"height": 7, "color": "car_red"}},
+    {"id": "entrance", "kind": "entrance", "p": [0, -30], "yaw": 0}
+  ]
+}

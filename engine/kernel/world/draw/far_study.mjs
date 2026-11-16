@@ -2,7 +2,7 @@
 // P6. The distance study of draw/FAR.md: three games on a flat study ground, each seen from the visitor's eye and
 // from a rise at 50, 150, 300 and 600 m from the edge of its plot.
 //
-//   node far_study.mjs walk <full|backdrop> <out walk.json> --hockey=<pack dir>
+//   node far_study.mjs walk <full|backdrop> <out walk.json> [--hockey=<pack dir>]   (default: hockey = engine/packs/hockey, res://packs)
 //       writes a walk (tl.walk/1) with 24 crane shots. `full`: every game is a sideline (drawn in full, ticked every
 //       tick); `backdrop`: every game is a backdrop (ticked one tick in `slice`, drawn by the draw layer's far
 //       pictures). Run it with `bash engine/tools/world.sh tour <walk.json> --out-dir=<abs dir> --pictures-only`;
@@ -20,7 +20,7 @@ import { execFileSync } from 'node:child_process';
 const GAMES = [
   { id: 'drive', pack: 'seed_drive', at: [0, 0, 0], radius: 64 },
   { id: 'paddle', pack: 'seed_paddle', at: [420, 0, 0], radius: 40 },
-  { id: 'hockey', pack: '', at: [-420, 0, 0], radius: 44 },
+  { id: 'hockey', pack: 'hockey', at: [-420, 0, 0], radius: 44 },
 ];
 const DIST = [50, 150, 300, 600];
 const HEIGHTS = [['eye', () => 1.7], ['rise', (d) => 10 + 0.12 * d]];
@@ -224,7 +224,7 @@ function firstFrame(walkArg, ticks, outDir) {
 
 const [cmd, ...rest] = process.argv.slice(2);
 if (cmd === 'compact' && rest.length >= 1) {
-  // P13: walks/compact_village.json with the hockey arena on the lot that waits for it (site/ is not in the repository)
+  // P13: walks/compact_village.json with the hockey arena on the lot that waits for it; --hockey=hockey is the house game engine/packs/hockey
   const hockey = (rest.find((a) => a.startsWith('--hockey=')) || '').slice(9) || process.env.TL_STUDY_HOCKEY || '';
   const src = path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '../walks/compact_village.json');
   const w = JSON.parse(fs.readFileSync(src, 'utf8'));
@@ -241,16 +241,12 @@ if (cmd === 'compact' && rest.length >= 1) {
 } else if (cmd === 'firstframe' && rest.length >= 1) {
   firstFrame(rest[0], Number((rest.find((a) => a.startsWith('--ticks=')) || '--ticks=240').slice(8)), path.resolve((rest.find((a) => a.startsWith('--out=')) || '--out=' + path.join(os.tmpdir(), 'tl_p13_ff')).slice(6)));
 } else if (cmd === 'motion' && rest.length >= 2) {
-  const hockey = (rest.find((a) => a.startsWith('--hockey=')) || '').slice(9) || process.env.TL_STUDY_HOCKEY || '';
+  const hockey = (rest.find((a) => a.startsWith('--hockey=')) || '').slice(9) || process.env.TL_STUDY_HOCKEY || 'hockey';
   const label = (rest.find((a) => a.startsWith('--label=')) || '').slice(8) || 'run';
   motion(rest[0], rest[1], hockey, label);
 } else if (cmd === 'walk' && rest.length >= 2) {
-  // the hockey arena is a job's pack (site/ is not in the repository): its directory is given, never assumed
-  const hockey = (rest.find((a) => a.startsWith('--hockey=')) || '').slice(9) || process.env.TL_STUDY_HOCKEY || '';
-  if (!hockey) {
-    console.log('far_study.mjs walk: --hockey=<pack dir> (or TL_STUDY_HOCKEY) is required: the third game of the study is the hockey arena');
-    process.exit(2);
-  }
+  // the hockey arena is the house game engine/packs/hockey (res://packs/hockey); --hockey=<pack dir> or TL_STUDY_HOCKEY overrides
+  const hockey = (rest.find((a) => a.startsWith('--hockey=')) || '').slice(9) || process.env.TL_STUDY_HOCKEY || 'hockey';
   fs.mkdirSync(path.dirname(path.resolve(rest[1])), { recursive: true });
   fs.writeFileSync(rest[1], JSON.stringify(walk(rest[0], hockey), null, 1) + '\n');
   console.log(`walk: ${rest[1]}`);

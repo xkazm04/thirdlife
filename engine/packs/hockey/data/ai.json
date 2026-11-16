@@ -1,0 +1,10 @@
+{
+  "speed_scale": 0.9,
+  "shoot_range": 12.0,
+  "aim_tolerance_deg": 20.0,
+  "min_separation": 4.0,
+  "pounce_radius": 5.0,
+  "back_radius": 6.0,
+  "lead_frames": 30,
+  "red_skill": 0.9
+}

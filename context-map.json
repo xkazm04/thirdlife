@@ -7,6 +7,7 @@
     {"name": "rigs", "group": "engine", "paths": ["engine/rigs/**"]},
     {"name": "style", "group": "engine", "paths": ["engine/style/**"]},
     {"name": "seeds", "group": "engine", "paths": ["engine/seeds/**"]},
+    {"name": "packs", "group": "engine", "paths": ["engine/packs/**"], "touches": ["engine/boot/games.json", "devx/lib/gate/steps/packs.mjs"]},
     {"name": "look", "group": "engine", "paths": ["engine/look/**"]},
     {"name": "ui", "group": "engine", "paths": ["engine/ui/**"], "touches": ["contracts/JOB.md"]},
     {"name": "cards", "group": "engine", "paths": ["engine/cards/**"], "touches": ["contracts/CARDS.md", "engine/seeds/**"]},

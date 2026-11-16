@@ -1,0 +1,8 @@
+{
+	"min_gap_frames": 12,
+	"scrape_every_frames": 20,
+	"scrape_speed": 5.0,
+	"spray_every_frames": 30,
+	"spray_speed": 6.0,
+	"volume_db": -6.0
+}

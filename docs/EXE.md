@@ -34,7 +34,7 @@ What is in it (`BUILD.txt` in the build says the same, with the commit and the d
 | `ex_walker` | a walker in a room, a skater on ice | walker | `engine/kernel/examples/` |
 | `ex_kit` | kit parts under the laws | kit | `engine/kernel/examples/` |
 | `ex_car` | a box car on a slalom, then ice | car | `engine/kernel/examples/` |
-| `ice_hockey_three_against` | Ice hockey, three against three (0.1.1, the first night job) | hockey, at the east end of the road, on the lot P13 left for it (radius 44) | `site/ice-hockey-three-against-20261111-1/promoted/` |
+| `ice_hockey_three_against` | Ice hockey, three against three (0.1.1, the first night job; a tracked house game since 16 Nov, H0) | hockey, at the east end of the road, on the lot P13 left for it (radius 44) | `engine/packs/hockey` (before H0: `site/ice-hockey-three-against-20261111-1/promoted/`, optional) |
 
 Size: 124 MB (`ThirdLife.exe` 104 MB: the engine's release template; `ThirdLife.pck` 1.5 MB: every script, shader and
 JSON table of `engine/`; `games/` 217 KB; P14: `cache/` 19 MB, 20 files: the rims, the far pictures and the rig recipes
@@ -202,8 +202,9 @@ example's own camera, and "Q or Esc leave the game").
 - The exe's vsync is switched on by `boot.gd` (the project runs without, for captures); frame time in the check's
   window was 16.7 ms.
 - (P14) The hockey plot has radius 44 m, the arena's own (P13 placed the lot for it); the fault of PATCHES-P9 5 was not
-  seen in the compact village (the arena stands on its pad in every picture and the check enters it). If `site/` is
-  not there when the build is made, the build has six games and says so.
+  seen in the compact village (the arena stands on its pad in every picture and the check enters it). Since H0 (16 Nov) the hockey
+  game is the tracked `engine/packs/hockey` and no longer optional: a build without it fails. The hashes of the table
+  above were taken with the `site/` copy (byte-identical pack) and are to be proved again from the new path.
 - Only Windows x86_64. No icon and no version resource in the exe: the preset has `application/modify_resources=false`
   (changing them needs `rcedit`, which this tool does not look for).
 - Windows SmartScreen or an antivirus may question an unsigned exe on another machine: not tested (no other machine).

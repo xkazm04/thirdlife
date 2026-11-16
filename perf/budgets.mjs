@@ -13,7 +13,7 @@ const get = (k, d) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : d; };
 const frames = Number(get("--frames", 1200));
 const copies = Number(get("--copies", 10));
 const only = get("--only", "")?.split(",").filter(Boolean);
-const hockey = process.env.TL_HOCKEY_PACK ?? "C:/Users/kazda/kiro/third-life/site/ice-hockey-three-against-20261111-1/promoted/game.ice_hockey_three_against@0.1.1";
+const hockey = process.env.TL_HOCKEY_PACK ?? "hockey";   // the house game engine/packs/hockey (res://packs/hockey);
 const godot = process.env.TL_GODOT ?? "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe";
 
 const packs = [["seed_paddle", "seed_paddle"], ["seed_wall", "seed_wall"], ["seed_drive", "seed_drive"], ["ex_bounce", "ex_bounce"], ["ex_car", "ex_car"],

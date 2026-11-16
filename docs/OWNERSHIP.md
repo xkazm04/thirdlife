@@ -10,6 +10,7 @@ else, so a session says what it owns before it edits.
 | Kernel | `engine/kernel/**`, `engine/project.godot` | engine | `engine/tools/selftest.sh` stays green; API additions update `engine/kernel/API.md` |
 | Kit, rigs, style | `engine/kits/**`, `engine/rigs/**`, `engine/style/**` | look | reference nothing outside; `tl arch` module-walls |
 | Seeds | `engine/seeds/**` | engine | every seed passes all verbs (`engine/tools/seeds.sh`) |
+| House games | `engine/packs/**` | engine | every house game passes all verbs (`tl check --tier full --only packs`); `engine/packs/README.md` |
 | Look captures | `engine/look/**` | look | stills and journal only |
 | Designer panel | `engine/ui/**` | engine | `engine/tools/ui.sh selftest`; reads job directories as `contracts/JOB.md` defines them |
 | Recipe cards | `engine/cards/**` | Director | `tl cards check`; a card names only what its seed shows (`contracts/CARDS.md`) |
