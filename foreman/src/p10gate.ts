@@ -10,6 +10,7 @@ import { readManifest } from "./promoter.js";
 import { dependants } from "./manifest.js";
 import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE } from "./p10.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
+import { finalSentSince } from "./rounds.js";
 import type { GateFailure, Verified } from "./machine.js";
 import type { ForemanOptions } from "./options.js";
 
@@ -107,9 +108,7 @@ export function finalLimit(h: GateHost): number {
 }
 /** How often the final verification sent a failure back since the last promotion or change request. */
 export function finalSent(h: GateHost): number {
-  const events = h.events;
-  const since = [...events].reverse().find((e) => e.type === "promoted" || e.type === "change_requested")?.seq ?? 0;
-  return events.filter((e) => e.type === "reopened" && e.seq > since && e.reason.startsWith(FINAL_FAILED)).length;
+  return finalSentSince(h.events);
 }
 
 /** The test a `bot` verify event ran, read from its report (`bot.test`). */

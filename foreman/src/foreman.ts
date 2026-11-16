@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Acceptance, BudgetPolicy, Cause, JobEvent, Milestone, PackageSpec } from "./events.js";
-import { CHANGE_REASON_RE, JobLog, changeReason, type JobState, type PackageView } from "./joblog.js";
+import { JobLog, changeReason, type JobState, type PackageView } from "./joblog.js";
 import type { RunResult } from "./builder/types.js";
 import { deriveBashAllowlist } from "./builder/allowlist.js";
 import type { VerifyResult } from "./verifier.js";
@@ -24,6 +24,9 @@ import type { ForemanOptions } from "./options.js";
 import { MACHINE_BUSY, NOT_LOAD, PACK_STALL, classifyStalls, clockDetail, diedSilently, frameFigures, medianOverHalfBudget, restsOnAClock, stallOf, type GateFailure, type Stall, type Verified } from "./machine.js";
 import { FOREMAN_NOTE, builderConduct, clip, countKitUse, parseDeviations, statesKitReason, type KitFigures } from "./conduct.js";
 import { packTest, packTestsFor, finalLimit, finalSent, sendBackFinal, type GateHost } from "./p10gate.js";
+// Why a round runs is one typed fold over the log (rounds.ts); the fixed starts of `detail` live there and are re-exported.
+import { CHANGE_ROUND, CRITIC_ROUND, DEP_CHANGED, KIT_REGRESSION, NO_VISIBLE_CHANGE, criticReopenFor, detailKind, hadCriticRound, isCriticReopenFor, queuedDetail, requeueDetail, roundCap, roundKindOf, roundKinds, type RoundKind } from "./rounds.js";
+export { CHANGE_ROUND, CRITIC_ROUND, DEP_CHANGED, KIT_REGRESSION, NO_VISIBLE_CHANGE };
 export type { ForemanOptions, KitFigures, Stall };
 export { FOREMAN_NOTE, MACHINE_BUSY, NOT_LOAD, PACK_STALL, builderConduct, classifyStalls, clockDetail, countKitUse, diedSilently, frameFigures, medianOverHalfBudget, parseDeviations, restsOnAClock, stallOf, statesKitReason };
 
@@ -36,14 +39,6 @@ export class ForemanError extends Error {
 
 /** Causes after which a failed package goes back to the Planner (a refusal, a budget stop or a cancel do not). */
 const REPLAN_CAUSES: Cause[] = ["verify_failed", "builder_error", "builder_timeout", "builder_truncated", "no_visible_change", "kit_regression"];
-
-/** Fixed starts of the `detail` of a package sent back after its merge; the feedback and the resume read them. */
-export const NO_VISIBLE_CHANGE = "NO VISIBLE CHANGE";
-export const CRITIC_ROUND = "critic (V5) NOT ok, one extra round";
-/** N3: fixed starts of the `detail` of a package that goes back to work after it was finished. */
-export const CHANGE_ROUND = "CHANGE REQUEST";
-export const DEP_CHANGED = "DEPENDENCY CHANGED";
-export const KIT_REGRESSION = "KIT REGRESSION";
 
 const BUILDER_CAUSE: Record<Exclude<RunResult["outcome"], "ok">, Cause> = {
   timeout: "builder_timeout",
@@ -670,19 +665,9 @@ export class Foreman {
     return manifestText(composeManifest(this.jobIdentity(), this.specsOf(ids), carried));
   }
 
-  /**
-   * The last round a package may use: the round limit counts from its last re-opening (N3). A package re-opened by
-   * a failed final verification (P10 item 2) gets ONE round per re-opening: the limit on those is counted per job
-   * (`finalRounds`), so a change that cannot be made costs at most that many builder runs.
-   */
+  /** The last round a package may use (rounds.ts): one round per re-opening by a failed final verification (`finalRounds` counts those per job). */
   private cap(id: string): number {
-    const p = this.pkg(id);
-    if (p.roundBase !== undefined && this.lastReopenReason(id).startsWith(FINAL_FAILED)) return p.roundBase;
-    return (p.roundBase ?? 1) + this.o.roundLimit - 1;
-  }
-  private lastReopenReason(id: string): string {
-    const e = [...this.log.events].reverse().find((x) => x.type === "reopened" && x.package === id);
-    return e && e.type === "reopened" ? e.reason : "";
+    return roundCap(this.pkg(id), roundKinds(this.log.events), this.o.roundLimit);
   }
 
   private ensureWs(id: string, fresh: boolean): void {
@@ -1235,12 +1220,7 @@ export class Foreman {
     for (const id of this.s.order) {
       const p = this.pkg(id);
       if (p.roundBase === undefined || p.roundBase !== p.round + 1 || p.state === "queued" || p.state === "running" || p.state === "verifying") continue;
-      const last = [...this.log.events].reverse().find((e) => e.type === "reopened" && e.package === id);
-      const reason = last && last.type === "reopened" ? last.reason : "";
-      const m = CHANGE_REASON_RE.exec(reason);
-      const change = m ? this.s.changes.find((c) => c.seq === Number(m[1])) : undefined;
-      const detail = change ? `${CHANGE_ROUND}: ${change.text}` : reason.startsWith(CRITIC_ROUND) || reason.startsWith(FINAL_FAILED) ? reason : `${DEP_CHANGED}: ${reason}`;
-      this.append({ type: "package_state", package: id, state: "queued", round: p.roundBase, detail: clip(detail, 1500) });
+      this.append({ type: "package_state", package: id, state: "queued", round: p.roundBase, detail: clip(requeueDetail(this.log.events, this.s, id), 1500) });
     }
   }
 
@@ -1322,7 +1302,7 @@ export class Foreman {
    */
   private async keepEarlier(id: string, round: number, why: string): Promise<boolean> {
     const p = this.pkg(id);
-    const sentBack = p.roundBase !== undefined || this.log.events.some((e) => e.type === "package_state" && e.package === id && e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND));
+    const sentBack = p.roundBase !== undefined || hadCriticRound(roundKinds(this.log.events), id);
     if (!sentBack || (p.mergedFiles ?? []).length === 0) return false;
     this.append({ type: "package_state", package: id, state: "promoted", round, detail: clip(`re-opened, but no round passed (${why}); the files merged before it stay in pack/ and the change was NOT made`, 500) });
     await this.maybeMilestone(this.spec(id).milestone, id);
@@ -1456,12 +1436,11 @@ export class Foreman {
    * round; a kit regression in it gives one more (N3 item 3), and after that one the job continues whatever happens.
    */
   private isCriticKitRetry(id: string, round: number): boolean {
-    const kitRetry = this.log.events.some((e) => e.type === "package_state" && e.package === id && e.round === round && e.state === "queued" && (e.detail ?? "").startsWith(KIT_REGRESSION));
-    return kitRetry && this.isCriticRound(id, round - 1);
+    return roundKindOf(this.log.events, id, round) === "critic_kit_retry";
   }
 
   private isCriticRound(id: string, round: number): boolean {
-    return this.log.events.some((e) => e.type === "package_state" && e.package === id && e.round === round && e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND));
+    return roundKindOf(this.log.events, id, round) === "critic";
   }
 
   /**
@@ -1525,7 +1504,7 @@ export class Foreman {
     if (members.length === 0 || !members.every((x) => this.pkg(x).state === "promoted")) return;
     // N3: the critic's extra round for this milestone went to another package (the one it named) and is not over
     // yet: the second look waits for it.
-    const stillOut = this.log.events.some((e) => e.type === "reopened" && e.reason.startsWith(`${CRITIC_ROUND} (milestone ${m})`) && this.s.packages[e.package] !== undefined && !["promoted", "failed"].includes(this.pkg(e.package).state));
+    const stillOut = this.log.events.some((e) => e.type === "reopened" && isCriticReopenFor(e.reason, m) && this.s.packages[e.package] !== undefined && !["promoted", "failed"].includes(this.pkg(e.package).state));
     if (stillOut) return;
     const packDir = this.dir("pack");
     let cameras: string[] = [];
@@ -1615,17 +1594,16 @@ export class Foreman {
       // N3 item 2: that round goes to the package the critic NAMES (the one whose files most likely cause what it
       // sees), through the re-open path, and not to whichever package just merged. A missing or unknown name falls
       // back to the milestone's own packages and is logged as a `note`.
-      const critiqueFor = `${CRITIC_ROUND} (milestone ${m})`;
       const events = this.log.events;
       const hadRound =
-        events.some((e) => e.type === "reopened" && e.reason.startsWith(critiqueFor)) ||
-        events.some((e, i) => e.type === "package_state" && members.includes(e.package) && e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND) && events[i - 1]?.type !== "reopened");
+        events.some((e) => e.type === "reopened" && isCriticReopenFor(e.reason, m)) ||
+        events.some((e, i) => e.type === "package_state" && members.includes(e.package) && e.state === "queued" && detailKind(e.detail) === "critic" && events[i - 1]?.type !== "reopened");
       if (res.ok && !res.value.ok && !hadRound) {
         const detail = `${CRITIC_ROUND}: ${Object.entries(res.value.scores).map(([k, v]) => `${k} ${v}`).join(", ")}. Critic's notes: ${res.value.notes.join(" | ")} [${this.rel(file)}]`;
         const named = res.value.package;
         const target = named !== undefined ? this.s.packages[named] : undefined;
         if (named !== undefined && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
-          this.reopen(named, `${critiqueFor}: the critic names this package as the cause of what it sees${members.includes(named) ? "" : ` (the milestone's own package(s): ${members.join(", ")})`}`, detail);
+          this.reopen(named, `${criticReopenFor(m)}: the critic names this package as the cause of what it sees${members.includes(named) ? "" : ` (the milestone's own package(s): ${members.join(", ")})`}`, detail);
           return;
         }
         const why = named === undefined ? "the critic named no package" : !target ? `the critic named "${clip(named, 60)}", which is not a package of this plan` : `the critic named ${named}, which is not merged (state ${target.state})`;
@@ -1651,12 +1629,9 @@ export class Foreman {
     const p = this.pkg(id);
     if (p.lastAnswer !== undefined) parts.push(`Answer to your question: ${p.lastAnswer}`);
     // Sent back after a merge: no visible change (art pass), or the critic's one extra round.
-    const queuedAs = (prefixes: string[]): string | undefined => {
-      const e = [...this.log.events].reverse().find((x) => x.type === "package_state" && x.package === id && x.round === round && x.state === "queued" && prefixes.some((pre) => (x.detail ?? "").startsWith(pre)));
-      return e && e.type === "package_state" ? (e.detail ?? "") : undefined;
-    };
+    const queuedAs = (...kinds: RoundKind[]): string | undefined => queuedDetail(this.log.events, id, round, kinds);
     // N3: re-opened after it was finished (a change request, a changed dependency), or not merged for a kit regression.
-    const change = queuedAs([CHANGE_ROUND]);
+    const change = queuedAs("change");
     if (change !== undefined) {
       parts.push(
         `This package was finished and merged. The player now asks for a change, and this package owns the files that must change:\n${change}\n` +
@@ -1664,12 +1639,12 @@ export class Foreman {
           "Where the change request and your contract disagree, the change request wins; say what you changed under DEVIATIONS, because the builders of dependent packages read that.",
       );
     }
-    const depChanged = queuedAs([DEP_CHANGED]);
+    const depChanged = queuedAs("dep_changed");
     if (depChanged !== undefined) {
       parts.push(`This package was finished and merged, and has been re-opened:\n${depChanged}\nThe changed files of that package are in your working directory now. Adapt your own files to them (the report is below); do not try to change the other package.`);
     }
     // P10 item 2: re-opened because the final verification of the whole pack failed after this package merged.
-    const fin = queuedAs([FINAL_FAILED]);
+    const fin = queuedAs("final_failed");
     if (fin !== undefined) {
       const rel = /\[report: ([^\]]+)\]/.exec(fin)?.[1];
       const body = rel !== undefined ? this.readClipped(this.dir(rel), 12_000) : undefined;
@@ -1685,14 +1660,12 @@ export class Foreman {
     // N3b: a clock-based failure reaches the builder only after the machine was measured; say so.
     const notLoad = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && (n.text.startsWith(`${FOREMAN_NOTE}${NOT_LOAD}`) || n.text.startsWith(`${FOREMAN_NOTE}${PACK_STALL}`)));
     if (notLoad) parts.push(`${notLoad.text.startsWith(`${FOREMAN_NOTE}${PACK_STALL}`) ? "The Foreman compared the two runs before reporting this" : "The Foreman measured the machine before reporting this"}: ${notLoad.text.slice(FOREMAN_NOTE.length)}`);
-    const kit = queuedAs([KIT_REGRESSION]);
+    const kit = queuedAs("kit_regression");
     if (kit !== undefined) parts.push(`Round ${round - 1} passed its checks but was not merged:\n${kit}\nYour files from that round are still in the working directory.`);
-    const sentBack = [...this.log.events]
-      .reverse()
-      .find((e) => e.type === "package_state" && e.package === id && e.round === round && e.state === "queued" && ((e.detail ?? "").startsWith(CRITIC_ROUND) || (e.detail ?? "").startsWith(NO_VISIBLE_CHANGE)));
-    if (sentBack && sentBack.type === "package_state") {
+    const sentBack = queuedAs("critic", "no_visible_change");
+    if (sentBack !== undefined) {
       parts.push(
-        `Round ${round - 1} passed the Verifier and was merged, but the package was sent back: ${sentBack.detail ?? ""}\n` +
+        `Round ${round - 1} passed the Verifier and was merged, but the package was sent back: ${sentBack}\n` +
           "Your files from that round are still in the working directory. Change them so that the milestone captures (the pack's declared cameras, taken while the bot plays) show the difference. Passing the same checks again without a visible change is not enough.",
       );
     }
