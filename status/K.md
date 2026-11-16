@@ -194,3 +194,38 @@ Acceptance:
   sudden death now ends 1:0 in 285 frames. bot_modes seeds 2, 3, 4 pass (657, 872, 1597). Pack-side threshold: FOR H.
 - tl arch 9/9; tl check --tier fast --changed: arch, assets, cards, devx.test 161/161 PASS; foreman.typecheck could not run.
 No window was opened in K3 (no still was the proof).
+
+## K4 (started 04:38)
+SEEN 04:40 TLHand aims (tl_hand.gd): set_aim under a person's profile now moves the game's aim as a cursor (reaction to a target that jumped > aim_jump, then at most aim_speed m/s with slowing aim_settle /s near the goal, a miss per target up to aim_miss m, still during a lapse); clear_aim; stats taps_lost, aim_targets, aim_lag_frames, mean_aim_lag_frames. perfect: set_aim / clear_aim straight to ctx.input on the same tick. Draws come from the hand's own seeded generator (seed, profile, stream) as all of TLHand's do, never ctx.rng; a hand that is given no aim draws exactly as before.
+SEEN 04:41 ex_pointer's bot through the perfect hand (tests/bot_square_hand.gd): 4a378038 = bot_square.gd's hash.
+SEEN 04:44 ex_pointer_hand, 4 profiles x seeds 1..10 (status/k4-table.md, status/k4_table.sh):
+| profile | hits | mean aim error at the shot | mean lag (jump -> within 0.6 m) | lapses | taps lost to a lapse |
+|---|---|---|---|---|---|
+| perfect | 200 of 200 shots (200 targets) | 0.050 m | 2.0 frames | 0 | 0 |
+| sharp | 197 of 198 | 0.261 m | 26.1 frames | 5 | 2 |
+| regular | 124 of 194 | 1.042 m | 47.2 frames | 17 | 6 |
+| newcomer | 43 of 193 | 3.445 m | 75.8 frames | 35 | 7 |
+  Monotone on every column. Seed 1 twice per profile: equal hashes (perfect 5673cbaa, sharp 18a3ded6, regular 7e4ff927, newcomer 60ef5299). perfect's 2.0 frames is the bot reading the state one frame late plus the latch.
+FOR H (K4): use `hand.set_aim(&"aim", point)` every tick (a moving target every tick) and `hand.clear_aim(&"aim")`; mouse buttons need nothing (a button is a key of a declared action; the hand presses the action); `hand.stats()["taps_lost"]` is the count of taps a lapse swallowed. `TLHand.clear_aim` is new (API 1.4).
+SEEN 05:03 hashes after (status/k4-hashes-after.txt): the 3 seeds and every example identical to K3's (smoke and first bot); seeds.sh 30/30; full selftest 140 passed 0 failed (status/k4-selftest.txt)
+
+READY K4 05:04
+Files (package): engine/kernel/api/tl_hand.gd (the aim as a person's cursor; clear_aim; taps_lost and aim counters in stats;
+profile numbers aim_speed, aim_settle, aim_jump); engine/kernel/examples/ex_pointer/tests/bot_square_hand.gd + pack.json tests
+list; engine/kernel/examples/ex_pointer_hand/** (new: bot_aim.gd and one bot per profile); engine/tools/selftest.sh block K4;
+engine/kernel/API.md (TLHand rows, profile table, the cursor's numbers and their reasoning, the measured table, examples
+table); docs/generated/API-INDEX.md regenerated.
+New public member: TLHand.clear_aim(action: StringName) -> void (API 1.3 -> 1.4). Changed: TLHand.set_aim now acts under a
+person's profile; TLHand.PROFILES gained aim_speed, aim_settle, aim_jump; stats() gained taps_lost, aim_targets,
+aim_lag_frames, mean_aim_lag_frames. Mouse buttons: nothing needed (a button is a key of a declared action).
+Acceptance:
+- perfect keeps ex_pointer's bot hash for the bot moved onto the hand: met (4a378038 both; selftest k4.hand_aim_perfect_same_hash).
+- per-profile table over 10 seeds, monotone from perfect to newcomer: met (above: hits 200/197/124/43, error 0.050/0.261/1.042/3.445 m,
+  lag 2.0/26.1/47.2/75.8 frames).
+- deterministic, a run twice equal: met (seed 1 twice, all 4 profiles).
+- taps lost to a lapse counted: met (2 / 6 / 7 over 10 seeds; perfect 0).
+- the three seeds and every example keep hashes: met. seeds.sh 30/30: met. selftest 140 passed 0 failed: met.
+- tl arch green except the version rule: met (api-v1 names only TLHand.clear_aim; on a scratch copy with KERNEL_API 1.4 and
+  arch --index: api-v1 green, devx arch tests 22/0: status/k4_bump.sh).
+- tl check --tier fast --changed: arch and devx.test (3) fail on the unbumped version only; assets, cards pass; foreman.typecheck could not run.
+The cursor's numbers are reasoning (API.md), not measured on a person. Not run: the hockey pack with the aiming hand (that is H9).

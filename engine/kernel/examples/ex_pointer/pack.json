@@ -6,6 +6,6 @@
   "capabilities": ["physics", "biped", "input", "camera"],
   "entry": "scripts/main.gd",
   "assets": [],
-  "tests": ["tests/bot_square.gd"],
+  "tests": ["tests/bot_square.gd", "tests/bot_square_hand.gd"],
   "cameras": ["rink", "top"]
 }

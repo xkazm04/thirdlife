@@ -205,6 +205,7 @@ Consts: `OFF`, `ON`, `PROFILES`
 
 Properties: `params: Dictionary`, `profile: String`
 
+- `func clear_aim(action: StringName) -> void`
 - `static func create(ctx: TLContext, profile_name: String = "regular", overrides: Dictionary = {}) -> TLHand`
 - `func is_perfect() -> bool`
 - `func press(action: StringName, value: float = 1.0) -> void`

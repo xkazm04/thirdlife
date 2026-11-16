@@ -48,6 +48,7 @@ Worked examples, all verified by `tools/tl.sh selftest`, are in `kernel/examples
 | `ex_walker` | `TLBiped` walk, run and skate, pushing a crate, checkpoints and a lap in `TLRules`, `TLOrbitCam` |
 | `ex_pointer` | the aim (`ctx.input.declare_aim`): a stick that turns to the point on the ice under the cursor; its bot drives the aim with `set_aim` |
 | `ex_held` | a skater on a held, shaken `TLBall` steps off it at his own speed: a held ball is never a moving floor (K2) |
+| `ex_pointer_hand` | `TLHand` moves the aim as a person's cursor: a jumping, sliding target, a shot after each jump, one bot per profile (K4) |
 | `ex_held_big` | a puck shot from under a still 2.2-scaled skater carries him nowhere: no ball, held or loose, is a floor (K3) |
 | `ex_down` | `TLBiped.down` / `shove` / `stumble` with a key held through them, and two pairs of 2.2-scaled figures meeting with today's body and with `body_scale` (K2) |
 | `ex_car` | `TLVehicle` driven by input actions, nitro, grip per surface, `TLChaseCam`, AI with `TLSteer`, `TLHud`, `TLVfx`, `TLAudio` |
@@ -580,9 +581,9 @@ func _bot_tick(_frame: int) -> void:
 | `profile: String`, `params: Dictionary`, `is_perfect() -> bool` | which hand, its numbers as used |
 | `press(action, value = 1.0)`, `release(action)`, `tap(action, frames = 1)`, `set_axis(negative, positive, value)`, `release_all()` | intents, named as `ctx.input`'s injection |
 | `steer(left, right, up, down, direction: Vector2)` | a direction (x right, y down) on four keys: quantised to 8 ways, a turn lets go of the old key late |
-| `set_aim(action, point: Vector3)` | where the bot wants to point an aim. The seam for the kernel's pointer aim (lane K): under `perfect` it goes to `ctx.input.set_aim` once the kernel has one; **under a person's profile a no-op today** (later: `aim_lag` frames late, resting `aim_miss` metres beside the point) |
+| `set_aim(action, point: Vector3)`, `clear_aim(action)` | **K4: the aim through a person's hand.** Where the bot wants to point an aim (a declared `ctx.input.declare_aim`); call it every tick it points (a moving target: every tick). `perfect`: straight to `ctx.input.set_aim` on the same tick (a ported bot keeps its hash: `ex_pointer`). A person's profile moves the game's aim as a cursor: a target that jumped more than `aim_jump` (1 m) is followed only `aim_lag` frames later (the cursor stays meanwhile); then the cursor travels at most `aim_speed` m/s on the ground and slows near its goal (it closes `aim_settle` of the rest each second); the goal is the target plus a miss drawn per target (up to `aim_miss` m, any side); a target moving on without jumping is tracked with no new reaction; during a lapse the cursor holds still. `clear_aim` takes the cursor away at the hand's next look. A mouse button needs nothing: it is a key of a declared action (`declare(&"shoot", [KEY_SPACE], [MOUSE_BUTTON_LEFT])`) and the hand presses the action |
 | `tick()` | the last line of `_bot_tick`: the hand sees this frame's intents (unless it is away) and presses or releases what is due |
-| `stats() -> Dictionary` | the proof that the hand ran, for `_bot_result()`: `decisions` (reactions), `mean_reaction_frames`, `stops` (feed-forward releases), `presses`, `releases`, `taps`, `lengthened` (a release postponed to a person's tap length), `sticks` (held through a change), `held_late_frames`, `overshoots`, `lapses`, `lapse_frames`, `intents`, `aims`, `profile` |
+| `stats() -> Dictionary` | the proof that the hand ran, for `_bot_result()`: `decisions` (reactions), `mean_reaction_frames`, `stops` (feed-forward releases), `presses`, `releases`, `taps`, `lengthened` (a release postponed to a person's tap length), `sticks` (held through a change), `held_late_frames`, `overshoots`, `lapses`, `lapse_frames`, `intents`, `aims`, `profile`; K4: `taps_lost` (taps the bot asked for while the hand was away in a lapse: never pressed), `aim_targets` (new targets the cursor reacted to), `aim_lag_frames`, `mean_aim_lag_frames` |
 
 What the hand does, per frame, under every profile but `perfect`:
 - **one decision, one reaction.** Everything the bot's intents changed since the hand last looked is one decision.
@@ -600,12 +601,12 @@ What the hand does, per frame, under every profile but `perfect`:
 - **attention.** `lapses_per_minute` times a minute on average the hand is away for `lapse` frames: intents made then
   are not seen (a tap is lost; a held wish is seen when it comes back).
 
-| Profile | reaction | tap | release_late | stick_chance, stick | overshoot | lapses / min, lapse | aim_lag, aim_miss (FOR K) |
+| Profile | reaction | tap | release_late | stick_chance, stick | overshoot | lapses / min, lapse | aim_lag, aim_miss, aim_speed, aim_settle (K4) |
 |---|---|---|---|---|---|---|---|
-| `perfect` | 0 (the call goes straight to `ctx.input`) | as asked | 0 | 0 | 0 | 0 | 0 |
-| `sharp` | 4..7 | 4..6 | 0..2 | 0.02, 6..12 | 1..3 | 1, 8..15 | 4..8, 0.15 |
-| `regular` | 8..13 | 5..8 | 2..6 | 0.05, 10..24 | 3..7 | 3, 15..30 | 8..16, 0.3 |
-| `newcomer` | 14..23 | 6..9 | 4..10 | 0.12, 18..40 | 6..12 | 6, 24..48 | 14..26, 0.6 |
+| `perfect` | 0 (the call goes straight to `ctx.input`) | as asked | 0 | 0 | 0 | 0 | 0 (the wanted point, same tick) |
+| `sharp` | 4..7 | 4..6 | 0..2 | 0.02, 6..12 | 1..3 | 1, 8..15 | 4..8, 0.15 m, 40 m/s, 12 /s |
+| `regular` | 8..13 | 5..8 | 2..6 | 0.05, 10..24 | 3..7 | 3, 15..30 | 8..16, 0.3 m, 25 m/s, 8 /s |
+| `newcomer` | 14..23 | 6..9 | 4..10 | 0.12, 18..40 | 6..12 | 6, 24..48 | 14..26, 0.6 m, 15 m/s, 5 /s |
 
 Why these numbers (frames at 60 Hz): a person's simple visual reaction is 200 to 250 ms (12 to 15 frames) and a choice
 under pressure is longer; somebody new to a game reads the screen first (about 300 ms: `newcomer` centres on 18), a
@@ -613,6 +614,18 @@ player who knows the game anticipates part of it (about 170 ms: `regular` 10), a
 event (about 85 ms: `sharp` 5). A finger's quickest deliberate tap on a keyboard is 60 to 150 ms, so 4 to 9 frames.
 The late release and the overshoot are a quarter to a half of the reaction (letting go is quicker than deciding); the
 stick and lapse numbers are guesses to be tuned against recorded sessions (`tl.sh play --record`), and are said to be.
+
+The cursor (K4) is reasoning, not a measurement on a person. A cursor's reaction to a new target is the same visual
+reaction as a key's, a little shorter for a sharp eye (`aim_lag` as above). Speed: under the hockey camera (52 m up,
+fov 55) the screen spans about 54 m of ice, and a mouse flick across half a screen takes a practised hand about half a
+second (about 50 m/s at its peak), a regular one most of a second, a newcomer longer: 40, 25, 15 m/s. The slowing near
+the target is the corrective phase of a pointing movement (Fitts): the cursor closes 12, 8 or 5 of the remaining
+distance per second, so the last few centimetres take a sharp hand about 0.1 s and a newcomer about 0.3 s. The miss is
+where a person stops pointing; up to 0.15, 0.3 or 0.6 m on the ice, about 3 to 12 pixels at 1080 lines. Measured on
+`ex_pointer_hand` (20 jumping, sliding targets, a shot 40 frames after each jump, seeds 1 to 10; mean aim error at
+the shot; mean frames from a jump until the cursor is within 0.6 m): perfect 200 of 200 hits, 0.050 m, 2.0 frames;
+sharp 197 of 198, 0.261 m, 26.1; regular 124 of 194, 1.042 m, 47.2; newcomer 43 of 193, 3.445 m, 75.8 (the shots that
+are missing are taps lost to a lapse: 2, 6, 7).
 
 Determinism: the hand draws from its own generator, seeded from `ctx.seed`, the profile and `stream`; it never draws
 from `ctx.rng`, so the game's own seeded choices are the same under every hand. Same pack, seed, frames and profile
