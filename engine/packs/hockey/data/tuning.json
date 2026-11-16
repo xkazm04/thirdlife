@@ -4,11 +4,11 @@
   "skater": {"skate_speed":8,"skate_accel":12,"skate_lateral_grip":3,"skate_turn_rate":5,"body_mass":80,"body_scale":2.2},
   "skater_sprint_scale": 1.25,
   "shoot": {"speed":18,"cooldown_s":0.4},
-  "carry": {"reach":1.45,"offset":[0.35,0.07,-0.95],"own_lock_frames":12,"own_lock_speed":4,"flight_take_speed":7,"flight_take_dist":0.6,"pass_speed":14,"pass_cone_deg":50,"pass_lead_max_frames":60,"poke_reach":1.9,"poke_cooldown_frames":30,"poke_speed":4,"poke_lock_frames":20,"carry_speed_scale":0.92,"behind_net_frames":90,"behind_net_half_width":3.5,"ring_width":0.2},
+  "carry": {"reach":1.45,"offset":[1.24,0.07,-2.77],"carry_min":1.0,"own_lock_frames":12,"own_lock_speed":4,"flight_take_speed":7,"flight_take_dist":0.6,"pass_speed":14,"pass_cone_deg":50,"pass_lead_max_frames":60,"poke_reach":1.9,"poke_cooldown_frames":30,"poke_speed":4,"poke_lock_frames":20,"carry_speed_scale":0.92,"behind_net_frames":90,"behind_net_half_width":3.5,"ring_width":0.2},
   "puck": {"radius":0.12,"height":0.08,"max_speed":30,"drag":0},
   "chase_camera": {"distance":11,"height":13,"look_height":0,"fov":50},
   "camera": {"pos":[0,100.7,9.0],"target":[0,0,0.2],"fov":20},
-  "look": {"puck_scale":2.5,"puck_height_scale":1.5,"puck_rim":0.14,"puck_rim_key":"hot","ring_key":"pine_light","carry_width":0.5,"carrier_ring":true,"team_keys":{"blue":"rink_blue","red":"rink_red"},"level_none":"Classic","goal":"GOAL: %s","again":"R: play again","keys":["W A S D: skate   |   Shift: sprint   |   E: poke   |   T: rule dial","With the puck   -   left button or Space: shoot   |   right button or Q: pass","Without it   -   left button or C: cross-check   |   right button or F: body check"]},
+  "look": {"puck_scale":2.5,"puck_height_scale":1.5,"puck_rim":0.14,"puck_rim_key":"hot","ring_key":"pine_light","carry_width":0.5,"carrier_ring":true,"carrier_ring_after_frames":20,"team_keys":{"blue":"rink_blue","red":"rink_red"},"level_none":"Classic","goal":"GOAL: %s","again":"R: play again","keys":["W A S D: skate   |   Shift: sprint   |   E: poke   |   T: rule dial","With the puck   -   left button or Space: shoot   |   right button or Q: pass","Without it   -   left button or C: cross-check   |   right button or F: body check"]},
   "goals": {"blue":[-26,0,0],"red":[26,0,0],"half_width":2,"depth":1.5},
   "roster": [
     {"id":"b0","team":"blue","role":"player","spawn":[-1.5,0]},

@@ -35,6 +35,7 @@ var behind_frames: int = 0             ## H6: frames the carrier has stayed in t
 var behind_limit: int = 90
 var net_zone_half: float = 3.5
 var own_goal_x: Dictionary = {}         ## team -> x of its own goal line
+var carry_min: float = 1.0             ## H9a: the nearest the puck is carried to his centre (clear of his body)
 var hold_at: Vector3 = Vector3.ZERO      ## where on him the puck is held now (the stick side, or another side at the boards)
 var last_release: Dictionary = {}      ## {kind: shot|pass|poked|board, by, team, frame}; empty after a face-off
 var shots: Dictionary = {}
@@ -72,6 +73,7 @@ func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Arr
 	poke_lock_frames = int(c["poke_lock_frames"])
 	carry_speed_scale = float(c["carry_speed_scale"])
 	sprint_speed_scale = float(tune["skater_sprint_scale"])
+	carry_min = float(c["carry_min"])
 	behind_limit = int(c["behind_net_frames"])
 	net_zone_half = float(c["behind_net_half_width"])
 	own_goal_x = {"blue": float(tune["goals"]["blue"][0]), "red": float(tune["goals"]["red"][0])}
@@ -181,15 +183,33 @@ func update_possession() -> void:
 				behind_frames = 0
 				give(best_o)
 				return
+			if behind_frames > behind_limit * 2:
+				# H9a: nobody can reach him there (the puck on his blade, 2.8 m out, can lie in the corner past the net):
+				# he loses it in front of his net; he may not take it back for poke_lock_frames (the lock of a hit)
+				var by: String = carrier
+				behind_frames = 0
+				_release("hit", by, Vector3.ZERO)
+				puck.place(Vector3(gx - signf(gx) * 2.0, 0.07, clampf(pp.z, -3.0, 3.0)))
+				return
 		# at the boards the stick side would be outside them: he moves the puck to a side of him that is inside
 		# (a release there gave it straight back to him every second frame, a loop a person reads as a frozen game;
 		# a puck tucked UNDER him was a kinematic body inside his capsule and shoved him through the boards)
+		# H9a: the puck rides on the stick's blade (carry.offset: the rig's blade socket measured on the ice), turned with
+		# the stick when the human aims (H4's stick heading); at the boards it comes in along the stick, then to his front
 		var tf: Transform3D = (skaters[carrier] as Node3D).global_transform
-		var want: Vector3 = offset
-		if not _inside(_flat(tf * offset)):
-			var y: float = offset.y
-			for c: Vector3 in [Vector3(-offset.x, y, offset.z), Vector3(0.0, y, offset.z), Vector3(-offset.z, y, 0.0), Vector3(offset.z, y, 0.0), Vector3(0.0, y, -offset.z)]:
-				if _inside(_flat(tf * c)):
+		var y: float = offset.y
+		var base: Vector3 = offset
+		if stick_dir.has(carrier):
+			var turn: float = fwd_of(carrier).signed_angle_to(stick_dir[carrier], Vector3.UP)
+			base = offset.rotated(Vector3.UP, turn)
+			base.y = y
+		var want: Vector3 = base
+		if not _inside(_flat(tf * base)):
+			want = Vector3(0.0, y, carry_min)
+			var cm: float = carry_min
+			for c: Vector3 in [Vector3(base.x * 0.8, y, base.z * 0.8), Vector3(base.x * 0.6, y, base.z * 0.6), Vector3(base.x * 0.45, y, base.z * 0.45),
+					Vector3(-base.x, y, base.z), Vector3(0.0, y, -cm), Vector3(-cm, y, 0.0), Vector3(cm, y, 0.0), Vector3(0.0, y, cm)]:
+				if Vector2(c.x, c.z).length() >= cm - 0.01 and _inside(_flat(tf * c)):
 					want = c
 					break
 		if want != hold_at:

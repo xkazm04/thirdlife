@@ -91,4 +91,6 @@ func tick(g) -> void:
 	for id: String in g.order:
 		var ring: Node3D = (g.skaters[id] as Node3D).get_node_or_null("CarryRing") as Node3D
 		if ring != null:
-			ring.visible = id == c
+			# H9a: the human's carry ring at once; another carrier's only after carrier_ring_after_frames of holding, so a
+			# puck traded by pokes on one spot (8 times in 110 frames, lane L) does not make a ring jump between figures
+			ring.visible = id == c and (id == "b0" or g.api._now - int(g.api.carry_since) >= int(cfg["carrier_ring_after_frames"]))

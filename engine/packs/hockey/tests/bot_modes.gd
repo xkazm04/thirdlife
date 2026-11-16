@@ -10,7 +10,7 @@ extends Node
 var ctx
 var s: Dictionary = {}
 const MODES: Array = ["base", "outnumbered", "sudden_death", "pond", "big_ice"]
-const CAP: int = 7000
+const CAP: int = 9000      # H9a: big ice 1:1 at 7,000 was still in its third period (seed 4); 3 x 36 s + intermissions + overtime
 const FLOOR: int = 120
 var i: int = 0
 var phase: String = "start"

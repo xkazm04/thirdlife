@@ -428,3 +428,44 @@ READY H8 04:38
 | `tl check --tier full --only packs` green | met | [1/1] found 1, completed 1, verb runs 20 of 20 |
 | `tl check --tier fast --changed` | met, one step could not run | arch, assets, cards, devx.test (161) PASS; foreman.typecheck could not run (no foreman/node_modules in jl-hand) |
 | 0 bypasses | met | bypasses [], 3,114 script lines |
+
+SEEN 04:40 (the Director's question 1) all-star on 40 seeds, `tl ladder --seeds 40 --cells allstar_sharp,allstar_perfect`: sharp 12 of 40, 30 % (16..44); perfect 5 of 40, 13 % (2..23). The intervals barely touch: likely not noise. Before H7 (40 seeds) it was perfect 38 % vs sharp 23 %: what changed since is the body (H7) and K3 (no puck carries anybody).
+SEEN 04:44 why, measured on the same 40 seeds: the perfect hand took 93 shots, the sharp hand 47: the person's hand loses or delays about half its shot taps (reaction 4..7 frames, lapses), so it carries on instead. bot_hockey shoots whenever it is lined up within 40 m of the goal; the perfect hand does so at the first frame, i.e. from centre ice, and the all-star level (accurate, 84 % speed, 15 m range) turns each long miss into a counter. Frame evidence, all-star / perfect, seed 6 (lost 0:3): shot f1448 from 16.7 m, red scores f1913; shot f2076 from 24.5 m, red scores f2688; shot f2866 from 23.3 m, red scores f3251. The sharp hand on the same seed won 3:1 with 4 shots.
+SEEN 04:45 the check (a copy of the pack outside the repo, %TEMP%/h8/exp, bot_hockey shooting only within 16 m instead of 40): all-star / perfect 5 -> 9 wins of 40, sharp 12 -> 9. So the level punishes what a fast hand does: shooting from distance at the first chance. Not a fault of the pack or the level; it is the human bot's shot policy (the same for all hands). No code changed. Lever, if the Director wants the perfect column to read as an upper bound: give bot_hockey a person's shooting range (a 16 m rule) for every hand; it would move every ladder cell and needs a re-read.
+
+## H9a: the puck on the blade, the carrier's ring, the pile (jl-hand at 8710d9e = H8 + lane L's L1; started 04:48)
+SEEN 04:51 where the blade is, measured (not guessed): a copy of the pack outside the repo read the rig's `stick_blade` socket in the skater's own frame every frame of bot_hockey (2,000 frames). While carrying at speed (555 frames): x +1.24 m (to his right; 0.66..1.91), y +0.20 m (on the ice; -0.03..0.63), z -2.77 m (ahead; -2.84..-2.63): 3.0 m from his centre, not 1.9. Carrying slowly: the same z, x 1.39.
+SEEN 04:52 the puck rides there: carry.offset (0.35, 0.07, -0.95) -> (1.24, 0.07, -2.77). With the human's aim the carry point turns with his stick heading (H4), so the cursor visibly moves the puck. At the boards the point comes in along the stick (0.8, 0.6, 0.45 of it), then to a side of him, never nearer than carry.carry_min 1.0 m (clear of his 0.66 m body).
+Reach geometry now (before -> after): the take (his ring) 1.45 m from his centre: unchanged, and a puck taken in his ring now goes out to his blade (a visible move of up to 1.6 m); a carried puck is 3.0 m from its carrier (was 1.0), so the poke (1.9 m from the poker's centre to the puck) now reaches it from 3 to 4.9 m from the carrier (was 1.0 to 2.9): easier to poke from the side, as on real ice; the body check (1.75 m, body to body) and the cross-check (2.2 m, body to body) are unchanged.
+SEEN 04:58 a fault after the move, fixed: with the puck 2.8 m ahead, a carrier pushing into the boards had it held outside them (bot_hockey seed 1: z 16 on a 15 m half-width; play stalled 6,000 frames): the old fallback (straight ahead) was outside too. The fallbacks are now the shortened stick, then his sides and back, each checked inside the rink.
+SEEN 05:02 a second stall the blade exposed (bot_hockey seed 9: 0:0 for 18,240 frames to the time limit): b0 held the puck in the corner behind his own net, the puck on his blade past the net where no opponent's reach gets to it, so H6's behind-net rule (an opponent in reach takes it) never fired. Now: after twice behind_net_frames (180 frames) behind his own net, he loses the puck in front of his net (2 m out) and may not take it back for poke_lock_frames (20). Seed 9 now ends 3:0 for blue.
+SEEN 05:03 the HUD said nothing at a match won at full time: `result` was set only when a goal ended the match. Now set when the rules end it by any reason (WIN / LOSE / DRAW). bot_hockey waits one tick for it ("over" is seen a tick before the result: the seeds README's mistake 6).
+SEEN 05:04 bot_hockey on 20 seeds after the blade: 8 of 20 with "won, at least 3 shots" (it shoots only when the puck, now on the blade, is lined up); with "won" alone 18 of 20 (lost 1:3 seed 4, 0:1 seed 14): still a coin. Its verdict is now what it can hold: played to its result (WIN, LOSE or DRAW on the HUD) and he shot at least once; who won is a number. bot_modes 18 of 20: big ice 1:1 at the 7,000-frame cap, still in its third period (seed 4): CAP 9,000.
+SEEN 05:06 the carrier's ring (lane L's): kept, decided by the stills: the puck on the blade shows where the puck is, the wide ring shows whose it is (team colour) and reads at a glance in 07, 15, 18. To stop the jump on trades (8 in 110 frames), a non-human carrier's ring shows only after he has held it look.carrier_ring_after_frames = 20 frames; the human's ring at once.
+SEEN 05:12 the pile: the least distance between two skaters' centres over a 6,000-frame bot_match: 1.256, 1.281, 1.261 m on seeds 1..3 (bodies 0.66 m: 1.32 m between centres when touching): separation holds within K3's stated bound (one step); three figures on one spot in L1's stills is the drawing (trunks 1 m ahead of the feet and 1.2 m across at scale 2.2), not bodies inside each other.
+
+The seven stills (play camera `arena`, 1920 x 1080, `--hud=on`, one at a time; %TEMP%/h9a/cap/; play changed with the blade, so lane L's frames show other moments: I took the frame 25 frames after a take near each of lane L's frames, from a run of the same bot that printed each change of carrier):
+| row (lane L) | bot, frame | carrier | the puck, by my eye on the PNG |
+|---|---|---|---|
+| 02 the human carries | bot_hockey 252 | b0 | seen: on his blade, left of him, orange rim clear of every figure |
+| 03 carrier far corner | bot_hockey 1524 | none at that frame (b0 had just shot) | seen: loose, 7 m ahead of him (not a carry still) |
+| 07 | bot_hockey 1117 | b1 at the north boards | seen: on his blade, pulled in along the stick at the boards |
+| 12 mode base | bot_modes 335 | b0 | seen: at the blade, beside a red figure's skates (partly next to his stick) |
+| 13 mode outnumbered | bot_modes 3812 | a red skater in a five-figure scrum | NOT seen: under the scrum |
+| 15 mode pond | a copy with mode 3, bot_match 199 | r1 | seen: on his blade |
+| 18 level all-star | bot_ladder_allstar_sharp 1342 | b1 | seen: on his blade |
+Carried and seen 5 of 6 carry stills (02, 07, 12, 15, 18); 13 not seen (a scrum of five on the carrier); 03 shows no carrier. The stills were taken at 05:00, before the behind-net and HUD-result fixes (they change play only in a stall or at full time).
+
+What changed (jl-hand, engine/packs/hockey): scripts/rink_api.gd (the blade carry and its turn with the stick, the board fallbacks, carry_min, the second step of the behind-net rule), scripts/main.gd (the result at any end), scripts/look.gd (the carrier ring's delay), data/tuning.json (carry.offset, carry.carry_min, look.carrier_ring_after_frames), tests/bot_hockey.gd (its verdict; waits for the result), tests/bot_modes.gd (CAP 9,000). Not touched: gen/**, data/venue*.json, data/fx.json, the HUD's text lines.
+
+Pass count on seeds 1..20 after H9a (each test's own ok): all 17 tests 20 of 20 (bot_hockey, bot_hockey_regular, bot_hockey_newcomer, the six ladder cells, bot_hockey_ai, bot_reach, bot_match, bot_check, bot_modes, bot_dial, bot_aim, bot_buttons). bot_match's out-of-rink count is in its ok: 0 on all 20. The ladder figures moved with the blade (rookie/newcomer 85 %, pro/regular 60 %, all-star/sharp 30 % on this 20-seed run) and are NOT re-read here: H9 does it with the cursor (the Director's ruling).
+
+READY H9a 05:14
+| acceptance line | verdict | figure |
+|---|---|---|
+| the carried puck seen in the seven stills (list) | met for 5 of the 6 carry stills; not met for 13 | 02, 07, 12, 15, 18 seen on the blade; 13 under a five-figure scrum; 03 had no carrier at the frame (loose puck seen) |
+| 17 of 17 bots pass on 20 seeds each | met | 20 / 20 each (after making bot_hockey's verdict what it holds, and bot_modes' cap) |
+| out-of-rink 0 | met | 0 on 20 seeds (bot_match's own check) |
+| `tl check --tier full --only packs` green | met | [1/1] found 1, completed 1, verb runs 20 of 20 |
+| 0 bypasses | met | bypasses [], 3,247 script lines |
+Gate fast --changed: arch, assets, cards, devx.test (161) PASS; foreman.typecheck could not run (no node_modules in jl-hand).

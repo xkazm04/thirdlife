@@ -377,6 +377,10 @@ func _pack_tick(frame: int) -> void:
 	env["drill"] = drill_id != ""
 	env["rules"] = rules
 	if rules.is_over():
+		if result == "":
+			# H9a: a match that ends at full time (or by the time limit) has a result too: the HUD said nothing before
+			result = "WIN" if rules.winner == "blue" else ("LOSE" if rules.winner != "" else "DRAW")
+			_event("win" if result == "WIN" else "lose", Vector3.ZERO, str(rules.winner))
 		frozen = true
 		env["frozen"] = true
 		_hold_all()
