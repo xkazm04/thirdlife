@@ -53,6 +53,7 @@ detail: "<what is missing>" }`. A step never returns `ok: true` for something it
 | `ui.selftest` | full | `ui/selftest.gd` trailer `[selftest] N passed, M failed` | as item.selftest | as item.selftest | (same path as item.selftest) |
 | `perf` | full | scenarios judged against a quiet baseline | **passed** with no quiet baseline and **passed** on a busy machine, judging nothing | both = could not run (exit 2); judged scenarios are found/completed | "perf with no quiet baseline judged nothing: could not run" |
 | `packs` (lane H, new) | | must return found = packs found, completed = packs carried to a verdict | (not yet written) | must follow the contract above | (lane H's) |
+| `world` (K7, new) | full | found = the games of `engine/boot/games.json`, completed = games whose row of `world.sh alone` says "same" | (new step) | fewer rows than games, no trailer line, a row that differs, our timeout: FAIL; a kill from outside: could not run | `devx/test/world.test.mjs` |
 
 Common to every step that spawns: `ctx.run` now names our own timeout (`timedOut: true`) and the signal (`signal`) on its result,
 so a step can tell "timed out" from "killed" from "failed" (test: "ctx.run names our own timeout").

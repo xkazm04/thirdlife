@@ -1,0 +1,5 @@
+# disk: 375.7 GB free on C:\ (floor 20 GB)
+... world
+PASS  world                          99567 ms  [7/7] 7 games: world = alone: seed.drive b912bc471e4967a9@3517, seed.wall cb75fb26a1e80254@1221, seed.paddle dff1a390470352e7@4486, example.walker f1c7b53757c34040@371, example.kit 6b270cedbf59690d@332, example.car 3a459d0fe25e7853@1872, game.ice_hockey_three_against c06b89c5ee18a798@3344; output: .tl/gat
+{"schema":"tl.devx/1","cmd":"check","ok":true,"steps":[{"id":"world","ok":true,"ms":99567,"detail":"7 games: world = alone: seed.drive b912bc471e4967a9@3517, seed.wall cb75fb26a1e80254@1221, seed.paddle dff1a390470352e7@4486, example.walker f1c7b53757c34040@371, example.kit 6b270cedbf59690d@332, example.car 3a459d0fe25e7853@1872, game.ice_hockey_three_against c06b89c5ee18a798@3344; output: .tl/gat","found":7,"completed":7,"retried":false}],"tier":"full","ms":99782,"load":13.75,"flaky_retries":0,"steps_found":1,"steps_completed":1,"units_found":7,"units_completed":7,"disk_free_gb":375.7,"disk_floor_gb":20}
+exit 0

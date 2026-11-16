@@ -278,3 +278,23 @@ Proof: world.sh alone, the 7 packs of the failing check (hockey = temp copy of 6
 PASS, hockey 1591 ticks 7773cb3f in the world = alone; the other six as in the failing log. Every seed and example keeps its
 hash; seeds.sh 30/30; selftest 146/0; tl arch 9/9 green.
 Not run: H0 (3249be7) (needs a checkout; no git). By the code the cause arrived with K2.
+
+## K7 (started 06:07)
+SEEN 06:10 tl check --tier full --only world on this tree: PASS [7/7] in 99.6 s (busy machine; one world run of the 7 games of
+engine/boot/games.json, then each alone): seed.drive b912bc47@3517, seed.wall cb75fb26@1221, seed.paddle dff1a390@4486,
+example.walker f1c7b537@371, example.kit 6b270ced@332, example.car 3a459d0f@1872, hockey (this tree's older pack)
+c06b89c5@3344, all "same" (status/k7-world-step.txt).
+SEEN 06:12 control: the pre-K6 line put back in tl_biped.gd for one run: FAIL [6/7] in 90 s, "game.ice_hockey_three_against
+differs: 4008 own ticks, world 4bceebc9a4bbf4d7, alone c06b89c5ee18a798 (3344 frames)"; line restored (the step bites).
+
+READY K7 06:13
+Files: devx/lib/gate/steps/world.mjs (new step, full tier, auto-discovered; paths: engine/kernel, kits, rigs, style, packs,
+seeds, boot/games.json, tools/world.sh, tools/tl.sh, project.godot select it under --changed); devx/test/world.test.mjs (7
+tests, fake runner: all same PASS; one different FAIL naming both hashes; fewer rows than games FAIL even with the tool's own
+PASS and exit 0; no trailer FAIL; our timeout FAIL; a kill from outside could not run; readGames; no Godot could not run;
+no games FAIL found 0); docs/GATE-HONESTY.md (one row in the audit table for `world`). Output kept in .tl/gate-world.log.
+Acceptance: tl check --tier full --only world green: met (7/7, 99.6 s). tl check --tier fast: arch 9/9, assets, cards,
+devx.test 168/168 PASS; foreman.typecheck could not run (no foreman/node_modules). Hockey in this tree = alone (c06b89c5) with K6.
+No kernel member added.
+Proposed line for CLAUDE.md, under "The one command" (not applied): "`tl check --tier full` includes `world`: every game of
+engine/boot/games.json played in one world must hash as it does alone (`world.sh alone`, about 2 minutes)."
