@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { runRules, loadRules } from "../lib/arch/core.mjs";
+import { runRules, loadRules, computeBaseline } from "../lib/arch/core.mjs";
 import { generateScopeMap, MARK_BEGIN, MARK_END, OWNERSHIP_FILE } from "../lib/arch/contextmap.mjs";
 import { run as archCmd } from "../lib/commands/arch.mjs";
 import { REPO } from "../lib/ctx.mjs";
@@ -78,6 +78,16 @@ test("ownership-fresh: a scope block that differs from the generated table names
   assert.match(r.findings[0].message, /docs/);
   assert.match(r.findings[0].message, /CLAUDE\.md/);
   assert.ok(r.findings[0].line > 0);
+});
+
+test("--update-baseline never grandfathers an unmapped file, a stale scope map or a stale reports digest (regenerate instead)", () => {
+  const files = tree(MAP, { "engine/boot/games.json": "{}\n" });
+  files[OWNERSHIP_FILE] = files[OWNERSHIP_FILE].replace("| `docs/**` | whoever changes the thing |", "| `docs/**`, `CLAUDE.md` | whoever changes the thing |");
+  const root = fixture(files);
+  const ids = ["context-map-cover", "ownership-fresh", "reports-index-fresh"];
+  for (const id of ids.slice(0, 2)) assert.equal(one(root, id).ok, false, `${id} fails on the fixture`);
+  const { next } = computeBaseline({ root, rules, old: { sizes: {}, grandfathered: {} } });
+  for (const id of ids) assert.equal(next.grandfathered[id], undefined, `${id} must never be held by the baseline`);
 });
 
 test("ownership-fresh: missing markers are a finding", () => {

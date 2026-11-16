@@ -35,14 +35,16 @@ export function runRules({ root, rules = loadRules(), baseline = loadBaseline(ro
 }
 
 /** The baseline that would make the current tree pass: sizes of over-budget files, keys of grandfatherable findings.
- *  Never includes api-index-fresh (regenerate instead), api-v1 (a broken API signature is never held: restore it or
- *  raise the version), scope-claims, or the crash/unknown-checker pseudo findings. */
+ *  Never includes the generated-file rules (api-index-fresh, ownership-fresh, reports-index-fresh: regenerate with
+ *  `tl arch --index` instead), context-map-cover (map the file in context-map.json instead), api-v1 (a broken API
+ *  signature is never held: restore it or raise the version), scope-claims, or the crash/unknown-checker pseudo findings. */
+const NEVER_HELD = ["size-ratchet", "api-index-fresh", "api-v1", "scope-claims", "context-map-cover", "ownership-fresh", "reports-index-fresh"];
 export function computeBaseline({ root, rules = loadRules(), old = loadBaseline(root) }) {
   const bare = { schema: "tl.arch.baseline/1", sizes: {}, grandfathered: {} };
   const { results, io } = runRules({ root, rules, baseline: bare });
   const next = { schema: "tl.arch.baseline/1", sizes: Object.fromEntries(Object.entries(io.current ?? {}).sort()), grandfathered: {} };
   for (const r of results) {
-    if (["size-ratchet", "api-index-fresh", "api-v1", "scope-claims"].includes(r.rule.id)) continue;
+    if (NEVER_HELD.includes(r.rule.id)) continue;
     const keys = [...new Set(r.findings.filter((f) => f.key !== "crash" && f.key !== "unknown-checker").map((f) => f.key))].sort();
     if (keys.length) next.grandfathered[r.rule.id] = keys;
   }
