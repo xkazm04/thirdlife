@@ -1,3 +1,9 @@
 {
-  "sessions": []
+  "sessions": [
+    {
+      "id": "challenge-2026-11-16",
+      "scope": ["engine/kernel/**", "engine/examples/**", "engine/JOURNAL.md", "foreman/src/**", "foreman/test/**", "devx/**", "docs/OWNERSHIP.md", "docs/generated/REPORTS.md", "context-map.json"],
+      "note": "scan-sweep --challenge run: 8 cards in 3 waves, builders in .claude/worktrees/ch-*, merged by the coordinator; until the run lands (16 Nov)"
+    }
+  ]
 }
