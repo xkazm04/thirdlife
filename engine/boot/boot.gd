@@ -380,7 +380,7 @@ func _physics_process(_delta: float) -> void:
 			"yaw_deg": snappedf(rad_to_deg(float((view.get("visitor") as Node3D).get("look_yaw"))), 0.01)}, "", false))
 		_trace.flush()
 	if _hint != null:
-		_hint.text = KEYS_STAGE if stage >= 0 else KEYS_WALK
+		_hint.text = (str(view.get("visit").call("stage_hint")) if view.get("visit") != null else KEYS_STAGE) if stage >= 0 else KEYS_WALK   # K8: Esc alone when the game uses Q
 		_hint.position.y = get_viewport().get_visible_rect().size.y - 58
 	if not _capture_path.is_empty() and not _capture_done and _frame >= _capture_at:
 		_capture_done = true

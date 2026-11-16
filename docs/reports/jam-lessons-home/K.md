@@ -298,3 +298,31 @@ devx.test 168/168 PASS; foreman.typecheck could not run (no foreman/node_modules
 No kernel member added.
 Proposed line for CLAUDE.md, under "The one command" (not applied): "`tl check --tier full` includes `world`: every game of
 engine/boot/games.json played in one world must hash as it does alone (`world.sh alone`, about 2 minutes)."
+
+## K8 (started 06:53): on stage, a key the staged game declared belongs to the game
+SEEN 06:55 how the host knows: the staged pack's TLInput is already in visit.gd (`_stage_rec[1]`, set when a game comes on
+stage, recorded or replayed); its declarations are kernel-side data (`_actions[...]["keys"]`). New kernel-side
+`TLInput._declares_key(keycode)` reads the declared actions' key lists only, never a device. visit.gd `stage_uses_key(keycode)`
+and `stage_hint()`; on stage: `quit` (Esc) always leaves, `leave` (Q) leaves only when the staged game declared no action on
+Q. Off stage nothing changed. boot.gd: the stage hint line comes from `visit.stage_hint()` ("Esc  leave the game" when the
+game uses Q, else "Q or Esc  leave the game"); KEYS_STAGE stays as the fallback.
+SEEN 06:57 proof (selftest k8.stage_keys; walks engine/kernel/world/walks/k8_stage_hockey.json, k8_stage_kit.json and
+k8_stage.devices.json; a scripted visitor in a test window: E 60, Q 200, Esc 300): hockey on stage after Q (tick 240,
+stage 0), the game's record has "pass" on frames 200..204 (5 frames), Esc leaves at 300; kit court: Q leaves at 200.
+Control: the old line put back: FAIL (hockey not on stage after Q, no pass, Esc not the leave); line restored.
+SEEN 07:00 world.sh visit-proof after: PASS, the same leave (tick 1700, plot 0, seed_drive, which declares no Q) and the same
+six pack hashes as before the change (drive 51e7c714, wall 91d21fbf, walker f1c7b537, paddle 1f933bb4, kit 6b270ced,
+car 03b291a2). export.sh build + check on this tree (--out %TEMP%/k8/dist): PASS, step 3: "E: a game was on stage from
+frame 750 to 990 (plot index 4 ...); Q: he was walking again at frame 1080" (the kit court still leaves on Q).
+SEEN 07:00 npm ci in foreman/ (8 packages from the lockfile); tl check --tier fast: arch 9/9, assets, cards, devx.test 169/169,
+foreman.typecheck PASS (all five green).
+CONTRACT TEXT (K8), for docs/EXE.md (keys) or contracts/RUNNER.md (visit): "On stage, a key the staged game declared is the
+game's: Esc always leaves the game; Q leaves it only when the game declared no action on Q, and the hint says which
+('Esc  leave the game' or 'Q or Esc  leave the game'). Off stage the keys are as before." And export.sh's README line 246
+"Keys inside a game: Q or Esc leave the game" would read "Esc leaves the game (Q too when the game does not use it)".
+
+SEEN 07:13 tl check --tier full --only kernel.selftest,world,seeds: kernel.selftest 147/147 (675 s), seeds 30/30, world 7/7, every game the same in a world as alone (the six others with the hashes of K7's run; hockey e8a95e16@4186: the pack of df0052d, newer than the one K7 ran (c06b89c5@3344), so not comparable with K7; world = alone holds). Every recorded tour case of the selftest (world.tour, walk_proof, next_round) passes.
+
+READY K8 07:14
+Files: engine/kernel/api/tl_input.gd (kernel-side _declares_key), engine/kernel/runner/visit.gd (stage_uses_key, stage_hint; Q leaves the stage only when the game declared no Q), engine/boot/boot.gd (the stage hint from visit.stage_hint(): one line), engine/kernel/world/walks/k8_stage_hockey.json, k8_stage_kit.json, k8_stage.devices.json, engine/tools/selftest.sh block K8.
+No public kernel member (API stays 1.5). Acceptance: hockey on stage, Q passes (5 frames of pass in the game's record) and does not leave, Esc leaves: met; kit court Q leaves: met (selftest k8.stage_keys, and export.sh check step 3); visit-proof the same path and hashes: met; world step hashes unchanged: met; tl check --tier full --only kernel.selftest,world,seeds: met; tl check --tier fast all five: met. Contract text above (not applied). The hint line was not seen in the exe's window (check step 3 counts W and Esc; the hint is drawn, not read).

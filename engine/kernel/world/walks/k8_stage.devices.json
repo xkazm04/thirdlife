@@ -1,0 +1,3 @@
+[[30, "mark", "start", 0], [60, "key", "E", 1], [65, "key", "E", 0], [120, "mark", "entered", 0],
+ [200, "key", "Q", 1], [205, "key", "Q", 0], [240, "mark", "after_q", 0],
+ [300, "key", "Escape", 1], [305, "key", "Escape", 0], [340, "mark", "after_esc", 0], [500, "key", "Escape", 1], [505, "key", "Escape", 0]]
