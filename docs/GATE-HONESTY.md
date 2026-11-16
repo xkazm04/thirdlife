@@ -20,11 +20,18 @@ This page is the audit of `tl check` against the first fault, and the rule for r
   outside) is never a pass. The gate exits **2** when nothing failed and something could not run; exit 1 when anything failed.
 - Zero steps selected is a FAIL ("found 0 steps"), except under `--changed` when nothing changed that any step claims: then there
   is nothing to check and the note line says so.
+- A counted step that **found fewer** units than its last green run of the same tier is a **FAIL** ("found 165, last green run
+  found 169 (-4)"), whatever `ok` it claims, unless the run declares it: `tl check --expect-drop <step>[,..]` (a step not
+  selected is a usage error, exit 2). The baseline is the latest row of `.tl/gate-history.jsonl` of that tier in which the step
+  passed with a count; a failed or not-run row never sets it, a row without the step (`--only`, `--changed`) is skipped, a step
+  that could not run is never compared. The row of a declared run carries `expected_drop`, so its count is the next baseline.
+  Every passing counted step shows its delta (`(+0 vs last green)`, `(-4 vs last green, expected)`, `(no earlier count)`).
 - The disk floor **says, never stops**: `tl doctor` and the first line of `tl check` print free space on the repo's drive and
   `WARN` under the floor (20 GB, `TL_DISK_FLOOR_GB` overrides). Nothing is killed or skipped for it.
 
 The JSON line of `tl check` carries, besides `steps`: `steps_found`, `steps_completed`, `units_found`, `units_completed`,
-`not_run` (the ids; omitted when none), `disk_free_gb`, `disk_floor_gb`, `disk_low` (only when low). Each step in `steps` carries
+`not_run` (the ids; omitted when none), `count_drops` (`[{id, was, now}]`; omitted when none), `expected_drop` (the declared
+ids; omitted when none), `disk_free_gb`, `disk_floor_gb`, `disk_low` (only when low). Each step in `steps` carries
 `found` and `completed` when it counts, `not_run: true` when it could not run. The PASS/FAIL line shows `[completed/found]`.
 
 ## The step contract
@@ -40,6 +47,7 @@ detail: "<what is missing>" }`. A step never returns `ok: true` for something it
 | step | tier | how it counts (after the cure) | the false-pass path found (before) | the cure | test (devx/test/gate-honesty.test.mjs) |
 |---|---|---|---|---|---|
 | (the gate itself) | both | steps selected vs steps that returned | zero steps selected passed (exit 0); a step's `ok:true` stood whatever it ran | zero selected = FAIL (except `--changed` with nothing to check); engine judges found/completed | "a step that says ok but completed fewer...", "found zero units", "zero steps selected", "JSON line carries found and completed" |
+| (count drops) | both | each counted step's found against its last green run of the tier (`devx/lib/gate/drops.mjs`) | a run that FOUND fewer (a test file the walk misses, a suite that stops registering) passed: counts were recorded and never read back | an undeclared drop = FAIL; `--expect-drop` declares it and is recorded; `--trend` shows `last found` / `green found` and `DROP` | `devx/test/count-drop.test.mjs` |
 | `arch` | both | rules evaluated (in process) | none: in-process, cannot stop part-way and still return | reports found/completed | (engine tests) |
 | `assets` | both | checks evaluated (in process) | none | reports found/completed | (engine tests) |
 | `cards` | both | checks evaluated (in process) | none (an empty check list read `steps[0].detail` and threw: a FAIL, not a pass) | reports found/completed; empty list says "no checks" and fails on found 0 | (engine tests) |
@@ -65,11 +73,14 @@ so a step can tell "timed out" from "killed" from "failed" (test: "ctx.run names
 - `tl check --tier full` on a busy machine exits **2** for `perf` ("machine BUSY: not judged"). It used to pass. A merge gate
   that needs a 0 runs perf on a quiet machine or reads `not_run` and decides in words.
 - The pre-push hook says "COULD NOT RUN" for exit 2 and stops the push, as it does for a FAIL.
+- A deliberate removal of tests (or cases, packs, rules) needs one declared run per tier: `tl check --tier fast --expect-drop
+  <step>`; the pre-push hook's FAIL message says so.
 
 ### What this does not catch
 
 - A shell script whose own trailer is printed and whose cases were skipped inside it (a case the script never ran is not counted
-  by anyone). The scripts in `engine/tools/` have no case manifest; a count drop against the previous run is not judged yet.
+  by anyone). The scripts in `engine/tools/` have no case manifest. A count drop is judged against the last green run only
+  where a history exists: a fresh worktree has none (`no earlier count`), and each tier keeps its own baseline.
 - A Windows timeout kills `bash` / `cmd.exe`; a grandchild (Godot, node) can outlive it. The verdict is still FAIL "timed out".
 - The gate process itself killed: no JSON line is printed. A reader that finds no JSON last line must treat the run as failed.
 

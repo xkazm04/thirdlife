@@ -22,7 +22,8 @@ cd "$ROOT" || exit 1
 node "$TL" check --tier "$TIER"; code=$?
 # exit 2 = a step COULD NOT RUN here (no Godot, no foreman deps, no input, machine too busy to judge): not a pass either
 [ "$code" = 2 ] && { echo "tl pre-push: gate COULD NOT RUN every step (exit 2, see the not_run steps), push stopped (override once: git push --no-verify)"; exit 1; }
-[ "$code" = 0 ] || { echo "tl pre-push: gate FAILED, push stopped (override once: git push --no-verify)"; exit 1; }
+# a step that found fewer units than its last green run fails too; a real removal is declared once before the push
+[ "$code" = 0 ] || { echo "tl pre-push: gate FAILED, push stopped (a step that found fewer units than its last green run: declare a real removal with node devx/bin/tl.mjs check --tier $TIER --expect-drop <step>; override once: git push --no-verify)"; exit 1; }
 `;
 
 export function hookPath(repo) {
