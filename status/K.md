@@ -257,3 +257,24 @@ Acceptance:
   version only; assets, cards PASS; foreman.typecheck could not run.
 Not done: a plate behind several separate widgets at once (a group is one multi-line label); the plate's colour is the HUD's
 own ink, not a style palette key (the style has no HUD section).
+
+## K6 (started 05:39)
+SEEN 05:45 K6 first difference: hockey alone in a world (no other pack) already differs (own ticks 6722 vs 1591), so not the neighbours. Bisected with world.sh alone --frames=N: equal through 680 ticks, different from 681. Per-frame state (a print in a temp copy of bot_hockey): after tick 680 only skater b0's position differs, by 3 cm ((22.191, 14.202) alone vs (22.161, 14.220) in the world), his velocity equal; b0 stands 0.42 m from r0's HELD puck (21.856, 14.520) at the side boards. Position without velocity = platform motion: my K2/K3 ball-under-the-feet test. Suspect (testing now): its shape query takes at most 8 results; at the boards more than 8 colliders touch the sphere (ice, apron, boards, glass, frame, skaters, puck) and which 8 come back depends on body order, which differs in a world.
+SEEN 05:47 K6 CAUSE (kernel, mine, from K2): TLBiped._held_under_feet asked get_world_3d().direct_space_state. In a world every pack has its own physics space (TLContext.space), and the viewport's space is empty: the query returned 0 colliders in the world (A: 679 Boards, Puck; 680 Boards, Ice, Puck; W: 0, 0, 0), so in a world a ball under the feet was never left out and b0 was carried by r0's held puck at tick 680. Cure (1 line, engine/kernel/api/tl_biped.gd): the query goes through TLContext.space_state_of(self), the kernel's door that gives the pack's own space in a world and the viewport's space alone. After: hockey (temp copy of 6e0dd8d's pack) in a world = alone at 681 ticks (34a421be both) and the bot ends at 1591 in both (fd2cdd28 both). The alone hash is unchanged by the cure. Running now: the 7-pack check, the other packs' hashes, selftest, seeds.
+SEEN 05:49 7-pack check with the cure (status/k6-alone-after.txt): PASS world.alone, hockey (temp copy of 6e0dd8d's pack) 1591 own ticks 7773cb3f in the world = 7773cb3f alone (the failing log's alone hash: the alone run is unchanged), the other six with the same hashes as in the failing log. Gated: selftest k6.world_ball_floor (world.sh alone on ex_held_big + ex_held): PASS with the cure, FAIL with the one line put back (both examples DIFFERENT).
+SEEN 05:55 after the cure: every seed and example hashes as in K5 (status/k6-hashes-after.txt, smoke and first bot); seeds.sh 30/30; tl arch 9/9 green (no new member); full selftest running (status/k6-selftest.txt). H0 (3249be7) not run: it needs a checkout of that commit and I run no git. By the code it predates the cause: the query came with K2 (02:53) and only matters once a skater stands on a held or shot puck in a world.
+SEEN 06:06 full selftest 146 passed 0 failed (status/k6-selftest.txt)
+
+READY K6 06:07
+Cause: kernel, mine (K2's ball-under-the-feet test in TLBiped). Its shape query asked get_world_3d().direct_space_state; in a
+world each pack has its own physics space and the viewport's space is empty, so the query found nothing there, a held or shot
+puck under a skater's feet was followed as a moving floor in the world and not alone: hockey diverged at tick 680 (b0 3 cm
+apart, carried by r0's held puck at the boards), and bot_hockey ended at 6722 instead of 1591.
+Cure: engine/kernel/api/tl_biped.gd, the query goes through TLContext.space_state_of(self) (the kernel's own door: the
+pack's space in a world, the viewport's alone). One line plus a comment; no new member; nothing in the pack.
+Gate: engine/tools/selftest.sh block K6 (k6.world_ball_floor: world.sh alone on ex_held_big + ex_held), PASS with the cure,
+FAIL without it.
+Proof: world.sh alone, the 7 packs of the failing check (hockey = temp copy of 6e0dd8d's pack), --mode=bot --frames=20000:
+PASS, hockey 1591 ticks 7773cb3f in the world = alone; the other six as in the failing log. Every seed and example keeps its
+hash; seeds.sh 30/30; selftest 146/0; tl arch 9/9 green.
+Not run: H0 (3249be7) (needs a checkout; no git). By the code the cause arrived with K2.
