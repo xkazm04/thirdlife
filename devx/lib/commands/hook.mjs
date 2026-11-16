@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { run as sh, REPO } from "../ctx.mjs";
+import { usage, fail, done } from "../verdict.mjs";
 
 export const summary = "install/remove/status of the pre-push hook that runs `tl check`";
 export const MARKER = "# tl-devx-managed-hook v1 (written by `tl hook install`; remove with `tl hook remove`)";
@@ -55,6 +56,6 @@ export function hookAction(action, repo = REPO) {
 
 export async function run(args) {
   const r = hookAction(args[0] ?? "");
-  (r.ok ? console.log : console.error)(r.message);
-  return r.ok ? 0 : (["install", "remove", "status"].includes(args[0]) ? 1 : 2);
+  if (r.ok) { console.log(r.message); return done("hook"); }
+  return ["install", "remove", "status"].includes(args[0]) ? fail("hook", r.message) : usage("hook", r.message);
 }

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { verdict } from "./verdict.mjs";
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const posix = (p) => p.split(path.sep).join("/");
@@ -49,11 +50,7 @@ export function bash(script, args = [], opts = {}) {
   return run(sh, [script, ...args], { ...opts, env: { TL_QUIET: "1", ...(godot ? { TL_GODOT: godot } : {}), ...(opts.env ?? {}) } });
 }
 
-/** A step result: {id, ok, ms, detail}. `verdict` prints one line per step and the JSON as the last line. */
+/** A step result: {id, ok, ms, detail}; not_run: true marks one that could not run. `printVerdict` prints one line per step
+ *  and the tl.devx/1 JSON as the last line, and returns the exit: 1 any fail, else 2 any not_run, else 0 (devx/lib/verdict.mjs). */
 export function step(id, ok, ms, detail = "") { return { id, ok, ms, detail }; }
-export function printVerdict(name, steps, extra = {}) {
-  for (const s of steps) console.log(`${s.ok ? "PASS" : "FAIL"}  ${s.id.padEnd(28)} ${String(s.ms).padStart(7)} ms  ${s.found !== undefined ? `[${s.completed ?? "?"}/${s.found}] ` : ""}${s.detail}`.trimEnd());
-  const ok = steps.every((s) => s.ok);
-  console.log(JSON.stringify({ schema: "tl.devx/1", cmd: name, ok, steps, ...extra }));
-  return ok ? 0 : 1;
-}
+export function printVerdict(name, steps, extra = {}) { return verdict(name, steps, extra); }

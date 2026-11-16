@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { REPO, run } from "../ctx.mjs";
+import { couldNotRun } from "../verdict.mjs";
 
 export const summary = "cost/outcome ledger of Foreman jobs (read-only) [--json]";
 
@@ -82,7 +83,7 @@ const num = (n) => n.toLocaleString("en-US");
 
 export async function run_(args) {
   const siteRoot = findSiteRoot();
-  if (!siteRoot) { console.error("tl ledger: no site directory (set TL_SITE_DIR, or run in a checkout with site/)"); return 2; }
+  if (!siteRoot) return couldNotRun("ledger", "tl ledger: no site directory (set TL_SITE_DIR, or run in a checkout with site/)");
   const led = readLedger(siteRoot);
   if (args.includes("--json")) { console.log(JSON.stringify({ schema: "tl.ledger/1", site: siteRoot.split(path.sep).join("/"), ...led })); return 0; }
   const cols = [["job", 36, "l"], ["outcome", 8, "l"], ["wall", 7], ["run", 7], ["pkgs", 4], ["rounds", 6], ["edit", 4], ["in", 11], ["out", 9], ["cacheRd", 11], ["weighted", 9], ["replan", 6], ["critic", 6]];

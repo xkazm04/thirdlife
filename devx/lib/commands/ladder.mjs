@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import * as realCtx from "../ctx.mjs";
+import { usage, couldNotRun } from "../verdict.mjs";
 
 const USAGE = "usage: tl ladder --pack <dir> [--seeds N] [--cells <level_hand>[,..]] [--par N]";
 
@@ -89,11 +90,11 @@ function realRunBot(ctx, packDir) {
 export async function execute(args, deps = {}) {
   const ctx = deps.ctx ?? realCtx;
   let o;
-  try { o = parseArgs(args); } catch (e) { console.error(`tl ladder: ${e.message}\n${USAGE}`); return 2; }
+  try { o = parseArgs(args); } catch (e) { return usage("ladder", `tl ladder: ${e.message}\n${USAGE}`); }
   const packDir = path.resolve(ctx.REPO, o.pack);
-  if (!fs.existsSync(path.join(packDir, "pack.json"))) { console.error(`tl ladder: no pack.json in ${packDir}`); return 2; }
+  if (!fs.existsSync(path.join(packDir, "pack.json"))) return couldNotRun("ladder", `tl ladder: no pack.json in ${packDir}`);
   const cells = findCells(packDir, o.cells);
-  if (!deps.runBot && !ctx.resolveGodot()) { console.error("tl ladder: Godot not found (tl doctor)"); return 2; }
+  if (!deps.runBot && !ctx.resolveGodot()) return couldNotRun("ladder", "tl ladder: Godot not found (tl doctor)");
   const t0 = Date.now();
   const rows = cells.length ? await ladder(cells, o.seeds, o.par, deps.runBot ?? realRunBot(ctx, packDir)) : [];
   console.log(`level      hand      wins          win % (95 %)   goals for:against  frames  period 2  passes reached  down %  draws  taps lost  his shots`);
