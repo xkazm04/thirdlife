@@ -5,19 +5,33 @@ else, so a session says what it owns before it edits.
 
 ## Scope map (stable owners of areas)
 
-| Area | Path globs | Owner role | Change rule |
-|---|---|---|---|
-| Kernel | `engine/kernel/**`, `engine/project.godot` | engine | `engine/tools/selftest.sh` stays green; API additions update `engine/kernel/API.md` |
-| Kit, rigs, style | `engine/kits/**`, `engine/rigs/**`, `engine/style/**` | look | reference nothing outside; `tl arch` module-walls |
-| Seeds | `engine/seeds/**` | engine | every seed passes all verbs (`engine/tools/seeds.sh`) |
-| House games | `engine/packs/**` | engine | every house game passes all verbs (`tl check --tier full --only packs`); `engine/packs/README.md` |
-| Look captures | `engine/look/**` | look | stills and journal only |
-| Designer panel | `engine/ui/**` | engine | `engine/tools/ui.sh selftest`; reads job directories as `contracts/JOB.md` defines them |
-| Recipe cards | `engine/cards/**` | Director | `tl cards check`; a card names only what its seed shows (`contracts/CARDS.md`) |
-| Foreman | `foreman/**` | foreman | typecheck + tests; JOB.md is the contract |
-| Contracts | `contracts/**` | Director only | builders propose in reports |
-| Dev tool | `devx/**`, `assets/**`, `.claude/**` | devx | `tl check --tier fast` |
-| Docs | `docs/**`, `CLAUDE.md` | whoever changes the thing | docs in the same commit |
+`context-map.json` is the one partition of the repo: the skills (spark, scan-sweep, lens-scan) target by it and the
+table below is generated from it. To change an owner, a rule or a glob, edit `context-map.json` and run `tl arch --index`.
+`tl arch` fails when a tracked file lies in no context or in two (rule `context-map-cover`) and when this table is stale
+(rule `ownership-fresh`).
+
+<!-- generated:scope-map -->
+Generated from `context-map.json` by `tl arch --index`; do not edit between the markers (rule `ownership-fresh`).
+
+| Context | Group | Path globs | Owner role | Change rule |
+|---|---|---|---|---|
+| kernel | engine | `engine/kernel/**`, `engine/project.godot`, `engine/*.md` | engine | `engine/tools/selftest.sh` stays green; API additions update `engine/kernel/API.md`; `engine/JOURNAL.md` is the engine's history |
+| kit | engine | `engine/kits/**`, `engine/kits_lab/**` | look | references nothing outside itself; `tl arch` module-walls; `engine/kits_lab` is the kit's layout lab |
+| rigs | engine | `engine/rigs/**` | look | references nothing outside itself; `tl arch` module-walls |
+| style | engine | `engine/style/**` | look | references nothing outside itself; `tl arch` module-walls |
+| seeds | engine | `engine/seeds/**` | engine | every seed passes all verbs (`engine/tools/seeds.sh`) |
+| packs | engine | `engine/packs/**` | engine | every house game passes all verbs (`tl check --tier full --only packs`); `engine/packs/README.md` |
+| look | engine | `engine/look/**` | look | stills and journal only |
+| ui | engine | `engine/ui/**` | engine | `engine/tools/ui.sh selftest`; reads job directories as `contracts/JOB.md` defines them |
+| cards | engine | `engine/cards/**` | Director | `tl cards check`; a card names only what its seed shows (`contracts/CARDS.md`) |
+| engine-tools | engine | `engine/tools/**` | engine | usage headers agree with verbs.json (`tl arch` verbs-contract); `tl check --tier full` |
+| foreman | foreman | `foreman/**` | foreman | typecheck + tests; `contracts/JOB.md` is the contract |
+| contracts | docs | `contracts/**` | Director only | builders propose in reports |
+| devx | devx | `devx/**`, `assets/**`, `.claude/**`, `CLAUDE.md`, `perf/**`, `context-map.json`, `.gitignore` | devx | `tl check --tier fast`; `perf/` measures under load and starts only processes it ends |
+| docs | docs | `docs/**`, `reports/**`, `research_notes/**`, `briefs/**` | whoever changes the thing | docs in the same commit; `docs/generated/**` only from its generator |
+| frozen | history | `spike/**`, `kitlab/**` | nobody | frozen history: do not build on it |
+| boot | engine | `engine/boot/**`, `engine/export_presets.cfg` | engine | `tl check --tier full --only world`: every game of `engine/boot/games.json` hashes in one world as it does alone; the exe exports (`docs/EXE.md`) |
+<!-- /generated:scope-map -->
 
 ## Claims
 

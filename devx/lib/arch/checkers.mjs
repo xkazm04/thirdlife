@@ -5,5 +5,7 @@ import { uidOrphans, sizeRatchet, scopeClaims } from "./hygiene.mjs";
 import { verbsContract, schemaVersions } from "./contracts.mjs";
 import { apiIndexFresh } from "./apiindex.mjs";
 import { apiContract } from "./apicontract.mjs";
+import { contextMapCover, ownershipFresh } from "./contextmap.mjs";
 
-export const CHECKERS = { moduleWalls, classPrefixes, uidOrphans, sizeRatchet, scopeClaims, verbsContract, schemaVersions, apiIndexFresh, apiContract };
+export const CHECKERS = { moduleWalls, classPrefixes, uidOrphans, sizeRatchet, scopeClaims, verbsContract, schemaVersions, apiIndexFresh, apiContract,
+  contextMapCover, ownershipFresh };

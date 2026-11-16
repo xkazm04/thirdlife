@@ -19,6 +19,10 @@
     {"id": "api-index-fresh", "severity": "error", "checker": "apiIndexFresh",
      "description": "docs/generated/API-INDEX.md equals what `tl arch --index` generates from the GDScript sources"},
     {"id": "api-v1", "severity": "error", "checker": "apiContract",
-     "description": "docs/generated/API-V1.json is the kernel API contract: a class, method, signal, property or constant in it may not be removed or changed without a new major version (KERNEL_API in manifest.gd), and an addition needs a new minor; the finding names the member"}
+     "description": "docs/generated/API-V1.json is the kernel API contract: a class, method, signal, property or constant in it may not be removed or changed without a new major version (KERNEL_API in manifest.gd), and an addition needs a new minor; the finding names the member"},
+    {"id": "context-map-cover", "severity": "error", "checker": "contextMapCover",
+     "description": "every tracked file lies in exactly one context of context-map.json: a file in none has no owner, a file in two has two (absent map passes)"},
+    {"id": "ownership-fresh", "severity": "error", "checker": "ownershipFresh",
+     "description": "the scope map between the generated:scope-map markers in docs/OWNERSHIP.md equals what `tl arch --index` generates from context-map.json, and every context names an owner and a change rule"}
   ]
 }
