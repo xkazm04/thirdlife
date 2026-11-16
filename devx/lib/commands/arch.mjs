@@ -1,4 +1,4 @@
-export const summary = "static architecture checks (walls, prefixes, uids, verbs, schemas, size ratchet, API index, API v1 contract); no Godot";
+export const summary = "static architecture checks (walls, prefixes, uids, verbs, schemas, size ratchet, API index, API v1 contract, report digest); no Godot";
 import fs from "node:fs";
 import path from "node:path";
 import { REPO, printVerdict, step } from "../ctx.mjs";
@@ -7,6 +7,7 @@ import { generateIndex, INDEX_FILE } from "../arch/apiindex.mjs";
 import { writeApi, makeBrokenTree, API_FILE } from "../arch/apicontract.mjs";
 import { makeIo } from "../arch/util.mjs";
 import { writeScopeMap } from "../arch/contextmap.mjs";
+import { generateReports, REPORTS_FILE } from "../arch/reportsindex.mjs";
 
 const USAGE = "tl arch [--rule <id>[,<id>]] [--verbose] [--root <dir>] | --index [--freeze] | --broken-demo <empty dir> | --update-baseline | --list";
 
@@ -35,6 +36,13 @@ export async function run(args, ctx = {}, root = REPO) {
     for (const l of api.lines) console.log(l);
     const scope = writeScopeMap(makeIo(root), root);   // docs/OWNERSHIP.md's scope map, from context-map.json
     for (const l of scope.lines) console.log(l);
+    const rep = generateReports(makeIo(root));        // docs/generated/REPORTS.md, the digest of docs/reports
+    if (rep.reports.length || fs.existsSync(path.join(root, REPORTS_FILE))) {
+      const rf = path.join(root, REPORTS_FILE);
+      const was = fs.existsSync(rf) ? fs.readFileSync(rf, "utf8").replace(/\r\n/g, "\n") : null;
+      if (was !== rep.text) { fs.mkdirSync(path.dirname(rf), { recursive: true }); fs.writeFileSync(rf, rep.text); }
+      console.log(`${was === rep.text ? "unchanged" : "wrote"} ${REPORTS_FILE} (${rep.reports.length} reports)`);
+    }
     return api.ok && scope.ok ? 0 : 1;
   }
   if (args.includes("--update-baseline")) {

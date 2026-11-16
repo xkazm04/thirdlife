@@ -65,6 +65,6 @@ The checkout is shared with other Claude sessions (a visual-look session and the
 | Shareable items (`item.json`, `.tlitem`) | `docs/SHARING.md`, `engine/kernel/share/`, `engine/tools/item.sh` |
 | Sharing, world layering | `docs/SHARING.md`, `reports/` |
 | Player-facing content tooling ideas | `docs/PLAYER-CONTENT-IDEAS.md` |
-| History and decisions | `engine/JOURNAL.md`, `foreman/JOURNAL.md`, `docs/reports/` |
+| History and decisions | `docs/generated/REPORTS.md` (generated digest: pack-author changes with stale marks, questions raised), `engine/JOURNAL.md`, `foreman/JOURNAL.md`, `docs/reports/` |
 
 `spike/` and `kitlab/` are frozen history; `site/` is gitignored job output. Do not build on them.

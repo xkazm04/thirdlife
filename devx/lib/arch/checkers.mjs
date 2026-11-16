@@ -6,6 +6,7 @@ import { verbsContract, schemaVersions } from "./contracts.mjs";
 import { apiIndexFresh } from "./apiindex.mjs";
 import { apiContract } from "./apicontract.mjs";
 import { contextMapCover, ownershipFresh } from "./contextmap.mjs";
+import { reportsIndexFresh } from "./reportsindex.mjs";
 
 export const CHECKERS = { moduleWalls, classPrefixes, uidOrphans, sizeRatchet, scopeClaims, verbsContract, schemaVersions, apiIndexFresh, apiContract,
-  contextMapCover, ownershipFresh };
+  contextMapCover, ownershipFresh, reportsIndexFresh };

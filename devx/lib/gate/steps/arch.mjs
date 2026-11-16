@@ -4,7 +4,7 @@ import { runRules } from "../../arch/core.mjs";
 
 export const id = "arch";
 export const tiers = ["fast", "full"];
-export const paths = ["engine/**", "contracts/**", "devx/**", "docs/generated/**", "context-map.json", "docs/OWNERSHIP.md"];
+export const paths = ["engine/**", "contracts/**", "devx/**", "docs/generated/**", "context-map.json", "docs/OWNERSHIP.md", "docs/reports/**", "briefs/**"];
 
 export async function run(ctx = {}) {
   const { results } = runRules({ root: ctx.repo ?? REPO });
