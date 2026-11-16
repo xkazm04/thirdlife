@@ -23,6 +23,8 @@
     {"id": "context-map-cover", "severity": "error", "checker": "contextMapCover",
      "description": "every tracked file lies in exactly one context of context-map.json: a file in none has no owner, a file in two has two (absent map passes)"},
     {"id": "ownership-fresh", "severity": "error", "checker": "ownershipFresh",
-     "description": "the scope map between the generated:scope-map markers in docs/OWNERSHIP.md equals what `tl arch --index` generates from context-map.json, and every context names an owner and a change rule"}
+     "description": "the scope map between the generated:scope-map markers in docs/OWNERSHIP.md equals what `tl arch --index` generates from context-map.json, and every context names an owner and a change rule"},
+    {"id": "reports-index-fresh", "severity": "error", "checker": "reportsIndexFresh",
+     "description": "docs/generated/REPORTS.md (the digest of docs/reports: pack-author bullets with stale marks, questions raised) equals what `node devx/bin/tl.mjs arch --index` generates; a new report fails until it is regenerated"}
   ]
 }
