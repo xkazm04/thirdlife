@@ -243,7 +243,7 @@ Third Life
 Start: double click ThirdLife.exe. Keep ThirdLife.pck and the folder "games" beside it.
 
 Keys while you walk:   W A S D  walk      Shift  run      E  enter the game whose plot you stand in      Esc  quit
-Keys inside a game:    Q or Esc  leave the game (the game's own keys are its own)
+Keys inside a game:    Esc leaves the game; Q leaves it too unless the game uses Q (hockey passes on Q)
 
 The games are the folders in "games". BUILD.txt says what this build was made from.
 Which build is this: BUILD-TAG.txt (the commit and the time of the export) is shown small in the window's top right

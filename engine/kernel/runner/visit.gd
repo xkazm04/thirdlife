@@ -137,7 +137,8 @@ func steer(tick: int) -> void:
 	var sched: RefCounted = world.get("sched")
 	var vis: Node3D = view.get("visitor")
 	if int(view.get("stage")) >= 0:
-		if input.just_pressed(&"leave") or input.just_pressed(&"quit"):
+		# K8: on stage a key the game declared is the game's: Q leaves only a game that does not use Q; Esc always leaves
+		if input.just_pressed(&"quit") or (input.just_pressed(&"leave") and not stage_uses_key(KEY_Q)):
 			sched.call("request", "leave")
 		return
 	if input.just_pressed(&"quit"):
@@ -158,6 +159,19 @@ func steer(tick: int) -> void:
 		world.set("player_pos", (world.get("player_pos") as Vector3) + move.normalized() * pace / 60.0)
 	if tick % PATH_EVERY == 0:
 		print_path(tick)
+
+
+## K8. True while a game is on stage and it declared an action on the physical key `keycode` (its own TLInput's
+## declarations: the host never reads the game's devices for this). Such a key is the game's, not the host's.
+func stage_uses_key(keycode: int) -> bool:
+	if _stage_rec.size() < 2 or not is_instance_valid(_stage_rec[1]):
+		return false
+	return bool((_stage_rec[1] as TLInput).call("_declares_key", keycode))
+
+
+## K8. The keys hint for the game on stage: "Esc  leave the game" when the game uses Q, else "Q or Esc  leave the game".
+func stage_hint() -> String:
+	return "Esc  leave the game" if stage_uses_key(KEY_Q) else "Q or Esc  leave the game"
 
 
 func print_path(tick: int, mark: String = "") -> void:

@@ -1,0 +1,4 @@
+{"schema": "tl.walk/1", "name": "k8_stage_hockey", "note": "K8 proof: the visitor stands in the hockey plot, enters, presses Q (the game's pass), then Esc.", "visitor": true, "ticks": 600, "mode": "bot",
+ "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+ "plots": [{"id": "hockey", "pack": "hockey", "origin": [0, 0, 0], "radius": 50, "footprint": {"size_m": [100, 100]}, "seed": 1}],
+ "player": [[0, [0, 0, 0]]]}

@@ -280,6 +280,16 @@ static func _ray_on_plane(cam: Camera3D, mp: Vector2, size: Vector2, height: flo
 	return origin + dir * along
 
 
+## K8. Kernel side: true when an action the pack declared has the physical key `keycode` (the host asks it of the game
+## on stage: a key the game declared belongs to the game, so the host does not take it for itself). Reads declarations
+## only, never a device.
+func _declares_key(keycode: int) -> bool:
+	for name: StringName in _order:
+		if ((_actions[name] as Dictionary)["keys"] as Array).has(keycode):
+			return true
+	return false
+
+
 ## True while a text field has the keyboard (the designer panel's fields): the game sees no key then.
 func keys_taken() -> bool:
 	var vp: Viewport = get_viewport() if is_inside_tree() else null
