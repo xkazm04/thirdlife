@@ -1,63 +1,354 @@
 extends RefCounted
-## Helper for shooting: reach, facing and cooldown checks. Created by main.gd, no class_name.
+## Possession (H1): who has the puck, carrying it, shooting, passing and poking. Created by main.gd, no class_name.
+## The rule: a loose puck that comes inside a skater's reach circle (or that his body skates through) becomes his on
+## that frame, whatever he faces, at any speed, with any button held. He carries it at his stick side (TLBall.hold)
+## until he shoots, passes, is poked or (H2) is hit. Every number is in data/tuning.json "shoot" and "carry".
 
 var puck: TLBall
 var skaters: Dictionary = {}
-var reach: float = 1.5
-var speed: float = 18.0
+var teams: Dictionary = {}
+var order: Array = []
+var speed: float = 18.0                ## shot speed, m/s
 var cooldown_frames: int = 24
-var front_dot: float = 0.5
+var reach: float = 1.1                 ## carry: the reach circle's radius, m
+var offset: Vector3 = Vector3(0.3, 0.07, -0.75)
+var own_lock_frames: int = 12
+var own_lock_speed: float = 4.0
+var flight_take_speed: float = 7.0
+var flight_take_dist: float = 0.6
+var pass_speed: float = 14.0
+var pass_cone_dot: float = 0.5
+var pass_lead_max_frames: int = 60
+var poke_reach: float = 1.7
+var poke_cooldown_frames: int = 30
+var poke_speed: float = 4.0
+var poke_lock_frames: int = 20
+var carry_speed_scale: float = 0.92
+var sprint_speed_scale: float = 1.25
+var rink_half: Vector2 = Vector2(30.0, 15.0)
+var rink_corner: float = 5.0
+var rink_margin: float = 0.35
+
+var carrier: String = ""               ## "" = the puck is loose
+var carry_since: int = 0
+var hold_at: Vector3 = Vector3.ZERO      ## where on him the puck is held now (the stick side, or another side at the boards)
+var last_release: Dictionary = {}      ## {kind: shot|pass|poked|board, by, team, frame}; empty after a face-off
 var shots: Dictionary = {}
-var events: Array = []                 # [id] of every successful shot since main last drained it
+var passes: Dictionary = {}
+var pokes: Dictionary = {}
+var takes: Dictionary = {}
+var events: Array = []                 ## [kind, id] since main last drained it (kind: shot, pass, poke, take)
+var base_speed: Dictionary = {}
+var sprinting: Dictionary = {}
 var _now: int = 0
 var _ready_at: Dictionary = {}
+var _poke_at: Dictionary = {}
+var hits = null                        ## scripts/hits.gd (H2): a man down or stumbling cannot take the puck
 
 
-func setup(tune: Dictionary, p: TLBall, sk: Dictionary) -> void:
+func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Array) -> void:
 	var s: Dictionary = tune["shoot"]
-	reach = float(s["reach"])
 	speed = float(s["speed"])
-	front_dot = float(s["front_dot"])
 	cooldown_frames = int(round(float(s["cooldown_s"]) * 60.0))
+	var c: Dictionary = tune["carry"]
+	reach = float(c["reach"])
+	offset = Vector3(float(c["offset"][0]), float(c["offset"][1]), float(c["offset"][2]))
+	own_lock_frames = int(c["own_lock_frames"])
+	own_lock_speed = float(c["own_lock_speed"])
+	flight_take_speed = float(c["flight_take_speed"])
+	flight_take_dist = float(c["flight_take_dist"])
+	pass_speed = float(c["pass_speed"])
+	pass_cone_dot = cos(deg_to_rad(float(c["pass_cone_deg"])))
+	pass_lead_max_frames = int(c["pass_lead_max_frames"])
+	poke_reach = float(c["poke_reach"])
+	poke_cooldown_frames = int(c["poke_cooldown_frames"])
+	poke_speed = float(c["poke_speed"])
+	poke_lock_frames = int(c["poke_lock_frames"])
+	carry_speed_scale = float(c["carry_speed_scale"])
+	sprint_speed_scale = float(tune["skater_sprint_scale"])
+	var r: Dictionary = tune["rink"]
+	rink_half = Vector2(float(r["half_length"]), float(r["half_width"]))
+	rink_corner = float(r["corner_r"])
+	rink_margin = float(r["margin"])
 	puck = p
 	skaters = sk
-	for id: String in skaters:
+	teams = tm
+	order = ord
+	for id: String in order:
 		shots[id] = 0
+		passes[id] = 0
+		pokes[id] = 0
+		takes[id] = 0
 		_ready_at[id] = 0
+		_poke_at[id] = 0
+		base_speed[id] = (skaters[id] as TLBiped).skate_speed
+		sprinting[id] = false
 
 
 func tick(frame: int) -> void:
 	_now = frame
 
 
-func _to_puck(id: String) -> Vector3:
-	var d: Vector3 = puck.global_position - (skaters[id] as Node3D).global_position
-	d.y = 0.0
-	return d
+func _flat(v: Vector3) -> Vector3:
+	return Vector3(v.x, 0.0, v.z)
+
+
+func pos_of(id: String) -> Vector3:
+	return _flat((skaters[id] as Node3D).global_position)
+
+
+func fwd_of(id: String) -> Vector3:
+	return _flat((skaters[id] as TLBiped).forward()).normalized()
+
+
+func puck_pos() -> Vector3:
+	return _flat(puck.global_position)
+
+
+## Distance from a skater to the puck's path of the last physics step (a fast puck cannot jump his circle).
+func dist_to_puck(id: String) -> float:
+	var step: Array = puck.last_step()
+	var a: Vector3 = _flat(step[0])
+	var b: Vector3 = _flat(step[1])
+	var p: Vector3 = pos_of(id)
+	var ab: Vector3 = b - a
+	var t: float = 0.0 if ab.length_squared() < 1e-8 else clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+	return p.distance_to(a + ab * t)
 
 
 func in_reach(id: String) -> bool:
-	var d: Vector3 = _to_puck(id)
-	if d.length() > reach:
-		return false
-	var f: Vector3 = (skaters[id] as TLBiped).forward()
-	f.y = 0.0
-	f = f.normalized()
-	return d.length() < 0.05 or f.dot(d.normalized()) >= front_dot
+	return carrier == "" and dist_to_puck(id) <= reach
+
+
+## Whether the loose puck may become his now (the locks after a release, the rule for a puck in flight).
+func may_take(id: String, d: float) -> bool:
+	if last_release.is_empty():
+		return true
+	var age: int = _now - int(last_release["frame"])
+	var kind: String = str(last_release["kind"])
+	var by: String = str(last_release["by"])
+	var spd: float = _flat(puck.linear_velocity).length()
+	if kind == "poked":
+		return id != by or age >= poke_lock_frames
+	if kind == "hit":
+		return id != by or age >= poke_lock_frames
+	if id == by:
+		return age >= own_lock_frames or spd < own_lock_speed
+	if kind == "pass" and str(teams[id]) == str(last_release["team"]):
+		return true
+	return spd < flight_take_speed or d < flight_take_dist
+
+
+## Called once a tick before anybody acts: the carried puck stays on the ice, a loose one becomes the nearest
+## eligible skater's whose reach it is inside.
+func update_possession() -> void:
+	if carrier != "":
+		# at the boards the stick side would be outside them: he moves the puck to a side of him that is inside
+		# (a release there gave it straight back to him every second frame, a loop a person reads as a frozen game;
+		# a puck tucked UNDER him was a kinematic body inside his capsule and shoved him through the boards)
+		var tf: Transform3D = (skaters[carrier] as Node3D).global_transform
+		var want: Vector3 = offset
+		if not _inside(_flat(tf * offset)):
+			var y: float = offset.y
+			for c: Vector3 in [Vector3(-offset.x, y, offset.z), Vector3(0.0, y, -0.6), Vector3(0.6, y, 0.0), Vector3(-0.6, y, 0.0), Vector3(0.0, y, 0.6)]:
+				if _inside(_flat(tf * c)):
+					want = c
+					break
+		if want != hold_at:
+			hold_at = want
+			puck.hold(skaters[carrier], want)
+		return
+	var best: String = ""
+	var best_d: float = 1e9
+	for id: String in order:
+		if hits != null and not hits.can_act(id):
+			continue
+		var d: float = dist_to_puck(id)
+		if d <= reach and d < best_d and may_take(id, d):
+			best = id
+			best_d = d
+	if best != "":
+		give(best)
+
+
+func give(id: String) -> void:
+	if carrier != "":
+		_drop()
+	carrier = id
+	carry_since = _now
+	takes[id] = int(takes[id]) + 1
+	hold_at = offset
+	puck.hold(skaters[id], offset)
+	events.append(["take", id])
+
+
+func _drop() -> void:
+	carrier = ""
+	puck.release(Vector3.ZERO)
+
+
+## A face-off or a drill: nobody has it, no lock.
+func reset() -> void:
+	if carrier != "":
+		_drop()
+	last_release = {}
+
+
+func _release(kind: String, by: String, vel: Vector3) -> void:
+	carrier = ""
+	puck.release(vel)
+	last_release = {"kind": kind, "by": by, "team": str(teams[by]), "frame": _now}
+
+
+## Sets each skater's top speed for this frame: carrying is slower, sprinting faster (numbers in data).
+func apply_speeds() -> void:
+	for id: String in order:
+		var v: float = float(base_speed[id])
+		if id == carrier:
+			v *= carry_speed_scale
+		if bool(sprinting[id]):
+			v *= sprint_speed_scale
+		if hits != null:
+			v *= hits.speed_scale(id)
+		(skaters[id] as TLBiped).skate_speed = v
 
 
 func can_shoot(id: String) -> bool:
-	return _now >= int(_ready_at[id]) and in_reach(id)
+	return carrier == id and _now >= int(_ready_at[id])
 
 
 func try_shoot(id: String) -> bool:
 	if not can_shoot(id):
 		return false
-	var f: Vector3 = (skaters[id] as TLBiped).forward()
-	f.y = 0.0
-	f = f.normalized()
-	puck.shoot(f * puck.mass * speed)
+	_release("shot", id, fwd_of(id) * speed)
+	_clip(id, &"shoot")
 	_ready_at[id] = _now + cooldown_frames
 	shots[id] = int(shots[id]) + 1
-	events.append(id)
+	events.append(["shot", id])
 	return true
+
+
+## The mate nearest his facing inside the pass cone, or "".
+func pass_target(id: String) -> String:
+	var me: Vector3 = pos_of(id)
+	var f: Vector3 = fwd_of(id)
+	var best: String = ""
+	var best_dot: float = pass_cone_dot
+	for mid: String in order:
+		if mid == id or str(teams[mid]) != str(teams[id]):
+			continue
+		var to: Vector3 = pos_of(mid) - me
+		if to.length() < 1.5:
+			continue
+		var dt: float = f.dot(to.normalized())
+		if dt >= best_dot:
+			best_dot = dt
+			best = mid
+	return best
+
+
+## Where a pass to `mid` should go: where he will be when it arrives (two refinements, lead bounded in data).
+func lead_point(mid: String) -> Vector3:
+	var from: Vector3 = puck_pos()
+	var mp: Vector3 = pos_of(mid)
+	var mv: Vector3 = _flat((skaters[mid] as TLBiped).velocity)
+	var tgt: Vector3 = mp
+	for i: int in 2:
+		var t: float = minf(from.distance_to(tgt) / pass_speed, float(pass_lead_max_frames) / 60.0)
+		tgt = mp + mv * t
+	return tgt
+
+
+func try_pass(id: String) -> bool:
+	if carrier != id:
+		return false
+	var mid: String = pass_target(id)
+	var dir: Vector3 = fwd_of(id)
+	if mid != "":
+		var to: Vector3 = lead_point(mid) - puck_pos()
+		if to.length() > 0.1:
+			dir = to.normalized()
+	_release("pass", id, dir * pass_speed)
+	_clip(id, &"pass")
+	if mid != "":
+		last_release["to"] = mid
+	passes[id] = int(passes[id]) + 1
+	events.append(["pass", id])
+	return true
+
+
+## The mate a pass is meant for skates to meet it while it is loose and moving: towards the nearest point of its
+## path ahead of the puck. Vector3.ZERO when he is not receiving.
+func receive_dir(id: String) -> Vector3:
+	if carrier != "" or last_release.is_empty() or str(last_release["kind"]) != "pass" or str(last_release.get("to", "")) != id:
+		return Vector3.ZERO
+	if _now - int(last_release["frame"]) > pass_lead_max_frames * 2:
+		return Vector3.ZERO
+	var v: Vector3 = _flat(puck.linear_velocity)
+	if v.length() < 1.0:
+		return Vector3.ZERO
+	var me: Vector3 = pos_of(id)
+	var pp: Vector3 = puck_pos()
+	var u: Vector3 = v.normalized()
+	var along: float = maxf((me - pp).dot(u), 0.0)
+	var meet: Vector3 = pp + u * along
+	var to: Vector3 = meet - me
+	return to.normalized() if to.length() > 0.2 else Vector3.ZERO
+
+
+## A hit takes the puck off him: loose, with a velocity (H2).
+func knock_loose(victim: String, vel: Vector3) -> void:
+	if carrier != victim:
+		return
+	_release("hit", victim, vel)
+
+
+func can_poke(id: String) -> bool:
+	return carrier != "" and carrier != id and str(teams[carrier]) != str(teams[id]) and _now >= int(_poke_at[id]) \
+		and pos_of(id).distance_to(puck_pos()) <= poke_reach
+
+
+## A stick poke at an opponent's carried puck: it comes loose towards the poker. A miss costs the cooldown too.
+func try_poke(id: String) -> bool:
+	if _now < int(_poke_at[id]) or carrier == "" or carrier == id or str(teams[carrier]) == str(teams[id]):
+		return false
+	_poke_at[id] = _now + poke_cooldown_frames
+	if pos_of(id).distance_to(puck_pos()) > poke_reach:
+		return false
+	var victim: String = carrier
+	var dir: Vector3 = pos_of(id) - puck_pos()
+	dir = dir.normalized() if dir.length() > 0.05 else -fwd_of(victim)
+	_release("poked", victim, dir * poke_speed)
+	_poke_at[victim] = maxi(int(_poke_at[victim]), _now + poke_lock_frames)     # no poke straight back
+	pokes[id] = int(pokes[id]) + 1
+	events.append(["poke", id])
+	return true
+
+
+func _clip(id: String, clip: StringName) -> void:
+	var r = (skaters[id] as TLBiped).rig
+	if r != null:
+		r.play(clip)
+
+
+func _inside(p: Vector3) -> bool:
+	var hx: float = rink_half.x - rink_margin
+	var hz: float = rink_half.y - rink_margin
+	if absf(p.x) > hx or absf(p.z) > hz:
+		return false
+	var r: float = rink_corner - rink_margin
+	var dx: float = maxf(absf(p.x) - (hx - r), 0.0)
+	var dz: float = maxf(absf(p.z) - (hz - r), 0.0)
+	return Vector2(dx, dz).length() <= r
+
+
+## Possession for _pack_state(): absent values are omitted.
+func state() -> Dictionary:
+	var s: Dictionary = {"takes": takes.duplicate(), "passes": passes.duplicate(), "pokes": pokes.duplicate()}
+	if carrier != "":
+		s["carrier"] = carrier
+		s["team"] = str(teams[carrier])
+		s["since"] = carry_since
+	if not last_release.is_empty():
+		s["last"] = last_release.duplicate()
+	return s

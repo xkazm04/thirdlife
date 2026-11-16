@@ -1,46 +1,193 @@
 extends Node
-## game.ice_hockey_three_against, hockey_core: rink, puck, six skaters, rules, HUD. First to 3 goals.
+## game.ice_hockey_three_against, hockey_core: rink, puck, skaters, rules, HUD.
 ## Venue: data/venue.json (kit rink + goals). Tuning: data/tuning.json. Handlers only set flags; _pack_tick acts last.
+## H1: possession (scripts/rink_api.gd): a puck in a skater's reach is his; he carries, shoots (Space), passes (Q),
+## pokes (E), sprints (Shift). Drills (data/drills.json) are set starts a test calls by declared actions with no key.
+## H2: body check (F; held while standing = brace) and cross-check (C) in scripts/hits.gd.
+## H3: modes are data (data/modes/<id>.json, chosen by the `mode` param or a keyless action mode_<id>); the match has
+## periods (TLRules), and once a period the player may open the rule dial (T: pause; A/D choose, W/S move one step).
 
 var ctx
-var tune: Dictionary
+var base_tune: Dictionary              # data/tuning.json as read
+var tune: Dictionary                   # base_tune with the mode's overrides
+var ai_base: Dictionary                # data/ai.json, for validating a mode's "ai" keys
+var modes: Dictionary = {}             # id -> mode file (validated)
+var mode_id: String = "base"
+var modes_lib                          # scripts/modes.gd
+var drill_lib                          # scripts/drills.gd
+var arena: Node3D                      # the match's own nodes (goal volumes, rules, HUD): rebuilt by every _build
+var venues: Dictionary = {}            # layout text -> its built rink and goals; out of the tree when not in use
+var dress_node: Node3D                 # stands, masts, signs (gen/art_hook): built once at setup
+var venue_key: String = "-"
+var pool: Dictionary = {}              # id -> TLBiped made so far; a mode uses some, the rest wait out of the tree
 var rules: TLRules
 var hud: TLHud
 var puck: TLBall
 var api
+var hits                               # scripts/hits.gd (H2)
 var brain = null
 var fx = null
-var skaters: Dictionary = {}          # id -> TLBiped
-var order: Array = []                 # ids in roster order
+var chase_cam = null
+var skaters: Dictionary = {}           # id -> TLBiped
+var order: Array = []                  # ids in roster order
 var teams: Dictionary = {}
 var roles: Dictionary = {}
 var spawns: Dictionary = {}
 var env: Dictionary = {}
 var goal_pos: Dictionary = {}
 var frozen: bool = false
-var reset_in: int = 0                 # frames left of the pause after a goal
+var reset_in: int = 0                  # frames left of the pause after a goal
 var result: String = ""
-var _flag_goal: String = ""           # side that scored, set by a goal trigger
-var _events: Array = []               # [name, pos, team] for the fx hook
+var _flag_goal: String = ""            # side that scored, set by a goal trigger
+var _events: Array = []                # [name, pos, team] for the fx hook
+var drills: Dictionary = {}
+var drill_id: String = ""              # the drill running ("" = a match)
+var drill_t0: int = 0
+var drill_moves: Dictionary = {}       # id -> Vector3 intent for a drill's scripted skaters
+var drill_script: Array = []           # [frames_after, id, act]
+var drill_brace: Array = []            # ids that brace in a drill
+var autopilot: bool = false            # the brain plays b0 too (a bot-only play)
+var dials: Dictionary = {}             # dial name -> steps (both teams)
+var dial_open: bool = false
+var dial_sel: int = 0
+var dial_used: Dictionary = {}         # period -> the change made in it
+var dial_refused: int = 0
+var rule_line: String = ""
+const DRILL_KEYS: Array = ["id", "place", "random_place", "move", "random_move", "puck", "puck_vel", "carrier", "script", "ai", "brace"]
+
 
 
 func _pack_setup(c) -> void:
 	ctx = c
-	tune = ctx.read_json("tuning.json")
-	var built: Dictionary = TLKit.build_layout(ctx.read_json("venue.json"), ctx.root)
-	if not built["ok"]:
-		push_error("venue.json does not build: %s" % "; ".join(built["errors"]))
-		return
-	if ctx.root.has_meta(&"hockey_dress"):
-		var dressed: Dictionary = TLKit.build_layout(ctx.read_json(str(ctx.root.get_meta(&"hockey_dress"))), ctx.root)
+	base_tune = ctx.read_json("tuning.json")
+	modes_lib = ctx.load_script("scripts/modes.gd").new()
+	drill_lib = ctx.load_script("scripts/drills.gd").new()
+	ai_base = ctx.read_json("ai.json")
+	drills = ctx.read_json("drills.json")
+	for d: Dictionary in drills["drills"]:
+		for k: String in d.keys():
+			if not DRILL_KEYS.has(k):
+				push_error("drills.json: drill '%s' has the unknown key '%s'" % [str(d.get("id", "?")), k])
+	for mid: String in base_tune["modes"]:
+		var file: String = "modes/%s.json" % mid
+		var m: Variant = ctx.read_json(file)
+		if not (m is Dictionary):
+			push_error("data/%s: the mode file is missing or not an object" % file)
+			continue
+		var errs: Array = modes_lib.check(m, mid, base_tune, ai_base)
+		for e: String in errs:
+			push_error("data/%s: %s" % [file, e])
+		if errs.is_empty():
+			modes[mid] = m
+	var list: Array = base_tune["modes"]
+	var pick: int = clampi(int(base_tune["mode"]), 0, list.size() - 1)
+	mode_id = str(list[pick]) if modes.has(str(list[pick])) else "base"
+
+	for a: Array in [[&"up", KEY_W], [&"down", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"shoot", KEY_SPACE], [&"pass", KEY_Q],
+			[&"poke", KEY_E], [&"sprint", KEY_SHIFT], [&"check", KEY_F], [&"cross", KEY_C], [&"dial", KEY_T], [&"restart", KEY_R]]:
+		ctx.input.declare(a[0], [a[1]])
+	ctx.input.declare(&"autopilot", [])
+	for d: Dictionary in drills["drills"]:
+		ctx.input.declare(StringName("drill_" + str(d["id"])), [])
+	for mid: String in base_tune["modes"]:
+		ctx.input.declare(StringName("mode_" + mid), [])
+	if ctx.root.has_meta(&"hockey_ai"):
+		brain = ctx.load_script(str(ctx.root.get_meta(&"hockey_ai"))).new()
+		brain.setup(ctx, env)
+	if ctx.root.has_meta(&"hockey_fx"):
+		fx = ctx.load_script(str(ctx.root.get_meta(&"hockey_fx"))).new()
+		fx.setup(ctx, env)
+	_build(mode_id)
+
+
+## Builds the match of a mode from nothing: venue, puck, skaters, goal volumes, rules, HUD, the helpers.
+func _build(mid: String) -> void:
+	# a rebuild runs inside one tick (a mode change, R): only what changed is made again, so it stays far under the
+	# runner's 250 ms tick limit (the whole arena rebuilt in a tick took 254 ms of processor time)
+	if arena != null:
+		ctx.root.remove_child(arena)
+		arena.queue_free()
+	mode_id = mid
+	var m: Dictionary = modes[mid]
+	tune = modes_lib.merged(m, base_tune)
+	arena = Node3D.new()
+	arena.name = "Arena"
+	ctx.root.add_child(arena)
+	skaters = {}
+	order = []
+	teams = {}
+	roles = {}
+	spawns = {}
+	frozen = false
+	reset_in = 0
+	result = ""
+	_flag_goal = ""
+	drill_id = ""
+	dials = {}
+	for n: String in tune["dial"]["names"]:
+		dials[n] = 0
+	dial_open = false
+	dial_sel = 0
+	dial_used = {}
+	dial_refused = 0
+	rule_line = str(m.get("label", mid))
+
+	var layout: Dictionary = ctx.read_json("venue.json")
+	var g: Dictionary = tune["goals"]
+	var ven: Dictionary = m.get("venue", {})
+	for p: Dictionary in layout["props"]:
+		if str(p["id"]) == "rink":
+			for k: String in ["length", "width", "corner_r", "apron"]:
+				if ven.has(k):
+					p["params"][k] = ven[k]
+		elif str(p["id"]) == "goal_blue":
+			p["p"] = [float(g["blue"][0]), 0.05, 0.0]
+		elif str(p["id"]) == "goal_red":
+			p["p"] = [float(g["red"][0]), 0.05, 0.0]
+	# venues are kept once built (a switch back is a re-parent, not a rebuild); the dress (stands, masts) is built at
+	# setup whatever the first mode, so no tick ever builds it (big ice -> base rebuilt it in a tick: 254 ms)
+	var key: String = JSON.stringify(layout)
+	if not venues.has(key):
+		var vn: Node3D = Node3D.new()
+		vn.name = "Venue%d" % venues.size()
+		var built: Dictionary = TLKit.build_layout(layout, vn)
+		if not built["ok"]:
+			push_error("venue.json does not build: %s" % "; ".join(built["errors"]))
+			return
+		venues[key] = vn
+	if dress_node == null and ctx.root.has_meta(&"hockey_dress"):
+		dress_node = Node3D.new()
+		dress_node.name = "Dress"
+		var dressed: Dictionary = TLKit.build_layout(ctx.read_json(str(ctx.root.get_meta(&"hockey_dress"))), dress_node)
 		if not dressed["ok"]:
 			push_error("dress layout does not build: %s" % "; ".join(dressed["errors"]))
+	for k: String in venues:
+		var vn2: Node3D = venues[k]
+		if k != key and vn2.is_inside_tree():
+			ctx.root.remove_child(vn2)
+	if not (venues[key] as Node3D).is_inside_tree():
+		ctx.root.add_child(venues[key])
+	venue_key = key
+	if dress_node != null:
+		var want: bool = bool(ven.get("dress", true))
+		if want and not dress_node.is_inside_tree():
+			ctx.root.add_child(dress_node)
+		elif not want and dress_node.is_inside_tree():
+			ctx.root.remove_child(dress_node)
 
-	var pk: Dictionary = tune["puck"]
-	puck = TLBall.create({"part": TLKit.build("puck", {"radius": float(pk.get("radius", 0.12)), "height": float(pk.get("height", 0.08))}), "planar": true, "color": Color(0.02, 0.02, 0.03), "group": "pucks", "max_speed": float(pk["max_speed"]),
-		"drag": float(pk["drag"]), "position": Vector3(0, 0.07, 0), "name": "Puck"})
-	ctx.root.add_child(puck)
-	puck.bounced.connect(_on_puck_bounced)
+	if puck == null:
+		var pk: Dictionary = tune["puck"]
+		puck = TLBall.create({"part": TLKit.build("puck", {"radius": float(pk.get("radius", 0.12)), "height": float(pk.get("height", 0.08))}), "planar": true, "color": Color(0.02, 0.02, 0.03), "group": "pucks", "max_speed": float(pk["max_speed"]),
+			"drag": float(pk["drag"]), "position": Vector3(0, 0.07, 0), "name": "Puck"})
+		ctx.root.add_child(puck)
+		puck.bounced.connect(_on_puck_bounced)
+	if puck.holder() != null:
+		puck.release()
+	puck.place(Vector3(0, 0.07, 0))
+	for pid: String in pool:
+		var old: TLBiped = pool[pid]
+		if old.is_inside_tree():
+			ctx.root.remove_child(old)       # every pooled skater lives directly under ctx.root
 
 	var opts: Dictionary = (tune["skater"] as Dictionary).duplicate()
 	for entry: Dictionary in tune["roster"]:
@@ -48,47 +195,71 @@ func _pack_setup(c) -> void:
 		var team: String = str(entry["team"])
 		var sp: Array = entry["spawn"]
 		var at := Vector3(float(sp[0]), 0.1, float(sp[1]))
-		var o: Dictionary = opts.duplicate()
-		o.merge({"mode": "skate", "position": at, "facing": _face_yaw(team), "name": "skater_" + id,
-			"rig_params": {"colors": {"top": "car_blue" if team == "blue" else "car_red", "trim": "car_blue" if team == "blue" else "car_red", "legs": "car_blue" if team == "blue" else "car_red"}}})
-		var sk: TLBiped = TLBiped.create(o)
+		var pid: String = id + ":" + team
+		if not pool.has(pid):
+			var o: Dictionary = opts.duplicate()
+			o.merge({"mode": "skate", "position": at, "facing": _face_yaw(team), "name": "skater_" + id,
+				"rig_params": {"colors": {"top": "car_blue" if team == "blue" else "car_red", "trim": "car_blue" if team == "blue" else "car_red", "legs": "car_blue" if team == "blue" else "car_red"}}})
+			var made: TLBiped = TLBiped.create(o)
+			if made.rig != null:
+				made.rig.scale = Vector3(2.2, 2.2, 2.2)
+			# a carried puck is a kinematic body moved every frame: under a skate it was a moving platform, and leaving
+			# it added its teleport speed to the skater (47 m/s on record, out through the boards). The kernel should own this.
+			made.platform_on_leave = CharacterBody3D.PLATFORM_ON_LEAVE_DO_NOTHING
+			pool[pid] = made
+		var sk: TLBiped = pool[pid]
 		ctx.root.add_child(sk)
-		if sk.rig != null:
-			sk.rig.scale = Vector3(2.2, 2.2, 2.2)
+		sk.skate_accel = float(opts["skate_accel"])
+		sk.skate_turn_rate = float(opts["skate_turn_rate"])
+		sk.body_mass = float(opts["body_mass"])
+		sk.brake(false)
+		sk.place(at, _face_yaw(team))
 		skaters[id] = sk
 		order.append(id)
 		teams[id] = team
 		roles[id] = str(entry["role"])
 		spawns[id] = at
-	var g: Dictionary = tune["goals"]
 	goal_pos = {"blue": _v3(g["blue"]), "red": _v3(g["red"])}
 
 	# goal volumes just behind each line, inside the nets; the trigger decides "the whole puck crossed"
 	for side: String in ["blue", "red"]:
-		var sgn: float = -1.0 if side == "blue" else 1.0
+		var gx: float = float(g[side][0])
 		var trig: TLTrigger = TLBodies.trigger(&"box", Vector3(1.5, 1.0, float(g["half_width"]) * 2.0),
-			{"position": Vector3(sgn * 26.75, 0.3, 0.0), "group_filter": "pucks", "name": "goal_trigger_" + side})
-		ctx.root.add_child(trig)
+			{"position": Vector3(gx + signf(gx) * 0.75, 0.3, 0.0), "group_filter": "pucks", "name": "goal_trigger_" + side})
+		arena.add_child(trig)
 		trig.entered.connect(_on_goal.bind(side))
 
 	api = ctx.load_script("scripts/rink_api.gd").new()
-	api.setup(tune, puck, skaters)
-
+	api.setup(tune, puck, skaters, teams, order)
+	hits = ctx.load_script("scripts/hits.gd").new()
+	hits.setup(tune, api, skaters, teams, order)
+	hits.enabled = bool(m.get("checks", true))
+	api.hits = hits
+	if ctx.root.has_meta(&"hockey_ring") and not skaters["b0"].has_node("ReachRing"):
+		var ring_script = ctx.load_script(str(ctx.root.get_meta(&"hockey_ring")))
+		ring_script.make_ring(skaters["b0"], api.reach, float(tune["carry"]["ring_width"]), "yellow")
 	_new_rules()
-	for a: Array in [[&"up", KEY_W], [&"down", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"shoot", KEY_SPACE], [&"restart", KEY_R]]:
-		ctx.input.declare(a[0], [a[1]])
-	var cam: Dictionary = tune["camera"]
-	ctx.cameras.add_view(&"arena", _v3(cam["pos"]), _v3(cam["target"]), float(cam["fov"]))
-	ctx.cameras.set_subject(&"arena", skaters["b0"])
 
-	env = {"puck": puck, "skaters": skaters, "teams": teams, "roles": roles, "spawns": spawns, "goals": goal_pos,
-		"frozen": false, "api": api, "tuning": tune, "rules": rules}
-	if ctx.root.has_meta(&"hockey_ai"):
-		brain = ctx.load_script(str(ctx.root.get_meta(&"hockey_ai"))).new()
-		brain.setup(ctx, env)
-	if ctx.root.has_meta(&"hockey_fx"):
-		fx = ctx.load_script(str(ctx.root.get_meta(&"hockey_fx"))).new()
-		fx.setup(ctx, env)
+	var cam: Dictionary = tune["camera"]
+	if ctx.cameras.has_view(&"arena"):
+		var v: Camera3D = ctx.cameras.view(&"arena")
+		v.global_position = _v3(cam["pos"])
+		v.look_at(_v3(cam["target"]), Vector3.UP)
+	else:
+		ctx.cameras.add_view(&"arena", _v3(cam["pos"]), _v3(cam["target"]), float(cam["fov"]))
+	ctx.cameras.set_subject(&"arena", skaters["b0"])
+	var cc: Dictionary = tune["chase_camera"]
+	if chase_cam == null:
+		chase_cam = ctx.cameras.chase(skaters["b0"], {"distance": float(cc["distance"]), "height": float(cc["height"]), "look_height": float(cc["look_height"]), "fov": float(cc["fov"])})        # the view "chase": stills of the hand
+	else:
+		chase_cam.target = skaters["b0"]
+	ctx.cameras.activate(&"arena")
+
+	env.merge({"puck": puck, "skaters": skaters, "teams": teams, "roles": roles, "spawns": spawns, "goals": goal_pos,
+		"frozen": false, "api": api, "hits": hits, "tuning": tune, "rules": rules, "autopilot": autopilot, "drill": false}, true)
+	if brain != null:
+		brain.override(m.get("ai", {}))
+	_apply_dials()
 
 
 func _v3(a: Array) -> Vector3:
@@ -102,16 +273,25 @@ func _face_yaw(team: String) -> float:
 
 func _new_rules() -> void:
 	rules = TLRules.create(tune["rules"])
-	ctx.root.add_child(rules)
+	arena.add_child(rules)
 	hud = TLHud.create()
-	ctx.root.add_child(hud)
+	arena.add_child(hud)
 	hud.add_score(rules, "blue", &"top_left", "BLUE")
 	hud.add_score(rules, "red", &"top_right", "RED")
+	hud.add_clock(rules, &"top")
 	hud.add_bound(&"result", func() -> String: return result, &"center")
+	hud.add_bound(&"rule", func() -> String: return rule_line, &"bottom")
+	hud.add_bound(&"dial", _dial_text, &"right")
 
 
 func _pack_start() -> void:
+	_start_match()
+
+
+func _start_match() -> void:
 	rules.start()
+	var j: float = float(tune["faceoff_jitter"])
+	puck.place(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
 	_event("faceoff", Vector3.ZERO, "")
 
 
@@ -121,7 +301,7 @@ func _on_puck_bounced(other: Node, speed: float) -> void:
 
 
 func _on_goal(body: Node3D, side: String) -> void:
-	if body == puck and _flag_goal == "" and reset_in <= 0 and not frozen:
+	if body == puck and puck.holder() == null and _flag_goal == "" and reset_in <= 0 and not frozen and rules.is_running():
 		_flag_goal = "red" if side == "blue" else "blue"
 
 
@@ -130,8 +310,23 @@ func _event(name: String, pos: Vector3, team: String) -> void:
 
 
 func _pack_tick(frame: int) -> void:
+	for mid: String in modes:
+		if ctx.input.just_pressed(StringName("mode_" + mid)):
+			_build(mid)
+			_start_match()
+			_flush_events(frame)
+			return
 	api.tick(frame)
-	env["frozen"] = frozen
+	hits.tick(frame)
+	if not autopilot and ctx.input.pressed(&"check"):
+		hits.braced["b0"] = true      # holding F braces him (standing still: he holds a hit from the side)
+	if ctx.input.just_pressed(&"autopilot"):
+		autopilot = not autopilot
+	for d: Dictionary in drills["drills"]:
+		if ctx.input.just_pressed(StringName("drill_" + str(d["id"]))):
+			drill_lib.start(self, d, frame)
+	env["autopilot"] = autopilot
+	env["drill"] = drill_id != ""
 	env["rules"] = rules
 	if rules.is_over():
 		frozen = true
@@ -141,26 +336,57 @@ func _pack_tick(frame: int) -> void:
 			_restart()
 		_flush_events(frame)
 		return
+	if _dial_tick():
+		env["frozen"] = true
+		_hold_all()
+		_flush_events(frame)
+		return
+	var stopped: bool = frozen or not rules.is_running()     # after a goal, between periods
+	env["frozen"] = stopped
 
 	var player: TLBiped = skaters["b0"]
-	if brain != null:
+	if not stopped:
+		api.update_possession()
+	if drill_id != "":
+		drill_lib.tick(self, frame)
+	elif brain != null:
 		brain.think(frame, env)
-	elif not frozen:
+	elif not stopped:
 		for id: String in order:
 			if id != "b0":
 				skaters[id].move(Vector3.ZERO)
-	if frozen:
+	if stopped:
 		_hold_all()
-	else:
+	elif not autopilot:
 		var v := Vector3(ctx.input.axis(&"left", &"right"), 0.0, ctx.input.axis(&"up", &"down"))
 		if v.length() > 1.0:
 			v = v.normalized()
+		player.brake(false)
 		player.move(v)
+		api.sprinting["b0"] = ctx.input.pressed(&"sprint")
 		if ctx.input.just_pressed(&"shoot"):
 			api.try_shoot("b0")
-	for sid: String in api.events:
-		_event("shot", (skaters[sid] as Node3D).global_position, str(teams[sid]))
+		if ctx.input.just_pressed(&"pass"):
+			api.try_pass("b0")
+		if ctx.input.just_pressed(&"poke"):
+			api.try_poke("b0")
+		if ctx.input.just_pressed(&"check"):
+			hits.try_check("b0")
+		if ctx.input.just_pressed(&"cross"):
+			hits.try_cross("b0")
+	if not stopped:
+		hits.enforce()
+		for id: String in order:
+			if drill_id == "" and (id != "b0" or autopilot):
+				(skaters[id] as TLBiped).brake(hits.is_down(id))
+	api.apply_speeds()
+	for e: Array in api.events:
+		if str(e[0]) == "shot":
+			_event("shot", (skaters[str(e[1])] as Node3D).global_position, str(teams[str(e[1])]))
 	api.events.clear()
+	for e: Array in hits.events:
+		_event("hit_" + str(e[0]), (skaters[str(e[2])] as Node3D).global_position, str(teams[str(e[1])]))
+	hits.events.clear()
 
 	# the pause after a goal, then the face-off
 	if reset_in > 0:
@@ -180,8 +406,71 @@ func _pack_tick(frame: int) -> void:
 			_event("win" if result == "WIN" else "lose", Vector3.ZERO, str(rules.winner))
 		else:
 			reset_in = int(round(float(tune["pause_s"]) * 60.0))
-	env["frozen"] = frozen
 	_flush_events(frame)
+
+
+## The rule dial (H3): T opens it once a period (the match pauses); A/D choose a dial, W/S move it one step for both
+## teams and close it; T again closes it unchanged. Bots never open it. -> true while it is open (nothing else runs).
+func _dial_tick() -> bool:
+	var names: Array = tune["dial"]["names"]
+	if not dial_open:
+		if ctx.input.just_pressed(&"dial"):
+			if dial_used.has(rules.period):
+				dial_refused += 1
+				rule_line = "One rule change a period: the next one in period %d" % (rules.period + 1)
+			elif rules.is_running() and not frozen:
+				dial_open = true
+				dial_sel = 0
+				rules.pause()
+				return true
+		return false
+	if ctx.input.just_pressed(&"dial"):
+		dial_open = false
+		rules.resume()
+		return false
+	if ctx.input.just_pressed(&"left"):
+		dial_sel = (dial_sel + names.size() - 1) % names.size()
+	if ctx.input.just_pressed(&"right"):
+		dial_sel = (dial_sel + 1) % names.size()
+	var step: int = 0
+	if ctx.input.just_pressed(&"up"):
+		step = 1
+	elif ctx.input.just_pressed(&"down"):
+		step = -1
+	if step != 0:
+		var n: String = str(names[dial_sel])
+		var now: int = clampi(int(dials[n]) + step, int(tune["dial"]["min"]), int(tune["dial"]["max"]))
+		if now != int(dials[n]):
+			dials[n] = now
+			dial_used[rules.period] = "%s %+d" % [n, step]
+			_apply_dials()
+			rule_line = "Period %d: %s %s for both teams (now %+d)" % [rules.period, str(tune["dial"]["labels"][dial_sel]), "up" if step > 0 else "down", now]
+		dial_open = false
+		rules.resume()
+	return dial_open
+
+
+func _dial_text() -> String:
+	if not dial_open:
+		return ""
+	var lines: Array = ["RULE DIAL (A/D choose, W/S one step, T close)"]
+	var names: Array = tune["dial"]["names"]
+	for i: int in names.size():
+		lines.append("%s %s %+d" % [">" if i == dial_sel else " ", str(tune["dial"]["labels"][i]), int(dials[str(names[i])])])
+	return "\n".join(lines)
+
+
+## The dials act on both teams: skate speed, shot speed, ice grip (sideways grip), bot sharpness.
+func _apply_dials() -> void:
+	var per: Array = tune["dial"]["per_step"]
+	var sk_speed: float = float(tune["skater"]["skate_speed"]) * (1.0 + float(per[0]) * int(dials["skate"]))
+	var grip: float = float(tune["skater"]["skate_lateral_grip"]) * (1.0 + float(per[2]) * int(dials["grip"]))
+	for id: String in order:
+		api.base_speed[id] = sk_speed
+		(skaters[id] as TLBiped).skate_lateral_grip = grip
+	api.speed = float(tune["shoot"]["speed"]) * (1.0 + float(per[1]) * int(dials["shot"]))
+	if brain != null:
+		brain.sharpness = float(per[3]) * int(dials["sharpness"])
 
 
 func _hold_all() -> void:
@@ -191,7 +480,10 @@ func _hold_all() -> void:
 
 
 func _faceoff() -> void:
-	puck.place(Vector3(0, 0.07, 0))
+	api.reset()
+	hits.reset()
+	var j: float = float(tune["faceoff_jitter"])
+	puck.place(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
 	for id: String in order:
 		var sk: TLBiped = skaters[id]
 		sk.brake(false)
@@ -201,17 +493,8 @@ func _faceoff() -> void:
 
 
 func _restart() -> void:
-	rules.queue_free()
-	hud.queue_free()
-	_new_rules()
-	result = ""
-	reset_in = 0
-	_flag_goal = ""
-	for id: String in order:
-		api.shots[id] = 0
-	_faceoff()
-	rules.start()
-	env["rules"] = rules
+	_build(mode_id)
+	_start_match()
 
 
 func _flush_events(_frame: int) -> void:
@@ -232,17 +515,44 @@ func _p2(v: Vector3) -> Array:
 
 func _pack_state() -> Dictionary:
 	var s: Dictionary = rules.snapshot()
+	s["mode"] = mode_id
+	s["periods"] = rules.periods
 	s["player"] = "b0"
 	s["puck"] = {"pos": _p2(puck.global_position), "vel": _p2(puck.linear_velocity)}
+	if api.carrier != "":
+		s["puck"]["holder"] = api.carrier
+	s["possession"] = api.state()
+	s["hits"] = hits.state()
+	s["reach"] = api.reach
+	s["poke_reach"] = api.poke_reach
+	s["autopilot"] = autopilot
+	if drill_id != "":
+		s["drill"] = drill_id
+	var dl: Dictionary = {"values": dials.duplicate(), "open": dial_open, "refused": dial_refused}
+	var used: Dictionary = {}
+	for p: int in dial_used:
+		used[str(p)] = dial_used[p]
+	if not used.is_empty():
+		dl["used"] = used
+	if dial_open:
+		dl["selected"] = str(tune["dial"]["names"][dial_sel])
+	s["dial"] = dl
+	if rule_line != "":
+		s["rule_line"] = rule_line
 	var list: Array = []
 	for id: String in order:
 		var sk: TLBiped = skaters[id]
 		var f: Vector3 = sk.forward()
-		list.append({"id": id, "team": teams[id], "role": roles[id], "pos": _p2(sk.global_position), "vel": _p2(sk.velocity), "facing": _p2(f)})
+		list.append({"id": id, "team": teams[id], "role": roles[id], "pos": _p2(sk.global_position), "vel": _p2(sk.velocity), "facing": _p2(f), "speed": _r3(sk.speed())})
 	s["skaters"] = list
 	s["shots"] = api.shots.duplicate()
 	s["frozen"] = frozen
 	s["shoot_ready"] = api.can_shoot("b0")
-	s["goals"] = {"blue": [-26.0, 0.0], "red": [26.0, 0.0], "half_width": float(tune["goals"]["half_width"])}
+	s["pass_ready"] = api.carrier == "b0"
+	s["poke_ready"] = api.can_poke("b0")
+	s["check_ready"] = hits.can_check("b0")
+	var g: Dictionary = tune["goals"]
+	s["goals"] = {"blue": [float(g["blue"][0]), float(g["blue"][2])], "red": [float(g["red"][0]), float(g["red"][2])], "half_width": float(g["half_width"])}
+	s["rink"] = {"half_length": float(tune["rink"]["half_length"]), "half_width": float(tune["rink"]["half_width"])}
 	s["result"] = result
 	return s

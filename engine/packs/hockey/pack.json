@@ -21,14 +21,21 @@
   "assets": [
     "gen/ai_hook.gd",
     "gen/art_hook.gd",
-    "gen/fx_hook.gd"
+    "gen/fx_hook.gd",
+    "gen/ring_hook.gd"
   ],
   "tests": [
     "tests/bot_hockey.gd",
-    "tests/bot_hockey_ai.gd"
+    "tests/bot_hockey_ai.gd",
+    "tests/bot_reach.gd",
+    "tests/bot_match.gd",
+    "tests/bot_check.gd",
+    "tests/bot_modes.gd",
+    "tests/bot_dial.gd"
   ],
   "cameras": [
-    "arena"
+    "arena",
+    "chase"
   ],
   "params": [
     {
@@ -68,6 +75,24 @@
       "label": "Shot cooldown"
     },
     {
+      "name": "reach",
+      "file": "data/tuning.json",
+      "path": "carry.reach",
+      "min": 0.6,
+      "max": 2,
+      "step": 0.1,
+      "label": "Puck reach (the ring)"
+    },
+    {
+      "name": "pass_speed",
+      "file": "data/tuning.json",
+      "path": "carry.pass_speed",
+      "min": 6,
+      "max": 24,
+      "step": 1,
+      "label": "Pass speed"
+    },
+    {
       "name": "pause",
       "file": "data/tuning.json",
       "path": "pause_s",
@@ -75,6 +100,15 @@
       "max": 5,
       "step": 0.5,
       "label": "Pause after a goal"
+    },
+    {
+      "name": "mode",
+      "file": "data/tuning.json",
+      "path": "mode",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "label": "Mode: 0 base 1 3v5 2 sudden 3 pond 4 big"
     }
   ],
   "on_leave": "pause",

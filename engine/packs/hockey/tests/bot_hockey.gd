@@ -20,6 +20,9 @@ func _v(a: Array) -> Vector2:
 func _bot_tick(frame: int) -> void:
 	var _frame: int = frame
 	s = ctx.pack_state()
+	if str(s.get("mode", "base")) != "base":
+		ctx.input.tap(&"mode_base")      # H3: this bot tests the base game; under another mode param it switches to it first
+		return
 	done = s["state"] == "over"
 	if done or bool(s["frozen"]):
 		ctx.input.set_axis(&"left", &"right", 0.0)

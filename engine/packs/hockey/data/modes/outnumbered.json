@@ -1,0 +1,79 @@
+{
+  "id": "outnumbered",
+  "label": "Outnumbered: three against five",
+  "about": "You and two mates against five. The rink holds eight skaters.",
+  "roster": [
+    {
+      "id": "b0",
+      "team": "blue",
+      "role": "player",
+      "spawn": [
+        -1.5,
+        0
+      ]
+    },
+    {
+      "id": "b1",
+      "team": "blue",
+      "role": "support",
+      "spawn": [
+        -10,
+        -8
+      ]
+    },
+    {
+      "id": "b2",
+      "team": "blue",
+      "role": "back",
+      "spawn": [
+        -10,
+        8
+      ]
+    },
+    {
+      "id": "r0",
+      "team": "red",
+      "role": "chaser",
+      "spawn": [
+        1.5,
+        0
+      ]
+    },
+    {
+      "id": "r1",
+      "team": "red",
+      "role": "support",
+      "spawn": [
+        10,
+        -8
+      ]
+    },
+    {
+      "id": "r2",
+      "team": "red",
+      "role": "back",
+      "spawn": [
+        10,
+        8
+      ]
+    },
+    {
+      "id": "r3",
+      "team": "red",
+      "role": "support",
+      "spawn": [
+        8,
+        0
+      ]
+    },
+    {
+      "id": "r4",
+      "team": "red",
+      "role": "back",
+      "spawn": [
+        16,
+        -4
+      ]
+    }
+  ]
+}

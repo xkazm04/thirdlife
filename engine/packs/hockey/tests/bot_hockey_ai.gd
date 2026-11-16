@@ -21,6 +21,9 @@ func _v(a: Array) -> Vector2:
 
 func _bot_tick(_frame: int) -> void:
 	s = ctx.pack_state()
+	if str(s.get("mode", "base")) != "base":
+		ctx.input.tap(&"mode_base")      # H3: this bot tests the base game; under another mode param it switches to it first
+		return
 	done = s["state"] == "over"
 	var pk: Vector2 = _v(s["puck"]["pos"])
 	if have_prev:

@@ -7,4 +7,5 @@ village (`engine/boot/games.json`) and improved in place. Copy from a seed, not 
 The gate step `packs` (`tl check --tier full --only packs`, `devx/lib/gate/steps/packs.mjs`) runs lint, smoke, every bot
 of the manifest and invariants on every folder here with a `pack.json`; it prints found and completed and fails when they
 differ. `tl play` lists the house games; `tl play hockey` plays one.
-Today: `hockey/` (`game.ice_hockey_three_against` 0.1.1, built by the Foreman on 11 Nov, record `docs/reports/JOB3-HOCKEY.md`).
+Today: `hockey/` (`game.ice_hockey_three_against` 0.1.1, built by the Foreman on 11 Nov, record `docs/reports/JOB3-HOCKEY.md`;
+since 16 Nov: possession and passing, hits, modes as data in `data/modes/` chosen by the param `mode`, a rule dial once a period).

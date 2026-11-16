@@ -39,6 +39,9 @@ func on_event(name: String, pos: Vector3, _team: String) -> void:
 			TLVfx.burst("confetti", pos + Vector3(0, 2, 0), ctx.root)
 		"faceoff":
 			_play("whistle")
+		"hit_bump", "hit_stumble", "hit_knockdown", "hit_cross":
+			# H2: a hit is heard, never drawn: the figures show it (fall, stumble, the stick's swing)
+			_play("hit_wood", pos)
 		"win":
 			_play("cheer")
 			TLVfx.burst("confetti", pos + Vector3(0, 2, 0), ctx.root)
@@ -61,6 +64,8 @@ func tick(frame: int, env) -> void:
 	var every: int = maxi(1, int(_f("scrape_every_frames", 20)))
 	if frame % every == 0 and fastest > _f("scrape_speed", 5.0):
 		_play("skate", fast_pos)
-	if fastest > _f("spray_speed", 6.0) and frame - _last_spray >= int(_f("spray_every_frames", 30)):
+	# H2: no spray where a hit just happened (a burst at a contact is a drawing at a hit)
+	var hit_recent: bool = env.has("hits") and not (env["hits"].last_hit as Dictionary).is_empty() and frame - int(env["hits"].last_hit["frame"]) < int(_f("no_spray_after_hit_frames", 45))
+	if not hit_recent and fastest > _f("spray_speed", 6.0) and frame - _last_spray >= int(_f("spray_every_frames", 30)):
 		_last_spray = frame
 		TLVfx.burst("ice_spray", fast_pos, ctx.root)

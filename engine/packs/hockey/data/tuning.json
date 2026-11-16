@@ -1,17 +1,26 @@
 {
-  "rules": {"sides": ["blue", "red"], "score_to_win": 3},
-  "pause_s": 2.0,
-  "skater": {"skate_speed": 8.0, "skate_accel": 12.0, "skate_lateral_grip": 3.0, "skate_turn_rate": 5.0, "body_mass": 80.0},
-  "shoot": {"reach": 1.5, "speed": 18.0, "cooldown_s": 0.4, "front_dot": 0.5},
-  "puck": {"radius": 0.12, "height": 0.08, "max_speed": 30.0, "drag": 0.0},
-  "camera": {"pos": [0, 52, 14], "target": [0, 0, 0], "fov": 55},
-  "goals": {"blue": [-26, 0, 0], "red": [26, 0, 0], "half_width": 2.0, "depth": 1.5},
+  "rules": {"sides":["blue","red"],"score_to_win":3,"periods":3,"period_seconds":36,"intermission_seconds":2,"sudden_death":true},
+  "pause_s": 2,
+  "skater": {"skate_speed":8,"skate_accel":12,"skate_lateral_grip":3,"skate_turn_rate":5,"body_mass":80},
+  "skater_sprint_scale": 1.25,
+  "shoot": {"speed":18,"cooldown_s":0.4},
+  "carry": {"reach":1.1,"offset":[0.3,0.07,-0.75],"own_lock_frames":12,"own_lock_speed":4,"flight_take_speed":7,"flight_take_dist":0.6,"pass_speed":14,"pass_cone_deg":50,"pass_lead_max_frames":60,"poke_reach":1.7,"poke_cooldown_frames":30,"poke_speed":4,"poke_lock_frames":20,"carry_speed_scale":0.92,"ring_width":0.09},
+  "puck": {"radius":0.12,"height":0.08,"max_speed":30,"drag":0},
+  "chase_camera": {"distance":11,"height":13,"look_height":0,"fov":50},
+  "camera": {"pos":[0,52,14],"target":[0,0,0],"fov":55},
+  "goals": {"blue":[-26,0,0],"red":[26,0,0],"half_width":2,"depth":1.5},
   "roster": [
-    {"id": "b0", "team": "blue", "role": "player", "spawn": [-1.5, 0]},
-    {"id": "b1", "team": "blue", "role": "chaser", "spawn": [-10, -8]},
-    {"id": "b2", "team": "blue", "role": "back", "spawn": [-10, 8]},
-    {"id": "r0", "team": "red", "role": "chaser", "spawn": [1.5, 0]},
-    {"id": "r1", "team": "red", "role": "support", "spawn": [10, -8]},
-    {"id": "r2", "team": "red", "role": "back", "spawn": [10, 8]}
-  ]
+    {"id":"b0","team":"blue","role":"player","spawn":[-1.5,0]},
+    {"id":"b1","team":"blue","role":"support","spawn":[-10,-8]},
+    {"id":"b2","team":"blue","role":"back","spawn":[-10,8]},
+    {"id":"r0","team":"red","role":"chaser","spawn":[1.5,0]},
+    {"id":"r1","team":"red","role":"support","spawn":[10,-8]},
+    {"id":"r2","team":"red","role":"back","spawn":[10,8]}
+  ],
+  "hits": {"check_reach":1.7,"check_cone_deg":60,"check_cooldown_frames":40,"whiff_cooldown_frames":20,"bump_speed":3.0,"knock_speed":7.8,"bump_push":0.3,"stumble_push":0.6,"stumble_frames":40,"stumble_speed_scale":0.4,"down_frames_min":30,"down_frames_max":60,"down_frames_per_mps":12,"brace_speed":1.0,"brace_side_dot":0.5,"lunge_speed":1.5,"cross_reach":1.9,"cross_cone_deg":60,"cross_push_speed":3.5,"cross_cooldown_frames":45,"loose_puck_speed":2.0},
+  "rink": {"half_length":30,"half_width":15,"corner_r":5,"margin":0.35},
+  "faceoff_jitter": 0.4,
+  "mode": 0,
+  "modes": ["base","outnumbered","sudden_death","pond","big_ice"],
+  "dial": {"names":["skate","shot","grip","sharpness"],"labels":["Skate speed","Shot speed","Ice grip","Bot sharpness"],"per_step":[0.08,0.1,0.25,0.05],"min":-3,"max":3}
 }

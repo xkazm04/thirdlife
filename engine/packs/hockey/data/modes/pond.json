@@ -1,0 +1,11 @@
+{
+  "id": "pond",
+  "label": "Pond hockey",
+  "about": "No checks: F and C do nothing. Bots pass earlier and to closer-marked mates.",
+  "checks": false,
+  "ai": {
+    "pressure_radius": 5,
+    "open_radius": 2.5,
+    "min_carry_frames": 6
+  }
+}

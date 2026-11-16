@@ -1,10 +1,20 @@
 {
   "speed_scale": 0.9,
-  "shoot_range": 12.0,
-  "aim_tolerance_deg": 20.0,
-  "min_separation": 4.0,
-  "pounce_radius": 5.0,
-  "back_radius": 6.0,
+  "shoot_range": 19,
+  "aim_tolerance_deg": 20,
+  "pounce_radius": 5,
+  "back_radius": 6,
+  "back_engage": 4,
   "lead_frames": 30,
-  "red_skill": 0.9
+  "red_skill": 0.9,
+  "open_ahead": 8,
+  "pressure_radius": 3,
+  "open_radius": 3,
+  "min_carry_frames": 10,
+  "yield_frames": 45,
+  "check_min_closing_red": 4,
+  "check_min_closing_blue": 6.5,
+  "stuck_frames": 45,
+  "mouth_half": 1.6,
+  "defend_radius": 12
 }

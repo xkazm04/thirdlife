@@ -1,0 +1,74 @@
+{
+  "id": "big_ice",
+  "label": "Big ice, two against two",
+  "about": "80 x 40 m, the largest rink that fits the village plot (88 m) with its apron; the stands do not fit around it and are left out.",
+  "venue": {
+    "length": 80,
+    "width": 40,
+    "corner_r": 8,
+    "apron": 2,
+    "dress": false
+  },
+  "rink": {
+    "half_length": 40,
+    "half_width": 20,
+    "corner_r": 8
+  },
+  "goals": {
+    "blue": [
+      -36,
+      0,
+      0
+    ],
+    "red": [
+      36,
+      0,
+      0
+    ]
+  },
+  "camera": {
+    "pos": [
+      0,
+      66,
+      18
+    ]
+  },
+  "roster": [
+    {
+      "id": "b0",
+      "team": "blue",
+      "role": "player",
+      "spawn": [
+        -1.5,
+        0
+      ]
+    },
+    {
+      "id": "b1",
+      "team": "blue",
+      "role": "back",
+      "spawn": [
+        -14,
+        6
+      ]
+    },
+    {
+      "id": "r0",
+      "team": "red",
+      "role": "chaser",
+      "spawn": [
+        1.5,
+        0
+      ]
+    },
+    {
+      "id": "r1",
+      "team": "red",
+      "role": "back",
+      "spawn": [
+        14,
+        -6
+      ]
+    }
+  ]
+}
