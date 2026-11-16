@@ -12,6 +12,7 @@ const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
 const CpuClock: GDScript = preload("res://kernel/host/cpuclock.gd")
 const StateHash: GDScript = preload("res://kernel/host/statehash.gd")
 const Session: GDScript = preload("res://kernel/runner/session.gd")   # P7: the input record (tl.input/1), replay, --devices
+const PackLife = preload("res://kernel/runner/pack_life.gd")   # the lifecycle this worker shares with a world's holder
 
 const TICK_LIMIT_MS: int = 250          # RUNNER.md: one _pack_tick or _bot_tick
 const SETUP_LIMIT_MS: int = 10000       # kernel addition: generators, _pack_setup, _pack_start, _bot_setup, teardown
@@ -20,7 +21,6 @@ const HARD_NODE_CAP: int = 50000        # runaway spawning (ten times the V3 bud
 const HARD_MEMORY_CAP: int = 4 * 1024 * 1024 * 1024
 const CENSUS_EVERY: int = 10
 const HASH_TRACE_EVERY: int = 300
-const BELOW_Y: float = -50.0
 const ORPHAN_AFTER_S: float = 60.0
 
 var opts: Dictionary = {}
@@ -42,15 +42,11 @@ var warnings: Array = []                 # WP5: things that fail nothing but tha
 var watchdog: Dictionary = {}
 var bot_info: Dictionary = {}
 var capture_info: Dictionary = {}
-var entities_max: int = 0
-var bodies_max: int = 0
-var below: Dictionary = {}
-var below_count: int = 0
+var life: PackLife                       # the pack's lifecycle (runner/pack_life.gd): context, load, frame, census, verdict
 var hash_trace: Array = []
 var frame_usec: PackedInt64Array = PackedInt64Array()
 var tick_ms_max: float = 0.0
 var _last_frame_usec: int = 0
-var _has_tick: bool = false
 
 var _wd_thread: Thread
 var _wd_mutex: Mutex = Mutex.new()
@@ -116,152 +112,39 @@ func _load_pack() -> bool:
 	var m: Dictionary = mres["manifest"]
 	for e: String in TLLaws.load_tables():
 		load_errors.append({"kind": "engine", "file": "res://kernel/data", "message": e})
-	ctx = TLContext.new()
+	life = PackLife.new()
+	life.load_errors = load_errors
+	life.warnings = warnings
+	life.on_begin = func(phase: String) -> void: _guard_begin(phase, TICK_LIMIT_MS if phase.ends_with("_tick") else SETUP_LIMIT_MS)
+	life.on_end = func(_phase: String) -> bool: return _guard_end()
+	ctx = life.make_context(self, m, pack_dir, int(opts.get("seed", 1)), frames_target, mode)
 	TLContext.current = ctx        # one pack in this process: it stays "the pack being called" for the whole run
-	ctx.holder = self              # N2: kernel nodes find their pack through the holder (TLContext.of)
-	set_meta(&"tl_ctx", ctx)
-	ctx.manifest = m
-	ctx.pack_dir = pack_dir
-	ctx.pack_id = str(m["id"])
-	ctx.seed = int(opts.get("seed", 1))
-	ctx.rng = RandomNumberGenerator.new()
-	ctx.rng.seed = ctx.seed
-	ctx.max_frames = frames_target
-	ctx.headless = DisplayServer.get_name() == "headless"
-	ctx.mode = mode
-	pack_node = Node3D.new()
-	pack_node.name = "TLPack"
-	add_child(pack_node)
-	ctx.root = Node3D.new()
-	ctx.root.name = "World"
-	pack_node.add_child(ctx.root)
-	ctx.input = TLInput.new()
-	ctx.input.name = "TLInput"
-	ctx.input.accept_devices = mode == "play"
-	add_child(ctx.input)
-	ctx.cameras = TLCameras.new()
-	ctx.cameras.name = "TLCameras"
-	add_child(ctx.cameras)
+	pack_node = life.make_scene()
+	life.make_io(mode == "play")
 	if not bool(session.call("attach", ctx)):
 		return false
 	TLStandin.prepare_style(ctx.headless)
 	if not ctx.headless:
 		TLStandin.install_look(self)
 	get_tree().node_added.connect(_on_node_added)
-
-	for gen: String in m["assets"]:
-		var gs: GDScript = _load_script(gen)
-		if gs == null:
-			return false
-		if not _script_has(gs, "generate"):
-			return _load_fail(gen, "an asset generator needs `static func generate(ctx) -> void`")
-		_guard_begin("generate " + gen, SETUP_LIMIT_MS)
-		gs.call("generate", ctx)
-		_guard_end()
-	var es: GDScript = _load_script(str(m["entry"]))
-	if es == null:
+	if not life.load_entry():
 		return false
-	var inst: Variant = es.new()
-	if not (inst is Node):
-		return _load_fail(str(m["entry"]), "the entry script must extend Node")
-	entry = inst
-	entry.name = "Entry"
-	for need: String in ["_pack_setup", "_pack_start"]:
-		if not entry.has_method(need):
-			entry.free()
-			entry = null
-			return _load_fail(str(m["entry"]), "the entry script has no %s()" % need)
-	_has_tick = entry.has_method("_pack_tick")
-	ctx._entry = entry
-	pack_node.add_child(entry)
-	_guard_begin("_pack_setup", SETUP_LIMIT_MS)
-	entry.call("_pack_setup", ctx)
-	_guard_end()
-	TLLaws.apply_tree(pack_node)
+	entry = life.entry
 	if not ctx.headless:
 		TLStandin.install_default_ground(self, ctx.root)   # WP5: a pack with no kit ground still gets a floor (visual only)
-	_find_idle_scripts(pack_node)
-
+	life.find_idle_scripts()
 	if mode == "bot" or (mode == "capture" and opts.has("test")):
-		var test: String = str(opts.get("test", ""))
-		if not (m["tests"] as Array).has(test):
-			return _load_fail(test, "--test must be one of the manifest's tests: %s" % ", ".join(PackedStringArray(m["tests"])))
-		var bs: GDScript = _load_script(test)
-		if bs == null:
+		if not life.load_bot(str(opts.get("test", ""))):
 			return false
-		var binst: Variant = bs.new()
-		if not (binst is Node):
-			return _load_fail(test, "a bot script must extend Node")
-		bot = binst
-		bot.name = "Bot"
-		for need: String in ["_bot_setup", "_bot_tick", "_bot_done", "_bot_result"]:
-			if not bot.has_method(need):
-				bot.free()
-				bot = null
-				return _load_fail(test, "the bot script has no %s()" % need)
-		add_child(bot)
-		_guard_begin("_bot_setup", SETUP_LIMIT_MS)
-		bot.call("_bot_setup", ctx)
-		_guard_end()
+		bot = life.bot
 	return true
 
 
-## WP5. A pack script on a node in the tree that defines `_process` or `_physics_process` while the node is not
-## processing never runs: the usual cause is `set_script` after `add_child` (the engine switches processing on only
-## when a node becomes ready). It fails nothing; the supervisor shows it in the `smoke.loads` detail.
-func _find_idle_scripts(n: Node) -> void:
-	var sc: Script = n.get_script() as Script
-	if sc is GDScript and n != entry and n.is_inside_tree() and sc.resource_path.begins_with(pack_dir) and warnings.size() < 8:
-		var idle: PackedStringArray = PackedStringArray()
-		if _script_has(sc as GDScript, "_physics_process") and not n.is_physics_processing():
-			idle.append("_physics_process")
-		if _script_has(sc as GDScript, "_process") and not n.is_processing():
-			idle.append("_process")
-		if not idle.is_empty():
-			var text: String = "%s on node '%s' never runs (%s is off): call set_script before add_child, or do the work in _pack_tick" % [
-				sc.resource_path.trim_prefix(pack_dir).trim_prefix("/"), str(pack_node.get_path_to(n)), ", ".join(idle)]
-			warnings.append(text)
-			print("[tl] warning: " + text)
-	for c: Node in n.get_children():
-		_find_idle_scripts(c)
-
-
-func _load_script(rel: String) -> GDScript:
-	var full: String = pack_dir + "/" + rel
-	if not FileAccess.file_exists(full):
-		_load_fail(rel, "file not found")
-		return null
-	var s: GDScript = load(full) as GDScript
-	if s == null or not s.can_instantiate():
-		_load_fail(rel, "the script did not load (parse error; see the script_error entries)")
-		return null
-	return s
-
-
-func _script_has(s: GDScript, method: String) -> bool:
-	for mi: Dictionary in s.get_script_method_list():
-		if mi["name"] == method:
-			return true
-	return false
-
-
 func _on_node_added(n: Node) -> void:
-	# P7: a pack script's own event handlers (_input, _unhandled_input, ...) would read a device past ctx.input, and
-	# so past the input record: the kernel switches them off when the node is ready (lint counts the handler as a bypass).
-	var sc: Script = n.get_script() as Script
-	if sc != null and not n.is_node_ready() and (sc.resource_path.begins_with(pack_dir) or sc.resource_path.begins_with(ProjectSettings.localize_path(pack_dir))) \
-			and not n.ready.is_connected(_mute_events.bind(n)):
-		n.ready.connect(_mute_events.bind(n), CONNECT_ONE_SHOT)
+	life.mute_if_pack(n)           # P7: a pack script's own event handlers would read a device past the input record
 	if n is CollisionObject3D and n.has_meta(&"tl_material") and not n.has_meta(&"tl_law_applied") and pack_node != null \
 			and pack_node.is_ancestor_of(n):
 		TLLaws.apply(n as CollisionObject3D)
-
-
-func _mute_events(n: Node) -> void:
-	n.set_process_input(false)
-	n.set_process_unhandled_input(false)
-	n.set_process_unhandled_key_input(false)
-	n.set_process_shortcut_input(false)
 
 
 ## P7: a person who closes the window ends the session as Esc does, so that its record (--record) is still written.
@@ -280,9 +163,7 @@ func _physics_process(_delta: float) -> void:
 	_last_frame_usec = now
 	if not started:
 		started = true
-		_guard_begin("_pack_start", SETUP_LIMIT_MS)
-		entry.call("_pack_start")
-		_guard_end()
+		life.start()
 	if mode == "play" and bool(session.call("ends_now")):     # Esc, unless the designer panel is open (ui/PATCHES.md 2)
 		_end_run()
 		return
@@ -298,22 +179,9 @@ func _physics_process(_delta: float) -> void:
 		else:
 			_end_run()
 		return
-	ctx.frame = frame
 	logger.set("frame", frame)
-	if bot != null:
-		_guard_begin("_bot_tick", TICK_LIMIT_MS)
-		bot.call("_bot_tick", frame)
-		if not _guard_end():
-			return
-	session.call("pre_sample", frame)
-	if finished:                       # a scripted "close" ended the run
+	if not life.tick(frame, true, _pre_sample):       # a call over its limit, or a scripted "close" ended the run
 		return
-	ctx.input._sample()
-	if _has_tick:
-		_guard_begin("_pack_tick", TICK_LIMIT_MS)
-		entry.call("_pack_tick", frame)
-		if not _guard_end():
-			return
 	if logger.call("total_errors") > MAX_ERRORS:
 		_trip("script_errors", "more than %d errors; stopped at frame %d" % [MAX_ERRORS, frame])
 		return
@@ -322,7 +190,7 @@ func _physics_process(_delta: float) -> void:
 			return
 	if frame % HASH_TRACE_EVERY == 0:
 		hash_trace.append([frame, _state_hash().substr(0, 16)])
-	var bot_done: bool = bot != null and mode == "bot" and bool(bot.call("_bot_done"))
+	var bot_done: bool = life.bot_done(mode == "bot")
 	if bot_done or frame == int(session.get("cut_frame")):      # P7: a replay of such a run stops inside the same frame
 		if bot_done:
 			_collect_bot(true)
@@ -333,24 +201,20 @@ func _physics_process(_delta: float) -> void:
 	frame += 1
 
 
+## P7: the input session's turn inside the frame (after the bot, before the input latches). False: it ended the run.
+func _pre_sample(f: int) -> bool:
+	session.call("pre_sample", f)
+	return not finished
+
+
 func _collect_bot(done: bool) -> void:
 	bot_info = {"test": str(opts.get("test", "")), "done": done, "frames": frame + (1 if done else 0)}
-	_guard_begin("_bot_result", SETUP_LIMIT_MS)
-	var r: Variant = bot.call("_bot_result")
-	_guard_end()
-	if typeof(r) == TYPE_DICTIONARY and typeof((r as Dictionary).get("ok")) == TYPE_BOOL and typeof((r as Dictionary).get("summary")) == TYPE_STRING:
-		bot_info["result"] = _plain(r)
-	else:
-		bot_info["result"] = {"ok": false, "summary": "_bot_result() did not return {ok: bool, summary: String}"}
-		load_errors.append({"kind": "bot", "file": str(opts.get("test", "")), "message": "_bot_result() must return a Dictionary with ok (bool) and summary (String)"})
+	bot_info["result"] = life.bot_result()
 
 
-## Counts nodes and bodies, looks for bodies below the ground budget, applies laws to bodies tagged late.
+## The census of the shared core, then this process's own limits: runaway spawning and memory trip the watchdog.
 func _census() -> bool:
-	var counts: Array = [0, 0]
-	_census_node(pack_node, counts)
-	entities_max = maxi(entities_max, int(counts[0]))
-	bodies_max = maxi(bodies_max, int(counts[1]))
+	var counts: Array = life.census(frame)
 	if int(counts[0]) > HARD_NODE_CAP:
 		_trip("entity_runaway", "%d nodes under the pack at frame %d" % [int(counts[0]), frame])
 		return false
@@ -360,36 +224,11 @@ func _census() -> bool:
 	return true
 
 
-func _census_node(n: Node, counts: Array) -> void:
-	counts[0] = int(counts[0]) + 1
-	if n is PhysicsBody3D:
-		counts[1] = int(counts[1]) + 1
-		var y: float = (n as PhysicsBody3D).global_position.y
-		if y < BELOW_Y:
-			below_count += 1
-			if below.is_empty():
-				below = {"node": str(pack_node.get_path_to(n)), "frame": frame, "y": snappedf(y, 0.01)}
-		if n.has_meta(&"tl_material") and not n.has_meta(&"tl_law_applied"):
-			TLLaws.apply(n as CollisionObject3D)
-	for c: Node in n.get_children():
-		_census_node(c, counts)
-
-
 # ------------------------------------------------------------------------------------------------------ hashing
 ## SHA-256 over every physics body under the pack, the canonical form of entry._pack_state(), the seeded generator and
-## the input state (kernel/host/statehash.gd).
+## the input state (kernel/host/statehash.gd, through runner/pack_life.gd).
 func _state_hash() -> String:
-	var tail: String = _canon(entry.call("_pack_state")) if entry != null and entry.has_method("_pack_state") else ""
-	return StateHash.call("hash", pack_node, tail, ctx.rng, ctx.input)
-
-
-static func _canon(v: Variant) -> String:
-	return StateHash.call("canon", v)
-
-
-## A JSON-safe copy of a pack-provided value (vectors become arrays, objects become their type name).
-static func _plain(v: Variant) -> Variant:
-	return StateHash.call("plain", v)
+	return life.state_hash()
 
 
 # ------------------------------------------------------------------------------------------------------ capture
@@ -545,14 +384,10 @@ func _end_run() -> void:
 	if loaded:
 		_census()
 		state_hash = _state_hash()
-		parts = {"bodies_and_state": str(StateHash.call("hash", pack_node, _canon(entry.call("_pack_state")) if entry.has_method("_pack_state") else "")).substr(0, 16),
+		parts = {"bodies_and_state": life.state_hash(true).substr(0, 16),
 			"rng_state": str(ctx.rng.state), "input_frames": int(ctx.input.get("_ticks"))}
-		if entry != null and entry.has_method("_pack_state"):
-			pack_state = _plain(entry.call("_pack_state"))
-		if entry != null and entry.has_method("_pack_teardown"):
-			_guard_begin("_pack_teardown", SETUP_LIMIT_MS)
-			entry.call("_pack_teardown")
-			_guard_end()
+		pack_state = life.pack_state()
+		life.teardown()
 	var sorted: PackedInt64Array = frame_usec.duplicate()
 	sorted.sort()
 	var res: Dictionary = {"loaded": loaded, "frames_run": frame, "load_errors": load_errors}
@@ -562,7 +397,7 @@ func _end_run() -> void:
 	var metrics: Dictionary = {}
 	if loaded:
 		metrics = {"state_hash": state_hash, "frame_ms_p50": _percentile(sorted, 0.5), "frame_ms_p99": _percentile(sorted, 0.99),
-			"entities_max": entities_max, "bodies_max": bodies_max, "tick_ms_max": snappedf(tick_ms_max, 0.001)}
+			"entities_max": life.entities_max, "bodies_max": life.bodies_max, "tick_ms_max": snappedf(tick_ms_max, 0.001)}
 	res["metrics"] = metrics
 	var starved: Dictionary = cpu.call("starved_summary")
 	if not starved.is_empty():
@@ -574,9 +409,9 @@ func _end_run() -> void:
 		res["hash_parts"] = parts
 	if not warnings.is_empty():
 		res["warnings"] = warnings
-	res["below_count"] = below_count
-	if not below.is_empty():
-		res["below"] = below
+	res["below_count"] = life.below_count if life != null else 0
+	if life != null and not life.below.is_empty():
+		res["below"] = life.below
 	if pack_state != null:
 		res["pack_state"] = pack_state
 	if not bot_info.is_empty():

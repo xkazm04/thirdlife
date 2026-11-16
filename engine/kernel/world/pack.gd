@@ -19,7 +19,7 @@ extends Node3D
 ## cache would be lost).
 
 const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
-const WorkerScript: GDScript = preload("res://kernel/runner/worker.gd")
+const PackLife = preload("res://kernel/runner/pack_life.gd")   # the lifecycle this holder shares with the lone worker
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")   # P5: the pack directory's hash, the world file
 
 const CENSUS_EVERY: int = 10            # the worker's rhythm: late-tagged bodies get their law on these frames
@@ -91,13 +91,13 @@ var hash_trace: Array = []
 var final_hash: String = ""
 var pack_state: Variant = null
 var bot_info: Dictionary = {}
-var entities_max: int = 0
-var bodies_max: int = 0
 var awake_last: int = 0
 var tick_usec: PackedInt64Array = PackedInt64Array()
 var toggles: int = 0
 var finished_at_world_tick: int = -1
-var _has_tick: bool = false
+var life: PackLife                      # the pack's lifecycle (runner/pack_life.gd): context, load, frame, census, verdict
+var warnings: Array = []                # things that fail nothing but that a builder should read (as the worker reports them)
+var _t_lap: int = 0
 var _before: TLContext = null
 # N5a: the plot this pack stands on in a scheduled world, and what a world file keeps of it
 var plot_id: String = ""
@@ -155,23 +155,16 @@ func load_pack(dir_arg: String, options: Dictionary) -> bool:
 		return false
 	var m: Dictionary = mres["manifest"]
 	manifest = m
-	ctx = TLContext.new()
-	ctx.manifest = m
-	ctx.pack_dir = pack_dir
-	ctx.pack_id = str(m["id"])
-	ctx.seed = seed_value
-	ctx.rng = RandomNumberGenerator.new()
-	ctx.rng.seed = seed_value
-	ctx.max_frames = frames_target
-	ctx.headless = DisplayServer.get_name() == "headless"
-	ctx.mode = mode
+	life = PackLife.new()
+	life.load_errors = load_errors
+	life.warnings = warnings
+	life.on_mark = func(key: String) -> void: _t_lap = _lap(key, _t_lap)
+	ctx = life.make_context(self, m, pack_dir, seed_value, frames_target, mode)
 	ctx.instance = String(name)
-	ctx.holder = self
 	ctx.origin = options.get("at", Vector3.ZERO)
 	ctx.on_stage = bool(options.get("on_stage", true))     # N7 (N5b patch 1): known before the pack's scripts load
 	ctx.ball_group = StringName("tl_ball@" + String(name))
 	ctx.scenery = str(options.get("scenery", "full"))
-	set_meta(&"tl_ctx", ctx)
 	position = ctx.origin
 	if own_space:
 		# what World3D does for the default space: gravity and damping come from the project settings
@@ -187,23 +180,12 @@ func load_pack(dir_arg: String, options: Dictionary) -> bool:
 	begin.ctx = ctx
 	_begin_mark = begin
 	add_child(begin)
-	pack_node = Node3D.new()
-	pack_node.name = "TLPack"
-	add_child(pack_node)
-	ctx.root = Node3D.new()
-	ctx.root.name = "World"
-	pack_node.add_child(ctx.root)
+	pack_node = life.make_scene()
 	probe = Probe.new()
 	probe.name = "_Probe"
 	probe.pack = self
 	add_child(probe)
-	ctx.input = TLInput.new()
-	ctx.input.name = "TLInput"
-	ctx.input.accept_devices = false          # a world's packs are played by bots or by the input the kernel routes
-	add_child(ctx.input)
-	ctx.cameras = TLCameras.new()
-	ctx.cameras.name = "TLCameras"
-	add_child(ctx.cameras)
+	life.make_io(false)                       # a world's packs are played by bots or by the input the kernel routes
 	_enter()
 	var ok: bool = _load_scripts(m, options)
 	_leave()
@@ -224,81 +206,22 @@ func _lap(key: String, t0: int) -> int:
 	return now
 
 
+## The shared load (runner/pack_life.gd), timed by its laps. A world's bot run defaults to the manifest's first test.
 func _load_scripts(m: Dictionary, options: Dictionary) -> bool:
-	var t: int = Time.get_ticks_usec()
-	for gen: String in m["assets"]:
-		var gs: GDScript = _load_script(gen)
-		if gs == null:
-			return false
-		if not _script_has(gs, "generate"):
-			return _fail(gen, "an asset generator needs `static func generate(ctx) -> void`")
-		gs.call("generate", ctx)
-	t = _lap("assets", t)
-	var es: GDScript = _load_script(str(m["entry"]))
-	if es == null:
+	_t_lap = Time.get_ticks_usec()
+	if not life.load_entry():
 		return false
-	t = _lap("script", t)
-	var inst: Variant = es.new()
-	if not (inst is Node):
-		return _fail(str(m["entry"]), "the entry script must extend Node")
-	entry = inst
-	entry.name = "Entry"
-	for need: String in ["_pack_setup", "_pack_start"]:
-		if not entry.has_method(need):
-			entry.free()
-			entry = null
-			return _fail(str(m["entry"]), "the entry script has no %s()" % need)
-	_has_tick = entry.has_method("_pack_tick")
-	ctx._entry = entry
-	pack_node.add_child(entry)
-	t = _lap("enter_tree", t)
-	entry.call("_pack_setup", ctx)
-	t = _lap("setup", t)
-	TLLaws.apply_tree(pack_node)
-	t = _lap("laws", t)
+	entry = life.entry
+	life.find_idle_scripts()
 	if mode == "bot":
 		var test: String = str(options.get("test", ""))
 		if test.is_empty():
 			test = str((m["tests"] as Array)[0])
-		if not (m["tests"] as Array).has(test):
-			return _fail(test, "the test must be one of the manifest's tests")
-		var bs: GDScript = _load_script(test)
-		if bs == null:
+		if not life.load_bot(test):
 			return false
-		var binst: Variant = bs.new()
-		if not (binst is Node):
-			return _fail(test, "a bot script must extend Node")
-		bot = binst
-		bot.name = "Bot"
-		for need: String in ["_bot_setup", "_bot_tick", "_bot_done", "_bot_result"]:
-			if not bot.has_method(need):
-				bot.free()
-				bot = null
-				return _fail(test, "the bot script has no %s()" % need)
-		add_child(bot)
-		bot.call("_bot_setup", ctx)
+		bot = life.bot
 		bot_info = {"test": test, "done": false, "frames": 0}
-		t = _lap("bot", t)
 	return true
-
-
-func _load_script(rel: String) -> GDScript:
-	var full: String = pack_dir + "/" + rel
-	if not FileAccess.file_exists(full):
-		_fail(rel, "file not found")
-		return null
-	var s: GDScript = TLContext._load_fresh(full)     # P12: a changed .gd is seen by a reload
-	if s == null or not s.can_instantiate():
-		_fail(rel, "the script did not load (parse error)")
-		return null
-	return s
-
-
-func _script_has(s: GDScript, method: String) -> bool:
-	for mi: Dictionary in s.get_script_method_list():
-		if mi["name"] == method:
-			return true
-	return false
 
 
 ## Called by the world for every node that enters the tree under this holder.
@@ -328,7 +251,8 @@ func set_running(on: bool) -> void:
 		PhysicsServer3D.space_set_active(space, on)
 
 
-## One tick of the pack's own clock: the kernel's calls into the pack for its frame `frames_done`.
+## One tick of the pack's own clock: the kernel's calls into the pack for its frame `frames_done` (runner/pack_life.gd,
+## the same frame order as the lone worker).
 func tick(world_tick: int) -> void:
 	var t0: int = Time.get_ticks_usec()
 	# P5 (PATCHES-P2 entry 1), the order of a tick in code: these calls, the pack's nodes, `contact_pass`, the physics step
@@ -338,20 +262,15 @@ func tick(world_tick: int) -> void:
 	_enter()
 	if not started:
 		started = true
-		entry.call("_pack_start")
-	ctx.frame = frames_done
+		life.start()
 	if world != null and world.get("logger") != null:
 		(world.get("logger") as Object).set("frame", frames_done)
-	if bot != null and not bot_off:
-		bot.call("_bot_tick", frames_done)
-	ctx.input._sample()
-	if _has_tick:
-		entry.call("_pack_tick", frames_done)
+	life.tick(frames_done, not bot_off)
 	if frames_done % CENSUS_EVERY == 0:
 		_census()
 	if trace_every > 0 and frames_done % trace_every == 0:
 		hash_trace.append([frames_done, state_hash().substr(0, 16)])
-	var bot_done: bool = bot != null and not bot_off and bool(bot.call("_bot_done"))
+	var bot_done: bool = life.bot_done(not bot_off)
 	_leave()
 	frames_done += 1
 	tick_usec.append(Time.get_ticks_usec() - t0)
@@ -368,7 +287,8 @@ func contact_pass() -> void:
 		_tracker.call("_physics_process", 0.0)
 
 
-## Ends the pack's run: final census, state hash, `_pack_state`, teardown. The pack stays in memory, switched off.
+## Ends the pack's run: the bot's verdict, final census, state hash, `_pack_state`, teardown. The pack stays in memory,
+## switched off.
 func finish(world_tick: int) -> void:
 	if finished:
 		return
@@ -383,18 +303,12 @@ func finish(world_tick: int) -> void:
 	_enter()
 	if bot != null:
 		bot_info["frames"] = frames_done
-		var r: Variant = bot.call("_bot_result")
-		if typeof(r) == TYPE_DICTIONARY and typeof((r as Dictionary).get("ok")) == TYPE_BOOL:
-			bot_info["result"] = WorkerScript.call("_plain", r)
-		else:
-			bot_info["result"] = {"ok": false, "summary": "_bot_result() did not return {ok: bool, summary: String}"}
+		bot_info["result"] = life.bot_result()
 	_census()
 	final_hash = state_hash()
 	_kept_summary = summary()
-	if entry != null and entry.has_method("_pack_state"):
-		pack_state = WorkerScript.call("_plain", entry.call("_pack_state"))
-	if entry != null and entry.has_method("_pack_teardown"):
-		entry.call("_pack_teardown")
+	pack_state = life.pack_state()
+	life.teardown()
 	_leave()
 	finished = true
 	finished_at_world_tick = world_tick
@@ -402,52 +316,28 @@ func finish(world_tick: int) -> void:
 	set_running(false)
 
 
+## The shared census (nodes, bodies, awake bodies, bodies below ground, late laws); the world weighs a pack by its awake bodies.
 func _census() -> void:
-	var counts: Array = [0, 0, 0]
-	_census_node(pack_node, counts)
-	entities_max = maxi(entities_max, int(counts[0]))
-	bodies_max = maxi(bodies_max, int(counts[1]))
-	awake_last = int(counts[2])
-
-
-func _census_node(n: Node, counts: Array) -> void:
-	counts[0] = int(counts[0]) + 1
-	if n is PhysicsBody3D:
-		counts[1] = int(counts[1]) + 1
-		if n is RigidBody3D and not (n as RigidBody3D).sleeping and not (n as RigidBody3D).freeze:
-			counts[2] = int(counts[2]) + 1
-		if n.has_meta(&"tl_material") and not n.has_meta(&"tl_law_applied"):
-			TLLaws.apply(n as CollisionObject3D)
-	for c: Node in n.get_children():
-		_census_node(c, counts)
+	life.census(frames_done)
+	awake_last = life.awake_last
 
 
 # ------------------------------------------------------------------------------------------------------ hashing
-## P11 (PATCHES-P7 section 1): the worker's state hash (kernel/host/statehash.gd): every physics body under the pack with
-## positions relative to the pack's origin, `_pack_state()`, the seeded generator and the input state. A pack in a
-## world hashes as `tl.sh smoke` / `bot` hashes it alone after the same number of its own ticks.
+## P11 (PATCHES-P7 section 1): the worker's state hash (runner/pack_life.gd, kernel/host/statehash.gd): every physics
+## body under the pack with positions relative to the pack's origin, `_pack_state()`, the seeded generator and the
+## input state. A pack in a world hashes as `tl.sh smoke` / `bot` hashes it alone after the same number of its own ticks.
 func state_hash() -> String:
-	if ctx == null:
+	if life == null:
 		return (load("res://kernel/host/statehash.gd") as GDScript).call("hash", pack_node, "")
-	var tail: String = str(WorkerScript.call("_canon", entry.call("_pack_state"))) if entry != null and entry.has_method("_pack_state") else ""
-	return (load("res://kernel/host/statehash.gd") as GDScript).call("hash", pack_node, tail, ctx.rng, ctx.input, ctx.origin)
+	return life.state_hash()
 
 
-## P11 (PATCHES-P7 section 2): a pack script's own event handlers (_input, _unhandled_input, ...) would read a device
-## past ctx.input, so past the input record: switched off when the node is ready, as the worker does. Only scripts of
-## this pack (by path), once per node. The holder enters the tree before `load_pack` makes any node.
+## P11 (PATCHES-P7 section 2): a pack script's own event handlers are switched off when the node is ready, as the worker
+## does (runner/pack_life.gd `mute_if_pack`). The holder enters the tree before `load_pack` makes any node.
 func _enter_tree() -> void:
 	get_tree().node_added.connect(func(n: Node) -> void:
-		var sc: Script = n.get_script() as Script
-		if sc == null or pack_dir.is_empty() or n.is_node_ready():
-			return
-		if not (sc.resource_path.begins_with(pack_dir) or sc.resource_path.begins_with(ProjectSettings.localize_path(pack_dir))):
-			return
-		n.ready.connect(func() -> void:
-			n.set_process_input(false)
-			n.set_process_unhandled_input(false)
-			n.set_process_unhandled_key_input(false)
-			n.set_process_shortcut_input(false), CONNECT_ONE_SHOT))
+		if life != null:
+			life.mute_if_pack(n))
 
 
 # ------------------------------------------------------------------------------------------------------ result
@@ -469,7 +359,7 @@ func result(index: int) -> Dictionary:
 		"at": [position.x, position.y, position.z], "every": every, "mode": mode, "loaded": loaded,
 		"frames": frames_done, "state_hash": final_hash,
 		"script_errors": int(counts[0]), "engine_errors": int(counts[1]),
-		"entities_max": entities_max, "bodies_max": bodies_max, "awake_bodies_at_end": awake_last,
+		"entities_max": life.entities_max if life != null else 0, "bodies_max": life.bodies_max if life != null else 0, "awake_bodies_at_end": awake_last,
 		"kernel_call_ms_p50": _percentile(tick_usec, 0.5), "kernel_call_ms_p99": _percentile(tick_usec, 0.99),
 		"probe_physics_calls": probe.physics_calls if probe != null else 0,
 		"probe_idle_calls": probe.idle_calls if probe != null else 0,
@@ -486,6 +376,11 @@ func result(index: int) -> Dictionary:
 		res["audio_events"] = ctx.audio_events.size()
 	if not load_errors.is_empty():
 		res["load_errors"] = load_errors
+	if not warnings.is_empty():
+		res["warnings"] = warnings
+	if life != null and life.below_count > 0:     # as the worker's result: how often a body was below ground, the first one
+		res["below_count"] = life.below_count
+		res["below"] = life.below
 	if not bot_info.is_empty():
 		res["bot"] = bot_info
 	if trace_every > 0:
@@ -547,7 +442,7 @@ func saved_data() -> Variant:
 	if entry == null or not started or not entry.has_method("_pack_save") or not entry.has_method("_pack_load"):
 		return null
 	_enter()
-	var d: Variant = WorkerScript.call("_plain", entry.call("_pack_save"))
+	var d: Variant = PackLife.plain(entry.call("_pack_save"))
 	_leave()
 	return d
 
@@ -579,6 +474,10 @@ func unload() -> Dictionary:
 	entry = null
 	bot = null
 	probe = null
+	if life != null:                    # its nodes are gone: the core keeps the counts, not the nodes
+		life.pack_node = null
+		life.entry = null
+		life.bot = null
 	release_space()
 	ledgered = true
 	finished = true

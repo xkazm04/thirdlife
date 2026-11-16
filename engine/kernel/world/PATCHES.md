@@ -62,3 +62,19 @@ Reason: scene-tree groups are tree-wide. The kernel's own group (`tl_ball`) is n
 pack passes to `TLBodies.make`, `TLBall.create` and so on are only ever tested on one body (`is_in_group`), which
 is safe. But a pack that asks the tree for a group by name would get the nodes of every pack in the world that
 uses the same name. No seed, example, kit or rig does this today (grep), and lint does not stop it.
+
+## 6. One pack lifecycle: `kernel/runner/pack_life.gd` (applied, challenge 2026-11-16 card 0)
+
+The holder (`pack.gd`) no longer has its own copy of the worker's lifecycle. Both drive one core,
+`kernel/runner/pack_life.gd`: the context fields they share, TLPack/World, TLInput and TLCameras under the driver's
+node, the load (generators, entry, `_pack_setup`, laws, idle-script warnings, the bot and `_bot_setup`), the frame
+(`ctx.frame`, `_bot_tick`, the input latch, `_pack_tick`), the census, the bot verdict, the state hash, `_pack_state`,
+teardown and the muting of a pack script's own event handlers. The holder keeps its marks, probe, physics space,
+slicing, load laps (the core's `on_mark` hook) and plot record; the worker keeps its watchdog (`on_begin`/`on_end`),
+session, capture and trips. Tick order and hash input are unchanged: no state hash moved. What a world now reports
+as the runner alone does: a `_bot_result` without a String `summary` is a failed bot (with the same load error of kind
+`bot`), `below_count` and `below` (the first body under pack-local y = -50, with its path), and `warnings` (a pack
+script that never runs because it was attached after `add_child`). A refused `--test` and a script that does not
+parse read as the worker's texts. A world's bot run still defaults to the manifest's first test. Proof: selftest
+`life.` (examples/bad_life, alone and in a world; `runner/life_case.gd` drives one probe pack both ways in one
+process), `world.`, `world.sh alone` over `boot/games.json`.
