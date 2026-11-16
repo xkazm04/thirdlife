@@ -35,6 +35,7 @@ New command = new file in `devx/lib/commands/`; new gate step = new file in `dev
 - **Packs use only the `TL*` API.** No hand-made materials, lights, environments (the runner counts them as bypasses). Look in `engine/kits/KIT.md` before making a mesh.
 - **kit, rigs, style reference nothing outside themselves.**
 - **Reuse before building**: kit part, seed pack, `engine/kernel/API.md` (generated index: `docs/generated/API-INDEX.md`).
+- **A game in a world plays as it does alone.** `tl check --tier full` includes `world`: every game of `engine/boot/games.json` played in one world must hash as it does alone (about 2 minutes). A kernel query asks the pack's own physics space (`TLContext.space_state_of`), never the viewport's.
 - **A stopped run is never a pass.** A gate step reports found and completed; found 0, fewer completed, a timeout or a kill is never PASS; "could not run" is exit 2 (`docs/GATE-HONESTY.md`).
 - **A bot with a perfect hand measures the game, not the player.** Quote a difficulty figure with the hand it was read through (`TLHand`: perfect, sharp, regular, newcomer; `tl ladder`).
 - **Never hand a worktree with a junction to `git worktree remove`** (it follows the link and empties the target): `tl trees remove` unlinks links first.

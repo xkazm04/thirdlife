@@ -9,6 +9,8 @@ var ring_lib = null                    # gen/ring_hook.gd (meshes are made in a 
 var touched: bool = false              # a person pressed a key or a button: the keys' lines go away
 var goal_by: String = ""               # the side that scored last, shown during the pause after the goal
 var seen: Dictionary = {}              # side -> the score the HUD last saw
+var plated_hud = null                  # L2: the HUD whose labels were aligned (a new match makes a new HUD)
+var plated: Dictionary = {}            # L2: widget id -> a plate is under it now (a plate only while there is a text)
 const HAND: Array = [&"up", &"down", &"left", &"right", &"shoot", &"pass", &"poke", &"sprint", &"check", &"cross", &"dial"]
 
 
@@ -62,22 +64,40 @@ func _bind(board: Node, rules: TLRules) -> void:
 
 func hud_lines(g) -> void:
 	g.hud.add_bound(&"result", func() -> String: return center_text(g), &"center")
-	g.hud.add_bound(&"hint", func() -> String: return str(cfg["again"]) if g.result != "" else "", &"center")
-	var lines: Array = cfg["keys"]
-	for i: int in lines.size():
-		var line: String = str(lines[i])
-		g.hud.add_bound(StringName("keys%d" % i), func() -> String: return "" if touched or g.autopilot or g.result != "" else line, &"top")
+	g.hud.add_bound(&"keys", func() -> String: return keys_text(g), &"top")
+
+
+## The keys, three lines in one label, until his first input (not while a bot-only match runs, not after the end).
+func keys_text(g) -> String:
+	return "" if touched or g.autopilot or g.result != "" else "\n".join(PackedStringArray(cfg["keys"]))
+
+
+## L2 (kernel API 1.5): a plate under every text that lies on the picture, only while it has a text (an empty
+## plate is a dark pill on the ice); lines centred in the keys and the result, the dial's lines left. The dial and
+## the rule line are main.gd's widgets: they exist by the first tick, so this runs from tick().
+func plates(g) -> void:
+	if plated_hud != g.hud:
+		plated_hud = g.hud
+		plated = {}
+		g.hud.set_align(&"keys", &"center")
+		g.hud.set_align(&"result", &"center")
+	var want: Dictionary = {&"keys": keys_text(g) != "", &"result": center_text(g) != "", &"dial": g.dial_open, &"rule": g.rule_line != ""}
+	for id: StringName in want:
+		if bool(want[id]) != bool(plated.get(id, false)):
+			plated[id] = want[id]
+			g.hud.set_plate(id, bool(want[id]))
 
 
 func center_text(g) -> String:
 	if g.result != "":
-		return g.result
+		return "%s\n%s" % [g.result, str(cfg["again"])]
 	if g.reset_in > 0 and goal_by != "":
 		return str(cfg["goal"]) % goal_by.to_upper()
 	return ""
 
 
 func tick(g) -> void:
+	plates(g)
 	if not touched and not g.autopilot:
 		for a: StringName in HAND:
 			if g.ctx.input.pressed(a):

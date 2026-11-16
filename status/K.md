@@ -229,3 +229,72 @@ Acceptance:
   arch --index: api-v1 green, devx arch tests 22/0: status/k4_bump.sh).
 - tl check --tier fast --changed: arch and devx.test (3) fail on the unbumped version only; assets, cards pass; foreman.typecheck could not run.
 The cursor's numbers are reasoning (API.md), not measured on a person. Not run: the hockey pack with the aiming hand (that is H9).
+
+## K5 (started 05:04)
+SEEN 05:07 TLHud (tl_hud.gd): set_plate(id, on = true) (StyleBoxFlat behind the label: the HUD's ink INK at PLATE_ALPHA 0.62, corners font_size x 0.35, margin PLATE_MARGIN 18 x 8 px), set_align(id, &"left"|&"center"|&"right"); bottom anchors grow upwards (grow_vertical BEGIN), and a plated label or a bottom label of several lines is fitted to its text whenever the text changes (keeps its bottom / right / middle edge by anchor). A one-line label without a plate is never moved. Colours: STYLE.md has no HUD section (API.md says the HUD is a stand-in look), so the plate takes the HUD's own outline ink, named TLHud.INK.
+SEEN 05:08 stills (ex_hud, capture --hud=on, %TEMP%/k5/hud_f20.png and hud_f170.png), what I see: on the right a dark translucent plate with round corners holds "RULE DIAL / > Skate speed +0 / A/D choose W/S one step T close", the three lines centred; it sits over the right goal circle and a skater and the letters read cleanly, the circle and the skater show dimmed through the plate. On the left the same three lines without a plate cross the left goal circle and the boards: the red circle runs through "W/S one step", visibly harder to read. At the bottom, frame 20: one plated line "Level: Classic | Mode: Three against three" 16 px above the screen's bottom edge; frame 170: the same plate grown to four lines upwards, its bottom edge at the same height, lines 2..4 centred under the first; nothing runs off the screen.
+SEEN 05:10 an existing HUD picture unchanged: ex_down, near, frame 165, --hud=on, captured now = byte-identical to the K2 still (%TEMP%/k2_stills/near_down_hud.png, 1,992,405 bytes).
+SEEN 05:29 hashes after (status/k5-hashes-after.txt): the 3 seeds and every example identical to K4's; seeds.sh 30/30 (status/k5-seeds.txt); full selftest 145 passed 0 failed (status/k5-selftest.txt)
+
+READY K5 05:30
+Files (package): engine/kernel/api/tl_hud.gd (set_plate, set_align, INK / PLATE_ALPHA / PLATE_MARGIN, bottom labels grow upwards,
+fitting of plated and several-line bottom labels); engine/kernel/examples/ex_hud/** (new); engine/tools/selftest.sh block K5;
+engine/kernel/API.md (section 13 TLHud K5 lines, examples table, limits line); docs/generated/API-INDEX.md regenerated.
+New public members (API 1.4 -> 1.5): TLHud.set_plate(id: StringName, on: bool = true) -> void;
+TLHud.set_align(id: StringName, align: StringName) -> void; const TLHud.INK: Color; const TLHud.PLATE_ALPHA: float (0.62);
+const TLHud.PLATE_MARGIN: Vector2 (18, 8). Changed default: a bottom-anchored label of several lines grows upwards (it grew
+off the screen); a one-line label without a plate is never moved.
+Acceptance:
+- (1) plate behind a label / a group of lines: met (one label with several lines = one plate; still %TEMP%/k5/hud_f20.png).
+- (2) lines aligned inside the plate: met (set_align center; the same still).
+- (3) a bottom label grows upwards: met (hud_f170.png: four lines, bottom edge where the one line of frame 20 was).
+- two stills with capture --hud=on, looked at: met (what I see is in SEEN 05:08).
+- every existing pack's picture and hash stay: hashes met (3 seeds + every example identical); picture shown for one existing
+  HUD (ex_down, byte-identical still); not proven for every pack's picture (only by the code: no call, no change).
+- selftest 145 passed 0 failed; seeds 30/30: met.
+- tl arch green except the version rule: met (api-v1 lists the 5 members above; on a scratch copy with 1.5: api-v1 green,
+  devx arch tests 22/0, status/k5_bump.sh). tl check --tier fast --changed: arch and devx.test (3) fail on the unbumped
+  version only; assets, cards PASS; foreman.typecheck could not run.
+Not done: a plate behind several separate widgets at once (a group is one multi-line label); the plate's colour is the HUD's
+own ink, not a style palette key (the style has no HUD section).
+
+## K6 (started 05:39)
+SEEN 05:45 K6 first difference: hockey alone in a world (no other pack) already differs (own ticks 6722 vs 1591), so not the neighbours. Bisected with world.sh alone --frames=N: equal through 680 ticks, different from 681. Per-frame state (a print in a temp copy of bot_hockey): after tick 680 only skater b0's position differs, by 3 cm ((22.191, 14.202) alone vs (22.161, 14.220) in the world), his velocity equal; b0 stands 0.42 m from r0's HELD puck (21.856, 14.520) at the side boards. Position without velocity = platform motion: my K2/K3 ball-under-the-feet test. Suspect (testing now): its shape query takes at most 8 results; at the boards more than 8 colliders touch the sphere (ice, apron, boards, glass, frame, skaters, puck) and which 8 come back depends on body order, which differs in a world.
+SEEN 05:47 K6 CAUSE (kernel, mine, from K2): TLBiped._held_under_feet asked get_world_3d().direct_space_state. In a world every pack has its own physics space (TLContext.space), and the viewport's space is empty: the query returned 0 colliders in the world (A: 679 Boards, Puck; 680 Boards, Ice, Puck; W: 0, 0, 0), so in a world a ball under the feet was never left out and b0 was carried by r0's held puck at tick 680. Cure (1 line, engine/kernel/api/tl_biped.gd): the query goes through TLContext.space_state_of(self), the kernel's door that gives the pack's own space in a world and the viewport's space alone. After: hockey (temp copy of 6e0dd8d's pack) in a world = alone at 681 ticks (34a421be both) and the bot ends at 1591 in both (fd2cdd28 both). The alone hash is unchanged by the cure. Running now: the 7-pack check, the other packs' hashes, selftest, seeds.
+SEEN 05:49 7-pack check with the cure (status/k6-alone-after.txt): PASS world.alone, hockey (temp copy of 6e0dd8d's pack) 1591 own ticks 7773cb3f in the world = 7773cb3f alone (the failing log's alone hash: the alone run is unchanged), the other six with the same hashes as in the failing log. Gated: selftest k6.world_ball_floor (world.sh alone on ex_held_big + ex_held): PASS with the cure, FAIL with the one line put back (both examples DIFFERENT).
+SEEN 05:55 after the cure: every seed and example hashes as in K5 (status/k6-hashes-after.txt, smoke and first bot); seeds.sh 30/30; tl arch 9/9 green (no new member); full selftest running (status/k6-selftest.txt). H0 (3249be7) not run: it needs a checkout of that commit and I run no git. By the code it predates the cause: the query came with K2 (02:53) and only matters once a skater stands on a held or shot puck in a world.
+SEEN 06:06 full selftest 146 passed 0 failed (status/k6-selftest.txt)
+
+READY K6 06:07
+Cause: kernel, mine (K2's ball-under-the-feet test in TLBiped). Its shape query asked get_world_3d().direct_space_state; in a
+world each pack has its own physics space and the viewport's space is empty, so the query found nothing there, a held or shot
+puck under a skater's feet was followed as a moving floor in the world and not alone: hockey diverged at tick 680 (b0 3 cm
+apart, carried by r0's held puck at the boards), and bot_hockey ended at 6722 instead of 1591.
+Cure: engine/kernel/api/tl_biped.gd, the query goes through TLContext.space_state_of(self) (the kernel's own door: the
+pack's space in a world, the viewport's alone). One line plus a comment; no new member; nothing in the pack.
+Gate: engine/tools/selftest.sh block K6 (k6.world_ball_floor: world.sh alone on ex_held_big + ex_held), PASS with the cure,
+FAIL without it.
+Proof: world.sh alone, the 7 packs of the failing check (hockey = temp copy of 6e0dd8d's pack), --mode=bot --frames=20000:
+PASS, hockey 1591 ticks 7773cb3f in the world = alone; the other six as in the failing log. Every seed and example keeps its
+hash; seeds.sh 30/30; selftest 146/0; tl arch 9/9 green.
+Not run: H0 (3249be7) (needs a checkout; no git). By the code the cause arrived with K2.
+
+## K7 (started 06:07)
+SEEN 06:10 tl check --tier full --only world on this tree: PASS [7/7] in 99.6 s (busy machine; one world run of the 7 games of
+engine/boot/games.json, then each alone): seed.drive b912bc47@3517, seed.wall cb75fb26@1221, seed.paddle dff1a390@4486,
+example.walker f1c7b537@371, example.kit 6b270ced@332, example.car 3a459d0f@1872, hockey (this tree's older pack)
+c06b89c5@3344, all "same" (status/k7-world-step.txt).
+SEEN 06:12 control: the pre-K6 line put back in tl_biped.gd for one run: FAIL [6/7] in 90 s, "game.ice_hockey_three_against
+differs: 4008 own ticks, world 4bceebc9a4bbf4d7, alone c06b89c5ee18a798 (3344 frames)"; line restored (the step bites).
+
+READY K7 06:13
+Files: devx/lib/gate/steps/world.mjs (new step, full tier, auto-discovered; paths: engine/kernel, kits, rigs, style, packs,
+seeds, boot/games.json, tools/world.sh, tools/tl.sh, project.godot select it under --changed); devx/test/world.test.mjs (7
+tests, fake runner: all same PASS; one different FAIL naming both hashes; fewer rows than games FAIL even with the tool's own
+PASS and exit 0; no trailer FAIL; our timeout FAIL; a kill from outside could not run; readGames; no Godot could not run;
+no games FAIL found 0); docs/GATE-HONESTY.md (one row in the audit table for `world`). Output kept in .tl/gate-world.log.
+Acceptance: tl check --tier full --only world green: met (7/7, 99.6 s). tl check --tier fast: arch 9/9, assets, cards,
+devx.test 168/168 PASS; foreman.typecheck could not run (no foreman/node_modules). Hockey in this tree = alone (c06b89c5) with K6.
+No kernel member added.
+Proposed line for CLAUDE.md, under "The one command" (not applied): "`tl check --tier full` includes `world`: every game of
+engine/boot/games.json played in one world must hash as it does alone (`world.sh alone`, about 2 minutes)."

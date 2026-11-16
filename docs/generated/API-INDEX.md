@@ -225,7 +225,7 @@ Properties: `params: Dictionary`, `profile: String`
 
 > HUD widgets: score, clock, speed and free labels, bound to live sources and refreshed every frame.
 
-Consts: `ANCHORS`
+Consts: `ANCHORS`, `INK`, `PLATE_ALPHA`, `PLATE_MARGIN`
 
 Properties: `font_size: int`
 
@@ -236,6 +236,8 @@ Properties: `font_size: int`
 - `func add_speed(source: Callable, unit: String = "km/h", anchor: StringName = &"bottom_right") -> void`
 - `static func create() -> TLHud`
 - `static func hide_all(of_pack: TLContext = null) -> void`
+- `func set_align(id: StringName, align: StringName) -> void`
+- `func set_plate(id: StringName, on: bool = true) -> void`
 - `func set_text(id: StringName, text: String) -> void`
 - `func text_of(id: StringName) -> String`
 

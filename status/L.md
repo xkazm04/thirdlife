@@ -84,3 +84,40 @@ The Director's eight (the addendum), each as seen after:
 
 Files: `engine/packs/hockey/data/tuning.json`, `data/modes/big_ice.json`, `data/venue_art.json`, `scripts/look.gd` (new), `scripts/main.gd`, `scripts/dial.gd`, `gen/ring_hook.gd`; `docs/experiments/hockey-look/` (README.md, sheet_before_after.jpg, before/ 19, after/ 19 + c1..c3 + w1 + z_carriers, camera-tried/ 6); `status/L.md`. 19 MB of JPEG in the docs folder: the Director decides what of it is committed.
 Not judged: motion (a stumble, the get-up, the ring when the puck changes hands 8 times in 110 frames); a person aiming with his eyes on the picture (the aim's reach through the new lens is computed: 108 m to the farthest corner, 144 m on big ice, against `aim.reach` 200); sound; the world view; `tl play` in a window.
+
+## L2 (started 05:31; the worktree at `36ba652`: lane H's blade carry, the 20-frame ring, the result at full time; kernel API 1.5)
+
+SEEN 05:33 baseline before L2: 17 bots and smoke pass (`%TEMP%/l1/rep/l2before`): bot_hockey 7773cb3fece6b9f8 @1591 ... smoke 2b981b5c6a60abee.
+SEEN 05:35 the plates work as the API says; an empty plated label would be a dark pill on the ice (by the code of `set_plate`, not tried), so `look.gd` sets a plate only while the widget has a text. The dial and the rule line are main.gd's widgets: `look.plates` runs from `look.tick`, so main.gd needs no line for them.
+SEEN 05:36 the puck on the blade reads from the play camera: the human in open ice yes (`l2/B`); at the south board partly, and his stick is drawn through the board (`l2/C`, `l2/z_C_at_boards_enlarged_x3.jpg`); in a scrum of five partly (`l2/F`); a mate 8 frames after his take: no ring, the puck on his blade says it; 26 frames after: the wide ring (`l2/E1`, `E2`).
+SEEN 05:36 the take (`l2/D1..D3`): one frame before, the puck is under the two centres; 2 frames after it lies on his blade 3.1 m from him, outside his ring (reach 1.45 m). Whether that jump reads is motion: not judged from stills.
+SEEN 05:38 the rule line (after a dial change) at the anchor `left` is 905 pixels wide at the height of the nets; with a plate it ran into the centre circle (`l2/L_rule_line_at_left.jpg`). Moved to the anchor `top` (one line of main.gd): under the clock, on the north board's shadow strip.
+SEEN 05:45 the final files (last edit 05:40, the one line of main.gd; every L2 still but `l2/L` was taken before it and shows no rule line): 17 bots and smoke again: results and summaries equal 18 of 18, hashes equal 18 of 18; the four verbs and both gate runs after it.
+SEEN 05:39 bot_hockey's first face-off: a shot at frame 1 from the dot is a goal at frame 98 (the probe's event list). Lane H's to judge.
+
+What changed in L2:
+- `scripts/look.gd` (now 116 lines): `hud_lines` adds `result` and one `keys` label (three lines); new `keys_text`, `plates` (plates only while a text is there; keys and result centred); `center_text` returns the result with "R: play again" on a second line (the widget `hint` is gone); `tick` calls `plates`.
+- `scripts/main.gd`: ONE line, in `_new_rules`:
+  - was: `	hud.add_bound(&"rule", func() -> String: return rule_line, &"left")`
+  - is:  `	hud.add_bound(&"rule", func() -> String: return rule_line, &"top")`
+- `scripts/dial.gd`, `data/tuning.json`: not touched in L2.
+- `docs/experiments/hockey-look/final_sheet.jpg` (546 KB), `l2/` (JPEG copies of the L2 stills), README.md (a section L2 appended).
+Kernel members added: none. Hashes: none moved (no HUD value in `_pack_state` changed: `result` is unchanged, the label alone gained the second line; the rule line's anchor is not state).
+
+FOR LANE H / rigs (seen in L2, not touched):
+- the human's ring (reach 1.45 m) no longer holds his carried puck (blade at 3 m): it reads as "me", the width says "I have it".
+- a stick through the board when he carries along it (`l2/C`): the rig's stick knows no board.
+- the take is a jump of at least 1.6 m in one frame (from inside the ring to the blade).
+- the human owns the face-off puck at frame 2 without a key; bot_hockey scores from the dot with a shot at frame 1.
+
+READY L2 05:45
+| line | verdict | figure |
+|---|---|---|
+| (1) a plate under the dial, the keys, GOAL, the result, and wherever a text lies on the picture; lines aligned | met | plates under keys, GOAL, result + play again, dial, rule line (stills `l2/A`, `I`, `K`, `J`, `L`); keys and result centred, the dial left; the keys stay at the top (at the bottom they would lie on the level line) |
+| (2) lane H's changes re-read from the play camera | met, with what does not read named | open ice: reads; boards: partly, stick through the board; scrum: partly; the take: the puck appears on the blade outside his ring, motion not judged; the 20-frame ring: reads |
+| (3) the final sheet of six, under 1 MB | met | `docs/experiments/hockey-look/final_sheet.jpg`, 545,614 bytes |
+| every bot's result stays | met | 17 bots and smoke: results and summaries equal 18 of 18, hashes equal 18 of 18 |
+| four verbs | met | lint passed, bypasses []; smoke 2b981b5c6a60abee (4 of 4 checks); bot 7773cb3fece6b9f8 @1591 (6 of 6); invariants 10 of 10 |
+| `tl check --tier full --only packs` | met | PASS [1/1] found 1, completed 1; verb runs 20 of 20 |
+| `tl check --tier fast --changed` | met | arch [9/9], assets [4/4], cards [3/3], devx.test [161/161], foreman.typecheck clean |
+Not judged: motion (the take's jump, the ring coming on after 20 frames, the plate coming and going); a person in a window.
