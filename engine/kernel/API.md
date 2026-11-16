@@ -46,6 +46,7 @@ Worked examples, all verified by `tools/tl.sh selftest`, are in `kernel/examples
 | `ex_shuffle` | the puck kind of `TLBall`: 30 m/s against a thin rail and through a thin trigger, `hold` and `release` |
 | `ex_wall` | `TLBall`, contact damage by hardness, `TLFracture` (wake, sleep, bake) |
 | `ex_walker` | `TLBiped` walk, run and skate, pushing a crate, checkpoints and a lap in `TLRules`, `TLOrbitCam` |
+| `ex_pointer` | the aim (`ctx.input.declare_aim`): a stick that turns to the point on the ice under the cursor; its bot drives the aim with `set_aim` |
 | `ex_car` | `TLVehicle` driven by input actions, nitro, grip per surface, `TLChaseCam`, AI with `TLSteer`, `TLHud`, `TLVfx`, `TLAudio` |
 | `ex_kit` | the kit and the rigs under the kernel: a `TLKit` ball on a `TLKit` ice patch, a `barrier_wall` and a `crate` through `TLFracture`, `TLBiped` and `TLVehicle` on the real `TLRigs` rigs, and the stand-in rigs given by hand |
 | `bad_*` | one deliberately bad pack per failure the runner detects |
@@ -303,11 +304,29 @@ multiple of 0.001 (`TLInput.STEP`): `press(&"left", 0.4567)` reads back as `0.45
 | signals `action_pressed(action)`, `action_released(action)`; `declared() -> PackedStringArray` | |
 | `TLInput.LOOK_X`, `TLInput.LOOK_Y`, `TLInput.ZOOM` | **the pointer**: three actions the kernel declares in every pack. `strength()` gives the pixels of a right-button drag in this frame (x to the right, y down) and the wheel notches (+ is out); any value, each lasts one frame. A bot injects them with `press(TLInput.LOOK_X, 12.0)`. `TLOrbitCam` reads them by itself |
 | `keys_taken() -> bool` | true while a text field has the keyboard (the designer panel): the game gets no key then |
+| `declare_aim(action: StringName, height: float = 0.0, reach: float = 200.0)` | **the aim** (K1): an action whose value is a point, where the cursor meets the ground plane y = `height` through the camera on screen, at most `reach` metres from the camera. Declare it again to change height or reach; a name is either an action or an aim |
+| `aim_valid(action) -> bool`, `aim(action) -> Vector3` | this frame's aim: valid while the cursor is over the window and its ray meets the plane in front of the camera within `reach` (or a bot set it); the point lies on the plane, x and z multiples of `STEP`. Invalid: `aim()` is `Vector3.ZERO` |
+| `aim_direction(action, from: Vector3, fallback: Vector3 = Vector3.ZERO) -> Vector3` | the unit vector on the plane (y = 0) from `from` (a body's position) to the aim. When the aim is invalid or within `TLInput.AIM_DEAD` (0.05 m) of `from` on the plane, the cursor sitting on the figure, it returns `fallback` flattened and normalised (`Vector3.ZERO` when that has no length): pass the figure's facing and it keeps it. Never a division by zero |
+| `set_aim(action, point: Vector3)`, `clear_aim(action)` | **injection** of the aim: a bot's point (its y ignored) holds until `clear_aim` and wins over the cursor; `release_all()` clears aims too |
 
 Real keys and the mouse are read only in interactive play (`tools/tl.sh play`); verify runs ignore every device, so a
 stray key press cannot change a result. A pack never reads a device itself: no `Input`, no `InputEvent`, no
-`_input` handler (the kernel switches a pack script's event handlers off), no mouse position. Using an undeclared action is an error. AI opponents do not need actions: give them
-intents directly (`biped.move()`, `vehicle.set_controls()`).
+`_input` handler (the kernel switches a pack script's event handlers off), no mouse position: where the cursor
+points is an aim (`declare_aim`), a world position the kernel resolves. Using an undeclared action is an error. AI opponents do not need actions: give them
+intents directly (`biped.move()`, `vehicle.set_controls()`). A bot that should press as a person does (late, in
+taps of human length, on keys instead of an analog axis) presses through `TLHand` (section 15).
+
+**The aim and determinism.** An aim is latched with the other actions, once per physics frame, after the bot's tick
+and before the pack's tick. Its point comes from, in this order: a fed record (`replay`: the record alone decides); a
+bot's `set_aim`; in interactive play the cursor, through the camera on screen (`Viewport.get_camera_3d()`) with the
+pose that camera has at that physics frame (chase and orbit cameras move in `_physics_process`) and its lens without
+the shake's `h_offset` / `v_offset` (the aim does not shake); otherwise it is invalid. So a verify run without a bot
+reads the aim invalid on every frame, never a stale or random point. In the state hash an aim is its validity and
+its x and z (only for a pack that declares one: other packs hash exactly as before). In a record (section 22) a
+frame's valid aim is three entries: `[f, "<aim>", 1]`, `[f, "<aim>@x", x]`, `[f, "<aim>@z", z]`, the last two left out
+when 0; that, the resolved point, is all a session needs to replay its aim: not the cursor's pixels, the window's
+size or the camera. Example: `examples/ex_pointer` (a stick that turns to the aim; its bot drives the aim round a
+square, onto the figure and away).
 
 ## 9. `TLRules` (capability `rules`): score, clock, periods, laps, win conditions
 
@@ -502,6 +521,76 @@ func _bot_result() -> Dictionary:
 Decide `ok` from game state, and put the numbers that prove it in the result. A bot that is not done within
 `--frames` fails: `bot.completed` false, outcome `failed`, exit code 1 (`_bot_result()` is still collected and shown).
 
+### `TLHand` (capability `input`): a person's hand for a bot
+
+A bot that presses `ctx.input` directly is a perfect hand: every press on the frame it is decided, any analog value,
+no tap shorter than one frame, never away. What it measures holds for nobody. `TLHand` sits between a bot's decisions
+and `ctx.input` and presses the way a person does. The bot keeps its decisions; it hands them over as intents and calls
+`tick()` as the last line of `_bot_tick`.
+
+```gdscript
+var hand: TLHand
+
+func _bot_setup(c) -> void:
+    ctx = c
+    hand = TLHand.create(ctx, "regular")                 # "perfect", "sharp", "regular", "newcomer"
+
+func _bot_tick(_frame: int) -> void:
+    var s: Dictionary = ctx.pack_state()
+    hand.set_axis(&"left", &"right", wanted)             # intents, as often as you like
+    if s["puck_free"]:
+        hand.tap(&"shoot")
+    hand.tick()                                          # last: the hand acts on what is due
+```
+
+| Member | Meaning |
+|---|---|
+| `TLHand.create(ctx, profile = "regular", overrides = {}) -> TLHand` | a hand; `overrides` replaces profile numbers (keys of the table below) and takes `stream` (an int: a second hand in the same run draws its own numbers); an unknown profile or key is an error |
+| `TLHand.PROFILES`, `TLHand.profiles() -> PackedStringArray`, `TLHand.ON`, `TLHand.OFF` | the profiles as data; a wished strength of at least `ON` (0.35) presses a key, which stays wished until the strength falls below `OFF` (0.15) |
+| `profile: String`, `params: Dictionary`, `is_perfect() -> bool` | which hand, its numbers as used |
+| `press(action, value = 1.0)`, `release(action)`, `tap(action, frames = 1)`, `set_axis(negative, positive, value)`, `release_all()` | intents, named as `ctx.input`'s injection |
+| `steer(left, right, up, down, direction: Vector2)` | a direction (x right, y down) on four keys: quantised to 8 ways, a turn lets go of the old key late |
+| `set_aim(action, point: Vector3)` | where the bot wants to point an aim. The seam for the kernel's pointer aim (lane K): under `perfect` it goes to `ctx.input.set_aim` once the kernel has one; **under a person's profile a no-op today** (later: `aim_lag` frames late, resting `aim_miss` metres beside the point) |
+| `tick()` | the last line of `_bot_tick`: the hand sees this frame's intents (unless it is away) and presses or releases what is due |
+| `stats() -> Dictionary` | the proof that the hand ran, for `_bot_result()`: `decisions` (reactions), `mean_reaction_frames`, `stops` (feed-forward releases), `presses`, `releases`, `taps`, `lengthened` (a release postponed to a person's tap length), `sticks` (held through a change), `held_late_frames`, `overshoots`, `lapses`, `lapse_frames`, `intents`, `aims`, `profile` |
+
+What the hand does, per frame, under every profile but `perfect`:
+- **one decision, one reaction.** Everything the bot's intents changed since the hand last looked is one decision.
+  When a key is to go down (a start, or a turn) the decision is a reaction to something new: it is pressed `reaction`
+  frames later (one draw for all of it). A stop of a movement the hand made itself is feed-forward, as a person's is:
+  the key comes up `release_late` frames late, without a reaction. (Measured on `seed_paddle`: with every stop a full
+  reaction late, the bot's per-frame servo on its own paddle became a delayed on/off loop that oscillated, and a
+  `regular` hand lost 9 of 10 games against a rival a person beats.) A change is never pressed before one already queued.
+- **keys, not an analog axis.** `set_axis(-1..1)` becomes one key down or none (`ON` / `OFF`), `steer` one of 8 ways.
+- **human lengths.** A press lasts at least a `tap` (4 to 9 frames). A stop is let go `release_late` frames late; a
+  turn (one key of a pair or of W A S D goes down while another goes up) lets go of the old key `overshoot` frames
+  late instead, and the opposite key of a pair (left and right, up and down) goes down only once the old one is up:
+  a person does not hold both. With `stick_chance` a key stays down `stick` frames more: the button still held when
+  the situation changed.
+- **attention.** `lapses_per_minute` times a minute on average the hand is away for `lapse` frames: intents made then
+  are not seen (a tap is lost; a held wish is seen when it comes back).
+
+| Profile | reaction | tap | release_late | stick_chance, stick | overshoot | lapses / min, lapse | aim_lag, aim_miss (FOR K) |
+|---|---|---|---|---|---|---|---|
+| `perfect` | 0 (the call goes straight to `ctx.input`) | as asked | 0 | 0 | 0 | 0 | 0 |
+| `sharp` | 4..7 | 4..6 | 0..2 | 0.02, 6..12 | 1..3 | 1, 8..15 | 4..8, 0.15 |
+| `regular` | 8..13 | 5..8 | 2..6 | 0.05, 10..24 | 3..7 | 3, 15..30 | 8..16, 0.3 |
+| `newcomer` | 14..23 | 6..9 | 4..10 | 0.12, 18..40 | 6..12 | 6, 24..48 | 14..26, 0.6 |
+
+Why these numbers (frames at 60 Hz): a person's simple visual reaction is 200 to 250 ms (12 to 15 frames) and a choice
+under pressure is longer; somebody new to a game reads the screen first (about 300 ms: `newcomer` centres on 18), a
+player who knows the game anticipates part of it (about 170 ms: `regular` 10), a sharp player reacts on cues before the
+event (about 85 ms: `sharp` 5). A finger's quickest deliberate tap on a keyboard is 60 to 150 ms, so 4 to 9 frames.
+The late release and the overshoot are a quarter to a half of the reaction (letting go is quicker than deciding); the
+stick and lapse numbers are guesses to be tuned against recorded sessions (`tl.sh play --record`), and are said to be.
+
+Determinism: the hand draws from its own generator, seeded from `ctx.seed`, the profile and `stream`; it never draws
+from `ctx.rng`, so the game's own seeded choices are the same under every hand. Same pack, seed, frames and profile
+give the same `state_hash`. `perfect` draws nothing: a bot ported onto `TLHand.create(ctx, "perfect")` keeps its
+result and its hash (`seed_paddle/tests/bot_win.gd`, seeds 1 to 10). Scaffold a bot on the hand with
+`node devx/bin/tl.mjs new bot <name> --pack <dir> --hand regular`. When to read a result through a hand:
+`engine/seeds/README.md`, "A bot is not a person".
+
 ## 16. Running and verifying
 
 ```
@@ -593,7 +682,8 @@ finding. A capability counts as used when a script names one of its classes (`TL
   (`breaks_into` is not used by fracture: pieces carry their own material tag).
 - **HUD and audio are stand-ins**: plain labels, synthesised tones, no style applied. (VFX presets are drawn by the
   style layer since WP5.)
-- **Input**: keys only for the player (no gamepad, no mouse actions except the orbit camera in play), no rebinding.
+- **Input**: keys, the orbit camera's drag and wheel, and aims (the point on a ground plane under the cursor,
+  `declare_aim`) for the player; no gamepad, no mouse buttons as actions, no rebinding.
 - **`requires`** in the manifest is checked for shape only; packs that need other packs are not loaded together.
 - **Saving, networking**: none. **More than one pack per process**: only through the world host (section 19),
   headless, without the watchdog; the verify verbs still run one pack per process.
@@ -756,7 +846,8 @@ the file and refuses to write over a break. Names that start with `_` are the ke
  "length": 4486, "end": "tick", "frames": [[110, "left", 1], [111, "left", 1], [112, "left", 0.42], ...]}
 ```
 `frames` has one entry for every action whose value was not zero in a frame, in frame order (a key held for a second
-is sixty entries; the pointer is `tl.look_x`, `tl.look_y`, `tl.zoom`). `length` is the number of frames the session
+is sixty entries; the pointer is `tl.look_x`, `tl.look_y`, `tl.zoom`; a valid aim is `"<aim>"` with 1 and its point as
+`"<aim>@x"`, `"<aim>@z"`, section 8). `length` is the number of frames the session
 ticked; `end` is `"step"` when it stopped after the physics step of its last frame (play, Esc) and `"tick"` when it
 stopped inside its last frame (a bot that said it was done); `mode` and `max_frames` are what `ctx.mode` and
 `ctx.max_frames` were, and a replay sets them again. All eight keys are required, unknown keys are errors.
@@ -773,7 +864,7 @@ stopped inside its last frame (a bot that said it was done); `mode` and `max_fra
 - A session ends with Esc or when the window is closed; the record is written either way.
 
 **The state hash** covers every physics body under the pack, `_pack_state()`, the seeded generator (`ctx.rng`: seed
-and state) and the input state (every action's value in this frame and the one before). Two runs that look alike and
+and state) and the input state (every action's value in this frame and the one before; each aim's validity and point). Two runs that look alike and
 would differ in their next random number, or in a key that is held, do not hash alike. (The world's own hash of a
 pack, `kernel/world/pack.gd`, does not cover the generator and the input yet: `kernel/api/PATCHES-P7.md`.) The
 worker's result file (`--result`) also has `hash_parts`: the bodies-and-state hash alone, the generator's state and

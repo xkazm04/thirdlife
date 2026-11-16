@@ -1,0 +1,11 @@
+{
+  "id": "example.pointer",
+  "version": "0.1.0",
+  "kernelApi": "1.2",
+  "title": "Primitive example: a stick that turns to the aim on the ice",
+  "capabilities": ["physics", "biped", "input", "camera"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_square.gd"],
+  "cameras": ["rink", "top"]
+}

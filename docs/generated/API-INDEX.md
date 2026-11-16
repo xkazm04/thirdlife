@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 41
+Classes: 42
 
 ## TLAudio
 
@@ -187,6 +187,29 @@ Properties: `bake: StringName`, `damage: TLDamage`, `kick: float`, `max_awake_fr
 - `func awake_count() -> int`
 - `func break_now(push: Vector3 = Vector3.ZERO, at: Variant = null, by: Node = null) -> void`
 
+## TLHand
+
+`engine/kernel/api/tl_hand.gd` extends `RefCounted`
+
+> A person's hand for a bot. A bot decides what it wants (an intent) and tells the hand; the hand presses the pack's
+
+Consts: `OFF`, `ON`, `PROFILES`
+
+Properties: `params: Dictionary`, `profile: String`
+
+- `static func create(ctx: TLContext, profile_name: String = "regular", overrides: Dictionary = {}) -> TLHand`
+- `func is_perfect() -> bool`
+- `func press(action: StringName, value: float = 1.0) -> void`
+- `static func profiles() -> PackedStringArray`
+- `func release(action: StringName) -> void`
+- `func release_all() -> void`
+- `func set_aim(action: StringName, point: Vector3) -> void`
+- `func set_axis(negative: StringName, positive: StringName, value: float) -> void`
+- `func stats() -> Dictionary`
+- `func steer(left: StringName, right: StringName, up: StringName, down: StringName, direction: Vector2) -> void`
+- `func tap(action: StringName, frames: int = 1) -> void`
+- `func tick() -> void`
+
 ## TLHud
 
 `engine/kernel/api/tl_hud.gd` extends `CanvasLayer`
@@ -213,14 +236,19 @@ Properties: `font_size: int`
 
 > Named actions: the one door for input. A pack declares actions; the player presses keys, a bot injects, and the
 
-Consts: `LOOK_X`, `LOOK_Y`, `STEP`, `ZOOM`
+Consts: `AIM_DEAD`, `LOOK_X`, `LOOK_Y`, `STEP`, `ZOOM`
 
 Signals: `action_pressed(action: StringName)`, `action_released(action: StringName)`
 
 Properties: `accept_devices: bool`
 
+- `func aim(action: StringName) -> Vector3`
+- `func aim_direction(action: StringName, from: Vector3, fallback: Vector3 = Vector3.ZERO) -> Vector3`
+- `func aim_valid(action: StringName) -> bool`
 - `func axis(negative: StringName, positive: StringName) -> float`
+- `func clear_aim(action: StringName) -> void`
 - `func declare(action: StringName, keys: Array = []) -> void`
+- `func declare_aim(action: StringName, height: float = 0.0, reach: float = 200.0) -> void`
 - `func declared() -> PackedStringArray`
 - `func just_pressed(action: StringName) -> bool`
 - `func just_released(action: StringName) -> bool`
@@ -229,6 +257,7 @@ Properties: `accept_devices: bool`
 - `func pressed(action: StringName) -> bool`
 - `func release(action: StringName) -> void`
 - `func release_all() -> void`
+- `func set_aim(action: StringName, point: Vector3) -> void`
 - `func set_axis(negative: StringName, positive: StringName, value: float) -> void`
 - `func strength(action: StringName) -> float`
 - `func tap(action: StringName, frames: int = 1) -> void`

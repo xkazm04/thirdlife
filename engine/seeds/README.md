@@ -99,7 +99,8 @@ blind**: positions, facings, what is held, what is next. If your bot needs a num
 `_bot_result()` returns `{"ok", "summary", numbers...}`. Decide `ok` from the rules (`state`, `winner`,
 `reason`) plus one or two facts that prove the mechanism really ran (the pad was visited, a block broke, the HUD
 shows the result). Put measured numbers in the summary: it is what a reviewer reads.
-A bot that is not done within `--frames` fails (exit code 1).
+A bot that is not done within `--frames` fails (exit code 1). A bot that measures anything a person would feel presses
+through `TLHand` (section 7).
 
 ## 6. Ten mistakes made while writing these seeds
 
@@ -146,3 +147,56 @@ Two more that cost nothing only because they were looked up first: a thrown ball
 target material's threshold (8 kg at 19 m/s is 150 N*s; concrete takes 260 N*s before any damage, so the seed sets
 `threshold` in data); and a kit `cone` is static scenery, so a cone the car may knock over has to be re-tagged
 as a dynamic prop (`seed_drive/scripts/main.gd`, `_loose_cone`).
+
+## 7. A bot is not a person
+
+A bot that presses `ctx.input` itself is a perfect hand: every press on the frame it is decided, an analog value on
+any axis, a tap one frame long, never looking away. A result read through it holds for nobody. In the jam before
+this engine's hockey pack, bots measured "loose pucks taken 99.6 %" all night; in the morning the owner could not
+pick up a puck lying in his own ring, and a difficulty ladder set through those bots was a class off for a person.
+
+**`TLHand`** (`engine/kernel/API.md`, section 15) sits between a bot's decisions and `ctx.input`. The bot keeps
+deciding as it did; it hands its intents to the hand (`hand.set_axis`, `hand.tap`, `hand.steer`, ...) and calls
+`hand.tick()` last. Profiles: `perfect` (today's bot, the same hash), `sharp`, `regular`, `newcomer`.
+`node devx/bin/tl.mjs new bot <name> --pack <dir> --hand regular` scaffolds one.
+
+**Read a result through a hand when it is about a person:** feel, reach, timing windows, difficulty, "can a player
+do X", a level or a rival's number. A perfect hand still proves that the game can be finished and that a mechanism
+runs (`ok`, determinism, budgets): keep the seed's first bot perfect.
+
+**Quote a number with its hand.** "Rival speed 2.3: perfect won 10/10, regular 2/10, newcomer 1/10 (seed_paddle,
+seeds 1 to 10)", never "the bot wins". A level set through `perfect` is set for nobody.
+
+What `seed_paddle` showed (the same bot, `tests/bot_win.gd`, through three of the hands, seeds 1 to 10; `sharp` was not run):
+
+| seed | perfect (bot_win) | regular | newcomer |
+|---|---|---|---|
+| 1 | won 5:0, 4486 | won 5:2, 4895 | lost 0:5, 2459 |
+| 2 | won 5:0, 4322 | lost 3:5, 4237 | lost 0:5, 3094 |
+| 3 | won 5:0, 6805 | lost 1:5, 3021 | lost 0:5, 2684 |
+| 4 | won 5:0, 2450 | won 5:0, 1581 | won 5:2, 4001 |
+| 5 | won 5:0, 1296 | lost 4:5, 3287 | lost 3:5, 2076 |
+| 6 | won 5:0, 5267 | lost 4:5, 6014 | lost 0:5, 1755 |
+| 7 | won 5:0, 7629 | lost 1:5, 1650 | lost 0:5, 1919 |
+| 8 | won 5:0, 8007 | lost 1:5, 2954 | lost 0:5, 594 |
+| 9 | won 5:0, 6685 | lost 2:5, 3429 | lost 0:5, 932 |
+| 10 | won 5:0, 8396 | lost 0:5, 1563 | lost 0:5, 1042 |
+| **won** | **10 / 10** | **2 / 10** | **1 / 10** |
+
+Cells: result and frames to the end. Same seed, same game: the hand draws from its own generator, so the serves
+are the same in every column. Where the regular hand's losses come from (the same 10 seeds, one part at a time):
+keys instead of the analog axis alone won 10/10; plus the reaction (8..13 frames) 10/10; plus taps of 5..8 frames
+10/10; plus held buttons and lapses 10/10; plus the late release and the overshoot of a turn 5/10; everything 2/10;
+everything with the bot meeting the ball with the middle of the paddle instead of its edge 5/10.
+
+Two things a bot author learns from that table:
+- **The hand is not the only thing measured: the bot's own policy is too.** This bot re-decides a servo on its own
+  paddle every frame and aims with the paddle's edge; through a person's hand that policy is worse than what a
+  person would play. A low number through a hand says "this game, played this way, by this hand", and a person
+  may still do better; it never says the game is easier than the perfect number.
+- **Feed-forward stops.** An early hand delayed every change by a full reaction, stops included: the servo became a
+  delayed on/off loop and oscillated (regular won 1 of 10). A person reacts late to the world, not to the end of a
+  move they made themselves; the hand now lets go of a stop `release_late` frames late, without a reaction.
+
+The profile numbers are reasoned, not measured on people (`API.md`, "Why these numbers"). Calibrate them against
+recorded sessions (`tl.sh play --record`) before a hand's number decides a design.
