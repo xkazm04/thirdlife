@@ -19,6 +19,21 @@
 #          process by itself (these two decide); E enters the kit court and Q leaves it (shown, not counted);
 #          P11: the turn south is 600 pixels of mouse (A and D step aside since P11)
 #       4. no process of the build is left.
+#       0. (first) the build tag: the exe, headless, prints "[boot] build: <tag>"; FAIL when it is not the tag this
+#          tool wrote into the build (BUILD.txt "tag:") or its commit is not the commit of the tree now (HEAD, read
+#          from the .git files, no git run; --expect <hash> names another), or dist/PLAY-LATEST.cmd does not start it.
+#       --no-window: steps 0, 1 and 4 only (nothing opens a window); --tag-only: step 0 only. Both say what they skipped.
+#   export.sh build --dry-run [--out <dir>]
+#       no export: prints the tag, the folder and the PLAY-LATEST.cmd it would write, and writes the tag file into
+#       <dist>/ThirdLife-dry-run/BUILD-TAG.txt (the real build is not touched).
+#   export.sh build --no-warm
+#       the export without the cache run (that run opens a window: TL_EXPORT_NO_WARM=1 does the same); the build
+#       ships no cache and BUILD.txt says so.
+#
+#   Which build is this (night jam-lessons-home T1, docs/EXE.md): every export writes BUILD-TAG.txt beside the exe,
+#   one line "<short commit> <YYYY-MM-DD HH:MM>" (the commit read from the repository's .git files; this tool runs
+#   no git), which boot.gd prints at start and shows small in the window's corner, and dist/PLAY-LATEST.cmd, which
+#   starts the build just exported (relative paths only). The last line of an export is "PASS export.build: tag ...".
 #   export.sh probe [--out <dir>]
 #       what works inside the build and what needs files on disk, measured in the editor binary and in the exe
 #       (the table of docs/EXE.md).
@@ -59,6 +74,25 @@ refresh_classes() {   # the class cache (TL* by name) must know every script of 
   [ -f "$E/.godot/global_script_class_cache.cfg" ] || { tail -20 "$1" >&2; die 1 "godot --import did not write the class cache (.godot/global_script_class_cache.cfg); its output is in $1"; }
 }
 
+head_commit() {   # the full hash of HEAD of the repository $1, read from its .git files (no git is run); "" if unknown
+  local gd="$1/.git" ref="" common="" h=""
+  if [ -f "$gd" ]; then gd="$(sed -n 's/^gitdir: *//p' "$gd" | head -1 | tr -d '\r')"; fi
+  [ -n "$gd" ] && [ -f "$gd/HEAD" ] || return 0
+  common="$gd"; [ -f "$gd/commondir" ] && common="$gd/$(head -1 "$gd/commondir" | tr -d '\r')"
+  ref="$(head -1 "$gd/HEAD" | tr -d '\r')"
+  case "$ref" in
+    "ref: "*) ref="${ref#ref: }"
+      if [ -f "$gd/$ref" ]; then h="$(head -1 "$gd/$ref")"
+      elif [ -f "$common/$ref" ]; then h="$(head -1 "$common/$ref")"
+      elif [ -f "$common/packed-refs" ]; then h="$(grep -E " $ref\$" "$common/packed-refs" | head -1 | cut -d' ' -f1)"; fi;;
+    *) h="$ref";;
+  esac
+  h="$(echo "$h" | tr -d '\r\n ')"
+  echo "$h" | grep -qE '^[0-9a-f]{40}$' && echo "$h"
+  return 0
+}
+TAG_FILE="BUILD-TAG.txt"
+dry=0; nowarm="${TL_EXPORT_NO_WARM:-0}"; [ "$nowarm" = 1 ] || nowarm=0; nowindow=0; tagonly=0; expect=""
 cmd="build"; commit="${TL_COMMIT:-unknown}"; OUT=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -67,8 +101,13 @@ while [ $# -gt 0 ]; do
     --commit=*) commit="${1#*=}";;
     --commit-file) [ $# -ge 2 ] && [ -f "$2" ] || die 2 "--commit-file wants a file that exists"; commit="$(head -1 "$2" | tr -d '\r')"; shift;;
     --out) [ $# -ge 2 ] || die 2 "--out wants a folder"; case "$2" in /*|[A-Za-z]:*) OUT="$(win "$2")";; *) OUT="$(win "$PWD/$2")";; esac; shift;;
-    -h|--help) sed -n '2,30p' "$0"; exit 0;;
-    *) sed -n '2,30p' "$0"; die 2 "unknown argument '$1'";;
+    --dry-run) dry=1;;
+    --no-warm) nowarm=1;;
+    --no-window) nowindow=1;;
+    --tag-only) tagonly=1;;
+    --expect) [ $# -ge 2 ] || die 2 "--expect wants a commit hash"; expect="$2"; shift;;
+    -h|--help) sed -n '2,46p' "$0"; exit 0;;
+    *) sed -n '2,46p' "$0"; die 2 "unknown argument '$1'";;
   esac
   shift
 done
@@ -76,10 +115,44 @@ done
 [ -z "$OUT" ] && OUT="$REPO/dist/ThirdLife"
 DIST="$(dirname "$OUT")"
 need_tools
+HEAD_HASH="$(head_commit "$REPO")"
+given="$(echo "$commit" | grep -oE '^[0-9a-f]{7,40}' | head -1)"
+[ -z "$HEAD_HASH" ] && HEAD_HASH="$given"
+SHORT="${HEAD_HASH:0:7}"; [ -z "$SHORT" ] && SHORT="unknown"
+
+write_play_latest() {   # write_play_latest <dist> <build folder name> <tag>: dist/PLAY-LATEST.cmd, relative paths only
+  local f="$1/PLAY-LATEST.cmd"
+  {
+    printf '@echo off\r\n'
+    printf 'rem Third Life: starts the newest build engine/tools/export.sh made. It rewrites this file on every export.\r\n'
+    printf 'rem Build tag when this file was written: %s\r\n' "$3"
+    printf 'if not exist "%%~dp0%s\\ThirdLife.exe" (\r\n' "$2"
+    printf '  echo ThirdLife.exe is not in the folder "%s" beside this file. Export again: bash engine/tools/export.sh\r\n' "$2"
+    printf '  pause\r\n  exit /b 1\r\n)\r\n'
+    printf 'if exist "%%~dp0%s\\%s" (set /p TLTAG=<"%%~dp0%s\\%s") else (set TLTAG=no tag file)\r\n' "$2" "$TAG_FILE" "$2" "$TAG_FILE"
+    printf 'echo Third Life, build %%TLTAG%%\r\n'
+    printf 'cd /d "%%~dp0%s"\r\n' "$2"
+    printf 'start "" "ThirdLife.exe"\r\n'
+  } > "$f"
+}
 
 # ------------------------------------------------------------------------------------------------------- build
 if [ "$cmd" = build ]; then
   t0=$(date +%s)
+  tag="$SHORT $(date '+%Y-%m-%d %H:%M')"
+  if [ -n "$given" ] && [ "${HEAD_HASH#"$given"}" = "$HEAD_HASH" ]; then
+    echo "export.sh: WARNING: --commit names $given, the tree's HEAD is $SHORT: the tag carries HEAD"
+  fi
+  if [ "$dry" = 1 ]; then
+    D="$DIST/ThirdLife-dry-run"
+    mkdir -p "$D" || die 1 "cannot make $D"
+    printf '%s\r\n' "$tag" > "$D/$TAG_FILE"
+    echo "export.sh: dry run: nothing exported; the build would be $OUT"
+    echo "export.sh: dry run: its tag file: $D/$TAG_FILE: $(head -1 "$D/$TAG_FILE" | tr -d '\r')"
+    echo "export.sh: dry run: $DIST/PLAY-LATEST.cmd would start $(basename "$OUT")\\ThirdLife.exe"
+    echo "PASS export.build --dry-run: tag $tag"
+    exit 0
+  fi
   version="$("$G" --version 2>/dev/null | tr -d '\r' | head -1)"
   [ -n "$version" ] || die 2 "$G --version printed nothing"
   tdir="$(win "${APPDATA:-$HOME/AppData/Roaming}")/Godot/export_templates/$(echo "$version" | cut -d. -f1-4 | sed -E 's/\.(official|custom_build).*//')"
@@ -135,22 +208,31 @@ NODE
   # P14: the caches of these games (rims, far pictures, rig recipes; keyed by each game's content), computed by the
   # new exe itself: its window runs the village's scripted tour once with TL_CACHE_DIR=<build>/cache. The exe copies
   # what a user's cache lacks from there on every start (boot.gd), so the first start on a machine finds them.
+  # T1: which build is this: one line beside the exe, read by boot.gd at start (no rebuild for a tag)
+  printf '%s\r\n' "$tag" > "$STAGE/$TAG_FILE" || die 1 "cannot write $STAGE/$TAG_FILE"
+  if [ "$nowarm" = 1 ]; then
+    echo "export.sh: --no-warm: the cache run (a window) is skipped; the build ships no cache"
+    cache_files=0
+  else
   echo "export.sh: filling the build's cache (the scripted village in a window, about 80 s)"
   rm -rf "$STAGE/cache"
   TL_CACHE_DIR="$STAGE/cache" TL_EXE_WARM=1 TL_EXE_WINDOW_POS="$POS" limited 300 "$STAGE/ThirdLife.exe" >"$DIST/ThirdLife-warm.log" 2>&1; wcode=$?
   rm -f "$STAGE/ThirdLife-last-run.log"
   cache_files="$(find "$STAGE/cache" -type f 2>/dev/null | wc -l)"
   [ $wcode -ne 0 ] && echo "export.sh: WARNING: the cache run ended with exit code $wcode ($DIST/ThirdLife-warm.log); the build ships $cache_files cache files"
+  fi
   api="$(grep -oE 'KERNEL_API: String = "[^"]*"' "$E/kernel/runner/manifest.gd" | head -1 | cut -d'"' -f2)"
   size_kb="$(du -sk "$STAGE" | cut -f1)"
   {
     echo "$MARK"
     echo "commit: $commit"
+    echo "tag: $tag"
     echo "built: $(date '+%Y-%m-%d %H:%M:%S %z') in $(( $(date +%s) - t0 )) s"
     echo "engine: Godot $version, kernelApi ${api:-unknown}, release export template, Windows x86_64"
     echo "what it opens: res://boot/boot.tscn (engine/boot/boot.gd), the walk res://boot/village.json"
     echo "size: $(( size_kb / 1024 )) MB (ThirdLife.exe $(( $(stat -c %s "$STAGE/ThirdLife.exe") / 1048576 )) MB, ThirdLife.pck $(( $(stat -c %s "$STAGE/ThirdLife.pck") / 1024 )) KB, games $(du -sk "$STAGE/games" | cut -f1) KB)"
-    echo "cache: $cache_files files, $(du -sk "$STAGE/cache" 2>/dev/null | cut -f1) KB (rims, far pictures, rig recipes of these games; copied to the user's cache on start)"
+    if [ "$nowarm" = 1 ]; then echo "cache: none (exported with --no-warm: a first start builds rims, far pictures and rig recipes itself)"
+    else echo "cache: $cache_files files, $(du -sk "$STAGE/cache" 2>/dev/null | cut -f1) KB (rims, far pictures, rig recipes of these games; copied to the user's cache on start)"; fi
     echo "games (folder in games/: id version, title, plot, where it came from):"
     cat "$STAGE/.games.txt"
   } > "$STAGE/BUILD.txt"
@@ -164,6 +246,8 @@ Keys while you walk:   W A S D  walk      Shift  run      E  enter the game whos
 Keys inside a game:    Q or Esc  leave the game (the game's own keys are its own)
 
 The games are the folders in "games". BUILD.txt says what this build was made from.
+Which build is this: BUILD-TAG.txt (the commit and the time of the export) is shown small in the window's top right
+corner. PLAY-LATEST.cmd beside this folder starts the newest build that was exported there.
 ThirdLife-last-run.log (written beside the exe on every start) holds what the last run printed and why it stopped.
 TXT
   if [ -e "$OUT" ]; then
@@ -176,6 +260,9 @@ TXT
   trap - EXIT
   sed -n '2,40p' "$OUT/BUILD.txt"
   echo "export.sh: built in $(( $(date +%s) - t0 )) s: $(cygpath -w "$OUT/ThirdLife.exe" 2>/dev/null || echo "$OUT/ThirdLife.exe")"
+  write_play_latest "$DIST" "$(basename "$OUT")" "$tag" || die 1 "the build is made, but $DIST/PLAY-LATEST.cmd could not be written"
+  echo "export.sh: $(cygpath -w "$DIST/PLAY-LATEST.cmd" 2>/dev/null || echo "$DIST/PLAY-LATEST.cmd") starts it"
+  echo "PASS export.build: tag $tag"
   exit 0
 fi
 
@@ -201,6 +288,28 @@ fi
 
 fail=0
 note() { echo "export.sh check: $1"; }
+# 0. which build is this: the tag the running exe reports against the tag written into it and the commit of the tree
+note "0. the build tag: the exe, headless, says which build it is"
+want_tag="$(sed -n 's/^tag: //p' "$OUT/BUILD.txt" | head -1 | tr -d '\r')"
+want_hash="${expect:-$HEAD_HASH}"
+limited 120 "$OUT/ThirdLife.exe" --headless --log-file "$W/tag.log" -- tag >/dev/null 2>&1; ct=$?
+said="$(grep -oE '^\[boot\] build: .*' "$W/tag.log" 2>/dev/null | head -1 | tr -d '\r' | sed 's/^\[boot\] build: //')"
+said_hash="${said%% *}"
+if [ $ct -ne 0 ] || [ -z "$said" ]; then note "   FAILED: the exe said no build line (exit code $ct; see $W/tag.log)"; fail=1
+elif [ -z "$want_tag" ]; then note "   FAILED: the exe says '$said', but BUILD.txt has no 'tag:' line (a build made before tags: export again)"; fail=1
+elif [ "$said" != "$want_tag" ]; then note "   FAILED: the exe says '$said', the export wrote '$want_tag' (BUILD.txt): $TAG_FILE beside the exe was changed or is missing"; fail=1
+elif [ -z "$want_hash" ]; then note "   FAILED: the exe says '$said', but the commit of this tree could not be read from its .git files (give --expect <hash>)"; fail=1
+elif [ "${want_hash#"$said_hash"}" = "$want_hash" ] || [ ${#said_hash} -lt 7 ]; then note "   FAILED: the exe says '$said', but the commit now is ${want_hash:0:7}: this build is not of this commit (export again)"; fail=1
+else note "   the exe says '$said': the tag the export wrote, of commit ${want_hash:0:7}"; fi
+PL="$DIST/PLAY-LATEST.cmd"
+if [ ! -f "$PL" ]; then note "   FAILED: $PL is missing"; fail=1
+elif ! grep -qF "cd /d \"%~dp0$(basename "$OUT")\"" "$PL"; then note "   FAILED: $PL does not start this build (it names: $(grep -o 'cd /d .*' "$PL" | tr -d '\r'))"; fail=1
+elif grep -qE '[A-Za-z]:[\\/]' "$PL"; then note "   FAILED: $PL holds an absolute path"; fail=1
+else note "   $(basename "$DIST")/PLAY-LATEST.cmd starts $(basename "$OUT")\\ThirdLife.exe (relative)"; fi
+if [ "$tagonly" = 1 ]; then
+  if [ $fail -eq 0 ]; then echo "PASS export.check --tag-only: the running build is tag '$said' (steps 1 to 4 not run)"; else echo "FAIL export.check --tag-only ($W)"; fi
+  exit $fail
+fi
 # 1. the scripted tour, three times
 note "1. the scripted tour of the village, headless (editor binary, the exe, the exe copied to a folder with a space in its name)"
 limited 600 "$G" --headless --fixed-fps 60 --path "$E" res://boot/boot.tscn -- check "--out=$W/editor.jsonl" "--games=$OUT/games" >"$W/editor.log" 2>&1; ce=$?
@@ -238,6 +347,9 @@ node -e '
   if ((b.left_out || []).length) console.log("left out of the village: " + b.left_out.map(d => d.id + " (" + d.why + ")").join("; "));
   process.exit(bad);' "$W" || { note "the hashes are NOT the same in the three runs (table above)"; fail=1; }
 
+if [ "$nowindow" = 1 ]; then
+  note "2. and 3. NOT RUN (--no-window): the picture, the keys"
+else
 # 2. no arguments: a window, one picture, a clean end
 note "2. the exe with no arguments: one picture after 120 frames, then a clean end on request"
 TL_EXE_CAPTURE="$W/village.png" TL_EXE_QUIT_AT=240 TL_EXE_WINDOW_POS="$POS" limited 180 "$OUT/ThirdLife.exe" >"$W/window.log" 2>&1; cw=$?
@@ -267,10 +379,12 @@ node -e '
 if [ $ck -eq 0 ] && grep -q "^\[visit\] the visitor quit at tick 110[0-9]" "$W/keys.log"; then note "   Esc ended the process by itself at $(grep -o "tick 110[0-9]" "$W/keys.log" | head -1), exit code 0"
 else note "   FAILED: Esc did not end the process cleanly (exit code $ck; see $W/keys.log)"; fail=1; fi
 [ -s "$W/on_stage.png" ] && note "   picture at frame 900: $(cygpath -w "$W/on_stage.png" 2>/dev/null || echo "$W/on_stage.png")"
+fi
 
 # 4. nothing left behind
 left="$left$(running_from "$OUT")"
 if [ -n "${left// /}" ]; then note "4. FAILED: a process of the build is still running: $left"; fail=1; else note "4. no process of the build is left"; fi
-if [ $fail -eq 0 ]; then echo "PASS export.check: the exe runs the same games to the same hashes as the editor binary, shows the village, obeys W and Esc, and leaves nothing behind ($W)"
+if [ $fail -eq 0 ] && [ "$nowindow" = 1 ]; then echo "PASS export.check --no-window: build '$said'; the exe runs the same games to the same hashes as the editor binary and leaves nothing behind; the window steps 2 and 3 were NOT run ($W)"
+elif [ $fail -eq 0 ]; then echo "PASS export.check: build '$said'; the exe runs the same games to the same hashes as the editor binary, shows the village, obeys W and Esc, and leaves nothing behind ($W)"
 else echo "FAIL export.check (the files of the runs are in $W)"; fi
 exit $fail

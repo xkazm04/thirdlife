@@ -11,6 +11,8 @@ extends Node
 ##                                              with the same run of the editor binary
 ##   ThirdLife.exe --headless -- probe --out=<abs file>
 ##                                              what works inside an exported build (the table of docs/EXE.md)
+##   ThirdLife.exe --headless -- tag             prints "[boot] build: <tag>" and ends (every verb prints that line
+##                                              first; `export.sh check` compares it with the commit just exported)
 ##   The same three from the editor binary: <godot> --path <engine> res://boot/boot.tscn [-- check ...]
 ##
 ## Why not kernel/host/host.gd: its `_ensure_import` looks for the class cache as a file beside `res://` and starts
@@ -41,6 +43,11 @@ const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel
 const KEYS_WALK: String = "W S  walk      A D  step aside      mouse  look      Shift  run      E  enter the game you stand in      Esc  quit"
 const KEYS_STAGE: String = "Q or Esc  leave the game"
 const CAPTURE_FRAME: int = 120
+## Night jam-lessons-home T1: which build is this. export.sh writes one line beside the exe, "<short commit> <date
+## time>" (for example "4e20087 2026-11-16 01:40"); it is read at start, printed to the log ("[boot] build: <tag>")
+## and shown small in the window's top right corner. The editor binary is "dev". No file: nothing is shown.
+const TAG_FILE: String = "BUILD-TAG.txt"
+const TAG_MAX: int = 64
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
 
 var verb: String = ""
@@ -62,6 +69,7 @@ var _quit_at: int = -1
 var _walk_tmp: String = ""
 var _ending: bool = false
 var _unattended: bool = false
+var tag: String = ""                    # the build tag: "dev" in the editor binary, "" when the exe has no tag file
 
 
 func _ready() -> void:
@@ -92,11 +100,15 @@ func _ready() -> void:
 		var seeded: int = int(PlotFile.call("seed_cache", OS.get_executable_path().get_base_dir().replace("\\", "/") + "/cache"))
 		if seeded > 0:
 			print("[boot] %d cache files of this build copied to %s" % [seeded, str(PlotFile.call("cache_dir"))])
+	tag = build_tag()
+	print("[boot] build: %s" % (tag if not tag.is_empty() else "none (no readable %s beside the exe)" % TAG_FILE))
 	match verb:
 		"":
 			_visit()
 		"check":
 			_check()
+		"tag":
+			get_tree().quit(0)                     # export.sh check: the line above is all it asks for
 		"probe":
 			var p: RefCounted = (load("res://boot/probe.gd") as GDScript).new()
 			p.call("run", self, str(opts.get("out", "")))
@@ -107,6 +119,23 @@ func _ready() -> void:
 ## True in a build made by export.sh (the preset's own feature tag), false under the editor binary.
 func exported() -> bool:
 	return OS.has_feature("thirdlife_exe")
+
+
+## The build tag: "dev" under the editor binary; in the exe the first line of BUILD-TAG.txt beside it when it has
+## the export's shape, "<7 to 40 hex digits or 'unknown'> <YYYY-MM-DD> <HH:MM>" (so no path or name can reach the
+## screen); "" when the file is absent or holds anything else (the log says which).
+func build_tag() -> String:
+	if not exported():
+		return "dev"
+	var p: String = OS.get_executable_path().get_base_dir().replace("\\", "/") + "/" + TAG_FILE
+	if not FileAccess.file_exists(p):
+		return ""
+	var line: String = FileAccess.get_file_as_string(p).replace("\r", "").split("\n")[0].strip_edges().left(TAG_MAX)
+	var shape: RegEx = RegEx.create_from_string("^([0-9a-f]{7,40}|unknown) [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}$")
+	if shape.search(line) == null:
+		print("[boot] %s beside the exe is not a build tag (wanted '<commit> <YYYY-MM-DD> <HH:MM>'): not shown" % TAG_FILE)
+		return ""
+	return line
 
 
 func _win_path(p: String) -> String:
@@ -209,9 +238,12 @@ func _exit_tree() -> void:
 
 func _identity() -> Dictionary:
 	var v: Dictionary = Engine.get_version_info()
-	return {"schema": "thirdlife.exe/1", "kind": "boot", "verb": verb if not verb.is_empty() else "visit", "exported": exported(),
+	var id: Dictionary = {"schema": "thirdlife.exe/1", "kind": "boot", "verb": verb if not verb.is_empty() else "visit", "exported": exported(),
 		"godot": str(v.get("string", "")), "executable": OS.get_executable_path().replace("\\", "/"), "games": games_dir,
 		"display": DisplayServer.get_name(), "user_dir": OS.get_user_data_dir().replace("\\", "/"), "plots": kept, "left_out": dropped}
+	if not tag.is_empty():
+		id["build"] = tag                          # absent value: the key is left out
+	return id
 
 
 # ------------------------------------------------------------------------------------------------ a person walks
@@ -286,6 +318,21 @@ func _visit() -> void:
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	_hint.position = Vector2(28, get_viewport().get_visible_rect().size.y - 58)
 	layer.add_child(_hint)
+	if not tag.is_empty():
+		# which build is this: small, in the top right corner, in the key line's look
+		var tl: Label = Label.new()
+		tl.name = "BuildTag"
+		tl.text = tag
+		tl.add_theme_font_size_override("font_size", 14)
+		tl.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+		tl.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.08, 0.7))
+		tl.add_theme_constant_override("outline_size", 4)
+		tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		tl.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		tl.offset_left = -360
+		tl.offset_right = -14
+		tl.offset_top = 10
+		layer.add_child(tl)
 	if OS.has_environment("TL_EXE_TRACE"):
 		_trace = FileAccess.open(_win_path(OS.get_environment("TL_EXE_TRACE")), FileAccess.WRITE)
 	process_physics_priority = 200000              # after the viewer (100000): its `stage` of this tick is known

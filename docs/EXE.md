@@ -9,7 +9,36 @@ work. Everything stated as a fact was measured on this machine (Windows 11, Godo
 bash engine/tools/export.sh --commit <text>      # makes dist/ThirdLife/ and prints the full path of ThirdLife.exe
 bash engine/tools/export.sh check                # proves the build (hashes, a picture, the keys, nothing left behind)
 bash engine/tools/export.sh probe                # the table "what an export needs", measured again
+bash engine/tools/export.sh check --tag-only     # only: is the build there the build of this commit (headless, seconds)
 ```
+
+## Which build am I playing
+
+(Night jam-lessons-home T1, 16 Nov.) On the jam's last morning the owner played a build of the evening before,
+believing it the newest; nothing on the screen said which build ran. Now:
+
+- **The corner.** The window's top right corner shows the build tag, small: the commit's short hash and the time of
+  the export, for example `4e20087 2026-11-16 01:19`. The editor binary shows `dev`. A build without a tag file shows
+  nothing there (no path, no name: `boot.gd` shows the line only when it has exactly that shape).
+- **The file.** `BUILD-TAG.txt` beside `ThirdLife.exe` is that one line; `BUILD.txt` has it as `tag:`. `export.sh`
+  writes it at every export (no rebuild of anything for a tag); the commit is read from the repository's `.git`
+  files (HEAD of the tree exported: a worktree's own branch), so a build made with uncommitted changes carries the
+  commit they sit on. `export.sh build --dry-run` writes only the tag file, to `dist/ThirdLife-dry-run/`.
+- **The log.** Every start prints `[boot] build: <tag>` first (in `ThirdLife-last-run.log` for a person's start);
+  `ThirdLife.exe --headless -- tag` prints only that and ends.
+- **The newest, by one double click.** Every export writes `dist/PLAY-LATEST.cmd` beside the build folder: it starts
+  the build just exported (relative paths only, so `dist/` can be copied), prints its tag, and says so when the build
+  is not there. It points at the folder of the last export (`--out` included): the newest is the last made.
+- **The proof.** `export.sh check` begins with step 0: the exe, headless, says its tag; FAIL when that is not the tag
+  the export wrote (BUILD.txt), when its commit is not the commit of the tree now (`--expect <hash>` names another),
+  or when `PLAY-LATEST.cmd` does not start this build. `--tag-only` runs step 0 alone; `--no-window` steps 0, 1 and 4
+  (nothing opens a window); both say what they did not run.
+- `export.sh build --no-warm` (or `TL_EXPORT_NO_WARM=1`) skips the cache run, which opens a window; that build
+  ships no cache (BUILD.txt says so) and a first start builds its rims and pictures itself.
+
+What the tag does not say: whether the tree had uncommitted changes when it was exported (no git is run), and which
+games' versions came from `site/` (BUILD.txt lists them). The corner text was not seen in a picture on the night it
+was made (every run was headless); its presence is proven by the log line and the label is made from the same value.
 
 ## For a person
 

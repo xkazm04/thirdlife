@@ -73,8 +73,8 @@ export function gatePacks(dirs, runVerb, keep = () => {}) {
 export async function run(ctx) {
   const roots = process.env.TL_GATE_PACKS_DIR ? process.env.TL_GATE_PACKS_DIR.split(path.delimiter).filter(Boolean) : [path.join(ctx.ENGINE, "packs")];
   const dirs = findPacks(roots);
-  if (!dirs.length) return { ok: false, detail: `found 0 house games under ${roots.join(", ")}, completed 0: nothing gated is not a pass` };
-  if (!ctx.resolveGodot()) return { ok: false, detail: `found ${dirs.length}, completed 0: no Godot found: set TL_GODOT or .tl/local.json (tl doctor)` };
+  if (!dirs.length) return { ok: false, found: 0, completed: 0, detail: `found 0 house games under ${roots.join(", ")}, completed 0: nothing gated is not a pass` };
+  if (!ctx.resolveGodot()) return { ok: false, notRun: true, found: dirs.length, completed: 0, detail: `found ${dirs.length}, completed 0: no Godot found: set TL_GODOT or .tl/local.json (tl doctor)` };
   const logDir = path.join(ctx.REPO, ".tl", "gate-packs");
   fs.mkdirSync(logDir, { recursive: true });
   for (const f of fs.readdirSync(logDir)) if (f.endsWith(".log")) fs.rmSync(path.join(logDir, f));   // this run's output only
@@ -84,9 +84,9 @@ export async function run(ctx) {
     (name, text) => fs.writeFileSync(path.join(logDir, name), text));
   const counts = `found ${res.found}, completed ${res.completed}; verb runs ${res.done} of ${res.units}`;
   const logs = `output: ${path.relative(ctx.REPO, logDir).replace(/\\/g, "/")}/`;
-  if (res.ok) return { ok: true, detail: `${counts}; ${res.summary.filter((s) => s.verb.startsWith("bot:")).map((s) => `${s.pack} ${s.verb} ${s.hash}@${s.frames}`).join(", ")}; ${logs}` };
+  if (res.ok) return { ok: true, found: res.found, completed: res.completed, detail: `${counts}; ${res.summary.filter((s) => s.verb.startsWith("bot:")).map((s) => `${s.pack} ${s.verb} ${s.hash}@${s.frames}`).join(", ")}; ${logs}` };
   // check.mjs prints 300 characters of a detail: the failing pack and verb names come first, one reason, then where the output is
   const byPack = [...new Set(res.failures.map((f) => f.pack))].map((p) => `${p}: ${res.failures.filter((f) => f.pack === p).map((f) => f.verb).join(", ")}`);
   const f0 = res.failures[0];
-  return { ok: false, detail: `${counts}; FAILED ${byPack.join("; ")}; ${logs}; first: ${f0 ? `${f0.pack} ${f0.verb}: ${f0.why}` : "?"}` };
+  return { ok: false, found: res.found, completed: res.completed, detail: `${counts}; FAILED ${byPack.join("; ")}; ${logs}; first: ${f0 ? `${f0.pack} ${f0.verb}: ${f0.why}` : "?"}` };
 }
