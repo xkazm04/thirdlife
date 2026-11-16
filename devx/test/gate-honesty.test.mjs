@@ -1,6 +1,6 @@
 // T2 (jam-lessons-home): a gate that cannot pass by stopping. One test per false-pass path in docs/GATE-HONESTY.md.
 // Every lib module is loaded with a relative dynamic import, so this same file run beside a copy of the OLD devx/lib shows each
-// test failing before the cure (the "before" run is in status/T2.md).
+// test failing before the cure (the "before" run is in docs/reports/jam-lessons-home/T2.md).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

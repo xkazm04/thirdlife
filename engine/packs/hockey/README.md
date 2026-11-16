@@ -2,7 +2,7 @@
 
 `game.ice_hockey_three_against`, built by the Foreman on 11 Nov 2026 from one sentence; made a tracked house game and
 rebuilt in the night of 15 to 16 Nov (lane H, packages H0 to H12; the look by lane L). Every figure below was measured
-that night, headless, on seeds 1 to 20 (or 40 where said), unless the line says otherwise. `status/H.md` holds the record.
+that night, headless, on seeds 1 to 20 (or 40 where said), unless the line says otherwise. `docs/reports/jam-lessons-home/H.md` holds the record.
 
 ## How to play
 

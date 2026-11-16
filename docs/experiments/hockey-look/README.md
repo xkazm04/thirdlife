@@ -102,7 +102,7 @@ Proof that nothing else is hashed: a copy of the pack as it is after L1 with tho
 (`%TEMP%/l1/proof/hockey`) gives 18 of 18 hashes equal to the baseline. So the camera, the puck's drawn size and rim, the
 rings, the keys' lines, GOAL, play again, the dial's text and the bound scoreboards move no hash.
 
-| run | before (= `status/H.md` after H7) | after L1 | result |
+| run | before (= `docs/reports/jam-lessons-home/H.md` after H7) | after L1 | result |
 |---|---|---|---|
 | bot_hockey | 38cafb633924dd63 @3442 | 6a3dfee83ba348d4 @3442 | blue 3:1 WIN, equal |
 | bot_hockey_regular | 9ccc65c2faccfcea @1666 | 01f88fd0cc84c5a3 @1666 | 1:3 LOSE, equal |
