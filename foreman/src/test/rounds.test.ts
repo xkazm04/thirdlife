@@ -54,3 +54,22 @@ test("rounds 5: free text that only mentions the critic is a verify retry, not a
   const events = [planSet(), queued(1), queued(2, "critic says the paddle is fine")];
   assert.equal(roundKindOf(events, "core", 2), "verify_retry");
 });
+
+test("rounds 6: foreman.ts and p10gate.ts classify no round by a prefix of their own", () => {
+  const consts = "CRITIC_ROUND|KIT_REGRESSION|NO_VISIBLE_CHANGE|CHANGE_ROUND|DEP_CHANGED|FINAL_FAILED|critiqueFor";
+  // Any startsWith whose argument mentions a round constant (plain, inside a template literal, or through a list of prefixes).
+  const scan = new RegExp(`startsWith\\([^;]*?(${consts})|prefixes\\.some\\(|startsWith\\(pre\\)|CHANGE_REASON_RE\\.exec`, "g");
+  const hits: string[] = [];
+  for (const f of ["src/foreman.ts", "src/p10gate.ts"]) {
+    const lines = fs.readFileSync(path.join(PKG_ROOT, f), "utf8").split("\n");
+    lines.forEach((l, i) => {
+      if (l.match(scan)) hits.push(`${f}:${i + 1}`);
+    });
+  }
+  assert.deepEqual(hits, []);
+});
+
+test("rounds 7: foreman.ts is below its 2032-line baseline", () => {
+  const n = fs.readFileSync(path.join(PKG_ROOT, "src/foreman.ts"), "utf8").match(/\n/g)?.length ?? 0;
+  assert.ok(n < 2032, `foreman.ts has ${n} lines`);
+});
