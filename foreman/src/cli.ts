@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// foreman: probe | new | approve | plan | prompts | run | resume | change | follow | status | verify | answer | comment | cancel | init-fixture
+// foreman: probe | new | approve | plan | prompts | run | resume | change | follow | status | explain | verify | answer | comment | cancel | init-fixture
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { ADAPTERS, BUDGET_KINDS, EventError, VERBS, type AdapterName, type BudgetPolicy, type JobEvent, type Milestone, type PackageSpec, type Verb } from "./events.js";
-import { JobLog, LogError, rebuildState, type JobState } from "./joblog.js";
+import { JobLog, LogError, foldEvents, readLog, rebuildState, type JobState } from "./joblog.js";
+import { explain, explainText } from "./explain.js";
 import type { Builder, ProbeResult } from "./builder/types.js";
 import { FakeBuilder } from "./builder/fake.js";
 import { ClaudeCliBuilder } from "./builder/claude-cli.js";
@@ -119,6 +120,9 @@ const HELP = `foreman <command>
         reaches a terminal state (done, failed, cancelled) in an event after SEQ. Holds no lock; a torn last line
         is waited for, not printed. --idle-ms: give up (exit 4) when nothing new arrives for that long.
   status <job> [--json]              one row per package: state, round, last cause
+  explain <job> [--package ID] [--json]
+        per package and round: why it ran, builder outcome, time, tokens (raw and weighted), last check; the
+        weighted cost by reason; and the one command to type next. Reads job.jsonl only and writes nothing.
   verify <pack dir> [--verbs all|lint,smoke,...] [--runner fake] [--reports DIR] [--<verb>-args "..."]
         default: all five verbs (every manifest test as a bot, every manifest camera as a capture)
   answer <job> <package> "<text>" [--change PACKAGE]
@@ -700,6 +704,17 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         if (holder.alive) out(`\nforeman  running (pid ${holder.pid})`);
         else if (open) out(`\nforeman  NOT running${holder.pid !== undefined ? ` (pid ${holder.pid} is gone: it was killed)` : ""}; the log stops at event ${state.lastSeq}. Continue with: foreman resume ${state.job}`);
       }
+      return 0;
+    }
+
+    case "explain": {
+      const jobDir = jobDirOf(a);
+      const { events, tornTail } = readLog(jobDir);
+      const state = foldEvents(path.basename(jobDir), events, tornTail);
+      const only = str(a, "package");
+      if (only !== undefined && !state.order.includes(only)) throw new UsageError(`no package "${only}" in ${state.job} (${state.order.join(", ")})`);
+      const ex = explain(state, events, lockHolder(jobDir), only);
+      out(a.flags["json"] === true ? JSON.stringify(ex, null, 1) : explainText(ex));
       return 0;
     }
 
