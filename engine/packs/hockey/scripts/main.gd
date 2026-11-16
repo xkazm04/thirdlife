@@ -16,6 +16,7 @@ var ai_base: Dictionary                # data/ai.json, for validating a mode's "
 var modes: Dictionary = {}             # id -> mode file (validated)
 var mode_id: String = "base"
 var modes_lib                          # scripts/modes.gd
+var menu_lib                           # scripts/menu.gd
 var drill_lib                          # scripts/drills.gd
 var dial_lib                           # scripts/dial.gd
 var look                               # scripts/look.gd (L1)
@@ -69,6 +70,7 @@ func _pack_setup(c) -> void:
 	ctx = c
 	base_tune = ctx.read_json("tuning.json")
 	modes_lib = ctx.load_script("scripts/modes.gd").new()
+	menu_lib = ctx.load_script("scripts/menu.gd").new()     # H14: the panel before the face-off
 	drill_lib = ctx.load_script("scripts/drills.gd").new()
 	dial_lib = ctx.load_script("scripts/dial.gd").new()
 	look = ctx.load_script("scripts/look.gd").new()
@@ -107,13 +109,12 @@ func _pack_setup(c) -> void:
 	var pick: int = clampi(int(base_tune["mode"]), 0, list.size() - 1)
 	mode_id = str(list[pick]) if modes.has(str(list[pick])) else "base"
 
+	menu_lib.setup(self)
 	for a: Array in [[&"up", KEY_W], [&"down", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"poke", KEY_E], [&"sprint", KEY_SHIFT],
 			[&"dial", KEY_T], [&"restart", KEY_R]]:
 		ctx.input.declare(a[0], [a[1]])
-	# H7: the mouse as the jam's game had it. With the puck: left shoots, right passes; without: left cross-checks, right
-	# body-checks. Each verb is one action with its key AND its button; a button is two actions, and only the verb that
-	# fits his possession acts. Both actions of a button go down on the same frame, so a button held while the puck
-	# changes hands is never a new press: nothing happens until it is released and pressed again (tests/bot_buttons.gd).
+	# H7: the mouse: with the puck left shoots, right passes; without, left cross-checks, right checks (each verb a key and a
+	# button; a button held while the puck changes hands is no new press: tests/bot_buttons.gd).
 	ctx.input.declare(&"shoot", [KEY_SPACE], [MOUSE_BUTTON_LEFT])
 	ctx.input.declare(&"cross", [KEY_C], [MOUSE_BUTTON_LEFT])
 	ctx.input.declare(&"pass", [KEY_Q], [MOUSE_BUTTON_RIGHT])
@@ -138,8 +139,7 @@ func _pack_setup(c) -> void:
 
 ## Builds the match of a mode from nothing: venue, puck, skaters, goal volumes, rules, HUD, the helpers.
 func _build(mid: String) -> void:
-	# a rebuild runs inside one tick (a mode change, R): only what changed is made again, so it stays far under the
-	# runner's 250 ms tick limit (the whole arena rebuilt in a tick took 254 ms of processor time)
+	# a rebuild runs inside one tick (a mode change, R): only what changed is made again, so it stays far under the runner's 250 ms tick limit (the whole arena rebuilt in a tick took 254 ms of processor time)
 	if arena != null:
 		ctx.root.remove_child(arena)
 		arena.queue_free()
@@ -181,8 +181,7 @@ func _build(mid: String) -> void:
 			p["p"] = [float(g["blue"][0]), 0.05, 0.0]
 		elif str(p["id"]) == "goal_red":
 			p["p"] = [float(g["red"][0]), 0.05, 0.0]
-	# venues are kept once built (a switch back is a re-parent, not a rebuild); the dress (stands, masts) is built at
-	# setup whatever the first mode, so no tick ever builds it (big ice -> base rebuilt it in a tick: 254 ms)
+	# venues are kept once built (a switch back is a re-parent, not a rebuild); the dress (stands, masts) is built at setup whatever the first mode, so no tick ever builds it (big ice -> base rebuilt it in a tick: 254 ms)
 	var key: String = JSON.stringify(layout)
 	if not venues.has(key):
 		var vn: Node3D = Node3D.new()
@@ -325,6 +324,8 @@ func _new_rules() -> void:
 
 ## H6: which game this is, on screen from the first frame: the level and the mode in one line.
 func _game_line() -> String:
+	if menu_lib.open:
+		return ""                      # H14: the panel says it
 	var lv: String = str(levels[level_id]["label"]) if levels.has(level_id) else str(base_tune["look"]["level_none"])
 	return "Level: %s | Mode: %s" % [lv, str(modes[mode_id].get("label", mode_id))]
 
@@ -334,6 +335,11 @@ func _pack_start() -> void:
 
 
 func _start_match() -> void:
+	if not menu_lib.hold(self):
+		_begin()
+
+
+func _begin() -> void:
 	rules.start()
 	var j: float = float(tune["faceoff_jitter"])
 	puck.place(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
@@ -355,6 +361,10 @@ func _event(name: String, pos: Vector3, team: String) -> void:
 
 
 func _pack_tick(frame: int) -> void:
+	if menu_lib.tick(self):
+		_hold_all()
+		look.plates(self)     # the keys' lines keep their plate (only the plates: a panel key is no skating touch)
+		return
 	for mid: String in modes:
 		if ctx.input.just_pressed(StringName("mode_" + mid)):
 			_build(mid)
@@ -453,8 +463,7 @@ func _pack_tick(frame: int) -> void:
 		reset_in -= 1
 		if reset_in == 0:
 			_faceoff()
-	# H11: a puck inside a goal volume counts however it got there (carried in on the blade, released there, lying
-	# loose; into his own net it is an own goal): its position is read each live tick, not only the trigger's enter event
+	# H11: a puck inside a goal volume counts however it got there (carried in on the blade, released there, lying loose; into his own net it is an own goal): its position is read each live tick, not only the trigger's enter event
 	if _flag_goal == "" and reset_in <= 0 and not frozen and rules.is_running():
 		_flag_goal = api.goal_by_position(tune["goals"])
 	# a goal: acted on last
@@ -473,10 +482,7 @@ func _pack_tick(frame: int) -> void:
 	_flush_events(frame)
 
 
-## H4: the stick follows the aim. Valid aim off the figure: the stick heading turns toward it at most
-## stick_turn_deg_per_frame; on the figure (TLInput.AIM_DEAD): held; invalid: none, and every stick action uses his
-## facing exactly as before H4. The rig has no upper-body or stick yaw (only the head's look_at): the head looks at
-## the aim, the body keeps skating where W A S D send it.
+## H4: the stick follows the aim. Valid aim off the figure: the stick heading turns toward it at most stick_turn_deg_per_frame; on the figure (TLInput.AIM_DEAD): held; invalid: none, and every stick action uses his facing exactly as before H4. The rig has no upper-body or stick yaw (only the head's look_at): the head looks at the aim, the body keeps skating where W A S D send it.
 func _aim_stick() -> void:
 	var player: TLBiped = skaters["b0"]
 	var at: Vector3 = player.global_position
@@ -543,6 +549,8 @@ func _p2(v: Vector3) -> Array:
 func _pack_state() -> Dictionary:
 	var s: Dictionary = rules.snapshot()
 	s["mode"] = mode_id
+	if menu_lib.open:
+		s["menu"] = {"level": str(menu_lib.LEVELS[menu_lib.lv]), "mode": str(base_tune["modes"][menu_lib.md]), "idle": menu_lib.idle}
 	s["body_radius"] = snappedf((skaters["b0"] as TLBiped).body_radius(), 0.001)
 	s["game_line"] = _game_line()
 	if level_id != "none":

@@ -583,3 +583,63 @@ READY H13 06:20
 | packs gate green | met | [1/1] found 1, completed 1, verb runs 24 of 24 (06:19, after the drill fix) |
 | README lines true again | met | |
 | 0 bypasses | met | bypasses [] |
+
+## H14 (07:12): the panel before the face-off. READY H14
+
+Files: new `engine/packs/hockey/scripts/menu.gd` (114 lines) and `tests/bot_menu.gd`; `pack.json` (tests list +1);
+`data/tuning.json` (`"menu": {"auto_start_frames": 600}`); `scripts/main.gd` 598 lines (lint limit 600); README.
+`look.gd` and `dial.gd` untouched. Panel still: `docs/reports/jam-lessons-home/H14-panel.png` (frame 22, arena camera, `--hud=on`).
+
+main.gd lines touched: 19 (var menu_lib), 73 (load menu.gd), 112 (menu_lib.setup), 116-117 (H7 comment shortened from 4
+lines to 2), 142, 184, 465, 484-485 (comments of 2 or 4 lines joined into one, text unchanged, to stay under 600),
+327-328 (`_game_line` empty while the panel is open: the panel says it), 337-342 (`_start_match` asks the panel, the
+old body is now `_begin`), 364-366 (`_pack_tick`: while the panel is open everyone is held and the tick returns),
+551-552 (`_pack_state` gets `menu` {level, mode, idle} only while the panel is open).
+
+What a person meets (`tl play hockey`): before the first face-off a plated panel bottom left (above the game line, clear
+of the keys' lines at the top): `CHOOSE YOUR GAME  Space or left button: start (by itself in 10 s)`, `Level (1 2 3):
+1 Rookie [ 2 Pro ] 3 All-star`, `Mode (A / D):` and the five modes by their labels with `>` at the chosen one, then the
+chosen mode's `about` from its data file, wrapped at 72 characters. 1 2 3 pick the level, A / D the
+mode, Space or the left button starts; the press that starts is spent on that frame (the left button is not also a
+cross-check). No input for 600 frames (10 s, data): it starts by itself with what it shows (each key press restarts the
+count). R after a match comes back to the panel with the last choice kept. Opens only when `ctx.mode == "play"` and
+`ctx.on_stage` (a world's game nobody is in starts at once, as before), never during a drill, or when a test presses the
+keyless action `menu`. Level 0 "Classic" stays a param only (the panel lists the three levels of the brief).
+
+| acceptance | verdict | measured |
+|---|---|---|
+| panel before the first face-off, plated, keys named, chosen row marked | met | still H14-panel.png, looked at: every line fits inside the plate at 1920x1080 (longest `about`, big ice 127 chars, is 2 lines); chosen level in [ ], chosen mode with `>`; the keys' lines at the top stay readable |
+| keys choose level and mode; Space starts | met | bot_menu: menu -> 2, D, D, Space: started, state running, level pro, mode sudden_death |
+| R returns to the panel, last choice kept | met | bot_menu: match over at frame 981 (WIN), R: panel back with pro / sudden death |
+| no input -> starts by itself with defaults | met | bot_menu: started by itself after 597 frames (600 counted from the R tick); a real headless play session (`tl.sh play --headless --frames=N --result=`) with no input: frame 300 state idle, menu {rookie, base, idle 300}; frame 900 state running, rookie / base |
+| every existing bot's result unchanged (seed 1, all 21 tests) | met | packs gate before/after: all 21 summaries identical, frames identical (e.g. bot_hockey 4186/4186, bot_modes 9542/9542, bot_faceoff 37/37) |
+| hashes | moved, explained | every state_hash moved, frames and summaries did not: the worker hashes `ctx.input` (StateHash.hash(pack_node, tail, rng, input)) and the panel declares four more actions (pick_1, pick_2, pick_3, menu) in every run; no bot opens the panel |
+| must_win 20 of 20 | met | bot_ladder_rookie_perfect 20 seeds: 20 wins; bot_menu 20 seeds: 20 of 20 ok |
+| `tl check --tier full --only packs,world` | met | PASS packs (found 1, completed 1, verb runs 25 of 25: 22 tests + smoke etc.), PASS world (7/7, world = alone) |
+| `tl check --tier fast` | met | arch 9/9, assets 4/4, cards 3/3, devx.test 169/169, foreman.typecheck clean |
+| 0 bypasses, main.gd under 600 | met | lint passed, bypasses [], main.gd 598 |
+| README "how to choose" true | met | paragraph rewritten (panel, keys, 10 s, R keeps the choice, who never sees it) + two key-table rows |
+
+Not done / limits: nobody has pressed these keys with a real keyboard (bots and a headless play session only). The
+panel's last edit (the start press spent on its frame, `on_stage`) landed after the first gate run; the second gate run
+(07:07) and bot_menu 20 seeds (07:08) ran on the final code except that one-line `return true`, which bot_menu then
+passed again (07:08, ok true). A / D are the pack's existing `left` / `right` actions (no arrow keys).
+
+## H14b (07:15): the keys' plate while the panel is open. READY H14b
+
+The keys' three lines had no plate while the panel was open: `_pack_tick` returned before `look.tick` (via
+`_flush_events`) ran `plates(g)`. Fix: one line in main.gd, line 366, `look.plates(self)` after `_hold_all()` in the
+panel's early return. Only the plates are called, not the whole `look.tick`: that would count a panel key (A / D) as a
+skating touch and take the keys' lines away. look.gd untouched. main.gd now 599 lines.
+
+main.gd lines touched in H14 + H14b (final numbering): 19, 73, 112, 116-117 (comment), 142, 184 (comments joined),
+327-328 (`_game_line`), 337-342 (`_start_match` / `_begin`), 364-367 (`_pack_tick`: panel tick, `_hold_all`,
+`look.plates`, return), 466, 485-486 (comments joined), 552-553 (`_pack_state` `menu`).
+
+Still taken again and looked at (`docs/reports/jam-lessons-home/H14-panel.png` replaced, frame 22, `--hud=on`): the
+keys' lines are on their plate at the top, centred; the panel at the bottom left does not touch them; every line fits.
+
+Gates on the final files (07:10-07:14, after the `return true` change and this one):
+`tl check --tier full --only packs,world`: PASS packs (found 1, completed 1, verb runs 25 of 25), PASS world (7/7).
+All 21 existing tests, seed 1: summaries and frames identical to before H14 (21 of 21 SAME); bot_menu ok true.
+`tl check --tier fast`: arch 9/9, assets 4/4, cards 3/3, devx.test 169/169, foreman.typecheck clean. Lint: bypasses [].

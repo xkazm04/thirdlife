@@ -24,6 +24,7 @@
   "aim": {"height":0.05,"reach":200,"stick_turn_deg_per_frame":12,"poke_cone_deg":60},
   "level": 1,
   "levels": ["none","rookie","pro","allstar"],
+  "menu": {"auto_start_frames":600},
   "mode": 0,
   "modes": ["base","outnumbered","sudden_death","pond","big_ice"],
   "dial": {"names":["skate","shot","grip","sharpness"],"labels":["Skate speed","Shot speed","Ice grip","Bot sharpness"],"per_step":[0.08,0.1,0.25,0.05],"min":-3,"max":3}

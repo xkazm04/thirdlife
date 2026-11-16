@@ -25,16 +25,20 @@ between them; a draw at full time plays on to the next goal; a match stops as a 
 | poke the carrier's puck loose | E | |
 | rule dial, once a period: open / close | T | |
 | in the dial: choose a dial / move it one step for both teams (and close) | A, D / W, S | |
-| play again after a match | R | |
+| play again after a match (back to the panel) | R | |
+| on the panel: level / mode / start | 1 2 3 / A, D / Space | left button starts |
 
 A button held while the puck changes hands does nothing until it is released and pressed again.
 Without a cursor on the ice (or with the mouse outside the window) the stick points where you skate.
 
-**Level and mode** are pack params, not keys: in `engine/packs/hockey/data/tuning.json` set `"level"` (0 none =
-"Classic", the opponents of `data/ai.json`; 1 rookie, the default; 2 pro; 3 all-star) and `"mode"` (0 three against
-three, the default; 1 outnumbered, three against five; 2 sudden death, one goal ends it; 3 pond, no checks; 4 big ice,
-80 x 40 m, two against two), or move the sliders `level` / `mode` in the Designer panel. The line at the bottom left of
-the screen names both.
+**Level and mode** are chosen on the panel before the first face-off (and again after R, with your last choice kept):
+1, 2, 3 pick the level (rookie, pro, all-star), A / D the mode (three against three; outnumbered, three against five;
+sudden death; pond, no checks; big ice, two against two), each mode with its line from `data/modes/<id>.json`; Space or
+the left button starts. Touch nothing and it starts by itself after 10 s (`menu.auto_start_frames` 600 in
+`data/tuning.json`) with what it shows. The first panel shows the params `level` / `mode` of `data/tuning.json` (1 rookie
+and 0 three against three by default; level 0 "Classic", the opponents of `data/ai.json`, is a param only) or the
+Designer panel's sliders. Only a person's session shows it: a bot, a smoke run, a capture and a world's game nobody is in
+start at once as before. The line at the bottom left of the screen names both once the match runs.
 
 **The rings**: the green ring under your skater is your reach (1.45 m from your centre): a loose puck inside it is
 yours on that frame, whatever you face and whatever you hold. A wider ring under a skater says he carries the puck,
