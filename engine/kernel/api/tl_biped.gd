@@ -185,7 +185,8 @@ func _held_under_feet() -> bool:
 		_feet_query.collide_with_areas = false
 	(_feet_query.shape as SphereShape3D).radius = _body_radius() + 0.05
 	_feet_query.transform = Transform3D(Basis.IDENTITY, global_position + up_direction * _body_radius())
-	for hit: Dictionary in get_world_3d().direct_space_state.intersect_shape(_feet_query, 8):
+	# K6: the pack's own physics space (a world gives every pack its own; the viewport's space is empty there)
+	for hit: Dictionary in TLContext.space_state_of(self).intersect_shape(_feet_query, 8):
 		var o: Object = hit.get("collider")
 		if o is TLBall:
 			return true

@@ -1,0 +1,9 @@
+pack | mode | own ticks | hash in the world | runner alone (tl.sh bot), same ticks | verdict
+game.ice_hockey_three_against | bot | 1591 | 7773cb3fece6b9f8 | 7773cb3fece6b9f8 (1591 frames) | same
+seed.drive | bot | 3517 | b912bc471e4967a9 | b912bc471e4967a9 (3517 frames) | same
+seed.wall | bot | 1221 | cb75fb26a1e80254 | cb75fb26a1e80254 (1221 frames) | same
+seed.paddle | bot | 4486 | dff1a390470352e7 | dff1a390470352e7 (4486 frames) | same
+example.walker | bot | 371 | f1c7b53757c34040 | f1c7b53757c34040 (371 frames) | same
+example.kit | bot | 332 | 6b270cedbf59690d | 6b270cedbf59690d (332 frames) | same
+example.car | bot | 1872 | 3a459d0fe25e7853 | 3a459d0fe25e7853 (1872 frames) | same
+PASS world.alone: every pack hashes in the world as the runner hashes it alone
