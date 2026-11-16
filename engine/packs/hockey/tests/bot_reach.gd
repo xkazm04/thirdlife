@@ -20,7 +20,7 @@ const ROWS: Array = [
 	["skates through at sprint (Shift)", "through", 1, "sprint"],
 	["skates through with Space held", "through", 1, "shoot_held"],
 	["skates through with Q held", "through", 1, "pass_held"],
-	["own pass to nobody, he chases it", "carry_alone", 1, "own_pass"],
+	["own pass to nobody, he chases it", "own_pass", 1, "own_pass"],
 	["an opponent pokes it, Space held through", "poked", 1, "poked"],
 	["he pokes theirs, 12 frames late", "poke_them", 1, "poke_late"],
 ]
@@ -155,7 +155,12 @@ func _row_tick(frame: int) -> void:
 			if age == 4:
 				ctx.input.tap(&"pass")
 			if age > 5:
-				_keys(1.0, true, false, false)
+				# H8: he chases the puck where it is (a person steers at it; holding D only caught it on 10 of 20 seeds,
+				# when the rebound off the boards happened to come back along his line)
+				_keys(0.0, true, false, false)
+				var to: Vector2 = (puck - pos).normalized() if (puck - pos).length() > 0.05 else Vector2.ZERO
+				ctx.input.set_axis(&"left", &"right", to.x)
+				ctx.input.set_axis(&"up", &"down", to.y)
 		"poked":
 			_keys(0.0, false, true, false)
 		"poke_late":
@@ -213,7 +218,7 @@ func _finish(_frame: int) -> void:
 	var note: String = ""
 	if mode == "own_pass":
 		ok = ok and not early_retake
-		note = "released, in his reach %d frames right after (not taken: lock %d frames / below %s m/s), retaken %s" % [lock_in_reach, 12, "4", "no" if not early_retake else "YES"]
+		note = "released, in his reach %d frames right after (not taken: lock %d frames / below %s m/s), retaken %s; taken meanwhile by %s at %d frames" % [lock_in_reach, 12, "4", "no" if not early_retake else "YES", other_took if other_took != "" else "nobody", other_frames]
 	elif mode == "poked":
 		frames = other_frames
 		ok = other_took == "r0" and other_frames >= 0 and other_frames <= 12 and first_his < 0
