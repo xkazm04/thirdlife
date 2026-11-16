@@ -9,3 +9,4 @@ of the manifest and invariants on every folder here with a `pack.json`; it print
 differ. `tl play` lists the house games; `tl play hockey` plays one.
 Today: `hockey/` (`game.ice_hockey_three_against` 0.1.1, built by the Foreman on 11 Nov, record `docs/reports/JOB3-HOCKEY.md`;
 since 16 Nov: possession and passing, hits, modes as data in `data/modes/` chosen by the param `mode`, a rule dial once a period).
+How to play it, what it is and how it is tested: `hockey/README.md`.

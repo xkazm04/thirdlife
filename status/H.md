@@ -546,3 +546,17 @@ READY H11 05:58
 | packs gate green | met | [1/1] found 1, completed 1, verb runs 21 of 21 (05:58, after the rename); fast --changed: arch, assets, cards, devx.test (162) PASS, foreman.typecheck could not run (no node_modules) |
 | 0 bypasses | met after a fix | bypasses [] |
 Files: engine/packs/hockey/scripts/main.gd (the lines above), data/drills.json (+5 drills), data/levels/allstar.json, tests/bot_goals.gd (new), pack.json (+bot_goals). Not touched: look.gd, dial.gd.
+
+## H12: the README for the owner and the next builder (started 05:59)
+SEEN 05:59 from the code, not memory: keys and buttons (scripts/main.gd declare lines 104..128: W A S D, Shift sprint, E poke, T dial, R restart; shoot Space + left button, cross C + left, pass Q + right, check F + right); level and mode are pack params only (`level` 0..3, default 1 rookie; `mode` 0..4, default 0), no key chooses them in play (the `level_<id>` / `mode_<id>` actions have no key: tests only); rings from scripts/look.gd and data/tuning.json `look` (reach ring radius 1.45, 0.2 m wide, green; carry ring 0.5 m wide in team colour, another carrier's after 20 frames).
+SEEN 05:59 the face-off: an accident of two numbers, not a rule: the centre men spawn 1.5 m from the centre (tuning roster), the puck drops up to 0.4 m off centre (faceoff_jitter), the reach is 1.45 m (it was 1.1 until H7), so whichever centre the puck lands nearer, inside 1.45 m, owns it on the first live frame; on a tie blue (roster order).
+
+READY H12 06:01
+Files: engine/packs/hockey/README.md (new, 111 lines: how to play; what the game is; the ladder table with its instrument and intervals; the 18 tests; known limits), engine/packs/README.md (one line pointing to it). No script touched. Lint on the pack: passed (a README beside pack.json is allowed, as in the seeds).
+| acceptance line | verdict | figure |
+|---|---|---|
+| how to play: command, every key and both buttons by possession, the dial, level and mode, the rings | met | checked against main.gd, look.gd, tuning.json, pack.json params |
+| what the game is, with the ladder table (hand, seeds, intervals) and the reasoning sentence | met | 05:48 table, 20 seeds |
+| how it is tested: the 18 tests, tl ladder, the gate step | met | 20 of 20 seeds each (05:55 run) |
+| known limits, each one line, including the face-off from the code | met | 12 lines |
+| engine/packs/README.md line | met | |
