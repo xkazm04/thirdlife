@@ -119,3 +119,15 @@ test("7 real tree: every report is a row, the digest is fresh, P7-CONTRACT.md:23
   const r = one(REPO);
   assert.ok(r.ok, msgs(r));
 });
+
+test("8 --changed: a change to a path a pack-author bullet cites, anywhere in the repo, selects the arch step", async () => {
+  const { pathsFor } = await import("../lib/gate/steps/arch.mjs");
+  const { mapChanged } = await import("../lib/gate/changed.mjs");
+  const t = tree();
+  t["foreman/src/live.ts"] = "export {};\n";
+  t["docs/reports/A.md"] += "\n## For a pack author\n- The helper is in `foreman/src/live.ts:4`; the kit is under `assets/meshes/`.\n";
+  const root = fixture(t);
+  const steps = [{ id: "arch", paths: pathsFor(root) }, { id: "foreman.test", paths: ["foreman/**"] }, { id: "assets", paths: ["assets/**"] }];
+  for (const p of ["foreman/src/live.ts", "assets/meshes/crate.glb"]) assert.ok(mapChanged([p], steps).ids.has("arch"), `${p} selects arch`);
+  assert.ok(!mapChanged(["foreman/src/other.ts"], steps).ids.has("arch"), "an uncited path does not");
+});

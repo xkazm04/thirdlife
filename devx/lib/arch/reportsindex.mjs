@@ -72,13 +72,22 @@ function items(lines, sec, { paragraphs = false } = {}) {
 const ver = (s) => s.split(".").map(Number);
 const below = (a, b) => { const [x, y] = [ver(a), ver(b)]; return x[0] < y[0] || (x[0] === y[0] && (x[1] ?? 0) < (y[1] ?? 0)); };
 
+/** Repo-path-shaped backticked spans of a text (`a/b`, an optional `:line` and trailing `/` dropped). */
+function cited(text) {
+  const out = [];
+  for (const m of text.matchAll(/`([^`\s]+)`/g)) {
+    const p = m[1].replace(/:\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*$/, "").replace(/\/$/, "");
+    if (/^[\w.-]+(?:\/[\w.-]+)+$/.test(p)) out.push(p);
+  }
+  return out;
+}
+
 /** The two mechanical stale tests -> list of marks. */
 function staleMarks(text, live, kernel) {
   const marks = [];
   const gone = [];
-  for (const m of text.matchAll(/`([^`\s]+)`/g)) {
-    const p = m[1].replace(/:\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*$/, "").replace(/\/$/, "");
-    if (!/^[\w.-]+(?:\/[\w.-]+)+$/.test(p) || !live.top.has(p.split("/")[0])) continue;
+  for (const p of cited(text)) {
+    if (!live.top.has(p.split("/")[0])) continue;
     if (!live.files.has(p) && !live.dirs.has(p)) gone.push(p);
   }
   if (gone.length) marks.push("[stale: path gone]");
@@ -154,6 +163,15 @@ export function generateReports(io) {
     L.push("");
   }
   return { text: L.join("\n").replace(/\n+$/, "") + "\n", reports };
+}
+
+/** Every path a pack-author bullet cites, as globs (`p` and `p/**`): a change to any of them can turn the digest's stale
+ *  marks, so the arch step must run under `tl check --changed` (devx/lib/gate/steps/arch.mjs). Sorted, deduplicated. */
+export function citedPathGlobs(io) {
+  const files = io.files.filter((f) => f.startsWith(DIR) && f.endsWith(".md"));
+  const out = new Set();
+  for (const f of files) for (const b of parseReport(io, f).pack) for (const p of cited(b.text)) { out.add(p); out.add(`${p}/**`); }
+  return [...out].sort();
 }
 
 /** Rule reports-index-fresh. A tree with no reports and no digest passes. Cheap: reads the reports once, no Godot. */
