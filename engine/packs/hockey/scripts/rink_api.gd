@@ -31,6 +31,10 @@ var rink_margin: float = 0.35
 
 var carrier: String = ""               ## "" = the puck is loose
 var carry_since: int = 0
+var behind_frames: int = 0             ## H6: frames the carrier has stayed in the zone behind his own net
+var behind_limit: int = 90
+var net_zone_half: float = 3.5
+var own_goal_x: Dictionary = {}         ## team -> x of its own goal line
 var hold_at: Vector3 = Vector3.ZERO      ## where on him the puck is held now (the stick side, or another side at the boards)
 var last_release: Dictionary = {}      ## {kind: shot|pass|poked|board, by, team, frame}; empty after a face-off
 var shots: Dictionary = {}
@@ -68,6 +72,9 @@ func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Arr
 	poke_lock_frames = int(c["poke_lock_frames"])
 	carry_speed_scale = float(c["carry_speed_scale"])
 	sprint_speed_scale = float(tune["skater_sprint_scale"])
+	behind_limit = int(c["behind_net_frames"])
+	net_zone_half = float(c["behind_net_half_width"])
+	own_goal_x = {"blue": float(tune["goals"]["blue"][0]), "red": float(tune["goals"]["red"][0])}
 	var r: Dictionary = tune["rink"]
 	rink_half = Vector2(float(r["half_length"]), float(r["half_width"]))
 	rink_corner = float(r["corner_r"])
@@ -152,6 +159,28 @@ func may_take(id: String, d: float) -> bool:
 ## eligible skater's whose reach it is inside.
 func update_possession() -> void:
 	if carrier != "":
+		# H6: a carrier who stays behind his own net longer than behind_net_frames loses the puck's protection there:
+		# an opponent whose reach it is in takes it (else a match could stall there until the time limit)
+		var gx: float = float(own_goal_x[str(teams[carrier])])
+		var pp: Vector3 = puck_pos()
+		if (pp.x - gx) * signf(gx) > 0.0 and absf(pp.z) < net_zone_half:
+			behind_frames += 1
+		else:
+			behind_frames = 0
+		if behind_frames > behind_limit:
+			var best_o: String = ""
+			var best_od: float = reach
+			for oid: String in order:
+				if str(teams[oid]) == str(teams[carrier]) or (hits != null and not hits.can_act(oid)):
+					continue
+				var od: float = pos_of(oid).distance_to(pp)
+				if od <= best_od:
+					best_o = oid
+					best_od = od
+			if best_o != "":
+				behind_frames = 0
+				give(best_o)
+				return
 		# at the boards the stick side would be outside them: he moves the puck to a side of him that is inside
 		# (a release there gave it straight back to him every second frame, a loop a person reads as a frozen game;
 		# a puck tucked UNDER him was a kinematic body inside his capsule and shoved him through the boards)
@@ -185,6 +214,7 @@ func give(id: String) -> void:
 		_drop()
 	carrier = id
 	carry_since = _now
+	behind_frames = 0
 	takes[id] = int(takes[id]) + 1
 	hold_at = offset
 	puck.hold(skaters[id], offset)

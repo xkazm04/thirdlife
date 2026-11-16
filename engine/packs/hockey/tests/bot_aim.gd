@@ -61,6 +61,9 @@ func _bot_tick(frame: int) -> void:
 	if str(s.get("mode", "base")) != "base":
 		ctx.input.tap(&"mode_base")
 		return
+	if str(s.get("level", "none")) != "none":
+		ctx.input.tap(&"level_none")      # H6: this bot measures against the opponents of data/ai.json; the default level is rookie
+		return
 	if done:
 		return
 	if t >= tests.size():

@@ -18,5 +18,7 @@
   "mouth_half": 1.6,
   "defend_radius": 12,
   "reaction_frames": 0,
-  "aim_error_deg": 0
+  "aim_error_deg": 0,
+  "net_zone_half": 3.5,
+  "net_round_z": 3.6
 }

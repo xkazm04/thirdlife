@@ -21,6 +21,11 @@ func _bot_setup(c) -> void:
 
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
+	if frame == 0:
+		notes.append("first frame (the defaults): level %s, HUD line '%s'" % [str(s.get("level", "none")), str(s.get("game_line", ""))])
+	if str(s.get("level", "none")) != "none":
+		ctx.input.tap(&"level_none")      # H6: this bot measures against the opponents of data/ai.json; the default level is rookie
+		return
 	if done or frame < wait_until:
 		return
 	var dl: Dictionary = s["dial"]

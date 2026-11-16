@@ -104,6 +104,9 @@ func _bot_tick(frame: int) -> void:
 	if str(s.get("mode", "base")) != "base":
 		ctx.input.tap(&"mode_base")      # H3: this bot tests the base game; under another mode param it switches to it first
 		return
+	if str(s.get("level", "none")) != "none":
+		ctx.input.tap(&"level_none")      # H6: this bot measures against the opponents of data/ai.json; the default level is rookie
+		return
 	if done:
 		_keys(0.0, false, false, false)
 		return

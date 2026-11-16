@@ -70,6 +70,27 @@ func think(frame: int, env: Dictionary) -> void:
 	_team = ""
 
 
+## H6: the x of the goal line a point is behind (inside the net's width), or 0.0.
+func _behind_net(p: Vector3, env: Dictionary) -> float:
+	for side: String in ["blue", "red"]:
+		var gx: float = float(env["goals"][side].x)
+		if (p.x - gx) * signf(gx) > -0.2 and absf(p.z) < _f("net_zone_half"):
+			return gx
+	return 0.0
+
+
+## H6: a target behind a net is reached round the frame, not through it: from in front, go first to the post on the
+## near side (side = 1.0) or the far side (side = -1.0, the second man); once level with the goal line, go straight.
+func _around_net(me: Vector3, target: Vector3, env: Dictionary, side: float) -> Vector3:
+	var gx: float = _behind_net(target, env)
+	if gx == 0.0:
+		return target
+	if (me.x - gx) * signf(gx) > -0.5:
+		return target
+	var zs: float = signf(me.z) if absf(me.z) > 0.3 else (signf(target.z) if absf(target.z) > 0.1 else 1.0)
+	return Vector3(gx + signf(gx) * 0.8, 0.0, zs * side * _f("net_round_z"))
+
+
 ## Where this skater sees the puck: now, or (red under a level) reaction_frames ago.
 func _puck_seen() -> Vector3:
 	var lag: int = int(_f("reaction_frames"))
@@ -134,7 +155,10 @@ func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 			elif may and api.can_poke(id):
 				api.try_poke(id)
 			var cv: Vector3 = _flat((env["skaters"][car] as TLBiped).velocity)
-			out = (pp + cv * clampf(dc / 10.0, 0.0, 0.5) - me).normalized()
+			out = (_around_net(me, pp + cv * clampf(dc / 10.0, 0.0, 0.5), env, 1.0) - me).normalized()
+		elif _behind_net(cp, env) != 0.0:
+			# H6: their carrier behind a net: the second man covers the far side of the frame
+			out = _goto(me, _around_net(me, cp, env, -1.0))
 		elif role == "back":
 			out = _goto(me, own_goal + Vector3(-signf(own_goal.x) * 3.0, 0, 0) + (cp - own_goal).limit_length(_f("back_radius")))
 		else:
@@ -146,7 +170,7 @@ func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 		var chase: bool = role == "chaser" or (role == "support" and d < _f("pounce_radius")) or (role == "back" and d < _f("back_engage"))
 		if chase and not yield_b0:
 			var lead: float = clampf(d / 10.0, 0.0, _f("lead_frames") / 60.0)
-			out = (pp + _flat(env["puck"].linear_velocity).limit_length(25.0) * lead - me)
+			out = (_around_net(me, pp + _flat(env["puck"].linear_velocity).limit_length(25.0) * lead, env, 1.0) - me)
 			out = out.normalized() if out.length() > 0.05 else Vector3.ZERO
 		elif role == "back":
 			out = _goto(me, own_goal + Vector3(-signf(own_goal.x) * 3.0, 0, 0) + (pp - own_goal).limit_length(_f("back_radius")))

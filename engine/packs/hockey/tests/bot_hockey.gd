@@ -8,7 +8,7 @@ extends Node
 ## ok (a person's hand or a level): played to the end and the hand acted; who won is a number in the result.
 
 var hand_profile: String = "perfect"
-var level: String = ""
+var level: String = "none"
 var use_pass: bool = false
 var ctx
 var hand: TLHand
@@ -37,8 +37,8 @@ func _bot_tick(frame: int) -> void:
 	if str(s.get("mode", "base")) != "base":
 		ctx.input.tap(&"mode_base")      # H3: this bot tests the base game; under another mode param it switches to it first
 		return
-	if level != "" and str(s.get("level", "none")) != level:
-		ctx.input.tap(StringName("level_" + level))   # H5: the test's set-up, not the person's play
+	if frame == 0 or str(s.get("level", "none")) != level:
+		ctx.input.tap(StringName("level_" + level))   # H5/H6: the test pins its level itself (the default is rookie since H6)
 		return
 	_measure()
 	done = s["state"] == "over"
@@ -155,11 +155,11 @@ func _bot_result() -> Dictionary:
 	var shots: int = int(s.get("shots", {}).get("b0", 0))
 	var won: bool = done and str(s.get("winner", "")) == "blue"
 	var ok: bool = done and str(s.get("winner", "")) == "blue" and mine == 3 and shots >= 3 and str(s.get("result", "")) == "WIN"
-	if not hand.is_perfect() or level != "":
+	if not hand.is_perfect() or level != "none":
 		ok = done and (hand.is_perfect() or int(hand.stats()["decisions"]) > 0)
 	var dbg: String = ""
 	if s.has("skaters"):
 		dbg = " TRACE " + " | ".join(trace)
 	return {"ok": ok, "summary": "blue %d : %d red in %d frames, %d shots, result %s%s" % [mine, theirs, ctx.frame, shots, str(s.get("result", "")), dbg],
-		"frames": ctx.frame, "shots": shots, "goals": mine, "against": theirs, "won": won, "hand": hand.stats(), "level": level if level != "" else "none",
+		"frames": ctx.frame, "shots": shots, "goals": mine, "against": theirs, "won": won, "hand": hand.stats(), "level": level,
 		"down_frames": down_frames, "period_reached": max_period, "passes": passes_seen, "passes_reached": passes_reached}

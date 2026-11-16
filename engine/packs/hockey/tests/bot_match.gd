@@ -23,6 +23,9 @@ func _bot_setup(c) -> void:
 
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
+	if str(s.get("level", "none")) != "none":
+		ctx.input.tap(&"level_none")      # H6: this bot measures against the opponents of data/ai.json; the default level is rookie
+		return
 	if frame == 1:
 		ctx.input.tap(&"autopilot")
 	var sc: Dictionary = s.get("scores", {})

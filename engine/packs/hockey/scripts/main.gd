@@ -306,7 +306,14 @@ func _new_rules() -> void:
 	hud.add_clock(rules, &"top")
 	hud.add_bound(&"result", func() -> String: return result, &"center")
 	hud.add_bound(&"rule", func() -> String: return rule_line, &"bottom")
+	hud.add_bound(&"game", _game_line, &"bottom_left")
 	hud.add_bound(&"dial", func() -> String: return dial_lib.text(self), &"right")
+
+
+## H6: which game this is, on screen from the first frame: the level and the mode in one line.
+func _game_line() -> String:
+	var lv: String = str(levels[level_id]["label"]) if levels.has(level_id) else "None (data/ai.json as is)"
+	return "Level: %s | Mode: %s" % [lv, str(modes[mode_id].get("label", mode_id))]
 
 
 func _pack_start() -> void:
@@ -509,6 +516,7 @@ func _p2(v: Vector3) -> Array:
 func _pack_state() -> Dictionary:
 	var s: Dictionary = rules.snapshot()
 	s["mode"] = mode_id
+	s["game_line"] = _game_line()
 	if level_id != "none":
 		s["level"] = level_id
 	s["periods"] = rules.periods

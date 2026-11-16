@@ -5,5 +5,5 @@ extends "bot_hockey.gd"
 
 func _init() -> void:
 	hand_profile = "regular"
-	level = ""
+	level = "none"
 	use_pass = false

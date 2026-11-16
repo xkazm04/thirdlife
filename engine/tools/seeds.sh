@@ -73,5 +73,22 @@ for row in "${PACKS[@]}"; do
   run "$id.bot" '"id":"bot.ok","ok":true' bot "--pack=$SEEDS/$pack" "--test=$bot"
   run "$id.bot_seed2" '"id":"bot.ok","ok":true' bot "--pack=$SEEDS/$pack" "--test=$bot" --seed=2
 done
+# H6: the person-hand bots (lane B's TLHand: tests/*_sharp.gd, *_regular.gd, *_newcomer.gd) of every seed. Such a bot is
+# EXPECTED to lose on most seeds, so its ok is "played to the end and the hand acted" (written in the bot, not here); the
+# gate runs it for that and for determinism: the same seed twice must give the same state_hash.
+for row in "${PACKS[@]}"; do
+  pack="${row%%:*}"; id="${pack/_/.}"
+  for hf in "$SEEDS/$pack"/tests/*_sharp.gd "$SEEDS/$pack"/tests/*_regular.gd "$SEEDS/$pack"/tests/*_newcomer.gd; do
+    [ -f "$hf" ] || continue
+    hb="$(basename "$hf" .gd)"
+    run "$id.hand.$hb" '"id":"bot.ok","ok":true' bot "--pack=$SEEDS/$pack" "--test=tests/$hb.gd"
+    run "$id.hand.$hb.again" '"id":"bot.ok","ok":true' bot "--pack=$SEEDS/$pack" "--test=tests/$hb.gd"
+    if [ -z "$FILTER" ] || [[ "$id.hand.$hb.same" == *"$FILTER"* ]]; then
+      a1="$(field "$id.hand.$hb" state_hash)"; a2="$(field "$id.hand.$hb.again" state_hash)"
+      if [ -n "$a1" ] && [ "$a1" = "$a2" ]; then echo "PASS $id.hand.$hb.same  seed 1 twice: ${a1:0:16}"; pass=$((pass+1))
+      else echo "FAIL $id.hand.$hb.same: seed 1 gave '${a1:0:16}' then '${a2:0:16}'"; fail=$((fail+1)); fi
+    fi
+  done
+done
 echo "seeds: $pass passed, $fail failed (reports in $OUT)"
 [ $fail -eq 0 ]
