@@ -21,6 +21,15 @@ locale_count: 1
 - a performance figure counts only from `node devx/bin/tl.mjs perf run --quiet-only --wait <s>`; a figure taken
   while builders run is labelled busy and decides nothing.
 
+- the pre-merge list, as it runs since 2026-11-16: the full gate now holds `world` (every game of `engine/boot/games.json` in one
+  world = alone; it replaced the hand-run `world.sh alone`); the tour in a window is `bash engine/tools/world.sh tour tour
+  --out-dir=<abs dir>` (without `--out-dir` it exits 2). Run the WHOLE list on the first merged tree of a night, not at the end:
+  a kernel fault of 03:31 was found by it at 05:39.
+- a worktree runs the whole full gate after `npm ci` in its `foreman/` and plain copies (no links) of
+  `site/marble-run-three-marbles-20261110-1` and `-2` into its `site/`; with only one of the two, a devx ledger test fails.
+- a win-or-lose test enters the gate only after its verdict held on 20 of 20 seeds (two of tonight's were coins: 10 and 19 of 20);
+  a difficulty figure comes from `tl ladder` and is quoted with the hand profile and the seed count.
+
 ## Rituals
 - Phase 0: read `.claude/sessions.json`; add an entry for this spark's scope. Phase 6: remove it.
 - Phase 5: after every package, `tl arch --index` if engine API changed (docs/generated/API-INDEX.md).
@@ -42,6 +51,17 @@ never relying on a `fi` that follows the file's last case: three merges of `engi
 fix for that.
 The kernel API is versioned (`tl arch` rule `api-v1`): a builder that adds a public member says so; the Director
 settles the version on the merged tree. `tl.sh` takes the pack as `--pack=<dir>`.
+
+A lane's state lives on disk, never only in the agent: every lane writes `status/<lane>.md` as it goes, so a Director restart (13:23 on 2026-11-13 lost three
+running lanes; 02:00 the same night lost the dispatch for seven hours) resumes a lane from its worktree and its status file with a new agent, and the Director's
+chain scripts live in files (`land.sh`, `export.sh`), not in a shell's memory.
+
+Since 2026-11-16 a lane's status file is `docs/reports/<slug>/<lane>.md` in its worktree (not a top-level `status/`); stills
+stay out of git (a table in a README and one sheet under 1 MB are committed; the rest is copied to the vault). A number in a
+brief is a thing to measure, and the brief says so: builders corrected three of the Director's premises that night (a hash that
+could not stay, a blade at 3.0 m not 1.9, a tolerance needing 100 seeds). A second builder on a pack another builder is in gets
+its own worktree and a list of files it stays out of: five such merges were clean. A kernel helper that asks the physics
+world asks the pack's own space (`TLContext.space_state_of`), and anything new in the kernel is proven in a world, not only alone.
 
 ## Wave defaults
 One AskUserQuestion call of up to 4 questions.
@@ -81,3 +101,23 @@ One AskUserQuestion call of up to 4 questions.
   the junction (`cmd //c rmdir <link>`) BEFORE `git worktree remove`, and the main folder is counted before and after.
 - 2026-11-11 core-perfection: the Director once typed `git commit --no-verify -m wip` while only meaning to stage, and
   amended it at once. Stage and commit are two commands; no flag that skips a hook is ever typed.
+- 2026-11-11 megajam-unreal: `node --test <dir>` is not valid on Node 24 (two builders hit it); briefs say `node --test` bare or quoted globs.
+- 2026-11-11 megajam-unreal: a builder's disk floor on the shared C: stopped it for another process's 5 GB; make floors per-step with an env override and tell the operator the number, do not hard-stop.
+- 2026-11-11 megajam-unreal: four builders on disjoint folders of a fresh repo needed no merge; the one cross-cutting change (a size budget) was two mid-flight messages. Opus for the package with an unknown toolchain (Unreal MCP) paid for itself: six failure modes diagnosed and scripted around.
+- 2026-11-12 megajam-unreal (prep, second phase): three PowerShell 5.1 traps in one script, each a false "failure" of a working step: Start-Process -PassThru returns a null ExitCode unless $p.Handle is read first; a function returns every line it emitted, so `return $code` after a logging pipe yields an array (pipe the log to Out-Null); cmd.exe in this environment does not resolve a bare .bat from the cwd (exit 9009), so stage files call batch files by absolute path. Check the log of the real tool before believing a script's verdict.
+- 2026-11-12 megajam-unreal (experiment night): a research lane's vendor claims (Meshy rig free, no retarget) were reversed by a 35-minute API run; brief research lanes to run the cheapest real call before writing a capability table, and mark every unrun row [vendor].
+- 2026-11-12 megajam-unreal: two art waves offered variants of one style; the operator wanted different styles. When the operator says "I love X but it is risky", the next set is alternative paths at X's tier, not X at several tiers.
+- 2026-11-13 night-capacity: the Director's session stood still for seven hours (a login interruption) and eight of eleven fillers never started; a lane finished at
+  01:52 and waited. Rule for a night: hand the queue to a scheduled chain or a second dispatching session; leave the operator a one-line liveness check.
+- 2026-11-13 night-capacity: `git apply --3way` on a file with unstaged edits applies nothing and the chain reported success; a cleanup lane removed a variable a
+  feature lane began reading the same hour; the cook ran on a stale editor after a gate in another worktree. All three are now checks in the Director's landing
+  script, which replaced the retyped chain.
+- 2026-11-16 jam-lessons-home: the overlay's pre-merge list was first run 2 h after the fault it catches was merged; every check
+  on that list that can be a gate step now is one (`world`), and the list is run on the first merged tree.
+- 2026-11-16 jam-lessons-home: one long-lived builder per lane (13 packages through one agent by SendMessage, each with a hard
+  clock time and "what is not proven by then is listed as not done") kept its context and finished every package early; briefs
+  written while the lane worked, so no lane waited for the Director more than two minutes.
+- 2026-11-16 jam-lessons-home: the Director merged a kernel package (3374cdd) without running the consumer's tests on the merge:
+  the branch was red on one step for 20 minutes. Run the consumer's gate step on every merge before the next dispatch.
+- 2026-11-16 jam-lessons-home: looking at one still per package by the Director found what no bot said (no puck, dial text on
+  the ice, developer wording); a separate look builder (Fable) with before/after pairs then cured it without touching a rule.
