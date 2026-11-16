@@ -11,10 +11,10 @@
   "look": {"puck_scale":2.5,"puck_height_scale":1.5,"puck_rim":0.14,"puck_rim_key":"hot","ring_key":"pine_light","carry_width":0.5,"carrier_ring":true,"carrier_ring_after_frames":20,"team_keys":{"blue":"rink_blue","red":"rink_red"},"level_none":"Classic","goal":"GOAL: %s","again":"R: play again","keys":["W A S D: skate   |   Shift: sprint   |   E: poke   |   T: rule dial","With the puck   -   left button or Space: shoot   |   right button or Q: pass","Without it   -   left button or C: cross-check   |   right button or F: body check"]},
   "goals": {"blue":[-26,0,0],"red":[26,0,0],"half_width":2,"depth":1.5},
   "roster": [
-    {"id":"b0","team":"blue","role":"player","spawn":[-1.5,0]},
+    {"id":"b0","team":"blue","role":"player","spawn":[-3.0,0]},
     {"id":"b1","team":"blue","role":"support","spawn":[-10,-8]},
     {"id":"b2","team":"blue","role":"back","spawn":[-10,8]},
-    {"id":"r0","team":"red","role":"chaser","spawn":[1.5,0]},
+    {"id":"r0","team":"red","role":"chaser","spawn":[3.0,0]},
     {"id":"r1","team":"red","role":"support","spawn":[10,-8]},
     {"id":"r2","team":"red","role":"back","spawn":[10,8]}
   ],

@@ -60,6 +60,7 @@ var rule_line: String = ""
 var levels: Dictionary = {}            # H5: id -> level file (validated); "none" = no level (as before H5)
 var level_id: String = "none"
 var stick_heading: Vector3 = Vector3.ZERO   # H4: the human's stick, turning toward the aim at a turn rate
+var _faceoff_period: int = 0           # H13: the period whose face-off was played
 const DRILL_KEYS: Array = ["id", "place", "random_place", "move", "random_move", "puck", "puck_vel", "carrier", "script", "ai", "brace"]
 
 
@@ -143,6 +144,7 @@ func _build(mid: String) -> void:
 		ctx.root.remove_child(arena)
 		arena.queue_free()
 	mode_id = mid
+	_faceoff_period = 0
 	var m: Dictionary = modes[mid]
 	tune = modes_lib.merged(m, base_tune)
 	arena = Node3D.new()
@@ -343,18 +345,6 @@ func _on_puck_bounced(other: Node, speed: float) -> void:
 		_event("board", puck.global_position, "")
 
 
-## H11: the side that scores when the puck's centre lies in a goal volume (the trigger's box: 1.5 m deep behind the line,
-## the goal's width), else "".
-func _goal_by_position() -> String:
-	var p: Vector3 = puck.global_position
-	var g: Dictionary = tune["goals"]
-	for side: String in ["blue", "red"]:
-		var gx: float = float(g[side][0])
-		if absf(p.x - (gx + signf(gx) * 0.75)) <= 0.75 and absf(p.z) <= float(g["half_width"]):
-			return "red" if side == "blue" else "blue"
-	return ""
-
-
 func _on_goal(body: Node3D, side: String) -> void:
 	if body == puck and puck.holder() == null and _flag_goal == "" and reset_in <= 0 and not frozen and rules.is_running():
 		_flag_goal = "red" if side == "blue" else "blue"
@@ -405,6 +395,11 @@ func _pack_tick(frame: int) -> void:
 		_hold_all()
 		_flush_events(frame)
 		return
+	# H13: each period starts with a face-off, as a match and every goal do
+	if rules.is_running() and rules.period != _faceoff_period:
+		if _faceoff_period > 0 and reset_in <= 0 and not frozen and drill_id == "":
+			_faceoff()
+		_faceoff_period = rules.period
 	var stopped: bool = frozen or not rules.is_running()     # after a goal, between periods
 	env["frozen"] = stopped
 
@@ -461,7 +456,7 @@ func _pack_tick(frame: int) -> void:
 	# H11: a puck inside a goal volume counts however it got there (carried in on the blade, released there, lying
 	# loose; into his own net it is an own goal): its position is read each live tick, not only the trigger's enter event
 	if _flag_goal == "" and reset_in <= 0 and not frozen and rules.is_running():
-		_flag_goal = _goal_by_position()
+		_flag_goal = api.goal_by_position(tune["goals"])
 	# a goal: acted on last
 	if _flag_goal != "":
 		var side: String = _flag_goal

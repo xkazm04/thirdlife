@@ -429,3 +429,14 @@ func state() -> Dictionary:
 	if not last_release.is_empty():
 		s["last"] = last_release.duplicate()
 	return s
+
+
+## H11 (moved from main.gd in H13, its 600-line limit): the side that scores when the puck's centre lies in a goal volume (the trigger's box: 1.5 m deep behind the line,
+## the goal's width), else "".
+func goal_by_position(g: Dictionary) -> String:
+	var p: Vector3 = puck.global_position
+	for side: String in ["blue", "red"]:
+		var gx: float = float(g[side][0])
+		if absf(p.x - (gx + signf(gx) * 0.75)) <= 0.75 and absf(p.z) <= float(g["half_width"]):
+			return "red" if side == "blue" else "blue"
+	return ""

@@ -1,10 +1,10 @@
 {
   "id": "rookie",
   "label": "Rookie",
-  "about": "Reacts 50 frames late, skates at 47 % of your speed, shoots only from 7 m with 28 degrees of spread, checks only from 8.5 m/s closing, marks loosely. Plays every role.",
+  "about": "Reacts 40 frames late, skates at 55 % of your speed, shoots only from 7 m with 28 degrees of spread, checks only from 8.5 m/s closing, marks loosely. Plays every role.",
   "ai": {
-    "reaction_frames": 50,
-    "red_skill": 0.47,
+    "reaction_frames": 40,
+    "red_skill": 0.55,
     "shoot_range": 7,
     "aim_error_deg": 28,
     "check_min_closing_red": 8.5,

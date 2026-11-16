@@ -42,7 +42,10 @@
     "tests/bot_dial.gd",
     "tests/bot_aim.gd",
     "tests/bot_buttons.gd",
-    "tests/bot_goals.gd"
+    "tests/bot_goals.gd",
+    "tests/bot_faceoff.gd",
+    "tests/bot_faceoff_idle.gd",
+    "tests/bot_faceoff_allstar.gd"
   ],
   "cameras": [
     "arena",

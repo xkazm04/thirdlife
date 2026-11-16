@@ -560,3 +560,26 @@ Files: engine/packs/hockey/README.md (new, 111 lines: how to play; what the game
 | how it is tested: the 18 tests, tl ladder, the gate step | met | 20 of 20 seeds each (05:55 run) |
 | known limits, each one line, including the face-off from the code | met | 12 lines |
 | engine/packs/README.md line | met | |
+
+## H13: a face-off is won, not given (started 06:05)
+SEEN 06:05 the centre men now start 3.0 m from the centre (data: tuning.json roster b0 [-3.0, 0], r0 [3.0, 0]; the same in data/modes/outnumbered.json and big_ice.json). The puck drops up to 0.4 m off centre on each axis (faceoff_jitter), at most 0.57 m from the centre, so the nearer centre man is at least 2.43 m from it: outside the 1.45 m reach. Nobody owns it at the drop; the ordinary reach rule decides.
+SEEN 06:05 each period now starts with a face-off too (scripts/main.gd `_pack_tick`, the block before "var stopped", and `_faceoff_period`, reset in `_build`); not during a drill (a first version reset the drills of bot_check at period 2: 0 of 20, found and fixed at 06:16). To stay under lint's 600 lines, H11's `_goal_by_position` moved from main.gd to rink_api.gd (`goal_by_position`). Lines touched in main.gd: the variable `_faceoff_period`, one line in `_build`, the period block, the call `api.goal_by_position(tune["goals"])`.
+SEEN 06:07 tests/bot_faceoff.gd (+ bot_faceoff_idle.gd, bot_faceoff_allstar.gd), the opening face-off on 20 seeds each: nobody owned the puck at the first live frame 60 of 60; doing nothing (rookie) the human was first to it 0 of 20; skating straight at it from the first frame (perfect keys) he took it 20 of 20 against rookie and 12 of 20 against all-star.
+SEEN 06:08 the ladder moved (who starts with the puck changed): rookie/newcomer 100 %, pro/regular 25 % on the first read. Retuned: rookie reaction 50 -> 40 frames, red_skill 0.47 -> 0.55 (90 %); pro reaction 15 -> 16, red_skill 0.805 -> 0.795 (53 % on 40 seeds; 40 % on the final 20-seed table: see below). All-star unchanged (25 %).
+
+The ladder after H13 (`tl ladder --seeds 20`, 06:08): rookie/newcomer 90 % (77..100), rookie/perfect 100 %, pro/regular 40 % (19..61) [on 40 seeds 53 % (37..68)], pro/perfect 90 %, all-star/sharp 25 % (6..44), all-star/perfect 80 %. Five-minute draws: 0 of 120.
+Pass count, seeds 1..20, 21 tests: 20 of 20 each (bot_check, bot_reach, bot_dial, bot_aim, bot_buttons, bot_goals re-run after the drill fix at 06:16; the others at 06:15). bot_ladder_rookie_perfect won 20 of 20.
+README (engine/packs/hockey/README.md): the face-off limit removed; a "face-offs are won" line with the figures; the levels' numbers; the ladder table of 06:08 with the pro note; the tests table + the three face-off tests; regular / newcomer against Classic now 1 and 2 of 20.
+
+READY H13 06:20
+| acceptance line | verdict | figure |
+|---|---|---|
+| nobody owns the puck at the drop, on 20 seeds | met | 60 of 60 runs (three tests x 20) |
+| a human who does nothing does not get it | met | 0 of 20 first to it |
+| skating at it: against rookie, against all-star | met | 20 of 20 rookie, 12 of 20 all-star |
+| the ladder on 20 seeds, retune what leaves its band | partly: pro not met at 20 seeds | rookie 90, all-star 25 in band; pro 40 % on 20 seeds (band 45..55), 53 % on 40 seeds; lever: pro's reaction / speed |
+| bot_ladder_rookie_perfect 20 of 20 | met | 20 of 20 |
+| all tests 20 of 20 | met | 21 tests (18 + 3 face-off) |
+| packs gate green | met | [1/1] found 1, completed 1, verb runs 24 of 24 (06:19, after the drill fix) |
+| README lines true again | met | |
+| 0 bypasses | met | bypasses [] |

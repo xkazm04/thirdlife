@@ -51,10 +51,15 @@ an orange rim. Nothing else is drawn on the ice: a hit is shown by the figures o
   loose), above it a knockdown (down 30 to 60 frames, then the kernel's get-up). The carrier cannot check.
 - **Five modes** as data files (`data/modes/*.json`), **three periods**, **the rule dial** (skate speed, shot speed,
   ice grip, bot sharpness; one step a period, for both teams).
-- **Three levels** of opponents (`data/levels/*.json`; red only): rookie reacts 50 frames late at 47 % of your speed;
-  pro 15 frames at 80.5 %; all-star 13 frames at 83 %, longer range, tighter shots, readier to check.
+- **Face-offs are won, not given**: at the start of a match, of each period and after each goal the puck drops up to
+  0.4 m off centre and the two centre men stand 3.0 m from the centre, at least 2.4 m from it, outside the 1.45 m reach:
+  nobody owns it at the drop; whoever skates to it first takes it. Measured on 20 seeds (the opening face-off): nobody
+  owned it at the first live frame in 60 of 60 runs; doing nothing, the human was never first to it; skating straight at
+  it he took it 20 of 20 against rookie and 12 of 20 against all-star.
+- **Three levels** of opponents (`data/levels/*.json`; red only): rookie reacts 40 frames late at 55 % of your speed;
+  pro 16 frames at 79.5 %; all-star 13 frames at 83 %, longer range, tighter shots, readier to check.
 
-The ladder (20 seeds a cell, `tl ladder --pack engine/packs/hockey --seeds 20`, 16 Nov 05:48; the human side is one
+The ladder (20 seeds a cell, `tl ladder --pack engine/packs/hockey --seeds 20`, 16 Nov 06:08; the human side is one
 bot's decisions pressed through TLHand of the named profile, with the cursor through the hand, shooting only inside
 16 m; 95 % intervals by the normal approximation):
 
@@ -62,19 +67,22 @@ bot's decisions pressed through TLHand of the named profile, with the cursor thr
 |---|---|---|---|---|
 | rookie | newcomer (the hand it is meant for) | 18 / 20 | 90 (77..100) | 80..90 |
 | rookie | perfect | 20 / 20 | 100 | - |
-| pro | regular (meant) | 10 / 20 | 50 (28..72) | 45..55 |
-| pro | perfect | 12 / 20 | 60 | - |
+| pro | regular (meant) | 8 / 20 | 40 (19..61); on 40 seeds 21 / 40 = 53 (37..68) | 45..55 |
+| pro | perfect | 18 / 20 | 90 | - |
 | all-star | sharp (meant) | 5 / 20 | 25 (6..44) | 20..30 |
-| all-star | perfect | 10 / 20 | 50 | - |
+| all-star | perfect | 16 / 20 | 80 | - |
+
+Pro through the regular hand is below its band on these 20 seeds and inside it on 40: at 20 seeds the interval is wider
+than the band. The lever is pro's reaction and speed in `data/levels/pro.json`.
 
 The hand profiles (reaction, taps, lapses) and the cursor's numbers (lag, speed, miss) are the kernel lanes' reasoning,
-not measured on a person. Against "none"/Classic a person's hand lost almost always (regular 2 of 20, newcomer 0 of 20).
+not measured on a person. Against "none"/Classic a person's hand lost almost always (regular 1 of 20, newcomer 2 of 20).
 
 ## How it is tested
 
 `tl check --tier full --only packs` runs lint, smoke, every test below on seed 1, and invariants (the first test twice,
 equal hashes). `tl ladder --pack engine/packs/hockey [--seeds N] [--cells level_hand,..]` runs the six ladder cells over
-N seeds and prints the table above. Each test below passed on 20 of 20 seeds (1..20) on 16 Nov 05:55.
+N seeds and prints the table above. Each test below passed on 20 of 20 seeds (1..20) on 16 Nov 06:15.
 
 | test | what it holds |
 |---|---|
@@ -91,13 +99,11 @@ N seeds and prints the table above. Each test below passed on 20 of 20 seeds (1.
 | bot_aim | the shot goes where the aim points while he skates another way; a pass to the mate aimed at; the dead zone; a cleared aim |
 | bot_buttons | the four held-button transitions |
 | bot_goals | a puck carried in, released, lying in a net counts (own goal too); on the blade behind the net it does not |
+| bot_faceoff, bot_faceoff_idle, bot_faceoff_allstar | nobody owns the puck at the drop; doing nothing he is not first to it; who wins the draw skating at it is a number (rookie, all-star) |
 
 ## Known limits (each measured or read in the code tonight)
 
 - No goalies: an open net from the face-off dot can be scored on, on rookie as on the others.
-- At a face-off the centre man nearer the dropped puck owns it at once, without a key: the players face off 1.5 m from
-  the centre and the reach is 1.45 m (the puck drops up to 0.4 m off centre). An accident of those two numbers, not a
-  rule; either side's centre can get it (blue on a tie).
 - A carried puck 3 m out is easier to poke than on real ice (from 3 to 4.9 m from its carrier).
 - A taken puck slides 1.6 m to the blade over 8 frames: a short visible move.
 - The stick is drawn through the boards when a skater stands at them (the rig's stick; the puck itself stays inside).

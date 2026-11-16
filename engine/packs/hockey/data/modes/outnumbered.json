@@ -8,7 +8,7 @@
       "team": "blue",
       "role": "player",
       "spawn": [
-        -1.5,
+        -3,
         0
       ]
     },
@@ -35,7 +35,7 @@
       "team": "red",
       "role": "chaser",
       "spawn": [
-        1.5,
+        3,
         0
       ]
     },
