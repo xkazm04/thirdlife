@@ -214,7 +214,9 @@ Unknown `type` or unknown keys are errors when the log is read.
   the `tl cards list` table); a card id that is not in `ref/cards/` is refused by the plan check like an unknown key.
 - **Builder briefs** of a job whose plan names a card carry the card's text exactly as `tl cards brief <id>` prints it.
 - **Change not made.** When a change request ends without a promotion, `pack/` is put back to the last promoted pack
-  (`promoted/<pack id>@<version>/`) before the job's state event; the unpromoted files stay only in the reports.
+  (`promoted/<pack id>@<version>/`) before the job's state event. The put-back is logged as `merge` events (files back,
+  `removed` the change's new files) before the job's state event; the unpromoted pack/ is kept in
+  `reports/change-not-made-s<seq>/pack/`.
 - **Kernel version.** A pack the Foreman writes declares the `KERNEL_API` of the engine it was built against
   (`engine/kernel/runner/manifest.gd`), read from that engine, never a constant in the Foreman.
 - **The construction site** (`engine/kernel/world`, a lot with a `job`) reads `job.jsonl` and `promoted/` and nothing

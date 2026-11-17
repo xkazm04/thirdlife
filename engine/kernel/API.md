@@ -898,7 +898,7 @@ another machine) without the game being rewritten.
 **API version.** `kernelApi` in `pack.json` is `major.minor`. A pack runs when its major equals the kernel's and its
 minor is not greater. `"0.1"` is the name this surface had before it was frozen and is read as `"1.0"`. Anything else
 is refused by lint and by every verb with a sentence that says why (`kernelApi '2.0' cannot run on this kernel, which
-offers API 1.0: the pack was built for major version 2 and this kernel is major version 1 ...`).
+offers API <KERNEL_API>: the pack was built for major version 2 and this kernel is major version 1 ...`).
 `docs/generated/API-V1.json` lists every public class of `kernel/api`, the kit, the rigs and the style:
 what it extends, its methods with their full signatures, signals, properties and constants. `node devx/bin/tl.mjs arch`
 (rule `api-v1`) fails when one of them is removed or changed while the major is the same, and names it; an addition

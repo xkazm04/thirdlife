@@ -33,7 +33,7 @@ Unknown keys are errors. An absent optional value is an omitted key, never `null
 | `kit_parts` | list | kit part kinds the seed uses for this kind of game | in `assets/manifest.json` and used by the seed (`"kind"` in its data or `TLKit.build` in its scripts) |
 | `swap_parts` (optional) | list | kit parts to reach for in a variant; not in the seed | in `assets/manifest.json` |
 | `api` | list of `TLClass.member` | the calls, signals and members the seed shows | the class declares the member, and the seed's scripts or tests use it |
-| `rules_keys` | list | `TLRules` config keys that carry the win condition | set in the seed's `data/rules.json` |
+| `rules_keys` | list | `TLRules` config keys that carry the win condition | set in the example's data: the top level of `data/rules.json`, or the `"rules"` object of a `data/*.json` the pack passes to `TLRules.create` |
 | `data_files` | list of `{file, role}` | the data files to write before any script | exist in the seed |
 | `do`, `dont` | list of strings | the techniques and the known mistakes | present |
 | `bot` | `{template, plays_by, wins_when}` | the seed's bot to copy, how it plays, what it asserts | the file exists and is in the seed's manifest `tests` |
@@ -44,7 +44,9 @@ Every seed must have at least one card (`cards.coverage`). A new seed therefore 
 
 Added 2026-11-17: a card may point at a tracked house game (`pack`) instead of a seed, when the house game is the worked
 example of its kind (team possession: `engine/packs/hockey`). Every rule a card's seed meets, its house pack meets the same
-way; `cards.coverage` still counts seeds only.
+way; `cards.coverage` still counts seeds only. The Foreman copies every card to `<job>/ref/cards/` and every house pack a
+card names, whole, to `<job>/ref/packs/<pack>/`; a builder brief maps the card's `engine/...` path to that copy in one line
+above the card text.
 
 ## Commands
 
