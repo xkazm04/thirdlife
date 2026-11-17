@@ -308,3 +308,47 @@ the viewer's line. Reports: `docs/reports/P5-LOADING.md`, `docs/reports/P6-FAR.m
   until then (drawing only). A plot on stage is adopted at once.
 - The caches (rims, far pictures, rig recipes) live in `PlotFile.cache_dir()` (`<user dir>/tl_cache`, or
   TL_CACHE_DIR); every key is a pack directory's content. The exe ships the caches of its games (docs/EXE.md).
+
+## S: the construction site (engine-world-next, 17-18 November)
+
+A lot of the village shows a Foreman job being built, from that job's own log, and the promoted game ARRIVES on it
+(vision layer L5, docs/FEASIBILITY.md). Files: `site.gd` (the model, owned by the world host), `site/log.gd` (the log
+read and folded), `site/draw.gd` (the look, built by the landscape), `site/fixtures/` (a failed job, a promoted job
+with its game, the selftest walk), `walks/site.json` (one still per stage). Selftest cases `site.*`.
+
+**Walk, block `landscape`, per lot** (all optional; unknown keys are errors; absent = today's decorative lot):
+
+| key | meaning |
+|---|---|
+| `job` | a job directory (contracts/JOB.md), relative to the repository root or absolute. Only `job.jsonl` and `promoted/` are read; nothing is written there. No `job.jsonl`: a plain lot and a warning (`[site] warning: ...`) |
+| `replay` | `{"ticks_per_event": N}`: the log is shown one event every N world ticks (deterministic: walks, stills, tests). Without it the site is LIVE: the file's size is looked at once every 60 world ticks and the whole lines that are new are read (a torn last line waits) |
+
+**What it shows** (the log's own words; the states are the log's): no `job_created` yet: the fenced pad; the job's
+title on a sign outside the fence by the gate; `plan_set`: one bay per package in the plan's order; each bay by its
+last `package_state` (`queued` waiting: a slab and timber; `running` building: walls and a scaffold; `verifying`
+checking: higher walls, a full scaffold, a beacon; `blocked` on hold: barricades; `promoted` built: a finished house
+with a flag; `failed`: low walls behind red barricades); a package merged before and opened again keeps its house and
+gets a scaffold; a package stands finished while it has merged files (`merge.files` add, `merge.removed` take away:
+the Foreman's restore after a change that was not made, `files: []` with `removed`, takes a bay back down); the sign says "N of M built"; a crane turns to the bay being built. A job whose last `job_state` is
+`failed` or `cancelled` and that promoted nothing: "This game could not be finished." A promotion: the scaffold comes
+down, the sign says "Ready. Walk in and press E to play.", the game stands on the lot.
+
+**Arrival.** With a build queue (tiers `load.mode` auto, queue, step or wait) a site lot whose log is there is a plot
+of the world from the start, appended after the walk's plots: id `site_<lot index>`, radius = the lot's, origin =
+the lot's `at` and `h` (give a site lot its `h`: without it the plot's origin is at height 0), footprint 2r x 2r. The
+plot is HELD until the log's last `promoted` event names a pack under `promoted/`: its holder has no manifest (the
+queue never builds it) and its size is negative for the scheduler (nobody stands in it, it is not entered). On the
+promotion the holder takes the pack's manifest, the plot gets its size back, and the queue builds it like any other
+arrival (`built` in the world log; a replay does the same). A later promotion is a `reload` from the new directory.
+`block` mode: no plot is reserved (warning); the lot stays plain. The site is presentation and never in a hash; the
+arrived game hashes as alone (`site.arrival`: tour = alone = replay). Its report: one line `[site] {json}` at the
+world's end (stage, events read, packages, stage ticks, reads and their time).
+
+**Measured** (17 Nov, machine busy): live mode in the village check (4000 ticks, the 11 Nov hockey log of 331 events,
+116 KB): 67 looks at the file, 23.9 ms in all, most of it the first read; the selftest's live job: 7 looks, 1.57 ms.
+The 11 Nov hockey game (built against the 0.1 kernel) loads on today's kernel: smoke 600 frames, 0 errors; its rink
+(60 x 30 m, apron 3.5) fits a lot of radius 40 (half-diagonal 38.3 m).
+
+**Not built:** the visitor walks through the site's bays (they have no colliders: the world's collider cannot drop
+parts yet); the site does not show `question`, `milestone` captures or comments; a live site does not see a job
+directory that appears after the world started.

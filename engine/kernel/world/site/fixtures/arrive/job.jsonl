@@ -1,0 +1,21 @@
+{"v":1,"seq":1,"ts":"2026-11-17T22:01:00.000Z","job":"bounce-court-20261117-1","type":"job_created","sentence":"Balls bounce in a court and I score when they land in the far half.","packId":"example.bounce","title":"Bounce court"}
+{"v":1,"seq":2,"ts":"2026-11-17T22:02:00.000Z","job":"bounce-court-20261117-1","type":"brief_approved","by":"auto"}
+{"v":1,"seq":3,"ts":"2026-11-17T22:03:00.000Z","job":"bounce-court-20261117-1","type":"plan_set","packages":[{"id":"court","title":"Court, balls and score","milestone":"blockout","deps":[],"scope":["scripts/court.gd"],"contract":"fixture","acceptance":[{"level":"V2","verb":"smoke","args":[]}]},{"id":"spawner","title":"The spawner","milestone":"greybox","deps":["court"],"scope":["scripts/spawner.gd"],"contract":"fixture","acceptance":[{"level":"V2","verb":"smoke","args":[]}]},{"id":"look","title":"Colours","milestone":"art_pass","deps":["court"],"scope":["scripts/look.gd"],"contract":"fixture","acceptance":[{"level":"V2","verb":"smoke","args":[]}]}]}
+{"v":1,"seq":4,"ts":"2026-11-17T22:04:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"court","state":"queued","round":1}
+{"v":1,"seq":5,"ts":"2026-11-17T22:05:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"spawner","state":"queued","round":1}
+{"v":1,"seq":6,"ts":"2026-11-17T22:06:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"look","state":"queued","round":1}
+{"v":1,"seq":7,"ts":"2026-11-17T22:07:00.000Z","job":"bounce-court-20261117-1","type":"job_state","state":"running","reason":"started"}
+{"v":1,"seq":8,"ts":"2026-11-17T22:08:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"court","state":"running","round":1}
+{"v":1,"seq":9,"ts":"2026-11-17T22:09:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"court","state":"verifying","round":1}
+{"v":1,"seq":10,"ts":"2026-11-17T22:10:00.000Z","job":"bounce-court-20261117-1","type":"merge","package":"court","files":["scripts/main.gd"]}
+{"v":1,"seq":11,"ts":"2026-11-17T22:11:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"court","state":"promoted","round":1}
+{"v":1,"seq":12,"ts":"2026-11-17T22:12:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"spawner","state":"running","round":1}
+{"v":1,"seq":13,"ts":"2026-11-17T22:13:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"look","state":"running","round":1}
+{"v":1,"seq":14,"ts":"2026-11-17T22:14:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"spawner","state":"verifying","round":1}
+{"v":1,"seq":15,"ts":"2026-11-17T22:15:00.000Z","job":"bounce-court-20261117-1","type":"merge","package":"spawner","files":["data/bounce.json"]}
+{"v":1,"seq":16,"ts":"2026-11-17T22:16:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"spawner","state":"promoted","round":1}
+{"v":1,"seq":17,"ts":"2026-11-17T22:17:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"look","state":"verifying","round":1}
+{"v":1,"seq":18,"ts":"2026-11-17T22:18:00.000Z","job":"bounce-court-20261117-1","type":"merge","package":"look","files":["tests/bot_bounce.gd"]}
+{"v":1,"seq":19,"ts":"2026-11-17T22:19:00.000Z","job":"bounce-court-20261117-1","type":"package_state","package":"look","state":"promoted","round":1}
+{"v":1,"seq":20,"ts":"2026-11-17T22:20:00.000Z","job":"bounce-court-20261117-1","type":"promoted","packId":"example.bounce","version":"0.1.0","dest":"promoted/example.bounce@0.1.0"}
+{"v":1,"seq":21,"ts":"2026-11-17T22:21:00.000Z","job":"bounce-court-20261117-1","type":"job_state","state":"done","reason":"pack verified and promoted under the job directory"}

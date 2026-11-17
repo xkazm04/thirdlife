@@ -1,0 +1,33 @@
+{"v":1,"seq":1,"ts":"2026-11-17T23:01:00.000Z","job":"cup-roll-20261117-1","type":"job_created","sentence":"A ball rolls down a slope into a cup.","packId":"game.cup_roll","title":"Cup roll"}
+{"v":1,"seq":2,"ts":"2026-11-17T23:02:00.000Z","job":"cup-roll-20261117-1","type":"plan_set","packages":[{"id":"core","title":"Slope, ball and cup","milestone":"blockout","deps":[],"scope":["scripts/core.gd"],"contract":"fixture","acceptance":[{"level":"V2","verb":"smoke","args":[]}]}]}
+{"v":1,"seq":3,"ts":"2026-11-17T23:03:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"core","state":"queued","round":1}
+{"v":1,"seq":4,"ts":"2026-11-17T23:04:00.000Z","job":"cup-roll-20261117-1","type":"job_state","state":"running","reason":"started"}
+{"v":1,"seq":5,"ts":"2026-11-17T23:05:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"core","state":"running","round":1}
+{"v":1,"seq":6,"ts":"2026-11-17T23:06:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"core","state":"verifying","round":1}
+{"v":1,"seq":7,"ts":"2026-11-17T23:07:00.000Z","job":"cup-roll-20261117-1","type":"merge","package":"core","files":["scripts/main.gd","data/slope.json"]}
+{"v":1,"seq":8,"ts":"2026-11-17T23:08:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"core","state":"promoted","round":1}
+{"v":1,"seq":9,"ts":"2026-11-17T23:09:00.000Z","job":"cup-roll-20261117-1","type":"promoted","packId":"game.cup_roll","version":"0.1.0","dest":"promoted/game.cup_roll"}
+{"v":1,"seq":10,"ts":"2026-11-17T23:10:00.000Z","job":"cup-roll-20261117-1","type":"job_state","state":"done","reason":"pack verified and promoted under the job directory"}
+{"v":1,"seq":11,"ts":"2026-11-17T23:11:00.000Z","job":"cup-roll-20261117-1","type":"change_requested","text":"Add a second cup and make the slope steeper."}
+{"v":1,"seq":12,"ts":"2026-11-17T23:12:00.000Z","job":"cup-roll-20261117-1","type":"job_state","state":"running","reason":"reopened by a change request (was done)"}
+{"v":1,"seq":13,"ts":"2026-11-17T23:13:00.000Z","job":"cup-roll-20261117-1","type":"replan","reason":"change request (event 11)","added":["cups"],"removed":[],"changed":["core"]}
+{"v":1,"seq":14,"ts":"2026-11-17T23:14:00.000Z","job":"cup-roll-20261117-1","type":"plan_set","packages":[{"id":"core","title":"Slope, ball and cup","milestone":"blockout","deps":[],"scope":["scripts/core.gd"],"contract":"fixture","acceptance":[{"level":"V2","verb":"smoke","args":[]}]},{"id":"cups","title":"A second cup","milestone":"blockout","deps":["core"],"scope":["scripts/cups.gd"],"contract":"fixture","acceptance":[{"level":"V2","verb":"smoke","args":[]}]}]}
+{"v":1,"seq":15,"ts":"2026-11-17T23:15:00.000Z","job":"cup-roll-20261117-1","type":"reopened","package":"core","reason":"change request (event 11); the Planner names the package"}
+{"v":1,"seq":16,"ts":"2026-11-17T23:16:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"core","state":"queued","round":2,"detail":"CHANGE REQUEST: Add a second cup and make the slope steeper."}
+{"v":1,"seq":17,"ts":"2026-11-17T23:17:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"cups","state":"queued","round":1}
+{"v":1,"seq":18,"ts":"2026-11-17T23:18:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"core","state":"running","round":2}
+{"v":1,"seq":19,"ts":"2026-11-17T23:19:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"core","state":"verifying","round":2}
+{"v":1,"seq":20,"ts":"2026-11-17T23:20:00.000Z","job":"cup-roll-20261117-1","type":"merge","package":"core","files":["scripts/main.gd","data/slope.json","data/steep.json"]}
+{"v":1,"seq":21,"ts":"2026-11-17T23:21:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"core","state":"promoted","round":2}
+{"v":1,"seq":22,"ts":"2026-11-17T23:22:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"cups","state":"running","round":1}
+{"v":1,"seq":23,"ts":"2026-11-17T23:23:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"cups","state":"verifying","round":1}
+{"v":1,"seq":24,"ts":"2026-11-17T23:24:00.000Z","job":"cup-roll-20261117-1","type":"merge","package":"cups","files":["scripts/cups.gd"]}
+{"v":1,"seq":25,"ts":"2026-11-17T23:25:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"cups","state":"promoted","round":1}
+{"v":1,"seq":26,"ts":"2026-11-17T23:26:00.000Z","job":"cup-roll-20261117-1","type":"reopened","package":"cups","reason":"FINAL VERIFICATION FAILED (1 of 1) at bot (V4) [report: reports/final-r1.json]. Sent back to cups: the ball misses both cups"}
+{"v":1,"seq":27,"ts":"2026-11-17T23:27:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"cups","state":"queued","round":2,"detail":"FINAL VERIFICATION FAILED (1 of 1) at bot (V4)"}
+{"v":1,"seq":28,"ts":"2026-11-17T23:28:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"cups","state":"running","round":2}
+{"v":1,"seq":29,"ts":"2026-11-17T23:29:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"cups","state":"verifying","round":2}
+{"v":1,"seq":30,"ts":"2026-11-17T23:30:00.000Z","job":"cup-roll-20261117-1","type":"package_state","package":"cups","state":"failed","round":2,"cause":"verify_failed","detail":"the final round did not pass"}
+{"v":1,"seq":31,"ts":"2026-11-17T23:31:00.000Z","job":"cup-roll-20261117-1","type":"merge","package":"core","files":[],"removed":["data/steep.json"]}
+{"v":1,"seq":32,"ts":"2026-11-17T23:32:00.000Z","job":"cup-roll-20261117-1","type":"merge","package":"cups","files":[],"removed":["scripts/cups.gd"]}
+{"v":1,"seq":33,"ts":"2026-11-17T23:33:00.000Z","job":"cup-roll-20261117-1","type":"job_state","state":"done","reason":"the change was NOT made: the earlier promotion game.cup_roll 0.1.0 stays. pack/ was put back to the last promotion game.cup_roll 0.1.0 (promoted/game.cup_roll)"}

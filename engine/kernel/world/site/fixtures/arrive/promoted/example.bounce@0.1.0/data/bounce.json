@@ -1,0 +1,12 @@
+{
+  "drop_height": 2.0,
+  "ball_radius": 0.11,
+  "pads": [
+    {"name": "rubber_on_concrete", "ball": "rubber", "pad": "concrete"},
+    {"name": "rubber_on_wood",     "ball": "rubber", "pad": "wood"},
+    {"name": "rubber_on_ice",      "ball": "rubber", "pad": "ice"},
+    {"name": "plastic_on_steel",   "ball": "plastic", "pad": "steel"}
+  ],
+  "rules": {"sides": ["bin"], "score_to_win": 5, "time_limit_seconds": 60},
+  "spawner": {"every_frames": 20, "max_alive": 12, "max_total": 30, "lifetime_frames": 360}
+}

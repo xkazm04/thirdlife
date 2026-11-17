@@ -452,6 +452,82 @@ if [ -z "$FILTER" ] || [[ "world.reload" == *"$FILTER"* ]]; then
   [ "$(echo "$r" | hp a)" = "$(echo "$rp" | hp a)" ] && [ "$(echo "$r" | hp b)" = "$(echo "$rp" | hp b)" ] || why="${why:+$why; }the log does not replay to the same"
   verdict world.reload "$why" "ex_slide reloaded at tick 300 with start_speed 4.5: $af ticks, $ah = the changed pack alone, not $plain; pack_min and ex_wall as undisturbed ($(echo "$r" | hp b | cut -d' ' -f2) $(echo "$r" | hp c | cut -d' ' -f2)); the log replays"
 fi
+# S (engine-world-next): the construction site (kernel/world/site.gd). A lot with a `job` shows that job's own log;
+# the replay at a fixed rate is the same on two runs; a failed job says so; a lot whose log is missing stays a plain
+# lot with a warning; a live site picks up lines appended while the world runs (the walk's `edits` instrument copies
+# the longer log in at tick 100); the promoted game arrives on the lot through the build queue and hashes in the
+# world as it does alone (and the log replays). Fixtures: kernel/world/site/fixtures/.
+if [ -z "$FILTER" ] || [[ "site." == *"$FILTER"* ]] || [[ "$FILTER" == site.* ]]; then
+  GS="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
+  ES="$(cd "$HERE/.." && pwd)"; command -v cygpath >/dev/null 2>&1 && ES="$(cygpath -m "$ES")"
+  SD="$OUT/site"; rm -rf "$SD"; mkdir -p "$SD"; command -v cygpath >/dev/null 2>&1 && SD="$(cygpath -m "$SD")"
+  site_run() {   # site_run <walk file> [options]: the [site] report line and the exit code line of a headless world
+    MSYS_NO_PATHCONV=1 "$GS" --headless --fixed-fps 60 --path "$ES" res://kernel/host/host.tscn -- world "--walk=$1" "${@:2}" 2>&1 | tr -d '\015' | grep -E '^\[site\]|^\[tl\] world done|SCRIPT ERROR'
+    echo "exit ${PIPESTATUS[0]}"
+  }
+  lot_of() { grep '^\[site\] {' | grep -o "{\"lot\":$1,[^]]*][^}]*}[^}]*}" | sed -E 's/"read_ms":[0-9.]+//'; }
+  FX="$ES/kernel/world/site/fixtures"
+  r1="$(site_run "$FX/site_arrive.json" --ticks=300)"
+  r2="$(site_run "$FX/site_arrive.json" --ticks=300)"
+  if [ -z "$FILTER" ] || [[ "site.replay_same" == *"$FILTER"* ]]; then
+    a="$(echo "$r1" | lot_of 0)"; b="$(echo "$r2" | lot_of 0)"; why=""
+    [ -n "$a" ] || why="no [site] report for lot 0"
+    [ "$a" = "$b" ] || why="${why:+$why; }two runs differ: [$a] [$b]"
+    echo "$a" | grep -q '"events":15,' || why="${why:+$why; }not 15 events at tick 300 with one event per 20 ticks: $a"
+    echo "$a" | grep -q '"stage":"building"' || why="${why:+$why; }not the building stage"
+    echo "$r1" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
+    verdict site.replay_same "$why" "$(echo "$a" | grep -oE '"stage":"[a-z]+","title":"[^"]*","built":[0-9]+,"total":[0-9]+' ) at tick 300, twice"
+  fi
+  if [ -z "$FILTER" ] || [[ "site.failed" == *"$FILTER"* ]]; then
+    a="$(echo "$r1" | lot_of 1)"; why=""
+    echo "$a" | grep -q '"stage":"failed"' || why="the failed job is not shown failed: $a"
+    echo "$a" | grep -q '"tower_core:failed"' || why="${why:+$why; }its failed package is not shown failed"
+    echo "$a" | grep -q '"tower_look:blocked"' || why="${why:+$why; }its blocked package is not shown blocked"
+    verdict site.failed "$why" "$(echo "$a" | grep -oE '"stage":"[a-z]+"|"packages":\[[^]]*\]' | tr '\n' ' ')"
+  fi
+  if [ -z "$FILTER" ] || [[ "site.missing_log" == *"$FILTER"* ]]; then
+    printf '{"schema":"tl.walk/1","name":"site_missing","visitor":true,"ticks":120,"mode":"bot","plots":[{"id":"a","pack":"pack_min","origin":[0,0,0],"seed":1}],"landscape":{"lots":[{"at":[60,0],"radius":16,"job":"%s/no_such_job"}]},"player":[[0,[0,0,30]]]}\n' "$SD" > "$SD/missing.json"
+    m="$(site_run "$SD/missing.json")"; why=""
+    echo "$m" | grep -q '^\[site\] warning: lot 0: no job log' || why="no warning for the missing log"
+    echo "$m" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0: $(echo "$m" | tail -2 | tr '\n' ' ')"
+    echo "$m" | grep -q '"lot":0' && why="${why:+$why; }a site was made for a lot without a log"
+    verdict site.missing_log "$why" "$(echo "$m" | grep -m1 '^\[site\] warning' | cut -c1-90)...; the lot stays plain, the world runs"
+  fi
+  if [ -z "$FILTER" ] || [[ "site.live" == *"$FILTER"* ]]; then
+    cp -r "$FX/arrive" "$SD/live"
+    cp "$SD/live/job.jsonl" "$SD/live_full.jsonl"
+    head -n 6 "$FX/arrive/job.jsonl" > "$SD/live/job.jsonl"
+    printf '{"schema":"tl.walk/1","name":"site_live","visitor":true,"ticks":400,"mode":"bot","plots":[{"id":"a","pack":"pack_min","origin":[-60,0,0],"seed":1}],"landscape":{"lots":[{"at":[40,0],"radius":22,"h":0,"job":"%s/live"}]},"player":[[0,[40,0,30]]],"edits":[[100,"%s/live/job.jsonl","%s/live_full.jsonl"]]}\n' "$SD" "$SD" "$SD" > "$SD/live.json"
+    l="$(site_run "$SD/live.json")"; a="$(echo "$l" | lot_of 0)"; why=""
+    echo "$a" | grep -q '"mode":"live"' || why="the site is not live: $a"
+    echo "$a" | grep -q '"events":21,' || why="${why:+$why; }the appended lines were not read (21 events wanted): $a"
+    echo "$a" | grep -q '"stage_ticks":{"bays":0,"promoted":120}' || why="${why:+$why; }not 6 events at the start and all of them at tick 120 (the first look after the copy at 100): $a"
+    echo "$a" | grep -q '"arrived":"example.bounce@0.1.0","arrived_at":120' || why="${why:+$why; }the promoted game did not arrive at tick 120"
+    echo "$l" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
+    verdict site.live "$why" "6 events, the log grew to 21 at tick 100, read at tick 120, the game arrived; $(echo "$l" | grep -oE '"reads":[0-9]+,"read_ms":[0-9.]+' | head -1)"
+  fi
+  if [ -z "$FILTER" ] || [[ "site.arrival" == *"$FILTER"* ]]; then
+    out="$(bash "$HERE/world.sh" tour "$FX/site_arrive.json" --headless 2>&1)"
+    why=""; echo "$out" | grep -q '^PASS world.tour' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror' | head -3 | tr '\n' ' ')"
+    echo "$out" | grep -Eq '^site_0 \| example\.bounce \| [1-9][0-9]* \| .* \| same$' || why="${why:+$why; }the arrived game has no row 'same' in the proof"
+    echo "$out" | grep -q 'tick 380   e:built  plot:site_0' || why="${why:+$why; }the game did not arrive at tick 380"
+    verdict site.arrival "$why" "the promoted game arrives at tick 380 and hashes as alone and as the replay: $(echo "$out" | grep '^site_0 |' | awk -F' [|] ' '{printf "%s ticks %s", $3, $5}')"
+  fi
+  # A change that was not made (JOB.md 2026-11-17, foreman/src/unmade.ts): pack/ goes back to the last promotion and
+  # `merge` events with `files: []` and `removed` follow just before the job's state. A package whose files all go
+  # (cups, added by the change) is not built any more; core keeps the files of the promotion; the game stays.
+  if [ -z "$FILTER" ] || [[ "site.unmade" == *"$FILTER"* ]]; then
+    printf '{"schema":"tl.walk/1","name":"site_unmade","visitor":true,"ticks":200,"mode":"bot","plots":[{"id":"a","pack":"pack_min","origin":[-60,0,0],"seed":1}],"landscape":{"lots":[{"at":[40,0],"radius":16,"h":0,"job":"%s","replay":{"ticks_per_event":5}}]},"player":[[0,[40,0,30]]]}\n' "$FX/unmade" > "$SD/unmade.json"
+    u="$(site_run "$SD/unmade.json")"; a="$(echo "$u" | lot_of 0)"; why=""
+    echo "$a" | grep -q '"events":33,"events_in_file":33,' || why="the log was not read to its end (33 events): $a"
+    echo "$a" | grep -q '"built":1,"total":2' || why="${why:+$why; }not 1 of 2 built after the restore: $a"
+    echo "$a" | grep -q '"core:promoted+merged","cups:failed"\]' || why="${why:+$why; }core is not built or cups is shown built: $a"
+    echo "$a" | grep -q '"stage":"promoted"' || why="${why:+$why; }the promoted game does not stay"
+    echo "$a" | grep -q '"log_error"' && why="${why:+$why; }the restore's merge events broke the reading"
+    echo "$u" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
+    verdict site.unmade "$why" "after the restore: $(echo "$a" | grep -oE '"built":[0-9]+,"total":[0-9]+|"packages":\[[^]]*\]' | tr '\n' ' ')"
+  fi
+fi
 # The build queue with its worker thread, without a window (walks/queue.json: `load.mode` wait): three seeds are
 # prepared on the worker (scripts, layouts built ahead by the kit), one per tick, waited for. Every pack hashes as
 # it does alone for the same number of its own ticks, and the log (with its `built` events) replays to the same.

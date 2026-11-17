@@ -1,0 +1,11 @@
+{"v":1,"seq":1,"ts":"2026-11-17T22:01:00.000Z","job":"marble-tower-20261117-1","type":"job_created","sentence":"A tower of marbles that I knock down with a ball.","packId":"game.marble_tower","title":"Marble tower"}
+{"v":1,"seq":2,"ts":"2026-11-17T22:02:00.000Z","job":"marble-tower-20261117-1","type":"brief_approved","by":"auto"}
+{"v":1,"seq":3,"ts":"2026-11-17T22:03:00.000Z","job":"marble-tower-20261117-1","type":"plan_set","packages":[{"id":"tower_core","title":"Tower, ball and rules","milestone":"blockout","deps":[],"scope":["scripts/tower_core.gd"],"contract":"fixture","acceptance":[{"level":"V2","verb":"smoke","args":[]}]},{"id":"tower_look","title":"Colours and lights","milestone":"art_pass","deps":["tower_core"],"scope":["scripts/tower_look.gd"],"contract":"fixture","acceptance":[{"level":"V2","verb":"smoke","args":[]}]}]}
+{"v":1,"seq":4,"ts":"2026-11-17T22:04:00.000Z","job":"marble-tower-20261117-1","type":"package_state","package":"tower_core","state":"queued","round":1}
+{"v":1,"seq":5,"ts":"2026-11-17T22:05:00.000Z","job":"marble-tower-20261117-1","type":"package_state","package":"tower_look","state":"queued","round":1}
+{"v":1,"seq":6,"ts":"2026-11-17T22:06:00.000Z","job":"marble-tower-20261117-1","type":"job_state","state":"running","reason":"started"}
+{"v":1,"seq":7,"ts":"2026-11-17T22:07:00.000Z","job":"marble-tower-20261117-1","type":"package_state","package":"tower_core","state":"running","round":1}
+{"v":1,"seq":8,"ts":"2026-11-17T22:08:00.000Z","job":"marble-tower-20261117-1","type":"package_state","package":"tower_core","state":"verifying","round":1}
+{"v":1,"seq":9,"ts":"2026-11-17T22:09:00.000Z","job":"marble-tower-20261117-1","type":"package_state","package":"tower_core","state":"failed","round":4,"cause":"verify_failed","detail":"bot (V4) failed four rounds"}
+{"v":1,"seq":10,"ts":"2026-11-17T22:10:00.000Z","job":"marble-tower-20261117-1","type":"package_state","package":"tower_look","state":"blocked","round":1,"cause":"dependency","detail":"tower_core failed"}
+{"v":1,"seq":11,"ts":"2026-11-17T22:11:00.000Z","job":"marble-tower-20261117-1","type":"job_state","state":"failed","reason":"tower_core failed after the round limit"}

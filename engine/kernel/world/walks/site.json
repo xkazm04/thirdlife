@@ -1,0 +1,30 @@
+{
+  "schema": "tl.walk/1",
+  "name": "site",
+  "note": "S (engine-world-next). The construction site, one still per stage. A wall yard and two site lots by the road: the big one replays the recorded hockey job of 11 Nov (site/ice-hockey-three-against-20261111-1: 331 events, 4 packages, one event every 8 world ticks; its last promotion releases the lot at tick 1832; in a window the queue builds the game when it is ready), the small one replays the hand-written failed job (kernel/world/site/fixtures/failed). `world.sh tour site --out-dir=<abs dir> --pictures-only` writes site_pad, site_bays, site_mid_build, site_all_merged, site_arrived and site_failed.",
+  "visitor": true,
+  "ticks": 2720,
+  "mode": "bot",
+  "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+  "plots": [
+    {"id": "wall", "pack": "ex_wall", "origin": [-150, 0, -10], "radius": 30, "footprint": {"size_m": [60, 60]}, "seed": 1}
+  ],
+  "road": [[-260, 70], [-150, 64], [-60, 66], [0, 66], [60, 68], [160, 66], [260, 70]],
+  "landscape": {
+    "seed": 7,
+    "trees": 60, "broadleaf": 20, "rocks": 20, "bushes": 40, "belt": 120, "mesas": 10, "haze": 0.4,
+    "lots": [
+      {"at": [60, 0], "radius": 40, "h": 0, "job": "site/ice-hockey-three-against-20261111-1", "replay": {"ticks_per_event": 8}},
+      {"at": [-60, 6], "radius": 18, "h": 0, "job": "engine/kernel/world/site/fixtures/failed", "replay": {"ticks_per_event": 20}}
+    ]
+  },
+  "player": [[0, [60, 0, 64]], [2720, [60, 0, 64]]],
+  "events": [
+    {"t": 24, "e": "shot", "name": "site_pad", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
+    {"t": 160, "e": "shot", "name": "site_bays", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
+    {"t": 900, "e": "shot", "name": "site_mid_build", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
+    {"t": 1600, "e": "shot", "name": "site_all_merged", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
+    {"t": 2640, "e": "shot", "name": "site_arrived", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
+    {"t": 2680, "e": "shot", "name": "site_failed", "cam": "crane", "from": [-40, 24, 70], "to": [-60, 2, 6]}
+  ]
+}

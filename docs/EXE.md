@@ -127,6 +127,25 @@ is `<file>.<plot>.<n>.json` beside it) and `ThirdLife.exe -- --input=<abs file>`
 and mouse are sampled once per world tick into one input of the world's own (`engine/kernel/runner/visit.gd`), and
 nothing below that line reads a device.
 
+## The construction site (S, engine-world-next, 17-18 November)
+
+The village has one construction site: the lot south of the road at its east end, `(240, -55)`, radius 40
+(`engine/boot/village.json`, `landscape.lots[0]`; the model is `engine/kernel/world/WORLD.md` section S). It shows a
+Foreman job being built from that job's own `job.jsonl`, and the game its last `promoted` event names arrives on the
+lot and is played like any other (walk up, E enters, Q or Esc leaves).
+
+- **Which job: one key in one file.** `landscape.lots[0].job` in `engine/boot/village.json`: a job directory relative to
+  the repository root (or absolute). Today: `site/ice-hockey-three-against-20261111-1` (the recorded job of 11 Nov;
+  `site/` is job output in the main checkout: from a worktree export.sh and the editor binary look there too).
+- **In the build:** `dist/ThirdLife/sites/<job folder name>/job.jsonl` and `.../promoted/<pack id>@<version>/` (only the
+  game the LAST `promoted` event names). `export.sh` copies them and says so in `BUILD.txt` ("construction sites").
+  `boot.gd` points the lot at `<folder of the exe>/sites/<job folder name>` (the editor binary with `--games=<dir>`
+  looks beside that folder; without it, the walk's own job directory is used).
+- **A job that is not found** (no `job.jsonl`) leaves a plain building site: `export.sh` warns and builds without it,
+  `boot.gd` prints `[boot] lot 0 is a plain building site: ...` and lists it under `left_out` in its first line.
+- The village's site is LIVE (no `replay`): the copied log is read at the start and looked at again every 60 ticks.
+  The build holds the log as it was when the build was made; a job that goes on after the export needs a new export.
+
 ## The first minute (P14)
 
 What a person sees and does, from the four pictures of P14 (`engine/captures/p14/`, taken from the exe by

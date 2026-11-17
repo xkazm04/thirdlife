@@ -205,6 +205,32 @@ for (const g of games) {
 for (const p of walk.plots) if (!games.some(g => g.name === p.pack)) { console.error(`export.sh: plot '${p.id}' of boot/village.json names the game '${p.pack}', which boot/games.json does not list`); process.exit(1); }
 fs.writeFileSync(path.join(stage, ".games.txt"), lines.join("\n") + "\n" + (missing.length ? "not in this build:\n" + missing.join("\n") + "\n" : ""));
 NODE
+  # S (engine-world-next): the construction sites of the village (a lot with a `job`, kernel/world/site.gd). Each job's
+  # job.jsonl and the game its LAST `promoted` event names go to sites/<job folder name>/ beside games/ (boot.gd looks
+  # there). The site reads nothing else of a job. A job that is not found is a warning: the lot stays a plain site.
+  node - "$E/boot/village.json" "$REPO" "$MAIN" "$STAGE" <<'NODE' || die 1 "the construction sites could not be copied (the reason is above); the old build (if any) is untouched"
+const fs = require("fs"), path = require("path");
+const [walkFile, repo, main, stage] = process.argv.slice(2);
+const walk = JSON.parse(fs.readFileSync(walkFile, "utf8"));
+const lots = ((walk.landscape || {}).lots || []), out = [];
+lots.forEach((lot, k) => {
+  if (!lot || typeof lot.job !== "string") return;
+  const src = (path.isAbsolute(lot.job) ? [lot.job] : [path.join(repo, lot.job), main ? path.join(main, lot.job) : ""]).find(p => p && fs.existsSync(path.join(p, "job.jsonl")));
+  if (!src) { console.error(`export.sh: WARNING: the job '${lot.job}' of lot ${k} has no job.jsonl; the build shows a plain building site there`); out.push(`  lot ${k}: ${lot.job} not found when the build was made (a plain building site)`); return; }
+  const name = path.basename(lot.job.replace(/[\/]+$/, "")), dest = path.join(stage, "sites", name);
+  fs.mkdirSync(dest, { recursive: true });
+  fs.copyFileSync(path.join(src, "job.jsonl"), path.join(dest, "job.jsonl"));
+  let last = null, events = 0;
+  for (const l of fs.readFileSync(path.join(src, "job.jsonl"), "utf8").split("\n")) { try { const e = JSON.parse(l); events++; if (e.type === "promoted") last = e; } catch (e) {} }
+  let game = "no promoted game yet";
+  if (last && /^promoted\//.test(last.dest) && fs.existsSync(path.join(src, last.dest, "pack.json"))) {
+    fs.cpSync(path.join(src, last.dest), path.join(dest, last.dest), { recursive: true, filter: s => !/\.(uid|import)$/.test(s) });
+    game = `game ${last.packId} ${last.version} (${last.dest})`;
+  } else if (last) game = `its promoted game ${last.dest} was not found (it cannot arrive)`;
+  out.push(`  lot ${k}: sites/${name}/ from ${lot.job}: ${events} events, ${game}`);
+});
+fs.writeFileSync(path.join(stage, ".sites.txt"), out.length ? "construction sites (folder in sites/):\n" + out.join("\n") + "\n" : "");
+NODE
   # P14: the caches of these games (rims, far pictures, rig recipes; keyed by each game's content), computed by the
   # new exe itself: its window runs the village's scripted tour once with TL_CACHE_DIR=<build>/cache. The exe copies
   # what a user's cache lacks from there on every start (boot.gd), so the first start on a machine finds them.
@@ -235,8 +261,9 @@ NODE
     else echo "cache: $cache_files files, $(du -sk "$STAGE/cache" 2>/dev/null | cut -f1) KB (rims, far pictures, rig recipes of these games; copied to the user's cache on start)"; fi
     echo "games (folder in games/: id version, title, plot, where it came from):"
     cat "$STAGE/.games.txt"
+    cat "$STAGE/.sites.txt" 2>/dev/null
   } > "$STAGE/BUILD.txt"
-  rm -f "$STAGE/.games.txt"
+  rm -f "$STAGE/.games.txt" "$STAGE/.sites.txt"
   cat > "$STAGE/README.txt" <<'TXT'
 Third Life
 

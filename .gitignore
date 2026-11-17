@@ -7,7 +7,7 @@ __pycache__/
 spike/art/r1/jobs/
 node_modules/
 .ai/*.local.jsonl
-site/
+/site/
 dist/
 
 # working notes of the spark loop (not version-controlled)

@@ -1,0 +1,21 @@
+{
+  "schema": "tl.walk/1",
+  "name": "site_arrive",
+  "note": "S (selftest site.arrival). A wall yard and two construction sites: one replays a small job that ends promoted (its game, a copy of ex_bounce under the job's promoted/, arrives on the lot at world tick 380), one replays a job that failed. The visitor stands by the first site, walks in when the game is there, enters it, leaves. world.sh tour --headless proves tour = alone = replay for every pack, the arrived one too.",
+  "visitor": true,
+  "ticks": 1200,
+  "mode": "bot",
+  "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+  "plots": [
+    {"id": "wall", "pack": "ex_wall", "origin": [-70, 0, 0], "radius": 20, "footprint": {"size_m": [40, 40]}, "seed": 1}
+  ],
+  "road": [[-140, 34], [-60, 32], [0, 34], [60, 34], [140, 36]],
+  "landscape": {
+    "lots": [
+      {"at": [40, 0], "radius": 22, "h": 0, "job": "engine/kernel/world/site/fixtures/arrive", "replay": {"ticks_per_event": 20}},
+      {"at": [-10, -60], "radius": 16, "h": 0, "job": "engine/kernel/world/site/fixtures/failed", "replay": {"ticks_per_event": 20}}
+    ]
+  },
+  "player": [[0, [40, 0, 32]], [600, [40, 0, 32]], [680, [40, 0, 4]], [1200, [40, 0, 4]]],
+  "events": [{"t": 720, "e": "enter"}, {"t": 1000, "e": "leave"}]
+}

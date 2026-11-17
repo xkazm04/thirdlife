@@ -57,6 +57,7 @@ var view: Node = null
 var world: Node = null
 var dropped: Array = []                 # plots left out: [{id, pack, why}]
 var kept: Array = []                    # [{id, pack, dir}]
+var kept_sites: Array = []              # S: [{lot, job, dir}]: the construction sites whose job log was found
 var _frame: int = 0
 var _hint: Label = null
 var _capture_path: String = ""
@@ -207,6 +208,7 @@ func _make_walk() -> String:
 	walk["plots"] = plots
 	if land.has("pad_h"):
 		land["pad_h"] = pads
+	_site_lots(land)
 	if not dropped.is_empty():
 		# a scripted `enter` that names a plot which is not there would be refused; without a name it enters where he stands
 		var evs: Array = []
@@ -231,6 +233,35 @@ func _make_walk() -> String:
 	return _walk_tmp
 
 
+## S (engine-world-next): a lot of the village with a `job` is a construction site (kernel/world/site.gd). In the
+## exe its job is the folder `sites/<job folder name>` beside `games/` (export.sh copies the job's job.jsonl and its
+## last promoted game there); the editor binary with --games looks beside that folder too, without it the job
+## directory of the walk is used as it is (relative to the repository). A job that is not found leaves a plain
+## building site, said on the log (like a game that is not there).
+func _site_lots(land: Dictionary) -> void:
+	for k: int in (land.get("lots", []) as Array).size():
+		var lot: Variant = (land["lots"] as Array)[k]
+		if typeof(lot) != TYPE_DICTIONARY or not (lot as Dictionary).has("job"):
+			continue
+		var job: String = str((lot as Dictionary)["job"]).replace("\\", "/").trim_suffix("/")
+		var dir: String = job
+		if not games_dir.is_empty():
+			dir = games_dir.get_base_dir() + "/sites/" + job.get_file()
+		elif not job.is_absolute_path():
+			dir = ProjectSettings.globalize_path("res://").replace("\\", "/").trim_suffix("/").get_base_dir() + "/" + job
+			var wt: int = dir.find("/.claude/worktrees/")
+			if wt >= 0 and not FileAccess.file_exists(dir + "/job.jsonl"):
+				dir = dir.substr(0, wt) + "/" + job           # site/ (job output) is in the main checkout only
+		if FileAccess.file_exists(dir + "/job.jsonl"):
+			(lot as Dictionary)["job"] = dir
+			kept_sites.append({"lot": k, "job": job.get_file(), "dir": dir})
+		else:
+			(lot as Dictionary).erase("job")
+			(lot as Dictionary).erase("replay")
+			dropped.append({"id": "lot %d" % k, "pack": job.get_file(), "why": "no job log at %s/job.jsonl: a plain building site" % dir})
+			print("[boot] lot %d is a plain building site: its job '%s' has no job.jsonl at %s" % [k, job, dir])
+
+
 func _exit_tree() -> void:
 	if not _walk_tmp.is_empty() and FileAccess.file_exists(_walk_tmp):
 		DirAccess.remove_absolute(_walk_tmp)
@@ -240,7 +271,7 @@ func _identity() -> Dictionary:
 	var v: Dictionary = Engine.get_version_info()
 	var id: Dictionary = {"schema": "thirdlife.exe/1", "kind": "boot", "verb": verb if not verb.is_empty() else "visit", "exported": exported(),
 		"godot": str(v.get("string", "")), "executable": OS.get_executable_path().replace("\\", "/"), "games": games_dir,
-		"display": DisplayServer.get_name(), "user_dir": OS.get_user_data_dir().replace("\\", "/"), "plots": kept, "left_out": dropped}
+		"display": DisplayServer.get_name(), "user_dir": OS.get_user_data_dir().replace("\\", "/"), "plots": kept, "sites": kept_sites, "left_out": dropped}
 	if not tag.is_empty():
 		id["build"] = tag                          # absent value: the key is left out
 	return id

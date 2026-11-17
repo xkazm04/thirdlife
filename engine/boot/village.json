@@ -1,7 +1,7 @@
 {
   "schema": "tl.walk/1",
   "name": "village",
-  "note": "P14: the village of the exported game (engine/boot/boot.gd) is the compact village of P13 (kernel/world/walks/compact_village.json): the six games about 4 m apart beyond their pads, both rows close to one road, and the hockey game of the first night job on the lot at the east end that waits for it (radius 44, the arena's own). `pack` is a folder name in `games/` beside the exe. A person: the first `player` entry is where the visitor starts (on the road west of the kit court, as in P13's eye-level frame), the next one he looks at (east, along the road, into the village); the scripted events are not run for a person (P11). The check (`-- check`): along the road, into the kit court (enter, leave), into the drive track (enter, leave), east along the road to the hockey arena (enter, leave). A plot whose folder is missing is left out by boot.gd together with its `pad_h`.",
+  "note": "P14: the village of the exported game (engine/boot/boot.gd) is the compact village of P13 (kernel/world/walks/compact_village.json): the six games about 4 m apart beyond their pads, both rows close to one road, and the hockey game of the first night job on the lot at the east end that waits for it (radius 44, the arena's own). `pack` is a folder name in `games/` beside the exe. A person: the first `player` entry is where the visitor starts (on the road west of the kit court, as in P13's eye-level frame), the next one he looks at (east, along the road, into the village); the scripted events are not run for a person (P11). The check (`-- check`): along the road, into the kit court (enter, leave), into the drive track (enter, leave), east along the road to the hockey arena (enter, leave). A plot whose folder is missing is left out by boot.gd together with its `pad_h`. S (engine-world-next): the lot south of the road at the east end (240, -55), radius 40, is the construction site of a Foreman job (kernel/world/site.gd): `landscape.lots[0].job` is the ONE key that names the job (a job directory, relative to the repository); it shows the job being built from its job.jsonl and its last promoted game arrives there. export.sh copies the job into dist/ThirdLife/sites/; a job that is not found leaves a plain building site.",
   "visitor": true,
   "ticks": 4000,
   "mode": "bot",
@@ -18,7 +18,8 @@
   "road": [[-270, 6], [-190, 3], [-100, 0], [0, 0], [100, 0], [190, 2], [290, 5]],
   "landscape": {"seed": 7, "pad_h": [4.0, -2.5, 3.0, 4.0, 2.0, 0.5, 1.0],
     "river": {"path": [[-236, -200], [-254, -130], [-250, -30], [-252, 12], [-262, 80], [-246, 150]], "half_m": 6.0, "pond_m": 16},
-    "margin_m": 90, "road_half_m": 3.0, "trees": 120, "broadleaf": 40, "rocks": 46, "bushes": 90, "belt": 180, "mesas": 18, "haze": 0.4},
+    "margin_m": 90, "road_half_m": 3.0, "trees": 120, "broadleaf": 40, "rocks": 46, "bushes": 90, "belt": 180, "mesas": 18, "haze": 0.4,
+    "lots": [{"at": [240, -55], "radius": 40, "h": 2.0, "job": "site/ice-hockey-three-against-20261111-1"}]},
   "player": [[0, [-60, 0, 2]], [60, [-60, 0, 2]], [300, [-20, 0, 2]], [420, [-20, 0, 30]], [960, [-20, 0, 30]], [1080, [-20, 0, 2]],
              [1240, [4, 0, 2]], [1460, [4, 0, -30]], [1960, [4, 0, -30]], [2180, [4, 0, 2]], [3350, [194, 0, 2]],
              [3540, [194, 0, 30]], [4000, [194, 0, 30]]],

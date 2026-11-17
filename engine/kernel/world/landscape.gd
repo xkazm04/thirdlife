@@ -11,7 +11,8 @@ extends RefCounted
 ## `parent` as the meta `tl_space`.
 ## `plots`: Transform3D per plot (world coordinates, lift included), `radii`: metres, `has_ground`: the pack has terrain
 ## of its own at its edge (the world's ground is cut open for it). `cfg` (the walk script's `landscape` block, all
-## optional): road, road_half_m, spurs, fence, gates, lots ([{"at": [x, z], "radius": m, "h": pad height}]), pad_h (per
+## optional): road, road_half_m, spurs, fence, gates, lots ([{"at": [x, z], "radius": m, "h": pad height}]; S: a lot with
+## `job` and `replay` is a construction site, kernel/world/site.gd: when its log is found it is a plot, drawn by site/draw.gd), pad_h (per
 ## plot: the height of its pad, default the plot's own y), river ({"path": [[x, z], ...], "half_m", "pond_m"}), trees,
 ## broadleaf, rocks, bushes, tufts, belt, mesas, seed, ground_key, spread_m, cell_m, rim_band.
 ## Cost is in the returned stats (`build_ms`, `terrain_ms`, instance counts); kernel/world/WORLD.md has the figures.
@@ -19,6 +20,7 @@ extends RefCounted
 const VillageTerrain: GDScript = preload("res://kernel/world/terrain/village_terrain.gd")
 const WorldSpace: GDScript = preload("res://kernel/world/terrain/world_space.gd")
 const Parts: GDScript = preload("res://kernel/world/terrain/village_parts.gd")
+const SiteDraw: GDScript = preload("res://kernel/world/site/draw.gd")    # S: a construction site's look
 
 const GROUND_Y: float = 0.0              # the terrain and the far plain: a pack's rim and the ground meet at the same height
 const FLAT_GROUND_Y: float = -0.06      # the flat ground of single shots (`ground()`), as in N7
@@ -100,7 +102,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		pad_h.append(float(pad_cfg[i]) if i < pad_cfg.size() else pt.origin.y)
 		lo = lo.min(c - Vector2.ONE * (float(radii[i]) + PAD_EXTRA))
 		hi = hi.max(c + Vector2.ONE * (float(radii[i]) + PAD_EXTRA))
-	var lots: Array = cfg.get("lots", []) if typeof(cfg.get("lots")) == TYPE_ARRAY else []
+	var lots: Array = (cfg["lots"] as Array).duplicate() if typeof(cfg.get("lots")) == TYPE_ARRAY else []     # S: a copy (site lots are taken out of it)
+	var site_plots: Array = SiteDraw.split_lots(parent, lots)   # S: a construction site is a plot (kernel/world/site.gd); the rest stay plain lots
 	var lot_auto: Array = []
 	for k: int in lots.size():
 		var lot: Dictionary = lots[k]
@@ -347,6 +350,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	_lap(stats, "edges_loop")
 	# ---- the lots: worn ground, a crane, a scaffold, stacked timber and pallets: the next game is being built here
 	Parts.lots(parent, lots.size(), plots.size(), centres, rad, pad_h, gates, rng, edge_n, ws, mk_ring, mk_edge, stats)
+	SiteDraw.place(parent, site_plots, centres, pad_h, rad, gates, stats)     # S: the construction sites, on their plots' pads
 	_lap(stats, "lots")
 	var edge_task: Dictionary = {"jobs": edge_jobs, "terr": terr, "half": half, "noise": edge_n, "ring": mk_ring, "edge": mk_edge, "kerb": mk_kerb}
 	if bool(cfg.get("edges_now", false)) or OS.get_environment("TL_LAND_NOW") == "1":

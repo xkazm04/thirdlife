@@ -38,6 +38,7 @@ const LoggerScript: GDScript = preload("res://kernel/runner/logger.gd")
 const Tiers: GDScript = preload("res://kernel/world/tiers.gd")
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")   # P5: the world file and a pack directory's hash (moved out: this file may not grow)
 const Jobs: GDScript = preload("res://kernel/world/jobs.gd")           # P5: the build queue
+const Site: GDScript = preload("res://kernel/world/site.gd")           # S: the construction site (a lot that shows a job; its game arrives)
 const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel/world/packs", "res://packs"]
 const FOREVER: int = 1 << 40
 const GuardScript: GDScript = preload("res://kernel/host/guard.gd")   # P1: the watchdog of this host (processor time per pack tick)
@@ -85,6 +86,7 @@ var _guard: RefCounted = GuardScript.new()   # P1: ends the process on a runaway
 var _dead: PackedStringArray = PackedStringArray()   # P1: indices (as text) of packs that ran away in an earlier run: not loaded, never ticked
 var player_live: bool = false           # true: `player_pos` is set from outside every tick (a person walks)
 var jobs: RefCounted = null             # P5: the build queue (kernel/world/jobs.gd); null = every pack is built before the first tick
+var site: RefCounted = Site.new()       # S: the construction sites of the walk (kernel/world/site.gd); presentation, never hashed
 
 
 func _list(key: String, fallback: String) -> PackedStringArray:
@@ -189,7 +191,7 @@ func _spawn_plot(i: int, named: bool = true) -> Node:
 	p.set("ticks_before", int(def.get("ticks_before", 0)))
 	p.set_meta(&"tl_plot", {"id": str(def["id"]), "origin": def.get("origin", Vector3.ZERO), "yaw": float(def.get("yaw", 0.0))})
 	if _dead.has(str(i)): return p     # P1: it ran away in an earlier run of this world: left unloaded
-	if jobs != null and not def.has("go"): return p.call("stub", dir)     # P5: the build queue builds it, later
+	if jobs != null and not def.has("go"): return site.call("stub", p, i, dir)     # P5: the build queue builds it, later (S: a held site plot: not yet)
 	var ok: bool = p.call("load_pack", dir, {"mode": str(def.get("mode", "smoke")), "seed": int(def.get("seed", 1)),
 		"frames": int(def.get("frames", 3600)), "every": int(def.get("every", 1)), "at": def.get("at", Vector3.ZERO),
 		"trace": int(def.get("trace", 0)), "own_space": bool(def.get("own_space", true)),
@@ -267,6 +269,7 @@ func _start_walk() -> void:
 		jobs.call("setup", self, lm, load_mode, str(opts.get("scenery", walk.get("scenery", "plot"))), walk.get("edits", []))
 	cost_measured = str(cfg.get("cost", "model")) == "measured"
 	player_script = walk.get("player", [])
+	site.call("setup", self, walk)       # S: a site lot whose log is there reserves a plot after the walk's own
 	var list: Array = []
 	var src: Array = walk.get("plots", [])
 	var default_size: Array = cfg.get("default_footprint_m", [40, 40])
@@ -278,7 +281,7 @@ func _start_walk() -> void:
 		var p: Node = _spawn_plot(i)
 		packs.append(p)
 		var m: Dictionary = p.get("manifest")
-		if jobs != null and m.is_empty() and not _dead.has(str(i)):
+		if jobs != null and m.is_empty() and not _dead.has(str(i)) and not site.call("holds", i):
 			errors.append("pack %d (%s) did not load" % [i, str((plot_defs[i] as Dictionary)["dir"])])
 		var size: Vector2 = Vector2(float(default_size[0]), float(default_size[1]))
 		var fp: Variant = sp.get("footprint", m.get("footprint", null))
@@ -442,6 +445,7 @@ func _walk_tick(span_usec: int) -> void:
 		return
 	if not player_live:
 		player_pos = Tiers.call("position_at", player_script, tick)
+	site.call("tick", tick)                # S: the job logs move on; a promotion releases its plot
 	var events: Array = []
 	if is_replay:
 		for ev: Dictionary in replay_events.get(tick, []):
@@ -630,16 +634,9 @@ func _end() -> void:
 		"iter_ms_mean_settled": _mean(_iter_any.slice(mini(120, _iter_any.size()))),
 		"iter_ms_p99_settled": _pct(_iter_any.slice(mini(120, _iter_any.size())), 0.99)}
 	if sched != null:
-		world_line["load"] = load_report
-		world_line["walk"] = str(walk.get("name", ""))
-		world_line["replay"] = is_replay
-		world_line["cost"] = "measured" if cost_measured else "model"
-		world_line["events"] = (sched.get("log") as Array).size()
-		world_line["valve_demotions"] = int(sched.get("valve_demotions"))
-		world_line["speed_pm"] = int(sched.get("speed_pm"))
-		world_line["speed_min_pm"] = int(sched.get("speed_min_pm"))
-		world_line["slice"] = int(sched.get("slice"))
-		world_line["slice_max_seen"] = int(sched.get("slice_max_seen"))
+		world_line.merge({"load": load_report, "walk": str(walk.get("name", "")), "replay": is_replay, "cost": "measured" if cost_measured else "model",
+			"events": (sched.get("log") as Array).size(), "valve_demotions": int(sched.get("valve_demotions")), "speed_pm": int(sched.get("speed_pm")),
+			"speed_min_pm": int(sched.get("speed_min_pm")), "slice": int(sched.get("slice")), "slice_max_seen": int(sched.get("slice_max_seen"))})
 		if opts.has("log"):
 			var packs_out: Array = []
 			for i: int in packs.size():

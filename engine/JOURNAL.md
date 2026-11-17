@@ -986,3 +986,27 @@ PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built i
   with `randf()`; a bot press of `flip` at frame 200 adds `randi()` to `_pack_state().flips`. Selftest `diverge.` 4
   cases (frame 437, `body World/Crate`, bot `frame 200: _pack_state.flips`, bad_nondeterminism `frame 0: body
   World/...`): 0 of 4 before, 4 of 4 after.
+
+## The construction site (engine-world-next, lane S, worktree ew-site; 17-18 Nov, clock from `date`)
+
+- 23:11 to 00:05. Vision layer L5, unbuilt until now: a lot of the village shows a Foreman job being built from the
+  job's own `job.jsonl` and the promoted game ARRIVES on it. `kernel/world/site.gd` (the model, owned by the world
+  host), `site/log.gd` (the log, checked against the event table of contracts/JOB.md and foreman/src/events.ts, folded
+  into a view), `site/draw.gd` (the look: a sign with the job's title and "N of M built", one bay per package rising
+  with the log's own states, a crane turning to the bay being built), `site/fixtures/` (a failed job; a promoted job
+  whose game is a copy of ex_bounce), `walks/site.json` (one still per stage). Walk keys `landscape.lots[i].job` and
+  `.replay.ticks_per_event`; WORLD.md section S.
+- The arrival goes through the world's own build queue: a site lot with a log is a plot of the world from the start
+  (`site_<lot>`), HELD (no manifest: the queue never builds it; a negative size: the scheduler never puts anyone in it)
+  until the log's last `promoted` event; then the holder takes the manifest and the queue builds it as any arrival, a
+  `built` event in the world log; a later promotion is a `reload`. world.gd 672 -> 669 lines (four calls added, the
+  world line's ten scheduler keys folded into one `merge`); landscape.gd 592 -> 596 (the site helpers live in
+  site/draw.gd).
+- The 11 Nov hockey pack (kernelApi 0.1) loads on today's kernel (smoke 600 frames, 0 errors) and arrives on the
+  village's site lot (240, -55), radius 40: its 60 x 30 m rink and stands stand inside the fence; in the exe a script
+  of keys walks the visitor 300 m east, in through the gate, E puts it on stage (frame 2310), Q leaves (2760).
+- Proof: selftest `site.` 5 of 5 (0 before: the old world makes no site plot and prints no `[site]` line);
+  `site.arrival`: the arrived game's hash in the world = alone = replay; `world.sh tour tour --headless` PASS;
+  `export.sh` PASS and `export.sh check` PASS with 8 games (the site's game the same in the editor binary, the exe and
+  the moved exe). Measured: a live site looks at the file every 60 ticks; the village's 331-event log, 4000 ticks: 67
+  looks, 23.9 ms in all. In a window the queue built the hockey game 703 to 737 ticks after its release (busy).

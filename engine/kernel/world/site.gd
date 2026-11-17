@@ -1,0 +1,272 @@
+extends RefCounted
+## S (engine-world-next, 17-18 Nov 2026). The construction site: a lot of the village that shows a Foreman job being
+## built, from that job's own log, and on which the promoted game ARRIVES (vision layer L5, docs/FEASIBILITY.md).
+## The world host (world.gd) owns one; the landscape (landscape.gd) draws it (site/draw.gd). WORLD.md "The
+## construction site" has the model; contracts/JOB.md lists the events.
+##
+## Walk script, block `landscape`, per lot (all optional; absent = today's decorative lot):
+##   "job": "<job directory>"                 relative to the repository root, or absolute
+##   "replay": {"ticks_per_event": <int>}       the log is shown one event per that many world ticks (deterministic:
+##                                              walks, stills, tests); without it the site is LIVE: it follows the
+##                                              file as it grows (its size is looked at once every 60 ticks)
+## The site reads ONLY `<job>/job.jsonl` and `<job>/promoted/` and writes nothing there (JOB.md, 2026-11-17).
+##
+## Arrival. With a build queue (tiers `load.mode` queue, step, wait or auto) a site lot is a plot of the world from the
+## start, appended after the walk's plots (id `site_<lot index>`, radius = the lot's, origin = the lot's `at` and `h`).
+## Until the log's LAST `promoted` event names a pack under `promoted/`, that plot is HELD: its holder has no
+## manifest (the queue never builds it, jobs.gd `want`) and the scheduler sees it out of reach (its size is negative:
+## nobody stands in it and it is not entered). Then the holder takes the promoted pack's manifest, the plot gets its
+## size back and the queue builds it like any other arrival (a `built` event in the world log; a replay does the
+## same). A later promotion replaces the pack by a `reload` from the new directory.
+## The site is presentation: it never enters a state hash. Its report is one line `[site] {json}` at the world's end.
+
+const SiteLog: GDScript = preload("res://kernel/world/site/log.gd")
+const LOT_KEYS: Array = ["at", "radius", "h", "job", "replay"]
+const LIVE_EVERY: int = 60                  # live mode: the log's size is looked at once in this many world ticks
+const HELD_SIZE: Vector2 = Vector2(-1.0e7, -1.0e7)
+
+var world: Node = null
+var sites: Array = []                       # [{lot, job, dir, plot (index or -1), tpe (0 = live), log, n, view, arrived_dir, ...}]
+var warnings: Array = []
+var _held_applied: bool = false
+
+
+## Reads the walk's site lots; reserves a plot for each lot whose log is there (when the world has a build queue).
+## Sets `world.refused` for a site lot that breaks its schema (unknown keys are errors). Called once, before the
+## world builds its plots.
+func setup(world_node: Node, walk: Dictionary) -> void:
+	world = world_node
+	var land: Variant = walk.get("landscape", {})
+	var lots: Array = (land as Dictionary).get("lots", []) if typeof(land) == TYPE_DICTIONARY and typeof((land as Dictionary).get("lots")) == TYPE_ARRAY else []
+	var plots: Array = walk.get("plots", []) if typeof(walk.get("plots")) == TYPE_ARRAY else []
+	var reserved: Dictionary = {}           # a replayed world log carries the plots it reserved: lot index -> plot index
+	for i: int in plots.size():
+		if typeof(plots[i]) == TYPE_DICTIONARY and (plots[i] as Dictionary).has("site_lot"):
+			reserved[int((plots[i] as Dictionary)["site_lot"])] = i
+	for k: int in lots.size():
+		if typeof(lots[k]) != TYPE_DICTIONARY or not (lots[k] as Dictionary).has("job"):
+			continue
+		var lot: Dictionary = lots[k]
+		var why: String = _check_lot(lot)
+		if not why.is_empty():
+			world.set("refused", "walk script, landscape.lots[%d]: %s" % [k, why])
+			return
+		var dir: String = job_dir(str(lot["job"]))
+		var s: Dictionary = {"lot": k, "job": str(lot["job"]), "dir": dir, "plot": -1, "tpe": int((lot.get("replay", {}) as Dictionary).get("ticks_per_event", 0)),
+			"log": SiteLog.new(), "n": 0, "view": SiteLog.fold([], 0), "arrived_dir": "", "size_seen": -1, "reads": 0, "read_us": 0, "stage_ticks": {},
+			"at": [float((lot["at"] as Array)[0]), float(lot.get("h", 0.0)), float((lot["at"] as Array)[1])], "radius": float(lot.get("radius", 20.0))}
+		if dir.is_empty() or not FileAccess.file_exists(dir + "/job.jsonl"):
+			_warn("lot %d: no job log at '%s' (%s): the lot stays a plain building site" % [k, str(lot["job"]), dir + "/job.jsonl" if not dir.is_empty() else "not found"])
+			continue
+		if world.get("jobs") == null:
+			_warn("lot %d: the world has no build queue (tiers load.mode block): the job is shown, its game cannot arrive" % k)
+		elif reserved.has(k):
+			s["plot"] = reserved[k]
+		else:
+			s["plot"] = plots.size()
+			var r: float = float(s["radius"])
+			plots.append({"id": "site_%d" % k, "origin": s["at"], "radius": r, "footprint": {"size_m": [r * 2.0, r * 2.0]}, "seed": 1, "site_lot": k})
+		sites.append(s)
+	walk["plots"] = plots
+	if not sites.is_empty():
+		world.connect("ended", _on_ended)
+
+
+static func _check_lot(lot: Dictionary) -> String:
+	for key: Variant in lot.keys():
+		if not LOT_KEYS.has(str(key)):
+			return "unknown key '%s'" % str(key)
+	if typeof(lot.get("at")) != TYPE_ARRAY or (lot["at"] as Array).size() != 2:
+		return "'at' must be [x, z]"
+	if typeof(lot["job"]) != TYPE_STRING or str(lot["job"]).is_empty():
+		return "'job' must be a job directory (text)"
+	if lot.has("replay"):
+		if typeof(lot["replay"]) != TYPE_DICTIONARY:
+			return "'replay' must be an object"
+		for key: Variant in (lot["replay"] as Dictionary).keys():
+			if str(key) != "ticks_per_event":
+				return "unknown key 'replay.%s'" % str(key)
+		var tpe: Variant = (lot["replay"] as Dictionary).get("ticks_per_event")
+		if not (typeof(tpe) == TYPE_INT or typeof(tpe) == TYPE_FLOAT) or int(tpe) < 1 or float(tpe) != float(int(tpe)):
+			return "'replay.ticks_per_event' must be a whole number of at least 1"
+	return ""
+
+
+## A job directory: absolute, or relative to the repository root (the folder above the engine). In a worktree a
+## job that is not there is looked for in the main checkout too (job output under `site/` is not tracked).
+static func job_dir(job: String) -> String:
+	var p: String = job.replace("\\", "/").trim_suffix("/")
+	if p.is_absolute_path():
+		return p if DirAccess.dir_exists_absolute(p) else ""
+	var root: String = ProjectSettings.globalize_path("res://").replace("\\", "/").trim_suffix("/").get_base_dir()
+	if DirAccess.dir_exists_absolute(root + "/" + p):
+		return root + "/" + p
+	var wt: int = root.find("/.claude/worktrees/")
+	if wt >= 0 and DirAccess.dir_exists_absolute(root.substr(0, wt) + "/" + p):
+		return root.substr(0, wt) + "/" + p
+	return ""
+
+
+## The plot index `i` is a site's plot that is still held (no game arrived on it).
+func holds(i: int) -> bool:
+	for s: Dictionary in sites:
+		if int(s["plot"]) == i and str(s["arrived_dir"]).is_empty():
+			return true
+	return false
+
+
+## world.gd `_spawn_plot` with a build queue: a held site plot gets an empty holder (no manifest: the queue never
+## builds it; in the ledger: it is not a pack that failed to load); any other plot its stub as before.
+func stub(p: Node, i: int, dir: String) -> Node:
+	if not holds(i):
+		return p.call("stub", dir)
+	p.set("pack_dir", dir.path_join("(arriving)"))
+	p.set("ledgered", true)
+	p.set("finished", true)
+	p.set("running", false)
+	return p
+
+
+## Once per world tick, before the scheduler decides: the logs move on, a promotion releases its plot.
+func tick(t: int) -> void:
+	if sites.is_empty():
+		return
+	var sched: RefCounted = world.get("sched")
+	if not _held_applied and sched != null:
+		_held_applied = true
+		for s: Dictionary in sites:
+			if int(s["plot"]) >= 0:
+				((sched.get("plots") as Array)[int(s["plot"])] as Dictionary)["size"] = HELD_SIZE
+	for s: Dictionary in sites:
+		_read(s, t)
+		var n: int = (s["log"] as RefCounted).get("events").size()
+		if int(s["tpe"]) > 0:
+			n = mini(n, 1 + t / int(s["tpe"]))
+		if n != int(s["n"]):
+			s["n"] = n
+			s["view"] = SiteLog.fold((s["log"] as RefCounted).get("events"), n)
+			var st: String = str((s["view"] as Dictionary)["stage"])
+			if not (s["stage_ticks"] as Dictionary).has(st):
+				(s["stage_ticks"] as Dictionary)[st] = t
+		var pr: Dictionary = (s["view"] as Dictionary)["promoted"]
+		if int(s["plot"]) >= 0 and not pr.is_empty():
+			_arrive(s, pr, t)
+
+
+## Reads what is new in the log: a replay reads the whole file once; live mode looks at the size every LIVE_EVERY ticks.
+func _read(s: Dictionary, t: int) -> void:
+	if int(s["tpe"]) > 0 and int(s["reads"]) > 0:
+		return
+	if int(s["tpe"]) == 0 and int(s["reads"]) > 0 and t % LIVE_EVERY != 0:
+		return
+	var t0: int = Time.get_ticks_usec()
+	var path: String = str(s["dir"]) + "/job.jsonl"
+	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+	s["reads"] = int(s["reads"]) + 1
+	if f == null:
+		return
+	var size: int = f.get_length()
+	if size != int(s["size_seen"]):
+		s["size_seen"] = size
+		var lg: RefCounted = s["log"]
+		lg.call("feed", f.get_as_text())
+		if not str(lg.get("error")).is_empty() and not bool(s.get("said", false)):
+			s["said"] = true
+			_warn("lot %d: %s; the site shows the log up to there" % [int(s["lot"]), str(lg.get("error"))])
+	f.close()
+	s["read_us"] = int(s["read_us"]) + Time.get_ticks_usec() - t0
+
+
+func _arrive(s: Dictionary, pr: Dictionary, t: int) -> void:
+	var dest: String = str(pr["dest"]).trim_suffix("/")
+	if not dest.begins_with("promoted/"):
+		if not bool(s.get("said_dest", false)):
+			s["said_dest"] = true
+			_warn("lot %d: the game was promoted into the engine (%s), not under the job's promoted/: it does not arrive here" % [int(s["lot"]), dest])
+		return
+	var dir: String = str(s["dir"]) + "/" + dest
+	if dir == str(s["arrived_dir"]) or dir == str(s.get("missing", "")):
+		return
+	if not FileAccess.file_exists(dir + "/pack.json"):
+		s["missing"] = dir
+		_warn("lot %d: the promoted game %s has no pack.json: it does not arrive" % [int(s["lot"]), dest])
+		return
+	var i: int = int(s["plot"])
+	var p: Node = (world.get("packs") as Array)[i]
+	var def: Dictionary = (world.get("plot_defs") as Array)[i]
+	var sched: RefCounted = world.get("sched")
+	var pl: Dictionary = (sched.get("plots") as Array)[i]
+	var first: bool = str(s["arrived_dir"]).is_empty()
+	s["arrived_dir"] = dir
+	s["arrived_at"] = t
+	def["dir"] = dir
+	if first:
+		p.call("stub", dir)                     # the manifest: from now on the queue builds it when the scheduler wants it
+		pl["size"] = Vector2(float(s["radius"]) * 2.0, float(s["radius"]) * 2.0)
+	else:
+		p.set("pack_dir", dir)                  # a later promotion: the pack is replaced by a reload from the new directory
+		var mres: Dictionary = (load("res://kernel/runner/manifest.gd") as GDScript).call("read", dir)
+		if bool(mres.get("ok", false)):
+			p.set("manifest", mres["manifest"])
+	var m: Dictionary = p.get("manifest")
+	pl["pack"] = str(m.get("id", ""))
+	var has_bot: bool = typeof(m.get("tests")) == TYPE_ARRAY and not (m["tests"] as Array).is_empty()
+	pl["on_leave"] = "bot" if has_bot else "pause"
+	def["on_leave"] = pl["on_leave"]
+	if first and not bool(world.get("is_replay")) and not ["", "ledger"].has(str(pl["tier"])):
+		(world.get("jobs") as RefCounted).call("want", i)     # already near: no tier event will ask for it
+	if not first and not bool(world.get("is_replay")):
+		var ev: Dictionary = {"t": t, "e": "reload", "plot": str(pl["id"])}
+		(sched.get("log") as Array).append(ev)  # in the world log: a replay applies it at the same tick
+		world.call("_on_event", ev)
+	print("[site] lot %d: %s %s arrives on plot %s at world tick %d" % [int(s["lot"]), str(pr["packId"]), str(pr["version"]), str(pl["id"]), t])
+
+
+## The view of the site of lot `k` (site/draw.gd asks every frame): the log's fold plus where the site stands.
+func view_of(k: int) -> Dictionary:
+	for s: Dictionary in sites:
+		if int(s["lot"]) == k:
+			var v: Dictionary = (s["view"] as Dictionary).duplicate()
+			v["arrived"] = not str(s["arrived_dir"]).is_empty()
+			v["plot"] = int(s["plot"])
+			return v
+	return {}
+
+
+## The lot `k` is a construction site (its log was found): the landscape draws it as a site, not as a plain lot.
+func is_site(k: int) -> bool:
+	for s: Dictionary in sites:
+		if int(s["lot"]) == k:
+			return true
+	return false
+
+
+func report() -> Array:
+	var out: Array = []
+	for s: Dictionary in sites:
+		var v: Dictionary = s["view"]
+		var pk: Array = []
+		for b: Dictionary in v["packages"]:
+			pk.append("%s:%s%s" % [str(b["id"]), str(b["state"]), "+merged" if bool(b["merged"]) else ""])
+		var r: Dictionary = {"lot": int(s["lot"]), "job": str(s["job"]), "mode": "replay" if int(s["tpe"]) > 0 else "live",
+			"events": int(s["n"]), "events_in_file": (s["log"] as RefCounted).get("events").size(), "stage": str(v["stage"]),
+			"title": str(v["title"]), "built": int(v["built"]), "total": int(v["total"]), "job_state": str(v["job_state"]),
+			"packages": pk, "stage_ticks": s["stage_ticks"], "reads": int(s["reads"]), "read_ms": snappedf(float(int(s["read_us"])) / 1000.0, 0.01)}
+		if int(s["plot"]) >= 0:
+			r["plot"] = str(((world.get("plot_defs") as Array)[int(s["plot"])] as Dictionary)["id"])
+		if not str(s["arrived_dir"]).is_empty():
+			r["arrived"] = str(s["arrived_dir"]).get_file()
+			r["arrived_at"] = int(s["arrived_at"])
+		if not str((s["log"] as RefCounted).get("error")).is_empty():
+			r["log_error"] = str((s["log"] as RefCounted).get("error"))
+		out.append(r)
+	return out
+
+
+func _warn(text: String) -> void:
+	warnings.append(text)
+	print("[site] warning: " + text)
+
+
+func _on_ended(_bad: bool) -> void:
+	print("[site] " + JSON.stringify({"sites": report(), "warnings": warnings}, "", false))
