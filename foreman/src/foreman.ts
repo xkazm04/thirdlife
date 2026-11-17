@@ -12,9 +12,11 @@ import { BudgetGate, budgetVerdict } from "./budget.js";
 import { copyDir, hashFile, listFiles, matchesAny, pruneEmptyDirs, snapshot } from "./scope.js";
 import { engineWritable, promotePack, readManifest } from "./promoter.js";
 import { existingText, prepareReference, referenceText } from "./reference.js";
+import { cardBriefSection, cardIds, cardsPlannerText } from "./cards.js";
+import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
-import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
-import { critic, replanPackages, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
+import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
+import { critic, render, replanPackages, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
 import { drainInbox } from "./inbox.js";
 import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls } from "./p10.js";
@@ -40,22 +42,10 @@ export class ForemanError extends Error {
 /** Causes after which a failed package goes back to the Planner (a refusal, a budget stop or a cancel do not). */
 const REPLAN_CAUSES: Cause[] = ["verify_failed", "builder_error", "builder_timeout", "builder_truncated", "no_visible_change", "kit_regression"];
 
-const BUILDER_CAUSE: Record<Exclude<RunResult["outcome"], "ok">, Cause> = {
-  timeout: "builder_timeout",
-  truncated: "builder_truncated",
-  error: "builder_error",
-  refused: "builder_error",
-};
+const BUILDER_CAUSE: Record<Exclude<RunResult["outcome"], "ok">, Cause> = { timeout: "builder_timeout", truncated: "builder_truncated", error: "builder_error", refused: "builder_error" };
 
 /** Whole-pack verification after every merge: V0 to V2. */
-const PACK_GATE: Acceptance[] = [
-  { level: "V1", verb: "lint", args: [] },
-  { level: "V2", verb: "smoke", args: [] },
-];
-
-function render(template: string, vars: Record<string, string>): string {
-  return template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
-}
+const PACK_GATE: Acceptance[] = [{ level: "V1", verb: "lint", args: [] }, { level: "V2", verb: "smoke", args: [] }];
 
 function listDetail(label: string, files: string[]): string {
   const shown = files.slice(0, 20).join(", ");
@@ -71,6 +61,7 @@ export class Foreman {
   private gate!: BudgetGate;
   private mergeChain: Promise<unknown> = Promise.resolve();
   private verbs: RunnerVerbs | undefined;
+  private engineApi: string | undefined; // the engine's KERNEL_API (manifest.ts kernelApiFor): every pack.json of the job declares it
   /** N3b: packages whose round ended inconclusive (machine busy) in THIS run: not started again until the next run. */
   private readonly busyThisRun = new Set<string>();
   private readonly jobDir: string;
@@ -185,6 +176,8 @@ export class Foreman {
     if (this.s.jobState?.state === "cancelled" && !this.o.retryFailed) return this.s;
     // The runner's option list comes from the engine. Without it nothing is started and nothing is written.
     this.verbs = this.o.verbs ?? verbsFor(this.o.verifier.location);
+    // JOB.md 2026-11-17: the kernel version every pack.json declares is the engine's own; unreadable, nothing starts.
+    this.engineApi = kernelApiFor(this.o.verifier.location);
     for (const d of ["pack", "ws", "reports", "captures"]) fs.mkdirSync(this.dir(d), { recursive: true });
     const now = this.o.now ?? (() => new Date());
     const sleep = this.o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
@@ -278,7 +271,7 @@ export class Foreman {
       if (re.replanned) continue;
       const failed = views.filter((p) => p.state === "failed").map((p) => `${p.id} (${p.cause ?? "?"})`);
       const blocked = views.filter((p) => p.state === "blocked").map((p) => `${p.id} (${p.cause ?? "?"})`);
-      this.endJob("failed", clip([failed.length ? `failed: ${failed.join(", ")}` : "", blocked.length ? `blocked: ${blocked.join(", ")}` : "", re.reason].filter(Boolean).join("; "), 600));
+      this.endJob("failed", clip([failed.length ? `failed: ${failed.join(", ")}` : "", blocked.length ? `blocked: ${blocked.join(", ")}` : "", re.reason].filter(Boolean).join("; "), 600), true);
       break;
     }
     return this.s;
@@ -373,6 +366,7 @@ export class Foreman {
       packContract: this.packContract,
       ...(this.kernelApiText() !== undefined ? { kernelApi: this.kernelApiText() as string } : {}),
       existing: existingText(this.refDir()),
+      cards: cardsPlannerText(this.refDir()),
       builderTimeoutMs: this.o.builderTimeoutMs,
       kept,
       failed: allFailed.map((p) => {
@@ -388,6 +382,7 @@ export class Foreman {
           ...(model ? { model } : {}),
           ...(this.o.maxPackages !== undefined ? { maxPackages: this.o.maxPackages } : {}),
           verbs: this.verbs ?? verbsFor(this.o.verifier.location),
+          cards: cardIds(this.refDir()),
         });
     this.logGenerateCalls(res.calls, model);
     if (!res.ok) return { replanned: false, reason: `re-plan failed: ${clip(res.reason, 300)}` };
@@ -404,7 +399,7 @@ export class Foreman {
         changed: [...freshIds].filter((x) => oldIds.has(x)),
       });
     }
-    this.append({ type: "plan_set", packages: [...kept, ...fresh] });
+    this.append({ type: "plan_set", packages: [...kept, ...fresh], ...(s.card !== undefined ? { card: s.card } : {}) }); // the job's card stays (JOB.md 2026-11-17)
     for (const p of fresh) this.append({ type: "package_state", package: p.id, state: "queued", round: 1, detail: "replanned" });
     return { replanned: true, reason: "" };
   }
@@ -531,10 +526,10 @@ export class Foreman {
    * The pack's identity. The version is 0.1.0 until the first promotion and 0.1.<n> after the n-th: a change request
    * on a finished job therefore builds, verifies and promotes a pack with a new version (N3).
    */
-  private jobIdentity(): { packId: string; title: string; version: string } {
+  private jobIdentity(): { packId: string; title: string; version: string; kernelApi: string } {
     const n = this.s.promotions.length;
     const version = n === 0 ? PACK_VERSION : PACK_VERSION.replace(/\d+$/, String(n));
-    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled", version };
+    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled", version, kernelApi: (this.engineApi ??= kernelApiFor(this.o.verifier.location)) };
   }
 
   // ---------- the manifest fields a builder owns (PACK.md, 2026-11-11): footprint, params, on_leave, subject, moments ----------
@@ -1763,6 +1758,7 @@ export class Foreman {
       registers: JSON.stringify(spec.registers ?? {}),
       optionalFields: this.optionalFieldsText(),
       reference: this.referenceText(),
+      card: cardBriefSection(this.refDir(), s.card),
     });
   }
 
@@ -1865,7 +1861,7 @@ export class Foreman {
   private async finish(): Promise<boolean> {
     // Promoted already and pack/ has not changed since: nothing to verify or promote again. A merge after the last
     // promotion (a change request) goes through the whole final verification and a NEW promotion.
-    if (this.s.promoted && !this.s.mergedSincePromotion) {
+    if (this.s.promoted && (!this.s.mergedSincePromotion || packIsLastPromotion(this.gateHost))) {
       const unmade = this.s.changes.length > 0 ? "; no merge since the last promotion (a change that was asked for was not made: see the package's detail)" : "";
       this.endJob("done", `all packages promoted${unmade}`);
       return false;
@@ -1899,10 +1895,10 @@ export class Foreman {
         if (back === "sent") return true;
         if (back === "spent") {
           const p = this.s.promoted;
-          this.endJob("done", clip(`the change was NOT made: the final verification still fails at ${a.verb} (${vr.level}) after ${finalSent(this.gateHost)} round(s) that it sent back to a package (limit ${finalLimit(this.gateHost)}); the job ends on the earlier promotion ${p?.packId ?? "?"} ${p?.version ?? "?"} (${p?.dest ?? "?"}), which is untouched and still the pack to play. pack/ holds the unpromoted files of the change. Last failure: ${vr.summary}`, 700));
+          this.endJob("done", clip(`the change was NOT made: the final verification still fails at ${a.verb} (${vr.level}) after ${finalSent(this.gateHost)} round(s) that it sent back to a package (limit ${finalLimit(this.gateHost)}); the job ends on the earlier promotion ${p?.packId ?? "?"} ${p?.version ?? "?"} (${p?.dest ?? "?"}), which is untouched and still the pack to play.${restoreLastPromotion(this.gateHost)} Last failure: ${vr.summary}`, 900));
           return false;
         }
-        this.endJob("failed", clip(`final verification failed at ${a.verb} (${vr.level}): ${vr.summary}`, 400));
+        this.endJob("failed", clip(`final verification failed at ${a.verb} (${vr.level}): ${vr.summary}`, 400), true);
         return false;
       }
     }
@@ -1977,8 +1973,10 @@ export class Foreman {
   }
 
   /** The end of a job. The reducer closes the budget's derived state on this event (joblog.ts). */
-  private endJob(state: "done" | "failed", reason: string): void {
-    this.append({ type: "job_state", state, reason });
+  private endJob(state: "done" | "failed", reason: string, unmade = false): void {
+    // unmade: an ending without a promotion; after a change, pack/ goes back to the last promotion first (unmade.ts).
+    const restored = unmade ? restoreLastPromotion(this.gateHost) : "";
+    this.append({ type: "job_state", state, reason: restored ? `${reason} The change was NOT made.${clip(restored, 400)}` : reason });
   }
 
   /**

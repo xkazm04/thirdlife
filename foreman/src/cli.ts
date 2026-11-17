@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { ADAPTERS, BUDGET_KINDS, EventError, VERBS, type AdapterName, type BudgetPolicy, type JobEvent, type Milestone, type PackageSpec, type Verb } from "./events.js";
+import { ADAPTERS, BUDGET_KINDS, EventError, VERBS, type AdapterName, type BudgetPolicy, type JobEvent, type Milestone, type Verb } from "./events.js";
 import { JobLog, LogError, foldEvents, readLog, rebuildState, type JobState } from "./joblog.js";
 import { explain, explainText } from "./explain.js";
 import type { Builder, ProbeResult } from "./builder/types.js";
@@ -13,7 +13,9 @@ import { ClaudeCliBuilder } from "./builder/claude-cli.js";
 import { MessagesApiBuilder } from "./builder/messages-api.js";
 import { Verifier, resolveRunner } from "./verifier.js";
 import { Foreman, ForemanError, restsOnAClock } from "./foreman.js";
-import { designBrief, planCheck, planPackages, renderPlannerPrompt, type GenerateCall } from "./designer.js";
+import { designBrief, planCheck, planPackages, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
+import { cardIds, cardsPlannerText } from "./cards.js";
+import { KernelApiError } from "./manifest.js";
 import { existingText, isEmptyReference, prepareReference, referenceOf } from "./reference.js";
 import { schemaErrors } from "./builder/json.js";
 import { killAllChildren, type SpawnFn } from "./proc.js";
@@ -232,16 +234,13 @@ function engineDirFor(a: Args, jobDir: string): string {
   return resolveRunner(env, flagEngine ? { engineDir: flagEngine } : {}).engineDir;
 }
 
-/**
- * What the Planner is told beyond the brief: the kernel API text, what exists (read from <job>/ref, which is
- * prepared here from the engine directory if the job has none yet) and the builder time limit.
- */
-function plannerContext(a: Args, jobDir: string): { kernelApi?: string; existing: string; builderTimeoutMs?: number } {
+/** What the Planner is told beyond the brief: the kernel API, what exists and the cards (from <job>/ref, prepared here if missing), the time limit. */
+function plannerContext(a: Args, jobDir: string): { kernelApi?: string; existing: string; cards: string; builderTimeoutMs?: number } {
   const refDir = path.join(jobDir, "ref");
   if (a.flags["no-reference"] !== true) prepareReference(refDir, referenceOf(engineDirFor(a, jobDir)));
   const api = path.join(refDir, "API.md");
   const t = num(a, "builder-timeout-ms");
-  return { ...(fs.existsSync(api) ? { kernelApi: fs.readFileSync(api, "utf8") } : {}), existing: existingText(refDir), ...(t !== undefined ? { builderTimeoutMs: t } : {}) };
+  return { ...(fs.existsSync(api) ? { kernelApi: fs.readFileSync(api, "utf8") } : {}), existing: existingText(refDir), cards: cardsPlannerText(refDir), ...(t !== undefined ? { builderTimeoutMs: t } : {}) };
 }
 
 function printProbe(p: ProbeResult, out: (s: string) => void): void {
@@ -573,20 +572,22 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         const s = log.state;
         if (!s.brief || !s.sentence || !s.packId || !s.title) throw new UsageError("this job has no brief yet");
         if (!s.briefApprovedBy) throw new UsageError("the brief is not approved yet (foreman approve <job>)");
-        let packages: PackageSpec[];
+        let answer: PlanAnswer;
         const maxPackages = num(a, "max-packages");
-        // The runner's option list is read from the engine before anything else happens: no file, no plan.
+        // The runner's option list is read from the engine before anything else happens: no file, no plan. Then the
+        // reference copy (ref/) for both paths: a plan's `card` must be one of ref/cards/ (JOB.md 2026-11-17).
         const limits = { ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}), verbs: verbsOf(a, jobDir) };
+        const ctx = plannerContext(a, jobDir);
+        const known = { ...limits, cards: cardIds(path.join(jobDir, "ref")) };
         if (from !== undefined) {
-          const doc = JSON.parse(fs.readFileSync(path.resolve(from), "utf8")) as unknown;
-          const planSchema = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, "prompts", "plan.schema.json"), "utf8")) as object;
-          const errs = schemaErrors(planSchema, doc);
-          if (errs.length === 0) errs.push(...planCheck((doc as { packages: PackageSpec[] }).packages, limits));
+          const doc = JSON.parse(fs.readFileSync(path.resolve(from), "utf8")) as PlanAnswer;
+          const errs = schemaErrors(JSON.parse(fs.readFileSync(path.join(PKG_ROOT, "prompts", "plan.schema.json"), "utf8")) as object, doc);
+          if (errs.length === 0) errs.push(...planCheck(doc.packages, known, doc.card));
           if (errs.length > 0) {
             out(`plan rejected:\n${errs.map((e) => `  - ${e}`).join("\n")}`);
             return 1;
           }
-          packages = (doc as { packages: PackageSpec[] }).packages;
+          answer = doc;
         } else {
           const builder = makeBuilder(a, jobDir);
           const probe = await ensureBilling(log, builder);
@@ -595,18 +596,15 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
             return 1;
           }
           const model = str(a, "model");
-          const res = await planPackages(
-            builder,
-            { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, ...plannerContext(a, jobDir) },
-            { ...(model ? { model } : {}), ...limits },
-          );
+          const res = await planPackages(builder, { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, ...ctx }, { ...(model ? { model } : {}), ...known });
           writeGenerateCalls(log, builder, res.calls, model);
           if (!res.ok) {
             out(`Planner failed: ${res.reason}`);
             return 1;
           }
-          packages = res.value.packages;
+          answer = res.value;
         }
+        const { packages, card } = answer;
         if (log.state.plan.length > 0) {
           const old = new Set(log.state.order);
           const next = new Set(packages.map((p) => p.id));
@@ -618,9 +616,9 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
             changed: [...next].filter((x) => old.has(x) && JSON.stringify(log.state.plan.find((p) => p.id === x)) !== JSON.stringify(packages.find((p) => p.id === x))),
           });
         }
-        log.append({ type: "plan_set", packages });
+        log.append({ type: "plan_set", packages, ...(card !== undefined ? { card } : {}) });
         for (const p of packages) if (!log.state.packages[p.id]?.announced) log.append({ type: "package_state", package: p.id, state: "queued", round: 1 });
-        out(`plan set: ${packages.map((p) => `${p.id}${p.deps.length ? `<-${p.deps.join("+")}` : ""}`).join(", ")}`);
+        out(`plan set${card !== undefined ? ` (card ${card})` : ""}: ${packages.map((p) => `${p.id}${p.deps.length ? `<-${p.deps.join("+")}` : ""}`).join(", ")}`);
         return 0;
       } finally {
         log.close();
@@ -853,7 +851,7 @@ if (invoked) {
     },
     (e: unknown) => {
       // Expected refusals (bad usage, a log that does not read, a job without a plan) are one line, not a stack.
-      if (e instanceof UsageError || e instanceof LogError || e instanceof ForemanError || e instanceof EventError || e instanceof VerbsError) process.stderr.write(`${e.name === "Error" ? "" : `${e.name}: `}${e.message}\n`);
+      if (e instanceof UsageError || e instanceof LogError || e instanceof ForemanError || e instanceof EventError || e instanceof VerbsError || e instanceof KernelApiError) process.stderr.write(`${e.name === "Error" ? "" : `${e.name}: `}${e.message}\n`);
       else process.stderr.write(`${e instanceof Error ? (e.stack ?? e.message) : String(e)}\n`);
       process.exitCode = 2;
     },

@@ -13,6 +13,23 @@ Brief:
 # What already exists (use it; do not plan to rebuild it)
 {{existing}}
 
+# Recipe cards (choose one for the whole job, or none)
+A recipe card is the tested advice for one kind of game on this engine: the seed or house game to start from, the
+kit parts, the API calls, the data files, the do's and don'ts, the bot to copy and what must hold before the game is
+offered. Every builder of this job is given the card you name, word for word.
+{{cards}}
+
+How to choose:
+- Read the player's sentence and the brief. A card fits when the game matches its `applies when` lines (most of
+  them, and the core one: who the player is and how points are won) and NONE of its `NOT when` lines.
+- A `NOT when` line that matches rules the card out, however well the rest fits; it often names where to go instead.
+- If one card fits, put its id in the answer as `"card"` (for example `"card": "card.knock_down"`) and write the
+  root package's contract from it: start from the card's seed or house game, use its data files and kit parts, copy
+  its bot. If two fit, take the one whose `applies when` lines match more of the request.
+- If no card fits, OMIT the `card` key (never `null`, never an empty string). A card that does not fit sends every
+  builder the wrong way; no card is better than a wrong one.
+- Name only an id from the list above; any other id is refused.
+
 # How the work is built (size the packages for this)
 - Each package is built by ONE builder run with a **hard time limit of {{timeLimit}} minutes** of wall clock. A run
   that is not finished by then is killed and its round is lost. For scale: in the first real job a root package of
@@ -89,7 +106,7 @@ Unknown keys are errors.
 
 {{schema}}
 
-# Pack contract (kernelApi 0.1)
+# Pack contract (`contracts/PACK.md`)
 {{packContract}}
 
 # Kernel API (what a pack script may call; the builders get the same text)

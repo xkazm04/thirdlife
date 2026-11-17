@@ -100,7 +100,7 @@ export type EventBody =
   | { type: "job_created"; sentence: string; packId: string; title: string }
   | { type: "brief_set"; brief: Brief; estimate: Estimate }
   | { type: "brief_approved"; by: "player" | "auto" }
-  | { type: "plan_set"; packages: PackageSpec[] }
+  | { type: "plan_set"; packages: PackageSpec[]; /** JOB.md 2026-11-17: the recipe card the Planner chose; omitted when none. */ card?: string }
   | { type: "package_state"; package: string; state: PackageState; round: number; cause?: Cause; detail?: string }
   | {
       type: "builder_run";
@@ -219,7 +219,7 @@ const SPECS: Record<EventType, Spec> = {
   },
   brief_set: { required: { brief: briefSchema, estimate: estimateSchema } },
   brief_approved: { required: { by: { enum: ["player", "auto"] } } },
-  plan_set: { required: { packages: { type: "array", minItems: 1, items: packageSpecSchema } } },
+  plan_set: { required: { packages: { type: "array", minItems: 1, items: packageSpecSchema } }, optional: { card: { type: "string", pattern: "^card\\.[a-z][a-z0-9_]*$" } } },
   package_state: {
     required: { package: pkgId, state: { enum: PACKAGE_STATES }, round: int1 },
     optional: { cause: { enum: CAUSES }, detail: str },

@@ -1,0 +1,67 @@
+{
+  "schema": "tl.card/1",
+  "id": "card.team_possession",
+  "version": "0.1.0",
+  "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
+  "summary": "Two teams of a few walkers or skaters on a bounded rink; whoever has the puck inside his reach carries it on his stick, passes to a mate or shoots; a puck inside a goal volume is a point; periods and a score decide. The worked example is the house game hockey (engine/packs/hockey). Covers ice hockey, street hockey, five-a-side football, a team ball game with carriers and passes.",
+  "applies_when": [
+    "two teams of several players each, the player controls one of them and the others are run by the AI",
+    "players carry the ball or puck themselves, pass it to mates and shoot it at the other team's goal",
+    "a point is the ball or puck inside a goal; the match ends by a score or by periods on a clock"
+  ],
+  "not_when": [
+    "one piece per side on a rail or in its own half returning the ball by contact (pong, air hockey): use card.two_sides_ball",
+    "no opponent team: targets to knock down use card.knock_down, a course against the clock card.timed_drive",
+    "a full simulation with goalies, offside or line changes (hockey shows none of them; see its README, known limits)"
+  ],
+  "pack": "hockey",
+  "capabilities": ["physics", "input", "ui", "camera", "rules", "ball", "kit", "style", "biped", "ai", "audio", "vfx"],
+  "kit_parts": ["rink", "goal", "puck", "stands", "scoreboard", "light_mast", "sign", "flag", "entrance"],
+  "swap_parts": ["ball", "ground_patch", "fence", "barrier_wall"],
+  "api": [
+    "TLKit.build_layout", "TLKit.build", "TLKitSite.bind_scoreboard", "TLBiped.create", "TLBall.create", "TLBall.hold",
+    "TLBall.release", "TLBodies.trigger", "TLSteer.arrive", "TLSteer.separate", "TLHand.create", "TLRules.create",
+    "TLRules.add_score", "TLRules.is_over", "TLRules.snapshot", "TLHud.create", "TLHud.add_score", "TLHud.add_clock",
+    "TLVfx.burst", "TLAudio.play"
+  ],
+  "rules_keys": ["sides", "score_to_win", "periods", "period_seconds", "sudden_death", "time_limit_seconds"],
+  "data_files": [
+    {"file": "data/venue.json", "role": "the play space as one tl.layout/1 file: the rink and the two goals"},
+    {"file": "data/venue_art.json", "role": "the dressing as a second tl.layout/1 file: stands, scoreboards, light masts, signs, flags, the entrance"},
+    {"file": "data/tuning.json", "role": "the rules object TLRules is created from (sides, score, periods) plus skater, shot, carry (reach, pass speed) and camera numbers"},
+    {"file": "data/ai.json", "role": "what the AI skaters do: roles, reaction, how they chase, pass and shoot"},
+    {"file": "data/levels/rookie.json", "role": "one difficulty level of the opponents (reaction frames, speed share); pro and all-star beside it"},
+    {"file": "data/modes/base.json", "role": "one mode as data (roster, rules, rink); the other modes are files beside it"}
+  ],
+  "do": [
+    "Decide possession by reach: a loose puck inside a player's ring is his on that frame; carry it with TLBall.hold and let it go with TLBall.release for a shot or a pass.",
+    "Put a goal volume in each net (TLBodies.trigger) and read the puck's position against it every live tick: a puck inside counts carried, released or lying there, not only on the enter event.",
+    "Keep the rule set, the levels and the modes as data files; the script reads them and only TLRules decides the score and the end.",
+    "Move the AI players with TLSteer (arrive, separate) from roles in data/ai.json; difficulty is their reaction and speed, not hidden help.",
+    "Name the player's check: one bot drives the human side's actions and fails when that side never touched the puck.",
+    "Read every difficulty figure through a hand (TLHand: perfect, sharp, regular, newcomer), never through a perfect bot alone."
+  ],
+  "dont": [
+    "Do not let the human's AI mates take a loose puck he is as near to: they yield it to him (scripts/ai/brain.gd).",
+    "Do not hand the puck to anybody at a face-off: drop it between the two centre men outside both reaches.",
+    "Do not animate a hit by hand: the closing speed picks bump, stumble or knockdown (numbers in data/tuning.json hits) and TLBiped's own down, stumble and shove play it.",
+    "Do not tune the levels against the perfect hand: the ladder is read per hand (tl ladder)."
+  ],
+  "bot": {
+    "template": "tests/bot_hockey.gd",
+    "plays_by": "the human side's own actions through a TLHand: it gets behind the puck on the far side from the other goal, dribbles toward the goal around the opponents and shoots when within range and lined up.",
+    "wins_when": "the match reached its result (the HUD reads WIN, LOSE or DRAW) and the bot's skater took the puck at least once; who won is a number in the result, the must-win verdict is a separate ladder cell."
+  },
+  "acceptance": [
+    "The bot plays a match to its result and takes the puck at least once, on seeds 1 to 20.",
+    "A player who does nothing never takes the puck and does not win the face-off.",
+    "A bot-only match ends with both sides scoring and nobody outside the rink.",
+    "Every mode file ends by its own rules inside its frame budget.",
+    "Lint reports 0 bypasses; the win share per level is quoted with the hand it was read through."
+  ],
+  "variants": [
+    {"ask": "football instead of hockey", "change": "the kit's ball for the puck and ground_patch for the rink in data/venue.json; walkers instead of skaters in data/tuning.json; the same possession by reach."},
+    {"ask": "more or fewer players a side", "change": "a mode file under data/modes/ with its roster; big ice is two against two."},
+    {"ask": "harder opponents", "change": "a level file under data/levels/: less reaction delay and more speed; measure it with tl ladder per hand."}
+  ]
+}

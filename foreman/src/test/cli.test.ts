@@ -119,6 +119,11 @@ test("cli: without a job config the runner comes from TL_GODOT and TL_ENGINE_DIR
   // (without it the run stops before anything is verified: n3.test.ts, item 4).
   fs.mkdirSync(path.join(job2.engineDir, "kernel", "runner"), { recursive: true });
   fs.copyFileSync(path.join(PKG_ROOT, "fixtures", "engine", "kernel", "runner", "verbs.json"), path.join(job2.engineDir, "kernel", "runner", "verbs.json"));
+  // 2026-11-17: so does the engine's kernel version (kernel/runner/manifest.gd): without it nothing starts (exit 2).
+  const noApi = await cli(["run", job2.jobDir, "--adapter", "fake", "--round-limit", "1"], { TL_GODOT: path.join(job2.root, "no-such-godot.exe"), TL_ENGINE_DIR: job2.engineDir });
+  assert.equal(noApi.exitCode, 2, noApi.stderr);
+  assert.match(noApi.stderr, /^KernelApiError: the engine's kernel API version cannot be read: no [^\n]*kernel\/runner\/manifest\.gd/);
+  fs.copyFileSync(path.join(PKG_ROOT, "fixtures", "engine", "kernel", "runner", "kernel_api.txt"), path.join(job2.engineDir, "kernel", "runner", "manifest.gd"));
   const bad = await cli(["run", job2.jobDir, "--adapter", "fake", "--round-limit", "1"], { TL_GODOT: path.join(job2.root, "no-such-godot.exe"), TL_ENGINE_DIR: job2.engineDir });
   assert.equal(bad.exitCode, 1);
   assert.match(bad.stdout, /core\s+failed\s+1\s+blockout\s+1\s+verify_failed/);

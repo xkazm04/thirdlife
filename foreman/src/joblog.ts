@@ -159,6 +159,8 @@ export interface JobState {
   briefApprovedBy?: "player" | "auto";
   planRevision: number;
   plan: PackageSpec[];
+  /** The recipe card the last plan_set names (JOB.md 2026-11-17); absent when it names none. */
+  card?: string;
   /** Package ids in plan order. */
   order: string[];
   packages: Record<string, PackageView>;
@@ -276,6 +278,8 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
             };
       }
       s.packages = next;
+      if (ev.card !== undefined) s.card = ev.card;
+      else delete s.card;
       break;
     }
     case "package_state": {

@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { copyDir } from "./scope.js";
 import { toPosix } from "./paths.js";
+import { cardsIndexText, readCards } from "./cards.js";
 
 export interface Reference {
   /** kernel/API.md -> ref/API.md */
@@ -17,6 +18,10 @@ export interface Reference {
   seedsDir?: string;
   /** Single documents, with their place under ref/ (kits/KIT.md, kits/LAYOUT.md, rigs/RIGS.md, style/STYLE.md). */
   docs?: { src: string; dest: string }[];
+  /** The engine's recipe cards (cards/*.json) -> ref/cards/, plus ref/cards/INDEX.md (JOB.md 2026-11-17). */
+  cardsDir?: string;
+  /** House games a card names as its worked example (`pack`): engine packs/<name>/ -> ref/packs/<name>/, whole. */
+  housePacks?: string[];
 }
 
 /** Engine-relative documents copied to the same relative path under ref/, when the engine has them. */
@@ -29,7 +34,14 @@ export function referenceOf(engineDir: string): Reference {
   const data = ["materials.json", "surfaces.json"].map((f) => path.join(engineDir, "kernel", "data", f)).filter((f) => fs.existsSync(f));
   const seedsDir = path.join(engineDir, "seeds");
   const docs = REFERENCE_DOCS.map((d) => ({ src: path.join(engineDir, ...d.split("/")), dest: d })).filter((d) => fs.existsSync(d.src));
+  const cardsDir = path.join(engineDir, "cards");
+  const housePacks = [...new Set(readCards(cardsDir).map((c) => c.card.pack).filter((p): p is string => typeof p === "string"))]
+    .sort()
+    .map((p) => path.join(engineDir, "packs", p))
+    .filter((d) => fs.existsSync(path.join(d, "pack.json")));
   return {
+    ...(housePacks.length > 0 ? { housePacks } : {}),
+    ...(readCards(cardsDir).length > 0 ? { cardsDir } : {}),
     ...(fs.existsSync(apiDoc) ? { apiDoc } : {}),
     ...(examples.length > 0 ? { examples } : {}),
     ...(data.length > 0 ? { data } : {}),
@@ -39,7 +51,7 @@ export function referenceOf(engineDir: string): Reference {
 }
 
 export function isEmptyReference(ref: Reference): boolean {
-  return !ref.apiDoc && !ref.examples?.length && !ref.data?.length && !ref.seedsDir && !ref.docs?.length;
+  return !ref.apiDoc && !ref.examples?.length && !ref.data?.length && !ref.seedsDir && !ref.docs?.length && !ref.cardsDir && !ref.housePacks?.length;
 }
 
 /** Directories directly under seeds/ that hold a pack.json. */
@@ -81,6 +93,14 @@ export function prepareReference(refDir: string, ref: Reference | undefined): vo
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(d.src, dest);
   }
+  // Recipe cards: every card file byte for byte, and INDEX.md, the `tl cards list` table of them.
+  const cards = ref.cardsDir ? readCards(ref.cardsDir) : [];
+  if (ref.cardsDir && cards.length > 0) {
+    fs.mkdirSync(path.join(refDir, "cards"), { recursive: true });
+    for (const c of cards) fs.copyFileSync(path.join(ref.cardsDir, c.file), path.join(refDir, "cards", c.file));
+    fs.writeFileSync(path.join(refDir, "cards", "INDEX.md"), cardsIndexText(cards.map((c) => c.card)));
+  }
+  for (const p of ref.housePacks ?? []) if (fs.existsSync(p)) copyDir(p, path.join(refDir, "packs", path.basename(p)));
 }
 
 /** What a reference copy holds, by name. */
@@ -92,6 +112,10 @@ export interface RefContents {
   seeds: string[];
   /** Present documents among REFERENCE_DOCS. */
   docs: string[];
+  /** Card ids under ref/cards/. */
+  cards: string[];
+  /** House games under ref/packs/ (the worked examples of cards). */
+  packs: string[];
 }
 
 export function refContents(refDir: string): RefContents {
@@ -103,6 +127,8 @@ export function refContents(refDir: string): RefContents {
     seedsReadme: fs.existsSync(path.join(refDir, "seeds", "README.md")),
     seeds: seedPacks(path.join(refDir, "seeds")),
     docs: REFERENCE_DOCS.filter((d) => fs.existsSync(path.join(refDir, ...d.split("/")))),
+    cards: readCards(path.join(refDir, "cards")).map((c) => c.card.id),
+    packs: seedPacks(path.join(refDir, "packs")),
   };
 }
 
@@ -138,6 +164,7 @@ export function referenceText(refDir: string): string {
   lines.push("What is in the reference copy:");
   if (c.seedsReadme) lines.push(`- How to write a pack (start here): ${at("seeds", "README.md")}`);
   for (const s of c.seeds) lines.push(`- Seed game (a complete pack that passes every verifier level): ${at("seeds", s)}/`);
+  for (const p of c.packs) lines.push(`- House game (the worked example of a recipe card; complete, tracked and gated): ${at("packs", p)}/`);
   for (const d of c.docs) lines.push(`- ${DOC_LINE[d] ?? d}: ${at(...d.split("/"))}`);
   if (c.api) lines.push(`- Kernel API (everything a pack script may call, with examples${c.seedsReadme ? "" : "; READ IT FIRST"}): ${at("API.md")}`);
   for (const e of c.examples) lines.push(`- Example pack that passes every verifier level: ${at("examples", e)}/ (pack.json, scripts/, tests/, data/)`);
@@ -187,6 +214,7 @@ export function existingText(refDir: string): string {
     lines.push(`- **Seed games** (complete packs that pass every verifier level, under \`ref/seeds/\`): ${c.seeds.join(", ")}. Every builder is told to copy the nearest one.`);
   }
   for (const e of c.examples) lines.push(`- Small example pack: \`ref/examples/${e}/\`.`);
+  if (c.cards.length > 0) lines.push(`- **Recipe cards** (\`ref/cards/INDEX.md\`; each card in full in \`ref/cards/<name>.json\`): ${c.cards.join(", ")}. The section "Recipe cards" below says how to name the one that fits.`);
   if (lines.length === 0 || (c.docs.length === 0 && c.seeds.length === 0)) {
     lines.push("This engine has no kit, no rigs, no style layer and no seed games: builders work from the kernel API and the example packs alone.");
   } else {

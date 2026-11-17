@@ -576,3 +576,26 @@ PATCHES-P10.md entry 5, option 2: `foreman.ts` back under its grandfathered 2138
   "Invalid access of index '0'" and the process never quits (the filtered ui.sh printed nothing in 300 s; killed).
   `--check-only` on panel.gd and foreman_door.gd: clean. The selftest is owed on the main checkout.
 - 15:05 `tl arch` ok; `tl check --tier fast` ok (arch, assets, cards, devx.test 123 pass, foreman.typecheck).
+
+## 2026-11-17/18 night, lane C (engine-world-next): the Foreman builds from recipe cards
+
+- Cards in a job (JOB.md "Added 2026-11-17"): `src/cards.ts` (new). The reference copy holds every card of the engine
+  under `ref/cards/` (byte copies) plus `ref/cards/INDEX.md` (the `tl cards list` lines), and every house pack a card
+  names, whole, under `ref/packs/<pack>/` (hockey: 172,464 bytes, 52 files). The Planner prompt has a "Recipe cards"
+  section (id, applies when, NOT when, how to choose, omit when none fits); `plan.schema.json` takes optional `card`;
+  the plan check refuses an id that is not in `ref/cards/` (`planCheck(packages, limits, card)`, `limits.cards`);
+  `plan_set.card` is written when present and omitted otherwise; a replan's `plan_set` repeats the job's card.
+  Builder briefs of such a job carry `## Recipe card`, one line mapping the card's engine path to the reference copy,
+  then the card text exactly as `tl cards brief <id>` prints it: both come from `devx/lib/cards/brief.mjs` (typed by
+  `brief.d.mts`), which this package imports (`../../devx/lib/cards/brief.mjs`, the same relative path from src/ and
+  dist/). One implementation, so the brief and the command cannot drift.
+- Kernel version (C2): no constant. `manifest.ts kernelApiFor(location)` reads `const KERNEL_API: String = "x.y"` from
+  `<engine>/kernel/runner/manifest.gd`; the bundled fake runner with an empty engine reads
+  `fixtures/engine/kernel/runner/kernel_api.txt`; otherwise `KernelApiError` before any event (cli exit 2).
+- Change not made (C3): `src/unmade.ts restoreLastPromotion` puts pack/ back to the last promotion before the job's
+  state event (unpromoted pack kept in `reports/change-not-made-s<seq>/pack/`, `merge` events re-align the log's file
+  lists); `finish()` treats a pack/ byte-identical to the last promotion as nothing merged.
+- Ratchets held: cli.ts 859 lines (baseline 861), foreman.ts 2003 (baseline 2005); `render` now lives in designer.ts.
+- Tests: `src/test/cards.test.ts` (8 cases); p10 "rounds are spent" extended, p10 "not that merge's doing" copies the
+  kept files back by hand (its premise was the unmade change left in pack/); cli env test copies the kernel version
+  file into its stand-in engine and checks the exit 2 without it; wp3b expects the fake engine's 1.5.

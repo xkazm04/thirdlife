@@ -7,7 +7,7 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { cleanup, tempDir, tempJob, foremanFor, readEvents, scriptWith, fixturePlan, fastVerifier, VERBS, type TempJob } from "./helpers.js";
+import { cleanup, tempDir, tempJob, foremanFor, readEvents, scriptWith, fixturePlan, fastVerifier, packFiles, VERBS, type TempJob } from "./helpers.js";
 import { FakeBuilder, type FakeScript, type FakeStep } from "../builder/fake.js";
 import type { Builder } from "../builder/types.js";
 import { planCheck, playerCheckProblems, playerChecks, renderPlannerPrompt } from "../designer.js";
@@ -23,6 +23,8 @@ import { FAKE_RUNNER, PKG_ROOT, REPO_ROOT } from "../paths.js";
 after(cleanup);
 
 const ofType = <T extends JobEvent["type"]>(evs: JobEvent[], type: T): Extract<JobEvent, { type: T }>[] => evs.filter((e) => e.type === type) as Extract<JobEvent, { type: T }>[];
+/** The last failing check of a final verification (reports/final-*). */
+const finalFail = (evs: JobEvent[]): Extract<JobEvent, { type: "verify" }> | undefined => ofType(evs, "verify").filter((e) => /^reports\/final-/.test(e.report) && !e.ok).at(-1);
 const states = (evs: JobEvent[], pkg: string): string[] => ofType(evs, "package_state").filter((e) => e.package === pkg).map((e) => `${e.state}${e.round}`);
 const promptsOf = (b: FakeBuilder, pkg: string): string[] => b.calls.filter((c) => c.req.meta?.role === "builder" && c.req.meta?.package === pkg).map((c) => c.req.prompt);
 const CLI = path.join(PKG_ROOT, "dist", "cli.js");
@@ -137,6 +139,12 @@ test("1 pack tests: a test that fails with AND without the round's files is not 
   const first = await foremanFor(job, { promoteTo: "job", roundLimit: 1, finalRounds: 0, packTests: "never", script: hockeyScript([aiStuck]) }).foreman.run();
   assert.equal(first.jobState?.state, "failed", "before P10 (no final rounds): the final verification ends the job");
   assert.equal(readEvents(job.jobDir).filter((e) => e.seq > before && e.type === "verify" && /-pack-bot-|-control-bot-/.test(reportOf(e))).length, 0, "packTests never: no pack test ran");
+  // 2026-11-17 (JOB.md, change not made): the failed change was put back, pack/ is the promotion again. This test
+  // needs the AI's bot already failing on pack/ before the next request, so the unmade change's files are copied
+  // back from where they were kept, by hand, as an operator could.
+  const keptAt = /kept only in (reports\/change-not-made-s\d+\/pack)\//.exec(first.jobState?.reason ?? "")?.[1];
+  assert.ok(keptAt, `the failed change was put back: ${first.jobState?.reason ?? ""}`);
+  fs.cpSync(path.join(job.jobDir, ...keptAt.split("/")), path.join(job.jobDir, "pack"), { recursive: true });
   const mid = readEvents(job.jobDir).length;
   request(job.jobDir, "Make the goal horn louder.", "hockey_fx");
   const s = await foremanFor(job, { promoteTo: "job", roundLimit: 1, finalRounds: 0, script: hockeyScript([fxAgain, aiStuck]) }).foreman.run();
@@ -205,14 +213,33 @@ test("2 final verification: when the rounds are spent the change ends as NOT mad
   assert.equal(ofType(later, "promoted").length, 0);
   assert.equal(s.promotions.length, 1);
   assert.match(fs.readFileSync(path.join(job.jobDir, "promoted", "game.ice_hockey_three_against", "data", "tuning.json"), "utf8"), /"radius": 0\.15/);
+  // JOB.md 2026-11-17 (lane C): pack/ is put back to the last promotion BEFORE the job's state event; the unpromoted
+  // files of the change stay only in reports/change-not-made-s<seq>/pack/.
+  const promotedDir = path.join(job.jobDir, "promoted", "game.ice_hockey_three_against");
+  const packDir = path.join(job.jobDir, "pack");
+  assert.deepEqual(packFiles(packDir), packFiles(promotedDir), "pack/ is the last promoted pack again, file for file");
+  assert.match(s.jobState?.reason ?? "", /pack\/ was put back to the last promotion game\.ice_hockey_three_against 0\.1\.0 \(promoted\/game\.ice_hockey_three_against\); the unpromoted files of the change are kept only in reports\/change-not-made-s(\d+)\/pack\/\./);
+  const keptSeq = Number(/change-not-made-s(\d+)/.exec(s.jobState?.reason ?? "")?.[1]);
+  const kept = packFiles(path.join(job.jobDir, "reports", `change-not-made-s${keptSeq}`, "pack"));
+  assert.notDeepEqual(kept, packFiles(promotedDir), "the kept copy is the unpromoted pack of the change");
+  const allLater = readEvents(job.jobDir).filter((e) => e.seq > before);
+  const doneEv = ofType(allLater, "job_state").at(-1);
+  const putBack = ofType(allLater, "merge").filter((e) => e.seq > (finalFail(allLater)?.seq ?? 0));
+  assert.ok(putBack.every((e) => e.seq < (doneEv?.seq ?? 0)), "any merge event that puts a file list back comes before the state event (here the change rewrote files the promotion has, so the lists are the same)");
+  const st = rebuildState(job.jobDir, { write: false });
+  for (const id of st.order) for (const f of st.packages[id]?.mergedFiles ?? []) assert.ok(fs.existsSync(path.join(packDir, f)), `the log's merged file ${id}: ${f} is in pack/`);
   const n = readEvents(job.jobDir).length;
   assert.equal((await foremanFor(job, { promoteTo: "job", script: hockeyScript() }).foreman.run()).jobState?.state, "done");
   assert.equal(readEvents(job.jobDir).length, n, "a finished job stays finished");
-  // A new request starts a new count.
+  // A new request builds on the promoted pack, not on the files of the change that was not made (2026-11-17: before
+  // pack/ was put back, the AI's breaking files were still there and this request's final verification failed again).
   request(job.jobDir, "The puck is far too big: radius about 0.12 m.", "hockey_core");
   const again = await foremanFor(job, { promoteTo: "job", packTests: "never", finalRounds: 1, script: hockeyScript() }).foreman.run();
   assert.equal(again.jobState?.state, "done", JSON.stringify(again.jobState));
-  assert.match(ofType(readEvents(job.jobDir).filter((e) => e.seq > n), "reopened").find((e) => e.reason.startsWith(FINAL_FAILED))?.reason ?? "", /\(1 of 1\)/);
+  const afterAgain = readEvents(job.jobDir).filter((e) => e.seq > n);
+  assert.equal(ofType(afterAgain, "reopened").filter((e) => e.reason.startsWith(FINAL_FAILED)).length, 0, "the final verification passes at once");
+  assert.deepEqual(ofType(afterAgain, "promoted").map((e) => e.version), ["0.1.1"]);
+  assert.match(fs.readFileSync(path.join(job.jobDir, "promoted", "game.ice_hockey_three_against@0.1.1", "data", "tuning.json"), "utf8"), /"puck": \{\n  "radius": 0\.35/, "the fake builder's answer to the request is what is promoted");
 
   // A first build (no earlier promotion to fall back on) fails as before.
   const fresh = tempJob("final-first");

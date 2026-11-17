@@ -3,13 +3,51 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { PackageSpec } from "./events.js";
-import { stripBom } from "./paths.js";
+import { PKG_ROOT, stripBom, toPosix } from "./paths.js";
+import type { RunnerLocation } from "./builder/allowlist.js";
+import { isFakeRunner } from "./verbs.js";
 
 /** The entry script is a convention, not a choice: the root package of every plan owns this file. */
 export const ENTRY_SCRIPT = "scripts/main.gd";
 export const MANIFEST_FILE = "pack.json";
 export const PACK_VERSION = "0.1.0";
-export const KERNEL_API = "1.0";
+
+/** Where an engine declares the kernel API it offers (`const KERNEL_API: String = "1.5"`). */
+export const KERNEL_API_FILE = "kernel/runner/manifest.gd";
+/** The fake runner's engine (the bundled fixture, a .txt holding the same constant): what a job run against the fake runner and an empty engine reads. */
+export const FAKE_KERNEL_API_FILE = path.join(PKG_ROOT, "fixtures", "engine", "kernel", "runner", "kernel_api.txt");
+
+/** The `KERNEL_API` constant of a kernel/runner/manifest.gd text, or undefined when it declares none. */
+export function kernelApiIn(src: string): string | undefined {
+  return /^const\s+KERNEL_API\s*(?::\s*String\s*)?=\s*"(\d+\.\d+)"/m.exec(src)?.[1];
+}
+
+/**
+ * JOB.md 2026-11-17: a pack the Foreman writes declares the KERNEL_API of the engine it was built against, read from
+ * that engine (`<engine>/kernel/runner/manifest.gd`), never a constant in the Foreman. The bundled fake runner with
+ * an engine directory that has no such file reads the fake engine's own file (as verbs.ts does for verbs.json).
+ * Anything else without a readable constant is an error: nothing is built against an engine whose version is unknown.
+ */
+export function kernelApiFor(location: RunnerLocation): string {
+  const own = path.join(location.engineDir, ...KERNEL_API_FILE.split("/"));
+  const file = fs.existsSync(own) || !isFakeRunner(location) ? own : FAKE_KERNEL_API_FILE;
+  let src: string;
+  try {
+    src = fs.readFileSync(file, "utf8");
+  } catch {
+    throw new KernelApiError(`the engine's kernel API version cannot be read: no ${toPosix(file)} (the Foreman writes the engine's KERNEL_API into every pack.json and has no version of its own)`);
+  }
+  const v = kernelApiIn(src);
+  if (v === undefined) throw new KernelApiError(`the engine's kernel API version cannot be read: ${toPosix(file)} declares no \`const KERNEL_API: String = "<major>.<minor>"\``);
+  return v;
+}
+
+export class KernelApiError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "KernelApiError";
+  }
+}
 
 export interface Manifest {
   id: string;
@@ -114,12 +152,12 @@ function union(lists: (string[] | undefined)[]): string[] {
  * The manifest for a pack that holds exactly `packages` (given in plan order, which fixes the order of asset
  * generators and tests). Pure: the same input always gives the same text.
  */
-export function composeManifest(job: { packId: string; title: string; version?: string }, packages: PackageSpec[], carried: Carried = {}): Manifest {
+export function composeManifest(job: { packId: string; title: string; version?: string; kernelApi: string }, packages: PackageSpec[], carried: Carried = {}): Manifest {
   const cameras = union(packages.map((p) => p.registers?.cameras));
   return {
     id: job.packId,
     version: job.version ?? PACK_VERSION,
-    kernelApi: KERNEL_API,
+    kernelApi: job.kernelApi,
     title: job.title.trim().slice(0, 80) || job.packId,
     capabilities: union(packages.map((p) => p.registers?.capabilities)),
     entry: ENTRY_SCRIPT,

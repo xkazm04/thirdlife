@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.two_sides_ball",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "title": "Two sides and a ball: score in the other side's goal",
   "summary": "One ball, two ends, a goal behind each end, first to N points. Covers pong, air hockey, table football, a penalty duel: anything where a ball crossing a line is a point.",
   "applies_when": [
@@ -10,7 +10,7 @@
     "the player's piece moves on a rail or inside its own half and returns the ball by contact"
   ],
   "not_when": [
-    "players run freely with the ball and pass it (needs possession and team AI the seed does not show)",
+    "players run freely with the ball and pass it (needs possession and team AI the seed does not show): use card.team_possession",
     "there is no opponent and the goal is a time or lap count: use card.timed_drive or card.knock_down"
   ],
   "seed": "seed_paddle",

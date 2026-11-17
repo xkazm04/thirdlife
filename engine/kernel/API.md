@@ -1,8 +1,9 @@
-# Third Life kernel API (kernelApi 1.0)
+# Third Life kernel API (kernelApi 1.5)
 
-**Version 1.0 (P7, 2026-11-11).** Every class, method, signal, property and constant a pack may use is written down by
-a machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.0"` in `pack.json`
-(`"0.1"`, the name this same surface had before, still runs).
+**Version 1.5 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+`kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.5"` in `pack.json` (any
+`"1.x"` up to 1.5 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with

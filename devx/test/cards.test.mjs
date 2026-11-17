@@ -140,3 +140,63 @@ test("validateCard and checkCardAgainstTree work alone; the brief is determinist
     assert.ok(a.includes(needle), `brief lacks: ${needle}`);
   }
 });
+
+// ---- 2026-11-17 (lane C): a card may point at a house game (`pack`, engine/packs/<name>) instead of a seed.
+/** A fixture with the hockey card and the hockey house pack (the seed card stays, so coverage holds). */
+function houseFixture() {
+  const root = fixture();
+  fs.cpSync(path.join(REPO, "engine/packs/hockey"), path.join(root, "engine/packs/hockey"), { recursive: true });
+  fs.copyFileSync(path.join(REPO, "engine/cards/team_possession.json"), path.join(root, "engine/cards/team_possession.json"));
+  return root;
+}
+const housePath = (root) => path.join(root, "engine/cards/team_possession.json");
+function houseProblemsAfter(mutate) {
+  const root = houseFixture();
+  try {
+    const card = JSON.parse(fs.readFileSync(housePath(root), "utf8"));
+    const out = mutate(card, root);
+    fs.writeFileSync(housePath(root), JSON.stringify(out ?? card, null, 2));
+    const r = checkCards({ root });
+    return { all: [...r.problems.shape, ...r.problems.tree], steps: r.steps, r };
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+}
+const expectHouseProblem = (mutate, re) => {
+  const { all, steps } = houseProblemsAfter(mutate);
+  assert.ok(all.some((p) => re.test(p)), `expected a problem matching ${re}, got: ${JSON.stringify(all)}`);
+  assert.ok(steps.some((s) => !s.ok), "a problem must turn a step red");
+};
+
+test("house pack: the hockey card passes on the real tree and in a fixture; coverage still counts seeds only", () => {
+  const real = checkCards({ root: REPO });
+  assert.ok(real.cards.some((c) => c.id === "card.team_possession" && c.pack === "hockey"));
+  assert.ok(real.cards.length >= 4);
+  const { all, r } = houseProblemsAfter(() => {});
+  assert.deepEqual(all, []);
+  assert.deepEqual(r.problems.uncovered, [], "a house-pack card is not a seed card, and needs none");
+  assert.match(r.steps.find((s) => s.id === "cards.coverage").detail, /^1 seeds, each has a card/);
+});
+
+test("house pack: a broken `pack` reference, both or neither of seed and pack, and every seed rule applied to the house pack turn it red", () => {
+  expectHouseProblem((c) => { c.pack = "curling"; }, /house pack 'curling' has no engine\/packs\/curling\/pack\.json/);
+  expectHouseProblem((c) => { c.seed = "seed_paddle"; }, /exactly one of 'seed' and 'pack' must be given/);
+  expectHouseProblem((c) => { delete c.pack; }, /exactly one of 'seed' and 'pack' must be given/);
+  expectHouseProblem((c) => { c.capabilities.push("vehicle"); }, /'vehicle' is not declared by hockey/);
+  expectHouseProblem((c) => { c.kit_parts.push("crane"); }, /kit part 'crane' is not used by hockey/);
+  expectHouseProblem((c) => { c.api.push("TLBall.shoot_at"); }, /'TLBall\.shoot_at' is never used in hockey/);
+  expectHouseProblem((c) => { c.rules_keys.push("laps_to_win"); }, /rules key 'laps_to_win' is not set in hockey's data/);
+  expectHouseProblem((c) => { c.data_files.push({ file: "data/rules.json", role: "x" }); }, /data file 'data\/rules\.json' does not exist in hockey/);
+  expectHouseProblem((c) => { c.bot.template = "tests/bot_nowhere.gd"; }, /bot template 'tests\/bot_nowhere\.gd' does not exist in hockey/);
+  // The pack moving under the card: the venue loses its scoreboard.
+  expectHouseProblem((c, root) => {
+    const f = path.join(root, "engine/packs/hockey/data/venue_art.json");
+    fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/"kind"\s*:\s*"scoreboard"/g, '"kind": "sign"'));
+  }, /kit part 'scoreboard' is not used by hockey/);
+});
+
+test("house pack: the brief starts from engine/packs/<pack>/ and names it a house game", () => {
+  const card = JSON.parse(fs.readFileSync(path.join(REPO, "engine/cards/team_possession.json"), "utf8"));
+  const text = cardBrief(card);
+  assert.match(text, /^Start from: engine\/packs\/hockey\/ \(copy its shape/m);
+  assert.match(text, /^Kit parts the house game already uses: /m);
+  assert.doesNotMatch(text, /engine\/seeds\/undefined/);
+});

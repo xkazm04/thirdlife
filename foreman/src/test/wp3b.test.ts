@@ -42,7 +42,7 @@ test("1 manifest: pack.json is composed from packId, title, version and the regi
   assert.deepEqual(seen[0], {
     id: "game.paddle_court",
     version: "0.1.0",
-    kernelApi: "1.0",          // P11: the Foreman writes KERNEL_API, now 1.0
+    kernelApi: "1.5",          // 2026-11-17: the engine's KERNEL_API (here the fake engine's manifest.gd), not a Foreman constant
     title: "Paddle Court",
     capabilities: ["physics", "input", "rules", "ball", "ai", "camera"],
     entry: ENTRY_SCRIPT,
@@ -62,7 +62,7 @@ test("1 manifest: a later package's registers appear only once it is merged; a w
   const plan = fixturePlan();
   const extra: PackageSpec = { ...clone(plan[2] as PackageSpec), id: "sound", deps: ["court"], scope: ["gen/sound.gd", "tests/bot_sound.gd"], registers: { capabilities: ["audio"], assets: ["gen/sound.gd"], tests: ["tests/bot_sound.gd"], cameras: ["side"] }, acceptance: [] };
   const all = [...plan, extra];
-  const job = { packId: "game.x", title: "X" };
+  const job = { packId: "game.x", title: "X", kernelApi: "1.5" };
   const before = composeManifest(job, all.filter((p) => p.id !== "sound"));
   assert.deepEqual([before.assets, before.tests, before.cameras, before.capabilities.includes("audio")], [[], ["tests/bot_rally.gd"], ["hero"], false]);
   const afterMerge = composeManifest(job, all);
@@ -70,7 +70,7 @@ test("1 manifest: a later package's registers appear only once it is merged; a w
   assert.ok(afterMerge.capabilities.includes("audio"));
   assert.deepEqual([...depClosure(all, "sound")].sort(), ["core", "court", "sound"]);
   assert.deepEqual(dependants(all, "core").sort(), ["court", "paddle_ai", "sound"]);
-  assert.equal(composeManifest({ packId: "game.x", title: "T".repeat(200) }, plan).title.length, 80, "the schema allows 80 characters");
+  assert.equal(composeManifest({ packId: "game.x", title: "T".repeat(200), kernelApi: "1.5" }, plan).title.length, 80, "the schema allows 80 characters");
   assert.equal(composeManifest(job, [{ ...(plan[1] as PackageSpec) }]).cameras, undefined, "an absent value is omitted, not an empty list");
 });
 

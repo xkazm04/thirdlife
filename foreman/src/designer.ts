@@ -10,10 +10,11 @@ import { critiqueSchema, type CritiqueResult } from "./verifier.js";
 import { PKG_ROOT, REPO_ROOT } from "./paths.js";
 import { ENTRY_SCRIPT, MANIFEST_FILE, depClosure } from "./manifest.js";
 import { acceptanceOptions, verbOptionsText, type RunnerVerbs } from "./verbs.js";
+import { planCardProblems } from "./cards.js";
 
 const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "prompts", name), "utf8");
 const schema = (name: string): object => JSON.parse(prompt(name)) as object;
-const render = (template: string, vars: Record<string, string>): string => template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
+export const render = (template: string, vars: Record<string, string>): string => template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
 
 export interface GenerateCall {
   role: "designer" | "planner" | "critic";
@@ -41,6 +42,17 @@ export interface PlanLimits {
    * the Foreman has no list of its own, and the real runner refuses an option it does not know with exit 2.
    */
   verbs: RunnerVerbs;
+  /**
+   * The recipe card ids the job's reference copy holds (`ref/cards/`, cards.ts cardIds). A plan's `card` must be one
+   * of them (JOB.md 2026-11-17); absent means none, and then any `card` is refused.
+   */
+  cards?: string[];
+}
+
+/** The Planner's answer: the packages and, when one fits, the recipe card for the whole job. */
+export interface PlanAnswer {
+  packages: PackageSpec[];
+  card?: string;
 }
 
 async function generate<T>(
@@ -101,8 +113,8 @@ export function designBrief(builder: Builder, sentence: string, opts: GenerateOp
 }
 
 /** Problems of a plan beyond its JSON shape: graph errors, scopes, the composed manifest, acceptance options. */
-export function planCheck(packages: PackageSpec[], limits: PlanLimits): string[] {
-  const out = [...planProblems(packages)];
+export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: unknown): string[] {
+  const out = [...planProblems(packages), ...planCardProblems(card, limits.cards ?? [])];
   if (limits.maxPackages !== undefined && packages.length > limits.maxPackages) {
     out.push(`the plan has ${packages.length} packages; the limit for this job is ${limits.maxPackages}: merge concerns until it fits`);
   }
@@ -227,6 +239,8 @@ export interface PlannerInput {
   kernelApi?: string;
   /** What already exists in the engine (kit, rigs, style, seeds, by name): reference.ts existingText(<job>/ref). */
   existing?: string;
+  /** The recipe cards the job offers, with when each applies and when not: cards.ts cardsPlannerText(<job>/ref). */
+  cards?: string;
   /** The hard wall-clock limit of ONE builder run, so that packages are sized to fit it. */
   builderTimeoutMs?: number;
 }
@@ -245,6 +259,7 @@ function plannerVars(input: PlannerInput, limits: PlanLimits, replan: string): R
     packContract,
     kernelApi: input.kernelApi ?? "(not available)",
     existing: input.existing ?? "Nothing but the kernel API below: no kit, no rigs, no style layer and no seed games were found for this job.",
+    cards: input.cards ?? "This engine has no recipe cards: omit `card`.",
     timeLimit: String(minutes),
     limit: limitLine(limits),
     verbOptions: verbOptionsText(limits.verbs),
@@ -261,14 +276,14 @@ function limitLine(limits: PlanLimits): string {
   return limits.maxPackages !== undefined ? `At most ${limits.maxPackages} packages in total for this job (a hard limit).` : "Three to eight packages for a mini-game.";
 }
 
-export function planPackages(builder: Builder, input: PlannerInput, opts: GenerateOptions & PlanLimits): Promise<Generated<{ packages: PackageSpec[] }>> {
-  return generate<{ packages: PackageSpec[] }>(
+export function planPackages(builder: Builder, input: PlannerInput, opts: GenerateOptions & PlanLimits): Promise<Generated<PlanAnswer>> {
+  return generate<PlanAnswer>(
     builder,
     "planner",
     prompt("planner.md"),
     plannerVars(input, opts, ""),
     schema("plan.schema.json"),
-    (v) => planCheck((v as { packages: PackageSpec[] }).packages, opts),
+    (v) => planCheck((v as PlanAnswer).packages, opts, (v as PlanAnswer).card),
     opts,
   );
 }
@@ -302,6 +317,7 @@ export function replanPackages(builder: Builder, input: ReplanInput, opts: Gener
       ? `These packages depend on a failed one and must be returned again (changed or not):\n${JSON.stringify(input.dependants, null, 1)}`
       : "No other package depends on the failed ones.",
     `Return ONLY the replacement packages${room !== undefined ? ` (at most ${room})` : ""}. Their deps may name kept packages.`,
+    "The job's recipe card (if it has one) stays as it is: omit `card` in this answer.",
   ].join("\n");
   return generate<{ packages: PackageSpec[] }>(
     builder,
@@ -312,7 +328,7 @@ export function replanPackages(builder: Builder, input: ReplanInput, opts: Gener
     (v) => {
       const fresh = (v as { packages: PackageSpec[] }).packages;
       const clash = fresh.filter((p) => keptIds.has(p.id)).map((p) => `package id "${p.id}" belongs to a kept package: do not return kept packages`);
-      return [...clash, ...planCheck([...input.kept, ...fresh.filter((p) => !keptIds.has(p.id))], opts)];
+      return [...clash, ...planCheck([...input.kept, ...fresh.filter((p) => !keptIds.has(p.id))], opts, (v as PlanAnswer).card)];
     },
     opts,
   );

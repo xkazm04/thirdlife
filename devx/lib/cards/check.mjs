@@ -15,7 +15,7 @@ const STR = "string", LIST = "list";
 const SHAPE = {
   schema: [STR, true], id: [STR, true], version: [STR, true], title: [STR, true], summary: [STR, true],
   applies_when: [LIST, true], not_when: [LIST, false],
-  seed: [STR, true], capabilities: [LIST, true], kit_parts: [LIST, true], swap_parts: [LIST, false],
+  seed: [STR, false], pack: [STR, false], capabilities: [LIST, true], kit_parts: [LIST, true], swap_parts: [LIST, false],
   api: [LIST, true], rules_keys: [LIST, true], data_files: [LIST, true],
   do: [LIST, true], dont: [LIST, true], bot: ["object", true], acceptance: [LIST, true], variants: [LIST, false],
 };
@@ -50,6 +50,8 @@ const duplicates = (list, where, key) => {
 export function validateCard(card, where = "card") {
   const errs = shapeErrors(card, SHAPE, where);
   if (errs.length) return errs;
+  // CARDS.md (2026-11-17): the worked example is a seed (engine/seeds/) or a house game (engine/packs/), exactly one.
+  if ((card.seed === undefined) === (card.pack === undefined)) errs.push(`${where}: exactly one of 'seed' and 'pack' must be given`);
   if (card.schema !== SCHEMA) errs.push(`${where}: schema must be '${SCHEMA}'`);
   if (!ID_RE.test(card.id)) errs.push(`${where}: id '${card.id}' must look like card.<snake_name>`);
   if (!SEMVER_RE.test(card.version)) errs.push(`${where}: version '${card.version}' must be x.y.z`);
@@ -100,9 +102,18 @@ export function engineFacts(root) {
   return { classes, kitParts, kitWhy, capabilities };
 }
 
-/** What one seed really shows. null when the seed directory or its manifest is missing. */
-export function seedFacts(root, seed) {
-  const dir = path.join(root, "engine", "seeds", seed);
+/** The card's worked example: a seed (engine/seeds/<seed>) or, since 2026-11-17, a house game (engine/packs/<pack>). */
+export function exampleOf(card) {
+  return card.pack !== undefined ? { kind: "house pack", name: card.pack, rel: `engine/packs/${card.pack}` } : { kind: "seed", name: card.seed, rel: `engine/seeds/${card.seed}` };
+}
+
+/**
+ * What one example pack really shows. null when the directory or its manifest is missing. `rulesKeys` are the
+ * TLRules config keys the pack sets as data: the top level of data/rules.json (the seeds' way) and the `rules`
+ * object of any data/*.json (the house game's way: hockey passes data/tuning.json "rules" to TLRules.create).
+ */
+export function exampleFacts(root, rel) {
+  const dir = path.join(root, ...rel.split("/"));
   if (!fs.existsSync(path.join(dir, "pack.json"))) return null;
   const manifest = readJson(path.join(dir, "pack.json"));
   const files = walk(dir).map((f) => path.relative(dir, f).split(path.sep).join("/"));
@@ -113,23 +124,35 @@ export function seedFacts(root, seed) {
   for (const m of code.matchAll(/TLKit\.build\(\s*&?"([a-z_0-9]+)"/g)) parts.add(m[1]);
   let rulesKeys = new Set();
   try { rulesKeys = new Set(Object.keys(readJson(path.join(dir, "data", "rules.json"))).filter((k) => !k.startsWith("_"))); } catch { /* a seed without rules.json shows no rules key */ }
+  for (const f of files.filter((f) => /^data\/[^/]+\.json$/.test(f) && f !== "data/rules.json")) {
+    let doc;
+    try { doc = readJson(path.join(dir, f)); } catch { continue; }
+    const r = doc && typeof doc === "object" && !Array.isArray(doc) ? doc.rules : undefined;
+    if (r && typeof r === "object" && !Array.isArray(r)) for (const k of Object.keys(r)) if (!k.startsWith("_")) rulesKeys.add(k);
+  }
   return { dir, manifest, files: new Set(files), code, parts, rulesKeys };
+}
+
+/** What one seed really shows (engine/seeds/<seed>). */
+export function seedFacts(root, seed) {
+  return exampleFacts(root, `engine/seeds/${seed}`);
 }
 
 /** One card against the tree. Returns readable errors. */
 export function checkCardAgainstTree(card, root, facts = engineFacts(root)) {
   const w = card.id, errs = [];
-  const seed = seedFacts(root, card.seed);
-  if (!seed) return [`${w}: seed '${card.seed}' has no engine/seeds/${card.seed}/pack.json`];
+  const ex = exampleOf(card);
+  const seed = exampleFacts(root, ex.rel);
+  if (!seed) return [`${w}: ${ex.kind} '${ex.name}' has no ${ex.rel}/pack.json`];
 
   for (const c of card.capabilities) {
     if (facts.capabilities && !facts.capabilities.has(c)) errs.push(`${w}: capability '${c}' is not in contracts/pack.schema.json`);
-    else if (!(seed.manifest.capabilities ?? []).includes(c)) errs.push(`${w}: capability '${c}' is not declared by ${card.seed} (a card promises only what its seed shows)`);
+    else if (!(seed.manifest.capabilities ?? []).includes(c)) errs.push(`${w}: capability '${c}' is not declared by ${ex.name} (a card promises only what its example shows)`);
   }
   if (!facts.kitParts) errs.push(`${w}: ${facts.kitWhy}`);
   for (const p of card.kit_parts) {
     if (facts.kitParts && !facts.kitParts.has(p)) errs.push(`${w}: kit part '${p}' does not exist in the kit (assets/manifest.json)`);
-    else if (!seed.parts.has(p)) errs.push(`${w}: kit part '${p}' is not used by ${card.seed}; move it to swap_parts or drop it`);
+    else if (!seed.parts.has(p)) errs.push(`${w}: kit part '${p}' is not used by ${ex.name}; move it to swap_parts or drop it`);
   }
   for (const p of card.swap_parts ?? []) if (facts.kitParts && !facts.kitParts.has(p)) errs.push(`${w}: swap part '${p}' does not exist in the kit (assets/manifest.json)`);
   for (const a of card.api) {
@@ -137,12 +160,12 @@ export function checkCardAgainstTree(card, root, facts = engineFacts(root)) {
     const members = facts.classes.get(cls);
     if (!members) errs.push(`${w}: api '${a}': no class ${cls} in engine/`);
     else if (!members.has(member)) errs.push(`${w}: api '${a}': ${cls} has no func, signal or var '${member}'`);
-    else if (!new RegExp(`\\.${member}\\b`).test(seed.code)) errs.push(`${w}: api '${a}' is never used in ${card.seed}'s scripts or tests`);
+    else if (!new RegExp(`\\.${member}\\b`).test(seed.code)) errs.push(`${w}: api '${a}' is never used in ${ex.name}'s scripts or tests`);
   }
-  for (const k of card.rules_keys) if (!seed.rulesKeys.has(k)) errs.push(`${w}: rules key '${k}' is not set in ${card.seed}/data/rules.json`);
-  for (const d of card.data_files) if (!seed.files.has(d.file)) errs.push(`${w}: data file '${d.file}' does not exist in ${card.seed}`);
-  if (!seed.files.has(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' does not exist in ${card.seed}`);
-  else if (!(seed.manifest.tests ?? []).includes(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' is not in ${card.seed}'s manifest tests`);
+  for (const k of card.rules_keys) if (!seed.rulesKeys.has(k)) errs.push(`${w}: rules key '${k}' is not set in ${ex.name}'s data (data/rules.json, or the "rules" object of a data/*.json)`);
+  for (const d of card.data_files) if (!seed.files.has(d.file)) errs.push(`${w}: data file '${d.file}' does not exist in ${ex.name}`);
+  if (!seed.files.has(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' does not exist in ${ex.name}`);
+  else if (!(seed.manifest.tests ?? []).includes(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' is not in ${ex.name}'s manifest tests`);
   return errs;
 }
 
@@ -186,7 +209,7 @@ export function checkCards({ root }) {
     problems: { shape, tree, uncovered },
     steps: [
       { id: "cards.shape", ok: shape.length === 0, ms, detail: shape.length ? line(shape) : `${cards.length} cards, schema ok` },
-      { id: "cards.references", ok: tree.length === 0, ms: 0, detail: tree.length ? line(tree) : "every seed, kit part, API member, rules key and bot a card names exists and is shown by its seed" },
+      { id: "cards.references", ok: tree.length === 0, ms: 0, detail: tree.length ? line(tree) : "every seed or house pack, kit part, API member, rules key and bot a card names exists and is shown by that example" },
       { id: "cards.coverage", ok: uncovered.length === 0, ms: 0, detail: uncovered.length ? `seeds with no card: ${uncovered.join(", ")}` : `${seeds.length} seeds, each has a card` },
     ],
   };

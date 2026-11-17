@@ -34,7 +34,7 @@ So: the entry script is `scripts/main.gd`; a script that uses a kernel class who
 test, generator or camera that is not listed, end with a `QUESTION:` line (see Rules) instead of editing pack.json.
 
 {{optionalFields}}
-
+{{card}}
 ## Reference material (read before you write)
 {{reference}}
 
@@ -88,5 +88,5 @@ round is lost. Get the smallest thing that passes the acceptance working first, 
   text, so be precise. If you followed the contract to the letter, write `DEVIATIONS: none`.
   (A `QUESTION:` line, if you need one, comes last.)
 
-# Pack contract (kernelApi 0.1)
+# Pack contract (`contracts/PACK.md`; the kernelApi your pack declares is in the manifest, read from the engine)
 {{packContract}}

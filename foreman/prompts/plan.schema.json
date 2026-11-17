@@ -5,6 +5,10 @@
     "packages"
   ],
   "properties": {
+    "card": {
+      "type": "string",
+      "pattern": "^card\\.[a-z][a-z0-9_]*$"
+    },
     "packages": {
       "type": "array",
       "minItems": 1,

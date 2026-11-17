@@ -1,0 +1,5 @@
+# Not a script: a .txt so no Godot import (and no .gd.uid) is needed. 
+## The fake engine's kernel version (the bundled fake runner's stand-in for engine/kernel/runner/manifest.gd). The
+## Foreman reads KERNEL_API from the engine it builds against (manifest.ts kernelApiFor); with the fake runner and an
+## engine directory that has no manifest.gd, it reads this file. Only the constant below is read.
+const KERNEL_API: String = "1.5"
