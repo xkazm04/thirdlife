@@ -1,4 +1,8 @@
-# Third Life: Phase 0 contracts (kernelApi 0.1)
+# Third Life: contracts
+
+The kernel API version is `KERNEL_API` in `engine/kernel/runner/manifest.gd` (1.5 on 2026-11-17); this page no longer
+carries a number of its own. The ownership table below is the Phase 0 history (`kitlab/` is frozen); live scope claims are
+`.claude/sessions.json` and `docs/OWNERSHIP.md`.
 
 Written by the Director on 2026-11-10 before the Phase 0 fan-out. **Builders read these; only the Director edits them.**
 If a contract blocks you or is wrong, do not work around it silently: keep going on what is unaffected and put the
@@ -10,6 +14,8 @@ question, with your proposed wording, in your final report.
 | `RUNNER.md` | how anything outside Godot (the Foreman, a builder, the Director) runs the engine and what JSON comes back |
 | `JOB.md` | the Foreman's job log events and states; the construction site will render exactly this log |
 | `KIT-RIG-STYLE.md` | what kit parts, rigs and the style layer expose to the kernel and to packs; material ids |
+| `ASSETS.md`, `assets.schema.json` | the asset manifest: what an asset is, its licence, its budget |
+| `CARDS.md` | recipe cards: one kind of game, the seed or house pack that shows it, the advice a Planner and a builder get |
 
 ## Ownership (disjoint; never write outside your own scope)
 

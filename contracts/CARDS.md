@@ -28,6 +28,7 @@ Unknown keys are errors. An absent optional value is an omitted key, never `null
 | `applies_when` | list of strings | the request features that make this the right card | present |
 | `not_when` (optional) | list of strings | look-alike requests this card does not cover, and where to go instead | present |
 | `seed` | string | directory name under `engine/seeds/` | has a `pack.json` |
+| `pack` | string | instead of `seed`: directory name under `engine/packs/` (a house game); exactly one of `seed` and `pack` | has a `pack.json` |
 | `capabilities` | list | pack capabilities the recipe uses | in `pack.schema.json` and declared by the seed |
 | `kit_parts` | list | kit part kinds the seed uses for this kind of game | in `assets/manifest.json` and used by the seed (`"kind"` in its data or `TLKit.build` in its scripts) |
 | `swap_parts` (optional) | list | kit parts to reach for in a variant; not in the seed | in `assets/manifest.json` |
@@ -41,6 +42,10 @@ Unknown keys are errors. An absent optional value is an omitted key, never `null
 
 Every seed must have at least one card (`cards.coverage`). A new seed therefore arrives with its card.
 
+Added 2026-11-17: a card may point at a tracked house game (`pack`) instead of a seed, when the house game is the worked
+example of its kind (team possession: `engine/packs/hockey`). Every rule a card's seed meets, its house pack meets the same
+way; `cards.coverage` still counts seeds only.
+
 ## Commands
 
 ```
@@ -52,8 +57,7 @@ tl cards brief <id>        the card as the text block that goes into a builder's
 
 ## What is not here yet
 
-- **The Planner does not pick cards yet** and the Foreman does not put `tl cards brief` into builder briefs: that is a
-  change in `foreman/` (prompts, the `ref/` directory, the plan event), planned once the current Foreman work has landed.
+- (2026-11-17: the Planner picking a card is specified in `JOB.md`, "Added 2026-11-17".)
 - `applies_when`, `do`, `dont` and `acceptance` are prose: the check proves they are present, not that they are right.
   Their test is the measurement named in `docs/PLAYER-CONTENT-IDEAS.md`: the same request with and without cards,
   several runs each, compared on verified-first-try rate, bypass count, script lines and tokens.

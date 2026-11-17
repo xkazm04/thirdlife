@@ -205,3 +205,17 @@ Unknown `type` or unknown keys are errors when the log is read.
   `PLAYER CHECK: tests/<bot>.gd fails when <what the human-controlled side can no longer do>`; the bot must be in a
   package's `registers.tests`. The plan check refuses a plan without it (first plan, re-plan, a hand-written plan).
 - Files in a job directory added by this: `inbox.jsonl`, `inbox.rejected.jsonl`.
+
+### Added 2026-11-17: recipe cards in a job; the construction site reads this log
+
+- **`plan_set.card`** (optional string): the id of the `tl.card/1` card (`contracts/CARDS.md`) the Planner chose for the
+  whole job, e.g. `"card.knock_down"`. Absent when no card fits (the key is omitted, never `null`). A `replan`'s fresh
+  `plan_set` repeats it or omits it. The Planner sees every card under `ref/cards/` (each card's JSON and `INDEX.md`,
+  the `tl cards list` table); a card id that is not in `ref/cards/` is refused by the plan check like an unknown key.
+- **Builder briefs** of a job whose plan names a card carry the card's text exactly as `tl cards brief <id>` prints it.
+- **Change not made.** When a change request ends without a promotion, `pack/` is put back to the last promoted pack
+  (`promoted/<pack id>@<version>/`) before the job's state event; the unpromoted files stay only in the reports.
+- **Kernel version.** A pack the Foreman writes declares the `KERNEL_API` of the engine it was built against
+  (`engine/kernel/runner/manifest.gd`), read from that engine, never a constant in the Foreman.
+- **The construction site** (`engine/kernel/world`, a lot with a `job`) reads `job.jsonl` and `promoted/` and nothing
+  else of a job directory. It writes nothing there. A change to an event that the site draws is a change to this page.
