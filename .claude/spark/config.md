@@ -131,3 +131,11 @@ One AskUserQuestion call of up to 4 questions.
   pasted laws already forbid); the Director's next brief made it frames-only. Read every new selftest for clock use at review.
 - 2026-11-18 engine-world-next: the Director re-ran one hand check (`tl cards hands seed_paddle`) and got the builder's figures
   exactly; one cheap re-run per round is the check that a lane's tables are real.
+- 2026-11-18 astra-trial: `tl arch --index` run inside a worktree counts that worktree's uncommitted report notes, so the
+  committed REPORTS.md was stale on main twice (a refused push). Regenerate generated docs on main after the merge, never in a
+  worktree that holds notes you will not commit.
+- 2026-11-18 astra-trial: arms branched before a structural change landed on main (the selftest.d split) each needed a hand
+  port at merge, and a builder's CRLF file made a whole-file conflict. Land structural changes before a wave branches, and check
+  `file <changed .md>` for CRLF at review.
+- 2026-11-18 astra-trial: for model comparisons, blind judge agents on anonymised copies worked; the copies must keep generated
+  files (a judge read a missing API index as every arm's failure) and strip arm words from report text.
