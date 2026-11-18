@@ -316,3 +316,26 @@ ticks, as slim figures for rigs; the far picture keeps the middle picture's tone
 on a worker and cached on disk by the pack directory's hash; an unbuilt plot shows its cached picture.
 `TL_DRAW_CAMERA=<json>` gives the layer a camera on keys (the motion study only). The kit's scoreboard can be bound
 to the rules by the pack itself (`TLKitSite.bind_scoreboard`); the layer leaves such a board alone.
+
+
+## 12. Walker-feel T (18 November 2026): no sky through the ground
+`docs/reports/walker-feel/T.md` has the capture, the blink list and the figures.
+- **A hole only under ground that covers the plot.** `edge_height` (draw_base.gd) found a rim whenever some wide mesh
+  had vertices in the ring round the plot edge, and the world's ground was cut open to radius + 2.5 m. ex_car's ground
+  is two boxes 60 m wide (its plot is 80 m across) and its ice box stands with its origin 200 m out, so the plot cut
+  drops it whole; the hockey arena's "rim" was the median of its stands (3.68 m) and it sank into the hole. Both
+  plots showed the sky over most of their area, and far off a sky line along the plot that flickered as the visitor
+  moved. Now `ground_cover` must find 95 % of two circles (radius - 2, radius + 2) under the kept wide meshes, or the
+  pack has no rim: no hole, no lift, the world's pad under it (as for ex_kit and ex_walker). The rim cache key ends
+  in `|cover`. `TL_GROUND_COVER=off` gives the rule before (for before pictures).
+- **A hole shut while its plot draws nothing.** A plot whose game has not arrived and that has no cached picture (the
+  first visit on a machine) keeps its hole closed (view_seam.gd `shut_holes` / `close_holes`, radius 0 in
+  `tl_holes`) until it has something to show. `TL_SHUT_HOLES=off`: as before.
+- Instruments (boot.gd, the exe's door): `TL_EXE_FRAMES=<dir>` every drawn frame as raw RGB (half size, or full with
+  `TL_EXE_FRAMES_FULL=1`) plus frames.jsonl; `TL_EXE_SKYMASK=1` paints "nothing drawn" magenta; the detector is
+  `kernel/world/walks/blink_detect.py`; the selftest `ground.no_sky_pit` (walks/ground_case.gd).
+- **No tie under a pack without ground.** Such a pack lays its floor at the pad's height; the pad under it lies 6 cm
+  lower over the plot (village_terrain.gd `SINK`, `SINK_BAND`), or the two fight for the same depth (the exe's TAA,
+  boot.gd `EXE_AA`, turned that tie into flicker on the kit court's floor).
+- With physics interpolation on (lane M): the stage re-base and a newly adopted holder reset their interpolation;
+  the marks of far packs are not interpolated (they are set per drawn frame).

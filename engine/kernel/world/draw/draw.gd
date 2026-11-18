@@ -171,6 +171,7 @@ func replace_holder(i: int, holder: Node) -> void:
 	elif float(e["radius"]) > 0.0:
 		_clip_walk(e, holder)
 	_set_far(e, _wants_far(e) and i != stage, true)
+	(holder as Node3D).reset_physics_interpolation()   # walker-feel T: new nodes start where they are, not half way from 0
 
 
 # ------------------------------------------------------------------------------------------------ placing a pack

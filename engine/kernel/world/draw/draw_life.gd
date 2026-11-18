@@ -235,6 +235,7 @@ func _build_life(e: Dictionary) -> void:
 		var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		mmi.name = ("Figures_" if want_fig else "Marks_") + String(holder.name)
 		mmi.multimesh = mm
+		mmi.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF   # M-PATCHES 4: set per drawn frame, not per tick
 		mmi.visible = false
 		add_child(mmi)
 		_place_free(e, mmi)

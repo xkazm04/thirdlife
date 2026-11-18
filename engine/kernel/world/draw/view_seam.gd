@@ -29,7 +29,7 @@ static func rim_of(v: Node, i: int, r: float) -> float:
 	if not _hashes.has(dir):
 		_hashes[dir] = str(PlotFile.call("dir_hash", dir))
 	var opts: Dictionary = v.get("opts")
-	var key: String = "%s|%s|%s" % [str(_hashes[dir]), str(r), str(opts.get("scenery", (world.get("walk") as Dictionary).get("scenery", "plot")))]
+	var key: String = ("%s|%s|%s" if OS.get_environment("TL_GROUND_COVER") == "off" else "%s|%s|%s|cover") % [str(_hashes[dir]), str(r), str(opts.get("scenery", (world.get("walk") as Dictionary).get("scenery", "plot")))]
 	if not rims.has(key) or OS.get_environment("TL_RIM_CACHE") == "off":
 		(world.get("jobs") as RefCounted).call("now", i)
 		var e: float = float(DrawScript.call("edge_height", (world.get("packs") as Array)[i], r))
@@ -75,3 +75,44 @@ static func copy_colliders(copies: Array, ws: Object, plots: Array, radii: Array
 		if bool(ws.call("step_pack", (copies[best] as Dictionary)["job"], COPY_US - (Time.get_ticks_usec() - tc))):
 			copies.remove_at(best)
 	return Time.get_ticks_usec() - tc
+
+
+## Walker-feel T (blink B2): every 10 frames, a plot with a ground of its own whose game has not arrived and that has
+## no picture to show keeps its hole in the world's ground shut (`close_holes` below): the pad shows, not the
+## sky. Called from the viewer's `_process`; changes the material only when the set changes. TL_SHUT_HOLES=off: as before.
+static func shut_holes(v: Node) -> void:
+	var land: Node3D = v.get("landscape")
+	var draw: Node = v.get("draw")
+	if land == null or draw == null or not land.has_meta(&"tl_ground_mat") or OS.get_environment("TL_SHUT_HOLES") == "off":
+		return
+	if Engine.get_process_frames() % 10 != 0 and land.has_meta(&"tl_shut"):
+		return
+	var has_ground: Array = v.get("has_ground")
+	var arrived: Dictionary = v.get("_arrived")
+	var entries: Array = draw.get("entries")
+	var shut: Array = []
+	for i: int in has_ground.size():
+		var empty: bool = i < entries.size() and ((entries[i] as Dictionary)["pics"] as Dictionary).is_empty()
+		shut.append(bool(has_ground[i]) and not arrived.has(i) and empty)
+	if shut != land.get_meta(&"tl_shut", []):
+		land.set_meta(&"tl_shut", shut)
+		close_holes(land, has_ground, v.get("radii"), shut)
+
+
+## Walker-feel T (blink B2): a plot whose ground is cut open but that draws nothing yet (its game has not arrived and
+## no picture of it is cached: the first visit on a machine) shows the sky through the world's ground. `shut[i]` true
+## closes plot i's hole (the world's pad shows there) until it has something to show. Plot order as in landscape.gd `build`; the
+## material is landscape.gd's, stored as the meta `tl_ground_mat` on the landscape node.
+static func close_holes(parent: Node3D, has_ground: Array, radii: Array, shut: Array) -> void:
+	var gm: Variant = parent.get_meta(&"tl_ground_mat", null)
+	if gm == null:
+		return
+	var all: Array = (gm as ShaderMaterial).get_meta(&"tl_holes_all", [])
+	var holes: Array = all.duplicate()
+	var k: int = 0
+	for i: int in has_ground.size():
+		if float(radii[i]) > 0.0 and bool(has_ground[i]) and k < 32:
+			if i < shut.size() and bool(shut[i]):
+				holes[k] = Vector4((all[k] as Vector4).x, (all[k] as Vector4).y, 0.0, 0.0)
+			k += 1
+	(gm as ShaderMaterial).set_shader_parameter(&"tl_holes", holes)

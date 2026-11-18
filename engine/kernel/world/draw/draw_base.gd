@@ -169,8 +169,42 @@ static func edge_height(holder: Node3D, radius: float) -> float:
 					ys.append(v.y)
 	if ys.is_empty():
 		return NAN         # no ground of its own at the plot edge: the world's ground runs through under it
+	if OS.get_environment("TL_GROUND_COVER") != "off" and ground_cover(holder, radius, wide) < COVER_MIN:
+		return NAN         # walker-feel T: some wide boxes touch the ring but leave most of the plot open: no hole
 	ys.sort()          # the median: a skirt under the far sheet or the foot of a cliff must not decide
 	return ys[ys.size() / 2]
+
+
+## Walker-feel T (blink B1): the share of the plot's rim that the pack's own wide meshes really cover. The world's
+## ground is cut open to radius + 2.5 m for a pack with ground of its own; ex_car's ground is two boxes 60 m wide
+## (its plot is 80 m across) and the 400 m ice box stands with its origin 200 m out, so the plot cut drops it whole:
+## the corners of the boxes reached the rim ring and the hole was cut, and most of the plot showed the sky.
+## Points on two circles (radius - 2 and radius + 2, 72 each) count as covered when a wide mesh that the plot cut
+## keeps (its origin inside the radius) spans them in x and z. TL_GROUND_COVER=off: the rule before (the before
+## pictures; the rim cache then uses the key without "|cover").
+const COVER_MIN: float = 0.95
+
+
+static func ground_cover(holder: Node3D, radius: float, wide: Array) -> float:
+	var boxes: Array = []
+	for m: MeshInstance3D in wide:
+		var xf: Transform3D = holder.global_transform.affine_inverse() * m.global_transform
+		if Vector2(xf.origin.x, xf.origin.z).length() > radius:
+			continue                                  # toon.gdshader drops an instance whose origin is outside the plot
+		var bb: AABB = xf * m.mesh.get_aabb()
+		boxes.append(Rect2(bb.position.x, bb.position.z, bb.size.x, bb.size.z))
+	var hit: int = 0
+	var n: int = 0
+	for rr: float in [radius - 2.0, radius + 2.0]:
+		for k: int in 72:
+			var a: float = TAU * float(k) / 72.0
+			var p: Vector2 = Vector2(cos(a), sin(a)) * rr
+			n += 1
+			for b: Rect2 in boxes:
+				if b.has_point(p):
+					hit += 1
+					break
+	return float(hit) / float(n)
 
 
 ## Meshes at least `width` metres wide both ways and flat-ish (wider than tall): the terrain sheets of a pack.

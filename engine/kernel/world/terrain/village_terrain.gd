@@ -22,7 +22,9 @@ var nx: int = 0                      # cells in x
 var nz: int = 0
 var heights: PackedFloat32Array = PackedFloat32Array()
 var centre: Vector2 = Vector2(5.0, -20.0)
-var pads: Array = []                 # {c: Vector2, r: float (flat radius), h: float, own: bool}
+var pads: Array = []                 # {c: Vector2, r: float (flat radius), h: float, own: bool, rp: plot radius}
+const SINK: float = 0.06              # walker-feel T: the pad under a plot without ground of its own lies this much lower
+const SINK_BAND: float = 3.5          # ... over the plot's radius, rising to the pad's height in this band beyond it (the plot cut ends at r + 3)
 var roads: Array = []                # {pts: PackedVector2Array, ys: PackedFloat32Array, half: float}
 var river: Dictionary = {}           # {pts, ys (water level), half}
 var ponds: Array = []                # {c: Vector2, r: float, y: float}
@@ -180,6 +182,10 @@ func _land_rows(j0: int, j1: int) -> PackedFloat32Array:
 				var d: float = sqrt(dx * dx + dz * dz)
 				if d <= r:
 					h = float(pd["h"])
+					if not bool(pd["own"]) and d < float(pd.get("rp", 0.0)) + SINK_BAND:
+						# walker-feel T: a game with no ground of its own lays its floor at the pad's height: the pad
+						# sinks under it, or the two fight for the same depth (TAA's jitter shows it as flicker)
+						h -= SINK * (1.0 - smoothstep(float(pd["rp"]), float(pd["rp"]) + SINK_BAND, d))
 				elif d < lim:
 					var ph: float = float(pd["h"])
 					var bw: float = clampf(absf(ph - h) * (0.7 if ph < h else 1.1), 3.5, 22.0)

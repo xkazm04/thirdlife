@@ -1,8 +1,9 @@
 extends Node
 ## P9. The door of the exported game (engine/tools/export.sh makes dist/ThirdLife/ThirdLife.exe; docs/EXE.md).
 ##
-##   ThirdLife.exe [--record=<abs file>]        the village for a person: a window; W S walk along the view, A D step
-##                                              aside, the mouse looks, Shift runs, E enters, Q leaves, Esc quits
+##   ThirdLife.exe [--record=<abs file>]        the village for a person: a window; W A S D walk (he turns toward
+##                                              where he walks), the mouse looks, Shift runs, Space jumps, C slides
+##                                              while running, E enters, Q leaves, Esc quits
 ##                                              (kernel/runner/visit.gd; --record writes the visit as tl.input/1)
 ##   ThirdLife.exe --input=<abs file>           a recorded visit again (no device is read)
 ##   ThirdLife.exe -- --site-job=<abs dir>      S2: the village's construction site follows that Foreman job directory
@@ -39,13 +40,15 @@ extends Node
 ## content) are copied into the user's cache on every start when a file is missing there (PlotFile.seed_cache).
 ## TL_EXE_WARM=1 (export.sh, with TL_CACHE_DIR): the window runs the village's scripted tour to its end, unattended,
 ## which fills that cache for the games beside the exe.
+## Walker-feel T: TL_EXE_FRAMES=<abs dir> (+ TL_EXE_FRAMES_RANGE=a:b, TL_EXE_FRAMES_FULL=1, TL_EXE_SKYMASK=1) writes
+## every drawn frame for the blink detector; TL_EXE_AA=<spec> overrides the window's antialiasing (EXE_AA).
 ## No global class name is declared here, and none of the kernel's is used by name.
 
 const WALK_RES: String = "res://boot/village.json"
 const VIEW_SCRIPT: String = "res://kernel/world/draw/view.gd"
 const WORLD_SCRIPT: String = "res://kernel/world/world.gd"
 const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel/world/packs", "res://packs"]
-const KEYS_WALK: String = "W S  walk      A D  step aside      mouse  look      Shift  run      E  enter the game you stand in      Esc  quit"
+const KEYS_WALK: String = "W A S D  walk      mouse  look      Shift  run      Space  jump      C  slide (running)      E  enter the game you stand in      Esc  quit"
 const KEYS_STAGE: String = "Q or Esc  leave the game"
 const CAPTURE_FRAME: int = 120
 ## Night jam-lessons-home T1: which build is this. export.sh writes one line beside the exe, "<short commit> <date
@@ -54,6 +57,12 @@ const CAPTURE_FRAME: int = 120
 const TAG_FILE: String = "BUILD-TAG.txt"
 const TAG_MAX: int = 64
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
+## Walker-feel T3: the exe's window adds temporal antialiasing to the style's SMAA and lowers the project's 4x MSAA
+## (project.godot msaa_3d=2 is 4x) to 2x, which TAA makes up for. Measured
+## on the replayed village walk (docs/reports/walker-feel/T.md): the ink contours on fences and the figure stop
+## breaking up from frame to frame (flicker in the horizon band -30 % walking), at no measurable GPU cost on this
+## machine; the price is a softer picture and a faint trail behind small far moving figures.
+const EXE_AA: String = "msaa=2,taa=1"
 
 var verb: String = ""
 var opts: Dictionary = {}
@@ -286,6 +295,8 @@ func _site_lots(land: Dictionary) -> void:
 
 
 func _exit_tree() -> void:
+	if _frames_log != null:
+		_frames_log.flush()
 	if not _walk_tmp.is_empty() and FileAccess.file_exists(_walk_tmp):
 		DirAccess.remove_absolute(_walk_tmp)
 
@@ -389,6 +400,16 @@ func _visit() -> void:
 		layer.add_child(tl)
 	if OS.has_environment("TL_EXE_TRACE"):
 		_trace = FileAccess.open(_win_path(OS.get_environment("TL_EXE_TRACE")), FileAccess.WRITE)
+	if OS.has_environment("TL_EXE_FRAMES"):
+		_frames_dir = _win_path(OS.get_environment("TL_EXE_FRAMES"))
+		var fr: PackedStringArray = OS.get_environment("TL_EXE_FRAMES_RANGE").split(":")
+		if fr.size() == 2 and fr[0].is_valid_int() and fr[1].is_valid_int():
+			_frames_range = Vector2i(int(fr[0]), int(fr[1]))
+		DirAccess.make_dir_recursive_absolute(_frames_dir)
+		_frames_log = FileAccess.open(_frames_dir + "/frames.jsonl", FileAccess.WRITE)
+		RenderingServer.frame_post_draw.connect(_frame_drawn)
+		if OS.get_environment("TL_EXE_SKYMASK") == "1":
+			_sky_mask()
 	process_physics_priority = 200000              # after the viewer (100000): its `stage` of this tick is known
 	set_physics_process(true)
 
@@ -414,6 +435,8 @@ func _end_world() -> void:
 
 func _physics_process(_delta: float) -> void:
 	_frame += 1
+	if _frame == 2:
+		_set_aa(OS.get_environment("TL_EXE_AA") if not OS.get_environment("TL_EXE_AA").is_empty() else EXE_AA)
 	for k: Array in _keys.get(_frame, []):
 		if str(k[0]) == "move":
 			var mv: InputEventMouseMotion = InputEventMouseMotion.new()
@@ -453,6 +476,92 @@ func _capture() -> void:
 		"width": img.get_width(), "height": img.get_height(), "driver": RenderingServer.get_current_rendering_driver_name(),
 		"adapter": RenderingServer.get_video_adapter_name()}, "", false))
 	_captured = true
+
+
+## Walker-feel T1 (a test instrument): TL_EXE_FRAMES=<abs dir> writes every drawn frame while the physics frame lies
+## in TL_EXE_FRAMES_RANGE=<from>:<to>, numbered in the order drawn (<dir>/f<n>.raw: RGB8 bytes, every other pixel of
+## the window, so 960x540 for 1920x1080; a raw copy costs a few milliseconds where a PNG costs 200, so the run keeps
+## the wall-clock pace a person meets), and one line per picture in <dir>/frames.jsonl (the physics frame, the
+## size, the camera's place and look, the stage). The blink detector (kernel/world/walks/blink_detect.py) reads it.
+var _frames_dir: String = ""
+var _frames_range: Vector2i = Vector2i(1, 1200)
+var _frames_log: FileAccess = null
+var _frames_n: int = 0
+
+
+## Walker-feel T3: the window's antialiasing, set at physics frame 2 (after the style set its own): EXE_AA, or
+## TL_EXE_AA="msaa=2,ss=smaa,taa=0" (a test instrument): msaa 0/2/4/8, ss off/fxaa/smaa, taa 0/1. Prints what was set.
+func _set_aa(spec: String) -> void:
+	var vp: Viewport = get_viewport()
+	for part: String in spec.split(",", false):
+		var kv: PackedStringArray = part.split("=")
+		if kv.size() != 2:
+			continue
+		match kv[0]:
+			"msaa": vp.msaa_3d = {"0": Viewport.MSAA_DISABLED, "2": Viewport.MSAA_2X, "4": Viewport.MSAA_4X, "8": Viewport.MSAA_8X}.get(kv[1], vp.msaa_3d)
+			"ss": vp.screen_space_aa = {"off": Viewport.SCREEN_SPACE_AA_DISABLED, "fxaa": Viewport.SCREEN_SPACE_AA_FXAA, "smaa": Viewport.SCREEN_SPACE_AA_SMAA}.get(kv[1], vp.screen_space_aa)
+			"taa": vp.use_taa = kv[1] == "1"
+	print(JSON.stringify({"schema": "thirdlife.exe/1", "kind": "aa", "msaa_3d": vp.msaa_3d, "screen_space_aa": vp.screen_space_aa, "taa": vp.use_taa}, "", false))
+
+
+## TL_EXE_SKYMASK=1 (with TL_EXE_FRAMES): every pixel where nothing was drawn (the depth buffer still holds the far
+## plane: sky) is painted pure magenta, so the detector reads "nothing drawn here" exactly instead of guessing sky by
+## its colour. An instrument only: the picture is otherwise the same.
+func _sky_mask() -> void:
+	var sh: Shader = Shader.new()
+	sh.code = """shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, depth_test_disabled, skip_vertex_transform, cull_disabled, fog_disabled;
+uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
+void vertex() { POSITION = vec4(VERTEX.xy, 1.0, 1.0); }
+void fragment() {
+	if (texture(depth_tex, SCREEN_UV).r > 0.0) { discard; }
+	ALBEDO = vec3(1.0, 0.0, 1.0);
+}
+"""
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = sh
+	mat.render_priority = 127
+	var q: QuadMesh = QuadMesh.new()
+	q.size = Vector2(2.0, 2.0)
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.name = "SkyMask"
+	mi.mesh = q
+	mi.material_override = mat
+	mi.extra_cull_margin = 16384.0
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+
+func _frame_drawn() -> void:
+	if _frame < _frames_range.x or _frame > _frames_range.y or view == null:
+		return
+	var img: Image = get_viewport().get_texture().get_image()
+	if img == null:
+		return
+	if img.get_format() != Image.FORMAT_RGB8:
+		img.convert(Image.FORMAT_RGB8)
+	if OS.get_environment("TL_EXE_FRAMES_FULL") != "1":            # T3: full size, for the antialiasing study
+		img.resize(img.get_width() / 2, img.get_height() / 2, Image.INTERPOLATE_NEAREST)
+	var f: FileAccess = FileAccess.open("%s/f%05d.raw" % [_frames_dir, _frames_n], FileAccess.WRITE)
+	if f != null:
+		f.store_buffer(img.get_data())
+		f.close()
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	var line: Dictionary = {"n": _frames_n, "frame": _frame, "size": [img.get_width(), img.get_height()], "stage": int(view.get("stage")),
+		"usec": Time.get_ticks_usec()}
+	_frames_n += 1
+	if cam != null:
+		var o: Vector3 = cam.global_position
+		var fw: Vector3 = -cam.global_basis.z
+		line["cam"] = [snappedf(o.x, 0.01), snappedf(o.y, 0.01), snappedf(o.z, 0.01)]
+		line["look"] = [snappedf(fw.x, 0.001), snappedf(fw.y, 0.001), snappedf(fw.z, 0.001)]
+		line["fov"] = snappedf(cam.fov, 0.01)
+	if world != null:
+		var pos: Vector3 = world.get("player_pos")
+		line["player"] = [snappedf(pos.x, 0.01), snappedf(pos.z, 0.01)]
+	_frames_log.store_line(JSON.stringify(line, "", false))
+	if _frames_n % 60 == 0:
+		_frames_log.flush()
 
 
 # ------------------------------------------------------------------------------------------------ the check

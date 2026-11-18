@@ -45,6 +45,7 @@ static func _ground_material(plots: Array, radii: Array, has_ground: Array) -> S
 		holes.append(Vector4.ZERO)
 	gm.set_shader_parameter(&"tl_holes", holes)
 	gm.set_shader_parameter(&"tl_hole_n", n)
+	gm.set_meta(&"tl_holes_all", holes.duplicate())      # walker-feel T: every hole as cut, for draw/view_seam.gd `close_holes`
 	return gm
 
 
@@ -142,7 +143,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	var pads: Array = []
 	for i: int in centres.size():
 		if float(rad[i]) > 0.0:
-			pads.append({"c": centres[i], "r": float(rad[i]) + PAD_EXTRA, "h": float(pad_h[i]), "own": bool(own_ground[i])})
+			pads.append({"c": centres[i], "r": float(rad[i]) + PAD_EXTRA, "h": float(pad_h[i]), "own": bool(own_ground[i]), "rp": float(rad[i])})
 	terr.set("pads", pads)
 	# ---- the roads: a main line that follows the land, a spur to every plot that climbs from the road to the gate
 	var half: float = float(cfg.get("road_half_m", 2.6))
@@ -218,6 +219,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		tmat = TLStyle.material(&"terrain")
 	var tmi: MeshInstance3D = terr.call("build_mesh", tmat)
 	parent.add_child(tmi)
+	if gmat != null:
+		parent.set_meta(&"tl_ground_mat", gmat)            # walker-feel T: draw/view_seam.gd `close_holes`
 	Parts.far_ground(parent, terr, str(cfg.get("ground_key", "")))
 	var tms: int = int(terr.get("build_ms"))
 	stats["terrain_ms"] = tms

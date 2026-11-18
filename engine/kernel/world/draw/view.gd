@@ -62,7 +62,7 @@ var _busy: bool = false
 var _stage_changes: int = 0
 # P5: packs arrive while the world is drawn (kernel/world/jobs.gd)
 var _arrived: Dictionary = {}           # plot index -> true: a built pack has stood there (a stand-in can be made of it)
-var _rims: Dictionary = {}              # the rim cache: "<pack directory hash>|<radius>|<scenery>" -> rim height, or "none"
+var _rims: Dictionary = {}              # the rim cache: "<pack directory hash>|<radius>|<scenery>|cover" (T: the cover rule) -> rim height, or "none"
 var _rims_new: int = 0
 var _first_frame_ms: int = -1           # milliseconds from the start of the process to the end of the first drawn frame
 var _start_ms: int = 0
@@ -270,6 +270,8 @@ func _apply_stage(st: int, cam_name: String) -> void:
 	stage = st
 	draw.call("set_stage", st)
 	landscape.transform = (plots[st] as Transform3D).affine_inverse()
+	landscape.reset_physics_interpolation()            # M-PATCHES 1
+	draw.reset_physics_interpolation()
 	var holders: Array = world.get("packs")
 	var ctx: TLContext = (holders[st] as Node).get("ctx")
 	if str(opts.get("hud", "on")) == "off":
@@ -389,6 +391,8 @@ func _set_stage(i: int) -> void:
 	_stage_changes += 1
 	draw.call("set_stage", i)
 	landscape.transform = (plots[i] as Transform3D).affine_inverse() if i >= 0 else Transform3D.IDENTITY
+	landscape.reset_physics_interpolation()            # M-PATCHES 1: a re-base is a teleport, not a move
+	draw.reset_physics_interpolation()
 	var vcam: Camera3D = visitor.get("cam")
 	if i < 0:
 		visitor.visible = true
@@ -478,6 +482,7 @@ func _process(_delta: float) -> void:
 		var ta: int = Time.get_ticks_usec()
 		Landscape.call("arrive", landscape)                           # P13
 		_note("land_arrive", ta)
+	Seam.shut_holes(self)                                             # walker-feel T: no sky where nothing is drawn yet
 	var now: int = Time.get_ticks_usec()
 	_frame_usec.append(now - _last)
 	_frame_tick.append(int(world.get("tick")) if world != null else -1)
