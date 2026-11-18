@@ -1,0 +1,62 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/a_stage_record.gd"
+extends SceneTree
+
+const Visit = preload("res://kernel/runner/visit.gd")
+const Session = preload("res://kernel/runner/session.gd")
+
+class World extends Node:
+	var plot_defs := [{"id": "court"}]
+
+class Holder extends Node:
+	var ctx := TLContext.new()
+	var manifest := {"id": "example.court"}
+	var seed_value := 1
+	var frames_target := 100
+	var bot_off := false
+
+func _initialize() -> void:
+	var visit = Visit.new()
+	var holder := Holder.new()
+	var world := World.new()
+	visit.world = world
+	visit.devices = true
+	var base: String = get_script().resource_path.get_base_dir().path_join("a_record_%d" % OS.get_process_id())
+	visit.record_path = base + ".json"
+	holder.ctx.input = TLInput.new()
+	holder.ctx.input.declare(&"move")
+	visit.stage(-1, 0, [holder], [], [])
+	for tick in 10:
+		if tick == 9:
+			holder.ctx.input.tap(&"move")
+		holder.ctx.input._sample()
+	var entries: Array = visit._stage_rec[2]
+	print("sampled frames=%d, recorded entries=%s" % [holder.ctx.input._ticks, str(entries)])
+	# A next round replaces the holder and its input while the same plot is on stage.
+	holder.ctx.input.free()
+	holder.free()
+	var next := Holder.new()
+	next.ctx.input = TLInput.new()
+	visit.stage(0, 0, [next], [], [])
+	var sidecar := base + ".court.1.json"
+	var got: Dictionary = Session.read(sidecar)
+	var length_read: int = got.get("record", {}).get("length", -1)
+	print("REPRO stage_record: %s expected first round sidecar with length 10, file exists=%s" % ["PASS" if length_read == 10 else "FAIL", FileAccess.file_exists(sidecar)])
+	if FileAccess.file_exists(sidecar):
+		DirAccess.remove_absolute(sidecar)
+	# Control: identical samples in a round whose input is still alive when closed.
+	next.ctx.input.declare(&"move")
+	for tick in 10:
+		if tick == 9:
+			next.ctx.input.tap(&"move")
+		next.ctx.input._sample()
+	visit._close_stage_record([next])
+	var control: String = base + ".court.2.json"
+	var record: Dictionary = Session.read(control).get("record", {})
+	print("control with input alive: length=%d, entries=%s" % [record.get("length", -1), record.get("frames", [])])
+	if FileAccess.file_exists(control):
+		DirAccess.remove_absolute(control)
+	next.ctx.input.free()
+	next.free()
+	visit.free()
+	world.free()
+	quit()

@@ -1,0 +1,382 @@
+extends "res://kernel/world/terrain/walker_space.gd"
+## P4. The world's own physics space, and the visitor's body in it.
+##
+## A pack is simulated in a space of its own and must stay untouched. The visitor is not part of any game: he walks the
+## land between them, so the WORLD owns a space (`PhysicsServer3D`, no nodes, no scene tree) that holds only static
+## things, all of them built once:
+##   * the terrain's triangles (a triangle is left out where a plot's own ground carries him instead),
+##   * a wall round every plot's fence, trunks of trees, boulders, the lots' machinery, the bridge,
+##   * for every plot: a COPY of the pack's static colliders (add_pack): the shapes are shared (a shape belongs to no
+##     space), the bodies are new bodies in this space, clipped to the plot's circle and moved to the plot's place with
+##     the same bent rim the draw layer gives the pack's ground. The pack's own bodies are never touched.
+## His own body is a kinematic capsule in that space; `walk()` moves it with the engine's test_motion (slide along what
+## he meets, step up small steps, follow slopes down, refuse slopes steeper than `max_slope_deg`).
+##
+## Nothing here is read by a pack, a scheduler or a state hash: the scripted tour still gives the scheduler the
+## scripted position; the body only decides where the visitor is DRAWN (and, when a person walks, where he is).
+
+var stats: Dictionary = {"bodies": 0, "faces": 0, "boxes": 0, "trunks": 0, "boulders": 0, "pack_shapes": 0, "pack_faces": 0}
+var _bodies: Array = []
+var tag: String = ""                  # set by the builder: the tag of the bodies made next
+var _keep: Array = []                 # Shape3D resources that must outlive their bodies
+var _cap: CapsuleShape3D = null
+var _cyl: Dictionary = {}             # radius key -> CylinderShape3D (shared by every trunk of that size)
+var _spheres: Dictionary = {}
+var _mover: RefCounted = null         # walker-feel: the body with weight (world_body.gd), made on the first drive()
+const Mover: GDScript = preload("./world_body.gd")
+
+
+func _init() -> void:
+	super()
+	space = PhysicsServer3D.space_create()
+	PhysicsServer3D.space_set_active(space, true)
+	_cap = CapsuleShape3D.new()
+	_cap.radius = RADIUS
+	_cap.height = HEIGHT
+	body = PhysicsServer3D.body_create()
+	PhysicsServer3D.body_set_mode(body, PhysicsServer3D.BODY_MODE_KINEMATIC)
+	PhysicsServer3D.body_set_space(body, space)
+	PhysicsServer3D.body_add_shape(body, _cap.get_rid(), Transform3D(Basis(), Vector3(0.0, HEIGHT * 0.5, 0.0)))
+	PhysicsServer3D.body_set_collision_layer(body, 2)          # the visitor is layer 2; the static things are layer 1
+	PhysicsServer3D.body_set_collision_mask(body, 1)
+
+
+## Called when everything static is in: the space holds no moving body, so it need not be stepped (queries still work).
+func finish() -> void:
+	PhysicsServer3D.space_set_active(space, false)
+
+
+func free_all() -> void:
+	for b: Variant in _bodies:
+		PhysicsServer3D.free_rid(b as RID)
+	_bodies.clear()
+	if body.is_valid():
+		PhysicsServer3D.free_rid(body)
+		body = RID()
+	if space.is_valid():
+		PhysicsServer3D.free_rid(space)
+		space = RID()
+	_keep.clear()
+
+
+func _static(shape: Shape3D, xf: Transform3D) -> void:
+	var b: RID = PhysicsServer3D.body_create()
+	PhysicsServer3D.body_set_mode(b, PhysicsServer3D.BODY_MODE_STATIC)
+	PhysicsServer3D.body_set_space(b, space)
+	PhysicsServer3D.body_add_shape(b, shape.get_rid(), xf)
+	PhysicsServer3D.body_set_collision_layer(b, 1)
+	PhysicsServer3D.body_set_collision_mask(b, 0)
+	_bodies.append(b)
+	_tags[b] = tag
+	stats["bodies"] = int(stats["bodies"]) + 1
+
+
+## S2: frees every body that was made under the tag `t` (a construction site's scaffold, when its game arrives: the
+## only thing in this space that goes). Returns how many. Their shapes stay in `_keep` until the space is freed.
+func remove_tag(t: String) -> int:
+	var n: int = 0
+	for b: Variant in _bodies.duplicate():
+		if str(_tags.get(b, "")) == t:
+			PhysicsServer3D.free_rid(b as RID)
+			_bodies.erase(b)
+			_tags.erase(b)
+			n += 1
+	stats["bodies"] = int(stats["bodies"]) - n
+	return n
+
+
+func add_faces(faces: PackedVector3Array) -> void:
+	if faces.size() < 3:
+		return
+	var sh: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+	sh.backface_collision = true
+	sh.set_faces(faces)
+	_keep.append(sh)
+	_static(sh, Transform3D.IDENTITY)
+	stats["faces"] = int(stats["faces"]) + faces.size() / 3
+
+
+func add_box(xf: Transform3D, size: Vector3) -> void:
+	var sh: BoxShape3D = BoxShape3D.new()
+	sh.size = size
+	_keep.append(sh)
+	_static(sh, xf)
+	stats["boxes"] = int(stats["boxes"]) + 1
+
+
+## A trunk: a cylinder standing on `foot`.
+func add_trunk(foot: Vector3, radius: float, height: float = 4.0) -> void:
+	var key: String = "%.2f_%.1f" % [radius, height]
+	if not _cyl.has(key):
+		var c: CylinderShape3D = CylinderShape3D.new()
+		c.radius = radius
+		c.height = height
+		_cyl[key] = c
+	_static(_cyl[key] as Shape3D, Transform3D(Basis(), foot + Vector3(0.0, height * 0.5, 0.0)))
+	stats["trunks"] = int(stats["trunks"]) + 1
+	if tag == "tree" and height == 4.0:
+		add_canopy(foot, radius / 0.46)
+
+
+## Walker-feel round 2: a tree's crown, for the CAMERA only (layer CANOPY: the body, the probes and `ground_at` ask
+## layer 1 and walk through it). `s` is the tree's scale (its trunk radius / 0.46: the landscape's pines have 0.42 x
+## scale, its broadleaf trees 0.5 x scale). The crown's core: a cylinder of 1.9 s from 2.2 s to 8.0 s over the foot
+## (kit pines: crown radius 2.1-2.7 from 0.16 h up, h 8.5-12.5; broadleaf: about 0.45 h round 0.7 h, h 6.5-7.5).
+const CANOPY: int = 4
+func add_canopy(foot: Vector3, s: float) -> void:
+	var key: String = "crown_%.2f" % s
+	if not _cyl.has(key):
+		var c: CylinderShape3D = CylinderShape3D.new()
+		c.radius = 1.9 * s
+		c.height = 5.8 * s
+		_cyl[key] = c
+	_static(_cyl[key] as Shape3D, Transform3D(Basis(), foot + Vector3(0.0, 5.1 * s, 0.0)))
+	PhysicsServer3D.body_set_collision_layer(_bodies[_bodies.size() - 1] as RID, CANOPY)
+	stats["canopies"] = int(stats.get("canopies", 0)) + 1
+
+
+func add_boulder(centre: Vector3, radius: float) -> void:
+	var key: String = "%.2f" % radius
+	if not _spheres.has(key):
+		var s: SphereShape3D = SphereShape3D.new()
+		s.radius = radius
+		_spheres[key] = s
+	_static(_spheres[key] as Shape3D, Transform3D(Basis(), centre))
+	stats["boulders"] = int(stats["boulders"]) + 1
+
+
+## A wall of thin quads along a polyline of ground points: `height` metres tall from each point's own y. `closed`: the
+## last point joins the first. Gaps are made by calling this once per stretch.
+func add_wall(pts: PackedVector3Array, height: float) -> void:
+	var faces: PackedVector3Array = PackedVector3Array()
+	for i: int in pts.size() - 1:
+		var a: Vector3 = pts[i]
+		var b: Vector3 = pts[i + 1]
+		var a2: Vector3 = a + Vector3(0.0, height, 0.0)
+		var b2: Vector3 = b + Vector3(0.0, height, 0.0)
+		faces.append_array(PackedVector3Array([a, b, b2, a, b2, a2]))
+	if faces.size() > 0:
+		var sh: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+		sh.backface_collision = true
+		sh.set_faces(faces)
+		_keep.append(sh)
+		_static(sh, Transform3D.IDENTITY)
+		stats["boxes"] = int(stats["boxes"]) + 1
+
+
+## The static colliders of a pack, copied into the world's space (see the header). `plot`: the plot's transform in
+## world coordinates (lift included), `radius`: the drawn circle, `rim`: the pack's own height at the plot edge in its
+## own coordinates and `band`: the width over which the draw layer bends its ground to that height. Only
+## StaticBody3D (a frozen rigid body is not copied); a concave shape (terrain) is clipped to the circle and bent like
+## the drawn ground, every other shape is copied whole when its body stands inside the circle and is lifted by
+## the amount the draw layer lifts something standing there.
+func add_pack(holder: Node3D, plot: Transform3D, radius: float, rim: float, band: float) -> void:
+	var inv: Transform3D = holder.global_transform.affine_inverse()
+	_add_pack_walk(holder, holder, inv, plot, radius, rim, band)
+
+
+## P14: the same copy in slices, for a pack that arrives while the world is drawn. `begin_pack` only lists the pack's
+## static shapes (in the pack's own coordinates, read now: the pack's nodes may move or go later); `step_pack` copies
+## them until `budget_usec` is spent and returns true when the whole pack is in. The result is the one `add_pack` makes.
+func begin_pack(holder: Node3D, plot: Transform3D, radius: float, rim: float, band: float) -> Dictionary:
+	var items: Array = []
+	_list_static(holder, holder.global_transform.affine_inverse(), radius, items)
+	return {"items": items, "at": 0, "tri": 0, "out": PackedVector3Array(), "plot": plot, "radius": radius, "rim": rim,
+		"band": band, "tag": tag, "src": PackedVector3Array()}
+
+
+func _list_static(n: Node, inv: Transform3D, radius: float, items: Array) -> void:
+	if n is StaticBody3D:
+		for ch: Node in n.get_children():
+			if ch is CollisionShape3D and not (ch as CollisionShape3D).disabled and (ch as CollisionShape3D).shape != null:
+				var local: Transform3D = inv * (ch as CollisionShape3D).global_transform
+				var sh: Shape3D = (ch as CollisionShape3D).shape
+				if sh is ConcavePolygonShape3D or radius <= 0.0 or Vector2(local.origin.x, local.origin.z).length() <= radius + 2.0:
+					items.append([sh, local])
+	for c: Node in n.get_children():
+		_list_static(c, inv, radius, items)
+
+
+func step_pack(job: Dictionary, budget_usec: int) -> bool:
+	var t0: int = Time.get_ticks_usec()
+	var items: Array = job["items"]
+	var plot: Transform3D = job["plot"]
+	var radius: float = float(job["radius"])
+	var rim: float = float(job["rim"])
+	var band: float = float(job["band"])
+	tag = str(job["tag"])
+	while int(job["at"]) < items.size():
+		var it: Array = items[int(job["at"])]
+		var sh: Shape3D = it[0]
+		var local: Transform3D = it[1]
+		if sh is ConcavePolygonShape3D:
+			if int(job["tri"]) == 0 and (job["src"] as PackedVector3Array).is_empty():
+				job["src"] = (sh as ConcavePolygonShape3D).get_faces()
+				job["out"] = PackedVector3Array()
+			var src: PackedVector3Array = job["src"]
+			var out: PackedVector3Array = job["out"]
+			var r2: float = (radius + 4.0) * (radius + 4.0)
+			var t: int = int(job["tri"])
+			while t + 2 < src.size():
+				var a: Vector3 = local * src[t]
+				var b: Vector3 = local * src[t + 1]
+				var c: Vector3 = local * src[t + 2]
+				t += 3
+				var cx: float = (a.x + b.x + c.x) / 3.0
+				var cz: float = (a.z + b.z + c.z) / 3.0
+				if radius <= 0.0 or cx * cx + cz * cz <= r2:
+					out.append(plot * _bent(a, radius, rim, band))
+					out.append(plot * _bent(b, radius, rim, band))
+					out.append(plot * _bent(c, radius, rim, band))
+				if t % 1536 == 0 and Time.get_ticks_usec() - t0 > budget_usec:
+					job["tri"] = t
+					job["out"] = out
+					return false
+			if out.size() > 0:
+				var ns: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+				ns.backface_collision = true
+				ns.set_faces(out)
+				_keep.append(ns)
+				_static(ns, Transform3D.IDENTITY)
+				stats["pack_faces"] = int(stats["pack_faces"]) + out.size() / 3
+			job["tri"] = 0
+			job["src"] = PackedVector3Array()
+			job["out"] = PackedVector3Array()
+		else:
+			var lifted: Transform3D = local
+			if band > 0.0 and radius > 0.0:
+				lifted.origin = _bent(local.origin, radius, rim, band)
+			_static(sh, plot * lifted)
+			stats["pack_shapes"] = int(stats["pack_shapes"]) + 1
+		job["at"] = int(job["at"]) + 1
+		if Time.get_ticks_usec() - t0 > budget_usec:
+			break
+	return int(job["at"]) >= items.size()
+
+
+func _bent(p: Vector3, radius: float, rim: float, band: float) -> Vector3:
+	var r: float = Vector2(p.x, p.z).length()
+	if band > 0.0 and radius > 0.0:
+		p.y += (rim - p.y) * smoothstep(radius - band, radius, r)
+	return p
+
+
+func _add_pack_walk(n: Node, holder: Node3D, inv: Transform3D, plot: Transform3D, radius: float, rim: float, band: float) -> void:
+	if n is StaticBody3D and (n as StaticBody3D).get_child_count() > 0:
+		var sb: StaticBody3D = n
+		for ch: Node in sb.get_children():
+			if not (ch is CollisionShape3D) or (ch as CollisionShape3D).disabled or (ch as CollisionShape3D).shape == null:
+				continue
+			var cs: CollisionShape3D = ch
+			var local: Transform3D = inv * cs.global_transform           # the shape in the pack's own coordinates
+			var sh: Shape3D = cs.shape
+			if sh is ConcavePolygonShape3D:
+				var src: PackedVector3Array = (sh as ConcavePolygonShape3D).get_faces()
+				var out: PackedVector3Array = PackedVector3Array()
+				var r2: float = (radius + 4.0) * (radius + 4.0)
+				var t: int = 0
+				while t + 2 < src.size():
+					var a: Vector3 = local * src[t]
+					var b: Vector3 = local * src[t + 1]
+					var c: Vector3 = local * src[t + 2]
+					t += 3
+					var cx: float = (a.x + b.x + c.x) / 3.0
+					var cz: float = (a.z + b.z + c.z) / 3.0
+					if radius > 0.0 and cx * cx + cz * cz > r2:
+						continue
+					out.append(plot * _bent(a, radius, rim, band))
+					out.append(plot * _bent(b, radius, rim, band))
+					out.append(plot * _bent(c, radius, rim, band))
+				if out.size() > 0:
+					var ns: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+					ns.backface_collision = true
+					ns.set_faces(out)
+					_keep.append(ns)
+					_static(ns, Transform3D.IDENTITY)
+					stats["pack_faces"] = int(stats["pack_faces"]) + out.size() / 3
+			else:
+				if radius > 0.0 and Vector2(local.origin.x, local.origin.z).length() > radius + 2.0:
+					continue
+				var lifted: Transform3D = local
+				if band > 0.0 and radius > 0.0:
+					lifted.origin = _bent(local.origin, radius, rim, band)
+				_static(sh, plot * lifted)
+				stats["pack_shapes"] = int(stats["pack_shapes"]) + 1
+	for c: Node in n.get_children():
+		_add_pack_walk(c, holder, inv, plot, radius, rim, band)
+
+
+# ------------------------------------------------------------------------------------------------ the body
+## Moves the body from `from` (feet) by the horizontal `delta`. Slides along what it meets, steps up small steps,
+## follows the ground down; a move that would end on a slope steeper than `max_slope_deg` is refused (he stays).
+## Returns the new feet position. `blocked` says whether anything held him back this tick.
+func walk(from: Vector3, delta: Vector3) -> Dictionary:
+	var pos: Vector3 = from
+	last_hit = {}
+	var rest: Vector3 = Vector3(delta.x, 0.0, delta.z)
+	var hit: bool = false
+	# lift by the step height, move horizontally (slide up to three times), then drop to the ground
+	var up: Vector3 = Vector3(0.0, step_up, 0.0)
+	if _test(Transform3D(Basis(), pos), up):
+		up = _res.get_travel()
+	pos += up
+	for it: int in 3:
+		if rest.length() < 0.0005:
+			break
+		if _test(Transform3D(Basis(), pos), rest):
+			hit = true
+			last_hit = {"tag": _tags.get(_res.get_collider_rid(0), "?"), "at": _res.get_collision_point(0), "n": _res.get_collision_normal(0), "from": pos}
+			var travel: Vector3 = _res.get_travel()
+			pos += travel
+			var rem: Vector3 = _res.get_remainder()
+			var nrm: Vector3 = _res.get_collision_normal(0)
+			nrm.y = 0.0
+			rest = rem - nrm.normalized() * rem.dot(nrm.normalized()) if nrm.length() > 0.001 else Vector3.ZERO
+		else:
+			pos += rest
+			rest = Vector3.ZERO
+	var drop: float = up.y + 0.9
+	var grounded: bool = false
+	var ground_n: Vector3 = Vector3.UP
+	if _test(Transform3D(Basis(), pos), Vector3(0.0, -drop, 0.0)):
+		pos += _res.get_travel()
+		ground_n = _res.get_collision_normal(0)
+		grounded = true
+	else:
+		pos.y -= drop                               # nothing under him within reach: a ledge; he steps down by the reach
+	var slope_ok: bool = not grounded or ground_n.y >= cos(deg_to_rad(max_slope_deg))
+	if not slope_ok:
+		# refuse: the move ends on something too steep to stand on; stay where he was
+		hit = true
+		pos = from
+		if _test(Transform3D(Basis(), pos), Vector3(0.0, -0.6, 0.0)):
+			pos += _res.get_travel()
+	if hit:
+		blocked_ticks += 1
+	place(pos)
+	return {"pos": pos, "blocked": hit, "grounded": grounded}
+
+
+# ------------------------------------------------------------------------------------------------ the body with weight
+## Walker-feel (18 Nov 2026): a person's body moves by velocity (terrain/world_body.gd, which uses this space's tests).
+## One call per world tick; see world_body.gd for the numbers.
+func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
+	if _mover == null:
+		_mover = Mover.new(self)
+	var result: Dictionary = _mover.drive(from, wish, jump, slide)
+	place(result["pos"])
+	return result
+
+
+## The body at rest, standing (after a teleport).
+func rest() -> void:
+	if _mover == null:
+		_mover = Mover.new(self)
+	_mover.rest()
+
+
+## The ground height under (x, z), looking down from `from_y`: NAN when there is none within 400 m.
+func ground_at(x: float, z: float, from_y: float) -> float:
+	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, from_y, z), Vector3(x, from_y - 400.0, z), 1)
+	var hit: Dictionary = PhysicsServer3D.space_get_direct_state(space).intersect_ray(q)
+	return float((hit["position"] as Vector3).y) if not hit.is_empty() else NAN

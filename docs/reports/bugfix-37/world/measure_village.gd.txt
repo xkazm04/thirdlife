@@ -1,0 +1,63 @@
+extends SceneTree
+## bugfix-37 lane world: the shipped village's landscape (engine/boot/village.json) built headless with the real
+## terrain (TLStyle.set_headless(false)); writes the terrain heights to <out>.bin and prints the stats.
+##   godot --headless --path engine --script <this> -- <out-path-without-ext> [<compare-with.bin>]
+## has_ground is taken as true for every plot (the rims need the packs built; it only changes the pads' sink).
+
+const Landscape = preload("res://kernel/world/landscape.gd")
+
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	TLStyle.set_headless(false)
+	var walk: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://boot/village.json"))
+	var cfg: Dictionary = (walk["landscape"] as Dictionary).duplicate(true)
+	cfg["road"] = walk["road"]
+	cfg["edges_now"] = true
+	var plots: Array = []
+	var radii: Array = []
+	var hg: Array = []
+	for p: Dictionary in walk["plots"]:
+		var o: Array = p["origin"]
+		plots.append(Transform3D(Basis(), Vector3(float(o[0]), float(o[1]), float(o[2]))))
+		radii.append(float(p.get("radius", 30.0)))
+		hg.append(true)
+	var view: Node = Node.new()
+	root.add_child(view)
+	var land: Node3D = Node3D.new()
+	view.add_child(land)
+	var st: Dictionary = Landscape.build(land, plots, radii, hg, cfg)
+	var terr: RefCounted = land.get_meta(&"tl_terrain")
+	var hs: PackedFloat32Array = terr.get("heights")
+	var f: FileAccess = FileAccess.open(args[0] + ".bin", FileAccess.WRITE)
+	f.store_buffer(hs.to_byte_array())
+	f.close()
+	print("MEASURE verts=%d road_m=%s spurs=%s bridge_m=%s pads=%s range=%s probe=%s" % [hs.size(), str(st.get("road_m")),
+		str(st.get("spurs")), str(st.get("bridge_m")), str(st.get("pads")), str(st.get("height_range_m")), str(st.get("probe"))])
+	print("MEASURE space=%s" % str(st.get("space")))
+	if args.size() > 1 and FileAccess.file_exists(args[1]):
+		var old: PackedFloat32Array = FileAccess.get_file_as_bytes(args[1]).to_float32_array()
+		var n: int = 0
+		var mx: float = 0.0
+		var at: int = -1
+		var sum: float = 0.0
+		for k: int in mini(old.size(), hs.size()):
+			var d: float = absf(old[k] - hs[k])
+			if d > 0.01:
+				n += 1
+				sum += d
+			if d > mx:
+				mx = d
+				at = k
+		var w: int = int(terr.get("nx")) + 1
+		var x: float = float(terr.get("x0")) + float(at % w) * float(terr.get("cell")) if at >= 0 else 0.0
+		var z: float = float(terr.get("z0")) + float(at / w) * float(terr.get("cell")) if at >= 0 else 0.0
+		print("MEASURE diff sizes=%d/%d changed_over_1cm=%d (%.2f %% of verts) max=%.3f m at (%.1f, %.1f) old=%.3f new=%.3f road_dist=%.2f mean_changed=%.3f m" % [
+			old.size(), hs.size(), n, 100.0 * float(n) / float(maxi(hs.size(), 1)), mx, x, z,
+			old[at] if at >= 0 else 0.0, hs[at] if at >= 0 else 0.0, float(terr.call("road_dist", x, z)), sum / float(maxi(n, 1))])
+	view.free()
+	quit()

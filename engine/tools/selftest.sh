@@ -1,6 +1,6 @@
 #!/bin/bash
 # Kernel self-test: bash engine/tools/selftest.sh [name-filter] (or tl.sh selftest [name-filter]).
-# One PASS/FAIL line per case; exit code 0 only when every case passed.
+# One PASS/FAIL line per case; exit code 0 only when every case passed, 2 when the filter selected no case (could not run).
 # No case reads the wall clock. Reports stay in $TL_SELFTEST_DIR (default: a temporary directory).
 # Add cases in engine/tools/selftest.d/NNN-<lane-or-topic>.sh. Pick an unused number; C sort order is run order.
 # Start with a short description and close all shell constructs in the file. Names starting with _ are skipped.
@@ -74,4 +74,9 @@ done
 [ "$selftest_found" -gt 0 ] || FILTER="" verdict selftest.blocks "no block found in $HERE/selftest.d"
 
 echo "selftest: $pass passed, $fail failed (reports in $OUT)"
+# A filter that selected no case ran nothing: found 0 is never a pass, it is "could not run" (exit 2, GATE-HONESTY.md).
+if [ $((pass + fail)) -eq 0 ]; then
+  echo "selftest: no case matches the filter '$FILTER'"
+  exit 2
+fi
 [ $fail -eq 0 ]

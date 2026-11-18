@@ -1,0 +1,56 @@
+extends SceneTree
+## D5 repro 2: a pit whose four walls are 62 degree banks (steeper than max_slope_deg 55), 1.2 m deep, flat ground around
+## it. He walks into it. In "slope" mode drive() never allows a jump (world_body.gd:149 can_jump), so with the wish held
+## outward and jump pressed every 10 ticks for 20 s he never gets out. Control: the same pit with 45 degree walls.
+## Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r2_slope_pit.gd
+
+const Space: GDScript = preload("res://kernel/world/terrain/world_space.gd")
+
+
+func _pit(sp: RefCounted, deg: float, depth: float) -> void:
+	var w: float = depth / tan(deg_to_rad(deg))     # horizontal run of a wall
+	var b: float = 0.05                              # half the bottom (almost a point: walls meet)
+	var t: float = b + w                             # half the top
+	var f: PackedVector3Array = PackedVector3Array()
+	var top: Array = [Vector3(-t, 0, -t), Vector3(t, 0, -t), Vector3(t, 0, t), Vector3(-t, 0, t)]
+	var bot: Array = [Vector3(-b, -depth, -b), Vector3(b, -depth, -b), Vector3(b, -depth, b), Vector3(-b, -depth, b)]
+	for i: int in 4:
+		var j: int = (i + 1) % 4
+		f.append_array(PackedVector3Array([top[i], top[j], bot[j], top[i], bot[j], bot[i]]))
+	f.append_array(PackedVector3Array([bot[0], bot[1], bot[2], bot[0], bot[2], bot[3]]))
+	# flat ground round the pit (four slabs)
+	var R: float = 30.0
+	for q: Array in [[-R, R, -R, -t], [-R, R, t, R], [-R, -t, -t, t], [t, R, -t, t]]:
+		f.append_array(PackedVector3Array([Vector3(q[0], 0, q[2]), Vector3(q[1], 0, q[2]), Vector3(q[1], 0, q[3]), Vector3(q[0], 0, q[2]), Vector3(q[1], 0, q[3]), Vector3(q[0], 0, q[3])]))
+	sp.call("add_faces", f)
+
+
+func _initialize() -> void:
+	for deg: float in [45.0, 62.0]:
+		var sp: RefCounted = Space.new()
+		_pit(sp, deg, 0.8)
+		var feet: Vector3 = Vector3(0, 0, 3.0)
+		sp.call("place", feet)
+		sp.call("rest")
+		var modes: Dictionary = {}
+		var jumps: int = 0
+		var out_at: int = -1
+		# walk in (toward -z) for 2 s
+		for i: int in 120:
+			feet = sp.call("drive", feet, Vector3(0, 0, -2.0), false, false)["pos"]
+		var inside_at: Vector3 = feet
+		# then try to get out: wish +z at run speed, jump pressed every 10 ticks, 1200 ticks
+		for i: int in 1200:
+			var r: Dictionary = sp.call("drive", feet, Vector3(0, 0, 9.0), i % 10 == 0, false)
+			feet = r["pos"]
+			modes[str(r["mode"])] = int(modes.get(str(r["mode"]), 0)) + 1
+			if (r["events"] as Array).has("jump"):
+				jumps += 1
+			if feet.y > -0.05 and feet.z > 2.0:
+				out_at = i                       # standing or jumping on the flat beyond the pit's rim: out
+				break
+		print("R2 pit walls %d deg, 0.8 m deep (less than a jump, 0.94 m): after walking in feet %s; W(+z) at 9 m/s + jump every 10 ticks for up to 1200 ticks: feet %s, out at tick %d, jumps %d, ticks per mode %s" % [
+			int(deg), str(inside_at.snapped(Vector3.ONE * 0.01)), str(feet.snapped(Vector3.ONE * 0.01)), out_at, jumps, str(modes)])
+		sp.call("free_all")
+	quit(0)

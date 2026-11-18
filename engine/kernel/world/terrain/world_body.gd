@@ -6,11 +6,14 @@ extends RefCounted
 ##            is let go; standing still on walkable ground is not a move at all (no test, no creep).
 ##   air      gravity GRAVITY, falls at most FALL_MAX; a little steering (AIR_ACCEL); lands on walkable ground.
 ##   jump     JUMP_V up (h = JUMP_V^2 / 2g = 1.0 m, about 35 ticks in the air on flat ground); allowed COYOTE ticks
-##            after walking off an edge; a press is kept BUFFER ticks, so a press just before landing still jumps.
+##            after walking off an edge; a press is kept BUFFER ticks after the tick it went down, so a press up to
+##            BUFFER ticks before landing still jumps, on the landing tick itself.
+##            From a slope (bugfix-37 D14: a pit of steep walls was a trap) he may jump too, but the jump pushes him
+##            SLOPE_JUMP_PUSH m/s away from the face as well as up: hopping never climbs a too-steep bank.
 ##   slope    ground steeper than `max_slope_deg`: he slides down it, gaining speed along it (gravity projected on the
 ##            slope, SLOPE_FRICTION against it, at most SLOPE_MAX), steerable a little (SLOPE_STEER), until he stands on
 ##            walkable ground again. Walking UP into such ground is refused as before (a wall); walking DOWN onto it
-##            starts the slide.
+##            starts the slide; put at rest on it (a teleport, a game left on a bank) he slides from the first tick.
 ##   slide    a run slide (`slide` asked while grounded and faster than SLIDE_MIN): the speed he has is kept and decays
 ##            by SLIDE_DECEL; a little steering; ends below SLIDE_END or after SLIDE_MAX ticks.
 
@@ -30,6 +33,7 @@ const JUMP_V: float = 6.93
 const FALL_MAX: float = 40.0
 const COYOTE: int = 6
 const BUFFER: int = 8
+const SLOPE_JUMP_PUSH: float = 4.5    # m/s away from a steep face (its normal, level) on a jump from a slope
 const ACCEL: float = 34.0
 const DECEL: float = 42.0
 const AIR_ACCEL: float = 9.0
@@ -49,7 +53,7 @@ var grounded: bool = true
 var mode: String = "ground"           # ground | air | slope | slide
 var ground_n: Vector3 = Vector3.UP
 var air_ticks: int = 0                # ticks since he last stood on walkable ground
-var _buffer: int = 0
+var _buffer: int = 0                  # ticks a jump press is still kept, this one included
 var _jumped: bool = false             # this airtime began with a jump (no coyote jump after it)
 var _slide_t: int = 0
 var _step_t: int = 0
@@ -151,19 +155,12 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 		if wish.length() < 0.01:
 			wish = _step_wish
 	if jump:
-		_buffer = BUFFER
+		_buffer = BUFFER + 1                     # the press tick and BUFFER ticks after it
 	elif _buffer > 0:
 		_buffer -= 1
-	var can_jump: bool = mode == "ground" or mode == "slide" or (mode == "air" and not _jumped and air_ticks <= COYOTE)
+	var can_jump: bool = mode == "ground" or mode == "slide" or mode == "slope" or (mode == "air" and not _jumped and air_ticks <= COYOTE)
 	if _buffer > 0 and can_jump:
-		if mode == "slide":
-			ev.append("end_slide")
-		_buffer = 0
-		_jumped = true
-		vel.y = JUMP_V
-		mode = "air"
-		grounded = false
-		ev.append("jump")
+		_take_jump(ev)
 	if slide and can_start_slide():
 		mode = "slide"
 		_slide_t = 0
@@ -193,6 +190,12 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 					grounded = false
 					_jumped = false
 					air_ticks = 0
+				elif mode == "ground" and not _walkable(pd["n"]) and _steep_under(pos):
+					# put at rest on ground steeper than the limit (D6): not a place to stand, the slope slide begins
+					mode = "slope"
+					grounded = false
+					ground_n = pd["n"]
+					ev.append("slope")
 				return {"pos": pos, "grounded": grounded, "mode": mode, "vel": vel, "events": ev, "blocked": false}
 			var r: Dictionary = _ground_move(pos, hv * dt)
 			pos = r["pos"]
@@ -241,6 +244,8 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 				air_ticks = 0
 				ground_n = m["n"]
 				ev.append("land")
+				if _buffer > 0:
+					_take_jump(ev)                       # a buffered press jumps on the landing tick (D20)
 			elif vel.y <= 0.0:
 				# on steep ground without falling free: a slope slide
 				var pd2: Dictionary = _probe_down(pos, 0.06)
@@ -284,6 +289,23 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 	if hit:
 		sp.blocked_ticks += 1
 	return {"pos": pos, "grounded": grounded, "mode": mode, "vel": vel, "events": ev, "blocked": hit}
+
+
+## A jump now, from ground, a slide, a slope or the coyote air (`can_jump`). From a slope he is pushed away from the
+## face as well (SLOPE_JUMP_PUSH along its level normal): out of a pit, never up a bank by hopping.
+func _take_jump(ev: Array) -> void:
+	if mode == "slide" or mode == "slope":
+		ev.append("end_slide")
+	if mode == "slope":
+		var away: Vector3 = Vector3(ground_n.x, 0.0, ground_n.z)
+		if away.length() > 0.001:
+			vel += away.normalized() * SLOPE_JUMP_PUSH
+	_buffer = 0
+	_jumped = true
+	vel.y = JUMP_V
+	mode = "air"
+	grounded = false
+	ev.append("jump")
 
 
 ## The ground part of drive(): lift by the step, move `delta` (horizontal) sliding along what it meets, then put him

@@ -102,9 +102,10 @@ func _ready() -> void:
 				p["prop"] = String(args["prop"])
 			if args.has("headgear"):
 				p["headgear"] = String(args["headgear"])
-			if String(args.get("team", "")) == "blue" or skate:
+			var team: String = String(args.get("team", "blue" if skate else ""))   # a skater is blue unless --team says red
+			if team == "blue":
 				p["colors"] = {"top": "car_blue", "trim": "car_white", "legs": "bot_dark", "boots": "black"}
-			elif String(args.get("team", "")) == "red":
+			elif team == "red":
 				p["colors"] = {"top": "car_red", "trim": "car_white", "legs": "bot_dark", "boots": "black"}
 			rig = TLRigs.build("biped", p)
 	add_child(rig)

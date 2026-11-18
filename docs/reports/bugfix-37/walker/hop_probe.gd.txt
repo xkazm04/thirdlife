@@ -1,0 +1,75 @@
+extends SceneTree
+## Lane walker (bugfix-37 D14): can a jump from slope mode climb a too-steep bank by hopping, or a steep V channel
+## (chimney)? A 65 degree bank 8 m high (walk.steep's), he holds W into it at walk and run speed and presses jump every
+## n ticks for 1200 ticks; the highest feet y. Then a V channel of 62 degree walls, 4 m deep: does he hop out?
+##   bash docs/reports/bugfix-37/walker/hop_probe.sh [old]   (copies this .gd.txt and old/*.gd.txt to a temp dir as .gd)
+
+var Space: GDScript = null    # the code in the tree, or with HOP_OLD=1 the HEAD copy in old/ (the unfixed body)
+
+
+func _flat(sp: RefCounted, y: float, x0: float, x1: float, z0: float, z1: float) -> void:
+	sp.call("add_faces", PackedVector3Array([Vector3(x0, y, z0), Vector3(x1, y, z0), Vector3(x1, y, z1), Vector3(x0, y, z0), Vector3(x1, y, z1), Vector3(x0, y, z1)]))
+
+
+func _initialize() -> void:
+	Space = load(get_script().resource_path.get_base_dir() + "/old/world_space.gd") if OS.get_environment("HOP_OLD") == "1" else load("res://kernel/world/terrain/world_space.gd")
+	print("HOP code: %s" % ("HEAD (unfixed)" if OS.get_environment("HOP_OLD") == "1" else "tree"))
+	var t: float = tan(deg_to_rad(65.0))
+	var top_z: float = -8.0 / t
+	for spd: float in [4.5, 9.0]:
+		var line: Array = []
+		for every: int in [1, 3, 6, 10, 20, 36]:
+			var sp: RefCounted = Space.new()
+			sp.call("add_faces", PackedVector3Array([Vector3(-20, 8, top_z), Vector3(20, 8, top_z), Vector3(20, 0, 0), Vector3(-20, 8, top_z), Vector3(20, 0, 0), Vector3(-20, 0, 0)]))
+			_flat(sp, 0.0, -20, 20, 0, 30)
+			_flat(sp, 8.0, -20, 20, -20, top_z)
+			var feet: Vector3 = Vector3(0, 0, 2.0)
+			sp.call("place", feet)
+			sp.call("rest")
+			var top: float = 0.0
+			var top_late: float = 0.0
+			var top_slope: float = 0.0
+			var jumps: int = 0
+			for i: int in 1200:
+				var r: Dictionary = sp.call("drive", feet, Vector3(0, 0, -spd), i % every == 0, false)
+				feet = r["pos"]
+				top = maxf(top, feet.y)
+				if str(r["mode"]) == "slope":
+					top_slope = maxf(top_slope, feet.y)
+				if i >= 600:
+					top_late = maxf(top_late, feet.y)
+				jumps += int((r["events"] as Array).has("jump"))
+			line.append("every %d: top %.2f (after tick 600 %.2f), highest on the face %.2f, jumps %d" % [every, top, top_late, top_slope, jumps])
+			sp.call("free_all")
+		print("HOP bank 65 deg 8 m, W %.1f m/s into it: %s" % [spd, ", ".join(line)])
+	# a V channel along x: walls of 62 degrees, 4 m deep, flat beyond; he starts at the bottom
+	for deg: float in [62.0, 75.0]:
+		var line2: Array = []
+		for every: int in [1, 6, 10, 20]:
+			var sp2: RefCounted = Space.new()
+			var w: float = 4.0 / tan(deg_to_rad(deg))
+			sp2.call("add_faces", PackedVector3Array([Vector3(-20, 4, -w - 0.05), Vector3(20, 4, -w - 0.05), Vector3(20, 0, -0.05), Vector3(-20, 4, -w - 0.05), Vector3(20, 0, -0.05), Vector3(-20, 0, -0.05),
+				Vector3(-20, 0, 0.05), Vector3(20, 0, 0.05), Vector3(20, 4, w + 0.05), Vector3(-20, 0, 0.05), Vector3(20, 4, w + 0.05), Vector3(-20, 4, w + 0.05)]))
+			_flat(sp2, 4.0, -20, 20, -30, -w - 0.05)
+			_flat(sp2, 0.0, -20, 20, -0.05, 0.05)
+			_flat(sp2, 4.0, -20, 20, w + 0.05, 30)
+			var f: Vector3 = Vector3(0, 0.5, 0)
+			sp2.call("place", f)
+			sp2.call("rest")
+			for i: int in 120:
+				f = sp2.call("drive", f, Vector3.ZERO, false, false)["pos"]
+			var g: float = f.y
+			var mset: Dictionary = {}
+			var top2: float = f.y
+			var out: int = -1
+			for i: int in 1200:
+				var r2: Dictionary = sp2.call("drive", f, Vector3(0, 0, 4.5), i % every == 0, false)
+				f = r2["pos"]
+				top2 = maxf(top2, f.y)
+				mset[str(r2["mode"])] = int(mset.get(str(r2["mode"]), 0)) + 1
+				if out < 0 and f.y > 3.95 and absf(f.z) > w + 0.3:
+					out = i
+			line2.append("every %d: start y %.2f top %.2f out at %d modes %s" % [every, g, top2, out, mset])
+			sp2.call("free_all")
+		print("HOP V channel %d deg 4 m deep: %s" % [int(deg), ", ".join(line2)])
+	quit(0)

@@ -29,7 +29,9 @@ static func rim_of(v: Node, i: int, r: float) -> float:
 	if not _hashes.has(dir):
 		_hashes[dir] = str(PlotFile.call("dir_hash", dir))
 	var opts: Dictionary = v.get("opts")
-	var key: String = ("%s|%s|%s" if OS.get_environment("TL_GROUND_COVER") == "off" else "%s|%s|%s|cover") % [str(_hashes[dir]), str(r), str(opts.get("scenery", (world.get("walk") as Dictionary).get("scenery", "plot")))]
+	# bugfix-37 D4: "|cover2": the cover is measured on triangles now (draw_base.gd `ground_cover`); a rim cached under the
+	# box rule ("|cover") is not read again
+	var key: String = ("%s|%s|%s" if OS.get_environment("TL_GROUND_COVER") == "off" else "%s|%s|%s|cover2") % [str(_hashes[dir]), str(r), str(opts.get("scenery", (world.get("walk") as Dictionary).get("scenery", "plot")))]
 	if not rims.has(key) or OS.get_environment("TL_RIM_CACHE") == "off":
 		(world.get("jobs") as RefCounted).call("now", i)
 		var e: float = float(DrawScript.call("edge_height", (world.get("packs") as Array)[i], r))
@@ -55,6 +57,8 @@ static func save_rims(v: Node) -> void:
 ## The rule: before the visitor takes a step, every plot whose edge is within COPY_NEAR_M of him has all its
 ## colliders (copied whole now if it must); of the rest the nearest is copied for COPY_US a frame. Running (9 m/s) he
 ## covers 10 m in 66 ticks; a seed's copy (5 ms whole) takes three slices. Returns the microseconds it took.
+## bugfix-37 D3: when a plot's copy is complete, the world's pad under it (landscape.gd, tag "pad <i>") is taken out:
+## from then on the game's own ground carries him there, as it does for a game that was built with the landscape.
 static func copy_colliders(copies: Array, ws: Object, plots: Array, radii: Array, at: Vector3) -> int:
 	var tc: int = Time.get_ticks_usec()
 	var best: int = -1
@@ -65,6 +69,7 @@ static func copy_colliders(copies: Array, ws: Object, plots: Array, radii: Array
 		var d: float = Vector2(at.x - o.x, at.z - o.z).length() - float(radii[i])
 		if d < COPY_NEAR_M:
 			ws.call("step_pack", (copies[k] as Dictionary)["job"], 1 << 30)
+			ws.call("remove_tag", "pad %d" % i)
 			copies.remove_at(k)
 			if best > k:
 				best -= 1
@@ -73,6 +78,7 @@ static func copy_colliders(copies: Array, ws: Object, plots: Array, radii: Array
 			best = k
 	if best >= 0 and Time.get_ticks_usec() - tc < COPY_US:
 		if bool(ws.call("step_pack", (copies[best] as Dictionary)["job"], COPY_US - (Time.get_ticks_usec() - tc))):
+			ws.call("remove_tag", "pad %d" % int((copies[best] as Dictionary)["i"]))
 			copies.remove_at(best)
 	return Time.get_ticks_usec() - tc
 

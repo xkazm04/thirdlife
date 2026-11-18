@@ -1,0 +1,43 @@
+extends SceneTree
+## D5 repro 5: while a game is on stage, view.gd `_set_stage` re-bases the landscape (TLLandscape.transform =
+## plot.affine_inverse(), view.gd:395). The visitor and his camera are children of the landscape, but the world's
+## physics space (world_space.gd) stays in landscape coordinates. TLChaseCam `_avoid` casts from `_look`, which is
+## built from GLOBAL positions (tl_chase_cam.gd:65-67, 174-179), into that space: after a re-base the cast is made at
+## the wrong place. view.gd:405-408 makes this camera current for a game with no view of its own.
+## Here: flat ground at y = 0 in the space, the visitor standing on it; the plot's origin is (40, 3, 0), yaw 30 deg.
+## Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r5_cam_rebase.gd
+
+const Space: GDScript = preload("res://kernel/world/terrain/world_space.gd")
+const Cam: GDScript = preload("res://kernel/api/tl_chase_cam.gd")
+
+
+func _initialize() -> void:
+	var sp: RefCounted = Space.new()
+	sp.call("add_faces", PackedVector3Array([Vector3(-200, 0, -200), Vector3(200, 0, -200), Vector3(200, 0, 200), Vector3(-200, 0, -200), Vector3(200, 0, 200), Vector3(-200, 0, 200)]))
+	var land: Node3D = Node3D.new()
+	root.add_child(land)
+	var who: Node3D = Node3D.new()
+	land.add_child(who)
+	who.position = Vector3(0, 0, 0)
+	var cam: Camera3D = Cam.new()
+	land.add_child(cam)
+	cam.setup(who, {"distance": 8.5, "height": 3.6, "look_height": 1.7, "stiffness": 1.0, "follow": 1.0, "aim": 1.0,
+		"anchor_follow": 0.45, "anchor_follow_y": 0.18, "avoid_space": sp.get("space"), "avoid_mask": 5})
+	for i: int in 30:
+		await physics_frame
+	var lk: Vector3 = who.global_position + Vector3.UP * 1.7
+	print("R5 landscape at identity: camera %.2f m from the point looked at (wanted 8.71), avoid_pull %.2f" % [cam.global_position.distance_to(lk), cam.avoid_pull])
+	var plot: Transform3D = Transform3D(Basis(Vector3.UP, deg_to_rad(30.0)), Vector3(40, 3, 0))
+	land.transform = plot.affine_inverse()            # view.gd _set_stage(i)
+	land.reset_physics_interpolation()
+	for i: int in 120:
+		await physics_frame
+	lk = who.global_position + Vector3.UP * 1.7
+	var local_cam: Vector3 = land.global_transform.affine_inverse() * cam.global_position
+	print("R5 landscape re-based on a plot at (40, 3, 0) yaw 30: camera %.2f m from the point looked at (wanted 8.71), avoid_pull %.2f; camera in landscape coordinates %s, the ground there is y 0" % [
+		cam.global_position.distance_to(lk), cam.avoid_pull, str(local_cam.snapped(Vector3.ONE * 0.01))])
+	land.queue_free()
+	await process_frame
+	sp.call("free_all")
+	quit(0)

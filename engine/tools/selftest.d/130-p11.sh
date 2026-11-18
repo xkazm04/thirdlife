@@ -8,6 +8,7 @@ p11_on() { [ -z "$FILTER" ] || [[ "$1" == *"$FILTER"* ]] || [[ "p11" == "$FILTER
 if p11_on p11.world_alone; then
   out="$(bash "$HERE/world.sh" alone --packs=seed_paddle,ex_kit,ex_walker --mode=bot --frames=6000 2>&1)"
   why=""; echo "$out" | grep -q '^PASS world.alone' || why="$(echo "$out" | grep -E 'DIFFERENT|FAIL|exit' | head -3 | tr '\n' ' ')"
+  [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.alone' && why="no PASS world.alone line: the run stopped before its verdict"
   verdict p11.world_alone "$why" "$(echo "$out" | grep ' | bot | ' | cut -d'|' -f1,3,4 | tr -s ' ' | tr '\n' ';')"
 fi
 if p11_on p11.world_handler_off; then

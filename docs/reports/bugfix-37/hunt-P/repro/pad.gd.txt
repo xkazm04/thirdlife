@@ -1,0 +1,70 @@
+extends SceneTree
+
+const Landscape = preload("res://kernel/world/landscape.gd")
+const Seam = preload("res://kernel/world/draw/view_seam.gd")
+
+class DrawState extends Node:
+	var entries := [{"pics": {}}]
+
+class ViewState extends Node:
+	var world: Node
+	var landscape := Node3D.new()
+	var draw := DrawState.new()
+	var _arrived := {}
+	var has_ground := [true]
+	var radii := [40.0]
+
+
+func _initialize() -> void:
+	_check.call_deferred()
+
+
+func _check() -> void:
+	var which := OS.get_cmdline_user_args()[0]
+	var v := ViewState.new()
+	root.add_child(v)
+	v.add_child(v.landscape)
+	v.add_child(v.draw)
+	var plots := [Transform3D.IDENTITY]
+	var gm: ShaderMaterial
+	var end_y := 0.0
+	if which == "flatpad":
+		var sheet := Landscape.ground(v.landscape, plots, v.radii, v.has_ground)
+		gm = sheet.material_override
+	else:
+		# Construct a plot with known rim, no loaded game, and no cached picture.
+		# This is the interval the viewer's shut_holes callback is intended to cover.
+		Landscape.build(v.landscape, plots, v.radii, v.has_ground, {
+			"edges_now": true, "relief": 0, "fence": false, "trees": 0, "broadleaf": 0,
+			"rocks": 0, "bushes": 0, "belt": 0, "mesas": 0, "plain_clumps": 0,
+			"tufts": 0, "soft_patches": 0
+		})
+		gm = v.landscape.get_meta(&"tl_ground_mat")
+	var before: Array = gm.get_shader_parameter(&"tl_holes")
+	Seam.shut_holes(v)
+	var after: Array = gm.get_shader_parameter(&"tl_holes")
+	var reproduced: bool
+	if which == "flatpad":
+		print("flat_ground=true arrived=false pictures=0 cut_radius_before=%.1f cut_radius_after=%.1f" %
+			[before[0].z, after[0].z])
+		reproduced = before[0].z > 40 and after[0].z == before[0].z
+	else:
+		var sp: RefCounted = v.landscape.get_meta(&"tl_space")
+		var terrain: RefCounted = v.landscape.get_meta(&"tl_terrain")
+		var drawn_y: float = terrain.gy(0, 0)
+		var feet := Vector3(0, drawn_y, 0)
+		sp.place(feet)
+		sp.rest()
+		var grounded: bool
+		for i in 120:
+			var result: Dictionary = sp.drive(feet, Vector3.ZERO, false, false)
+			feet = result.pos
+			grounded = result.grounded
+		end_y = feet.y
+		print("arrived=false pictures=0 cut_radius_after=%.1f visible_pad_y=%.2f support=%s idle_120_y=%.2f grounded=%s" %
+			[after[0].z, drawn_y, is_finite(sp.ground_at(0, 0, 20)), end_y, grounded])
+		reproduced = after[0].z == 0 and end_y < drawn_y - 10 and not grounded
+	v.free()
+	if reproduced:
+		print("REPRODUCED ", which)
+	quit(0 if reproduced else 1)

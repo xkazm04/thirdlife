@@ -62,7 +62,7 @@ var _busy: bool = false
 var _stage_changes: int = 0
 # P5: packs arrive while the world is drawn (kernel/world/jobs.gd)
 var _arrived: Dictionary = {}           # plot index -> true: a built pack has stood there (a stand-in can be made of it)
-var _rims: Dictionary = {}              # the rim cache: "<pack directory hash>|<radius>|<scenery>|cover" (T: the cover rule) -> rim height, or "none"
+var _rims: Dictionary = {}              # the rim cache: "<pack directory hash>|<radius>|<scenery>|cover2" (T, bugfix-37 D4: the cover rule on triangles) -> rim height, or "none"
 var _rims_new: int = 0
 var _first_frame_ms: int = -1           # milliseconds from the start of the process to the end of the first drawn frame
 var _start_ms: int = 0
@@ -401,6 +401,7 @@ func _set_stage(i: int) -> void:
 		vcam.make_current()
 		return
 	visitor.visible = false
+	vcam.call("snap")                                   # bugfix-37 D18: its anchor was in the old frame; no glide across
 	var ctx: TLContext = (holders[i] as Node).get("ctx")
 	if ctx != null and ctx.cameras != null and ctx.cameras.active != null:
 		ctx.cameras.active.make_current()

@@ -7,6 +7,7 @@
 if [ -z "$FILTER" ] || [[ "world.walk_proof" == *"$FILTER"* ]]; then
   out="$(bash "$HERE/world.sh" proof proof --tiers-all 2>&1)"
   why=""; echo "$out" | grep -q '^PASS world.proof' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|never|FAIL|rror' | head -3 | tr '\n' ' ')"
+  [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.proof' && why="no PASS world.proof line: the run stopped before its verdict"
   verdict world.walk_proof "$why" "walk = alone = replay: $(echo "$out" | grep -E '^[abc] \| ' | awk -F' [|] ' '{printf "%s %s ticks %s; ", $2, $3, $5}')"
 fi
 # a world too heavy for its budget: the farthest sideline packs are demoted first, then the whole world slows, and
@@ -58,6 +59,7 @@ fi
 if [ -z "$FILTER" ] || [[ "world.tour" == *"$FILTER"* ]]; then
   out="$(bash "$HERE/world.sh" tour tour --headless 2>&1)"
   why=""; echo "$out" | grep -q '^PASS world.tour' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror|no game' | head -3 | tr '\n' ' ')"
+  [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.tour' && why="no PASS world.tour line: the run stopped before its verdict"
   echo "$out" | grep -q 'e:tier  plot:drive  from:sideline  to:stage  why:enter' || why="${why:+$why; }the track was not entered from the sideline"
   echo "$out" | grep -q 'e:tier  plot:wall  from:stage  to:sideline  why:leave' || why="${why:+$why; }the wall yard was not left"
   echo "$out" | grep -q 'why:next_round' && why="${why:+$why; }a game started a next round although restart_pause_ticks ships as 0"
@@ -69,6 +71,7 @@ fi
 if [ -z "$FILTER" ] || [[ "world.next_round" == *"$FILTER"* ]]; then
   out="$(bash "$HERE/world.sh" tour tour_next_round --headless 2>&1)"
   why=""; echo "$out" | grep -q '^PASS world.tour' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror|no game' | head -3 | tr '\n' ' ')"
+  [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.tour' && why="no PASS world.tour line: the run stopped before its verdict"
   echo "$out" | grep -q 'e:restart  plot:walker  why:next_round' || why="${why:+$why; }the walker room did not start a next round"
   echo "$out" | grep -Eq 'gate leaks 0, wrong-pack calls 0, .*script errors 0, engine errors 0' || why="${why:+$why; }gate leaks or errors"
   verdict world.next_round "$why" "$(echo "$out" | grep -c 'why:next_round') next rounds, each pack rebuilt from its seed; tour = alone = replay"

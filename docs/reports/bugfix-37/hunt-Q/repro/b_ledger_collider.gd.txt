@@ -1,0 +1,37 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_ledger_collider.gd"
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	for sliced: bool in [false, true]:
+		var holder := Node3D.new()
+		root.add_child(holder)
+		var platform := StaticBody3D.new()
+		holder.add_child(platform)
+		var collision := CollisionShape3D.new()
+		collision.shape = BoxShape3D.new()
+		collision.shape.size = Vector3(6, 1, 6)
+		platform.add_child(collision)
+		var sp := Space.new()
+		if sliced:
+			var job := sp.begin_pack(holder, Transform3D.IDENTITY, 10, 0, 0)
+			while not sp.step_pack(job, 2000):
+				pass
+			job.clear()
+		else:
+			sp.add_pack(holder, Transform3D.IDENTITY, 10, 0, 0)
+		sp.finish()
+		var before := sp.ground_at(0, 0, 4)
+		holder.free()
+		await physics_frame
+		await physics_frame
+		var after := sp.ground_at(0, 0, 4)
+		print("REPRO ledger_collider %s: %s before=%.2f expected_after=0.50 actual_after=%s" % [
+			"sliced" if sliced else "immediate",
+			"FAIL" if is_equal_approx(before, 0.5) and is_nan(after) else "other", before, str(after)])
+		sp.free_all()
+	quit()

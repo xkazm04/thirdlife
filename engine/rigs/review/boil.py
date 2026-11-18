@@ -12,8 +12,12 @@ probe = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-sh
 w, h = int(probe[0]), int(probe[1])
 r0 = r0 * h // 1080
 r1 = r1 * h // 1080
-vf = "select=between(n\\,%d\\,%d),crop=%d:%d:0:%d,format=gray" % (a, b, w, r1 - r0, r0)
+# Grey BEFORE the crop: a crop of a yuv420p picture rounds an odd height or top row to even, and the frames would then be
+# read with the wrong row count, each shifted against the next (the band 133..280 of a 720p clip read as 100 % flips).
+vf = "select=between(n\\,%d\\,%d),format=gray,crop=%d:%d:0:%d" % (a, b, w, r1 - r0, r0)
 raw = subprocess.run(['ffmpeg', '-loglevel', 'error', '-i', clip, '-vf', vf, '-vsync', '0', '-f', 'rawvideo', '-'], capture_output=True).stdout
+if len(raw) % (w * (r1 - r0)) != 0:
+    sys.exit("boil: ffmpeg gave %d bytes, not whole %dx%d frames: the band was not cut as asked" % (len(raw), w, r1 - r0))
 n = len(raw) // (w * (r1 - r0))
 f = np.frombuffer(raw[:n * w * (r1 - r0)], dtype=np.uint8).reshape(n, r1 - r0, w).astype(np.int16)
 d1 = np.abs(f[1:] - f[:-1])

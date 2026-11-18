@@ -1,0 +1,36 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/a_stage_input.gd"
+extends SceneTree
+
+const Visit = preload("res://kernel/runner/visit.gd")
+
+class World extends Node:
+	var plot_defs := [{"id": "drive"}]
+
+class Holder extends Node:
+	var ctx := TLContext.new()
+	var bot_off := false
+
+func _initialize() -> void:
+	var world := World.new()
+	var holder := Holder.new()
+	var visit = Visit.new()
+	visit.world = world
+	visit.devices = true
+	var inp := TLInput.new()
+	holder.ctx.input = inp
+	inp.declare(&"gas", [KEY_W])
+	# The drive bot uses this held injection in tests/bot_laps.gd.
+	inp.press(&"gas", 1.0)
+	inp._sample()
+	visit.stage(-1, 0, [holder], [], [])
+	var down := 0
+	for tick in 120:
+		inp._sample()
+		if inp.pressed(&"gas"):
+			down += 1
+	print("REPRO stage_input: %s bot_off=%s, physical W=%s, gas active on %d/120 player ticks" % ["FAIL" if down > 0 else "PASS", holder.bot_off, Input.is_physical_key_pressed(KEY_W), down])
+	inp.free()
+	holder.free()
+	world.free()
+	visit.free()
+	quit()

@@ -1,0 +1,23 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_steep_rest.gd"
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+const WalkCase = preload("res://kernel/world/walks/walk_case.gd")
+
+func _initialize() -> void:
+	var sp := Space.new()
+	WalkCase.bank(sp, 65.0)
+	var start := Vector3(0, sp.ground_at(0, 0, 50), 0)
+	sp.place(start)
+	sp.rest()
+	var feet := start
+	var ground_ticks := 0
+	for tick in 120:
+		var frame := sp.drive(feet, Vector3.ZERO, false, false)
+		feet = frame.pos
+		ground_ticks += int(frame.grounded)
+	print("REPRO steep_rest: %s slope=65 limit=%.0f grounded_ticks=%d/120 downhill_metres=%.3f" % [
+		"FAIL" if ground_ticks == 120 and feet.is_equal_approx(start) else "other",
+		sp.max_slope_deg, ground_ticks, feet.z - start.z])
+	sp.free_all()
+	quit()

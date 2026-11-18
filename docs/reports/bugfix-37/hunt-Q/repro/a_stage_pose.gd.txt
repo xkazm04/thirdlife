@@ -1,0 +1,41 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/a_stage_pose.gd"
+extends SceneTree
+
+const Visitor = preload("res://kernel/world/visitor.gd")
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+
+class View extends Node3D:
+	var world: Node
+
+func _initialize() -> void:
+	call_deferred("_check")
+
+func _check() -> void:
+	var view := View.new()
+	root.add_child(view)
+	var land := Node3D.new()
+	view.add_child(land)
+	var sp = Space.new()
+	sp.add_box(Transform3D(Basis(), Vector3(0, -0.5, 0)), Vector3(100, 1, 100))
+	land.set_meta(&"tl_space", sp)
+	var visitor = Visitor.new()
+	land.add_child(visitor)
+	visitor.setup(Vector3.ZERO)
+	visitor.steer_on()
+	for tick in 61:
+		visitor.wish(Vector3(0, 0, -9), false, tick == 60)
+		visitor.step(visitor.feet, tick)
+	print("before stage: body=%s, rig=%s" % [visitor.mode, visitor.rig.clip])
+	# The view hides the visitor on stage. Leaving puts him at the gate and shows him.
+	visitor.visible = false
+	visitor.wish(Vector3.ZERO, false, false)
+	visitor.step(visitor.feet, 61)
+	visitor.put(Vector3(5, 0, 5), 0)
+	visitor.visible = true
+	for tick in range(62, 182):
+		visitor.wish(Vector3.ZERO, false, false)
+		visitor.step(visitor.feet, tick)
+	print("REPRO stage_pose: %s 120 idle ticks after return, body=%s, speed=%.1f, rig clip='%s'" % ["FAIL" if visitor.rig.clip == &"slide" else "PASS", visitor.mode, visitor.speed, visitor.rig.clip])
+	view.free()
+	sp.free_all()
+	quit()

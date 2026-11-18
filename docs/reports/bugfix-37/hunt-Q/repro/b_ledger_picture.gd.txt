@@ -1,0 +1,62 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_ledger_picture.gd"
+extends SceneTree
+
+const Draw = preload("res://kernel/world/draw/draw.gd")
+const View = preload("res://kernel/world/draw/view.gd")
+
+class Holder extends Node3D:
+	var loaded := true
+	var frames_done := 3
+	var pack_dir := ""
+	var ctx: TLContext
+
+class World extends Node:
+	var cfg := {}
+	var packs := []
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	for worker: bool in [false, true]:
+		var world := World.new()
+		root.add_child(world)
+		var holder := Holder.new()
+		world.add_child(holder)
+		world.packs.append(holder)
+		var prop := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(8, 4, 6)
+		prop.mesh = box
+		prop.material_override = TLStyle.material(&"white")
+		holder.add_child(prop)
+		var draw := Draw.new()
+		root.add_child(draw)
+		draw.set_process(false)
+		draw.setup(world, [Transform3D.IDENTITY], [30], [0], -1)
+		draw.pic_worker = worker
+		draw.set_stage(-1)
+		var view := View.new()
+		view.world = world
+		view.draw = draw
+		view._arrived[0] = true
+		# world.gd: before_tier is synchronous, then unload releases the children, then tier.
+		view._on_plot_event(0, "before_tier", {"to": "ledger"})
+		holder.loaded = false
+		prop.free()
+		view._on_plot_event(0, "tier", {"to": "ledger"})
+		var e: Dictionary = draw.entries[0]
+		while e.has("build"):
+			await process_frame
+			draw._process(0)
+		for frame in 65:
+			draw._process(0)
+			await process_frame
+		var mid: MeshInstance3D = e.pics.mid
+		print("REPRO ledger_picture: %s worker=%s tier=%s source_meshes=%d mid_triangles=%d visible=%s" % [
+			"control" if mid.is_visible_in_tree() else "FAIL", str(worker), e.tier,
+			holder.get_child_count(), e.standin_info.mid.tris, str(mid.is_visible_in_tree())])
+		view.free()
+		draw.free()
+		world.free()
+	quit()

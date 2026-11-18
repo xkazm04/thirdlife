@@ -173,6 +173,7 @@ func place(at: Vector3, facing: float = 0.0) -> void:
 		PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, xf)
 		PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_LINEAR_VELOCITY, Vector3.ZERO)
 		PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY, Vector3.ZERO)
+		reset_physics_interpolation()   # D15: drawn at the new place at once, never a glide from the old one (draw only)
 
 
 var _ctx: TLContext = null

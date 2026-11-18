@@ -1,0 +1,22 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/r_pose.gd"
+extends SceneTree
+
+func _initialize() -> void:
+	var rig = TLRigs.build("biped")
+	var sk: Skeleton3D = rig.get_node("Model/Skeleton3D")
+	var shoulder := sk.find_bone("LeftShoulder")
+	rig.play(&"cheer", 0.0)
+	rig.tick(1)
+	rig.play(&"idle", 0.0)
+	for f in range(2, 122):
+		rig.tick(f)
+	var other = TLRigs.build("biped")
+	other.play(&"idle", 0.0)
+	for f in range(2, 122):
+		other.tick(f)
+	var control: Skeleton3D = other.get_node("Model/Skeleton3D")
+	var delta := rad_to_deg(sk.get_bone_pose_rotation(shoulder).angle_to(control.get_bone_pose_rotation(shoulder)))
+	print("REPRO pose: %s expected identical idle shoulders after 120 ticks, difference=%.1f degrees" % ["FAIL" if delta > 0.1 else "PASS", delta])
+	rig.free()
+	other.free()
+	quit()

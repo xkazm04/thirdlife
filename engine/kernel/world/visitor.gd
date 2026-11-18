@@ -134,7 +134,8 @@ func _place_cam() -> void:
 	cam.look_height = _cam_look_h
 
 
-## P11. Puts him at `at` (feet, x and z; the ground decides y) facing `yaw`, the camera behind him.
+## P11. Puts him at `at` (feet, x and z; the ground decides y) facing `yaw`, the camera behind him, the figure back
+## in its locomotion (no held clip).
 func put(at: Vector3, yaw: float) -> void:
 	if space != null:
 		var g: float = space.call("ground_at", at.x, at.z, 200.0)
@@ -153,6 +154,7 @@ func put(at: Vector3, yaw: float) -> void:
 	mode = "ground"
 	if rig != null:
 		rig.rotation.y = 0.0
+		_clip(&"")                              # a teleport ends any held clip: he stands where he is put (D7)
 	reset_physics_interpolation()
 	snap()
 
@@ -207,8 +209,11 @@ func step(pos: Vector3, frame: int) -> void:
 ## toward his travel; the rig is told the velocity in its own axes, whether he stands, and the one-shot clips.
 func _drive_step(pos: Vector3, frame: int) -> void:
 	if not visible:
-		# a game is on stage: the walker stands where he entered it (as before: nothing moved him then)
+		# a game is on stage: the walker stands where he entered it (as before: nothing moved him then); a held slide
+		# or slope clip ends with the slide the rest just ended, or he comes back on his hip (bugfix-37 D7)
 		space.call("rest")
+		if rig != null and (mode == "slide" or mode == "slope"):
+			_clip(&"")
 		vel = Vector3.ZERO
 		mode = "ground"
 		_wish_jump = false
@@ -257,7 +262,8 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 				"slope":
 					_clip(&"slope_slide")
 				"end_slide":
-					if was == "slide" or was == "slope":
+					# a slide started this very tick ends here too (pressed on the edge tick, D19)
+					if was == "slide" or was == "slope" or (res["events"] as Array).has("slide"):
 						_clip(&"")
 		rig.call("tick", frame)
 

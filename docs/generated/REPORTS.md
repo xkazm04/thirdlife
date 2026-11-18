@@ -3,7 +3,7 @@
 Generated from `docs/reports/**/*.md`, `briefs/` and `engine/kernel/runner/manifest.gd` by `node devx/bin/tl.mjs arch --index`; do not edit (rule `reports-index-fresh`).
 The reports are history and stay as written; this page only collects them.
 
-66 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
+84 reports, 77 pack-author bullets (3 marked stale), 125 questions raised.
 
 A stale mark is one of two mechanical tests on a pack-author bullet, nothing more:
 - `[stale: path gone]`: the bullet cites in backticks a repo path (first segment a top-level directory of the repo, an optional `:line` dropped) that no file or directory of the tree matches now.
@@ -53,6 +53,24 @@ An unmarked bullet passed both tests; it was not read for being right.
 | astra-trial/d1/c | - | - | - |
 | astra-trial/d2/a | - | - | - |
 | astra-trial/d3/c | - | - | - |
+| bugfix-37/hunt-P/b | - | - | - |
+| bugfix-37/hunt-P/findings | - | - | - |
+| bugfix-37/hunt-Q/astra/brief_common | - | - | - |
+| bugfix-37/hunt-Q/astra/brief_review | - | - | - |
+| bugfix-37/hunt-Q/astra/cand_a | - | - | - |
+| bugfix-37/hunt-Q/astra/cand_b | - | - | - |
+| bugfix-37/hunt-Q/astra/cand_r | - | - | - |
+| bugfix-37/hunt-Q/astra/review | - | - | - |
+| bugfix-37/hunt-Q/c | - | - | - |
+| bugfix-37/hunt-Q/findings | - | - | - |
+| bugfix-37/hunt-R/a | - | - | - |
+| bugfix-37/hunt-R/findings | - | - | - |
+| bugfix-37/JUDGE-D5 | - | - | - |
+| bugfix-37/lane-cam | - | - | - |
+| bugfix-37/lane-rig | - | - | - |
+| bugfix-37/lane-runner | - | - | - |
+| bugfix-37/lane-walker | - | - | - |
+| bugfix-37/lane-world | - | - | - |
 | engine-world-next/C | - | - | - |
 | engine-world-next/C-PATCHES | - | - | - |
 | engine-world-next/C2 | - | - | - |
@@ -212,7 +230,7 @@ An unmarked bullet passed both tests; it was not read for being right.
 - `docs/reports/P8-PROCESS.md:257` Never wait for something only a window has.
 - `docs/reports/P8-PROCESS.md:258` Expect `subject_px` and `frame` to change or go.
 
-## Questions raised (119)
+## Questions raised (125)
 
 Numbered items under a report's Questions heading, as the builder asked them. This page cannot tell an answered question
 from an unanswered one: where the Director answered, it is in that report's "Director's decisions on the builder's questions".
@@ -407,3 +425,15 @@ from an unanswered one: where the Director answered, it is in that report's "Dir
 2. `docs/reports/WP5-KERNEL.md:123` **Contract wording.** I added `--bot-frames`, the three bot metrics, the `WARNING:` text in the `smoke.loads` detail, and the optional style keys `env.plain_ambient` and `env.ground_key`. Proposed lines for `RUNNER.md`: "`invariants` takes `--bot-frames=<max>` (default 36000)." "A `smoke.loads` ...
 3. `docs/reports/WP5-KERNEL.md:126` **Default ground.** It is grass and sits just under the pack's lowest visual. A course built in the air floats above it, and a body that falls off passes through it. Is that the wanted behaviour, or should it be a neutral colour?
 4. `docs/reports/WP5-KERNEL.md:127` **A fixed marble pack.** If a later job attaches `look_dress.gd` correctly, it will add its own sun, environment and `StandardMaterial3D`s on top of the style. The documents now say not to; nothing stops it.
+
+### bugfix-37/lane-walker (undated)
+
+1. `docs/reports/bugfix-37/lane-walker.md:97` **New member.** `SLOPE_JUMP_PUSH` is a new public constant on world_body.gd (not a `TL*` class), and `_take_jump()` is private. KERNEL_API is not bumped. Through TLBiped walker feel, a pack's runner can now jump from a slope too. API.md:310 ("buffered and coyote jumps, step and 55-degree slope ...
+2. `docs/reports/bugfix-37/lane-walker.md:101` **Owner feel (D14).** A jump from a slope pushes him 4.5 m/s off the face. My judgement is that this escape is safe: one steep bank cannot be climbed by hopping (measured above); in a narrow steep V or chimney he could in principle wall-jump from face to face. Options for the owner: keep it; lower ...
+3. `docs/reports/bugfix-37/lane-walker.md:108` **New finding, not fixed (outside D14).** In a V channel whose bottom is narrower than the capsule, he wedges between the two walls in **`air`** mode and stays there for good: no jump, since the coyote time is over. The ray under his middle sees the walkable floor strip, so slope mode never starts. ...
+
+### bugfix-37/lane-world (undated)
+
+1. `docs/reports/bugfix-37/lane-world.md:96` `engine/kernel/world/draw/view.gd:65` (lane cam) says in a comment that the rim cache key ends in `|cover`; it is now `|cover2`. `engine/kernel/world/draw/DRAW.md:330` says the same ("The rim cache key ends in `|cover`") and should become "`|cover2` (bugfix-37 D4: cover measured on triangles)". I ...
+2. `docs/reports/bugfix-37/lane-world.md:99` New public members on kernel-internal scripts: world_space.gd: `add_pads()`, static `pad_rim()`, and an optional `stat` argument on `add_faces()`. village_terrain.gd: `faces_in_disc()`, `bridge_span()`, and two optional arguments on the private `_stamp()`. draw_pictures.gd: static ...
+3. `docs/reports/bugfix-37/lane-world.md:105` With D3, when a game's colliders arrive while the visitor stands on its pad, the pad goes and the game's own floor takes over. If that floor is higher than the pad, he may start inside it for a tick (step-up 0.55 m handles small steps). Before the fix he fell through instead. Watch it in the first ...

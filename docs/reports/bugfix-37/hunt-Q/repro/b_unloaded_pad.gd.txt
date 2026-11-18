@@ -1,0 +1,45 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_unloaded_pad.gd"
+extends SceneTree
+
+const Landscape = preload("res://kernel/world/landscape.gd")
+const Draw = preload("res://kernel/world/draw/draw.gd")
+const Seam = preload("res://kernel/world/draw/view_seam.gd")
+
+class Viewer extends Node:
+	var world: Node
+	var draw: Node
+	var landscape := Node3D.new()
+	var has_ground := [true]
+	var radii := [25.0]
+	var _arrived := {}
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	TLStyle.set_headless(false) # Build the same landscape as the viewer, on the headless display.
+	var view := Viewer.new()
+	root.add_child(view)
+	view.add_child(view.landscape)
+	view.draw = Draw.new()
+	view.draw.entries.append({"pics": {}})
+	Landscape.build(view.landscape, [Transform3D.IDENTITY], view.radii, view.has_ground, {
+		"relief": 0, "trees": 0, "broadleaf": 0, "rocks": 0, "bushes": 0, "belt": 0,
+		"mesas": 0, "soft_patches": 0, "plain_clumps": 0, "edges_now": true})
+	Seam.shut_holes(view)
+	var material: ShaderMaterial = view.landscape.get_meta(&"tl_ground_mat")
+	var hole: Vector4 = material.get_shader_parameter(&"tl_holes")[0]
+	var sp: RefCounted = view.landscape.get_meta(&"tl_space")
+	var visible_y: float = view.landscape.get_meta(&"tl_terrain").gy(0, 0)
+	var support: float = sp.ground_at(0, 0, 10)
+	var feet := Vector3(0, visible_y, 0)
+	sp.place(feet)
+	sp.rest()
+	for tick in 60:
+		feet = sp.drive(feet, Vector3.ZERO, false, false).pos
+	print("REPRO unloaded_pad: %s hole_radius=%.1f visible_pad_y=%.2f support_y=%s feet_y_after_60=%.2f" % [
+		"FAIL" if hole.z == 0 and is_nan(support) and feet.y < -5 else "other",
+		hole.z, visible_y, str(support), feet.y])
+	view.draw.free()
+	view.free()
+	quit()

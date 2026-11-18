@@ -327,7 +327,7 @@ to the rules by the pack itself (`TLKitSite.bind_scoreboard`); the layer leaves 
   plots showed the sky over most of their area, and far off a sky line along the plot that flickered as the visitor
   moved. Now `ground_cover` must find 95 % of two circles (radius - 2, radius + 2) under the kept wide meshes, or the
   pack has no rim: no hole, no lift, the world's pad under it (as for ex_kit and ex_walker). The rim cache key ends
-  in `|cover`. `TL_GROUND_COVER=off` gives the rule before (for before pictures).
+  in `|cover2` (bugfix-37 D4: cover measured on the triangles, not their bounding box). `TL_GROUND_COVER=off` gives the rule before (for before pictures).
 - **A hole shut while its plot draws nothing.** A plot whose game has not arrived and that has no cached picture (the
   first visit on a machine) keeps its hole closed (view_seam.gd `shut_holes` / `close_holes`, radius 0 in
   `tl_holes`) until it has something to show. `TL_SHUT_HOLES=off`: as before.

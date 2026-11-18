@@ -1,0 +1,231 @@
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+const Surfaces = preload("res://kernel/world/walks/walk_case.gd")
+const Draw = preload("res://kernel/world/draw/draw_base.gd")
+const Visitor = preload("res://kernel/world/visitor.gd")
+const Visit = preload("res://kernel/runner/visit.gd")
+const Pack = preload("res://kernel/world/pack.gd")
+const Session = preload("res://kernel/runner/session.gd")
+
+class PlotList extends Node:
+	var plot_defs := [{"id": "kit"}]
+	var walk := {}
+	var tick := 0
+	var player_pos := Vector3.ZERO
+
+class VisitorView extends Node:
+	var visitor: Node3D
+
+
+func _initialize() -> void:
+	_run.call_deferred()
+
+
+func _run() -> void:
+	var name_of_case := OS.get_cmdline_user_args()[0]
+	var observed := false
+	match name_of_case:
+		"bank": observed = _bank()
+		"cover": observed = _cover()
+		"option": observed = _option()
+		"canopy": observed = _canopy()
+		"gate": observed = _gate()
+		"record": observed = _record()
+	if observed:
+		print("REPRODUCED ", name_of_case)
+	quit(0 if observed else 1)
+
+
+func _bank() -> bool:
+	var sp := Space.new()
+	Surfaces.bank(sp, 65.0)
+	var feet := Vector3(0, sp.ground_at(0, 0, 20), 0)
+	var start := feet
+	sp.place(feet)
+	sp.rest()
+	var r: Dictionary
+	for i in 600:
+		r = sp.drive(feet, Vector3.ZERO, false, false)
+		feet = r.pos
+	var idle_distance := start.distance_to(feet)
+	var jumped := sp.drive(feet, Vector3.ZERO, true, false)
+	print("bank=65 limit=%.0f idle_ticks=600 drift_m=%.3f mode=%s jump=%s" %
+		[sp.max_slope_deg, idle_distance, r.mode, jumped.events.has("jump")])
+	sp.free_all()
+	return r.mode == "ground" and idle_distance < 0.001 and jumped.events.has("jump")
+
+
+func _cover() -> bool:
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(64, 64)
+	plane.subdivide_width = 31
+	plane.subdivide_depth = 31
+	var sheet := MeshInstance3D.new()
+	sheet.mesh = plane
+	holder.add_child(sheet)
+	var unrotated := Draw.edge_height(holder, 40)
+	sheet.rotation.y = PI / 4
+	var rim := Draw.edge_height(holder, 40)
+	var measured: float = Draw.ground_cover(holder, 40, [sheet])
+	var sp := Space.new()
+	sp.add_faces(sheet.transform * plane.get_faces())
+	var missing := 0
+	for radius: float in [38.0, 42.0]:
+		for i in 72:
+			var angle := TAU * i / 72
+			if is_nan(sp.ground_at(radius * cos(angle), radius * sin(angle), 10)):
+				missing += 1
+	print("plot_r=40 sheet=64x64 yaw0_own=%s yaw45_own=%s reported_cover=%.3f rays_missing=%d/144" %
+		[not is_nan(unrotated), not is_nan(rim), measured, missing])
+	sp.free_all()
+	holder.free()
+	return is_nan(unrotated) and is_finite(rim) and measured == 1.0 and missing > 36
+
+
+func _option() -> bool:
+	var who := Node3D.new()
+	root.add_child(who)
+	var cam := TLChaseCam.new()
+	who.add_child(cam)
+	cam.setup(who, {"avoid_min": 4.0})
+	var applied := cam.avoid_min
+	print("avoid_min requested=4.0 applied=%.1f" % applied)
+	who.free()
+	return applied == 2.5
+
+
+func _canopy() -> bool:
+	var sp := Space.new()
+	Surfaces.flat(sp, 0, -20, 20, -20, 20)
+	sp.tag = "tree"
+	sp.add_trunk(Vector3(0, 0, 1.2), 0.46)
+	var who := Node3D.new()
+	root.add_child(who)
+	var cam := TLChaseCam.new()
+	root.add_child(cam)
+	cam.setup(who, {"distance": 8.5, "height": 3.6, "look_height": 1.7, "avoid_space": sp.space,
+		"avoid_mask": 5, "stiffness": 1.0, "anchor_follow": 0.45, "anchor_follow_y": 0.18})
+	# A vertical jump clears the trunk. Test a point halfway from the actual head to the camera
+	# as well as points nearer the head; query the crown's collision layer independently.
+	var feet := Vector3.ZERO
+	var blocked := 0
+	var camera_inside := 0
+	var anchor_inside := 0
+	var standing_inside := 0
+	for i in 90:
+		var state := sp.drive(feet, Vector3.ZERO, i == 20, false)
+		feet = state.pos
+		who.position = feet
+		cam._physics_process(1.0 / 60)
+		var head := feet + Vector3.UP * 1.7
+		var pt := PhysicsPointQueryParameters3D.new()
+		pt.collision_mask = 4
+		var direct := PhysicsServer3D.space_get_direct_state(sp.space)
+		pt.position = cam.global_position
+		if not direct.intersect_point(pt, 1).is_empty():
+			camera_inside += 1
+			if i < 20:
+				standing_inside += 1
+		pt.position = cam._look
+		if not direct.intersect_point(pt, 1).is_empty():
+			anchor_inside += 1
+		for j in range(1, 21):
+			pt.position = head.lerp(cam.global_position, j / 20.0)
+			if not direct.intersect_point(pt, 1).is_empty():
+				blocked += 1
+				break
+	print("ticks=90 jump_tick=20 before_jump_camera_inside=%d anchor_in_crown=%d sightline_in_crown=%d camera_in_crown=%d" %
+		[standing_inside, anchor_inside, blocked, camera_inside])
+	cam.free()
+	who.free()
+	sp.free_all()
+	return standing_inside == 0 and camera_inside > 0 and anchor_inside > 0
+
+
+func _gate() -> bool:
+	var sp := Space.new()
+	Surfaces.flat(sp, 0, -100, 100, -100, 100)
+	var land := Node3D.new()
+	root.add_child(land)
+	land.set_meta(&"tl_space", sp)
+	var vis := Visitor.new()
+	land.add_child(vis)
+	vis.setup(Vector3.ZERO)
+	vis.steer_on()
+	for i in 60:
+		vis.wish(Vector3.FORWARD * 9, false, i == 59)
+		vis.step(vis.feet, i)
+	var entered: String = vis.rig.get("clip")
+	var visit := Visit.new()
+	var context := VisitorView.new()
+	var world := PlotList.new()
+	var holder := Pack.new()
+	context.visitor = vis
+	visit.view = context
+	visit.world = world
+	visit.stage(-1, 0, [holder], [Transform3D.IDENTITY], [40.0])
+	vis.visible = false
+	vis.wish(Vector3.ZERO, false, false)
+	vis.step(vis.feet, 60)
+	world.tick = 61
+	visit.stage(0, -1, [holder], [Transform3D.IDENTITY], [40.0])
+	vis.visible = true
+	var at_gate: Vector3 = vis.feet
+	for i in 180:
+		vis.wish(Vector3.FORWARD * 4.5, false, false)
+		vis.step(vis.feet, i + 61)
+	var after: String = vis.rig.get("clip")
+	var distance: float = at_gate.distance_to(vis.feet)
+	print("entry_clip=%s after_gate_ticks=180 mode=%s distance_m=%.2f clip=%s" %
+		[entered, vis.mode, distance, after])
+	land.free()
+	sp.free_all()
+	holder.free()
+	world.free()
+	context.free()
+	visit.free()
+	return entered == "slide" and after == "slide" and distance > 10
+
+
+func _record() -> bool:
+	# The closing callback gets the current holder, as on a rebuilt plot. Vary only
+	# whether the TLInput that collected the first round still exists at close.
+	var result := []
+	for rebuild: bool in [false, true]:
+		var visit := Visit.new()
+		var world := PlotList.new()
+		var holder := Pack.new()
+		holder.manifest = {"id": "ex_kit"}
+		holder.ctx = TLContext.new()
+		holder.ctx.input = TLInput.new()
+		holder.ctx.input.declare(&"tap")
+		visit.world = world
+		visit.devices = true
+		var prefix := OS.get_environment("D5_OUTPUT").path_join("rebuilt" if rebuild else "live")
+		visit.record_path = prefix + ".json"
+		visit.stage(-1, 0, [holder], [Transform3D.IDENTITY], [40.0])
+		for i in 20:
+			if i == 18:
+				holder.ctx.input.tap(&"tap")
+			holder.ctx.input._sample()
+		var rows: Array = visit._stage_rec[2]
+		if rebuild:
+			holder.ctx.input.free()
+			holder.ctx.input = TLInput.new()
+		visit._close_stage_record([holder])
+		var path := prefix + ".kit.1.json"
+		var saved := FileAccess.file_exists(path)
+		var length: int = Session.read(path).record.length if saved else -1
+		print("rebuilt=%s sampled_ticks=20 action_rows=%d action_tick=%d saved=%s length=%d" %
+			[rebuild, rows.size(), rows[0][0], saved, length])
+		result.append(saved and length == 20)
+		holder.ctx.input.free()
+		holder.free()
+		world.free()
+		visit.free()
+	return result == [true, false]
+
+

@@ -154,6 +154,8 @@ func place(at: Vector3) -> void:
 	sleeping = false
 	_was_moving = false
 	_pos_stamp = -1          # a teleport is not a path: it must not count as passing through a trigger
+	if is_inside_tree():
+		reset_physics_interpolation()   # D15: drawn at the new place at once, never a glide from the old one (draw only)
 
 
 ## Carries the ball with a node (a stick blade, a hand socket): it stays at `offset` in the holder's space and takes

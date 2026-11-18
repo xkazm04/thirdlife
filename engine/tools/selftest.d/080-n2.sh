@@ -29,8 +29,15 @@ if [ -z "$FILTER" ] || [[ "verbs.json_matches_host" == *"$FILTER"* ]]; then
 fi
 # several packs in one process: every pack hashes together as it does alone (tools/world.sh same)
 if [ -z "$FILTER" ] || [[ "world.same" == *"$FILTER"* ]]; then
-  out="$(bash "$HERE/world.sh" same --packs=pack_min,ex_bounce,ex_wall,ex_wall --frames=600 2>&1)"
+  # A stopped child is never a pass (docs/GATE-HONESTY.md): read its exit status and count the hash lines it printed
+  # (4 alone + 4 together x 3 runs), not only the absence of a failure word (bugfix-37 D1: a killed child printed nothing).
+  out="$(bash "$HERE/world.sh" same --packs=pack_min,ex_bounce,ex_wall,ex_wall --frames=600 2>&1)"; ws_code=$?
   why=""; echo "$out" | grep -q '^PASS world.same' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|not every' | head -3 | tr '\n' ' ')"
+  [ "$ws_code" -ne 0 ] && why="${why:+$why; }world.sh same exited $ws_code"
+  ws_alone="$(echo "$out" | grep -cE '^alone +[^ ]+: [0-9a-f]{16}$')"
+  ws_together="$(echo "$out" | grep -cE '^together [123] .*: [0-9a-f]{16} same$')"
+  { [ "$ws_alone" -ne 4 ] || [ "$ws_together" -ne 12 ]; } && why="${why:+$why; }hash lines alone $ws_alone of 4, together $ws_together of 12"
+  [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.same' && why="no PASS world.same line"
   verdict world.same "$why" "pack_min, ex_bounce and two ex_wall in one process: 4 hashes equal to the solo runs, three times"
 fi
 # a pack that gets one world tick in 8, and one paused for 100 ticks, end in the state of the uninterrupted run
