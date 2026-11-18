@@ -232,3 +232,5 @@ Unknown `type` or unknown keys are errors when the log is read.
   test back for ONE round (`reopened` reason and `queued` detail starting `hand check failed`, with the rows); then
   final verification and the hand checks run again. Only a second failure since the last promotion or change request,
   or a failing test no package registers, ends the job unpromoted.
+- Each hand check also leaves `reports/hand-checks-s<seq>.json` (`tl.hand-checks/1`: card, version, title, seeds, rows with
+  their bounds); `foreman status`, `foreman explain` and the designer panel read it. The verify events stay the record.
