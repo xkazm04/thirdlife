@@ -1,0 +1,49 @@
+$ ls engine/tools/selftest.d
+010-min.sh
+020-v0v1.sh
+030-v2.sh
+040-v3.sh
+050-norun.sh
+060-examples.sh
+070-kit.sh
+080-n2.sh
+090-n5a.sh
+100-p1.sh
+110-p7.sh
+120-p5.sh
+130-p11.sh
+140-p13.sh
+150-p12.sh
+160-p14c.sh
+170-k1.sh
+180-k2a.sh
+190-k2b.sh
+200-k2c.sh
+210-k2d.sh
+220-k3.sh
+230-k4.sh
+240-k5.sh
+250-k6.sh
+260-k8.sh
+270-life.sh
+280-walk.sh
+290-ground.sh
+300-rig.sh
+990-demo-a.sh
+991-demo-b.sh
+README.md
+
+$ cat engine/tools/selftest.d/990-demo-a.sh
+# Demo block A contributes one case through automatic discovery.
+# It only uses the shared verdict helper.
+verdict demo.a_independent ""
+
+$ cat engine/tools/selftest.d/991-demo-b.sh
+# Demo block B contributes one case through automatic discovery.
+# It only uses the shared verdict helper.
+verdict demo.b_independent ""
+
+$ bash engine/tools/selftest.sh demo.
+PASS demo.a_independent
+PASS demo.b_independent
+selftest: 2 passed, 0 failed (reports in .tl/d1-c/demo)

@@ -49,9 +49,8 @@ what was printed; the Director writes briefs, reads results, looks at the pictur
 one step at a time, one repeat on failure, never explain a failure away.
 Parallel builders get disjoint FILES, named in each brief with who owns the neighbours; what sits between them goes
 to a patches file, and a last single-builder package owns the seam (P14 of the core run closed what three parallel
-builders each had to leave). Every builder appends its selftest cases as a closed block (`if ...; then ... fi`),
-never relying on a `fi` that follows the file's last case: three merges of `engine/tools/selftest.sh` needed a hand
-fix for that.
+builders each had to leave). Each builder picks an unused number for `engine/tools/selftest.d/NNN-<lane-or-topic>.sh`
+and puts its cases there. Close every shell construct in that file. The selftest runner discovers blocks in sort order.
 The kernel API is versioned (`tl arch` rule `api-v1`): a builder that adds a public member says so; the Director
 settles the version on the merged tree. `tl.sh` takes the pack as `--pack=<dir>`.
 
