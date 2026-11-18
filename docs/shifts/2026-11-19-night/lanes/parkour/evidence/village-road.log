@@ -1,0 +1,22 @@
+tick 0   e:tier  plot:walker  from:  to:backdrop  why:start
+tick 0   e:tier  plot:drive  from:  to:backdrop  why:start
+tick 0   e:tier  plot:wall  from:  to:backdrop  why:start
+tick 0   e:tier  plot:paddle  from:  to:sideline  why:start
+tick 0   e:tier  plot:kit  from:  to:backdrop  why:start
+tick 0   e:tier  plot:car  from:  to:backdrop  why:start
+tick 0   e:tier  plot:hockey  from:  to:backdrop  why:start
+tick 0   e:tier  plot:parkour  from:  to:sideline  why:start
+pack walker example.walker seed 1: ticks 55 of 110, hash 40edb71d97afa0b5, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack drive seed.drive seed 1: ticks 55 of 110, hash 33d2a8261217ae22, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack wall seed.wall seed 1: ticks 55 of 110, hash d0976c99a35da339, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack paddle seed.paddle seed 1: ticks 110 of 110, hash d2d6e486f57b7077, tier sideline, seen [sideline], changes 0, longest wait 1, speed 1.0
+pack kit example.kit seed 1: ticks 55 of 110, hash 6773797e36ecc5ca, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack car example.car seed 1: ticks 55 of 110, hash 1e959fff4254b874, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack hockey game.ice_hockey_three_against seed 1: ticks 55 of 110, hash ccf9002fde139831, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack parkour game.parkour seed 1: ticks 110 of 110, hash 75801fdb41aac8a1, tier sideline, seen [sideline], changes 0, longest wait 1, speed 1.0
+world parkour_road: ticks 110, cost model, events 8, valve demotions 0, speed 1000 (lowest 1000) per mille, slice 2 (highest 2), tick p50 5.103 ms mean 8.5452 ms p99 29.686 ms, gate leaks 0, wrong-pack calls 0, kernel calls p50 1.345 ms, script errors 0, engine errors 0
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour/docs/shifts/2026-11-19-night/lanes/parkour/.work/01_village-road.png (tick 103, stage -1, cam visitor, 260 draw calls, 2240206 primitives, frame 5.116 ms)
+window: 1 of 1 pictures, 0 stage changes, frame p50 5.116 ms (simulation and drawing), render cpu 0.458 ms gpu 1.485 ms, landscape built in 873 ms (terrain 302 ms, colliders 272 ms)
+visitor: kind:visitor  ticks:108  blocked_ticks:0  max_dev_m:0.0  end_dev_m:0.0  frame_ms_p50:5.098  frame_ms_p99:29.238  frame_ms_max:72.186  end:[-185.0  0.88  2.52]
+landscape: road_m:560.0  spurs:10  fence_m:1990.0  trees:384  rocks:46  bushes:160  mesas:18  laps_ms:{grid_prep:2.7  grid:108.1  terrain:196.2  roads:38.2  edges_loop:2.7  lots:78.1  edges:4.9  scatter_setup:9.4  scatter:104.9  road_side:6.0  tufts:20.7  belt:4.8  mesas:24.7  coll_faces:120.9  add_faces:109.4  space:42.1
+DONE world.tour: pictures only, nothing was proven
