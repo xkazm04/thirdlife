@@ -15,6 +15,7 @@ var far_mode: String = "off"            # off | auto | all
 var far_dist: float = 150.0
 var far_margin: float = 0.15            # hysteresis: far beyond dist * (1 + m), near again inside dist * (1 - m)
 var rim_band: float = 9.0                # metres inside the plot edge over which a pack's ground is bent to the world's
+var grounds: Array = []                 # walker-feel T2: per plot, the pack has ground of its own (view.gd `has_ground`)
 var standin_min: float = 1.2            # metres: a mesh instance whose longest side is shorter is dropped ("still")
 # P6: the pictures of a far game (draw/FAR.md has the study these numbers come from)
 var mid_min: float = 2.5                # "mid": instances shorter than this are clutter at 100 m and more
@@ -43,7 +44,7 @@ var _shader_ok: Dictionary = {}         # Shader -> bool (declares tl_plot)
 var _pal: Material = null
 var _mark: ArrayMesh = null             # P6: the unit box every mark is an instance of
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
-const PIC_VERSION: int = 13             # P13: part of the picture cache's key; count it up when a picture's rules change
+const PIC_VERSION: int = 14             # P13: part of the picture cache's key; count it up when a picture's rules change (T2: 14)
 var pic_worker: bool = true             # P13: pictures are merged on a worker (false: in the frame, as P6 did)
 var _dir_hashes: Dictionary = {}        # P13: pack directory -> content hash (the picture cache's key)
 var _cache_tasks: Array = []            # P13: picture cache writes in flight
@@ -68,7 +69,34 @@ func _clip_v4(e: Dictionary, g: Node) -> Vector4:
 		var wide: Array = []
 		_wide_meshes(e["holder"], maxf(30.0, float(e["radius"])), wide)
 		e["sheets"] = wide
-	return Vector4(float(e["radius"]), float(e["rim"]), rim_band, 1.0 if (e["sheets"] as Array).has(g) else 0.0)
+	var w: float = (1.0 if (e["sheets"] as Array).has(g) else 0.0) + (2.0 if reaches_in(e["holder"], g, float(e["radius"])) else 0.0)
+	return Vector4(float(e["radius"]), float(e["rim"]), _band(e), w)
+
+
+## Walker-feel T2 (ex_car's asphalt): a mesh whose origin lies outside the plot but whose box reaches into it. The
+## plot cut drops an instance by its origin (a tree of the forest beyond the plot): right for small things, wrong for
+## a long slab placed by its middle (ex_car's asphalt, 60 x 190 m with its origin 65 m out of a 40 m plot: the course
+## was not drawn at all in a world). Such an instance gets 2 added to `tl_clip.w` (1 = a terrain sheet, so 2 or 3):
+## toon.gdshader (lane L, T-PATCHES) keeps it and cuts it in fragment() like a large mesh. With the shader as it is,
+## w >= 2 changes nothing: it is dropped as before, and w = 3 reads as a sheet (w > 0.5) as w = 1 did.
+static func reaches_in(holder: Node, g: Node, radius: float) -> bool:
+	if radius <= 0.0 or not (g is GeometryInstance3D) or not (holder is Node3D):
+		return false
+	var xf: Transform3D = (holder as Node3D).global_transform.affine_inverse() * (g as Node3D).global_transform
+	if Vector2(xf.origin.x, xf.origin.z).length() <= radius:
+		return false
+	var bb: AABB = xf * (g as GeometryInstance3D).get_aabb()
+	var cx: float = clampf(0.0, bb.position.x, bb.end.x)          # the box's nearest point to the plot centre
+	var cz: float = clampf(0.0, bb.position.z, bb.end.z)
+	return Vector2(cx, cz).length() < radius
+
+
+## Walker-feel T2: the width of the bent band of plot `e`. Only a pack with ground of its own is bent at its rim (its
+## ground meets the world's there); a pack without one (ex_car, the hockey arena: the world's pad lies under it) is
+## drawn as it is built: before, its wide meshes (the arena's stands) were bent down toward height 0 in the last 9 m.
+## TL_RIM_BEND=all: as before (before pictures).
+func _band(e: Dictionary) -> float:
+	return rim_band if bool(e.get("ground", true)) or OS.get_environment("TL_RIM_BEND") == "all" else 0.0
 
 
 func _plot_v4(rel: Transform3D) -> Vector4:

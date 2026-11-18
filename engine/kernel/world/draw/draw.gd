@@ -52,7 +52,7 @@ func setup(world_node: Node, plots: Array, radii: Array, rims: Array, stage_inde
 	var holders: Array = world.get("packs")
 	for i: int in holders.size():
 		entries.append({"holder": holders[i], "plot": plots[i], "radius": float(radii[i]) if i < radii.size() else 0.0,
-			"rim": float(rims[i]) if i < rims.size() else 0.0,
+			"rim": float(rims[i]) if i < rims.size() else 0.0, "ground": bool(grounds[i]) if i < grounds.size() else true,
 			"clipped": [], "rel": Transform3D.IDENTITY, "a": [], "mirrors": [],
 			"pics": {}, "kind": "", "life": {}, "boards": {}, "far": false, "placed": false, "standin_info": {}})
 	get_tree().node_added.connect(_on_node_added)
@@ -113,14 +113,17 @@ func set_stage(index: int) -> void:
 		var e: Dictionary = entries[i]
 		_unplace(e)
 		e["rel"] = inv * (e["plot"] as Transform3D)
-		var ctx: TLContext = (e["holder"] as Node).get("ctx")
+		var hn: Variant = e["holder"]
+		var ctx: TLContext = (hn as Node).get("ctx") if is_instance_valid(hn) else null      # M2-PATCHES 1: a freed holder
 		if ctx != null:
 			ctx.on_stage = i == stage
 			for h: Variant in ctx.huds:
 				if is_instance_valid(h):
 					(h as CanvasLayer).visible = i == stage
 		_place_own(e)
-		if i != stage:
+		if not is_instance_valid(hn):
+			pass                              # its pack is being rebuilt: replace_holder places the new one
+		elif i != stage:
 			_place(e)
 		elif float(e["radius"]) > 0.0:
 			_clip_walk(e, e["holder"])        # the stage pack is cut to its plot too; nothing else of it is touched

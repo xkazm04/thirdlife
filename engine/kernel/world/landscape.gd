@@ -540,7 +540,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		for i: int in mini(holders.size(), plots.size()):
 			if float(radii[i]) > 0.0 and is_instance_valid(holders[i]):
 				ws.set("tag", "pack %d" % i)
-				ws.call("add_pack", holders[i], plots[i], float(radii[i]), float(pad_h[i]) - (plots[i] as Transform3D).origin.y, band)
+				ws.call("add_pack", holders[i], plots[i], float(radii[i]), float(pad_h[i]) - (plots[i] as Transform3D).origin.y, band if bool(has_ground[i]) else 0.0)
 	ws.call("finish")
 	stats["space"] = ws.get("stats")
 	stats["space_ms"] = Time.get_ticks_msec() - cs0

@@ -339,3 +339,8 @@ to the rules by the pack itself (`TLKitSite.bind_scoreboard`); the layer leaves 
   boot.gd `EXE_AA`, turned that tie into flicker on the kit court's floor).
 - With physics interpolation on (lane M): the stage re-base and a newly adopted holder reset their interpolation;
   the marks of far packs are not interpolated (they are set per drawn frame).
+- **Round 2: no rim bend without ground.** Only a pack with ground of its own is bent at its rim (draw_base.gd
+  `_band`); the hockey arena's stands were bent down toward height 0 in the last 9 m. `TL_RIM_BEND=all` as before.
+- **A slab that reaches in** (draw_base.gd `reaches_in`): an instance whose origin lies outside the plot but whose box
+  reaches into it gets 2 added to `tl_clip.w`; with lane L's toon.gdshader patch (T2-PATCHES.md) it is cut, not
+  dropped (ex_car's course). The far pictures keep it already.

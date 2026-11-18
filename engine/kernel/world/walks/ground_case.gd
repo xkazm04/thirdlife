@@ -74,8 +74,16 @@ func _check() -> void:
 	h = gm.get_shader_parameter(&"tl_holes")
 	if not ((h[1] as Vector4).z > 32.0):
 		why.append("opened again: plot 1's hole is %s" % str(h[1]))
+	# round 2: a pack without ground of its own is not bent at its rim (the hockey arena's stands were)
+	var dl: Node3D = DrawScript.new()
+	dl.set("rim_band", 9.0)
+	var b_none: float = float(dl.call("_band", {"ground": false}))
+	var b_own: float = float(dl.call("_band", {"ground": true}))
+	if OS.get_environment("TL_RIM_BEND") != "all" and (b_none != 0.0 or b_own != 9.0):
+		why.append("rim band: %.1f m without ground (want 0), %.1f m with (want 9)" % [b_none, b_own])
+	dl.free()
 	print("GROUNDCASE %s %s" % ["ok" if why.is_empty() else "fail",
-		("ex_car's boxes cover %d %% of the rim: no hole; a terrain sheet: rim 1.5; a hole shut and opened again" % int(round(cover * 100.0))) if why.is_empty() else "; ".join(why)])
+		("ex_car's boxes cover %d %% of the rim: no hole; a terrain sheet: rim 1.5; a hole shut and opened again; no rim bend without ground" % int(round(cover * 100.0))) if why.is_empty() else "; ".join(why)])
 	car.free()
 	sheet.free()
 	land.free()

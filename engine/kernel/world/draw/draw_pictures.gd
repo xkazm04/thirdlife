@@ -90,7 +90,7 @@ func _new_accs(e: Dictionary, kinds: Array) -> Array:
 		acc.kind = k
 		acc.radius = float(e["radius"])
 		acc.rim = float(e["rim"])
-		acc.band = rim_band
+		acc.band = _band(e)
 		acc.sheets = e["sheets"]
 		acc.min_size = standin_min if k == "still" else (mid_min if k == "mid" else far_min)
 		acc.cell = far_cell if k == "far" else 0.0
@@ -180,7 +180,7 @@ func _cache_key(e: Dictionary) -> String:
 	if not WorkerThreadPool.is_task_completed(int(slot[0])) or slot.size() < 2:
 		return ""                      # its hash is still being read on a worker: no cache this time
 	var rules: String = "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [PIC_VERSION, mid_min, far_min, far_cell, far_flat, far_thin, far_small, standin_min, rim_band]
-	return ("%s|%s|%s|%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules]).md5_text()
+	return ("%s|%s|%s|%s|%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules, _band(e)]).md5_text()
 
 
 ## The content hash of a pack directory reads every file of it (60 to 100 ms for the seeds): on a worker, never in a
@@ -281,7 +281,7 @@ func _collect_standin(n: Node, holder: Node3D, accs: Array, jobs: Array) -> void
 				acc.dropped_moving += 1
 			elif longest < acc.min_size:
 				acc.dropped_small += 1
-			elif acc.radius > 0.0 and Vector2(m.global_position.x, m.global_position.z).length() > acc.radius:
+			elif acc.radius > 0.0 and Vector2(m.global_position.x, m.global_position.z).length() > acc.radius and not reaches_in(holder, m, acc.radius):        # walker-feel T2: a long slab that reaches in is cut, not dropped
 				acc.dropped_outside += 1
 			else:
 				for s: int in m.mesh.get_surface_count():

@@ -78,6 +78,7 @@ var _capture_path: String = ""
 var _capture_done: bool = false
 var _captured: bool = false
 var _capture_at: int = CAPTURE_FRAME
+var _keys_held: Dictionary = {}         # keycode -> true: the keys TL_EXE_KEYS holds down now (M2-PATCHES 2)
 var _keys: Dictionary = {}              # physics frame -> [[pressed, keycode], ...] or [["move", Vector2]] (TL_EXE_KEYS)
 var _trace: FileAccess = null
 var _quit_at: int = -1
@@ -435,6 +436,14 @@ func _end_world() -> void:
 
 func _physics_process(_delta: float) -> void:
 	_frame += 1
+	# M2-PATCHES 2: a key TL_EXE_KEYS holds is pressed again when the engine let go of it (another window took the focus)
+	for k: Variant in _keys_held.keys():
+		if not Input.is_physical_key_pressed(int(k)):
+			var again: InputEventKey = InputEventKey.new()
+			again.keycode = int(k)
+			again.physical_keycode = int(k)
+			again.pressed = true
+			Input.parse_input_event(again)
 	if _frame == 2:
 		_set_aa(OS.get_environment("TL_EXE_AA") if not OS.get_environment("TL_EXE_AA").is_empty() else EXE_AA)
 	for k: Array in _keys.get(_frame, []):
@@ -448,6 +457,10 @@ func _physics_process(_delta: float) -> void:
 		ev.physical_keycode = k[1]
 		ev.pressed = bool(k[0])
 		Input.parse_input_event(ev)
+		if bool(k[0]):
+			_keys_held[int(k[1])] = true
+		else:
+			_keys_held.erase(int(k[1]))
 	var stage: int = int(view.get("stage"))
 	if _trace != null and _frame % 30 == 0:
 		var pos: Vector3 = world.get("player_pos")

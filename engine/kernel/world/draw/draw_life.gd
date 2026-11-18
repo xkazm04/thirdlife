@@ -468,7 +468,7 @@ func _build_boards(e: Dictionary) -> void:
 		add_child(mi)
 		_place_free(e, mi)
 		if float(e["radius"]) > 0.0:
-			mi.set_instance_shader_parameter(CLIP, Vector4(float(e["radius"]), float(e["rim"]), rim_band, 0.0))    # lifted at the rim like the prop under it
+			mi.set_instance_shader_parameter(CLIP, Vector4(float(e["radius"]), float(e["rim"]), _band(e), 0.0))    # lifted at the rim like the prop under it
 		(boards["list"] as Array).append({"node": mi})
 
 

@@ -226,6 +226,7 @@ func start(options: Dictionary) -> void:
 	draw.set("far_mode", str(opts.get("standins", "off")))
 	draw.set("far_dist", float(opts.get("far", "150")))
 	draw.set("rim_band", float(opts.get("band", str(walk.get("rim_band", 9.0)))))
+	draw.set("grounds", has_ground)                            # walker-feel T2: no rim bend for a pack without ground
 	draw.set("force_picture", str(opts.get("picture", "")))     # P11 (PATCHES-P6 entry 2): still | mid | far, every far game
 	add_child(draw)
 	if tour:
@@ -357,7 +358,7 @@ func _on_plot_event(i: int, what: String, ev: Dictionary) -> void:
 				var tc: int = Time.get_ticks_usec()
 				# P14: listed now, copied in slices of 2 ms a frame (nearest plot first), and at once when he is near
 				_copies.append({"i": i, "job": ws.call("begin_pack", (world.get("packs") as Array)[i], plots[i], float(radii[i]),
-					float(rims[i]), float((lc as Dictionary).get("rim_band", 9.0)) if typeof(lc) == TYPE_DICTIONARY else 9.0)})
+					float(rims[i]), (float((lc as Dictionary).get("rim_band", 9.0)) if typeof(lc) == TYPE_DICTIONARY else 9.0) if bool(has_ground[i]) else 0.0)})
 				_note("colliders_list p%d" % i, tc)
 			_arrived[i] = true
 			if i == stage or not tour:
