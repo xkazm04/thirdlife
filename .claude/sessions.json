@@ -1,9 +1,3 @@
 {
-  "sessions": [
-    {
-      "id": "spark-astra-trial",
-      "scope": ["engine/tools/selftest.sh", "engine/tools/selftest.d/**", "docs/reports/astra-trial/**", "docs/art/**"],
-      "note": "spark astra-trial, 18 Nov afternoon: 3 arms (Opus / Astra / Opus+Astra) per discipline in .claude/worktrees/at-*; only winners merge"
-    }
-  ]
+  "sessions": []
 }
