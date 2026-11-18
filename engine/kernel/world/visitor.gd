@@ -88,6 +88,7 @@ func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary 
 	cam.setup(self, o)
 	if space != null:
 		cam.avoid_space = space.get("space")
+		cam.avoid_mask = 1 | 4                 # the ground and solid things, and the trees' crowns (world_space CANOPY)
 		cam.near = 0.05
 	_cam_dist = Vector2(float(o["distance"]), float(o["height"]) - float(o["look_height"])).length()
 	_cam_look_h = float(o["look_height"])

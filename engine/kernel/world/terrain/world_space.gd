@@ -128,6 +128,25 @@ func add_trunk(foot: Vector3, radius: float, height: float = 4.0) -> void:
 		_cyl[key] = c
 	_static(_cyl[key] as Shape3D, Transform3D(Basis(), foot + Vector3(0.0, height * 0.5, 0.0)))
 	stats["trunks"] = int(stats["trunks"]) + 1
+	if tag == "tree" and height == 4.0:
+		add_canopy(foot, radius / 0.46)
+
+
+## Walker-feel round 2: a tree's crown, for the CAMERA only (layer CANOPY: the body, the probes and `ground_at` ask
+## layer 1 and walk through it). `s` is the tree's scale (its trunk radius / 0.46: the landscape's pines have 0.42 x
+## scale, its broadleaf trees 0.5 x scale). The crown's core: a cylinder of 1.9 s from 2.2 s to 8.0 s over the foot
+## (kit pines: crown radius 2.1-2.7 from 0.16 h up, h 8.5-12.5; broadleaf: about 0.45 h round 0.7 h, h 6.5-7.5).
+const CANOPY: int = 4
+func add_canopy(foot: Vector3, s: float) -> void:
+	var key: String = "crown_%.2f" % s
+	if not _cyl.has(key):
+		var c: CylinderShape3D = CylinderShape3D.new()
+		c.radius = 1.9 * s
+		c.height = 5.8 * s
+		_cyl[key] = c
+	_static(_cyl[key] as Shape3D, Transform3D(Basis(), foot + Vector3(0.0, 5.1 * s, 0.0)))
+	PhysicsServer3D.body_set_collision_layer(_bodies[_bodies.size() - 1] as RID, CANOPY)
+	stats["canopies"] = int(stats.get("canopies", 0)) + 1
 
 
 func add_boulder(centre: Vector3, radius: float) -> void:

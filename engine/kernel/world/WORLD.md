@@ -202,7 +202,10 @@ per tick across, 0.18 in height: a jump or a landing is eased, a mouse turn keep
 the world's space: a sphere of 0.3 m is cast from the point looked at (1.7 m over his feet) to the wanted place; it
 stands where the sphere stops (pulled in at once, back out by 0.12 of the way per tick); when that is nearer than
 2.5 m it is first swung up round the point looked at (10 degree steps, at most 80 degrees over the horizon) so over an
-edge it looks down at him. Near plane 0.05 m. Physics interpolation is on (`project.godot`): between two ticks the
+edge it looks down at him. Near plane 0.05 m. Round 2: trees' crowns are in the world's space too, for the camera only (collision layer 4, a
+cylinder of 1.9 s from 2.2 s to 8.0 s over the foot, s = the tree's scale): the body, the probes and `ground_at` ask
+layer 1 and pass under them as before; the visitor's camera asks 1 | 4, so a crown between him and the camera pulls
+the camera in front of it (`walk.canopy`: the view through a crown in 221 of 360 ticks before, 0 after). Physics interpolation is on (`project.godot`): between two ticks the
 figure and the camera are drawn where they are between them; `put`, `setup` and `snap` reset it after a teleport.
 
 Proof: `tl.sh selftest walk.` (headless, kernel/world/walks/walk_case.gd: idle on banks of 20, 35, 50 degrees for 600

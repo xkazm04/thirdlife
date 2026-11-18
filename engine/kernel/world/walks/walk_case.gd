@@ -61,6 +61,8 @@ func _initialize() -> void:
 		_slide()
 	if _want("camera"):
 		await _camera()
+	if _want("canopy"):
+		await _canopy()
 	print("WALKCASE done %d %d" % [_ok, _n])
 	quit(0 if _ok == _n else 1)
 
@@ -330,3 +332,50 @@ func _camera() -> void:
 		sp.call("free_all")
 	var ok: bool = res[0] < 0.0 and res[1] > 0.2
 	_say("walk.camera", ok, "camera height over the ground, lowest of 240 ticks along a 30 deg hill, view pitched -10 deg: without avoid_space %.2f m (under the ground), with it %.2f m" % [res[0], res[1]])
+
+
+func _canopy() -> void:
+	# round 2 (T-PATCHES M2): he runs along x past a row of trees just off his line; the chase camera behind him. A
+	# tick is "blocked" when the line from the point looked at to the camera passes through a crown (layer 4), "inside"
+	# when the camera itself is in one. Without the crowns in the camera's mask (round 1) and with them.
+	var res: Array = []
+	for mask: int in [1, 1 | 4]:
+		var sp: RefCounted = Space.new()
+		flat(sp, 0.0, -80, 80, -40, 40)
+		sp.set("tag", "tree")
+		for x: float in [-30.0, -18.0, -6.0, 6.0, 18.0]:
+			sp.call("add_trunk", Vector3(x, 0.0, -1.2), 0.5)
+		var holder: Node3D = Node3D.new()
+		root.add_child(holder)
+		var who: Node3D = Node3D.new()
+		holder.add_child(who)
+		who.position = Vector3(-40, 0, 0)
+		who.rotation.y = deg_to_rad(-90.0)        # looking along +x
+		var cam: TLChaseCam = TLChaseCam.new()
+		holder.add_child(cam)
+		cam.setup(who, {"distance": 8.5, "height": 3.6, "look_height": 1.7, "stiffness": 1.0, "follow": 1.0, "aim": 1.0, "anchor_follow": 0.45, "anchor_follow_y": 0.18,
+			"avoid_space": sp.get("space"), "avoid_mask": mask})
+		cam.make_current()
+		var blocked: int = 0
+		var inside: int = 0
+		var nearest: float = INF
+		for i: int in 360:
+			who.position.x += 9.0 / 60.0
+			await physics_frame
+			var c: Vector3 = cam.global_position
+			var look: Vector3 = who.global_position + Vector3.UP * 1.7
+			var st: PhysicsDirectSpaceState3D = PhysicsServer3D.space_get_direct_state(sp.get("space"))
+			if not st.intersect_ray(PhysicsRayQueryParameters3D.create(look, c, 4)).is_empty():
+				blocked += 1
+			var q: PhysicsPointQueryParameters3D = PhysicsPointQueryParameters3D.new()
+			q.position = c
+			q.collision_mask = 4
+			if not st.intersect_point(q, 1).is_empty():
+				inside += 1
+			nearest = minf(nearest, c.distance_to(look))
+		res.append([blocked, inside, nearest])
+		holder.queue_free()
+		await process_frame
+		sp.call("free_all")
+	var ok: bool = int(res[0][0]) > 0 and int(res[1][0]) == 0 and int(res[1][1]) == 0
+	_say("walk.canopy", ok, "360 ticks at 9 m/s past 5 trees: camera mask 1 (round 1): the view through a crown in %d ticks, the camera inside one in %d; mask 1|4: %d and %d, nearest camera %.2f m from the point looked at" % [res[0][0], res[0][1], res[1][0], res[1][1], res[1][2]])

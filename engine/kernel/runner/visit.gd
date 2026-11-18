@@ -43,6 +43,7 @@ var _stage_feeds: Dictionary = {}       # "<plot id>.<n>" -> record (replay)
 var _ticks: int = 0
 var _captured: bool = false
 var shots: Array = []                   # [tick, name] asked by the device script
+var _held: Dictionary = {}              # walker-feel round 2: keys the device script holds down (keycode -> true)
 
 
 ## `opts`: the viewer's options (record, input, devices). Returns "" or why the visit cannot start.
@@ -111,6 +112,15 @@ func _notification(what: int) -> void:
 
 ## The sampling line, once per world tick: the device script's events of this tick, the pointer, then the latch.
 func sample(tick: int) -> void:
+	# T-PATCHES M4: the engine lets go of every pressed key when another window takes the focus; a key the device
+	# script still holds is pressed again here (a person's own keys are the person's: only scripted ones)
+	for k: Variant in _held.keys():
+		if not Input.is_physical_key_pressed(int(k)):
+			var again: InputEventKey = InputEventKey.new()
+			again.keycode = int(k)
+			again.physical_keycode = int(k)
+			again.pressed = true
+			Input.parse_input_event(again)
 	for e: Array in _script.get(tick, []):
 		match str(e[0]):
 			"key":
@@ -119,6 +129,10 @@ func sample(tick: int) -> void:
 				ev.physical_keycode = ev.keycode
 				ev.pressed = int(e[2]) != 0
 				Input.parse_input_event(ev)
+				if ev.pressed:
+					_held[ev.keycode] = true
+				else:
+					_held.erase(ev.keycode)
 			"move":
 				var mv: InputEventMouseMotion = InputEventMouseMotion.new()
 				mv.relative = Vector2(float(e[1]), float(e[2]))
@@ -199,6 +213,10 @@ func print_path(tick: int, mark: String = "") -> void:
 		if not is_nan(g):
 			line["cam_over_ground_m"] = snappedf(c.y - g, 0.01)
 		line["body"] = str(vis.get("mode"))
+		var pq: PhysicsPointQueryParameters3D = PhysicsPointQueryParameters3D.new()
+		pq.position = c
+		pq.collision_mask = 4                          # a tree's crown (world_space CANOPY)
+		line["cam_in_crown"] = not PhysicsServer3D.space_get_direct_state(sp.get("space")).intersect_point(pq, 1).is_empty()
 	print(JSON.stringify(line, "", false))
 
 
@@ -239,6 +257,18 @@ func stage(was: int, now: int, holders: Array, plots: Array, radii: Array) -> vo
 
 func _close_stage_record(holders: Array) -> void:
 	if _stage_rec.is_empty():
+		return
+	if not is_instance_valid(_stage_rec[1]):
+		# the game was rebuilt from its seed while on stage (its next round): its input went with it. What was
+		# recorded of this visit is written as it is. (Walker-feel round 2: typing a freed input was a SCRIPT ERROR.)
+		if _stage_rec[2] != null and not record_path.is_empty():
+			var h0: Variant = holders[int(_stage_rec[0])]
+			var m0: Dictionary = h0.get("manifest") if is_instance_valid(h0) else {}
+			Session.call("write", record_path.trim_suffix(".json") + "." + str(_stage_rec[3]) + ".json", {"schema": Session.SCHEMA,
+				"pack": str(m0.get("id", "")), "seed": int(h0.get("seed_value")) if is_instance_valid(h0) else 1, "mode": "play",
+				"max_frames": int(h0.get("frames_target")) if is_instance_valid(h0) else (_stage_rec[2] as Array).size(),
+				"length": (_stage_rec[2] as Array).size(), "end": "step", "frames": _stage_rec[2]})
+		_stage_rec = []
 		return
 	var inp: TLInput = _stage_rec[1]
 	if is_instance_valid(inp) and _stage_rec[2] != null:
