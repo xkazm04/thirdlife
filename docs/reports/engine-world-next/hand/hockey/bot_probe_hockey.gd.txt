@@ -1,0 +1,32 @@
+extends Node
+## Lane C2 probe (not part of hockey): an idle player at level rookie. It only pins the level (the keyless action
+## level_rookie, as bot_hockey.gd does) and then presses nothing; blue's AI mates still play.
+## won = the match is over and the winner is blue; ok = the match ended.
+
+var hand_profile: String = "idle"
+var ctx
+var s: Dictionary = {}
+var done: bool = false
+
+
+func _bot_setup(c) -> void:
+	ctx = c
+
+
+func _bot_tick(frame: int) -> void:
+	s = ctx.pack_state()
+	if frame == 0 or str(s.get("level", "none")) != "rookie":
+		ctx.input.tap(&"level_rookie")
+		return
+	done = s["state"] == "over" and str(s.get("result", "")) != ""
+
+
+func _bot_done() -> bool:
+	return done
+
+
+func _bot_result() -> Dictionary:
+	var tally: Dictionary = s.get("scores", {})
+	var won: bool = done and str(s.get("winner", "")) == "blue"
+	return {"ok": done, "won": won, "goals": int(tally.get("blue", 0)), "against": int(tally.get("red", 0)), "frames": ctx.frame,
+		"summary": "idle at rookie: %s %d : %d" % [str(s.get("result", "")), int(tally.get("blue", 0)), int(tally.get("red", 0))]}

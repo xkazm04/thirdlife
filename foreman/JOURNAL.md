@@ -599,3 +599,14 @@ PATCHES-P10.md entry 5, option 2: `foreman.ts` back under its grandfathered 2138
 - Tests: `src/test/cards.test.ts` (8 cases); p10 "rounds are spent" extended, p10 "not that merge's doing" copies the
   kept files back by hand (its premise was the unmade change left in pack/); cli env test copies the kernel version
   file into its stand-in engine and checks the exit 2 without it; wp3b expects the fake engine's 1.5.
+
+## 2026-11-18 night, lane C2 (engine-world-next): a built game is checked through a person's hand
+
+- A card may carry `hands` ({seeds, checks: [{hand, wins_min?, wins_max?, measured}]}; hand = idle or a TLHand
+  profile). `src/handcheck.ts`: at the end of the final verification, every check's `tests/bot_hand_<hand>.gd` runs on
+  seeds 1..seeds (verb bot, V4, stem final-hand-<hand>-seed<k>). The bot result's boolean `won` is counted and judged
+  by `devx/lib/cards/hands.mjs judgeHand`, the same code `tl cards hands` uses. A missing test, an unfinished run, a
+  missing `won`, or a bound missed means the job ends `failed` with nothing promoted (after a change, pack/ goes back).
+- The fake runner's marker FAKE_WON(<n>) makes a bot result say won on seeds 1..n. `src/test/hands.test.ts` covers 3
+  cases: a pass promotes; a missed bound and a missing test do not. The Planner's card list names the hand tests a card
+  needs. foreman.ts is at 2005 lines (its limit): one comment line was folded into an import line.

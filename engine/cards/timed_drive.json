@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.timed_drive",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "title": "Drive a circuit: laps through checkpoints against a clock",
   "summary": "One vehicle on a road loop built from data, checkpoints in order make a lap, N laps before the clock runs out. Covers time trials, kart circuits, delivery runs with gates, slaloms.",
   "applies_when": [
@@ -14,18 +14,69 @@
     "the vehicle leaves the road for open terrain or stunts"
   ],
   "seed": "seed_drive",
-  "capabilities": ["physics", "vehicle", "rules", "input", "camera", "spawn", "ai", "ui", "kit"],
-  "kit_parts": ["kerb", "cone", "tyre_stack", "barricade", "sign", "flag", "light_mast", "marshal_post", "scoreboard", "watch_tower"],
-  "swap_parts": ["road_spline", "bridge", "fence", "stands", "crate"],
-  "api": [
-    "TLKit.build_layout", "TLKit.build", "TLVehicle.create", "TLVehicle.drive_from_input", "TLBodies.trigger", "TLBodies.from_part",
-    "TLSpawner.create", "TLSteer.keep_lane", "TLRules.create", "TLRules.pass_checkpoint", "TLRules.snapshot", "TLHud.create"
+  "capabilities": [
+    "physics",
+    "vehicle",
+    "rules",
+    "input",
+    "camera",
+    "spawn",
+    "ai",
+    "ui",
+    "kit"
   ],
-  "rules_keys": ["sides", "laps_to_win", "checkpoints", "time_limit_seconds"],
+  "kit_parts": [
+    "kerb",
+    "cone",
+    "tyre_stack",
+    "barricade",
+    "sign",
+    "flag",
+    "light_mast",
+    "marshal_post",
+    "scoreboard",
+    "watch_tower"
+  ],
+  "swap_parts": [
+    "road_spline",
+    "bridge",
+    "fence",
+    "stands",
+    "crate"
+  ],
+  "api": [
+    "TLKit.build_layout",
+    "TLKit.build",
+    "TLVehicle.create",
+    "TLVehicle.drive_from_input",
+    "TLBodies.trigger",
+    "TLBodies.from_part",
+    "TLSpawner.create",
+    "TLSteer.keep_lane",
+    "TLRules.create",
+    "TLRules.pass_checkpoint",
+    "TLRules.snapshot",
+    "TLHud.create"
+  ],
+  "rules_keys": [
+    "sides",
+    "laps_to_win",
+    "checkpoints",
+    "time_limit_seconds"
+  ],
   "data_files": [
-    {"file": "data/track.json", "role": "the venue: one circuits[] entry whose control points are the road; the built road node carries its centre line, length and half width"},
-    {"file": "data/rules.json", "role": "laps to win, number of checkpoints, the time limit"},
-    {"file": "data/tuning.json", "role": "start place and checkpoint places as shares of the lap, cone places, every vehicle tuning member"}
+    {
+      "file": "data/track.json",
+      "role": "the venue: one circuits[] entry whose control points are the road; the built road node carries its centre line, length and half width"
+    },
+    {
+      "file": "data/rules.json",
+      "role": "laps to win, number of checkpoints, the time limit"
+    },
+    {
+      "file": "data/tuning.json",
+      "role": "start place and checkpoint places as shares of the lap, cone places, every vehicle tuning member"
+    }
   ],
   "do": [
     "Place everything by distance along the centre line (s metres along, off metres to the side): start, checkpoints, pads, cones. Then moving the road moves the game.",
@@ -55,9 +106,46 @@
     "The chase camera keeps the car in frame for the whole bot run and the HUD shows lap and clock."
   ],
   "variants": [
-    {"ask": "more laps, a tighter clock", "change": "one number each in rules.json; re-measure the bot before tightening the clock."},
-    {"ask": "a different circuit", "change": "move the control points in track.json; checkpoints, cones and the start follow because they are placed by s."},
-    {"ask": "a slalom or gate run", "change": "more checkpoints as narrow triggers, cones from the spawner beside each gate."},
-    {"ask": "icy or wet road", "change": "the road's surface in the layout: grip follows from the law table (asphalt 1.0 against ice 0.1), so lower the bot's cornering speed with it."}
-  ]
+    {
+      "ask": "more laps, a tighter clock",
+      "change": "one number each in rules.json; re-measure the bot before tightening the clock."
+    },
+    {
+      "ask": "a different circuit",
+      "change": "move the control points in track.json; checkpoints, cones and the start follow because they are placed by s."
+    },
+    {
+      "ask": "a slalom or gate run",
+      "change": "more checkpoints as narrow triggers, cones from the spawner beside each gate."
+    },
+    {
+      "ask": "icy or wet road",
+      "change": "the road's surface in the layout: grip follows from the law table (asphalt 1.0 against ice 0.1), so lower the bot's cornering speed with it."
+    }
+  ],
+  "hands": {
+    "seeds": 20,
+    "checks": [
+      {
+        "hand": "idle",
+        "wins_max": 0,
+        "measured": "seed_drive idle 0 of 20 (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      },
+      {
+        "hand": "newcomer",
+        "wins_min": 1,
+        "measured": "seed_drive newcomer 4 of 20, Wilson 8..42 (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      },
+      {
+        "hand": "regular",
+        "wins_min": 13,
+        "measured": "seed_drive regular 18 of 20, Wilson 70..97 (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      },
+      {
+        "hand": "perfect",
+        "wins_min": 16,
+        "measured": "seed_drive perfect 20 of 20, Wilson 84..100 (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      }
+    ]
+  }
 }

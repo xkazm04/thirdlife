@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { REPO } from "../lib/ctx.mjs";
-import { checkCards, validateCard, checkCardAgainstTree } from "../lib/cards/check.mjs";
+import { checkCards, validateCard, checkCardAgainstTree, loadCards } from "../lib/cards/check.mjs";
 import { cardBrief } from "../lib/commands/cards.mjs";
 
 const COPY = ["engine/cards", "engine/seeds/seed_paddle", "engine/kernel/api", "engine/kits", "assets/manifest.json", "contracts/pack.schema.json"];
@@ -199,4 +199,64 @@ test("house pack: the brief starts from engine/packs/<pack>/ and names it a hous
   assert.match(text, /^Start from: engine\/packs\/hockey\/ \(copy its shape/m);
   assert.match(text, /^Kit parts the house game already uses: /m);
   assert.doesNotMatch(text, /engine\/seeds\/undefined/);
+});
+
+// ---- lane C2 (18 Nov): `hands`, what a person's hand must find; `tl cards hands` runs it on a pack.
+import { handRows, overlayPack, readHandRun, parseHandArgs } from "../lib/cards/handrun.mjs";
+import { judgeHand, wilson } from "../lib/cards/hands.mjs";
+
+test("hands: every committed card's block is valid; shape errors are named", () => {
+  for (const { card } of loadCards(REPO).cards) if (card.hands) assert.deepEqual(validateCard(card), [], card.id);
+  expectProblem((c) => { c.hands = { seeds: 20, checks: [{ hand: "idle", wins_max: 0, measured: "m", extra: 1 }] }; }, /checks\[0\]: unknown key 'extra'/);
+  expectProblem((c) => { c.hands = { seeds: 20, checks: [{ hand: "lefty", wins_max: 0, measured: "m" }] }; }, /hand 'lefty' must be one of idle, newcomer, regular, sharp, perfect/);
+  expectProblem((c) => { c.hands = { seeds: 20, checks: [{ hand: "idle", measured: "m" }] }; }, /give wins_min, wins_max or both/);
+  expectProblem((c) => { c.hands = { seeds: 20, checks: [{ hand: "idle", wins_min: 5, wins_max: 2, measured: "m" }] }; }, /wins_min is above wins_max/);
+  expectProblem((c) => { c.hands = { seeds: 20, checks: [{ hand: "idle", wins_max: 21, measured: "m" }] }; }, /wins_max must be an integer 0\.\.20/);
+  expectProblem((c) => { c.hands = { seeds: 0, checks: [{ hand: "idle", wins_max: 0, measured: "m" }] }; }, /seeds must be an integer 1\.\.40/);
+  expectProblem((c) => { c.hands = { seeds: 20, checks: [{ hand: "idle", wins_max: 0, measured: "m" }, { hand: "idle", wins_max: 0, measured: "m" }] }; }, /hand 'idle' is checked twice/);
+  expectProblem((c) => { c.hands = { seeds: 20, checks: [] }; }, /'checks' must be a non-empty list/);
+  expectProblem((c) => { c.hands = { seeds: 20, checks: [{ hand: "idle", wins_max: 0 }] }; }, /missing 'measured'/);
+});
+
+test("hands: the brief tells builders which hand tests to write and what they must find", () => {
+  const card = JSON.parse(fs.readFileSync(path.join(REPO, "engine/cards/knock_down.json"), "utf8"));
+  const text = cardBrief(card);
+  assert.match(text, /^Hand checks \(the Foreman runs them before it promotes, seeds 1 to 20\): register tests\/bot_hand_<hand>\.gd/m);
+  assert.match(text, /^- idle: wins at most 0 of 20 \(measured: seed_wall idle 0 of 20/m);
+  assert.match(text, /^- perfect: wins at least 16 of 20 \(measured: /m);
+});
+
+test("hands: judge and runner core: holds, a bound missed, a run not finished, a result without won, a missing test", async () => {
+  assert.deepEqual(wilson(0, 20), { lo: 0, hi: 16 });
+  assert.deepEqual(wilson(20, 20), { lo: 84, hi: 100 });
+  assert.equal(judgeHand({ wins_max: 0 }, 20, 20, 0).ok, true);
+  assert.match(judgeHand({ wins_min: 16 }, 20, 20, 15).why, /15 of 20 won .*the card asks at least 16/);
+  assert.match(judgeHand({ wins_max: 0 }, 20, 19, 0).why, /19 of 20 runs finished/);
+  assert.match(judgeHand({ wins_max: 0 }, 20, 20, 0, 1).why, /no boolean "won"/);
+  const line = (done, won) => JSON.stringify({ schema: "tl.verify/1", checks: [{ id: "bot.completed", ok: done }], bot: { result: won === undefined ? {} : { won } } });
+  assert.deepEqual(readHandRun(`banner\n${line(true, true)}\n`), { done: true, won: true });
+  assert.deepEqual(readHandRun(line(true, undefined)), { done: true, won: undefined });
+  const hands = { seeds: 4, checks: [{ hand: "idle", wins_max: 0, measured: "m" }, { hand: "perfect", wins_min: 3, measured: "m" }, { hand: "newcomer", wins_min: 1, measured: "m" }] };
+  const runBot = async (test, seed) => (test.endsWith("idle.gd") ? line(true, false) : seed === 4 ? line(false, false) : line(true, true));
+  const rows = await handRows(hands, 4, ["tests/bot_hand_idle.gd", "tests/bot_hand_perfect.gd"], 2, runBot);
+  assert.deepEqual(rows.map((r) => `${r.hand}:${r.ok}:${r.completed}:${r.wins}`), ["idle:true:4:0", "perfect:false:3:3", "newcomer:false:0:0"]);
+  assert.match(rows[2].why, /does not list tests\/bot_hand_newcomer\.gd/);
+  assert.throws(() => parseHandArgs(["x"]), /--card is required/);
+});
+
+test("hands: --tests lays bot_hand files over a temporary copy and lists them; the pack itself is untouched", () => {
+  const before = fs.readFileSync(path.join(REPO, "engine/seeds/seed_wall/pack.json"), "utf8");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tl-hand-tests-"));
+  try {
+    fs.writeFileSync(path.join(dir, "bot_probe.gd.txt"), "extends Node\n");
+    fs.writeFileSync(path.join(dir, "bot_hand_idle.gd"), 'extends "bot_probe.gd"\n');
+    const out = overlayPack(path.join(REPO, "engine/seeds/seed_wall"), dir);
+    try {
+      const man = JSON.parse(fs.readFileSync(path.join(out, "pack.json"), "utf8"));
+      assert.ok(man.tests.includes("tests/bot_hand_idle.gd"));
+      assert.ok(!man.tests.includes("tests/bot_probe.gd"), "only bot_hand_<hand>.gd files are listed");
+      assert.ok(fs.existsSync(path.join(out, "tests", "bot_probe.gd")));
+    } finally { fs.rmSync(out, { recursive: true, force: true }); }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  assert.equal(fs.readFileSync(path.join(REPO, "engine/seeds/seed_wall/pack.json"), "utf8"), before);
 });

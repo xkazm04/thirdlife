@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.team_possession",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
   "summary": "Two teams of a few walkers or skaters on a bounded rink; whoever has the puck inside his reach carries it on his stick, passes to a mate or shoots; a puck inside a goal volume is a point; periods and a score decide. The worked example is the house game hockey (engine/packs/hockey). Covers ice hockey, street hockey, five-a-side football, a team ball game with carriers and passes.",
   "applies_when": [
@@ -15,23 +15,92 @@
     "a full simulation with goalies, offside or line changes (hockey shows none of them; see its README, known limits)"
   ],
   "pack": "hockey",
-  "capabilities": ["physics", "input", "ui", "camera", "rules", "ball", "kit", "style", "biped", "ai", "audio", "vfx"],
-  "kit_parts": ["rink", "goal", "puck", "stands", "scoreboard", "light_mast", "sign", "flag", "entrance"],
-  "swap_parts": ["ball", "ground_patch", "fence", "barrier_wall"],
-  "api": [
-    "TLKit.build_layout", "TLKit.build", "TLKitSite.bind_scoreboard", "TLBiped.create", "TLBall.create", "TLBall.hold",
-    "TLBall.release", "TLBodies.trigger", "TLSteer.arrive", "TLSteer.separate", "TLHand.create", "TLRules.create",
-    "TLRules.add_score", "TLRules.is_over", "TLRules.snapshot", "TLHud.create", "TLHud.add_score", "TLHud.add_clock",
-    "TLVfx.burst", "TLAudio.play"
+  "capabilities": [
+    "physics",
+    "input",
+    "ui",
+    "camera",
+    "rules",
+    "ball",
+    "kit",
+    "style",
+    "biped",
+    "ai",
+    "audio",
+    "vfx"
   ],
-  "rules_keys": ["sides", "score_to_win", "periods", "period_seconds", "sudden_death", "time_limit_seconds"],
+  "kit_parts": [
+    "rink",
+    "goal",
+    "puck",
+    "stands",
+    "scoreboard",
+    "light_mast",
+    "sign",
+    "flag",
+    "entrance"
+  ],
+  "swap_parts": [
+    "ball",
+    "ground_patch",
+    "fence",
+    "barrier_wall"
+  ],
+  "api": [
+    "TLKit.build_layout",
+    "TLKit.build",
+    "TLKitSite.bind_scoreboard",
+    "TLBiped.create",
+    "TLBall.create",
+    "TLBall.hold",
+    "TLBall.release",
+    "TLBodies.trigger",
+    "TLSteer.arrive",
+    "TLSteer.separate",
+    "TLHand.create",
+    "TLRules.create",
+    "TLRules.add_score",
+    "TLRules.is_over",
+    "TLRules.snapshot",
+    "TLHud.create",
+    "TLHud.add_score",
+    "TLHud.add_clock",
+    "TLVfx.burst",
+    "TLAudio.play"
+  ],
+  "rules_keys": [
+    "sides",
+    "score_to_win",
+    "periods",
+    "period_seconds",
+    "sudden_death",
+    "time_limit_seconds"
+  ],
   "data_files": [
-    {"file": "data/venue.json", "role": "the play space as one tl.layout/1 file: the rink and the two goals"},
-    {"file": "data/venue_art.json", "role": "the dressing as a second tl.layout/1 file: stands, scoreboards, light masts, signs, flags, the entrance"},
-    {"file": "data/tuning.json", "role": "the rules object TLRules is created from (sides, score, periods) plus skater, shot, carry (reach, pass speed) and camera numbers"},
-    {"file": "data/ai.json", "role": "what the AI skaters do: roles, reaction, how they chase, pass and shoot"},
-    {"file": "data/levels/rookie.json", "role": "one difficulty level of the opponents (reaction frames, speed share); pro and all-star beside it"},
-    {"file": "data/modes/base.json", "role": "one mode as data (roster, rules, rink); the other modes are files beside it"}
+    {
+      "file": "data/venue.json",
+      "role": "the play space as one tl.layout/1 file: the rink and the two goals"
+    },
+    {
+      "file": "data/venue_art.json",
+      "role": "the dressing as a second tl.layout/1 file: stands, scoreboards, light masts, signs, flags, the entrance"
+    },
+    {
+      "file": "data/tuning.json",
+      "role": "the rules object TLRules is created from (sides, score, periods) plus skater, shot, carry (reach, pass speed) and camera numbers"
+    },
+    {
+      "file": "data/ai.json",
+      "role": "what the AI skaters do: roles, reaction, how they chase, pass and shoot"
+    },
+    {
+      "file": "data/levels/rookie.json",
+      "role": "one difficulty level of the opponents (reaction frames, speed share); pro and all-star beside it"
+    },
+    {
+      "file": "data/modes/base.json",
+      "role": "one mode as data (roster, rules, rink); the other modes are files beside it"
+    }
   ],
   "do": [
     "Decide possession by reach: a loose puck inside a player's ring is his on that frame; carry it with TLBall.hold and let it go with TLBall.release for a shot or a pass.",
@@ -60,8 +129,32 @@
     "Lint reports 0 bypasses; the win share per level is quoted with the hand it was read through."
   ],
   "variants": [
-    {"ask": "football instead of hockey", "change": "the kit's ball for the puck and ground_patch for the rink in data/venue.json; walkers instead of skaters in data/tuning.json; the same possession by reach."},
-    {"ask": "more or fewer players a side", "change": "a mode file under data/modes/ with its roster; big ice is two against two."},
-    {"ask": "harder opponents", "change": "a level file under data/levels/: less reaction delay and more speed; measure it with tl ladder per hand."}
-  ]
+    {
+      "ask": "football instead of hockey",
+      "change": "the kit's ball for the puck and ground_patch for the rink in data/venue.json; walkers instead of skaters in data/tuning.json; the same possession by reach."
+    },
+    {
+      "ask": "more or fewer players a side",
+      "change": "a mode file under data/modes/ with its roster; big ice is two against two."
+    },
+    {
+      "ask": "harder opponents",
+      "change": "a level file under data/levels/: less reaction delay and more speed; measure it with tl ladder per hand."
+    }
+  ],
+  "hands": {
+    "seeds": 20,
+    "checks": [
+      {
+        "hand": "newcomer",
+        "wins_min": 13,
+        "measured": "hockey rookie newcomer 18 of 20, Wilson 70..97 (tl ladder, 16 Nov 06:08, engine/packs/hockey/README.md)"
+      },
+      {
+        "hand": "perfect",
+        "wins_min": 16,
+        "measured": "hockey rookie perfect 20 of 20, Wilson 84..100 (tl ladder, 16 Nov 06:08)"
+      }
+    ]
+  }
 }

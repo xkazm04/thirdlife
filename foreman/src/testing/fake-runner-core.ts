@@ -6,7 +6,7 @@
 //   - by the environment variable FAKE_RUNNER_MODE = hang | garbage | disagree | noreport.
 // Markers: FAKE_BYPASS (one lint bypass per line that holds it), FAKE_BOT_NEEDS(x)/FAKE_HAS(x) (the bot fails until some
 // file holds FAKE_HAS(x)), FAKE_SCRIPT_ERROR (smoke fails), FAKE_WATCHDOG (exit 3), FAKE_NONDETERMINISTIC (invariants fail),
-// FAKE_BOT_FAIL (bot reports ok=false), FAKE_BOT_NEVER_DONE (the bot does not finish), FAKE_CAPTURE_FAIL (no image),
+// FAKE_BOT_FAIL (bot reports ok=false), FAKE_WON(<n>) (the bot result says won on seeds 1..n), FAKE_BOT_NEVER_DONE (the bot does not finish), FAKE_CAPTURE_FAIL (no image),
 // FAKE_RUNNER_HANG, FAKE_RUNNER_GARBAGE, FAKE_RUNNER_DISAGREE, FAKE_RUNNER_NOREPORT.
 // FAKE_RUNNER_BOT_TIMEOUT=watchdog makes an unfinished bot end as the snapshot engine does (exit 3, outcome
 // watchdog) instead of as the amended contract says (exit 1, outcome failed).
@@ -413,7 +413,12 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
           test,
           done,
           frames: done ? 600 : Number(frames),
-          result: { ok: done && !botFail, summary: never ? "never done" : botFail ? "lost the rally" : "played to full time" },
+          result: {
+            ok: done && !botFail,
+            summary: never ? "never done" : botFail ? "lost the rally" : "played to full time",
+            // Lane C2: FAKE_WON(<n>) in the bot script: its result says won on seeds 1..n and lost above (a hand check).
+            ...(/FAKE_WON\((\d+)\)/.test(body) ? { won: Number(seed) <= Number(/FAKE_WON\((\d+)\)/.exec(body)?.[1]) } : {}),
+          },
         };
       }
       if (never) {

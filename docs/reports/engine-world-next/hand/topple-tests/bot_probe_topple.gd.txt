@@ -1,0 +1,144 @@
+extends Node
+## Lane C2 probe (not part of the pack): tests/bot_hand_regular.gd with the hand as a variable (hand_profile; "idle" presses
+## nothing) and a frame cap. won = the result is WIN. ok = the run ended (a measurement).
+## Bot: the policy of tests/bot_topple.gd (copied, not imported) played through a person's hand, TLHand "regular".
+##
+## Per throw it aims at the mean of the standing crates (a little below it): yaw = atan2(dx, dz), pitch = the low
+## ballistic solution at full speed from the throw spot. Each aim axis is corrected with its keys (hand.press/release)
+## with a dead band and hysteresis: it starts correcting when the error is above 1.5 degrees and stops below 0.5.
+## When neither axis is correcting it holds throw until the power reads 0.95 or more, then lets go and waits for the
+## throw to settle. Done when the rules say the round is over (no restart).
+## ok: the round is over and either three throws were made or the result is WIN, and the hand pressed keys.
+
+const START_DEG := 1.5
+const STOP_DEG := 0.5
+const POWER_GO := 0.95
+const G := 9.8
+
+var hand_profile: String = "regular"
+var max_frames: int = 7200
+var ctx
+var hand: TLHand
+var tune: Dictionary
+var s: Dictionary = {}
+var fix_yaw: int = 0                 # -1 pressing aim_left, +1 pressing aim_right, 0 none
+var fix_pitch: int = 0               # -1 pressing aim_down, +1 pressing aim_up, 0 none
+var charging: bool = false
+var waiting: bool = false
+var per_throw: Array = []
+var final: Dictionary = {}
+var over_frame: int = -1
+
+
+func _bot_setup(c) -> void:
+	ctx = c
+	if hand_profile != "idle":
+		hand = TLHand.create(ctx, hand_profile)
+	tune = ctx.read_json("tuning.json")
+
+
+func _bot_tick(frame: int) -> void:
+	s = ctx.pack_state()
+	if hand == null:
+		if str(s.get("state", "")) == "over" or str(s.get("phase", "")) == "over" or frame >= max_frames:
+			final = s.duplicate(true)
+			over_frame = frame
+		return
+	if final.is_empty() and frame >= max_frames:
+		final = s.duplicate(true)
+		over_frame = frame
+	if final.is_empty():
+		_play()
+	hand.tick()
+
+
+func _play() -> void:
+	var phase: String = str(s["phase"])
+	if str(s.get("state", "")) == "over" or phase == "over":
+		final = s.duplicate(true)
+		over_frame = ctx.frame
+		if waiting or per_throw.size() < int(s["throws_made"]):
+			per_throw.append(int(s["toppled"]))
+		waiting = false
+		hand.release_all()
+		return
+	if waiting:
+		if phase == "aim":
+			per_throw.append(int(s["toppled"]))
+			waiting = false
+		return
+	if phase == "flight":
+		charging = false
+		waiting = true
+		return
+	if charging:
+		if float(s["power"]) >= POWER_GO:
+			hand.release(&"throw")
+		return
+	var want: Vector2 = _aim()
+	fix_yaw = _correct(fix_yaw, want.x - float(s["yaw_deg"]), &"aim_left", &"aim_right")
+	fix_pitch = _correct(fix_pitch, want.y - float(s["pitch_deg"]), &"aim_down", &"aim_up")
+	if fix_yaw == 0 and fix_pitch == 0:
+		hand.press(&"throw")
+		charging = true
+
+
+## One aim axis with a dead band and hysteresis: start at START_DEG, stop at STOP_DEG. Returns the key held.
+func _correct(held: int, err: float, neg: StringName, pos: StringName) -> int:
+	var want: int = held
+	if held == 0:
+		if absf(err) > START_DEG:
+			want = 1 if err > 0.0 else -1
+	elif absf(err) < STOP_DEG or signf(err) != float(held):
+		want = 0 if absf(err) <= START_DEG else (1 if err > 0.0 else -1)
+	if want == held:
+		return held
+	if want > 0:
+		hand.release(neg)
+		hand.press(pos)
+	elif want < 0:
+		hand.release(pos)
+		hand.press(neg)
+	else:
+		hand.release(neg)
+		hand.release(pos)
+	return want
+
+
+## (yaw, pitch) in degrees toward the mean of the standing crates.
+func _aim() -> Vector2:
+	var sum := Vector3.ZERO
+	var n: int = 0
+	for c: Array in s["crates"]:
+		if not bool(c[3]):
+			sum += Vector3(float(c[0]), float(c[1]), float(c[2]))
+			n += 1
+	var t: Vector3 = sum / float(n) if n > 0 else Vector3(0, 1.6, 12)
+	t.y -= 0.15
+	var yaw: float = rad_to_deg(atan2(t.x, t.z))
+	var d: float = Vector2(t.x, t.z).length()
+	var h: float = t.y - 1.5
+	var v: float = float(tune["ball"]["speed_max"])
+	var disc: float = v * v * v * v - G * (G * d * d + 2.0 * h * v * v)
+	var pitch: float = 20.0
+	if disc >= 0.0:
+		pitch = rad_to_deg(atan((v * v - sqrt(disc)) / (G * d)))
+	var a: Dictionary = tune["aim"]
+	return Vector2(clampf(yaw, float(a["yaw_min_deg"]), float(a["yaw_max_deg"])), clampf(pitch, float(a["pitch_min_deg"]), float(a["pitch_max_deg"])))
+
+
+func _bot_done() -> bool:
+	return not final.is_empty()
+
+
+func _bot_result() -> Dictionary:
+	var f: Dictionary = final if not final.is_empty() else s
+	var res: String = str(f.get("result", ""))
+	var toppled: int = int(f.get("toppled", 0))
+	var made: int = int(f.get("throws_made", 0))
+	var st: Dictionary = hand.stats() if hand != null else {}
+	var ok: bool = not final.is_empty()
+	return {"ok": ok, "summary": "%s hand: %s with %d/10 toppled in %d throws; toppled after each throw %s; over at frame %d; presses %d, lapses %d" % [
+			hand_profile, res, toppled, made, str(per_throw), over_frame, int(st.get("presses", 0)), int(st.get("lapses", 0))],
+		"won": res == "WIN", "goals": toppled, "shots": made, "result": res, "toppled": toppled, "throws_made": made, "toppled_per_throw": per_throw, "frames": over_frame,
+		"hand": st}

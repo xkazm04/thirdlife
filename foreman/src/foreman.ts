@@ -14,6 +14,7 @@ import { engineWritable, promotePack, readManifest } from "./promoter.js";
 import { existingText, prepareReference, referenceText } from "./reference.js";
 import { cardBriefSection, cardIds, cardsPlannerText } from "./cards.js";
 import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
+import { runHandChecks } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
 import { critic, render, replanPackages, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
@@ -21,8 +22,7 @@ import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
 import { drainInbox } from "./inbox.js";
 import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls } from "./p10.js";
 export { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls };
-// P10b: the options type and the pure functions live in their own modules; everything that was exported here still is.
-import type { ForemanOptions } from "./options.js";
+import type { ForemanOptions } from "./options.js"; // P10b: the options type and the pure functions live in their own modules; everything exported here still is
 import { MACHINE_BUSY, NOT_LOAD, PACK_STALL, classifyStalls, clockDetail, diedSilently, frameFigures, medianOverHalfBudget, restsOnAClock, stallOf, type GateFailure, type Stall, type Verified } from "./machine.js";
 import { FOREMAN_NOTE, builderConduct, clip, countKitUse, parseDeviations, statesKitReason, type KitFigures } from "./conduct.js";
 import { packTest, packTestsFor, finalLimit, finalSent, sendBackFinal, type GateHost } from "./p10gate.js";
@@ -1902,6 +1902,8 @@ export class Foreman {
         return false;
       }
     }
+    const hands = await runHandChecks(this.gateHost, packDir); // lane C2: the card's hand checks (handcheck.ts)
+    if (hands.failure) return (this.endJob("failed", clip(hands.failure, 700), true), false);
     // N3: a pack that is promoted AGAIN (after a change request) is photographed first, so that whoever asked for the
     // change can look at it: the declared cameras at the usual frames, into captures/promotion<n>-<cam>-f<frame>.png.
     // No critic, no gate; the paths are in a `note` on the package that was re-opened last.

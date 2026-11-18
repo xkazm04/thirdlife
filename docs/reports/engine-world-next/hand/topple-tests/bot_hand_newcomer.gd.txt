@@ -1,0 +1,6 @@
+extends "bot_probe_topple.gd"
+## Lane C2: the newcomer hand for `tl cards hands --tests` (laid over a copy of the pack, never into it).
+
+
+func _init() -> void:
+	hand_profile = "newcomer"

@@ -68,6 +68,8 @@ export function cardsPlannerText(refDir: string): string {
     lines.push(`- \`${c.id}\` (${c.pack !== undefined ? `house game engine/packs/${c.pack}` : `seed ${c.seed ?? "?"}`}): ${c.title}`);
     for (const w of c.applies_when) lines.push(`  - applies when: ${w}`);
     for (const w of c.not_when ?? []) lines.push(`  - NOT when: ${w}`);
+    const hands = (c as Card & { hands?: { checks: { hand: string }[] } }).hands;
+    if (hands?.checks?.length) lines.push(`  - hand checks: when you name this card, some package must register ${hands.checks.map((h) => `tests/bot_hand_${h.hand}.gd`).join(", ")} (the Foreman plays them through a person's hand on many seeds before it promotes; the card's text tells the builder what each must find)`);
   }
   lines.push(`Each card in full: \`ref/cards/<name>.json\`; the list: \`ref/cards/INDEX.md\`.`);
   return lines.join("\n");

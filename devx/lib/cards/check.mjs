@@ -17,10 +17,33 @@ const SHAPE = {
   applies_when: [LIST, true], not_when: [LIST, false],
   seed: [STR, false], pack: [STR, false], capabilities: [LIST, true], kit_parts: [LIST, true], swap_parts: [LIST, false],
   api: [LIST, true], rules_keys: [LIST, true], data_files: [LIST, true],
-  do: [LIST, true], dont: [LIST, true], bot: ["object", true], acceptance: [LIST, true], variants: [LIST, false],
+  do: [LIST, true], dont: [LIST, true], bot: ["object", true], acceptance: [LIST, true], variants: [LIST, false], hands: ["object", false],
 };
 const BOT_SHAPE = { template: [STR, true], plays_by: [STR, true], wins_when: [STR, true] };
 const VARIANT_SHAPE = { ask: [STR, true], change: [STR, true] };
+/** Lane C2 (18 Nov): what a person's hand must find in a game of this kind; TLHand's profiles plus idle (presses nothing). */
+export const HANDS = ["idle", "newcomer", "regular", "sharp", "perfect"];
+const HANDS_SHAPE = { seeds: ["number", true], checks: [LIST, true] };
+const HAND_CHECK_SHAPE = { hand: [STR, true], wins_min: ["number", false], wins_max: ["number", false], measured: [STR, true] };
+
+/** The hands block of a card: shape and bounds. Returns readable errors. */
+export function handsErrors(h, where) {
+  const errs = shapeErrors(h, HANDS_SHAPE, where);
+  if (errs.length) return errs;
+  if (!Number.isInteger(h.seeds) || h.seeds < 1 || h.seeds > 40) errs.push(`${where}: seeds must be an integer 1..40`);
+  const seen = new Set();
+  h.checks.forEach((c, i) => {
+    const w = `${where}.checks[${i}]`, e = shapeErrors(c, HAND_CHECK_SHAPE, w);
+    if (e.length) { errs.push(...e); return; }
+    if (!HANDS.includes(c.hand)) errs.push(`${w}: hand '${c.hand}' must be one of ${HANDS.join(", ")}`);
+    if (seen.has(c.hand)) errs.push(`${w}: hand '${c.hand}' is checked twice`);
+    seen.add(c.hand);
+    if (c.wins_min === undefined && c.wins_max === undefined) errs.push(`${w}: give wins_min, wins_max or both`);
+    for (const k of ["wins_min", "wins_max"]) if (c[k] !== undefined && (!Number.isInteger(c[k]) || c[k] < 0 || c[k] > h.seeds)) errs.push(`${w}: ${k} must be an integer 0..${h.seeds}`);
+    if (c.wins_min !== undefined && c.wins_max !== undefined && c.wins_min > c.wins_max) errs.push(`${w}: wins_min is above wins_max`);
+  });
+  return errs;
+}
 const DATA_FILE_SHAPE = { file: [STR, true], role: [STR, true] };
 
 function shapeErrors(obj, shape, where) {
@@ -62,6 +85,7 @@ export function validateCard(card, where = "card") {
   card.data_files.forEach((d, i) => errs.push(...shapeErrors(d, DATA_FILE_SHAPE, `${where}.data_files[${i}]`)));
   (card.variants ?? []).forEach((v, i) => errs.push(...shapeErrors(v, VARIANT_SHAPE, `${where}.variants[${i}]`)));
   for (const a of card.api) if (typeof a === "string" && !/^TL[A-Za-z]+\.[a-z_][a-z0-9_]*$/.test(a)) errs.push(`${where}: api '${a}' must look like TLClass.member`);
+  if (card.hands !== undefined) errs.push(...handsErrors(card.hands, `${where}.hands`));
   const both = (card.swap_parts ?? []).filter((p) => card.kit_parts.includes(p));
   for (const p of both) errs.push(`${where}: '${p}' is in both kit_parts and swap_parts`);
   return errs;

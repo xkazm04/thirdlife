@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.two_sides_ball",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "title": "Two sides and a ball: score in the other side's goal",
   "summary": "One ball, two ends, a goal behind each end, first to N points. Covers pong, air hockey, table football, a penalty duel: anything where a ball crossing a line is a point.",
   "applies_when": [
@@ -14,19 +14,65 @@
     "there is no opponent and the goal is a time or lap count: use card.timed_drive or card.knock_down"
   ],
   "seed": "seed_paddle",
-  "capabilities": ["physics", "ball", "rules", "input", "ai", "ui", "camera", "kit"],
-  "kit_parts": ["ball", "paddle", "ground_patch", "scoreboard", "stands", "light_mast", "flag"],
-  "swap_parts": ["puck", "rink", "goal", "barrier_wall", "fence"],
-  "api": [
-    "TLKit.build_layout", "TLBall.create", "TLBall.shoot_at", "TLBodies.from_part", "TLBodies.drive", "TLBodies.trigger",
-    "TLSteer.intercept_point", "TLSteer.arrive", "TLRules.create", "TLRules.add_score", "TLRules.is_over",
-    "TLRules.snapshot", "TLHud.create", "TLHud.add_score"
+  "capabilities": [
+    "physics",
+    "ball",
+    "rules",
+    "input",
+    "ai",
+    "ui",
+    "camera",
+    "kit"
   ],
-  "rules_keys": ["sides", "score_to_win"],
+  "kit_parts": [
+    "ball",
+    "paddle",
+    "ground_patch",
+    "scoreboard",
+    "stands",
+    "light_mast",
+    "flag"
+  ],
+  "swap_parts": [
+    "puck",
+    "rink",
+    "goal",
+    "barrier_wall",
+    "fence"
+  ],
+  "api": [
+    "TLKit.build_layout",
+    "TLBall.create",
+    "TLBall.shoot_at",
+    "TLBodies.from_part",
+    "TLBodies.drive",
+    "TLBodies.trigger",
+    "TLSteer.intercept_point",
+    "TLSteer.arrive",
+    "TLRules.create",
+    "TLRules.add_score",
+    "TLRules.is_over",
+    "TLRules.snapshot",
+    "TLHud.create",
+    "TLHud.add_score"
+  ],
+  "rules_keys": [
+    "sides",
+    "score_to_win"
+  ],
   "data_files": [
-    {"file": "data/court.json", "role": "the venue as one tl.layout/1 file: floor, walls, the ball and both paddles as props with ids, scenery, cameras"},
-    {"file": "data/rules.json", "role": "the whole rule set: the two sides and the score that wins"},
-    {"file": "data/tuning.json", "role": "every number a designer turns: serve and top speed, angles, paddle speed, the rival's speed (the difficulty)"}
+    {
+      "file": "data/court.json",
+      "role": "the venue as one tl.layout/1 file: floor, walls, the ball and both paddles as props with ids, scenery, cameras"
+    },
+    {
+      "file": "data/rules.json",
+      "role": "the whole rule set: the two sides and the score that wins"
+    },
+    {
+      "file": "data/tuning.json",
+      "role": "every number a designer turns: serve and top speed, angles, paddle speed, the rival's speed (the difficulty)"
+    }
   ],
   "do": [
     "Put the ball and both movers in the layout as kit props with ids; let the kernel make their bodies (TLBall.create with the part, TLBodies.from_part with axis locks).",
@@ -56,9 +102,41 @@
     "Both registered cameras show the whole court and both scores are on the HUD."
   ],
   "variants": [
-    {"ask": "air hockey or ice hockey shoot-out", "change": "swap ball for puck and the court for a rink (its goals are child parts with tl_mouth for the goal trigger); keep planar on."},
-    {"ask": "two balls", "change": "a second TLBall in the same group; the goal triggers already count it."},
-    {"ask": "harder or easier", "change": "the rival's speed and the ball's max_speed in tuning.json; nothing else."},
-    {"ask": "a different surface feel", "change": "the floor's surface in the layout (ice, concrete, wood): friction and bounce follow from the law table."}
-  ]
+    {
+      "ask": "air hockey or ice hockey shoot-out",
+      "change": "swap ball for puck and the court for a rink (its goals are child parts with tl_mouth for the goal trigger); keep planar on."
+    },
+    {
+      "ask": "two balls",
+      "change": "a second TLBall in the same group; the goal triggers already count it."
+    },
+    {
+      "ask": "harder or easier",
+      "change": "the rival's speed and the ball's max_speed in tuning.json; nothing else."
+    },
+    {
+      "ask": "a different surface feel",
+      "change": "the floor's surface in the layout (ice, concrete, wood): friction and bounce follow from the law table."
+    }
+  ],
+  "hands": {
+    "seeds": 20,
+    "checks": [
+      {
+        "hand": "idle",
+        "wins_max": 0,
+        "measured": "seed_paddle idle 0 of 20, 0.35 : 5 on average (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      },
+      {
+        "hand": "sharp",
+        "wins_min": 13,
+        "measured": "seed_paddle sharp 18 of 20, Wilson 70..97 (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      },
+      {
+        "hand": "perfect",
+        "wins_min": 16,
+        "measured": "seed_paddle perfect 20 of 20, Wilson 84..100 (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      }
+    ]
+  }
 }
