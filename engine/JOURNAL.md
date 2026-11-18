@@ -1035,3 +1035,11 @@ PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built i
   40 -> 22 m; hockey of 11 Nov keeps 40 (no footprint). The bay words, unreadable from the road, became a board "The
   plan" beside the sign; an arrived game gets an entrance arch with its title, flags and light masts. Before/after
   stills with the same cameras in docs/reports/engine-world-next/stills/.
+
+## Any game fits, any time; two sites (engine-world-next, lane S round 4, worktree ew-site4; 18 Nov, clock from `date`)
+
+- 03:11 to 03:25. An arrived game is measured once it is built (the farthest point of what it drew from the plot's
+  centre; vertices, not boxes: the merged stands of the 11 Nov hockey have a box whose corners reach 47.6 m, their
+  vertices 40.3 m) and its lot refits to that, live too (selftest `site.refit`: 30 -> 25 m). The site draws its own
+  fence (the landscape leaves site plots unfenced); its size-only meshes are built on a worker and kept per size: a
+  refit frame went from 33-35 ms to 1.1-1.4 ms. The village has a second site, the hockey job of 11 Nov at (310, 55).

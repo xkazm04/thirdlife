@@ -506,6 +506,22 @@ if [ -z "$FILTER" ] || [[ "site." == *"$FILTER"* ]] || [[ "$FILTER" == site.* ]]
     echo "$l" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
     verdict site.live "$why" "6 events, the log grew to 21 at tick 100, read at tick 120, the game arrived; $(echo "$l" | grep -oE '"reads":[0-9]+,"read_ms":[0-9.]+' | head -1)"
   fi
+  # S4: a live promotion refits the lot. A job of 6 lines on a lot of radius 30 grows to its promotion at tick 100
+  # (read at 120); the game (a copy of ex_bounce, no footprint declared) is built and measured: 25.0 m from the
+  # plot's centre, so the lot becomes 25 m (`radius_before` 30, `radius` 25 in the site's report line).
+  if [ -z "$FILTER" ] || [[ "site.refit" == *"$FILTER"* ]]; then
+    rm -rf "$SD/refit"; cp -r "$FX/arrive" "$SD/refit"; cp "$SD/refit/job.jsonl" "$SD/refit_full.jsonl"
+    head -n 6 "$SD/refit_full.jsonl" > "$SD/refit/job.jsonl"
+    printf '{"schema":"tl.walk/1","name":"site_refit","visitor":true,"ticks":400,"mode":"bot","plots":[{"id":"a","pack":"pack_min","origin":[-60,0,0],"seed":1}],"landscape":{"lots":[{"at":[40,0],"radius":30,"h":0,"job":"%s/refit"}]},"player":[[0,[40,0,40]]],"edits":[[100,"%s/refit/job.jsonl","%s/refit_full.jsonl"]]}\n' "$SD" "$SD" "$SD" > "$SD/refit.json"
+    rf="$(site_run "$SD/refit.json")"; a="$(echo "$rf" | lot_of 0)"; why=""
+    echo "$a" | grep -q '"arrived":"example.bounce@0.1.0","arrived_at":120' || why="the promoted game did not arrive at tick 120: $a"
+    echo "$a" | grep -q '"radius":25.0,' || why="${why:+$why; }the lot was not refitted to 25 m: $(echo "$a" | grep -o '"radius":[0-9.]*')"
+    echo "$a" | grep -q '"radius_before":30.0' || why="${why:+$why; }no radius before (30 wanted)"
+    echo "$a" | grep -q '"measured_m":25.0' || why="${why:+$why; }the game was not measured at 25.0 m: $(echo "$a" | grep -o '"measured_m":[0-9.]*')"
+    echo "$a" | grep -q '"fit":"walk radius: nothing promoted yet"' && why="${why:+$why; }the fit still says nothing was promoted"
+    echo "$rf" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
+    verdict site.refit "$why" "lot 30 m -> $(echo "$a" | grep -o '"radius":[0-9.]*' | cut -d: -f2) m after the live arrival at tick 120; $(echo "$a" | grep -oE '"measured_m":[0-9.]+|"measure_ms":[0-9.]+' | tr '\n' ' ')"
+  fi
   if [ -z "$FILTER" ] || [[ "site.arrival" == *"$FILTER"* ]]; then
     out="$(bash "$HERE/world.sh" tour "$FX/site_arrive.json" --headless 2>&1)"
     why=""; echo "$out" | grep -q '^PASS world.tour' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror' | head -3 | tr '\n' ' ')"

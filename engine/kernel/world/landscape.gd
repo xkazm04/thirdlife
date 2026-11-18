@@ -324,7 +324,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var a1: float = TAU * float(k + 1) / float(seg)
 			tones.append(0.92 + 0.14 * rng.randf())
 			var fence_k: int = 0
-			if bool(cfg.get("fence", true)):
+			if bool(cfg.get("fence", true)) and not site_plots.any(func(sp: Array) -> bool: return int(sp[1]) == i):     # S4: a site draws its own fence (site/draw.gd)
 				var mid: float = (a0 + a1) * 0.5
 				if gate != null and absf(angle_difference(mid, gate_a)) < gate_w:
 					if run.size() > 1:

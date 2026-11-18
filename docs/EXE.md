@@ -145,6 +145,9 @@ lot and is played like any other (walk up, E enters, Q or Esc leaves).
   `boot.gd` prints `[boot] lot 0 is a plain building site: ...` and lists it under `left_out` in its first line.
 - The village's site is LIVE (no `replay`): the copied log is read at the start and looked at again every 60 ticks.
   The build holds the log as it was when the build was made; to watch a job that is running, see the next item.
+- **Two sites (S4).** `landscape.lots[1]` at (310, 55), radius 42, shows the hockey job of 11 Nov
+  (`site/ice-hockey-three-against-20261111-1`); export.sh copies it to `sites/` as it does the first. `--site-job`
+  points only the first site lot at a running job.
 - **Follow a running job (S2): `ThirdLife.exe -- --site-job=<abs job dir>`** (also after `-- check`). The village's
   first site lot then reads that job directory's `job.jsonl` live, as the Foreman writes it (looked at every 60
   ticks), and its last promoted game arrives from that directory's `promoted/`. Nothing is written there. A path that

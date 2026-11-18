@@ -362,5 +362,13 @@ site plot's radius is the half-diagonal of that pack's `footprint` + 4 m (at lea
 pack without a footprint keeps the walk's radius; a job that promoted nothing yet too). The packages are listed on
 a board "The plan" beside the sign (state word and title, by state colour); the bays carry no text. When the game
 arrives an entrance arch with its title stands over the gate, with flags and two light masts.
+**S4 (18 Nov).** Any game fits, any time. Once the arrived game is built the site measures it (site.gd `_measure`:
+the farthest ground distance from the plot's centre of what it drew; the meshes are listed on the main thread, their
+vertices read on a worker) and the lot takes that radius (ceil, at least 12, at most the plot's); the measured
+extent decides over a declared `footprint`, which only sizes the lot before the game is built. The landscape no
+longer fences a site plot: site/draw.gd draws the fence at the lot's current radius (solid, gate open 4 m each
+side) and a path in from the plot's gate; the meshes that depend only on the size (fence, arch, masts) are built on
+a worker once per size, so a refit costs the frame about 1.2 ms. Measured: crates 18.1 m (declared 12 x 32 m),
+hockey of 11 Nov 40.3 m (declared none). Selftest `site.refit`.
 **Not built:** the site does not show `question`, `milestone` captures or comments; a live site does not see a job
 directory that appears after the world started.

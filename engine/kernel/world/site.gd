@@ -179,6 +179,92 @@ func tick(t: int) -> void:
 		var pr: Dictionary = (s["view"] as Dictionary)["promoted"]
 		if int(s["plot"]) >= 0 and not pr.is_empty():
 			_arrive(s, pr, t)
+			_measure(s, t)
+
+
+## S4. The game that arrived is measured once it is built: the farthest point (from the plot's centre, across the
+## ground) of every mesh it put in the world after its setup. That is what stands on the lot, so it decides the lot's
+## radius from then on (site/draw.gd draws the fence round it): ceil(extent), at least FIT_MIN, at most the plot's
+## radius (the draw layer cuts a pack at that circle and the landscape's pad is that big). Before the game is built
+## only its declared `footprint` is known (`fit_radius`, at the world's start). Main thread, one pass over the nodes,
+## once per arrived directory; the time is in the report (`measure_ms`).
+func _measure(s: Dictionary, t: int) -> void:
+	var p: Node = (world.get("packs") as Array)[int(s["plot"])]
+	if not bool(p.get("loaded")) or str(s.get("measured_dir", "")) == str(s["arrived_dir"]):
+		return
+	if str(p.get("pack_dir")).simplify_path() != str(s["arrived_dir"]).simplify_path():
+		return                                  # the game of an earlier promotion is still there: wait for the new one
+	if not s.has("measure_task"):
+		# the main thread lists the meshes (one pass over the nodes); a worker reads their vertices (hockey: 10.7 ms
+		# when it was done in the frame)
+		var t0: int = Time.get_ticks_usec()
+		var box: Dictionary = {"items": meshes_of(p)}
+		s["measure_ms"] = snappedf(float(Time.get_ticks_usec() - t0) / 1000.0, 0.01)
+		s["measure_task"] = [WorkerThreadPool.add_task(func() -> void: box["far"] = extent_from(box["items"])), box]
+		return
+	var task: Array = s["measure_task"]
+	if not WorkerThreadPool.is_task_completed(int(task[0])) and not bool(world.get("_ended")) and t < int(world.get("walk_ticks")) - 1:
+		return
+	WorkerThreadPool.wait_for_task_completion(int(task[0]))
+	s.erase("measure_task")
+	var far: float = float((task[1] as Dictionary).get("far", 0.0))
+	s["measured_dir"] = s["arrived_dir"]
+	s["measured_m"] = snappedf(far, 0.1)
+	var plot_r: float = float(((world.get("walk") as Dictionary)["plots"] as Array)[int(s["plot"])].get("radius", s["radius"]))
+	var r: float = clampf(ceilf(far), FIT_MIN, plot_r)
+	if not s.has("radius_before"):
+		s["radius_before"] = float(s["radius"])
+	s["radius"] = r
+	s["fit"] = "measured %.1f m (what the game built, at tick %d)%s" % [far, t, "; declared: " + str(s["fit"]) if s.has("fit") else ""]
+	print("[site] lot %d: the game measures %.1f m from the plot's centre: the lot is %.0f m (was %.0f)" % [int(s["lot"]), far, r, float(s["radius_before"])])
+
+
+## The farthest ground distance from a holder's origin to anything it drew: the vertices of every MeshInstance3D
+## whose box reaches farther than what was found so far, the box of every MultiMeshInstance3D; in the holder's own
+## frame (a pack is simulated at its own origin).
+static func extent_of(holder: Node) -> float:
+	return extent_from(meshes_of(holder))
+
+
+## The meshes a holder drew: [[Mesh or null (a MultiMesh: its box only), its transform in the holder's frame, its AABB]].
+static func meshes_of(holder: Node) -> Array:
+	var out: Array = []
+	var inv: Transform3D = (holder as Node3D).global_transform.affine_inverse()
+	var stack: Array = [holder]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		for c: Node in n.get_children():
+			stack.append(c)
+		if n is MeshInstance3D or n is MultiMeshInstance3D:
+			var gi: GeometryInstance3D = n as GeometryInstance3D
+			if gi.get_aabb().size != Vector3.ZERO:
+				out.append([(n as MeshInstance3D).mesh if n is MeshInstance3D else null, inv * gi.global_transform, gi.get_aabb()])
+	return out
+
+
+static func extent_from(items: Array) -> float:
+	var far: float = 0.0
+	for it: Array in items:
+		var bb: AABB = it[2]
+		var xf: Transform3D = it[1]
+		var box: float = 0.0
+		for k: int in 8:
+			var c: Vector3 = xf * bb.get_endpoint(k)
+			box = maxf(box, Vector2(c.x, c.z).length())
+		if box <= far:
+			continue
+		# a box's corner overstates a merged mesh (a rink's stands make a rectangle whose corners are empty): the
+		# vertices of a plain mesh decide; a MultiMesh keeps its box
+		var mesh: Mesh = it[0]
+		if mesh == null:
+			far = box
+			continue
+		for si: int in mesh.get_surface_count():
+			var vs: PackedVector3Array = mesh.surface_get_arrays(si)[Mesh.ARRAY_VERTEX]
+			for v: Vector3 in vs:
+				var c: Vector3 = xf * v
+				far = maxf(far, Vector2(c.x, c.z).length())
+	return far
 
 
 ## Reads what is new in the log: a replay reads the whole file once; live mode looks at the size every LIVE_EVERY ticks.
@@ -257,6 +343,7 @@ func view_of(k: int) -> Dictionary:
 			var v: Dictionary = (s["view"] as Dictionary).duplicate()
 			v["arrived"] = not str(s["arrived_dir"]).is_empty()
 			v["plot"] = int(s["plot"])
+			v["radius"] = float(s["radius"])            # S4: the lot as it is now (refitted when the game is measured)
 			return v
 	return {}
 
@@ -284,6 +371,9 @@ func report() -> Array:
 			r["plot"] = str(((world.get("plot_defs") as Array)[int(s["plot"])] as Dictionary)["id"])
 		if s.has("fit"):
 			r["fit"] = str(s["fit"])
+		for key: String in ["radius_before", "measured_m", "measure_ms", "refit_ms"]:
+			if s.has(key):
+				r[key] = s[key]
 		if not str(s["arrived_dir"]).is_empty():
 			r["arrived"] = str(s["arrived_dir"]).get_file()
 			r["arrived_at"] = int(s["arrived_at"])
