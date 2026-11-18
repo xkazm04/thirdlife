@@ -1,0 +1,17 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/a_avoid_min.gd"
+extends SceneTree
+
+const Cameras = preload("res://kernel/api/tl_cameras.gd")
+
+func _initialize() -> void:
+	call_deferred("_check")
+
+func _check() -> void:
+	var who := Node3D.new()
+	var cameras = Cameras.new()
+	root.add_child(who)
+	root.add_child(cameras)
+	var cam: TLChaseCam = cameras.chase(who, {"avoid_min": 4.0})
+	var ok: bool = is_equal_approx(cam.avoid_min, 4.0)
+	print("REPRO avoid_min: %s expected setup option 4.0 m, got %.1f m" % ["PASS" if ok else "FAIL", cam.avoid_min])
+	quit()

@@ -1,0 +1,26 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_bridge_endpoint.gd"
+extends SceneTree
+
+const Landscape = preload("res://kernel/world/landscape.gd")
+
+class Viewer extends Node:
+	var world: Node
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	TLStyle.set_headless(false)
+	var view := Viewer.new()
+	root.add_child(view)
+	var land := Node3D.new()
+	view.add_child(land)
+	var result := Landscape.build(land, [Transform3D(Basis(), Vector3(-20, 0, 30))], [10], [false], {
+		"road": [[-30, 0], [0, 0]], "river": {"path": [[16, -20], [16, 20]], "half_m": 6},
+		"cell_m": 1, "margin_m": 8, "spurs": false, "relief": 0, "trees": 0, "broadleaf": 0,
+		"bushes": 0, "rocks": 0, "belt": 0, "mesas": 0, "soft_patches": 0, "edges_now": true})
+	var built := result.has("terrain_verts") and land.has_meta(&"tl_terrain")
+	print("REPRO bridge_endpoint: %s road_end=(0,0) river_x=16 build_completed=%s" % [
+		"control" if built else "FAIL", str(built)])
+	view.free()
+	quit()

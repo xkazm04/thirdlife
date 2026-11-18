@@ -4,11 +4,14 @@ extends "res://kernel/world/terrain/walker_space.gd"
 ## A pack is simulated in a space of its own and must stay untouched. The visitor is not part of any game: he walks the
 ## land between them, so the WORLD owns a space (`PhysicsServer3D`, no nodes, no scene tree) that holds only static
 ## things, all of them built once:
-##   * the terrain's triangles (a triangle is left out where a plot's own ground carries him instead),
+##   * the terrain's triangles (a triangle is left out where a plot's own ground carries him instead; until that
+##     game's colliders are in, those triangles stand there as the plot's pad, landscape.gd, bugfix-37 D3),
 ##   * a wall round every plot's fence, trunks of trees, boulders, the lots' machinery, the bridge,
 ##   * for every plot: a COPY of the pack's static colliders (add_pack): the shapes are shared (a shape belongs to no
 ##     space), the bodies are new bodies in this space, clipped to the plot's circle and moved to the plot's place with
-##     the same bent rim the draw layer gives the pack's ground. The pack's own bodies are never touched.
+##     the same bent rim the draw layer gives the pack's ground. The pack's own bodies are never touched. A shared
+##     shape is held in `_keep` (bugfix-37 D9): the pack's nodes may go (a next round frees its holder) while the copy
+##     stays, and a Shape3D nobody references frees its server shape, leaving the copied body with none.
 ## His own body is a kinematic capsule in that space; `walk()` moves it with the engine's test_motion (slide along what
 ## he meets, step up small steps, follow slopes down, refuse slopes steeper than `max_slope_deg`).
 ##
@@ -24,6 +27,7 @@ var _cyl: Dictionary = {}             # radius key -> CylinderShape3D (shared by
 var _spheres: Dictionary = {}
 var _mover: RefCounted = null         # walker-feel: the body with weight (world_body.gd), made on the first drive()
 const Mover: GDScript = preload("res://kernel/world/terrain/world_body.gd")
+const DrawBase: GDScript = preload("res://kernel/world/draw/draw_base.gd")     # bugfix-37 Q17: `edge_height` (pad_rim)
 
 
 func _init() -> void:
@@ -71,8 +75,9 @@ func _static(shape: Shape3D, xf: Transform3D) -> void:
 	stats["bodies"] = int(stats["bodies"]) + 1
 
 
-## S2: frees every body that was made under the tag `t` (a construction site's scaffold, when its game arrives: the
-## only thing in this space that goes). Returns how many. Their shapes stay in `_keep` until the space is freed.
+## S2: frees every body that was made under the tag `t` (a construction site's scaffold, when its game arrives; a
+## plot's pad, "pad <i>", when its game's colliders are in: bugfix-37 D3). Returns how many. Their shapes stay in
+## `_keep` until the space is freed.
 func remove_tag(t: String) -> int:
 	var n: int = 0
 	for b: Variant in _bodies.duplicate():
@@ -85,7 +90,8 @@ func remove_tag(t: String) -> int:
 	return n
 
 
-func add_faces(faces: PackedVector3Array) -> void:
+## `stat`: the stats key the triangles are counted under (bugfix-37 D3: a plot's pad, "pad_faces", is not terrain that stays).
+func add_faces(faces: PackedVector3Array, stat: String = "faces") -> void:
 	if faces.size() < 3:
 		return
 	var sh: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
@@ -93,7 +99,45 @@ func add_faces(faces: PackedVector3Array) -> void:
 	sh.set_faces(faces)
 	_keep.append(sh)
 	_static(sh, Transform3D.IDENTITY)
-	stats["faces"] = int(stats["faces"]) + faces.size() / 3
+	stats[stat] = int(stats.get(stat, 0)) + faces.size() / 3
+
+
+## bugfix-37 D3: the pads of the plots whose game is not built yet. The terrain's triangles inside a plot with ground of
+## its own are left out (its game's ground carries him there), but until that game has arrived the world's pad is drawn
+## there (draw/view_seam.gd shuts the hole) or its picture is, with nothing under it: those triangles (village_terrain.gd
+## `faces_in_disc`, the same `collision_faces` leaves out) go in under the tag "pad <i>", and draw/view_seam.gd
+## `copy_colliders` takes them out when the game's colliders are in. A game built already (`holders[i].loaded`; a
+## holder that does not say counts as built) has its colliders copied by landscape.gd now: no pad.
+func add_pads(terr: RefCounted, centres: Array, has_ground: Array, radii: Array, holders: Variant) -> void:
+	var hs: Array = holders if typeof(holders) == TYPE_ARRAY else []
+	var was: String = tag
+	for i: int in has_ground.size():
+		if not bool(has_ground[i]) or float(radii[i]) <= 0.0:
+			continue
+		var loaded: Variant = (hs[i] as Node).get("loaded") if i < hs.size() and is_instance_valid(hs[i]) else false
+		if loaded == null or bool(loaded):
+			continue
+		tag = "pad %d" % i
+		add_faces(terr.call("faces_in_disc", centres[i], float(radii[i]) - 1.0), "pad_faces")
+	tag = was
+
+
+## bugfix-37 Q17: the rim of plot `i`'s pack (its lift given back): landscape.gd's `plots` come lifted (the viewer moved
+## each by minus that rim), but a pad without `pad_h` stands at the walk's plot origin y, the lifted origin plus the
+## rim. `view`'s own `rims` when it has them (they include `--lift`), else draw_base.gd `edge_height` of the world's
+## holder, else 0 (no ground of its own).
+static func pad_rim(view: Node, i: int, radius: float) -> float:
+	if view == null:
+		return 0.0
+	var rims: Variant = view.get("rims")
+	if typeof(rims) == TYPE_ARRAY and i < (rims as Array).size():
+		return float((rims as Array)[i])
+	var world: Variant = view.get("world")
+	var packs: Variant = (world as Node).get("packs") if world is Node else null
+	if typeof(packs) != TYPE_ARRAY or i >= (packs as Array).size() or not is_instance_valid((packs as Array)[i]) or not ((packs as Array)[i] is Node3D):
+		return 0.0
+	var e: float = float(DrawBase.call("edge_height", (packs as Array)[i], radius))
+	return 0.0 if is_nan(e) else e
 
 
 func add_box(xf: Transform3D, size: Vector3) -> void:
@@ -246,6 +290,7 @@ func step_pack(job: Dictionary, budget_usec: int) -> bool:
 			var lifted: Transform3D = local
 			if band > 0.0 and radius > 0.0:
 				lifted.origin = _bent(local.origin, radius, rim, band)
+			_keep.append(sh)                                  # bugfix-37 D9: the pack's shape outlives its holder here
 			_static(sh, plot * lifted)
 			stats["pack_shapes"] = int(stats["pack_shapes"]) + 1
 		job["at"] = int(job["at"]) + 1
@@ -300,6 +345,7 @@ func _add_pack_walk(n: Node, holder: Node3D, inv: Transform3D, plot: Transform3D
 				var lifted: Transform3D = local
 				if band > 0.0 and radius > 0.0:
 					lifted.origin = _bent(local.origin, radius, rim, band)
+				_keep.append(sh)                              # bugfix-37 D9: the pack's shape outlives its holder here
 				_static(sh, plot * lifted)
 				stats["pack_shapes"] = int(stats["pack_shapes"]) + 1
 	for c: Node in n.get_children():

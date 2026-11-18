@@ -81,7 +81,8 @@ static func jump(t: float) -> Dictionary:
 
 
 ## Run slide (holds): low on the left hip, the right leg out ahead with the heel on the floor, the left leg folded under,
-## the left hand trailing on the floor behind, the right arm up for balance, eyes ahead.
+## the left arm trailing low and back (the hand about 0.3 m above the floor: it does not reach it), the right arm up for
+## balance, eyes ahead.
 static func slide(t: float) -> Dictionary:
 	var k: float = smoothstep(0.0, 0.22, t)
 	var settle: float = 1.0 - smoothstep(0.1, 0.3, t)      # the first bump as the hip meets the floor

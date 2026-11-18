@@ -1,0 +1,43 @@
+extends SceneTree
+## D5 repro 8: a run slide pressed on the tick he runs off an edge. world_body.gd drive() starts the slide and the
+## ground move finds no ground: events ["slide", "end_slide"] in one tick. visitor.gd:259-261 plays &"" for end_slide
+## only when the mode BEFORE the tick was slide or slope (it was ground), so the `slide` hold clip stays on through the
+## fall. Needs the class cache. Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r8_slide_at_edge.gd
+
+const Space: GDScript = preload("res://kernel/world/terrain/world_space.gd")
+const Visitor: GDScript = preload("res://kernel/world/visitor.gd")
+
+
+func _initialize() -> void:
+	# high ground for z > -L, then a 3 m drop; he runs toward -z and presses C on each tick in turn until a slide starts
+	# on the tick he leaves the edge
+	for press_at: int in range(40, 80):
+		var sp: RefCounted = Space.new()
+		var f: PackedVector3Array = PackedVector3Array([Vector3(-20, 3, -6), Vector3(20, 3, -6), Vector3(20, 3, 20), Vector3(-20, 3, -6), Vector3(20, 3, 20), Vector3(-20, 3, 20),
+			Vector3(-20, 0, -60), Vector3(20, 0, -60), Vector3(20, 0, -6), Vector3(-20, 0, -60), Vector3(20, 0, -6), Vector3(-20, 0, -6)])
+		sp.call("add_faces", f)
+		var land: Node3D = Node3D.new()
+		land.set_meta(&"tl_space", sp)
+		root.add_child(land)
+		var vis: Node3D = Visitor.new()
+		land.add_child(vis)
+		vis.call("setup", Vector3(0, 3, 0), Vector3.FORWARD)
+		vis.call("steer_on")
+		var rig: Node3D = vis.get("rig")
+		var hit: String = ""
+		for i: int in 120:
+			vis.call("wish", Vector3(0, 0, -9.0), false, i == press_at)
+			var before: String = str(vis.get("mode"))
+			vis.call("step", Vector3.ZERO, i)
+			if i == press_at and before == "ground" and str(vis.get("mode")) == "air":
+				hit = "pressed C at tick %d on the edge: mode ground -> air, rig clip '%s'" % [i, rig.get("clip")]
+			if hit != "" and i == press_at + 10:
+				hit += "; 10 ticks later, falling (mode %s, feet y %.2f): rig clip '%s'" % [vis.get("mode"), (vis.get("feet") as Vector3).y, rig.get("clip")]
+		land.queue_free()
+		await process_frame
+		sp.call("free_all")
+		if hit != "":
+			print("R8 " + hit)
+			break
+	quit(0)

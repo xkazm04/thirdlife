@@ -1,6 +1,6 @@
 # Kernel selftest blocks
 
-Run `bash engine/tools/selftest.sh [name-filter]` from the repo root. For example, `bash engine/tools/selftest.sh verbs.` runs the cases whose names contain the literal substring `verbs.`. An empty filter runs the suite.
+Run `bash engine/tools/selftest.sh [name-filter]` from the repo root. For example, `bash engine/tools/selftest.sh verbs.` runs the cases whose names contain the literal substring `verbs.`. An empty filter runs the suite. A filter that selects no case exits 2 (could not run), never 0.
 
 No case reads the wall clock. Measure simulation time in physics frames (60 Hz).
 

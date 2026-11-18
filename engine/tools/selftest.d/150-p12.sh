@@ -28,6 +28,7 @@ if [ -z "$FILTER" ] || [[ "world.needed_now" == *"$FILTER"* ]]; then
   out="$(bash "$HERE/world.sh" proof "$WN/needed.json" 2>&1)"
   js="$(TL_JSON=1 bash "$HERE/world.sh" walk "$WN/needed.json" 2>&1 | grep '"kind":"world"')"
   why=""; echo "$out" | grep -q '^PASS world.proof' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror' | head -3 | tr '\n' ' ')"
+  [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.proof' && why="no PASS world.proof line: the run stopped before its verdict"
   echo "$js" | grep -q '"forced_list":\[\["a",0,' || why="${why:+$why; }plot a (on stage at tick 0) was not built at once: $(echo "$js" | grep -oE '"forced_list":[^}]*' | head -c 200)"
   echo "$js" | grep -q '"never_built":0' || why="${why:+$why; }a wanted game was never built"
   verdict world.needed_now "$why" "forced $(echo "$js" | grep -oE '"forced_list":\[[^}]*\]\]' | head -c 160); walk = alone = replay"

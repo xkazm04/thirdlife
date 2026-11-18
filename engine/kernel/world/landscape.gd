@@ -13,7 +13,7 @@ extends RefCounted
 ## of its own at its edge (the world's ground is cut open for it). `cfg` (the walk script's `landscape` block, all
 ## optional): road, road_half_m, spurs, fence, gates, lots ([{"at": [x, z], "radius": m, "h": pad height}]; S: a lot with
 ## `job` and `replay` is a construction site, kernel/world/site.gd: when its log is found it is a plot, drawn by site/draw.gd), pad_h (per
-## plot: the height of its pad, default the plot's own y), river ({"path": [[x, z], ...], "half_m", "pond_m"}), trees,
+## plot: the height of its pad, default the plot's own y before the lift), river ({"path": [[x, z], ...], "half_m", "pond_m"}), trees,
 ## broadleaf, rocks, bushes, tufts, belt, mesas, seed, ground_key, spread_m, cell_m, rim_band.
 ## Cost is in the returned stats (`build_ms`, `terrain_ms`, instance counts); kernel/world/WORLD.md has the figures.
 
@@ -49,13 +49,14 @@ static func _ground_material(plots: Array, radii: Array, has_ground: Array) -> S
 	return gm
 
 
-## The flat ground of N7 (used when the landscape is off: `--landscape=off`, single shots).
+## The flat ground of N7 (`--landscape=off`, single shots); its material is the meta `tl_ground_mat` of `parent` as in `build` (bugfix-37 D16).
 static func ground(parent: Node3D, plots: Array, radii: Array, has_ground: Array, key: String = "") -> MeshInstance3D:
 	var g: MeshInstance3D = TLStyle.ground(FLAT_GROUND_Y, key, 3000.0)
 	parent.add_child(g)
 	var gm: ShaderMaterial = _ground_material(plots, radii, has_ground)
 	if gm != null:
 		g.material_override = gm
+		parent.set_meta(&"tl_ground_mat", gm)
 	return g
 
 
@@ -100,7 +101,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var pt: Transform3D = plots[i]
 		var c: Vector2 = Vector2(pt.origin.x, pt.origin.z)
 		centres.append(c)
-		pad_h.append(float(pad_cfg[i]) if i < pad_cfg.size() else pt.origin.y)
+		pad_h.append(float(pad_cfg[i]) if i < pad_cfg.size() else pt.origin.y + float(WorldSpace.call("pad_rim", parent.get_parent(), i, float(radii[i]))))
 		lo = lo.min(c - Vector2.ONE * (float(radii[i]) + PAD_EXTRA))
 		hi = hi.max(c + Vector2.ONE * (float(radii[i]) + PAD_EXTRA))
 	var lots: Array = (cfg["lots"] as Array).duplicate() if typeof(cfg.get("lots")) == TYPE_ARRAY else []     # S: a copy (site lots are taken out of it)
@@ -247,11 +248,9 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	if main_path != null:
 		road_pts.append_array(main_path.pts)
 		if rv_path != null:
-			for i: int in main_path.pts.size():
-				if float(terr.call("river_dist", main_path.pts[i].x, main_path.pts[i].y)) < rv_half + 11.0:
-					if bridge_a < 0:
-						bridge_a = i
-					bridge_b = i
+			var span: Vector2i = terr.call("bridge_span", main_path.pts, rv_half + 11.0)     # bugfix-37 Q15: (-1, -1) for a road that only ends there
+			bridge_a = span.x
+			bridge_b = span.y
 		Parts.strip(mk_road, terr, main_path.pts, half + 0.7, 0.05, "grass_dry", 1.0, rng, bridge_a, bridge_b, half)     # P14b: beside the road only
 		Parts.strip(mk_road, terr, main_path.pts, half, 0.065, "dirt", 1.0, rng, bridge_a, bridge_b)
 		Parts.strip(mk_road, terr, main_path.pts, half * 0.36, 0.1, "dirt", 0.9, rng, bridge_a, bridge_b, -1.0, half)     # P14b: on the road's plane
@@ -535,6 +534,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	_lap(stats, "add_faces")
 	var view: Node = parent.get_parent()
 	var world: Variant = view.get("world") if view != null else null
+	ws.call("add_pads", terr, centres, has_ground, radii, (world as Node).get("packs") if world != null else [])     # bugfix-37 D3: world_space.gd
 	if world != null:
 		var holders: Array = (world as Node).get("packs")
 		var band: float = float(cfg.get("rim_band", 9.0))

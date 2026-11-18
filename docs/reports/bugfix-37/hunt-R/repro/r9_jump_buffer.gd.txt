@@ -1,0 +1,37 @@
+extends SceneTree
+## D5 repro 9: the jump buffer. world_body.gd:8-9 / :30: "a press is kept BUFFER (8) ticks, so a press just before
+## landing still jumps". A jump on flat ground; the next press k ticks before the landing tick (k = 1..10): does it jump
+## again on landing? Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r9_jump_buffer.gd
+
+const Space: GDScript = preload("res://kernel/world/terrain/world_space.gd")
+
+
+func _run(press2: int) -> Array:
+	var sp: RefCounted = Space.new()
+	sp.call("add_faces", PackedVector3Array([Vector3(-20, 0, -20), Vector3(20, 0, -20), Vector3(20, 0, 20), Vector3(-20, 0, -20), Vector3(20, 0, 20), Vector3(-20, 0, 20)]))
+	var feet: Vector3 = Vector3.ZERO
+	sp.call("place", feet)
+	sp.call("rest")
+	var land: int = -1
+	var jumps: Array = []
+	for i: int in 120:
+		var r: Dictionary = sp.call("drive", feet, Vector3.ZERO, i == 5 or i == press2, false)
+		feet = r["pos"]
+		if (r["events"] as Array).has("land") and land < 0:
+			land = i
+		if (r["events"] as Array).has("jump"):
+			jumps.append(i)
+	sp.call("free_all")
+	return [land, jumps]
+
+
+func _initialize() -> void:
+	var base: Array = _run(-1)
+	var land: int = int(base[0])
+	var out: Array = []
+	for k: int in range(1, 11):
+		var r: Array = _run(land - k)
+		out.append("k%d:%s" % [k, "jumps" if (r[1] as Array).size() > 1 else "no"])
+	print("R9 first jump at tick 5 lands at tick %d; a second press k ticks before that landing tick: %s (BUFFER = 8)" % [land, " ".join(out)])
+	quit(0)

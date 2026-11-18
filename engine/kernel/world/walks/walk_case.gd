@@ -25,8 +25,9 @@ func _say(name: String, ok: bool, figs: String) -> void:
 	print("WALKCASE %s %s %s" % [name, "ok" if ok else "fail", figs])
 
 
+## The filter matches the printed name (`walk.<case>`), so `-- walk.jump` and `-- jump` select the same case.
 func _want(name: String) -> bool:
-	return _filter.is_empty() or name.contains(_filter)
+	return _filter.is_empty() or ("walk." + name).contains(_filter)
 
 
 ## A plane through the origin rising toward -z at `deg` (60 m square), with a flat floor at its foot from z = foot_z.
@@ -66,6 +67,11 @@ func _initialize() -> void:
 	if _want("canopy"):
 		await _canopy()
 	print("WALKCASE done %d %d" % [_ok, _n])
+	# A filter that selected no case ran nothing: never a pass (docs/GATE-HONESTY.md), exit 2 "could not run".
+	if _n == 0:
+		print("WALKCASE none: no case matches the filter '%s'" % _filter)
+		quit(2)
+		return
 	quit(0 if _ok == _n else 1)
 
 

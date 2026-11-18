@@ -21,7 +21,8 @@ TLRigs.spec("biped"); TLRigs.validate("biped", params); TLRigs.list()
   `+x` swings a hanging limb forward (-Z) and tips an upright bone (spine, head) back, so a forward lean is negative x
   on Hips / Spine; `+y` turns left; `+z` rolls the top towards -X. A new clip is one function and one `add_clip` line.
 - `tick(frame)` evaluates the current pose, blends from the pose that was showing when `play` was called (quaternion
-  slerp, smoothstep over the blend time) and writes bone poses. Everything is a function of the number of ticks and
+  slerp, smoothstep over the blend time) and writes bone poses; a bone the pose does not name returns to its rest
+  rotation (it never keeps what an earlier clip left on it), and `look_at` turns the head from that fresh pose each tick. Everything is a function of the number of ticks and
   of `frame`: the same calls give the same pose on every run (the self-test compares two runs).
 - **Locomotion**: with no action clip playing, `set_locomotion` decides. `mode = walk`: one gait from standing to a
   sprint, read from the speed AND the direction of `velocity_local` (see "The walking gait" below); off the floor
@@ -50,7 +51,7 @@ TLRigs.spec("biped"); TLRigs.validate("biped", params); TLRigs.list()
 | `work` | yes | 0.8 | hammering with the right arm, leaning in |
 | `jump` | no | 0.30 | take-off, played as the feet leave the floor: legs push straight, arms thrown up, ends in the rising air pose |
 | `land` | no | 0.45 | landing: the gait's own legs (feet stay where they stand, he may run on) under a crouch that takes the fall: soft from 4 m/s of fall, deep and slow with the arms out at 14 m/s. The fall speed is the last `velocity_local.y` seen while `grounded` was false. Its blend is at most 4 frames |
-| `slide` | holds | 0.30 | run slide: low on the left hip, right leg out ahead, left hand trailing on the floor, right arm up |
+| `slide` | holds | 0.30 | run slide: low on the left hip, right leg out ahead, left arm trailing low behind (the hand about 0.3 m above the floor), right arm up |
 | `slope_slide` | yes | 1.6 | sliding down steep ground: knees bent, weight back, turned a little across the fall line, arms out wide and working for balance. Loops until another `play` (`play(&"")` ends it) |
 | `air` | yes | 1.0 | the air pose by name (locomotion shows it by itself when `grounded` is false): rising above +4 m/s, apex round 0, falling below -5 m/s |
 

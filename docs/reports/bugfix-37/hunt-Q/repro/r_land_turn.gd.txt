@@ -1,0 +1,37 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/r_land_turn.gd"
+extends SceneTree
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var control := landed_heading(false)
+	var actual := landed_heading(true)
+	print("REPRO land_turn: %s after landing blend: control boot yaw %.1f degrees, turned-in-air boot yaw %.1f degrees relative to the same body heading" % ["FAIL" if absf(actual - control) > 1.0 else "PASS", absf(control), actual])
+	quit()
+
+func landed_heading(turn_in_air: bool) -> float:
+	var rig = TLRigs.build("biped")
+	rig.rotation.y = 0.0 if turn_in_air else deg_to_rad(30.0)
+	root.add_child(rig)
+	rig.set_locomotion(Vector3.ZERO, true)
+	rig.tick(1)
+	for f in range(2, 32):
+		if turn_in_air:
+			rig.rotation.y = deg_to_rad(f - 1.0)
+		var vy := 5.8 - 0.4 * (f - 2)
+		rig.position.y += vy / 60.0
+		rig.set_locomotion(Vector3(0, vy, 0), false)
+		rig.tick(f)
+	# A purely vertical jump. With no ground contact in these 30 ticks, there is no old
+	# stance anchor to preserve across the turn. land() sets the two new headings to psi.
+	rig.position.y = 0.0
+	rig.set_locomotion(Vector3.ZERO, true)
+	rig.play(&"land")
+	for f in range(32, 36):
+		rig.tick(f)
+	var sk: Skeleton3D = rig.get_node("Model/Skeleton3D")
+	var bi := sk.find_bone("LeftFoot")
+	var actual := rad_to_deg(sk.get_bone_global_pose(bi).basis.get_euler().y)
+	rig.free()
+	return actual

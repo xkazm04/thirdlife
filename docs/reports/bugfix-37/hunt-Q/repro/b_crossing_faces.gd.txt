@@ -1,0 +1,39 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_crossing_faces.gd"
+extends SceneTree
+
+const Draw = preload("res://kernel/world/draw/draw.gd")
+
+class Holder extends Node3D:
+	var loaded := true
+	var pack_dir := ""
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	var draw := Draw.new()
+	root.add_child(draw)
+	draw.set_process(false)
+	draw.pic_worker = false
+	draw._pal = TLStyle.material(&"white")
+	for subdivisions in [0, 3]:
+		var holder := Holder.new()
+		root.add_child(holder)
+		var ground := MeshInstance3D.new()
+		var mesh := PlaneMesh.new()
+		mesh.size = Vector2(100, 100)
+		mesh.subdivide_depth = subdivisions
+		mesh.subdivide_width = subdivisions
+		ground.mesh = mesh
+		ground.material_override = draw._pal
+		holder.add_child(ground)
+		var entry := {"holder": holder, "radius": 40.0, "rim": 0.0, "ground": false,
+			"rel": Transform3D.IDENTITY, "pics": {}, "standin_info": {}}
+		draw._build_pictures(entry, ["mid", "far"])
+		var mid: int = entry.standin_info.mid.tris
+		var far: int = entry.standin_info.far.tris
+		print("REPRO crossing_faces: %s subdivisions=%d source_covers_plot=true mid_triangles=%d far_triangles=%d" % [
+			"FAIL" if mid == 0 and far == 0 else "control", subdivisions, mid, far])
+		holder.free()
+	draw.free()
+	quit()

@@ -1,0 +1,22 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/a_reverse_camera.gd"
+extends SceneTree
+
+const Chase = preload("res://kernel/api/tl_chase_cam.gd")
+
+func _initialize() -> void:
+	call_deferred("_check")
+
+func _check() -> void:
+	var who := Node3D.new()
+	var cam = Chase.new()
+	root.add_child(who)
+	root.add_child(cam)
+	cam.setup(who, {"use_velocity": true, "distance": 7.0, "follow": 1.0})
+	# Start in the setup heading (-Z), then travel the opposite way (+Z).
+	for tick in 360:
+		var direction := Vector3.FORWARD if tick < 60 else Vector3.BACK
+		who.position += direction * 0.1
+		cam._physics_process(1.0 / 60.0)
+	var ahead: float = (cam.global_position - who.global_position).dot(Vector3.BACK)
+	print("REPRO reverse_camera: %s after 300 reverse ticks, expected 7.0 m behind travel, camera %.1f m ahead" % ["PASS" if ahead < 0.0 else "FAIL", ahead])
+	quit()

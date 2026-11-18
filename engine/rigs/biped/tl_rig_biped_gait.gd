@@ -196,10 +196,12 @@ func step(vm: Vector2, cadence_k: float, yaw_world: float) -> void:
 		ft["u"] = u
 
 
-## After a jump or a fall: both feet are put down under the body, the one ahead first.
+## After a jump or a fall: both feet are put down under the body as it faces now, the one ahead first. The yaw seen before
+## take-off is forgotten (step() is not called in the air): a turn made in the air must not twist the newly planted feet.
 func land(vm: Vector2) -> void:
 	if feet.is_empty():
 		reset()
+	_yaw_seen = NAN
 	var sp: float = vm.length()
 	var that: Vector2 = vm / sp if sp > 0.001 else Vector2(0.0, -1.0)
 	var reach: float = minf(ls, 0.5)

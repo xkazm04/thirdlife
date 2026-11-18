@@ -202,10 +202,17 @@ static func mix(a: Dictionary, b: Dictionary, k: float) -> Dictionary:
 	return {"q": q, "h": (a["h"] as Vector3).lerp(b["h"], k)}
 
 
+## Writes a pose. A bone the pose does not name returns to its rest rotation (identity), the same value `mix` blends
+## a missing bone towards: a clip that omits a bone must not leave it where the previous clip put it, and a correction
+## layered on after the pose (the biped's look_at) must start from a fresh base every tick, not from its own last result.
+## Rotation only: positions and scales of bones no clip names (the face) are the family's own.
 func _apply(pose: Dictionary) -> void:
 	var q: Dictionary = pose["q"]
-	for bi: int in q:
-		_sk.set_bone_pose_rotation(bi, q[bi])
+	for bi: int in _sk.get_bone_count():
+		if q.has(bi):
+			_sk.set_bone_pose_rotation(bi, q[bi])
+		else:
+			_sk.set_bone_pose_rotation(bi, _sk.get_bone_rest(bi).basis.get_rotation_quaternion())
 	if _root_bone >= 0:
 		_sk.set_bone_pose_position(_root_bone, _root_rest + (pose["h"] as Vector3))
 

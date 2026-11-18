@@ -38,7 +38,8 @@ var replay: Dictionary = {}
 var _rec: Variant = null
 var _mouse: Vector2 = Vector2.ZERO
 var _script: Dictionary = {}            # tick -> [[kind, a, b], ...]
-var _stage_rec: Array = []              # [plot index, TLInput, frames list or null, visit number]
+var _stage_rec: Array = []              # [plot index, TLInput, frames list or null, visit number, samples taken when last seen]
+var _leaving: Callable = Callable()     # D2: connected to the recorded stage input's tree_exiting
 var _visits: Dictionary = {}            # plot id -> times on stage
 var _stage_feeds: Dictionary = {}       # "<plot id>.<n>" -> record (replay)
 var _ticks: int = 0
@@ -247,40 +248,59 @@ func stage(was: int, now: int, holders: Array, plots: Array, radii: Array) -> vo
 	var id: String = str(((world.get("plot_defs") as Array)[now] as Dictionary)["id"])
 	_visits[id] = int(_visits.get(id, 0)) + 1
 	var key: String = "%s.%d" % [id, int(_visits[id])]
+	# D10: the hand-over. What the bot injected (TLInput.press holds until release) is let go here, or the person's
+	# game keeps the bot's held press (the drive bot's gas) with no key down. Only on stage with a person: bot-mode
+	# runs never come here, so their hashes are untouched.
+	c.input.release_all()
 	if devices:
 		c.input.accept_devices = true
-		_stage_rec = [now, c.input, c.input._record() if not record_path.is_empty() else null, key]
+		_stage_rec = [now, c.input, c.input._record() if not record_path.is_empty() else null, key, int(c.input.get("_ticks"))]
+		if _stage_rec[2] != null:
+			_leaving = _on_stage_input_leaving.bind(c.input)
+			c.input.tree_exiting.connect(_leaving)
 	else:
 		var fr: Array = (_stage_feeds[key] as Dictionary)["frames"] if _stage_feeds.has(key) else []
 		c.input._feed(fr)
-		_stage_rec = [now, c.input, null, key]
+		_stage_rec = [now, c.input, null, key, int(c.input.get("_ticks"))]
+
+
+## D2: the game on stage is rebuilt from its seed (world.gd `_rebuild` frees the holder's children in the tree): the
+## samples its input took are read while it still exists, so the record's `length` is the ticks sampled.
+func _on_stage_input_leaving(inp: TLInput) -> void:
+	if not _stage_rec.is_empty() and _stage_rec[1] == inp:
+		_stage_rec[4] = int(inp.get("_ticks"))
 
 
 func _close_stage_record(holders: Array) -> void:
 	if _stage_rec.is_empty():
 		return
-	if not is_instance_valid(_stage_rec[1]):
-		# the game was rebuilt from its seed while on stage (its next round): its input went with it. What was
-		# recorded of this visit is written as it is. (Walker-feel round 2: typing a freed input was a SCRIPT ERROR.)
-		if _stage_rec[2] != null and not record_path.is_empty():
-			var h0: Variant = holders[int(_stage_rec[0])]
-			var m0: Dictionary = h0.get("manifest") if is_instance_valid(h0) else {}
-			Session.call("write", record_path.trim_suffix(".json") + "." + str(_stage_rec[3]) + ".json", {"schema": Session.SCHEMA,
-				"pack": str(m0.get("id", "")), "seed": int(h0.get("seed_value")) if is_instance_valid(h0) else 1, "mode": "play",
-				"max_frames": int(h0.get("frames_target")) if is_instance_valid(h0) else (_stage_rec[2] as Array).size(),
-				"length": (_stage_rec[2] as Array).size(), "end": "step", "frames": _stage_rec[2]})
+	var alive: bool = is_instance_valid(_stage_rec[1])
+	if alive and _leaving.is_valid() and (_stage_rec[1] as TLInput).tree_exiting.is_connected(_leaving):
+		(_stage_rec[1] as TLInput).tree_exiting.disconnect(_leaving)
+	_leaving = Callable()
+	if _stage_rec[2] == null or record_path.is_empty():
 		_stage_rec = []
 		return
-	var inp: TLInput = _stage_rec[1]
-	if is_instance_valid(inp) and _stage_rec[2] != null:
-		inp.set("_rec", null)
-		var h: Node = holders[int(_stage_rec[0])]
-		var m: Dictionary = h.get("manifest")
-		var err: String = Session.call("write", record_path.trim_suffix(".json") + "." + str(_stage_rec[3]) + ".json", {"schema": Session.SCHEMA,
-			"pack": str(m.get("id", "")), "seed": int(h.get("seed_value")), "mode": "play", "max_frames": int(h.get("frames_target")),
-			"length": int(inp.get("_ticks")), "end": "step", "frames": _stage_rec[2]})
-		if not err.is_empty():
-			print("[visit] " + err)
+	var frames: Array = _stage_rec[2]
+	# D2: `length` is the samples taken (header), never the count of the sparse rows. The input alive: its own count.
+	# Rebuilt on stage (its next round; walker-feel round 2: typing a freed input was a SCRIPT ERROR): the count read
+	# as it left the tree, and never below the last recorded frame + 1 (the session writer rejects a frame >= length).
+	var length: int = int((_stage_rec[1] as TLInput).get("_ticks")) if alive else int(_stage_rec[4])
+	if not frames.is_empty():
+		length = maxi(length, int(frames[frames.size() - 1][0]) + 1)
+	if alive:
+		(_stage_rec[1] as TLInput).set("_rec", null)
+	var h: Variant = holders[int(_stage_rec[0])]
+	var hv: bool = is_instance_valid(h)
+	var m: Dictionary = (h as Node).get("manifest") if hv else {}
+	var out: String = record_path.trim_suffix(".json") + "." + str(_stage_rec[3]) + ".json"
+	var err: String = Session.call("write", out, {"schema": Session.SCHEMA, "pack": str(m.get("id", "")),
+		"seed": int((h as Node).get("seed_value")) if hv else 1, "mode": "play",
+		"max_frames": int((h as Node).get("frames_target")) if hv else length, "length": length, "end": "step", "frames": frames})
+	if not err.is_empty():
+		# D2: a stage record that could not be written is said, never dropped in silence
+		push_error("[visit] the stage record %s was not written: %s" % [out, err])
+		print("[visit] " + err)
 	_stage_rec = []
 
 

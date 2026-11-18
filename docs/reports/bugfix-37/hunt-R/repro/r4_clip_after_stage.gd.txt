@@ -1,0 +1,58 @@
+extends SceneTree
+## D5 repro 4: the visitor (visitor.gd, steer on, a body in a world space) runs, starts a run slide (C), and a game goes
+## on stage while he slides (E: view.gd `_set_stage` hides him; `_drive_step` then only rests the body). On leaving,
+## visit.gd `_to_gate` calls `put()`. Neither path tells the rig to leave the `slide` clip (a HOLD clip, tl_rig_biped.gd:67),
+## so he stands at the gate, and walks on, in the slide pose until a jump or a landing plays another clip.
+## Same for `slope_slide` (a loop). Needs the class cache (run `"$G" --headless --path engine --import` once).
+## Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r4_clip_after_stage.gd
+
+const Space: GDScript = preload("res://kernel/world/terrain/world_space.gd")
+const Visitor: GDScript = preload("res://kernel/world/visitor.gd")
+
+
+func _initialize() -> void:
+	var sp: RefCounted = Space.new()
+	sp.call("add_faces", PackedVector3Array([Vector3(-200, 0, -200), Vector3(200, 0, -200), Vector3(200, 0, 200), Vector3(-200, 0, -200), Vector3(200, 0, 200), Vector3(-200, 0, 200)]))
+	var land: Node3D = Node3D.new()
+	land.set_meta(&"tl_space", sp)
+	root.add_child(land)
+	var vis: Node3D = Visitor.new()
+	land.add_child(vis)
+	vis.call("setup", Vector3.ZERO, Vector3.FORWARD)
+	vis.call("steer_on")
+	var rig: Node3D = vis.get("rig")
+	var f: int = 0
+	for i: int in 60:                                  # Shift+W: run at 9 m/s
+		vis.call("wish", Vector3(0, 0, -9.0), false, false)
+		vis.call("step", Vector3.ZERO, f)
+		f += 1
+	vis.call("wish", Vector3(0, 0, -9.0), false, true)  # C: the run slide
+	vis.call("step", Vector3.ZERO, f)
+	f += 1
+	for i: int in 5:
+		vis.call("wish", Vector3.ZERO, false, false)
+		vis.call("step", Vector3.ZERO, f)
+		f += 1
+	print("R4 sliding: body mode %s, rig clip '%s'" % [vis.get("mode"), rig.get("clip")])
+	vis.visible = false                                # E: a game goes on stage (view.gd _set_stage)
+	for i: int in 120:
+		vis.call("wish", Vector3.ZERO, false, false)
+		vis.call("step", Vector3.ZERO, f)
+		f += 1
+	vis.visible = true                                 # Q: back (view.gd _set_stage(-1)), visit.gd _to_gate -> put()
+	vis.call("put", Vector3(10, 0, 10), 0.0)
+	for i: int in 120:                                 # 2 s standing at the gate
+		vis.call("wish", Vector3.ZERO, false, false)
+		vis.call("step", Vector3.ZERO, f)
+		f += 1
+	print("R4 2 s after put() at the gate: body mode %s, speed %.2f m/s, rig clip '%s'" % [vis.get("mode"), float(vis.get("speed")), rig.get("clip")])
+	for i: int in 120:                                 # 2 s walking
+		vis.call("wish", Vector3(0, 0, -4.5), false, false)
+		vis.call("step", Vector3.ZERO, f)
+		f += 1
+	print("R4 then 2 s walking at 4.5 m/s: body mode %s, rig clip '%s'" % [vis.get("mode"), rig.get("clip")])
+	land.queue_free()
+	await process_frame
+	sp.call("free_all")
+	quit(0)

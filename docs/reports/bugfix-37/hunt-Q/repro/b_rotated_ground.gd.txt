@@ -1,0 +1,37 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_rotated_ground.gd"
+extends SceneTree
+
+const DrawBase = preload("res://kernel/world/draw/draw_base.gd")
+const Landscape = preload("res://kernel/world/landscape.gd")
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	TLStyle.set_headless(false) # Exercise the normal ground material on the headless display.
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var deck := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(40, 90)
+	plane.subdivide_depth = 17
+	plane.subdivide_width = 7
+	deck.mesh = plane
+	holder.add_child(deck)
+	for yaw in [0, 45]:
+		deck.rotation_degrees.y = yaw
+		var measured := DrawBase.ground_cover(holder, 40, [deck])
+		var real_hits := 0
+		for radius in [38.0, 42.0]:
+			for k in 72:
+				var angle := TAU * k / 72.0
+				var local := deck.to_local(Vector3(radius * cos(angle), 0, radius * sin(angle)))
+				if absf(local.x) <= 20 and absf(local.z) <= 45:
+					real_hits += 1
+		var owns := not is_nan(DrawBase.edge_height(holder, 40))
+		var mat := Landscape._ground_material([Transform3D.IDENTITY], [40], [owns])
+		var hole: Vector4 = mat.get_shader_parameter(&"tl_holes")[0]
+		print("REPRO rotated_ground: %s yaw=%d physical_coverage=%d/144 reported=%.3f hole_radius=%.1f" % [
+			"FAIL" if owns and real_hits < 0.95 * 144 else "control", yaw, real_hits, measured, hole.z])
+	holder.free()
+	quit()

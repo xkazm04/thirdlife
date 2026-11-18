@@ -1,0 +1,48 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_freed_visuals.gd"
+extends SceneTree
+
+const Draw = preload("res://kernel/world/draw/draw.gd")
+
+class Holder extends Node3D:
+	var loaded := true
+	var frames_done := 0
+	var ctx: TLContext
+	var pack_dir := ""
+
+class World extends Node:
+	var cfg := {}
+	var packs := []
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	TLStyle.set_headless(false)
+	var world := World.new()
+	root.add_child(world)
+	var holder := Holder.new()
+	world.add_child(holder)
+	world.packs.append(holder)
+	var draw := Draw.new()
+	root.add_child(draw)
+	draw.set_process(false)
+	draw.setup(world, [Transform3D.IDENTITY], [40], [0], -1)
+	draw.set_stage(-1)
+	var mesh := BoxMesh.new()
+	mesh.material = TLStyle.material(&"white")
+	for batch in 2:
+		for count in 256:
+			var prop := MeshInstance3D.new()
+			prop.mesh = mesh
+			holder.add_child(prop)
+			draw._process(0) # The node_added queue adopts this live visual.
+			prop.free()
+		for frame in 300:
+			draw._process(0)
+		var entry: Dictionary = draw.entries[0]
+		print("REPRO freed_visuals: %s freed=%d live_children=%d reported_live=%d clip_records=%d" % [
+			"FAIL" if draw.report().a_instances_live > 0 else "pass",
+			(batch + 1) * 256, holder.get_child_count(), draw.report().a_instances_live, entry.clipped.size()])
+	draw.free()
+	world.free()
+	quit()

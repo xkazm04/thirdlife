@@ -1,0 +1,16 @@
+== hunt-Q/repro/b_steep_rest.gd
+REPRO steep_rest: FAIL slope=65 limit=55 grounded_ticks=120/120 downhill_metres=0.000
+== hunt-R/repro/r2_slope_pit.gd
+R2 pit walls 45 deg, 0.8 m deep (less than a jump, 0.94 m): after walking in feet (0.0, 0.0, -0.96); W(+z) at 9 m/s + jump every 10 ticks for up to 1200 ticks: feet (0.0, 0.39, 2.0), out at tick 62, jumps 2, ticks per mode { "air": 62, "ground": 1 }
+R2 pit walls 62 deg, 0.8 m deep (less than a jump, 0.94 m): after walking in feet (-0.03, -0.5, -0.02); W(+z) at 9 m/s + jump every 10 ticks for up to 1200 ticks: feet (-0.04, -0.5, -0.03), out at tick -1, jumps 0, ticks per mode { "slope": 1200 }
+== hunt-Q/repro/a_stage_pose.gd
+before stage: body=slide, rig=slide
+REPRO stage_pose: FAIL 120 idle ticks after return, body=ground, speed=0.0, rig clip='slide'
+== hunt-R/repro/r4_clip_after_stage.gd
+R4 sliding: body mode slide, rig clip 'slide'
+R4 2 s after put() at the gate: body mode ground, speed 0.00 m/s, rig clip 'slide'
+R4 then 2 s walking at 4.5 m/s: body mode ground, rig clip 'slide'
+== hunt-R/repro/r8_slide_at_edge.gd
+R8 pressed C at tick 49 on the edge: mode ground -> air, rig clip 'slide'; 10 ticks later, falling (mode air, feet y 2.54): rig clip 'slide'
+== hunt-R/repro/r9_jump_buffer.gd
+R9 first jump at tick 5 lands at tick 38; a second press k ticks before that landing tick: k1:jumps k2:jumps k3:jumps k4:jumps k5:jumps k6:jumps k7:no k8:no k9:no k10:no (BUFFER = 8)

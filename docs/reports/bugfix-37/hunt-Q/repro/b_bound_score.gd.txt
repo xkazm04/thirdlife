@@ -1,0 +1,58 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/b_bound_score.gd"
+extends SceneTree
+
+const Draw = preload("res://kernel/world/draw/draw.gd")
+
+class Holder extends Node3D:
+	var loaded := true
+	var frames_done := 3
+	var ctx: TLContext
+	var pack_dir := ""
+
+class World extends Node:
+	var cfg := {}
+	var packs := []
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	TLStyle.set_headless(false)
+	var world := World.new()
+	root.add_child(world)
+	var holder := Holder.new()
+	world.add_child(holder)
+	world.packs.append(holder)
+	var rules := TLRules.new()
+	holder.add_child(rules)
+	rules.add_side("home")
+	rules.add_side("away")
+	rules.start()
+	var board := Node3D.new()
+	board.set_meta(&"tl_kind", "scoreboard")
+	holder.add_child(board)
+	# Same binding the hockey pack applies to both arena boards.
+	var face := TLKitSite.bind_scoreboard(board, rules)
+	var zero_tris := face.mesh.get_faces().size() / 3
+	var draw := Draw.new()
+	root.add_child(draw)
+	draw.set_process(false)
+	draw.setup(world, [Transform3D.IDENTITY], [40], [0], -1)
+	draw.pic_worker = false
+	draw.set_stage(-1)
+	draw.set_tier(0, "backdrop")
+	draw._process(0)
+	rules.add_score("home")
+	holder.frames_done += 1
+	draw._process(0)
+	var e: Dictionary = draw.entries[0]
+	var pic: MeshInstance3D = e.pics.mid
+	var pic_tris := pic.mesh.get_faces().size() / 3
+	var one_tris := face.mesh.get_faces().size() / 3
+	var stale := pic.is_visible_in_tree() and not face.is_visible_in_tree() and e.boards.list.is_empty() and pic_tris == zero_tris and one_tris != zero_tris
+	print("REPRO bound_score: %s bound_score=%s bound_visible=%s overlay_count=%d" % [
+		"FAIL" if stale else "other", face.get_meta(&"tl_shown"), str(face.is_visible_in_tree()), e.boards.list.size()])
+	print("REPRO bound_score: mesh_triangles score_0_0=%d score_1_0=%d displayed=%d" % [zero_tris, one_tris, pic_tris])
+	draw.free()
+	world.free()
+	quit()

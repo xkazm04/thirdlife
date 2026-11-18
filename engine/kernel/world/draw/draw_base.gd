@@ -44,7 +44,7 @@ var _shader_ok: Dictionary = {}         # Shader -> bool (declares tl_plot)
 var _pal: Material = null
 var _mark: ArrayMesh = null             # P6: the unit box every mark is an instance of
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
-const PIC_VERSION: int = 14             # P13: part of the picture cache's key; count it up when a picture's rules change (T2: 14)
+const PIC_VERSION: int = 15             # P13: part of the picture cache's key; count it up when a picture's rules change (T2: 14; bugfix-37 D13: 15)
 var pic_worker: bool = true             # P13: pictures are merged on a worker (false: in the frame, as P6 did)
 var _dir_hashes: Dictionary = {}        # P13: pack directory -> content hash (the picture cache's key)
 var _cache_tasks: Array = []            # P13: picture cache writes in flight
@@ -207,32 +207,54 @@ static func edge_height(holder: Node3D, radius: float) -> float:
 ## ground is cut open to radius + 2.5 m for a pack with ground of its own; ex_car's ground is two boxes 60 m wide
 ## (its plot is 80 m across) and the 400 m ice box stands with its origin 200 m out, so the plot cut drops it whole:
 ## the corners of the boxes reached the rim ring and the hole was cut, and most of the plot showed the sky.
-## Points on two circles (radius - 2 and radius + 2, 72 each) count as covered when a wide mesh that the plot cut
-## keeps (its origin inside the radius) spans them in x and z. TL_GROUND_COVER=off: the rule before (the before
-## pictures; the rim cache then uses the key without "|cover").
+## Points on two circles (radius - 2 and radius + 2, 72 each) count as covered when a triangle of a wide mesh that the
+## plot cut keeps (its origin inside the radius) lies over or under them: a vertical ray there meets it (bugfix-37 D4:
+## the mesh's axis-aligned box, which this counted before, covers the whole rim of a square deck turned 45 degrees
+## that covers a third of it). TL_GROUND_COVER=off: the rule before the cover (the before pictures; the rim cache then
+## uses the key without "|cover").
 const COVER_MIN: float = 0.95
 
 
 static func ground_cover(holder: Node3D, radius: float, wide: Array) -> float:
-	var boxes: Array = []
+	var pts: PackedVector2Array = PackedVector2Array()
+	for rr: float in [radius - 2.0, radius + 2.0]:
+		for k: int in 72:
+			var a: float = TAU * float(k) / 72.0
+			pts.append(Vector2(cos(a), sin(a)) * rr)
+	var n: int = pts.size()
+	var r_lo: float = radius - 2.0
+	var r_hi: float = radius + 2.0
 	for m: MeshInstance3D in wide:
 		var xf: Transform3D = holder.global_transform.affine_inverse() * m.global_transform
 		if Vector2(xf.origin.x, xf.origin.z).length() > radius:
 			continue                                  # toon.gdshader drops an instance whose origin is outside the plot
-		var bb: AABB = xf * m.mesh.get_aabb()
-		boxes.append(Rect2(bb.position.x, bb.position.z, bb.size.x, bb.size.z))
-	var hit: int = 0
-	var n: int = 0
-	for rr: float in [radius - 2.0, radius + 2.0]:
-		for k: int in 72:
-			var a: float = TAU * float(k) / 72.0
-			var p: Vector2 = Vector2(cos(a), sin(a)) * rr
-			n += 1
-			for b: Rect2 in boxes:
-				if b.has_point(p):
-					hit += 1
-					break
-	return float(hit) / float(n)
+		var f: PackedVector3Array = xf * m.mesh.get_faces()
+		var t: int = 0
+		while t + 2 < f.size() and not pts.is_empty():
+			var a: Vector2 = Vector2(f[t].x, f[t].z)
+			var b: Vector2 = Vector2(f[t + 1].x, f[t + 1].z)
+			var c: Vector2 = Vector2(f[t + 2].x, f[t + 2].z)
+			t += 3
+			var lo: Vector2 = a.min(b).min(c)
+			var hi: Vector2 = a.max(b).max(c)
+			# only a triangle that reaches the band between the two circles can cover a point of them
+			if maxf(maxf(a.length(), b.length()), c.length()) < r_lo:
+				continue
+			if Vector2(maxf(lo.x, minf(0.0, hi.x)), maxf(lo.y, minf(0.0, hi.y))).length() > r_hi:
+				continue
+			var area: float = (b - a).cross(c - a)
+			if absf(area) < 1e-6:
+				continue                              # a wall or a box's side seen from above: no ground
+			for q: int in range(pts.size() - 1, -1, -1):
+				var p: Vector2 = pts[q]
+				if p.x < lo.x or p.x > hi.x or p.y < lo.y or p.y > hi.y:
+					continue
+				var w0: float = (b - a).cross(p - a) * signf(area)
+				var w1: float = (c - b).cross(p - b) * signf(area)
+				var w2: float = (a - c).cross(p - c) * signf(area)
+				if w0 >= 0.0 and w1 >= 0.0 and w2 >= 0.0:
+					pts.remove_at(q)
+	return float(n - pts.size()) / float(n)
 
 
 ## Meshes at least `width` metres wide both ways and flat-ish (wider than tall): the terrain sheets of a pack.

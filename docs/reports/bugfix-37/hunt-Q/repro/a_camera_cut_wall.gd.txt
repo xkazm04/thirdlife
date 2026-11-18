@@ -1,0 +1,56 @@
+# timeout 120 "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --fixed-fps 120 --path engine --script "$PWD/docs/reports/astra-trial/d5/repro/a_camera_cut_wall.gd"
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+const Chase = preload("res://kernel/api/tl_chase_cam.gd")
+
+var tick := 0
+var sp = Space.new()
+var who := Node3D.new()
+var cam = Chase.new()
+var inside_drawn := 0
+var inside_physics := 0
+var first_inside := Vector3.ZERO
+var started := false
+
+func _initialize() -> void:
+	call_deferred("_setup")
+
+func _setup() -> void:
+	root.add_child(who)
+	root.add_child(cam)
+	sp.add_box(Transform3D(Basis(), Vector3(4, 1, 4)), Vector3(2, 2, 2))
+	cam.setup(who, {"distance": 8.0, "height": 1.0, "look_height": 1.0, "stiffness": 1.0,
+			"anchor_follow": 1.0, "avoid_space": sp.space})
+	cam.make_current()
+	cam.get_global_transform_interpolated()
+	started = true
+
+func _physics_process(_delta: float) -> bool:
+	if started:
+		tick += 1
+		if tick == 8:
+			who.rotation.y = PI / 2
+	return false
+
+func _inside(pos: Vector3) -> bool:
+	var q := PhysicsPointQueryParameters3D.new()
+	q.position = pos
+	q.collision_mask = 1
+	return not PhysicsServer3D.space_get_direct_state(sp.space).intersect_point(q).is_empty()
+
+func _process(_delta: float) -> bool:
+	if started:
+		if _inside(cam.global_position):
+			inside_physics += 1
+		var drawn: Vector3 = cam.get_global_transform_interpolated().origin
+		if _inside(drawn):
+			inside_drawn += 1
+			first_inside = drawn
+		if tick >= 16:
+			print("REPRO camera_cut_wall: %s physics poses inside=%d, interpolated frames inside=%d, last interior position=%s" % ["FAIL" if inside_drawn > 0 and inside_physics == 0 else "PASS", inside_physics, inside_drawn, first_inside])
+			cam.free()
+			who.free()
+			sp.free_all()
+			quit()
+	return false

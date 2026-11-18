@@ -1,0 +1,42 @@
+extends SceneTree
+## Sweep the slide clip's left arm (upper arm x and z, lower arm x): lowest left-hand vertex at the held pose.
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func lowest(sk: Skeleton3D, geometry: TLMesh, bones: Array) -> float:
+	var lo := INF
+	for surface in geometry.surfs.values():
+		for i in surface.v.size():
+			var b: int = surface.b[4 * i]
+			if b in bones:
+				var skin := sk.get_bone_global_pose(b) * sk.get_bone_global_rest(b).affine_inverse()
+				lo = minf(lo, (skin * Vector3(surface.v[i])).y)
+	return lo
+
+func run() -> void:
+	var rig = TLRigs.build("biped")
+	root.add_child(rig)
+	rig.play(&"slide")
+	for f in range(1, 61):
+		rig.tick(f)
+	var sk: Skeleton3D = rig.get_node("Model/Skeleton3D")
+	var geometry := TLRigBipedMesh.build_mesh(sk, TLRigBipedMesh.LOOK, true, false)
+	var ua := sk.find_bone("LeftUpperArm")
+	var la := sk.find_bone("LeftLowerArm")
+	var hd := sk.find_bone("LeftHand")
+	var all := []
+	for b in sk.get_bone_count():
+		if not sk.get_bone_name(b).begins_with("Left") or true:
+			all.append(b)
+	print("SWEEP base hand=%.3f body=%.3f" % [lowest(sk, geometry, [hd]), lowest(sk, geometry, all)])
+	for ux in [-40.0, -25.0, -10.0, 0.0]:
+		for uz in [-15.0, -5.0, 5.0, 15.0]:
+			for lx in [10.0]:
+				sk.set_bone_pose_rotation(ua, Quaternion.from_euler(Vector3(deg_to_rad(ux), 0, deg_to_rad(uz))))
+				sk.set_bone_pose_rotation(la, Quaternion.from_euler(Vector3(deg_to_rad(lx), 0, 0)))
+				var h := lowest(sk, geometry, [hd])
+				var hp := sk.get_bone_global_pose(hd).origin
+				print("SWEEP ux=%.0f uz=%.0f lx=%.0f hand_lowest=%.3f hand_joint=(%.2f, %.2f, %.2f)" % [ux, uz, lx, h, hp.x, hp.y, hp.z])
+	rig.free()
+	quit()

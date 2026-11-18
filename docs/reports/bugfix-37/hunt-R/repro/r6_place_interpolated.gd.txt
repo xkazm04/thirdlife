@@ -1,0 +1,41 @@
+extends SceneTree
+## D5 repro 6: project.godot now sets physics/common/physics_interpolation=true for every pack. The kernel's teleports
+## (TLBall.place, tl_ball.gd:146; TLBiped.place, tl_biped.gd:166; TLVehicle.place) do not call
+## reset_physics_interpolation(), so a face-off / reset after a goal is DRAWN as a glide across the rink for one tick:
+## the frames rendered in that tick show the puck between where it was and where it was put.
+## Needs the class cache (run `"$G" --headless --path engine --import` once). Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r6_place_interpolated.gd
+
+
+var _ball: RigidBody3D = null
+var _ticks: int = 0
+var _placed_at: int = -1
+
+
+func _initialize() -> void:
+	print("R6 physics_interpolation setting: %s" % str(ProjectSettings.get_setting("physics/common/physics_interpolation")))
+	_ball = TLBall.create({"kind": &"puck", "radius": 0.1, "position": Vector3(0, 0.07, 0), "planar": true})
+	_ball.gravity_scale = 0.0
+	root.add_child(_ball)
+	physics_frame.connect(_on_tick)
+	var between: Array = []
+	var frames: int = 0
+	while _ticks < 40:
+		await process_frame
+		frames += 1
+		if _placed_at >= 0 and _ticks <= _placed_at + 2:
+			var x: float = _ball.get_global_transform_interpolated().origin.x
+			if x > 0.5 and x < 29.5:
+				between.append(snappedf(x, 0.01))
+	print("R6 %d frames drawn over 40 ticks; TLBall.place() from x 0 to x 30 at tick %d; frames drawn with the puck between the two places: %d %s" % [
+		frames, _placed_at, between.size(), str(between.slice(0, 12))])
+	_ball.queue_free()
+	await process_frame
+	quit(0)
+
+
+func _on_tick() -> void:
+	_ticks += 1
+	if _ticks == 20:
+		_ball.call("place", Vector3(30, 0.07, 0))
+		_placed_at = _ticks

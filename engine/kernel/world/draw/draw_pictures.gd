@@ -341,6 +341,23 @@ func _target(acc: Acc, mat: Material) -> Acc:
 	return null
 
 
+## bugfix-37 D13: whether the triangle a, b, c (x and z) meets the disc of squared radius `r2` round the origin, its
+## corners all being outside it: an edge passes within the radius, or the triangle holds the centre.
+static func _tri_meets_disc(a: Vector2, b: Vector2, c: Vector2, r2: float) -> bool:
+	for e: Array in [[a, b], [b, c], [c, a]]:
+		var p: Vector2 = e[0]
+		var q: Vector2 = e[1]
+		var d: Vector2 = q - p
+		var l2: float = d.length_squared()
+		var u: float = clampf(-p.dot(d) / l2, 0.0, 1.0) if l2 > 0.0 else 0.0
+		if (p + d * u).length_squared() <= r2:
+			return true
+	var s0: float = (b - a).cross(-a)
+	var s1: float = (c - b).cross(-b)
+	var s2: float = (a - c).cross(-c)
+	return (s0 >= 0.0 and s1 >= 0.0 and s2 >= 0.0) or (s0 <= 0.0 and s1 <= 0.0 and s2 <= 0.0)
+
+
 func _append(acc: Acc, a: Array, xf: Transform3D, sheet: bool, terrain: bool = false) -> void:
 	var v: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
 	var count: int = v.size()
@@ -393,12 +410,15 @@ func _append(acc: Acc, a: Array, xf: Transform3D, sheet: bool, terrain: bool = f
 	var keep_r2: float = maxf(0.0, r - acc.cell * 2.0) * maxf(0.0, r - acc.cell * 2.0)
 	var t: int = 0
 	while t + 2 < src.size():
-		# the plot cut of toon.gdshader, per triangle: a triangle wholly outside the plot is not part of the stand-in
+		# the plot cut of toon.gdshader, per triangle: a triangle wholly outside the plot is not part of the stand-in.
+		# bugfix-37 D13: "wholly outside" is the triangle (seen from above) missing the disc, not only its corners: two
+		# big triangles that span a plot have every corner outside it and cover all of it
 		if r > 0.0:
 			var a0: Vector3 = out_v[src[t]]
 			var a1: Vector3 = out_v[src[t + 1]]
 			var a2: Vector3 = out_v[src[t + 2]]
-			if a0.x * a0.x + a0.z * a0.z > r2 and a1.x * a1.x + a1.z * a1.z > r2 and a2.x * a2.x + a2.z * a2.z > r2:
+			if a0.x * a0.x + a0.z * a0.z > r2 and a1.x * a1.x + a1.z * a1.z > r2 and a2.x * a2.x + a2.z * a2.z > r2 \
+					and not _tri_meets_disc(Vector2(a0.x, a0.z), Vector2(a1.x, a1.z), Vector2(a2.x, a2.z), r2):
 				t += 3
 				continue
 		# P6, the far picture: thin members and small detail inside a merged mesh go as whole triangles (FAR.md rule 8)

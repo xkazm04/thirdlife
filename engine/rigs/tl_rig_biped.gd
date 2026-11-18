@@ -27,6 +27,7 @@ var stride_k: float = 1.0   # cadence multiplier (review tool; 1 = shipped)
 var amp_override: float = -1.0   # P3 review tool, kept for API v1: the gait has no swing amplitude any more (the stride follows the speed)
 var _gait: TLRigBipedGait = TLRigBipedGait.new()
 var _amp: float = 1.0   # swing amplitude of the walk and run clips played by name (their authored swing)
+var _face_now: Vector2 = Vector2(-1.0, -1.0)   # the (mood, blink) the face bones show (skips rewriting an unchanged face)
 
 
 func setup(p: Dictionary) -> void:
@@ -70,7 +71,7 @@ func setup(p: Dictionary) -> void:
 	_build_hammer()
 	_param_changed("stick", p["stick"])
 	_param_changed("mode", p["mode"])
-	_face(1.0, 0.0)
+	_expr()
 	tick(0)
 
 
@@ -120,13 +121,7 @@ func _build_hammer() -> void:
 func _build_stick() -> void:
 	_stick = Node3D.new()
 	_stick.name = "Stick"
-	var mk: TLMesh = TLMesh.new(72)
-	var key: String = String((params.get("colors", {}) as Dictionary).get("stick", "wood_light"))
-	# grip point at the origin; the shaft runs up to the butt and down to the blade, which lies across (towards -X)
-	mk.bar(Vector3(0, 0.55, 0), Vector3(0, -1.02, 0), 0.05, 0.065, key, Color.WHITE, 0.008)
-	mk.box(Vector3(0.07, 0.12, 0.06), "black", Color.WHITE, 0.01, Vector3(0, 0.50, 0))
-	mk.hull([Vector3(0.035, -1.03, -0.02), Vector3(0.035, -0.90, -0.02), Vector3(-0.38, -1.03, -0.02), Vector3(-0.38, -0.93, -0.02),
-		Vector3(0.035, -1.03, 0.02), Vector3(0.035, -0.90, 0.02), Vector3(-0.38, -1.03, 0.02), Vector3(-0.38, -0.93, 0.02)], "black")
+	var mk: TLMesh = TLRigBipedMesh._stick_mesh(params.get("colors", {}))
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	mi.name = "StickMesh"
 	mi.mesh = mk.build("stick")
@@ -173,6 +168,7 @@ func _param_changed(pname: String, value: Variant) -> void:
 			_model.position.y = 0.05 * float(params["scale"]) if String(value) == "skate" else 0.0
 		"colors":
 			_rebuild_mesh(_sk)
+			(_stick.get_node("StickMesh") as MeshInstance3D).mesh = TLRigBipedMesh._stick_mesh(params.get("colors", {})).build("stick")   # the stick is a part too
 		"expression":
 			_expr()
 
@@ -195,6 +191,9 @@ func _expr() -> void:
 ## mood 0 = focused (flat mouth, low brows) .. 1 = happy; blink 0 = open .. 1 = closed. Face bones are not touched by clips.
 func _face(mood: float, blink: float) -> void:
 	var bl: float = clampf(blink, 0.0, 1.0)
+	if Vector2(mood, bl) == _face_now:
+		return
+	_face_now = Vector2(mood, bl)
 	var open: float = lerpf(1.0, 0.07, bl) * lerpf(0.8, 1.0, mood)
 	for n: String in ["LeftEye", "RightEye"]:
 		_sk.set_bone_pose_scale(_sk.find_bone(n), Vector3(lerpf(1.0, 1.12, bl), open, 1.0))
@@ -257,13 +256,15 @@ static func _mixe(a: Dictionary, b: Dictionary, k: float) -> Dictionary:
 
 
 func _post_pose() -> void:
-	# blink: closed for 6 frames every 204 frames, unless the expression holds the eyes shut
-	if String(params.get("expression", "happy")) != "blink":
-		var ph: int = frame % 204
-		if ph < 6:
-			_face(0.0 if String(params.get("expression", "happy")) == "focus" else 1.0, 1.0 if ph < 4 else 0.5)
-		elif ph == 6:
-			_expr()
+	# blink: closed for 6 frames every 204 frames, unless the expression holds the eyes shut. The face is a function of
+	# this frame alone (not of the frames ticked before it): a biped first ticked late, or one whose ticks skipped the end
+	# of a blink, shows the expression's face, not the half-shut eyes of the last blink it happened to see
+	var ex: String = String(params.get("expression", "happy"))
+	var ph: int = frame % 204
+	if ex != "blink" and ph < 6:
+		_face(0.0 if ex == "focus" else 1.0, 1.0 if ph < 4 else 0.5)
+	else:
+		_expr()
 	var la: Variant = params.get("look_at", null)
 	if la is Vector3:
 		var a: Vector2 = look_angles(la, Vector3(0, 1.75 * float(params["scale"]), 0))

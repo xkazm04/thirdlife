@@ -211,6 +211,8 @@ func place(at: Vector3, facing: float = 0.0) -> void:
 		grounded = true
 		if _rig_has(&"slide"):
 			rig.call("play", &"")
+	if is_inside_tree():
+		reset_physics_interpolation()   # D15: drawn at the new place at once, never a glide from the old one (draw only)
 
 
 var _ctx: TLContext = null

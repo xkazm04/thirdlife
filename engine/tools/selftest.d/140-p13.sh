@@ -16,6 +16,7 @@ if [ -z "$FILTER" ] || [[ "world.compact" == *"$FILTER"* ]]; then
   out="$(bash "$HERE/world.sh" proof compact_village 2>&1)"
   why=""; echo "$out" | grep -q '^PASS world.proof' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror' | head -3 | tr '
 ' ' ')"
+  [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.proof' && why="no PASS world.proof line: the run stopped before its verdict"
   verdict world.compact "$why" "six games of the compact village: walk = alone = replay"
 fi
 

@@ -1,0 +1,39 @@
+extends SceneTree
+## D5 repro 7: walking diagonally (45 deg) into the foot of a bank too steep to climb (65 deg). world_body.gd's header
+## says walking up into such ground "is refused as before (a wall)"; but `_ground_move` (world_body.gd:331-333) refuses
+## the WHOLE move, its part along the bank too, and drive() then zeroes the velocity (world_body.gd:200-201): he stops
+## dead at the foot instead of sliding along it as he does along a real wall. Control: a vertical wall in the same place.
+## Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r7_bank_diagonal.gd
+
+const Space: GDScript = preload("res://kernel/world/terrain/world_space.gd")
+
+
+func _initialize() -> void:
+	for what: String in ["wall", "bank65"]:
+		var sp: RefCounted = Space.new()
+		var f: PackedVector3Array = PackedVector3Array()
+		# flat ground for z > 0
+		f.append_array(PackedVector3Array([Vector3(-40, 0, 0), Vector3(40, 0, 0), Vector3(40, 0, 40), Vector3(-40, 0, 0), Vector3(40, 0, 40), Vector3(-40, 0, 40)]))
+		if what == "wall":
+			f.append_array(PackedVector3Array([Vector3(-40, 0, 0), Vector3(40, 0, 0), Vector3(40, 6, 0), Vector3(-40, 0, 0), Vector3(40, 6, 0), Vector3(-40, 6, 0)]))
+		else:
+			var t: float = tan(deg_to_rad(65.0))
+			f.append_array(PackedVector3Array([Vector3(-40, 0, 0), Vector3(40, 0, 0), Vector3(40, 6 * t, -6), Vector3(-40, 0, 0), Vector3(40, 6 * t, -6), Vector3(-40, 6 * t, -6)]))
+		sp.call("add_faces", f)
+		var feet: Vector3 = Vector3(0, 0, 1.5)
+		sp.call("place", feet)
+		sp.call("rest")
+		var wish: Vector3 = Vector3(1, 0, -1).normalized() * 4.5      # walking at 45 deg into it (-z), and along it (+x)
+		var blocked: int = 0
+		var modes: Dictionary = {}
+		for i: int in 180:
+			var r: Dictionary = sp.call("drive", feet, wish, false, false)
+			feet = r["pos"]
+			if bool(r["blocked"]):
+				blocked += 1
+			modes[str(r["mode"])] = int(modes.get(str(r["mode"]), 0)) + 1
+		print("R7 %s: 180 ticks walking at 4.5 m/s, 45 deg into it: moved %.2f m along it (x), ends at %s, blocked %d ticks, modes %s" % [
+			what, feet.x, str(feet.snapped(Vector3.ONE * 0.01)), blocked, str(modes)])
+		sp.call("free_all")
+	quit(0)

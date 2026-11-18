@@ -120,6 +120,7 @@ if [ -z "$FILTER" ] || [[ "site." == *"$FILTER"* ]] || [[ "$FILTER" == site.* ]]
   if [ -z "$FILTER" ] || [[ "site.arrival" == *"$FILTER"* ]]; then
     out="$(bash "$HERE/world.sh" tour "$FX/site_arrive.json" --headless 2>&1)"
     why=""; echo "$out" | grep -q '^PASS world.tour' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror' | head -3 | tr '\n' ' ')"
+    [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.tour' && why="no PASS world.tour line: the run stopped before its verdict"
     echo "$out" | grep -Eq '^site_0 \| example\.bounce \| [1-9][0-9]* \| .* \| same$' || why="${why:+$why; }the arrived game has no row 'same' in the proof"
     echo "$out" | grep -q 'tick 380   e:built  plot:site_0' || why="${why:+$why; }the game did not arrive at tick 380"
     verdict site.arrival "$why" "the promoted game arrives at tick 380 and hashes as alone and as the replay: $(echo "$out" | grep '^site_0 |' | awk -F' [|] ' '{printf "%s ticks %s", $3, $5}')"
@@ -183,6 +184,7 @@ fi
 if [ -z "$FILTER" ] || [[ "world.queue" == *"$FILTER"* ]]; then
   out="$(bash "$HERE/world.sh" proof queue 2>&1)"
   why=""; echo "$out" | grep -q '^PASS world.proof' || why="$(echo "$out" | grep -E 'DIFFERENT|NO HASH|FAIL|rror' | head -3 | tr '\n' ' ')"
+  [ -z "$why" ] && ! echo "$out" | grep -q '^PASS world.proof' && why="no PASS world.proof line: the run stopped before its verdict"
   [ "$(echo "$out" | grep -c 'e:built')" = 3 ] || why="${why:+$why; }expected 3 built events, got $(echo "$out" | grep -c 'e:built')"
   verdict world.queue "$why" "3 seeds built by the worker, arrived at ticks $(echo "$out" | grep 'e:built' | sed -E 's/^tick ([0-9]+).*plot:([a-z]+).*/\2 \1/' | tr '\n' ' '); walk = alone = replay"
 fi

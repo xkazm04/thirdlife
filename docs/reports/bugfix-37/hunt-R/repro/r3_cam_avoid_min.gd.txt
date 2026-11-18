@@ -1,0 +1,17 @@
+extends SceneTree
+## D5 repro 3: API.md (KERNEL_API 1.6, ctx.cameras.chase) lists `avoid_min` as a chase-camera option; TLChaseCam.setup()
+## (tl_chase_cam.gd:49-53) does not accept it: it pushes "unknown option" and keeps the default 2.5.
+## Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r3_cam_avoid_min.gd
+
+const Cam: GDScript = preload("res://kernel/api/tl_chase_cam.gd")
+
+
+func _initialize() -> void:
+	var who: Node3D = Node3D.new()
+	root.add_child(who)
+	var cam: Camera3D = Cam.new()
+	root.add_child(cam)
+	cam.setup(who, {"avoid_margin": 0.2, "avoid_min": 1.0})
+	print("R3 asked avoid_margin 0.2 -> %.2f, avoid_min 1.0 -> %.2f" % [cam.get("avoid_margin"), cam.get("avoid_min")])
+	quit(0)

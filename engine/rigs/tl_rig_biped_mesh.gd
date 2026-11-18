@@ -25,6 +25,19 @@ const HAND_K: float = 1.38
 const HEAD_BONES: Array = ["Hair", "LeftEye", "RightEye", "Brows", "MouthCorners", "Glints"]
 
 
+## The hockey stick held in `hand_r`, in the `stick` colour of a biped's `colors` (built again when `colors` changes at runtime).
+## Internal to the rig (TLRigBiped calls it), hence the underscore: not pack API.
+static func _stick_mesh(colors: Dictionary) -> TLMesh:
+	var mk: TLMesh = TLMesh.new(72)
+	var key: String = String(colors.get("stick", "wood_light"))
+	# grip point at the origin; the shaft runs up to the butt and down to the blade, which lies across (towards -X)
+	mk.bar(Vector3(0, 0.55, 0), Vector3(0, -1.02, 0), 0.05, 0.065, key, Color.WHITE, 0.008)
+	mk.box(Vector3(0.07, 0.12, 0.06), "black", Color.WHITE, 0.01, Vector3(0, 0.50, 0))
+	mk.hull([Vector3(0.035, -1.03, -0.02), Vector3(0.035, -0.90, -0.02), Vector3(-0.38, -1.03, -0.02), Vector3(-0.38, -0.93, -0.02),
+		Vector3(0.035, -1.03, 0.02), Vector3(0.035, -0.90, 0.02), Vector3(-0.38, -1.03, 0.02), Vector3(-0.38, -0.93, 0.02)], "black")
+	return mk
+
+
 static func head_pt(v: Vector3) -> Vector3:
 	return HEAD_PIVOT + (v - HEAD_PIVOT) * HEAD_K - Vector3(0, HEAD_DROP, 0)
 

@@ -123,20 +123,22 @@ func build_grid() -> void:
 		joined.append_array(out[b])
 	heights = joined
 	# 2. stamps
+	# bugfix-37 Q21: each vertex also learns the half width of the road it is nearest to (every road was graded with
+	# the first road's half width: the village's spurs, 0.8 of the main road, were graded as wide as the main road)
+	var road_hh: PackedFloat32Array = PackedFloat32Array()
+	road_hh.resize(count)
 	for rd: Dictionary in roads:
-		_stamp(rd["pts"], rd["ys"], float(rd["half"]) + 10.0, road_d, road_y)
+		_stamp(rd["pts"], rd["ys"], float(rd["half"]) + 10.0, road_d, road_y, road_hh, float(rd["half"]))
 	if not river.is_empty():
 		_stamp(river["pts"], river["ys"], 40.0, river_d, river_y)
-	# 3. roads grade the land along them, then the river digs its valley and channel
-	var rhalf: float = 3.0
-	if not roads.is_empty():
-		rhalf = float((roads[0] as Dictionary)["half"])
+	# 3. roads grade the land along them (each by its own half width), then the river digs its valley and channel
 	var rv_half: float = float(river.get("half", 6.0))
 	for k: int in count:
 		var h: float = heights[k]
 		var d: float = road_d[k]
 		if d < 1e8:
 			var ph: float = road_y[k]
+			var rhalf: float = road_hh[k]
 			h = lerpf(h, ph - 0.02, 1.0 - smoothstep(rhalf + 1.6, rhalf + 9.0, d))
 		var dr: float = river_d[k]
 		if dr < 1e8:
@@ -195,9 +197,13 @@ func _land_rows(j0: int, j1: int) -> PackedFloat32Array:
 	return rows
 
 
-func _stamp(pts: PackedVector2Array, ys: PackedFloat32Array, reach: float, dist: PackedFloat32Array, yy: PackedFloat32Array) -> void:
+## Marks the vertices within `reach` of each sample of `pts` with their distance (`dist`) and the sample's y (`yy`) when
+## that sample is the nearest so far; `hh` (optional, a road's) takes `half` there too.
+func _stamp(pts: PackedVector2Array, ys: PackedFloat32Array, reach: float, dist: PackedFloat32Array, yy: PackedFloat32Array,
+		hh: PackedFloat32Array = PackedFloat32Array(), half: float = 0.0) -> void:
 	var w: int = nx + 1
 	var rc: int = int(ceil(reach / cell))
+	var with_h: bool = not hh.is_empty()
 	for s: int in pts.size():
 		var p: Vector2 = pts[s]
 		var ci: int = int(round((p.x - x0) / cell))
@@ -212,6 +218,8 @@ func _stamp(pts: PackedVector2Array, ys: PackedFloat32Array, reach: float, dist:
 				if d < dist[k]:
 					dist[k] = d
 					yy[k] = ys[s]
+					if with_h:
+						hh[k] = half
 
 
 ## The height at (x, z), consistent with the mesh triangles (the same diagonal rule as the kit's terrain).
@@ -391,3 +399,44 @@ func collision_faces(skip: Callable) -> PackedVector3Array:
 				n += 3
 	faces.resize(n)
 	return faces
+
+
+## bugfix-37 D3: the triangles `collision_faces` leaves out for one plot: those of the heightfield whose centre lies
+## within `r` of `c` (the plot's own ground carries the visitor there once its game has arrived). Same triangles, same
+## order and winding as `collision_faces`; landscape.gd puts them in the visitor's space as the plot's pad until then.
+func faces_in_disc(c: Vector2, r: float) -> PackedVector3Array:
+	var faces: PackedVector3Array = PackedVector3Array()
+	var i0: int = clampi(int(floor((c.x - r - x0) / cell)) - 1, 0, nx)
+	var i1: int = clampi(int(ceil((c.x + r - x0) / cell)) + 1, 0, nx)
+	var j0: int = clampi(int(floor((c.y - r - z0) / cell)) - 1, 0, nz)
+	var j1: int = clampi(int(ceil((c.y + r - z0) / cell)) + 1, 0, nz)
+	for j: int in range(j0, j1):
+		var za: float = z0 + float(j) * cell
+		for i: int in range(i0, i1):
+			var xa: float = x0 + float(i) * cell
+			var a: Vector3 = Vector3(xa, heights[_v(i, j)] + GROUND_Y, za)
+			var b: Vector3 = Vector3(xa + cell, heights[_v(i + 1, j)] + GROUND_Y, za)
+			var cc: Vector3 = Vector3(xa + cell, heights[_v(i + 1, j + 1)] + GROUND_Y, za + cell)
+			var d: Vector3 = Vector3(xa, heights[_v(i, j + 1)] + GROUND_Y, za + cell)
+			var even: bool = (i + j) % 2 == 0
+			var t0c: Vector3 = cc if even else d
+			var t1a: Vector3 = a if even else b
+			if Vector2((a.x + b.x + t0c.x) / 3.0, (a.z + b.z + t0c.z) / 3.0).distance_to(c) < r:
+				faces.append_array(PackedVector3Array([a, t0c, b]))
+			if Vector2((t1a.x + cc.x + d.x) / 3.0, (t1a.z + cc.z + d.z) / 3.0).distance_to(c) < r:
+				faces.append_array(PackedVector3Array([t1a, d, cc]))
+	return faces
+
+
+## The samples of `pts` (a road) from the first to the last within `reach` of the river, as (first, last): where a
+## bridge stands. (-1, -1) when none is, or when fewer than three samples are (bugfix-37 Q15: a road that only ends
+## near the river; village_parts.gd `bridge` and landscape.gd's rail probe read the samples either side of its middle).
+func bridge_span(pts: PackedVector2Array, reach: float) -> Vector2i:
+	var a: int = -1
+	var b: int = -1
+	for i: int in pts.size():
+		if river_dist(pts[i].x, pts[i].y) < reach:
+			if a < 0:
+				a = i
+			b = i
+	return Vector2i(a, b) if b - a >= 2 else Vector2i(-1, -1)

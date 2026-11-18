@@ -1,0 +1,45 @@
+extends SceneTree
+## D5 repro 1: the visitor stands beside a pine (trunk and foot as landscape.gd:426 places them, scale 1.1); the chase
+## camera with the visitor's options (visitor.gd:90-91: avoid_mask 1|4, anchor follow) and the camera behind him in the
+## open. He stands at heights -0.06 .. +0.06 m over the tree's ground (a bank uphill of the tree, a step, a jump). Printed: the
+## camera's distance from the point looked at (wanted 8.71 m) and whether that point is inside the crown.
+## Run from the worktree root:
+##   "$G" --headless --path engine --script ../docs/reports/astra-trial/d5/repro/r1_cam_in_crown.gd
+
+const Space: GDScript = preload("res://kernel/world/terrain/world_space.gd")
+const Cam: GDScript = preload("res://kernel/api/tl_chase_cam.gd")
+
+
+func _initialize() -> void:
+	var sc: float = 1.1
+	for mask: int in [1, 1 | 4]:
+		var line: Array = []
+		for k: int in 9:
+			var h: float = -0.8 + 0.1 * float(k)
+			var sp: RefCounted = Space.new()
+			sp.call("add_faces", PackedVector3Array([Vector3(-40, 0, -40), Vector3(40, 0, -40), Vector3(40, 0, 40), Vector3(-40, 0, -40), Vector3(40, 0, 40), Vector3(-40, 0, 40)]))
+			sp.set("tag", "tree")
+			sp.call("add_trunk", Vector3(0, -0.2, 0), 0.42 * sc)
+			var holder: Node3D = Node3D.new()
+			root.add_child(holder)
+			var who: Node3D = Node3D.new()
+			holder.add_child(who)
+			who.position = Vector3(0.42 * sc + 0.36, h, 0)        # touching the trunk (capsule radius 0.35)
+			who.rotation.y = deg_to_rad(90.0)                     # looking along -x at the trunk: the camera stands in the open (+x)
+			var cam: Camera3D = Cam.new()
+			holder.add_child(cam)
+			cam.setup(who, {"distance": 8.5, "height": 3.6, "look_height": 1.7, "stiffness": 1.0, "follow": 1.0, "aim": 1.0,
+				"anchor_follow": 0.45, "anchor_follow_y": 0.18, "avoid_space": sp.get("space"), "avoid_mask": mask})
+			for i: int in 60:
+				await physics_frame
+			var look: Vector3 = who.global_position + Vector3.UP * 1.7
+			var q: PhysicsPointQueryParameters3D = PhysicsPointQueryParameters3D.new()
+			q.position = look
+			q.collision_mask = 4
+			var inside: bool = not PhysicsServer3D.space_get_direct_state(sp.get("space")).intersect_point(q, 1).is_empty()
+			line.append("h%+.3f:%.2fm%s" % [h, cam.global_position.distance_to(look), "(in)" if inside else ""])
+			holder.queue_free()
+			await process_frame
+			sp.call("free_all")
+		print("R1 pine scale %.2f, camera mask %d, camera distance from the point looked at by standing height: %s" % [sc, mask, " ".join(line)])
+	quit(0)

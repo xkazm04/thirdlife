@@ -1,0 +1,5 @@
+WALKCASE walk.steep_rest fail put at rest, 60 ticks idle: 65 deg: first tick ground, grounded 60 of 60 ticks, 0.00 m down, 50 deg: first tick ground, grounded 60 of 60 ticks, 0.00 m down
+WALKCASE walk.slope_pit fail 0.8 m pit, W out + jump every 10 ticks: 45 deg walls out at tick 57, 62 deg walls (in slope mode) out at tick -1; 65 deg bank 8 m, W 9 m/s into it for 1200 ticks: highest standing or sliding on it 1.62 m with ground jumps only, 1.62 m with a jump pressed every tick (highest in the air 1.62 / 1.62 m)
+WALKCASE walk.jump_buffer fail first jump at tick 5 lands at tick 38; a second press k ticks before it jumps at: k1:tick 39 k2:tick 39 k3:tick 39 k4:tick 39 k5:tick 39 k6:tick 39 k7:no k8:no k9:no k10:no (BUFFER 8)
+WALKCASE walk.stage_pose fail run slide: mode/clip slide/slide, hidden 30 ticks: clip 'slide', put at the gate and 60 ticks walking: ground/slide; put on a 65 deg bank: ground/, hidden: clip '', put on the flat: ground/
+WALKCASE walk.edge_slide fail C pressed on the edge tick (49): clip 'slide' that tick, 10 ticks into the fall mode/clip air/slide

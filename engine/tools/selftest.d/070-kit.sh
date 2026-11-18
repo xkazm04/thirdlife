@@ -5,6 +5,12 @@
 # one pack, one bot run; each line below is one claim the bot measured (kernel/examples/ex_kit)
 check kit.lint 0 lint "--pack=$EX/ex_kit" -- '"bypasses":\[\]'
 check kit.bot 0 bot "--pack=$EX/ex_kit" --frames=3000 -- '"id":"bot.ok","ok":true'
+# A claim selected without kit.bot (e.g. `selftest.sh rig.vehicle_drives`) measures in THIS run too: a kit.bot.json left in
+# $TL_SELFTEST_DIR by an earlier run is never this run's figure (bugfix-37: a stale 99 m/s passed).
+if [ -n "$FILTER" ] && [[ "kit.bot" != *"$FILTER"* ]] \
+  && [[ " kit.ball_on_ice_slides_by_law kit.wall_and_crate_break rig.biped_walks_and_skates rig.vehicle_drives standin.fallback_still_works " == *"$FILTER"* ]]; then
+  FILTER="" check kit.bot 0 bot "--pack=$EX/ex_kit" --frames=3000 -- '"id":"bot.ok","ok":true'
+fi
 kit_claim() {  # kit_claim <case name> <ERE the kit.bot report must match> <note>
   if [ -n "$FILTER" ] && [[ "$1" != *"$FILTER"* ]] && [[ "kit.bot" != *"$FILTER"* ]]; then return; fi
   local why=""; grep -Eq -- "$2" "$(report_of kit.bot)" 2>/dev/null || why="the kit.bot report lacks /$2/"
