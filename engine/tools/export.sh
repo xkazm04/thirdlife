@@ -230,6 +230,16 @@ lots.forEach((lot, k) => {
   out.push(`  lot ${k}: sites/${name}/ from ${lot.job}: ${events} events, ${game}`);
 });
 fs.writeFileSync(path.join(stage, ".sites.txt"), out.length ? "construction sites (folder in sites/):\n" + out.join("\n") + "\n" : "");
+// D2 (Astra trial): the village's landmark meshes (landscape.landmarks[].asset, repo-relative under assets/) go to the same
+// relative path beside the exe, where kernel/world/terrain/landmarks.gd looks when the repo copy is absent.
+for (const lm of ((walk.landscape || {}).landmarks || [])) {
+  const rel = String((lm || {}).asset || "");
+  if (!/^assets\/[\w\/.-]+\.glb$/.test(rel)) { console.error(`export.sh: landmark asset '${rel}' is not a repo-relative assets/*.glb`); process.exit(1); }
+  const src = [path.join(repo, rel), main ? path.join(main, rel) : ""].find(p => p && fs.existsSync(p));
+  if (!src) { console.error(`export.sh: WARNING: landmark ${rel} not found; the build leaves it out`); continue; }
+  fs.mkdirSync(path.dirname(path.join(stage, rel)), { recursive: true });
+  fs.copyFileSync(src, path.join(stage, rel));
+}
 NODE
   # P14: the caches of these games (rims, far pictures, rig recipes; keyed by each game's content), computed by the
   # new exe itself: its window runs the village's scripted tour once with TL_CACHE_DIR=<build>/cache. The exe copies

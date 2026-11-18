@@ -18,6 +18,8 @@ static func place(parent: Node3D, ws: RefCounted, terr: RefCounted, cfg: Diction
 	for lm: Variant in list:
 		var d: Dictionary = lm
 		var path: String = repo + "/" + str(d.get("asset", ""))
+		if not FileAccess.file_exists(path):     # the exported game: export.sh puts the asset beside the exe
+			path = OS.get_executable_path().get_base_dir().replace("\\", "/") + "/" + str(d.get("asset", ""))
 		if not FileAccess.file_exists(path):
 			push_warning("landscape: landmark %s not found, left out" % str(d.get("asset", "")))
 			continue
