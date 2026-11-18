@@ -47,6 +47,8 @@ func _drive(sp: RefCounted, feet: Vector3, wish: Vector3, jump: bool = false, sl
 func _initialize() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	_filter = args[0] if args.size() > 0 else ""
+	if _want("biped_parity"):
+		await _biped_parity()
 	if _want("idle_bank"):
 		_idle_bank()
 	if _want("jump"):
@@ -379,3 +381,88 @@ func _canopy() -> void:
 		sp.call("free_all")
 	var ok: bool = int(res[0][0]) > 0 and int(res[1][0]) == 0 and int(res[1][1]) == 0
 	_say("walk.canopy", ok, "360 ticks at 9 m/s past 5 trees: camera mask 1 (round 1): the view through a crown in %d ticks, the camera inside one in %d; mask 1|4: %d and %d, nearest camera %.2f m from the point looked at" % [res[0][0], res[0][1], res[1][0], res[1][1], res[1][2]])
+
+## The public pack controller and the visitor see the same fixed geometry through separate capsules.
+## Drive the pack through move/jump/slide and measure its resulting position and velocity.
+func _biped_parity() -> void:
+	await process_frame
+	var sp = Space.new()
+	var angle := deg_to_rad(65.0)
+	var lip := -8.0 / tan(angle)
+	flat(sp, 8.0, -20, 20, -80, lip)
+	flat(sp, 0.0, -20, 20, 0, 40)
+	var a := Vector3(-20, 8, lip)
+	var b := Vector3(20, 8, lip)
+	var c := Vector3(20, 0, 0)
+	var d := Vector3(-20, 0, 0)
+	sp.add_faces(PackedVector3Array([a, b, c, a, c, d]))
+	var actor := TLBiped.create({"feel": &"walker"})
+	root.add_child(actor)
+	actor.set_physics_process(false)
+	actor.collision_layer = 2
+	PhysicsServer3D.body_set_space(actor.get_rid(), sp.space)
+	var observations: Array[Dictionary] = []
+	for use_pack: bool in [false, true]:
+		var pos := Vector3(0, 8, -60)
+		actor.place(pos)
+		sp.rest()
+		sp.place(pos)
+		var m := {"apex": 0.0, "air": 0, "run": 0, "slide": 0.0, "slide_ticks": 0, "slope": 0, "peak": 0.0}
+		var entry := 0.0
+		var sliding := false
+		for tick: int in 360:
+			var wish := Vector3.BACK if tick >= 45 else Vector3.ZERO
+			if tick == 75:
+				entry = pos.z
+			if tick == 150:
+				pos = Vector3(0, 8, lip - 1.0)
+				sp.rest()
+				sp.place(pos)
+				actor.place(pos)
+			var run := tick < 150
+			if tick >= 170:
+				wish = Vector3.ZERO
+			var motion: String
+			var v: Vector3
+			if use_pack:
+				actor.move(wish, run)
+				if tick == 5:
+					actor.jump()
+				if tick == 75:
+					actor.slide()
+				actor._physics_process(DT)
+				pos = actor.global_position
+				motion = actor.walker_motion()
+				v = actor.velocity
+			else:
+				var res: Dictionary = sp.drive(pos, wish * (9.0 if run else 4.5), tick == 5, tick == 75)
+				pos = res.pos
+				motion = res.mode
+				v = res.vel
+			if tick < 45:
+				m.apex = maxf(m.apex, pos.y - 8.0)
+				if motion == "air":
+					m.air += 1
+			elif tick < 75 and m.run == 0 and v.z >= 8.999:
+				m.run = tick - 45 + 1
+			if motion == "slide":
+				m.slide_ticks += 1
+				sliding = true
+			elif sliding:
+				m.slide = pos.z - entry
+				sliding = false
+			if motion == "slope":
+				m.slope += 1
+				m.peak = maxf(m.peak, v.length())
+		m.foot = pos.y
+		observations.append(m)
+	var visitor := observations[0]
+	var pack := observations[1]
+	var ok: bool = absf(pack.apex - visitor.apex) < 0.005 and pack.air == visitor.air and pack.run == visitor.run \
+		and absf(pack.slide - visitor.slide) < 0.02 and pack.slide_ticks == visitor.slide_ticks \
+		and pack.slope == visitor.slope and absf(pack.peak - visitor.peak) < 0.05 \
+		and pack.apex > 0.9 and pack.apex < 1.1 and pack.air >= 32 and pack.air <= 35 and pack.run == 16 \
+		and pack.slide > 5 and pack.slope == 54 and absf(pack.foot) < 0.05
+	_say("walk.biped_parity", ok, "visitor %s; pack %s" % [visitor, pack])
+	actor.free()
+	sp.free_all()

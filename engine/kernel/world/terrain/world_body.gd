@@ -23,6 +23,8 @@ var sp: Variant:
 func _init(space_: RefCounted) -> void:
 	_w = weakref(space_)
 
+const WALK_MPS: float = 4.5
+const RUN_MPS: float = 9.0
 const GRAVITY: float = 24.0
 const JUMP_V: float = 6.93
 const FALL_MAX: float = 40.0
@@ -80,6 +82,7 @@ func _steep_under(pos: Vector3) -> bool:
 ## The normal of the steep ground straight under the feet (see `_steep_under`), or ZERO.
 func _steep_n(pos: Vector3) -> Vector3:
 	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(pos + Vector3(0.0, 0.5, 0.0), pos + Vector3(0.0, -1.2, 0.0), 1)
+	q.exclude = [sp.body]
 	var h: Dictionary = PhysicsServer3D.space_get_direct_state(sp.space).intersect_ray(q)
 	return h["normal"] if not h.is_empty() and not _walkable(h["normal"]) else Vector3.ZERO
 
@@ -123,6 +126,11 @@ func _slide_move(pos: Vector3, motion: Vector3) -> Dictionary:
 	return out
 
 
+## Read before a pack's sweep so the capsule can shorten on the very tick the slide is accepted.
+func can_start_slide() -> bool:
+	return mode == "ground" and Vector2(vel.x, vel.z).length() >= SLIDE_MIN
+
+
 ## One tick of a person's body. `wish`: the horizontal velocity he asks for (m/s, world axes); `jump`, `slide`: the
 ## key went down this tick. Returns {"pos", "grounded", "mode", "vel", "events": ["jump" | "land" | "slide" |
 ## "slope" | "end_slide"], "blocked"}.
@@ -156,7 +164,7 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 		mode = "air"
 		grounded = false
 		ev.append("jump")
-	if slide and mode == "ground" and hv.length() >= SLIDE_MIN:
+	if slide and can_start_slide():
 		mode = "slide"
 		_slide_t = 0
 		ev.append("slide")
@@ -185,7 +193,6 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 					grounded = false
 					_jumped = false
 					air_ticks = 0
-				sp.place(pos)
 				return {"pos": pos, "grounded": grounded, "mode": mode, "vel": vel, "events": ev, "blocked": false}
 			var r: Dictionary = _ground_move(pos, hv * dt)
 			pos = r["pos"]
@@ -276,7 +283,6 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 				ev.append("end_slide")
 	if hit:
 		sp.blocked_ticks += 1
-	sp.place(pos)
 	return {"pos": pos, "grounded": grounded, "mode": mode, "vel": vel, "events": ev, "blocked": hit}
 
 

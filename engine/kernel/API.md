@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.7)
+# Third Life kernel API (kernelApi 1.8)
 
-**Version 1.7 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.8 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.5"` in `pack.json` (any
-`"1.x"` up to 1.5 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.8"` in `pack.json` (any
+`"1.x"` up to 1.8 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -302,6 +302,17 @@ ctx.root.add_child(skater)
 func _pack_tick(_frame: int) -> void:
     skater.drive_from_input(ctx.input, {"left": &"left", "right": &"right", "forward": &"up", "back": &"down", "brake": &"stop"})
 ```
+
+### Walker feel (addition in 1.8)
+
+Pass `{"feel": &"walker"}` to `TLBiped.create` for the village visitor's fixed-tick controller.
+It walks at 4.5 m/s, runs at 9 m/s, and shares the visitor's jump, acceleration, air control,
+buffered and coyote jumps, step and 55-degree slope limit. Call `slide()` or supply a `slide` action
+to `drive_from_input`. A grounded run slide carries momentum and lowers the collision capsule
+from `WALKER_HEIGHT` (1.8 m) to `WALKER_SLIDE_HEIGHT` (0.84 m) at body scale 1.
+The body stands once there is headroom. `walker_motion()` reports `ground`, `air`, `slide` or
+`slope` after the physics step. `place()` clears the walker's motion for a restart.
+Walk and skate packs keep their original controller by default.
 
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
 
@@ -911,6 +922,8 @@ what it extends, its methods with their full signatures, signals, properties and
 (rule `api-v1`) fails when one of them is removed or changed while the major is the same, and names it; an addition
 (a new member, or parameters with defaults at the end of a method) needs a new minor. `tl arch --index` regenerates
 the file and refuses to write over a break. Names that start with `_` are the kernel's side and no part of the contract.
+
+**1.8 addition.** TLBiped accepts walker feel and a slide action. Section 6 describes the shared visitor controller and its collision heights.
 
 **The input record, `tl.input/1`.**
 ```

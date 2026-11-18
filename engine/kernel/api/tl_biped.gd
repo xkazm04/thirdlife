@@ -20,8 +20,19 @@ signal got_up()                                      ## K2: he stands again and 
 
 const OPTIONS: Array = ["rig", "rig_params", "mode", "position", "facing", "name", "group", "walk_speed", "run_speed", "accel",
 	"turn_rate", "skate_speed", "skate_accel", "skate_lateral_grip", "skate_turn_rate", "skate_brake", "jump_speed",
-	"body_mass", "push_strength", "sole_material", "blade_material", "get_up_frames", "body_scale"]
+	"body_mass", "push_strength", "sole_material", "blade_material", "get_up_frames", "body_scale", "feel"]
 
+const _Walker = preload("res://kernel/world/terrain/world_body.gd")
+const _WalkerSpace = preload("res://kernel/world/terrain/walker_space.gd")
+const WALKER_SLIDE_HEIGHT: float = 0.84
+const WALKER_HEIGHT: float = _WalkerSpace.HEIGHT
+
+var _walker_space: _WalkerSpace
+var _walker: _Walker
+var _slide: bool = false
+var _low: bool = false
+var _standing: CapsuleShape3D
+var _sliding: CapsuleShape3D
 var rig: Node3D
 var mode: StringName = &"walk"         ## &"walk" or &"skate"
 var walk_speed: float = 2.3
@@ -68,8 +79,20 @@ static func create(opts: Dictionary = {}) -> TLBiped:
 	for k: String in opts.keys():
 		if not OPTIONS.has(k):
 			push_error("TLBiped.create: unknown option '%s' (options: %s)" % [k, ", ".join(PackedStringArray(OPTIONS))])
-		elif not ["rig", "rig_params", "mode", "position", "facing", "name", "group", "body_scale"].has(k):
+		elif not ["rig", "rig_params", "mode", "position", "facing", "name", "group", "body_scale", "feel"].has(k):
 			b.set(k, opts[k])
+	match StringName(opts.get("feel", &"default")):
+		&"walker":
+			b._walker_space = _WalkerSpace.new()
+			b._walker_space.body = b.get_rid()
+			b._walker = _Walker.new(b._walker_space)
+			b.walk_speed = _Walker.WALK_MPS
+			b.run_speed = _Walker.RUN_MPS
+			b.jump_speed = _Walker.JUMP_V
+		&"default":
+			pass
+		_:
+			push_error("TLBiped.create: unknown feel '%s'" % opts["feel"])
 	var given: Variant = opts.get("rig")
 	if given is Node3D:
 		var problems: PackedStringArray = TLStandin.check_rig(given as Node3D)
@@ -96,8 +119,8 @@ static func create(opts: Dictionary = {}) -> TLBiped:
 	cs.position.y = cap.height * 0.5
 	b.add_child(cs)
 	b._shape = cs
-	if opts.has("body_scale"):
-		b.set_body_scale(float(opts["body_scale"]))
+	if opts.has("body_scale") or b._walker != null:
+		b.set_body_scale(float(opts.get("body_scale", 1.0)))
 	b.add_child(b.rig)
 	b.floor_snap_length = 0.25
 	if opts.has("position"):
@@ -134,6 +157,17 @@ func jump() -> void:
 	_jump = true
 
 
+## Requests one grounded run slide in walker feel.
+func slide() -> void:
+	if _walker != null:
+		_slide = true
+
+
+## Walker locomotion after the last physics step: ground, air, slide or slope.
+func walker_motion() -> StringName:
+	return StringName(_walker.mode) if _walker != null else &""
+
+
 func set_mode(mode_: StringName) -> void:
 	if mode_ != mode:
 		mode = mode_
@@ -151,6 +185,8 @@ func drive_from_input(input: TLInput, map: Dictionary, view: Basis = Basis.IDENT
 		brake(input.pressed(map["brake"]))
 	if map.has("jump") and input.just_pressed(map["jump"]):
 		jump()
+	if map.has("slide") and input.just_pressed(map["slide"]):
+		slide()
 
 
 ## Unit vector the body faces (its -z).
@@ -167,6 +203,14 @@ func place(at: Vector3, facing: float = 0.0) -> void:
 	global_position = at
 	rotation.y = facing
 	velocity = Vector3.ZERO
+	if _walker != null:
+		_walker.rest()
+		_set_low(false)
+		_jump = false
+		_slide = false
+		grounded = true
+		if _rig_has(&"slide"):
+			rig.call("play", &"")
 
 
 var _ctx: TLContext = null
@@ -264,9 +308,18 @@ func set_body_scale(scale_: float) -> void:
 		return
 	var h: float = float(_metrics.get("height", 1.8)) * _body_scale
 	var r: float = float(_metrics.get("radius", 0.3)) * _body_scale
+	if _walker != null:
+		h = WALKER_HEIGHT * _body_scale
+		r = _WalkerSpace.RADIUS * _body_scale
+		_sliding = CapsuleShape3D.new()
+		_sliding.radius = r
+		_sliding.height = WALKER_SLIDE_HEIGHT * _body_scale
 	var cap: CapsuleShape3D = CapsuleShape3D.new()
 	cap.radius = r
 	cap.height = maxf(h, r * 2.0)
+	_standing = cap
+	if _low:
+		cap = _sliding
 	_shape.shape = cap
 	_shape.position.y = cap.height * 0.5
 
@@ -316,14 +369,58 @@ func _step_down() -> void:
 		_rig_param(&"lean", _stumble_lean * float(_stumble_left) / float(maxi(_stumble_frames, 1)))
 
 
+func _set_low(low: bool) -> void:
+	if low == _low:
+		return
+	_low = low
+	var cap: CapsuleShape3D = _sliding if low else _standing
+	_shape.shape = cap
+	_shape.position.y = cap.height * 0.5
+	_shape.force_update_transform()
+
+
+func _walker_tick(delta: float, mv: Vector3, brk: bool) -> void:
+	_walker_space.space = PhysicsServer3D.body_get_space(get_rid())
+	_walker.vel = velocity
+	var wish: Vector3 = Vector3.ZERO if brk else mv * (run_speed if _run else walk_speed)
+	if _slide and not _jump and not is_down() and _walker.can_start_slide():
+		_set_low(true)
+	var res: Dictionary = _walker.drive(global_position, wish, _jump and not is_down(), _slide and not is_down())
+	_jump = false
+	_slide = false
+	global_position = res["pos"]
+	velocity = res["vel"]
+	grounded = res["grounded"]
+	if _low and _walker.mode != "slide":
+		# The short capsule swept upwards covers exactly the added headroom.
+		if not _walker_space._test(Transform3D(Basis.IDENTITY, global_position), Vector3.UP * (_standing.height - _sliding.height)):
+			_set_low(false)
+	var flat := Vector2(velocity.x, velocity.z)
+	if flat.length() > 0.5:
+		rotation.y = rotate_toward(rotation.y, atan2(-flat.x, -flat.y), turn_rate * delta)
+	for event: String in res["events"]:
+		var clip := StringName(event)
+		if event == "slope":
+			clip = &"slope_slide"
+		elif event == "end_slide":
+			clip = &""
+		if rig != null and (clip == &"" or _rig_has(clip)):
+			rig.call("play", clip)
+
+
 func _physics_process(delta: float) -> void:
 	# K2: down (lying or rising): no intent, the brake on; stumbling: a third of the intent, no brake
 	var mv: Vector3 = Vector3.ZERO if is_down() else (_move * 0.3 if _stumble_left > 0 else _move)
 	var brk: bool = true if is_down() else (false if _stumble_left > 0 else _brake)
 	_frame += 1
-	grounded = is_on_floor()
 	var under: Dictionary = TLLaws.surface_under(self, global_position + Vector3.UP * 0.2, 0.6, [get_rid()])
 	surface = str(under.get("material", "")) if under.get("hit", false) else ""
+	if _walker != null:
+		_walker_tick(delta, mv, brk)
+		_step_down()
+		_tick_rig(grounded)
+		return
+	grounded = is_on_floor()
 	var flat: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	if mode == &"skate":
 		var glide_mu: float = float(TLLaws.pair(blade_material, surface)["friction"]) if not surface.is_empty() else 0.3
@@ -396,8 +493,12 @@ func _physics_process(delta: float) -> void:
 				TLDamage.report(rb, impulse, self)
 	if _down_left > 0 or _rise_left > 0 or _stumble_left > 0:
 		_step_down()
+	_tick_rig(is_on_floor())
+
+
+func _tick_rig(on_ground: bool) -> void:
 	if rig != null:
-		rig.call("set_locomotion", global_transform.basis.inverse() * velocity, is_on_floor())
+		rig.call("set_locomotion", global_transform.basis.inverse() * velocity, on_ground)
 		if _ctx == null:
 			_ctx = TLContext.of(self)        # N2: the pack this biped belongs to, not "the pack of the process"
 		rig.call("tick", _ctx.frame if _ctx != null else _frame)

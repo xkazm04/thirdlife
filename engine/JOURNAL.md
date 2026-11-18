@@ -1050,3 +1050,14 @@ PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built i
   the next world starts its lot, pad and ring at that size, so a refitted fence no longer stands inside a larger
   ring (crates: 22 -> 19 m from the start). The scheduler's footprint stays from files: no hash depends on the
   cache. Selftest `site.ring`.
+
+## Timber Run (parkour, 18 Nov 2026)
+
+- 14:33. Kernel API 1.7 shares the visitor's mover with an opt-in pack biped. Headless parity measured 0.9435 m, 33 air ticks, 16 ticks to full run and 5.2556 m sliding for both bodies.
+- 14:37. The input bot cleared both gaps, the chain bar and the 65-degree chute in one run. Its first complete trial took 335 race frames.
+- 14:40. The geometry and course bots both exited 1 for the copied 12 m gap. The negative-control bot verified checkpoint respawns, standing collision and R on the normal course.
+- 14:44. Mounted the course at (-186, 1, -32) on a 28 m pad, clear of the road by 3.85 m. Captured the course from overhead, three moves and the view from the road.
+- 14:49. The pack gate completed 33/33 verbs and the world gate matched all eight games. Running the old visitor cases against a pristine engine copy caught a missing base constructor call. All eight original case lines now agree and both parity bodies spend 54 ticks in slope mode.
+- 14:55. In a live village visit the player entered the plot and finished through the stage input layer. Reviewing the finish image showed the kit kerbs start at their left end. Centred the stripes, aligned both chute cheeks from lip to foot, and moved finish detection to the stripe itself. The measured race is now 338 frames.
+- 15:33. The final course ran in 338 race frames on seeds 1 through 20. The kernel passed 181/181 cases, the house games passed 33/33 verbs, and the world matched 8/8 games. The 59 pre-existing bot scenarios kept their full hashes and frame counts against the original engine. Both performance scenarios passed. Five Git-dependent devx tests were outside this run, so there is no full-gate verdict.
+- 15:56 (Director). The stock `node devx/bin/tl.mjs check --tier full` ran in this worktree: exit 0, 14/14 steps, 945/945 units, world 8/8 with game.parkour hashing as alone; `--tier fast --changed` exit 0 (arch 12/12, cards 3/3). The gate's own git use (a read-only diff, a fixture repository in the system temp folder) is the gate's, not a builder's.

@@ -23,8 +23,9 @@ const ACTIONS: Array = [[&"forward", KEY_W], [&"back", KEY_S], [&"left", KEY_A],
 const LOOK_DEG_PER_PX: float = 0.15     # 600 px of mouse = 90 degrees
 const PITCH_MIN_DEG: float = -10.0      # the camera's elevation above the visitor's head: he stays in the picture
 const PITCH_MAX_DEG: float = 60.0
-const WALK_MPS: float = 4.5
-const RUN_MPS: float = 9.0
+const WalkerBody = preload("res://kernel/world/terrain/world_body.gd")
+const WALK_MPS: float = WalkerBody.WALK_MPS
+const RUN_MPS: float = WalkerBody.RUN_MPS
 const GATE_OUT_M: float = 5.0           # after Q he stands this far outside the plot's radius, at its gate
 const PATH_EVERY: int = 300             # a `visit_path` line every this many ticks
 

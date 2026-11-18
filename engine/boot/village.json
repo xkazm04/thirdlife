@@ -13,10 +13,11 @@
     {"id": "paddle", "pack": "seed_paddle", "origin": [-125, 4.0, 57], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
     {"id": "kit", "pack": "ex_kit", "origin": [-20, 2.0, 57], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
     {"id": "car", "pack": "ex_car", "origin": [85, 0.5, 57], "radius": 40, "footprint": {"size_m": [80, 80]}, "seed": 1},
-    {"id": "hockey", "pack": "ice_hockey_three_against", "origin": [194, 1.0, 61], "radius": 44, "footprint": {"size_m": [88, 88]}, "seed": 1}
+    {"id": "hockey", "pack": "ice_hockey_three_against", "origin": [194, 1.0, 61], "radius": 44, "footprint": {"size_m": [88, 88]}, "seed": 1},
+    {"id": "parkour", "pack": "parkour", "origin": [-186, 1.0, -32], "radius": 28, "footprint": {"size_m": [56, 56]}, "seed": 1}
   ],
   "road": [[-270, 6], [-190, 3], [-100, 0], [0, 0], [100, 0], [190, 2], [290, 5]],
-  "landscape": {"seed": 7, "pad_h": [4.0, -2.5, 3.0, 4.0, 2.0, 0.5, 1.0],
+  "landscape": {"seed": 7, "pad_h": [4.0, -2.5, 3.0, 4.0, 2.0, 0.5, 1.0, 1.0],
     "river": {"path": [[-236, -200], [-254, -130], [-250, -30], [-252, 12], [-262, 80], [-246, 150]], "half_m": 6.0, "pond_m": 16},
     "margin_m": 90, "road_half_m": 3.0, "trees": 120, "broadleaf": 40, "rocks": 46, "bushes": 90, "belt": 180, "mesas": 18, "haze": 0.4,
     "landmarks": [{"asset": "assets/engine/pip.glb", "at": [-38, -8.5], "yaw": -60, "posts": [[0, 0, 1.05]]}],

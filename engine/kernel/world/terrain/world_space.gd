@@ -1,4 +1,4 @@
-extends RefCounted
+extends "res://kernel/world/terrain/walker_space.gd"
 ## P4. The world's own physics space, and the visitor's body in it.
 ##
 ## A pack is simulated in a space of its own and must stay untouched. The visitor is not part of any game: he walks the
@@ -15,23 +15,11 @@ extends RefCounted
 ## Nothing here is read by a pack, a scheduler or a state hash: the scripted tour still gives the scheduler the
 ## scripted position; the body only decides where the visitor is DRAWN (and, when a person walks, where he is).
 
-const RADIUS: float = 0.35
-const HEIGHT: float = 1.8
-
-var space: RID = RID()
-var body: RID = RID()
 var stats: Dictionary = {"bodies": 0, "faces": 0, "boxes": 0, "trunks": 0, "boulders": 0, "pack_shapes": 0, "pack_faces": 0}
-var max_slope_deg: float = 55.0
-var step_up: float = 0.55
-var blocked_ticks: int = 0
 var _bodies: Array = []
-var _tags: Dictionary = {}           # body RID -> what it is (for the one line that says what stopped him)
 var tag: String = ""                  # set by the builder: the tag of the bodies made next
-var last_hit: Dictionary = {}
 var _keep: Array = []                 # Shape3D resources that must outlive their bodies
 var _cap: CapsuleShape3D = null
-var _params: PhysicsTestMotionParameters3D = PhysicsTestMotionParameters3D.new()
-var _res: PhysicsTestMotionResult3D = PhysicsTestMotionResult3D.new()
 var _cyl: Dictionary = {}             # radius key -> CylinderShape3D (shared by every trunk of that size)
 var _spheres: Dictionary = {}
 var _mover: RefCounted = null         # walker-feel: the body with weight (world_body.gd), made on the first drive()
@@ -39,6 +27,7 @@ const Mover: GDScript = preload("res://kernel/world/terrain/world_body.gd")
 
 
 func _init() -> void:
+	super()
 	space = PhysicsServer3D.space_create()
 	PhysicsServer3D.space_set_active(space, true)
 	_cap = CapsuleShape3D.new()
@@ -50,9 +39,6 @@ func _init() -> void:
 	PhysicsServer3D.body_add_shape(body, _cap.get_rid(), Transform3D(Basis(), Vector3(0.0, HEIGHT * 0.5, 0.0)))
 	PhysicsServer3D.body_set_collision_layer(body, 2)          # the visitor is layer 2; the static things are layer 1
 	PhysicsServer3D.body_set_collision_mask(body, 1)
-	_params.margin = 0.03
-	_params.max_collisions = 4
-	_params.recovery_as_collision = false
 
 
 ## Called when everything static is in: the space holds no moving body, so it need not be stepped (queries still work).
@@ -321,17 +307,6 @@ func _add_pack_walk(n: Node, holder: Node3D, inv: Transform3D, plot: Transform3D
 
 
 # ------------------------------------------------------------------------------------------------ the body
-func _test(from: Transform3D, motion: Vector3) -> bool:
-	_params.from = from
-	_params.motion = motion
-	return PhysicsServer3D.body_test_motion(body, _params, _res)
-
-
-## Puts the body at `pos` (feet), unchecked.
-func place(pos: Vector3) -> void:
-	PhysicsServer3D.body_set_state(body, PhysicsServer3D.BODY_STATE_TRANSFORM, Transform3D(Basis(), pos))
-
-
 ## Moves the body from `from` (feet) by the horizontal `delta`. Slides along what it meets, steps up small steps,
 ## follows the ground down; a move that would end on a slope steeper than `max_slope_deg` is refused (he stays).
 ## Returns the new feet position. `blocked` says whether anything held him back this tick.
@@ -388,7 +363,9 @@ func walk(from: Vector3, delta: Vector3) -> Dictionary:
 func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 	if _mover == null:
 		_mover = Mover.new(self)
-	return _mover.drive(from, wish, jump, slide)
+	var result: Dictionary = _mover.drive(from, wish, jump, slide)
+	place(result["pos"])
+	return result
 
 
 ## The body at rest, standing (after a teleport).
