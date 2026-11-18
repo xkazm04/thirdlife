@@ -221,3 +221,9 @@ Unknown `type` or unknown keys are errors when the log is read.
   (`engine/kernel/runner/manifest.gd`), read from that engine, never a constant in the Foreman.
 - **The construction site** (`engine/kernel/world`, a lot with a `job`) reads `job.jsonl` and `promoted/` and nothing
   else of a job directory. It writes nothing there. A change to an event that the site draws is a change to this page.
+
+### Added 2026-11-18: hand checks at final verification
+
+- When the job's card has `hands` (`contracts/CARDS.md`), final verification runs every check on seeds 1..N as `verify`
+  events (level V4, verb `bot`, report stem `final-hand-<hand>-seed<k>`). A failed bound means nothing is promoted and the
+  job ends `failed` with the rows in its reason; after a change request, `pack/` goes back to the last promotion.

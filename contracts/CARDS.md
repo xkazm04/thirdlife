@@ -38,6 +38,7 @@ Unknown keys are errors. An absent optional value is an omitted key, never `null
 | `do`, `dont` | list of strings | the techniques and the known mistakes | present |
 | `bot` | `{template, plays_by, wins_when}` | the seed's bot to copy, how it plays, what it asserts | the file exists and is in the seed's manifest `tests` |
 | `acceptance` | list of strings | what must hold before the game is offered | present |
+| `hands` (optional) | object | `{seeds, checks: [{hand, wins_min?, wins_max?, measured}]}`: what a person's hand must find over seeds 1..`seeds`; `hand` is `idle` or a `TLHand` profile (`newcomer`, `regular`, `sharp`, `perfect`); at least one bound per check; `measured` is the row the bound came from | known hand, bounds within 0..`seeds` |
 | `variants` (optional) | list of `{ask, change}` | common requests and the smallest change that answers each | shape |
 
 Every seed must have at least one card (`cards.coverage`). A new seed therefore arrives with its card.
@@ -47,6 +48,14 @@ example of its kind (team possession: `engine/packs/hockey`). Every rule a card'
 way; `cards.coverage` still counts seeds only. The Foreman copies every card to `<job>/ref/cards/` and every house pack a
 card names, whole, to `<job>/ref/packs/<pack>/`; a builder brief maps the card's `engine/...` path to that copy in one line
 above the card text.
+
+## Hand checks (added 2026-11-18)
+
+A bound comes only from a measured row of the card's own example: `wins_max: 0` for `idle` only where idle won 0 of
+`seeds`; `wins_min` is floor(Wilson 95 % low end x seeds), set only when it is at least 1. A hand with no such row is
+not set. A pack meets a check through its own test `tests/bot_hand_<hand>.gd` (registered by a package) whose
+`_bot_result()` returns `won` (bool). `tl cards hands <pack> --card <id> [--seeds N] [--tests <dir>] [--par N]` runs
+a card's checks on any pack; the Foreman runs them at final verification (`JOB.md`, "Added 2026-11-18").
 
 ## Commands
 
@@ -60,7 +69,7 @@ tl cards brief <id>        the card as the text block that goes into a builder's
 ## What is not here yet
 
 - (2026-11-17: the Planner picking a card is specified in `JOB.md`, "Added 2026-11-17".)
-- `applies_when`, `do`, `dont` and `acceptance` are prose: the check proves they are present, not that they are right.
+- Hand checks (`hands`) are executed; `applies_when`, `do`, `dont` and `acceptance` are still prose: the check proves they are present, not that they are right.
   Their test is the measurement named in `docs/PLAYER-CONTENT-IDEAS.md`: the same request with and without cards,
   several runs each, compared on verified-first-try rate, bypass count, script lines and tokens.
 - Acceptance lines are not yet executed. The ones about a do-nothing or random player need the play profile
