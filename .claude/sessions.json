@@ -1,9 +1,3 @@
 {
-  "sessions": [
-    {
-      "id": "bugfix-37",
-      "scope": ["engine/kernel/**", "engine/rigs/**", "engine/tools/**", "engine/look/**", "docs/reports/bugfix-37/**"],
-      "note": "18 Nov 20:20: one Opus builder fixes the 37 defects of the astra-trial bug hunt in .claude/worktrees/bugfix-37; Director lands before 00:00"
-    }
-  ]
+  "sessions": []
 }
