@@ -9,6 +9,7 @@ import { handTest, judgeHand } from "../../devx/lib/cards/hands.mjs";
 import { cardOf, type Card } from "./cards.js";
 import type { GateHost } from "./p10gate.js";
 import { readManifest } from "./promoter.js";
+import { HAND_CHECK } from "./rounds.js";
 
 export interface HandCheck {
   hand: string;
@@ -67,4 +68,37 @@ export async function runHandChecks(h: Pick<GateHost, "s" | "dir" | "verifyLogge
   }
   const bad = rows.filter((r) => !r.ok);
   return { rows, failure: bad.length === 0 ? "" : `hand check of ${h.s.card ?? "the card"} failed, nothing promoted: ${bad.map((r) => `${r.hand}: ${r.why}`).join("; ")}` };
+}
+
+/**
+ * Lane C3: a failed hand check is a round, not an end. The first failure since the last promotion (or change request)
+ * re-opens, for ONE round, every package that registers a failing hand test, with the rows in its brief (reason and
+ * detail start "hand check failed"; rounds.ts reads it as a final-verification round). Returns true when something was
+ * sent back (the job goes on and checks again); false on a second failure, or when no package owns a failing test:
+ * then the job ends unpromoted.
+ */
+export function sendBackHands(h: Pick<GateHost, "s" | "events" | "reopen">, rows: HandRow[]): boolean {
+  let since = 0;
+  for (let i = h.events.length - 1; i >= 0; i--) {
+    const e = h.events[i];
+    if (e && (e.type === "promoted" || e.type === "change_requested")) {
+      since = e.seq;
+      break;
+    }
+  }
+  if (h.events.some((e) => e.type === "reopened" && e.seq > since && e.reason.startsWith(HAND_CHECK))) return false;
+  const bad = rows.filter((r) => !r.ok);
+  const owners = new Map<string, HandRow[]>();
+  for (const r of bad) {
+    const owner = h.s.plan.find((p) => (p.registers?.tests ?? []).includes(r.test));
+    if (owner) owners.set(owner.id, [...(owners.get(owner.id) ?? []), r]);
+  }
+  if (owners.size === 0) return false;
+  for (const [id, mine] of owners) {
+    const lines = mine.map((r) => `${r.test} (${r.hand} hand): ${r.why}`).join("; ");
+    const reason = `${HAND_CHECK} (1 of 1) for card ${h.s.card ?? "?"}: ${lines}. Sent back to ${id}, which registers the test.`;
+    const detail = `${reason} The Foreman played each hand test on seeds 1..${mine[0]?.seeds ?? "?"} and counted won in its bot result. Change your files so the game meets the card's bound through that hand (the test plays the game's own policy through TLHand; do not make the test lie about won). This is ONE round; then the final verification and the hand checks run again, and a second failure ends the job unpromoted.`;
+    h.reopen(id, reason, detail);
+  }
+  return true;
 }

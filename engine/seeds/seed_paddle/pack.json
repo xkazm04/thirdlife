@@ -6,6 +6,6 @@
   "capabilities": ["physics", "ball", "rules", "input", "ai", "ui", "camera", "kit"],
   "entry": "scripts/main.gd",
   "assets": [],
-  "tests": ["tests/bot_win.gd", "tests/bot_win_regular.gd", "tests/bot_win_newcomer.gd"],
+  "tests": ["tests/bot_win.gd", "tests/bot_win_regular.gd", "tests/bot_win_newcomer.gd", "tests/bot_hand_idle.gd", "tests/bot_hand_sharp.gd", "tests/bot_hand_perfect.gd"],
   "cameras": ["court", "baseline"]
 }

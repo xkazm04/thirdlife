@@ -4,7 +4,8 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { cleanup, tempDir, tempJob, foremanFor, readEvents, fixtureScript, type TempJob } from "./helpers.js";
+import { cleanup, tempDir, tempJob, foremanFor, readEvents, fixtureScript, fixturePlan, VERBS, type TempJob } from "./helpers.js";
+import { planCheck } from "../designer.js";
 import { validateEvent, type JobEvent, type PackageSpec } from "../events.js";
 import { prepareReference } from "../reference.js";
 import { REPO_ROOT } from "../paths.js";
@@ -37,8 +38,9 @@ function handJob(label: string, min: number, register = HAND_TESTS): TempJob {
   fs.writeFileSync(file, lines.join("\n") + "\n");
   return job;
 }
-/** The fixture's builder; court also writes the two hand tests: idle never wins, perfect wins seeds 1..perfectWins. */
-function handScript(perfectWins: number): { steps: FakeStep[] } {
+/** The fixture's builder; court also writes the two hand tests: idle never wins, perfect wins seeds 1..perfectWins.
+ *  With `secondRound`, court's round 2 (the round a failed hand check sends back) writes perfect winning that many. */
+function handScript(perfectWins: number, secondRound?: number): { steps: FakeStep[] } {
   const base = fixtureScript();
   const court = base.steps.find((s) => s.match?.package === "court") as FakeStep;
   const withHands: FakeStep = {
@@ -46,7 +48,8 @@ function handScript(perfectWins: number): { steps: FakeStep[] } {
     delayMs: 0,
     write: { ...court.write, "tests/bot_hand_idle.gd": "extends Node\n# idle: presses nothing FAKE_WON(0)\n", "tests/bot_hand_perfect.gd": `extends Node\n# perfect hand FAKE_WON(${perfectWins})\n` },
   };
-  return { ...base, steps: [withHands, ...base.steps.map((s) => ({ ...s, delayMs: 0 }))] };
+  const again: FakeStep[] = secondRound === undefined ? [] : [{ ...withHands, match: { role: "builder", package: "court", round: 2 }, write: { ...withHands.write, "tests/bot_hand_perfect.gd": `extends Node\n# perfect hand, after the fix FAKE_WON(${secondRound})\n` } }];
+  return { ...base, steps: [...again, withHands, ...base.steps.map((s) => ({ ...s, delayMs: 0 }))] };
 }
 const handVerifies = (jobDir: string): Extract<JobEvent, { type: "verify" }>[] =>
   readEvents(jobDir).filter((e): e is Extract<JobEvent, { type: "verify" }> => e.type === "verify" && /final-hand-/.test(e.report));
@@ -64,10 +67,18 @@ test("hands 1: a pack whose hand tests meet the card (idle 0 of 4, perfect 4 of 
   assert.ok(runs.every((e) => e.level === "V4" && e.verb === "bot"));
 });
 
-test("hands 2: a pack whose perfect hand wins 1 of 4 where the card asks 3 is NOT promoted; the job fails and names the row", async () => {
+test("hands 2 (fail twice): perfect wins 1 of 4 where the card asks 3; court gets ONE round back with the rows, fails again, and the job ends unpromoted", async () => {
   const job = handJob("hands-fail", 3);
   const s = await foremanFor(job, { promoteTo: "job", script: handScript(1) }).foreman.run();
   assert.equal(s.jobState?.state, "failed");
+  const evs = readEvents(job.jobDir);
+  const back = evs.filter((e): e is Extract<JobEvent, { type: "reopened" }> => e.type === "reopened");
+  assert.equal(back.length, 1, "one round back, not two");
+  assert.equal(back[0]?.package, "court", "the package that registers the failing test");
+  assert.match(back[0]?.reason ?? "", /^hand check failed \(1 of 1\) for card card\.knock_down: tests\/bot_hand_perfect\.gd \(perfect hand\): 1 of 4 won .*the card asks at least 3/);
+  const queued = evs.find((e) => e.type === "package_state" && e.package === "court" && e.state === "queued" && e.seq > (back[0]?.seq ?? 0));
+  assert.ok(queued && queued.type === "package_state" && queued.round === 2 && (queued.detail ?? "").startsWith("hand check failed"), "a queued round 2 whose detail starts hand check");
+  assert.equal(handVerifies(job.jobDir).length, 16, "the hand checks ran twice (2 hands x 4 seeds each time)");
   assert.equal(s.promotions.length, 0, "nothing promoted");
   assert.equal(fs.existsSync(path.join(job.jobDir, "promoted")), false);
   assert.match(s.jobState?.reason ?? "", /^hand check of card\.knock_down failed, nothing promoted: perfect: 1 of 4 won \(Wilson 95 % \d+\.\.\d+\); the card asks at least 3/);
@@ -83,4 +94,29 @@ test("hands 3: a pack that does not register a hand test the card asks for is NO
   const p = await foremanFor(plain, { promoteTo: "job" }).foreman.run();
   assert.equal(p.jobState?.state, "done");
   assert.equal(handVerifies(plain.jobDir).length, 0);
+});
+
+test("hands 4 (fail then pass): perfect wins 1 of 4, court's round back fixes it to 4 of 4, the hand checks pass and the pack is promoted", async () => {
+  const job = handJob("hands-fix", 3);
+  const { foreman, builder } = foremanFor(job, { promoteTo: "job", script: handScript(1, 4) });
+  const s = await foreman.run();
+  assert.equal(s.jobState?.state, "done", s.jobState?.reason);
+  assert.equal(s.promotions.length, 1);
+  const evs = readEvents(job.jobDir);
+  assert.equal(evs.filter((e) => e.type === "reopened").length, 1);
+  const r2 = builder.calls.find((c) => c.req.meta?.role === "builder" && c.req.meta?.package === "court" && c.req.meta?.round === 2);
+  assert.match(r2?.req.prompt ?? "", /hand check failed \(1 of 1\)[^]*1 of 4 won/, "the rows are in court's brief");
+  assert.match(fs.readFileSync(path.join(job.jobDir, "promoted", "game.paddle_court", "tests", "bot_hand_perfect.gd"), "utf8"), /FAKE_WON\(4\)/);
+});
+
+test("hands 5 (plan): a plan that names a card with hand checks and registers no hand tests is refused; registering them passes", () => {
+  const plan = fixturePlan();
+  const cardHands = { "card.knock_down": ["idle", "perfect"] };
+  const refused = planCheck(plan, { verbs: VERBS, cards: ["card.knock_down"], cardHands }, "card.knock_down");
+  assert.match(refused.join("\n"), /the card card\.knock_down has hand checks, and no package registers tests\/bot_hand_idle\.gd, tests\/bot_hand_perfect\.gd\. Register each in registers\.tests/);
+  const court = plan.find((p) => p.id === "court") as PackageSpec;
+  court.scope.push(...HAND_TESTS);
+  court.registers = { tests: HAND_TESTS };
+  assert.deepEqual(planCheck(plan, { verbs: VERBS, cards: ["card.knock_down"], cardHands }, "card.knock_down"), []);
+  assert.deepEqual(planCheck(fixturePlan(), { verbs: VERBS, cards: ["card.knock_down"], cardHands }), [], "no card named: nothing owed");
 });

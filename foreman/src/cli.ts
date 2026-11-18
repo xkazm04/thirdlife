@@ -14,7 +14,7 @@ import { MessagesApiBuilder } from "./builder/messages-api.js";
 import { Verifier, resolveRunner } from "./verifier.js";
 import { Foreman, ForemanError, restsOnAClock } from "./foreman.js";
 import { designBrief, planCheck, planPackages, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
-import { cardIds, cardsPlannerText } from "./cards.js";
+import { cardLimits, cardsPlannerText } from "./cards.js";
 import { KernelApiError } from "./manifest.js";
 import { existingText, isEmptyReference, prepareReference, referenceOf } from "./reference.js";
 import { schemaErrors } from "./builder/json.js";
@@ -578,7 +578,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         // reference copy (ref/) for both paths: a plan's `card` must be one of ref/cards/ (JOB.md 2026-11-17).
         const limits = { ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}), verbs: verbsOf(a, jobDir) };
         const ctx = plannerContext(a, jobDir);
-        const known = { ...limits, cards: cardIds(path.join(jobDir, "ref")) };
+        const known = { ...limits, ...cardLimits(path.join(jobDir, "ref")) };
         if (from !== undefined) {
           const doc = JSON.parse(fs.readFileSync(path.resolve(from), "utf8")) as PlanAnswer;
           const errs = schemaErrors(JSON.parse(fs.readFileSync(path.join(PKG_ROOT, "prompts", "plan.schema.json"), "utf8")) as object, doc);

@@ -46,7 +46,9 @@
     "tests/bot_faceoff.gd",
     "tests/bot_faceoff_idle.gd",
     "tests/bot_faceoff_allstar.gd",
-    "tests/bot_menu.gd"
+    "tests/bot_menu.gd",
+    "tests/bot_hand_newcomer.gd",
+    "tests/bot_hand_perfect.gd"
   ],
   "cameras": [
     "arena",

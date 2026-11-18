@@ -12,9 +12,9 @@ import { BudgetGate, budgetVerdict } from "./budget.js";
 import { copyDir, hashFile, listFiles, matchesAny, pruneEmptyDirs, snapshot } from "./scope.js";
 import { engineWritable, promotePack, readManifest } from "./promoter.js";
 import { existingText, prepareReference, referenceText } from "./reference.js";
-import { cardBriefSection, cardIds, cardsPlannerText } from "./cards.js";
+import { cardBriefSection, cardLimits, cardsPlannerText } from "./cards.js";
 import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
-import { runHandChecks } from "./handcheck.js";
+import { runHandChecks, sendBackHands } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
 import { critic, render, replanPackages, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
@@ -382,7 +382,7 @@ export class Foreman {
           ...(model ? { model } : {}),
           ...(this.o.maxPackages !== undefined ? { maxPackages: this.o.maxPackages } : {}),
           verbs: this.verbs ?? verbsFor(this.o.verifier.location),
-          cards: cardIds(this.refDir()),
+          ...cardLimits(this.refDir()),
         });
     this.logGenerateCalls(res.calls, model);
     if (!res.ok) return { replanned: false, reason: `re-plan failed: ${clip(res.reason, 300)}` };
@@ -1903,7 +1903,7 @@ export class Foreman {
       }
     }
     const hands = await runHandChecks(this.gateHost, packDir); // lane C2: the card's hand checks (handcheck.ts)
-    if (hands.failure) return (this.endJob("failed", clip(hands.failure, 700), true), false);
+    if (hands.failure) return sendBackHands(this.gateHost, hands.rows) || (this.endJob("failed", clip(hands.failure, 700), true), false);
     // N3: a pack that is promoted AGAIN (after a change request) is photographed first, so that whoever asked for the
     // change can look at it: the declared cameras at the usual frames, into captures/promotion<n>-<cam>-f<frame>.png.
     // No critic, no gate; the paths are in a `note` on the package that was re-opened last.

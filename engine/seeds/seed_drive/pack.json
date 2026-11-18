@@ -6,6 +6,6 @@
   "capabilities": ["physics", "vehicle", "rules", "input", "camera", "spawn", "ai", "ui", "kit"],
   "entry": "scripts/main.gd",
   "assets": [],
-  "tests": ["tests/bot_laps.gd"],
+  "tests": ["tests/bot_laps.gd", "tests/bot_hand_idle.gd", "tests/bot_hand_newcomer.gd", "tests/bot_hand_regular.gd", "tests/bot_hand_perfect.gd"],
   "cameras": ["chase", "overview"]
 }

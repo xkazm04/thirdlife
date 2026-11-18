@@ -105,6 +105,7 @@ N seeds and prints the table above. Each test below passed on 20 of 20 seeds (1.
 | bot_buttons | the four held-button transitions |
 | bot_goals | a puck carried in, released, lying in a net counts (own goal too); on the blade behind the net it does not |
 | bot_faceoff, bot_faceoff_idle, bot_faceoff_allstar | nobody owns the puck at the drop; doing nothing he is not first to it; who wins the draw skating at it is a number (rookie, all-star) |
+| bot_hand_newcomer, bot_hand_perfect | card.team_possession's hand checks (contracts/CARDS.md): level rookie through the hand, played to the end; `won` counted by `tl cards hands engine/packs/hockey --card team_possession` (18 Nov: 18 and 20 of 20 seeds) |
 
 ## Known limits (each measured or read in the code tonight)
 

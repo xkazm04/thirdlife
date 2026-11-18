@@ -36,6 +36,32 @@ export function cardIds(refDir: string): string[] {
   return readCards(path.join(refDir, "cards")).map((c) => c.card.id);
 }
 
+/** The hands a card's `hands` block checks (CARDS.md "Hand checks"), in its order; [] when it has none. */
+export function cardHandList(card: Card): string[] {
+  const h = (card as Card & { hands?: { checks?: { hand: string }[] } }).hands;
+  return (h?.checks ?? []).map((c) => c.hand);
+}
+
+/** What the plan check needs of ref/cards/: the card ids, and per card the hands its plan must register tests for. */
+export function cardLimits(refDir: string): { cards: string[]; cardHands: Record<string, string[]> } {
+  const cards = readCards(path.join(refDir, "cards")).map((c) => c.card);
+  return { cards: cards.map((c) => c.id), cardHands: Object.fromEntries(cards.filter((c) => cardHandList(c).length > 0).map((c) => [c.id, cardHandList(c)])) };
+}
+
+/**
+ * Lane C3: a plan that names a card with hand checks must register, in some package's `registers.tests`, every
+ * tests/bot_hand_<hand>.gd the card checks (like the PLAYER CHECK rule): otherwise final verification would fail it.
+ */
+export function planHandProblems(packages: { id: string; registers?: { tests?: string[] } }[], card: string | undefined, cardHands: Record<string, string[]>): string[] {
+  const need = card !== undefined ? (cardHands[card] ?? []) : [];
+  const registered = new Set(packages.flatMap((p) => p.registers?.tests ?? []));
+  const missing = need.map((h) => `tests/bot_hand_${h}.gd`).filter((t) => !registered.has(t));
+  if (missing.length === 0) return [];
+  return [
+    `the card ${card ?? ""} has hand checks, and no package registers ${missing.join(", ")}. Register each in registers.tests (and its scope) of the package that owns the player's bot: a bot that plays the game's own policy through TLHand.create(ctx, "<hand>") ("idle" presses nothing), is done when the game is over, and returns ok (it finished) and won (true or false) in _bot_result(). The Foreman plays each on many seeds before it promotes; the card's text names the bounds and a real example to copy.`,
+  ];
+}
+
 /** The card with this id in the reference copy, or undefined. */
 export function cardOf(refDir: string, id: string): Card | undefined {
   return readCards(path.join(refDir, "cards")).find((c) => c.card.id === id)?.card;

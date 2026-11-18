@@ -25,11 +25,12 @@ export function cardBrief(card) {
   L.push(`Bot: copy ${card.bot.template}. It plays by: ${card.bot.plays_by} It has won when: ${card.bot.wins_when}`);
   list("Accepted when", card.acceptance);
   if (card.hands?.checks?.length) {
-    L.push(`Hand checks (the Foreman runs them before it promotes, seeds 1 to ${card.hands.seeds}): register tests/bot_hand_<hand>.gd for each, playing your bot's policy through TLHand.create(ctx, "<hand>") (idle: press nothing), done when the game is over, ok = it finished, and "won" (true or false) in _bot_result():`);
+    L.push(`Hand checks (the Foreman runs them before it promotes, seeds 1 to ${card.hands.seeds}): register tests/bot_hand_<hand>.gd for each, playing your bot's policy through TLHand.create(ctx, "<hand>") (idle: press nothing, and never stop on your own: the game must end its round by itself), done when the game is over, ok = it finished, and "won" (true or false) in _bot_result():`);
     for (const c of card.hands.checks) {
       const b = [c.wins_min !== undefined ? `at least ${c.wins_min}` : "", c.wins_max !== undefined ? `at most ${c.wins_max}` : ""].filter(Boolean).join(" and ");
       L.push(`- ${c.hand}: wins ${b} of ${card.hands.seeds} (measured: ${c.measured})`);
     }
+    L.push(`The example's hand tests, to copy (a plan without them is refused): ${card.hands.checks.map((c) => `${cardExample(card)}tests/bot_hand_${c.hand}.gd`).join(", ")}`);
   }
   if (card.variants?.length) { L.push("Known variants:"); for (const v of card.variants) L.push(`- "${v.ask}": ${v.change}`); }
   return L.join("\n") + "\n";

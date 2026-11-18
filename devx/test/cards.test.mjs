@@ -260,3 +260,14 @@ test("hands: --tests lays bot_hand files over a temporary copy and lists them; t
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   assert.equal(fs.readFileSync(path.join(REPO, "engine/seeds/seed_wall/pack.json"), "utf8"), before);
 });
+
+test("hands (C3): every hand a card checks has its tests/bot_hand_<hand>.gd in the example and in its manifest tests", () => {
+  expectProblem((c, root) => { fs.rmSync(path.join(root, "engine/seeds/seed_paddle/tests/bot_hand_sharp.gd")); }, /hand check 'sharp': tests\/bot_hand_sharp\.gd does not exist in seed_paddle/);
+  expectProblem((c, root) => {
+    const f = path.join(root, "engine/seeds/seed_paddle/pack.json");
+    fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(', "tests/bot_hand_idle.gd"', ""));
+  }, /hand check 'idle': tests\/bot_hand_idle\.gd is not in seed_paddle's manifest tests/);
+  const text = cardBrief(JSON.parse(fs.readFileSync(path.join(REPO, "engine/cards/two_sides_ball.json"), "utf8")));
+  assert.match(text, /^The example's hand tests, to copy \(a plan without them is refused\): engine\/seeds\/seed_paddle\/tests\/bot_hand_idle\.gd, engine\/seeds\/seed_paddle\/tests\/bot_hand_sharp\.gd, engine\/seeds\/seed_paddle\/tests\/bot_hand_perfect\.gd$/m);
+  assert.match(text, /idle: press nothing, and never stop on your own/);
+});

@@ -14,6 +14,9 @@ export const CRITIC_ROUND = "critic (V5) NOT ok, one extra round";
 export const CHANGE_ROUND = "CHANGE REQUEST";
 export const DEP_CHANGED = "DEPENDENCY CHANGED";
 export const KIT_REGRESSION = "KIT REGRESSION";
+/** Lane C3: the start of the `reopened` reason and `queued` detail of a round sent back by a failed hand check. It is a
+ *  final-verification round (one round, then the final verification and the hand checks again): kind final_failed. */
+export const HAND_CHECK = "hand check failed";
 
 /**
  * Why a round runs. `first`: round 1 (a first build, a retry requested, a replan). `verify_retry`: any later round
@@ -31,6 +34,7 @@ const DETAIL_KINDS: ReadonlyArray<readonly [string, RoundKind]> = [
   [CHANGE_ROUND, "change"],
   [DEP_CHANGED, "dep_changed"],
   [FINAL_FAILED, "final_failed"],
+  [HAND_CHECK, "final_failed"],
 ];
 
 /** The kind a `detail` (or a `reason`) names by its fixed start; undefined for free text. The one prefix test. */

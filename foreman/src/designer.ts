@@ -10,7 +10,7 @@ import { critiqueSchema, type CritiqueResult } from "./verifier.js";
 import { PKG_ROOT, REPO_ROOT } from "./paths.js";
 import { ENTRY_SCRIPT, MANIFEST_FILE, depClosure } from "./manifest.js";
 import { acceptanceOptions, verbOptionsText, type RunnerVerbs } from "./verbs.js";
-import { planCardProblems } from "./cards.js";
+import { planCardProblems, planHandProblems } from "./cards.js";
 
 const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "prompts", name), "utf8");
 const schema = (name: string): object => JSON.parse(prompt(name)) as object;
@@ -47,6 +47,8 @@ export interface PlanLimits {
    * of them (JOB.md 2026-11-17); absent means none, and then any `card` is refused.
    */
   cards?: string[];
+  /** Lane C3: card id -> the hands its `hands` block checks; a plan naming that card must register tests/bot_hand_<hand>.gd for each. */
+  cardHands?: Record<string, string[]>;
 }
 
 /** The Planner's answer: the packages and, when one fits, the recipe card for the whole job. */
@@ -114,7 +116,7 @@ export function designBrief(builder: Builder, sentence: string, opts: GenerateOp
 
 /** Problems of a plan beyond its JSON shape: graph errors, scopes, the composed manifest, acceptance options. */
 export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: unknown): string[] {
-  const out = [...planProblems(packages), ...planCardProblems(card, limits.cards ?? [])];
+  const out = [...planProblems(packages), ...planCardProblems(card, limits.cards ?? []), ...planHandProblems(packages, typeof card === "string" ? card : undefined, limits.cardHands ?? {})];
   if (limits.maxPackages !== undefined && packages.length > limits.maxPackages) {
     out.push(`the plan has ${packages.length} packages; the limit for this job is ${limits.maxPackages}: merge concerns until it fits`);
   }

@@ -160,7 +160,9 @@ test("cards 5 cli: `foreman plan --from` keeps a known card in plan_set and name
   fs.writeFileSync(file, lines.slice(0, upTo).join("\n") + "\n");
   const planFile = path.join(job.root, "plan.json");
   const bad = path.join(job.root, "bad.json");
-  fs.writeFileSync(planFile, JSON.stringify({ card: "card.knock_down", packages: fixturePlan() }));
+  // Since C3 a plan naming a card with hand checks registers the hand tests the card needs (court owns them here).
+  const withHands = fixturePlan().map((p) => (p.id === "court" ? { ...p, scope: [...p.scope, "tests/bot_hand_idle.gd", "tests/bot_hand_perfect.gd"], registers: { tests: ["tests/bot_hand_idle.gd", "tests/bot_hand_perfect.gd"] } } : p));
+  fs.writeFileSync(planFile, JSON.stringify({ card: "card.knock_down", packages: withHands }));
   fs.writeFileSync(bad, JSON.stringify({ card: "card.topple_tower", packages: fixturePlan() }));
   const before = fs.readFileSync(file, "utf8");
   const r1 = await node([CLI, "plan", job.jobDir, "--from", bad, "--no-reference"]);

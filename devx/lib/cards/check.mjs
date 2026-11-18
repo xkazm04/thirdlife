@@ -190,6 +190,11 @@ export function checkCardAgainstTree(card, root, facts = engineFacts(root)) {
   for (const d of card.data_files) if (!seed.files.has(d.file)) errs.push(`${w}: data file '${d.file}' does not exist in ${ex.name}`);
   if (!seed.files.has(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' does not exist in ${ex.name}`);
   else if (!(seed.manifest.tests ?? []).includes(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' is not in ${ex.name}'s manifest tests`);
+  for (const c of card.hands?.checks ?? []) {
+    const t = `tests/bot_hand_${c.hand}.gd`;
+    if (!seed.files.has(t)) errs.push(`${w}: hand check '${c.hand}': ${t} does not exist in ${ex.name} (the example a builder copies)`);
+    else if (!(seed.manifest.tests ?? []).includes(t)) errs.push(`${w}: hand check '${c.hand}': ${t} is not in ${ex.name}'s manifest tests`);
+  }
   return errs;
 }
 

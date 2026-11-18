@@ -6,6 +6,6 @@
   "capabilities": ["physics", "ball", "biped", "fracture", "rules", "input", "camera", "vfx", "audio", "ui", "kit"],
   "entry": "scripts/main.gd",
   "assets": [],
-  "tests": ["tests/bot_knock.gd"],
+  "tests": ["tests/bot_knock.gd", "tests/bot_hand_idle.gd", "tests/bot_hand_perfect.gd"],
   "cameras": ["player", "yard"]
 }
