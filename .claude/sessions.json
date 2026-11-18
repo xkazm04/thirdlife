@@ -1,9 +1,3 @@
 {
-  "sessions": [
-    {
-      "id": "spark-engine-world-next",
-      "scope": ["engine/kernel/world/**", "engine/boot/**", "engine/tools/export.sh", "engine/tools/selftest.sh", "docs/EXE.md", "foreman/**", "engine/cards/**", "engine/kernel/API.md", "devx/lib/commands/cards.mjs", "devx/lib/cards/**", "devx/test/**", "contracts/JOB.md", "contracts/CARDS.md", "contracts/README.md", "engine/seeds/**", "engine/packs/hockey/**", "engine/ui/**"],
-      "note": "spark engine-world-next, 17-18 Nov night: lane S construction site (worktree ew-site), lane C Foreman cards (worktree ew-cards); real knock-down job ~05:30; until landed 08:00 18 Nov"
-    }
-  ]
+  "sessions": []
 }
