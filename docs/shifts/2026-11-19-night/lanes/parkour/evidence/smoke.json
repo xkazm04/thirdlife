@@ -1,0 +1,44 @@
+{
+  "schema": "tl.verify/1",
+  "verb": "smoke",
+  "level": "V2",
+  "pack": "game.parkour",
+  "packVersion": "0.1.0",
+  "kernelApi": "1.8",
+  "ok": true,
+  "outcome": "passed",
+  "seed": 1,
+  "frames": 3600,
+  "durationMs": 3925,
+  "checks": [
+    {
+      "id": "smoke.loads",
+      "ok": true,
+      "detail": "pack loaded"
+    },
+    {
+      "id": "smoke.no_script_errors",
+      "ok": true,
+      "detail": "0 errors in 3600 frames"
+    },
+    {
+      "id": "smoke.no_engine_errors",
+      "ok": true,
+      "detail": "0 engine errors"
+    },
+    {
+      "id": "smoke.watchdog",
+      "ok": true,
+      "detail": "no trip in 3600 frames"
+    }
+  ],
+  "metrics": {
+    "state_hash": "147426727bd88dc1959579558c564ef2cfcab81f56d187ba879b3ad9f5b238c1",
+    "frame_ms_p50": 0.425,
+    "frame_ms_p99": 0.778,
+    "entities_max": 271,
+    "bodies_max": 48,
+    "tick_ms_max": 0.186
+  },
+  "errors": []
+}

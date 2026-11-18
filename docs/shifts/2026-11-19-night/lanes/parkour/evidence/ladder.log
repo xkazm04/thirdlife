@@ -1,0 +1,4 @@
+level      hand      wins          win % (95 %)   goals for:against  frames  period 2  passes reached  down %  draws  taps lost  his shots
+retry      regular    20 of 20    100 (100..100)      0.00 : 0.00           468    0/20   0/0          0      20     4          0
+PASS  ladder:retry_regular               0 ms  [20/20] 20 of 20 won (100 %, 100..100) through the regular hand
+{"schema":"tl.devx/1","cmd":"ladder","ok":true,"exit":0,"steps":[{"id":"ladder:retry_regular","ok":true,"ms":0,"found":20,"completed":20,"detail":"20 of 20 won (100 %, 100..100) through the regular hand"}],"pack":"engine/packs/parkour","seeds":20,"cells_found":1,"cells_completed":1,"ms":31308,"cells":[{"cell":"retry_regular","level":"retry","hand":"regular","found":20,"completed":20,"wins":20,"pct":100,"lo":100,"hi":100,"gf":0,"ga":0,"frames":468,"draws":20,"taps_lost":4,"shots":0,"period2":0,"passes":0,"reached":0,"down_pct":0}]}

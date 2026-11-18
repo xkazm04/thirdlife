@@ -1,0 +1,312 @@
+{
+  "schema": "tl.walk/1",
+  "name": "parkour_road",
+  "visitor": true,
+  "ticks": 110,
+  "mode": "bot",
+  "tiers": {
+    "sideline_m": 30,
+    "margin_m": {
+      "stage": 2,
+      "sideline": 8,
+      "backdrop": 40
+    },
+    "dwell_ticks": 90
+  },
+  "plots": [
+    {
+      "id": "walker",
+      "pack": "res://kernel/examples/ex_walker",
+      "origin": [
+        -115,
+        4.0,
+        -47
+      ],
+      "radius": 30,
+      "footprint": {
+        "size_m": [
+          60,
+          60
+        ]
+      },
+      "seed": 1
+    },
+    {
+      "id": "drive",
+      "pack": "res://seeds/seed_drive",
+      "origin": [
+        4,
+        -2.5,
+        -81
+      ],
+      "radius": 64,
+      "footprint": {
+        "size_m": [
+          128,
+          128
+        ]
+      },
+      "seed": 1
+    },
+    {
+      "id": "wall",
+      "pack": "res://seeds/seed_wall",
+      "origin": [
+        131,
+        3.0,
+        -55
+      ],
+      "radius": 38,
+      "footprint": {
+        "size_m": [
+          76,
+          76
+        ]
+      },
+      "seed": 1
+    },
+    {
+      "id": "paddle",
+      "pack": "res://seeds/seed_paddle",
+      "origin": [
+        -125,
+        4.0,
+        57
+      ],
+      "radius": 40,
+      "footprint": {
+        "size_m": [
+          80,
+          80
+        ]
+      },
+      "seed": 1
+    },
+    {
+      "id": "kit",
+      "pack": "res://kernel/examples/ex_kit",
+      "origin": [
+        -20,
+        2.0,
+        57
+      ],
+      "radius": 40,
+      "footprint": {
+        "size_m": [
+          80,
+          80
+        ]
+      },
+      "seed": 1
+    },
+    {
+      "id": "car",
+      "pack": "res://kernel/examples/ex_car",
+      "origin": [
+        85,
+        0.5,
+        57
+      ],
+      "radius": 40,
+      "footprint": {
+        "size_m": [
+          80,
+          80
+        ]
+      },
+      "seed": 1
+    },
+    {
+      "id": "hockey",
+      "pack": "res://packs/hockey",
+      "origin": [
+        194,
+        1.0,
+        61
+      ],
+      "radius": 44,
+      "footprint": {
+        "size_m": [
+          88,
+          88
+        ]
+      },
+      "seed": 1
+    },
+    {
+      "id": "parkour",
+      "pack": "res://packs/parkour",
+      "origin": [
+        -186,
+        1.0,
+        -32
+      ],
+      "radius": 28,
+      "footprint": {
+        "size_m": [
+          56,
+          56
+        ]
+      },
+      "seed": 1
+    }
+  ],
+  "road": [
+    [
+      -270,
+      6
+    ],
+    [
+      -190,
+      3
+    ],
+    [
+      -100,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      100,
+      0
+    ],
+    [
+      190,
+      2
+    ],
+    [
+      290,
+      5
+    ]
+  ],
+  "landscape": {
+    "seed": 7,
+    "pad_h": [
+      4.0,
+      -2.5,
+      3.0,
+      4.0,
+      2.0,
+      0.5,
+      1.0,
+      1.0
+    ],
+    "river": {
+      "path": [
+        [
+          -236,
+          -200
+        ],
+        [
+          -254,
+          -130
+        ],
+        [
+          -250,
+          -30
+        ],
+        [
+          -252,
+          12
+        ],
+        [
+          -262,
+          80
+        ],
+        [
+          -246,
+          150
+        ]
+      ],
+      "half_m": 6.0,
+      "pond_m": 16
+    },
+    "margin_m": 90,
+    "road_half_m": 3.0,
+    "trees": 120,
+    "broadleaf": 40,
+    "rocks": 46,
+    "bushes": 90,
+    "belt": 180,
+    "mesas": 18,
+    "haze": 0.4,
+    "landmarks": [
+      {
+        "asset": "assets/engine/pip.glb",
+        "at": [
+          -38,
+          -8.5
+        ],
+        "yaw": -60,
+        "posts": [
+          [
+            0,
+            0,
+            1.05
+          ]
+        ]
+      }
+    ],
+    "lots": [
+      {
+        "at": [
+          240,
+          -55
+        ],
+        "radius": 40,
+        "h": 2.0,
+        "job": "site/topple-tower-crates-three-20261118-1"
+      },
+      {
+        "at": [
+          310,
+          55
+        ],
+        "radius": 42,
+        "h": 1.0,
+        "job": "site/ice-hockey-three-against-20261111-1"
+      }
+    ]
+  },
+  "player": [
+    [
+      0,
+      [
+        -185,
+        0,
+        4.5
+      ]
+    ],
+    [
+      35,
+      [
+        -185,
+        0,
+        3.0
+      ]
+    ],
+    [
+      110,
+      [
+        -185,
+        0,
+        2.5
+      ]
+    ]
+  ],
+  "events": [
+    {
+      "t": 100,
+      "e": "shot",
+      "name": "village-road"
+    }
+  ],
+  "visitor_cam": {
+    "distance": 8.5,
+    "height": 3.6,
+    "look_height": 2.35,
+    "fov": 64.0
+  }
+}

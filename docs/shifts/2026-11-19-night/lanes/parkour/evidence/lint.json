@@ -1,0 +1,66 @@
+{
+  "schema": "tl.verify/1",
+  "verb": "lint",
+  "level": "V1",
+  "pack": "game.parkour",
+  "packVersion": "0.1.0",
+  "kernelApi": "1.8",
+  "ok": true,
+  "outcome": "passed",
+  "durationMs": 14,
+  "checks": [
+    {
+      "id": "lint.schema",
+      "ok": true,
+      "detail": "manifest matches tl.pack/0.1"
+    },
+    {
+      "id": "lint.layout",
+      "ok": true,
+      "detail": "6 scripts, 2 data files"
+    },
+    {
+      "id": "lint.fence",
+      "ok": true,
+      "detail": "no fenced pattern in 6 scripts"
+    },
+    {
+      "id": "lint.capabilities",
+      "ok": true,
+      "detail": "every kernel capability used is declared"
+    },
+    {
+      "id": "lint.size",
+      "ok": true,
+      "detail": "459 lines of GDScript, 1316 bytes of data"
+    }
+  ],
+  "errors": [],
+  "composability": {
+    "gdscript_lines": {
+      "scripts": 192,
+      "gen": 0,
+      "tests": 191
+    },
+    "kit_parts_added": 0,
+    "bypasses": [],
+    "kit_parts_used": 9,
+    "kit_kinds_used": [
+      "barricade",
+      "cabin",
+      "crane",
+      "lumber",
+      "pallet",
+      "tree",
+      "tyre_stack"
+    ],
+    "kit_build_calls": 1,
+    "world_coordinates": 0,
+    "world_coordinates_by": {
+      "global_position": 0,
+      "global_transform": 0,
+      "to_global": 0,
+      "look_at": 0
+    }
+  }
+}

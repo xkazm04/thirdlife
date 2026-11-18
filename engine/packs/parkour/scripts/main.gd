@@ -13,26 +13,28 @@ var cam: TLOrbitCam
 var hud: TLHud
 var spawn_at: Vector3
 var falls := 0
+var chute_tilt := 0.0
 
 
 func _pack_setup(c: TLContext) -> void:
 	ctx = c
 	venue = ctx.load_script("scripts/course.gd").new()
+	TLKit.build_layout(ctx.read_json("yard.json"), ctx.root)
 	venue.build(ctx.root, ctx.read_json("course.json"))
 	spawn_at = venue.point(0, venue.DECK_Y + 0.04)
 	runner = TLBiped.create({"feel": &"walker", "position": spawn_at, "name": "Runner",
-		"rig_params": {"backpack": false, "expression": "focus", "colors": {"top": "flag_a", "trim": "white"}}})
+		"rig_params": {"backpack": false, "expression": "focus", "colors": {"top": "flag_b", "trim": "white"}}})
 	ctx.root.add_child(runner)
 	rules = TLRules.create({"sides": [SIDE], "checkpoints": venue.checkpoints.size(), "laps_to_win": 1, "time_limit_seconds": 60})
 	ctx.root.add_child(rules)
 	for key: Array in [[&"forward", [KEY_W, KEY_UP]], [&"back", [KEY_S, KEY_DOWN]], [&"left", [KEY_A, KEY_LEFT]],
 			[&"right", [KEY_D, KEY_RIGHT]], [&"jump", [KEY_SPACE]], [&"run", [KEY_SHIFT]], [&"slide", [KEY_C]], [&"restart", [KEY_R]]]:
 		ctx.input.declare(key[0], key[1])
-	cam = ctx.cameras.orbit(runner, {"distance": 5.5, "pitch": 33, "look_height": 1.1, "fov": 55})
-	ctx.cameras.add_view(&"overview", Vector3(3, 48, 0.5), Vector3(0, 2, 0.5), 39)
-	_view(&"jump", venue.FIRST_LIP + 1.1, Vector3(7.2, 2.0, 0.8), 1.15)
-	_view(&"under_bar", venue.bar + 0.6, Vector3(1.7, 0.90, -5.0), 0.65)
-	_view(&"chute", (venue.lip + venue.foot) / 2, Vector3(7.5, 2.0, -4.0), -2.3)
+	cam = ctx.cameras.orbit(runner, {"yaw": -90, "distance": 5.5, "pitch": 33, "look_height": 1.1, "fov": 55})
+	ctx.cameras.add_view(&"overview", Vector3(-3.5, 30, 41), Vector3(0, 5.7, 0), 43)
+	_view(&"jump", venue.FIRST_LIP + 1.5, Vector3(1.8, 1.15, 6.4), 1.0)
+	_view(&"under_bar", venue.bar + 0.3, Vector3(6.7, 1.6, 5.7), 0.85)
+	_view(&"chute", (venue.lip + venue.foot) / 2, Vector3(4.2, 1.5, 9.6), -3.0)
 	hud = TLHud.create()
 	ctx.root.add_child(hud)
 	hud.add_label(&"race", "", &"top_left")
@@ -53,6 +55,7 @@ func _pack_start() -> void:
 func _restart() -> void:
 	spawn_at = venue.point(0, venue.DECK_Y + 0.04)
 	runner.place(spawn_at)
+	_frame_chute(0.0)
 	cam.snap()
 	falls = 0
 	rules.start()
@@ -63,25 +66,48 @@ func _pack_tick(_frame: int) -> void:
 	if ctx.input.just_pressed(&"restart"):
 		_restart()
 	if rules.is_running():
-		var at: float = venue.Z_START - runner.position.z
+		var at: float = runner.position.x - venue.START_X
 		# Catch a miss before a trestle underneath a high deck can catch the runner.
 		var below_decks: bool = at < venue.lip and runner.position.y < venue.DECK_Y - 1.35
-		if runner.position.y < KILL_Y or below_decks:
-			falls += 1
+		var retry := _at_blocked_bar(at) and ctx.input.just_pressed(&"slide")
+		if runner.position.y < KILL_Y or below_decks or retry:
+			if not retry:
+				falls += 1
 			runner.place(spawn_at)
+			at = spawn_at.x - venue.START_X
 			cam.snap()
 		runner.drive_from_input(ctx.input, ACTIONS, cam.yaw_basis())
 		var index := int(rules.next_checkpoint[SIDE])
 		var station: float = venue.checkpoints[index]
 		var height: float = 0.0 if index == venue.checkpoints.size() - 1 else venue.DECK_Y
 		var feet := runner.position
-		if runner.grounded and absf(feet.y - height) < 0.2 and absf(feet.x) < venue.WIDTH / 2 \
-				and at >= station and at < station + 0.6:
+		# A late jump can land beyond the stripe. The entire approach earns its respawn.
+		var end: float = venue.bar if index == 1 else station + 0.6
+		# The beam checkpoint is inside the opening. Jumping around a jamb cannot earn it.
+		var on_route: bool = index != 2 or (at < venue.bar + venue.BAR_DEPTH and absf(feet.z) < venue.WIDTH / 2 - 0.35)
+		if on_route and runner.grounded and absf(feet.y - height) < 0.2 and absf(feet.z) < venue.WIDTH / 2 \
+				and at >= station and at < end:
 			if rules.pass_checkpoint(SIDE, index):
-				spawn_at = venue.point(station, height + 0.04)
+				var safe_station: float = venue.bar + venue.BAR_DEPTH + 1.0 if index == 2 else station
+				spawn_at = venue.point(safe_station, height + 0.04)
 	else:
 		runner.move(Vector3.ZERO)
+	_frame_chute(runner.position.x - venue.START_X)
 	_update_hud()
+
+
+func _frame_chute(at: float) -> void:
+	# Lift the orbit over the lip, then give the player their original pitch on the finish deck.
+	var weight := smoothstep(venue.lip - 3.0, venue.lip, at) * (1.0 - smoothstep(venue.foot + 1.0, venue.finish, at))
+	var free_pitch := clampf(cam.pitch - chute_tilt, TLOrbitCam.PITCH_MIN, TLOrbitCam.PITCH_MAX)
+	chute_tilt = (TLOrbitCam.PITCH_MAX - free_pitch) * weight
+	cam.pitch = free_pitch + chute_tilt
+	cam.look_height = 1.1 + weight * 0.65
+
+
+func _at_blocked_bar(at: float) -> bool:
+	return int(rules.next_checkpoint[SIDE]) == 2 and runner.grounded and runner.speed() < 0.5 \
+		and at > venue.bar - 0.6 and at < venue.bar
 
 
 func _update_hud() -> void:
@@ -89,7 +115,9 @@ func _update_hud() -> void:
 	if rules.best_lap_frames.has(SIDE):
 		best = "%.2f s" % (float(rules.best_lap_frames[SIDE]) / 60)
 	var caption := "TIMBER RUN    |    %d / %d" % [int(rules.next_checkpoint[SIDE]), venue.checkpoints.size()]
-	var cue: String = ["Run + jump", "Jump, land, then slide", "Down the chute"][int(rules.next_checkpoint[SIDE])]
+	var cue: String = ["Run + jump", "Jump the gap", "Slide under the beam", "Down the chute"][int(rules.next_checkpoint[SIDE])]
+	if _at_blocked_bar(runner.position.x - venue.START_X):
+		cue = "C  Retry from checkpoint"
 	caption += "    " + cue
 	if rules.is_over():
 		caption = "FINISH" if rules.reason == "laps" else "TIME UP"
@@ -98,7 +126,7 @@ func _update_hud() -> void:
 
 func _pack_state() -> Dictionary:
 	var s := rules.snapshot()
-	s.merge({"station": venue.Z_START - runner.position.z, "height": runner.position.y, "motion": runner.walker_motion(),
+	s.merge({"station": runner.position.x - venue.START_X, "height": runner.position.y, "motion": runner.walker_motion(),
 		"speed": runner.speed(), "falls": falls, "checkpoint": int(rules.next_checkpoint[SIDE]),
 		"first_lip": venue.FIRST_LIP,
 		"first_land": venue.first_land, "chain_lip": venue.chain_lip, "chain_land": venue.chain_land,

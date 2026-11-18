@@ -6,9 +6,9 @@
   "capabilities": ["physics", "biped", "rules", "input", "camera", "kit", "ui"],
   "entry": "scripts/main.gd",
   "assets": [],
-  "tests": ["tests/bot_course.gd", "tests/bot_geometry.gd", "tests/bot_obstacles.gd"],
+  "tests": ["tests/bot_course.gd", "tests/bot_geometry.gd", "tests/bot_obstacles.gd", "tests/bot_ladder_retry_regular.gd"],
   "cameras": ["orbit", "overview", "jump", "under_bar", "chute"],
   "subject": "Runner",
-  "footprint": {"size_m": [18, 50], "height_m": 12},
+  "footprint": {"size_m": [50, 28], "height_m": 20},
   "params": [{"name": "chain_gap_m", "file": "data/course.json", "path": "chain_gap_m", "min": 2, "max": 12, "step": 0.1, "label": "Chain gap (m)"}]
 }

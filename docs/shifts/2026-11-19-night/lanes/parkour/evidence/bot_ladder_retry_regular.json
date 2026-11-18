@@ -1,0 +1,66 @@
+{
+  "schema": "tl.verify/1",
+  "verb": "bot",
+  "level": "V4",
+  "pack": "game.parkour",
+  "packVersion": "0.1.0",
+  "kernelApi": "1.8",
+  "ok": true,
+  "outcome": "passed",
+  "seed": 1,
+  "frames": 396,
+  "durationMs": 3282,
+  "checks": [
+    {
+      "id": "smoke.loads",
+      "ok": true,
+      "detail": "pack loaded"
+    },
+    {
+      "id": "smoke.no_script_errors",
+      "ok": true,
+      "detail": "0 errors in 396 frames"
+    },
+    {
+      "id": "smoke.no_engine_errors",
+      "ok": true,
+      "detail": "0 engine errors"
+    },
+    {
+      "id": "smoke.watchdog",
+      "ok": true,
+      "detail": "no trip in 396 frames"
+    },
+    {
+      "id": "bot.completed",
+      "ok": true,
+      "detail": "done at frame 396"
+    },
+    {
+      "id": "bot.ok",
+      "ok": true,
+      "detail": "regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 394 ticks"
+    }
+  ],
+  "metrics": {
+    "state_hash": "dbc04e2c47dbcfd4ec56d92c9e56b39916c550271fa6cafad5cb671f721d9e9f",
+    "frame_ms_p50": 0.413,
+    "frame_ms_p99": 0.846,
+    "entities_max": 271,
+    "bodies_max": 48,
+    "tick_ms_max": 0.133
+  },
+  "errors": [],
+  "bot": {
+    "test": "tests/bot_ladder_retry_regular.gd",
+    "done": true,
+    "frames": 396,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 394,
+      "taps_lost": 0,
+      "summary": "regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 394 ticks"
+    }
+  }
+}
