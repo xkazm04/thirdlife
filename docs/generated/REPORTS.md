@@ -3,7 +3,7 @@
 Generated from `docs/reports/**/*.md`, `briefs/` and `engine/kernel/runner/manifest.gd` by `node devx/bin/tl.mjs arch --index`; do not edit (rule `reports-index-fresh`).
 The reports are history and stay as written; this page only collects them.
 
-84 reports, 77 pack-author bullets (3 marked stale), 125 questions raised.
+85 reports, 77 pack-author bullets (3 marked stale), 131 questions raised.
 
 A stale mark is one of two mechanical tests on a pack-author bullet, nothing more:
 - `[stale: path gone]`: the bullet cites in backticks a repo path (first segment a top-level directory of the repo, an optional `:line` dropped) that no file or directory of the tree matches now.
@@ -71,6 +71,7 @@ An unmarked bullet passed both tests; it was not read for being right.
 | bugfix-37/lane-runner | - | - | - |
 | bugfix-37/lane-walker | - | - | - |
 | bugfix-37/lane-world | - | - | - |
+| bugfix-37/REPORT | - | - | - |
 | engine-world-next/C | - | - | - |
 | engine-world-next/C-PATCHES | - | - | - |
 | engine-world-next/C2 | - | - | - |
@@ -230,7 +231,7 @@ An unmarked bullet passed both tests; it was not read for being right.
 - `docs/reports/P8-PROCESS.md:257` Never wait for something only a window has.
 - `docs/reports/P8-PROCESS.md:258` Expect `subject_px` and `frame` to change or go.
 
-## Questions raised (125)
+## Questions raised (131)
 
 Numbered items under a report's Questions heading, as the builder asked them. This page cannot tell an answered question
 from an unanswered one: where the Director answered, it is in that report's "Director's decisions on the builder's questions".
@@ -437,3 +438,12 @@ from an unanswered one: where the Director answered, it is in that report's "Dir
 1. `docs/reports/bugfix-37/lane-world.md:96` `engine/kernel/world/draw/view.gd:65` (lane cam) says in a comment that the rim cache key ends in `|cover`; it is now `|cover2`. `engine/kernel/world/draw/DRAW.md:330` says the same ("The rim cache key ends in `|cover`") and should become "`|cover2` (bugfix-37 D4: cover measured on triangles)". I ...
 2. `docs/reports/bugfix-37/lane-world.md:99` New public members on kernel-internal scripts: world_space.gd: `add_pads()`, static `pad_rim()`, and an optional `stat` argument on `add_faces()`. village_terrain.gd: `faces_in_disc()`, `bridge_span()`, and two optional arguments on the private `_stamp()`. draw_pictures.gd: static ...
 3. `docs/reports/bugfix-37/lane-world.md:105` With D3, when a game's colliders arrive while the visitor stands on its pad, the pad goes and the game's own floor takes over. If that floor is higher than the pad, he may start inside it for a tick (step-up 0.55 m handles small steps). Before the fix he fell through instead. Watch it in the first ...
+
+### bugfix-37/REPORT (undated)
+
+1. `docs/reports/bugfix-37/REPORT.md:81` KERNEL_API stays 1.8 and no `TL*` member was added. `TLRigBipedMesh._stick_mesh` is underscored to avoid a 1.9 bump even though another file calls it. D18 makes the chase camera work in its parent's frame when the parent is a 3D node; an explicit `avoid_frame` option would be 1.9.
+2. `docs/reports/bugfix-37/REPORT.md:84` New internal members: `SLOPE_JUMP_PUSH`, `add_pads()`, `pad_rim()`, `faces_in_disc()`, `bridge_span()`, and an optional `stat` argument on `add_faces()`. Should API.md:310 say that TLBiped can jump from a slope?
+3. `docs/reports/bugfix-37/REPORT.md:86` D2: an input freed outside the tree is recorded with length = last frame + 1. Making it exact needs a hook in tl_input.gd.
+4. `docs/reports/bugfix-37/REPORT.md:87` Q24: boot.gd sits exactly at its 600-line budget. One more line would let the sky mask be detected automatically.
+5. `docs/reports/bugfix-37/REPORT.md:88` The Python tool checks need numpy, PIL and ffmpeg, so they are not in the gate.
+6. `docs/reports/bugfix-37/REPORT.md:89` An early version of block 350 nested itself: about 230 of the builder's own bash processes ran for a few minutes before it stopped them. The block now has a guard against nesting.
