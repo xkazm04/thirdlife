@@ -21,6 +21,7 @@ extends RefCounted
 ## The site is presentation: it never enters a state hash. Its report is one line `[site] {json}` at the world's end.
 
 const SiteLog: GDScript = preload("res://kernel/world/site/log.gd")
+const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")   # S5: the cache of measured extents
 const LOT_KEYS: Array = ["at", "radius", "h", "job", "replay"]
 const LIVE_EVERY: int = 60                  # live mode: the log's size is looked at once in this many world ticks
 const HELD_SIZE: Vector2 = Vector2(-1.0e7, -1.0e7)
@@ -66,10 +67,12 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 		else:
 			s["plot"] = plots.size()
 			var fit: Array = fit_radius(dir, float(s["radius"]))
-			s["radius"] = fit[0]
-			s["fit"] = fit[1]
+			var fr: float = float(fit[0])               # the scheduler's footprint: from the files only, so a run's ticks never depend on a cache
+			var seen: Array = remembered_radius(dir, float(s["radius"]))
+			s["radius"] = fr if seen.is_empty() else float(seen[0])
+			s["fit"] = str(fit[1]) if seen.is_empty() else str(seen[1])
 			var r: float = float(s["radius"])
-			plots.append({"id": "site_%d" % k, "origin": s["at"], "radius": r, "footprint": {"size_m": [r * 2.0, r * 2.0]}, "seed": 1, "site_lot": k})
+			plots.append({"id": "site_%d" % k, "origin": s["at"], "radius": r, "footprint": {"size_m": [fr * 2.0, fr * 2.0]}, "seed": 1, "site_lot": k})
 		sites.append(s)
 	walk["plots"] = plots
 	if not sites.is_empty():
@@ -98,6 +101,44 @@ static func fit_radius(dir: String, lot_r: float) -> Array:
 	var half: float = Vector2(float(sz[0]), float(sz[1])).length() * 0.5
 	var r: float = clampf(ceilf(half + FIT_MARGIN), FIT_MIN, lot_r)
 	return [r, "footprint %s x %s m of %s: half-diagonal %.1f m + %.0f" % [str(sz[0]), str(sz[1]), dest.get_file(), half, FIT_MARGIN]]
+
+
+## S5. One ring per site. A game measured once (`_measure`) is remembered in the world's cache (PlotFile.cache_dir()
+## `/site_extent.json`: the promoted pack's content hash -> metres, as the far pictures and rims are kept), so the
+## next world starts the lot, its pad, bank and worn ring at the measured size, not at the size the footprint guessed.
+## Returns [radius, what decided it], or [] when the promoted game of the log was never measured on this machine (or
+## in the build's shipped cache). Drawing only: the scheduler's footprint stays the one `fit_radius` reads from files.
+const EXTENT_FILE: String = "site_extent.json"
+static func remembered_radius(dir: String, lot_r: float) -> Array:
+	var pd: String = promoted_dir(dir)
+	if pd.is_empty():
+		return []
+	var c: Variant = JSON.parse_string(FileAccess.get_file_as_string(str(PlotFile.call("cache_dir")) + "/" + EXTENT_FILE)) if FileAccess.file_exists(str(PlotFile.call("cache_dir")) + "/" + EXTENT_FILE) else null
+	var key: String = str(PlotFile.call("dir_hash", pd))
+	if typeof(c) != TYPE_DICTIONARY or not (c as Dictionary).has(key):
+		return []
+	var far: float = float((c as Dictionary)[key])
+	return [clampf(ceilf(far), FIT_MIN, lot_r), "measured %.1f m before (cache, %s)" % [far, pd.get_file()]]
+
+
+static func remember_extent(pack_dir: String, far: float) -> void:
+	var path: String = str(PlotFile.call("cache_dir")) + "/" + EXTENT_FILE
+	var c: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	var d: Dictionary = c if typeof(c) == TYPE_DICTIONARY else {}
+	d[str(PlotFile.call("dir_hash", pack_dir))] = snappedf(far, 0.1)
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify(d, "", true) + "\n")
+		f.close()
+
+
+## The directory of the game the log's last `promoted` event names, or "".
+static func promoted_dir(dir: String) -> String:
+	var lg: RefCounted = SiteLog.new()
+	lg.call("feed", FileAccess.get_file_as_string(dir + "/job.jsonl"))
+	var dest: String = str((SiteLog.fold(lg.get("events"))["promoted"] as Dictionary).get("dest", "")).trim_suffix("/")
+	return dir + "/" + dest if dest.begins_with("promoted/") and FileAccess.file_exists(dir + "/" + dest + "/pack.json") else ""
 
 
 static func _check_lot(lot: Dictionary) -> String:
@@ -210,6 +251,7 @@ func _measure(s: Dictionary, t: int) -> void:
 	var far: float = float((task[1] as Dictionary).get("far", 0.0))
 	s["measured_dir"] = s["arrived_dir"]
 	s["measured_m"] = snappedf(far, 0.1)
+	remember_extent(str(s["arrived_dir"]), far)         # S5: the next world starts the lot at this size
 	var plot_r: float = float(((world.get("walk") as Dictionary)["plots"] as Array)[int(s["plot"])].get("radius", s["radius"]))
 	var r: float = clampf(ceilf(far), FIT_MIN, plot_r)
 	if not s.has("radius_before"):

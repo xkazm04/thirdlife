@@ -370,5 +370,10 @@ longer fences a site plot: site/draw.gd draws the fence at the lot's current rad
 side) and a path in from the plot's gate; the meshes that depend only on the size (fence, arch, masts) are built on
 a worker once per size, so a refit costs the frame about 1.2 ms. Measured: crates 18.1 m (declared 12 x 32 m),
 hockey of 11 Nov 40.3 m (declared none). Selftest `site.refit`.
+**S5 (18 Nov).** One ring per site: a measured extent is kept in the world's cache (`site_extent.json` in
+PlotFile.cache_dir(), keyed by the promoted pack's content, shipped in the exe's cache like rims and far pictures);
+a world that finds it starts the lot, and so the landscape's pad, bank and worn ring, at that size. The scheduler's
+footprint stays the one read from files, so ticks and hashes never depend on a cache. A live refit still moves only
+the fence and dressing (the pad is in the terrain mesh, built once). Selftest `site.ring`.
 **Not built:** the site does not show `question`, `milestone` captures or comments; a live site does not see a job
 directory that appears after the world started.

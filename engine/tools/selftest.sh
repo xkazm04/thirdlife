@@ -513,7 +513,8 @@ if [ -z "$FILTER" ] || [[ "site." == *"$FILTER"* ]] || [[ "$FILTER" == site.* ]]
     rm -rf "$SD/refit"; cp -r "$FX/arrive" "$SD/refit"; cp "$SD/refit/job.jsonl" "$SD/refit_full.jsonl"
     head -n 6 "$SD/refit_full.jsonl" > "$SD/refit/job.jsonl"
     printf '{"schema":"tl.walk/1","name":"site_refit","visitor":true,"ticks":400,"mode":"bot","plots":[{"id":"a","pack":"pack_min","origin":[-60,0,0],"seed":1}],"landscape":{"lots":[{"at":[40,0],"radius":30,"h":0,"job":"%s/refit"}]},"player":[[0,[40,0,40]]],"edits":[[100,"%s/refit/job.jsonl","%s/refit_full.jsonl"]]}\n' "$SD" "$SD" "$SD" > "$SD/refit.json"
-    rf="$(site_run "$SD/refit.json")"; a="$(echo "$rf" | lot_of 0)"; why=""
+    rm -rf "$SD/refit_cache"
+    rf="$(TL_CACHE_DIR="$SD/refit_cache" site_run "$SD/refit.json")"; a="$(echo "$rf" | lot_of 0)"; why=""
     echo "$a" | grep -q '"arrived":"example.bounce@0.1.0","arrived_at":120' || why="the promoted game did not arrive at tick 120: $a"
     echo "$a" | grep -q '"radius":25.0,' || why="${why:+$why; }the lot was not refitted to 25 m: $(echo "$a" | grep -o '"radius":[0-9.]*')"
     echo "$a" | grep -q '"radius_before":30.0' || why="${why:+$why; }no radius before (30 wanted)"
@@ -521,6 +522,18 @@ if [ -z "$FILTER" ] || [[ "site." == *"$FILTER"* ]] || [[ "$FILTER" == site.* ]]
     echo "$a" | grep -q '"fit":"walk radius: nothing promoted yet"' && why="${why:+$why; }the fit still says nothing was promoted"
     echo "$rf" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
     verdict site.refit "$why" "lot 30 m -> $(echo "$a" | grep -o '"radius":[0-9.]*' | cut -d: -f2) m after the live arrival at tick 120; $(echo "$a" | grep -oE '"measured_m":[0-9.]+|"measure_ms":[0-9.]+' | tr '\n' ' ')"
+  fi
+  # S5: one ring per site. The extent measured in site.refit is kept in the world's cache (site_extent.json, by the
+  # promoted pack's content); the next world on the same cache starts the lot (its pad, bank and ring) at 25 m.
+  if [ -z "$FILTER" ] || [[ "site.ring" == *"$FILTER"* ]]; then
+    why=""
+    [ -s "$SD/refit_cache/site_extent.json" ] || why="site.refit left no site_extent.json in its cache (run site.refit first)"
+    rg="$(TL_CACHE_DIR="$SD/refit_cache" site_run "$SD/refit.json")"; a="$(echo "$rg" | lot_of 0)"
+    echo "$a" | grep -q '"radius":25.0,' || why="${why:+$why; }the second world did not start the lot at 25 m: $(echo "$a" | grep -o '"radius":[0-9.]*')"
+    echo "$a" | grep -q '"radius_before":30' && why="${why:+$why; }the lot started at 30 m and was refitted again (it should start at its size)"
+    echo "$a" | grep -q 'measured 25.0 m before (cache' || why="${why:+$why; }the fit does not name the cache: $(echo "$a" | grep -o '"fit":"[^"]*"')"
+    echo "$rg" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
+    verdict site.ring "$why" "second world on the same cache: $(echo "$a" | grep -oE '"radius":[0-9.]+|"fit":"[^"]*"' | tr '\n' ' ')"
   fi
   if [ -z "$FILTER" ] || [[ "site.arrival" == *"$FILTER"* ]]; then
     out="$(bash "$HERE/world.sh" tour "$FX/site_arrive.json" --headless 2>&1)"

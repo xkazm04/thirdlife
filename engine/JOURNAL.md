@@ -1043,3 +1043,10 @@ PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built i
   vertices 40.3 m) and its lot refits to that, live too (selftest `site.refit`: 30 -> 25 m). The site draws its own
   fence (the landscape leaves site plots unfenced); its size-only meshes are built on a worker and kept per size: a
   refit frame went from 33-35 ms to 1.1-1.4 ms. The village has a second site, the hockey job of 11 Nov at (310, 55).
+
+## One ring per site (engine-world-next, lane S round 5, worktree ew-site5; 18 Nov, clock from `date`)
+
+- 03:44 to 03:50. The measured extent of a promoted game is cached (`site_extent.json`, by the pack's content hash);
+  the next world starts its lot, pad and ring at that size, so a refitted fence no longer stands inside a larger
+  ring (crates: 22 -> 19 m from the start). The scheduler's footprint stays from files: no hash depends on the
+  cache. Selftest `site.ring`.
