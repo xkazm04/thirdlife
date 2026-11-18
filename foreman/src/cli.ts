@@ -15,6 +15,7 @@ import { Verifier, resolveRunner } from "./verifier.js";
 import { Foreman, ForemanError, restsOnAClock } from "./foreman.js";
 import { designBrief, planCheck, planPackages, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
 import { cardLimits, cardsPlannerText } from "./cards.js";
+import { cardLines, cardView } from "./handview.js";
 import { KernelApiError } from "./manifest.js";
 import { existingText, isEmptyReference, prepareReference, referenceOf } from "./reference.js";
 import { schemaErrors } from "./builder/json.js";
@@ -695,7 +696,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       const state = rebuildState(jobDir);
       if (a.flags["json"] === true) out(JSON.stringify(state, null, 1));
       else {
-        out(statusTable(state));
+        out(statusTable(state, cardLines(cardView(jobDir, state, readLog(jobDir).events))));
         // The log cannot know that its writer died. The lock file can: say which it is.
         const holder = lockHolder(jobDir);
         const open = state.jobState?.state === "running";
@@ -711,7 +712,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       const state = foldEvents(path.basename(jobDir), events, tornTail);
       const only = str(a, "package");
       if (only !== undefined && !state.order.includes(only)) throw new UsageError(`no package "${only}" in ${state.job} (${state.order.join(", ")})`);
-      const ex = explain(state, events, lockHolder(jobDir), only);
+      const ex = { ...explain(state, events, lockHolder(jobDir), only), card: cardLines(cardView(jobDir, state, events)) };
       out(a.flags["json"] === true ? JSON.stringify(ex, null, 1) : explainText(ex));
       return 0;
     }

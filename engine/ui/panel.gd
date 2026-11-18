@@ -993,8 +993,8 @@ func _fill_build(box: VBoxContainer, j: Dictionary, phase: String, busy: String)
 	if int(j["total"]) == 0:
 		box.add_child(_label("No plan yet: packages appear here once the Planner has cut the game." if phase != "approve" else "Nothing is built before you approve the brief.", _col["dim"]))
 		return
-	# column heads
-	var hh: HBoxContainer = _hbox()
+	if not str(j.get("recipe_words", "")).is_empty(): box.add_child(_para(str(j["recipe_words"]), 3, "recipe", _col["text"]))  # lane C4: recipe + hand checks in words
+	var hh: HBoxContainer = _hbox()  # column heads
 	hh.custom_minimum_size.y = 18
 	for col: Array in [["package", 0], ["state", 70], ["rnd", 26], ["time", 58], ["tokens", 50]]:
 		var l: Label = _label(str(col[0]), Color(_col["dim"], 0.7), FS_SMALL, int(col[1]), HORIZONTAL_ALIGNMENT_LEFT if int(col[1]) == 0 else (HORIZONTAL_ALIGNMENT_CENTER if col[0] == "state" else HORIZONTAL_ALIGNMENT_RIGHT))

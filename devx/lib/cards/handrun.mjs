@@ -49,6 +49,19 @@ export function overlayPack(packDir, testsDir) {
   return out;
 }
 
+/** Lane C4: the sentence that refuses a seed count below the card's, or "" when the count is the card's or more. */
+export function seedsBelow(hands, seeds) {
+  if (seeds >= hands.seeds) return "";
+  return `--seeds ${seeds} is below the ${hands.seeds} seeds this card's bounds were measured on: a bound like "at least ${hands.checks.find((c) => c.wins_min !== undefined)?.wins_min ?? 0} of ${hands.seeds}" cannot be judged on fewer runs. Use --seeds ${hands.seeds} or more.`;
+}
+
+/** Lane C4: the card's checks for `seeds` runs: each bound keeps its share (wins_min rounded up, wins_max down; 0 stays 0). */
+export function scaleHands(hands, seeds) {
+  if (seeds === hands.seeds) return hands;
+  const k = seeds / hands.seeds;
+  return { ...hands, seeds, checks: hands.checks.map((c) => ({ ...c, ...(c.wins_min !== undefined ? { wins_min: Math.ceil(c.wins_min * k) } : {}), ...(c.wins_max !== undefined ? { wins_max: Math.floor(c.wins_max * k) } : {}) })) };
+}
+
 /** One run's stdout -> {done, won} where won is true, false or undefined (no boolean `won` in the bot result). */
 export function readHandRun(stdout) {
   const line = String(stdout).split(/\r?\n/).filter((l) => l.startsWith("{")).reverse().find((l) => { try { return JSON.parse(l).schema === "tl.verify/1"; } catch { return false; } });
@@ -102,15 +115,20 @@ export async function runHands(args, ctx, deps = {}) {
   if (!fs.existsSync(path.join(src, "pack.json"))) { console.error(`tl cards hands: no pack.json in ${src}`); return 2; }
   if (!deps.runBot && !ctx.resolveGodot()) { console.error("tl cards hands: Godot not found (tl doctor)"); return 2; }
   const seeds = o.seeds ?? hands.seeds;
+  // Lane C4: a bound holds for the number of seeds it was measured on. Fewer seeds cannot test it (at least 16 of 20
+  // says nothing about 3 runs), so fewer is refused; more seeds scale each bound by the same share (scaleHands).
+  const below = seedsBelow(hands, seeds);
+  if (below) { console.error(`tl cards hands: ${below}`); return 2; }
+  const scaled = scaleHands(hands, seeds);
   const packDir = o.tests ? overlayPack(src, path.resolve(o.tests)) : src;
   try {
     const tests = JSON.parse(fs.readFileSync(path.join(packDir, "pack.json"), "utf8")).tests ?? [];
     const t0 = Date.now();
-    const rows = await handRows(hands, seeds, tests, o.par, deps.runBot ?? realRunBot(ctx, packDir));
-    console.log(`card ${hit.card.id} v${hit.card.version} on ${src}${o.tests ? ` (tests laid over from ${o.tests})` : ""}, seeds 1..${seeds}`);
+    const rows = await handRows(scaled, seeds, tests, o.par, deps.runBot ?? realRunBot(ctx, packDir));
+    console.log(`card ${hit.card.id} v${hit.card.version} on ${src}${o.tests ? ` (tests laid over from ${o.tests})` : ""}, seeds 1..${seeds}${seeds !== hands.seeds ? ` (bounds scaled from the card's ${hands.seeds} seeds)` : ""}`);
     console.log("hand       wins          Wilson 95 %   card");
     for (const r of rows) {
-      const c = hands.checks.find((x) => x.hand === r.hand);
+      const c = scaled.checks.find((x) => x.hand === r.hand);
       console.log(`${r.hand.padEnd(10)} ${String(r.wins).padStart(3)} of ${String(r.completed).padEnd(4)}  ${`${r.lo ?? 0}..${r.hi ?? 0}`.padEnd(12)}  ${[c.wins_min !== undefined ? `>= ${c.wins_min}` : "", c.wins_max !== undefined ? `<= ${c.wins_max}` : ""].filter(Boolean).join(", ")}  ${r.ok ? "holds" : "FAILS"}`);
     }
     const steps = rows.map((r) => ({ id: `hand:${r.hand}`, ok: r.ok, ms: 0, found: r.found, completed: r.completed, detail: r.why }));

@@ -192,11 +192,12 @@ export function explain(state: JobState, events: readonly JobEvent[], lock: { pi
 const verifyText = (v: RoundVerify | undefined): string => (v ? `${v.verb} ${v.level} ${v.ok ? "ok" : `FAILED ${v.report}`}` : "not verified");
 
 /** The text `foreman explain` prints: a head, one block per package with one line per round, the job runs, `next:`. */
-export function explainText(ex: Explanation): string {
+export function explainText(ex: Explanation & { card?: string[] }): string {
   const lines: string[] = [];
   lines.push(`job      ${ex.job}${ex.title ? `  "${ex.title}"` : ""}   state ${ex.state}   events ${ex.lastSeq}`);
   const by = Object.entries(ex.costByWhy).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(", ");
   lines.push(`cost     weighted ${ex.weighted}${by ? `   by why: ${by}` : ""}`);
+  lines.push(...(ex.card ?? []));
   const all = ex.packages.flatMap((p) => p.rounds);
   const whyW = Math.max(0, ...all.map((r) => r.why.length));
   const outW = Math.max(0, ...all.map((r) => (r.outcome ?? "-").length));

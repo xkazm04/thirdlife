@@ -5,6 +5,7 @@
 // finish, a result without `won`, or a count outside the bounds fails the final verification: nothing is promoted.
 // The verdict of a row comes from devx/lib/cards/hands.mjs, the same code `tl cards hands` judges with.
 // Kept out of foreman.ts (line ratchet); the Foreman calls runHandChecks after its other final checks.
+import fs from "node:fs";
 import { handTest, judgeHand } from "../../devx/lib/cards/hands.mjs";
 import { cardOf, type Card } from "./cards.js";
 import type { GateHost } from "./p10gate.js";
@@ -27,6 +28,21 @@ export interface HandRow {
   why: string;
 }
 
+/** Lane C4: the report one hand check leaves (reports/hand-checks-s<seq>.json). */
+export const HAND_SUMMARY = "tl.hand-checks/1";
+export interface HandSummary {
+  schema: string;
+  card: string;
+  version: string;
+  title: string;
+  seeds: number;
+  rows: (HandRow & { wins_min?: number; wins_max?: number })[];
+}
+const boundsOf = (checks: HandCheck[], hand: string): { wins_min?: number; wins_max?: number } => {
+  const c = checks.find((x) => x.hand === hand);
+  return { ...(c?.wins_min !== undefined ? { wins_min: c.wins_min } : {}), ...(c?.wins_max !== undefined ? { wins_max: c.wins_max } : {}) };
+};
+
 /** The card's hand checks, or undefined when the card has none. */
 export function handsOf(card: Card | undefined): { seeds: number; checks: HandCheck[] } | undefined {
   const h = (card as (Card & { hands?: { seeds: number; checks: HandCheck[] } }) | undefined)?.hands;
@@ -38,7 +54,8 @@ export function handsOf(card: Card | undefined): { seeds: number; checks: HandCh
  * card has none), else the sentence for the job's reason. Each run is a logged `verify` (stem final-hand-<hand>-seed<k>).
  */
 export async function runHandChecks(h: Pick<GateHost, "s" | "dir" | "verifyLogged">, packDir: string): Promise<{ rows: HandRow[]; failure: string }> {
-  const hands = handsOf(h.s.card !== undefined ? cardOf(h.dir("ref"), h.s.card) : undefined);
+  const card = h.s.card !== undefined ? cardOf(h.dir("ref"), h.s.card) : undefined;
+  const hands = handsOf(card);
   if (!hands) return { rows: [], failure: "" };
   let tests: string[] = [];
   try {
@@ -66,6 +83,10 @@ export async function runHandChecks(h: Pick<GateHost, "s" | "dir" | "verifyLogge
     }
     rows.push({ hand: c.hand, test, seeds: hands.seeds, completed, wins, ...judgeHand(c, hands.seeds, completed, wins, unread) });
   }
+  // Lane C4: the rows of this hand check as one report (reports/hand-checks-s<seq>.json, the seq of the last hand run),
+  // so status, explain and the designer panel show them without re-reading every run's report.
+  const summary: HandSummary = { schema: HAND_SUMMARY, card: card?.id ?? "", version: card?.version ?? "", title: card?.title ?? "", seeds: hands.seeds, rows: rows.map((r) => ({ ...r, ...boundsOf(hands.checks, r.hand) })) };
+  fs.writeFileSync(h.dir("reports", `hand-checks-s${h.s.lastSeq}.json`), JSON.stringify(summary, null, 1) + "\n");
   const bad = rows.filter((r) => !r.ok);
   return { rows, failure: bad.length === 0 ? "" : `hand check of ${h.s.card ?? "the card"} failed, nothing promoted: ${bad.map((r) => `${r.hand}: ${r.why}`).join("; ")}` };
 }

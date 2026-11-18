@@ -236,6 +236,26 @@ func _initialize() -> void:
 	eq("figures: time", [JobModel.fmt_time(885.4), JobModel.fmt_time(3725.0), JobModel.fmt_minutes(309.2)], ["14:45", "1:02:05", "5.2 min"])
 	eq("one line: no line breaks, no markdown marks, cut with an ellipsis", JobModel.one_line("- **Ramp**\nlayout: `x`  y", 12), "Ramp layout…")
 
+	# ---- 7. lane C4: the recipe and the hand checks in a person's words (no ids on screen)
+	var hc: Callable = func(rows: Array) -> Array: return [{"seq": 90, "summary": {"seeds": 20, "rows": rows}}]
+	var base_job: Dictionary = {"plan_revisions": 1, "card": "card.knock_down", "recipe": {}, "hand_checks": [], "hand_rounds": []}
+	eq("recipe: no plan yet says nothing", JobModel.recipe_words({"plan_revisions": 0}), "")
+	eq("recipe: a plan without a card", JobModel.recipe_words({"plan_revisions": 1, "card": ""}), "Built without a recipe.")
+	eq("recipe: a card that had no hand checks (tonight's crate job)", JobModel.recipe_words(base_job), "Built from the knock-down recipe. This recipe had no hand checks when the game was built.")
+	var asked: Dictionary = base_job.duplicate(true)
+	asked["recipe"] = {"hands": {"seeds": 20, "checks": [{"hand": "idle"}]}}
+	eq("recipe: checks owed, not run yet", JobModel.recipe_words(asked), "Built from the knock-down recipe. Its hand checks run when the game is finished.")
+	var held: Dictionary = base_job.duplicate(true)
+	held["hand_checks"] = hc.call([{"hand": "idle", "wins": 0, "completed": 20, "seeds": 20, "ok": true, "wins_max": 0}, {"hand": "sharp", "wins": 18, "completed": 20, "seeds": 20, "ok": true, "wins_min": 13}])
+	eq("recipe: checks that held, in words", JobModel.recipe_words(held), "Built from the knock-down recipe. Doing nothing never wins; a sharp player wins 18 of 20.")
+	var missed: Dictionary = held.duplicate(true)
+	missed["hand_checks"] = hc.call([{"hand": "idle", "wins": 2, "completed": 20, "seeds": 20, "ok": false, "wins_max": 0}, {"hand": "perfect", "wins": 9, "completed": 20, "seeds": 20, "ok": false, "wins_min": 16}])
+	missed["hand_rounds"] = ["court"]
+	eq("recipe: a check missed twice, in words", JobModel.recipe_words(missed), "Built from the knock-down recipe. Doing nothing won 2 of 20 (it should never win); a flawless player won only 9 of 20 (the recipe expects at least 16). The builder got one more round, and it still missed: the game was not handed over.")
+	check("recipe: no developer words on screen", not JobModel.recipe_words(missed).contains("card.") and not JobModel.recipe_words(missed).contains("wins_min") and not JobModel.recipe_words(missed).contains("_"))
+	var rj: Dictionary = JobModel.read_job(marble, 0.0)
+	eq("recipe: the real marble job has no card (built before cards)", [str(rj.get("card", "?")), str(rj.get("recipe_words", "?"))], ["", "Built without a recipe."])
+
 	_remove(tmp)
 	print("[selftest] %d passed, %d failed" % [passed, failed])
 	quit(0 if failed == 0 else 1)

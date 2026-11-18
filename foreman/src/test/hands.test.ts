@@ -6,9 +6,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { cleanup, tempDir, tempJob, foremanFor, readEvents, fixtureScript, fixturePlan, VERBS, type TempJob } from "./helpers.js";
 import { planCheck } from "../designer.js";
+import { cardLines, cardView } from "../handview.js";
+import { readLog, rebuildState } from "../joblog.js";
+import { runProcess } from "../proc.js";
 import { validateEvent, type JobEvent, type PackageSpec } from "../events.js";
 import { prepareReference } from "../reference.js";
-import { REPO_ROOT } from "../paths.js";
+import { PKG_ROOT, REPO_ROOT } from "../paths.js";
 import { handsOf } from "../handcheck.js";
 import { cardOf, cardsPlannerText } from "../cards.js";
 import type { FakeStep } from "../builder/fake.js";
@@ -119,4 +122,25 @@ test("hands 5 (plan): a plan that names a card with hand checks and registers no
   court.registers = { tests: HAND_TESTS };
   assert.deepEqual(planCheck(plan, { verbs: VERBS, cards: ["card.knock_down"], cardHands }, "card.knock_down"), []);
   assert.deepEqual(planCheck(fixturePlan(), { verbs: VERBS, cards: ["card.knock_down"], cardHands }), [], "no card named: nothing owed");
+});
+
+test("hands 6 (C4 status/explain): the card and every hand check that ran, with the round it cost; a job without a card says so", async () => {
+  const job = handJob("hands-view", 3);
+  await foremanFor(job, { promoteTo: "job", script: handScript(1, 4) }).foreman.run();
+  const { events } = readLog(job.jobDir);
+  const lines = cardLines(cardView(job.jobDir, rebuildState(job.jobDir, { write: false }), events));
+  assert.match(lines[0] ?? "", /^card     card\.knock_down v\d+\.\d+\.\d+  "Knock it down: [^"]+"  2 hand check\(s\)$/);
+  assert.deepEqual(lines.slice(1).map((l) => l.replace(/\s+/g, " ")), [
+    "hands #1 idle 0 of 4 at most 0 holds",
+    "hands #1 perfect 1 of 4 at least 3 MISSED",
+    "hands #1 missed: one round was sent back to court",
+    "hands #2 idle 0 of 4 at most 0 holds",
+    "hands #2 perfect 4 of 4 at least 3 holds",
+  ]);
+  const st = await runProcess({ exe: process.execPath, args: [path.join(PKG_ROOT, "dist", "cli.js"), "status", job.jobDir], timeoutMs: 60_000 });
+  assert.ok(st.stdout.includes(lines.join("\n")), st.stdout);
+  const ex = await runProcess({ exe: process.execPath, args: [path.join(PKG_ROOT, "dist", "cli.js"), "explain", job.jobDir], timeoutMs: 60_000 });
+  assert.ok(ex.stdout.includes(lines.join("\n")), ex.stdout);
+  const plain = tempJob("hands-view-none");
+  assert.deepEqual(cardLines(cardView(plain.jobDir, rebuildState(plain.jobDir, { write: false }), readLog(plain.jobDir).events)), ["card     no card (the Planner named none)"]);
 });

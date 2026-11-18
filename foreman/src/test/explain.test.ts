@@ -57,6 +57,7 @@ function snapshot(dir: string): string {
 const STATUS_DONE = `job      paddle-court-20261110-1  "Paddle Court"  pack game.paddle_court
 state    done  (pack verified V0 to V4 and promoted under the job directory (promoted/game.paddle_court))   events 56
 brief    approved by auto   plan 3 packages (revision 1)
+card     no card (the Planner named none)
 billing  fake none: fake adapter: no model is called and nothing is billed
 tokens   in 20400  out 2660
 promoted game.paddle_court 0.1.0 -> promoted/game.paddle_court

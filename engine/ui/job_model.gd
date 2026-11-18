@@ -82,6 +82,9 @@ static func read_job(job_dir: String, now: float = -1.0) -> Dictionary:
 	if str(job["title"]).is_empty():
 		job["title"] = str(job["id"])
 	job["lock_pid"] = read_lock(job_dir)
+	job["recipe"] = read_recipe(job_dir, str(job["card"]))
+	job["hand_checks"] = read_hand_checks(job_dir)
+	job["recipe_words"] = recipe_words(job)
 	job["params"] = []
 	job["pack_dir"] = ""
 	if not (job["promotions"] as Array).is_empty():
@@ -91,6 +94,77 @@ static func read_job(job_dir: String, now: float = -1.0) -> Dictionary:
 			job["pack_dir"] = job_dir.path_join(dest)
 			job["params"] = read_params(job["pack_dir"])
 	return job
+
+
+## Lane C4: the recipe card the job was built with, as the job's reference copy holds it (ref/cards/<name>.json):
+## {} when the plan names none or the copy is missing.
+static func read_recipe(job_dir: String, card_id: String) -> Dictionary:
+	if not card_id.begins_with("card."):
+		return {}
+	var path: String = job_dir.path_join("ref/cards").path_join(card_id.substr(5) + ".json")
+	if not FileAccess.file_exists(path):
+		return {}
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return data if data is Dictionary else {}
+
+
+## Lane C4: every hand check the Foreman ran (reports/hand-checks-s<seq>.json, schema tl.hand-checks/1), oldest first.
+static func read_hand_checks(job_dir: String) -> Array:
+	var dir: String = job_dir.path_join("reports")
+	var found: Array = []
+	if not DirAccess.dir_exists_absolute(dir):
+		return found
+	for f: String in DirAccess.get_files_at(dir):
+		if not (f.begins_with("hand-checks-s") and f.ends_with(".json")):
+			continue
+		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(f)))
+		if data is Dictionary and str((data as Dictionary).get("schema", "")) == "tl.hand-checks/1":
+			found.append({"seq": int(f.trim_prefix("hand-checks-s").trim_suffix(".json")), "summary": data})
+	found.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["seq"]) < int(b["seq"]))
+	return found
+
+
+const HAND_WORDS: Dictionary = {"newcomer": "a newcomer", "regular": "a regular player", "sharp": "a sharp player", "perfect": "a flawless player"}
+
+
+## Lane C4: the card and its hand checks in a person's words (no ids): which recipe the game was built from, and for
+## the last hand check that ran, what each kind of player finds. "" when there is nothing to say yet (no plan).
+static func recipe_words(job: Dictionary) -> String:
+	if int(job.get("plan_revisions", 0)) == 0:
+		return ""
+	var card: String = str(job.get("card", ""))
+	if card.is_empty():
+		return "Built without a recipe."
+	var name_: String = card.trim_prefix("card.").replace("_", "-")
+	var out: String = "Built from the %s recipe." % name_
+	var recipe: Dictionary = job.get("recipe", {})
+	var checks: Array = job.get("hand_checks", [])
+	if checks.is_empty():
+		var asked: Array = (recipe.get("hands", {}) as Dictionary).get("checks", []) if recipe.get("hands") is Dictionary else []
+		if asked.is_empty():
+			return out + " This recipe had no hand checks when the game was built."
+		return out + " Its hand checks run when the game is finished."
+	var last: Dictionary = (checks.back() as Dictionary)["summary"]
+	var parts: PackedStringArray = []
+	for r: Dictionary in last.get("rows", []):
+		var hand: String = str(r.get("hand", ""))
+		var wins: int = int(r.get("wins", 0))
+		var n: int = int(r.get("seeds", last.get("seeds", 0)))
+		var ok: bool = bool(r.get("ok", false))
+		if int(r.get("completed", 0)) < n:
+			parts.append("%s did not get to the end of every game (%d of %d)" % ["a player who does nothing" if hand == "idle" else HAND_WORDS.get(hand, hand), int(r.get("completed", 0)), n])
+		elif hand == "idle":
+			parts.append("Doing nothing never wins" if wins == 0 else ("doing nothing won %d of %d (it should never win)" % [wins, n]))
+		elif ok:
+			parts.append("%s wins %d of %d" % [HAND_WORDS.get(hand, hand), wins, n])
+		else:
+			parts.append("%s won only %d of %d (the recipe expects at least %d)" % [HAND_WORDS.get(hand, hand), wins, n, int(r.get("wins_min", 0))])
+	var said: String = "; ".join(parts)
+	out += " " + said.substr(0, 1).to_upper() + said.substr(1) + "."
+	var rounds: int = (job.get("hand_rounds", []) as Array).size()
+	if rounds > 0:
+		out += " The first check missed, and the builder got one more round to fix it." if bool((last.get("rows", []) as Array).all(func(r: Dictionary) -> bool: return bool(r.get("ok", false)))) else " The builder got one more round, and it still missed: the game was not handed over."
+	return out
 
 
 ## The pid in `foreman.lock`, 0 when there is no lock.
@@ -113,6 +187,7 @@ static func reduce(events: Array, now: float) -> Dictionary:
 		"first_ts": 0.0, "last_ts": 0.0, "n_events": events.size(), "last_seq": 0,
 		"activity": "", "billing": "", "phase": "designing", "adapter": "",
 		"done": 0, "total": 0, "elapsed_s": 0.0, "pause_kind": "", "fail_line": "", "unknown_types": [],
+		"card": "", "hand_rounds": [],
 	}
 	var pk: Dictionary = job["packages"]
 	for e: Dictionary in events:
@@ -141,6 +216,7 @@ static func reduce(events: Array, now: float) -> Dictionary:
 				job["activity"] = "brief approved; the Planner cuts the game into packages"
 			"plan_set":
 				job["plan_revisions"] = int(job["plan_revisions"]) + 1
+				job["card"] = str(e.get("card", ""))       # lane C4: the recipe card the Planner chose ("" = none)
 				var order: Array = []
 				for spec: Dictionary in e.get("packages", []):
 					var id: String = str(spec.get("id", ""))
@@ -248,6 +324,8 @@ static func reduce(events: Array, now: float) -> Dictionary:
 					for c: Dictionary in job["changes"]:
 						if int(c["seq"]) == n:
 							c["owner"] = pid
+				if reason.begins_with("hand check failed"):
+					(job["hand_rounds"] as Array).append(pid)     # lane C4: a round a failed hand check cost
 				job["activity"] = "%s re-opened" % pid
 			"comment":
 				pass

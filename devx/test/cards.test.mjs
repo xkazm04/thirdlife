@@ -271,3 +271,24 @@ test("hands (C3): every hand a card checks has its tests/bot_hand_<hand>.gd in t
   assert.match(text, /^The example's hand tests, to copy \(a plan without them is refused\): engine\/seeds\/seed_paddle\/tests\/bot_hand_idle\.gd, engine\/seeds\/seed_paddle\/tests\/bot_hand_sharp\.gd, engine\/seeds\/seed_paddle\/tests\/bot_hand_perfect\.gd$/m);
   assert.match(text, /idle: press nothing, and never stop on your own/);
 });
+
+test("hands (C4): --seeds below the card's count is refused with a sentence; more seeds scale each bound by its share", async () => {
+  const { seedsBelow, scaleHands, runHands } = await import("../lib/cards/handrun.mjs");
+  const ctx = await import("../lib/ctx.mjs");
+  const hands = { seeds: 20, checks: [{ hand: "idle", wins_max: 0, measured: "m" }, { hand: "perfect", wins_min: 16, measured: "m" }, { hand: "sharp", wins_min: 1, wins_max: 5, measured: "m" }] };
+  assert.match(seedsBelow(hands, 3), /^--seeds 3 is below the 20 seeds this card's bounds were measured on: a bound like "at least 16 of 20" cannot be judged on fewer runs\. Use --seeds 20 or more\.$/);
+  assert.equal(seedsBelow(hands, 20), "");
+  assert.equal(scaleHands(hands, 20), hands);
+  assert.deepEqual(scaleHands(hands, 40).checks.map((c) => [c.wins_min, c.wins_max]), [[undefined, 0], [32, undefined], [2, 10]]);
+  assert.deepEqual(scaleHands(hands, 30).checks.map((c) => [c.wins_min, c.wins_max]), [[undefined, 0], [24, undefined], [2, 7]]);
+  let ran = 0;
+  const errs = [];
+  const orig = console.error;
+  console.error = (m) => errs.push(String(m));
+  try {
+    const code = await runHands(["engine/seeds/seed_wall", "--card", "knock_down", "--seeds", "3"], ctx, { runBot: async () => { ran += 1; return ""; } });
+    assert.equal(code, 2, "could not run: exit 2");
+  } finally { console.error = orig; }
+  assert.equal(ran, 0, "nothing is run");
+  assert.match(errs.join("\n"), /--seeds 3 is below the 20 seeds/);
+});

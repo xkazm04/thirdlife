@@ -36,11 +36,13 @@ export function eventLine(ev: JobEvent): string {
   }
 }
 
-export function statusTable(s: JobState): string {
+/** `card`: the lines of handview.ts cardLines (the recipe card and its hand checks), printed under the plan line. */
+export function statusTable(s: JobState, card: string[] = []): string {
   const lines: string[] = [];
   lines.push(`job      ${s.job}${s.title ? `  "${s.title}"` : ""}${s.packId ? `  pack ${s.packId}` : ""}`);
   lines.push(`state    ${s.jobState?.state ?? "created"}${s.jobState?.reason ? `  (${s.jobState.reason})` : ""}   events ${s.lastSeq}${s.tornTail ? "   TORN LAST LINE" : ""}`);
   lines.push(`brief    ${s.brief ? (s.briefApprovedBy ? `approved by ${s.briefApprovedBy}` : "set, not approved") : "none"}   plan ${s.plan.length > 0 ? `${s.plan.length} packages (revision ${s.planRevision})` : "none"}`);
+  lines.push(...card);
   if (s.billing) lines.push(`billing  ${s.billing.adapter} ${s.billing.mode}: ${s.billing.evidence}`);
   if (s.budget) lines.push(`budget   ${s.budget.policy.kind}${s.budget.policy.limit !== undefined ? ` ${s.budget.policy.limit}` : ""} ${s.budget.state}: ${s.budget.reason}`);
   lines.push(`tokens   in ${s.tokens.in}  out ${s.tokens.out}${s.tokens.unreportedRuns > 0 ? `  (${s.tokens.unreportedRuns} runs reported none)` : ""}`);
