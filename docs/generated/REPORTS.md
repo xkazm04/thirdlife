@@ -3,7 +3,7 @@
 Generated from `docs/reports/**/*.md`, `briefs/` and `engine/kernel/runner/manifest.gd` by `node devx/bin/tl.mjs arch --index`; do not edit (rule `reports-index-fresh`).
 The reports are history and stay as written; this page only collects them.
 
-68 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
+64 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
 
 A stale mark is one of two mechanical tests on a pack-author bullet, nothing more:
 - `[stale: path gone]`: the bullet cites in backticks a repo path (first segment a top-level directory of the repo, an optional `:line` dropped) that no file or directory of the tree matches now.
@@ -50,10 +50,6 @@ An unmarked bullet passed both tests; it was not read for being right.
 | WP3C-FOREMAN | 2026-11-10 | `briefs/BRIEF-WP3C-FOREMAN.md` | All nine items are built and each has tests named by item number. No real job was run and no model was called; `foreman probe` ran once (0 ... |
 | WP4-SEEDS | 2026-11-10 | `briefs/BRIEF-WP4-SEEDS.md` | Step 1 and Step 2 are both done and verified. I worked 19:59 to 20:56 CEST by `date` (57 minutes) and stopped because the list was ... |
 | WP5-KERNEL | 2026-11-10 | `briefs/BRIEF-WP5-KERNEL.md` | All five items are done and proven, and `engine/` is green. I worked 21:14:54 to 21:39:26 CEST (25 minutes by `date`). The last code edit ... |
-| astra-trial/brief/arm-c | - | - | - |
-| astra-trial/brief/common | - | - | - |
-| astra-trial/brief/d1 | - | - | - |
-| astra-trial/brief/laws | - | - | - |
 | astra-trial/d1/c | - | - | - |
 | engine-world-next/C | - | - | - |
 | engine-world-next/C-PATCHES | - | - | - |
