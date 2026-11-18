@@ -32,3 +32,16 @@ Briefs: `lanes/<lane>/BRIEF.md` (each ends with `.claude/skills/shift/lane-rules
 The first lane that is done lands first. hunt2 is cut from that merge. Kernel/style lanes (walker) run the full
 pre-merge list on the merged tree; the parkour and editor lanes run `packs,world` and `ui.sh selftest` plus the fast tier.
 At 07:12 the verdict: final full gate, `tl arch --index`, export the exe, push, publish the page.
+
+## Launch record (00:03-00:10)
+- Preflight: bugfix-37 on main (`c8b88fc`, 0 behind origin); disk 323 GB free; RAM 38.0 GB free of 63.1; standby off;
+  4 Godot processes running that the Director did not start (left alone).
+- Worktrees cut from `c8b88fc`, each with `npm ci` in foreman/, plain copies of the two marble-run site jobs and the class
+  cache imported. Scopes claimed in `.claude/sessions.json` (`tl arch` scope-claims PASS).
+
+| Lane | Worktree | Agent (SendMessage id) | Started |
+|---|---|---|---|
+| parkour | `.claude/worktrees/n19-parkour` | a81bbee6e7f18ff8d (Opus operator, Astra builds) | 00:08 |
+| walker | `.claude/worktrees/n19-walker` | a49944906952f0dab (Opus director of Astra) | 00:08 |
+| editor | `.claude/worktrees/n19-editor` | a2525ec4bc5815931 (Opus designs and builds; Astra mockups) | 00:08 |
+| hunt2 | (cut after the first landing) | - | - |

@@ -1,3 +1,7 @@
 {
-  "sessions": []
+  "sessions": [
+    {"id": "n19-parkour", "scope": ["engine/packs/parkour/**", "engine/kits/**", "docs/shifts/2026-11-19-night/lanes/parkour/**"], "note": "night 19 Nov lane parkour (Astra solo look), .claude/worktrees/n19-parkour, until 08:00"},
+    {"id": "n19-walker", "scope": ["engine/kernel/world/**", "engine/kernel/runner/**", "engine/style/**", "engine/rigs/**", "docs/shifts/2026-11-19-night/lanes/walker/**"], "note": "night 19 Nov lane walker (Opus directing Astra), .claude/worktrees/n19-walker, until 08:00"},
+    {"id": "n19-editor", "scope": ["engine/ui/**", "engine/tools/ui.sh", "docs/design/editor/**", "docs/shifts/2026-11-19-night/lanes/editor/**"], "note": "night 19 Nov lane editor (Opus + Astra mockups), .claude/worktrees/n19-editor, until 08:00"}
+  ]
 }
