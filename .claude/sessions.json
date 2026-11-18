@@ -1,9 +1,3 @@
 {
-  "sessions": [
-    {
-      "id": "spark-walker-feel",
-      "scope": ["engine/kernel/world/terrain/**", "engine/kernel/world/visitor.gd", "engine/kernel/runner/visit.gd", "engine/kernel/api/tl_chase_cam.gd", "engine/project.godot", "engine/rigs/**", "engine/style/**", "engine/kernel/world/landscape.gd", "engine/kernel/world/draw/**", "engine/boot/boot.gd"],
-      "note": "spark walker-feel, 18 Nov day: lanes M (movement+camera), L (figure, Fable), T (ground+edges) in .claude/worktrees/wf-*; first landing ~13:00"
-    }
-  ]
+  "sessions": []
 }
