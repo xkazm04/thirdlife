@@ -3,7 +3,7 @@
 Generated from `docs/reports/**/*.md`, `briefs/` and `engine/kernel/runner/manifest.gd` by `node devx/bin/tl.mjs arch --index`; do not edit (rule `reports-index-fresh`).
 The reports are history and stay as written; this page only collects them.
 
-57 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
+59 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
 
 A stale mark is one of two mechanical tests on a pack-author bullet, nothing more:
 - `[stale: path gone]`: the bullet cites in backticks a repo path (first segment a top-level directory of the repo, an optional `:line` dropped) that no file or directory of the tree matches now.
@@ -68,6 +68,8 @@ An unmarked bullet passed both tests; it was not read for being right.
 | jam-lessons-home/k4-table | - | - | - |
 | jam-lessons-home/L | - | - | - |
 | jam-lessons-home/T2 | - | - | - |
+| walker-feel/L | - | - | - |
+| walker-feel/L-PATCHES | - | - | - |
 | walker-feel/M | - | - | - |
 | walker-feel/M-PATCHES | - | - | - |
 | walker-feel/T | - | - | - |
