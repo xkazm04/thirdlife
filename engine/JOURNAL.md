@@ -1026,3 +1026,12 @@ PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built i
   `visitor_probe` may carry `t` (visitor.gd runs it at that world tick). Selftest `site.solid` (a window): the gate
   lets the visitor in, the bay stops him while building (`stopped_by: site 0`), after the arrival the walk passes.
 - Stills of tonight's real crate job (walks/site.json): mid-build "2 of 5 built", the game arrived.
+
+## The site as a person meets it (engine-world-next, lane S round 3, worktree ew-site3; 18 Nov, clock from `date`)
+
+- 02:42 to 03:10. `site.follow_exe` grows the job by world ticks (boot `-- check --edits=<file>`, the walk's `edits`),
+  no clock: stage ticks bays 0, building 240, promoted 420 on three runs. The lot fits its game (site.gd
+  `fit_radius`: footprint half-diagonal + 4 m when the log already names the promoted pack): tonight's crate game
+  40 -> 22 m; hockey of 11 Nov keeps 40 (no footprint). The bay words, unreadable from the road, became a board "The
+  plan" beside the sign; an arrived game gets an entrance arch with its title, flags and light masts. Before/after
+  stills with the same cameras in docs/reports/engine-world-next/stills/.

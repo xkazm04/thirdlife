@@ -527,30 +527,29 @@ if [ -z "$FILTER" ] || [[ "site." == *"$FILTER"* ]] || [[ "$FILTER" == site.* ]]
     echo "$u" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
     verdict site.unmade "$why" "after the restore: $(echo "$a" | grep -oE '"built":[0-9]+,"total":[0-9]+|"packages":\[[^]]*\]' | tr '\n' ' ')"
   fi
-  # S2: the exe's village follows a job that is running (`-- check --site-job=<abs dir>`, engine/boot/boot.gd): the
-  # job starts with 3 lines; a writer appends the other 18, one at a time, while the world runs (it starts when the
-  # world host has printed "[tl] world start": a headless world builds its packs one per tick from there). The site
-  # reads them as they come: more than one stage is seen at its own world tick, the log is read to its end and the
-  # promoted game arrives. The writer only spaces its lines (0.2 s); the check runs 40000 ticks so that it outlasts
-  # the writer on a busy machine; nothing is judged by the clock.
+  # S2, S3: the exe's village follows a job that is running (`-- check --site-job=<abs dir>`, engine/boot/boot.gd).
+  # The job starts with 3 lines and grows by world ticks, not by the clock: `--edits` (a test instrument: the walk's
+  # `edits`, kernel/world/jobs.gd) copies a longer prefix of the fixture's log over the job's job.jsonl at ticks 100,
+  # 200, 300 and 400. The live site looks at the file every 60 ticks, so it must see bays at 0, building at 240 (the
+  # first merge) and the promotion at 420, and the game arrives then: the same ticks on three runs.
   if [ -z "$FILTER" ] || [[ "site.follow_exe" == *"$FILTER"* ]]; then
-    cp -r "$FX/arrive" "$SD/follow"; cp "$SD/follow/job.jsonl" "$SD/follow_full.jsonl"
-    head -n 3 "$SD/follow_full.jsonl" > "$SD/follow/job.jsonl"
-    ( for _ in $(seq 1 1200); do grep -q '^\[tl\] world start' "$SD/fcheck.out" 2>/dev/null && break; sleep 0.1; done
-      tail -n +4 "$SD/follow_full.jsonl" | while IFS= read -r line; do sleep 0.2; echo "$line" >> "$SD/follow/job.jsonl"; done ) &
-    wpid=$!
-    MSYS_NO_PATHCONV=1 "$GS" --headless --fixed-fps 60 --path "$ES" res://boot/boot.tscn -- check "--out=$SD/fcheck.jsonl" "--site-job=$SD/follow" --ticks=40000 > "$SD/fcheck.out" 2>&1; fcode=$?
-    f="$(tr -d '\015' < "$SD/fcheck.out" | grep -E '^\[site\]|^\[boot\]|SCRIPT ERROR')"
-    wait $wpid 2>/dev/null
-    a="$(echo "$f" | lot_of 0)"; why=""
-    echo "$f" | grep -q '^\[boot\] lot 0 follows the job .*follow live' || why="the check did not take --site-job"
-    echo "$a" | grep -q '"mode":"live"' || why="${why:+$why; }the site is not live: $a"
-    echo "$a" | grep -q '"events":21,' || why="${why:+$why; }the appended lines were not all read (21 wanted): $a"
-    st="$(echo "$a" | grep -o '"stage_ticks":{[^}]*}' | grep -o '"[a-z]*":[0-9]*' | wc -l)"
-    [ "${st:-0}" -ge 2 ] || why="${why:+$why; }only one stage was seen while the world ran: $(echo "$a" | grep -o '"stage_ticks":{[^}]*}')"
-    echo "$a" | grep -q '"arrived":"example.bounce@0.1.0"' || why="${why:+$why; }the promoted game did not arrive"
-    grep -q '"plot":"site_0"' "$SD/fcheck.jsonl" 2>/dev/null || why="${why:+$why; }no line for the site's plot in the check's output"
-    verdict site.follow_exe "$why" "$(echo "$a" | grep -oE '"stage_ticks":\{[^}]*\}|"arrived_at":[0-9]+|"reads":[0-9]+,"read_ms":[0-9.]+' | tr '\n' ' ')"
+    fruns=""; why=""
+    for run in 1 2 3; do
+      rm -rf "$SD/follow"; cp -r "$FX/arrive" "$SD/follow"; cp "$SD/follow/job.jsonl" "$SD/follow_21.jsonl"
+      for n in 3 6 11 16; do head -n $n "$SD/follow_21.jsonl" > "$SD/follow_$n.jsonl"; done
+      cp "$SD/follow_3.jsonl" "$SD/follow/job.jsonl"
+      printf '[[100,"%s/follow/job.jsonl","%s/follow_6.jsonl"],[200,"%s/follow/job.jsonl","%s/follow_11.jsonl"],[300,"%s/follow/job.jsonl","%s/follow_16.jsonl"],[400,"%s/follow/job.jsonl","%s/follow_21.jsonl"]]\n' "$SD" "$SD" "$SD" "$SD" "$SD" "$SD" "$SD" "$SD" > "$SD/follow_edits.json"
+      f="$(MSYS_NO_PATHCONV=1 "$GS" --headless --fixed-fps 60 --path "$ES" res://boot/boot.tscn -- check "--out=$SD/fcheck.jsonl" "--site-job=$SD/follow" "--edits=$SD/follow_edits.json" --ticks=600 2>&1 | tr -d '\015' | grep -E '^\[site\]|^\[boot\]|SCRIPT ERROR')"
+      a="$(echo "$f" | lot_of 0)"
+      echo "$f" | grep -q '^\[boot\] lot 0 follows the job .*follow live' || why="${why:+$why; }run $run: the check did not take --site-job"
+      echo "$a" | grep -q '"mode":"live"' || why="${why:+$why; }run $run: the site is not live"
+      echo "$a" | grep -q '"events":21,' || why="${why:+$why; }run $run: not all 21 lines read: $a"
+      echo "$a" | grep -q '"stage_ticks":{"bays":0,"building":240,"promoted":420}' || why="${why:+$why; }run $run: stage ticks $(echo "$a" | grep -o '"stage_ticks":{[^}]*}'), wanted bays 0, building 240, promoted 420"
+      echo "$a" | grep -q '"arrived":"example.bounce@0.1.0","arrived_at":420' || why="${why:+$why; }run $run: the game did not arrive at tick 420"
+      grep -q '"plot":"site_0"' "$SD/fcheck.jsonl" 2>/dev/null || why="${why:+$why; }run $run: no line for the site's plot"
+      fruns="$fruns$(echo "$a" | grep -o '"stage_ticks":{[^}]*}' | sed 's/"stage_ticks"://'); "
+    done
+    verdict site.follow_exe "$why" "three runs, the log grown by ticks 100 to 400: $fruns"
   fi
   # S2: the scaffold is solid (a window: the visitor's space exists only with the landscape). Probes at world ticks
   # (walk `visitor_probe` entries with `t`): while the site builds, the gate lets the visitor in and the middle bay

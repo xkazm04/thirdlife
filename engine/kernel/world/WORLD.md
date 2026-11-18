@@ -357,5 +357,10 @@ order): it is run then (selftest `site.solid`). The exe follows a running job: `
 (docs/EXE.md). Arrival time measured (S2.md): the worker starts the promoted game's preparation within 1 ms of the
 release and the game is attached on the next tick after it (hockey: 611-615 ms, against 663-695 ms to load it
 alone); a test window runs unpaced (about 740 ticks a second), so the same 0.6 s read as 450 to 510 ticks.
+**S3 (18 Nov).** The lot fits its game: when the log already names a promoted game (a finished job, a replay), the
+site plot's radius is the half-diagonal of that pack's `footprint` + 4 m (at least 12, at most the walk's radius; a
+pack without a footprint keeps the walk's radius; a job that promoted nothing yet too). The packages are listed on
+a board "The plan" beside the sign (state word and title, by state colour); the bays carry no text. When the game
+arrives an entrance arch with its title stands over the gate, with flags and two light masts.
 **Not built:** the site does not show `question`, `milestone` captures or comments; a live site does not see a job
 directory that appears after the world started.

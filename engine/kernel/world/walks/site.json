@@ -23,8 +23,10 @@
     {"t": 24, "e": "shot", "name": "site_pad", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
     {"t": 80, "e": "shot", "name": "site_bays", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
     {"t": 560, "e": "shot", "name": "site_mid_build", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
+    {"t": 570, "e": "shot", "name": "site_mid_build_road", "cam": "crane", "from": [66, 2.2, 70], "to": [60, 2.5, 0]},
     {"t": 1060, "e": "shot", "name": "site_all_merged", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
     {"t": 1640, "e": "shot", "name": "site_arrived", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]},
+    {"t": 1650, "e": "shot", "name": "site_arrived_road", "cam": "crane", "from": [66, 2.2, 70], "to": [60, 2.5, 0]},
     {"t": 1680, "e": "shot", "name": "site_failed", "cam": "crane", "from": [-40, 24, 70], "to": [-60, 2, 6]}
   ]
 }

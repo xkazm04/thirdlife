@@ -8,6 +8,8 @@ extends Node
 ##   ThirdLife.exe -- --site-job=<abs dir>      S2: the village's construction site follows that Foreman job directory
 ##                                              live, as it grows (also with `check`); missing or without job.jsonl:
 ##                                              the exported copy, and a warning
+##   ... -- check --edits=<abs json file>       S3 (a test instrument): the walk's `edits` ([[tick, file, replacement]],
+##                                              kernel/world/jobs.gd): a file is copied over another at a world tick
 ##   ThirdLife.exe --headless --fixed-fps 60 -- check --out=<abs file> [--ticks=N] [--games=<dir>]
 ##                                              the scripted tour of the same village without a window; one tl.world/1
 ##                                              line per pack (its state hash) in --out; `export.sh check` compares it
@@ -87,7 +89,7 @@ func _ready() -> void:
 				opts[a.substr(2, eq - 2)] = a.substr(eq + 1)
 		elif verb.is_empty():
 			verb = a
-	for k: String in ["games", "out", "record", "input", "site-job"]:
+	for k: String in ["games", "out", "record", "input", "site-job", "edits"]:
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if opts.has("games"):
@@ -224,6 +226,14 @@ func _make_walk() -> String:
 		walk["events"] = evs
 	if opts.has("ticks") and str(opts["ticks"]).is_valid_int():
 		walk["ticks"] = int(opts["ticks"])
+	if opts.has("edits"):
+		# S3: a test instrument (the walk's `edits`, kernel/world/jobs.gd): [[world tick, file, replacement file]]
+		# from a JSON file; a file is copied over another at a tick, so a "job that grows" is a function of the ticks
+		var ed: Variant = JSON.parse_string(FileAccess.get_file_as_string(str(opts["edits"])))
+		if typeof(ed) == TYPE_ARRAY:
+			walk["edits"] = ed
+		else:
+			print("[boot] warning: --edits=%s is not a JSON list of [tick, file, replacement]: no edits" % str(opts["edits"]))
 	var dir_out: String = OS.get_user_data_dir().replace("\\", "/") + "/boot"
 	DirAccess.make_dir_recursive_absolute(dir_out)
 	_walk_tmp = "%s/village_%d.json" % [dir_out, OS.get_process_id()]

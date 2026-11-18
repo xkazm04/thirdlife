@@ -62,14 +62,42 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 			_warn("lot %d: the world has no build queue (tiers load.mode block): the job is shown, its game cannot arrive" % k)
 		elif reserved.has(k):
 			s["plot"] = reserved[k]
+			s["radius"] = float((plots[reserved[k]] as Dictionary).get("radius", s["radius"]))
 		else:
 			s["plot"] = plots.size()
+			var fit: Array = fit_radius(dir, float(s["radius"]))
+			s["radius"] = fit[0]
+			s["fit"] = fit[1]
 			var r: float = float(s["radius"])
 			plots.append({"id": "site_%d" % k, "origin": s["at"], "radius": r, "footprint": {"size_m": [r * 2.0, r * 2.0]}, "seed": 1, "site_lot": k})
 		sites.append(s)
 	walk["plots"] = plots
 	if not sites.is_empty():
 		world.connect("ended", _on_ended)
+
+
+## S3. The lot fits its game. When the job's log already names a promoted game under `promoted/` (its last
+## `promoted` event: a finished job, a replay), the lot is sized to that game: the half-diagonal of the `footprint` its
+## pack.json declares plus FIT_MARGIN metres, at least FIT_MIN, never more than the walk's radius. A pack without a
+## footprint keeps the walk's radius (what its scripts build cannot be known before it is built). A job that has
+## promoted nothing yet keeps the walk's radius too. Returns [radius, what decided it].
+const FIT_MARGIN: float = 4.0
+const FIT_MIN: float = 12.0
+static func fit_radius(dir: String, lot_r: float) -> Array:
+	var lg: RefCounted = SiteLog.new()
+	lg.call("feed", FileAccess.get_file_as_string(dir + "/job.jsonl"))
+	var pr: Dictionary = SiteLog.fold(lg.get("events"))["promoted"]
+	var dest: String = str(pr.get("dest", "")).trim_suffix("/")
+	if not dest.begins_with("promoted/") or not FileAccess.file_exists(dir + "/" + dest + "/pack.json"):
+		return [lot_r, "walk radius: nothing promoted yet"]
+	var m: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "/" + dest + "/pack.json"))
+	var fp: Variant = (m as Dictionary).get("footprint", null) if typeof(m) == TYPE_DICTIONARY else null
+	if typeof(fp) != TYPE_DICTIONARY or typeof((fp as Dictionary).get("size_m")) != TYPE_ARRAY or ((fp as Dictionary)["size_m"] as Array).size() != 2:
+		return [lot_r, "walk radius: %s declares no footprint" % dest.get_file()]
+	var sz: Array = (fp as Dictionary)["size_m"]
+	var half: float = Vector2(float(sz[0]), float(sz[1])).length() * 0.5
+	var r: float = clampf(ceilf(half + FIT_MARGIN), FIT_MIN, lot_r)
+	return [r, "footprint %s x %s m of %s: half-diagonal %.1f m + %.0f" % [str(sz[0]), str(sz[1]), dest.get_file(), half, FIT_MARGIN]]
 
 
 static func _check_lot(lot: Dictionary) -> String:
@@ -251,9 +279,11 @@ func report() -> Array:
 		var r: Dictionary = {"lot": int(s["lot"]), "job": str(s["job"]), "mode": "replay" if int(s["tpe"]) > 0 else "live",
 			"events": int(s["n"]), "events_in_file": (s["log"] as RefCounted).get("events").size(), "stage": str(v["stage"]),
 			"title": str(v["title"]), "built": int(v["built"]), "total": int(v["total"]), "job_state": str(v["job_state"]),
-			"packages": pk, "stage_ticks": s["stage_ticks"], "reads": int(s["reads"]), "read_ms": snappedf(float(int(s["read_us"])) / 1000.0, 0.01)}
+			"packages": pk, "stage_ticks": s["stage_ticks"], "radius": float(s["radius"]), "reads": int(s["reads"]), "read_ms": snappedf(float(int(s["read_us"])) / 1000.0, 0.01)}
 		if int(s["plot"]) >= 0:
 			r["plot"] = str(((world.get("plot_defs") as Array)[int(s["plot"])] as Dictionary)["id"])
+		if s.has("fit"):
+			r["fit"] = str(s["fit"])
 		if not str(s["arrived_dir"]).is_empty():
 			r["arrived"] = str(s["arrived_dir"]).get_file()
 			r["arrived_at"] = int(s["arrived_at"])

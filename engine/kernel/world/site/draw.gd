@@ -128,7 +128,8 @@ func _build(v: Dictionary) -> void:
 	_sign(v, arrived)
 	_solid([])                                   # S2: the scaffold's colliders of the view before go
 	if arrived:
-		return                                   # the scaffold came down: the game stands here now
+		_arrived_dressing(v)                      # the scaffold came down: the game stands here now, and says so
+		return
 	var mk: TLMesh = TLMesh.new(51)
 	var pk: Array = v["packages"]
 	var m: int = pk.size()
@@ -157,8 +158,8 @@ func _build(v: Dictionary) -> void:
 	TLKitSite.add_pallet(mk, Vector3(-r * 0.5, 0.0, r * 0.55), 3, 20.0)
 	var mi: MeshInstance3D = mk.instance("site_bays")
 	_parts.add_child(mi)
-	for i: int in m:
-		_bay_label(pk[i], Vector3(float(_bays_x[i]), 0.0, _bay_z + 5.6))
+	if m > 0:
+		_plan_board(pk)                           # S3: the packages on a board by the gate (the bays carry no text)
 	# the crane: behind the bays, turning to the one being built (or slowly along them when none is)
 	_crane = TLKitSite.crane(24.0, 2.0, maxf(16.0, width * 0.5 + 6.0), 7.0)
 	_crane.position = Vector3(width * 0.5 + 3.0 if width * 0.5 + 3.0 < r - 3.0 else r - 4.0, 0.0, _bay_z - 8.0)
@@ -174,6 +175,30 @@ func _build(v: Dictionary) -> void:
 	_target = atan2(-aim.z, aim.x)
 	if str(v["stage"]) == "failed":
 		_target += 0.9                           # the jib turned away: nobody works here
+
+
+## S3. A game is here: an entrance arch over the gate with the game's title, two light masts behind the fence and
+## flags along it, so that a small game on its lot reads from the road (the lot itself is fitted to the game:
+## site.gd `fit_radius`). The arch's pillars are solid; the way between them is 5.4 m wide.
+func _arrived_dressing(v: Dictionary) -> void:
+	var mk: TLMesh = TLMesh.new(54)
+	var g: float = radius + 3.6                  # the fence line, where the landscape leaves the gate open
+	TLKitSite.add_entrance(mk, Vector3(0.0, 0.0, g), 0.0)
+	for side: float in [-1.0, 1.0]:
+		var a: float = deg_to_rad(90.0 + side * 55.0)
+		TLKitSite.add_light_mast(mk, Vector3(cos(a), 0.0, -sin(a)) * (g + 1.5), rad_to_deg(-a) - 90.0)
+		for k: int in 3:
+			var b: float = deg_to_rad(90.0 - side * (16.0 + 9.0 * float(k)))
+			TLKitSite.add_flag(mk, Vector3(cos(b), 0.0, sin(b)) * (g + 0.8), 6.0, "flag_a" if k % 2 == 0 else "flag_b")
+	_parts.add_child(mk.instance("site_arrived"))
+	var name_: Label3D = _text(str(v["title"]) if not str(v["title"]).is_empty() else "A new game", 64, 0.01, 820)
+	name_.modulate = Color(0.98, 0.96, 0.9)
+	name_.outline_size = 10
+	name_.outline_modulate = Color(0.1, 0.08, 0.12)
+	name_.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	name_.position = Vector3(0.0, 6.75, g + 0.62)
+	_parts.add_child(name_)
+	_solid([[Vector3(-3.4, 2.6, g), Vector3(1.4, 5.2, 1.4)], [Vector3(3.4, 2.6, g), Vector3(1.4, 5.2, 1.4)]])
 
 
 ## One bay: a slab; above it what the package's state shows. A package merged before (and opened again by a change)
@@ -256,17 +281,42 @@ func _scaffold(mk: TLMesh, o: Vector3, w: float, d: float, levels: int) -> void:
 	TLKitSite.add_ladder(mk, o + Vector3(w * 0.5 - 0.4, 0, z0 + 1.0), o + Vector3(w * 0.5 - 0.4, 2.0, z0 + 1.0))
 
 
-func _bay_label(b: Dictionary, at: Vector3) -> void:
-	var lb: Label3D = _text("%s\n%s" % [str(b["title"]), str(STATE_WORD.get(str(b["state"]), str(b["state"])))], 56, 0.012, 900)
-	lb.position = at + Vector3(0, 0.75, 0)
-	_parts.add_child(lb)
+## S3. The plan: a board beside the sign, facing the road, one row per package in the plan's order:
+## its state word and its title (the job's own words), coloured by state. Round 1 put the words on the bays, lying
+## low in front of them: from the road they could not be read (stills before_site/04_site_mid_build_road.png).
+const ROW_COLOUR: Dictionary = {"promoted": Color(0.1, 0.42, 0.16), "running": Color(0.72, 0.36, 0.0), "verifying": Color(0.72, 0.36, 0.0),
+	"blocked": Color(0.66, 0.1, 0.08), "failed": Color(0.66, 0.1, 0.08), "queued": Color(0.32, 0.3, 0.34)}
+func _plan_board(pk: Array) -> void:
+	var mk: TLMesh = TLMesh.new(53)
+	var row: float = 0.72
+	var h: float = 1.4 + row * float(pk.size())
+	var o: Vector3 = Vector3(21.2, 0.0, radius + 6.2)        # beside the sign, away from the gate's spur
+	for sx: float in [-4.6, 4.6]:
+		mk.bar(o + Vector3(sx, -0.5, 0), o + Vector3(sx, 2.4 + h, 0), 0.26, 0.26, "wood_dark", Color.WHITE, 0.02)
+	mk.box(Vector3(10.6, h + 0.4, 0.2), "sign", Color.WHITE, 0.05, o + Vector3(0, 2.2 + h * 0.5, 0))
+	mk.box(Vector3(10.0, h - 0.2, 0.06), "cabin", Color.WHITE, 0.0, o + Vector3(0, 2.2 + h * 0.5, 0.12))
+	_parts.add_child(mk.instance("site_plan"))
+	var head: Label3D = _text("The plan", 64, 0.01, 960)
+	head.position = o + Vector3(0, 2.2 + h - 0.55, 0.2)
+	_parts.add_child(head)
+	for i: int in pk.size():
+		var b: Dictionary = pk[i]
+		var st: String = "built" if bool(b["merged"]) and str(b["state"]) == "promoted" else str(STATE_WORD.get(str(b["state"]), str(b["state"])))
+		var title: String = str(b["title"])
+		if title.length() > 30:
+			title = title.left(28) + "..."
+		var lb: Label3D = _text("%s  %s" % [st, title], 46, 0.01, 960)
+		lb.autowrap_mode = TextServer.AUTOWRAP_OFF
+		lb.modulate = ROW_COLOUR.get(str(b["state"]), Color(0.12, 0.1, 0.14))
+		lb.position = o + Vector3(0, 2.2 + h - 1.3 - row * float(i), 0.2)
+		_parts.add_child(lb)
 
 
 ## The sign: outside the fence beside the gate, facing the road. The job's title; how far it is; when it failed,
 ## that it failed; when the game is there, that it can be played.
 func _sign(v: Dictionary, arrived: bool) -> void:
 	var mk: TLMesh = TLMesh.new(52)
-	var o: Vector3 = Vector3(10.0, 0.0, radius + 8.0)
+	var o: Vector3 = Vector3(10.0, 0.0, radius + 6.2)
 	var failed: bool = str(v["stage"]) == "failed"
 	for sx: float in [-4.6, 4.6]:
 		mk.bar(o + Vector3(sx, -0.5, 0), o + Vector3(sx, 7.6, 0), 0.26, 0.26, "wood_dark", Color.WHITE, 0.02)

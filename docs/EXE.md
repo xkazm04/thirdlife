@@ -150,6 +150,9 @@ lot and is played like any other (walk up, E enters, Q or Esc leaves).
   ticks), and its last promoted game arrives from that directory's `promoted/`. Nothing is written there. A path that
   is not absolute or has no `job.jsonl`: `[boot] warning: --site-job=...` and the exported copy is shown. From a
   shortcut or a console: `ThirdLife.exe -- --site-job=C:/Users/<you>/kiro/third-life/site/<job id>`.
+- **Test instrument (S3): `-- check --edits=<abs json file>`**: the walk's `edits` (`[[world tick, file, replacement
+  file]]`, kernel/world/jobs.gd): a file is copied over another at a world tick. The selftest `site.follow_exe` grows a
+  job's `job.jsonl` with it at ticks 100 to 400, so the live site's stages fall on the same ticks every run.
 
 ## The first minute (P14)
 
