@@ -3,11 +3,11 @@
 Generated from `docs/reports/**/*.md`, `briefs/` and `engine/kernel/runner/manifest.gd` by `node devx/bin/tl.mjs arch --index`; do not edit (rule `reports-index-fresh`).
 The reports are history and stay as written; this page only collects them.
 
-64 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
+66 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
 
 A stale mark is one of two mechanical tests on a pack-author bullet, nothing more:
 - `[stale: path gone]`: the bullet cites in backticks a repo path (first segment a top-level directory of the repo, an optional `:line` dropped) that no file or directory of the tree matches now.
-- `[stale: kernel now X]`: the bullet names a `kernelApi` version below `KERNEL_API` in `engine/kernel/runner/manifest.gd` (X = 1.6).
+- `[stale: kernel now X]`: the bullet names a `kernelApi` version below `KERNEL_API` in `engine/kernel/runner/manifest.gd` (X = 1.8).
 
 An unmarked bullet passed both tests; it was not read for being right.
 
@@ -51,6 +51,8 @@ An unmarked bullet passed both tests; it was not read for being right.
 | WP4-SEEDS | 2026-11-10 | `briefs/BRIEF-WP4-SEEDS.md` | Step 1 and Step 2 are both done and verified. I worked 19:59 to 20:56 CEST by `date` (57 minutes) and stopped because the list was ... |
 | WP5-KERNEL | 2026-11-10 | `briefs/BRIEF-WP5-KERNEL.md` | All five items are done and proven, and `engine/` is green. I worked 21:14:54 to 21:39:26 CEST (25 minutes by `date`). The last code edit ... |
 | astra-trial/d1/c | - | - | - |
+| astra-trial/d2/a | - | - | - |
+| astra-trial/d3/c | - | - | - |
 | engine-world-next/C | - | - | - |
 | engine-world-next/C-PATCHES | - | - | - |
 | engine-world-next/C2 | - | - | - |
@@ -135,7 +137,7 @@ An unmarked bullet passed both tests; it was not read for being right.
 
 ### P11-CONTROLS (2026-11-11)
 
-- `docs/reports/P11-CONTROLS.md:197` [stale: kernel now 1.6] Write `"kernelApi": "1.0"`.
+- `docs/reports/P11-CONTROLS.md:197` [stale: kernel now 1.8] Write `"kernelApi": "1.0"`.
 - `docs/reports/P11-CONTROLS.md:198` A `func _input` or `_unhandled_input` is now a lint error, and `play` refuses the pack.
 - `docs/reports/P11-CONTROLS.md:199` A pack's hash in a world is now the hash `tl.sh` prints for it alone.
 - `docs/reports/P11-CONTROLS.md:200` Every world hash changed once; the old and new values are in the table above.
@@ -155,7 +157,7 @@ An unmarked bullet passed both tests; it was not read for being right.
 
 ### P14-SEAM (2026-11-11)
 
-- `docs/reports/P14-SEAM.md:147` [stale: kernel now 1.6] Nothing changes in what you write. A pack may now say `"kernelApi": "1.1"` to use `bind_scoreboard`, and a 1.0 pack still runs.
+- `docs/reports/P14-SEAM.md:147` [stale: kernel now 1.8] Nothing changes in what you write. A pack may now say `"kernelApi": "1.1"` to use `bind_scoreboard`, and a 1.0 pack still runs.
 
 ### P2-HOTPATH (2026-11-11)
 
@@ -195,7 +197,7 @@ An unmarked bullet passed both tests; it was not read for being right.
 
 ### P7-CONTRACT (2026-11-11)
 
-- `docs/reports/P7-CONTRACT.md:237` [stale: kernel now 1.6] Write `"kernelApi": "1.0"`; 0.1 still runs.
+- `docs/reports/P7-CONTRACT.md:237` [stale: kernel now 1.8] Write `"kernelApi": "1.0"`; 0.1 still runs.
 - `docs/reports/P7-CONTRACT.md:238` `ctx.input` values are multiples of 0.001: `press(&"left", 0.4567)` reads back as 0.457.
 - `docs/reports/P7-CONTRACT.md:239` The mouse is `ctx.input` too: `TLInput.LOOK_X`, `LOOK_Y`, `ZOOM`. An orbit camera turns with them by itself. A bot injects with `press(TLInput.LOOK_X, 12.0)`.
 - `docs/reports/P7-CONTRACT.md:240` A session can be recorded and replayed.
