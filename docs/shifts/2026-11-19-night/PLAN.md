@@ -44,4 +44,4 @@ At 07:12 the verdict: final full gate, `tl arch --index`, export the exe, push, 
 | parkour | `.claude/worktrees/n19-parkour` | a81bbee6e7f18ff8d (Opus operator, Astra builds) | 00:08 |
 | walker | `.claude/worktrees/n19-walker` | a49944906952f0dab (Opus director of Astra) | 00:08 |
 | editor | `.claude/worktrees/n19-editor` | a2525ec4bc5815931 (Opus designs and builds; Astra mockups) | 00:08 |
-| hunt2 | (cut after the first landing) | - | - |
+| hunt2 | `.claude/worktrees/n19-hunt2` (cut from `9ea78b0`) | a05823f6ff3e59e1b (Opus director of Astra) | 00:56 |
