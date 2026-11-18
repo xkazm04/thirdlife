@@ -39,6 +39,20 @@ var look_yaw: float = 0.0               # where he and the camera look (radians,
 var look_pitch: float = 0.0             # the camera's elevation above the point it looks at (radians)
 var _cam_dist: float = 8.5
 var _cam_look_h: float = 1.7
+# Walker-feel (18 Nov): a person's body has weight (terrain/world_space.gd `drive()`): visit.gd hands over a wish each
+# tick (`wish()`), the body moves by velocity, the figure turns toward where he goes (eased), the camera follows the
+# mouse only. A sidestep with the camera's facing would show the rig's forward cycle sliding sideways: the biped rig
+# reads speed, not direction, so he turns to his travel and the camera keeps the view.
+const FACE_EASE: float = 0.22           # share of the remaining turn of the figure toward his travel, per tick
+const CAM_ANCHOR: float = 0.45          # the camera's anchor follows him by this share per tick (x, z) ...
+const CAM_ANCHOR_Y: float = 0.18        # ... and this share in height (a jump, a step, a landing are eased)
+var face_yaw: float = 0.0               # where the figure faces (radians, 0 = -z); the node itself keeps `look_yaw`
+var mode: String = "ground"             # the body's mode: ground | air | slope | slide
+var vel: Vector3 = Vector3.ZERO         # the body's velocity, m/s
+var _wish: Vector3 = Vector3.ZERO
+var _wish_jump: bool = false
+var _wish_slide: bool = false
+var trace_frames: int = 0               # drawn frames still to trace (a device script's `trace`, kernel/runner/visit.gd)
 
 
 func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary = {}) -> void:
@@ -72,10 +86,17 @@ func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary 
 	var o: Dictionary = {"distance": 8.5, "height": 3.6, "look_height": 1.7, "stiffness": 0.05, "fov": 60.0}
 	o.merge(cam_opts, true)
 	cam.setup(self, o)
+	if space != null:
+		cam.avoid_space = space.get("space")
+		cam.near = 0.05
 	_cam_dist = Vector2(float(o["distance"]), float(o["height"]) - float(o["look_height"])).length()
 	_cam_look_h = float(o["look_height"])
 	look_pitch = atan2(float(o["height"]) - float(o["look_height"]), float(o["distance"]))
 	look_yaw = _yaw
+	face_yaw = _yaw
+	if space != null:
+		space.call("rest")
+	reset_physics_interpolation()
 
 
 ## P11. A person's controls: from now on he faces `look_yaw` and the camera sits behind him at `look_pitch`, at once
@@ -85,7 +106,18 @@ func steer_on() -> void:
 	cam.stiffness = 1.0
 	cam.follow = 1.0
 	cam.aim = 1.0
+	cam.anchor_follow = CAM_ANCHOR
+	cam.anchor_follow_y = CAM_ANCHOR_Y
 	_place_cam()
+	cam.snap()
+
+
+## Walker-feel. A person's wish for this tick (kernel/runner/visit.gd, below its sampling line): `v` the horizontal
+## velocity he asks for (m/s, world axes), `jump` / `slide`: the key went down this tick.
+func wish(v: Vector3, jump: bool, slide: bool) -> void:
+	_wish = v
+	_wish_jump = _wish_jump or jump
+	_wish_slide = _wish_slide or slide
 
 
 ## Turns the view: `dx` radians to the right (the mouse moved right), `dy` radians down; the pitch stays in its limits.
@@ -112,7 +144,15 @@ func put(at: Vector3, yaw: float) -> void:
 	position = at
 	_yaw = yaw
 	look_yaw = yaw
+	face_yaw = yaw
 	rotation.y = yaw
+	if space != null:
+		space.call("rest")
+	vel = Vector3.ZERO
+	mode = "ground"
+	if rig != null:
+		rig.rotation.y = 0.0
+	reset_physics_interpolation()
 	snap()
 
 
@@ -121,6 +161,9 @@ func step(pos: Vector3, frame: int) -> void:
 	if not _later.is_empty() and space != null and _world != null and int(_world.get("tick")) >= int((_later[0] as Dictionary)["t"]):
 		_run_probes([_later.pop_front()], {}, Vector3.INF)
 		space.call("place", feet)
+	if space != null and steer:
+		_drive_step(pos, frame)
+		return
 	if space != null:
 		var want: Vector3 = Vector3(pos.x - feet.x, 0.0, pos.z - feet.z)
 		var dist: float = want.length()
@@ -157,6 +200,71 @@ func step(pos: Vector3, frame: int) -> void:
 	if rig != null and visible:
 		rig.call("set_locomotion", local_v, true)
 		rig.call("tick", frame)
+
+
+## Walker-feel: one tick of a person's body (steer on, a space): the wish moves the body by velocity; the figure turns
+## toward his travel; the rig is told the velocity in its own axes, whether he stands, and the one-shot clips.
+func _drive_step(pos: Vector3, frame: int) -> void:
+	if not visible:
+		# a game is on stage: the walker stands where he entered it (as before: nothing moved him then)
+		space.call("rest")
+		vel = Vector3.ZERO
+		mode = "ground"
+		_wish_jump = false
+		_wish_slide = false
+		return
+	var res: Dictionary = space.call("drive", feet, _wish, _wish_jump, _wish_slide)
+	_wish_jump = false
+	_wish_slide = false
+	var was: String = mode
+	if bool(res["blocked"]) and _logged < 6 and (ticks % 30 == 1 or _logged < 2):
+		_logged += 1
+		var lh: Dictionary = space.get("last_hit")
+		print(JSON.stringify({"schema": "tl.view/1", "kind": "visitor_blocked", "world_tick": int(_world.get("tick")) if _world != null else -1,
+			"feet": [snappedf(feet.x, 0.01), snappedf(feet.y, 0.01), snappedf(feet.z, 0.01)], "mode": str(res["mode"]),
+			"hit": str(lh.get("tag", "none")), "at": str(lh.get("at", "")), "normal": str(lh.get("n", ""))}, "", false))
+	feet = res["pos"]
+	vel = res["vel"]
+	mode = str(res["mode"])
+	if _world != null and bool(_world.get("player_live")):
+		_world.set("player_pos", Vector3(feet.x, pos.y, feet.z))        # a person walks: the body decides
+	var d: Vector3 = feet - _last
+	d.y = 0.0
+	speed = d.length() * 60.0
+	var hv: Vector3 = Vector3(vel.x, 0.0, vel.z)
+	if hv.length() > 0.5 and mode != "slope":
+		face_yaw = lerp_angle(face_yaw, atan2(-hv.x, -hv.z), FACE_EASE)
+	elif mode == "slope" and hv.length() > 0.5:
+		face_yaw = lerp_angle(face_yaw, atan2(-hv.x, -hv.z), FACE_EASE * 0.5)
+	_yaw = look_yaw
+	position = feet
+	rotation.y = look_yaw
+	_last = feet
+	if rig != null and visible:
+		rig.rotation.y = wrapf(face_yaw - look_yaw, -PI, PI)
+		var local_v: Vector3 = vel.rotated(Vector3.UP, -face_yaw)
+		rig.call("set_locomotion", local_v, mode == "ground" or mode == "slide")
+		for e: Variant in res["events"]:
+			match str(e):
+				"jump":
+					_clip(&"jump")
+				"land":
+					if mode != "slope":
+						_clip(&"land")
+				"slide":
+					_clip(&"slide")
+				"slope":
+					_clip(&"slope_slide")
+				"end_slide":
+					if was == "slide" or was == "slope":
+						_clip(&"")
+		rig.call("tick", frame)
+
+
+## Plays a clip of the wire only if the rig has it (lane L adds them); &"" is always allowed (back to locomotion).
+func _clip(c: StringName) -> void:
+	if String(c) == "" or (rig.call("clips") as PackedStringArray).has(String(c)):
+		rig.call("play", c)
 
 
 ## Probes (a walk's `visitor_probe`): the body is put at `from`, told to walk to `to`, and the line says where it ended.
@@ -222,6 +330,13 @@ func _run_probes(list: Array, auto: Dictionary, back_to: Vector3) -> void:
 
 func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_usec()
+	if trace_frames > 0:
+		trace_frames -= 1
+		var f: Vector3 = get_global_transform_interpolated().origin
+		var c: Vector3 = cam.get_global_transform_interpolated().origin if cam != null else Vector3.ZERO
+		print(JSON.stringify({"schema": "tl.view/1", "kind": "visitor_frame", "tick": int(_world.get("tick")) if _world != null else -1,
+			"physics_frames": Engine.get_physics_frames(), "usec": now, "fraction": snappedf(Engine.get_physics_interpolation_fraction(), 0.001),
+			"figure": [snappedf(f.x, 0.0001), snappedf(f.y, 0.0001), snappedf(f.z, 0.0001)], "cam": [snappedf(c.x, 0.0001), snappedf(c.y, 0.0001), snappedf(c.z, 0.0001)]}, "", false))
 	if _frame_last > 0:
 		_frame_usec.append(now - _frame_last)
 	_frame_last = now

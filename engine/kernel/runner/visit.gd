@@ -5,19 +5,21 @@ extends Node
 ## `tl.input/1` record (`--record=<file>`) and fed back (`--input=<file>`): the visitor walks the same path and every
 ## pack ends with the same hash. Later a second player's keys can arrive here from another machine.
 ##
-##   actions  forward W, back S, left A, right D (sidestep), run Shift, enter E, leave Q, quit Esc, and the pointer
+##   actions  forward W, back S, left A, right D, run Shift, jump Space, slide C (while running), enter E, leave Q, quit Esc, and the pointer
 ##            (TLInput.LOOK_X / LOOK_Y: pixels the mouse moved while it was captured, this tick)
 ##   record   `pack` is the walk's name, `mode` "play", `max_frames` the walk's ticks, `length` the samples taken.
 ##            A game played on stage is a record of its own (the same schema, that pack's own frames):
 ##            `<record>.<plot>.<n>.json` for the n-th time the person was on that plot's stage.
 ##   devices  `--devices=<file>` (tests): [[tick, "key", "<Key>", 1|0], [tick, "move", dx, dy], [tick, "shot", "<name>", 0],
-##            [tick, "mark", "<name>", 0]] (a mark prints where he is at that tick, before its move)
+##            [tick, "mark", "<name>", 0], [tick, "trace", <frames>, 0]] (a mark prints where he is at that tick, before
+##            its move; a trace prints, for that many DRAWN frames, where the figure and the camera are drawn: kind
+##            `visitor_frame`, the proof that they move between ticks when frames outrun ticks)
 ##            raw events put into the engine's input path at a world tick (Input.parse_input_event), as a person makes them.
 ## Above the sampling line: `_input` (mouse motion while captured), the device script and the mouse capture.
 
 const Session: GDScript = preload("res://kernel/runner/session.gd")
 const ACTIONS: Array = [[&"forward", KEY_W], [&"back", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"run", KEY_SHIFT],
-	[&"enter", KEY_E], [&"leave", KEY_Q], [&"quit", KEY_ESCAPE]]
+	[&"enter", KEY_E], [&"leave", KEY_Q], [&"quit", KEY_ESCAPE], [&"jump", KEY_SPACE], [&"slide", KEY_C]]
 const LOOK_DEG_PER_PX: float = 0.15     # 600 px of mouse = 90 degrees
 const PITCH_MIN_DEG: float = -10.0      # the camera's elevation above the visitor's head: he stays in the picture
 const PITCH_MAX_DEG: float = 60.0
@@ -123,6 +125,8 @@ func sample(tick: int) -> void:
 				Input.parse_input_event(mv)
 			"mark":
 				print_path(tick, str(e[1]))
+			"trace":
+				(view.get("visitor") as Node).set("trace_frames", int(e[1]))
 	Input.flush_buffered_events()
 	if devices and _mouse != Vector2.ZERO:
 		input.press(TLInput.LOOK_X, _mouse.x)
@@ -137,6 +141,8 @@ func steer(tick: int) -> void:
 	var sched: RefCounted = world.get("sched")
 	var vis: Node3D = view.get("visitor")
 	if int(view.get("stage")) >= 0:
+		if vis.get("space") != null:
+			vis.call("wish", Vector3.ZERO, false, false)     # walker-feel: on stage the walker's keys are not his
 		# K8: on stage a key the game declared is the game's: Q leaves only a game that does not use Q; Esc always leaves
 		if input.just_pressed(&"quit") or (input.just_pressed(&"leave") and not stage_uses_key(KEY_Q)):
 			sched.call("request", "leave")
@@ -154,9 +160,13 @@ func steer(tick: int) -> void:
 	var fwd: Vector3 = Vector3(-sin(yaw), 0.0, -cos(yaw))
 	var right: Vector3 = Vector3(cos(yaw), 0.0, -sin(yaw))
 	var move: Vector3 = fwd * input.axis(&"back", &"forward") + right * input.axis(&"left", &"right")
-	if move.length() > 0.01:
-		var pace: float = RUN_MPS if input.pressed(&"run") else WALK_MPS
-		world.set("player_pos", (world.get("player_pos") as Vector3) + move.normalized() * pace / 60.0)
+	var pace: float = RUN_MPS if input.pressed(&"run") else WALK_MPS
+	# walker-feel: the body has weight (visitor.gd `wish`, world_space.gd `drive`): it eases toward this velocity
+	var want: Vector3 = move.normalized() * pace if move.length() > 0.01 else Vector3.ZERO
+	if vis.get("space") != null:
+		vis.call("wish", want, input.just_pressed(&"jump"), input.just_pressed(&"slide"))
+	elif move.length() > 0.01:
+		world.set("player_pos", (world.get("player_pos") as Vector3) + want / 60.0)
 	if tick % PATH_EVERY == 0:
 		print_path(tick)
 
@@ -177,9 +187,19 @@ func stage_hint() -> String:
 func print_path(tick: int, mark: String = "") -> void:
 	var vis: Node3D = view.get("visitor")
 	var f: Vector3 = vis.get("feet")
-	print(JSON.stringify({"schema": "tl.view/1", "kind": "visit_path", "tick": tick, "feet": [snappedf(f.x, 0.01), snappedf(f.y, 0.01), snappedf(f.z, 0.01)],
+	var line: Dictionary = {"schema": "tl.view/1", "kind": "visit_path", "tick": tick, "feet": [snappedf(f.x, 0.01), snappedf(f.y, 0.01), snappedf(f.z, 0.01)],
 		"yaw_deg": snappedf(rad_to_deg(float(vis.get("look_yaw"))), 0.01), "pitch_deg": snappedf(rad_to_deg(float(vis.get("look_pitch"))), 0.01),
-		"stage": int(view.get("stage")), "mark": mark}, "", false))
+		"stage": int(view.get("stage")), "mark": mark}
+	# walker-feel: how high the camera stands over the ground under it, and the body's mode (a mark only)
+	var sp: RefCounted = vis.get("space")
+	var cam: Camera3D = vis.get("cam")
+	if not mark.is_empty() and sp != null and cam != null and int(view.get("stage")) < 0:
+		var c: Vector3 = cam.global_position
+		var g: float = sp.call("ground_at", c.x, c.z, c.y + 60.0)
+		if not is_nan(g):
+			line["cam_over_ground_m"] = snappedf(c.y - g, 0.01)
+		line["body"] = str(vis.get("mode"))
+	print(JSON.stringify(line, "", false))
 
 
 ## The stage changes from `was` to `now` (-1: nobody). A person plays the game on stage: its bot waits and its input

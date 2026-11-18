@@ -174,8 +174,41 @@ road's verge (passes): 8 of 8 as expected. In the tour (script adjusted as said)
 
 Limits. A pack's static colliders are copied when the world is built: a wall a pack removes later is still there for
 the visitor. A pack's ground is a bowl he cannot walk into where it is steeper than 55 degrees (the drive seed's rim).
-Bushes, grass, flags and small rocks are walk-through. No jump, no swimming (the river is 1 m deep and he wades it).
+Bushes, grass, flags and small rocks are walk-through. No swimming (the river is 1 m deep and he wades it).
 The world's space is built by the landscape, so a world without a window has no visitor.
+
+### A person's body has weight (walker-feel, 18 Nov 2026)
+
+When a person walks (`--live`, a record replayed), `walk()` is no longer used for him: kernel/runner/visit.gd hands the
+visitor a WISH each tick (the velocity he asks for, and whether Space or C went down) and `world_space.gd drive()`
+moves the body by velocity. Every number counts ticks at 60 Hz (constants at the head of drive()):
+
+| | |
+|---|---|
+| ground | accel 34 m/s^2 (rest to 4.5 m/s in 8 ticks, 4.5 to 9.0 in 8), decel 42 m/s^2 (9 to 0 in 13 ticks, 0.89 m); a key tapped from rest is held 9 ticks (a 6-tick tap moves 0.62 m: a step); standing is not a move (no test, no creep) |
+| down | a step down of 0.35 m is followed; more is a FALL (gravity 24 m/s^2, at most 40 m/s); the capsule's round foot on an edge is told from a slope by a ray under its middle |
+| jump | Space: 6.93 m/s up, 0.94 m high, 33 ticks in the air on flat ground; coyote 6 ticks after walking off an edge, a press kept 8 ticks (pressed just before landing it still jumps) |
+| steep | ground steeper than 55 degrees: walking up into it is refused (a wall, as before); walking down onto it, or landing on it, starts a SLOPE SLIDE: gravity along the slope, friction 3 m/s^2, at most 14 m/s, steering 4 m/s^2 across it, until he stands on walkable ground |
+| run slide | C while grounded and faster than 6 m/s: his speed is kept and decays by 7 m/s^2, a little steering, ends below 2.6 m/s or after 70 ticks (from 9 m/s: 54 ticks, 5.3 m; a plain stop takes 0.97 m); with W held he runs on |
+
+The figure turns toward his travel (a share of 0.22 of the remaining turn per tick); the camera follows the mouse only.
+A and D are no longer a sidestep with the face to the camera: the biped rig reads speed, not direction, so a sidestep
+showed its forward cycle sliding sideways. The rig hears `set_locomotion(velocity in its own axes, grounded)` every tick
+and the clips `jump`, `land`, `slide` (held), `slope_slide` (held) and `&""` at a slide's end, each only if `rig.clips()`
+has it. A scripted walk (a tour) still uses `walk()` and the scripted position: nothing a pack is given changed.
+
+The camera (`TLChaseCam`, opt-in options, a pack's camera is unchanged): it orbits a smoothed anchor (0.45 of the way
+per tick across, 0.18 in height: a jump or a landing is eased, a mouse turn keeps the distance exact) and never enters
+the world's space: a sphere of 0.3 m is cast from the point looked at (1.7 m over his feet) to the wanted place; it
+stands where the sphere stops (pulled in at once, back out by 0.12 of the way per tick); when that is nearer than
+2.5 m it is first swung up round the point looked at (10 degree steps, at most 80 degrees over the horizon) so over an
+edge it looks down at him. Near plane 0.05 m. Physics interpolation is on (`project.godot`): between two ticks the
+figure and the camera are drawn where they are between them; `put`, `setup` and `snap` reset it after a teleport.
+
+Proof: `tl.sh selftest walk.` (headless, kernel/world/walks/walk_case.gd: idle on banks of 20, 35, 50 degrees for 600
+ticks moves him 0.0000 m; jump; ledge; steep bank; pace; run slide; the camera over a hill) and the scripted windows
+`world.sh visit-test wf_feel --devices=<walks>/wf_feel.devices.json` and `wf_bluff` (the bank, the camera, a jump, a
+run slide; the bluff's face: before, he crept down it at 3.5 m/s with no key held; now he slides down and stops).
 
 ## What it costs (11 November, 03:40 to 04:05, other jobs running on the machine: figures under load)
 

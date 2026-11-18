@@ -34,6 +34,8 @@ var _params: PhysicsTestMotionParameters3D = PhysicsTestMotionParameters3D.new()
 var _res: PhysicsTestMotionResult3D = PhysicsTestMotionResult3D.new()
 var _cyl: Dictionary = {}             # radius key -> CylinderShape3D (shared by every trunk of that size)
 var _spheres: Dictionary = {}
+var _mover: RefCounted = null         # walker-feel: the body with weight (world_body.gd), made on the first drive()
+const Mover: GDScript = preload("res://kernel/world/terrain/world_body.gd")
 
 
 func _init() -> void:
@@ -359,6 +361,22 @@ func walk(from: Vector3, delta: Vector3) -> Dictionary:
 		blocked_ticks += 1
 	place(pos)
 	return {"pos": pos, "blocked": hit, "grounded": grounded}
+
+
+# ------------------------------------------------------------------------------------------------ the body with weight
+## Walker-feel (18 Nov 2026): a person's body moves by velocity (terrain/world_body.gd, which uses this space's tests).
+## One call per world tick; see world_body.gd for the numbers.
+func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
+	if _mover == null:
+		_mover = Mover.new(self)
+	return _mover.drive(from, wish, jump, slide)
+
+
+## The body at rest, standing (after a teleport).
+func rest() -> void:
+	if _mover == null:
+		_mover = Mover.new(self)
+	_mover.rest()
 
 
 ## The ground height under (x, z), looking down from `from_y`: NAN when there is none within 400 m.

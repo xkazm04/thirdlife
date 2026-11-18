@@ -120,7 +120,7 @@ Properties: `active: Camera3D`
 
 > Follows a target from behind and above; frame-counted smoothing (no wall clock). Capability: `camera`.
 
-Properties: `aim: float`, `distance: float`, `follow: float`, `height: float`, `look_height: float`, `stiffness: float`, `target: Node3D`, `use_velocity: bool`
+Properties: `aim: float`, `anchor_follow: float`, `anchor_follow_y: float`, `avoid_lift: float`, `avoid_margin: float`, `avoid_mask: int`, `avoid_min: float`, `avoid_out: float`, `avoid_pull: float`, `avoid_space: RID`, `distance: float`, `follow: float`, `height: float`, `look_height: float`, `stiffness: float`, `target: Node3D`, `use_velocity: bool`
 
 - `func setup(target_: Node3D, opts: Dictionary = {}) -> void`
 - `func snap() -> void`
