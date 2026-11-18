@@ -52,7 +52,7 @@ Properties: `contact: TLContact`, `height: float`, `kind: StringName`, `material
 
 > A character on two legs: walks, runs, and skates. The controller owns the physics body and drives a rig through
 
-Consts: `OPTIONS`
+Consts: `OPTIONS`, `WALKER_HEIGHT`, `WALKER_SLIDE_HEIGHT`
 
 Signals: `downed()`, `got_up()`, `mode_changed(mode: StringName)`, `pushed(body: RigidBody3D, impulse: float)`
 
@@ -73,8 +73,10 @@ Properties: `accel: float`, `blade_material: String`, `body_mass: float`, `get_u
 - `func set_body_scale(scale_: float) -> void`
 - `func set_mode(mode_: StringName) -> void`
 - `func shove(impulse: Vector3) -> void`
+- `func slide() -> void`
 - `func speed() -> float`
 - `func stumble(frames: int, lean: float = 0.7) -> void`
+- `func walker_motion() -> StringName`
 
 ## TLBodies
 
