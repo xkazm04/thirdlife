@@ -43,6 +43,15 @@ or `TLBodies.from_part(p)`; `barrier_wall` and `crate` to `TLFracture.attach(p)`
 - Variation comes only from the `seed` param (a seeded generator inside `TLMesh`); no part calls a global random
   function or reads a clock.
 
+## A mesh asset (`TLKitAsset`, D2 of 18 Nov 2026)
+The first imported mesh is `assets/engine/pip.glb` (Pip, the photo-finish judge; built by
+`engine/tools/assets/pip_blender.py` in Blender 4.2). `TLKitAsset.build(path)` (`tl_kit_asset.gd`) draws a glTF file
+in the house look: a material's NAME is the palette key, each triangle goes through `TLMesh.tri` (flat face, palette
+column, the one toon material), each glTF node keeps its name and transform. A model made for it names its materials
+after keys of `style/style.json` (an unknown key is drawn `white` with a warning), faces outward explicitly (the loader
+takes the outside from the file's normals) and puts each moving part's pivot at its joint. The world places one with
+`landscape.landmarks` (`kernel/world/terrain/landmarks.gd`).
+
 ## Adding a part
 1. Add a row to `TLKit.PARTS` in `tl_kit.gd`: `"kind": [doc, material id, fracturable, {param: [type, default, min, max, doc]}]`
    (types: float, int, bool, enum, key = palette key, points, ints).

@@ -1,6 +1,6 @@
-# Third Life kernel API (kernelApi 1.6)
+# Third Life kernel API (kernelApi 1.7)
 
-**Version 1.6 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.7 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
 machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.5"` in `pack.json` (any
 `"1.x"` up to 1.5 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
@@ -521,6 +521,13 @@ installed in this engine (since WP4), so by default:
   the style's sun and a plain ambient, but gets no bands and no drawn surface: do not make one;
 - when the pack built no kit ground (no layout, no `ground_patch`), windowed runs put the style's default ground
   just under the pack's lowest visual. It is a picture, not a floor: it has no collision and is not in the state.
+
+**A mesh asset in the house look (1.7, D2):** `TLKitAsset.build(abs_path) -> Node3D` reads a `.glb` / `.gltf` of
+`assets/<owner>/` (contracts/ASSETS.md) and draws it like a kit part: each glTF material NAME is a palette key, every
+triangle is emitted again through `TLMesh` with the style's one toon material (bands, ink, palette); the file's own
+materials are never used. Every glTF node keeps its name and local transform (moving parts stay separate). Visual
+only, no body. `res://kits/tl_kit_asset.gd`. Where a pack's own assets are found at run time is not settled yet (the
+world's landmarks resolve paths against the repository: `kernel/world/terrain/landmarks.gd`).
 
 `ctx.root` has no ground to stand on: bring a `ground_patch` (or a layout with a terrain) or everything falls.
 

@@ -379,6 +379,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = int(cfg.get("seed", 7))
 	noise.frequency = 0.022
+	preload("res://kernel/world/terrain/landmarks.gd").place(parent, ws, terr, cfg, stats, centres, rad)     # D2: imported models in the village; scatter keeps clear of them
 	var is_free: Callable = func(p: Vector2, clear: float, road_clear: float, river_clear: float) -> bool:
 		for i: int in centres.size():
 			if p.distance_to(centres[i]) < float(rad[i]) + clear:

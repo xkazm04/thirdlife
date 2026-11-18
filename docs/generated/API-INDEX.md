@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 42
+Classes: 43
 
 ## TLAudio
 
@@ -310,6 +310,14 @@ Consts: `MATERIALS`, `PARTS`
 - `static func rrect(L: float, W: float, r: float, n: int = 6) -> Array`
 - `static func slab(mk: TLMesh, p0: Vector2, p1: Vector2, w: float, y0: float, y1: float, key: String, col: Color = Color.WHITE, ext: float = 0.04) -> void`
 - `static func stands(L: float, W: float, rows: int = 10, row_d: float = 0.95, rise: float = 0.46, seat_cols: int = 0) -> TLMesh`
+
+## TLKitAsset
+
+`engine/kits/tl_kit_asset.gd` extends `RefCounted`
+
+> A mesh asset (`.glb` / `.gltf` of `assets/<owner>/`, contracts/ASSETS.md) drawn in the house look.
+
+- `static func build(path: String) -> Node3D`
 
 ## TLKitHouse
 

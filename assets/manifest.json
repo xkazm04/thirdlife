@@ -1,6 +1,7 @@
 {
   "schema": "tl.assets/1",
   "assets": [
+    {"id":"engine.pip","kind":"mesh","source":"imported","origin":"assets/engine/pip.glb","hash":"0b63a6eba65345fb2bdbd2620d9e2872fed39f28329cf6daf5279f42bb956df6","bytes":71680,"tris":986,"license":"first-party","provenance":{"tool":"blender-4.2.1:engine/tools/assets/pip_blender.py","author":"astra-trial-d2-arm-a"},"owner":"engine"},
     {"id":"kit.arch_rib","kind":"kit_part","source":"procedural","origin":"tlkit:arch_rib","hash":"8e63f81fa51c071ba7ac0546726a7873051e6676","bytes":0,"tris":404,"license":"first-party","provenance":{"tool":"TLKit","author":"engine"},"owner":"engine"},
     {"id":"kit.ball","kind":"kit_part","source":"procedural","origin":"tlkit:ball","hash":"36b7d211caeed7d0ef50d3e15ed2c3c752883d8f","bytes":0,"tris":320,"license":"first-party","provenance":{"tool":"TLKit","author":"engine"},"owner":"engine"},
     {"id":"kit.barricade","kind":"kit_part","source":"procedural","origin":"tlkit:barricade","hash":"a2e8dd0f218c31c3356a126458252a1b32deeb9a","bytes":0,"tris":576,"license":"first-party","provenance":{"tool":"TLKit","author":"engine"},"owner":"engine"},
