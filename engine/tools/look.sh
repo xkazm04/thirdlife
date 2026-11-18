@@ -16,9 +16,15 @@
 #                                                hockey                  the house game engine/packs/hockey (HOCKEY_PACK=<dir> to override)
 #                                                rig:<kind>[:<speed>[:<turn>[:<view>]]]  a rig on a marked floor, tracking camera,
 #                                                  kind = walk | run | skate | shoot | pass | idle | work | car | bot | fx (all nine effect presets); speed m/s, turn deg/s,
-#                                                  view = side | three | front | high   (engine/rigs/review/review.gd)
-#   look.sh slip <speed> [mode]                foot slide of a walking or skating biped at <speed> (headless, prints mean/max m/s)
-# Env: TL_GODOT (Godot console exe), RES (1920x1080), CLIP_RES (1280x720), GPOS (window position, 0,1440).
+#                                                  kind = jump | air | land | slide | slope_slide (walker-feel: the biped's moves off the gait),
+#                                                  view = side | three | front | high | behind (the visitor's camera) | vclose | vfront   (engine/rigs/review/review.gd)
+#   look.sh slip <speed> [mode]                foot slide of a walking or skating biped at <speed> (headless, prints two lines, mean/max
+#                                              m/s: `contact` = sole points on the floor two frames running, `slip` = the P3 meter)
+#   look.sh boil <clip.mp4> [first] [last]     walker-feel: mean change per frame and the share of pixels that flip, in the horizon band
+#                                              of a clip. Made for a slow pan over thin members (a quarter of a pixel a frame):
+#                                              CLIP_RES=1920x1080 CLIP_CRF=4 RIG_ARGS="--thin=1" look.sh clip rig:idle:0:0.83:behind out.mp4 150
+# Env: TL_GODOT (Godot console exe), RES (1920x1080), CLIP_RES (1280x720), CLIP_CRF (x264 quality of a clip, 20; 4 for measuring), GPOS (window position, 0,1440),
+#      RIG_ARGS (extra review.gd arguments for `clip rig:` and `slip`: --dir=90 sidestep, --dir=180 backward, --turn=60, --accel=24, --stop-at=150).
 HERE="$(cd "$(dirname "$0")" && pwd)"
 TL="$HERE/tl.sh"
 K="$HERE/k.sh"
@@ -113,6 +119,11 @@ case "$1" in
      idle) ra=(--what=biped --mode=walk --speed=0.0);;
      work) ra=(--what=biped --mode=walk --speed=0.0 --prop=hammer --clip=work --clip-at=20);;
      run) ra=(--what=biped --mode=walk --speed="${rspeed:-4.2}");;
+     jump) ra=(--what=biped --mode=walk --speed="${rspeed:-4.5}" --jump-at=90 --jump-v=8.5);;        # take-off, air, a soft landing
+     air) ra=(--what=biped --mode=walk --speed="${rspeed:-4.5}" --jump-at=60 --jump-v=13);;          # a long flight: rising, apex, falling
+     land) ra=(--what=biped --mode=walk --speed="${rspeed:-2.0}" --jump-at=60 --jump-v=14.5);;       # a hard landing (falls at 14 m/s)
+     slide) ra=(--what=biped --mode=walk --speed="${rspeed:-9.0}" --hold=slide --hold-at=90 --hold-end=170);;
+     slope_slide) ra=(--what=biped --mode=walk --speed="${rspeed:-6.0}" --hold=slope_slide --hold-at=70 --hold-end=220);;
      skate) ra=(--what=biped --mode=skate --speed="${rspeed:-5}");;
      shoot|pass) ra=(--what=biped --mode=skate --speed="${rspeed:-4}" --clip="$kind" --clip-at=90);;
      car) ra=(--what=car --speed="${rspeed:-14}");;
@@ -120,12 +131,12 @@ case "$1" in
      fx) ra=(--what=fx);;
      *) echo "unknown rig kind $kind"; exit 2;;
     esac
-    ra+=(--turn="${rturn:-0}" --view="${rview:-side}" --frames="$nfr")
+    ra+=(--turn="${rturn:-0}" --view="${rview:-side}" --frames="$nfr" ${RIG_ARGS:-})
     MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" "${common[@]}" --quit-after "$nfr" res://rigs/review/review.tscn -- "${ra[@]}" >/dev/null 2>&1;;
    *) echo "look.sh clip: unknown <what> '$what'"; exit 2;;
   esac
   if [ ! -s "$avi" ]; then echo "FAIL clip $out (no movie written)"; exit 1; fi
-  ffmpeg -y -loglevel error -i "$avi" -c:v libx264 -pix_fmt yuv420p -crf 20 -r 60 "$out" || exit 1
+  ffmpeg -y -loglevel error -i "$avi" -c:v libx264 -pix_fmt yuv420p -crf "${CLIP_CRF:-20}" -r 60 "$out" || exit 1
   n="$(ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 "$avi" 2>/dev/null)"; n="${n:-300}"
   # 8 frames, evenly spaced, in two rows of four
   step=$(( n / 8 > 0 ? n / 8 : 1 ))
@@ -134,7 +145,12 @@ case "$1" in
 
  slip)
   G="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"; G="$(w "$G")"
-  MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --headless --fixed-fps 60 --path "$(w "$ENGINE")" res://rigs/review/review.tscn --quit-after 420 -- --what=biped "--mode=${3:-walk}" "--speed=$2" --frames=400 --slip=1 ${SLIP_K:+--k=$SLIP_K} ${SLIP_A:+--a=$SLIP_A} 2>&1 | grep -a "\[review\]\|SCRIPT ERROR";;
+  MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --headless --fixed-fps 60 --path "$(w "$ENGINE")" res://rigs/review/review.tscn --quit-after 420 -- --what=biped "--mode=${3:-walk}" "--speed=$2" --frames=400 --slip=1 ${SLIP_K:+--k=$SLIP_K} ${SLIP_A:+--a=$SLIP_A} ${RIG_ARGS:-} 2>&1 | grep -a "\[review\]\|SCRIPT ERROR";;
+
+ boil)
+  # walker-feel: how much a clip changes from frame to frame inside the horizon band (python + numpy + ffmpeg)
+  [ -z "$2" ] && { echo "usage: look.sh boil <clip.mp4> [first frame] [last frame]"; exit 2; }
+  python "$ENGINE/rigs/review/boil.py" "$2" "${3:-40}" "${4:-145}";;
 
  px)
   frames="${2:-1500}"

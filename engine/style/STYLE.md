@@ -112,3 +112,60 @@ or the draw layer treats its geometry as foreign and mirrors it (correct place, 
 - Ink: `outer_px` 4.0, `near_px` 4.8, `bold_far` 140, `thin_near` 60, `thin_far` 220, `outer_far` 0.7: contours at 30 to 120 m keep their weight.
 - Light: `toon.rim2` / `toon.rim2_k` = a cool rim on the side that faces away from the sun (global `g_rim2`); `toon.bounce_k` 0.42.
 - Effects (`TLStyleFx.preset`): dust and smoke are larger and more opaque; sparks, nitro flame and goal flash grow in over their first frames instead of appearing at full size.
+
+## Bodies that move (walker-feel, 18 Nov 2026)
+Shading anchored to the world or to the screen crawls over whatever moves through it. Measured on the walking figure
+(frozen pose, rigid camera, 4.5 m/s: mean change per frame 1.20 of 255 on his back, floor of the meter 0.31): the sun's
+shadow map on himself (about 40 %), the world-anchored mottle (about 25 %), amplified by ink and grade. So:
+
+- `instance uniform vec2 tl_body` in `toon` (zero on everything that is not a rig; `TLRigs` sets it on every mesh of a rig).
+  `x = 1`: the mottle is read in the part's own space; the hatching is drawn ON the body (strokes in each part's own
+  space; the spacing follows the distance in octaves so the strokes stay near `toon.hatch_px` pixels); the two rim lights
+  are drawn only where the surface curves (a flat face at a grazing angle lit up whole: the sole of a boot kicked up
+  behind flashed blue); `ROUGHNESS` is written as 0.5 (the toon light never reads it), which marks a body in the
+  normal-roughness buffer for the ink pass.
+  `y` = metres the body's shadow CASTER is moved down the sun's rays (`vertex()`, shadow pass only; nothing below 0.2 m
+  above the instance's origin, in full from about 0.6 m): the shadow on flat ground is the same, and no part of the body
+  shadows another. Shade from the world still falls on it. A rig sets 0.6 x scale (biped, bot), 0 (vehicle).
+  Limit: on ground that rises steeply away from the sun the lower part of the shadow can thin out.
+- `ink.body_k` (default 1.0 in the shader, 0.55 in both shipped styles): the contour width on a body as a share of the
+  width anywhere else; the contour's screen wobble is 30 % there. The contour is drawn inside a silhouette, so on a
+  figure 170 px tall the full width left a dark blob. `ink.body_dbg` 1 paints what the pass takes for a body.
+- After: 0.43 on his back at 4.5 m/s, 0.62 at 9 m/s (was 1.20 and 1.68). Measure again: `look.sh clip rig:run:4.5:0:behind
+  out.mp4 130` with `RIG_ARGS="--freeze-at=90"` (add `--no-body=1` for the old shading) and difference the frames inside
+  the figure.
+- Palette: `pants` is denim blue `#4d5a8c` (was a purple that merged with the ink), `pack` canvas tan `#c2975a`.
+
+## Thin members far away (walker-feel, lane T's item L1)
+Lane T measured that the shimmer of the picture sits on the far fences, scaffolds and trees and comes from the ink pass.
+Measured here on a slow pan (a quarter of a pixel a frame over rail and mesh fences, scaffolds, a crane and trees at 15 to
+70 m; `look.sh boil`): share of pixels in the horizon band that flip by more than 24 grey levels in one frame, and the mean
+change per frame.
+
+| ink variant | flips % | mean |
+|---|---|---|
+| no ink at all (the floor: the geometry's own aliasing) | 0.54 | 1.66 |
+| shipped before (`thin_keep` 1: hairline on thin members) | 3.17 | 3.37 |
+| width noise and wobble anchored to the world instead of the screen (T's proposal) | 3.22 | 3.40 |
+| no width noise, no wobble at all | 3.08 | 3.32 |
+| no hairline on wires (members under 2 px) | 3.31 | 3.47 |
+| thin members get no ink at all | 3.17 | 3.42 |
+| `thin_keep` 0 (every thin member a full black contour: the look N1 removed) | 2.50 | 3.02 |
+| thin decided from three rings (`thin_rings` 1) | 3.03 | 3.27 |
+| **three rings + far thin members toned evenly (`thin_tone` 0.55 from 15 to 45 m): shipped now** | **2.63** | **3.06** |
+
+Reading: the noise is not the cause, and neither is the ink on the thin members themselves. The flips are pixels that change
+CLASS from frame to frame: "thin member: keeps its colour, one hairline" against "edge: full contour". In a lattice the two
+taps of the wide ring land on the next bar or miss it as the picture moves by a fraction of a pixel, and low over ground
+seen at a grazing angle the background is only a few per cent further than the bar, right at the depth threshold. The
+ink is drawn per pixel on a depth buffer that is not multisampled, at full contrast, so every change of class is a dash
+that appears or goes. What helps is to make the two classes look alike where the members are a pixel or two wide:
+- `ink.thin_rings` 1: a member is also thin when both opposite taps of the half-width ring or of the inner ring see the
+  background (8 more depth taps a pixel);
+- `ink.thin_tone` (0.55), `thin_tone_near` (15 m), `thin_tone_far` (45 m): from there on a thin member is toned evenly
+  with that much ink in place of the one-sided hairline (which cannot be drawn on a 2 px bar anyway). Nearer than
+  `thin_tone_near` nothing changes: "coloured bars with one dark side".
+Gain: 17 % fewer flips, 9 % less change per frame, on top of whatever antialiasing the window has (measured with the
+style's SMAA only, no TAA). It is a part, not a cure: the cure is ink that knows sub-pixel coverage (edge taps on a
+multisampled depth, or the contour drawn as geometry), which is a look pass of its own.
+All four keys are optional; absent = the old behaviour.

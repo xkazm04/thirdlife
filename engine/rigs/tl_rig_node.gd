@@ -83,7 +83,12 @@ func play(cname: StringName, blend: float = 0.15) -> void:
 		return
 	clip = cname
 	clip_t = 0.0
-	_start_blend(blend)
+	_start_blend(_blend_of(cname, blend))
+
+
+## The blend a clip really gets (override): a family may shorten it for a clip that must show at once (a landing).
+func _blend_of(_cname: StringName, blend: float) -> float:
+	return blend
 
 
 func _start_blend(blend: float) -> void:
@@ -94,9 +99,15 @@ func _start_blend(blend: float) -> void:
 
 ## Called every frame by the controller. velocity_local: metres per second in the rig's own space (forward is -Z).
 func set_locomotion(velocity_local: Vector3, grounded: bool) -> void:
+	_locomotion_changes(velocity_local, grounded)
 	_vel = velocity_local
 	_grounded = grounded
 	_loco_on = true
+
+
+## Called by set_locomotion before the new values are stored (override): the old ones are still in _vel and _grounded.
+func _locomotion_changes(_velocity_local: Vector3, _grounded_now: bool) -> void:
+	pass
 
 
 func set_param(pname: StringName, value: Variant) -> void:

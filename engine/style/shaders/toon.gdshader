@@ -51,6 +51,14 @@ instance uniform vec4 tl_clip = vec4(0.0);
 // (its part-local x and z), z = radius. Every other material leaves the count at 0.
 uniform int tl_hole_n = 0;
 uniform vec4 tl_holes[32];
+// walker-feel (18 Nov): a body that moves (a rig sets this on its meshes; everything else leaves it at zero).
+// x > 0.5: the painterly mottle and the hatching are anchored to the body, not to the world and the screen: noise anchored
+//   to the world swims across whatever moves through it (measured on the walking figure: a third of his crawl).
+// y = metres the body's SHADOW CASTER is moved down the sun's rays (from 0 at the feet to y at half a metre up). The shadow
+//   on the ground lies along the same rays, so it does not change; but no part of the body shadows another part. On a
+//   figure 170 px tall those self-shadows are a few shadow-map texels wide and step as he moves (40 % of his crawl); his
+//   shade side is drawn by the bands anyway. Shade from the world (a wall, a tree) still falls on him.
+instance uniform vec2 tl_body = vec2(0.0);
 mat4 tl_plot_mat() {
 	float cy = cos(tl_plot.w); float sy = sin(tl_plot.w);
 	return mat4(vec4(cy, 0.0, -sy, 0.0), vec4(0.0, 1.0, 0.0, 0.0), vec4(sy, 0.0, cy, 0.0), vec4(tl_plot.xyz, 1.0));
@@ -64,6 +72,8 @@ varying vec3 wn_l;    // world normal, handed from fragment() to light()
 varying flat vec4 m0;   // lookup row 0: albedo rgb, emit
 varying flat vec4 m1;   // lookup row 1: metal, mottle, class, dscale
 varying flat vec4 m2;   // lookup row 2: dk, no_hatch, ice, dissolve
+varying vec2 hatch_b;   // a body's two hatch strokes, drawn in its parts' own space (fragment() hands them to light())
+varying float rim_w;    // 1 = the rim lights are drawn; on a body 0 where the surface is flat (fragment() hands it to light())
 
 float hash31(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
 float vnoise(vec3 x) {
@@ -246,6 +256,16 @@ void vertex() {
 		VERTEX.x += s * sway * COLOR.a;
 		VERTEX.z += s * sway * 0.5 * COLOR.a;
 	}
+	if (tl_body.y > 0.0 && IN_SHADOW_PASS) {
+		float up = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y - MODEL_MATRIX[3].y;
+		// nothing below 0.2 m (boots and ankles cast as they stand: their shadow must touch the feet), then at most half of
+		// the way down to the floor: a caster that comes close to the floor falls inside the shadow bias and casts nothing
+		// (seen: the shadow let go of the feet)
+		vec3 sd = normalize(g_sun_dir.xyz);
+		vec3 down_ray = -sd * min(tl_body.y, 0.5 * max(up - 0.2, 0.0) / max(sd.y, 0.08));
+		if (tl_plot.w != 0.0) { down_ray = transpose(mat3(tl_plot_mat())) * down_ray; }   // the sun in the pack's own space
+		VERTEX += (inverse(MODEL_MATRIX) * vec4(down_ray, 0.0)).xyz;
+	}
 	float rim_dy = 0.0;
 	if (tl_clip.x > 0.0) {
 		vec3 org = MODEL_MATRIX[3].xyz;
@@ -279,7 +299,8 @@ void fragment() {
 	vec3 vw = normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz);
 	float fres = pow(1.0 - clamp(dot(wn, vw), 0.0, 1.0), 3.0);
 	float mk = m1.y < 0.0 ? g_mottle.x : m1.y;
-	float n = vnoise(vec3(wpos.x * 0.30, wpos.y * 0.8, wpos.z * 0.30)) * 0.6 + vnoise(wpos * 1.35) * 0.4;
+	vec3 mp = tl_body.x > 0.5 ? lp.xyz : wpos;   // a moving body carries its mottle with it
+	float n = vnoise(vec3(mp.x * 0.30, mp.y * 0.8, mp.z * 0.30)) * 0.6 + vnoise(mp * 1.35) * 0.4;
 	c *= 1.0 + (n - 0.5) * 2.0 * mk;
 	float em = m0.a;
 	if (mclass > 0) {
@@ -362,8 +383,33 @@ void fragment() {
 		c = mix(c, vec3(0.25, 0.9, 1.0), edge);
 		em += edge * 2.5;
 	}
+	hatch_b = vec2(0.0);
+	rim_w = 1.0;
+	if (tl_body.x > 0.5) {
+		// A rim light belongs to a form that turns away. On a flat face seen at a grazing angle the whole face lights up at
+		// once (seen: the sole of a boot kicked up behind flashed bright blue at every stride): on a body the rim is drawn
+		// only where the surface curves (a radius under about 0.3 m).
+		float px_m = 2.0 * vdepth / (abs(PROJECTION_MATRIX[1][1]) * VIEWPORT_SIZE.y);
+		rim_w = smoothstep(0.8, 3.0, length(fwidth(NORMAL)) / max(px_m, 0.00001));
+		// A body's hatching is drawn ON it (strokes in each part's own space), not on the screen: a limb that swings through
+		// strokes that stand still on the screen reads as crawling. The spacing follows the distance in octaves, so the strokes
+		// stay about g_hatch.y pixels apart; between two octaves every other stroke fades.
+		float want = g_hatch.y * 2.0 * vdepth / (abs(PROJECTION_MATRIX[1][1]) * 1080.0);   // metres between strokes
+		float lg = log2(max(want, 0.0005));
+		float sp = exp2(floor(lg));
+		float ow = fract(lg);
+		float wb = sin(dot(lp.xyz, vec3(23.0, 9.0, 17.0))) * 0.10;
+		float u1 = (lp.x + lp.z * 0.6 - lp.y) / sp + wb;
+		float u2 = (lp.x - lp.z * 0.6 + lp.y * 0.8) / (sp * 1.3) - wb;
+		float a1 = 1.0 - smoothstep(0.26, 0.42, abs(fract(u1 + 0.5) - 0.5) * 2.0);
+		float b1 = 1.0 - smoothstep(0.26, 0.42, abs(fract(u1 * 0.5 + 0.5) - 0.5) * 4.0);
+		float a2 = 1.0 - smoothstep(0.22, 0.38, abs(fract(u2 + 0.5) - 0.5) * 2.0);
+		float b2 = 1.0 - smoothstep(0.22, 0.38, abs(fract(u2 * 0.5 + 0.5) - 0.5) * 4.0);
+		hatch_b = vec2(mix(a1, b1, ow), mix(a2, b2, ow));
+	}
 	ALBEDO = c;
-	ROUGHNESS = 1.0;
+	// the normal-roughness buffer tells the ink pass what is a body (0.5; the toon light never reads roughness)
+	ROUGHNESS = tl_body.x > 0.5 ? 0.5 : 1.0;
 	SPECULAR = 0.0;
 	vec3 amb = mix(g_amb_gnd.rgb, g_amb_sky.rgb, wn.y * 0.5 + 0.5) * g_amb_sky.a;
 	// cheap bounce: sunlit ground throws warm light up and back at faces that look away from the sun and down
@@ -404,6 +450,7 @@ void light() {
 	float wob = sin(fc.x * 0.045 + fc.y * 0.031) * 1.6 + sin(fc.y * 0.11) * 0.7;
 	float s1 = 1.0 - smoothstep(0.26, 0.42, abs(fract((fc.x - fc.y + wob) / g_hatch.y) - 0.5) * 2.0);
 	float s2 = 1.0 - smoothstep(0.22, 0.38, abs(fract((fc.x + fc.y * 0.8 - wob) / (g_hatch.y * 1.3)) - 0.5) * 2.0);
+	if (tl_body.x > 0.5) { s1 = hatch_b.x; s2 = hatch_b.y; }
 	float deep = smoothstep(-0.35, -0.75, ndl);
 	shc *= 1.0 - hk * max(s1, s2 * deep) * (1.0 - b_lo);
 	vec3 col = mix(shc, midc, b_lo);
@@ -417,7 +464,7 @@ void light() {
 	}
 	float fr = pow(1.0 - clamp(dot(N, VIEW), 0.0, 1.0), 2.5);
 	float back = clamp(ndl + 0.35, 0.0, 1.0);
-	SPECULAR_LIGHT += g_rim.rgb * g_rim.a * fr * back * smoothstep(0.1, 0.6, ATTENUATION);
-	SPECULAR_LIGHT += g_rim2.rgb * g_rim2.a * fr * smoothstep(0.1, -0.4, ndl);   // P3: the cool edge that turns a shape away from the light
+	SPECULAR_LIGHT += g_rim.rgb * g_rim.a * fr * back * smoothstep(0.1, 0.6, ATTENUATION) * rim_w;
+	SPECULAR_LIGHT += g_rim2.rgb * g_rim2.a * fr * smoothstep(0.1, -0.4, ndl) * rim_w;   // P3: the cool edge that turns a shape away from the light
 	}
 }

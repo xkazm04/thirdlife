@@ -2,7 +2,7 @@ class_name TLRigBiped
 extends TLRigNode
 ## The standard biped: 29 bones on Godot humanoid names (+ Backpack, Hair and five face bones), rigid-weighted toy
 ## forms from lane B, and a procedural clip library driven by tick(frame).
-## Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work.
+## Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air.
 ## Params (set_param): mode (&"walk" | &"skate"), look_at (Vector3 world, or null to clear), expression (&"happy" |
 ## &"focus" | &"blink"), lean (-1..1, + = right), stick (bool), colors ({part: palette key}).
 ## Sockets: hand_r, hand_l, head, back, foot_r, foot_l.
@@ -17,10 +17,16 @@ var _hammer: Node3D
 var _helmet_built: bool = false
 var _skates: Array = []
 var _stick_on: bool = false
+var _was_air: bool = false
+var _air_w: float = 0.0     # 0 = on the ground .. 1 = the air pose (eased over 5 ticks)
+var _air_vy: float = 0.0    # the last vertical speed seen in the air (m/s at scale 1)
+var _impact: float = 0.0    # the fall speed of the last landing
+var _crouch_x: float = 0.0  # extra crouch under the gait (the landing)
 var _tri_extra: int = 0
-var stride_k: float = 1.0   # stride-rate multiplier (review tool; 1 = shipped)
-var amp_override: float = -1.0   # swing amplitude override (review tool; < 0 = from speed)
-var _amp: float = 1.0   # swing amplitude of the walk and run pose functions (set from the speed by _loco_pose)
+var stride_k: float = 1.0   # cadence multiplier (review tool; 1 = shipped)
+var amp_override: float = -1.0   # P3 review tool, kept for API v1: the gait has no swing amplitude any more (the stride follows the speed)
+var _gait: TLRigBipedGait = TLRigBipedGait.new()
+var _amp: float = 1.0   # swing amplitude of the walk and run clips played by name (their authored swing)
 
 
 func setup(p: Dictionary) -> void:
@@ -53,9 +59,14 @@ func setup(p: Dictionary) -> void:
 	add_clip("shoot", 0.85, false, _shoot, true)
 	add_clip("pass", 0.55, false, _pass, true)
 	add_clip("cheer", 1.2, true, _cheer)
-	add_clip("fall", 1.0, false, _fall, false, true)
+	add_clip("fall", 1.0, false, TLRigBipedMoves.fall_down, false, true)
 	add_clip("carry", 0.9, true, _carry)
-	add_clip("work", 0.8, true, _work)
+	add_clip("work", 0.8, true, TLRigBipedMoves.work)
+	add_clip("jump", 0.3, false, TLRigBipedMoves.jump)
+	add_clip("land", 0.45, false, _land)
+	add_clip("slide", 0.3, false, TLRigBipedMoves.slide, false, true)
+	add_clip("slope_slide", 1.6, true, TLRigBipedMoves.slope_slide)
+	add_clip("air", 1.0, true, _air)
 	_build_hammer()
 	_param_changed("stick", p["stick"])
 	_param_changed("mode", p["mode"])
@@ -201,22 +212,16 @@ func _speed() -> float:
 
 
 func _advance() -> void:
-	var v: float = _speed()
-	var rate: float
 	if String(params.get("mode", "walk")) == "skate":
-		rate = clampf(0.55 + 0.07 * v, 0.55, 1.25)
-	else:
-		var w_run: float = smoothstep(2.6, 4.2, v)
-		rate = lerpf(clampf(v / 1.4, 0.6, 1.5) / 0.9, clampf(v / 4.5, 0.8, 1.4) / 0.6, w_run)
-	_phase = fposmod(_phase + rate * stride_k * DT, 1.0)
-
-
-## Swing amplitude of the walk / run pose from the ground speed: a planted foot must move back at the speed of the body,
-## and the foot's backward speed is (cadence x swing), so the swing follows the speed at a fixed cadence (P3 foot-slide fix).
-## Measured with `look.sh slip` (a planted foot's ground speed, signed mean = 0 at the values below): 0.62 at 0.8 to 2 m/s, rising
-## to 0.78 at a run; below 0.8 m/s the cadence is already at its floor, so the swing follows the speed.
-func _stride_amp(v: float) -> float:
-	return 0.62 * clampf(v / 0.8, 0.4, 1.0) + 0.16 * smoothstep(1.6, 4.5, v)
+		_phase = fposmod(_phase + clampf(0.55 + 0.07 * _speed(), 0.55, 1.25) * stride_k * DT, 1.0)
+		return
+	var vm: Vector2 = Vector2(_vel.x, _vel.z) / float(params["scale"]) if _loco_on else Vector2.ZERO
+	if _grounded or not _loco_on:
+		if _was_air:
+			_gait.land(vm)
+		_gait.step(vm, stride_k, global_transform.basis.get_euler().y if is_inside_tree() else NAN)
+	_was_air = _loco_on and not _grounded
+	_air_w = move_toward(_air_w, 1.0 if _was_air else 0.0, 0.2 if _was_air else 0.34)
 
 
 func _loco_pose() -> Dictionary:
@@ -226,18 +231,10 @@ func _loco_pose() -> Dictionary:
 	if String(params.get("mode", "walk")) == "skate":
 		var glide: Dictionary = _skate_pose(_phase, 0.12)
 		out = _mixe(glide, _skate_pose(_phase, 1.0), smoothstep(0.3, 2.5, v))
-	elif not _grounded and _loco_on:
+	elif _air_w >= 1.0:
 		out = _air(t)
-	else:
-		var w_walk: float = smoothstep(0.15, 0.8, v)
-		var w_run: float = smoothstep(2.6, 4.2, v)
-		_amp = amp_override if amp_override >= 0.0 else _stride_amp(v)
-		out = _idle(t)
-		if w_walk > 0.0:
-			out = _mixe(out, _walk(_phase * 0.9), w_walk)
-		if w_run > 0.0:
-			out = _mixe(out, _run(_phase * 0.6), w_run)
-	_amp = 1.0   # the clips played by name (walk, carry, run) keep their authored swing
+	else:      # the side lean is part of the gait: the feet stay where they stand
+		return _gait_pose(t) if _air_w <= 0.0 else _mixe(_gait_pose(t), _air(t), _air_w * _air_w * (3.0 - 2.0 * _air_w))
 	var lean: float = clampf(float(params.get("lean", 0.0)), -1.0, 1.0)
 	if lean != 0.0:
 		out = add_pose(out, {"Hips": Vector3(0, 0, -16.0 * lean), "Spine": Vector3(0, 0, -5.0 * lean)})
@@ -276,6 +273,48 @@ func _post_pose() -> void:
 			var bi: int = _sk.find_bone(b[0])
 			var extra: Quaternion = Quaternion.from_euler(Vector3(deg_to_rad(pitch * float(b[1])), deg_to_rad(yaw * float(b[1])), 0))
 			_sk.set_bone_pose_rotation(bi, extra * _sk.get_bone_pose_rotation(bi))
+
+
+# ------------------------------------------------------------------ the walking gait (biped/tl_rig_biped_gait.gd)
+## The locomotion pose on the ground: idle, walk, jog, run and sprint are one gait read at the speed.
+func _gait_pose(t: float) -> Dictionary:
+	var gt: TLRigBipedGait = _gait
+	var v: float = gt.v
+	var d: float = gt.d
+	var ph: float = gt.phase
+	var still: float = 1.0 - smoothstep(0.1, 0.7, v)
+	var run_w: float = smoothstep(2.0, 3.4, v)
+	var amp: float = clampf(gt.ls / 0.6, 0.0, 1.2)
+	var s: float = cos(TAU * (ph - (d - 0.5) * 0.5)) * amp        # + = the left leg is ahead
+	var lean: float = clampf(float(params.get("lean", 0.0)), -1.0, 1.0)
+	var pitch: float = lerpf(-(1.5 + 2.4 * minf(v, 6.5)), 3.0, gt.back_w * (1.0 - still)) - 46.0 * _crouch_x
+	var yaw: float = rad_to_deg(gt.psi) - lerpf(4.0, 7.0, run_w) * s
+	var b: float = sin(TAU * t / 4.0)
+	var y_style: float = -_crouch_x - gt.crouch() - gt.bounce() * cos(2.0 * TAU * (ph - d * 0.5)) + (-0.012 + 0.006 * b) * still
+	var sway: float = -lerpf(0.022, 0.008, run_w) * cos(TAU * (ph - d * 0.5)) * minf(amp, 1.0)
+	var out: Dictionary = gt.legs_pose(Vector3(pitch, yaw, -16.0 * lean), y_style, Vector3(sway, 0.0, 0.0))
+	var bounce: float = cos(2.0 * TAU * (ph - d * 0.5) - 1.0) * minf(amp, 1.0)
+	var tw: float = lerpf(5.0, 9.0, run_w) * s        # the shoulders turn against the pelvis
+	var sw: float = lerpf(24.0, 44.0, run_w) * s * lerpf(1.0, 0.6, gt.back_w)
+	var elbow: float = lerpf(16.0, 80.0, run_w)
+	var up: Dictionary = {
+		"Spine": Vector3(lerpf(-2.0, -4.0, run_w), -0.5 * yaw + 0.5 * tw, -5.0 * lean), "Chest": Vector3(lerpf(-2.0, -4.0, run_w), -0.5 * yaw + 0.5 * tw, 0),
+		"Neck": Vector3(lerpf(2.0, 7.0, run_w), -0.5 * tw, 0), "Head": Vector3(lerpf(3.0, 7.0, run_w) - 0.25 * pitch * run_w, -0.5 * tw, 0),
+		"Backpack": Vector3(lerpf(3.5, 7.0, run_w) * bounce, 0, 2.0 * s), "Hair": Vector3(lerpf(4.0, 9.0, run_w) * cos(2.0 * TAU * (ph - d * 0.5) - 1.4) * minf(amp, 1.0), 0, 0),
+		"LeftUpperArm": Vector3(lerpf(5.0, 14.0, run_w) - sw, 0, lerpf(-6.0, -8.0, run_w)), "LeftLowerArm": Vector3(elbow + lerpf(14.0, 12.0, run_w) * maxf(0.0, -s), 0, 0), "LeftHand": Vector3(0, 0, 0),
+		"RightUpperArm": Vector3(lerpf(5.0, 14.0, run_w) + sw, 0, lerpf(6.0, 8.0, run_w)), "RightLowerArm": Vector3(elbow + lerpf(14.0, 12.0, run_w) * maxf(0.0, s), 0, 0), "RightHand": Vector3(0, 0, 0),
+	}
+	if _stick_on:
+		up.merge(_stick_arms(pitch - 5.0, -4.0 * (1.0 - run_w)), true)
+	if still > 0.0:
+		var idle: Dictionary = _idle(t)
+		var iu: Dictionary = {}
+		for key: String in idle:
+			if UPPER.has(key):
+				iu[key] = idle[key]
+		up = _mixe(up, iu, still)
+	out.merge(up, true)
+	return out
 
 
 # ------------------------------------------------------------------ pose helpers
@@ -369,13 +408,33 @@ func _run(t: float) -> Dictionary:
 	return out
 
 
+## In the air (also the `air` clip): rising, apex or falling by the vertical speed of `set_locomotion`.
 func _air(_t: float) -> Dictionary:
-	return {
-		"_hips": Vector3(0, 0, 0), "Hips": Vector3(-6.0, 0, 0), "Spine": Vector3(-4.0, 0, 0), "Head": Vector3(6.0, 0, 0),
-		"LeftUpperArm": Vector3(30.0, 0, -40.0), "LeftLowerArm": Vector3(40.0, 0, 0), "RightUpperArm": Vector3(30.0, 0, 40.0), "RightLowerArm": Vector3(40.0, 0, 0),
-		"LeftUpperLeg": Vector3(40.0, 0, -4.0), "LeftLowerLeg": Vector3(-60.0, 0, 0), "LeftFoot": Vector3(15.0, 0, 0),
-		"RightUpperLeg": Vector3(12.0, 0, 4.0), "RightLowerLeg": Vector3(-35.0, 0, 0), "RightFoot": Vector3(15.0, 0, 0),
-	}
+	return TLRigBipedMoves.air(_vel.y / float(params["scale"]))
+
+
+## Landing (one shot, 0.45 s): the gait's own legs, feet where they stand, under a crouch that takes the fall. Soft from
+## 4 m/s of fall, hard (deep, slow to rise, arms out) at 14 m/s; the fall speed is the last vertical speed seen in the air.
+func _land(t: float) -> Dictionary:
+	var k: float = smoothstep(4.0, 14.0, _impact)
+	var c: float = smoothstep(0.0, 0.06, t) * (1.0 - smoothstep(0.10, lerpf(0.28, 0.45, k), t))
+	_crouch_x = lerpf(0.12, 0.40, k) * c
+	var out: Dictionary = _gait_pose(float(frame) * DT)
+	_crouch_x = 0.0
+	return add_pose(out, {"Chest": Vector3(-6.0 * c, 0, 0), "Head": Vector3(lerpf(6.0, 16.0, k) * c, 0, 0),
+		"LeftUpperArm": Vector3(lerpf(14.0, 30.0, k) * c, 0, -lerpf(18.0, 46.0, k) * c), "RightUpperArm": Vector3(lerpf(14.0, 30.0, k) * c, 0, lerpf(18.0, 46.0, k) * c)})
+
+
+## The landing takes the fall at once: its blend is never longer than 4 frames.
+func _blend_of(cname: StringName, blend: float) -> float:
+	return minf(blend, 0.07) if cname == &"land" else blend
+
+
+func _locomotion_changes(velocity_local: Vector3, grounded_now: bool) -> void:
+	if not grounded_now:
+		_air_vy = velocity_local.y / float(params["scale"])
+	elif not _grounded:
+		_impact = maxf(0.0, -minf(_air_vy, velocity_local.y / float(params["scale"])))
 
 
 func _skate(t: float) -> Dictionary:
@@ -510,31 +569,17 @@ func _cheer(t: float) -> Dictionary:
 	}
 
 
-## Fall, one-shot that holds (1.0 s): stumble, knees, then flat on the front with the arms thrown forward.
-func _fall(t: float) -> Dictionary:
-	var stand: Dictionary = {"_hips": Vector3.ZERO, "Hips": Vector3.ZERO}
-	var lg: Array = _leg(34.0, -30.0)
-	var stumble: Dictionary = {
-		"_hips": Vector3(0, -0.16, -0.08), "Hips": Vector3(-30.0, 0, 8.0), "Spine": Vector3(-10.0, 0, 0), "Chest": Vector3(-8.0, 0, 0), "Head": Vector3(24.0, 0, 0),
-		"LeftUpperArm": Vector3(120.0, 0, -40.0), "LeftLowerArm": Vector3(30.0, 0, 0), "RightUpperArm": Vector3(96.0, 0, 50.0), "RightLowerArm": Vector3(40.0, 0, 0),
-		"LeftUpperLeg": Vector3(float(lg[0]) + 20.0, 0, 0), "LeftLowerLeg": Vector3(float(lg[1]), 0, 0), "LeftFoot": Vector3(float(lg[2]), 0, 0),
-		"RightUpperLeg": Vector3(float(lg[0]) - 40.0, 0, 0), "RightLowerLeg": Vector3(-20.0, 0, 0), "RightFoot": Vector3(30.0, 0, 0)}
-	var knees: Dictionary = {
-		"_hips": Vector3(0, -0.52, -0.3), "Hips": Vector3(-62.0, 0, 0), "Spine": Vector3(-8.0, 0, 0), "Chest": Vector3(-6.0, 0, 0), "Head": Vector3(34.0, 0, 0),
-		"LeftUpperArm": Vector3(150.0, 0, -18.0), "LeftLowerArm": Vector3(24.0, 0, 0), "RightUpperArm": Vector3(150.0, 0, 18.0), "RightLowerArm": Vector3(24.0, 0, 0),
-		"LeftUpperLeg": Vector3(70.0, 0, 0), "LeftLowerLeg": Vector3(-96.0, 0, 0), "LeftFoot": Vector3(40.0, 0, 0),
-		"RightUpperLeg": Vector3(56.0, 0, 0), "RightLowerLeg": Vector3(-84.0, 0, 0), "RightFoot": Vector3(40.0, 0, 0)}
-	var prone: Dictionary = {
-		"_hips": Vector3(0, -0.82, -0.55), "Hips": Vector3(-88.0, 0, 0), "Spine": Vector3(2.0, 0, 0), "Chest": Vector3(4.0, 0, 0), "Neck": Vector3(14.0, 0, 0), "Head": Vector3(22.0, 12.0, 0),
-		"LeftUpperArm": Vector3(170.0, 0, -22.0), "LeftLowerArm": Vector3(14.0, 0, 0), "RightUpperArm": Vector3(164.0, 0, 30.0), "RightLowerArm": Vector3(30.0, 0, 0),
-		"LeftUpperLeg": Vector3(2.0, 0, -8.0), "LeftLowerLeg": Vector3(-6.0, 0, 0), "LeftFoot": Vector3(-50.0, 0, 0),
-		"RightUpperLeg": Vector3(4.0, 0, 10.0), "RightLowerLeg": Vector3(-14.0, 0, 0), "RightFoot": Vector3(-50.0, 0, 0),
-		"Backpack": Vector3(0, 0, 0), "Hair": Vector3(10.0, 0, 0)}
-	var bounce: Dictionary = add_pose(prone, {"_hips": Vector3(0, 0.05, 0), "Head": Vector3(10.0, 0, 0), "LeftUpperLeg": Vector3(-12.0, 0, 0), "RightUpperLeg": Vector3(-8.0, 0, 0)})
-	return _keys(t, [[0.0, stand], [0.22, stumble], [0.5, knees], [0.72, prone], [0.82, bounce], [1.0, prone]])
-
-
 func _carry(t: float) -> Dictionary:
+	if String(params.get("mode", "walk")) == "walk" and _loco_on:
+		# walker-feel: under a load the legs are the gait's (planted, at the real speed and direction); the arms hold the load
+		var g: Dictionary = _gait_pose(t)
+		var q: float = TAU * _gait.phase
+		g.merge({
+			"Spine": Vector3(3.0, 0, 0) + Vector3(0, (g["Spine"] as Vector3).y, 0), "Chest": Vector3(3.0, 0, 0) + Vector3(0, (g["Chest"] as Vector3).y, 0), "Head": Vector3(2.0, 0, 0),
+			"LeftUpperArm": Vector3(34.0 + 2.0 * cos(2.0 * q), 0, 10.0), "LeftLowerArm": Vector3(62.0, 0, 0), "LeftHand": Vector3(0, 0, -20.0),
+			"RightUpperArm": Vector3(34.0 + 2.0 * cos(2.0 * q), 0, -10.0), "RightLowerArm": Vector3(62.0, 0, 0), "RightHand": Vector3(0, 0, 20.0),
+		}, true)
+		return g
 	var out: Dictionary = _walk(t)
 	var p: float = TAU * t / 0.9
 	out.merge({
@@ -545,19 +590,3 @@ func _carry(t: float) -> Dictionary:
 	for k: String in ["LeftUpperLeg", "RightUpperLeg"]:
 		out[k] = (out[k] as Vector3) * Vector3(0.75, 1, 1)
 	return out
-
-
-func _work(t: float) -> Dictionary:
-	var p: float = TAU * t / 0.8
-	var hit: float = pow(maxf(0.0, sin(p)), 2.0)        # the hammer comes down fast
-	var lift: float = maxf(0.0, -sin(p))
-	var lg: Array = _leg(16.0, -16.0)
-	return {
-		"_hips": Vector3(0, -CROUCH * (1.0 - cos(deg_to_rad(16.0))) - 0.01 * hit, 0), "Hips": Vector3(-16.0, -6.0, 0),
-		"Spine": Vector3(-8.0 - 3.0 * hit, 0, 0), "Chest": Vector3(-6.0 - 3.0 * hit, -6.0 + 8.0 * lift, 0), "Neck": Vector3(4.0, 0, 0), "Head": Vector3(-4.0 - 4.0 * hit, 4.0, 0),
-		"LeftUpperArm": Vector3(66.0, 0, 14.0), "LeftLowerArm": Vector3(34.0, 0, 0), "LeftHand": Vector3(0, 0, 0),
-		"RightUpperArm": Vector3(84.0 + 46.0 * lift - 22.0 * hit, 0, 8.0), "RightLowerArm": Vector3(40.0 + 62.0 * lift - 26.0 * hit, 0, 0), "RightHand": Vector3(20.0 * lift - 20.0 * hit, 0, 0),
-		"LeftUpperLeg": Vector3(float(lg[0]) + 14.0, 0, -6.0), "LeftLowerLeg": Vector3(float(lg[1]), 0, 0), "LeftFoot": Vector3(float(lg[2]) - 14.0, 0, 0),
-		"RightUpperLeg": Vector3(float(lg[0]) - 14.0, 0, 6.0), "RightLowerLeg": Vector3(float(lg[1]), 0, 0), "RightFoot": Vector3(float(lg[2]) + 14.0, 0, 0),
-		"Backpack": Vector3(2.0 * hit, 0, 0), "Hair": Vector3(-4.0 * hit, 0, 0),
-	}

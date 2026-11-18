@@ -51,6 +51,8 @@ const LOOK: Dictionary = {"skin": "skin", "hair": "hair", "top": "jacket", "trim
 static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool, helmet: bool = false) -> TLMesh:
 	var mk: TLMesh = TLMesh.new(71)
 	mk.skinned = true
+	# the sole is the boot's own colour, darker: a near-black sole kicked up behind at a run was a black square at every stride
+	var sole: Color = Color(0.5, 0.48, 0.5)
 	var B: Callable = func(n: String) -> void: mk.bone = sk.find_bone(n)
 	# rounded toy forms (TLMesh.rbox / TLMesh.capsule): smooth normals, so the ink pass draws silhouettes, not facet creases
 	B.call("Hips")
@@ -76,11 +78,11 @@ static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool, helmet: bool =
 	# backpack with bedroll, pocket and the small glowing light (own bone: it lags a little)
 	if pack:
 		B.call("Backpack")
-		mk.rbox(Vector3(0.38, 0.46, 0.20), L["pack"], Color.WHITE, 0.08, Vector3(0, 1.30, 0.24))
-		mk.rbox(Vector3(0.40, 0.13, 0.22), L["pack"], Color(0.8, 0.8, 0.8), 0.05, Vector3(0, 1.50, 0.24), 1)
-		mk.rbox(Vector3(0.24, 0.16, 0.07), L["pack"], Color(0.86, 0.86, 0.86), 0.03, Vector3(0, 1.20, 0.36), 1)
-		mk.box(Vector3(0.05, 0.40, 0.02), L["strap"], Color.WHITE, 0.0, Vector3(-0.1, 1.32, 0.345))
-		mk.box(Vector3(0.05, 0.40, 0.02), L["strap"], Color.WHITE, 0.0, Vector3(0.1, 1.32, 0.345))
+		mk.rbox(Vector3(0.36, 0.40, 0.20), L["pack"], Color.WHITE, 0.095, Vector3(0, 1.335, 0.24))
+		mk.rbox(Vector3(0.38, 0.12, 0.22), L["pack"], Color(0.8, 0.8, 0.8), 0.05, Vector3(0, 1.50, 0.24), 1)
+		mk.rbox(Vector3(0.22, 0.14, 0.07), L["pack"], Color(0.86, 0.86, 0.86), 0.03, Vector3(0, 1.225, 0.36), 1)
+		mk.box(Vector3(0.05, 0.33, 0.02), L["strap"], Color.WHITE, 0.0, Vector3(-0.1, 1.345, 0.345))
+		mk.box(Vector3(0.05, 0.33, 0.02), L["strap"], Color.WHITE, 0.0, Vector3(0.1, 1.345, 0.345))
 		mk.capsule(Vector3(-0.2, 1.63, 0.23), Vector3(0.2, 1.63, 0.23), 0.085, L["trim"], Color(0.9, 0.9, 0.9), 8, 2)
 		mk.box(Vector3(0.11, 0.11, 0.05), "cyan", Color.WHITE, 0.02, Vector3(0, 1.40, 0.35))
 		mk.box(Vector3(0.15, 0.15, 0.03), L["strap"], Color.WHITE, 0.02, Vector3(0, 1.40, 0.34))
@@ -103,7 +105,7 @@ static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool, helmet: bool =
 		# hair: a few large calm shapes on their own bone (cap, back, swept fringe, quiff)
 		B.call("Hair")
 		mk.rbox(Vector3(0.41, 0.17, 0.39), L["hair"], Color.WHITE, 0.085, Vector3(0, 1.895, 0.025))
-		mk.rbox(Vector3(0.40, 0.25, 0.14), L["hair"], Color(0.9, 0.9, 0.9), 0.065, Vector3(0, 1.80, 0.16))
+		mk.rbox(Vector3(0.40, 0.27, 0.19), L["hair"], Color(0.9, 0.9, 0.9), 0.092, Vector3(0, 1.79, 0.135))
 		mk.push_at(Vector3(0.02, 1.885, -0.165), Vector3(-14, 0, -7))
 		mk.rbox(Vector3(0.36, 0.09, 0.11), L["hair"], Color(1.1, 1.08, 1.0), 0.045)
 		mk.pop()
@@ -169,15 +171,15 @@ static func build_mesh(sk: Skeleton3D, L: Dictionary, pack: bool, helmet: bool =
 		mk.pop()
 		var lx: float = sx * 0.11
 		B.call(String(side[0]) + "UpperLeg")
-		mk.rbox(Vector3(0.19, 0.46, 0.22), L["legs"], Color.WHITE, 0.085, Vector3(lx, 0.74, 0))
+		mk.rbox(Vector3(0.208, 0.46, 0.236), L["legs"], Color.WHITE, 0.09, Vector3(lx, 0.74, 0))
 		B.call(String(side[0]) + "LowerLeg")
-		mk.rbox(Vector3(0.165, 0.32, 0.185), L["legs"], Color(0.92, 0.92, 0.92), 0.07, Vector3(lx, 0.40, 0))
-		mk.rbox(Vector3(0.20, 0.22, 0.22), L["boots"], Color.WHITE, 0.07, Vector3(lx, 0.21, 0))
-		mk.rbox(Vector3(0.212, 0.05, 0.232), L["trim"], Color(0.85, 0.85, 0.85), 0.02, Vector3(lx, 0.31, 0), 1)
+		mk.rbox(Vector3(0.182, 0.32, 0.202), L["legs"], Color(0.92, 0.92, 0.92), 0.075, Vector3(lx, 0.40, 0))
+		mk.rbox(Vector3(0.214, 0.22, 0.236), L["boots"], Color.WHITE, 0.075, Vector3(lx, 0.21, 0))
+		mk.rbox(Vector3(0.226, 0.05, 0.248), L["trim"], Color(0.85, 0.85, 0.85), 0.02, Vector3(lx, 0.31, 0), 1)
 		B.call(String(side[0]) + "Foot")
-		mk.rbox(Vector3(0.20, 0.12, 0.21), L["boots"], Color.WHITE, 0.05, Vector3(lx, 0.078, 0.02))
-		mk.box(Vector3(0.20, 0.03, 0.21), "black", Color.WHITE, 0.0, Vector3(lx, 0.015, 0.02))
+		mk.rbox(Vector3(0.214, 0.12, 0.21), L["boots"], Color.WHITE, 0.05, Vector3(lx, 0.078, 0.02))
+		mk.box(Vector3(0.214, 0.03, 0.21), L["boots"], sole, 0.0, Vector3(lx, 0.015, 0.02))
 		B.call(String(side[0]) + "Toes")
-		mk.rbox(Vector3(0.20, 0.10, 0.17), L["boots"], Color(0.93, 0.93, 0.93), 0.05, Vector3(lx, 0.068, -0.15))
-		mk.box(Vector3(0.20, 0.03, 0.17), "black", Color.WHITE, 0.0, Vector3(lx, 0.015, -0.15))
+		mk.rbox(Vector3(0.214, 0.10, 0.17), L["boots"], Color(0.93, 0.93, 0.93), 0.05, Vector3(lx, 0.068, -0.15))
+		mk.box(Vector3(0.214, 0.03, 0.17), L["boots"], sole, 0.0, Vector3(lx, 0.015, -0.15))
 	return mk

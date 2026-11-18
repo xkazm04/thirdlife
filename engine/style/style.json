@@ -99,7 +99,12 @@
   "ao_k": 0.42,
   "ao_radius": 0.7,
   "ao_far": 120.0,
-  "ao_color": "#2a2058"
+  "ao_color": "#2a2058",
+  "body_k": 0.55,
+  "thin_rings": 1.0,
+  "thin_tone": 0.55,
+  "thin_tone_near": 15.0,
+  "thin_tone_far": 45.0
  },
  "grade": {
   "shadows": "#2c3070",
@@ -173,9 +178,9 @@
   "hair": "#8a4a2c",
   "jacket": "#d24a3a",
   "jacket_trim": "#f2e4d4",
-  "pants": "#4c405a",
+  "pants": "#4d5a8c",
   "boots": "#6c4a38",
-  "pack": "#8c8272",
+  "pack": "#c2975a",
   "strap": "#4a3f4a",
   "bot_body": "#f4c43a",
   "bot_white": "#f4f0ea",

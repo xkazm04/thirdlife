@@ -3,6 +3,13 @@ extends Node3D
 ## (godot --write-movie) shows foot slide, turns and timing. Visual only; counts physics frames, never a clock.
 ## Args after `--`:  --what=biped|car|bot   --mode=walk|skate   --speed=m/s   --clip=<biped clip played over locomotion>
 ##   --turn=deg/s (yaw rate)   --view=side|three|front   --stick=1   --team=blue|red   --seconds=N (frames to run)
+##   walker-feel (18 Nov): --dir=deg (travel direction against the facing: 0 forward, 90 right, 180 back; the figure keeps facing
+##   one way), --dir2=deg --dir-at=frame (a second direction from that frame), --accel=frames (speed ramps up over N frames),
+##   --stop-at=frame (speed 0 from there), --jump-at=frame (a jump: off the floor, `jump` / `land` clips if the rig has them),
+##   --jump-v=m/s, --hold=<clip> --hold-at=frame --hold-end=frame (a held clip such as slide, ended with play("")),
+##   --view=behind (the visitor's camera: 8.5 m back, 3.6 m up, fov 60) | vclose (2.6 m back) | vfront
+##   --freeze-at=frame (the pose stops there, the travel goes on: a crawl meter), --style=<file>, --no-ink, --no-grade, --no-shadow, --no-body,
+##   --thin=1 (fences, scaffolds, a crane and trees beside the path: the ink contour on thin members under a pan)
 ## `res://rigs/review/review.tscn` is run by `look.sh clip rig:...`; it is not part of any pack.
 
 var args: Dictionary = {}
@@ -21,6 +28,16 @@ var cam_pos: Vector3 = Vector3.ZERO
 var slip_log: Array = []
 var signed_log: Array = []
 var prev_feet: Array = []
+var dir_deg: float = 0.0
+var face: float = 0.0          # facing yaw (radians, 0 = +X); travel = facing turned by dir_deg
+var vy: float = 0.0
+var airborne: bool = false
+var c_prev: Dictionary = {}    # contact meter: point index -> world position last frame (only while on the floor)
+var c_log: Array = []
+var c_frames: int = 0
+var c_none: int = 0
+var c_low: float = 0.0
+const GRAV: float = 24.0
 
 
 func _ready() -> void:
@@ -33,7 +50,14 @@ func _ready() -> void:
 	view = String(args.get("view", "side"))
 	clip = String(args.get("clip", ""))
 	clip_at = int(args.get("clip-at", "90"))
-	TLStyle.install(self, {"ink": true, "grade": true})
+	dir_deg = float(args.get("dir", "0"))
+	if args.has("style"):                      # another style file (an absolute path works): the look under test
+		for note: String in TLStyle.load_style(String(args["style"])):
+			print("[review] style: " + note)
+	TLStyle.install(self, {"ink": not args.has("no-ink"), "grade": not args.has("no-grade")})
+	if args.has("no-shadow"):                  # measurement only: is a crawl the sun's shadow map?
+		for n: Node in find_children("*", "DirectionalLight3D", true, false):
+			(n as DirectionalLight3D).shadow_enabled = false
 	var skate: bool = String(args.get("mode", "walk")) == "skate"
 	var floor_surface: String = "ice" if skate else "asphalt" if what == "car" else "concrete"
 	var fl: Node3D = TLKit.build("ground_patch", {"size_x": 300.0, "size_z": 400.0, "surface": floor_surface, "thickness": 0.3})
@@ -45,6 +69,25 @@ func _ready() -> void:
 			var c: Node3D = TLKit.build("cone", {})
 			c.position = Vector3(float(i) * 4.0 - 8.0, 0, sz)
 			add_child(c)
+	if args.has("thin"):
+		# walker-feel: thin members at 15 to 70 m beside the path (rail and mesh fences, scaffolds, a crane, trees): what the
+		# ink contour does on them while the picture pans (--turn) is the shimmer lane T measured
+		for i: int in 8:
+			for side: float in [-1.0, 1.0]:
+				var fz: float = side * (14.0 + 9.0 * float(i % 4))
+				var fe: Node3D = TLKit.build("fence", {"length": 24.0, "style": "rail" if (i + int(side)) % 2 == 0 else "mesh"})
+				fe.position = Vector3(10.0 + 26.0 * float(i), 0, fz)
+				add_child(fe)
+				var tr: Node3D = TLKit.build("tree", {"species": "pine" if i % 2 == 0 else "broadleaf", "height": 8.0 + float(i % 3) * 3.0, "seed": 100 + i})
+				tr.position = Vector3(18.0 + 26.0 * float(i), 0, fz + side * 5.0)
+				add_child(tr)
+		for i: int in 4:
+			var sc: Node3D = TLKit.build("scaffold", {})
+			sc.position = Vector3(40.0 + 45.0 * float(i), 0, -26.0 if i % 2 == 0 else 22.0)
+			add_child(sc)
+		var cr: Node3D = TLKit.build("crane", {})
+		cr.position = Vector3(110.0, 0, -45.0)
+		add_child(cr)
 	if what == "fx":
 		_setup_fx()
 		return
@@ -65,6 +108,9 @@ func _ready() -> void:
 				p["colors"] = {"top": "car_red", "trim": "car_white", "legs": "bot_dark", "boots": "black"}
 			rig = TLRigs.build("biped", p)
 	add_child(rig)
+	if args.has("no-body"):                    # measurement only: the rig without the body-anchored shading (toon `tl_body`)
+		for n: Node in rig.find_children("*", "GeometryInstance3D", true, false):
+			(n as GeometryInstance3D).set_instance_shader_parameter(&"tl_body", Vector2.ZERO)
 	cam = Camera3D.new()
 	cam.fov = 38.0
 	cam.far = 2000.0
@@ -106,15 +152,41 @@ func _physics_process(_dt: float) -> void:
 	var v: float = speed
 	if what == "biped" and frame < 30:
 		v = 0.0                                      # stand for half a second, then go
+	elif what == "biped" and args.has("accel"):
+		v = speed * clampf(float(frame - 30) / maxf(1.0, float(args["accel"])), 0.0, 1.0)
+	if what == "biped" and args.has("stop-at") and frame >= int(args["stop-at"]):
+		v = 0.0
 	if what == "car":
 		v = speed * smoothstep(0.0, 120.0, float(frame))
+	if args.has("dir2") and frame >= int(args.get("dir-at", "150")):
+		dir_deg = float(args["dir2"])
 	heading += deg_to_rad(turn) * dt * (1.0 if frame > 30 else 0.0)
-	var dir: Vector3 = Vector3(cos(heading), 0, sin(heading))
+	face = heading
+	var fwd: Vector3 = Vector3(cos(face), 0, sin(face))
+	var right: Vector3 = Vector3(-sin(face), 0, cos(face))
+	var da: float = deg_to_rad(dir_deg)
+	var dir: Vector3 = fwd * cos(da) + right * sin(da)
 	pos += dir * v * dt
+	# a jump: ballistic, off the floor until it comes back
+	if what == "biped" and args.has("jump-at") and frame == int(args["jump-at"]):
+		vy = float(args.get("jump-v", "8.0"))
+		airborne = true
+		if (rig.call("clips") as PackedStringArray).has("jump"):
+			rig.call("play", &"jump")
+	var landed: bool = false
+	var land_v: float = 0.0
+	if airborne:
+		vy -= GRAV * dt
+		pos.y += vy * dt
+		if pos.y <= 0.0:
+			pos.y = 0.0
+			airborne = false
+			landed = true
+			land_v = vy
+			vy = 0.0
 	rig.position = pos
-	rig.rotation.y = -heading + (0.0 if what == "car" else 0.0) - PI * 0.5 + PI * 0.5
-	# rigs face -Z; rotation about Y by -(heading + 90 deg) points -Z along `dir`
-	rig.rotation.y = -(heading + PI * 0.5)
+	# rigs face -Z; rotation about Y by -(heading + 90 deg) points -Z along the facing
+	rig.rotation.y = -(face + PI * 0.5)
 	if what == "car":
 		var yaw_rate: float = deg_to_rad(turn)
 		var steer: float = clampf(yaw_rate * 2.7 / maxf(v, 1.0) / deg_to_rad(32.0), -1.0, 1.0)
@@ -126,16 +198,29 @@ func _physics_process(_dt: float) -> void:
 		rig.call("set_param", &"suspension", [bump, -bump, -bump, bump])
 		rig.call("set_param", &"nitro", 1.0 if (frame > 150 and frame < 190) else 0.0)
 	else:
-		rig.call("set_locomotion", Vector3(0, 0, -v), true)
+		rig.call("set_locomotion", Vector3(sin(da) * v, land_v if landed else vy, -cos(da) * v), not airborne)
+		if landed and (rig.call("clips") as PackedStringArray).has("land"):
+			rig.call("play", &"land")
 		if clip != "" and frame == clip_at:
 			rig.call("play", StringName(clip))
-	rig.call("tick", frame)
+		if args.has("hold") and (rig.call("clips") as PackedStringArray).has(String(args["hold"])):
+			if frame == int(args.get("hold-at", "120")):
+				rig.call("play", StringName(String(args["hold"])))
+			if frame == int(args.get("hold-end", "200")):
+				rig.call("play", &"")
+	if not (args.has("freeze-at") and frame >= int(args["freeze-at"])):
+		rig.call("tick", frame)       # --freeze-at: the pose stops, the travel goes on: what still changes on him is the shading
 	if what == "biped" and frame == 1 and args.has("k"):
 		rig.set("stride_k", float(args["k"]))
 	if what == "biped" and frame == 1 and args.has("a"):
 		rig.set("amp_override", float(args["a"]))
+	if what == "biped" and args.has("hip") and frame > 200 and frame <= 200 + int(args["hip"]):
+		var fts: Array = (rig.get("_gait") as Object).get("feet")
+		var lp: Dictionary = rig.get("_last")
+		print("[hip] f=%d y=%.3f L st=%s pos=%s R st=%s pos=%s" % [frame, (lp["h"] as Vector3).y, str(fts[0]["st"]), str((fts[0]["pos"] as Vector3).snapped(Vector3.ONE * 0.01)), str(fts[1]["st"]), str((fts[1]["pos"] as Vector3).snapped(Vector3.ONE * 0.01))])
 	if what == "biped":
 		_log_feet(dir, v)
+		_log_contact(v)
 	_place_cam(false)
 
 
@@ -144,6 +229,15 @@ func _place_cam(snap: bool) -> void:
 	if view == "face":
 		target = pos + Vector3(0, 1.74, 0)
 	cam_pos = target if snap else cam_pos.lerp(target, 0.25)
+	if view == "behind" or view == "vclose" or view == "vfront":
+		# the visitor's camera (kernel/world/visitor.gd): behind the facing, looking at 1.7 m; rigid, as with steer on
+		var f: Vector3 = Vector3(cos(face), 0, sin(face))
+		var back: float = 8.5 if view == "behind" else 2.6 if view == "vclose" else -4.2
+		var up: float = 3.6 if view == "behind" else 2.0
+		cam.fov = 60.0 if view == "behind" else 45.0
+		cam.position = Vector3(pos.x, 0.0, pos.z) - f * back + Vector3(0, up, 0)
+		cam.look_at(Vector3(pos.x, 1.7 if view == "behind" else 1.25, pos.z), Vector3.UP)
+		return
 	var off: Vector3
 	match view:
 		"three": off = Vector3(-4.2, 2.2, 5.8)
@@ -187,6 +281,7 @@ func _log_feet(dir: Vector3, v: float) -> void:
 			signed_log.append(best_signed)
 	prev_feet = feet
 	if frame == int(args.get("frames", "300")) and args.has("slip"):
+		_print_contact()
 		var sum: float = 0.0
 		var worst: float = 0.0
 		for e: Array in slip_log:
@@ -197,3 +292,47 @@ func _log_feet(dir: Vector3, v: float) -> void:
 		for x: float in signed_log:
 			ss += x
 		print("[review] slip speed=%.2f k=%s planted_samples=%d mean_ms=%.3f max_ms=%.3f signed_mean=%.3f (foot on the floor: ground speed along travel, m/s)" % [speed, str(args.get("k", "1")), slip_log.size(), sum / maxf(1.0, float(slip_log.size())), worst, ss / maxf(1.0, float(signed_log.size()))])
+
+
+## Contact slide (walker-feel): what the eye sees. Six points of the soles (heel, ball, toe tip of each boot); a point that is on
+## the floor (under 15 mm) this frame and the last should not have moved: its horizontal speed over the floor is the slide.
+## Per frame the worst point counts. Also: the frames with no point on the floor (flight or floating) and the lowest point
+## seen (below 0 = through the floor).
+const SOLE: Array = [["LeftFoot", Vector3(-0.11, 0.0, 0.115)], ["LeftFoot", Vector3(-0.11, 0.0, -0.08)], ["LeftToes", Vector3(-0.11, 0.0, -0.225)],
+	["RightFoot", Vector3(0.11, 0.0, 0.115)], ["RightFoot", Vector3(0.11, 0.0, -0.08)], ["RightToes", Vector3(0.11, 0.0, -0.225)]]
+
+
+func _log_contact(v: float) -> void:
+	var sk: Skeleton3D = rig.get_node_or_null("Model/Skeleton3D")
+	if sk == null:
+		return
+	var now: Dictionary = {}
+	var worst: float = -1.0
+	var lowest: float = 1e9
+	for i: int in SOLE.size():
+		var bi: int = sk.find_bone(String(SOLE[i][0]))
+		var p: Vector3 = sk.global_transform * (sk.get_bone_global_pose(bi) * (sk.get_bone_global_rest(bi).affine_inverse() * (SOLE[i][1] as Vector3)))
+		lowest = minf(lowest, p.y - rig.position.y)
+		if p.y - rig.position.y < 0.015 and not airborne:
+			now[i] = p
+			if c_prev.has(i):
+				var d: Vector3 = p - (c_prev[i] as Vector3)
+				d.y = 0.0
+				worst = maxf(worst, d.length() * 60.0)
+	c_prev = now
+	if v > 0.05 and frame > 60 and not airborne:
+		c_frames += 1
+		c_low = minf(c_low, lowest)
+		if worst >= 0.0:
+			c_log.append(worst)
+		elif now.is_empty():
+			c_none += 1
+
+
+func _print_contact() -> void:
+	var sum: float = 0.0
+	var mx: float = 0.0
+	for x: float in c_log:
+		sum += x
+		mx = maxf(mx, x)
+	print("[review] contact speed=%.2f dir=%.0f frames=%d on_floor=%d mean_ms=%.3f max_ms=%.3f none_on_floor=%d lowest_m=%.3f (sole points on the floor two frames running: speed over the floor, m/s)" % [speed, dir_deg, c_frames, c_log.size(), sum / maxf(1.0, float(c_log.size())), mx, c_none, c_low])

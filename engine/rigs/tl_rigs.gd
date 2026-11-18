@@ -10,10 +10,10 @@ const BIPED_COLORS: Array = ["skin", "hair", "top", "trim", "legs", "boots", "pa
 
 ## family -> [doc, "", false, {param: [type, default, min, max, doc]}]  (the row format of TLKit.PARTS)
 const FAMILIES: Dictionary = {
-	"biped": ["Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work.", "", false, {
+	"biped": ["Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air.", "", false, {
 		"seed": ["int", 1, 0, 1000000, "reserved for variation (no effect in v0.1)"], "scale": ["float", 1.0, 0.5, 2.0, "uniform scale (1 = 2.0 m tall with hair)"],
 		"colors": ["dict", {}, ["skin", "hair", "top", "trim", "legs", "boots", "pack", "strap", "stick"], "", "palette key per part; absent parts keep the default look"],
-		"mode": ["enum", "walk", ["walk", "skate"], "", "locomotion mode: walk = idle / walk / run by speed; skate = glide / stride by speed, skate blades shown"],
+		"mode": ["enum", "walk", ["walk", "skate"], "", "locomotion mode: walk = one planted gait from standing to a sprint, read from the speed and direction; skate = glide / stride by speed, skate blades shown"],
 		"stick": ["bool", false, "", "", "show a hockey stick in hand_r; arms take the two-handed hold (same as prop = stick)"],
 		"prop": ["enum", "auto", ["auto", "none", "stick", "hammer"], "", "what hand_r holds: auto = the stick in skate mode, nothing in walk mode; hammer goes with the work clip"],
 		"headgear": ["enum", "auto", ["auto", "none", "helmet"], "", "auto = a team helmet in the top colour and the hockey kit (white hem band, number patch) in skate mode, hair in walk mode"],
@@ -149,4 +149,15 @@ static func _build_rig(family: String, params: Dictionary) -> Node3D:
 	rig.set_meta("tl_kind", "rig." + family)
 	rig.set_meta("tl_params", p)
 	rig.call("setup", p)
+	# walker-feel: a rig moves. Its meshes carry their mottle and hatching with them, and a biped or a bot casts its shadow from
+	# further down the sun's rays, so that no part of it shadows another (style/shaders/toon.gdshader, `tl_body`): shading
+	# anchored to the world or to shadow-map texels crawls over a moving figure.
+	_mark_body(rig, Vector2(1.0, 0.0 if family == "vehicle" else 0.6 * float(p.get("scale", 1.0))))
 	return rig
+
+
+static func _mark_body(n: Node, body: Vector2) -> void:
+	if n is GeometryInstance3D:
+		(n as GeometryInstance3D).set_instance_shader_parameter(&"tl_body", body)
+	for c: Node in n.get_children():
+		_mark_body(c, body)
