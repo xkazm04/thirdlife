@@ -54,7 +54,8 @@ above the card text.
 A bound comes only from a measured row of the card's own example: `wins_max: 0` for `idle` only where idle won 0 of
 `seeds`; `wins_min` is floor(Wilson 95 % low end x seeds), set only when it is at least 1. A hand with no such row is
 not set. A pack meets a check through its own test `tests/bot_hand_<hand>.gd` (registered by a package) whose
-`_bot_result()` returns `won` (bool). `tl cards hands <pack> --card <id> [--seeds N] [--tests <dir>] [--par N]` runs
+`_bot_result()` returns `won` (bool). An `idle` test presses nothing and has no frame cap of its own: a game whose round does not
+end by itself fails its idle check. A card's example carries every hand test the card checks (`tl cards check`). `tl cards hands <pack> --card <id> [--seeds N] [--tests <dir>] [--par N]` runs
 a card's checks on any pack; the Foreman runs them at final verification (`JOB.md`, "Added 2026-11-18").
 
 ## Commands

@@ -227,3 +227,8 @@ Unknown `type` or unknown keys are errors when the log is read.
 - When the job's card has `hands` (`contracts/CARDS.md`), final verification runs every check on seeds 1..N as `verify`
   events (level V4, verb `bot`, report stem `final-hand-<hand>-seed<k>`). A failed bound means nothing is promoted and the
   job ends `failed` with the rows in its reason; after a change request, `pack/` goes back to the last promotion.
+- (Added later the same night.) A plan whose card has `hands` must register each `tests/bot_hand_<hand>.gd` the card
+  checks; the plan check refuses it otherwise. A failed hand check first sends every package that registers a failing
+  test back for ONE round (`reopened` reason and `queued` detail starting `hand check failed`, with the rows); then
+  final verification and the hand checks run again. Only a second failure since the last promotion or change request,
+  or a failing test no package registers, ends the job unpromoted.

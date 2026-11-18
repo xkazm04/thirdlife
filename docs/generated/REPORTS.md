@@ -3,7 +3,7 @@
 Generated from `docs/reports/**/*.md`, `briefs/` and `engine/kernel/runner/manifest.gd` by `node devx/bin/tl.mjs arch --index`; do not edit (rule `reports-index-fresh`).
 The reports are history and stay as written; this page only collects them.
 
-48 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
+50 reports, 77 pack-author bullets (3 marked stale), 119 questions raised.
 
 A stale mark is one of two mechanical tests on a pack-author bullet, nothing more:
 - `[stale: path gone]`: the bullet cites in backticks a repo path (first segment a top-level directory of the repo, an optional `:line` dropped) that no file or directory of the tree matches now.
@@ -54,9 +54,11 @@ An unmarked bullet passed both tests; it was not read for being right.
 | engine-world-next/C-PATCHES | - | - | - |
 | engine-world-next/C2 | - | - | - |
 | engine-world-next/C2-PATCHES | - | - | - |
+| engine-world-next/C3 | - | - | - |
 | engine-world-next/S | - | - | - |
 | engine-world-next/S-PATCHES | - | - | - |
 | engine-world-next/S2 | - | - | - |
+| engine-world-next/S3 | - | - | - |
 | jam-lessons-home/B | - | - | - |
 | jam-lessons-home/H | - | - | - |
 | jam-lessons-home/K | - | - | - |
