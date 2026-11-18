@@ -31,6 +31,7 @@ var _reported: bool = false
 var _logged: int = 0
 var _frame_usec: PackedInt64Array = PackedInt64Array()      # the wall time of every frame while he walks (cost line)
 var _frame_last: int = 0
+var _later: Array = []                  # S2: probes with a world tick `t`, run when the world reaches it
 # P11: a person steers (kernel/runner/visit.gd): he faces where the camera looks, A and D sidestep, the mouse turns
 # the view. A scripted walk keeps the N7 behaviour (he turns to where he moves and the camera follows his back).
 var steer: bool = false
@@ -117,6 +118,9 @@ func put(at: Vector3, yaw: float) -> void:
 
 func step(pos: Vector3, frame: int) -> void:
 	ticks += 1
+	if not _later.is_empty() and space != null and _world != null and int(_world.get("tick")) >= int((_later[0] as Dictionary)["t"]):
+		_run_probes([_later.pop_front()], {}, Vector3.INF)
+		space.call("place", feet)
 	if space != null:
 		var want: Vector3 = Vector3(pos.x - feet.x, 0.0, pos.z - feet.z)
 		var dist: float = want.length()
@@ -172,6 +176,8 @@ func _run_probes(list: Array, auto: Dictionary, back_to: Vector3) -> void:
 			if auto.has("rail"):
 				var b: Array = auto["rail"]
 				probes.append({"name": "bridge_rail", "from": [float(b[0]), float(b[1])], "to": [float(b[0]) + float(b[2]) * 8.0, float(b[1]) + float(b[3]) * 8.0], "expect": "stop"})
+		elif typeof(p) == TYPE_DICTIONARY and (p as Dictionary).has("t") and int((p as Dictionary)["t"]) > 0 and back_to != Vector3.INF:
+			_later.append(p)                        # S2: at its world tick (a site's scaffold before and after its game arrives)
 		elif typeof(p) == TYPE_DICTIONARY:
 			probes.append(p)
 	for pr: Dictionary in probes:
@@ -210,7 +216,8 @@ func _run_probes(list: Array, auto: Dictionary, back_to: Vector3) -> void:
 		print(JSON.stringify({"schema": "tl.view/1", "kind": "visitor_probe", "name": str(pr.get("name", "")), "expect": expect, "ok": ok, "from": f, "to": to,
 			"end": [snappedf(pos.x, 0.01), snappedf(pos.y, 0.01), snappedf(pos.z, 0.01)], "short_of_target_m": snappedf(short, 0.01), "stopped_by": hit, "ticks": steps}, "", false))
 	space.set("blocked_ticks", 0)
-	space.call("place", back_to)
+	if back_to != Vector3.INF:
+		space.call("place", back_to)
 
 
 func _process(_delta: float) -> void:

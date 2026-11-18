@@ -5,6 +5,9 @@ extends Node
 ##                                              aside, the mouse looks, Shift runs, E enters, Q leaves, Esc quits
 ##                                              (kernel/runner/visit.gd; --record writes the visit as tl.input/1)
 ##   ThirdLife.exe --input=<abs file>           a recorded visit again (no device is read)
+##   ThirdLife.exe -- --site-job=<abs dir>      S2: the village's construction site follows that Foreman job directory
+##                                              live, as it grows (also with `check`); missing or without job.jsonl:
+##                                              the exported copy, and a warning
 ##   ThirdLife.exe --headless --fixed-fps 60 -- check --out=<abs file> [--ticks=N] [--games=<dir>]
 ##                                              the scripted tour of the same village without a window; one tl.world/1
 ##                                              line per pack (its state hash) in --out; `export.sh check` compares it
@@ -84,7 +87,7 @@ func _ready() -> void:
 				opts[a.substr(2, eq - 2)] = a.substr(eq + 1)
 		elif verb.is_empty():
 			verb = a
-	for k: String in ["games", "out", "record", "input"]:
+	for k: String in ["games", "out", "record", "input", "site-job"]:
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if opts.has("games"):
@@ -252,6 +255,16 @@ func _site_lots(land: Dictionary) -> void:
 			var wt: int = dir.find("/.claude/worktrees/")
 			if wt >= 0 and not FileAccess.file_exists(dir + "/job.jsonl"):
 				dir = dir.substr(0, wt) + "/" + job           # site/ (job output) is in the main checkout only
+		if opts.has("site-job") and kept_sites.is_empty():
+			# S2: a person points the first site lot at a job that is running now (an absolute job directory)
+			var live: String = str(opts["site-job"]).trim_suffix("/")
+			if live.is_absolute_path() and FileAccess.file_exists(live + "/job.jsonl"):
+				print("[boot] lot %d follows the job %s live (--site-job)" % [k, live])
+				dir = live
+				job = live
+				(lot as Dictionary).erase("replay")
+			else:
+				print("[boot] warning: --site-job=%s is not an absolute job directory with a job.jsonl: lot %d shows %s" % [live, k, dir])
 		if FileAccess.file_exists(dir + "/job.jsonl"):
 			(lot as Dictionary)["job"] = dir
 			kept_sites.append({"lot": k, "job": job.get_file(), "dir": dir})

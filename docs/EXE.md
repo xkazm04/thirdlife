@@ -144,7 +144,12 @@ lot and is played like any other (walk up, E enters, Q or Esc leaves).
 - **A job that is not found** (no `job.jsonl`) leaves a plain building site: `export.sh` warns and builds without it,
   `boot.gd` prints `[boot] lot 0 is a plain building site: ...` and lists it under `left_out` in its first line.
 - The village's site is LIVE (no `replay`): the copied log is read at the start and looked at again every 60 ticks.
-  The build holds the log as it was when the build was made; a job that goes on after the export needs a new export.
+  The build holds the log as it was when the build was made; to watch a job that is running, see the next item.
+- **Follow a running job (S2): `ThirdLife.exe -- --site-job=<abs job dir>`** (also after `-- check`). The village's
+  first site lot then reads that job directory's `job.jsonl` live, as the Foreman writes it (looked at every 60
+  ticks), and its last promoted game arrives from that directory's `promoted/`. Nothing is written there. A path that
+  is not absolute or has no `job.jsonl`: `[boot] warning: --site-job=...` and the exported copy is shown. From a
+  shortcut or a console: `ThirdLife.exe -- --site-job=C:/Users/<you>/kiro/third-life/site/<job id>`.
 
 ## The first minute (P14)
 

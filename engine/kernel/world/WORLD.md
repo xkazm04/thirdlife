@@ -349,6 +349,13 @@ world's end (stage, events read, packages, stage ticks, reads and their time).
 The 11 Nov hockey game (built against the 0.1 kernel) loads on today's kernel: smoke 600 frames, 0 errors; its rink
 (60 x 30 m, apron 3.5) fits a lot of radius 40 (half-diagonal 38.3 m).
 
-**Not built:** the visitor walks through the site's bays (they have no colliders: the world's collider cannot drop
-parts yet); the site does not show `question`, `milestone` captures or comments; a live site does not see a job
+**S2 (18 Nov).** The scaffold is solid: `site/draw.gd` puts one box per bay (slab, walls or house, scaffold; its
+height by the package's state) and one for the crane's foot into the visitor's space under the tag `site <lot>`,
+rebuilt when the view changes, and takes them all away when the game arrives (`terrain/world_space.gd`
+`remove_tag`, the space's only removal). A walk's `visitor_probe` entry may carry `t` (a world tick; entries in
+order): it is run then (selftest `site.solid`). The exe follows a running job: `-- --site-job=<abs job dir>`
+(docs/EXE.md). Arrival time measured (S2.md): the worker starts the promoted game's preparation within 1 ms of the
+release and the game is attached on the next tick after it (hockey: 611-615 ms, against 663-695 ms to load it
+alone); a test window runs unpaced (about 740 ticks a second), so the same 0.6 s read as 450 to 510 ticks.
+**Not built:** the site does not show `question`, `milestone` captures or comments; a live site does not see a job
 directory that appears after the world started.

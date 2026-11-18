@@ -527,6 +527,45 @@ if [ -z "$FILTER" ] || [[ "site." == *"$FILTER"* ]] || [[ "$FILTER" == site.* ]]
     echo "$u" | grep -q '^exit 0' || why="${why:+$why; }the world did not end with exit 0"
     verdict site.unmade "$why" "after the restore: $(echo "$a" | grep -oE '"built":[0-9]+,"total":[0-9]+|"packages":\[[^]]*\]' | tr '\n' ' ')"
   fi
+  # S2: the exe's village follows a job that is running (`-- check --site-job=<abs dir>`, engine/boot/boot.gd): the
+  # job starts with 3 lines; a writer appends the other 18, one at a time, while the world runs (it starts when the
+  # world host has printed "[tl] world start": a headless world builds its packs one per tick from there). The site
+  # reads them as they come: more than one stage is seen at its own world tick, the log is read to its end and the
+  # promoted game arrives. The writer only spaces its lines (0.2 s); the check runs 40000 ticks so that it outlasts
+  # the writer on a busy machine; nothing is judged by the clock.
+  if [ -z "$FILTER" ] || [[ "site.follow_exe" == *"$FILTER"* ]]; then
+    cp -r "$FX/arrive" "$SD/follow"; cp "$SD/follow/job.jsonl" "$SD/follow_full.jsonl"
+    head -n 3 "$SD/follow_full.jsonl" > "$SD/follow/job.jsonl"
+    ( for _ in $(seq 1 1200); do grep -q '^\[tl\] world start' "$SD/fcheck.out" 2>/dev/null && break; sleep 0.1; done
+      tail -n +4 "$SD/follow_full.jsonl" | while IFS= read -r line; do sleep 0.2; echo "$line" >> "$SD/follow/job.jsonl"; done ) &
+    wpid=$!
+    MSYS_NO_PATHCONV=1 "$GS" --headless --fixed-fps 60 --path "$ES" res://boot/boot.tscn -- check "--out=$SD/fcheck.jsonl" "--site-job=$SD/follow" --ticks=40000 > "$SD/fcheck.out" 2>&1; fcode=$?
+    f="$(tr -d '\015' < "$SD/fcheck.out" | grep -E '^\[site\]|^\[boot\]|SCRIPT ERROR')"
+    wait $wpid 2>/dev/null
+    a="$(echo "$f" | lot_of 0)"; why=""
+    echo "$f" | grep -q '^\[boot\] lot 0 follows the job .*follow live' || why="the check did not take --site-job"
+    echo "$a" | grep -q '"mode":"live"' || why="${why:+$why; }the site is not live: $a"
+    echo "$a" | grep -q '"events":21,' || why="${why:+$why; }the appended lines were not all read (21 wanted): $a"
+    st="$(echo "$a" | grep -o '"stage_ticks":{[^}]*}' | grep -o '"[a-z]*":[0-9]*' | wc -l)"
+    [ "${st:-0}" -ge 2 ] || why="${why:+$why; }only one stage was seen while the world ran: $(echo "$a" | grep -o '"stage_ticks":{[^}]*}')"
+    echo "$a" | grep -q '"arrived":"example.bounce@0.1.0"' || why="${why:+$why; }the promoted game did not arrive"
+    grep -q '"plot":"site_0"' "$SD/fcheck.jsonl" 2>/dev/null || why="${why:+$why; }no line for the site's plot in the check's output"
+    verdict site.follow_exe "$why" "$(echo "$a" | grep -oE '"stage_ticks":\{[^}]*\}|"arrived_at":[0-9]+|"reads":[0-9]+,"read_ms":[0-9.]+' | tr '\n' ' ')"
+  fi
+  # S2: the scaffold is solid (a window: the visitor's space exists only with the landscape). Probes at world ticks
+  # (walk `visitor_probe` entries with `t`): while the site builds, the gate lets the visitor in and the middle bay
+  # stops him (`stopped_by` site 0); after the game arrived (tick 380) the same walk is not stopped by the site.
+  if [ -z "$FILTER" ] || [[ "site.solid" == *"$FILTER"* ]]; then
+    so="$(bash "$HERE/world.sh" tour "$FX/site_solid.json" "--out-dir=$SD/solid" --pictures-only 2>&1)"
+    pr() { echo "$so" | grep "name:$1 " | grep -oE 'ok:[a-z]+|stopped_by:[a-z0-9 ]+  ticks|end:\[[^]]*\]' | sed 's/  ticks//' | tr '\n' ' '; }
+    why=""
+    echo "$so" | grep -q 'name:site_gate_while_building .*ok:true' || why="the gate did not let him in while the site builds: $(pr site_gate_while_building)"
+    echo "$so" | grep -q 'name:site_bay_while_building .*ok:true.*stopped_by:site 0 ' || why="${why:+$why; }the bay did not stop him while the site builds: $(pr site_bay_while_building)"
+    echo "$so" | grep -q 'name:site_bay_after_arrival .*ok:true.*stopped_by:none' || why="${why:+$why; }the bay's collider was still there after the arrival: $(pr site_bay_after_arrival)"
+    echo "$so" | grep -q 'e:built  plot:site_0' || why="${why:+$why; }the game did not arrive"
+    echo "$so" | grep -q '^DONE world.tour' || why="${why:+$why; }the window run failed: $(echo "$so" | grep -E 'FAIL|ERROR' | head -2 | tr '\n' ' ')"
+    verdict site.solid "$why" "gate: $(pr site_gate_while_building); bay while building: $(pr site_bay_while_building); after arrival: $(pr site_bay_after_arrival)"
+  fi
 fi
 # The build queue with its worker thread, without a window (walks/queue.json: `load.mode` wait): three seeds are
 # prepared on the worker (scripts, layouts built ahead by the kit), one per tick, waited for. Every pack hashes as

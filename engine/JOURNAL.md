@@ -1010,3 +1010,19 @@ PASS, `selftest.sh world.` 15 passed 0 failed, `export.sh --commit p14c` built i
   `export.sh` PASS and `export.sh check` PASS with 8 games (the site's game the same in the editor binary, the exe and
   the moved exe). Measured: a live site looks at the file every 60 ticks; the village's 331-event log, 4000 ticks: 67
   looks, 23.9 ms in all. In a window the queue built the hockey game 703 to 737 ticks after its release (busy).
+
+## The live site (engine-world-next, lane S round 2, worktree ew-site2; 18 Nov, clock from `date`)
+
+- 01:32 to 02:30. The exe follows a running job: `ThirdLife.exe -- --site-job=<abs job dir>` (boot.gd; docs/EXE.md);
+  not absolute or no job.jsonl: a warning and the exported copy. Selftest `site.follow_exe`: a writer appends 18 of a
+  fixture's 21 lines while the editor binary's village check runs; the site sees bays, building, merged and promoted
+  at their own ticks and the game arrives. Without the option the village check hashes as on main (7 lines equal).
+- Arrival time: measured, not changed. With prints in jobs.gd (removed after): the worker starts the promoted game's
+  preparation within 1 ms of the release and the queue attaches it on the next tick after (hockey: prepare 611-615
+  ms, attach 53-63 ms; the game alone loads in 663-695 ms). Round 1's 287 to 737 ticks were ticks of an unpaced
+  test window (about 740 a second). The reading "the queue waits behind far packs" is refuted.
+- The scaffold is solid: `terrain/world_space.gd remove_tag`, the space's first removal; `site/draw.gd` gives each bay
+  and the crane's foot a box under the tag `site <lot>` and takes them away when the game arrives. A walk's
+  `visitor_probe` may carry `t` (visitor.gd runs it at that world tick). Selftest `site.solid` (a window): the gate
+  lets the visitor in, the bay stops him while building (`stopped_by: site 0`), after the arrival the walk passes.
+- Stills of tonight's real crate job (walks/site.json): mid-build "2 of 5 built", the game arrived.

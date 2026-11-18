@@ -1,0 +1,23 @@
+{
+  "schema": "tl.walk/1",
+  "name": "site_solid",
+  "note": "S2 (selftest site.solid, a window). The small promoted job replayed one event every 20 ticks (its game arrives at tick 380) on a lot whose gate faces north. Probes at world ticks: at 200 the visitor walks in through the gate (it lets him in) and then south through the middle bay (the scaffold stops him: `stopped_by` site 0); at 600, after the arrival, the same walk through the bay is not stopped by the site any more.",
+  "visitor": true,
+  "ticks": 700,
+  "mode": "bot",
+  "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+  "plots": [
+    {"id": "wall", "pack": "ex_wall", "origin": [-70, 0, 0], "radius": 20, "footprint": {"size_m": [40, 40]}, "seed": 1}
+  ],
+  "road": [[-140, 34], [-60, 32], [0, 34], [40, 34], [80, 34], [140, 36]],
+  "landscape": {
+    "seed": 7, "trees": 20, "broadleaf": 10, "rocks": 10, "bushes": 20, "belt": 40, "mesas": 4,
+    "lots": [{"at": [40, 0], "radius": 22, "h": 0, "job": "engine/kernel/world/site/fixtures/arrive", "replay": {"ticks_per_event": 20}}]
+  },
+  "player": [[0, [40, 0, 31]], [700, [40, 0, 31]]],
+  "visitor_probe": [
+    {"t": 200, "name": "site_gate_while_building", "from": [40, 31], "to": [40, 7], "expect": "pass"},
+    {"t": 201, "name": "site_bay_while_building", "from": [40, 7], "to": [40, -12], "expect": "stop"},
+    {"t": 600, "name": "site_bay_after_arrival", "from": [40, 7], "to": [40, -12], "expect": "pass"}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "tl.walk/1",
+  "name": "site_arrival",
+  "note": "S2b. How long a promoted game takes to arrive on a site lot in a window: the hockey job of 11 Nov replayed one event every 2 ticks (its first promotion releases the lot at tick 458), the visitor standing on the road by the lot. `world.sh tour site_arrival --out-dir=<abs dir> --pictures-only` (TL_RAW=1 for the world line: load.arrivals = [plot, tick, ms since the world started, prepare ms, attach ms, left]).",
+  "visitor": true,
+  "ticks": 1500,
+  "mode": "bot",
+  "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+  "plots": [
+    {"id": "wall", "pack": "ex_wall", "origin": [-150, 0, -10], "radius": 30, "footprint": {"size_m": [60, 60]}, "seed": 1}
+  ],
+  "road": [[-260, 70], [-150, 64], [-60, 66], [0, 66], [60, 68], [160, 66], [260, 70]],
+  "landscape": {
+    "seed": 7, "trees": 60, "broadleaf": 20, "rocks": 20, "bushes": 40, "belt": 120, "mesas": 10, "haze": 0.4,
+    "lots": [{"at": [60, 0], "radius": 40, "h": 0, "job": "site/ice-hockey-three-against-20261111-1", "replay": {"ticks_per_event": 2}}]
+  },
+  "player": [[0, [60, 0, 64]], [1500, [60, 0, 64]]],
+  "events": [{"t": 1480, "e": "shot", "name": "site_arrival_end", "cam": "crane", "from": [92, 26, 118], "to": [58, 3, 8]}]
+}

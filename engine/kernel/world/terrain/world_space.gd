@@ -83,6 +83,20 @@ func _static(shape: Shape3D, xf: Transform3D) -> void:
 	stats["bodies"] = int(stats["bodies"]) + 1
 
 
+## S2: frees every body that was made under the tag `t` (a construction site's scaffold, when its game arrives: the
+## only thing in this space that goes). Returns how many. Their shapes stay in `_keep` until the space is freed.
+func remove_tag(t: String) -> int:
+	var n: int = 0
+	for b: Variant in _bodies.duplicate():
+		if str(_tags.get(b, "")) == t:
+			PhysicsServer3D.free_rid(b as RID)
+			_bodies.erase(b)
+			_tags.erase(b)
+			n += 1
+	stats["bodies"] = int(stats["bodies"]) - n
+	return n
+
+
 func add_faces(faces: PackedVector3Array) -> void:
 	if faces.size() < 3:
 		return
