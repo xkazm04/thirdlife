@@ -30,6 +30,9 @@ locale_count: 1
 - a win-or-lose test enters the gate only after its verdict held on 20 of 20 seeds (two of tonight's were coins: 10 and 19 of 20);
   a difficulty figure comes from `tl ladder` and is quoted with the hand profile and the seed count.
 
+- before committing a builder's new directory: `git check-ignore -v <dir>/<a file>`; an ignore pattern for job output
+  (`/site/`) once hid `engine/kernel/world/site/` and the commit would have dropped the site's code silently.
+
 ## Rituals
 - Phase 0: read `.claude/sessions.json`; add an entry for this spark's scope. Phase 6: remove it.
 - Phase 5: after every package, `tl arch --index` if engine API changed (docs/generated/API-INDEX.md).
@@ -69,6 +72,7 @@ One AskUserQuestion call of up to 4 questions.
 ## Question taste
 - Operator wants tooling-scope questions asked as multi-select pillars, and answers extra wishes via "Other" (devx spark 2026-11-11 added a doctrine: player-facing content tooling ideas).
 - Isolation and push policy: worktree + branch + push branch is the accepted default; do not re-ask.
+- 2026-11-17 engine-world-next: offered "replay recorded jobs (no spend)" vs "one real job", the operator chose the real job: when a path can be proven against a real model at bounded cost, offer it and expect a yes.
 
 ## Skill improvement log
 - 2026-11-11 devx-foundation: a bash heredoc with many quoted passages failed to parse as one command; write brief files with the Write tool, not heredocs.
@@ -121,3 +125,10 @@ One AskUserQuestion call of up to 4 questions.
   the branch was red on one step for 20 minutes. Run the consumer's gate step on every merge before the next dispatch.
 - 2026-11-16 jam-lessons-home: looking at one still per package by the Director found what no bot said (no puck, dial text on
   the ice, developer wording); a separate look builder (Fable) with before/after pairs then cured it without touching a rule.
+- 2026-11-18 engine-world-next: packages timed at 1-2 h each were done in 30-60 min by long-lived Opus lanes; the night ran as five
+  rounds per lane, each brief written while the previous round gated. Plan a night as rounds with the next brief ready, not
+  one long package list; the real job moved from 05:30 to 01:14 because the lanes landed early.
+- 2026-11-18 engine-world-next: a builder made a gate selftest pace its writer by wall clock under load (a law breach the
+  pasted laws already forbid); the Director's next brief made it frames-only. Read every new selftest for clock use at review.
+- 2026-11-18 engine-world-next: the Director re-ran one hand check (`tl cards hands seed_paddle`) and got the builder's figures
+  exactly; one cheap re-run per round is the check that a lane's tables are real.
