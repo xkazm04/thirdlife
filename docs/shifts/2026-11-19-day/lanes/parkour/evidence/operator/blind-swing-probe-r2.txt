@@ -1,0 +1,24 @@
+seed 1 delay 0 OPERATOR falls 1 hits 1 state running  race 582; perfect hand, 582 frames (9.700 s), gaps [true, true], chain 
+seed 1 delay 13 OPERATOR falls 1 hits 1 state running  race 595; perfect hand, 595 frames (9.917 s), gaps [true, true], chain 
+seed 1 delay 26 OPERATOR falls 0 hits 0 state over laps race 813; perfect hand, 813 frames (13.550 s), gaps [true, true], chai
+seed 1 delay 39 OPERATOR falls 0 hits 0 state over laps race 826; perfect hand, 826 frames (13.767 s), gaps [true, true], chai
+seed 1 delay 52 OPERATOR falls 0 hits 0 state over laps race 839; perfect hand, 839 frames (13.983 s), gaps [true, true], chai
+seed 1 delay 65 OPERATOR falls 1 hits 1 state running  race 655; perfect hand, 655 frames (10.917 s), gaps [true, true], chain
+seed 1 delay 78 OPERATOR falls 1 hits 1 state running  race 660; perfect hand, 660 frames (11.000 s), gaps [true, true], chain
+seed 1 delay 91 OPERATOR falls 1 hits 1 state running  race 673; perfect hand, 673 frames (11.217 s), gaps [true, true], chain
+seed 1 delay 104 OPERATOR falls 0 hits 0 state over laps race 891; perfect hand, 891 frames (14.850 s), gaps [true, true], chai
+seed 1 delay 117 OPERATOR falls 0 hits 0 state over laps race 904; perfect hand, 904 frames (15.067 s), gaps [true, true], chai
+seed 1 delay 130 OPERATOR falls 0 hits 0 state over laps race 917; perfect hand, 917 frames (15.283 s), gaps [true, true], chai
+seed 1 delay 143 OPERATOR falls 1 hits 1 state running  race 732; perfect hand, 732 frames (12.200 s), gaps [true, true], chain
+seed 2 delay 0 OPERATOR falls 1 hits 1 state running  race 582; perfect hand, 582 frames (9.700 s), gaps [true, true], chain 
+seed 2 delay 13 OPERATOR falls 1 hits 1 state running  race 595; perfect hand, 595 frames (9.917 s), gaps [true, true], chain 
+seed 2 delay 26 OPERATOR falls 0 hits 0 state over laps race 813; perfect hand, 813 frames (13.550 s), gaps [true, true], chai
+seed 2 delay 39 OPERATOR falls 0 hits 0 state over laps race 826; perfect hand, 826 frames (13.767 s), gaps [true, true], chai
+seed 2 delay 52 OPERATOR falls 0 hits 0 state over laps race 839; perfect hand, 839 frames (13.983 s), gaps [true, true], chai
+seed 2 delay 65 OPERATOR falls 1 hits 1 state running  race 655; perfect hand, 655 frames (10.917 s), gaps [true, true], chain
+seed 2 delay 78 OPERATOR falls 1 hits 1 state running  race 660; perfect hand, 660 frames (11.000 s), gaps [true, true], chain
+seed 2 delay 91 OPERATOR falls 1 hits 1 state running  race 673; perfect hand, 673 frames (11.217 s), gaps [true, true], chain
+seed 2 delay 104 OPERATOR falls 0 hits 0 state over laps race 891; perfect hand, 891 frames (14.850 s), gaps [true, true], chai
+seed 2 delay 117 OPERATOR falls 0 hits 0 state over laps race 904; perfect hand, 904 frames (15.067 s), gaps [true, true], chai
+seed 2 delay 130 OPERATOR falls 0 hits 0 state over laps race 917; perfect hand, 917 frames (15.283 s), gaps [true, true], chai
+seed 2 delay 143 OPERATOR falls 1 hits 1 state running  race 732; perfect hand, 732 frames (12.200 s), gaps [true, true], chain

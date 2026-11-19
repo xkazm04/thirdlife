@@ -1,0 +1,13 @@
+# exit 0
+pack | mode | own ticks | hash in the world | runner alone (tl.sh bot), same ticks | verdict
+seed.drive | bot | 3441 | a2940a1735bc2b72 | a2940a1735bc2b72 (3441 frames) | same
+seed.wall | bot | 1220 | d5aea03b46c33ee6 | d5aea03b46c33ee6 (1220 frames) | same
+seed.paddle | bot | 4486 | dff1a390470352e7 | dff1a390470352e7 (4486 frames) | same
+example.walker | bot | 371 | f1c7b53757c34040 | f1c7b53757c34040 (371 frames) | same
+example.kit | bot | 332 | ca698e71d34d1021 | ca698e71d34d1021 (332 frames) | same
+example.car | bot | 1872 | 3a459d0fe25e7853 | 3a459d0fe25e7853 (1872 frames) | same
+game.ice_hockey_three_against | bot | 4186 | a29dcdf02a16dd1c | a29dcdf02a16dd1c (4186 frames) | same
+game.parkour | bot | 808 | 5dcb8573e86c20c6 | 5dcb8573e86c20c6 (808 frames) | same
+PASS world.alone: every pack hashes in the world as the runner hashes it alone
+
+--- stderr

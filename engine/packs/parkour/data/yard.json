@@ -18,7 +18,7 @@
     {"kind": "tyre_stack", "p": [19, -1.25, -4.7], "params": {"columns": 3}},
     {"kind": "lumber", "p": [-16, -1.25, 6], "params": {"layers": 4}},
     {"kind": "pallet", "p": [-12, -1.25, 6], "params": {"rows": 2}},
-    {"kind": "barricade", "p": [22, -1.25, 4.8], "yaw": -12},
+    {"kind": "barricade", "p": [23, -1.25, -4.8], "yaw": -12},
     {"kind": "tree", "p": [-22, -1.25, -10], "params": {"species": "broadleaf", "height": 8, "seed": 31}},
     {"kind": "tree", "p": [15, -1.25, -11], "params": {"height": 8, "seed": 24}},
     {"kind": "tree", "p": [19, -1.25, -9], "params": {"height": 6, "seed": 52}}

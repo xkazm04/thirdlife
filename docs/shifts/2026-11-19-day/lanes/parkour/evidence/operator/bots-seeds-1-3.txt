@@ -1,0 +1,38 @@
+lint exit 0
+bot_course seed 1 exit 0 passed 808 5dcb8573e86c20c6 | perfect hand, 806 frames (13.433 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0; splits [338, 286, 182], wa
+bot_course seed 2 exit 0 passed 808 d93429efc5435954 | perfect hand, 806 frames (13.433 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0; splits [338, 286, 182], wa
+bot_course seed 3 exit 0 passed 808 413f0ad8ca6f61e2 | perfect hand, 806 frames (13.433 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0; splits [338, 286, 182], wa
+bot_geometry seed 1 exit 0 passed 1 bb7d00e9599b455b | gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg
+bot_geometry seed 2 exit 0 passed 1 89a7aee3865c27a5 | gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg
+bot_geometry seed 3 exit 0 passed 1 2692eef2c4d44db8 | gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg
+bot_obstacles seed 1 exit 0 passed 455 bf167922e2e4f354 | missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and 
+bot_obstacles seed 2 exit 0 passed 455 e4564b9d997834c4 | missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and 
+bot_obstacles seed 3 exit 0 passed 455 44afd8f93e146009 | missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and 
+bot_ladder_retry_regular seed 1 exit 0 passed 1024 3a936de007286905 | regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 1022 ticks; checkpoint 0, return (43.51, 0.00), height 7.11, marks 
+bot_ladder_retry_regular seed 2 exit 0 passed 1215 97abc57742d4398f | regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 1213 ticks; checkpoint 0, return (43.48, -0.31), height 7.11, marks
+bot_ladder_retry_regular seed 3 exit 0 passed 1030 cad372b9cef7c38d | regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 1028 ticks; checkpoint 0, return (43.52, -0.04), height 7.11, marks
+bot_ladder_retry_newcomer seed 1 exit 0 passed 2019 b80637b5f8701c24 | newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 2017 ticks; checkpoint 0, return (43.52, 0.00), height 7.11, marks
+bot_ladder_retry_newcomer seed 2 exit 0 passed 1414 8b77231aeefb2869 | newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 1412 ticks; checkpoint 0, return (43.50, 0.00), height 7.11, marks
+bot_ladder_retry_newcomer seed 3 exit 0 passed 1612 ad3e8919d636d13e | newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 1610 ticks; checkpoint 0, return (43.52, 0.00), height 7.11, marks
+bot_ladder_course_newcomer seed 1 exit 0 passed 1779 f263ac2669b9d2f9 | newcomer hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 1777 ticks; checkpoint 0, return (43.51, 1.24), height 7.11, mar
+bot_ladder_course_newcomer seed 2 exit 0 passed 3121 34e8b8feb0f71e70 | newcomer hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 3119 ticks; checkpoint 0, return (43.53, 0.00), height 7.11, mar
+bot_ladder_course_newcomer seed 3 exit 0 passed 1118 d394099a645f201e | newcomer hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 1116 ticks; checkpoint 0, return (43.51, 0.00), height 7.11, mar
+bot_ladder_course_regular seed 1 exit 0 passed 900 fd25f960991e4f47 | regular hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 898 ticks; checkpoint 0, return (43.48, 0.23), height 7.11, marks
+bot_ladder_course_regular seed 2 exit 0 passed 1228 2b6e15800ec4118c | regular hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 1226 ticks; checkpoint 0, return (43.54, 0.00), height 7.11, mark
+bot_ladder_course_regular seed 3 exit 0 passed 1043 6de6ea3800949e97 | regular hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 1041 ticks; checkpoint 0, return (43.54, 0.00), height 7.11, mark
+bot_ladder_course_sharp seed 1 exit 0 passed 814 5c208dc793e4c1c6 | sharp hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 812 ticks; checkpoint 0, return (43.53, -0.24), height 7.11, marks 
+bot_ladder_course_sharp seed 2 exit 0 passed 812 c1f88ab05baa346c | sharp hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 810 ticks; checkpoint 0, return (43.49, 0.12), height 7.11, marks {
+bot_ladder_course_sharp seed 3 exit 0 passed 967 ba5da7eeaf75b822 | sharp hand: blocked false, checkpoint retry false (0.00 m to beam), slid under true, laps in 965 ticks; checkpoint 0, return (43.52, 0.20), height 7.11, marks {
+bot_splits seed 1 exit 0 passed 1693 61153cf9f90ef2b2 | R reset true, first [338, 286, 182], second [418, 284, 182], best per stage [338, 284, 182]
+bot_splits seed 2 exit 0 passed 1693 3cbc9f3c3aace4e3 | R reset true, first [338, 286, 182], second [418, 284, 182], best per stage [338, 284, 182]
+bot_splits seed 3 exit 0 passed 1693 502954bb0d74eaf2 | R reset true, first [338, 286, 182], second [418, 284, 182], best per stage [338, 284, 182]
+bot_wall seed 1 exit 0 passed 966 8db36ff5fcaa83f5 | wall walk-jump 4.50 m/s, airborne beyond lip true, checkpoint recovery true, running jump true, 1 falls, finish laps
+bot_wall seed 2 exit 0 passed 966 b231daf3a4843989 | wall walk-jump 4.50 m/s, airborne beyond lip true, checkpoint recovery true, running jump true, 1 falls, finish laps
+bot_wall seed 3 exit 0 passed 966 17a90fe606ee836d | wall walk-jump 4.50 m/s, airborne beyond lip true, checkpoint recovery true, running jump true, 1 falls, finish laps
+bot_swing_phases seed 1 exit 0 passed 20987 afcfd2d546622b1d | 12 clean timed finishes. Charging took a hit at [0, 13, 65, 78, 91, 143], cost [18, 24, 12, 17, 24, 11] ticks; no contact at [26, 39, 52, 104, 117, 130]; unequa
+bot_swing_phases seed 2 exit 0 passed 20987 7e2f46e995ef4b2e | 12 clean timed finishes. Charging took a hit at [0, 13, 65, 78, 91, 143], cost [18, 24, 12, 17, 24, 11] ticks; no contact at [26, 39, 52, 104, 117, 130]; unequa
+bot_swing_phases seed 3 exit 0 passed 20987 3048a76fc0822489 | 12 clean timed finishes. Charging took a hit at [0, 13, 65, 78, 91, 143], cost [18, 24, 12, 17, 24, 11] ticks; no contact at [26, 39, 52, 104, 117, 130]; unequa
+bot_return_controls seed 1 exit 0 passed 4927 c7768e340eb05650 | no steering: fell back to checkpoint 5; keep the first pad line: fell back to checkpoint 7; skip the second hop: fell back to checkpoint 6; run off the wall lip
+bot_return_controls seed 2 exit 0 passed 4927 e934c3fd4754945c | no steering: fell back to checkpoint 5; keep the first pad line: fell back to checkpoint 7; skip the second hop: fell back to checkpoint 6; run off the wall lip
+bot_return_controls seed 3 exit 0 passed 4927 62e7147fc5400ce0 | no steering: fell back to checkpoint 5; keep the first pad line: fell back to checkpoint 7; skip the second hop: fell back to checkpoint 6; run off the wall lip
+DONE

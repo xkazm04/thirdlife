@@ -1,47 +1,97 @@
 # Timber Run
 
-Run `node devx/bin/tl.mjs play parkour`. In the village, enter the scaffold course on the south side of the road, west of the walker plot. Beat the 60-second clock and your best time this session.
+Enter the scaffold yard west of the walker plot from the village road, or play with `node devx/bin/tl.mjs play parkour`. Reach the two red flags on the tower within 60 seconds. The outgoing high line and lower return lane share a 50 × 28 m plot.
 
 | Control | Action |
 |---|---|
 | WASD or arrows | Move relative to the orbit camera |
 | Shift | Run |
 | Space | Jump |
-| C | Slide while running on the ground |
+| C | Slide from a run. When the retry prompt appears at the low beam, return to the landing stripe |
 | Right-drag / wheel | Orbit / zoom |
-| R | Start another attempt |
+| R | Restart the race and pendulum. Keep this session’s best splits and best run |
 
-Run up to the striped take-off boards. Jump the 3.4 m gap to the first checkpoint. Keep running, jump the 3.8 m gap, and **press C as your feet land**. The landing earns the second checkpoint. The striped beam sits 5.5 m into this deck and leaves 1.52 m of clearance. A standing runner is 1.80 m tall and slides at 0.84 m.
+## Course
 
-If the beam stops you, **tap C to return to the landing stripe**. Keep running forward and tap C again to slide. Crossing under the beam earns the third checkpoint. Ride the 65-degree concrete chute down and cross the finish stripe. A fall returns you to your last checkpoint while the clock keeps running. R clears the attempt and keeps the session best.
+1. **High line.** Run and jump the 3.4 m span. Jump the 3.8 m gap and press C on landing to slide beneath the 1.52 m beam. If it stops you standing, tap C at the retry prompt, run forward, then press C again. The walker automatically slope-slides down the 65° chute to the first split.
+2. **Swing yard.** Follow the rising bend. Steer right to the first timber pad, turn back across the second and jump onto the centre of the 1.05 m balance beam. The pad centres are 2.15 m and 1.15 m right of the beam centreline. They face opposite ways at 22° and bank 8°. Read the counterweight at the beam’s cross-stripe. Keep running when the weight is swinging clear. If it is coming across your path, brake before the gantry and set off when you can reach the other side. A hit returns you to the near end of the beam while both the race and the pendulum keep going. The far end records split two.
+3. **Summit.** Run up the 3.2 m concrete bank and jump from the wooden lip across a 2.90 m gap to a crest 0.72 m higher. Ease off Shift on the tower. Jump the two 0.78 m ledges, then cross the summit stripe between the flags.
+
+Twelve ordered checkpoints register landings and crossings. Falling costs the time it takes to recover. The HUD shows the current stage, its elapsed time and session best, and the current and best full-run times. The finish board shows all three splits. The pendulum swings ±56° over 156 physics frames at 60 Hz.
 
 ## Verification
 
-The course layout is the same at every seed. A clean `perfect`-hand run takes 338 race frames (5.633 seconds at 60 Hz). The runner reports 340 frames because the bot observes the finished rules on its following tick.
+On seeds 1, 2 and 3 the perfect hand finished with zero falls and zero swing contacts in **806 race frames (13.433 s)**. Its splits were **338, 286 and 182**. The runner observed the finish at frame 808. On the default approach the bot braked for 18 frames. Across twelve matched start delays per seed, charging the weight caused six checkpoint returns and cost 11–24 frames against the timed runner. The other six approaches stayed open and both runners recorded the same finish times. [Phase results](../../../docs/shifts/2026-11-19-day/lanes/parkour/evidence/r2/verify/bot_swing_phases-1.json)
 
-| Test | What must happen |
+| Test in `tests/` | What it measures |
 |---|---|
-| `tests/bot_course.gd` | Jump and land beyond both spans, enter a run slide within two samples of landing the chain, travel under the beam in slide mode, descend at least 2 m in slope mode and finish without a fall. |
-| `tests/bot_geometry.gd` | Each positive gap fits the measured 4.95 m airborne reach at 9 m/s. The beam fits only the short capsule. The chute exceeds the 55-degree walk limit. |
-| `tests/bot_obstacles.gd` | Running off each lip without jumping returns the runner to its checkpoint. A standing runner pressing forward and trying a jump stays at the near face of the beam. R resets the clock and sends the runner back to the start. |
-| `tests/bot_ladder_retry_regular.gd` | A regular hand holds forward, runs into the beam, uses C to return to the landing checkpoint, passes under the beam in slide mode and finishes. |
-| `tests/bot_ladder_retry_newcomer.gd` | The same inputs and win conditions through the newcomer hand. A finish counts only when the bot also observes the block, checkpoint return and slide under the beam. |
-
-Run the pack checks from the repository root.
+| `bot_course.gd` | Airborne crossings and grounded landings on both high gaps, slide within two samples of landing, slide inside the bar, over 2 m of slope descent, both pad landings, a grounded crossing of the swing, running flight to the crest, airborne ascent of both tower faces and all three splits. A clean finish requires zero falls and hits. |
+| `bot_swing_phases.gd` | Twelve matched start delays. The blind runner keeps running even after a strike. Each strike must return it to the approach checkpoint with the first split intact. The timed runner must finish every lap clean and beat every struck run. When the blind runner crosses cleanly both runners must record the same time. |
+| `bot_return_controls.gd` | Six omissions and a clean control. Straight ahead misses pad one. Keeping the first-pad line misses the beam. Skipping the second hop or the wall jump causes a fall. Withholding tower jumps leaves the walker below the first ledge for 90 ticks. Holding run through the tower with the same jump cues overshoots the summit approach. |
+| `bot_geometry.gd` | Checks horizontal and raised jump reach, slide clearance, chute angle, offset and spacing of pads, beam approach, maximum swing opening and minimum crossing time, and both tower rises. |
+| `bot_obstacles.gd` | Omitting either high jump returns to its checkpoint. Running and jumping without sliding stops at the bar. R clears the attempt. |
+| `bot_wall.gd` | A 4.50 m/s walking jump falls short. The same hand returns to the run-up, clears the crest at running speed and finishes. |
+| `bot_splits.gd` | R between two finishes. An 80-frame delayed second start gives a slower race and a faster second stage. The HUD’s underlying split and full-run records keep each best independently. |
+| `bot_ladder_course_{newcomer,regular,sharp}.gd` | Try a landing slide, use C to recover if blocked, slide inside the bar and finish within the clock. |
+| `bot_ladder_retry_{newcomer,regular}.gd` | Deliberately hit the bar standing, use C to retry, slide under it and finish at the tower. |
 
 ```sh
 bash engine/tools/tl.sh lint --pack=engine/packs/parkour
 bash engine/tools/tl.sh bot --pack=engine/packs/parkour --test=tests/bot_course.gd --seed=1
-node devx/bin/tl.mjs ladder --pack engine/packs/parkour --cells retry_regular,retry_newcomer --seeds 20
-node devx/bin/tl.mjs check --tier full --only packs
-bash engine/tools/selftest.sh walk.biped_parity
+bash engine/tools/tl.sh bot --pack=engine/packs/parkour --test=tests/bot_swing_phases.gd --seed=1
+node devx/bin/tl.mjs ladder --pack engine/packs/parkour --cells course_newcomer,course_regular,course_sharp,retry_newcomer,retry_regular --seeds 20
+node devx/bin/tl.mjs check --tier full --only packs,world
+node devx/bin/tl.mjs check --tier fast
 ```
 
-To reproduce the negative case, copy the pack to a scratch folder and set `chain_gap_m` to `12.0` in its `data/course.json`. Set the shell variable `bad` to the scratch pack path and run each command below. Both exit 1. The geometry bot identifies gap 2, and the input bot falls after clearing only gap 1.
+### Difficulty by hand
+
+Each ladder level uses one input policy across its hands. It calls for a high-line jump 1.95 m before each lip, uses common pad take-off and steering cues, reads the same pendulum phase and approach speed, and uses the same wall and tower take-offs. Only the profile passed to `TLHand.create` changes. The retry drill changes the first slide instruction for every hand. The separately scripted perfect-hand proof above uses a 0.85 m high-line take-off lead and the same return driver.
+
+The following means include all twenty seeds per cell, including runs that used the full 3,600-frame clock. They describe these controllers and hands at 60 Hz. [Ladder output](../../../docs/shifts/2026-11-19-day/lanes/parkour/evidence/r2/ladder.txt)
+
+| Level | TLHand | Wins | Mean race frames | Mean seconds |
+|---|---|---:|---:|---:|
+| Course | newcomer | 17/20 | 2,316 | 38.60 |
+| Course | regular | 20/20 | 971 | 16.18 |
+| Course | sharp | 20/20 | 845 | 14.08 |
+| Forced C retry | newcomer | 17/20 | 2,042 | 34.03 |
+| Forced C retry | regular | 20/20 | 1,041 | 17.35 |
+
+### Impossibility cases
+
+Make one data change at a time in a scratch copy, leaving the shipped pack playable. Run both commands below. In each case the bot completes with exit 1 and only `bot.ok` fails.
+
+| File in `data/` | Single change | Observed failure |
+|---|---|---|
+| `course.json` | `chain_gap_m = 12` | The second gap exceeds the measured 4.95 m reach. The first still clears. |
+| `course.json` | `bar_clearance_m = 0.55` | Even the 0.84 m sliding capsule stops at the bar. |
+| `return.json` | `pad_spacing_m = 13` | The opposing pad edges are at least 8.78 m apart. The runner falls after pad one. |
+| `return.json` | `pad_offsets_m = [11, 1.15]` | At least 6.76 m separates the corner from pad one. The runner falls before landing on it. |
+| `return.json` | `beam_entry_offset_m = 12` | The nearest beam edge is at least 9.89 m past pad two. |
+| `return.json` | `swing_degrees = 0` | The weight covers the beam permanently. A crossing attempt strikes it and returns to the near checkpoint. |
+| `return.json` | `swing_period_frames = 12` | The half-cycle lasts 6 frames. Even a straight sprint needs at least 15 to clear the weight and capsule. Waiting times out, charging takes a hit. |
+| `return.json` | `wall_crest_rise_m = 2.4` | The crest exceeds the 1.00 m jump apex above the lip. |
+| `return.json` | `tower_step_rise_m = 1.85` | The first high ledge stops the runner until timeout. |
 
 ```sh
-bash engine/tools/tl.sh bot --pack="$bad" --test=tests/bot_geometry.gd
-bash engine/tools/tl.sh bot --pack="$bad" --test=tests/bot_course.gd
+bash engine/tools/tl.sh bot --pack="$bad" --test=tests/bot_geometry.gd --seed=1
+bash engine/tools/tl.sh bot --pack="$bad" --test=tests/bot_course.gd --seed=1
 ```
 
-The play view is `orbit`. Capture views are `overview`, `jump`, `under_bar` and `chute`. For the moving views pass `--test=tests/bot_course.gd` to the capture verb. Frames 73, 228 and 288 show the jump, bar and descent.
+There is also a negative control for the timing test itself. In a scratch copy, disable the line that sets `swing_hit_pending` in `_weight_contact`, then run `bot_swing_phases.gd`. The missing contact penalty must turn the test red. [Negative results](../../../docs/shifts/2026-11-19-day/lanes/parkour/evidence/r2/negatives/results.txt)
+
+### Capture
+
+Use `tests/bot_course.gd` on seed 1 for the clean run. Use `tests/bot_swing_phases.gd` for its first blind crossing and recovery. The registered camera names and physics frames are below. For a full-speed windowed clip use `orbit`, HUD on and 855 frames including the finish hold.
+
+| View | Frame | View | Frame |
+|---|---:|---|---:|
+| `overview` | 1 | `balance` | 573 |
+| `jump` | 73 | `swing` | 611 |
+| `under_bar` | 228 | `wall` | 687 |
+| `chute` | 288 | `tower` | 781 |
+| `pads` | 496 | `orbit` with HUD | 837 |
+| `swing` blind approach | 580 | `orbit` blind recovery with HUD | 588 |
+
+The gallery includes the plot from the village road. [Contact sheet](../../../docs/shifts/2026-11-19-day/lanes/parkour/stills/astra-2/contact-sheet.jpg)

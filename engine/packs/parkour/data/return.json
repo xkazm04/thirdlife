@@ -1,0 +1,10 @@
+{
+  "pad_spacing_m": 5.5,
+  "pad_offsets_m": [2.15, 1.15],
+  "beam_entry_offset_m": 4.5,
+  "beam_width_m": 1.05,
+  "swing_degrees": 56,
+  "swing_period_frames": 156,
+  "wall_crest_rise_m": 0.72,
+  "tower_step_rise_m": 0.78
+}
