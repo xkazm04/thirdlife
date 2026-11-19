@@ -1,0 +1,1284 @@
+{
+  "seed": 12,
+  "hash_matches_uninstrumented_run": true,
+  "state_hash": "8443f5fd133dc665a3ed9478ca775fb957b1be1a560c0ff59aba5a1527a1544b",
+  "result": {
+    "ok": false,
+    "won": false,
+    "frames": 542,
+    "taps_lost": 2,
+    "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under false, laps in 542 ticks"
+  },
+  "samples": [
+    {
+      "checkpoint": 0,
+      "falls": 0,
+      "frame": 0,
+      "height": 7.03999996185303,
+      "motion": "ground",
+      "respawned": false,
+      "station": 0.0,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 0,
+      "falls": 0,
+      "frame": 78,
+      "height": 6.94353055953979,
+      "motion": "air",
+      "respawned": false,
+      "station": 8.33331489562988,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 0,
+      "falls": 0,
+      "frame": 115,
+      "height": 7.00061655044556,
+      "motion": "ground",
+      "respawned": false,
+      "station": 13.88330078125,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 1,
+      "falls": 0,
+      "frame": 117,
+      "height": 7.00022649765015,
+      "motion": "ground",
+      "respawned": false,
+      "station": 14.1833009719849,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 1,
+      "falls": 0,
+      "frame": 168,
+      "height": 6.84633302688599,
+      "motion": "air",
+      "respawned": false,
+      "station": 21.8333043754101,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 1,
+      "falls": 0,
+      "frame": 202,
+      "height": 7.00038528442383,
+      "motion": "ground",
+      "respawned": false,
+      "station": 26.9333052635193,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 203,
+      "height": 7.00019025802612,
+      "motion": "ground",
+      "respawned": false,
+      "station": 27.0833053588867,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 220,
+      "height": 7.00039005279541,
+      "motion": "ground",
+      "respawned": false,
+      "station": 29.6333069801331,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 221,
+      "height": 7.00019502639771,
+      "motion": "ground",
+      "respawned": false,
+      "station": 29.7833070755005,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 222,
+      "height": 7.0,
+      "motion": "ground",
+      "respawned": false,
+      "station": 29.9333071708679,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 223,
+      "height": 7.00156259536743,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0094795227051,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 224,
+      "height": 7.00136756896973,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096502304077,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 225,
+      "height": 7.00117254257202,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096731185913,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 226,
+      "height": 7.00097751617432,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 227,
+      "height": 7.00078248977661,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 228,
+      "height": 7.00058746337891,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 229,
+      "height": 7.0003924369812,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 230,
+      "height": 7.0001974105835,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 231,
+      "height": 7.00000238418579,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 232,
+      "height": 7.00156497955322,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 233,
+      "height": 7.00136995315552,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 234,
+      "height": 7.00117492675781,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 235,
+      "height": 7.00097990036011,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 236,
+      "height": 7.0007848739624,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 237,
+      "height": 7.0005898475647,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 238,
+      "height": 7.00039482116699,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 239,
+      "height": 7.00019979476929,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 240,
+      "height": 7.00000476837158,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 241,
+      "height": 7.00156736373901,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 242,
+      "height": 7.00137233734131,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 243,
+      "height": 7.0011773109436,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 244,
+      "height": 7.0009822845459,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 245,
+      "height": 7.00078725814819,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 246,
+      "height": 7.00059223175049,
+      "motion": "ground",
+      "respawned": false,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 279,
+      "height": 7.00016498565674,
+      "motion": "ground",
+      "respawned": true,
+      "station": 29.6833348274231,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 280,
+      "height": 7.00172758102417,
+      "motion": "ground",
+      "respawned": true,
+      "station": 29.8333349227905,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 281,
+      "height": 7.00153255462646,
+      "motion": "ground",
+      "respawned": true,
+      "station": 29.983335018158,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 282,
+      "height": 7.00133752822876,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0085306167603,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 283,
+      "height": 7.00114250183105,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0091209411621,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 284,
+      "height": 7.00094747543335,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096044540405,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 285,
+      "height": 7.00075244903564,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096664428711,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 286,
+      "height": 7.00055742263794,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096740722656,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 287,
+      "height": 7.00036239624023,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 288,
+      "height": 7.00016736984253,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 289,
+      "height": 7.00172996520996,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 290,
+      "height": 7.00153493881226,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 291,
+      "height": 7.00133991241455,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 292,
+      "height": 7.00114488601685,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 293,
+      "height": 7.00094985961914,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 294,
+      "height": 7.00075483322144,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 295,
+      "height": 7.00055980682373,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 296,
+      "height": 7.00036478042603,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 297,
+      "height": 7.00016975402832,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 298,
+      "height": 7.00173234939575,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 299,
+      "height": 7.00153732299805,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 300,
+      "height": 7.00134229660034,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 301,
+      "height": 7.00114727020264,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 302,
+      "height": 7.00095224380493,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 303,
+      "height": 7.00075721740723,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 304,
+      "height": 7.00056219100952,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 305,
+      "height": 7.00036716461182,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 306,
+      "height": 7.00017213821411,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 307,
+      "height": 7.00173473358154,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 308,
+      "height": 7.00153970718384,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 309,
+      "height": 7.00134468078613,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 310,
+      "height": 7.00114965438843,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 311,
+      "height": 7.00095462799072,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 312,
+      "height": 7.00075960159302,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 313,
+      "height": 7.00056457519531,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 314,
+      "height": 7.00036954879761,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 315,
+      "height": 7.0001745223999,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 316,
+      "height": 7.00173711776733,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 317,
+      "height": 7.00154209136963,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 318,
+      "height": 7.00134706497192,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 319,
+      "height": 7.00115203857422,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 320,
+      "height": 7.00095701217651,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 353,
+      "height": 7.00016498565674,
+      "motion": "ground",
+      "respawned": true,
+      "station": 29.6833348274231,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 354,
+      "height": 7.00172758102417,
+      "motion": "ground",
+      "respawned": true,
+      "station": 29.8333349227905,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 355,
+      "height": 7.00153255462646,
+      "motion": "ground",
+      "respawned": true,
+      "station": 29.983335018158,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 356,
+      "height": 7.00133752822876,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0085306167603,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 357,
+      "height": 7.00114250183105,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0091209411621,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 358,
+      "height": 7.00094747543335,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096044540405,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 359,
+      "height": 7.00075244903564,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096664428711,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 360,
+      "height": 7.00055742263794,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096740722656,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 361,
+      "height": 7.00036239624023,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 362,
+      "height": 7.00016736984253,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 363,
+      "height": 7.00172996520996,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 364,
+      "height": 7.00153493881226,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 365,
+      "height": 7.00133991241455,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 366,
+      "height": 7.00114488601685,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 367,
+      "height": 7.00094985961914,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 368,
+      "height": 7.00075483322144,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 369,
+      "height": 7.00055980682373,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 370,
+      "height": 7.00036478042603,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 371,
+      "height": 7.00016975402832,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 372,
+      "height": 7.00173234939575,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 373,
+      "height": 7.00153732299805,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 374,
+      "height": 7.00134229660034,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 375,
+      "height": 7.00114727020264,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 376,
+      "height": 7.00095224380493,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 377,
+      "height": 7.00075721740723,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 378,
+      "height": 7.00056219100952,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.0096759796143,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 392,
+      "height": 7.00035524368286,
+      "motion": "slide",
+      "respawned": true,
+      "station": 26.8302774429321,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 423,
+      "height": 7.00133991241455,
+      "motion": "slide",
+      "respawned": true,
+      "station": 29.6116642951965,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 424,
+      "height": 7.00114488601685,
+      "motion": "slide",
+      "respawned": true,
+      "station": 29.6702752113342,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 425,
+      "height": 7.00094985961914,
+      "motion": "slide",
+      "respawned": true,
+      "station": 29.7269420623779,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 426,
+      "height": 7.00075483322144,
+      "motion": "slide",
+      "respawned": true,
+      "station": 29.7816643714905,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 427,
+      "height": 7.00055980682373,
+      "motion": "slide",
+      "respawned": true,
+      "station": 29.8344421386719,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 428,
+      "height": 7.00036478042603,
+      "motion": "slide",
+      "respawned": true,
+      "station": 29.8852753639221,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 429,
+      "height": 7.00016975402832,
+      "motion": "slide",
+      "respawned": true,
+      "station": 29.9341640472412,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 430,
+      "height": 7.00173234939575,
+      "motion": "slide",
+      "respawned": true,
+      "station": 29.9811086654663,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 431,
+      "height": 7.00153732299805,
+      "motion": "slide",
+      "respawned": true,
+      "station": 30.0261087417603,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 432,
+      "height": 7.00134229660034,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.069164276123,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 433,
+      "height": 7.00114727020264,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.1216640472412,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 434,
+      "height": 7.00095224380493,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.1836080551147,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 435,
+      "height": 7.00075721740723,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.254997253418,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 436,
+      "height": 7.00056219100952,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.3358306884766,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 437,
+      "height": 7.00036716461182,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.4261083602905,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 438,
+      "height": 7.00017213821411,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.5258302688599,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 439,
+      "height": 7.00173473358154,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.6349973678589,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 2,
+      "falls": 0,
+      "frame": 440,
+      "height": 7.00153970718384,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.7536087036133,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 3,
+      "falls": 0,
+      "frame": 441,
+      "height": 7.00134468078613,
+      "motion": "ground",
+      "respawned": true,
+      "station": 30.881664276123,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 3,
+      "falls": 0,
+      "frame": 442,
+      "height": 7.00114965438843,
+      "motion": "ground",
+      "respawned": true,
+      "station": 31.0191640853882,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 3,
+      "falls": 0,
+      "frame": 443,
+      "height": 7.00095462799072,
+      "motion": "ground",
+      "respawned": true,
+      "station": 31.1661081314087,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 3,
+      "falls": 0,
+      "frame": 467,
+      "height": 6.58758068084717,
+      "motion": "slope",
+      "respawned": true,
+      "station": 34.7660989761353,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 3,
+      "falls": 0,
+      "frame": 509,
+      "height": 0.000372704118490219,
+      "motion": "ground",
+      "respawned": true,
+      "station": 37.8600282669067,
+      "witnessed": false
+    },
+    {
+      "checkpoint": 0,
+      "falls": 0,
+      "frame": 543,
+      "height": 0.0218566656112671,
+      "motion": "ground",
+      "respawned": true,
+      "station": 42.8447380065918,
+      "witnessed": false
+    }
+  ]
+}

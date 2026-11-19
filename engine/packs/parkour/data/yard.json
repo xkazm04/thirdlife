@@ -4,19 +4,22 @@
   "seed": 17,
   "terrain": {
     "base_y": -4,
-    "pads": [{"c": [0, 0], "r": 27, "blend": 12, "h": -1.25, "dirt": true}],
+    "pads": [
+      {"c": [0, 0], "r": 34, "blend": 12, "h": -1.25},
+      {"c": [0, 0], "r": 18, "blend": 13, "h": -1.25, "dirt": true}
+    ],
     "ridges": [{"a": [-115, -61], "b": [105, -90], "half_w": 13, "fall": 31, "h": 5}],
-    "mesas": [{"c": [-64, -135], "r": 36, "h": 36}, {"c": [86, -155], "r": 42, "h": 46}, {"c": [146, 51], "r": 48, "h": 31}]
+    "mesas": [{"c": [-51, -112], "r": 39, "h": 41}, {"c": [86, -155], "r": 42, "h": 46}, {"c": [146, 51], "r": 48, "h": 31}]
   },
-  "forest": {"density": 0.35, "clear": [[-31, 32, -24, 24]]},
+  "forest": {"scatter": false},
   "props": [
     {"kind": "crane", "p": [8, -1.25, -9], "params": {"height": 17, "mast": 1.35, "jib": 12, "counter": 4, "slew": -16, "trolley": 0.63}},
-    {"kind": "cabin", "p": [-10, -1.25, -8], "yaw": 8},
+    {"kind": "cabin", "p": [-13, -1.25, -12], "yaw": -10},
     {"kind": "tyre_stack", "p": [19, -1.25, -4.7], "params": {"columns": 3}},
     {"kind": "lumber", "p": [-16, -1.25, 6], "params": {"layers": 4}},
     {"kind": "pallet", "p": [-12, -1.25, 6], "params": {"rows": 2}},
     {"kind": "barricade", "p": [22, -1.25, 4.8], "yaw": -12},
-    {"kind": "tree", "p": [-22, -1.25, -5], "params": {"species": "broadleaf", "height": 8, "seed": 31}},
+    {"kind": "tree", "p": [-22, -1.25, -10], "params": {"species": "broadleaf", "height": 8, "seed": 31}},
     {"kind": "tree", "p": [15, -1.25, -11], "params": {"height": 8, "seed": 24}},
     {"kind": "tree", "p": [19, -1.25, -9], "params": {"height": 6, "seed": 52}}
   ]

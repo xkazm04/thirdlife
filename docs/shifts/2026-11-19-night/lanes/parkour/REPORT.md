@@ -42,3 +42,38 @@ Every difficulty figure here comes from scripted hands, not from a person.
 - Try the retry with the newcomer hand and with a person.
 - Place D's cabin between the first two decks and thin the pines.
 - Play it in a window from the village road.
+
+---
+
+# Round 2 (04:32-05:00): framing, newcomer retry, road blend
+
+The Director saved this from the lane's message.
+
+**How it ran:** Astra alone, one Codex run (session `01a1f1dc-9ef3-7b63-bc3a-a8d1502632c9`): 21 min 55 s, 221,281
+tokens. The operator re-ran every check itself.
+
+## What changed and what it measured
+- **Framing:** D's cabin now stands between the first two decks. The automatic pine ring is off (`forest.scatter:
+  false`; one broadleaf and two pines are left), the dirt pad sits inside a grass pad, and one mesa moved. The gaps,
+  beam, chute and checkpoints are unchanged. The jump view is the biggest gain, now nearly D's picture.
+- **Newcomer retry:** `tl ladder`, 20 seeds, newcomer hand: 19 of 20 won (95 %, 85..100), mean 467 race frames. The
+  loss is seed 12, where the slide ended before the beam. Nothing was loosened. The regular hand won 20 of 20, mean 399.
+- **Road blend:** from a windowed visitor tour, the dirt fades to grass before the fence, with no seams and no pack
+  trees outside the plot.
+- **Tests:** a new `tests/bot_ladder_retry_newcomer.gd`. The regular bot's hand is now a variable (default unchanged).
+  The newcomer bot is registered in `pack.json` like hockey's ladder bots, so the gate runs it on seed 1, where it
+  passes deterministically; the 19/20 figure comes from `tl ladder`.
+
+## Gates
+- Lint passes, and all five bots pass on seeds 1 and 2. A 12 m second gap makes `bot_geometry` and `bot_course` exit 1,
+  as they should.
+- `--only packs,world`, first run at load 7.8: packs 2/2 (35/35), world 8/8.
+- Fast tier passes (devx.test 226).
+
+## Evidence
+`stills-r2/` (before, after, comparisons, contact sheet), `clip-r2.mp4` (6.6 s), and `evidence/r2/`.
+
+## Open
+- The road view's distance and straight fence belong to the village's plot setup, not the pack.
+- Why the newcomer's slide ends early on seed 12.
+- A person still needs to try the C prompt.
