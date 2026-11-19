@@ -25,14 +25,18 @@
       "id": "n19-hunt2",
       "scope": [
         "engine/kernel/api/**",
-        "engine/packs/**",
         "engine/seeds/**",
-        "engine/tools/selftest.d/36*-hunt2-*.sh",
-        "engine/tools/selftest.d/37*-hunt2-*.sh",
         "engine/boot/**",
+        "devx/lib/commands/ladder.mjs",
+        "devx/test/**",
+        "engine/tools/selftest.d/31*-bugfix-*.sh",
+        "engine/tools/selftest.d/32*-bugfix-*.sh",
+        "engine/tools/selftest.d/33*-bugfix-*.sh",
+        "engine/tools/selftest.d/34*-bugfix-*.sh",
+        "engine/tools/selftest.d/36*-hunt2-*.sh",
         "docs/shifts/2026-11-19-night/lanes/hunt2/**"
       ],
-      "note": "night 19 Nov lane hunt2 (Opus directing Astra), .claude/worktrees/n19-hunt2, until 07:00; findings in walker/editor scopes go to the Director"
+      "note": "night 19 Nov lane hunt2 round 2, .claude/worktrees/n19-hunt2b (from main after the hunt2 merge), until 06:30"
     }
   ]
 }

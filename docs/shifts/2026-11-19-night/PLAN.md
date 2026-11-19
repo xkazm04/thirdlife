@@ -47,3 +47,4 @@ At 07:12 the verdict: final full gate, `tl arch --index`, export the exe, push, 
 | hunt2 | `.claude/worktrees/n19-hunt2` (cut from `9ea78b0`) | a05823f6ff3e59e1b (Opus director of Astra) | 00:56 |
 | editor round 2 | `.claude/worktrees/n19-editor2` (cut from `eac9e92`) | same agent, by SendMessage | 01:38 |
 | editor round 3 | `.claude/worktrees/n19-editor3` (cut from `c9fe14f`) | same agent | 02:22 |
+| hunt2 round 2 | `.claude/worktrees/n19-hunt2b` (cut from `30cfbed`) | same agent | 03:06 |
