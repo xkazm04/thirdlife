@@ -1,18 +1,3 @@
 {
-  "sessions": [
-    {
-      "id": "e19-hud",
-      "scope": [
-        "engine/kernel/api/tl_hud.gd",
-        "engine/kernel/API.md",
-        "engine/style/STYLE.md",
-        "engine/style/style.json",
-        "engine/style/hud/**",
-        "engine/ui/**",
-        "engine/packs/parkour/**",
-        "docs/shifts/2026-11-19-evening/lanes/hud/**"
-      ],
-      "note": "evening 19 Nov lane hud, .claude/worktrees/e19-hud, until 23:00"
-    }
-  ]
+  "sessions": []
 }

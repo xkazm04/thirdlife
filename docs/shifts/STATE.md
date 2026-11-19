@@ -133,3 +133,4 @@ look, with an Opus operator. Land and push by 23:30. Plan: `docs/shifts/2026-11-
 - 19:10 evening lanes launched: wings, hud (from `2950f03`).
 - 21:08 wings landed (`a6c44ac`: summoned by a sigil, none worn; flight 14/14, moves 15/15, world 8/8, packs 48/48). hud on track (round 2 done, final full tier running).
 - 21:09 standup: hud on track (final full tier running; index staleness is the Director's to regenerate); landable due by 22:45.
+- 21:40 hud landed (`1e254ab`: Split Ticket HUD + HUD workshop, API 1.11; hashes identical). Both evening lanes landed; full gate on main running for the verdict.
