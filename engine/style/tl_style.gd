@@ -10,7 +10,23 @@ extends RefCounted
 ## Ported from spike/lab/b/src/style.gd + stage.gd (lane B, accepted look).
 
 const SHADER_DIR: String = "res://style/shaders/"
-const DEFAULT_PATH: String = "res://style/style.json"
+## Diorama night (20 Nov, branch diorama-base): the style file is chosen by the environment variable TL_STYLE.
+## Unset or "diorama" = style_diorama.json (this branch's default); "classic" = today's style.json; any other name N =
+## style_N.json. Every caller that used DEFAULT_PATH keeps working.
+const CLASSIC_PATH: String = "res://style/style.json"
+const DIORAMA_PATH: String = "res://style/style_diorama.json"
+static var DEFAULT_PATH: String = _chosen_path()
+
+
+static func _chosen_path() -> String:
+	var name: String = OS.get_environment("TL_STYLE").strip_edges()
+	if name.is_empty() or name == "diorama":
+		return DIORAMA_PATH
+	if name == "classic":
+		return CLASSIC_PATH
+	return "res://style/style_%s.json" % name
+
+
 const SPECIAL: PackedStringArray = ["glass", "water", "holo", "fx_add", "fx_mix"]
 const RIG_NODE: String = "TLStyleRig"
 ## material classes of the drawn surface language (toon.gdshader surface_detail)
@@ -73,7 +89,9 @@ static func ensure() -> void:
 
 ## Loads and validates a style file. Returns readable messages: hard errors (the file is then NOT applied and the
 ## previous style stays), and lines starting with "clamped: " for values that were out of range and were clamped.
-static func load_style(path: String = "res://style/style.json") -> PackedStringArray:
+static func load_style(path: String = "") -> PackedStringArray:
+	if path.is_empty():
+		path = DEFAULT_PATH
 	var out: PackedStringArray = PackedStringArray()
 	# hunt2 B12: a rejected file marks the style loaded only when it is the default (never retry that in a loop); a
 	# rejected override (a missing --style) leaves it unloaded, so the next ensure() still installs the default
