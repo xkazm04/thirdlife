@@ -41,7 +41,13 @@ static func run(t: SceneTree, tmp: String) -> void:
 	var ids: Array = mine.map(func(p: Dictionary) -> String: return p.candidate)
 	var top3: Array = Scorer.candidates(m, m.heights, 3).map(func(c: Dictionary) -> String: return c.id)
 	t.check("place: no place words -> the scorer's top three, worded from their facts, no model call", ids == top3 and ids.size() == 3 and
-		mine.all(func(p: Dictionary) -> bool: return p.reason.contains("walk") and p.reason.length() < 120) and PlacePanel.valid_answer({"schema": "tl.place-answer/1", "proposals": mine, "adapter": "fake", "model": "editor", "durationMs": 0}), str(mine))
+		mine.all(func(p: Dictionary) -> bool: return p.reason.contains(" m walk from") and p.reason.length() < 120 and p.reason.count("next to") <= 1) and PlacePanel.valid_answer({"schema": "tl.place-answer/1", "proposals": mine, "adapter": "fake", "model": "editor", "durationMs": 0}), str(mine))
+	# Round 3: "next to walker" is not a walk fact (a 43 m ring's third place had walker twice in its reason)
+	m.answer("rink", "standard")
+	var bigger: Array = PlacePanel.measured_proposals(m)
+	t.check("place: a measured reason names one walk and at most one neighbour", bigger.size() == 3 and bigger.all(func(p: Dictionary) -> bool:
+		return p.reason.count(" m walk from") == 1 and p.reason.count("next to") <= 1), str(bigger))
+	m.answer("rink", "small")
 	var a := {"at": [best.x, best.y], "yaw_deg": 0, "reason": "short walk"}
 	var b := {"at": [347, -80], "yaw_deg": 15, "reason": "long walk"}
 	var c := {"at": [-250, -30], "yaw_deg": 0, "reason": "river"}

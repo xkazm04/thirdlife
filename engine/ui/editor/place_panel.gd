@@ -15,6 +15,7 @@ var ranked: Array = []
 var ask_path := ""
 var out_path := ""
 var number := 0
+var measured_for := -1.0                 # round 3: the ring the editor's own three places were measured for (-1 = the Designer's)
 var asked_words := PackedStringArray()   # the place words that made Find a place ask the Designer
 
 
@@ -75,7 +76,7 @@ static func measured_proposals(m) -> Array:
 	for c: Dictionary in Scorer.candidates(m, m.heights, 3):
 		var parts: PackedStringArray = []
 		for f: String in c.facts:
-			if f.contains("walk"):
+			if f.contains(" m walk from"):      # not "next to walker"
 				parts.append(f)
 		for f: String in c.facts:
 			if f.begins_with("next to"):
@@ -89,8 +90,10 @@ static func measured_proposals(m) -> Array:
 func _find() -> void:
 	proposals = []
 	var words := place_words(str(wb.model.sentence))
+	measured_for = -1.0
 	if words.is_empty():
 		proposals = measured_proposals(wb.model)
+		measured_for = wb.model.lot_radius()
 		if proposals.is_empty():
 			_fallback("No measured free place fits.")
 			return
@@ -254,6 +257,16 @@ func refresh() -> void:
 		why.text = title + "\n" + _lines(current.lines)
 	status.visible = not status.text.is_empty()
 	var had_places := not ranked.is_empty() and bool(ranked[0].valid)
+	# Round 3: the editor's own places follow the requirements: an answer that changes the ring measures them again
+	# (free: no model call). The Designer's places stay as it chose them and are judged again below.
+	if measured_for > 0.0 and not is_equal_approx(m.lot_radius(), measured_for):
+		proposals = measured_proposals(m)
+		measured_for = m.lot_radius()
+		if proposals.is_empty():
+			ranked = []
+			_rescore()
+			_fallback("No measured free place fits the new size.")
+			return
 	_rescore()
 	if had_places and not ranked.is_empty() and not ranked[0].valid:
 		_fallback("The new footprint rules out every suggested place.")

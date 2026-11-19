@@ -66,9 +66,27 @@ func run_place(d: Node) -> void:
 		d.note("read", "FAILED: expected two valid places by score, then a refusal: " + str(rows))
 		return
 	await d.picture("p-6-ranked.png")
-	if not await d.click("TakePlace1", "take the top-ranked place"):
+	if measured:
+		# Round 3: the map follows the requirements: a bigger rink measures the editor's three places again
+		var ring0: float = m.lot_radius()
+		await d.scroll_to("Opt_rink_standard")
+		if not await d.click("Opt_rink_standard", "the Standard 60 x 30 m option"):
+			return
+		if not await _place_wait(d, func() -> bool: return m.lot_radius() > ring0 and is_equal_approx(wb._places.measured_for, m.lot_radius()) and wb._places.ranked.size() == 3, "places measured again for the bigger ring"):
+			return
+		rows = wb._places.ranked
+		if not rows.all(func(r: Dictionary) -> bool: return r.valid):
+			d.failed = true
+			d.note("read", "FAILED: after the size change the measured places are not all valid: " + str(rows))
+			return
+		d.note("read", "ring %d -> %d m: the three measured places follow (best %.1f)" % [int(ring0), int(m.lot_radius()), rows[0].score])
+		await d.picture("p-6b-ranked-bigger.png")
+	# --take=N: take the N-th ranked place (default the top one)
+	var take: int = clampi(int(str((d.host.get("args") as Dictionary).get("take", "1"))), 1, rows.size())
+	var chosen: Dictionary = rows[take - 1]
+	if not await d.click("TakePlace%d" % take, "take the place ranked %d" % take):
 		return
-	if not await _place_wait(d, func() -> bool: return m.at == rows[0].at and m.yaw == rows[0].yaw and m.placed_by == "proposal", "selected place and yaw"):
+	if not await _place_wait(d, func() -> bool: return m.at == chosen.at and m.yaw == chosen.yaw and m.placed_by == "proposal", "selected place and yaw"):
 		return
 	await d.frames(60 if d.slow else 6)
 	await d.picture("p-7-chosen.png")
