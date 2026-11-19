@@ -19,7 +19,7 @@
         "docs/design/editor/**",
         "docs/shifts/2026-11-19-night/lanes/editor/**"
       ],
-      "note": "night 19 Nov lane editor (Opus + Astra mockups), .claude/worktrees/n19-editor, until 08:00"
+      "note": "night 19 Nov lane editor (Opus + Astra mockups), .claude/worktrees/n19-editor2 (round 2 from eac9e92), until 06:30"
     },
     {
       "id": "n19-hunt2",

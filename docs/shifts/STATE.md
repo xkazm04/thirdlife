@@ -44,3 +44,4 @@ lands on main.
 - 00:55 parkour landed (merge `9ea78b0`, Astra alone 16 min, 183 k tokens); hunt2 launched from it.
 - 00:47 merged tree after parkour: fast, kit 91/91, packs 34/34, world 8/8, headless tour PASS.
 - 00:57 standup: parkour landed; walker, editor, hunt2 on track (editor near done); 37 GB free.
+- 01:35 editor landed (merge `eac9e92`; fast 5/5, ui.selftest 116, item 91); re-dispatched: change a decision from the game sheet + Astra-alone look pass (worktree n19-editor2).
