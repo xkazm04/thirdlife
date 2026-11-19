@@ -56,16 +56,19 @@ Consts: `OPTIONS`, `WALKER_HEIGHT`, `WALKER_SLIDE_HEIGHT`
 
 Signals: `downed()`, `got_up()`, `mode_changed(mode: StringName)`, `pushed(body: RigidBody3D, impulse: float)`
 
-Properties: `accel: float`, `blade_material: String`, `body_mass: float`, `get_up_frames: int`, `grounded: bool`, `jump_speed: float`, `mode: StringName`, `push_strength: float`, `rig: Node3D`, `run_speed: float`, `skate_accel: float`, `skate_brake: float`, `skate_lateral_grip: float`, `skate_speed: float`, `skate_turn_rate: float`, `sole_material: String`, `surface: String`, `turn_rate: float`, `walk_speed: float`
+Properties: `accel: float`, `blade_material: String`, `body_mass: float`, `fly_scale: float`, `get_up_frames: int`, `grounded: bool`, `jump_speed: float`, `mode: StringName`, `push_strength: float`, `rig: Node3D`, `run_speed: float`, `skate_accel: float`, `skate_brake: float`, `skate_lateral_grip: float`, `skate_speed: float`, `skate_turn_rate: float`, `sole_material: String`, `surface: String`, `turn_rate: float`, `walk_speed: float`
 
 - `func body_radius() -> float`
 - `func brake(on: bool = true) -> void`
+- `func climb(v: float) -> void`
 - `static func create(opts: Dictionary = {}) -> TLBiped`
 - `func down(frames: int) -> void`
 - `func down_frames_left() -> int`
 - `func drive_from_input(input: TLInput, map: Dictionary, view: Basis = Basis.IDENTITY) -> void`
+- `func fly(on: bool = true) -> void`
 - `func forward() -> Vector3`
 - `func is_down() -> bool`
+- `func is_flying() -> bool`
 - `func is_stumbling() -> bool`
 - `func jump() -> void`
 - `func move(direction: Vector3, run: bool = false) -> void`
