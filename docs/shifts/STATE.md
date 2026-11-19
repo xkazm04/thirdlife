@@ -14,20 +14,34 @@ writes it back. Newest shift-log entry last.
 
 ## Open owner verdicts
 Asks from the night of 19 Nov, by ID (details in VERDICT.md):
-- E1 editor direction; E2 contract additions (card interview and footprint, job answers, lot and changed decision); E3
-  village too full by the road for 45 m venues.
-- P1 keep the C retry at the beam, or only the run-up; P2 newcomer retry bot in the gate.
-- W1 A/D face, sidestep or turn; W2 camera sideways swing near crowns, or stay behind; W3 slope jumps (D14/A11);
+- E3 village too full by the road for 45 m venues.
+- P2 newcomer retry bot in the gate.
+- W2 camera sideways swing near crowns, or stay behind; W3 slope jumps (D14/A11);
   W4 slide hand to the floor (Q31); W5 the three bugfix-37 camera rules.
 - H1 hockey C4/C6 (deferred topic); H2 should `place()` take pack coordinates; H3 the hockey frame budget under load.
 
 ## Backlog (accepted by the owner, not yet scheduled)
+- Editor placement intelligence (E1): the LLM/editor proposes position, pathing and fit on the map. The map updates as the
+  requirements change in the builder. Constructions blend into the terrain, with no circular ring that does not match it.
+- Contract additions (E2, approved): CARDS.md `interview` and `footprint`; JOB.md `job_created.answers`,
+  `job_created.lot` and `change_requested.decision`. Then the village reads the lot from the job.
+- Parkour: harder, multi-stage obstacle challenges in the style of TV ninja runs (P1).
 - Site Boss modelled in Blender (approved concept, second to Pip; Opus solo).
 - Pip as a character with a role (concept: the photo-finish judge; the parkour finish is a natural home).
 - A second real Foreman job through the hand checks; the construction process (deferred by the owner).
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-19 08:20 (owner, morning after the night of 19 Nov):
+  - E1: "it is right direction, but needs more care for LLM to pick positioning, pathing in the map, good fit in the map.
+    As player develops the requirements in the builder, the map representation should change with it. All constructions
+    do have circle around incompatible with terrain around, the transition is not seamless".
+  - E2: approve all the contract additions: CARDS.md `interview` and `footprint`; JOB.md `job_created.answers`,
+    `job_created.lot` and `change_requested.decision`.
+  - P1: "Continue with improvements to create more sophisticated challenges (like TV ninja runs)". The C retry stays for
+    now; the course grows into harder, multi-stage obstacle runs.
+  - W1: A/D keeps facing the direction (today's default); `TL_AD_KEYS` stays as an option.
+  - Still open: E3, P2, W2-W5, H1-H3.
 - 2026-11-18: Astra trial routes (memory `project-astra-trial-results`): Opus directing Astra for code/review/tools; Astra
   alone for concept art and look by eye; Opus alone for Blender.
 - 2026-11-18: losing trial arms removed on the owner's word; D's and E's parkour code was uncommitted and went with them
