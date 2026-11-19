@@ -147,11 +147,15 @@ shadow map on himself (about 40 %), the world-anchored mottle (about 25 %), ampl
 The toon shader writes roughness 0.9 for the ground material class. The silhouette brush keeps its original tap
 positions and full weight. At terrain pixels with less than 65% brush weight, a second decision checks the ground
 one inner-ring radius above and below the texel centre. A receding upper tap beyond twice the lower reciprocal-depth
-slope adds up to 65% ink. Reciprocal depth varies linearly across a projected plane, so a continuous slope adds none.
+slope adds a crest stroke. Its original 65% response curve levels off at 55% brush weight (0.528 near-field opacity).
+Reciprocal depth varies linearly across a projected plane, so a continuous slope adds none.
 
-Where all three texels carry the ground tag, brush weights through 0.375 drop out to clear faint lines on grazing
-planes. The brush returns to its original weight by 0.6. The crest decision reuses the depth and roughness samples
-when the original taps land in the required texels. A mismatch costs three depth and two normal/roughness reads.
+Where all three texels carry the ground tag, the brush also checks its original vertical taps at the wide radius.
+If those taps see a receding ridge beyond twice the foreground reciprocal-depth slope, the brush keeps its soft
+flank there, even when the inner taps both land below the ridge. On a grazing plane, brush weights through 0.375
+drop out and weights from 0.6 keep their full strength. The wide test reuses the brush's depth reads. The centred
+inner test reuses its original samples when they land in the required texels. A mismatch costs three depth and
+two normal/roughness reads.
 
 ## Thin members far away (walker-feel, lane T's item L1)
 Lane T measured that the shimmer of the picture sits on the far fences, scaffolds and trees and comes from the ink pass.

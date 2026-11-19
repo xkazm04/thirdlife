@@ -1,0 +1,1 @@
+boil frames=106 band=200..420 mean=3.065 flips_pct=2.625 (mean change per frame, grey levels; share of pixels changing by more than 24)

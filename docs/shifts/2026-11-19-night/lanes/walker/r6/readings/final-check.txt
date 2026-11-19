@@ -1,0 +1,11 @@
+Selected trial vs live production shader: 333/335 PNGs byte-identical
+bluff_120-beauty.png: 930 pixels differ, bounds x=1305..1562, y=316..476
+bluff_120-noink.png: 915 pixels differ, bounds x=1291..1551, y=313..487
+Every motion sample and full-frame diagnostic agrees
+head bluff: 13459/669600 flips (2.010006%), mean=1.822122
+baseline bluff: 14844/669600 flips (2.216846%), mean=1.822667
+after bluff: 13307/669600 flips (1.987306%), mean=1.821047
+bank_310: 0/7463 strong opacity codes changed, 0/160 crest decisions changed across all gap bands
+bluff_120: 0/11638 strong opacity codes changed, 0/1057 crest decisions changed across all gap bands
+shoulder: 0/7898 strong opacity codes changed, 0/886 crest decisions changed across all gap bands
+plane: 0/9077 strong opacity codes changed, 0/0 crest decisions changed across all gap bands

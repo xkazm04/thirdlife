@@ -1,11 +1,11 @@
 extends SceneTree
-## Headless CPU check of one axis of the ink shader's inner ring. Evaluate its actual
+## Headless CPU check of the ink shader's inner and wide depth profiles. Evaluate its actual
 ## scalar assignments with Godot Expression so reverting the shader also reverts the test result.
-## Input samples stand in for the two texture fetches. Rendering and AA need the windowed probe.
+## Inputs stand in for texture samples. Rendering and AA need the windowed probe.
 
 const CORE := ["fp", "fm", "background_gap", "core"]
 const CREST := ["crest_jump", "crest_slope", "crest"]
-const OUTER := ["outer"]
+const OUTER := ["outer", "wide_jump", "wide_slope", "wide_crest"]
 var assignments: Array[Array] = []
 
 func _initialize() -> void:
@@ -40,30 +40,40 @@ func _initialize() -> void:
 			errors += 1
 	# One vertical pair of terrain taps. Inverse depth advances linearly along the
 	# projected grazing plane (centre 20 m). The cliff sample has a 10% gap above.
-	var land_cases := [["close terrain crest", 22.0, 19.98, true],
-		["perspective plane", 20.0 / 0.95, 20.0 / 1.05, false],
-		["rising foreground", 19.0, 20.02, false]]
+	# Opacity after the 0.96 line multiplier. A small gap on the ramp still covers
+	# its pixel, and a large gap saturates at the lighter crest tone.
+	var land_cases := [["close terrain crest", 22.0, 19.98, 0.5, 0.55],
+		["shallow crest on the ramp", 20.37, 19.98, 0.5, 0.55],
+		["perspective plane", 20.0 / 0.95, 20.0 / 1.05, 0.0, 0.0],
+		["rising foreground", 19.0, 20.02, 0.0, 0.0]]
 	for c: Array in land_cases:
 		var state := {"d0": 20.0, "dbm": c[1], "dbp": c[2], "centre_depth": 20.0,
 			"vertical_taps": Vector4(c[2], c[1], 0.9, 0.9), "crest": 0.0}
 		if not _evaluate(state, CREST):
 			quit(1)
 			return
-		var matches := float(state.crest) * 0.96 >= 0.5 if c[3] else is_zero_approx(float(state.crest))
-		if not matches:
-			print("ink case ", c[0], " expected coverage ", c[3], " got weight ", state.crest)
+		var opacity := float(state.crest) * 0.96
+		if opacity < c[3] or opacity > c[4]:
+			print("ink case ", c[0], " expected opacity in [", c[3], ", ", c[4], "] got ", opacity)
 			errors += 1
-	# Near terrain strip, full legacy core, no thin-member treatment or extra crest.
-	# Execute the shader's outer-weight assignments in order, including the terrain branch.
-	var strong := {"core": 1.0, "cnt": 3.0, "hair": 0.0, "hair_alpha": 0.8,
-		"thin_b": 0.0, "thin_tone": 0.55, "flat_k": 0.0, "tk": 0.0, "crest": 0.0}
-	if not _evaluate(strong, OUTER):
-		quit(1)
-		return
-	if not is_equal_approx(float(strong.get("outer", -1.0)), 1.0):
-		print("ink case strong terrain silhouette expected 1.0 got ", strong.get("outer"))
-		errors += 1
-	print("INK_CORE completed=%d failed=%d" % [cases.size() + land_cases.size() + 1, errors])
+	# No inner crest. One wide tap gives a faint brush flank. Keep it at a ridge,
+	# clear it on a plane with equal and opposite reciprocal-depth changes.
+	var brush_cases := [
+		["strong terrain silhouette", 1.0, 3.0, Vector2(20.0, 20.0), 1.0],
+		["wide terrain crest flank", 0.0, 1.0, Vector2(19.98, 30.0), smoothstep(0.0, 2.6, 1.0)],
+		["wide grazing plane flank", 0.0, 1.0, Vector2(20.0 / 1.3, 20.0 / 0.7), 0.0],
+	]
+	for c: Array in brush_cases:
+		var state := {"core": c[1], "cnt": c[2], "d0": 20.0, "wide_depth": c[3],
+			"hair": 0.0, "hair_alpha": 0.8, "thin_b": 0.0, "thin_tone": 0.55,
+			"flat_k": 0.0, "tk": 0.0, "crest": 0.0}
+		if not _evaluate(state, OUTER):
+			quit(1)
+			return
+		if not is_equal_approx(float(state.get("outer", -1.0)), float(c[4])):
+			print("ink case ", c[0], " expected ", c[4], " got ", state.get("outer"))
+			errors += 1
+	print("INK_CORE completed=%d failed=%d" % [cases.size() + land_cases.size() + brush_cases.size(), errors])
 	quit(1 if errors else 0)
 
 

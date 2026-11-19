@@ -92,13 +92,16 @@ void fragment() {
 	float core = 0.0;     // the inner ring looks past a silhouette: the solid part of the line
 	float crest = 0.0;
 	vec4 vertical_taps = vec4(0.0); // lower/upper depth, lower/upper roughness
+	vec2 wide_depth = vec2(0.0);    // lower/upper depth at the brush radius
 	float hair = 0.0;     // the inner ring, lower right side only: the hairline of a thin member
 	float ne = 0.0;
 	for (int i = 0; i < 4; i++) {
 		float a = float(i) * 0.7853982;
 		vec2 dir = vec2(cos(a), sin(a));
-		float ep = smoothstep(0.025, 0.05, (lin_depth(juv + dir * px * wo, INV_PROJECTION_MATRIX) - d0) * inv_d);
-		float em = smoothstep(0.025, 0.05, (lin_depth(juv - dir * px * wo, INV_PROJECTION_MATRIX) - d0) * inv_d);
+		float dwp = lin_depth(juv + dir * px * wo, INV_PROJECTION_MATRIX);
+		float dwm = lin_depth(juv - dir * px * wo, INV_PROJECTION_MATRIX);
+		float ep = smoothstep(0.025, 0.05, (dwp - d0) * inv_d);
+		float em = smoothstep(0.025, 0.05, (dwm - d0) * inv_d);
 		cnt += ep + em;
 		thin = max(thin, ep * em);
 		if (thin_rings > 0.5) {
@@ -121,7 +124,10 @@ void fragment() {
 		// relative depth test miss. The crease taps already identify non-body surfaces.
 		float background_gap = max((dbp - d0) * step(0.8, np.a), (dbm - d0) * step(0.8, nm.a));
 		core = max(core, body * smoothstep(0.04, 0.12, background_gap));
-		if (i == 2) { vertical_taps = vec4(dbp, dbm, np.a, nm.a); }
+		if (i == 2) {
+			vertical_taps = vec4(dbp, dbm, np.a, nm.a);
+			wide_depth = vec2(dwp, dwm);
+		}
 		ne = max(ne, (1.0 - dot(np.rgb * 2.0 - 1.0, n0)) * step(dbp, d0 * 1.02));
 		ne = max(ne, (1.0 - dot(nm.rgb * 2.0 - 1.0, n0)) * step(dbm, d0 * 1.02));
 	}
@@ -146,8 +152,14 @@ void fragment() {
 		if (abs(vertical_taps.z - 0.9) < 0.025 && abs(vertical_taps.w - 0.9) < 0.025) {
 			float crest_jump = 1.0 - centre_depth / vertical_taps.y;
 			float crest_slope = abs(1.0 - centre_depth / vertical_taps.x);
-			crest = 0.65 * smoothstep(0.005, 0.020, crest_jump - 2.0 * crest_slope);
-			outer = max(outer * smoothstep(0.375, 0.6, outer), crest);
+			// Keep the onset at small gaps; limit only the additional crest tone at larger gaps.
+			crest = min(0.55, 0.65 * smoothstep(0.005, 0.020, crest_jump - 2.0 * crest_slope));
+			// The inner taps can both land below the ridge while the wide brush still crosses it.
+			// Keep that brush's soft flank using its own centre and taps. A planar slope cancels.
+			float wide_jump = 1.0 - d0 / wide_depth.y;
+			float wide_slope = abs(1.0 - d0 / wide_depth.x);
+			float wide_crest = smoothstep(0.005, 0.020, wide_jump - 2.0 * wide_slope);
+			outer = max(outer * max(smoothstep(0.375, 0.6, outer), wide_crest), crest);
 		}
 	}
 	float inner = smoothstep(0.3, 0.6, ne) * inner_alpha * (1.0 - tk);

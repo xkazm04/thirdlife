@@ -96,12 +96,16 @@ static func slide(t: float) -> Dictionary:
 		"Backpack": Vector3(-6.0 * settle, 0, 0), "Hair": Vector3(12.0 - 8.0 * settle, 0, 0),
 	}
 	var enter: Dictionary = {
-		"_hips": Vector3(0, -0.16, 0), "Hips": Vector3(-6.0, 0, 0), "Spine": Vector3(-6.0, 0, 0), "Chest": Vector3(-4.0, 0, 0), "Head": Vector3(6.0, 0, 0),
+		"_hips": Vector3(0, -0.10, 0), "Hips": Vector3(-6.0, 0, 0), "Spine": Vector3(-6.0, 0, 0), "Chest": Vector3(-4.0, 0, 0), "Head": Vector3(6.0, 0, 0),
 		"RightUpperLeg": Vector3(52.0, 0, 4.0), "RightLowerLeg": Vector3(-40.0, 0, 0), "RightFoot": Vector3(-6.0, 0, 0),
 		"LeftUpperLeg": Vector3(20.0, 0, -8.0), "LeftLowerLeg": Vector3(-78.0, 0, 0), "LeftFoot": Vector3(40.0, 0, 0),
 		"LeftUpperArm": Vector3(-30.0, 0, -20.0), "LeftLowerArm": Vector3(30.0, 0, 0), "RightUpperArm": Vector3(40.0, 0, 30.0), "RightLowerArm": Vector3(60.0, 0, 0),
 	}
-	return _mix(enter, low, k)
+	# lane walker (19 Nov, round 3): the hips drop late (k^3), after the legs have begun to fold; with the plain mix the
+	# right foot went 0.148 m under the floor for about 6 frames of the entry
+	var pose: Dictionary = _mix(enter, low, k)
+	pose["_hips"] = (enter["_hips"] as Vector3).lerp(low["_hips"] as Vector3, k * k * k)
+	return pose
 
 
 ## Sliding down steep ground (loops until another play): knees bent, weight back, the left foot ahead, the body turned a

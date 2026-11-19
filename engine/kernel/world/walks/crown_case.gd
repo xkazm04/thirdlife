@@ -100,7 +100,7 @@ func _run() -> void:
 					poses += 1
 	var frames: int = counts[0][0] + counts[1][0]
 	var ok: bool = frames == 34560 and poses == 2880 and counts[1][0] > 0 and counts[0][0] > 0 and counts[0][1] == 0 and counts[0][2] == 0
-	print("CROWNCASE regression %s frames=%d poses=%d head_out=%s head_in=%s" % ["ok" if ok else "FAIL", frames, poses, counts[0], counts[1]])
+	print("CROWNCASE regression %s frames=%d poses=%d head_out=%s head_in=%s side=%d max_side=%.0f" % ["ok" if ok else "FAIL", frames, poses, counts[0], counts[1], int(visitor.cam.get("side_ticks")), float(visitor.cam.get("max_side"))])
 	land.free()
 	oracle.close()
 	space.free_all()
