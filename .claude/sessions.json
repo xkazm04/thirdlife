@@ -1,3 +1,59 @@
 {
-  "sessions": []
+  "sessions": [
+    {
+      "id": "d19-editor",
+      "scope": [
+        "engine/ui/**",
+        "engine/tools/ui.sh",
+        "foreman/**",
+        "engine/cards/**",
+        "devx/lib/commands/cards*",
+        "devx/lib/cards/**",
+        "devx/test/cards*",
+        "engine/kernel/world/site.gd",
+        "engine/kernel/world/site/**",
+        "docs/shifts/2026-11-19-day/lanes/editor/**"
+      ],
+      "note": "day 19 Nov lane editor, .claude/worktrees/d19-editor, until 18:00"
+    },
+    {
+      "id": "d19-blend",
+      "scope": [
+        "engine/kernel/world/landscape.gd",
+        "engine/kernel/world/terrain/village_terrain.gd",
+        "engine/kernel/world/terrain/village_parts.gd",
+        "engine/kernel/world/draw/**",
+        "engine/style/**",
+        "engine/kernel/world/WORLD.md",
+        "docs/shifts/2026-11-19-day/lanes/blend/**"
+      ],
+      "note": "day 19 Nov lane blend, .claude/worktrees/d19-blend, until 18:00"
+    },
+    {
+      "id": "d19-parkour",
+      "scope": [
+        "engine/packs/parkour/**",
+        "engine/kits/**",
+        "docs/shifts/2026-11-19-day/lanes/parkour/**"
+      ],
+      "note": "day 19 Nov lane parkour, .claude/worktrees/d19-parkour, until 18:00"
+    },
+    {
+      "id": "d19-flight",
+      "scope": [
+        "engine/kernel/api/tl_biped.gd",
+        "engine/kernel/api/tl_chase_cam.gd",
+        "engine/kernel/world/visitor.gd",
+        "engine/kernel/world/terrain/world_body.gd",
+        "engine/kernel/world/terrain/walker_space.gd",
+        "engine/kernel/world/terrain/crown_camera.gd",
+        "engine/kernel/runner/**",
+        "engine/rigs/**",
+        "engine/kernel/API.md",
+        "assets/**",
+        "docs/shifts/2026-11-19-day/lanes/flight/**"
+      ],
+      "note": "day 19 Nov lane flight, .claude/worktrees/d19-flight, until 18:00"
+    }
+  ]
 }

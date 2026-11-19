@@ -23,3 +23,17 @@ verdict page for the owner to overturn.
 
 Four lanes at once: 40 GB RAM free at 08:15, and two of the lanes are mostly non-Godot. Estimated Astra spend is 2-3 M
 tokens. Not offered: hockey and win measurement (deferred).
+
+## Launch record (08:35-08:42)
+Worktrees `d19-{editor,blend,parkour,flight}` were cut from `1b3e055`, each with foreman deps, the site jobs and the class
+cache. Scopes are claimed in `.claude/sessions.json`; the selftest blocks are assigned per lane in the briefs, not claimed,
+because `tl arch` reads overlapping globs as a collision.
+
+| Lane | Agent (SendMessage id) | Started |
+|---|---|---|
+| editor | ab4f290a059951785 | 08:40 |
+| blend | a30fec00b00f954ea | 08:40 |
+| parkour | a3c7abec1e09a7c6a | 08:40 |
+| flight | ab4454967cfe24cf9 | 08:40 |
+
+Timers: standups hourly at :37 (09:37-16:37), verdict at 17:13.
