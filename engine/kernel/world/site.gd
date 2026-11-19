@@ -26,8 +26,7 @@ extends RefCounted
 
 const SiteLog: GDScript = preload("res://kernel/world/site/log.gd")
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")   # S5: the cache of measured extents
-const VillageTerrain := preload("res://kernel/world/terrain/village_terrain.gd")
-const Landscape := preload("res://kernel/world/landscape.gd")
+const SiteGround: GDScript = preload("res://kernel/world/site/ground.gd")
 const LOT_KEYS: Array = ["at", "radius", "h", "job", "replay"]
 const LIVE_EVERY: int = 60                  # live mode: the log's size is looked at once in this many world ticks
 const HELD_SIZE: Vector2 = Vector2(-1.0e7, -1.0e7)
@@ -67,21 +66,27 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 		var s: Dictionary = {"lot": k, "job": str(lot["job"]), "dir": dir, "plot": -1, "tpe": int((lot.get("replay", {}) as Dictionary).get("ticks_per_event", 0)),
 			"log": SiteLog.new(), "n": 0, "view": SiteLog.fold([], 0), "arrived_dir": "", "size_seen": -1, "reads": 0, "read_us": 0, "stage_ticks": {},
 			"at": [float((lot["at"] as Array)[0]), float(lot.get("h", 0.0)), float((lot["at"] as Array)[1])], "radius": float(lot.get("radius", 20.0))}
-		var placement := job_lot(dir)
-		var source := "job log"
-		if placement.is_empty():
-			placement = draft_lot(dir)
-			if placement.has("file"):
-				source = "workbench draft " + str(placement.file)
-		if not placement.is_empty():
-			lot["at"] = placement.at
-			lot["radius"] = placement.radius
-			s["at"] = [placement.at[0], float(lot.get("h", 0.0)), placement.at[1]]
-			s["radius"] = placement.radius
-			if float(placement.get("yaw_deg", 0.0)) != 0.0:
-				s["yaw_deg"] = placement.yaw_deg
-			s["lot_from"] = source
-			print("[site] lot %d: at %s, radius %s m, from the %s" % [k, str(lot.at), str(lot.radius), source])
+		if reserved.has(k):
+			# The expanded walk records the placement. A draft may have changed since then.
+			var record: Dictionary = plots[reserved[k]]
+			if float(record.get("yaw", 0.0)) != 0.0:
+				s["yaw_deg"] = -float(record.yaw)
+		else:
+			var placement := job_lot(dir)
+			var source := "job log"
+			if placement.is_empty():
+				placement = draft_lot(dir)
+				if placement.has("file"):
+					source = "workbench draft " + str(placement.file)
+			if not placement.is_empty():
+				lot["at"] = placement.at
+				lot["radius"] = placement.radius
+				s["at"] = [placement.at[0], float(lot.get("h", 0.0)), placement.at[1]]
+				s["radius"] = placement.radius
+				if float(placement.get("yaw_deg", 0.0)) != 0.0:
+					s["yaw_deg"] = placement.yaw_deg
+				s["lot_from"] = source
+				print("[site] lot %d: at %s, radius %s m, from the %s" % [k, str(lot.at), str(lot.radius), source])
 		if world.get("jobs") == null:
 			_warn("lot %d: the world has no build queue (tiers load.mode block): the job is shown, its game cannot arrive" % k)
 		elif reserved.has(k):
@@ -92,11 +97,13 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 			var fit: Array = fit_radius(dir, float(s["radius"]))
 			var fr: float = float(fit[0])               # the scheduler's footprint: from the files only, so a run's ticks never depend on a cache
 			var seen: Array = remembered_radius(dir, float(s["radius"]))
-			s["sched_r"] = fr                         # hunt2 B2: the scheduler gets this back on arrival, never the cached radius
 			s["radius"] = fr if seen.is_empty() else float(seen[0])
 			s["fit"] = str(fit[1]) if seen.is_empty() else str(seen[1])
 			var r: float = float(s["radius"])
-			plots.append({"id": "site_%d" % k, "origin": s["at"], "radius": r, "footprint": {"size_m": [fr * 2.0, fr * 2.0]}, "seed": 1, "site_lot": k})
+			var plot := {"id": "site_%d" % k, "origin": s["at"], "radius": r, "footprint": {"size_m": [fr * 2.0, fr * 2.0]}, "seed": 1, "site_lot": k}
+			if s.has("yaw_deg"):
+				plot["yaw"] = -float(s.yaw_deg) # Godot +Y turns +X towards -Z; the editor turns it towards +Z.
+			plots.append(plot)
 		var moved: bool = walk_at != lot.at
 		if moved or not lot.has("h"):
 			auto_pads.append({"site": s, "centre": "new centre" if moved else "centre"})
@@ -106,14 +113,14 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 	walk["plots"] = plots
 	# Every placement must be known before sampling: any lot can move the terrain's bounds and centre.
 	if not auto_pads.is_empty():
-		var terr := _base_terrain(walk, world._resolve)
+		var terr = _base_terrain(walk, world._resolve)
 		var pads: Array = land.get("pad_h", [])
 		for pad: Dictionary in auto_pads:
 			var s: Dictionary = pad.site
 			var k: int = s.lot
 			var lot: Dictionary = lots[k]
 			var centre := Vector2(lot.at[0], lot.at[1])
-			var h := terr.base_h(centre.x, centre.y)
+			var h: float = terr.base_h(centre.x, centre.y)
 			print("[site] lot %d: pad h %s -> %.2f m (the land at the %s)" % [k, str(lot.get("h", "auto")), h, pad.centre])
 			lot.h = h
 			s.at[1] = h                  # the reserved plot's origin shares this array
@@ -124,58 +131,9 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 		world.connect("ended", _on_ended)
 
 
-## Mirrors landscape.gd build(), lines 74-135: the same plot and lot bounds, road, river, grid and base height.
-## Site plots already represent their lots. No heightfield or rendered world is needed for this sample.
-static func _base_terrain(walk: Dictionary, resolve_pack: Callable) -> VillageTerrain:
-	var cfg: Dictionary = walk.landscape
-	var tiers: Dictionary = walk.tiers if walk.get("tiers") is Dictionary else {}
-	var default_size: Array = tiers.get("default_footprint_m", [40, 40])
-	var lo := Vector2(INF, INF)
-	var hi := Vector2(-INF, -INF)
-	var scatter := Vector2.ONE * Landscape.SCATTER_MARGIN
-	var reserved := {}
-	for plot: Dictionary in walk.get("plots", []):
-		if plot.has("site_lot"):
-			reserved[int(plot.site_lot)] = true
-		var fp: Dictionary = plot.get("footprint", {})
-		if not plot.has("footprint") and plot.has("pack"):
-			var path := str(resolve_pack.call(plot.pack)).path_join("pack.json")
-			if FileAccess.file_exists(path):
-				var manifest: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-				if manifest is Dictionary:
-					fp = manifest.get("footprint", {})
-		var size: Array = fp.get("size_m", default_size)
-		var extent := Vector2(size[0], size[1]) * 0.5
-		var r := float(plot.get("radius", minf(extent.x, extent.y)))
-		var axis := Vector2.from_angle(-deg_to_rad(float(plot.get("yaw", 0.0))))
-		var bounds := (axis.abs() * extent.x + axis.orthogonal().abs() * extent.y).max(Vector2.ONE * r)
-		var origin: Array = plot.get("origin", [0, 0, 0])
-		var c := Vector2(origin[0], origin[2])
-		lo = lo.min(c - bounds - scatter)
-		hi = hi.max(c + bounds + scatter)
-	var lots: Array = cfg.get("lots", [])
-	for k: int in lots.size():
-		if reserved.has(k):
-			continue
-		var c := Vector2(lots[k].at[0], lots[k].at[1])
-		var bounds := Vector2.ONE * (float(lots[k].get("radius", 20.0)) + Landscape.SCATTER_MARGIN)
-		lo = lo.min(c - bounds)
-		hi = hi.max(c + bounds)
-	for p: Array in cfg.get("road", walk.get("road", [])):
-		lo = lo.min(Vector2(p[0], p[1]))
-		hi = hi.max(Vector2(p[0], p[1]))
-	var river: Dictionary = cfg.river if cfg.get("river") is Dictionary else {}
-	for p: Array in river.get("path", []):
-		lo = lo.min(Vector2(p[0], p[1]) - Vector2.ONE * 40.0)
-		hi = hi.max(Vector2(p[0], p[1]) + Vector2.ONE * 40.0)
-	var cell := float(cfg.get("cell_m", 3.0))
-	var margin := Vector2.ONE * float(cfg.get("margin_m", 110.0))
-	var start := ((lo - margin) / cell).floor() * cell
-	var end := ((hi + margin) / cell).ceil() * cell
-	var terr := VillageTerrain.new(int(cfg.get("seed", 7)), Rect2(start, end - start), cell)
-	terr.centre = (lo + hi) * 0.5
-	terr.relief = float(cfg.get("relief", 1.0))
-	return terr
+## The land under a lot: site/ground.gd (it mirrors landscape.gd's terrain box).
+static func _base_terrain(walk: Dictionary, resolve_pack: Callable):
+	return SiteGround.base_terrain(walk, resolve_pack)
 
 
 ## Read only the complete creation event, even when the rest of a live log is large or still being written.
@@ -361,7 +319,9 @@ func tick(t: int) -> void:
 		_held_applied = true
 		for s: Dictionary in sites:
 			if int(s["plot"]) >= 0:
-				((sched.get("plots") as Array)[int(s["plot"])] as Dictionary)["size"] = HELD_SIZE
+				var plot: Dictionary = sched.plots[int(s.plot)]
+				s["sched_size"] = plot.size
+				plot["size"] = HELD_SIZE
 	for s: Dictionary in sites:
 		_read(s, t)
 		var n: int = (s["log"] as RefCounted).get("events").size()
@@ -519,8 +479,7 @@ func _arrive(s: Dictionary, pr: Dictionary, t: int) -> void:
 	def["dir"] = dir
 	if first:
 		p.call("stub", dir)                     # the manifest: from now on the queue builds it when the scheduler wants it
-		var sr: float = float(s.get("sched_r", s["radius"]))
-		pl["size"] = Vector2(sr * 2.0, sr * 2.0)
+		pl["size"] = s["sched_size"] # saved footprint, independent of the measured visual radius
 	else:
 		p.set("pack_dir", dir)                  # a later promotion: the pack is replaced by a reload from the new directory
 		var mres: Dictionary = (load("res://kernel/runner/manifest.gd") as GDScript).call("read", dir)

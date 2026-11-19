@@ -381,7 +381,7 @@ func lot_inside(centre: Vector2, radius: float) -> bool:
 func yaw_note() -> String:
 	if yaw == 0.0:
 		return ""
-	return "Turned %s°: the village stands games square for now; the turn is kept in your request." % str(rad_to_deg(yaw)).trim_suffix(".0")
+	return "Turned %s°: the game stands turned on its lot; its gate still faces the road." % str(rad_to_deg(yaw)).trim_suffix(".0")
 
 
 func seconds_across() -> float:

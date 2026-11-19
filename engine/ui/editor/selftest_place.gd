@@ -96,7 +96,7 @@ static func run(t: SceneTree, tmp: String) -> void:
 	stub.free()
 	t.check("place: square placement has no turn notice", m.yaw_note().is_empty())
 	m.turn(-1)
-	t.check("place: a turn is explained and kept in the draft", m.yaw_note() == "Turned -15°: the village stands games square for now; the turn is kept in your request." and m.draft().lot.yaw_deg == -15)
+	t.check("place: a turn is explained and kept in the draft", m.yaw_note() == "Turned -15°: the game stands turned on its lot; its gate still faces the road." and m.draft().lot.yaw_deg == -15)
 	m.plots = [{"id":"yard","label":"parkour yard","kind":"plot","at":Vector2(14, 30),"r":12.0}]
 	m.road_samples = PackedVector2Array([Vector2(-100,0),Vector2.ZERO,Vector2(100,0)])
 	m.river_samples.clear()

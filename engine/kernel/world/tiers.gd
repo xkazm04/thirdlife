@@ -150,6 +150,19 @@ func index_of(id: String) -> int:
 
 
 func _gap(a: Dictionary, b: Dictionary) -> float:
+	if float(a["yaw"]) != 0.0 or float(b["yaw"]) != 0.0:
+		var ac := _corners(a)
+		var bc := _corners(b)
+		# Corners cover containment and the minimum distance of disjoint rectangles.
+		# Two thin rectangles can also cross without either enclosing a corner.
+		var gap := INF
+		for i: int in 4:
+			gap = minf(gap, distance(a, Vector3(bc[i].x, 0, bc[i].y)))
+			gap = minf(gap, distance(b, Vector3(ac[i].x, 0, ac[i].y)))
+			for j: int in 4:
+				if Geometry2D.segment_intersects_segment(ac[i], ac[(i + 1) % 4], bc[j], bc[(j + 1) % 4]) != null:
+					return 0.0
+		return gap
 	var ao: Vector3 = a["origin"]
 	var bo: Vector3 = b["origin"]
 	var asz: Vector2 = a["size"]
@@ -159,11 +172,21 @@ func _gap(a: Dictionary, b: Dictionary) -> float:
 	return sqrt(dx * dx + dz * dz)
 
 
+func _corners(p: Dictionary) -> PackedVector2Array:
+	var o: Vector3 = p["origin"]
+	var centre := Vector2(o.x, o.z)
+	var half_size: Vector2 = p["size"] * 0.5
+	var x_axis := Vector2.from_angle(-deg_to_rad(float(p["yaw"])))
+	var x := x_axis * half_size.x
+	var z := x_axis.orthogonal() * half_size.y
+	return PackedVector2Array([centre - x - z, centre + x - z, centre + x + z, centre - x + z])
+
+
 ## Metres from `pos` to the nearest edge of the plot's footprint; 0 inside.
 func distance(p: Dictionary, pos: Vector3) -> float:
 	var o: Vector3 = p["origin"]
 	var sz: Vector2 = p["size"]
-	var local: Vector2 = Vector2(pos.x - o.x, pos.z - o.z).rotated(float(p["yaw"]))
+	var local: Vector2 = Vector2(pos.x - o.x, pos.z - o.z).rotated(deg_to_rad(float(p["yaw"])))
 	var dx: float = maxf(absf(local.x) - sz.x * 0.5, 0.0)
 	var dz: float = maxf(absf(local.y) - sz.y * 0.5, 0.0)
 	return sqrt(dx * dx + dz * dz)
