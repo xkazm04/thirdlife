@@ -394,7 +394,7 @@ case "$1" in
     [ -z "$1" ] && { echo "world.sh visit-test: a walk script is required"; exit 2; }
     f="$(walk_file "$1")"; shift
     out="$(window_mode world-view "--walk=$f" --live "$@")"; code=$?
-    echo "$out" | grep -E '"kind":"(visit_path|visit_left|visit_record|tour|picture)"|^\[view\] [^s]|SCRIPT ERROR|^ERROR'
+    echo "$out" | grep -E '"kind":"(visit_path|visit_left|visit_fly_gate|visit_record|tour|picture)"|^\[view\] [^s]|SCRIPT ERROR|^ERROR'
     echo "$out" | grep '"kind":"pack"' | sed -E 's/.*"frames":([0-9]+),"state_hash":"([0-9a-f]{0,16})[^"]*".*"plot":"([^"]*)".*/pack \3 ticks \1 hash \2/'
     echo "$out" | grep '"kind":"event"' | grep -E '"e":"(enter|leave|refused)"' | sed -E 's/^\{"schema":"tl.world\/1","kind":"event",//; s/\}$//'
     exit $code;;

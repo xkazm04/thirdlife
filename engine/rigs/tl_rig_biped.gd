@@ -68,6 +68,7 @@ func setup(p: Dictionary) -> void:
 	add_clip("slide", 0.3, false, TLRigBipedMoves.slide, false, true)
 	add_clip("slope_slide", 1.6, true, TLRigBipedMoves.slope_slide)
 	add_clip("air", 1.0, true, _air)
+	add_clip("fly", 1.6, true, TLRigBipedMoves.fly)
 	_build_hammer()
 	_param_changed("stick", p["stick"])
 	_param_changed("mode", p["mode"])

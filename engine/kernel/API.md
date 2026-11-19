@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.8)
+# Third Life kernel API (kernelApi 1.9)
 
-**Version 1.8 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.9 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.8"` in `pack.json` (any
-`"1.x"` up to 1.8 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.9"` in `pack.json` (any
+`"1.x"` up to 1.9 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -313,6 +313,17 @@ from `WALKER_HEIGHT` (1.8 m) to `WALKER_SLIDE_HEIGHT` (0.84 m) at body scale 1.
 The body stands once there is headroom. `walker_motion()` reports `ground`, `air`, `slide` or
 `slope` after the physics step. `place()` clears the walker's motion for a restart.
 Walk and skate packs keep their original controller by default.
+
+### Flight (addition in 1.9)
+
+Walker-feel bipeds can call `fly(true)` to take off and `fly(false)` to end flight and fall (a pack biped gets the
+flight, not the village walker's wings: those are a kernel part of the visitor, `kernel/world/flight_wings.gd`).
+After the physics step, `is_flying()` reports flight and `walker_motion()` returns `fly` while airborne under power.
+Call `move(direction)` to cruise and `climb(v)` each tick for vertical intent from -1 to 1.
+The `fly_scale` option defaults to 5.0 times run speed. Flight eases into turns and glides to a hover on release.
+It sweeps against solids and crowns and limits altitude to 120 m over ground. Descending onto walkable ground lands.
+Optional `drive_from_input` keys are `fly` (toggle on press), `climb` and `descend` (held).
+Forward input cruises at 45 m/s by default. Sideways and backward input travel at run speed.
 
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
 

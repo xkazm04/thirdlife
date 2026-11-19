@@ -87,6 +87,12 @@ func _avoid(now: bool) -> void:
 	_ray.collision_mask = mask
 
 
+func _limit_lift(previous: float, wanted: float, now: bool) -> float:
+	if not now and target.get("flying") == true:
+		return move_toward(previous, wanted, 2.0)
+	return wanted
+
+
 func _clear(st: PhysicsDirectSpaceState3D, at: Vector3) -> bool:
 	clearance.transform.origin = at
 	if not st.intersect_shape(clearance, 1).is_empty():

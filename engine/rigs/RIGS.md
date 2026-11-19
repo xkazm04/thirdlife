@@ -54,6 +54,7 @@ TLRigs.spec("biped"); TLRigs.validate("biped", params); TLRigs.list()
 | `slide` | holds | 0.30 | run slide: low on the left hip, right leg out ahead, left leg folded under with the foot on the floor (never under it: `rig.walker.slide_floor`), left arm trailing low behind (the hand about 0.3 m above the floor), right arm up |
 | `slope_slide` | yes | 1.6 | sliding down steep ground: knees bent, weight back, turned a little across the fall line, arms out wide and working for balance. Loops until another `play` (`play(&"")` ends it) |
 | `air` | yes | 1.0 | the air pose by name (locomotion shows it by itself when `grounded` is false): rising above +4 m/s, apex round 0, falling below -5 m/s |
+| `fly` | yes | 1.6 | flight (lane flight, 19 Nov): body long and straight, legs together trailing with soft knees and pointed toes, arms back along the sides with the hands out, head lifted; a slow breath. The controller leans the whole figure into the flight; wings are not part of the rig |
 
 With `stick = true` the arms of idle, walk, run, skate and skate_stop take the two-handed stick hold; `shoot` and
 `pass` always use it. The stick is a child of the `hand_r` socket; `socket(&"stick_blade")` is the blade (for a
