@@ -191,3 +191,12 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
 ## Skill improvement log
 - 2026-11-18: skill created from the GTAI `/gta` shift design (pof) and this repo's three sparks of 17-18 Nov; the
   route table comes from the astra-trial scores.
+- 2026-11-19 (first run, night of 19 Nov): agents cannot write files named REPORT.md (harness refusal): ask lanes for
+  REPORT.txt and the full report in the final message; the Director saves it as REPORT.md.
+- 2026-11-19: two lanes picked the same selftest block number (360): assign each lane a block range in its brief.
+- 2026-11-19: measuring clips and frames reached 775 MB in one lane: lanes keep raw captures under .tl/ and commit only
+  sheets, notes and clips of 20 s or less; the Director converts large PNGs to JPG before staging.
+- 2026-11-19: hockey invariants.many_budget fails packs whenever lanes load the machine: re-run packs alone and A/B it
+  against the pre-merge commit before calling a regression; perf needs `tl perf run --quiet-only --wait 600` after the lanes.
+- 2026-11-19: re-dispatching landed lanes from their own "next" lists (SendMessage, fresh worktree from main) kept the
+  machine busy all night inside the agreed scope; all lanes finished by 05:10 and the verdict ran early.

@@ -1,27 +1,3 @@
 {
-  "sessions": [
-    {
-      "id": "n19-walker",
-      "scope": [
-        "engine/kernel/world/terrain/**",
-        "engine/kernel/world/walks/**",
-        "engine/kernel/world/landscape.gd",
-        "engine/kernel/world/visitor.gd",
-        "engine/style/**",
-        "engine/rigs/**",
-        "engine/tools/selftest.d/49*-walker-*.sh",
-        "docs/shifts/2026-11-19-night/lanes/walker/**"
-      ],
-      "note": "night 19 Nov lane walker round 3, .claude/worktrees/n19-walker3, until 06:30"
-    },
-    {
-      "id": "n19-parkour",
-      "scope": [
-        "engine/packs/parkour/**",
-        "engine/kits/**",
-        "docs/shifts/2026-11-19-night/lanes/parkour/**"
-      ],
-      "note": "night 19 Nov lane parkour round 2, .claude/worktrees/n19-parkour2, until 06:30"
-    }
-  ]
+  "sessions": []
 }

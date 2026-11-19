@@ -4,16 +4,22 @@ The campaign memory for `/shift` (`.claude/skills/shift/SKILL.md`). Read in full
 writes it back. Newest shift-log entry last.
 
 ## Now
-- Focus (owner, 18 Nov): the game must become playable and fun before anything is measured. The walking figure (look, jump,
-  slides, run), camera and terrain immersion, the parkour course, and the minigame editor as the backbone of player-made
-  games. Hockey decisions and win measurement deferred; the construction process later.
-- Next 3: (1) the owner plays the morning exe (Pip by the road, parkour plot west, walker feel); (2) the editor's design
-  direction, judged from the night's mockups and slice; (3) parkour fun pass after the owner plays it.
+- Focus (owner, 18 Nov): make the game playable and fun before measuring anything. The walking figure, camera and terrain
+  immersion, the parkour course, and the minigame editor as the backbone of player-made games. Hockey decisions and win
+  measurement are deferred; the construction process comes later.
+- Next 3: (1) the owner plays exe `d6f3659` and answers the night's asks (verdict page
+  https://claude.ai/artifact/5aAsbgDdYF1FRv3HC2H9YD, `docs/shifts/2026-11-19-night/VERDICT.md`); (2) editor next steps
+  once E1/E2 are answered (the village reads `_editor/` itself; contract additions); (3) parkour fun pass after the owner
+  plays it.
 
 ## Open owner verdicts
-- Play exe f871d0c (or tomorrow's): Pip at the start, parkour plot at the west end of the road, `tl play parkour`.
-- Walker: A/D sidestep or turn (walker-feel retro).
-- The night of 19 Nov's verdict page (asks per lane).
+Asks from the night of 19 Nov, by ID (details in VERDICT.md):
+- E1 editor direction; E2 contract additions (card interview and footprint, job answers, lot and changed decision); E3
+  village too full by the road for 45 m venues.
+- P1 keep the C retry at the beam, or only the run-up; P2 newcomer retry bot in the gate.
+- W1 A/D face, sidestep or turn; W2 camera sideways swing near crowns, or stay behind; W3 slope jumps (D14/A11);
+  W4 slide hand to the floor (Q31); W5 the three bugfix-37 camera rules.
+- H1 hockey C4/C6 (deferred topic); H2 should `place()` take pack coordinates; H3 the hockey frame budget under load.
 
 ## Backlog (accepted by the owner, not yet scheduled)
 - Site Boss modelled in Blender (approved concept, second to Pip; Opus solo).
@@ -56,3 +62,10 @@ lands on main.
 - 03:57 standup: three lanes finished and landed; editor round 4 on track; main full gate running.
 - 04:40 editor round 4 landed (`16534db`: the chosen lot in the 3D village; the workbench now knows the river); every lane landed. 04:46 short last rounds (until 06:15) to fill idle capacity within the agreed scope: walker 3 (bluff crawl back, slide-entry dip, crown swing behind a flag), parkour 2 (D's cabin, pines, newcomer retry, road blend).
 - 05:00 standup: walker round 3 landed; parkour round 2 done (review); then the verdict early.
+
+### 2026-11-19 night: wrap (05:50)
+Landed and pushed: main `d6f3659`, exe `d6f3659 2026-11-19 05:29` (export check PASS). The final gate is green on every step
+(kernel.selftest 277, ui 128, packs 35/35, world 8/8; perf PASS on a quiet machine). 12 landings: parkour x2, walker x3,
+editor x4, hunt2 x2 (plus bugfix-37 before the shift). About 4.1 M Astra tokens. Verdict: `docs/shifts/2026-11-19-night/VERDICT.md`;
+page https://claude.ai/artifact/5aAsbgDdYF1FRv3HC2H9YD. Leftover worktrees for the morning cleanup: at-d3-c, n19-hunt2,
+n19-hunt2b (held open), n19-walker (Filename too long), n19-walker2, n19-walker3, n19-parkour2, n19-editor4.
