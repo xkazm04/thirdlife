@@ -1,3 +1,11 @@
 {
-  "sessions": []
+  "sessions": [
+    {
+      "id": "n20-diorama",
+      "scope": [
+        "docs/shifts/2026-11-20-night/**"
+      ],
+      "note": "night of 20 Nov diorama duel: six arms on branches diorama-<pillar>-<astra|fable> in .claude/worktrees/n20-*; nothing lands on main"
+    }
+  ]
 }
