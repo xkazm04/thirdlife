@@ -89,38 +89,6 @@ static func far_ground(parent: Node3D, t: RefCounted, key: String) -> void:
 	parent.add_child(mi)
 
 
-## A strip of road along `path`, every corner on the ground (`t.gy`) plus `dy`.
-## P14b: `hole` > 0 leaves the middle out (a verge: two bands from `hole` to `half` beside the road, nothing under it);
-## `on` > 0 lays the strip on the surface of the strip `on` wide below it (heights lerped between that strip's corners,
-## not sampled from the ground). Stacked strips each sampled from the ground at their own corners crossed each other
-## where the land is curved across the road, and the verge under the road came through it in angular patches.
-static func strip(mk: TLMesh, t: RefCounted, path: PackedVector2Array, half: float, dy: float, key: String, tone: float, rng: RandomNumberGenerator, skip_from: int = -1, skip_to: int = -1, hole: float = -1.0, on: float = -1.0) -> void:
-	var n: int = path.size()
-	var at: Callable = func(q: Vector2, nrm: Vector2, s: float) -> Vector3:      # the corner `s` m to the side of q
-		var p: Vector2 = q + nrm * s
-		var h: float = float(t.call("gy", p.x, p.y))
-		if on > 0.0:
-			var l: Vector2 = q - nrm * on
-			var r: Vector2 = q + nrm * on
-			h = lerpf(float(t.call("gy", l.x, l.y)), float(t.call("gy", r.x, r.y)), (s + on) / (2.0 * on))
-		return Vector3(p.x, h + dy, p.y)
-	var bands: Array = [[-half, half]] if hole <= 0.0 else [[-half, -hole], [hole, half]]
-	for i: int in n - 1:
-		if i >= skip_from and i <= skip_to:
-			continue
-		var a: Vector2 = path[i]
-		var b: Vector2 = path[i + 1]
-		var ta: Vector2 = (path[mini(i + 1, n - 1)] - path[maxi(i - 1, 0)]).normalized()
-		var tb: Vector2 = (path[mini(i + 2, n - 1)] - path[i]).normalized()
-		var na: Vector2 = Vector2(-ta.y, ta.x)
-		var nb: Vector2 = Vector2(-tb.y, tb.x)
-		var c: float = tone * (0.94 + 0.12 * rng.randf())      # one draw per segment, as before (the scatter keeps its places)
-		for bd: Array in bands:
-			var s0: float = float(bd[0])
-			var s1: float = float(bd[1])
-			mk.quad_up(at.call(a, na, s0), at.call(a, na, s1), at.call(b, nb, s1), at.call(b, nb, s0), key, Color(c, c, c))
-
-
 static func smooth(ys: PackedFloat32Array, win: int) -> void:
 	var n: int = ys.size()
 	var out: PackedFloat32Array = ys.duplicate()
@@ -317,11 +285,13 @@ static func edge_geometry(t: Dictionary) -> void:
 		var side := dir.orthogonal()
 		var centre: Vector2 = job["entrance"]
 		var gap := float(t["half"]) * 0.8 + 1.9
-		for hand: float in [-1.0, 1.0]:
-			var p := centre + side * gap * hand
-			TLKitSite.add_flag(mk, Vector3(p.x, terr.gy(p.x, p.y), p.y), 5.5, "flag_a" if int(job["i"]) % 2 == 0 else "flag_b")
-		var sign_at := centre + dir * 2.4 + side * (gap + 1.7)
-		TLKitSite.add_sign(mk, Vector3(sign_at.x, terr.gy(sign_at.x, sign_at.y), sign_at.y), rad_to_deg(atan2(dir.x, dir.y)))
+		# One roadside marker per entrance. The board faces an approaching walker.
+		var post := centre + side * (gap + 1.2) - dir * 0.15
+		var yaw := rad_to_deg(atan2(dir.x, dir.y))
+		mk.push_at(Vector3(post.x, terr.gy(post.x, post.y), post.y), Vector3(0, yaw, 0), Vector3.ONE * 0.72)
+		TLKitSite.add_flag(mk, Vector3(0.7, 0, 0), 4.9, "flag_a" if int(job["i"]) % 2 == 0 else "flag_b")
+		TLKitSite.add_sign(mk, Vector3(0, 0, 0.30), 0.0)
+		mk.pop()
 	t["mesh"] = mk.build("WorldPlotFences") if mk.tri_count > 0 else null
 
 
@@ -376,9 +346,8 @@ static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Ar
 		stats["lots"] = int(stats.get("lots", 0)) + 1
 
 
-## P13: soft ground. Low irregular patches lying on the land: worn earth near the roads and pads, darker grass in the
-## hollows, and meadows with flowers (small flecks in four colours). One mesh, no collider, no shadow; a generator of
-## its own, so nothing else moves. Skipped by plots, pads, roads and the river (`is_free`).
+## Soft ground: paint wear and meadow colour into the heightfield before mesh upload. Only flowers
+## need geometry, in one shadowless mesh. The patch generator has its own stream. Skipped by plots, pads, roads and the river (`is_free`).
 ## P14b: `pad_extra` (the scenery clearance outside a reserved plot) and `road_half` (a road with its
 ## verge) keep the patches off plots, roads and gate paths: `is_free` measures to a plot's radius and to a road's
 ## middle line on the 3 m grid (up to 2.2 m off), so the margins are added here with 2.5 m to spare.
@@ -406,33 +375,20 @@ static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2
 		var road: float = float(terr.call("road_dist", p.x, p.y))
 		var conv: float = float(terr.call("h", p.x, p.y)) - 0.25 * (float(terr.call("h", p.x + 10.0, p.y)) + float(terr.call("h", p.x - 10.0, p.y)) + float(terr.call("h", p.x, p.y + 10.0)) + float(terr.call("h", p.x, p.y - 10.0)))
 		var kind: String = "dirt" if road < 22.0 and rng.randf() < 0.7 else ("grass_dark" if conv < -0.15 or rng.randf() < 0.45 else "meadow")
-		var key: String = "grass_dark" if kind == "meadow" else kind
 		var tone: float = rng.randf_range(0.86, 1.0) if kind == "dirt" else rng.randf_range(0.8, 0.95)
 		var seg: int = 12
 		var radii: PackedFloat32Array = PackedFloat32Array()
 		for k: int in seg:
 			radii.append(r * rng.randf_range(0.55, 1.0))
-		var lift: float = 0.045 if kind == "dirt" else 0.04
-		var at: Callable = func(q: Vector2) -> Vector3:
-			return Vector3(q.x, float(terr.call("gy", q.x, q.y)) + lift, q.y)
-		for k: int in seg:
-			var a0: float = TAU * float(k) / float(seg)
-			var a1: float = TAU * float(k + 1) / float(seg)
-			var o0: Vector2 = p + Vector2(cos(a0), sin(a0)) * radii[k]
-			var o1: Vector2 = p + Vector2(cos(a1), sin(a1)) * radii[(k + 1) % seg]
-			var m0: Vector2 = p + Vector2(cos(a0), sin(a0)) * radii[k] * 0.5
-			var m1: Vector2 = p + Vector2(cos(a1), sin(a1)) * radii[(k + 1) % seg] * 0.5
-			var col: Color = Color(tone, tone, tone)
-			mk.quad_up(at.call(m0), at.call(o0), at.call(o1), at.call(m1), key, col)
-			_tri_up(mk, at.call(p), at.call(m1), at.call(m0), key, col)
+		terr.paint_patch(p, r, radii, tone, kind == "dirt")
 		if kind == "meadow":
 			for f: int in int(r * r * 0.6):
 				var fp: Vector2 = p + Vector2.from_angle(rng.randf() * TAU) * sqrt(rng.randf()) * r * 0.8
-				var c: Vector3 = at.call(fp) + Vector3(0.0, 0.03, 0.0)
+				var c := Vector3(fp.x, terr.gy(fp.x, fp.y) + 0.035, fp.y)
 				var s: float = rng.randf_range(0.12, 0.22)
 				_tri_up(mk, c + Vector3(-s, 0.0, -s * 0.6), c + Vector3(0.0, 0.0, s), c + Vector3(s, 0.0, -s * 0.6), flowers[rng.randi_range(0, 3)], Color.WHITE)
 		made += 1
-	if made > 0:
+	if mk.tri_count > 0:
 		var mi: MeshInstance3D = mk.instance("WorldSoftGround")
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(mi)

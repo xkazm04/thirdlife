@@ -24,8 +24,10 @@ var nz: int = 0
 var heights: PackedFloat32Array = PackedFloat32Array()
 var centre: Vector2 = Vector2(5.0, -20.0)
 var pads: Array = []                 # oriented footprint, clip radius, height and yard approach from landscape.gd
+static var _village_shader: Shader
 var rim_material: ShaderMaterial
 var wear_map := PackedFloat32Array()
+var meadow_map := PackedFloat32Array()
 const SINK: float = 0.06              # walker-feel T: the pad under a plot without ground of its own lies this much lower
 const SINK_BAND: float = 3.5          # ... over the plot's radius, rising to the pad's height in this band beyond it (the plot cut ends at r + 3)
 var roads: Array = []                # {pts: PackedVector2Array, ys: PackedFloat32Array, half: float}
@@ -189,6 +191,8 @@ func _grade_pads() -> PackedFloat32Array:
 	support.resize(heights.size())
 	wear_map.resize(heights.size())
 	wear_map.fill(0.0)
+	meadow_map.resize(heights.size())
+	meadow_map.fill(0.0)
 	var total := PackedFloat32Array()
 	total.resize(heights.size())
 	var cover := PackedFloat32Array()
@@ -213,7 +217,10 @@ func _grade_pads() -> PackedFloat32Array:
 		var grid := Vector2(x0, z0)
 		var lo := Vector2i(((c - reach - grid) / cell).floor()).max(Vector2i.ZERO)
 		var hi := Vector2i(((c + reach - grid) / cell).ceil()).min(Vector2i(nx, nz))
-		var entry: Vector2 = pd["approach"] * r
+		var approach: Vector2 = pd["approach"]
+		var entry := approach * r
+		var path_half := float(pd.get("path_half", 0.0))
+		var run_in := clampf(r * 0.40, 5.0, 19.0)
 		for j: int in range(lo.y, hi.y + 1):
 			var z := z0 + j * cell
 			for i: int in range(lo.x, hi.x + 1):
@@ -224,6 +231,14 @@ func _grade_pads() -> PackedFloat32Array:
 					continue
 				var p := Vector2(x, z) - c
 				var radial := p.length()
+				if not yard and path_half > 0.0 and radial <= r + cell * 2.0:
+					# Carry foot traffic past the posts. The tread narrows and grass returns as feet disperse.
+					var depth := r - p.dot(approach)
+					if depth >= -2.0 * cell and depth < run_in:
+						var along := 1.0 - smoothstep(0.0, run_in, depth)
+						var cross_path := absf(p.cross(approach) + (1.0 - along) * path_half * 0.7)
+						var tread := 1.0 - smoothstep(path_half * 0.5 * along, path_half + 2.0, cross_path)
+						wear_map[k] = maxf(wear_map[k], along * tread)
 				if not yard and radial <= guard:
 					# A negative weight locks this floor. Where two grid margins touch, keep the nearer clip.
 					support[k] = 1.0
@@ -342,7 +357,27 @@ func road_dist(x: float, z: float) -> float:
 
 
 # ------------------------------------------------------------------------------------------------ colour and mesh
-func _col(x: float, y: float, z: float, n: Vector3, rd: float, rvd: float, wear: float = 0.0) -> Color:
+func paint_patch(p: Vector2, r: float, radii: PackedFloat32Array, tone: float, dirt: bool) -> void:
+	# Paint into the same 3 m samples as the hill; a separate fan cut through convex ground.
+	var seg := radii.size()
+	var grid := Vector2(x0, z0)
+	var lo := Vector2i(((p - Vector2.ONE * r - grid) / cell).floor()).max(Vector2i.ZERO)
+	var hi := Vector2i(((p + Vector2.ONE * r - grid) / cell).ceil()).min(Vector2i(nx, nz))
+	for j: int in range(lo.y, hi.y + 1):
+		for i: int in range(lo.x, hi.x + 1):
+			var q := grid + Vector2(i, j) * cell - p
+			var a := fposmod(q.angle(), TAU) * seg / TAU
+			var k := int(a) % seg
+			var reach := lerpf(radii[k], radii[(k + 1) % seg], fmod(a, 1.0))
+			var amount := tone * (1.0 - smoothstep(reach * 0.25, reach, q.length()))
+			var index := j * (nx + 1) + i
+			if dirt:
+				wear_map[index] = maxf(wear_map[index], amount * 0.78)
+			else:
+				meadow_map[index] = maxf(meadow_map[index], amount)
+
+
+func _col(x: float, y: float, z: float, n: Vector3, rd: float, rvd: float, wear: float = 0.0, meadow: float = 0.0) -> Color:
 	var slope_: float = 1.0 - n.y
 	var np: float = _np.get_noise_2d(x, z) * 0.5 + 0.5
 	var base: Color = (_c["grass_dark"] as Color).lerp(_c["grass"], 0.5 + 0.5 * smoothstep(0.2, 0.8, np))
@@ -351,6 +386,7 @@ func _col(x: float, y: float, z: float, n: Vector3, rd: float, rvd: float, wear:
 	base = base.lerp(_c["rock_warm"], smoothstep(14.0, 34.0, y) * 0.55)
 	var rk: float = smoothstep(0.17, 0.34, slope_)
 	var rock: Color = (_c["rock"] as Color).lerp(_c["cliff"], smoothstep(0.3, 0.7, np)).lerp(_c["rock_warm"], smoothstep(0.55, 0.85, _nd.get_noise_2d(x, z + 5.0) * 0.5 + 0.5) * 0.6)
+	base = base.lerp(_c["grass_dark"], meadow)
 	base = base.lerp(rock, rk)
 	if rd < 30.0:
 		base = base.lerp((_c["grass_dark"] as Color).lerp(_c["dirt"], 0.35), (1.0 - smoothstep(3.5, 12.0, rd)) * 0.5 * (1.0 - rk))
@@ -401,12 +437,12 @@ func build_mesh(mat: Material, name_: String = "WorldTerrain") -> MeshInstance3D
 		colours.resize(end - start)
 		for k: int in range(start, end):
 			var p := vs[k]
-			colours[k - start] = _col(p.x, p.y, p.z, ns[k], road_d[k], river_d[k], wear_map[k])
+			colours[k - start] = _col(p.x, p.y, p.z, ns[k], road_d[k], river_d[k], wear_map[k], meadow_map[k])
 		slices[b] = colours
 	WorkerThreadPool.wait_for_group_task_completion(WorkerThreadPool.add_group_task(paint, bands))
 	for colours: PackedColorArray in slices:
 		cs.append_array(colours)
-	if pads.any(func(pd: Dictionary) -> bool: return bool(pd["own"])):
+	if not pads.is_empty():
 		rim_material = _rim_material(cs, Vector2i(w, nz + 1), Vector2(x0, z0), cell)
 	var ix: PackedInt32Array = PackedInt32Array()
 	ix.resize(nx * nz * 6)
@@ -445,10 +481,26 @@ func build_mesh(mat: Material, name_: String = "WorldTerrain") -> MeshInstance3D
 	return mi
 
 
+## Compile the village pigment path once. A pack running alone keeps the original shader program.
+static func _village_material() -> ShaderMaterial:
+	var palette := TLStyle.material(&"terrain") as ShaderMaterial
+	if palette == null or palette.shader == null:
+		return null
+	if _village_shader == null:
+		_village_shader = Shader.new()
+		_village_shader.code = "#define TL_VILLAGE\n" + palette.shader.code
+	var mat := ShaderMaterial.new()
+	mat.shader = _village_shader
+	mat.set_shader_parameter(&"pal_lut", palette.get_shader_parameter(&"pal_lut"))
+	return mat
+
+
 ## A village lends its ground colours to the outer vertices of the kit terrain on its plots.
 ## The texels are the mesh's linear vertex colours. Texel centres coincide with heightfield samples.
 static func _rim_material(colours: PackedColorArray, grid: Vector2i, origin: Vector2, cell: float) -> ShaderMaterial:
-	var mat := TLStyle.material(&"terrain").duplicate() as ShaderMaterial
+	var mat := _village_material()
+	if mat == null:
+		return null
 	var img := Image.create_from_data(grid.x, grid.y, false, Image.FORMAT_RGBAF, colours.to_byte_array())
 	img.convert(Image.FORMAT_RGBA8)
 	var scale_ := Vector2.ONE / (Vector2(grid) * cell)

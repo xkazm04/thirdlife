@@ -74,12 +74,8 @@ func _clip_v4(e: Dictionary, g: Node) -> Vector4:
 	return Vector4(float(e["radius"]), float(e["rim"]), _band(e), w)
 
 
-## Walker-feel T2 (ex_car's asphalt): a mesh whose origin lies outside the plot but whose box reaches into it. The
-## plot cut drops an instance by its origin (a tree of the forest beyond the plot): right for small things, wrong for
-## a long slab placed by its middle (ex_car's asphalt, 60 x 190 m with its origin 65 m out of a 40 m plot: the course
-## was not drawn at all in a world). Such an instance gets 2 added to `tl_clip.w` (1 = a terrain sheet, so 2 or 3):
-## toon.gdshader (lane L, T-PATCHES) keeps it and cuts it in fragment() like a large mesh. With the shader as it is,
-## w >= 2 changes nothing: it is dropped as before, and w = 3 reads as a sheet (w > 0.5) as w = 1 did.
+## The picture builder can keep a slab that overlaps the plot. Its merged instance is centred on the plot.
+## Live instances still use the shader's origin cut, including those with the overlap bit set in tl_clip.w.
 static func reaches_in(holder: Node, g: Node, radius: float) -> bool:
 	if radius <= 0.0 or not (g is GeometryInstance3D) or not (holder is Node3D):
 		return false
@@ -108,24 +104,58 @@ func _band(e: Dictionary) -> float:
 ## Bind the village palette only where the pack used the shared toon palette. The actual disc cut and all
 ## cached mesh data stay pack-local. Record a live sheet's overrides so unplacing it restores the pack.
 func _dress_ground(e: Dictionary, mi: MeshInstance3D, live: bool) -> void:
-	if rim_material == null or not e["ground"] or mi.mesh == null:
+	if rim_material == null or mi.mesh == null or (live and not e["ground"]):
 		return
+	var whole := mi.material_override != null
 	var dressed := false
-	if mi.material_override == _pal:
+	for s: int in (1 if whole else mi.mesh.get_surface_count()):
+		var base := mi.get_active_material(s)
+		var mat: ShaderMaterial
+		if e["ground"] and base == _pal:
+			mat = rim_material
+		elif not e["ground"] and base != _pal and base is ShaderMaterial and (base as ShaderMaterial).shader == (_pal as ShaderMaterial).shader:
+			mat = _picture_floor_material(e, mi.mesh as ArrayMesh, s, base)
+		if mat == null:
+			continue
 		if live:
-			e["dressed"].append([mi, -1, _pal])
-		mi.material_override = rim_material
+			e["dressed"].append([mi, -1 if whole else s, base if whole else mi.get_surface_override_material(s)])
+		if whole:
+			mi.material_override = mat
+		else:
+			mi.set_surface_override_material(s, mat)
 		dressed = true
-	elif mi.material_override == null:
-		for i: int in mi.mesh.get_surface_count():
-			if mi.get_active_material(i) == _pal:
-				if live:
-					e["dressed"].append([mi, i, mi.get_surface_override_material(i)])
-				mi.set_surface_override_material(i, rim_material)
-				dressed = true
 	if dressed:
 		var plot: Transform3D = e["plot"]
 		mi.set_instance_shader_parameter(&"tl_land_plot", Vector4(plot.origin.x, plot.origin.z, plot.basis.x.x, plot.basis.x.z))
+
+
+## A merged picture retains its floor box corners in plot coordinates. Dress only that existing surface.
+func _picture_floor_material(e: Dictionary, mesh: ArrayMesh, surface: int, base: ShaderMaterial) -> ShaderMaterial:
+	if mesh == null or mesh.surface_get_array_len(surface) > 24:
+		return null
+	var points: PackedVector3Array = mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
+	if points.size() < 4:
+		return null
+	var box := AABB(points[0], Vector3.ZERO)
+	for p: Vector3 in points:
+		box = box.expand(p)
+	var radius := float(e["radius"])
+	if absf(box.end.y - float(e["rim"])) > 0.05 or box.size.y > 1.2 or minf(box.size.x, box.size.z) < radius:
+		return null
+	if Vector2(box.get_center().x, box.get_center().z).length() <= radius:
+		return null
+	for p: Vector3 in points:
+		var dx := minf(absf(p.x - box.position.x), absf(p.x - box.end.x))
+		var dz := minf(absf(p.z - box.position.z), absf(p.z - box.end.z))
+		if maxf(dx, dz) > 0.01:
+			return null
+	var mat := ShaderMaterial.new()
+	mat.shader = rim_material.shader
+	mat.set_shader_parameter(&"pal_lut", base.get_shader_parameter(&"pal_lut"))
+	mat.set_shader_parameter(&"tl_floor_rect", Vector4(box.position.x, box.position.z, box.end.x, box.end.z))
+	mat.set_shader_parameter(&"tl_land_colours", rim_material.get_shader_parameter(&"tl_land_colours"))
+	mat.set_shader_parameter(&"tl_land_uv", rim_material.get_shader_parameter(&"tl_land_uv"))
+	return mat
 
 
 func _plot_v4(rel: Transform3D) -> Vector4:
