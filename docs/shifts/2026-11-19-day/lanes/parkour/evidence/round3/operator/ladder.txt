@@ -1,0 +1,14 @@
+level      hand      wins          win % (95 %)   goals for:against  frames  period 2  passes reached  down %  draws  taps lost  his shots
+retry      regular    20 of 20    100 (100..100)      0.00 : 0.00          1378    0/20   0/0          0      20     16         0
+retry      newcomer   17 of 20     85 (69..100)       0.00 : 0.00          2467    0/20   0/0          0      20     68         0
+retry      sharp      20 of 20    100 (100..100)      0.00 : 0.00          1186    0/20   0/0          0      20     0          0
+course     newcomer   18 of 20     90 (77..100)       0.00 : 0.00          2670    0/20   0/0          0      20     82         0
+course     regular    20 of 20    100 (100..100)      0.00 : 0.00          1291    0/20   0/0          0      20     15         0
+course     sharp      20 of 20    100 (100..100)      0.00 : 0.00          1081    0/20   0/0          0      20     2          0
+PASS  ladder:retry_regular               0 ms  [20/20] 20 of 20 won (100 %, 100..100) through the regular hand
+PASS  ladder:retry_newcomer              0 ms  [20/20] 17 of 20 won (85 %, 69..100) through the newcomer hand
+PASS  ladder:retry_sharp                 0 ms  [20/20] 20 of 20 won (100 %, 100..100) through the sharp hand
+PASS  ladder:course_newcomer             0 ms  [20/20] 18 of 20 won (90 %, 77..100) through the newcomer hand
+PASS  ladder:course_regular              0 ms  [20/20] 20 of 20 won (100 %, 100..100) through the regular hand
+PASS  ladder:course_sharp                0 ms  [20/20] 20 of 20 won (100 %, 100..100) through the sharp hand
+ladder exit 0

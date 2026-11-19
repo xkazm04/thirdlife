@@ -1,0 +1,37 @@
+## Diagnostic for a scratch copy only. Call this once at race frame 842, checkpoint 12.
+func _trace_lip() -> void:
+	var pos := runner.global_position
+	var space := TLContext.space_state_of(runner, ctx)
+	var hand := pos + Vector3.UP * 1.6
+	var q := PhysicsRayQueryParameters3D.create(hand, hand + Vector3.FORWARD * 0.58)
+	q.exclude = [runner.get_rid()]
+	var f := space.intersect_ray(q)
+	if f.is_empty():
+		return
+	var edge: Vector3 = f.position - f.normal * 0.02
+	q.from = edge + Vector3.UP * 1.21
+	q.to = edge + Vector3.UP * 0.39
+	var top := space.intersect_ray(q)
+	if top.is_empty():
+		return
+	var lip := Vector3(f.position.x, top.position.y, f.position.z)
+	var stand: Vector3 = lip - f.normal * 0.365 + Vector3.UP * 0.001
+	var hang: Vector3 = lip + f.normal * 0.354 - Vector3.UP * 1.6
+	var fit := PhysicsTestMotionParameters3D.new()
+	fit.from.origin = stand
+	fit.margin = 0.001
+	fit.recovery_as_collision = true
+	var res := PhysicsTestMotionResult3D.new()
+	var blocked := PhysicsServer3D.body_test_motion(runner.get_rid(),fit,res)
+	var by: String = str(res.get_collider().get_parent().name) if blocked else "-"
+	if blocked and rules.total_frames == 842:
+		print("FLOOR ",res.get_collider().global_position," meta ",res.get_collider().get_parent().get_meta("tl_params",{})," normal ",res.get_collision_normal()," depth ",res.get_collision_depth())
+		fit.from.origin += Vector3.UP * 0.0001
+		print("FIT_PLUS_100UM ", PhysicsServer3D.body_test_motion(runner.get_rid(),fit))
+	fit.from.origin = hang
+	var blocked_h := PhysicsServer3D.body_test_motion(runner.get_rid(),fit)
+	fit.from.origin = pos
+	fit.motion = hang - pos
+	fit.recovery_as_collision = false
+	var path := PhysicsServer3D.body_test_motion(runner.get_rid(),fit)
+	print("LIP ",rules.total_frames," ",pos," face ",f.normal," stand ",stand," blocked ",blocked," by ",by," hang ",blocked_h," path ",path)

@@ -1,0 +1,3 @@
+pack | mode | own ticks | hash in the world | runner alone (tl.sh bot), same ticks | verdict
+game.parkour | bot | 808 | f934bc510f4eacf3 | d252059296969eef (808 frames) | DIFFERENT
+FAIL world.alone

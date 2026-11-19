@@ -59,8 +59,35 @@ func _bot_tick(_frame: int) -> void:
 			notes.append("run-up gap exceeds raised landing reach %.2f m" % raised_reach)
 	if s.tier_rise <= 0.55 or s.tier_rise >= apex:
 		notes.append("tower terrace rise %.2f m must require a jump and fit the %.2f m apex" % [s.tier_rise, apex])
+	if s.ledge_rise <= apex or s.ledge_rise > 2.8 + apex:
+		notes.append("headwall rise %.2f m must exceed a jump and fit the 3.80 m maximum catch" % s.ledge_rise)
+	var hands_rise := float(s.first_bar_y) - float(s.rim_y)
+	if hands_rise <= 2.2 + 0.35 or hands_rise > 2.2 + apex + 0.35:
+		notes.append("blue bar %.2f m above runway must need a jump and fit the airborne hands" % hands_rise)
+	var transfer := float(s.second_bar) - float(s.first_bar)
+	var transfer_bound := _swing_reach(float(s.red_rise) - 2.2 - 0.35, s.run_mps) + 0.35
+	if transfer <= 0.0 or transfer > transfer_bound:
+		notes.append("bar spacing %.2f m exceeds the running transfer envelope %.2f m" % [transfer, transfer_bound])
+	var landing := float(s.landing_z) - float(s.second_bar)
+	var landing_bound := _swing_reach(float(s.landing_y) - float(s.first_bar_y) - float(s.red_rise), s.run_mps) + 0.35
+	if landing <= 0.0 or landing > landing_bound:
+		notes.append("landing %.2f m from red exceeds the release envelope %.2f m" % [landing, landing_bound])
 	result = {"ok": notes.is_empty(), "summary": "gaps %.2f / %.2f m, reach %.2f m, bar %.2f m, chute %.0f deg%s" % [
 		spans[0], spans[1], reach, s.clearance, s.chute_degrees, "" if notes.is_empty() else " | " + ", ".join(notes)]}
+
+
+# Optimistic first outbound swing with a running entry, full forward pump and no damping.
+# Test every release degree against the descending ballistic arc. The runner still has to hit the actual cylinder.
+func _swing_reach(target_y: float, run_mps: float) -> float:
+	var best := 0.0
+	for degrees: int in 101:
+		var angle := deg_to_rad(degrees)
+		var omega_sq := pow(run_mps / 1.1, 2) - 2.0 * 24.0 / 1.1 * (1.0 - cos(angle)) + 10.0 * angle
+		var up := 2.0 + sqrt(maxf(0.0, omega_sq)) * 1.1 * sin(angle)
+		var disc := up * up - 48.0 * (target_y + 2.2 * cos(angle))
+		if disc >= 0.0:
+			best = maxf(best, 2.2 * sin(angle) + run_mps * (up + sqrt(disc)) / 24.0)
+	return best
 
 
 func _bot_done() -> bool:

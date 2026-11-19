@@ -1,0 +1,5 @@
+seed	before outcome	before checkpoint	before frames	after outcome	after frames
+3	False	7	3600	True	2126
+7	False	6	3600	True	3188
+12	False	5	3600	True	2428
+15	False	8	3600	True	2959

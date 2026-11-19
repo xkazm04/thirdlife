@@ -17,6 +17,22 @@ const WALL_RUN := 3.6
 const WALL_RISE := 3.2
 const TIER_LENGTH := 3.4
 
+const HEADWALL := 4.6
+const RUNWAY_END := 10.2
+const UPPER_WIDTH := 3.8
+const FIRST_BAR := 11.5
+const RED_RISE := 1.55
+const LANDING_RUN := 3.9
+const LANDING_RISE := 2.2
+
+var summit_y: float
+var rim_y: float
+var ledge_rise: float
+var first_bar_y: float
+var second_bar: float
+var landing_z: float
+var landing_y: float
+
 var root := Node3D.new()
 var pads: Array[Node3D] = []
 var pendulum := Node3D.new()
@@ -169,14 +185,80 @@ func _build_summit(crest_rise: float, step_rise: float) -> void:
 			"levels": levels, "level_h": frame_height / levels, "decks": range(1, levels + 1)}, Vector3(near + 0.14, -1.25, -1.35))
 		_slab(Vector3(near + TIER_LENGTH / 2, top, 0), Vector3(TIER_LENGTH, 0.38, width), "wood")
 		if i == 0:
-			# Exposed concrete face on the far side of the run-up gap.
-			_slab(Vector3(near + 0.54, top - 0.36, 0), Vector3(1.08, 3.9, width - 0.12), "concrete")
+			# Recess the concrete pier 0.82 m. The run-up lands on a thin timber nose without a handhold.
+			_slab(Vector3(near + 1.36, top - 0.36, 0), Vector3(1.08, 3.9, width - 0.12), "concrete")
 		_cross_stripe(summit if i == 2 else near + TIER_LENGTH - 0.55, top, width - 0.12)
 		if i == 2:
-			for side: float in [-1, 1]:
-				_part(root, "flag", {"height": 3.4, "color": "flag_a"}, Vector3(summit, top, side * width / 2))
+			_part(root, "flag", {"height": 3.4, "color": "flag_a"}, Vector3(summit, top, -width / 2))
 
 
 func _cross_stripe(t: float, top: float, width: float) -> void:
 	_part(root, "kerb", {"length": width, "width": 0.3, "height": 0.03},
 		Vector3(t, top, -width / 2)).rotation.y = -PI / 2
+
+func build_skyline(ctx: TLContext) -> void:
+	var data: Dictionary = ctx.read_json("upper.json")
+	for key: String in data:
+		if key not in ["ledge_rise_m", "first_bar_rise_m", "bar_spacing_m", "landing_gap_m"]:
+			push_error("Unknown upper course key '%s'" % key)
+	ledge_rise = float(data.ledge_rise_m)
+	summit_y = crest_y + 2 * tier_rise
+	rim_y = summit_y + ledge_rise
+	first_bar_y = rim_y + float(data.first_bar_rise_m)
+	second_bar = FIRST_BAR + float(data.bar_spacing_m)
+	landing_z = second_bar + float(data.landing_gap_m)
+	landing_y = rim_y + 1.48
+	# A quarter turn at the summit sends the runner across the outgoing high line.
+	_upper_deck(1.8, HEADWALL + 0.2, summit_y, 0.34, "wood")
+	_upper_deck(HEADWALL, HEADWALL + 1.0, rim_y, ledge_rise + 0.35, "concrete")
+	_upper_deck(HEADWALL + 1.0, RUNWAY_END, rim_y, 0.36, "wood")
+	for side: float in [-1, 1]:
+		_part(root, "kerb", {"length": 1.0, "width": 0.3, "height": 0.03},
+			Vector3(summit + (-UPPER_WIDTH / 2 if side < 0 else UPPER_WIDTH / 2 - 1.0), rim_y, RUNWAY_END - 0.85))
+		var x := summit + side * (UPPER_WIDTH / 2 - 0.13)
+		var height := summit_y - 0.35 + 1.25
+		var sections := ceili(height / 5.0)
+		for j: int in sections:
+			var depth := height / sections
+			_slab(Vector3(x, -1.25 + (j + 1) * depth, HEADWALL + 0.48), Vector3(1, depth, 1), "concrete")
+		_part(root, "kerb", {"length": ledge_rise, "width": 0.30, "height": 0.08},
+			Vector3(x, summit_y, HEADWALL - 0.02)).rotation.z = PI / 2
+
+	# These longitudinal steel ribs rise from plinths at either end of the gap.
+	# Their crowns carry the rods. The lower high-line deck remains clear beneath them.
+	for side: float in [-1, 1]:
+		var x := summit + side * 1.76
+		_part(root, "arch_rib", {"span": 7.7, "apex": 15.95, "exponent": 2.65, "footings": false},
+			Vector3(x, -1.25, 14.7)).scale.x = 0.45
+		for station: float in [7.0, 22.4]:
+			_slab(Vector3(x, -0.66, station), Vector3(1.0, 0.65, 1.0), "concrete")
+	_build_grip(FIRST_BAR, first_bar_y, "flag_b")
+	_build_grip(second_bar, first_bar_y + RED_RISE, "flag_a")
+	_part(root, "scaffold", {"bays": 1, "bay_w": 2.8, "bay_d": 2.8, "levels": 5,
+		"level_h": (landing_y + 1.25 - 1.1) / 5, "decks": [1, 3, 5]}, Vector3(summit - 1.4, -1.25, landing_z + 0.5))
+	# Two crossheads bear the inclined decking on the scaffold's level top platform.
+	for d: float in [0.8, 3.0]:
+		var cap := landing_height(d - 0.40) - 0.45
+		_slab(Vector3(summit, cap, landing_z + d), Vector3(2.9, cap - (landing_y - 1.0), 1.0), "concrete")
+	var ramp := Vector2(LANDING_RUN, LANDING_RISE)
+	_slab(Vector3(summit, landing_y + LANDING_RISE / 2, landing_z + LANDING_RUN / 2),
+		Vector3(UPPER_WIDTH, 0.42, ramp.length()), "wood").rotation.x = -ramp.angle()
+	_part(root, "kerb", {"length": UPPER_WIDTH - 0.1, "width": 0.30, "height": 0.03},
+		Vector3(summit - UPPER_WIDTH / 2 + 0.05, landing_height(1.0), landing_z + 1.0)).rotation.x = -ramp.angle()
+	for side: float in [-1, 1]:
+		_part(root, "flag", {"height": 2.6, "color": "flag_a"}, Vector3(summit + side * 1.8, landing_height(1.6), landing_z + 1.6))
+
+
+func landing_height(distance: float) -> float:
+	return landing_y + LANDING_RISE * distance / LANDING_RUN
+
+
+func _build_grip(station: float, height: float, color: String) -> void:
+	var span := 3.8
+	var rod := _part(root, "flag", {"height": span, "color": color}, Vector3(summit + span / 2, height, station))
+	rod.rotation.z = PI / 2
+	TLBiped.mark_bar(rod.get_node("Body") as StaticBody3D)
+
+
+func _upper_deck(start: float, end: float, top: float, depth: float, surface: String) -> void:
+	_slab(Vector3(summit, top, (start + end) / 2), Vector3(UPPER_WIDTH, depth, end - start), surface)

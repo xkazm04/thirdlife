@@ -1,0 +1,3 @@
+FLOOR (-22.78585, 10.13, 3.900004) meta { "size_x": 3.79999995231628, "size_z": 1.0, "thickness": 3.40000009536743, "surface": "concrete" } normal (0.0, 1.0, 0.0) depth 0.00000024179462
+FIT_PLUS_100UM false
+LIP 842 (-23.5385, 7.702526, 4.93414) face (0.0, 0.0, 1.0) stand (-23.5385, 10.131, 4.035004) blocked true by @Node3D@61 hang false path false
