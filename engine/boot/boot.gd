@@ -3,7 +3,7 @@ extends Node
 ##
 ##   ThirdLife.exe [--record=<abs file>]        the village for a person: a window; W A S D walk (he turns toward
 ##                                              where he walks), the mouse looks, Shift runs, Space jumps, C slides
-##                                              while running, E enters, Q leaves, Esc quits
+##                                              while running, F toggles flight (Space up, C down), E enters, Q leaves, Esc quits
 ##                                              (kernel/runner/visit.gd; --record writes the visit as tl.input/1)
 ##   ThirdLife.exe --input=<abs file>           a recorded visit again (no device is read)
 ##   ThirdLife.exe -- --site-job=<abs dir>      S2: the village's construction site follows that Foreman job directory
@@ -46,7 +46,7 @@ const WALK_RES: String = "res://boot/village.json"
 const VIEW_SCRIPT: String = "res://kernel/world/draw/view.gd"
 const WORLD_SCRIPT: String = "res://kernel/world/world.gd"
 const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel/world/packs", "res://packs"]
-const KEYS_WALK: String = "W A S D  walk      mouse  look      Shift  run      Space  jump      C  slide (running)      E  enter the game you stand in      Esc  quit"
+const KEYS_WALK: String = "W A S D  walk      mouse  look      Shift  run      Space  jump      C  slide (running)      F  fly (Space up, C down)      E  enter the game you stand in      Esc  quit"
 const KEYS_STAGE: String = "Q or Esc  leave the game"
 const CAPTURE_FRAME: int = 120
 ## Night jam-lessons-home T1: which build is this. export.sh writes one line beside the exe, "<short commit> <date

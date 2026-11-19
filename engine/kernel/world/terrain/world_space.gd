@@ -432,10 +432,10 @@ func walk(from: Vector3, delta: Vector3) -> Dictionary:
 # ------------------------------------------------------------------------------------------------ the body with weight
 ## Walker-feel (18 Nov 2026): a person's body moves by velocity (terrain/world_body.gd, which uses this space's tests).
 ## One call per world tick; see world_body.gd for the numbers.
-func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
+func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool, toggle_fly: bool = false, climb: float = 0.0) -> Dictionary:
 	if _mover == null:
 		_mover = Mover.new(self)
-	var result: Dictionary = _mover.drive(from, wish, jump, slide)
+	var result: Dictionary = _mover.drive(from, wish, jump, slide, false, toggle_fly, climb)
 	place(result["pos"])
 	return result
 
@@ -445,10 +445,3 @@ func rest() -> void:
 	if _mover == null:
 		_mover = Mover.new(self)
 	_mover.rest()
-
-
-## The ground height under (x, z), looking down from `from_y`: NAN when there is none within 400 m.
-func ground_at(x: float, z: float, from_y: float) -> float:
-	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, from_y, z), Vector3(x, from_y - 400.0, z), 1)
-	var hit: Dictionary = PhysicsServer3D.space_get_direct_state(space).intersect_ray(q)
-	return float((hit["position"] as Vector3).y) if not hit.is_empty() else NAN

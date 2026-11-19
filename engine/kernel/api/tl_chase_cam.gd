@@ -145,12 +145,14 @@ func _avoid(now: bool) -> void:
 		if fl > best + 0.25:
 			best = fl
 			want_lift = ang
+	var previous_lift := _lift
 	if now or want_lift > _lift or (want_lift < 0.0 and want_lift < _lift):
 		_lift = want_lift                                      # swung away from the wanted angle at once
 	else:
 		_lift = lerpf(_lift, want_lift, clampf(avoid_out, 0.01, 1.0))
 		if absf(_lift - want_lift) < 0.05:
 			_lift = want_lift
+	_lift = _limit_lift(previous_lift, _lift, now)
 	var dir: Vector3 = d.rotated(axis, deg_to_rad(_lift)) if _lift != 0.0 else d
 	var free_len: float = _cast(st, dir, want_len)
 	if now or _free_len < 0.0 or free_len < _free_len:
@@ -161,6 +163,11 @@ func _avoid(now: bool) -> void:
 	avoid_pull = (fr.basis * d).length() - (fr.basis * (dir / want_len * len)).length()   # hunt2 A10: metres, whatever the parent's scale
 	avoid_lift = _lift
 	global_position = fr * (_look_local + dir / want_len * len)
+
+
+## Visitor flight can swing the arm more slowly. The cast still shortens it immediately.
+func _limit_lift(_previous: float, wanted: float, _now: bool) -> float:
+	return wanted
 
 
 ## The frame `avoid_space` is in: the parent's (see the header).

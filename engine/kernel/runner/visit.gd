@@ -5,7 +5,7 @@ extends Node
 ## `tl.input/1` record (`--record=<file>`) and fed back (`--input=<file>`): the visitor walks the same path and every
 ## pack ends with the same hash. Later a second player's keys can arrive here from another machine.
 ##
-##   actions  forward W, back S, left A, right D, run Shift, jump Space, slide C (while running), enter E, leave Q, quit Esc, and the pointer
+##   actions  forward W, back S, left A, right D, run Shift, jump Space, slide C (while running), fly F (Space climbs, C descends), enter E, leave Q, quit Esc, and the pointer
 ##            (TLInput.LOOK_X / LOOK_Y: pixels the mouse moved while it was captured, this tick)
 ##   record   `pack` is the walk's name, `mode` "play", `max_frames` the walk's ticks, `length` the samples taken.
 ##            A game played on stage is a record of its own (the same schema, that pack's own frames):
@@ -19,7 +19,7 @@ extends Node
 
 const Session: GDScript = preload("res://kernel/runner/session.gd")
 const ACTIONS: Array = [[&"forward", KEY_W], [&"back", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"run", KEY_SHIFT],
-	[&"enter", KEY_E], [&"leave", KEY_Q], [&"quit", KEY_ESCAPE], [&"jump", KEY_SPACE], [&"slide", KEY_C]]
+	[&"enter", KEY_E], [&"leave", KEY_Q], [&"quit", KEY_ESCAPE], [&"jump", KEY_SPACE], [&"slide", KEY_C], [&"fly", KEY_F]]
 const LOOK_DEG_PER_PX: float = 0.15     # 600 px of mouse = 90 degrees
 const PITCH_MIN_DEG: float = -10.0      # the camera's elevation above the visitor's head: he stays in the picture
 const PITCH_MAX_DEG: float = 60.0
@@ -60,6 +60,9 @@ func setup(v: Node, opts: Dictionary) -> String:
 	name = "TLVisit"
 	view = v
 	world = v.get("world")
+	var visitor: Node = v.get("visitor")
+	if visitor != null and visitor.has_signal("flight_step"):
+		visitor.connect("flight_step", _fly_gate)
 	input = TLInput.new()
 	input.name = "VisitorInput"
 	add_child(input)
@@ -176,9 +179,12 @@ func steer(tick: int) -> void:
 		print("[visit] the visitor quit at tick %d" % tick)
 		world.set("walk_ticks", int(world.get("tick")))
 		return
-	if input.just_pressed(&"enter"):
+	if input.just_pressed(&"enter") and vis.get("flying") != true:
 		sched.call("request", "enter")
-	var key_turn: float = input.axis(&"left", &"right") * deg_to_rad(TURN_DEG_PER_TICK) if ad_keys == "turn" else 0.0
+	var toggle_fly := input.just_pressed(&"fly")
+	var in_flight: bool = (vis.get("flying") == true) != toggle_fly
+	var turn_keys := ad_keys == "turn" and not in_flight
+	var key_turn: float = input.axis(&"left", &"right") * deg_to_rad(TURN_DEG_PER_TICK) if turn_keys else 0.0
 	vis.call("turn", input.strength(TLInput.LOOK_X) * deg_to_rad(LOOK_DEG_PER_PX) + key_turn, input.strength(TLInput.LOOK_Y) * deg_to_rad(LOOK_DEG_PER_PX),
 		deg_to_rad(PITCH_MIN_DEG), deg_to_rad(PITCH_MAX_DEG))
 	if vis.get("face_view") != null:
@@ -186,13 +192,17 @@ func steer(tick: int) -> void:
 	var yaw: float = float(vis.get("look_yaw"))
 	var fwd: Vector3 = Vector3(-sin(yaw), 0.0, -cos(yaw))
 	var right: Vector3 = Vector3(cos(yaw), 0.0, -sin(yaw))
-	var side: float = 0.0 if ad_keys == "turn" else input.axis(&"left", &"right")
+	var side: float = 0.0 if turn_keys else input.axis(&"left", &"right")
 	var move: Vector3 = fwd * input.axis(&"back", &"forward") + right * side
 	var pace: float = RUN_MPS if input.pressed(&"run") else WALK_MPS
+	if in_flight:
+		var forward_share := maxf(0.0, move.normalized().dot(fwd))
+		pace = RUN_MPS * lerpf(1.0, WalkerBody.FLY_SCALE, forward_share)
 	# walker-feel: the body has weight (visitor.gd `wish`, world_space.gd `drive`): it eases toward this velocity
 	var want: Vector3 = move.normalized() * pace if move.length() > 0.01 else Vector3.ZERO
 	if vis.get("space") != null:
-		vis.call("wish", want, input.just_pressed(&"jump"), input.just_pressed(&"slide"))
+		vis.call("wish", want, input.just_pressed(&"jump") and not in_flight and not toggle_fly,
+			input.just_pressed(&"slide") and not in_flight and not toggle_fly, toggle_fly, input.axis(&"slide", &"jump"))
 	elif move.length() > 0.01:
 		world.set("player_pos", (world.get("player_pos") as Vector3) + want / 60.0)
 	if tick % PATH_EVERY == 0:
@@ -215,7 +225,7 @@ func stage_hint() -> String:
 func print_path(tick: int, mark: String = "") -> void:
 	var vis: Node3D = view.get("visitor")
 	var f: Vector3 = vis.get("feet")
-	var line: Dictionary = {"schema": "tl.view/1", "kind": "visit_path", "tick": tick, "feet": [snappedf(f.x, 0.01), snappedf(f.y, 0.01), snappedf(f.z, 0.01)],
+	var line: Dictionary = {"schema": "tl.view/1", "kind": "visit_path", "tick": tick, "feet": [snappedf(f.x, 0.001), snappedf(f.y, 0.001), snappedf(f.z, 0.001)],
 		"yaw_deg": snappedf(rad_to_deg(float(vis.get("look_yaw"))), 0.01), "pitch_deg": snappedf(rad_to_deg(float(vis.get("look_pitch"))), 0.01),
 		"stage": int(view.get("stage")), "mark": mark}
 	# walker-feel: how high the camera stands over the ground under it, and the body's mode (a mark only)
@@ -316,8 +326,21 @@ func _close_stage_record(holders: Array) -> void:
 	_stage_rec = []
 
 
+## The flight sweep just finished. Use the same gate and facing as leaving the stage.
+func _fly_gate() -> void:
+	var vis: Node3D = view.get("visitor")
+	var feet: Vector3 = vis.get("feet")
+	var plots: Array = view.get("plots")
+	var radii: Array = view.get("radii")
+	for i in mini(plots.size(), radii.size()):
+		var delta := feet - (plots[i] as Transform3D).origin
+		if delta.y < 12.0 and Vector2(delta.x, delta.z).length() < float(radii[i]):
+			_to_gate(i, plots, radii, "visit_fly_gate")
+			return
+
+
 ## After Q: outside the plot at its gate (the side that faces the road), facing away from the venue.
-func _to_gate(i: int, plots: Array, radii: Array) -> void:
+func _to_gate(i: int, plots: Array, radii: Array, kind: String = "visit_left") -> void:
 	var o: Vector3 = (plots[i] as Transform3D).origin
 	var g: Vector2 = _gate_dir(Vector2(o.x, o.z))
 	var at: Vector3 = Vector3(o.x + g.x * (float(radii[i]) + GATE_OUT_M), 0.0, o.z + g.y * (float(radii[i]) + GATE_OUT_M))
@@ -326,7 +349,7 @@ func _to_gate(i: int, plots: Array, radii: Array) -> void:
 	world.set("player_pos", Vector3(at.x, 0.0, at.z))
 	var f: Vector3 = vis.get("feet")
 	var gap: float = Vector2(f.x - o.x, f.z - o.z).length() - float(radii[i])
-	print(JSON.stringify({"schema": "tl.view/1", "kind": "visit_left", "tick": int(world.get("tick")), "plot": i, "feet": [snappedf(f.x, 0.01), snappedf(f.y, 0.01), snappedf(f.z, 0.01)],
+	print(JSON.stringify({"schema": "tl.view/1", "kind": kind, "tick": int(world.get("tick")), "plot": i, "feet": [snappedf(f.x, 0.01), snappedf(f.y, 0.01), snappedf(f.z, 0.01)],
 		"outside_edge_m": snappedf(gap, 0.01), "gate": [snappedf(g.x, 0.001), snappedf(g.y, 0.001)], "yaw_deg": snappedf(rad_to_deg(float(vis.get("look_yaw"))), 0.01)}, "", false))
 
 

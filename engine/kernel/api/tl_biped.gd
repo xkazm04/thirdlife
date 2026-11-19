@@ -20,7 +20,7 @@ signal got_up()                                      ## K2: he stands again and 
 
 const OPTIONS: Array = ["rig", "rig_params", "mode", "position", "facing", "name", "group", "walk_speed", "run_speed", "accel",
 	"turn_rate", "skate_speed", "skate_accel", "skate_lateral_grip", "skate_turn_rate", "skate_brake", "jump_speed",
-	"body_mass", "push_strength", "sole_material", "blade_material", "get_up_frames", "body_scale", "feel"]
+	"body_mass", "push_strength", "sole_material", "blade_material", "get_up_frames", "body_scale", "feel", "fly_scale"]
 
 const _Walker = preload("res://kernel/world/terrain/world_body.gd")
 const _WalkerSpace = preload("res://kernel/world/terrain/walker_space.gd")
@@ -29,6 +29,10 @@ const WALKER_HEIGHT: float = _WalkerSpace.HEIGHT
 
 var _walker_space: _WalkerSpace
 var _walker: _Walker
+var fly_scale: float = _Walker.FLY_SCALE
+var _toggle_fly := false
+var _climb := 0.0
+var _forward_share := 1.0
 var _slide: bool = false
 var _low: bool = false
 var _standing: CapsuleShape3D
@@ -146,6 +150,7 @@ func _ready() -> void:
 func move(direction: Vector3, run: bool = false) -> void:
 	_move = Vector3(direction.x, 0.0, direction.z).limit_length(1.0)
 	_run = run
+	_forward_share = 1.0
 
 
 func brake(on: bool = true) -> void:
@@ -163,7 +168,22 @@ func slide() -> void:
 		_slide = true
 
 
-## Walker locomotion after the last physics step: ground, air, slide or slope.
+## Sets walker flight for the next physics step.
+func fly(on: bool = true) -> void:
+	if _walker != null:
+		_toggle_fly = on != (_walker.mode == "fly")
+
+
+func is_flying() -> bool:
+	return _walker != null and _walker.mode == "fly"
+
+
+## Vertical intent for the next walker flight step.
+func climb(v: float) -> void:
+	_climb = clampf(v, -1.0, 1.0)
+
+
+## Walker locomotion after the last physics step: ground, air, fly, slide or slope.
 func walker_motion() -> StringName:
 	return StringName(_walker.mode) if _walker != null else &""
 
@@ -181,6 +201,13 @@ func set_mode(mode_: StringName) -> void:
 func drive_from_input(input: TLInput, map: Dictionary, view: Basis = Basis.IDENTITY) -> void:
 	var v: Vector2 = input.vector(map["left"], map["right"], map["forward"], map["back"])
 	move(view * Vector3(v.x, 0.0, v.y), map.has("run") and input.pressed(map["run"]))
+	_forward_share = maxf(0, -v.normalized().y)
+	if map.has("fly") and input.just_pressed(map["fly"]):
+		fly(not is_flying())
+	if map.has("climb") or map.has("descend"):
+		var up := input.strength(map["climb"]) if map.has("climb") else 0.0
+		var down_intent := input.strength(map["descend"]) if map.has("descend") else 0.0
+		climb(up - down_intent)
 	if map.has("brake"):
 		brake(input.pressed(map["brake"]))
 	if map.has("jump") and input.just_pressed(map["jump"]):
@@ -205,6 +232,8 @@ func place(at: Vector3, facing: float = 0.0) -> void:
 	velocity = Vector3.ZERO
 	if _walker != null:
 		_walker.rest()
+		_toggle_fly = false
+		_climb = 0.0
 		_set_low(false)
 		_jump = false
 		_slide = false
@@ -385,9 +414,15 @@ func _walker_tick(delta: float, mv: Vector3, brk: bool) -> void:
 	_walker_space.space = PhysicsServer3D.body_get_space(get_rid())
 	_walker.vel = velocity
 	var wish: Vector3 = mv * (run_speed if _run else walk_speed)
-	if _slide and not _jump and not is_down() and _walker.can_start_slide():
+	var in_flight := is_flying() != _toggle_fly
+	var cruise := run_speed * maxf(0.0, fly_scale)
+	if in_flight:
+		wish = mv * lerpf(run_speed, cruise, _forward_share)
+	if not in_flight and _slide and not _jump and not is_down() and _walker.can_start_slide():
 		_set_low(true)
-	var res: Dictionary = _walker.drive(global_position, wish, _jump and not is_down(), _slide and not is_down(), brk)
+	var res: Dictionary = _walker.drive(global_position, wish, _jump and not is_down(), _slide and not is_down(), brk, _toggle_fly, _climb, cruise)
+	_toggle_fly = false
+	_climb = 0.0
 	_jump = false
 	_slide = false
 	global_position = res["pos"]

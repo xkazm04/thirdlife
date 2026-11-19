@@ -164,3 +164,20 @@ static func work(t: float) -> Dictionary:
 		"RightUpperLeg": Vector3(float(lg[0]) - 14.0, 0, 6.0), "RightLowerLeg": Vector3(float(lg[1]), 0, 0), "RightFoot": Vector3(float(lg[2]) + 14.0, 0, 0),
 		"Backpack": Vector3(2.0 * hit, 0, 0), "Hair": Vector3(-4.0 * hit, 0, 0),
 	}
+
+
+## Flight (loops, 1.6 s; lane flight, 19 Nov): the body straight and long, legs together and trailing a little with soft
+## knees and pointed toes, the arms back along the sides with the hands out (a glider, not a swimmer), the head lifted to
+## look ahead; a slow breath of the legs and arms. The controller leans the whole figure into the flight (the rig itself
+## stays upright here) and the wings are a kernel part on the `back` socket, not part of the rig.
+static func fly(t: float) -> Dictionary:
+	var b: float = sin(TAU * t / 1.6)
+	var c: float = sin(TAU * t / 1.6 - 1.2)
+	return {
+		"_hips": Vector3(0, 0, 0), "Hips": Vector3(-2.0, 0, 0), "Spine": Vector3(2.0, 0, 0), "Chest": Vector3(4.0 + 1.0 * b, 0, 0), "Neck": Vector3(10.0, 0, 0), "Head": Vector3(18.0, 0, 0),
+		"LeftUpperLeg": Vector3(-6.0 + 3.0 * c, 0, -2.0), "LeftLowerLeg": Vector3(-14.0 - 4.0 * c, 0, 0), "LeftFoot": Vector3(-38.0, 0, 0), "LeftToes": Vector3(0, 0, 0),
+		"RightUpperLeg": Vector3(-3.0 - 3.0 * c, 0, 2.0), "RightLowerLeg": Vector3(-20.0 + 4.0 * c, 0, 0), "RightFoot": Vector3(-38.0, 0, 0), "RightToes": Vector3(0, 0, 0),
+		"LeftUpperArm": Vector3(-28.0 + 2.0 * b, 0, -16.0), "LeftLowerArm": Vector3(8.0, 0, 0), "LeftHand": Vector3(-10.0, 0, -10.0),
+		"RightUpperArm": Vector3(-28.0 + 2.0 * b, 0, 16.0), "RightLowerArm": Vector3(8.0, 0, 0), "RightHand": Vector3(-10.0, 0, 10.0),
+		"Backpack": Vector3(0, 0, 0), "Hair": Vector3(-6.0, 0, 0),
+	}

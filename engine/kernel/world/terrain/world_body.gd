@@ -28,6 +28,10 @@ func _init(space_: RefCounted) -> void:
 
 const WALK_MPS: float = 4.5
 const RUN_MPS: float = 9.0
+const FLY_SCALE: float = 5.0
+const FLY_CRUISE := FLY_SCALE * RUN_MPS
+const FLY_CEILING: float = 120.0
+const TAKEOFF_TICKS := 30
 const GRAVITY: float = 24.0
 const JUMP_V: float = 6.93
 const FALL_MAX: float = 40.0
@@ -50,9 +54,15 @@ const STEP_TICKS: int = 9            # a wish that starts from rest is kept at l
 
 var vel: Vector3 = Vector3.ZERO       # m/s
 var grounded: bool = true
-var mode: String = "ground"           # ground | air | slope | slide
+var mode: String = "ground"           # ground | air | slope | slide | fly
 var ground_n: Vector3 = Vector3.UP
 var air_ticks: int = 0                # ticks since he last stood on walkable ground
+var _turn := 0.0
+var fly_turn: float:
+	get:
+		return _turn
+var _takeoff := 0
+var _walk_mask := 1
 var _buffer: int = 0                  # ticks a jump press is still kept, this one included
 var _jumped: bool = false             # this airtime began with a jump (no coyote jump after it)
 var _slide_t: int = 0
@@ -62,6 +72,8 @@ var _step_wish: Vector3 = Vector3.ZERO
 
 ## Starts the body at rest, standing (after a teleport: `put`, entering, leaving).
 func rest() -> void:
+	if mode == "fly":
+		_fold()
 	vel = Vector3.ZERO
 	grounded = true
 	mode = "ground"
@@ -166,7 +178,7 @@ func _standing_floor(pos: Vector3) -> float:
 
 ## Moves by `motion` sliding along what it meets (three times at most); a hit with walkable ground while falling is a
 ## landing. Returns {"pos", "hit", "land", "n"}; `vel` loses its part into every surface met.
-func _slide_move(pos: Vector3, motion: Vector3) -> Dictionary:
+func _slide_move(pos: Vector3, motion: Vector3, descending: bool = false) -> Dictionary:
 	var rest_m: Vector3 = motion
 	var out: Dictionary = {"hit": false, "land": false, "n": Vector3.UP}
 	for it: int in 3:
@@ -178,7 +190,14 @@ func _slide_move(pos: Vector3, motion: Vector3) -> Dictionary:
 			sp.last_hit = {"tag": sp._tags.get(sp._res.get_collider_rid(0), "?"), "at": sp._res.get_collision_point(0), "n": n, "from": pos}
 			pos += sp._res.get_travel()
 			var rem: Vector3 = sp._res.get_remainder()
-			if _walkable(n) and vel.y <= 0.0:
+			if mode == "fly":
+				var rid: RID = sp._res.get_collider_rid(0)
+				sp.last_hit["rid"] = rid
+				var layer := PhysicsServer3D.body_get_collision_layer(rid)
+				if descending and (layer & 1) and _walkable(n):
+					out.land = true
+					out.n = n
+			elif _walkable(n) and vel.y <= 0.0:
 				out["land"] = true
 				out["n"] = n
 				rem.y = 0.0
@@ -189,7 +208,9 @@ func _slide_move(pos: Vector3, motion: Vector3) -> Dictionary:
 				vel -= n * vel.dot(n)
 			rest_m = rem - n * rem.dot(n)
 		else:
-			pos += rest_m
+			# A free sweep can still depenetrate its start. Keep that travel in flight,
+			# especially on the tangent sweep immediately after a crown contact.
+			pos += sp._res.get_travel() if mode == "fly" else rest_m
 			rest_m = Vector3.ZERO
 	out["pos"] = pos
 	return out
@@ -203,13 +224,31 @@ func can_start_slide() -> bool:
 ## One tick of a person's body. `wish`: the horizontal velocity he asks for (m/s, world axes); `jump`, `slide`: the
 ## key went down this tick. A brake cancels even a tapped step. Returns {"pos", "grounded", "mode", "vel", "events": ["jump" | "land" | "slide" |
 ## "slope" | "end_slide"], "blocked"}.
-func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool, brake: bool = false) -> Dictionary:
+func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool, brake: bool = false, toggle_fly: bool = false, climb: float = 0.0, cruise: float = FLY_CRUISE) -> Dictionary:
 	var dt: float = 1.0 / 60.0
 	var pos: Vector3 = from
 	var ev: Array = []
 	var hit: bool = false
 	wish.y = 0.0
 	sp.last_hit = {}
+	if toggle_fly:
+		if mode == "fly":
+			_fold()
+			mode = "air"
+			_jumped = true
+			ev.append("fly_end")
+		else:
+			_takeoff = TAKEOFF_TICKS if grounded else 0
+			_walk_mask = PhysicsServer3D.body_get_collision_mask(sp.body)
+			PhysicsServer3D.body_set_collision_mask(sp.body, _walk_mask | 4)
+			grounded = false
+			mode = "fly"
+			_buffer = 0
+			_step_t = 0
+			_slide_t = 0
+			ev.append("fly_start")
+	if mode == "fly":
+		return _fly(pos, Vector3.ZERO if brake else wish, climb, cruise, ev)
 	# a tapped key is a step: a wish that starts from rest is kept STEP_TICKS ticks
 	var hv: Vector3 = Vector3(vel.x, 0.0, vel.z)
 	if brake:
@@ -370,6 +409,54 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool, brake: bool = 
 	if hit:
 		sp.blocked_ticks += 1
 	return {"pos": pos, "grounded": grounded, "mode": mode, "vel": vel, "events": ev, "blocked": hit}
+
+
+func _fold() -> void:
+	PhysicsServer3D.body_set_collision_mask(sp.body, _walk_mask)
+	_takeoff = 0
+	_turn = 0.0
+
+
+func _fly(pos: Vector3, wish: Vector3, climb: float, cruise: float, events: Array) -> Dictionary:
+	var horizontal := Vector3(vel.x, 0, vel.z)
+	var speed := horizontal.length()
+	var goal := wish.length()
+	var heading := horizontal.normalized() if speed > 0.001 else wish.normalized()
+	_turn = 0.0
+	if goal > 0.001 and speed > 0.001:
+		var rate := deg_to_rad(lerpf(300.0, 140.0, clampf(speed / maxf(0.01, cruise), 0, 1)))
+		var angle := heading.signed_angle_to(wish.normalized(), Vector3.UP)
+		_turn = clampf(angle * 60, -rate, rate)
+		heading = heading.rotated(Vector3.UP, _turn / 60)
+	# Cap initial thrust, then taper it as cruise approaches. Drag tails off to a stop.
+	var dv := absf(goal - speed) * (0.051 if goal > speed else 0.042)
+	horizontal = heading * move_toward(speed, goal, clampf(dv, 0.12, 1.5))
+	vel.x = horizontal.x
+	vel.z = horizontal.z
+	if _takeoff > 0 and is_zero_approx(climb):
+		var t := TAKEOFF_TICKS - _takeoff
+		# Integrated half cosine: zero endpoint speeds, exactly 2.5 m over 30 sweeps.
+		vel.y = 75.0 * (cos(PI * t / TAKEOFF_TICKS) - cos(PI * (t + 1) / TAKEOFF_TICKS))
+		_takeoff -= 1
+	else:
+		_takeoff = 0
+		vel.y = move_toward(vel.y, clampf(climb, -1, 1) * RUN_MPS, RUN_MPS / 18.0)
+	var floor_y: float = sp.ground_at(pos.x + vel.x / 60, pos.z + vel.z / 60, pos.y + 0.05)
+	if is_finite(floor_y):
+		var room := floor_y + FLY_CEILING - pos.y
+		vel.y = minf(vel.y, room * (60.0 if room < 0.0 else 4.0))
+	var motion := _slide_move(pos, vel / 60, climb < 0 or vel.y < -0.5)
+	if motion.land:
+		_fold()
+		mode = "ground"
+		grounded = true
+		ground_n = motion.n
+		air_ticks = 0
+		vel.y = 0
+		events.append("fly_land")
+	if motion.hit:
+		sp.blocked_ticks += 1
+	return {"pos": motion.pos, "grounded": grounded, "mode": mode, "vel": vel, "events": events, "blocked": motion.hit, "fly_turn": _turn}
 
 
 ## A jump now, from ground, a slide, a slope or the coyote air (`can_jump`). From a slope he is pushed away from the

@@ -49,6 +49,35 @@ const CAM_ANCHOR_Y: float = 0.18        # ... and this share in height (a jump, 
 var face_yaw: float = 0.0               # where the figure faces (radians, 0 = -z); the node itself keeps `look_yaw`
 var face_view: bool = false             # lane walker (TL_AD_KEYS=sidestep, visit.gd): on the ground the figure faces `look_yaw`, not his travel
 var mode: String = "ground"             # the body's mode: ground | air | slope | slide
+signal flight_step
+const Body = preload("res://kernel/world/terrain/world_body.gd")
+var flying: bool:
+	get:
+		return mode == "fly"
+var _flight_changed_at := 0
+var fly_t: int:
+	get:
+		var elapsed := ticks - _flight_changed_at
+		return elapsed if flying else -1 - elapsed
+var _flight_turn := 0.0
+var fly_turn: float:
+	get:
+		return _flight_turn
+var fly_speed_k: float:
+	get:
+		return clampf(Vector2(vel.x, vel.z).length() / Body.FLY_CRUISE, 0, 1)
+var _cam_flight := 0.0
+# Lane flight: the mechanical wings on the rig's `back` socket (kernel/world/flight_wings.gd, assets/engine/wings.glb) and
+# the figure's lean into the flight (degrees forward, about his middle) and bank (degrees, + = rolled left, into a left turn)
+const FlightWings: GDScript = preload("res://kernel/world/flight_wings.gd")
+const LEAN_HOVER: float = 12.0
+const LEAN_CRUISE: float = 62.0
+const BANK_MAX: float = 28.0
+var wings: RefCounted = null
+var lean: float = 0.0
+var bank: float = 0.0
+var _wish_fly := false
+var _wish_climb := 0.0
 var vel: Vector3 = Vector3.ZERO         # the body's velocity, m/s
 var _wish: Vector3 = Vector3.ZERO
 var _wish_jump: bool = false
@@ -81,6 +110,7 @@ func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary 
 	rig = TLRigs.build("biped", {})
 	if rig != null:
 		add_child(rig)
+		wings = FlightWings.attach(rig)
 	var chase := preload("res://kernel/world/terrain/crown_camera.gd").new()
 	if space != null and space.get("drawn_crowns") is Dictionary:
 		chase.crowns = space.get("drawn_crowns")
@@ -119,7 +149,9 @@ func steer_on() -> void:
 
 ## Walker-feel. A person's wish for this tick (kernel/runner/visit.gd, below its sampling line): `v` the horizontal
 ## velocity he asks for (m/s, world axes), `jump` / `slide`: the key went down this tick.
-func wish(v: Vector3, jump: bool, slide: bool) -> void:
+func wish(v: Vector3, jump: bool, slide: bool, toggle_fly: bool = false, climb: float = 0.0) -> void:
+	_wish_fly = toggle_fly
+	_wish_climb = climb
 	_wish = v
 	_wish_jump = _wish_jump or jump
 	_wish_slide = _wish_slide or slide
@@ -133,8 +165,10 @@ func turn(dx: float, dy: float, pitch_min: float, pitch_max: float) -> void:
 
 
 func _place_cam() -> void:
-	cam.distance = _cam_dist * cos(look_pitch)
-	cam.height = _cam_look_h + _cam_dist * sin(look_pitch)
+	var pitch := look_pitch - deg_to_rad(6.0) * _cam_flight
+	var arm := _cam_dist * (1.0 + 0.8 * _cam_flight)
+	cam.distance = arm * cos(pitch)
+	cam.height = _cam_look_h + arm * sin(pitch)
 	cam.look_height = _cam_look_h
 
 
@@ -154,9 +188,20 @@ func put(at: Vector3, yaw: float) -> void:
 	rotation.y = yaw
 	if space != null:
 		space.call("rest")
+	if flying:
+		_flight_changed_at = ticks
+	_flight_turn = 0.0
+	_wish_fly = false
+	_wish_climb = 0.0
+	_cam_flight = 0.0
 	vel = Vector3.ZERO
 	mode = "ground"
+	if steer:
+		_flight_camera()
+	lean = 0.0
+	bank = 0.0
 	if rig != null:
+		rig.transform = Transform3D.IDENTITY
 		rig.rotation.y = 0.0
 		_clip(&"")                              # a teleport ends any held clip: he stands where he is put (D7)
 	reset_physics_interpolation()
@@ -218,12 +263,19 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 		space.call("rest")
 		if rig != null and (mode == "slide" or mode == "slope"):
 			_clip(&"")
+		if flying:
+			_flight_changed_at = ticks
+		_flight_turn = 0.0
+		_wish_fly = false
+		_wish_climb = 0.0
 		vel = Vector3.ZERO
 		mode = "ground"
 		_wish_jump = false
 		_wish_slide = false
 		return
-	var res: Dictionary = space.call("drive", feet, _wish, _wish_jump, _wish_slide)
+	var res: Dictionary = space.call("drive", feet, _wish, _wish_jump, _wish_slide, _wish_fly, _wish_climb)
+	_wish_fly = false
+	_wish_climb = 0.0
 	_wish_jump = false
 	_wish_slide = false
 	var was: String = mode
@@ -236,6 +288,14 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 	feet = res["pos"]
 	vel = res["vel"]
 	mode = str(res["mode"])
+	_flight_turn = float(res.get("fly_turn", 0))
+	if flying != (was == "fly"):
+		_flight_changed_at = ticks
+	if flying or was == "fly" or _cam_flight > 0.0:
+		_cam_flight = lerpf(_cam_flight, fly_speed_k if flying else 0.0, 1.0 - exp(-1.0 / 30.0))
+		if _cam_flight < 0.00001:
+			_cam_flight = 0.0
+		_flight_camera()
 	if _world != null and bool(_world.get("player_live")):
 		_world.set("player_pos", Vector3(feet.x, pos.y, feet.z))        # a person walks: the body decides
 	var d: Vector3 = feet - _last
@@ -253,7 +313,7 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 	rotation.y = look_yaw
 	_last = feet
 	if rig != null and visible:
-		rig.rotation.y = wrapf(face_yaw - look_yaw, -PI, PI)
+		_lean_and_bank(wrapf(face_yaw - look_yaw, -PI, PI))
 		var local_v: Vector3 = vel.rotated(Vector3.UP, -face_yaw)
 		rig.call("set_locomotion", local_v, mode == "ground" or mode == "slide")
 		for e: Variant in res["events"]:
@@ -271,7 +331,46 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 					# a slide started this very tick ends here too (pressed on the edge tick, D19)
 					if was == "slide" or was == "slope" or (res["events"] as Array).has("slide"):
 						_clip(&"")
+				"fly_start":
+					_clip(&"fly")
+				"fly_land", "fly_end":
+					_clip(&"")
 		rig.call("tick", frame)
+		if wings != null:
+			wings.call("tick", flying, fly_speed_k, _flight_turn, frame)
+
+
+	if flying or res.events.has("fly_land"):
+		flight_step.emit()
+
+
+## Lane flight: the figure leans into the flight (LEAN_HOVER hovering, LEAN_CRUISE at cruise, eased) about a point at
+## his middle and banks into a turn (from the heading's turn rate); on the ground both are 0 and the rig is turned only
+## about y, exactly as before.
+func _lean_and_bank(yaw_rel: float) -> void:
+	var lean_want: float = lerpf(LEAN_HOVER, LEAN_CRUISE, fly_speed_k) if flying else 0.0
+	var bank_want: float = clampf(rad_to_deg(_flight_turn) * 0.2, -BANK_MAX, BANK_MAX) if flying else 0.0
+	if flying:
+		lean = lerpf(lean, lean_want, 0.08)
+		bank = lerpf(bank, bank_want, 0.1)
+	else:
+		# landed or fallen out of flight: he straightens up in at most 30 ticks and lands exactly on 0 (flight.pose)
+		lean = move_toward(lean, 0.0, clampf(absf(lean) * 0.12, 1.0, 5.0))
+		bank = move_toward(bank, 0.0, clampf(absf(bank) * 0.12, 1.0, 5.0))
+	if lean == 0.0 and bank == 0.0:
+		rig.transform = Transform3D.IDENTITY
+		rig.rotation.y = yaw_rel
+		return
+	var b: Basis = Basis(Vector3.UP, yaw_rel) * Basis.from_euler(Vector3(deg_to_rad(-lean), 0.0, deg_to_rad(bank)))
+	var mid: Vector3 = Vector3(0.0, 1.0, 0.0)
+	rig.transform = Transform3D(b, mid - b * mid)
+
+
+func _flight_camera() -> void:
+	# Anchor the cast inside the flying capsule, including when braking against a wall.
+	cam.anchor_follow = 1.0 if flying else CAM_ANCHOR
+	cam.anchor_follow_y = 1.0 if flying else CAM_ANCHOR_Y
+	_place_cam()
 
 
 ## Plays a clip of the wire only if the rig has it (lane L adds them); &"" is always allowed (back to locomotion).
