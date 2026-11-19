@@ -200,3 +200,8 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   against the pre-merge commit before calling a regression; perf needs `tl perf run --quiet-only --wait 600` after the lanes.
 - 2026-11-19: re-dispatching landed lanes from their own "next" lists (SendMessage, fresh worktree from main) kept the
   machine busy all night inside the agreed scope; all lanes finished by 05:10 and the verdict ran early.
+- 2026-11-19 (day): a lane's "landable" standup line was missed twice: lanes also send a message when they are landable.
+- 2026-11-19 (day): a lane tree cut before another lane's dependent pack landed passed its own gates and broke 11 bots
+  on main (reverted): re-cut a lane's tree from main before its last round when merged work uses its API.
+- 2026-11-19 (day): starting the verdict's full gate at the last standup, on a quiet machine, let perf run (2/2) and kept
+  the verdict inside the land-by time; Astra spend ran 2x the plan because resumed sessions recount their context.

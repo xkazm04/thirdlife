@@ -7,12 +7,13 @@ writes it back. Newest shift-log entry last.
 - Focus (owner, 18 Nov): make the game playable and fun before measuring anything. The walking figure, camera and terrain
   immersion, the parkour course, and the minigame editor as the backbone of player-made games. Hockey decisions and win
   measurement are deferred; the construction process comes later.
-- Next 3: (1) the owner plays exe `d6f3659` and answers the night's asks (verdict page
-  https://claude.ai/artifact/5aAsbgDdYF1FRv3HC2H9YD, `docs/shifts/2026-11-19-night/VERDICT.md`); (2) editor next steps
-  once E1/E2 are answered (the village reads `_editor/` itself; contract additions); (3) parkour fun pass after the owner
-  plays it.
+- Next 3: (1) the owner plays exe `d59f072` (flight on F, Skyline, a turned workbench game) and answers the day's asks
+  (page https://claude.ai/artifact/9bQ6cjKuVXGF8Hw9UGYFHu, `docs/shifts/2026-11-19-day/VERDICT.md`); (2) a hunt: the
+  off-origin `--at` hash and the picture-cache proof for turned games; (3) the site's round fence follows the footprint (B2).
 
 ## Open owner verdicts
+Asks from the day of 19 Nov (docs/shifts/2026-11-19-day/VERDICT.md): F1 flight feel; F2 ledge/bar for the village walker;
+P3 Skyline side camera; P4 parkour next; B1 open plots; B2 site round fence; B3 car course floor; E4 Designer call vs scorer.
 Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - E3 village too full by the road for 45 m venues.
 - P2 newcomer retry bot in the gate.
@@ -111,3 +112,10 @@ to overturn. Contracts for E2 were written first (`cf73f58`). Land and push by 1
 - 16:05 standup: editor round 4 reports landable (arrived game turns with the yaw, 8 world hashes identical); reviewing once its final gate lines arrive; other lanes finished.
 - 16:18 editor round 4 landed (`e66ca0b`): the arrived game turns with the yaw; merged-tree world 8/8 same hashes, packs 48/48, site. 23/23, ui 166. All lanes finished.
 - 17:07 standup: all four lanes finished and landed; full gate started early on a quiet machine for the verdict.
+
+### 2026-11-19 day: wrap (17:40)
+All four lanes landed (14 landings, 1 revert): flight `83c39b7`..`ce0dd63` (wings, 5x, API 1.9-1.10 moves), parkour
+`9bb3986`..`a6f8941` (four stages, Skyline), blend `a68ef16` `0503123` (no circles, no facets), editor `5f50416`..`e66ca0b`
+(E2 in code, placement, the turned game). Main `d59f072`: full gate PASS on every step (kernel 317, perf 2/2 quiet, world 8/8,
+packs 48/48); exe d59f072 PASS check; pushed. Verdict: `docs/shifts/2026-11-19-day/VERDICT.md`, page
+https://claude.ai/artifact/9bQ6cjKuVXGF8Hw9UGYFHu. About 6.0 M Astra tokens as printed (plan 2-3 M). Claims released, timers deleted.
