@@ -1,0 +1,1 @@
+held-back exit 1 held Back 16 ticks before placement, drift 0.085 m; W with S held travelled 0.00 m; fresh Back crossed rear edge false, retry false, finish . held Back moved the runner on placement

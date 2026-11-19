@@ -16,6 +16,7 @@ var venue
 var runner: TLBiped
 var rules: TLRules
 var cam: TLOrbitCam
+var skyline_camera
 var hud: TLHud
 var spawn_at: Vector3
 var lane
@@ -24,6 +25,7 @@ var stage_bests: Array[int] = []
 var stage_started := 0
 var falls := 0
 var carried_strafe := 0.0
+var carried_back := false
 var swing_hits := 0
 var swing_hit_pending := false
 var hit_notice_until := 0
@@ -53,6 +55,9 @@ func _pack_setup(c: TLContext) -> void:
 			[&"right", [KEY_D, KEY_RIGHT]], [&"jump", [KEY_SPACE]], [&"run", [KEY_SHIFT]], [&"slide", [KEY_C]], [&"restart", [KEY_R]]]:
 		ctx.input.declare(key[0], key[1])
 	cam = ctx.cameras.orbit(runner, {"yaw": -90, "distance": 5.5, "pitch": 33, "look_height": 1.1, "fov": 55})
+	skyline_camera = ctx.load_script("scripts/skyline_camera.gd").new()
+	skyline_camera.cam = cam
+	cam.add_child(skyline_camera)
 	ctx.cameras.add_view(&"overview", Vector3(-9, 34, 50), Vector3(0, 5.1, 0.0), 43)
 	_view(&"jump", venue.FIRST_LIP + 1.5, Vector3(1.8, 1.15, 6.4), 1.0)
 	_view(&"under_bar", venue.bar + 0.3, Vector3(6.7, 1.6, 5.7), 0.85)
@@ -104,12 +109,13 @@ func _restart() -> void:
 	spawn_at = venue.point(0, venue.DECK_Y + 0.04)
 	runner.place(ctx.root.to_global(spawn_at))   # hunt2 C7: spawn_at is in course coordinates, place() takes the world's
 	cam.yaw = -90
-	_frame_chute(0.0)
+	_frame_course(0.0, false)
 	cam.snap()
 	trail.clear()
 	splits.clear()
 	stage_started = 0
 	carried_strafe = 0.0
+	carried_back = false
 	swing_hits = 0
 	swing_hit_pending = false
 	hit_notice_until = 0
@@ -146,6 +152,9 @@ func _pack_tick(_frame: int) -> void:
 		if index >= 12:
 			var upper: Vector3 = lane.local_feet(runner.position)
 			below_decks = below_decks or upper.y < lane.summit_y - 0.7 or absf(upper.x - lane.summit) > lane.UPPER_WIDTH / 2 + 0.6
+			# The lower headwall approach is no longer the active deck after the mantle.
+			if index == 13 and runner.grounded and upper.z < lane.HEADWALL and upper.y < lane.rim_y - 0.7:
+				below_decks = true
 		if index == 13:
 			var grip := _current_grip()
 			if grip > 0 and grip == grips_passed + 1:
@@ -164,6 +173,7 @@ func _pack_tick(_frame: int) -> void:
 			grips_passed = 0
 			if not retry:
 				falls += 1
+			carried_back = index == 13 and ctx.input.pressed(&"back")
 			var facing := 0.0
 			if index == 8:
 				carried_strafe = signf(ctx.input.axis(&"left", &"right"))
@@ -179,13 +189,20 @@ func _pack_tick(_frame: int) -> void:
 			_return_checkpoint(index)
 	else:
 		runner.move(Vector3.ZERO)
-	_frame_chute(runner.position.x - venue.START_X if splits.is_empty() else 0.0)
+	_frame_course(runner.position.x - venue.START_X if splits.is_empty() else 0.0, int(rules.next_checkpoint[SIDE]) == 13)
 	_update_hud()
 
 
 func _drive_walker(index: int) -> void:
 	var view := cam.yaw_basis()
 	runner.drive_from_input(ctx.input, ACTIONS, view)
+	if carried_back:
+		carried_back = index == 13 and ctx.input.pressed(&"back")
+		if carried_back:
+			# A held pump key belongs to the previous swing. Keep lateral and forward input live.
+			var side := ctx.input.axis(&"left", &"right")
+			runner.move(view * Vector3(side, 0.0, -ctx.input.strength(&"forward")), ctx.input.pressed(&"run"))
+			return
 	if carried_strafe == 0.0:
 		return
 	if index != 8 or signf(ctx.input.axis(&"left", &"right")) != carried_strafe:
@@ -281,13 +298,23 @@ func _current_grip() -> int:
 	return 2 if absf(z - lane.second_bar) < 0.1 else 0
 
 
-func _frame_chute(at: float) -> void:
+func _frame_course(at: float, on_runway: bool) -> void:
 	# Lift the orbit over the lip, then give the player their original pitch on the finish deck.
 	var weight := smoothstep(venue.lip - 3.0, venue.lip, at) * (1.0 - smoothstep(venue.foot + 1.0, venue.finish, at))
 	var free_pitch := clampf(cam.pitch - chute_tilt, TLOrbitCam.PITCH_MIN, TLOrbitCam.PITCH_MAX)
 	chute_tilt = (TLOrbitCam.PITCH_MAX - free_pitch) * weight
 	cam.pitch = free_pitch + chute_tilt
 	cam.look_height = 1.1 + weight * 0.65
+	cam.fov = 55.0
+	skyline_camera.amount = 0.0
+	if on_runway:
+		var feet: Vector3 = lane.local_feet(runner.position)
+		var skyline := smoothstep(lane.HEADWALL + 0.6, lane.RUNWAY_END - 1.0, feet.z) \
+			* (1.0 - smoothstep(lane.second_bar + 1.75, lane.landing_z + 0.45, feet.z))
+		# Keep W aligned with the runway until blue is caught, and with the ramp after red is released.
+		skyline_camera.swing_view = grips_passed == 1 or (grips_passed == 2 and runner.walker_motion() == &"bar")
+		skyline_camera.amount = skyline
+		cam.fov += 4.0 * skyline
 
 
 func _at_blocked_bar(at: float) -> bool:
@@ -324,7 +351,9 @@ func _update_hud() -> void:
 		cue = "Back on beam   ·   Release side key to steer"
 	if int(rules.next_checkpoint[SIDE]) == 13:
 		cue = ["Jump to the blue bar", "Swing forward · Space to reach red", "Space to land on the striped ramp"][grips_passed]
-		if rules.total_frames < missed_grip_until:
+		if carried_back:
+			cue = "Back on runway · Release Back to step back"
+		elif rules.total_frames < missed_grip_until:
 			cue = "Catch blue, then red · Try again"
 	caption += "    " + cue
 	if rules.is_over():
@@ -367,6 +396,8 @@ func _pack_state() -> Dictionary:
 		"first_land": venue.first_land, "chain_lip": venue.chain_lip, "chain_land": venue.chain_land,
 		"bar": venue.bar, "bar_depth": venue.BAR_DEPTH, "lip": venue.lip, "foot": venue.foot, "deck_y": venue.DECK_Y,
 		"clearance": venue.clearance, "chute_degrees": rad_to_deg(venue.angle), "run_mps": runner.run_speed})
+	if carried_back:
+		s["carried_back"] = true
 	if rules.total_frames < missed_landing_until:
 		s["missed_landing_until"] = missed_landing_until
 	if rules.total_frames < missed_grip_until:
