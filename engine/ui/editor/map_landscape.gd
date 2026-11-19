@@ -9,6 +9,10 @@ static func paint(map: Control, world: Rect2, scale: float, col: Dictionary) -> 
 	var offset: Vector2 = -world.position * scale
 	_ground(map, world, scale, col)
 	var rng := RandomNumberGenerator.new()
+	var ghost_half := Vector2.ZERO
+	if map.model.placed:
+		var f: Vector3 = map.model.footprint()
+		ghost_half = Vector2(f.x, f.y) * 0.5
 	var area := world.grow(70)
 	for y: int in range(floori(area.position.y / 102), ceili(area.end.y / 102)):
 		for x: int in range(floori(area.position.x / 102), ceili(area.end.x / 102)):
@@ -52,9 +56,9 @@ static func paint(map: Control, world: Rect2, scale: float, col: Dictionary) -> 
 			# The road and the occupied plots have their own surface dressing.
 			if map.model.road_point(w).distance_to(w) < map.model.road_half_m + 7:
 				continue
-			var clear: bool = not map.model.placed or w.distance_to(map.model.at) > map.model.lot_radius() + 6
+			var clear: bool = not map.model.placed or not _on_pad(w, map.model.at, ghost_half, map.model.yaw)
 			for plot: Dictionary in map.model.plots:
-				if w.distance_to(plot["at"]) < float(plot["r"]) + 4:
+				if _on_pad(w, plot.at, map._plot_half(plot), plot.get("yaw", 0.0)):
 					clear = false
 					break
 			if not clear:
@@ -70,6 +74,11 @@ static func paint(map: Control, world: Rect2, scale: float, col: Dictionary) -> 
 				var symbol := Rect2(foot - Vector2(height * 0.72, height * 0.93), Vector2(height * 1.44, height))
 				map.draw_colored_polygon(PackedVector2Array([foot - Vector2(0, height * 0.2), foot + Vector2(height * 0.72, height * 0.03), foot + Vector2(height * 0.5, height * 0.17), foot - Vector2(height * 0.18, 0)]), Color(col["shade"], 0.22))
 				map.draw_texture_rect(Art.stamp(tree, col, symbol.size.x), symbol, false)
+
+
+static func _on_pad(p: Vector2, centre: Vector2, half_size: Vector2, yaw: float) -> bool:
+	var local := (p - centre).rotated(-yaw).abs()
+	return local.x < half_size.x + 4.0 and local.y < half_size.y + 4.0
 
 
 ## Two scales of colour in the meadow: a continuous sun-warmed wash below the distinct

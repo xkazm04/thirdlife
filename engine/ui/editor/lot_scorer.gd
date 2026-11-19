@@ -66,30 +66,30 @@ static func errors(model, at: Vector2, radius: float, path: Dictionary) -> Array
 # A sweep reuses the river's bank-to-bank bounding box. Beyond the 60 m fact range its exact
 # distance cannot affect either the verdict or the displayed facts. The spur is checked separately.
 static func _bank(model, at: Vector2, radius: float, river_box := Rect2()) -> float:
-	var fence: float = model.fence_radius(radius)
-	if river_box.has_area() and not river_box.grow(fence + 60).has_point(at):
+	var edge: float = model.edge_radius(radius)
+	if river_box.has_area() and not river_box.grow(edge + 60).has_point(at):
 		return INF
-	return line_distance(at, model.river_samples) - fence - float(model.river_half_m)
+	return line_distance(at, model.river_samples) - edge - float(model.river_half_m)
 
 
 static func _errors(model, at: Vector2, radius: float, path: Dictionary, bank: float, river_box: Rect2, road_sample_slack := INF) -> Array:
 	var out: Array = []
 	for lot: Dictionary in model.plots:
-		var gap: float = model.fence_gap(at, radius, lot)
-		if gap < model.FENCE_GAP_M - model.FIT_EPS_M:
-			var words := "its fence would cross %s's fence by %.1f m" % [lot.label, -gap] if gap < 0 else (
-				"%.1f m between its fence and %s's fence (needs %.0f m)" % [gap, lot.label, model.FENCE_GAP_M])
+		var gap: float = model.lot_gap(at, radius, lot)
+		if gap < model.LOT_GAP_M - model.FIT_EPS_M:
+			var words := "its edge would cross %s's by %.1f m" % [lot.label, -gap] if gap < 0 else (
+				"%.1f m from %s's lot edge (needs %.0f m)" % [gap, lot.label, model.LOT_GAP_M])
 			out.append({"level": "error", "what": "overlap", "with": lot.id, "text": words})
-		elif _crosses_fence(path, lot.at, model.fence_radius(lot.r)):
-			out.append({"level": "error", "what": "path", "with": lot.id, "text": "the path crosses %s's fence" % lot.label})
+		elif _crosses_lot(path, lot.at, model.edge_radius(lot.r)):
+			out.append({"level": "error", "what": "path", "with": lot.id, "text": "the path crosses %s's lot" % lot.label})
 	# Every point on a road segment lies within half its length of a sampled endpoint.
 	# The spur already found the nearest sample. Only borderline rings need the exact segment check.
-	var road_clearance: float = model.fence_radius(radius) + model.road_half_m + model.ROAD_GAP_M - model.FIT_EPS_M
+	var road_clearance: float = model.edge_radius(radius) + model.road_half_m + model.ROAD_GAP_M - model.FIT_EPS_M
 	if at.distance_to(path.to) <= road_clearance + road_sample_slack and line_distance(at, model.road_samples) < road_clearance:
-		out.append({"level": "error", "what": "road", "text": "its fence needs 1 m off the road edge"})
+		out.append({"level": "error", "what": "road", "text": "keep the lot 1 m off the road edge"})
 	var river: PackedVector2Array = model.river_samples
 	if bank < model.RING_GAP_M - model.FIT_EPS_M:
-		out.append({"level": "error", "what": "river", "text": "its fence needs 2 m off the riverbank"})
+		out.append({"level": "error", "what": "river", "text": "keep the lot 2 m off the riverbank"})
 	elif path.length_m > 0 and (not river_box.has_area() or river_box.intersects(Rect2(path.from, Vector2.ZERO).expand(path.to), true)):
 		for i in range(1, river.size()):
 			var pair := Geometry2D.get_closest_points_between_segments(path.from, path.to, river[i-1], river[i])
@@ -98,12 +98,12 @@ static func _errors(model, at: Vector2, radius: float, path: Dictionary, bank: f
 				break
 	if model.road_samples.is_empty():
 		out.append({"level": "error", "what": "road", "text": "there is no road to reach"})
-	if not model.fence_inside(at, radius):
-		out.append({"level": "error", "what": "outside", "text": "its fence reaches outside the village"})
+	if not model.lot_inside(at, radius):
+		out.append({"level": "error", "what": "outside", "text": "its lot edge reaches outside the village"})
 	return out
 
 
-static func _crosses_fence(path: Dictionary, centre: Vector2, radius: float) -> bool:
+static func _crosses_lot(path: Dictionary, centre: Vector2, radius: float) -> bool:
 	return path.length_m > 0 and centre.distance_to(Geometry2D.get_closest_point_to_segment(centre, path.from, path.to)) < radius
 
 
@@ -134,12 +134,12 @@ static func _score(model, at: Vector2, yaw: float, heights: Callable, radius: fl
 	var gap := INF
 	var nearest := ""
 	for lot: Dictionary in model.plots:
-		var d: float = model.fence_gap(at, radius, lot)
+		var d: float = model.lot_gap(at, radius, lot)
 		if d < gap:
 			gap = d
 			nearest = lot.label
 	if not nearest.is_empty():
-		lines.append({"text": "next to %s (%.0f m between fences)" % [nearest, gap], "points": 0})
+		lines.append({"text": "next to %s (%.0f m between lots)" % [nearest, gap], "points": 0})
 		if gap > 12:
 			lines.append({"text": "stands apart from its neighbours", "points": clampf((gap - 12) / 28 * 10, 0, 10)})
 	if bank < 60:
@@ -214,10 +214,10 @@ static func _facts(model, at: Vector2, radius: float, result: Dictionary, delta:
 	var facts := ["%s of the road, %s" % [_direction(at - road), along]]
 	var neighbours := []
 	for lot: Dictionary in model.plots:
-		neighbours.append({"label": lot.label, "gap": model.fence_gap(at, radius, lot)})
+		neighbours.append({"label": lot.label, "gap": model.lot_gap(at, radius, lot)})
 	neighbours.sort_custom(func(a, b): return a.gap < b.gap if a.gap != b.gap else a.label < b.label)
 	for neighbour: Dictionary in neighbours.slice(0, 2):
-		facts.append("next to %s (%.0f m between fences)" % [neighbour.label, neighbour.gap])
+		facts.append("next to %s (%.0f m between lots)" % [neighbour.label, neighbour.gap])
 	facts.append("%.0f m walk from the gate to the road" % result.path.length_m)
 	if bank < 60:
 		facts.append("%.0f m from the riverbank" % bank)
@@ -231,18 +231,18 @@ static func candidates(model, heights: Callable, n := 10) -> Array:
 		return []
 	var radius: float = model.lot_radius()
 	var positions: PackedVector2Array = model.roadside_positions(radius)
-	var inside: Rect2 = model.bounds.grow(-model.fence_radius(radius))
+	var inside: Rect2 = model.bounds.grow(-model.edge_radius(radius))
 	for z in range(ceili(inside.position.y), floori(inside.end.y) + 1, 8):
 		for x in range(ceili(inside.position.x), floori(inside.end.x) + 1, 8):
 			positions.append(Vector2(x, z))
 	var sweep := Sweep.new(model, disc_offsets(radius + PAD_EXTRA))
 	var free := []
 	for at in positions:
-		if not model.fence_inside(at, radius):
+		if not model.lot_inside(at, radius):
 			continue
 		var blocked := false
 		for lot: Dictionary in model.plots:
-			if model.fence_gap(at, radius, lot) < model.FENCE_GAP_M - model.FIT_EPS_M:
+			if model.lot_gap(at, radius, lot) < model.LOT_GAP_M - model.FIT_EPS_M:
 				blocked = true
 				break
 		if blocked:

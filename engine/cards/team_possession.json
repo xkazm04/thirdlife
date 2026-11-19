@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.team_possession",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
   "summary": "Two teams of a few walkers or skaters on a bounded rink; whoever has the puck inside his reach carries it on his stick, passes to a mate or shoots; a puck inside a goal volume is a point; periods and a score decide. The worked example is the house game hockey (engine/packs/hockey). Covers ice hockey, street hockey, five-a-side football, a team ball game with carriers and passes.",
   "applies_when": [
@@ -346,6 +346,7 @@
             "id": "big",
             "label": "Big ice 80 x 40 m",
             "say": "a big 80 x 40 m rink",
+            "from_words": ["big ice", "big rink", "large rink"],
             "size": {
               "set": [
                 84,
@@ -358,6 +359,7 @@
             "id": "small",
             "label": "Small 40 x 20 m",
             "say": "a small 40 x 20 m rink",
+            "from_words": ["small ice", "small rink", "little rink"],
             "size": {
               "set": [
                 47,
@@ -379,6 +381,7 @@
             "id": "arena",
             "label": "Stands, scoreboard, light masts",
             "say": "stands, a scoreboard and light masts around it",
+            "from_words": ["stands", "scoreboard", "crowd"],
             "size": {
               "add": [
                 0,
@@ -391,7 +394,8 @@
           {
             "id": "bare",
             "label": "Just the boards",
-            "say": "nothing around it but the boards"
+            "say": "nothing around it but the boards",
+            "from_words": ["no stands", "just the boards", "bare boards"]
           },
           {
             "id": "pond",

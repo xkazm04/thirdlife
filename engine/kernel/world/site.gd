@@ -13,6 +13,7 @@ extends RefCounted
 ## E2 (day of 19 Nov): a job made in the minigame editor carries the player's lot in `job_created.lot` (JOB.md, "Added
 ## 2026-11-19"): it moves this lot there (`job_lot`). A job without it falls back to the workbench's draft
 ## `<job>/../_editor/*.json` whose request is the job's sentence (`draft_lot`, E6); neither = the walk's lot.
+## When the centre moves, the lot and its reserved plot take the natural ground height at that centre.
 ##
 ## Arrival. With a build queue (tiers `load.mode` queue, step, wait or auto) a site lot is a plot of the world from the
 ## start, appended after the walk's plots (id `site_<lot index>`, radius = the lot's, origin = the lot's `at` and `h`).
@@ -25,6 +26,8 @@ extends RefCounted
 
 const SiteLog: GDScript = preload("res://kernel/world/site/log.gd")
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")   # S5: the cache of measured extents
+const VillageTerrain := preload("res://kernel/world/terrain/village_terrain.gd")
+const Landscape := preload("res://kernel/world/landscape.gd")
 const LOT_KEYS: Array = ["at", "radius", "h", "job", "replay"]
 const LIVE_EVERY: int = 60                  # live mode: the log's size is looked at once in this many world ticks
 const HELD_SIZE: Vector2 = Vector2(-1.0e7, -1.0e7)
@@ -44,6 +47,7 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 	var lots: Array = (land as Dictionary).get("lots", []) if typeof(land) == TYPE_DICTIONARY and typeof((land as Dictionary).get("lots")) == TYPE_ARRAY else []
 	var plots: Array = walk.get("plots", []) if typeof(walk.get("plots")) == TYPE_ARRAY else []
 	var reserved: Dictionary = {}           # a replayed world log carries the plots it reserved: lot index -> plot index
+	var moved := {}                         # lot index -> site whose centre changed
 	for i: int in plots.size():
 		if typeof(plots[i]) == TYPE_DICTIONARY and (plots[i] as Dictionary).has("site_lot"):
 			reserved[int((plots[i] as Dictionary)["site_lot"])] = i
@@ -60,7 +64,7 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 			"log": SiteLog.new(), "n": 0, "view": SiteLog.fold([], 0), "arrived_dir": "", "size_seen": -1, "reads": 0, "read_us": 0, "stage_ticks": {},
 			"at": [float((lot["at"] as Array)[0]), float(lot.get("h", 0.0)), float((lot["at"] as Array)[1])], "radius": float(lot.get("radius", 20.0))}
 		if not dir.is_empty() and FileAccess.file_exists(dir + "/job.jsonl"):
-			# The walk keeps its pad height and its gate facing the road, independent of the player's yaw.
+			# The gate still faces the road, independent of the player's yaw.
 			var placement := job_lot(dir)
 			var source := "job log"
 			if placement.is_empty():
@@ -68,6 +72,8 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 				if placement.has("file"):
 					source = "workbench draft " + str(placement.file)
 			if not placement.is_empty():
+				if lot.at != placement.at:
+					moved[k] = s
 				lot["at"] = placement.at
 				lot["radius"] = placement.radius
 				s["at"] = [placement.at[0], float(lot.get("h", 0.0)), placement.at[1]]
@@ -82,6 +88,8 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 		elif reserved.has(k):
 			s["plot"] = reserved[k]
 			s["radius"] = float((plots[reserved[k]] as Dictionary).get("radius", s["radius"]))
+			if moved.has(k):
+				plots[reserved[k]].origin = s.at
 		else:
 			s["plot"] = plots.size()
 			var fit: Array = fit_radius(dir, float(s["radius"]))
@@ -94,8 +102,77 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 			plots.append({"id": "site_%d" % k, "origin": s["at"], "radius": r, "footprint": {"size_m": [fr * 2.0, fr * 2.0]}, "seed": 1, "site_lot": k})
 		sites.append(s)
 	walk["plots"] = plots
+	# Every placement must be known before sampling: any lot can move the terrain's bounds and centre.
+	if not moved.is_empty():
+		var terr := _base_terrain(walk, world._resolve)
+		var pads: Array = land.get("pad_h", [])
+		for k: int in moved:
+			var s: Dictionary = moved[k]
+			var lot: Dictionary = lots[k]
+			var centre := Vector2(lot.at[0], lot.at[1])
+			var h := terr.base_h(centre.x, centre.y)
+			print("[site] lot %d: pad h %s -> %.2f m (the land at the new centre)" % [k, str(lot.get("h", "auto")), h])
+			lot.h = h
+			s.at[1] = h                  # the reserved plot's origin shares this array
+			s.pad_h = h
+			if s.plot >= 0 and s.plot < pads.size():
+				pads[s.plot] = h
 	if not sites.is_empty():
 		world.connect("ended", _on_ended)
+
+
+## Mirrors landscape.gd build(), lines 74-135: the same plot and lot bounds, road, river, grid and base height.
+## Site plots already represent their lots. No heightfield or rendered world is needed for this sample.
+static func _base_terrain(walk: Dictionary, resolve_pack: Callable) -> VillageTerrain:
+	var cfg: Dictionary = walk.landscape
+	var tiers: Dictionary = walk.tiers if walk.get("tiers") is Dictionary else {}
+	var default_size: Array = tiers.get("default_footprint_m", [40, 40])
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	var scatter := Vector2.ONE * Landscape.SCATTER_MARGIN
+	var reserved := {}
+	for plot: Dictionary in walk.get("plots", []):
+		if plot.has("site_lot"):
+			reserved[int(plot.site_lot)] = true
+		var fp: Dictionary = plot.get("footprint", {})
+		if not plot.has("footprint") and plot.has("pack"):
+			var path := str(resolve_pack.call(plot.pack)).path_join("pack.json")
+			if FileAccess.file_exists(path):
+				var manifest: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+				if manifest is Dictionary:
+					fp = manifest.get("footprint", {})
+		var size: Array = fp.get("size_m", default_size)
+		var extent := Vector2(size[0], size[1]) * 0.5
+		var r := float(plot.get("radius", minf(extent.x, extent.y)))
+		var axis := Vector2.from_angle(-deg_to_rad(float(plot.get("yaw", 0.0))))
+		var bounds := (axis.abs() * extent.x + axis.orthogonal().abs() * extent.y).max(Vector2.ONE * r)
+		var origin: Array = plot.get("origin", [0, 0, 0])
+		var c := Vector2(origin[0], origin[2])
+		lo = lo.min(c - bounds - scatter)
+		hi = hi.max(c + bounds + scatter)
+	var lots: Array = cfg.get("lots", [])
+	for k: int in lots.size():
+		if reserved.has(k):
+			continue
+		var c := Vector2(lots[k].at[0], lots[k].at[1])
+		var bounds := Vector2.ONE * (float(lots[k].get("radius", 20.0)) + Landscape.SCATTER_MARGIN)
+		lo = lo.min(c - bounds)
+		hi = hi.max(c + bounds)
+	for p: Array in cfg.get("road", walk.get("road", [])):
+		lo = lo.min(Vector2(p[0], p[1]))
+		hi = hi.max(Vector2(p[0], p[1]))
+	var river: Dictionary = cfg.river if cfg.get("river") is Dictionary else {}
+	for p: Array in river.get("path", []):
+		lo = lo.min(Vector2(p[0], p[1]) - Vector2.ONE * 40.0)
+		hi = hi.max(Vector2(p[0], p[1]) + Vector2.ONE * 40.0)
+	var cell := float(cfg.get("cell_m", 3.0))
+	var margin := Vector2.ONE * float(cfg.get("margin_m", 110.0))
+	var start := ((lo - margin) / cell).floor() * cell
+	var end := ((hi + margin) / cell).ceil() * cell
+	var terr := VillageTerrain.new(int(cfg.get("seed", 7)), Rect2(start, end - start), cell)
+	terr.centre = (lo + hi) * 0.5
+	terr.relief = float(cfg.get("relief", 1.0))
+	return terr
 
 
 ## Read only the complete creation event, even when the rest of a live log is large or still being written.
@@ -298,7 +375,7 @@ func tick(t: int) -> void:
 
 ## S4. The game that arrived is measured once it is built: the farthest point (from the plot's centre, across the
 ## ground) of every mesh it put in the world after its setup. That is what stands on the lot, so it decides the lot's
-## radius from then on (site/draw.gd draws the fence round it): ceil(extent), at least FIT_MIN, at most the plot's
+## radius from then on (site/draw.gd moves its entrance there): ceil(extent), at least FIT_MIN, at most the plot's
 ## radius (the draw layer cuts a pack at that circle and the landscape's pad is that big). Before the game is built
 ## only its declared `footprint` is known (`fit_radius`, at the world's start). Main thread, one pass over the nodes,
 ## once per arrived directory; the time is in the report (`measure_ms`).
@@ -494,6 +571,8 @@ func report() -> Array:
 			r["fit"] = str(s["fit"])
 		if s.has("lot_from"):
 			r["lot_from"] = str(s["lot_from"])
+		if s.has("pad_h"):
+			r["pad_h"] = s.pad_h
 		r["at"] = [float((s["at"] as Array)[0]), float((s["at"] as Array)[2])]
 		for key: String in ["radius_before", "measured_m", "measure_ms", "refit_ms"]:
 			if s.has(key):

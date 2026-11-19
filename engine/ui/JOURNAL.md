@@ -105,3 +105,9 @@ Resume point. Newest entry last. Times are CEST from `date`.
   crossed in the 3D village). The map draws fences where the world builds them.
 - When nothing by the road fits, the automatic placement takes the best measured place anywhere and says so.
 - Tools: `ui.sh place [--build] [--any-places] [--no-build] [--slow]` (drive), `ui.sh rank --ask= --answer=`.
+- Round 2 (day of 19 Nov, after blend landed): the map draws games on footprint pads with spurs and entrance rails
+  (no fenced circles; words say "between lots", "its edge"). "Find a place" asks the Designer only when the idea names
+  a place (place_panel.gd PLACE_WORDS); otherwise the scorer's top three, worded from their facts, no model call.
+  Every model call's figures go to `foreman new --place-calls` (job-level builder_run; tl ledger counts it). Drive
+  flags: `ui.sh place --measured` (no place words, no call). The site has entrance rails instead of a round fence and a
+  moved lot's pad takes the land's height at its new centre (kernel/world/site.gd `_base_terrain`, block 501).

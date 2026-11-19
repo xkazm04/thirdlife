@@ -5,6 +5,7 @@ extends SceneTree
 
 const JobModel = preload("res://ui/job_model.gd")
 const Door = preload("res://ui/foreman_door.gd")
+const PlacePanel = preload("res://ui/editor/place_panel.gd")
 
 var passed: int = 0
 var failed: int = 0
@@ -202,6 +203,20 @@ func _initialize() -> void:
 		var arg: String = args[flag + 1] if flag >= 0 and flag + 1 < args.size() else ""
 		check("door: %s is one json64 argument" % row[1], arg.begins_with("json64:") and
 			JSON.parse_string(Marshalls.base64_to_utf8(arg.trim_prefix("json64:"))) == row[2])
+	# Round 2 (19 Nov): the editor's place calls travel to `foreman new --place-calls` (logged as builder runs)
+	var pdry: Door = Door.new()
+	pdry.setup(tmp, {"cli": repo.path_join("foreman/dist/cli.js"), "flags": {"new": []}, "dry": true})
+	var pm := {"place_calls": []}
+	PlacePanel.record_call(pm, {"schema": "tl.place-answer/1", "proposals": [], "adapter": "claude-cli", "model": "claude-sonnet-5-5", "durationMs": 8125.0, "tokensIn": 5296.0, "tokensOut": 581.0})
+	PlacePanel.record_call(pm, {"schema": "tl.place-answer/1", "error": "builder timeout"})
+	eq("place: a model call's figures are kept, an error without figures is not", pm.place_calls, [{"adapter": "claude-cli", "model": "claude-sonnet-5-5", "durationMs": 8125, "tokensIn": 5296, "tokensOut": 581}])
+	pdry.new_game("Hockey", {}, {}, pm.place_calls)
+	pdry.new_game("Hockey")
+	var pargs: Array = pdry.dry_steps[0][0]
+	var pflag := pargs.find("--place-calls")
+	check("door: --place-calls is one json64 argument with the calls", pflag >= 0 and str(pargs[pflag + 1]).begins_with("json64:") and
+		Marshalls.base64_to_utf8(str(pargs[pflag + 1]).trim_prefix("json64:")) == JSON.stringify(pm.place_calls), str(pargs))
+	check("door: no place calls, no --place-calls flag", not (pdry.dry_steps[1][0] as Array).has("--place-calls"), str(pdry.dry_steps[1]))
 	var reduced := JobModel.reduce([{"type": "job_created", "answers": answers, "lot": lot},
 		{"type": "change_requested", "text": "Fewer players", "decision": decision}], 0)
 	check("job model: answers, placement and change decision survive reduction",
@@ -403,7 +418,7 @@ func _workbench_checks() -> void:
 	eq("workbench: nothing placed yet -> Build it names it", h.call("blocker"), "the place: no place chosen on the map yet")
 	h.call("place", Vector2(194, 61))
 	var ck: Array = h.call("checks")
-	check("workbench: on the hockey plot -> overlap named", ck.size() > 0 and str(ck[0]["text"]).begins_with("its fence would cross hockey's fence"), str(ck))
+	check("workbench: on the hockey plot -> overlap named", ck.size() > 0 and str(ck[0]["text"]).begins_with("its edge would cross hockey's"), str(ck))
 	h.call("place", Vector2(0, 0))
 	var on_road: bool = false
 	for c: Dictionary in h.call("checks"):

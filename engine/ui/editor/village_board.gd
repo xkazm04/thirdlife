@@ -220,12 +220,17 @@ func reload() -> void:
 	for g: Dictionary in games:
 		if not bool(g["lot"]):
 			continue
-		var lot: Dictionary = (g["draft"] as Dictionary).get("lot", {})
+		var draft: Dictionary = g.draft
+		var lot: Dictionary = draft.get("lot", {})
 		var a: Array = lot.get("at", [0, 0])
 		var built: bool = g["state"] == "done"
-		plots.append({"id": "game:" + str(g["id"]), "job": str(g["id"]), "label": "%s · %s" % [_short(str(g["title"])), str(g["words"])],
+		var plot := {"id": "game:" + str(g["id"]), "job": str(g["id"]), "label": "%s · %s" % [_short(str(g["title"])), str(g["words"])],
 			"pack": "", "at": Vector2(float(a[0]), float(a[1])), "r": float(lot.get("radius", 20)), "kind": "game",
-			"stamp": STAMPS.get(str((g["draft"] as Dictionary).get("card", "")), "parkour") if built else "site"})
+			"yaw": deg_to_rad(float(lot.get("yaw_deg", 0.0))), "stamp": STAMPS.get(str(draft.get("card", "")), "parkour") if built else "site"}
+		var footprint: Array = draft.get("footprint", {}).get("size_m", [])
+		if footprint.size() == 2:
+			plot.pad_size = Vector2(footprint[0], footprint[1])
+		plots.append(plot)
 	model.plots = plots
 	_map.queue_redraw()
 	# the list

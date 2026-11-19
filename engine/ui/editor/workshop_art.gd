@@ -172,7 +172,7 @@ static func stamp(key: String, colors: Dictionary, display_width: float = 64) ->
 		var img := Image.new()
 		img.load_svg_from_string(svg.format(inks))
 		cache[key] = img
-	# Filter from the master drawing so a fence or roof seam remains a single ink
+	# Filter from the master drawing so a rail or roof seam remains a single ink
 	# stroke in the overview, even where the Control uses a non-mipmapped sampler.
 	var image: Image = cache[key].duplicate()
 	if width < image.get_width():

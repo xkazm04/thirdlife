@@ -112,11 +112,12 @@ static func _json_flag(name: String, value: Dictionary) -> Array:
 	return [name, "json64:" + Marshalls.utf8_to_base64(JSON.stringify(value))]
 
 
-func new_game(sentence: String, answers: Dictionary = {}, lot: Dictionary = {}) -> String:
+func new_game(sentence: String, answers: Dictionary = {}, lot: Dictionary = {}, place_calls: Array = []) -> String:
 	var s: String = clean_text(sentence)
 	if s.is_empty():
 		return "describe the game first"
-	return _start("new:" + s, "new", [["new", s, "--site", jobs_root] + _flags("new") + _json_flag("--answers", answers) + _json_flag("--lot", lot)])
+	var calls: Array = [] if place_calls.is_empty() else ["--place-calls", "json64:" + Marshalls.utf8_to_base64(JSON.stringify(place_calls))]
+	return _start("new:" + s, "new", [["new", s, "--site", jobs_root] + _flags("new") + _json_flag("--answers", answers) + _json_flag("--lot", lot) + calls])
 
 
 func place(ask: String, out: String) -> String:

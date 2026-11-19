@@ -8,7 +8,10 @@ func run_place(d: Node) -> void:
 		return
 	if not await d.click("IdeaField", "the idea field"):
 		return
-	await d.type("ice hockey, three against three", "the idea")
+	# Round 2: the words name a place ("by the river"), so Find a place asks the Designer (the fake answers);
+	# --measured: no place words, so the editor offers its own three measured places and calls no model
+	var measured: bool = (d.host.get("args") as Dictionary).has("measured")
+	await d.type("ice hockey, three against three" + ("" if measured else " by the river"), "the idea")
 	var wb: Control = await d.find("Workbench")
 	if wb == null:
 		d.failed = true
@@ -41,7 +44,7 @@ func run_place(d: Node) -> void:
 	d._mouse(wb._map.global_position + Vector2(12, 12))
 	# --any-places: a real Designer answers (flags/real.json): any 2-3 places, checked only for the scorer's order
 	# (valid first, then by score); the fake's fixed answer is checked exactly.
-	var any_places: bool = (d.host.get("args") as Dictionary).has("any-places")
+	var any_places: bool = (d.host.get("args") as Dictionary).has("any-places") or measured
 	if not await _place_wait(d, func() -> bool: return wb._places.ranked.size() >= (2 if any_places else 3), "ranked places"):
 		return
 	var rows: Array = wb._places.ranked
@@ -53,7 +56,11 @@ func run_place(d: Node) -> void:
 			d.failed = true
 			d.note("read", "FAILED: the places are not in the scorer's order, or none is valid: " + str(rows))
 			return
-		d.note("read", "%d places from the Designer, %d valid, best %.1f" % [rows.size(), rows.filter(func(r: Dictionary) -> bool: return r.valid).size(), rows[0].score])
+		if measured and (rows.size() != 3 or not rows.all(func(r: Dictionary) -> bool: return r.valid) or not m.place_calls.is_empty()):
+			d.failed = true
+			d.note("read", "FAILED: no place words: expected the editor's three valid places and no model call: %s calls %s" % [str(rows), str(m.place_calls)])
+			return
+		d.note("read", "%d places from the %s, %d valid, best %.1f" % [rows.size(), "editor (no model call)" if measured else "Designer", rows.filter(func(r: Dictionary) -> bool: return r.valid).size(), rows[0].score])
 	elif not (rows[0].valid and rows[1].valid and rows[0].score >= rows[1].score and not rows[2].valid):
 		d.failed = true
 		d.note("read", "FAILED: expected two valid places by score, then a refusal: " + str(rows))
@@ -89,6 +96,25 @@ func run_place(d: Node) -> void:
 		d.note("read", "FAILED: logged answers or lot differ from the chosen draft")
 	else:
 		d.note("read", "job and draft agree: %s, lot %s" % [dir, str(event.lot)])
+	# Round 2: every place call the workbench made is a job-level builder_run in the new job (tl ledger counts it)
+	var runs: Array = []
+	for line in FileAccess.get_file_as_string(dir.path_join("job.jsonl")).split("
+", false):
+		var e: Variant = JSON.parse_string(line)
+		if e is Dictionary and e.get("type") == "builder_run" and not e.has("package") and not e.has("transcript"):
+			runs.append(e)
+	var calls: Array = m.place_calls
+	if measured:
+		if not runs.is_empty():
+			d.failed = true
+			d.note("read", "FAILED: no model call was made, yet the job logs place runs: %s" % str(runs))
+		else:
+			d.note("read", "no place call made, none logged")
+	elif calls.is_empty() or runs.size() != calls.size() or int(runs[0].get("tokensIn", -1)) != int(calls[0].get("tokensIn", -2)):
+		d.failed = true
+		d.note("read", "FAILED: place calls %s were not logged as builder runs: %s" % [str(calls), str(runs)])
+	else:
+		d.note("read", "place calls logged in the job: %d, tokens in %d, out %d" % [runs.size(), int(runs[0].get("tokensIn", 0)), int(runs[0].get("tokensOut", 0))])
 	# --build: approve in the game sheet and wait until the game is promoted, so the village can show it arrived
 	if (d.host.get("args") as Dictionary).has("build") and not d.failed:
 		if not await d.click("ApproveButton", "the button \"Approve and build\" in the game sheet"):
@@ -201,7 +227,7 @@ func run(d: Node) -> void:
 	var blocker: String = m.call("blocker")
 	var build: Button = await d.find("BuildButton", 2.0)
 	d.note("read", "blocker: \"%s\"; Build it disabled: %s" % [blocker, str(build.disabled)])
-	if blocker.find("fence would cross") == -1 or not build.disabled:
+	if blocker.find("edge would cross") == -1 or not build.disabled:
 		d.note("read", "FAILED: an overlap must block Build it with its reason")
 		d.failed = true
 	await d.picture("e-5-overlap-refused.png")

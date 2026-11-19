@@ -12,10 +12,10 @@ const VILLAGE: String = "res://boot/village.json"
 const WALKER_M: float = 2.0          # the walking figure, as the brief measures him
 const RUN_MPS: float = 4.5           # his run, for "seconds to cross" (walker-feel, 18 Nov: 4.5 m/s)
 const ROAD_HALF_M: float = 4.0       # the road's half width for the "on the road" check
-const RING_GAP_M := 2.0              # clearance from the fence to the riverbank
-# kernel/world/landscape.gd:327–330 and kernel/world/site/draw.gd::_fence (line 121) both use r + 3.6 m.
-const FENCE_OUT_M := 3.6
-const FENCE_GAP_M := 2.0
+const RING_GAP_M := 2.0              # clearance from the lot edge to the riverbank
+# The entrance rails stand this far beyond the radius of each lot.
+const LOT_EDGE_M := 3.6
+const LOT_GAP_M := 2.0
 const ROAD_GAP_M := 1.0
 const FIT_EPS_M := 0.00002           # Vector2 coordinates are single precision
 const FAR_FROM_ROAD_M: float = 40.0  # a path longer than this is a warning
@@ -49,6 +49,7 @@ var heights: Callable
 var road_samples := PackedVector2Array()
 var river_samples := PackedVector2Array()
 var proposal_reason := ""
+var place_calls: Array = []           # each "Find a place" model call: {adapter, model, durationMs, tokensIn?, tokensOut?} (foreman new --place-calls)
 var placed: bool = false
 var placed_by: String = ""           # "auto" (the workbench's first free spot, follows the size) or "player"
 var auto_key := ""                   # recipe and size of the last automatic placement (roadside or measured)
@@ -106,16 +107,18 @@ func _load_village() -> void:
 		return
 	var lo: Vector2 = Vector2(INF, INF)
 	var hi: Vector2 = Vector2(-INF, -INF)
-	for p: Variant in (v as Dictionary).get("plots", []):
-		var d: Dictionary = p
+	for d: Dictionary in v.get("plots", []):
 		var o: Array = d.get("origin", [0, 0, 0])
 		var e: Dictionary = {"id": str(d.get("id", "")), "label": str(d.get("id", "")), "pack": str(d.get("pack", "")),
 			"at": Vector2(float(o[0]), float(o[2])), "r": float(d.get("radius", 20)), "kind": "plot"}
+		var footprint: Array = d.get("footprint", {}).get("size_m", [])
+		if footprint.size() == 2:
+			e.pad_size = Vector2(footprint[0], footprint[1])
+		e.yaw = -deg_to_rad(float(d.get("yaw", 0.0))) # Godot +Y rotation in the map's x/z plane
 		plots.append(e)
 	var land: Dictionary = (v as Dictionary).get("landscape", {})
 	var k: int = 0
-	for l: Variant in land.get("lots", []):
-		var d: Dictionary = l
+	for d: Dictionary in land.get("lots", []):
 		var a: Array = d.get("at", [0, 0])
 		var job: String = str(d.get("job", "")).get_file()
 		plots.append({"id": "site_%d" % k, "label": _job_label(job), "pack": "", "at": Vector2(float(a[0]), float(a[1])),
@@ -361,16 +364,16 @@ func lot_radius() -> float:
 	return maxf(12.0, ceilf(Vector2(f.x, f.y).length() * 0.5 + 4.0))
 
 
-static func fence_radius(radius: float) -> float:
-	return radius + FENCE_OUT_M
+static func edge_radius(radius: float) -> float:
+	return radius + LOT_EDGE_M
 
 
-static func fence_gap(at_pos: Vector2, radius: float, lot: Dictionary) -> float:
-	return at_pos.distance_to(lot.at) - fence_radius(radius) - fence_radius(lot.r)
+static func lot_gap(at_pos: Vector2, radius: float, lot: Dictionary) -> float:
+	return at_pos.distance_to(lot.at) - edge_radius(radius) - edge_radius(lot.r)
 
 
-func fence_inside(centre: Vector2, radius: float) -> bool:
-	var inset := bounds.grow(-fence_radius(radius))
+func lot_inside(centre: Vector2, radius: float) -> bool:
+	var inset := bounds.grow(-edge_radius(radius))
 	return (centre.x >= inset.position.x - FIT_EPS_M and centre.x <= inset.end.x + FIT_EPS_M
 		and centre.y >= inset.position.y - FIT_EPS_M and centre.y <= inset.end.y + FIT_EPS_M)
 
@@ -408,7 +411,7 @@ func turn(steps: int) -> void:
 ## A free spot to start from: along the road, the first place whose checks have no error (deterministic).
 func roadside_positions(r: float) -> PackedVector2Array:
 	var positions := PackedVector2Array()
-	# Try the nearest fence setback first, then work farther from the road.
+	# Try the nearest lot setback first, then work farther from the road.
 	for back: float in [6.0, 14.0, 24.0, 40.0]:
 		for side: float in [1.0, -1.0]:
 			for i: int in range(road.size() - 1):
@@ -417,7 +420,7 @@ func roadside_positions(r: float) -> PackedVector2Array:
 				for t: float in [0.5, 0.3, 0.7, 0.1, 0.9]:
 					var p: Vector2 = a.lerp(b, t)
 					var n: Vector2 = (b - a).orthogonal().normalized() * side
-					var c: Vector2 = p + n * (fence_radius(r) + road_half_m + back)
+					var c: Vector2 = p + n * (edge_radius(r) + road_half_m + back)
 					positions.append(c)
 	return positions
 
@@ -474,9 +477,9 @@ func checks() -> Array:
 		return [{"level": "error", "what": "unplaced", "text": "no place chosen on the map yet"}]
 	var out: Array = _errors_at(at, lot_radius())
 	if no_free and placed_by == "auto" and not out.is_empty():
-		out.push_front({"level": "error", "what": "no_room", "text": "no free place by the road fits a %d m ring: make it smaller, or drag it where you want it" % int(lot_radius())})
+		out.push_front({"level": "error", "what": "no_room", "text": "no free place by the road fits a lot of radius %d m: make it smaller, or drag it where you want it" % int(lot_radius())})
 	if out.is_empty() and auto_far and placed_by == "auto":
-		out.append({"level": "warn", "what": "no_roadside", "text": "no place by the road fits a %d m ring: the best measured place further back is taken" % int(lot_radius())})
+		out.append({"level": "warn", "what": "no_roadside", "text": "no place by the road fits a lot of radius %d m: the best measured place further back is taken" % int(lot_radius())})
 	if out.is_empty() and path_m() > FAR_FROM_ROAD_M:
 		out.append({"level": "warn", "what": "far", "text": "a %d m walk from the road" % int(path_m())})
 	return out
@@ -589,6 +592,8 @@ func draft() -> Dictionary:
 			d.why.push_front({"text": proposal_reason, "points": 0})
 	if has_card():
 		d["card"] = str(interview().get("card", ""))
+	if not place_calls.is_empty():
+		d["place_calls"] = place_calls.duplicate(true)
 	var left: PackedStringArray = left_to_proposal()
 	if not left.is_empty():
 		d["left_to_proposal"] = Array(left)

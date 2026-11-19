@@ -307,16 +307,16 @@ func _apply_answers() -> void:
 			base[str(c["key"])] = {"id": str(c["to"]), "by": "player", "changed": true}
 	_base = base.duplicate(true)
 	model.answers = base
-	var ring_before: float = model.lot_radius()
+	var radius_before: float = model.lot_radius()
 	if not _pending.is_empty():
 		base[str(_pending["key"])] = {"id": str(_pending["to"]), "by": "player"}
 	model.answers = base
 	if _map != null:
-		_map.ring_before = ring_before if not _pending.is_empty() else 0.0
+		_map.radius_before = radius_before if not _pending.is_empty() else 0.0
 	if _size_line == null:
 		return
 	var f: Vector3 = model.footprint()
-	var line: String = "%d x %d m, %d m high · ring %d m (estimate)" % [int(f.x), int(f.y), int(f.z), int(model.lot_radius())]
+	var line: String = "%d x %d m, %d m high · lot radius %d m (estimate)" % [int(f.x), int(f.y), int(f.z), int(model.lot_radius())]
 	if not _pending.is_empty():
 		var errs: PackedStringArray = []
 		for ch: Dictionary in model.checks():
@@ -401,7 +401,7 @@ func _fill_decided() -> void:
 	if not lot.is_empty():
 		var f: Vector3 = model.footprint() if _pending.is_empty() else Vector3.ZERO
 		if _pending.is_empty():
-			_decided.add_child(_label("Lot at %d, %d · ring %d m · %d x %d m (estimate until it is built)" % [int((lot["at"] as Array)[0]), int((lot["at"] as Array)[1]), int(model.lot_radius()), int(f.x), int(f.y)], 12, false, col["dim"], true))
+			_decided.add_child(_label("Lot at %d, %d · lot radius %d m · %d x %d m (estimate until it is built)" % [int((lot["at"] as Array)[0]), int((lot["at"] as Array)[1]), int(model.lot_radius()), int(f.x), int(f.y)], 12, false, col["dim"], true))
 	var brief: Dictionary = job.get("brief", {})
 	if not brief.is_empty():
 		_decided.add_child(_label("THE BRIEF THE DESIGNER WROTE", 11, true, col["dim"]))
