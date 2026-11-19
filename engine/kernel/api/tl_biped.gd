@@ -200,7 +200,7 @@ static func mark_bar(body: CollisionObject3D) -> void:
 	if not body is StaticBody3D:
 		push_error("TLBiped.mark_bar: expected a StaticBody3D")
 		return
-	body.set_meta(&"tl_bar", true)
+	body.set_meta(&"tl_bar", true); body.add_to_group(&"tl_bar")   # the group: chase cameras do not avoid a bar
 
 
 ## Requests a grounded run slide, or drops a walker from a ledge or bar.
