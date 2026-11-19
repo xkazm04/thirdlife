@@ -400,6 +400,12 @@ func _workbench_checks() -> void:
 		if c["what"] == "outside":
 			outside = true
 	check("workbench: far away -> outside the village", outside)
+	h.call("place", Vector2(-250, -30))
+	var in_river: bool = false
+	for c: Dictionary in h.call("checks"):
+		if c["what"] == "river":
+			in_river = true
+	check("workbench: on the river -> named (E6: the tour put a lot in it)", in_river, str(h.call("checks")))
 	var free: Vector2 = h.call("first_free")
 	h.call("place", free)
 	eq("workbench: a place set by hand is the player's", h.get("placed_by"), "player")
@@ -433,6 +439,18 @@ func _workbench_checks() -> void:
 	eq("game sheet: the draft is found by the job's sentence", str((GS.call("find_draft", root, "a game called 'Puck'. Decided: three against three.") as Dictionary).get("schema", "")), "tl.editor-draft/1")
 	eq("game sheet: no draft for another sentence", (GS.call("find_draft", root, "something else") as Dictionary).is_empty(), true)
 	eq("game sheet: no _editor directory, no draft", (GS.call("find_draft", root.path_join("nowhere"), "x") as Dictionary).is_empty(), true)
+	# E6: the construction site reads the same draft: the lot the player chose, for the job whose sentence it is
+	var SiteGd: GDScript = load("res://kernel/world/site.gd")
+	DirAccess.make_dir_recursive_absolute(root.path_join("puck-1"))
+	DirAccess.make_dir_recursive_absolute(root.path_join("other-1"))
+	for jd: Array in [["puck-1", "a game called 'Puck'. Decided: three against three."], ["other-1", "something else entirely"]]:
+		var jf: FileAccess = FileAccess.open(root.path_join(str(jd[0])).path_join("job.jsonl"), FileAccess.WRITE)
+		jf.store_string(JSON.stringify({"v": 1, "seq": 1, "ts": "2026-11-19T03:00:00.000Z", "job": str(jd[0]), "type": "job_created", "sentence": str(jd[1]), "packId": "game.puck", "title": "Puck"}) + "
+")
+		jf.close()
+	var sl: Dictionary = SiteGd.call("draft_lot", root.path_join("puck-1"))
+	eq("site: the lot of a workbench game comes from its draft", [sl.get("at", []), sl.get("radius", 0.0), sl.get("file", "")], [[float((dd["lot"]["at"] as Array)[0]), float((dd["lot"]["at"] as Array)[1])], float(dd["lot"]["radius"]), "x.json"])
+	eq("site: a job without a draft keeps the walk's lot", (SiteGd.call("draft_lot", root.path_join("other-1")) as Dictionary).is_empty(), true)
 	_remove(root)
 
 	# E3: changing a decision from the game sheet (no scene: the sheet's model, job and draft set by hand)

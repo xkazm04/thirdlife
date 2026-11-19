@@ -10,6 +10,8 @@ extends RefCounted
 ##                                              walks, stills, tests); without it the site is LIVE: it follows the
 ##                                              file as it grows (its size is looked at once every 60 ticks)
 ## The site reads ONLY `<job>/job.jsonl` and `<job>/promoted/` and writes nothing there (JOB.md, 2026-11-17).
+## E6 (19 Nov): and, beside the job, the workbench's draft `<job>/../_editor/*.json` whose request is the job's
+## sentence: its `lot` (at, radius) moves this lot to the place the player chose (`draft_lot`); none = the walk's lot.
 ##
 ## Arrival. With a build queue (tiers `load.mode` queue, step, wait or auto) a site lot is a plot of the world from the
 ## start, appended after the walk's plots (id `site_<lot index>`, radius = the lot's, origin = the lot's `at` and `h`).
@@ -56,6 +58,18 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 		var s: Dictionary = {"lot": k, "job": str(lot["job"]), "dir": dir, "plot": -1, "tpe": int((lot.get("replay", {}) as Dictionary).get("ticks_per_event", 0)),
 			"log": SiteLog.new(), "n": 0, "view": SiteLog.fold([], 0), "arrived_dir": "", "size_seen": -1, "reads": 0, "read_us": 0, "stage_ticks": {},
 			"at": [float((lot["at"] as Array)[0]), float(lot.get("h", 0.0)), float((lot["at"] as Array)[1])], "radius": float(lot.get("radius", 20.0))}
+		if not dir.is_empty() and FileAccess.file_exists(dir + "/job.jsonl"):
+			# E6 (editor lane, 19 Nov): a game made in the workbench stands where the player put it. The workbench's
+			# draft for this job (<jobs root>/_editor/*.json, found by the job's sentence) moves the walk's lot (so the
+			# landscape draws its pad there too) and gives it the player's ring; the walk's pad height stays.
+			var dl: Dictionary = draft_lot(dir)
+			if not dl.is_empty():
+				lot["at"] = [float((dl["at"] as Array)[0]), float((dl["at"] as Array)[1])]
+				lot["radius"] = float(dl["radius"])
+				s["at"] = [float((dl["at"] as Array)[0]), float(lot.get("h", 0.0)), float((dl["at"] as Array)[1])]
+				s["radius"] = float(dl["radius"])
+				s["lot_from"] = "workbench draft " + str(dl["file"])
+				print("[site] lot %d: at %s, radius %s m, from the workbench draft %s" % [k, str(lot["at"]), str(lot["radius"]), str(dl["file"])])
 		if dir.is_empty() or not FileAccess.file_exists(dir + "/job.jsonl"):
 			_warn("lot %d: no job log at '%s' (%s): the lot stays a plain building site" % [k, str(lot["job"]), dir + "/job.jsonl" if not dir.is_empty() else "not found"])
 			continue
@@ -78,6 +92,42 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 	walk["plots"] = plots
 	if not sites.is_empty():
 		world.connect("ended", _on_ended)
+
+
+## E6. The lot the player chose in the workbench for this job: the draft (`tl.editor-draft/1`, written by
+## engine/ui/editor/workbench.gd on Build it) under `<the job's parent>/_editor/` whose `request` is the job's
+## `job_created.sentence` (the Foreman's command line turns " into '). Returns {at: [x, z], radius, file} or {} when
+## there is none or it is malformed (then the walk's lot stands as before). Read from files only: the same files give
+## the same lot, so a run's ticks and hashes stay a function of its inputs.
+static func draft_lot(dir: String) -> Dictionary:
+	var lg: RefCounted = SiteLog.new()
+	lg.call("feed", FileAccess.get_file_as_string(dir + "/job.jsonl"))
+	var sentence: String = ""
+	for e: Variant in lg.get("events"):
+		if typeof(e) == TYPE_DICTIONARY and str((e as Dictionary).get("type", "")) == "job_created":
+			sentence = str((e as Dictionary).get("sentence", "")).replace("\"", "'").strip_edges()
+			break
+	var ed: String = dir.get_base_dir() + "/_editor"
+	if sentence.is_empty() or not DirAccess.dir_exists_absolute(ed):
+		return {}
+	var files: PackedStringArray = DirAccess.get_files_at(ed)
+	files.sort()
+	for f: String in files:
+		if not f.ends_with(".json"):
+			continue
+		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(ed + "/" + f))
+		if typeof(d) != TYPE_DICTIONARY or str((d as Dictionary).get("schema", "")) != "tl.editor-draft/1":
+			continue
+		if str((d as Dictionary).get("request", "")).replace("\"", "'").strip_edges() != sentence:
+			continue
+		var lot: Variant = (d as Dictionary).get("lot", null)
+		if typeof(lot) != TYPE_DICTIONARY or typeof((lot as Dictionary).get("at")) != TYPE_ARRAY or ((lot as Dictionary)["at"] as Array).size() != 2:
+			return {}
+		var r: float = float((lot as Dictionary).get("radius", 0.0))
+		if r < FIT_MIN:
+			return {}
+		return {"at": [float(((lot as Dictionary)["at"] as Array)[0]), float(((lot as Dictionary)["at"] as Array)[1])], "radius": r, "file": f}
+	return {}
 
 
 ## S3. The lot fits its game. When the job's log already names a promoted game under `promoted/` (its last
@@ -420,6 +470,9 @@ func report() -> Array:
 			r["plot"] = str(((world.get("plot_defs") as Array)[int(s["plot"])] as Dictionary)["id"])
 		if s.has("fit"):
 			r["fit"] = str(s["fit"])
+		if s.has("lot_from"):
+			r["lot_from"] = str(s["lot_from"])
+			r["at"] = [float((s["at"] as Array)[0]), float((s["at"] as Array)[2])]
 		for key: String in ["radius_before", "measured_m", "measure_ms", "refit_ms"]:
 			if s.has(key):
 				r[key] = s[key]

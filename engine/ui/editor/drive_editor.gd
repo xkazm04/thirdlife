@@ -286,8 +286,18 @@ func run_home(d: Node) -> void:
 	if not await d.click("TakeProposals", "the chip \"Take the proposals\""):
 		return
 	await d.secs(pause)
+	if not m.call("fits"):
+		# E6: with the river in the checks no free place by the road holds the proposed 45 m arena: say so, then build
+		# a small bare rink, as a player would after reading the reason under Build it
+		d.note("read", "the proposed size does not fit: \"%s\"" % str(m.call("blocker")))
+		await d.picture("h-1a-no-room.png")
+		for opt: String in ["Opt_rink_small", "Opt_dressing_bare"]:
+			await d.scroll_to(opt)
+			if not await d.click(opt, "the chip " + opt):
+				return
+			await d.secs(pause * 0.5)
 	await d.picture("h-1-workbench.png")
-	d.note("read", "lot by the workbench: %s, fits %s" % [str(m.get("at")), str(m.call("fits"))])
+	d.note("read", "lot by the workbench: %s, ring %d m, fits %s" % [str(m.get("at")), int(m.call("lot_radius")), str(m.call("fits"))])
 	if not await d.click("BuildButton", "the button \"Build it\""):
 		return
 	if not await d.wait_for("the game sheet opened on the brief", func() -> bool: return d.host.get("game_sheet") != null and d.job().get("phase", "") == "approve", 60.0):

@@ -183,3 +183,46 @@ The Director saved this from the lane's message and re-ran `ui.sh selftest`: 125
 
 ## Still open
 - The 3D village does not yet place a workbench game on the lot the player chose (proposal `job_created.lot`).
+
+---
+
+# Round 4 (03:55-04:29): the chosen lot in the 3D village
+
+The Director saved this from the lane's message and looked at the village and workbench captures.
+
+## What changed
+- `site.gd` has a new `draft_lot(dir)`. It finds the workbench draft (`<job parent>/_editor/*.json`, `tl.editor-draft/1`)
+  whose `request` matches the job's `job_created.sentence`, and returns its `at` and `radius` (a radius under 12 m is
+  refused).
+- In `setup`, before the plot is reserved, the walk's lot moves there with the player's ring. Pad, fence, path, plot
+  origin, crane, bays, sign and the arrived game all stand at the chosen place.
+- The site logs `[site] lot k: at [...], radius r m, from the workbench draft <file>`, and its report gains `lot_from` and
+  `at`. A job without a draft keeps today's lot.
+- It is built on the walker lane's B2, B9 and B3 work, and is deterministic: the lot comes from files only.
+- Not taken from the draft: the yaw (the site's gate faces the road by the landscape rule) and the pad height (the
+  walk's height is kept).
+
+## Found and fixed: the workbench did not know the river
+- The first village tour showed the chosen lot sitting in the river. The editor model now reads `landscape.river`,
+  draws it on the map, and refuses a lot in it ("stands in the river").
+- The map bounds now come from the landscape margin, and the free-spot search looks further back from the road.
+- **Consequence:** no free place by the road fits a 45 m hockey ring any more, and the workbench says so. The home
+  drive builds the small rink with just the boards (a 32 m ring) instead.
+
+## Proof
+- `selftest.sh site.`: 13/13, including the new `site.editor_lot` (block 480). Two lots: the one with a draft is at
+  100,-30 with a 26 m ring and names its draft; the one without stays at the walk's place with 30 m. The block uses its
+  own extent cache, so an earlier measurement cannot decide its result.
+- `selftest.sh world.`: 16/16.
+- `--only world,packs`: PASS (world 8/8, packs 34/34).
+- `ui.sh selftest`: 128/0 (3 new cases).
+- Drives `editor`, `home` and `live`: all pass.
+- Fast tier: 5/5.
+- Stills in `stills/lot/` (building with the crane, arrived, from the road, the workbench refusing then placing).
+- Clip: `clip-lot.mp4` (19.4 s), from the workbench to the village; the walker turns in at the arch of the chosen lot.
+
+## For the Director and the owner
+1. Yaw and pad height are not yet carried into the world.
+2. A fresh workbench job gets a village lot only when some walk lot follows it (the exe's `--site-job` or a walk's
+   `job`). Next: have the village read `<jobs root>/_editor/` itself, or use `job_created.lot` once the contract has it.
+3. With the river checked, the village has no room by the road for a 45 m venue.

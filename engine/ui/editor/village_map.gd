@@ -74,6 +74,7 @@ func _draw() -> void:
 	var screen := Rect2(Vector2.ZERO, size)
 	var world := Rect2(to_world(Vector2.ZERO), size / _scale)
 	Landscape.paint(self, world, _scale, col)
+	_river()
 	_road()
 	var errs: Dictionary = {}
 	for check: Dictionary in model.checks():
@@ -106,6 +107,18 @@ func _draw() -> void:
 		var r := float(lot["r"]) * _scale
 		var at := Vector2(c.x - (_w(label, 11, true) + 12) * 0.5, c.y + minf(r * 0.38, 68))
 		_tag(at, label, col["honey"] if lot["kind"] == "game" else (col["vellum"] if lot["kind"] == "site" else col["card"]), col["ink"], 11)
+
+
+## E6: the village's river (the workbench refuses a lot in it), drawn at its width in the palette's water.
+func _river() -> void:
+	if model.river.size() < 2:
+		return
+	var pts: PackedVector2Array = PackedVector2Array()
+	for q: Vector2 in model.river:
+		pts.append(to_screen(q))
+	var w: float = maxf(3.0, float(model.river_half_m) * 2.0 * _scale)
+	draw_polyline(pts, Color(col["ink"], 0.55), w + 2.0, true)
+	draw_polyline(pts, col.get("water", Color("#4a8ac0")), w, true)
 
 
 func _road() -> void:

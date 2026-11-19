@@ -270,3 +270,15 @@ recipe (rink, wall, circuit, court). Beside it "Your games" lists the same games
 so and opens in the jobs list. A click on a lot or a row opens the game sheet; "< Games" in the sheet and the
 workbench's close return to the board; "+ New game" opens the workbench; "Jobs list" shows the designer panel with a
 "Village" button back. No new art: Astra's map drawing and symbols are reused as they are.
+
+## 12. Round 4: the lot into the world (E6)
+
+The construction site reads the workbench's draft for the job a lot shows (`site.gd draft_lot`: `<jobs root>/_editor/
+*.json`, matched by the job's sentence) and moves that lot to the place and ring the player chose; the landscape
+draws its pad, fence and path there, the crane and bays rise there, and the arrived game stands there. A job without
+a draft keeps the walk's lot. The site reads files only, so the same files give the same lot (determinism holds).
+The walk's pad height is kept (the terrain is shaped to the pad). Yaw is not used: the site's gate faces the road by
+the landscape's own rule, as the workbench's gate does. JOB.md `job_created.lot` stays a proposal: with it the lot
+would travel in the log instead of beside it.
+
+Found on the way: the workbench did not know the village's river; it now draws it and refuses a lot in it.
