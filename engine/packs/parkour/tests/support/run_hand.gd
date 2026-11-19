@@ -17,6 +17,9 @@ var jump_response := -1.0
 var observed_request := -100
 var grip_request := -100
 var target_grip := 0
+var skyline_sample := -100
+var last_station := 0.0
+var last_height := 0.0
 
 
 func _bot_setup(c: TLContext) -> void:
@@ -118,6 +121,12 @@ func _where() -> String:
 
 
 func _skyline_inputs(frame: int, gate: int) -> void:
+	var advance: float = state.return_z - last_station
+	var rise: float = state.height - last_height
+	var consecutive := frame == skyline_sample + 1
+	last_station = state.return_z
+	last_height = state.height
+	skyline_sample = frame
 	hand.press(&"run")
 	if state.motion != "bar":
 		hand.set_axis(&"back", &"forward", 1.0)
@@ -142,14 +151,20 @@ func _skyline_inputs(frame: int, gate: int) -> void:
 		var ahead := frequency * lead / 60.0
 		var next_omega := omega * cos(ahead) - frequency * float(state.bar_theta) * sin(ahead)
 		hand.set_axis(&"back", &"forward", 1.0 if next_omega >= 0.0 else -1.0)
-		if omega > 2.7 and state.bar_theta < 1.3 and state.bar_theta + omega * lead / 60.0 >= 0.63:
+		var next_theta := float(state.bar_theta) * cos(ahead) + omega / frequency * sin(ahead)
+		if next_omega > 2.7 and next_theta >= 0.63 and next_theta < 1.35:
 			_request_release(frame, rod)
-	elif state.motion == "air":
-		var rod := 1 if state.return_z < state.first_bar else 2
+	elif state.motion == "air" and consecutive and advance > 0.03 and state.grips_passed < 2:
+		var rod := int(state.grips_passed) + 1
 		var axis_z: float = state.first_bar if rod == 1 else state.second_bar
-		var until_grip := (axis_z - float(state.return_z) - 0.30) * 60.0 / float(state.run_mps)
-		# At running speed the first upswing reaches the release angle five ticks after the catch.
-		if until_grip >= 0 and until_grip + 6.0 <= lead:
+		var axis_y: float = state.first_bar_y if rod == 1 else state.first_bar_y + state.red_rise
+		var eta: float = (axis_z - float(state.return_z) - 0.24) / advance
+		if eta < 0.0 or eta > lead:
+			return
+		# Anticipate only a reachable catch. A slow transfer takes longer to build the release angle.
+		var hands: float = state.height + 2.2 + rise * eta - 12.0 * pow(eta / 60.0, 2)
+		var swing_ticks := 0.63 * 1.1 / advance
+		if absf(hands - axis_y) < 0.55 and eta + swing_ticks + 1.0 <= lead:
 			_request_release(frame, rod)
 
 

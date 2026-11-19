@@ -1,0 +1,86 @@
+timing_policy	frame	event	grip	request_motion	request_z_m	measured_delay_ticks	theta_rad	omega_rad_s
+shipped	1492	request	1	air	9.55	19.4	0	0
+shipped	1504	catch	1					8.18
+shipped	1513	request	2	air	13.42	19.6	0	0
+shipped	1513	release	1				1.06	7.34
+shipped	1553	request	2	air	14.58	17.4	0	0
+shipped	1619	request	1	air	9.63	16.8	0	0
+shipped	1631	catch	1					8.18
+shipped	1638	release	1				0.81	7.78
+shipped	1642	request	2	air	13.51	17.3	0	0
+shipped	1659	catch	2					3.97
+shipped	1663	release	2				0.2	4.1
+shipped	1757	request	1	air	10.53	18.4	0	0
+shipped	1778	request	2	air	13.68	16.6	0	0
+shipped	1842	request	1	air	10.61	17.2	0	0
+shipped	1862	request	2	air	13.61	17.1	0	0
+shipped	1930	request	1	air	9.88	17.1	0	0
+shipped	1940	catch	1					8.18
+shipped	1953	request	2	air	13.69	19.1	0	0
+shipped	1953	release	1				1.5	6.2
+shipped	1993	request	2	air	15.02	19	0	0
+shipped	2061	request	1	air	9.63	16.9	0	0
+shipped	2073	catch	1					8.18
+shipped	2080	release	1				0.81	7.78
+shipped	2084	request	2	air	13.51	17.3	0	0
+shipped	2101	catch	2					3.97
+shipped	2102	release	2				0	3.97
+shipped	2193	request	1	air	10.53	17.2	0	0
+shipped	2213	request	2	air	13.53	17.5	0	0
+shipped	2266	request	1	air	9.27	18.9	0	0
+shipped	2275	request	1	air	10.62	18.9	0	0
+shipped	2295	request	2	air	13.62	16.9	0	0
+shipped	2366	request	1	air	10.33	14.3	0	0
+shipped	2374	catch	1					8.18
+shipped	2387	request	2	air	13.69	16.6	0	0
+shipped	2387	release	1				1.5	6.2
+shipped	2427	request	2	air	15.12	16.3	0	0
+shipped	2433	catch	2					1.5
+shipped	2448	release	2				0.41	1.63
+shipped	2535	request	1	air	9.48	17.5	0	0
+shipped	2548	catch	1					8.18
+shipped	2552	release	1				0.41	8.19
+shipped	2561	request	2	air	13.7	16.9	0	0
+shipped	2664	request	1	air	10.2	18.5	0	0
+shipped	2672	catch	1					8.18
+shipped	2688	request	2	air	13.67	20.3	0	0
+shipped	2688	release	1				1.75	0
+shipped	2728	request	2	air	14.94	21	0	0
+shipped	2772	request	1	air	8.84	21.8	0	0
+shipped	2799	request	2	air	12.89	21.9	0	0
+shipped	2847	request	1	air	10.12	13.5	0	0
+shipped	2873	request	2	air	14.02	14.1	0	0
+shipped	2912	request	1	air	9.78	16.1	0	0
+shipped	2937	request	2	air	13.53	18	0	0
+shipped	2987	request	1	air	9.46	18.4	0	0
+shipped	2994	request	1	air	10.51	18.4	0	0
+shipped	3016	request	2	air	13.81	15.5	0	0
+shipped	3073	request	1	air	10.53	12.1	0	0
+shipped	3097	request	2	air	14.13	13.6	0	0
+shipped	3147	request	1	air	9.78	15.8	0	0
+shipped	3173	request	2	air	13.68	17.1	0	0
+shipped	3240	request	1	air	10.59	16.6	0	0
+shipped	3266	request	2	air	14.49	11.6	0	0
+shipped	3337	request	1	air	9.93	14.6	0	0
+shipped	3347	catch	1					8.18
+shipped	3357	release	1				1.17	7.07
+shipped	3360	request	2	air	13.69	16.3	0	0
+shipped	3400	request	2	air	14.93	17	0	0
+shipped	3464	request	1	air	9.48	19.6	0	0
+shipped	3477	catch	1					8.18
+shipped	3480	release	1				0.27	8.24
+shipped	3489	request	2	air	13.44	17.8	0	0
+shipped	3570	request	1	air	9.63	17.4	0	0
+shipped	3582	catch	1					8.18
+shipped	3585	release	1				0.27	8.24
+shipped	3596	request	2	air	13.74	16	0	0
+revised	1492	request	1	air	9.55	19.4	0	0
+revised	1504	catch	1					8.18
+revised	1513	release	1				1.06	7.34
+revised	1665	request	1	air	9.33	19	0	0
+revised	1679	catch	1					8.18
+revised	1685	release	1				0.68	7.96
+revised	1692	request	2	air	13.75	19	0	0
+revised	1703	catch	2					8.18
+revised	1784	request	2	bar	14.39	19	-0.53	3.47
+revised	1808	release	2				1.11	2.93

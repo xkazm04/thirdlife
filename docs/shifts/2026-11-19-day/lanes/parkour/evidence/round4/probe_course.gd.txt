@@ -1,0 +1,41 @@
+extends "bot_ladder_course_newcomer.gd"
+## Operator probe: newcomer course bot; logs Skyline events (catch, release with angle/speed, falls) after checkpoint 13.
+var ev: Array[String] = []
+var pm := ""
+var pf := 0
+var attempts := 0
+var catches := [0, 0, 0]
+var lt := 0.0
+var lo := 0.0
+var lg := -1
+
+
+func _bot_tick(frame: int) -> void:
+	super(frame)
+	if not state.has("motion") or int(state.checkpoint) < 13:
+		pm = str(state.get("motion", ""))
+		pf = int(state.get("falls", 0))
+		return
+	var m := str(state.motion)
+	if m == "bar" and pm != "bar":
+		catches[int(state.grip)] += 1
+		ev.append("f%d catch%d" % [frame, int(state.grip)])
+	if m == "bar":
+		lt = float(state.bar_theta)
+		lo = float(state.bar_omega)
+		lg = int(state.grip)
+	if pm == "bar" and m != "bar":
+		ev.append("f%d rel%d th%.2f om%.2f" % [frame, lg, lt, lo])
+	if int(state.falls) != pf:
+		attempts += 1
+		ev.append("f%d FALL z%.2f y%.2f" % [frame, float(state.return_z), float(state.height)])
+	if frame % 40 == 0 and frame > 1740 and frame < 2300:
+		ev.append("f%d %s z%.2f y%.2f x%.2f v%.1f" % [frame, m, float(state.return_z), float(state.height), float(state.return_x), float(state.speed)])
+	pm = m
+	pf = int(state.falls)
+
+
+func _bot_result() -> Dictionary:
+	var r := super()
+	r["summary"] = "SKY attempts %d catches blue %d red %d lead %.1f | %s" % [attempts, catches[1], catches[2], jump_response, " ".join(ev.slice(0, 40))]
+	return r

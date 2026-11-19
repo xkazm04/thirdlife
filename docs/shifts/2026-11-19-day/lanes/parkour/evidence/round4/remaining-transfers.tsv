@@ -1,0 +1,78 @@
+level	seed	frame	event	grip_or_fall_z	last_angle_rad	last_angular_speed_rad_s
+course	4	2036	catch	1		
+course	4	2044	release	1	0.93	7.57
+course	4	2112	fall	5.2094		
+course	4	2160	catch	1		
+course	4	2162	release	1	0.14	8.23
+course	4	2209	fall	5.2094		
+course	4	2257	catch	1		
+course	4	2269	release	1	1.4	6.5
+course	4	2342	fall	5.2094		
+course	4	2390	catch	1		
+course	4	2393	release	1	0.27	8.24
+course	4	2444	fall	5.2094		
+course	4	2492	catch	1		
+course	4	2504	release	1	1.4	6.5
+course	4	2577	fall	5.2094		
+course	4	2625	catch	1		
+course	4	2635	release	1	1.17	7.07
+course	4	2679	catch	2		
+course	4	2789	release	2	0.61	2.84
+course	4	2845	fall	5.2094		
+course	4	2893	catch	1		
+course	4	2903	release	1	1.17	7.07
+course	4	2975	fall	5.2094		
+course	4	3023	catch	1		
+course	4	3032	release	1	1.06	7.34
+course	4	3072	catch	2		
+course	4	3264	release	2	-0.05	7.87
+course	4	3321	fall	5.2094		
+course	4	3369	catch	1		
+course	4	3378	release	1	1.06	7.34
+course	4	3448	fall	5.2094		
+course	4	3496	catch	1		
+course	4	3507	release	1	1.29	6.79
+course	4	3579	fall	5.2094		
+retry	8	2197	catch	1		
+retry	8	2203	release	1	0.68	7.96
+retry	8	2221	catch	2		
+retry	8	2231	release	2	1.13	6.26
+retry	8	2304	fall	5.2094		
+retry	8	2352	catch	1		
+retry	8	2362	release	1	1.17	7.07
+retry	8	2434	fall	5.2094		
+retry	8	2482	catch	1		
+retry	8	2492	release	1	1.17	7.07
+retry	8	2564	fall	5.2094		
+retry	8	2612	catch	1		
+retry	8	2617	release	1	0.55	8.1
+retry	8	2676	fall	5.2094		
+retry	8	2724	catch	1		
+retry	8	2728	release	1	0.41	8.19
+retry	8	2783	fall	5.2094		
+retry	8	2831	catch	1		
+retry	8	2838	release	1	0.81	7.78
+retry	8	2859	catch	2		
+retry	8	2867	release	2	0.43	3.12
+retry	8	2922	fall	5.2		
+retry	8	2973	catch	1		
+retry	8	2980	release	1	0.81	7.78
+retry	8	3001	catch	2		
+retry	8	3005	release	2	0.2	4.1
+retry	8	3056	fall	5.2094		
+retry	8	3104	catch	1		
+retry	8	3111	release	1	0.81	7.78
+retry	8	3132	catch	2		
+retry	8	3139	release	2	0.4	3.67
+retry	8	3193	fall	5.2094		
+retry	8	3241	catch	1		
+retry	8	3248	release	1	0.81	7.78
+retry	8	3269	catch	2		
+retry	8	3280	release	2	0.65	3.25
+retry	8	3337	fall	5.2094		
+retry	8	3385	catch	1		
+retry	8	3389	release	1	0.41	8.19
+retry	8	3444	fall	5.2094		
+retry	8	3492	catch	1		
+retry	8	3497	release	1	0.55	8.1
+retry	8	3556	fall	5.2094		

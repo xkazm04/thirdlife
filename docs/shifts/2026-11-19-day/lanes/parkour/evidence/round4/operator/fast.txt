@@ -1,0 +1,6 @@
+PASS  arch                             479 ms  [12/12] 12 rules (+0 vs last green)
+PASS  assets                             3 ms  [4/4] 4 checks passed (+0 vs last green)
+PASS  cards                             37 ms  [3/3] 4 cards, schema ok (+0 vs last green)
+PASS  devx.test                       5058 ms  [229/229] 229 pass, 0 fail across 17 files (+0 vs last green)
+PASS  foreman.typecheck               1610 ms  tsc --noEmit clean
+exit 0

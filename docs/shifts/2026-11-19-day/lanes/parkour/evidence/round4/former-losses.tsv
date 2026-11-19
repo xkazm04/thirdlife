@@ -1,0 +1,6 @@
+level	seed	shipped_outcome	shipped_frames	runway_only_won	runway_only_frames	runway_and_policy_won	runway_and_policy_frames
+course	5	timeout	3600	False	3600	True	1855
+course	16	timeout	3600	True	2259	True	2931
+retry	11	timeout	3600	True	2919	True	2148
+retry	12	timeout	3600	False	3600	True	1909
+retry	18	timeout	3600	False	3600	True	1833
