@@ -467,3 +467,10 @@ func _workbench_checks() -> void:
 	sheet.call("_apply_answers")
 	check("change: a picked option refits the ring before anything is sent", float(sm.call("lot_radius")) < big_ring, "%s -> %s" % [str(big_ring), str(sm.call("lot_radius"))])
 	sheet.free()
+
+	# E5: the village board says what a game is doing in the site's words
+	var VB: GDScript = load("res://ui/editor/village_board.gd")
+	eq("board: words per phase", [VB.call("words", {}, "designing"), VB.call("words", {}, "approve"), VB.call("words", {"done": 1, "total": 3}, "running"),
+		VB.call("words", {"pause_kind": "question"}, "paused"), VB.call("words", {}, "done"), VB.call("words", {}, "failed"), VB.call("words", {}, "stalled")],
+		["being designed", "waits for you", "building 1 of 3", "waits for your answer", "ready to play", "could not be finished", "stopped"])
+	eq("board: a running job before its plan", VB.call("words", {"done": 0, "total": 0}, "running"), "building")

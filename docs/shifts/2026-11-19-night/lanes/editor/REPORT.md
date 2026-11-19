@@ -142,3 +142,44 @@ looked at the side-by-sides at 720p.
 ## For the Director
 - JOB.md could take an optional `change_requested.decision {key, to}`. Today the change is matched to its decision by text.
 - The village still does not put a workbench game on the lot the player chose (round 1, proposal 2).
+
+---
+
+# Round 3 (02:16-03:29): the lost click, and the village board as home
+
+The Director saved this from the lane's message and re-ran `ui.sh selftest`: 125 passed, 0 failed.
+
+## 1. The lost "Pro" click came from the drive, not the editor
+- Reproduced with a targeted session, `ui.sh chips`: 7 of 1,740 clicks were lost (0.4 %).
+- Cause: a press sent from script makes the window receive one mouse motion at the real Windows cursor's position. That
+  motion lands outside the chip, so Godot's button cancels the press and fires "button up" but not "pressed". In the
+  logs, the stray motion sits exactly at the OS cursor minus the window position.
+- The chip rebuilds were ruled out: the logged positions were identical before and after.
+- A person's mouse is where it presses, so a player is not affected. The editor was not changed.
+- Fix in `drive.gd` `click_at`: wait until the press has been processed, then send the drive's own position again just
+  before the release. Result: 0 of 900 clicks lost, with other drives running in parallel for load.
+- No selftest case is possible, because this needs a real window and the OS cursor. `ui.sh chips` is the check.
+- The N6 live drive uses the same `click_at`, so older lost-click flakes are explained by this too.
+
+## 2. The village board is the editor's home screen (E5)
+- The board shows the workbench's map with every plot and every workbench game on its lot. Labels are in honey, with
+  the site's words (being designed, waits for you, building 1 of 2, ready to play, ...): a crane while it builds, its
+  recipe's symbol when done.
+- "Your games" lists the same games. A game made with the one-line box has no lot; its row says so.
+- Click a lot or a row to open its game sheet; "< Games" comes back to the board. "+ New game" opens the workbench.
+  "Jobs list" opens the designer panel, and its "Village" button returns.
+- No new art: Astra's map and symbols are reused.
+- `ui.sh open` starts on the board; `--panel` starts on the old panel.
+- Drive `ui.sh home` (input events only): empty board, new game, build, approve, back to the board ("building 0 of 2"),
+  then "ready to play", then a click on its lot opens the sheet, then the jobs list, then the village board again. It
+  passes in 56 s.
+- Captures in `stills/home/`; clip `clip-home.mp4`, 19.2 s.
+
+## Gates
+- `ui.sh selftest` 125/0 (2 new cases).
+- Drives pass: `ui.sh editor`, `ui.sh home` and `ui.sh live`.
+- `ui.sh chips`: 0 of 60 lost.
+- `tl check --tier fast`: 5/5.
+
+## Still open
+- The 3D village does not yet place a workbench game on the lot the player chose (proposal `job_created.lot`).

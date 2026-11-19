@@ -15,6 +15,7 @@ var close_up: bool = false           # false: the whole village; true: the lot a
 var _view_c: Vector2 = Vector2.ZERO  # the close-up's centre (follows the ghost, but not while it is dragged)
 var read_only: bool = false          # the game sheet: the lot is chosen, nothing moves
 var ring_before: float = 0.0         # the game sheet: the ring as it stands while a change is only picked (dashed)
+var board: bool = false             # E5: the home board: no ghost; a click on a game's lot says which (lot_clicked)
 var bays: Array = []                 # the game sheet: [{title, state}] in plan order, drawn as the site's bays
 const BAY_WORDS: Dictionary = {"queued": "waiting", "running": "building", "verifying": "checking", "blocked": "on hold",
 	"promoted": "built", "failed": "failed"}

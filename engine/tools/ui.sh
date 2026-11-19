@@ -16,6 +16,10 @@
 #   ui.sh sheet    --dir=<captures dir> --out=<abs png>   contact sheet of the captures
 #   ui.sh editor   --jobs=<scratch dir> --flags=<json> --shots=<dir>   the workbench session (E1, ui/editor/;
 #                    ui/drive.gd _editor): idea -> recipe -> answers -> place -> Build it, input events only
+#   ui.sh home     --jobs=<scratch dir> --flags=<json> --shots=<dir>   the village board session (E5): New game,
+#                    Build it, approve, the game on its lot while it is built, open it from the map, jobs list
+#   ui.sh chips    --jobs=<scratch dir> --shots=<dir> [--n=60]   retype the idea and click a chip N times; FAIL on a lost click
+#   ui.sh open ... --home   the village board as the home screen
 #   ui.sh shot ... --editor [--sentence=<text>] [--recipe=<name>] [--place=<x>,<z>] [--turn=<n>] [--take]
 #                    a capture of the workbench filled as given
 #
@@ -60,9 +64,10 @@ windowed() {  # like tools/tl.sh capture: a window below the desktop, Direct3D 1
 }
 
 case "$verb" in
-  ""|help|-h|--help) sed -n '2,24p' "$0"; exit 2;;
-  open)
-    windowed res://ui/host.tscn -- "${args[@]}"; exit $?;;
+  ""|help|-h|--help) sed -n '2,28p' "$0"; exit 2;;
+  open)   # E5: the village board is the home screen; --panel opens the designer panel as before
+    home=(--home); for a in "${args[@]}"; do [ "$a" = "--panel" ] && home=(); done
+    windowed res://ui/host.tscn -- "${home[@]}" "${args[@]}"; exit $?;;
   shot)
     [ -z "$out" ] && { echo "ui.sh shot needs --out=<abs png>"; exit 2; }
     for attempt in 1 2 3; do   # a window can die in the driver while it opens under GPU load (see RUNNER.md)
@@ -72,6 +77,12 @@ case "$verb" in
       echo "[ui] no picture on attempt $attempt"
     done
     exit 1;;
+  chips)  # the lost-click check: --n=<clicks> retype-then-click rounds on the workbench's chips (E5)
+    windowed res://ui/host.tscn -- --drive=chips "${args[@]}" 2>&1 | grep -E "^\[drive\].*(LOST|chips:)|SCRIPT ERROR|Parse Error"
+    exit "${PIPESTATUS[0]}";;
+  home)
+    windowed res://ui/host.tscn -- --drive=home --home "${args[@]}" 2>&1 | grep -E "^\[ui\]|^\[drive\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"
+    exit "${PIPESTATUS[0]}";;
   editor)
     windowed res://ui/host.tscn -- --drive=editor "${args[@]}" 2>&1 | grep -E "^\[ui\]|^\[drive\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"
     exit "${PIPESTATUS[0]}";;
@@ -93,5 +104,5 @@ case "$verb" in
     res="1920x1080"
     windowed res://ui/sheet.tscn -- "${args[@]}" 2>&1 | grep -E "^\[ui\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"
     [ -s "$out" ]; exit $?;;
-  *) echo "ui.sh: unknown verb $verb"; sed -n '5,21p' "$0"; exit 2;;
+  *) echo "ui.sh: unknown verb $verb"; sed -n '5,25p' "$0"; exit 2;;
 esac

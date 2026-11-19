@@ -5,6 +5,7 @@ extends "res://ui/editor/map_base.gd"
 ## says and writes only `at` and `yaw` into it; `changed` tells the workbench to redraw the rest.
 
 signal changed
+signal lot_clicked(id: String)    # E5 board: a game's lot (plot kind "game") was clicked; id = its job
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -13,6 +14,14 @@ func _ready() -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	if board and model != null and event is InputEventMouseButton and (event as InputEventMouseButton).pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		_fit()
+		var w: Vector2 = to_world((event as InputEventMouseButton).position)
+		for lot: Dictionary in model.plots:
+			if lot["kind"] == "game" and w.distance_to(lot["at"]) <= float(lot["r"]):
+				lot_clicked.emit(str(lot["job"]))
+				accept_event()
+				return
 	if model == null or not model.village_ok or read_only:
 		return
 	_fit()
@@ -81,7 +90,9 @@ func _draw() -> void:
 
 	_annotations.clear()
 	_furniture()
-	if model.placed:
+	if board:
+		pass
+	elif model.placed:
 		_ghost()
 	else:
 		_tag(Vector2(10, 9), "Click the map where the game should stand.", col["card"], col["ink"], 13)
@@ -94,7 +105,7 @@ func _draw() -> void:
 		var label := str(lot["label"]).replace("_", " ")
 		var r := float(lot["r"]) * _scale
 		var at := Vector2(c.x - (_w(label, 11, true) + 12) * 0.5, c.y + minf(r * 0.38, 68))
-		_tag(at, label, col["vellum"] if lot["kind"] == "site" else col["card"], col["ink"], 11)
+		_tag(at, label, col["honey"] if lot["kind"] == "game" else (col["vellum"] if lot["kind"] == "site" else col["card"]), col["ink"], 11)
 
 
 func _road() -> void:
@@ -143,7 +154,7 @@ func _plot(c: Vector2, r: float, lot: Dictionary, hit: bool) -> void:
 		_dashed_circle(c, r, stroke, 2)
 	else:
 		_fence(c, r, stroke, hit)
-	var key := "site" if site else str(lot["id"])
+	var key := str(lot.get("stamp", "site" if site else str(lot["id"])))
 	if Art.SYMBOLS.has(key):
 		var w := r * 1.52
 		# Small illustrations are map symbols. At a larger scale the surrounding scenery

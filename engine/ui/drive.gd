@@ -27,6 +27,10 @@ func start(the_host: Control, what: String, shots_dir: String) -> void:
 		await _live()
 	elif what == "live2":
 		await _live2()
+	elif what == "chips":
+		await (load("res://ui/editor/drive_editor.gd") as GDScript).new().run_chips(self)
+	elif what == "home":
+		await (load("res://ui/editor/drive_editor.gd") as GDScript).new().run_home(self)
 	elif what == "editor":
 		await (load("res://ui/editor/drive_editor.gd") as GDScript).new().run(self)
 	else:
@@ -86,12 +90,26 @@ func _mouse(pos: Vector2, pressed: Variant = null) -> void:
 		Input.parse_input_event(b)
 
 
+var press_frame: int = 0             # the process frames of the last click's press and release (reads for chips)
+var release_frame: int = 0
+
+
 func click_at(pos: Vector2) -> void:
 	_mouse(pos)
 	await frames(2)
 	_mouse(pos, true)
+	press_frame = Engine.get_process_frames()
+	for i: int in 10:                 # wait until the press is really processed (input can lag a frame under load)
+		await frames(1)
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			break
 	await frames(2)
+	# E5 (lost-click hunt): a synthetic press makes the window receive one motion event at the REAL cursor's place
+	# (logged: global = OS cursor - window position), which clears the button's pressing-inside state, so about 1
+	# click in 200 was dropped. A real mouse is where its press is; say so again right before the release.
+	_mouse(pos)
 	_mouse(pos, false)
+	release_frame = Engine.get_process_frames()
 	await frames(3)
 
 

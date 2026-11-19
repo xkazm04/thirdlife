@@ -258,3 +258,15 @@ to, text}]`), and its line shows the job's own outcome for that request ("in fli
 made change becomes the decided value ("changed by you"). Sending is disabled, with the panel's own reasons, until a
 package is built and while the builders are busy; a change that makes the game outgrow its lot is refused with the
 neighbour named (a change cannot move the lot).
+
+## 11. Round 3: the village board as the home (E5)
+
+`ui.sh open` now starts on the village board (`--panel` gives the panel as before; the drives and captures keep the
+panel unless `--home`). The board is the workbench's own map in a board mode: every plot of the village, and every
+game made in the workbench standing on its lot, its label in honey with the game's name and what it is doing in the
+site's words (being designed, waits for you, being planned, building 1 of 2, waits for your answer, ready to play,
+could not be finished, stopped). A lot under construction carries the crane symbol, a finished one the symbol of its
+recipe (rink, wall, circuit, court). Beside it "Your games" lists the same games; one made in one line (no lot) says
+so and opens in the jobs list. A click on a lot or a row opens the game sheet; "< Games" in the sheet and the
+workbench's close return to the board; "+ New game" opens the workbench; "Jobs list" shows the designer panel with a
+"Village" button back. No new art: Astra's map drawing and symbols are reused as they are.
