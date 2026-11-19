@@ -40,6 +40,8 @@ Unknown keys are errors. An absent optional value is an omitted key, never `null
 | `acceptance` | list of strings | what must hold before the game is offered | present |
 | `hands` (optional) | object | `{seeds, checks: [{hand, wins_min?, wins_max?, measured}]}`: what a person's hand must find over seeds 1..`seeds`; `hand` is `idle` or a `TLHand` profile (`newcomer`, `regular`, `sharp`, `perfect`); at least one bound per check; `measured` is the row the bound came from | known hand, bounds within 0..`seeds` |
 | `variants` (optional) | list of `{ask, change}` | common requests and the smallest change that answers each | shape |
+| `interview` (optional) | object | the editor's questions for this kind of game: see "Interview and footprint" | shape; every `propose` is one of its question's option ids; option ids unique per question |
+| `footprint` (optional) | object | `{size_m: [w, d], height_m, shape, source}`: the worked example's measured size on the ground; `shape` one of `rink`, `pitch`, `court`, `track`, `slalom`, `course`, `arena`, `yard` | numbers > 0; `source` names the file it was measured from |
 
 Every seed must have at least one card (`cards.coverage`). A new seed therefore arrives with its card.
 
@@ -57,6 +59,16 @@ not set. A pack meets a check through its own test `tests/bot_hand_<hand>.gd` (r
 `_bot_result()` returns `won` (bool). An `idle` test presses nothing and has no frame cap of its own: a game whose round does not
 end by itself fails its idle check. A card's example carries every hand test the card checks (`tl cards check`). `tl cards hands <pack> --card <id> [--seeds N] [--tests <dir>] [--par N]` runs
 a card's checks on any pack; the Foreman runs them at final verification (`JOB.md`, "Added 2026-11-18").
+
+## Interview and footprint (added 2026-11-19)
+
+Approved by the owner on 19 Nov (E2). `interview` moves the minigame editor's questions into the card (they were in
+`engine/ui/interview/*.json`): `{kind, example, match: [words], estimate: {packages, minutes, source}, questions:
+[{key, group, ask, options: [{id, label, say, from_words?, size?, shape?}], propose, reason}]}`. `group` is one of
+`who`, `win`, `where`. `propose` names the option the editor proposes; `reason` says why, with a measured figure where
+one exists. `size` on an option changes the footprint (`{set: [w, d, h]}` or `{scale: f}`). The editor's answers travel in
+`job_created.answers` (JOB.md, "Added 2026-11-19"). A request no card fits uses the editor's own `none` questions, which
+stay in `engine/ui/`.
 
 ## Commands
 

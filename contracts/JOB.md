@@ -36,7 +36,7 @@ Unknown `type` or unknown keys are errors when the log is read.
 
 | `type` | Extra keys |
 |---|---|
-| `job_created` | `sentence` (the player's words), `packId`, `title` |
+| `job_created` | `sentence` (the player's words), `packId`, `title`; `answers` (optional), `lot` (optional): see "Added 2026-11-19" |
 | `brief_set` | `brief` (object: `rules`, `arena`, `ai`, `controls`, `mood`, each a string), `estimate` (`{packages, wallMinutes, tokens}`) |
 | `brief_approved` | `by` (`player` or `auto`) |
 | `plan_set` | `packages[]`: `{id, title, milestone, deps[], scope[] (globs inside the pack), contract (string), acceptance[] ({level, verb, args}), registers ({capabilities[], assets[], tests[], cameras[]}, each optional)}` |
@@ -234,3 +234,18 @@ Unknown `type` or unknown keys are errors when the log is read.
   or a failing test no package registers, ends the job unpromoted.
 - Each hand check also leaves `reports/hand-checks-s<seq>.json` (`tl.hand-checks/1`: card, version, title, seeds, rows with
   their bounds); `foreman status`, `foreman explain` and the designer panel read it. The verify events stay the record.
+
+### Added 2026-11-19: answers, lot and decision (the minigame editor)
+
+Approved by the owner on 19 Nov (E2). All three keys are optional; absent means the job was not made in the editor, and
+the reader behaves as before (absent = omit the key, never `null`).
+
+- `job_created.answers`: object `{<question key>: <option id>}` from the card's `interview` (CARDS.md), one entry per
+  question the player or a proposal answered. Every key is a question of the card the job was made from, every value one
+  of its option ids.
+- `job_created.lot`: `{at: [x, z], yaw_deg, radius}` in village metres: the lot the player placed. `radius` is the lot
+  ring (half the footprint's diagonal + 4 m, at least 12). A village site that shows the job builds on this lot.
+- `change_requested.decision` (optional): `{key, to}` when a change request was made by changing one decided answer in
+  the editor: `key` is the question key, `to` the new option id. The `text` is still the request the builders read.
+- Command: `foreman new` takes `--answers <json>` and `--lot <json>`; `foreman change` takes `--decision <json>`.
+  Each is checked against the shapes above before anything is written; an invalid value is an error, not a dropped key.
