@@ -1,0 +1,63 @@
+   0.7s  direct   session start; jobs root C:/Users/kazda/AppData/Local/Temp/claude/0251139bc1345a0c/7804f5a1-4f00-4c11-8138-a2655303186f/scratchpad/ejobs; 0 jobs in the list
+   0.9s  direct   screenshot e-0-list.png
+   1.0s  UI event mouse click at (236, 63) on the row "New game in the workbench…"
+   1.8s  direct   screenshot e-1-workbench-empty.png
+   1.9s  UI event mouse click at (286, 133) on the field "What do you want to play?"
+   2.1s  UI event typed 53 key events into the idea field: "ice hockey, three against three, against the computer"
+   2.8s  read     seen: the recipe Team possession matched the sentence
+   2.8s  read     answers read from the sentence: ["sport", "players"]
+   2.9s  direct   screenshot e-2-recipe-matched.png
+   3.0s  UI event mouse click at (201, 501) on the chip "Pro"
+   3.3s  UI event mouse wheel down at (286, 511) on the questions (to reach Opt_match_one)
+   3.4s  UI event mouse wheel down at (286, 511) on the questions (to reach Opt_match_one)
+   3.5s  UI event mouse wheel down at (286, 511) on the questions (to reach Opt_match_one)
+   3.6s  UI event mouse click at (374, 506) on the chip "One 3-minute period"
+   4.4s  direct   screenshot e-3-answered.png
+   4.5s  UI event mouse wheel down at (286, 532) on the questions (to reach Opt_rink_big)
+   4.5s  UI event mouse wheel down at (286, 532) on the questions (to reach Opt_rink_big)
+   4.6s  UI event mouse click at (320, 538) on the chip "Big ice 80 x 40 m"
+   5.3s  read     footprint (67.0, 45.0, 12.0) -> (84.0, 52.0, 12.0), lot ring 45 -> 54 m
+   5.4s  direct   screenshot e-4-big-ice.png
+   5.5s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.6s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.6s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.7s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.8s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.9s  UI event mouse click at (109, 547) on the chip "Take the proposal(s)"
+   6.5s  UI event mouse drag from (654, 379) to (1034, 372) on the map: the ghost onto the hockey plot
+   7.2s  read     blocker: "the place: overlaps the plot "car" by 17 m (and 1 more)"; Build it disabled: true
+   7.4s  direct   screenshot e-5-overlap-refused.png
+   7.4s  UI event mouse wheel up at (1034, 372) on the map (turn the ghost 15 degrees)
+   7.5s  UI event mouse wheel up at (1034, 372) on the map (turn the ghost 15 degrees)
+   7.5s  read     yaw now 30.0 degrees
+   7.5s  read     free spot by the road nearest the hockey plot: (-220, 73)
+   7.7s  UI event mouse drag from (1034, 372) to (661, 380) on the map: the ghost to free ground
+   8.4s  read     fits: true; checks: []; gate path 10 m
+   8.6s  direct   screenshot e-6-placed.png
+   8.7s  UI event mouse click at (1209, 93) on the button "Close up"
+   9.8s  direct   screenshot e-6b-close-up.png
+  10.0s  UI event mouse click at (1118, 637) on the button "Build it"
+  10.5s  read     drafts under <jobs>/_editor: ["ice-hockey,-three-against-three,-against-1795048528.json"]
+  11.3s  read     seen: the workbench closed and the panel selected the new job
+  11.3s  read     job id: ice-hockey-three-against-20261119-1; its sentence starts "ice hockey, three against three, against the computer. Decid"
+  14.3s  read     seen: the brief is there and waits for approval
+  15.5s  direct   screenshot e-7-game-sheet-brief.png
+  15.6s  UI event mouse click at (122, 174) on the button "Approve and build" in the game sheet
+  19.4s  read     seen: the plan is cut: one bay per package on the lot
+  19.4s  read     seen: a bay is being built or checked
+  20.2s  direct   screenshot e-8-game-sheet-building.png
+  56.9s  read     seen: the game is done (verified and promoted)
+  58.1s  direct   screenshot e-9-game-sheet-done.png
+  58.2s  UI event mouse click at (286, 370) on the line "How big is the rink?" under Decided
+  59.0s  UI event mouse click at (104, 396) on the chip "Standard 60 x 30 m"
+  59.7s  read     the lot's ring 54 -> 45 m before anything is sent; size line: "With this change: 67 x 45 m, 12 m high · ring 45 m (estimate)"
+  59.8s  direct   screenshot e-11-change-picked.png
+  59.9s  UI event mouse click at (115, 467) on the button "Send the change"
+  61.0s  read     seen: the change request is in the job's log
+  61.0s  read     change request: "Change of a decision: How big is the rink? Standard 60 x 30 m instead of Big ice 80 x 40 m. Make it a 60 x 30 m rink."
+  61.8s  direct   screenshot e-12-change-sent.png
+  87.4s  read     seen: the change was made (a new promotion)
+  88.5s  direct   screenshot e-13-change-made.png
+  88.5s  read     rink now standard (by player, changed true)
+  88.6s  UI event mouse click at (69, 36) on the button "< Games"
+  89.6s  direct   screenshot e-10-back-to-the-list.png

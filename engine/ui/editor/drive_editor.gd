@@ -36,10 +36,12 @@ func run(d: Node) -> void:
 	await d.picture("e-2-recipe-matched.png")
 	if not await d.click("Opt_opponents_pro", "the chip \"Pro\""):
 		return
+	await took(d, m, "opponents", "pro")
 	await d.secs(0.3)
 	await d.scroll_to("Opt_match_one")
 	if not await d.click("Opt_match_one", "the chip \"One 3-minute period\""):
 		return
+	await took(d, m, "match", "one")
 	await d.secs(pause)
 	var small: Vector3 = m.call("footprint")
 	var r0: float = m.call("lot_radius")
@@ -47,6 +49,7 @@ func run(d: Node) -> void:
 	await d.scroll_to("Opt_rink_big")
 	if not await d.click("Opt_rink_big", "the chip \"Big ice 80 x 40 m\""):
 		return
+	await took(d, m, "rink", "big")
 	await d.secs(pause)
 	var big: Vector3 = m.call("footprint")
 	var r1: float = m.call("lot_radius")
@@ -151,7 +154,50 @@ func run(d: Node) -> void:
 		return
 	await d.secs(pause * 1.5)
 	await d.picture("e-9-game-sheet-done.png")
+	# E3: change a decision from the game sheet: big ice -> standard, see the lot refit, send it as a change request
+	var gs: Control = await d.find("GameSheet", 3.0)
+	var gm: RefCounted = gs.get("model")
+	var ring0: float = gm.call("lot_radius")
+	if not await d.click("Decided_rink", "the line \"How big is the rink?\" under Decided"):
+		return
+	await d.secs(pause)
+	if not await d.click("Change_rink_standard", "the chip \"Standard 60 x 30 m\""):
+		return
+	await d.secs(pause)
+	var ring1: float = gm.call("lot_radius")
+	d.note("read", "the lot's ring %d -> %d m before anything is sent; size line: \"%s\"" % [int(ring0), int(ring1), str((await d.find("SizeLine", 2.0)).get("text"))])
+	if not ring1 < ring0:
+		d.note("read", "FAILED: the picked option did not refit the lot")
+		d.failed = true
+	await d.picture("e-11-change-picked.png")
+	if not await d.click("SendChange", "the button \"Send the change\""):
+		return
+	if not await d.wait_for("the change request is in the job's log", func() -> bool: return not (d.job().get("changes", []) as Array).is_empty(), 30.0):
+		return
+	var sent: String = str((d.job()["changes"] as Array)[-1]["text"])
+	d.note("read", "change request: \"%s\"" % sent)
+	await d.secs(pause)
+	await d.picture("e-12-change-sent.png")
+	if not await d.wait_for("the change was made (a new promotion)", func() -> bool: return str((d.job()["changes"] as Array)[-1]["outcome"]) == "made" and d.job().get("phase", "") == "done", 240.0):
+		await d.picture("e-13-change-not-made.png")
+		return
+	await d.secs(pause * 1.5)
+	await d.picture("e-13-change-made.png")
+	var after: Dictionary = (gm.get("answers") as Dictionary).get("rink", {})
+	d.note("read", "rink now %s (by %s, changed %s)" % [str(after.get("id", "")), str(after.get("by", "")), str(after.get("changed", false))])
+	if str(after.get("id", "")) != "standard":
+		d.note("read", "FAILED: the made change is not shown as decided")
+		d.failed = true
 	if not await d.click("GamesButton", "the button \"< Games\""):
 		return
 	await d.secs(pause)
 	await d.picture("e-10-back-to-the-list.png")
+
+
+## A click on a chip must become the player's answer: read it back, fail the session when it was lost.
+func took(d: Node, m: RefCounted, key: String, id: String) -> void:
+	var ok: bool = await d.wait_for("the answer %s = %s is the player's" % [key, id], func() -> bool:
+		var v: Dictionary = m.call("value", key)
+		return str(v["id"]) == id and str(v["by"]) == "player", 3.0)
+	if not ok:
+		d.note("read", "FAILED: the click on %s was lost; the answer stands at %s" % [id, str(m.call("value", key))])

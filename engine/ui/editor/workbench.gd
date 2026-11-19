@@ -66,11 +66,9 @@ func _ready() -> void:
 
 func _load_colors() -> void:
 	col = Look.colors()
-	font = ThemeDB.fallback_font
-	var fv: FontVariation = FontVariation.new()
-	fv.base_font = font
-	fv.variation_embolden = 0.7
-	bold = fv
+	var face := Look.typeface()
+	font = Look.weight(face, 480)
+	bold = Look.weight(face, 790, 96)
 
 
 func _sb(bg: Color, border: Color = Color(0, 0, 0, 0), bw: int = 0, radius: int = 6, pad_h: int = 10, pad_v: int = 4) -> StyleBoxFlat:
@@ -85,6 +83,10 @@ func _label(text: String, fs: int = FS, b: bool = false, color: Color = Color(0,
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if b:
 		l.add_theme_font_override("font", bold)
+	if b and fs >= 20:
+		l.add_theme_stylebox_override("normal", Look.plate(col, "flag" if color == col["card"] else "heading"))
+	elif b and fs <= 12 and not text.is_empty() and text == text.to_upper():
+		l.add_theme_stylebox_override("normal", Look.plate(col, "index"))
 	if fs != FS:
 		l.add_theme_font_size_override("font_size", fs)
 	if color.a > 0.0:
@@ -114,13 +116,13 @@ func _chip(name_: String, text: String, look: String) -> Button:
 	var sb: StyleBoxFlat
 	match look:
 		"player", "sentence":
-			sb = _sb(col["honey"], ink, 2, 14, 12, 4)
+			sb = Look.keycap(col["honey"], ink, true, 11)
 			b.add_theme_font_override("font", bold)
 		"proposal":
-			sb = _sb(Color(col["honey"], 0.18), col["honey_dark"], 2, 14, 12, 4)
+			sb = Look.keycap(col["vellum"], col["honey_dark"], false, 11)
 			b.text = text + "  · proposed"
 		_:
-			sb = _sb(col["paper"], Color(ink, 0.55), 1, 14, 12, 4)
+			sb = Look.keycap(col["card"], col["rule"], false, 11)
 	for st: String in ["normal", "hover", "pressed", "focus"]:
 		var s: StyleBoxFlat = sb.duplicate()
 		if st == "hover":
@@ -136,10 +138,10 @@ func _primary(name_: String, text: String) -> Button:
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_override("font", bold)
 	b.add_theme_font_size_override("font_size", 18)
-	b.add_theme_stylebox_override("normal", _sb(col["honey"], col["ink"], 3, 8, 22, 8))
-	b.add_theme_stylebox_override("hover", _sb(col["honey"].lightened(0.1), col["ink"], 3, 8, 22, 8))
-	b.add_theme_stylebox_override("pressed", _sb(col["honey_dark"], col["ink"], 3, 8, 22, 8))
-	b.add_theme_stylebox_override("disabled", _sb(col["paper"].darkened(0.08), Color(col["ink"], 0.3), 3, 8, 22, 8))
+	b.add_theme_stylebox_override("normal", Look.keycap(col["honey"], col["wood_dark"], true, 22, 8))
+	b.add_theme_stylebox_override("hover", Look.keycap(col["honey"].lerp(col["card"], 0.20), col["wood_dark"], true, 22, 8))
+	b.add_theme_stylebox_override("pressed", Look.keycap(col["honey_dark"], col["ink"], true, 22, 8))
+	b.add_theme_stylebox_override("disabled", Look.keycap(col["concrete"], col["rule"], false, 22, 8))
 	return b
 
 
@@ -147,7 +149,7 @@ func _primary(name_: String, text: String) -> Button:
 
 func _build_frame() -> void:
 	var shade: ColorRect = ColorRect.new()
-	shade.color = Color(col["shade"], 0.35)
+	shade.color = Color(col["shade"], 0.26)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
@@ -164,7 +166,7 @@ func _build_frame() -> void:
 	var head: HBoxContainer = HBoxContainer.new()
 	root.add_child(head)
 	var hp: PanelContainer = _plate("HeadPlate")
-	hp.add_theme_stylebox_override("panel", _sb(col["paper"], col["ink"], 3, 8, 14, 6))
+	hp.add_theme_stylebox_override("panel", Look.plate(col, "rail"))
 	var hh: HBoxContainer = HBoxContainer.new()
 	hp.add_child(hh)
 	var back: Button = Button.new()
@@ -173,12 +175,12 @@ func _build_frame() -> void:
 	back.focus_mode = Control.FOCUS_NONE
 	back.pressed.connect(func() -> void: closed.emit())
 	hh.add_child(back)
-	hh.add_child(_label("Workbench · New game", 20, true))
+	hh.add_child(_label("Workbench · New game", 22, true, col["card"]))
 	head.add_child(hp)
 	var pp: PanelContainer = _plate("ProgressPlate")
-	pp.add_theme_stylebox_override("panel", _sb(Color(col["paper"], 0.92), col["ink"], 2, 8, 14, 6))
+	pp.add_theme_stylebox_override("panel", Look.plate(col, "rail"))
 	pp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_progress = _label("", 14)
+	_progress = _label("", 14, false, col["card"])
 	_progress.name = "Progress"
 	_progress.clip_text = true
 	_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -196,7 +198,7 @@ func _build_frame() -> void:
 	mid.add_child(left)
 	var lv: VBoxContainer = VBoxContainer.new()
 	left.add_child(lv)
-	lv.add_child(_label("Your idea", 22, true))
+	lv.add_child(_label("Your idea", 24, true))
 	_idea = LineEdit.new()
 	_idea.name = "IdeaField"
 	_idea.placeholder_text = "What do you want to play?"
@@ -227,7 +229,7 @@ func _build_frame() -> void:
 	var rv: VBoxContainer = VBoxContainer.new()
 	right.add_child(rv)
 	var rh: HBoxContainer = HBoxContainer.new()
-	rh.add_child(_label("Where it stands", 22, true))
+	rh.add_child(_label("Where it stands", 24, true))
 	var hint: Label = _label("click to place · drag to move · wheel or Q / E to turn", 12, false, col["dim"])
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hint.clip_text = true
@@ -241,7 +243,7 @@ func _build_frame() -> void:
 	rh.add_child(zoom)
 	rv.add_child(rh)
 	var frame: PanelContainer = PanelContainer.new()
-	frame.add_theme_stylebox_override("panel", _sb(col["ink"], col["ink"], 0, 6, 2, 2))
+	frame.add_theme_stylebox_override("panel", _sb(col["trunk"], col["ink"], 1, 2, 2, 2))
 	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rv.add_child(frame)
 	_map = VillageMap.new()
@@ -263,6 +265,7 @@ func _build_frame() -> void:
 
 	# bottom: what will be sent
 	var bottom: PanelContainer = _plate("Review")
+	bottom.add_theme_stylebox_override("panel", Look.plate(col, "review"))
 	root.add_child(bottom)
 	var bh: HBoxContainer = HBoxContainer.new()
 	bh.add_theme_constant_override("separation", 16)
@@ -271,13 +274,13 @@ func _build_frame() -> void:
 	bv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bv.add_theme_constant_override("separation", 2)
 	bh.add_child(bv)
-	bv.add_child(_label("WHAT THE BUILDERS WILL BE TOLD", 11, true, col["dim"]))
-	_request = _label("", 13, false, Color(0, 0, 0, 0), true)
+	bv.add_child(_label("WHAT THE BUILDERS WILL BE TOLD", 12, true, col["honey"]))
+	_request = _label("", 13, false, col["card"], true)
 	_request.name = "Request"
 	_request.custom_minimum_size = Vector2(0, 36)
 	_request.max_lines_visible = 3
 	bv.add_child(_request)
-	_footer = _label("", 12, false, col["dim"], true)
+	_footer = _label("", 12, false, col["vellum"], true)
 	_footer.name = "Footer"
 	_footer.max_lines_visible = 2
 	bv.add_child(_footer)
@@ -288,7 +291,7 @@ func _build_frame() -> void:
 	_build = _primary("BuildButton", "Build it")
 	_build.pressed.connect(_commit)
 	bb.add_child(_build)
-	_blocker = _label("", 12, true, col["hazard"], true)
+	_blocker = _label("", 12, true, col["hazard_light"], true)
 	_blocker.name = "Blocker"
 	_blocker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bb.add_child(_blocker)
@@ -320,6 +323,7 @@ func _clear(box: Node) -> void:
 func _fill_examples() -> void:
 	_clear(_examples)
 	_examples.visible = model.sentence.is_empty()
+	_q_scroll.add_theme_stylebox_override("panel", Look.plate(col, "blank") if model.recipe.is_empty() else StyleBoxEmpty.new())
 	if not _examples.visible:
 		return
 	var ex: Array = [["ExampleHockey", "ice hockey, three against three, against the computer"],
@@ -344,7 +348,8 @@ func _fill_recipe() -> void:
 	p.name = "RecipeChip"
 	var iv: Dictionary = model.interview()
 	if model.has_card():
-		p.add_theme_stylebox_override("panel", _sb(Color(col["honey"], 0.16), col["ink"], 2, 8, 12, 8))
+		var emblem: String = {"track": "drive", "slalom": "drive", "yard": "wall"}.get(model.shape().get("shape", ""), "recipe")
+		p.add_theme_stylebox_override("panel", Look.plate(col, "recipe", emblem))
 		var v: VBoxContainer = VBoxContainer.new()
 		v.add_theme_constant_override("separation", 2)
 		p.add_child(v)
@@ -359,7 +364,7 @@ func _fill_recipe() -> void:
 			why = "you chose it"
 		v.add_child(_label("%s · plays like %s" % [why, str(iv.get("example", ""))], 12, false, Color(0, 0, 0, 0), true))
 	else:
-		p.add_theme_stylebox_override("panel", _sb(Color(col["hazard"], 0.10), col["hazard"], 2, 8, 12, 8))
+		p.add_theme_stylebox_override("panel", Look.plate(col, "notice"))
 		var v: VBoxContainer = VBoxContainer.new()
 		v.add_theme_constant_override("separation", 2)
 		p.add_child(v)
@@ -397,7 +402,7 @@ func _fill_questions() -> void:
 				qs.append(q)
 		if qs.is_empty():
 			continue
-		_q_box.add_child(_label(str(g[1]).to_upper(), 11, true, col["dim"]))
+		_q_box.add_child(_label(str(g[1]).to_upper(), 12, true, col["wood_dark"]))
 		for q: Dictionary in qs:
 			var key: String = q["key"]
 			var v: Dictionary = model.value(key)
@@ -419,7 +424,7 @@ func _fill_questions() -> void:
 				"proposal": note = "Proposed: " + str(q["reason"])
 				"sentence": note = "From your words \"%s\"" % str(v.get("words", ""))
 				_: note = "Yours." + ("" if str(v.get("took", "")) != "proposal" else " (you took the proposal: %s)" % str(q["reason"]))
-			_q_box.add_child(_label(note, 12, false, col["dim"] if str(v["by"]) != "proposal" else col["honey_dark"].darkened(0.25), true))
+			_q_box.add_child(_label(note, 12, false, col["dim"] if str(v["by"]) != "proposal" else col["wood_dark"], true))
 	var row: HFlowContainer = HFlowContainer.new()
 	row.name = "AfterQuestions"
 	var left: int = model.left_to_proposal().size()
@@ -476,10 +481,10 @@ func _fill_review() -> void:
 	var why: String = model.blocker()
 	if not message.is_empty():
 		_blocker.text = message
-		_blocker.add_theme_color_override("font_color", col["hazard"] if message_bad else col["green"])
+		_blocker.add_theme_color_override("font_color", col["hazard_light"] if message_bad else col["meadow_light"])
 	else:
 		_blocker.text = why
-		_blocker.add_theme_color_override("font_color", col["hazard"])
+		_blocker.add_theme_color_override("font_color", col["hazard_light"])
 	_build.disabled = not why.is_empty()
 
 

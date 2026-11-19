@@ -62,3 +62,12 @@ Resume point. Newest entry last. Times are CEST from `date`.
 - ui/fixtures/make_fake.mjs: its plan had no PLAYER CHECK line, which the Planner refuses since P10; the fake live
   path could not plan. One contract line added; `ui.sh live` passes again (87 s).
 - `ui.sh editor` (drive.gd `_editor`, `--slow` for a clip, `--no-build` to stop at the brief): ok in 61 s.
+- (round 2, 01:31-) E3: change a decision from the game sheet (Decided lines -> option chips -> the lot refits, the
+  current ring dashed -> Send the change through door.change; the draft keeps `changes`; a made change becomes
+  decided). Drive: big ice -> standard, change made, 92 s. Drive now reads back each chip answer.
+- E4 look pass by Astra (Codex, session 01a1f140-8552-7913-9cc6-7026c7570d86, 231,058 tokens): look.gd, Archivo
+  font (OFL, fonts/OFL.txt), presswork.gd, workshop_art.gd, map_landscape.gd, drawing in village_map / scale_strip,
+  styling lines in workbench / game_sheet. village_map.gd went to 659 lines: its state and helpers moved to
+  map_base.gd (village_map extends it); ten screens re-captured after the split and checked by eye.
+- Archivo loads imported when the editor has imported it, else from the .ttf directly; the two render with slightly
+  different letter spacing (Astra's own captures are the direct path: stills/look-pass/after-astra-raw/).

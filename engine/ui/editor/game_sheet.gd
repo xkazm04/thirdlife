@@ -15,7 +15,7 @@ const JobModel = preload("res://ui/job_model.gd")
 signal closed
 
 const M: int = 16
-const LEFT_W: int = 540
+const LEFT_W: int = 558
 const STATE_WORDS: Dictionary = {"queued": "waiting", "running": "building", "verifying": "checking", "blocked": "on hold",
 	"promoted": "built", "failed": "failed"}
 const PHASE_WORDS: Dictionary = {"designing": "the brief is being written", "approve": "the brief waits for you",
@@ -40,6 +40,10 @@ var _decided: VBoxContainer
 var _open: VBoxContainer
 var _now: VBoxContainer
 var _map: VillageMap
+var _size_line: Label
+var _editing: String = ""            # E3: the question whose line under Decided is open for a change
+var _base: Dictionary = {}           # E3: the answers as they stand, without the picked option
+var _pending: Dictionary = {}        # E3: {key, to}: the option picked, not sent yet (the map shows it)
 
 
 ## The draft the workbench wrote for this job: the one whose request is the job's sentence ({} when none).
@@ -52,6 +56,7 @@ static func find_draft(jobs_root: String, sentence: String) -> Dictionary:
 		if d is Dictionary and str((d as Dictionary).get("schema", "")) == "tl.editor-draft/1":
 			var req: String = str((d as Dictionary).get("request", "")).replace("\"", "'").strip_edges()
 			if req == want:
+				(d as Dictionary)["_path"] = dir.path_join(f)
 				return d
 	return {}
 
@@ -66,11 +71,9 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	col = Look.colors()
-	font = ThemeDB.fallback_font
-	var fv: FontVariation = FontVariation.new()
-	fv.base_font = font
-	fv.variation_embolden = 0.7
-	bold = fv
+	var face := Look.typeface()
+	font = Look.weight(face, 480)
+	bold = Look.weight(face, 790, 96)
 	theme = Look.theme(col, font)
 	model = Model.new()
 	model.load_all()
@@ -100,7 +103,7 @@ func _plate(name_: String, title: String, parent: Node) -> VBoxContainer:
 	var v: VBoxContainer = VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
 	p.add_child(v)
-	v.add_child(_label(title, 20, true))
+	v.add_child(_label(title, 23, true))
 	var body: VBoxContainer = VBoxContainer.new()
 	body.add_theme_constant_override("separation", 4)
 	v.add_child(body)
@@ -113,6 +116,10 @@ func _label(text: String, fs: int = 14, b: bool = false, color: Color = Color(0,
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if b:
 		l.add_theme_font_override("font", bold)
+	if b and fs >= 20:
+		l.add_theme_stylebox_override("normal", Look.plate(col, "flag" if color == col["card"] else "heading"))
+	elif b and fs <= 12 and not text.is_empty() and text == text.to_upper():
+		l.add_theme_stylebox_override("normal", Look.plate(col, "index"))
 	if fs != 14:
 		l.add_theme_font_size_override("font_size", fs)
 	if color.a > 0.0:
@@ -135,16 +142,16 @@ func _button(name_: String, text: String, primary: bool) -> Button:
 	if primary:
 		b.add_theme_font_override("font", bold)
 		b.add_theme_font_size_override("font_size", 16)
-		b.add_theme_stylebox_override("normal", Look.sb(col["honey"], col["ink"], 3, 8, 18, 6))
-		b.add_theme_stylebox_override("hover", Look.sb(col["honey"].lightened(0.1), col["ink"], 3, 8, 18, 6))
-		b.add_theme_stylebox_override("pressed", Look.sb(col["honey_dark"], col["ink"], 3, 8, 18, 6))
-		b.add_theme_stylebox_override("disabled", Look.sb(col["paper"].darkened(0.08), Color(col["ink"], 0.3), 3, 8, 18, 6))
+		b.add_theme_stylebox_override("normal", Look.keycap(col["honey"], col["ink"], true, 18, 6))
+		b.add_theme_stylebox_override("hover", Look.keycap(col["honey"].lerp(col["card"], 0.20), col["ink"], true, 18, 6))
+		b.add_theme_stylebox_override("pressed", Look.keycap(col["honey_dark"], col["ink"], true, 18, 6))
+		b.add_theme_stylebox_override("disabled", Look.keycap(col["concrete"], col["rule"], false, 18, 6))
 	return b
 
 
 func _build() -> void:
 	var shade: ColorRect = ColorRect.new()
-	shade.color = Color(col["shade"], 0.35)
+	shade.color = Color(col["shade"], 0.26)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
@@ -157,23 +164,24 @@ func _build() -> void:
 	root.add_theme_constant_override("separation", 10)
 	add_child(root)
 	var head: PanelContainer = PanelContainer.new()
-	head.add_theme_stylebox_override("panel", Look.sb(col["paper"], col["ink"], 3, 8, 14, 6))
+	head.add_theme_stylebox_override("panel", Look.plate(col, "rail"))
 	root.add_child(head)
 	var hh: HBoxContainer = HBoxContainer.new()
 	head.add_child(hh)
 	var back: Button = _button("GamesButton", "< Games", false)
 	back.pressed.connect(func() -> void: closed.emit())
 	hh.add_child(back)
-	_title = _label("", 20, true)
+	_title = _label("", 22, true, col["card"])
 	hh.add_child(_title)
 	_chip = Label.new()
 	_chip.name = "StateChip"
+	_chip.add_theme_stylebox_override("normal", Look.keycap(col["vellum"], col["wood"], false, 6, 3))
 	_chip.add_theme_font_override("font", bold)
 	_chip.add_theme_font_size_override("font_size", 13)
 	hh.add_child(_chip)
 	_figures = Label.new()
 	_figures.add_theme_font_size_override("font_size", 12)
-	_figures.add_theme_color_override("font_color", col["dim"])
+	_figures.add_theme_color_override("font_color", col["vellum"])
 	hh.add_child(_figures)
 	var mid: HBoxContainer = HBoxContainer.new()
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -193,7 +201,7 @@ func _build() -> void:
 	left.add_child(dp)
 	var dv: VBoxContainer = VBoxContainer.new()
 	dp.add_child(dv)
-	dv.add_child(_label("Decided", 20, true))
+	dv.add_child(_label("Decided", 23, true))
 	dv.add_child(scroll)
 	_decided = VBoxContainer.new()
 	_decided.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -204,9 +212,9 @@ func _build() -> void:
 	mid.add_child(right)
 	var rv: VBoxContainer = VBoxContainer.new()
 	right.add_child(rv)
-	rv.add_child(_label("On its lot", 20, true))
+	rv.add_child(_label("On its lot", 23, true))
 	var frame: PanelContainer = PanelContainer.new()
-	frame.add_theme_stylebox_override("panel", Look.sb(col["ink"], col["ink"], 0, 6, 2, 2))
+	frame.add_theme_stylebox_override("panel", Look.sb(col["trunk"], col["ink"], 1, 2, 2, 2))
 	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rv.add_child(frame)
 	_map = VillageMap.new()
@@ -218,6 +226,9 @@ func _build() -> void:
 	_map.read_only = true
 	_map.close_up = true
 	frame.add_child(_map)
+	_size_line = _label("", 12, false, col["dim"])
+	_size_line.name = "SizeLine"
+	rv.add_child(_size_line)
 	rv.add_child(_label("Now", 20, true))
 	_now = VBoxContainer.new()
 	_now.name = "Now"
@@ -240,7 +251,7 @@ func _reload() -> void:
 		phase = "stalled" if not _starting() else phase
 	job["shown"] = phase
 	var derr: String = str(door.call("last_error", job_dir)) if door != null else ""
-	var sig: String = "%s|%d|%s|%s|%s" % [phase, int(job.get("n_events", 0)), message, _starting(), derr]
+	var sig: String = "%s|%d|%s|%s|%s|%s|%s" % [phase, int(job.get("n_events", 0)), message, _starting(), derr, _editing, str(_pending)]
 	_figures.text = "  %s · %s tokens" % [_clock(float(job.get("elapsed_s", 0))), _k(int(job.get("tokens_in", 0)) + int(job.get("tokens_out", 0)))]
 	if sig == _sig:
 		return
@@ -249,6 +260,7 @@ func _reload() -> void:
 	_chip.text = " %s " % str(PHASE_WORDS.get(phase, phase))
 	_chip.add_theme_color_override("font_color", col["hazard"] if phase in ["failed", "stalled", "cancelled"] else (col["green"] if phase == "done" else col["ink"]))
 	_fill_open(phase)
+	_apply_answers()
 	_fill_decided()
 	_fill_now()
 	var bays: Array = []
@@ -278,25 +290,117 @@ func _clear(box: Node) -> void:
 		c.queue_free()
 
 
+## E3: the answers as they stand now: the draft's, then every change sent from here whose request was made; the
+## picked option on top while it is not sent (so the map and the size line show it). Changes still in flight or not
+## made are shown on their line, never taken as decided.
+func _apply_answers() -> void:
+	var base: Dictionary = (draft.get("answers", {}) as Dictionary).duplicate(true)
+	for c: Dictionary in draft.get("changes", []):
+		if _outcome(c) == "made":
+			base[str(c["key"])] = {"id": str(c["to"]), "by": "player", "changed": true}
+	_base = base.duplicate(true)
+	model.answers = base
+	var ring_before: float = model.lot_radius()
+	if not _pending.is_empty():
+		base[str(_pending["key"])] = {"id": str(_pending["to"]), "by": "player"}
+	model.answers = base
+	if _map != null:
+		_map.ring_before = ring_before if not _pending.is_empty() else 0.0
+	if _size_line == null:
+		return
+	var f: Vector3 = model.footprint()
+	var line: String = "%d x %d m, %d m high · ring %d m (estimate)" % [int(f.x), int(f.y), int(f.z), int(model.lot_radius())]
+	if not _pending.is_empty():
+		var errs: PackedStringArray = []
+		for ch: Dictionary in model.checks():
+			if ch["level"] == "error":
+				errs.append(str(ch["text"]))
+		line = "With this change: " + line + ("" if errs.is_empty() else " · on its lot it " + errs[0])
+	_size_line.text = line
+
+
+## What became of a change sent from here: the job's own change request with the same text ("" when not found yet).
+func _outcome(c: Dictionary) -> String:
+	for jc: Dictionary in job.get("changes", []):
+		if str(jc["text"]) == str(c["text"]).replace("\"", "'"):
+			return str(jc["outcome"])
+	return ""
+
+
+## Why a change cannot be sent now ("" = it can), in the panel's own words (panel.gd _fill_change).
+func _change_blocker() -> String:
+	if int(job.get("done", 0)) == 0:
+		return "A change can be asked for once the first package is built."
+	if door == null or not bool(door.get("available")):
+		return str(door.get("problem")) if door != null else "No Foreman."
+	if _starting() or str(job.get("shown", "")) in JobModel.LIVE_PHASES:
+		return "The builders are busy with this game; a change can be sent when they stop."
+	if str(job.get("shown", "")) == "cancelled":
+		return "This game was discarded."
+	return ""
+
+
+func _change_text(q: Dictionary, from_id: String, to_id: String) -> String:
+	var a: Dictionary = model.option(q, from_id)
+	var b: Dictionary = model.option(q, to_id)
+	return "Change of a decision: %s %s instead of %s. Make it %s." % [str(q["ask"]), str(b.get("label", to_id)), str(a.get("label", from_id)), str(b.get("say", b.get("label", to_id)))]
+
+
 func _fill_decided() -> void:
 	_clear(_decided)
+	_decided.add_child(_label("Click a line to change it.", 12, false, col["dim"]))
 	for q: Dictionary in model.questions():
-		var v: Dictionary = model.value(q["key"])
+		var key: String = q["key"]
+		var shown: Dictionary = model.value(key)
+		if not _pending.is_empty() and _pending["key"] == key:
+			shown = _base.get(key, model.value(key))
+		var v: Dictionary = shown
 		var o: Dictionary = model.option(q, str(v["id"]))
 		var who: String = {"player": "yours", "sentence": "from your words", "proposal": "left to the proposal"}.get(str(v["by"]), "")
+		if bool(v.get("changed", false)):
+			who = "changed by you"
+		var row: Button = Button.new()
+		row.name = "Decided_" + key
+		row.focus_mode = Control.FOCUS_NONE
+		row.flat = true
+		row.custom_minimum_size = Vector2(0, 25)
+		row.add_theme_stylebox_override("hover", Look.sb(Color(col["honey"], 0.18), Color(0, 0, 0, 0), 0, 4, 0, 0))
+		row.add_theme_stylebox_override("normal", Look.sb(Color(col["honey"], 0.22) if _editing == key else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 4, 0, 0))
+		row.pressed.connect(func() -> void:
+			_editing = "" if _editing == key else key
+			_pending = {}
+			message = ""
+			_sig = ""
+			_reload())
 		var h: HBoxContainer = HBoxContainer.new()
+		h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(h)
 		var k: Label = _label(str(q["ask"]), 13, false, col["dim"])
-		k.custom_minimum_size = Vector2(250, 0)
+		k.custom_minimum_size = Vector2(224, 0)
+		k.add_theme_stylebox_override("normal", Look.plate(col, "ledger"))
 		k.size_flags_horizontal = Control.SIZE_FILL
 		h.add_child(k)
-		h.add_child(_label(str(o.get("label", v["id"])), 13, true))
-		h.add_child(_label(who, 12, false, col["honey_dark"].darkened(0.2) if v["by"] == "proposal" else col["dim"]))
-		_decided.add_child(h)
+		var answer := _label(str(o.get("label", v["id"])), 13, true)
+		answer.custom_minimum_size = Vector2(183, 0)
+		answer.add_theme_stylebox_override("normal", Look.plate(col, "ledger"))
+		h.add_child(answer)
+		var source := _label(who, 12, false, col["wood_dark"] if v["by"] == "proposal" else col["dim"])
+		source.add_theme_stylebox_override("normal", Look.plate(col, "ledger"))
+		h.add_child(source)
+		_decided.add_child(row)
+		for c: Dictionary in draft.get("changes", []):
+			if str(c["key"]) == key and _outcome(c) != "made":
+				var out: String = _outcome(c)
+				_decided.add_child(_label("   change to %s sent: %s" % [str(model.option(q, str(c["to"])).get("label", c["to"])), out if not out.is_empty() else "waiting for the Foreman"], 12, true, col["hazard"] if out in ["not made", "failed"] else col["honey_dark"].darkened(0.25)))
+		if _editing == key:
+			_change_box(q, str(v["id"]))
 	var lot: Dictionary = draft.get("lot", {})
 	var fp: Dictionary = draft.get("footprint", {})
 	if not lot.is_empty():
-		var s: Array = fp.get("size_m", [0, 0])
-		_decided.add_child(_label("Lot at %d, %d · ring %d m · %d x %d m (estimate until it is built)" % [int((lot["at"] as Array)[0]), int((lot["at"] as Array)[1]), int(lot.get("radius", 0)), int(s[0]), int(s[1])], 12, false, col["dim"], true))
+		var f: Vector3 = model.footprint() if _pending.is_empty() else Vector3.ZERO
+		if _pending.is_empty():
+			_decided.add_child(_label("Lot at %d, %d · ring %d m · %d x %d m (estimate until it is built)" % [int((lot["at"] as Array)[0]), int((lot["at"] as Array)[1]), int(model.lot_radius()), int(f.x), int(f.y)], 12, false, col["dim"], true))
 	var brief: Dictionary = job.get("brief", {})
 	if not brief.is_empty():
 		_decided.add_child(_label("THE BRIEF THE DESIGNER WROTE", 11, true, col["dim"]))
@@ -309,6 +413,78 @@ func _fill_decided() -> void:
 				h.add_child(k)
 				h.add_child(_label(str(brief[key]), 13))
 				_decided.add_child(h)
+
+
+## E3: the options of one decision as chips; a picked one shows on the map and in the size line, and is sent as a
+## change request through the Foreman's change path (door.change), the same one the panel's Change field uses.
+func _change_box(q: Dictionary, current: String) -> void:
+	var key: String = q["key"]
+	var flow: HFlowContainer = HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 6)
+	for o: Dictionary in q["options"]:
+		var id: String = str(o["id"])
+		var picked: bool = (not _pending.is_empty() and _pending["to"] == id) or (_pending.is_empty() and id == current)
+		var b: Button = Button.new()
+		b.name = "Change_%s_%s" % [key, id]
+		b.text = str(o["label"]) + ("  · now" if id == current else "")
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override("font_size", 13)
+		var sb: StyleBoxFlat = Look.keycap(col["honey"] if picked else col["card"], col["ink"] if picked else col["rule"], picked, 11, 4)
+		b.add_theme_stylebox_override("normal", sb)
+		b.add_theme_stylebox_override("hover", Look.keycap(sb.bg_color.darkened(0.07), sb.border_color, picked, 11, 4))
+		b.add_theme_stylebox_override("pressed", sb)
+		b.pressed.connect(func() -> void:
+			_pending = {} if id == current else {"key": key, "to": id}
+			message = ""
+			_sig = ""
+			_reload())
+		flow.add_child(b)
+	_decided.add_child(flow)
+	if _pending.is_empty():
+		_decided.add_child(_label("Pick another option: the lot on the right shows it before anything is sent.", 12, false, col["dim"], true))
+		return
+	var text: String = _change_text(q, current, str(_pending["to"]))
+	_decided.add_child(_label(text, 12, false, Color(0, 0, 0, 0), true))
+	var why: String = _change_blocker()
+	if why.is_empty() and not model.fits():
+		for ch: Dictionary in model.checks():
+			if ch["level"] == "error":
+				why = "On its lot the bigger game " + str(ch["text"]) + ": a change cannot move the lot."
+				break
+	var h: HBoxContainer = HBoxContainer.new()
+	var send: Button = _button("SendChange", "Send the change", true)
+	send.disabled = not why.is_empty()
+	send.pressed.connect(func() -> void: _send_change(q, current, text))
+	h.add_child(send)
+	var cancel: Button = _button("CancelChange", "Keep it as it is", false)
+	cancel.pressed.connect(func() -> void:
+		_pending = {}
+		_editing = ""
+		_sig = ""
+		_reload())
+	h.add_child(cancel)
+	_decided.add_child(h)
+	if not why.is_empty():
+		_decided.add_child(_label(why, 12, true, col["hazard"], true))
+
+
+func _send_change(q: Dictionary, current: String, text: String) -> void:
+	var err: String = str(door.call("change", job_dir, text))
+	if err.is_empty():
+		var changes: Array = draft.get("changes", [])
+		changes.append({"key": str(q["key"]), "from": current, "to": str(_pending["to"]), "text": text})
+		draft["changes"] = changes
+		var path: String = str(draft.get("_path", ""))
+		if not path.is_empty():
+			var keep: Dictionary = draft.duplicate(true)
+			keep.erase("_path")
+			var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+			if f != null:
+				f.store_string(JSON.stringify(keep, "  ") + "\n")
+				f.close()
+		_pending = {}
+		_editing = ""
+	_act(err)
 
 
 func _fill_open(phase: String) -> void:
@@ -401,7 +577,7 @@ func _fill_now() -> void:
 		chip.custom_minimum_size = Vector2(110, 0)
 		chip.add_theme_font_override("font", bold)
 		chip.add_theme_font_size_override("font_size", 12)
-		var bg: StyleBoxFlat = Look.sb(col.get("bay_" + st, col["paper"]), col["ink"], 1, 4, 4, 1)
+		var bg: StyleBoxFlat = Look.keycap(col.get("bay_" + st, col["paper"]), col["trunk"], true, 4, 2)
 		chip.add_theme_stylebox_override("normal", bg)
 		h.add_child(chip)
 		h.add_child(_label(str(p["title"]), 13))

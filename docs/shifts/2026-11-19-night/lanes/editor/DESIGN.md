@@ -59,12 +59,12 @@ Captures: `stills/today/` (1280x720, `ui.sh shot` on the seven display fixtures 
 
 | Screen | What it does well | What fails a player |
 |---|---|---|
-| List (`new.png`) | One row per game, state chip, packages n/m, a bar, time. Honest states (stalled, budget, question). | Rows are named by the job, not by the game; nothing says *where* the game is or will be in the village. The list is the home screen, so the first thing a player meets is a jobs table. |
-| New game (`new.png`, top) | It exists and is one click away. | **A blank text box and a "Design" button.** Nothing tells the player what the engine can build, what it will ask, or what a good sentence looks like. Every decision (players a side, rink size, periods, difficulty) is left to the Designer model to guess, and the player sees the guesses only when the brief comes back (minutes later, tokens spent). |
-| Brief (`01-approve.png`) | The player's sentence in quotes; the brief's five fields; an estimate; Approve / Discard. | The five fields are prose cut at one line ("...side by...") and none can be changed except by Discard and typing the whole idea again. The estimate is shown as a fact. Size, place and look are buried in "arena" prose. The approve gate comes *after* the Designer run is paid for. |
-| Build (`fx-2-question.png`) | Packages with state, round, time, tokens; a builder's question with an answer field and "let it change core". | It speaks the Foreman's language (`core_run`, `workshop_look`, rnd, tokens). What the question *means for my game* is not said; there is no picture of what is built so far in the place it will stand. |
-| Change (`fx-7-change.png`) | One field; requests listed with their outcome. | A change is a blank box again; nothing ties it to the decision it would overturn. |
-| Tune (`fx-6-tune.png`) | Sliders with labels and units straight from the pack's declared params; writes a copy. | Good and kept: the only screen that works on the *game* rather than on the *job*. |
+| List (`new.jpg`) | One row per game, state chip, packages n/m, a bar, time. Honest states (stalled, budget, question). | Rows are named by the job, not by the game; nothing says *where* the game is or will be in the village. The list is the home screen, so the first thing a player meets is a jobs table. |
+| New game (`new.jpg`, top) | It exists and is one click away. | **A blank text box and a "Design" button.** Nothing tells the player what the engine can build, what it will ask, or what a good sentence looks like. Every decision (players a side, rink size, periods, difficulty) is left to the Designer model to guess, and the player sees the guesses only when the brief comes back (minutes later, tokens spent). |
+| Brief (`01-approve.jpg`) | The player's sentence in quotes; the brief's five fields; an estimate; Approve / Discard. | The five fields are prose cut at one line ("...side by...") and none can be changed except by Discard and typing the whole idea again. The estimate is shown as a fact. Size, place and look are buried in "arena" prose. The approve gate comes *after* the Designer run is paid for. |
+| Build (`fx-2-question.jpg`) | Packages with state, round, time, tokens; a builder's question with an answer field and "let it change core". | It speaks the Foreman's language (`core_run`, `workshop_look`, rnd, tokens). What the question *means for my game* is not said; there is no picture of what is built so far in the place it will stand. |
+| Change (`fx-7-change.jpg`) | One field; requests listed with their outcome. | A change is a blank box again; nothing ties it to the decision it would overturn. |
+| Tune (`fx-6-tune.jpg`) | Sliders with labels and units straight from the pack's declared params; writes a copy. | Good and kept: the only screen that works on the *game* rather than on the *job*. |
 
 Verdict: today's panel is a faithful **job monitor**. It shows the log honestly and its live path is proven (N6). It
 is not an **editor**: the player cannot see or change the decisions that make the game (they live in model prose),
@@ -245,3 +245,16 @@ When no free place by the road fits the size at all (a 96 x 70 m track), that is
   them and the game sheet can show Decided from the log) and `job_created.lot` (`{at, yaw, radius}`), so the site takes
   the place the player chose. Tonight the slice puts the decisions into the sentence (which the Designer already reads)
   and keeps the lot in the draft file.
+
+## 10. Round 2 (01:35-): change a decision from the game sheet (E3)
+
+Every line under Decided is a button ("Click a line to change it."). Clicking it opens that question's options as
+chips (the current one marked "now"). Picking another option sends nothing: the lot on the right refits at once
+(the new ring drawn, the current ring dashed with "now: ring N m"), the size line under the map says "With this
+change: ..." and, when the new ring no longer fits the lot, which neighbour it hits; the request text that will be
+sent is shown in full. "Send the change" goes through the Foreman's existing change path (`foreman change`, the same
+door the panel's Change field uses), so no contract changes. The change is kept in the draft (`changes [{key, from,
+to, text}]`), and its line shows the job's own outcome for that request ("in flight", "not made", "made"); only a
+made change becomes the decided value ("changed by you"). Sending is disabled, with the panel's own reasons, until a
+package is built and while the builders are busy; a change that makes the game outgrow its lot is refused with the
+neighbour named (a change cannot move the lot).
