@@ -130,4 +130,4 @@ https://claude.ai/artifact/9bQ6cjKuVXGF8Hw9UGYFHu. About 6.0 M Astra tokens as p
 The owner's points 1-2 of the day verdict, before the night. Lanes: wings (summon and dismiss them by magic, none
 worn by default) and hud (a HUD customized in the world creator, styled beyond the first try); both Astra alone for the
 look, with an Opus operator. Land and push by 23:30. Plan: `docs/shifts/2026-11-19-evening/PLAN.md`.
-- 19:15 evening lanes launched: wings, hud (from `2950f03`).
+- 19:10 evening lanes launched: wings, hud (from `2950f03`).

@@ -17,13 +17,13 @@ on my directions"
 | wings | Astra alone designs and builds the summon/dismiss look (look judged by eye); Opus operator verifies | `engine/kernel/world/flight_wings.gd`, `engine/kernel/world/visitor.gd`, `engine/kernel/api/tl_biped.gd`, `engine/kernel/api/tl_vfx.gd`, `engine/kernel/api/tl_vfx_node.gd`, `engine/style/tl_style_fx.gd`, `engine/style/shaders/**`, `assets/**` | 540-549 |
 | hud | Astra alone designs and builds the HUD and its editor (look judged by eye); Opus operator verifies | `engine/kernel/api/tl_hud.gd`, `engine/kernel/API.md`, `engine/style/STYLE.md`, `engine/style/style.json`, `engine/style/hud/**`, `engine/ui/**`, `engine/packs/parkour/**` | 550-559 |
 
-## Launch record (19:15)
+## Launch record (19:10)
 Worktrees `e19-wings` and `e19-hud` were cut from `2950f03`, each with foreman deps, the site jobs and the class cache.
 Scopes are claimed in `.claude/sessions.json` (`tl arch` scope-claims PASS).
 
 | Lane | Agent | Started |
 |---|---|---|
-| wings | Opus operator, Astra builds | 19:15 |
-| hud | Opus operator, Astra builds | 19:15 |
+| wings | Opus operator, Astra builds | 19:10 |
+| hud | Opus operator, Astra builds | 19:10 |
 
 Timers: standups at 20:47, 21:47 and 22:47 (the scheduler shifts them a little), and the verdict at 23:07.
