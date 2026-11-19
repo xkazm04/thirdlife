@@ -12,18 +12,12 @@
         "devx/test/cards*",
         "engine/kernel/world/site.gd",
         "engine/kernel/world/site/**",
-        "docs/shifts/2026-11-19-day/lanes/editor/**"
+        "docs/shifts/2026-11-19-day/lanes/editor/**",
+        "engine/kernel/world/terrain/world_space.gd",
+        "engine/kernel/runner/**",
+        "engine/kernel/world/tiers.gd"
       ],
-      "note": "day 19 Nov lane editor round 2, .claude/worktrees/d19-editor3, until 16:45"
-    },
-    {
-      "id": "d19-parkour",
-      "scope": [
-        "engine/packs/parkour/**",
-        "engine/kits/**",
-        "docs/shifts/2026-11-19-day/lanes/parkour/**"
-      ],
-      "note": "day 19 Nov lane parkour round 2, .claude/worktrees/d19-parkour3 (moves stage), until 16:45"
+      "note": "day 19 Nov lane editor round 4 (turn the arrived game), .claude/worktrees/d19-editor4, until 16:15"
     }
   ]
 }

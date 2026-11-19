@@ -106,3 +106,4 @@ to overturn. Contracts for E2 were written first (`cf73f58`). Land and push by 1
 - 14:05 standup: all lanes on track; flight redoing round 3 on top of Skyline; blend quiet for an hour (watch).
 - 14:35 flight redo landed (`ce0dd63`): ledge 3.05 m, cameras ignore bars, pack grip case; soft swing for the village walker only (pack swing unchanged, Skyline hashes identical). Main: packs 47/47, world 8/8, moves. 14/14. Flight lane finished for the day.
 - 14:50 blend round 2 landed (`0503123`: no facets, terrain-painted wear, car lot as main; checks 512-513). Blend lane finished. Main full gate running.
+- 15:10 main full gate green (kernel.selftest 310/310, packs 47/47, world 8/8; perf NOT RUN busy). Merged editor round 3 (yawed construction, auto pad, titles) and parkour round 4 (runway recovery bug a person could hit, Skyline camera): `a6f8941`, foreman 223, packs 48/48, ui 166, world 8/8. Parkour finished. Editor round 4 (the arrived game's turn) until 16:15.
