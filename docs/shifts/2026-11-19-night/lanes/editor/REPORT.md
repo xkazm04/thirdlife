@@ -87,3 +87,58 @@ in 60 s with the fake adapter on the real runner.
 1. Put the lot into the world, so the construction rises where the player placed it.
 2. Change a decision from the game sheet: the ring refits and the change is sent as a change request.
 3. Make the village map the editor's home screen, with every game on its lot.
+
+---
+
+# Round 2 (01:31-02:13): change a decision, and Astra's look pass
+
+The Director saved this from the lane's message and re-ran `ui.sh selftest`: 123 passed, 0 failed. The Director also
+looked at the side-by-sides at 720p.
+
+## A. Change a decision from the game sheet
+- Click a line under Decided ("Click a line to change it."). The question's options appear as chips, with the current one
+  marked "now".
+- Pick another option and the lot refits at once:
+  - the new ring is drawn and the current ring is dashed ("now: ring N m");
+  - a line reads "With this change: 67 x 45 m … ring 45 m";
+  - the exact request text is shown.
+- "Send the change" goes through the existing Foreman change path. No contract changed.
+- Sending is refused until a package is built, while the builders are busy, or when the new size outgrows the lot (the
+  neighbour it would hit is named).
+- The line follows the job's outcome: waiting, in flight, not made, made. Only a made change becomes the decided value,
+  marked "changed by you". "Keep it as it is" cancels.
+- The drive was run on input events alone: rink, then Standard 60 x 30 m (ring 54 -> 45 m before sending), then Send,
+  then the change request appears in the log, then the change is made. It passes in about 92 s (fake adapter, real
+  runner). Captures are in `stills/change/`.
+- The selftest gained 7 cases: 123 in all, none failing.
+- **Open: a lost click.** In 1 run of about 6, a click on the "Pro" chip did not register as an answer; 4 runs made to
+  catch it did not reproduce it. The drive now reads every chip answer back and fails loudly if one is missing. A player
+  would feel this; watch it.
+
+## B. Look pass by Astra alone
+- One Codex run: session `01a1f140-8552-7913-9cc6-7026c7570d86`, about 26 min, 231,058 tokens. Astra was given only the
+  problem, the before captures, its own mockups as reference, and the rule that changes be visual only. Its notes are in
+  `stills/look-pass/NOTES-astra.md`.
+- What it changed:
+  - the Archivo typeface (SIL Open Font License, `engine/ui/editor/fonts/OFL.txt`, 644 KB);
+  - cream paper panels ruled in ink, ink header and review bars, the red workshop flag, honey chips;
+  - an illustrated village map: fenced plots, a landmark per neighbour, wheel tracks, trees, terracotta hatching where a
+    game overlaps;
+  - jerseys on the rink, a scale drawing on graph paper beside the 2 m walker, and boarded bays with signs in the game
+    sheet.
+- Clarity: the lane read every screen at 1280x720 and 1920x1080. Everything is readable and every control can still be
+  found by name. Astra was not sent back.
+- The only change the lane made itself: `village_map.gd` reached 659 lines, over the 600 ratchet, so its state and small
+  helpers moved into `map_base.gd`. Drawing did not change, and every screen was re-captured and looked at.
+- Pictures: `stills/look-pass/side-by-side/` (25 before/after pairs), `after/`, and `after-astra-raw/`. The separate
+  before set was dropped because the side-by-sides hold it. Clip: `clip-look.mp4`, 20.1 s at 1.4x.
+
+## Gates
+- `ui.sh selftest`: 123 passed, 0 failed.
+- `ui.sh editor`: the whole session passes after the look pass, through to the change being made.
+- `tl check --tier fast`: 5/5.
+- Packs were not run, because nothing outside `engine/ui` changed.
+
+## For the Director
+- JOB.md could take an optional `change_requested.decision {key, to}`. Today the change is matched to its decision by text.
+- The village still does not put a workbench game on the lot the player chose (round 1, proposal 2).
