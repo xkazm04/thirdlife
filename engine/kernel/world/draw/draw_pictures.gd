@@ -262,6 +262,7 @@ func _place_standin(e: Dictionary, mi: MeshInstance3D) -> void:
 	mi.set_instance_shader_parameter(PLOT, _plot_v4(e["rel"]))
 	if float(e["radius"]) > 0.0:
 		mi.set_instance_shader_parameter(CLIP, Vector4(float(e["radius"]), float(e["rim"]), 0.0, 0.0))    # cut, not bent: the bend is baked
+		_dress_ground(e, mi, false)
 	if mi.mesh != null:
 		mi.custom_aabb = (e["rel"] as Transform3D) * mi.mesh.get_aabb().grow(4.0)
 
@@ -325,7 +326,7 @@ func _collect_standin(n: Node, holder: Node3D, accs: Array, jobs: Array) -> void
 ## of the toon shader (TLStyle.flat_material: the kernel's boxes and balls, in one colour) into a surface of its own,
 ## anything else (glass, water, a pack's own material) nowhere.
 func _target(acc: Acc, mat: Material) -> Acc:
-	if mat == _pal:
+	if mat == _pal or (rim_material != null and mat == rim_material):
 		return acc
 	if mat is ShaderMaterial and (mat as ShaderMaterial).shader == (_pal as ShaderMaterial).shader:
 		if not acc.extra.has(mat):

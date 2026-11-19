@@ -9,7 +9,7 @@
 
 > **P4 (11 November, morning): the land has height and the visitor has a body.** The world's ground is a heightfield
 > (`terrain/village_terrain.gd`): rolling land, a ring of hills, a bluff with a cliff face, a low valley with a river
-> and two ponds. Every plot stands on a flat pad of its own height with a bank and a kerb round it; roads follow the
+> and two ponds. Every plot stands on a flat pad of its own height graded into the surrounding land; roads follow the
 > land with a spur and a gate to every plot; a bridge crosses the river; trees, rocks and bushes follow the land. The
 > visitor is a capsule in a physics space that belongs to the world (`terrain/world_space.gd`): he walks on the terrain,
 > stands on a plot's own ground inside the plot, and stops at fences, trees, rocks, walls and rails. Sections "Relief"
@@ -79,7 +79,7 @@ N5a's format (TIERS.md) plus:
 | `"events"` | `{"t": 990, "e": "enter"}` (the plot he stands in; `"plot": "<id>"` names one), `{"t": 1440, "e": "leave"}`, `{"t": 1200, "e": "shot", "name": "on_stage_drive"}`, `{"t": 100, "e": "shot", "name": "overview", "cam": "crane", "from": [x, y, z], "to": [x, y, z]}` |
 | `"plots"[i]."radius"` | metres: the circle the pack is cut to and drawn in |
 | `"road"` | `[[x, z], ...]`: control points of the main road; every plot gets a spur and a gate |
-| `"landscape"` | `seed`, `road_half_m`, `trees`, `broadleaf`, `rocks`, `bushes`, `belt`, `tufts`, `mesas`, `haze` (factor on the style's fog, 0.4), `fence`, `gates`, `spurs`, `lots` (`[{"at": [x, z], "radius": m, "h": pad height}]`: fenced building sites with a crane, a scaffold and stacked timber, no game on them yet; no `h` = the land's own height there), P4: `pad_h` (per plot, the height of its pad: the SAME number as the plot's `origin` y, see PATCHES-P4 1), `river` (`{"path": [[x, z], ...], "half_m", "pond_m", "depth_m"}`: a river that ends in a pond at each end), `margin_m` (the heightfield reaches this far beyond the plots, roads and river), `cell_m` (3), `rim_band` (9: must equal the draw layer's), P13: `soft_patches` (150: low patches of worn earth, darker grass and meadows; their own random generator), `edges_now` (false: build the pad edges in the frame instead of on a worker, to measure; `TL_LAND_NOW=1` does the same) |
+| `"landscape"` | `seed`, `road_half_m`, `trees`, `broadleaf`, `rocks`, `bushes`, `belt`, `tufts`, `mesas`, `haze` (factor on the style's fog, 0.4), `fence`, `gates`, `spurs`, `lots` (`[{"at": [x, z], "radius": m, "h": pad height}]`: work yards with a crane, a scaffold and stacked timber, no game on them yet; no `h` = the land's own height there), P4: `pad_h` (per plot, the height of its pad: the SAME number as the plot's `origin` y, see PATCHES-P4 1), `river` (`{"path": [[x, z], ...], "half_m", "pond_m", "depth_m"}`: a river that ends in a pond at each end), `margin_m` (the heightfield reaches this far beyond the plots, roads and river), `cell_m` (3), `rim_band` (optional width override in metres, shared by rendering and collision), P13: `soft_patches` (150: low patches of worn earth, darker grass and meadows; their own random generator), `edges_now` (false: build the pad edges in the frame instead of on a worker, to measure; `TL_LAND_NOW=1` does the same) |
 | `"plots"[i]."origin"` | `[x, y, z]`: P4: `y` is the height of the plot's PAD in the world (the draw layer lifts the pack by its own rim on top of it) |
 | `"visitor_probe"` | P4: a list of `{"name", "from": [x, z], "to": [x, z], "expect": "stop" or "pass"}` (and the element `"auto"`: a tree, a rock and the bridge's rail): the visitor's body is put at `from`, sent at `to`, and one `tl.view/1` line of kind `visitor_probe` says where it ended and what stopped it |
 | `"visitor_cam"` | options of the chase camera (`distance`, `height`, `look_height`, `fov`) |
@@ -104,15 +104,14 @@ tour = alone for the same number of its own ticks = replay of the world log**. T
   world builds you again from your seed 3 seconds later: `_pack_setup`, `_pack_start`, tick 0. Nothing is carried
   over (not even `_pack_save` data). Do not keep state in `static var`: the script is the same object in the next
   round.
-- **Your plot has a height.** P4: the world puts your plot on a flat pad at its own height (a bank and a kerb round it;
-  the ground of the world meets your ground at the same height at your rim, so there is no seam and no step). Your
-  rim height is measured as before and lifted on top of the pad. Standing on a pad is a rim, not a floor: a pack
-  whose own ground is a hollow (the drive seed, 7.6 m deep) has its rim ground bent over 9 m, which is 40 to 60
-  degrees at the steepest: the visitor's body stops at the top of it (see "The visitor's body").
+- **Your plot has a height.** P4: the world puts your plot on a flat pad at its own height. The grade follows the rotated footprint.
+  The village aligns your ground to the pad using the median height of terrain vertices around the clip.
+  Deck-only venues use the median of their wide sheets. The draw layer and visitor collider bend the outer quarter-radius (9 to 16 m by default)
+  to that height. Pack walls and props near the clip can still stop someone approaching from that side.
 - **You bring a venue, not a landscape.** In a world your layout is built without its far terrain and its scattered
-  forest. The world draws the ground, the road to your gate, a ring of worn ground and a fence 3.6 m outside your
-  radius, the trees and the mesas. Declare `footprint` in `pack.json`; no seed or example does yet, so tonight's
-  radii are in the walk script.
+  forest. The world draws the ground, the worn spur, short entrance rails, trees and mesas.
+  Declare `footprint` in `pack.json`; a walk can also supply the size, radius and yaw. The tour takes its
+  radii from the walk script.
 - **A big flat floor of your own reads as a disc from above** (`ex_car`): it is cut to your radius like everything.
 - **Far away you are a still picture and run slower** (TIERS.md, DRAW.md): the stand-in is taken when you are first
   far and is kept across your rounds.
@@ -129,16 +128,16 @@ vertex, would have cost 18 s). What is in it:
 |---|---|
 | land | simplex noise (4 m and 1 m amplitude), a ring of hills 24 m high from 300 m out, the border pulled down to the far plain's level |
 | a bluff | a 9.5 m step with a cliff face behind the northern venues (z about -205), a plateau on top |
-| pads | `pad_h` per plot: a flat disc of radius plot + 10.5 m at the plot's height, a bank round it (width 0.7 x height difference when cut into the land, 1.1 x when filled up, at least 3.5 m), a stone kerb at the lip wherever the bank falls or rises more than 0.9 m |
+| pads | Each plot's `footprint.size_m` and yaw set the flat floor. The rounded corners grade into the heightfield over 20 to 66 m according to the elevation difference. The grade eases at both ends, including where roads cross it. The triangles supporting the game through radius + 3 m stay flat. Floors without their own terrain retain their 6 cm sink. |
 | roads | the main road follows the land (the land's height along it, smoothed twice over 20 m); a spur from every plot's gate climbs from the pad's height to the road's; the ground is graded flat across the road (corridor 3 m + 9 m blend) |
 | water | `river`: a valley 5 m under the land round the river (36 m wide), a channel, the style's water material along it, a pond at each end |
 | bridge | where the main road is within 17 m of the river over at least three of its 2 m samples (a road that only ends there gets none): a deck on the road's own profile, rails, three piers; the road strips stop under it |
 | scatter | trees stand on convex ground (tree lines on ridges), rocks on steep ground, none within the pad of a plot, on a road, in the river or on ground steeper than 17 to 19 degrees; 120 pines, 40 broadleaf, 46 rocks, 90 bushes, a belt of 180 on the hills (fewer than N7's 150 / 46 / 60 / 110 / 260) |
 
 Where the plots stand moved (the pads need room and the roads a margin): the tour's plots are 100 m apart in two rows
-either side of a road at z = 0 (`tour.json`). The dirt ring, the fence and the gate stand on the pad at its height;
-the pack's ground meets the pad at the same height (the world's ground used to lie 6 cm under it and the ring 3.6 cm
-over it: that step was the black rim line of last night's pictures 04 and 06).
+either side of a road at z = 0 (`tour.json`). Short rails mark the gate. The spur and crane yard use dirt and sand
+vertex colours on the heightfield. Grass returns around offset strips of worn ground on each game's terrain, sampling the village colours and grass detail in
+village coordinates. The live mesh and its cached pictures use the same colour map.
 
 ## The visitor's body (P4)
 
@@ -148,7 +147,7 @@ with the landscape:
 
 * the terrain's triangles (88,812; a triangle is left out where a plot's own ground carries him instead; until that
   game's colliders are in, those triangles stay as the plot's pad and are taken out then: bugfix-37 D3);
-* a wall (thin quads, 3 m high) along every plot's fence, with the gate left open; trunks of trees and tall rocks
+* a wall matching each 1.2 m entrance rail, with the gate and the flanks open; trunks of trees and tall rocks
   (cylinders); the lots' cranes, scaffolds and timber piles; the bridge's deck, rails and piers;
 * for every plot a COPY of the pack's static colliders (`add_pack`): the shapes are shared (a shape belongs to no
   space), the bodies are new bodies in this space, clipped to the plot's circle, bent at the rim exactly as the draw
@@ -174,7 +173,7 @@ cliff face (stopped by slope 34 m short of the target), a tree, a tall rock and 
 road's verge (passes): 8 of 8 as expected. In the tour (script adjusted as said): 0 blocked ticks, and he ends at the script's last position (`end_dev_m` 0.0).
 
 Limits. A pack's static colliders are copied when the world is built: a wall a pack removes later is still there for
-the visitor. A pack's ground is a bowl he cannot walk into where it is steeper than 55 degrees (the drive seed's rim).
+the visitor. Authored obstacles can stop a crossing, and slopes above 55 degrees can make the visitor slide.
 Bushes, grass, flags and small rocks are walk-through. No swimming (the river is 1 m deep and he wades it).
 The world's space is built by the landscape, so a world without a window has no visitor.
 

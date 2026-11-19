@@ -4,8 +4,8 @@ extends RefCounted
 ##   var stats: Dictionary = Landscape.build(parent, plots, radii, has_ground, cfg)
 ##
 ## P4: the ground has height (terrain/village_terrain.gd: rolling land, a ring of hills, a bluff, a valley with a river
-## and two ponds). Every plot stands on a flat pad of its own height (`pad_h`, the walk's plot origin y) with a bank
-## round it, a kerb at its lip and a spur road that climbs to the gate; the main road follows the land and crosses the
+## and two ponds). Every plot stands on a flat pad of its own height (`pad_h`, the walk's plot origin y) with a graded
+## shoulder and a spur road that climbs to the entrance; the main road follows the land and crosses the
 ## river on a bridge; trees, rocks and bushes follow the land (tree lines on ridges, rocks on banks, none on a road,
 ## none inside a plot). The visitor's collider (terrain/world_space.gd) is built from the same things and stored on
 ## `parent` as the meta `tl_space`.
@@ -17,6 +17,7 @@ extends RefCounted
 ## broadleaf, rocks, bushes, tufts, belt, mesas, seed, ground_key, spread_m, cell_m, rim_band.
 ## Cost is in the returned stats (`build_ms`, `terrain_ms`, instance counts); kernel/world/WORLD.md has the figures.
 
+const DrawBase := preload("res://kernel/world/draw/draw_base.gd")
 const VillageTerrain: GDScript = preload("res://kernel/world/terrain/village_terrain.gd")
 const WorldSpace: GDScript = preload("res://kernel/world/terrain/world_space.gd")
 const Parts: GDScript = preload("res://kernel/world/terrain/village_parts.gd")
@@ -24,7 +25,7 @@ const SiteDraw: GDScript = preload("res://kernel/world/site/draw.gd")    # S: a 
 
 const GROUND_Y: float = 0.0              # the terrain and the far plain: a pack's rim and the ground meet at the same height
 const FLAT_GROUND_Y: float = -0.06      # the flat ground of single shots (`ground()`), as in N7
-const PAD_EXTRA: float = 10.5            # the flat of a pad reaches this far beyond the plot's radius (ring and fence stand on it)
+const SCATTER_MARGIN: float = 10.5            # clearance for scenery around a reserved plot
 
 
 ## The private material of the world's ground: the palette's shader and lookup, with the plots that carry a ground of
@@ -33,9 +34,7 @@ static func _ground_material(plots: Array, radii: Array, has_ground: Array) -> S
 	var pal: ShaderMaterial = TLStyle.material(&"white") as ShaderMaterial
 	if pal == null or pal.shader == null:
 		return null
-	var gm: ShaderMaterial = ShaderMaterial.new()
-	gm.shader = pal.shader
-	gm.set_shader_parameter(&"pal_lut", pal.get_shader_parameter(&"pal_lut"))
+	var gm := pal.duplicate() as ShaderMaterial
 	var holes: Array = []
 	for i: int in plots.size():
 		if float(radii[i]) > 0.0 and bool(has_ground[i]) and holes.size() < 32:
@@ -74,6 +73,9 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	rng.seed = int(cfg.get("seed", 7))
 	# ---- plots and lots: centre, radius, own ground, pad height
 	var centres: Array = []
+	var footprints: Array = cfg.get("footprints", [])
+	var extents: Array[Vector2] = []
+	var axes: Array[Vector2] = []
 	var rad: Array = radii.duplicate()
 	var own_ground: Array = has_ground.duplicate()
 	var pad_h: Array = []
@@ -85,8 +87,13 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var c: Vector2 = Vector2(pt.origin.x, pt.origin.z)
 		centres.append(c)
 		pad_h.append(float(pad_cfg[i]) if i < pad_cfg.size() else pt.origin.y + float(WorldSpace.call("pad_rim", parent.get_parent(), i, float(radii[i]))))
-		lo = lo.min(c - Vector2.ONE * (float(radii[i]) + PAD_EXTRA))
-		hi = hi.max(c + Vector2.ONE * (float(radii[i]) + PAD_EXTRA))
+		var extent: Vector2 = footprints[i] * 0.5 if i < footprints.size() else Vector2.ONE * float(radii[i])
+		var axis := Vector2(pt.basis.x.x, pt.basis.x.z).normalized()
+		extents.append(extent)
+		axes.append(axis)
+		var bounds := (axis.abs() * extent.x + axis.orthogonal().abs() * extent.y).max(Vector2.ONE * float(radii[i]))
+		lo = lo.min(c - bounds - Vector2.ONE * SCATTER_MARGIN)
+		hi = hi.max(c + bounds + Vector2.ONE * SCATTER_MARGIN)
 	var lots: Array = (cfg["lots"] as Array).duplicate() if typeof(cfg.get("lots")) == TYPE_ARRAY else []     # S: a copy (site lots are taken out of it)
 	var site_plots: Array = SiteDraw.split_lots(parent, lots)   # S: a construction site is a plot (kernel/world/site.gd); the rest stay plain lots
 	var lot_auto: Array = []
@@ -95,12 +102,14 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var lc: Vector2 = _v2(lot["at"])
 		var lr: float = float(lot.get("radius", 20.0))
 		centres.append(lc)
+		extents.append(Vector2(0.72, 0.62) * lr)   # working floor under the crane, scaffold and stores
+		axes.append(Vector2.RIGHT)
 		rad.append(lr)
 		own_ground.append(false)
 		pad_h.append(float(lot["h"]) if lot.has("h") else NAN)
 		lot_auto.append(not lot.has("h"))
-		lo = lo.min(lc - Vector2.ONE * (lr + PAD_EXTRA))
-		hi = hi.max(lc + Vector2.ONE * (lr + PAD_EXTRA))
+		lo = lo.min(lc - Vector2.ONE * (lr + SCATTER_MARGIN))
+		hi = hi.max(lc + Vector2.ONE * (lr + SCATTER_MARGIN))
 	var cps: Array = []
 	for p: Variant in cfg.get("road", []):
 		cps.append(_v2(p))
@@ -124,11 +133,6 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		if lot_auto[k]:
 			var li: int = plots.size() + k
 			pad_h[li] = float(terr.call("base_h", (centres[li] as Vector2).x, (centres[li] as Vector2).y))
-	var pads: Array = []
-	for i: int in centres.size():
-		if float(rad[i]) > 0.0:
-			pads.append({"c": centres[i], "r": float(rad[i]) + PAD_EXTRA, "h": float(pad_h[i]), "own": bool(own_ground[i]), "rp": float(rad[i])})
-	terr.set("pads", pads)
 	# ---- the roads: a main line that follows the land, a spur to every plot that climbs from the road to the gate
 	var half: float = float(cfg.get("road_half_m", 2.6))
 	var rd_list: Array = []
@@ -162,7 +166,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var sp: TLKitPath = TLKitPath.new([from, main_path.pts[best]], false, 2.0)
 			var sys: PackedFloat32Array = PackedFloat32Array()
 			sys.resize(sp.pts.size())
-			var flat_len: float = PAD_EXTRA - 0.5
+			var flat_len := 2.5 + cell * sqrt(2.0) if i < plots.size() else 0.0
 			for q: int in sp.pts.size():
 				var l: float = from.distance_to(sp.pts[q])
 				var f: float = smoothstep(0.0, 1.0, clampf((l - flat_len) / maxf(span - flat_len, 4.0), 0.0, 1.0))
@@ -171,6 +175,14 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			rd_list.append({"pts": sp.pts, "ys": sys, "half": half * 0.8})
 			stats["spurs"] = int(stats["spurs"]) + 1
 	terr.set("roads", rd_list)
+	var pads: Array = []
+	for i: int in centres.size():
+		if float(rad[i]) <= 0.0:
+			continue
+		var approach: Vector2 = gates[i] if gates[i] != null else Vector2.DOWN
+		pads.append({"c": centres[i], "extent": extents[i], "axis": axes[i], "h": float(pad_h[i]),
+			"rp": float(rad[i]), "own": bool(own_ground[i]), "yard": i >= plots.size(), "approach": approach})
+	terr.set("pads", pads)
 	# ---- the river and its ponds
 	var rv_path: TLKitPath = null
 	var rv_half: float = float(rv_cfg.get("half_m", 6.0))
@@ -241,8 +253,9 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		Parts.strip(mk_road, terr, main_path.pts, half * 0.36, 0.1, "dirt", 0.9, rng, bridge_a, bridge_b, -1.0, half)     # P14b: on the road's plane
 		for sp: Array in spur_paths:
 			var spp: TLKitPath = sp[1]
-			Parts.strip(mk_road, terr, spp.pts, half * 0.8 + 0.5, 0.052, "grass_dry", 1.0, rng, -1, -1, half * 0.8)
-			Parts.strip(mk_road, terr, spp.pts, half * 0.8, 0.07, "dirt", 0.97, rng)
+			# The spur is worn into the heightfield. Keep the scatter stream after its former two strips.
+			for q: int in 2 * (spp.pts.size() - 1):
+				rng.randf()
 			road_pts.append_array(spp.pts)
 		var rmi: MeshInstance3D = mk_road.instance("WorldRoad")
 		rmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -273,73 +286,44 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var bt: Vector2 = (main_path.pts[(bridge_a + bridge_b) / 2 + 1] - main_path.pts[(bridge_a + bridge_b) / 2 - 1]).normalized()
 		bridge_probe = [snappedf(bm.x, 0.01), snappedf(bm.y, 0.01), snappedf(-bt.y, 0.001), snappedf(bt.x, 0.001)]
 	_lap(stats, "roads")
-	# ---- every plot's edge: a ring of worn ground, a kerb at the lip of the pad and a fence with a gate towards the road
-	var mk_edge: TLMesh = TLMesh.new(33)
-	var mk_ring: TLMesh = TLMesh.new(34)
-	var mk_kerb: TLMesh = TLMesh.new(37)
-	# P6: a pad is a place, not a disc: a worn ring 2 to 8 m wide (noise), rocks instead of fence on the side away
-	# from the gate (the visitor's wall stays). A generator of its own: the scatter below keeps the places it had.
-	var rng6: RandomNumberGenerator = RandomNumberGenerator.new()
+	# A pair of short rails marks the spur mouth. Both ends sit on the visitor's heightfield.
+	var mk_edge := TLMesh.new(33)
+	var rng6 := RandomNumberGenerator.new()
 	rng6.seed = int(cfg.get("seed", 7)) + 606
-	var edge_n: FastNoiseLite = FastNoiseLite.new()
-	edge_n.seed = int(cfg.get("seed", 7)) + 6
-	edge_n.frequency = 0.03
-	var edge_rocks: Array = []
-	# P13: two passes. This one, on the main thread, draws the random numbers in P6's order (tones, rocks), collects
-	# the fence's colliders and places the rocks; the geometry (worn ring, kerbs, fences, flags) is made on a worker
-	# (village_parts.gd `edge_geometry`) and added in a later frame: it was most of the landscape's time (P13 FAR.md).
 	var edge_jobs: Array = []
+	var edge_rocks: Array = []
 	for i: int in centres.size():
 		var r: float = float(rad[i])
 		if r <= 0.0:
 			continue
-		var c: Vector2 = centres[i]
-		var H: float = float(pad_h[i])
 		var seg: int = maxi(24, int(TAU * r / 3.2))
-		var gate: Variant = gates[i]
-		var gate_a: float = atan2((gate as Vector2).y, (gate as Vector2).x) if gate != null else 0.0
-		var rock_a: float = gate_a + PI + 0.6 * sin(float(i) * 2.1)
-		var rock_w: float = 0.8 if (gate != null and bool(cfg.get("pad_rocks", true))) else -1.0
-		var gate_w: float = (half * 0.8 + 1.6) / (r + 3.5)
-		var job: Dictionary = {"i": i, "c": c, "r": r, "H": H, "seg": seg, "r0": r + (2.4 if bool(own_ground[i]) else 0.0),
-			"gate": gate if bool(cfg.get("gates", true)) else null}
-		var tones: PackedFloat32Array = PackedFloat32Array()      # packed arrays in a Dictionary are copies: filled here
-		var fences: PackedByteArray = PackedByteArray()
-		var run: PackedVector3Array = PackedVector3Array()
 		for k: int in seg:
-			var a0: float = TAU * float(k) / float(seg)
-			var a1: float = TAU * float(k + 1) / float(seg)
-			tones.append(0.92 + 0.14 * rng.randf())
-			var fence_k: int = 0
-			if bool(cfg.get("fence", true)) and not site_plots.any(func(sp: Array) -> bool: return int(sp[1]) == i):     # S4: a site draws its own fence (site/draw.gd)
-				var mid: float = (a0 + a1) * 0.5
-				if gate != null and absf(angle_difference(mid, gate_a)) < gate_w:
-					if run.size() > 1:
-						ws.call("add_wall", run, 3.0)
-					run = PackedVector3Array()
-					fences.append(0)
-					continue
-				var f: Vector3 = Vector3(c.x, H, c.y)
-				if rock_w > 0.0 and absf(angle_difference(mid, rock_a)) < rock_w:
-					Parts.edge_rocks(rng6, f, r, a0, a1, 1.0 - absf(angle_difference(mid, rock_a)) / rock_w, edge_rocks)
-				else:
-					fence_k = 1
-					stats["fence_m"] = float(stats["fence_m"]) + (Vector3(cos(a0), 0.0, sin(a0)) - Vector3(cos(a1), 0.0, sin(a1))).length() * (r + 3.6)
-				if run.is_empty():
-					run.append(f + Vector3(cos(a0), 0.0, sin(a0)) * (r + 3.6))
-				run.append(f + Vector3(cos(a1), 0.0, sin(a1)) * (r + 3.6))
-			fences.append(fence_k)
-		if run.size() > 1:
-			ws.call("add_wall", run, 3.0)
-		job["tones"] = tones
-		job["fence"] = fences
-		edge_jobs.append(job)
+			rng.randf()    # preserve the old apron tones' draws before lots and scatter
+		if gates[i] == null:
+			continue
+		var c: Vector2 = centres[i]
+		var dir: Vector2 = gates[i]
+		var side := dir.orthogonal()
+		var is_site := site_plots.any(func(sp: Array) -> bool: return int(sp[1]) == i)
+		var rails := PackedVector3Array()
+		var entrance := c + dir * (r + 3.6)
+		if bool(cfg.get("fence", true)) and not is_site:
+			for hand: float in [-1.0, 1.0]:
+				var a := entrance + side * hand * (half * 0.8 + 2.0)
+				var b := a + side * hand * clampf(r * 0.24, 4.0, 10.0)
+				var span := PackedVector3Array([Vector3(a.x, terr.gy(a.x, a.y), a.y), Vector3(b.x, terr.gy(b.x, b.y), b.y)])
+				rails.append_array(span)
+				ws.call("add_wall", span, 1.2)
+				stats["fence_m"] += span[0].distance_to(span[1])
+			if bool(cfg.get("pad_rocks", true)):
+				Parts.bank_rocks(rng6, terr, c, r, seg, dir.angle() + PI + 0.6 * sin(float(i) * 2.1), edge_rocks)
+		edge_jobs.append({"i": i, "rails": rails, "entrance": entrance, "dir": dir, "flags": bool(cfg.get("gates", true))})
 	_lap(stats, "edges_loop")
 	# ---- the lots: worn ground, a crane, a scaffold, stacked timber and pallets: the next game is being built here
-	Parts.lots(parent, lots.size(), plots.size(), centres, rad, pad_h, gates, rng, edge_n, ws, mk_ring, mk_edge, stats)
+	Parts.lots(parent, lots.size(), plots.size(), centres, rad, pad_h, gates, rng, ws, mk_edge, stats)
 	SiteDraw.place(parent, site_plots, centres, pad_h, rad, gates, stats)     # S: the construction sites, on their plots' pads
 	_lap(stats, "lots")
-	var edge_task: Dictionary = {"jobs": edge_jobs, "terr": terr, "half": half, "noise": edge_n, "ring": mk_ring, "edge": mk_edge, "kerb": mk_kerb}
+	var edge_task: Dictionary = {"jobs": edge_jobs, "terr": terr, "half": half, "edge": mk_edge}
 	if bool(cfg.get("edges_now", false)) or OS.get_environment("TL_LAND_NOW") == "1":
 		Parts.edge_geometry(edge_task)            # P13: in the frame, as before (to measure the difference)
 		Parts.edge_nodes(parent, edge_task)
@@ -399,7 +383,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			xs.append(Transform3D(b, Vector3(p.x, float(terr.call("gy", p.x, p.y)) + y_off, p.y)))
 		return xs
 	_lap(stats, "scatter_setup")
-	stats["soft_patches"] = Parts.soft_ground(parent, terr, int(cfg.get("seed", 7)), box, is_free, int(cfg.get("soft_patches", 150)), PAD_EXTRA, half + 0.7)     # P13, P14b
+	stats["soft_patches"] = Parts.soft_ground(parent, terr, int(cfg.get("seed", 7)), box, is_free, int(cfg.get("soft_patches", 150)), SCATTER_MARGIN, half + 0.7)     # P13, P14b
 	var cams: Array = Parts.cameras(cfg.get("events", []))
 	ws.set("tag", "tree")
 	var probe: Dictionary = {}
@@ -526,11 +510,11 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	ws.call("add_pads", terr, centres, has_ground, radii, (world as Node).get("packs") if world != null else [])     # bugfix-37 D3: world_space.gd
 	if world != null:
 		var holders: Array = (world as Node).get("packs")
-		var band: float = float(cfg.get("rim_band", 9.0))
+		var configured_band: float = float(cfg.get("rim_band", NAN))
 		for i: int in mini(holders.size(), plots.size()):
 			if float(radii[i]) > 0.0 and is_instance_valid(holders[i]):
 				ws.set("tag", "pack %d" % i)
-				ws.call("add_pack", holders[i], plots[i], float(radii[i]), float(pad_h[i]) - (plots[i] as Transform3D).origin.y, band if bool(has_ground[i]) else 0.0)
+				ws.call("add_pack", holders[i], plots[i], float(radii[i]), float(pad_h[i]) - (plots[i] as Transform3D).origin.y, DrawBase.rim_width(float(radii[i]), configured_band) if bool(has_ground[i]) else 0.0)
 	_lap(stats, "space")
 	ws.call("finish")
 	_lap(stats, "crowns")

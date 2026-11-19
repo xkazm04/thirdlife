@@ -53,7 +53,7 @@ func setup(world_node: Node, plots: Array, radii: Array, rims: Array, stage_inde
 	for i: int in holders.size():
 		entries.append({"holder": holders[i], "plot": plots[i], "radius": float(radii[i]) if i < radii.size() else 0.0,
 			"rim": float(rims[i]) if i < rims.size() else 0.0, "ground": bool(grounds[i]) if i < grounds.size() else true,
-			"clipped": [], "rel": Transform3D.IDENTITY, "a": [], "mirrors": [],
+			"clipped": [], "dressed": [], "rel": Transform3D.IDENTITY, "a": [], "mirrors": [],
 			"pics": {}, "kind": "", "life": {}, "boards": {}, "far": false, "placed": false, "standin_info": {}})
 	get_tree().node_added.connect(_on_node_added)
 	stage = stage_index             # the caller places the world with set_stage()
@@ -194,6 +194,8 @@ func _clip(e: Dictionary, g: GeometryInstance3D) -> void:
 	if float(e["radius"]) > 0.0 and not g.has_meta(&"tl_clip"):
 		g.set_meta(&"tl_clip", true)
 		g.set_instance_shader_parameter(CLIP, _clip_v4(e, g))
+		if g is MeshInstance3D and (e["sheets"] as Array).has(g):
+			_dress_ground(e, g, true)
 		(e["clipped"] as Array).append(g)
 
 
@@ -285,12 +287,26 @@ func _unplace(e: Dictionary) -> void:
 			(n as Node).remove_meta(&"tl_draw")
 			RenderingServer.instance_set_visible((n as VisualInstance3D).get_instance(), (n as VisualInstance3D).is_visible_in_tree())
 	(e["mirrors"] as Array).clear()
+	_restore_ground(e)
 	for g: Variant in e["clipped"]:
 		if is_instance_valid(g):
 			(g as GeometryInstance3D).set_instance_shader_parameter(CLIP, null)
 			(g as Node).remove_meta(&"tl_clip")
 	(e["clipped"] as Array).clear()
 	e["placed"] = false
+
+
+func _restore_ground(e: Dictionary) -> void:
+	var dressed: Array = e.get("dressed", [])
+	for rec: Array in dressed:
+		var mi: MeshInstance3D = rec[0] if is_instance_valid(rec[0]) else null
+		if mi != null:
+			if int(rec[1]) < 0:
+				mi.material_override = rec[2]
+			else:
+				mi.set_surface_override_material(int(rec[1]), rec[2])
+			mi.set_instance_shader_parameter(&"tl_land_plot", null)
+	dressed.clear()
 
 
 func _on_node_added(n: Node) -> void:
@@ -491,6 +507,7 @@ func clear() -> void:
 		WorkerThreadPool.wait_for_task_completion(int((_dir_hashes[dir] as Array)[0]))
 	_dir_hashes.clear()
 	for e: Dictionary in entries:
+		_restore_ground(e)
 		for m: Dictionary in e["mirrors"]:
 			RenderingServer.free_rid(m["rid"])
 		(e["mirrors"] as Array).clear()

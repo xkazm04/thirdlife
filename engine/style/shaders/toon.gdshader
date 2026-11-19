@@ -51,6 +51,10 @@ instance uniform vec4 tl_clip = vec4(0.0);
 // (its part-local x and z), z = radius. Every other material leaves the count at 0.
 uniform int tl_hole_n = 0;
 uniform vec4 tl_holes[32];
+// On a village's private pack-ground material, one texel per village heightfield vertex.
+uniform sampler2D tl_land_colours : filter_linear, repeat_disable;
+uniform vec4 tl_land_uv;
+uniform int tl_land_index = -1;
 // walker-feel (18 Nov): a body that moves (a rig sets this on its meshes; everything else leaves it at zero).
 // x > 0.5: the painterly mottle and the hatching are anchored to the body, not to the world and the screen: noise anchored
 //   to the world swims across whatever moves through it (measured on the walking figure: a third of his crawl).
@@ -59,6 +63,7 @@ uniform vec4 tl_holes[32];
 //   figure 170 px tall those self-shadows are a few shadow-map texels wide and step as he moves (40 % of his crawl); his
 //   shade side is drawn by the bands anyway. Shade from the world (a wall, a tree) still falls on him.
 instance uniform vec2 tl_body = vec2(0.0);
+instance uniform vec4 tl_land_plot = vec4(0.0); // village xz, local X axis in village xz
 mat4 tl_plot_mat() {
 	float cy = cos(tl_plot.w); float sy = sin(tl_plot.w);
 	return mat4(vec4(cy, 0.0, -sy, 0.0), vec4(0.0, 1.0, 0.0, 0.0), vec4(sy, 0.0, cy, 0.0), vec4(tl_plot.xyz, 1.0));
@@ -251,6 +256,23 @@ void vertex() {
 	m2 = texelFetch(pal_lut, ivec2(idx, 2), 0);
 	float sway = texelFetch(pal_lut, ivec2(idx, 3), 0).x;
 	lp = vec4(CUSTOM0.xyz, float(code % 16));
+	if (idx == tl_land_index && tl_clip.x > 0.0) {
+		vec2 axis = tl_land_plot.zw;
+		vec2 village = tl_land_plot.xy + mat2(axis, vec2(-axis.y, axis.x)) * wpos.xz;
+		lp.xz = village; // one continuous field of tufts and colour patches through the join
+		float r = tl_clip.x;
+		// Two offset work areas leave grass between the approach and the back of the yard.
+		// Sample in plot axes; displace their edges in village coordinates so neighbouring plots vary.
+		vec2 p = wpos.xz / r;
+		p += 0.20 * (vec2(vn2(village * 0.105), vn2(village * 0.095 + vec2(31.0))) - 0.5);
+		float yard = max(abs(p.x + 0.12) - 0.47, abs(p.y + 0.16) - 0.16);
+		float access = max(abs(p.x - 0.16) - 0.13, abs(p.y - 0.12) - 0.46);
+		float rim = smoothstep(0.78, 0.95, length(wpos.xz) / r);
+		float grass = max(rim, smoothstep(-0.08, 0.18, min(yard, access)));
+		vec3 soil = textureLod(tl_land_colours, village * tl_land_uv.xy + tl_land_uv.zw, 0.0).rgb;
+		COLOR.rgb = mix(COLOR.rgb, soil, grass);
+		NORMAL = normalize(mix(NORMAL, normalize(inverse(MODEL_NORMAL_MATRIX) * vec3(0.0, 1.0, 0.0)), rim));
+	}
 	if (sway > 0.0) {
 		float s = sin(TIME * 1.7 + wpos.x * 0.65 + wpos.z * 0.45) * 0.6 + sin(TIME * 3.1 + wpos.z * 1.3) * 0.4;
 		VERTEX.x += s * sway * COLOR.a;

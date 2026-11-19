@@ -14,6 +14,7 @@ extends RefCounted
 ## Colour and strata are the style's: the palette key "terrain" (class ground: tufts, strata on steep faces).
 
 const GROUND_Y: float = 0.0
+const MAX_GRADE: float = 66.0
 
 var x0: float = 0.0
 var z0: float = 0.0
@@ -22,7 +23,9 @@ var nx: int = 0                      # cells in x
 var nz: int = 0
 var heights: PackedFloat32Array = PackedFloat32Array()
 var centre: Vector2 = Vector2(5.0, -20.0)
-var pads: Array = []                 # {c: Vector2, r: float (flat radius), h: float, own: bool, rp: plot radius}
+var pads: Array = []                 # oriented footprint, clip radius, height and yard approach from landscape.gd
+var rim_material: ShaderMaterial
+var wear_map := PackedFloat32Array()
 const SINK: float = 0.06              # walker-feel T: the pad under a plot without ground of its own lies this much lower
 const SINK_BAND: float = 3.5          # ... over the plot's radius, rising to the pad's height in this band beyond it (the plot cut ends at r + 3)
 var roads: Array = []                # {pts: PackedVector2Array, ys: PackedFloat32Array, half: float}
@@ -109,7 +112,7 @@ func build_grid() -> void:
 	road_y.resize(count)
 	var river_y: PackedFloat32Array = PackedFloat32Array()
 	river_y.resize(count)
-	# 1. the land and the pads. P13: in bands of rows on workers (each band its own array, joined in order: the same
+	# 1. the land. P13: in bands of rows on workers (each band its own array, joined in order: the same
 	# numbers as one loop); it was a third of the time to the first frame of a village of thirty games.
 	var bands: int = clampi(OS.get_processor_count() - 1, 1, 8)
 	var per: int = int(ceil(float(nz + 1) / float(bands)))
@@ -122,6 +125,7 @@ func build_grid() -> void:
 	for b: int in bands:
 		joined.append_array(out[b])
 	heights = joined
+	var support := _grade_pads()
 	# 2. stamps
 	# bugfix-37 Q21: each vertex also learns the half width of the road it is nearest to (every road was graded with
 	# the first road's half width: the village's spurs, 0.8 of the main road, were graded as wide as the main road)
@@ -139,6 +143,7 @@ func build_grid() -> void:
 		if d < 1e8:
 			var ph: float = road_y[k]
 			var rhalf: float = road_hh[k]
+			wear_map[k] = maxf(wear_map[k], 1.0 - smoothstep(rhalf * 0.5, rhalf + 2.0, d))
 			h = lerpf(h, ph - 0.02, 1.0 - smoothstep(rhalf + 1.6, rhalf + 9.0, d))
 		var dr: float = river_d[k]
 		if dr < 1e8:
@@ -146,7 +151,7 @@ func build_grid() -> void:
 			var wv: float = 1.0 - smoothstep(5.0, 36.0, dr)
 			h = minf(h, lerpf(h, lvl + 0.6, wv))
 			h = lerpf(h, lvl - 1.0, 1.0 - smoothstep(rv_half * 0.55, rv_half + 5.0, dr))
-		heights[k] = h
+		heights[k] = lerpf(h, heights[k], support[k])
 	for pn: Dictionary in ponds:
 		var c: Vector2 = pn["c"]
 		var pr: float = float(pn["r"])
@@ -159,11 +164,11 @@ func build_grid() -> void:
 				var d2: float = Vector2(x, z).distance_to(c)
 				if d2 < pr + 14.0:
 					var k2: int = j * w + i
-					heights[k2] = lerpf(heights[k2], float(pn["y"]) - 1.2, 1.0 - smoothstep(pr * 0.7, pr + 7.0, d2))
+					heights[k2] = lerpf(heights[k2], float(pn["y"]) - 1.2, (1.0 - smoothstep(pr * 0.7, pr + 7.0, d2)) * (1.0 - support[k2]))
 	build_ms = Time.get_ticks_msec() - t0
 
 
-## Heights of the land and the pads for rows j0 .. j1 - 1 (runs on a worker: reads only).
+## Heights of the unworked land for rows j0 .. j1 - 1 (runs on a worker: reads only).
 func _land_rows(j0: int, j1: int) -> PackedFloat32Array:
 	var w: int = nx + 1
 	var rows: PackedFloat32Array = PackedFloat32Array()
@@ -172,29 +177,93 @@ func _land_rows(j0: int, j1: int) -> PackedFloat32Array:
 		var z: float = z0 + float(j) * cell
 		for i: int in w:
 			var x: float = x0 + float(i) * cell
-			var h: float = base_h(x, z)
-			for pd: Dictionary in pads:
-				var c: Vector2 = pd["c"]
-				var dx: float = x - c.x
-				var dz: float = z - c.y
-				var r: float = float(pd["r"])
-				var lim: float = r + 24.0
-				if absf(dx) > lim or absf(dz) > lim:
-					continue
-				var d: float = sqrt(dx * dx + dz * dz)
-				if d <= r:
-					h = float(pd["h"])
-					if not bool(pd["own"]) and d < float(pd.get("rp", 0.0)) + SINK_BAND:
-						# walker-feel T: a game with no ground of its own lays its floor at the pad's height: the pad
-						# sinks under it, or the two fight for the same depth (TAA's jitter shows it as flicker)
-						h -= SINK * (1.0 - smoothstep(float(pd["rp"]), float(pd["rp"]) + SINK_BAND, d))
-				elif d < lim:
-					var ph: float = float(pd["h"])
-					var bw: float = clampf(absf(ph - h) * (0.7 if ph < h else 1.1), 3.5, 22.0)
-					if d < r + bw:
-						h = lerpf(ph, h, smoothstep(0.0, 1.0, (d - r) / bw))
-			rows[(j - j0) * w + i] = h
+			rows[(j - j0) * w + i] = base_h(x, z)
 	return rows
+
+
+## Stamp the pads before carving the road and water profiles. Return how much of each vertex must stay flat.
+## Where two shoulders meet, combine their influences against the same original height. The supporting
+## triangles inside the runtime clip take precedence over another footprint's corner or shoulder.
+func _grade_pads() -> PackedFloat32Array:
+	var support := PackedFloat32Array()
+	support.resize(heights.size())
+	wear_map.resize(heights.size())
+	wear_map.fill(0.0)
+	var total := PackedFloat32Array()
+	total.resize(heights.size())
+	var cover := PackedFloat32Array()
+	cover.resize(heights.size())
+	var weights := PackedFloat32Array()
+	weights.resize(heights.size())
+	for pd: Dictionary in pads:
+		var c: Vector2 = pd["c"]
+		var extent: Vector2 = pd["extent"]
+		var axis: Vector2 = pd["axis"]
+		var side := Vector2(-axis.y, axis.x)
+		var r: float = pd["rp"]
+		var ph: float = pd["h"]
+		var yard: bool = pd["yard"]
+		var sink := not yard and not bool(pd["own"])
+		var flat_margin := 2.0 if yard else 3.0 + cell * sqrt(2.0)
+		var guard := r + flat_margin if not yard else 0.0
+		var corner := minf(5.0, minf(extent.x, extent.y) * 0.2)
+		var footprint_bounds := axis.abs() * (extent.x + flat_margin) + side.abs() * (extent.y + flat_margin)
+		var flat_bounds := footprint_bounds.max(Vector2.ONE * guard)
+		var reach := flat_bounds + Vector2.ONE * MAX_GRADE
+		var grid := Vector2(x0, z0)
+		var lo := Vector2i(((c - reach - grid) / cell).floor()).max(Vector2i.ZERO)
+		var hi := Vector2i(((c + reach - grid) / cell).ceil()).min(Vector2i(nx, nz))
+		var entry: Vector2 = pd["approach"] * r
+		for j: int in range(lo.y, hi.y + 1):
+			var z := z0 + j * cell
+			for i: int in range(lo.x, hi.x + 1):
+				var x := x0 + i * cell
+				var k := j * (nx + 1) + i
+				var width := minf(20.0 + absf(ph - heights[k]) * 2.25, MAX_GRADE)
+				if not yard and (absf(x - c.x) > flat_bounds.x + width or absf(z - c.y) > flat_bounds.y + width):
+					continue
+				var p := Vector2(x, z) - c
+				var radial := p.length()
+				if not yard and radial <= guard:
+					# A negative weight locks this floor. Where two grid margins touch, keep the nearer clip.
+					support[k] = 1.0
+					var lock_weight := minf(-0.0001, radial - guard)
+					if weights[k] >= lock_weight:
+						total[k] = ph
+						if sink:
+							total[k] -= SINK * (1.0 - smoothstep(r, r + SINK_BAND, radial))
+						weights[k] = lock_weight
+					continue
+				var local := Vector2(p.dot(axis), p.dot(side))
+				var q := local.abs() - extent + Vector2.ONE * (corner - flat_margin)
+				var edge := q.max(Vector2.ZERO).length() + minf(maxf(q.x, q.y), 0.0) - corner
+				if not yard:
+					edge = minf(edge, radial - guard)
+				var clearance := edge if yard else radial - guard
+				if yard and radial < r + 6.0:
+					# Wear runs from the spur to the crane, then along the stack of supplies.
+					var crane := Vector2(-0.38, -0.22) * r
+					var access := Geometry2D.get_closest_point_to_segment(p, entry, crane)
+					var stores := Geometry2D.get_closest_point_to_segment(p, crane, Vector2(0.40, 0.32) * r)
+					var d := minf(p.distance_to(access), p.distance_to(stores)) + 3.0 * _nd.get_noise_2d(x, z)
+					wear_map[k] = maxf(wear_map[k], 1.0 - smoothstep(1.2, clampf(r * 0.43, 6.0, 14.0), d))
+
+				if edge < width and weights[k] >= 0.0:
+					# Zero slope and curvature at both ends, including where a road crosses the bank.
+					var u := clampf(edge / width, 0.0, 1.0)
+					var w := 1.0 - u * u * u * (10.0 + u * (-15.0 + 6.0 * u))
+					support[k] = maxf(support[k], w)
+					# Intersecting shoulders share a grade. Close to a protected floor its height wins smoothly.
+					var influence := w * w / maxf(0.0001, smoothstep(0.0, width, clearance))
+					total[k] += ph * influence
+					weights[k] += influence
+					cover[k] += (1.0 - cover[k]) * w
+	for k: int in heights.size():
+		if weights[k] < 0.0:
+			heights[k] = total[k]
+		elif weights[k] > 0.0:
+			heights[k] = lerpf(heights[k], total[k] / weights[k], cover[k])
+	return support
 
 
 ## Marks the vertices within `reach` of each sample of `pts` with their distance (`dist`) and the sample's y (`yy`) when
@@ -273,7 +342,7 @@ func road_dist(x: float, z: float) -> float:
 
 
 # ------------------------------------------------------------------------------------------------ colour and mesh
-func _col(x: float, y: float, z: float, n: Vector3, rd: float, rvd: float) -> Color:
+func _col(x: float, y: float, z: float, n: Vector3, rd: float, rvd: float, wear: float = 0.0) -> Color:
 	var slope_: float = 1.0 - n.y
 	var np: float = _np.get_noise_2d(x, z) * 0.5 + 0.5
 	var base: Color = (_c["grass_dark"] as Color).lerp(_c["grass"], 0.5 + 0.5 * smoothstep(0.2, 0.8, np))
@@ -285,6 +354,8 @@ func _col(x: float, y: float, z: float, n: Vector3, rd: float, rvd: float) -> Co
 	base = base.lerp(rock, rk)
 	if rd < 30.0:
 		base = base.lerp((_c["grass_dark"] as Color).lerp(_c["dirt"], 0.35), (1.0 - smoothstep(3.5, 12.0, rd)) * 0.5 * (1.0 - rk))
+	if wear > 0.0:
+		base = base.lerp((_c["dirt"] as Color).lerp(_c["sand"], np * 0.35), wear * 0.90)
 	if rvd < 40.0:
 		base = base.lerp(_c["sand"], (1.0 - smoothstep(float(river.get("half", 6.0)) * 0.6, float(river.get("half", 6.0)) + 7.0, rvd)) * 0.7 * (1.0 - rk * 0.6))
 	return base.srgb_to_linear()
@@ -301,7 +372,6 @@ func build_mesh(mat: Material, name_: String = "WorldTerrain") -> MeshInstance3D
 	var cu: PackedFloat32Array = PackedFloat32Array()
 	vs.resize(count)
 	ns.resize(count)
-	cs.resize(count)
 	uv.resize(count)
 	cu.resize(count * 4)
 	var code: float = 1.0 + 16.0 * float(TLStyle.index("terrain"))
@@ -314,11 +384,30 @@ func build_mesh(mat: Material, name_: String = "WorldTerrain") -> MeshInstance3D
 			var nrm: Vector3 = Vector3(heights[_v(i - 1, j)] - heights[_v(i + 1, j)], 2.0 * cell, heights[_v(i, j - 1)] - heights[_v(i, j + 1)]).normalized()
 			vs[k] = Vector3(x, y, z)
 			ns[k] = nrm
-			cs[k] = _col(x, y, z, nrm, road_d[k], river_d[k])
 			cu[k * 4] = x
 			cu[k * 4 + 1] = y
 			cu[k * 4 + 2] = z
 			cu[k * 4 + 3] = code
+	# The same colours drive the mesh and the pack-rim map. Workers read the finished grid and normals;
+	# each writes a private slice, joined in vertex order before upload.
+	var bands := clampi(OS.get_processor_count() - 1, 1, 8)
+	var per := ceili(float(count) / bands)
+	var slices: Array[PackedColorArray] = []
+	slices.resize(bands)
+	var paint := func(b: int) -> void:
+		var start := mini(b * per, count)
+		var end := mini(start + per, count)
+		var colours := PackedColorArray()
+		colours.resize(end - start)
+		for k: int in range(start, end):
+			var p := vs[k]
+			colours[k - start] = _col(p.x, p.y, p.z, ns[k], road_d[k], river_d[k], wear_map[k])
+		slices[b] = colours
+	WorkerThreadPool.wait_for_group_task_completion(WorkerThreadPool.add_group_task(paint, bands))
+	for colours: PackedColorArray in slices:
+		cs.append_array(colours)
+	if pads.any(func(pd: Dictionary) -> bool: return bool(pd["own"])):
+		rim_material = _rim_material(cs, Vector2i(w, nz + 1), Vector2(x0, z0), cell)
 	var ix: PackedInt32Array = PackedInt32Array()
 	ix.resize(nx * nz * 6)
 	var q: int = 0
@@ -354,6 +443,20 @@ func build_mesh(mat: Material, name_: String = "WorldTerrain") -> MeshInstance3D
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	build_ms += Time.get_ticks_msec() - t0
 	return mi
+
+
+## A village lends its ground colours to the outer vertices of the kit terrain on its plots.
+## The texels are the mesh's linear vertex colours. Texel centres coincide with heightfield samples.
+static func _rim_material(colours: PackedColorArray, grid: Vector2i, origin: Vector2, cell: float) -> ShaderMaterial:
+	var mat := TLStyle.material(&"terrain").duplicate() as ShaderMaterial
+	var img := Image.create_from_data(grid.x, grid.y, false, Image.FORMAT_RGBAF, colours.to_byte_array())
+	img.convert(Image.FORMAT_RGBA8)
+	var scale_ := Vector2.ONE / (Vector2(grid) * cell)
+	var offset := (Vector2.ONE * cell * 0.5 - origin) * scale_
+	mat.set_shader_parameter(&"tl_land_colours", ImageTexture.create_from_image(img))
+	mat.set_shader_parameter(&"tl_land_uv", Vector4(scale_.x, scale_.y, offset.x, offset.y))
+	mat.set_shader_parameter(&"tl_land_index", TLStyle.index("terrain"))
+	return mat
 
 
 ## Triangles of the heightfield for the visitor's collider (world coordinates, GROUND_Y included). `skip` is a Callable
