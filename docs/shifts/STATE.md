@@ -53,3 +53,4 @@ lands on main.
 - 03:33 main full gate after walker: all PASS (kernel.selftest 250, packs 34/34, world 8/8) except perf NOT RUN (busy).
 - 03:50 hunt2 round 2 (`376dc23`: B8, A1, C9, B11, C8) and editor round 3 (`d47f14b`: village board home; lost click = drive artefact, fixed) landed; fast 5/5 (devx 226), seeds 39, ui 125, hunt2. 36, gate. 7, windowed tour PASS. hunt2 and editor finished (editor's next item, the lot in the 3D village, needs walker's site.gd: after walker round 2). Live: walker round 2.
 - 04:05 walker round 2 landed (`7b8c2bf`: hunt2 B2/B4 highs + B7, B3, B9, A13, H1, A5, B12; its gate one run green incl. perf, kernel.selftest 259); main full gate running. Editor round 4 dispatched: the chosen lot into the 3D village (claims site code now walker is done).
+- 03:57 standup: three lanes finished and landed; editor round 4 on track; main full gate running.
