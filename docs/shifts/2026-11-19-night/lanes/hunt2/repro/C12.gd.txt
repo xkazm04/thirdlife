@@ -1,0 +1,48 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh C12
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var p := Pack.new()
+	root.add_child(p)
+	if not p.load_pack("res://seeds/seed_wall", {"scenery": "plot", "seed": 1, "own_space": true}):
+		quit(2)
+		return
+	var g = p.entry
+	var handouts: Array[int] = []
+	var at: Array[int] = []
+	var errors := 0
+	var prev := -1
+	# Hold the first throw past the reload. Then use distinct presses to go round the ball pool.
+	for f in 3602:
+		await physics_frame
+		if f == 1:
+			p.ctx.input.press(&"throw")
+		elif f == 48:
+			p.ctx.input.release(&"throw")
+		elif f in [50, 88, 126, 164]:
+			p.ctx.input.tap(&"throw")
+		p.tick(f)
+		var idx: int = g.balls.find(g.in_hand)
+		if idx >= 0 and idx != prev:
+			handouts.append(idx)
+			at.append(f)
+		if f == 47:
+			errors += int(g.throws != 1 or idx != 1)
+		prev = idx
+	var before := TLContext.enter(p.ctx)
+	var s := p.ctx.pack_state()
+	TLContext.leave(before)
+	errors += int(handouts != [0, 1, 2, 3, 4, 0] or at != [0, 37, 86, 124, 162, 200])
+	errors += int(s.throws != 5 or s.reason != "time" or s.total_frames != 3600)
+	errors += int(s.sounds.horn != 1 or s.sounds.whistle != 1 or s.hud.hint != "TIME IS UP")
+	print("pool %s at frames %s; %d throws; %d game ticks; whistle/horn %d/%d; HUD %s" %
+		[handouts, at, s.throws, s.total_frames, s.sounds.whistle, s.sounds.horn, s.hud.hint])
+	p.unload()
+	p.free()
+	print("REPRO C12: FAIL %d pool or finish checks" % errors if errors else "REPRO C12: PASS")
+	quit(int(errors > 0))

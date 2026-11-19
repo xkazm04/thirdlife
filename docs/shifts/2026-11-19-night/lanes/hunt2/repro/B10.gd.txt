@@ -1,0 +1,24 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B10
+extends SceneTree
+
+func _initialize() -> void:
+	var ctx := TLContext.new()
+	ctx.seed = 1
+	ctx.input = TLInput.new()
+	ctx.input.declare(&"shoot")
+	var hand := TLHand.create(ctx, "regular", {"lapses_per_minute": 0.0})
+	var edges := 0
+	for frame in 3200:
+		ctx.frame = frame
+		if frame % 100 < 2:
+			hand.tap(&"shoot")
+		hand.tick()
+		ctx.input._sample()
+		edges += int(ctx.input.just_pressed(&"shoot"))
+	var stats := hand.stats()
+	ctx.input.free()
+	if int(stats.taps) != 64 or int(stats.lapses) != 0:
+		quit(2)
+		return
+	print("REPRO B10: FAIL 64 requested taps, %d internal presses, %d shoot edges, %d lapses, %d taps_lost" % [stats.presses, edges, stats.lapses, stats.taps_lost] if edges != 64 else "REPRO B10: PASS")
+	quit(int(edges != 64))

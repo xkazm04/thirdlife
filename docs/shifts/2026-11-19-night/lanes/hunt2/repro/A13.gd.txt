@@ -1,0 +1,40 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A13
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+const Walk = preload("res://kernel/world/walks/walk_case.gd")
+
+func jumped(delay: int) -> int:
+	var sp := Space.new()
+	Walk.flat(sp, 2, -20, 20, -20, 0)
+	Walk.flat(sp, 0, -20, 20, 0, 20)
+	var p := Vector3(0, 2, -2)
+	sp.place(p)
+	sp.rest()
+	var edge := -1
+	var fired := -1
+	for tick in 120:
+		var tap := edge >= 0 and tick == edge + delay
+		var r: Dictionary = sp.drive(p, Vector3.BACK * 4.5, tap, false)
+		p = r.pos
+		if edge < 0 and r.mode == "air":
+			edge = tick
+		if tap:
+			fired = int(r.events.has("jump") and not r.events.has("land"))
+			break
+	sp.free_all()
+	return fired
+
+func _initialize() -> void:
+	var six := jumped(6)
+	var seven := jumped(7)
+	var eight := jumped(8)
+	if six != 1 or eight != 0 or seven < 0:
+		printerr("unexpected boundary controls: ", [six, seven, eight])
+		quit(2)
+	elif seven == 1:
+		print("REPRO A13: FAIL airborne jump accepted 7 ticks after leaving the ledge; limit 6 ticks (offsets 6/7/8 accepted %d/%d/%d)" % [six, seven, eight])
+		quit(1)
+	else:
+		print("REPRO A13: PASS")
+		quit()

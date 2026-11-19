@@ -26,22 +26,20 @@ extends Node
 ## and the second start would be the game itself. This script starts the same two nodes the host starts
 ## (kernel/world/draw/view.gd for the window, kernel/world/world.gd without one) with the same `start(options)`.
 ##
-## Games are plain folders in `games/` beside the exe (`--games=<dir>` names another folder; the editor binary
-## without `--games` uses the engine's own seeds and examples). The walk is `res://boot/village.json`; each plot's
-## `pack` is a folder name in `games/`. A plot whose folder is missing is left out and said so.
+## Games are plain folders in `games/` beside the exe (`--games=<dir>` names another folder; the editor binary without `--games`
+## uses the engine's own packs, by folder or by games.json). The walk is `res://boot/village.json`; each plot's `pack` is a folder
+## name in `games/`. A plot whose folder is missing is left out and said so.
 ##
-## Environment, for unattended starts (export.sh check): TL_EXE_CAPTURE=<abs png> writes one picture after 120 physics
-## frames (TL_EXE_CAPTURE_AT=<frame> names another frame); TL_EXE_QUIT_AT=<frame> ends the world cleanly at that
-## frame; TL_EXE_WINDOW_POS=x,y moves the window; TL_EXE_KEYS="60:+W;400:-W;420:+E;900:+Escape" presses and releases
-## keys at physics frames (the same Input state a keyboard sets: this is how the keys were tested without a person);
-## P11: `<frame>:~<dx>,<dy>` moves the mouse by that many pixels (the same event a mouse makes);
-## TL_EXE_TRACE=<abs file> writes where the visitor is and who is on stage every 30 frames.
-## P14: the caches a build ships (`cache` beside the exe: rims, far pictures, rig recipes, keyed by each game's
-## content) are copied into the user's cache on every start when a file is missing there (PlotFile.seed_cache).
-## TL_EXE_WARM=1 (export.sh, with TL_CACHE_DIR): the window runs the village's scripted tour to its end, unattended,
-## which fills that cache for the games beside the exe.
-## Walker-feel T: TL_EXE_FRAMES=<abs dir> (+ TL_EXE_FRAMES_RANGE=a:b, TL_EXE_FRAMES_FULL=1, TL_EXE_SKYMASK=1) writes
-## every drawn frame for the blink detector; TL_EXE_AA=<spec> overrides the window's antialiasing (EXE_AA).
+## Environment, for unattended starts (export.sh check): TL_EXE_CAPTURE=<abs png> writes one picture after 120 physics frames
+## (TL_EXE_CAPTURE_AT=<frame> names another frame); TL_EXE_QUIT_AT=<frame> ends the world cleanly at that frame;
+## TL_EXE_WINDOW_POS=x,y moves the window; TL_EXE_KEYS="60:+W;400:-W;420:+E;900:+Escape" presses and releases keys at physics frames
+## (the same Input state a keyboard sets: this is how the keys were tested without a person); P11: `<frame>:~<dx>,<dy>` moves the
+## mouse by that many pixels (the same event a mouse makes); TL_EXE_TRACE=<abs file> writes where the visitor is and who is on stage
+## every 30 frames. P14: the caches a build ships (`cache` beside the exe: rims, far pictures, rig recipes, keyed by each game's
+## content) are copied into the user's cache on every start when a file is missing there (PlotFile.seed_cache). TL_EXE_WARM=1
+## (export.sh, with TL_CACHE_DIR): the window runs the village's scripted tour to its end, unattended, which fills that cache for
+## the games beside the exe. Walker-feel T: TL_EXE_FRAMES=<abs dir> (+ TL_EXE_FRAMES_RANGE=a:b, TL_EXE_FRAMES_FULL=1,
+## TL_EXE_SKYMASK=1) writes every drawn frame for the blink detector; TL_EXE_AA=<spec> overrides the window's antialiasing (EXE_AA).
 ## No global class name is declared here, and none of the kernel's is used by name.
 
 const WALK_RES: String = "res://boot/village.json"
@@ -57,11 +55,10 @@ const CAPTURE_FRAME: int = 120
 const TAG_FILE: String = "BUILD-TAG.txt"
 const TAG_MAX: int = 64
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
-## Walker-feel T3: the exe's window adds temporal antialiasing to the style's SMAA and lowers the project's 4x MSAA
-## (project.godot msaa_3d=2 is 4x) to 2x, which TAA makes up for. Measured
-## on the replayed village walk (docs/reports/walker-feel/T.md): the ink contours on fences and the figure stop
-## breaking up from frame to frame (flicker in the horizon band -30 % walking), at no measurable GPU cost on this
-## machine; the price is a softer picture and a faint trail behind small far moving figures.
+## Walker-feel T3: the exe's window adds temporal antialiasing to the style's SMAA and lowers the project's 4x MSAA (project.godot
+## msaa_3d=2 is 4x) to 2x, which TAA makes up for. Measured on the replayed village walk (docs/reports/walker-feel/T.md): the ink
+## contours on fences and the figure stop breaking up from frame to frame (flicker in the horizon band -30 % walking), at no
+## measurable GPU cost on this machine; the price is a softer picture and a faint trail behind small far moving figures.
 const EXE_AA: String = "msaa=2,taa=1"
 
 var verb: String = ""
@@ -182,6 +179,9 @@ func _pack_dir(pack: String) -> String:
 		var full: String = ProjectSettings.globalize_path(base + "/" + p)
 		if FileAccess.file_exists(full + "/pack.json"):
 			return full
+	var cat: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://boot/games.json"))   # hunt2 A2: an export name
+	for g: Variant in (cat.get("games", []) if cat is Dictionary else []):                       # that is not its folder's name
+		if str(g.get("name", "")) == p: return _pack_dir(ProjectSettings.globalize_path("res://" + str(g.get("from", "")).trim_prefix("engine/")))
 	return ""
 
 

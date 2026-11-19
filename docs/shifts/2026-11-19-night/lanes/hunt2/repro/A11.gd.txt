@@ -1,0 +1,45 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A11
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+const Walk = preload("res://kernel/world/walks/walk_case.gd")
+const HEIGHT := 2.8
+const ANGLE := 56.0
+
+func reach(permit_slope_press: bool) -> Array:
+	var sp := Space.new()
+	var rim := -HEIGHT / tan(deg_to_rad(ANGLE))
+	sp.add_faces(PackedVector3Array([Vector3(-20, HEIGHT, rim), Vector3(20, HEIGHT, rim), Vector3(20, 0, 0),
+		Vector3(-20, HEIGHT, rim), Vector3(20, 0, 0), Vector3(-20, 0, 0)]))
+	Walk.flat(sp, 0, -20, 20, 0, 30)
+	Walk.flat(sp, HEIGHT, -20, 20, -40, rim)
+	var pos := Vector3(0, 0, 2)
+	sp.place(pos)
+	sp.rest()
+	var mode := "ground"
+	var slope_jumps := 0
+	var arrived := -1
+	for tick in 800:
+		var tap := tick % 18 == 0 and (permit_slope_press or mode == "ground")
+		var r: Dictionary = sp.drive(pos, Vector3.FORWARD * 9.0, tap, false)
+		slope_jumps += int(r.events.has("jump") and mode == "slope")
+		pos = r.pos
+		mode = r.mode
+		if mode == "ground" and pos.z < rim - 1.0 and absf(pos.y - HEIGHT) < 0.05:
+			arrived = tick
+			break
+	sp.free_all()
+	return [arrived, slope_jumps]
+
+func _initialize() -> void:
+	var ground := reach(false)
+	var hopping := reach(true)
+	if ground[0] >= 0:
+		printerr("ground-only control also cleared the bank")
+		quit(2)
+	elif hopping[0] >= 0 and hopping[1] > 0:
+		print("REPRO A11: FAIL topped a %.1f m bank at %.0f degrees on tick %d with %d slope jumps; ground-only control 0/800 ticks on top" % [HEIGHT, ANGLE, hopping[0], hopping[1]])
+		quit(1)
+	else:
+		print("REPRO A11: PASS")
+		quit()

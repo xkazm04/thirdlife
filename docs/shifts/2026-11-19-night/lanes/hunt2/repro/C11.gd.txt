@@ -1,0 +1,68 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh C11
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+var errors := 0
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func trial(restart_on_slide: bool) -> void:
+	var p := Pack.new()
+	root.add_child(p)
+	if not p.load_pack("res://packs/parkour", {"own_space": true, "seed": 1, "scenery": "plot"}):
+		errors += 1
+		p.free()
+		return
+	var g = p.entry
+	var policy: Node = p.ctx.load_script("tests/bot_course.gd").new()
+	policy._bot_setup(p.ctx)
+	var views: PackedStringArray = p.ctx.cameras.views()
+	errors += int(Array(views) != ["orbit", "overview", "jump", "under_bar", "chute"])
+	var gates: Array[int] = []
+	g.rules.checkpoint_passed.connect(func(_who: String, index: int): gates.append(index))
+	var pitch: float = g.cam.pitch
+	var maximum := pitch
+	var done := false
+	for f in 600:
+		await physics_frame
+		p.ctx.frame = f
+		var s := p.ctx.pack_state()
+		var sliding: bool = s.motion == "slide"
+		var finished: bool = s.reason == "laps"
+		maximum = maxf(maximum, g.cam.pitch)
+		if (restart_on_slide and sliding) or (not restart_on_slide and finished):
+			var best := int(s.get("best_frames", -1))
+			if sliding:
+				g.runner.set_body_scale(1.25)
+				var shape: CapsuleShape3D = g.runner.get_child(0).shape
+				errors += int(not is_equal_approx(shape.height, TLBiped.WALKER_SLIDE_HEIGHT * 1.25))
+			else:
+				errors += int(gates != [0, 1, 2, 3] or best <= 0 or maximum < 59.9)
+				errors += int(not is_equal_approx(g.cam.pitch, pitch) or not g.hud.text_of(&"race").begins_with("FINISH"))
+			p.ctx.input.release_all()
+			p.ctx.input.tap(&"restart")
+			p.tick(f)
+			var after := p.ctx.pack_state()
+			errors += int(after.checkpoint != 0 or after.falls != 0 or after.total_frames != 0 or absf(after.station) > 0.001)
+			errors += int(after.motion != "ground" or not is_equal_approx(g.cam.pitch, pitch) or after.speed > 0.001)
+			errors += int(int(after.get("best_frames", -1)) != best or not g.hud.text_of(&"race").contains("0 / 4"))
+			if sliding:
+				var shape: CapsuleShape3D = g.runner.get_child(0).shape
+				errors += int(not is_equal_approx(shape.height, TLBiped.WALKER_HEIGHT * 1.25))
+			print("restart from %s at frame %d; gates %s; pitch start/peak/end %.1f/%.1f/%.1f; best %d" %
+				[s.motion if sliding else "finish", f, gates, pitch, maximum, g.cam.pitch, best])
+			done = true
+			break
+		policy._bot_tick(f)
+		p.tick(f)
+	errors += int(not done)
+	policy.free()
+	p.unload()
+	p.free()
+
+func run() -> void:
+	await trial(true)
+	await trial(false)
+	print("REPRO C11: FAIL %d course checks" % errors if errors else "REPRO C11: PASS")
+	quit(int(errors > 0))

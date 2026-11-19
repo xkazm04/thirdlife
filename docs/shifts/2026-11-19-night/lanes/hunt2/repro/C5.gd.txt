@@ -1,0 +1,28 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh C5
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://seeds/seed_drive", {"own_space": false, "scenery": "plot"}):
+		quit(2)
+		return
+	var game = pack.entry
+	for f in range(game.rules.time_limit_frames + 1):
+		await physics_frame
+		pack.tick(f)
+	var s := pack.ctx.pack_state()
+	var hint := str(s.hud.hint)
+	var frames := int(s.total_frames)
+	if s.reason != "time" or frames != 5400 or int(s.laps.car) != 0:
+		quit(2)
+		return
+	pack.free()
+	var bad := hint == "THREE LAPS DONE"
+	print("REPRO C5: FAIL %d frames, 0/3 laps, reason time, HUD '%s'" % [frames, hint] if bad else "REPRO C5: PASS")
+	quit(int(bad))

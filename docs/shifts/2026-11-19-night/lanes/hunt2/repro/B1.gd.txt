@@ -1,0 +1,38 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B1
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://packs/hockey", {"own_space": false, "scenery": "plot"}):
+		quit(2)
+		return
+	pack.tick(0)
+	var game = pack.entry
+	var refs := []
+	for sk: Node in game.pool.values():
+		refs.append(weakref(sk))
+	pack.ctx.input.tap(&"mode_big_ice")
+	pack.tick(1)
+	var benched: int = refs.size() - game.skaters.size()
+	if game.mode_id != "big_ice" or benched != 2:
+		quit(2)
+		return
+	pack.unload()
+	pack.free()
+	await physics_frame
+	var survivors := 0
+	var nodes := 0
+	for ref: WeakRef in refs:
+		var sk: Node = ref.get_ref()
+		if sk != null:
+			survivors += 1
+			nodes += 1 + sk.find_children("*", "", true, false).size()
+			sk.free()
+	print("REPRO B1: FAIL %d/%d benched skaters still own %d nodes after unload" % [survivors, benched, nodes] if survivors else "REPRO B1: PASS")
+	quit(int(survivors > 0))

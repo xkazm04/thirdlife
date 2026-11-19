@@ -137,6 +137,14 @@ func _pack_setup(c) -> void:
 	_build(mode_id)
 
 
+## hunt2 A14, B1: the venues, the dress and the benched skaters kept out of the tree go with the pack, never left behind.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		for n: Variant in venues.values() + pool.values() + [dress_node]:
+			if is_instance_valid(n) and not (n as Node).is_inside_tree():
+				(n as Node).free()
+
+
 ## Builds the match of a mode from nothing: venue, puck, skaters, goal volumes, rules, HUD, the helpers.
 func _build(mid: String) -> void:
 	# a rebuild runs inside one tick (a mode change, R): only what changed is made again, so it stays far under the runner's 250 ms tick limit (the whole arena rebuilt in a tick took 254 ms of processor time)
@@ -150,16 +158,8 @@ func _build(mid: String) -> void:
 	arena = Node3D.new()
 	arena.name = "Arena"
 	ctx.root.add_child(arena)
-	skaters = {}
-	order = []
-	teams = {}
-	roles = {}
-	spawns = {}
-	frozen = false
-	reset_in = 0
-	result = ""
-	_flag_goal = ""
-	drill_id = ""
+	skaters = {}; order = []; teams = {}; roles = {}; spawns = {}
+	frozen = false; reset_in = 0; result = ""; _flag_goal = ""; drill_id = ""
 	dials = {}
 	for n: String in tune["dial"]["names"]:
 		dials[n] = 0

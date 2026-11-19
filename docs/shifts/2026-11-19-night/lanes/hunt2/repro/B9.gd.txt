@@ -1,0 +1,76 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B9
+extends SceneTree
+
+const Site = preload("res://kernel/world/site.gd")
+const World = preload("res://kernel/world/world.gd")
+const Pack = preload("res://kernel/world/pack.gd")
+const Tiers = preload("res://kernel/world/tiers.gd")
+const FIXTURE = "res://kernel/world/site/fixtures/arrive"
+const DEST = "promoted/example.bounce@0.1.0"
+const FILES = ["data/bounce.json", "scripts/main.gd", "tests/bot_bounce.gd", "pack.json"]
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func make_world(dir: String) -> Node:
+	var w := World.new()
+	w.jobs = RefCounted.new()
+	w.sched = Tiers.new()
+	w.walk = {"plots": [], "landscape": {"lots": [{"job": dir, "at": [0,0], "radius": 22}]}}
+	w.site.setup(w, w.walk)
+	w.plot_defs = w.walk.plots
+	w.sched.plots = [{"id": "site_0", "tier": "ledger", "size": Vector2(44, 44)}]
+	w.packs = [Pack.new()]
+	w.add_child(w.packs[0])
+	return w
+
+func save(path: String, content: String) -> void:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(content)
+	f.close()
+
+func run() -> void:
+	var dir: String = get_script().resource_path.get_base_dir()
+	OS.set_environment("TL_CACHE_DIR", dir)
+	var file := dir + "/job.jsonl"
+	var log := FileAccess.get_file_as_string(FIXTURE + "/job.jsonl")
+	var end_at := log.find('"type":"promoted"')
+	if end_at <= 0:
+		quit(2)
+		return
+	save(file, log.left(end_at))
+	var w := make_world(dir)
+	for t in 61:
+		if t == 1:
+			save(file, log)
+		w.site.tick(t)
+		if t == 59 and int(w.site.sites[0].n) != 19:
+			quit(2)
+			return
+	var n: int = w.site.sites[0].n
+	var pack_dir := dir + "/" + DEST
+	for rel: String in FILES:
+		var path := pack_dir + "/" + rel
+		DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+		save(path, FileAccess.get_file_as_string(FIXTURE + "/" + DEST + "/" + rel))
+	for t in range(61, 241):
+		w.site.tick(t)
+	var late: bool = w.site.view_of(0).arrived
+	var polls: int = w.site.sites[0].reads
+	var fresh := make_world(dir)
+	fresh.site.tick(0)
+	var on_time: bool = fresh.site.view_of(0).arrived
+	w.free()
+	fresh.free()
+	for rel: String in FILES:
+		DirAccess.remove_absolute(pack_dir + "/" + rel)
+	for sub in ["data", "scripts", "tests"]:
+		DirAccess.remove_absolute(pack_dir + "/" + sub)
+	DirAccess.remove_absolute(pack_dir)
+	DirAccess.remove_absolute(pack_dir.get_base_dir())
+	DirAccess.remove_absolute(file)
+	if n != 21 or not on_time or polls != 5:
+		quit(2)
+		return
+	print("REPRO B9: FAIL 21 events, 5 polls; manifest available for 180 ticks; arrivals live %d, fresh load %d" % [int(late), int(on_time)] if not late else "REPRO B9: PASS")
+	quit(int(not late))

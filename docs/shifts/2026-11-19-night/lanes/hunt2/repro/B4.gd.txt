@@ -1,0 +1,78 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B4
+extends SceneTree
+
+const Visit = preload("res://kernel/runner/visit.gd")
+const Pack = preload("res://kernel/world/pack.gd")
+const World = preload("res://kernel/world/world.gd")
+const Session = preload("res://kernel/runner/session.gd")
+
+class WalkView extends Node:
+	var world: Node
+	var visitor: Node3D
+	var stage := 0
+
+class Walker extends Node3D:
+	var feet := Vector3.ZERO
+	var look_yaw := 0.0
+	var look_pitch := 0.0
+	var space: RefCounted
+	var cam: Camera3D
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func trial(path: String, writing: bool) -> Array:
+	var v := WalkView.new()
+	var w := World.new()
+	v.world = w
+	v.visitor = Walker.new()
+	v.add_child(v.visitor)
+	w.plot_defs = [{"id": "road"}]
+	w.walk = {"name": "village"}
+	w.walk_ticks = 75
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://seeds/seed_drive", {"seed": 1, "frames": 75, "own_space": true, "scenery": "plot"}):
+		return []
+	w.packs = [pack]
+	var visit := Visit.new()
+	if not visit.setup(v, {"record": path} if writing else {"input": path}).is_empty():
+		return []
+	visit.stage(-1, 0, [pack], [], [])
+	var gas_ticks := 0
+	for t in 75:
+		await physics_frame
+		w.tick = t
+		if writing and t == 4:
+			pack.ctx.input.press(&"gas")
+		visit.sample(t)
+		pack.tick(t)
+		gas_ticks += int(pack.ctx.input.pressed(&"gas"))
+	await physics_frame
+	var digest := pack.state_hash()
+	visit.finish()
+	visit.free()
+	pack.unload()
+	pack.free()
+	v.free()
+	w.free()
+	return [gas_ticks, digest]
+
+func run() -> void:
+	var path: String = get_script().resource_path.get_base_dir().path_join("visit.json").replace("\\", "/")
+	var rec := await trial(path, true)
+	var header := Session.read(path)
+	if not header.ok or int(header.record.length) != 75 or not FileAccess.file_exists(path.trim_suffix(".json") + ".road.1.json"):
+		quit(2)
+		return
+	var control := await trial(path, false)
+	var native := await trial(path.replace("/", "\\"), false)
+	DirAccess.remove_absolute(path)
+	DirAccess.remove_absolute(path.trim_suffix(".json") + ".road.1.json")
+	if rec.size() != 2 or rec[0] != 71 or rec != control or native.size() != 2:
+		printerr("control failed ", rec, control, native)
+		quit(2)
+		return
+	var failed := native != rec
+	print("REPRO B4: FAIL 75 frames; recorded/forward-slash/native-path gas ticks %d/%d/%d; hashes %s/%s" % [rec[0], control[0], native[0], rec[1], native[1]] if failed else "REPRO B4: PASS")
+	quit(int(failed))

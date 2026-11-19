@@ -42,6 +42,7 @@ var avoid_pull: float = 0.0      ## read only: metres the camera stands nearer t
 var avoid_lift: float = 0.0      ## read only: degrees the camera is swung up this frame (0 when free)
 var _heading: Vector3 = Vector3.FORWARD
 var _last_pos: Vector3 = Vector3.ZERO
+var _travel: Vector3 = Vector3.ZERO   ## hunt2 A4: the last travel heading (use_velocity); zero: none yet, the facing is used
 var _look: Vector3 = Vector3.ZERO
 var _anchor: Vector3 = Vector3.ZERO
 var _free_len: float = -1.0
@@ -78,6 +79,7 @@ func snap() -> void:
 		return
 	_heading = _target_forward()
 	_last_pos = target.global_position
+	_travel = Vector3.ZERO
 	_anchor = target.global_position
 	global_position = _wanted()
 	_look = target.global_position + Vector3.UP * look_height
@@ -153,7 +155,7 @@ func _avoid(now: bool) -> void:
 	else:
 		_free_len = minf(free_len, lerpf(_free_len, free_len, clampf(avoid_out, 0.01, 1.0)))
 	var len: float = minf(_free_len, want_len)
-	avoid_pull = want_len - len
+	avoid_pull = (fr.basis * d).length() - (fr.basis * (dir / want_len * len)).length()   # hunt2 A10: metres, whatever the parent's scale
 	avoid_lift = _lift
 	global_position = fr * (_look_local + dir / want_len * len)
 
@@ -248,9 +250,15 @@ func _physics_process(_delta: float) -> void:
 	if use_velocity:
 		var step: Vector3 = target.global_position - _last_pos
 		step.y = 0.0
+		# hunt2 A4: travel is measured over as many ticks as it takes to cover 2 cm (slow travel too), and its heading is
+		# kept between samples and at rest, never swapped for the facing
 		if step.length() > 0.02:
-			want_heading = step.normalized()
-	_last_pos = target.global_position
+			_travel = step.normalized()
+			_last_pos = target.global_position
+		if _travel != Vector3.ZERO:
+			want_heading = _travel
+	else:
+		_last_pos = target.global_position
 	if _heading.dot(want_heading) < -0.999:
 		# Q20: an exact reversal lerps along the line and normalises back to the old heading: turn round the up axis
 		_heading = _heading.rotated(Vector3.UP, PI * clampf(stiffness, 0.0, 1.0))

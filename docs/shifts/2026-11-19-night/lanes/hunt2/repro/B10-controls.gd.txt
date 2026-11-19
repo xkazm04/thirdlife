@@ -1,0 +1,70 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B10-controls
+extends SceneTree
+
+const KEYS := [&"left", &"right", &"sprint", &"shoot"]
+
+func trial(seed_value: int, lapse_rate: float) -> Dictionary:
+	var ctx := TLContext.new()
+	ctx.seed = seed_value
+	ctx.input = TLInput.new()
+	for key: StringName in KEYS:
+		ctx.input.declare(key)
+	var hand := TLHand.create(ctx, "regular", {"lapses_per_minute": lapse_rate})
+	var stream := PackedByteArray()
+	var edges := 0
+	var ups := 0
+	var shoots := 0
+	var requests := 0
+	var overlap := 0
+	var held := 0
+	var final_mask := 0
+	for f in 2600:
+		ctx.frame = f
+		if f < 2400:
+			var phase := f % 100
+			hand.set_axis(&"left", &"right", -1.0 if phase < 35 else (1.0 if phase < 70 else 0.0))
+			if phase == 5:
+				hand.press(&"sprint")
+			if phase == 70:
+				hand.release(&"sprint")
+			if phase in [25, 26]:
+				hand.tap(&"shoot")
+				requests += 1
+		elif f == 2400:
+			hand.release_all()
+		hand.tick()
+		ctx.input._sample()
+		var mask := 0
+		for i in KEYS.size():
+			edges += int(ctx.input.just_pressed(KEYS[i]))
+			ups += int(ctx.input.just_released(KEYS[i]))
+			mask |= int(ctx.input.pressed(KEYS[i])) << i
+		shoots += int(ctx.input.just_pressed(&"shoot"))
+		overlap += int((mask & 3) == 3)
+		if f < 2400 and f % 100 in range(38, 65):
+			held += int(ctx.input.pressed(&"sprint"))
+		stream.append(mask)
+		final_mask = mask
+	var s := hand.stats()
+	ctx.input.free()
+	var sound: bool = edges == s.presses and ups == s.releases and requests == shoots + s.taps_lost and shoots == s.taps
+	sound = sound and overlap == 0 and final_mask == 0 and s.lengthened > 0 and s.sticks > 0 and s.overshoots > 0
+	sound = sound and ((held == 24 * 27 and s.taps_lost == 0) if lapse_rate == 0 else s.taps_lost > 0)
+	return {"ok": sound, "trace": stream.hex_encode().sha256_text(), "stats": s, "overlap": overlap,
+		"edges": edges, "ups": ups, "shoots": shoots, "held": held}
+
+func _initialize() -> void:
+	var bad := 0
+	var samples := []
+	for seed_value in [1, 2]:
+		for rate in [0.0, 72.0]:
+			var a := trial(seed_value, rate)
+			var b := trial(seed_value, rate)
+			bad += int(a != b or not a.ok)
+			samples.append(a.trace)
+			print("seed %d rate %.0f: edges %d/%d releases %d/%d shoot %d lost %d lengthened %d sticks %d overshoots %d overlap %d held %d" % [
+				seed_value, rate, a.edges, a.stats.presses, a.ups, a.stats.releases, a.shoots, a.stats.taps_lost,
+				a.stats.lengthened, a.stats.sticks, a.stats.overshoots, a.overlap, a.held])
+	bad += int(samples[0] == samples[2])
+	print("REPRO B10-controls: FAIL %d checks" % bad if bad else "REPRO B10-controls: PASS")
+	quit(int(bad > 0))

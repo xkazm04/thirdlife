@@ -361,6 +361,8 @@ func _apply(a: StringName, k: Dictionary, frame: int) -> void:
 		elif not on and bool(k["down"]) and not (int(q[0][2]) < 0 and bool(k["seen"])):
 			if frame < int(k["min_up"]):
 				q[0][0] = int(k["min_up"])           # a person's press is never shorter than a tap
+				for i: int in range(1, q.size()):     # hunt2 B10: what follows moves too, so a next press has an up frame
+					q[i][0] = maxi(int(q[i][0]), int(q[i - 1][0]) + 1)
 				_n["lengthened"] += 1
 				return
 			_ctx.input.release(a)

@@ -1,0 +1,31 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B3
+extends SceneTree
+
+const Log = preload("res://kernel/world/site/log.gd")
+const FIXTURE = "res://kernel/world/site/fixtures/arrive/job.jsonl"
+
+func _initialize() -> void:
+	var lines := FileAccess.get_file_as_string(FIXTURE).strip_edges().split("\n")
+	var created: Dictionary = JSON.parse_string(lines[0])
+	var cases := []
+	for key in ["v", "job", "ts", "seq", "packId"]:
+		var row := created.duplicate()
+		row.erase(key)
+		cases.append(row)
+	var plan: Dictionary = JSON.parse_string(lines[2])
+	plan.packages[0]["titlle"] = "ignored"
+	cases.append(plan)
+	var accepted := 0
+	for row: Dictionary in cases:
+		var log := Log.new()
+		accepted += int(log.feed(JSON.stringify(row) + "\n") == 1 and log.error.is_empty())
+	var control := Log.new()
+	if control.feed(lines[0] + "\n") != 1:
+		quit(2)
+		return
+	created["titlle"] = "unknown"
+	if control.feed(lines[0] + "\n" + JSON.stringify(created) + "\n") != 0 or control.error.is_empty():
+		quit(2)
+		return
+	print("REPRO B3: FAIL %d/%d invalid job events accepted (5 missing required fields, 1 unknown package key)" % [accepted, cases.size()] if accepted else "REPRO B3: PASS")
+	quit(int(accepted > 0))

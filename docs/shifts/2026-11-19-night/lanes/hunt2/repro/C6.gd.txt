@@ -1,0 +1,36 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh C6
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://packs/hockey", {"own_space": false, "scenery": "plot"}):
+		quit(2)
+		return
+	await physics_frame
+	pack.tick(0)
+	var game = pack.entry
+	var gx := float(game.tune.goals.red[0])
+	var puck: TLBall = game.puck
+	# The puck stays here for the server's overlap notification, with its centre on the field side.
+	puck.freeze = true
+	puck.place(Vector3(gx - puck.radius * 0.5, 0.12, 0.0))
+	var pos_rule: String = game.api.goal_by_position(game.tune.goals)
+	var gap: float = gx - puck.position.x
+	var trig: TLTrigger = game.arena.get_node("goal_trigger_red")
+	for f in range(1, 7):
+		await physics_frame
+		pack.tick(f)
+	var points: int = game.rules.score("blue")
+	var touched := trig.has_inside(puck)
+	if not touched or not pos_rule.is_empty() or absf(puck.position.x - gx + gap) > 0.001:
+		quit(2)
+		return
+	pack.free()
+	print("REPRO C6: FAIL 1 stationary puck, centre %.3f m short of line for 6 ticks, blue gained %d" % [gap, points] if points else "REPRO C6: PASS")
+	quit(int(points > 0))

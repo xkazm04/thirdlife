@@ -1,0 +1,51 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh C10
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+var origin_at_break := {}
+var ever_displaced := {}
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func remember(_by: Node, fracture: TLFracture) -> void:
+	for piece: RigidBody3D in fracture.pieces:
+		origin_at_break[piece] = piece.global_position
+
+func run() -> void:
+	var p := Pack.new()
+	root.add_child(p)
+	if not p.load_pack("res://seeds/seed_wall", {"seed": 1, "mode": "bot", "scenery": "plot",
+			"own_space": true, "test": "tests/bot_knock.gd", "frames": 3601}):
+		quit(2)
+		return
+	var game = p.entry
+	for block: Dictionary in game.blocks:
+		var fracture: TLFracture = block.fracture
+		fracture.broke.connect(remember.bind(fracture))
+	var mismatches := 0
+	var first := []
+	for f in 3601:
+		await physics_frame
+		# The seed counts pieces in its pack tick. Sample at that same instant, before the physics step.
+		var live: bool = game.rules.is_running()
+		for piece: RigidBody3D in origin_at_break:
+			if live and piece.global_position.distance_to(origin_at_break[piece]) > float(game.tune.wall.down_distance):
+				ever_displaced[piece] = true
+		p.tick(f)
+		if live and ever_displaced.size() != game.down.size():
+			mismatches += 1
+			if first.is_empty():
+				first = [f, ever_displaced.size(), game.down.size()]
+		if p.finished:
+			break
+	var finished_by_goals: bool = p.finished and game.rules.reason == "score"
+	var counted := origin_at_break.size()
+	p.unload()
+	p.free()
+	if not finished_by_goals or counted == 0:
+		quit(2)
+		return
+	print("REPRO C10: FAIL %d scoring ticks disagree; first frame %d, pieces beyond threshold from wall %d, credited %d" %
+		([mismatches] + first) if mismatches else "REPRO C10: PASS")
+	quit(int(mismatches > 0))

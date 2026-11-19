@@ -186,9 +186,11 @@ func _physics_process(delta: float) -> void:
 	var up: Vector3 = xf.basis.y.normalized()
 	var fspeed: float = forward_speed()
 	# nitro
-	var burning: bool = _nitro_wanted and nitro_charge > 0.0 and throttle > 0.0
+	# hunt2 A9: a tick burns only on at least half a tick's charge (a crumb of recharge from one released tick is not a boost)
+	var per_tick: float = 1.0 / float(maxi(1, nitro_frames))
+	var burning: bool = _nitro_wanted and nitro_charge >= per_tick * 0.5 and throttle > 0.0
 	if burning:
-		nitro_charge = maxf(0.0, nitro_charge - 1.0 / float(maxi(1, nitro_frames)))
+		nitro_charge = maxf(0.0, nitro_charge - per_tick)
 	elif not _nitro_wanted:
 		nitro_charge = minf(1.0, nitro_charge + 1.0 / float(maxi(1, nitro_recharge_frames)))
 	if burning != nitro_active:

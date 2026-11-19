@@ -1,0 +1,32 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh H1-beam-trace   (director's trace of a runner pushing into the beam)
+extends SceneTree
+const Pack = preload("res://kernel/world/pack.gd")
+
+
+func _initialize() -> void:
+	run.call_deferred()
+
+
+func run() -> void:
+	var pack: Node = Pack.new()
+	root.add_child(pack)
+	pack.load_pack("res://packs/parkour", {"own_space": false, "scenery": "plot"})
+	var game = pack.entry
+	var runner: TLBiped = game.runner
+	var venue = game.venue
+	pack.tick(0)
+	game.rules.pass_checkpoint("runner", 0)
+	game.rules.pass_checkpoint("runner", 1)
+	runner.place(venue.point(venue.bar - 2.0, venue.DECK_Y + 0.04), -PI / 2)
+	pack.ctx.input.press(&"forward")
+	var last := runner.position
+	for i in 70:
+		pack.tick(i + 1)
+		await physics_frame
+		if i >= 40:
+			print("t%d x=%.4f dx=%.4f y=%.3f g=%s spd=%.2f mode=%s trail=%d" % [i, runner.position.x - venue.START_X - venue.bar,
+				runner.position.x - last.x, runner.position.y, runner.grounded, runner.speed(), runner.walker_motion(), game.trail.size()])
+		last = runner.position
+	print("REPRO H1-beam-trace: PASS")
+	pack.free()
+	quit()

@@ -1,0 +1,55 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A14
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func tree_size(node: Node) -> int:
+	var n := 1
+	for child in node.get_children():
+		n += tree_size(child)
+	return n
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://packs/hockey", {"own_space": false, "scenery": "plot"}):
+		printerr(pack.load_errors)
+		quit(2)
+		return
+	pack.tick(0)
+	var game = pack.entry
+	var old_venue: WeakRef = weakref(game.venues[game.venue_key])
+	var helpers := [weakref(game.api)]
+	pack.ctx.input.tap(&"mode_big_ice")
+	pack.tick(1)
+	if game.mode_id != "big_ice":
+		quit(2)
+		return
+	helpers.append(weakref(game.api))
+	# Keep only weak references to off-tree assets for cleanup after measuring.
+	var detached: Array[WeakRef] = []
+	var cached: Array = game.venues.values() + game.pool.values() + [game.dress_node]
+	for n: Variant in cached:
+		if n is Node and n.get_parent() == null:
+			detached.append(weakref(n))
+	cached.clear()
+	pack.unload()
+	pack.free()
+	await physics_frame
+	var surviving := 0
+	if old_venue.get_ref() != null:
+		surviving = tree_size(old_venue.get_ref())
+	for ref in detached:
+		if ref.get_ref() != null:
+			ref.get_ref().free()
+	for ref in helpers:
+		if ref.get_ref() != null:
+			ref.get_ref().hits = null
+	if surviving > 0:
+		print("REPRO A14: FAIL old rink still owns %d live nodes after 1 mode switch and 1 pack unload" % surviving)
+	else:
+		print("REPRO A14: PASS")
+	quit(int(surviving > 0))

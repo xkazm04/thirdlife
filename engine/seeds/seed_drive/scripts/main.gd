@@ -86,7 +86,7 @@ func _pack_setup(c) -> void:
 	hud.add_speed(car.speed_kmh, "km/h", &"bottom_right")
 	hud.add_label(&"hint", "A / D steer, W gas, S reverse, Space brake, Shift nitro (fill it at the striped pad)", &"bottom")
 	rules.finished.connect(func(winner: String, reason: String) -> void:
-		hud.set_text(&"hint", "THREE LAPS DONE" if winner == "car" else "OUT OF TIME (%s)" % reason))
+		hud.set_text(&"hint", "THREE LAPS DONE" if winner == "car" and reason == "laps" else "OUT OF TIME (%s)" % reason))
 
 	for action: Array in [[&"left", KEY_A], [&"right", KEY_D], [&"gas", KEY_W], [&"reverse", KEY_S], [&"brake", KEY_SPACE], [&"nitro", KEY_SHIFT]]:
 		ctx.input.declare(action[0], [action[1]])

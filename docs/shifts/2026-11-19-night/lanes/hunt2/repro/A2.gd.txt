@@ -1,0 +1,29 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A2
+extends SceneTree
+
+const Boot = preload("res://boot/boot.gd")
+
+func _initialize() -> void:
+	var boot := Boot.new()
+	var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://boot/games.json"))
+	var village: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://boot/village.json"))
+	var missing: Array[String] = []
+	var installed := 0
+	for plot: Dictionary in village.plots:
+		for game: Dictionary in catalog.games:
+			if plot.pack != game.name:
+				continue
+			var src := "res://" + str(game.from).trim_prefix("engine/") + "/pack.json"
+			if FileAccess.file_exists(src):
+				installed += 1
+				if boot._pack_dir(plot.pack).is_empty():
+					missing.append(plot.pack)
+	boot.free()
+	if installed == 0:
+		quit(2)
+	elif missing.is_empty():
+		print("REPRO A2: PASS")
+		quit()
+	else:
+		print("REPRO A2: FAIL editor boot resolves %d/%d installed village games; missing %s" % [installed - missing.size(), installed, ", ".join(missing)])
+		quit(1)

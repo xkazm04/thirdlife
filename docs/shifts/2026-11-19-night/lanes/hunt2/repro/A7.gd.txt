@@ -1,0 +1,42 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A7
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	var pack_dir := OS.get_environment("HUNT2_HOCKEY_PACK")
+	if pack_dir.is_empty():
+		pack_dir = "res://packs/hockey"
+	if not pack.load_pack(pack_dir, {"own_space": false, "scenery": "plot"}):
+		printerr(pack.load_errors)
+		quit(2)
+		return
+	pack.tick(0)
+	var game = pack.entry
+	if not game.rules.is_running():
+		printerr("match is not running")
+		quit(2)
+		return
+	var trigger := game.arena.get_node("goal_trigger_red") as TLTrigger
+	var box := trigger.get_child(0) as CollisionShape3D
+	var top := box.global_position.y + (box.shape as BoxShape3D).size.y / 2
+	var puck := game.puck as TLBall
+	puck.place(Vector3(trigger.global_position.x, top + 1.0, trigger.global_position.z))
+	var shape := puck.get_child(0) as CollisionShape3D
+	var gap := shape.global_position.y - (shape.shape as CylinderShape3D).height / 2 - top
+	var before: int = game.rules.score("blue")
+	pack.tick(1)
+	var scored: int = game.rules.score("blue") - before
+	# Release the fixture after reading the score, including the helpers' ownership cycle.
+	game.api.hits = null
+	pack.free()
+	if scored > 0:
+		print("REPRO A7: FAIL blue gained %d goal with puck bottom %.2f m above the goal volume" % [scored, gap])
+	else:
+		print("REPRO A7: PASS")
+	quit(int(scored > 0))

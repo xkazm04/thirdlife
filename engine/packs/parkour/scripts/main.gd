@@ -14,6 +14,7 @@ var hud: TLHud
 var spawn_at: Vector3
 var falls := 0
 var chute_tilt := 0.0
+var trail: Array[Vector3] = []         # the runner's last 8 places: blocked at the beam is under 10 cm of travel across them
 
 
 func _pack_setup(c: TLContext) -> void:
@@ -54,7 +55,7 @@ func _pack_start() -> void:
 
 func _restart() -> void:
 	spawn_at = venue.point(0, venue.DECK_Y + 0.04)
-	runner.place(spawn_at)
+	runner.place(ctx.root.to_global(spawn_at))   # hunt2 C7: spawn_at is in course coordinates, place() takes the world's
 	_frame_chute(0.0)
 	cam.snap()
 	falls = 0
@@ -66,6 +67,10 @@ func _pack_tick(_frame: int) -> void:
 	if ctx.input.just_pressed(&"restart"):
 		_restart()
 	if rules.is_running():
+		# hunt2 A15: pushed into the beam he bounces 3 cm in a three-tick cycle and his speed flickers: read his travel
+		trail.push_back(runner.position)
+		if trail.size() > 8:
+			trail.pop_front()
 		var at: float = runner.position.x - venue.START_X
 		# Catch a miss before a trestle underneath a high deck can catch the runner.
 		var below_decks: bool = at < venue.lip and runner.position.y < venue.DECK_Y - 1.35
@@ -73,7 +78,7 @@ func _pack_tick(_frame: int) -> void:
 		if runner.position.y < KILL_Y or below_decks or retry:
 			if not retry:
 				falls += 1
-			runner.place(spawn_at)
+			runner.place(ctx.root.to_global(spawn_at))
 			at = spawn_at.x - venue.START_X
 			cam.snap()
 		runner.drive_from_input(ctx.input, ACTIONS, cam.yaw_basis())
@@ -106,7 +111,8 @@ func _frame_chute(at: float) -> void:
 
 
 func _at_blocked_bar(at: float) -> bool:
-	return int(rules.next_checkpoint[SIDE]) == 2 and runner.grounded and runner.speed() < 0.5 \
+	return int(rules.next_checkpoint[SIDE]) == 2 and runner.grounded and trail.size() == 8 \
+		and Vector2(trail[0].x - trail[7].x, trail[0].z - trail[7].z).length() < 0.1 \
 		and at > venue.bar - 0.6 and at < venue.bar
 
 

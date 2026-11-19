@@ -1,0 +1,67 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A15
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://packs/parkour", {"own_space": false, "scenery": "plot"}):
+		printerr(pack.load_errors)
+		quit(2)
+		return
+	pack.tick(0)
+	var game = pack.entry
+	var venue = game.venue
+	var runner: TLBiped = game.runner
+	var tick := 1
+	for station: float in [venue.checkpoints[0] + 0.1, venue.checkpoints[1] + 0.1]:
+		runner.place(venue.point(station, venue.DECK_Y + 0.01))
+		for i in 5:
+			await physics_frame
+			pack.tick(tick)
+			tick += 1
+	pack.ctx.input.press(&"forward")
+	pack.ctx.input.press(&"run")
+	for i in 90:
+		await physics_frame
+		pack.tick(tick)
+		tick += 1
+	var x_min := runner.position.x
+	var x_max := x_min
+	var shown := 0
+	for i in 40:
+		await physics_frame
+		pack.tick(tick)
+		tick += 1
+		shown += int(game.hud.text_of(&"race").contains("Retry"))
+		x_min = minf(x_min, runner.position.x)
+		x_max = maxf(x_max, runner.position.x)
+	var face: float = venue.point(venue.bar, venue.DECK_Y).x
+	if game.rules.next_checkpoint.runner != 2 or absf(face - runner.position.x - runner.body_radius()) > 0.04 or x_max - x_min > 0.04:
+		printerr("runner did not remain at the beam")
+		quit(2)
+		return
+	# Tap on the higher-speed sample of the braced posture if it occurs.
+	var moved := 0.0
+	for i in 8:
+		await physics_frame
+		var before := runner.position.x
+		var tap := runner.speed() >= 0.5 or i == 7
+		if tap:
+			pack.ctx.input.tap(&"slide")
+		pack.tick(tick)
+		tick += 1
+		if tap:
+			moved = before - runner.position.x
+			break
+	var failed := shown < 40 or moved < 1.0
+	pack.free()
+	if failed:
+		print("REPRO A15: FAIL blocked for 40 ticks across %.3f m; retry hint shown %d/40 ticks; one C press moved runner back %.2f m" % [x_max-x_min, shown, moved])
+	else:
+		print("REPRO A15: PASS")
+	quit(int(failed))
