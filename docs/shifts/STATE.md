@@ -151,4 +151,4 @@ Astra ~0.85 M tokens. Route held: Astra alone for both looks; operators passed b
 The toy-diorama duel: three pillars (frame, surfaces, character), each built by an Astra arm and a Fable arm on
 branches from `diorama-base` (TL_STYLE switch, classic one switch away). Branches only; combine at 06:00; verdict 07:15.
 Plan: `docs/shifts/2026-11-20-night/PLAN.md`; boards https://claude.ai/artifact/MaR63DYediCSyJdiZ7cn65.
-- 23:33 six arms launched (3 Astra via Opus operators, 3 Fable 5.2).
+- 23:30 six arms launched (3 Astra via Opus operators, 3 Fable 5.2).

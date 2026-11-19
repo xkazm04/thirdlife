@@ -24,12 +24,12 @@
 
 | Arm | Worktree / branch | Builder | Agent | Started |
 |---|---|---|---|---|
-| frame-astra | `n20-frame-astra` / `diorama-frame-astra` | Astra via Codex, Opus operator | a961ae657f1a391a3 | 23:33 |
-| surfaces-astra | `n20-surfaces-astra` / `diorama-surfaces-astra` | Astra via Codex, Opus operator | a34fc124d90a0acf6 | 23:33 |
-| character-astra | `n20-character-astra` / `diorama-character-astra` | Astra via Codex, Opus operator | a9b98dbe5315b4270 | 23:33 |
-| frame-fable | `n20-frame-fable` / `diorama-frame-fable` | Fable 5.2 | a66e03b1222a50be6 | 23:33 |
-| surfaces-fable | `n20-surfaces-fable` / `diorama-surfaces-fable` | Fable 5.2 | a62acfca651779dd3 | 23:33 |
-| character-fable | `n20-character-fable` / `diorama-character-fable` | Fable 5.2 | aa5e24cfa452f834e | 23:33 |
+| frame-astra | `n20-frame-astra` / `diorama-frame-astra` | Astra via Codex, Opus operator | a961ae657f1a391a3 | 23:30 |
+| surfaces-astra | `n20-surfaces-astra` / `diorama-surfaces-astra` | Astra via Codex, Opus operator | a34fc124d90a0acf6 | 23:30 |
+| character-astra | `n20-character-astra` / `diorama-character-astra` | Astra via Codex, Opus operator | a9b98dbe5315b4270 | 23:30 |
+| frame-fable | `n20-frame-fable` / `diorama-frame-fable` | Fable 5.2 | a66e03b1222a50be6 | 23:30 |
+| surfaces-fable | `n20-surfaces-fable` / `diorama-surfaces-fable` | Fable 5.2 | a62acfca651779dd3 | 23:30 |
+| character-fable | `n20-character-fable` / `diorama-character-fable` | Fable 5.2 | aa5e24cfa452f834e | 23:30 |
 
 **Times:**
 - Standups hourly at :41.
