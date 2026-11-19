@@ -6,7 +6,8 @@
 - Append one line at each milestone and at least every 60 minutes of work:
   `HH:MM | state: working|blocked|done|cut | did: <one line> | next: <one line> | gates: <last PASS/FAIL line or ->`
 - `blocked` names the question in the same line. Then keep working on whatever the block does not touch.
-- When you finish, write `REPORT.md` beside it (below) and set the last standup line to `done`.
+- When you finish, write `REPORT.txt` beside it (the harness refuses agent writes to files named REPORT.md), return the
+  full report as your final message too, and set the last standup line to `done`.
 
 ## Honesty
 - Evidence or it is not done: a gate line, a test count, a still, a video, a repro before and after.
@@ -21,7 +22,10 @@
 - Time is physics frames; determinism (same pack + seed + frames = same state_hash); unknown keys are errors; packs use only
   the TL* API and never declare class_name; kit, rigs, style reference nothing outside themselves.
 - Contracts (`contracts/*`) are Director-only: put the question in your report.
-- New selftest cases go in your own `engine/tools/selftest.d/NNN-<name>.sh` file.
+- New selftest cases go in your own `engine/tools/selftest.d/NNN-<name>.sh` files, numbered inside the block range your brief
+  assigns (two lanes once collided on 360).
+- Raw captures (frame folders, long or uncompressed clips, mkv/avi) stay under `.tl/` in your worktree. The lane folder
+  gets only sheets, notes, JPG stills and mp4 clips of 30 s or less.
 - A kernel API addition updates `engine/kernel/API.md`; the Director regenerates docs on main (`tl arch --index`).
 - Gates before `done`: `node devx/bin/tl.mjs check --tier fast`; when kernel, kits, rigs, style or seeds changed, also
   `node devx/bin/tl.mjs check --tier full` (perf alone if it says NOT RUN).

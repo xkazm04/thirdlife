@@ -83,3 +83,10 @@ Landed and pushed: main `d6f3659`, exe `d6f3659 2026-11-19 05:29` (export check 
 editor x4, hunt2 x2 (plus bugfix-37 before the shift). About 4.1 M Astra tokens. Verdict: `docs/shifts/2026-11-19-night/VERDICT.md`;
 page https://claude.ai/artifact/5aAsbgDdYF1FRv3HC2H9YD. Leftover worktrees for the morning cleanup: at-d3-c, n19-hunt2,
 n19-hunt2b (held open), n19-walker (Filename too long), n19-walker2, n19-walker3, n19-parkour2, n19-editor4.
+
+### 2026-11-19 day: plan
+The owner is away most of the day: "Continue with all tracks during this day ... add one track to allow character fly".
+Lanes: editor (E2 in code, then E1 placement), blend (lots without circles), parkour (TV-ninja-style stages), and
+flight (mechanical wings, 5 x run). The Director took the design decisions; they are listed in each brief for the owner
+to overturn. Contracts for E2 were written first (`cf73f58`). Land and push by 18:00; verdict at 17:15. Plan:
+`docs/shifts/2026-11-19-day/PLAN.md`.
