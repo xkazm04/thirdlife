@@ -9,14 +9,20 @@ extends Control
 ##   --readonly                        look only: no Foreman command, no write to a pack
 ##   --drive=<name> --shots=<dir>      run a scripted session through real input events (ui/drive.gd)
 ##   --bg=<png>|none                   the picture behind the panel
+##   --editor  [--sentence=<text>] [--recipe=<name>] [--place=<x>,<z>] [--turn=<steps>] [--take] [--closeup]
+##                                     open the workbench (ui/editor/) over the panel; the rest fill it for a capture
 
 const Panel_ = preload("res://ui/panel.gd")
 const Door = preload("res://ui/foreman_door.gd")
 const JobModel = preload("res://ui/job_model.gd")
+const Workbench = preload("res://ui/editor/workbench.gd")
+const GameSheet = preload("res://ui/editor/game_sheet.gd")
 
 var args: Dictionary = {}
 var panel: Panel_
 var door: Door
+var workbench: Workbench = null
+var game_sheet: GameSheet = null
 
 
 func _ready() -> void:
@@ -65,6 +71,15 @@ func _ready() -> void:
 		if panel.selected.is_empty():
 			print("[ui] no job named %s under %s" % [want, jobs_root])
 	panel.refresh(true)
+	panel.action_started.connect(func(what: String, _err: String) -> void:
+		if what == "workbench":
+			open_workbench())
+	panel.job_selected.connect(open_game_sheet)
+	if args.has("editor"):
+		open_workbench()
+		_fill_workbench()
+	elif not panel.selected.is_empty():
+		open_game_sheet(panel.selected)
 	if capture:
 		_capture_and_quit(str(args["out"]))
 	elif args.has("drive"):
@@ -72,6 +87,70 @@ func _ready() -> void:
 		drive.name = "Drive"
 		add_child(drive)
 		drive.call("start", self, str(args["drive"]), str(args.get("shots", "")))
+
+
+## E1: the workbench over the panel. Build it -> the builders start through the same door; the panel shows the job.
+func open_workbench() -> void:
+	if workbench != null:
+		return
+	workbench = Workbench.new()
+	workbench.name = "Workbench"
+	workbench.setup(door, door.jobs_root)
+	add_child(workbench)
+	panel.visible = false
+	workbench.closed.connect(close_workbench)
+	workbench.committed.connect(func(request: String, err: String) -> void:
+		if err.is_empty():
+			panel.set("_want_select_sentence", Door.clean_text(request))
+			panel.say("The Designer is writing a brief…")
+			close_workbench.call_deferred()
+		panel.refresh(true))
+
+
+## E2: a game made in the workbench (its draft is under <jobs>/_editor) opens in the game sheet when it is selected.
+func open_game_sheet(id: String) -> void:
+	if workbench != null or game_sheet != null or not panel.jobs.has(id):
+		return
+	var d: Dictionary = GameSheet.find_draft(door.jobs_root, str((panel.jobs[id] as Dictionary).get("sentence", "")))
+	if d.is_empty():
+		return
+	game_sheet = GameSheet.new()
+	game_sheet.name = "GameSheet"
+	game_sheet.setup(door, door.jobs_root.path_join(id), d)
+	add_child(game_sheet)
+	panel.visible = false
+	game_sheet.closed.connect(func() -> void:
+		game_sheet.queue_free()
+		game_sheet = null
+		panel.visible = true)
+
+
+func close_workbench() -> void:
+	if workbench != null:
+		workbench.queue_free()
+		workbench = null
+	panel.visible = true
+
+
+## For captures: --sentence, --recipe, --take, --place, --turn fill the workbench as a player would have.
+func _fill_workbench() -> void:
+	var m: RefCounted = workbench.model
+	if args.has("sentence"):
+		var idea: LineEdit = workbench.find_child("IdeaField", true, false) as LineEdit
+		idea.text = str(args["sentence"])
+		m.call("set_sentence", idea.text)
+	if args.has("recipe"):
+		m.call("choose_recipe", str(args["recipe"]))
+	if args.has("take"):
+		m.call("take_proposals")
+	if args.has("place"):
+		var xz: PackedStringArray = str(args["place"]).split(",")
+		m.call("place", Vector2(float(xz[0]), float(xz[1])))
+	if args.has("turn"):
+		m.call("turn", int(args["turn"]))
+	if args.has("closeup"):
+		(workbench.find_child("CloseUpButton", true, false) as Button).pressed.emit()
+	workbench.refresh()
 
 
 func _background(path: String) -> void:

@@ -1,0 +1,48 @@
+{
+  "schema": "tl.ui-interview/1",
+  "card": "",
+  "kind": "a game without a recipe",
+  "example": "",
+  "match": [],
+  "estimate": {"packages": 6, "minutes": 90, "source": "a guess: no recipe, so no measured job"},
+  "footprint": {"size_m": [50, 50], "height_m": 6, "shape": "arena", "source": "the size you choose below"},
+  "questions": [
+    {
+      "key": "control", "group": "who", "ask": "Who do you play?",
+      "options": [
+        {"id": "runner", "label": "A runner on foot", "say": "the player runs, jumps and slides on foot", "from_words": ["run", "jump", "parkour", "obstacle", "course", "takeshi"]},
+        {"id": "fighter", "label": "A fighter", "say": "the player is a fighter with a weapon and abilities", "from_words": ["fight", "sword", "arena", "rpg", "battle", "warrior"]},
+        {"id": "vehicle", "label": "A vehicle", "say": "the player drives a vehicle", "from_words": ["car", "boat", "plane"]}
+      ],
+      "propose": "runner", "reason": "a walker on foot is the engine's best-measured character (TLBiped)"
+    },
+    {
+      "key": "against", "group": "who", "ask": "What is against you?",
+      "options": [
+        {"id": "course", "label": "Obstacles and falls", "say": "obstacles and falls stand in the way", "from_words": ["obstacle", "course", "takeshi", "parkour"]},
+        {"id": "waves", "label": "Waves of enemies", "say": "waves of enemies attack", "from_words": ["waves", "enemies", "goblins", "monsters", "arena"]},
+        {"id": "rival", "label": "One rival", "say": "one rival competes", "from_words": ["rival", "duel", "boss"]}
+      ],
+      "propose": "course", "reason": "the house game Timber Run shows obstacles; nothing yet shows enemies with intent"
+    },
+    {
+      "key": "ends", "group": "win", "ask": "When does a round end?",
+      "options": [
+        {"id": "finish", "label": "At the finish line or 90 s", "say": "a round ends at the finish line or after 90 seconds"},
+        {"id": "survive", "label": "After surviving 5 waves", "say": "a round ends after surviving 5 waves, or when the player falls", "from_words": ["waves", "survive"]},
+        {"id": "score", "label": "At a score", "say": "a round ends at a score"}
+      ],
+      "propose": "finish", "reason": "a round that ends by itself is what the gate's idle check needs (CARDS.md)"
+    },
+    {
+      "key": "size", "group": "where", "ask": "How big?",
+      "options": [
+        {"id": "course", "label": "A long course 18 x 50 m, 12 m high", "say": "a long course of 18 x 50 m, up to 12 m high", "size": {"set": [18, 50, 12]}, "shape": "course", "from_words": ["course", "obstacle", "takeshi", "parkour"]},
+        {"id": "arena_s", "label": "Small arena 30 m", "say": "a small round arena of 30 m", "size": {"set": [30, 30, 5]}},
+        {"id": "arena_l", "label": "Large arena 60 m", "say": "a large arena of 60 m", "size": {"set": [60, 60, 8]}, "from_words": ["arena"]}
+      ],
+      "propose": "course", "reason": "Timber Run's footprint (engine/packs/parkour/pack.json)"
+    }
+  ],
+  "variants": []
+}

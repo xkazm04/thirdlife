@@ -620,7 +620,7 @@ func _draw_list() -> void:
 	_msg.text = message
 	_msg.add_theme_color_override("font_color", _col["failed"] if message_bad else _col["dim"])
 
-	# the first row: New game...
+	_new_holder.add_child((load("res://ui/editor/workbench_row.gd") as GDScript).call("make", self))  # E1 row, then New game...
 	var nb: Button = _row_button("NewRow", new_open)
 	var nh: HBoxContainer = _fill_row(nb)
 	nh.add_child(_label("+", _col["accent"], FS, 10))

@@ -256,6 +256,8 @@ func _initialize() -> void:
 	var rj: Dictionary = JobModel.read_job(marble, 0.0)
 	eq("recipe: the real marble job has no card (built before cards)", [str(rj.get("card", "?")), str(rj.get("recipe_words", "?"))], ["", "Built without a recipe."])
 
+	_workbench_checks()
+
 	_remove(tmp)
 	print("[selftest] %d passed, %d failed" % [passed, failed])
 	quit(0 if failed == 0 else 1)
@@ -270,3 +272,165 @@ func _remove(dir: String) -> void:
 	for f: String in d.get_files():
 		d.remove(f)
 	DirAccess.remove_absolute(dir)
+
+
+## E1: the workbench's model (ui/editor/editor_model.gd) and its interview files (ui/interview/*.json).
+func _workbench_checks() -> void:
+	var M: GDScript = load("res://ui/editor/editor_model.gd")
+	var m: RefCounted = M.new()
+	m.call("load_all")
+	eq("workbench: every interview file loads, every card it names exists", m.get("load_errors"), [])
+	var names: PackedStringArray = m.get("interview_order")
+	eq("workbench: one interview per card, none last", names, ["knock_down", "team_possession", "timed_drive", "two_sides_ball", "none"])
+	var cards_dir: PackedStringArray = []
+	for f: String in DirAccess.get_files_at("res://cards"):
+		if f.ends_with(".json"):
+			cards_dir.append(f.get_basename())
+	var missing: PackedStringArray = []
+	for c: String in cards_dir:
+		if not names.has(c):
+			missing.append(c)
+	eq("workbench: every recipe card has its interview", missing, [])
+	# the template rule (registry, templates-scaffolding): every proposal is a member of its own options; ids unique
+	var bad: PackedStringArray = []
+	var allowed_q: Array = ["key", "group", "ask", "options", "propose", "reason"]
+	var allowed_o: Array = ["id", "label", "say", "size", "from_words", "shape", "stands"]
+	for n: String in names:
+		var iv: Dictionary = (m.get("interviews") as Dictionary)[n]
+		var keys: Dictionary = {}
+		for q: Dictionary in iv.get("questions", []):
+			for k: String in q:
+				if not allowed_q.has(k):
+					bad.append("%s.%s: unknown key %s" % [n, str(q.get("key")), k])
+			if keys.has(q["key"]):
+				bad.append("%s: question %s twice" % [n, str(q["key"])])
+			keys[q["key"]] = true
+			if not ["who", "win", "where"].has(str(q["group"])):
+				bad.append("%s.%s: group %s" % [n, str(q["key"]), str(q["group"])])
+			var ids: Dictionary = {}
+			for o: Dictionary in q["options"]:
+				for k: String in o:
+					if not allowed_o.has(k):
+						bad.append("%s.%s.%s: unknown key %s" % [n, str(q["key"]), str(o["id"]), k])
+				if ids.has(o["id"]):
+					bad.append("%s.%s: option %s twice" % [n, str(q["key"]), str(o["id"])])
+				ids[o["id"]] = true
+			if not ids.has(q["propose"]):
+				bad.append("%s.%s: proposal %s is not one of its options" % [n, str(q["key"]), str(q["propose"])])
+			if str(q.get("reason", "")).is_empty():
+				bad.append("%s.%s: a proposal without a reason" % [n, str(q["key"])])
+		for v: Dictionary in iv.get("variants", []):
+			for k: String in (v["set"] as Dictionary):
+				var q: Dictionary = {}
+				for qq: Dictionary in iv["questions"]:
+					if qq["key"] == k:
+						q = qq
+				if q.is_empty() or (m.call("option", q, str(v["set"][k])) as Dictionary).is_empty():
+					bad.append("%s: variant \"%s\" sets %s=%s, not an option" % [n, str(v["ask"]), k, str(v["set"][k])])
+		if n != "none":
+			var card: Dictionary = (m.get("cards") as Dictionary).get(str(iv["card"]), {})
+			var asks: Array = []
+			for cv: Dictionary in card.get("variants", []):
+				asks.append(cv["ask"])
+			for v: Dictionary in iv.get("variants", []):
+				if not asks.has(v["ask"]):
+					bad.append("%s: variant \"%s\" is not one of the card's" % [n, str(v["ask"])])
+	eq("workbench: interviews are well formed (proposal among options, reasons, variants are the card's)", bad, [])
+
+	# matching and reading answers out of the sentence
+	m.call("set_sentence", "ice hockey, three against three, against the computer")
+	eq("workbench: hockey sentence -> team possession", m.get("recipe"), "team_possession")
+	eq("workbench: answers read from the hockey sentence", [m.call("value", "sport"), m.call("value", "players")],
+		[{"id": "ice_hockey", "by": "sentence", "words": "ice hockey"}, {"id": "3", "by": "sentence", "words": "three against three"}])
+	eq("workbench: an unanswered question stands at its proposal", m.call("value", "opponents"), {"id": "rookie", "by": "proposal"})
+	m.call("set_sentence", "street hockey, five a side")
+	eq("workbench: the longest phrase wins (street hockey over hockey)", [str((m.call("value", "sport") as Dictionary)["id"]), str((m.call("value", "players") as Dictionary)["id"])], ["street", "5"])
+	m.call("answer", "sport", "football")
+	m.call("set_sentence", "street hockey, five a side, quickly")
+	eq("workbench: the sentence never overwrites the player's answer", (m.call("value", "sport") as Dictionary)["by"], "player")
+	var m2: RefCounted = M.new()
+	m2.call("load_all")
+	m2.call("set_sentence", "an arena where I fight waves of goblins with a sword")
+	eq("workbench: arena RPG -> no recipe, the generic interview", [m2.get("recipe"), m2.call("has_card")], ["none", false])
+	m2.call("set_sentence", "a Takeshi's castle obstacle course with jumps and a slide")
+	eq("workbench: obstacle course -> no recipe, sized like Timber Run", [m2.get("recipe"), m2.call("footprint")], ["none", Vector3(18, 50, 12)])
+	m2.call("set_sentence", "knock down a tower of crates with a ball")
+	eq("workbench: crates sentence -> knock down", m2.get("recipe"), "knock_down")
+	m2.call("set_sentence", "race")
+	eq("workbench: one word chooses nothing", m2.get("recipe"), "")
+	m2.call("set_sentence", "ice h")
+	eq("workbench: no \"no recipe\" flash while the first words are typed", m2.get("recipe"), "")
+	m2.call("set_sentence", "a car race of three laps on ice")
+	m2.call("first_free")
+	m2.call("place", m2.call("first_free"), "auto")
+	check("workbench: a 96 x 70 m track has no room by the road -> said so, first", bool(m2.get("no_free")) and str((m2.call("checks") as Array)[0]["what"]) == "no_room", str(m2.call("checks")))
+	eq("workbench: drive sentence -> timed drive, road read as ice", [m2.get("recipe"), str((m2.call("value", "road") as Dictionary)["id"])], ["timed_drive", "ice"])
+
+	# size: the base, set and add; the lot ring by the world's rule
+	var h: RefCounted = M.new()
+	h.call("load_all")
+	h.call("set_sentence", "ice hockey, three against three")
+	eq("workbench: hockey footprint, proposals (rink 67 x 37 + stands 8 m)", h.call("footprint"), Vector3(67, 45, 12))
+	eq("workbench: lot ring = ceil(half diagonal + 4)", h.call("lot_radius"), ceilf(Vector2(67, 45).length() * 0.5 + 4.0))
+	h.call("answer", "rink", "big")
+	h.call("answer", "players", "5")
+	eq("workbench: big ice sets, five a side adds", h.call("footprint"), Vector3(84 + 8, 44 + 4 + 8, 12))
+	h.call("answer", "rink", "small")
+	h.call("answer", "players", "3")
+	h.call("answer", "dressing", "bare")
+	eq("workbench: a small bare rink", h.call("footprint"), Vector3(47, 27, 9))
+	eq("workbench: the ring is at least 12 m", maxf(12.0, 1.0) <= float(h.call("lot_radius")), true)
+
+	# the village: plots, road, checks
+	check("workbench: the village map is read (plots, sites, road)", bool(h.get("village_ok")) and (h.get("plots") as Array).size() == 10 and (h.get("road") as PackedVector2Array).size() == 7,
+		"plots %d road %d" % [(h.get("plots") as Array).size(), (h.get("road") as PackedVector2Array).size()])
+	eq("workbench: nothing placed yet -> Build it names it", h.call("blocker"), "the place: no place chosen on the map yet")
+	h.call("place", Vector2(194, 61))
+	var ck: Array = h.call("checks")
+	check("workbench: on the hockey plot -> overlap named", ck.size() > 0 and str(ck[0]["text"]).begins_with("overlaps the plot \"hockey\""), str(ck))
+	h.call("place", Vector2(0, 0))
+	var on_road: bool = false
+	for c: Dictionary in h.call("checks"):
+		if c["what"] == "road":
+			on_road = true
+	check("workbench: on the road -> named", on_road, str(h.call("checks")))
+	h.call("place", Vector2(5000, 0))
+	var outside: bool = false
+	for c: Dictionary in h.call("checks"):
+		if c["what"] == "outside":
+			outside = true
+	check("workbench: far away -> outside the village", outside)
+	var free: Vector2 = h.call("first_free")
+	h.call("place", free)
+	eq("workbench: a place set by hand is the player's", h.get("placed_by"), "player")
+	check("workbench: first_free fits, gate faces the road", bool(h.call("fits")) and float(h.call("path_m")) < 40.0, "at %s checks %s" % [str(free), str(h.call("checks"))])
+	var g: Vector2 = h.call("gate")
+	var rp: Vector2 = h.call("road_point", free)
+	check("workbench: the gate is on the ring, toward the road", absf(g.distance_to(free) - float(h.call("lot_radius"))) < 0.01 and g.distance_to(rp) < free.distance_to(rp))
+	h.call("turn", 2)
+	eq("workbench: Q / E turn by 15 degrees", snappedf(rad_to_deg(float(h.get("yaw"))), 0.1), 30.0)
+
+	# what is sent: the player's words first, verbatim; a draft with no null and no empty list
+	var req: String = h.call("request")
+	check("workbench: the request starts with the player's words", req.begins_with("ice hockey, three against three. Decided: "), req)
+	check("workbench: the request carries every decision", req.contains("a small 40 x 20 m rink") and req.contains("nothing around it but the boards") and req.contains("rookie opponents"), req)
+	var d: Dictionary = h.call("draft")
+	eq("workbench: draft keys", d.keys(), ["schema", "sentence", "request", "answers", "footprint", "lot", "card", "left_to_proposal"])
+	check("workbench: no null in the draft", not JSON.stringify(d).contains("null"))
+	h.call("take_proposals")
+	check("workbench: after Take the proposals nothing is left to the proposal", not (h.call("draft") as Dictionary).has("left_to_proposal"))
+	eq("workbench: a fitting placement leaves nothing blocking", h.call("blocker"), "")
+
+	# E2: the game sheet finds the workbench's draft by the job's sentence (the door turns " into ' on the command line)
+	var GS: GDScript = load("res://ui/editor/game_sheet.gd")
+	var root: String = OS.get_user_data_dir().path_join("tl_ui_selftest_drafts_%d" % OS.get_process_id())
+	DirAccess.make_dir_recursive_absolute(root.path_join("_editor"))
+	var dd: Dictionary = h.call("draft")
+	dd["request"] = "a game called \"Puck\". Decided: three against three."
+	var f: FileAccess = FileAccess.open(root.path_join("_editor/x.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(dd))
+	f.close()
+	eq("game sheet: the draft is found by the job's sentence", str((GS.call("find_draft", root, "a game called 'Puck'. Decided: three against three.") as Dictionary).get("schema", "")), "tl.editor-draft/1")
+	eq("game sheet: no draft for another sentence", (GS.call("find_draft", root, "something else") as Dictionary).is_empty(), true)
+	eq("game sheet: no _editor directory, no draft", (GS.call("find_draft", root.path_join("nowhere"), "x") as Dictionary).is_empty(), true)
+	_remove(root)

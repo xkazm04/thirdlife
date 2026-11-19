@@ -13,18 +13,22 @@ var shots: String = ""
 var proof: PackedStringArray = []
 var t0: float = 0.0
 var failed: bool = false
+var slow: bool = false               # --slow: a person's pace (one key every 2 frames, longer looks), for a clip
 
 
 func start(the_host: Control, what: String, shots_dir: String) -> void:
 	host = the_host
 	panel = host.get("panel")
 	shots = shots_dir
+	slow = (host.get("args") as Dictionary).has("slow")
 	t0 = Time.get_unix_time_from_system()
 	DirAccess.make_dir_recursive_absolute(shots)
 	if what == "live":
 		await _live()
 	elif what == "live2":
 		await _live2()
+	elif what == "editor":
+		await (load("res://ui/editor/drive_editor.gd") as GDScript).new().run(self)
 	else:
 		note("direct", "unknown drive '%s'" % what)
 		failed = true
@@ -113,9 +117,10 @@ func click_control(c: Control, what: String) -> void:
 func find(node_name: String, wait_s: float = 10.0) -> Control:
 	var until: float = Time.get_unix_time_from_system() + wait_s
 	while Time.get_unix_time_from_system() < until:
-		var c: Control = panel.find_child(node_name, true, false) as Control
-		if c != null and c.is_visible_in_tree() and c.size.x > 0.0:
-			return c
+		for n: Node in host.find_children(node_name, "", true, false):   # the hidden panel may hold one of the same name
+			var c: Control = n as Control
+			if c != null and c.is_visible_in_tree() and c.size.x > 0.0:
+				return c
 		await frames(5)
 	return null
 
@@ -130,7 +135,9 @@ func type(text: String, what: String) -> void:
 		up.unicode = text.unicode_at(i)
 		up.pressed = false
 		Input.parse_input_event(up)
-		if i % 6 == 5:
+		if slow:
+			await frames(2)
+		elif i % 6 == 5:
 			await frames(1)
 	await frames(3)
 	note("UI event", "typed %d key events into %s: \"%s\"" % [text.length(), what, text])
@@ -152,18 +159,45 @@ func drag(from: Vector2, to: Vector2, what: String) -> void:
 	await frames(2)
 	_mouse(from, true)
 	await frames(2)
-	for i: int in 9:
-		var p: Vector2 = from.lerp(to, float(i + 1) / 9.0)
+	var n: int = 36 if slow else 9
+	for i: int in n:
+		var p: Vector2 = from.lerp(to, float(i + 1) / float(n))
 		var m: InputEventMouseMotion = InputEventMouseMotion.new()
 		m.position = p
 		m.global_position = p
-		m.relative = (to - from) / 9.0
+		m.relative = (to - from) / float(n)
 		m.button_mask = MOUSE_BUTTON_MASK_LEFT
 		Input.parse_input_event(m)
 		await frames(1)
 	_mouse(to, false)
 	await frames(3)
 	note("UI event", "mouse drag from (%d, %d) to (%d, %d) on %s" % [int(from.x), int(from.y), int(to.x), int(to.y), what])
+
+
+func wheel(pos: Vector2, up: bool, what: String) -> void:
+	for down: bool in [true, false]:
+		var b: InputEventMouseButton = InputEventMouseButton.new()
+		b.position = pos
+		b.global_position = pos
+		b.button_index = MOUSE_BUTTON_WHEEL_UP if up else MOUSE_BUTTON_WHEEL_DOWN
+		b.pressed = down
+		Input.parse_input_event(b)
+		await frames(2)
+	note("UI event", "mouse wheel %s at (%d, %d) on %s" % ["up" if up else "down", int(pos.x), int(pos.y), what])
+
+
+## Turns the wheel over the questions until the control is inside their scroll box (input events only).
+func scroll_to(node_name: String) -> void:
+	var c: Control = await find(node_name, 3.0)
+	var box: Control = await find("QuestionsScroll", 3.0)
+	if c == null or box == null:
+		return
+	for i: int in 30:
+		var r: Rect2 = c.get_global_rect()
+		var v: Rect2 = box.get_global_rect()
+		if r.position.y >= v.position.y and r.end.y <= v.end.y:
+			return
+		await wheel(Vector2(v.get_center().x, v.end.y - 30.0), r.position.y < v.position.y, "the questions (to reach %s)" % node_name)
 
 
 # ---------------------------------------------------------------- eyes: reads only
