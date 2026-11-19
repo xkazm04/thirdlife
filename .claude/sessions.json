@@ -1,3 +1,33 @@
 {
-  "sessions": []
+  "sessions": [
+    {
+      "id": "e19-wings",
+      "scope": [
+        "engine/kernel/world/flight_wings.gd",
+        "engine/kernel/world/visitor.gd",
+        "engine/kernel/api/tl_biped.gd",
+        "engine/kernel/api/tl_vfx.gd",
+        "engine/kernel/api/tl_vfx_node.gd",
+        "engine/style/tl_style_fx.gd",
+        "engine/style/shaders/**",
+        "assets/**",
+        "docs/shifts/2026-11-19-evening/lanes/wings/**"
+      ],
+      "note": "evening 19 Nov lane wings, .claude/worktrees/e19-wings, until 23:00"
+    },
+    {
+      "id": "e19-hud",
+      "scope": [
+        "engine/kernel/api/tl_hud.gd",
+        "engine/kernel/API.md",
+        "engine/style/STYLE.md",
+        "engine/style/style.json",
+        "engine/style/hud/**",
+        "engine/ui/**",
+        "engine/packs/parkour/**",
+        "docs/shifts/2026-11-19-evening/lanes/hud/**"
+      ],
+      "note": "evening 19 Nov lane hud, .claude/worktrees/e19-hud, until 23:00"
+    }
+  ]
 }

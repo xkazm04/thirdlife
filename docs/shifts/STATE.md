@@ -12,8 +12,7 @@ writes it back. Newest shift-log entry last.
   off-origin `--at` hash and the picture-cache proof for turned games; (3) the site's round fence follows the footprint (B2).
 
 ## Open owner verdicts
-Asks from the day of 19 Nov (docs/shifts/2026-11-19-day/VERDICT.md): F1 flight feel; F2 ledge/bar for the village walker;
-P3 Skyline side camera; P4 parkour next; B1 open plots; B2 site round fence; B3 car course floor; E4 Designer call vs scorer.
+Asks from the day of 19 Nov: E4 Designer call vs scorer (editor, owner tests first). The rest answered 19:00.
 Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - E3 village too full by the road for 45 m venues.
 - P2 newcomer retry bot in the gate.
@@ -50,6 +49,13 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - 2026-11-18 20:40: night of 19 Nov handshake: lanes parkour polish, walker & terrain residue, bug hunt round 2, and the
   minigame editor UI/UX (owner's words in its brief); 3 lanes at once, mixed models; land + push by 08:00; verdict page
   with short videos.
+
+- 2026-11-19 19:00: owner on the day verdict: (0) Astra spend over plan is fine: spend what quality needs. (1) Flight
+  "looks great"; remove the wings by default: a key binding and a 'magical' animation summon or dismiss them. (2) Parkour
+  "looks great"; next: customize the HUD in the world creator and improve the UI from the user's view; the LLM should
+  escape mediocre styling on the first try. (3) Blend accepted for now (B1-B3 closed as built). (4) Editor: opinions after
+  more tests, deferred (E4 open). F1/F2/P3/P4 answered by (1) and (2). Points 1-2 run now as an evening shift; the night
+  scope is set again from the owner's directions.
 
 ## Shift log
 
@@ -119,3 +125,9 @@ All four lanes landed (14 landings, 1 revert): flight `83c39b7`..`ce0dd63` (wing
 (E2 in code, placement, the turned game). Main `d59f072`: full gate PASS on every step (kernel 317, perf 2/2 quiet, world 8/8,
 packs 48/48); exe d59f072 PASS check; pushed. Verdict: `docs/shifts/2026-11-19-day/VERDICT.md`, page
 https://claude.ai/artifact/9bQ6cjKuVXGF8Hw9UGYFHu. About 6.0 M Astra tokens as printed (plan 2-3 M). Claims released, timers deleted.
+
+### 2026-11-19 evening: plan
+The owner's points 1-2 of the day verdict, before the night. Lanes: wings (summon and dismiss them by magic, none
+worn by default) and hud (a HUD customized in the world creator, styled beyond the first try); both Astra alone for the
+look, with an Opus operator. Land and push by 23:30. Plan: `docs/shifts/2026-11-19-evening/PLAN.md`.
+- 19:15 evening lanes launched: wings, hud (from `2950f03`).
