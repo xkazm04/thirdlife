@@ -1,0 +1,2 @@
+PASS world.site_warm_cache  (cold = warm: 220 51b227f5682175d607b8d848d67debb438d1abb4cd63ae4b554bf25fa32dd681 events=21 arrived=19 radius=25)
+selftest: 1 passed, 0 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker2/docs/shifts/2026-11-19-night/lanes/walker/r5/.scratch/selftest)

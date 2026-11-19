@@ -1,0 +1,3 @@
+PASS walk.coyote_limit
+FAIL walk.wall_still: no WALKCASE line for walk.wall_still
+PASS walk.down_brake

@@ -186,7 +186,7 @@ moves the body by velocity. Every number counts ticks at 60 Hz (constants at the
 
 | | |
 |---|---|
-| ground | accel 34 m/s^2 (rest to 4.5 m/s in 8 ticks, 4.5 to 9.0 in 8), decel 42 m/s^2 (9 to 0 in 13 ticks, 0.89 m); a key tapped from rest is held 9 ticks (a 6-tick tap moves 0.62 m: a step); the standing capsule holds still on a bank |
+| ground | accel 34 m/s^2 (rest to 4.5 m/s in 8 ticks, 4.5 to 9.0 in 8), decel 42 m/s^2 (9 to 0 in 13 ticks, 0.89 m); a key tapped from rest is held 9 ticks (a 6-tick tap moves 0.62 m: a step); a biped brake cancels the held step, including when downed. The standing capsule holds still on a bank. Pushing straight into a wall stops him at its face |
 | pad swap | when a game's walkable floor replaces the pad through his feet, the standing visitor rises onto it on the first tick if he fits and the lift is within one step (0.55 m) |
 | narrow V | when two steep walls together stop his descent, he can stand, jump and walk along the channel, including over triangle seams. Downhill travel along the crease continues while he is sliding |
 | down | a step down of 0.35 m is followed; more is a FALL (gravity 24 m/s^2, at most 40 m/s); the capsule's round foot on an edge is told from a slope by a ray under its middle |

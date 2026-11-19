@@ -1,0 +1,23 @@
+extends SceneTree
+const Log = preload("res://kernel/world/site/log.gd")
+
+func _initialize() -> void:
+	var folders := ["res://kernel/world/site/fixtures", ProjectSettings.globalize_path("res://").path_join("../site")]
+	var count := 0
+	var ok := true
+	for folder: String in folders:
+		for job: String in DirAccess.get_directories_at(folder):
+			var path := folder.path_join(job).path_join("job.jsonl")
+			if not FileAccess.file_exists(path):
+				continue
+			var text := FileAccess.get_file_as_string(path)
+			var rows := text.strip_edges().split("\n").size()
+			var log := Log.new()
+			var n := log.feed(text)
+			var whole := rows > 0 and n == rows and log.error.is_empty() and log.read_bytes == text.to_utf8_buffer().size()
+			var view := Log.fold(log.events)
+			print("JOB %s %d/%d stage=%s %s" % [job, n, rows, view.stage, "PASS" if whole else "FAIL " + log.error])
+			ok = ok and whole
+			count += 1
+	print("JOBS %d complete=%s" % [count, str(ok and count == 5)])
+	quit(0 if ok and count == 5 else 1)

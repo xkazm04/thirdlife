@@ -384,10 +384,10 @@ func _set_low(low: bool) -> void:
 func _walker_tick(delta: float, mv: Vector3, brk: bool) -> void:
 	_walker_space.space = PhysicsServer3D.body_get_space(get_rid())
 	_walker.vel = velocity
-	var wish: Vector3 = Vector3.ZERO if brk else mv * (run_speed if _run else walk_speed)
+	var wish: Vector3 = mv * (run_speed if _run else walk_speed)
 	if _slide and not _jump and not is_down() and _walker.can_start_slide():
 		_set_low(true)
-	var res: Dictionary = _walker.drive(global_position, wish, _jump and not is_down(), _slide and not is_down())
+	var res: Dictionary = _walker.drive(global_position, wish, _jump and not is_down(), _slide and not is_down(), brk)
 	_jump = false
 	_slide = false
 	global_position = res["pos"]

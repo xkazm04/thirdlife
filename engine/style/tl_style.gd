@@ -75,7 +75,10 @@ static func ensure() -> void:
 ## previous style stays), and lines starting with "clamped: " for values that were out of range and were clamped.
 static func load_style(path: String = "res://style/style.json") -> PackedStringArray:
 	var out: PackedStringArray = PackedStringArray()
-	_loaded = true   # even when it fails: never retry in a loop
+	# hunt2 B12: a rejected file marks the style loaded only when it is the default (never retry that in a loop); a
+	# rejected override (a missing --style) leaves it unloaded, so the next ensure() still installs the default
+	if path == DEFAULT_PATH:
+		_loaded = true
 	if not FileAccess.file_exists(path):
 		out.append("style file not found: " + path)
 		return out
@@ -89,6 +92,7 @@ static func load_style(path: String = "res://style/style.json") -> PackedStringA
 		if not line.begins_with("clamped: "):
 			return out
 	data = d
+	_loaded = true
 	style_path = path
 	style_name = String(d.get("name", path.get_file().get_basename()))
 	_index.clear()

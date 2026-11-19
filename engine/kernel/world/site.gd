@@ -69,6 +69,7 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 			var fit: Array = fit_radius(dir, float(s["radius"]))
 			var fr: float = float(fit[0])               # the scheduler's footprint: from the files only, so a run's ticks never depend on a cache
 			var seen: Array = remembered_radius(dir, float(s["radius"]))
+			s["sched_r"] = fr                         # hunt2 B2: the scheduler gets this back on arrival, never the cached radius
 			s["radius"] = fr if seen.is_empty() else float(seen[0])
 			s["fit"] = str(fit[1]) if seen.is_empty() else str(seen[1])
 			var r: float = float(s["radius"])
@@ -341,12 +342,17 @@ func _arrive(s: Dictionary, pr: Dictionary, t: int) -> void:
 			_warn("lot %d: the game was promoted into the engine (%s), not under the job's promoted/: it does not arrive here" % [int(s["lot"]), dest])
 		return
 	var dir: String = str(s["dir"]) + "/" + dest
-	if dir == str(s["arrived_dir"]) or dir == str(s.get("missing", "")):
+	if dir == str(s["arrived_dir"]):
+		return
+	var was_missing := dir == str(s.get("missing", ""))
+	if was_missing and (int(s["tpe"]) > 0 or t % LIVE_EVERY != 0):
 		return
 	if not FileAccess.file_exists(dir + "/pack.json"):
-		s["missing"] = dir
-		_warn("lot %d: the promoted game %s has no pack.json: it does not arrive" % [int(s["lot"]), dest])
+		if not was_missing:
+			s["missing"] = dir
+			_warn("lot %d: the promoted game %s has no pack.json" % [int(s["lot"]), dest])
 		return
+	s.erase("missing")
 	var i: int = int(s["plot"])
 	var p: Node = (world.get("packs") as Array)[i]
 	var def: Dictionary = (world.get("plot_defs") as Array)[i]
@@ -358,7 +364,8 @@ func _arrive(s: Dictionary, pr: Dictionary, t: int) -> void:
 	def["dir"] = dir
 	if first:
 		p.call("stub", dir)                     # the manifest: from now on the queue builds it when the scheduler wants it
-		pl["size"] = Vector2(float(s["radius"]) * 2.0, float(s["radius"]) * 2.0)
+		var sr: float = float(s.get("sched_r", s["radius"]))
+		pl["size"] = Vector2(sr * 2.0, sr * 2.0)
 	else:
 		p.set("pack_dir", dir)                  # a later promotion: the pack is replaced by a reload from the new directory
 		var mres: Dictionary = (load("res://kernel/runner/manifest.gd") as GDScript).call("read", dir)

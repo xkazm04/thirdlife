@@ -1,0 +1,6 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+WALKCASE walk.coyote_limit ok jumps at offsets 6/7 = [1, 0]
+WALKCASE walk.wall_still ok 45 ticks x_span=0.00000 m peak_speed=0.000 m/s grounded=45/45 along=2.09 m
+WALKCASE walk.down_brake ok start=1.70 peak=1.70 end=0.00 m/s increases=0/6
+WALKCASE done 3 3

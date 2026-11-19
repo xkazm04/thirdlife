@@ -16,14 +16,14 @@ var _res: PhysicsTestMotionResult3D = PhysicsTestMotionResult3D.new()
 
 
 func _init() -> void:
-	_params.margin = 0.03
 	_params.max_collisions = 4
 	_params.recovery_as_collision = false
 
 
-func _test(from: Transform3D, motion: Vector3) -> bool:
+func _test(from: Transform3D, motion: Vector3, margin: float = 0.03) -> bool:
 	_params.from = from
 	_params.motion = motion
+	_params.margin = margin
 	return PhysicsServer3D.body_test_motion(body, _params, _res)
 
 

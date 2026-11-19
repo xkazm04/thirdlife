@@ -1,0 +1,15 @@
+$ bash engine/tools/selftest.sh ground.concave_cover
+FAIL ground.concave_cover: WALKERWORLD ground.concave_cover fail immediate 0 faces y=-26.60, arriving 0 faces y=-26.60 at tick 90 (exit 0)
+selftest: 0 passed, 1 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker2/docs/shifts/2026-11-19-night/lanes/walker/r5/.scratch/red-ground.concave_cover)
+exit 1
+
+$ bash engine/tools/selftest.sh site.log_schema
+FAIL site.log_schema: WALKERWORLD site.log_schema fail 1/25 invalid rows refused, 0 warnings, arrive=21, failed=11, unmade=33 (exit 0)
+selftest: 0 passed, 1 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker2/docs/shifts/2026-11-19-night/lanes/walker/r5/.scratch/red-site.log_schema)
+exit 1
+
+$ bash engine/tools/selftest.sh site.late_files
+FAIL site.late_files: WALKERWORLD site.late_files fail arrival tick -1, 21 events, 5 polls, 1 warnings (exit 0)
+selftest: 0 passed, 1 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker2/docs/shifts/2026-11-19-night/lanes/walker/r5/.scratch/red-site.late_files)
+exit 1
+

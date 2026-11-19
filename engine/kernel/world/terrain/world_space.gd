@@ -296,9 +296,7 @@ func step_pack(job: Dictionary, budget_usec: int) -> bool:
 				var b: Vector3 = local * src[t + 1]
 				var c: Vector3 = local * src[t + 2]
 				t += 3
-				var cx: float = (a.x + b.x + c.x) / 3.0
-				var cz: float = (a.z + b.z + c.z) / 3.0
-				if radius <= 0.0 or cx * cx + cz * cz <= r2:
+				if radius <= 0.0 or DrawBase.tri_meets_disc(a, b, c, r2):
 					out.append(plot * _bent(a, radius, rim, band))
 					out.append(plot * _bent(b, radius, rim, band))
 					out.append(plot * _bent(c, radius, rim, band))
@@ -355,9 +353,7 @@ func _add_pack_walk(n: Node, holder: Node3D, inv: Transform3D, plot: Transform3D
 					var b: Vector3 = local * src[t + 1]
 					var c: Vector3 = local * src[t + 2]
 					t += 3
-					var cx: float = (a.x + b.x + c.x) / 3.0
-					var cz: float = (a.z + b.z + c.z) / 3.0
-					if radius > 0.0 and cx * cx + cz * cz > r2:
+					if radius > 0.0 and not DrawBase.tri_meets_disc(a, b, c, r2):
 						continue
 					out.append(plot * _bent(a, radius, rim, band))
 					out.append(plot * _bent(b, radius, rim, band))

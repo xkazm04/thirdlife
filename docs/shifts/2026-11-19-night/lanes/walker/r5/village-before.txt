@@ -1,0 +1,11 @@
+﻿Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FACES walker immediate=0 sliced=0 shapes=6
+FACES drive immediate=7974 sliced=7974 shapes=22
+FACES wall immediate=688 sliced=688 shapes=34
+FACES paddle immediate=768 sliced=768 shapes=49
+FACES kit immediate=0 sliced=0 shapes=7
+FACES car immediate=0 sliced=0 shapes=0
+FACES hockey immediate=0 sliced=0 shapes=82
+FACES parkour immediate=408 sliced=408 shapes=102
+FACES total=9838 plots=8

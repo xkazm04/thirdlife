@@ -1,0 +1,32 @@
+Git Bash, from the n19-walker2 worktree root, Godot 4.7.2.
+export TL_GODOT=C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe
+
+Original repros, each run before and after the fix:
+bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B7
+bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B3
+bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B9
+
+red-on-old.txt records three separate runs of the new block. Each had just
+that defect's original production files copied in, followed by restoration
+of the fixed files. The original site.gd snapshot already included B2.
+missing-line.txt is a harness control with TL_GODOT=/usr/bin/true.
+
+bash engine/tools/selftest.sh ground.
+bash engine/tools/selftest.sh site
+bash engine/tools/selftest.sh walker.crown
+bash engine/tools/selftest.sh world.site_warm_cache
+node devx/bin/tl.mjs check --tier full --only world
+node devx/bin/tl.mjs check --tier fast
+
+hashes-{before,after}.txt are the eight complete rows from .tl/gate-world.log.
+For the village and job probes, the .gd.txt evidence can be run as follows:
+ev=docs/shifts/2026-11-19-night/lanes/walker/r5
+probe_dir=$(mktemp -d .tl/walker-r5-probes.XXXXXX)
+for probe in village-faces read-jobs; do
+  cp "$ev/$probe.gd.txt" "$probe_dir/$probe.gd" || exit 1
+  MSYS_NO_PATHCONV=1 "$TL_GODOT" --headless --fixed-fps 60 --path "$(cygpath -am engine)" --script "$(cygpath -am "$probe_dir/$probe.gd")" || exit 1
+done
+The face counts use all eight boot/village.json plot radii and the holders
+after setup, before their first game tick. Both copy paths count their emitted
+concave faces. shapes counts the other static collision shapes separately.
+The original selftest scratch reports are retained under .tl/walker-r5-scratch.
