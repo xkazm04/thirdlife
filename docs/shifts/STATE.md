@@ -110,3 +110,4 @@ to overturn. Contracts for E2 were written first (`cf73f58`). Land and push by 1
 - 15:10 standup: three lanes finished; editor round 4 the only live lane.
 - 16:05 standup: editor round 4 reports landable (arrived game turns with the yaw, 8 world hashes identical); reviewing once its final gate lines arrive; other lanes finished.
 - 16:18 editor round 4 landed (`e66ca0b`): the arrived game turns with the yaw; merged-tree world 8/8 same hashes, packs 48/48, site. 23/23, ui 166. All lanes finished.
+- 17:07 standup: all four lanes finished and landed; full gate started early on a quiet machine for the verdict.
