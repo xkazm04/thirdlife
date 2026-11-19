@@ -55,6 +55,9 @@ uniform vec4 tl_holes[32];
 uniform sampler2D tl_land_colours : filter_linear, repeat_disable;
 uniform vec4 tl_land_uv;
 uniform int tl_land_index = -1;
+#ifdef TL_VILLAGE
+uniform vec4 tl_floor_rect = vec4(0.0); // min and max XZ of a clipped village floor box
+#endif
 // walker-feel (18 Nov): a body that moves (a rig sets this on its meshes; everything else leaves it at zero).
 // x > 0.5: the painterly mottle and the hatching are anchored to the body, not to the world and the screen: noise anchored
 //   to the world swims across whatever moves through it (measured on the walking figure: a third of his crawl).
@@ -88,8 +91,25 @@ float vnoise(vec3 x) {
 }
 
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+#ifdef TL_VILLAGE
+// Each shared noise corner must have the same value from either cell. On D3D12 the
+// float hash of (cell + 1) can round differently from the hash of that cell directly.
+float land_corner(ivec2 cell) {
+	uvec2 i = uvec2(cell);
+	uint h = (i.x * 1597334677u) ^ (i.y * 3812015801u);
+	h = (h ^ (h >> 16u)) * 2246822519u;
+	return float(h ^ (h >> 13u)) * (1.0 / 4294967296.0);
+}
+#endif
 float vn2(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
-	return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+#ifdef TL_VILLAGE
+	ivec2 c = ivec2(i);
+	return mix(mix(land_corner(c), land_corner(c + ivec2(1, 0)), f.x),
+		mix(land_corner(c + ivec2(0, 1)), land_corner(c + ivec2(1, 1)), f.x), f.y);
+#else
+	return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y);
+#endif
+}
 // thin drawn line at the integer positions of x (x in pattern units); fades out when the pattern gets sub-pixel
 float seam(float x, float w) {
 	float fw = fwidth(x);
@@ -256,6 +276,13 @@ void vertex() {
 	m2 = texelFetch(pal_lut, ivec2(idx, 2), 0);
 	float sway = texelFetch(pal_lut, ivec2(idx, 3), 0).x;
 	lp = vec4(CUSTOM0.xyz, float(code % 16));
+#ifdef TL_VILLAGE
+	if (tl_floor_rect.z > tl_floor_rect.x) {
+		vec2 axis = tl_land_plot.zw;
+		lp.xz = tl_land_plot.xy + mat2(axis, vec2(-axis.y, axis.x)) * wpos.xz;
+		lp.w = 1.0; // project the surface detail onto XZ
+	}
+#endif
 	if (idx == tl_land_index && tl_clip.x > 0.0) {
 		vec2 axis = tl_land_plot.zw;
 		vec2 village = tl_land_plot.xy + mat2(axis, vec2(-axis.y, axis.x)) * wpos.xz;
@@ -317,6 +344,22 @@ void fragment() {
 	}
 	vec3 c = m0.rgb * COLOR.rgb;
 	int mclass = int(m1.z + 0.5);
+#ifdef TL_VILLAGE
+	vec3 pigment = COLOR.rgb;
+	if (tl_floor_rect.z > tl_floor_rect.x && tl_clip.x > 0.0) {
+		vec2 sides = min(wpos.xz - tl_floor_rect.xy, tl_floor_rect.zw - wpos.xz);
+		float edge = min(min(sides.x, sides.y), tl_clip.x + 3.0 - length(wpos.xz));
+		mclass = 4; // aggregate on the exposed driving surface
+		if (edge < 8.0) {
+			float depth = 1.5 + 4.0 * vn2(lp.xz * 0.12) + 1.3 * vn2(lp.xz * 0.7);
+			if (edge < 0.35) { discard; } // reveal the meadow under the shallow vertical face
+			float turf = 1.0 - smoothstep(0.1, depth, edge);
+			pigment = mix(c, texture(tl_land_colours, lp.xz * tl_land_uv.xy + tl_land_uv.zw).rgb, turf);
+			c = pigment;
+			if (turf > 0.02) { mclass = 5; }
+		}
+	}
+#endif
 	vec3 wn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	vec3 vw = normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz);
 	float fres = pow(1.0 - clamp(dot(wn, vw), 0.0, 1.0), 3.0);
@@ -331,11 +374,21 @@ void fragment() {
 		float fade = g_detail.x * m2.x * (1.0 - smoothstep(g_detail.y, g_detail.z, vdepth));
 		// lines thin out with distance, but the tone pattern (planks, panels, courses) gains contrast so the surface still reads
 		float tone_k = g_detail.x * m2.x * (1.0 + g_detail2.x * smoothstep(g_detail2.y, g_detail2.z, vdepth)) * (1.0 - smoothstep(g_detail2.w * 0.6, g_detail2.w, vdepth));
+#ifdef TL_VILLAGE
+		if (tl_floor_rect.z > tl_floor_rect.x && mclass == 4) {
+			tone_k *= 0.45;
+			fade *= 0.55;
+		}
+#endif
 		c *= 1.0 + dt.y * tone_k;
 		if (mclass == 5) {   // ground: blade flecks one tone darker and greener, never ink-dark dashes
 			// N1: marks are a darker, cooler tone of the ground itself (grass: deep green, dirt: brown), never ink black;
 			// where grass meets dirt the blend of the two vertex colours is cut by one wobbly drawn edge
+#ifdef TL_VILLAGE
+			float grassy = pigment.g - pigment.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
+#else
 			float grassy = COLOR.g - COLOR.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
+#endif
 			float gfw = fwidth(grassy) * 1.6 + 0.0015;
 			float gm = smoothstep(-gfw, gfw, grassy);
 			vec2 away = -INV_VIEW_MATRIX[2].xz;

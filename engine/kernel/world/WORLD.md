@@ -112,7 +112,7 @@ tour = alone for the same number of its own ticks = replay of the world log**. T
   forest. The world draws the ground, the worn spur, short entrance rails, trees and mesas.
   Declare `footprint` in `pack.json`; a walk can also supply the size, radius and yaw. The tour takes its
   radii from the walk script.
-- **A big flat floor of your own reads as a disc from above** (`ex_car`): it is cut to your radius like everything.
+- **The live plot cut uses each mesh's origin.** At the car lot the asphalt box is centred outside the plot, so the visitor sees grass. The distant tour picture merges the overlapping floor into a mesh centred on the plot. Its visible asphalt takes village grass at the edge.
 - **Far away you are a still picture and run slower** (TIERS.md, DRAW.md): the stand-in is taken when you are first
   far and is kept across your rounds.
 
@@ -131,12 +131,14 @@ vertex, would have cost 18 s). What is in it:
 | pads | Each plot's `footprint.size_m` and yaw set the flat floor. The rounded corners grade into the heightfield over 20 to 66 m according to the elevation difference. The grade eases at both ends, including where roads cross it. The triangles supporting the game through radius + 3 m stay flat. Floors without their own terrain retain their 6 cm sink. |
 | roads | the main road follows the land (the land's height along it, smoothed twice over 20 m); a spur from every plot's gate climbs from the pad's height to the road's; the ground is graded flat across the road (corridor 3 m + 9 m blend) |
 | water | `river`: a valley 5 m under the land round the river (36 m wide), a channel, the style's water material along it, a pond at each end |
-| bridge | where the main road is within 17 m of the river over at least three of its 2 m samples (a road that only ends there gets none): a deck on the road's own profile, rails, three piers; the road strips stop under it |
+| bridge | where the main road is within 17 m of the river over at least three of its 2 m samples (a road that only ends there gets none): a deck on the road's own profile, rails, three piers above the painted roadbed |
 | scatter | trees stand on convex ground (tree lines on ridges), rocks on steep ground, none within the pad of a plot, on a road, in the river or on ground steeper than 17 to 19 degrees; 120 pines, 40 broadleaf, 46 rocks, 90 bushes, a belt of 180 on the hills (fewer than N7's 150 / 46 / 60 / 110 / 260) |
 
 Where the plots stand moved (the pads need room and the roads a margin): the tour's plots are 100 m apart in two rows
-either side of a road at z = 0 (`tour.json`). Short rails mark the gate. The spur and crane yard use dirt and sand
-vertex colours on the heightfield. Grass returns around offset strips of worn ground on each game's terrain, sampling the village colours and grass detail in
+either side of a road at z = 0 (`tour.json`). Short rails and one pennant beside the sign mark each village entrance. A live site supplies its own markers.
+The main road, spurs, crane yards and meadow patches are painted into the heightfield. A spur narrows as it runs into its plot.
+Only the small flowers stand above their meadow. The village material uses integer noise-corner values so neighbouring patches
+of painted light meet continuously. The lighting bands, hatching and depth-based crest strokes still follow the original 3 m mesh. Grass returns around offset strips of worn ground on each game's terrain, sampling the village colours and grass detail in
 village coordinates. The live mesh and its cached pictures use the same colour map.
 
 ## The visitor's body (P4)

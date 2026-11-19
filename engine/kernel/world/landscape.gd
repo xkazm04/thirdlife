@@ -30,11 +30,11 @@ const SCATTER_MARGIN: float = 10.5            # clearance for scenery around a r
 
 ## The private material of the world's ground: the palette's shader and lookup, with the plots that carry a ground of
 ## their own cut open (toon.gdshader `tl_holes`).
-static func _ground_material(plots: Array, radii: Array, has_ground: Array) -> ShaderMaterial:
+static func _ground_material(plots: Array, radii: Array, has_ground: Array, village := false) -> ShaderMaterial:
 	var pal: ShaderMaterial = TLStyle.material(&"white") as ShaderMaterial
 	if pal == null or pal.shader == null:
 		return null
-	var gm := pal.duplicate() as ShaderMaterial
+	var gm := VillageTerrain._village_material() if village else pal.duplicate() as ShaderMaterial
 	var holes: Array = []
 	for i: int in plots.size():
 		if float(radii[i]) > 0.0 and bool(has_ground[i]) and holes.size() < 32:
@@ -181,7 +181,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			continue
 		var approach: Vector2 = gates[i] if gates[i] != null else Vector2.DOWN
 		pads.append({"c": centres[i], "extent": extents[i], "axis": axes[i], "h": float(pad_h[i]),
-			"rp": float(rad[i]), "own": bool(own_ground[i]), "yard": i >= plots.size(), "approach": approach})
+			"rp": float(rad[i]), "own": bool(own_ground[i]), "yard": i >= plots.size(), "approach": approach, "path_half": half * 0.8 if gates[i] != null else 0.0})
 	terr.set("pads", pads)
 	# ---- the river and its ponds
 	var rv_path: TLKitPath = null
@@ -209,36 +209,14 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	_lap(stats, "grid_prep")
 	terr.call("build_grid")
 	_lap(stats, "grid")
-	var gmat: ShaderMaterial = _ground_material(plots, radii, has_ground)
-	var tmat: Material = gmat
-	if tmat == null:
-		tmat = TLStyle.material(&"terrain")
-	var tmi: MeshInstance3D = terr.call("build_mesh", tmat)
-	parent.add_child(tmi)
-	if gmat != null:
-		parent.set_meta(&"tl_ground_mat", gmat)            # walker-feel T: draw/view_seam.gd `close_holes`
-	Parts.far_ground(parent, terr, str(cfg.get("ground_key", "")))
-	var tms: int = int(terr.get("build_ms"))
-	stats["terrain_ms"] = tms
-	stats["terrain_verts"] = (int(terr.get("nx")) + 1) * (int(terr.get("nz")) + 1)
-	stats["terrain_size_m"] = [snappedf(bx1 - bx0, 1.0), snappedf(bz1 - bz0, 1.0)]
-	var hmin: float = INF
-	var hmax: float = -INF
-	for hv: float in (terr.get("heights") as PackedFloat32Array):
-		hmin = minf(hmin, hv)
-		hmax = maxf(hmax, hv)
-	stats["height_range_m"] = [snappedf(hmin, 0.1), snappedf(hmax, 0.1)]
-	stats["pads"] = pad_h.map(func(v: float) -> float: return snappedf(v, 0.1))
-	_lap(stats, "terrain")
 	var ws: RefCounted = WorldSpace.new()
 	var crown_batches := []
 	ws.set("crown_batches", crown_batches)
 	ws.set("tag", "wall")
 	parent.set_meta(&"tl_space", ws)
 	parent.tree_exiting.connect(func() -> void: ws.call("free_all"))
-	# ---- roads: strips on the ground, a worn verge, a trodden middle; the bridge replaces the road over the river
+	# ---- Road samples also guide the roadside scatter and locate the bridge.
 	var road_pts: PackedVector2Array = PackedVector2Array()
-	var mk_road: TLMesh = TLMesh.new(31)
 	var bridge_a: int = -1
 	var bridge_b: int = -1
 	var bridge_probe: Array = []
@@ -248,18 +226,16 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var span: Vector2i = terr.call("bridge_span", main_path.pts, rv_half + 11.0)     # bugfix-37 Q15: (-1, -1) for a road that only ends there
 			bridge_a = span.x
 			bridge_b = span.y
-		Parts.strip(mk_road, terr, main_path.pts, half + 0.7, 0.05, "grass_dry", 1.0, rng, bridge_a, bridge_b, half)     # P14b: beside the road only
-		Parts.strip(mk_road, terr, main_path.pts, half, 0.065, "dirt", 1.0, rng, bridge_a, bridge_b)
-		Parts.strip(mk_road, terr, main_path.pts, half * 0.36, 0.1, "dirt", 0.9, rng, bridge_a, bridge_b, -1.0, half)     # P14b: on the road's plane
+		# The road and verge share the terrain. Advance the three former strips' segment tones.
+		var skipped := mini(bridge_b + 1, main_path.pts.size() - 1) - bridge_a if bridge_a >= 0 else 0
+		for q: int in 3 * (main_path.pts.size() - 1 - skipped):
+			rng.randf()
 		for sp: Array in spur_paths:
 			var spp: TLKitPath = sp[1]
 			# The spur is worn into the heightfield. Keep the scatter stream after its former two strips.
 			for q: int in 2 * (spp.pts.size() - 1):
 				rng.randf()
 			road_pts.append_array(spp.pts)
-		var rmi: MeshInstance3D = mk_road.instance("WorldRoad")
-		rmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		parent.add_child(rmi)
 	# ---- the river: water at its level, a pond at each end, a bridge where the road crosses
 	if rv_path != null:
 		var mk_w: TLMesh = TLKitRoad.river_ribbon(rv_path, rv_half + 9.0, 0.0)
@@ -310,14 +286,14 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		if bool(cfg.get("fence", true)) and not is_site:
 			for hand: float in [-1.0, 1.0]:
 				var a := entrance + side * hand * (half * 0.8 + 2.0)
-				var b := a + side * hand * clampf(r * 0.24, 4.0, 10.0)
+				var b := a + side * hand * clampf(r * 0.15, 3.4, 6.5)
 				var span := PackedVector3Array([Vector3(a.x, terr.gy(a.x, a.y), a.y), Vector3(b.x, terr.gy(b.x, b.y), b.y)])
 				rails.append_array(span)
 				ws.call("add_wall", span, 1.2)
 				stats["fence_m"] += span[0].distance_to(span[1])
 			if bool(cfg.get("pad_rocks", true)):
 				Parts.bank_rocks(rng6, terr, c, r, seg, dir.angle() + PI + 0.6 * sin(float(i) * 2.1), edge_rocks)
-		edge_jobs.append({"i": i, "rails": rails, "entrance": entrance, "dir": dir, "flags": bool(cfg.get("gates", true))})
+		edge_jobs.append({"i": i, "rails": rails, "entrance": entrance, "dir": dir, "flags": not is_site and bool(cfg.get("gates", true))})
 	_lap(stats, "edges_loop")
 	# ---- the lots: worn ground, a crane, a scaffold, stacked timber and pallets: the next game is being built here
 	Parts.lots(parent, lots.size(), plots.size(), centres, rad, pad_h, gates, rng, ws, mk_edge, stats)
@@ -343,11 +319,11 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	_lap(stats, "edges")
 	# ---- scatter: follows the land. Never inside a plot (plus its pad), never on a road, never in the river.
 	var spread: float = float(cfg.get("spread_m", 70.0))
-	var box: Rect2 = Rect2(Vector2(bx0, bz0) + Vector2.ONE * 30.0, Vector2(bx1 - bx0, bz1 - bz0) - Vector2.ONE * 60.0)
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = int(cfg.get("seed", 7))
 	noise.frequency = 0.022
 	preload("res://kernel/world/terrain/landmarks.gd").place(parent, ws, terr, cfg, stats, centres, rad)     # D2: imported models in the village; scatter keeps clear of them
+	var box: Rect2 = Rect2(Vector2(bx0, bz0) + Vector2.ONE * 30.0, Vector2(bx1 - bx0, bz1 - bz0) - Vector2.ONE * 60.0)
 	var is_free: Callable = func(p: Vector2, clear: float, road_clear: float, river_clear: float) -> bool:
 		for i: int in centres.size():
 			if p.distance_to(centres[i]) < float(rad[i]) + clear:
@@ -355,6 +331,28 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		if float(terr.call("road_dist", p.x, p.y)) < road_clear:
 			return false
 		return float(terr.call("river_dist", p.x, p.y)) > river_clear
+	stats["soft_patches"] = Parts.soft_ground(parent, terr, int(cfg.get("seed", 7)), box, is_free, int(cfg.get("soft_patches", 150)), SCATTER_MARGIN, half + 0.7)     # P13, P14b
+	var gmat: ShaderMaterial = _ground_material(plots, radii, has_ground, true)
+	var tmat: Material = gmat
+	if tmat == null:
+		tmat = TLStyle.material(&"terrain")
+	var tmi: MeshInstance3D = terr.call("build_mesh", tmat)
+	parent.add_child(tmi)
+	if gmat != null:
+		parent.set_meta(&"tl_ground_mat", gmat)            # walker-feel T: draw/view_seam.gd `close_holes`
+	Parts.far_ground(parent, terr, str(cfg.get("ground_key", "")))
+	var tms: int = int(terr.get("build_ms"))
+	stats["terrain_ms"] = tms
+	stats["terrain_verts"] = (int(terr.get("nx")) + 1) * (int(terr.get("nz")) + 1)
+	stats["terrain_size_m"] = [snappedf(bx1 - bx0, 1.0), snappedf(bz1 - bz0, 1.0)]
+	var hmin: float = INF
+	var hmax: float = -INF
+	for hv: float in (terr.get("heights") as PackedFloat32Array):
+		hmin = minf(hmin, hv)
+		hmax = maxf(hmax, hv)
+	stats["height_range_m"] = [snappedf(hmin, 0.1), snappedf(hmax, 0.1)]
+	stats["pads"] = pad_h.map(func(v: float) -> float: return snappedf(v, 0.1))
+	_lap(stats, "terrain")
 	# mode: "ridge" (trees stand on convex ground), "bank" (rocks stand on steep ground and at the water), "any"
 	var place: Callable = func(count: int, area: Rect2, clear: float, road_clear: float, s_min: float, s_max: float, clump: float, y_off: float, mode: String, max_slope: float) -> Array:
 		var xs: Array = []
@@ -383,7 +381,6 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			xs.append(Transform3D(b, Vector3(p.x, float(terr.call("gy", p.x, p.y)) + y_off, p.y)))
 		return xs
 	_lap(stats, "scatter_setup")
-	stats["soft_patches"] = Parts.soft_ground(parent, terr, int(cfg.get("seed", 7)), box, is_free, int(cfg.get("soft_patches", 150)), SCATTER_MARGIN, half + 0.7)     # P13, P14b
 	var cams: Array = Parts.cameras(cfg.get("events", []))
 	ws.set("tag", "tree")
 	var probe: Dictionary = {}
