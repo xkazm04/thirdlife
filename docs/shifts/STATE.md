@@ -7,11 +7,12 @@ writes it back. Newest shift-log entry last.
 - Focus (owner, 18 Nov): make the game playable and fun before measuring anything. The walking figure, camera and terrain
   immersion, the parkour course, and the minigame editor as the backbone of player-made games. Hockey decisions and win
   measurement are deferred; the construction process comes later.
-- Next 3: (1) the owner plays exe `d59f072` (flight on F, Skyline, a turned workbench game) and answers the day's asks
-  (page https://claude.ai/artifact/9bQ6cjKuVXGF8Hw9UGYFHu, `docs/shifts/2026-11-19-day/VERDICT.md`); (2) a hunt: the
-  off-origin `--at` hash and the picture-cache proof for turned games; (3) the site's round fence follows the footprint (B2).
+- Next 3: (1) the owner plays exe `79af060` (summoned wings, Split Ticket HUD, the HUD workshop) and answers W6/H4/H5
+  (page https://claude.ai/artifact/3UcBXULfNK4stpPdhQhByc); (2) the night's scope from the owner's directions;
+  (3) still open: the off-origin `--at` hash, the picture-cache proof, the site's round fence (B2), editor E4 after his tests.
 
 ## Open owner verdicts
+Asks from the evening of 19 Nov: W6 summon key; H4 HUD look; H5 PACK.md hud.json convention.
 Asks from the day of 19 Nov: E4 Designer call vs scorer (editor, owner tests first). The rest answered 19:00.
 Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - E3 village too full by the road for 45 m venues.
@@ -134,3 +135,9 @@ look, with an Opus operator. Land and push by 23:30. Plan: `docs/shifts/2026-11-
 - 21:08 wings landed (`a6c44ac`: summoned by a sigil, none worn; flight 14/14, moves 15/15, world 8/8, packs 48/48). hud on track (round 2 done, final full tier running).
 - 21:09 standup: hud on track (final full tier running; index staleness is the Director's to regenerate); landable due by 22:45.
 - 21:34 hud landed (`1e254ab`: Split Ticket HUD + HUD workshop, API 1.11; hashes identical). Both evening lanes landed; full gate on main running for the verdict.
+
+### 2026-11-19 evening: wrap (22:05)
+Both lanes landed: wings `a6c44ac` (summoned by a sigil, none worn) and hud `1e254ab` (Split Ticket HUD + workshop, API 1.11),
+index and API line `dc87d48`. Main `79af060`: full gate PASS on every step (kernel 324, perf 2/2, world 8/8, packs 48/48); exe 79af060 check PASS;
+pushed. Verdict `docs/shifts/2026-11-19-evening/VERDICT.md`, page https://claude.ai/artifact/3UcBXULfNK4stpPdhQhByc.
+Astra ~0.85 M tokens. Route held: Astra alone for both looks; operators passed back only measurements.

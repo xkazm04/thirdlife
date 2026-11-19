@@ -205,3 +205,5 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   on main (reverted): re-cut a lane's tree from main before its last round when merged work uses its API.
 - 2026-11-19 (day): starting the verdict's full gate at the last standup, on a quiet machine, let perf run (2/2) and kept
   the verdict inside the land-by time; Astra spend ran 2x the plan because resumed sessions recount their context.
+- 2026-11-19 (evening): an operator passing Astra only a measurement (720p glyph heights against a readability floor)
+  fixed the HUD in one round without directing the design: measured feedback is the right lever on an Astra-alone lane.
