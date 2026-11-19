@@ -1,0 +1,32 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh C7
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func sample(offset: Vector3) -> Array:
+	var p := Pack.new()
+	root.add_child(p)
+	if not p.load_pack("res://packs/parkour", {"at": offset, "scenery": "plot"}):
+		p.free()
+		return []
+	for f in 120:
+		await physics_frame
+		p.tick(f)
+	var s := p.ctx.pack_state()
+	var result := [float(s.station), int(s.falls), float(s.height), float(s.deck_y)]
+	p.unload()
+	p.free()
+	return result
+
+func run() -> void:
+	var control := await sample(Vector3.ZERO)
+	var shifted := await sample(Vector3(100, 0, 0))
+	if control.size() != 4 or shifted.size() != 4 or absf(control[0]) > 0.1 or control[1] != 0:
+		quit(2)
+		return
+	var bad: bool = absf(shifted[0]) > 0.1 or shifted[1] != 0
+	print("REPRO C7: FAIL 120 idle ticks, translation 0/100 m, start stations %.2f/%.2f m, falls %d/%d" % [control[0], shifted[0], control[1], shifted[1]] if bad else "REPRO C7: PASS")
+	quit(int(bad))

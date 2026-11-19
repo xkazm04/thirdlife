@@ -1,0 +1,45 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A9
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://seeds/seed_drive", {"own_space": false, "scenery": "plot"}):
+		printerr(pack.load_errors)
+		quit(2)
+		return
+	var game = pack.entry
+	var car: TLVehicle = game.car
+	if car.nitro_charge != 0:
+		quit(2)
+		return
+	var active := 0
+	var boosts_on_ground := 0
+	var charge_on_press := 0.0
+	pack.ctx.input.press(&"gas")
+	for tick in 60:
+		if tick % 2 == 1:
+			charge_on_press = maxf(charge_on_press, car.nitro_charge)
+			pack.ctx.input.press(&"nitro")
+		else:
+			pack.ctx.input.release(&"nitro")
+		pack.tick(tick)
+		await physics_frame
+		active += int(car.nitro_active)
+		boosts_on_ground += int(car.nitro_active and car.grounded_wheels() > 0)
+	var pads: int = game.pad_visits
+	pack.free()
+	if pads != 0:
+		printerr("fixture reached a pad")
+		quit(2)
+	elif boosts_on_ground > 1:
+		print("REPRO A9: FAIL %d boost ticks in 60 frames before first pad (%d grounded); maximum charge on press %.6f tanks" % [active, boosts_on_ground, charge_on_press])
+		quit(1)
+	else:
+		print("REPRO A9: PASS")
+		quit()

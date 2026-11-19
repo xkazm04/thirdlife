@@ -13,6 +13,7 @@ const SLOW: float = 10.0
 const BOOST: float = 30.0              # speed allowed while the nitro burns
 
 var ctx
+var target: int = 3
 var s: Dictionary = {}
 var done: bool = false
 var worst_off_line: float = 0.0
@@ -21,6 +22,7 @@ var boosting: bool = false
 
 func _bot_setup(c) -> void:
 	ctx = c
+	target = int(ctx.read_json("rules.json")["laps_to_win"])   # hunt2 C1: the target a builder sets in the rules
 
 
 func _bot_tick(_frame: int) -> void:
@@ -57,7 +59,7 @@ func _bot_done() -> bool:
 
 func _bot_result() -> Dictionary:
 	var rounds: int = int((s.get("laps", {}) as Dictionary).get("car", 0))
-	var ok: bool = done and s["winner"] == "car" and s["reason"] == "laps" and rounds == 3 \
+	var ok: bool = done and s["winner"] == "car" and s["reason"] == "laps" and rounds == target \
 		and int(s["pad_visits"]) >= 3 and int(s["nitro_starts"]) >= 1 and int(s["cones"]["spawned"]) >= 8
 	return {"ok": ok, "summary": "%d laps in %.1f s (limit 90 s), ended by %s; top speed %.1f m/s; nitro pad %d times, %d nitro bursts; %d cone hits, %d cones spawned; at most %.1f m off the centre line" % [
 			rounds, ctx.seconds(int(s["total_frames"])), str(s["reason"]), float(s["top_speed"]), int(s["pad_visits"]), int(s["nitro_starts"]),

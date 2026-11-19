@@ -23,6 +23,7 @@ var max_speed: float = 0.0         ## m/s; 0 = no limit
 var contact: TLContact
 var _was_moving: bool = false
 var _holder: Node3D = null
+var _held: bool = false   # hunt2 A6: possession apart from the node, which compares equal to null once freed
 var _pos_now: Vector3 = Vector3.ZERO       # for swept trigger tests (TLTrigger): where it was at the last two ticks
 var _pos_before: Vector3 = Vector3.ZERO
 var _pos_stamp: int = -1
@@ -162,6 +163,7 @@ func place(at: Vector3) -> void:
 ## no part in physics until `release()`. Possession for hockey, handball, a pickup.
 func hold(holder: Node3D, offset: Vector3 = Vector3.ZERO) -> void:
 	_holder = holder
+	_held = true
 	_hold_offset = offset
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	freeze = true
@@ -170,10 +172,11 @@ func hold(holder: Node3D, offset: Vector3 = Vector3.ZERO) -> void:
 
 ## Lets go of a held ball with a velocity in m/s (a pass, a shot). Does nothing when it is not held.
 func release(velocity: Vector3 = Vector3.ZERO) -> void:
-	if _holder == null:
+	if not _held:
 		return
-	var was: Node3D = _holder
+	var was: Node3D = _holder if is_instance_valid(_holder) else null
 	_holder = null
+	_held = false
 	freeze = false
 	sleeping = false
 	linear_velocity = velocity
@@ -210,7 +213,7 @@ func _physics_process(_delta: float) -> void:
 	_pos_before = _pos_now if _pos_stamp >= 0 else global_position
 	_pos_now = global_position
 	_pos_stamp = Engine.get_physics_frames()
-	if _holder != null:
+	if _held:
 		if is_instance_valid(_holder) and _holder.is_inside_tree():
 			global_position = _holder.global_transform * _hold_offset
 		else:

@@ -54,6 +54,9 @@ func declare(action: StringName, keys: Array = [], buttons: Array = []) -> void:
 	if _aims.has(action):
 		push_error("ctx.input.declare('%s'): the name is already an aim (declare_aim)" % action)
 		return
+	if String(action).contains("@"):   # hunt2 C2: "<aim>@x" / "@z" name an aim's record entries; a plain action never does
+		push_error("ctx.input.declare('%s'): '@' is reserved for an aim's record entries" % action)
+		return
 	if _actions.has(action):
 		(_actions[action] as Dictionary)["keys"] = keys.duplicate()
 		(_actions[action] as Dictionary)["buttons"] = buttons.duplicate()
@@ -112,6 +115,9 @@ func declare_aim(action: StringName, height: float = 0.0, reach: float = 200.0) 
 	TLContext.require("input", "ctx.input")
 	if _actions.has(action):
 		push_error("ctx.input.declare_aim('%s'): the name is already a plain action" % action)
+		return
+	if String(action).contains("@"):   # hunt2 C2: reserved for the record entries "<aim>@x" / "@z"
+		push_error("ctx.input.declare_aim('%s'): '@' is reserved for an aim's record entries" % action)
 		return
 	if _aims.has(action):
 		(_aims[action] as Dictionary)["height"] = height

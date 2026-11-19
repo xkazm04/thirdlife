@@ -1,0 +1,52 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh api_control
+extends SceneTree
+
+const Manifest = preload("res://kernel/runner/manifest.gd")
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+
+func accepts(folder: String, data: Dictionary) -> bool:
+	var f := FileAccess.open(folder.path_join("pack.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(data))
+	f.close()
+	return Manifest.read(folder).ok
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	# The wrapper made this private directory; the source seed is read-only.
+	var folder := str(get_script().resource_path).get_base_dir()
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://seeds/seed_drive/pack.json"))
+	var valid := accepts(folder, data)
+	var extra := data.duplicate(true)
+	extra["titel"] = "typo"
+	var unknown_rejected := not accepts(folder, extra)
+	var nested := data.duplicate(true)
+	nested["footprint"] = {"size_m": [40, 40], "height_m": 10, "tall": true}
+	var nested_rejected := not accepts(folder, nested)
+	var absent := data.duplicate(true)
+	absent.erase("subject")
+	var omission_ok := accepts(folder, absent)
+	absent.subject = null
+	var null_rejected := not accepts(folder, absent)
+	DirAccess.remove_absolute(folder.path_join("pack.json"))
+	var space := Space.new()
+	var target := Node3D.new()
+	root.add_child(target)
+	var cam := TLChaseCam.new()
+	root.add_child(cam)
+	cam.setup(target, {"distance": 3, "height": 1, "look_height": 1, "avoid_min": 9, "avoid_space": space.space, "use_velocity": true})
+	target.rotation.y = PI / 2
+	cam.snap()
+	for i in 30:
+		cam._physics_process(1.0 / 60)
+	var behind := (cam.global_position - target.global_position).dot(target.global_basis.z)
+	var pull := cam.avoid_pull
+	cam.free()
+	target.free()
+	space.free_all()
+	var checks := [valid, unknown_rejected, nested_rejected, omission_ok, null_rejected, absf(behind - 3.0) < 0.01, pull < 0.01]
+	print("manifest valid/top-unknown/nested-unknown/omit/null checks=%s; velocity snap at rest %.2f m behind; avoid_min 9 m, pull %.2f m" % [str(checks.slice(0, 5)), behind, pull])
+	var failed := checks.count(false)
+	print("REPRO api_control: PASS" if failed == 0 else "REPRO api_control: FAIL %d/7 checks failed" % failed)
+	quit(int(failed > 0))

@@ -1,0 +1,33 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A4
+extends SceneTree
+
+# Compare a slow and a fast sideways glide with the same facing and camera options.
+func _initialize() -> void:
+	run.call_deferred()
+
+func behind(step: float) -> float:
+	var target := Node3D.new()
+	root.add_child(target)
+	var camera := TLChaseCam.new()
+	root.add_child(camera)
+	camera.setup(target, {"use_velocity": true, "stiffness": 1.0, "follow": 1.0})
+	for i in 120:
+		target.position.x += step
+		camera._physics_process(1.0 / 60)
+	var result := target.position.x - camera.position.x
+	camera.free()
+	target.free()
+	return result
+
+func run() -> void:
+	var fast := behind(0.05)
+	var slow := behind(0.01)
+	if absf(fast - 7.0) > 0.01:
+		printerr("fast travel control failed: ", fast)
+		quit(2)
+	elif absf(slow - 7.0) > 0.01:
+		print("REPRO A4: FAIL velocity camera trails by %.2f m at 0.60 m/s and %.2f m at 3.00 m/s; wanted 7.00 m at both speeds" % [slow, fast])
+		quit(1)
+	else:
+		print("REPRO A4: PASS")
+		quit()

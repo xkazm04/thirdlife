@@ -53,7 +53,12 @@ var _ready_at: Dictionary = {}
 var _poke_at: Dictionary = {}
 var stick_dir: Dictionary = {}          ## H4: id -> where his stick points (the human's aim); absent = his facing
 var poke_cone_dot: float = -1.0         ## H4: a poke with a stick direction reaches only inside this cone
-var hits = null                        ## scripts/hits.gd (H2): a man down or stumbling cannot take the puck
+var hits = null:                       ## scripts/hits.gd (H2): a man down or stumbling cannot take the puck
+	get:                                 # hunt2 A8: held weakly (hits.gd holds this helper; main.gd holds both), so the
+		return _hits_ref.get_ref() if _hits_ref != null else null   # pair is freed with the pack, never a cycle
+	set(v):
+		_hits_ref = weakref(v) if v != null else null
+var _hits_ref: WeakRef = null
 
 
 func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Array) -> void:
@@ -431,12 +436,15 @@ func state() -> Dictionary:
 	return s
 
 
+const GOAL_TOP := 1.55   ## the crossbar: data/venue.json's goals stand at y 0.05 and are 1.5 m high
+
+
 ## H11 (moved from main.gd in H13, its 600-line limit): the side that scores when the puck's centre lies in a goal volume (the trigger's box: 1.5 m deep behind the line,
-## the goal's width), else "".
+## the goal's width, under the goal's crossbar), else "". hunt2 A7: a puck flying over the net is no goal.
 func goal_by_position(g: Dictionary) -> String:
-	var p: Vector3 = puck.global_position
+	var p: Vector3 = puck.position   # the pack's own coordinates (the goals' too), wherever a world puts the pack
 	for side: String in ["blue", "red"]:
 		var gx: float = float(g[side][0])
-		if absf(p.x - (gx + signf(gx) * 0.75)) <= 0.75 and absf(p.z) <= float(g["half_width"]):
+		if absf(p.x - (gx + signf(gx) * 0.75)) <= 0.75 and absf(p.z) <= float(g["half_width"]) and p.y <= GOAL_TOP:
 			return "red" if side == "blue" else "blue"
 	return ""

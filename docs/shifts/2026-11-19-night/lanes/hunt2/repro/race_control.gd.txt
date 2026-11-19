@@ -1,0 +1,59 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh race_control
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://packs/parkour", {"seed": 1, "frames": 3600, "mode": "bot",
+			"test": "tests/bot_ladder_retry_regular.gd", "own_space": false, "scenery": "plot"}):
+		printerr(pack.load_errors)
+		quit(2)
+		return
+	var race = pack.entry
+	var retries := 0
+	var intact := true
+	var visited: Array[int] = []
+	var retry_clock := -1
+	for tick in 3600:
+		await physics_frame
+		var x: float = race.runner.position.x
+		var clock: int = race.rules.total_frames
+		var falls: int = race.falls
+		pack.tick(tick)
+		var checkpoint: int = race.rules.next_checkpoint.runner
+		if visited.is_empty() or checkpoint != visited.back():
+			visited.append(checkpoint)
+		if tick > 0 and x - race.runner.position.x > 3.0 and race.ctx.input.just_pressed(&"slide"):
+			retries += 1
+			retry_clock = clock
+			intact = intact and falls == race.falls and checkpoint == 2 and clock > 0 and race.rules.total_frames == clock
+		if pack.finished:
+			break
+	if not pack.finished or not pack.bot_info.result.ok:
+		print("REPRO race_control: FAIL finished %d after %d pack ticks" % [int(pack.finished), pack.frames_done])
+		quit(1)
+		return
+	var best: int = race.rules.best_lap_frames.runner
+	var digest: String = pack.final_hash
+	var frame_count: int = pack.frames_done
+	var before: float = race.runner.position.x
+	pack.ctx.input.release_all()
+	pack.life.tick(frame_count, false)
+	pack.ctx.input.tap(&"slide")
+	pack.life.tick(frame_count + 1, false)
+	intact = intact and is_equal_approx(before, race.runner.position.x) and race.hud.text_of(&"race").begins_with("FINISH")
+	pack.ctx.input.tap(&"restart")
+	pack.life.tick(frame_count + 2, false)
+	var hud: String = race.hud.text_of(&"race")
+	intact = intact and race.rules.total_frames == 0 and race.falls == 0 and race.rules.next_checkpoint.runner == 0
+	intact = intact and hud.contains("0 / 4") and hud.contains("0.00 s") and hud.contains("Best  %.2f s" % (best / 60.0))
+	print("seed=1 hash=%s pack_ticks=%d race_ticks=%d C_retries=%d retry_clock=%d checkpoints=%s" % [digest, frame_count, best, retries, retry_clock, str(visited)])
+	var ok := retries > 0 and intact and visited == [0, 1, 2, 3, 0]
+	pack.free()
+	print("REPRO race_control: PASS" if ok else "REPRO race_control: FAIL %d retries, guard checks %d" % [retries, int(intact)])
+	quit(int(not ok))

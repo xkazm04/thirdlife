@@ -48,7 +48,10 @@ func _pack_setup(c) -> void:
 		var fracture: TLFracture = TLFracture.attach(nodes[id], {"hp": hp, "threshold": float(wall["threshold"]),
 			"kick": float(wall["kick"]), "scatter": float(wall["scatter"])})
 		var index: int = blocks.size()
-		fracture.broke.connect(func(_by: Node) -> void: _events.append(["broke", index]))
+		fracture.broke.connect(func(_by: Node) -> void:
+			for piece: RigidBody3D in fracture.pieces:   # hunt2 C10: where each piece sat, before a physics step moves it
+				origin_of[piece] = piece.global_position
+			_events.append(["broke", index]))
 		blocks.append({"part": nodes[id], "fracture": fracture})
 
 	# the walker: TLBiped builds the real biped rig; it starts at the layout's spawn point, facing the wall (-z)
@@ -127,11 +130,9 @@ func _throw(frame: int) -> void:
 func _handle_events() -> void:
 	for event: Array in _events:
 		match event[0]:
-			"broke":      # remember where every piece sat, then dust, debris and the crack
+			"broke":      # dust, debris and the crack (where every piece sat was kept when it broke)
 				var block: Dictionary = blocks[int(event[1])]
 				var at: Vector3 = (block["part"] as Node3D).global_position + Vector3.UP
-				for piece: RigidBody3D in (block["fracture"] as TLFracture).pieces:
-					origin_of[piece] = piece.global_position
 				TLVfx.burst(&"debris", at, ctx.root, {"color": dust.darkened(0.25)})
 				TLVfx.burst(&"dust", at, ctx.root, {"scale": 1.6, "color": dust})
 				TLAudio.play(&"break", at)

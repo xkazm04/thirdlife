@@ -1,0 +1,41 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A10
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func measure(scale_factor: float) -> Vector2:
+	var sp := Space.new()
+	# The local collision wall is the same physical wall at each parent scale.
+	var world_center := Vector3(0, 1, 5)
+	sp.add_box(Transform3D(Basis.IDENTITY, world_center / scale_factor), Vector3(20, 20, 4) / scale_factor)
+	var parent := Node3D.new()
+	root.add_child(parent)
+	parent.rotation.y = deg_to_rad(31)
+	parent.scale = Vector3.ONE * scale_factor
+	var target := Node3D.new()
+	parent.add_child(target)
+	var cam := TLChaseCam.new()
+	parent.add_child(cam)
+	cam.setup(target, {"distance": 7.0, "height": 1.0, "look_height": 1.0, "avoid_space": sp.space,
+		"avoid_min": 0.0, "avoid_margin": 0.3})
+	var look := target.global_position + Vector3.UP
+	var result := Vector2(cam.avoid_pull, 7.0 - cam.global_position.distance_to(look))
+	parent.free()
+	sp.free_all()
+	return result
+
+func run() -> void:
+	var ordinary := measure(1.0)
+	var scaled := measure(2.0)
+	if ordinary.y < 1 or scaled.y < 1 or absf(ordinary.x - ordinary.y) > 0.01:
+		printerr("wall fixture failed: ", ordinary, " ", scaled)
+		quit(2)
+	elif absf(scaled.x - scaled.y) > 0.03:
+		print("REPRO A10: FAIL at parent scale 2 camera moved %.2f m closer but avoid_pull reported %.2f m; scale 1 error %.2f m" % [scaled.y, scaled.x, absf(ordinary.x - ordinary.y)])
+		quit(1)
+	else:
+		print("REPRO A10: PASS")
+		quit()

@@ -1,0 +1,47 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/C2.sh
+extends SceneTree
+
+const Session = preload("res://kernel/runner/session.gd")
+
+func input_for_case() -> TLInput:
+	var inp := TLInput.new()
+	inp.declare_aim(&"aim")
+	inp.declare(&"aim@x")
+	return inp
+
+func _initialize() -> void:
+	var live := input_for_case()
+	if not live.declared().has("aim@x"):
+		live.free()
+		print("C2 declaration rejected")
+		print("REPRO C2: PASS")
+		quit(0)
+		return
+	var rows := live._record()
+	live.press(&"aim@x", 0.25)
+	live.set_aim(&"aim", Vector3(7, 0, 2))
+	live._sample()
+	var path: String = get_script().resource_path.get_base_dir() + "/pack.json"
+	var err := Session.write(path, {"pack": "qa.aim", "mode": "bot", "seed": 1, "length": 1, "max_frames": 1, "end": "step", "frames": rows})
+	if err != "":
+		printerr(err)
+		quit(2)
+		return
+	var replay := input_for_case()
+	replay._feed(Session.read(path).record.frames)
+	replay._sample()
+	var a := StreamPeerBuffer.new()
+	var b := StreamPeerBuffer.new()
+	live._hash_into(a)
+	replay._hash_into(b)
+	var diff := a.data_array != b.data_array
+	var point_matches := live.aim(&"aim").is_equal_approx(replay.aim(&"aim"))
+	var msg := "%d frame, aim x %.3f in both, plain action live %.3f / replay %.3f, equal hash input %d" % [
+		1, live.aim(&"aim").x, live.strength(&"aim@x"), replay.strength(&"aim@x"), int(not diff)]
+	live.free()
+	replay.free()
+	if not point_matches:
+		quit(2)
+		return
+	print("REPRO C2: FAIL " + msg if diff else "REPRO C2: PASS")
+	quit(int(diff))

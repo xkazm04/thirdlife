@@ -1,0 +1,36 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B11
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func clearance(k: float) -> float:
+	var sp := Space.new()
+	# In world metres the near face is at z=3 for every trial.
+	sp.add_box(Transform3D(Basis.IDENTITY, Vector3(0, 1, 5) / k), Vector3(20, 20, 4) / k)
+	var parent := Node3D.new()
+	root.add_child(parent)
+	parent.scale = Vector3.ONE * k
+	var target := Node3D.new()
+	parent.add_child(target)
+	var cam := TLChaseCam.new()
+	parent.add_child(cam)
+	cam.setup(target, {"distance": 7.0, "height": 1.0, "look_height": 1.0, "avoid_space": sp.space,
+		"avoid_margin": 0.3, "avoid_min": 0.0})
+	var gap := 3.0 - cam.global_position.z
+	parent.free()
+	sp.free_all()
+	return gap
+
+func run() -> void:
+	var small := clearance(0.5)
+	var unit := clearance(1.0)
+	var big := clearance(2.0)
+	if absf(unit - 0.3) > 0.02:
+		quit(2)
+		return
+	var failed := absf(small - unit) > 0.03 or absf(big - unit) > 0.03
+	print("REPRO B11: FAIL requested 0.30 m wall clearance; scales 0.5/1/2 leave %.2f/%.2f/%.2f m" % [small, unit, big] if failed else "REPRO B11: PASS")
+	quit(int(failed))

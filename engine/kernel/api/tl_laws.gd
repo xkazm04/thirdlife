@@ -88,8 +88,12 @@ static func has(id: String) -> bool:
 
 
 ## One row of the table: {density, friction, restitution, hardness, flammability, sound, breaks_into}.
-## An unknown id logs an error once and answers with concrete.
+## An unknown id logs an error once and answers with concrete. hunt2 C3: a copy (editing it changes no other context's law).
 static func material(id: String) -> Dictionary:
+	return _row(id).duplicate()
+
+
+static func _row(id: String) -> Dictionary:
 	_ensure()
 	if _materials.has(id):
 		return _materials[id]
@@ -102,8 +106,8 @@ static func material(id: String) -> Dictionary:
 ## The pair law for two materials: {friction, restitution, override: bool}.
 static func pair(a: String, b: String) -> Dictionary:
 	_ensure()
-	var ma: Dictionary = material(a)
-	var mb: Dictionary = material(b)
+	var ma: Dictionary = _row(a)
+	var mb: Dictionary = _row(b)
 	var out: Dictionary = {
 		"friction": minf(float(ma["friction"]), float(mb["friction"])),
 		"restitution": clampf(float(ma["restitution"]) + float(mb["restitution"]), 0.0, 1.0),
@@ -148,7 +152,7 @@ static func apply(body: CollisionObject3D, id: String = "") -> void:
 		id = material_of(body)
 	if id.is_empty():
 		return
-	var row: Dictionary = material(id)
+	var row: Dictionary = _row(id)
 	body.set_meta(&"tl_material", id)
 	body.set_meta(&"tl_law_applied", id)
 	var pm: PhysicsMaterial = PhysicsMaterial.new()
@@ -202,7 +206,7 @@ static func volume_of(body: CollisionObject3D) -> float:
 
 ## The impulse (N*s) a body of this material takes in one hit before it is damaged: hardness x impulse_per_hardness.
 static func impact_threshold(id: String) -> float:
-	return float(material(id)["hardness"]) * impulse_per_hardness
+	return float(_row(id)["hardness"]) * impulse_per_hardness
 
 
 ## Casts down from `from` and answers what is underneath: {hit: bool, material, position, normal, collider, distance}.

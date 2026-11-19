@@ -1,0 +1,30 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A5
+extends SceneTree
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var ground := TLBodies.ground(Vector2(20, 20), "concrete")
+	root.add_child(ground)
+	var walker := TLBiped.create({"feel": &"walker", "position": Vector3(0, 0.01, 0)})
+	root.add_child(walker)
+	for tick in 10:
+		await physics_frame
+	walker.move(Vector3.RIGHT, true)
+	await physics_frame
+	var before := walker.speed()
+	walker.move(Vector3.ZERO)
+	walker.down(20)
+	for tick in 6:
+		await physics_frame
+	var after := walker.speed()
+	if not walker.is_down() or before < 0.1:
+		printerr("walker setup failed")
+		quit(2)
+	elif after > before + 0.1:
+		print("REPRO A5: FAIL downed walker accelerated from %.2f to %.2f m/s in 6 ticks with movement released" % [before, after])
+		quit(1)
+	else:
+		print("REPRO A5: PASS")
+		quit()

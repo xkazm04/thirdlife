@@ -13,6 +13,7 @@ extends Node
 ## result says who won and proves the hand ran).
 
 var ctx
+var target: int = 5
 var s: Dictionary = {}
 var done: bool = false
 var longest_rally: int = 0
@@ -22,6 +23,7 @@ var hand: TLHand
 
 func _bot_setup(c) -> void:
 	ctx = c
+	target = int(ctx.read_json("rules.json")["score_to_win"])   # hunt2 C1: the target a builder sets in the rules
 	hand = TLHand.create(ctx, hand_profile)
 
 
@@ -57,11 +59,11 @@ func _bot_result() -> Dictionary:
 	var tally: Dictionary = s.get("scores", {})
 	var mine: int = int(tally.get("player", 0))
 	var theirs: int = int(tally.get("rival", 0))
-	var ok: bool = done and s["winner"] == "player" and s["reason"] == "score" and mine == 5 and str(s["hud"]["hint"]) == "PLAYER wins"
+	var ok: bool = done and s["winner"] == "player" and s["reason"] == "score" and mine == target and str(s["hud"]["hint"]) == "PLAYER wins"
 	if not hand.is_perfect():
 		# through a person's hand the game may be lost: ok is "it was played to the end, and the hand really acted"
 		var h: Dictionary = hand.stats()
-		var played: bool = done and s["reason"] == "score" and maxi(mine, theirs) == 5 and str(s["hud"]["hint"]) == "%s wins" % str(s["winner"]).to_upper()
+		var played: bool = done and s["reason"] == "score" and maxi(mine, theirs) == target and str(s["hud"]["hint"]) == "%s wins" % str(s["winner"]).to_upper()
 		return {"ok": played and int(h["decisions"]) > 0 and int(h["presses"]) > 0 and float(h["mean_reaction_frames"]) > 0.0,
 			"summary": "hand %s: %s %d : %d in %d frames (%.0f s); longest rally %d; %d decisions, mean reaction %.1f frames, %d presses, %d taps lengthened, %d held through a change, %d overshoots, %d lapses (%d frames)" % [
 				hand.profile, "won" if s["winner"] == "player" else "lost", mine, theirs, ctx.frame, ctx.seconds(ctx.frame), longest_rally,

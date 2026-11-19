@@ -1,0 +1,77 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B1-controls
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+var bad := 0
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func probe(path: String) -> void:
+	var p := Pack.new()
+	root.add_child(p)
+	if not p.load_pack("res://packs/hockey", {"scenery": "plot", "own_space": false}):
+		bad += 1
+		p.free()
+		return
+	var g = p.entry
+	var dress: WeakRef = weakref(g.dress_node)
+	var rink: WeakRef = weakref(g.venues[g.venue_key])
+	var originals: Dictionary = {}
+	for key: String in g.pool:
+		originals[key] = weakref(g.pool[key])
+	p.tick(0)
+	var f := 1
+	for mode in ["big_ice", "base", "pond", "big_ice"]:
+		p.ctx.input.tap(StringName("mode_" + mode))
+		await physics_frame
+		p.tick(f)
+		f += 1
+		bad += int(g.mode_id != mode or g.dress_node != dress.get_ref())
+		bad += int(g.dress_node.is_inside_tree() != (mode != "big_ice"))
+		bad += int(g.skaters.size() != (4 if mode == "big_ice" else 6))
+		bad += int(g.venues[g.venue_key].is_inside_tree() == false)
+		if mode == "base":
+			bad += int(rink.get_ref() != g.venues[g.venue_key])
+		for key: String in originals:
+			bad += int(g.pool[key] != originals[key].get_ref())
+	var refs := [dress]
+	for n: Node in g.venues.values() + g.pool.values():
+		refs.append(weakref(n))
+	var survivors_expected := 0
+	if path == "entry":
+		# A still-referenced bench object may already have been freed by its owner.
+		for sk: Node in g.pool.values():
+			if not sk.is_inside_tree():
+				sk.free()
+				break
+		for ref: WeakRef in refs:
+			var n: Node = ref.get_ref()
+			if n != null and n.is_inside_tree():
+				survivors_expected += 1
+		g.free()
+		var active := 0
+		for ref: WeakRef in refs:
+			var n: Node = ref.get_ref()
+			if n != null:
+				active += 1
+				bad += int(not n.is_inside_tree())
+		bad += int(active != survivors_expected or active != 5)
+	elif path == "detached holder":
+		root.remove_child(p)
+	else:
+		p.unload()
+	p.free()
+	await physics_frame
+	var alive := 0
+	for ref: WeakRef in refs:
+		alive += int(ref.get_ref() != null)
+	bad += alive
+	print("%s: %d tracked, %d separately retained live siblings expected at entry delete, %d survive holder" %
+		[path, refs.size(), survivors_expected, alive])
+
+func run() -> void:
+	for path in ["unload", "entry", "detached holder"]:
+		await probe(path)
+	print("REPRO B1-controls: FAIL %d ownership or mode checks" % bad if bad else "REPRO B1-controls: PASS")
+	quit(int(bad > 0))

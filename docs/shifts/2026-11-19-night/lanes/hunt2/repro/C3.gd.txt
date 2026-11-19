@@ -1,0 +1,34 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh C3
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://seeds/seed_paddle", {"seed": 1, "own_space": false, "scenery": "plot"}):
+		quit(2)
+		return
+	var ball: TLBall = pack.entry.ball
+	var id := ball.material_id
+	TLLaws.apply(ball)
+	var baseline := ball.physics_material_override.friction
+	var other := TLContext.new()
+	var prev := TLContext.enter(other)
+	var preview := TLLaws.material(id)
+	preview["friction"] = 0.03125
+	TLContext.leave(prev)
+	prev = TLContext.enter(pack.ctx)
+	TLLaws.apply(ball)
+	TLContext.leave(prev)
+	var actual := ball.physics_material_override.friction
+	pack.free()
+	if is_equal_approx(baseline, 0.03125):
+		quit(2)
+		return
+	var bad := not is_equal_approx(actual, baseline)
+	print("REPRO C3: FAIL 2 contexts, 1 edited return value, Seed Paddle ball friction %.5f -> %.5f" % [baseline, actual] if bad else "REPRO C3: PASS")
+	quit(int(bad))

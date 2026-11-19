@@ -1,0 +1,36 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh C4
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var pack := Pack.new()
+	root.add_child(pack)
+	if not pack.load_pack("res://packs/hockey", {"own_space": false, "scenery": "plot"}):
+		quit(2)
+		return
+	await physics_frame
+	pack.tick(0)
+	pack.ctx.input.tap(&"drill_slides_from_behind")
+	await physics_frame
+	pack.tick(1)
+	pack.ctx.input.tap(&"dial")
+	await physics_frame
+	pack.tick(2)
+	var game = pack.entry
+	var pos: Vector3 = game.puck.position
+	var start: int = game.rules.total_frames
+	for f in range(3, 33):
+		await physics_frame
+		pack.tick(f)
+	var dx: float = absf(game.puck.position.x - pos.x)
+	if not game.dial_open or game.rules.state != &"paused" or game.rules.total_frames != start:
+		quit(2)
+		return
+	pack.free()
+	var bad := dx > 0.05
+	print("REPRO C4: FAIL 30 paused frames, clock advanced 0, loose puck travelled %.3f m along x" % dx if bad else "REPRO C4: PASS")
+	quit(int(bad))

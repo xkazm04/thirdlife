@@ -1,0 +1,61 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh B7
+extends SceneTree
+
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+const Seam = preload("res://kernel/world/draw/view_seam.gd")
+const Draw = preload("res://kernel/world/draw/draw_base.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var corners := [Vector3(-60, 0, -60), Vector3(60, 0, -60), Vector3(60, 0, 60), Vector3(-60, 0, 60)]
+	for i in 4:
+		surface.add_vertex(Vector3(20, 0, 0))
+		surface.add_vertex(corners[i])
+		surface.add_vertex(corners[(i + 1) % 4])
+	var mesh := surface.commit()
+	var ground := MeshInstance3D.new()
+	ground.mesh = mesh
+	holder.add_child(ground)
+	ground.create_trimesh_collision()
+	var rim := Draw.edge_height(holder, 20.0)
+	if is_nan(rim):
+		printerr("fixture must qualify as visible ground")
+		quit(2)
+		return
+	var ys := []
+	var control := Space.new()
+	control.add_pack(holder, Transform3D.IDENTITY, 0.0, 0.0, 0.0)
+	control.finish()
+	var reference_y := control.ground_at(1.0, 0.0, 2.0)
+	control.free_all()
+	if is_nan(reference_y) or absf(reference_y) > 0.01:
+		quit(2)
+		return
+	for sliced in [false, true]:
+		var ws := Space.new()
+		ws.tag = "pad 0"
+		ws.add_box(Transform3D(Basis.IDENTITY, Vector3(0, -0.5, 0)), Vector3(40, 1, 40))
+		ws.tag = "game"
+		if sliced:
+			var copies := [{"i": 0, "job": ws.begin_pack(holder, Transform3D.IDENTITY, 20.0, rim, 9.0)}]
+			Seam.copy_colliders(copies, ws, [Transform3D.IDENTITY], [20.0], Vector3.ZERO)
+		else:
+			ws.add_pack(holder, Transform3D.IDENTITY, 20.0, rim, 9.0)
+			ws.remove_tag("pad 0")
+		ws.finish()
+		var feet := Vector3(1, 0.1, 0)
+		ws.place(feet)
+		for t in 90:
+			feet = ws.drive(feet, Vector3.ZERO, false, false).pos
+		ys.append(feet.y)
+		ws.free_all()
+	holder.free()
+	var failed: bool = ys[0] < -1 or ys[1] < -1
+	print("REPRO B7: FAIL 4 visible floor triangles, rim %.2f m; visitor y after 90 ticks: immediate %.2f m, arriving %.2f m" % [rim, ys[0], ys[1]] if failed else "REPRO B7: PASS")
+	quit(int(failed))

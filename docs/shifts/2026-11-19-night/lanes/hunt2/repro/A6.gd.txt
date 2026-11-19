@@ -1,0 +1,29 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A6
+extends SceneTree
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var hand := Node3D.new()
+	root.add_child(hand)
+	hand.position.y = 10.0
+	var ball := TLBall.create({"position": hand.position})
+	root.add_child(ball)
+	ball.hold(hand)
+	for i in 3:
+		await physics_frame
+	var start := ball.position.y
+	hand.free()
+	for i in 30:
+		await physics_frame
+	var drop := start - ball.position.y
+	if ball.holder() == null and ball.freeze and drop < 0.01:
+		print("REPRO A6: FAIL ball has 0 holders but remains frozen for 30 ticks; drop %.3f m" % drop)
+		quit(1)
+	elif ball.holder() == null and not ball.freeze and drop > 0.5:
+		print("REPRO A6: PASS")
+		quit()
+	else:
+		printerr("unexpected post-release state: ", ball.freeze, " drop ", drop)
+		quit(2)

@@ -1,0 +1,35 @@
+# bash docs/shifts/2026-11-19-night/lanes/hunt2/repro/run.sh A8
+extends SceneTree
+
+const Pack = preload("res://kernel/world/pack.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	var old: Array[WeakRef] = []
+	for iteration in 3:
+		var pack := Pack.new()
+		root.add_child(pack)
+		if not pack.load_pack("res://packs/hockey", {"own_space": false, "scenery": "plot"}):
+			printerr(pack.load_errors)
+			quit(2)
+			return
+		pack.tick(0)
+		old.append(weakref(pack.entry.api))
+		old.append(weakref(pack.entry.hits))
+		pack.unload()
+		pack.free()
+		await physics_frame
+	var live := 0
+	for ref in old:
+		live += int(ref.get_ref() != null)
+	# Break any surviving cycles after the count so even a failing test cleans up.
+	for i in range(0, old.size(), 2):
+		if old[i].get_ref() != null:
+			old[i].get_ref().hits = null
+	if live > 0:
+		print("REPRO A8: FAIL %d/6 match helpers survived 3 hockey pack unloads" % live)
+	else:
+		print("REPRO A8: PASS")
+	quit(int(live > 0))
