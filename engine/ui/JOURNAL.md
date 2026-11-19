@@ -79,3 +79,11 @@ Resume point. Newest entry last. Times are CEST from `date`.
   (15 x 60, under load from parallel drives). The chip rows' rebuild per keystroke was not the cause (rects stable).
 - E5 the village board (editor/village_board.gd; map board mode in village_map.gd / map_base.gd; host --home;
   ui.sh open starts on it, --panel for the panel; ui.sh home drive; ui.sh chips).
+- (round 4, 04:05-) E6 the lot into the world: kernel/world/site.gd `draft_lot` reads the workbench's draft for the
+  job a site lot shows (<jobs root>/_editor/*.json by the job's sentence) and moves the walk's lot there with the
+  player's ring (the landscape then draws pad, fence and path there; the walk's pad height stays). Report keys
+  `lot_from`, `at`. Selftests: ui.selftest (draft_lot) and selftest.d/480-editor-lot.sh (site.editor_lot).
+- The first village tour put the workbench's lot on the river: the workbench never knew the river. editor_model now
+  reads landscape.river (check "stands in the river", drawn on the map), bounds come from landscape.margin_m, and
+  first_free looks further back. With the river checked no free place by the road holds the proposed 45 m hockey
+  arena any more: the workbench says so, the home drive then picks a small bare rink (ring 32 m).

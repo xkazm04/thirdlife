@@ -68,6 +68,7 @@ static func colors() -> Dictionary:
 		"bay_blocked": pick.call("orange", "#e8742c"),
 		"bay_promoted": pick.call("leaf_light", "#a9c243"),
 		"bay_failed": pick.call("hazard_red", "#d8452e"),
+		"water": pick.call("water", "#4a8ac0"),
 		"hazard_light": pick.call("hazard_red", "#d8452e").lerp(pick.call("curb_white", "#f3e8dc"), 0.5),
 	}
 

@@ -33,6 +33,8 @@ var answers: Dictionary = {}         # key -> {id, by: "player" | "sentence", wo
 var village_ok: bool = false
 var plots: Array = []                # [{id, label, at: Vector2, r: float, kind: "plot" | "site"}]
 var road: PackedVector2Array = PackedVector2Array()
+var river: PackedVector2Array = PackedVector2Array()   # E6: the village's river (landscape.river.path)
+var river_half_m: float = 0.0
 var bounds: Rect2 = Rect2()
 var at: Vector2 = Vector2.ZERO
 var yaw: float = 0.0
@@ -100,6 +102,12 @@ func _load_village() -> void:
 		plots.append({"id": "site_%d" % k, "label": _job_label(job), "pack": "", "at": Vector2(float(a[0]), float(a[1])),
 			"r": float(d.get("radius", 20)), "kind": "site"})
 		k += 1
+	river = PackedVector2Array()
+	var rv: Variant = land.get("river", {})
+	if typeof(rv) == TYPE_DICTIONARY:
+		for q: Variant in (rv as Dictionary).get("path", []):
+			river.append(Vector2(float((q as Array)[0]), float((q as Array)[1])))
+		river_half_m = float((rv as Dictionary).get("half_m", 6.0))
 	for q: Variant in (v as Dictionary).get("road", []):
 		road.append(Vector2(float((q as Array)[0]), float((q as Array)[1])))
 	for e: Dictionary in plots:
@@ -112,7 +120,10 @@ func _load_village() -> void:
 		hi = Vector2(maxf(hi.x, q.x), maxf(hi.y, q.y))
 	if plots.is_empty():
 		return
-	bounds = Rect2(lo - Vector2(30, 30), hi - lo + Vector2(60, 60))
+	# the landscape is drawn this far beyond its plots and road (village.json landscape.margin_m), half of it is ground
+	# a lot may take; a lot further out is outside the village
+	var mg: float = float(land.get("margin_m", 60.0)) * 0.5
+	bounds = Rect2(lo - Vector2(mg, mg), hi - lo + Vector2(mg, mg) * 2.0)
 	village_ok = true
 
 
@@ -340,17 +351,19 @@ func turn(steps: int) -> void:
 ## A free spot to start from: along the road, the first place whose checks have no error (deterministic).
 func first_free() -> Vector2:
 	var r: float = lot_radius()
-	for side: float in [1.0, -1.0]:
-		for i: int in range(road.size() - 1):
-			var a: Vector2 = road[i]
-			var b: Vector2 = road[i + 1]
-			for t: float in [0.5, 0.25, 0.75]:
-				var p: Vector2 = a.lerp(b, t)
-				var n: Vector2 = (b - a).orthogonal().normalized() * side
-				var c: Vector2 = p + n * (r + ROAD_HALF_M + 6.0)
-				if _errors_at(c, r).is_empty():
-					no_free = false
-					return c
+	# by the road first (the nearest ring to it), then a little further back; every candidate is checked
+	for back: float in [6.0, 14.0, 24.0, 40.0]:
+		for side: float in [1.0, -1.0]:
+			for i: int in range(road.size() - 1):
+				var a: Vector2 = road[i]
+				var b: Vector2 = road[i + 1]
+				for t: float in [0.5, 0.3, 0.7, 0.1, 0.9]:
+					var p: Vector2 = a.lerp(b, t)
+					var n: Vector2 = (b - a).orthogonal().normalized() * side
+					var c: Vector2 = p + n * (r + ROAD_HALF_M + back)
+					if _errors_at(c, r).is_empty():
+						no_free = false
+						return c
 	no_free = true
 	return bounds.get_center()
 
@@ -388,6 +401,12 @@ func _errors_at(c: Vector2, r: float) -> Array:
 				"text": "overlaps %s \"%s\" by %d m" % ["the site" if e["kind"] == "site" else "the plot", e["label"], int(ceilf(-gap))]})
 	if not road.is_empty() and road_point(c).distance_to(c) < r + ROAD_HALF_M:
 		out.append({"level": "error", "what": "road", "text": "stands on the road"})
+	if river.size() > 1:
+		var rd: float = INF
+		for i: int in range(river.size() - 1):
+			rd = minf(rd, Geometry2D.get_closest_point_to_segment(c, river[i], river[i + 1]).distance_to(c))
+		if rd < r + river_half_m + RING_GAP_M:
+			out.append({"level": "error", "what": "river", "text": "stands in the river"})
 	if village_ok and not bounds.encloses(Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)):
 		out.append({"level": "error", "what": "outside", "text": "reaches outside the village"})
 	return out
