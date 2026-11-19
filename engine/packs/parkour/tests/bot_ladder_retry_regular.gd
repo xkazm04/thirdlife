@@ -2,6 +2,7 @@ extends Node
 ## Hold forward throughout. Omit the first slide and use the same C key a player sees at the beam.
 var ctx: TLContext
 var hand: TLHand
+var hand_profile := "regular"
 var state: Dictionary
 var last_jump := -60
 var last_slide := -60
@@ -13,7 +14,7 @@ var retry_distance := 0.0
 
 func _bot_setup(c: TLContext) -> void:
 	ctx = c
-	hand = TLHand.create(ctx, "regular")
+	hand = TLHand.create(ctx, hand_profile)
 
 
 func _bot_tick(frame: int) -> void:
@@ -48,5 +49,5 @@ func _bot_done() -> bool:
 func _bot_result() -> Dictionary:
 	var won: bool = state.get("reason") == "laps" and blocked and respawned and slid_under
 	return {"ok": won, "won": won, "frames": state.total_frames, "taps_lost": hand.stats().taps_lost,
-		"summary": "regular hand: blocked %s, checkpoint retry %s (%.2f m to beam), slid under %s, %s in %d ticks" % [
-			blocked, respawned, retry_distance, slid_under, state.reason, state.total_frames]}
+		"summary": "%s hand: blocked %s, checkpoint retry %s (%.2f m to beam), slid under %s, %s in %d ticks" % [
+			hand_profile, blocked, respawned, retry_distance, slid_under, state.reason, state.total_frames]}

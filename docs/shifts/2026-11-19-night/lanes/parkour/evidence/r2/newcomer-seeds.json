@@ -1,0 +1,262 @@
+[
+  {
+    "seed": 1,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 413,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 413 ticks"
+    },
+    "state_hash": "e6a3c7732bca3f6605daa5ee203c39e1a3a2cc9064adc518452e6e5b580818b8"
+  },
+  {
+    "seed": 2,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 458,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 458 ticks"
+    },
+    "state_hash": "2db82063040d6a699574f80418523d3623c584339ce9f5d6c32a040e72c25fe9"
+  },
+  {
+    "seed": 3,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 588,
+      "taps_lost": 1,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 588 ticks"
+    },
+    "state_hash": "bf905a314a47317892b100a1bd8e4c038669a6489aa3c0b764f9987a0ee58e7f"
+  },
+  {
+    "seed": 4,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 462,
+      "taps_lost": 1,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 462 ticks"
+    },
+    "state_hash": "37bc4b9054c1b62af976f7b1440d8a0d18eefbf980599720057c55befcb7d6bc"
+  },
+  {
+    "seed": 5,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 417,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 417 ticks"
+    },
+    "state_hash": "d9b9b2ab3032082700cd2a3a8f5cb4bd765a14b5c34b6e302c81ea40f6568507"
+  },
+  {
+    "seed": 6,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 416,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 416 ticks"
+    },
+    "state_hash": "a7518340def8b438285eca7c464dfc41d36017084df5671d213aecf70121356b"
+  },
+  {
+    "seed": 7,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 501,
+      "taps_lost": 1,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 501 ticks"
+    },
+    "state_hash": "86c6d2157f7dcea5a883b82c35bba33f0160dc658ff61ebd27011825ce4b64fc"
+  },
+  {
+    "seed": 8,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 413,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 413 ticks"
+    },
+    "state_hash": "2e17a8846478603a94123d68ffe765f006bf738ae609a1032c4677008aeae1b4"
+  },
+  {
+    "seed": 9,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 499,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 499 ticks"
+    },
+    "state_hash": "ebbfe8f7cdd48f17ebe43dee0d1a250c58616bee85af4e85a0fce91abddf605a"
+  },
+  {
+    "seed": 10,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 422,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 422 ticks"
+    },
+    "state_hash": "c14aeb6a0639aea21826d2d6231a6b94bff6299268ac45ab4c3fd68284fddc9b"
+  },
+  {
+    "seed": 11,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 490,
+      "taps_lost": 1,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 490 ticks"
+    },
+    "state_hash": "6e7500fa9e123585f2b12d54719005ca26b2993f0701ccc21f681e5f93dc7e61"
+  },
+  {
+    "seed": 12,
+    "exit": 1,
+    "completed": true,
+    "result": {
+      "ok": false,
+      "won": false,
+      "frames": 542,
+      "taps_lost": 2,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under false, laps in 542 ticks"
+    },
+    "state_hash": "8443f5fd133dc665a3ed9478ca775fb957b1be1a560c0ff59aba5a1527a1544b"
+  },
+  {
+    "seed": 13,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 490,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 490 ticks"
+    },
+    "state_hash": "bde7dab575a03a98cb56b09a2bd5d7998a3545e782bd8d12ed369e1b3ebad674"
+  },
+  {
+    "seed": 14,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 460,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 460 ticks"
+    },
+    "state_hash": "ec26651922e25a76ca756de737ba1d220c3ac936b9b2fb4062d16a3733371ae2"
+  },
+  {
+    "seed": 15,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 519,
+      "taps_lost": 1,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 519 ticks"
+    },
+    "state_hash": "a4989fe312ebd13dbb7d87e8940466b9502c2e25a9316f020dbb131fe6175bd9"
+  },
+  {
+    "seed": 16,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 460,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 460 ticks"
+    },
+    "state_hash": "d707fefdb1ec3fb75ecfc213c1e32319e546907d7976d64ef478c307f6b71fe7"
+  },
+  {
+    "seed": 17,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 408,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 408 ticks"
+    },
+    "state_hash": "6b3d8ae979d8629f690260dd304614f87a05f79a32918947256e5b932ebba361"
+  },
+  {
+    "seed": 18,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 493,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 493 ticks"
+    },
+    "state_hash": "81b3628e9dbdac3abf2427b83e4e734b730b6a6652d3e9165c9fe94980cb83be"
+  },
+  {
+    "seed": 19,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 402,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 402 ticks"
+    },
+    "state_hash": "76359e5edaa80595c9eca16bf052f1a3e1031a56844bd82646402ef0aef9a95e"
+  },
+  {
+    "seed": 20,
+    "exit": 0,
+    "completed": true,
+    "result": {
+      "ok": true,
+      "won": true,
+      "frames": 477,
+      "taps_lost": 0,
+      "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 477 ticks"
+    },
+    "state_hash": "baa14054c209eabeb295d82886c0c4d1420518a2372b3549f3e58332ebc99ec8"
+  }
+]

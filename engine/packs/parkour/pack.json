@@ -6,7 +6,7 @@
   "capabilities": ["physics", "biped", "rules", "input", "camera", "kit", "ui"],
   "entry": "scripts/main.gd",
   "assets": [],
-  "tests": ["tests/bot_course.gd", "tests/bot_geometry.gd", "tests/bot_obstacles.gd", "tests/bot_ladder_retry_regular.gd"],
+  "tests": ["tests/bot_course.gd", "tests/bot_geometry.gd", "tests/bot_obstacles.gd", "tests/bot_ladder_retry_regular.gd", "tests/bot_ladder_retry_newcomer.gd"],
   "cameras": ["orbit", "overview", "jump", "under_bar", "chute"],
   "subject": "Runner",
   "footprint": {"size_m": [50, 28], "height_m": 20},

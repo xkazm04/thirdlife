@@ -1,0 +1,47 @@
+[lock] window lock taken by 35176 after 0s
+tick 0   e:tier  plot:walker  from:  to:backdrop  why:start
+tick 0   e:tier  plot:drive  from:  to:backdrop  why:start
+tick 0   e:tier  plot:wall  from:  to:backdrop  why:start
+tick 0   e:tier  plot:paddle  from:  to:sideline  why:start
+tick 0   e:tier  plot:kit  from:  to:backdrop  why:start
+tick 0   e:tier  plot:car  from:  to:backdrop  why:start
+tick 0   e:tier  plot:hockey  from:  to:backdrop  why:start
+tick 0   e:tier  plot:parkour  from:  to:sideline  why:start
+tick 0   e:tier  plot:site_0  from:  to:backdrop  why:start
+tick 0   e:tier  plot:site_1  from:  to:backdrop  why:start
+tick 21   e:built  plot:walker
+tick 30   e:slice  slice:3
+tick 373   e:tier  plot:walker  from:backdrop  to:sideline  why:distance
+tick 378   e:built  plot:parkour
+tick 390   e:slice  slice:2
+tick 524   e:tier  plot:paddle  from:sideline  to:backdrop  why:distance
+tick 605   e:built  plot:paddle
+tick 625   e:over  plot:walker  ticks:371
+tick 718   e:over  plot:parkour  ticks:340
+tick 739   e:built  plot:drive
+tick 739   e:built  plot:wall
+tick 739   e:built  plot:kit
+tick 739   e:built  plot:car
+tick 739   e:built  plot:hockey
+tick 739   e:built  plot:site_0
+tick 739   e:built  plot:site_1
+pack walker example.walker seed 1: ticks 371 of 740, hash f1c7b53757c34040, tier sideline, seen [backdrop,sideline], changes 1, longest wait 3, speed 0.5014
+pack drive seed.drive seed 1: ticks 0 of 740, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack wall seed.wall seed 1: ticks 0 of 740, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack paddle seed.paddle seed 1: ticks 67 of 740, hash abef1086a6ae4798, tier backdrop, seen [sideline,backdrop], changes 1, longest wait 2, speed 0.0905
+pack kit example.kit seed 1: ticks 0 of 740, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack car example.car seed 1: ticks 0 of 740, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack hockey game.ice_hockey_three_against seed 1: ticks 0 of 740, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack parkour game.parkour seed 1: ticks 340 of 740, hash f0f8e8446029a098, tier sideline, seen [sideline], changes 0, longest wait 1, speed 0.4595
+pack site_0 game.topple_tower_crates_three seed 1: ticks 0 of 740, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack site_1 game.ice_hockey_three_against seed 1: ticks 0 of 740, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+world parkour_plot_edge: ticks 740, cost model, events 26, valve demotions 0, speed 1000 (lowest 1000) per mille, slice 2 (highest 3), tick p50 1.939 ms mean 5.7866 ms p99 15.612 ms, gate leaks 0, wrong-pack calls 0, kernel calls p50 0.237 ms, script errors 0, engine errors 0
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/after/walk/01_village-road.png (tick 103, stage -1, cam visitor, 97 draw calls, 1724096 primitives, frame 1.541 ms)
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/after/walk/02_through-gate.png (tick 243, stage -1, cam visitor, 96 draw calls, 1705616 primitives, frame 1.377 ms)
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/after/walk/03_edge-across-fence.png (tick 485, stage -1, cam visitor, 265 draw calls, 2193434 primitives, frame 2.358 ms)
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/after/walk/04_edge-along-fence.png (tick 642, stage -1, cam visitor, 175 draw calls, 2034382 primitives, frame 2.542 ms)
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/after/walk/05_edge-facing-yard.png (tick 735, stage -1, cam visitor, 124 draw calls, 1834046 primitives, frame 2.148 ms)
+window: 5 of 5 pictures, 0 stage changes, frame p50 1.929 ms (simulation and drawing), render cpu 0.324 ms gpu 1.218 ms, landscape built in 811 ms (terrain 265 ms, colliders 333 ms)
+visitor: kind:visitor  ticks:738  blocked_ticks:0  max_dev_m:0.0  end_dev_m:0.0  frame_ms_p50:1.934  frame_ms_p99:16.669  frame_ms_max:93.364  end:[-159.54  1.0  -42.22]
+landscape: road_m:560.0  spurs:10  fence_m:1590.7  trees:384  rocks:46  bushes:160  mesas:18  laps_ms:{grid_prep:3.3  grid:96.8  terrain:182.2  roads:34.5  edges_loop:2.5  lots:0.1  edges:3.7  scatter_setup:7.8  scatter:94.2  road_side:5.1  tufts:21.4  belt:3.8  mesas:22.8  coll_faces:105.0  add_faces:102.6  space:12.9  crowns:112.3
+DONE world.tour: pictures only, nothing was proven

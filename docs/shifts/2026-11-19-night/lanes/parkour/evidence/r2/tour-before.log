@@ -1,0 +1,33 @@
+Baseline pack copied verbatim from git tree 16534db426880a5ef0f3e24b1248730538dbd7ab. Only its path differs in the walk.
+[lock] window lock taken by 37052 after 0s
+tick 0   e:tier  plot:walker  from:  to:backdrop  why:start
+tick 0   e:tier  plot:drive  from:  to:backdrop  why:start
+tick 0   e:tier  plot:wall  from:  to:backdrop  why:start
+tick 0   e:tier  plot:paddle  from:  to:sideline  why:start
+tick 0   e:tier  plot:kit  from:  to:backdrop  why:start
+tick 0   e:tier  plot:car  from:  to:backdrop  why:start
+tick 0   e:tier  plot:hockey  from:  to:backdrop  why:start
+tick 0   e:tier  plot:parkour  from:  to:sideline  why:start
+tick 339   e:over  plot:parkour  ticks:340
+tick 373   e:tier  plot:walker  from:backdrop  to:sideline  why:distance
+tick 524   e:tier  plot:paddle  from:sideline  to:backdrop  why:distance
+tick 556   e:over  plot:walker  ticks:371
+tick 663   e:over  plot:kit  ticks:332
+pack walker example.walker seed 1: ticks 371 of 740, hash f1c7b53757c34040, tier sideline, seen [backdrop,sideline], changes 1, longest wait 2, speed 0.5014
+pack drive seed.drive seed 1: ticks 370 of 740, hash 38102cd7ae976d88, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack wall seed.wall seed 1: ticks 370 of 740, hash 980bf229295f0d10, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack paddle seed.paddle seed 1: ticks 632 of 740, hash e177603dea3e5e11, tier backdrop, seen [sideline,backdrop], changes 1, longest wait 2, speed 0.8541
+pack kit example.kit seed 1: ticks 332 of 740, hash ca698e71d34d1021, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.4486
+pack car example.car seed 1: ticks 370 of 740, hash f15c7036b980ebab, tier backdrop, seen [backdrop], changes 0, longest wait 2, speed 0.5
+pack hockey game.ice_hockey_three_against seed 1: ticks 369 of 740, hash dce05381b9cfc6aa, tier backdrop, seen [backdrop], changes 0, longest wait 3, speed 0.4986
+pack parkour game.parkour seed 1: ticks 340 of 740, hash d1256f49895f2b73, tier sideline, seen [sideline], changes 0, longest wait 1, speed 0.4595
+world parkour_plot_edge: ticks 740, cost model, events 13, valve demotions 0, speed 1000 (lowest 1000) per mille, slice 2 (highest 2), tick p50 4.035 ms mean 20.7063 ms p99 279.481 ms, gate leaks 0, wrong-pack calls 0, kernel calls p50 1.105 ms, script errors 0, engine errors 0
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/before/walk/01_village-road.png (tick 103, stage -1, cam visitor, 260 draw calls, 2240206 primitives, frame 22.332 ms)
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/before/walk/02_through-gate.png (tick 243, stage -1, cam visitor, 251 draw calls, 2216270 primitives, frame 4.583 ms)
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/before/walk/03_edge-across-fence.png (tick 485, stage -1, cam visitor, 286 draw calls, 2352770 primitives, frame 3.822 ms)
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/before/walk/04_edge-along-fence.png (tick 642, stage -1, cam visitor, 186 draw calls, 2201188 primitives, frame 3.595 ms)
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/before/walk/05_edge-facing-yard.png (tick 735, stage -1, cam visitor, 134 draw calls, 1998328 primitives, frame 3.219 ms)
+window: 5 of 5 pictures, 0 stage changes, frame p50 4.027 ms (simulation and drawing), render cpu 0.374 ms gpu 1.422 ms, landscape built in 1173 ms (terrain 316 ms, colliders 536 ms)
+visitor: kind:visitor  ticks:738  blocked_ticks:0  max_dev_m:0.0  end_dev_m:0.0  frame_ms_p50:4.025  frame_ms_p99:282.895  frame_ms_max:829.602  end:[-159.54  1.01  -42.22]
+landscape: road_m:560.0  spurs:10  fence_m:1990.0  trees:384  rocks:46  bushes:160  mesas:18  laps_ms:{grid_prep:3.3  grid:105.8  terrain:213.2  roads:40.9  edges_loop:2.7  lots:85.2  edges:4.8  scatter_setup:9.2  scatter:108.5  road_side:6.5  tufts:27.5  belt:3.7  mesas:25.8  coll_faces:110.6  add_faces:102.9  space:172.6  crowns:149.3
+DONE world.tour: pictures only, nothing was proven

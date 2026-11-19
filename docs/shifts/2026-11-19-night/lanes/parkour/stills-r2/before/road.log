@@ -1,0 +1,38 @@
+[lock] window lock taken by 18870 after 0s
+tick 0   e:tier  plot:walker  from:  to:backdrop  why:start
+tick 0   e:tier  plot:drive  from:  to:backdrop  why:start
+tick 0   e:tier  plot:wall  from:  to:backdrop  why:start
+tick 0   e:tier  plot:paddle  from:  to:sideline  why:start
+tick 0   e:tier  plot:kit  from:  to:backdrop  why:start
+tick 0   e:tier  plot:car  from:  to:backdrop  why:start
+tick 0   e:tier  plot:hockey  from:  to:backdrop  why:start
+tick 0   e:tier  plot:parkour  from:  to:sideline  why:start
+tick 0   e:tier  plot:site_0  from:  to:backdrop  why:start
+tick 0   e:tier  plot:site_1  from:  to:backdrop  why:start
+tick 0   e:built  plot:parkour
+tick 8   e:built  plot:walker
+tick 30   e:slice  slice:3
+tick 109   e:built  plot:drive
+tick 109   e:built  plot:wall
+tick 109   e:built  plot:paddle
+tick 109   e:built  plot:kit
+tick 109   e:built  plot:car
+tick 109   e:built  plot:hockey
+tick 109   e:built  plot:site_0
+tick 109   e:built  plot:site_1
+pack walker example.walker seed 1: ticks 37 of 110, hash a604f5ac82651917, tier backdrop, seen [backdrop], changes 0, longest wait 3, speed 0.3364
+pack drive seed.drive seed 1: ticks 0 of 110, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack wall seed.wall seed 1: ticks 0 of 110, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack paddle seed.paddle seed 1: ticks 0 of 110, hash , tier sideline, seen [sideline], changes 0, longest wait 0, speed 0.0
+pack kit example.kit seed 1: ticks 0 of 110, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack car example.car seed 1: ticks 0 of 110, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack hockey game.ice_hockey_three_against seed 1: ticks 0 of 110, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack parkour game.parkour seed 1: ticks 109 of 110, hash 0c026968e8e5d7bc, tier sideline, seen [sideline], changes 0, longest wait 1, speed 0.9909
+pack site_0 game.topple_tower_crates_three seed 1: ticks 0 of 110, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+pack site_1 game.ice_hockey_three_against seed 1: ticks 0 of 110, hash , tier backdrop, seen [backdrop], changes 0, longest wait 0, speed 0.0
+world parkour_road: ticks 110, cost model, events 21, valve demotions 0, speed 1000 (lowest 1000) per mille, slice 3 (highest 3), tick p50 2.073 ms mean 30.7051 ms p99 98.842 ms, gate leaks 0, wrong-pack calls 0, kernel calls p50 0.207 ms, script errors 0, engine errors 0
+picture: C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-parkour2/docs/shifts/2026-11-19-night/lanes/parkour/stills-r2/before/road/01_village-road.png (tick 103, stage -1, cam visitor, 231 draw calls, 1951988 primitives, frame 2.02 ms)
+window: 1 of 1 pictures, 0 stage changes, frame p50 2.014 ms (simulation and drawing), render cpu 0.266 ms gpu 1.32 ms, landscape built in 742 ms (terrain 228 ms, colliders 346 ms)
+visitor: kind:visitor  ticks:108  blocked_ticks:0  max_dev_m:0.0  end_dev_m:0.0  frame_ms_p50:1.96  frame_ms_p99:31.985  frame_ms_max:81.412  end:[-185.0  1.0  2.52]
+landscape: road_m:560.0  spurs:10  fence_m:1590.7  trees:384  rocks:46  bushes:160  mesas:18  laps_ms:{grid_prep:2.0  grid:91.7  terrain:139.1  roads:30.3  edges_loop:1.9  lots:0.3  edges:2.7  scatter_setup:7.9  scatter:77.9  road_side:4.0  tufts:16.9  belt:2.9  mesas:18.4  coll_faces:118.3  add_faces:100.3  space:45.1  crowns:83.2
+DONE world.tour: pictures only, nothing was proven

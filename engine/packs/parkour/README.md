@@ -25,13 +25,14 @@ The course layout is the same at every seed. A clean `perfect`-hand run takes 33
 | `tests/bot_geometry.gd` | Each positive gap fits the measured 4.95 m airborne reach at 9 m/s. The beam fits only the short capsule. The chute exceeds the 55-degree walk limit. |
 | `tests/bot_obstacles.gd` | Running off each lip without jumping returns the runner to its checkpoint. A standing runner pressing forward and trying a jump stays at the near face of the beam. R resets the clock and sends the runner back to the start. |
 | `tests/bot_ladder_retry_regular.gd` | A regular hand holds forward, runs into the beam, uses C to return to the landing checkpoint, passes under the beam in slide mode and finishes. |
+| `tests/bot_ladder_retry_newcomer.gd` | The same inputs and win conditions through the newcomer hand. A finish counts only when the bot also observes the block, checkpoint return and slide under the beam. |
 
 Run the pack checks from the repository root.
 
 ```sh
 bash engine/tools/tl.sh lint --pack=engine/packs/parkour
 bash engine/tools/tl.sh bot --pack=engine/packs/parkour --test=tests/bot_course.gd --seed=1
-node devx/bin/tl.mjs ladder --pack engine/packs/parkour --cells retry_regular --seeds 20
+node devx/bin/tl.mjs ladder --pack engine/packs/parkour --cells retry_regular,retry_newcomer --seeds 20
 node devx/bin/tl.mjs check --tier full --only packs
 bash engine/tools/selftest.sh walk.biped_parity
 ```

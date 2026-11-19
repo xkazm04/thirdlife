@@ -1,0 +1,536 @@
+[
+  {
+    "exit": 0,
+    "report": {
+      "schema": "tl.verify/1",
+      "verb": "bot",
+      "level": "V4",
+      "pack": "game.parkour",
+      "packVersion": "0.1.0",
+      "kernelApi": "1.8",
+      "ok": true,
+      "outcome": "passed",
+      "seed": 1,
+      "frames": 340,
+      "durationMs": 2220,
+      "checks": [
+        {
+          "id": "smoke.loads",
+          "ok": true,
+          "detail": "pack loaded"
+        },
+        {
+          "id": "smoke.no_script_errors",
+          "ok": true,
+          "detail": "0 errors in 340 frames"
+        },
+        {
+          "id": "smoke.no_engine_errors",
+          "ok": true,
+          "detail": "0 engine errors"
+        },
+        {
+          "id": "smoke.watchdog",
+          "ok": true,
+          "detail": "no trip in 340 frames"
+        },
+        {
+          "id": "bot.completed",
+          "ok": true,
+          "detail": "done at frame 340"
+        },
+        {
+          "id": "bot.ok",
+          "ok": true,
+          "detail": "perfect hand, 338 frames (5.633 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0"
+        }
+      ],
+      "metrics": {
+        "state_hash": "f0f8e8446029a0982a928ebdfa72fced792afa9344422bc8c0ab874dc6c373ce",
+        "frame_ms_p50": 0.446,
+        "frame_ms_p99": 0.8,
+        "entities_max": 260,
+        "bodies_max": 48,
+        "tick_ms_max": 0.295
+      },
+      "errors": [],
+      "bot": {
+        "test": "tests/bot_course.gd",
+        "done": true,
+        "frames": 340,
+        "result": {
+          "ok": true,
+          "summary": "perfect hand, 338 frames (5.633 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0",
+          "jump_frame": 76,
+          "under_bar_frame": 230,
+          "chute_frame": 288,
+          "finish_frames": 338
+        }
+      }
+    }
+  },
+  {
+    "exit": 0,
+    "report": {
+      "schema": "tl.verify/1",
+      "verb": "bot",
+      "level": "V4",
+      "pack": "game.parkour",
+      "packVersion": "0.1.0",
+      "kernelApi": "1.8",
+      "ok": true,
+      "outcome": "passed",
+      "seed": 1,
+      "frames": 1,
+      "durationMs": 2153,
+      "checks": [
+        {
+          "id": "smoke.loads",
+          "ok": true,
+          "detail": "pack loaded"
+        },
+        {
+          "id": "smoke.no_script_errors",
+          "ok": true,
+          "detail": "0 errors in 1 frames"
+        },
+        {
+          "id": "smoke.no_engine_errors",
+          "ok": true,
+          "detail": "0 engine errors"
+        },
+        {
+          "id": "smoke.watchdog",
+          "ok": true,
+          "detail": "no trip in 1 frames"
+        },
+        {
+          "id": "bot.completed",
+          "ok": true,
+          "detail": "done at frame 1"
+        },
+        {
+          "id": "bot.ok",
+          "ok": true,
+          "detail": "gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg"
+        }
+      ],
+      "metrics": {
+        "state_hash": "2825737d679b7fa18989b9159436fcffddc326726f7c0179017f74c7773c1a9e",
+        "frame_ms_p50": 0,
+        "frame_ms_p99": 0,
+        "entities_max": 260,
+        "bodies_max": 48,
+        "tick_ms_max": 0.05
+      },
+      "errors": [],
+      "bot": {
+        "test": "tests/bot_geometry.gd",
+        "done": true,
+        "frames": 1,
+        "result": {
+          "ok": true,
+          "summary": "gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg"
+        }
+      }
+    }
+  },
+  {
+    "exit": 0,
+    "report": {
+      "schema": "tl.verify/1",
+      "verb": "bot",
+      "level": "V4",
+      "pack": "game.parkour",
+      "packVersion": "0.1.0",
+      "kernelApi": "1.8",
+      "ok": true,
+      "outcome": "passed",
+      "seed": 1,
+      "frames": 415,
+      "durationMs": 2128,
+      "checks": [
+        {
+          "id": "smoke.loads",
+          "ok": true,
+          "detail": "pack loaded"
+        },
+        {
+          "id": "smoke.no_script_errors",
+          "ok": true,
+          "detail": "0 errors in 415 frames"
+        },
+        {
+          "id": "smoke.no_engine_errors",
+          "ok": true,
+          "detail": "0 engine errors"
+        },
+        {
+          "id": "smoke.watchdog",
+          "ok": true,
+          "detail": "no trip in 415 frames"
+        },
+        {
+          "id": "bot.completed",
+          "ok": true,
+          "detail": "done at frame 415"
+        },
+        {
+          "id": "bot.ok",
+          "ok": true,
+          "detail": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 413 ticks"
+        }
+      ],
+      "metrics": {
+        "state_hash": "e6a3c7732bca3f6605daa5ee203c39e1a3a2cc9064adc518452e6e5b580818b8",
+        "frame_ms_p50": 0.429,
+        "frame_ms_p99": 0.769,
+        "entities_max": 260,
+        "bodies_max": 48,
+        "tick_ms_max": 0.064
+      },
+      "errors": [],
+      "bot": {
+        "test": "tests/bot_ladder_retry_newcomer.gd",
+        "done": true,
+        "frames": 415,
+        "result": {
+          "ok": true,
+          "won": true,
+          "frames": 413,
+          "taps_lost": 0,
+          "summary": "newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 413 ticks"
+        }
+      }
+    }
+  },
+  {
+    "exit": 0,
+    "report": {
+      "schema": "tl.verify/1",
+      "verb": "bot",
+      "level": "V4",
+      "pack": "game.parkour",
+      "packVersion": "0.1.0",
+      "kernelApi": "1.8",
+      "ok": true,
+      "outcome": "passed",
+      "seed": 1,
+      "frames": 396,
+      "durationMs": 2421,
+      "checks": [
+        {
+          "id": "smoke.loads",
+          "ok": true,
+          "detail": "pack loaded"
+        },
+        {
+          "id": "smoke.no_script_errors",
+          "ok": true,
+          "detail": "0 errors in 396 frames"
+        },
+        {
+          "id": "smoke.no_engine_errors",
+          "ok": true,
+          "detail": "0 engine errors"
+        },
+        {
+          "id": "smoke.watchdog",
+          "ok": true,
+          "detail": "no trip in 396 frames"
+        },
+        {
+          "id": "bot.completed",
+          "ok": true,
+          "detail": "done at frame 396"
+        },
+        {
+          "id": "bot.ok",
+          "ok": true,
+          "detail": "regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 394 ticks"
+        }
+      ],
+      "metrics": {
+        "state_hash": "a3b32cc8854f21a83bedc1bf81c8e9ad23e515f84ac89c18b97602ba88d22b13",
+        "frame_ms_p50": 0.427,
+        "frame_ms_p99": 0.942,
+        "entities_max": 260,
+        "bodies_max": 48,
+        "tick_ms_max": 0.097
+      },
+      "errors": [],
+      "bot": {
+        "test": "tests/bot_ladder_retry_regular.gd",
+        "done": true,
+        "frames": 396,
+        "result": {
+          "ok": true,
+          "won": true,
+          "frames": 394,
+          "taps_lost": 0,
+          "summary": "regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 394 ticks"
+        }
+      }
+    }
+  },
+  {
+    "exit": 0,
+    "report": {
+      "schema": "tl.verify/1",
+      "verb": "bot",
+      "level": "V4",
+      "pack": "game.parkour",
+      "packVersion": "0.1.0",
+      "kernelApi": "1.8",
+      "ok": true,
+      "outcome": "passed",
+      "seed": 1,
+      "frames": 455,
+      "durationMs": 2646,
+      "checks": [
+        {
+          "id": "smoke.loads",
+          "ok": true,
+          "detail": "pack loaded"
+        },
+        {
+          "id": "smoke.no_script_errors",
+          "ok": true,
+          "detail": "0 errors in 455 frames"
+        },
+        {
+          "id": "smoke.no_engine_errors",
+          "ok": true,
+          "detail": "0 engine errors"
+        },
+        {
+          "id": "smoke.watchdog",
+          "ok": true,
+          "detail": "no trip in 455 frames"
+        },
+        {
+          "id": "bot.completed",
+          "ok": true,
+          "detail": "done at frame 455"
+        },
+        {
+          "id": "bot.ok",
+          "ok": true,
+          "detail": "missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and time 1"
+        }
+      ],
+      "metrics": {
+        "state_hash": "74ac17ed0bf5e3c3a8bd9f1e6ac385739e9001ebb692ccd9b3f872021ba8cda9",
+        "frame_ms_p50": 0.46,
+        "frame_ms_p99": 0.823,
+        "entities_max": 260,
+        "bodies_max": 48,
+        "tick_ms_max": 0.086
+      },
+      "errors": [],
+      "bot": {
+        "test": "tests/bot_obstacles.gd",
+        "done": true,
+        "frames": 455,
+        "result": {
+          "ok": true,
+          "summary": "missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and time 1"
+        }
+      }
+    }
+  },
+  {
+    "exit": 0,
+    "report": {
+      "schema": "tl.verify/1",
+      "verb": "invariants",
+      "level": "V3",
+      "pack": "game.parkour",
+      "packVersion": "0.1.0",
+      "kernelApi": "1.8",
+      "ok": true,
+      "outcome": "passed",
+      "seed": 1,
+      "frames": 3600,
+      "durationMs": 11154,
+      "checks": [
+        {
+          "id": "smoke.loads",
+          "ok": true,
+          "detail": "pack loaded"
+        },
+        {
+          "id": "smoke.no_script_errors",
+          "ok": true,
+          "detail": "0 errors in 3600 frames"
+        },
+        {
+          "id": "smoke.no_engine_errors",
+          "ok": true,
+          "detail": "0 engine errors"
+        },
+        {
+          "id": "smoke.watchdog",
+          "ok": true,
+          "detail": "no trip in 3600 frames"
+        },
+        {
+          "id": "invariants.determinism",
+          "ok": true,
+          "detail": "two runs, seed 1, 3600 frames: 63ac6e5310f0daff"
+        },
+        {
+          "id": "invariants.below_ground",
+          "ok": true,
+          "detail": "no physics body below y = -50"
+        },
+        {
+          "id": "invariants.frame_budget",
+          "ok": true,
+          "detail": "frame p99 0.692 ms (stage budget 4 ms; scripts + physics step, headless, each frame's best of 2 runs)"
+        },
+        {
+          "id": "invariants.many_budget",
+          "ok": true,
+          "detail": "frame p50 0.376 ms (budget 1.0 ms for one of many; target 0.5 ms)"
+        },
+        {
+          "id": "invariants.entity_budget",
+          "ok": true,
+          "detail": "260 nodes (budget 5000), 48 physics bodies (budget 600)"
+        },
+        {
+          "id": "invariants.bot_deterministic",
+          "ok": true,
+          "detail": "bot tests/bot_course.gd twice, seed 1: f0f8e8446029a098 after 340 frames"
+        }
+      ],
+      "metrics": {
+        "state_hash": "63ac6e5310f0daff3b4950e5cdc65751e37c9997da2796205d45cbb28f75caa0",
+        "frame_ms_p50": 0.376,
+        "frame_ms_p99": 0.692,
+        "entities_max": 260,
+        "bodies_max": 48,
+        "bot_state_hash": "f0f8e8446029a0982a928ebdfa72fced792afa9344422bc8c0ab874dc6c373ce",
+        "bot_frames": 340
+      },
+      "errors": []
+    }
+  },
+  {
+    "exit": 0,
+    "report": {
+      "schema": "tl.verify/1",
+      "verb": "lint",
+      "level": "V1",
+      "pack": "game.parkour",
+      "packVersion": "0.1.0",
+      "kernelApi": "1.8",
+      "ok": true,
+      "outcome": "passed",
+      "durationMs": 14,
+      "checks": [
+        {
+          "id": "lint.schema",
+          "ok": true,
+          "detail": "manifest matches tl.pack/0.1"
+        },
+        {
+          "id": "lint.layout",
+          "ok": true,
+          "detail": "7 scripts, 2 data files"
+        },
+        {
+          "id": "lint.fence",
+          "ok": true,
+          "detail": "no fenced pattern in 7 scripts"
+        },
+        {
+          "id": "lint.capabilities",
+          "ok": true,
+          "detail": "every kernel capability used is declared"
+        },
+        {
+          "id": "lint.size",
+          "ok": true,
+          "detail": "472 lines of GDScript, 1357 bytes of data"
+        }
+      ],
+      "errors": [],
+      "composability": {
+        "gdscript_lines": {
+          "scripts": 197,
+          "gen": 0,
+          "tests": 195
+        },
+        "kit_parts_added": 0,
+        "bypasses": [],
+        "kit_parts_used": 9,
+        "kit_kinds_used": [
+          "barricade",
+          "cabin",
+          "crane",
+          "lumber",
+          "pallet",
+          "tree",
+          "tyre_stack"
+        ],
+        "kit_build_calls": 1,
+        "world_coordinates": 2,
+        "world_coordinates_by": {
+          "global_position": 0,
+          "global_transform": 0,
+          "to_global": 2,
+          "look_at": 0
+        }
+      }
+    }
+  },
+  {
+    "exit": 0,
+    "report": {
+      "schema": "tl.verify/1",
+      "verb": "smoke",
+      "level": "V2",
+      "pack": "game.parkour",
+      "packVersion": "0.1.0",
+      "kernelApi": "1.8",
+      "ok": true,
+      "outcome": "passed",
+      "seed": 1,
+      "frames": 3600,
+      "durationMs": 3427,
+      "checks": [
+        {
+          "id": "smoke.loads",
+          "ok": true,
+          "detail": "pack loaded"
+        },
+        {
+          "id": "smoke.no_script_errors",
+          "ok": true,
+          "detail": "0 errors in 3600 frames"
+        },
+        {
+          "id": "smoke.no_engine_errors",
+          "ok": true,
+          "detail": "0 engine errors"
+        },
+        {
+          "id": "smoke.watchdog",
+          "ok": true,
+          "detail": "no trip in 3600 frames"
+        }
+      ],
+      "metrics": {
+        "state_hash": "63ac6e5310f0daff3b4950e5cdc65751e37c9997da2796205d45cbb28f75caa0",
+        "frame_ms_p50": 0.395,
+        "frame_ms_p99": 0.771,
+        "entities_max": 260,
+        "bodies_max": 48,
+        "tick_ms_max": 0.206
+      },
+      "errors": []
+    }
+  }
+]

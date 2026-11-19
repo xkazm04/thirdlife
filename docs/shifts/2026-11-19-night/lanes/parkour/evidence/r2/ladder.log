@@ -1,0 +1,4 @@
+level      hand      wins          win % (95 %)   goals for:against  frames  period 2  passes reached  down %  draws  taps lost  his shots
+retry      newcomer   19 of 20     95 (85..100)       0.00 : 0.00           467    0/20   0/0          0      20     7          0
+PASS  ladder:retry_newcomer              0 ms  [20/20] 19 of 20 won (95 %, 85..100) through the newcomer hand
+{"schema":"tl.devx/1","cmd":"ladder","ok":true,"exit":0,"steps":[{"id":"ladder:retry_newcomer","ok":true,"ms":0,"found":20,"completed":20,"detail":"19 of 20 won (95 %, 85..100) through the newcomer hand"}],"pack":"engine/packs/parkour","seeds":20,"cells_found":1,"cells_completed":1,"ms":50198,"cells":[{"cell":"retry_newcomer","level":"retry","hand":"newcomer","found":20,"completed":20,"wins":19,"pct":95,"lo":85,"hi":100,"gf":0,"ga":0,"frames":467,"draws":20,"taps_lost":7,"shots":0,"period2":0,"passes":0,"reached":0,"down_pct":0}]}
