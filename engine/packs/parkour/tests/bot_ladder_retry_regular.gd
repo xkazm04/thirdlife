@@ -39,7 +39,8 @@ func _bot_tick(frame: int) -> void:
 	if not force_retry and not blocked and state.checkpoint == 2 and state.motion == "ground" and frame - last_slide > 30:
 		hand.tap(&"slide")
 		last_slide = frame
-	if respawned and at > state.bar - 3.6 and at < state.bar and frame - last_slide > 20:
+	# Build speed after the C retry so the slide is still active inside the beam.
+	if respawned and at > state.bar - 3.0 and at < state.bar and frame - last_slide > 20:
 		hand.tap(&"slide")
 		last_slide = frame
 	if (respawned or not force_retry) and state.motion == "slide" and at >= state.bar and at <= state.bar + state.bar_depth:
@@ -54,5 +55,6 @@ func _bot_done() -> bool:
 func _bot_result() -> Dictionary:
 	var won: bool = state.get("reason") == "laps" and slid_under and (not force_retry or (blocked and respawned))
 	return {"ok": won, "won": won, "frames": state.total_frames, "taps_lost": hand.stats().taps_lost,
+		"falls": state.falls, "swing_hits": state.swing_hits, "slid_under": slid_under,
 		"summary": "%s hand: blocked %s, checkpoint retry %s (%.2f m to beam), slid under %s, %s in %d ticks" % [
 			hand_profile, blocked, respawned, retry_distance, slid_under, state.reason, state.total_frames] + "; " + _where()}

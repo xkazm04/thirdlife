@@ -10,6 +10,8 @@ var wait_ticks := 0
 var through := false
 var last_falls := 0
 var last_side_tap := -100
+var side_action: StringName = &""
+var side_press_seen := false
 var last_z := 0.0
 
 
@@ -24,6 +26,7 @@ func _return_inputs(frame: int) -> void:
 	if state.falls != last_falls:
 		through = false
 		last_falls = state.falls
+		last_z = state.return_z
 	if not marks.has(gate):
 		marks[gate] = frame
 	hand.press(&"run", 1.0 if gate < 10 else 0.0)
@@ -79,9 +82,19 @@ func _aim_return(frame: int) -> void:
 	var target := float(state.pad_z[0]) - 0.55 if t < state.pad_one - 1.0 else 0.0
 	var dz := z - last_z
 	last_z = z
+	# Finish one key stroke before requesting another. A missed tap may never reach the input.
+	if side_action != &"":
+		if ctx.input.pressed(side_action):
+			side_press_seen = true
+			return
+		if not side_press_seen and frame - last_side_tap < 45:
+			return
+		side_action = &""
 	var error := target - (z + 12.0 * dz)
 	if absf(error) > 0.28 and frame - last_side_tap >= 16:
-		hand.tap(&"right" if error > 0 else &"left", 9)
+		side_action = &"right" if error > 0 else &"left"
+		side_press_seen = false
+		hand.tap(side_action, 9)
 		last_side_tap = frame
 
 

@@ -1,0 +1,23 @@
+extends "bot_ladder_course_newcomer.gd"
+## Operator probe: the newcomer course bot; for each fall, where he was on the tick before it.
+var log_lines: Array[String] = []
+var last_f := 0
+var prev := {}
+var hist := []
+
+
+func _bot_tick(frame: int) -> void:
+	super(frame)
+	if state.has("falls"):
+		hist.push_back("x%.2f z%.2f y%.2f %s v%.1f" % [float(state.return_x), float(state.return_z), float(state.height), state.motion, float(state.speed)])
+		if hist.size() > 25:
+			hist.pop_front()
+		if int(state.falls) != last_f:
+			last_f = int(state.falls)
+			log_lines.append("f%d cp%d hits%d before[%s ; %s ; %s]" % [frame, int(state.checkpoint), int(state.swing_hits), hist[0], hist[12], hist[hist.size() - 2]])
+
+
+func _bot_result() -> Dictionary:
+	var r := super()
+	r["summary"] = "falls %d hits %d | %s | " % [int(state.falls), int(state.swing_hits), "\n".join(log_lines.slice(0, 12))] + str(r.summary)
+	return r

@@ -1,0 +1,5 @@
+[[30, "mark", "start", 0], [60, "key", "E", 1], [65, "key", "E", 0], [150, "mark", "entered", 0],
+ [160, "key", "F", 1], [165, "key", "F", 0], [170, "key", "Space", 1], [172, "key", "Shift", 1], [172, "key", "W", 1],
+ [260, "key", "F", 1], [265, "key", "F", 0], [300, "mark", "flying_try", 0], [420, "mark", "flying_try2", 0],
+ [430, "key", "Space", 0], [430, "key", "Shift", 0], [430, "key", "W", 0], [450, "key", "Escape", 1], [455, "key", "Escape", 0],
+ [500, "mark", "left", 0], [520, "key", "F", 1], [525, "key", "F", 0], [530, "key", "Space", 1], [600, "mark", "village_fly", 0], [610, "key", "Space", 0]]

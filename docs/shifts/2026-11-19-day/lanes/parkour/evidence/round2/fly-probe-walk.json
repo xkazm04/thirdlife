@@ -1,0 +1,4 @@
+{"schema": "tl.walk/1", "name": "parkour_fly_probe", "visitor": true, "ticks": 700, "mode": "bot",
+ "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+ "plots": [{"id": "parkour", "pack": "res://packs/parkour", "origin": [0, 0, 0], "radius": 30, "footprint": {"size_m": [50, 28]}, "seed": 1}],
+ "player": [[0, [0, 0, 0]]]}

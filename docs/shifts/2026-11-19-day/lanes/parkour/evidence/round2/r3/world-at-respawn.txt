@@ -1,0 +1,4 @@
+pack | mode | own ticks | hash in the world | runner alone (tl.sh bot), same ticks | verdict
+game.parkour | bot | 601 | e287ab6a7637f6ec | e287ab6a7637f6ec (601 frames) | same
+seed.paddle | bot | 601 | fead2275e2cb4eea | fead2275e2cb4eea (601 frames) | same
+PASS world.alone: every pack hashes in the world as the runner hashes it alone

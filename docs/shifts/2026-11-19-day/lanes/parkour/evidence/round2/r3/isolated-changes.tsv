@@ -1,0 +1,30 @@
+level-seed	one shared policy per hand	ladder_win	race_frames	falls	swing_hits	falls_by_checkpoint
+course-1	baseline	True	1777	16	0	{'6': 1, '7': 15}
+course-1	beam input guard only	True	1777	16	0	{'6': 1, '7': 15}
+course-1	steering policy only	True	1248	6	1	{'6': 1, '7': 1, '8': 3, '9': 1}
+course-1	all three changes	True	1265	7	2	{'6': 1, '7': 1, '8': 3, '9': 2}
+course-8	baseline	False	3600	68	6	{'1': 2, '7': 2, '8': 64}
+course-8	beam input guard only	True	1661	12	1	{'1': 2, '7': 2, '8': 8}
+course-8	steering policy only	True	2583	18	2	{'1': 2, '5': 10, '6': 1, '7': 1, '8': 2, '9': 2}
+course-8	all three changes	True	2152	14	0	{'1': 2, '5': 2, '6': 1, '7': 3, '9': 6}
+course-14	baseline	False	3600	51	6	{'6': 19, '8': 32}
+course-14	beam input guard only	True	2677	22	3	{'6': 19, '8': 3}
+course-14	steering policy only	True	1175	3	0	{'5': 2, '9': 1}
+course-14	all three changes	True	1386	6	1	{'5': 2, '7': 3, '8': 1}
+course-16	baseline	False	3600	57	6	{'1': 1, '6': 9, '7': 2, '8': 45}
+course-16	beam input guard only	True	2686	25	5	{'1': 1, '6': 9, '7': 2, '8': 10, '9': 3}
+course-16	steering policy only	True	1402	6	0	{'1': 1, '5': 4, '9': 1}
+course-16	all three changes	True	1550	8	0	{'1': 1, '5': 6, '9': 1}
+retry-4	baseline	False	3600	66	9	{'0': 3, '6': 1, '7': 2, '8': 60}
+retry-4	beam input guard only	True	1552	8	0	{'0': 3, '6': 1, '7': 2, '8': 2}
+retry-4	steering policy only	True	1637	9	1	{'0': 3, '5': 2, '8': 1, '9': 3}
+retry-4	all three changes	True	1963	13	1	{'0': 3, '5': 9, '9': 1}
+retry-12	baseline	False	1630	12	3	{'1': 1, '7': 1, '8': 10}
+retry-12	beam input guard only	False	1590	7	1	{'1': 1, '7': 1, '8': 3, '9': 2}
+retry-12	steering policy only	False	1098	3	0	{'1': 1, '6': 2}
+retry-12	all three changes	True	1267	4	0	{'1': 1, '6': 1, '7': 1, '9': 1}
+retry-14	baseline	False	3600	63	4	{'5': 3, '7': 9, '8': 49, '9': 2}
+retry-14	beam input guard only	True	2412	24	3	{'5': 3, '7': 9, '8': 11, '9': 1}
+retry-14	steering policy only	True	1232	4	0	{'5': 2, '6': 1, '7': 1}
+retry-14	all three changes	True	1637	8	0	{'5': 6, '6': 1, '7': 1}
+retry-12	retry slide cue only	True	1659	9	0	{'1': 1, '5': 4, '8': 4}
