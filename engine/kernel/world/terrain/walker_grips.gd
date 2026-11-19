@@ -12,12 +12,7 @@ const BAR_L := 1.1
 const BAR_HOP := 2.0
 const DAMPING := 0.23105  # 2 ln(2) / 6 per second
 const PUMP := 5.0         # maximum angular acceleration from input (rad/s²)
-const LIMIT := 100.0 * PI / 180.0  # a hard stop left as a guard only: the soft end below keeps the swing under it
-## Lane flight round 3: a soft end to a hard swing. Pumping adds no energy once the swing's energy would carry it past
-## SOFT_AMP, and energy above that (a fast entry) is bled off by BRAKE (1/s, ramped in over the first quarter of the
-## excess), so the swing peaks smoothly near SOFT_AMP and never meets LIMIT (measured: moves.swing_soft).
-const SOFT_AMP := 85.0 * PI / 180.0
-const BRAKE := 6.0
+const LIMIT := 100.0 * PI / 180.0
 const CLEARANCE := 0.004
 
 var ledges := false
@@ -54,22 +49,12 @@ func _ray(sp: Variant, a: Vector3, b: Vector3) -> Dictionary:
 	q.exclude = [sp.body]
 	return PhysicsServer3D.space_get_direct_state(sp.space).intersect_ray(q)
 
-## Round 3 (the parkour lane's 3.05 m ledge): far from the origin a capsule put 1 mm over a floor reads a contact a few
-## 1e-7 m deep (float noise), which refused the catch. A contact no deeper than FIT_TOL is standing ON it, not in it.
-const FIT_TOL := 0.0001
-
 func _fits(sp: Variant, pos: Vector3) -> bool:
 	var fit := PhysicsTestMotionParameters3D.new()
 	fit.from.origin = pos
 	fit.margin = 0.001
 	fit.recovery_as_collision = true
-	var res := PhysicsTestMotionResult3D.new()
-	if not PhysicsServer3D.body_test_motion(sp.body, fit, res):
-		return true
-	for i in res.get_collision_count():
-		if res.get_collision_depth(i) > FIT_TOL:
-			return false
-	return true
+	return not PhysicsServer3D.body_test_motion(sp.body, fit)
 
 func _clear(sp: Variant, pos: Vector3, to: Vector3) -> bool:
 	return _fits(sp, to) and not sp._test(Transform3D(Basis.IDENTITY, pos), to - pos, 0.001)
@@ -220,12 +205,7 @@ func drive(body: Variant, pos: Vector3, wish: Vector3, jump: bool, slide: bool, 
 			else:
 				var side := bar_axis.cross(Vector3.DOWN)
 				var pump := clampf(wish.dot(side) / body.WALK_MPS, -1, 1)
-				var energy: float = omega * omega * 0.5 + body.GRAVITY / BAR_L * (1.0 - cos(theta))
-				var cap: float = body.GRAVITY / BAR_L * (1.0 - cos(SOFT_AMP))
-				if energy >= cap and pump * omega > 0.0:
-					pump = 0.0                               # no more energy from pumping
-				var brake: float = BRAKE * minf(1.0, (energy - cap) / cap * 4.0) * omega if energy > cap else 0.0
-				omega += (PUMP * pump - body.GRAVITY / BAR_L * sin(theta) * side.length() - DAMPING * omega - brake) / 60.0
+				omega += (PUMP * pump - body.GRAVITY / BAR_L * sin(theta) * side.length() - DAMPING * omega) / 60.0
 				var angle := clampf(theta + omega / 60.0, -LIMIT, LIMIT)
 				var next := bar_point + Vector3.DOWN.rotated(bar_axis, angle) * BAR_HANDS_H
 				if not _clear(body.sp, pos, next):

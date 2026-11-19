@@ -19,15 +19,12 @@ var phase: String = "run_wall"
 var _phase_t: int = 0
 var _quit: int = 1400
 var _turned: float = 0.0
-var _behind: bool = false                        # --behind: the camera stays behind him on the bar (round 3)
 
 
 func _ready() -> void:
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--quit="):
 			_quit = int(a.trim_prefix("--quit="))
-		if a == "--behind":
-			_behind = true
 	TLStyle.install(self, {})
 	land = Node3D.new()
 	add_child(land)
@@ -107,7 +104,7 @@ func _physics_process(_d: float) -> void:
 			if v.mode == "bar":
 				_go("swing")
 		"swing":                                      # pump with the swing, then let go at a forward peak
-			if _phase_t <= 45 and not _behind:         # the view turns 80 deg to watch the swing from the side
+			if _phase_t <= 45:                         # the view turns 80 deg to watch the swing from the side
 				v.turn(deg_to_rad(80.0) / 45.0, 0.0, deg_to_rad(-10.0), deg_to_rad(60.0))
 			var face: Vector3 = Vector3(-sin(v.face_yaw), 0.0, -cos(v.face_yaw))
 			if _phase_t < 170:

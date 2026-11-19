@@ -204,7 +204,7 @@ func _start(st: PhysicsDirectSpaceState3D) -> void:
 		_ray = PhysicsRayQueryParameters3D.new()
 	_point.collision_mask = avoid_mask
 	_point.position = _look_local
-	var ex: Array[RID] = _bar_rids()
+	var ex: Array[RID] = []
 	for h: Dictionary in st.intersect_point(_point, 8):
 		ex.append(h["rid"] as RID)
 	_query.collision_mask = avoid_mask
@@ -238,21 +238,6 @@ func _cast(st: PhysicsDirectSpaceState3D, d: Vector3, want_len: float) -> float:
 	return want_len * (r[0] if r.size() > 0 else 1.0)
 
 
-## 1.10 (lane flight round 3): a marked bar (TLBiped.mark_bar: the group `tl_bar`) is thin and is swung on: the camera
-## never avoids it (no lift when he walks under one, no cut when it passes the arm during a swing). The bars in
-## `avoid_space`; a subclass adds bars it knows of another way (crown_camera.gd: the world space's copied bars).
-func _bar_rids() -> Array[RID]:
-	var out: Array[RID] = []
-	if not is_inside_tree():
-		return out
-	for n: Node in get_tree().get_nodes_in_group(&"tl_bar"):
-		if n is CollisionObject3D:
-			var rid: RID = (n as CollisionObject3D).get_rid()
-			if PhysicsServer3D.body_get_space(rid) == avoid_space:
-				out.append(rid)
-	return out
-
-
 ## Q32: a move from `was` that passes through something in the space would be drawn (interpolated) inside it: a cut.
 func _cut_if_blocked(was: Vector3) -> void:
 	if not avoid_space.is_valid() or _ray == null:
@@ -263,7 +248,7 @@ func _cut_if_blocked(was: Vector3) -> void:
 	var inv: Transform3D = _frame().affine_inverse()
 	_ray.from = inv * was
 	_ray.to = inv * global_position
-	_ray.exclude = _bar_rids()
+	_ray.exclude = []
 	if _ray.from.distance_to(_ray.to) > 0.001 and not st.intersect_ray(_ray).is_empty():
 		reset_physics_interpolation()
 

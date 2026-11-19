@@ -135,8 +135,6 @@ func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary 
 	var chase := preload("res://kernel/world/terrain/crown_camera.gd").new()
 	if space != null and space.get("drawn_crowns") is Dictionary:
 		chase.crowns = space.get("drawn_crowns")
-	if space != null and space.get("copied_bars") is Dictionary:
-		chase.bars = space.get("copied_bars")         # round 3: the camera leaves bars out of its avoidance
 	cam = chase
 	cam.name = "VisitorCam"
 	get_parent().add_child(cam)
