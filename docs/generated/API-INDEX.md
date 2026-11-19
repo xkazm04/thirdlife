@@ -240,10 +240,13 @@ Properties: `font_size: int`
 - `func add_label(id: StringName, text: String, anchor: StringName = &"top_left") -> void`
 - `func add_score(rules: TLRules, side: String, anchor: StringName = &"top_left", caption: String = "") -> void`
 - `func add_speed(source: Callable, unit: String = "km/h", anchor: StringName = &"bottom_right") -> void`
+- `func configure_widgets(catalog: Variant, layout: Variant) -> bool`
 - `static func create() -> TLHud`
 - `static func hide_all(of_pack: TLContext = null) -> void`
 - `func set_align(id: StringName, align: StringName) -> void`
+- `func set_phase(phase: StringName) -> void`
 - `func set_plate(id: StringName, on: bool = true) -> void`
+- `func set_readout(id: StringName, reading: Dictionary) -> void`
 - `func set_text(id: StringName, text: String) -> void`
 - `func text_of(id: StringName) -> String`
 

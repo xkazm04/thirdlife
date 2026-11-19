@@ -316,8 +316,11 @@ Walk and skate packs keep their original controller by default.
 
 ### Flight (addition in 1.9)
 
-Walker-feel bipeds can call `fly(true)` to take off and `fly(false)` to end flight and fall (a pack biped gets the
-flight, not the village walker's wings: those are a kernel part of the visitor, `kernel/world/flight_wings.gd`).
+Walker-feel bipeds can call `fly(true)` to take off and `fly(false)` to end flight and fall. Since the evening of 19 Nov
+a walker-feel biped with a back socket summons the visitor's wings on take-off (`kernel/world/flight_wings.gd`, drawn in
+36 ticks, no take-off delay); landing folds and dismisses them, and ending flight in the air dismisses them during the
+fall. Presentation only. A walker-feel biped is built without the rig's backpack unless the pack sets
+`rig_params.backpack`.
 After the physics step, `is_flying()` reports flight and `walker_motion()` returns `fly` while airborne under power.
 Call `move(direction)` to cruise and `climb(v)` each tick for vertical intent from -1 to 1.
 The `fly_scale` option defaults to 5.0 times run speed. Flight eases into turns and glides to a hover on release.
