@@ -22,6 +22,43 @@ func _bot_tick(_frame: int) -> void:
 			s.clearance, TLBiped.WALKER_SLIDE_HEIGHT, TLBiped.WALKER_HEIGHT])
 	if s.chute_degrees <= 55 or s.chute_degrees >= 90:
 		notes.append("chute %.1f degrees must be steeper than 55 and below vertical" % s.chute_degrees)
+	# Project the two rotated rectangular decks onto the direction of travel.
+	var projected := float(s.pad_length) * cos(deg_to_rad(s.pad_yaw)) + float(s.pad_width) * sin(deg_to_rad(s.pad_yaw))
+	var half_z := (float(s.pad_width) * cos(deg_to_rad(s.pad_yaw)) + float(s.pad_length) * sin(deg_to_rad(s.pad_yaw))) / 2
+	var dz := maxf(0.0, maxf(s.pad_z[0] - half_z - s.corner_far_z, s.corner_near_z - (s.pad_z[0] + half_z)))
+	var corner_gap := Vector2(maxf(0.0, s.pad_one - projected / 2 - s.corner_end), dz).length()
+	if corner_gap > reach:
+		notes.append("offset first pad is at least %.2f m from the corner, running reach %.2f m" % [corner_gap, reach])
+	var pad_gap := float(s.pad_two) - float(s.pad_one) - projected
+	var beam_gap := float(s.beam_start) - float(s.pad_two) - projected / 2
+	if pad_gap > reach or pad_gap <= 0:
+		notes.append("angled pad gap %.2f m, running reach %.2f m" % [pad_gap, reach])
+	if beam_gap > reach or beam_gap <= 0:
+		notes.append("balance beam entry gap %.2f m, running reach %.2f m" % [beam_gap, reach])
+	# At maximum swing the near corner of the counterweight must clear a standing runner on the centre line.
+	var angle := deg_to_rad(float(s.swing_degrees))
+	var opening := (float(s.swing_arm) - float(s.weight_height) / 2) * sin(angle) - float(s.weight_width) / 2 * cos(angle)
+	var body_radius := 0.35
+	if opening <= body_radius + s.contact_skin:
+		notes.append("swing opens only %.2f m from centre, walker radius 0.35 m" % opening)
+	# Upper bound: even a fully open half-cycle must allow the weight's depth and one capsule diameter to cross.
+	var crossing_ticks := ceili(60 * (float(s.weight_depth) + 2 * (body_radius + float(s.contact_skin))) / float(s.run_mps))
+	if s.swing_period / 2.0 < crossing_ticks:
+		notes.append("swing half-cycle %.1f ticks, crossing needs at least %d ticks" % [s.swing_period / 2.0, crossing_ticks])
+	# The walker rises one metre from a level lip. Integrate the descending branch of its unassisted arc.
+	var crest_rise := float(s.crest_y) - float(s.wall_top)
+	var apex := 6.93 * 6.93 / (2 * 24.0)
+	if crest_rise <= 0 or crest_rise >= apex:
+		notes.append("run-up wall crest rises %.2f m above the lip, walker apex %.2f m" % [crest_rise, apex])
+	else:
+		var raised_reach := float(s.run_mps) * (6.93 + sqrt(6.93 * 6.93 - 48 * crest_rise)) / 24
+		var walking_reach := raised_reach * 4.5 / float(s.run_mps)
+		if s.crest - s.wall_lip <= walking_reach + 0.7:
+			notes.append("run-up gap fits a walk jump including both 0.35 m capsule edges")
+		if s.crest - s.wall_lip > raised_reach:
+			notes.append("run-up gap exceeds raised landing reach %.2f m" % raised_reach)
+	if s.tier_rise <= 0.55 or s.tier_rise >= apex:
+		notes.append("tower terrace rise %.2f m must require a jump and fit the %.2f m apex" % [s.tier_rise, apex])
 	result = {"ok": notes.is_empty(), "summary": "gaps %.2f / %.2f m, reach %.2f m, bar %.2f m, chute %.0f deg%s" % [
 		spans[0], spans[1], reach, s.clearance, s.chute_degrees, "" if notes.is_empty() else " | " + ", ".join(notes)]}
 

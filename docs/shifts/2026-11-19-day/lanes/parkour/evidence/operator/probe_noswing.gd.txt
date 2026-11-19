@@ -1,0 +1,19 @@
+extends "bot_course.gd"
+## Operator probe: the perfect-hand course bot, but it never waits for the swing.
+var gate8 := 0
+
+
+func _init() -> void:
+	through = true
+
+
+func _bot_tick(frame: int) -> void:
+	super(frame)
+	if int(state.checkpoint) == 8:
+		gate8 += 1
+
+
+func _bot_result() -> Dictionary:
+	var r := super()
+	r["summary"] = "falls %d, ticks before the swing checkpoint: %d, state %s %s, frames %d; " % [int(state.falls), gate8, state.state, state.get("reason", ""), int(state.total_frames)] + str(r.get("summary", ""))
+	return r

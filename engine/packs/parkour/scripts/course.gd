@@ -50,11 +50,13 @@ func build(parent: Node3D, data: Dictionary) -> void:
 			lip, DECK_Y, side * (WIDTH / 2 - 0.05))
 		cheek.rotation.z = -angle
 		for station: float in [0.0, checkpoints[0], finish]:
+			if station == finish and side > 0:
+				continue
 			_part("flag", {"height": 3.0, "color": "flag_a" if station == finish else "flag_b"},
 				station, 0.0 if station == finish else DECK_Y, side * (WIDTH / 2 + 0.12))
 		# One short red kerb stood on end forms each jamb.
-		var jamb := _part("kerb", {"length": clearance, "width": BAR_DEPTH, "height": 0.27},
-			bar + BAR_DEPTH / 2, DECK_Y, side * (WIDTH / 2 - 0.2))
+		var jamb := _part("kerb", {"length": maxf(clearance, 1.0), "width": BAR_DEPTH, "height": 0.27},
+			bar + BAR_DEPTH / 2, DECK_Y + minf(clearance - 1.0, 0.0), side * (WIDTH / 2 - 0.2))
 		jamb.basis = Basis(Vector3.UP, PI / 2) * Basis(Vector3.BACK, PI / 2)
 	var beam := _part("kerb", {"length": WIDTH + 0.4, "width": BAR_DEPTH, "height": 0.48},
 		bar + BAR_DEPTH / 2, DECK_Y + clearance, -(WIDTH + 0.4) / 2)

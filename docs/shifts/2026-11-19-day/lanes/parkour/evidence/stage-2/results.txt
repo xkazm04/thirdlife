@@ -1,0 +1,11 @@
+PASS  bot_course seed 1   perfect hand, 674 frames (11.233 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0; splits [338, 336], waited 71 ticks; checkpoint 0, return (24.99, -0.14), height 1.60, marks { 4: 339, 5: 413, 6: 482, 7: 517, 8: 553 }
+PASS  bot_course seed 2   perfect hand, 674 frames (11.233 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0; splits [338, 336], waited 71 ticks; checkpoint 0, return (24.99, -0.14), height 1.60, marks { 4: 339, 5: 413, 6: 482, 7: 517, 8: 553 }
+PASS  bot_geometry seed 1   gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg
+PASS  bot_geometry seed 2   gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg
+PASS  bot_ladder_retry_newcomer seed 1   newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 1340 ticks; checkpoint 0, return (25.08, 0.00), height 1.60, marks { 4: 414, 5: 488, 6: 797, 7: 1016, 8: 1098 }
+PASS  bot_ladder_retry_newcomer seed 2   newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 752 ticks; checkpoint 0, return (25.10, 0.20), height 1.60, marks { 4: 459, 5: 533, 6: 604, 7: 638, 8: 681 }
+PASS  bot_ladder_retry_regular seed 1   regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 680 ticks; checkpoint 0, return (24.99, -0.14), height 1.60, marks { 4: 395, 5: 469, 6: 538, 7: 572, 8: 608 }
+PASS  bot_ladder_retry_regular seed 2   regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 893 ticks; checkpoint 0, return (25.01, 0.00), height 1.60, marks { 4: 394, 5: 468, 6: 539, 7: 776, 8: 819 }
+PASS  bot_obstacles seed 1   missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and time 1
+PASS  bot_obstacles seed 2   missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and time 1
+PASS  lint   lint.schema, lint.layout, lint.fence, lint.capabilities, lint.size

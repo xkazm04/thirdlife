@@ -1,0 +1,13 @@
+probe-noswing-1 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 776; perfect hand, 776 frames (12.933 s), gaps [true, true
+probe-noswing-2 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 776; perfect hand, 776 frames (12.933 s), gaps [true, true
+probe-d104 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 880; perfect hand, 880 frames (14.667 s), gaps [true, true
+probe-d117 falls 0, ticks before the swing checkpoint: 40, state over laps, frames 891; perfect hand, 891 frames (14.850 s), gaps [true, true
+probe-d13 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 789; perfect hand, 789 frames (13.150 s), gaps [true, true
+probe-d130 falls 0, ticks before the swing checkpoint: 59, state over laps, frames 923; perfect hand, 923 frames (15.383 s), gaps [true, true
+probe-d143 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 919; perfect hand, 919 frames (15.317 s), gaps [true, true
+probe-d26 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 802; perfect hand, 802 frames (13.367 s), gaps [true, true
+probe-d39 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 815; perfect hand, 815 frames (13.583 s), gaps [true, true
+probe-d52 falls 0, ticks before the swing checkpoint: 62, state over laps, frames 848; perfect hand, 848 frames (14.133 s), gaps [true, true
+probe-d65 falls 0, ticks before the swing checkpoint: 49, state over laps, frames 848; perfect hand, 848 frames (14.133 s), gaps [true, true
+probe-d78 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 854; perfect hand, 854 frames (14.233 s), gaps [true, true
+probe-d91 falls 0, ticks before the swing checkpoint: 41, state over laps, frames 867; perfect hand, 867 frames (14.450 s), gaps [true, true

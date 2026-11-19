@@ -1,0 +1,11 @@
+PASS  bot_course seed 1   perfect hand, 338 frames (5.633 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0
+PASS  bot_course seed 2   perfect hand, 338 frames (5.633 s), gaps [true, true], chain landed 179 / slid 180, under bar 230, chute 42 ticks / 6.42 m, falls 0
+PASS  bot_geometry seed 1   gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg
+PASS  bot_geometry seed 2   gaps 3.40 / 3.80 m, reach 4.95 m, bar 1.52 m, chute 65 deg
+PASS  bot_ladder_retry_newcomer seed 1   newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 413 ticks
+PASS  bot_ladder_retry_newcomer seed 2   newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 458 ticks
+PASS  bot_ladder_retry_regular seed 1   regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 394 ticks
+PASS  bot_ladder_retry_regular seed 2   regular hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, laps in 393 ticks
+PASS  bot_obstacles seed 1   missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and time 1
+PASS  bot_obstacles seed 2   missed gaps respawned at start / checkpoint: true / true; with run and jump but no slide, furthest 30.08 before bar 30.36 in 85 ticks; R reset station 0.01 and time 1
+PASS  lint   lint.schema, lint.layout, lint.fence, lint.capabilities, lint.size
