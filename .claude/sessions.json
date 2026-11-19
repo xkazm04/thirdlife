@@ -10,33 +10,6 @@
         "docs/shifts/2026-11-19-night/lanes/walker/**"
       ],
       "note": "night 19 Nov lane walker (Opus directing Astra), .claude/worktrees/n19-walker2 (round 2 from 58a80d1), until 06:30"
-    },
-    {
-      "id": "n19-editor",
-      "scope": [
-        "engine/ui/**",
-        "engine/tools/ui.sh",
-        "docs/design/editor/**",
-        "docs/shifts/2026-11-19-night/lanes/editor/**"
-      ],
-      "note": "night 19 Nov lane editor (Opus + Astra mockups), .claude/worktrees/n19-editor3 (round 3 from c9fe14f), until 06:30"
-    },
-    {
-      "id": "n19-hunt2",
-      "scope": [
-        "engine/kernel/api/**",
-        "engine/seeds/**",
-        "engine/boot/**",
-        "devx/lib/commands/ladder.mjs",
-        "devx/test/**",
-        "engine/tools/selftest.d/31*-bugfix-*.sh",
-        "engine/tools/selftest.d/32*-bugfix-*.sh",
-        "engine/tools/selftest.d/33*-bugfix-*.sh",
-        "engine/tools/selftest.d/34*-bugfix-*.sh",
-        "engine/tools/selftest.d/36*-hunt2-*.sh",
-        "docs/shifts/2026-11-19-night/lanes/hunt2/**"
-      ],
-      "note": "night 19 Nov lane hunt2 round 2, .claude/worktrees/n19-hunt2b (from main after the hunt2 merge), until 06:30"
     }
   ]
 }
