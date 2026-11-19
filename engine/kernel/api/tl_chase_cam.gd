@@ -54,6 +54,7 @@ var _ray: PhysicsRayQueryParameters3D = null
 var _look_local: Vector3 = Vector3.ZERO   ## the point looked at in the avoid frame (the parent's coordinates)
 var _cast_r: float = 0.3                  ## the radius cast this tick; under _RAY_R a ray is cast instead
 const _RAY_R: float = 0.02
+var _unit: float = 1.0                    ## hunt2 B11: metres per unit of the avoid frame (the parent's scale), for avoid_margin and avoid_min
 
 
 func setup(target_: Node3D, opts: Dictionary = {}) -> void:
@@ -119,6 +120,8 @@ func _avoid(now: bool) -> void:
 	if st == null:
 		return
 	var fr: Transform3D = _frame()
+	var sc: Vector3 = fr.basis.get_scale()
+	_unit = maxf((absf(sc.x) + absf(sc.y) + absf(sc.z)) / 3.0, 0.0001)   # hunt2 B11: avoid_margin and avoid_min are metres
 	_look_local = fr.affine_inverse() * _look
 	var d: Vector3 = fr.affine_inverse() * global_position - _look_local
 	var want_len: float = d.length()
@@ -131,7 +134,7 @@ func _avoid(now: bool) -> void:
 		axis = -axis
 	var elev: float = rad_to_deg(asin(clampf(d.y / want_len, -1.0, 1.0)))
 	# the lowest swing up that is clear for avoid_min (or the whole wanted way when that is shorter); then down
-	var need: float = minf(avoid_min, want_len)
+	var need: float = minf(avoid_min / _unit, want_len)
 	var want_lift: float = 0.0
 	var best: float = -1.0
 	for ang: float in _swings(elev):
@@ -204,7 +207,7 @@ func _start(st: PhysicsDirectSpaceState3D) -> void:
 	_ray.collision_mask = avoid_mask
 	_ray.exclude = ex
 	_ray.hit_from_inside = false
-	_cast_r = maxf(avoid_margin, _RAY_R)
+	_cast_r = maxf(avoid_margin / _unit, _RAY_R)
 	while _cast_r >= _RAY_R:
 		_sphere.radius = _cast_r
 		if st.intersect_shape(_query, 1).is_empty():

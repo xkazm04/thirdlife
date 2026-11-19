@@ -251,8 +251,7 @@ func _make_walk() -> String:
 	if f == null:
 		_stop("cannot write the walk to %s (error %d)" % [_walk_tmp, FileAccess.get_open_error()], 2)
 		return ""
-	f.store_string(JSON.stringify(walk, "", false) + "\n")
-	f.close()
+	f.store_string(JSON.stringify(walk, "", false) + "\n"); f.close()
 	return _walk_tmp
 
 
@@ -591,9 +590,10 @@ func _check() -> void:
 	print(id_line)
 	DirAccess.make_dir_recursive_absolute(str(opts["out"]).get_base_dir())
 	var f: FileAccess = FileAccess.open(str(opts["out"]) + ".boot.json", FileAccess.WRITE)
-	if f != null:
-		f.store_string(id_line + "\n")
-		f.close()
+	if f == null:                          # hunt2 C9: a report that cannot be written is never a clean exit
+		_stop("check: cannot write %s.boot.json" % str(opts["out"]), 2)
+		return
+	f.store_string(id_line + "\n"); f.close()
 	world = (load(WORLD_SCRIPT) as GDScript).new()
 	world.name = "World"
 	add_child(world)

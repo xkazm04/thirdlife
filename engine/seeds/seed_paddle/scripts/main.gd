@@ -28,9 +28,17 @@ var _hit_by: String = ""              # flag from the ball's contact signal
 var _conceded: String = ""            # flag from a goal trigger
 
 
+## hunt2 C8: the keys tuning.json may hold (see _check_tuning_keys).
+const TUNING_KEYS: Dictionary = {"court": {"half_width": 0, "goal_depth": 0},
+	"ball": {"serve_speed": 0, "speed_step": 0, "max_speed": 0, "max_angle": 0, "serve_spread": 0, "serve_delay_seconds": 0,
+		"dead_ball_speed": 0, "dead_ball_seconds": 0},
+	"paddle": {"mass": 0, "speed": 0, "accel": 0}, "rival": {"speed": 0, "slow_radius": 0}}
+
+
 func _pack_setup(c) -> void:
 	ctx = c
 	tune = ctx.read_json("tuning.json")
+	_check_tuning_keys(tune, TUNING_KEYS)
 	var built: Dictionary = TLKit.build_layout(ctx.read_json("court.json"), ctx.root)
 	if not built["ok"]:
 		push_error("court.json does not build: %s" % "; ".join(built["errors"]))
@@ -172,3 +180,15 @@ func _pack_state() -> Dictionary:
 	s["court"] = {"half_width": float(tune["court"]["half_width"]), "ball_radius": ball.radius, "paddle_half": half_len}
 	s["hud"] = {"player": hud.text_of(&"score_player"), "hint": hud.text_of(&"hint")}
 	return s
+
+
+## Unknown keys are errors (CLAUDE.md, hunt2 C8): every key of tuning.json is one this script reads (TUNING_KEYS; 0 = a value or a
+## dictionary handed whole to a kernel call that checks its own keys); keys starting with "_" are notes. Add a key here when you add one.
+func _check_tuning_keys(have: Dictionary, want: Dictionary, where: String = "") -> void:
+	for k: String in have:
+		if k.begins_with("_"):
+			continue
+		if not want.has(k):
+			push_error("tuning.json: unknown key '%s%s' (known here: %s)" % [where, k, ", ".join(PackedStringArray(want.keys()))])
+		elif want[k] is Dictionary and have[k] is Dictionary:
+			_check_tuning_keys(have[k], want[k], where + k + ".")
