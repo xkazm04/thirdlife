@@ -93,6 +93,7 @@ func _run() -> void:
 	for holder: Node in view.world.packs:
 		holder.release_space()
 	view.free()
+	print("FLIGHT done %s" % ("fail" if failed else "pass"))     # the run completed; each case is judged by its own line
 	quit(1 if failed else 0)
 
 func _road() -> void:
@@ -242,13 +243,54 @@ func _impact(start: Vector3, finish: Vector3, tag: String) -> float:
 func _collide() -> void:
 	var y := sp.ground_at(0, -195, 90) + 2
 	var bluff := _impact(Vector3(0, y, -195), Vector3(0, y, -224), "terrain")
-	# The seed-7 tree east of the car plot has an exposed trunk under its foliage.
-	var centre := Vector3(256.269, 4.989344, 50.85989)
-	var trunk := _impact(centre + Vector3.LEFT * 8, centre, "tree")
+	# A trunk FOUND in the space (lane flight round 2): the scatter moves trees when the terrain changes (the blend lane's
+	# regrade did, 19 Nov), so no fixed position. Trunks are the tree-tagged cylinders on layer 1 (crowns are layer 4); in a
+	# fixed order (nearest the reference point first), the first one a cruise can be aimed at with a clear line counts.
+	var trunk := -INF
+	var tried := 0
+	var picked := Vector3.INF
+	for c: Vector3 in _trunks(Vector3(0, 0, 0)):
+		if tried >= 40:
+			break
+		tried += 1
+		for side: Vector3 in [Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
+			var from := c + side * 8.0
+			var gy := sp.ground_at(from.x, from.z, c.y + 40.0)
+			if is_nan(gy):
+				continue
+			# fly in low (0.25 m over the trunk's foot): the capsule's top stays under the crown, so the trunk is what it meets
+			var at := Vector3(from.x, c.y - 2.0 + 0.25, from.z)
+			var aim := Vector3(c.x, at.y, c.z)
+			if gy > at.y - 0.05:
+				continue                                   # the ground at the start is higher: no clear low line
+			trunk = _impact(at, aim, "tree")
+			if trunk > 0:
+				picked = c
+				break
+		if trunk > 0:
+			break
 	# The example walker's room has a copied wall at x=6, extending well over capsule height.
 	var o: Vector3 = view.plots[0].origin
 	var wall := _impact(o + Vector3(0, 1, 4), o + Vector3(9, 1, 4), "pack 0")
-	_line("collide", bluff > 0 and trunk > 0 and wall > 0, "cruise=45 near_side_m bluff=%.3f trunk=%.3f wall=%.3f" % [bluff, trunk, wall])
+	_line("collide", bluff > 0 and trunk > 0 and wall > 0, "cruise=45 near_side_m bluff=%.3f trunk=%.3f wall=%.3f trunk_at=[%.1f,%.1f] trunks_tried=%d" % [bluff, trunk, wall, picked.x, picked.z, tried])
+
+
+## Centres of the tree trunks of the space (tree-tagged cylinders on layer 1), nearest `ref` first, ties by position.
+func _trunks(ref: Vector3) -> Array:
+	var out: Array = []
+	for b: Variant in sp._bodies:
+		var rid: RID = b
+		if str(sp._tags.get(rid, "")) != "tree" or PhysicsServer3D.body_get_collision_layer(rid) & 1 == 0 or PhysicsServer3D.body_get_shape_count(rid) == 0:
+			continue
+		if PhysicsServer3D.shape_get_type(PhysicsServer3D.body_get_shape(rid, 0)) != PhysicsServer3D.SHAPE_CYLINDER:
+			continue
+		# the trunk's place is in its shape's transform (world_space `_static` adds the shape at it; the body sits at 0)
+		out.append(((PhysicsServer3D.body_get_state(rid, PhysicsServer3D.BODY_STATE_TRANSFORM) as Transform3D) * PhysicsServer3D.body_get_shape_transform(rid, 0)).origin)
+	out.sort_custom(func(a: Vector3, b2: Vector3) -> bool:
+		var da := a.distance_squared_to(ref)
+		var db := b2.distance_squared_to(ref)
+		return da < db if da != db else (a.x < b2.x if a.x != b2.x else a.z < b2.z))
+	return out
 
 func _sweep() -> void:
 	var v := view.visitor

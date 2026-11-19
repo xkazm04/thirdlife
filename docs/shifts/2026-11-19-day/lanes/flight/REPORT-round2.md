@@ -51,3 +51,56 @@ NOTE FOR PACK AUTHORS
   A bar shape must stay alive: a Shape3D you create in a function and hand to the world space by hand is freed when the
   function returns (world_space keeps shapes it copies itself; my demo scene hit this and keeps its own reference).
   Through TLBiped in a pack's own space this does not arise (the pack's CollisionShape3D holds the shape).
+
+== AFTER THE MOVES LANDED (12:15 on): main-red fix, dust, media
+
+MAIN-RED FIX (flight.collide trunk=-inf after the blend lane's regrade moved the scattered trees)
+  engine/kernel/runner/flight_case.gd: the collide case FINDS a trunk: the tree-tagged cylinders on layer 1 (crowns are
+    layer 4), nearest the origin first (ties by position), approached at cruise from 4 sides, 0.25 m over the trunk's
+    foot so the capsule passes under the crown; the first clear line counts (up to 40 trunks). On main's terrain: found
+    at [26.0, 14.9] on the 2nd try, stops 0.351 m short. It also prints `FLIGHT done` when its run completed.
+    (Why the old one failed besides the moved tree: a trunk body sits at 0 with its place in its shape transform, and a
+    flying capsule meets the crown (layer 4) before the trunk unless it comes in low.)
+  engine/tools/selftest.d/520-flight-body.sh: once `FLIGHT done` is printed, each case is judged by its own line, so
+    one failing measurement no longer fails the others; a run that stops before `FLIGHT done` still fails every case.
+    Measured: with the old collide line failing, ratio/accel/ceiling/sweep/land/gate printed PASS individually.
+  Verified on a tree with main's files copied in read-only (identical to main at 12:10: engine/, devx/, foreman/ changes
+  since ebeeb2b, then docs/generated/ from cc6b8d3): flight. 11/11, moves. 10/10, walker. 8/8, fast PASS, world 8/8,
+  packs 2/2 (44/44 verb runs), kit.selftest 95/95. Standup line `landable:` at that time.
+
+DUST (take-off and landing)
+  engine/kernel/world/flight_wings.gd `dust(parent, at, scale)`: the style's own `dust` preset (TLStyleFx, palette discs,
+    one shot, 40 frames), freed by a frame counter (DUST_FRAMES + 10); nothing headless or without the style.
+  engine/kernel/world/visitor.gd: a puff (scale 1.3) on `fly_start`, one (1.0) on `fly_land` (not on `fly_end`: he is
+    in the air then).
+  Case flight.dust (engine/kernel/world/flight_dust_case.gd, block 532, WINDOWED under the machine-wide window lock):
+    take-off tick 30 and landing tick 201 each get exactly one puff, at the feet, emitting, freed in time; PASS.
+  Seen in a window: clip-moves.mp4 (take-off and landing at the end), stills-moves/j_, k_.
+
+MEDIA (lane folder)
+  clip-moves.mp4: 15.1 s, 1280x720, windowed, kernel/world/moves_demo.tscn (the visitor with its body, rig, wings and
+    camera in a course of its own: a 2.4 m wall, a bar 2.8 m up): run and jump at the wall, hang, mantle, turn, run off,
+    jump under the bar, catch, pump (the view swings to the side), release at a forward peak, land, F take-off with dust,
+    hover, C down, land with dust. The village has no bar (a pack marks its own), so the bar is shown in this course; the
+    ledge also works in the village (moves.replay: the ex_walker wall in wf_feel).
+  sheet_moves.jpg + stills-moves/ (11 frames of that clip), sheet_poses.jpg (kernel/world/moves_review.tscn: hang side /
+    back, mantle 25/50/75/100 %, swing at 0 / -40 / +60 deg, three-quarter).
+
+BEHAVIOUR NOTES / FOR THE DIRECTOR
+  - A pumped swing hits the 100 deg limit and stops dead there (omega = 0): visibly abrupt if a player pumps hard. A soft
+    limit (damping near the end) would read better; not changed (a move's number, measured in moves.bar_swing).
+  - The rig poses for pack bipeds (kernel/world/terrain/grip_pose.gd, used by TLBiped) are not covered by a case of their
+    own; the visitor's are (moves.pose). The same math; a TLBiped pose case is next.
+  - The camera's crown/terrain avoid treats a bar as a solid: walking under a bar toward the camera's side lifts the
+    camera over it (seen in the first demo run). The village has no bars yet; worth a look when the parkour lane adds one.
+  - Every tree file I copied from main is identical to main; only my own files differ (list in the `landable:` line).
+
+GATES (final, this tree): see the last STANDUP line (full gate and windowed tour run after this was written).
+
+CODEX TOKENS (round 2, session 01a1f313-086c-72f2-a7f7-ea6b899eeb6a): round 3 of the lane (moves): 198,786. No further
+  Codex rounds (the collide fix, the grip poses, dust and the cases are mine).
+
+NEXT THREE
+  1. A TLBiped grip-pose case (hands on the bar / the lip for a pack biped, body_scale 1 and 2).
+  2. A soft end to the swing (no dead stop at 100 deg) and A/D shuffle along a ledge, if the parkour lane wants them.
+  3. Camera: ignore marked bars in the avoid cast (they are thin), so swinging under the camera's line does not lift it.

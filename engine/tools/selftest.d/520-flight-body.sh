@@ -1,5 +1,6 @@
 # One scene build for the village measurements. Missing lines, script errors and
-# stopped processes fail even when an earlier measurement printed PASS.
+# stopped processes fail even when an earlier measurement printed PASS. Round 2: flight_case prints `FLIGHT done` when
+# its run completed; then each case is judged by its own line (one failing measurement no longer fails the others).
 flight_block() {
   local engine godot dir script name log rc detail why
   engine="$(cd "$HERE/.." && pwd)"
@@ -26,7 +27,8 @@ flight_block() {
       detail="$(tr -d '\r' < "$log" | grep -a "^FLIGHT $name " | head -1)"
       why=""
       if [[ "$detail" != "FLIGHT $name PASS "* ]]; then why="${detail:-missing measurement}"
-      elif [ "$rc" -ne 0 ]; then why="case process exited $rc"
+      elif [ "$script" = flight_case ] && ! grep -aq '^FLIGHT done ' "$log"; then why="the case run did not complete (exit $rc)"
+      elif [ "$script" != flight_case ] && [ "$rc" -ne 0 ]; then why="case process exited $rc"
       elif grep -aEq '^(SCRIPT ERROR|ERROR):' "$log"; then why="engine error in $log"; fi
       verdict "flight.$name" "$why" "${detail#FLIGHT "$name" PASS }"
     done
