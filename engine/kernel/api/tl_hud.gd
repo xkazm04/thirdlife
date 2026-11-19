@@ -1,7 +1,7 @@
 class_name TLHud
 extends CanvasLayer
 ## HUD widgets: score, clock, speed and free labels, bound to live sources and refreshed every frame.
-## Stand-in look (plain labels) until the style layer provides one. Capability: `ui`.
+## Split Ticket house instruments and backward-compatible labels. Capability: `ui`.
 ##
 ##   var hud := TLHud.create()
 ##   ctx.root.add_child(hud)
@@ -20,17 +20,29 @@ const ANCHORS: Dictionary = {
 	&"bottom_right": [Control.PRESET_BOTTOM_RIGHT, Vector2(-24, -16)],
 }
 
-# N2: no static list any more; a pack's HUD layers are in its context (`ctx.huds`).
+const _STOCK_PATH := "res://style/hud/stock.gd"
+const _LAYOUT_PATH := "res://style/hud/layout.gd"
+const _SHEET_PATH := "res://style/hud/sheet.gd"
 
-## K5. The HUD's ink: the outline of its letters and the colour of a plate (set_plate). The HUD is a stand-in look the
-## style layer does not draw yet (engine/style/STYLE.md has no HUD section), so its colours live here.
+## Kept for packs written against API 1.5.
 const INK: Color = Color(0.05, 0.05, 0.08)
 const PLATE_ALPHA: float = 0.62
 const PLATE_MARGIN: Vector2 = Vector2(18, 8)
 
 var font_size: int = 36
 var _widgets: Dictionary = {}      # id -> {label: Label, source: Callable or null}
-var _stacks: Dictionary = {}       # anchor -> count (widgets on one anchor stack up)
+var _sheet                  # The optional style module owns this Control.
+var _stock: GDScript
+var _layout: GDScript
+var _layout_dirty := true
+var _inks := {"ink": INK, "paper": Color.WHITE, "marker": Color.WHITE}
+var _village_hud := false
+
+
+func _init() -> void:
+	if ResourceLoader.exists(_STOCK_PATH):
+		_stock = load(_STOCK_PATH)
+		_inks = _stock.colors("signal")
 
 
 static func create() -> TLHud:
@@ -40,6 +52,7 @@ static func create() -> TLHud:
 	if TLContext.current != null:
 		TLContext.current.huds.append(h)
 		h.visible = TLContext.current.on_stage      # N7 (N5b patch 2): in a world only the stage pack's HUD is shown
+		h._village_hud = not TLContext.current.instance.is_empty()
 	return h
 
 
@@ -53,57 +66,122 @@ static func hide_all(of_pack: TLContext = null) -> void:
 			(h as TLHud).visible = false
 
 
+func _ready() -> void:
+	get_viewport().size_changed.connect(_resized)
+	_resized()
+
+
+func _resized() -> void:
+	_layout_dirty = true
+	if _sheet != null:
+		var extent := get_viewport().get_visible_rect().size
+		_sheet.vertical_clearance = _vertical_clearance(extent)
+		_sheet.size = extent
+
+
+# The village owns the build tag at the top and its leave-game hint at the bottom.
+func _vertical_clearance(extent: Vector2) -> Vector2:
+	if not _village_hud:
+		return Vector2.ZERO
+	return Vector2(minf(36, extent.y / 4), minf(64, extent.y / 4))
+
+
+## Install the pack's instrument catalogue and the player's saved layout. An invalid file changes nothing.
+func configure_widgets(catalog: Variant, layout: Variant) -> bool:
+	if not ResourceLoader.exists(_LAYOUT_PATH) or not ResourceLoader.exists(_SHEET_PATH):
+		push_warning("TLHud.configure_widgets: install the HUD style module for editable instruments")
+		return false
+	_layout = load(_LAYOUT_PATH)
+	var error: String = _layout.check_catalog(catalog)
+	if error.is_empty():
+		error = _layout.check_profile(layout, catalog)
+	if not error.is_empty():
+		push_error("TLHud: " + error)
+		return false
+	if _sheet == null:
+		_sheet = (load(_SHEET_PATH) as GDScript).new()
+		add_child(_sheet)
+	_sheet.install(catalog, layout)
+	if is_inside_tree():
+		_resized()
+	return true
+
+
+## Supply the live values for one declared instrument. The empty dictionary clears it.
+func set_readout(id: StringName, reading: Dictionary) -> void:
+	if _sheet == null or not _sheet.cards.has(id):
+		push_error("TLHud.set_readout: unknown widget '%s'" % id)
+		return
+	var card = _sheet.cards[id]
+	if card.reading == reading:
+		return
+	if not reading.is_empty():
+		var error: String = _layout.check_reading(card.form, reading)
+		if not error.is_empty():
+			push_error("TLHud.set_readout: " + error)
+			return
+	_sheet.set_reading(id, reading)
+
+
+## Switch between the in-run instruments and the finish board.
+func set_phase(phase: StringName) -> void:
+	if phase not in [&"run", &"finish"]:
+		push_error("TLHud.set_phase: unknown phase '%s'" % phase)
+		return
+	if _sheet != null:
+		_sheet.set_phase(phase)
+
+
 func _make(id: StringName, anchor: StringName, source: Callable) -> Label:
 	if not ANCHORS.has(anchor):
-		push_error("TLHud: unknown anchor '%s' (anchors: %s)" % [anchor, ", ".join(PackedStringArray(ANCHORS.keys()))])
+		push_error("TLHud: unknown anchor '%s'" % anchor)
 		anchor = &"top_left"
 	if _widgets.has(id):
-		(_widgets[id] as Dictionary)["source"] = source
-		return (_widgets[id] as Dictionary)["label"]
-	var label: Label = Label.new()
+		_widgets[id].source = source
+		return _widgets[id].label
+	var label := Label.new()
 	label.name = String(id)
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", Color(1, 1, 1))
-	label.add_theme_color_override("font_outline_color", INK)
-	label.add_theme_constant_override("outline_size", 8)
+	label.oversampling_with_scale = CanvasItem.OVERSAMPLING_WITH_SCALE_ENABLED
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var instrument := String(id).begins_with("score_") or id in [&"clock", &"speed"]
+	if _stock != null:
+		label.add_theme_font_override("font", _stock.font(830, 86) if instrument else _stock.font(690, 94))
+	label.add_theme_font_size_override("font_size", maxi(1, font_size))
+	label.add_theme_color_override("font_color", _inks.paper)
+	label.add_theme_color_override("font_outline_color", _inks.ink)
+	label.add_theme_constant_override("outline_size", 3)
+	label.add_theme_constant_override("line_spacing", 0)
 	add_child(label)
-	var stack: int = int(_stacks.get(anchor, 0))
-	_stacks[anchor] = stack + 1
-	var a: Array = ANCHORS[anchor]
-	var down: float = -1.0 if String(anchor).begins_with("bottom") else 1.0
-	label.set_anchors_and_offsets_preset(a[0], Control.PRESET_MODE_KEEP_SIZE)
-	label.position += (a[1] as Vector2) + Vector2(0, float(stack) * float(font_size + 10) * down)
-	label.grow_horizontal = Control.GROW_DIRECTION_BOTH if String(anchor) in ["top", "center", "bottom"] else (
-		Control.GROW_DIRECTION_BEGIN if String(anchor).ends_with("right") else Control.GROW_DIRECTION_END)
-	# K5: a label on a bottom anchor keeps its bottom edge and grows upwards when its text gets longer (a label of one
-	# line is where it always was); every other anchor grows downwards, as before
-	label.grow_vertical = Control.GROW_DIRECTION_BEGIN if down < 0.0 else Control.GROW_DIRECTION_END
-	_widgets[id] = {"label": label, "source": source, "anchor": anchor, "plate": false, "fitted": ""}
+	_widgets[id] = {"label": label, "source": source, "anchor": anchor, "fitted": "", "plate": false}
+	if instrument and _stock != null:
+		set_plate(id)
+	_layout_dirty = true
 	return label
 
 
-## K5. A plate behind a widget: the HUD's own ground under its text, so it reads over lines, circles and figures.
-## The plate is the HUD's ink (the outline colour of its letters) at PLATE_ALPHA, with round corners and a margin of
-## PLATE_MARGIN around the text; a label of several lines gets one plate around all of them (a group of lines is one
-## label). `on = false` takes it away. Default: no plate (the look every pack had).
+## Ink stock with a printed registration stripe. An empty widget occupies no space.
 func set_plate(id: StringName, on: bool = true) -> void:
 	if not _widgets.has(id):
 		push_error("TLHud.set_plate: no widget '%s'" % id)
 		return
-	var label: Label = (_widgets[id] as Dictionary)["label"]
+	var label: Label = _widgets[id].label
+	_widgets[id].plate = on
+	_layout_dirty = true
 	if not on:
 		label.remove_theme_stylebox_override("normal")
+		label.add_theme_constant_override("outline_size", 3)
 		return
-	var box: StyleBoxFlat = StyleBoxFlat.new()
-	(_widgets[id] as Dictionary)["plate"] = true
-	(_widgets[id] as Dictionary)["fitted"] = ""
-	box.bg_color = Color(INK.r, INK.g, INK.b, PLATE_ALPHA)
-	box.set_corner_radius_all(int(round(float(font_size) * 0.35)))
-	box.content_margin_left = PLATE_MARGIN.x
-	box.content_margin_right = PLATE_MARGIN.x
-	box.content_margin_top = PLATE_MARGIN.y
-	box.content_margin_bottom = PLATE_MARGIN.y
+	var box := StyleBoxFlat.new()
+	box.bg_color = _inks.ink
+	box.border_color = _inks.marker
+	box.border_width_left = 3
+	box.corner_radius_top_right = 5
+	box.content_margin_left = 12
+	box.content_margin_right = 12
+	box.content_margin_top = 3
+	box.content_margin_bottom = 4
 	label.add_theme_stylebox_override("normal", box)
+	label.add_theme_constant_override("outline_size", 0)
 
 
 ## K5. How the lines of a label of several lines sit inside it (and inside its plate): &"left", &"center" or &"right".
@@ -165,29 +243,50 @@ func add_bound(id: StringName, source: Callable, anchor: StringName = &"top_left
 
 func _physics_process(_delta: float) -> void:
 	for w: Dictionary in _widgets.values():
-		var source: Callable = w["source"]
+		var label: Label = w.label
+		var source: Callable = w.source
 		if source.is_valid():
-			(w["label"] as Label).text = str(source.call())
-		_fit(w)
+			label.text = str(source.call())
+		if label.text != w.fitted:
+			w.fitted = label.text
+			_layout_dirty = true
+	if _layout_dirty:
+		_arrange_labels()
+		_layout_dirty = false
 
 
-## K5. Fits a plated label, or a label of several lines on a bottom anchor, to its text after the text changed: it
-## keeps its bottom edge on a bottom anchor (it grows upwards), its right edge on a right anchor, its middle on a
-## centred one. A label of one line without a plate is never touched (it stays where every pack had it).
-func _fit(w: Dictionary) -> void:
-	var label: Label = w["label"]
-	if label.text == str(w["fitted"]):
-		return
-	var bottom: bool = String(w["anchor"]).begins_with("bottom")
-	if not bool(w["plate"]) and not (bottom and label.text.contains("\n")):
-		return
-	w["fitted"] = label.text
-	var old: Rect2 = Rect2(label.position, label.size)
-	label.reset_size()
-	var s: Vector2 = label.size
-	var x: float = old.position.x
-	if label.grow_horizontal == Control.GROW_DIRECTION_BEGIN:
-		x = old.end.x - s.x
-	elif label.grow_horizontal == Control.GROW_DIRECTION_BOTH:
-		x = old.get_center().x - s.x * 0.5
-	label.position = Vector2(x, old.end.y - s.y if bottom else old.position.y)
+func _arrange_labels() -> void:
+	var extent := get_viewport().get_visible_rect().size
+	var ratio := minf(extent.x / 1280.0, extent.y / 720.0)
+	var margin := Vector2(22, 19) * ratio
+	var room := extent - margin * 2
+	var clearance := _vertical_clearance(extent)
+	var lower_margin := maxf(margin.y, clearance.y)
+	margin.y = maxf(margin.y, clearance.x)
+	room.y = extent.y - margin.y - lower_margin
+	var stacks := {}
+	for w: Dictionary in _widgets.values():
+		var label: Label = w.label
+		label.visible = not label.text.is_empty()
+		if label.visible:
+			label.reset_size()
+			if not stacks.has(w.anchor):
+				stacks[w.anchor] = []
+			stacks[w.anchor].append(label)
+	for anchor: StringName in stacks:
+		var group: Array = stacks[anchor]
+		# A positive inset marks the left/top edge, a negative one the right/bottom edge.
+		var alignment := (Vector2.ONE - (ANCHORS[anchor][1] as Vector2).sign()) * 0.5
+		if alignment.y == 1:
+			group.reverse() # The first bottom widget keeps the bottom edge when more widgets appear.
+		var height := 4.0 * (group.size() - 1)
+		var width := 1.0
+		for label: Label in group:
+			height += label.size.y
+			width = maxf(width, label.size.x)
+		var fit := minf(ratio, minf(room.x / width, room.y / maxf(1, height)))
+		var y := margin.y + (room.y - height * fit) * alignment.y
+		for label: Label in group:
+			label.scale = Vector2.ONE * fit
+			label.position = Vector2(margin.x + (room.x - label.size.x * fit) * alignment.x, y).round()
+			y += (4.0 + label.size.y) * fit

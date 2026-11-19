@@ -18,6 +18,8 @@ var rules: TLRules
 var cam: TLOrbitCam
 var skyline_camera
 var hud: TLHud
+var hud_ready := false
+var previous_split_best := -1  # Display reference from before the timing gate updated the personal best.
 var spawn_at: Vector3
 var lane
 var splits: Array[int] = []
@@ -75,10 +77,7 @@ func _pack_setup(c: TLContext) -> void:
 	_upper_view(&"catch_deck", lane.landing_z + 1.7, lane.landing_height(1.7) + 0.4, Vector3(6.0, 3.2, -5.2))
 	hud = TLHud.create()
 	ctx.root.add_child(hud)
-	hud.add_label(&"race", "", &"top_left")
-	hud.set_plate(&"race")
-	hud.add_label(&"controls", "WASD / arrows  Move     Shift  Run     Space  Jump     C  Slide     R  Restart", &"bottom")
-	hud.set_plate(&"controls")
+	hud_ready = hud.configure_widgets(ctx.read_json("hud-widgets.json"), ctx.read_json("hud.json"))
 
 
 func _view(id: StringName, station: float, offset: Vector3, above: float) -> void:
@@ -113,6 +112,7 @@ func _restart() -> void:
 	cam.snap()
 	trail.clear()
 	splits.clear()
+	previous_split_best = -1
 	stage_started = 0
 	carried_strafe = 0.0
 	carried_back = false
@@ -327,6 +327,7 @@ func _close_stage() -> void:
 	var index := splits.size()
 	var elapsed := rules.total_frames - stage_started
 	splits.append(elapsed)
+	previous_split_best = stage_bests[index] if index < stage_bests.size() else -1
 	if index == stage_bests.size():
 		stage_bests.append(elapsed)
 	else:
@@ -335,11 +336,20 @@ func _close_stage() -> void:
 
 
 func _update_hud() -> void:
-	var best := "—"
-	if rules.best_lap_frames.has(SIDE):
-		best = "%.2f s" % (float(rules.best_lap_frames[SIDE]) / 60)
+	if not hud_ready:
+		return
+	var best := _time(int(rules.best_lap_frames[SIDE])) if rules.best_lap_frames.has(SIDE) else "—"
 	var index := mini(splits.size(), STAGES.size() - 1)
-	var caption := "%d   %s" % [index + 1, STAGES[index]]
+	if rules.is_over():
+		hud.set_phase(&"finish")
+		var rows := []
+		for i: int in splits.size():
+			rows.append([STAGES[i], _time(splits[i]), _time(stage_bests[i])])
+		hud.set_readout(&"finish", {"name": "Finish" if rules.reason == "laps" else "Time up",
+			"value": _time(rules.total_frames), "best": best, "rows": rows})
+		hud.set_readout(&"controls", {"pairs": [["R", "Run again"]]})
+		return
+	hud.set_phase(&"run")
 	var cue: String = CUES[int(rules.next_checkpoint[SIDE])]
 	if _at_blocked_bar(runner.position.x - venue.START_X):
 		cue = "C  Retry from checkpoint"
@@ -355,19 +365,32 @@ func _update_hud() -> void:
 			cue = "Back on runway · Release Back to step back"
 		elif rules.total_frames < missed_grip_until:
 			cue = "Catch blue, then red · Try again"
-	caption += "    " + cue
-	if rules.is_over():
-		caption = "FINISH" if rules.reason == "laps" else "TIME UP"
-	var stage_time := rules.total_frames - stage_started if splits.size() <= index else splits[index]
-	if rules.reason == "laps":
-		var lines := PackedStringArray(["FINISH     %.2f s     Best  %s" % [rules.seconds_played(), best]])
-		for i: int in splits.size():
-			lines.append("%s    %.2f     Best  %.2f" % [STAGES[i], splits[i] / 60.0, stage_bests[i] / 60.0])
-		hud.set_text(&"race", "\n".join(lines))
-		return
-	var pb := "%.2f" % (stage_bests[index] / 60.0) if index < stage_bests.size() else "—"
-	hud.set_text(&"race", "%s\nSplit  %.2f     Best  %s\nRun  %.2f     Best  %s" % [
-		caption, stage_time / 60.0, pb, rules.seconds_played(), best])
+	var elapsed := rules.total_frames - stage_started
+	var pb := "—"
+	var delta := ""
+	var split_name := "Live split"
+	if not splits.is_empty() and elapsed < 150:
+		# Compare completed stages for 2.5 seconds after a gate. An unfinished stage has no delta yet.
+		elapsed = splits.back()
+		split_name = "Split %02d" % splits.size()
+		if previous_split_best < 0:
+			delta = "FIRST"
+		else:
+			pb = _time(previous_split_best)
+			var diff := elapsed - previous_split_best
+			delta = ("+" if diff > 0 else ("−" if diff < 0 else "")) + _time(absi(diff))
+	elif index < stage_bests.size():
+		pb = _time(stage_bests[index])
+	hud.set_readout(&"stage", {"value": "%02d" % (index + 1), "name": STAGES[index]})
+	hud.set_readout(&"next", {"value": cue})
+	hud.set_readout(&"split", {"name": split_name, "value": _time(elapsed), "best": pb, "delta": delta})
+	hud.set_readout(&"run", {"value": _time(rules.total_frames), "best": best})
+	hud.set_readout(&"checkpoints", {"done": int(rules.next_checkpoint[SIDE]), "total": CUES.size()})
+	hud.set_readout(&"controls", {"pairs": [["WASD / ↑↓←→", "Move"], ["Shift", "Run"], ["Space", "Jump"], ["C", "Slide"], ["R", "Restart"]]})
+
+
+func _time(frames: int) -> String:
+	return "%05.2f" % (frames / 60.0)
 
 
 func _pack_state() -> Dictionary:

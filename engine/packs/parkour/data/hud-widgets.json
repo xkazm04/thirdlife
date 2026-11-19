@@ -1,0 +1,9 @@
+[
+  {"id":"stage","title":"Stage","form":"bib","anchor":"top_left","sample":{"value":"02","name":"Swing yard"}},
+  {"id":"next","title":"Next move","form":"cue","anchor":"top_left","sample":{"value":"Leap to the first pad"}},
+  {"id":"split","title":"Stage split","form":"split","anchor":"top_right","sample":{"name":"Split 01","value":"05.63","best":"05.94","delta":"−0.31"}},
+  {"id":"run","title":"Run time","form":"timer","anchor":"top_right","sample":{"value":"08.47","best":"16.43"}},
+  {"id":"checkpoints","title":"Checkpoints","form":"progress","anchor":"bottom_left","sample":{"done":5,"total":14}},
+  {"id":"controls","title":"Controls","form":"keys","anchor":"bottom_right","phase":"both","sample":{"pairs":[["WASD / ↑↓←→","Move"],["Shift","Run"],["Space","Jump"],["C","Slide"],["R","Restart"]]},"finish_sample":{"pairs":[["R","Run again"]]}},
+  {"id":"finish","title":"Finish board","form":"results","anchor":"top_left","phase":"finish","sample":{"name":"Finish","value":"16.43","best":"16.43","rows":[["High line","05.63","05.63"],["Swing yard","04.77","04.77"],["Summit","03.03","03.03"],["Skyline","03.00","03.00"]]}}
+]

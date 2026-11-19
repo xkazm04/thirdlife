@@ -2,6 +2,11 @@
 
 Enter the scaffold yard west of the walker plot from the village road, or play with `node devx/bin/tl.mjs play parkour`. Reach the flagged catch ramp within 60 seconds. Four stages share a 50 × 28 m plot.
 
+Open `bash engine/tools/ui.sh open` and choose **HUD workshop** to arrange Timber Run's instruments.
+Drag the next move or another widget in the preview, or use the nine position buttons. The eye beside each
+widget controls visibility. **At finish** previews the scorecard. **Save & play** opens the course with
+your choices. The game keeps the layout in `data/hud.json`.
+
 | Control | Action |
 |---|---|
 | WASD or arrows | Move relative to the orbit camera |
