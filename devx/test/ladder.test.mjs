@@ -73,3 +73,24 @@ test("H9 columns: taps lost and his shots are summed per cell from the bot resul
   assert.equal(cell.shots, 6);
   assert.equal(cell.draws, 3);
 });
+
+// hunt2 B8: the verifier's other checks decide too. A run whose bot finished but whose report fails a check other than
+// bot.ok (a script error, a watchdog, an invariant) is rejected, never a sample; a lost game (bot.ok false only) still counts.
+// A run whose runner exited 2 (could not run) or 3 (watchdog) is not completed either, whatever its stdout says.
+test("B8: a run the verifier rejected is not a completed sample; a plain loss is", async () => {
+  const dir = fakePack(["tests/bot_ladder_pro_regular.gd"]);
+  const verify = (checks) => JSON.stringify({ schema: "tl.verify/1", ok: false, metrics: { state_hash: "cd".repeat(32) },
+    checks, bot: { result: { won: false, goals: 0, against: 1, frames: 800 } } });
+  const runBot = async (c, seed) => seed === 1
+    ? verify([{ id: "bot.completed", ok: true }, { id: "bot.ok", ok: false }])
+    : seed === 2 ? verify([{ id: "bot.completed", ok: true }, { id: "bot.ok", ok: false }, { id: "smoke.no_script_errors", ok: false }])
+      : { stdout: verify([{ id: "bot.completed", ok: true }, { id: "bot.ok", ok: true }]), code: 3 };
+  const code = await quiet(() => execute(["--pack", dir, "--seeds", "3"], { ctx: fakeCtx(dir), runBot }));
+  assert.equal(code, 1);
+  const st = fakeCtx.last.steps[0];
+  assert.equal(st.found, 3); assert.equal(st.completed, 1);
+  assert.match(st.detail, /seeds not completed: 2,3/);
+  assert.match(st.detail, /smoke\.no_script_errors/);
+  assert.match(st.detail, /exit 3/);
+  assert.equal(readRun(verify([{ id: "bot.completed", ok: true }, { id: "smoke.no_script_errors", ok: false }])).done, false);
+});

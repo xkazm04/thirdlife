@@ -29,9 +29,16 @@ var dust: Color = Color(0.78, 0.7, 0.62)
 var _events: Array = []               # [kind, value] from signal handlers, handled in _pack_tick
 
 
+## hunt2 C8: the keys tuning.json may hold (see _check_tuning_keys).
+const TUNING_KEYS: Dictionary = {"player": 0, "balls": {"count": 0, "radius": 0, "mass": 0, "color": 0},
+	"throw": {"speed": 0, "lift": 0, "reload_seconds": 0, "carry_at": 0},
+	"wall": {"hp": 0, "hp_spread": 0, "threshold": 0, "kick": 0, "scatter": 0, "down_distance": 0}, "camera": 0, "camera_fill": 0}
+
+
 func _pack_setup(c) -> void:
 	ctx = c
 	tune = ctx.read_json("tuning.json")
+	_check_tuning_keys(tune, TUNING_KEYS)
 	var built: Dictionary = TLKit.build_layout(ctx.read_json("yard.json"), ctx.root)
 	if not built["ok"]:
 		push_error("yard.json does not build: %s" % "; ".join(built["errors"]))
@@ -175,3 +182,15 @@ func _pack_state() -> Dictionary:
 	s["sounds"] = {"break": TLAudio.count(&"break"), "whistle": TLAudio.count(&"whistle"), "horn": TLAudio.count(&"horn")}
 	s["hud"] = {"pieces": hud.text_of(&"score_player"), "clock": hud.text_of(&"clock"), "hint": hud.text_of(&"hint")}
 	return s
+
+
+## Unknown keys are errors (CLAUDE.md, hunt2 C8): every key of tuning.json is one this script reads (TUNING_KEYS; 0 = a value or a
+## dictionary handed whole to a kernel call that checks its own keys); keys starting with "_" are notes. Add a key here when you add one.
+func _check_tuning_keys(have: Dictionary, want: Dictionary, where: String = "") -> void:
+	for k: String in have:
+		if k.begins_with("_"):
+			continue
+		if not want.has(k):
+			push_error("tuning.json: unknown key '%s%s' (known here: %s)" % [where, k, ", ".join(PackedStringArray(want.keys()))])
+		elif want[k] is Dictionary and have[k] is Dictionary:
+			_check_tuning_keys(have[k], want[k], where + k + ".")

@@ -123,15 +123,20 @@ func run(boot: Node, out: String) -> void:
 	print(text)
 	if out.is_absolute_path():
 		DirAccess.make_dir_recursive_absolute(out.get_base_dir())
-		_write(out, text + "\n")
+		if not _write(out, text + "\n"):       # hunt2 C9: a report that cannot be written is never a clean exit
+			printerr("[boot] probe: cannot write %s" % out)
+			boot.get_tree().quit(2)
+			return
 	boot.get_tree().quit(0)
 
 
-func _write(path: String, text: String) -> void:
+func _write(path: String, text: String) -> bool:
 	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	if f != null:
-		f.store_string(text)
-		f.close()
+	if f == null:
+		return false
+	f.store_string(text)
+	f.close()
+	return true
 
 
 func _writable(dir: String) -> bool:

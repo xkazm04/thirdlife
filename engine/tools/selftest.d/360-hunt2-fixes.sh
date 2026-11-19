@@ -3,7 +3,7 @@
 # (written to $OUT), plus two seed-bot runs on copies (C1); each Godot case needs its own HUNT2CASE line, the run its trailer `HUNT2END <n>` and exit 0: a missing line,
 # a missing trailer or a stopped Godot is a FAIL (docs/GATE-HONESTY.md; finding A1 of the same hunt).
 
-hunt2_cases="ball_holder_freed chase_slow_travel chase_pull_scaled nitro_crumb nitro_full_tank goal_over_net goal_in_net goal_offset_pack hockey_helpers_freed hockey_venue_freed hockey_bench_freed boot_editor_games parkour_retry_pressing hand_double_tap laws_material_copy input_at_reserved drive_time_hud parkour_offset_pack wall_origin_at_break"
+hunt2_cases="ball_holder_freed chase_slow_travel chase_pull_scaled nitro_crumb nitro_full_tank goal_over_net goal_in_net goal_offset_pack hockey_helpers_freed hockey_venue_freed hockey_bench_freed boot_editor_games parkour_retry_pressing hand_double_tap laws_material_copy input_at_reserved drive_time_hud parkour_offset_pack wall_origin_at_break chase_margin_scaled"
 hunt2_any=""
 for hunt2_c in $hunt2_cases; do
   if [ -z "$FILTER" ] || [[ "hunt2.$hunt2_c" == *"$FILTER"* ]]; then hunt2_any=1; fi
@@ -56,6 +56,7 @@ func run() -> void:
 	drive_time_hud()
 	await parkour_offset_pack()
 	await wall_origin_at_break()
+	chase_margin_scaled()
 	print("HUNT2END %d" % said)
 	quit()
 
@@ -373,6 +374,26 @@ func wall_origin_at_break() -> void:
 	p.unload()
 	p.free()
 	say("wall_origin_at_break", by_score and pieces > 0 and disagree == 0, "bot_knock seed 1: %d pieces, ended by score %s, ticks where the score and the pieces past 0.6 m from the wall disagree: %d (wanted 0)" % [pieces, by_score, disagree])
+
+# B11: avoid_margin is metres under a scaled parent too: the camera keeps 0.30 m from the wall at parent scale 0.5, 1 and 2.
+func chase_margin_scaled() -> void:
+	var gaps := []
+	for k: float in [0.5, 1.0, 2.0]:
+		var sp: Object = Space.new()
+		sp.add_box(Transform3D(Basis.IDENTITY, Vector3(0, 1, 5) / k), Vector3(20, 20, 4) / k)   # its near face at z = 3 m in the world
+		var parent := Node3D.new()
+		root.add_child(parent)
+		parent.scale = Vector3.ONE * k
+		var target := Node3D.new()
+		parent.add_child(target)
+		var cam := TLChaseCam.new()
+		parent.add_child(cam)
+		cam.setup(target, {"distance": 7.0, "height": 1.0, "look_height": 1.0, "avoid_space": sp.space, "avoid_margin": 0.3, "avoid_min": 0.0})
+		gaps.append(3.0 - cam.global_position.z)
+		parent.free()
+		sp.free_all()
+	var ok: bool = absf(gaps[0] - 0.3) < 0.03 and absf(gaps[1] - 0.3) < 0.03 and absf(gaps[2] - 0.3) < 0.03
+	say("chase_margin_scaled", ok, "wall clearance at parent scale 0.5 / 1 / 2: %.2f / %.2f / %.2f m (wanted 0.30)" % [gaps[0], gaps[1], gaps[2]])
 HUNT2_GD
   hunt2_g="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
   hunt2_e="$(cd "$HERE/.." && pwd)"; hunt2_s="$hunt2_gd"
@@ -412,5 +433,96 @@ for hunt2_t in "paddle score_to_win 1 bot_win" "drive laps_to_win 4 bot_laps"; d
     fi
     verdict "hunt2.seed_target_$hunt2_n1" "$why" "$hunt2_k = $hunt2_v in a copy: ${hunt2_sum:0:100}"
     rm -rf "$hunt2_p"
+  fi
+done
+
+# A1 (hunt2 round 2): blocks 310-340 refuse a Godot child that stopped after printing its case lines. A fake Godot (TL_GODOT)
+# prints a passing line for every case and kills itself (exit 143): each nested selftest must print FAIL "... stopped" and exit
+# 1. Control: the same fake exiting 0 passes, so the cases test the exit-status guard and nothing else. Nested runs skip this.
+if [ -z "${TL_HUNT2_NESTED:-}" ]; then
+  hunt2_fake="$OUT/hunt2_fake_godot.sh"
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'echo "CAMCASE cam.wall_start ok fake"; echo "CAMCASE cam.cut_wall ok fake"; echo "BFWORLD ground.ledger_shapes ok fake"' \
+    'echo "RIGCASE pose_rest ok fake"; case "$*" in *--team=red*) echo "RIGTEAM car_red";; *) echo "RIGTEAM car_blue";; esac' \
+    'echo "BUGFIXRUNNER record ok - fake"; echo "BUGFIXRUNNER handover ok - fake"; echo "BUGFIXRUNNER place ok - fake"' \
+    '[ -n "${HUNT2_FAKE_STOP:-}" ] && kill -TERM $$' 'exit 0' > "$hunt2_fake"
+  chmod +x "$hunt2_fake"
+  for hunt2_s in cam:cam.wall_start cam_cut:cam.cut_wall world:ground.ledger_shapes rig:rig.bugfix.pose_rest rig_team:rig.bugfix.review_team \
+      runner:runner.stage_record_rebuilt runner_place:runner.place_no_glide; do
+    hunt2_sn="hunt2.stopped_${hunt2_s%%:*}"; hunt2_sc="${hunt2_s#*:}"
+    if [ -z "$FILTER" ] || [[ "$hunt2_sn" == *"$FILTER"* ]]; then
+      hunt2_so="$(TL_HUNT2_NESTED=1 TL_BUGFIX_NESTED=1 HUNT2_FAKE_STOP=1 TL_GODOT="$hunt2_fake" TL_SELFTEST_DIR="$OUT/$hunt2_sn" bash "$HERE/selftest.sh" "$hunt2_sc" 2>&1)"; hunt2_sx=$?
+      why=""
+      [ "$hunt2_sx" -eq 1 ] || why="nested selftest $hunt2_sc exited $hunt2_sx, expected 1"
+      echo "$hunt2_so" | grep -q "^FAIL $hunt2_sc: .*stopped (Godot exit 143)" || why="${why:+$why; }no 'FAIL $hunt2_sc ... stopped (Godot exit 143)' line"
+      echo "$hunt2_so" | grep -q "^PASS $hunt2_sc" && why="${why:+$why; }PASS $hunt2_sc printed for a stopped child"
+      verdict "$hunt2_sn" "$why" "fake Godot printed every case line, then stopped itself: FAIL $hunt2_sc, exit $hunt2_sx"
+    fi
+  done
+  if [ -z "$FILTER" ] || [[ "hunt2.stopped_control" == *"$FILTER"* ]]; then
+    hunt2_so="$(TL_HUNT2_NESTED=1 TL_BUGFIX_NESTED=1 TL_GODOT="$hunt2_fake" TL_SELFTEST_DIR="$OUT/hunt2.stopped_control" bash "$HERE/selftest.sh" cam.wall_start 2>&1)"; hunt2_sx=$?
+    why=""
+    [ "$hunt2_sx" -eq 0 ] || why="nested selftest exited $hunt2_sx, expected 0 (${hunt2_so:0:160})"
+    echo "$hunt2_so" | grep -q '^PASS cam.wall_start' || why="${why:+$why; }no PASS cam.wall_start"
+    verdict hunt2.stopped_control "$why" "the same fake Godot exiting 0: PASS cam.wall_start, exit $hunt2_sx"
+  fi
+fi
+
+# C9 (hunt2 round 2): boot's `check` and `probe` exit 2, not 0, when the report they were asked for cannot be written (here: a
+# directory stands where the file goes). The probe also tests writing beside the executable, so Godot runs from a hard link in
+# $OUT (a copy when links fail), never from its own folder. Control: the same probe with a writable --out exits 0.
+hunt2_c9_any=""
+for hunt2_c in boot_check_unwritable boot_probe_unwritable boot_probe_writable; do
+  if [ -z "$FILTER" ] || [[ "hunt2.$hunt2_c" == *"$FILTER"* ]]; then hunt2_c9_any=1; fi
+done
+if [ -n "$hunt2_c9_any" ]; then
+  hunt2_g9="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
+  hunt2_bin="$OUT/hunt2_c9_bin"; mkdir -p "$hunt2_bin"
+  for hunt2_x in "$hunt2_g9" "${hunt2_g9/_console.exe/.exe}"; do
+    [ -f "$hunt2_x" ] && { ln -f "$hunt2_x" "$hunt2_bin/" 2>/dev/null || cp -f "$hunt2_x" "$hunt2_bin/"; }
+  done
+  hunt2_gl="$hunt2_bin/$(basename "$hunt2_g9")"
+  hunt2_e9="$(cd "$HERE/.." && pwd)"; hunt2_o9="$OUT/hunt2_c9"; mkdir -p "$hunt2_o9"
+  if command -v cygpath >/dev/null 2>&1; then hunt2_e9="$(cygpath -m "$hunt2_e9")"; hunt2_o9="$(cygpath -m "$hunt2_o9")"; fi
+  hunt2_boot() { MSYS_NO_PATHCONV=1 APPDATA="$hunt2_o9" TL_CACHE_DIR="$hunt2_o9" timeout 180 "$hunt2_gl" --headless --fixed-fps 60 --path "$hunt2_e9" res://boot/boot.tscn -- "$@" >/dev/null 2>&1; echo $?; }
+  if [ -z "$FILTER" ] || [[ "hunt2.boot_check_unwritable" == *"$FILTER"* ]]; then
+    rm -rf "$hunt2_o9/check.json.boot.json"; mkdir -p "$hunt2_o9/check.json.boot.json"
+    hunt2_rc9="$(hunt2_boot check "--out=$hunt2_o9/check.json" "--games=$hunt2_e9/seeds" --ticks=12)"
+    why=""; [ "$hunt2_rc9" = 2 ] || why="boot check with an unwritable <out>.boot.json exited $hunt2_rc9, wanted 2"
+    verdict hunt2.boot_check_unwritable "$why" "a directory where <out>.boot.json goes: exit $hunt2_rc9"
+  fi
+  if [ -z "$FILTER" ] || [[ "hunt2.boot_probe_unwritable" == *"$FILTER"* ]]; then
+    rm -rf "$hunt2_o9/probe0.json"; mkdir -p "$hunt2_o9/probe0.json"
+    hunt2_rc9="$(hunt2_boot probe "--out=$hunt2_o9/probe0.json")"
+    why=""; [ "$hunt2_rc9" = 2 ] || why="boot probe with an unwritable --out exited $hunt2_rc9, wanted 2"
+    verdict hunt2.boot_probe_unwritable "$why" "a directory where the probe report goes: exit $hunt2_rc9"
+  fi
+  if [ -z "$FILTER" ] || [[ "hunt2.boot_probe_writable" == *"$FILTER"* ]]; then
+    rm -rf "$hunt2_o9/probe1.json"
+    hunt2_rc9="$(hunt2_boot probe "--out=$hunt2_o9/probe1.json")"
+    why=""; [ "$hunt2_rc9" = 0 ] || why="boot probe exited $hunt2_rc9, wanted 0"
+    grep -q '"kind": "probe"' "$hunt2_o9/probe1.json" 2>/dev/null || why="${why:+$why; }no probe report written"
+    verdict hunt2.boot_probe_writable "$why" "control: writable --out, exit $hunt2_rc9, report written"
+  fi
+  rm -rf "$hunt2_bin"
+fi
+
+# C8 (hunt2 round 2): unknown keys are errors. A misspelled tuning key in a seed's tuning.json (a copy in $OUT) fails a 20-frame
+# smoke and names the key; the seeds gate (39 cases) runs the shipped files clean, which is the control.
+for hunt2_t in "drive cones mass" "paddle rival speed" "wall wall hp"; do
+  read -r hunt2_n8 hunt2_sec hunt2_key <<< "$hunt2_t"
+  if [ -z "$FILTER" ] || [[ "hunt2.tuning_typo_$hunt2_n8" == *"$FILTER"* ]]; then
+    hunt2_p8="$OUT/hunt2_typo_$hunt2_n8"; rm -rf "$hunt2_p8"; cp -r "$HERE/../seeds/seed_$hunt2_n8" "$hunt2_p8"
+    sed -i "0,/\"$hunt2_key\":/s//\"${hunt2_key}_typo\": 1, \"$hunt2_key\":/" "$hunt2_p8/data/tuning.json"
+    why=""
+    grep -q "\"${hunt2_key}_typo\"" "$hunt2_p8/data/tuning.json" || why="could not add ${hunt2_key}_typo to the copy"
+    if [ -z "$why" ]; then
+      hunt2_rc8=0
+      TL_QUIET=1 timeout 300 bash "$TL" smoke --pack="$hunt2_p8" --frames=20 --report="$OUT/hunt2_typo_$hunt2_n8.json" >/dev/null 2>&1 || hunt2_rc8=$?
+      [ "$hunt2_rc8" = 1 ] || why="smoke with ${hunt2_key}_typo exited $hunt2_rc8, wanted 1"
+      grep -q "${hunt2_key}_typo" "$OUT/hunt2_typo_$hunt2_n8.json" 2>/dev/null || why="${why:+$why; }the report does not name ${hunt2_key}_typo"
+    fi
+    verdict "hunt2.tuning_typo_$hunt2_n8" "$why" "tuning.json with ${hunt2_key}_typo (first '$hunt2_key' key): smoke exit $hunt2_rc8, the key named in the report"
+    rm -rf "$hunt2_p8"
   fi
 done
