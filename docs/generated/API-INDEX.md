@@ -56,7 +56,7 @@ Consts: `OPTIONS`, `WALKER_HEIGHT`, `WALKER_SLIDE_HEIGHT`
 
 Signals: `downed()`, `got_up()`, `mode_changed(mode: StringName)`, `pushed(body: RigidBody3D, impulse: float)`
 
-Properties: `accel: float`, `blade_material: String`, `body_mass: float`, `fly_scale: float`, `get_up_frames: int`, `grounded: bool`, `jump_speed: float`, `mode: StringName`, `push_strength: float`, `rig: Node3D`, `run_speed: float`, `skate_accel: float`, `skate_brake: float`, `skate_lateral_grip: float`, `skate_speed: float`, `skate_turn_rate: float`, `sole_material: String`, `surface: String`, `turn_rate: float`, `walk_speed: float`
+Properties: `accel: float`, `bar_axis: Vector3`, `bar_omega: float`, `bar_point: Vector3`, `bar_theta: float`, `blade_material: String`, `body_mass: float`, `fly_scale: float`, `get_up_frames: int`, `grounded: bool`, `jump_speed: float`, `ledge_top: Vector3`, `mantle_progress: float`, `mode: StringName`, `push_strength: float`, `rig: Node3D`, `run_speed: float`, `skate_accel: float`, `skate_brake: float`, `skate_lateral_grip: float`, `skate_speed: float`, `skate_turn_rate: float`, `sole_material: String`, `surface: String`, `turn_rate: float`, `walk_speed: float`, `wall_normal: Vector3`
 
 - `func body_radius() -> float`
 - `func brake(on: bool = true) -> void`
@@ -71,6 +71,7 @@ Properties: `accel: float`, `blade_material: String`, `body_mass: float`, `fly_s
 - `func is_flying() -> bool`
 - `func is_stumbling() -> bool`
 - `func jump() -> void`
+- `static func mark_bar(body: CollisionObject3D) -> void`
 - `func move(direction: Vector3, run: bool = false) -> void`
 - `func place(at: Vector3, facing: float = 0.0) -> void`
 - `func set_body_scale(scale_: float) -> void`
