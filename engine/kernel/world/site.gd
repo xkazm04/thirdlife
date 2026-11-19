@@ -13,7 +13,7 @@ extends RefCounted
 ## E2 (day of 19 Nov): a job made in the minigame editor carries the player's lot in `job_created.lot` (JOB.md, "Added
 ## 2026-11-19"): it moves this lot there (`job_lot`). A job without it falls back to the workbench's draft
 ## `<job>/../_editor/*.json` whose request is the job's sentence (`draft_lot`, E6); neither = the walk's lot.
-## When the centre moves, the lot and its reserved plot take the natural ground height at that centre.
+## A moved site or one without an explicit height takes the natural ground height at its final centre.
 ##
 ## Arrival. With a build queue (tiers `load.mode` queue, step, wait or auto) a site lot is a plot of the world from the
 ## start, appended after the walk's plots (id `site_<lot index>`, radius = the lot's, origin = the lot's `at` and `h`).
@@ -47,7 +47,7 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 	var lots: Array = (land as Dictionary).get("lots", []) if typeof(land) == TYPE_DICTIONARY and typeof((land as Dictionary).get("lots")) == TYPE_ARRAY else []
 	var plots: Array = walk.get("plots", []) if typeof(walk.get("plots")) == TYPE_ARRAY else []
 	var reserved: Dictionary = {}           # a replayed world log carries the plots it reserved: lot index -> plot index
-	var moved := {}                         # lot index -> site whose centre changed
+	var auto_pads: Array[Dictionary] = []   # sites to sample once all terrain bounds are known
 	for i: int in plots.size():
 		if typeof(plots[i]) == TYPE_DICTIONARY and (plots[i] as Dictionary).has("site_lot"):
 			reserved[int((plots[i] as Dictionary)["site_lot"])] = i
@@ -60,36 +60,33 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 			world.set("refused", "walk script, landscape.lots[%d]: %s" % [k, why])
 			return
 		var dir: String = job_dir(str(lot["job"]))
-		var s: Dictionary = {"lot": k, "job": str(lot["job"]), "dir": dir, "plot": -1, "tpe": int((lot.get("replay", {}) as Dictionary).get("ticks_per_event", 0)),
-			"log": SiteLog.new(), "n": 0, "view": SiteLog.fold([], 0), "arrived_dir": "", "size_seen": -1, "reads": 0, "read_us": 0, "stage_ticks": {},
-			"at": [float((lot["at"] as Array)[0]), float(lot.get("h", 0.0)), float((lot["at"] as Array)[1])], "radius": float(lot.get("radius", 20.0))}
-		if not dir.is_empty() and FileAccess.file_exists(dir + "/job.jsonl"):
-			# The gate still faces the road, independent of the player's yaw.
-			var placement := job_lot(dir)
-			var source := "job log"
-			if placement.is_empty():
-				placement = draft_lot(dir)
-				if placement.has("file"):
-					source = "workbench draft " + str(placement.file)
-			if not placement.is_empty():
-				if lot.at != placement.at:
-					moved[k] = s
-				lot["at"] = placement.at
-				lot["radius"] = placement.radius
-				s["at"] = [placement.at[0], float(lot.get("h", 0.0)), placement.at[1]]
-				s["radius"] = placement.radius
-				s["lot_from"] = source
-				print("[site] lot %d: at %s, radius %s m, from the %s" % [k, str(lot.at), str(lot.radius), source])
 		if dir.is_empty() or not FileAccess.file_exists(dir + "/job.jsonl"):
 			_warn("lot %d: no job log at '%s' (%s): the lot stays a plain building site" % [k, str(lot["job"]), dir + "/job.jsonl" if not dir.is_empty() else "not found"])
 			continue
+		var walk_at: Array = lot.at
+		var s: Dictionary = {"lot": k, "job": str(lot["job"]), "dir": dir, "plot": -1, "tpe": int((lot.get("replay", {}) as Dictionary).get("ticks_per_event", 0)),
+			"log": SiteLog.new(), "n": 0, "view": SiteLog.fold([], 0), "arrived_dir": "", "size_seen": -1, "reads": 0, "read_us": 0, "stage_ticks": {},
+			"at": [float((lot["at"] as Array)[0]), float(lot.get("h", 0.0)), float((lot["at"] as Array)[1])], "radius": float(lot.get("radius", 20.0))}
+		var placement := job_lot(dir)
+		var source := "job log"
+		if placement.is_empty():
+			placement = draft_lot(dir)
+			if placement.has("file"):
+				source = "workbench draft " + str(placement.file)
+		if not placement.is_empty():
+			lot["at"] = placement.at
+			lot["radius"] = placement.radius
+			s["at"] = [placement.at[0], float(lot.get("h", 0.0)), placement.at[1]]
+			s["radius"] = placement.radius
+			if float(placement.get("yaw_deg", 0.0)) != 0.0:
+				s["yaw_deg"] = placement.yaw_deg
+			s["lot_from"] = source
+			print("[site] lot %d: at %s, radius %s m, from the %s" % [k, str(lot.at), str(lot.radius), source])
 		if world.get("jobs") == null:
 			_warn("lot %d: the world has no build queue (tiers load.mode block): the job is shown, its game cannot arrive" % k)
 		elif reserved.has(k):
 			s["plot"] = reserved[k]
 			s["radius"] = float((plots[reserved[k]] as Dictionary).get("radius", s["radius"]))
-			if moved.has(k):
-				plots[reserved[k]].origin = s.at
 		else:
 			s["plot"] = plots.size()
 			var fit: Array = fit_radius(dir, float(s["radius"]))
@@ -100,18 +97,24 @@ func setup(world_node: Node, walk: Dictionary) -> void:
 			s["fit"] = str(fit[1]) if seen.is_empty() else str(seen[1])
 			var r: float = float(s["radius"])
 			plots.append({"id": "site_%d" % k, "origin": s["at"], "radius": r, "footprint": {"size_m": [fr * 2.0, fr * 2.0]}, "seed": 1, "site_lot": k})
+		var moved: bool = walk_at != lot.at
+		if moved or not lot.has("h"):
+			auto_pads.append({"site": s, "centre": "new centre" if moved else "centre"})
+			if s.plot >= 0:
+				plots[s.plot].origin = s.at   # an already-reserved plot also shares the sampled height
 		sites.append(s)
 	walk["plots"] = plots
 	# Every placement must be known before sampling: any lot can move the terrain's bounds and centre.
-	if not moved.is_empty():
+	if not auto_pads.is_empty():
 		var terr := _base_terrain(walk, world._resolve)
 		var pads: Array = land.get("pad_h", [])
-		for k: int in moved:
-			var s: Dictionary = moved[k]
+		for pad: Dictionary in auto_pads:
+			var s: Dictionary = pad.site
+			var k: int = s.lot
 			var lot: Dictionary = lots[k]
 			var centre := Vector2(lot.at[0], lot.at[1])
 			var h := terr.base_h(centre.x, centre.y)
-			print("[site] lot %d: pad h %s -> %.2f m (the land at the new centre)" % [k, str(lot.get("h", "auto")), h])
+			print("[site] lot %d: pad h %s -> %.2f m (the land at the %s)" % [k, str(lot.get("h", "auto")), h, pad.centre])
 			lot.h = h
 			s.at[1] = h                  # the reserved plot's origin shares this array
 			s.pad_h = h
@@ -191,14 +194,13 @@ static func _job_created(dir: String) -> Dictionary:
 
 ## E2. `job_created.lot` ({at: [x, z], yaw_deg, radius}) or {}. The first line is checked against the job schema
 ## (site/event_schema.gd: radius >= 12, at two numbers); a line that fails gives {} and the draft is tried instead.
-## The yaw is not taken: the gate faces the road by the landscape rule.
 static func job_lot(dir: String) -> Dictionary:
 	return _job_created(dir).get("lot", {})
 
 
 ## E6. The lot the player chose in the workbench for this job: the draft (`tl.editor-draft/1`, written by
 ## engine/ui/editor/workbench.gd on Build it) under `<the job's parent>/_editor/` whose `request` is the job's
-## `job_created.sentence` (the Foreman's command line turns " into '). Returns {at: [x, z], radius, file} or {} when
+## `job_created.sentence` (the Foreman's command line turns " into '). Returns the placement and its source file or {} when
 ## there is none or it is malformed (then the walk's lot stands as before). Read from files only: the same files give
 ## the same lot, so a run's ticks and hashes stay a function of its inputs.
 static func draft_lot(dir: String) -> Dictionary:
@@ -220,12 +222,16 @@ static func draft_lot(dir: String) -> Dictionary:
 		if typeof(lot) != TYPE_DICTIONARY or typeof((lot as Dictionary).get("at")) != TYPE_ARRAY or ((lot as Dictionary)["at"] as Array).size() != 2:
 			return {}
 		var at: Array = lot.at
-		for n: Variant in [at[0], at[1], lot.get("radius")]:
+		var yaw: Variant = lot.get("yaw_deg", 0.0)
+		for n: Variant in [at[0], at[1], lot.get("radius"), yaw]:
 			if not (n is float or n is int) or not is_finite(n):
 				return {}
-		if lot.radius < FIT_MIN:
+		if lot.radius < FIT_MIN or absf(yaw) > 360.0:
 			return {}
-		return {"at": [float(at[0]), float(at[1])], "radius": float(lot.radius), "file": f}
+		var placement := {"at": [float(at[0]), float(at[1])], "radius": float(lot.radius), "file": f}
+		if yaw != 0.0:
+			placement["yaw_deg"] = yaw
+		return placement
 	return {}
 
 
@@ -542,6 +548,8 @@ func view_of(k: int) -> Dictionary:
 			v["arrived"] = not str(s["arrived_dir"]).is_empty()
 			v["plot"] = int(s["plot"])
 			v["radius"] = float(s["radius"])            # S4: the lot as it is now (refitted when the game is measured)
+			if s.has("yaw_deg"):
+				v["yaw_deg"] = s.yaw_deg
 			return v
 	return {}
 
@@ -567,12 +575,9 @@ func report() -> Array:
 			"packages": pk, "stage_ticks": s["stage_ticks"], "radius": float(s["radius"]), "reads": int(s["reads"]), "read_ms": snappedf(float(int(s["read_us"])) / 1000.0, 0.01)}
 		if int(s["plot"]) >= 0:
 			r["plot"] = str(((world.get("plot_defs") as Array)[int(s["plot"])] as Dictionary)["id"])
-		if s.has("fit"):
-			r["fit"] = str(s["fit"])
-		if s.has("lot_from"):
-			r["lot_from"] = str(s["lot_from"])
-		if s.has("pad_h"):
-			r["pad_h"] = s.pad_h
+		for key: String in ["fit", "lot_from", "pad_h", "yaw_deg"]:
+			if s.has(key):
+				r[key] = s[key]
 		r["at"] = [float((s["at"] as Array)[0]), float((s["at"] as Array)[2])]
 		for key: String in ["radius_before", "measured_m", "measure_ms", "refit_ms"]:
 			if s.has(key):

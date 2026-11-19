@@ -98,8 +98,8 @@ func _process(delta: float) -> void:
 
 ## S2. The site is solid: one box per bay (slab, walls or house, scaffold) and one for the crane's foot, in the world's
 ## space (terrain/world_space.gd) under the tag `site <lot>`, made again when the view changes and all taken away when
-## the game arrives. `boxes`: [[centre, size]] in the site's own frame. Nothing without a landscape (headless).
-func _solid(boxes: Array, rails: PackedVector3Array) -> void:
+## the game arrives. Boxes use the construction frame (the gate frame for arch pillars). Rails always use the gate.
+func _solid(boxes: Array, rails: PackedVector3Array, layout: Transform3D = Transform3D.IDENTITY) -> void:
 	var land: Node = get_parent()
 	if land == null or not land.has_meta(&"tl_space"):
 		return
@@ -109,8 +109,9 @@ func _solid(boxes: Array, rails: PackedVector3Array) -> void:
 	var keep: String = str(ws.get("tag"))
 	ws.set("tag", t)
 	var xf: Transform3D = Transform3D(Basis(Vector3.UP, rotation.y), position)
+	var box_frame := xf * layout
 	for bx: Array in boxes:
-		ws.call("add_box", Transform3D(xf.basis, xf * (bx[0] as Vector3)), bx[1])
+		ws.call("add_box", box_frame.translated_local(bx[0]), bx[1])
 	for k: int in range(0, rails.size(), 2):
 		ws.call("add_wall", PackedVector3Array([xf * rails[k], xf * rails[k + 1]]), 1.2)
 	ws.set("tag", keep)
@@ -150,6 +151,7 @@ static func _key(v: Dictionary) -> String:
 	if v.is_empty():
 		return ""
 	var parts: PackedStringArray = PackedStringArray([str(v["stage"]), str(v["title"]), str(v["arrived"]), str(v["job_state"]), str(v.get("radius", ""))])
+	parts.append(str(v.get("yaw_deg", 0.0)))
 	for b: Dictionary in v["packages"]:
 		parts.append("%s:%s:%s" % [str(b["id"]), str(b["state"]), str(b["merged"])])
 	return "|".join(parts)
@@ -180,6 +182,14 @@ func _build(v: Dictionary) -> void:
 			print("[site] lot %d: lot %.0f m (was %.0f), its parts built in %.2f ms on the main thread%s" % [lot, radius, was, build_ms, " (worker meshes still coming)" if not _tasks.is_empty() else ""])
 			_report_next = not _tasks.is_empty()
 		return
+	var construction := _parts
+	var yaw := float(v.get("yaw_deg", 0.0))
+	if yaw != 0.0:
+		construction = Node3D.new()
+		construction.name = "Construction"
+		# The workbench turns +X toward +Z on its map. Cancel the parent's road-facing turn.
+		construction.rotation.y = -deg_to_rad(yaw) - rotation.y
+		_parts.add_child(construction)
 	var mk: TLMesh = TLMesh.new(51)
 	var pk: Array = v["packages"]
 	var m: int = pk.size()
@@ -207,20 +217,22 @@ func _build(v: Dictionary) -> void:
 	TLKitSite.add_lumber(mk, Vector3(-r * 0.62, 0.0, r * 0.35), 3.2, 1.0, 6, 70.0)
 	TLKitSite.add_pallet(mk, Vector3(-r * 0.5, 0.0, r * 0.55), 3, 20.0)
 	var mi: MeshInstance3D = mk.instance("site_bays")
-	_parts.add_child(mi)
+	construction.add_child(mi)
 	if m > 0:
-		_plan_board(pk)                           # S3: the packages on a board by the gate (the bays carry no text)
+		# A turned yard carries its board on the working floor. The original board stands beside the sign.
+		var board_at := Vector3(0, 0, -r * 0.60) if yaw != 0.0 else Vector3(21.2, 0, r + 6.2)
+		_plan_board(pk, construction, board_at)
 	# the crane: behind the bays, turning to the one being built (or slowly along them when none is)
 	_crane = TLKitSite.crane(24.0, 2.0, maxf(16.0, width * 0.5 + 6.0), 7.0)
 	_crane.position = Vector3(width * 0.5 + 3.0 if width * 0.5 + 3.0 < r - 3.0 else r - 4.0, 0.0, _bay_z - 8.0)
-	_parts.add_child(_crane)
+	construction.add_child(_crane)
 	var boxes: Array = [[_crane.position + Vector3(0.0, 3.0, 0.0), Vector3(4.0, 6.0, 4.0)]]
 	for i: int in m:
 		var b: Dictionary = pk[i]
 		var h: float = 7.6 if bool(b["merged"]) else float(SOLID_H.get(str(b["state"]), 1.2))
 		# the slab, the walls or house and the scaffold in front of it (z to +2 m beyond the slab)
 		boxes.append([Vector3(float(_bays_x[i]), h * 0.5, _bay_z + 1.0), Vector3(bw - 0.8, h, 8.6 + 2.0)])
-	_solid(boxes, rails)
+	_solid(boxes, rails, construction.transform)
 	var aim: Vector3 = Vector3(float(_bays_x[active]) if active >= 0 else 0.0, 0.0, _bay_z) - _crane.position
 	_target = atan2(-aim.z, aim.x)
 	if str(v["stage"]) == "failed":
@@ -374,24 +386,23 @@ func _scaffold(mk: TLMesh, o: Vector3, w: float, d: float, levels: int) -> void:
 	TLKitSite.add_ladder(mk, o + Vector3(w * 0.5 - 0.4, 0, z0 + 1.0), o + Vector3(w * 0.5 - 0.4, 2.0, z0 + 1.0))
 
 
-## S3. The plan: a board beside the sign, facing the road, one row per package in the plan's order:
+## S3. The plan: a board in the construction frame, one row per package in the plan's order:
 ## its state word and its title (the job's own words), coloured by state. Round 1 put the words on the bays, lying
 ## low in front of them: from the road they could not be read (stills before_site/04_site_mid_build_road.png).
 const ROW_COLOUR: Dictionary = {"promoted": Color(0.1, 0.42, 0.16), "running": Color(0.72, 0.36, 0.0), "verifying": Color(0.72, 0.36, 0.0),
 	"blocked": Color(0.66, 0.1, 0.08), "failed": Color(0.66, 0.1, 0.08), "queued": Color(0.32, 0.3, 0.34)}
-func _plan_board(pk: Array) -> void:
+func _plan_board(pk: Array, construction: Node3D, o: Vector3) -> void:
 	var mk: TLMesh = TLMesh.new(53)
 	var row: float = 0.72
 	var h: float = 1.4 + row * float(pk.size())
-	var o: Vector3 = Vector3(21.2, 0.0, radius + 6.2)        # beside the sign, away from the gate's spur
 	for sx: float in [-4.6, 4.6]:
 		mk.bar(o + Vector3(sx, -0.5, 0), o + Vector3(sx, 2.4 + h, 0), 0.26, 0.26, "wood_dark", Color.WHITE, 0.02)
 	mk.box(Vector3(10.6, h + 0.4, 0.2), "sign", Color.WHITE, 0.05, o + Vector3(0, 2.2 + h * 0.5, 0))
 	mk.box(Vector3(10.0, h - 0.2, 0.06), "cabin", Color.WHITE, 0.0, o + Vector3(0, 2.2 + h * 0.5, 0.12))
-	_parts.add_child(mk.instance("site_plan"))
+	construction.add_child(mk.instance("site_plan"))
 	var head: Label3D = _text("The plan", 64, 0.01, 960)
 	head.position = o + Vector3(0, 2.2 + h - 0.55, 0.2)
-	_parts.add_child(head)
+	construction.add_child(head)
 	for i: int in pk.size():
 		var b: Dictionary = pk[i]
 		var st: String = "built" if bool(b["merged"]) and str(b["state"]) == "promoted" else str(STATE_WORD.get(str(b["state"]), str(b["state"])))
@@ -402,7 +413,7 @@ func _plan_board(pk: Array) -> void:
 		lb.autowrap_mode = TextServer.AUTOWRAP_OFF
 		lb.modulate = ROW_COLOUR.get(str(b["state"]), Color(0.12, 0.1, 0.14))
 		lb.position = o + Vector3(0, 2.2 + h - 1.3 - row * float(i), 0.2)
-		_parts.add_child(lb)
+		construction.add_child(lb)
 
 
 ## The sign: beside the gate, facing the road. The job's title; how far it is; when it failed,

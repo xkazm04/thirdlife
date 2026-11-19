@@ -489,7 +489,9 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       try {
         // At most 80 characters (pack.schema.json), cut at a word boundary; the words before a colon when there is one.
         const whole = sentence.trim().replace(/\s+/g, " ").replace(/^./, (c) => c.toUpperCase());
-        const head = whole.includes(":") ? (whole.split(":")[0] as string).trim() : whole;
+        // Lane editor, 19 Nov: and only the first sentence: the workbench sends "<idea>. Decided: <answers>.", and the
+        // sign by the gate read "Ice hockey, three against three by the river. Decided".
+        const head = ((whole.includes(":") ? (whole.split(":")[0] as string) : whole).split(/\.\s/)[0] as string).trim().replace(/\.$/, "");
         const title = (head.length <= 80 ? head : head.slice(0, 80).replace(/\s+\S*$/, "")) || whole.slice(0, 80);
         log.append({ type: "job_created", sentence: sentence.trim(), packId: `game.${slug.replace(/-/g, "_")}`, title,
           ...(answers && { answers }), ...(lot && { lot }) });

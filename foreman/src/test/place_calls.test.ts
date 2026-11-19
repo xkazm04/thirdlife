@@ -73,3 +73,20 @@ test("a bad --place-calls value is refused before anything is written", async ()
     assert.ok(!fs.existsSync(site) || fs.readdirSync(site).length === 0, `nothing written for ${value}`);
   }
 });
+
+test("the title is the idea's first sentence: the workbench's '<idea>. Decided: ...' gives a clean sign", async () => {
+  const root = tempDir("title");
+  const site = path.join(root, "jobs"), script = path.join(root, "fake.json");
+  const brief = readLog(FIXTURE).events.find((e) => e.type === "brief_set")!;
+  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer" }, json: { brief: brief.brief, estimate: brief.estimate } }] }));
+  const cases: [string, string][] = [
+    ["ice hockey, three against three by the river. Decided: ice hockey on a rink; three against three.", "Ice hockey, three against three by the river"],
+    ["balls roll down a ramp: three of them", "Balls roll down a ramp"],
+    ["a ramp with balls", "A ramp with balls"],
+  ];
+  for (const [sentence, title] of cases) {
+    assert.equal(await main(["new", sentence, "--site", site, "--adapter", "fake", "--fake-script", script], quiet), 0);
+  }
+  const titles = fs.readdirSync(site).sort().map((d) => readLog(path.join(site, d)).events[0]).map((e) => (e?.type === "job_created" ? e.title : ""));
+  assert.deepEqual(titles.sort(), cases.map((c) => c[1]).sort());
+});
