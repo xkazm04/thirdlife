@@ -9,7 +9,7 @@
         "engine/rigs/**",
         "docs/shifts/2026-11-19-night/lanes/walker/**"
       ],
-      "note": "night 19 Nov lane walker (Opus directing Astra), .claude/worktrees/n19-walker, until 08:00"
+      "note": "night 19 Nov lane walker (Opus directing Astra), .claude/worktrees/n19-walker2 (round 2 from 58a80d1), until 06:30"
     },
     {
       "id": "n19-editor",

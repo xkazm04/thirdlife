@@ -49,3 +49,4 @@ lands on main.
 - 02:20 editor round 2 landed (`c9fe14f`; ui.selftest 123, fast 5/5): change-a-decision + Astra-alone look pass; round 3 dispatched (lost click, village map as home).
 - 02:45 hunt2 landed (`30cfbed`; 18 fixes, kernel.selftest 240): main full gate green except packs (hockey many_budget 1.07 ms under load 13; A/B vs pre-merge shows load, not a regression) and perf NOT RUN; both re-run at the verdict. 03:06 hunt2 round 2 dispatched (B8, A1, C9, B11, C8).
 - 02:57 standup: walker nearly done (gate green but perf); editor round 3 found the lost click's mechanism; hunt2 round 2 fixed B8.
+- 03:28 walker landed (`58a80d1`; crowns 0/0, V wedge, pad swap, ink coverage, crest ink, A/D behind TL_AD_KEYS; 2.04 M Astra tokens); blocks renumbered 400-430; full gate on main running. 03:31 walker round 2 dispatched (hunt2's B2, B4 highs, then walker-scope mediums/lows).
