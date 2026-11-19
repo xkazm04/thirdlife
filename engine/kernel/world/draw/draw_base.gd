@@ -176,6 +176,31 @@ func _under_moving_body(n: Node, top: Node) -> bool:
 	return false
 
 
+## Does the face's XZ projection touch the plot disc? Used by far pictures and both collision copies.
+static func tri_meets_disc(v0: Vector3, v1: Vector3, v2: Vector3, r2: float) -> bool:
+	var a := Vector2(v0.x, v0.z)
+	var b := Vector2(v1.x, v1.z)
+	var c := Vector2(v2.x, v2.z)
+	if a.length_squared() <= r2 or b.length_squared() <= r2 or c.length_squared() <= r2:
+		return true
+	if _edge_meets_disc(a, b, r2) or _edge_meets_disc(b, c, r2) or _edge_meets_disc(c, a, r2):
+		return true
+	# Edges already handle boundary contact, including triangles seen edge-on.
+	# Only a strictly enclosed origin remains.
+	var s0 := (b - a).cross(-a)
+	var s1 := (c - b).cross(-b)
+	var s2 := (a - c).cross(-c)
+	return (s0 > 0.0 and s1 > 0.0 and s2 > 0.0) or (s0 < 0.0 and s1 < 0.0 and s2 < 0.0)
+
+
+static func _edge_meets_disc(a: Vector2, b: Vector2, r2: float) -> bool:
+	var d := b - a
+	var l2 := d.length_squared()
+	if l2 == 0.0:
+		return false
+	var u := clampf(-a.dot(d) / l2, 0.0, 1.0)
+	return (a + d * u).length_squared() <= r2
+
 ## The height of a pack's own ground where its plot ends: the median height of its terrain sheets in a ring around
 ## `radius` (the shader bends the ring to exactly this height). The viewer lifts the plot by minus this, so the rim of the pack's ground meets the world's ground.
 ## NAN when the pack has no terrain sheet that reaches the ring.

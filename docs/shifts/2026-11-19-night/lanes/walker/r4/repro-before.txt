@@ -1,0 +1,42 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+REPRO A13: FAIL airborne jump accepted 7 ticks after leaving the ledge; limit 6 ticks (offsets 6/7/8 accepted 1/1/0)
+exit 1
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+t40 x=-0.3230 dx=0.0189 y=7.001 g=true spd=1.13 mode=ground trail=8
+t41 x=-0.3514 dx=-0.0283 y=7.000 g=true spd=0.00 mode=ground trail=8
+t42 x=-0.3419 dx=0.0094 y=7.000 g=true spd=0.57 mode=ground trail=8
+t43 x=-0.3230 dx=0.0189 y=7.002 g=true spd=1.13 mode=ground trail=8
+t44 x=-0.3514 dx=-0.0283 y=7.002 g=true spd=0.00 mode=ground trail=8
+t45 x=-0.3419 dx=0.0094 y=7.001 g=true spd=0.57 mode=ground trail=8
+t46 x=-0.3230 dx=0.0189 y=7.001 g=true spd=1.13 mode=ground trail=8
+t47 x=-0.3514 dx=-0.0283 y=7.001 g=true spd=0.00 mode=ground trail=8
+t48 x=-0.3419 dx=0.0094 y=7.001 g=true spd=0.57 mode=ground trail=8
+t49 x=-0.3230 dx=0.0189 y=7.001 g=true spd=1.13 mode=ground trail=8
+t50 x=-0.3514 dx=-0.0283 y=7.000 g=true spd=0.00 mode=ground trail=8
+t51 x=-0.3419 dx=0.0094 y=7.000 g=true spd=0.57 mode=ground trail=8
+t52 x=-0.3230 dx=0.0189 y=7.002 g=true spd=1.13 mode=ground trail=8
+t53 x=-0.3514 dx=-0.0283 y=7.002 g=true spd=0.00 mode=ground trail=8
+t54 x=-0.3419 dx=0.0094 y=7.001 g=true spd=0.57 mode=ground trail=8
+t55 x=-0.3230 dx=0.0189 y=7.001 g=true spd=1.13 mode=ground trail=8
+t56 x=-0.3514 dx=-0.0283 y=7.001 g=true spd=0.00 mode=ground trail=8
+t57 x=-0.3419 dx=0.0094 y=7.001 g=true spd=0.57 mode=ground trail=8
+t58 x=-0.3230 dx=0.0189 y=7.001 g=true spd=1.13 mode=ground trail=8
+t59 x=-0.3514 dx=-0.0283 y=7.000 g=true spd=0.00 mode=ground trail=8
+t60 x=-0.3419 dx=0.0094 y=7.000 g=true spd=0.57 mode=ground trail=8
+t61 x=-0.3230 dx=0.0189 y=7.002 g=true spd=1.13 mode=ground trail=8
+t62 x=-0.3514 dx=-0.0283 y=7.002 g=true spd=0.00 mode=ground trail=8
+t63 x=-0.3419 dx=0.0094 y=7.001 g=true spd=0.57 mode=ground trail=8
+t64 x=-0.3230 dx=0.0189 y=7.001 g=true spd=1.13 mode=ground trail=8
+t65 x=-0.3514 dx=-0.0283 y=7.001 g=true spd=0.00 mode=ground trail=8
+t66 x=-0.3419 dx=0.0094 y=7.001 g=true spd=0.57 mode=ground trail=8
+t67 x=-0.3230 dx=0.0189 y=7.001 g=true spd=1.13 mode=ground trail=8
+t68 x=-0.3514 dx=-0.0283 y=7.000 g=true spd=0.00 mode=ground trail=8
+t69 x=-0.3419 dx=0.0094 y=7.000 g=true spd=0.57 mode=ground trail=8
+REPRO H1-beam-trace: PASS
+exit 0
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+REPRO A5: FAIL downed walker accelerated from 0.57 to 3.97 m/s in 6 ticks with movement released
+exit 1

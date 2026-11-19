@@ -1,0 +1,6 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[site] warning: lot 0: the promoted game promoted/example.bounce@0.1.0 has no pack.json
+[site] lot 0: example.bounce 0.1.0 arrives on plot site_0 at world tick 120
+[site] lot 0: example.bounce 0.1.0 arrives on plot site_0 at world tick 0
+REPRO B9: PASS

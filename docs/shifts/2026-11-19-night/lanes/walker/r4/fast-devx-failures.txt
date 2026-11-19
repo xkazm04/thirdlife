@@ -1,0 +1,7 @@
+✖ 9 api-v1: the description is deterministic and lists signals, properties, constants; the demo tree fails on TLBall.shoot (302.1869ms)
+✖ real tree: green, under 5 s, grandfathered items are exactly the documented ones, index is stable (535.7562ms)
+✖ gate step: shape and a green real-tree run (857.4154ms)
+ℹ tests 225
+ℹ pass 222
+ℹ fail 3
+✖ 9 api-v1: the description is deterministic and lists signals, properties, constants; the demo tree fails on TLBall.shoot (302.1869ms)

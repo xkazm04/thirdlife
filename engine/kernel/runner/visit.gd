@@ -71,10 +71,11 @@ func setup(v: Node, opts: Dictionary) -> String:
 			return str(r["error"])
 		replay = r["record"]
 		input._feed(replay["frames"])
-		var base: String = str(opts["input"]).trim_suffix(".json")
+		var in_path: String = str(opts["input"]).replace("\\", "/")     # hunt2 B4: a Windows path (backslashes) found no stage records
+		var base: String = in_path.trim_suffix(".json")
 		for f: String in DirAccess.get_files_at(base.get_base_dir()):
 			var full: String = base.get_base_dir() + "/" + f
-			if full.begins_with(base + ".") and f.ends_with(".json") and full != str(opts["input"]):
+			if full.begins_with(base + ".") and f.ends_with(".json") and full != in_path:
 				var sr: Dictionary = Session.call("read", full)
 				if bool(sr["ok"]):
 					_stage_feeds[full.trim_prefix(base + ".").trim_suffix(".json")] = sr["record"]

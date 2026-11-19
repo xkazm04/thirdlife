@@ -1,0 +1,2 @@
+FAIL ground.concave_cover: missing WALKERWORLD ground.concave_cover line (exit 0)
+selftest: 0 passed, 1 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker2/docs/shifts/2026-11-19-night/lanes/walker/r5/.scratch/missing-line)

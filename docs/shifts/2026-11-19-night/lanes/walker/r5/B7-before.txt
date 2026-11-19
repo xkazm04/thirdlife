@@ -1,0 +1,3 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+REPRO B7: FAIL 4 visible floor triangles, rim 0.00 m; visitor y after 90 ticks: immediate -26.60 m, arriving -26.60 m

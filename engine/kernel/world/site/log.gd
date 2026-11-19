@@ -13,30 +13,7 @@ extends RefCounted
 ##   and nothing was promoted), "promoted" (a `promoted` event: the game arrived and stays, whatever a later change
 ##   request does; `failed` still says when the job's last state is a failure). `promoted` = the LAST promoted event: {packId, version, dest}.
 
-const BASE: Array = ["v", "seq", "ts", "job", "type"]
-## Keys per event type (contracts/JOB.md and foreman/src/events.ts SPECS; `plan_set.card` added 2026-11-17).
-const KEYS: Dictionary = {
-	"job_created": ["sentence", "packId", "title"],
-	"brief_set": ["brief", "estimate"],
-	"brief_approved": ["by"],
-	"plan_set": ["packages", "card"],
-	"package_state": ["package", "state", "round", "cause", "detail"],
-	"builder_run": ["package", "round", "adapter", "mode", "model", "outcome", "durationMs", "tokensIn", "tokensOut", "tokensCacheRead", "transcript"],
-	"verify": ["package", "round", "level", "verb", "ok", "report", "exitCode", "after"],
-	"merge": ["package", "files", "removed"],
-	"note": ["package", "round", "text"],
-	"change_requested": ["text", "package", "inbox"],
-	"reopened": ["package", "reason"],
-	"question": ["package", "text"],
-	"answer": ["package", "text", "by", "inbox"],
-	"milestone": ["milestone", "captures", "summary"],
-	"comment": ["milestone", "text", "by"],
-	"replan": ["reason", "added", "removed", "changed"],
-	"budget": ["policy", "state", "reason"],
-	"billing": ["adapter", "mode", "evidence"],
-	"promoted": ["packId", "version", "dest"],
-	"job_state": ["state", "reason"],
-}
+const EventSchema = preload("res://kernel/world/site/event_schema.gd")
 
 var events: Array = []          # the checked events, in order
 var error: String = ""          # the first line that is not an event of the contract: reading stops there
@@ -59,28 +36,25 @@ func feed(text: String) -> int:
 		at = nl + 1
 		if line.is_empty():
 			continue
-		var why: String = check_line(line)
+		var parsed := JSON.new()
+		var why := check_line(line, parsed)
+		if why.is_empty() and parsed.data.seq != events.size() + 1:
+			why = "expected seq %d" % [events.size() + 1]
+		if why.is_empty() and not events.is_empty() and parsed.data.job != events[0].job:
+			why = "job changed within the log"
 		if not why.is_empty():
 			error = "job.jsonl line %d: %s" % [events.size() + 1, why]
 			break
-		events.append(JSON.parse_string(line))
+		events.append(parsed.data)
 		added += 1
 	read_bytes = at
 	return added
 
 
-static func check_line(line: String) -> String:
-	var j: JSON = JSON.new()
-	if j.parse(line) != OK or typeof(j.data) != TYPE_DICTIONARY:
+static func check_line(line: String, parsed: JSON = JSON.new()) -> String:
+	if parsed.parse(line) != OK or not parsed.data is Dictionary:
 		return "not a JSON object"
-	var e: Dictionary = j.data
-	var t: String = str(e.get("type", ""))
-	if not KEYS.has(t):
-		return "unknown event type '%s'" % t
-	for k: Variant in e.keys():
-		if not BASE.has(str(k)) and not (KEYS[t] as Array).has(str(k)):
-			return "unknown key '%s' in a %s event" % [str(k), t]
-	return ""
+	return EventSchema.check(parsed.data)
 
 
 ## What the site shows after the first `n` events (all of them when n < 0). Pure: the same events give the same view.

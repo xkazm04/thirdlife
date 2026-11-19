@@ -1,0 +1,12 @@
+# disk: 282.1 GB free on C:\ (floor 20 GB)
+... arch
+... assets
+... cards
+... devx.test
+... foreman.typecheck
+FAIL  arch                             667 ms  [12/12] uid-orphans, api-index-fresh, api-v1: docs/shifts/2026-11-19-night/lanes/walker/r5/.scratch/read-jobs.gd .gd without its .gd.uid
+PASS  assets                             4 ms  [4/4] 4 checks passed (+0 vs last green)
+PASS  cards                             77 ms  [3/3] 4 cards, schema ok (+0 vs last green)
+FAIL  devx.test                       7375 ms  [225/225] 222 pass, 3 fail across 17 files; 9 api-v1: the description is deterministic and lists signals, properties, constants; the demo tree fails on TLBall.shoot (devx\test\arch.test.mjs:264:1) | real tree: green, under 5 s, grandfathered items are exactly the documented ones, index is stable (devx\test\ar
+PASS  foreman.typecheck               2527 ms  tsc --noEmit clean
+{"schema":"tl.devx/1","cmd":"check","ok":false,"exit":1,"steps":[{"id":"arch","ok":false,"ms":667,"detail":"uid-orphans, api-index-fresh, api-v1: docs/shifts/2026-11-19-night/lanes/walker/r5/.scratch/read-jobs.gd .gd without its .gd.uid","found":12,"completed":12,"retried":false},{"id":"assets","ok":true,"ms":4,"detail":"4 checks passed (+0 vs last green)","found":4,"completed":4,"retried":false},{"id":"cards","ok":true,"ms":77,"detail":"4 cards, schema ok (+0 vs last green)","found":3,"completed":3,"retried":false},{"id":"devx.test","ok":false,"ms":7375,"detail":"222 pass, 3 fail across 17 files; 9 api-v1: the description is deterministic and lists signals, properties, constants; the demo tree fails on TLBall.shoot (devx\\test\\arch.test.mjs:264:1) | real tree: green, under 5 s, grandfathered items are exactly the documented ones, index is stable (devx\\test\\ar","found":225,"completed":225,"retried":false},{"id":"foreman.typecheck","ok":true,"ms":2527,"detail":"tsc --noEmit clean","retried":false}],"tier":"fast","ms":10861,"load":6.19,"flaky_retries":0,"steps_found":5,"steps_completed":5,"units_found":244,"units_completed":244,"disk_free_gb":282.1,"disk_floor_gb":20}

@@ -1,0 +1,6 @@
+PARKOUR lint: exit 0 "ok":true  
+PARKOUR smoke: exit 0 "ok":true "state_hash":"147426727bd88dc1959579558c564ef2cfcab81f56d187ba879b3ad9f5b238c1" "frames":3600
+PARKOUR bot --test=tests/bot_course.gd: exit 0 "ok":true "state_hash":"d1256f49895f2b739360e8209db7a7030d5e91f4275730828b9140b6a639e472" "frames":340
+PARKOUR bot --test=tests/bot_geometry.gd: exit 0 "ok":true "state_hash":"99c22a7ed9babcb1016173c523b2c19f88780f940455e7039efcd9e3abc3736c" "frames":1
+PARKOUR bot --test=tests/bot_obstacles.gd: exit 0 "ok":true "state_hash":"16f30417fe5f443bf016b07e7cea475096bfe2af52a433d586e2d54d4cb6c838" "frames":455
+PARKOUR invariants: exit 0 "ok":true "state_hash":"147426727bd88dc1959579558c564ef2cfcab81f56d187ba879b3ad9f5b238c1" "frames":3600

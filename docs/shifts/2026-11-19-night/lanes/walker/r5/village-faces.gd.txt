@@ -1,0 +1,43 @@
+extends SceneTree
+# Run as a .gd script with --headless --path engine. Copy both ways from the
+# same seed-1 holder at each shipped plot radius, before the first game tick.
+const Pack = preload("res://kernel/world/pack.gd")
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+
+func _initialize() -> void:
+	run.call_deferred()
+
+func run() -> void:
+	TLStyle.set_headless(false)
+	var games: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://boot/games.json"))
+	var village: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://boot/village.json"))
+	var dirs := {}
+	for game: Dictionary in games.games:
+		dirs[game.name] = ProjectSettings.globalize_path("res://" + game.from.trim_prefix("engine/"))
+	var total := 0
+	for plot: Dictionary in village.plots:
+		var holder := Pack.new()
+		holder.name = plot.id
+		root.add_child(holder)
+		if not holder.load_pack(dirs[plot.pack], {"seed": plot.seed}):
+			printerr(holder.load_errors)
+			quit(1)
+			return
+		var immediate := Space.new()
+		immediate.add_pack(holder, Transform3D.IDENTITY, plot.radius, 0.0, 9.0)
+		var sliced := Space.new()
+		var job := sliced.begin_pack(holder, Transform3D.IDENTITY, plot.radius, 0.0, 9.0)
+		while not sliced.step_pack(job, 2000):
+			pass
+		var n: int = immediate.stats.pack_faces
+		print("FACES %s immediate=%d sliced=%d shapes=%d" % [plot.id, n, sliced.stats.pack_faces, immediate.stats.pack_shapes])
+		if n != int(sliced.stats.pack_faces):
+			quit(1)
+			return
+		total += n
+		immediate.free_all()
+		sliced.free_all()
+		holder.unload()
+		holder.free()
+	print("FACES total=%d plots=%d" % [total, village.plots.size()])
+	quit()

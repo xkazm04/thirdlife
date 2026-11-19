@@ -201,9 +201,9 @@ func can_start_slide() -> bool:
 
 
 ## One tick of a person's body. `wish`: the horizontal velocity he asks for (m/s, world axes); `jump`, `slide`: the
-## key went down this tick. Returns {"pos", "grounded", "mode", "vel", "events": ["jump" | "land" | "slide" |
+## key went down this tick. A brake cancels even a tapped step. Returns {"pos", "grounded", "mode", "vel", "events": ["jump" | "land" | "slide" |
 ## "slope" | "end_slide"], "blocked"}.
-func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
+func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool, brake: bool = false) -> Dictionary:
 	var dt: float = 1.0 / 60.0
 	var pos: Vector3 = from
 	var ev: Array = []
@@ -212,7 +212,10 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 	sp.last_hit = {}
 	# a tapped key is a step: a wish that starts from rest is kept STEP_TICKS ticks
 	var hv: Vector3 = Vector3(vel.x, 0.0, vel.z)
-	if wish.length() > 0.01 and hv.length() < 0.3 and _step_t <= 0 and mode == "ground":
+	if brake:
+		_step_t = 0
+		wish = Vector3.ZERO
+	elif wish.length() > 0.01 and hv.length() < 0.3 and _step_t <= 0 and mode == "ground":
 		_step_t = STEP_TICKS
 		_step_wish = wish
 	if _step_t > 0:
@@ -223,7 +226,8 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 		_buffer = BUFFER + 1                     # the press tick and BUFFER ticks after it
 	elif _buffer > 0:
 		_buffer -= 1
-	var can_jump: bool = mode == "ground" or mode == "slide" or mode == "slope" or (mode == "air" and not _jumped and air_ticks <= COYOTE)
+	# air_ticks counts completed air ticks, before the current press.
+	var can_jump: bool = mode == "ground" or mode == "slide" or mode == "slope" or (mode == "air" and not _jumped and air_ticks < COYOTE)
 	if _buffer > 0 and can_jump:
 		_take_jump(ev)
 	if slide and can_start_slide():
@@ -401,7 +405,9 @@ func _ground_move(from: Vector3, delta: Vector3) -> Dictionary:
 	for it: int in 3:
 		if rest_m.length() < 0.0005:
 			break
-		if sp._test(Transform3D(Basis(), pos), rest_m):
+		# Sweep with 1 mm of clearance here. With the 3 cm ground-probe margin,
+		# recovery can shift the sweep so far back that a short push misses the wall.
+		if sp._test(Transform3D(Basis(), pos), rest_m, 0.001):
 			hit = true
 			sp.last_hit = {"tag": sp._tags.get(sp._res.get_collider_rid(0), "?"), "at": sp._res.get_collision_point(0), "n": sp._res.get_collision_normal(0), "from": pos}
 			var travel: Vector3 = sp._res.get_travel()
