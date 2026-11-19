@@ -1,0 +1,3 @@
+FAIL walker.crown: no CROWNCASE regression line (Godot exit 0)
+selftest: 0 passed, 1 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker/gate-missing-line)
+exit=1

@@ -60,23 +60,6 @@ static func ground(parent: Node3D, plots: Array, radii: Array, has_ground: Array
 	return g
 
 
-static func _multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String) -> void:
-	if xs.is_empty():
-		return
-	var mm: MultiMesh = MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = mk.build(mname.to_snake_case())
-	mm.instance_count = xs.size()
-	for i: int in xs.size():
-		mm.set_instance_transform(i, xs[i])
-		mm.set_instance_color(i, Color.WHITE)
-	var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
-	mmi.name = mname
-	mmi.multimesh = mm
-	parent.add_child(mmi)
-
-
 static func _v2(a: Variant) -> Vector2:
 	return Vector2(float((a as Array)[0]), float((a as Array)[1]))
 
@@ -236,6 +219,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	stats["pads"] = pad_h.map(func(v: float) -> float: return snappedf(v, 0.1))
 	_lap(stats, "terrain")
 	var ws: RefCounted = WorldSpace.new()
+	var crown_batches := []
+	ws.set("crown_batches", crown_batches)
 	ws.set("tag", "wall")
 	parent.set_meta(&"tl_space", ws)
 	parent.tree_exiting.connect(func() -> void: ws.call("free_all"))
@@ -362,7 +347,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		edge_task["task"] = WorkerThreadPool.add_task(Parts.edge_geometry.bind(edge_task))
 		parent.set_meta(&"tl_land_rest", edge_task)     # landscape.gd `arrive` adds the nodes when the worker is done
 	if not edge_rocks.is_empty():
-		_multi(parent, TLKitNature.rock(210, 1.3, 0.78), edge_rocks, "WorldPadRocks")
+		Parts.multi(parent, TLKitNature.rock(210, 1.3, 0.78), edge_rocks, "WorldPadRocks")
 		(parent.get_node("WorldPadRocks") as MultiMeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF      # 337 rocks in four cascades cost more than they showed
 		ws.set("tag", "rock")
 		for x: Transform3D in edge_rocks:
@@ -421,20 +406,20 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	var trees: int = int(cfg.get("trees", 120))
 	for v: int in 3:
 		var xs: Array = Parts.clear_views(place.call(trees / 3, box, 9.0, 6.0, 0.8, 1.35, 0.9, -0.2, "ridge", 0.3), cams)
-		_multi(parent, TLKitNature.pine(100 + v, 8.5 + float(v) * 2.0, 5, 2.1 + float(v) * 0.3), xs, "WorldPines%d" % v)
+		Parts.multi(parent, TLKitNature.pine(100 + v, 8.5 + float(v) * 2.0, 5, 2.1 + float(v) * 0.3), xs, "WorldPines%d" % v, crown_batches)
 		for x: Transform3D in xs:
 			ws.call("add_trunk", x.origin, 0.42 * x.basis.get_scale().x)
 			Parts.probe_candidate(probe, "tree", terr, x.origin, 0.42 * x.basis.get_scale().x)
 		stats["trees"] = int(stats["trees"]) + xs.size()
 	var leaf: Array = Parts.clear_views(place.call(int(cfg.get("broadleaf", 40)), box, 10.0, 6.5, 0.8, 1.3, 0.7, 0.0, "any", 0.22), cams)
-	_multi(parent, TLKitNature.broadleaf(120, 7.5), leaf, "WorldBroadleaf")
+	Parts.multi(parent, TLKitNature.broadleaf(120, 7.5), leaf, "WorldBroadleaf", crown_batches)
 	for x: Transform3D in leaf:
 		ws.call("add_trunk", x.origin, 0.5 * x.basis.get_scale().x)
 	stats["trees"] = int(stats["trees"]) + leaf.size()
 	for v: int in 2:
 		ws.set("tag", "rock")
 		var xs: Array = place.call(int(cfg.get("rocks", 46)) / 2, box, 6.5, 3.6, 0.7, 2.0, 0.0, -0.25, "bank", 0.9)
-		_multi(parent, TLKitNature.rock(200 + v, 1.2 + float(v) * 0.5, 0.65), xs, "WorldRocks%d" % v)
+		Parts.multi(parent, TLKitNature.rock(200 + v, 1.2 + float(v) * 0.5, 0.65), xs, "WorldRocks%d" % v)
 		for x: Transform3D in xs:
 			var rvis: float = x.basis.get_scale().x * (1.2 + float(v) * 0.5)
 			if rvis * 0.65 >= 0.5:           # a rock lower than a knee is a stone he walks over, not an obstacle
@@ -442,14 +427,14 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 				Parts.probe_candidate(probe, "rock", terr, x.origin, rvis * 0.85)
 		stats["rocks"] = int(stats["rocks"]) + xs.size()
 	var bushes: Array = place.call(int(cfg.get("bushes", 90)), box, 6.5, 3.4, 0.7, 1.4, 0.4, 0.0, "any", 0.2)
-	_multi(parent, TLKitNature.bush(300, 1.0), bushes, "WorldBushes")
+	Parts.multi(parent, TLKitNature.bush(300, 1.0), bushes, "WorldBushes")
 	stats["bushes"] = bushes.size()
 	_lap(stats, "scatter")
 	var road_side: Array = Parts.road_side(rng6, terr, road_pts, half, rv_half, is_free, int(cfg.get("road_trees", 44)), int(cfg.get("road_bushes", 70)))
 	var road_trees: Array = Parts.clear_views(road_side[0], cams)     # P13: trees give way to fixed cameras            # P6: density where the eye goes: trees and bushes along the roads
 	var road_bushes: Array = road_side[1]
-	_multi(parent, TLKitNature.broadleaf(121, 6.5), road_trees, "WorldRoadTrees")
-	_multi(parent, TLKitNature.bush(301, 0.9), road_bushes, "WorldRoadBushes")
+	Parts.multi(parent, TLKitNature.broadleaf(121, 6.5), road_trees, "WorldRoadTrees", crown_batches)
+	Parts.multi(parent, TLKitNature.bush(301, 0.9), road_bushes, "WorldRoadBushes")
 	if not road_bushes.is_empty():
 		(parent.get_node("WorldRoadBushes") as MultiMeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	ws.set("tag", "tree")
@@ -471,7 +456,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var sc: float = rng.randf_range(0.8, 1.6)
 		tufts.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(p.x, float(terr.call("gy", p.x, p.y)) + 0.04, p.y)))
 	if not tufts.is_empty():
-		_multi(parent, TLKitNature.grass_tuft(400, 4, 0.5), tufts, "WorldTufts")
+		Parts.multi(parent, TLKitNature.grass_tuft(400, 4, 0.5), tufts, "WorldTufts")
 		var tm: MultiMeshInstance3D = parent.get_node("WorldTufts") as MultiMeshInstance3D
 		tm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		tm.visibility_range_end = 120.0
@@ -479,6 +464,12 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	stats["tufts"] = tufts.size()
 	_lap(stats, "tufts")
 	# a forest belt on the hills round the village: the skyline between the venues and the mesas
+	var view: Node = parent.get_parent()
+	var world: Variant = view.get("world") if view != null else null
+	var walk_v: Variant = (world as Object).get("walk") if world is Object else null     # a world without a walk (a test) has none
+	var walk: Dictionary = walk_v if walk_v is Dictionary else {}
+	var cam: Dictionary = walk.get("visitor_cam", {}) if walk.get("visitor_cam") is Dictionary else {}
+	var crown_region: Rect2 = Parts.camera_region(Rect2(bx0, bz0, bx1 - bx0, bz1 - bz0), hmax, cam)
 	var belt: int = int(cfg.get("belt", 180))
 	var centre: Vector2 = (lo + hi) * 0.5
 	var reach: float = (hi - lo).length() * 0.5
@@ -500,7 +491,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var sc: float = rng.randf_range(0.9, 1.7)
 			var py: float = float(terr.call("gy", p.x, p.y)) - 0.2 if bool(terr.call("inside", p.x, p.y)) else -0.26
 			xs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.95, 1.2), sc)), Vector3(p.x, py, p.y)))
-		_multi(parent, TLKitNature.pine(110 + v, 10.0 + float(v) * 2.5, 5, 2.4 + float(v) * 0.3), xs, "WorldBelt%d" % v)
+		Parts.multi(parent, TLKitNature.pine(110 + v, 10.0 + float(v) * 2.5, 5, 2.4 + float(v) * 0.3), xs, "WorldBelt%d" % v, crown_batches, crown_region)
 		for x: Transform3D in xs:
 			if bool(terr.call("inside", x.origin.x, x.origin.z)):
 				ws.call("add_trunk", x.origin, 0.5 * x.basis.get_scale().x)
@@ -510,7 +501,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	stats["mesas"] = Parts.mesas(parent, rng, centre, reach, int(cfg.get("mesas", 18)), mesa_trees)
 	Parts.plain_clumps(rng6, terr, centre, reach, int(cfg.get("plain_clumps", 16)), mesa_trees)
 	if not mesa_trees.is_empty():
-		_multi(parent, TLKitNature.pine(130, 10.0, 4, 2.6), mesa_trees, "WorldMesaPines")
+		Parts.multi(parent, TLKitNature.pine(130, 10.0, 4, 2.6), mesa_trees, "WorldMesaPines", crown_batches, crown_region)
 		(parent.get_node("WorldMesaPines") as MultiMeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	stats["far_trees"] = mesa_trees.size()
 	_lap(stats, "mesas")
@@ -532,8 +523,6 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	_lap(stats, "coll_faces")
 	ws.call("add_faces", cfaces)
 	_lap(stats, "add_faces")
-	var view: Node = parent.get_parent()
-	var world: Variant = view.get("world") if view != null else null
 	ws.call("add_pads", terr, centres, has_ground, radii, (world as Node).get("packs") if world != null else [])     # bugfix-37 D3: world_space.gd
 	if world != null:
 		var holders: Array = (world as Node).get("packs")
@@ -542,7 +531,9 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			if float(radii[i]) > 0.0 and is_instance_valid(holders[i]):
 				ws.set("tag", "pack %d" % i)
 				ws.call("add_pack", holders[i], plots[i], float(radii[i]), float(pad_h[i]) - (plots[i] as Transform3D).origin.y, band if bool(has_ground[i]) else 0.0)
+	_lap(stats, "space")
 	ws.call("finish")
+	_lap(stats, "crowns")
 	stats["space"] = ws.get("stats")
 	stats["space_ms"] = Time.get_ticks_msec() - cs0
 	parent.set_meta(&"tl_terrain", terr)
@@ -550,7 +541,6 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	if not bridge_probe.is_empty():
 		probe["rail"] = bridge_probe
 	stats["probe"] = probe
-	_lap(stats, "space")
 	stats["build_ms"] = Time.get_ticks_msec() - t0
 	stats.erase("_lap")
 	return stats

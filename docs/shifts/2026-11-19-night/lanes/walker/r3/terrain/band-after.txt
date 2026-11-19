@@ -1,0 +1,2 @@
+bank boil frames=32 band=0..90 mean=1.103 flips_pct=1.322 (mean change per frame, grey levels; share of pixels changing by more than 24)
+bluff boil frames=32 band=0..90 mean=1.823 flips_pct=2.217 (mean change per frame, grey levels; share of pixels changing by more than 24)

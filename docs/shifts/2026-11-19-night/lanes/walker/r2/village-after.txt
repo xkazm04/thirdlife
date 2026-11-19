@@ -1,0 +1,12 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4090
+
+SCAN synthetic control=62 stuck=false
+SCAN synthetic control=75 stuck=false
+SCAN driver=Windows verts=58015 seed=7.0 plots=8 ticks=240
+SCAN region=steep candidates=340 starts=192 trials=576 stuck=0
+SCAN region=river candidates=1335 starts=192 trials=576 stuck=0
+SCAN region=bluff candidates=1556 starts=192 trials=576 stuck=0
+SCAN region=road candidates=1282 starts=192 trials=576 stuck=0
+SCAN region=background candidates=42854 starts=192 trials=576 stuck=0
+SCAN done trials=2880 stuck=0 complete=true

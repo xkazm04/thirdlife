@@ -1,0 +1,5 @@
+engine/kernel/world/terrain/world_space.gd sha256=7ca17d0f5f4f8ba4c72a438438213b3659e7f1d59ee93b84b271a40bcf2bee80
+engine/kernel/world/visitor.gd sha256=abd6549cc57befd68697c33a08f4d6534727eaf92145df13b0591a063bf2486d
+PASS walker.crown  (frames=34560 poses=2880 head_out=[29184, 0, 0] head_in=[5376, 1050, 1075])
+selftest: 1 passed, 0 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker/review/tmpjwz5ez9k/restored)
+exit=0 seconds=6.477

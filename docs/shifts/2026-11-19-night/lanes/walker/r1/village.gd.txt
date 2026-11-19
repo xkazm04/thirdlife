@@ -1,0 +1,250 @@
+extends SceneTree
+## Windowed, fixed-frame measurement of the visitor's camera against the drawn village.
+const View := preload("res://kernel/world/draw/view.gd")
+const Oracle := preload("res://kernel/world/walks/crown_oracle.gd")
+const WALKS := "res://kernel/world/walks/"
+const SETTLE := 24
+var oracle := Oracle.new()
+var view := View.new()
+var trees := {}
+var counts := [[0, 0, 0], [0, 0, 0]]  # [head outside, head inside] -> [frames, camera inside, within 0.5 m inclusive]
+var last_pull := NAN
+var pull_sum := 0.0
+var pull_max := 0.0
+var poses := 0
+var side_frames := 0
+var max_yaw := 0.0
+var straight_ok := 0
+var max_residual := 0.0
+var avoidable := 0
+var wall_cast := TLChaseCam.new()
+var previous_test := []
+var previous_result := false
+
+
+func _initialize() -> void:
+	physics_frame.connect(_run, CONNECT_ONE_SHOT)
+
+
+func _run() -> void:
+	var args := OS.get_cmdline_user_args()
+	if args.size() != 1 or args[0] not in ["sweep", "regression", "wf_canopy", "tour"]:
+		quit(2)
+		return
+	var mode := args[0]
+	var host := Node.new()
+	root.add_child(host)
+	host.add_child(view)
+	var walk := "tour" if mode == "tour" else "wf_canopy"
+	var opts := {"walk": WALKS + walk + ".json", "cost": "model", "load": "block"}
+	if mode != "tour":
+		opts["live"] = "true"
+		opts["ticks"] = "400"
+	if mode == "wf_canopy":
+		opts["devices"] = WALKS + "wf_canopy.devices.json"
+	view.start(opts)
+	if view.visitor == null or not _build_oracle(view.landscape):
+		quit(2)
+		return
+	print("CROWN build ", JSON.stringify(view.land_stats))
+	var cam = view.visitor.cam
+	cam.review_calls = 0
+	cam.review_total = 0
+	cam.review_worst = 0
+	var frames := 0
+	var sweeping := mode in ["sweep", "regression"]
+	if sweeping:
+		frames = _sweep(mode == "regression")
+	else:
+		if mode == "wf_canopy":
+			# The fixture quits at 300. Keep all movement and turns, then observe the idle tail to 400.
+			for tick in view.visit._script:
+				view.visit._script[tick] = view.visit._script[tick].filter(
+					func(e: Array) -> bool: return not (e[0] == "key" and e[1] == "Escape"))
+		frames = int(view.world.walk_ticks)
+		for t in range(1, frames + 1):
+			while view.world.tick < t:
+				await physics_frame
+			if view.world.tick != t:
+				quit(2)
+				return
+			_sample()
+	var calls: int = cam.review_calls
+	var usecs: int = cam.review_total
+	var worst_usec: int = cam.review_worst
+	view.world.walk_ticks = view.world.tick
+	if sweeping:
+		view._done = true
+		view.world.ended.disconnect(view._on_world_ended)
+		view.draw.clear()
+	view.world._walk_tick(0)
+	var complete: bool = calls > 0 and frames > 0 and counts[0][0] + counts[1][0] == frames
+	var ok: bool = max_residual < 2.0 and view.world.exit_code == 0 and complete and counts[0][0] > 0 and counts[0][1] == 0 and counts[0][2] == 0
+	print("REVIEW frames=%d side=%d max_yaw=%.3f yaw0_ok=%d avoidable_side=%d avoid_calls=%d avoid_us_sum=%d avoid_us_mean=%.3f avoid_us_max=%d" % [
+		frames, side_frames, max_yaw, straight_ok, avoidable, calls, usecs, float(usecs) / maxi(1, calls), worst_usec])
+	print("REVIEW max_yaw_residual_deg=%.3f" % max_residual)
+	wall_cast.free()
+	print("CROWNCASE %s %s frames=%d poses=%d head_out=%s head_in=%s pull_sum=%.6f pull_max=%.6f" % [
+		mode, "ok" if ok else "FAIL", frames, poses, counts[0], counts[1], pull_sum, pull_max])
+	oracle.close()
+	quit(0 if ok else 1)
+
+
+func _sample() -> void:
+	var cam = view.visitor.cam
+	var look := view.landscape.to_local(cam._look)
+	var row: Array = counts[int(oracle.inside(look))]
+	var arm: Vector3 = cam.review_arm
+	var end: Vector3 = cam.position - cam.review_head
+	var horizontal := Vector2(arm.x, arm.z)
+	var placed := Vector2(end.x, end.z)
+	var yaw := absf(rad_to_deg(horizontal.angle_to(placed))) if minf(horizontal.length(), placed.length()) > 0.001 else 0.0
+	# Repairs choose one of twelve azimuths. Report the endpoint's nearest choice,
+	# and check the residual independently (centimetre-long arms have float roundoff).
+	var chosen := snappedf(yaw, 30.0)
+	max_residual = maxf(max_residual, absf(chosen - yaw))
+	max_yaw = maxf(max_yaw, chosen)
+	if chosen > 0.0:
+		side_frames += 1
+		var key := [look, arm, cam.avoid_margin]
+		if previous_test != key:
+			previous_result = _could_stay_behind(look, arm, cam)
+			previous_test = key
+		avoidable += int(previous_result)
+		straight_ok += int(previous_result)
+	else:
+		# Test even the chosen straight endpoint with the raw 0.5 m probe and the D5 exclusion.
+		oracle.probe.exclude = _head_crowns(look)
+		var safe := not oracle.near_crown(cam.position)
+		oracle.probe.exclude = []
+		straight_ok += int(safe or _could_stay_behind(look, arm, cam))
+	row[0] += 1
+	row[1] += int(oracle.inside(cam.position))
+	row[2] += int(oracle.near_crown(cam.position))
+	if not is_nan(last_pull):
+		var delta := absf(cam.avoid_pull - last_pull)
+		pull_sum += delta
+		pull_max = maxf(pull_max, delta)
+	last_pull = cam.avoid_pull
+
+
+func _sweep(short: bool) -> int:
+	var visitor = view.visitor
+	var terrain: RefCounted = view.landscape.get_meta(&"tl_terrain")
+	var selected := 0
+	var distances := [0.6, 3.0, 7.0] if short else [0.6, 1.5, 3.0, 5.0, 7.0]
+	for group: String in trees:
+		if group == "WorldMesaPines":
+			continue
+		var candidates: Array = trees[group].filter(func(p: Vector3) -> bool: return terrain.inside(p.x, p.z, 8.0))
+		candidates.sort_custom(func(a: Vector3, b: Vector3) -> bool: return terrain.slope(a.x, a.z) < terrain.slope(b.x, b.z))
+		if candidates.is_empty():
+			return 0
+		var indices := [candidates.size() - 1] if short else [0, candidates.size() / 2, candidates.size() - 1]
+		for index: int in indices:
+			var tree: Vector3 = candidates[index]
+			selected += 1
+			for r: float in distances:
+				for bearing in 8:
+					var angle := TAU * bearing / 8.0
+					visitor.put(tree + r * Vector3(sin(angle), 0, cos(angle)), angle)
+					last_pull = NAN  # exclude teleports, include each subsequent turn and recovery
+					for facing in 8:
+						visitor.rotation.y = angle + TAU * facing / 8.0
+						for tick in SETTLE:
+							visitor.cam._physics_process(1.0 / 60.0)
+							_sample()
+						poses += 1
+	return selected * distances.size() * 8 * 8 * SETTLE
+
+
+func _build_oracle(land: Node3D) -> bool:
+	for group: String in Oracle.GROUPS:
+		var node := land.get_node_or_null(group) as MultiMeshInstance3D
+		if node == null:
+			return false
+		var mesh := node.multimesh
+		var parts := oracle.parts_of(mesh.mesh)
+		var expected := 4 if group == "WorldMesaPines" else 5
+		if parts.size() != expected or mesh.instance_count == 0:
+			push_error("%s has %d parts, expected %d" % [group, parts.size(), expected])
+			return false
+		var low := INF
+		var high := -INF
+		var radius := 0.0
+		for part in parts:
+			for p in part:
+				low = minf(low, p.y)
+				high = maxf(high, p.y)
+				radius = maxf(radius, Vector2(p.x, p.z).length())
+		print("CROWN mesh %s instances=%d parts=%d local_y=%.4f..%.4f radius=%.4f" % [
+			group, mesh.instance_count, parts.size(), low, high, radius])
+		trees[group] = []
+		for i in mesh.instance_count:
+			var xf := node.transform * mesh.get_instance_transform(i)
+			trees[group].append(xf.origin)
+			oracle.place(parts, xf)
+	return true
+
+func _head_crowns(look: Vector3) -> Array[RID]:
+	var skip: Array[RID] = []
+	oracle.point.position = look
+	for hit in PhysicsServer3D.space_get_direct_state(oracle.space).intersect_point(oracle.point):
+		if hit.rid not in skip:
+			skip.append(hit.rid)
+	return skip
+
+
+## Counterfactual in the same frame. Use the ordinary wall cast and a ray against raw
+## foliage to bound the arm. Check even short gaps between separate convex parts.
+func _could_stay_behind(look: Vector3, arm: Vector3, cam: TLChaseCam) -> bool:
+	var skip := _head_crowns(look)
+	var raw := PhysicsServer3D.space_get_direct_state(oracle.space)
+	var walls := PhysicsServer3D.space_get_direct_state(cam.avoid_space)
+	wall_cast.avoid_mask = 1
+	wall_cast.avoid_margin = cam.avoid_margin
+	wall_cast._look_local = look
+	wall_cast._start(walls)
+	var length := arm.length()
+	if length < 0.01:
+		return false
+	var elev := rad_to_deg(asin(clampf(arm.y / length, -1.0, 1.0)))
+	var level := Vector3(arm.x, 0, arm.z).normalized()
+	var ray := PhysicsRayQueryParameters3D.new()
+	ray.exclude = skip
+	oracle.probe.exclude = skip
+	for angle in cam._swings(elev):
+		var pitch := deg_to_rad(elev + angle)
+		var dir := level * cos(pitch) + Vector3.UP * sin(pitch)
+		var reach := wall_cast._cast(walls, dir * length, length)
+		ray.from = look
+		ray.to = look + dir * reach
+		var hit := raw.intersect_ray(ray)
+		if not hit.is_empty():
+			reach = look.distance_to(hit.position)
+		if reach >= 0.01 and _gap(raw, look, dir, 0.01, reach, _touching(raw, look + 0.01 * dir), _touching(raw, look + reach * dir)):
+			oracle.probe.exclude = []
+			return true
+	oracle.probe.exclude = []
+	return false
+
+
+func _touching(raw: PhysicsDirectSpaceState3D, at: Vector3) -> Array:
+	oracle.probe.transform.origin = at
+	return raw.intersect_shape(oracle.probe)
+
+
+## Endpoints touching the same convex part prove the entire span blocked. Otherwise
+## bisect and check both halves, independently of the production furthest-pull search.
+func _gap(raw: PhysicsDirectSpaceState3D, look: Vector3, dir: Vector3, lo: float, hi: float, left: Array, right: Array) -> bool:
+	if left.is_empty() or right.is_empty():
+		return true
+	for a: Dictionary in left:
+		for b: Dictionary in right:
+			if a.rid == b.rid and a.shape == b.shape:
+				return false
+	if hi - lo <= 0.0001:
+		return false
+	var mid := 0.5 * (lo + hi)
+	var middle := _touching(raw, look + mid * dir)
+	return _gap(raw, look, dir, lo, mid, left, middle) or _gap(raw, look, dir, mid, hi, middle, right)

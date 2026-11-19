@@ -1,0 +1,49 @@
+extends SceneTree
+## Lane walker (19 Nov): the lowest drawn vertex of the biped per clip, per bone, at held frames. The floor is y = 0
+## (the rig's root stands on it). Prints LOWPROBE lines.
+
+func _initialize() -> void:
+	run.call_deferred()
+
+
+func per_bone(sk: Skeleton3D, geometry: TLMesh) -> Dictionary:
+	var lo: Dictionary = {}
+	for surface in geometry.surfs.values():
+		for i in surface.v.size():
+			var b: int = surface.b[4 * i]
+			var skin := sk.get_bone_global_pose(b) * sk.get_bone_global_rest(b).affine_inverse()
+			var y: float = (skin * Vector3(surface.v[i])).y
+			var n: String = sk.get_bone_name(b)
+			lo[n] = minf(float(lo.get(n, INF)), y)
+	return lo
+
+
+func run() -> void:
+	var clips: Array = ["slide"]
+	for c in clips:
+		var rig = TLRigs.build("biped")
+		root.add_child(rig)
+		rig.play(StringName(c))
+		var worst: float = INF
+		var worst_at: String = ""
+		for f in range(1, 121):
+			rig.tick(f)
+			if f > 24:
+				continue
+			var sk: Skeleton3D = rig.get_node("Model/Skeleton3D")
+			var geometry := TLRigBipedMesh.build_mesh(sk, TLRigBipedMesh.LOOK, true, false)
+			var lo: Dictionary = per_bone(sk, geometry)
+			for n in lo.keys():
+				if float(lo[n]) < worst:
+					worst = float(lo[n])
+					worst_at = "%s@f%d" % [n, f]
+			if true:
+				var parts: Array = []
+				var names: Array = lo.keys()
+				names.sort_custom(func(a, b): return float(lo[a]) < float(lo[b]))
+				for k in mini(5, names.size()):
+					parts.append("%s=%.3f" % [names[k], float(lo[names[k]])])
+				print("LOWPROBE %s f%d lowest5 %s" % [c, f, " ".join(parts)])
+		print("LOWPROBE %s worst %.3f %s" % [c, worst, worst_at])
+		rig.free()
+	quit()

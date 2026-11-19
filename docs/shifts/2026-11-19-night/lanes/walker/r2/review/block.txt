@@ -1,0 +1,14 @@
+"C:/Program Files/Git/usr/bin/bash.exe" docs/shifts/2026-11-19-night/lanes/walker/r2/review/block.sh
+PASS walk.v_wedge  (62deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 75deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 15% grade ground_inside=0 exit_x=11.54 | 5% grade ground_inside=0 exit_x=10.82)
+PASS walk.v_asymmetric  (settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true)
+PASS walk.v_yaw  (settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true)
+PASS walk.v_terrain  (settled=ground lands=1 walk_ground=120/120 changes=0 x=8.73 jump=true rise=0.94 exit=true skew_contacts=100/120)
+selftest: 4 passed, 0 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker-r2/review/tl_selftest_29557)
+PASS walk.single_face  (62deg slope=68 ground=0 downhill=6.90 y=-12.71)
+selftest: 1 passed, 0 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker-r2/review/tl_selftest_29941)
+PASS walk.step_edge  (0.60m air=12 lands=1 slope=0 max_drop=0.073 end=ground y=0.001)
+selftest: 1 passed, 0 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker-r2/review/tl_selftest_30140)
+PASS walk.pad_swap  (faces+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | faces+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | faces+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | faces+0.65 first=0.000 idle60=-11.800 overlaps=19/60 walk90=-26.700 | box+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | box+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | box+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | box+0.65 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.650 | pitched=0.242 roof=0.000)
+selftest: 1 passed, 0 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker-r2/review/tl_selftest_30326)
+block 380: 7 passed, 0 failed
+exit 0

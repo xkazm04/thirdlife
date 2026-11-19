@@ -1,0 +1,68 @@
+extends "res://kernel/world/walks/crown_village_evidence.gd"
+## Supplement the fixed-pitch sweep with the visitor's pitch limits. Print actual heights
+## divided by each instance's horizontal scale, so vertical stretch stays in the measurement.
+func _sweep(_short: bool) -> int:
+	var visitor = view.visitor
+	var terrain: RefCounted = view.landscape.get_meta(&"tl_terrain")
+	var measured := 0
+	var cores := {}
+	var space = view.visitor.space
+	for body: RID in space._bodies:
+		if PhysicsServer3D.body_get_collision_layer(body) != 4:
+			continue
+		var shape := PhysicsServer3D.body_get_shape(body, 0)
+		if PhysicsServer3D.shape_get_type(shape) != PhysicsServer3D.SHAPE_CYLINDER:
+			continue
+		var body_xf: Transform3D = PhysicsServer3D.body_get_state(body, PhysicsServer3D.BODY_STATE_TRANSFORM)
+		var centre := (body_xf * PhysicsServer3D.body_get_shape_transform(body, 0)).origin
+		var dimensions: Dictionary = PhysicsServer3D.shape_get_data(shape)
+		cores[Vector2(centre.x, centre.z)] = Vector3(centre.y - dimensions.height / 2, centre.y + dimensions.height / 2, dimensions.radius)
+	for group: String in oracle.GROUPS:
+		var mm: MultiMesh = view.landscape.get_node(group).multimesh
+		var parts := oracle.parts_of(mm.mesh)
+		var bottom := INF
+		var top := -INF
+		for part in parts:
+			for p in part:
+				bottom = minf(bottom, p.y)
+				top = maxf(top, p.y)
+		var low := Vector2(INF, INF)
+		var high := Vector2(-INF, -INF)
+		var core_min := Vector3.INF
+		var core_max := -Vector3.INF
+		for i in mm.instance_count:
+			var scale := mm.get_instance_transform(i).basis.get_scale()
+			var heights := Vector2(bottom, top) * (scale.y / scale.x)
+			low = low.min(heights)
+			high = high.max(heights)
+			var origin := mm.get_instance_transform(i).origin
+			var key := Vector2(origin.x, origin.z)
+			if cores.has(key):
+				var relative: Vector3 = (cores[key] - Vector3(origin.y, origin.y, 0.0)) / scale.x
+				core_min = core_min.min(relative)
+				core_max = core_max.max(relative)
+		if core_min.is_finite():
+			print("CROWN legacy %s [bottom,top,radius]/sc min=%s max=%s" % [group, core_min, core_max])
+		print("CROWN extent %s bottom/sc=%.4f..%.4f top/sc=%.4f..%.4f" % [group, low.x, high.x, low.y, high.y])
+		if group == "WorldMesaPines":
+			continue
+		var sample_trees: Array = trees[group].filter(func(p: Vector3) -> bool: return terrain.inside(p.x, p.z, 8.0))
+		sample_trees.sort_custom(func(a: Vector3, b: Vector3) -> bool: return terrain.slope(a.x, a.z) > terrain.slope(b.x, b.z))
+		if sample_trees.is_empty():
+			return 0
+		var tree: Vector3 = sample_trees.front()
+		for pitch: float in [-10.0, 0.0, 35.0, 60.0]:
+			visitor.turn(0.0, deg_to_rad(pitch) - visitor.look_pitch, deg_to_rad(-10.0), deg_to_rad(60.0))
+			for radius: float in [0.6, 2.0, 4.5, 7.0]:
+				for bearing in 4:
+					var angle := TAU * bearing / 4.0
+					visitor.put(tree + radius * Vector3(sin(angle), 0, cos(angle)), angle)
+					last_pull = NAN
+					for facing in 8:
+						visitor.rotation.y = angle + TAU * facing / 8.0
+						for tick in SETTLE:
+							visitor.cam._physics_process(1.0 / 60.0)
+							_sample()
+							measured += 1
+						poses += 1
+	return measured if measured == 86016 else 0

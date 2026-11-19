@@ -3,7 +3,7 @@ extends RefCounted
 ## capsule (terrain/world_space.gd, `sp`) by VELOCITY, one `drive()` per world tick (60 Hz; every number below is per
 ## second or counted in ticks). `world_space.gd walk()` stays for the probes and a scripted walk.
 ##   ground   the horizontal velocity eases toward the wish: ACCEL m/s^2 while the wish has a direction, DECEL while it
-##            is let go; standing still on walkable ground is not a move at all (no test, no creep).
+##            is let go; standing holds position unless a floor arrives through his feet.
 ##   air      gravity GRAVITY, falls at most FALL_MAX; a little steering (AIR_ACCEL); lands on walkable ground.
 ##   jump     JUMP_V up (h = JUMP_V^2 / 2g = 1.0 m, about 35 ticks in the air on flat ground); allowed COYOTE ticks
 ##            after walking off an edge; a press is kept BUFFER ticks after the tick it went down, so a press up to
@@ -99,6 +99,71 @@ func _probe_down(pos: Vector3, reach: float) -> Dictionary:
 	return {"hit": false, "dy": -reach, "n": Vector3.UP}
 
 
+## Read the last down sweep. Opposing walls constrain motion to their crease.
+## It can carry him if downhill gravity along that crease fits within slope friction.
+func _channel_support(travel: Vector3 = Vector3.ZERO, wish_step: Vector3 = Vector3.ZERO) -> bool:
+	var result: PhysicsTestMotionResult3D = sp._res
+	for i in result.get_collision_count():
+		var n := result.get_collision_normal(i)
+		if n.y <= 0.01 or _walkable(n):
+			continue
+		for j in range(i + 1, result.get_collision_count()):
+			var other := result.get_collision_normal(j)
+			if _supports_together(n, other, travel, wish_step):
+				return true
+	return false
+
+
+## The first normal has already been checked by the caller.
+func _supports_together(n: Vector3, other: Vector3, travel: Vector3 = Vector3.ZERO, wish_step: Vector3 = Vector3.ZERO) -> bool:
+	if other.y <= 0.01 or _walkable(other):
+		return false
+	var across := Vector2(n.x, n.z).normalized().dot(Vector2(other.x, other.z).normalized())
+	var crease := n.cross(other).normalized()
+	if across >= -0.5 or GRAVITY * absf(crease.y) > SLOPE_FRICTION:
+		return false
+	# A pocket can supply an opposing pair as well. Another face across
+	# their line of travel closes the channel (the four walls of a pit).
+	var contacts: PhysicsTestMotionResult3D = sp._res
+	for i in contacts.get_collision_count():
+		if absf(crease.dot(contacts.get_collision_normal(i))) > 0.5:
+			return false
+	# On landing, vertical contact recovery may mask an ongoing slide. Check
+	# uncommanded downhill travel along the crease in the horizontal plane.
+	var downhill := -signf(crease.y) * Vector3(crease.x, 0, crease.z)
+	return absf(crease.y) < 0.0001 or travel.dot(downhill) <= maxf(0.0, wish_step.dot(downhill)) + 0.0001
+
+
+## A two-sided floor can intersect the capsule so deeply that a down sweep misses
+## it or only partly recovers it. Locate its upper face within one step of the feet.
+func _standing_floor(pos: Vector3) -> float:
+	var start := pos + Vector3.UP * (float(sp.step_up) + 0.001)
+	var q := PhysicsRayQueryParameters3D.create(start, pos, 1)
+	q.exclude = [sp.body]
+	var h: Dictionary = PhysicsServer3D.space_get_direct_state(sp.space).intersect_ray(q)
+	# Ignore centre-ray roundoff when he was placed exactly on an existing bank.
+	if h.is_empty() or not _walkable(h.normal) or h.position.y <= pos.y + 0.0001:
+		return pos.y
+	var y: float = h.position.y
+	if h.normal.y < 0.99999:
+		# The capsule contacts an inclined floor to one side of the centre ray.
+		var pad := _probe_down(start, start.y - pos.y)
+		if not pad.hit or not _walkable(pad.n):
+			return pos.y
+		y = maxf(y, start.y + pad.dy)
+	if y - pos.y > float(sp.step_up) + 0.000001:
+		return pos.y
+	y = minf(y, pos.y + sp.step_up)
+	# Check the destination: sweeping UP from inside a two-sided floor can hit its underside.
+	var fit := PhysicsTestMotionParameters3D.new()
+	fit.from = Transform3D(Basis(), Vector3(pos.x, y, pos.z))
+	fit.margin = 0.001
+	fit.recovery_as_collision = true
+	if PhysicsServer3D.body_test_motion(sp.body, fit, sp._res) and sp._res.get_collision_depth(0) > fit.margin:
+		return pos.y
+	return y
+
+
 ## Moves by `motion` sliding along what it meets (three times at most); a hit with walkable ground while falling is a
 ## landing. Returns {"pos", "hit", "land", "n"}; `vel` loses its part into every surface met.
 func _slide_move(pos: Vector3, motion: Vector3) -> Dictionary:
@@ -182,15 +247,20 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 					ev.append("end_slide")
 			vel = Vector3(hv.x, 0.0, hv.z)
 			if hv.length() < 0.0005:
-				# standing: not a move; only check that the ground is still there (a site's scaffold can go)
+				# A scaffold can disappear, or the floor of an arriving game can replace a lower pad.
 				vel = Vector3.ZERO
 				var pd: Dictionary = _probe_down(pos, 0.05)
+				if not pd.hit or (pd.dy > 0.0 and _walkable(pd.n)):
+					var floor_y := _standing_floor(pos)
+					if floor_y > pos.y:
+						pos.y = floor_y
+						pd = _probe_down(pos, 0.05)
 				if not bool(pd["hit"]):
 					mode = "air"
 					grounded = false
 					_jumped = false
 					air_ticks = 0
-				elif mode == "ground" and not _walkable(pd["n"]) and _steep_under(pos):
+				elif mode == "ground" and not _walkable(pd["n"]) and not _channel_support() and _steep_under(pos):
 					# put at rest on ground steeper than the limit (D6): not a place to stand, the slope slide begins
 					mode = "slope"
 					grounded = false
@@ -234,9 +304,22 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 				ah = ah.move_toward(target, AIR_ACCEL * dt)
 				vel.x = ah.x
 				vel.z = ah.z
+			var falling := vel.y <= 0.0
 			var m: Dictionary = _slide_move(pos, vel * dt)
 			pos = m["pos"]
 			hit = bool(m["hit"])
+			if not m.land and vel.y <= 0.0:
+				var pd2: Dictionary = _probe_down(pos, 0.06)
+				if pd2.hit and not _walkable(pd2.n):
+					if falling and hit and pos.y >= from.y - 0.001 and _channel_support(pos - from, wish * dt):
+						m.land = true
+						m.n = Vector3.UP
+						vel.y = 0.0
+					elif _steep_under(pos):
+						mode = "slope"
+						ground_n = pd2.n
+						ev.append("land")
+						ev.append("slope")
 			if bool(m["land"]):
 				mode = "ground"
 				grounded = true
@@ -246,14 +329,6 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 				ev.append("land")
 				if _buffer > 0:
 					_take_jump(ev)                       # a buffered press jumps on the landing tick (D20)
-			elif vel.y <= 0.0:
-				# on steep ground without falling free: a slope slide
-				var pd2: Dictionary = _probe_down(pos, 0.06)
-				if bool(pd2["hit"]) and not _walkable(pd2["n"]) and _steep_under(pos):
-					mode = "slope"
-					ground_n = pd2["n"]
-					ev.append("land")
-					ev.append("slope")
 		"slope":
 			var n2: Vector3 = ground_n
 			var g: Vector3 = Vector3(0.0, -GRAVITY, 0.0)
@@ -274,6 +349,8 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool) -> Dictionary:
 			if bool(pd3["hit"]):
 				pos.y += float(pd3["dy"])
 				ground_n = pd3["n"]
+				if pos.y >= from.y - 0.001 and absf(pd3.dy) <= 0.06 and _channel_support(pos - from, wish * dt):
+					ground_n = Vector3.UP
 				if _walkable(ground_n):
 					mode = "ground"
 					grounded = true
@@ -348,6 +425,18 @@ func _ground_move(from: Vector3, delta: Vector3) -> Dictionary:
 		ground_n = n
 		return {"pos": pos, "blocked": hit, "state": "ground"}
 	var landed: Vector3 = pos + Vector3(0.0, float(pd["dy"]), 0.0)
+	if n.y > 0.01 and absf(landed.y - from.y) <= SNAP_DOWN:
+		if _channel_support():
+			ground_n = Vector3.UP
+			return {"pos": landed, "blocked": hit, "state": "ground"}
+		# The step-down sweep can touch one side of a bending channel first.
+		# Let the foot settle along that face only if the other wall actually catches it.
+		var settle := Vector3.DOWN.slide(n).normalized() * 0.06
+		if sp._test(Transform3D(Basis(), landed), settle):
+			for i in sp._res.get_collision_count():
+				if _supports_together(n, sp._res.get_collision_normal(i)):
+					ground_n = Vector3.UP
+					return {"pos": landed + sp._res.get_travel(), "blocked": hit, "state": "ground"}
 	var sn: Vector3 = _steep_n(landed)
 	if sn == Vector3.ZERO:
 		pos.y -= up.y                                # the round foot met an edge, not a slope: he walks off it and falls

@@ -1,0 +1,8 @@
+"C:/Program Files/Git/usr/bin/bash.exe" docs/shifts/2026-11-19-night/lanes/walker/r2/parkour.sh
+PARKOUR lint exit=0 ok=true frames=- hash=-
+PARKOUR smoke exit=0 ok=true frames=3600 hash=fc06244c9c526a3c7da9f77ca96c1494c3a9e5f9a68374053133b09831379148
+PARKOUR bot --test=tests/bot_course.gd exit=0 ok=true frames=340 hash=5b103a8c06fb916c951f0926475b2520b8099f7fcf8a6fb845c0fe97c5113635
+PARKOUR bot --test=tests/bot_geometry.gd exit=0 ok=true frames=1 hash=7ae4f8520c034bdcfb45b2177ecea7cc145b8924299761f510d11fda7649b835
+PARKOUR bot --test=tests/bot_obstacles.gd exit=0 ok=true frames=434 hash=17835b3f0a22d75f700477b6c0c80db779421325b09d2dc34c34bd9f107e0dda
+PARKOUR invariants exit=0 ok=true frames=3600 hash=fc06244c9c526a3c7da9f77ca96c1494c3a9e5f9a68374053133b09831379148
+exit 0

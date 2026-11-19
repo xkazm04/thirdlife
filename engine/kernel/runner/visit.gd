@@ -28,6 +28,13 @@ const WALK_MPS: float = WalkerBody.WALK_MPS
 const RUN_MPS: float = WalkerBody.RUN_MPS
 const GATE_OUT_M: float = 5.0           # after Q he stands this far outside the plot's radius, at its gate
 const PATH_EVERY: int = 300             # a `visit_path` line every this many ticks
+## Lane walker (19 Nov): what A and D do is the owner's question, so both answers sit behind TL_AD_KEYS (absent: as before).
+##   (absent) or face   A and D move him sideways along the view; the figure turns toward where he walks (walker-feel M)
+##   sidestep           the same move, but the figure keeps facing where the camera looks: a sidestep (S: a backward walk)
+##   turn               A and D turn him and the view TURN_DEG_PER_TICK a tick (the mouse still looks); W and S as before
+## A record is replayed with the value it was made with.
+const TURN_DEG_PER_TICK: float = 2.5    # 150 degrees a second
+var ad_keys: String = OS.get_environment("TL_AD_KEYS")
 
 var input: TLInput = null
 var view: Node = null
@@ -170,12 +177,16 @@ func steer(tick: int) -> void:
 		return
 	if input.just_pressed(&"enter"):
 		sched.call("request", "enter")
-	vis.call("turn", input.strength(TLInput.LOOK_X) * deg_to_rad(LOOK_DEG_PER_PX), input.strength(TLInput.LOOK_Y) * deg_to_rad(LOOK_DEG_PER_PX),
+	var key_turn: float = input.axis(&"left", &"right") * deg_to_rad(TURN_DEG_PER_TICK) if ad_keys == "turn" else 0.0
+	vis.call("turn", input.strength(TLInput.LOOK_X) * deg_to_rad(LOOK_DEG_PER_PX) + key_turn, input.strength(TLInput.LOOK_Y) * deg_to_rad(LOOK_DEG_PER_PX),
 		deg_to_rad(PITCH_MIN_DEG), deg_to_rad(PITCH_MAX_DEG))
+	if vis.get("face_view") != null:
+		vis.set("face_view", ad_keys == "sidestep")
 	var yaw: float = float(vis.get("look_yaw"))
 	var fwd: Vector3 = Vector3(-sin(yaw), 0.0, -cos(yaw))
 	var right: Vector3 = Vector3(cos(yaw), 0.0, -sin(yaw))
-	var move: Vector3 = fwd * input.axis(&"back", &"forward") + right * input.axis(&"left", &"right")
+	var side: float = 0.0 if ad_keys == "turn" else input.axis(&"left", &"right")
+	var move: Vector3 = fwd * input.axis(&"back", &"forward") + right * side
 	var pace: float = RUN_MPS if input.pressed(&"run") else WALK_MPS
 	# walker-feel: the body has weight (visitor.gd `wish`, world_space.gd `drive`): it eases toward this velocity
 	var want: Vector3 = move.normalized() * pace if move.length() > 0.01 else Vector3.ZERO

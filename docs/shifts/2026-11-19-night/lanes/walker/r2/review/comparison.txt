@@ -1,0 +1,27 @@
+original SHA256 6c045c41e6cb0e9b17c65274b626f184e59648744a7934ae091e4a61e940ac5f
+WALKCASE walk.v_wedge fail 62deg settled=air lands=0 walk_ground=0/120 changes=0 x=8.36 jump=false rise=0.03 exit=true | 75deg settled=air lands=0 walk_ground=0/120 changes=0 x=8.01 jump=false rise=0.02 exit=true | 15% grade ground_inside=0 exit_x=11.54 | 5% grade ground_inside=0 exit_x=10.82
+WALKCASE walk.v_asymmetric fail settled=slope lands=1 walk_ground=0/120 changes=0 x=4.08 jump=true rise=1.05 exit=false
+WALKCASE walk.v_yaw fail settled=air lands=0 walk_ground=0/120 changes=0 x=8.36 jump=false rise=0.03 exit=true
+WALKCASE walk.v_terrain fail settled=slope lands=1 walk_ground=0/120 changes=0 x=4.59 jump=true rise=1.05 exit=false skew_contacts=76/120
+WALKCASE walk.single_face ok 62deg slope=68 ground=0 downhill=6.90 y=-12.71
+WALKCASE walk.step_edge ok 0.60m air=12 lands=1 slope=0 max_drop=0.073 end=ground y=0.001
+WALKCASE walk.pad_swap fail faces+0.20 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.202 | faces+0.40 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.401 | faces+0.55 first=0.000 idle60=-11.800 overlaps=19/60 walk90=-26.700 | faces+0.65 first=0.000 idle60=-11.800 overlaps=19/60 walk90=-26.700 | box+0.20 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.202 | box+0.40 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.401 | box+0.55 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.552 | box+0.65 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.650 | pitched=0.000 roof=0.000
+WALKCASE done 2 7
+reviewed SHA256 94d93503d5fbce6c9f4862405914ea2786d28331b91b1bb5b44df333a5fb7923
+WALKCASE walk.v_wedge ok 62deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 75deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 15% grade ground_inside=0 exit_x=11.54 | 5% grade ground_inside=0 exit_x=10.82
+WALKCASE walk.v_asymmetric fail settled=slope lands=1 walk_ground=0/120 changes=0 x=4.08 jump=true rise=1.05 exit=false
+WALKCASE walk.v_yaw ok settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true
+WALKCASE walk.v_terrain fail settled=slope lands=1 walk_ground=0/120 changes=0 x=4.59 jump=true rise=1.05 exit=false skew_contacts=76/120
+WALKCASE walk.single_face ok 62deg slope=68 ground=0 downhill=6.90 y=-12.71
+WALKCASE walk.step_edge ok 0.60m air=12 lands=1 slope=0 max_drop=0.073 end=ground y=0.001
+WALKCASE walk.pad_swap ok faces+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | faces+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | faces+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | faces+0.65 first=0.000 idle60=-11.800 overlaps=19/60 walk90=-26.700 | box+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | box+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | box+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | box+0.65 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.650 | pitched=0.242 roof=0.000
+WALKCASE done 5 7
+after SHA256 f9de400ab9e0d0ed8cce0aaa5e5460b48ca4f9a14dcba0cae6c73d0ef29e208b
+WALKCASE walk.v_wedge ok 62deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 75deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 15% grade ground_inside=0 exit_x=11.54 | 5% grade ground_inside=0 exit_x=10.82
+WALKCASE walk.v_asymmetric ok settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true
+WALKCASE walk.v_yaw ok settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true
+WALKCASE walk.v_terrain ok settled=ground lands=1 walk_ground=120/120 changes=0 x=8.73 jump=true rise=0.94 exit=true skew_contacts=100/120
+WALKCASE walk.single_face ok 62deg slope=68 ground=0 downhill=6.90 y=-12.71
+WALKCASE walk.step_edge ok 0.60m air=12 lands=1 slope=0 max_drop=0.073 end=ground y=0.001
+WALKCASE walk.pad_swap ok faces+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | faces+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | faces+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | faces+0.65 first=0.000 idle60=-11.800 overlaps=19/60 walk90=-26.700 | box+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | box+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | box+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | box+0.65 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.650 | pitched=0.242 roof=0.000
+WALKCASE done 7 7

@@ -2,6 +2,45 @@ extends RefCounted
 ## P4. Parts of the village landscape that need no terrain object: the far plain, a road strip on the ground, a bridge,
 ## the far mesas, the helpers of the scatter. Static functions; landscape.gd is the assembly.
 
+## Outside the terrain the far plain has no floor. Keep crowns reachable from its edge,
+## including a downhill jump and the whole boom at any pitch. The far pines start above -1 m.
+static func camera_region(terrain: Rect2, highest: float, cam: Dictionary) -> Rect2:
+	const Body := preload("res://kernel/world/terrain/world_body.gd")
+	var look := float(cam.get("look_height", 1.7))
+	var boom := Vector2(float(cam.get("distance", 8.5)), float(cam.get("height", 3.6)) - look).length()
+	var drop := maxf(0.0, highest + look + boom + 1.0 + Body.JUMP_V ** 2 / (2.0 * Body.GRAVITY))
+	var terminal_drop := Body.FALL_MAX ** 2 / (2.0 * Body.GRAVITY)
+	var descent := sqrt(2.0 * minf(drop, terminal_drop) / Body.GRAVITY) + maxf(0.0, drop - terminal_drop) / Body.FALL_MAX
+	var air := (1.0 + Body.COYOTE) / 60.0 + Body.JUMP_V / Body.GRAVITY + descent
+	return terrain.grow(boom + 0.5 + (Body.SLOPE_MAX + Body.SLOPE_JUMP_PUSH) * air)
+
+
+static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_batches: Variant = null, region := Rect2()) -> void:
+	if xs.is_empty():
+		return
+	var mm: MultiMesh = MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = mk.build(mname.to_snake_case())
+	if crown_batches is Array:
+		var placed := xs
+		if region.has_area():
+			var mesh_bounds := mm.mesh.get_aabb()
+			placed = xs.filter(func(xf: Transform3D) -> bool:
+				var bounds := xf * mesh_bounds
+				return region.intersects(Rect2(bounds.position.x, bounds.position.z, bounds.size.x, bounds.size.z), true))
+		if not placed.is_empty():
+			crown_batches.append([mk, placed])
+	mm.instance_count = xs.size()
+	for i: int in xs.size():
+		mm.set_instance_transform(i, xs[i])
+		mm.set_instance_color(i, Color.WHITE)
+	var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	mmi.name = mname
+	mmi.multimesh = mm
+	parent.add_child(mmi)
+
+
 ## The far plain: the flat ground with a rectangular hole where the terrain is, so the valley is not covered.
 static func far_ground(parent: Node3D, t: RefCounted, key: String) -> void:
 	if TLStyle.headless():

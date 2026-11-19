@@ -51,7 +51,7 @@ TLRigs.spec("biped"); TLRigs.validate("biped", params); TLRigs.list()
 | `work` | yes | 0.8 | hammering with the right arm, leaning in |
 | `jump` | no | 0.30 | take-off, played as the feet leave the floor: legs push straight, arms thrown up, ends in the rising air pose |
 | `land` | no | 0.45 | landing: the gait's own legs (feet stay where they stand, he may run on) under a crouch that takes the fall: soft from 4 m/s of fall, deep and slow with the arms out at 14 m/s. The fall speed is the last `velocity_local.y` seen while `grounded` was false. Its blend is at most 4 frames |
-| `slide` | holds | 0.30 | run slide: low on the left hip, right leg out ahead, left arm trailing low behind (the hand about 0.3 m above the floor), right arm up |
+| `slide` | holds | 0.30 | run slide: low on the left hip, right leg out ahead, left leg folded under with the foot on the floor (never under it: `rig.walker.slide_floor`), left arm trailing low behind (the hand about 0.3 m above the floor), right arm up |
 | `slope_slide` | yes | 1.6 | sliding down steep ground: knees bent, weight back, turned a little across the fall line, arms out wide and working for balance. Loops until another `play` (`play(&"")` ends it) |
 | `air` | yes | 1.0 | the air pose by name (locomotion shows it by itself when `grounded` is false): rising above +4 m/s, apex round 0, falling below -5 m/s |
 

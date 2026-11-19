@@ -72,7 +72,10 @@ void fragment() {
 	// the contour is drawn INSIDE a silhouette: at 8.5 m a figure's arm is 15 px wide and a 4.8 px line on each side leaves a
 	// dark blob. A body (roughness 0.5 in the buffer) gets a thinner line; the wobble of its line is damped too, since a
 	// line that wobbles on the screen boils on a limb that moves through it.
-	float body = 1.0 - smoothstep(0.6, 0.8, texture(nr_tex, uv).a);
+	vec4 centre_nr = texture(nr_tex, uv);
+	float roughness = centre_nr.a;
+	float body = 1.0 - smoothstep(0.6, 0.8, roughness);
+	bool terrain = abs(roughness - 0.9) < 0.025;
 	juv = mix(juv, uv, body * 0.7);
 	float d0 = lin_depth(juv, INV_PROJECTION_MATRIX);
 	float noise = mix(0.75 + 0.5 * wn, 1.0, even);
@@ -87,6 +90,8 @@ void fragment() {
 	float thin = 0.0;     // the object is narrower than the line across some axis
 	float thin_b = 0.0;   // ... narrower than the inner ring: a wire
 	float core = 0.0;     // the inner ring looks past a silhouette: the solid part of the line
+	float crest = 0.0;
+	vec4 vertical_taps = vec4(0.0); // lower/upper depth, lower/upper roughness
 	float hair = 0.0;     // the inner ring, lower right side only: the hairline of a thin member
 	float ne = 0.0;
 	for (int i = 0; i < 4; i++) {
@@ -101,24 +106,50 @@ void fragment() {
 			float hm = smoothstep(0.025, 0.05, (lin_depth(juv - dir * px * wo * 0.5, INV_PROJECTION_MATRIX) - d0) * inv_d);
 			thin = max(thin, hp * hm);
 		}
-		float dbp = lin_depth(juv + dir * px * wi, INV_PROJECTION_MATRIX);
-		float dbm = lin_depth(juv - dir * px * wi, INV_PROJECTION_MATRIX);
+		vec2 inner_offset = dir * px * wi;
+		float dbp = lin_depth(juv + inner_offset, INV_PROJECTION_MATRIX);
+		float dbm = lin_depth(juv - inner_offset, INV_PROJECTION_MATRIX);
 		float fp = smoothstep(0.025, 0.05, (dbp - d0) * inv_d);
 		float fm = smoothstep(0.025, 0.05, (dbm - d0) * inv_d);
 		core = max(core, max(fp, fm));
 		thin_b = max(thin_b, fp * fm);
 		thin = max(thin, fp * fm * thin_rings);
 		if (i < 3) { hair = max(hair, fp); }
-		vec3 np = texture(nr_tex, juv + dir * px * wi).rgb * 2.0 - 1.0;
-		vec3 nm = texture(nr_tex, juv - dir * px * wi).rgb * 2.0 - 1.0;
-		ne = max(ne, (1.0 - dot(np, n0)) * step(dbp, d0 * 1.02));
-		ne = max(ne, (1.0 - dot(nm, n0)) * step(dbm, d0 * 1.02));
+		vec4 np = texture(nr_tex, juv + inner_offset);
+		vec4 nm = texture(nr_tex, juv - inner_offset);
+		// A tagged body can end just in front of the bank. Its grazing normal makes the
+		// relative depth test miss. The crease taps already identify non-body surfaces.
+		float background_gap = max((dbp - d0) * step(0.8, np.a), (dbm - d0) * step(0.8, nm.a));
+		core = max(core, body * smoothstep(0.04, 0.12, background_gap));
+		if (i == 2) { vertical_taps = vec4(dbp, dbm, np.a, nm.a); }
+		ne = max(ne, (1.0 - dot(np.rgb * 2.0 - 1.0, n0)) * step(dbp, d0 * 1.02));
+		ne = max(ne, (1.0 - dot(nm.rgb * 2.0 - 1.0, n0)) * step(dbm, d0 * 1.02));
 	}
 	// full weight where the core ring or three wide taps reach the edge; one wide tap = the soft flank
 	float outer = max(core, smoothstep(0.0, 2.6, cnt));
 	float tk = thin * thin_keep;
 	float flat_k = thin_tone > 0.0 ? smoothstep(thin_tone_near, thin_tone_far, d0) : 0.0;
 	outer = mix(outer, mix(hair * hair_alpha * (1.0 - 0.45 * thin_b), thin_tone, flat_k), tk);
+	// The established brush keeps its original sampling positions, width and opacity.
+	// Only weak terrain pixels need the additional, texel-centred crest decision.
+	vec2 rise = vec2(0.0, px.y * round(wi));
+	if (terrain && outer < 0.65 && rise.y > 0.0 && uv.y > rise.y && uv.y < 1.0 - rise.y) {
+		float centre_depth = d0;
+		vec2 shift_px = abs(juv - uv) * VIEWPORT_SIZE;
+		// With nearest filtering all five values are already in hand if jitter and
+		// fractional radius keep the centre and both taps within the same texels.
+		if (shift_px.x >= 0.49 || shift_px.y + abs(wi - round(wi)) >= 0.49) {
+			centre_depth = lin_depth(uv, INV_PROJECTION_MATRIX);
+			vertical_taps = vec4(lin_depth(uv + rise, INV_PROJECTION_MATRIX), lin_depth(uv - rise, INV_PROJECTION_MATRIX),
+				texture(nr_tex, uv + rise).a, texture(nr_tex, uv - rise).a);
+		}
+		if (abs(vertical_taps.z - 0.9) < 0.025 && abs(vertical_taps.w - 0.9) < 0.025) {
+			float crest_jump = 1.0 - centre_depth / vertical_taps.y;
+			float crest_slope = abs(1.0 - centre_depth / vertical_taps.x);
+			crest = 0.65 * smoothstep(0.005, 0.020, crest_jump - 2.0 * crest_slope);
+			outer = max(outer * smoothstep(0.375, 0.6, outer), crest);
+		}
+	}
 	float inner = smoothstep(0.3, 0.6, ne) * inner_alpha * (1.0 - tk);
 	inner *= inner_far > 0.0 ? 1.0 - smoothstep(inner_near, inner_far, d0) : 1.0 - smoothstep(fade_near, fade_far, d0);
 	outer *= 1.0 - smoothstep(fade_far, outer_fade_far, d0);

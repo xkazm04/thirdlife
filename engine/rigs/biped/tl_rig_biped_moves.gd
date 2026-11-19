@@ -82,7 +82,7 @@ static func jump(t: float) -> Dictionary:
 
 ## Run slide (holds): low on the left hip, the right leg out ahead with the heel on the floor, the left leg folded under,
 ## the left arm trailing low and back (the hand about 0.3 m above the floor: it does not reach it), the right arm up for
-## balance, eyes ahead.
+## balance, eyes ahead. The folded left foot rests ON the floor (lane walker, 19 Nov: it was 0.151 m under it).
 static func slide(t: float) -> Dictionary:
 	var k: float = smoothstep(0.0, 0.22, t)
 	var settle: float = 1.0 - smoothstep(0.1, 0.3, t)      # the first bump as the hip meets the floor
@@ -90,7 +90,7 @@ static func slide(t: float) -> Dictionary:
 		"_hips": Vector3(-0.03, -0.585 - 0.03 * settle, 0.12), "Hips": Vector3(34.0, 0, 9.0),
 		"Spine": Vector3(-10.0, 0, -5.0), "Chest": Vector3(-12.0, 4.0, -5.0), "Neck": Vector3(-8.0, 0, 0), "Head": Vector3(-12.0, 0, 0),
 		"RightUpperLeg": Vector3(46.0, 0, 6.0), "RightLowerLeg": Vector3(-12.0, 0, 0), "RightFoot": Vector3(26.0, 0, 0), "RightToes": Vector3(0, 0, 0),
-		"LeftUpperLeg": Vector3(56.0, 0, -38.0), "LeftLowerLeg": Vector3(-118.0, 0, 0), "LeftFoot": Vector3(34.0, 0, 0), "LeftToes": Vector3(0, 0, 0),
+		"LeftUpperLeg": Vector3(78.0, 0, -26.0), "LeftLowerLeg": Vector3(-142.0, 0, 0), "LeftFoot": Vector3(34.0, 0, 0), "LeftToes": Vector3(0, 0, 0),
 		"LeftUpperArm": Vector3(-64.0, 0, -26.0), "LeftLowerArm": Vector3(10.0, 0, 0), "LeftHand": Vector3(-20.0, 0, 0),
 		"RightUpperArm": Vector3(64.0, 0, 56.0), "RightLowerArm": Vector3(50.0, 0, 0), "RightHand": Vector3(0, 0, 0),
 		"Backpack": Vector3(-6.0 * settle, 0, 0), "Hair": Vector3(12.0 - 8.0 * settle, 0, 0),
