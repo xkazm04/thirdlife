@@ -9,6 +9,7 @@ extends Control
 ##   --readonly                        look only: no Foreman command, no write to a pack
 ##   --drive=<name> --shots=<dir>      run a scripted session through real input events (ui/drive.gd)
 ##   --bg=<png>|none                   the picture behind the panel
+##   --home                            the village board is the home screen (ui/editor/village_board.gd)
 ##   --editor  [--sentence=<text>] [--recipe=<name>] [--place=<x>,<z>] [--turn=<steps>] [--take] [--closeup]
 ##                                     open the workbench (ui/editor/) over the panel; the rest fill it for a capture
 
@@ -17,12 +18,15 @@ const Door = preload("res://ui/foreman_door.gd")
 const JobModel = preload("res://ui/job_model.gd")
 const Workbench = preload("res://ui/editor/workbench.gd")
 const GameSheet = preload("res://ui/editor/game_sheet.gd")
+const Board = preload("res://ui/editor/village_board.gd")
 
 var args: Dictionary = {}
 var panel: Panel_
 var door: Door
 var workbench: Workbench = null
 var game_sheet: GameSheet = null
+var board: Board = null                # E5: the village board, the home screen with --home
+var village_button: Button = null       # E5: back from the jobs list to the board
 
 
 func _ready() -> void:
@@ -75,6 +79,8 @@ func _ready() -> void:
 		if what == "workbench":
 			open_workbench())
 	panel.job_selected.connect(open_game_sheet)
+	if args.has("home"):
+		_make_board()
 	if args.has("editor"):
 		open_workbench()
 		_fill_workbench()
@@ -98,6 +104,8 @@ func open_workbench() -> void:
 	workbench.setup(door, door.jobs_root)
 	add_child(workbench)
 	panel.visible = false
+	if board != null:
+		board.visible = false
 	workbench.closed.connect(close_workbench)
 	workbench.committed.connect(func(request: String, err: String) -> void:
 		if err.is_empty():
@@ -119,17 +127,65 @@ func open_game_sheet(id: String) -> void:
 	game_sheet.setup(door, door.jobs_root.path_join(id), d)
 	add_child(game_sheet)
 	panel.visible = false
+	if board != null:
+		board.visible = false
 	game_sheet.closed.connect(func() -> void:
 		game_sheet.queue_free()
 		game_sheet = null
-		panel.visible = true)
+		back_home())
 
 
 func close_workbench() -> void:
 	if workbench != null:
 		workbench.queue_free()
 		workbench = null
-	panel.visible = true
+	back_home()
+
+
+## E5: the home: the board when there is one (and nothing else is open), else the panel.
+func back_home() -> void:
+	if workbench != null or game_sheet != null:
+		return
+	if board == null:
+		panel.visible = true
+		return
+	panel.visible = false
+	village_button.visible = false
+	board.visible = true
+	board.reload()
+
+
+func _make_board() -> void:
+	board = Board.new()
+	board.name = "VillageBoard"
+	board.setup(panel, door.jobs_root)
+	add_child(board)
+	panel.visible = false
+	village_button = Button.new()
+	village_button.name = "VillageButton"
+	village_button.text = "Village"
+	village_button.focus_mode = Control.FOCUS_NONE
+	village_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	village_button.offset_left = -116
+	village_button.offset_right = -16
+	village_button.offset_top = 16
+	village_button.offset_bottom = 48
+	village_button.visible = false
+	village_button.pressed.connect(back_home)
+	add_child(village_button)
+	board.new_game.connect(open_workbench)
+	board.jobs_list.connect(func() -> void:
+		board.visible = false
+		panel.visible = true
+		village_button.visible = true)
+	board.open_game.connect(func(id: String) -> void:
+		if not GameSheet.find_draft(door.jobs_root, str((panel.jobs.get(id, {}) as Dictionary).get("sentence", ""))).is_empty():
+			open_game_sheet(id)
+		else:
+			board.visible = false
+			panel.visible = true
+			village_button.visible = true
+			panel.select(id))
 
 
 ## For captures: --sentence, --recipe, --take, --place, --turn fill the workbench as a player would have.

@@ -71,3 +71,11 @@ Resume point. Newest entry last. Times are CEST from `date`.
   map_base.gd (village_map extends it); ten screens re-captured after the split and checked by eye.
 - Archivo loads imported when the editor has imported it, else from the .ttf directly; the two render with slightly
   different letter spacing (Astra's own captures are the direct path: stills/look-pass/after-astra-raw/).
+- (round 3, 02:14-) The lost chip click: reproduced with `ui.sh chips` (retype the idea, click a chip; 7 lost of 1740
+  clicks). Logged in the lost cases: one mouse motion between the drive's press and release at global (160, 90) =
+  the real OS cursor (160, 1530) minus the window position (0, 1440); it clears BaseButton's pressing-inside, so the
+  release emits button_up but not pressed. Drive-only: a real mouse is where its press is. drive.gd click_at now
+  waits until the press is processed, then re-asserts its position right before the release: 0 lost of 900 clicks
+  (15 x 60, under load from parallel drives). The chip rows' rebuild per keystroke was not the cause (rects stable).
+- E5 the village board (editor/village_board.gd; map board mode in village_map.gd / map_base.gd; host --home;
+  ui.sh open starts on it, --panel for the panel; ui.sh home drive; ui.sh chips).

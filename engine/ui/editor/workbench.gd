@@ -44,6 +44,7 @@ var _footer: Label
 var _show_recipes: bool = false
 var _sig: String = ""
 var _auto_key: String = ""
+var rebuilds: Array = []             # process frames at which the chip rows were rebuilt (a read for the drive)
 
 
 func setup(the_door: RefCounted, root: String) -> void:
@@ -305,6 +306,7 @@ func refresh() -> void:
 		str(model.matches), _show_recipes, model.placed, str(model.footprint())]
 	if sig != _sig:
 		_sig = sig
+		rebuilds.append(Engine.get_process_frames())   # read by the drive (ui/editor/drive_editor.gd chips)
 		_fill_examples()
 		_fill_recipe()
 		_fill_questions()

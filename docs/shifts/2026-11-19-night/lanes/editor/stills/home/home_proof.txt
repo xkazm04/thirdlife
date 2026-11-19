@@ -1,0 +1,29 @@
+   0.9s  direct   screenshot h-0-board-empty.png
+   1.2s  UI event mouse click at (1190, 37) on the button "+ New game" on the board
+   2.0s  UI event mouse click at (267, 163) on the example idea "ice hockey, three against three, …"
+   2.7s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   2.8s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   2.8s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   2.9s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   3.0s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   3.0s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   3.1s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   3.1s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   3.2s  UI event mouse wheel down at (286, 538) on the questions (to reach TakeProposals)
+   3.4s  UI event mouse click at (102, 554) on the chip "Take the proposals"
+   4.2s  direct   screenshot h-1-workbench.png
+   4.2s  read     lot by the workbench: (-227.9389, 59.46137), fits true
+   4.4s  UI event mouse click at (1118, 637) on the button "Build it"
+   8.5s  read     seen: the game sheet opened on the brief
+   9.3s  UI event mouse click at (118, 167) on the button "Approve and build"
+   9.9s  UI event mouse click at (71, 35) on the button "< Games" (back to the village)
+  14.2s  read     seen: the board shows the game on its lot, being built
+  15.0s  direct   screenshot h-2-board-building.png
+  53.8s  read     seen: the board says the game is ready to play
+  54.7s  direct   screenshot h-3-board-ready.png
+  54.9s  UI event mouse click on the game's lot on the village map
+  55.7s  direct   screenshot h-4-sheet-from-the-lot.png
+  55.8s  UI event mouse click at (71, 35) on the button "< Games"
+  55.9s  UI event mouse click at (1073, 37) on the button "Jobs list"
+  56.7s  direct   screenshot h-5-jobs-list.png
+  56.9s  UI event mouse click at (1214, 32) on the button "Village" (back to the board)

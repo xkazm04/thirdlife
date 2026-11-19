@@ -201,3 +201,141 @@ func took(d: Node, m: RefCounted, key: String, id: String) -> void:
 		return str(v["id"]) == id and str(v["by"]) == "player", 3.0)
 	if not ok:
 		d.note("read", "FAILED: the click on %s was lost; the answer stands at %s" % [id, str(m.call("value", key))])
+
+
+## The lost-click hunt: N times (--n=, default 40) retype the idea (Ctrl+A, then the sentence key by key), wait for
+## the recipe, wait for a drawn frame as a screenshot does, then click the opponents chip that is not chosen and read
+## back whether it took. Logs the press and release frames and every chip-row rebuild between typing and release.
+func run_chips(d: Node) -> void:
+	var n: int = int((d.host.get("args") as Dictionary).get("n", "40"))
+	await d.secs(0.5)
+	if not await d.click("WorkbenchRow", "the row \"New game in the workbench…\""):
+		return
+	var wb: Control = await d.find("Workbench", 5.0)
+	var m: RefCounted = wb.get("model")
+	var lost: int = 0
+	for i: int in n:
+		if not await d.click("IdeaField", "the idea field"):
+			return
+		var k: InputEventKey = InputEventKey.new()
+		k.keycode = KEY_A
+		k.ctrl_pressed = true
+		k.pressed = true
+		Input.parse_input_event(k)
+		var ku: InputEventKey = k.duplicate()
+		ku.pressed = false
+		Input.parse_input_event(ku)
+		await d.frames(2)
+		var typed_at: int = Engine.get_process_frames()
+		await d.type("ice hockey, three against three, against the computer" if i % 2 == 0 else "ice hockey, three against three, versus the computer", "the idea field")
+		await d.wait_for("recipe", func() -> bool: return str(m.get("recipe")) == "team_possession", 5.0)
+		await d.frames(4)
+		await RenderingServer.frame_post_draw
+		var want: String = "pro" if str((m.call("value", "opponents") as Dictionary)["id"]) != "pro" else "rookie"
+		var rects: Callable = func() -> String:
+			var out: PackedStringArray = []
+			for nm: String in ["Opt_opponents_rookie", "Opt_opponents_pro", "Opt_opponents_allstar"]:
+				for nd: Node in d.host.find_children(nm, "", true, false):
+					var r: Rect2 = (nd as Control).get_global_rect()
+					out.append("%s x%d-%d y%d" % [nm.get_slice("_", 2), int(r.position.x), int(r.end.x), int(r.position.y)])
+			return " ".join(out)
+		var r_before: String = rects.call()
+		var f_before: int = Engine.get_process_frames()
+		if not await d.click("Opt_opponents_" + want, "the chip " + want):
+			return
+		var r_after: String = rects.call()
+		var v: Dictionary = m.call("value", "opponents")
+		var ok: bool = str(v["id"]) == want and str(v["by"]) == "player"
+		var during: Array = []
+		for f: int in wb.get("rebuilds"):
+			if f >= typed_at:
+				during.append(f)
+		d.note("read", "%2d %s press %d release %d; rebuilds since typing: %s" % [i, "ok  " if ok else "LOST", d.press_frame, d.release_frame, str(during.slice(maxi(0, during.size() - 4)))])
+		if not ok:
+			lost += 1
+			d.note("read", "   want %s; rects at frame %d: %s" % [want, f_before, r_before])
+			d.note("read", "   rects after release: %s" % r_after)
+			d.note("read", "   focus owner: %s; hovered: %s" % [str(wb.get_viewport().gui_get_focus_owner()), str(wb.get_viewport().gui_get_hovered_control())])
+	d.note("read", "chips: %d of %d clicks lost" % [lost, n])
+	if lost > 0:
+		d.failed = true
+
+
+## E5: the home session (tools/ui.sh home): the empty village board, New game -> the workbench (an example idea, the
+## proposals taken, the lot the workbench chose) -> Build it -> the game sheet: approve -> back to the board, where
+## the game stands on its lot in the site's words while it is built -> ready to play -> a click on its lot opens it
+## again -> the jobs list and back. Input events only; positions on the map are read from the board's model.
+func run_home(d: Node) -> void:
+	var pause: float = 1.4 if d.slow else 0.6
+	await d.secs(0.8)
+	var bd: Control = await d.find("VillageBoard", 5.0)
+	if bd == null:
+		d.note("read", "FAILED: no village board (is --home given?)")
+		d.failed = true
+		return
+	await d.picture("h-0-board-empty.png")
+	if not await d.click("NewGameButton", "the button \"+ New game\" on the board"):
+		return
+	await d.secs(pause)
+	if not await d.click("ExampleHockey", "the example idea \"ice hockey, three against three, …\""):
+		return
+	var wb: Control = await d.find("Workbench", 3.0)
+	var m: RefCounted = wb.get("model")
+	await d.secs(pause)
+	await d.scroll_to("TakeProposals")
+	if not await d.click("TakeProposals", "the chip \"Take the proposals\""):
+		return
+	await d.secs(pause)
+	await d.picture("h-1-workbench.png")
+	d.note("read", "lot by the workbench: %s, fits %s" % [str(m.get("at")), str(m.call("fits"))])
+	if not await d.click("BuildButton", "the button \"Build it\""):
+		return
+	if not await d.wait_for("the game sheet opened on the brief", func() -> bool: return d.host.get("game_sheet") != null and d.job().get("phase", "") == "approve", 60.0):
+		return
+	await d.secs(pause)
+	if not await d.click("ApproveButton", "the button \"Approve and build\""):
+		return
+	await d.secs(0.5)
+	if not await d.click("GamesButton", "the button \"< Games\" (back to the village)"):
+		return
+	if not await d.wait_for("the board shows the game on its lot, being built", func() -> bool:
+		for g: Dictionary in bd.get("games"):
+			if bool(g["lot"]) and str(g["words"]).begins_with("building"):
+				return true
+		return false, 90.0):
+		return
+	await d.secs(pause)
+	await d.picture("h-2-board-building.png")
+	if not await d.wait_for("the board says the game is ready to play", func() -> bool:
+		for g: Dictionary in bd.get("games"):
+			if bool(g["lot"]) and str(g["words"]) == "ready to play":
+				return true
+		return false, 240.0):
+		return
+	await d.secs(pause)
+	await d.picture("h-3-board-ready.png")
+	var map: Control = await d.find("HomeMap", 3.0)
+	var at: Vector2 = Vector2.ZERO
+	for lot: Dictionary in (bd.get("model") as RefCounted).get("plots"):
+		if lot["kind"] == "game":
+			at = lot["at"]
+	await d.click_at(map.global_position + (map.call("to_screen", at) as Vector2))
+	d.note("UI event", "mouse click on the game's lot on the village map")
+	if await d.find("GameSheet", 5.0) == null:
+		d.note("read", "FAILED: a click on the lot did not open the game sheet")
+		d.failed = true
+		return
+	await d.secs(pause)
+	await d.picture("h-4-sheet-from-the-lot.png")
+	if not await d.click("GamesButton", "the button \"< Games\""):
+		return
+	if not await d.click("JobsListButton", "the button \"Jobs list\""):
+		return
+	await d.secs(pause)
+	await d.picture("h-5-jobs-list.png")
+	if not await d.click("VillageButton", "the button \"Village\" (back to the board)"):
+		return
+	await d.secs(pause)
+	if await d.find("HomeMap", 3.0) == null:
+		d.note("read", "FAILED: the board did not come back")
+		d.failed = true
