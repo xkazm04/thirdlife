@@ -1,0 +1,115 @@
+extends SceneTree
+## Shipped terrain outside the game plots. Sample a 3 m grid, spread the chosen starts across each stratum.
+const Landscape = preload("res://kernel/world/landscape.gd")
+const Cases = preload("res://kernel/world/walks/walk_case_c.gd")
+const Space = preload("res://kernel/world/terrain/world_space.gd")
+const LIMIT := 192
+const TICKS := 240
+
+
+func _initialize() -> void:
+	_run.call_deferred()
+
+
+## The unfixed V contacts oscillate by centimetres. Count a body once if the entire
+## 120-tick air window spans at most 5 cm vertically, including when it moves along a wall.
+func _trial(sp: RefCounted, start: Vector3, wish: Vector3, region: String) -> bool:
+	var feet := start
+	sp.place(feet)
+	sp.rest()
+	var heights: Array[float] = []
+	var stuck := false
+	for tick in TICKS:
+		var r: Dictionary = sp.drive(feet, wish, false, false)
+		feet = r.pos
+		if r.mode != "air":
+			heights.clear()
+			continue
+		heights.append(feet.y)
+		if heights.size() > 120:
+			heights.pop_front()
+		if not stuck and heights.size() == 120 and heights.max() - heights.min() <= 0.05:
+			stuck = true
+			print("SCAN stuck region=%s start=%s wish=%s tick=%d feet=%s" % [region, start, wish, tick + 1, feet])
+	return stuck
+
+
+func _run() -> void:
+	for deg: float in [62.0, 75.0]:
+		var control := Space.new()
+		Cases.channel(control, deg)
+		var detected := _trial(control, Vector3(0, 2, 0), Vector3.ZERO, "control")
+		print("SCAN synthetic control=%d stuck=%s" % [deg, detected])
+		control.free_all()
+	var village: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://boot/village.json"))
+	var cfg: Dictionary = village.landscape.duplicate(true)
+	cfg.road = village.road
+	cfg.edges_now = true
+	var plots := []
+	var radii := []
+	var own_ground := []
+	for p: Dictionary in village.plots:
+		plots.append(Transform3D(Basis(), Vector3(p.origin[0], p.origin[1], p.origin[2])))
+		radii.append(p.radius)
+		own_ground.append(true)
+	var view := Node.new()
+	root.add_child(view)
+	var land := Node3D.new()
+	view.add_child(land)
+	var stats := Landscape.build(land, plots, radii, own_ground, cfg)
+	if not land.has_meta("tl_terrain") or not land.has_meta("tl_space"):
+		print("SCAN missing village terrain or physics space")
+		quit(2)
+		return
+	var terr: RefCounted = land.get_meta("tl_terrain")
+	var sp: RefCounted = land.get_meta("tl_space")
+	var groups := {"steep": [], "river": [], "bluff": [], "road": [], "background": []}
+	for j in range(4, terr.nz - 4):
+		for i in range(4, terr.nx - 4):
+			var x: float = terr.x0 + (i + 0.5) * terr.cell
+			var z: float = terr.z0 + (j + 0.5) * terr.cell
+			var point := Vector2(x, z)
+			var in_plot := false
+			for pad: Dictionary in terr.pads:
+				if point.distance_to(pad.c) < pad.rp + 1:
+					in_plot = true
+					break
+			if in_plot:
+				continue
+			if terr.slope(x, z) >= 1 - cos(deg_to_rad(55)):
+				groups.steep.append(point)
+			elif terr.river_dist(x, z) < 16:
+				groups.river.append(point)
+			elif x > -205 and x < 260 and z > -222 and z < -188:
+				groups.bluff.append(point)
+			elif terr.road_dist(x, z) < 12 and terr.road_dist(x, z) > 2:
+				groups.road.append(point)
+			else:
+				groups.background.append(point)
+	print("SCAN driver=%s verts=%s seed=%s plots=%d ticks=%d" % [DisplayServer.get_name(), stats.terrain_verts, cfg.seed, plots.size(), TICKS])
+	var total := 0
+	var stuck := 0
+	var complete := true
+	for region: String in groups:
+		var sites: Array = groups[region]
+		var used := mini(LIMIT, sites.size())
+		var trials := 0
+		var trapped := 0
+		for k in used:
+			var point: Vector2 = sites[floori((k + 0.5) * sites.size() / used)]
+			var start := Vector3(point.x, terr.gy(point.x, point.y) + 1.5, point.y)
+			var y: float = sp.ground_at(start.x, start.z, start.y)
+			if not is_finite(y) or absf(y - (start.y - 1.5)) > 1.5:
+				continue
+			start.y = y + 1.5
+			var dir := Vector3.RIGHT.rotated(Vector3.UP, TAU * (k % 8) / 8.0)
+			for speed: float in [0.0, 4.5, 9.0]:
+				trials += 1
+				trapped += int(_trial(sp, start, dir * speed, region))
+		print("SCAN region=%s candidates=%d starts=%d trials=%d stuck=%d" % [region, sites.size(), trials / 3, trials, trapped])
+		complete = complete and trials > 0
+		total += trials
+		stuck += trapped
+	view.free()
+	print("SCAN done trials=%d stuck=%d complete=%s" % [total, stuck, complete])
+	quit(0 if complete else 2)

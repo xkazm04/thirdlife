@@ -1,0 +1,3 @@
+selftest: 0 passed, 0 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker/gate-walker.crown-no-such-case)
+selftest: no case matches the filter 'walker.crown-no-such-case'
+exit=2

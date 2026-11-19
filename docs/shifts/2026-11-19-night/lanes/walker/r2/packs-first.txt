@@ -1,0 +1,3 @@
+node devx/bin/tl.mjs check --tier full --only packs
+FAIL  packs                         271240 ms  [1/2] completed 1 of 2 units found; found 2, completed 1; verb runs 32 of 33; FAILED hockey: invariants; output: .tl/gate-packs/; first: hockey invariants: invariants.many_budget: frame p50 1.038 ms (budget 1.0 ms for one of many; target 0.5 ms, above the target)
+exit 1

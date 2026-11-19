@@ -1,0 +1,51 @@
+extends SceneTree
+## Lane walker (19 Nov): the held slide's folded left leg digs 0.151 m into the floor (LeftFoot). Sweep the left leg's
+## angles at the held pose: lowest left foot / toes / shin, and the right side, for each. Prints SWEEP lines.
+
+func _initialize() -> void:
+	run.call_deferred()
+
+
+func low(sk: Skeleton3D, geometry: TLMesh, names: Array) -> float:
+	var lo: float = INF
+	var ids: Array = []
+	for n in names:
+		ids.append(sk.find_bone(n))
+	for surface in geometry.surfs.values():
+		for i in surface.v.size():
+			var b: int = surface.b[4 * i]
+			if b in ids:
+				var skin := sk.get_bone_global_pose(b) * sk.get_bone_global_rest(b).affine_inverse()
+				lo = minf(lo, (skin * Vector3(surface.v[i])).y)
+	return lo
+
+
+func q(x: float, y: float, z: float) -> Quaternion:
+	return Quaternion.from_euler(Vector3(deg_to_rad(x), deg_to_rad(y), deg_to_rad(z)))
+
+
+func run() -> void:
+	var rig = TLRigs.build("biped")
+	root.add_child(rig)
+	rig.play(&"slide")
+	for f in range(1, 61):
+		rig.tick(f)
+	var sk: Skeleton3D = rig.get_node("Model/Skeleton3D")
+	var geometry := TLRigBipedMesh.build_mesh(sk, TLRigBipedMesh.LOOK, true, false)
+	var ul: int = sk.find_bone("LeftUpperLeg")
+	var ll: int = sk.find_bone("LeftLowerLeg")
+	var ft: int = sk.find_bone("LeftFoot")
+	print("SWEEP base foot=%.3f shin=%.3f thigh=%.3f hips=%.3f" % [low(sk, geometry, ["LeftFoot", "LeftToes"]), low(sk, geometry, ["LeftLowerLeg"]),
+		low(sk, geometry, ["LeftUpperLeg"]), low(sk, geometry, ["Hips"])])
+	for ux in [62.0, 70.0, 78.0, 86.0]:
+		for uz in [-38.0, -26.0, -14.0]:
+			for lx in [-126.0, -134.0, -142.0]:
+				for fx in [34.0, 45.0, 55.0]:
+					sk.set_bone_pose_rotation(ul, q(ux, 0, uz))
+					sk.set_bone_pose_rotation(ll, q(lx, 0, 0))
+					sk.set_bone_pose_rotation(ft, q(fx, 0, 0))
+					var a: float = low(sk, geometry, ["LeftFoot", "LeftToes"])
+					var b: float = low(sk, geometry, ["LeftLowerLeg"])
+					print("SWEEP ux=%.0f uz=%.0f lx=%.0f fx=%.0f foot=%.3f shin=%.3f" % [ux, uz, lx, fx, a, b])
+	rig.free()
+	quit()

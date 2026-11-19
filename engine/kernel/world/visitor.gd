@@ -47,6 +47,7 @@ const FACE_EASE: float = 0.22           # share of the remaining turn of the fig
 const CAM_ANCHOR: float = 0.45          # the camera's anchor follows him by this share per tick (x, z) ...
 const CAM_ANCHOR_Y: float = 0.18        # ... and this share in height (a jump, a step, a landing are eased)
 var face_yaw: float = 0.0               # where the figure faces (radians, 0 = -z); the node itself keeps `look_yaw`
+var face_view: bool = false             # lane walker (TL_AD_KEYS=sidestep, visit.gd): on the ground the figure faces `look_yaw`, not his travel
 var mode: String = "ground"             # the body's mode: ground | air | slope | slide
 var vel: Vector3 = Vector3.ZERO         # the body's velocity, m/s
 var _wish: Vector3 = Vector3.ZERO
@@ -80,16 +81,19 @@ func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary 
 	rig = TLRigs.build("biped", {})
 	if rig != null:
 		add_child(rig)
-	cam = TLChaseCam.new()
+	var chase := preload("res://kernel/world/terrain/crown_camera.gd").new()
+	if space != null and space.get("drawn_crowns") is Dictionary:
+		chase.crowns = space.get("drawn_crowns")
+	cam = chase
 	cam.name = "VisitorCam"
 	get_parent().add_child(cam)
 	var o: Dictionary = {"distance": 8.5, "height": 3.6, "look_height": 1.7, "stiffness": 0.05, "fov": 60.0}
 	o.merge(cam_opts, true)
-	cam.setup(self, o)
 	if space != null:
-		cam.avoid_space = space.get("space")
-		cam.avoid_mask = 1 | 4                 # the ground and solid things, and the trees' crowns (world_space CANOPY)
+		o["avoid_space"] = space.get("space")
+		o["avoid_mask"] = 1 | 4                 # the ground and solid things, and the trees' crowns (world_space CANOPY)
 		cam.near = 0.05
+	cam.setup(self, o)
 	_cam_dist = Vector2(float(o["distance"]), float(o["height"]) - float(o["look_height"])).length()
 	_cam_look_h = float(o["look_height"])
 	look_pitch = atan2(float(o["height"]) - float(o["look_height"]), float(o["distance"]))
@@ -238,7 +242,9 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 	d.y = 0.0
 	speed = d.length() * 60.0
 	var hv: Vector3 = Vector3(vel.x, 0.0, vel.z)
-	if hv.length() > 0.5 and mode != "slope":
+	if face_view and (mode == "ground" or mode == "air"):
+		face_yaw = lerp_angle(face_yaw, look_yaw, FACE_EASE)          # a sidestep or a backward walk: the gait reads the direction
+	elif hv.length() > 0.5 and mode != "slope":
 		face_yaw = lerp_angle(face_yaw, atan2(-hv.x, -hv.z), FACE_EASE)
 	elif mode == "slope" and hv.length() > 0.5:
 		face_yaw = lerp_angle(face_yaw, atan2(-hv.x, -hv.z), FACE_EASE * 0.5)

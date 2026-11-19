@@ -131,10 +131,27 @@ shadow map on himself (about 40 %), the world-anchored mottle (about 25 %), ampl
 - `ink.body_k` (default 1.0 in the shader, 0.55 in both shipped styles): the contour width on a body as a share of the
   width anywhere else; the contour's screen wobble is 30 % there. The contour is drawn inside a silhouette, so on a
   figure 170 px tall the full width left a dark blob. `ink.body_dbg` 1 paints what the pass takes for a body.
+- On a body pixel, an inner-ring tap with roughness at least 0.8 can see the ground or a wall behind the rig.
+  Its depth gap adds contour weight, starting at 4 cm and reaching full strength at 12 cm. The crease taps already
+  read this roughness and depth. The wide ring and thin-member classification still use the grazing-weighted depth test.
+  At tick 310 of the village bank approach, the share of the figure's inner boundary carrying half-strength silhouette
+  ink rose from 45.2 % to 94.8 %. On the running figure's frozen rear silhouette, mean frame change fell from 3.24
+  to 2.85 grey levels over 50 frame pairs.
 - After: 0.43 on his back at 4.5 m/s, 0.62 at 9 m/s (was 1.20 and 1.68). Measure again: `look.sh clip rig:run:4.5:0:behind
   out.mp4 130` with `RIG_ARGS="--freeze-at=90"` (add `--no-body=1` for the old shading) and difference the frames inside
   the figure.
 - Palette: `pants` is denim blue `#4d5a8c` (was a purple that merged with the ink), `pack` canvas tan `#c2975a`.
+
+## Terrain crests
+
+The toon shader writes roughness 0.9 for the ground material class. The silhouette brush keeps its original tap
+positions and full weight. At terrain pixels with less than 65% brush weight, a second decision checks the ground
+one inner-ring radius above and below the texel centre. A receding upper tap beyond twice the lower reciprocal-depth
+slope adds up to 65% ink. Reciprocal depth varies linearly across a projected plane, so a continuous slope adds none.
+
+Where all three texels carry the ground tag, brush weights through 0.375 drop out to clear faint lines on grazing
+planes. The brush returns to its original weight by 0.6. The crest decision reuses the depth and roughness samples
+when the original taps land in the required texels. A mismatch costs three depth and two normal/roughness reads.
 
 ## Thin members far away (walker-feel, lane T's item L1)
 Lane T measured that the shimmer of the picture sits on the far fences, scaffolds and trees and comes from the ink pass.

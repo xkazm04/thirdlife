@@ -1,0 +1,2 @@
+PASS walk.v_wedge  (62deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 75deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 15% grade ground_inside=0 exit_x=11.54)
+selftest: 1 passed, 0 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker-r2/tl_selftest_21050)

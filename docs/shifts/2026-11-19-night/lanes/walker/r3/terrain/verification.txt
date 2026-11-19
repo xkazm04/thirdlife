@@ -1,0 +1,13 @@
+HEAD vs r3b depth: 66/66 byte-identical
+HEAD vs r3b removed: 66/66 byte-identical
+HEAD vs after depth: 66/66 byte-identical
+HEAD vs after removed: 66/66 byte-identical
+flat head: nonzero opacity codes=6344/279300 max=87/255
+flat r3b: nonzero opacity codes=0/279300 max=0/255
+flat after: nonzero opacity codes=0/279300 max=0/255
+head taps 35 without AO, 44 with AO, +0 on crest refetch
+r3b taps 35 without AO, 44 with AO, +0 on crest refetch
+after taps 35 without AO, 44 with AO, +5 on crest refetch
+  bank_310 refetch=39.16% average_extra=1.958 taps/pixel
+  bluff_120 refetch=33.45% average_extra=1.672 taps/pixel
+  shoulder refetch=34.43% average_extra=1.722 taps/pixel

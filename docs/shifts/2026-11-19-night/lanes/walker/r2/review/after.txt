@@ -1,0 +1,12 @@
+C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe --headless --path engine --script res://kernel/world/walks/walk_case_c.gd -- walk.
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+WALKCASE walk.v_wedge ok 62deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 75deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 15% grade ground_inside=0 exit_x=11.54 | 5% grade ground_inside=0 exit_x=10.82
+WALKCASE walk.v_asymmetric ok settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true
+WALKCASE walk.v_yaw ok settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true
+WALKCASE walk.v_terrain ok settled=ground lands=1 walk_ground=120/120 changes=0 x=8.73 jump=true rise=0.94 exit=true skew_contacts=100/120
+WALKCASE walk.single_face ok 62deg slope=68 ground=0 downhill=6.90 y=-12.71
+WALKCASE walk.step_edge ok 0.60m air=12 lands=1 slope=0 max_drop=0.073 end=ground y=0.001
+WALKCASE walk.pad_swap ok faces+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | faces+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | faces+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | faces+0.65 first=0.000 idle60=-11.800 overlaps=19/60 walk90=-26.700 | box+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | box+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | box+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | box+0.65 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.650 | pitched=0.242 roof=0.000
+WALKCASE done 7 7
+exit 0

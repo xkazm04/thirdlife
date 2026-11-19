@@ -1,0 +1,42 @@
+extends SceneTree
+## Draw both materials at the same physics tick, before any video encoder.
+func _initialize() -> void:
+	call_deferred("sample")
+
+func sample() -> void:
+	await process_frame
+	var view := current_scene.get_node("WorldView")
+	var world: Node = view.world
+	var post: MeshInstance3D = view.find_child("InkPost", true, false)
+	var live: ShaderMaterial = post.material_override
+	var previous: ShaderMaterial = live.duplicate()
+	var shader := Shader.new()
+	var out := OS.get_environment("INK_OUTPUT")
+	shader.code = FileAccess.get_file_as_string(out + "/previous.txt")
+	previous.shader = shader
+	TLStyle.push("ink", previous)
+	var files := [FileAccess.open(out + "/before.rgb", FileAccess.WRITE), FileAccess.open(out + "/after.rgb", FileAccess.WRITE)]
+	var changed_subject := 0
+	for tick in range(40, 146):
+		while world.tick < tick:
+			await process_frame
+		if world.tick != tick:
+			push_error("missed sample tick")
+			quit(1)
+			return
+		var subject := PackedByteArray()
+		for i in 2:
+			post.material_override = previous if i == 0 else live
+			RenderingServer.force_draw(false, 0.0)
+			var img := root.get_texture().get_image()
+			img.convert(Image.FORMAT_RGB8)
+			files[i].store_buffer(img.get_region(Rect2i(0, 200, 1920, 220)).get_data())
+			var body := img.get_region(Rect2i(850, 450, 220, 340)).get_data()
+			if i == 0:
+				subject = body
+			elif subject != body:
+				changed_subject += 1
+		await process_frame
+	for f: FileAccess in files:
+		f.close()
+	print("PAIRED frames=106 changed_subject_frames=", changed_subject)

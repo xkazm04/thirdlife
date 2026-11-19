@@ -1,0 +1,2 @@
+PASS walker.crown  (frames=34560 poses=2880 head_out=[29184, 0, 0] head_in=[5376, 1050, 1075])
+selftest: 1 passed, 0 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker/review/gate-walker.crown)

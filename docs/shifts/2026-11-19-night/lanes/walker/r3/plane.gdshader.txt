@@ -1,0 +1,14 @@
+// Diagnostic alternative to the tagged inner-ring rule. Intersect the neighbour's ray
+// with the centre plane. Both rays pass through the centres of the sampled depth texels.
+vec3 ink_ray(vec2 sample_uv, vec2 size, mat4 inv) {
+	vec2 texel = (clamp(floor(sample_uv * size), vec2(0.0), size - 1.0) + 0.5) / size;
+	vec4 v = inv * vec4(texel * 2.0 - 1.0, 0.5, 1.0);
+	return v.xyz / -v.z;
+}
+float plane_edge(vec3 n, vec3 centre_ray, vec3 tap_ray, float d0, float tap_depth) {
+	float denom = dot(n, tap_ray);
+	float numer = dot(n, centre_ray);
+	if (abs(denom) < 0.0001 || denom * numer <= 0.0 || tap_depth <= d0) { return 0.0; }
+	float predicted = d0 * numer / denom;
+	return smoothstep(0.04, 0.12, tap_depth - predicted);
+}

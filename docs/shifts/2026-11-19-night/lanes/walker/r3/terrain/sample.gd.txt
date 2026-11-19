@@ -1,0 +1,154 @@
+extends SceneTree
+## Draw the live world several times in one physics tick. Only the diagnostic passes disable the grade and AA.
+var out := OS.get_environment("TERRAIN_OUT")
+var place := OS.get_environment("TERRAIN_PLACE")
+var view: Node
+var post: MeshInstance3D
+var land: MeshInstance3D
+var normal: ShaderMaterial
+var instrument: ShaderMaterial
+var we: WorldEnvironment
+var diagnostic_env: Environment
+var crops := Rect2i(48, 555, 800, 420)
+
+func _initialize() -> void:
+	call_deferred("measure")
+
+func save_frame(prefix: String, kind: String, full: bool) -> void:
+	RenderingServer.force_draw(false, 0.0)
+	var img := root.get_texture().get_image()
+	if not full:
+		img = img.get_region(crops)
+	if img.save_png(out + "/" + prefix + "-" + kind + ".png") != OK:
+		push_error("save failed")
+		quit(2)
+
+func snapshot(prefix: String, full: bool) -> void:
+	save_frame(prefix, "beauty", full)
+	post.hide()
+	save_frame(prefix, "noink", full)
+	post.show()
+	var env := we.environment
+	var attrs := we.camera_attributes
+	var aa := root.screen_space_aa
+	var layers := []
+	for n in view.find_children("*", "CanvasLayer", true, false):
+		if n.visible:
+			layers.append(n)
+			n.hide()
+	we.environment = diagnostic_env
+	we.camera_attributes = null
+	root.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	post.material_override = instrument
+	instrument.set_shader_parameter("read_depth", false)
+	save_frame(prefix, "ink", full)
+	if full:
+		# Red is continuous outer opacity, green is the exact >=0.9 decision before quantisation.
+		var saved := instrument.shader
+		var suffix := """
+		float v = 0.96 * outer;
+		ALBEDO = vec3(v <= 0.04045 ? v/12.92 : pow((v+0.055)/1.055,2.4), step(0.9,v), measured_extra); ALPHA=1.0;
+		}"""
+		for version in (["r3", "live"] if prefix == "plane" else ["live"]):
+			var src := normal.shader.code if version == "live" else FileAccess.get_file_as_string(OS.get_environment("TERRAIN_BASE"))
+			src = src.replace("void fragment() {", "void fragment() {\n float measured_extra = 0.0;")
+			src = src.replace("centre_depth = lin_depth(uv,", "measured_extra = 1.0;\n centre_depth = lin_depth(uv,")
+			var output_shader := Shader.new()
+			output_shader.code = src.strip_edges().trim_suffix("}") + suffix
+			instrument.shader = output_shader
+			TLStyle.push("ink", instrument)
+			save_frame(prefix, version + "-weight", true)
+		instrument.shader = saved
+		TLStyle.push("ink", instrument)
+	instrument.set_shader_parameter("read_depth", true)
+	save_frame(prefix, "depth", full)
+	land.hide()
+	save_frame(prefix, "removed", full)
+	land.show()
+	post.material_override = normal
+	we.environment = env
+	we.camera_attributes = attrs
+	root.screen_space_aa = aa
+	for n in layers:
+		n.show()
+
+func measure() -> void:
+	await process_frame
+	view = current_scene.get_node("WorldView")
+	post = view.find_child("InkPost", true, false)
+	land = view.find_child("WorldTerrain", true, false)
+	if post == null or land == null:
+		push_error("terrain probe needs the visible world and its ink pass")
+		quit(2)
+		return
+	normal = post.material_override
+	if OS.has_environment("TERRAIN_INK_POST"):
+		var loaded := Shader.new()
+		loaded.code = FileAccess.get_file_as_string(OS.get_environment("TERRAIN_INK_POST"))
+		normal.shader = loaded
+		TLStyle.push("ink", normal)
+	if OS.has_environment("TERRAIN_TOON"):
+		var loaded_toon: Shader = load("res://style/shaders/toon.gdshader")
+		loaded_toon.code = FileAccess.get_file_as_string(OS.get_environment("TERRAIN_TOON"))
+	if OS.get_environment("TERRAIN_STAGE") == "before":
+		# Replay the measured R3 baseline without writing the live shaders to disk.
+		var baseline := Shader.new()
+		baseline.code = FileAccess.get_file_as_string(OS.get_environment("TERRAIN_BASE"))
+		normal.shader = baseline
+		TLStyle.push("ink", normal)
+		var toon: Shader = load("res://style/shaders/toon.gdshader")
+		toon.code = toon.code.replace("(mclass == 5 ? 0.9 : 1.0)", "1.0")
+	we = post.get_parent().get_node("WorldEnvironment")
+	diagnostic_env = we.environment.duplicate()
+	diagnostic_env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	diagnostic_env.tonemap_exposure = 1.0
+	diagnostic_env.glow_enabled = false
+	instrument = normal.duplicate()
+	var shader := Shader.new()
+	shader.code = normal.shader.code.strip_edges().trim_suffix("}").replace("void fragment()", "uniform bool read_depth = false;\nvoid fragment()") + """
+	ALPHA = 1.0;
+	ALBEDO = vec3(step(0.5, outer * 0.96), step(0.5, inner * 0.96), step(graze, 0.2));
+	if (read_depth) {
+		float q = clamp(round(lin_depth(uv, INV_PROJECTION_MATRIX) * 500.0), 0.0, 262143.0);
+		vec3 digits = mod(floor(q / vec3(4096.,64.,1.)),64.) / 63.;
+		ALBEDO = mix(digits/12.92, pow((digits+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),digits));
+	}
+}
+"""
+	instrument.shader = shader
+	instrument.render_priority = 127
+	TLStyle.push("ink", instrument)
+	var last := 310 if place == "bank" else 120
+	var first := last - 31
+	for tick in range(first, last + 1):
+		while view.world.tick < tick:
+			await process_frame
+		if view.world.tick != tick:
+			push_error("missed tick")
+			quit(2)
+			return
+		snapshot("%s_%d" % [place,tick], tick == last)
+	if place == "bluff":
+		var visitor_cam := root.get_camera_3d()
+		var cam := Camera3D.new()
+		cam.fov = visitor_cam.fov
+		cam.far = visitor_cam.far
+		cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		view.add_child(cam)
+		cam.make_current()
+		var terrain: RefCounted = view.landscape.get_meta("tl_terrain")
+		# A second camera at eye height on the actual bluff, across its slope.
+		var eye := Vector3(55, terrain.call("gy", 55.0, -211.0) + 1.5, -211)
+		cam.look_at_from_position(eye, eye + Vector3(1.0, -0.09, 0.38))
+		cam.force_update_transform()
+		snapshot("shoulder", true)
+		var sheet := TLStyle.ground(100, "terrain", 1800)
+		view.add_child(sheet)
+		land = sheet
+		cam.look_at_from_position(Vector3(0,101.4,0),Vector3(35,100,0))
+		cam.force_update_transform()
+		snapshot("plane", true)
+		sheet.queue_free()
+		visitor_cam.make_current()
+		cam.queue_free()
+	print("TERRAIN_DONE ", place, " frames=32")

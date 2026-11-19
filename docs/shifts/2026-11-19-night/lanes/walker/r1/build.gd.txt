@@ -1,0 +1,45 @@
+extends "res://kernel/world/walks/crown_village_evidence.gd"
+## One cold village build, no sweep or oracle construction during the measured lap.
+func _run() -> void:
+	var host := Node.new()
+	root.add_child(host)
+	host.add_child(view)
+	view.start({"walk": WALKS + "wf_canopy.json", "cost": "model", "load": "block", "live": "true", "ticks": "400"})
+	var stats: Dictionary = view.land_stats
+	var terrain: RefCounted = view.landscape.get_meta(&"tl_terrain")
+	var space: RefCounted = view.landscape.get_meta(&"tl_space")
+	var locations := {}
+	for rid: RID in space.drawn_crowns:
+		var xf: Transform3D = space.drawn_crowns[rid][1].affine_inverse()
+		locations[xf.origin] = true
+	var distant := {}
+	var nearest_centre := {}
+	for group: String in ["WorldBelt0", "WorldBelt1", "WorldMesaPines"]:
+		var mesh: MultiMesh = view.landscape.get_node(group).multimesh
+		var counts := [0, 0]
+		var nearest := INF
+		for i in mesh.instance_count:
+			var p := mesh.get_instance_transform(i).origin
+			if group == "WorldMesaPines" or not terrain.inside(p.x, p.z):
+				var edge := Vector2(clampf(p.x, terrain.x0, terrain.x1()), clampf(p.z, terrain.z0, terrain.z1()))
+				nearest = minf(nearest, edge.distance_to(Vector2(p.x, p.z)))
+				counts[0] += 1
+				for centre: Vector3 in locations:
+					if centre.distance_squared_to(p) < 0.00001:
+						counts[1] += 1
+						break
+		distant[group] = counts
+		nearest_centre[group] = snappedf(nearest, 0.001)
+	print("REVIEW build crowns_ms=%.1f total_ms=%d canopies=%d bodies=%d distant_drawn_kept=%s" % [
+		stats.laps_ms.crowns, stats.build_ms, stats.space.canopies, stats.space.bodies, distant])
+	print("REVIEW nearest_distant_centre_to_terrain_m=", nearest_centre)
+	view._done = true
+	view.world.ended.disconnect(view._on_world_ended)
+	view.draw.clear()
+	view.world.walk_ticks = view.world.tick
+	view.world._walk_tick(0)
+	oracle.close()
+	wall_cast.free()
+	var ok: bool = view.world.exit_code == 0 and locations.size() == stats.space.canopies and locations.size() > 0
+	print("CROWNCASE build ", "ok" if ok else "FAIL")
+	quit(0 if ok else 1)

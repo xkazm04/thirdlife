@@ -1,0 +1,5 @@
+C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe --headless --path engine --script res://kernel/world/walks/walk_case_c.gd -- nonexistent
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+WALKCASE done 0 0
+exit 2

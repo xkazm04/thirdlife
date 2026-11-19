@@ -1,0 +1,3 @@
+Host-idle build NOT RUN. The lane process was still parked immediately before WorldSpace.finish().
+Time waiting at this build: 3601.6 s. Other Godot engines at release: [2192, 2676, 20540, 27008, 51268, 54148, 59636].
+No elapsed crown lap or isolated timing was recorded. The three completed standalone runs are review-after-build-{1,2,3}.log.

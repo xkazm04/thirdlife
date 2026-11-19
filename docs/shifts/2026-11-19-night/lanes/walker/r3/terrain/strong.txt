@@ -1,0 +1,12 @@
+bank_310 terrain HEAD_pixels=7463 head mean=0.9593 retained=100.00% r3b mean=0.7391 retained=61.25% after mean=0.9593 retained=100.00%
+bank_310 review crop HEAD_pixels=2 head mean=0.9314 retained=100.00% r3b mean=0.4804 retained=50.00% after mean=0.9314 retained=100.00%
+bank_310 crest HEAD_pixels=19 head mean=0.9606 retained=100.00% r3b mean=0.7653 retained=42.11% after mean=0.9606 retained=100.00%
+bluff_120 terrain HEAD_pixels=11638 head mean=0.9579 retained=100.00% r3b mean=0.6298 retained=23.72% after mean=0.9579 retained=100.00%
+bluff_120 review crop HEAD_pixels=1668 head mean=0.9605 retained=100.00% r3b mean=0.6224 retained=16.01% after mean=0.9605 retained=100.00%
+bluff_120 crest HEAD_pixels=797 head mean=0.9604 retained=100.00% r3b mean=0.6278 retained=1.25% after mean=0.9604 retained=100.00%
+shoulder terrain HEAD_pixels=7898 head mean=0.9596 retained=100.00% r3b mean=0.6955 retained=32.39% after mean=0.9596 retained=100.00%
+shoulder review crop HEAD_pixels=1138 head mean=0.9597 retained=100.00% r3b mean=0.6990 retained=28.38% after mean=0.9597 retained=100.00%
+shoulder crest HEAD_pixels=374 head mean=0.9607 retained=100.00% r3b mean=0.6271 retained=1.07% after mean=0.9607 retained=100.00%
+plane terrain HEAD_pixels=9077 head mean=0.9575 retained=100.00% r3b mean=0.5467 retained=0.00% after mean=0.9575 retained=100.00%
+plane review crop HEAD_pixels=0
+plane crest HEAD_pixels=0

@@ -1,0 +1,4 @@
+engine/kernel/world/terrain/world_space.gd sha256=ced6c0064dc8d980782a39b32b2ec70752edf4822d4dd8c2a97f02c8f1608d06
+FAIL walker.crown: CROWNCASE regression FAIL frames=32256 poses=1344 head_out=[27456, 557, 2592] head_in=[4800, 1373, 1472] pull_sum=2402.940390 pull_max=8.706342
+selftest: 0 passed, 1 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker/tmpcl5fb5a0/old)
+exit=1

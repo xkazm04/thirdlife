@@ -20,6 +20,8 @@ extends "res://kernel/world/terrain/walker_space.gd"
 
 var stats: Dictionary = {"bodies": 0, "faces": 0, "boxes": 0, "trunks": 0, "boulders": 0, "pack_shapes": 0, "pack_faces": 0}
 var _bodies: Array = []
+var crown_batches: Array = []  # [kit recipe, instance transforms], supplied by Landscape.build
+var drawn_crowns := {}  # body RID -> [kit crown, landscape-to-kit transform] for exact head containment
 var tag: String = ""                  # set by the builder: the tag of the bodies made next
 var _keep: Array = []                 # Shape3D resources that must outlive their bodies
 var _cap: CapsuleShape3D = null
@@ -47,6 +49,14 @@ func _init() -> void:
 
 ## Called when everything static is in: the space holds no moving body, so it need not be stepped (queries still work).
 func finish() -> void:
+	var was := tag
+	tag = "tree"
+	for batch: Array in crown_batches:
+		var crown := preload("res://kernel/world/terrain/tree_crown.gd").new(batch[0])
+		for xf: Transform3D in batch[1]:
+			_add_drawn_crown(xf, crown)
+	tag = was
+	crown_batches.clear()
 	PhysicsServer3D.space_set_active(space, false)
 
 
@@ -54,6 +64,7 @@ func free_all() -> void:
 	for b: Variant in _bodies:
 		PhysicsServer3D.free_rid(b as RID)
 	_bodies.clear()
+	drawn_crowns.clear()
 	if body.is_valid():
 		PhysicsServer3D.free_rid(body)
 		body = RID()
@@ -85,6 +96,7 @@ func remove_tag(t: String) -> int:
 			PhysicsServer3D.free_rid(b as RID)
 			_bodies.erase(b)
 			_tags.erase(b)
+			drawn_crowns.erase(b)
 			n += 1
 	stats["bodies"] = int(stats["bodies"]) - n
 	return n
@@ -158,10 +170,28 @@ func add_trunk(foot: Vector3, radius: float, height: float = 4.0) -> void:
 		_cyl[key] = c
 	_static(_cyl[key] as Shape3D, Transform3D(Basis(), foot + Vector3(0.0, height * 0.5, 0.0)))
 	stats["trunks"] = int(stats["trunks"]) + 1
-	if tag == "tree" and height == 4.0:
+	if tag == "tree" and height == 4.0 and crown_batches.is_empty():
 		add_canopy(foot, radius / 0.46)
 
 
+## One camera body per drawn tree. All its foliage parts share the exclusion when his head is inside.
+func _add_drawn_crown(xf: Transform3D, crown: RefCounted) -> void:
+	var b := PhysicsServer3D.body_create()
+	PhysicsServer3D.body_set_mode(b, PhysicsServer3D.BODY_MODE_STATIC)
+	PhysicsServer3D.body_set_state(b, PhysicsServer3D.BODY_STATE_TRANSFORM, Transform3D(Basis(), xf.origin))
+	PhysicsServer3D.body_set_collision_layer(b, CANOPY)
+	PhysicsServer3D.body_set_collision_mask(b, 0)
+	for shape: Shape3D in crown.shapes(xf.basis):
+		PhysicsServer3D.body_add_shape(b, shape.get_rid())
+	PhysicsServer3D.body_set_space(b, space)
+	drawn_crowns[b] = [crown, xf.affine_inverse()]
+	_bodies.append(b)
+	_tags[b] = tag
+	stats["bodies"] += 1
+	stats["canopies"] = int(stats.get("canopies", 0)) + 1
+
+
+## Synthetic trunks without a drawn mesh retain the original camera fixture.
 ## Walker-feel round 2: a tree's crown, for the CAMERA only (layer CANOPY: the body, the probes and `ground_at` ask
 ## layer 1 and walk through it). `s` is the tree's scale (its trunk radius / 0.46: the landscape's pines have 0.42 x
 ## scale, its broadleaf trees 0.5 x scale). The crown's core: a cylinder of 1.9 s from 2.2 s to 8.0 s over the foot

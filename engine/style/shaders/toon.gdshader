@@ -408,8 +408,8 @@ void fragment() {
 		hatch_b = vec2(mix(a1, b1, ow), mix(a2, b2, ow));
 	}
 	ALBEDO = c;
-	// the normal-roughness buffer tells the ink pass what is a body (0.5; the toon light never reads roughness)
-	ROUGHNESS = tl_body.x > 0.5 ? 0.5 : 1.0;
+	// Tag bodies and ground-class terrain in the normal/roughness prepass for ink.
+	ROUGHNESS = tl_body.x > 0.5 ? 0.5 : (mclass == 5 ? 0.9 : 1.0);
 	SPECULAR = 0.0;
 	vec3 amb = mix(g_amb_gnd.rgb, g_amb_sky.rgb, wn.y * 0.5 + 0.5) * g_amb_sky.a;
 	// cheap bounce: sunlit ground throws warm light up and back at faces that look away from the sun and down

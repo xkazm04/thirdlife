@@ -186,7 +186,9 @@ moves the body by velocity. Every number counts ticks at 60 Hz (constants at the
 
 | | |
 |---|---|
-| ground | accel 34 m/s^2 (rest to 4.5 m/s in 8 ticks, 4.5 to 9.0 in 8), decel 42 m/s^2 (9 to 0 in 13 ticks, 0.89 m); a key tapped from rest is held 9 ticks (a 6-tick tap moves 0.62 m: a step); standing is not a move (no test, no creep) |
+| ground | accel 34 m/s^2 (rest to 4.5 m/s in 8 ticks, 4.5 to 9.0 in 8), decel 42 m/s^2 (9 to 0 in 13 ticks, 0.89 m); a key tapped from rest is held 9 ticks (a 6-tick tap moves 0.62 m: a step); the standing capsule holds still on a bank |
+| pad swap | when a game's walkable floor replaces the pad through his feet, the standing visitor rises onto it on the first tick if he fits and the lift is within one step (0.55 m) |
+| narrow V | when two steep walls together stop his descent, he can stand, jump and walk along the channel, including over triangle seams. Downhill travel along the crease continues while he is sliding |
 | down | a step down of 0.35 m is followed; more is a FALL (gravity 24 m/s^2, at most 40 m/s); the capsule's round foot on an edge is told from a slope by a ray under its middle |
 | jump | Space: 6.93 m/s up, 0.94 m high, 33 ticks in the air on flat ground; coyote 6 ticks after walking off an edge, a press kept 8 ticks after the tick it went down (pressed up to 8 ticks before landing it jumps on the landing tick); from a slope too, pushed 4.5 m/s away from the face (out of a steep pit, never up a steep bank by hopping) |
 | steep | ground steeper than 55 degrees: walking up into it is refused (a wall, as before); walking down onto it, landing on it, or being put at rest on it starts a SLOPE SLIDE: gravity along the slope, friction 3 m/s^2, at most 14 m/s, steering 4 m/s^2 across it, until he stands on walkable ground |
@@ -194,7 +196,10 @@ moves the body by velocity. Every number counts ticks at 60 Hz (constants at the
 
 The figure turns toward his travel (a share of 0.22 of the remaining turn per tick); the camera follows the mouse only.
 A and D are no longer a sidestep with the face to the camera: the biped rig reads speed, not direction, so a sidestep
-showed its forward cycle sliding sideways. The rig hears `set_locomotion(velocity in its own axes, grounded)` every tick
+showed its forward cycle sliding sideways. Lane walker (19 Nov): the gait now steps sideways and backward, and what A and D
+do is the owner's question, so `TL_AD_KEYS` picks it (kernel/runner/visit.gd): absent or `face` as above; `sidestep` the figure
+keeps facing where the camera looks (A, D and S step sideways and back); `turn` A and D turn him and the view 150 degrees a
+second. A record replays with the value it was made with. The rig hears `set_locomotion(velocity in its own axes, grounded)` every tick
 and the clips `jump`, `land`, `slide` (held), `slope_slide` (held) and `&""` at a slide's end (also when a game goes on stage during a slide, and on `put`), each only if `rig.clips()`
 has it. A scripted walk (a tour) still uses `walk()` and the scripted position: nothing a pack is given changed.
 

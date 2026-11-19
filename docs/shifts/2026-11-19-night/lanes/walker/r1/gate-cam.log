@@ -1,0 +1,10 @@
+PASS cam.wall_start  (wall m behind the point looked at: inside the wall after snap and 30 ticks: 1.2:out 1.2:out 0.2:out 0.2:out 0.1:out 0.1:out (camera z 0.05 with the wall at 0.2 m))
+PASS cam.crown_band  (pine 1.1, 21 standing heights -0.80..+0.06 m: nearest camera 8.71 m from the point looked at (avoid_min 2.5; was 0.04 m before bugfix-37), 0 bad)
+PASS cam.canopy_jump  (90 ticks, jump at 20: point looked at in the crown 22 ticks, camera 22 (alone 0; was 10 before bugfix-37), camera inside the trunk 0)
+PASS cam.avoid_min  (setup {avoid_min = 4.0}: 4.0 m)
+PASS cam.rebase  (parent re-based on (40, 3, 0) yaw 30: camera 8.71 m from the point looked at on the snap, 8.71 m after 120 ticks (wanted 8.71; was 4.58 before bugfix-37), avoid_pull 0.00)
+PASS cam.snap_heading  (teleport and quarter turn, then snap(): 8.00 m behind the new facing (wanted 8.00))
+PASS cam.reverse  (use_velocity, travel reversed for 300 ticks: camera 7.00 m behind the travel (wanted 7.00))
+PASS cam.cut_wall  (quarter turn in one tick past a box, 31 frames drawn over 16 ticks: physics poses inside 0, drawn frames inside 0 (was 1 before bugfix-37))
+selftest: 8 passed, 0 failed (reports in C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/.tl/walker/gate-cam)
+exit=0

@@ -1,0 +1,209 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4090
+
+SCRIPT ERROR: Parse Error: Cannot infer the type of "crown_region" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://kernel/world/landscape.gd:471)
+   GDScript backtrace (most recent call first):
+       [0] _start_mode (res://kernel/host/host.gd:112)
+       [1] _ready (res://kernel/host/host.gd:81)
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+   at: GDScript::reload (res://kernel/world/draw/view.gd:0)
+   GDScript backtrace (most recent call first):
+       [0] _start_mode (res://kernel/host/host.gd:112)
+       [1] _ready (res://kernel/host/host.gd:81)
+ERROR: Failed to load script "res://kernel/world/draw/view.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+   GDScript backtrace (most recent call first):
+       [0] _start_mode (res://kernel/host/host.gd:112)
+       [1] _ready (res://kernel/host/host.gd:81)
+[view] start
+[tl] world start
+SCRIPT ERROR: Invalid call. Nonexistent function 'build (via call)' in base 'GDScript'.
+   at: start (res://kernel/world/draw/view.gd:198)
+   GDScript backtrace (most recent call first):
+       [0] start (res://kernel/world/draw/view.gd:198)
+       [1] _start_mode (res://kernel/host/host.gd:115)
+       [2] _ready (res://kernel/host/host.gd:81)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+SCRIPT ERROR: Cannot call method 'hide' on a null value.
+   at: snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+   GDScript backtrace (most recent call first):
+       [0] snapshot (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:64)
+       [1] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:109)
+ERROR: The object does not have any 'meta' values with the key 'tl_terrain'.
+   at: get_meta (core/object/object.cpp:1053)
+   GDScript backtrace (most recent call first):
+       [0] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:118)
+SCRIPT ERROR: Cannot call method 'call' on a null value.
+   at: measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:120)
+   GDScript backtrace (most recent call first):
+       [0] measure (C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd:120)
+{"schema":"tl.world/1","kind":"event","t":0,"e":"tier","plot":"walker","from":"","to":"backdrop","why":"start"}
+{"schema":"tl.world/1","kind":"event","t":0,"e":"tier","plot":"drive","from":"","to":"backdrop","why":"start"}
+{"schema":"tl.world/1","kind":"event","t":0,"e":"tier","plot":"wall","from":"","to":"backdrop","why":"start"}
+{"schema":"tl.world/1","kind":"event","t":0,"e":"tier","plot":"paddle","from":"","to":"backdrop","why":"start"}
+{"schema":"tl.world/1","kind":"event","t":0,"e":"tier","plot":"kit","from":"","to":"backdrop","why":"start"}
+{"schema":"tl.world/1","kind":"event","t":0,"e":"tier","plot":"car","from":"","to":"backdrop","why":"start"}
+{"schema":"tl.world/1","kind":"pack","index":0,"instance":"P0_ex_walker","pack":"example.walker","dir":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/engine/kernel/examples/ex_walker","seed":1,"at":[0.0,0.0,0.0],"every":1,"mode":"bot","loaded":true,"frames":61,"state_hash":"5a3cb3e03fd4189acbc912796c5faf1a3426d4696a5ff93ffe0bbc9cf9c92396","script_errors":0,"engine_errors":0,"entities_max":81,"bodies_max":9,"awake_bodies_at_end":0,"kernel_call_ms_p50":0.056,"kernel_call_ms_p99":0.282,"probe_physics_calls":61,"probe_idle_calls":61,"gate_leaks":0,"wrong_pack_calls":0,"toggles":121,"finished_at_world_tick":122,"own_space":true,"load_ms":{"assets":0.01,"script":159.14,"enter_tree":0.2,"setup":203.39,"laws":0.08,"bot":5.82},"plot":"walker","plot_origin":[-115.0,4.0,-47.0],"ticks":61,"restored":false,"ledgered":false,"audio_events":0,"bot":{"test":"tests/bot_walk.gd","done":false,"frames":61,"result":{"ok":false,"summary":"walker: walked at 0.00 m/s, stopped in -1 frames on concrete, ran at 2.30 m/s, pushed the crate 0 times, lap done ( by ); skater: 0.00 m/s after 2 s of thrust, still 0.00 m/s after 2 s of coasting on ice","walk_speed":0.0,"run_speed":2.3,"walker_stop_frames":-1,"skater_speed_at_release":0.0,"skater_speed_after_2s_coast":0.0,"crate_pushes":0,"total_frames":60}},"tier":"backdrop","tiers_seen":["backdrop"],"ticks_by_tier":{"stage":0,"sideline":0,"backdrop":61,"ledger":0},"tier_changes":0,"max_gap":2,"on_leave":"bot","held":false,"over":false,"cost_ms":0.5,"speed_share":0.5}
+{"schema":"tl.world/1","kind":"pack","index":1,"instance":"P1_seed_drive","pack":"seed.drive","dir":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/engine/seeds/seed_drive","seed":1,"at":[0.0,0.0,0.0],"every":1,"mode":"bot","loaded":true,"frames":61,"state_hash":"2a6df638328bcaee012972054ce8c25e953389bd9c8d04c0658ee0555065c071","script_errors":0,"engine_errors":0,"entities_max":174,"bodies_max":36,"awake_bodies_at_end":1,"kernel_call_ms_p50":0.371,"kernel_call_ms_p99":0.698,"probe_physics_calls":61,"probe_idle_calls":61,"gate_leaks":0,"wrong_pack_calls":0,"toggles":121,"finished_at_world_tick":122,"own_space":true,"load_ms":{"assets":0.0,"script":77.02,"enter_tree":0.47,"setup":655.23,"laws":0.13,"bot":8.18},"plot":"drive","plot_origin":[4.0,-2.5,-81.0],"ticks":61,"restored":false,"ledgered":false,"audio_events":0,"bot":{"test":"tests/bot_laps.gd","done":false,"frames":61,"result":{"ok":false,"summary":"0 laps in 1.0 s (limit 90 s), ended by ; top speed 4.9 m/s; nitro pad 0 times, 0 nitro bursts; 0 cone hits, 8 cones spawned; at most 0.0 m off the centre line","laps":0,"seconds":1.0,"top_speed":4.8862,"pad_visits":0,"nitro_starts":0,"cone_hits":0,"cones_spawned":8,"worst_off_line_m":0.011}},"tier":"backdrop","tiers_seen":["backdrop"],"ticks_by_tier":{"stage":0,"sideline":0,"backdrop":61,"ledger":0},"tier_changes":0,"max_gap":2,"on_leave":"bot","held":false,"over":false,"cost_ms":0.8,"speed_share":0.5}
+{"schema":"tl.world/1","kind":"pack","index":2,"instance":"P2_seed_wall","pack":"seed.wall","dir":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/engine/seeds/seed_wall","seed":1,"at":[0.0,0.0,0.0],"every":1,"mode":"bot","loaded":true,"frames":61,"state_hash":"069f728a235bc87e82926b1ae1b2adace163ad6c8cf16f12151cd194cd0d01af","script_errors":0,"engine_errors":0,"entities_max":254,"bodies_max":35,"awake_bodies_at_end":1,"kernel_call_ms_p50":0.096,"kernel_call_ms_p99":7.18,"probe_physics_calls":61,"probe_idle_calls":61,"gate_leaks":0,"wrong_pack_calls":0,"toggles":121,"finished_at_world_tick":122,"own_space":true,"load_ms":{"assets":0.01,"script":88.99,"enter_tree":0.53,"setup":585.44,"laws":0.3,"bot":9.91},"plot":"wall","plot_origin":[131.0,3.0,-55.0],"ticks":61,"restored":false,"ledgered":false,"audio_events":1,"bot":{"test":"tests/bot_knock.gd","done":false,"frames":61,"result":{"ok":false,"summary":"0 pieces down in 1.0 s (limit 60 s), ended by ; 0 of 6 blocks broken with 1 throws (0 hard hits); 0 pieces loose","pieces_down":0,"seconds":1.0,"blocks_broken":0,"throws":1,"hits":0,"pieces_loose":0}},"tier":"backdrop","tiers_seen":["backdrop"],"ticks_by_tier":{"stage":0,"sideline":0,"backdrop":61,"ledger":0},"tier_changes":0,"max_gap":2,"on_leave":"bot","held":false,"over":false,"cost_ms":0.4,"speed_share":0.5}
+{"schema":"tl.world/1","kind":"pack","index":3,"instance":"P3_seed_paddle","pack":"seed.paddle","dir":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/engine/seeds/seed_paddle","seed":1,"at":[0.0,0.0,0.0],"every":1,"mode":"bot","loaded":true,"frames":61,"state_hash":"8695035e04e409047f2527ec6a573970465d8293f1722adf2e8cceb9c936a794","script_errors":0,"engine_errors":0,"entities_max":366,"bodies_max":24,"awake_bodies_at_end":3,"kernel_call_ms_p50":0.083,"kernel_call_ms_p99":0.73,"probe_physics_calls":61,"probe_idle_calls":61,"gate_leaks":0,"wrong_pack_calls":0,"toggles":123,"finished_at_world_tick":122,"own_space":true,"load_ms":{"assets":0.0,"script":30.22,"enter_tree":0.67,"setup":643.97,"laws":0.24,"bot":28.64},"plot":"paddle","plot_origin":[-125.0,4.0,57.0],"ticks":61,"restored":false,"ledgered":false,"audio_events":0,"bot":{"test":"tests/bot_win.gd","done":false,"frames":61,"result":{"ok":false,"summary":"the bot won 0 : 0 in 60 frames (1 s); longest rally 0 paddle hits","player":0,"rival":0,"frames":60,"longest_rally":0,"winner":""}},"tier":"backdrop","tiers_seen":["backdrop"],"ticks_by_tier":{"stage":0,"sideline":0,"backdrop":61,"ledger":0},"tier_changes":0,"max_gap":2,"on_leave":"bot","held":false,"over":false,"cost_ms":0.25,"speed_share":0.5}
+{"schema":"tl.world/1","kind":"pack","index":4,"instance":"P4_ex_kit","pack":"example.kit","dir":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/engine/kernel/examples/ex_kit","seed":1,"at":[0.0,0.0,0.0],"every":1,"mode":"bot","loaded":true,"frames":61,"state_hash":"957d9e6418105147f173240cfa697e557608cf97c7289e965901feb2a41f547f","script_errors":0,"engine_errors":0,"entities_max":178,"bodies_max":16,"awake_bodies_at_end":5,"kernel_call_ms_p50":0.089,"kernel_call_ms_p99":2.167,"probe_physics_calls":61,"probe_idle_calls":61,"gate_leaks":0,"wrong_pack_calls":0,"toggles":123,"finished_at_world_tick":122,"own_space":true,"load_ms":{"assets":0.0,"script":42.15,"enter_tree":0.97,"setup":206.14,"laws":0.18,"bot":10.05},"plot":"kit","plot_origin":[-20.0,2.0,57.0],"ticks":61,"restored":false,"ledgered":false,"audio_events":0,"bot":{"test":"tests/bot_kit.gd","done":false,"frames":61,"result":{"ok":false,"summary":"kit ball on kit ice: slid 1.37 m from 3 m/s (friction 0.334, law 0.10); kit wall intact into 0 pieces, kit crate intact into 0; real biped rig (29 bones) walked at 2.30 m/s with a leg swing of 0.85, skated to 3.1 m/s and kept 0.0 after 2 s; real car rig reached 2.4 m/s, wheels spun, steering right turned the wheel 0.00 rad and the car right","kit_ice_ok":false,"kit_fracture_ok":false,"rig_biped_ok":false,"rig_vehicle_ok":false,"standin_fallback_ok":false,"standin_walk_speed":2.3,"standin_car_top_speed":2.4701,"ice_friction_measured":0.3343,"ice_friction_law":0.1,"ball_mass_kg":0.736,"kit_bodies_tagged":8,"wall_pieces":0,"crate_pieces":0,"wall_impulse":0.0,"crate_impulse":0.0,"walker_surface":"concrete","skater_surface":"ice","car_surface":"asphalt","car_grounded_wheels":4,"walk_speed":2.3,"leg_swing":0.8502,"skate_speed":3.0706,"skate_coast":0.0,"car_top_speed":2.382,"car_mass_kg":1150.0,"steer_wheel_yaw":0.0,"steer_turn":0.0}},"tier":"backdrop","tiers_seen":["backdrop"],"ticks_by_tier":{"stage":0,"sideline":0,"backdrop":61,"ledger":0},"tier_changes":0,"max_gap":2,"on_leave":"bot","held":false,"over":false,"cost_ms":0.5,"speed_share":0.5}
+{"schema":"tl.world/1","kind":"pack","index":5,"instance":"P5_ex_car","pack":"example.car","dir":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/engine/kernel/examples/ex_car","seed":1,"at":[0.0,0.0,0.0],"every":1,"mode":"bot","loaded":true,"frames":61,"state_hash":"c7befcb24a5f929b1288b6aa0476b66792b0f954268109f23111543dee38e8d3","script_errors":0,"engine_errors":0,"entities_max":100,"bodies_max":12,"awake_bodies_at_end":2,"kernel_call_ms_p50":0.096,"kernel_call_ms_p99":0.403,"probe_physics_calls":61,"probe_idle_calls":61,"gate_leaks":0,"wrong_pack_calls":0,"toggles":123,"finished_at_world_tick":122,"own_space":true,"load_ms":{"assets":0.01,"script":39.65,"enter_tree":1.05,"setup":46.04,"laws":0.11,"bot":10.76},"plot":"car","plot_origin":[85.0,0.5,57.0],"ticks":61,"restored":false,"ledgered":false,"audio_events":1,"bot":{"test":"tests/bot_slalom.gd","done":false,"frames":61,"result":{"ok":false,"summary":"slalom of 4 gates done in -1 frames (top speed 4.9 m/s, 1 nitro burst, 0 cone hits); braking from 0.0 m/s: -1.0 m on asphalt, -1.0 m on ice; AI pace car followed the line for 2 of 147 m, at most 0.00 m off it","pace_progress_m":2.3939,"pace_offset_max_m":0.0,"horns":0,"hud_speed":"18 km/h","slalom_frames":-1,"top_speed":4.8733,"brake_asphalt_m":-1.0,"brake_ice_m":-1.0,"brake_asphalt_from":0.0,"brake_ice_from":0.0,"grip_measured_asphalt":0.0,"grip_measured_ice":0.0,"grip_law_asphalt":1.0,"grip_law_ice":0.1,"cone_hits":0}},"tier":"backdrop","tiers_seen":["backdrop"],"ticks_by_tier":{"stage":0,"sideline":0,"backdrop":61,"ledger":0},"tier_changes":0,"max_gap":2,"on_leave":"bot","held":false,"over":false,"cost_ms":0.5,"speed_share":0.5}
+{"schema":"tl.world/1","kind":"world","packs":6,"world_ticks":122,"load_ms":2901,"wall_ms":8708,"iter_ms_p50_all_ticked":0.0,"iter_ms_p99_all_ticked":0.0,"iter_ms_mean_all_ticked":0.0,"iters_all_ticked":0,"iter_ms_p50_last_third":0.0,"iter_ms_p50":3.522,"iter_ms_mean":46.2296,"iters":122,"hold_iter_ms_p50":0.0,"hold_iter_ms_mean":0.0,"hold_iters":0,"kernel_ms_p50":1.193,"kernel_ms_mean":1.3722,"static_mem_per_pack_kb":3206,"gate_leaks":0,"wrong_pack_calls":0,"script_errors":34,"engine_errors":1,"engine_warnings":0,"warning_texts":[],"contact_or_body_limit_warnings":0,"errors":[],"logged":[{"kind":"script_error","file":"res://kernel/world/draw/view.gd","line":198,"message":"Invalid call. Nonexistent function 'build (via call)' in base 'GDScript'.","function":"start"},{"kind":"script_error","file":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd","line":64,"message":"Cannot call method 'hide' on a null value.","function":"snapshot","frame":44,"count":32},{"kind":"engine","file":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd","line":118,"message":"The object does not have any 'meta' values with the key 'tl_terrain'.","function":"get_meta","frame":59},{"kind":"script_error","file":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n19-walker/docs/shifts/2026-11-19-night/lanes/walker/r3/terrain/captures/terrain-45020.gd","line":120,"message":"Cannot call method 'call' on a null value.","function":"measure","frame":59}],"load_ms_per_pack":[["P0_ex_walker",370.7],["P1_seed_drive",744.2],["P2_seed_wall",688.9],["P3_seed_paddle",707.9],["P4_ex_kit",264.4],["P5_ex_car",103.7]],"iter_ms_p99":425.014,"iter_ms_max":587.501,"first_iter_ms":181.33,"iter_ms_p50_settled":6.72,"iter_ms_mean_settled":8.7555,"iter_ms_p99_settled":10.791,"load":{"mode":"block"},"walk":"wf_bluff","replay":false,"cost":"model","events":6,"valve_demotions":0,"speed_pm":1000,"speed_min_pm":1000,"slice":2,"slice_max_seen":2}
+[tl] world done: packs=6 ticks=122
+{"schema":"tl.view/1","kind":"tour","pictures":0,"shots_asked":0,"world_ticks":122,"stage_changes":0,"landscape":{},"frame_ms_p50":3.575,"frame_ms_p50_all":3.575,"frame_ms_p99_all":424.106,"frame_ms_max_all":587.255,"frames":122,"frames_over_16_7_ms":36,"first_frame_ms":-1,"view_ready_ms":0,"world_to_first_frame_ms":-2776,"first_two_frames_ms":[5853.67,166.06],"rims_measured":0,"slow_frames":[[3,45.1,[],0.2],[4,18.9,[],0.1],[5,26.7,[],0.1],[6,58.8,[],0.1],[89,424.1,[],0.0],[90,117.0,[],0.0],[91,115.7,[],0.0],[92,117.6,[],0.0],[93,118.4,[],0.0],[94,121.0,[],0.0],[95,122.2,[],0.0],[96,123.7,[],0.0],[97,129.0,[],0.0],[98,127.3,[],0.0],[99,122.4,[],0.0],[100,121.5,[],0.0],[101,127.8,[],0.0],[102,122.4,[],0.0],[103,127.1,[],0.0],[104,135.1,[],0.0],[105,136.5,[],0.0],[106,137.2,[],0.0],[107,143.2,[],0.0],[108,151.1,[],0.0],[109,160.0,[],0.0],[110,138.9,[],0.0],[111,133.1,[],0.0],[112,125.6,[],0.1],[113,133.2,[],0.0],[114,148.5,[],0.0],[115,155.3,[],0.1],[116,142.7,[],0.0],[117,136.3,[],0.0],[118,133.9,[],0.0],[119,146.8,[],0.0],[120,587.3,[],0.0]],"render_cpu_ms_p50":0.031,"render_gpu_ms_p50":0.0,"draw":{}}

@@ -1,0 +1,15 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+HOP code: tree
+HOP bank 65 deg 8 m, W 4.5 m/s into it: every 1: top 2.26 (after tick 600 2.20), highest on the face 1.31, jumps 36, every 3: top 2.26 (after tick 600 2.20), highest on the face 1.31, jumps 36, every 6: top 2.26 (after tick 600 2.20), highest on the face 1.31, jumps 36, every 10: top 2.26 (after tick 600 2.20), highest on the face 1.31, jumps 36, every 20: top 2.36 (after tick 600 2.36), highest on the face 1.41, jumps 36, every 36: top 2.23 (after tick 600 2.11), highest on the face 1.57, jumps 34
+HOP bank 65 deg 8 m, W 9.0 m/s into it: every 1: top 2.56 (after tick 600 2.20), highest on the face 1.62, jumps 36, every 3: top 2.56 (after tick 600 2.20), highest on the face 1.62, jumps 36, every 6: top 2.56 (after tick 600 2.20), highest on the face 1.62, jumps 36, every 10: top 2.56 (after tick 600 2.20), highest on the face 1.62, jumps 36, every 20: top 2.37 (after tick 600 2.37), highest on the face 1.58, jumps 34, every 36: top 2.61 (after tick 600 2.42), highest on the face 1.90, jumps 34
+EVENTS wall=62 every=1 land=35 jump=36 top=4.48 out=-1
+EVENTS wall=62 every=6 land=35 jump=36 top=4.48 out=-1
+EVENTS wall=62 every=10 land=29 jump=30 top=4.94 out=605
+EVENTS wall=62 every=20 land=33 jump=34 top=4.30 out=-1
+HOP V channel 62 deg 4 m deep: every 1: start y 0.33 top 4.48 out at -1 modes { "air": 1165, "slope": 35 }, every 6: start y 0.33 top 4.48 out at -1 modes { "air": 1165, "slope": 35 }, every 10: start y 0.33 top 4.94 out at 605 modes { "air": 1181, "slope": 19 }, every 20: start y 0.33 top 4.30 out at -1 modes { "air": 1054, "slope": 146 }
+EVENTS wall=75 every=1 land=30 jump=31 top=1.92 out=-1
+EVENTS wall=75 every=6 land=30 jump=31 top=1.92 out=-1
+EVENTS wall=75 every=10 land=30 jump=31 top=1.92 out=-1
+EVENTS wall=75 every=20 land=29 jump=30 top=2.19 out=-1
+HOP V channel 75 deg 4 m deep: every 1: start y 0.50 top 1.92 out at -1 modes { "air": 1200 }, every 6: start y 0.50 top 1.92 out at -1 modes { "air": 1200 }, every 10: start y 0.50 top 1.92 out at -1 modes { "air": 1200 }, every 20: start y 0.50 top 2.19 out at -1 modes { "air": 1197, "ground": 2, "slope": 1 }
