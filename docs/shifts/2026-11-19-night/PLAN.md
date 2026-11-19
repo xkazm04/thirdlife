@@ -50,3 +50,5 @@ At 07:12 the verdict: final full gate, `tl arch --index`, export the exe, push, 
 | hunt2 round 2 | `.claude/worktrees/n19-hunt2b` (cut from `30cfbed`) | same agent | 03:06 |
 | walker round 2 | `.claude/worktrees/n19-walker2` (cut from `58a80d1`) | same agent | 03:31 |
 | editor round 4 | `.claude/worktrees/n19-editor4` (cut from `7b8c2bf`) | same agent | 04:06 |
+| walker round 3 | `.claude/worktrees/n19-walker3` (from `16534db`) | same agent | 04:46 |
+| parkour round 2 | `.claude/worktrees/n19-parkour2` (from `16534db`) | same agent | 04:46 |
