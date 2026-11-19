@@ -30,30 +30,32 @@
       "note": "day 19 Nov lane blend, .claude/worktrees/d19-blend, until 18:00"
     },
     {
-      "id": "d19-parkour",
-      "scope": [
-        "engine/packs/parkour/**",
-        "engine/kits/**",
-        "docs/shifts/2026-11-19-day/lanes/parkour/**"
-      ],
-      "note": "day 19 Nov lane parkour, .claude/worktrees/d19-parkour, until 18:00"
-    },
-    {
       "id": "d19-flight",
       "scope": [
         "engine/kernel/api/tl_biped.gd",
         "engine/kernel/api/tl_chase_cam.gd",
         "engine/kernel/world/visitor.gd",
+        "engine/kernel/world/flight_wings.gd",
         "engine/kernel/world/terrain/world_body.gd",
         "engine/kernel/world/terrain/walker_space.gd",
         "engine/kernel/world/terrain/crown_camera.gd",
+        "engine/kernel/world/terrain/world_space.gd",
         "engine/kernel/runner/**",
         "engine/rigs/**",
         "engine/kernel/API.md",
         "assets/**",
         "docs/shifts/2026-11-19-day/lanes/flight/**"
       ],
-      "note": "day 19 Nov lane flight, .claude/worktrees/d19-flight, until 18:00"
+      "note": "day 19 Nov lane flight round 2 (walker moves for ninja runs + dust), .claude/worktrees/d19-flight2, until 16:45"
+    },
+    {
+      "id": "d19-parkour",
+      "scope": [
+        "engine/packs/parkour/**",
+        "engine/kits/**",
+        "docs/shifts/2026-11-19-day/lanes/parkour/**"
+      ],
+      "note": "day 19 Nov lane parkour round 2, .claude/worktrees/d19-parkour2, until 16:45"
     }
   ]
 }

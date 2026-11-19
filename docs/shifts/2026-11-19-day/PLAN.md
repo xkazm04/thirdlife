@@ -37,3 +37,5 @@ because `tl arch` reads overlapping globs as a collision.
 | flight | ab4454967cfe24cf9 | 08:40 |
 
 Timers: standups hourly at :37 (09:37-16:37), verdict at 17:13.
+| parkour round 2 | `.claude/worktrees/d19-parkour2` (from `ebeeb2b`) | same agent | 10:36 |
+| flight round 2 | `.claude/worktrees/d19-flight2` (from `ebeeb2b`) | same agent | 10:36 |

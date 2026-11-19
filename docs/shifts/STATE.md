@@ -91,3 +91,4 @@ flight (mechanical wings, 5 x run). The Director took the design decisions; they
 to overturn. Contracts for E2 were written first (`cf73f58`). Land and push by 18:00; verdict at 17:15. Plan:
 `docs/shifts/2026-11-19-day/PLAN.md`.
 - 08:40 day lanes launched: editor, blend, parkour, flight (from `1b3e055`).
+- 10:20 parkour landed (`9bb3986`: three stages, 12 checkpoints, per-hand ladders); flight landed (`83c39b7`: wings, 5x cruise, API 1.9) plus the export fix for the wings (`ebeeb2b`). 10:36 round 2: flight builds the walker moves the ninja course needs (ledge grab + mantle, hang bar; API 1.10; Director decision) and dust; parkour checks the newcomer losses, then a stage on the new moves.
