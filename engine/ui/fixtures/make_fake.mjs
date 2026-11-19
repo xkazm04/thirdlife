@@ -62,6 +62,11 @@ const scores = { silhouette: 0.8, readability: 0.75, style_consistency: 0.8, sho
 const script = {
   model: "fake",
   steps: [
+    { match: { role: "placer" }, delayMs: 1500, tokensIn: 3200, tokensOut: 260, json: { proposals: [
+      { at: [347, -80], yaw_deg: 30, reason: "East of the tower yard, with a longer walk of about 70 m to the road." },
+      { at: [-250, -30], yaw_deg: 0, reason: "West of parkour, beside the river bend." },
+      { at: [-207, 44], yaw_deg: -15, reason: "Beside paddle, with about 8 m to walk from the gate to the road." },
+    ] } },
     {
       match: { role: "designer" },
       delayMs: 3000,
@@ -122,7 +127,7 @@ const run = [...fake, "--parallel", "1", "--round-limit", "3", "--timeout-ms", "
 const flags = {
   name: "fake adapter",
   note: "No model is called. The runner is the real one (TL_GODOT, TL_ENGINE_DIR from the environment).",
-  flags: { new: fake, plan: [...fake, "--max-packages", "4"], run, resume: run, change: run },
+  flags: { new: fake, place: fake, plan: [...fake, "--max-packages", "4"], run, resume: run, change: run },
 };
 fs.writeFileSync(path.join(out, "flags.fake.json"), JSON.stringify(flags, null, 1));
 // the second script: the package "feel" asks a question first, and builds once the answer is in its prompt

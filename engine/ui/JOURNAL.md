@@ -87,3 +87,21 @@ Resume point. Newest entry last. Times are CEST from `date`.
   reads landscape.river (check "stands in the river", drawn on the map), bounds come from landscape.margin_m, and
   first_free looks further back. With the river checked no free place by the road holds the proposed 45 m hockey
   arena any more: the workbench says so, the home drive then picks a small bare rink (ring 32 m).
+
+## Day of 19 Nov 2026 (lane editor: E2 in code, E1 placement with care)
+- E2: the interviews live in the cards (`engine/cards/<card>.json` keys `interview`, `footprint`; `ui/interview/none.json`
+  stays). `tl cards check` validates them (CARDS.md 2026-11-19, plus `variants`, option `stands` and `size.add`, named
+  "awaiting CARDS.md" in devx/lib/cards/check.mjs). The workbench passes `--answers`/`--lot` to `foreman new` and the
+  game sheet `--decision` to `foreman change`, as `json64:<base64>` arguments that ui/foreman_run.mjs decodes (a JSON
+  double quote does not survive OS.create_process on Windows). kernel/world/site.gd `job_lot` reads `job_created.lot`
+  first, then the draft (`draft_lot`). job_model.gd keeps answers, lot and each change's decision.
+- E1: "Find a place" (editor/place_panel.gd) writes `tl.place-ask/1` under `<jobs>/_editor/place/`, runs
+  `foreman place` (role `placer`, foreman/prompts/placer.md) through the door, and ranks the answer with
+  editor/lot_scorer.gd: hard checks (fences, road, river, bounds, the gate-to-road spur crossing a fence or the river),
+  soft points (walk, ground under the pad, spacing). The ask carries ten measured candidates with facts; the Designer
+  chooses among them or proposes its own place; the scorer stays the judge. Fallback: the best measured place.
+- Fit is by fences: every plot's and site's fence stands at r + 3.6 m (kernel landscape.gd, site/draw.gd); the editor
+  wants 2 m between fences, 1 m off the road edge, 2 m off the riverbank (it had wanted 2 m between rings and fences
+  crossed in the 3D village). The map draws fences where the world builds them.
+- When nothing by the road fits, the automatic placement takes the best measured place anywhere and says so.
+- Tools: `ui.sh place [--build] [--any-places] [--no-build] [--slow]` (drive), `ui.sh rank --ask= --answer=`.

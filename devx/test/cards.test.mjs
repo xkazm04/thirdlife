@@ -292,3 +292,40 @@ test("hands (C4): --seeds below the card's count is refused with a sentence; mor
   assert.equal(ran, 0, "nothing is run");
   assert.match(errs.join("\n"), /--seeds 3 is below the 20 seeds/);
 });
+
+test("editor recipes live on the four cards and validate against the interview and footprint shapes", () => {
+  const { cards } = loadCards(REPO);
+  for (const name of ["knock_down", "team_possession", "timed_drive", "two_sides_ball"]) {
+    const { card } = cards.find(({ card }) => card.id === "card." + name);
+    assert.ok(card.interview?.questions.length, name);
+    assert.ok(card.footprint?.source, name);
+    assert.deepEqual(validateCard(card, card.id), []);
+  }
+});
+
+test("interview references, option uniqueness and nested keys are checked", () => {
+  expectProblem((c) => { c.interview.questions[0].propose = "foo"; }, /questions\[0\]: propose 'foo' is not one of its options/);
+  expectProblem((c) => { c.interview.questions[0].options.push(c.interview.questions[0].options[0]); }, /duplicate option id/);
+  expectProblem((c) => { c.interview.questions[1].extra = true; }, /questions\[1\]: unknown key 'extra'/);
+  expectProblem((c) => { c.footprint.shape = "lake"; }, /footprint:.*shape/);
+  expectProblem((c) => { c.interview.variants[0].set.kind = "lost"; }, /variants\[0\].*'lost'/);
+});
+
+test("interview size modifiers, stands and estimate bounds are validated", () => {
+  const card = load(REPO), opt = card.interview.questions[0].options[0];
+  opt.stands = true;
+  for (const size of [{ scale: 0.5 }, { set: [1, 2, 3] }, { add: [0, -2, 4] }]) {
+    opt.size = size;
+    assert.deepEqual(validateCard(card), []);
+  }
+  for (const size of [{}, { add: [1, 2] }, { set: [1, 0, 3] }, { scale: 0 }, { scale: 2, add: [0, 0, 1] }, { width: 20 }]) {
+    opt.size = size;
+    assert.match(validateCard(card).join("\n"), /options\[0\].size/);
+  }
+  delete opt.size;
+  opt.stands = false;
+  card.interview.estimate.packages = 1.5;
+  card.interview.estimate.minutes = 0;
+  const errors = validateCard(card).join("\n");
+  for (const field of ["stands", "packages", "minutes"]) assert.ok(errors.includes(field));
+});

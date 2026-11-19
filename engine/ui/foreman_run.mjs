@@ -32,7 +32,7 @@ for (const a of rest) {
   if (a === ";;") {
     if (cur.length > 0) steps.push(cur);
     cur = [];
-  } else cur.push(a);
+  } else cur.push(a.startsWith("json64:") ? Buffer.from(a.slice(7), "base64").toString("utf8") : a);
 }
 if (cur.length > 0) steps.push(cur);
 

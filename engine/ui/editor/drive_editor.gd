@@ -2,10 +2,136 @@ extends RefCounted
 ## E1/E2: the workbench session of ui/drive.gd (tools/ui.sh editor), kept in its own file (drive.gd's size is
 ## ratcheted). It acts only through the drive's hands (input events) and reads only, like drive.gd's own sessions.
 
-## The workbench session: open it from the list, type an idea, see the recipe it matched, answer questions, grow the
-## rink, drag the ghost onto a neighbour (refused, with the reason), turn it, drag it to free ground, Build it; the
-## job appears in the panel with the request as its sentence. Input events only; the map's screen positions and the
-## free spot are read from the workbench's model (reads, like the job reads above).
+## Ask for places through the UI and compare the first job event with the chosen draft.
+func run_place(d: Node) -> void:
+	if not await d.click("WorkbenchRow", "New game in the workbench"):
+		return
+	if not await d.click("IdeaField", "the idea field"):
+		return
+	await d.type("ice hockey, three against three", "the idea")
+	var wb: Control = await d.find("Workbench")
+	if wb == null:
+		d.failed = true
+		return
+	var m = wb.model
+	if not await _place_wait(d, func() -> bool: return m.recipe == "team_possession", "team possession recipe"):
+		return
+	if not await d.click("CloseUpButton", "close up on the footprint"):
+		return
+	await d.picture("p-1-recipe.png")
+	for step in [["rink", "small", "p-2-small"], ["dressing", "bare", "p-3-bare"], ["dressing", "arena", "p-4-stands"], ["dressing", "bare", "p-5-no-stands"]]:
+		var chip := "Opt_%s_%s" % [step[0], step[1]]
+		await d.scroll_to(chip)
+		if not await d.click(chip, "the " + str(step[1]) + " option"):
+			return
+		if not await _place_wait(d, func() -> bool: return m.value(step[0]).id == step[1], chip):
+			return
+		await d.frames(60 if d.slow else 6)
+		await d.picture(step[2] + ".png")
+	await d.scroll_to("TakeProposals")
+	if not await d.click("TakeProposals", "accept the remaining proposed answers"):
+		return
+	if not wb._places.status.text.is_empty():
+		d.failed = true
+		d.note("read", "FAILED: unexpected placement message before Find a place")
+		return
+	if not await d.click("FindPlace", "Find a place"):
+		return
+	# Move off Find so its hover tooltip does not cover the map while the answer arrives.
+	d._mouse(wb._map.global_position + Vector2(12, 12))
+	# --any-places: a real Designer answers (flags/real.json): any 2-3 places, checked only for the scorer's order
+	# (valid first, then by score); the fake's fixed answer is checked exactly.
+	var any_places: bool = (d.host.get("args") as Dictionary).has("any-places")
+	if not await _place_wait(d, func() -> bool: return wb._places.ranked.size() >= (2 if any_places else 3), "ranked places"):
+		return
+	var rows: Array = wb._places.ranked
+	var ordered := true
+	for i in range(1, rows.size()):
+		ordered = ordered and (rows[i - 1].valid or not rows[i].valid) and (rows[i - 1].valid != rows[i].valid or rows[i - 1].score >= rows[i].score)
+	if any_places:
+		if not ordered or not rows[0].valid:
+			d.failed = true
+			d.note("read", "FAILED: the places are not in the scorer's order, or none is valid: " + str(rows))
+			return
+		d.note("read", "%d places from the Designer, %d valid, best %.1f" % [rows.size(), rows.filter(func(r: Dictionary) -> bool: return r.valid).size(), rows[0].score])
+	elif not (rows[0].valid and rows[1].valid and rows[0].score >= rows[1].score and not rows[2].valid):
+		d.failed = true
+		d.note("read", "FAILED: expected two valid places by score, then a refusal: " + str(rows))
+		return
+	await d.picture("p-6-ranked.png")
+	if not await d.click("TakePlace1", "take the top-ranked place"):
+		return
+	if not await _place_wait(d, func() -> bool: return m.at == rows[0].at and m.yaw == rows[0].yaw and m.placed_by == "proposal", "selected place and yaw"):
+		return
+	await d.frames(60 if d.slow else 6)
+	await d.picture("p-7-chosen.png")
+	if (d.host.get("args") as Dictionary).has("no-build"):
+		d.note("direct", "--no-build: the session stops before Build it (nothing is started)")
+		return
+	var root: String = wb.jobs_root
+	if not await d.click("BuildButton", "Build it"):
+		return
+	if not await _place_wait(d, func() -> bool: return not d.job().is_empty() and d.job().get("phase") == "approve", "new job brief"):
+		return
+	var dir := root.path_join(str(d.job().id))
+	var file := FileAccess.open(dir.path_join("job.jsonl"), FileAccess.READ)
+	var event: Variant = JSON.parse_string(file.get_line()) if file != null else null
+	if not event is Dictionary or event.get("type") != "job_created" or not event.get("sentence") is String:
+		d.failed = true
+		d.note("read", "FAILED: expected a readable job_created event on the first line")
+		return
+	var draft: Dictionary = preload("res://ui/editor/game_sheet.gd").find_draft(root, event.sentence)
+	var ids := {}
+	for key in draft.get("answers", {}):
+		ids[key] = draft.answers[key].id
+	if ids.is_empty() or event.get("answers") != ids or not draft.get("lot") is Dictionary or event.get("lot") != draft.lot or draft.get("placed_by") != "proposal":
+		d.failed = true
+		d.note("read", "FAILED: logged answers or lot differ from the chosen draft")
+	else:
+		d.note("read", "job and draft agree: %s, lot %s" % [dir, str(event.lot)])
+	# --build: approve in the game sheet and wait until the game is promoted, so the village can show it arrived
+	if (d.host.get("args") as Dictionary).has("build") and not d.failed:
+		if not await d.click("ApproveButton", "the button \"Approve and build\" in the game sheet"):
+			return
+		if not await _wait_build(d, "the game is done (verified and promoted)", func() -> bool: return d.job().get("phase", "") == "done"):
+			return
+		await d.picture("p-8-done.png")
+		d.note("read", "built and promoted: %s" % dir)
+
+
+func _place_wait(d: Node, ready: Callable, description: String) -> bool:
+	for i in 3600:
+		if ready.call():
+			return true
+		await d.get_tree().physics_frame
+	d.failed = true
+	d.note("read", "FAILED: %s after 3600 physics frames" % description)
+	return false
+
+
+## A real build can take several minutes across packages. Each new Foreman event proves progress.
+## A silent job still times out after four minutes of physics frames, and an endless stream after twelve.
+func _wait_build(d: Node, description: String, ready: Callable) -> bool:
+	const IDLE_FRAMES := 4 * 60 * 60
+	var last_seq := -1
+	var idle := 0
+	for frame in 3 * IDLE_FRAMES:
+		if ready.call():
+			d.note("read", "seen: " + description)
+			return true
+		var seq := int(d.job().get("last_seq", 0))
+		if seq != last_seq:
+			idle = 0
+			last_seq = seq
+		elif idle >= IDLE_FRAMES:
+			break
+		idle += 1
+		await d.get_tree().physics_frame
+	d.failed = true
+	d.note("read", "FAILED waiting for %s (last event %d, %d idle frames)" % [description, last_seq, idle])
+	return false
+
+
 func run(d: Node) -> void:
 	var sentence: String = "ice hockey, three against three, against the computer"
 	var pause: float = 1.6 if d.slow else 0.7
@@ -75,7 +201,7 @@ func run(d: Node) -> void:
 	var blocker: String = m.call("blocker")
 	var build: Button = await d.find("BuildButton", 2.0)
 	d.note("read", "blocker: \"%s\"; Build it disabled: %s" % [blocker, str(build.disabled)])
-	if blocker.find("overlaps") == -1 or not build.disabled:
+	if blocker.find("fence would cross") == -1 or not build.disabled:
 		d.note("read", "FAILED: an overlap must block Build it with its reason")
 		d.failed = true
 	await d.picture("e-5-overlap-refused.png")
@@ -85,18 +211,23 @@ func run(d: Node) -> void:
 	d.note("read", "yaw now %.1f degrees" % rad_to_deg(float(m.get("yaw"))))
 	# a free spot: the nearest grid point to the hockey plot whose checks have no error (read from the model)
 	var r: float = m.call("lot_radius")
-	var best: Vector2 = Vector2.ZERO
+	var best: Vector2 = Vector2.INF
 	var bd: float = INF
 	var b: Rect2 = m.get("bounds")
 	for gx: int in range(int(b.position.x), int(b.end.x), 8):
 		for gz: int in range(int(b.position.y), int(b.end.y), 8):
 			var c: Vector2 = Vector2(gx, gz)
-			if (m.call("_errors_at", c, r) as Array).is_empty() and (m.call("road_point", c) as Vector2).distance_to(c) < r + 30.0:
+			if (m.call("_errors_at", c, r) as Array).is_empty():
 				var dist: float = c.distance_to(hockey)
 				if dist < bd:
 					bd = dist
 					best = c
-	d.note("read", "free spot by the road nearest the hockey plot: (%d, %d)" % [int(best.x), int(best.y)])
+	if best == Vector2.INF:
+		d.failed = true
+		d.note("read", "FAILED: no fitting grid point for the big rink")
+		return
+	at_s = map.global_position + (map.call("to_screen", m.get("at")) as Vector2)
+	d.note("read", "free spot nearest the hockey plot: (%d, %d)" % [int(best.x), int(best.y)])
 	await d.drag(at_s, map.global_position + (map.call("to_screen", best) as Vector2), "the map: the ghost to free ground")
 	await d.secs(pause)
 	d.note("read", "fits: %s; checks: %s; gate path %d m" % [str(m.call("fits")), str(m.call("checks")), int(m.call("path_m"))])
@@ -149,7 +280,7 @@ func run(d: Node) -> void:
 		return
 	await d.secs(pause)
 	await d.picture("e-8-game-sheet-building.png")
-	if not await d.wait_for("the game is done (verified and promoted)", func() -> bool: return d.job().get("phase", "") == "done", 240.0):
+	if not await _wait_build(d, "the game is done (verified and promoted)", func() -> bool: return d.job().get("phase", "") == "done"):
 		await d.picture("e-9-game-sheet-not-done.png")
 		return
 	await d.secs(pause * 1.5)
@@ -178,7 +309,7 @@ func run(d: Node) -> void:
 	d.note("read", "change request: \"%s\"" % sent)
 	await d.secs(pause)
 	await d.picture("e-12-change-sent.png")
-	if not await d.wait_for("the change was made (a new promotion)", func() -> bool: return str((d.job()["changes"] as Array)[-1]["outcome"]) == "made" and d.job().get("phase", "") == "done", 240.0):
+	if not await _wait_build(d, "the change was made (a new promotion)", func() -> bool: return str((d.job()["changes"] as Array)[-1]["outcome"]) == "made" and d.job().get("phase", "") == "done"):
 		await d.picture("e-13-change-not-made.png")
 		return
 	await d.secs(pause * 1.5)

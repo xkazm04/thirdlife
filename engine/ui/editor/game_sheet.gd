@@ -7,6 +7,7 @@ extends Control
 ## Reads the job directory (job_model.gd) once a second and the draft the workbench wrote (<jobs>/_editor/*.json);
 ## acts only through the Foreman door, like the panel.
 
+const GameChanges = preload("res://ui/editor/game_changes.gd")
 const Model = preload("res://ui/editor/editor_model.gd")
 const VillageMap = preload("res://ui/editor/village_map.gd")
 const Look = preload("res://ui/editor/look.gd")
@@ -42,6 +43,7 @@ var _now: VBoxContainer
 var _map: VillageMap
 var _size_line: Label
 var _editing: String = ""            # E3: the question whose line under Decided is open for a change
+var _outcomes: PackedStringArray = [] # One outcome per change in the draft, in submission order.
 var _base: Dictionary = {}           # E3: the answers as they stand, without the picked option
 var _pending: Dictionary = {}        # E3: {key, to}: the option picked, not sent yet (the map shows it)
 
@@ -226,6 +228,8 @@ func _build() -> void:
 	_map.read_only = true
 	_map.close_up = true
 	frame.add_child(_map)
+	if not model.yaw_note().is_empty():
+		rv.add_child(_label(model.yaw_note(), 12, false, col["dim"], true))
 	_size_line = _label("", 12, false, col["dim"])
 	_size_line.name = "SizeLine"
 	rv.add_child(_size_line)
@@ -295,8 +299,11 @@ func _clear(box: Node) -> void:
 ## made are shown on their line, never taken as decided.
 func _apply_answers() -> void:
 	var base: Dictionary = (draft.get("answers", {}) as Dictionary).duplicate(true)
-	for c: Dictionary in draft.get("changes", []):
-		if _outcome(c) == "made":
+	var changes: Array = draft.get("changes", [])
+	_outcomes = GameChanges.outcomes(changes, job.get("changes", []))
+	for i in changes.size():
+		var c: Dictionary = changes[i]
+		if _outcomes[i] == "made":
 			base[str(c["key"])] = {"id": str(c["to"]), "by": "player", "changed": true}
 	_base = base.duplicate(true)
 	model.answers = base
@@ -317,14 +324,6 @@ func _apply_answers() -> void:
 				errs.append(str(ch["text"]))
 		line = "With this change: " + line + ("" if errs.is_empty() else " · on its lot it " + errs[0])
 	_size_line.text = line
-
-
-## What became of a change sent from here: the job's own change request with the same text ("" when not found yet).
-func _outcome(c: Dictionary) -> String:
-	for jc: Dictionary in job.get("changes", []):
-		if str(jc["text"]) == str(c["text"]).replace("\"", "'"):
-			return str(jc["outcome"])
-	return ""
 
 
 ## Why a change cannot be sent now ("" = it can), in the panel's own words (panel.gd _fill_change).
@@ -389,9 +388,11 @@ func _fill_decided() -> void:
 		source.add_theme_stylebox_override("normal", Look.plate(col, "ledger"))
 		h.add_child(source)
 		_decided.add_child(row)
-		for c: Dictionary in draft.get("changes", []):
-			if str(c["key"]) == key and _outcome(c) != "made":
-				var out: String = _outcome(c)
+		var changes: Array = draft.get("changes", [])
+		for i in changes.size():
+			var c: Dictionary = changes[i]
+			var out: String = _outcomes[i]
+			if str(c["key"]) == key and out != "made":
 				_decided.add_child(_label("   change to %s sent: %s" % [str(model.option(q, str(c["to"])).get("label", c["to"])), out if not out.is_empty() else "waiting for the Foreman"], 12, true, col["hazard"] if out in ["not made", "failed"] else col["honey_dark"].darkened(0.25)))
 		if _editing == key:
 			_change_box(q, str(v["id"]))
@@ -469,7 +470,7 @@ func _change_box(q: Dictionary, current: String) -> void:
 
 
 func _send_change(q: Dictionary, current: String, text: String) -> void:
-	var err: String = str(door.call("change", job_dir, text))
+	var err: String = str(door.call("change", job_dir, text, _pending))
 	if err.is_empty():
 		var changes: Array = draft.get("changes", [])
 		changes.append({"key": str(q["key"]), "from": current, "to": str(_pending["to"]), "text": text})

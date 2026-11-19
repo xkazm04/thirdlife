@@ -6,7 +6,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { EventBody, JobEvent } from "./events.js";
+import { editorFieldProblem, type EditorFields, type EventBody, type JobEvent } from "./events.js";
 import type { JobState } from "./joblog.js";
 
 export const INBOX_FILE = "inbox.jsonl";
@@ -14,12 +14,12 @@ export const INBOX_REJECTED_FILE = "inbox.rejected.jsonl";
 
 export type InboxEntry =
   | { id: string; ts: string; kind: "answer"; package: string; text: string; by: string; change?: string }
-  | { id: string; ts: string; kind: "change"; text: string; package?: string };
+  | { id: string; ts: string; kind: "change"; text: string; package?: string; decision?: EditorFields["decision"] };
 
 /** Every key of an entry, by kind: unknown keys are errors here as everywhere. */
 const KEYS: Record<InboxEntry["kind"], { required: string[]; optional: string[] }> = {
   answer: { required: ["id", "ts", "kind", "package", "text", "by"], optional: ["change"] },
-  change: { required: ["id", "ts", "kind", "text"], optional: ["package"] },
+  change: { required: ["id", "ts", "kind", "text"], optional: ["package", "decision"] },
 };
 
 export function parseInboxLine(line: string): InboxEntry | string {
@@ -37,6 +37,11 @@ export function parseInboxLine(line: string): InboxEntry | string {
   for (const k of spec.required) if (typeof o[k] !== "string" || (o[k] as string).length === 0) return `"${k}" is missing or empty`;
   for (const k of Object.keys(o)) {
     if (!spec.required.includes(k) && !spec.optional.includes(k)) return `unknown key "${k}"`;
+    if (k === "decision") {
+      const problem = editorFieldProblem("decision", o[k]);
+      if (problem) return problem;
+      continue;
+    }
     if (typeof o[k] !== "string" || (o[k] as string).length === 0) return `"${k}" is not a non-empty string`;
   }
   return o as unknown as InboxEntry;
@@ -105,7 +110,8 @@ function rejectedIds(jobDir: string): Set<string> {
 }
 
 /** Whether a change request can be recorded on this job now; the words when it cannot (the same as the CLI's). */
-export function changeProblem(s: JobState, pkg: string | undefined): string | undefined {
+export function changeProblem(s: JobState, pkg: string | undefined, decision?: EditorFields["decision"]): string | undefined {
+  if (decision && s.answers && !Object.hasOwn(s.answers, decision.key)) return `--decision: question '${decision.key}' is missing from this job's answers`;
   if (pkg !== undefined && !s.packages[pkg]) return `unknown package ${pkg} (the plan has: ${s.order.join(", ")})`;
   if (!s.order.some((id) => (s.packages[id]?.mergedFiles ?? []).length > 0)) return "this job has no merged package yet: a change request needs something finished to change";
   if (s.jobState?.state === "cancelled") return "this job is cancelled; a change request cannot re-open it";
@@ -169,12 +175,12 @@ export function drainInbox(jobDir: string, events: () => readonly JobEvent[], st
         }
       }
     } else if (!changed.has(e.id)) {
-      const problem = changeProblem(state(), e.package);
+      const problem = changeProblem(state(), e.package, e.decision);
       if (problem !== undefined) {
         reject(e.id, problem, e);
         continue;
       }
-      out.appended.push(append({ type: "change_requested", text: e.text, ...(e.package !== undefined ? { package: e.package } : {}), inbox: e.id }));
+      out.appended.push(append({ type: "change_requested", text: e.text, ...(e.decision && { decision: e.decision }), ...(e.package !== undefined ? { package: e.package } : {}), inbox: e.id }));
       changed.add(e.id);
     }
   }

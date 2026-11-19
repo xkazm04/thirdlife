@@ -191,6 +191,21 @@ func _initialize() -> void:
 	dry.resume("J", false, false)
 	eq("door: Resume starts resume, or plan and run when there is no plan yet", [dry.dry_steps[6], dry.dry_steps[7]], [[["resume", "J", "--adapter", "fake", "--parallel", "1"]], [["plan", "J", "--adapter", "fake", "--max-packages", "4"], ["run", "J", "--adapter", "fake", "--parallel", "1"]]])
 	eq("door: empty text is refused before anything is started", [dry.new_game("  "), dry.change("J", ""), dry.answer("J", "feel", " ", ""), dry.dry_steps.size()], ["describe the game first", "say what should be different first", "write the answer first", 8])
+	var answers := {"players": "3"}
+	var lot := {"at": [-100.0, 40.0], "yaw_deg": -15.0, "radius": 22.0}
+	var decision := {"key": "players", "to": "2"}
+	dry.new_game("Hockey", answers, lot)
+	dry.change("J", "Fewer players", decision)
+	for row in [[8, "--answers", answers], [8, "--lot", lot], [9, "--decision", decision]]:
+		var args: Array = dry.dry_steps[row[0]][0]
+		var flag := args.find(row[1])
+		var arg: String = args[flag + 1] if flag >= 0 and flag + 1 < args.size() else ""
+		check("door: %s is one json64 argument" % row[1], arg.begins_with("json64:") and
+			JSON.parse_string(Marshalls.base64_to_utf8(arg.trim_prefix("json64:"))) == row[2])
+	var reduced := JobModel.reduce([{"type": "job_created", "answers": answers, "lot": lot},
+		{"type": "change_requested", "text": "Fewer players", "decision": decision}], 0)
+	check("job model: answers, placement and change decision survive reduction",
+		reduced.get("answers") == answers and reduced.get("lot") == lot and reduced.changes[0].get("decision") == decision)
 	eq("a dead pid is not alive; this process is", [real.pid_alive(999999), real.pid_alive(OS.get_process_id())], [false, true])
 	var stale: String = cut.call(31, "stale")
 	var lf: FileAccess = FileAccess.open(stale.path_join("foreman.lock"), FileAccess.WRITE)
@@ -257,6 +272,7 @@ func _initialize() -> void:
 	eq("recipe: the real marble job has no card (built before cards)", [str(rj.get("card", "?")), str(rj.get("recipe_words", "?"))], ["", "Built without a recipe."])
 
 	_workbench_checks()
+	preload("res://ui/editor/selftest_place.gd").run(self, tmp)
 
 	_remove(tmp)
 	print("[selftest] %d passed, %d failed" % [passed, failed])
@@ -274,23 +290,18 @@ func _remove(dir: String) -> void:
 	DirAccess.remove_absolute(dir)
 
 
-## E1: the workbench's model (ui/editor/editor_model.gd) and its interview files (ui/interview/*.json).
+## E1: the workbench's model (ui/editor/editor_model.gd) and the recipe cards' interviews and the editor's none.json.
 func _workbench_checks() -> void:
 	var M: GDScript = load("res://ui/editor/editor_model.gd")
 	var m: RefCounted = M.new()
 	m.call("load_all")
-	eq("workbench: every interview file loads, every card it names exists", m.get("load_errors"), [])
+	eq("workbench: the card interviews and the fallback load", m.get("load_errors"), [])
 	var names: PackedStringArray = m.get("interview_order")
 	eq("workbench: one interview per card, none last", names, ["knock_down", "team_possession", "timed_drive", "two_sides_ball", "none"])
-	var cards_dir: PackedStringArray = []
-	for f: String in DirAccess.get_files_at("res://cards"):
-		if f.ends_with(".json"):
-			cards_dir.append(f.get_basename())
-	var missing: PackedStringArray = []
-	for c: String in cards_dir:
-		if not names.has(c):
-			missing.append(c)
-	eq("workbench: every recipe card has its interview", missing, [])
+	var counts: Array = []
+	for name in names:
+		counts.append(m.get("interviews")[name].questions.size())
+	eq("workbench: original question counts for the sorted recipes and fallback", counts, [4, 6, 4, 3, 4])
 	# the template rule (registry, templates-scaffolding): every proposal is a member of its own options; ids unique
 	var bad: PackedStringArray = []
 	var allowed_q: Array = ["key", "group", "ask", "options", "propose", "reason"]
@@ -365,6 +376,11 @@ func _workbench_checks() -> void:
 	m2.call("place", m2.call("first_free"), "auto")
 	check("workbench: a 96 x 70 m track has no room by the road -> said so, first", bool(m2.get("no_free")) and str((m2.call("checks") as Array)[0]["what"]) == "no_room", str(m2.call("checks")))
 	eq("workbench: drive sentence -> timed drive, road read as ice", [m2.get("recipe"), str((m2.call("value", "road") as Dictionary)["id"])], ["timed_drive", "ice"])
+	# Day 19 Nov: nothing by the road holds a 47 m arena; the best measured place further back is taken, and said
+	m2.call("set_sentence", "an arena where I fight waves of goblins with a sword")
+	m2.call("place", m2.call("first_free"), "auto")
+	check("workbench: no room by the road for a %d m arena ring -> the best measured place further back, said so" % int(m2.call("lot_radius")),
+		bool(m2.get("auto_far")) and bool(m2.call("fits")) and (m2.call("checks") as Array).any(func(c: Dictionary) -> bool: return c["what"] == "no_roadside"), str(m2.call("checks")))
 
 	# size: the base, set and add; the lot ring by the world's rule
 	var h: RefCounted = M.new()
@@ -387,7 +403,7 @@ func _workbench_checks() -> void:
 	eq("workbench: nothing placed yet -> Build it names it", h.call("blocker"), "the place: no place chosen on the map yet")
 	h.call("place", Vector2(194, 61))
 	var ck: Array = h.call("checks")
-	check("workbench: on the hockey plot -> overlap named", ck.size() > 0 and str(ck[0]["text"]).begins_with("overlaps the plot \"hockey\""), str(ck))
+	check("workbench: on the hockey plot -> overlap named", ck.size() > 0 and str(ck[0]["text"]).begins_with("its fence would cross hockey's fence"), str(ck))
 	h.call("place", Vector2(0, 0))
 	var on_road: bool = false
 	for c: Dictionary in h.call("checks"):
@@ -412,7 +428,7 @@ func _workbench_checks() -> void:
 	check("workbench: first_free fits, gate faces the road", bool(h.call("fits")) and float(h.call("path_m")) < 40.0, "at %s checks %s" % [str(free), str(h.call("checks"))])
 	var g: Vector2 = h.call("gate")
 	var rp: Vector2 = h.call("road_point", free)
-	check("workbench: the gate is on the ring, toward the road", absf(g.distance_to(free) - float(h.call("lot_radius"))) < 0.01 and g.distance_to(rp) < free.distance_to(rp))
+	check("workbench: the gate is on the ring, toward the road", absf(g.distance_to(free) - float(h.call("lot_radius")) - 0.5) < 0.01 and g.distance_to(rp) < free.distance_to(rp))
 	h.call("turn", 2)
 	eq("workbench: Q / E turn by 15 degrees", snappedf(rad_to_deg(float(h.get("yaw"))), 0.1), 30.0)
 
@@ -421,7 +437,7 @@ func _workbench_checks() -> void:
 	check("workbench: the request starts with the player's words", req.begins_with("ice hockey, three against three. Decided: "), req)
 	check("workbench: the request carries every decision", req.contains("a small 40 x 20 m rink") and req.contains("nothing around it but the boards") and req.contains("rookie opponents"), req)
 	var d: Dictionary = h.call("draft")
-	eq("workbench: draft keys", d.keys(), ["schema", "sentence", "request", "answers", "footprint", "lot", "card", "left_to_proposal"])
+	eq("workbench: draft keys", d.keys(), ["schema", "sentence", "request", "answers", "footprint", "lot", "placed_by", "why", "card", "left_to_proposal"])
 	check("workbench: no null in the draft", not JSON.stringify(d).contains("null"))
 	h.call("take_proposals")
 	check("workbench: after Take the proposals nothing is left to the proposal", not (h.call("draft") as Dictionary).has("left_to_proposal"))
@@ -451,6 +467,17 @@ func _workbench_checks() -> void:
 	var sl: Dictionary = SiteGd.call("draft_lot", root.path_join("puck-1"))
 	eq("site: the lot of a workbench game comes from its draft", [sl.get("at", []), sl.get("radius", 0.0), sl.get("file", "")], [[float((dd["lot"]["at"] as Array)[0]), float((dd["lot"]["at"] as Array)[1])], float(dd["lot"]["radius"]), "x.json"])
 	eq("site: a job without a draft keeps the walk's lot", (SiteGd.call("draft_lot", root.path_join("other-1")) as Dictionary).is_empty(), true)
+	var log_path := root.path_join("puck-1/job.jsonl")
+	var created: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(log_path))
+	eq("site: old job has no logged placement", SiteGd.call("job_lot", root.path_join("puck-1")), {})
+	for placement in [{"at": [-100.0, 40.0], "yaw_deg": -15.0, "radius": 22.0},
+			{"at": [1, "x"], "yaw_deg": 0, "radius": 12}, {"at": [0, 0], "yaw_deg": 0, "radius": 5}]:
+		created["lot"] = placement
+		var log_file := FileAccess.open(log_path, FileAccess.WRITE)
+		log_file.store_line(JSON.stringify(created))
+		log_file.close()
+		check("site: job_lot checks placement %s" % str(placement), SiteGd.call("job_lot", root.path_join("puck-1")) ==
+			(placement if placement.radius == 22 else {}))
 	_remove(root)
 
 	# E3: changing a decision from the game sheet (no scene: the sheet's model, job and draft set by hand)
@@ -477,6 +504,14 @@ func _workbench_checks() -> void:
 	sheet.set("job", {"done": 2, "changes": [{"text": ct, "outcome": "made"}], "shown": "done"})
 	sheet.call("_apply_answers")
 	eq("change: made -> the decision is the new option, marked changed", [str((sm.call("value", "rink") as Dictionary)["id"]), bool((sm.call("value", "rink") as Dictionary).get("changed", false))], ["standard", true])
+	sheet.set("job", {"changes": [{"text": ct, "outcome": "failed", "decision": {"key": "rink", "to": "small"}},
+		{"text": "Different wording", "outcome": "made", "decision": {"key": "rink", "to": "standard"}}]})
+	sheet.call("_apply_answers")
+	eq("change: the structured decision identifies the request even when its words differ", sheet.get("_outcomes"), ["made"])
+	hd.changes.append(hd.changes[0].duplicate())
+	sheet.call("_apply_answers")
+	eq("change: an earlier outcome cannot complete a second request for the same option", sheet.get("_outcomes"), ["made", ""])
+	hd.changes.pop_back()
 	sheet.set("job", {"done": 2, "changes": [{"text": ct, "outcome": "not made"}], "shown": "done"})
 	sheet.call("_apply_answers")
 	eq("change: not made -> the decision stands as it was", str((sm.call("value", "rink") as Dictionary)["id"]), "big")

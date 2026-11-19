@@ -200,6 +200,9 @@ static func reduce(events: Array, now: float) -> Dictionary:
 		var pid: String = str(e.get("package", ""))
 		match t:
 			"job_created":
+				for key in ["answers", "lot"]:
+					if e.has(key):
+						job[key] = e[key]
 				job["sentence"] = str(e.get("sentence", ""))
 				job["title"] = str(e.get("title", ""))
 				job["pack_id"] = str(e.get("packId", ""))
@@ -314,8 +317,11 @@ static func reduce(events: Array, now: float) -> Dictionary:
 				job["job_reason"] = str(e.get("reason", ""))
 				job["activity"] = one_line(str(e.get("reason", "")), 110)
 			"change_requested":
-				(job["changes"] as Array).append({"seq": int(e.get("seq", 0)), "text": str(e.get("text", "")), "package": pid, "owner": pid,
-					"outcome": "in flight", "version": "", "ts": ts})
+				var change := {"seq": int(e.get("seq", 0)), "text": str(e.get("text", "")), "package": pid, "owner": pid,
+					"outcome": "in flight", "version": "", "ts": ts}
+				if e.has("decision"):
+					change["decision"] = e["decision"]
+				job["changes"].append(change)
 				job["activity"] = "change requested"
 			"reopened":
 				var reason: String = str(e.get("reason", ""))

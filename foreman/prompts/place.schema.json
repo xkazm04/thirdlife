@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "proposals"
+  ],
+  "properties": {
+    "proposals": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "at",
+          "yaw_deg",
+          "reason"
+        ],
+        "properties": {
+          "candidate": { "type": "string", "pattern": "^[A-Z]$" },
+          "at": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number"
+            }
+          },
+          "yaw_deg": {
+            "type": "number",
+            "minimum": -360,
+            "maximum": 360
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 119,
+            "pattern": "^(?!.*[\\r\\n\\u2028\\u2029])(?=.*\\S)"
+          }
+        }
+      }
+    }
+  }
+}

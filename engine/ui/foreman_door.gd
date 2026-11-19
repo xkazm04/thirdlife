@@ -90,7 +90,7 @@ func _start(key: String, label: String, steps: Array) -> String:
 	if not check():
 		return problem
 	_n += 1
-	var log_dir: String = jobs_root.path_join("_ui_logs")
+	var log_dir: String = (jobs_root if not jobs_root.is_empty() else OS.get_user_data_dir()).path_join("_ui_logs")
 	DirAccess.make_dir_recursive_absolute(log_dir)
 	var log: String = log_dir.path_join("%d-%03d-%s.log" % [int(Time.get_unix_time_from_system()), _n, label])
 	var args: PackedStringArray = PackedStringArray([runner_path, "--log", log, "--cli", cli_path, "--"])
@@ -106,11 +106,22 @@ func _start(key: String, label: String, steps: Array) -> String:
 	return ""
 
 
-func new_game(sentence: String) -> String:
+static func _json_flag(name: String, value: Dictionary) -> Array:
+	if value.is_empty():
+		return []
+	return [name, "json64:" + Marshalls.utf8_to_base64(JSON.stringify(value))]
+
+
+func new_game(sentence: String, answers: Dictionary = {}, lot: Dictionary = {}) -> String:
 	var s: String = clean_text(sentence)
 	if s.is_empty():
 		return "describe the game first"
-	return _start("new:" + s, "new", [["new", s, "--site", jobs_root] + _flags("new")])
+	return _start("new:" + s, "new", [["new", s, "--site", jobs_root] + _flags("new") + _json_flag("--answers", answers) + _json_flag("--lot", lot)])
+
+
+func place(ask: String, out: String) -> String:
+	var settings := _flags("place") if flags.has("place") else _flags("new")
+	return _start(ask, "place", [["place", "--in", ask, "--out", out] + settings])
 
 
 func approve(job_dir: String) -> String:
@@ -144,11 +155,11 @@ func answer(job_dir: String, package: String, text: String, change_package: Stri
 	return _start(job_dir, "answer", [a, ["resume", job_dir] + _flags("resume")])
 
 
-func change(job_dir: String, text: String) -> String:
+func change(job_dir: String, text: String, decision: Dictionary = {}) -> String:
 	var t: String = clean_text(text)
 	if t.is_empty():
 		return "say what should be different first"
-	return _start(job_dir, "change", [["change", job_dir, t] + _flags("change")])
+	return _start(job_dir, "change", [["change", job_dir, t] + _flags("change") + _json_flag("--decision", decision)])
 
 
 ## Looks at what this door started. Returns true when something ended since the last call.

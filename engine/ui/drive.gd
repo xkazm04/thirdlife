@@ -29,6 +29,8 @@ func start(the_host: Control, what: String, shots_dir: String) -> void:
 		await _live2()
 	elif what == "chips":
 		await (load("res://ui/editor/drive_editor.gd") as GDScript).new().run_chips(self)
+	elif what == "place":
+		await (load("res://ui/editor/drive_editor.gd") as GDScript).new().run_place(self)
 	elif what == "home":
 		await (load("res://ui/editor/drive_editor.gd") as GDScript).new().run_home(self)
 	elif what == "editor":
@@ -45,6 +47,8 @@ func start(the_host: Control, what: String, shots_dir: String) -> void:
 		await get_tree().create_timer(0.2).timeout
 	var left: PackedInt32Array = door.call("pids_running")
 	print("[drive] processes still running at the end: %s" % str(left))
+	if what == "place" and not failed:
+		print("[drive] place: ok")
 	print("[drive] %s" % ("FAILED" if failed else "ok"))
 	get_tree().quit(1 if failed else 0)
 
@@ -242,6 +246,8 @@ func picture(name: String) -> void:
 	await frames(4)
 	var path: String = shots.path_join(name)
 	var err: int = await host.call("shot", path)
+	if err != OK:
+		failed = true
 	note("direct", "screenshot %s%s" % [name, "" if err == OK else " FAILED"])
 
 
