@@ -15,12 +15,13 @@ var ranked: Array = []
 var ask_path := ""
 var out_path := ""
 var number := 0
+var asked_words := PackedStringArray()   # the place words that made Find a place ask the Designer
 
 
 func setup(workbench: Control, button: Button) -> void:
 	wb = workbench
 	find_button = button
-	find_button.tooltip_text = "Ask the Designer for up to three places. This calls the model."
+	find_button.tooltip_text = "Three places for this game. When your words say where (by the river, quiet, next to ...), the Designer is asked: that calls the model."
 	find_button.pressed.connect(_find)
 	why = wb._label("", 14, false, wb.col.ink, true)
 	why.name = "WhyHere"
@@ -46,8 +47,59 @@ func _message(words: String) -> void:
 	status.visible = not words.is_empty()
 
 
+## Round 2 (19 Nov): the Designer is asked only when the player's words say something about the place. On a
+## neutral request it picked the scorer's top three every time (9 of 9 real runs), so the editor offers its own three
+## best measured places, worded from their facts, and calls no model.
+const PLACE_WORDS: Array = ["quiet", "calm", "peaceful", "secluded", "hidden", "busy", "lively", "river", "riverside",
+	"water", "stream", "bank", "lake", "near", "next to", "beside", "close to", "far from", "away from", "by the",
+	"along", "view", "hill", "hilltop", "slope", "valley", "flat", "centre", "center", "middle", "edge", "outskirts",
+	"corner", "north", "south", "east", "west", "behind", "opposite", "entrance", "square"]
+
+
+## The phrases of `sentence` that name something about the place (whole words, lower case); empty = none.
+static func place_words(sentence: String) -> PackedStringArray:
+	var text := " "
+	for ch in sentence.to_lower():
+		text += ch if (ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9") else " "
+	text = " " + " ".join(text.split(" ", false)) + " "
+	var found := PackedStringArray()
+	for w: String in PLACE_WORDS:
+		if text.contains(" " + w + " "):
+			found.append(w)
+	return found
+
+
+## The editor's own three best measured places as proposals, each reason built from its measured facts.
+static func measured_proposals(m) -> Array:
+	var out: Array = []
+	for c: Dictionary in Scorer.candidates(m, m.heights, 3):
+		var parts: PackedStringArray = []
+		for f: String in c.facts:
+			if f.contains("walk"):
+				parts.append(f)
+		for f: String in c.facts:
+			if f.begins_with("next to"):
+				parts.append(f)
+				break
+		var reason := "; ".join(parts).left(118)
+		out.append({"candidate": c.id, "at": c.at, "yaw_deg": 0.0, "reason": reason[0].to_upper() + reason.substr(1)})
+	return out
+
+
 func _find() -> void:
 	proposals = []
+	var words := place_words(str(wb.model.sentence))
+	if words.is_empty():
+		proposals = measured_proposals(wb.model)
+		if proposals.is_empty():
+			_fallback("No measured free place fits.")
+			return
+		_rescore()
+		_message("Measured by the editor, no model call: your words name no place. Say where you want it (\"by the river\", \"quiet\", \"next to the hockey\") and the Designer is asked.")
+		wb.set_map_zoom(false)
+		wb.refresh()
+		return
+	asked_words = words
 	var root := str(wb.jobs_root)
 	var dir := root.path_join("_editor/place") if not root.is_empty() else ProjectSettings.globalize_path("user://editor/place")
 	if DirAccess.make_dir_recursive_absolute(dir) != OK:
@@ -93,18 +145,31 @@ func _process(_delta: float) -> void:
 	var error: String = wb.door.last_error(ask_path)
 	ask_path = ""
 	if response is Dictionary and response.get("schema") == "tl.place-answer/1":
+		record_call(wb.model, response)
 		if response.size() == 2 and response.get("error") is String:
 			error = response.error
 		elif valid_answer(response) and match_candidates(response.proposals, asked_candidates):
 			proposals = response.proposals
 			_rescore()
 			if ranked[0].valid:
-				_message("")
+				_message("The Designer chose these for \"%s\" in your words." % "\", \"".join(asked_words))
 				wb.set_map_zoom(false)
 				wb.refresh()
 				return
 			error = "None of the suggested places fits."
 	_fallback(error if not error.is_empty() else "The Designer returned no usable places.")
+
+
+## Round 2 (19 Nov): a model call costs tokens; Build it hands every call's figures to `foreman new --place-calls`,
+## which logs each as a job-level builder_run (tl ledger counts it). An answer without usage figures records nothing.
+static func record_call(m, response: Dictionary) -> void:
+	if not (response.get("adapter") is String and response.get("model") is String and (response.get("durationMs") is float or response.get("durationMs") is int)):
+		return
+	var c := {"adapter": response.adapter, "model": response.model, "durationMs": int(response.durationMs)}
+	for k in ["tokensIn", "tokensOut"]:
+		if response.get(k) is float or response.get(k) is int:
+			c[k] = int(response[k])
+	m.place_calls.append(c)
 
 
 static func match_candidates(picks: Array, candidates: Array) -> bool:
@@ -214,7 +279,8 @@ func _rescore() -> void:
 	wb._strip.visible = ranked.is_empty()
 	for i in ranked.size():
 		_row(i)
-	scroll.custom_minimum_size.y = minf(205, rows.get_combined_minimum_size().y + 6)
+	# Leave enough map above the scrollable rows to locate their numbers at 720p.
+	scroll.custom_minimum_size.y = minf(minf(205, wb.size.y * 0.20), rows.get_combined_minimum_size().y + 6)
 
 
 func _highlight(i: int) -> void:

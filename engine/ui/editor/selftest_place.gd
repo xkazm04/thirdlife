@@ -26,6 +26,22 @@ static func run(t: SceneTree, tmp: String) -> void:
 	var level := Scorer.score(m, best, 0, flat)
 	var tilted := Scorer.score(m, best, 0, slope)
 	t.check("place: a flat pad loses no ground points, a tilted pad does", level.valid and tilted.valid and level.lines[1].points == 0 and tilted.lines[1].points > 0)
+	# Round 2: the Designer only when the words name a place; otherwise the editor's own three measured places
+	var neutral := ["ice hockey, three against three", "knock down a tower of crates with balls", "a car race, three laps against the clock",
+		"an arena where I fight waves of goblins with a sword", "a frozen pond rink with trees", "football on grass, five a side"]
+	var placed := {"a quiet rink": ["quiet"], "hockey by the river": ["river", "by the"], "a rink next to the other hockey": ["next to"],
+		"a slalom on the hill, far from the road": ["far from", "hill"], "an arena in the middle of the village": ["middle"]}
+	var words_ok := true
+	for sentence: String in neutral:
+		words_ok = words_ok and PlacePanel.place_words(sentence).is_empty()
+	for sentence: String in placed:
+		words_ok = words_ok and Array(PlacePanel.place_words(sentence)) == placed[sentence]
+	t.check("place: the Designer is asked only for words that name a place (%d neutral, %d placed)" % [neutral.size(), placed.size()], words_ok)
+	var mine: Array = PlacePanel.measured_proposals(m)
+	var ids: Array = mine.map(func(p: Dictionary) -> String: return p.candidate)
+	var top3: Array = Scorer.candidates(m, m.heights, 3).map(func(c: Dictionary) -> String: return c.id)
+	t.check("place: no place words -> the scorer's top three, worded from their facts, no model call", ids == top3 and ids.size() == 3 and
+		mine.all(func(p: Dictionary) -> bool: return p.reason.contains("walk") and p.reason.length() < 120) and PlacePanel.valid_answer({"schema": "tl.place-answer/1", "proposals": mine, "adapter": "fake", "model": "editor", "durationMs": 0}), str(mine))
 	var a := {"at": [best.x, best.y], "yaw_deg": 0, "reason": "short walk"}
 	var b := {"at": [347, -80], "yaw_deg": 15, "reason": "long walk"}
 	var c := {"at": [-250, -30], "yaw_deg": 0, "reason": "river"}
@@ -62,7 +78,9 @@ static func run(t: SceneTree, tmp: String) -> void:
 	t.check("place: measured candidates are separated by at least the ring or 40 m", diverse)
 	t.check("place: candidate path facts match the live scorer", facts_match)
 	var expected := centres[0] if not centres.is_empty() else Vector2.INF
+	m.sentence = "ice hockey, three against three by the river"   # words that name a place: the Designer is asked (and its door fails)
 	panel._find()
+	m.sentence = "ice hockey, three against three"
 	t.check("place: failed door takes candidate A and explains it", m.placed and m.at == expected and panel.status.text.contains("best measured free place") and panel.status.text.contains("Foreman"))
 	m.answer("dressing", "arena")
 	stub.refresh()
@@ -77,14 +95,14 @@ static func run(t: SceneTree, tmp: String) -> void:
 	m.road_samples = PackedVector2Array([Vector2(-100,0),Vector2.ZERO,Vector2(100,0)])
 	m.river_samples.clear()
 	var path := Scorer.score(m, Vector2(0,100), 0, flat)
-	t.check("place: a path outside the parkour ring but through its fence is refused", not path.valid and str(path.lines).contains("path crosses parkour yard"))
+	t.check("place: a path outside the parkour radius but across its lot edge is refused", not path.valid and path.lines[0].text == "the path crosses parkour yard's lot")
 	m.plots = [{"id":"paddle","label":"paddle","kind":"plot","at":Vector2.ZERO,"r":40.0}]
 	# End the spur away from paddle, with the road itself well clear of both lots.
 	m.road_samples = PackedVector2Array([Vector2(50,-100),Vector2(81.2,-100),Vector2(120,-100)])
 	var crossed := Scorer.score(m, Vector2(77.6,0), 0, flat)
-	t.check("place: a 5.6 m ring gap crosses paddle's fence by 1.6 m", not crossed.valid and crossed.lines[0].text == "its fence would cross paddle's fence by 1.6 m")
+	t.check("place: a 5.6 m gap between radii overlaps paddle by 1.6 m", not crossed.valid and crossed.lines[0].text == "its edge would cross paddle's by 1.6 m")
 	var touching := Scorer._score(m, Vector2(81.2,0), 0, flat, 32, true)
-	t.check("place: a 9.2 m ring gap leaves exactly 2 m between fences", touching.valid and "next to paddle (2 m between fences)" in touching.get("facts", []))
+	t.check("place: a 9.2 m gap between radii leaves exactly 2 m between lots", touching.valid and "next to paddle (2 m between lots)" in touching.get("facts", []))
 	# A centre just inside the legal margin can round onto the wrong side when written to the job.
 	m.plots[0].at = Vector2(0.03,0)
 	m.place(Vector2(81.24,0))
@@ -95,8 +113,8 @@ static func run(t: SceneTree, tmp: String) -> void:
 	path = Scorer.score(m, Vector2(0,100), 0, flat)
 	t.check("place: a clear pad with a path across the river is refused", not path.valid and str(path.lines).contains("path crosses the river"))
 	m.river_samples.clear()
-	t.check("place: the fence needs 1 m off the road edge", Scorer.score(m, Vector2(0,39.6), 0, flat).valid and not Scorer.score(m, Vector2(0,39.5), 0, flat).valid)
+	t.check("place: the lot edge needs 1 m off the road edge", Scorer.score(m, Vector2(0,39.6), 0, flat).valid and not Scorer.score(m, Vector2(0,39.5), 0, flat).valid)
 	m.river_samples = PackedVector2Array([Vector2(-50,100),Vector2(50,100)])
-	t.check("place: the fence needs 2 m off the riverbank", Scorer.score(m, Vector2(0,56.4), 0, flat).valid and not Scorer.score(m, Vector2(0,56.5), 0, flat).valid)
+	t.check("place: the lot edge needs 2 m off the riverbank", Scorer.score(m, Vector2(0,56.4), 0, flat).valid and not Scorer.score(m, Vector2(0,56.5), 0, flat).valid)
 	m.river_samples.clear()
-	t.check("place: the fence can touch the village bounds", Scorer.score(m, Vector2(0,114.4), 0, flat).valid and not Scorer.score(m, Vector2(0,114.5), 0, flat).valid)
+	t.check("place: the lot edge can touch the village bounds", Scorer.score(m, Vector2(0,114.4), 0, flat).valid and not Scorer.score(m, Vector2(0,114.5), 0, flat).valid)

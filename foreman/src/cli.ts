@@ -29,7 +29,7 @@ import { eventLine, statusTable } from "./status.js";
 export { statusTable };
 
 import { placeCommand } from "./place.js";
-import { UsageError, editorFlag, num, parseArgs, str, type Args } from "./cli_args.js";
+import { UsageError, editorFlag, num, parseArgs, placeCallsFlag, str, type Args } from "./cli_args.js";
 export { UsageError, parseArgs };
 
 const HELP = `foreman <command>
@@ -475,6 +475,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       if (!sentence || sentence.trim().length === 0) throw new UsageError('usage: foreman new "<sentence>"');
       const answers = editorFlag(a, "answers");
       const lot = editorFlag(a, "lot");
+      const placeCalls = placeCallsFlag(a);
       const slug = slugify(sentence);
       const d = new Date();
       const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
@@ -500,6 +501,13 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
           out(`builder not available: ${probe.notes.join("; ")}`);
           return 1;
         }
+        // Lane editor, 19 Nov: the editor's "Find a place" calls were made before the job existed; they are job-level
+        // builder runs (no package, no round) so the job's cost holds them (tl ledger sums builder_run tokens).
+        for (const c of placeCalls ?? []) {
+          log.append({ type: "builder_run", adapter: c.adapter, mode: "generate", model: c.model, outcome: "ok", durationMs: c.durationMs,
+            ...(c.tokensIn !== undefined ? { tokensIn: c.tokensIn } : {}), ...(c.tokensOut !== undefined ? { tokensOut: c.tokensOut } : {}) });
+        }
+        if (placeCalls) out(`place calls logged: ${placeCalls.length}`);
         const model = str(a, "model");
         const t = num(a, "timeout-ms");
         const res = await designBrief(builder, sentence.trim(), { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });

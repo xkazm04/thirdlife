@@ -4,7 +4,7 @@ extends Node3D
 ## for the lot's view and builds its parts again only when that view changed. Drawing only: kit parts (TLKitSite) and
 ## TLMesh boxes in the style's palette, as the landscape draws; text is the job's own words.
 ##
-## Read from 20 m: a sign by the gate (outside the fence: the job's title and "N of M built", or "This game could not
+## Read from 20 m: a sign by the gate (the job's title and "N of M built", or "This game could not
 ## be finished"); one bay per package in the plan's order, rising with its state (waiting: a slab and timber; building:
 ## walls and a scaffold; checking: higher walls, full scaffold, a beacon; on hold: a barricade; built: a finished
 ## house with a flag; failed: low walls behind red barricades); a crane that turns to the bay being built. When the
@@ -17,7 +17,8 @@ var site: RefCounted = null           # kernel/world/site.gd
 var lot: int = -1
 var radius: float = 20.0
 var plot_radius: float = 20.0         # S4: the plot's radius (the landscape's pad); `radius` is the lot as it is now
-var _fence_boxes: Array = []
+var road_half_m := 2.6
+var has_rails := true
 var build_ms: float = 0.0             # S4: what the last build of the site's parts cost on the main thread
 var _report_next: bool = false
 var _shown: String = ""
@@ -47,7 +48,7 @@ static func make(site_: RefCounted, lot_: int, centre: Vector3, radius_: float, 
 
 
 ## landscape.gd: the lots that are construction sites with a plot are taken out of `lots` (they are drawn as plots,
-## with the plot's pad, fence and gate); returns them as [lot index, plot index, the world's site].
+## with the plot's pad and gate); returns them as [lot index, plot index, the world's site].
 static func split_lots(parent: Node3D, lots: Array) -> Array:
 	var view: Node = parent.get_parent()
 	var world: Variant = view.get("world") if view != null else null
@@ -71,7 +72,11 @@ static func place(parent: Node3D, site_plots: Array, centres: Array, pad_h: Arra
 	for sp: Array in site_plots:
 		var i: int = int(sp[1])
 		var c: Vector2 = centres[i]
-		parent.add_child(make(sp[2], int(sp[0]), Vector3(c.x, float(pad_h[i]), c.y), float(rad[i]), gates[i]))
+		var node := make(sp[2], int(sp[0]), Vector3(c.x, float(pad_h[i]), c.y), float(rad[i]), gates[i])
+		var cfg: Dictionary = sp[2].world.walk.landscape
+		node.set("road_half_m", float(cfg.get("road_half_m", 2.6)))
+		node.set("has_rails", gates[i] != null and bool(cfg.get("fence", true)))
+		parent.add_child(node)
 		stats["sites"] = int(stats.get("sites", 0)) + 1
 
 
@@ -94,7 +99,7 @@ func _process(delta: float) -> void:
 ## S2. The site is solid: one box per bay (slab, walls or house, scaffold) and one for the crane's foot, in the world's
 ## space (terrain/world_space.gd) under the tag `site <lot>`, made again when the view changes and all taken away when
 ## the game arrives. `boxes`: [[centre, size]] in the site's own frame. Nothing without a landscape (headless).
-func _solid(boxes: Array) -> void:
+func _solid(boxes: Array, rails: PackedVector3Array) -> void:
 	var land: Node = get_parent()
 	if land == null or not land.has_meta(&"tl_space"):
 		return
@@ -105,44 +110,37 @@ func _solid(boxes: Array) -> void:
 	ws.set("tag", t)
 	var xf: Transform3D = Transform3D(Basis(Vector3.UP, rotation.y), position)
 	for bx: Array in boxes:
-		var bb: Basis = xf.basis * Basis(Vector3.UP, float(bx[2])) if bx.size() > 2 else xf.basis
-		ws.call("add_box", Transform3D(bb, xf * (bx[0] as Vector3)), bx[1])
+		ws.call("add_box", Transform3D(xf.basis, xf * (bx[0] as Vector3)), bx[1])
+	for k: int in range(0, rails.size(), 2):
+		ws.call("add_wall", PackedVector3Array([xf * rails[k], xf * rails[k + 1]]), 1.2)
 	ws.set("tag", keep)
-	if boxes.size() != colliders:
-		print("[site] lot %d: scaffold colliders %d -> %d" % [lot, colliders, boxes.size()])
-	colliders = boxes.size()
+	var count := boxes.size() + rails.size() / 2
+	if count != colliders:
+		print("[site] lot %d: scaffold colliders %d -> %d" % [lot, colliders, count])
+	colliders = count
 
 
-## S4. The lot's fence is the site's (the landscape leaves a site plot unfenced): a rail fence 3.6 m outside the
-## lot's radius as it is now, open 4 m either side of the gate, solid (a thin box per stretch). When the lot is
-## smaller than its plot, a path leads from the plot's gate (where the spur road ends) to the lot's.
-func _fence() -> void:
-	_fence_boxes = []
-	for st: Array in _stretches(radius + 3.6):
-		var d: Vector3 = (st[1] as Vector3) - (st[0] as Vector3)
-		_fence_boxes.append([((st[0] as Vector3) + (st[1] as Vector3)) * 0.5 + Vector3(0.0, 0.7, 0.0), Vector3(0.3, 1.4, d.length() + 0.1), atan2(d.x, d.z)])
-	_show_mesh("fence %.1f %.1f" % [radius, plot_radius], _fence_mesh.bind(radius, plot_radius), "site_fence")
+## The plot entrance rule in landscape.gd, in the site's gate-facing frame. The mesh and walls share endpoints.
+func _rail_ends() -> PackedVector3Array:
+	var rails := PackedVector3Array()
+	if has_rails:
+		var terr: RefCounted = get_parent().get_meta(&"tl_terrain")
+		var gap := road_half_m * 0.8 + 2.0
+		for side: float in [-1.0, 1.0]:
+			for x: float in [gap, gap + clampf(radius * 0.24, 4.0, 10.0)]:
+				var p := Vector3(x * side, 0, radius + 3.6)
+				var v := transform * p
+				p.y = terr.gy(v.x, v.z) - position.y
+				rails.append(p)
+	return rails
 
 
-static func _stretches(fr: float) -> Array:
-	var out: Array = []
-	var seg: int = maxi(24, int(TAU * fr / 3.2))
-	var gap: float = 4.0 / fr
-	for k: int in seg:
-		var a0: float = TAU * float(k) / float(seg) - PI
-		var a1: float = TAU * float(k + 1) / float(seg) - PI
-		if absf(angle_difference((a0 + a1) * 0.5, 0.0)) >= gap:
-			out.append([Vector3(sin(a0), 0.0, cos(a0)) * fr, Vector3(sin(a1), 0.0, cos(a1)) * fr])
-	return out
-
-
-static func _fence_mesh(r: float, plot_r: float) -> TLMesh:
+static func _entrance_mesh(rails: PackedVector3Array, r: float, plot_r: float) -> TLMesh:
 	var mk: TLMesh = TLMesh.new(55)
-	var fr: float = r + 3.6
-	for st: Array in _stretches(fr):
-		TLKitSite.add_fence(mk, st[0], st[1], 2.2)
+	for k: int in range(0, rails.size(), 2):
+		TLKitSite.add_fence(mk, rails[k], rails[k + 1], 3.4)
 	if plot_r - r > 1.0:
-		var z0: float = fr - 0.5
+		var z0: float = r + 3.6 - 0.5
 		var z1: float = plot_r + 1.0
 		mk.quad_up(Vector3(-2.0, 0.06, z1), Vector3(2.0, 0.06, z1), Vector3(2.0, 0.06, z0), Vector3(-2.0, 0.06, z0), "dirt")
 	return mk
@@ -172,10 +170,11 @@ func _build(v: Dictionary) -> void:
 	var arrived: bool = bool(v["arrived"])
 	var r: float = radius
 	_sign(v, arrived)
-	_solid([])                                   # S2: the scaffold's colliders of the view before go
-	_fence()                                     # S4: the lot's own fence, round the lot as it is now
+	var rails := _rail_ends()
+	if not rails.is_empty() or plot_radius - r > 1.0:
+		_show_mesh("entrance %s %s" % [r, plot_radius], _entrance_mesh.bind(rails, r, plot_radius), "site_rails")
 	if arrived:
-		_arrived_dressing(v)                      # the scaffold came down: the game stands here now, and says so
+		_arrived_dressing(v, rails)                # the scaffold came down: the game stands here now, and says so
 		build_ms = float(Time.get_ticks_usec() - t0) / 1000.0
 		if was != radius or _report_next:
 			print("[site] lot %d: lot %.0f m (was %.0f), its parts built in %.2f ms on the main thread%s" % [lot, radius, was, build_ms, " (worker meshes still coming)" if not _tasks.is_empty() else ""])
@@ -198,7 +197,7 @@ func _build(v: Dictionary) -> void:
 		if active < 0 and ["running", "verifying"].has(str(b["state"])):
 			active = i
 	if m == 0:
-		# no plan yet: the pad is fenced and the first timber is there
+		# no plan yet: the first timber is there
 		TLKitSite.add_lumber(mk, Vector3(-3.0, 0.0, _bay_z), 3.2, 1.0, 5, 15.0)
 		TLKitSite.add_pallet(mk, Vector3(2.5, 0.0, _bay_z + 1.0), 3, -10.0)
 	if str(v["stage"]) == "failed":
@@ -221,18 +220,18 @@ func _build(v: Dictionary) -> void:
 		var h: float = 7.6 if bool(b["merged"]) else float(SOLID_H.get(str(b["state"]), 1.2))
 		# the slab, the walls or house and the scaffold in front of it (z to +2 m beyond the slab)
 		boxes.append([Vector3(float(_bays_x[i]), h * 0.5, _bay_z + 1.0), Vector3(bw - 0.8, h, 8.6 + 2.0)])
-	_solid(boxes + _fence_boxes)
+	_solid(boxes, rails)
 	var aim: Vector3 = Vector3(float(_bays_x[active]) if active >= 0 else 0.0, 0.0, _bay_z) - _crane.position
 	_target = atan2(-aim.z, aim.x)
 	if str(v["stage"]) == "failed":
 		_target += 0.9                           # the jib turned away: nobody works here
 
 
-## S3. A game is here: an entrance arch over the gate with the game's title, two light masts behind the fence and
-## flags along it, so that a small game on its lot reads from the road (the lot itself is fitted to the game:
+## S3. A game is here: an entrance arch over the gate with the game's title, two light masts and
+## flags, so that a small game on its lot reads from the road (the lot itself is fitted to the game:
 ## site.gd `fit_radius`). The arch's pillars are solid; the way between them is 5.4 m wide.
-func _arrived_dressing(v: Dictionary) -> void:
-	var g: float = radius + 3.6                  # the fence line, where the gate is open
+func _arrived_dressing(v: Dictionary, rails: PackedVector3Array) -> void:
+	var g: float = radius + 3.6                  # the gate line
 	_show_mesh("arrived %.1f" % radius, _dressing_mesh.bind(g), "site_arrived")
 	var name_: Label3D = _text(str(v["title"]) if not str(v["title"]).is_empty() else "A new game", 64, 0.01, 820)
 	name_.modulate = Color(0.98, 0.96, 0.9)
@@ -241,7 +240,7 @@ func _arrived_dressing(v: Dictionary) -> void:
 	name_.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	name_.position = Vector3(0.0, 6.75, g + 0.62)
 	_parts.add_child(name_)
-	_solid([[Vector3(-3.4, 2.6, g), Vector3(1.4, 5.2, 1.4)], [Vector3(3.4, 2.6, g), Vector3(1.4, 5.2, 1.4)]] + _fence_boxes)
+	_solid([[Vector3(-3.4, 2.6, g), Vector3(1.4, 5.2, 1.4)], [Vector3(3.4, 2.6, g), Vector3(1.4, 5.2, 1.4)]], rails)
 
 
 static func _dressing_mesh(g: float) -> TLMesh:
@@ -256,9 +255,8 @@ static func _dressing_mesh(g: float) -> TLMesh:
 	return mk
 
 
-## S4. The meshes that depend only on the lot's size (its fence, the arrival's arch and masts) are built on a worker
-## thread, once per size, and kept: a refit costs the main thread no mesh building (measured in a window before:
-## 24 to 29 ms for the fence, 8 to 11 ms for the arch and masts, in one frame). Until the new mesh is there the one
+## S4. The meshes that depend only on the lot's size (rails, path, arrival arch and masts) are built on a worker
+## thread, once per size, and kept: a refit costs the main thread no mesh building. Until the new mesh is there the one
 ## of the size before stays shown (`stand_in`); when it is done the site is built again with it.
 var _meshes: Dictionary = {}          # key -> ArrayMesh
 var _tasks: Dictionary = {}           # key -> [task id, {"mesh": ArrayMesh}]
@@ -407,7 +405,7 @@ func _plan_board(pk: Array) -> void:
 		_parts.add_child(lb)
 
 
-## The sign: outside the fence beside the gate, facing the road. The job's title; how far it is; when it failed,
+## The sign: beside the gate, facing the road. The job's title; how far it is; when it failed,
 ## that it failed; when the game is there, that it can be played.
 func _sign(v: Dictionary, arrived: bool) -> void:
 	var mk: TLMesh = TLMesh.new(52)

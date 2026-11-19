@@ -1,6 +1,6 @@
 extends Control
 ## E1: the footprint from the side at true scale beside the 2 m walking figure, and the size in words a player can
-## feel: metres, seconds to run across, the lot ring, the worked example's own plot.
+## feel: metres, seconds to run across, the lot radius, the worked example's own plot.
 
 var model: RefCounted
 var col: Dictionary = {}
@@ -68,12 +68,12 @@ func _draw() -> void:
 	y += 22
 	draw_string(font, Vector2(tx, y), "about %d s to run across, %d walkers end to end" % [int(round(model.seconds_across())), int(round(long / model.walker_m))], HORIZONTAL_ALIGNMENT_LEFT, text_w - 8, 12, col["ink"])
 	y += 19
-	draw_string(font, Vector2(tx, y), "lot ring %d m (half the diagonal + 4 m)" % int(model.lot_radius()), HORIZONTAL_ALIGNMENT_LEFT, text_w - 8, 12, col["ink"])
+	draw_string(font, Vector2(tx, y), "lot radius %d m (half the diagonal + 4 m)" % int(model.lot_radius()), HORIZONTAL_ALIGNMENT_LEFT, text_w - 8, 12, col["ink"])
 	y += 19
 	var n: Dictionary = model.neighbour_like()
 	var src: String = str(model.interview().get("footprint", {}).get("source", ""))
 	if not n.is_empty():
-		draw_string(font, Vector2(tx, y), "the example's own plot \"%s\": ring %d m" % [str(n["label"]), int(n["r"])], HORIZONTAL_ALIGNMENT_LEFT, text_w - 8, 12, col["dim"])
+		draw_string(font, Vector2(tx, y), "the example's own plot \"%s\": radius %d m" % [str(n["label"]), int(n["r"])], HORIZONTAL_ALIGNMENT_LEFT, text_w - 8, 12, col["dim"])
 	elif not src.is_empty():
 		draw_string(font, Vector2(tx, y), "from " + src, HORIZONTAL_ALIGNMENT_LEFT, text_w - 8, 12, col["dim"])
 

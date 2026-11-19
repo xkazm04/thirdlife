@@ -494,7 +494,7 @@ func _fill_review() -> void:
 	if not left.is_empty():
 		foot += " · left to the proposal: " + ", ".join(left)
 	if model.placed:
-		foot += " · lot at %d, %d, ring %d m" % [int(model.at.x), int(model.at.y), int(model.lot_radius())]
+		foot += " · lot at %d, %d, radius %d m" % [int(model.at.x), int(model.at.y), int(model.lot_radius())]
 	_footer.text = foot
 	var why: String = model.blocker()
 	if not message.is_empty():
@@ -530,7 +530,7 @@ func _commit() -> void:
 		f.store_string(JSON.stringify(d, "  ") + "\n")
 		f.close()
 	var answers := model.answer_ids()
-	var err: String = "no Foreman door" if door == null else str(door.call("new_game", d["request"], answers, d["lot"]))
+	var err: String = "no Foreman door" if door == null else str(door.call("new_game", d["request"], answers, d["lot"], model.place_calls))
 	if err.is_empty():
 		message = "The builders are starting. Your draft: " + draft_path.get_file()
 		message_bad = false

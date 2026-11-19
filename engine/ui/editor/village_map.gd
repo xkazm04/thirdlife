@@ -1,7 +1,7 @@
 extends "res://ui/editor/map_base.gd"
 ## E1: the village from above (boot/village.json), north up, with the new game's ghost: its footprint inside its lot
-## ring, its gate toward the road and the dashed path in. Left press places the ghost there (or picks it up when the
-## press is inside its ring) and dragging moves it; the wheel and Q / E turn it by 15 degrees. It draws what the model
+## edge, its entrance rails toward the road and the path in. Left press places the ghost there (or picks it up when the
+## press is inside its lot) and dragging moves it; the wheel and Q / E turn it by 15 degrees. It draws what the model
 ## says and writes only `at` and `yaw` into it; `changed` tells the workbench to redraw the rest.
 
 const Overlay = preload("res://ui/editor/map_overlay.gd")
@@ -22,7 +22,7 @@ func _gui_input(event: InputEvent) -> void:
 		_fit()
 		var w: Vector2 = to_world((event as InputEventMouseButton).position)
 		for lot: Dictionary in model.plots:
-			if lot["kind"] == "game" and w.distance_to(lot["at"]) <= model.fence_radius(lot.r):
+			if lot["kind"] == "game" and w.distance_to(lot["at"]) <= model.edge_radius(lot.r):
 				lot_clicked.emit(str(lot["job"]))
 				accept_event()
 				return
@@ -35,7 +35,7 @@ func _gui_input(event: InputEvent) -> void:
 			if mb.pressed:
 				grab_focus()
 				var w: Vector2 = to_world(mb.position)
-				if model.placed and w.distance_to(model.at) <= model.fence_radius(model.lot_radius()):
+				if model.placed and w.distance_to(model.at) <= model.edge_radius(model.lot_radius()):
 					_grab = model.at - w
 				else:
 					_grab = Vector2.ZERO
@@ -85,15 +85,20 @@ func _draw() -> void:
 		if check.has("with"):
 			errs[check["with"]] = true
 	var visible_plots: Array[Dictionary] = []
+	_annotations.clear()
 	for lot: Dictionary in model.plots:
 		var c := to_screen(lot["at"])
-		var r := float(lot["r"]) * _scale
-		if not screen.grow(r + (model.FENCE_OUT_M + model.FENCE_GAP_M / 2) * _scale + 8).has_point(c):
+		var half_size := _plot_half(lot)
+		var reach := maxf(half_size.length() + 10.0, model.edge_radius(lot.r) + 10.0)
+		# A long spur can cross the close-up even when its plot is just outside the view.
+		var road: Vector2 = model.road_point(lot.at)
+		if not screen.grow(reach * _scale).has_point(c):
+			if screen.intersects(Rect2(c, Vector2.ZERO).expand(to_screen(road)), true):
+				_approach(lot.at, lot.r, road)
 			continue
-		_plot(c, r, lot, errs.has(lot["id"]))
+		_plot(c, half_size, road, lot, errs.has(lot["id"]))
 		visible_plots.append(lot)
 
-	_annotations.clear()
 	_furniture()
 	if board:
 		pass
@@ -112,9 +117,12 @@ func _draw() -> void:
 		if not screen.has_point(c):
 			continue
 		var label := str(lot["label"]).replace("_", " ")
-		var r := float(lot["r"]) * _scale
-		var at := Vector2(c.x - (_w(label, 11, true) + 12) * 0.5, c.y + minf(r * 0.38, 68))
-		_tag(at, label, col["honey"] if lot["kind"] == "game" else (col["vellum"] if lot["kind"] == "site" else col["card"]), col["ink"], 11)
+		var half_size := _plot_half(lot)
+		var r := minf(half_size.x, half_size.y) * _scale
+		var above: bool = model.road_point(lot.at).y > lot.at.y
+		var anchor := c + Vector2.DOWN * r * (-0.58 if above else 0.38)
+		var at := anchor + Vector2(-(_w(label, 11, true) + 12) * 0.5, -23 if above else 3)
+		_tag(at, label, col["honey"] if lot["kind"] == "game" else (col["vellum"] if lot["kind"] == "site" else col["card"]), col["ink"], 11, anchor)
 
 
 ## E6: the village's river (the workbench refuses a lot in it), drawn at its width in the palette's water.
@@ -157,23 +165,12 @@ func _road() -> void:
 		draw_dashed_line(a + n * rw * 0.32, b + n * rw * 0.32, Color(col["wood_dark"], 0.37), 1.0, maxf(5, rw * 0.57), true, true)
 
 
-func _plot(c: Vector2, r: float, lot: Dictionary, hit: bool) -> void:
-	var site: bool = lot["kind"] == "site"
-	var stroke: Color = col["hazard"] if hit else col["trunk"]
-	draw_circle(c, r, Color(col["dirt"] if site else col["plot"], 0.82 if site else 0.72), true, -1, true)
-	if r > 55:
-		# The approach is worn into the meadow and the orchard floor shows through it.
-		var worn := PackedVector2Array()
-		for i: int in 21:
-			var t := i / 20.0
-			var local := Vector2(lerpf(-0.78, 0.72, t), 0.29 - 0.16 * sin(t*TAU))
-			worn.append(c + local * r)
-		draw_polyline(worn, Color(col["sand"], 0.68), r * 0.065, true)
-		draw_polyline(worn, Color(col["wood_dark"], 0.13), 1, true)
-	draw_arc(c, r * 0.86, 0.15, 2.4, 40, Color(col["wood_dark"], 0.19), maxf(1, r * 0.025), true)
-	var fence: float = model.fence_radius(lot.r) * _scale
-	_dashed_circle(c, fence + model.FENCE_GAP_M * 0.5 * _scale, Color(col["ink"], 0.65), 1.0)
-	_fence(c, fence, stroke, hit)
+func _plot(c: Vector2, half_size: Vector2, road: Vector2, lot: Dictionary, hit: bool) -> void:
+	var site: bool = lot.kind == "site" or lot.get("stamp", "") == "site"
+	var tint: Color = col.dirt if site else col.plot
+	_pad(lot.at, half_size, lot.get("yaw", 0.0), Color(tint.lerp(col.hazard, 0.3) if hit else tint, 0.50))
+	_approach(lot.at, lot.r, road)
+	var r := minf(half_size.x, half_size.y) * _scale
 	var key := str(lot.get("stamp", "site" if site else str(lot["id"])))
 	if Art.SYMBOLS.has(key):
 		var w := r * 1.52
@@ -187,30 +184,12 @@ func _plot(c: Vector2, r: float, lot: Dictionary, hit: bool) -> void:
 			_stamp("stone", c + Vector2(0.54, 0.31) * r, r * 0.25)
 			w = r * 1.3
 		_stamp(key, c - Vector2(0, w * 0.10), w)
+		_annotations.append(Rect2(c - Vector2(0.43, 0.36) * w, Vector2(0.86, 0.59) * w))
 
 
 func _stamp(key: String, c: Vector2, width: float) -> void:
 	var extent := Vector2(width, width * 0.72)
 	draw_texture_rect(Art.stamp(key, col, width), Rect2(c - extent * 0.5, extent), false)
-
-
-func _fence(c: Vector2, r: float, stroke: Color, hit: bool) -> void:
-	var h := clampf(_scale * 1.65, 2.1, 9.5)
-	var rail := clampf(_scale * 0.49, 0.95, 2.7)
-	var count := clampi(roundi(TAU * r / maxf(10, 8 * _scale)), 12, 55)
-	draw_arc(c, r, 0, TAU, 96, Color(col["trunk"], 0.52), rail, true)
-	for up: float in [0.27, 0.80]:
-		var level := c - Vector2(0, h * up)
-		draw_arc(level, r, 0, TAU, 96, stroke, rail + 1.0, true)
-		draw_arc(level - Vector2(0, 0.55), r, 0, TAU, 96, col["brick"] if hit else col["wood"], rail, true)
-	for j: int in count:
-		var foot := c + Vector2.from_angle(TAU * j / count) * r
-		var top := foot - Vector2(0, h + rail)
-		draw_line(foot, foot + Vector2(h * 0.93, h * 0.29), Color(col["shade"], 0.26), rail + 1.3, true)
-		draw_line(foot, top, stroke, rail + 1.4, true)
-		draw_line(top, top + Vector2(0, rail), col["sand"], rail + 1.3, true)
-	if hit:
-		draw_arc(c, r, 0, TAU, 96, col["hazard"], 2.5, true)
 
 
 func _furniture() -> void:
@@ -238,25 +217,18 @@ func _furniture() -> void:
 func _ghost() -> void:
 	var ok: bool = model.fits()
 	var c: Vector2 = to_screen(model.at)
-	var r: float = model.fence_radius(model.lot_radius()) * _scale
+	var r: float = model.edge_radius(model.lot_radius()) * _scale
 	var tint: Color = col["honey"] if ok else col["hazard"]
-	draw_circle(c, r, Color(tint, 0.36), true, -1, true)
-	# Keep the requested lot radius visible inside its surveyed fence.
-	draw_arc(c, model.lot_radius() * _scale, 0, TAU, 72, Color(col["paper"], 0.48), 1.0, true)
-	draw_arc(c, r, 0, TAU, 72, col["ink"], 4.0, true)
-	draw_arc(c, r, 0, TAU, 72, tint, 2.0, true)
-	for i: int in 4:
-		var peg := c + Vector2.from_angle(i * PI / 2) * r
-		draw_rect(Rect2(peg - Vector2(2.5, 2.5), Vector2(5, 5)), col["ink"])
-		draw_rect(Rect2(peg - Vector2(1.5, 1.5), Vector2(3, 3)), tint)
-	if ring_before > 0.0 and absf(ring_before - model.lot_radius()) > 0.5:
-		_dashed_circle(c, ring_before * _scale, col["ink"], 2.0)
-		_tag(c + Vector2(-ring_before * _scale * 0.7 - 60.0, ring_before * _scale * 0.7), "now: ring %d m" % int(ring_before), col["paper"], col["ink"])
-	_dashed_circle(c, r + model.FENCE_GAP_M * 0.5 * _scale, col["ink"], 1.0)
-	# footprint, turned by yaw
 	var f: Vector3 = model.footprint()
 	var hx: float = f.x * 0.5
 	var hz: float = f.y * 0.5
+	_pad(model.at, Vector2(hx, hz) + Vector2.ONE * 2.0, model.yaw, Color(tint, 0.58))
+	if not read_only or radius_before > 0.0:
+		_dashed_circle(c, r, Color(col.ink, 0.45), 1.2)
+	if radius_before > 0.0 and absf(radius_before - model.lot_radius()) > 0.5:
+		var previous: float = model.edge_radius(radius_before) * _scale
+		_dashed_circle(c, previous, Color(col.ink, 0.35), 1.0)
+		_tag(c + Vector2(-previous * 0.7 - 60, previous * 0.7), "current radius %d m" % int(radius_before), col.paper, col.ink)
 	var poly: PackedVector2Array = _rect(-hx, -hz, hx, hz)
 	var shadow := poly.duplicate()
 	for i: int in shadow.size():
@@ -275,9 +247,7 @@ func _ghost() -> void:
 	# gate and path
 	var g: Vector2 = model.gate()
 	var q: Vector2 = model.road_point(model.at)
-	_dashed_line(to_screen(g), to_screen(q), col["ink"], 2.0)
-	var gs: Vector2 = c + model.at.direction_to(q) * r
-	Overlay.entrance(self, gs, to_screen(q) - gs)
+	var gs := _approach(model.at, model.lot_radius(), q, true)
 	if close_up or proposals.is_empty():
 		_tag(gs + Vector2(8, -8), "gate · %d m path" % roundi(model.path_m()), col["paper"], col["ink"])
 	if close_up:
@@ -301,7 +271,7 @@ func _ghost() -> void:
 	var away: Vector2 = (c - gs).normalized() if gs.distance_to(c) > 0.5 else Vector2(0, 1)
 	var at: Vector2 = c + away * (r + 6.0) + Vector2(-20, -10)
 	if lines.is_empty():
-		_tag(at, "fits", col["green"], col["card"])
+		_tag(at, "fits" if read_only else "Your lot fits", col["green"], col["card"])
 	else:
 		_tag(at, lines[0], col["hazard"] if not ok else col["honey"], col["paper"] if not ok else col["ink"])
 
@@ -312,14 +282,19 @@ func _clearance_hatching(c: Vector2, r: float) -> void:
 	var ring := _circle_polygon(c, r)
 	for lot: Dictionary in model.plots:
 		var center := to_screen(lot["at"])
-		var radius: float = model.fence_radius(lot.r) * _scale
+		var radius: float = model.edge_radius(lot.r) * _scale
 		if c.distance_to(center) < r + radius:
 			for patch: PackedVector2Array in Geometry2D.intersect_polygons(ring, _circle_polygon(center, radius)):
 				_hatch(patch)
-	for i: int in range(1, model.road_samples.size()):
-		var a := to_screen(model.road_samples[i-1])
-		var b := to_screen(model.road_samples[i])
-		var n: Vector2 = (b - a).normalized().orthogonal() * model.road_half_m * _scale
+	_hatch_strip(ring, c, r, model.road_samples, model.road_half_m)
+	_hatch_strip(ring, c, r, model.river_samples, model.river_half_m)
+
+
+func _hatch_strip(ring: PackedVector2Array, c: Vector2, r: float, samples: PackedVector2Array, half_width: float) -> void:
+	for i: int in range(1, samples.size()):
+		var a := to_screen(samples[i-1])
+		var b := to_screen(samples[i])
+		var n := (b - a).normalized().orthogonal() * half_width * _scale
 		if a.distance_squared_to(b) < 0.01 or c.distance_to(Geometry2D.get_closest_point_to_segment(c, a, b)) > r + n.length():
 			continue
 		for patch: PackedVector2Array in Geometry2D.intersect_polygons(ring, PackedVector2Array([a-n, b-n, b+n, a+n])):

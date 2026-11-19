@@ -13,7 +13,7 @@ var _origin: Vector2 = Vector2.ZERO  # screen position of the world point _view.
 var _view: Rect2 = Rect2()           # the world rectangle the map shows
 var close_up: bool = false           # false: the whole village; true: the lot and its neighbours at a scale where you show
 var read_only: bool = false          # the game sheet: the lot is chosen, nothing moves
-var ring_before: float = 0.0         # the game sheet: the ring as it stands while a change is only picked (dashed)
+var radius_before := 0.0             # the game sheet compares a pending change with the current lot
 var board: bool = false             # E5: the home board: no ghost; a click on a game's lot says which (lot_clicked)
 var bays: Array = []                 # the game sheet: [{title, state}] in plan order, drawn as the site's bays
 const BAY_WORDS: Dictionary = {"queued": "waiting", "running": "building", "verifying": "checking", "blocked": "on hold",
@@ -49,6 +49,10 @@ func to_screen(w: Vector2) -> Vector2:
 
 func to_world(s: Vector2) -> Vector2:
 	return _view.position + (s - _origin) / _scale
+
+
+static func _plot_half(lot: Dictionary) -> Vector2:
+	return lot.pad_size * 0.5 if lot.has("pad_size") else Vector2.ONE * float(lot.r)
 
 
 func _circle_polygon(c: Vector2, r: float) -> PackedVector2Array:
@@ -87,23 +91,72 @@ func _lp(p: Vector2) -> Vector2:
 
 ## A rounded rectangle (or a stadium) in footprint metres.
 func _round(hx: float, hz: float, r: float) -> PackedVector2Array:
+	return Transform2D(model.yaw, to_screen(model.at)) * _rounded_points(Vector2(hx, hz) * _scale, r * _scale)
+
+
+static func _rounded_points(half_size: Vector2, r: float) -> PackedVector2Array:
 	var out: PackedVector2Array = PackedVector2Array()
+	var hx := half_size.x
+	var hz := half_size.y
 	r = minf(r, minf(hx, hz))
 	var cs: Array = [Vector2(hx - r, hz - r), Vector2(-hx + r, hz - r), Vector2(-hx + r, -hz + r), Vector2(hx - r, -hz + r)]
 	for i: int in 4:
 		for k: int in 7:
 			var a: float = PI * 0.5 * i + PI * 0.5 * k / 6.0
-			out.append(_lp(cs[i] + Vector2(cos(a), sin(a)) * r))
+			out.append(cs[i] + Vector2(cos(a), sin(a)) * r)
 	return out
+
+
+## The flat footprint fades into the meadow along a rounded shoulder.
+func _pad(at: Vector2, half_size: Vector2, yaw: float, tint: Color) -> void:
+	var frame := Transform2D(yaw, to_screen(at))
+	var corner := minf(5.0, minf(half_size.x, half_size.y) * 0.2)
+	var shoulder := clampf(minf(half_size.x, half_size.y) * 0.3, 4.0, 10.0)
+	var inner := frame * _rounded_points(half_size * _scale, corner * _scale)
+	var outer := frame * _rounded_points((half_size + Vector2.ONE * shoulder) * _scale, (corner + shoulder) * _scale)
+	draw_colored_polygon(inner, tint)
+	var clear := Color(tint, 0.0)
+	var tones := PackedColorArray([tint, tint, clear, clear])
+	for i in inner.size():
+		var j := (i + 1) % inner.size()
+		draw_polygon(PackedVector2Array([inner[i], inner[j], outer[j], outer[i]]), tones)
+
+
+## The village spur starts at r + 0.5. The two rails stand across it at r + 3.6, with its centre open.
+func _approach(at: Vector2, radius: float, road: Vector2, proposed := false) -> Vector2:
+	var dir := at.direction_to(road)
+	var gate := to_screen(at + dir * model.edge_radius(radius))
+	if dir == Vector2.ZERO or model.road_samples.is_empty():
+		return gate
+	var start := to_screen(at + dir * (radius + 0.5))
+	var end := to_screen(road)
+	var width := maxf(2.0, model.road_half_m * 1.6 * _scale)
+	draw_line(start, end, Color(col.wood_dark, 0.65), width + 1.2, true)
+	draw_line(start, end, col.sand if proposed else col.road, width, true)
+	if proposed:
+		_dashed_line(start, end, col.wood_dark, 1.1)
+	var side := dir.orthogonal() * _scale
+	var gap: float = model.road_half_m * 0.8 + 2.0
+	var length := clampf(radius * 0.24, 4.0, 10.0)
+	var pen := clampf(_scale * 0.4, 0.85, 2.0)
+	var reach := side * (gap + length)
+	_annotations.append(Rect2(gate - reach, Vector2.ZERO).expand(gate + reach).grow(pen + 1.0))
+	for hand: float in [-1.0, 1.0]:
+		var a := gate + side * hand * gap
+		var b := a + side * hand * length
+		draw_line(a, b, col.trunk, pen + 1.8, true)
+		draw_line(a, b, col.wood, pen, true)
+		for post: Vector2 in [a, b]:
+			draw_circle(post, pen + 0.65, col.trunk, true, -1, true)
+	return gate
 
 
 func _line(a: Vector2, b: Vector2, color: Color, w: float) -> void:
 	draw_line(_lp(a), _lp(b), color, w, true)
 
 
-## What the game is, seen from above, by its shape: a rink, a pitch, a court, a track, a slalom, a course, an arena,
-## a yard. Drawn inside the footprint; stands as bands along the long sides when an answer adds them.
-func _tag(at: Vector2, text: String, bg: Color, fg: Color, fs: int = 12) -> void:
+## If a crowded label shifts away, join it to the symbol it identifies.
+func _tag(at: Vector2, text: String, bg: Color, fg: Color, fs: int = 12, anchor := Vector2.INF) -> void:
 	var extent := Vector2(_w(text, fs, true) + 12, fs + 8)
 	var chosen := Rect2(at, extent)
 	var best := INF
@@ -119,6 +172,11 @@ func _tag(at: Vector2, text: String, bg: Color, fg: Color, fs: int = 12) -> void
 		if is_zero_approx(cost):
 			break
 	_annotations.append(chosen)
+	if anchor.is_finite():
+		var end := anchor.clamp(chosen.position, chosen.end)
+		if anchor.distance_to(end) > 6.0:
+			draw_line(anchor, end, col.trunk, 1.1, true)
+			draw_circle(anchor, 1.7, col.trunk, true, -1, true)
 	draw_rect(Rect2(chosen.position + Vector2(1, 2), extent), Color(col["ink"], 0.32))
 	draw_rect(chosen, bg)
 	draw_rect(chosen, col["trunk"], false, 1.2)

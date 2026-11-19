@@ -12,9 +12,9 @@ A rink by another sports venue could form a sports quarter. A quiet game may sui
 Give each a short, one-line reason in the player's words using only that candidate's facts and the player's answers. Use no new numbers.
 If no measured place suits, or too few are available, you can suggest your own centre and omit candidate.
 For your own place, explain the fit from the answers and village table without claiming unmeasured distances or ground conditions.
-Every fence stands 3.6 m beyond its lot radius. Keep the whole fence inside the village bounds and leave at least 2 m between fences.
-Keep the fence at least 1 m off the road edge and 2 m off the riverbank. Measure each edge from its centreline using its half width.
-The straight walk from the gate to the nearest road sample must clear the river and every other lot's fence. Prefer a short walk and gentle ground.
-Space proposals at least 5 m apart. Yaw turns the footprint within its ring.
+The lot edge is 3.6 m beyond the lot radius. Keep each lot edge inside the village bounds and leave at least 2 m between lot edges.
+Keep the lot edge at least 1 m off the road edge and 2 m off the riverbank. Measure each edge from its centreline using its half width.
+The straight walk from the gate to the nearest road sample must clear the river and every other lot's edge. Prefer a short walk and gentle ground.
+Space proposals at least 5 m apart. Yaw turns the footprint on its pad.
 {{schema}}
 {{feedback}}
