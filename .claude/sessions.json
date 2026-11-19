@@ -37,24 +37,6 @@
         "docs/shifts/2026-11-19-day/lanes/parkour/**"
       ],
       "note": "day 19 Nov lane parkour round 2, .claude/worktrees/d19-parkour3 (moves stage), until 16:45"
-    },
-    {
-      "id": "d19-flight",
-      "scope": [
-        "engine/kernel/api/tl_biped.gd",
-        "engine/kernel/api/tl_chase_cam.gd",
-        "engine/kernel/world/visitor.gd",
-        "engine/kernel/world/moves_demo.gd",
-        "engine/kernel/world/flight_cam_bar_case.gd",
-        "engine/kernel/world/swing_soft_case.gd",
-        "engine/kernel/world/terrain/walker_grips.gd",
-        "engine/kernel/world/terrain/crown_camera.gd",
-        "engine/kernel/runner/biped_grip_case.gd",
-        "engine/kernel/runner/ledge_fit_case.gd",
-        "engine/kernel/API.md",
-        "docs/shifts/2026-11-19-day/lanes/flight/**"
-      ],
-      "note": "day 19 Nov lane flight round 3 redo, .claude/worktrees/d19-flight4, until 16:30"
     }
   ]
 }
