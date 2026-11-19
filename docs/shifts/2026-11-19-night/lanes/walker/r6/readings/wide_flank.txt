@@ -1,0 +1,65 @@
+--- band.py ---
+bank boil frames=32 band=0..90 mean=1.103 flips_pct=1.322 (mean change per frame, grey levels; share of pixels changing by more than 24)
+bluff boil frames=32 band=0..90 mean=1.825 flips_pct=2.006 (mean change per frame, grey levels; share of pixels changing by more than 24)
+--- measure.py ---
+bank_310 crest 160 ink 142 grazing 120
+  1..5% n=31 ink=20 covered=64.52% median_z=22.1m
+  5..15% n=64 ink=60 covered=93.75% median_z=21.9m
+  15..50% n=47 ink=45 covered=95.74% median_z=26.8m
+  50..inf% n=18 ink=17 covered=94.44% median_z=53.7m
+bluff_120 crest 1057 ink 1046 grazing 785
+  1..5% n=30 ink=21 covered=70.00% median_z=19.5m
+  5..15% n=82 ink=80 covered=97.56% median_z=19.0m
+  15..50% n=132 ink=132 covered=100.00% median_z=10.8m
+  50..inf% n=813 ink=813 covered=100.00% median_z=23.0m
+shoulder crest 886 ink 869 grazing 814
+  1..5% n=35 ink=22 covered=62.86% median_z=33.9m
+  5..15% n=299 ink=299 covered=100.00% median_z=28.8m
+  15..50% n=179 ink=176 covered=98.32% median_z=19.2m
+  50..inf% n=373 ink=372 covered=99.73% median_z=11.0m
+plane crest 0 ink 0 grazing 0
+  1..5% n=0 ink=0 empty
+  5..15% n=0 ink=0 empty
+  15..50% n=0 ink=0 empty
+  50..inf% n=0 ink=0 empty
+flat grazing false pixels=0/279300
+bank motion all pairs=10253080 mean=1.1066 flips=93169 pct=0.90869 noink_flips=89225 crossed_only_with_ink=8892
+bank motion crest pairs=0 empty
+bank motion crease pairs=21812 mean=13.0431 flips=5132 pct=23.52833 noink_flips=2246 crossed_only_with_ink=4618
+bank motion other_outer pairs=5 mean=60.6000 flips=5 pct=100.00000 noink_flips=0 crossed_only_with_ink=5
+bank motion elsewhere pairs=10231263 mean=1.0811 flips=88032 pct=0.86042 noink_flips=86979 crossed_only_with_ink=4269
+bluff motion all pairs=10298555 mean=1.1983 flips=90516 pct=0.87892 noink_flips=55670 crossed_only_with_ink=35033
+bluff motion crest pairs=253180 mean=5.9418 flips=22234 pct=8.78189 noink_flips=15 crossed_only_with_ink=22225
+bluff motion crease pairs=0 empty
+bluff motion other_outer pairs=218213 mean=5.0048 flips=13291 pct=6.09084 noink_flips=1242 crossed_only_with_ink=12146
+bluff motion elsewhere pairs=9827162 mean=0.9915 flips=54991 pct=0.55958 noink_flips=54413 crossed_only_with_ink=662
+--- strong.py ---
+bank_310 terrain HEAD_pixels=7463 head mean=0.9593 retained=100.00% baseline mean=0.9593 retained=100.00% wide_flank mean=0.9593 retained=100.00%
+bank_310 review crop HEAD_pixels=2 head mean=0.9314 retained=100.00% baseline mean=0.9314 retained=100.00% wide_flank mean=0.9314 retained=100.00%
+bank_310 crest HEAD_pixels=19 head mean=0.9606 retained=100.00% baseline mean=0.9606 retained=100.00% wide_flank mean=0.9606 retained=100.00%
+bluff_120 terrain HEAD_pixels=11638 head mean=0.9579 retained=100.00% baseline mean=0.9579 retained=100.00% wide_flank mean=0.9579 retained=100.00%
+bluff_120 review crop HEAD_pixels=1668 head mean=0.9605 retained=100.00% baseline mean=0.9605 retained=100.00% wide_flank mean=0.9605 retained=100.00%
+bluff_120 crest HEAD_pixels=797 head mean=0.9604 retained=100.00% baseline mean=0.9604 retained=100.00% wide_flank mean=0.9604 retained=100.00%
+shoulder terrain HEAD_pixels=7898 head mean=0.9596 retained=100.00% baseline mean=0.9596 retained=100.00% wide_flank mean=0.9596 retained=100.00%
+shoulder review crop HEAD_pixels=1138 head mean=0.9597 retained=100.00% baseline mean=0.9597 retained=100.00% wide_flank mean=0.9597 retained=100.00%
+shoulder crest HEAD_pixels=374 head mean=0.9607 retained=100.00% baseline mean=0.9607 retained=100.00% wide_flank mean=0.9607 retained=100.00%
+plane terrain HEAD_pixels=9077 head mean=0.9575 retained=100.00% baseline mean=0.9575 retained=100.00% wide_flank mean=0.9575 retained=100.00%
+plane review crop HEAD_pixels=0
+plane crest HEAD_pixels=0
+--- verify.py ---
+HEAD vs baseline depth: 66/66 byte-identical
+HEAD vs baseline removed: 66/66 byte-identical
+HEAD vs wide_flank depth: 66/66 byte-identical
+HEAD vs wide_flank removed: 66/66 byte-identical
+flat head: nonzero opacity codes=6344/279300 max=87/255
+flat baseline: nonzero opacity codes=0/279300 max=0/255
+flat wide_flank: nonzero opacity codes=0/279300 max=0/255
+head taps 35 without AO, 44 with AO, +0 on crest refetch
+baseline taps 35 without AO, 44 with AO, +5 on crest refetch
+  bank_310 refetch=39.16% average_extra=1.958 taps/pixel
+  bluff_120 refetch=33.45% average_extra=1.672 taps/pixel
+  shoulder refetch=34.43% average_extra=1.722 taps/pixel
+wide_flank taps 35 without AO, 44 with AO, +5 on crest refetch
+  bank_310 refetch=39.16% average_extra=1.958 taps/pixel
+  bluff_120 refetch=33.45% average_extra=1.672 taps/pixel
+  shoulder refetch=34.43% average_extra=1.722 taps/pixel

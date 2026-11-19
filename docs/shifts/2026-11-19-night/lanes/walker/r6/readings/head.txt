@@ -1,0 +1,35 @@
+--- band.py ---
+bank boil frames=32 band=0..90 mean=1.103 flips_pct=1.322 (mean change per frame, grey levels; share of pixels changing by more than 24)
+bluff boil frames=32 band=0..90 mean=1.822 flips_pct=2.010 (mean change per frame, grey levels; share of pixels changing by more than 24)
+--- measure.py ---
+bank_310 crest 160 ink 33 grazing 120
+  1..5% n=31 ink=1 covered=3.23% median_z=22.1m
+  5..15% n=64 ink=6 covered=9.38% median_z=21.9m
+  15..50% n=47 ink=13 covered=27.66% median_z=26.8m
+  50..inf% n=18 ink=13 covered=72.22% median_z=53.7m
+bluff_120 crest 1057 ink 817 grazing 785
+  1..5% n=30 ink=0 covered=0.00% median_z=19.5m
+  5..15% n=82 ink=0 covered=0.00% median_z=19.0m
+  15..50% n=132 ink=108 covered=81.82% median_z=10.8m
+  50..inf% n=813 ink=709 covered=87.21% median_z=23.0m
+shoulder crest 886 ink 414 grazing 814
+  1..5% n=35 ink=2 covered=5.71% median_z=33.9m
+  5..15% n=299 ink=33 covered=11.04% median_z=28.8m
+  15..50% n=179 ink=35 covered=19.55% median_z=19.2m
+  50..inf% n=373 ink=344 covered=92.23% median_z=11.0m
+plane crest 0 ink 0 grazing 0
+  1..5% n=0 ink=0 empty
+  5..15% n=0 ink=0 empty
+  15..50% n=0 ink=0 empty
+  50..inf% n=0 ink=0 empty
+flat grazing false pixels=0/279300
+bank motion all pairs=10253080 mean=1.1066 flips=93169 pct=0.90869 noink_flips=89225 crossed_only_with_ink=8892
+bank motion crest pairs=0 empty
+bank motion crease pairs=21812 mean=13.0431 flips=5132 pct=23.52833 noink_flips=2246 crossed_only_with_ink=4618
+bank motion other_outer pairs=5 mean=60.6000 flips=5 pct=100.00000 noink_flips=0 crossed_only_with_ink=5
+bank motion elsewhere pairs=10231263 mean=1.0811 flips=88032 pct=0.86042 noink_flips=86979 crossed_only_with_ink=4269
+bluff motion all pairs=10298555 mean=1.1498 flips=83030 pct=0.80623 noink_flips=55670 crossed_only_with_ink=27396
+bluff motion crest pairs=253180 mean=5.6499 flips=22291 pct=8.80441 noink_flips=15 crossed_only_with_ink=22282
+bluff motion crease pairs=0 empty
+bluff motion other_outer pairs=145256 mean=3.7835 flips=5061 pct=3.48419 noink_flips=7 crossed_only_with_ink=5058
+bluff motion elsewhere pairs=9900119 mean=0.9961 flips=55678 pct=0.56240 noink_flips=55648 crossed_only_with_ink=56

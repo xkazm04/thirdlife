@@ -44,4 +44,20 @@ func _run() -> void:
 	var ok: bool = worst >= -FLOOR_TOL
 	print("RIGCASE slide_floor %s lowest=%.3f m at %s (tolerance -%.2f)" % ["ok" if ok else "fail", worst, worst_at, FLOOR_TOL])
 	rig.free()
+	# lane walker round 3: the entry, every frame of the first 24, from standing with the default blend
+	var rig2: Node = TLRigs.build("biped")
+	root.add_child(rig2)
+	rig2.call("play", &"slide")
+	var ew: float = INF
+	var ew_at: String = ""
+	for f: int in range(1, 25):
+		rig2.call("tick", f)
+		var sk2: Skeleton3D = rig2.get_node("Model/Skeleton3D")
+		var lo2: Array = _lowest(sk2, TLRigBipedMesh.build_mesh(sk2, TLRigBipedMesh.LOOK, true, false))
+		if float(lo2[0]) < ew:
+			ew = float(lo2[0])
+			ew_at = "%s@f%d" % [lo2[1], f]
+	var ok2: bool = ew >= -FLOOR_TOL
+	print("RIGCASE slide_entry %s lowest=%.3f m at %s (tolerance -%.2f)" % ["ok" if ok2 else "fail", ew, ew_at, FLOOR_TOL])
+	rig2.free()
 	quit()

@@ -5,13 +5,18 @@ extends TLChaseCam
 ## normal close cast. A crown actually containing the look point is still looked out of.
 ## All pulls and up/down swings behind the visitor take precedence. If raw leaves
 ## and solid walls block every such placement, the last resort is a sideways swing.
-## The owner may revisit that choice. An ordinary close wall keeps the head-on pull.
+## The owner may revisit that choice: TL_CROWN_SWING=behind (lane walker, 19 Nov round 3) never swings sideways; the
+## camera then keeps the nearest placement behind him (it may stand in leaves). Absent or `sideways`: as described.
+## An ordinary close wall keeps the head-on pull.
 const CANOPY := 4
 var crowns: Dictionary = {}
 var repair := preload("res://kernel/world/terrain/crown_clearance.gd").new()
 var clearance := PhysicsShapeQueryParameters3D.new()
 var sphere := SphereShape3D.new()
 var nearby: Array = []  # [prototype, inverse transform] for padded starts outside actual foliage
+var yaws: Array = [0.0] if OS.get_environment("TL_CROWN_SWING") == "behind" else [0.0, 30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 150.0, -150.0, 180.0]
+var side_ticks: int = 0                  ## read only: ticks the camera stood swung sideways (yaw != 0)
+var max_side: float = 0.0                ## read only: the largest sideways swing so far (degrees)
 
 
 func _init() -> void:
@@ -62,7 +67,7 @@ func _avoid(now: bool) -> void:
 	_start(st)
 	avoid_mask = mask
 	var swings := _swings(elev)
-	for yaw: float in [0.0, 30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 150.0, -150.0, 180.0]:
+	for yaw: float in yaws:
 		var horizontal := level.rotated(Vector3.UP, deg_to_rad(yaw))
 		for angle in swings:
 			var pitch := deg_to_rad(elev + angle)
@@ -74,6 +79,9 @@ func _avoid(now: bool) -> void:
 				_lift = angle
 				avoid_lift = angle
 				avoid_pull = length - reach
+				if yaw != 0.0:
+					side_ticks += 1
+					max_side = maxf(max_side, absf(yaw))
 				_ray.collision_mask = mask
 				return
 	_ray.collision_mask = mask

@@ -7,10 +7,10 @@ if [ -z "$FILTER" ] || [[ "style.walker.ink" == *"$FILTER"* ]]; then
   ink_error=""
   MSYS_NO_PATHCONV=1 "$ink_godot" --headless --path "$ink_engine" --quit-after 4 \
     --script res://rigs/review/walker_ink_case.gd >"$ink_log" 2>&1 || ink_error="Godot exit $?"
-  if ! tr -d '\r' <"$ink_log" | grep -Fxq 'INK_CORE completed=11 failed=0'; then
+  if ! tr -d '\r' <"$ink_log" | grep -Fxq 'INK_CORE completed=14 failed=0'; then
     ink_error="${ink_error:+$ink_error, }$(grep -aE 'ink case |INK_CORE|ERROR' "$ink_log" | head -1)"
     ink_error="${ink_error:-missing completion line}"
   fi
   if grep -aqE 'SCRIPT ERROR|^ERROR:' "$ink_log"; then ink_error="engine error in $ink_log"; fi
-  verdict style.walker.ink "$ink_error" "7 body/depth cases, 3 terrain tap profiles and 1 strong silhouette"
+  verdict style.walker.ink "$ink_error" "7 body/depth cases, 4 terrain tap profiles, 1 strong silhouette and 2 brush flanks"
 fi

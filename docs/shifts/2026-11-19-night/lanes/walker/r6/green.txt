@@ -1,0 +1,5 @@
+PASS style.walker.ink  (7 body/depth cases, 4 terrain tap profiles, 1 strong silhouette and 2 brush flanks)
+selftest: 1 passed, 0 failed (reports in docs/shifts/2026-11-19-night/lanes/walker/r6/raw/green)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+INK_CORE completed=14 failed=0

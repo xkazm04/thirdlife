@@ -13,3 +13,17 @@ if [ -z "$FILTER" ] || [[ "rig.walker.slide_floor" == *"$FILTER"* ]]; then
   elif echo "$ws_out" | grep -aq 'SCRIPT ERROR'; then why="script error: $(echo "$ws_out" | grep -a 'SCRIPT ERROR' | head -1)"; fi
   verdict rig.walker.slide_floor "$why" "${ws_line#RIGCASE slide_floor ok }"
 fi
+
+# Lane walker round 3: the slide's entry (frames 1-24 from standing) keeps the biped above the floor too; before, the
+# right foot dipped 0.148 m under it around frame 6. Same script, its second line.
+if [ -z "$FILTER" ] || [[ "rig.walker.slide_entry" == *"$FILTER"* ]]; then
+  GG="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
+  EG="$(cd "$HERE/.." && pwd)"; command -v cygpath >/dev/null 2>&1 && EG="$(cygpath -m "$EG")"
+  we_out="$(MSYS_NO_PATHCONV=1 timeout 200 "$GG" --headless --path "$EG" --script res://rigs/review/walker_slide_floor.gd 2>&1 | tr -d '\015' | grep -a '^RIGCASE\|SCRIPT ERROR')"
+  we_line="$(echo "$we_out" | grep -a '^RIGCASE slide_entry ' | head -1)"
+  why=""
+  if [ -z "$we_line" ]; then why="no RIGCASE slide_entry line (${we_out:0:120})"
+  elif [[ "$we_line" != "RIGCASE slide_entry ok "* ]]; then why="${we_line#RIGCASE }"
+  elif echo "$we_out" | grep -aq 'SCRIPT ERROR'; then why="script error: $(echo "$we_out" | grep -a 'SCRIPT ERROR' | head -1)"; fi
+  verdict rig.walker.slide_entry "$why" "${we_line#RIGCASE slide_entry ok }"
+fi

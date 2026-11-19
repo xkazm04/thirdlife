@@ -1,0 +1,7 @@
+FAIL style.walker.ink: Godot exit 1, ink case close terrain crest expected opacity in [0.5, 0.55] got 0.624
+selftest: 0 passed, 1 failed (reports in docs/shifts/2026-11-19-night/lanes/walker/r6/raw/red)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ink case close terrain crest expected opacity in [0.5, 0.55] got 0.624
+ink case wide terrain crest flank expected 0.32999544833864 got 0.0
+INK_CORE completed=14 failed=2

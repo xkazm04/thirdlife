@@ -374,6 +374,13 @@ func _report_at_end() -> void:
 			"space": s}, "", false))
 
 
+## Lane walker round 3: how often the camera swung sideways round him near crowns (crown_camera.gd, TL_CROWN_SWING).
+func _exit_tree() -> void:
+	if cam != null and cam.get("side_ticks") != null:
+		print(JSON.stringify({"schema": "tl.view/1", "kind": "visitor_cam", "crown_swing": OS.get_environment("TL_CROWN_SWING"),
+			"side_ticks": int(cam.get("side_ticks")), "max_side_deg": float(cam.get("max_side"))}, "", false))
+
+
 func snap() -> void:
 	if cam != null:
 		cam.snap()
