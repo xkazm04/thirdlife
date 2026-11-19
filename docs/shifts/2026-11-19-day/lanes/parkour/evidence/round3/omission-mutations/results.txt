@@ -1,0 +1,2 @@
+landing-disabled exit 1 skimming beam supported true, missed landing returned to pad two false, falls 0, finish time
+weight-disabled exit 1 12 clean timed finishes. Charging took a hit at [], cost [] ticks; no contact at [0, 13, 26, 39, 52, 65, 78, 91, 104, 117, 130, 143]; unequal clean times at [0, 13, 65, 78, 91, 143]

@@ -12,9 +12,15 @@ var slope_drop := 0.0
 var slope_y := 0.0
 var jump_frame := -1
 var chute_frame := -1
+var hang_frame := -1
+var mantle_frame := -1
+var catches := [-1, -1]
+var releases := [-1, -1]
+var last_grip := 0
 var on_beam := false
 var passed_weight := false
 var jumped_wall := false
+var caught_crest := false
 var tower_air := [false, false]
 
 
@@ -22,7 +28,7 @@ func _bot_tick(frame: int) -> void:
 	state = ctx.pack_state()
 	if state.checkpoint >= 4 or state.state == "over":
 		if state.state != "over":
-			_watch_return()
+			_watch_return(frame)
 			_return_inputs(frame)
 		hand.tick()
 		return
@@ -75,9 +81,15 @@ func _restart_run() -> void:
 	slope_drop = 0.0
 	jump_frame = -1
 	chute_frame = -1
+	hang_frame = -1
+	mantle_frame = -1
+	catches = [-1, -1]
+	releases = [-1, -1]
+	last_grip = 0
 	on_beam = false
 	passed_weight = false
 	jumped_wall = false
+	caught_crest = false
 	tower_air = [false, false]
 	through = false
 	last_falls = 0
@@ -87,16 +99,34 @@ func _restart_run() -> void:
 	side_action = &""
 	side_press_seen = false
 	last_z = 0.0
+	jump_response = -1.0
+	observed_request = -100
+	grip_request = -100
+	target_grip = 0
 	marks.clear()
 
 
-func _watch_return() -> void:
+func _watch_return(frame: int) -> void:
+	if state.checkpoint == 12:
+		if state.motion == "hang" and hang_frame < 0:
+			hang_frame = frame
+		if state.motion == "mantle" and mantle_frame < 0:
+			mantle_frame = frame
+	if state.checkpoint == 13:
+		var grip := int(state.get("grip", 0))
+		if grip > 0 and catches[grip - 1] < 0:
+			catches[grip - 1] = frame
+		if last_grip > 0 and state.motion == "air" and releases[last_grip - 1] < 0:
+			releases[last_grip - 1] = frame
+		last_grip = grip
 	var t := float(state.return_x)
 	if state.motion == "ground" and absf(state.return_z) < float(state.beam_width) / 2:
 		if state.checkpoint == 8 and t < state.swing_x:
 			on_beam = true
 		if on_beam and state.checkpoint == 8 and t > state.swing_x + 0.9:
 			passed_weight = true
+	if state.checkpoint == 9 and state.motion in ["hang", "mantle"]:
+		caught_crest = true
 	if state.checkpoint == 9 and state.motion == "air" and t > state.wall_lip and t < state.crest:
 		jumped_wall = jumped_wall or (state.speed > 6 and state.height > state.wall_top + 0.4)
 	for i: int in 2:
@@ -112,11 +142,20 @@ func _bot_done() -> bool:
 func _bot_result() -> Dictionary:
 	var ok: bool = state.get("reason") == "laps" and crossed == [true, true] and under >= 0 and landing >= 0 \
 		and slide_start > landing and slide_start <= landing + 2 and slope_frames > 4 and slope_drop > 2.0 and state.falls == 0 \
-		and on_beam and state.swing_hits == 0 and passed_weight and jumped_wall and tower_air == [true, true] \
-		and marks.has(11) and state.stage_splits.size() == 3 and state.stage_splits == state.stage_bests
+		and on_beam and state.swing_hits == 0 and passed_weight and jumped_wall and not caught_crest and tower_air == [true, true] \
+		and catches[0] > mantle_frame and releases[0] > catches[0] and catches[1] > releases[0] and releases[1] > catches[1] \
+		and state.grips_passed == 2 and marks.has(11) and hang_frame > 0 and mantle_frame > hang_frame and state.stage_splits.size() == 4 and state.stage_splits == state.stage_bests
 	var result := {"ok": ok, "summary": "perfect hand, %d frames (%.3f s), gaps %s, chain landed %d / slid %d, under bar %d, chute %d ticks / %.2f m, falls %d" % [
 		state.total_frames, float(state.total_frames) / 60, crossed, landing, slide_start, under, slope_frames, slope_drop, state.falls]}
 	result.summary += "; splits %s, waited %d ticks; " % [state.stage_splits, wait_ticks] + _where()
+	if hang_frame >= 0:
+		result["hang_frame"] = hang_frame
+	if mantle_frame >= 0:
+		result["mantle_frame"] = mantle_frame
+	if catches[0] >= 0:
+		result["catch_frames"] = catches.filter(func(t: int) -> bool: return t >= 0)
+	if releases[0] >= 0:
+		result["release_frames"] = releases.filter(func(t: int) -> bool: return t >= 0)
 	if jump_frame >= 0:
 		result["jump_frame"] = jump_frame
 	if under >= 0:

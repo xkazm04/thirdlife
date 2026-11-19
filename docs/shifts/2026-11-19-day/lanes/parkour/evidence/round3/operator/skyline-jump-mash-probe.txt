@@ -1,0 +1,6 @@
+OPERATOR mash 5: falls 30 state over time race 3600 cp 13 splits [338, 286, 182]
+OPERATOR mash 8: falls 18 state over time race 3600 cp 13 splits [338, 286, 182]
+OPERATOR mash 11: falls 22 state over time race 3600 cp 13 splits [338, 286, 182]
+OPERATOR mash 17: falls 39 state over time race 3600 cp 13 splits [338, 286, 182]
+OPERATOR mash 23: falls 38 state over time race 3600 cp 13 splits [338, 286, 182]
+OPERATOR mash 31: falls 1 state over laps race 1111 cp 0 splits [338, 286, 182, 305]

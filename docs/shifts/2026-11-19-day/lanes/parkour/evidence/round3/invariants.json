@@ -1,0 +1,75 @@
+{
+  "schema": "tl.verify/1",
+  "verb": "invariants",
+  "level": "V3",
+  "pack": "game.parkour",
+  "packVersion": "0.3.0",
+  "kernelApi": "1.10",
+  "ok": true,
+  "outcome": "passed",
+  "seed": 1,
+  "frames": 3600,
+  "durationMs": 11869,
+  "checks": [
+    {
+      "id": "smoke.loads",
+      "ok": true,
+      "detail": "pack loaded"
+    },
+    {
+      "id": "smoke.no_script_errors",
+      "ok": true,
+      "detail": "0 errors in 3600 frames"
+    },
+    {
+      "id": "smoke.no_engine_errors",
+      "ok": true,
+      "detail": "0 engine errors"
+    },
+    {
+      "id": "smoke.watchdog",
+      "ok": true,
+      "detail": "no trip in 3600 frames"
+    },
+    {
+      "id": "invariants.determinism",
+      "ok": true,
+      "detail": "two runs, seed 1, 3600 frames: ddd6406508628e98"
+    },
+    {
+      "id": "invariants.below_ground",
+      "ok": true,
+      "detail": "no physics body below y = -50"
+    },
+    {
+      "id": "invariants.frame_budget",
+      "ok": true,
+      "detail": "frame p99 0.847 ms (stage budget 4 ms; scripts + physics step, headless, each frame's best of 2 runs)"
+    },
+    {
+      "id": "invariants.many_budget",
+      "ok": true,
+      "detail": "frame p50 0.405 ms (budget 1.0 ms for one of many; target 0.5 ms)"
+    },
+    {
+      "id": "invariants.entity_budget",
+      "ok": true,
+      "detail": "556 nodes (budget 5000), 116 physics bodies (budget 600)"
+    },
+    {
+      "id": "invariants.bot_deterministic",
+      "ok": true,
+      "detail": "bot tests/bot_course.gd twice, seed 1: f7abac006a45bd43 after 988 frames"
+    }
+  ],
+  "metrics": {
+    "state_hash": "ddd6406508628e98e690c3683ac3a9312c4bac341743f38ea7990a3f7cdc967b",
+    "frame_ms_p50": 0.405,
+    "frame_ms_p99": 0.847,
+    "entities_max": 556,
+    "bodies_max": 116,
+    "bot_state_hash": "f7abac006a45bd43b7c7987e7400a234ac9060deae54f3b681be2f5803ab2af0",
+    "bot_frames": 988
+  },
+  "errors": []
+}

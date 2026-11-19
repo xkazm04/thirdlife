@@ -1,0 +1,24 @@
+extends "bot_course.gd"
+## Operator probe: perfect-hand course bot; on Skyline past the headwall it ignores the swing and mashes jump every 31 frames, holding run + forward.
+var mash_last := -100
+
+
+func _skyline_inputs(frame: int, gate: int) -> void:
+	if gate == 12:
+		super(frame, gate)
+		return
+	hand.press(&"run")
+	hand.set_axis(&"back", &"forward", 1.0)
+	if frame - mash_last >= 31:
+		hand.tap(&"jump")
+		mash_last = frame
+
+
+func _bot_result() -> Dictionary:
+	var r := super()
+	r["summary"] = "OPERATOR mash 31: falls %d state %s %s race %d cp %d splits %s" % [int(state.falls), state.state, state.get("reason", ""), int(state.total_frames), int(state.checkpoint), str(state.get("stage_splits", []))]
+	return r
+
+
+func _bot_done() -> bool:
+	return state.get("state") == "over"

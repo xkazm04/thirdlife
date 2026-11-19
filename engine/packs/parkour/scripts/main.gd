@@ -5,10 +5,11 @@ const ACTIONS := {"left": &"left", "right": &"right", "forward": &"forward", "ba
 const KILL_Y := -0.8
 const SIDE := "runner"
 
-const STAGES := ["High line", "Swing yard", "Summit"]
+const STAGES := ["High line", "Swing yard", "Summit", "Skyline"]
 const CUES := ["Run + jump", "Jump the gap", "Slide under the beam", "Down the chute",
 	"Follow the ramp around", "Leap to the first pad", "Jump to the opposite pad", "Land on the striped beam", "Time the swing",
-	"Run up the wall and jump", "Jump to the next ledge", "Take the summit stripe"]
+	"Run up the wall and jump", "Jump to the next ledge", "Take the summit stripe", "Jump to the lip · Push forward to mantle",
+	"Jump to blue · Swing to red · Space to release"]
 
 var ctx: TLContext
 var venue
@@ -26,6 +27,9 @@ var carried_strafe := 0.0
 var swing_hits := 0
 var swing_hit_pending := false
 var hit_notice_until := 0
+var grips_passed := 0
+var missed_grip_until := 0
+var missed_landing_until := 0
 var chute_tilt := 0.0
 var trail: Array[Vector3] = []         # the runner's last 8 places: blocked at the beam is under 10 cm of travel across them
 
@@ -37,8 +41,9 @@ func _pack_setup(c: TLContext) -> void:
 	venue.build(ctx.root, ctx.read_json("course.json"))
 	lane = ctx.load_script("scripts/return_lane.gd").new()
 	lane.build(ctx, venue.point(venue.finish, 0, 9))
+	lane.build_skyline(ctx)
 	spawn_at = venue.point(0, venue.DECK_Y + 0.04)
-	runner = TLBiped.create({"feel": &"walker", "position": spawn_at, "name": "Runner", "group": &"timber_runner",
+	runner = TLBiped.create({"feel": &"walker", "moves": [&"ledge", &"bar"], "position": spawn_at, "name": "Runner", "group": &"timber_runner",
 		"rig_params": {"backpack": false, "expression": "focus", "colors": {"top": "flag_b", "trim": "white"}}})
 	ctx.root.add_child(runner)
 	lane.weight_contact.entered.connect(_weight_contact)
@@ -48,7 +53,7 @@ func _pack_setup(c: TLContext) -> void:
 			[&"right", [KEY_D, KEY_RIGHT]], [&"jump", [KEY_SPACE]], [&"run", [KEY_SHIFT]], [&"slide", [KEY_C]], [&"restart", [KEY_R]]]:
 		ctx.input.declare(key[0], key[1])
 	cam = ctx.cameras.orbit(runner, {"yaw": -90, "distance": 5.5, "pitch": 33, "look_height": 1.1, "fov": 55})
-	ctx.cameras.add_view(&"overview", Vector3(-4, 30, 45), Vector3(0, 4.2, 2.5), 43)
+	ctx.cameras.add_view(&"overview", Vector3(-9, 34, 50), Vector3(0, 5.1, 0.0), 43)
 	_view(&"jump", venue.FIRST_LIP + 1.5, Vector3(1.8, 1.15, 6.4), 1.0)
 	_view(&"under_bar", venue.bar + 0.3, Vector3(6.7, 1.6, 5.7), 0.85)
 	_view(&"chute", (venue.lip + venue.foot) / 2, Vector3(4.2, 1.5, 9.6), -3.0)
@@ -57,6 +62,12 @@ func _pack_setup(c: TLContext) -> void:
 	_return_view(&"balance", lane.beam_start + 1.3, 0.3, Vector3(3.8, 2.8, 5.5))
 	_return_view(&"wall", lane.wall_lip, 2.85, Vector3(4.4, 2.3, 8.8))
 	_return_view(&"tower", lane.crest + lane.TIER_LENGTH * 1.6, 4.4, Vector3(-5.6, 4.0, 12.8))
+	var wall_face: Vector3 = lane.root.transform * Vector3(lane.summit, lane.rim_y - 1.0, lane.HEADWALL)
+	ctx.cameras.add_view(&"headwall", wall_face + Vector3(7.2, 2.2, 5.6), wall_face, 42)
+	_upper_view(&"blue_grip", lane.FIRST_BAR, lane.first_bar_y - 0.7, Vector3(0.9, -0.55, -5.1))
+	_upper_view(&"red_grip", lane.second_bar, lane.first_bar_y + 0.6, Vector3(-0.35, -0.7, -5.2))
+	_upper_view(&"transfer", (lane.FIRST_BAR + lane.second_bar) / 2, lane.first_bar_y + 0.4, Vector3(5.5, 7.0, 1.8))
+	_upper_view(&"catch_deck", lane.landing_z + 1.7, lane.landing_height(1.7) + 0.4, Vector3(6.0, 3.2, -5.2))
 	hud = TLHud.create()
 	ctx.root.add_child(hud)
 	hud.add_label(&"race", "", &"top_left")
@@ -72,6 +83,11 @@ func _view(id: StringName, station: float, offset: Vector3, above: float) -> voi
 
 func _return_view(id: StringName, t: float, above: float, offset: Vector3) -> void:
 	var target: Vector3 = lane.root.transform * Vector3(t, lane.HEIGHT + above, 0)
+	ctx.cameras.add_view(id, target + offset, target, 46)
+
+
+func _upper_view(id: StringName, station: float, height: float, offset: Vector3) -> void:
+	var target: Vector3 = lane.root.transform * Vector3(lane.summit, height, station)
 	ctx.cameras.add_view(id, target + offset, target, 46)
 
 
@@ -97,6 +113,9 @@ func _restart() -> void:
 	swing_hits = 0
 	swing_hit_pending = false
 	hit_notice_until = 0
+	grips_passed = 0
+	missed_grip_until = 0
+	missed_landing_until = 0
 	falls = 0
 	rules.start()
 	_update_hud()
@@ -116,9 +135,24 @@ func _pack_tick(_frame: int) -> void:
 		lane.advance(rules.total_frames)
 		var below_decks: bool = index < 4 and at < venue.lip and runner.position.y < venue.DECK_Y - 1.35
 		below_decks = below_decks or (index >= 5 and runner.position.y < lane.HEIGHT - 0.7)
+		# A capsule can skim a deck with its centre outside the marked landing, then run past it.
+		if index >= 5 and index <= 8 and runner.grounded and _past_landing(index):
+			missed_landing_until = rules.total_frames + 75
+			below_decks = true
 		if index >= 9:
 			var p: Vector3 = lane.local_feet(runner.position)
 			if p.x > lane.wall_lip and p.y < lane.HEIGHT + lane.WALL_RISE - 0.8:
+				below_decks = true
+		if index >= 12:
+			var upper: Vector3 = lane.local_feet(runner.position)
+			below_decks = below_decks or upper.y < lane.summit_y - 0.7 or absf(upper.x - lane.summit) > lane.UPPER_WIDTH / 2 + 0.6
+		if index == 13:
+			var grip := _current_grip()
+			if grip > 0 and grip == grips_passed + 1:
+				grips_passed = grip
+			var upper_station: float = lane.local_feet(runner.position).z
+			if runner.grounded and upper_station >= lane.landing_z and grips_passed < 2:
+				missed_grip_until = rules.total_frames + 90
 				below_decks = true
 		var retry := _at_blocked_bar(at) and ctx.input.just_pressed(&"slide")
 		var struck := swing_hit_pending and index >= 4
@@ -127,6 +161,7 @@ func _pack_tick(_frame: int) -> void:
 			swing_hits += 1
 			hit_notice_until = rules.total_frames + 60
 		if runner.position.y < KILL_Y or below_decks or retry or struck:
+			grips_passed = 0
 			if not retry:
 				falls += 1
 			var facing := 0.0
@@ -209,10 +244,41 @@ func _return_checkpoint(index: int) -> void:
 			if p.x < mark or p.x >= near + lane.TIER_LENGTH or absf(p.z) > 1.8 or absf(p.y - top) > 0.18:
 				return
 			safe = Vector3(near + 0.7, top, 0)
+		12:
+			if p.z < lane.HEADWALL + 0.25 or p.z > lane.RUNWAY_END or absf(p.y - lane.rim_y) > 0.1:
+				return
+			safe = Vector3(lane.summit, lane.rim_y, lane.HEADWALL + 0.6)
+		13:
+			var distance: float = p.z - lane.landing_z
+			if distance < 0.45 or distance > lane.LANDING_RUN or absf(p.y - lane.landing_height(distance)) > 0.24:
+				return
 	rules.pass_checkpoint(SIDE, index)
 	spawn_at = lane.root.transform * (safe + Vector3.UP * 0.04)
-	if index == 8 or index == 11:
+	if index == 11:
+		spawn_at = lane.root.transform * Vector3(lane.summit, lane.summit_y + 0.04, 0)
+		cam.orbit_by(-90, 0)
+	if index == 8 or index == 11 or index == 13:
 		_close_stage()
+
+
+func _past_landing(index: int) -> bool:
+	var t: float = lane.local_feet(runner.position).x
+	if index == 7:
+		return t > lane.swing_x - 0.9
+	if index == 8:
+		return t > lane.beam_end + 0.1
+	# Past this radius the complete pad, including its yaw and the capsule radius, is behind us.
+	var centre: float = lane.PAD_X if index == 5 else lane.second
+	return t > centre + Vector2(lane.PAD_LENGTH, lane.PAD_WIDTH).length() / 2 + 0.35
+
+
+func _current_grip() -> int:
+	if runner.walker_motion() != &"bar":
+		return 0
+	var z: float = lane.root.to_local(runner.bar_point).z
+	if absf(z - lane.FIRST_BAR) < 0.1:
+		return 1
+	return 2 if absf(z - lane.second_bar) < 0.1 else 0
 
 
 func _frame_chute(at: float) -> void:
@@ -250,10 +316,16 @@ func _update_hud() -> void:
 	var cue: String = CUES[int(rules.next_checkpoint[SIDE])]
 	if _at_blocked_bar(runner.position.x - venue.START_X):
 		cue = "C  Retry from checkpoint"
+	if rules.total_frames < missed_landing_until:
+		cue = "Missed landing · Back to checkpoint"
 	if rules.total_frames < hit_notice_until:
 		cue = "Weight hit   ·   Back on beam"
 	if carried_strafe != 0.0:
 		cue = "Back on beam   ·   Release side key to steer"
+	if int(rules.next_checkpoint[SIDE]) == 13:
+		cue = ["Jump to the blue bar", "Swing forward · Space to reach red", "Space to land on the striped ramp"][grips_passed]
+		if rules.total_frames < missed_grip_until:
+			cue = "Catch blue, then red · Try again"
 	caption += "    " + cue
 	if rules.is_over():
 		caption = "FINISH" if rules.reason == "laps" else "TIME UP"
@@ -276,6 +348,9 @@ func _pack_state() -> Dictionary:
 		"beam_start": lane.beam_start, "beam_end": lane.beam_end, "beam_width": lane.beam_width,
 		"wall_base": lane.wall_base, "wall_lip": lane.wall_lip, "wall_top": lane.HEIGHT + lane.WALL_RISE,
 		"crest": lane.crest, "crest_y": lane.crest_y, "tier_rise": lane.tier_rise,
+		"headwall": lane.HEADWALL, "ledge_rise": lane.ledge_rise, "rim_y": lane.rim_y, "runway_end": lane.RUNWAY_END,
+		"first_bar": lane.FIRST_BAR, "first_bar_y": lane.first_bar_y, "red_rise": lane.RED_RISE, "second_bar": lane.second_bar,
+		"landing_z": lane.landing_z, "landing_y": lane.landing_y, "grips_passed": grips_passed,
 		"tier_length": lane.TIER_LENGTH, "summit": lane.summit,
 		"corner_end": lane.CORNER_CENTER.x + lane.CORNER_SIZE.x / 2,
 		"corner_near_z": lane.CORNER_CENTER.z - lane.CORNER_SIZE.z / 2,
@@ -292,6 +367,14 @@ func _pack_state() -> Dictionary:
 		"first_land": venue.first_land, "chain_lip": venue.chain_lip, "chain_land": venue.chain_land,
 		"bar": venue.bar, "bar_depth": venue.BAR_DEPTH, "lip": venue.lip, "foot": venue.foot, "deck_y": venue.DECK_Y,
 		"clearance": venue.clearance, "chute_degrees": rad_to_deg(venue.angle), "run_mps": runner.run_speed})
+	if rules.total_frames < missed_landing_until:
+		s["missed_landing_until"] = missed_landing_until
+	if rules.total_frames < missed_grip_until:
+		s["missed_grip_until"] = missed_grip_until
+	if runner.walker_motion() == &"bar":
+		s["grip"] = _current_grip()
+		s["bar_theta"] = runner.bar_theta
+		s["bar_omega"] = runner.bar_omega
 	if rules.best_lap_frames.has(SIDE):
 		s["best_frames"] = int(rules.best_lap_frames[SIDE])
 	return s

@@ -13,6 +13,10 @@ var last_side_tap := -100
 var side_action: StringName = &""
 var side_press_seen := false
 var last_z := 0.0
+var jump_response := -1.0
+var observed_request := -100
+var grip_request := -100
+var target_grip := 0
 
 
 func _bot_setup(c: TLContext) -> void:
@@ -21,14 +25,24 @@ func _bot_setup(c: TLContext) -> void:
 
 
 func _return_inputs(frame: int) -> void:
+	# Read the delivered key edge against our last request, as a player anticipating their own timing can.
+	var request := maxi(last_leap, grip_request)
+	if ctx.input.just_pressed(&"jump") and request >= 0 and request != observed_request:
+		var ticks := clampi(frame - request - 1, 0, 25)
+		jump_response = ticks if jump_response < 0.0 else lerpf(jump_response, ticks, 0.4)
+		observed_request = request
 	var gate := int(state.checkpoint)
 	var t := float(state.return_x)
 	if state.falls != last_falls:
 		through = false
 		last_falls = state.falls
+		target_grip = 0
 		last_z = state.return_z
 	if not marks.has(gate):
 		marks[gate] = frame
+	if gate >= 12:
+		_skyline_inputs(frame, gate)
+		return
 	hand.press(&"run", 1.0 if gate < 10 else 0.0)
 	var holding := false
 	if gate == 8 and not through and t > state.swing_x - 3.5:
@@ -101,3 +115,47 @@ func _aim_return(frame: int) -> void:
 func _where() -> String:
 	return "checkpoint %d, return (%.2f, %.2f), height %.2f, marks %s" % [
 		state.checkpoint, state.return_x, state.return_z, state.height, marks]
+
+
+func _skyline_inputs(frame: int, gate: int) -> void:
+	hand.press(&"run")
+	if state.motion != "bar":
+		hand.set_axis(&"back", &"forward", 1.0)
+	if gate == 12:
+		if state.height < state.rim_y - 1.0 and state.return_z >= state.headwall - 1.6 and state.motion == "ground" and frame - last_leap > 30:
+			hand.tap(&"jump")
+			last_leap = frame
+		return
+	var lead := maxf(jump_response, 0.0)
+	if state.motion == "ground" and state.return_z < state.runway_end:
+		var takeoff: float = state.runway_end - 1.05 - lead * float(state.run_mps) / 60.0
+		if state.return_z >= takeoff and frame - last_leap > 27:
+			target_grip = 0
+			hand.tap(&"jump")
+			last_leap = frame
+		return
+	if state.motion == "bar":
+		var rod := int(state.grip)
+		var omega := float(state.bar_omega)
+		# Pump back while returning. Aim for the forward, rising part of the next swing.
+		var frequency := sqrt(24.0 / 1.1)
+		var ahead := frequency * lead / 60.0
+		var next_omega := omega * cos(ahead) - frequency * float(state.bar_theta) * sin(ahead)
+		hand.set_axis(&"back", &"forward", 1.0 if next_omega >= 0.0 else -1.0)
+		if omega > 2.7 and state.bar_theta < 1.3 and state.bar_theta + omega * lead / 60.0 >= 0.63:
+			_request_release(frame, rod)
+	elif state.motion == "air":
+		var rod := 1 if state.return_z < state.first_bar else 2
+		var axis_z: float = state.first_bar if rod == 1 else state.second_bar
+		var until_grip := (axis_z - float(state.return_z) - 0.30) * 60.0 / float(state.run_mps)
+		# At running speed the first upswing reaches the release angle five ticks after the catch.
+		if until_grip >= 0 and until_grip + 6.0 <= lead:
+			_request_release(frame, rod)
+
+
+func _request_release(frame: int, rod: int) -> void:
+	if target_grip == rod and frame - grip_request < 40:
+		return
+	target_grip = rod
+	grip_request = frame
+	hand.tap(&"jump")

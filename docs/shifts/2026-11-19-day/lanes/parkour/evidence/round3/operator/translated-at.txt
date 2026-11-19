@@ -1,0 +1,4 @@
+pack | mode | own ticks | hash in the world | runner alone (tl.sh bot), same ticks | verdict
+game.parkour | bot | 988 | 9e90a1f38601b700 | f7abac006a45bd43 (988 frames) | DIFFERENT
+FAIL world.alone
+same check, --frames=600: seed.paddle DIFFERENT, game.ice_hockey_three_against DIFFERENT (not parkour-specific)

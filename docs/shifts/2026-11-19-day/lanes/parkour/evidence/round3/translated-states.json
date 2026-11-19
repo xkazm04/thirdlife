@@ -1,0 +1,52 @@
+{
+  "runs": [
+    {
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "frames": 988,
+      "state_hash": "f7abac006a45bd43b7c7987e7400a234ac9060deae54f3b681be2f5803ab2af0",
+      "script_errors": 0,
+      "engine_errors": 0,
+      "finish_frames": 986,
+      "falls": 0,
+      "splits": [
+        338,
+        286,
+        182,
+        180
+      ]
+    },
+    {
+      "at": [
+        -186.0,
+        1.0,
+        -32.0
+      ],
+      "frames": 988,
+      "state_hash": "9e90a1f38601b7006b89921460f926823c48e6dbe0ffd9480da032da4a21543e",
+      "script_errors": 0,
+      "engine_errors": 0,
+      "finish_frames": 986,
+      "falls": 0,
+      "splits": [
+        338,
+        286,
+        182,
+        180
+      ]
+    }
+  ],
+  "different_public_fields": {
+    "return_x": [
+      44.1526,
+      44.1525
+    ],
+    "station": [
+      -1.5385,
+      -1.5383
+    ]
+  }
+}
