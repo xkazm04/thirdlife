@@ -16,6 +16,11 @@ var sphere := SphereShape3D.new()
 var nearby: Array = []  # [prototype, inverse transform] for padded starts outside actual foliage
 var yaws: Array = [0.0] if OS.get_environment("TL_CROWN_SWING") == "behind" else [0.0, 30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 150.0, -150.0, 180.0]
 var side_ticks: int = 0                  ## read only: ticks the camera stood swung sideways (yaw != 0)
+## Lane flight round 3: the world space's copied bars (world_space `copied_bars`, body RID -> true), left out of the
+## avoidance like a pack's marked bars (TLChaseCam `_bar_rids`). `ignore_bars = false` only for the control in
+## flight_cam_bar_case.gd (the old behaviour: the camera lifts over a bar).
+var bars: Dictionary = {}
+var ignore_bars: bool = true
 var max_side: float = 0.0                ## read only: the largest sideways swing so far (degrees)
 
 
@@ -85,6 +90,15 @@ func _avoid(now: bool) -> void:
 				_ray.collision_mask = mask
 				return
 	_ray.collision_mask = mask
+
+
+func _bar_rids() -> Array[RID]:
+	if not ignore_bars:
+		return [] as Array[RID]
+	var out: Array[RID] = super()
+	for rid: Variant in bars.keys():
+		out.append(rid as RID)
+	return out
 
 
 func _limit_lift(previous: float, wanted: float, now: bool) -> float:
