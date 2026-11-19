@@ -25,6 +25,7 @@ const OPTIONS: Array = ["rig", "rig_params", "mode", "position", "facing", "name
 const _Walker = preload("res://kernel/world/terrain/world_body.gd")
 const _Grip = preload("res://kernel/world/terrain/grip_pose.gd")
 var _grip: RefCounted = null
+var _wings: RefCounted
 const _WalkerSpace = preload("res://kernel/world/terrain/walker_space.gd")
 const WALKER_SLIDE_HEIGHT: float = 0.84
 const WALKER_HEIGHT: float = _WalkerSpace.HEIGHT
@@ -138,9 +139,10 @@ static func create(opts: Dictionary = {}) -> TLBiped:
 		else:
 			push_error("TLBiped: the rig cannot be used (%s); using the stand-in" % "; ".join(problems))
 	if b.rig == null:
-		# P12: the rig is built in the controller's mode (walk or skate) at once; built in walk and told "skate" at
-		# `_ready` it rebuilt its whole skinned mesh for the helmet on the main thread (about 50 ms a skater)
+		# P12: starting in the requested mode saves a helmet mesh rebuild on the main thread.
 		var rp: Dictionary = (opts["rig_params"] as Dictionary).duplicate() if typeof(opts.get("rig_params")) == TYPE_DICTIONARY else {}
+		if b._walker != null:
+			rp.get_or_add("backpack", false)   # bare back until flight, unless the pack dressed this rig
 		var md: String = str(opts.get("mode", "walk"))
 		if not rp.has("mode") and (md == "walk" or md == "skate"):
 			rp["mode"] = md
@@ -202,18 +204,15 @@ static func mark_bar(body: CollisionObject3D) -> void:
 		return
 	body.set_meta(&"tl_bar", true); body.add_to_group(&"tl_bar")   # the group: chase cameras do not avoid a bar
 
-
 ## Requests a grounded run slide, or drops a walker from a ledge or bar.
 func slide() -> void:
 	if _walker != null:
 		_slide = true
 
-
 ## Sets walker flight for the next physics step.
 func fly(on: bool = true) -> void:
 	if _walker != null:
 		_toggle_fly = on != (_walker.mode == "fly")
-
 
 func is_flying() -> bool:
 	return _walker != null and _walker.mode == "fly"
@@ -264,7 +263,6 @@ func forward() -> Vector3:
 
 func speed() -> float:
 	return Vector2(velocity.x, velocity.z).length()
-
 
 ## Puts the character somewhere, at rest.
 func place(at: Vector3, facing: float = 0.0) -> void:
@@ -474,6 +472,11 @@ func _walker_tick(delta: float, mv: Vector3, brk: bool) -> void:
 	global_position = res["pos"]
 	velocity = res["vel"]
 	grounded = res["grounded"]
+	if res.events.has("fly_start") and _wings == null:
+		_wings = preload("res://kernel/world/flight_wings.gd").attach(rig)
+	if _wings != null:
+		var share := clampf(speed() / maxf(cruise, 0.001), 0.0, 1.0)
+		_wings.call("tick", is_flying(), share, _walker.fly_turn, _frame, res.events.has("fly_end"))
 	if _low and _walker.mode != "slide":
 		# The short capsule swept upwards covers exactly the added headroom.
 		if not _walker_space._test(Transform3D(Basis.IDENTITY, global_position), Vector3.UP * (_standing.height - _sliding.height)):
@@ -500,9 +503,6 @@ func _walker_tick(delta: float, mv: Vector3, brk: bool) -> void:
 	if rig != null:                                  # 1.10: the figure's pose on a grip (kernel/world/terrain/grip_pose.gd)
 		_grip = _grip if _grip != null else _Grip.new()
 		_grip.call("pose", self, rig, _walker, _body_scale)
-
-
-
 
 func _physics_process(delta: float) -> void:
 	# K2: down (lying or rising): no intent, the brake on; stumbling: a third of the intent, no brake
