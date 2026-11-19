@@ -452,6 +452,7 @@ func ensure_mover() -> Mover:
 		_mover = Mover.new(self)
 		_mover.grips.ledges = true
 		_mover.grips.bars = true
+		_mover.grips.soft_swing = true               # round 4: the soft end of a hard swing (visitor only)
 	return _mover
 
 
