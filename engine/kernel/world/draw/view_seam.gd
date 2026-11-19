@@ -29,9 +29,8 @@ static func rim_of(v: Node, i: int, r: float) -> float:
 	if not _hashes.has(dir):
 		_hashes[dir] = str(PlotFile.call("dir_hash", dir))
 	var opts: Dictionary = v.get("opts")
-	# bugfix-37 D4: "|cover2": the cover is measured on triangles now (draw_base.gd `ground_cover`); a rim cached under the
-	# box rule ("|cover") is not read again
-	var key: String = ("%s|%s|%s" if OS.get_environment("TL_GROUND_COVER") == "off" else "%s|%s|%s|cover2") % [str(_hashes[dir]), str(r), str(opts.get("scenery", (world.get("walk") as Dictionary).get("scenery", "plot")))]
+	# Cache terrain-first heights separately from older scenery medians.
+	var key: String = ("%s|%s|%s|soil" if OS.get_environment("TL_GROUND_COVER") == "off" else "%s|%s|%s|cover2|soil") % [str(_hashes[dir]), str(r), str(opts.get("scenery", (world.get("walk") as Dictionary).get("scenery", "plot")))]
 	if not rims.has(key) or OS.get_environment("TL_RIM_CACHE") == "off":
 		(world.get("jobs") as RefCounted).call("now", i)
 		var e: float = float(DrawScript.call("edge_height", (world.get("packs") as Array)[i], r))

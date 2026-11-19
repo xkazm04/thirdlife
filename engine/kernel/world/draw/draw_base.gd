@@ -14,7 +14,8 @@ var cull: String = "auto"
 var far_mode: String = "off"            # off | auto | all
 var far_dist: float = 150.0
 var far_margin: float = 0.15            # hysteresis: far beyond dist * (1 + m), near again inside dist * (1 - m)
-var rim_band: float = 9.0                # metres inside the plot edge over which a pack's ground is bent to the world's
+var rim_band: float = NAN                # an explicit width in metres overrides the radius-dependent default
+var rim_material: ShaderMaterial        # this landscape's vertex colours, shared by its live and cached terrain
 var grounds: Array = []                 # walker-feel T2: per plot, the pack has ground of its own (view.gd `has_ground`)
 var standin_min: float = 1.2            # metres: a mesh instance whose longest side is shorter is dropped ("still")
 # P6: the pictures of a far game (draw/FAR.md has the study these numbers come from)
@@ -91,12 +92,40 @@ static func reaches_in(holder: Node, g: Node, radius: float) -> bool:
 	return Vector2(cx, cz).length() < radius
 
 
+## Larger terrain sheets have room for the rim to meet the pad over several mesh cells.
+static func rim_width(radius: float, configured: float) -> float:
+	return clampf(radius * 0.25, 9.0, 16.0) if is_nan(configured) else configured
+
+
 ## Walker-feel T2: the width of the bent band of plot `e`. Only a pack with ground of its own is bent at its rim (its
 ## ground meets the world's there); a pack without one (ex_car, the hockey arena: the world's pad lies under it) is
 ## drawn as it is built: before, its wide meshes (the arena's stands) were bent down toward height 0 in the last 9 m.
 ## TL_RIM_BEND=all: as before (before pictures).
 func _band(e: Dictionary) -> float:
-	return rim_band if bool(e.get("ground", true)) or OS.get_environment("TL_RIM_BEND") == "all" else 0.0
+	return rim_width(float(e.get("radius", 0.0)), rim_band) if bool(e.get("ground", true)) or OS.get_environment("TL_RIM_BEND") == "all" else 0.0
+
+
+## Bind the village palette only where the pack used the shared toon palette. The actual disc cut and all
+## cached mesh data stay pack-local. Record a live sheet's overrides so unplacing it restores the pack.
+func _dress_ground(e: Dictionary, mi: MeshInstance3D, live: bool) -> void:
+	if rim_material == null or not e["ground"] or mi.mesh == null:
+		return
+	var dressed := false
+	if mi.material_override == _pal:
+		if live:
+			e["dressed"].append([mi, -1, _pal])
+		mi.material_override = rim_material
+		dressed = true
+	elif mi.material_override == null:
+		for i: int in mi.mesh.get_surface_count():
+			if mi.get_active_material(i) == _pal:
+				if live:
+					e["dressed"].append([mi, i, mi.get_surface_override_material(i)])
+				mi.set_surface_override_material(i, rim_material)
+				dressed = true
+	if dressed:
+		var plot: Transform3D = e["plot"]
+		mi.set_instance_shader_parameter(&"tl_land_plot", Vector4(plot.origin.x, plot.origin.z, plot.basis.x.x, plot.basis.x.z))
 
 
 func _plot_v4(rel: Transform3D) -> Vector4:
@@ -210,21 +239,36 @@ static func edge_height(holder: Node3D, radius: float) -> float:
 	var wide: Array = []
 	_wide_meshes(holder, maxf(30.0, radius), wide)
 	var ys: PackedFloat32Array = PackedFloat32Array()
+	var soil := PackedFloat32Array()
+	var sectors := PackedByteArray()
+	sectors.resize(16)
+	var terrain_index := TLStyle.index("terrain")
 	var r_in: float = (radius - 3.0) * (radius - 3.0)
 	var r_out: float = (radius + 4.0) * (radius + 4.0)
 	for m: MeshInstance3D in wide:
 		var xf: Transform3D = holder.global_transform.affine_inverse() * m.global_transform
 		for s: int in m.mesh.get_surface_count():
-			var verts: PackedVector3Array = xf * (m.mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX] as PackedVector3Array)
-			for v: Vector3 in verts:
+			var arrays := m.mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = xf * (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array)
+			var custom: Variant = arrays[Mesh.ARRAY_CUSTOM0]
+			var coded: bool = custom is PackedFloat32Array and custom.size() == 4 * verts.size()
+			for k: int in verts.size():
+				var v := verts[k]
 				var d2: float = v.x * v.x + v.z * v.z
 				if d2 >= r_in and d2 <= r_out:
 					ys.append(v.y)
+					if coded and (int(custom[4 * k + 3] + 0.5) >> 4) == terrain_index:
+						soil.append(v.y)
+						sectors[posmod(floori(atan2(v.z, v.x) * 16.0 / TAU), 16)] = 1
 	if ys.is_empty():
 		return NAN         # no ground of its own at the plot edge: the world's ground runs through under it
 	if OS.get_environment("TL_GROUND_COVER") != "off" and ground_cover(holder, radius, wide) < COVER_MIN:
 		return NAN         # walker-feel T: some wide boxes touch the ring but leave most of the plot open: no hole
-	ys.sort()          # the median: a skirt under the far sheet or the foot of a cliff must not decide
+	# A merged scenery mesh can contain more treetop vertices than the soil beneath them.
+	# Prefer tagged ground that encircles the plot. Deck-only venues still use their sheet median.
+	if sectors.count(1) >= 14:
+		ys = soil
+	ys.sort()
 	return ys[ys.size() / 2]
 
 

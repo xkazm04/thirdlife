@@ -62,7 +62,7 @@ var _busy: bool = false
 var _stage_changes: int = 0
 # P5: packs arrive while the world is drawn (kernel/world/jobs.gd)
 var _arrived: Dictionary = {}           # plot index -> true: a built pack has stood there (a stand-in can be made of it)
-var _rims: Dictionary = {}              # the rim cache: "<pack directory hash>|<radius>|<scenery>|cover2" (T, bugfix-37 D4: the cover rule on triangles) -> rim height, or "none"
+var _rims: Dictionary = {}              # the rim cache: "<pack directory hash>|<radius>|<scenery>|cover2|soil" (T, bugfix-37 D4: the cover rule on triangles) -> rim height, or "none"
 var _rims_new: int = 0
 var _first_frame_ms: int = -1           # milliseconds from the start of the process to the end of the first drawn frame
 var _start_ms: int = 0
@@ -149,6 +149,8 @@ func start(options: Dictionary) -> void:
 		get_tree().quit(1)
 		return
 	var walk: Dictionary = world.get("walk")
+	var lcfg: Dictionary = (walk.get("landscape", {}) as Dictionary).duplicate() if typeof(walk.get("landscape")) == TYPE_DICTIONARY else {}
+	var footprints: Array[Vector2] = []
 	var rads: PackedStringArray = str(opts.get("radius", "40")).split(",", false)
 	if tour:
 		# plots and radii come from the walk script (a plot's `radius`, else the footprint's shorter side)
@@ -159,11 +161,12 @@ func start(options: Dictionary) -> void:
 		for i: int in defs.size():
 			var d: Dictionary = defs[i]
 			var o: Vector3 = d.get("origin", Vector3.ZERO)
-			var pads: Array = (walk.get("landscape", {}) as Dictionary).get("pad_h", []) if typeof(walk.get("landscape")) == TYPE_DICTIONARY else []
+			var pads: Array = lcfg.get("pad_h", [])
 			if i < pads.size():
 				o.y = float(pads[i])           # PATCHES-P4 entry 1: a walk states a pad's height once
 			plots.append(Transform3D(Basis(Vector3.UP, deg_to_rad(float(d.get("yaw", 0.0)))), o))
 			var size: Vector2 = (sp[i] as Dictionary)["size"]
+			footprints.append(size)
 			rads.append(str(float((src[i] as Dictionary).get("radius", minf(size.x, size.y) * 0.5))))
 	else:
 		_make_plots(holders.size())
@@ -190,10 +193,11 @@ func start(options: Dictionary) -> void:
 	landscape = Node3D.new()
 	landscape.name = "TLLandscape"
 	add_child(landscape)
+	lcfg["rim_band"] = float(opts.get("band", walk.get("rim_band", lcfg.get("rim_band", NAN))))
 	if tour and str(opts.get("landscape", "on")) != "off":
-		var lcfg: Dictionary = (walk.get("landscape", {}) as Dictionary).duplicate() if typeof(walk.get("landscape")) == TYPE_DICTIONARY else {}     # P13: a copy
 		if not lcfg.has("road") and walk.has("road"):
 			lcfg["road"] = walk["road"]
+		lcfg["footprints"] = footprints
 		lcfg["events"] = walk.get("events", [])               # P13: trees give way to the walk's crane shots
 		land_stats = Landscape.call("build", landscape, plots, radii, has_ground, lcfg)
 		land_stats["haze"] = float(lcfg.get("haze", 0.4))
@@ -225,7 +229,9 @@ func start(options: Dictionary) -> void:
 	draw.set("cull", str(opts.get("cull", "auto")))
 	draw.set("far_mode", str(opts.get("standins", "off")))
 	draw.set("far_dist", float(opts.get("far", "150")))
-	draw.set("rim_band", float(opts.get("band", str(walk.get("rim_band", 9.0)))))
+	draw.set("rim_band", lcfg["rim_band"])
+	if landscape.has_meta(&"tl_terrain"):
+		draw.set("rim_material", landscape.get_meta(&"tl_terrain").rim_material)
 	draw.set("grounds", has_ground)                            # walker-feel T2: no rim bend for a pack without ground
 	draw.set("force_picture", str(opts.get("picture", "")))     # P11 (PATCHES-P6 entry 2): still | mid | far, every far game
 	add_child(draw)
@@ -353,12 +359,11 @@ func _on_plot_event(i: int, what: String, ev: Dictionary) -> void:
 				# P5: the first pack to stand on this plot arrived after the landscape was built: its static colliders
 				# are copied into the visitor's space now (landscape.gd does it at the start for the packs that are there)
 				var ws: Object = landscape.get_meta(&"tl_space")
-				var lc: Variant = (world.get("walk") as Dictionary).get("landscape", {})
 				ws.set("tag", "pack %d" % i)
 				var tc: int = Time.get_ticks_usec()
 				# P14: listed now, copied in slices of 2 ms a frame (nearest plot first), and at once when he is near
 				_copies.append({"i": i, "job": ws.call("begin_pack", (world.get("packs") as Array)[i], plots[i], float(radii[i]),
-					float(rims[i]), (float((lc as Dictionary).get("rim_band", 9.0)) if typeof(lc) == TYPE_DICTIONARY else 9.0) if bool(has_ground[i]) else 0.0)})
+					float(rims[i]), DrawScript.rim_width(float(radii[i]), draw.get("rim_band")) if bool(has_ground[i]) else 0.0)})
 				_note("colliders_list p%d" % i, tc)
 			_arrived[i] = true
 			if i == stage or not tour:
