@@ -63,7 +63,7 @@ static func prepare_style(headless: bool) -> void:
 	if style == null:
 		return
 	style.call("set_headless", headless)
-	var problems: Variant = style.call("load_style")
+	var problems: Variant = style.call("load_style", style.call("_chosen_path"))   # diorama-base: TL_STYLE
 	if problems is PackedStringArray:
 		for p: String in problems:
 			print("[tl] style: " + p)
