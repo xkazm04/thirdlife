@@ -17,19 +17,6 @@
       "note": "day 19 Nov lane editor round 2, .claude/worktrees/d19-editor3, until 16:45"
     },
     {
-      "id": "d19-blend",
-      "scope": [
-        "engine/kernel/world/landscape.gd",
-        "engine/kernel/world/terrain/village_terrain.gd",
-        "engine/kernel/world/terrain/village_parts.gd",
-        "engine/kernel/world/draw/**",
-        "engine/style/**",
-        "engine/kernel/world/WORLD.md",
-        "docs/shifts/2026-11-19-day/lanes/blend/**"
-      ],
-      "note": "day 19 Nov lane blend round 2, .claude/worktrees/d19-blend2, until 16:45"
-    },
-    {
       "id": "d19-parkour",
       "scope": [
         "engine/packs/parkour/**",
