@@ -51,6 +51,27 @@ var face_view: bool = false             # lane walker (TL_AD_KEYS=sidestep, visi
 var mode: String = "ground"             # the body's mode: ground | air | slope | slide
 signal flight_step
 const Body = preload("res://kernel/world/terrain/world_body.gd")
+var ledge_top: Vector3:
+	get:
+		return space.ensure_mover().ledge_top if space != null else Vector3.ZERO
+var wall_normal: Vector3:
+	get:
+		return space.ensure_mover().wall_normal if space != null else Vector3.ZERO
+var bar_point: Vector3:
+	get:
+		return space.ensure_mover().bar_point if space != null else Vector3.ZERO
+var bar_axis: Vector3:
+	get:
+		return space.ensure_mover().bar_axis if space != null else Vector3.ZERO
+var bar_theta: float:
+	get:
+		return space.ensure_mover().bar_theta if space != null else 0.0
+var bar_omega: float:
+	get:
+		return space.ensure_mover().bar_omega if space != null else 0.0
+var mantle_progress: float:
+	get:
+		return space.ensure_mover().mantle_progress if space != null else 0.0
 var flying: bool:
 	get:
 		return mode == "fly"
@@ -261,7 +282,7 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 		# a game is on stage: the walker stands where he entered it (as before: nothing moved him then); a held slide
 		# or slope clip ends with the slide the rest just ended, or he comes back on his hip (bugfix-37 D7)
 		space.call("rest")
-		if rig != null and (mode == "slide" or mode == "slope"):
+		if rig != null and mode in ["slide", "slope", "hang", "bar", "mantle"]:
 			_clip(&"")
 		if flying:
 			_flight_changed_at = ticks
@@ -302,7 +323,11 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 	d.y = 0.0
 	speed = d.length() * 60.0
 	var hv: Vector3 = Vector3(vel.x, 0.0, vel.z)
-	if face_view and (mode == "ground" or mode == "air"):
+	if mode == "hang" or mode == "mantle":
+		face_yaw = atan2(wall_normal.x, wall_normal.z)
+	elif mode == "bar":
+		face_yaw = _bar_face()                                          # across the bar, kept through the swing
+	elif face_view and (mode == "ground" or mode == "air"):
 		face_yaw = lerp_angle(face_yaw, look_yaw, FACE_EASE)          # a sidestep or a backward walk: the gait reads the direction
 	elif hv.length() > 0.5 and mode != "slope":
 		face_yaw = lerp_angle(face_yaw, atan2(-hv.x, -hv.z), FACE_EASE)
@@ -331,9 +356,22 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 					# a slide started this very tick ends here too (pressed on the edge tick, D19)
 					if was == "slide" or was == "slope" or (res["events"] as Array).has("slide"):
 						_clip(&"")
+				# Grip clips are optional. The rig reads the contact and progress getters above.
+				"hang":
+					_clip(&"hang")
+				"mantle":
+					_clip(&"mantle")
+				"bar":
+					_clip(&"swing")
+				"end_mantle", "release", "drop":
+					_clip(&"")
 				"fly_start":
 					_clip(&"fly")
-				"fly_land", "fly_end":
+					FlightWings.dust(get_parent(), feet, 1.3)       # round 2: a puff as he lifts off
+				"fly_land":
+					_clip(&"")
+					FlightWings.dust(get_parent(), feet, 1.0)       # ... and as he lands
+				"fly_end":
 					_clip(&"")
 		rig.call("tick", frame)
 		if wings != null:
@@ -347,7 +385,55 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 ## Lane flight: the figure leans into the flight (LEAN_HOVER hovering, LEAN_CRUISE at cruise, eased) about a point at
 ## his middle and banks into a turn (from the heading's turn rate); on the ground both are 0 and the rig is turned only
 ## about y, exactly as before.
+## Round 2: the facing across the bar (perpendicular to its axis, level), the side nearest where he faced as he caught it.
+func _bar_face() -> float:
+	var side: Vector3 = bar_axis.cross(Vector3.DOWN)
+	side.y = 0.0
+	if side.length() < 0.001:
+		return face_yaw
+	side = side.normalized()
+	var f: Vector3 = Vector3(-sin(face_yaw), 0.0, -cos(face_yaw))
+	if f.dot(side) < 0.0:
+		side = -side
+	return atan2(-side.x, -side.z)
+
+
+## Round 2: on the bar the whole figure turns about the bar by the swing's angle (its feet are where the body put them,
+## its hands on the bar: the rig is turned about its feet by the same rotation the body used); hanging on a ledge the
+## figure hangs HANG_SINK lower than the capsule (its arms are overhead, the body's hands are at chest height), easing
+## back to 0 through the mantle.
+const HANG_SINK: float = 0.4
+var _tilt: Quaternion = Quaternion.IDENTITY     # the bar's turn of the figure (world), eased out after a release
+var _sink: float = 0.0                          # the hang's sink, eased out after a drop
+
+
+func _grip_pose(yaw_rel: float) -> bool:
+	if mode == "bar":
+		_tilt = Quaternion(Basis(bar_axis.normalized(), bar_theta))
+		_sink = 0.0
+		var world_b: Basis = Basis(_tilt) * Basis(Vector3.UP, face_yaw)
+		rig.transform = Transform3D(Basis(Vector3.UP, look_yaw).inverse() * world_b, Vector3.ZERO)
+		return true
+	if mode == "hang" or mode == "mantle":
+		_sink = HANG_SINK if mode == "hang" else HANG_SINK * (1.0 - smoothstep(0.0, 0.6, mantle_progress))
+		_tilt = Quaternion.IDENTITY
+		rig.transform = Transform3D(Basis(Vector3.UP, yaw_rel), Vector3(0.0, -_sink, 0.0))
+		return true
+	if not _tilt.is_equal_approx(Quaternion.IDENTITY) or _sink != 0.0:
+		# just let go of a bar or a ledge: the figure turns upright (and rises to the capsule) over about 12 ticks
+		_tilt = _tilt.slerp(Quaternion.IDENTITY, 0.25)
+		if _tilt.angle_to(Quaternion.IDENTITY) < 0.01:
+			_tilt = Quaternion.IDENTITY
+		_sink = move_toward(_sink, 0.0, 0.06)
+		var b: Basis = Basis(Vector3.UP, look_yaw).inverse() * Basis(_tilt) * Basis(Vector3.UP, look_yaw) * Basis(Vector3.UP, yaw_rel)
+		rig.transform = Transform3D(b, Vector3(0.0, -_sink, 0.0))
+		return true
+	return false
+
+
 func _lean_and_bank(yaw_rel: float) -> void:
+	if _grip_pose(yaw_rel):
+		return
 	var lean_want: float = lerpf(LEAN_HOVER, LEAN_CRUISE, fly_speed_k) if flying else 0.0
 	var bank_want: float = clampf(rad_to_deg(_flight_turn) * 0.2, -BANK_MAX, BANK_MAX) if flying else 0.0
 	if flying:

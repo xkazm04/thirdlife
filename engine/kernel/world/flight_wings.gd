@@ -156,3 +156,35 @@ static func _len_basis(a: float, dir: float, ln: float) -> Basis:
 	var r: Basis = Basis(Vector3(0, 0, 1), dir)
 	var s: Basis = Basis.from_scale(Vector3(ln, 1.0, 1.0))
 	return Basis(Vector3(0, 0, 1), a) * (r * s * r.inverse())
+
+
+## Round 2: a puff of dust at `at` under `parent` (take-off and landing): the style's own `dust` preset (TLStyleFx, palette
+## discs), freed after its life in physics frames; nothing headless or without the style. `scale` 1 = a landing.
+const DUST_FRAMES: int = 40
+
+
+static func dust(parent: Node, at: Vector3, scale: float = 1.0) -> Node:
+	var fx: GDScript = TLStandin.ext("TLStyleFx")
+	if fx == null or parent == null or not parent.is_inside_tree():
+		return null
+	var p: Variant = fx.call("preset", "dust", {"life_frames": DUST_FRAMES, "one_shot": true, "scale": scale})
+	if p == null:
+		return null
+	var n: CPUParticles3D = p
+	n.add_child(_FreeAfter.new(DUST_FRAMES + 10))
+	parent.add_child(n)
+	n.global_position = at + Vector3(0.0, 0.05, 0.0)
+	n.emitting = true
+	return n
+
+
+class _FreeAfter extends Node:
+	var left: int = 0
+
+	func _init(frames: int) -> void:
+		left = frames
+
+	func _physics_process(_d: float) -> void:
+		left -= 1
+		if left <= 0:
+			get_parent().queue_free()

@@ -4,6 +4,10 @@ extends RefCounted
 const RADIUS: float = 0.35
 const HEIGHT: float = 1.8
 
+var copied_bars := {}  # marked static shape copies in a village space, keyed by body RID
+var walker_radius := RADIUS
+var walker_height := HEIGHT
+var crouched := false
 var space: RID = RID()
 var body: RID = RID()
 var max_slope_deg: float = 55.0

@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.9)
+# Third Life kernel API (kernelApi 1.10)
 
-**Version 1.9 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.10 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.9"` in `pack.json` (any
-`"1.x"` up to 1.9 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.10"` in `pack.json` (any
+`"1.x"` up to 1.10 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -324,6 +324,31 @@ The `fly_scale` option defaults to 5.0 times run speed. Flight eases into turns 
 It sweeps against solids and crowns and limits altitude to 120 m over ground. Descending onto walkable ground lands.
 Optional `drive_from_input` keys are `fly` (toggle on press), `climb` and `descend` (held).
 Forward input cruises at 45 m/s by default. Sideways and backward input travel at run speed.
+
+### Ledges and bars (addition in 1.10)
+
+Pass `{"feel": &"walker", "moves": [&"ledge", &"bar"]}` to `TLBiped.create`. Each move is optional.
+The village visitor has both. `walker_motion()` also reports `hang`, `mantle` and `bar`.
+Catch from the air by approaching a steep face whose walkable lip is 2.0 to 2.8 m above the feet.
+The full capsule needs room to stand on top. The hands hang at the lip, 1.6 m above the feet.
+Use `jump()` or move into the wall to mantle in 28 physics ticks. If a sweep is obstructed, the walker
+falls from the last safe position. Use `slide()` or move away to drop. The hang holds its position along the edge.
+
+Call `TLBiped.mark_bar(body: CollisionObject3D)` on a `StaticBody3D` before the plot is copied.
+It sets the `tl_bar` metadata. A cylinder or capsule collision shape's transformed local Y axis is the bar,
+bounded by the shape's ends. Lay it horizontally for a playground swing. A visitor can catch the copied
+collider even after the source pack is unloaded. An airborne walker catches within 0.35 m of the axis
+at hands height 2.2 m. Move across the bar to pump. `jump()` releases with tangential speed plus
+2 m/s up, and `slide()` drops with tangential speed. Re-catching the same grip takes 20 clear ticks.
+Existing jump and slide actions in `drive_from_input` also operate these moves.
+
+The visitor, shared walker body and `TLBiped` expose read-only rig hooks including `ledge_top` and `wall_normal` in world space during
+`hang` and `mantle`, `mantle_progress` (0 to 1), and `bar_point`, `bar_axis`, `bar_theta`
+(radians) and `bar_omega` (rad/s) during `bar`. The optional clip names are `hang`, `mantle` and `swing`.
+The kernel's biped rig has those three clips. With it, `TLBiped` (and the visitor) pose the figure for you: on a bar
+the whole rig turns about the bar by `bar_theta` with its hands on the bar and faces across the bar; on a ledge it
+faces the wall and hangs 0.4 m (x body scale) lower so the raised hands meet the lip; after a release or a drop it
+turns upright in about 12 ticks.
 
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
 

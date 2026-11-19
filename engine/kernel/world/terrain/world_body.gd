@@ -54,9 +54,33 @@ const STEP_TICKS: int = 9            # a wish that starts from rest is kept at l
 
 var vel: Vector3 = Vector3.ZERO       # m/s
 var grounded: bool = true
-var mode: String = "ground"           # ground | air | slope | slide | fly
+var mode: String = "ground"           # ground | air | slope | slide | fly | hang | mantle | bar
 var ground_n: Vector3 = Vector3.UP
 var air_ticks: int = 0                # ticks since he last stood on walkable ground
+const Grips = preload("res://kernel/world/terrain/walker_grips.gd")
+var grips := Grips.new()
+var ledge_top: Vector3:
+	get:
+		return grips.ledge_top
+var wall_normal: Vector3:
+	get:
+		return grips.wall_normal
+var bar_point: Vector3:
+	get:
+		return grips.bar_point
+var bar_axis: Vector3:
+	get:
+		return grips.bar_axis
+var bar_theta: float:
+	get:
+		return grips.theta
+var bar_omega: float:
+	get:
+		return grips.omega
+var mantle_progress: float:
+	get:
+		return grips.mantle_tick / float(Grips.MANTLE_TICKS)
+
 var _turn := 0.0
 var fly_turn: float:
 	get:
@@ -72,6 +96,7 @@ var _step_wish: Vector3 = Vector3.ZERO
 
 ## Starts the body at rest, standing (after a teleport: `put`, entering, leaving).
 func rest() -> void:
+	grips.reset()
 	if mode == "fly":
 		_fold()
 	vel = Vector3.ZERO
@@ -247,8 +272,14 @@ func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool, brake: bool = 
 			_step_t = 0
 			_slide_t = 0
 			ev.append("fly_start")
+	if grips.ledges or grips.bars:
+		grips.advance_clock()
 	if mode == "fly":
 		return _fly(pos, Vector3.ZERO if brake else wish, climb, cruise, ev)
+	if grips.ledges or grips.bars:
+		var grip := grips.drive(self, pos, Vector3.ZERO if brake else wish, jump, slide, ev)
+		if not grip.is_empty():
+			return grip
 	# a tapped key is a step: a wish that starts from rest is kept STEP_TICKS ticks
 	var hv: Vector3 = Vector3(vel.x, 0.0, vel.z)
 	if brake:
