@@ -20,15 +20,39 @@ signal got_up()                                      ## K2: he stands again and 
 
 const OPTIONS: Array = ["rig", "rig_params", "mode", "position", "facing", "name", "group", "walk_speed", "run_speed", "accel",
 	"turn_rate", "skate_speed", "skate_accel", "skate_lateral_grip", "skate_turn_rate", "skate_brake", "jump_speed",
-	"body_mass", "push_strength", "sole_material", "blade_material", "get_up_frames", "body_scale", "feel", "fly_scale"]
+	"body_mass", "push_strength", "sole_material", "blade_material", "get_up_frames", "body_scale", "feel", "fly_scale", "moves"]
 
 const _Walker = preload("res://kernel/world/terrain/world_body.gd")
+const _Grip = preload("res://kernel/world/terrain/grip_pose.gd")
+var _grip: RefCounted = null
 const _WalkerSpace = preload("res://kernel/world/terrain/walker_space.gd")
 const WALKER_SLIDE_HEIGHT: float = 0.84
 const WALKER_HEIGHT: float = _WalkerSpace.HEIGHT
 
 var _walker_space: _WalkerSpace
 var _walker: _Walker
+## Current world-space grip for a pack rig. Read while walker_motion() reports the corresponding move.
+var ledge_top: Vector3:
+	get:
+		return _walker.ledge_top if _walker != null else Vector3.ZERO
+var wall_normal: Vector3:
+	get:
+		return _walker.wall_normal if _walker != null else Vector3.ZERO
+var mantle_progress: float:
+	get:
+		return _walker.mantle_progress if _walker != null else 0.0
+var bar_point: Vector3:
+	get:
+		return _walker.bar_point if _walker != null else Vector3.ZERO
+var bar_axis: Vector3:
+	get:
+		return _walker.bar_axis if _walker != null else Vector3.ZERO
+var bar_theta: float:
+	get:
+		return _walker.bar_theta if _walker != null else 0.0
+var bar_omega: float:
+	get:
+		return _walker.bar_omega if _walker != null else 0.0
 var fly_scale: float = _Walker.FLY_SCALE
 var _toggle_fly := false
 var _climb := 0.0
@@ -83,7 +107,7 @@ static func create(opts: Dictionary = {}) -> TLBiped:
 	for k: String in opts.keys():
 		if not OPTIONS.has(k):
 			push_error("TLBiped.create: unknown option '%s' (options: %s)" % [k, ", ".join(PackedStringArray(OPTIONS))])
-		elif not ["rig", "rig_params", "mode", "position", "facing", "name", "group", "body_scale", "feel"].has(k):
+		elif not ["rig", "rig_params", "mode", "position", "facing", "name", "group", "body_scale", "feel", "moves"].has(k):
 			b.set(k, opts[k])
 	match StringName(opts.get("feel", &"default")):
 		&"walker":
@@ -97,6 +121,15 @@ static func create(opts: Dictionary = {}) -> TLBiped:
 			pass
 		_:
 			push_error("TLBiped.create: unknown feel '%s'" % opts["feel"])
+	if opts.has("moves"):
+		if b._walker == null or not opts.moves is Array:
+			push_error("TLBiped.create: moves requires walker feel and an Array of move names")
+		else:
+			for move_name: Variant in opts.moves:
+				match move_name:
+					&"ledge": b._walker.grips.ledges = true
+					&"bar": b._walker.grips.bars = true
+					_: push_error("TLBiped.create: unknown walker move '%s'" % str(move_name))
 	var given: Variant = opts.get("rig")
 	if given is Node3D:
 		var problems: PackedStringArray = TLStandin.check_rig(given as Node3D)
@@ -162,7 +195,15 @@ func jump() -> void:
 	_jump = true
 
 
-## Requests one grounded run slide in walker feel.
+## Mark the cylinder/capsule shapes of a static body as finite swing bars.
+static func mark_bar(body: CollisionObject3D) -> void:
+	if not body is StaticBody3D:
+		push_error("TLBiped.mark_bar: expected a StaticBody3D")
+		return
+	body.set_meta(&"tl_bar", true)
+
+
+## Requests a grounded run slide, or drops a walker from a ledge or bar.
 func slide() -> void:
 	if _walker != null:
 		_slide = true
@@ -183,7 +224,7 @@ func climb(v: float) -> void:
 	_climb = clampf(v, -1.0, 1.0)
 
 
-## Walker locomotion after the last physics step: ground, air, fly, slide or slope.
+## Walker locomotion after the last physics step: ground, air, fly, slide, slope, hang, mantle or bar.
 func walker_motion() -> StringName:
 	return StringName(_walker.mode) if _walker != null else &""
 
@@ -231,6 +272,7 @@ func place(at: Vector3, facing: float = 0.0) -> void:
 	rotation.y = facing
 	velocity = Vector3.ZERO
 	if _walker != null:
+		var held_grip := _walker.mode in ["hang", "mantle", "bar"]
 		_walker.rest()
 		_toggle_fly = false
 		_climb = 0.0
@@ -238,7 +280,7 @@ func place(at: Vector3, facing: float = 0.0) -> void:
 		_jump = false
 		_slide = false
 		grounded = true
-		if _rig_has(&"slide"):
+		if held_grip or _rig_has(&"slide"):
 			rig.call("play", &"")
 	if is_inside_tree():
 		reset_physics_interpolation()   # D15: drawn at the new place at once, never a glide from the old one (draw only)
@@ -342,6 +384,8 @@ func set_body_scale(scale_: float) -> void:
 	if _walker != null:
 		h = WALKER_HEIGHT * _body_scale
 		r = _WalkerSpace.RADIUS * _body_scale
+		_walker_space.walker_radius = r
+		_walker_space.walker_height = h
 		_sliding = CapsuleShape3D.new()
 		_sliding.radius = r
 		_sliding.height = WALKER_SLIDE_HEIGHT * _body_scale
@@ -404,6 +448,7 @@ func _set_low(low: bool) -> void:
 	if low == _low:
 		return
 	_low = low
+	_walker_space.crouched = low
 	var cap: CapsuleShape3D = _sliding if low else _standing
 	_shape.shape = cap
 	_shape.position.y = cap.height * 0.5
@@ -420,6 +465,7 @@ func _walker_tick(delta: float, mv: Vector3, brk: bool) -> void:
 		wish = mv * lerpf(run_speed, cruise, _forward_share)
 	if not in_flight and _slide and not _jump and not is_down() and _walker.can_start_slide():
 		_set_low(true)
+	var was_gripping := _walker.mode in ["hang", "mantle", "bar"]
 	var res: Dictionary = _walker.drive(global_position, wish, _jump and not is_down(), _slide and not is_down(), brk, _toggle_fly, _climb, cruise)
 	_toggle_fly = false
 	_climb = 0.0
@@ -433,16 +479,29 @@ func _walker_tick(delta: float, mv: Vector3, brk: bool) -> void:
 		if not _walker_space._test(Transform3D(Basis.IDENTITY, global_position), Vector3.UP * (_standing.height - _sliding.height)):
 			_set_low(false)
 	var flat := Vector2(velocity.x, velocity.z)
-	if flat.length() > 0.5:
+	if _walker.mode in ["hang", "mantle"]:
+		rotation.y = atan2(_walker.wall_normal.x, _walker.wall_normal.z)
+	elif _walker.mode == "bar":
+		rotation.y = _Grip.bar_facing(self, _walker)  # across the bar, kept through the swing (it reverses each half)
+	elif flat.length() > 0.5:
 		rotation.y = rotate_toward(rotation.y, atan2(-flat.x, -flat.y), turn_rate * delta)
 	for event: String in res["events"]:
 		var clip := StringName(event)
 		if event == "slope":
 			clip = &"slope_slide"
-		elif event == "end_slide":
+		elif event == "fly_start" and was_gripping:
+			clip = &"fly" if _rig_has(&"fly") else &""
+		elif event == "bar":
+			clip = &"swing"
+		elif event in ["end_slide", "end_mantle", "release", "drop"]:
 			clip = &""
 		if rig != null and (clip == &"" or _rig_has(clip)):
 			rig.call("play", clip)
+	if rig != null:                                  # 1.10: the figure's pose on a grip (kernel/world/terrain/grip_pose.gd)
+		_grip = _grip if _grip != null else _Grip.new()
+		_grip.call("pose", self, rig, _walker, _body_scale)
+
+
 
 
 func _physics_process(delta: float) -> void:

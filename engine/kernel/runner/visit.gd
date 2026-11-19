@@ -5,7 +5,7 @@ extends Node
 ## `tl.input/1` record (`--record=<file>`) and fed back (`--input=<file>`): the visitor walks the same path and every
 ## pack ends with the same hash. Later a second player's keys can arrive here from another machine.
 ##
-##   actions  forward W, back S, left A, right D, run Shift, jump Space, slide C (while running), fly F (Space climbs, C descends), enter E, leave Q, quit Esc, and the pointer
+##   actions  forward W, back S, left A, right D, run Shift, jump/mantle/release Space, run slide/grip drop C, fly F (Space climbs, C descends), enter E, leave Q, quit Esc, and the pointer
 ##            (TLInput.LOOK_X / LOOK_Y: pixels the mouse moved while it was captured, this tick)
 ##   record   `pack` is the walk's name, `mode` "play", `max_frames` the walk's ticks, `length` the samples taken.
 ##            A game played on stage is a record of its own (the same schema, that pack's own frames):

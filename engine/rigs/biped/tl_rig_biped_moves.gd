@@ -181,3 +181,56 @@ static func fly(t: float) -> Dictionary:
 		"RightUpperArm": Vector3(-28.0 + 2.0 * b, 0, 16.0), "RightLowerArm": Vector3(8.0, 0, 0), "RightHand": Vector3(-10.0, 0, 10.0),
 		"Backpack": Vector3(0, 0, 0), "Hair": Vector3(-6.0, 0, 0),
 	}
+
+
+## Ledge hang (loops, 2.0 s; lane flight round 2): both hands up and a little forward on the edge at shoulder width,
+## elbows soft, head tipped back to look at the top, legs hanging with bent knees and the toes against the face, a slow
+## sway. The controller puts the feet so the hands meet the edge.
+static func hang(t: float) -> Dictionary:
+	var s: float = sin(TAU * t / 2.0)
+	return {
+		"_hips": Vector3(0, 0, 0), "Hips": Vector3(2.0, 0, 1.5 * s), "Spine": Vector3(4.0, 0, 0), "Chest": Vector3(6.0, 0, 0), "Neck": Vector3(8.0, 0, 0), "Head": Vector3(16.0, 0, 0),
+		"LeftShoulder": Vector3(0, 0, -10.0), "RightShoulder": Vector3(0, 0, 10.0),
+		"LeftUpperArm": Vector3(145.0, 0, -16.0), "LeftLowerArm": Vector3(18.0, 0, 0), "LeftHand": Vector3(-20.0, 0, 0),
+		"RightUpperArm": Vector3(145.0, 0, 16.0), "RightLowerArm": Vector3(18.0, 0, 0), "RightHand": Vector3(-20.0, 0, 0),
+		"LeftUpperLeg": Vector3(14.0 + 3.0 * s, 0, -4.0), "LeftLowerLeg": Vector3(-34.0, 0, 0), "LeftFoot": Vector3(-20.0, 0, 0), "LeftToes": Vector3(0, 0, 0),
+		"RightUpperLeg": Vector3(8.0 - 3.0 * s, 0, 4.0), "RightLowerLeg": Vector3(-26.0, 0, 0), "RightFoot": Vector3(-20.0, 0, 0), "RightToes": Vector3(0, 0, 0),
+		"Backpack": Vector3(0, 0, 0), "Hair": Vector3(4.0, 0, 0),
+	}
+
+
+## Mantle (one shot, 0.47 s = 28 ticks, the body's MANTLE_TICKS): pull up (arms from overhead to pressing down on the top
+## beside the hips, chest leaning over the edge), the right knee comes up onto the top, then he stands. The controller
+## moves the body along its path; this is the pose along it.
+static func mantle(t: float) -> Dictionary:
+	var k: float = clampf(t / 0.47, 0.0, 1.0)
+	var pull: float = smoothstep(0.0, 0.45, k)
+	var knee: float = smoothstep(0.35, 0.7, k) * (1.0 - smoothstep(0.8, 1.0, k))
+	var stand: float = smoothstep(0.7, 1.0, k)
+	var lean: float = -28.0 * smoothstep(0.15, 0.5, k) * (1.0 - stand)
+	return {
+		"_hips": Vector3(0, -0.12 * knee, 0), "Hips": Vector3(lean, 0, 0), "Spine": Vector3(lean * 0.5, 0, 0), "Chest": Vector3(lean * 0.3, 0, 0),
+		"Neck": Vector3(lerpf(8.0, 2.0, pull), 0, 0), "Head": Vector3(lerpf(16.0, 0.0, pull), 0, 0),
+		"LeftShoulder": Vector3(0, 0, -10.0 * (1.0 - pull)), "RightShoulder": Vector3(0, 0, 10.0 * (1.0 - pull)),
+		"LeftUpperArm": Vector3(lerpf(145.0, -12.0, pull) * (1.0 - stand), 0, lerpf(-16.0, -14.0, pull)), "LeftLowerArm": Vector3(lerpf(18.0, 70.0 * (1.0 - pull * 0.6), pull) * (1.0 - stand), 0, 0), "LeftHand": Vector3(0, 0, 0),
+		"RightUpperArm": Vector3(lerpf(145.0, -12.0, pull) * (1.0 - stand), 0, lerpf(16.0, 14.0, pull)), "RightLowerArm": Vector3(lerpf(18.0, 70.0 * (1.0 - pull * 0.6), pull) * (1.0 - stand), 0, 0), "RightHand": Vector3(0, 0, 0),
+		"LeftUpperLeg": Vector3(lerpf(14.0, 0.0, stand), 0, -4.0), "LeftLowerLeg": Vector3(lerpf(-34.0, 0.0, stand), 0, 0), "LeftFoot": Vector3(lerpf(-20.0, 0.0, stand), 0, 0), "LeftToes": Vector3(0, 0, 0),
+		"RightUpperLeg": Vector3(lerpf(8.0, 0.0, stand) + 92.0 * knee, 0, 4.0), "RightLowerLeg": Vector3(lerpf(-26.0, 0.0, stand) - 112.0 * knee, 0, 0), "RightFoot": Vector3(lerpf(-20.0, 0.0, stand) + 10.0 * knee, 0, 0), "RightToes": Vector3(0, 0, 0),
+		"Backpack": Vector3(0, 0, 0), "Hair": Vector3(0, 0, 0),
+	}
+
+
+## Bar swing (loops, 1.3 s): both arms straight overhead on the bar, body long, legs together with a light pike and a
+## kick that breathes with the loop. The controller turns the whole figure about the bar by the swing's angle (hands
+## stay on the bar); this is the body's shape under it.
+static func swing(t: float) -> Dictionary:
+	var s: float = sin(TAU * t / 1.3)
+	return {
+		"_hips": Vector3(0, 0, 0), "Hips": Vector3(4.0 * s, 0, 0), "Spine": Vector3(2.0, 0, 0), "Chest": Vector3(4.0, 0, 0), "Neck": Vector3(6.0, 0, 0), "Head": Vector3(8.0, 0, 0),
+		"LeftShoulder": Vector3(0, 0, -6.0), "RightShoulder": Vector3(0, 0, 6.0),
+		"LeftUpperArm": Vector3(176.0, 0, -8.0), "LeftLowerArm": Vector3(4.0, 0, 0), "LeftHand": Vector3(-12.0, 0, 0),
+		"RightUpperArm": Vector3(176.0, 0, 8.0), "RightLowerArm": Vector3(4.0, 0, 0), "RightHand": Vector3(-12.0, 0, 0),
+		"LeftUpperLeg": Vector3(10.0 + 8.0 * s, 0, -2.0), "LeftLowerLeg": Vector3(-10.0 - 6.0 * s, 0, 0), "LeftFoot": Vector3(-36.0, 0, 0), "LeftToes": Vector3(0, 0, 0),
+		"RightUpperLeg": Vector3(10.0 + 8.0 * s, 0, 2.0), "RightLowerLeg": Vector3(-10.0 - 6.0 * s, 0, 0), "RightFoot": Vector3(-36.0, 0, 0), "RightToes": Vector3(0, 0, 0),
+		"Backpack": Vector3(0, 0, 0), "Hair": Vector3(-4.0 * s, 0, 0),
+	}

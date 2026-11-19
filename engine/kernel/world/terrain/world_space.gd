@@ -27,7 +27,7 @@ var _keep: Array = []                 # Shape3D resources that must outlive thei
 var _cap: CapsuleShape3D = null
 var _cyl: Dictionary = {}             # radius key -> CylinderShape3D (shared by every trunk of that size)
 var _spheres: Dictionary = {}
-var _mover: RefCounted = null         # walker-feel: the body with weight (world_body.gd), made on the first drive()
+var _mover: Mover = null         # walker-feel: the body with weight (world_body.gd), made on the first drive()
 const Mover: GDScript = preload("res://kernel/world/terrain/world_body.gd")
 const DrawBase: GDScript = preload("res://kernel/world/draw/draw_base.gd")     # bugfix-37 Q17: `edge_height` (pad_rim)
 
@@ -64,6 +64,7 @@ func free_all() -> void:
 	for b: Variant in _bodies:
 		PhysicsServer3D.free_rid(b as RID)
 	_bodies.clear()
+	copied_bars.clear()
 	drawn_crowns.clear()
 	if body.is_valid():
 		PhysicsServer3D.free_rid(body)
@@ -96,6 +97,7 @@ func remove_tag(t: String) -> int:
 			PhysicsServer3D.free_rid(b as RID)
 			_bodies.erase(b)
 			_tags.erase(b)
+			copied_bars.erase(b)
 			drawn_crowns.erase(b)
 			n += 1
 	stats["bodies"] = int(stats["bodies"]) - n
@@ -266,7 +268,7 @@ func _list_static(n: Node, inv: Transform3D, radius: float, items: Array) -> voi
 				var local: Transform3D = inv * (ch as CollisionShape3D).global_transform
 				var sh: Shape3D = (ch as CollisionShape3D).shape
 				if sh is ConcavePolygonShape3D or radius <= 0.0 or Vector2(local.origin.x, local.origin.z).length() <= radius + 2.0:
-					items.append([sh, local])
+					items.append([sh, local, n.get_meta(&"tl_bar", false)])
 	for c: Node in n.get_children():
 		_list_static(c, inv, radius, items)
 
@@ -319,12 +321,18 @@ func step_pack(job: Dictionary, budget_usec: int) -> bool:
 			if band > 0.0 and radius > 0.0:
 				lifted.origin = _bent(local.origin, radius, rim, band)
 			_keep.append(sh)                                  # bugfix-37 D9: the pack's shape outlives its holder here
-			_static(sh, plot * lifted)
+			_copy_solid(sh, plot * lifted, it[2])
 			stats["pack_shapes"] = int(stats["pack_shapes"]) + 1
 		job["at"] = int(job["at"]) + 1
 		if Time.get_ticks_usec() - t0 > budget_usec:
 			break
 	return int(job["at"]) >= items.size()
+
+
+func _copy_solid(shape: Shape3D, xf: Transform3D, marked: bool) -> void:
+	_static(shape, xf)
+	if marked and (shape is CapsuleShape3D or shape is CylinderShape3D):
+		copied_bars[_bodies.back()] = true
 
 
 func _bent(p: Vector3, radius: float, rim: float, band: float) -> Vector3:
@@ -372,7 +380,7 @@ func _add_pack_walk(n: Node, holder: Node3D, inv: Transform3D, plot: Transform3D
 				if band > 0.0 and radius > 0.0:
 					lifted.origin = _bent(local.origin, radius, rim, band)
 				_keep.append(sh)                              # bugfix-37 D9: the pack's shape outlives its holder here
-				_static(sh, plot * lifted)
+				_copy_solid(sh, plot * lifted, sb.get_meta(&"tl_bar", false))
 				stats["pack_shapes"] = int(stats["pack_shapes"]) + 1
 	for c: Node in n.get_children():
 		_add_pack_walk(c, holder, inv, plot, radius, rim, band)
@@ -433,15 +441,21 @@ func walk(from: Vector3, delta: Vector3) -> Dictionary:
 ## Walker-feel (18 Nov 2026): a person's body moves by velocity (terrain/world_body.gd, which uses this space's tests).
 ## One call per world tick; see world_body.gd for the numbers.
 func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool, toggle_fly: bool = false, climb: float = 0.0) -> Dictionary:
-	if _mover == null:
-		_mover = Mover.new(self)
+	ensure_mover()
 	var result: Dictionary = _mover.drive(from, wish, jump, slide, false, toggle_fly, climb)
 	place(result["pos"])
 	return result
 
 
-## The body at rest, standing (after a teleport).
-func rest() -> void:
+func ensure_mover() -> Mover:
 	if _mover == null:
 		_mover = Mover.new(self)
+		_mover.grips.ledges = true
+		_mover.grips.bars = true
+	return _mover
+
+
+## The body at rest, standing (after a teleport).
+func rest() -> void:
+	ensure_mover()
 	_mover.rest()
