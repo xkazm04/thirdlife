@@ -66,7 +66,10 @@ Approved by the owner on 19 Nov (E2). `interview` moves the minigame editor's qu
 `engine/ui/interview/*.json`): `{kind, example, match: [words], estimate: {packages, minutes, source}, questions:
 [{key, group, ask, options: [{id, label, say, from_words?, size?, shape?}], propose, reason}]}`. `group` is one of
 `who`, `win`, `where`. `propose` names the option the editor proposes; `reason` says why, with a measured figure where
-one exists. `size` on an option changes the footprint (`{set: [w, d, h]}` or `{scale: f}`). The editor's answers travel in
+one exists. `size` on an option changes the footprint (`{set: [w, d, h]}` or `{scale: f}`). Added later on 19 Nov (the editor lane's use, accepted by the Director): `size: {add: [w, d]}` adds
+metres to the footprint; an option may carry `stands: true` (the footprint gains the stands drawn around it);
+`interview.variants` (optional) lists one-click variants as `[{label, answers: {<key>: <option id>}}]`, each answer a real
+option of its question. The editor's answers travel in
 `job_created.answers` (JOB.md, "Added 2026-11-19"). A request no card fits uses the editor's own `none` questions, which
 stay in `engine/ui/`.
 
