@@ -32,7 +32,9 @@ const plan = {
       milestone: "blockout",
       deps: [],
       scope: ["scripts/**", "data/tuning.json", "gen/**", "tests/**"],
-      contract: "The kernel example pack_min, file for file: balls roll down a ramp and cross a finish line.",
+      // E2 (19 Nov): the Planner's check since P10 wants the player check named in a contract line of its own
+      contract: ["The kernel example pack_min, file for file: balls roll down a ramp and cross a finish line.",
+        "PLAYER CHECK: tests/bot_roll.gd fails when no ball crosses the finish line after the release"].join(String.fromCharCode(10)),
       registers: { capabilities: ["physics", "camera", "input"], assets: ["gen/layout.gd"], tests: ["tests/bot_roll.gd"], cameras: ["hero"] },
       acceptance: [
         { level: "V1", verb: "lint", args: [] },

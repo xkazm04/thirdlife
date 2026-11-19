@@ -45,3 +45,20 @@ Resume point. Newest entry last. Times are CEST from `date`.
 - 09:08 ui/captures/sheet.png built (39 captures) and looked at. Known and not fixed: on a stalled job the Change
   field is enabled and the section head still says "1 in flight" while the row's chip says "no foreman" (capture 14).
 - 09:09 final process check, report. RESUME POINT: nothing is running; the work is complete as reported.
+
+# E1/E2 journal (the workbench and the game sheet, night of 19 Nov, lane editor)
+
+- 00:05 brief read; today's panel captured on the seven fixtures (lane stills/today). Registry: wizard-flows,
+  templates-scaffolding, review-before-commit, conversation-orchestration. DESIGN.md in the lane folder.
+- ui/editor/editor_model.gd: the one model (sentence, recipe, answers with who gave them, footprint, lot, checks,
+  request, draft). ui/interview/*.json (tl.ui-interview/1): one per recipe card plus none.json; every proposal is
+  one of its options and has a reason (selftest).
+- ui/editor/workbench.gd (+ look.gd, village_map.gd, scale_strip.gd, workbench_row.gd): idea, recipe chip with the
+  words that matched, questions with proposals, village map from boot/village.json (drag, wheel / Q / E to turn,
+  Close up), named checks, walker scale strip, request bar, Build it through foreman_door.new_game.
+- panel.gd is size-ratcheted at 1325 lines: the workbench row is made by editor/workbench_row.gd and tells the host
+  through `action_started("workbench", "")`; panel.gd changed by one line.
+- ui/editor/game_sheet.gd (E2): a workbench game opens in it when selected (draft found by the job's sentence).
+- ui/fixtures/make_fake.mjs: its plan had no PLAYER CHECK line, which the Planner refuses since P10; the fake live
+  path could not plan. One contract line added; `ui.sh live` passes again (87 s).
+- `ui.sh editor` (drive.gd `_editor`, `--slow` for a clip, `--no-build` to stop at the brief): ok in 61 s.

@@ -1,0 +1,1315 @@
+Reading additional input from stdin...
+OpenAI Codex v0.170.0
+--------
+workdir: C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+model: gpt-6.2-astra
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1f0ea-887b-7300-b0b3-6338aea0143a
+--------
+user
+You are the concept artist and UX designer for the minigame editor of Third Life. Read docs/shifts/2026-11-19-night/lanes/editor/DESIGN.md section 1 (the problem statement and its constraints): that is your whole brief. You design the screens; nobody has a layout in mind for you.
+
+House look references (look at them before you draw): engine/style/STYLE.md (the palette is in engine/style/style.json: read its "palette" keys), docs/reports/img/n7_village_overview.jpg and docs/reports/engine-world-next/S-site-sheet.jpg (the village and the construction site as they are), docs/shifts/2026-11-19-night/lanes/editor/stills/today/*.png (the current dark developer panel the owner calls static and mediocre). The recipe cards the interview can be shaped by are engine/cards/*.json (read team_possession.json and knock_down.json at least).
+
+Draw 3 or 4 key screens of the editor with your image_gen tool, each at 16:9 (1280x720 or larger), as a player would see them in the game window:
+ 1. drawing out what the player wants for a new game (start from the hockey case: the player typed "ice hockey, three against three, against the computer");
+ 2. sizing and placing the construction on a plot in the village (footprint, scale against the 2 m walking figure, neighbours, the road, the gate; a placement that does not fit);
+ 3. a game in progress (what is decided, what is open, what the builders are doing; a builder question waiting);
+ 4. optional, your choice: the case where no recipe card fits (an arena RPG with waves of enemies) or a Takeshi-castle obstacle course being sized.
+Text in the images should be legible English and plausible for the real data in the cards (rules keys like periods, period_seconds, score_to_win; kit parts like rink, stands, scoreboard, light_mast).
+
+Write only under docs/shifts/2026-11-19-night/lanes/editor/mockups/: the images as NN-<name>.png, and for each image the exact prompt you gave image_gen in NN-<name>.prompt.txt, plus one NOTES.md with a short paragraph per screen saying what design decision it shows and why. Read-only git is fine; do not commit; do not touch any other file; do not run Godot. Keep every raw image you generate, including rejected attempts (name them NN-<name>-try<k>.png).
+codex
+I’ll read the brief, cards, and visual references first, then use the imagegen skill to draw the screens. I’ll keep the generated images and their exact prompts together in the requested mockups folder.
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git status --short
+rg --files -g AGENTS.md -g '"'!vendor'"' " in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'rg --files engine/cards docs/shifts/2026-11-19-night/lanes/editor
+Get-Content -Raw engine/cards/team_possession.json
+Get-Content -Raw engine/cards/knock_down.json' in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Raw docs/shifts/2026-11-19-night/lanes/editor/DESIGN.md | ForEach-Object { ($_ -split '"'(?m)"'^## 2[. )]'"')[0] }" in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+ succeeded in 100ms:
+engine/cards\two_sides_ball.json
+engine/cards\timed_drive.json
+engine/cards\team_possession.json
+engine/cards\knock_down.json
+docs/shifts/2026-11-19-night/lanes/editor\DESIGN.md
+docs/shifts/2026-11-19-night/lanes/editor\BRIEF.md
+docs/shifts/2026-11-19-night/lanes/editor\STANDUP.md
+docs/shifts/2026-11-19-night/lanes/editor\stills\today\new.png
+docs/shifts/2026-11-19-night/lanes/editor\stills\today\fx-7-change.png
+docs/shifts/2026-11-19-night/lanes/editor\stills\today\fx-6-tune.png
+docs/shifts/2026-11-19-night/lanes/editor\stills\today\fx-4-failed.png
+docs/shifts/2026-11-19-night/lanes/editor\stills\today\fx-2-question.png
+docs/shifts/2026-11-19-night/lanes/editor\stills\today\01-approve.png
+{
+  "schema": "tl.card/1",
+  "id": "card.team_possession",
+  "version": "0.2.0",
+  "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
+  "summary": "Two teams of a few walkers or skaters on a bounded rink; whoever has the puck inside his reach carries it on his stick, passes to a mate or shoots; a puck inside a goal volume is a point; periods and a score decide. The worked example is the house game hockey (engine/packs/hockey). Covers ice hockey, street hockey, five-a-side football, a team ball game with carriers and passes.",
+  "applies_when": [
+    "two teams of several players each, the player controls one of them and the others are run by the AI",
+    "players carry the ball or puck themselves, pass it to mates and shoot it at the other team's goal",
+    "a point is the ball or puck inside a goal; the match ends by a score or by periods on a clock"
+  ],
+  "not_when": [
+    "one piece per side on a rail or in its own half returning the ball by contact (pong, air hockey): use card.two_sides_ball",
+    "no opponent team: targets to knock down use card.knock_down, a course against the clock card.timed_drive",
+    "a full simulation with goalies, offside or line changes (hockey shows none of them; see its README, known limits)"
+  ],
+  "pack": "hockey",
+  "capabilities": [
+    "physics",
+    "input",
+    "ui",
+    "camera",
+    "rules",
+    "ball",
+    "kit",
+    "style",
+    "biped",
+    "ai",
+    "audio",
+    "vfx"
+  ],
+  "kit_parts": [
+    "rink",
+    "goal",
+    "puck",
+    "stands",
+    "scoreboard",
+    "light_mast",
+    "sign",
+    "flag",
+    "entrance"
+  ],
+  "swap_parts": [
+    "ball",
+    "ground_patch",
+    "fence",
+    "barrier_wall"
+  ],
+  "api": [
+    "TLKit.build_layout",
+    "TLKit.build",
+    "TLKitSite.bind_scoreboard",
+    "TLBiped.create",
+    "TLBall.create",
+    "TLBall.hold",
+    "TLBall.release",
+    "TLBodies.trigger",
+    "TLSteer.arrive",
+    "TLSteer.separate",
+    "TLHand.create",
+    "TLRules.create",
+    "TLRules.add_score",
+    "TLRules.is_over",
+    "TLRules.snapshot",
+    "TLHud.create",
+    "TLHud.add_score",
+    "TLHud.add_clock",
+    "TLVfx.burst",
+    "TLAudio.play"
+  ],
+  "rules_keys": [
+    "sides",
+    "score_to_win",
+    "periods",
+    "period_seconds",
+    "sudden_death",
+    "time_limit_seconds"
+  ],
+  "data_files": [
+    {
+      "file": "data/venue.json",
+      "role": "the play space as one tl.layout/1 file: the rink and the two goals"
+    },
+    {
+      "file": "data/venue_art.json",
+      "role": "the dressing as a second tl.layout/1 file: stands, scoreboards, light masts, signs, flags, the entrance"
+    },
+    {
+      "file": "data/tuning.json",
+      "role": "the rules object TLRules is created from (sides, score, periods) plus skater, shot, carry (reach, pass speed) and camera numbers"
+    },
+    {
+      "file": "data/ai.json",
+      "role": "what the AI skaters do: roles, reaction, how they chase, pass and shoot"
+    },
+    {
+      "file": "data/levels/rookie.json",
+      "role": "one difficulty level of the opponents (reaction frames, speed share); pro and all-star beside it"
+    },
+    {
+      "file": "data/modes/base.json",
+      "role": "one mode as data (roster, rules, rink); the other modes are files beside it"
+    }
+  ],
+  "do": [
+    "Decide possession by reach: a loose puck inside a player's ring is his on that frame; carry it with TLBall.hold and let it go with TLBall.release for a shot or a pass.",
+    "Put a goal volume in each net (TLBodies.trigger) and read the puck's position against it every live tick: a puck inside counts carried, released or lying there, not only on the enter event.",
+    "Keep the rule set, the levels and the modes as data files; the script reads them and only TLRules decides the score and the end.",
+    "Move the AI players with TLSteer (arrive, separate) from roles in data/ai.json; difficulty is their reaction and speed, not hidden help.",
+    "Name the player's check: one bot drives the human side's actions and fails when that side never touched the puck.",
+    "Read every difficulty figure through a hand (TLHand: perfect, sharp, regular, newcomer), never through a perfect bot alone."
+  ],
+  "dont": [
+    "Do not let the human's AI mates take a loose puck he is as near to: they yield it to him (scripts/ai/brain.gd).",
+    "Do not hand the puck to anybody at a face-off: drop it between the two centre men outside both reaches.",
+    "Do not animate a hit by hand: the closing speed picks bump, stumble or knockdown (numbers in data/tuning.json hits) and TLBiped's own down, stumble and shove play it.",
+    "Do not tune the levels against the perfect hand: the ladder is read per hand (tl ladder)."
+  ],
+  "bot": {
+    "template": "tests/bot_hockey.gd",
+    "plays_by": "the human side's own actions through a TLHand: it gets behind the puck on the far side from the other goal, dribbles toward the goal around the opponents and shoots when within range and lined up.",
+    "wins_when": "the match reached its result (the HUD reads WIN, LOSE or DRAW) and the bot's skater took the puck at least once; who won is a number in the result, the must-win verdict is a separate ladder cell."
+  },
+  "acceptance": [
+    "The bot plays a match to its result and takes the puck at least once, on seeds 1 to 20.",
+    "A player who does nothing never takes the puck and does not win the face-off.",
+    "A bot-only match ends with both sides scoring and nobody outside the rink.",
+    "Every mode file ends by its own rules inside its frame budget.",
+    "Lint reports 0 bypasses; the win share per level is quoted with the hand it was read through."
+  ],
+  "variants": [
+    {
+      "ask": "football instead of hockey",
+      "change": "the kit's ball for the puck and ground_patch for the rink in data/venue.json; walkers instead of skaters in data/tuning.json; the same possession by reach."
+    },
+    {
+      "ask": "more or fewer players a side",
+      "change": "a mode file under data/modes/ with its roster; big ice is two against two."
+    },
+    {
+      "ask": "harder opponents",
+      "change": "a level file under data/levels/: less reaction delay and more speed; measure it with tl ladder per hand."
+    }
+  ],
+  "hands": {
+    "seeds": 20,
+    "checks": [
+      {
+        "hand": "newcomer",
+        "wins_min": 13,
+        "measured": "hockey rookie newcomer 18 of 20, Wilson 70..97 (tl ladder, 16 Nov 06:08, engine/packs/hockey/README.md)"
+      },
+      {
+        "hand": "perfect",
+        "wins_min": 16,
+        "measured": "hockey rookie perfect 20 of 20, Wilson 84..100 (tl ladder, 16 Nov 06:08)"
+      }
+    ]
+  }
+}
+
+{
+  "schema": "tl.card/1",
+  "id": "card.knock_down",
+  "version": "0.2.0",
+  "title": "Knock it down: a character throws things at breakable scenery against a clock",
+  "summary": "A walker carries and throws balls at fracturable kit parts; every piece knocked out of place is a point; reach the score before time runs out. Covers demolition, target throwing, a snowball fight against a fort, bowling-like games.",
+  "applies_when": [
+    "the player controls a character on foot who carries, throws or kicks an object",
+    "the targets are scenery that breaks into pieces or falls over, and points come from what was knocked down",
+    "the round ends by reaching a score or by a time limit"
+  ],
+  "not_when": [
+    "targets shoot back or move with intent (needs enemy AI the seed does not show)",
+    "the thing thrown must be caught or passed between characters"
+  ],
+  "seed": "seed_wall",
+  "capabilities": [
+    "physics",
+    "ball",
+    "biped",
+    "fracture",
+    "rules",
+    "input",
+    "camera",
+    "vfx",
+    "audio",
+    "ui",
+    "kit"
+  ],
+  "kit_parts": [
+    "barrier_wall",
+    "ball",
+    "barricade",
+    "fence",
+    "pallet",
+    "scaffold",
+    "cone",
+    "sign",
+    "flag",
+    "light_mast"
+  ],
+  "swap_parts": [
+    "crate",
+    "tyre_stack",
+    "lumber",
+    "ground_patch"
+  ],
+  "api": [
+    "TLKit.build_layout",
+    "TLKit.build",
+    "TLFracture.attach",
+    "TLBiped.create",
+    "TLBiped.drive_from_input",
+    "TLBall.create",
+    "TLBall.hold",
+    "TLBall.release",
+    "TLRules.create",
+    "TLRules.add_score",
+    "TLRules.snapshot",
+    "TLVfx.burst",
+    "TLAudio.play",
+    "TLAudio.count",
+    "TLHud.create"
+  ],
+  "rules_keys": [
+    "sides",
+    "score_to_win",
+    "time_limit_seconds"
+  ],
+  "data_files": [
+    {
+      "file": "data/yard.json",
+      "role": "the venue: the breakable props with ids the script finds by prefix, the spawn point, scenery, a fixed camera"
+    },
+    {
+      "file": "data/rules.json",
+      "role": "the score that wins and the time limit"
+    },
+    {
+      "file": "data/tuning.json",
+      "role": "walker speeds, the ball pool, throw speed and angle, block toughness, camera"
+    }
+  ],
+  "do": [
+    "Use fracturable kit parts (barrier_wall, crate) as targets and attach TLFracture to each; the kit already prepared the pieces.",
+    "Let impacts do the damage: a TLBall reports its hits and the block's damage model does the arithmetic; tune hp and threshold, write no damage code.",
+    "Check that the thrown object can hurt the target at all: impulse is mass times speed and must exceed the material's threshold.",
+    "Queue events in signal handlers and act on the queue as the last step of _pack_tick.",
+    "Score pieces by how far they moved from their place, so the count means knocked down and not cracked.",
+    "Play rig clips from game events (carry, cheer) and mark breaks with one effect burst and one sound."
+  ],
+  "dont": [
+    "Do not build targets from script boxes: they would not fracture and would not wear the style.",
+    "Do not subtract health in the script on contact: TLDamage already does, from the real impulse.",
+    "Do not create the next ball inside the release or the break handler: do it in _pack_tick.",
+    "Do not let the rules say over before the pack reacted (HUD text, horn): the bot reads both.",
+    "Do not set score_to_win above what the bot knocks down with margin: measure first (the seed's bot gets 40 to 45 pieces)."
+  ],
+  "bot": {
+    "template": "tests/bot_knock.gd",
+    "plays_by": "the player's own actions only: it lines up with the nearest standing block at throwing distance, faces it and throws whenever it holds a ball; too close, it walks out and comes in again.",
+    "wins_when": "the rules say state over with reason score, the HUD shows the win text, one break sound per broken block and one horn were recorded; reason time fails."
+  },
+  "acceptance": [
+    "The bot wins by score, never by time, at seeds 1 to 3.",
+    "A player who never throws loses by time with a score of 0.",
+    "Every block can break: none has hp or threshold beyond what the thrown object delivers.",
+    "Lint reports 0 bypasses and 0 kit parts added.",
+    "The orbit camera keeps the walker and the targets in frame; HUD shows score and clock."
+  ],
+  "variants": [
+    {
+      "ask": "kick instead of throw",
+      "change": "the same release with a flat velocity from the feet; lower the hold offset."
+    },
+    {
+      "ask": "a bigger or taller wall",
+      "change": "params of the block props in yard.json; raise score_to_win only after re-measuring the bot."
+    },
+    {
+      "ask": "crates or a tower instead of a wall",
+      "change": "swap barrier_wall for crate (also fracturable) stacked by layout transforms."
+    },
+    {
+      "ask": "lighter ball, faster throws",
+      "change": "lower the blocks' threshold with the ball's mass or nothing breaks (8 kg at 19 m/s is about 150 N*s; concrete's default threshold is 260)."
+    }
+  ],
+  "hands": {
+    "seeds": 20,
+    "checks": [
+      {
+        "hand": "idle",
+        "wins_max": 0,
+        "measured": "seed_wall idle 0 of 20, every round ended by time (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      },
+      {
+        "hand": "perfect",
+        "wins_min": 16,
+        "measured": "seed_wall perfect 20 of 20, Wilson 95 % 84..100 (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
+      }
+    ]
+  }
+}
+
+
+ exited 1 in 104ms:
+?? docs/shifts/2026-11-19-night/lanes/editor/DESIGN.md
+?? docs/shifts/2026-11-19-night/lanes/editor/STANDUP.md
+?? docs/shifts/2026-11-19-night/lanes/editor/stills/
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Raw 'C:/Users/kazda/.codex/skills/.system/imagegen/SKILL.md'" in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Raw engine/style/STYLE.md
+(Get-Content -Raw engine/style/style.json | ConvertFrom-Json).palette | ConvertTo-Json -Depth 10' in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+ succeeded in 105ms:
+---
+name: "imagegen"
+description: "Generate or edit raster images when the task benefits from AI-created bitmap visuals such as photos, illustrations, textures, sprites, mockups, or transparent-background cutouts. Use when Codex should create a brand-new image, transform an existing image, or derive visual variants from references, and the output should be a bitmap asset rather than repo-native code or vector. Do not use when the task is better handled by editing existing SVG/vector/code-native assets, extending an established icon or logo system, or building the visual directly in HTML/CSS/canvas."
+---
+
+# Image Generation Skill
+
+Generates or edits images for the current project (for example website assets, game assets, UI mockups, product mockups, wireframes, logo design, photorealistic images, or infographics).
+
+## Top-level modes and rules
+
+This skill has exactly two top-level modes:
+
+- **Default built-in tool mode (preferred):** built-in `image_gen` tool for image generation, editing, and transparent-image requests. Does not require `OPENAI_API_KEY`.
+- **Fallback CLI mode:** `scripts/image_gen.py` CLI. Use when the user explicitly asks for or confirms the CLI/API/model path. Requires `OPENAI_API_KEY`.
+
+Within CLI fallback, the CLI exposes three subcommands:
+
+- `generate`
+- `edit`
+- `generate-batch`
+
+Rules:
+- Use the built-in `image_gen` tool by default for normal image generation and editing requests.
+- Do not switch to CLI fallback for ordinary quality, size, or file-path control.
+- For transparent images, ask built-in `image_gen` for a transparent background and preserve the generated alpha.
+- Never silently switch from built-in `image_gen` or CLI `gpt-image-2` to CLI `gpt-image-1.5`; ask the user first unless they explicitly requested `gpt-image-1.5`.
+- The word `batch` by itself does not mean CLI fallback. If the user asks for many assets or says to batch-generate assets without explicitly asking for CLI/API/model controls, stay on the built-in path and issue one built-in call per requested asset or variant.
+- If the built-in tool fails or is unavailable, tell the user the CLI fallback exists and that it requires `OPENAI_API_KEY`. Proceed only if the user explicitly asks for that fallback.
+- If the user explicitly asks for CLI mode, use the bundled `scripts/image_gen.py` workflow. Do not create one-off SDK runners.
+- Never modify `scripts/image_gen.py`. If something is missing, ask the user before doing anything else.
+
+Built-in save-path policy:
+- In built-in tool mode, Codex saves generated images under `$CODEX_HOME/*` by default.
+- Do not describe or rely on OS temp as the default built-in destination.
+- Do not describe or rely on a destination-path argument (if any) on the built-in `image_gen` tool. If a specific location is needed, generate first and then move or copy the selected output from `$CODEX_HOME/generated_images/...`.
+- Save-path precedence in built-in mode:
+  1. If the user names a destination, move or copy the selected output there.
+  2. If the image is meant for the current project, move or copy the final selected image into the workspace before finishing.
+  3. If the image is only for preview or brainstorming, render it inline; the underlying file can remain at the default `$CODEX_HOME/*` path.
+- Never leave a project-referenced asset only at the default `$CODEX_HOME/*` path.
+- Do not overwrite an existing asset unless the user explicitly asked for replacement; otherwise create a sibling versioned filename such as `hero-v2.png` or `item-icon-edited.png`.
+
+Shared prompt guidance for both modes lives in `references/prompting.md` and `references/sample-prompts.md`.
+
+Fallback-only docs/resources for CLI mode:
+- `references/cli.md`
+- `references/image-api.md`
+- `references/codex-network.md`
+- `scripts/image_gen.py`
+
+## When to use
+- Generate a new image (concept art, product shot, cover, website hero)
+- Generate a new image using one or more reference images for style, composition, or mood
+- Edit an existing image (inpainting, lighting or weather transformations, background replacement, object removal, compositing, transparent background)
+- Produce many assets or variants for one task
+
+## When not to use
+- Extending or matching an existing SVG/vector icon set, logo system, or illustration library inside the repo
+- Creating simple shapes, diagrams, wireframes, or icons that are better produced directly in SVG, HTML/CSS, or canvas
+- Making a small project-local asset edit when the source file already exists in an editable native format
+- Any task where the user clearly wants deterministic code-native output instead of a generated bitmap
+
+## Decision tree
+
+Think about two separate questions:
+
+1. **Intent:** is this a new image or an edit of an existing image?
+2. **Execution strategy:** is this one asset or many assets/variants?
+
+Intent:
+- If the user wants to modify an existing image while preserving parts of it, treat the request as **edit**.
+- If the user provides images only as references for style, composition, mood, or subject guidance, treat the request as **generate**.
+- If the user provides no images, treat the request as **generate**.
+
+Built-in edit semantics:
+- Built-in edit mode is for images already visible in the conversation context, such as attached images or images generated earlier in the thread.
+- If the user wants to edit a local image file with the built-in tool, first load it with built-in `view_image` tool so the image is visible in the conversation context, then proceed with the built-in edit flow.
+- Do not promise arbitrary filesystem-path editing through the built-in tool.
+- If a local file still needs direct file-path control, masks, or other explicit CLI-only parameters, use the explicit CLI fallback only when the user asks for it.
+- For edits, preserve invariants aggressively and save non-destructively by default.
+
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+- In the CLI fallback path, use the CLI `generate-batch` subcommand only when the user explicitly chose CLI mode and needs many prompts/assets.
+- For many distinct assets, do not use `n` as a substitute for separate prompts. `n` is for variants of one prompt; distinct assets need distinct built-in calls or distinct CLI `generate-batch` jobs.
+
+Assume the user wants a new image unless they clearly ask to change an existing one.
+
+## Workflow
+1. Decide the top-level mode: built-in by default, including transparent-output requests; fallback CLI only if explicitly requested or confirmed.
+2. Decide the intent: `generate` or `edit`.
+3. Decide whether the output is preview-only or meant to be consumed by the current project.
+4. Decide the execution strategy: single asset vs repeated built-in calls vs CLI `generate-batch`.
+5. Collect inputs up front: prompt(s), exact text (verbatim), constraints/avoid list, and any input images.
+6. For every input image, label its role explicitly:
+   - reference image
+   - edit target
+   - supporting insert/style/compositing input
+7. If the edit target is only on the local filesystem and you are staying on the built-in path, inspect it with `view_image` first so the image is available in conversation context.
+8. If the user asked for a photo, illustration, sprite, product image, banner, or other explicitly raster-style asset, use `image_gen` rather than substituting SVG/HTML/CSS placeholders. If the request is for an icon, logo, or UI graphic that should match existing repo-native SVG/vector/code assets, prefer editing those directly instead.
+9. Augment the prompt based on specificity:
+   - If the user's prompt is already specific and detailed, normalize it into a clear spec without adding creative requirements.
+   - If the user's prompt is generic, add tasteful augmentation only when it materially improves output quality.
+10. Use the built-in `image_gen` tool by default.
+11. For transparent-output requests, ask built-in `image_gen` for a transparent background and preserve the generated alpha channel.
+12. Inspect outputs and validate: subject, style, composition, text accuracy, and invariants/avoid items.
+13. Iterate with a single targeted change, then re-check.
+14. For preview-only work, render the image inline; the underlying file may remain at the default `$CODEX_HOME/generated_images/...` path.
+15. For project-bound work, move or copy the selected artifact into the workspace and update any consuming code or references. Never leave a project-referenced asset only at the default `$CODEX_HOME/generated_images/...` path.
+16. For batches or multi-asset requests, persist every requested deliverable final in the workspace unless the user explicitly asked to keep outputs preview-only. Discarded variants do not need to be kept unless requested.
+17. If the user explicitly chooses or confirms the CLI fallback, then use the fallback-only docs for model, quality, size, `input_fidelity`, masks, output format, output paths, and network setup.
+18. Always report the final saved path(s) for any workspace-bound asset(s), plus the final prompt or prompt set and whether the built-in tool or fallback CLI mode was used.
+
+## Transparent image requests
+
+Ask built-in `image_gen` for a genuinely transparent background and preserve its alpha.
+
+## Prompt augmentation
+
+Reformat user prompts into a structured, production-oriented spec. Make the user's goal clearer and more actionable, but do not blindly add detail.
+
+Treat this as prompt-shaping guidance, not a closed schema. Use only the lines that help, and add a short extra labeled line when it materially improves clarity.
+
+### Specificity policy
+
+Use the user's prompt specificity to decide how much augmentation is appropriate:
+
+- If the prompt is already specific and detailed, preserve that specificity and only normalize/structure it.
+- If the prompt is generic, you may add tasteful augmentation when it will materially improve the result.
+
+Allowed augmentations:
+- composition or framing hints
+- polish level or intended-use hints
+- practical layout guidance
+- reasonable scene concreteness that supports the stated request
+
+Not allowed augmentations:
+- extra characters or objects that are not implied by the request
+- brand names, slogans, palettes, or narrative beats that are not implied
+- arbitrary side-specific placement unless the surrounding layout supports it
+
+## Use-case taxonomy (exact slugs)
+
+Classify each request into one of these buckets and keep the slug consistent across prompts and references.
+
+Generate:
+- photorealistic-natural â€” candid/editorial lifestyle scenes with real texture and natural lighting.
+- product-mockup â€” product/packaging shots, catalog imagery, merch concepts.
+- ui-mockup â€” app/web interface mockups and wireframes; specify the desired fidelity.
+- infographic-diagram â€” diagrams/infographics with structured layout and text.
+- scientific-educational â€” classroom explainers, scientific diagrams, and learning visuals with required labels and accuracy constraints.
+- ads-marketing â€” campaign concepts and ad creatives with audience, brand position, scene, and exact tagline/copy.
+- productivity-visual â€” slide, chart, workflow, and data-heavy business visuals.
+- logo-brand â€” logo/mark exploration, vector-friendly.
+- illustration-story â€” comics, childrenâ€™s book art, narrative scenes.
+- stylized-concept â€” style-driven concept art, 3D/stylized renders.
+- historical-scene â€” period-accurate/world-knowledge scenes.
+
+Edit:
+- text-localization â€” translate/replace in-image text, preserve layout.
+- identity-preserve â€” try-on, person-in-scene; lock face/body/pose.
+- precise-object-edit â€” remove/replace a specific element (including interior swaps).
+- lighting-weather â€” time-of-day/season/atmosphere changes only.
+- background-extraction â€” transparent background / clean cutout. Ask built-in `image_gen` for actual transparency.
+- style-transfer â€” apply reference style while changing subject/scene.
+- compositing â€” multi-image insert/merge with matched lighting/perspective.
+- sketch-to-render â€” drawing/line art to photoreal render.
+
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+
+Notes:
+- `Asset type` and `Input images` are prompt scaffolding, not dedicated CLI flags.
+- `Scene/backdrop` refers to the visual setting. It is not the same as the fallback CLI `background` parameter, which controls output transparency behavior.
+- Fallback-only execution notes such as `Quality:`, `Input fidelity:`, masks, output format, and output paths belong in the CLI path only. Do not treat them as built-in `image_gen` tool arguments.
+
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+
+## Examples
+
+### Generation example (hero image)
+```text
+Use case: product-mockup
+Asset type: landing page hero
+Primary request: a minimal hero image of a ceramic coffee mug
+Style/medium: clean product photography
+Composition/framing: wide composition with usable negative space for page copy if needed
+Lighting/mood: soft studio lighting
+Constraints: no logos, no text, no watermark
+```
+
+### Edit example (invariants)
+```text
+Use case: precise-object-edit
+Asset type: product photo background replacement
+Primary request: replace only the background with a warm sunset gradient
+Constraints: change only the background; keep the product and its edges unchanged; no text; no watermark
+```
+
+## Prompting best practices
+- Structure prompt as scene/backdrop -> subject -> details -> constraints.
+- Include intended use (ad, UI mock, infographic) to set the mode and polish level.
+- Use camera/composition language for photorealism.
+- Only use SVG/vector stand-ins when the user explicitly asked for vector output or a non-image placeholder.
+- Quote exact text and specify typography + placement.
+- For tricky words, spell them letter-by-letter and require verbatim rendering.
+- For multi-image inputs, reference images by index and describe how they should be used.
+- For edits, repeat invariants every iteration to reduce drift.
+- Iterate with single-change follow-ups.
+- If the prompt is generic, add only the extra detail that will materially help.
+- If the prompt is already detailed, normalize it instead of expanding it.
+- For CLI fallback only, see `references/cli.md` and `references/image-api.md` for model, `quality`, `input_fidelity`, masks, output format, and output-path guidance.
+- For transparent images, ask built-in `image_gen` for actual transparency and preserve its alpha.
+
+More principles shared by both modes: `references/prompting.md`.
+Copy/paste specs shared by both modes: `references/sample-prompts.md`.
+
+## Guidance by asset type
+Asset-type templates (website assets, game assets, wireframes, logo) are consolidated in `references/sample-prompts.md`.
+
+## gpt-image-2 guidance for CLI fallback
+
+The fallback CLI defaults to `gpt-image-2`.
+
+- Use `gpt-image-2` for new CLI/API workflows unless the user confirms a different model.
+- CLI `gpt-image-2` does not support `background=transparent`; ask before using `gpt-image-1.5` unless the user explicitly requested that model.
+- `gpt-image-2` always uses high fidelity for image inputs; do not set `input_fidelity` with this model.
+- `gpt-image-2` supports `quality` values `low`, `medium`, `high`, and `auto`.
+- Use `quality low` for fast drafts, thumbnails, and quick iterations. Use `medium`, `high`, or `auto` for final assets, dense text, diagrams, identity-sensitive edits, or high-resolution outputs.
+- Square images are typically fastest to generate. Use `1024x1024` for fast square drafts.
+- If the user asks for 4K-style output, use `3840x2160` for landscape or `2160x3840` for portrait.
+- `gpt-image-2` size may be `auto` or `WIDTHxHEIGHT` if all constraints hold: max edge `<= 3840px`, both edges multiples of `16px`, long-to-short ratio `<= 3:1`, total pixels between `655,360` and `8,294,400`.
+
+Popular `gpt-image-2` sizes:
+- `1024x1024` square
+- `1536x1024` landscape
+- `1024x1536` portrait
+- `2048x2048` 2K square
+- `2048x1152` 2K landscape
+- `3840x2160` 4K landscape
+- `2160x3840` 4K portrait
+- `auto`
+
+## Fallback CLI mode only
+
+### Temp and output conventions
+These conventions apply only to the CLI fallback. They do not describe built-in `image_gen` output behavior.
+- Use `tmp/imagegen/` for intermediate files (for example JSONL batches); delete them when done.
+- Write final artifacts under `output/imagegen/`.
+- Use `--out` or `--out-dir` to control output paths; keep filenames stable and descriptive.
+
+### Dependencies
+Prefer `uv` for dependency management in this repo.
+
+Required Python package:
+```bash
+uv pip install openai
+```
+
+Optional for image inspection and downscaling:
+```bash
+uv pip install pillow
+```
+
+Portability note:
+- If you are using the installed skill outside this repo, install dependencies into that environment with its package manager.
+- In uv-managed environments, `uv pip install ...` remains the preferred path.
+
+### Environment
+- `OPENAI_API_KEY` must be set for live API calls.
+- Do not ask the user for `OPENAI_API_KEY` when using the built-in `image_gen` tool.
+- Never ask the user to paste the full key in chat. Ask them to set it locally and confirm when ready.
+
+If the key is missing, give the user these steps:
+1. Create an API key in the OpenAI platform UI: https://platform.openai.com/api-keys
+2. Set `OPENAI_API_KEY` as an environment variable in their system.
+3. Offer to guide them through setting the environment variable for their OS/shell if needed.
+
+If installation is not possible in this environment, tell the user which dependency is missing and how to install it into their active environment.
+
+### Script-mode notes
+- CLI commands + examples: `references/cli.md`
+- API parameter quick reference: `references/image-api.md`
+- Network approvals / sandbox settings for CLI mode: `references/codex-network.md`
+
+## Reference map
+- `references/prompting.md`: shared prompting principles for both modes.
+- `references/sample-prompts.md`: shared copy/paste prompt recipes for both modes.
+- `references/cli.md`: fallback-only CLI usage via `scripts/image_gen.py`.
+- `references/image-api.md`: fallback-only API/CLI parameter reference.
+- `references/codex-network.md`: fallback-only network/sandbox troubleshooting for CLI mode.
+- `scripts/image_gen.py`: fallback-only CLI implementation. Use only when the user explicitly chooses or confirms CLI mode.
+
+
+ succeeded in 269ms:
+# The minigame editor: design (lane editor, night of 19 Nov 2026)
+
+Status: problem statement written 00:20; the rest of this file is filled in below it during the night.
+
+## 1. Problem statement (this is what Astra draws from)
+
+**Third Life** is a cosy toy-like 3D sandbox village (golden-hour light, ink outlines, chunky low-poly kit parts:
+fences, cranes, rinks, stands, scaffolds, flags). A player describes a minigame; AI builders (the Foreman) make it
+over 30-60 minutes; while they work, a construction site with a crane and one "bay" per package rises on a fenced
+round lot in the village; when the game is finished the scaffold comes down and the game stands on the lot, playable
+by walking in. The village has a road, about ten round plots (radius 28 to 64 m) and site lots beside it.
+
+**The editor** is the player's tool for this. Today it is a dark developer panel: a list of jobs with state chips and
+a sheet with folding sections (brief, build, change, tune). A new game starts from one blank text box ("Describe a
+game..."). The owner calls it "very static and mediocre"; it should become **the backbone for thoughtful minigames and
+worldbuilding**: games like ice hockey (two teams, a puck, periods), an arena RPG (a fighter, waves of enemies,
+abilities), and Takeshi's-Castle-style obstacle courses (jumps, slides, beams, a clock).
+
+The editor must do three things well:
+
+1. **Draw out what the player wants.** Not a blank box. The engine has *recipe cards*: one per kind of game it knows
+   how to build (today: team possession = hockey/football, knock-down = throw at breakable walls, timed drive =
+   laps against a clock, two sides and a ball = pong/air hockey). Each card knows the questions that matter for its
+   kind (players a side, periods and their length, score to win, laps, difficulty as opponent reaction, the
+   surface: ice or grass, the venue's dressing: stands, scoreboard, light masts) and offers common variants
+   ("football instead of hockey", "harder opponents"). For each question the editor can propose an answer with a
+   one-line reason, so the player adjudicates instead of composing. Some ideas fit no card (an arena RPG has none
+   yet): the editor must say so honestly (built without a recipe: slower, riskier, more questions from builders).
+   The player's own sentence still matters: it is the first thing asked and it is kept, word for word.
+2. **Present a game in progress.** What is decided (answers, the brief), what is still open (a builder's question
+   waiting for the player, choices left to defaults), what the builders are doing now (packages: waiting, building,
+   checking, on hold, built, failed; minutes and tokens spent), and pictures as they come. A builder can stop and
+   ask a question; the game can stall; a change can be asked for after the first part is built; numbers can be
+   tuned with sliders once it is done.
+3. **Size and place the construction in the world.** The game needs ground: a footprint (a hockey rink 60 x 30 m
+   plus stands; an obstacle course 18 x 50 m and 12 m high; a throwing range). The player must see how big it will
+   be against a 2 m tall walking figure, which plot of the village it takes, its neighbours, which way its gate
+   faces the road, and whether it fits (no overlap with other games, not on the road, a path in from the road).
+   Answers change the size (more players a side = bigger rink; more obstacles = a longer course) and the placement
+   must follow live.
+
+**Who uses it:** a player, not a developer; at a desk (mouse and keyboard, 1280x720 to 1920x1080 window), inside the
+game (the village behind the panel) or on its own. Patient enough to answer six good questions, not twenty.
+
+**Constraints for any design:**
+- Built in Godot 4.7 from code (Controls, a 2D top-down map drawn with draw_* calls, optionally a small 3D view);
+  no web views. Colours come from the house style file (golden hour palette: warm cream, honey, terracotta, sage
+  grass, dusk violet shade, ink-dark outlines); the current panel is a dark violet card over the scene.
+- Every state must exist on screen: empty (no games yet; no card fits), waiting (builders working, nothing to see
+  yet; Foreman not reachable), error (the game could not be finished; a builder's question blocks; the placement
+  overlaps a neighbour or the road).
+- Nothing is spent before the player commits: answers and a placement are a staged proposal until "Build it".
+- The player's own words are kept and shown; the engine's proposals are visibly proposals (with their reason).
+- Figures are honest: a size or estimate that is a guess is shown as a guess.
+
+
+
+ succeeded in 198ms:
+# Style (`TLStyle`, kernelApi 0.1)
+
+The whole look is data: `style.json` (golden hour) and `style_overcast.json`. Swapping the file changes palette, sun,
+toon bands, fog, sky, ink and grade with no code change. All state is static: **no autoload, no project setting**
+(the 16 global shader parameters are added at run time by `TLStyle`).
+
+```gdscript
+var notes: PackedStringArray = TLStyle.load_style("res://style/style_overcast.json")   # optional: style.json loads itself on first use
+TLStyle.install(world_root)                 # Sun, WorldEnvironment (painted sky), InkPost, Grade under one `TLStyleRig` child; idempotent
+TLStyle.material(&"grass")                  # THE palette material (the same ShaderMaterial for every toon key)
+TLStyle.material(&"glass")                  # special materials: glass, water, holo, fx_add, fx_mix
+TLStyle.palette()                           # PackedStringArray of palette keys
+TLStyle.set_headless(true)                  # normally detected from the display server
+```
+
+- `load_style` returns messages. A line starting with `clamped: ` is a note (a value was outside its looked-at range
+  and was clamped: the file is applied). Any other line is an error and the file is **not** applied: the previous
+  style stays. Unknown sections and unknown `mat` keys are errors. `TLStyle.check(dict)` validates without applying.
+- To swap the look at run time: `TLStyle.load_style(other)` then `TLStyle.install(host)` again. Meshes need no
+  rebuild as long as both files have the same palette keys in the same order (the two shipped files do): a mesh
+  stores the palette **column** of each face, and the colour is read from a lookup texture built from the file.
+- `install(host, {"ink": false, "grade": false})` leaves the post-process passes out (for measurements).
+- Extras used by the kit: `TLStyle.color(key)`, `TLStyle.num(section, key, default)`, `TLStyle.has_key(key)`,
+  `TLStyle.material_instance(key)` (a private copy of a special material), `TLStyle.push(section, material)`.
+- `tl_style_fx.gd` (`TLStyleFx`): lane-B particle and glow helpers (`sparks`, `dust_burst`, `smoke`, `nitro_trail`,
+  `tyre_dust`, `glow`). They create `CPUParticles3D`, which run on the engine's clock: visual only, never state.
+  `TLStyleFx.preset(name, {life_frames, one_shot, direction, scale, color})` is the in-style effect for each kernel
+  `TLVfx` preset (`TLStyleFx.preset_names()`); the kernel calls it, a pack calls `TLVfx`.
+
+**For a pack author: you call none of this.** The kernel installs the style in windowed runs and asks it for
+materials. The three seams the kernel uses (added in WP5):
+- `TLStyle.flat_material(color, metal = 0.0)`: the toon look in one flat colour, for geometry `TLMesh` did not build
+  (the box or sphere behind `TLBodies.make(..., {"color": ...})` and `TLBall`). One material per colour.
+- `TLStyle.ground(y = 0.0, key = "", half = 2000.0)`: a very large flat ground in a palette colour (`env.ground_key`
+  in the style file, else `grass`), visual only. The kernel adds it when a pack built no kit ground.
+- The environment's ambient light is the mean of `toon.amb_sky` and `toon.amb_ground` times `env.plain_ambient`
+  (default 1.0). Every style shader ignores it (they are `ambient_light_disabled` or `unshaded` and bring their own),
+  so it only lights materials the style did not make: a `StandardMaterial3D` is readable, though it has no bands and
+  no drawn surface. The right fix for such a material is not to make it.
+
+## Headless
+Under `--headless` (or after `set_headless(true)`): no shader is loaded, no texture is built, no global shader
+parameter is touched, `install` adds an empty `TLStyleRig` node, and `material(key)` returns one shared
+`ShaderMaterial` with no shader (it answers `set_shader_parameter`). Palette queries, `load_style` and validation
+work as usual, so parts and layouts build identically.
+
+## Style file
+Sections: `name`, `sun`, `toon`, `env`, `fog`, `sky`, `ink`, `grade`, `holo`, `water`, `palette`, `mat`, `detail`,
+`lights`, `fx`. `palette` is `key -> "#rrggbb"`; a new material is a palette colour plus an optional `mat` entry:
+`mat.<key>` = `{class: none|wood|concrete|steel|tarmac|ground|rock|roof|fabric|masonry, dscale, dk, emit, metal,
+mottle, no_hatch, ice, dissolve, sway, shader: glass|water, base_a, fres_a}`. The clamp ranges are the `RANGES`
+table in `tl_style.gd`.
+
+Rink markings are drawn by the toon shader on any surface whose material has `ice: 1` **and** whose UV carries the
+sheet's half length and half width (the `rink` part writes them): each rink draws its own markings in its own space,
+so any number of rinks of any size and yaw work. UV (0, 0) = plain ice (ponds, `ground_patch` with `surface: ice`).
+
+## Shaders (`style/shaders/`)
+`toon` (the one palette material: bands, hatching, drawn surface detail per material class, ice, dissolve, sway),
+`ink_post` (outline pass on depth and normals), `grade`, `sky`, `holo`, `glass`, `water`, `fx_add`, `fx_mix`.
+
+## N1 look pass (2026-11-11)
+New data keys (all optional; absent = the old behaviour, except where a default is named):
+- `ink.near_px`, `bold_near`, `bold_far`: contour width in px (at 1080) up close, and the metres over which it
+  falls to `outer_px`. `ink.even` 0..1 damps the width noise. `ink.thin_keep` 0..1: a member narrower than the line
+  keeps its colour and gets a hairline (`hair_alpha`) on its lower right side instead of a full contour.
+  `ink.inner_near`, `inner_far`: the crease line's own distance rule (full to, gone at; metres).
+- `ink.ao_k`, `ao_radius`, `ao_far`, `ao_color`: contact shade drawn by the ink pass (8 depth taps). The engine's SSAO
+  was measured and does nothing to the toon shader (it is `ambient_light_disabled` and writes its own light).
+- `env.line_aa`: `smaa` (default), `fxaa` or `off`: screen-space smoothing set on the host viewport by `install`.
+- `env.dof_far`, `dof_far_transition`, `dof_amount`: far blur for cameras without attributes. Shipped **off** (0):
+  at 0.06 and at 0.02 it blurred the far contours that the concept keeps crisp.
+- `sky.sun_draw_elev`: degrees above the horizon at which the sun disc and glow are painted; the light itself
+  (`sun.elev`) stands higher so that venues are lit and shadows are short.
+- Golden style values changed: sun `#ffd9a0` x 1.12 at 21 degrees, shade `#5a60c0` k 0.70, bounce 0.3, grade sat 1.24,
+  contrast 1.14, split 0.06, fog `#d9b6a8`, tarmac `#66666e`.
+
+Toon shader, class `ground`: tone patches with a crisp wobbly edge; `ground_marks()` draws tufts (grass only; they
+stand upright on screen), pebbles (anywhere), scratches and grit (dirt only), and one drawn edge where grass meets
+dirt. Grass or dirt is read from the vertex colour (green above red = grass). The kit's terrain gives ground that is
+not steep one colour and one normal per grid vertex, so its triangles no longer show.
+
+`TLStyleFx.squash(visual, amount = 0.25, frames = 18, axis = UP)` and
+`TLStyleFx.trail(target, {width, frames, color, offset})`: squash and stretch on a visual node (never a body) and a
+fading ribbon behind a moving node. Frame-counted, visual only. A pack cannot reach them yet (there is no `TLVfx`
+seam for them): see the N1 report.
+
+## N5b: a world of several packs (kernel/world/draw/DRAW.md)
+
+Three parameters were added for the world's draw layer; a single pack never sets them and is drawn as before.
+
+- `instance uniform vec4 tl_plot` in toon, glass, water, holo, fx_add, fx_mix: xyz = offset (m), w = yaw (rad) of
+  the pack's plot relative to the stage pack. Not zero: `vertex()` draws the instance at `plot * MODEL_MATRIX`
+  (shadow pass included). World-anchored noise (`wpos`) stays in the pack's own coordinates.
+- `instance uniform vec4 tl_clip` in toon: x = plot radius (0 = no cut), y = height of the world's ground at the
+  plot edge in pack coordinates, z = width of the band in which the pack's ground is bent to it, w = 1 on terrain
+  sheets. Outside the radius an instance is dropped (by its origin) or cut (per fragment, 3 m further out).
+- `uniform int tl_hole_n`, `uniform vec4 tl_holes[32]` in toon: only on the world ground's own material; the plots
+  are cut out of it (xy = centre in the ground's part-local x and z, z = radius).
+
+A new style shader that packs can reach must declare `instance uniform vec4 tl_plot` and apply it in `vertex()`,
+or the draw layer treats its geometry as foreign and mirrors it (correct place, per-frame cost, no plot cut).
+
+
+## P3 look pass (second pass, with motion)
+- Sky: clouds are drawn clumps on the dome (azimuth, elevation) with flat bases and bumpy tops, three flat tones from the slope towards the sun, an ink contour on the
+  shade side. Style keys (section `sky`): `cloud`, `cloud_shade`, `cloud_cover` (0..1 share of cells with a cloud), `cloud_scale` (clumps per radian), `cloud_high`
+  (raises them), `cloud_puff` (size), `cloud_line` (contour strength), `cloud_ink`. The gradient reaches mauve and blue sooner, and the horizon is gold, not pink.
+- Far cliffs and mesas (palette class `rock`): drawn strata at any distance: bands of world height (`detail.strata_m` x 2) with a tone each, ink seams that stay at least
+  one pixel wide, vertical streaks, warm light on the sun side. `palette.cliff` is a purple grey.
+- Grass: broad soft patches from a warm olive-yellow to a cool blue-green in two scales (in `toon.gdshader`, ground class, grass only); the N1 crisp patch edge is soft.
+- Ink: `outer_px` 4.0, `near_px` 4.8, `bold_far` 140, `thin_near` 60, `thin_far` 220, `outer_far` 0.7: contours at 30 to 120 m keep their weight.
+- Light: `toon.rim2` / `toon.rim2_k` = a cool rim on the side that faces away from the sun (global `g_rim2`); `toon.bounce_k` 0.42.
+- Effects (`TLStyleFx.preset`): dust and smoke are larger and more opaque; sparks, nitro flame and goal flash grow in over their first frames instead of appearing at full size.
+
+## Bodies that move (walker-feel, 18 Nov 2026)
+Shading anchored to the world or to the screen crawls over whatever moves through it. Measured on the walking figure
+(frozen pose, rigid camera, 4.5 m/s: mean change per frame 1.20 of 255 on his back, floor of the meter 0.31): the sun's
+shadow map on himself (about 40 %), the world-anchored mottle (about 25 %), amplified by ink and grade. So:
+
+- `instance uniform vec2 tl_body` in `toon` (zero on everything that is not a rig; `TLRigs` sets it on every mesh of a rig).
+  `x = 1`: the mottle is read in the part's own space; the hatching is drawn ON the body (strokes in each part's own
+  space; the spacing follows the distance in octaves so the strokes stay near `toon.hatch_px` pixels); the two rim lights
+  are drawn only where the surface curves (a flat face at a grazing angle lit up whole: the sole of a boot kicked up
+  behind flashed blue); `ROUGHNESS` is written as 0.5 (the toon light never reads it), which marks a body in the
+  normal-roughness buffer for the ink pass.
+  `y` = metres the body's shadow CASTER is moved down the sun's rays (`vertex()`, shadow pass only; nothing below 0.2 m
+  above the instance's origin, in full from about 0.6 m): the shadow on flat ground is the same, and no part of the body
+  shadows another. Shade from the world still falls on it. A rig sets 0.6 x scale (biped, bot), 0 (vehicle).
+  Limit: on ground that rises steeply away from the sun the lower part of the shadow can thin out.
+- `ink.body_k` (default 1.0 in the shader, 0.55 in both shipped styles): the contour width on a body as a share of the
+  width anywhere else; the contour's screen wobble is 30 % there. The contour is drawn inside a silhouette, so on a
+  figure 170 px tall the full width left a dark blob. `ink.body_dbg` 1 paints what the pass takes for a body.
+- After: 0.43 on his back at 4.5 m/s, 0.62 at 9 m/s (was 1.20 and 1.68). Measure again: `look.sh clip rig:run:4.5:0:behind
+  out.mp4 130` with `RIG_ARGS="--freeze-at=90"` (add `--no-body=1` for the old shading) and difference the frames inside
+  the figure.
+- Palette: `pants` is denim blue `#4d5a8c` (was a purple that merged with the ink), `pack` canvas tan `#c2975a`.
+
+## Thin members far away (walker-feel, lane T's item L1)
+Lane T measured that the shimmer of the picture sits on the far fences, scaffolds and trees and comes from the ink pass.
+Measured here on a slow pan (a quarter of a pixel a frame over rail and mesh fences, scaffolds, a crane and trees at 15 to
+70 m; `look.sh boil`): share of pixels in the horizon band that flip by more than 24 grey levels in one frame, and the mean
+change per frame.
+
+| ink variant | flips % | mean |
+|---|---|---|
+| no ink at all (the floor: the geometry's own aliasing) | 0.54 | 1.66 |
+| shipped before (`thin_keep` 1: hairline on thin members) | 3.17 | 3.37 |
+| width noise and wobble anchored to the world instead of the screen (T's proposal) | 3.22 | 3.40 |
+| no width noise, no wobble at all | 3.08 | 3.32 |
+| no hairline on wires (members under 2 px) | 3.31 | 3.47 |
+| thin members get no ink at all | 3.17 | 3.42 |
+| `thin_keep` 0 (every thin member a full black contour: the look N1 removed) | 2.50 | 3.02 |
+| thin decided from three rings (`thin_rings` 1) | 3.03 | 3.27 |
+| **three rings + far thin members toned evenly (`thin_tone` 0.55 from 15 to 45 m): shipped now** | **2.63** | **3.06** |
+
+Reading: the noise is not the cause, and neither is the ink on the thin members themselves. The flips are pixels that change
+CLASS from frame to frame: "thin member: keeps its colour, one hairline" against "edge: full contour". In a lattice the two
+taps of the wide ring land on the next bar or miss it as the picture moves by a fraction of a pixel, and low over ground
+seen at a grazing angle the background is only a few per cent further than the bar, right at the depth threshold. The
+ink is drawn per pixel on a depth buffer that is not multisampled, at full contrast, so every change of class is a dash
+that appears or goes. What helps is to make the two classes look alike where the members are a pixel or two wide:
+- `ink.thin_rings` 1: a member is also thin when both opposite taps of the half-width ring or of the inner ring see the
+  background (8 more depth taps a pixel);
+- `ink.thin_tone` (0.55), `thin_tone_near` (15 m), `thin_tone_far` (45 m): from there on a thin member is toned evenly
+  with that much ink in place of the one-sided hairline (which cannot be drawn on a 2 px bar anyway). Nearer than
+  `thin_tone_near` nothing changes: "coloured bars with one dark side".
+Gain: 17 % fewer flips, 9 % less change per frame, on top of whatever antialiasing the window has (measured with the
+style's SMAA only, no TAA). It is a part, not a cure: the cure is ink that knows sub-pixel coverage (edge taps on a
+multisampled depth, or the contour drawn as geometry), which is a look pass of its own.
+All four keys are optional; absent = the old behaviour.
+
+{
+    "white":  "#ffffff",
+    "grass":  "#86b944",
+    "grass_dry":  "#bdbb4c",
+    "grass_dark":  "#4f8a3e",
+    "dirt":  "#c99568",
+    "sand":  "#dcb88a",
+    "rock":  "#a8998f",
+    "rock_dark":  "#7a6a80",
+    "rock_warm":  "#b2917f",
+    "cliff":  "#8c7088",
+    "tarmac":  "#5c6478",
+    "tarmac_light":  "#747c90",
+    "curb_red":  "#dc4238",
+    "curb_white":  "#f3e8dc",
+    "line_white":  "#efe6dc",
+    "concrete":  "#cbbdb4",
+    "concrete_dark":  "#9c8f98",
+    "barrier":  "#d4c8bf",
+    "barrier_dark":  "#a89aa2",
+    "steel":  "#8a85a0",
+    "steel_dark":  "#4f4a60",
+    "steel_light":  "#b6b0c8",
+    "black":  "#2b2532",
+    "yellow":  "#f2b230",
+    "yellow_dark":  "#c98720",
+    "orange":  "#e8742c",
+    "hazard_red":  "#d8452e",
+    "wood":  "#b9794a",
+    "wood_light":  "#e2b472",
+    "wood_dark":  "#7c4a30",
+    "plank":  "#d9a868",
+    "roof":  "#98443c",
+    "roof_slate":  "#5c4c6c",
+    "stone":  "#aa9e98",
+    "stone_dark":  "#7e7480",
+    "window":  "#ffc462",
+    "leaf":  "#6c9a3c",
+    "leaf_light":  "#a9c243",
+    "pine":  "#2f6b4c",
+    "pine_light":  "#4c8c58",
+    "trunk":  "#6c4a3b",
+    "skin":  "#eab294",
+    "hair":  "#8a4a2c",
+    "jacket":  "#d24a3a",
+    "jacket_trim":  "#f2e4d4",
+    "pants":  "#4d5a8c",
+    "boots":  "#6c4a38",
+    "pack":  "#c2975a",
+    "strap":  "#4a3f4a",
+    "bot_body":  "#f4c43a",
+    "bot_white":  "#f4f0ea",
+    "bot_dark":  "#3a3446",
+    "bot_visor":  "#5af2ff",
+    "car_red":  "#da3a30",
+    "car_blue":  "#3a6cda",
+    "car_white":  "#f6f0e6",
+    "car_glass":  "#2e364a",
+    "tire":  "#2b2731",
+    "rim_metal":  "#c8c4d6",
+    "ice":  "#e2f2ff",
+    "rink_red":  "#d94242",
+    "rink_blue":  "#4274d9",
+    "boards":  "#eee6de",
+    "boards_kick":  "#d9484a",
+    "glass":  "#b4def0",
+    "cyan":  "#52f2ff",
+    "hot":  "#ff9a3a",
+    "flame_core":  "#fff4b8",
+    "dust":  "#c9a57e",
+    "spark":  "#ffe08a",
+    "smoke":  "#f4ebe6",
+    "terrain":  "#ffffff",
+    "goal_red":  "#e04040",
+    "goal_net":  "#d9d0dc",
+    "seat":  "#4a66c8",
+    "seat_alt":  "#e2b062",
+    "rib_built":  "#8f8ca6",
+    "rib_steel":  "#6d6a85",
+    "cone":  "#f0702c",
+    "hazard_white":  "#f3ece6",
+    "grass_blade":  "#a2c24a",
+    "water":  "#4a8ac0",
+    "nitro_hot":  "#ff8a2a",
+    "nitro_core":  "#fff2b0",
+    "tail_light":  "#ff4a3a",
+    "head_light":  "#fff2c0",
+    "bot_body2":  "#3fb6ae",
+    "hat_a":  "#f6f2ea",
+    "hat_b":  "#f07a2a",
+    "hat_c":  "#e24a3a",
+    "beacon":  "#ffb030",
+    "cabin":  "#e3e8ea",
+    "cabin_trim":  "#3f6fb0",
+    "sign":  "#f4d23c",
+    "rebar":  "#70402c",
+    "flag_a":  "#e8483a",
+    "flag_b":  "#3a78d8",
+    "fall_a":  "#bfe4f2",
+    "fall_b":  "#f6fbff",
+    "pond_ice":  "#cfe6f2"
+}
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Encoding UTF8 docs/shifts/2026-11-19-night/lanes/editor/DESIGN.md | Select-Object -First 90' in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Location
+python -c \"from PIL import Image; from pathlib import Path; refs=[Path('docs/reports/img/n7_village_overview.jpg'),Path('docs/reports/engine-world-next/S-site-sheet.jpg'),*Path('docs/shifts/2026-11-19-night/lanes/editor/stills/today').glob('*.png')]; print([(str(p),Image.open(p).size) for p in refs])\" " in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Encoding UTF8 engine/style/STYLE.md | Select-Object -First 82
+Get-ChildItem -Force docs/shifts/2026-11-19-night/lanes/editor/mockups -ErrorAction SilentlyContinue
+Get-Content -Raw engine/packs/hockey/data/venue.json
+Get-Content -Raw engine/packs/hockey/data/modes/base.json' in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+ succeeded in 74ms:
+# The minigame editor: design (lane editor, night of 19 Nov 2026)
+
+Status: problem statement written 00:20; the rest of this file is filled in below it during the night.
+
+## 1. Problem statement (this is what Astra draws from)
+
+**Third Life** is a cosy toy-like 3D sandbox village (golden-hour light, ink outlines, chunky low-poly kit parts:
+fences, cranes, rinks, stands, scaffolds, flags). A player describes a minigame; AI builders (the Foreman) make it
+over 30-60 minutes; while they work, a construction site with a crane and one "bay" per package rises on a fenced
+round lot in the village; when the game is finished the scaffold comes down and the game stands on the lot, playable
+by walking in. The village has a road, about ten round plots (radius 28 to 64 m) and site lots beside it.
+
+**The editor** is the player's tool for this. Today it is a dark developer panel: a list of jobs with state chips and
+a sheet with folding sections (brief, build, change, tune). A new game starts from one blank text box ("Describe a
+game..."). The owner calls it "very static and mediocre"; it should become **the backbone for thoughtful minigames and
+worldbuilding**: games like ice hockey (two teams, a puck, periods), an arena RPG (a fighter, waves of enemies,
+abilities), and Takeshi's-Castle-style obstacle courses (jumps, slides, beams, a clock).
+
+The editor must do three things well:
+
+1. **Draw out what the player wants.** Not a blank box. The engine has *recipe cards*: one per kind of game it knows
+   how to build (today: team possession = hockey/football, knock-down = throw at breakable walls, timed drive =
+   laps against a clock, two sides and a ball = pong/air hockey). Each card knows the questions that matter for its
+   kind (players a side, periods and their length, score to win, laps, difficulty as opponent reaction, the
+   surface: ice or grass, the venue's dressing: stands, scoreboard, light masts) and offers common variants
+   ("football instead of hockey", "harder opponents"). For each question the editor can propose an answer with a
+   one-line reason, so the player adjudicates instead of composing. Some ideas fit no card (an arena RPG has none
+   yet): the editor must say so honestly (built without a recipe: slower, riskier, more questions from builders).
+   The player's own sentence still matters: it is the first thing asked and it is kept, word for word.
+2. **Present a game in progress.** What is decided (answers, the brief), what is still open (a builder's question
+   waiting for the player, choices left to defaults), what the builders are doing now (packages: waiting, building,
+   checking, on hold, built, failed; minutes and tokens spent), and pictures as they come. A builder can stop and
+   ask a question; the game can stall; a change can be asked for after the first part is built; numbers can be
+   tuned with sliders once it is done.
+3. **Size and place the construction in the world.** The game needs ground: a footprint (a hockey rink 60 x 30 m
+   plus stands; an obstacle course 18 x 50 m and 12 m high; a throwing range). The player must see how big it will
+   be against a 2 m tall walking figure, which plot of the village it takes, its neighbours, which way its gate
+   faces the road, and whether it fits (no overlap with other games, not on the road, a path in from the road).
+   Answers change the size (more players a side = bigger rink; more obstacles = a longer course) and the placement
+   must follow live.
+
+**Who uses it:** a player, not a developer; at a desk (mouse and keyboard, 1280x720 to 1920x1080 window), inside the
+game (the village behind the panel) or on its own. Patient enough to answer six good questions, not twenty.
+
+**Constraints for any design:**
+- Built in Godot 4.7 from code (Controls, a 2D top-down map drawn with draw_* calls, optionally a small 3D view);
+  no web views. Colours come from the house style file (golden hour palette: warm cream, honey, terracotta, sage
+  grass, dusk violet shade, ink-dark outlines); the current panel is a dark violet card over the scene.
+- Every state must exist on screen: empty (no games yet; no card fits), waiting (builders working, nothing to see
+  yet; Foreman not reachable), error (the game could not be finished; a builder's question blocks; the placement
+  overlaps a neighbour or the road).
+- Nothing is spent before the player commits: answers and a placement are a staged proposal until "Build it".
+- The player's own words are kept and shown; the engine's proposals are visibly proposals (with their reason).
+- Figures are honest: a size or estimate that is a guess is shown as a guess.
+
+## 2. Today's panel, screen by screen
+(below)
+
+ succeeded in 70ms:
+# Style (`TLStyle`, kernelApi 0.1)
+
+The whole look is data: `style.json` (golden hour) and `style_overcast.json`. Swapping the file changes palette, sun,
+toon bands, fog, sky, ink and grade with no code change. All state is static: **no autoload, no project setting**
+(the 16 global shader parameters are added at run time by `TLStyle`).
+
+```gdscript
+var notes: PackedStringArray = TLStyle.load_style("res://style/style_overcast.json")   # optional: style.json loads itself on first use
+TLStyle.install(world_root)                 # Sun, WorldEnvironment (painted sky), InkPost, Grade under one `TLStyleRig` child; idempotent
+TLStyle.material(&"grass")                  # THE palette material (the same ShaderMaterial for every toon key)
+TLStyle.material(&"glass")                  # special materials: glass, water, holo, fx_add, fx_mix
+TLStyle.palette()                           # PackedStringArray of palette keys
+TLStyle.set_headless(true)                  # normally detected from the display server
+```
+
+- `load_style` returns messages. A line starting with `clamped: ` is a note (a value was outside its looked-at range
+  and was clamped: the file is applied). Any other line is an error and the file is **not** applied: the previous
+  style stays. Unknown sections and unknown `mat` keys are errors. `TLStyle.check(dict)` validates without applying.
+- To swap the look at run time: `TLStyle.load_style(other)` then `TLStyle.install(host)` again. Meshes need no
+  rebuild as long as both files have the same palette keys in the same order (the two shipped files do): a mesh
+  stores the palette **column** of each face, and the colour is read from a lookup texture built from the file.
+- `install(host, {"ink": false, "grade": false})` leaves the post-process passes out (for measurements).
+- Extras used by the kit: `TLStyle.color(key)`, `TLStyle.num(section, key, default)`, `TLStyle.has_key(key)`,
+  `TLStyle.material_instance(key)` (a private copy of a special material), `TLStyle.push(section, material)`.
+- `tl_style_fx.gd` (`TLStyleFx`): lane-B particle and glow helpers (`sparks`, `dust_burst`, `smoke`, `nitro_trail`,
+  `tyre_dust`, `glow`). They create `CPUParticles3D`, which run on the engine's clock: visual only, never state.
+  `TLStyleFx.preset(name, {life_frames, one_shot, direction, scale, color})` is the in-style effect for each kernel
+  `TLVfx` preset (`TLStyleFx.preset_names()`); the kernel calls it, a pack calls `TLVfx`.
+
+**For a pack author: you call none of this.** The kernel installs the style in windowed runs and asks it for
+materials. The three seams the kernel uses (added in WP5):
+- `TLStyle.flat_material(color, metal = 0.0)`: the toon look in one flat colour, for geometry `TLMesh` did not build
+  (the box or sphere behind `TLBodies.make(..., {"color": ...})` and `TLBall`). One material per colour.
+- `TLStyle.ground(y = 0.0, key = "", half = 2000.0)`: a very large flat ground in a palette colour (`env.ground_key`
+  in the style file, else `grass`), visual only. The kernel adds it when a pack built no kit ground.
+- The environment's ambient light is the mean of `toon.amb_sky` and `toon.amb_ground` times `env.plain_ambient`
+  (default 1.0). Every style shader ignores it (they are `ambient_light_disabled` or `unshaded` and bring their own),
+  so it only lights materials the style did not make: a `StandardMaterial3D` is readable, though it has no bands and
+  no drawn surface. The right fix for such a material is not to make it.
+
+## Headless
+Under `--headless` (or after `set_headless(true)`): no shader is loaded, no texture is built, no global shader
+parameter is touched, `install` adds an empty `TLStyleRig` node, and `material(key)` returns one shared
+`ShaderMaterial` with no shader (it answers `set_shader_parameter`). Palette queries, `load_style` and validation
+work as usual, so parts and layouts build identically.
+
+## Style file
+Sections: `name`, `sun`, `toon`, `env`, `fog`, `sky`, `ink`, `grade`, `holo`, `water`, `palette`, `mat`, `detail`,
+`lights`, `fx`. `palette` is `key -> "#rrggbb"`; a new material is a palette colour plus an optional `mat` entry:
+`mat.<key>` = `{class: none|wood|concrete|steel|tarmac|ground|rock|roof|fabric|masonry, dscale, dk, emit, metal,
+mottle, no_hatch, ice, dissolve, sway, shader: glass|water, base_a, fres_a}`. The clamp ranges are the `RANGES`
+table in `tl_style.gd`.
+
+Rink markings are drawn by the toon shader on any surface whose material has `ice: 1` **and** whose UV carries the
+sheet's half length and half width (the `rink` part writes them): each rink draws its own markings in its own space,
+so any number of rinks of any size and yaw work. UV (0, 0) = plain ice (ponds, `ground_patch` with `surface: ice`).
+
+## Shaders (`style/shaders/`)
+`toon` (the one palette material: bands, hatching, drawn surface detail per material class, ice, dissolve, sway),
+`ink_post` (outline pass on depth and normals), `grade`, `sky`, `holo`, `glass`, `water`, `fx_add`, `fx_mix`.
+
+## N1 look pass (2026-11-11)
+New data keys (all optional; absent = the old behaviour, except where a default is named):
+- `ink.near_px`, `bold_near`, `bold_far`: contour width in px (at 1080) up close, and the metres over which it
+  falls to `outer_px`. `ink.even` 0..1 damps the width noise. `ink.thin_keep` 0..1: a member narrower than the line
+  keeps its colour and gets a hairline (`hair_alpha`) on its lower right side instead of a full contour.
+  `ink.inner_near`, `inner_far`: the crease line's own distance rule (full to, gone at; metres).
+- `ink.ao_k`, `ao_radius`, `ao_far`, `ao_color`: contact shade drawn by the ink pass (8 depth taps). The engine's SSAO
+  was measured and does nothing to the toon shader (it is `ambient_light_disabled` and writes its own light).
+- `env.line_aa`: `smaa` (default), `fxaa` or `off`: screen-space smoothing set on the host viewport by `install`.
+- `env.dof_far`, `dof_far_transition`, `dof_amount`: far blur for cameras without attributes. Shipped **off** (0):
+  at 0.06 and at 0.02 it blurred the far contours that the concept keeps crisp.
+- `sky.sun_draw_elev`: degrees above the horizon at which the sun disc and glow are painted; the light itself
+  (`sun.elev`) stands higher so that venues are lit and shadows are short.
+- Golden style values changed: sun `#ffd9a0` x 1.12 at 21 degrees, shade `#5a60c0` k 0.70, bounce 0.3, grade sat 1.24,
+  contrast 1.14, split 0.06, fog `#d9b6a8`, tarmac `#66666e`.
+
+Toon shader, class `ground`: tone patches with a crisp wobbly edge; `ground_marks()` draws tufts (grass only; they
+stand upright on screen), pebbles (anywhere), scratches and grit (dirt only), and one drawn edge where grass meets
+dirt. Grass or dirt is read from the vertex colour (green above red = grass). The kit's terrain gives ground that is
+not steep one colour and one normal per grid vertex, so its triangles no longer show.
+
+{
+  "schema": "tl.layout/1",
+  "name": "hockey_rink",
+  "seed": 3,
+  "_about": "60 x 30 m rink from the kit part rink (boards, centre line, face-off spot and goal lines are its markings); two kit goals, opening 4 m wide, mouths facing each other. Ids goal_blue and goal_red.",
+  "props": [
+    {"id": "rink", "kind": "rink", "p": [0, 0, 0], "params": {"length": 60, "width": 30, "corner_r": 5, "boards": true, "glass": false, "markings": true, "goals": false, "apron": 3.5}},
+    {"id": "goal_blue", "kind": "goal", "p": [-26, 0.05, 0], "yaw": 180, "params": {"width": 4.0, "height": 1.5, "depth": 1.5}},
+    {"id": "goal_red", "kind": "goal", "p": [26, 0.05, 0], "yaw": 0, "params": {"width": 4.0, "height": 1.5, "depth": 1.5}}
+  ]
+}
+
+{
+  "id": "base",
+  "label": "Three against three",
+  "about": "The game as it is: three periods of 36 s, first to 3 goals, a draw at full time plays on to the next goal."
+}
+
+
+ succeeded in 129ms:
+
+[('docs\\reports\\img\\n7_village_overview.jpg', (1600, 900)), ('docs\\reports\\engine-world-next\\S-site-sheet.jpg', (1920, 720)), ('docs\\shifts\\2026-11-19-night\\lanes\\editor\\stills\\today\\01-approve.png', (1280, 720)), ('docs\\shifts\\2026-11-19-night\\lanes\\editor\\stills\\today\\fx-2-question.png', (1280, 720)), ('docs\\shifts\\2026-11-19-night\\lanes\\editor\\stills\\today\\fx-4-failed.png', (1280, 720)), ('docs\\shifts\\2026-11-19-night\\lanes\\editor\\stills\\today\\fx-6-tune.png', (1280, 720)), ('docs\\shifts\\2026-11-19-night\\lanes\\editor\\stills\\today\\fx-7-change.png', (1280, 720)), ('docs\\shifts\\2026-11-19-night\\lanes\\editor\\stills\\today\\new.png', (1280, 720))]
+Path                                                       
+----                                                       
+C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+
+
+
+codex
+The hockey card gives the Foreman a concrete opening suggestion: three 36-second periods. I’ll carry that decision through the plot map and build site, then use the fourth screen for an arena RPG so the player can see what changes when no recipe fits.
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$ErrorActionPreference = '"'Stop'
+"'$outDir = '"'docs/shifts/2026-11-19-night/lanes/editor/mockups'
+[void][IO.Directory]::CreateDirectory((Join-Path (Get-Location) "'$outDir))
+[IO.File]::WriteAllText((Join-Path (Join-Path (Get-Location) $outDir) '"'01-match-length.prompt.txt'), 'Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor''s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don''t print quote marks unless explicitly requested.
+
+Compose a hockey interview in an overlay anchored at the right (roughly 45% of the window), leaving a large playable-looking village view on the left. In the left foreground a proposed rink appears like a tabletop construction maquette on a patch of grass: cool blue-white ice, a red centre line, blue lines, two red nets, exactly three tiny red and three tiny blue stick-carrying skaters (six in total), one black puck, and cool dashed corner marks suggesting a preview. Eye-level-ish elevated three-quarter view with the road, pines and distant mesas visible. Add a simple tag \"Rink preview\". No NHL markings, brands or goalies. On the cream panel show a small heading \"Your idea\" and the player''s literal text exactly, entirely lower case: \"ice hockey, three against three, against the computer\". Beneath it a slim ink rink diagram icon and \"Team possession recipe\". In the panel''s main interaction put \"Match length\", followed by \"How long should a match last?\" Then a honey-accented proposal block, headed \"Foreman suggests\", with two clean editable steppers side by side, showing \"−   3   +\" above \"periods\" and \"−   36   +\" above \"seconds each\". Set the reason in generous type: \"Short periods bring you back to the face-off quickly.\" Distinguish the proposal from an accepted choice. Honey control \"Use these periods\" and quieter \"Decide later\". Footer small but legible \"Draft · Nothing spent\". Make the numbers and the tiny figures on the ice the visual anchors. No extra sections or question list.', [Text.UTF8Encoding]::new("'$false))
+[IO.File]::WriteAllText((Join-Path (Join-Path (Get-Location) $outDir) '"'02-road-clearance.prompt.txt'), 'Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor''s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don''t print quote marks unless explicitly requested.
+
+Create a plot placement tool. The dominant left two-thirds is an accurately scaled, ORTHOGRAPHIC 2D top-down survey map, grass greens, simple crisp primitives, level north up with an ochre village road running vertically along the right edge of the selected lot. Other circular fenced lots, one with an oval go-kart loop and one with a cabin, are partially visible; label that neighbour \"Kart track\". Main selected lot is a circular fenced meadow radius 48 m with an opening to the road on its east. A proposed rink lies horizontally offset too far to the east in that 96 m diameter plot. Draw ice with correct length to width ratio 2:1, simple ice markings, two goals, and a narrow run of spectator stands. A distinct straight dashed rectangular outer footprint around ice AND stands is approx. 70 m long by 42 m deep, or roughly 73% of the lot diameter across. Four chunky drag handles. Show the rightmost end actually intruding over the adjacent dirt road, just the collision patch in bold diagonal red hatching with a leader \"Road overlap\". Show east-facing gate symbol and a path toward road labeled \"Gate\". A thin move-west arrow on the footprint shows how to recover. Keep red confined to the obstruction. Right third is a restrained ivory inspector. Header \"Place your rink\", then \"Meadow plot\" and \"48 m radius\". Display \"Ice\" with \"60 × 30 m\", then \"With stands\" with \"About 70 × 42 m\". A genuine little side ELEVATION with a red-jacket 2 m walking figure beside much taller bleacher steps and an adjacent 2 m vertical tick, caption \"2 m walker\". Clear alert \"The rink crosses the road.\" followed by a honey button \"Centre on plot\", discreet control \"Rotate\", and a clearly disabled grey \"Build it\" commit button. Footer \"Draft · Nothing spent\". No scale ruler with random numbers; do not hide the overlap behind the inspector. No mini dashboards. Actual terrain schematic fills the canvas under native controls. Tiny ink-pen trees and rails give the map character, never sacrificing readability.', [Text.UTF8Encoding]::new("'$false))
+[IO.File]::WriteAllText((Join-Path (Join-Path (Get-Location) $outDir) '"'03-build-site.prompt.txt'), 'Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor''s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don''t print quote marks unless explicitly requested.
+
+Depict an active hockey build on Meadow plot. The whole upper and central scene is the live three-quarter view over a large round timber-fenced lot, entrance path to village road at the front, one big yellow lattice crane and three distinct low kit bays: rink base and red-edged ice boards in first bay, tiny testing skaters in the second, scaffold and unfinished blue stands in third. Late sun, warm grass, plum shadows, distant mesas; game screenshot, not a painting. Directly attached to the three bays put three little ivory signposts with two clearly readable lines each, reading \"Rink / Built\", \"Skaters / Checking\", \"Stands / On hold\" (slash denotes line break). Use check, magnifier, pause icons respectively for quick reading. Beside the Workshop nameplate, clear heading \"Meadow hockey\". Upper right an unobtrusive readout \"18 min elapsed\" and \"240k tokens spent\". Give the bottom about 34% of the screen to two clean well-spaced cream native surfaces. The left is a running brief headed \"Decided\" featuring \"3 a side · Computer opponents\" and \"3 periods · 36 seconds each\" and secondary action \"Request a change\". Add a small single site photograph thumbnail with simple white edge depicting rink boards being fitted, caption \"Latest picture\". The larger bottom-right surface is a Foreman message visibly tied to the held stands bay by a little ink leader or speech tail. A terracotta pause icon beside \"Stands crew is waiting\". Main question: \"Where should the stands go?\" Reason: \"The north side keeps the gate clear.\" A prominent honey action \"Use north side\" and quieter action \"Choose another side\". Make the crew''s pending decision the strongest clickable thing. Do not block view of bays. Show only the requested text, lettering crisp enough to read the status signposts at game size.', [Text.UTF8Encoding]::new("'$false))
+[IO.File]::WriteAllText((Join-Path (Join-Path (Get-Location) $outDir) '"'04-arena-idea.prompt.txt'), 'Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor''s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don''t print quote marks unless explicitly requested.
+
+Show a different interview state in the same native village workshop. A cream, clean field-guide panel occupies the right half. Left is a quiet EMPTY round, low-fenced meadow by the road in golden evening light. In midair above that empty plot only a modest, translucent dotted-ink planning sketch of a possible low circular arena with one small fighter and two groups of abstract enemy silhouettes. No constructed arena or crane. A little ivory tag beneath the sketch reads \"Idea sketch\". The confirmed real village and the unconfirmed idea should be easy to tell apart. Panel top \"Your idea\", followed by the player''s line exactly: \"an arena RPG with waves of enemies\". Then present the finding as the main headline \"No recipe fits yet\". Under it two readable short sentences: \"Enemies that fight back need new behaviour.\" and \"Expect a slower build, more risk and more builder questions.\" Put a simple line drawing of three overlapping blank recipe cards with a magnifying lens beside the finding. Use remaining panel space for an actionable small first decision, heading \"What starts the next wave?\" and a clearly labeled \"Foreman suggests\" choice \"When the arena is clear\", then one short reason \"A clear arena gives you a breather.\" Bottom primary honey button \"Keep planning\" and smaller secondary \"Revise idea\". At foot \"Draft · Nothing spent\". No danger-red fatal error, enemies in combat, false ready-to-build claim, game stats, or costume-fantasy interface. Keep it warm, honest and spacious.', [Text.UTF8Encoding]::new("'$false))
+' in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+ succeeded in 36ms:
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$ErrorActionPreference='"'Stop'
+Copy-Item -LiteralPath 'C:\\Users\\kazda\\.codex\\generated_images\\01a1f0ea-887b-7300-b0b3-6338aea0143a\\exec-2daa38a1-c1f6-4f1d-94d2-bbf80f72dc0a.png' -Destination 'docs/shifts/2026-11-19-night/lanes/editor/mockups/01-match-length.png'
+Copy-Item -LiteralPath 'C:\\Users\\kazda\\.codex\\generated_images\\01a1f0ea-887b-7300-b0b3-6338aea0143a\\exec-c176ac06-e59c-4157-be36-c6fc11e8cfc3.png' -Destination 'docs/shifts/2026-11-19-night/lanes/editor/mockups/02-road-clearance-try1.png'
+Copy-Item -LiteralPath 'C:\\Users\\kazda\\.codex\\generated_images\\01a1f0ea-887b-7300-b0b3-6338aea0143a\\exec-ab62246c-1dae-42a8-a86c-8b80a357360e.png' -Destination 'docs/shifts/2026-11-19-night/lanes/editor/mockups/03-build-site.png'
+Copy-Item -LiteralPath 'C:\\Users\\kazda\\.codex\\generated_images\\01a1f0ea-887b-7300-b0b3-6338aea0143a\\exec-287cf843-6a79-4148-a684-f7e2cae039e6.png' -Destination 'docs/shifts/2026-11-19-night/lanes/editor/mockups/04-arena-idea.png'
+Move-Item -LiteralPath 'docs/shifts/2026-11-19-night/lanes/editor/mockups/02-road-clearance.prompt.txt' -Destination 'docs/shifts/2026-11-19-night/lanes/editor/mockups/02-road-clearance-try1.prompt.txt'
+python -c \"from PIL import Image;from pathlib import Path;print([(p.name,Image.open(p).size) for p in Path('docs/shifts/2026-11-19-night/lanes/editor/mockups').glob('*.png')])\"" in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+ succeeded in 299ms:
+[('01-match-length.png', (1672, 941)), ('02-road-clearance-try1.png', (1672, 941)), ('03-build-site.png', (1672, 941)), ('04-arena-idea.png', (1672, 941))]
+
+codex
+The first plot drawing shows the warning, but the hatched area mostly hugs the fence. I’ll keep that attempt and revise the map so the footprint visibly covers part of the road. I’ll also put the rink-size control beside the footprint estimate.
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "[IO.File]::WriteAllText((Join-Path (Get-Location) 'docs/shifts/2026-11-19-night/lanes/editor/mockups/02-road-clearance.prompt.txt'), 'Edit the supplied Third Life placement screenshot into a final 16:9 game-window UX concept. The source is the first placement attempt. Retain its colours, chunky ivory controls, well-typeset English, Workshop flag, village neighbours, grass, bleacher scale illustration and gate path. Make TWO practical corrections.
+
+1. Make the conflict geometrically undeniable. In the left map, the proposal is being dragged east beyond the circular fenced meadow. Let the ochre road bend INWARD from upper right to lower right so its left edge passes UNDER the eastern 15% of the footprint. The white dashed rectangular selection and blue ice must visibly continue out OVER this broad road, to the middle of the ochre surface. The upper and lower road segments are easy to follow through this area. Where the road is beneath the proposal, draw translucent RED DIAGONAL HATCHES precisely clipped to this rectangular overlap on the road. A single leader \"Road overlap\" points to this collision. Leave the unambiguous leftward recovery arrow. Keep the gate further south with its own unblocked path. The gate faces the road. The nearby \"Kart track\" remains visible.
+
+2. In the inspector make rink resizing an actual control. Change the \"Ice 60 × 30 m\" readout to \"Ice size\" with a clearly outlined compact minus, \"60 × 30 m\", plus stepper. Below, keep \"With stands\" and \"About 70 × 42 m\" as the live footprint estimate. Preserve plot name \"Meadow plot\", \"48 m radius\", scale illustration labeled \"2 m walker\", warning \"The rink crosses the road.\", primary action \"Centre on plot\", rotate and disabled \"Build it\" controls, and \"Draft · Nothing spent\". Typeset carefully. Keep the scale figure''s height and adjacent scale tick consistent. Maintain comfortable margins and full-bleed 16:9 screenshot. Use clean plan geometry and ground diagram symbols, as a native game placement map would. The 60 × 30 m rink is twice as long as it is wide with one goal at either end.', [Text.UTF8Encoding]::new("'$false))' in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+ succeeded in 2357ms:
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$ErrorActionPreference='"'Stop'
+Set-Location -LiteralPath 'docs/shifts/2026-11-19-night/lanes/editor/mockups'
+Move-Item -LiteralPath '01-match-length.png' -Destination '01-match-length-try1.png'
+Copy-Item -LiteralPath '01-match-length.prompt.txt' -Destination '01-match-length-try1.prompt.txt'
+Copy-Item -LiteralPath 'C:\\Users\\kazda\\.codex\\generated_images\\01a1f0ea-887b-7300-b0b3-6338aea0143a\\exec-ec93cc78-3e10-4501-8d38-dee0c4f074c8.png' -Destination '02-road-clearance-try2.png'
+Copy-Item -LiteralPath '02-road-clearance.prompt.txt' -Destination '02-road-clearance-try2.prompt.txt'
+Move-Item -LiteralPath '03-build-site.png' -Destination '03-build-site-try1.png'
+Copy-Item -LiteralPath '03-build-site.prompt.txt' -Destination '03-build-site-try1.prompt.txt'
+Move-Item -LiteralPath '04-arena-idea.png' -Destination '04-arena-idea-try1.png'
+Copy-Item -LiteralPath '04-arena-idea.prompt.txt' -Destination '04-arena-idea-try1.prompt.txt'
+@'
+from pathlib import Path
+from PIL import Image
+for n in ['01-match-length','02-road-clearance','03-build-site','04-arena-idea']:
+    src = Path(n + ('-try2' if n.startswith('02') else '-try1') + '.png')
+    with Image.open(src) as img:
+        img.resize((1664, 936), Image.Resampling.LANCZOS).save(n+'.png')
+'@ | python -
+[IO.File]::WriteAllText((Join-Path (Get-Location) 'NOTES.md'), '# Third Life workshop
+
+## 01 · Match length
+
+The player''s sentence stays above the question, and six skaters on the preview ice show what the Foreman understood. The suggested three 36-second periods come from the hockey base mode. The player can change either number, accept both, or leave match length open without spending anything.
+
+## 02 · Road clearance
+
+The 60 × 30 m ice sheet sits inside a larger outline that includes the stands. Changing the ice size updates the footprint and its road check together. Hatching shows where the proposal covers the road, while the nearby kart track, gate path and 2 m walker give it scale. The player can centre the proposal and check the fit again before choosing **Build it**. The 70 × 42 m dressed footprint is an estimate for this example.
+
+## 03 · Build site
+
+Each crew posts its status at its bay, so the player can see that skater checks continue while the stands crew waits. Its question points back to the scaffold and explains why the north side would keep the gate clear. The agreed match rules and latest rink picture stay in view while the player answers. Elapsed time and token spend are illustrative readings for this build.
+
+## 04 · Arena idea
+
+Enemy waves fall outside the available recipes because the enemies need to act on their own. The outline over the empty plot keeps the idea visible while the Foreman explains the extra time, uncertainty and questions. Offering a first decision about when the next wave starts gives the player a way to judge that planning process before committing.
+', [Text.UTF8Encoding]::new("'$false))' in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+ succeeded in 1130ms:
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Set-Location -LiteralPath 'docs/shifts/2026-11-19-night/lanes/editor/mockups'
+[Console]::OutputEncoding=[Text.UTF8Encoding]::new("'$false)
+Get-ChildItem -Filter '"'*.prompt.txt' | ForEach-Object { [PSCustomObject]@{n="'$_.BaseName.Replace('"'.prompt',''); p=[IO.File]::ReadAllText("'$_.FullName)} } | ConvertTo-Json -Compress' in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Set-Location -LiteralPath 'docs/shifts/2026-11-19-night/lanes/editor/mockups'
+python -c \"from pathlib import Path;from PIL import Image;files=sorted(Path('.').glob('*.png'));print([(p.name,Image.open(p).size) for p in files]);[Image.open(p).verify() for p in files];assert all(Image.open(p).width*9==Image.open(p).height*16 for p in files if '-try' not in p.name);assert all(p.with_suffix('.prompt.txt').is_file() for p in files);assert Path('NOTES.md').is_file()\"
+git status --short" in C:\Users\kazda\kiro\third-life\.claude\worktrees\n19-editor
+ succeeded in 234ms:
+[{"n":"01-match-length-try1","p":"Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor\u0027s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don\u0027t print quote marks unless explicitly requested.\n\nCompose a hockey interview in an overlay anchored at the right (roughly 45% of the window), leaving a large playable-looking village view on the left. In the left foreground a proposed rink appears like a tabletop construction maquette on a patch of grass: cool blue-white ice, a red centre line, blue lines, two red nets, exactly three tiny red and three tiny blue stick-carrying skaters (six in total), one black puck, and cool dashed corner marks suggesting a preview. Eye-level-ish elevated three-quarter view with the road, pines and distant mesas visible. Add a simple tag \"Rink preview\". No NHL markings, brands or goalies. On the cream panel show a small heading \"Your idea\" and the player\u0027s literal text exactly, entirely lower case: \"ice hockey, three against three, against the computer\". Beneath it a slim ink rink diagram icon and \"Team possession recipe\". In the panel\u0027s main interaction put \"Match length\", followed by \"How long should a match last?\" Then a honey-accented proposal block, headed \"Foreman suggests\", with two clean editable steppers side by side, showing \"−   3   +\" above \"periods\" and \"−   36   +\" above \"seconds each\". Set the reason in generous type: \"Short periods bring you back to the face-off quickly.\" Distinguish the proposal from an accepted choice. Honey control \"Use these periods\" and quieter \"Decide later\". Footer small but legible \"Draft · Nothing spent\". Make the numbers and the tiny figures on the ice the visual anchors. No extra sections or question list."},{"n":"01-match-length","p":"Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor\u0027s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don\u0027t print quote marks unless explicitly requested.\n\nCompose a hockey interview in an overlay anchored at the right (roughly 45% of the window), leaving a large playable-looking village view on the left. In the left foreground a proposed rink appears like a tabletop construction maquette on a patch of grass: cool blue-white ice, a red centre line, blue lines, two red nets, exactly three tiny red and three tiny blue stick-carrying skaters (six in total), one black puck, and cool dashed corner marks suggesting a preview. Eye-level-ish elevated three-quarter view with the road, pines and distant mesas visible. Add a simple tag \"Rink preview\". No NHL markings, brands or goalies. On the cream panel show a small heading \"Your idea\" and the player\u0027s literal text exactly, entirely lower case: \"ice hockey, three against three, against the computer\". Beneath it a slim ink rink diagram icon and \"Team possession recipe\". In the panel\u0027s main interaction put \"Match length\", followed by \"How long should a match last?\" Then a honey-accented proposal block, headed \"Foreman suggests\", with two clean editable steppers side by side, showing \"−   3   +\" above \"periods\" and \"−   36   +\" above \"seconds each\". Set the reason in generous type: \"Short periods bring you back to the face-off quickly.\" Distinguish the proposal from an accepted choice. Honey control \"Use these periods\" and quieter \"Decide later\". Footer small but legible \"Draft · Nothing spent\". Make the numbers and the tiny figures on the ice the visual anchors. No extra sections or question list."},{"n":"02-road-clearance-try1","p":"Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor\u0027s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don\u0027t print quote marks unless explicitly requested.\n\nCreate a plot placement tool. The dominant left two-thirds is an accurately scaled, ORTHOGRAPHIC 2D top-down survey map, grass greens, simple crisp primitives, level north up with an ochre village road running vertically along the right edge of the selected lot. Other circular fenced lots, one with an oval go-kart loop and one with a cabin, are partially visible; label that neighbour \"Kart track\". Main selected lot is a circular fenced meadow radius 48 m with an opening to the road on its east. A proposed rink lies horizontally offset too far to the east in that 96 m diameter plot. Draw ice with correct length to width ratio 2:1, simple ice markings, two goals, and a narrow run of spectator stands. A distinct straight dashed rectangular outer footprint around ice AND stands is approx. 70 m long by 42 m deep, or roughly 73% of the lot diameter across. Four chunky drag handles. Show the rightmost end actually intruding over the adjacent dirt road, just the collision patch in bold diagonal red hatching with a leader \"Road overlap\". Show east-facing gate symbol and a path toward road labeled \"Gate\". A thin move-west arrow on the footprint shows how to recover. Keep red confined to the obstruction. Right third is a restrained ivory inspector. Header \"Place your rink\", then \"Meadow plot\" and \"48 m radius\". Display \"Ice\" with \"60 × 30 m\", then \"With stands\" with \"About 70 × 42 m\". A genuine little side ELEVATION with a red-jacket 2 m walking figure beside much taller bleacher steps and an adjacent 2 m vertical tick, caption \"2 m walker\". Clear alert \"The rink crosses the road.\" followed by a honey button \"Centre on plot\", discreet control \"Rotate\", and a clearly disabled grey \"Build it\" commit button. Footer \"Draft · Nothing spent\". No scale ruler with random numbers; do not hide the overlap behind the inspector. No mini dashboards. Actual terrain schematic fills the canvas under native controls. Tiny ink-pen trees and rails give the map character, never sacrificing readability."},{"n":"02-road-clearance-try2","p":"Edit the supplied Third Life placement screenshot into a final 16:9 game-window UX concept. The source is the first placement attempt. Retain its colours, chunky ivory controls, well-typeset English, Workshop flag, village neighbours, grass, bleacher scale illustration and gate path. Make TWO practical corrections.\n\n1. Make the conflict geometrically undeniable. In the left map, the proposal is being dragged east beyond the circular fenced meadow. Let the ochre road bend INWARD from upper right to lower right so its left edge passes UNDER the eastern 15% of the footprint. The white dashed rectangular selection and blue ice must visibly continue out OVER this broad road, to the middle of the ochre surface. The upper and lower road segments are easy to follow through this area. Where the road is beneath the proposal, draw translucent RED DIAGONAL HATCHES precisely clipped to this rectangular overlap on the road. A single leader \"Road overlap\" points to this collision. Leave the unambiguous leftward recovery arrow. Keep the gate further south with its own unblocked path. The gate faces the road. The nearby \"Kart track\" remains visible.\n\n2. In the inspector make rink resizing an actual control. Change the \"Ice 60 × 30 m\" readout to \"Ice size\" with a clearly outlined compact minus, \"60 × 30 m\", plus stepper. Below, keep \"With stands\" and \"About 70 × 42 m\" as the live footprint estimate. Preserve plot name \"Meadow plot\", \"48 m radius\", scale illustration labeled \"2 m walker\", warning \"The rink crosses the road.\", primary action \"Centre on plot\", rotate and disabled \"Build it\" controls, and \"Draft · Nothing spent\". Typeset carefully. Keep the scale figure\u0027s height and adjacent scale tick consistent. Maintain comfortable margins and full-bleed 16:9 screenshot. Use clean plan geometry and ground diagram symbols, as a native game placement map would. The 60 × 30 m rink is twice as long as it is wide with one goal at either end."},{"n":"02-road-clearance","p":"Edit the supplied Third Life placement screenshot into a final 16:9 game-window UX concept. The source is the first placement attempt. Retain its colours, chunky ivory controls, well-typeset English, Workshop flag, village neighbours, grass, bleacher scale illustration and gate path. Make TWO practical corrections.\n\n1. Make the conflict geometrically undeniable. In the left map, the proposal is being dragged east beyond the circular fenced meadow. Let the ochre road bend INWARD from upper right to lower right so its left edge passes UNDER the eastern 15% of the footprint. The white dashed rectangular selection and blue ice must visibly continue out OVER this broad road, to the middle of the ochre surface. The upper and lower road segments are easy to follow through this area. Where the road is beneath the proposal, draw translucent RED DIAGONAL HATCHES precisely clipped to this rectangular overlap on the road. A single leader \"Road overlap\" points to this collision. Leave the unambiguous leftward recovery arrow. Keep the gate further south with its own unblocked path. The gate faces the road. The nearby \"Kart track\" remains visible.\n\n2. In the inspector make rink resizing an actual control. Change the \"Ice 60 × 30 m\" readout to \"Ice size\" with a clearly outlined compact minus, \"60 × 30 m\", plus stepper. Below, keep \"With stands\" and \"About 70 × 42 m\" as the live footprint estimate. Preserve plot name \"Meadow plot\", \"48 m radius\", scale illustration labeled \"2 m walker\", warning \"The rink crosses the road.\", primary action \"Centre on plot\", rotate and disabled \"Build it\" controls, and \"Draft · Nothing spent\". Typeset carefully. Keep the scale figure\u0027s height and adjacent scale tick consistent. Maintain comfortable margins and full-bleed 16:9 screenshot. Use clean plan geometry and ground diagram symbols, as a native game placement map would. The 60 × 30 m rink is twice as long as it is wide with one goal at either end."},{"n":"03-build-site-try1","p":"Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor\u0027s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don\u0027t print quote marks unless explicitly requested.\n\nDepict an active hockey build on Meadow plot. The whole upper and central scene is the live three-quarter view over a large round timber-fenced lot, entrance path to village road at the front, one big yellow lattice crane and three distinct low kit bays: rink base and red-edged ice boards in first bay, tiny testing skaters in the second, scaffold and unfinished blue stands in third. Late sun, warm grass, plum shadows, distant mesas; game screenshot, not a painting. Directly attached to the three bays put three little ivory signposts with two clearly readable lines each, reading \"Rink / Built\", \"Skaters / Checking\", \"Stands / On hold\" (slash denotes line break). Use check, magnifier, pause icons respectively for quick reading. Beside the Workshop nameplate, clear heading \"Meadow hockey\". Upper right an unobtrusive readout \"18 min elapsed\" and \"240k tokens spent\". Give the bottom about 34% of the screen to two clean well-spaced cream native surfaces. The left is a running brief headed \"Decided\" featuring \"3 a side · Computer opponents\" and \"3 periods · 36 seconds each\" and secondary action \"Request a change\". Add a small single site photograph thumbnail with simple white edge depicting rink boards being fitted, caption \"Latest picture\". The larger bottom-right surface is a Foreman message visibly tied to the held stands bay by a little ink leader or speech tail. A terracotta pause icon beside \"Stands crew is waiting\". Main question: \"Where should the stands go?\" Reason: \"The north side keeps the gate clear.\" A prominent honey action \"Use north side\" and quieter action \"Choose another side\". Make the crew\u0027s pending decision the strongest clickable thing. Do not block view of bays. Show only the requested text, lettering crisp enough to read the status signposts at game size."},{"n":"03-build-site","p":"Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor\u0027s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don\u0027t print quote marks unless explicitly requested.\n\nDepict an active hockey build on Meadow plot. The whole upper and central scene is the live three-quarter view over a large round timber-fenced lot, entrance path to village road at the front, one big yellow lattice crane and three distinct low kit bays: rink base and red-edged ice boards in first bay, tiny testing skaters in the second, scaffold and unfinished blue stands in third. Late sun, warm grass, plum shadows, distant mesas; game screenshot, not a painting. Directly attached to the three bays put three little ivory signposts with two clearly readable lines each, reading \"Rink / Built\", \"Skaters / Checking\", \"Stands / On hold\" (slash denotes line break). Use check, magnifier, pause icons respectively for quick reading. Beside the Workshop nameplate, clear heading \"Meadow hockey\". Upper right an unobtrusive readout \"18 min elapsed\" and \"240k tokens spent\". Give the bottom about 34% of the screen to two clean well-spaced cream native surfaces. The left is a running brief headed \"Decided\" featuring \"3 a side · Computer opponents\" and \"3 periods · 36 seconds each\" and secondary action \"Request a change\". Add a small single site photograph thumbnail with simple white edge depicting rink boards being fitted, caption \"Latest picture\". The larger bottom-right surface is a Foreman message visibly tied to the held stands bay by a little ink leader or speech tail. A terracotta pause icon beside \"Stands crew is waiting\". Main question: \"Where should the stands go?\" Reason: \"The north side keeps the gate clear.\" A prominent honey action \"Use north side\" and quieter action \"Choose another side\". Make the crew\u0027s pending decision the strongest clickable thing. Do not block view of bays. Show only the requested text, lettering crisp enough to read the status signposts at game size."},{"n":"04-arena-idea-try1","p":"Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor\u0027s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don\u0027t print quote marks unless explicitly requested.\n\nShow a different interview state in the same native village workshop. A cream, clean field-guide panel occupies the right half. Left is a quiet EMPTY round, low-fenced meadow by the road in golden evening light. In midair above that empty plot only a modest, translucent dotted-ink planning sketch of a possible low circular arena with one small fighter and two groups of abstract enemy silhouettes. No constructed arena or crane. A little ivory tag beneath the sketch reads \"Idea sketch\". The confirmed real village and the unconfirmed idea should be easy to tell apart. Panel top \"Your idea\", followed by the player\u0027s line exactly: \"an arena RPG with waves of enemies\". Then present the finding as the main headline \"No recipe fits yet\". Under it two readable short sentences: \"Enemies that fight back need new behaviour.\" and \"Expect a slower build, more risk and more builder questions.\" Put a simple line drawing of three overlapping blank recipe cards with a magnifying lens beside the finding. Use remaining panel space for an actionable small first decision, heading \"What starts the next wave?\" and a clearly labeled \"Foreman suggests\" choice \"When the arena is clear\", then one short reason \"A clear arena gives you a breather.\" Bottom primary honey button \"Keep planning\" and smaller secondary \"Revise idea\". At foot \"Draft · Nothing spent\". No danger-red fatal error, enemies in combat, false ready-to-build claim, game stats, or costume-fantasy interface. Keep it warm, honest and spacious."},{"n":"04-arena-idea","p":"Use case: ui-mockup. Draw ONE finished, full-bleed 16:9 in-game screenshot at 2048 × 1152. This is Third Life, a mouse-and-keyboard Godot game. All four screens use a village surveyor\u0027s field guide visual language: flat warm ivory enamel surfaces (#f3e8dc), nearly black plum ink (#2b2532), honey-yellow active controls (#f2b230), terracotta signal accents, squared corners with small chamfers, offset ink shadows, confident wide humanist sans titles, condensed sans labels, crisp untextured typesetting. Use large readable lettering and restrained line icons. Strong hierarchy and breathing room even at 1280 × 720. Anchor upper left with a compact ivory nameplate bearing a tiny flag icon and the word \"Workshop\", plus a small back chevron. Do not add a game logo, window frame, invented microcopy, fake text or ornamental statistics. No website dashboard, desk photograph, sepia parchment or border around the image. The actual world has rolling spring-yellow green grass, sparse conical firs and simple polygon trees, low round timber fences, a winding ochre road, small red-roof plank cabins, blocky distant flat-topped mauve mesas under a peach-and-rose sunset. Low-poly flat toon faces, dark fine ink outlines, violet cast shadows, toy construction kit proportions. Native game UI is clean and sharp against the world. Follow the quoted text precisely; quotes delimit UI copy, don\u0027t print quote marks unless explicitly requested.\n\nShow a different interview state in the same native village workshop. A cream, clean field-guide panel occupies the right half. Left is a quiet EMPTY round, low-fenced meadow by the road in golden evening light. In midair above that empty plot only a modest, translucent dotted-ink planning sketch of a possible low circular arena with one small fighter and two groups of abstract enemy silhouettes. No constructed arena or crane. A little ivory tag beneath the sketch reads \"Idea sketch\". The confirmed real village and the unconfirmed idea should be easy to tell apart. Panel top \"Your idea\", followed by the player\u0027s line exactly: \"an arena RPG with waves of enemies\". Then present the finding as the main headline \"No recipe fits yet\". Under it two readable short sentences: \"Enemies that fight back need new behaviour.\" and \"Expect a slower build, more risk and more builder questions.\" Put a simple line drawing of three overlapping blank recipe cards with a magnifying lens beside the finding. Use remaining panel space for an actionable small first decision, heading \"What starts the next wave?\" and a clearly labeled \"Foreman suggests\" choice \"When the arena is clear\", then one short reason \"A clear arena gives you a breather.\" Bottom primary honey button \"Keep planning\" and smaller secondary \"Revise idea\". At foot \"Draft · Nothing spent\". No danger-red fatal error, enemies in combat, false ready-to-build claim, game stats, or costume-fantasy interface. Keep it warm, honest and spacious."}]
+
+ succeeded in 298ms:
+[('01-match-length-try1.png', (1672, 941)), ('01-match-length.png', (1664, 936)), ('02-road-clearance-try1.png', (1672, 941)), ('02-road-clearance-try2.png', (1672, 941)), ('02-road-clearance.png', (1664, 936)), ('03-build-site-try1.png', (1672, 941)), ('03-build-site.png', (1664, 936)), ('04-arena-idea-try1.png', (1672, 941)), ('04-arena-idea.png', (1664, 936))]
+?? ../DESIGN.md
+?? ../STANDUP.md
+?? ./
+?? ../stills/
+?? ../../../../../../engine/ui/interview/
+
+codex
+Four editor screens are ready at **1664 × 936**, exactly 16:9.
+
+1. [Hockey interview](docs/shifts/2026-11-19-night/lanes/editor/mockups/01-match-length.png) keeps the player’s sentence visible while they accept, adjust, or defer the Foreman’s suggested three 36-second periods.
+2. [Plot placement](docs/shifts/2026-11-19-night/lanes/editor/mockups/02-road-clearance.png) shows the rink and stands against a 2 m walker, the neighbouring kart track, and the gate. Red hatching marks where the rink crosses the road, and **Centre on plot** offers a fix.
+3. [Build in progress](docs/shifts/2026-11-19-night/lanes/editor/mockups/03-build-site.png) shows the finished rink, skaters under test, and the stands crew waiting for an answer. The crew explains why the north side would keep the gate clear.
+4. [Arena RPG interview](docs/shifts/2026-11-19-night/lanes/editor/mockups/04-arena-idea.png) explains why no recipe fits and asks the player what should trigger the next wave.
+
+[Design notes](docs/shifts/2026-11-19-night/lanes/editor/mockups/NOTES.md) accompany the screens. The [mockups folder](docs/shifts/2026-11-19-night/lanes/editor/mockups/) contains all five raw ImageGen outputs, including the first placement attempt, and the verified exact prompt for every image.
+tokens used
+51,364
+Four editor screens are ready at **1664 × 936**, exactly 16:9.
+
+1. [Hockey interview](docs/shifts/2026-11-19-night/lanes/editor/mockups/01-match-length.png) keeps the player’s sentence visible while they accept, adjust, or defer the Foreman’s suggested three 36-second periods.
+2. [Plot placement](docs/shifts/2026-11-19-night/lanes/editor/mockups/02-road-clearance.png) shows the rink and stands against a 2 m walker, the neighbouring kart track, and the gate. Red hatching marks where the rink crosses the road, and **Centre on plot** offers a fix.
+3. [Build in progress](docs/shifts/2026-11-19-night/lanes/editor/mockups/03-build-site.png) shows the finished rink, skaters under test, and the stands crew waiting for an answer. The crew explains why the north side would keep the gate clear.
+4. [Arena RPG interview](docs/shifts/2026-11-19-night/lanes/editor/mockups/04-arena-idea.png) explains why no recipe fits and asks the player what should trigger the next wave.
+
+[Design notes](docs/shifts/2026-11-19-night/lanes/editor/mockups/NOTES.md) accompany the screens. The [mockups folder](docs/shifts/2026-11-19-night/lanes/editor/mockups/) contains all five raw ImageGen outputs, including the first placement attempt, and the verified exact prompt for every image.

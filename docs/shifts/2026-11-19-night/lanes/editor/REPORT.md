@@ -1,0 +1,89 @@
+# Lane editor: report (night of 19 Nov 2026, done at about 01:25)
+
+The Director saved this from the lane's final message, because the harness refused the agent's report-file write. The
+Director re-ran `ui.sh selftest`: 116 passed, 0 failed.
+
+## What to look at, in order
+1. `clip.mp4` (27.3 s, 1280x720, recorded in a real window driven by input events; the workbench plays at 1.3x, the
+   game sheet at 4x).
+2. `stills/contact-sheet.jpg` (18 captures) and `stills/slice/`. Today's panel is in `stills/today/`, judged in DESIGN.md.
+3. Astra's raw mockups in `mockups/`: 4 screens and 5 rejected tries, with their prompts and `NOTES.md`. Astra ran alone,
+   for 7 min and 51,364 tokens, given the problem and the constraints but no layout.
+4. `DESIGN.md`.
+5. To try it: `TL_ENGINE_DIR=<repo>/engine bash engine/tools/ui.sh fake --out=<scratch>/fake`, then
+   `bash engine/tools/ui.sh open --jobs=<empty dir> --flags=<scratch>/fake/flags.fake.json`, then click
+   "New game in the workbench…".
+
+## What was built
+**E1, the workbench** (`engine/ui/editor/`). One model sits behind every view. Nothing is written or started before you
+press "Build it".
+- **Your idea:** you write one line. Example sentences sit under it, and your words are kept as you wrote them.
+- **The recipe:** a chip names the card that matched and the words that matched it. "Other recipes" and "None of these"
+  are one click away. An idea with no card (for example an arena RPG) gets an honest notice plus the questions every
+  game has.
+- **The questions:** grouped as "Who plays", "How it is won" and "Where and how it looks".
+  - Each question is a row of option chips. The proposed option is marked, with its reason and, where it exists, a
+    measured figure ("a newcomer's hand wins 18 of 20 against rookie").
+  - Answers read from your sentence are marked "from your words".
+  - "Take the proposals" fills in every open question at once.
+- **The village map:** your game appears on the map as a ghost.
+  - Its ring follows the world's own lot rule (half the diagonal + 4 m).
+  - The footprint is drawn by kind of game: rink with stands, pitch, track, course, arena and so on.
+  - You can drag it and turn it (wheel or Q/E). Its gate faces the road.
+  - Problems are named in words, for example: overlaps the plot "car" by 17 m; stands on the road; no free place fits.
+  - "Close up" shows you at true scale (2 m).
+- **The scale strip:** a side view beside the 2 m walker, and the size in words ("about 19 s to run across").
+- **The review bar:** shows the exact request that will be sent and an estimate labelled as a guess. When "Build it" is
+  disabled, the reason is written under it. "Build it" writes `<jobs>/_editor/*.json` and starts the Foreman through
+  the existing door.
+
+**E2, the game sheet** opens for a game made in the workbench. It has four parts:
+- **Open:** approve or discard, answer a builder, resume, or see the door's errors.
+- **Decided:** every answer and who gave it, plus the lot and the brief.
+- **On its lot:** one bay per package, coloured by the site's state words.
+- **Now:** what the builders are doing.
+
+The input-event drive goes from the idea to "Build it", then approval, building and done, and back to the list. It passes
+in 60 s with the fake adapter on the real runner.
+
+## Gates
+- `tl check --tier fast`: PASS 5/5.
+- Full gate, first run: arch failed because `drive.gd` reached 603 lines (the limit is 600; it was split, and is now 446),
+  and devx.test failed with the same finding. Packs missed hockey's `many_budget` at 1.088 ms with the machine at 91 %;
+  the lane changed nothing outside the UI.
+- Re-runs: arch 12/12, devx.test 225/225, ui.selftest 116/116, packs 2/2 (33 verb runs).
+- First run, untouched by the fix: kernel.selftest 219, kit 91, seeds 39, item 91, foreman 210 (0 fail), world 8/8.
+- **perf: NOT RUN (machine busy). It was not measured.**
+- One self-inflicted problem: a parse error left the lane's own Godot window hanging for about 35 min, until the lane
+  killed it by pid. Drive runs now pass `TL_UI_QUIT_AFTER`.
+
+## Behaviour changes
+- The games list's first row is now "New game in the workbench…". The old one-line "New game…" row is still there.
+- The fake plan in `ui/fixtures/make_fake.mjs` had been out of date since P10 (no `PLAYER CHECK` line), so N6's live proof
+  could not pass. One contract line was added, and `ui.sh live` passes again (87 s).
+- The drive's `find` now returns the first visible control with a given name.
+- `panel.gd` changed by one line (it is held by the size ratchet).
+
+## Where the lane disagrees with Astra's mockups (it did not redraw them)
+- 01 asks one question per screen, which would be six screens for hockey. The slice shows every question at once. It
+  borrowed Astra's "Foreman suggests" idea, its "Draft · Nothing spent" footer and the cream, honey and ink look.
+- 01 shows a rink with skaters before anything is built. The slice draws only what has been decided.
+- 02 moves the rink inside a plot it was given, whereas in the village the player places the lot itself. 02's hatched
+  overlap is better than the lane's red ring, and was not built.
+- 03 is the strongest: crew signs at the bays, and the builder's question tied to the bay on hold. The game sheet takes
+  bays-by-state in 2D only.
+- 04 explains why no recipe fits ("enemies that fight back need new behaviour"), which is better than the lane's
+  generic notice.
+
+## Contract proposals (the Director's to decide)
+1. CARDS.md: an optional `interview` key per card (questions, options, the proposal and its reason, match words, variants)
+   and an optional `footprint`; `tl cards check` would verify that each proposal is one of its options. For now these
+   live in `engine/ui/interview/*.json`.
+2. JOB.md: optional `job_created.answers` and `job_created.lot` (`{at, yaw_deg, radius}`). Until then the village does
+   not put a workbench game on the lot the player chose, and the game sheet says so.
+3. A measured `footprint` in each seed's `pack.json`, to replace the size guesses.
+
+## Next three
+1. Put the lot into the world, so the construction rises where the player placed it.
+2. Change a decision from the game sheet: the ring refits and the change is sent as a change request.
+3. Make the village map the editor's home screen, with every game on its lot.

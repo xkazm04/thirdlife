@@ -1,0 +1,52 @@
+   0.7s  direct   session start; jobs root C:/Users/kazda/AppData/Local/Temp/claude/0251139bc1345a0c/7804f5a1-4f00-4c11-8138-a2655303186f/scratchpad/ejobs; 0 jobs in the list
+   1.0s  direct   screenshot e-0-list.png
+   1.1s  UI event mouse click at (236, 63) on the row "New game in the workbench…"
+   1.9s  direct   screenshot e-1-workbench-empty.png
+   2.0s  UI event mouse click at (286, 133) on the field "What do you want to play?"
+   2.2s  UI event typed 53 key events into the idea field: "ice hockey, three against three, against the computer"
+   2.9s  read     seen: the recipe Team possession matched the sentence
+   2.9s  read     answers read from the sentence: ["sport", "players"]
+   3.0s  direct   screenshot e-2-recipe-matched.png
+   3.1s  UI event mouse click at (201, 501) on the chip "Pro"
+   3.5s  UI event mouse wheel down at (286, 532) on the questions (to reach Opt_match_one)
+   3.5s  UI event mouse wheel down at (286, 532) on the questions (to reach Opt_match_one)
+   3.6s  UI event mouse click at (374, 534) on the chip "One 3-minute period"
+   4.5s  direct   screenshot e-3-answered.png
+   4.5s  UI event mouse wheel down at (286, 532) on the questions (to reach Opt_rink_big)
+   4.6s  UI event mouse wheel down at (286, 532) on the questions (to reach Opt_rink_big)
+   4.6s  UI event mouse wheel down at (286, 532) on the questions (to reach Opt_rink_big)
+   4.8s  UI event mouse click at (320, 530) on the chip "Big ice 80 x 40 m"
+   5.5s  read     footprint (67.0, 45.0, 12.0) -> (84.0, 52.0, 12.0), lot ring 45 -> 54 m
+   5.6s  direct   screenshot e-4-big-ice.png
+   5.6s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.7s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.7s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.8s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   5.9s  UI event mouse wheel down at (286, 532) on the questions (to reach TakeProposals)
+   6.0s  UI event mouse click at (106, 539) on the chip "Take the proposal(s)"
+   6.6s  UI event mouse drag from (654, 379) to (1034, 372) on the map: the ghost onto the hockey plot
+   7.3s  read     blocker: "the place: overlaps the plot "car" by 17 m (and 1 more)"; Build it disabled: true
+   7.5s  direct   screenshot e-5-overlap-refused.png
+   7.5s  UI event mouse wheel up at (1034, 372) on the map (turn the ghost 15 degrees)
+   7.6s  UI event mouse wheel up at (1034, 372) on the map (turn the ghost 15 degrees)
+   7.6s  read     yaw now 30.0 degrees
+   7.6s  read     free spot by the road nearest the hockey plot: (-220, 73)
+   7.9s  UI event mouse drag from (1034, 372) to (661, 380) on the map: the ghost to free ground
+   8.6s  read     fits: true; checks: []; gate path 10 m
+   8.7s  direct   screenshot e-6-placed.png
+   8.8s  UI event mouse click at (1209, 93) on the button "Close up"
+   9.9s  direct   screenshot e-6b-close-up.png
+  10.0s  UI event mouse click at (1118, 637) on the button "Build it"
+  10.5s  read     drafts under <jobs>/_editor: ["ice-hockey,-three-against-three,-against-1795047703.json"]
+  10.5s  read     seen: the workbench closed and the panel selected the new job
+  10.6s  read     job id: ice-hockey-three-against-20261119-1; its sentence starts "ice hockey, three against three, against the computer. Decid"
+  13.3s  read     seen: the brief is there and waits for approval
+  14.5s  direct   screenshot e-7-game-sheet-brief.png
+  14.6s  UI event mouse click at (122, 174) on the button "Approve and build" in the game sheet
+  18.4s  read     seen: the plan is cut: one bay per package on the lot
+  19.4s  read     seen: a bay is being built or checked
+  20.2s  direct   screenshot e-8-game-sheet-building.png
+  60.0s  read     seen: the game is done (verified and promoted)
+  61.2s  direct   screenshot e-9-game-sheet-done.png
+  61.3s  UI event mouse click at (69, 36) on the button "< Games"
+  62.2s  direct   screenshot e-10-back-to-the-list.png

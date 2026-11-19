@@ -14,6 +14,10 @@
 #   ui.sh fake     --out=<dir>   fake-adapter script and flags for the live path (no model is called)
 #   ui.sh live     --jobs=<scratch dir> --flags=<json> --shots=<dir>   the scripted live session (ui/drive.gd)
 #   ui.sh sheet    --dir=<captures dir> --out=<abs png>   contact sheet of the captures
+#   ui.sh editor   --jobs=<scratch dir> --flags=<json> --shots=<dir>   the workbench session (E1, ui/editor/;
+#                    ui/drive.gd _editor): idea -> recipe -> answers -> place -> Build it, input events only
+#   ui.sh shot ... --editor [--sentence=<text>] [--recipe=<name>] [--place=<x>,<z>] [--turn=<n>] [--take]
+#                    a capture of the workbench filled as given
 #
 # `open` stays until Esc or the window is closed; TL_UI_QUIT_AFTER=<frames> makes any window close by itself.
 # Env: TL_GODOT (Godot console exe). TL_ENGINE_DIR is NOT read here: the panel runs from this engine copy; the
@@ -56,7 +60,7 @@ windowed() {  # like tools/tl.sh capture: a window below the desktop, Direct3D 1
 }
 
 case "$verb" in
-  ""|help|-h|--help) sed -n '2,20p' "$0"; exit 2;;
+  ""|help|-h|--help) sed -n '2,24p' "$0"; exit 2;;
   open)
     windowed res://ui/host.tscn -- "${args[@]}"; exit $?;;
   shot)
@@ -68,6 +72,9 @@ case "$verb" in
       echo "[ui] no picture on attempt $attempt"
     done
     exit 1;;
+  editor)
+    windowed res://ui/host.tscn -- --drive=editor "${args[@]}" 2>&1 | grep -E "^\[ui\]|^\[drive\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"
+    exit "${PIPESTATUS[0]}";;
   live)
     windowed res://ui/host.tscn -- --drive=live "${args[@]}" 2>&1 | grep -E "^\[ui\]|^\[drive\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"
     exit "${PIPESTATUS[0]}";;
@@ -86,5 +93,5 @@ case "$verb" in
     res="1920x1080"
     windowed res://ui/sheet.tscn -- "${args[@]}" 2>&1 | grep -E "^\[ui\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"
     [ -s "$out" ]; exit $?;;
-  *) echo "ui.sh: unknown verb $verb"; sed -n '5,17p' "$0"; exit 2;;
+  *) echo "ui.sh: unknown verb $verb"; sed -n '5,21p' "$0"; exit 2;;
 esac

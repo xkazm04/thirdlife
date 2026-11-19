@@ -1,0 +1,479 @@
+extends RefCounted
+## E1 (night of 19 Nov): the workbench's one model. Everything the "New game" workbench shows is a projection of this
+## object: the player's sentence (kept verbatim), the recipe (a card's interview, ui/interview/*.json, or none), the
+## answers (each with who gave it: the player, the sentence, or nobody yet = the proposal stands), the placement on the
+## village map, and what is derived from them: the request "Build it" sends, the footprint, the lot's radius, the gate,
+## the checks. No screen keeps an answer of its own; nothing is written until commit (`draft()` is what is written).
+
+const INTERVIEW_DIR: String = "res://ui/interview"
+const CARDS_DIR: String = "res://cards"
+const VILLAGE: String = "res://boot/village.json"
+const WALKER_M: float = 2.0          # the walking figure, as the brief measures him
+const RUN_MPS: float = 4.5           # his run, for "seconds to cross" (walker-feel, 18 Nov: 4.5 m/s)
+const ROAD_HALF_M: float = 4.0       # the road's half width for the "on the road" check
+const RING_GAP_M: float = 2.0        # the least ground between two lot rings
+const FAR_FROM_ROAD_M: float = 40.0  # a path longer than this is a warning
+const YAW_STEP: float = PI / 12.0    # 15 degrees
+const NONE_AFTER_WORDS: int = 4      # how many words before "no recipe fits" is said
+
+var walker_m: float = WALKER_M       # the constants, readable through an untyped reference
+var road_half_m: float = ROAD_HALF_M
+var interviews: Dictionary = {}      # name -> interview (Dictionary)
+var interview_order: PackedStringArray = []   # card interviews first (file order), "none" last
+var cards: Dictionary = {}           # card id -> card json (title, summary)
+var load_errors: PackedStringArray = []
+
+var sentence: String = ""
+var recipe: String = ""              # interview name ("team_possession", ..., "none"); "" = nothing chosen yet
+var recipe_by: String = ""           # "match" (from the sentence) or "player"
+var matches: Array = []              # [{name, score, words}], best first, score > 0 only
+var answers: Dictionary = {}         # key -> {id, by: "player" | "sentence", words?}
+
+# village
+var village_ok: bool = false
+var plots: Array = []                # [{id, label, at: Vector2, r: float, kind: "plot" | "site"}]
+var road: PackedVector2Array = PackedVector2Array()
+var bounds: Rect2 = Rect2()
+var at: Vector2 = Vector2.ZERO
+var yaw: float = 0.0
+var placed: bool = false
+var placed_by: String = ""           # "auto" (the workbench's first free spot, follows the size) or "player"
+var no_free: bool = false            # the last first_free() found no place by the road for this size
+
+
+func load_all() -> void:
+	interviews.clear()
+	interview_order.clear()
+	load_errors.clear()
+	var names: PackedStringArray = []
+	for f: String in DirAccess.get_files_at(INTERVIEW_DIR):
+		if f.ends_with(".json"):
+			names.append(f.get_basename())
+	names.sort()
+	for n: String in names:
+		var j: Variant = _read(INTERVIEW_DIR.path_join(n + ".json"))
+		if not (j is Dictionary) or str((j as Dictionary).get("schema", "")) != "tl.ui-interview/1":
+			load_errors.append("interview %s is not tl.ui-interview/1" % n)
+			continue
+		interviews[n] = j
+		if n != "none":
+			interview_order.append(n)
+		var cid: String = str((j as Dictionary).get("card", ""))
+		if not cid.is_empty():
+			var c: Variant = _read(CARDS_DIR.path_join(cid.trim_prefix("card.") + ".json"))
+			if c is Dictionary:
+				cards[cid] = c
+			else:
+				load_errors.append("card %s named by interview %s was not found" % [cid, n])
+	if interviews.has("none"):
+		interview_order.append("none")
+	_load_village()
+
+
+static func _read(path: String) -> Variant:
+	if not FileAccess.file_exists(path):
+		return null
+	return JSON.parse_string(FileAccess.get_file_as_string(path))
+
+
+func _load_village() -> void:
+	village_ok = false
+	plots.clear()
+	road = PackedVector2Array()
+	var v: Variant = _read(VILLAGE)
+	if not (v is Dictionary):
+		return
+	var lo: Vector2 = Vector2(INF, INF)
+	var hi: Vector2 = Vector2(-INF, -INF)
+	for p: Variant in (v as Dictionary).get("plots", []):
+		var d: Dictionary = p
+		var o: Array = d.get("origin", [0, 0, 0])
+		var e: Dictionary = {"id": str(d.get("id", "")), "label": str(d.get("id", "")), "pack": str(d.get("pack", "")),
+			"at": Vector2(float(o[0]), float(o[2])), "r": float(d.get("radius", 20)), "kind": "plot"}
+		plots.append(e)
+	var land: Dictionary = (v as Dictionary).get("landscape", {})
+	var k: int = 0
+	for l: Variant in land.get("lots", []):
+		var d: Dictionary = l
+		var a: Array = d.get("at", [0, 0])
+		var job: String = str(d.get("job", "")).get_file()
+		plots.append({"id": "site_%d" % k, "label": _job_label(job), "pack": "", "at": Vector2(float(a[0]), float(a[1])),
+			"r": float(d.get("radius", 20)), "kind": "site"})
+		k += 1
+	for q: Variant in (v as Dictionary).get("road", []):
+		road.append(Vector2(float((q as Array)[0]), float((q as Array)[1])))
+	for e: Dictionary in plots:
+		var c: Vector2 = e["at"]
+		var r: float = e["r"]
+		lo = Vector2(minf(lo.x, c.x - r), minf(lo.y, c.y - r))
+		hi = Vector2(maxf(hi.x, c.x + r), maxf(hi.y, c.y + r))
+	for q: Vector2 in road:
+		lo = Vector2(minf(lo.x, q.x), minf(lo.y, q.y))
+		hi = Vector2(maxf(hi.x, q.x), maxf(hi.y, q.y))
+	if plots.is_empty():
+		return
+	bounds = Rect2(lo - Vector2(30, 30), hi - lo + Vector2(60, 60))
+	village_ok = true
+
+
+## "topple-tower-crates-three-20261118-1" -> "topple tower crates three"
+static func _job_label(job: String) -> String:
+	var parts: PackedStringArray = job.split("-")
+	while parts.size() > 1 and (parts[parts.size() - 1].is_valid_int()):
+		parts.remove_at(parts.size() - 1)
+	return " ".join(parts)
+
+
+# ---------------------------------------------------------------- the sentence and the recipe
+
+static func _norm(text: String) -> String:
+	var s: String = " " + text.to_lower() + " "
+	for ch: String in [",", ".", "!", "?", ";", ":", "(", ")", "\"", "'"]:
+		s = s.replace(ch, " ")
+	while s.find("  ") != -1:
+		s = s.replace("  ", " ")
+	return s
+
+
+static func _has(norm: String, phrase: String) -> bool:
+	return norm.find(" " + phrase.to_lower() + " ") != -1
+
+
+func set_sentence(text: String) -> void:
+	sentence = text.strip_edges()
+	var norm: String = _norm(sentence)
+	matches.clear()
+	if sentence.split(" ", false).size() >= 2:
+		for n: String in interview_order:
+			if n == "none":
+				continue
+			var words: PackedStringArray = []
+			var score: int = 0
+			for w: Variant in (interviews[n] as Dictionary).get("match", []):
+				if _has(norm, str(w)):
+					words.append(str(w))
+					score += str(w).split(" ", false).size()
+			if score > 0:
+				matches.append({"name": n, "score": score, "words": words})
+		matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return int(a["score"]) > int(b["score"]) or (int(a["score"]) == int(b["score"]) and str(a["name"]) < str(b["name"])))
+	if recipe_by != "player":
+		# "none" is said only once the idea has a few words: no flash of "no recipe" while the first words are typed
+		var want: String = str(matches[0]["name"]) if not matches.is_empty() else ("none" if sentence.split(" ", false).size() >= NONE_AFTER_WORDS else "")
+		if want != recipe:
+			recipe = want
+			recipe_by = "match"
+			_drop_answers_not_in_recipe()
+	_read_answers_from_sentence()
+
+
+func choose_recipe(name: String) -> void:
+	if not interviews.has(name):
+		return
+	recipe = name
+	recipe_by = "player"
+	_drop_answers_not_in_recipe()
+	_read_answers_from_sentence()
+
+
+func _drop_answers_not_in_recipe() -> void:
+	var keep: Dictionary = {}
+	for q: Dictionary in questions():
+		if answers.has(q["key"]):
+			keep[q["key"]] = answers[q["key"]]
+	answers = keep
+
+
+## An option whose `from_words` occur in the sentence answers its question "by the sentence" (the longest phrase wins);
+## an answer the player gave is never overwritten by the sentence.
+func _read_answers_from_sentence() -> void:
+	var norm: String = _norm(sentence)
+	for q: Dictionary in questions():
+		var key: String = q["key"]
+		if answers.has(key) and str((answers[key] as Dictionary)["by"]) == "player":
+			continue
+		var best: String = ""
+		var best_len: int = 0
+		var best_words: String = ""
+		for o: Dictionary in q["options"]:
+			for w: Variant in o.get("from_words", []):
+				if _has(norm, str(w)) and str(w).length() > best_len:
+					best = str(o["id"])
+					best_len = str(w).length()
+					best_words = str(w)
+		if best.is_empty():
+			answers.erase(key)
+		else:
+			answers[key] = {"id": best, "by": "sentence", "words": best_words}
+
+
+func interview() -> Dictionary:
+	return interviews.get(recipe, {}) if not recipe.is_empty() else {}
+
+
+func card() -> Dictionary:
+	return cards.get(str(interview().get("card", "")), {})
+
+
+func has_card() -> bool:
+	return not recipe.is_empty() and recipe != "none"
+
+
+func questions() -> Array:
+	return interview().get("questions", [])
+
+
+func question(key: String) -> Dictionary:
+	for q: Dictionary in questions():
+		if q["key"] == key:
+			return q
+	return {}
+
+
+func option(q: Dictionary, id: String) -> Dictionary:
+	for o: Dictionary in q.get("options", []):
+		if str(o["id"]) == id:
+			return o
+	return {}
+
+
+# ---------------------------------------------------------------- answers
+
+func answer(key: String, id: String) -> void:
+	var q: Dictionary = question(key)
+	if q.is_empty() or option(q, id).is_empty():
+		return
+	answers[key] = {"id": id, "by": "player"}
+
+
+## What the question stands at: the answer when there is one, else the proposal. {id, by: player|sentence|proposal}
+func value(key: String) -> Dictionary:
+	if answers.has(key):
+		return answers[key]
+	var q: Dictionary = question(key)
+	return {"id": str(q.get("propose", "")), "by": "proposal"}
+
+
+func take_proposals() -> int:
+	var n: int = 0
+	for q: Dictionary in questions():
+		if not answers.has(q["key"]):
+			answers[q["key"]] = {"id": str(q["propose"]), "by": "player", "took": "proposal"}
+			n += 1
+	return n
+
+
+func apply_variant(index: int) -> void:
+	var vs: Array = interview().get("variants", [])
+	if index < 0 or index >= vs.size():
+		return
+	var set: Dictionary = (vs[index] as Dictionary).get("set", {})
+	for key: String in set:
+		answer(key, str(set[key]))
+
+
+func decided_count() -> int:
+	var n: int = 0
+	for q: Dictionary in questions():
+		if answers.has(q["key"]):
+			n += 1
+	return n
+
+
+# ---------------------------------------------------------------- size
+
+## [x, z, h] in metres: the interview's base footprint, then each question's chosen (or proposed) option: `set`
+## replaces the size, `add` grows it (sets first, in question order, then adds).
+func footprint() -> Vector3:
+	var fp: Dictionary = interview().get("footprint", {})
+	var s: Array = fp.get("size_m", [40, 40])
+	var size: Vector3 = Vector3(float(s[0]), float(s[1]), float(fp.get("height_m", 4)))
+	var adds: Vector3 = Vector3.ZERO
+	for q: Dictionary in questions():
+		var o: Dictionary = option(q, str(value(q["key"])["id"]))
+		var sz: Dictionary = o.get("size", {})
+		if sz.has("set"):
+			var a: Array = sz["set"]
+			size = Vector3(float(a[0]), float(a[1]), float(a[2]))
+		if sz.has("add"):
+			var a: Array = sz["add"]
+			adds += Vector3(float(a[0]), float(a[1]), float(a[2]))
+	return size + adds
+
+
+## How the footprint is drawn from above: the interview's shape, unless the chosen (or proposed) option of a question
+## names its own; `stands` when an answer puts stands along the long sides.
+func shape() -> Dictionary:
+	var out: Dictionary = {"shape": str(interview().get("footprint", {}).get("shape", "yard")), "stands": false}
+	for q: Dictionary in questions():
+		var o: Dictionary = option(q, str(value(q["key"])["id"]))
+		if o.has("shape"):
+			out["shape"] = str(o["shape"])
+		if bool(o.get("stands", false)):
+			out["stands"] = true
+	return out
+
+
+## The site's own rule (kernel/world/WORLD.md, S3): half the footprint's diagonal + 4 m, at least 12 m.
+func lot_radius() -> float:
+	var f: Vector3 = footprint()
+	return maxf(12.0, ceilf(Vector2(f.x, f.y).length() * 0.5 + 4.0))
+
+
+func seconds_across() -> float:
+	var f: Vector3 = footprint()
+	return maxf(f.x, f.y) / RUN_MPS
+
+
+# ---------------------------------------------------------------- place
+
+func place(p: Vector2, by: String = "player") -> void:
+	at = p
+	placed = true
+	placed_by = by
+
+
+func turn(steps: int) -> void:
+	yaw = wrapf(yaw + YAW_STEP * steps, -PI, PI)
+
+
+## A free spot to start from: along the road, the first place whose checks have no error (deterministic).
+func first_free() -> Vector2:
+	var r: float = lot_radius()
+	for side: float in [1.0, -1.0]:
+		for i: int in range(road.size() - 1):
+			var a: Vector2 = road[i]
+			var b: Vector2 = road[i + 1]
+			for t: float in [0.5, 0.25, 0.75]:
+				var p: Vector2 = a.lerp(b, t)
+				var n: Vector2 = (b - a).orthogonal().normalized() * side
+				var c: Vector2 = p + n * (r + ROAD_HALF_M + 6.0)
+				if _errors_at(c, r).is_empty():
+					no_free = false
+					return c
+	no_free = true
+	return bounds.get_center()
+
+
+## The nearest point of the road to `p`, and its distance.
+func road_point(p: Vector2) -> Vector2:
+	var best: Vector2 = p
+	var bd: float = INF
+	for i: int in range(road.size() - 1):
+		var q: Vector2 = Geometry2D.get_closest_point_to_segment(p, road[i], road[i + 1])
+		var d: float = q.distance_to(p)
+		if d < bd:
+			bd = d
+			best = q
+	return best
+
+
+## The gate is on the ring, facing the nearest point of the road.
+func gate() -> Vector2:
+	var q: Vector2 = road_point(at)
+	var dir: Vector2 = (q - at).normalized() if q.distance_to(at) > 0.01 else Vector2(0, 1)
+	return at + dir * lot_radius()
+
+
+func path_m() -> float:
+	return maxf(0.0, road_point(at).distance_to(at) - lot_radius() - ROAD_HALF_M)
+
+
+func _errors_at(c: Vector2, r: float) -> Array:
+	var out: Array = []
+	for e: Dictionary in plots:
+		var gap: float = (e["at"] as Vector2).distance_to(c) - float(e["r"]) - r - RING_GAP_M
+		if gap < 0.0:
+			out.append({"level": "error", "what": "overlap", "with": e["id"],
+				"text": "overlaps %s \"%s\" by %d m" % ["the site" if e["kind"] == "site" else "the plot", e["label"], int(ceilf(-gap))]})
+	if not road.is_empty() and road_point(c).distance_to(c) < r + ROAD_HALF_M:
+		out.append({"level": "error", "what": "road", "text": "stands on the road"})
+	if village_ok and not bounds.encloses(Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)):
+		out.append({"level": "error", "what": "outside", "text": "reaches outside the village"})
+	return out
+
+
+## Every check of the current placement, errors first: {level: error|warn, what, text}.
+func checks() -> Array:
+	if not village_ok:
+		return [{"level": "error", "what": "map", "text": "the village map could not be read (boot/village.json)"}]
+	if not placed:
+		return [{"level": "error", "what": "unplaced", "text": "no place chosen on the map yet"}]
+	var out: Array = _errors_at(at, lot_radius())
+	if no_free and placed_by == "auto" and not out.is_empty():
+		out.push_front({"level": "error", "what": "no_room", "text": "no free place by the road fits a %d m ring: make it smaller, or drag it where you want it" % int(lot_radius())})
+	if out.is_empty() and path_m() > FAR_FROM_ROAD_M:
+		out.append({"level": "warn", "what": "far", "text": "a %d m walk from the road" % int(path_m())})
+	return out
+
+
+func fits() -> bool:
+	for c: Dictionary in checks():
+		if c["level"] == "error":
+			return false
+	return true
+
+
+## The plot of the village whose pack is the recipe's worked example, for "as big as" (or {}).
+func neighbour_like() -> Dictionary:
+	var c: Dictionary = card()
+	var want: String = str(c.get("pack", c.get("seed", "")))
+	if want.is_empty():
+		return {}
+	if want == "hockey":
+		want = "ice_hockey_three_against"
+	for e: Dictionary in plots:
+		if e["pack"] == want:
+			return e
+	return {}
+
+
+# ---------------------------------------------------------------- what is sent
+
+func request() -> String:
+	var says: PackedStringArray = []
+	for q: Dictionary in questions():
+		var o: Dictionary = option(q, str(value(q["key"])["id"]))
+		if not o.is_empty():
+			says.append(str(o.get("say", o.get("label", ""))))
+	var s: String = sentence.strip_edges().trim_suffix(".")
+	if says.is_empty():
+		return s
+	return "%s. Decided: %s." % [s, "; ".join(says)]
+
+
+func left_to_proposal() -> PackedStringArray:
+	var out: PackedStringArray = []
+	for q: Dictionary in questions():
+		if not answers.has(q["key"]):
+			out.append(str(q["key"]))
+	return out
+
+
+## What blocks "Build it", in words ("" = nothing).
+func blocker() -> String:
+	if sentence.split(" ", false).size() < 2:
+		return "say in a few words what you want to play"
+	if recipe.is_empty():
+		return "choose a recipe, or None of these"
+	var errs: PackedStringArray = []
+	for c: Dictionary in checks():
+		if c["level"] == "error":
+			errs.append(str(c["text"]))
+	if errs.is_empty():
+		return ""
+	return "the place: " + errs[0] + ("" if errs.size() == 1 else " (and %d more)" % (errs.size() - 1))
+
+
+func draft() -> Dictionary:
+	var f: Vector3 = footprint()
+	var d: Dictionary = {"schema": "tl.editor-draft/1", "sentence": sentence, "request": request(),
+		"answers": answers.duplicate(true),
+		"footprint": {"size_m": [f.x, f.y], "height_m": f.z, "estimate": true},
+		"lot": {"at": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)], "yaw_deg": snappedf(rad_to_deg(yaw), 0.1), "radius": lot_radius()}}
+	if has_card():
+		d["card"] = str(interview().get("card", ""))
+	var left: PackedStringArray = left_to_proposal()
+	if not left.is_empty():
+		d["left_to_proposal"] = Array(left)
+	return d
