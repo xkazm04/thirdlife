@@ -249,3 +249,6 @@ the reader behaves as before (absent = omit the key, never `null`).
   the editor: `key` is the question key, `to` the new option id. The `text` is still the request the builders read.
 - Command: `foreman new` takes `--answers <json>` and `--lot <json>`; `foreman change` takes `--decision <json>`.
   Each is checked against the shapes above before anything is written; an invalid value is an error, not a dropped key.
+- `foreman new --place-calls <json>` (added later on 19 Nov): the editor's "Find a place" model calls, written as job-level
+  `builder_run` events (no `package`/`round`) right after the job is created, so `tl ledger` counts them. Proposed, not yet
+  in the contract: an optional `role` on job-level `builder_run` (designer, planner, critic, placer).
