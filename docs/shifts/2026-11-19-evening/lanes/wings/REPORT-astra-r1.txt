@@ -1,0 +1,45 @@
+Summoned wings | e19-wings | 19 November 2026
+
+The visitor walks with a bare back. F draws a four-point star between the shoulders. Two cyan strokes sweep outward, and a bright edge writes the spars and twelve feather plates from hinge to tip. Landing folds the wings before the spell draws them back into the star. An airborne F starts the fall and the dismissal together. Walker-feel pack bipeds use the same effect on their back socket and honor an explicitly chosen backpack.
+
+Timing at 60 Hz
+
+- Summon takes 36 ticks (0.60 s). Take-off delay is 0 ticks. The joints reach full extension on tick 30, and the last glint clears by tick 36.
+- From full spread, landing takes 36 ticks to fold and another 36 to dismiss. The back is clear on landing tick 72 (1.20 s, counting touchdown as tick 1). An airborne release folds and dismisses together in 36 ticks. Toggling during assembly reverses the current progress.
+- In the road recording, F is sampled on tick 102, the summon finishes on 137, touchdown occurs on 349, and the back is clear on 420. No existing case expectation moved. Flight measured 9.000 m/s running, 45.000 m/s cruising, 95% cruise on tick 60, and a maximum of 119.993 m over ground.
+
+Acceptance evidence
+
+- Windowed clip met in builder review. .tl/wing-review/clip-summon.mp4 is 8.52 s, 1280x720 at 60 fps. It shows the walk, summon, flight, touchdown, dismiss and walk away. The operator owns the final capture.
+- Close and road stills met in builder review. .tl/wing-review/close-contact.jpg and road-contact.jpg each show both transitions. All 20 sampled close-ups were byte-identical across two independently launched windowed renders. The reproducible inputs are .tl/wing-review/review.gd and final.devices.json. The road uses the day flight lane's wf_flight.json.
+- Permanent case met. Block 540, flight.wings_summon, checks the walking visitor, drives a real pack biped, compares 144 frames of poses and draw commands twice, and checks an interrupted cast. It failed on archived main 2950f03 for visible visitor gear and missing pack wings.
+- Hash parity met. Against 2950f03, all 46 reported pack state hashes, all 48 verb frame rows and all eight world frame/hash rows matched.
+
+Builder gates
+
+PASS flight.                 13 passed, 0 failed
+PASS moves.                  14 passed, 0 failed
+PASS --only world,packs      world 8/8, packs 2/2, 48/48 verb runs
+PASS fast                    5/5 steps. Arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, Foreman typecheck clean
+PASS full                    14/14 steps, 1192/1192 gate units, exit 0, zero retries
+PASS kernel.selftest         318/318 (main 317/317)
+PASS kit / seeds / item / UI 95/95, 39/39, 91/91, 166/166
+PASS perf                    2/2, mix30 and pile600 within tolerance, machine use 21%
+PASS foreman.test            223/223 found and accounted for. The full tier reported 217 passed and 6 skipped. Main reported 218 passed and 5 skipped. The additional historical planner case passed separately with the original marble-job report and the archived 1eaccda runner snapshot. That gives 218 distinct Foreman passes across the two runs.
+
+Gate logs are .tl/wings-{flight,moves,worldpacks,fast,full,compare}.log and .tl/foreman-historical-case.log.
+
+Files changed
+
+- engine/kernel/world/flight_wings.gd, engine/kernel/world/visitor.gd, engine/kernel/api/tl_biped.gd
+- engine/style/tl_style_fx.gd, engine/style/shaders/toon.gdshader, engine/style/shaders/wing_sigil.gdshader and its .uid
+- engine/tools/selftest.d/540-wings-summon.sh
+- docs/shifts/2026-11-19-evening/lanes/wings/STANDUP.md and REPORT.txt
+
+The changes are uncommitted. There is no new public API.
+
+Director handoff and next three steps
+
+1. Operator captures the final road clip and sheets. The builder clip opens on the walking figure. The landing row of each sheet shows the fold and the return to a bare back.
+2. Director updates the existing Flight paragraph in engine/kernel/API.md. Suggested wording follows. "Walker-feel bipeds with a back socket summon the visitor's wings on take-off. Landing folds and dismisses them. Ending flight in the air dismisses them during the fall."
+3. Owner judges the immediate lift during the 0.60 s inscription and the longer fold-then-dismiss on touchdown. There are no blocking Director questions.

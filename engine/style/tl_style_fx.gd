@@ -385,6 +385,71 @@ static func trail(target: Node3D, opts: Dictionary = {}) -> Node3D:
 	return t
 
 
+## A two-sided inscription in the plane of the shoulders. Its single clock also
+## clips the toon meshes in their own hinge space, so the grain follows a folding vane.
+static var _wing_shader: Shader
+
+
+static func _wing_sigil() -> MeshInstance3D:
+	var seal := WingSigil.new()
+	seal.name = "WingSigil"
+	seal.position = Vector3(0.0, 0.13, 0.43)
+	seal.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	seal.hide()
+	var paper := QuadMesh.new()
+	paper.size = Vector2(5.4, 2.8)
+	seal.mesh = paper
+	var glyph := ShaderMaterial.new()
+	glyph.shader = preload("res://style/shaders/wing_sigil.gdshader")
+	glyph.set_shader_parameter("ink", TLStyle.color("steel_dark"))
+	glyph.set_shader_parameter("enamel", TLStyle.color("cyan"))
+	glyph.set_shader_parameter("gold", TLStyle.color("spark"))
+	glyph.set_shader_parameter("ivory", TLStyle.color("flame_core"))
+	seal.material_override = glyph
+	var palette := TLStyle.material(&"white") as ShaderMaterial
+	seal.stroke = ShaderMaterial.new()
+	if palette.shader != null:
+		if _wing_shader == null:
+			_wing_shader = Shader.new()
+			_wing_shader.code = "#define TL_WING_CAST\n" + palette.shader.code
+		seal.stroke.shader = _wing_shader
+		seal.stroke.set_shader_parameter("pal_lut", palette.get_shader_parameter("pal_lut"))
+		seal.stroke.set_shader_parameter("wing_ink", TLStyle.color("cyan"))
+		seal.stroke.set_shader_parameter("wing_nib", TLStyle.color("flame_core"))
+	return seal
+
+
+class WingSigil extends MeshInstance3D:
+	var stroke: ShaderMaterial
+	var parts: Array[MeshInstance3D] = []
+	var spans: Array[Vector3] = []     # first tick, last tick, furthest corner from the hinge
+
+	func bind_part(part: MeshInstance3D, first: int, last: int) -> void:
+		if part == null:
+			return
+		var box := part.get_aabb()
+		var extent := box.position.abs().max(box.end.abs())
+		parts.append(part)
+		spans.append(Vector3(first, last, extent.length()))
+		part.hide()
+
+	func seek(age: int, duration: int, spread: float) -> void:
+		visible = age > 0 and age < duration
+		var glyph := material_override as ShaderMaterial
+		glyph.set_shader_parameter("phase", float(age) / duration)
+		glyph.set_shader_parameter("spread", spread)
+		for i: int in parts.size():
+			var part := parts[i]
+			var span := spans[i]
+			part.visible = age > span.x
+			if age > span.x and age < span.y:
+				part.material_override = stroke
+				var reach := inverse_lerp(span.x, span.y, age) * (span.z + 0.22)
+				part.set_instance_shader_parameter("wing_radius", reach)
+			else:
+				part.material_override = null
+
+
 class TLSquashNode extends Node:
 	var rest: Vector3 = Vector3.ONE
 	var amount: float = 0.25

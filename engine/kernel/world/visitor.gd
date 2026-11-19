@@ -128,7 +128,7 @@ func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary 
 	if facing.length() > 0.001:
 		_yaw = atan2(-facing.x, -facing.z)
 	rotation.y = _yaw
-	rig = TLRigs.build("biped", {})
+	rig = TLRigs.build("biped", {"backpack": false})
 	if rig != null:
 		add_child(rig)
 		wings = FlightWings.attach(rig)
@@ -377,7 +377,7 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 					_clip(&"")
 		rig.call("tick", frame)
 		if wings != null:
-			wings.call("tick", flying, fly_speed_k, _flight_turn, frame)
+			wings.call("tick", flying, fly_speed_k, _flight_turn, frame, res.events.has("fly_end"))
 
 
 	if flying or res.events.has("fly_land"):

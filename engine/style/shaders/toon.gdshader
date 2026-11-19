@@ -67,6 +67,12 @@ uniform vec4 tl_floor_rect = vec4(0.0); // min and max XZ of a clipped village f
 //   shade side is drawn by the bands anyway. Shade from the world (a wall, a tree) still falls on him.
 instance uniform vec2 tl_body = vec2(0.0);
 instance uniform vec4 tl_land_plot = vec4(0.0); // village xz, local X axis in village xz
+#ifdef TL_WING_CAST
+// Distance from this joint to the advancing nib, in unposed mesh metres.
+instance uniform float wing_radius;
+uniform vec4 wing_ink : source_color;
+uniform vec4 wing_nib : source_color;
+#endif
 mat4 tl_plot_mat() {
 	float cy = cos(tl_plot.w); float sy = sin(tl_plot.w);
 	return mat4(vec4(cy, 0.0, -sy, 0.0), vec4(0.0, 1.0, 0.0, 0.0), vec4(sy, 0.0, cy, 0.0), vec4(tl_plot.xyz, 1.0));
@@ -458,6 +464,13 @@ void fragment() {
 		c = mix(c, vec3(0.25, 0.9, 1.0), edge);
 		em += edge * 2.5;
 	}
+#ifdef TL_WING_CAST
+	float behind = wing_radius - length(lp.xyz);
+	if (behind < 0.0) { discard; }
+	float stroke = 1.0 - smoothstep(0.045, 0.22, behind);
+	c = mix(c, mix(wing_ink.rgb, wing_nib.rgb, 1.0 - smoothstep(0.015, 0.055, behind)), stroke);
+	em += stroke * 1.25;
+#endif
 	hatch_b = vec2(0.0);
 	rim_w = 1.0;
 	if (tl_body.x > 0.5) {

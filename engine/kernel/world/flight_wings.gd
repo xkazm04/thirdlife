@@ -1,19 +1,12 @@
 extends RefCounted
-## Lane flight (19 Nov 2026): the walker's mechanical wings, a kernel part worn on the biped rig's `back` socket.
-## The mesh is `assets/engine/wings.glb` (engine/tools/assets/wings_blender.py), drawn in the house look by TLKitAsset
-## (its materials are palette keys); this file only moves its named parts. Visual only: no body, nothing a pack or a
-## state hash can see. Every part turns about the socket's Z axis (out of his back), so the wings fold in planes
-## parallel to his back.
-##
-##   var wings := FlightWings.attach(rig)        # null when the rig has no `back` socket or the file is missing
-##   wings.tick(flying, speed_k, turn, frame)    # once per world tick: speed_k 0..1 of cruise, turn rad/s (+ = left)
-##
-## Folded (on the ground): the arm spar hangs down his back, the forearm lies back up along it, and every panel lies
-## along its spar slid into its sleeve (25 % long): two narrow bundles behind the backpack.
-## Take-off unfolds them in UNFOLD_TICKS (0.5 s): the spars swing out first, the forearms open, the panels slide out.
-## Landing folds them in FOLD_TICKS. In the air: a slow flap while hovering, a still glide pose at cruise, the wings
-## bank with the turn. All of it is a function of ticks: the same calls give the same pose.
+## Summoned flight gear on the biped's back socket. Only the caller knows about the body.
+## The pose follows flight immediately. A second, reversible clock inks the parts into existence.
+## On touchdown the joints fold first. An airborne release unbinds them as they fold.
 
+const CAST_TICKS: int = 36
+var _cast_tick: int = 0
+var _air_release: bool = false
+var _sigil: MeshInstance3D
 const UNFOLD_TICKS: int = 30
 const FOLD_TICKS: int = 36
 const FLAP_TICKS: float = 96.0          # one flap cycle while hovering (1.6 s)
@@ -61,8 +54,13 @@ static func attach(rig: Node3D) -> RefCounted:
 	var w: RefCounted = load("res://kernel/world/flight_wings.gd").new()
 	w.set("root", node)
 	node.name = "FlightWings"
+	node.hide()
 	sock.add_child(node)
 	w.call("_find")
+	var wardrobe: Variant = rig.get("params")
+	if wardrobe is Dictionary and not wardrobe.get("backpack", true):
+		node.position.z -= 0.18   # the plate meets the jacket directly on a bare back
+	w.call("_bind_magic", sock)
 	w.call("_pose")
 	return w
 
@@ -77,13 +75,33 @@ func _find() -> void:
 		_parts[s] = {"arm": arm, "fore": fore, "panels": panels}
 
 
+func _bind_magic(sock: Node3D) -> void:
+	var fx: GDScript = TLStandin.ext("TLStyleFx")
+	if fx == null:
+		return
+	_sigil = fx.call("_wing_sigil")
+	_sigil.position += root.position
+	sock.add_child(_sigil)
+	# The harness catches first, then the inner and outer spars. The six pairs of
+	# vanes follow in a ripple, each written from its own hinge to its pointed end.
+	_sigil.call("bind_part", root.find_child("harness", true, false), 3, 10)
+	for side: Dictionary in _parts.values():
+		_sigil.call("bind_part", side.arm, 6, 17)
+		_sigil.call("bind_part", side.fore, 12, 24)
+		for i: int in 6:
+			_sigil.call("bind_part", side.panels[i], 12 + i * 2, 24 + i * 2)
+
+
 static func _ss(a: float, b: float, x: float) -> float:
 	return smoothstep(a, b, x)
 
 
 ## One world tick. `flying`: the body is in flight; `speed_k`: horizontal speed / cruise (0..1); `turn`: the heading's
 ## turn rate (rad/s, + = turning left).
-func tick(flying: bool, speed_k: float, turn: float, _frame: int) -> void:
+func tick(flying: bool, speed_k: float, turn: float, _frame: int, released_in_air: bool = false) -> void:
+	if not flying and _cast_tick == 0 and k == 0.0:
+		return
+	var folded: bool = k == 0.0
 	if flying:
 		k = minf(1.0, k + 1.0 / float(UNFOLD_TICKS) + 0.000001)
 	else:
@@ -92,8 +110,25 @@ func tick(flying: bool, speed_k: float, turn: float, _frame: int) -> void:
 	flap_t += 1.0 + 0.6 * hover
 	var want_bank: float = clampf(rad_to_deg(turn) * 0.18, -18.0, 18.0) if flying else 0.0
 	bank = lerpf(bank, want_bank, 0.12)
+	if flying:
+		_air_release = false
+	elif released_in_air:
+		_air_release = true
+	var age := _cast_tick
+	if flying:
+		age = mini(CAST_TICKS, age + 1)
+	elif folded or _air_release:
+		age = maxi(0, age - 1)
+	if age != _cast_tick:
+		_cast_tick = age
+		root.visible = age > 0
+		if _sigil != null:
+			_sigil.call("seek", age, CAST_TICKS, k)
+	if age == 0 and k == 0.0:
+		flap_t = 0.0
+		bank = 0.0
 	_pose(hover, speed_k)
-	_trails(flying and k >= 1.0 and speed_k >= (TRAIL_OFF if not trails.is_empty() else TRAIL_ON))
+	_trails(flying and _cast_tick == CAST_TICKS and k >= 1.0 and speed_k >= (TRAIL_OFF if not trails.is_empty() else TRAIL_ON))
 
 
 ## A small wind trail at each wing tip at top speed: the style's own ribbon (TLStyleFx.trail, additive, house palette),
