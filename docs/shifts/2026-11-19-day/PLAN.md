@@ -43,3 +43,4 @@ Timers: standups hourly at :37 (09:37-16:37), verdict at 17:13.
 | blend round 2 | `.claude/worktrees/d19-blend2` | same agent | 11:45 |
 | editor round 3 | `.claude/worktrees/d19-editor3` | same agent | 13:05 |
 | flight round 3 | `.claude/worktrees/d19-flight3` (from `0f714bc`) | same agent | 13:36 |
+| flight round 3 redo | `.claude/worktrees/d19-flight4` (from `aeb201e`) | same agent | 14:36 |
