@@ -1,15 +1,16 @@
 {
   "sessions": [
     {
-      "id": "n19-walker",
+      "id": "n19-editor",
       "scope": [
-        "engine/kernel/world/**",
-        "engine/kernel/runner/**",
-        "engine/style/**",
-        "engine/rigs/**",
-        "docs/shifts/2026-11-19-night/lanes/walker/**"
+        "engine/ui/**",
+        "engine/tools/ui.sh",
+        "engine/kernel/world/site/**",
+        "engine/kernel/world/site.gd",
+        "engine/tools/selftest.d/48*-editor-*.sh",
+        "docs/shifts/2026-11-19-night/lanes/editor/**"
       ],
-      "note": "night 19 Nov lane walker (Opus directing Astra), .claude/worktrees/n19-walker2 (round 2 from 58a80d1), until 06:30"
+      "note": "night 19 Nov lane editor round 4 (lot into the 3D village), .claude/worktrees/n19-editor4, until 06:30"
     }
   ]
 }
