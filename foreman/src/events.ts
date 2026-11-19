@@ -88,6 +88,12 @@ export interface BudgetPolicy {
   limit?: number | string;
 }
 
+export interface EditorFields {
+  answers: Record<string, string>;
+  lot: { at: [number, number]; yaw_deg: number; radius: number };
+  decision: { key: string; to: string };
+}
+
 interface Base {
   v: 1;
   seq: number;
@@ -97,7 +103,7 @@ interface Base {
 export type JobEvent = Base & EventBody;
 
 export type EventBody =
-  | { type: "job_created"; sentence: string; packId: string; title: string }
+  | { type: "job_created"; sentence: string; packId: string; title: string; answers?: EditorFields["answers"]; lot?: EditorFields["lot"] }
   | { type: "brief_set"; brief: Brief; estimate: Estimate }
   | { type: "brief_approved"; by: "player" | "auto" }
   | { type: "plan_set"; packages: PackageSpec[]; /** JOB.md 2026-11-17: the recipe card the Planner chose; omitted when none. */ card?: string }
@@ -134,7 +140,7 @@ export type EventBody =
   | { type: "merge"; package: string; files: string[]; removed?: string[] }
   | { type: "note"; package: string; round: number; text: string }
   /** N3: the player (or an answer with --change) asks for a change to a finished package. `package` when it was named. */
-  | { type: "change_requested"; text: string; package?: string; /** P10: the id of the inbox entry this event was written from. */ inbox?: string }
+  | { type: "change_requested"; text: string; decision?: EditorFields["decision"]; package?: string; /** P10: the id of the inbox entry this event was written from. */ inbox?: string }
   /** N3: a promoted package goes back to work: a change request, the critic naming it, or a dependency that changed. */
   | { type: "reopened"; package: string; reason: string }
   | { type: "question"; package: string; text: string }
@@ -159,6 +165,19 @@ const strList = { type: "array", items: str } as const;
 const pkgId = { type: "string", pattern: PACKAGE_ID_RE.source } as const;
 const pkgIdList = { type: "array", items: pkgId } as const;
 const relPath = { type: "string", minLength: 1, pattern: "^(?![A-Za-z]:|/|\\\\)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$" } as const;
+
+const optionId = { type: "string", pattern: "^[a-z0-9_]+$" };
+const editorSchemas = {
+  answers: { type: "object", minProperties: 1, propertyNames: pkgId, additionalProperties: optionId },
+  lot: {
+    type: "object", additionalProperties: false, required: ["at", "yaw_deg", "radius"],
+    properties: {
+      at: { type: "array", minItems: 2, maxItems: 2, items: { type: "number" } },
+      yaw_deg: { type: "number", minimum: -360, maximum: 360 }, radius: { type: "number", minimum: 12 },
+    },
+  },
+  decision: { type: "object", additionalProperties: false, required: ["key", "to"], properties: { key: pkgId, to: optionId } },
+};
 
 const acceptanceSchema = {
   type: "object",
@@ -216,6 +235,7 @@ interface Spec {
 const SPECS: Record<EventType, Spec> = {
   job_created: {
     required: { sentence: nonEmpty, packId: { type: "string", pattern: PACK_ID_RE.source }, title: nonEmpty },
+    optional: { answers: editorSchemas.answers, lot: editorSchemas.lot },
   },
   brief_set: { required: { brief: briefSchema, estimate: estimateSchema } },
   brief_approved: { required: { by: { enum: ["player", "auto"] } } },
@@ -240,7 +260,7 @@ const SPECS: Record<EventType, Spec> = {
   },
   merge: { required: { package: pkgId, files: { type: "array", items: relPath } }, optional: { removed: { type: "array", items: relPath } } },
   note: { required: { package: pkgId, round: int1, text: nonEmpty } },
-  change_requested: { required: { text: nonEmpty }, optional: { package: pkgId, inbox: nonEmpty } },
+  change_requested: { required: { text: nonEmpty }, optional: { package: pkgId, inbox: nonEmpty, decision: editorSchemas.decision } },
   reopened: { required: { package: pkgId, reason: nonEmpty } },
   question: { required: { package: pkgId, text: nonEmpty } },
   answer: { required: { package: pkgId, text: nonEmpty, by: nonEmpty }, optional: { inbox: nonEmpty } },
@@ -297,6 +317,16 @@ export function eventSchemas(): Record<EventType, object> {
 }
 
 const ajv = new Ajv2020({ allErrors: true, allowUnionTypes: true });
+const editorValidators = {
+  answers: ajv.compile(editorSchemas.answers), lot: ajv.compile(editorSchemas.lot), decision: ajv.compile(editorSchemas.decision),
+};
+
+export function editorFieldProblem(key: keyof EditorFields, value: unknown): string | undefined {
+  const validate = editorValidators[key];
+  if (!validate(value)) return ajv.errorsText(validate.errors, { dataVar: key });
+  return undefined;
+}
+
 const validators = new Map<EventType, ValidateFunction>();
 for (const t of EVENT_TYPES) validators.set(t, ajv.compile(buildSchema(t, SPECS[t])));
 

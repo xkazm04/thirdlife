@@ -12,7 +12,6 @@ var _scale: float = 1.0
 var _origin: Vector2 = Vector2.ZERO  # screen position of the world point _view.position
 var _view: Rect2 = Rect2()           # the world rectangle the map shows
 var close_up: bool = false           # false: the whole village; true: the lot and its neighbours at a scale where you show
-var _view_c: Vector2 = Vector2.ZERO  # the close-up's centre (follows the ghost, but not while it is dragged)
 var read_only: bool = false          # the game sheet: the lot is chosen, nothing moves
 var ring_before: float = 0.0         # the game sheet: the ring as it stands while a change is only picked (dashed)
 var board: bool = false             # E5: the home board: no ghost; a click on a game's lot says which (lot_clicked)
@@ -27,12 +26,14 @@ var _annotations: Array[Rect2] = []  # screen-space ink reserved by higher-prior
 
 
 func _fit() -> void:
+	# The verdict under the map may wrap as the ghost moves. Keep the press-time
+	# transform through release so that this reflow cannot move the drop point.
+	if _drag:
+		return
 	var b: Rect2 = model.bounds
 	if close_up and model.placed:
-		if not _drag:
-			_view_c = model.at
 		var half: float = model.lot_radius() + 30.0
-		b = Rect2(_view_c - Vector2(half, half), Vector2(half, half) * 2.0)
+		b = Rect2(model.at - Vector2(half, half), Vector2(half, half) * 2.0)
 	_view = b
 	if b.size.x <= 0.0 or b.size.y <= 0.0 or size.x <= 0.0 or size.y <= 0.0:
 		_scale = 1.0
@@ -135,7 +136,7 @@ func _dashed_line(a: Vector2, b: Vector2, color: Color, w: float) -> void:
 	var d: float = a.distance_to(b)
 	if d < 1.0:
 		return
-	var steps: int = int(d / 6.0)
+	var steps: int = maxi(1, ceili(d / 5.0))
 	for i: int in range(0, steps, 2):
 		draw_line(a.lerp(b, float(i) / steps), a.lerp(b, minf(1.0, float(i + 1) / steps)), color, w)
 

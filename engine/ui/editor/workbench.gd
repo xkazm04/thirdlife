@@ -8,6 +8,7 @@ extends Control
 
 const Model = preload("res://ui/editor/editor_model.gd")
 const VillageMap = preload("res://ui/editor/village_map.gd")
+const PlacePanel = preload("res://ui/editor/place_panel.gd")
 const ScaleStrip = preload("res://ui/editor/scale_strip.gd")
 const Look = preload("res://ui/editor/look.gd")
 
@@ -35,15 +36,17 @@ var _recipe_box: VBoxContainer
 var _q_box: VBoxContainer
 var _q_scroll: ScrollContainer
 var _progress: Label
+var _zoom: Button
 var _map: VillageMap
+var _yaw_note: Label
 var _strip: ScaleStrip
+var _places: PlacePanel
 var _request: Label
 var _blocker: Label
 var _build: Button
 var _footer: Label
 var _show_recipes: bool = false
 var _sig: String = ""
-var _auto_key: String = ""
 var rebuilds: Array = []             # process frames at which the chip rows were rebuilt (a read for the drive)
 
 
@@ -231,17 +234,16 @@ func _build_frame() -> void:
 	right.add_child(rv)
 	var rh: HBoxContainer = HBoxContainer.new()
 	rh.add_child(_label("Where it stands", 24, true))
-	var hint: Label = _label("click to place · drag to move · wheel or Q / E to turn", 12, false, col["dim"])
+	var hint: Label = _label("Click or drag to place · Q / E to turn", 12, false, col["dim"])
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hint.clip_text = true
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	rh.add_child(hint)
-	var zoom: Button = _chip("CloseUpButton", "Close up", "")
-	zoom.pressed.connect(func() -> void:
-		_map.close_up = not _map.close_up
-		zoom.text = "Whole village" if _map.close_up else "Close up"
-		_map.queue_redraw())
-	rh.add_child(zoom)
+	var find := _chip("FindPlace", "Find a place", "")
+	rh.add_child(find)
+	_zoom = _chip("CloseUpButton", "Close up", "")
+	_zoom.pressed.connect(func() -> void: set_map_zoom(not _map.close_up))
+	rh.add_child(_zoom)
 	rv.add_child(rh)
 	var frame: PanelContainer = PanelContainer.new()
 	frame.add_theme_stylebox_override("panel", _sb(col["trunk"], col["ink"], 1, 2, 2, 2))
@@ -255,6 +257,8 @@ func _build_frame() -> void:
 	_map.bold = bold
 	_map.changed.connect(refresh)
 	frame.add_child(_map)
+	_yaw_note = _label("", 12, false, col["dim"], true)
+	rv.add_child(_yaw_note)
 	_strip = ScaleStrip.new()
 	_strip.name = "ScaleStrip"
 	_strip.model = model
@@ -263,6 +267,9 @@ func _build_frame() -> void:
 	_strip.bold = bold
 	_strip.custom_minimum_size = Vector2(0, 104)
 	rv.add_child(_strip)
+	_places = PlacePanel.new()
+	_places.setup(self, find)
+	rv.add_child(_places)
 
 	# bottom: what will be sent
 	var bottom: PanelContainer = _plate("Review")
@@ -300,6 +307,12 @@ func _build_frame() -> void:
 
 # ---------------------------------------------------------------- refresh
 
+func set_map_zoom(close_up: bool) -> void:
+	_map.close_up = close_up
+	_zoom.text = "Whole village" if close_up else "Close up"
+	_map.queue_redraw()
+
+
 func refresh() -> void:
 	_place_if_needed()
 	var sig: String = "%s|%s|%s|%s|%s|%s|%s|%s" % [model.sentence, model.recipe, model.recipe_by, str(model.answers),
@@ -311,6 +324,9 @@ func refresh() -> void:
 		_fill_recipe()
 		_fill_questions()
 	_fill_progress()
+	_places.refresh()
+	_yaw_note.text = model.yaw_note()
+	_yaw_note.visible = not _yaw_note.text.is_empty()
 	_fill_review()
 	_map.queue_redraw()
 	_strip.queue_redraw()
@@ -471,7 +487,7 @@ func _fill_progress() -> void:
 func _fill_review() -> void:
 	_request.text = model.request() if not model.sentence.is_empty() else "Nothing yet: start with your idea, top left."
 	var est: Dictionary = model.interview().get("estimate", {})
-	var foot: String = "Draft · nothing spent"
+	var foot: String = "Draft"
 	if not est.is_empty():
 		foot += " · estimate %d packages, about %d min (%s)" % [int(est.get("packages", 0)), int(est.get("minutes", 0)), str(est.get("source", "a guess"))]
 	var left: PackedStringArray = model.left_to_proposal()
@@ -495,9 +511,7 @@ func _fill_review() -> void:
 func _place_if_needed() -> void:
 	if model.recipe.is_empty() or not model.village_ok:
 		return
-	var key: String = "%s|%s" % [model.recipe, str(model.footprint())]
-	if (not model.placed or model.placed_by == "auto") and key != _auto_key:
-		_auto_key = key
+	if not model.placed or (model.placed_by == "auto" and model.placement_key() != model.auto_key):
 		model.place(model.first_free(), "auto")
 
 
@@ -515,7 +529,8 @@ func _commit() -> void:
 	if f != null:
 		f.store_string(JSON.stringify(d, "  ") + "\n")
 		f.close()
-	var err: String = "no Foreman door" if door == null else str(door.call("new_game", model.request()))
+	var answers := model.answer_ids()
+	var err: String = "no Foreman door" if door == null else str(door.call("new_game", d["request"], answers, d["lot"]))
 	if err.is_empty():
 		message = "The builders are starting. Your draft: " + draft_path.get_file()
 		message_bad = false

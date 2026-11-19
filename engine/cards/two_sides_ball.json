@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.two_sides_ball",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "title": "Two sides and a ball: score in the other side's goal",
   "summary": "One ball, two ends, a goal behind each end, first to N points. Covers pong, air hockey, table football, a penalty duel: anything where a ball crossing a line is a point.",
   "applies_when": [
@@ -138,5 +138,124 @@
         "measured": "seed_paddle perfect 20 of 20, Wilson 84..100 (C2 probe, 18 Nov, seeds 1-20, docs/reports/engine-world-next/C2.md)"
       }
     ]
+  },
+  "interview": {
+    "kind": "two sides returning a ball",
+    "example": "the seed Paddle (seed_paddle)",
+    "match": [
+      "pong",
+      "paddle",
+      "air hockey",
+      "table",
+      "tennis",
+      "shoot-out",
+      "one against one",
+      "1v1",
+      "rival"
+    ],
+    "estimate": {
+      "packages": 3,
+      "minutes": 35,
+      "source": "a guess from the seed's size (no measured job)"
+    },
+    "questions": [
+      {
+        "key": "kind",
+        "group": "who",
+        "ask": "What is played?",
+        "options": [
+          {
+            "id": "pong",
+            "label": "Paddles and a ball",
+            "say": "paddles and a ball",
+            "from_words": [
+              "pong",
+              "paddle"
+            ]
+          },
+          {
+            "id": "air",
+            "label": "Air hockey",
+            "say": "air hockey with a puck on ice",
+            "from_words": [
+              "air hockey"
+            ],
+            "shape": "rink"
+          }
+        ],
+        "propose": "pong",
+        "reason": "the seed's own game; air hockey is its first variant"
+      },
+      {
+        "key": "score",
+        "group": "win",
+        "ask": "First to how many?",
+        "options": [
+          {
+            "id": "5",
+            "label": "5",
+            "say": "first to 5"
+          },
+          {
+            "id": "3",
+            "label": "3",
+            "say": "first to 3"
+          },
+          {
+            "id": "11",
+            "label": "11",
+            "say": "first to 11"
+          }
+        ],
+        "propose": "5",
+        "reason": "the seed's score_to_win; a sharp hand wins 18 of 20 (C2 probe)"
+      },
+      {
+        "key": "balls",
+        "group": "win",
+        "ask": "How many balls at once?",
+        "options": [
+          {
+            "id": "1",
+            "label": "One",
+            "say": "one ball"
+          },
+          {
+            "id": "2",
+            "label": "Two",
+            "say": "two balls at once",
+            "from_words": [
+              "two balls",
+              "2 balls"
+            ]
+          }
+        ],
+        "propose": "1",
+        "reason": "the seed; a second ball needs nothing new (the card)"
+      }
+    ],
+    "variants": [
+      {
+        "ask": "air hockey or ice hockey shoot-out",
+        "set": {
+          "kind": "air"
+        }
+      },
+      {
+        "ask": "two balls",
+        "set": {
+          "balls": "2"
+        }
+      }
+    ]
+  },
+  "footprint": {
+    "size_m": [
+      30,
+      20
+    ],
+    "height_m": 3,
+    "shape": "court",
+    "source": "a guess from the seed's court (data/court.json)"
   }
 }

@@ -28,51 +28,16 @@ export { lockHolder };
 import { eventLine, statusTable } from "./status.js";
 export { statusTable };
 
-export class UsageError extends Error {}
-
-interface Args {
-  cmd: string;
-  pos: string[];
-  flags: Record<string, string | true>;
-}
-
-const BOOLEAN_FLAGS = new Set(["auto-approve", "allow-edit", "no-promote", "retry-failed", "quiet", "json", "force-subscription", "help", "no-critic", "no-reference", "planner-only", "builder-only", "no-run", "no-kit-gate"]);
-
-export function parseArgs(argv: string[]): Args {
-  const pos: string[] = [];
-  const flags: Record<string, string | true> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i] as string;
-    if (a.startsWith("--")) {
-      const eq = a.indexOf("=");
-      const name = eq === -1 ? a.slice(2) : a.slice(2, eq);
-      if (eq !== -1) flags[name] = a.slice(eq + 1);
-      else if (BOOLEAN_FLAGS.has(name)) flags[name] = true;
-      else {
-        const v = argv[i + 1];
-        if (v === undefined) throw new UsageError(`--${name} needs a value`);
-        flags[name] = v;
-        i += 1;
-      }
-    } else pos.push(a);
-  }
-  return { cmd: pos[0] ?? "help", pos: pos.slice(1), flags };
-}
-
-const str = (a: Args, name: string): string | undefined => (typeof a.flags[name] === "string" ? (a.flags[name] as string) : undefined);
-const num = (a: Args, name: string): number | undefined => {
-  const v = str(a, name);
-  if (v === undefined) return undefined;
-  const n = Number(v);
-  if (!Number.isFinite(n)) throw new UsageError(`--${name} must be a number`);
-  return n;
-};
+import { placeCommand } from "./place.js";
+import { UsageError, editorFlag, num, parseArgs, str, type Args } from "./cli_args.js";
+export { UsageError, parseArgs };
 
 const HELP = `foreman <command>
 
   probe [--adapter claude-cli|messages-api|fake] [--api-key-var NAME] [--json]
         adapter, version, authorization and billing mode; spends no tokens
-  new "<sentence>" [--site DIR] [--adapter A] [--auto-approve] [--model M]
+  place --in ASK.json --out ANSWER.json [--adapter A] [--fake-script FILE] [--model M] [--timeout-ms N]
+  new "<sentence>" [--answers JSON] [--lot JSON] [--site DIR] [--adapter A] [--auto-approve] [--model M]
         creates site/<job_id>/ and asks the Designer for a brief
   approve <job>                      the player approves the brief
   plan <job> [--from plan.json] [--adapter A] [--model M] [--max-packages N] [--builder-timeout-ms N]
@@ -110,7 +75,7 @@ const HELP = `foreman <command>
                               the job ends done on the earlier promotion
             [--inbox-poll-ms N]  how often <job>/inbox.jsonl is read while builders run (default 1000)
   resume <job> [same options as run]  continues from job.jsonl; promoted packages are never rebuilt
-  change <job> "<text>" [--package ID] [--no-run] [same options as run]
+  change <job> "<text>" [--decision JSON] [--package ID] [--no-run] [same options as run]
         a change request on a job with at least one merged package, also a finished (done) one. With --package that
         package is re-opened; without it the Planner is asked which package owns the problem (one short call). The
         owner runs its normal rounds with the text as part of its brief; every package that depends on it is then
@@ -502,9 +467,14 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       return results.some((p) => p.ok) ? 0 : 1;
     }
 
+    case "place":
+      return placeCommand(str(a, "in"), str(a, "out"), () => makeBuilder(a), { model: str(a, "model"), timeoutMs: num(a, "timeout-ms") });
+
     case "new": {
       const sentence = a.pos[0];
       if (!sentence || sentence.trim().length === 0) throw new UsageError('usage: foreman new "<sentence>"');
+      const answers = editorFlag(a, "answers");
+      const lot = editorFlag(a, "lot");
       const slug = slugify(sentence);
       const d = new Date();
       const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
@@ -520,7 +490,8 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         const whole = sentence.trim().replace(/\s+/g, " ").replace(/^./, (c) => c.toUpperCase());
         const head = whole.includes(":") ? (whole.split(":")[0] as string).trim() : whole;
         const title = (head.length <= 80 ? head : head.slice(0, 80).replace(/\s+\S*$/, "")) || whole.slice(0, 80);
-        log.append({ type: "job_created", sentence: sentence.trim(), packId: `game.${slug.replace(/-/g, "_")}`, title });
+        log.append({ type: "job_created", sentence: sentence.trim(), packId: `game.${slug.replace(/-/g, "_")}`, title,
+          ...(answers && { answers }), ...(lot && { lot }) });
         out(`job ${jobId} created in ${toPosix(jobDir)}`);
         const probe = await ensureBilling(log, builder);
         out(`billing: ${probe.billing.mode} (${probe.billing.evidence})`);
@@ -673,7 +644,8 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       const jobDir = jobDirOf(a);
       const text = a.pos[1];
       if (!text || text.trim().length === 0) throw new UsageError('usage: foreman change <job> "<text>" [--package ID]');
-      if (asUsage(() => requestChange(jobDir, text.trim(), str(a, "package"), out)) === "inbox") return 0;
+      const decision = editorFlag(a, "decision");
+      if (asUsage(() => requestChange(jobDir, text.trim(), str(a, "package"), out, decision)) === "inbox") return 0;
       if (a.flags["no-run"] === true) {
         out(`continue with: foreman resume ${path.basename(jobDir)}`);
         return 0;

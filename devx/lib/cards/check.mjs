@@ -18,6 +18,7 @@ const SHAPE = {
   seed: [STR, false], pack: [STR, false], capabilities: [LIST, true], kit_parts: [LIST, true], swap_parts: [LIST, false],
   api: [LIST, true], rules_keys: [LIST, true], data_files: [LIST, true],
   do: [LIST, true], dont: [LIST, true], bot: ["object", true], acceptance: [LIST, true], variants: [LIST, false], hands: ["object", false],
+  interview: ["object", false], footprint: ["object", false],
 };
 const BOT_SHAPE = { template: [STR, true], plays_by: [STR, true], wins_when: [STR, true] };
 const VARIANT_SHAPE = { ask: [STR, true], change: [STR, true] };
@@ -49,13 +50,16 @@ const DATA_FILE_SHAPE = { file: [STR, true], role: [STR, true] };
 function shapeErrors(obj, shape, where) {
   const errs = [];
   if (obj === null || typeof obj !== "object" || Array.isArray(obj)) return [`${where}: must be an object`];
-  for (const k of Object.keys(obj)) if (!(k in shape)) errs.push(`${where}: unknown key '${k}'`);
+  for (const k of Object.keys(obj)) if (!Object.hasOwn(shape, k)) errs.push(`${where}: unknown key '${k}'`);
   for (const [k, [type, required]] of Object.entries(shape)) {
-    if (!(k in obj)) { if (required) errs.push(`${where}: missing '${k}'`); continue; }
+    if (!Object.hasOwn(obj, k)) { if (required) errs.push(`${where}: missing '${k}'`); continue; }
     const v = obj[k];
     if (v === null) errs.push(`${where}: '${k}' is null (omit the key instead)`);
     else if (type === STR && (typeof v !== "string" || !v.trim())) errs.push(`${where}: '${k}' must be a non-empty string`);
     else if (type === LIST && (!Array.isArray(v) || v.length === 0)) errs.push(`${where}: '${k}' must be a non-empty list`);
+    else if (type === "array" && !Array.isArray(v)) errs.push(`${where}: '${k}' must be a list`);
+    else if (type === "number" && !Number.isFinite(v)) errs.push(`${where}: '${k}' must be a finite number`);
+    else if (type === "true" && v !== true) errs.push(`${where}: '${k}' must be true`);
     else if (type === "object" && (typeof v !== "object" || Array.isArray(v))) errs.push(`${where}: '${k}' must be an object`);
   }
   return errs;
@@ -68,6 +72,92 @@ const duplicates = (list, where, key) => {
   for (const s of list) { if (seen.has(s)) errs.push(`${where}: '${key}' lists '${s}' twice`); seen.add(s); }
   return errs;
 };
+
+// CARDS.md "Interview and footprint": size.add, option stands, interview.variants (accepted 19 Nov)
+const EDITOR_EXTENSIONS = {
+  interview: { variants: ["array", false] },
+  option: { stands: ["true", false] },
+  size: { add: ["array", false] },
+};
+const FOOTPRINT_SHAPES = ["rink", "pitch", "court", "track", "slalom", "course", "arena", "yard"];
+const requiredText = [STR, true];
+const footprintShape = {
+  size_m: ["array", true], height_m: ["number", true], shape: requiredText, source: requiredText,
+};
+const interviewShape = {
+  kind: requiredText, example: requiredText, match: [LIST, true], estimate: ["object", true],
+  questions: [LIST, true], ...EDITOR_EXTENSIONS.interview,
+};
+const questionShape = {
+  key: requiredText, group: requiredText, ask: requiredText, options: [LIST, true], propose: requiredText, reason: requiredText,
+};
+const optionShape = {
+  id: requiredText, label: requiredText, say: requiredText, from_words: [LIST, false],
+  size: ["object", false], shape: [STR, false], ...EDITOR_EXTENSIONS.option,
+};
+const vector = (v, length, positive) => Array.isArray(v) && v.length === length
+  && v.every((n) => Number.isFinite(n) && (!positive || n > 0));
+
+function footprintErrors(f, where) {
+  const errs = shapeErrors(f, footprintShape, where);
+  if (errs.length) return errs;
+  if (!vector(f.size_m, 2, true)) errs.push(`${where}: size_m must hold two positive numbers`);
+  if (f.height_m <= 0) errs.push(`${where}: height_m must be positive`);
+  if (!FOOTPRINT_SHAPES.includes(f.shape)) errs.push(`${where}: unknown footprint shape '${f.shape}'`);
+  return errs;
+}
+
+function optionErrors(o, where) {
+  const errs = shapeErrors(o, optionShape, where);
+  if (errs.length) return errs;
+  errs.push(...stringsOnly(o.from_words, where, "from_words"));
+  if (o.shape !== undefined && !FOOTPRINT_SHAPES.includes(o.shape)) errs.push(`${where}: unknown shape '${o.shape}'`);
+  if (o.size !== undefined) {
+    const size = o.size, path = where + ".size";
+    errs.push(...shapeErrors(size, { set: ["array", false], scale: ["number", false], ...EDITOR_EXTENSIONS.size }, path));
+    if (Object.keys(size).length !== 1) errs.push(`${path}: give exactly one of set, scale, add`);
+    if (size.set !== undefined && !vector(size.set, 3, true)) errs.push(`${path}: set must hold three positive numbers`);
+    if (size.add !== undefined && !vector(size.add, 3, false)) errs.push(`${path}: add must hold three numbers`);
+    if (Number.isFinite(size.scale) && size.scale <= 0) errs.push(`${path}: scale must be positive`);
+  }
+  return errs;
+}
+
+function interviewErrors(interview, where) {
+  const errs = shapeErrors(interview, interviewShape, where);
+  if (errs.length) return errs;
+  errs.push(...stringsOnly(interview.match, where, "match"));
+  const estimate = interview.estimate;
+  errs.push(...shapeErrors(estimate, { packages: ["number", true], minutes: ["number", true], source: requiredText }, where + ".estimate"));
+  if (!Number.isInteger(estimate.packages) || estimate.packages < 1) errs.push(`${where}.estimate: packages must be a positive integer`);
+  if (Number.isFinite(estimate.minutes) && estimate.minutes <= 0) errs.push(`${where}.estimate: minutes must be positive`);
+  const optionsByKey = new Map();
+  interview.questions.forEach((q, i) => {
+    const path = `${where}.questions[${i}]`, problems = shapeErrors(q, questionShape, path);
+    if (problems.length) { errs.push(...problems); return; }
+    if (!/^[a-z][a-z0-9_]*$/.test(q.key)) errs.push(`${path}: invalid question key '${q.key}'`);
+    if (optionsByKey.has(q.key)) errs.push(`${path}: duplicate question key '${q.key}'`);
+    if (!["who", "win", "where"].includes(q.group)) errs.push(`${path}: unknown group '${q.group}'`);
+    const ids = new Set();
+    optionsByKey.set(q.key, ids);
+    q.options.forEach((o, j) => {
+      errs.push(...optionErrors(o, `${path}.options[${j}]`));
+      if (ids.has(o?.id)) errs.push(`${path}: duplicate option id '${o?.id}'`);
+      if (typeof o?.id === "string") ids.add(o.id);
+    });
+    if (!ids.has(q.propose)) errs.push(`${path}: propose '${q.propose}' is not one of its options`);
+  });
+  (interview.variants ?? []).forEach((v, i) => {
+    const path = `${where}.variants[${i}]`, problems = shapeErrors(v, { ask: requiredText, set: ["object", true] }, path);
+    if (problems.length) { errs.push(...problems); return; }
+    for (const [key, id] of Object.entries(v.set)) {
+      if (!optionsByKey.has(key)) errs.push(`${path}.set: unknown question '${key}'`);
+      else if (typeof id !== "string") errs.push(`${path}.set: option for '${key}' must be a string`);
+      else if (!optionsByKey.get(key).has(id)) errs.push(`${path}.set: '${id}' is not an option for '${key}'`);
+    }
+  });
+  return errs;
+}
 
 /** Structure only: no file system. Returns readable errors; empty = valid. */
 export function validateCard(card, where = "card") {
@@ -86,6 +176,8 @@ export function validateCard(card, where = "card") {
   (card.variants ?? []).forEach((v, i) => errs.push(...shapeErrors(v, VARIANT_SHAPE, `${where}.variants[${i}]`)));
   for (const a of card.api) if (typeof a === "string" && !/^TL[A-Za-z]+\.[a-z_][a-z0-9_]*$/.test(a)) errs.push(`${where}: api '${a}' must look like TLClass.member`);
   if (card.hands !== undefined) errs.push(...handsErrors(card.hands, `${where}.hands`));
+  if (card.interview !== undefined) errs.push(...interviewErrors(card.interview, `${where}.interview`));
+  if (card.footprint !== undefined) errs.push(...footprintErrors(card.footprint, `${where}.footprint`));
   const both = (card.swap_parts ?? []).filter((p) => card.kit_parts.includes(p));
   for (const p of both) errs.push(`${where}: '${p}' is in both kit_parts and swap_parts`);
   return errs;

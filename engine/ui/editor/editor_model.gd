@@ -1,17 +1,23 @@
 extends RefCounted
 ## E1 (night of 19 Nov): the workbench's one model. Everything the "New game" workbench shows is a projection of this
-## object: the player's sentence (kept verbatim), the recipe (a card's interview, ui/interview/*.json, or none), the
+## object: the player's sentence (kept verbatim), the recipe (a card's interview or the editor's none.json), the
 ## answers (each with who gave it: the player, the sentence, or nobody yet = the proposal stands), the placement on the
 ## village map, and what is derived from them: the request "Build it" sends, the footprint, the lot's radius, the gate,
 ## the checks. No screen keeps an answer of its own; nothing is written until commit (`draft()` is what is written).
 
-const INTERVIEW_DIR: String = "res://ui/interview"
+const Scorer = preload("res://ui/editor/lot_scorer.gd")
+const NONE_INTERVIEW: String = "res://ui/interview/none.json"
 const CARDS_DIR: String = "res://cards"
 const VILLAGE: String = "res://boot/village.json"
 const WALKER_M: float = 2.0          # the walking figure, as the brief measures him
 const RUN_MPS: float = 4.5           # his run, for "seconds to cross" (walker-feel, 18 Nov: 4.5 m/s)
 const ROAD_HALF_M: float = 4.0       # the road's half width for the "on the road" check
-const RING_GAP_M: float = 2.0        # the least ground between two lot rings
+const RING_GAP_M := 2.0              # clearance from the fence to the riverbank
+# kernel/world/landscape.gd:327–330 and kernel/world/site/draw.gd::_fence (line 121) both use r + 3.6 m.
+const FENCE_OUT_M := 3.6
+const FENCE_GAP_M := 2.0
+const ROAD_GAP_M := 1.0
+const FIT_EPS_M := 0.00002           # Vector2 coordinates are single precision
 const FAR_FROM_ROAD_M: float = 40.0  # a path longer than this is a warning
 const YAW_STEP: float = PI / 12.0    # 15 degrees
 const NONE_AFTER_WORDS: int = 4      # how many words before "no recipe fits" is said
@@ -37,38 +43,51 @@ var river: PackedVector2Array = PackedVector2Array()   # E6: the village's river
 var river_half_m: float = 0.0
 var bounds: Rect2 = Rect2()
 var at: Vector2 = Vector2.ZERO
-var yaw: float = 0.0
+var yaw: float = 0.0                 # Turns the footprint in the editor. The world still faces its gate to the road.
+var land: RefCounted
+var heights: Callable
+var road_samples := PackedVector2Array()
+var river_samples := PackedVector2Array()
+var proposal_reason := ""
 var placed: bool = false
 var placed_by: String = ""           # "auto" (the workbench's first free spot, follows the size) or "player"
+var auto_key := ""                   # recipe and size of the last automatic placement (roadside or measured)
 var no_free: bool = false            # the last first_free() found no place by the road for this size
+var auto_far: bool = false           # ... and took the best measured place further back instead (Day 19 Nov)
 
 
 func load_all() -> void:
 	interviews.clear()
 	interview_order.clear()
 	load_errors.clear()
-	var names: PackedStringArray = []
-	for f: String in DirAccess.get_files_at(INTERVIEW_DIR):
-		if f.ends_with(".json"):
-			names.append(f.get_basename())
-	names.sort()
-	for n: String in names:
-		var j: Variant = _read(INTERVIEW_DIR.path_join(n + ".json"))
-		if not (j is Dictionary) or str((j as Dictionary).get("schema", "")) != "tl.ui-interview/1":
-			load_errors.append("interview %s is not tl.ui-interview/1" % n)
+	cards.clear()
+	var files := DirAccess.get_files_at(CARDS_DIR)
+	files.sort()
+	for file in files:
+		if not file.ends_with(".json"):
 			continue
-		interviews[n] = j
-		if n != "none":
-			interview_order.append(n)
-		var cid: String = str((j as Dictionary).get("card", ""))
-		if not cid.is_empty():
-			var c: Variant = _read(CARDS_DIR.path_join(cid.trim_prefix("card.") + ".json"))
-			if c is Dictionary:
-				cards[cid] = c
-			else:
-				load_errors.append("card %s named by interview %s was not found" % [cid, n])
-	if interviews.has("none"):
+		var card: Variant = _read(CARDS_DIR.path_join(file))
+		if not card is Dictionary:
+			load_errors.append("cannot read card %s" % file)
+			continue
+		if not card.has("interview"):
+			continue
+		var cid: String = card.id
+		var name := file.get_basename()
+		cards[cid] = card
+		var interview: Dictionary = card.interview.duplicate()
+		interview["schema"] = "tl.ui-interview/1"
+		interview["card"] = cid
+		if card.has("footprint"):
+			interview["footprint"] = card.footprint
+		interviews[name] = interview
+		interview_order.append(name)
+	var none: Variant = _read(NONE_INTERVIEW)
+	if none is Dictionary and none.get("schema") == "tl.ui-interview/1":
+		interviews["none"] = none
 		interview_order.append("none")
+	else:
+		load_errors.append("none interview is not tl.ui-interview/1")
 	_load_village()
 
 
@@ -124,6 +143,15 @@ func _load_village() -> void:
 	# a lot may take; a lot further out is outside the village
 	var mg: float = float(land.get("margin_m", 60.0)) * 0.5
 	bounds = Rect2(lo - Vector2(mg, mg), hi - lo + Vector2(mg, mg) * 2.0)
+	road_half_m = float(land.get("road_half_m", 2.6))
+	prepare_terrain(land)
+
+
+func prepare_terrain(cfg: Dictionary) -> void:
+	road_samples = TLKitPath.new(Array(road), false, 2.0).pts if road.size() >= 2 else PackedVector2Array()
+	river_samples = TLKitPath.new(Array(river), false, 4.0).pts if river.size() >= 2 else PackedVector2Array()
+	self.land = Scorer.terrain(self, cfg)
+	heights = Callable(self.land, "base_h")
 	village_ok = true
 
 
@@ -294,7 +322,7 @@ func decided_count() -> int:
 # ---------------------------------------------------------------- size
 
 ## [x, z, h] in metres: the interview's base footprint, then each question's chosen (or proposed) option: `set`
-## replaces the size, `add` grows it (sets first, in question order, then adds).
+## replaces the size and `scale` multiplies it in question order, then `add` grows it.
 func footprint() -> Vector3:
 	var fp: Dictionary = interview().get("footprint", {})
 	var s: Array = fp.get("size_m", [40, 40])
@@ -306,6 +334,8 @@ func footprint() -> Vector3:
 		if sz.has("set"):
 			var a: Array = sz["set"]
 			size = Vector3(float(a[0]), float(a[1]), float(a[2]))
+		if sz.has("scale"):
+			size *= float(sz["scale"])
 		if sz.has("add"):
 			var a: Array = sz["add"]
 			adds += Vector3(float(a[0]), float(a[1]), float(a[2]))
@@ -331,6 +361,26 @@ func lot_radius() -> float:
 	return maxf(12.0, ceilf(Vector2(f.x, f.y).length() * 0.5 + 4.0))
 
 
+static func fence_radius(radius: float) -> float:
+	return radius + FENCE_OUT_M
+
+
+static func fence_gap(at_pos: Vector2, radius: float, lot: Dictionary) -> float:
+	return at_pos.distance_to(lot.at) - fence_radius(radius) - fence_radius(lot.r)
+
+
+func fence_inside(centre: Vector2, radius: float) -> bool:
+	var inset := bounds.grow(-fence_radius(radius))
+	return (centre.x >= inset.position.x - FIT_EPS_M and centre.x <= inset.end.x + FIT_EPS_M
+		and centre.y >= inset.position.y - FIT_EPS_M and centre.y <= inset.end.y + FIT_EPS_M)
+
+
+func yaw_note() -> String:
+	if yaw == 0.0:
+		return ""
+	return "Turned %s°: the village stands games square for now; the turn is kept in your request." % str(rad_to_deg(yaw)).trim_suffix(".0")
+
+
 func seconds_across() -> float:
 	var f: Vector3 = footprint()
 	return maxf(f.x, f.y) / RUN_MPS
@@ -338,7 +388,14 @@ func seconds_across() -> float:
 
 # ---------------------------------------------------------------- place
 
-func place(p: Vector2, by: String = "player") -> void:
+func placement_key() -> String:
+	return "%s|%s" % [recipe, str(footprint())]
+
+
+func place(p: Vector2, by: String = "player", reason := "") -> void:
+	if by == "auto":
+		auto_key = placement_key()
+	proposal_reason = reason
 	at = p
 	placed = true
 	placed_by = by
@@ -349,9 +406,9 @@ func turn(steps: int) -> void:
 
 
 ## A free spot to start from: along the road, the first place whose checks have no error (deterministic).
-func first_free() -> Vector2:
-	var r: float = lot_radius()
-	# by the road first (the nearest ring to it), then a little further back; every candidate is checked
+func roadside_positions(r: float) -> PackedVector2Array:
+	var positions := PackedVector2Array()
+	# Try the nearest fence setback first, then work farther from the road.
 	for back: float in [6.0, 14.0, 24.0, 40.0]:
 		for side: float in [1.0, -1.0]:
 			for i: int in range(road.size() - 1):
@@ -360,56 +417,53 @@ func first_free() -> Vector2:
 				for t: float in [0.5, 0.3, 0.7, 0.1, 0.9]:
 					var p: Vector2 = a.lerp(b, t)
 					var n: Vector2 = (b - a).orthogonal().normalized() * side
-					var c: Vector2 = p + n * (r + ROAD_HALF_M + back)
-					if _errors_at(c, r).is_empty():
-						no_free = false
-						return c
+					var c: Vector2 = p + n * (fence_radius(r) + road_half_m + back)
+					positions.append(c)
+	return positions
+
+
+func first_free() -> Vector2:
+	var r := lot_radius()
+	auto_far = false
+	for c: Vector2 in roadside_positions(r):
+		if _errors_at(c, r).is_empty():
+			no_free = false
+			return c
+	# Day 19 Nov: nothing by the road: the best measured free place anywhere in the village (lot_scorer.candidates),
+	# rather than a refused ghost in the middle of the map; checks() says so.
+	if heights.is_valid():
+		var far: Array = Scorer.candidates(self, heights, 1)
+		if not far.is_empty():
+			no_free = false
+			auto_far = true
+			var centre: Variant = far[0].at
+			return centre if centre is Vector2 else Vector2(float(centre[0]), float(centre[1]))
 	no_free = true
 	return bounds.get_center()
 
 
-## The nearest point of the road to `p`, and its distance.
+## landscape.gd uses the nearest 2 m road sample for the end of the spur.
 func road_point(p: Vector2) -> Vector2:
-	var best: Vector2 = p
-	var bd: float = INF
-	for i: int in range(road.size() - 1):
-		var q: Vector2 = Geometry2D.get_closest_point_to_segment(p, road[i], road[i + 1])
-		var d: float = q.distance_to(p)
-		if d < bd:
-			bd = d
+	var best := p
+	var distance := INF
+	for q in road_samples:
+		var d := q.distance_squared_to(p)
+		if d < distance:
+			distance = d
 			best = q
 	return best
 
 
-## The gate is on the ring, facing the nearest point of the road.
 func gate() -> Vector2:
-	var q: Vector2 = road_point(at)
-	var dir: Vector2 = (q - at).normalized() if q.distance_to(at) > 0.01 else Vector2(0, 1)
-	return at + dir * lot_radius()
+	return Scorer.spur(self, at, lot_radius()).from
 
 
 func path_m() -> float:
-	return maxf(0.0, road_point(at).distance_to(at) - lot_radius() - ROAD_HALF_M)
+	return Scorer.spur(self, at, lot_radius()).length_m
 
 
 func _errors_at(c: Vector2, r: float) -> Array:
-	var out: Array = []
-	for e: Dictionary in plots:
-		var gap: float = (e["at"] as Vector2).distance_to(c) - float(e["r"]) - r - RING_GAP_M
-		if gap < 0.0:
-			out.append({"level": "error", "what": "overlap", "with": e["id"],
-				"text": "overlaps %s \"%s\" by %d m" % ["the site" if e["kind"] == "site" else "the plot", e["label"], int(ceilf(-gap))]})
-	if not road.is_empty() and road_point(c).distance_to(c) < r + ROAD_HALF_M:
-		out.append({"level": "error", "what": "road", "text": "stands on the road"})
-	if river.size() > 1:
-		var rd: float = INF
-		for i: int in range(river.size() - 1):
-			rd = minf(rd, Geometry2D.get_closest_point_to_segment(c, river[i], river[i + 1]).distance_to(c))
-		if rd < r + river_half_m + RING_GAP_M:
-			out.append({"level": "error", "what": "river", "text": "stands in the river"})
-	if village_ok and not bounds.encloses(Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)):
-		out.append({"level": "error", "what": "outside", "text": "reaches outside the village"})
-	return out
+	return Scorer.errors(self, c, r, Scorer.spur(self, c, r))
 
 
 ## Every check of the current placement, errors first: {level: error|warn, what, text}.
@@ -421,6 +475,8 @@ func checks() -> Array:
 	var out: Array = _errors_at(at, lot_radius())
 	if no_free and placed_by == "auto" and not out.is_empty():
 		out.push_front({"level": "error", "what": "no_room", "text": "no free place by the road fits a %d m ring: make it smaller, or drag it where you want it" % int(lot_radius())})
+	if out.is_empty() and auto_far and placed_by == "auto":
+		out.append({"level": "warn", "what": "no_roadside", "text": "no place by the road fits a %d m ring: the best measured place further back is taken" % int(lot_radius())})
 	if out.is_empty() and path_m() > FAR_FROM_ROAD_M:
 		out.append({"level": "warn", "what": "far", "text": "a %d m walk from the road" % int(path_m())})
 	return out
@@ -484,12 +540,53 @@ func blocker() -> String:
 	return "the place: " + errs[0] + ("" if errs.size() == 1 else " (and %d more)" % (errs.size() - 1))
 
 
+func answer_ids() -> Dictionary:
+	var ids := {}
+	for q: Dictionary in questions():
+		ids[q.key] = value(q.key).id
+	return ids
+
+
+static func _coords(points: PackedVector2Array) -> Array:
+	var coords := []
+	for p in points:
+		coords.append([p.x, p.y])
+	return coords
+
+
+func place_ask() -> Dictionary:
+	var village := {"plots": [], "road": _coords(road), "road_half_m": road_half_m,
+		"bounds": [bounds.position.x, bounds.position.y, bounds.end.x, bounds.end.y]}
+	for p: Dictionary in plots:
+		village.plots.append({"id": p.id, "label": p.label, "kind": p.kind, "at": [p.at.x, p.at.y], "r": p.r})
+	if not river.is_empty():
+		village.river = {"path": _coords(river), "half_m": river_half_m}
+	var f := footprint()
+	var fp := {"size_m": [f.x, f.y], "height_m": f.z, "shape": shape().shape}
+	if shape().stands:
+		fp.stands = true
+	var ask := {"schema": "tl.place-ask/1", "sentence": sentence, "answers": answer_ids(), "footprint": fp,
+		"radius": lot_radius(), "village": village}
+	var measured := Scorer.candidates(self, heights)
+	if not measured.is_empty():
+		ask.candidates = measured
+	if has_card():
+		ask.card = card().id
+	return ask
+
+
 func draft() -> Dictionary:
 	var f: Vector3 = footprint()
 	var d: Dictionary = {"schema": "tl.editor-draft/1", "sentence": sentence, "request": request(),
 		"answers": answers.duplicate(true),
 		"footprint": {"size_m": [f.x, f.y], "height_m": f.z, "estimate": true},
-		"lot": {"at": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)], "yaw_deg": snappedf(rad_to_deg(yaw), 0.1), "radius": lot_radius()}}
+		"lot": {"at": [at.x, at.y], "yaw_deg": snappedf(rad_to_deg(yaw), 0.1), "radius": lot_radius()}}
+	if placed:
+		d["placed_by"] = placed_by
+		d["why"] = Scorer.score(self, at, yaw, heights).lines
+		if placed_by == "proposal":
+			d.lot.yaw_deg = rad_to_deg(yaw)
+			d.why.push_front({"text": proposal_reason, "points": 0})
 	if has_card():
 		d["card"] = str(interview().get("card", ""))
 	var left: PackedStringArray = left_to_proposal()

@@ -6,6 +6,7 @@ import {
   EventError,
   type JobEvent,
   type EventBody,
+  type EditorFields,
   type PackageSpec,
   type PackageState,
   type Cause,
@@ -131,6 +132,7 @@ export interface PackageView {
 
 /** N3: one change request and what became of it. */
 export interface ChangeView {
+  decision?: EditorFields["decision"];
   /** seq of the `change_requested` event. */
   seq: number;
   text: string;
@@ -152,6 +154,8 @@ export interface JobState {
   lastTs?: string;
   tornTail: boolean;
   sentence?: string;
+  answers?: EditorFields["answers"];
+  lot?: EditorFields["lot"];
   packId?: string;
   title?: string;
   brief?: Brief;
@@ -234,6 +238,8 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
   s.lastTs = ev.ts;
   switch (ev.type) {
     case "job_created":
+      if (ev.answers) s.answers = ev.answers;
+      if (ev.lot) s.lot = ev.lot;
       s.sentence = ev.sentence;
       s.packId = ev.packId;
       s.title = ev.title;
@@ -336,7 +342,7 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
     }
     case "change_requested":
       if (ev.package !== undefined) need(s, ev.package, ev);
-      s.changes.push({ seq: ev.seq, text: ev.text, ...(ev.package !== undefined ? { package: ev.package } : {}), state: "pending" });
+      s.changes.push({ seq: ev.seq, text: ev.text, ...(ev.decision && { decision: ev.decision }), ...(ev.package !== undefined ? { package: ev.package } : {}), state: "pending" });
       break;
     case "reopened": {
       const p = need(s, ev.package, ev);

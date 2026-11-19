@@ -4,7 +4,7 @@ extends RefCounted
 ## and [] checks every array element with the named rule.
 const BASE := {"v": "version", "seq": "positive", "ts": "utc", "job": "nonempty", "type": "text"}
 const EVENTS := {
-	"job_created": {"sentence": "nonempty", "packId": "pack_id", "title": "nonempty"},
+	"job_created": {"sentence": "nonempty", "packId": "pack_id", "title": "nonempty", "answers": "answers?", "lot": "lot?"},
 	"brief_set": {"brief": "brief", "estimate": "estimate"},
 	"brief_approved": {"by": "approver"},
 	"plan_set": {"packages": "package[]", "card": "card?"},
@@ -14,7 +14,7 @@ const EVENTS := {
 	"verify": {"package": "id?", "round": "positive", "level": "level", "verb": "verb", "ok": "bool", "report": "path", "exitCode": "integer?", "after": "id?"},
 	"merge": {"package": "id", "files": "path[]", "removed": "path[]?"},
 	"note": {"package": "id", "round": "positive", "text": "nonempty"},
-	"change_requested": {"text": "nonempty", "package": "id?", "inbox": "nonempty?"},
+	"change_requested": {"decision": "decision?", "text": "nonempty", "package": "id?", "inbox": "nonempty?"},
 	"reopened": {"package": "id", "reason": "nonempty"},
 	"question": {"package": "id", "text": "nonempty"},
 	"answer": {"package": "id", "text": "nonempty", "by": "nonempty", "inbox": "nonempty?"},
@@ -27,6 +27,8 @@ const EVENTS := {
 	"job_state": {"state": "job_state", "reason": "text?"},
 }
 const OBJECTS := {
+	"lot": {"at": "coordinate_pair", "yaw_deg": "yaw", "radius": "lot_radius"},
+	"decision": {"key": "id", "to": "option_id"},
 	"brief": {"rules": "nonempty", "arena": "nonempty", "ai": "nonempty", "controls": "nonempty", "mood": "nonempty"},
 	"estimate": {"packages": "positive", "wallMinutes": "number", "tokens": "count"},
 	"package": {"id": "id", "title": "nonempty", "milestone": "milestone", "deps": "id[]", "scope": "path[]",
@@ -49,6 +51,7 @@ const ENUMS := {
 	"capability": ["physics", "input", "ui", "audio", "vfx", "camera", "rules", "ai", "spawn", "fracture", "vehicle", "biped", "ball", "kit", "style"],
 }
 const PATTERNS := {
+	"option_id": "^[a-z0-9_]+$",
 	"utc": r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{1,9})?Z$",
 	"id": "^[a-z][a-z0-9_]*$", "pack_id": r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", "card": r"^card\.[a-z][a-z0-9_]*$",
 	"asset": r"^gen/[A-Za-z0-9_/]+\.gd$", "test": r"^tests/[A-Za-z0-9_/]+\.gd$",
@@ -102,6 +105,17 @@ static func _object_error(obj: Dictionary, fields: Dictionary, path: String) -> 
 	return ""
 
 static func _field_error(value: Variant, rule: String, path: String) -> String:
+	if rule == "answers":
+		if not value is Dictionary or value.is_empty():
+			return "%s must be a non-empty object" % path
+		for key in value:
+			if not _valid_scalar(key, "id") or not _valid_scalar(value[key], "option_id"):
+				return "%s.%s must map a question key to an option id" % [path, key]
+		return ""
+	if rule == "coordinate_pair":
+		if not value is Array or value.size() != 2:
+			return "%s must hold two coordinates" % path
+		rule = "finite[]"
 	if rule.ends_with("[]"):
 		if not value is Array:
 			return "%s must be an array" % path
@@ -136,6 +150,9 @@ static func _valid_scalar(value: Variant, rule: String) -> bool:
 		"text": return value is String
 		"nonempty": return value is String and not value.is_empty()
 		"bool": return value is bool
+		"finite": return number
+		"yaw": return number and absf(value) <= 360
+		"lot_radius": return number and value >= 12
 		"number": return number and value >= 0
 		"version": return number and value == 1
 		"integer": return number and value == floor(value)

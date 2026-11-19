@@ -45,6 +45,46 @@
     "title": {
      "type": "string",
      "minLength": 1
+    },
+    "answers": {
+     "type": "object",
+     "minProperties": 1,
+     "propertyNames": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "additionalProperties": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+     }
+    },
+    "lot": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "at",
+      "yaw_deg",
+      "radius"
+     ],
+     "properties": {
+      "at": {
+       "type": "array",
+       "minItems": 2,
+       "maxItems": 2,
+       "items": {
+        "type": "number"
+       }
+      },
+      "yaw_deg": {
+       "type": "number",
+       "minimum": -360,
+       "maximum": 360
+      },
+      "radius": {
+       "type": "number",
+       "minimum": 12
+      }
+     }
     }
    }
   },
@@ -736,6 +776,24 @@
     "inbox": {
      "type": "string",
      "minLength": 1
+    },
+    "decision": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "key",
+      "to"
+     ],
+     "properties": {
+      "key": {
+       "type": "string",
+       "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "to": {
+       "type": "string",
+       "pattern": "^[a-z0-9_]+$"
+      }
+     }
     }
    }
   },

@@ -16,6 +16,8 @@
 #   ui.sh sheet    --dir=<captures dir> --out=<abs png>   contact sheet of the captures
 #   ui.sh editor   --jobs=<scratch dir> --flags=<json> --shots=<dir>   the workbench session (E1, ui/editor/;
 #                    ui/drive.gd _editor): idea -> recipe -> answers -> place -> Build it, input events only
+#   ui.sh rank     --ask=<json> --answer=<json>   score saved places headlessly
+#   ui.sh place    --jobs=<scratch dir> --flags=<json> --shots=<dir>   rank suggestions, choose a lot, build
 #   ui.sh home     --jobs=<scratch dir> --flags=<json> --shots=<dir>   the village board session (E5): New game,
 #                    Build it, approve, the game on its lot while it is built, open it from the map, jobs list
 #   ui.sh chips    --jobs=<scratch dir> --shots=<dir> [--n=60]   retype the idea and click a chip N times; FAIL on a lost click
@@ -36,7 +38,7 @@ fi
 fix() {  # --name=/c/path -> --name=C:/path for the options that hold a path
   local a="$1"
   case "$a" in
-    --jobs=*|--out=*|--flags=*|--shots=*|--bg=*|--dir=*|--foreman=*)
+    --jobs=*|--out=*|--flags=*|--shots=*|--bg=*|--dir=*|--foreman=*|--ask=*|--answer=*)
       local k="${a%%=*}" v="${a#*=}"
       if [ "$v" != "none" ] && command -v cygpath >/dev/null 2>&1; then
         case "$v" in /*|[A-Za-z]:*) v="$(cygpath -m "$v")";; *) v="$(cygpath -m "$PWD/$v")";; esac
@@ -82,6 +84,12 @@ case "$verb" in
     exit "${PIPESTATUS[0]}";;
   home)
     windowed res://ui/host.tscn -- --drive=home --home "${args[@]}" 2>&1 | grep -E "^\[ui\]|^\[drive\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"
+    exit "${PIPESTATUS[0]}";;
+  rank)
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --headless --path "$E" --script res://ui/editor/rank_places.gd -- "${args[@]}"
+    exit $?;;
+  place)
+    windowed res://ui/host.tscn -- --drive=place "${args[@]}" 2>&1 | grep -E "^\[ui\]|^\[drive\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"
     exit "${PIPESTATUS[0]}";;
   editor)
     windowed res://ui/host.tscn -- --drive=editor "${args[@]}" 2>&1 | grep -E "^\[ui\]|^\[drive\]|SCRIPT ERROR|ERROR:|Parse Error|   at:"

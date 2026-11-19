@@ -3,6 +3,7 @@
 // does, the command appends a line to <job>/inbox.jsonl and the running Foreman writes the event (inbox.ts).
 import fs from "node:fs";
 import path from "node:path";
+import type { EditorFields } from "./events.js";
 import { JobLog, LogError, rebuildState } from "./joblog.js";
 import { INBOX_FILE, answerProblem, changeProblem, drainInbox, writeInbox } from "./inbox.js";
 
@@ -53,20 +54,25 @@ function openForRequest(jobDir: string): JobLog | undefined {
  * Records a change request (N3 item 1). Returns "inbox" when it was handed to a running Foreman (nothing is run by
  * the caller then) and "log" when it was written into job.jsonl here (the caller continues the job as `resume` would).
  */
-export function requestChange(jobDir: string, text: string, pkgId: string | undefined, out: (s: string) => void): "inbox" | "log" {
+export function requestChange(jobDir: string, text: string, pkgId: string | undefined, out: (s: string) => void, decision?: EditorFields["decision"]): "inbox" | "log" {
   const about = pkgId !== undefined ? ` for package ${pkgId}` : " (the Planner will be asked which package owns it)";
+  // Reject an invalid decision before opening a writer (which also drains pending inbox entries).
+  if (decision) {
+    const problem = changeProblem(rebuildState(jobDir, { write: false }), pkgId, decision);
+    if (problem) throw new RequestError(problem);
+  }
   const log = openForRequest(jobDir);
   if (log === undefined) {
-    const problem = changeProblem(rebuildState(jobDir, { write: false }), pkgId);
+    const problem = changeProblem(rebuildState(jobDir, { write: false }), pkgId, decision);
     if (problem !== undefined) throw new RequestError(problem);
-    const entry = writeInbox(jobDir, { kind: "change", text, ...(pkgId !== undefined ? { package: pkgId } : {}) });
+    const entry = writeInbox(jobDir, { kind: "change", text, ...(decision && { decision }), ...(pkgId !== undefined ? { package: pkgId } : {}) });
     out(`change request handed to the running Foreman (pid ${lockHolder(jobDir).pid ?? "?"}) through ${INBOX_FILE} as entry ${entry.id}${about}; it is logged and acted on at that Foreman's next safe point`);
     return "inbox";
   }
   try {
-    const problem = changeProblem(log.state, pkgId);
+    const problem = changeProblem(log.state, pkgId, decision);
     if (problem !== undefined) throw new RequestError(problem);
-    const ev = log.append({ type: "change_requested", text, ...(pkgId !== undefined ? { package: pkgId } : {}) });
+    const ev = log.append({ type: "change_requested", text, ...(decision && { decision }), ...(pkgId !== undefined ? { package: pkgId } : {}) });
     out(`change request recorded as event ${ev.seq}${about}`);
     return "log";
   } finally {

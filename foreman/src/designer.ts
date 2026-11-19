@@ -17,7 +17,7 @@ const schema = (name: string): object => JSON.parse(prompt(name)) as object;
 export const render = (template: string, vars: Record<string, string>): string => template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
 
 export interface GenerateCall {
-  role: "designer" | "planner" | "critic";
+  role: "designer" | "planner" | "critic" | "placer";
   attempt: number;
   prompt: string;
   result: RunResult;
@@ -57,7 +57,7 @@ export interface PlanAnswer {
   card?: string;
 }
 
-async function generate<T>(
+export async function generate<T>(
   builder: Builder,
   role: GenerateCall["role"],
   template: string,
@@ -87,7 +87,8 @@ async function generate<T>(
     let problems: string[] = [];
     if (result.outcome === "ok") {
       // The adapter validated against the schema; we do it again here because acceptance is ours to decide.
-      problems = [...schemaErrors(jsonSchema, result.json), ...(result.json !== undefined ? check(result.json) : ["no JSON in the answer"])];
+      problems = schemaErrors(jsonSchema, result.json);
+      if (!problems.length) problems = check(result.json);
       calls.push({ role, attempt, prompt: text, result, problems });
       if (problems.length === 0) return { ok: true, value: result.json as T, calls };
     } else {

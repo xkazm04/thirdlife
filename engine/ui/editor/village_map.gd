@@ -4,6 +4,10 @@ extends "res://ui/editor/map_base.gd"
 ## press is inside its ring) and dragging moves it; the wheel and Q / E turn it by 15 degrees. It draws what the model
 ## says and writes only `at` and `yaw` into it; `changed` tells the workbench to redraw the rest.
 
+const Overlay = preload("res://ui/editor/map_overlay.gd")
+var proposals: Array = []
+var highlight := -1
+
 signal changed
 signal lot_clicked(id: String)    # E5 board: a game's lot (plot kind "game") was clicked; id = its job
 
@@ -18,7 +22,7 @@ func _gui_input(event: InputEvent) -> void:
 		_fit()
 		var w: Vector2 = to_world((event as InputEventMouseButton).position)
 		for lot: Dictionary in model.plots:
-			if lot["kind"] == "game" and w.distance_to(lot["at"]) <= float(lot["r"]):
+			if lot["kind"] == "game" and w.distance_to(lot["at"]) <= model.fence_radius(lot.r):
 				lot_clicked.emit(str(lot["job"]))
 				accept_event()
 				return
@@ -31,7 +35,7 @@ func _gui_input(event: InputEvent) -> void:
 			if mb.pressed:
 				grab_focus()
 				var w: Vector2 = to_world(mb.position)
-				if model.placed and w.distance_to(model.at) <= model.lot_radius():
+				if model.placed and w.distance_to(model.at) <= model.fence_radius(model.lot_radius()):
 					_grab = model.at - w
 				else:
 					_grab = Vector2.ZERO
@@ -84,7 +88,7 @@ func _draw() -> void:
 	for lot: Dictionary in model.plots:
 		var c := to_screen(lot["at"])
 		var r := float(lot["r"]) * _scale
-		if not screen.grow(r + 8).has_point(c):
+		if not screen.grow(r + (model.FENCE_OUT_M + model.FENCE_GAP_M / 2) * _scale + 8).has_point(c):
 			continue
 		_plot(c, r, lot, errs.has(lot["id"]))
 		visible_plots.append(lot)
@@ -99,7 +103,11 @@ func _draw() -> void:
 		_tag(Vector2(10, 9), "Click the map where the game should stand.", col["card"], col["ink"], 13)
 	# The names are separate from the illustrations. A gate or verdict gets first choice of
 	# space, then the neighbouring names can slide to another part of their own plot.
+	var compare := not proposals.is_empty() and not close_up
+	var neighbours := Overlay.neighbours(self) if compare else []
 	for lot: Dictionary in visible_plots:
+		if compare and not lot.id in neighbours:
+			continue
 		var c := to_screen(lot["at"])
 		if not screen.has_point(c):
 			continue
@@ -114,7 +122,7 @@ func _river() -> void:
 	if model.river.size() < 2:
 		return
 	var pts: PackedVector2Array = PackedVector2Array()
-	for q: Vector2 in model.river:
+	for q: Vector2 in model.river_samples:
 		pts.append(to_screen(q))
 	var w: float = maxf(3.0, float(model.river_half_m) * 2.0 * _scale)
 	draw_polyline(pts, Color(col["ink"], 0.55), w + 2.0, true)
@@ -123,7 +131,7 @@ func _river() -> void:
 
 func _road() -> void:
 	var pts := PackedVector2Array()
-	for q: Vector2 in model.road:
+	for q: Vector2 in model.road_samples:
 		pts.append(to_screen(q))
 	if pts.size() < 2:
 		return
@@ -133,16 +141,16 @@ func _road() -> void:
 		draw_circle(tip, rw * 0.5, col["road"], true, -1, true)
 	draw_polyline(pts, col["wood_dark"], rw + 2.5, true)
 	draw_polyline(pts, col["road"], rw, true)
-	for i: int in range(1, pts.size()):
-		var a := pts[i-1]
-		var b := pts[i]
+	for i: int in range(0, pts.size()-1, 8):
+		var a := pts[i]
+		var b := pts[mini(i+8, pts.size()-1)]
 		var n := (b-a).normalized().orthogonal()
 		for side: float in [-1.0, 1.0]:
 			var rut_offset := n * rw * 0.25 * side
 			draw_line(a + rut_offset, b + rut_offset, Color(col["sand"], 0.74), maxf(1.0, rw * 0.15), true)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = i * 371
-		for j: int in ceili(model.road[i-1].distance_to(model.road[i]) * 0.65):
+		for j: int in ceili(a.distance_to(b) * 0.65 / _scale):
 			var pt := a.lerp(b, rng.randf()) + n * rw * rng.randf_range(-0.45, 0.45)
 			draw_line(pt, pt + Vector2(rng.randf_range(0.5, 1.4), -0.12) * _scale, Color(col["trunk"], 0.27), clampf(_scale * 0.24, 0.65, 1.4), true)
 		# Broken wagon ruts pick out the direction even when zoomed all the way out.
@@ -163,10 +171,9 @@ func _plot(c: Vector2, r: float, lot: Dictionary, hit: bool) -> void:
 		draw_polyline(worn, Color(col["sand"], 0.68), r * 0.065, true)
 		draw_polyline(worn, Color(col["wood_dark"], 0.13), 1, true)
 	draw_arc(c, r * 0.86, 0.15, 2.4, 40, Color(col["wood_dark"], 0.19), maxf(1, r * 0.025), true)
-	if site:
-		_dashed_circle(c, r, stroke, 2)
-	else:
-		_fence(c, r, stroke, hit)
+	var fence: float = model.fence_radius(lot.r) * _scale
+	_dashed_circle(c, fence + model.FENCE_GAP_M * 0.5 * _scale, Color(col["ink"], 0.65), 1.0)
+	_fence(c, fence, stroke, hit)
 	var key := str(lot.get("stamp", "site" if site else str(lot["id"])))
 	if Art.SYMBOLS.has(key):
 		var w := r * 1.52
@@ -231,11 +238,11 @@ func _furniture() -> void:
 func _ghost() -> void:
 	var ok: bool = model.fits()
 	var c: Vector2 = to_screen(model.at)
-	var r: float = model.lot_radius() * _scale
+	var r: float = model.fence_radius(model.lot_radius()) * _scale
 	var tint: Color = col["honey"] if ok else col["hazard"]
 	draw_circle(c, r, Color(tint, 0.36), true, -1, true)
-	# Survey pegs and a broken inner registration line distinguish the proposal from fences.
-	_dashed_circle(c, maxf(1, r - 3.7), col["paper"], 1.4)
+	# Keep the requested lot radius visible inside its surveyed fence.
+	draw_arc(c, model.lot_radius() * _scale, 0, TAU, 72, Color(col["paper"], 0.48), 1.0, true)
 	draw_arc(c, r, 0, TAU, 72, col["ink"], 4.0, true)
 	draw_arc(c, r, 0, TAU, 72, tint, 2.0, true)
 	for i: int in 4:
@@ -245,6 +252,7 @@ func _ghost() -> void:
 	if ring_before > 0.0 and absf(ring_before - model.lot_radius()) > 0.5:
 		_dashed_circle(c, ring_before * _scale, col["ink"], 2.0)
 		_tag(c + Vector2(-ring_before * _scale * 0.7 - 60.0, ring_before * _scale * 0.7), "now: ring %d m" % int(ring_before), col["paper"], col["ink"])
+	_dashed_circle(c, r + model.FENCE_GAP_M * 0.5 * _scale, col["ink"], 1.0)
 	# footprint, turned by yaw
 	var f: Vector3 = model.footprint()
 	var hx: float = f.x * 0.5
@@ -263,14 +271,15 @@ func _ghost() -> void:
 	draw_polyline(poly, col["ink"], 2.0, true)
 	if not ok:
 		_clearance_hatching(c, r)
+	Overlay.places(self)
 	# gate and path
 	var g: Vector2 = model.gate()
 	var q: Vector2 = model.road_point(model.at)
 	_dashed_line(to_screen(g), to_screen(q), col["ink"], 2.0)
-	var gs: Vector2 = to_screen(g)
-	draw_rect(Rect2(gs - Vector2(5, 5), Vector2(10, 10)), col["honey"])
-	draw_rect(Rect2(gs - Vector2(5, 5), Vector2(10, 10)), col["ink"], false, 2.0)
-	_tag(gs + Vector2(8, -8), "gate · %d m path" % int(model.path_m()), col["paper"], col["ink"])
+	var gs: Vector2 = c + model.at.direction_to(q) * r
+	Overlay.entrance(self, gs, to_screen(q) - gs)
+	if close_up or proposals.is_empty():
+		_tag(gs + Vector2(8, -8), "gate · %d m path" % roundi(model.path_m()), col["paper"], col["ink"])
 	if close_up:
 		# you, at true scale, standing on the path outside the gate
 		var dir: Vector2 = (q - g).normalized() if q.distance_to(g) > 0.1 else Vector2(0, 1)
@@ -282,6 +291,8 @@ func _ghost() -> void:
 		draw_circle(you - Vector2(0, h * 0.58), rr, col["jacket"], true, -1, true)
 		draw_circle(you - Vector2(0, h * 0.88), maxf(1, h * 0.15), col["skin"], true, -1, true)
 		_tag(you + Vector2(-_w("you (2 m)", 12, true) - 22.0, -10), "you (2 m)", col["paper"], col["ink"])
+	if not close_up and not proposals.is_empty():
+		return  # the ranked rows carry the verdict while comparing sites
 	# what is wrong, written by the ring
 	var lines: PackedStringArray = []
 	for ch: Dictionary in model.checks():
@@ -301,13 +312,13 @@ func _clearance_hatching(c: Vector2, r: float) -> void:
 	var ring := _circle_polygon(c, r)
 	for lot: Dictionary in model.plots:
 		var center := to_screen(lot["at"])
-		var radius := float(lot["r"]) * _scale
+		var radius: float = model.fence_radius(lot.r) * _scale
 		if c.distance_to(center) < r + radius:
 			for patch: PackedVector2Array in Geometry2D.intersect_polygons(ring, _circle_polygon(center, radius)):
 				_hatch(patch)
-	for i: int in range(1, model.road.size()):
-		var a := to_screen(model.road[i-1])
-		var b := to_screen(model.road[i])
+	for i: int in range(1, model.road_samples.size()):
+		var a := to_screen(model.road_samples[i-1])
+		var b := to_screen(model.road_samples[i])
 		var n: Vector2 = (b - a).normalized().orthogonal() * model.road_half_m * _scale
 		if a.distance_squared_to(b) < 0.01 or c.distance_to(Geometry2D.get_closest_point_to_segment(c, a, b)) > r + n.length():
 			continue
@@ -320,6 +331,7 @@ func _footprint(hx: float, hz: float, sh: Dictionary) -> void:
 	var ix: float = hx
 	var iz: float = hz
 	if bool(sh.get("stands", false)):
+		Overlay.spectators(self, hx, hz, long_x)
 		var band: float = 4.0
 		if long_x:
 			draw_colored_polygon(_rect(-hx * 0.8, -hz, hx * 0.8, -hz + band), col["seat"])
