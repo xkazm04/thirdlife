@@ -14,6 +14,7 @@ const Look = preload("res://ui/editor/look.gd")
 
 signal committed(request: String, error: String)
 signal closed
+signal edit_hud
 
 const M: int = 16
 const LEFT_W: int = 540
@@ -190,6 +191,9 @@ func _build_frame() -> void:
 	_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pp.add_child(_progress)
 	head.add_child(pp)
+	var hud_button := _chip("HudWorkshop", "HUD workshop", "")
+	hud_button.pressed.connect(func() -> void: edit_hud.emit())
+	head.add_child(hud_button)
 
 	var mid: HBoxContainer = HBoxContainer.new()
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL

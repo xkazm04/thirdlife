@@ -1,0 +1,293 @@
+HUD LANE / 19 NOVEMBER 2026
+Builder handoff for the operator
+
+DESIGN AND BEHAVIOUR
+
+Built-in ImageGen produced the two boards before implementation. See concepts/DECISION.md,
+split-ticket.jpg, glass-rail.jpg and PROMPTS.txt. Split Ticket separates the race number,
+action and timing reference. Glass Rail gave five readings equal weight and lost its
+composition when a widget moved.
+
+Parkour reads its instrument catalogue and player layout from data/hud-widgets.json and
+data/hud.json. The creator offers seven independently configurable widgets, nine anchor
+positions, three sizes and three ink palettes. The preview and the running game share the
+same renderer. The preview uses two real, HUD-free course frames and labelled sample
+states for the run and finish. The eye toggles and position grid also work without dragging.
+Save layout writes only the layout file. Save & play writes it and opens the game in a
+window. Reopening the workshop reads back the saved choices. A conflicting external edit
+or a validation error is reported without replacing the disk file.
+
+On course the stage, current action, elapsed run, run best and checkpoint punches come
+from the live pack. At a timing gate the split slip holds the completed stage for 150
+physics ticks. Its signed difference compares that completed stage with its prior best.
+A first recorded stage shows FIRST. Between gates it shows live stage time and available
+best. Finish lists the four actual splits, each stage best and the best total. Timeout
+shows the elapsed time and the stages actually completed. R retains session bests.
+
+Existing TLHud scores, clocks, speeds and free labels receive the house type, measured
+stacking and plate treatment. Their existing data sources and text_of values are retained.
+The editable catalogue is opt-in. Timber Run supplies one. The workshop discovers other
+catalogue-bearing installed games and promoted workbench packs through the same path.
+Hockey's game code, scoring rules and HUD sources were untouched.
+
+API 1.11 adds configure_widgets, set_readout and set_phase. The version constant is in
+kernel/runner/manifest.gd as required by the brief. API.md documents types, keys and errors.
+The house tokens, typeface and OFL licence live in engine/style/hud/ and STYLE.md describes
+the visual rules. Archivo moved from the editor into style so both can use one font.
+The layout is ordinary pack data. No contract key is needed.
+The kernel loads the instrument style on demand. A project made from project.godot
+and kernel/ alone imported cleanly, displayed ordinary free/bound label values, and
+reported the missing optional module when asked for editable instruments. The probe
+printed “HUD kernel only: PASS”.
+
+Windowed QA included the real Play game button. It opened a 1280x720 game worker with
+the edited copy's absolute pack path. The test closed that game window normally.
+I also inspected the matched six game stills. On the 1080p crop the initial scaled
+text had soft edges. The shipped instruments, native labels and editor now request
+scale-aware font rasterization. A second 1080p capture confirmed the sharper lettering.
+
+I also exported a scratch Windows release, installed the workshop-saved Relay blue layout
+in its games/parkour/data/hud.json and walked from the village road into the parkour plot.
+The first visit exposed the village's leave-game hint covering the checkpoint punches.
+In a village instance TLHud now leaves at least 36 pixels above and 64 below at both test
+resolutions. A second release build and visit showed the build tag, split, checkpoints
+and leave hint clearly separated, with the large blue cue still at bottom centre. World
+trace confirmed stage 7 at frame 1260. The two release images are under .tl/hud-qa/
+export-check/village-visit.png and export-check-clear/village-visit.png. Both used the
+release executable's normal village entrance and a real edited profile.
+At 1080p the initially hidden village instruments still softened the lettering. I set
+the Archivo glyph atlas to 2× oversampling and exported again. The final 1080p village
+image is .tl/hud-qa/export-type/village-visit.png. Compare export-clear-type.png and
+export-type-crop.png under .tl/hud-qa/ at native size. The release's world report
+recorded 0 script errors, 0 engine errors and 0 engine warnings over 1266 ticks.
+
+CODE MAP
+
+engine/kernel/api/tl_hud.gd keeps the existing binding API and installs structured widgets.
+engine/style/hud/{stock,layout,sheet,ticket}.gd hold the inks and type, validation, shared
+arrangement and drawing. engine/packs/parkour/scripts/main.gd publishes the race readings.
+The workbench entry points are engine/ui/host.gd and editor/{village_board,workbench,game_sheet}.gd.
+editor/hud/{model,proof,workshop}.gd handle persistence, drag placement and the player UI.
+editor/hud/drive.gd produces the clip's real input take. editor/hud/selftest.gd is the
+headless input fixture used by engine/tools/selftest.d/550-hud-layout.sh.
+
+WINDOWED REPRODUCTION / GIT BASH FROM THE WORKTREE ROOT
+
+export TL_GODOT='C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe'
+G="$TL_GODOT"
+ROOT="$(pwd -W)"
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL='*'
+
+Open the village. Choose HUD workshop in the header, or + New game → HUD workshop.
+The header identifies the game whose data will be written.
+
+TL_WINDOW_POS=48,48 bash engine/tools/ui.sh open --res=1280x720
+
+For a custom capture without modifying the shipped layout, work on a fresh pack copy.
+
+TAKE="$ROOT/.tl/hud-take-$(date +%s)"
+mkdir -p "$TAKE"
+cp -R engine/packs/parkour "$TAKE/parkour"
+"$G" --windowed --position 48,48 --resolution 1280x720 --path "$ROOT/engine" res://ui/host.tscn -- "--hud-pack=$TAKE/parkour"
+
+Select Next move and drag it to bottom centre. Choose Large, Relay blue and the eye beside
+Controls. Save & play opens the modified game over the workbench. Esc closes the game.
+Alternatively use Save layout, return to the shell, and open that same pack directly.
+
+"$G" --windowed --position 48,48 --resolution 1280x720 --path "$ROOT/engine" res://kernel/host/host.tscn -- worker --mode=play "--pack=$TAKE/parkour"
+
+STILLS / MATCHED TO THE OPERATOR'S BASELINE
+
+Use the operator's pristine copy at .tl/base for the before frames. It must have its own
+class cache imported. The following runs each capture in the corresponding engine. Raw
+frames and verify reports stay under .tl/. Pass the six PNGs in each set to the operator's
+sheet/JPG process. Windowed capture must report capture.written and the requested dimensions.
+
+hud_stills() {
+  local tree="$1" out="$2" res frame
+  mkdir -p "$out"
+  for res in 1280x720 1920x1080; do
+    for frame in 520 987; do
+      TL_ENGINE_DIR="$tree/engine" bash "$tree/engine/tools/tl.sh" capture "--pack=$tree/engine/packs/parkour" --seed=1 --test=tests/bot_course.gd --cam=orbit "--frame=$frame" "--res=$res" --hud=on "--out=$out/parkour-$res-f$frame.png" "--report=$out/parkour-$res-f$frame.json" || return 1
+    done
+    TL_ENGINE_DIR="$tree/engine" bash "$tree/engine/tools/tl.sh" capture "--pack=$tree/engine/packs/hockey" --seed=1 --test=tests/bot_hockey.gd --cam=arena --frame=1500 "--res=$res" --hud=on "--out=$out/hockey-$res.png" "--report=$out/hockey-$res.json" || return 1
+  done
+}
+hud_stills "$ROOT/.tl/base" "$TAKE/before"
+hud_stills "$ROOT" "$TAKE/after"
+
+For a close look at the split comparison, use the two-run bot with the same orbit
+camera. At frame 1490 I saw Split 01 at 06.97, prior best 05.63, delta +01.33.
+At frame 1770 I saw Split 02 at 04.73, prior best 04.77, delta −00.03. The signs
+and ink change together. Times and differences are rounded from physics frames.
+
+for frame in 1490 1770; do
+  bash engine/tools/tl.sh capture "--pack=$ROOT/engine/packs/parkour" --seed=1 --test=tests/bot_splits.gd --cam=orbit "--frame=$frame" --res=1280x720 --hud=on "--out=$TAKE/repeat-$frame.png" "--report=$TAKE/repeat-$frame.json" || break
+done
+
+REPEATABLE CLIP / REAL GODOT WINDOWS
+
+Use a fresh TAKE and copy as above. The first command sends mouse events through the
+actual editor. It drags Next move, enlarges it, selects Relay blue, hides Controls and
+saves. Look for “saved take: PASS”. The second starts that saved game and follows the
+real course bot for 600 physics frames. Movie Maker records both windows. No composited
+HUD or concept art is used. The builder's scratch verification yielded 197 editor and
+304 game frames, 501 frames at 30 fps after joining (16.70 seconds). Running these same
+commands on the final source produced .tl/hud-qa/take-final/clip-hud.mp4 and the same counts.
+
+"$G" --windowed --position 0,1440 --resolution 1280x720 --path "$ROOT/engine" --fixed-fps 30 --write-movie "$TAKE/editor.avi" --quit-after 420 res://ui/host.tscn -- "--hud-pack=$TAKE/parkour" --drive=hud "--shots=$TAKE"
+"$G" --windowed --position 0,1440 --resolution 1280x720 --path "$ROOT/engine" --fixed-fps 30 --write-movie "$TAKE/run.avi" --quit-after 340 res://kernel/host/host.tscn -- worker --mode=capture "--pack=$TAKE/parkour" --test=tests/bot_course.gd --seed=1 --frames=600 --cam=orbit --hud=on "--out=$TAKE/game.png" "--result=$TAKE/game.json"
+ffmpeg -hide_banner -i "$TAKE/editor.avi" -i "$TAKE/run.avi" -filter_complex '[0:v]scale=1280:720,setsar=1[a];[1:v]scale=1280:720,setsar=1[b];[a][b]concat=n=2:v=1:a=0[v]' -map '[v]' -an -c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p -movflags +faststart "$TAKE/clip-hud.mp4"
+ffprobe -v error -show_entries stream=width,height,nb_frames:format=duration -of compact "$TAKE/clip-hud.mp4"
+
+GATE EVIDENCE
+
+ui.sh selftest
+[selftest] 166 passed, 0 failed
+
+bash engine/tools/selftest.sh hud550
+PASS hud550.editor_save
+PASS hud550.strict_data
+PASS hud550.layout_applies
+PASS hud550.village_clearance
+PASS hud550.state_hash  (f7abac006a45bd43b7c7987e7400a234ac9060deae54f3b681be2f5803ab2af0@988)
+PASS hud550.bad_key
+selftest: 6 passed, 0 failed
+
+node devx/bin/tl.mjs check --tier full --only world,packs
+PASS  packs  226474 ms  [2/2] found 2, completed 2; verb runs 48 of 48
+PASS  world   49277 ms  [8/8] 8 games: world = alone
+All 56 rows in .tl/hud-qa/current-units.txt matched .tl/base-units.txt. This includes
+every available state hash and frame count in the 48 pack runs and the eight world rows.
+I repeated all 18 Timber Run bots on seeds 1 and 2 with the final default layout and
+with the actual edited profile from the clip. Default 36/36 passed; custom 36/36 passed.
+Every 64-digit hash and frame count in both sets matched the operator's pristine
+.tl/bots-base.txt. Results: .tl/hud-qa/bots-final.txt and .tl/hud-qa/bots-custom.txt.
+
+node devx/bin/tl.mjs check --tier fast
+In the landing worktree the Director-owned generated indexes still describe 1.10.
+FAIL arch [12/12] api-index-fresh, api-v1, reports-index-fresh
+FAIL devx.test [229/229] 225 passed, 4 failed; all four assert generated index freshness.
+PASS assets [4/4], PASS cards [3/3], PASS foreman.typecheck.
+In an isolated copy of the worktree files under .tl/hud-qa/index-check, after running
+node devx/bin/tl.mjs arch --index, the fast tier exited 0 (5/5 steps, 248/248 units).
+PASS arch [12/12], PASS assets [4/4], PASS cards [3/3], PASS devx.test [229/229],
+PASS foreman.typecheck. The generated files that differ are docs/generated/API-INDEX.md,
+docs/generated/API-V1.json and docs/generated/REPORTS.md. The Director regenerates them
+on main with the same command.
+
+node devx/bin/tl.mjs check --tier full
+First run completed 14/14 steps and 1196/1196 units with zero retries. Exit 1.
+FAIL arch [12/12] and FAIL devx.test [229/229] as above.
+PASS assets [4/4], PASS cards [3/3], PASS foreman.typecheck.
+PASS foreman.test [223/223] 217 passed, 0 failed, 6 skipped.
+PASS kernel.selftest [322/322], PASS kit.selftest [95/95].
+PASS packs [2/2] 48 of 48 verb runs.
+PASS perf [2/2] mix30, pile600 within tolerance of the last quiet baseline.
+PASS seeds [39/39], PASS item.selftest [91/91], PASS ui.selftest [166/166].
+PASS world [8/8] world = alone.
+Builder log: .tl/hud-qa/full.log.
+
+The second full-tier run completed 14/14 steps and 1197/1197 units with zero retries.
+Exit 1. The two failing steps again named only the generated index expectations.
+After the village clearance regression was added, the kernel count went up by one.
+The final generated-index scratch fast run passed 248/248. The last full run printed:
+
+FAIL  arch [12/12] api-index-fresh, api-v1, reports-index-fresh
+PASS  assets [4/4]
+PASS  cards [3/3]
+FAIL  devx.test [229/229] 225 pass, 4 fail across 17 files
+PASS  foreman.typecheck  tsc --noEmit clean
+PASS  foreman.test [223/223] 217 pass, 0 fail, 6 skipped
+PASS  kernel.selftest [323/323] 323 cases passed
+PASS  kit.selftest [95/95] 95 cases passed
+PASS  packs [2/2] found 2, completed 2; verb runs 48 of 48
+PASS  perf [2/2] mix30, pile600 within tolerance of the last quiet baseline (machine quiet: use 13%, probe 1)
+PASS  seeds [39/39] 39 cases passed
+PASS  item.selftest [91/91] 91 cases passed
+PASS  ui.selftest [166/166] 166 cases passed
+PASS  world [8/8] 8 games: world = alone
+
+Full output is in .tl/hud-qa/full-final.log. All 56 final pack/world hash and frame
+rows in .tl/hud-qa/final-units.txt matched the operator's pristine .tl/base-units.txt.
+
+ROUND 2
+
+The prior stage best and signed difference now share a larger line directly under
+the split. Both the sign and the ink distinguish a gain from a loss. The checkpoint
+ticket leads with the count and carries fourteen larger punches below it. The
+controls wrap into two short rows. I placed a Large next move at bottom centre with
+the controls still visible and checked that both remained readable. Hockey's free
+and bound labels now respect the authored font_size (36 at 720p for its status).
+At frame 1500 the rink still showed BLUE 1, RED 0 and 00:11 P1.
+
+Native rendered heights, in pixels, with the default Signal red theme and Regular size:
+
+Reading or caption                        1280 x 720    1920 x 1080
+Next move, capital L                             20             29
+Split, digits                                    23             35
+Previous stage best, digits                      16             25
+Signed split delta, faster and slower            17             26
+Run time, digits                                 19             29
+Best run, digits                                 16             24
+Checkpoint count, digits                         18             28
+Checkpoint punch diameter, filled and open       12             18
+LIVE SPLIT, NEXT MOVE and WASD keycap            12             18
+STAGE, BEST, RUN TIME, RUN BEST, CHECKPOINTS     12             19
+Finish board, stage split / stage best        16/15          25/23
+Hockey status, capital L                         24             37
+
+All the measured running captions reach 12 px at Regular. When the player chooses
+Small, SPLIT and CHECKPOINTS measure 10 px. These labels name the instruments.
+In that same Small capture the prior best still measured 13 px, the signed difference
+14 px and the checkpoint count 15 px.
+
+I counted rows of ink in the original PNGs at their native resolution. Each counted
+row had at least two foreground pixels at 50% coverage on the flat colour of its
+ticket. For hockey's outlined L over the rink, I counted the light letter fill.
+I used a single capital or digits without the slash or descenders. Applying the same
+method to the round-one 720p files gave 10 px for the previous best, 11 px for its
+delta, 10 px for the checkpoint digits, 8 px for the punches and 13 px for hockey's L.
+
+The still commands above reproduce these readings. Use seed 1. For course frame
+520, crop (33,648)-(65,678) for the 07 in 07 / 14. For bot_splits frame 1770,
+crop (1084,64)-(1156,93) for best 04.77 and (1171,64)-(1250,93) for −00.03.
+Frame 1490 shows the slower +01.33. Coordinates use the top-left origin at 1280 x 720.
+Both resolutions were rendered independently. The comparison sheet enlarges actual
+pixels with nearest-neighbour scaling.
+
+Builder proofs live in .tl/hud-qa/round2/:
+  reading-proof.png                matched round-one and round-two crops
+  measure.py, measurements.txt     sample boxes, measurement code and its output
+  gain-, loss-, run-, finish-, hockey-<resolution>.png   native stills
+  compact.png, bottom-cue.png       Small readings and the Large cue beside live controls
+  take/clip-hud.mp4                workshop edit and saved game, 501 frames, 16.70 s
+
+ROUND 2 GATES
+
+bash engine/tools/ui.sh selftest
+[selftest] 166 passed, 0 failed
+
+bash engine/tools/selftest.sh hud550
+PASS hud550.editor_save
+PASS hud550.strict_data
+PASS hud550.layout_applies
+PASS hud550.village_clearance
+PASS hud550.state_hash  (f7abac006a45bd43b7c7987e7400a234ac9060deae54f3b681be2f5803ab2af0@988)
+PASS hud550.bad_key
+selftest: 6 passed, 0 failed
+
+bot_course, bot_splits and bot_landing_recovery each passed on seeds 1 and 2.
+All six full hashes and frame counts matched .tl/bots-base.txt. Both course runs ended
+at frame 988, both split runs at 2097 and both landing recovery runs at 1082.
+All twelve windowed captures reported capture.written. The editor drive printed
+“saved take: PASS” and the game loaded its saved blue layout.
+
+node devx/bin/tl.mjs check --tier fast
+Worktree: FAIL arch [12/12] api-index-fresh, api-v1, reports-index-fresh;
+FAIL devx.test [229/229] 225 pass, 4 fail. Assets, cards and foreman.typecheck passed.
+The existing regenerated-index scratch copy with round-two source passed all five
+steps and 248/248 units, including arch [12/12] and devx.test [229/229]. The Director
+owns the landing indexes. The operator will run the full tier, world/packs and the
+complete bot matrix for this round.

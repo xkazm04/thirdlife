@@ -19,12 +19,15 @@ const JobModel = preload("res://ui/job_model.gd")
 const Workbench = preload("res://ui/editor/workbench.gd")
 const GameSheet = preload("res://ui/editor/game_sheet.gd")
 const Board = preload("res://ui/editor/village_board.gd")
+const HudWorkshop = preload("res://ui/editor/hud/workshop.gd")
+const HudLayout = preload("res://style/hud/layout.gd")
 
 var args: Dictionary = {}
 var panel: Panel_
 var door: Door
 var workbench: Workbench = null
 var game_sheet: GameSheet = null
+var hud_workshop: HudWorkshop
 var board: Board = null                # E5: the village board, the home screen with --home
 var village_button: Button = null       # E5: back from the jobs list to the board
 
@@ -86,10 +89,13 @@ func _ready() -> void:
 		_fill_workbench()
 	elif not panel.selected.is_empty():
 		open_game_sheet(panel.selected)
+	if args.has("hud-editor") or args.has("hud-pack"):
+		open_hud_workshop(str(args.get("hud-pack", "")))
 	if capture:
 		_capture_and_quit(str(args["out"]))
 	elif args.has("drive"):
-		var drive: Node = (load("res://ui/drive.gd") as GDScript).new()
+		var script_path := "res://ui/editor/hud/drive.gd" if args.drive == "hud" else "res://ui/drive.gd"
+		var drive: Node = (load(script_path) as GDScript).new()
 		drive.name = "Drive"
 		add_child(drive)
 		drive.call("start", self, str(args["drive"]), str(args.get("shots", "")))
@@ -107,6 +113,7 @@ func open_workbench() -> void:
 	if board != null:
 		board.visible = false
 	workbench.closed.connect(close_workbench)
+	workbench.edit_hud.connect(open_hud_workshop)
 	workbench.committed.connect(func(request: String, err: String) -> void:
 		if err.is_empty():
 			panel.set("_want_select_sentence", Door.clean_text(request))
@@ -125,6 +132,7 @@ func open_game_sheet(id: String) -> void:
 	game_sheet = GameSheet.new()
 	game_sheet.name = "GameSheet"
 	game_sheet.setup(door, door.jobs_root.path_join(id), d)
+	game_sheet.edit_hud.connect(open_hud_workshop)
 	add_child(game_sheet)
 	panel.visible = false
 	if board != null:
@@ -174,6 +182,7 @@ func _make_board() -> void:
 	village_button.pressed.connect(back_home)
 	add_child(village_button)
 	board.new_game.connect(open_workbench)
+	board.edit_hud.connect(open_hud_workshop)
 	board.jobs_list.connect(func() -> void:
 		board.visible = false
 		panel.visible = true
@@ -207,6 +216,47 @@ func _fill_workbench() -> void:
 	if args.has("closeup"):
 		(workbench.find_child("CloseUpButton", true, false) as Button).pressed.emit()
 	workbench.refresh()
+
+
+## Existing games can opt in through their own HUD catalogue. A promoted game edits its own pack folder.
+func open_hud_workshop(pack_dir: String = "") -> void:
+	if hud_workshop != null:
+		return
+	var games: Array = []
+	if not pack_dir.is_empty():
+		_add_hud_game(games, pack_dir, true)
+	else:
+		var library: Dictionary = JobModel.read_json("res://boot/games.json")
+		for game: Dictionary in library.get("games", []):
+			_add_hud_game(games, "res://" + str(game.from).trim_prefix("engine/"))
+		for job: Dictionary in panel.jobs.values():
+			_add_hud_game(games, str(job.get("pack_dir", "")))
+	hud_workshop = HudWorkshop.new()
+	hud_workshop.name = "HudWorkshopScreen"
+	hud_workshop.setup(games, door.dry)
+	var previous: Control = panel
+	for screen: Control in [board, game_sheet, workbench]:
+		if screen != null and screen.visible:
+			previous = screen
+	previous.hide()
+	add_child(hud_workshop)
+	hud_workshop.closed.connect(func() -> void:
+		hud_workshop.queue_free()
+		hud_workshop = null
+		previous.show())
+
+
+func _add_hud_game(games: Array, dir: String, explicit: bool = false) -> void:
+	if dir.is_empty() or (not explicit and not FileAccess.file_exists(dir.path_join(HudLayout.CATALOG))):
+		return
+	dir = ProjectSettings.globalize_path(dir).replace("\\", "/").simplify_path()
+	for game: Dictionary in games:
+		if game.dir == dir:
+			return
+	var manifest: Variant = JobModel.read_json(dir.path_join("pack.json"))
+	var title := str(manifest.get("title", dir.get_file())) if manifest is Dictionary else dir.get_file()
+	var id := str(manifest.get("id", "")) if manifest is Dictionary else ""
+	games.append({"id": id, "title": title, "dir": dir})
 
 
 func _background(path: String) -> void:
@@ -254,4 +304,7 @@ func shot(out: String) -> int:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and not args.has("drive"):
+		if hud_workshop != null:
+			hud_workshop.request_close()
+			return
 		get_tree().quit(0)

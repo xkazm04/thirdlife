@@ -1,11 +1,6 @@
 extends Control
-## E2 (night of 19 Nov): a game in progress, for a game made in the workbench. Three things, in the player's words:
-## DECIDED (what the workbench sent: every answer and who gave it; the brief once it is written), OPEN (what waits for
-## the player: the brief to approve, a builder's question, a game that stopped), NOW (what the builders are doing:
-## one line per package with the site's own state words, the current one first). On the right the game's lot, close
-## up, with one bay per package coloured by its state, as the village draws the construction site.
-## Reads the job directory (job_model.gd) once a second and the draft the workbench wrote (<jobs>/_editor/*.json);
-## acts only through the Foreman door, like the panel.
+## A workbench game's decisions, open questions, build progress and lot. Reads the job and saved draft.
+## The Foreman door handles build actions. The HUD workshop opens the promoted pack's layout.
 
 const GameChanges = preload("res://ui/editor/game_changes.gd")
 const Model = preload("res://ui/editor/editor_model.gd")
@@ -14,6 +9,7 @@ const Look = preload("res://ui/editor/look.gd")
 const JobModel = preload("res://ui/job_model.gd")
 
 signal closed
+signal edit_hud(pack_dir: String)
 
 const M: int = 16
 const LEFT_W: int = 558
@@ -185,6 +181,10 @@ func _build() -> void:
 	_figures.add_theme_font_size_override("font_size", 12)
 	_figures.add_theme_color_override("font_color", col["vellum"])
 	hh.add_child(_figures)
+	var hud_button := _button("HudWorkshop", "HUD workshop", false)
+	hud_button.visible = false
+	hud_button.pressed.connect(func() -> void: edit_hud.emit(str(job.get("pack_dir", ""))))
+	hh.add_child(hud_button)
 	var mid: HBoxContainer = HBoxContainer.new()
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	mid.add_theme_constant_override("separation", 10)
@@ -250,6 +250,8 @@ func _process(delta: float) -> void:
 
 func _reload() -> void:
 	job = JobModel.read_job(job_dir)
+	var dir := str(job.get("pack_dir", ""))
+	find_child("HudWorkshop", true, false).visible = not dir.is_empty() and FileAccess.file_exists(dir.path_join("data/hud-widgets.json"))
 	var phase: String = str(job.get("phase", "unreadable"))
 	if phase in JobModel.LIVE_PHASES and door != null and not bool(door.call("foreman_alive", job_dir, JobModel.read_lock(job_dir))):
 		phase = "stalled" if not _starting() else phase

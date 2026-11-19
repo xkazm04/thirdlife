@@ -3,7 +3,7 @@ extends RefCounted
 ## plates with an ink outline, honey for what is chosen and for the one button that spends.
 
 const Presswork = preload("res://ui/editor/presswork.gd")
-const TYPEFACE := "res://ui/editor/fonts/Archivo.ttf"
+const TYPEFACE := "res://style/hud/Archivo.ttf"
 
 const JobModel = preload("res://ui/job_model.gd")
 

@@ -12,6 +12,7 @@ const Look = preload("res://ui/editor/look.gd")
 const GameSheet = preload("res://ui/editor/game_sheet.gd")
 
 signal new_game
+signal edit_hud
 signal open_game(id: String)
 signal jobs_list
 
@@ -114,6 +115,9 @@ func _build() -> void:
 	var jl: Button = _button("JobsListButton", "Jobs list", false)
 	jl.pressed.connect(func() -> void: jobs_list.emit())
 	hh.add_child(jl)
+	var hud_button := _button("HudWorkshop", "HUD workshop", false)
+	hud_button.pressed.connect(func() -> void: edit_hud.emit())
+	hh.add_child(hud_button)
 	var ng: Button = _button("NewGameButton", "+ New game", true)
 	ng.pressed.connect(func() -> void: new_game.emit())
 	hh.add_child(ng)

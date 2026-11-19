@@ -38,6 +38,30 @@ materials. The three seams the kernel uses (added in WP5):
   so it only lights materials the style did not make: a `StandardMaterial3D` is readable, though it has no bands and
   no drawn surface. The right fix for such a material is not to make it.
 
+## HUD · Split Ticket
+
+The HUD takes its shapes from race bibs and printed timing slips. A numbered tab identifies the stage.
+The next move gets its own clipped paper ticket. The split sits on ink. Its previous best and the signed
+difference share a line directly beneath it. The checkpoint count leads the row of filled and open punches.
+The controls legend wraps into short rows so a player can place the next move at bottom centre. The finish docket
+sets the stage, split and personal best in aligned columns and marks the total with a perforation.
+
+`hud/stock.gd` owns the paper, ink, accent, accent text, timing marker and gain colours for Signal red,
+Relay blue and Night meet. The shared Archivo variable face uses condensed heavy cuts for the action and
+tabular figures for time. Its OFL licence travels with the font in `hud/`. Text widgets use the same
+typeface and inks. A plate has a registration stripe, and an empty label leaves the course clear.
+
+Judge size in a native 1280 × 720 capture. At Regular size, aim for at least 16 pixels of visible digit height
+for the split comparison and checkpoint count, and 12 pixels of capital height for their captions and keycaps.
+Free and bound labels respect the pack's `TLHud.font_size` at this resolution.
+
+`hud/ticket.gd` draws the instruments on a 1280 × 720 design surface. `hud/sheet.gd` fits it uniformly
+to the available screen, stacks instruments at each occupied anchor, and holds the edge in place as
+text wraps. The creator uses the same sheet, with author-supplied sample readings over a course still.
+The default margin is 22 units horizontally and 19 vertically. In the village the HUD also clears
+the build tag above and leave-game hint below, while preserving the size of the type. The player's three widget sizes are
+0.82×, 1× and 1.22×. The kernel API's TLHud section documents the two pack-local data files.
+
 ## Headless
 Under `--headless` (or after `set_headless(true)`): no shader is loaded, no texture is built, no global shader
 parameter is touched, `install` adds an empty `TLStyleRig` node, and `material(key)` returns one shared

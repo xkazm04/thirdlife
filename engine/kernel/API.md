@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.10)
+# Third Life kernel API (kernelApi 1.11)
 
-**Version 1.10 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.11 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.10"` in `pack.json` (any
-`"1.x"` up to 1.10 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.11"` in `pack.json` (any
+`"1.x"` up to 1.11 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -517,22 +517,52 @@ car.set_controls(lane["steer"], 1.0 if car.forward_speed() < 20.0 else 0.0)
 defender.move(TLSteer.pursue(defender.global_position, defender.speed(), puck.global_position, puck.linear_velocity))
 ```
 
-**`TLHud`** (a `CanvasLayer`; stand-in look): `TLHud.create()`, `add_score(rules, side, anchor, caption = "")`,
-`add_clock(rules, anchor)`, `add_speed(callable, unit, anchor)`, `add_label(id, text, anchor)`,
-`add_bound(id, callable, anchor)`, `set_text(id, text)`, `text_of(id)`. Anchors `top_left top top_right left center
-right bottom_left bottom bottom_right`. Captures hide the HUD (`capture --hud=on` keeps it). Widget ids for `text_of` /
-`set_text`: `score_<side>`, `clock`, `speed`, and the id you gave to `add_label` or `add_bound`.
-K5, text that reads over a busy picture (all additive; without these calls every HUD looks as it did):
-- `set_plate(id, on = true)`: a plate behind the widget: the HUD's ink (`TLHud.INK`, the outline colour of its letters)
-  at `PLATE_ALPHA` 0.62, round corners, `PLATE_MARGIN` (18, 8) px around the text. A group of lines is one label with
-  `\n` in its text: one plate around all of them. The HUD is a stand-in the style layer does not draw yet (STYLE.md has
-  no HUD section), so its colours are these constants.
-- `set_align(id, align)`: `&"left"` (default), `&"center"` or `&"right"`: where the lines of a label of several lines sit
-  inside it and its plate.
-- A label on a `bottom*` anchor keeps its bottom edge and grows upwards when its text gets more lines (before, it grew
-  downwards, off the screen). A plated label, or a bottom label of several lines, is fitted to its text whenever the text
-  changes (it shrinks again, keeping its bottom, right or middle edge by its anchor); a label of one line without a plate
-  is never moved, so existing pictures stay. Example: `examples/ex_hud`.
+**`TLHud`** is a per-pack `CanvasLayer` with the Split Ticket house style. Existing calls keep their signatures and
+their text values. `TLHud.create()` registers the layer with its pack. Captures include it with `--hud=on`.
+
+- `add_score(rules, side, anchor, caption = "")`, `add_clock(rules, anchor)` and `add_speed(callable, unit, anchor)`
+  bind live readouts. Their ids are `score_<side>`, `clock` and `speed`.
+- `add_label(id, text, anchor)`, `add_bound(id, callable, anchor)`, `set_text(id, text)` and `text_of(id)` work with
+  free text. Bound sources continue to refresh in physics order, including off stage.
+- `set_plate(id, on = true)` toggles a backing on a text widget. Scores, clocks and speed start plated.
+  `set_align(id, align)` aligns lines inside a label (`left`, `center`, `right`). Text on a shared anchor stacks
+  by its measured size. Empty text takes no space. The first bottom label keeps its bottom edge.
+- The nine anchors are `top_left`, `top`, `top_right`, `left`, `center`, `right`, `bottom_left`, `bottom` and `bottom_right`.
+
+**Editable instruments (1.11).** A pack opts into the creator's HUD workshop with two ordinary pack data files.
+
+```gdscript
+var ready := hud.configure_widgets(ctx.read_json("hud-widgets.json"), ctx.read_json("hud.json"))
+if ready:
+    hud.set_readout(&"next", {"value": "Jump the gap"})
+    hud.set_phase(&"run")
+```
+
+`configure_widgets(catalog, layout) -> bool` validates both files before replacing the instruments. A bad file logs
+an error and keeps the previous configuration. `set_readout(id, reading)` updates one instrument. An empty dictionary
+clears it. `set_phase(phase)` shows the `run` or `finish` set. These calls only change the drawing.
+Kernel-only installations retain the ordinary text widgets. Requesting editable instruments there returns false
+and reports the missing HUD style module.
+
+- `data/hud-widgets.json` is the author's array of instruments. Each has a unique ASCII identifier `id`, player-facing
+  `title`, `form`, default `anchor` and `sample` reading for the workbench. Optional `phase` is `run` (default),
+  `finish` or `both`. An optional `finish_sample` supplies a distinct example on the finish screen.
+- `data/hud.json` holds the player's optional `theme` and `widgets` override list. An empty object uses house defaults.
+  Each override has one declared `id` and may set `visible` (boolean), `anchor` and `size` (`small`, `regular`, `large`).
+  Themes are `signal`, `relay` and `night`. Unknown keys, unknown ids, duplicates, invalid types and unknown choices
+  produce errors in the game and editor.
+- Example layout: `{"theme":"relay","widgets":[{"id":"next","anchor":"bottom","size":"large"}]}`.
+  See `packs/parkour/data/hud-widgets.json` for a complete catalogue.
+
+| Form | Reading fields |
+|---|---|
+| `bib` | `value` (bib number text), `name` (stage name) |
+| `cue` | `value` (action text) |
+| `split` | `name` (live or completed split caption), `value`, `best`, `delta` (signed comparison text, empty to omit) |
+| `timer` | `value`, `best` (formatted times) |
+| `progress` | `done`, `total` (whole counts with `0 <= done <= total` and `total >= 1`) |
+| `results` | `name`, `value`, `best`, `rows` (array of three-string rows: stage, split, best) |
+| `keys` | `pairs` (array of two-string rows: key, action) |
 
 **`TLVfx`** also has two motion helpers that sit on the style layer (N5a; they do nothing when it is absent):
 `TLVfx.squash(visual, amount = 0.25, frames = 18, axis = Vector3.UP)` (squash and stretch on a VISUAL node, never a

@@ -1,7 +1,7 @@
 {
   "id": "game.parkour",
   "version": "0.3.1",
-  "kernelApi": "1.10",
+  "kernelApi": "1.11",
   "title": "Parkour | Timber Run",
   "capabilities": ["physics", "biped", "rules", "input", "camera", "kit", "ui"],
   "entry": "scripts/main.gd",
