@@ -349,6 +349,12 @@ The kernel's biped rig has those three clips. With it, `TLBiped` (and the visito
 the whole rig turns about the bar by `bar_theta` with its hands on the bar and faces across the bar; on a ledge it
 faces the wall and hangs 0.4 m (x body scale) lower so the raised hands meet the lip; after a release or a drop it
 turns upright in about 12 ticks.
+`mark_bar` also puts the body in the group `tl_bar`: a `TLChaseCam` (and the visitor's camera, which also knows the
+village's copied bars) leaves marked bars out of its avoidance, so walking under a bar or swinging on one does not lift,
+pull or cut the camera. Keep the player's own body out of the camera's `avoid_mask` as before.
+The village visitor's hard swing ends softly: pumping adds no energy once the swing would pass 85 degrees, and energy
+above that (a fast entry) is bled off, so it peaks near 85 degrees instead of stopping dead at the 100 degree limit. A
+pack biped keeps the plain swing (it stops at 100 degrees), so a pack tuned to it (parkour's Skyline) is unchanged.
 
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
 
