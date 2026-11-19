@@ -1,0 +1,7 @@
+extends "probe_nc.gd"
+## Operator probe: as probe_nc, but no side taps once the runner is on the beam (checkpoint 7 or later).
+func _aim_return(frame: int) -> void:
+	if int(state.checkpoint) >= 7:
+		last_z = float(state.return_z)
+		return
+	super(frame)

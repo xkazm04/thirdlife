@@ -1,0 +1,12 @@
+seed 8: falls 68 hits 6 | f195 cp1 hits0 before[x21.38 z9.00 y7.00 ground v9.0 ; x19.58 z9.00 y6.61 air v9.0 ; x17.93 z9.00 y5.58 air v9.0]
+f274 cp1 hits0 before[x21.43 z9.00 y7.02 ground v9.0 ; x19.63 z9.00 y6.66 air v9.0 ; x17.98 z9.00 y5.64 air v9.0]
+f830 cp7 hits0 before[x15.50 z0.01 y2.38 air v8.5 ; x16.85 z-1.10 y2.04 air v8.7 ; x18.12 z-1.96 y0.89 air v8.0]
+f902 cp7 hits0 before[x15.68 z1.71 y2.47 air v9.0 ; x17.42 z1.56 y2.05 air v8.6 ; x18.93 z1.21 y0.83 air v8.4]
+f982 cp8 hits1 before[x17.08 z-0.76 y1.81 air v8.4 ; x18.72 z-0.44 y1.60 ground v8.4 ; x19.95 z0.31 y1.60 ground v5.4]
+f1035 cp8 hits1 before[x16.78 z-0.01 y1.60 ground v4.6 ; x17.89 z-1.05 y1.48 air v8.6 ; x19.16 z-1.83 y0.90 air v7.5]
+f1062 cp8 hits1 before[x16.60 z0.09 y1.60 ground v2.3 ; x16.60 z1.24 y1.48 air v7.5 ; x16.72 z2.51 y0.82 air v6.5]
+f1094 cp8 hits1 before[x16.91 z-0.27 y1.60 ground v4.5 ; x18.02 z-1.20 y1.47 air v8.9 ; x19.27 z-2.16 y0.81 air v8.3]
+f1127 cp8 hits1 before[x16.98 z0.30 y1.60 ground v4.8 ; x18.14 z1.10 y1.53 air v8.5 ; x19.27 z2.01 y0.87 air v7.3]
+f1166 cp8 hits1 before[x16.60 z-0.14 y1.60 ground v2.8 ; x16.88 z-0.95 y1.46 air v4.6 ; x17.60 z-1.46 y0.87 air v4.9]
+f1200 cp8 hits1 before[x17.00 z0.40 y1.60 ground v3.7 ; x17.20 z1.04 y1.45 air v5.2 ; x17.48 z1.88 y0.87 air v4.4]
+f1231 cp8 hits1 before[x16.85 z-0.18 y1.60 ground v4.1 ; x17.93 z-1.03 y1.51 air v7.7 ; x19.14 z-1.63 y0.85 air v7.1] | newcomer hand: blocked true, checkpoint retry true (4.50 m to beam), slid under true, time in 3600 ticks; checkpoint 8, return (19.14, -1.19), height 1.42, marks { 4: 590, 5: 664, 6: 743, 7: 781, 8: 970 }

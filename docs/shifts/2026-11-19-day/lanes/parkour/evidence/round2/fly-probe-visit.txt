@@ -1,0 +1,9 @@
+[world] no end after 600s: stopping this run's own window (tlworld_53276_15184)
+{"schema":"tl.view/1","kind":"visit_path","tick":30,"feet":[0.0,0.0,0.0],"yaw_deg":0.0,"pitch_deg":12.6,"stage":-1,"mark":"start","cam_over_ground_m":0.75,"body":"ground","cam_in_crown":false}
+{"schema":"tl.view/1","kind":"visit_path","tick":150,"feet":[0.0,0.0,0.0],"yaw_deg":0.0,"pitch_deg":12.6,"stage":0,"mark":"entered"}
+{"schema":"tl.view/1","kind":"visit_path","tick":300,"feet":[0.0,0.0,0.0],"yaw_deg":0.0,"pitch_deg":12.6,"stage":0,"mark":"flying_try"}
+{"schema":"tl.view/1","kind":"visit_path","tick":420,"feet":[0.0,0.0,0.0],"yaw_deg":0.0,"pitch_deg":12.6,"stage":0,"mark":"flying_try2"}
+{"schema":"tl.view/1","kind":"visit_left","tick":450,"plot":0,"feet":[0.0,0.0,35.0],"outside_edge_m":5.0,"gate":[0.0,1.0],"yaw_deg":-180.0}
+{"schema":"tl.view/1","kind":"visit_path","tick":500,"feet":[0.0,0.0,35.0],"yaw_deg":-180.0,"pitch_deg":12.6,"stage":-1,"mark":"left","body":"ground","cam_in_crown":false}
+{"schema":"tl.view/1","kind":"visit_path","tick":600,"feet":[0.0,11.077,35.0],"yaw_deg":-180.0,"pitch_deg":12.6,"stage":-1,"mark":"village_fly","cam_over_ground_m":14.68,"body":"fly","cam_in_crown":false}
+stage record rec.parkour.1.json: 449 samples; actions seen: jump forward run (F pressed on stage at ticks 160 and 260; no fly action reaches the game)

@@ -22,6 +22,7 @@ var splits: Array[int] = []
 var stage_bests: Array[int] = []
 var stage_started := 0
 var falls := 0
+var carried_strafe := 0.0
 var swing_hits := 0
 var swing_hit_pending := false
 var hit_notice_until := 0
@@ -92,6 +93,7 @@ func _restart() -> void:
 	trail.clear()
 	splits.clear()
 	stage_started = 0
+	carried_strafe = 0.0
 	swing_hits = 0
 	swing_hit_pending = false
 	hit_notice_until = 0
@@ -127,11 +129,15 @@ func _pack_tick(_frame: int) -> void:
 		if runner.position.y < KILL_Y or below_decks or retry or struck:
 			if not retry:
 				falls += 1
-			runner.place(ctx.root.to_global(spawn_at))
+			var facing := 0.0
+			if index == 8:
+				carried_strafe = signf(ctx.input.axis(&"left", &"right"))
+				facing = Vector3.FORWARD.signed_angle_to(lane.root.basis.x, Vector3.UP)
+			runner.place(ctx.root.to_global(spawn_at), facing)
 			trail.clear()
 			at = spawn_at.x - venue.START_X
 			cam.snap()
-		runner.drive_from_input(ctx.input, ACTIONS, cam.yaw_basis())
+		_drive_walker(index)
 		if index < 4:
 			_high_checkpoint(index, at)
 		else:
@@ -140,6 +146,19 @@ func _pack_tick(_frame: int) -> void:
 		runner.move(Vector3.ZERO)
 	_frame_chute(runner.position.x - venue.START_X if splits.is_empty() else 0.0)
 	_update_hud()
+
+
+func _drive_walker(index: int) -> void:
+	var view := cam.yaw_basis()
+	runner.drive_from_input(ctx.input, ACTIONS, view)
+	if carried_strafe == 0.0:
+		return
+	if index != 8 or signf(ctx.input.axis(&"left", &"right")) != carried_strafe:
+		carried_strafe = 0.0
+		return
+	# A held side key belonged to the fall. Keep the forward/back controls until the player steers afresh.
+	var along := ctx.input.axis(&"forward", &"back")
+	runner.move(view * Vector3(0.0, 0.0, along), ctx.input.pressed(&"run"))
 
 
 func _high_checkpoint(index: int, at: float) -> void:
@@ -233,6 +252,8 @@ func _update_hud() -> void:
 		cue = "C  Retry from checkpoint"
 	if rules.total_frames < hit_notice_until:
 		cue = "Weight hit   ·   Back on beam"
+	if carried_strafe != 0.0:
+		cue = "Back on beam   ·   Release side key to steer"
 	caption += "    " + cue
 	if rules.is_over():
 		caption = "FINISH" if rules.reason == "laps" else "TIME UP"
@@ -265,7 +286,7 @@ func _pack_state() -> Dictionary:
 		"swing_x": lane.swing_x, "swing_phase": lane.phase(rules.total_frames), "swing_period": lane.swing_period_frames,
 		"swing_degrees": rad_to_deg(lane.swing_angle), "station": runner.position.x - venue.START_X,
 		"height": runner.position.y, "motion": runner.walker_motion(),
-		"speed": runner.speed(), "falls": falls, "swing_hits": swing_hits, "swing_hit_pending": swing_hit_pending, "checkpoint": int(rules.next_checkpoint[SIDE]),
+		"speed": runner.speed(), "falls": falls, "swing_hits": swing_hits, "carried_strafe": carried_strafe, "swing_hit_pending": swing_hit_pending, "checkpoint": int(rules.next_checkpoint[SIDE]),
 		"stage_splits": splits.duplicate(), "stage_bests": stage_bests.duplicate(), "stage_started": stage_started,
 		"first_lip": venue.FIRST_LIP,
 		"first_land": venue.first_land, "chain_lip": venue.chain_lip, "chain_land": venue.chain_land,

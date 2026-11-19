@@ -1,0 +1,12 @@
+delay 0 OPERATOR falls 1 hits 1 state running race 582
+delay 13 OPERATOR falls 1 hits 1 state running race 595
+delay 26 OPERATOR falls 0 hits 0 state over race 813
+delay 39 OPERATOR falls 0 hits 0 state over race 826
+delay 52 OPERATOR falls 0 hits 0 state over race 839
+delay 65 OPERATOR falls 1 hits 1 state running race 655
+delay 78 OPERATOR falls 1 hits 1 state running race 660
+delay 91 OPERATOR falls 1 hits 1 state running race 673
+delay 104 OPERATOR falls 0 hits 0 state over race 891
+delay 117 OPERATOR falls 0 hits 0 state over race 904
+delay 130 OPERATOR falls 0 hits 0 state over race 917
+delay 143 OPERATOR falls 1 hits 1 state running race 732

@@ -84,6 +84,8 @@ func _restart_run() -> void:
 	wait_ticks = 0
 	last_leap = -100
 	last_side_tap = -100
+	side_action = &""
+	side_press_seen = false
 	last_z = 0.0
 	marks.clear()
 
