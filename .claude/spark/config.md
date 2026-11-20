@@ -69,6 +69,7 @@ world asks the pack's own space (`TLContext.space_state_of`), and anything new i
 One AskUserQuestion call of up to 4 questions.
 
 ## Question taste
+- 2026-11-20 designer-and-two-worlds: three times the owner overrode a fixed-structure recommendation for the LLM-chosen one (aspects, phases, a menu screen over an in-world overlay). For content-design questions, recommend the expressive LLM-chosen option and put the fixed scaffold in as its fallback.
 - Operator wants tooling-scope questions asked as multi-select pillars, and answers extra wishes via "Other" (devx spark 2026-11-11 added a doctrine: player-facing content tooling ideas).
 - Isolation and push policy: worktree + branch + push branch is the accepted default; do not re-ask.
 - 2026-11-17 engine-world-next: offered "replay recorded jobs (no spend)" vs "one real job", the operator chose the real job: when a path can be proven against a real model at bounded cost, offer it and expect a yes.
