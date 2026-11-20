@@ -80,16 +80,19 @@ func _render_callback(_type: int, data: RenderData) -> void:
 					RenderingDevice.TEXTURE_SAMPLES_1,size,buffers.get_view_count(),1,false,false)
 	# RenderSceneBuffersRD is per viewport. A cut, changed sampling mode or lens,
 	# resize or new effect starts with the current image in both eyes.
-	var warm: bool = allocated and last.get("owner",0) == owner_id
-	if warm:
+	var history_weight := 0.0
+	if allocated and last.get("owner",0) == owner_id:
 		var prior: Transform3D = last.pose
-		warm = pose.origin.distance_squared_to(prior.origin) < 4.0 \
-				and pose.basis.z.dot(prior.basis.z) > 0.97 and projection == last.projection
+		var travel := pose.origin.distance_to(prior.origin)
+		if travel < 2.0 and pose.basis.z.dot(prior.basis.z) > 0.97 and projection == last.projection:
+			# During fast translation, distant edges can have very small screen
+			# velocities even as the view uncovers a new strip of terrain.
+			history_weight = strength * lerpf(1.0,0.45,smoothstep(0.12,0.65,travel))
 	var previous: StringName = last.get("output",A)
 	var output := B if previous == A else A
 	buffers.set_meta(BUFFER,{"owner":owner_id,"pose":pose,"projection":projection,"output":output})
 	var constants := PackedFloat32Array([projection.z.z,projection.z.w,projection.w.z,projection.w.w,
-			strength if warm else 0.0,0.0,0.0,0.0])
+			history_weight,0.0,0.0,0.0])
 	for view in buffers.get_view_count():
 		var uniforms: Array[RDUniform] = [
 			_uniform(0,buffers.get_color_layer(view)), _uniform(1,buffers.get_depth_layer(view),nearest),

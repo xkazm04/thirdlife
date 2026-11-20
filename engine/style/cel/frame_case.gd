@@ -22,6 +22,24 @@ func _difference(a: Color,b: Color) -> int:
 	return maxi(absi(a.r8-b.r8),maxi(absi(a.g8-b.g8),absi(a.b8-b.b8)))
 
 
+func _check_shadow_splits(sun: DirectionalLight3D) -> void:
+	var style := preload("res://style/cel/style_cel.gd")
+	var crisp: Dictionary = TLStyle.data.sun
+	var painted := Vector3(sun.directional_shadow_split_1,sun.directional_shadow_split_2,sun.directional_shadow_split_3)
+	var classic := crisp.duplicate()
+	classic.erase("shadow_splits")
+	style.configure_sun(sun,classic)
+	var restored := Vector3(sun.directional_shadow_split_1,sun.directional_shadow_split_2,sun.directional_shadow_split_3)
+	style.configure_sun(sun,crisp)
+	var splits: Array = crisp.shadow_splits
+	if not painted.is_equal_approx(Vector3(splits[0],splits[1],splits[2])) or not restored.is_equal_approx(Vector3(.1,.2,.5)):
+		failures.append("directional shadow splits or restore")
+	for invalid: Variant in [[.2,.1,.5],[.1,.4,1.0],["near",.2,.6],[.1,.4]]:
+		if style.check({"sun":{"shadow_splits":invalid}}).is_empty():
+			failures.append("accepted invalid shadow splits")
+	print("CEL_SHADOW splits=",painted," restored=",restored)
+
+
 func _check_shadow_fill(host: Node) -> void:
 	# Supply display colours before the grade, independent of the terrain palette.
 	var strip := HBoxContainer.new()
@@ -170,6 +188,7 @@ func _run() -> void:
 	host.add_child(cam)
 	cam.make_current()
 	var sun := host.get_node("TLStyleRig/Sun") as DirectionalLight3D
+	_check_shadow_splits(sun)
 	var overhead := OverheadCamera.new()
 	host.add_child(overhead)
 	overhead.make_current()

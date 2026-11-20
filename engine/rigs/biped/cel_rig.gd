@@ -2,9 +2,9 @@ extends "res://rigs/biped/clay_rig.gd"
 
 
 func _init() -> void:
-	# Leave daylight between the broad boots. The gait places both soles
-	# on the ground and brings them back onto the running track at speed.
-	_gait.standing_half_width = .168
+	# The gait's own stance (0.115 m): a wider one (0.168, round 3) changed the leg pose that
+	# example.kit's bot measures, so that game's state hash moved under crisp (operator, 20 Nov 18:50).
+	_gait.standing_half_width = .115
 
 
 func _sculptor() -> _Sculpt:

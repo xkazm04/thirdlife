@@ -1,5 +1,29 @@
 # Cel surface handoff
 
+## Operator note, 18:45 (for cel-fable and the Director): the dark C-band in 08
+
+The large dark C-shaped band on the meadow in 08_parkour_above (integration 2) is the drifting cloud shadow,
+`toon.cel_cloud` (cel-fable's key). Measured on a scratch archive of 5e4b5c8 (never in this worktree), with the same tour
+in crisp and in crisp with `toon.cel_cloud` 0: the band disappears without it (`.tl/i2-cloud/08_pair.png`). It covers
+10.2 % of the frame and paints the full cast depth: grass 77,103,37 against lit 174,182,33; road 110,65,65 against
+225,133,64. From above it reads as one giant cast. Suggested, yours to decide: a shallower cloud shade than a cast
+shadow, or a smaller or broken cover. Not isolated, only seen: 51_road_visitor has a lighter oval on the road around the runner (242,149,71 inside,
+225,133,63 outside), possibly the same cover.
+
+## Round 5 integration
+
+The joined 40° key uses `sun.filter_quality = 5`, `shadow_blur = 1.0` and `shadow_splits = [0.027, 0.07, 0.22]`. The four cascades still reach 235 m. Their first three boundaries are now 6.35, 16.45 and 51.7 m. The palette fit uses the same light colour, energy, elevation, bearing and linear exposure as round 4.
+
+On the left-hand fence cast in the playable west-facing road view, the old filter crossed halfway from shade to lit road 19 extra times in 120 scanlines. The new filter crossed once per row. The edge's RMS deviation from a fitted curve fell from 1.24 to 0.35 px. Its median 10–90% width fell from 2.62 to 1.45 px. Both native captures use the same pose at tick 1180. The same near edge in the frozen visitor view for shot 51 went from 1.34 to 0.36 px RMS, with 20 extra crossings reduced to zero. The boot cast still meets both soles. This resolves the filter request with the existing surface shadow cut.
+
+With the delivery screen-space AA, the same near edge measures 1.53 px wide in both shot 51 and the playable west view. The middle edge has zero extra crossings in either capture. For palette work, use the existing surface values and the same 40° key. The new sky pigments are `horizon #ffbd84`, `mid #e177a7`, `upper #9a82ce`, `cloud #ffda9f` and `cloud_shade #dfa5c3`. [Fence comparison](stills/r5-fence.jpg) · [Sky beside board 2](stills/r5-sky.jpg)
+
+With the same tuft mesh and paints, the share of fine grass pixels changing by more than 24 luma levels per frame fell from 8.82% to 4.06% on the village road and from 26.18% to 9.45% against the open sky. The thinnest tips still flicker during a pan. [Grass crops and reference](stills/r5-grass.jpg)
+
+I repeated your `crawl.sh` on the integration and delivery trees. Review-horizon flips fell from 1.706% to 1.131%. The broad far-land band averaged 0.815 luma levels of change, down from 1.030, while its flips over 24 rose from 0.692% to 0.819%. Near-land flips were 0.156% and 0.155%. The paired recordings are in `.tl/astra-r5/surface-joined/` and `surface-delivery/`.
+
+The integration already contains `toon.shade_k = 0.85`. Both the wardrobe and exported-AA clean-load assertions now pass.
+
 ## Round 4 integration
 
 **Use the round-4 grade when fitting the meadow.** The direct key is `#ffe4a6` at energy 1.17, elevation 40° and azimuth 176°. Tonemapping is linear at exposure 0.93. The existing `grade.plum_density = 0.88` supplies the road's plum. The new `grade.olive_fill = 0.88` cools dark yellow-greens in the display grade. It reduces excess green and fills the missing blue up to a limit set by the incoming pigment. The selector sees colour, so dark leaves can pick it up too. Set **olive_fill alone** to zero in a private comparison to see the contribution under a new palette.

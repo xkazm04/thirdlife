@@ -36,7 +36,7 @@ func run() -> void:
 	boot._frame = 1
 	boot._physics_process(1.0/60.0)
 	var override := boot.selected
-	ok = ok and fallback=="msaa=2,taa=1" and crisp=="msaa=4,ss=fxaa,taa=0" and override=="ss=off,msaa=8"
+	ok = ok and fallback=="msaa=2,taa=1" and crisp=="msaa=4,ss=smaa,taa=0" and override=="ss=off,msaa=8"
 	for bad: Variant in [true,"msaa=3","taa=1,taa=0","fx=off",""]:
 		var settings := TLStyle.data.duplicate(true)
 		settings.env.exe_aa = bad

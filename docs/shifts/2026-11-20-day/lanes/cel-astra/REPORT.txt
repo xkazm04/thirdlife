@@ -1,33 +1,135 @@
-Cel-astra · round 3 · 20 November 2026
+CEL-ASTRA: REPORT (day of 20 Nov 2026, crisp cel; team cel, the frame and the figure)
+Operator: Opus 5.5. Designer and builder: GPT 6.2 Astra via Codex, five rounds in four sessions
+(01a1f84e r1-r2, 01a1f8dd r3, 01a1f935 r4, 01a1f992 r5). Worktree .claude/worktrees/d20-cel-astra, branch d20-cel-astra.
+Landed by the Director: c5d32eb (r1-r2), c9d14ba (r3-r4). Round 5 is uncommitted on d20-cel 5e4b5c8.
+Every figure below is my own run unless it says "Astra measured".
 
-Ready for integration together with cel-fable’s one-line clean-load correction. The worktree is uncommitted. To play this capture build, set TL_STYLE=crisp and launch .tl/astra-r3/delivery/ThirdLife.exe.
+WHAT WAS BUILT AND WHY IT MOVES TOWARD BOARD 2 (all under TL_STYLE=crisp; an absent key keeps today's behaviour)
+- Sky (env.cel_sky -> shaders/sky_cel.gdshader): a saturated violet-to-peach gradient with flat cream clouds and one
+  lavender underside each, no longitude seam, a pale sun disc with a warm glow at the upper left of the road view.
+  r5: broader domes, flat undersides, peach pickup. Astra measured the sky gradient against 20 clear board rows: RGB RMS
+  error 8.76 -> 3.29 levels; seven cream cloud regions in the upper third of the road view, as on the board.
+- Light: warm key #ffe4a6 x 1.17 at 40 deg / 176 deg (the long cut cast from the left of the board). grade.plum_density
+  0.88 gives the road casts their plum. grade.olive_fill 0.88 gives the grass casts the board's blue lift.
+  Samples, board 2 vs 51_road_visitor:
+  - road cast 124,79,74 vs 117,73,71;
+  - grass cast 80,106,35 vs 81,107,36;
+  - lit road 247,149,69 vs 241,148,70.
+  Fixed overhead game views (hockey) get a 39 deg key, so the rink loses the scoreboard's rectangle shadow.
+- Cut cast edges (r5): sun.filter_quality 5, shadow_blur 1.0 and shorter first cascades (shadow_splits
+  0.027/0.07/0.22). The near fence cast on the road went from 1.24 to 0.35 px RMS edge deviation, and from 19 to 0
+  stray light crossings in 120 rows (Astra measured, in the playable build). Earlier (r3), normal_bias 2.8 removed
+  shadow acne that striped the road shoulder in the exe (10,390 -> 259 flipping pairs).
+- Figure (figure.model "cel": engine/rigs/biped/cel_biped.gd, cel_rig.gd, body_cel*.gdshader, style/cel/body_outline.tres):
+  - distinct hair, raised collar, cuffs, trouser turn-ups and boots, with a dark hem seam;
+  - three red jacket bands (#b51b1b..#e83a22) and an inverted-hull outline of at most 2.35 px;
+  - figure medians vs board: coat 200,33,30 vs 199,26,29; hair 116,47,14 vs 115,46,16; jeans 41,43,120 vs 46,52,118.
+  The rails hold:
+  - 29 bones, 20 clips, 8,420-9,988 tris over 12 wardrobes, height 2.0 m, radius 0.3 m, grip error 0.00000 m;
+  - TLBiped.create, the clip names and the bone names are unchanged.
+- Camera: the grounded visitor camera is closer (env.visitor_frame arm 0.51, lift 0.63) and eases back to the flight
+  view on take-off. The runner fills 36.6 % of the frame height in 51_road_visitor (board 2: about 37 %). Astra
+  measured 36.8-37.8 % in the exe. Parkour keeps its own orbit camera (31.7 %), which is the game's.
+- Exported game antialiasing:
+  - boot.gd reads env.exe_aa (absent = today's msaa=2,taa=1; TL_EXE_AA first). Crisp: 4x MSAA + SMAA, TAA off.
+  - env.distant_aa 0.86 is a distant-only history pass with motion-vector reprojection (style/cel/distant_aa.gd,
+    shaders/distant_aa.glsl). It eases off at flight speed and leaves the sky, near ground and HUD alone.
+  - Astra measured, in the exe: crisp AA 2.4-3.6x the old edge energy.
+  - Fine grass at the horizon, large frame-to-frame changes:
+    - village road 8.82 % -> 4.06 %;
+    - isolated skyline 26.18 % -> 9.45 %.
+    The thinnest blade tips still flicker in a pan.
+- Sharpness (my shot set, Laplacian variance, classic -> crisp r5):
+  - centre crop: x1.05-2.11 in 23 of 27 shots; 26_flight_west x1.00; below classic in 13_lot_river_road x0.93,
+    14_lot_river_above x0.93 and 32_hockey_rink x0.72;
+  - visitor road: centre x1.87, near x13.8.
+  - The near band is lower than classic in 14 shots. Flat cel paint has less texture than classic's hatching, so this
+    metric undercounts crispness there.
+  - 51 still frame by eye: sharp figure, cut casts, clean rails.
 
-The playable build now uses 4× MSAA, FXAA and TAA off. On matched 1080p footage, large mid-distance luma changes fell from 3.619% to 3.181% during a walk and from 1.698% to 1.309% during a slow pan, relative reductions of 12.1% and 22.9% from previous crisp. On that pan, the literal old msaa=2,taa=1 override reached 0.325% with inherited FXAA. Reproducing the historical SMAA viewport gave 0.450%. Delivery retained 2.53× its walking edge energy. The 8-second native crop comparison is stills/r3-exe-motion.mp4.
+RULES, EACH WITH ITS EVIDENCE
+1. No pack or seed changes: nothing under engine/packs or engine/seeds. No palette key changed. tl arch 12/12 (api-v1)
+   in every fast gate. My keys are only in my sections of style_crisp.json: sun, env, fog, sky, ink, grade, and the new
+   figure section between sky and ink.
+2. Classic exact. Base: a pristine archive of e191d8f with assets (.tl/base) -> .tl/r0/classic, 27 shots. Two base runs
+   agree bit-exactly on 18 shots. After every round (r1, r2, joined, r3, r4, r5) those 18 are 0/255 against the base;
+   the other 9 (live games, flight) stay within the base's own run-to-run noise. r5: .tl/op-r5/classic-proof.txt.
+3. Game state hashes. Gate (default style): world 8/8 with the base hashes (drive a2940a17@3441, wall d5aea03b@1220,
+   paddle dff1a390@4486, walker f1c7b537@371, kit ca698e71@332, car 3a459d0f@1872, hockey a29dcdf0@4186, parkour
+   f7abac00@988), packs 48/48, and all 46 pack state hashes identical to the base archive.
+   Under TL_STYLE=crisp too (the look the owner plays): world 8/8 with the same eight hashes, packs 48/48, and all 46
+   pack state hashes identical to the base (.tl/op-r5b/full-crisp.log), after one operator fix at 18:50.
+   FOUND AND FIXED: under crisp, example.kit had hashed 326a337efb7371a2@332 instead of ca698e71 since round 3. The cel
+   rig widened the gait stance (standing_half_width 0.168), and ex_kit's bot measures the walker's leg pose (leg_swing
+   0.5626 against 0.8838). A scratch test showed that 0.115 restores ca698e71 and 0.8838. engine/rigs/biped/cel_rig.gd
+   now keeps the gait's own 0.115: one line, and the boots stand a little closer from behind. The default-style gates
+   cannot see this, because the cel rig exists only under crisp: the gate should also run under each team style.
+4. Cache keys: no kit, terrain or crown generator changed, so no PIC_VERSION bump from this arm.
+5. Performance, windowed tour6 (perf run --no-record):
+   - r5: crisp gpu 1.359 ms (quiet), classic 1.233 ms (busy, util 0.49); about +10 %, under the 2x allowed.
+   - r2: crisp 1.024 ms vs classic 1.23 ms.
+   - Astra's isolated costs: distant history +0.07 ms; cel figure 0.013 ms; 31.6 MiB of video memory at 1080p.
+   - Cost per new game: zero. No pack setting, asset or camera declaration is needed.
+6. Style file seams: only my sections. The ground bands, paints and cloud shadows were passed to cel-fable as numbers
+   in PATCHES.md, never as edits.
 
-The road shoulder’s repeated diagonals came from directional shadow acne. In the same walking frame, high-contrast vertical transitions fell from 10,390 to 259 across 96,360 pairs. Lit road in the west-facing release measured RGB (241,148,70), against (249,150,68) on board 2. The interior boot cast measured (118,73,72), against (112,69,77). The upper sky is within one level per channel of the reference. The board, joined frame and delivery are beside each other in stills/r3-board.jpg. The playable samples are in stills/r3-road-shadow.jpg.
+GATES (my runs on the r5 tree; engine files unchanged since 18:05, md5 checked)
+- check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, foreman.typecheck clean).
+- check --tier full --only world,packs,kit.selftest: PASS (world 8/8, packs 48/48, kit.selftest 95/95).
+- selftest: style. 10/0, rig. 14/0, cel. 4/0 (600 figure, 601 frame, 602 camera, 603 exe AA), moves. 14/0,
+  flight. 13/0, wings 2/0, character. 2/0.
+- After the operator's cel_rig.gd fix (18:50):
+  - check --tier fast: PASS 5/5.
+  - TL_STYLE=crisp check --tier full --only world,packs: PASS (world 8/8 with the base hashes, kit ca698e71@332;
+    packs 48/48, 46 hashes = base).
+  - selftest cel. 4/0 (character.cel.wardrobe: 12 wardrobes, 29 bones, errors=[]), rig. 14/0, character. 2/0,
+    moves. 14/0.
+  - The cel rig is used only under crisp, so the default-style gates and the classic proof above stand.
+  - clip.mp4 and the round-5 study sheets were made before the fix: they show the wider stance. The contact sheet's
+    figure close-ups and 51_road_visitor are after it.
+- Earlier in the day:
+  - r3: packs failed once on the hockey invariants.many_budget wall-clock check (1.222 ms). Re-run alone, alternating
+    base and tree three times: base 0.914/0.910/0.924 ms, tree 0.912/0.923/0.899 ms. All PASS: it was load.
+  - r4: style.frame.pixels could not run once (the window lock timed out after 900 s); it passes in r5.
+- Not run: the unfiltered check --tier full. Astra started one; its kernel.selftest hit the 30-min limit at 18:30 and
+  Astra stopped it. That is a stopped run, not a pass.
 
-The runner has an angular umber crown, visible thumbs, three red coat bands and separated brown boots. At board scale the boot gap grew from 5.3 to 18.7 pixels against the board’s 20. The connected shadow fits in frame. Its right edge is 45 pixels farther right than the board and its bottom edge is one pixel higher. The 23.35-second clip.mp4 shows the walk, bridge takeoff and flight.
+CHANGED FILES (this arm, day total)
+engine/boot/boot.gd (600/600 lines), engine/kernel/api/tl_chase_cam.gd, engine/kernel/world/terrain/crown_camera.gd,
+engine/rigs/tl_rigs.gd, engine/rigs/biped/{cel_biped,cel_rig,clay_biped,clay_form,clay_rig,tl_rig_biped_gait}.gd,
+engine/rigs/review/cel_case.gd, engine/style/tl_style.gd (585 lines), engine/style/style_crisp.json,
+engine/style/cel/{style_cel,frame_case,contour_case,distant_aa,distant_aa_case}.gd, engine/style/cel/body_outline.tres,
+engine/style/shaders/{sky_cel,body_cel,body_cel_outline}.gdshader, body_cel_plot.gdshaderinc, distant_aa.glsl,
+grade.gdshader, engine/tools/selftest.d/600-603. Round 5 alone changed the distant_aa pair, frame_case, style_cel,
+sky_cel, style_crisp.json, 601 and 603, plus the operator's one-line cel_rig.gd fix (rule 3).
+Notes:
+- tl_rig_biped_gait.gd is shared: it adds standing_half_width with today's 0.115 as the default, and classic stays exact.
+- clay_biped.gd carries the _sculpt_face rename (= e191d8f).
+Lane folder:
+- notes and patches: STANDUP.md, REPORT.txt, ASTRA-NOTES.md, PATCHES.md, ASTRA-BRIEF-r1..r5.md;
+- stills and clips: contact-sheet.jpg (board 2 beside the r5 road views, then 11 classic|crisp pairs from my r5 run),
+  stills/ (22 pair JPGs plus r2-r5 study sheets), clip.mp4 (23.35 s, 1080p: road walk, bridge take-off, flight over the
+  bluff), stills/r3-exe-motion.mp4 and r4-contours.mp4 (motion evidence);
+- tools: shotset.sh, measure.py, sheet.py, exe-aa.mjs, exe-motion.mjs/.py, grass-sweep.
 
-Verification passed fast 5/5, world 8/8, pack runs 48/48 and kit 95/95. All 46 pack hashes, all eight world hashes and all 18 reproducible classic shots matched the base. The other nine shots varied. The live climb reached 2.8769% of pixels over 1/255 and an independent repeat reached 2.3043%. Four of 27 centre crops and 18 near crops have lower spatial variance than classic. The visitor-road centre is 1.29× classic. The busy six-game tour measured 1.140 ms GPU for crisp and 1.332 ms for classic. Per-game authoring cost is zero.
+WHAT STILL FALLS SHORT OF BOARD 2 (honest)
+- The meadow is one bright field. The board's open composition (river, fence line along the road, bushes, yard beside
+  the road) does not exist at any camera position the world has. 51 with cel-fable's rails is the closest frame.
+- The cloud shadow (cel-fable's toon.cel_cloud) paints the full cast depth: the dark C-band in 08 is it, measured with
+  it on and off (PATCHES.md, operator note).
+- The thinnest grass tips still flicker in a slow pan. Fence error in a slow pan rose slightly (2.243 -> 2.400
+  frame-change MAE, Astra measured).
+- The figure's hair reads as two lumps, and the board's bun is rounder. The figure is not yet as chunky as the board's
+  from behind.
 
-Rig and moves passed 14/14 each, flight 13/13 and wings 2/2. Style passed 9/10, cel 2/4 and character 1/2. The two distinct failures share one cause. Cel-fable’s authored toon.shade_k of 0.90 clamps to 0.85 and the two clean-load checks reject the warning. Both original cases passed in an isolated copy with only that value corrected. PATCHES.md records the handoff and measured grass and bluff colours. ASTRA-NOTES.md records changed files, keys, full measurements, test expectations and reproduction commands. Next priorities are distant-line shimmer, meadow cast shapes and the shaded grass and bluff palette.
+QUESTIONS FOR THE DIRECTOR
+1. The gates run in the default style. Under crisp a pack hash had moved unseen through integration 2 (fixed, rule 3).
+   Should the integration gate also run world,packs with TL_STYLE=crisp (and diorama for team dio)?
+2. Astra token spend: about 3.25 M over the day against the 2-2.5 M budget (r1-r2 1.04 M, r3 0.72 M, r4 0.58 M,
+   r5 0.91 M).
 
-Cel-astra · round 2 · 20 November 2026
-
-Ready for operator verification. The release now selects 4× MSAA, SMAA and TAA off for crisp. On identical release camera and input schedules, mid-distance edge energy rose 2.37× standing and 3.60× walking. Classic keeps its original boot settings and the environment override wins. The final visitor-road image has a visible pale sun and a peach horizon. Six cloud profiles vary the skyline in flight.
-
-Start with stills/r2-exe-aa.jpg for the native window detail, stills/r2-sky.jpg for the board and flight comparison, and clip.mp4 for the final 23.35 s road-to-flight take. The contact sheet uses the final shot sets. ASTRA-NOTES.md records the tests and measurements. PATCHES.md carries the material handoff.
-
-Fast 5/5. World 8/8, packs 48/48, kit 95/95. Style 10/10, rig 14/14, cel 4/4. All 18 stable classic shots were bit-identical. The six flagged near-ground crops still have lower variance, especially over the second bluff. All changes remain uncommitted.
-
-Cel-astra · round 1 · 20 November 2026
-
-Ready for operator verification. Select TL_STYLE=crisp and start with the visitor-road pair in contact-sheet.jpg. The continuous clip.mp4 walks and runs to the river bridge, then flies over the bluff in 23.35 seconds at 1080p60. Both official shot sets contain 27 native frames. The lane includes 11 paired views.
-
-The visitor now fills about 37% of the frame height, up from 20% and close to board 2. The side light throws a plum boot shadow across the warm road. The figure retains three measured red jacket bands, distinct cuffs and boots, 29 bones, 20 clips and 8,484–9,988 triangles across 12 wardrobes. The sky uses cream clouds with lavender undersides. The native visitor-road centre crop rose from 403.1 to 741.6 in Laplacian variance. With camera, pose and lighting held fixed, sharpening alone raised the figure crop from 541.1 to 685.9.
-
-Fast gate 5/5. Selected full gate passed world 8/8, all 48 pack verbs and kit 95/95. All 46 pack hashes and their frame counts matched the repaired base. Selftests passed style 9/9, rig 14/14, moves 14/14, character 2/2, flight 13/13, wings 2/2 and the new cel block 3/3.
-
-All 18 reproducible classic shots were pixel-identical. The other nine also varied in the base-to-base comparison. Up to 2.3057% of pixels exceeded 1/255 in the live climb frame. The busy six-game tour measured 1.011 ms GPU for crisp and 1.256 ms for classic. Per-game authoring cost is zero.
-
-The terrain's screen-space hatching is still visible and the cloud silhouettes repeat on a long pan. The isolated surface proposal removed the hatch and produced a boot shadow of RGB (115,63,81), close to the board's (112,69,78). PATCHES.md gives cel-fable the exact tested patch and paired still. ASTRA-NOTES.md lists changed files and settings, crop measurements, feature costs, gate evidence, the base compiler repair and the next art passes. Packs, seeds, public API and geometry cache version are intact. The worktree is uncommitted.
+NEXT THREE THINGS THIS LANE WOULD DO
+1. Give the board's wide boot stance back to the figure without touching the gait's leg pose (a sculpt offset of the
+   boots, not the stance), verified by the kit hash under crisp.
+2. Thinnest grass flicker: per-tuft alpha-to-coverage or a distance fade of the tips, measured with the grass sweep.
+3. A board-composition camera pass in the exe (the board's road bend with the yard beside it), with cel-fable.

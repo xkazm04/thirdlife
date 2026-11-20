@@ -18,6 +18,16 @@ class OverheadKey extends Node:
 
 
 static func configure_sun(sun: DirectionalLight3D, settings: Dictionary) -> void:
+	# Keep the original split distances when a live rig returns to another style.
+	const PREVIOUS_SPLITS := &"tl_previous_shadow_splits"
+	if settings.has("shadow_splits"):
+		if not sun.has_meta(PREVIOUS_SPLITS):
+			sun.set_meta(PREVIOUS_SPLITS,[sun.directional_shadow_split_1,
+					sun.directional_shadow_split_2,sun.directional_shadow_split_3])
+		_set_splits(sun,settings.shadow_splits)
+	elif sun.has_meta(PREVIOUS_SPLITS):
+		_set_splits(sun,sun.get_meta(PREVIOUS_SPLITS))
+		sun.remove_meta(PREVIOUS_SPLITS)
 	var key := sun.get_node_or_null("OverheadKey") as OverheadKey
 	if not settings.has("overhead_elev"):
 		if key != null:
@@ -34,6 +44,12 @@ static func configure_sun(sun: DirectionalLight3D, settings: Dictionary) -> void
 	key.overhead_pitch = -deg_to_rad(float(settings.overhead_elev))
 	if key.is_inside_tree():
 		key._process(0.0)
+
+
+static func _set_splits(sun: DirectionalLight3D, splits: Array) -> void:
+	sun.directional_shadow_split_1 = splits[0]
+	sun.directional_shadow_split_2 = splits[1]
+	sun.directional_shadow_split_3 = splits[2]
 
 
 static func configure_distant_aa(world: WorldEnvironment, weight: float) -> void:
@@ -97,6 +113,19 @@ static func install_grade(rig: Node, enabled: bool, settings: Dictionary, shader
 
 static func check(d: Dictionary) -> PackedStringArray:
 	var errors := PackedStringArray()
+	var sun: Variant = d.get("sun")
+	if sun is Dictionary and sun.has("shadow_splits"):
+		var splits: Variant = sun.shadow_splits
+		var valid: bool = splits is Array and splits.size() == 3
+		if valid:
+			var last := 0.0
+			for part: Variant in splits:
+				if not (part is int or part is float) or not (part > last and part < 1.0):
+					valid = false
+					break
+				last = part
+		if not valid:
+			errors.append("sun.shadow_splits expects three increasing fractions between 0 and 1")
 	if d.has("figure") and d.figure not in [{}, {"model":"cel"}]:
 		errors.append("figure expects an optional model named 'cel'")
 	var env: Variant = d.get("env")

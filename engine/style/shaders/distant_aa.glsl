@@ -33,6 +33,50 @@ vec3 previous_color(vec2 uv, vec2 size) {
 	return sum / (1.0 - (left.x + right.x) * (left.y + right.y));
 }
 
+float eye_depth(float device_z) {
+	vec4 p = params.projection;
+	return (p.z - device_z * p.w) / (p.x - device_z * p.y);
+}
+
+// Protect the near side of a multisampled edge, including its partially
+// covered pixels. Resolved MSAA depth and motion both diminish with partial
+// coverage, so sample them together from the foreground side of the edge.
+ivec2 nearest_surface(ivec2 xy, ivec2 last, float centre_z, out float edge_depth) {
+	const ivec2 taps[4] = {ivec2(-1,0), ivec2(1,0), ivec2(0,-1), ivec2(0,1)};
+	float nearest_z = centre_z;
+	ivec2 nearest = xy;
+	for (int i = 0; i < 4; i++) {
+		ivec2 q = clamp(xy + taps[i], ivec2(0), last);
+		float z = texelFetch(depths, q, 0).r;
+		if (z > nearest_z) {
+			nearest_z = z;
+			nearest = q;
+		}
+	}
+	edge_depth = nearest_z > 0.0 ? eye_depth(nearest_z) : 0.0;
+	return nearest;
+}
+
+float depth_agreement(vec2 previous_pixel, float depth, float speed, ivec2 last) {
+	float old_depth = texelFetch(history, ivec2(previous_pixel), 0).a;
+	float mismatch = abs(old_depth - depth) / depth;
+	if (mismatch > 0.03 && speed < 4.0) {
+		// At a silhouette the old reconstruction footprint contains both
+		// surfaces. Nearest-depth rejection alone drops a thin blade every
+		// time its centre sample changes coverage.
+		ivec2 corner = ivec2(floor(previous_pixel - 0.5));
+		for (int i = 0; i < 4; i++) {
+			ivec2 q = clamp(corner + ivec2(i & 1, i >> 1), ivec2(0), last);
+			float tap = texelFetch(history, q, 0).a;
+			mismatch = min(mismatch, abs(tap - depth) / depth);
+		}
+		// A subpixel crossing can uncover all four samples. The current
+		// colour neighbourhood still bounds its contribution below.
+		mismatch *= smoothstep(0.35, 2.0, speed);
+	}
+	return 1.0 - smoothstep(0.03, 0.12, mismatch);
+}
+
 void main() {
 	ivec2 xy = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(scene);
@@ -44,19 +88,33 @@ void main() {
 	}
 
 	float z = texelFetch(depths, xy, 0).r;
-	vec4 p = params.projection;
-	float depth = (p.z - z * p.w) / (p.x - z * p.y);
-	float weight = params.weight * smoothstep(8.0, 24.0, depth);
-	if (weight > 0.0 && z > 0.0) {
-		vec2 velocity = texelFetch(motion, xy, 0).xy;
+	float depth = z > 0.0 ? min(eye_depth(z), 65504.0) : 65504.0;
+	ivec2 last = size - 1;
+	float edge_depth = depth;
+	ivec2 motion_xy = xy;
+	if (depth > 8.0 && params.weight > 0.0) {
+		ivec2 nearest = nearest_surface(xy, last, z, edge_depth);
+		if (z == 0.0 && nearest != xy) {
+			// The first covered neighbour can itself be only a quarter sample.
+			ivec2 inside = clamp(nearest + (nearest - xy), ivec2(0), last);
+			float inside_z = texelFetch(depths, inside, 0).r;
+			if (inside_z > texelFetch(depths, nearest, 0).r) {
+				nearest = inside;
+				edge_depth = eye_depth(inside_z);
+			}
+		}
+		if (z == 0.0 || edge_depth < depth * 0.92) motion_xy = nearest;
+	}
+	float weight = params.weight * smoothstep(8.0, 24.0, edge_depth);
+	if (weight > 0.0) {
+		vec2 velocity = texelFetch(motion, motion_xy, 0).xy;
 		vec2 old_uv = (vec2(xy) + 0.5) / vec2(size) + velocity;
-		weight *= 1.0 - smoothstep(4.0, 16.0, length(velocity * vec2(size)));
+		float speed = length(velocity * vec2(size));
+		weight *= smoothstep(0.004, 0.06, speed) * (1.0 - smoothstep(4.0, 16.0, speed));
 		if (weight > 0.0 && all(greaterThanEqual(old_uv, vec2(0.0))) && all(lessThan(old_uv, vec2(1.0)))) {
-			float old_depth = texelFetch(history, ivec2(old_uv * vec2(size)), 0).a;
-			weight *= 1.0 - smoothstep(0.03, 0.12, abs(old_depth - depth) / depth);
+			weight *= depth_agreement(old_uv * vec2(size), depth, speed, last);
 			if (weight > 0.0) {
 				// A newly revealed flat face must recover its own paint immediately.
-				ivec2 last = size - 1;
 				vec3 a = imageLoad(scene, min(xy + ivec2(1, 0), last)).rgb;
 				vec3 b = imageLoad(scene, max(xy - ivec2(1, 0), ivec2(0))).rgb;
 				vec3 c = imageLoad(scene, min(xy + ivec2(0, 1), last)).rgb;
@@ -67,5 +125,5 @@ void main() {
 			}
 		}
 	}
-	imageStore(next_frame, xy, vec4(current.rgb, min(depth, 65504.0)));
+	imageStore(next_frame, xy, vec4(current.rgb, depth));
 }

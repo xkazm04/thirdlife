@@ -1,5 +1,130 @@
 # Cel-astra · 20 November 2026
 
+## Round 5
+
+### Fence casts on the road
+
+I measured the right-hand edge of the left rail's cast on the west road. In the joined build the near edge broke into dark and lit flecks. A hard filter with radius 0.3 removed the flecks but left a regular staircase. On the joined 40° sun, the best cut in the 72-setting sweep used the highest directional PCF quality, radius 1.0 and a shorter first cascade. It gives each nearby shadow texel a smaller footprint. The cel material still cuts the filtered light at its original threshold. [Native release crops](stills/r5-fence.jpg)
+
+The crisp sun now sets `filter_quality = 5`, `shadow_blur = 1.0` and `shadow_splits = [0.027, 0.07, 0.22]`. The split distances are 6.345, 16.45 and 51.7 m and the last cascade reaches 235 m. A rig switching styles restores its previous splits. The sun is still `#ffe4a6` at energy 1.17, elevation 40° and bearing 176°, with linear exposure 0.93. The two soles still meet their cast.
+
+I normalized the red channel in each scanline between its local shade and lit road. The three columns below give RMS displacement of the half-light edge from a fitted quadratic, its median 10–90% width, and the number of extra dark-to-light crossings at 50%. All distances are native 1080p pixels. The near span is 120 scanlines and the middle span is 117.
+
+| Capture and span | Joined RMS / width / extras | Shadow change alone | Delivery |
+|---|---:|---:|---:|
+| Shot 51, middle | 0.97 / 2.06 / 3 | 0.59 / 1.74 / 0 | **0.58 / 1.72 / 0** |
+| Shot 51, near | 1.34 / 2.61 / 20 | 0.36 / 1.40 / 0 | **0.36 / 1.53 / 0** |
+| Playable, middle | 1.02 / 1.68 / 3 | 0.63 / 1.74 / 0 | **0.64 / 1.72 / 0** |
+| Playable, near | 1.24 / 2.62 / 19 | 0.35 / 1.45 / 0 | **0.35 / 1.53 / 0** |
+
+I then walked 4.16 m forward in both exported builds. All 61 camera and player poses matched. Excluding rows where a post or road marking obscured the edge left 6,804 paired middle rows over 61 frames and 3,370 near rows over 58 frames. Median middle-frame RMS fell from 1.00 to 0.65 px and near-frame RMS from 0.62 to 0.36 px. In the near span the median number of extra crossings per 100 measured rows fell from 19.36 to zero. The moving-edge overlay and measurements are in `fence-walk-tracked.jpg` and `fence-walk-scores.txt`.
+
+### Still sharpness and grass in motion
+
+I repeated the joined tour, flight and visitor capture with the distance history enabled and disabled. In 07 the centre Laplacian variance was 2,361.7 on and 2,362.3 off. In 51 it was 758.7 and 759.0. In 24 the camera was still flying. Its centre measured 647.1 on and 795.7 off, and its middle band measured 790.3 and 957.7. The difference matters when judging these three frames together.
+
+On the same frozen parkour view I then changed the screen-space filter alone. Centre variance was 2,438 with FXAA and history on, and 2,446 with it off. SMAA measured 3,411 and 3,426. The frozen visitor gave 756 with FXAA and 853 with SMAA in either history state. The official 07 centre value near 3,500 quoted in the brief belongs to the earlier `.tl/op-r3` set. The verified `.tl/op-r3v` value is 2,345. Using the same joined worktree for both passes avoids that ambiguity.
+
+The native viewport uses 4× MSAA and SMAA with engine TAA off. The distant compositor uses a maximum history weight of 0.86. At a partially covered edge it samples motion from the foreground side, protects nearby paint using neighbouring depths, and tests the four previous depth samples under a reprojected silhouette. This matters because the resolved MSAA buffers average covered and uncovered samples. An 8 m rail with one-quarter coverage reported approximately 31 m and only one-quarter of its motion. At a sky boundary the adjoining blade now supplies velocity. A stationary pixel uses its current colour.
+
+Fast camera translation needs less history even where distant objects have small screen-space velocities. The mix starts decreasing at 0.12 m of camera travel per rendered frame and reaches 45% of its usual weight at 0.65 m. This leaves the 0.015° pan and the 0.075 m walking step at full strength. Existing checks still reject camera cuts and changes of lens.
+
+| Official 1920 × 1080 luma Laplacian variance | Centre, joined → delivery | Middle band, joined → delivery | Near band, joined → delivery |
+|---|---:|---:|---:|
+| 07 parkour road | 2,361.7 → **3,241.3** | 2,573.4 → **3,488.2** | 463.7 → 485.2 |
+| 24 flight bluff | 647.1 → **733.9** | 790.3 → **886.2** | 17.6 → 19.1 |
+| 51 visitor road | 758.7 → **752.8** | 1,168.8 → **1,546.6** | 457.2 → 309.0 |
+
+The visitor centre stays within 1% of the joined shot. Of the lost squared edge energy in its near band, 74% comes from the leftmost 600 pixels, where the near fence crosses the frame. The near-rail fixture measured zero pixel change from temporal filtering. [Native parkour, flight and visitor crops](stills/r5-sharpness.jpg)
+
+I also froze the playable west-road camera and village at tick 1180. For each shadow setting I compared native 4× MSAA with a 3840 × 2160, 8× MSAA reference, area-averaged to 1080p. History was disabled for every plate. In rows 800–1023, above the control legend, mean absolute luma error fell from 0.695 with joined shadows and FXAA to 0.563 with the new shadows and FXAA. Switching that last plate to SMAA gave 0.573. Across the left 600 pixels of those rows the three errors were 0.930, 0.826 and 0.837. The new shadow setting accounts for most of the improvement in this frozen comparison. See `frozen-road/` and `frozen-road-scene-scores.txt`.
+
+On the matched flight scene, leaving the history at full strength during translation produced centre variance 522 in shot 24. With the travel adjustment it measures 734. At tick 723, the 3200 × 1800, 8× MSAA reference reduced to 1080p measures 632. Delivery has more edge energy than that reference. Across 30 consecutive flight poses, mean absolute centre image error nevertheless falls from 1.419 with joined AA to 1.323 with delivery. The middle-band error falls from 1.785 to 1.665 and the middle-band frame-change error from 2.190 to 2.114. Raw middle-band changes over 24 increase from 7.78% to 8.64%. The near-band frame-change error rises from 0.360 to 0.408. `flight-series-scores.txt` contains all three crops.
+
+The sweep uses 27 poses at 0.015° intervals. It compares the native output to a 3840 × 2160, 8× MSAA plate reduced with Lanczos. A second reference with the village tuft mesh hidden identifies its pixels. The fine mask takes connected components of at least two pixels with a bounding box no larger than 16 × 16 px in x750–1189, y300–389. Each comparison uses the union of the two consecutive masks. [Native grass crops and supersampled reference](stills/r5-grass.jpg)
+
+| Fine grass during the pan | Pixels sampled per transition | Image MAE, joined AA → Round 5 | Frame-change MAE, joined AA → Round 5 | Changes over 24 luma levels |
+|---|---:|---:|---:|---:|
+| Village road | 1,117 | 12.76 → 12.21 | 11.07 → 8.89 | 8.82% → 4.06% |
+| Same geometry isolated against sky | 673 | 21.48 → 20.25 | 23.99 → 17.00 | 26.18% → 9.45% |
+
+MAE is mean absolute error against the supersampled reference, in display luma levels. The isolated plate is a stress test. The normal village measurement includes its terrain, trees and rails. Large changes still occur on the thinnest blades. The local `.tl/astra-r5/grass-pan-compare.mp4` plays both sequences at 15 fps for inspection.
+
+The reference itself changes by more than 24 levels on 10.09% of fine village samples and 24.02% of isolated samples. A lower flip count can therefore include suppressed real movement. I compared image error and frame-change error as well. At 4× MSAA, raising the history weight from 0.86 to 0.92 brought the skyline frame-change error from 17.00 to 16.87 but worsened image error from 20.25 to 21.88. With 8× MSAA at weight 0.86 the fine village errors improved slightly (image 11.86, frame change 8.81), while the skyline errors rose to 21.26 and 17.20. I kept 4× and 0.86. The four sampling trials are in `tune-grass-*-fine.txt`.
+
+I also drove the exported game through a 61-frame walk and a 61-frame pan. Camera and player poses, stage and field of view matched the two native builds and the 3200 × 1800, 8× MSAA reference at every logged frame. The table gives mean absolute error in the *change* between consecutive frames for fixed screen regions. The distant-tuft window improves in both routes. Walking also improves the fence region, while a slow pan increases the fence error from 2.243 to 2.400. The regional measurements are in `ready-ref-walk.log` and `ready-ref-pan.log`.
+
+| Playable route | Distant tufts | Fence | Middle band | Near band |
+|---|---:|---:|---:|---:|
+| Walk, joined AA → delivery | 2.898 → 2.723 | 2.690 → 2.591 | 1.908 → 1.877 | 1.017 → 0.972 |
+| Pan, joined AA → delivery | 1.144 → 1.077 | 2.243 → 2.400 | 1.316 → 1.327 | 0.437 → 0.465 |
+
+I repeated cel-fable's `crawl.sh` on the joined and delivery trees. In its 106-frame rig review, the thin-member horizon band fell from 2.702 to 2.321 mean luma change, with flips over 24 falling from 1.706% to 1.131%. The kit-floor flips rose from 0.062% to 0.075%. In its 291-frame village sequence the far band's mean change fell from 1.030 to 0.815, while large changes rose from 0.692% to 0.819%. Near-ground flips measured 0.156% and 0.155%. This broad far band contains the scaffold, trees and terrain as well as grass. Logs and clips are in `surface-joined/` and `surface-delivery/`.
+
+### Sky beside board 2
+
+The western clouds have broader domes, uneven shoulders, a flat underside with a narrow violet line and slanting lavender facets. The banks pick up peach from the painted sun. The local cloud families vary the larger shoulder, the length of the shelf and the second fold. The open sky blends peach through rose into violet. [Joined frame and delivery beside board 2](stills/r5-sky.jpg)
+
+The authored sky pigments are `horizon #ffbd84`, `mid #e177a7`, `upper #9a82ce`, `cloud #ffda9f` and `cloud_shade #dfa5c3`. I sampled 20 clear board rows from y=10 to 200 and the corresponding normalized rows in two columns of the game's clear-sky plate. Combined RGB RMS error fell from 8.76 to 3.29 levels. At board rows 10, 70, 130 and 190 the RGB medians were (176,117,199), (204,127,182), (233,146,157) and (252,171,138). The delivery column at x=1388 measured (179,117,198), (209,131,177), (231,148,158) and (249,171,137).
+
+The upper 32% of the west-road image contains seven connected cream regions larger than 0.09% of the frame, up from four in the joined image. Board 2 has seven at the same threshold. Above the right-hand bluff, the main cream region occupies 15.0% of frame width, against 13.4% on the board. Its median RGB is (253,213,150), against (253,214,155). The small central cloud now has clear sky above the mesa. The near tree still obscures more of the left bank than in the board composition.
+
+### Verification and handoff
+
+The final fast gate passed all five steps, including 12 architecture checks and 229 devx tests. With `TL_STYLE=crisp`, the lane's `check --tier full --only world,packs,kit.selftest` passed world 8/8, packs 48/48 and kit selftests 95/95. Neither gate needed a retry. The previously blocked pixel test ran to completion. Its line included `PASS style.frame.pixels (west_p99=1 nearby=1 cloud_samples=2176 ... flight_delta=0 ...)`.
+
+| Selftest filter | Final summary |
+|---|---|
+| `rig.` | `selftest: 14 passed, 0 failed` |
+| `moves.` | `selftest: 14 passed, 0 failed` |
+| `flight.` | `selftest: 13 passed, 0 failed` |
+| `wings` | `selftest: 2 passed, 0 failed` |
+| `character.` | `selftest: 2 passed, 0 failed` |
+| `style.` | `selftest: 10 passed, 0 failed` |
+| `cel.` | `selftest: 4 passed, 0 failed` |
+
+The cel frame fixture reported `CEL_SHADOW splits=(0.027, 0.07, 0.22) restored=(0.1, 0.2, 0.5)`, `CEL_MOTION near_delta=0 rest_delta=0 distant_step_rms=29.7056457702067 -> 10.9912251933076`, and `CEL_CONTOURS both_edges_px=[6, 4, 2] gap_delta=0`. On the sky, `west_p99=0 neighbour=10 cream=3796 lavender=1989`. The material guard gave `protected_delta=0`. The exported-AA fixture now expects `crisp=msaa=4,ss=smaa,taa=0` to follow the selected viewport filter. The wardrobe test passed for 12 wardrobes, 8,420–9,988 triangles, 29 bones and 20 clips. Full test lines are in `ready-test-*.log`.
+
+I also started an unfiltered `check --tier full`. Its repository-wide kernel selftest reached the runner's 30-minute limit at 18:30:58 without completing. I stopped this additional run after it advanced to packs to release the machine for operator verification. It has no overall verdict. The completed lane run and the additional run have separate logs, `ready-full.log` and `ready-full-unfiltered.log`.
+
+All 48 pack reports agree with the round-1 archive on result and frame count, including all 46 state hashes. I also ran all eight world games from a pristine archive of integration commit `5e4b5c8` under each style. All eight hashes, frame counts and world-versus-alone verdicts match delivery under the **same** style. Classic also matches the eight archived round-1 rows. The kit example already has a style-dependent hash at frame 332. Joined crisp and delivery crisp both give `326a337efb7371a2`. Joined classic, delivery classic and the round-1 archive give `ca698e71d34d1021`. The kit bot includes the visible stride in its state. Its reported leg swing is 0.5626 in crisp and 0.8838 in classic. The other numeric bot results agree. This corrects Round 4's description of that cross-style comparison. See `ready-hashes.log`.
+
+The release tour on the RTX 4090 measured 1.488 ms GPU in crisp and 1.225 ms in classic (1.21×). The median frame times were 2.715 and 2.734 ms, with 346 and 371 draw calls. Both `tour6 --no-record` runs passed. The machine was busy during both, so these timings are local observations.
+
+To isolate the frame changes I froze the playable west road at tick 1180, disabled VSync and panned the same view through five configurations in three orders. Each configuration had 30 warmup frames and 120 timed frames per order. The median of the three GPU medians was 1.348 ms for the joined frame, 1.372 with the new cascades and shadow filter, 1.375 with the new sky, 1.401 with SMAA and 1.400 with the delivery history. The total increase was 0.052 ms. The three SMAA and delivery timing ranges overlap. A separate sampling comparison measured 1.402 ms at 4× MSAA and 1.574 at 8×. The two 1080p RGBA16F history images use 31.6 MiB per view. The raw samples are in `frozen-gpu-uncapped/console.log` and `sampling-gpu-uncapped/console.log`.
+
+I inspected all 27 native captures in each style. All 18 reproducible classic views match the round-1 pixels exactly. In the other nine, 0.0067%–0.9063% of pixels differed by more than one RGB level. The earlier classic repeat comparison reached 2.3685% in this group. The contact sheet pairs 11 views, including both figure poses, both games and the road. The road-to-flight movie contains 1,401 frames at 1920 × 1080 and 60 fps (23.35 seconds). Its frame count and duration match the source recording. [Board and paired views](contact-sheet.jpg) · [Road walk and flight](clip.mp4)
+
+In the frontal portrait, five 9 × 9 pixel samples on the chest, sleeve, cheek, trousers and boot stayed within two RGB levels of the operator's Round 4 crisp capture. The chest at (912,611) measured (200,33,30) and the sleeve at (1064,603) measured (181,27,27). Both jacket bands remain red. [Front portrait](stills/42_figure_front_crisp.jpg)
+
+### Files and reproduction
+
+The rendered look comes from `engine/style/style_crisp.json`, `engine/style/cel/style_cel.gd`, `engine/style/cel/distant_aa.gd`, `engine/style/shaders/distant_aa.glsl` and `engine/style/shaders/sky_cel.gdshader`. Regression coverage is in `frame_case.gd`, `distant_aa_case.gd` and the 601/603 cel selftest blocks. The figure and game cameras use the joined integration's rigs and settings. The filter costs no authoring work per new game.
+
+Raw captures, test logs and the Windows release are under `.tl/astra-r5/`. Run `ready/Play-crisp.cmd` to open the measured release with the crisp profile. The PCK SHA-256 is `4477103f69049c64bf8ae1808b801eddf52432b6dd0a23bc160a011c172bab49`.
+
+From the worktree root in PowerShell, these commands remeasure the stored native captures.
+
+```powershell
+$lane = 'docs/shifts/2026-11-20-day/lanes/cel-astra'
+$r = '.tl/astra-r5'
+python "$lane/measure.py" fence "$r/joined-crisp/51_road_visitor.png" "$r/ready-crisp/51_road_visitor.png" "$r/before-west/crisp-board/still.png" "$r/ready-west/crisp-board/still.png"
+python "$lane/measure.py" sharp "$r/joined-crisp" "$r/ready-crisp"
+python "$lane/measure.py" grass "$r/ready-grass-village" --fine r4 delivery
+python "$lane/measure.py" grass "$r/ready-grass-sky" --fine r4 delivery
+python "$lane/exe-motion.py" "$r/ready-control-motion/crisp-pan" "$r/ready-motion/crisp-pan"
+```
+
+The grass harness boots the village, freezes tick 190 and renders 27 recorded camera angles. An independent skyline rerun reproduced all three delivery measurements to three decimal places. The control project uses the delivery sky and shadow setup with the joined `distant_aa.gd`, `distant_aa.glsl` and joined `env.line_aa`, `env.exe_aa` and `env.distant_aa` values. These commands recreate the skyline comparison in a fresh directory. Omit `--skyline` for the actual road.
+
+```powershell
+$out = "$r/recheck-grass-sky"
+node "$lane/grass-sweep.mjs" "$r/ready-control-source/engine" $out r4 --skyline
+node "$lane/grass-sweep.mjs" engine $out delivery --skyline
+node "$lane/grass-sweep.mjs" engine $out --reference --skyline
+python "$lane/measure.py" grass $out --fine r4 delivery
+```
+
 ## Round 4
 
 The visitor’s tree cast now has the blue lift visible in board 2. A thin rail cast shows the same response. The second change steadies distant contours during walking and panning. I kept the camera settings after measuring the visitor at 37% of frame height in the exported game’s village camera. [Cast shadows beside the board](stills/r4-shadow.jpg) · [Matched footage of the fence and visitor](stills/r4-contours.mp4)
