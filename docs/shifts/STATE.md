@@ -154,3 +154,4 @@ Plan: `docs/shifts/2026-11-20-night/PLAN.md`; boards https://claude.ai/artifact/
 - 23:30 six arms launched (3 Astra via Opus operators, 3 Fable 5.2).
 - 01:03 standup: all six arms on track; early leaders by eye: frame Astra, surfaces Fable, character Fable (the Astra figure's missing wings were a capture artefact, corrected 01:10).
 - 02:03 standup: five arms on track, surfaces-astra at risk on time (Astra r1 2 h 25 min, no stills; time check sent); leaders by eye: frame Fable by a nose (light; Astra best sky), surfaces Fable clearly, character Fable by a nose; packs many_budget fails on load for base too.
+- 03:03 standup: six arms on track; surfaces-astra classic proof accepted (moving objects only); leaders by eye: frame Fable by a nose, surfaces Fable clearly, character even (Astra r2 closed the gap from behind); window lock is the bottleneck.
