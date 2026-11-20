@@ -46,11 +46,12 @@ was made (every run was headless); its presence is proven by the log line and th
 |---|---|
 | where | `dist/ThirdLife/` at the repository root (`dist/` is ignored by git). The folder can be copied anywhere; it needs nothing from the repository |
 | start | double click `ThirdLife.exe`. `ThirdLife.pck` and the folder `games` must stay beside it. No arguments, no console |
-| what you see | (P14) a 1920 x 1080 window: the compact village of seven games close to one dirt road, the visitor standing on the road looking east into it (the drive track behind its fence at the left, the kit court and the paddle court's wall at the right, the wall yard's crane, three mesas), one line with the keys at the bottom left |
-| keys while walking | (P11) `W` / `S` walk forward and back where the camera looks, `A` / `D` step aside, the mouse turns the view (0.15 degrees a pixel: 600 pixels are a quarter turn; up and down within -10 to 60 degrees, so he stays in the picture), `Shift` run, `E` enter the game whose plot you stand in, `Esc` quit. The mouse is captured while you walk and free while a game is on stage or the window is not in front |
+| what you see first | (L4, 21 Nov) the main menu on the crisp sky: World, Dungeons, Create, Quit (section "The main menu and dungeons" below). World is what follows in this table |
+| what you see in World | (P14) a 1920 x 1080 window: the compact village of seven games close to one dirt road, the visitor standing on the road looking east into it (the drive track behind its fence at the left, the kit court and the paddle court's wall at the right, the wall yard's crane, three mesas), one line with the keys at the bottom left |
+| keys while walking | (P11) `W` / `S` walk forward and back where the camera looks, `A` / `D` step aside, the mouse turns the view (0.15 degrees a pixel: 600 pixels are a quarter turn; up and down within -10 to 60 degrees, so he stays in the picture), `Shift` run, `E` enter the game whose plot you stand in, `Esc` back to the menu (L4; before it: quit). The mouse is captured while you walk and free while a game is on stage or the window is not in front |
 | keys inside a game | `Esc` always leaves the game; `Q` leaves it only when the game declared no action on `Q` (hockey passes on `Q`), and the hint says which (16 Nov, K8); everything else belongs to the game (the paddle court says "A / D or the arrow keys move your paddle"). After `Q` you stand 5 m outside the plot at its gate, facing away from it, the camera behind you |
 | the games | each stands on a fenced plot with a gate and a spur to the road. Walk through the gate, stand inside the fence, press `E`: the picture becomes the game's own camera and you play instead of its bot |
-| quit | `Esc` while walking, or the window's close button. Both end the world cleanly (exit code 0 when no game had an error) |
+| quit | Quit in the menu, or the window's close button anywhere. Both end what is open cleanly (exit code 0 when no game had an error). `Esc` while walking ends the world and returns to the menu |
 | if the window closes at once | a message box should say why (for example: the folder `games` is not beside the exe; the box is written and was not seen: the same refusal was tested headless, where it is a log line and exit code 2). Everything the last start printed is in `ThirdLife-last-run.log` beside the exe |
 
 What is in it (`BUILD.txt` in the build says the same, with the commit and the date):
@@ -69,6 +70,61 @@ Size: 124 MB (`ThirdLife.exe` 104 MB: the engine's release template; `ThirdLife.
 JSON table of `engine/`; `games/` 217 KB; P14: `cache/` 19 MB, 20 files: the rims, the far pictures and the rig recipes
 of these seven games, see "The first start"). The export takes 10 to 18 s (class cache 3 s, export 5 s, copying), the
 check 1 min 20 s to 2 min, both with other builders loading the machine.
+
+## The main menu and dungeons (L4, night of 21 Nov)
+
+The owner's picks (spark `designer-and-two-worlds`): one main menu at boot; a dungeon is its own scene, the world is
+unloaded, and the avatar, camera, HUD and look all come from the dungeon.
+
+```
+ThirdLife.exe                                    the main menu (a person's start: no argument, no TL_EXE_* instrument)
+ThirdLife.exe -- --dungeon=<pack dir> [--look=<name>] [--seed=N]
+                                                 that pack straight as a dungeon; "Back to Create" ends the process
+ThirdLife.exe --headless --fixed-fps 60 -- --dungeon=<pack dir> --frames=N [--seed=N] [--out=<abs file>]
+                                                 a counted dungeon without a window: its state hash, then the end
+<godot> --headless --fixed-fps 60 --path engine res://boot/boot.tscn -- trips --out=<abs file> [--trips=3]
+                                                 menu -> World -> menu -> dungeon -> menu, N times, a census each time
+```
+
+- **The menu** (`engine/boot/menu.gd`, colours read from `style/style_crisp.json` by `kernel/dungeon/look_ui.gd`):
+  World, Dungeons, Create, Quit. Arrows or W/S move, Enter or Space opens, Esc goes back; the mouse works too. With
+  the focus on Dungeons the list shows at the right (title, the look's name, and a still of the last frame you saw in
+  that dungeon, `%APPDATA%\ThirdLife\dungeon_stills\<pack id>.png`, or a letter tile before the first visit). The
+  build tag stays in the top right corner.
+- **World** is the village exactly as before (the same `boot.gd` code path). Only Esc changed: the walk ends, the world
+  prints its lines as it always did, its viewer and world are freed, and the menu is back.
+- **Dungeons** come from `engine/boot/dungeons.json` (`tl.dungeons/1`: `{"pack", "title", "look"?}`; `pack` relative to
+  `engine/`, `look` a `TL_STYLE` name: crisp, classic, diorama, overcast; absent: the default look). Today: hockey
+  (crisp), parkour, the paddle court seed. A dungeon must be one of `boot/games.json` (export.sh refuses a build
+  otherwise): in the exe it runs from its folder in `games/`. Picking one shows a load screen with its title for half a
+  second, installs its look, and runs the pack alone (`kernel/dungeon/dungeon.gd`: the worker's lifecycle in mode
+  `play`, the pack's own camera and HUD, no visitor). Esc opens the pause card (Resume, Leave); the tree is paused
+  meanwhile. Leave frees every node of the pack, puts the default look back and shows the menu.
+- **Create** mounts `res://ui/create/create.tscn` when the build has it (lane L3: its root has `open()` and emits
+  `closed`); without it the button reads "Create (coming tonight)" and does nothing.
+- **Try it** (L3): `load("res://kernel/dungeon/dungeons.gd").launch(<job dir>/pack)` starts the running executable again
+  as a second process with `-- --dungeon=<dir>` (under the editor binary with `--path <engine> res://boot/boot.tscn`).
+  Its pause card says "Back to Create", which ends that process (exit code 0). Its log is
+  `ThirdLife-last-dungeon.log` beside the exe, so it does not overwrite the menu's `ThirdLife-last-run.log`.
+- **What goes past the menu, as before:** every verb (`check`, `probe`, `tag`), every flag (`--record`, `--input`,
+  `--site-job`, `--games`, `--edits`, `--ticks`, any other `--x`), a headless start, and every unattended instrument in
+  the environment (`TL_EXE_CAPTURE`, `_CAPTURE_AT`, `_QUIT_AT`, `_KEYS`, `_WARM`, `_TRACE`, `_FRAMES`). `--menu` or
+  `TL_EXE_MENU=1` shows the menu anyway; that is how the scripted clips of the menu are made (the keys of `TL_EXE_KEYS`
+  work in the menu and in a dungeon, and keep counting while the pause card pauses the tree).
+
+Measured (21 Nov, RTX 4090, other lanes loading the machine; selftest 640 and the runs named):
+
+| what | figure |
+|---|---|
+| a dungeon hashes as the pack alone | hockey 600 and 1200 frames (seeds 1, 7), parkour 900, paddle 900 (seed 3): `--dungeon --frames=N` = `worker --mode=play --frames=N`, every one; the exe = the editor binary for all three dungeons (`export.sh check` step 1b) |
+| three round trips, headless (`trips`, world 600 ticks, hockey 600 frames) | from the 3rd menu to the 7th: nodes 33 = 33, resources 159 = 159, objects 1870 = 1870, static memory +0.02 MB; the three hockey runs hash as alone, the three worlds' ten games hash alike |
+| three round trips in a window (editor binary, scripted keys) | in the world 2869 nodes, 249 MB static, 897 MB video; back at the menu 33 nodes, 172.5 MB, 629 MB. Menu 3 to menu 7: nodes 0, resources 0, objects +10, static +0.09 MB, video +0.25 MB (`docs/shifts/2026-11-21-night/lanes/L4-dungeon/census-window-3-trips.jsonl`) |
+| what is not given back | the first world and the first dungeon each leave caches (scripts, shaders, the shadow atlas: menu 94 MB static / 67 MB video before, 172 / 629 MB after the first round trip); later trips add nothing measurable |
+| the clip | `lanes/L4-dungeon/exe-menu-dungeon-world.mp4` (28 s, the exe, scripted keys): menu, Dungeons, hockey (load screen, its camera and HUD, crisp), Esc, Leave, menu with the hockey still, World, walk, Esc, menu |
+
+Not verified: a person's hands on the menu (keys and mouse were pressed by a script through the engine's input), a
+dungeon whose pack loads for long (the load screen is drawn before the load and does not move during it), the exe's
+static memory (a release template does not count it: the census leaves the key out there).
 
 ## What an export of this project needs (measured: `export.sh probe`, `engine/boot/probe.gd`)
 
@@ -100,7 +156,8 @@ absolute path exactly as the runner loads a pack directory today.
 |---|---|
 | `engine/export_presets.cfg` | one preset, `ThirdLife`: Windows Desktop x86_64, all resources plus `*.json`, scripts as text, the pack file beside the exe (not embedded), no console wrapper, the feature tag `thirdlife_exe` |
 | `engine/project.godot` | one line added under `[application]`: `run/main_scene.thirdlife_exe="res://boot/boot.tscn"`. Only a build with that feature tag starts in the boot scene; the editor binary and every tool still start in `kernel/host/host.tscn` |
-| `engine/boot/boot.gd`, `boot.tscn` | the exe's door. No arguments: the village for a person. `-- check --out=<file>`: the scripted tour without a window. `-- probe --out=<file>`: the table above. It starts the same two nodes `host.gd` starts (`kernel/world/draw/view.gd` with `--live`, `kernel/world/world.gd`) with the same `start(options)` |
+| `engine/boot/boot.gd`, `boot.tscn` | the exe's door. No arguments: the main menu for a person (L4; before it: the village). `-- check --out=<file>`: the scripted tour without a window. `-- probe --out=<file>`: the table above. It starts the same two nodes `host.gd` starts (`kernel/world/draw/view.gd` with `--live`, `kernel/world/world.gd`) with the same `start(options)` |
+| `engine/boot/hub.gd`, `menu.gd`, `dungeons.json`, `frames.gd` | L4: the menu, `--dungeon`, `trips` and the census (`hub.gd`); the menu's screen (`menu.gd`); the dungeon list (`dungeons.json`, `tl.dungeons/1`); the TL_EXE_FRAMES instrument moved out of `boot.gd` unchanged (`frames.gd`). The dungeon itself: `engine/kernel/dungeon/` |
 | `engine/boot/village.json` | the walk (`tl.walk/1`). P14: the compact village of P13 (`kernel/world/walks/compact_village.json`: six games about 4 m apart beyond their pads, both rows close to one road) with the hockey arena on the lot at its east end, and the scripted tour for the check (enter the kit court, the drive track and the hockey arena). `pack` is a folder name in `games/` |
 | `engine/boot/games.json` | which games `export.sh` copies into `games/`, and from where. An `optional` game that is not found is left out with a warning, and `boot.gd` leaves its plot out |
 | `engine/boot/probe.gd`, `probe/inner/` | the measurements of the table above; `inner` is a pack that travels inside the pack file, never run as a game |

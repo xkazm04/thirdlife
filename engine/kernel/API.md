@@ -1042,3 +1042,21 @@ the number of input frames, for the day two runs differ and one wants to know in
 
 **Keys and the panel.** While a `LineEdit` or `TextEdit` has focus, the game gets no key (`ctx.input.keys_taken()`);
 Esc does not end an interactive run while a `CanvasLayer` named `TLDesigner` is visible under the worker.
+
+## 23. Dungeons: one pack alone in the game's own process (L4, night of 21 Nov)
+
+Nothing a pack calls changed: no class, no member, no `ctx` field was added (kernel API stays 1.11). What is new is a
+driver beside the worker, so a pack can be a **dungeon**: entered from the exe's main menu, or opened by
+`--dungeon=<pack dir>`, with the world unloaded and the pack's own camera, HUD and look on the screen.
+
+- `kernel/dungeon/dungeon.gd` (no class_name) drives `runner/pack_life.gd` in the worker's order, in mode `"play"`
+  (`ctx.mode == "play"`, `ctx.on_stage == true`, devices on, no bot). So a pack sees exactly what `tl play` gives it,
+  and a counted run (`--frames=N`) hashes as `worker --mode=play --frames=N` of the same seed (selftest 640,
+  `dungeon.hash_alone`; `export.sh check` step 1b in the exe). It lints first (a pack outside the fence is refused),
+  counts script errors with the runner's logger (more than 20 stop it), and has no watchdog thread.
+- Esc belongs to the dungeon: it opens the pause card (Resume, Leave) and pauses the tree (the physics too). As in a
+  world, where Esc leaves the game, a pack should not put an action on Esc.
+- `kernel/dungeon/dungeons.gd`: the list `engine/boot/dungeons.json` (`tl.dungeons/1`: `{pack, title, look?}`; `look`
+  is a `TL_STYLE` name), `resolve`, `look_path`, and the launch seam `launch(<pack dir>)` (a second game process that
+  opens that folder as a dungeon; its "Back to Create" ends it).
+- `kernel/dungeon/look_ui.gd`: the crisp 2D look of the menu and the cards (colours read from `style/style_crisp.json`).

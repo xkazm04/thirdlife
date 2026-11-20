@@ -1,0 +1,13 @@
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":1,"frame":3,"nodes":33,"objects":1687,"resources":45,"orphans":0,"video_mb":67.07,"static_mb":94.06}
+{"schema":"thirdlife.exe/1","kind":"census","at":"dungeon","n":1,"frame":232,"nodes":348,"objects":2240,"resources":100,"orphans":0,"video_mb":704.2,"static_mb":135.57}
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":2,"frame":515,"nodes":33,"objects":1772,"resources":100,"orphans":0,"video_mb":617.84,"static_mb":133.93}
+{"schema":"thirdlife.exe/1","kind":"census","at":"world","n":2,"frame":822,"nodes":2538,"objects":8690,"resources":229,"orphans":67,"video_mb":881.8,"static_mb":248.96}
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":3,"frame":884,"nodes":33,"objects":1992,"resources":229,"orphans":0,"video_mb":628.63,"static_mb":172.52}
+{"schema":"thirdlife.exe/1","kind":"census","at":"dungeon","n":3,"frame":1132,"nodes":348,"objects":2461,"resources":229,"orphans":0,"video_mb":715.49,"static_mb":174.63}
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":4,"frame":1415,"nodes":33,"objects":1991,"resources":229,"orphans":0,"video_mb":628.63,"static_mb":172.49}
+{"schema":"thirdlife.exe/1","kind":"census","at":"world","n":4,"frame":1722,"nodes":2869,"objects":9129,"resources":229,"orphans":0,"video_mb":897.12,"static_mb":249.37}
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":5,"frame":1784,"nodes":33,"objects":2002,"resources":229,"orphans":0,"video_mb":628.88,"static_mb":172.59}
+{"schema":"thirdlife.exe/1","kind":"census","at":"dungeon","n":5,"frame":2032,"nodes":348,"objects":2471,"resources":229,"orphans":0,"video_mb":715.74,"static_mb":174.69}
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":6,"frame":2315,"nodes":33,"objects":2001,"resources":229,"orphans":0,"video_mb":628.88,"static_mb":172.55}
+{"schema":"thirdlife.exe/1","kind":"census","at":"world","n":6,"frame":2622,"nodes":2869,"objects":9136,"resources":229,"orphans":0,"video_mb":897.37,"static_mb":249.42}
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":7,"frame":2684,"nodes":33,"objects":2002,"resources":229,"orphans":0,"video_mb":628.88,"static_mb":172.61}
