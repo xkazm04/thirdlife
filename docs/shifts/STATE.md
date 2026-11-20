@@ -6,10 +6,12 @@ writes it back. Newest shift-log entry last.
 ## Now
 - Focus (owner, 18 Nov): make the game playable and fun before measuring anything. The walking figure, camera and terrain
   immersion, the parkour course, and the minigame editor as the backbone of player-made games. Hockey decisions and win
-  measurement are deferred; the construction process comes later.
-- Next 3: (1) the owner plays exe `79af060` (summoned wings, Split Ticket HUD, the HUD workshop) and answers W6/H4/H5
-  (page https://claude.ai/artifact/3UcBXULfNK4stpPdhQhByc); (2) the night's scope from the owner's directions;
-  (3) still open: the off-origin `--at` hash, the picture-cache proof, the site's round fence (B2), editor E4 after his tests.
+  measurement are deferred; the construction process comes later. Since 19 Nov 22:35: the engine's look (art-engine-duo).
+- Next 3: (1) the owner plays `dist/arms/combined/ThirdLife/PLAY-DIORAMA.cmd` (and PLAY-CLASSIC) and answers the diorama
+  asks D1-D5 (page https://claude.ai/artifact/PDGjcWgSg1XN6NyujhjKyq): a) adopt diorama or b) evolve crisp cel;
+  (2) still open from 19 Nov evening: W6/H4/H5 on exe `79af060`; (3) day-shift findings: flight_review still mode draws no
+  wings since 8cae88f; COMMON tours need `--load=block`; the off-origin `--at` hash, the picture-cache proof, the site's
+  round fence (B2), editor E4 after his tests.
 
 ## Open owner verdicts
 Asks from the evening of 19 Nov: W6 summon key; H4 HUD look; H5 PACK.md hud.json convention.
@@ -158,3 +160,13 @@ Plan: `docs/shifts/2026-11-20-night/PLAN.md`; boards https://claude.ai/artifact/
 - 04:03 standup: all six arms finishing on frozen trees (Astra r3 stopped in frame and surfaces; r2 delivered); leaders by eye: frame even (Astra sky, Fable light), surfaces Fable clearly, character even; character-fable ring banding fixed (v4).
 - 05:03 standup: frame-astra and surfaces-astra done (r2); four arms finishing on frozen trees; kernel.selftest hits the 1800 s limit under load in every arm (0 failed): it runs alone at the combine; leaders: frame even, surfaces close, character even.
 - 06:15 combine: six arms done and pushed; leaders frame Astra, surfaces Fable, character Fable merged into diorama-combined without conflicts; tl_style.gd size seam fixed (5609241); fast PASS; world/packs and selftests running.
+- 06:55 combined build verified: fast PASS; world 8/8, packs 48/48, kit 95/95 (hashes = base); style. 7, rig. 14, figure. 4, surf. 5, flight. 13, wings 2; moves. 13/14 in the batch (nested record exit 127), PASS alone; kernel.selftest alone 338/0; export.check PASS (5609241); quiet perf GPU 1.23 -> 1.56 ms (+27 %).
+
+### 2026-11-20 night: wrap (07:50)
+- Done: six arms done, none cut; all pushed (frame-astra e0c9a9f, frame-fable 3a89777, surfaces-astra e61a534,
+  surfaces-fable efcf1b9, character-astra 5ce876c, character-fable 4d0023a); `diorama-combined` 9a749e2 (frame Astra +
+  surfaces Fable + character Fable), exe `dist/arms/combined/ThirdLife`. Nothing on main but the shift docs.
+- Evidence: VERDICT.md; page https://claude.ai/artifact/PDGjcWgSg1XN6NyujhjKyq; lane reports and sheets in `lanes/`.
+- Route scoreboard: Astra led frame (one striking image: sky, light); Fable led surfaces (a material system) and character
+  (even by eye, cleaner footprint). Cost: Astra at least 3.2 M tokens; Opus operators 1.06 M; Fable 1.78 M.
+- Open: the owner's D1-D5; the next shift follows D1.

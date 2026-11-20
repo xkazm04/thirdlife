@@ -139,6 +139,9 @@ A standup (by timer or by hand):
 3. **Review and land** every lane that says done: read its diff (`git diff main...<branch>`), re-run its acceptance checks
    yourself, compute the overlap with main, then merge on main and run the overlay's pre-merge gate list on the merged
    tree (the WHOLE list on the first merge of the shift). Red on main means revert the merge, not fix forward at 4 am.
+   On a loaded machine, wall-clock checks (hockey `invariants.many_budget`, the kernel suite's 1800 s limit, perf) are
+   not evidence either way: A/B them against the pre-merge tree, and run the whole kernel suite and perf alone on the
+   quiet machine before the verdict (seen 19 and 20 Nov).
 4. **Re-dispatch:** when a lane landed and time remains, give it its next item from PLAN.md or the backlog (SendMessage to
    the same agent keeps its context), within the scope the owner agreed. Do not invent a new direction overnight.
 5. Fill idle capacity only with lanes the handshake accepted (memory: idle capacity is waste, but scope is the owner's).
@@ -207,3 +210,12 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   the verdict inside the land-by time; Astra spend ran 2x the plan because resumed sessions recount their context.
 - 2026-11-19 (evening): an operator passing Astra only a measurement (720p glyph heights against a readability floor)
   fixed the HUD in one round without directing the design: measured feedback is the right lever on an Astra-alone lane.
+- 2026-11-20 (night, the diorama duel): six arms building the same pillar twice made the shared window lock the
+  bottleneck (10-20 min a capture); two Astra rounds fit, a third did not. Plan captures as a queue or give
+  pictures-only tours their own lock class.
+- 2026-11-20: arms split by file scope merged without a textual conflict, but together broke a global size budget no arm
+  could see (tl_style.gd 611/600): the combine runs the fast tier before anything else.
+- 2026-11-20: a classic-proof baseline must be the same world as the worktree (same site jobs, `--load=block` tours), or
+  its noise floor measures another village.
+- 2026-11-20: an Astra operator let round 1 re-run whole suites itself for 2 h; a Director time check ("end the round,
+  verify yourself, spend the rest on the look") recovered the arm. Operators verify; Astra builds.
