@@ -361,7 +361,7 @@ static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Ar
 	var first_crane := TLKitSite.crane(26.0, 2.0, 20.0, 8.0)
 	var scaffold_recipe := TLKitSite.scaffold(3, 2)
 	var scaffold_mesh := scaffold_recipe.build("LotScaffold")
-	var scaffold_wood: ArrayMesh = Strew.dowels(scaffold_recipe, "LotScaffold", {"yellow": "plank", "orange": "wood_light", "yellow_dark": "wood", "wood_light": "wood_light"})     # diorama day: wooden dowels
+	var scaffold_wood: ArrayMesh = Strew.dowels(scaffold_recipe, "LotScaffold", {"yellow": "wood", "orange": "wood", "yellow_dark": "wood_dark", "wood_light": "wood"})     # diorama day: wooden dowels
 	if scaffold_wood != null:
 		scaffold_mesh = scaffold_wood
 	for k: int in count:
@@ -400,21 +400,32 @@ static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Ar
 		stats["lots"] = int(stats.get("lots", 0)) + 1
 
 
-## Diorama day: many small clumps of one mesh (flock tufts, grit), no shadow of their own. Nothing when `mesh` is null.
-static func clumps(parent: Node3D, mesh: ArrayMesh, xs: Array, mname: String) -> void:
+## Diorama day: many small clumps of one mesh (flock tufts, grit), no shadow of their own unless `shadows`. Nothing when
+## `mesh` is null. With `far` (metres; Director, 18:40) the strew is drawn in pieces of STREW_CELL metres of ground, each
+## with that far limit, as the road's rails are: a piece out of view or further than `far` is neither drawn nor shadowed
+## (one multimesh over the whole village is drawn whole in every pass, wherever the eye is).
+const STREW_CELL: float = 32.0
+static func clumps(parent: Node3D, mesh: ArrayMesh, xs: Array, mname: String, far: float = 0.0, shadows: bool = false) -> void:
 	if mesh == null or xs.is_empty():
 		return
-	var mm: MultiMesh = MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
-	mm.instance_count = xs.size()
-	for i: int in xs.size():
-		mm.set_instance_transform(i, xs[i])
-	var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
-	mmi.name = mname
-	mmi.multimesh = mm
-	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	parent.add_child(mmi)
+	var parts: Array = Strew.pieces(xs, STREW_CELL) if far > 0.0 else [xs]
+	for pi: int in parts.size():
+		var piece: Array = parts[pi]
+		var mm: MultiMesh = MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = mesh
+		mm.instance_count = piece.size()
+		for i: int in piece.size():
+			mm.set_instance_transform(i, piece[i])
+		var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
+		mmi.name = mname if far <= 0.0 else "%s_%d" % [mname, pi]
+		mmi.multimesh = mm
+		if not shadows:
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if far > 0.0:
+			mmi.visibility_range_end = far
+			mmi.visibility_range_end_margin = 8.0
+		parent.add_child(mmi)
 
 
 ## Diorama day: one rail fence from a to b, as the style draws it: turned posts and round rails under a style with
@@ -475,8 +486,8 @@ static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2
 		parent.add_child(mi)
 	if Felt.enabled() and TLStyle.num("detail", "pebbles", 0.0) > 0.0:      # diorama day: clay pebbles on the roads, presentation only
 		var strewn: Array = Strew.pebbles(terr, seed_, box, road_half - 0.7, int(TLStyle.num("detail", "pebbles", 0.0)))
-		for v: int in 3:
-			multi(parent, TLKitNature.rock(220 + v, 1.0, 0.62 + 0.1 * float(v)), strewn[v], "WorldPebbles%d" % v)
+		for v: int in 3:       # in pieces with a far limit: a pebble is a pixel at about 100 m
+			clumps(parent, Felt.look(TLKitNature.rock(220 + v, 1.0, 0.62 + 0.1 * float(v)), ("WorldPebbles%d" % v).to_snake_case(), 10, 1), strewn[v], "WorldPebbles%d" % v, 96.0, true)
 	if Felt.enabled() and TLStyle.num("detail", "dress", 0.0) > 0.0:        # ... and the roadsides dressed: small pines, felt balls, stones
 		var dress: Array = Strew.dressing(terr, seed_, box, road_half - 0.7, is_free, int(TLStyle.num("detail", "dress", 0.0)))
 		multi(parent, TLKitNature.pine(140, 9.0, 4, 2.6), dress[0], "WorldDressPines")
@@ -484,12 +495,12 @@ static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2
 		multi(parent, TLKitNature.rock(230, 1.0, 0.7), dress[2], "WorldDressRocks")
 	if Felt.enabled() and TLStyle.num("detail", "tufts", 0.0) > 0.0:        # ... flock tufts over the whole meadow, in two dyes
 		var drifts: Array = Strew.meadow_tufts(terr, seed_, box, road_half - 0.7, is_free, int(TLStyle.num("detail", "tufts", 0.0)))
-		clumps(parent, Felt.clump_mesh("meadow_tuft_a", "leaf_light", Color(0.97, 0.84, 1.1), Vector3(0.23, 0.11, 0.19), 0.03, false, 11), drifts[0], "WorldMeadowTuftsA")
-		clumps(parent, Felt.clump_mesh("meadow_tuft_b", "leaf", Color(1.25, 0.92, 1.0), Vector3(0.25, 0.12, 0.21), 0.03, false, 12), drifts[1], "WorldMeadowTuftsB")
+		clumps(parent, Felt.clump_mesh("meadow_tuft_a", "leaf_light", Color(0.97, 0.84, 1.1), Vector3(0.23, 0.11, 0.19), 0.03, false, 11), drifts[0], "WorldMeadowTuftsA", 84.0)
+		clumps(parent, Felt.clump_mesh("meadow_tuft_b", "leaf", Color(1.25, 0.92, 1.0), Vector3(0.25, 0.12, 0.21), 0.03, false, 12), drifts[1], "WorldMeadowTuftsB", 84.0)
 	if Felt.enabled() and TLStyle.num("detail", "grit", 0.0) > 0.0:         # ... and the roads strewn all over with grit
 		var strew: Array = Strew.grit(terr, seed_, box, road_half - 0.7, int(TLStyle.num("detail", "grit", 0.0)))
-		clumps(parent, Felt.clump_mesh("road_grit_a", "rock", Color.WHITE, Vector3(0.050, 0.030, 0.045), 0.006, true, 21), strew[0], "WorldGritA")
-		clumps(parent, Felt.clump_mesh("road_grit_b", "rock_warm", Color(0.9, 0.9, 0.9), Vector3(0.036, 0.024, 0.040), 0.005, true, 22), strew[1], "WorldGritB")
+		clumps(parent, Felt.clump_mesh("road_grit_a", "rock", Color.WHITE, Vector3(0.050, 0.030, 0.045), 0.006, true, 21), strew[0], "WorldGritA", 44.0)
+		clumps(parent, Felt.clump_mesh("road_grit_b", "rock_warm", Color(0.9, 0.9, 0.9), Vector3(0.036, 0.024, 0.040), 0.005, true, 22), strew[1], "WorldGritB", 44.0)
 	return made
 
 

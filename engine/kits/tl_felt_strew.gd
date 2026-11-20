@@ -5,6 +5,9 @@ extends RefCounted
 ## never changed here.
 
 const Felt: GDScript = preload("res://kits/tl_felt.gd")
+## Bump with any change to what a look mesh of kits/tl_felt*.gd draws for a pack (felt, clay, dowels): it is part of a
+## pack picture's cache key under a diorama style (draw_pictures.gd `style_rules`), as PIC_VERSION is for the recipes.
+const LOOK_REV: int = 4
 
 
 ## A closed outline through `pts` (a polygon), rounded: `n` points on the curve through its corners.
@@ -72,7 +75,7 @@ static func fence(mk: TLMesh, a: Vector3, b: Vector3, post_gap: float) -> void:
 		var lean: Vector3 = Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0)) * 0.035
 		var h: float = 1.26 + rng.randf_range(-0.05, 0.06)
 		var top: Vector3 = p + Vector3(0, h, 0) + lean
-		mk.cyl_between(p - Vector3(0, 0.15, 0), top, 0.125, 12, "wood_dark", Color.WHITE, 0.112)
+		mk.cyl_between(p - Vector3(0, 0.15, 0), top, 0.125, 12, "wood", Color(0.80, 0.80, 0.80), 0.112)
 		mk.cyl_between(top, top + (top - p).normalized() * 0.035, 0.112, 12, "wood_light", Color(0.92, 0.92, 0.92), 0.085)     # the sawn end, chamfered
 		tops.append([p, lean / h])
 	for i: int in n:
@@ -207,7 +210,12 @@ static func dowels(mk: TLMesh, mesh_name: String, keys: Dictionary, force: bool 
 				var up: Vector3 = Vector3.RIGHT if absf(yy.x) < 0.95 else Vector3.FORWARD
 				var zz: Vector3 = up.cross(yy).normalized()
 				out.push(Transform3D(Basis(yy.cross(zz), yy, zz), c + yy * (t0 if a.y >= 0.0 else -t1)))
-				out.cyl(rmax * 0.7071 * 1.22, t1 - t0, 8, String(keys[key]), s.c[comp[0]], -1.0, Vector3.ZERO, yy.y > 0.9, false)
+				# every dowel is another piece of wood: a tone of its own (one colour over a whole frame reads as moulded plastic)
+				var th: int = hash(c)
+				var tone: float = 0.74 + 0.30 * float(th & 0xff) / 255.0       # measured against the board's scaffold (mean 173, 98, 42)
+				var warm: float = 0.97 + 0.06 * float((th >> 8) & 0xff) / 255.0
+				var bc: Color = s.c[comp[0]]
+				out.cyl(rmax * 0.7071 * 1.22, t1 - t0, 8, String(keys[key]), Color(bc.r * tone * warm, bc.g * tone, bc.b * tone / warm), -1.0, Vector3.ZERO, yy.y > 0.9, false)
 				out.pop()
 				made += 1
 			else:
@@ -287,3 +295,49 @@ static func grit(terr: RefCounted, seed_: int, box: Rect2, road_half: float, wan
 			(out[rng.randi_range(0, 1)] as Array).append(Transform3D(bs, Vector3(pp.x, float(terr.call("gy", pp.x, pp.y)), pp.y)))
 			made += 1
 	return out
+
+
+## One turned fence post at `p` and the rails between two such posts, for a row whose posts are given (a row of rails
+## along a road: kernel/world/terrain/road_rails.gd). A post leans by its own place, so the rails of the two spans
+## that meet at it find the same post.
+static func _post_lean(p: Vector3) -> Vector3:
+	var hsh: int = hash(p)
+	return Vector3(float(hsh & 0xff) / 127.5 - 1.0, float((hsh >> 8) & 0xff) / 255.0, float((hsh >> 16) & 0xff) / 127.5 - 1.0)
+
+
+static func fence_post(mk: TLMesh, p: Vector3) -> void:
+	var l: Vector3 = _post_lean(p)
+	var h: float = 1.24 + 0.10 * l.y
+	var top: Vector3 = p + Vector3(l.x * 0.035, h, l.z * 0.035)
+	mk.cyl_between(p - Vector3(0, 0.15, 0), top, 0.115, 10, "wood", Color(0.80, 0.80, 0.80), 0.102)      # the board's posts are the rails' own wood, a shade darker
+	mk.cyl_between(top, top + (top - p).normalized() * 0.035, 0.102, 10, "wood_light", Color(0.92, 0.92, 0.92), 0.078)     # the sawn end, chamfered
+
+
+static func fence_rails(mk: TLMesh, p0: Vector3, p1: Vector3, heights: Array) -> void:
+	var l0: Vector3 = _post_lean(p0)
+	var l1: Vector3 = _post_lean(p1)
+	for h: float in heights:
+		var k: float = h / 1.25
+		var a: Vector3 = p0 + Vector3(l0.x * 0.035 * k, h + (l0.y - 0.5) * 0.05 * (1.0 if h < 0.7 else -1.0), l0.z * 0.035 * k)
+		var b: Vector3 = p1 + Vector3(l1.x * 0.035 * k, h + (l1.y - 0.5) * 0.05 * (1.0 if h < 0.7 else -1.0), l1.z * 0.035 * k)
+		var d: Vector3 = (b - a).normalized()
+		var tone: float = 0.92 + 0.14 * l0.y
+		mk.cyl_between(a - d * 0.10, b + d * 0.10, 0.058, 8, "wood", Color(tone, tone, tone))
+
+
+## The meadow's dye by the land's form (`detail.dye_relief`): `crown` = how far a place stands above the mean of four
+## points 14 m off (metres; negative in a hollow). Deep green in the hollows, the dry gold on the crowns.
+static func relief_dye(base: Color, dark: Color, dry: Color, crown: float, k: float) -> Color:
+	return base.lerp(dark, smoothstep(0.08, 1.0, -crown) * 0.75 * k).lerp(dry, smoothstep(0.08, 1.0, crown) * 0.55 * k)
+
+
+## A strew's places (Transform3D) sorted into square pieces of `cell` metres of ground, in the order the places come:
+## every place lands in exactly one piece. So a strew can be drawn piece by piece, each with a far limit of its own.
+static func pieces(xs: Array, cell: float) -> Array:
+	var by: Dictionary = {}
+	for xf: Transform3D in xs:
+		var k: Vector2i = Vector2i(floori(xf.origin.x / cell), floori(xf.origin.z / cell))
+		if not by.has(k):
+			by[k] = []
+		(by[k] as Array).append(xf)
+	return by.values()

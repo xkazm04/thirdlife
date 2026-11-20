@@ -40,7 +40,7 @@ global uniform vec4 g_dio;       // x bump strength, y bump fade from (m), z to 
 global uniform vec4 g_dio2;      // x gloss of a key that names none, y felt sheen, z sky reflection on gloss, w sun highlight
 global uniform vec4 g_dio3;      // rgb = what shows where paint has chipped (primer), a = soft edge radius (m) of a box face
 global uniform vec4 g_dio4;      // rgb = the dye of the grass felt (palette `grass`), a = how round a lump is lit (0 = its facets)
-global uniform vec4 g_dio5;      // x = wax: warm light bleeding through the clay where it turns from the sun (0 = none), y = 1: the road's pebbles are real ones, none is drawn
+global uniform vec4 g_dio5;      // x = wax: warm light bleeding through the clay where it turns from the sun (0 = none), y = 1: the road's pebbles are real ones, none is drawn, z = how much the felt's dye follows the land's facing (`detail.dye_relief`)
 varying vec3 sn_v;               // a round thing's own normal (view space; zero = this is not one), TLMesh UV2
 varying flat vec4 m3;            // lookup row 3: sway, gloss, fuzz, chip
 varying vec3 bn_l;               // the marked normal (view space), handed from fragment() to light()
@@ -730,6 +730,10 @@ void fragment() {
 #else
 			float grassy = COLOR.g - COLOR.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
 #endif
+			// how much green stands over red in the felt's own dye, and the same measure of this place. The line between
+			// felt and earth lies a little below zero: a golden dye has hardly more green than red, earth has far less.
+			float dye_d = g_dio4.g - g_dio4.r + 0.03;
+			if (g_dio6.x > 0.0) { grassy += 0.03; }
 			float gfw = fwidth(grassy) * 2.5 + 0.006;
 			if (g_dio6.x > 0.0) {
 				// the cut edge of a flocked sheet is ragged: fibres hang over it, and bare spots reach in (a hand's width)
@@ -783,11 +787,19 @@ void fragment() {
 				// flock is strewn by hand: two dyes that do not mix evenly, and places where it lies thinner (a few metres across)
 				float thin = gn2(gq * 0.21 + 11.0);
 				gtint = mix(vec3(0.74, 0.93, 0.92), vec3(1.16, 1.05, 0.68), smoothstep(0.28, 0.72, gpa)) * (0.88 + 0.22 * smoothstep(0.3, 0.7, thin));
+				// the dye follows the land, not noise alone: golden where a slope looks at the sun, cooler and deeper where it
+				// turns away (how much by how steep it is), as flock strewn on a model catches more of the lighter dye on its crowns
+				float tilt = smoothstep(0.015, 0.16, 1.0 - wn.y);
+				float sunward = dot(normalize(wn.xz + vec2(1e-5)), normalize(g_sun_dir.xz + vec2(1e-5))) * tilt * g_dio5.z;
+				gtint *= mix(vec3(1.0), vec3(1.03, 0.97, 0.78), max(sunward, 0.0));     // gold by hue, not by brightness (the lit nap is bright enough)
+				gtint *= mix(vec3(1.0), vec3(0.72, 0.92, 1.04), max(-sunward, 0.0));
 			}
 			// one sheet of felt has one dye: where the land's pigment is a blur of grass and rock or earth, the felt side of
 			// the cut takes the grass colour back (its own lightness kept), so the cut is clean and nothing looks sprayed
 			float muddy = (1.0 - smoothstep(0.0, 0.07, grassy)) * gm;
-			if (g_dio6.x > 0.0) { muddy = (1.0 - smoothstep(0.09, 0.21, grassy)) * gm * 1.15; }   // the whole brown halo round bare earth, seen from above
+			// (the whole brown halo round bare earth, seen from above; measured against the dye, so the land's own darker and
+			// drier greens are NOT taken for a halo and painted over: with a golden dye that made the meadow one colour)
+			if (g_dio6.x > 0.0) { muddy = (1.0 - smoothstep(0.30 * dye_d, 0.62 * dye_d, grassy)) * gm * 1.15; }
 			float glum = clamp(dot(c, vec3(0.3, 0.6, 0.1)) / max(dot(g_dio4.rgb, vec3(0.3, 0.6, 0.1)), 0.01), 0.75, g_dio6.x > 0.0 ? 1.04 : 1.15);
 			c = mix(c, g_dio4.rgb * glum, muddy * 0.8);
 			// ... and the clay beside the cut loses the green that bled into it (the blend undone, as far as it can be guessed)
@@ -798,8 +810,7 @@ void fragment() {
 				// ... all of it: the pigment here is the dye and the earth mixed by a share that `grassy` tells (the dye has
 				// g - r of its own, earth and rock about -0.25 to -0.35), so the earth side of the cut is un-mixed and keeps its own
 				// clay, whichever it is (road, rock, sand): no sprayed halo of the felt on it
-				float dye_g = g_dio4.g - g_dio4.r;
-				float share = clamp((grassy + 0.24) / (0.24 + dye_g), 0.0, 0.66) * (1.0 - gm);
+				float share = clamp((grassy + 0.21) / (0.21 + dye_d), 0.0, 0.66) * (1.0 - gm);
 				c = max((c - share * g_dio4.rgb * glum) / (1.0 - share), vec3(0.0));
 			}
 			// clay: crumbs and thumb dents, pebbles pressed in
@@ -863,11 +874,11 @@ void fragment() {
 					// a dowel, a post, a trunk: the grain runs along it and goes around with it
 					vec2 rad = normalize(P_d.xz + vec2(1e-5));
 					vec3 s0; vec3 s2;
-					// (twice as coarse as on a board: a rail a hand wide must still show a few lines of grain from the road)
-					float t0 = dio_face(1, P_d * 0.5, 0, 1, dPx * 0.5, dPy * 0.5, s0);
-					float t2 = dio_face(1, P_d * 0.5 + vec3(0.31, 0.0, 0.0), 2, 1, dPx * 0.5, dPy * 0.5, s2);
+					// (three times as coarse as on a board, and stronger: a rail a hand wide must still show its grain from the road)
+					float t0 = dio_face(1, P_d * 0.36, 0, 1, dPx * 0.36, dPy * 0.36, s0);
+					float t2 = dio_face(1, P_d * 0.36 + vec3(0.31, 0.0, 0.0), 2, 1, dPx * 0.36, dPy * 0.36, s2);
 					float w0 = rad.x * rad.x;
-					tt = mix(t2, t0, w0) * 1.3;
+					tt = mix(t2, t0, w0) * 1.9;
 					tex_g = mix(s2, s0, w0) * (dk * g_dio6.w);
 				} else {
 					tt = dio_face(mclass, P_d, fax, code / 4, dPx, dPy, tex_g);

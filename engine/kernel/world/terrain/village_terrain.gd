@@ -45,6 +45,7 @@ var _nr: FastNoiseLite = FastNoiseLite.new()
 var _np: FastNoiseLite = FastNoiseLite.new()
 var _nd: FastNoiseLite = FastNoiseLite.new()
 var _c: Dictionary = {}
+var _dye: float = clampf(TLStyle.num("detail", "dye_relief", 0.0), 0.0, 1.5)   # only a style that asks; absent = the land's colours as they were
 
 
 func _init(seed_: int, box: Rect2, cell_m: float = 3.0) -> void:
@@ -383,6 +384,7 @@ func _col(x: float, y: float, z: float, n: Vector3, rd: float, rvd: float, wear:
 	var base: Color = (_c["grass_dark"] as Color).lerp(_c["grass"], 0.5 + 0.5 * smoothstep(0.2, 0.8, np))
 	var dry: float = smoothstep(0.55, 0.85, _nd.get_noise_2d(x * 0.4, z * 0.4) * 0.5 + 0.5) * 0.3 + smoothstep(-4.0, 6.0, y) * 0.12
 	base = base.lerp(_c["grass_dry"], clampf(dry, 0.0, 0.85))
+	if _dye > 0.0: base = preload("res://kits/tl_felt_strew.gd").relief_dye(base, _c["grass_dark"], _c["grass_dry"], h(x, z) - 0.25 * (h(x + 14.0, z) + h(x - 14.0, z) + h(x, z + 14.0) + h(x, z - 14.0)), _dye)   # diorama day: the dye follows the land's form
 	base = base.lerp(_c["rock_warm"], smoothstep(14.0, 34.0, y) * 0.55)
 	var rk: float = smoothstep(0.17, 0.34, slope_)
 	var rock: Color = (_c["rock"] as Color).lerp(_c["cliff"], smoothstep(0.3, 0.7, np)).lerp(_c["rock_warm"], smoothstep(0.55, 0.85, _nd.get_noise_2d(x, z + 5.0) * 0.5 + 0.5) * 0.6)

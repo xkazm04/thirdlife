@@ -68,7 +68,7 @@ static func globals(data: Dictionary) -> Dictionary:
 		"g_dio": Vector4(float(dt.get("bump", 1.0)), float(dt.get("bump_near", 14.0)), float(dt.get("bump_far", 60.0)), float(dt.get("chip", 1.0))),
 		"g_dio2": Vector4(float(t.get("gloss", 0.12)), float(t.get("sheen", 1.0)), float(t.get("sky_refl", 0.5)), float(t.get("spec", 1.0))),
 		"g_dio3": Vector4(chip.r, chip.g, chip.b, float(dt.get("bevel", 0.0))),
-		"g_dio5": Vector4(float(t.get("wax", 0.0)), 1.0 if (float(dt.get("pebbles", 0.0)) > 0.0 and float(dt.get("nature", 0.0)) > 0.0) else 0.0, 0.0, 0.0),
+		"g_dio5": Vector4(float(t.get("wax", 0.0)), 1.0 if (float(dt.get("pebbles", 0.0)) > 0.0 and float(dt.get("nature", 0.0)) > 0.0) else 0.0, clampf(float(dt.get("dye_relief", 0.0)), 0.0, 1.5), 0.0),
 		"g_dio4": Vector4(grass.r, grass.g, grass.b, clampf(float(dt.get("round", 0.0)), 0.0, 1.0)),
 		"g_dio6": Vector4(textures(data), float(dt.get("tex_felt_m", 2.4)), float(dt.get("tex_clay_m", 2.0)), float(dt.get("tex_relief", 0.8))),
 	}
