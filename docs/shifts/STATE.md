@@ -184,3 +184,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 12:35 standup: base fully green (e191d8f), pushed; four arms on track (cel-astra r1 and dio-astra r2 verified, both Fable arms on r2/r3); picture cache not keyed by style (dio-fable keys it).
 - 13:30 integration 1: d20-cel 597a374 and d20-dio 1070eea joined without conflicts; world 8/8 + packs 48/48 on both; exes in dist/day/cel and dist/day/dio; one cel seam (toon.shade_k clamp) sent to cel-fable; arms resumed on the joined trees.
 - 13:35 standup: four arms on track on the joined trees; cel shade_k seam fixed by cel-fable; dio 16x anisotropy diorama-only; i1 gaps measured.
+- 14:35 standup: four arms on track; cel-astra wrote round 3 as `done` and was sent to round 4 (plum shadows, shimmer, figure scale); cel-fable granted landscape.gd for a crisp-keyed road fence row (no colliders), to be offered to dio at i2; dio round-3 warm light matches the board spread (123 vs 122).
