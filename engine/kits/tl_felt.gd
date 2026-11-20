@@ -252,6 +252,26 @@ static func _lump(out: TLMesh, key: String, pts: PackedVector3Array, col: Color,
 	if flat:
 		r.y = (hi.y - lo.y) / 1.36
 		c.y = lo.y + 0.36 * r.y
+	if flat and not clay and minf(r.x, r.z) > 0.75:      # (the small second blob of a kit bush stays one ball beside the cluster)
+		# a bush is not one lump: felt balls rolled one by one and pressed together, a ring of them and one or two on top
+		var n: int = rng.randi_range(4, 5)
+		var a0: float = rng.randf() * TAU
+		var rr: float = minf(r.x, r.z)
+		for i: int in n + 2:
+			var top: bool = i >= n
+			var a: float = a0 + TAU * float(i) / float(n) + rng.randf_range(-0.25, 0.25)
+			var d: float = (0.50 if not top else 0.16 * float(i - n)) * rng.randf_range(0.85, 1.1)
+			var br: float = rr * (rng.randf_range(0.46, 0.60) if not top else rng.randf_range(0.50, 0.62))
+			var bc: Vector3 = Vector3(c.x + cos(a) * r.x * d, lo.y + (br * 0.55 if not top else r.y * 0.78 + br * 0.30), c.z + sin(a) * r.z * d)
+			var tone: float = rng.randf_range(0.90, 1.10) * (1.06 if top else 1.0)
+			_ball(out, key, bc, Vector3(br, br * rng.randf_range(0.82, 0.95), br), lo.y, hi.y, true, Color(col.r * tone, col.g * tone, col.b * tone), maxi(detail - 1, 1), false, rng, Vector3(c.x, lo.y, c.z), rr)
+		return
+	_ball(out, key, c, r, lo.y, hi.y, flat, col, detail, clay, rng, Vector3.ZERO, 0.0)
+
+
+## One rolled ball about `c` with radii `r`: lumps, nodules, clay pressed flat here and there; cut at `floor_y` when
+## `flat`. `core`, `core_r`: the middle of a cluster it belongs to (0 = none): it is darker where it faces the others.
+static func _ball(out: TLMesh, key: String, c: Vector3, r: Vector3, floor_y: float, top_y: float, flat: bool, col: Color, detail: int, clay: bool, rng: RandomNumberGenerator, core: Vector3, core_r: float) -> void:
 	var ico: Array = _icosphere(detail)
 	var vs: Array = ico[0]
 	var fs: Array = ico[1]
@@ -278,8 +298,8 @@ static func _lump(out: TLMesh, key: String, pts: PackedVector3Array, col: Color,
 			if over > 0.0:
 				q -= (pr[0] as Vector3) * over * 0.85
 		var p: Vector3 = c + Vector3(q.x * r.x, q.y * r.y, q.z * r.z)
-		if flat and p.y < lo.y - 0.02:
-			p.y = lo.y - 0.02
+		if flat and p.y < floor_y - 0.02:
+			p.y = floor_y - 0.02
 		ps.append(p)
 	var ns: PackedVector3Array = PackedVector3Array()
 	ns.resize(ps.size())
@@ -294,119 +314,13 @@ static func _lump(out: TLMesh, key: String, pts: PackedVector3Array, col: Color,
 	for f: Array in fs:
 		var cs: Array = []
 		for e: int in 3:
-			var up: float = clampf(((ps[f[e]].y - lo.y) / maxf(hi.y - lo.y, 1e-4)), 0.0, 1.0)
+			var up: float = clampf(((ps[f[e]].y - floor_y) / maxf(top_y - floor_y, 1e-4)), 0.0, 1.0)
 			var k: float = 0.72 + 0.34 * smoothstep(0.0, 0.7, up)        # darker where it sits: it shades itself there
+			if core_r > 0.0:
+				var away: float = Vector2(ps[f[e]].x - core.x, ps[f[e]].z - core.z).length() / core_r
+				k *= 0.66 + 0.34 * smoothstep(0.25, 0.85, away + 0.5 * up)      # ... and where it is pressed against the other balls
 			cs.append(Color(col.r * k, col.g * k, col.b * k))
 		_tri(out, key, [ps[f[0]], ps[f[1]], ps[f[2]]], [ns[f[0]], ns[f[1]], ns[f[2]]], cs)
-
-
-## A closed outline through `pts` (a polygon), rounded: `n` points on the curve through its corners.
-static func round_outline(pts: PackedVector2Array, n: int) -> PackedVector2Array:
-	var out: PackedVector2Array = PackedVector2Array()
-	var m: int = pts.size()
-	for i: int in n:
-		var t: float = float(i) / float(n) * float(m)
-		var k: int = int(t)
-		var f: float = t - float(k)
-		out.append(pts[k % m].cubic_interpolate(pts[(k + 1) % m], pts[(k + m - 1) % m], pts[(k + 2) % m], f))
-	return out
-
-
-## A bluff as slabs of clay laid one on another (the mesas of the skyline): `unit` = its rounded outline (radius about
-## 1), from height y0 to y1, reach r0 at the foot and r1 at the top, `slabs` layers. Each slab is rolled (its side
-## bulges, its edges turn in), sits a little off the one below and has a tone of its own. The top is closed inward.
-static func slab_stack(out: TLMesh, key: String, unit: PackedVector2Array, y0: float, y1: float, r0: float, r1: float, slabs: int, col: Color, seed_: int) -> void:
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = seed_
-	var seg: int = unit.size()
-	var rings: Array = []
-	var tone: PackedFloat32Array = PackedFloat32Array()
-	var hs: float = (y1 - y0) / float(slabs)
-	var rr: float = r1
-	for k: int in slabs:
-		var f: float = pow(float(k) / float(maxi(slabs - 1, 1)), 0.7)
-		rr = lerpf(r0, r1, f) * rng.randf_range(0.975, 1.03)
-		var off: Vector2 = Vector2(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)) * rr * 0.025
-		var waves: int = rng.randi_range(3, 6)
-		var ph: float = rng.randf() * TAU
-		var tk: float = (0.93 if k % 2 == 0 else 1.05) * rng.randf_range(0.96, 1.04)
-		var yb: float = y0 + hs * float(k)
-		for step: Array in [[0.955, 0.0, 0.86], [1.0, 0.20, 1.0], [1.0, 0.78, 1.0], [0.962, 1.0, 1.08]]:
-			var ring: PackedVector3Array = PackedVector3Array()
-			for i: int in seg:
-				var a: float = TAU * float(i) / float(seg)
-				var q: Vector2 = unit[i] * rr * float(step[0]) * (1.0 + 0.03 * sin(a * float(waves) + ph)) + off
-				ring.append(Vector3(q.x, yb + hs * float(step[1]), q.y))
-			rings.append(ring)
-			tone.append(tk * float(step[2]))
-	var lid: PackedVector3Array = PackedVector3Array()
-	for i: int in seg:
-		lid.append(Vector3(unit[i].x * rr * 0.45, y1, unit[i].y * rr * 0.45))
-	rings.append(lid)
-	tone.append(1.0)
-	_grid(out, key, rings, seg, col, tone, false)
-
-
-## A rail fence as a hand would build it for a diorama: turned posts, a little out of true, and round rails from post
-## to post (the kit's fence is square bars). The same places and the same reach as TLKitSite.add_fence.
-static func fence(mk: TLMesh, a: Vector3, b: Vector3, post_gap: float) -> void:
-	var l: float = a.distance_to(b)
-	var n: int = maxi(1, roundi(l / post_gap))
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = hash(a) ^ hash(b)
-	var tops: Array = []
-	for i: int in n + 1:
-		var p: Vector3 = a.lerp(b, float(i) / float(n))
-		var lean: Vector3 = Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0)) * 0.035
-		var h: float = 1.26 + rng.randf_range(-0.05, 0.06)
-		var top: Vector3 = p + Vector3(0, h, 0) + lean
-		mk.cyl_between(p - Vector3(0, 0.15, 0), top, 0.125, 12, "wood_dark", Color.WHITE, 0.112)
-		mk.cyl_between(top, top + (top - p).normalized() * 0.035, 0.112, 12, "wood_light", Color(0.92, 0.92, 0.92), 0.085)     # the sawn end, chamfered
-		tops.append([p, lean / h])
-	for i: int in n:
-		for h: float in [0.50, 0.96]:
-			var p0: Vector3 = (tops[i][0] as Vector3) + Vector3(0, h + rng.randf_range(-0.035, 0.035), 0) + (tops[i][1] as Vector3) * h
-			var p1: Vector3 = (tops[i + 1][0] as Vector3) + Vector3(0, h + rng.randf_range(-0.035, 0.035), 0) + (tops[i + 1][1] as Vector3) * h
-			var d: Vector3 = (p1 - p0).normalized()
-			var tone: float = rng.randf_range(0.9, 1.08)
-			mk.cyl_between(p0 - d * 0.10, p1 + d * 0.10, 0.062, 10, "wood", Color(tone, tone, tone))
-
-
-## Pebbles of rolled clay strewn on the roads (the drawn ones of the road shader are discs): Transform3D each, for
-## three recipes. `terr` is the village terrain (road_dist, gy), `box` its extent. Its own stream; nothing else moves.
-static func pebbles(terr: RefCounted, seed_: int, box: Rect2, road_half: float, want: int) -> Array:
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = seed_ + 4242
-	var out: Array = [[], [], []]
-	var made: int = 0
-	var tries: int = 0
-	while made < want and tries < want * 400:
-		tries += 1
-		var p: Vector2 = box.position + Vector2(rng.randf() * box.size.x, rng.randf() * box.size.y)
-		if float(terr.call("road_dist", p.x, p.y)) > road_half + 0.6:
-			continue
-		for q: int in rng.randi_range(2, 7):          # they lie in little strews, one large with small ones round it
-			var pp: Vector2 = p + Vector2.from_angle(rng.randf() * TAU) * rng.randf() * 2.4
-			var sc: float = rng.randf_range(0.07, 0.14) if q > 0 else rng.randf_range(0.14, 0.27)
-			var bs: Basis = Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.6, 0.95), sc * rng.randf_range(0.75, 1.25)))
-			(out[rng.randi_range(0, 2)] as Array).append(Transform3D(bs, Vector3(pp.x, float(terr.call("gy", pp.x, pp.y)) + sc * 0.12, pp.y)))
-			made += 1
-	# ... and stones along the river: larger, half sunk in the bank, a few of them in the shallows
-	var river: Dictionary = terr.get("river") if terr.get("river") is Dictionary else {}
-	var rhalf: float = float(river.get("half", 0.0))
-	made = 0
-	tries = 0
-	while rhalf > 0.0 and made < want / 3 and tries < want * 400:
-		tries += 1
-		var p: Vector2 = box.position + Vector2(rng.randf() * box.size.x, rng.randf() * box.size.y)
-		var rd: float = float(terr.call("river_dist", p.x, p.y))
-		if rd < rhalf * 0.72 or rd > rhalf + 2.6:
-			continue
-		var sc: float = rng.randf_range(0.14, 0.5) * (0.7 if rd < rhalf else 1.0)
-		var bs: Basis = Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.6, 0.9), sc * rng.randf_range(0.75, 1.25)))
-		(out[rng.randi_range(0, 2)] as Array).append(Transform3D(bs, Vector3(p.x, float(terr.call("gy", p.x, p.y)) + sc * 0.05, p.y)))
-		made += 1
-	return out
 
 
 ## The roadside tufts (the kit's are blades that sway; nothing sways on a diorama): a clump of flock, two small balls.
@@ -414,5 +328,18 @@ static func tuft_look(mesh_name: String) -> ArrayMesh:
 	if not enabled():
 		return null
 	var mk: TLMesh = TLMesh.new(77)
-	mk.blob(Vector3(0.30, 0.19, 0.26), 1, 0.2, "leaf", Color.WHITE, 0.0, Vector3(0, 0.05, 0), true)
+	mk.blob(Vector3(0.32, 0.15, 0.27), 1, 0.2, "leaf", Color(1.28, 1.04, 0.92), 0.0, Vector3(0, 0.04, 0), true)     # near the meadow's own dye: a clump of the same flock, not a dot on it
 	return look(mk, mesh_name, 18, 1)
+
+
+## A clump of flock or a grit stone as its own small mesh (a ball of twenty faces, smooth, flat where it sits): the
+## meadow's tufts, the dark flock at a pine's foot, the grit of a road. `r` = its radii, `sink` = how far it sits
+## in the ground. Null when the style does not ask for felt nature.
+static func clump_mesh(mesh_name: String, key: String, col: Color, r: Vector3, sink: float, clay: bool, seed_: int) -> ArrayMesh:
+	if not enabled():
+		return null
+	var out: TLMesh = TLMesh.new(1)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_
+	_ball(out, key, Vector3(0.0, r.y * 0.36 - sink, 0.0), r, -sink, r.y * 1.36 - sink, true, col, 0, clay, rng, Vector3.ZERO, 0.0)
+	return out.build(mesh_name)

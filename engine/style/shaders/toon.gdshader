@@ -532,7 +532,8 @@ void vertex() {
 	float sway = texelFetch(pal_lut, ivec2(idx, 3), 0).x;
 #ifdef TL_DIORAMA
 	m3 = texelFetch(pal_lut, ivec2(idx, 3), 0);
-	mp_v = VERTEX;
+	// (in metres as the thing stands: a pebble is a rock recipe a tenth its size, and its clay must not be ten times finer)
+	mp_v = VERTEX * length(MODEL_MATRIX[0].xyz);
 	// a round thing (a blob: whole part 1; the side of a cylinder or cone: whole part 0): the fraction of UV2 is
 	// 0.5 + 0.45 * (n.x, n.z) of its own normal, n.y by the facet's sign
 	vec3 sn_o = vec3(0.0);
@@ -671,6 +672,7 @@ void fragment() {
 	float edge_k = 0.0;
 	float thin_k = 1.0;   // 0.3 on a member thinner than a hand: its plate seams and board joints would read as dots along it
 	float big_k = 1.0;    // 0 on a box face smaller than a cast block: it is one block, not a wall of them
+	float edge_m = 1e3;   // metres to the nearest edge of this box face (large = not a box face)
 	vec2 eq = floor(UV2);
 	bool prim_face = prim_half.x + prim_half.y + prim_half.z > 0.0;
 	vec2 f_dx = vec2(0.0); vec2 f_dy = vec2(0.0);   // how the place on the face (m) changes from pixel to pixel
@@ -690,6 +692,7 @@ void fragment() {
 		thin_k = mix(0.3, 1.0, smoothstep(0.08, 0.22, min(fsz.x, fsz.y)));
 		big_k = smoothstep(0.9, 1.5, min(fsz.x, fsz.y)) * smoothstep(1.7, 2.6, max(fsz.x, fsz.y));
 		vec2 fd = min(fpos, fsz - fpos);
+		edge_m = min(fd.x, fd.y);
 		float bw = min(g_dio3.a, 0.5 * min(fsz.x, fsz.y));
 		float px_v = 2.0 * vdepth / (abs(PROJECTION_MATRIX[1][1]) * VIEWPORT_SIZE.y);
 		float bkeep = 1.0 - smoothstep(0.35, 1.0, px_v / bw);
@@ -728,6 +731,11 @@ void fragment() {
 			float grassy = COLOR.g - COLOR.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
 #endif
 			float gfw = fwidth(grassy) * 2.5 + 0.006;
+			if (g_dio6.x > 0.0) {
+				// the cut edge of a flocked sheet is ragged: fibres hang over it, and bare spots reach in (a hand's width)
+				float over = textureGrad(g_dio_felt, gq / g_dio6.y, dPx.xz / g_dio6.y, dPy.xz / g_dio6.y).a - 0.5;
+				grassy += over * 0.034 * (1.0 - smoothstep(0.0, 0.10, abs(grassy)));
+			}
 			float gm = smoothstep(-gfw, gfw, grassy);
 			float flat_k = step(0.5, wn.y);
 			// felt: fibres brushed one way, cross fibres, soft blotches of pile; broad patches of two greens as today, gentler
@@ -751,7 +759,7 @@ void fragment() {
 					vec4 fa = dio_tx(g_dio_felt, gq, g_dio6.y, gx2, gy2);
 					vec4 fb = dio_tx(g_dio_felt, turn * gq + 3.7, g_dio6.y * 3.3, turn * gx2, turn * gy2);
 					fibre = fa.z * 0.75 + fb.z * 0.45;
-					felt_t = fibre * 0.42 * g_dio6.x + (f4 - 0.5) * 0.14 * kb;
+					felt_t = fibre * 0.56 * g_dio6.x + (f4 - 0.5) * 0.14 * kb;
 					felt_h = (f4 - 0.5) * 0.02 * kb;
 					felt_s = fa.xy * 0.8 + (fb.xy * turn) * 0.6;
 				}
@@ -759,8 +767,12 @@ void fragment() {
 					// bare earth: crumbs and grit strewn on rolled clay, and the hand's dents much larger under them
 					vec4 ca = dio_tx(g_dio_soil, gq, g_dio6.z * 1.25, gx2, gy2);
 					vec4 cb = dio_tx(g_dio_clay, turn * gq + 1.3, g_dio6.z * 3.4, turn * gx2, turn * gy2);
-					clay_x = (ca.z * 0.80 + cb.z * 0.25) * g_dio6.x;
-					clay_s = ca.xy * 0.85 + (cb.xy * turn) * 0.22;
+					// ... and the same strewing once more, four times as coarse: from a walker's eye the fine crumbs are already
+					// under a pixel, and a road must still read as earth, not as a sprayed band
+					mat2 turn2 = mat2(vec2(0.6, -0.8), vec2(0.8, 0.6));
+					vec4 cc = dio_tx(g_dio_soil, turn2 * gq + 7.1, g_dio6.z * 5.2, turn2 * gx2, turn2 * gy2);
+					clay_x = (ca.z * 0.80 + cc.z * 0.62 + cb.z * 0.25) * g_dio6.x;
+					clay_s = ca.xy * 0.85 + (cc.xy * turn2) * 0.75 + (cb.xy * turn) * 0.22;
 				}
 				vec2 ls = mix(clay_s, felt_s, gm) * g_dio6.w;
 				tex_g = vec3(ls.x, 0.0, ls.y);
@@ -770,7 +782,7 @@ void fragment() {
 			if (g_dio6.x > 0.0) {
 				// flock is strewn by hand: two dyes that do not mix evenly, and places where it lies thinner (a few metres across)
 				float thin = gn2(gq * 0.21 + 11.0);
-				gtint = mix(vec3(0.80, 0.95, 0.90), vec3(1.14, 1.05, 0.70), smoothstep(0.28, 0.72, gpa)) * (0.93 + 0.16 * smoothstep(0.3, 0.7, thin));
+				gtint = mix(vec3(0.74, 0.93, 0.92), vec3(1.16, 1.05, 0.68), smoothstep(0.28, 0.72, gpa)) * (0.88 + 0.22 * smoothstep(0.3, 0.7, thin));
 			}
 			// one sheet of felt has one dye: where the land's pigment is a blur of grass and rock or earth, the felt side of
 			// the cut takes the grass colour back (its own lightness kept), so the cut is clean and nothing looks sprayed
@@ -894,8 +906,15 @@ void fragment() {
 				float across = dot(q, vec2(1.0)) - along;
 				float br = vn2(vec2(along * 1.7, across * 36.0));
 				float kb = keep(0.05, px_d);
-				c *= 1.0 + (br - 0.5) * 0.12 * kb * chip;
-				hgt += (br - 0.5) * 0.0012 * kb;
+				c *= 1.0 + (br - 0.5) * 0.30 * kb * chip;
+				hgt += (br - 0.5) * 0.0030 * kb;
+				// painted by hand, one colour after the other: the brush did not keep to the edge, and the primer shows there
+				// in a band of uneven width (a stripe of a kerb or a beam gets its uneven cream edges this way)
+				float wob = vn2(vec2(along * 2.3, across * 2.3) + 9.0) * 0.65 + vn2(q * 13.0 + 4.0) * 0.35;
+				float band = (0.004 + 0.046 * wob * wob) * min(chip * 2.2, 1.0);
+				float eb = (1.0 - smoothstep(band - px_d * 0.7, band + px_d * 0.7, edge_m)) * keep(0.05, px_d);
+				c = mix(c, g_dio3.rgb * (0.88 + 0.24 * br), eb * 0.92);
+				gloss *= 1.0 - eb * 0.6;
 				float cn = vn2(q * 5.0 + 1.7) * 0.6 + vn2(q * 17.0 + 3.0) * 0.4;
 				float thr = 0.76 - 0.10 * chip - 0.30 * edge_k * edge_k * chip;   // paint wears first where a corner is knocked
 				float cfw = fwidth(cn) * 1.2 + 0.004;

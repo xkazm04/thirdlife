@@ -3,6 +3,7 @@ extends RefCounted
 ## the far mesas, the helpers of the scatter. Static functions; landscape.gd is the assembly.
 
 const Felt := preload("res://kits/tl_felt.gd")
+const Strew := preload("res://kits/tl_felt_strew.gd")
 
 ## Outside the terrain the far plain has no floor. Keep crowns reachable from its edge,
 ## including a downhill jump and the whole boom at any pitch. The far pines start above -1 m.
@@ -36,7 +37,7 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 	# diorama day: the recipe drawn as felt and clay (kits/tl_felt.gd); the recipe above stays the crowns' source
 	var far: bool = mname.begins_with("WorldMesa")
 	var near: bool = mname.begins_with("WorldRoadTrees") or mname.begins_with("WorldPines") or mname.begins_with("WorldPad")
-	var felt: ArrayMesh = Felt.look(mk, mname.to_snake_case(), 8 if far else (20 if near else 10), 1 if (far or mname.begins_with("WorldPebbles")) else (3 if near else 2))
+	var felt: ArrayMesh = Felt.look(mk, mname.to_snake_case(), 8 if far else (20 if near else 10), 1 if (far or mname.begins_with("WorldPebbles") or mname.begins_with("WorldDressRocks")) else (3 if near else 2))
 	if mname == "WorldTufts":
 		felt = Felt.tuft_look("world_tufts")
 	var recipe: Mesh = mm.mesh
@@ -50,7 +51,7 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 	mmi.name = mname
 	mmi.multimesh = mm
 	parent.add_child(mmi)
-	if felt != null and (mname.begins_with("WorldPines") or mname.begins_with("WorldBelt") or mname.begins_with("WorldBroadleaf") or mname.begins_with("WorldRoadTrees")):
+	if felt != null and (mname.begins_with("WorldPines") or mname.begins_with("WorldDressPines") or mname.begins_with("WorldBelt") or mname.begins_with("WorldBroadleaf") or mname.begins_with("WorldRoadTrees") or mname.begins_with("WorldBushes") or mname.begins_with("WorldDressBushes")):
 		# a felt tree is fifteen times the recipe's triangles and the sun's shadow is drawn four times over: the SHADOW is
 		# cast by the recipe (a little smaller, so it stays inside the felt and never shades it from outside)
 		var sm: MultiMesh = MultiMesh.new()
@@ -66,6 +67,19 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 		shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mmi.add_child(shade)
+		if not mname.begins_with("WorldBushes") and not mname.begins_with("WorldDress"):
+			# the flock goes darker toward a tree: mounds of dark flock round its foot, sunk deep enough that a slope
+			# cannot leave one in the air (the land's height is not known here)
+			var foot: Array = []
+			var frng: RandomNumberGenerator = RandomNumberGenerator.new()
+			frng.seed = hash(mname) + 17
+			for xf: Transform3D in xs:
+				var s: float = xf.basis.get_scale().x
+				for q: int in frng.randi_range(4, 6):
+					var d: Vector2 = Vector2.from_angle(frng.randf() * TAU) * frng.randf_range(0.35, 1.25) * maxf(s, 0.8)
+					var fs: float = frng.randf_range(0.7, 1.35)
+					foot.append(Transform3D(Basis(Vector3.UP, frng.randf() * TAU).scaled(Vector3(fs, fs * frng.randf_range(0.8, 1.2), fs)), xf.origin + Vector3(d.x, 0.0, d.y)))
+			clumps(mmi, Felt.clump_mesh("tree_foot", "leaf", Color(0.86, 0.9, 0.82), Vector3(0.42, 0.46, 0.38), 0.34, false, 31), foot, "Foot")
 
 
 ## The far plain: the flat ground with a rectangular hole where the terrain is, so the valley is not covered.
@@ -206,7 +220,7 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 			unit.append(Vector2(cos(pa), sin(pa)) * (0.84 + 0.3 * rng.randf()))
 		var clay: bool = Felt.enabled()      # diorama day: the same mesa as slabs of rolled clay, its outline rounded
 		if clay:
-			unit = Felt.round_outline(unit, 44)
+			unit = Strew.round_outline(unit, 44)
 		var outline: Callable = func(scale: float) -> PackedVector2Array:
 			var out: PackedVector2Array = PackedVector2Array()
 			for u: Vector2 in unit:
@@ -228,7 +242,7 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 			trees_out.append(Transform3D(Basis(Vector3.UP, rng6.randf() * TAU).scaled(Vector3(ts, ts, ts)),
 				Vector3(at.x, at.y + h * 1.3 + 2.2, at.z) + rb * Vector3(cos(ta) * tr, 0.0, sin(ta) * tr * sz)))
 		if clay:
-			Felt.slab_stack(mk_far, "cliff", unit, 0.0, h * 1.3, r * 1.30, r * 0.87, clampi(int(h * 1.3 / 11.0), 5, 10), Color(tone, tone * 0.98, tone * 0.96), 9100 + i)
+			Strew.slab_stack(mk_far, "cliff", unit, 0.0, h * 1.3, r * 1.30, r * 0.87, clampi(int(h * 1.3 / 11.0), 5, 10), Color(tone, tone * 0.98, tone * 0.96), 9100 + i)
 		else:
 			mk_far.prism(outline.call(r * 1.28), 0.0, h * 0.34, "cliff", Color(tone * 0.88, tone * 0.88, tone * 0.88), 0.82)
 		for k: int in (0 if clay else 3):
@@ -239,7 +253,7 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 		if rng.randf() > 0.5:
 			mk_far.push_at(Vector3(r * 0.18, 0.0, 0.0))
 			if clay:
-				Felt.slab_stack(mk_far, "cliff", unit, h * 1.3, h * 1.75, r * 0.47, r * 0.40, clampi(int(h * 0.45 / 9.0), 2, 5), Color(tone, tone, tone), 9200 + i)
+				Strew.slab_stack(mk_far, "cliff", unit, h * 1.3, h * 1.75, r * 0.47, r * 0.40, clampi(int(h * 0.45 / 9.0), 2, 5), Color(tone, tone, tone), 9200 + i)
 			else:
 				mk_far.prism(outline.call(r * 0.46), h * 1.3, h * 1.75, "cliff", Color(tone, tone, tone), 0.84)
 			mk_far.prism(outline.call(r * 0.38), h * 1.75, h * 1.75 + 2.0, "grass_dry", Color.WHITE, 0.96)
@@ -314,10 +328,7 @@ static func edge_geometry(t: Dictionary) -> void:
 	for job: Dictionary in t["jobs"]:
 		var rails: PackedVector3Array = job["rails"]
 		for k: int in range(0, rails.size(), 2):
-			if Felt.enabled():
-				Felt.fence(mk, rails[k], rails[k + 1], 3.4)        # diorama day: turned posts and round rails
-			else:
-				TLKitSite.add_fence(mk, rails[k], rails[k + 1], 3.4)
+			fence_run(mk, rails[k], rails[k + 1], 3.4)
 		if not job["flags"]:
 			continue
 		var dir: Vector2 = job["dir"]
@@ -348,7 +359,11 @@ static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Ar
 	if count == 0:
 		return
 	var first_crane := TLKitSite.crane(26.0, 2.0, 20.0, 8.0)
-	var scaffold_mesh := TLKitSite.scaffold(3, 2).build("LotScaffold")
+	var scaffold_recipe := TLKitSite.scaffold(3, 2)
+	var scaffold_mesh := scaffold_recipe.build("LotScaffold")
+	var scaffold_wood: ArrayMesh = Strew.dowels(scaffold_recipe, "LotScaffold", {"yellow": "plank", "orange": "wood_light", "yellow_dark": "wood", "wood_light": "wood_light"})     # diorama day: wooden dowels
+	if scaffold_wood != null:
+		scaffold_mesh = scaffold_wood
 	for k: int in count:
 		var li: int = first + k
 		var lc: Vector2 = centres[li]
@@ -383,6 +398,33 @@ static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Ar
 			for j: int in 4:
 				TLKitSite.add_cone(mk_edge, base + gd * (lr - 5.0 - float(j) * 1.6) + side * (1.4 if j % 2 == 0 else -1.4))
 		stats["lots"] = int(stats.get("lots", 0)) + 1
+
+
+## Diorama day: many small clumps of one mesh (flock tufts, grit), no shadow of their own. Nothing when `mesh` is null.
+static func clumps(parent: Node3D, mesh: ArrayMesh, xs: Array, mname: String) -> void:
+	if mesh == null or xs.is_empty():
+		return
+	var mm: MultiMesh = MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = xs.size()
+	for i: int in xs.size():
+		mm.set_instance_transform(i, xs[i])
+	var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	mmi.name = mname
+	mmi.multimesh = mm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(mmi)
+
+
+## Diorama day: one rail fence from a to b, as the style draws it: turned posts and round rails under a style with
+## felt nature, the kit's square bars otherwise. Every fence the village draws goes through here (plot entrances,
+## a fence row along a road).
+static func fence_run(mk: TLMesh, a: Vector3, b: Vector3, post_gap: float = 3.4) -> void:
+	if Felt.enabled():
+		Strew.fence(mk, a, b, post_gap)
+	else:
+		TLKitSite.add_fence(mk, a, b, post_gap)
 
 
 ## Soft ground: paint wear and meadow colour into the heightfield before mesh upload. Only flowers
@@ -432,9 +474,22 @@ static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(mi)
 	if Felt.enabled() and TLStyle.num("detail", "pebbles", 0.0) > 0.0:      # diorama day: clay pebbles on the roads, presentation only
-		var strewn: Array = Felt.pebbles(terr, seed_, box, road_half - 0.7, int(TLStyle.num("detail", "pebbles", 0.0)))
+		var strewn: Array = Strew.pebbles(terr, seed_, box, road_half - 0.7, int(TLStyle.num("detail", "pebbles", 0.0)))
 		for v: int in 3:
 			multi(parent, TLKitNature.rock(220 + v, 1.0, 0.62 + 0.1 * float(v)), strewn[v], "WorldPebbles%d" % v)
+	if Felt.enabled() and TLStyle.num("detail", "dress", 0.0) > 0.0:        # ... and the roadsides dressed: small pines, felt balls, stones
+		var dress: Array = Strew.dressing(terr, seed_, box, road_half - 0.7, is_free, int(TLStyle.num("detail", "dress", 0.0)))
+		multi(parent, TLKitNature.pine(140, 9.0, 4, 2.6), dress[0], "WorldDressPines")
+		multi(parent, TLKitNature.bush(310, 1.0), dress[1], "WorldDressBushes")
+		multi(parent, TLKitNature.rock(230, 1.0, 0.7), dress[2], "WorldDressRocks")
+	if Felt.enabled() and TLStyle.num("detail", "tufts", 0.0) > 0.0:        # ... flock tufts over the whole meadow, in two dyes
+		var drifts: Array = Strew.meadow_tufts(terr, seed_, box, road_half - 0.7, is_free, int(TLStyle.num("detail", "tufts", 0.0)))
+		clumps(parent, Felt.clump_mesh("meadow_tuft_a", "leaf_light", Color(0.97, 0.84, 1.1), Vector3(0.23, 0.11, 0.19), 0.03, false, 11), drifts[0], "WorldMeadowTuftsA")
+		clumps(parent, Felt.clump_mesh("meadow_tuft_b", "leaf", Color(1.25, 0.92, 1.0), Vector3(0.25, 0.12, 0.21), 0.03, false, 12), drifts[1], "WorldMeadowTuftsB")
+	if Felt.enabled() and TLStyle.num("detail", "grit", 0.0) > 0.0:         # ... and the roads strewn all over with grit
+		var strew: Array = Strew.grit(terr, seed_, box, road_half - 0.7, int(TLStyle.num("detail", "grit", 0.0)))
+		clumps(parent, Felt.clump_mesh("road_grit_a", "rock", Color.WHITE, Vector3(0.050, 0.030, 0.045), 0.006, true, 21), strew[0], "WorldGritA")
+		clumps(parent, Felt.clump_mesh("road_grit_b", "rock_warm", Color(0.9, 0.9, 0.9), Vector3(0.036, 0.024, 0.040), 0.005, true, 22), strew[1], "WorldGritB")
 	return made
 
 

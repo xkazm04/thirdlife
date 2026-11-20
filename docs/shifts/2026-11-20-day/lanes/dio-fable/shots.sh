@@ -4,6 +4,7 @@
 #     <style>   classic | diorama (TL_STYLE);  <out dir> gets PNG captures (raw: keep under .tl/) and logs
 #   01..16 the village tour (blend_views.walk.json, --load=block so two runs show the same world)
 #   21..26 the flight over the bluff (the flight lane's walk; flight_shots.devices.json adds the shot events)
+#   51..53 the village road as the visitor meets it, behind the figure (last night's surf_clip.walk.json, chase.devices.json)
 # The picture cache is kept in this worktree (.tl/cache): the machine's cache is shared by every checkout.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -24,5 +25,11 @@ if [ "$what" = all ] || [ "$what" = flight ]; then
   bash engine/tools/world.sh visit-test docs/shifts/2026-11-19-day/lanes/flight/wf_flight.json "--devices=$HERE/flight_shots.devices.json" "--out-dir=$out/flight" > "$out/flight.log" 2>&1
   for f in "$out"/flight/*.png; do b="$(basename "$f")"; [ -f "$f" ] && mv -f "$f" "$out/2${b#0}"; done
   rmdir "$out/flight" 2>/dev/null
+fi
+if [ "$what" = all ] || [ "$what" = chase ]; then
+  mkdir -p "$out/chase"
+  bash engine/tools/world.sh visit-test docs/shifts/2026-11-20-night/lanes/surfaces-fable/surf_clip.walk.json "--devices=$HERE/chase.devices.json" "--out-dir=$out/chase" --load=block > "$out/chase.log" 2>&1
+  for f in "$out"/chase/*.png; do b="$(basename "$f")"; [ -f "$f" ] && mv -f "$f" "$out/5${b#0}"; done
+  rmdir "$out/chase" 2>/dev/null
 fi
 echo "shots: $(ls "$out"/*.png 2>/dev/null | wc -l) pictures in $out"

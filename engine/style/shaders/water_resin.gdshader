@@ -17,6 +17,12 @@ render_mode unshaded, cull_disabled;
 #ifdef TL_SHORE
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
 uniform float shore = 1.0;     // metres of resin over the bed at which the bed is no longer seen
+// Diorama day: cured resin is a mirror. With `water.mirror_world` > 0 the surface shows what stands on its banks: the
+// mirrored ray is walked through the picture that was drawn before the resin (the same depth it reads its bed from),
+// and where it passes behind something, that thing's colour is taken. Where it finds nothing (the sky, the edge of
+// the screen) the sky and the cotton clouds stand in it as before. 0 = sky only, as last night.
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear, repeat_disable;
+uniform float mirror_world = 0.0;
 #endif
 global uniform vec4 g_haze;
 global uniform vec4 g_sun;       // rgb sun colour (linear), a energy
@@ -118,10 +124,49 @@ void fragment() {
 		float cl = gn(cq) * 0.7 + gn(cq * 2.3 + 5.0) * 0.3;
 		skyc = mix(skyc, cloud, smoothstep(0.03, 0.20, cl) * clouds * smoothstep(0.0, 0.12, r.y));
 	}
+#ifdef TL_SHORE
+	float world_k = 0.0;
+	if (mirror_world > 0.0) {
+		// (walked by a calmer mirror than the glints use: a ripple must not shred a bank into flecks)
+		vec3 rv = normalize(mat3(VIEW_MATRIX) * reflect(-v, normalize(vec3(-g.x * 0.3, 1.0, -g.y * 0.3))));
+		vec3 p = VERTEX;
+		float sl = 0.45;
+		vec2 huv = vec2(0.0);
+		float found = 0.0;
+		for (int i = 0; i < 22; i++) {
+			p += rv * sl;
+			vec4 cp = PROJECTION_MATRIX * vec4(p, 1.0);
+			if (cp.w <= 0.0) { break; }
+			vec2 uv = cp.xy / cp.w * 0.5 + 0.5;
+			if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { break; }
+			vec4 sp = INV_PROJECTION_MATRIX * vec4(uv * 2.0 - 1.0, textureLod(depth_tex, uv, 0.0).r, 1.0);
+			float behind = sp.z / sp.w - p.z;        // > 0: the ray is behind what was drawn there
+			if (behind > 0.0 && behind < sl * 1.6 + 0.8) {
+				// one step back, halfway: the place where the ray went in
+				vec3 q = p - rv * sl * 0.5;
+				vec4 cq2 = PROJECTION_MATRIX * vec4(q, 1.0);
+				vec2 uq = cq2.xy / cq2.w * 0.5 + 0.5;
+				vec4 sq = INV_PROJECTION_MATRIX * vec4(uq * 2.0 - 1.0, textureLod(depth_tex, uq, 0.0).r, 1.0);
+				huv = (sq.z / sq.w - q.z > 0.0) ? uq : uv;
+				found = 1.0;
+				break;
+			}
+			sl *= 1.2;
+		}
+		if (found > 0.5) {
+			vec2 edge = min(huv, 1.0 - huv);
+			world_k = mirror_world * smoothstep(0.0, 0.06, min(edge.x, edge.y));
+			skyc = mix(skyc, textureLod(screen_tex, huv, 0.0).rgb, world_k);
+		}
+	}
+#endif
 	float fr = 0.03 + 0.97 * pow(1.0 - ndv, 5.0);
 	// never more than half a mirror: at a grazing angle (the far reach, the view from the air) a full mirror of a
 	// sunset sky turns the river into a pink road; the tint of the resin has to stay in the picture
 	float mirror = clamp(sky_k + fr * 0.46 * gloss, 0.0, 0.52);
+#ifdef TL_SHORE
+	mirror = max(mirror, world_k * (0.30 + 0.45 * fr));     // a bank or a tree standing in the resin is seen from above too
+#endif
 #ifdef TL_SHORE
 	mirror *= 1.0 - 0.7 * smoothstep(0.45, 1.0, bank);   // a film of resin on the clay of the bank shows the clay
 #endif

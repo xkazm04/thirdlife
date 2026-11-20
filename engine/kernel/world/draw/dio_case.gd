@@ -7,6 +7,7 @@ extends SceneTree
 ##            before), the look stays inside the recipe's reach, within a triangle budget, and is the same twice
 ##   mesa     a slab stack is closed around, as high as asked and no wider than its foot
 const Felt: GDScript = preload("res://kits/tl_felt.gd")
+const Strew: GDScript = preload("res://kits/tl_felt_strew.gd")
 const Dio: GDScript = preload("res://style/dio/style_dio.gd")
 const Pictures: GDScript = preload("res://kernel/world/draw/draw_pictures.gd")
 
@@ -43,7 +44,7 @@ func _tex(classic: bool) -> void:
 		ok = ok and str(Pictures.style_rules()) == ""           # classic's picture key is what it was
 	else:
 		ok = ok and float(dt.get("tex", 0.0)) > 0.0 and float(dt.get("nature", 0.0)) > 0.0
-		ok = ok and str(Pictures.style_rules()) == "|felt%d" % int(float(dt.get("nature", 0.0)))
+		ok = ok and str(Pictures.style_rules()) == "|felt%d" % int(float(dt.get("nature", 0.0))) + ("|dowels" if float(dt.get("dowels", 0.0)) > 0.0 else "")
 	print("DIO tex %s style=%s textures=%d of %d tex=%s nature=%s picture_key_adds='%s' %s" % ["ok" if ok else "failed", TLStyle.style_name, found, Dio.TEX_NAMES.size(),
 		str(dt.get("tex", "absent")), str(dt.get("nature", "absent")), str(Pictures.style_rules()), "; ".join(bad)])
 
@@ -110,9 +111,9 @@ func _mesa() -> void:
 	var unit: PackedVector2Array = PackedVector2Array()
 	for v: int in 10:
 		unit.append(Vector2.from_angle(TAU * float(v) / 10.0) * (0.9 + 0.2 * float(v % 2)))
-	var round_: PackedVector2Array = Felt.round_outline(unit, 40)
+	var round_: PackedVector2Array = Strew.round_outline(unit, 40)
 	var mk: TLMesh = TLMesh.new(1)
-	Felt.slab_stack(mk, "cliff", round_, 0.0, 60.0, 80.0, 55.0, 6, Color.WHITE, 7)
+	Strew.slab_stack(mk, "cliff", round_, 0.0, 60.0, 80.0, 55.0, 6, Color.WHITE, 7)
 	var box: AABB = mk.aabb()
 	var through: int = 0          # every corner of the polygon lies on the rounded outline
 	for p: Vector2 in unit:

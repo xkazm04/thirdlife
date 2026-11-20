@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 base, now, lane = sys.argv[1:4]
 label = sys.argv[4] if len(sys.argv) > 4 else "now"
-BEST = "07_parkour_road.png"
+BEST = "52_chase_b.png"
 names = sorted(f for f in os.listdir(now) if f.endswith(".png"))
 os.makedirs(os.path.join(lane, "stills", "base"), exist_ok=True)
 for f in names:

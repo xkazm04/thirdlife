@@ -185,10 +185,10 @@ func _box(h: Vector3, c: float, key: String, col: Color, ofs: Vector3) -> void:
 	var vx: Callable = func(sx: float, sy: float, sz: float) -> Vector3: return ofs + Vector3(sx * h.x, sy * (h.y - c), sz * (h.z - c))
 	var vy: Callable = func(sx: float, sy: float, sz: float) -> Vector3: return ofs + Vector3(sx * (h.x - c), sy * h.y, sz * (h.z - c))
 	var vz: Callable = func(sx: float, sy: float, sz: float) -> Vector3: return ofs + Vector3(sx * (h.x - c), sy * (h.y - c), sz * h.z)
-	for s1: float in S:
-		face_out([vx.call(s1, -1.0, -1.0), vx.call(s1, 1.0, -1.0), vx.call(s1, 1.0, 1.0), vx.call(s1, -1.0, 1.0)], ofs, key, col)
-		face_out([vy.call(-1.0, s1, -1.0), vy.call(1.0, s1, -1.0), vy.call(1.0, s1, 1.0), vy.call(-1.0, s1, 1.0)], ofs, key, col)
-		face_out([vz.call(-1.0, -1.0, s1), vz.call(1.0, -1.0, s1), vz.call(1.0, 1.0, s1), vz.call(-1.0, 1.0, s1)], ofs, key, col)
+	for s1: float in S:      # (diorama day: the six main faces of a chamfered box say where their vertices are too; UV2, not hashed)
+		_rect_face([vx.call(s1, -1.0, -1.0), vx.call(s1, 1.0, -1.0), vx.call(s1, 1.0, 1.0), vx.call(s1, -1.0, 1.0)], ofs, key, col)
+		_rect_face([vy.call(-1.0, s1, -1.0), vy.call(1.0, s1, -1.0), vy.call(1.0, s1, 1.0), vy.call(-1.0, s1, 1.0)], ofs, key, col)
+		_rect_face([vz.call(-1.0, -1.0, s1), vz.call(1.0, -1.0, s1), vz.call(1.0, 1.0, s1), vz.call(-1.0, 1.0, s1)], ofs, key, col)
 		for s2: float in S:
 			face_out([vx.call(s1, s2, -1.0), vx.call(s1, s2, 1.0), vy.call(s1, s2, 1.0), vy.call(s1, s2, -1.0)], ofs, key, col)
 			face_out([vy.call(-1.0, s1, s2), vy.call(1.0, s1, s2), vz.call(1.0, s1, s2), vz.call(-1.0, s1, s2)], ofs, key, col)

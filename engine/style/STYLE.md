@@ -273,10 +273,19 @@ fibres): at 1080p they read as a smear. They are textures now, and nature has re
 | `detail.pebbles` (count) | clay pebbles strewn on the roads as real lumps (with `nature`); the discs the road shader drew are then left out. |
 | `water.clouds`, `water.cloud` | the cotton clouds stand in the resin: soft cream shapes where the mirrored ray meets a cloud layer. |
 | `water.glint` 0..1 | 1 = that night's tight spark of the sun in the ripples, 0 = a soft pool of light only (sparks flicker when the eye moves). |
+| `water.mirror_world` 0..1 | with `water.shore`: the resin mirrors what stands on its banks. The mirrored ray (of a calmer surface than the glints use) is walked through the picture drawn before the resin and its depth (22 steps); where it passes behind something, that colour is taken, else the sky and the clouds as before. |
+| `detail.dress` (count) | the roadsides dressed as a diorama builder strews them (with `nature`): knee-high felt pines, felt balls, stones a walker steps over. Nothing of it is tall enough to need a collider (the village's bushes have none either). |
+| `detail.tufts` (count) | flock tufts over the whole meadow, in drifts and two dyes (clumps of twenty faces, no shadow of their own), and mounds of dark flock round the foot of every tree (with `nature`). |
+| `detail.grit` (count) | the roads strewn all over with small stones (with `nature`); `pebbles` are the larger ones, in strews, with shadows. |
+| `detail.dowels` > 0 | a kit scaffold's square steel bars are drawn as turned wooden dowels (`kits/tl_felt_strew.gd` `dowels`: every bar-shaped piece of the recipe becomes a round dowel of a wood key, a little stouter, its grain along it; decks and foot plates are kept). The picture cache key carries `dowels`. |
 
 Also under a material model: the felt sheet is cut clean against the earth (the pigment near the cut is un-mixed into
 dye and earth by its green-minus-red); rock pigment on a bank shows as clay slabs like a wall does; felt takes no hard
 rim light; a wall or slab of class concrete is laid of cast blocks with pressed joints; and a primitive the kernel
 makes for a body (BoxMesh, SphereMesh with `TLStyle.flat_material`) gets the part's space and, on a box, the soft
-edge (`tl_prim`), so the grey walls of a simple pack are clay too.
+edge (`tl_prim`), so the grey walls of a simple pack are clay too. A bush (a flat-bottomed blob of a leaf key) is a
+cluster of felt balls. The cut edge of the flocked sheet is ragged by the flock's own fibres. A painted box (a key
+with `chip`) gets an uneven band of primer along its edges and brush strokes that read; the six main faces of a
+chamfered `TLMesh.box` carry the face record for that (UV2, not hashed). The sun's shadow of a felt tree or bush is
+cast by its recipe, a little smaller, so the shadow passes draw the kit's few triangles.
 
