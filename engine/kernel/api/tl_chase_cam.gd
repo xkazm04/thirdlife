@@ -110,6 +110,12 @@ func _aim() -> void:
 		look_at(_look, Vector3.UP)
 
 
+## Subject depth and height in the optical frame, after avoidance and smoothing.
+## Only the presentation rig queries this. Zero depth asks for deep focus.
+func _miniature_focus() -> Vector2:
+	return TLCameras._subject_focus(self, target, look_height)
+
+
 ## Keeps the camera out of `avoid_space` (see the header). `now`: no easing (a snap).
 func _avoid(now: bool) -> void:
 	avoid_pull = 0.0
