@@ -51,6 +51,8 @@ var sprinting: Dictionary = {}
 var _now: int = 0
 var _ready_at: Dictionary = {}
 var _poke_at: Dictionary = {}
+var aim_at: Dictionary = {}             ## L5: id -> the point the human's cursor is on: a shot leaves the blade at it
+var goalies: Dictionary = {}            ## L5: goalie id -> team: no pass goes to him, nobody pokes the puck off him
 var stick_dir: Dictionary = {}          ## H4: id -> where his stick points (the human's aim); absent = his facing
 var poke_cone_dot: float = -1.0         ## H4: a poke with a stick direction reaches only inside this cone
 var hits = null:                       ## scripts/hits.gd (H2): a man down or stumbling cannot take the puck
@@ -300,12 +302,23 @@ func can_shoot(id: String) -> bool:
 func try_shoot(id: String) -> bool:
 	if not can_shoot(id):
 		return false
-	_release("shot", id, stick_of(id) * speed)
+	_release("shot", id, shot_dir(id) * speed)
 	_clip(id, &"shoot")
 	_ready_at[id] = _now + cooldown_frames
 	shots[id] = int(shots[id]) + 1
 	events.append(["shot", id])
 	return true
+
+
+## L5: where a shot goes: from the blade at the cursor's point when he has one at least 4 m away and in front of the
+## stick (before, it left parallel to the stick from the blade, 1.24 m to the right of the cursor), else along the stick.
+func shot_dir(id: String) -> Vector3:
+	var st: Vector3 = stick_of(id)
+	if aim_at.has(id):
+		var to: Vector3 = _flat(aim_at[id]) - puck_pos()
+		if to.length() >= 4.0 and to.normalized().dot(st) > 0.5:
+			return to.normalized()
+	return st
 
 
 ## The mate nearest his facing inside the pass cone, or "".
@@ -315,7 +328,7 @@ func pass_target(id: String) -> String:
 	var best: String = ""
 	var best_dot: float = pass_cone_dot
 	for mid: String in order:
-		if mid == id or str(teams[mid]) != str(teams[id]):
+		if mid == id or str(teams[mid]) != str(teams[id]) or goalies.has(mid):
 			continue
 		var to: Vector3 = pos_of(mid) - me
 		if to.length() < 1.5:
@@ -384,13 +397,13 @@ func knock_loose(victim: String, vel: Vector3) -> void:
 
 
 func can_poke(id: String) -> bool:
-	return carrier != "" and carrier != id and str(teams[carrier]) != str(teams[id]) and _now >= int(_poke_at[id]) \
+	return carrier != "" and carrier != id and not goalies.has(carrier) and str(teams[carrier]) != str(teams[id]) and _now >= int(_poke_at[id]) \
 		and pos_of(id).distance_to(puck_pos()) <= poke_reach
 
 
 ## A stick poke at an opponent's carried puck: it comes loose towards the poker. A miss costs the cooldown too.
 func try_poke(id: String) -> bool:
-	if _now < int(_poke_at[id]) or carrier == "" or carrier == id or str(teams[carrier]) == str(teams[id]):
+	if _now < int(_poke_at[id]) or carrier == "" or carrier == id or goalies.has(carrier) or str(teams[carrier]) == str(teams[id]):
 		return false
 	_poke_at[id] = _now + poke_cooldown_frames
 	if pos_of(id).distance_to(puck_pos()) > poke_reach:
@@ -442,6 +455,8 @@ const GOAL_TOP := 1.55   ## the crossbar: data/venue.json's goals stand at y 0.0
 ## H11 (moved from main.gd in H13, its 600-line limit): the side that scores when the puck's centre lies in a goal volume (the trigger's box: 1.5 m deep behind the line,
 ## the goal's width, under the goal's crossbar), else "". hunt2 A7: a puck flying over the net is no goal.
 func goal_by_position(g: Dictionary) -> String:
+	if goalies.has(carrier):
+		return ""                         # L5: a puck a goalie holds is covered, never a goal (his blade can reach into his net)
 	var p: Vector3 = puck.position   # the pack's own coordinates (the goals' too), wherever a world puts the pack
 	for side: String in ["blue", "red"]:
 		var gx: float = float(g[side][0])

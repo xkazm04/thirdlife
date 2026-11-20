@@ -16,7 +16,8 @@ var out_of_rink: int = 0              # skater-frames outside the boards (the ri
 var closest_at: String = ""
 var closest: float = 1e9               # H7: the closest two skaters came (centre to centre), against two body radii
 var trace: Array = []                 # every 600 frames: who has the puck and where it is
-const LIMIT: int = 6000
+const LIMIT: int = 18000   # L5: was 6000; with goalies the weaker side (Classic red) first scored at up to 12267 frames on seeds 1..20
+const AT_LEAST: int = 6000 # L5: it stops at 6000 frames as before when both sides have scored by then, else when they have
 
 
 func _bot_setup(c) -> void:
@@ -60,7 +61,7 @@ func _bot_tick(frame: int) -> void:
 	if frame % 600 == 0:
 		var pk: Array = s["puck"]["pos"]
 		trace.append("%d:%s(%.0f,%.0f)" % [frame, str(s["puck"].get("holder", "-")), float(pk[0]), float(pk[1])])
-	done = frame >= LIMIT
+	done = frame >= LIMIT or (frame >= AT_LEAST and first_goal.size() == 2)
 
 
 func _bot_done() -> bool:

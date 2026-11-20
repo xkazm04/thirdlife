@@ -20,5 +20,8 @@
   "reaction_frames": 0,
   "aim_error_deg": 0,
   "net_zone_half": 3.5,
-  "net_round_z": 3.6
+  "net_round_z": 3.6,
+  "corner_z": 1.5,
+  "assist_frames": 240,
+  "feed_frames": 40
 }

@@ -16,6 +16,7 @@ var use_pass: bool = false
 var use_aim: bool = false              # H9: aim with the cursor through the hand (the ladder); bot_hockey stays key-only
 var shoot_range: float = 16.0          # H9: a person's range: he shoots from inside it (the Director's ruling of 04:50)
 var aim_tolerance_deg: float = 6.0     # H9: he presses when the game's stick points at his aim within this
+var corner_z: float = 1.5              # L5: the side of the mouth he aims at, away from the goalie (was 1.2 before goalies)
 var pass_target: Vector2 = Vector2.ZERO
 var ctx
 var hand: TLHand
@@ -31,7 +32,7 @@ var pass_pending: bool = false
 
 func _bot_setup(c) -> void:
 	ctx = c
-	hand = TLHand.create(ctx, hand_profile)
+	hand = TLHand.create(ctx, "perfect" if hand_profile == "idle" else hand_profile)     # L5: idle presses nothing
 
 
 func _v(a: Array) -> Vector2:
@@ -49,6 +50,8 @@ func _bot_tick(frame: int) -> void:
 		return
 	_measure()
 	done = s["state"] == "over" and str(s.get("result", "")) != ""      # H9a: the result is written a tick after "over" at full time
+	if hand_profile == "idle":
+		return                               # L5: the idle hand: no key, no button, no cursor, the whole match
 	if done or bool(s["frozen"]):
 		hand.steer(&"left", &"right", &"up", &"down", Vector2.ZERO)
 		hand.tick()
@@ -154,7 +157,7 @@ func _aim_play(pos: Vector2, puck: Vector2, others: Array) -> void:
 	for o: Vector2 in others:
 		if o.distance_to(goal) < 5.0:
 			keeper_side += signf(o.y)
-	var target: Vector2 = Vector2(26.0, -1.2 if keeper_side > 0.0 else 1.2)
+	var target: Vector2 = Vector2(26.0, -corner_z if keeper_side > 0.0 else corner_z)
 	var want_pass: bool = false
 	if use_pass:
 		var face: Vector2 = _v(_me()["facing"]).normalized()
@@ -236,6 +239,8 @@ func _bot_result() -> Dictionary:
 	var ok: bool = done and str(s.get("result", "")) in ["WIN", "LOSE", "DRAW"] and took >= 1
 	if must_win:
 		ok = done and str(s.get("winner", "")) == "blue" and str(s.get("result", "")) == "WIN"
+	elif hand_profile == "idle":
+		ok = done
 	elif not require_win or not hand.is_perfect():
 		ok = done and (hand.is_perfect() or int(hand.stats()["decisions"]) > 0)
 	var dbg: String = ""

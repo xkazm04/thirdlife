@@ -33,6 +33,10 @@ var hits                               # scripts/hits.gd (H2)
 var brain = null
 var fx = null
 var chase_cam = null
+var fun = null                         # L5: scripts/fun/fun.gd (hit-stop, shake, the goal's replay and cards, the play camera)
+var keeper = null                      # L5: scripts/keeper.gd (the goalies)
+var intro = null                       # L5: scripts/intro.gd (the first minute: a drill before the first match)
+var state_lib = null                   # scripts/state.gd (_pack_state)
 var skaters: Dictionary = {}           # id -> TLBiped
 var order: Array = []                  # ids in roster order
 var teams: Dictionary = {}
@@ -62,7 +66,7 @@ var levels: Dictionary = {}            # H5: id -> level file (validated); "none
 var level_id: String = "none"
 var stick_heading: Vector3 = Vector3.ZERO   # H4: the human's stick, turning toward the aim at a turn rate
 var _faceoff_period: int = 0           # H13: the period whose face-off was played
-const DRILL_KEYS: Array = ["id", "place", "random_place", "move", "random_move", "puck", "puck_vel", "carrier", "script", "ai", "brace"]
+const DRILL_KEYS: Array = ["id", "place", "random_place", "move", "random_move", "puck", "puck_vel", "carrier", "script", "ai", "brace", "goalies"]
 
 
 
@@ -74,6 +78,10 @@ func _pack_setup(c) -> void:
 	drill_lib = ctx.load_script("scripts/drills.gd").new()
 	dial_lib = ctx.load_script("scripts/dial.gd").new()
 	look = ctx.load_script("scripts/look.gd").new()
+	keeper = ctx.load_script("scripts/keeper.gd").new()
+	fun = ctx.load_script("scripts/fun/fun.gd").new()
+	intro = ctx.load_script("scripts/intro.gd").new()
+	state_lib = ctx.load_script("scripts/state.gd").new()
 	look.cfg = base_tune["look"]
 	ai_base = ctx.read_json("ai.json")
 	drills = ctx.read_json("drills.json")
@@ -97,7 +105,7 @@ func _pack_setup(c) -> void:
 			continue
 		var lf: String = "levels/%s.json" % lid
 		var lv: Variant = ctx.read_json(lf)
-		var lerrs: Array = modes_lib.check_level(lv, lid, ai_base) if lv is Dictionary else ["the level file is missing or not an object"]
+		var lerrs: Array = modes_lib.check_level(lv, lid, ai_base, base_tune["goalie"]) if lv is Dictionary else ["the level file is missing or not an object"]
 		for e: String in lerrs:
 			push_error("data/%s: %s" % [lf, e])
 		if lerrs.is_empty():
@@ -111,7 +119,7 @@ func _pack_setup(c) -> void:
 
 	menu_lib.setup(self)
 	for a: Array in [[&"up", KEY_W], [&"down", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"poke", KEY_E], [&"sprint", KEY_SHIFT],
-			[&"dial", KEY_T], [&"restart", KEY_R]]:
+			[&"dial", KEY_T], [&"restart", KEY_R], [&"view", KEY_V], [&"skip", KEY_ENTER]]:
 		ctx.input.declare(a[0], [a[1]])
 	# H7: the mouse: with the puck left shoots, right passes; without, left cross-checks, right checks (each verb a key and a
 	# button; a button held while the puck changes hands is no new press: tests/bot_buttons.gd).
@@ -120,6 +128,7 @@ func _pack_setup(c) -> void:
 	ctx.input.declare(&"pass", [KEY_Q], [MOUSE_BUTTON_RIGHT])
 	ctx.input.declare(&"check", [KEY_F], [MOUSE_BUTTON_RIGHT])
 	ctx.input.declare(&"autopilot", [])
+	ctx.input.declare(&"intro", [])        # L5: a test starts the first-minute drill with it (a person's session starts it by itself)
 	var am: Dictionary = base_tune["aim"]
 	ctx.input.declare_aim(&"aim", float(am["height"]), float(am["reach"]))
 	for d: Dictionary in drills["drills"]:
@@ -228,7 +237,7 @@ func _build(mid: String) -> void:
 			ctx.root.remove_child(old)       # every pooled skater lives directly under ctx.root
 
 	var opts: Dictionary = (tune["skater"] as Dictionary).duplicate()
-	for entry: Dictionary in tune["roster"]:
+	for entry: Dictionary in (tune["roster"] as Array) + keeper.entries(self, m):
 		var id: String = str(entry["id"])
 		var team: String = str(entry["team"])
 		var sp: Array = entry["spawn"]
@@ -236,11 +245,12 @@ func _build(mid: String) -> void:
 		var pid: String = id + ":" + team
 		if not pool.has(pid):
 			var o: Dictionary = opts.duplicate()
-			o.merge({"mode": "skate", "position": at, "facing": _face_yaw(team), "name": "skater_" + id,
-				"rig_params": {"colors": {"top": "car_blue" if team == "blue" else "car_red", "trim": "car_blue" if team == "blue" else "car_red", "legs": "car_blue" if team == "blue" else "car_red"}}})
+			var kit: String = "car_blue" if team == "blue" else "car_red"
+			o.merge({"mode": "skate", "position": at, "facing": _face_yaw(team), "name": "skater_" + id, "rig_params": {"colors": entry.get("colors", {"top": kit, "trim": kit, "legs": kit})}})
+			o["body_scale"] = float(entry.get("scale", opts["body_scale"]))
 			var made: TLBiped = TLBiped.create(o)
 			if made.rig != null:
-				var bs: float = float(opts["body_scale"])
+				var bs: float = float(o["body_scale"])
 				made.rig.scale = Vector3(bs, bs, bs)      # H7: the body is the figure's size too (create option body_scale)
 			pool[pid] = made
 		var sk: TLBiped = pool[pid]
@@ -272,6 +282,9 @@ func _build(mid: String) -> void:
 	hits.enabled = bool(m.get("checks", true))
 	api.hits = hits
 	api.poke_cone_dot = cos(deg_to_rad(float(tune["aim"]["poke_cone_deg"])))
+	for t: String in keeper.ids:
+		api.goalies[keeper.ids[t]] = t
+		hits.shield[keeper.ids[t]] = t
 	stick_heading = Vector3.ZERO
 	_new_rules()
 	look.setup(self)
@@ -289,7 +302,7 @@ func _build(mid: String) -> void:
 		chase_cam = ctx.cameras.chase(skaters["b0"], {"distance": float(cc["distance"]), "height": float(cc["height"]), "look_height": float(cc["look_height"]), "fov": float(cc["fov"])})        # the view "chase": stills of the hand
 	else:
 		chase_cam.target = skaters["b0"]
-	ctx.cameras.activate(&"arena")
+	fun.setup(self)                        # L5: the play camera ("follow") is on screen; V shows the old top view
 
 	env.merge({"puck": puck, "skaters": skaters, "teams": teams, "roles": roles, "spawns": spawns, "goals": goal_pos,
 		"frozen": false, "api": api, "hits": hits, "tuning": tune, "rules": rules, "autopilot": autopilot, "drill": false}, true)
@@ -331,7 +344,32 @@ func _game_line() -> String:
 
 
 func _pack_start() -> void:
-	_start_match()
+	if intro.wanted(self):
+		intro.begin(self, 0)                 # L5: a person's first minute is a drill, then the match
+	else:
+		_start_match()
+
+
+## The human's keys and mouse for this frame (the match and the first-minute drill).
+func player_input() -> void:
+	var player: TLBiped = skaters["b0"]
+	var v := Vector3(ctx.input.axis(&"left", &"right"), 0.0, ctx.input.axis(&"up", &"down"))
+	if v.length() > 1.0:
+		v = v.normalized()
+	player.brake(false)
+	player.move(v)
+	_aim_stick()
+	api.sprinting["b0"] = ctx.input.pressed(&"sprint")
+	if ctx.input.just_pressed(&"shoot"):
+		api.try_shoot("b0")
+	if ctx.input.just_pressed(&"pass"):
+		api.try_pass("b0")
+	if ctx.input.just_pressed(&"poke"):
+		api.try_poke("b0")
+	if ctx.input.just_pressed(&"check"):
+		hits.try_check("b0")
+	if ctx.input.just_pressed(&"cross"):
+		hits.try_cross("b0")
 
 
 func _start_match() -> void:
@@ -365,6 +403,8 @@ func _pack_tick(frame: int) -> void:
 		_hold_all()
 		look.plates(self)     # the keys' lines keep their plate (only the plates: a panel key is no skating touch)
 		return
+	if intro.tick(self, frame):
+		return
 	for mid: String in modes:
 		if ctx.input.just_pressed(StringName("mode_" + mid)):
 			_build(mid)
@@ -378,6 +418,9 @@ func _pack_tick(frame: int) -> void:
 				brain.red_over = (levels[level_id]["ai"] as Dictionary).duplicate() if levels.has(level_id) else {}
 	api.tick(frame)
 	hits.tick(frame)
+	if fun.stop(self):                     # L5: a hard check holds the picture for a few frames (everything frozen)
+		_flush_events(frame)
+		return
 	if not autopilot and ctx.input.pressed(&"check"):
 		hits.braced["b0"] = true      # holding F braces him (standing still: he holds a hit from the side)
 	if ctx.input.just_pressed(&"autopilot"):
@@ -413,8 +456,9 @@ func _pack_tick(frame: int) -> void:
 	var stopped: bool = frozen or not rules.is_running()     # after a goal, between periods
 	env["frozen"] = stopped
 
-	var player: TLBiped = skaters["b0"]
 	if not stopped:
+		if drill_id == "" or keeper.in_drill:
+			keeper.save(self)                 # L5: a goalie's catch or poke check comes before anybody's reach
 		api.update_possession()
 	if drill_id != "":
 		drill_lib.tick(self, frame)
@@ -424,30 +468,16 @@ func _pack_tick(frame: int) -> void:
 		for id: String in order:
 			if id != "b0":
 				skaters[id].move(Vector3.ZERO)
+	if not stopped and (drill_id == "" or keeper.in_drill):
+		keeper.move(self)
 	if stopped:
 		_hold_all()
 	elif not autopilot:
-		var v := Vector3(ctx.input.axis(&"left", &"right"), 0.0, ctx.input.axis(&"up", &"down"))
-		if v.length() > 1.0:
-			v = v.normalized()
-		player.brake(false)
-		player.move(v)
-		_aim_stick()
-		api.sprinting["b0"] = ctx.input.pressed(&"sprint")
-		if ctx.input.just_pressed(&"shoot"):
-			api.try_shoot("b0")
-		if ctx.input.just_pressed(&"pass"):
-			api.try_pass("b0")
-		if ctx.input.just_pressed(&"poke"):
-			api.try_poke("b0")
-		if ctx.input.just_pressed(&"check"):
-			hits.try_check("b0")
-		if ctx.input.just_pressed(&"cross"):
-			hits.try_cross("b0")
+		player_input()
 	if not stopped:
 		hits.enforce()
 		for id: String in order:
-			if drill_id == "" and (id != "b0" or autopilot):
+			if drill_id == "" and (id != "b0" or autopilot) and not keeper.is_goalie(id):
 				(skaters[id] as TLBiped).brake(hits.is_down(id))
 	api.apply_speeds()
 	for e: Array in api.events:
@@ -489,6 +519,7 @@ func _aim_stick() -> void:
 	if not ctx.input.aim_valid(&"aim"):
 		stick_heading = Vector3.ZERO
 		api.stick_dir.erase("b0")
+		api.aim_at.erase("b0")
 		if player.rig != null:
 			player.rig.set_param(&"look_at", null)
 		return
@@ -501,6 +532,7 @@ func _aim_stick() -> void:
 		var ang: float = stick_heading.signed_angle_to(want, Vector3.UP)
 		stick_heading = stick_heading.rotated(Vector3.UP, clampf(ang, -turn, turn)).normalized()
 	api.stick_dir["b0"] = stick_heading
+	api.aim_at["b0"] = ctx.input.aim(&"aim")
 	if player.rig != null:
 		player.rig.set_param(&"look_at", ctx.input.aim(&"aim") + Vector3(0, 1.0, 0))
 
@@ -530,70 +562,18 @@ func _restart() -> void:
 
 
 func _flush_events(_frame: int) -> void:
+	for e: Array in keeper.events:
+		_event(str(e[0]), (skaters[str(e[1])] as Node3D).global_position, str(teams[str(e[1])]))
+	keeper.events.clear()
+	fun.on_events(self, _events)
 	if fx != null:
 		for e: Array in _events:
 			fx.on_event(str(e[0]), e[1], str(e[2]))
 		fx.tick(_frame, env)
 	_events.clear()
+	fun.tick(self)
 	look.tick(self)
 
 
-func _r3(x: float) -> float:
-	return snappedf(x, 0.001)
-
-
-func _p2(v: Vector3) -> Array:
-	return [_r3(v.x), _r3(v.z)]
-
-
 func _pack_state() -> Dictionary:
-	var s: Dictionary = rules.snapshot()
-	s["mode"] = mode_id
-	if menu_lib.open:
-		s["menu"] = {"level": str(menu_lib.LEVELS[menu_lib.lv]), "mode": str(base_tune["modes"][menu_lib.md]), "idle": menu_lib.idle}
-	s["body_radius"] = snappedf((skaters["b0"] as TLBiped).body_radius(), 0.001)
-	s["game_line"] = _game_line()
-	if level_id != "none":
-		s["level"] = level_id
-	s["periods"] = rules.periods
-	s["player"] = "b0"
-	s["puck"] = {"pos": _p2(puck.global_position), "vel": _p2(puck.linear_velocity)}
-	if api.carrier != "":
-		s["puck"]["holder"] = api.carrier
-	s["possession"] = api.state()
-	s["hits"] = hits.state()
-	s["reach"] = api.reach
-	s["poke_reach"] = api.poke_reach
-	s["autopilot"] = autopilot
-	if drill_id != "":
-		s["drill"] = drill_id
-	var dl: Dictionary = {"values": dials.duplicate(), "open": dial_open, "refused": dial_refused}
-	var used: Dictionary = {}
-	for p: int in dial_used:
-		used[str(p)] = dial_used[p]
-	if not used.is_empty():
-		dl["used"] = used
-	if dial_open:
-		dl["selected"] = str(tune["dial"]["names"][dial_sel])
-	s["dial"] = dl
-	if rule_line != "":
-		s["rule_line"] = rule_line
-	var list: Array = []
-	for id: String in order:
-		var sk: TLBiped = skaters[id]
-		var f: Vector3 = sk.forward()
-		list.append({"id": id, "team": teams[id], "role": roles[id], "pos": _p2(sk.global_position), "vel": _p2(sk.velocity), "facing": _p2(f), "speed": _r3(sk.speed())})
-	s["skaters"] = list
-	s["shots"] = api.shots.duplicate()
-	s["frozen"] = frozen
-	s["shoot_ready"] = api.can_shoot("b0")
-	s["pass_ready"] = api.carrier == "b0"
-	s["poke_ready"] = api.can_poke("b0")
-	s["check_ready"] = hits.can_check("b0")
-	var g: Dictionary = tune["goals"]
-	s["goals"] = {"blue": [float(g["blue"][0]), float(g["blue"][2])], "red": [float(g["red"][0]), float(g["red"][2])], "half_width": float(g["half_width"])}
-	s["rink"] = {"half_length": float(tune["rink"]["half_length"]), "half_width": float(tune["rink"]["half_width"])}
-	s["result"] = result
-	if api.stick_dir.has("b0"):
-		s["stick"] = _p2(api.stick_dir["b0"])       # H4: only while the aim is valid (absent: as before H4)
-	return s
+	return state_lib.state(self)
