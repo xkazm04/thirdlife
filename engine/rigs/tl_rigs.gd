@@ -86,7 +86,16 @@ static var _record: Array = []
 
 ## The identity of a call: family and params (equal params give the same key).
 static func _key_of(family: String, params: Dictionary) -> String:
+	if family == "biped":
+		return family + "|" + _biped_model() + "|" + var_to_str(params)
 	return family + "|" + var_to_str(params)
+
+
+static func _biped_model() -> String:
+	TLStyle.ensure()
+	if TLStyle.data.get("figure", {}).get("model", "") == "cel":
+		return "cel"
+	return "clay" if TLStyle.style_path.get_file() == "style_diorama.json" else "classic"
 
 
 ## Builds a rig ahead (any thread). Returns its key ("" when the params are not valid).
@@ -143,7 +152,11 @@ static func _build_rig(family: String, params: Dictionary) -> Node3D:
 	var p: Dictionary = TLKit.with_defaults(FAMILIES[family][3], params)
 	var rig: TLRigNode
 	match family:
-		"biped": rig = TLRigBiped.new()
+		"biped":
+			match _biped_model():
+				"cel": rig = preload("res://rigs/biped/cel_rig.gd").new()
+				"clay": rig = preload("res://rigs/biped/clay_rig.gd").new()
+				_: rig = TLRigBiped.new()
 		"vehicle": rig = TLRigVehicle.new()
 		_: rig = TLRigBot.new()
 	rig.set_meta("tl_kind", "rig." + family)

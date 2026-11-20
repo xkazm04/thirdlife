@@ -22,11 +22,59 @@ var side_ticks: int = 0                  ## read only: ticks the camera stood sw
 var bars: Dictionary = {}
 var ignore_bars: bool = true
 var max_side: float = 0.0                ## read only: the largest sideways swing so far (degrees)
+var _ground_arm := 1.0
+var _ground_lift := 0.0
+var _ground_weight := 0.0
+var _frame_style: Dictionary = {}
 
 
 func _init() -> void:
 	clearance.shape = sphere
 	clearance.collision_mask = CANOPY
+
+
+func setup(target_: Node3D, opts: Dictionary = {}) -> void:
+	TLStyle.ensure()
+	_sync_frame(target_)
+	super(target_,opts)
+
+
+func _sync_frame(subject: Node3D) -> void:
+	if is_same(_frame_style,TLStyle.data):
+		return
+	_frame_style = TLStyle.data
+	var view: Dictionary = TLStyle.data.get("env", {}).get("visitor_frame", {})
+	_ground_arm = float(view.get("arm",1.0))
+	_ground_lift = float(view.get("lift",0.0))
+	_ground_weight = 0.0 if view.is_empty() or not is_instance_valid(subject) or subject.get("flying") == true else 1.0
+
+
+func _physics_process(delta: float) -> void:
+	_sync_frame(target)
+	if _ground_arm != 1.0 or _ground_lift != 0.0:
+		var grounded_view: bool = is_instance_valid(target) and target.get("flying") != true
+		_ground_weight = move_toward(_ground_weight,1.0 if grounded_view else 0.0,1.0/24.0)
+	super(delta)
+
+
+func _look_point(origin: Vector3) -> Vector3:
+	return super(origin) + Vector3.UP * (_ground_lift*_ground_weight)
+
+
+func _wanted() -> Vector3:
+	var eye := super()
+	if _ground_weight == 0.0:
+		return eye
+	var pivot := _base() + Vector3.UP*look_height
+	# The actor keeps the ordinary chase anchor. Shorten its arm before
+	# collision and crown clearance, then lift both aim and eye together.
+	return pivot + (eye-pivot)*lerpf(1.0,_ground_arm,_ground_weight) + Vector3.UP*(_ground_lift*_ground_weight)
+
+
+func _miniature_focus() -> Vector2:
+	if is_instance_valid(target) and target.get("flying") == true:
+		return Vector2.ZERO
+	return super()
 
 
 func _avoid(now: bool) -> void:

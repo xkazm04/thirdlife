@@ -3,6 +3,7 @@ extends Node3D
 ## (godot --write-movie) shows foot slide, turns and timing. Visual only; counts physics frames, never a clock.
 ## Args after `--`:  --what=biped|car|bot   --mode=walk|skate   --speed=m/s   --clip=<biped clip played over locomotion>
 ##   --turn=deg/s (yaw rate)   --view=side|three|front   --stick=1   --team=blue|red   --seconds=N (frames to run)
+##   --backpack=0|1 (override the walking/skating wardrobe for a close-up)
 ##   walker-feel (18 Nov): --dir=deg (travel direction against the facing: 0 forward, 90 right, 180 back; the figure keeps facing
 ##   one way), --dir2=deg --dir-at=frame (a second direction from that frame), --accel=frames (speed ramps up over N frames),
 ##   --stop-at=frame (speed 0 from there), --jump-at=frame (a jump: off the floor, `jump` / `land` clips if the rig has them),
@@ -98,6 +99,8 @@ func _ready() -> void:
 			rig = TLRigs.build("bot", {})
 		_:
 			var p: Dictionary = {"mode": "skate" if skate else "walk", "backpack": not skate}
+			if args.has("backpack"):
+				p["backpack"] = int(args["backpack"]) != 0
 			if args.has("prop"):
 				p["prop"] = String(args["prop"])
 			if args.has("headgear"):

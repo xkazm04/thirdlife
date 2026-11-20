@@ -261,6 +261,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var bm: Vector2 = main_path.pts[(bridge_a + bridge_b) / 2]
 		var bt: Vector2 = (main_path.pts[(bridge_a + bridge_b) / 2 + 1] - main_path.pts[(bridge_a + bridge_b) / 2 - 1]).normalized()
 		bridge_probe = [snappedf(bm.x, 0.01), snappedf(bm.y, 0.01), snappedf(-bt.y, 0.001), snappedf(bt.x, 0.001)]
+	if main_path != null and TLStyle.num("detail", "road_rails", 0.0) > 0.0:     # a style-keyed row of rails along the road, no colliders (terrain/road_rails.gd); absent key = none
+		stats["rail_m"] = preload("res://kernel/world/terrain/road_rails.gd").build(parent, terr, main_path, half, spur_paths, bridge_a, bridge_b, centres, rad, TLStyle.num("detail", "road_rails", 0.0))
 	_lap(stats, "roads")
 	# A pair of short rails marks the spur mouth. Both ends sit on the visitor's heightfield.
 	var mk_edge := TLMesh.new(33)
@@ -299,7 +301,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	Parts.lots(parent, lots.size(), plots.size(), centres, rad, pad_h, gates, rng, ws, mk_edge, stats)
 	SiteDraw.place(parent, site_plots, centres, pad_h, rad, gates, stats)     # S: the construction sites, on their plots' pads
 	_lap(stats, "lots")
-	var edge_task: Dictionary = {"jobs": edge_jobs, "terr": terr, "half": half, "edge": mk_edge}
+	var edge_task: Dictionary = {"jobs": edge_jobs, "terr": terr, "half": half, "edge": mk_edge, "marker_out": TLStyle.num("detail", "sign_out", 0.0)}
 	if bool(cfg.get("edges_now", false)) or OS.get_environment("TL_LAND_NOW") == "1":
 		Parts.edge_geometry(edge_task)            # P13: in the frame, as before (to measure the difference)
 		Parts.edge_nodes(parent, edge_task)
@@ -522,6 +524,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	if not bridge_probe.is_empty():
 		probe["rail"] = bridge_probe
 	stats["probe"] = probe
+	if TLStyle.num("detail", "tree_shade", 0.0) > 0.0:     # a style-keyed map of where trees stand, for the land shader (terrain/tree_shade.gd); absent key = none
+		stats["tree_shade"] = preload("res://kernel/world/terrain/tree_shade.gd").build(parent, TLStyle.num("detail", "tree_shade", 0.0))
 	stats["build_ms"] = Time.get_ticks_msec() - t0
 	stats.erase("_lap")
 	return stats

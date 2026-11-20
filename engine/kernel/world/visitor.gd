@@ -376,6 +376,11 @@ func _drive_step(pos: Vector3, frame: int) -> void:
 				"fly_end":
 					_clip(&"")
 		rig.call("tick", frame)
+		if mode in ["bar", "hang", "mantle"] and rig.has_method("_fit_grip"):
+			var land := get_parent_node_3d()
+			var point := bar_point if mode == "bar" else ledge_top
+			var axis := bar_axis if mode == "bar" else Vector3.UP.cross(wall_normal)
+			rig.call("_fit_grip", land.to_global(point), land.global_transform.basis * axis, mantle_progress if mode == "mantle" else 0.0)
 		if wings != null:
 			wings.call("tick", flying, fly_speed_k, _flight_turn, frame, res.events.has("fly_end"))
 

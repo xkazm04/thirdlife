@@ -286,7 +286,8 @@ static func edge_geometry(t: Dictionary) -> void:
 		var centre: Vector2 = job["entrance"]
 		var gap := float(t["half"]) * 0.8 + 1.9
 		# One roadside marker per entrance. The board faces an approaching walker.
-		var post := centre + side * (gap + 1.2) - dir * 0.15
+		# (`marker_out`, metres: a style may stand it before the plot's fence instead of in its line; absent = as ever)
+		var post := centre + side * (gap + 1.2) - dir * 0.15 + dir * float(t.get("marker_out", 0.0))
 		var yaw := rad_to_deg(atan2(dir.x, dir.y))
 		mk.push_at(Vector3(post.x, terr.gy(post.x, post.y), post.y), Vector3(0, yaw, 0), Vector3.ONE * 0.72)
 		TLKitSite.add_flag(mk, Vector3(0.7, 0, 0), 4.9, "flag_a" if int(job["i"]) % 2 == 0 else "flag_b")

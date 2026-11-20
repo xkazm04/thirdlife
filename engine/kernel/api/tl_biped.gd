@@ -174,8 +174,7 @@ static func create(opts: Dictionary = {}) -> TLBiped:
 	return b
 
 
-## The rig hears from the controller only once both are in the scene tree (a skeleton posed outside the tree
-## stops updating): the mode is sent here, `tick` and `set_locomotion` only from `_physics_process`.
+## Send the mode once both nodes enter the tree so the skeleton can update.
 func _ready() -> void:
 	if rig != null:
 		rig.call("set_param", &"mode", mode)
@@ -412,9 +411,7 @@ func _down_text() -> String:
 
 
 func _rig_has(clip: StringName) -> bool:
-	if rig == null or rig is TLStandinRig or not rig.has_method("clips"):
-		return false
-	return (rig.call("clips") as PackedStringArray).has(String(clip))
+	return rig != null and not rig is TLStandinRig and rig.has_method("clips") and (rig.call("clips") as PackedStringArray).has(String(clip))
 
 
 func _rig_param(p: StringName, v: Variant) -> void:
@@ -598,3 +595,6 @@ func _tick_rig(on_ground: bool) -> void:
 		if _ctx == null:
 			_ctx = TLContext.of(self)        # N2: the pack this biped belongs to, not "the pack of the process"
 		rig.call("tick", _ctx.frame if _ctx != null else _frame)
+		if _walker != null and _walker.mode in ["bar", "hang", "mantle"] and rig.has_method("_fit_grip"):
+			var bar := _walker.mode == "bar"
+			rig.call("_fit_grip", bar_point if bar else ledge_top, bar_axis if bar else Vector3.UP.cross(wall_normal), mantle_progress if _walker.mode == "mantle" else 0.0)

@@ -45,7 +45,9 @@ var _shader_ok: Dictionary = {}         # Shader -> bool (declares tl_plot)
 var _pal: Material = null
 var _mark: ArrayMesh = null             # P6: the unit box every mark is an instance of
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
-const PIC_VERSION: int = 15             # P13: part of the picture cache's key; count it up when a picture's rules change (T2: 14; bugfix-37 D13: 15)
+const PIC_VERSION: int = 1601           # P13: part of the picture cache's key; count it up when a picture's rules change (T2: 14; bugfix-37 D13: 15).
+# Diorama night (surfaces arm, Fable): pictures carry UV2 (box faces, round things). 1601, not 16: the cache is shared by
+# every checkout of this machine, so this arm took a number no other arm would pick; the Director sets the one that lands.
 var pic_worker: bool = true             # P13: pictures are merged on a worker (false: in the frame, as P6 did)
 var _dir_hashes: Dictionary = {}        # P13: pack directory -> content hash (the picture cache's key)
 var _cache_tasks: Array = []            # P13: picture cache writes in flight

@@ -54,7 +54,7 @@ func _initialize() -> void:
 	quit(0 if ok else 1)
 GDSCRIPT
   pigment_why=""
-  if ! bash "$HERE/world.sh" tour "$pigment_dir/field.json" "--out-dir=$pigment_dir" --pictures-only --load=block >"$pigment_dir/window.log" 2>&1; then
+  if ! TL_STYLE=classic bash "$HERE/world.sh" tour "$pigment_dir/field.json" "--out-dir=$pigment_dir" --pictures-only --load=block >"$pigment_dir/window.log" 2>&1; then
     pigment_why="capture failed in $pigment_dir/window.log"
   else
     MSYS_NO_PATHCONV=1 "$pigment_godot" --headless --path "$pigment_engine" --script "$pigment_dir/measure.gd" -- "$pigment_dir/01_grass.png" >"$pigment_dir/measure.log" 2>&1 || pigment_why="measurement failed"

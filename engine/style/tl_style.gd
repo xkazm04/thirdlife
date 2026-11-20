@@ -11,13 +11,29 @@ extends RefCounted
 
 const SHADER_DIR: String = "res://style/shaders/"
 const DEFAULT_PATH: String = "res://style/style.json"
+## The style a run loads is chosen by the environment variable TL_STYLE (owner, 20 Nov: crisp cel is the baseline).
+## Unset or "crisp" = style_crisp.json; "classic" = the pre-crisp style.json (DEFAULT_PATH); any other name N =
+## style_N.json ("diorama" = style_diorama.json). Internal: no public name changes.
+static var _chosen: String = _chosen_path()
+
+
+static func _chosen_path() -> String:
+	var name: String = OS.get_environment("TL_STYLE").strip_edges()
+	if name.is_empty() or name == "crisp":
+		return "res://style/style_crisp.json"
+	if name == "classic":
+		return DEFAULT_PATH
+	return "res://style/style_%s.json" % name
+
+
+const _Dio: GDScript = preload("res://style/dio/style_dio.gd")   # diorama night: a style that names a material model
 const SPECIAL: PackedStringArray = ["glass", "water", "holo", "fx_add", "fx_mix"]
 const RIG_NODE: String = "TLStyleRig"
 ## material classes of the drawn surface language (toon.gdshader surface_detail)
-const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9}
-const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx"]
+const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9, "clay": 10, "felt": 11}
+const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx", "figure"]
 const REQUIRED: PackedStringArray = ["sun", "toon", "env", "fog", "sky", "ink", "grade", "palette", "mat"]
-const MAT_KEYS: PackedStringArray = ["class", "dscale", "dk", "emit", "metal", "mottle", "no_hatch", "ice", "dissolve", "sway", "shader", "base_a", "fres_a"]
+const MAT_KEYS: PackedStringArray = ["class", "dscale", "dk", "emit", "metal", "mottle", "no_hatch", "ice", "dissolve", "sway", "shader", "base_a", "fres_a", "gloss", "fuzz", "chip"]
 ## Numeric parameters are clamped to ranges that were looked at: a bad style file cannot break the look.
 const RANGES: Dictionary = {
 	"fog.density": [0.0, 0.004], "fog.height_density": [0.0, 0.008], "fog.sun_scatter": [0.0, 0.6], "fog.aerial": [0.0, 1.0],
@@ -27,6 +43,8 @@ const RANGES: Dictionary = {
 	"ink.outer_px": [0.0, 4.0], "ink.inner_px": [0.0, 2.5], "ink.inner_alpha": [0.0, 1.0],
 	"ink.near_px": [0.0, 6.0], "ink.even": [0.0, 1.0], "ink.thin_keep": [0.0, 1.0], "ink.hair_alpha": [0.0, 1.0],
 	"grade.sat": [0.6, 1.4], "grade.contrast": [0.85, 1.25], "grade.vignette": [0.0, 0.5], "grade.grain": [0.0, 0.05], "grade.paper": [0.0, 0.06], "grade.split": [0.0, 0.3],
+	"grade.plum_density": [0.0, 1.0], "grade.edge_contrast": [0.0, 0.8], "grade.olive_fill": [0.0, 1.0],
+	"sun.overhead_elev": [4.0, 85.0], "env.distant_aa": [0.0, 0.9],
 	"lights.pool_smooth": [0.0, 1.0], "detail.strata": [0.0, 1.0], "detail.strata_m": [0.5, 12.0], "detail.strata_tone": [0.0, 0.6], "detail.strata_crack": [0.0, 1.0],
 	"detail.k": [0.0, 1.6], "detail.macro": [0.0, 2.5], "detail.dark": [0.25, 0.9], "env.exposure": [0.6, 1.6], "env.glow": [0.0, 1.2],
 }
@@ -67,7 +85,7 @@ static func ensure() -> void:
 	if not _loaded:
 		_lock.lock()
 		if not _loaded:
-			load_style(DEFAULT_PATH)
+			load_style(_chosen)
 		_lock.unlock()
 
 
@@ -77,7 +95,7 @@ static func load_style(path: String = "res://style/style.json") -> PackedStringA
 	var out: PackedStringArray = PackedStringArray()
 	# hunt2 B12: a rejected file marks the style loaded only when it is the default (never retry that in a loop); a
 	# rejected override (a missing --style) leaves it unloaded, so the next ensure() still installs the default
-	if path == DEFAULT_PATH:
+	if path == DEFAULT_PATH or path == _chosen:
 		_loaded = true
 	if not FileAccess.file_exists(path):
 		out.append("style file not found: " + path)
@@ -104,6 +122,9 @@ static func load_style(path: String = "res://style/style.json") -> PackedStringA
 		_build_lut()
 		if _pal_mat != null:
 			_pal_mat.set_shader_parameter(&"pal_lut", _lut)
+		for tm: ShaderMaterial in ([_pal_mat] if _pal_mat != null else []) + _flat.values():
+			if tm.shader != _shader("toon"):
+				tm.shader = _shader("toon")       # the material model may differ between two style files
 		for key: String in _mats:
 			_fill_special(key, _mats[key])
 	return out
@@ -120,6 +141,7 @@ static func check(d: Dictionary) -> PackedStringArray:
 	for k: String in REQUIRED:
 		if not d.has(k) or not (d[k] is Dictionary):
 			out.append("missing section '%s'" % k)
+	out.append_array(preload("res://style/cel/style_cel.gd").check(d))
 	if out.size() > 0:
 		return out
 	var pal: Dictionary = d["palette"]
@@ -196,6 +218,8 @@ static func is_toon(key: String) -> bool:
 
 
 static func _shader(sname: String) -> Shader:
+	if sname == "toon" or sname == "water":
+		return _Dio.toon(data, _shaders) if sname == "toon" else _Dio.water(data, _shaders)
 	if not _shaders.has(sname):
 		_shaders[sname] = load(SHADER_DIR + sname + ".gdshader")
 	return _shaders[sname]
@@ -316,6 +340,7 @@ static func _fill_special(k: String, m: ShaderMaterial) -> void:
 	m.shader = _shader(sh)
 	if sh == "water" or sh == "holo":
 		push(sh, m)
+		m.render_priority = int(num(sh, "priority", 0.0))     # cel water reads depth: drawn before the ink pass (-100), absent = 0
 	if sh == "glass" or sh == "water":
 		m.set_shader_parameter(&"albedo", color(k))
 	for p: String in ov:
@@ -333,6 +358,8 @@ static func push(section: String, m: ShaderMaterial) -> void:
 		var v: Variant = s[k]
 		if v is String and String(v).begins_with("#"):
 			m.set_shader_parameter(k, Color(String(v)))
+		elif v is String:
+			continue      # a name (water.model), not a uniform
 		else:
 			m.set_shader_parameter(k, v)
 
@@ -377,6 +404,9 @@ static func _register_globals() -> void:
 	_g("g_detail", Vector4(float(dt.get("k", 1.0)), float(dt.get("fade_near", 45.0)), float(dt.get("fade_far", 170.0)), float(dt.get("dark", 0.5))))
 	_g("g_strata", Vector4(float(dt.get("strata", 0.0)), float(dt.get("strata_m", 3.0)), float(dt.get("strata_tone", 0.2)), float(dt.get("strata_crack", 0.5))))
 	_g("g_detail2", Vector4(float(dt.get("macro", 0.0)), float(dt.get("macro_near", 20.0)), float(dt.get("macro_far", 90.0)), float(dt.get("tone_end", 400.0))))
+	var dio: Dictionary = _Dio.globals(data)
+	for gk: String in dio:
+		_g(gk, dio[gk])
 
 
 ## The palette lookup texture: one column per palette key, 4 rows of per-material values (see toon.gdshader).
@@ -395,7 +425,8 @@ static func _build_lut() -> void:
 		img.set_pixel(i + 1, 0, Color(c.r, c.g, c.b, float(ov.get("emit", 0.0))))
 		img.set_pixel(i + 1, 1, Color(float(ov.get("metal", 0.0)), float(ov.get("mottle", -1.0)), float(CLASSES.get(String(ov.get("class", "none")), 0)), float(ov.get("dscale", 1.0))))
 		img.set_pixel(i + 1, 2, Color(float(ov.get("dk", 1.0)), float(ov.get("no_hatch", 0.0)), float(ov.get("ice", 0.0)), float(ov.get("dissolve", 0.0))))
-		img.set_pixel(i + 1, 3, Color(float(ov.get("sway", 0.0)), 0, 0, 0))
+		# row 3: sway | read by the diorama model only: gloss, fuzz, chip (dio/style_dio.gd); absent = 0, as before
+		img.set_pixel(i + 1, 3, Color(float(ov.get("sway", 0.0)), float(ov.get("gloss", 0.0)), float(ov.get("fuzz", 0.0)), float(ov.get("chip", 0.0))))
 	if _lut == null or _lut.get_width() != img.get_width():
 		_lut = ImageTexture.create_from_image(img)
 	else:
@@ -427,63 +458,68 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 		we.name = "WorldEnvironment"
 		var env0: Environment = Environment.new()
 		env0.background_mode = Environment.BG_SKY
-		var sky: Sky = Sky.new()
-		var sm0: ShaderMaterial = ShaderMaterial.new()
-		sm0.shader = _shader("sky")
-		sky.sky_material = sm0
-		env0.sky = sky
+		env0.sky = Sky.new()
+		env0.sky.sky_material = ShaderMaterial.new()
 		we.environment = env0
 		rig.add_child(we)
-	push("sky", we.environment.sky.sky_material)
-	_apply_world(we.environment, sun)
-	# N1. Far blur for every camera that has no attributes of its own: `env.dof_far` = metres where it starts (0 = off)
 	var e0: Dictionary = data["env"]
-	if float(e0.get("dof_far", 0.0)) > 0.0:
-		var ca: CameraAttributesPractical = CameraAttributesPractical.new()
-		ca.dof_blur_far_enabled = true
-		ca.dof_blur_far_distance = float(e0["dof_far"])
-		ca.dof_blur_far_transition = float(e0.get("dof_far_transition", 150.0))
-		ca.dof_blur_amount = clampf(float(e0.get("dof_amount", 0.05)), 0.0, 0.3)
-		we.camera_attributes = ca
+	preload("res://style/cel/style_cel.gd").configure_distant_aa(we,e0.get("distant_aa",0.0))
+	var sky: Sky = we.environment.sky
+	var cotton: bool = e0.get("cotton_sky", false)
+	var sky_material := sky.sky_material as ShaderMaterial
+	var sky_pass := "sky_cel" if e0.get("cel_sky", false) else "sky"
+	sky_material.shader = _shader("sky_cotton" if cotton else sky_pass)
+	sky.radiance_size = Sky.RADIANCE_SIZE_512 if cotton else Sky.RADIANCE_SIZE_256
+	sky.process_mode = Sky.PROCESS_MODE_QUALITY if cotton else Sky.PROCESS_MODE_AUTOMATIC
+	push("sky", sky.sky_material)
+	_apply_world(we.environment, sun)
+	# A style can opt into the tracked lens. Other styles keep their original far-only camera setting.
+	var lens := we.get_node_or_null("MiniatureLens") as TLStyleFx.MiniatureLens
+	if e0.has("miniature_lens"):
+		if lens == null:
+			lens = TLStyleFx.MiniatureLens.new()
+			lens.name = "MiniatureLens"
+			we.add_child(lens)
+		lens.configure(we, e0["miniature_lens"])
 	else:
-		we.camera_attributes = null
+		if lens != null:
+			lens.free()
+		we.camera_attributes = _Dio.far_dof(e0)     # N1. far blur for cameras without attributes (env.dof_far, 0 = off)
 	_apply_view(host)
-	var post: MeshInstance3D = rig.get_node_or_null("InkPost")
+	var post: TLStyleFx.TabletopPost = rig.get_node_or_null("InkPost")
 	if bool(opt.get("ink", true)):
 		if post == null:
-			post = MeshInstance3D.new()
+			post = TLStyleFx.TabletopPost.new()
 			post.name = "InkPost"
-			var q: QuadMesh = QuadMesh.new()
-			q.size = Vector2(2, 2)
-			post.mesh = q
-			var pm: ShaderMaterial = ShaderMaterial.new()
-			pm.shader = _shader("ink_post")
-			pm.render_priority = -100
-			post.material_override = pm
-			post.extra_cull_margin = 16384.0
-			post.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_screen_quad(post, ShaderMaterial.new(), -100)
 			rig.add_child(post)
-		push("ink", post.material_override)
+		var pm := post.material_override as ShaderMaterial
+		pm.shader = _shader("ink_post_contact" if e0.get("contact_only", false) else "ink_post")
+		push("ink", pm)
+		var tabletop: bool = e0.get("contact_only", false) and float(data["ink"].get("tabletop_reach", 0.0)) > 0.0
+		post.sun = sun if tabletop else null
+		post.active = false
+		post.process_mode = Node.PROCESS_MODE_ALWAYS
+		post.process_priority = 80
+		post.set_process(tabletop)
+		if e0.get("contact_only", false):
+			pm.set_shader_parameter(&"tabletop", false)
+			pm.set_shader_parameter(&"tabletop_opacity", float(data["ink"].get("tabletop_opacity", 0.47)))
+		if tabletop and post.is_inside_tree():
+			post._process(0.0)
 	elif post != null:
-		post.queue_free()
-	var layer: CanvasLayer = rig.get_node_or_null("Grade")
-	if bool(opt.get("grade", true)):
-		if layer == null:
-			layer = CanvasLayer.new()
-			layer.layer = 1
-			layer.name = "Grade"
-			var rect: ColorRect = ColorRect.new()
-			rect.name = "Rect"
-			rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			var gm: ShaderMaterial = ShaderMaterial.new()
-			gm.shader = _shader("grade")
-			rect.material = gm
-			layer.add_child(rect)
-			rig.add_child(layer)
-		push("grade", (layer.get_node("Rect") as ColorRect).material)
-	elif layer != null:
-		layer.queue_free()
+		post.free()
+	preload("res://style/cel/style_cel.gd").install_grade(rig,opt.get("grade",true),data.grade,_shaders)
+
+
+static func _screen_quad(node: MeshInstance3D, material: ShaderMaterial, priority: int) -> void:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(2, 2)
+	node.mesh = quad
+	material.render_priority = priority
+	node.material_override = material
+	node.extra_cull_margin = 16384.0
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## N1. Screen-space smoothing for the ink pass: the contour is drawn after the scene's multisampling, so its outer
@@ -506,14 +542,16 @@ static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	sun.light_color = Color(String(s["color"]))
 	sun.light_energy = 1.0
 	sun.rotation_degrees = Vector3(-float(s["elev"]), 180.0 - float(s["azim"]), 0.0)
+	preload("res://style/cel/style_cel.gd").configure_sun(sun,s)
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	sun.directional_shadow_max_distance = float(s["shadow_max"])
 	sun.directional_shadow_blend_splits = true
 	sun.shadow_blur = float(s["shadow_blur"])
 	sun.shadow_bias = float(s["shadow_bias"])
-	sun.shadow_normal_bias = 1.4
-	sun.light_angular_distance = 0.0
+	sun.shadow_normal_bias = float(s.get("normal_bias", 1.4))
+	sun.light_angular_distance = float(s.get("angular_size", 0.0))
+	_Dio.shadow_filter(s)     # the PCSS filter is renderer-wide (dio/style_dio.gd)
 	var e: Dictionary = data["env"]
 	env.tonemap_mode = {"linear": Environment.TONE_MAPPER_LINEAR, "filmic": Environment.TONE_MAPPER_FILMIC,
 		"aces": Environment.TONE_MAPPER_ACES, "reinhard": Environment.TONE_MAPPER_REINHARDT}.get(e["tonemap"], 0)

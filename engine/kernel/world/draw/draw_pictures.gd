@@ -13,6 +13,7 @@ class Acc:
 	var n: PackedVector3Array = PackedVector3Array()
 	var c: PackedColorArray = PackedColorArray()
 	var uv: PackedVector2Array = PackedVector2Array()
+	var uv2: PackedVector2Array = PackedVector2Array()   # diorama night: the place on a box face (TLMesh), zero elsewhere
 	var cu: PackedFloat32Array = PackedFloat32Array()
 	var ix: PackedInt32Array = PackedInt32Array()
 	var sheets: Array = []
@@ -130,6 +131,8 @@ func _finish_pictures(e: Dictionary, accs: Array, t0: int, main_us: int) -> void
 			arr[Mesh.ARRAY_NORMAL] = pa.n
 			arr[Mesh.ARRAY_COLOR] = pa.c
 			arr[Mesh.ARRAY_TEX_UV] = pa.uv
+			if pa.uv2.size() == pa.v.size():
+				arr[Mesh.ARRAY_TEX_UV2] = pa.uv2
 			arr[Mesh.ARRAY_CUSTOM0] = pa.cu
 			arr[Mesh.ARRAY_INDEX] = pa.ix
 			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
@@ -180,7 +183,8 @@ func _cache_key(e: Dictionary) -> String:
 	if not WorkerThreadPool.is_task_completed(int(slot[0])) or slot.size() < 2:
 		return ""                      # its hash is still being read on a worker: no cache this time
 	var rules: String = "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [PIC_VERSION, mid_min, far_min, far_cell, far_flat, far_thin, far_small, standin_min, rim_band]
-	return ("%s|%s|%s|%s|%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules, _band(e)]).md5_text()
+	# + the paints a kit terrain bakes into vertex colours, when they are not today's (pic_salt.gd: "" for style.json, so today's key is byte-equal)
+	return ("%s|%s|%s|%s|%s%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules, _band(e), preload("res://kernel/world/draw/pic_salt.gd").salt()]).md5_text()
 
 
 ## The content hash of a pack directory reads every file of it (60 to 100 ms for the seeds): on a worker, never in a
@@ -353,6 +357,8 @@ func _append(acc: Acc, a: Array, xf: Transform3D, sheet: bool, terrain: bool = f
 	var uv: Variant = a[Mesh.ARRAY_TEX_UV]
 	var cu: Variant = a[Mesh.ARRAY_CUSTOM0]
 	var ix: Variant = a[Mesh.ARRAY_INDEX]
+	var uv2: Variant = a[Mesh.ARRAY_TEX_UV2]
+	var has_uv2: bool = uv2 is PackedVector2Array and (uv2 as PackedVector2Array).size() == count
 	var has_n: bool = nrm is PackedVector3Array and (nrm as PackedVector3Array).size() == count
 	var has_c: bool = col is PackedColorArray and (col as PackedColorArray).size() == count
 	var has_uv: bool = uv is PackedVector2Array and (uv as PackedVector2Array).size() == count
@@ -434,6 +440,7 @@ func _append(acc: Acc, a: Array, xf: Transform3D, sheet: bool, terrain: bool = f
 				acc.n.append((nb * (nrm as PackedVector3Array)[k]).normalized() if has_n else Vector3.UP)
 				acc.c.append((col as PackedColorArray)[k] if has_c else Color.WHITE)
 				acc.uv.append((uv as PackedVector2Array)[k] if has_uv else Vector2.ZERO)
+				acc.uv2.append((uv2 as PackedVector2Array)[k] if has_uv2 else Vector2.ZERO)
 				if has_cu:
 					var f: PackedFloat32Array = cu
 					acc.cu.append(f[k * 4])

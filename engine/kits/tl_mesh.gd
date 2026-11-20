@@ -14,6 +14,7 @@ class Surf:
 	var w: PackedFloat32Array = PackedFloat32Array()
 	var cu: PackedFloat32Array = PackedFloat32Array()   # CUSTOM0: part-local xyz + (face axis + 4 * grain axis + 16 * palette column)
 	var k16: float = 0.0   # 16 * palette lookup column of this key (TLStyle.index)
+	var uv2: PackedVector2Array = PackedVector2Array()   # box faces: where a vertex is on its face (tl_mesh_bake.gd); lazy, not hashed
 
 var surfs: Dictionary = {}
 var tf: Transform3D = Transform3D.IDENTITY
@@ -26,6 +27,9 @@ var grain: int = 1   # preferred grain axis (0 x, 1 y, 2 z) in part-local space;
 var mats: Dictionary = {}   # optional key -> Material override (e.g. a hologram surface inside a toon mesh)
 var uv_fixed: bool = false   # when true every vertex gets uv_value (hologram dissolve uses uv.x of a whole part)
 var uv_value: Vector2 = Vector2.ZERO
+const Bake: GDScript = preload("res://kits/tl_mesh_bake.gd")
+var _face: Array = []   # the record of the box face being emitted (tl_mesh_bake.gd `face`), [] = none
+var _round: Array = []  # the round thing whose facets are being emitted (tl_mesh_bake.gd `lump`, `turned`), [] = none
 
 
 func _init(seed_: int = 1) -> void:
@@ -87,6 +91,10 @@ func tri(p0: Vector3, p1: Vector3, p2: Vector3, key: String, col: Color = Color.
 		s.uv.append(uv_value); s.uv.append(uv_value); s.uv.append(uv_value)
 	else:
 		s.uv.append(uv0); s.uv.append(uv2); s.uv.append(uv1)
+	if not _face.is_empty():
+		Bake.mark(s, _face, a, c, b)
+	elif not _round.is_empty() and not skinned:
+		Bake.mark_round(s, _round, p0, p1, p2)
 	if skinned:
 		for i: int in 3:
 			s.b.append(bone); s.b.append(0); s.b.append(0); s.b.append(0)
@@ -159,12 +167,19 @@ func box(size: Vector3, key: String, col: Color = Color.WHITE, ch: float = 0.0, 
 	grain = g_keep
 
 
+## A rectangular face of a box (four corners in order): face_out, and its vertices say where they are on the face.
+func _rect_face(pts: Array, centre: Vector3, key: String, col: Color) -> void:
+	_face = Bake.face(tf, pts)
+	face_out(pts, centre, key, col)
+	_face = []
+
+
 func _box(h: Vector3, c: float, key: String, col: Color, ofs: Vector3) -> void:
 	if c <= 0.0001:
 		for sg: float in [-1.0, 1.0]:
-			face_out([ofs + Vector3(sg * h.x, -h.y, -h.z), ofs + Vector3(sg * h.x, h.y, -h.z), ofs + Vector3(sg * h.x, h.y, h.z), ofs + Vector3(sg * h.x, -h.y, h.z)], ofs, key, col)
-			face_out([ofs + Vector3(-h.x, sg * h.y, -h.z), ofs + Vector3(h.x, sg * h.y, -h.z), ofs + Vector3(h.x, sg * h.y, h.z), ofs + Vector3(-h.x, sg * h.y, h.z)], ofs, key, col)
-			face_out([ofs + Vector3(-h.x, -h.y, sg * h.z), ofs + Vector3(h.x, -h.y, sg * h.z), ofs + Vector3(h.x, h.y, sg * h.z), ofs + Vector3(-h.x, h.y, sg * h.z)], ofs, key, col)
+			_rect_face([ofs + Vector3(sg * h.x, -h.y, -h.z), ofs + Vector3(sg * h.x, h.y, -h.z), ofs + Vector3(sg * h.x, h.y, h.z), ofs + Vector3(sg * h.x, -h.y, h.z)], ofs, key, col)
+			_rect_face([ofs + Vector3(-h.x, sg * h.y, -h.z), ofs + Vector3(h.x, sg * h.y, -h.z), ofs + Vector3(h.x, sg * h.y, h.z), ofs + Vector3(-h.x, sg * h.y, h.z)], ofs, key, col)
+			_rect_face([ofs + Vector3(-h.x, -h.y, sg * h.z), ofs + Vector3(h.x, -h.y, sg * h.z), ofs + Vector3(h.x, h.y, sg * h.z), ofs + Vector3(-h.x, h.y, sg * h.z)], ofs, key, col)
 		return
 	var S: Array = [-1.0, 1.0]
 	var vx: Callable = func(sx: float, sy: float, sz: float) -> Vector3: return ofs + Vector3(sx * h.x, sy * (h.y - c), sz * (h.z - c))
@@ -291,6 +306,7 @@ func cyl(r: float, h: float, seg: int, key: String, col: Color = Color.WHITE, r2
 		cap_top: bool = true, cap_bot: bool = true) -> void:
 	var ts: float = 1.0 if r2 < 0.0 else r2 / r
 	push(Transform3D(Basis.IDENTITY, ofs))
+	_round = Bake.turned(tf, (r - maxf(r2, 0.0)) / maxf(h, 1e-4) if r2 >= 0.0 else 0.0)
 	if ts <= 0.001:
 		var poly: PackedVector2Array = ngon(r, seg)
 		var apex: Vector3 = Vector3(0, h, 0)
@@ -304,6 +320,7 @@ func cyl(r: float, h: float, seg: int, key: String, col: Color = Color.WHITE, r2
 			face_out(ring, centre, key, col)
 	else:
 		prism(ngon(r, seg), 0.0, h, key, col, ts, cap_top, cap_bot)
+	_round = []
 	pop()
 
 
@@ -357,12 +374,14 @@ func blob(r: Vector3, detail: int, jitter: float, key: String, col: Color = Colo
 		if keep_flat_bottom and p.y < -r.y * 0.35:
 			p.y = -r.y * 0.35
 		pv.append(p + ofs)
+	_round = Bake.lump(tf, ofs, r)
 	for f: Array in fs:
 		var cc: Color = col
 		if vary > 0.0:
 			var k: float = 1.0 + (rng.randf() - 0.5) * 2.0 * vary
 			cc = Color(col.r * k, col.g * k, col.b * k, col.a)
 		tri(pv[f[0]], pv[f[1]], pv[f[2]], key, cc)
+	_round = []
 
 
 ## Loft through rings of equal point count (convex sections). Faces are oriented away from the section centre.
@@ -527,6 +546,7 @@ func build(mesh_name: String = "mk") -> ArrayMesh:
 			shared.n.append_array(s.n)
 			shared.c.append_array(s.c)
 			shared.uv.append_array(s.uv)
+			Bake.join(shared, s)
 			shared.cu.append_array(s.cu)
 			shared.b.append_array(s.b)
 			shared.w.append_array(s.w)
@@ -592,6 +612,7 @@ static func _add_surface(mesh: ArrayMesh, s: Surf, mat: Material) -> void:
 	arr[Mesh.ARRAY_NORMAL] = s.n
 	arr[Mesh.ARRAY_COLOR] = s.c
 	arr[Mesh.ARRAY_TEX_UV] = s.uv
+	Bake.put(arr, s)
 	arr[Mesh.ARRAY_CUSTOM0] = s.cu
 	if s.b.size() > 0:
 		arr[Mesh.ARRAY_BONES] = s.b
@@ -618,43 +639,4 @@ func all_points() -> PackedVector3Array:
 ## Merge whole meshes (each with a transform) into one ArrayMesh, one surface per material, keeping CUSTOM0.
 ## Used to bake rubble and to merge static site meshes so shadow cascades draw them once.
 static func merge(items: Array, mesh_name: String = "merged") -> ArrayMesh:
-	var acc: Dictionary = {}
-	for it: Array in items:
-		var m: Mesh = it[0]
-		var t: Transform3D = it[1]
-		var nb: Basis = t.basis.inverse().transposed()
-		for si: int in m.get_surface_count():
-			var mat: Material = m.surface_get_material(si)
-			var arr: Array = (m.get_meta(&"tl_arrays") as Array)[si] if m.has_meta(&"tl_arrays") else m.surface_get_arrays(si)   # P12
-			if not acc.has(mat):
-				acc[mat] = [PackedVector3Array(), PackedVector3Array(), PackedColorArray(), PackedVector2Array(), PackedFloat32Array()]
-			var d: Array = acc[mat]
-			var vs: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
-			var ns: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
-			# packed arrays are values: take them out, append, put them back
-			var av: PackedVector3Array = d[0]
-			var an: PackedVector3Array = d[1]
-			var ac: PackedColorArray = d[2]
-			var au: PackedVector2Array = d[3]
-			var af: PackedFloat32Array = d[4]
-			for i: int in vs.size():
-				av.append(t * vs[i])
-				an.append((nb * ns[i]).normalized())
-			ac.append_array(arr[Mesh.ARRAY_COLOR])
-			au.append_array(arr[Mesh.ARRAY_TEX_UV])
-			af.append_array(arr[Mesh.ARRAY_CUSTOM0])
-			d[0] = av; d[1] = an; d[2] = ac; d[3] = au; d[4] = af
-	var out: ArrayMesh = ArrayMesh.new()
-	out.resource_name = mesh_name
-	for mat: Material in acc:
-		var d: Array = acc[mat]
-		var arr2: Array = []
-		arr2.resize(Mesh.ARRAY_MAX)
-		arr2[Mesh.ARRAY_VERTEX] = d[0]
-		arr2[Mesh.ARRAY_NORMAL] = d[1]
-		arr2[Mesh.ARRAY_COLOR] = d[2]
-		arr2[Mesh.ARRAY_TEX_UV] = d[3]
-		arr2[Mesh.ARRAY_CUSTOM0] = d[4]
-		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr2, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
-		out.surface_set_material(out.get_surface_count() - 1, mat)
-	return out
+	return Bake.merge(items, mesh_name)

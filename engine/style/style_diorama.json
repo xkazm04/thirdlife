@@ -1,0 +1,587 @@
+{
+ "name": "diorama",
+ "sun": {
+  "color": "#ffcb98",
+  "energy": 1.24,
+  "elev": 23.0,
+  "azim": -91.0,
+  "shadow_max": 235.0,
+  "shadow_blur": 1.28,
+  "shadow_bias": 0.075,
+  "angular_size": 0.65,
+  "filter_quality": 5,
+  "normal_bias": 1.55
+ },
+ "toon": {
+  "shade": "#6c6494",
+  "shade_k": 0.74,
+  "band_hi": 0.78,
+  "band_lo": 0.06,
+  "band_soft": 0.03,
+  "wrap": 0.5,
+  "amb_sky": "#8c86c8",
+  "amb_ground": "#c98a6a",
+  "amb_energy": 0.34,
+  "hatch": 0.0,
+  "hatch_px": 8.0,
+  "hatch_fade_near": 22.0,
+  "hatch_fade_far": 80.0,
+  "rim": "#ffb070",
+  "rim_k": 0.3,
+  "mottle": 0.05,
+  "shade_ground": "#7a5c6c",
+  "shade_grad": 0.75,
+  "bounce": "#ffb27a",
+  "bounce_k": 0.42,
+  "rim2": "#86a8ff",
+  "rim2_k": 0.3,
+  "model": "diorama",
+  "gloss": 0.14,
+  "sheen": 1.0,
+  "sky_refl": 0.5,
+  "spec": 1.0,
+  "chip_color": "#e6dac6",
+  "wax": 0.1
+ },
+ "env": {
+  "tonemap": "linear",
+  "exposure": 0.89,
+  "white": 6.0,
+  "glow": 0.28,
+  "glow_threshold": 1.25,
+  "glow_bloom": 0.018,
+  "cotton_sky": true,
+  "contact_only": true,
+  "miniature_lens": {
+   "amount": 0.023,
+   "tilt_deg": -15.0,
+   "near_px": 5.0,
+   "far_px": 1.5,
+   "vista_near": 27.0,
+   "vista_far": 125.0,
+   "vista_transition": 180.0,
+   "vista_amount": 0.013
+  }
+ },
+ "fog": {
+  "color": "#d09a93",
+  "density": 0.00037,
+  "sun_scatter": 0.16,
+  "height": 10.0,
+  "height_density": 0.0006,
+  "height_falloff": 0.06,
+  "aerial": 0.12,
+  "sky_affect": 0.025
+ },
+ "sky": {
+  "zenith": "#524564",
+  "upper": "#795882",
+  "mid": "#d07b80",
+  "horizon": "#ffad71",
+  "ground": "#d99578",
+  "glow": "#ffa14a",
+  "disc": "#ffe6aa",
+  "glow_k": 1.1,
+  "disc_r": 0.023,
+  "sun_draw_elev": 6.0,
+  "sun_draw_yaw": 34.0,
+  "brush": 0.26,
+  "cloud": "#ffddad",
+  "cloud_shade": "#a06b60",
+  "cloud_scale": 1.0
+ },
+ "ink": {
+  "ao_color": "#382a35",
+  "ao_k": 0.78,
+  "ao_radius": 0.7,
+  "ao_far": 85.0,
+  "tabletop_reach": 3.6,
+  "tabletop_opacity": 0.47
+ },
+ "grade": {
+  "shadows": "#62617d",
+  "highlights": "#ffe0b7",
+  "split": 0.036,
+  "sat": 1.105,
+  "contrast": 1.135,
+  "vignette": 0.13,
+  "grain": 0.004,
+  "lift": 0.003,
+  "gamma": 1.0,
+  "paper": 0.0
+ },
+ "holo": {
+  "holo": "#2ad8ff",
+  "edge": "#5beaff",
+  "alpha": 0.12,
+  "edge_k": 1.15,
+  "scan": 0.35
+ },
+ "water": {
+  "deep": "#2f6f8c",
+  "shallow": "#58b0b4",
+  "sky": "#ffc59a",
+  "stripe": "#eef6f2",
+  "sky_k": 0.06,
+  "model": "resin",
+  "sky_top": "#8a78c8",
+  "bed": "#b07a4a",
+  "gloss": 1.0,
+  "ripple": 1.0,
+  "foam": 0.22,
+  "shore": 0.9
+ },
+ "palette": {
+  "white": "#ffffff",
+  "grass": "#5fa044",
+  "grass_dry": "#98a848",
+  "grass_dark": "#357538",
+  "dirt": "#c8824e",
+  "sand": "#d8a56c",
+  "rock": "#b89c90",
+  "rock_dark": "#8f7078",
+  "rock_warm": "#c88c74",
+  "cliff": "#b8847c",
+  "tarmac": "#5c6478",
+  "tarmac_light": "#747c90",
+  "curb_red": "#dc4238",
+  "curb_white": "#f3e8dc",
+  "line_white": "#efe6dc",
+  "concrete": "#cbbdb4",
+  "concrete_dark": "#9c8f98",
+  "barrier": "#d4c8bf",
+  "barrier_dark": "#a89aa2",
+  "steel": "#8a85a0",
+  "steel_dark": "#4f4a60",
+  "steel_light": "#b6b0c8",
+  "black": "#2b2532",
+  "yellow": "#f2b230",
+  "yellow_dark": "#c98720",
+  "orange": "#e8742c",
+  "hazard_red": "#d8452e",
+  "wood": "#b9794a",
+  "wood_light": "#e2b472",
+  "wood_dark": "#7c4a30",
+  "plank": "#d9a868",
+  "roof": "#98443c",
+  "roof_slate": "#5c4c6c",
+  "stone": "#aa9e98",
+  "stone_dark": "#7e7480",
+  "window": "#ffc462",
+  "leaf": "#5a8f3c",
+  "leaf_light": "#8fb440",
+  "pine": "#2c6a48",
+  "pine_light": "#48895a",
+  "trunk": "#6c4a3b",
+  "skin": "#eab294",
+  "hair": "#8a4a2c",
+  "jacket": "#d24a3a",
+  "jacket_trim": "#f2e4d4",
+  "pants": "#4d5a8c",
+  "boots": "#6c4a38",
+  "pack": "#c2975a",
+  "strap": "#4a3f4a",
+  "bot_body": "#f4c43a",
+  "bot_white": "#f4f0ea",
+  "bot_dark": "#3a3446",
+  "bot_visor": "#5af2ff",
+  "car_red": "#da3a30",
+  "car_blue": "#3a6cda",
+  "car_white": "#f6f0e6",
+  "car_glass": "#2e364a",
+  "tire": "#2b2731",
+  "rim_metal": "#c8c4d6",
+  "ice": "#e2f2ff",
+  "rink_red": "#d94242",
+  "rink_blue": "#4274d9",
+  "boards": "#eee6de",
+  "boards_kick": "#d9484a",
+  "glass": "#b4def0",
+  "cyan": "#52f2ff",
+  "hot": "#ff9a3a",
+  "flame_core": "#fff4b8",
+  "dust": "#c9a57e",
+  "spark": "#ffe08a",
+  "smoke": "#f4ebe6",
+  "terrain": "#ffffff",
+  "goal_red": "#e04040",
+  "goal_net": "#d9d0dc",
+  "seat": "#4a66c8",
+  "seat_alt": "#e2b062",
+  "rib_built": "#8f8ca6",
+  "rib_steel": "#6d6a85",
+  "cone": "#f0702c",
+  "hazard_white": "#f3ece6",
+  "grass_blade": "#7fae48",
+  "water": "#4a8ac0",
+  "nitro_hot": "#ff8a2a",
+  "nitro_core": "#fff2b0",
+  "tail_light": "#ff4a3a",
+  "head_light": "#fff2c0",
+  "bot_body2": "#3fb6ae",
+  "hat_a": "#f6f2ea",
+  "hat_b": "#f07a2a",
+  "hat_c": "#e24a3a",
+  "beacon": "#ffb030",
+  "cabin": "#e3e8ea",
+  "cabin_trim": "#3f6fb0",
+  "sign": "#f4d23c",
+  "rebar": "#70402c",
+  "flag_a": "#e8483a",
+  "flag_b": "#3a78d8",
+  "fall_a": "#bfe4f2",
+  "fall_b": "#f6fbff",
+  "pond_ice": "#cfe6f2"
+ },
+ "mat": {
+  "window": {
+   "emit": 1.6
+  },
+  "cyan": {
+   "emit": 2.2
+  },
+  "bot_visor": {
+   "emit": 2.0
+  },
+  "steel": {
+   "metal": 0.35,
+   "class": "steel",
+   "gloss": 0.5
+  },
+  "steel_light": {
+   "metal": 0.6,
+   "class": "steel",
+   "gloss": 0.5
+  },
+  "yellow": {
+   "metal": 0.25,
+   "class": "steel",
+   "gloss": 0.5
+  },
+  "car_red": {
+   "metal": 0.8,
+   "gloss": 0.7
+  },
+  "car_blue": {
+   "metal": 0.8,
+   "gloss": 0.7
+  },
+  "car_glass": {
+   "metal": 1.0
+  },
+  "rim_metal": {
+   "metal": 0.8
+  },
+  "glass": {
+   "shader": "glass",
+   "base_a": 0.1,
+   "fres_a": 0.5
+  },
+  "ice": {
+   "ice": 1.0,
+   "metal": 0.6
+  },
+  "grass": {
+   "mottle": 0.2
+  },
+  "grass_dry": {
+   "mottle": 0.22
+  },
+  "tarmac": {
+   "mottle": 0.07,
+   "class": "tarmac"
+  },
+  "tarmac_light": {
+   "mottle": 0.07
+  },
+  "rib_built": {
+   "dissolve": 1.0,
+   "metal": 0.25,
+   "class": "steel"
+  },
+  "rib_steel": {
+   "dissolve": 1.0,
+   "metal": 0.25,
+   "class": "steel"
+  },
+  "terrain": {
+   "mottle": 0.04,
+   "no_hatch": 0.0,
+   "class": "ground"
+  },
+  "goal_net": {
+   "mottle": 0.0
+  },
+  "grass_blade": {
+   "sway": 0.22,
+   "no_hatch": 1.0,
+   "mottle": 0.0
+  },
+  "water": {
+   "shader": "water"
+  },
+  "nitro_hot": {
+   "emit": 2.6,
+   "mottle": 0.0
+  },
+  "nitro_core": {
+   "emit": 3.6,
+   "mottle": 0.0
+  },
+  "tail_light": {
+   "emit": 1.8
+  },
+  "head_light": {
+   "emit": 2.0
+  },
+  "barrier": {
+   "mottle": 0.05,
+   "class": "concrete",
+   "gloss": 0.08
+  },
+  "dust": {
+   "mottle": 0.0,
+   "no_hatch": 1.0
+  },
+  "smoke": {
+   "mottle": 0.0,
+   "no_hatch": 1.0
+  },
+  "wood": {
+   "class": "wood",
+   "gloss": 0.22
+  },
+  "wood_light": {
+   "class": "wood",
+   "gloss": 0.22
+  },
+  "wood_dark": {
+   "class": "wood",
+   "gloss": 0.22
+  },
+  "plank": {
+   "class": "wood",
+   "gloss": 0.22
+  },
+  "concrete": {
+   "class": "concrete",
+   "gloss": 0.08
+  },
+  "concrete_dark": {
+   "class": "concrete",
+   "gloss": 0.08
+  },
+  "barrier_dark": {
+   "class": "concrete",
+   "gloss": 0.08
+  },
+  "steel_dark": {
+   "class": "steel",
+   "gloss": 0.5
+  },
+  "yellow_dark": {
+   "class": "steel",
+   "gloss": 0.5
+  },
+  "orange": {
+   "class": "steel",
+   "gloss": 0.5
+  },
+  "rock": {
+   "class": "rock",
+   "gloss": 0.08
+  },
+  "rock_dark": {
+   "class": "rock",
+   "gloss": 0.08
+  },
+  "rock_warm": {
+   "class": "rock",
+   "gloss": 0.08
+  },
+  "cliff": {
+   "class": "rock",
+   "gloss": 0.08
+  },
+  "roof": {
+   "class": "roof"
+  },
+  "roof_slate": {
+   "class": "roof"
+  },
+  "jacket": {
+   "class": "fabric",
+   "dk": 1.0
+  },
+  "pants": {
+   "class": "fabric",
+   "dk": 0.3,
+   "dscale": 0.6
+  },
+  "pack": {
+   "class": "fabric",
+   "dk": 0.55,
+   "dscale": 0.8
+  },
+  "stone": {
+   "class": "masonry",
+   "gloss": 0.08
+  },
+  "stone_dark": {
+   "class": "masonry",
+   "gloss": 0.08
+  },
+  "beacon": {
+   "emit": 3.0
+  },
+  "rebar": {
+   "class": "steel",
+   "dk": 0.0
+  },
+  "cabin": {
+   "class": "steel",
+   "dk": 0.5,
+   "gloss": 0.5
+  },
+  "fall_a": {
+   "emit": 0.45,
+   "no_hatch": 1.0,
+   "mottle": 0.0
+  },
+  "fall_b": {
+   "emit": 0.6,
+   "no_hatch": 1.0,
+   "mottle": 0.0
+  },
+  "pond_ice": {
+   "metal": 0.5,
+   "mottle": 0.1,
+   "no_hatch": 1.0
+  },
+  "pine": {
+   "class": "felt",
+   "fuzz": 0.8
+  },
+  "pine_light": {
+   "class": "felt",
+   "fuzz": 0.8
+  },
+  "leaf": {
+   "class": "felt",
+   "fuzz": 0.8
+  },
+  "leaf_light": {
+   "class": "felt",
+   "fuzz": 0.8
+  },
+  "curb_red": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "curb_white": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "hazard_red": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "hazard_white": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "flag_a": {
+   "class": "felt",
+   "fuzz": 0.5
+  },
+  "flag_b": {
+   "class": "felt",
+   "fuzz": 0.5
+  },
+  "sign": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "boards": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "boards_kick": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "cone": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "cabin_trim": {
+   "gloss": 0.5
+  },
+  "trunk": {
+   "gloss": 0.22,
+   "class": "wood"
+  },
+  "car_white": {
+   "gloss": 0.7
+  },
+  "bot_body": {
+   "gloss": 0.7
+  },
+  "bot_white": {
+   "gloss": 0.7
+  },
+  "bot_body2": {
+   "gloss": 0.7
+  },
+  "hat_a": {
+   "gloss": 0.7
+  },
+  "hat_b": {
+   "gloss": 0.7
+  },
+  "hat_c": {
+   "gloss": 0.7
+  },
+  "seat": {
+   "gloss": 0.7
+  },
+  "seat_alt": {
+   "gloss": 0.7
+  },
+  "goal_red": {
+   "gloss": 0.7
+  }
+ },
+ "detail": {
+  "k": 1.0,
+  "fade_near": 60.0,
+  "fade_far": 260.0,
+  "dark": 0.46,
+  "macro": 2.0,
+  "macro_near": 18.0,
+  "macro_far": 90.0,
+  "tone_end": 420.0,
+  "strata": 0.8,
+  "strata_m": 2.6,
+  "strata_tone": 0.24,
+  "strata_crack": 0.55,
+  "bump": 1.4,
+  "bump_near": 16.0,
+  "bump_far": 70.0,
+  "chip": 1.0,
+  "bevel": 0.07,
+  "round": 0.85
+ },
+ "lights": {
+  "window": 1.35,
+  "window_range": 9.0,
+  "mast": 1.25,
+  "pool_outer": 0.05,
+  "pool_inner": 0.42,
+  "pool_soft": 0.14,
+  "pool_smooth": 0.4
+ },
+ "fx": {
+  "dust_alpha": 0.5
+ }
+}
