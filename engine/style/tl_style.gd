@@ -31,7 +31,7 @@ const SPECIAL: PackedStringArray = ["glass", "water", "holo", "fx_add", "fx_mix"
 const RIG_NODE: String = "TLStyleRig"
 ## material classes of the drawn surface language (toon.gdshader surface_detail)
 const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9, "clay": 10, "felt": 11}
-const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx"]
+const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx", "figure"]
 const REQUIRED: PackedStringArray = ["sun", "toon", "env", "fog", "sky", "ink", "grade", "palette", "mat"]
 const MAT_KEYS: PackedStringArray = ["class", "dscale", "dk", "emit", "metal", "mottle", "no_hatch", "ice", "dissolve", "sway", "shader", "base_a", "fres_a", "gloss", "fuzz", "chip"]
 ## Numeric parameters are clamped to ranges that were looked at: a bad style file cannot break the look.
@@ -43,6 +43,8 @@ const RANGES: Dictionary = {
 	"ink.outer_px": [0.0, 4.0], "ink.inner_px": [0.0, 2.5], "ink.inner_alpha": [0.0, 1.0],
 	"ink.near_px": [0.0, 6.0], "ink.even": [0.0, 1.0], "ink.thin_keep": [0.0, 1.0], "ink.hair_alpha": [0.0, 1.0],
 	"grade.sat": [0.6, 1.4], "grade.contrast": [0.85, 1.25], "grade.vignette": [0.0, 0.5], "grade.grain": [0.0, 0.05], "grade.paper": [0.0, 0.06], "grade.split": [0.0, 0.3],
+	"grade.plum_density": [0.0, 1.0], "grade.edge_contrast": [0.0, 0.8],
+	"sun.overhead_elev": [4.0, 85.0],
 	"lights.pool_smooth": [0.0, 1.0], "detail.strata": [0.0, 1.0], "detail.strata_m": [0.5, 12.0], "detail.strata_tone": [0.0, 0.6], "detail.strata_crack": [0.0, 1.0],
 	"detail.k": [0.0, 1.6], "detail.macro": [0.0, 2.5], "detail.dark": [0.25, 0.9], "env.exposure": [0.6, 1.6], "env.glow": [0.0, 1.2],
 }
@@ -139,6 +141,7 @@ static func check(d: Dictionary) -> PackedStringArray:
 	for k: String in REQUIRED:
 		if not d.has(k) or not (d[k] is Dictionary):
 			out.append("missing section '%s'" % k)
+	out.append_array(preload("res://style/cel/style_cel.gd").check(d))
 	if out.size() > 0:
 		return out
 	var pal: Dictionary = d["palette"]
@@ -462,7 +465,8 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 	var sky: Sky = we.environment.sky
 	var cotton: bool = e0.get("cotton_sky", false)
 	var sky_material := sky.sky_material as ShaderMaterial
-	sky_material.shader = _shader("sky_cotton" if cotton else "sky")
+	var sky_pass := "sky_cel" if e0.get("cel_sky", false) else "sky"
+	sky_material.shader = _shader("sky_cotton" if cotton else sky_pass)
 	sky.radiance_size = Sky.RADIANCE_SIZE_512 if cotton else Sky.RADIANCE_SIZE_256
 	sky.process_mode = Sky.PROCESS_MODE_QUALITY if cotton else Sky.PROCESS_MODE_AUTOMATIC
 	push("sky", sky.sky_material)
@@ -503,24 +507,7 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 			post._process(0.0)
 	elif post != null:
 		post.free()
-	var layer: CanvasLayer = rig.get_node_or_null("Grade")
-	if bool(opt.get("grade", true)):
-		if layer == null:
-			layer = CanvasLayer.new()
-			layer.layer = 1
-			layer.name = "Grade"
-			var rect: ColorRect = ColorRect.new()
-			rect.name = "Rect"
-			rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			var gm: ShaderMaterial = ShaderMaterial.new()
-			gm.shader = _shader("grade")
-			rect.material = gm
-			layer.add_child(rect)
-			rig.add_child(layer)
-		push("grade", (layer.get_node("Rect") as ColorRect).material)
-	elif layer != null:
-		layer.queue_free()
+	preload("res://style/cel/style_cel.gd").install_grade(rig,opt.get("grade",true),data.grade,_shaders)
 
 
 static func _screen_quad(node: MeshInstance3D, material: ShaderMaterial, priority: int) -> void:
@@ -553,6 +540,7 @@ static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	sun.light_color = Color(String(s["color"]))
 	sun.light_energy = 1.0
 	sun.rotation_degrees = Vector3(-float(s["elev"]), 180.0 - float(s["azim"]), 0.0)
+	preload("res://style/cel/style_cel.gd").configure_sun(sun,s)
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	sun.directional_shadow_max_distance = float(s["shadow_max"])

@@ -193,10 +193,14 @@ func _sculpt_face(helmet: bool) -> void:
 		part("Brows", Finish.HAIR)
 		cord([Vector3(s*.069,1.799,-.251),Vector3(s*.097,1.81,-.244),Vector3(s*.133,1.81,-.230),Vector3(s*.149,1.802,-.223)], .012,"hair", DEEP)
 	part("Head", Finish.CLAY)
-	piece(Vector3(0,1.688,-.274), Vector3(.041,.035,.036), "skin", EGG, 14, Vector3.ZERO, Form.PLAIN, Color(1,.91,.82))
+	_nose()
 	part("MouthCorners", Finish.CLAY)
 	cord([Vector3(-.058,1.634,-.261),Vector3(-.034,1.618,-.270),Vector3(-.004,1.612,-.270),
 		Vector3(.028,1.620,-.272),Vector3(.057,1.639,-.266)], .009, "hair", DEEP)
+
+
+func _nose() -> void:
+	piece(Vector3(0,1.688,-.274), Vector3(.041,.035,.036), "skin", EGG, 14, Vector3.ZERO, Form.PLAIN, Color(1,.91,.82))
 
 
 func _hair() -> void:

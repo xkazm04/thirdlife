@@ -1,0 +1,19 @@
+Cel-astra · round 2 · 20 November 2026
+
+Ready for operator verification. The release now selects 4× MSAA, SMAA and TAA off for crisp. On identical release camera and input schedules, mid-distance edge energy rose 2.37× standing and 3.60× walking. Classic keeps its original boot settings and the environment override wins. The final visitor-road image has a visible pale sun and a peach horizon. Six cloud profiles vary the skyline in flight.
+
+Start with stills/r2-exe-aa.jpg for the native window detail, stills/r2-sky.jpg for the board and flight comparison, and clip.mp4 for the final 23.35 s road-to-flight take. The contact sheet uses the final shot sets. ASTRA-NOTES.md records the tests and measurements. PATCHES.md carries the material handoff.
+
+Fast 5/5. World 8/8, packs 48/48, kit 95/95. Style 10/10, rig 14/14, cel 4/4. All 18 stable classic shots were bit-identical. The six flagged near-ground crops still have lower variance, especially over the second bluff. All changes remain uncommitted.
+
+Cel-astra · round 1 · 20 November 2026
+
+Ready for operator verification. Select TL_STYLE=crisp and start with the visitor-road pair in contact-sheet.jpg. The continuous clip.mp4 walks and runs to the river bridge, then flies over the bluff in 23.35 seconds at 1080p60. Both official shot sets contain 27 native frames. The lane includes 11 paired views.
+
+The visitor now fills about 37% of the frame height, up from 20% and close to board 2. The side light throws a plum boot shadow across the warm road. The figure retains three measured red jacket bands, distinct cuffs and boots, 29 bones, 20 clips and 8,484–9,988 triangles across 12 wardrobes. The sky uses cream clouds with lavender undersides. The native visitor-road centre crop rose from 403.1 to 741.6 in Laplacian variance. With camera, pose and lighting held fixed, sharpening alone raised the figure crop from 541.1 to 685.9.
+
+Fast gate 5/5. Selected full gate passed world 8/8, all 48 pack verbs and kit 95/95. All 46 pack hashes and their frame counts matched the repaired base. Selftests passed style 9/9, rig 14/14, moves 14/14, character 2/2, flight 13/13, wings 2/2 and the new cel block 3/3.
+
+All 18 reproducible classic shots were pixel-identical. The other nine also varied in the base-to-base comparison. Up to 2.3057% of pixels exceeded 1/255 in the live climb frame. The busy six-game tour measured 1.011 ms GPU for crisp and 1.256 ms for classic. Per-game authoring cost is zero.
+
+The terrain's screen-space hatching is still visible and the cloud silhouettes repeat on a long pan. The isolated surface proposal removed the hatch and produced a boot shadow of RGB (115,63,81), close to the board's (112,69,78). PATCHES.md gives cel-fable the exact tested patch and paired still. ASTRA-NOTES.md lists changed files and settings, crop measurements, feature costs, gate evidence, the base compiler repair and the next art passes. Packs, seeds, public API and geometry cache version are intact. The worktree is uncommitted.

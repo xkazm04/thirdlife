@@ -35,6 +35,8 @@ var blend_axis := Vector3.UP
 var hip_joint := -1
 var grip_points: Dictionary[int,Vector3] = {}
 var grip_normals: Dictionary[int,Vector3] = {}
+var paint_shader: Shader = preload("res://style/shaders/body_clay.gdshader")
+var contour: Material
 
 
 func part(joint: String, surface: Finish = Finish.ENAMEL, worn_edge: float = 0.0) -> void:
@@ -237,7 +239,8 @@ func build(mesh_name: String = "biped") -> ArrayMesh:
 	var material := TLStyle.material("white") as ShaderMaterial
 	if not TLStyle.headless():
 		var paint := ShaderMaterial.new()
-		paint.shader = preload("res://style/shaders/body_clay.gdshader")
+		paint.shader = paint_shader
+		paint.next_pass = contour
 		paint.set_shader_parameter(&"pal_lut", material.get_shader_parameter(&"pal_lut"))
 		material = paint
 	mesh.surface_set_material(0, material)

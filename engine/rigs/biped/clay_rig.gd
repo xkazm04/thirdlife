@@ -25,12 +25,16 @@ func _rebuild_mesh(sk: Skeleton3D) -> void:
 	look.merge(params.get("colors", {}), true)
 	_helmet_built = _helmet()
 	_skate_built = String(params["mode"]) == "skate"
-	var figure := _Sculpt.new()
+	var figure := _sculptor()
 	figure.sculpt(sk, look, bool(params["backpack"]), _helmet_built, _skate_built)
 	_hand_mesh = attach_skinned(_model, sk, figure, "biped")
 	if not _skate_built:
 		_hand_mesh.set_blend_shape_value(0,_grip_weight)
 	_metrics["triangles"] = figure.tri_count + _tri_extra
+
+
+func _sculptor() -> _Sculpt:
+	return _Sculpt.new()
 
 
 func _param_changed(pname: String, value: Variant) -> void:
@@ -130,7 +134,7 @@ func _save_arm(side: String) -> void:
 		_last["q"][bi] = _sk.get_bone_pose_rotation(bi)
 
 
-static func _pocket_beat(beat: float) -> float:
+func _pocket_beat(beat: float) -> float:
 	return smoothstep(1.12,1.93,beat) * (1.0 - smoothstep(2.69,3.68,beat))
 
 
