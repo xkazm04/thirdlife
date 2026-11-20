@@ -48,6 +48,9 @@ const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
 const PIC_VERSION: int = 1601           # P13: part of the picture cache's key; count it up when a picture's rules change (T2: 14; bugfix-37 D13: 15).
 # Diorama night (surfaces arm, Fable): pictures carry UV2 (box faces, round things). 1601, not 16: the cache is shared by
 # every checkout of this machine, so this arm took a number no other arm would pick; the Director sets the one that lands.
+# Diorama day (dio-fable): under a style with `detail.nature` a pack's kit trees, rocks and bushes are drawn as felt
+# (kits/tl_felt.gd). The kit's recipes did not change, so this number did not: such a style's pictures are keyed
+# apart instead (draw_pictures.gd `_cache_key`: `|felt<n>`), and classic's key is byte for byte what it was.
 var pic_worker: bool = true             # P13: pictures are merged on a worker (false: in the frame, as P6 did)
 var _dir_hashes: Dictionary = {}        # P13: pack directory -> content hash (the picture cache's key)
 var _cache_tasks: Array = []            # P13: picture cache writes in flight

@@ -50,6 +50,14 @@ static func water(data: Dictionary, cache: Dictionary) -> Shader:
 	return variant("water_" + m, "TL_SHORE" if float(w.get("shore", 0.0)) > 0.0 else "", cache)
 
 
+## Diorama day: a flat-colour material is worn by primitives the kernel makes for bodies (BoxMesh, SphereMesh). Under
+## a material model they say so, and the shader gives them the part's space and the soft edges a TLMesh part has.
+## A style without a model sets nothing: its materials are as they were.
+static func prim(m: ShaderMaterial, data: Dictionary) -> void:
+	if not model(data).is_empty():
+		m.set_shader_parameter(&"tl_prim", true)
+
+
 ## The shader globals of the diorama model (read only by the TL_DIORAMA variant; today's shader never declares them).
 static func globals(data: Dictionary) -> Dictionary:
 	var t: Dictionary = data.get("toon", {})
@@ -60,9 +68,39 @@ static func globals(data: Dictionary) -> Dictionary:
 		"g_dio": Vector4(float(dt.get("bump", 1.0)), float(dt.get("bump_near", 14.0)), float(dt.get("bump_far", 60.0)), float(dt.get("chip", 1.0))),
 		"g_dio2": Vector4(float(t.get("gloss", 0.12)), float(t.get("sheen", 1.0)), float(t.get("sky_refl", 0.5)), float(t.get("spec", 1.0))),
 		"g_dio3": Vector4(chip.r, chip.g, chip.b, float(dt.get("bevel", 0.0))),
-		"g_dio5": Vector4(float(t.get("wax", 0.0)), 0.0, 0.0, 0.0),
+		"g_dio5": Vector4(float(t.get("wax", 0.0)), 1.0 if (float(dt.get("pebbles", 0.0)) > 0.0 and float(dt.get("nature", 0.0)) > 0.0) else 0.0, 0.0, 0.0),
 		"g_dio4": Vector4(grass.r, grass.g, grass.b, clampf(float(dt.get("round", 0.0)), 0.0, 1.0)),
+		"g_dio6": Vector4(textures(data), float(dt.get("tex_felt_m", 2.4)), float(dt.get("tex_clay_m", 2.0)), float(dt.get("tex_relief", 0.8))),
 	}
+
+
+const TEX_DIR: String = "res://style/dio/tex/"
+const TEX_NAMES: PackedStringArray = ["felt", "clay", "wood", "cast", "soil", "wool"]
+static var _tex: Dictionary = {}     # name -> Texture2D, kept alive here (the renderer holds only the RID)
+
+
+## Diorama day: the material textures (make_tex.py, bake_tex.gd) as the global samplers g_dio_<name> of the diorama
+## model. Returns `detail.tex` (how much of them the shader uses), or 0 when the style names no model or a texture is
+## missing: the shader then draws last night's marks. A style without a material model never gets here.
+static func textures(data: Dictionary) -> float:
+	if model(data).is_empty():
+		return 0.0
+	var whole: bool = true
+	for n: String in TEX_NAMES:
+		if _tex.has(n):
+			whole = whole and not (_tex[n] is ImageTexture)
+			continue
+		var path: String = TEX_DIR + n + ".res"
+		var t: Texture2D = load(path) as Texture2D if ResourceLoader.exists(path) else null
+		if t == null:
+			push_warning("style: %s is missing; the diorama model draws its marks without textures" % path)
+			var img: Image = Image.create(1, 1, false, Image.FORMAT_RGBA8)
+			img.fill(Color(0.5, 0.5, 0.5, 0.5))
+			t = ImageTexture.create_from_image(img)
+			whole = false
+		_tex[n] = t
+		RenderingServer.global_shader_parameter_add("g_dio_" + n, RenderingServer.GLOBAL_VAR_TYPE_SAMPLER2D, t.get_rid())
+	return clampf(float((data.get("detail", {}) as Dictionary).get("tex", 0.0)), 0.0, 1.5) if whole else 0.0
 
 
 ## Combine of 20 Nov (moved from tl_style.gd to keep it inside its size budget; behaviour unchanged).

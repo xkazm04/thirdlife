@@ -31,6 +31,11 @@ uniform float sky_k = 0.35;    // how much sky the surface takes on before the a
 uniform float gloss = 1.0;     // strength of the mirror and of the sun's glint
 uniform float ripple = 1.0;    // height of the combed ripples
 uniform float foam = 0.35;     // how much dry-brushed foam
+// Diorama day: the cotton clouds stand in the resin too (0 = a plain sky, as last night), and the sun's glint is a soft
+// pool instead of sparks (`glint`: 1 = last night's tight spark, 0 = only the soft pool).
+uniform vec3 cloud : source_color = vec3(1.0, 0.9, 0.74);
+uniform float clouds = 0.0;
+uniform float glint = 1.0;
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(h21(i), h21(i + vec2(1,0)), f.x), mix(h21(i + vec2(0,1)), h21(i + vec2(1,1)), f.x), f.y); }
@@ -105,6 +110,14 @@ void fragment() {
 	vec3 r = reflect(-v, n);
 	// the mirror: sky by the reflected ray, more of it at a grazing angle
 	vec3 skyc = mix(mix(sky, sky_top, smoothstep(0.05, 0.75, r.y)), shallow, 0.2);
+	if (clouds > 0.0) {
+		// where the mirrored ray meets the cloud layer: soft cream shapes that slide over the resin as the eye moves
+		// (the shapes are placed by the flat mirror and only nudged by the ripples: a ripple must not shred a cloud)
+		vec3 r0 = reflect(-v, vec3(0.0, 1.0, 0.0));
+		vec2 cq = (r0.xz + g * 0.35) / max(r0.y, 0.14) * 0.42 + wp.xz * 0.006;
+		float cl = gn(cq) * 0.7 + gn(cq * 2.3 + 5.0) * 0.3;
+		skyc = mix(skyc, cloud, smoothstep(0.03, 0.20, cl) * clouds * smoothstep(0.0, 0.12, r.y));
+	}
 	float fr = 0.03 + 0.97 * pow(1.0 - ndv, 5.0);
 	// never more than half a mirror: at a grazing angle (the far reach, the view from the air) a full mirror of a
 	// sunset sky turns the river into a pink road; the tint of the resin has to stay in the picture
@@ -117,7 +130,7 @@ void fragment() {
 	vec3 sd = normalize(g_sun_dir.xyz);
 	float rs = max(dot(r, sd), 0.0);
 	vec3 sunc = g_sun.rgb * g_sun.a;
-	c += sunc * (pow(rs, 520.0) * 2.4 + pow(rs, 36.0) * 0.22) * gloss;
+	c += sunc * (pow(rs, 520.0) * 2.4 * glint + pow(rs, 150.0) * 0.45 * (1.0 - glint) + pow(rs, 36.0) * (0.22 - 0.08 * (1.0 - glint))) * gloss;
 	// dry-brushed foam: short strokes that lie still, more of them where the water meets the bank
 	float fn = vn(vec2(pp.x * 1.3 + pp.z * 0.6, pp.z * 3.4 - pp.x * 0.9));
 #ifdef TL_SHORE

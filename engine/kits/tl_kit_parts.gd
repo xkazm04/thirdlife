@@ -19,6 +19,16 @@ static func mesh(n: Node3D, mk: TLMesh, mname: String = "Mesh", shadows: bool = 
 	return mi
 
 
+## Diorama day: a tree, a rock, a bush. Under a style with `detail.nature` the recipe is drawn as felt and clay
+## (tl_felt.gd); the recipe stays what the part is (hash, triangles, collider).
+static func _mesh_nature(n: Node3D, mk: TLMesh) -> MeshInstance3D:
+	var mi: MeshInstance3D = mesh(n, mk)
+	var felt: ArrayMesh = preload("res://kits/tl_felt.gd").look(mk, "mesh", 20, 3)
+	if felt != null:
+		mi.mesh = felt
+	return mi
+
+
 static func body(n: Node3D, material: String, bname: String = "Body") -> StaticBody3D:
 	var b: StaticBody3D = StaticBody3D.new()
 	b.name = bname
@@ -208,14 +218,14 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 				_:
 					tm = TLKitNature.hero_tree()
 					th2 = tm.aabb().size.y
-			mesh(n, tm)
+			_mesh_nature(n, tm)
 			cyl(body(n, "wood"), maxf(0.12, th2 * 0.03), th2 * 0.5, Vector3(0, th2 * 0.25, 0))
 		"rock":
 			var rk: TLMesh = TLKitNature.rock(int(p["seed"]), float(p["size"]), float(p["squash"]))
-			mesh(n, rk)
+			_mesh_nature(n, rk)
 			hull(body(n, "stone"), rk.all_points())
 		"bush":
-			mesh(n, TLKitNature.bush(int(p["seed"]), float(p["size"])))
+			_mesh_nature(n, TLKitNature.bush(int(p["seed"]), float(p["size"])))
 		"fence":
 			var fa: Vector3 = Vector3.ZERO
 			var fb2: Vector3 = Vector3(float(p["length"]), 0, 0)
