@@ -1,0 +1,564 @@
+{
+ "schema": "tl.state/1",
+ "job": "penguin-push-20261121-1",
+ "lastSeq": 75,
+ "tornTail": false,
+ "planRevision": 1,
+ "plan": [
+  {
+   "id": "ice_arena",
+   "title": "Iceberg and sea",
+   "milestone": "blockout",
+   "deps": [],
+   "scope": [
+    "scripts/arena*.gd",
+    "data/arena.json"
+   ],
+   "contract": "Builds the round iceberg and the sea; sink_ring(k) drops ring k.",
+   "acceptance": [
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "physics"
+    ]
+   }
+  },
+  {
+   "id": "penguin_moves",
+   "title": "Belly slide and brake",
+   "milestone": "blockout",
+   "deps": [
+    "ice_arena"
+   ],
+   "scope": [
+    "scripts/penguin*.gd",
+    "data/penguin.json"
+   ],
+   "contract": "The player's penguin: slide, brake, bump.\nPLAYER CHECK: tests/bot_push.gd fails when the player can no longer push a dummy off.",
+   "acceptance": [
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "tests/bot_push.gd"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "input"
+    ],
+    "tests": [
+     "tests/bot_push.gd"
+    ]
+   }
+  },
+  {
+   "id": "rivals_ai",
+   "title": "Three rival penguins",
+   "milestone": "greybox",
+   "deps": [
+    "penguin_moves"
+   ],
+   "scope": [
+    "scripts/rival*.gd"
+   ],
+   "contract": "Three rivals that pick a target every 3 s.",
+   "acceptance": [
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "tests/bot_rounds.gd"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "ai"
+    ],
+    "tests": [
+     "tests/bot_rounds.gd"
+    ]
+   }
+  },
+  {
+   "id": "cracks_orca",
+   "title": "Cracks and the orca",
+   "milestone": "greybox",
+   "deps": [
+    "ice_arena"
+   ],
+   "scope": [
+    "scripts/orca*.gd",
+    "data/orca.json"
+   ],
+   "contract": "Edge rings crack every 20 s; the orca leaps where ice breaks.",
+   "acceptance": [
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ]
+  },
+  {
+   "id": "look_sound",
+   "title": "Splashes and the crowd",
+   "milestone": "art_pass",
+   "deps": [
+    "rivals_ai",
+    "cracks_orca"
+   ],
+   "scope": [
+    "scripts/look*.gd"
+   ],
+   "contract": "Splashes, squawks, the seal crowd.",
+   "acceptance": [
+    {
+     "level": "V5",
+     "verb": "capture",
+     "args": []
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "vfx",
+     "audio"
+    ]
+   }
+  }
+ ],
+ "order": [
+  "ice_arena",
+  "penguin_moves",
+  "rivals_ai",
+  "cracks_orca",
+  "look_sound"
+ ],
+ "packages": {
+  "ice_arena": {
+   "id": "ice_arena",
+   "title": "Iceberg and sea",
+   "milestone": "blockout",
+   "deps": [],
+   "state": "promoted",
+   "announced": true,
+   "round": 1,
+   "builtRounds": [
+    1
+   ],
+   "builderRuns": 1,
+   "tokensIn": 310000,
+   "tokensOut": 9800,
+   "lastOutcome": "ok",
+   "lastVerify": {
+    "round": 1,
+    "level": "V2",
+    "verb": "smoke",
+    "ok": true,
+    "report": "reports/ice_arena-r1-smoke.json",
+    "exitCode": 0
+   },
+   "mergedFiles": [
+    "scripts/ice_arena.gd"
+   ]
+  },
+  "penguin_moves": {
+   "id": "penguin_moves",
+   "title": "Belly slide and brake",
+   "milestone": "blockout",
+   "deps": [
+    "ice_arena"
+   ],
+   "state": "promoted",
+   "announced": true,
+   "round": 2,
+   "builtRounds": [
+    1,
+    2
+   ],
+   "builderRuns": 2,
+   "tokensIn": 440000,
+   "tokensOut": 14000,
+   "lastOutcome": "ok",
+   "lastVerify": {
+    "round": 2,
+    "level": "V4",
+    "verb": "bot",
+    "ok": true,
+    "report": "reports/penguin_moves-r2-bot.json",
+    "exitCode": 0
+   },
+   "mergedFiles": [
+    "data/penguin.json",
+    "scripts/penguin.gd",
+    "tests/bot_push.gd"
+   ],
+   "roundBase": 2,
+   "reopens": 1
+  },
+  "rivals_ai": {
+   "id": "rivals_ai",
+   "title": "Three rival penguins",
+   "milestone": "greybox",
+   "deps": [
+    "penguin_moves"
+   ],
+   "state": "promoted",
+   "announced": true,
+   "round": 1,
+   "builtRounds": [
+    1
+   ],
+   "builderRuns": 1,
+   "tokensIn": 280000,
+   "tokensOut": 8000,
+   "lastOutcome": "ok",
+   "lastVerify": {
+    "round": 1,
+    "level": "V4",
+    "verb": "bot",
+    "ok": true,
+    "report": "reports/rivals_ai-r1-bot.json",
+    "exitCode": 0
+   },
+   "mergedFiles": [
+    "scripts/rivals.gd"
+   ]
+  },
+  "cracks_orca": {
+   "id": "cracks_orca",
+   "title": "Cracks and the orca",
+   "milestone": "greybox",
+   "deps": [
+    "ice_arena"
+   ],
+   "state": "promoted",
+   "announced": true,
+   "round": 1,
+   "builtRounds": [
+    1
+   ],
+   "builderRuns": 1,
+   "tokensIn": 310000,
+   "tokensOut": 9800,
+   "lastOutcome": "ok",
+   "lastVerify": {
+    "round": 1,
+    "level": "V2",
+    "verb": "smoke",
+    "ok": true,
+    "report": "reports/cracks_orca-r1-smoke.json",
+    "exitCode": 0
+   },
+   "mergedFiles": [
+    "scripts/cracks_orca.gd"
+   ]
+  },
+  "look_sound": {
+   "id": "look_sound",
+   "title": "Splashes and the crowd",
+   "milestone": "art_pass",
+   "deps": [
+    "rivals_ai",
+    "cracks_orca"
+   ],
+   "state": "promoted",
+   "announced": true,
+   "round": 1,
+   "builtRounds": [
+    1
+   ],
+   "builderRuns": 1,
+   "tokensIn": 310000,
+   "tokensOut": 9800,
+   "lastOutcome": "ok",
+   "lastVerify": {
+    "round": 1,
+    "level": "V2",
+    "verb": "smoke",
+    "ok": true,
+    "report": "reports/look_sound-r1-smoke.json",
+    "exitCode": 0
+   },
+   "mergedFiles": [
+    "scripts/look_sound.gd"
+   ]
+  }
+ },
+ "briefs": 2,
+ "reactions": {
+  "iceberg": {
+   "choice": "floes",
+   "seq": 10
+  }
+ },
+ "phases": [
+  {
+   "id": "slide",
+   "title": "Slide and bump",
+   "try": "Slide your penguin around and bump a dummy into the sea.",
+   "packages": [
+    "ice_arena",
+    "penguin_moves"
+   ],
+   "state": "passed",
+   "doneCount": 2,
+   "reviews": [
+    {
+     "verdict": "hold",
+     "by": "player",
+     "note": "the penguin turns too slowly, make the brake snappier",
+     "seq": 31
+    },
+    {
+     "verdict": "pass",
+     "by": "player",
+     "seq": 43
+    }
+   ]
+  },
+  {
+   "id": "rivals",
+   "title": "Rivals and cracks",
+   "try": "Survive three rivals while the ice cracks under you.",
+   "packages": [
+    "rivals_ai",
+    "cracks_orca"
+   ],
+   "state": "passed",
+   "doneCount": 1,
+   "reviews": [
+    {
+     "verdict": "pass",
+     "by": "player",
+     "seq": 60
+    }
+   ]
+  },
+  {
+   "id": "show",
+   "title": "Orca show",
+   "try": "Play full rounds with splashes, squawks and the goofy orca.",
+   "packages": [
+    "look_sound"
+   ],
+   "state": "passed",
+   "doneCount": 1,
+   "reviews": [
+    {
+     "verdict": "pass",
+     "by": "player",
+     "seq": 71
+    }
+   ]
+  }
+ ],
+ "promotions": [
+  {
+   "packId": "game.penguin_push",
+   "version": "0.1.0",
+   "dest": "promoted/game.penguin_push"
+  }
+ ],
+ "mergedSincePromotion": false,
+ "changes": [],
+ "tokens": {
+  "in": 1755000,
+  "out": 63900,
+  "cacheRead": 0,
+  "unreportedRuns": 0
+ },
+ "tokenLedger": [
+  {
+   "ts": "2026-11-21T19:02:49.000Z",
+   "tokens": 23900
+  },
+  {
+   "ts": "2026-11-21T19:04:34.000Z",
+   "tokens": 26600
+  },
+  {
+   "ts": "2026-11-21T19:06:45.000Z",
+   "tokens": 67000
+  },
+  {
+   "ts": "2026-11-21T19:13:45.000Z",
+   "tokens": 319800
+  },
+  {
+   "ts": "2026-11-21T19:21:23.000Z",
+   "tokens": 299000
+  },
+  {
+   "ts": "2026-11-21T19:30:25.000Z",
+   "tokens": 155000
+  },
+  {
+   "ts": "2026-11-21T19:40:29.000Z",
+   "tokens": 319800
+  },
+  {
+   "ts": "2026-11-21T19:47:37.000Z",
+   "tokens": 288000
+  },
+  {
+   "ts": "2026-11-21T20:00:41.000Z",
+   "tokens": 319800
+  }
+ ],
+ "milestones": [],
+ "notes": [],
+ "replans": 0,
+ "replanned": [],
+ "creativity": "crazy",
+ "lastTs": "2026-11-21T20:06:24.000Z",
+ "sentence": "penguins pushing each other off an iceberg",
+ "packId": "game.penguin_push",
+ "title": "Penguin Push",
+ "billing": {
+  "adapter": "claude-cli",
+  "mode": "subscription",
+  "evidence": "claude CLI login (no ANTHROPIC_API_KEY)"
+ },
+ "brief": {
+  "rules": "Last penguin on the iceberg wins the round; best of three rounds. The ice shrinks every 20 s.",
+  "arena": "A round iceberg, 30 m across, in open sea; edge rings crack and sink.",
+  "ai": "Three rival penguins pick a target every 3 s, the leader more often.",
+  "controls": "WASD steer the belly slide, Space hops over a shove.",
+  "mood": "Bright, splashy and silly: big splashes, squawks, a cheering seal crowd.",
+  "pitch": "Hop and bump three rivals off a shrinking iceberg while a goofy orca circles.",
+  "aspects": [
+   {
+    "id": "player",
+    "icon": "player",
+    "title": "Tiny rockhopper",
+    "line": "Hops over shoves, but flies far when hit.",
+    "detail": "You steer a penguin that slides on its belly. Holding brake digs the flippers in for a sharp turn; a full-speed slide is hard to stop, so the edge is always close.",
+    "alternatives": [
+     {
+      "id": "heavy",
+      "title": "Heavy emperor",
+      "line": "Slow to start, almost impossible to push over."
+     },
+     {
+      "id": "slider",
+      "title": "Belly slider",
+      "line": "Belly-slide fast, brake with your flippers to turn."
+     }
+    ]
+   },
+   {
+    "id": "rivals",
+    "icon": "rival",
+    "title": "Three rival penguins",
+    "line": "They gang up on whoever leads the round.",
+    "detail": "Three computer penguins. Each picks a target every few seconds; the leader gets picked more often, so a lead is hard to keep and a comeback is always possible.",
+    "alternatives": [
+     {
+      "id": "solo",
+      "title": "Every bird alone",
+      "line": "Each rival shoves whoever is nearest."
+     },
+     {
+      "id": "pairs",
+      "title": "Two against two",
+      "line": "You and a buddy penguin against a pair."
+     }
+    ]
+   },
+   {
+    "id": "iceberg",
+    "icon": "arena",
+    "title": "Shrinking iceberg",
+    "line": "Cracks spread from the edges every twenty seconds.",
+    "detail": "A round iceberg about thirty metres across. Every twenty seconds a ring of ice at the edge cracks and sinks, so the fight moves to the middle.",
+    "alternatives": [
+     {
+      "id": "floes",
+      "title": "Drifting floes",
+      "line": "Small floes drift apart; jump the gaps."
+     },
+     {
+      "id": "bowl",
+      "title": "Ice bowl",
+      "line": "A slippery bowl that tips everyone to the middle."
+     },
+     {
+      "id": "ship",
+      "title": "Icebreaker deck",
+      "line": "A tilting ship deck that rolls with the waves."
+     }
+    ]
+   },
+   {
+    "id": "win",
+    "icon": "goal",
+    "title": "Last one standing",
+    "line": "Push the others into the sea; best of three rounds.",
+    "detail": "A round ends when one penguin is left on the ice. Three rounds; the winner of two takes the match.",
+    "alternatives": [
+     {
+      "id": "fish",
+      "title": "Fish grab",
+      "line": "Most fish when the time runs out wins."
+     },
+     {
+      "id": "crown",
+      "title": "Hold the crown",
+      "line": "Keep the crown longest; a bump knocks it loose."
+     }
+    ]
+   },
+   {
+    "id": "orca",
+    "icon": "twist",
+    "title": "Goofy orca",
+    "line": "A clumsy orca flops onto the ice where it cracks.",
+    "crazy": true,
+    "detail": "Crazy mode adds an orca. Its fin circles the iceberg; where it leaps, the ice breaks and any penguin there is thrown high. Lure rivals onto its path.",
+    "alternatives": [
+     {
+      "id": "seals",
+      "title": "Seal surfers",
+      "line": "Seals ride in on waves and shove everyone."
+     },
+     {
+      "id": "blizzard",
+      "title": "Sudden blizzard",
+      "line": "Snow hides the edge; listen for the cracks."
+     }
+    ]
+   }
+  ]
+ },
+ "estimate": {
+  "packages": 5,
+  "wallMinutes": 65,
+  "tokens": 1700000
+ },
+ "briefApprovedBy": "player",
+ "jobState": {
+  "state": "done",
+  "reason": "promoted 0.1.0"
+ },
+ "packVerify": {
+  "round": 1,
+  "level": "V4",
+  "verb": "bot",
+  "ok": true,
+  "report": "reports/final-bot_rounds.json",
+  "exitCode": 0
+ },
+ "promoted": {
+  "packId": "game.penguin_push",
+  "version": "0.1.0",
+  "dest": "promoted/game.penguin_push"
+ }
+}

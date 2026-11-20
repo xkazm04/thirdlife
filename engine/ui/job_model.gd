@@ -3,6 +3,7 @@ extends RefCounted
 ## that the panel draws. Read only: nothing here writes into a job directory. It reads `job.jsonl` itself (the single
 ## source of truth) and tolerates a torn last line; `state.json` is only used by the selftest as a cross-check.
 
+const V2 = preload("res://ui/job_v2.gd")
 const LIVE_PHASES: PackedStringArray = ["designing", "planning", "running"]
 const TERMINAL: PackedStringArray = ["done", "failed", "cancelled"]
 
@@ -188,7 +189,7 @@ static func reduce(events: Array, now: float) -> Dictionary:
 		"activity": "", "billing": "", "phase": "designing", "adapter": "",
 		"done": 0, "total": 0, "elapsed_s": 0.0, "pause_kind": "", "fail_line": "", "unknown_types": [],
 		"card": "", "hand_rounds": [],
-	}
+	}.merged(V2.defaults())       # designer v2 keys (JOB.md 2026-11-20): ui/job_v2.gd
 	var pk: Dictionary = job["packages"]
 	for e: Dictionary in events:
 		var t: String = str(e.get("type", ""))
@@ -198,6 +199,7 @@ static func reduce(events: Array, now: float) -> Dictionary:
 		job["last_ts"] = ts
 		job["last_seq"] = int(e.get("seq", 0))
 		var pid: String = str(e.get("package", ""))
+		V2.take(job, e)
 		match t:
 			"job_created":
 				for key in ["answers", "lot"]:
@@ -333,7 +335,7 @@ static func reduce(events: Array, now: float) -> Dictionary:
 				if reason.begins_with("hand check failed"):
 					(job["hand_rounds"] as Array).append(pid)     # lane C4: a round a failed hand check cost
 				job["activity"] = "%s re-opened" % pid
-			"comment":
+			"comment", "aspect_reacted", "phase_done", "phase_reviewed":
 				pass
 			_:
 				if not (job["unknown_types"] as Array).has(t):
@@ -403,7 +405,7 @@ static func reduce(events: Array, now: float) -> Dictionary:
 		job["fail_line"] = one_line(line, 160)
 	var end: float = float(job["last_ts"]) if (phase in TERMINAL or phase == "approve" or phase == "paused") else now
 	job["elapsed_s"] = maxf(0.0, end - float(job["first_ts"])) if float(job["first_ts"]) > 0.0 else 0.0
-	return job
+	return V2.finish(job)
 
 
 ## `params` of a promoted pack: [{name, file, path, min, max, step, label, value, ok, error}]

@@ -55,6 +55,7 @@ for (const step of steps) {
   say(`[door] step ${at} exit ${code}`);
   if (code !== 0) break;
 }
-const jobOutcome = ["run", "resume", "change"].includes(at) && (code === 1 || code === 3);
+// `phase` (designer v2): a Foreman that builds on after a pass ends the same way as `run`.
+const jobOutcome = ["run", "resume", "change", "phase"].includes(at) && (code === 1 || code === 3);
 say(`[door] end code=${code} step=${at} ${code === 0 || jobOutcome ? "ok" : "error"}`);
 process.exit(code);

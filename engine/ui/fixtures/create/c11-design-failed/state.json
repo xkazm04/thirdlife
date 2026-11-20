@@ -1,0 +1,41 @@
+{
+ "schema": "tl.state/1",
+ "job": "penguin-push-20261121-1",
+ "lastSeq": 4,
+ "tornTail": false,
+ "planRevision": 0,
+ "plan": [],
+ "order": [],
+ "packages": {},
+ "briefs": 0,
+ "reactions": {},
+ "phases": [],
+ "promotions": [],
+ "mergedSincePromotion": false,
+ "changes": [],
+ "tokens": {
+  "in": 0,
+  "out": 0,
+  "cacheRead": 0,
+  "unreportedRuns": 1
+ },
+ "tokenLedger": [],
+ "milestones": [],
+ "notes": [],
+ "replans": 0,
+ "replanned": [],
+ "creativity": "crazy",
+ "lastTs": "2026-11-21T19:07:02.000Z",
+ "sentence": "penguins pushing each other off an iceberg",
+ "packId": "game.penguin_push",
+ "title": "Penguin Push",
+ "billing": {
+  "adapter": "claude-cli",
+  "mode": "subscription",
+  "evidence": "claude CLI login (no ANTHROPIC_API_KEY)"
+ },
+ "jobState": {
+  "state": "failed",
+  "reason": "the Designer did not answer in 300 s"
+ }
+}

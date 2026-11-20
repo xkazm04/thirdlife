@@ -112,12 +112,68 @@ static func _json_flag(name: String, value: Dictionary) -> Array:
 	return [name, "json64:" + Marshalls.utf8_to_base64(JSON.stringify(value))]
 
 
-func new_game(sentence: String, answers: Dictionary = {}, lot: Dictionary = {}, place_calls: Array = []) -> String:
+## `v2` (designer v2, JOB.md "Added 2026-11-20"): {creativity: "crazy"} adds `--creativity crazy`, {run_through: true}
+## adds `--run-through`; anything else adds nothing (absent = standard, stop after every phase).
+func new_game(sentence: String, answers: Dictionary = {}, lot: Dictionary = {}, place_calls: Array = [], v2: Dictionary = {}) -> String:
 	var s: String = clean_text(sentence)
 	if s.is_empty():
 		return "describe the game first"
 	var calls: Array = [] if place_calls.is_empty() else ["--place-calls", "json64:" + Marshalls.utf8_to_base64(JSON.stringify(place_calls))]
-	return _start("new:" + s, "new", [["new", s, "--site", jobs_root] + _flags("new") + _json_flag("--answers", answers) + _json_flag("--lot", lot) + calls])
+	return _start("new:" + s, "new", [["new", s, "--site", jobs_root] + _flags("new") + _json_flag("--answers", answers) + _json_flag("--lot", lot) + calls + v2_flags(v2)])
+
+
+static func v2_flags(v2: Dictionary) -> Array:
+	var out: Array = []
+	if str(v2.get("creativity", "")) == "crazy":
+		out.append_array(["--creativity", "crazy"])
+	if v2.get("run_through", false) == true:
+		out.append("--run-through")
+	return out
+
+
+## Designer v2. `foreman react <job> <aspect> <choice> [--note "..."]`: one step per reaction, [aspect, choice, note].
+static func react_step(job_dir: String, aspect: String, choice: String, note: String = "") -> Array:
+	var step: Array = ["react", job_dir, aspect, choice]
+	var n: String = clean_text(note)
+	if not n.is_empty():
+		step.append_array(["--note", n])
+	return step
+
+
+## The reactions that are not in the log yet (each [aspect, choice, note]), then `foreman redesign <job>` with the
+## Designer's adapter settings (the "redesign" entry of the flags, else the "new" one: the Designer runs again).
+func redesign(job_dir: String, reactions: Array = []) -> String:
+	var steps: Array = []
+	for r: Array in reactions:
+		steps.append(react_step(job_dir, str(r[0]), str(r[1]), str(r[2]) if r.size() > 2 else ""))
+	steps.append(["redesign", job_dir] + (_flags("redesign") if flags.has("redesign") else _flags("new")))
+	return _start(job_dir, "redesign", steps)
+
+
+## The reactions that are not in the log yet, then approve, plan and run (the brief and the reactions that stand on it).
+func approve_v2(job_dir: String, reactions: Array = []) -> String:
+	var steps: Array = []
+	for r: Array in reactions:
+		steps.append(react_step(job_dir, str(r[0]), str(r[1]), str(r[2]) if r.size() > 2 else ""))
+	steps.append_array([["approve", job_dir], ["plan", job_dir] + _flags("plan"), ["run", job_dir] + _flags("run")])
+	return _start(job_dir, "approve", steps)
+
+
+## `foreman phase <job> pass|hold [--note "..."]` with the run settings of `resume`: the Foreman writes the verdict and
+## builds on like `resume` (L2: exit 3 when the job stops at the next phase, 0 when it ends done; foreman_run.mjs takes
+## both as the job's outcome). It is refused while a Foreman holds the job, so the page does not start it then.
+func phase(job_dir: String, verdict: String, note: String = "", foreman_running: bool = false) -> String:
+	if not verdict in ["pass", "hold"]:
+		return "a phase is passed or held"
+	var n: String = clean_text(note)
+	if verdict == "hold" and n.is_empty():
+		return "say what should change first"
+	if foreman_running:
+		return "the builders are still at work on this game"
+	var step: Array = ["phase", job_dir, verdict]
+	if not n.is_empty():
+		step.append_array(["--note", n])
+	return _start(job_dir, "phase", [step + _flags("resume")])
 
 
 func place(ask: String, out: String) -> String:

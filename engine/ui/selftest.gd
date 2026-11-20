@@ -288,6 +288,16 @@ func _initialize() -> void:
 
 	_workbench_checks()
 	preload("res://ui/editor/selftest_place.gd").run(self, tmp)
+	# ---- 8. night of 21 Nov (L3): the Create page and the designer v2 readers, from ui/fixtures/create/
+	var create_done: Variant = await preload("res://ui/create/create_checks.gd").run(self, func(name: String, ok: bool, detail: String = "") -> void: check(name, ok, detail), tmp)
+	if create_done != true:
+		check("create: the Create page's checks ran to their end", false, "stopped half way (a script error above)")
+	# a v2 key in a marble prefix: the panel's model takes it (creativity, a pause on a phase)
+	var v2_tail: String = (head % 49) + "\"type\":\"phase_done\",\"phase\":\"first\"}
+" + (head % 50) + "\"type\":\"job_state\",\"state\":\"paused\",\"reason\":\"phase\"}
+"
+	var dv2: Dictionary = JobModel.read_job(cut.call(48, "v2_phase", v2_tail), 0.0)
+	eq("v2: a phase_done on a plan without phases is not a known phase: paused, not a phase wait", [dv2["phase"], dv2["pause_kind"], (dv2["unknown_types"] as Array).size()], ["paused", "other", 0])
 
 	_remove(tmp)
 	print("[selftest] %d passed, %d failed" % [passed, failed])
