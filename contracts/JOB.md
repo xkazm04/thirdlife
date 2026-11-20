@@ -104,8 +104,18 @@ Unknown `type` or unknown keys are errors when the log is read.
   milestone, and the milestone is `art_pass`, its packages fail that round with the cause `no_visible_change`.
 - **Critic.** A "NOT ok" verdict gives the milestone's packages one extra round with the critic's notes as feedback.
   After that round the job continues whatever the verdict; the verdict stays in the `milestone` event.
-- **Capture frames.** 25 % and 75 % of the frame at which the first bot finished in its last passing report; 120 and
-  480 when there is none.
+- **Capture frames.** A milestone films at most two bots. First the manifest's first test, at 25 % and 75 % of the
+  frame at which it finished in its last passing report (the same shot every milestone, which the no-visible-change
+  rule compares). Then the milestone's packages, newest merge first: the first one with an own acceptance bot (a
+  test its acceptance runs and its `registers.tests` lists, not the first test) is filmed at 25 % and 95 % of the
+  frame at which THAT bot finished. 120 and 480 for a bot without such a report. The first bot's captures keep the
+  name `captures/<milestone>-<cam>-f<frame>.png`; the second bot's are `captures/<milestone>-<cam>-<bot stem>-f<frame>.png`.
+  No visible change compares the first bot's captures only. The critic is told, per capture, the camera, the frame
+  and which bot of which package was playing; `reports/critic-<milestone>-s<seq>.json` carries `shots[]`
+  (`{capture, label}`).
+- `foreman critique <job> <milestone> --out DIR` (added 2026-11-21): the milestone's captures and one critic call
+  again on `pack/` as it is, writing only into DIR (captures, runner reports, `critique.json` with `dry: true`);
+  nothing is written to the job.
 - **Milestones are labels**, not ordered stages: one fires when its packages are merged.
 - **Budget weights.** Cache-read tokens count at 0.1 against a token policy; raw figures are logged unchanged.
 - **Manifest.** Version `0.1.0` at the first build; entry `scripts/main.gd`.
