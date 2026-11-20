@@ -171,3 +171,12 @@ Plan: `docs/shifts/2026-11-20-night/PLAN.md`; boards https://claude.ai/artifact/
 - Route scoreboard: Astra led frame (one striking image: sky, light); Fable led surfaces (a material system) and character
   (even by eye, cleaner footprint). Cost: Astra at least 3.2 M tokens; Opus operators 1.06 M; Fable 1.78 M.
 - Open: the owner's D1-D5; the next shift follows D1.
+
+### 2026-11-20 day: plan (crisp cel vs toy diorama, two teams)
+The owner played the combined diorama (10:10). Their verdict: it looks better at first sight, but it is blurry and its
+fidelity is far below the concept. Today's look has the potential to evolve. So: one day of two teams, each with Astra
+on the frame and the figure and Fable on surfaces and nature, looping for 10 hours to show each look's full potential.
+- **Branches:** `d20-cel` (crisp, `TL_STYLE=crisp`) and `d20-dio` (diorama with Astra's figure).
+- **Plan:** `docs/shifts/2026-11-20-day/PLAN.md`.
+- **Integrations** at 13:30, 16:30 and 19:45 export `dist/day/<cel|dio>`. Verdict 20:45. Branches only.
+- 10:40 four arms launched (cel-astra, cel-fable, dio-astra, dio-fable). d20-base fast PASS; world/packs running.
