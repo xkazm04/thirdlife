@@ -95,8 +95,9 @@ more because shots go where the cursor is; the AI mates no longer score without 
 TEST EXPECTATIONS THAT MOVED (each named, with why)
 - bot_hockey_ai: "everybody moved 3 m" now counts skaters only. Goalies keep to their crease; bot_goalie checks that.
   It also waits for the result line at full time (H9a's rule); with goalies, full-time ends became common.
-- bot_match: the horizon went from 6,000 to 12,000 frames. With goalies, one side went 6,000 frames without a goal on
-  5 of 20 seeds. At 12,000 both sides scored on 20 of 20.
+- bot_match: it now runs until both sides have scored, at least 6,000 and at most 18,000 frames (it was a fixed 6,000).
+  With goalies, one side went 6,000 frames without a goal on 5 of 20 seeds, and red's first goal on seed 1 came at
+  12,267. Both sides scored on 20 of 20 seeds.
 - bot_aim: the shot's error is measured from the puck to the aim point, because the shot now flies at it. Errors are
   0.00 to 0.01 degrees on seed 1, against the same 3-degree bound.
 - bot_hockey (ladder base): the bot aims at the mouth's side away from the goalie at z 1.5. It was 1.2, chosen when
