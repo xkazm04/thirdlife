@@ -10,6 +10,8 @@ extends RefCounted
 ## Gaps: on the spur's side at every spur mouth, both sides at the bridge, wherever a plot or a lot reaches the row,
 ## at the river, and one open span in every `PASS_EVERY` so a walker always has a way through nearby.
 
+const Felt: GDScript = preload("res://kits/tl_felt.gd")              # diorama day (dio-fable): under a style with felt nature
+const Strew: GDScript = preload("res://kits/tl_felt_strew.gd")      # the row is turned posts and round rails with grain
 const POST_GAP: float = 2.6        # metres between posts
 const PASS_EVERY: int = 9          # every ninth span stays open
 const POST_H: float = 1.25
@@ -77,12 +79,19 @@ static func _row(parent: Node3D, run: PackedVector3Array) -> float:
 	for from: int in range(0, run.size() - 1, CHUNK):
 		var to: int = mini(from + CHUNK, run.size() - 1)
 		var mk: TLMesh = TLMesh.new(41)
+		var felt: bool = Felt.enabled()
 		for k: int in range(from, to + 1):
 			if k > from or from == 0:      # the post two pieces share is drawn once
-				mk.bar(run[k], run[k] + Vector3(0, POST_H, 0), 0.17, 0.17, "wood_dark", Color.WHITE, 0.02)
+				if felt:
+					Strew.fence_post(mk, run[k])
+				else:
+					mk.bar(run[k], run[k] + Vector3(0, POST_H, 0), 0.17, 0.17, "wood_dark", Color.WHITE, 0.02)
 			if k > from and k % PASS_EVERY != 0:
-				for h: float in RAIL_H:
-					mk.bar(run[k - 1] + Vector3(0, h, 0), run[k] + Vector3(0, h, 0), 0.10, 0.15, "wood", Color.WHITE, 0.01)
+				if felt:
+					Strew.fence_rails(mk, run[k - 1], run[k], RAIL_H)
+				else:
+					for h: float in RAIL_H:
+						mk.bar(run[k - 1] + Vector3(0, h, 0), run[k] + Vector3(0, h, 0), 0.10, 0.15, "wood", Color.WHITE, 0.01)
 				metres += run[k - 1].distance_to(run[k])
 		var mi: MeshInstance3D = mk.instance("WorldRoadRails%d" % parent.get_child_count())
 		mi.visibility_range_end = SEEN_M

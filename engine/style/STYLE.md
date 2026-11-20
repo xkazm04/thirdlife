@@ -262,7 +262,7 @@ not part of the indexed API. `style_surfaces.json` is the diorama file with ink 
 The owner found the diorama of that night blurry. The marks of felt and clay were formulas (value noise stretched into
 fibres): at 1080p they read as a smear. They are textures now, and nature has real form. All of it is behind keys of
 `style_diorama.json`; a style without them (classic) loads no texture and draws the kit recipes as they are
-(selftest block 630: `dio.tex`, `dio.tex_classic`, `dio.nature`, `dio.mesa`).
+(selftest block 630: `dio.tex`, `dio.tex_classic`, `dio.nature`, `dio.mesa`, `dio.rails`, `dio.rails_classic`, `dio.strew`).
 
 | Key | What it does (absent = that night's behaviour; without `toon.model`, today's) |
 |---|---|
@@ -270,12 +270,14 @@ fibres): at 1080p they read as a smear. They are textures now, and nature has re
 | `detail.tex_felt_m`, `tex_clay_m` | the size of one tile of flocking and of clay on the land (m). |
 | `detail.tex_relief` | how strongly the textures' slopes tilt the lit normal. |
 | `detail.nature` > 0 | the village draws each kit recipe as felt and clay (`kits/tl_felt.gd`; the village's scatter, and in a pack a layout's forest and the parts tree, rock, bush): a cone of a pine key becomes a felt skirt with a lobed, hanging rim, a rolled lip and a dark underside; a blob of a leaf key a ball of felted wool; a blob of a rock key a lump of rolled clay, pressed flat here and there; the mesas are slabs of clay laid one on another with a rounded outline; the plot fences have turned posts and round rails. The recipe stays the source of crowns, colliders and kit hashes, and casts the sun's shadow for the trees (a felt tree is fifteen times the recipe's triangles, and the shadow is drawn four times over). From 2 a layout's own forest is felt too (about a thousand pines a pack: off by default). The picture cache key carries `felt<n>`, so such a style never shares a pack's picture with classic. |
-| `detail.pebbles` (count) | clay pebbles strewn on the roads as real lumps (with `nature`); the discs the road shader drew are then left out. |
+| `detail.pebbles` (count) | clay pebbles strewn on the roads as real lumps (with `nature`); the discs the road shader drew are then left out. Pebbles, grit and meadow tufts are drawn in pieces of 32 m of ground, each with a far limit (pebbles 96 m, tufts 84 m, grit 44 m; `village_parts.gd` `clumps`, `STREW_CELL`): a piece out of view or beyond its limit is neither drawn nor shadowed. |
 | `water.clouds`, `water.cloud` | the cotton clouds stand in the resin: soft cream shapes where the mirrored ray meets a cloud layer. |
 | `water.glint` 0..1 | 1 = that night's tight spark of the sun in the ripples, 0 = a soft pool of light only (sparks flicker when the eye moves). |
 | `water.mirror_world` 0..1 | with `water.shore`: the resin mirrors what stands on its banks. The mirrored ray (of a calmer surface than the glints use) is walked through the picture drawn before the resin and its depth (22 steps); where it passes behind something, that colour is taken, else the sky and the clouds as before. |
 | `detail.dress` (count) | the roadsides dressed as a diorama builder strews them (with `nature`): knee-high felt pines, felt balls, stones a walker steps over. Nothing of it is tall enough to need a collider (the village's bushes have none either). |
 | `detail.tufts` (count) | flock tufts over the whole meadow, in drifts and two dyes (clumps of twenty faces, no shadow of their own), and mounds of dark flock round the foot of every tree (with `nature`). |
+| `detail.dye_relief` 0..1.5 | the meadow's dye follows the land instead of noise alone: the village's land paints its hollows with `grass_dark` and its crowns with `grass_dry` (by the height against the mean of four points 14 m off), and the shader turns the dye golden on a slope that looks at the sun and cooler and deeper on one that turns away. |
+| `detail.road_rails` (m) | a row of rails along both sides of the main road, that far from its edge (`kernel/world/terrain/road_rails.gd`, cel-fable's; no colliders, every ninth span open). Under a style with `nature` the row is turned posts and round rails with grain (`kits/tl_felt_strew.gd` `fence_post`, `fence_rails`). |
 | `detail.grit` (count) | the roads strewn all over with small stones (with `nature`); `pebbles` are the larger ones, in strews, with shadows. |
 | `detail.dowels` > 0 | a kit scaffold's square steel bars are drawn as turned wooden dowels (`kits/tl_felt_strew.gd` `dowels`: every bar-shaped piece of the recipe becomes a round dowel of a wood key, a little stouter, its grain along it; decks and foot plates are kept). The picture cache key carries `dowels`. |
 

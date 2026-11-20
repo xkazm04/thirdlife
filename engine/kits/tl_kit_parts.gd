@@ -165,7 +165,7 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 					decks.append(int(dl))
 			var scm: TLMesh = TLKitSite.scaffold(int(p["bays"]), int(p["levels"]), float(p["bay_w"]), float(p["bay_d"]), float(p["level_h"]), decks)
 			var scmi: MeshInstance3D = mesh(n, scm)
-			var scd: ArrayMesh = preload("res://kits/tl_felt_strew.gd").dowels(scm, "mesh", {"yellow": "plank", "orange": "wood_light", "yellow_dark": "wood", "wood_light": "wood_light"})     # diorama day: wooden dowels
+			var scd: ArrayMesh = preload("res://kits/tl_felt_strew.gd").dowels(scm, "mesh", {"yellow": "wood", "orange": "wood", "yellow_dark": "wood_dark", "wood_light": "wood"})     # diorama day: wooden dowels
 			if scd != null:
 				scmi.mesh = scd
 			var W: float = float(p["bays"]) * float(p["bay_w"])
