@@ -15,6 +15,7 @@ extends RefCounted
 ##                turn from sun to shade).
 
 const SHADER_DIR: String = "res://style/shaders/"
+const _Cel: GDScript = preload("res://style/cel/cel_surfaces.gd")   # crisp cel (20 Nov, day): `toon.model` = "cel"
 
 
 ## `file`.gdshader, or compiled with `#define <define>` in front when `define` is not empty. `cache` is TLStyle's.
@@ -38,6 +39,8 @@ static func model(data: Dictionary) -> String:
 ## The toon shader of a style: the file itself, or its variant for the style's material model.
 static func toon(data: Dictionary, cache: Dictionary) -> Shader:
 	var m: String = model(data)
+	if m == "cel":
+		return variant("toon_cel", "", cache)     # a file of its own (style/cel/cel_surfaces.gd): toon.gdshader is not touched
 	return variant("toon", "" if m.is_empty() else "TL_" + m.to_upper(), cache)
 
 
@@ -56,13 +59,15 @@ static func globals(data: Dictionary) -> Dictionary:
 	var dt: Dictionary = data.get("detail", {})
 	var chip: Color = Color(String(t.get("chip_color", "#e8dcc8"))).srgb_to_linear()
 	var grass: Color = Color(String((data.get("palette", {}) as Dictionary).get("grass", "#86b944"))).srgb_to_linear()
-	return {
+	var out: Dictionary = {
 		"g_dio": Vector4(float(dt.get("bump", 1.0)), float(dt.get("bump_near", 14.0)), float(dt.get("bump_far", 60.0)), float(dt.get("chip", 1.0))),
 		"g_dio2": Vector4(float(t.get("gloss", 0.12)), float(t.get("sheen", 1.0)), float(t.get("sky_refl", 0.5)), float(t.get("spec", 1.0))),
 		"g_dio3": Vector4(chip.r, chip.g, chip.b, float(dt.get("bevel", 0.0))),
 		"g_dio5": Vector4(float(t.get("wax", 0.0)), 0.0, 0.0, 0.0),
 		"g_dio4": Vector4(grass.r, grass.g, grass.b, clampf(float(dt.get("round", 0.0)), 0.0, 1.0)),
 	}
+	out.merge(_Cel.globals(data))
+	return out
 
 
 ## Combine of 20 Nov (moved from tl_style.gd to keep it inside its size budget; behaviour unchanged).

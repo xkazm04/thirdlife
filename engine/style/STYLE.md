@@ -256,3 +256,52 @@ off the horizon band falls from 2.5 % of flipping pixels to 0.3 %.
 
 `engine/style/dio/style_dio.gd` holds the code a model needs (shader variants, the globals `g_dio` .. `g_dio5`); it is
 not part of the indexed API. `style_surfaces.json` is the diorama file with ink and paper off, a judging aid of that night.
+
+## The cel material model (day of 20 Nov 2026, surfaces)
+
+`style_crisp.json` (`TL_STYLE=crisp`) names the cel model. It lives in files of its own: `shaders/toon_cel.gdshader`
+(it began as toon.gdshader without its `TL_DIORAMA` branches and keeps every kernel hook of it), `shaders/water_cel.gdshader`
+and `cel/cel_surfaces.gd` (the globals `g_cel` .. `g_cel3`, `g_land0` .. `g_land7`). toon.gdshader, water.gdshader and
+style.json are not touched (selftest `celsurf.classic_files`: their sha256 as on the base), so today's look cannot move.
+
+| Key | What it does (absent = today) |
+|---|---|
+| `toon.model` = `"cel"` | the palette material is toon_cel.gdshader: flat bands (lit, shade, deep), each edge one pixel soft at any distance (`band_soft` is not read: a fixed softness is a gradient metres wide where land turns slowly); no hatching; class tones are flat per plank, panel, plate and course (no stains or streaks). |
+| `toon.cel_shadow` 0..0.5 | a cast shadow is cut at half of the sun's shadow, this far to either side: its edge is a line however the shadow map was filtered, and it falls to the shade band, never to the deep one. |
+| `toon.cel_chroma` | chroma the shade gives back to the paint (0 = a plain multiply): grass stays green and a red jacket red in the shade. |
+| `toon.cel_deep` | the band of a form turned fully away, as a factor of the shade (1 = two bands only). |
+| `toon.cel_top`, `cel_top_k` | a lump (bush, crown, rock) has one more flat shape where it faces the sun squarely: from this much of the light, this much lighter. |
+| `toon.cel_rim` 0..1 | the rim lights as a cut shape instead of a gradient (with `rim_k`, `rim2_k` 0 there is none). |
+| `detail.round` 0..1 | a `blob` and the side of a `cyl` are drawn with the round thing's own normal (TLMesh UV2), in the prepass too: one terminator, and the ink pass draws the outline of the lump, not a crease on every facet. A blob's facet tones are mostly taken back. |
+| `detail.edge` | a painted highlight along the edges of a box face (TLMesh UV2), drawn where the face is in the sun; none on a member thinner than about 5 cm. |
+| `detail.land_wobble`, `land_bias` | the land is painted by numbers: its blended pigment is snapped to the nearest of eight palette paints (`grass`, `grass_dark`, `grass_dry`, `dirt`, `sand`, `rock`, `cliff`, `rock_warm`), the edge between two fields wobbles by `land_wobble` and is one pixel soft. `land_bias` {paint: number} lets a paint win more or less ground. Rock never wins on level ground and earth never on a steep face; a pigment that is none of the paints is left as it is. |
+| `detail.verge_m` | where grass meets earth the grass side is one tone darker for this width (the cut of the turf beside a road). |
+| `detail.marks_m`, `marks_far`, `patch`, `flowers` | scale of the tufts (grass only) and pebbles (earth only), and the distance at which they end (far land is flat colour, not a field of dots); light flat patches on earth and meadow; handfuls of flat dots (cream, yellow, pink) in the meadow, gone before they are smaller than a pixel. |
+| `detail.land_flat` 0..1 | level land is lit as flatter than it is: a meadow that rolls a few degrees stays one lit field, and only a real slope turns to the shade band. |
+| `toon.cel_wind` (m), `mat.<key>.sway` < 0 | a scattered tree leans in the wind as one thing: nothing at its foot, `cel_wind` metres at 10 m, the phase from where it stands. It moves the keys whose `sway` is negative (pine, leaf, trunk), and only an instance with a place of its own; the shadow moves with it. |
+| `detail.strata*` | rock fields and cliffs carry flat strata in world height in two alternating tones, each edge one pixel soft; mesas the same at any distance. `strata_tone` is the contrast. |
+| `water.model` = `"cel"` | water_cel.gdshader: two flat blues (channel, shallows), light streaks that lie along the flow and drift with it (`streak`, `flow`), a few large flat shapes of sky (`sky`, `sky_k`), a foam line (`foam`). |
+| `water.shore` (m) > 0, `water.priority` | the water reads the depth of its bed: the waterline is where the land really meets it, and round every pier. It is then drawn after the solid world; `priority` -110 puts it before the ink pass (-100), so drawn contours lie over the water. |
+
+Level land takes the ambient of level ground, no bounce and no rim: a smooth function of a rolling normal is a
+gradient across the meadow, and cel land is flat fields. Cliffs keep their own.
+
+Does it crawl? Measured as the diorama model was (`look.sh boil`: mean change per frame in grey levels / share of
+pixels that change by more than 24 in one frame; 1920x1080, x264 crf 4; lane script
+`docs/shifts/2026-11-20-day/lanes/cel-fable/crawl.sh`), both styles with the base's ink and grade:
+
+| clip, band | classic | crisp cel |
+|---|---|---|
+| review scene, slow pan, horizon (thin members) | 3.065 / 2.625 % | 2.797 / 2.320 % |
+| review scene, slow pan, kit floor | 0.441 / 0.037 % | 0.469 / 0.038 % |
+| village road, slow pan, far land and yard | 0.485 / 0.523 % | 0.452 / 0.492 % |
+| village road, slow pan, near land | 0.040 / 0.000 % | 0.022 / 0.001 % |
+
+Why it holds: a field's edge, a band's edge and a mark's edge are each one pixel soft by the screen's own
+derivatives; the wobble of a paint edge and every mark are anchored in the world and faded before they are finer than
+a pixel; a cast shadow is cut, not blurred, so its edge is as steady as the shadow map under it. The first run after
+a change of the shader text compiles for about a second (seen as one long frame); after that it is cached.
+
+The picture cache (kernel/world/draw) stores vertex colours, and a kit terrain bakes palette paints into them: its key
+carries those paints when they are not the paints of style.json (`kernel/world/draw/pic_salt.gd`), so a style with
+other land paints has its own pictures and today's key is unchanged.
