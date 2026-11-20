@@ -301,7 +301,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	Parts.lots(parent, lots.size(), plots.size(), centres, rad, pad_h, gates, rng, ws, mk_edge, stats)
 	SiteDraw.place(parent, site_plots, centres, pad_h, rad, gates, stats)     # S: the construction sites, on their plots' pads
 	_lap(stats, "lots")
-	var edge_task: Dictionary = {"jobs": edge_jobs, "terr": terr, "half": half, "edge": mk_edge}
+	var edge_task: Dictionary = {"jobs": edge_jobs, "terr": terr, "half": half, "edge": mk_edge, "marker_out": TLStyle.num("detail", "sign_out", 0.0)}
 	if bool(cfg.get("edges_now", false)) or OS.get_environment("TL_LAND_NOW") == "1":
 		Parts.edge_geometry(edge_task)            # P13: in the frame, as before (to measure the difference)
 		Parts.edge_nodes(parent, edge_task)

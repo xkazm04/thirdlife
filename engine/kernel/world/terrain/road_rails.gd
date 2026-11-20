@@ -8,6 +8,7 @@ extends RefCounted
 ## no hash can move. It draws nothing from the landscape's random stream (posts stand at fixed steps along the road),
 ## so the scatter that follows is the same with and without it.
 ## Gaps: on the spur's side at every spur mouth, both sides at the bridge, wherever a plot or a lot reaches the row,
+## round every plot's gate (its own fence, flag and sign stand there),
 ## at the river, and one open span in every `PASS_EVERY` so a walker always has a way through nearby.
 
 const POST_GAP: float = 2.6        # metres between posts
@@ -18,6 +19,7 @@ const RAIL_H: Array = [0.50, 0.98]
 ## about 105 m and 120 m. Thinner than a pixel they would flicker as the eye moves, so the row is cut into pieces of `CHUNK` spans
 ## (about 31 m) and a piece is not drawn when its middle is further than `SEEN_M` (+ `SEEN_MARGIN` before it returns).
 const CHUNK: int = 12
+const GATE_CLEAR: float = 9.0      # metres round a plot's gate (the start of its spur) that stay free: its fence, flag and sign stand there
 const SEEN_M: float = 108.0
 const SEEN_MARGIN: float = 8.0
 
@@ -34,6 +36,7 @@ static func build(parent: Node3D, terr: RefCounted, main_path: TLKitPath, half: 
 	var metres: float = 0.0
 	# where a spur leaves the road, and to which side (+1 left of the direction of travel, -1 right)
 	var mouths: Array = []
+	var gates: PackedVector2Array = PackedVector2Array()   # where a spur starts: a plot's gate, its flag and its sign
 	for sp: Array in spur_paths:
 		var spp: TLKitPath = sp[1]
 		var j: Vector2 = spp.pts[spp.pts.size() - 1]
@@ -43,6 +46,7 @@ static func build(parent: Node3D, terr: RefCounted, main_path: TLKitPath, half: 
 				best = q
 		var t0: Vector2 = (pts[mini(best + 1, pts.size() - 1)] - pts[maxi(best - 1, 0)]).normalized()
 		mouths.append([j, signf(t0.orthogonal().dot(spp.pts[0] - j))])
+		gates.append(spp.pts[0])
 	for hand: float in [-1.0, 1.0]:
 		var run: PackedVector3Array = PackedVector3Array()     # the posts of the row that is being walked
 		var walked: float = POST_GAP                           # metres since the last post
@@ -58,6 +62,8 @@ static func build(parent: Node3D, terr: RefCounted, main_path: TLKitPath, half: 
 				open = open or (float(m[1]) == hand and pts[i].distance_to(m[0]) < half * 0.8 + 3.2)
 			for k: int in centres.size():
 				open = open or p.distance_to(centres[k]) < float(rad[k]) + 2.0
+			for g: Vector2 in gates:
+				open = open or p.distance_to(g) < GATE_CLEAR
 			open = open or float(terr.call("river_dist", p.x, p.y)) < 9.0 or not bool(terr.call("inside", p.x, p.y, 6.0))
 			if open:
 				metres += _row(parent, run)

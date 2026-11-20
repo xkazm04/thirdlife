@@ -167,12 +167,20 @@ float dots(vec2 q, float r) {   // one dot per unit cell, jittered
 }
 // N1. Drawn marks on the ground, in the plane q (metres): x = grass tuft (three tapered strokes fanning from one
 // root), y = pebble body, z = pebble rim, w = dirt scratch (a short dash or two) and grit. All fade when sub-pixel.
-vec4 ground_marks(vec2 q, vec2 away) {
+vec4 ground_marks(vec2 q, vec2 away_k) {
 	vec2 c = floor(q / 1.15); vec2 f = fract(q / 1.15) - 0.5;
 	float hh = h21(c);
-	vec2 d = f - (vec2(hh, h21(c + 5.1)) - 0.5) * 0.5;
-	// the tuft stands "up" on screen: its strokes point away from the camera along the ground (`away`, unit length)
-	vec2 r = vec2(d.x * away.y - d.y * away.x, d.x * away.x + d.y * away.y);
+	vec2 jit = (vec2(hh, h21(c + 5.1)) - 0.5) * 0.5;
+	vec2 d = f - jit;
+	// the tuft stands "up" on screen: its strokes point away from the camera along the ground (`away_k`: that
+	// direction, its length = how much longer the tuft is drawn on the ground). Seen from a low eye a tuft painted
+	// on the ground lies flat; drawn longer it stands again. Never longer than its own cell has room for; shorter
+	// (down to 0.4) where the caller says a slope shows the ground longer than level ground would.
+	float stretch = max(length(away_k), 1e-4);
+	vec2 away = away_k / stretch;
+	vec2 room = (0.42 - jit * sign(away)) / max(abs(away), vec2(1e-3));
+	stretch = clamp(stretch, 0.4, max(min(room.x, room.y) / 0.24, 1.0));
+	vec2 r = vec2(d.x * away.y - d.y * away.x, (d.x * away.x + d.y * away.y) / stretch);
 	float fw = fwidth(q.x / 1.15) + fwidth(q.y / 1.15);
 	float keep = 1.0 - smoothstep(0.10, 0.34, fw);
 	float st = 0.0;
@@ -544,8 +552,17 @@ void fragment() {
 			float rock_k = mix(float(i2 >= 5), float(i1 >= 5), lt1) * snap;   // 1 = rock
 			rock_w = rock_k;
 			// (the marks end at `detail.marks_far` metres: far land is flat colour, not a field of dots)
-			vec2 away = -INV_VIEW_MATRIX[2].xz;
-			away = length(away) > 0.01 ? normalize(away) : vec2(0.0, -1.0);
+			// (away from the eye along the ground, at this fragment: a tuft stands upright wherever it is on the screen)
+			vec3 to_eye = (INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz;
+			vec2 away = length(to_eye.xz) > 0.01 ? -normalize(to_eye.xz) : -normalize(INV_VIEW_MATRIX[1].xz + vec2(1e-4, 0.0));
+			// (a tuft is drawn longer on the ground the lower the eye looks along it: at 44 degrees and steeper as it is)
+			// (on a slope the same paint is seen longer or shorter than on level ground: `tuft_seen` = how long a metre of the
+			// ground under `away` is on the screen. Where the slope shows it longer than level ground would, the tuft
+			// is drawn that much shorter, so a bank that faces the eye does not grow tall grass; never longer than level)
+			vec3 tuft_dir = vec3(away.x, -dot(wn.xz, away) / max(wn.y, 0.3), away.y);
+			float tuft_seen = length(tuft_dir - dot(tuft_dir, to_eye) * to_eye);
+			float tuft_level = max(to_eye.y, 0.12);
+			away *= clamp(0.70 / tuft_level, 1.0, 2.6) * clamp(tuft_level / max(tuft_seen, 1e-3), 0.4, 1.0);
 			float mfade = g_cel4.w > 0.0 ? 1.0 - smoothstep(g_cel4.w * 0.4, g_cel4.w, vdepth) : 1.0;
 			// the verge: where grass meets earth the grass side is one tone darker for a hand's width (the cut of the turf),
 			// and the grass stands thicker along it: smaller tufts, close together, for half a metre
@@ -554,8 +571,11 @@ void fragment() {
 				float vw = max(g_cel2.w, 1.2 * pxm);
 				float verge = (1.0 - smoothstep(vw - pxm * 0.6, vw + pxm * 0.6, dist_m)) * (1.0 - 0.55 * smoothstep(50.0, 160.0, vdepth));
 				c = mix(c, c * vec3(0.50, 0.74, 0.52), verge * snap * flat_k);
-				float vt = (1.0 - smoothstep(0.30, 0.75, dist_m)) * fade * mfade * flat_k * snap;
-				if (vt > 0.0) { c = mix(c, c * vec3(0.46, 0.72, 0.44), ground_marks(gq / 0.62 + 13.0, away).x * vt); }
+				float vt = (1.0 - smoothstep(0.60, 1.40, dist_m)) * fade * mfade * flat_k * snap;
+				if (vt > 0.0) {
+					c = mix(c, c * vec3(0.46, 0.72, 0.44), ground_marks(gq / 0.95 + 13.0, away).x * vt);
+					c = mix(c, c * vec3(0.46, 0.72, 0.44), ground_marks(gq / 0.6 + 47.0, away).x * vt);     // two sizes: the edge is thick with them
+				}
 			}
 			// ... and the earth's own rim along the turf is one tone darker (damp, in the shade of the grass), a step wide
 			if ((i1 == 3 || i1 == 4) && i2 < 3 && g_cel2.w > 0.0) {
@@ -563,6 +583,9 @@ void fragment() {
 				float rw = max(g_cel2.w * 2.2, 1.5 * pxm);
 				float rim = (1.0 - smoothstep(rw - pxm * 0.6, rw + pxm * 0.6, rim_m)) * (1.0 - smoothstep(40.0, 110.0, vdepth));
 				c = mix(c, c * vec3(0.84, 0.76, 0.76), rim * snap * flat_k);
+				// blades of the turf hang over the road's edge: tufts in the grass paint on the earth, two hands' width in
+				float over = (1.0 - smoothstep(0.20, 0.60, rim_m)) * fade * mfade * flat_k * snap;
+				if (over > 0.0) { c = mix(c, m0.rgb * g_land0.rgb * vec3(0.52, 0.76, 0.50), ground_marks(gq / 0.75 + 29.0, away).x * over); }
 			}
 			// light patches: big flat shapes one tone lighter (dry earth on the road, sun-bleached meadow), crisp edge
 			if (g_cel2.z > 0.0) {
@@ -585,9 +608,9 @@ void fragment() {
 			}
 			// sparse marks: tufts in grass (three strokes, one tone darker), pebbles on earth (a light body, a dark underside)
 			vec4 gk = ground_marks(gq / max(g_cel2.y, 0.2), away) * fade * flat_k * mfade;
-			// (in some patches of the meadow the tufts are sunlit instead: one tone lighter, as dry blades are)
+			// (in some patches of the meadow the tufts are half as dark; none is lighter than the grass: the board's are all dark)
 			float tlight = step(0.62, vn2(gq * 0.045 + 61.0));
-			c = mix(c, c * mix(vec3(0.46, 0.72, 0.44), vec3(1.22, 1.16, 0.70), tlight), gk.x * gm);
+			c = mix(c, c * mix(vec3(0.46, 0.72, 0.44), vec3(0.66, 0.84, 0.56), tlight), gk.x * gm);
 			c = mix(c, c * 1.30 + 0.03, gk.y * (1.0 - gk.z) * em_k);
 			c = mix(c, c * 0.55, gk.z * 0.9 * em_k);
 			c = mix(c, c * vec3(0.78, 0.70, 0.66), gk.w * em_k * 0.5);
@@ -766,10 +789,24 @@ void fragment() {
 	// (land, trees, a game's own yard), cut like any cast shadow, one pixel soft
 	cloud_l = 0.0;
 	if (g_cel6.x > 0.0) {
-		vec2 cq = (wpos.xz - vec2(0.8, 0.6) * (TIME * g_cel6.z)) * g_cel6.y;
-		float cn = vn2(cq) * 0.62 + vn2(cq * 2.3 + 7.0) * 0.38;
-		float cfw2 = fwidth(cn) * 0.75 + 0.0008;
-		cloud_l = smoothstep(1.0 - g_cel6.w - cfw2, 1.0 - g_cel6.w + cfw2, cn);
+		// one round shape in some cells of `size` metres (a share `cover` of them), longer along the wind, its rim a
+		// little wobbly: a cloud's shadow, not a contour of noise (which drew bands and rings)
+		// (where the fragment is drawn in the world, not `wpos`: a pack at its plot keeps its own space there, and a
+		// cloud's shadow would be cut at the edge of a game's yard)
+		vec2 cq = ((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz - vec2(0.8, 0.6) * (TIME * g_cel6.z)) * g_cel6.y;
+		vec2 cq_r = vec2(cq.x * 0.8 + cq.y * 0.6, cq.y * 0.8 - cq.x * 0.6);    // x along the wind
+		vec2 ci = floor(cq_r - 0.5);
+		float cd = 9.0;
+		for (int cx = 0; cx < 2; cx++) { for (int cy = 0; cy < 2; cy++) {
+			vec2 cc = ci + vec2(float(cx), float(cy));
+			vec2 cj = vec2(h21(cc + 3.7), h21(cc + 11.3));
+			vec2 dd = (cq_r - (cc + 0.5 + (cj - 0.5) * 0.36)) * vec2(0.72, 1.0);
+			float cr = 0.20 + 0.12 * h21(cc + 23.9);
+			cd = min(cd, h21(cc + 5.1) < g_cel6.w ? length(dd) / cr : 9.0);
+		} }
+		cd += (vn2(cq * 5.0 + 7.0) - 0.5) * 0.22;
+		float cfw2 = fwidth(cd) * 0.75 + 0.0008;
+		cloud_l = 1.0 - smoothstep(1.0 - cfw2, 1.0 + cfw2, cd);
 	}
 	cel_l = vec4(fwidth(lt_s) * 0.7, edge_h, float(dot(sn_v, sn_v) > 0.2 && floor(UV2.x) == 1.0), rock_w);
 }

@@ -9,8 +9,9 @@ extends RefCounted
 ##                 the shade), cel_rim (0 = smooth rim light, 1 = a cut shape), cel_top and cel_top_k (where on a lump
 ##                 the top light begins, of the light 0..1, and how much lighter it is; 0 = none), cel_wind (metres the
 ##                 top of a 10 m tree leans in the wind; it moves the keys whose `mat.<key>.sway` is negative),
-##                 cel_cloud (0..1: drifting cloud shadows, cut like any cast shadow; 0 = none), cel_cloud_m (their
-##                 size), cel_cloud_speed (m/s), cel_cloud_cover (0..1 of the land),
+##                 cel_cloud (0..1: drifting cloud shadows, round shapes cut like any cast shadow; 0 = none),
+##                 cel_cloud_m (the cell, metres: one shape in some cells), cel_cloud_speed (m/s), cel_cloud_cover
+##                 (0..1: the share of cells that carry one),
 ##                 cel_rock_shade ([r, g, b]: the shade on rock is multiplied by it: mauve bluffs under a blue shade).
 ##   detail        edge (a painted highlight on the edges of a sunlit box face), round (0..1: a blob or a cone side lit
 ##                 as the round thing it is), land_wobble (how far the edge between two land paints strays), marks_m
