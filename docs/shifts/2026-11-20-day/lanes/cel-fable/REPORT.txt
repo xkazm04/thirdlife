@@ -1,0 +1,97 @@
+CEL-FABLE (surfaces and nature of the crisp-cel look): REPORT, day of 20 Nov 2026
+DRAFT of 15:05 (before integration 2), kept current through the day; the final version is written at the hard stop.
+Worktree .claude/worktrees/d20-cel-fable, branch d20-cel-fable. The Director commits and merges (no git that writes here).
+
+HOW TO LOOK (two minutes)
+- contact-sheet.jpg: board 2 beside the village road as the visitor sees it, then the lane's own nine views, then
+  every shot of the set as classic | crisp.
+- stills/crisp, stills/classic (tour 01..16, flight 21..26, 51 the road as the visitor sees it), stills/views
+  (cel_views.walk.json: the road as board 2 frames it, river bank, bridge, bushes and pines, timber, a bluff face,
+  the far meadow, the river towards the sun).
+- clip.mp4 (16.85 s): the visitor walks the village road, then flies north and west over the river.
+- The exe: dist/day/cel/ThirdLife, PLAY-CRISP.cmd (the Director's, one per integration).
+
+WHAT I BUILT, AND WHY IT MOVES TOWARDS BOARD 2
+
+One idea: a cel picture is flat fields of paint with cut edges. So every edge in my scope (a band of light, a cast
+shadow, a field of the land, a stratum, a mark) is a cut that is one pixel soft at any distance, and nothing between
+two edges is a gradient.
+
+1. The cel material model, in files of its own (toon.model = "cel" -> engine/style/shaders/toon_cel.gdshader; helper
+   engine/style/cel/cel_surfaces.gd). toon.gdshader, water.gdshader and style.json are byte for byte the base's.
+   - Light: flat bands (lit | shade | deep); the band edge is one pixel wide by the screen's own derivatives (a fixed
+     softness was a gradient metres wide on rolling land). A cast shadow is cut at half of the sun's shadow: a line,
+     however the shadow map is filtered. The shade keeps the paint's chroma. No hatching, no mottle, no rim.
+   - Level land takes one ambient and no bounce; land that leans less than a dead zone is lit as level, so a meadow is
+     one lit field and a hill's far flank is one shade band (no shards).
+2. Land painted by numbers. The terrain's pigment is a blend of palette paints per 3 m vertex; every fragment takes the
+   nearest of eight paints (grass, grass_dark, grass_dry, dirt, sand, rock, cliff, rock_warm), with a wobbly edge.
+   Rock never wins on level ground and earth never on a steep face. On top:
+   - the road: a dark verge with thicker tufts where grass meets it, a darker rim on its own side, light and damp
+     patches of 2 to 8 m, pebbles;
+   - the meadow: patches of the dry-grass paint (the board's warm olive) against the green, running on over the far
+     plain to the horizon; dark grass under every scattered tree and bush; sparse tufts (some sunlit) that end at
+     100 m and lean in the wind near the eye; handfuls of flowers.
+3. Bluffs, mesas, rock fields: flat strata in world height in two alternating tones with a drawn seam, at any distance;
+   about one bed in four is cream (cream in the sun, a lighter rock in the shade); rock has a shade of its own (mauve
+   under a blue shade light, as on the board).
+4. Nature as clean forms, without one new triangle: a bush, a crown, a rock and a pine tier are drawn with the round
+   thing's own normal (in the prepass too: the ink draws the outline, not a crease per facet) and have a top light;
+   the skirt of every pine tier is cut in teeth (in its shadow and its outline too); scattered trees lean in the wind.
+5. Timber and props: a painted highlight along the edges of box faces, strong in the sun, weak in the shade.
+6. The river (water_cel.gdshader): two flat blues, light streaks that drift along the flow, a foam line at the real
+   waterline and round every pier (from depth), large flat shapes of sky, and the sun's road: cream dashes towards
+   the sun. Drawn before the ink pass, so contours lie over the water.
+7. Drifting cloud shadows: large cut shapes that fall on land, trees and yards alike; they lay dark bands across the
+   big fields.
+8. Rails along both sides of the main road, as the board shows (the Director's word of 14:35): presentation only, no
+   collider, gaps at spur mouths, bridge, plots and lots, one open span in nine.
+9. Colours fitted to board 2 in numbers (sampled from the board's file), on the joined tree.
+
+THE RULES, EACH WITH ITS EVIDENCE (state of 15:20; the final figures are written at the hard stop)
+
+1. No pack or seed changes; every v1 signature kept; palette keys neither renamed nor reordered.
+   - git status engine/packs engine/seeds contracts: empty. check --tier fast arch [12/12] (api-v1 in it).
+   - selftest celsurf.palette: keys=100 crisp_keys=100 same_names_and_order=true (12 colours changed).
+2. Today's look stays exact (TL_STYLE=classic).
+   - By construction: toon.gdshader, water.gdshader, style.json are the base's files byte for byte (selftest
+     celsurf.classic_files, sha256 of each); the cel model is toon_cel.gdshader, water_cel.gdshader, cel/cel_surfaces.gd;
+     every landscape addition (rails, tree shade map) sits behind a key only style_crisp.json names.
+   - By picture, three times: (a) 11:19 to 11:51, a copy of the fixed base against this tree, 22 pictures at
+     1920x1080: 14 bit-identical, the other 8 hold a moving pack or the flying figure and differ as two runs of the
+     base differ (0.006 to 0.999 % of pixels; the same 8, the same amounts); (b) 12:46 after the cache-key line, the
+     tour's 16: 11 identical, the same 5 moving; (c) 15:10 after the rails and the tree shade map, the joined tree's
+     classic of 14:29 against the final tree, 23 pictures: 16 identical, the same 7 moving.
+3. No game's state hash moves.
+   - check --tier full --only world,packs,kit.selftest PASS on every run of the day (10 runs), world [8/8], and the 8
+     hashes equal `world.sh alone` on a copy of the base, line by line: seed.drive a2940a1735bc2b72@3441, seed.wall
+     d5aea03b46c33ee6@1220, seed.paddle dff1a390470352e7@4486, example.walker f1c7b53757c34040@371, example.kit
+     ca698e71d34d1021@332, example.car 3a459d0fe25e7853@1872, game.ice_hockey_three_against a29dcdf02a16dd1c@4186,
+     game.parkour f7abac006a45bd43@988. The rails and the tree shade map make no collider and no node a game sees
+     (selftest celsurf.rails: collision_objects=0).
+4. Cache keys. No kit, terrain or crown generator changed, so PIC_VERSION stays 1601. Two things were found and
+   keyed instead: a picture stores the land paints a kit terrain bakes into vertex colours, and a style may ask for
+   landscape geometry of its own (the rails). The key now carries both for a style that differs from style.json
+   (draw/pic_salt.gd); under classic the addition is the empty string: today's key byte-equal (selftest
+   celsurf.pic_key, celsurf.pic_key_classic).
+5. Performance, windowed GPU (tl perf run --scenario tour6 --no-record; machine BUSY every time, so measured, not judged):
+   this arm alone 11:52: classic 1.239, 1.229 ms, crisp 1.308, 1.307 ms (+6 %); joined tree 13:23: classic 1.233,
+   1.226 ms, crisp 1.212, 1.249 ms (the joined frame has no glow). The first run after a change of shader text has one
+   frame of 1.0 to 1.3 s (the compile); every run after it 70 to 85 ms.
+6. Style file seams: only toon, water, palette, mat, detail of style_crisp.json; tl_style.gd one line in
+   _fill_special; style_dio.gd toon() and globals(). The Director's merge of the two arms was clean.
+
+SURFACES CALM IN MOTION (crawl.sh: mean change per frame in grey levels / share of pixels changing by more than 24)
+ clip, band                                     classic          crisp, this arm alone   crisp, joined tree
+ review scene, slow pan, horizon (thin members)  3.065 / 2.625 %   2.797 / 2.320 %         3.690 / 3.356 %
+ review scene, slow pan, kit floor               0.441 / 0.037 %   0.469 / 0.038 %         0.666 / 0.068 %
+ village road, slow pan, far land and yard       0.485 / 0.523 %   0.452 / 0.492 %         0.512 / 0.568 % (0.666 / 0.756 with the rails)
+ village road, slow pan, near land               0.040 / 0.000 %   0.022 / 0.001 %         0.111 / 0.055 % (0.209 / 0.145 with the rails)
+ Reading: alone the surfaces are calmer than classic. On the joined tree the figures rise, and they are the same with
+ my wind and cloud shadows off (measured: 0.524 / 0.599, 0.107 / 0.056, 3.695 / 3.360): the joined camera puts the
+ figure into the near band, and the contour on thin members is the frame's. The rails add hard edges that the pan
+ moves over (flip maps .tl/view/crawl4_flips.jpg, crawl6_flips.jpg: lattice, tree outlines and rails light up, grass
+ and road do not).
+
+(filled at the hard stop: GATES of the last run, CHANGED FILES, PATCHES in short, WHAT STILL FALLS SHORT OF THE BOARD,
+COST PER NEW GAME, QUESTIONS, NEXT THREE THINGS)

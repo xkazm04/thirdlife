@@ -45,6 +45,9 @@ global uniform vec4 g_cel;       // x half width of the cast shadow's cut (of th
 global uniform vec4 g_cel2;      // x wobble of the land's paint edges, y scale of the ground marks, z light patches, w verge width (m)
 global uniform vec4 g_cel3;      // x the deep band (form turned fully away) as a factor of the shade, y crisp rim (0 smooth .. 1 cut), z where a lump's top light begins (of the light, 0..1), w its strength
 global uniform vec4 g_cel4;      // x = wind: metres the top of a 10 m tree leans (0 = still), y = meadow flowers (0 none .. 1 many), z = how much flatter level land is lit than it is, w = where the ground marks end (m; 0 = at the detail fade)
+global uniform vec4 g_cel5;      // rgb = what the shade is multiplied by on rock (bluffs, mesas, rocks: mauve, not violet), a = teeth round the skirt of a pine tier (0 = a plain rim)
+global uniform vec4 g_cel6;      // drifting cloud shadows: x = strength (0 = none), y = 1 / size (1/m), z = speed (m/s), w = cover (0 none .. 1 all)
+global uniform vec4 g_cel7;      // x = the lean (sine of the angle) under which level land is lit as level, y = cream strata (0 none .. 1 full cream)
 global uniform vec4 g_land0;     // the land's eight paints (linear rgb, a = bias: a larger one wins more ground):
 global uniform vec4 g_land1;     // grass, grass_dark, grass_dry | dirt, sand | rock, cliff, rock_warm
 global uniform vec4 g_land2;
@@ -55,7 +58,14 @@ global uniform vec4 g_land6;
 global uniform vec4 g_land7;
 varying vec3 sn_v;               // cel: a round thing's own normal (view space; zero = this is not one), TLMesh UV2
 varying vec3 bn_l;               // cel: the normal the light sees (view space), handed from fragment() to light()
-varying vec3 cel_l;              // cel: x = band edge softness of this fragment (one pixel), y = edge highlight, z = 1 on a lump; fragment() to light()
+varying vec4 cel_l;              // cel: x = band edge softness of this fragment (one pixel), y = edge highlight, z = 1 on a lump, w = 1 on rock; fragment() to light()
+// cel: where the landscape's trees and bushes stand (kernel/world/terrain/tree_shade.gd sets both on the terrain's own
+// material for a style that names `detail.tree_shade`; every other material leaves the scale at zero = no map)
+uniform sampler2D cel_shade : filter_linear, repeat_disable;
+uniform vec4 cel_shade_uv = vec4(0.0);   // xy = scale, zw = offset: the land's own xz to the map
+varying float cream_l;           // cel: 1 on a cream stratum, fragment() to light()
+varying float cloud_l;           // cel: 1 under a drifting cloud's shadow, fragment() to light()
+varying float pine_k;            // cel: 1 on the side of a cone of a tree key (a pine tier), vertex() to fragment()
 instance uniform float build = 1.0;
 // N5b: the plot of the pack this instance belongs to, relative to the stage pack: xyz = offset (m), w = yaw (rad).
 // Set once per GeometryInstance3D by the world's draw layer (kernel/world/draw/draw.gd); all zero = drawn where it is
@@ -166,10 +176,13 @@ vec4 ground_marks(vec2 q, vec2 away) {
 	float fw = fwidth(q.x / 1.15) + fwidth(q.y / 1.15);
 	float keep = 1.0 - smoothstep(0.10, 0.34, fw);
 	float st = 0.0;
+	// cel: a tuft leans in the wind with the trees (`toon.cel_wind`), each in its own time; only near, where a stroke is
+	// several pixels wide (a far tuft that leaned would flicker)
+	float lean = sin(TIME * 1.6 + hh * 20.0 + c.x * 0.7 + c.y * 0.5) * 0.045 * min(g_cel4.x / 0.14, 1.5) * (1.0 - smoothstep(0.02, 0.07, fw));
 	for (int i = -1; i <= 1; i++) {
 		float fi = float(i);
 		vec2 root = vec2(fi * 0.055, 0.0);
-		vec2 tip = vec2(fi * 0.035 + (hh - 0.75) * 0.08, 0.22 - abs(fi) * (0.05 + 0.06 * h21(c + 4.4 + fi)));
+		vec2 tip = vec2(fi * 0.035 + (hh - 0.75) * 0.08 + lean, 0.22 - abs(fi) * (0.05 + 0.06 * h21(c + 4.4 + fi)));
 		float t = clamp(dot(r - root, tip) / dot(tip, tip), 0.0, 1.0);
 		float w = 0.020 * (1.0 - t * 0.75);
 		st = max(st, 1.0 - smoothstep(w, w + fw * 0.9, length(r - root - tip * t)));
@@ -300,6 +313,25 @@ vec3 ice_surface(vec3 base, vec3 lpos, vec2 half_s, vec3 wp, float fres) {
 
 // cel: 1 = a mark of wavelength `wl` metres is drawn, 0 = it is finer than the pixels (`px` metres across): flat, so nothing boils
 float keep_wl(float wl, float px) { return 1.0 - smoothstep(wl * 0.16, wl * 0.5, px); }
+// cel: value noise with an integer hash, the same in every variant of this file (the terrain's material is the TL_VILLAGE
+// variant, the far plain's is not): what must run on unbroken from the terrain onto the far plain is drawn with it
+float cel_corner(ivec2 cell) {
+	uvec2 i = uvec2(cell);
+	uint h = (i.x * 1597334677u) ^ (i.y * 3812015801u);
+	h = (h ^ (h >> 16u)) * 2246822519u;
+	return float(h ^ (h >> 13u)) * (1.0 / 4294967296.0);
+}
+float cel_vn(vec2 p) {
+	vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+	ivec2 c = ivec2(i);
+	return mix(mix(cel_corner(c), cel_corner(c + ivec2(1, 0)), f.x), mix(cel_corner(c + ivec2(0, 1)), cel_corner(c + ivec2(1, 1)), f.x), f.y);
+}
+// the meadow's warm patches (0..1, cut): the same field on the terrain and on the far plain beyond it
+float cel_meadow(vec2 q) {
+	float pg = cel_vn(q * 0.031 + 23.0) * 0.6 + cel_vn(q * 0.085 + 2.0) * 0.4;
+	float fw = fwidth(pg) * 0.75 + 0.0015;
+	return smoothstep(0.57 - fw, 0.57 + fw, pg);
+}
 // cel: pebbles on earth: flat ovals in their own cells, a light body (x) with a dark underside (y); none smaller than a pixel
 vec2 cel_pebbles(vec2 q, float px) {
 	vec2 cq = q / 0.95;
@@ -335,6 +367,7 @@ void vertex() {
 		vec2 se = (UV2 - sw - 0.5) / 0.45;
 		sn_o = vec3(se.x, sqrt(max(1.0 - dot(se, se), 0.0)) * (NORMAL.y < 0.0 ? -1.0 : 1.0), se.y);
 	}
+	pine_k = float(sway < 0.0 && sw.x == 0.0 && sn_o.y > 0.25);
 	lp = vec4(CUSTOM0.xyz, float(code % 16));
 #ifdef TL_VILLAGE
 	if (tl_floor_rect.z > tl_floor_rect.x) {
@@ -413,8 +446,19 @@ void fragment() {
 	for (int hi = 0; hi < tl_hole_n; hi++) {
 		if (length(lp.xz - tl_holes[hi].xy) < tl_holes[hi].z) { discard; }
 	}
+	// cel: the skirt of a pine tier is cut in teeth (a cone of a tree key: the part's own y runs from its rim to its
+	// tip). Cut in the shadow and in the prepass too, so the tree's shadow and its drawn outline are scalloped as well.
+	if (pine_k > 0.5 && g_cel5.a > 0.5) {
+		float tooth = abs(fract(atan(lp.z, lp.x) / 6.2831853 * g_cel5.a) - 0.5) * 2.0;
+		float rim_r = length(lp.xz);
+		// a tooth narrower than three pixels is not cut (far off the tier keeps its plain rim: nothing shimmers)
+		float tooth_px = (6.2831853 * rim_r / g_cel5.a) / max(length(fwidth(lp.xz)), 1e-5);
+		if (lp.y < 0.30 * rim_r * tooth * smoothstep(3.0, 7.0, tooth_px)) { discard; }
+	}
 	vec3 c = m0.rgb * COLOR.rgb;
 	int mclass = int(m1.z + 0.5);
+	float cream_w = 0.0;   // a cream bed of a bluff: painted in light(), cream where the sun is on it, a lighter rock in the shade
+	float rock_w = mclass == 6 ? 1.0 : ((mclass == 2 || mclass == 9) ? 0.5 : 0.0);   // cast blocks and masonry take half of rock's shade
 	// cel: a round thing is one form. A lump (a bush, a rock, a crown) gives back most of the tone each of its facets was
 	// given apart, and it is drawn with the round thing's own normal, in the prepass too: the bands gather into one
 	// terminator and the ink pass draws its outline, not a crease along every facet.
@@ -498,6 +542,7 @@ void fragment() {
 			float em_k = mix(e2, e1, lt1) * snap + (1.0 - snap) * (1.0 - smoothstep(-0.01, 0.01, pig.g - pig.r));   // 1 = earth
 			float flat_k = step(0.5, wn.y);
 			float rock_k = mix(float(i2 >= 5), float(i1 >= 5), lt1) * snap;   // 1 = rock
+			rock_w = rock_k;
 			// (the marks end at `detail.marks_far` metres: far land is flat colour, not a field of dots)
 			vec2 away = -INV_VIEW_MATRIX[2].xz;
 			away = length(away) > 0.01 ? normalize(away) : vec2(0.0, -1.0);
@@ -512,23 +557,37 @@ void fragment() {
 				float vt = (1.0 - smoothstep(0.30, 0.75, dist_m)) * fade * mfade * flat_k * snap;
 				if (vt > 0.0) { c = mix(c, c * vec3(0.46, 0.72, 0.44), ground_marks(gq / 0.62 + 13.0, away).x * vt); }
 			}
+			// ... and the earth's own rim along the turf is one tone darker (damp, in the shade of the grass), a step wide
+			if ((i1 == 3 || i1 == 4) && i2 < 3 && g_cel2.w > 0.0) {
+				float rim_m = le / max(lfw, 1e-6) * pxm;
+				float rw = max(g_cel2.w * 2.2, 1.5 * pxm);
+				float rim = (1.0 - smoothstep(rw - pxm * 0.6, rw + pxm * 0.6, rim_m)) * (1.0 - smoothstep(40.0, 110.0, vdepth));
+				c = mix(c, c * vec3(0.84, 0.76, 0.76), rim * snap * flat_k);
+			}
 			// light patches: big flat shapes one tone lighter (dry earth on the road, sun-bleached meadow), crisp edge
 			if (g_cel2.z > 0.0) {
-				float pn = vn2(gq * 0.075 + 3.0) * 0.6 + vn2(gq * 0.23 + 11.0) * 0.4;
+				float pn = vn2(gq * 0.13 + 3.0) * 0.55 + vn2(gq * 0.41 + 11.0) * 0.45;   // shapes of 2 to 8 m: a walker always has a few in view
 				float pfw = fwidth(pn) * 0.75 + 0.0015;
 				float patch = smoothstep(0.56 - pfw, 0.56 + pfw, pn) * flat_k;
 				c = mix(c, c * vec3(1.20, 1.24, 1.34) + 0.012, patch * em_k * g_cel2.z);
 				// ... and where the earth is damp, one tone darker
-				float pdk = vn2(gq * 0.11 + 41.0) * 0.6 + vn2(gq * 0.31 + 7.0) * 0.4;
+				float pdk = vn2(gq * 0.17 + 41.0) * 0.55 + vn2(gq * 0.53 + 7.0) * 0.45;
 				float dkw = fwidth(pdk) * 0.75 + 0.0015;
 				c = mix(c, c * vec3(0.85, 0.79, 0.80), smoothstep(0.62 - dkw, 0.62 + dkw, pdk) * (1.0 - patch) * em_k * g_cel2.z);
-				float pg = vn2(gq * 0.031 + 23.0) * 0.6 + vn2(gq * 0.085 + 2.0) * 0.4;
-				float gfw2 = fwidth(pg) * 0.75 + 0.0015;
-				c = mix(c, c * vec3(1.12, 1.07, 0.84), smoothstep(0.60 - gfw2, 0.60 + gfw2, pg) * gm * g_cel2.z * 0.6 * flat_k);
+				// (the meadow's patches are the dry-grass paint: the warm olive of the board's sunlit fields, against the green)
+				c = mix(c, m0.rgb * g_land2.rgb, cel_meadow(gq) * gm * g_cel2.z * 0.8 * flat_k);
+			}
+			// the grass under a tree or a bush is the dark grass paint, one tone deeper: a field with a cut, wobbly edge
+			if (cel_shade_uv.x != 0.0) {
+				float under = texture(cel_shade, lp.xz * cel_shade_uv.xy + cel_shade_uv.zw).r + (wb * 0.5 + wc * 0.4) * 0.5;
+				float ufw = fwidth(under) * 0.75 + 0.003;
+				c = mix(c, m0.rgb * g_land1.rgb * vec3(0.50, 0.74, 0.62), smoothstep(0.5 - ufw, 0.5 + ufw, under) * gm * flat_k);
 			}
 			// sparse marks: tufts in grass (three strokes, one tone darker), pebbles on earth (a light body, a dark underside)
 			vec4 gk = ground_marks(gq / max(g_cel2.y, 0.2), away) * fade * flat_k * mfade;
-			c = mix(c, c * vec3(0.46, 0.72, 0.44), gk.x * gm);
+			// (in some patches of the meadow the tufts are sunlit instead: one tone lighter, as dry blades are)
+			float tlight = step(0.62, vn2(gq * 0.045 + 61.0));
+			c = mix(c, c * mix(vec3(0.46, 0.72, 0.44), vec3(1.22, 1.16, 0.70), tlight), gk.x * gm);
 			c = mix(c, c * 1.30 + 0.03, gk.y * (1.0 - gk.z) * em_k);
 			c = mix(c, c * 0.55, gk.z * 0.9 * em_k);
 			c = mix(c, c * vec3(0.78, 0.70, 0.66), gk.w * em_k * 0.5);
@@ -572,6 +631,8 @@ void fragment() {
 				float edge_t = clamp(0.5 + (0.5 - abs(fract(sv + 0.5) - 0.5)) / max(sfw, 1e-5), 0.5, 1.0);
 				tone = mix(lnext, tone, edge_t);
 				c *= 1.0 + tone * g_strata.z * steep * (0.4 + 0.6 * keep);
+				float lcream = mix(step(0.74, h21(vec2(layer + sign(fract(sv + 0.5) - 0.5), 5.0))), step(0.74, h21(vec2(layer, 5.0))), edge_t);
+				cream_w = lcream * g_cel7.y * steep * keep * rock_k;
 				c = mix(c, c * g_detail.w, sl * g_strata.x * steep * keep);
 			}
 		} else {
@@ -593,11 +654,19 @@ void fragment() {
 				float fet = clamp(0.5 + (0.5 - abs(fs)) / max(ffw, 1e-5), 0.5, 1.0);
 				float steepf = 1.0 - smoothstep(0.55, 0.85, wn.y);
 				c *= 1.0 + mix(t1, t0, fet) * g_strata.z * farw * steepf * (0.35 + 0.65 * fkeep);
+				// some strata are cream (`detail.strata_cream`): the pale beds of the board's bluffs
+				float cream = mix(step(0.74, h21(vec2(fnx, 5.0))), step(0.74, h21(vec2(fl, 5.0))), fet);
+				cream_w = cream * g_cel7.y * farw * steepf * fkeep;
 				c = mix(c, c * vec3(0.62, 0.52, 0.70), fseam * 0.6 * g_strata.x * farw * steepf * fkeep);
 				// the top stays pale like a drawn cap
 				c = mix(c, c * vec3(1.14, 1.04, 0.92), farw * (1.0 - steepf) * 0.5);
 			}
 		}
+	}
+	// cel: the far plain beyond the terrain (a flat sheet in the grass paint, no class) carries the meadow's warm patches
+	// on to the horizon
+	if (mclass == 0 && g_cel2.z > 0.0 && wn.y > 0.95 && distance(m0.rgb * COLOR.rgb, g_land0.rgb) < 0.004 && tl_body.x < 0.5) {
+		c = mix(c, g_land2.rgb, cel_meadow(lp.xz) * g_cel2.z * 0.8);
 	}
 	if (m2.z > 0.5) {
 		c = ice_surface(c, lp.xyz, uvv, wpos, fres);
@@ -662,7 +731,18 @@ void fragment() {
 	vec3 nv = normalize(NORMAL);
 	// level land is lit as flatter than it is (`detail.land_flat`): a meadow that rolls a few degrees stays one lit field,
 	// and only a real slope turns to the shade band
-	if (land_k > 0.0) { nv = normalize(mix(nv, normalize(mat3(VIEW_MATRIX) * vec3(0.0, 1.0, 0.0)), g_cel4.z * land_k)); }
+	// ... and what leans less than `detail.land_dead` is lit as level: the small waves of a meadow give no islands of
+	// shade (a cut band on a bumpy normal is a field of shards), a hill's far side still turns to the shade band whole
+	if (land_k > 0.0) {
+		vec3 wl = normalize(mix(wn, vec3(0.0, 1.0, 0.0), g_cel4.z * land_k));
+		float tilt = length(wl.xz);
+		float dead = g_cel7.x * land_k;
+		if (tilt > 1e-5 && dead > 0.0) {
+			float t2 = clamp((tilt - dead) / max(1.0 - dead, 0.2), 0.0, 1.0);
+			wl = normalize(vec3(wl.x * t2 / tilt, sqrt(max(1.0 - t2 * t2, 0.0)), wl.z * t2 / tilt));
+		}
+		nv = normalize(mat3(VIEW_MATRIX) * wl);
+	}
 	bn_l = nv;
 	// the band edge is one pixel soft wherever the form turns smoothly (the sun's direction is known here, not only in light())
 	vec3 wnb = normalize((INV_VIEW_MATRIX * vec4(nv, 0.0)).xyz);
@@ -677,11 +757,21 @@ void fragment() {
 		vec2 fd = min(fpos, fsz - fpos);
 		float mn = min(fsz.x, fsz.y);
 		float px_v = 2.0 * vdepth / (abs(PROJECTION_MATRIX[1][1]) * VIEWPORT_SIZE.y);
-		float ew = max(clamp(mn * 0.14, 0.010, 0.030), px_v * 1.05);
+		float ew = max(clamp(mn * 0.20, 0.014, 0.050), px_v * 1.4);
 		edge_h = 1.0 - smoothstep(ew - px_v * 0.6, ew + px_v * 0.6, min(fd.x, fd.y));
 		edge_h *= smoothstep(0.045, 0.09, mn) * (1.0 - smoothstep(0.22, 0.45, ew / mn));   // a thin member is all edge: none there
 	}
-	cel_l = vec3(fwidth(lt_s) * 0.7, edge_h, float(dot(sn_v, sn_v) > 0.2 && floor(UV2.x) == 1.0));
+	cream_l = cream_w;
+	// drifting cloud shadows: large flat shapes in the world's plane that move with the wind and fall on everything alike
+	// (land, trees, a game's own yard), cut like any cast shadow, one pixel soft
+	cloud_l = 0.0;
+	if (g_cel6.x > 0.0) {
+		vec2 cq = (wpos.xz - vec2(0.8, 0.6) * (TIME * g_cel6.z)) * g_cel6.y;
+		float cn = vn2(cq) * 0.62 + vn2(cq * 2.3 + 7.0) * 0.38;
+		float cfw2 = fwidth(cn) * 0.75 + 0.0008;
+		cloud_l = smoothstep(1.0 - g_cel6.w - cfw2, 1.0 - g_cel6.w + cfw2, cn);
+	}
+	cel_l = vec4(fwidth(lt_s) * 0.7, edge_h, float(dot(sn_v, sn_v) > 0.2 && floor(UV2.x) == 1.0), rock_w);
 }
 
 void light() {
@@ -703,13 +793,14 @@ void light() {
 	float wrap = g_bands.w;
 	float lt = clamp((ndl + wrap) / (1.0 + wrap), 0.0, 1.0);
 	float soft = max(cel_l.x, 0.0006);   // one pixel, however slowly the form turns (`band_soft` is not read: a fixed softness is a gradient on rolling land)
-	float sh = smoothstep(0.5 - g_cel.x, 0.5 + g_cel.x, ATTENUATION);
+	float sh = smoothstep(0.5 - g_cel.x, 0.5 + g_cel.x, ATTENUATION) * (1.0 - cloud_l * g_cel6.x);
 	float b_hi = smoothstep(g_bands.x - soft, g_bands.x + soft, lt) * sh;
 	float b_lo = smoothstep(g_bands.y - soft, g_bands.y + soft, lt);
 	vec3 litc = g_sun.rgb * g_sun.a;
 	// the shade band is not one colour: up-facing shade takes the sky violet, walls and undersides the ground-lit tone
 	vec3 shade_n = mix(g_shade2.rgb, g_shade.rgb, smoothstep(-0.3, 0.85, wn_l.y));
 	vec3 shc = mix(litc, mix(g_shade.rgb, shade_n, g_shade2.a), g_shade.a);
+	shc *= mix(vec3(1.0), g_cel5.rgb, cel_l.w);   // rock has a shade of its own: a blue shade light on pink rock is violet, the board's bluffs are mauve
 	vec3 col = mix(shc * g_cel3.x, shc, b_lo);
 	// paint in the shade keeps its chroma (a red jacket stays red, grass stays green): what the plum light takes is given back
 	vec3 al = ALBEDO;
@@ -719,8 +810,10 @@ void light() {
 	// a lump (a bush, a crown, a rock) has one more flat shape: the top light, where it faces the sun squarely
 	col += litc * (g_cel3.w * cel_l.z * smoothstep(g_cel3.z - soft, g_cel3.z + soft, lt) * sh);
 	DIFFUSE_LIGHT += col;
+	// a cream bed: the board's cream in the sun (the paint under it does not show), the same rock one tone lighter in the shade
+	SPECULAR_LIGHT += ((vec3(0.92, 0.66, 0.52) - al) * litc * b_hi + al * col * (0.30 * (1.0 - b_hi))) * cream_l;
 	// a painted highlight on the edges of a sunlit box face
-	SPECULAR_LIGHT += al * litc * (cel_l.y * g_cel.z * b_hi);
+	SPECULAR_LIGHT += al * (litc * b_hi + col * (0.45 * (1.0 - b_hi))) * (cel_l.y * g_cel.z);   // and, weaker, where it is in the shade: the edge still reads
 	float metal = m1.x;
 	if (metal > 0.0) {
 		vec3 hv = normalize(LIGHT + VIEW);

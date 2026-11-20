@@ -6,7 +6,8 @@ extends RefCounted
 ##
 ## `salt()` is what the cache key carries for the loaded style: nothing when the baked paints are today's
 ## (style.json), so today's key stays byte-equal; else the paints themselves. Two styles with the same paints share
-## their pictures, as before.
+## their pictures, as before. A style that asks for geometry of its own in the landscape (`detail.road_rails`) is
+## told apart by that key too, so no picture made beside it is ever served to a style without it.
 
 ## The palette keys TLKitTerrain bakes into a terrain's vertex colours (engine/kits/tl_kit_terrain.gd).
 const BAKED: PackedStringArray = ["grass", "grass_dry", "grass_dark", "dirt", "sand", "rock", "rock_dark", "rock_warm", "cliff", "pine", "leaf"]
@@ -25,7 +26,10 @@ static func salt() -> String:
 			var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(TLStyle.DEFAULT_PATH))
 			_classic = paints(d if d is Dictionary else {})
 		var now: String = paints(TLStyle.data)
-		_salts[path] = "" if now == _classic else "|paints:" + now
+		var salt_now: String = "" if now == _classic else "|paints:" + now
+		# ... and a style's own landscape geometry (the row of rails along the road, terrain/road_rails.gd)
+		var rails: float = float((TLStyle.data.get("detail", {}) as Dictionary).get("road_rails", 0.0))
+		_salts[path] = salt_now + ("|rails:%s" % snappedf(rails, 0.01) if rails > 0.0 else "")
 	var out: String = _salts[path]
 	_lock.unlock()
 	return out

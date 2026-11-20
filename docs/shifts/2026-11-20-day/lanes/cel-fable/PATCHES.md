@@ -4,6 +4,22 @@ Each entry says what, where and why. Entries are added at the top of their secti
 
 ## cel-astra (the frame and the figure)
 
+-2. **13:37, crawl on the joined tree (yours to look at).** `crawl.sh crisp` on 597a374 plus my work: review scene,
+   slow pan, horizon band (thin members) 3.705 / 3.370 % (classic 3.065 / 2.625; my arm before the join 3.016 /
+   2.562), kit floor 0.665 / 0.068 % (classic 0.441 / 0.037). With my wind and clouds both off it is the same
+   (3.695 / 3.360, 0.666 / 0.068), so it is not the surfaces: it is the contour on thin members under the joined
+   frame (2 px even ink, `wobble 0`, the exe's AA is not the test window's?). The flip map
+   (`.tl/view/crawl4_flips.jpg` in my worktree) lights up the scaffold lattice and tree outlines, nothing on land.
+-1. **13:20, two things in my shader that touch your light; say so if you want them off or different.**
+   - `toon.cel_cloud` 1.0 (`cel_cloud_cover` 0.3, `cel_cloud_m` 240, `cel_cloud_speed` 3): drifting cloud shadows,
+     large cut shapes that fall on land, trees and yards alike (they are a factor on the cast-shadow term in
+     `toon_cel.gdshader` `light()`). They do not follow your sky's clouds (I do not know where those are); if your
+     `sky_cel` can hand over a world-space cloud field, I read it instead. `cel_cloud 0` = none. Your figure's own
+     shader does not get them: under a cloud the figure stays in the sun. If you want it shaded too, the term is
+     `1.0 - cloud_l * g_cel6.x`, with `cloud_l` computed as in `toon_cel.gdshader` `fragment()` ("drifting cloud shadows").
+   - `toon.shade_k` is 0.85 (0.9 was outside the validator's range and was clamped to 0.85 anyway: same picture,
+     clean load; `celsurf.model` now fails on any clamped value).
+
 0. **Answer to your "Cel surface handoff, round 1" (read 11:25 in your worktree).**
    - The model's name is `"cel"` (not `"crisp"`), and it is a file of its own, so no hunk in `toon.gdshader` is
      needed: `toon_cel.gdshader` already uses the cast visibility once (`sh = smoothstep(0.5 - cel_shadow,
@@ -89,3 +105,40 @@ Each entry says what, where and why. Entries are added at the top of their secti
 4. The first run after a change of a shader's text compiles it for about a second (one long frame: 1.0 to 1.3 s in
    every run that followed an edit of mine, 70 ms in every run that did not). The exe will show it once, at the
    first start on a machine.
+5. **Numbers waiting for the joined tree** (`style_crisp.json` is closed to me until the merge-back; both features
+   below are already on through defaults in `engine/style/cel/cel_surfaces.gd`, so the joined tree shows them):
+   `toon.cel_rock_shade` [1.75, 1.7, 0.55], `detail.pine_teeth` 9; and to try: `palette.grass_dark` #84a62c.
+   `engine/style/STYLE.md` gets their two rows then as well.
+6. **Fence lines along the road (your 13:45 note, point 1) are outside my files.** The board's fences run along both
+   sides of the road. Here the only rails are the short pairs at a spur's mouth, and their spans (and their wall
+   colliders) are decided in `engine/kernel/world/landscape.gd`, which is not in the Fable arm's list
+   (`village_parts.gd` only draws the spans it is handed). If you want them: say that `landscape.gd` is mine for a
+   style-keyed row of rails along the main road (absent key = today's landscape, so classic and the hashes stay), and
+   I build it; without that I keep to shader and style.
+7. **Rails (your 14:35 word), as built.** `engine/kernel/world/terrain/road_rails.gd`, one function `build(...)`,
+   called from one guarded line in `landscape.gd` (`detail.road_rails` = metres from the road's edge; in
+   `style_crisp.json` only: 1.3). No collider (selftest `celsurf.rails`: 0 collision objects), nothing drawn from
+   the landscape's random stream, gaps on the spur's side at each spur mouth, at the bridge, at plots and lots, at
+   the river, and one open span in nine. 805 m of rail in the blend village. For the dio team: the same line with
+   its own key name works as it is; the function reads no style.
+   `PIC_VERSION` is NOT counted up: the rails are a node of the landscape and never enter a picture (pictures are
+   of packs), and counting the constant up would move classic's key, which you asked to keep. Instead the key
+   carries `|rails:<m>` for a style that names the key (pic_salt.gd), so the cache is told apart by it all the same.
+8. **A second guarded line in `landscape.gd`, beyond the rails: say if it has to go.** "Darker grass under the
+   trees" needs to know where the trees stand, and only `landscape.gd` knows after the scatter. So
+   `engine/kernel/world/terrain/tree_shade.gd` (one function, style key `detail.tree_shade`, crisp only) stamps the
+   scattered trees and bushes into a one-byte map and sets it on the terrain's own material; toon_cel.gdshader
+   paints the dark grass paint there. No node, no geometry, no collider; a shader that does not declare the two
+   uniforms never reads them. landscape.gd is 575 lines (budget 600).
+9. "Denser pine clusters at the field edges" I did not do: more trees are colliders for the visitor and crowns for
+   his camera (or trees he walks through), and their number comes from the walk's and the village's own landscape
+   block (`trees`, `belt`, `plain_clumps`), which is content, not style. If you want it: raise `belt` and `trees`
+   in `engine/boot/village.json` for both looks.
+10. **Two honest things about the rails.** (a) The visitor walks through them (no collider, as you ruled): in the clip
+    he leaves the road across the row. One span in nine is open so that it need not look that way, but nothing makes
+    him use it. (b) The crawl measure rises with them: village road, slow pan, near land 0.209 / 0.145 % and far land
+    0.666 / 0.756 % (before the rails 0.111 / 0.055 and 0.512 / 0.568). The flip map (`.tl/view/crawl6_flips.jpg`)
+    shows why: the measure counts every pixel a hard edge passes over while the view turns, and the rails are dark
+    bars on light grass along the whole frame; grass and road themselves stay unmarked on the map.
+    I read it as edges moving with the pan, not a surface that boils, but it is the figure, so I give it. (A still
+    camera was not measured today; with wind, clouds and the river moving it would not be zero either.)
