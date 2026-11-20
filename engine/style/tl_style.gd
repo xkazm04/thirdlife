@@ -11,16 +11,16 @@ extends RefCounted
 
 const SHADER_DIR: String = "res://style/shaders/"
 const DEFAULT_PATH: String = "res://style/style.json"
-## Diorama night (20 Nov, branch diorama-base): the style a run loads by default is chosen by the environment variable
-## TL_STYLE. Unset or "diorama" = style_diorama.json (this branch's default); "classic" = today's style.json
-## (DEFAULT_PATH); any other name N = style_N.json. Internal: no public name changes.
+## The style a run loads is chosen by the environment variable TL_STYLE (owner, 20 Nov: crisp cel is the baseline).
+## Unset or "crisp" = style_crisp.json; "classic" = the pre-crisp style.json (DEFAULT_PATH); any other name N =
+## style_N.json ("diorama" = style_diorama.json). Internal: no public name changes.
 static var _chosen: String = _chosen_path()
 
 
 static func _chosen_path() -> String:
 	var name: String = OS.get_environment("TL_STYLE").strip_edges()
-	if name.is_empty() or name == "diorama":
-		return "res://style/style_diorama.json"
+	if name.is_empty() or name == "crisp":
+		return "res://style/style_crisp.json"
 	if name == "classic":
 		return DEFAULT_PATH
 	return "res://style/style_%s.json" % name
