@@ -40,7 +40,7 @@ func sculpt(sk: Skeleton3D, colors: Dictionary, pack: bool, helmet: bool, skate:
 		var side := "Left" if sign_x < 0.0 else "Right"
 		_leg(side, sign_x)
 		_arm(side, sign_x, skate)
-	_face(helmet)
+	_sculpt_face(helmet)
 	if helmet:
 		_helmet()
 	else:
@@ -175,7 +175,7 @@ func _leg(side: String, s: float) -> void:
 	cord([Vector3(x-.059,.192,-.177),Vector3(x-.018,.201,-.179),Vector3(x+.020,.204,-.177),Vector3(x+.056,.197,-.163)], .010,"wood", SHADE)
 	cord([Vector3(x-.053,.217,-.146),Vector3(x-.012,.222,-.145),Vector3(x+.027,.220,-.148),Vector3(x+.050,.217,-.141)], .009,"wood", SHADE)
 
-func _face(helmet: bool) -> void:
+func _sculpt_face(helmet: bool) -> void:
 	part("Head", Finish.CLAY)
 	piece(Vector3(0,1.70,-.014), Vector3(.302,.278,.265), "skin", EGG, 28)
 	for s: float in [-1.0,1.0]:
@@ -193,10 +193,14 @@ func _face(helmet: bool) -> void:
 		part("Brows", Finish.HAIR)
 		cord([Vector3(s*.069,1.799,-.251),Vector3(s*.097,1.81,-.244),Vector3(s*.133,1.81,-.230),Vector3(s*.149,1.802,-.223)], .012,"hair", DEEP)
 	part("Head", Finish.CLAY)
-	piece(Vector3(0,1.688,-.274), Vector3(.041,.035,.036), "skin", EGG, 14, Vector3.ZERO, Form.PLAIN, Color(1,.91,.82))
+	_nose()
 	part("MouthCorners", Finish.CLAY)
 	cord([Vector3(-.058,1.634,-.261),Vector3(-.034,1.618,-.270),Vector3(-.004,1.612,-.270),
 		Vector3(.028,1.620,-.272),Vector3(.057,1.639,-.266)], .009, "hair", DEEP)
+
+
+func _nose() -> void:
+	piece(Vector3(0,1.688,-.274), Vector3(.041,.035,.036), "skin", EGG, 14, Vector3.ZERO, Form.PLAIN, Color(1,.91,.82))
 
 
 func _hair() -> void:

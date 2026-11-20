@@ -83,7 +83,7 @@ func snap() -> void:
 	_travel = Vector3.ZERO
 	_anchor = target.global_position
 	global_position = _wanted()
-	_look = target.global_position + Vector3.UP * look_height
+	_look = _look_point(target.global_position)
 	_free_len = -1.0
 	_lift = 0.0
 	_avoid(true)
@@ -103,6 +103,10 @@ func _base() -> Vector3:
 
 func _wanted() -> Vector3:
 	return _base() - _heading * distance + Vector3.UP * height
+
+
+func _look_point(origin: Vector3) -> Vector3:
+	return origin + Vector3.UP * look_height
 
 
 func _aim() -> void:
@@ -303,10 +307,10 @@ func _physics_process(_delta: float) -> void:
 		_anchor = Vector3(lerpf(_anchor.x, tp.x, clampf(anchor_follow, 0.01, 1.0)), lerpf(_anchor.y, tp.y, clampf(ky, 0.01, 1.0)),
 			lerpf(_anchor.z, tp.z, clampf(anchor_follow, 0.01, 1.0)))
 		global_position = _wanted()
-		_look = _anchor + Vector3.UP * look_height
+		_look = _look_point(_anchor)
 	else:
 		global_position = global_position.lerp(_wanted(), clampf(follow, 0.01, 1.0))
-		_look = _look.lerp(target.global_position + Vector3.UP * look_height, clampf(aim, 0.01, 1.0))
+		_look = _look.lerp(_look_point(target.global_position), clampf(aim, 0.01, 1.0))
 	_avoid(false)
 	_cut_if_blocked(was)
 	_aim()
