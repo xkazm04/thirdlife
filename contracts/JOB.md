@@ -290,8 +290,15 @@ key is optional; a job made before this reads as before (absent = omit the key, 
   note is the request), then writes `phase_done` again. With `run_through` the Foreman writes `phase_reviewed {verdict:
   "pass", by: "auto"}` itself, right after `phase_done`.
 - A job waiting on a phase is never a hang: `foreman status` names the phase and the command that answers it.
-- Commands: `foreman new` takes `--creativity crazy` and `--run-through`; `foreman react <job> <aspect> <choice> [--note]`;
+- Commands: `foreman new` takes `--creativity crazy` and `--run-through`; `foreman react <job> <aspect> <choice> [--note "..."]`;
   `foreman redesign <job>`; `foreman phase <job> pass|hold [--note "..."]`. Each checks its value against the shapes
   above before writing.
 - Readers that mirror this table keep up: `foreman/data/job-events.schema.json`, `engine/ui/job_model.gd`,
   `engine/kernel/world/site/event_schema.gd` (strict: an unknown key there breaks the village site).
+- Narrowings (21 Nov, from L2 and L3; the writer and every reader enforce them):
+  - Alternative ids and phase ids are snake_case, like aspect ids.
+  - No alternative id is `keep` or `drop`, so a `choice` always means one thing.
+  - A `note`, where present (`aspect_reacted`, `phase_reviewed`), is a non-empty string; an empty note is an absent key.
+  - The pause written after `phase_done` without `run_through` is `job_state {state: "paused", reason: "phase"}`.
+  - The word limits stay strict in the site reader: the Foreman refuses to write an over-long line, so the reader never
+    meets one from a v2 Foreman.
