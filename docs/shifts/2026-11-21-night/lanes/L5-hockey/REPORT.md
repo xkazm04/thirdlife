@@ -95,8 +95,9 @@ more because shots go where the cursor is; the AI mates no longer score without 
 TEST EXPECTATIONS THAT MOVED (each named, with why)
 - bot_hockey_ai: "everybody moved 3 m" now counts skaters only. Goalies keep to their crease; bot_goalie checks that.
   It also waits for the result line at full time (H9a's rule); with goalies, full-time ends became common.
-- bot_match: the horizon went from 6,000 to 12,000 frames. With goalies, one side went 6,000 frames without a goal on
-  5 of 20 seeds. At 12,000 both sides scored on 20 of 20.
+- bot_match: it now runs until both sides have scored, at least 6,000 and at most 18,000 frames (it was a fixed 6,000).
+  With goalies, one side went 6,000 frames without a goal on 5 of 20 seeds, and red's first goal on seed 1 came at
+  12,267. Both sides scored on 20 of 20 seeds.
 - bot_aim: the shot's error is measured from the puck to the aim point, because the shot now flies at it. Errors are
   0.00 to 0.01 degrees on seed 1, against the same 3-degree bound.
 - bot_hockey (ladder base): the bot aims at the mouth's side away from the goalie at z 1.5. It was 1.2, chosen when
@@ -156,3 +157,55 @@ NEXT THREE THINGS THIS LANE WOULD DO (L5b, if the Director agrees)
 1. The goalie's save made visible (a stab or slide and a squash; drawing only, no hash change).
 2. AI spacing against the scrum: one chaser a side. This changes the sim, so the ladder and the gates run again.
 3. A one-timer bonus with an on-screen mark.
+
+======================================================================================================================
+L5b (22 Nov, 00:00-00:15), on top of the Director's commit 30c1372. Small changes, each gated.
+1. The goalie's figure is ticked by the fun layer: a stance, and on a caught shot a stab (pass clip) and a squash. His
+   biped step stays off. Drawing only: bot_goalie's hash was unchanged (667641179215f829) after this step alone.
+2. Nobody swarms a goalie. While a goalie holds the puck, the other side's skaters wait 10 m out in their lanes
+   (ai.json goalie_gap). The clip save_v3 (.tl) shows red backing off where five figures had crowded the goalie.
+   This changes the simulation.
+3. One-timer. A shot within 14 frames of taking your own side's pass flies 1.35x (18 -> 24.3 m/s), with a
+   "ONE-TIMER!" card, a crack and a kick of the camera. The shot frames and the factor are tuning values
+   (shoot.one_timer_frames, shoot.one_timer_scale). bot_fun gets 2 rows: a shot straight off the pass is a one-timer
+   at 24.3 m/s; a shot held 16 frames first is not, at 18.0 m/s.
+   bot_match also reports the crowd near the puck as a number, not a verdict: 1.2 to 1.6 skaters within 4 m, 4 or more
+   in 0 to 4 % of live frames, on seeds 1 to 10.
+
+Gates (L5b final code, 00:00 to 00:10):
+- PASS packs [2/2]: found 2, completed 2; verb runs 61 of 61.
+- PASS world [8/8]: world = alone.
+- hockey invariants: frame p50 0.974 ms (budget 1.0; busy machine, as before).
+- selftest hockeyfun.*: 6 of 6 PASS (bot_fun 5 rows, record = replay).
+- 20 tests on seeds 1 to 20: all 20 of 20.
+
+Ladder (tl ladder --pack engine/packs/hockey --seeds 20, L5b; hands as in L5):
+| level    | newcomer        | regular          | sharp            | perfect          | idle |
+| rookie   | 18/20 90        | 20/20 100        | 20/20 100        | 20/20 100        | 0/20 |
+| pro      | 5/20 25 (6..44) | 12/20 60 (39..81)| 12/20 60 (39..81)| 19/20 95 (85..100)| 0/20 |
+| all-star | 3/20 15 (0..31) | 10/20 50 (28..72)| 12/20 60 (39..81)| 14/20 70 (50..90)| 0/20 |
+The idle hand still wins nothing, and the perfect hand still wins every rookie match.
+
+Clip (20 s or less, in the lane folder): clips/l5b_fun_rows.mp4 (10 s, bot_fun). It shows the hit-stop, the bump, the
+goal replay, the one-timer card and the ordinary shot.
+Files: scripts/fun/fun.gd, scripts/ai/brain.gd, scripts/rink_api.gd, scripts/main.gd (one line: the shot event
+carries the one-timer), scripts/fx/fx.gd, data/tuning.json, data/ai.json, tests/bot_fun.gd, tests/bot_match.gd (crowd
+figure only), README.md.
+
+======================================================================================================================
+L5c (22 Nov, 00:25-00:55), on top of 981cf41. The camera at the moments a person meets first; drawing only.
+- Establishing shot: each match opens on the whole rink from 46 m and swoops in to the play over 100 frames. The
+  opening face-off's cut no longer kills it; the first try did (clip l5c_cam2, .tl), the second keeps it (l5c_cam3).
+- Goal: while the horn goes (hold_frames) the camera moves in close on the net at 12 m, then follows the replay at
+  15 m as before.
+- Cost: none headless. The camera's work is skipped headless, and no loop over skaters was added.
+- The simulation is unchanged: the gate's bot_hockey hash 3b372f91ecfe4c79@6751 equals L5b's, so the L5b ladder stands.
+Gates (00:40-00:52):
+- PASS packs [2/2]: verb runs 61 of 61.
+- PASS world [8/8]: world = alone.
+- hockey invariants: frame p50 0.971 ms (L5b 0.974; busy machine).
+- selftest hockeyfun.*: 6 of 6 PASS.
+Files: scripts/fun/cam.gd, scripts/fun/fun.gd (one argument), data/tuning.json (follow.goal_distance,
+establish_distance, establish_frames, establish_ease), README.md.
+Clip: clips/l5c_establish_and_goals.mp4 (19.6 s, rookie, perfect hand, seed 6): the opening swoop, two goals each in
+close on the net, then the replay.

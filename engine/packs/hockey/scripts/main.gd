@@ -481,8 +481,8 @@ func _pack_tick(frame: int) -> void:
 				(skaters[id] as TLBiped).brake(hits.is_down(id))
 	api.apply_speeds()
 	for e: Array in api.events:
-		if str(e[0]) == "shot":
-			_event("shot", (skaters[str(e[1])] as Node3D).global_position, str(teams[str(e[1])]))
+		if str(e[0]) == "shot" or str(e[0]) == "one_timer":
+			_event(str(e[0]), (skaters[str(e[1])] as Node3D).global_position, str(teams[str(e[1])]))
 	api.events.clear()
 	for e: Array in hits.events:
 		_event("hit_" + str(e[0]), (skaters[str(e[2])] as Node3D).global_position, str(teams[str(e[1])]))

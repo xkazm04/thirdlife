@@ -15,6 +15,8 @@ var focus: Vector3 = Vector3.ZERO
 var speed: Vector3 = Vector3.ZERO      ## the focus's velocity (the damped follow)
 var dist: float = 0.0
 var _placed: bool = false
+var _swoop: int = 0                   ## L5c: frames left of the slow zoom in from the establishing shot
+var _wide: bool = false                ## L5c: the next placement opens wide on the rink (a match's first picture)
 var _punch: float = 0.0                ## share of the distance taken off by a big hit, fading
 var _punch_frames: int = 0
 var _punch_left: int = 0
@@ -28,6 +30,8 @@ func punch(amount: float, frames: int) -> void:
 
 
 func snap() -> void:
+	if _swoop > 0:
+		return                             # L5c: the match's opening face-off: the establishing shot keeps going
 	_placed = false
 
 
@@ -42,6 +46,7 @@ func setup(g) -> void:
 	view.fov = float(c["fov"])
 	g.ctx.cameras.set_subject(&"follow", g.skaters["b0"])
 	_placed = false
+	_wide = true                           # L5c: an establishing shot: the whole rink, then in to the play
 	g.ctx.cameras.activate(&"follow" if on else &"arena")
 	tick(g, false, false)                  # placed before the first picture (it showed the whole rink from 30 m up)
 
@@ -51,7 +56,7 @@ func want(g, replay: bool) -> Vector3:
 	var api = g.api
 	var pp: Vector3 = api.puck_pos()
 	if replay:
-		return pp
+		return pp                          # the replay, and (L5c) the net right after a goal: the puck
 	var me: Vector3 = api.pos_of("b0")
 	var lead: Vector3 = Vector3.ZERO
 	if api.carrier != "":
@@ -71,7 +76,9 @@ func want(g, replay: bool) -> Vector3:
 
 
 ## How far the camera stands from its focus: wider when b0 and the puck are far apart, closer in a replay.
-func want_dist(g, replay: bool) -> float:
+func want_dist(g, replay: bool, goal: bool = false) -> float:
+	if goal:
+		return float(cfg["goal_distance"])      # L5c: in close on the net while the horn goes
 	if replay:
 		return float(cfg["replay_distance"])
 	var gap: float = g.api.pos_of("b0").distance_to(g.api.puck_pos())
@@ -79,27 +86,33 @@ func want_dist(g, replay: bool) -> float:
 
 
 ## Every tick (after the game's own work; not while a hit holds the picture still: `hold`).
-func tick(g, replay: bool, hold: bool) -> void:
+func tick(g, replay: bool, hold: bool, goal: bool = false) -> void:
 	if g.ctx.input.just_pressed(&"view"):
 		on = not on
 		g.ctx.cameras.activate(&"follow" if on else &"arena")
 	if view == null or g.ctx.headless:
 		return                             # visual only: no picture, no work (budget: frame p50)
-	var w: Vector3 = want(g, replay)
-	var d: float = want_dist(g, replay)
+	var w: Vector3 = want(g, replay or goal)
+	var d: float = want_dist(g, replay, goal)
 	if not _placed:
 		focus = w
 		speed = Vector3.ZERO
 		dist = d
+		if _wide:
+			focus = g.ctx.root.global_position            # L5c: the whole rink first; zoom_ease brings it in
+			dist = float(cfg["establish_distance"])
+			_swoop = int(cfg["establish_frames"])
+			_wide = false
 		_placed = true
 	elif not hold:
 		# a critically damped spring: no overshoot, no lag that grows with speed (omega in 1/s)
-		var om: float = float(cfg["replay_omega"] if replay else cfg["omega"])
+		var om: float = float(cfg["replay_omega"] if (replay or goal) else cfg["omega"])
 		var dt: float = 1.0 / 60.0
 		var acc: Vector3 = (w - focus) * om * om - speed * 2.0 * om
 		speed += acc * dt
 		focus += speed * dt
-		dist = lerpf(dist, d, float(cfg["zoom_ease"]))
+		dist = lerpf(dist, d, float(cfg["establish_ease"] if _swoop > 0 else cfg["zoom_ease"]))
+		_swoop -= 1
 	var dd: float = dist
 	if _punch_left > 0:
 		var u: float = float(_punch_left) / float(maxi(_punch_frames, 1))

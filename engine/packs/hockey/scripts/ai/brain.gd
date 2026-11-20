@@ -154,7 +154,13 @@ func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 		var cp: Vector3 = _pos[car]
 		var dc: float = me.distance_to(cp)
 		var closes: bool = role == "chaser" or (role == "support" and dc < _f("pounce_radius")) or (role == "back" and (dc < _f("back_engage") or cp.distance_to(own_goal) < _f("defend_radius")))
-		if closes:
+		if str(env["roles"][car]) == "goalie":
+			# L5b: their goalie has it covered: nobody checks or pokes him, so nobody swarms him (the clips showed five
+			# figures round a goalie holding the puck); they wait goalie_gap metres out, each in his lane
+			var wait: Vector3 = cp + (own_goal - cp).normalized() * _f("goalie_gap")
+			wait.z = clampf(lane * 1.2, -11.0, 11.0)
+			out = _goto(me, wait)
+		elif closes:
 			var may: bool = not (car == "b0" and _human(env) and _frame_no - int(api.carry_since) < int(_f("yield_frames")))
 			if may and hits.can_check(id) and hits.target(id, hits._f("check_reach"), hits._f("check_cone_deg")) == car and hits.closing(id, car) >= _f("check_min_closing_" + team):
 				hits.try_check(id)

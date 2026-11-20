@@ -23,5 +23,6 @@
   "net_round_z": 3.6,
   "corner_z": 1.5,
   "assist_frames": 240,
-  "feed_frames": 40
+  "feed_frames": 40,
+  "goalie_gap": 10
 }
