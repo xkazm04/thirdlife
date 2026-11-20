@@ -1,7 +1,7 @@
 extends TLMesh
 ## Indexed, closed rings in bind space. Each piece has its own outline and paint.
 ## UV holds edge wear and finish. CUSTOM0 retains bind-space position through skinning.
-enum Form { PLAIN, COAT, COLLAR, HAIRLINE, LOCK, LEATHER, KNIT, DENIM, CURL, SLEEVE, FLAP }
+enum Form { PLAIN, COAT, COLLAR, HAIRLINE, LOCK, LEATHER, KNIT, DENIM, CURL, SLEEVE, FLAP, CROP }
 enum Finish { CLAY, ENAMEL, HAIR, SATIN, GLOSS, HELMET, JACKET, SOLE, DENIM, SLEEVE, BOOT }
 
 const EGG := [Vector2(-1, .06), Vector2(-.91, .40), Vector2(-.68, .73), Vector2(-.36, .94),
@@ -99,6 +99,9 @@ func piece(at: Vector3, size: Vector3, key: String, rings: Array = EGG, sides: i
 					y += .26*s - .82*split + .10*c
 					radius *= 1.0 - .29*split
 					y += .11 * cos(2.0*angle - .45)
+				Form.CROP:
+					# A high temple clears the eyes. The back drops to the collar in one plane.
+					y += (1.0-h)*.5 * (-.62*s + .19*absf(c) - .09*c)
 				Form.HAIRLINE:
 					# Low nape; high brow with pointed sides and a slant above one eye.
 					y += (1.0 - h) * .5 * (-.45 * s - .30 * maxf(s,0.0) + .09 * sin(3.0 * angle + .8) - .10 * c)

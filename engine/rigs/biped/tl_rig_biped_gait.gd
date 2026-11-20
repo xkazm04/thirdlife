@@ -23,6 +23,7 @@ const _G_HS: Array = [0.0, 8.0, 14.0, 16.0, 16.0, 10.0, 6.0, 4.0, 2.0, 0.0, 0.0]
 const _G_KICK: Array = [0.0, 0.0, 4.0, 6.0, 10.0, 22.0, 32.0, 40.0, 48.0, 58.0, 60.0]      # heel kick behind in the swing, deg
 
 var feet: Array = []             # per foot (0 = left): stance flag, anchor, ankle position, pitch, yaw ... (see reset)
+var standing_half_width := 0.115 # hip centre to a planted ankle, in bind metres
 var phase: float = 0.0           # the stride phase, in cycles
 var psi: float = 0.0             # the pelvis heading against the facing, radians (+ = left)
 var back_w: float = 0.0          # 0 = moves forward, 1 = backpedals (eased)
@@ -47,7 +48,7 @@ static func _tab(x: float, ys: Array) -> float:
 func reset() -> void:
 	feet = []
 	for i: int in 2:
-		var sx: float = -0.115 if i == 0 else 0.115
+		var sx: float = -standing_half_width if i == 0 else standing_half_width
 		var yaw: float = deg_to_rad(6.0 if i == 0 else -8.0)
 		feet.append({"st": true, "a": Vector2(sx, 0.0), "yaw": yaw, "yaw0": yaw, "u": 0.5 * float(i), "u0": 0.0, "from": Vector3.ZERO, "fp": 0.0,
 			"ft0": 0.0, "hs": 0.0, "pos": Vector3(sx, ANKLE_H, 0.0), "pitch": 0.0, "toes": 0.0, "w": 0.0})
@@ -132,7 +133,7 @@ func step(vm: Vector2, cadence_k: float, yaw_world: float) -> void:
 	d = _tab(v, _G_D)
 	ls = d * v / f
 	var fb: float = lerpf(0.5, lerpf(0.44, 0.38, smoothstep(2.0, 3.5, v)), clampf(fw, 0.0, 1.0))   # share of the stride ahead of the hip
-	var half: float = lerpf(0.115, 0.09, smoothstep(2.0, 4.0, v)) + 0.05 * (1.0 - fw * fw)
+	var half: float = lerpf(standing_half_width, 0.09, smoothstep(2.0, 4.0, v)) + 0.05 * (1.0 - fw * fw)
 	var still: float = 1.0 - smoothstep(0.1, 0.7, v)
 	var settled: bool = v < 0.05
 	if settled:

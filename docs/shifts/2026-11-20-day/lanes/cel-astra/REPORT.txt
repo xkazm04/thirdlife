@@ -1,3 +1,17 @@
+Cel-astra · round 3 · 20 November 2026
+
+Ready for integration together with cel-fable’s one-line clean-load correction. The worktree is uncommitted. To play this capture build, set TL_STYLE=crisp and launch .tl/astra-r3/delivery/ThirdLife.exe.
+
+The playable build now uses 4× MSAA, FXAA and TAA off. On matched 1080p footage, large mid-distance luma changes fell from 3.619% to 3.181% during a walk and from 1.698% to 1.309% during a slow pan, relative reductions of 12.1% and 22.9% from previous crisp. On that pan, the literal old msaa=2,taa=1 override reached 0.325% with inherited FXAA. Reproducing the historical SMAA viewport gave 0.450%. Delivery retained 2.53× its walking edge energy. The 8-second native crop comparison is stills/r3-exe-motion.mp4.
+
+The road shoulder’s repeated diagonals came from directional shadow acne. In the same walking frame, high-contrast vertical transitions fell from 10,390 to 259 across 96,360 pairs. Lit road in the west-facing release measured RGB (241,148,70), against (249,150,68) on board 2. The interior boot cast measured (118,73,72), against (112,69,77). The upper sky is within one level per channel of the reference. The board, joined frame and delivery are beside each other in stills/r3-board.jpg. The playable samples are in stills/r3-road-shadow.jpg.
+
+The runner has an angular umber crown, visible thumbs, three red coat bands and separated brown boots. At board scale the boot gap grew from 5.3 to 18.7 pixels against the board’s 20. The connected shadow fits in frame. Its right edge is 45 pixels farther right than the board and its bottom edge is one pixel higher. The 23.35-second clip.mp4 shows the walk, bridge takeoff and flight.
+
+Verification passed fast 5/5, world 8/8, pack runs 48/48 and kit 95/95. All 46 pack hashes, all eight world hashes and all 18 reproducible classic shots matched the base. The other nine shots varied. The live climb reached 2.8769% of pixels over 1/255 and an independent repeat reached 2.3043%. Four of 27 centre crops and 18 near crops have lower spatial variance than classic. The visitor-road centre is 1.29× classic. The busy six-game tour measured 1.140 ms GPU for crisp and 1.332 ms for classic. Per-game authoring cost is zero.
+
+Rig and moves passed 14/14 each, flight 13/13 and wings 2/2. Style passed 9/10, cel 2/4 and character 1/2. The two distinct failures share one cause. Cel-fable’s authored toon.shade_k of 0.90 clamps to 0.85 and the two clean-load checks reject the warning. Both original cases passed in an isolated copy with only that value corrected. PATCHES.md records the handoff and measured grass and bluff colours. ASTRA-NOTES.md records changed files, keys, full measurements, test expectations and reproduction commands. Next priorities are distant-line shimmer, meadow cast shapes and the shaded grass and bluff palette.
+
 Cel-astra · round 2 · 20 November 2026
 
 Ready for operator verification. The release now selects 4× MSAA, SMAA and TAA off for crisp. On identical release camera and input schedules, mid-distance edge energy rose 2.37× standing and 3.60× walking. Classic keeps its original boot settings and the environment override wins. The final visitor-road image has a visible pale sun and a peach horizon. Six cloud profiles vary the skyline in flight.

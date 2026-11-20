@@ -3,11 +3,12 @@
  "sun": {
   "color": "#ffe4a6",
   "energy": 1.17,
-  "elev": 22.5,
-  "azim": -173.0,
+  "elev": 40.0,
+  "azim": 176.0,
   "shadow_max": 235.0,
   "shadow_blur": 0.72,
   "shadow_bias": 0.043,
+  "normal_bias": 2.8,
   "filter_quality": 2,
   "overhead_elev": 39.0
  },
@@ -54,7 +55,9 @@
   "dof_far_transition": 400.0,
   "dof_amount": 0.02,
   "cel_sky": true,
-  "exe_aa": "msaa=4,ss=smaa,taa=0",
+  "line_aa": "fxaa",
+  "distant_aa": 0.76,
+  "exe_aa": "msaa=4,ss=fxaa,taa=0",
   "visitor_frame": {
    "arm": 0.51,
    "lift": 0.63
@@ -63,7 +66,7 @@
  "fog": {
   "color": "#c093a2",
   "density": 0.00032,
-  "sun_scatter": 0.07,
+  "sun_scatter": 0.0,
   "height": 10.0,
   "height_density": 0.00068,
   "height_falloff": 0.06,
@@ -72,14 +75,14 @@
  },
  "sky": {
   "zenith": "#754bb6",
-  "upper": "#ad74ca",
+  "upper": "#a479ca",
   "mid": "#f39a9b",
   "horizon": "#ffc08a",
   "ground": "#edac89",
-  "glow": "#ffdb81",
+  "glow": "#ffeb69",
   "glow_k": 1.0,
   "disc": "#fffff8",
-  "disc_r": 0.032,
+  "disc_r": 0.026,
   "disc_soft": 0.004,
   "cloud": "#ffdda0",
   "cloud_shade": "#d69cc0",
@@ -87,7 +90,7 @@
   "cloud_scale": 1.0,
   "cloud_high": 0.3,
   "sun_draw_elev": 9.8,
-  "sun_draw_yaw": 41.8,
+  "sun_draw_yaw": 52.5,
   "cloud_puff": 1.35,
   "cloud_line": 0.7,
   "cloud_ink": "#5a3470"
@@ -116,7 +119,7 @@
   "hair_alpha": 0.72,
   "inner_near": 22.0,
   "inner_far": 120.0,
-  "ao_k": 0.13,
+  "ao_k": 0.0,
   "ao_radius": 0.7,
   "ao_far": 120.0,
   "ao_color": "#633b52",
@@ -128,6 +131,7 @@
  },
  "grade": {
   "plum_density": 0.88,
+  "olive_fill": 0.88,
   "edge_contrast": 0.34,
   "shadows": "#784968",
   "highlights": "#ffe4a7",

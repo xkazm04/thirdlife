@@ -1,5 +1,39 @@
 # Cel surface handoff
 
+## Round 4 integration
+
+**Use the round-4 grade when fitting the meadow.** The direct key is `#ffe4a6` at energy 1.17, elevation 40° and azimuth 176°. Tonemapping is linear at exposure 0.93. The existing `grade.plum_density = 0.88` supplies the road's plum. The new `grade.olive_fill = 0.88` cools dark yellow-greens in the display grade. It reduces excess green and fills the missing blue up to a limit set by the incoming pigment. The selector sees colour, so dark leaves can pick it up too. Set **olive_fill alone** to zero in a private comparison to see the contribution under a new palette.
+
+| Native sample | Round 3 RGB | Round 4 RGB | Board 2 RGB |
+|---|---|---|---|
+| Visitor tree cast on grass, (780,545) | 90, 123, 11 | 81, 107, 36 | 80, 106, 35 and 77, 103, 35 on grass beneath fence rails |
+| Visitor lit grass, (300,600) | 184, 186, 27 | 184, 186, 27 | 191, 174, 22 and 198, 178, 19 |
+| Lighter patch inside tree area, (640,560) | 165, 173, 26 | 165, 173, 26 | |
+| Visitor boot cast on road, (1300,1010) | 117, 73, 71 | 117, 73, 71 | 124, 79, 74 in bush cast |
+| Visitor lit road, (700,1000) | 241, 148, 70 | 241, 148, 70 | 247, 149, 69 |
+| Parkour road, right-hand fence rail cast, (660,886) | 95, 126, 9 | 86, 108, 36 | 80, 106, 35 |
+| Sunlit grass above that rail, (662,866) | 192, 191, 25 | 192, 191, 25 | 191, 174, 22 |
+
+Visitor samples are 7 × 7 medians in shot 51. The two parkour samples are 5 × 5 in shot 07. In the parkour pair the cast keeps 45% of lit red and 57% of lit green, and blue rises from 25 to 36. In the board pair it keeps 42% and 61%, and blue rises from 22 to 35. The broad crown still shapes the visitor cast. The parkour fence shows what the same grade does on thin shadows. The remaining meadow differences are the sunlit paint and the distribution of tree crowns, rails and posts. [Board, tree and fence comparison](stills/r4-shadow.jpg)
+
+**Joined-tree load repair.** The authoring correction for cel-fable is still `toon.shade_k: 0.90 → 0.85` in `style_crisp.json`. The validator already renders at 0.85. The higher authored value triggers the clean-load assertions in `character.cel.wardrobe` and `style.cel.exe_aa`.
+
+## Round 3 integration
+
+**Gate repair for cel-fable.** In `engine/style/style_crisp.json`, set `toon.shade_k` from `0.9` to `0.85`. The loader already renders the joined style at 0.85. It returns a clamp message on every load, which fails the clean-load assertion in `character.cel.wardrobe`. The fixture measured 12 wardrobes, 29 bones and zero grip error. The only reported error was `crisp load`. The exported joined build logs the same clamp. Please preserve the shared validator and the clean-load assertion.
+
+**Tree patch in shot 51.** At (645,590) the grass reads (165,173,26), against (186,188,27) at (745,590). Both pixels stay identical with the ink pass hidden, directional shadows disabled or positional lights hidden, tested separately in the frozen view. Forcing a single grass paint in the diagnostic terrain shader makes both pixels (186,188,27). The shape comes from the selection between land paints. The probes are in `.tl/astra-r3/pool-study/`.
+
+**Light and grade.** The palette still receives `#ffe4a6 × 1.17`, linear tonemapping and 0.93 exposure. In a frozen joined road view, removing `grade.plum_density` changed the cast from (119,74,72) to (128,103,60). Board 2 is (112,69,77), so the delivery keeps 0.88. Contact shade and fog sun scatter are both zero. The yellow glow around the disc is painted into the sky. A bridge control showed only about 1–2 levels of change on the facing hill from removing scatter.
+
+The delivery key is 40° elevation, 176° azimuth, normal bias 2.8 and depth bias 0.043. In shot 51 the sunlit road is (241,148,70) and the interior of the tree cast is (118,73,72), within eight levels per channel of the board. The grass in that cast is (90,123,11) at x745–784, y566–580. Board grass shade is (80,104,35). That leaves a sampled difference of (+10,+19,−24), especially yellow-green in the shade. The operator’s original x1500–1699, y620–659 box now falls outside the cast. For lit grass, the fixed foreground is (182,185,27) against (200,182,22) on the board. These are display-space differences for evaluating the grass paints under the joined light.
+
+**Bluffs in shot 13.** In the joined native image, the left mesa at x547–575, y251–273 reads (155,84,149). The right river-bank facet at x1755–1794, y372–382 reads (114,71,171). On the board at its native 1280 × 720, the left mesa at x317–367, y122–153 reads (168,94,120) and the right mesa at x890–949, y178–200 reads (169,94,127). On the joined left face red exceeds blue by 6 levels, against 48 on the board. Start with the shaded cliff paint there. Globally warming the grade would also move the already close tree cast on the road.
+
+Under the delivery key, the same left mesa reads (151,78,150). The right-bank sample turns sunlit at (230,145,141). Re-evaluate the cliff pigment on the left face first. It remains in shade in both captures.
+
+**Clean-load control.** With a private copy of the delivery engine and exactly the suggested 0.85 authoring change, the original assertions return `PASS character.cel.wardrobe` and `PASS style.cel.exe_aa`. Logs are in `.tl/astra-r3/clamp-control/`.
+
 ## Round 2 integration
 
 The new sky warms the horizon in the visitor shot. The fixed lit-road sample at (1320,965) remains RGB (220,152,80) and the boot cast at (1250,1030) remains (128,71,97). Both are 15 × 15 medians at 1920 × 1080. Use those coordinates to judge the surface merge under the final sky. The tested material patch and its board comparison follow below. [Final visitor road and sky](stills/r2-sky.jpg)

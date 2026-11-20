@@ -43,8 +43,8 @@ const RANGES: Dictionary = {
 	"ink.outer_px": [0.0, 4.0], "ink.inner_px": [0.0, 2.5], "ink.inner_alpha": [0.0, 1.0],
 	"ink.near_px": [0.0, 6.0], "ink.even": [0.0, 1.0], "ink.thin_keep": [0.0, 1.0], "ink.hair_alpha": [0.0, 1.0],
 	"grade.sat": [0.6, 1.4], "grade.contrast": [0.85, 1.25], "grade.vignette": [0.0, 0.5], "grade.grain": [0.0, 0.05], "grade.paper": [0.0, 0.06], "grade.split": [0.0, 0.3],
-	"grade.plum_density": [0.0, 1.0], "grade.edge_contrast": [0.0, 0.8],
-	"sun.overhead_elev": [4.0, 85.0],
+	"grade.plum_density": [0.0, 1.0], "grade.edge_contrast": [0.0, 0.8], "grade.olive_fill": [0.0, 1.0],
+	"sun.overhead_elev": [4.0, 85.0], "env.distant_aa": [0.0, 0.9],
 	"lights.pool_smooth": [0.0, 1.0], "detail.strata": [0.0, 1.0], "detail.strata_m": [0.5, 12.0], "detail.strata_tone": [0.0, 0.6], "detail.strata_crack": [0.0, 1.0],
 	"detail.k": [0.0, 1.6], "detail.macro": [0.0, 2.5], "detail.dark": [0.25, 0.9], "env.exposure": [0.6, 1.6], "env.glow": [0.0, 1.2],
 }
@@ -463,6 +463,7 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 		we.environment = env0
 		rig.add_child(we)
 	var e0: Dictionary = data["env"]
+	preload("res://style/cel/style_cel.gd").configure_distant_aa(we,e0.get("distant_aa",0.0))
 	var sky: Sky = we.environment.sky
 	var cotton: bool = e0.get("cotton_sky", false)
 	var sky_material := sky.sky_material as ShaderMaterial

@@ -3,8 +3,8 @@ extends "res://rigs/biped/clay_biped.gd"
 ## The skater keeps the team sweater, padded gloves and helmet on this skin.
 const JACKET := [Vector2(-1,.94),Vector2(-.94,1),Vector2(-.70,.99),
 	Vector2(.12,.93),Vector2(.59,1),Vector2(.82,.95),Vector2(1,.66)]
-const TUFT := [Vector2(-1,.57),Vector2(-.74,.88),Vector2(-.28,1.0),
-	Vector2(.43,.97),Vector2(.82,.73),Vector2(1,.45)]
+const TUFT := [Vector2(-1,.71),Vector2(-.71,.95),Vector2(.32,1.0),
+	Vector2(.72,.95),Vector2(1,.79)]
 
 
 func _init() -> void:
@@ -16,13 +16,13 @@ func _hair() -> void:
 	part("Head", Finish.HAIR)
 	# One continuous nape and two swept blocks. The crown steps down to
 	# the near ear. Both locks follow the existing secondary-motion bone.
-	piece(Vector3(0,1.781,.031),Vector3(.341,.190,.295),"hair",DOME,28,
-		Vector3(0,-4,-2),Form.HAIRLINE,Color.WHITE,.77)
+	piece(Vector3(0,1.785,.029),Vector3(.337,.183,.288),"hair",DOME,28,
+		Vector3(0,-4,-2),Form.CROP,Color.WHITE,.76)
 	part("Hair", Finish.HAIR)
-	piece(Vector3(.073,1.970,.033),Vector3(.171,.110,.158),"hair",TUFT,16,
-		Vector3(6,-19,-21),Form.PLAIN,Color.WHITE,.66)
-	piece(Vector3(-.103,1.938,.163),Vector3(.139,.087,.118),"hair",TUFT,16,
-		Vector3(19,15,16),Form.PLAIN,Color(1,.92,.85),.64)
+	piece(Vector3(.077,1.971,.022),Vector3(.164,.090,.139),"hair",TUFT,16,
+		Vector3(4,-9,-7),Form.PLAIN,Color.WHITE,.47)
+	piece(Vector3(-.097,1.941,.167),Vector3(.121,.065,.102),"hair",TUFT,16,
+		Vector3(7,14,7),Form.PLAIN,Color(1,.95,.90),.49)
 	# A swept fringe crosses the hairline only on one side of the face.
 	piece(Vector3(-.081,1.893,-.160),Vector3(.202,.080,.113),"hair",TIP,20,
 		Vector3(-16,-17,-18),Form.LOCK,Color.WHITE,.83)
@@ -84,10 +84,10 @@ func _arm(side: String, s: float, skate: bool) -> void:
 	var x := s*.288
 	part(side+"LowerArm",Finish.SLEEVE)
 	bend_into(side+"UpperArm",1.11,1.24)
-	piece(Vector3(x,1.187,-.002),Vector3(.110,.255,.124),"top",SLEEVE,18,
+	piece(Vector3(x,1.198,-.002),Vector3(.110,.242,.119),"top",SLEEVE,18,
 		Vector3(0,0,-s*2.0),Form.SLEEVE,Color.WHITE,.86)
 	part(side+"LowerArm",Finish.ENAMEL)
-	piece(Vector3(x+s*.004,.947,-.001),Vector3(.114,.033,.122),"trim",ROLL,18,
+	piece(Vector3(x+s*.004,.965,-.001),Vector3(.111,.029,.119),"trim",ROLL,18,
 		Vector3(-3,0,-s*4),Form.PLAIN,Color(.92,.86,.91),.86)
 	part(side+"Hand",Finish.CLAY)
 	_hand(s)
@@ -96,18 +96,19 @@ func _arm(side: String, s: float, skate: bool) -> void:
 func _hand(s: float) -> void:
 	var start := vertices.size()
 	super(s)
-	# Open the relaxed thumb towards the viewer behind the shoulder. The
-	# fitted vertices still come from the common five-centimetre bar grip.
+	# Open the hand below the cuff. Its grip blend shape still closes on the
+	# original five-centimetre bar at the hand socket.
 	var sides := (vertices.size()-start)/HAND.size()
-	for ring in 5:
-		var shift := Vector3(-s*.023,-.011,.032)*(1.0-smoothstep(0,4,ring))
+	var palm := skeleton.get_bone_global_rest(bone).origin + Contact.PALM
+	for ring in HAND.size():
+		var thumb := Vector3(-s*.030,-.014,.041)*(1.0-smoothstep(0,4,ring))
 		for i in sides:
 			var v := start+ring*sides+i
-			vertices[v] += shift
+			vertices[v] = palm + (vertices[v]-palm)*1.22 + Vector3(0,-.022,.007) + thumb
 			bind_data[v*4] = vertices[v].x
 			bind_data[v*4+1] = vertices[v].y
 			bind_data[v*4+2] = vertices[v].z
-	for ring in range(1,5):
+	for ring in range(1,HAND.size()-1):
 		for i in sides:
 			var first := start+ring*sides
 			var v := first+i

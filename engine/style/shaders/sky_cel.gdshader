@@ -15,6 +15,7 @@ uniform vec3 disc : source_color;
 uniform float sun_draw_elev = 6.0;
 uniform float sun_draw_yaw = 0.0;
 uniform float disc_r = 0.027;
+uniform float disc_soft = 0.004;
 uniform float glow_k = 0.8;
 uniform float cloud_scale = 1.0;
 
@@ -133,9 +134,12 @@ void sky() {
 	float el = radians(sun_draw_elev);
 	vec3 sun = vec3(bearing.x*cos(el),sin(el),bearing.y*cos(el));
 	float angle = acos(clamp(dot(sun,d),-1.0,1.0));
-	c = mix(c,glow,glow_k*(.48*exp(-12.0*angle*angle)+.48*exp(-12.5*angle)));
+	// The broad peach field carries a smaller, yellow aureole immediately
+	// around the pale disc. Both follow its bearing across the sky join.
+	c = mix(c,glow,glow_k*(.40*exp(-12.0*angle*angle)+.60*exp(-75.0*angle*angle)));
 	float feather = clamp(max(length(dFdx(d)),length(dFdy(d))),.00015,.002);
-	c = mix(c,disc,1.0-smoothstep(disc_r-feather,disc_r+feather,angle));
+	float rim = max(feather,disc_soft);
+	c = mix(c,disc,1.0-smoothstep(disc_r-rim,disc_r+rim,angle));
 	// EYEDIR is continuous at the longitude join, including its derivatives.
 	float pixel = degrees(max(length(dFdx(d)),length(dFdy(d))))*.68;
 	if (cloud_scale > .0 && h > .008 && h < .80) {

@@ -15,5 +15,5 @@ NODE
   ) > "$cel_log" 2>&1 || cel_why="exit $?"
   cel_line="$(grep -a '^CEL_FRAME ok=true' "$cel_log")"
   if [ -z "$cel_line" ] || grep -aEq 'SCRIPT ERROR|SHADER ERROR|^ERROR:' "$cel_log"; then cel_why="see $cel_log"; fi
-  verdict style.cel.frame "$cel_why" "$(grep -aE '^CEL_(LIGHT|SUN|SKY|BANDS|CONTOURS)' "$cel_log" | tr -d '\r' | tr '\n' ' ')"
+  verdict style.cel.frame "$cel_why" "$(grep -aE '^CEL_(LIGHT|SUN|SKY|BANDS|FILL|CONTOURS|MOTION)' "$cel_log" | tr -d '\r' | tr '\n' ' ')"
 fi

@@ -25,13 +25,15 @@ void fragment() {
 		// shoulder stitch disappear as it projects below a single pixel.
 		float dy = max(.0007,fwidth(p.y));
 		float yoke = p.y - (1.158+.15*p.x*p.x);
-		float stitch = 1.0-smoothstep(.001,.001+dy,abs(yoke));
-		c *= 1.0 - .28*stitch*smoothstep(.08,.14,p.z)*clamp(.003/dy,0.0,1.0);
-		c *= mix(vec3(.33,.22,.38),vec3(1),smoothstep(.878-dy,.878+dy,p.y));
+		float stitch = 1.0-smoothstep(.002,.002+dy,abs(yoke));
+		c *= 1.0 - .42*stitch*smoothstep(.08,.14,p.z)*clamp(.005/dy,0.0,1.0);
+		c *= mix(vec3(.28,.23,.36),vec3(1),smoothstep(.895-dy,.895+dy,p.y));
 	} else if (abs(finish-2.0) < .1) {
-		c *= vec3(1.04,.86,.77);
+		c *= vec3(.98,1.02,.75);
 	} else if (abs(finish-10.0) < .1) {
-		c *= vec3(1.18,.92,.80);
+		c *= vec3(1.51,1.23,.55);
+	} else if (abs(finish-8.0) < .1) {
+		c *= vec3(.97,1.60,.90);
 	}
 	if (abs(finish-6.0) < .1 || abs(finish-9.0) < .1) {
 		// Concentrate the cloth dye while preserving a pack's chosen hue.
@@ -57,12 +59,17 @@ void light() {
 			shade = vec3(.82,.63,.63);
 			midtone = vec3(.99,.86,.80);
 		} else if (abs(finish-2.0) < .1 || abs(finish-10.0) < .1) {
+			// A broad umber face and one amber facet across the crown or toe.
+			// The flat shadow paint also keeps fine self-shadow steps off the nape.
 			sunlit *= vec3(1.70,1.40,1.0);
-			shade *= vec3(1.0,.86,.72);
+			shade = vec3(.77,.69,.37);
+			midtone = shade;
+			light_face = smoothstep(.34-aa,.34+aa,facing);
 		} else if (abs(finish-6.0) < .1 || abs(finish-9.0) < .1) {
 			// The violet fill brightens the red and blue plates on folded
 			// cloth. It also works on alternate team colours.
-			shade *= vec3(1.19,.95,1.28);
+			shade *= vec3(1.22,.85,1.08);
+			midtone *= vec3(.93,.59,.90);
 			sunlit *= vec3(.94,.92,1.06);
 		}
 		vec3 paint = mix(mix(shade,midtone,turn),sunlit,light_face);

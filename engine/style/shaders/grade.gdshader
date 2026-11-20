@@ -13,6 +13,7 @@ uniform float gamma = 1.0;
 uniform float paper = 0.03;   // gouache-on-paper: blotchy pigment + fibre grain
 #ifdef TL_CEL_GRADE
 uniform float plum_density = 0.0;
+uniform float olive_fill = 0.0;
 uniform float edge_contrast = 0.0;
 #endif
 
@@ -44,6 +45,14 @@ void fragment() {
 	float halftone = smoothstep(.055,.23,l)*(1.0-smoothstep(.44,.63,l));
 	float wash = plum_density*halftone*(1.0-smoothstep(.24,.55,chroma));
 	c *= mix(vec3(1.0),vec3(.92,.71,1.17),wash);
+	// A multiplicative wash cannot return blue to an olive shadow with
+	// almost no blue left. Reduce the green excess and replenish the
+	// missing blue in proportion to the remaining red pigment.
+	float green_excess = max(c.g-c.r,0.0);
+	float olive = smoothstep(.0,.09,green_excess)*smoothstep(.06,.24,c.g-c.b);
+	float missing_blue = max(min(.56*c.r,.18)-c.b,0.0);
+	float green_cut = min(green_excess,.65*max(c.g-.375,0.0));
+	c += olive_fill*halftone*olive*vec3(-.32*green_excess,-green_cut,missing_blue);
 	l = dot(c,vec3(.299,.587,.114));
 #endif
 	vec3 tone = mix(shadows, highlights, smoothstep(0.12, 0.85, l));

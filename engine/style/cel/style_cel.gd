@@ -1,6 +1,9 @@
 extends RefCounted
 ## Crisp frame settings and the higher light used on a fixed overhead board.
 
+const DistantAA := preload("res://style/cel/distant_aa.gd")
+
+
 class OverheadKey extends Node:
 	var sun: DirectionalLight3D
 	var overhead_pitch := 0.0
@@ -33,6 +36,38 @@ static func configure_sun(sun: DirectionalLight3D, settings: Dictionary) -> void
 		key._process(0.0)
 
 
+static func configure_distant_aa(world: WorldEnvironment, weight: float) -> void:
+	# An explicit boot AA profile controls the whole viewport.
+	if not OS.get_environment("TL_EXE_AA").is_empty() or RenderingServer.get_current_rendering_method() != "forward_plus":
+		weight = 0.0
+	if weight <= 0.0 and world.compositor == null:
+		return
+	var effects: Array[CompositorEffect] = []
+	if world.compositor != null:
+		effects = world.compositor.compositor_effects.duplicate()
+	var existing: DistantAA
+	for effect in effects:
+		if effect is DistantAA:
+			existing = effect
+			break
+	if existing != null:
+		if is_equal_approx(existing.strength,weight):
+			return
+		effects.erase(existing)
+	elif weight <= 0.0:
+		return
+	if weight > 0.0:
+		var effect := DistantAA.new()
+		effect.strength = weight
+		effects.append(effect)
+	if effects.is_empty():
+		world.compositor = null
+	else:
+		var compositor := Compositor.new()
+		compositor.compositor_effects = effects
+		world.compositor = compositor
+
+
 static func install_grade(rig: Node, enabled: bool, settings: Dictionary, shaders: Dictionary) -> void:
 	var layer := rig.get_node_or_null("Grade") as CanvasLayer
 	if not enabled:
@@ -51,10 +86,11 @@ static func install_grade(rig: Node, enabled: bool, settings: Dictionary, shader
 		layer.add_child(rect)
 		rig.add_child(layer)
 	var grade := (layer.get_node("Rect") as ColorRect).material as ShaderMaterial
-	var cel := settings.has("plum_density") or settings.has("edge_contrast")
+	var cel := settings.has("plum_density") or settings.has("edge_contrast") or settings.has("olive_fill")
 	grade.shader = preload("res://style/dio/style_dio.gd").variant("grade","TL_CEL_GRADE" if cel else "",shaders)
 	if cel:
 		grade.set_shader_parameter(&"plum_density",settings.get("plum_density",0.0))
+		grade.set_shader_parameter(&"olive_fill",settings.get("olive_fill",0.0))
 		grade.set_shader_parameter(&"edge_contrast",settings.get("edge_contrast",0.0))
 	TLStyle.push("grade",grade)
 

@@ -2,6 +2,8 @@
   python measure.py sharp <dir> [<dir2>]        sharpness per shot and crop: variance of a 3x3 Laplacian of luma (0..255)
                                                 over fixed crops of the 1920x1080 frame; with <dir2>, the ratio dir2/dir
   python measure.py diff <dirA> <dirB>          per shot: max |A-B| over RGB (0..255), share of pixels differing > 1/255
+  python measure.py shoulder <walk160.png> ...   native release road shoulder: luma transitions over 24 levels
+  python measure.py rgb <img> <radius> <x,y> ...  RGB median and standard deviation in native square patches
   python measure.py bands <img> x0 y0 x1 y1     luma histogram modes in a crop (64 bins, modes with >= 3 % of the crop)
 Crops (x0, y0, x1, y1 at 1920x1080): top (sky/far) 0,0,1920,300; mid 0,300,1920,620; centre (subject) 660,320,1260,860;
 near (bottom) 0,800,1920,1080."""
@@ -38,7 +40,29 @@ def sharp(d):
 
 def main():
     cmd = sys.argv[1]
-    if cmd == "sharp":
+    if cmd == "rgb":
+        with Image.open(sys.argv[2]) as image:
+            rgb = np.asarray(image.convert("RGB"))
+        radius = int(sys.argv[3])
+        height, width = rgb.shape[:2]
+        for point in sys.argv[4:]:
+            x, y = map(int, point.split(","))
+            if radius < 0 or min(x, y) < radius or x + radius >= width or y + radius >= height:
+                raise ValueError(f"Patch at {point} extends outside {width} × {height}")
+            patch = rgb[y-radius:y+radius+1, x-radius:x+radius+1]
+            median = np.median(patch, axis=(0, 1)).astype(int)
+            print(point, "median", median.tolist(), "SD", patch.std(axis=(0, 1)).round(2).tolist())
+    elif cmd == "shoulder":
+        for path in sys.argv[2:]:
+            with Image.open(path) as image:
+                if image.size != (1920, 1080):
+                    raise ValueError("The road shoulder needs the native 1920x1080 walk frame")
+            y = luma(path)
+            line = np.abs(np.diff(y[875, 450:610]))
+            patch = np.abs(np.diff(y[740:1005, 325:690], axis=0))
+            print(f"{path}: {np.count_nonzero(line > 24)}/{line.size} horizontal,"
+                  f" {np.count_nonzero(patch > 24)}/{patch.size} vertical")
+    elif cmd == "sharp":
         a = sharp(sys.argv[2])
         b = sharp(sys.argv[3]) if len(sys.argv) > 3 else None
         print("shot".ljust(28) + "".join(k.rjust(18) for k in CROPS))

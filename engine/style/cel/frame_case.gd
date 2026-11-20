@@ -22,6 +22,33 @@ func _difference(a: Color,b: Color) -> int:
 	return maxi(absi(a.r8-b.r8),maxi(absi(a.g8-b.g8),absi(a.b8-b.b8)))
 
 
+func _check_shadow_fill(host: Node) -> void:
+	# Supply display colours before the grade, independent of the terrain palette.
+	var strip := HBoxContainer.new()
+	host.add_child(strip)
+	for pigment: Color in [Color("#5b7915"),Color("#b3b627"),Color("#80673c"),Color("#733820")]:
+		var chip := ColorRect.new()
+		chip.custom_minimum_size = Vector2(64,64)
+		chip.color = pigment
+		strip.add_child(chip)
+	var grade := (host.get_node("TLStyleRig/Grade/Rect") as ColorRect).material as ShaderMaterial
+	var strength: float = grade.get_shader_parameter(&"olive_fill")
+	grade.set_shader_parameter(&"olive_fill",0.0)
+	var before := await _photo()
+	grade.set_shader_parameter(&"olive_fill",strength)
+	var after := await _photo()
+	var base := before.get_pixel(32,32)
+	var filled := after.get_pixel(32,32)
+	var protected_delta := 0
+	for i in range(1,strip.get_child_count()):
+		var centre := Vector2i((strip.get_child(i) as Control).get_global_rect().get_center())
+		protected_delta = maxi(protected_delta,_difference(before.get_pixelv(centre),after.get_pixelv(centre)))
+	if filled.b8-base.b8 < 15 or filled.g8 >= base.g8 or filled.r8 >= base.r8 or protected_delta > 1:
+		failures.append("olive shadow fill or protected pigments")
+	print("CEL_FILL olive=",base.to_html(false),"->",filled.to_html(false)," protected_delta=",protected_delta)
+	strip.free()
+
+
 func _seam(im: Image,x: int) -> int:
 	var steps := PackedInt32Array()
 	for y in im.get_height():
@@ -151,7 +178,7 @@ func _run() -> void:
 	cam.make_current()
 	await _photo()
 	var road_pitch := sun.rotation_degrees.x
-	if not is_equal_approx(plan_pitch,-39.0) or not is_equal_approx(road_pitch,-22.5):
+	if not is_equal_approx(plan_pitch,-39.0) or not is_equal_approx(road_pitch,-40.0):
 		failures.append("overhead light or road restoration")
 	print("CEL_LIGHT road=",road_pitch," overhead=",plan_pitch)
 	overhead.free()
@@ -159,8 +186,9 @@ func _run() -> void:
 		failures.append("native deep focus")
 	await _check_sky(world.environment,cam)
 	await _check_bands(host,world.environment,sun,cam)
+	await _check_shadow_fill(host)
 	host.free()
 	if not await preload("res://style/cel/contour_case.gd").measure(self):
-		failures.append("1080p rail taper or open gap")
+		failures.append("1080p rail taper, open gap or distant motion")
 	print("CEL_FRAME ok=",failures.is_empty()," errors=",failures)
 	quit(0 if failures.is_empty() else 1)

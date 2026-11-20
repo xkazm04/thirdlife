@@ -1,5 +1,194 @@
 # Cel-astra · 20 November 2026
 
+## Round 4
+
+The visitor’s tree cast now has the blue lift visible in board 2. A thin rail cast shows the same response. The second change steadies distant contours during walking and panning. I kept the camera settings after measuring the visitor at 37% of frame height in the exported game’s village camera. [Cast shadows beside the board](stills/r4-shadow.jpg) · [Matched footage of the fence and visitor](stills/r4-contours.mp4)
+
+### Grass and road shadows
+
+`grade.olive_fill = 0.88` reduces red and green in dark olive paint and fills its blue deficit. It operates on rendered colour, so dark leaves of the same hue also qualify. The sun uses `#ffe4a6` at 1.17, elevation 40°, azimuth 176°. Linear exposure is 0.93 and `grade.plum_density` is 0.88.
+
+| Native 1080p patch | Round 3 RGB | Round 4 RGB | Board 2 reference |
+|---|---|---|---|
+| 51, tree cast on grass (780,545) | 90,123,11 | **81,107,36** | 80,106,35 and 77,103,35 |
+| 51, lit grass (300,600) | 184,186,27 | 184,186,27 | 191,174,22 and 198,178,19 |
+| 07, slender fence cast (660,886) | 95,126,9 | **86,108,36** | 80,106,35 |
+| 07, adjacent lit grass (662,866) | 192,191,25 | 192,191,25 | 191,174,22 |
+| 51, boot cast on road (1300,1010) | 117,73,71 | 117,73,71 | 124,79,74 |
+| 51, lit road (700,1000) | 241,148,70 | 241,148,70 | 247,149,69 |
+
+Shot 51 uses 7 × 7 medians. The operator’s other two tree boxes at (700,580) and (600,425) give (76,101,35) and (83,107,36). Both cross a cast edge. The interior at (780,545) has zero channel standard deviation. Shot 07 uses 5 × 5 medians. Its slender cast keeps 45% of the red and 57% of the green in the adjacent grass. Blue rises from 25 to 36. On the board it rises from 22 to 35. The lighter paint inside the tree area at (640,560) stays (165,173,26). The broad tree crown and the expanse of sunlit grass still dominate shot 51. Surface and layout measurements are in the [handoff to cel-fable](PATCHES.md).
+
+### Which camera the owner sees
+
+The village uses the visitor’s `TLChaseCam`, with a 60° FOV. Its 8.5 m authored ground arm is scaled by 0.51 and the crisp ground lift is 0.63 m. The west-facing board pose has a 4.335 m horizontal arm. On the normal boot path I froze the scene and compared a visible figure to the same rig in shadows-only mode, then repeated the visible capture. This keeps the cast in both plates. At 1920 × 1080 the visible figure spans 397 px at spawn (36.8%), 408 px walking east at tick 160 (37.8%) and 400 px looking west at tick 1180 (37.0%). The operator measured 36.6% in fixed shot 51 and about 37% on the board.
+
+Parkour enters its own `TLOrbitCam`, with a 5.5 m arm and a 55° base FOV. Its skyline preset can widen to 59°. The blue runner in the HUD-on official frame 520 spans rows 376–717 inclusive, 342 px or 31.7%. That difference is specific to the game view. The village framing already matches the board. [Four views with figure-height measurements](stills/r4-framing.jpg)
+
+### Distant contours in motion
+
+Crisp now uses `env.distant_aa = 0.76` with native 4× MSAA and FXAA. A 3D compositor effect reprojects the previous frame using surface motion vectors. The mix rises from zero at 8 m to full strength at 24 m. A five-tap cubic sample and a clamp to the current pixel and its four neighbours preserve thin edges. Depth disagreement, fast motion and camera cuts reject history. The sky and foreground bypass the mix, and the HUD draws afterward. Explicit `TL_EXE_AA` profiles take precedence. Each active native 1080p view uses two RGBA16F images, about 31.6 MiB per eye. Content authors have no per-game setup.
+
+The two profiles below ran on the **same Windows release** at 1920 × 1080 on D3D12. Both used 4× MSAA, FXAA and engine TAA off. Each route has 61 consecutive poses at ticks 100–160, with matching player, stage, camera, look direction and FOV. The pan advances 0.015° per tick and the walker covers 4.5 m. Each entry gives the percentage of pixels changing by more than 24 luma levels across 60 transitions. The fence crop is x1080–1449, y310–469.
+
+| Route and profile | Mid, rows 300–619 | Fence | Near, rows 700–1039 | Figure crop |
+|---|---:|---:|---:|---:|
+| Pan, history off | 1.315% | 2.597% | 0.232% | 0.492% |
+| Pan, delivery | **0.912%** | **1.864%** | 0.229% | 0.491% |
+| Walk, history off | 3.238% | 3.583% | 2.502% | 7.230% |
+| Walk, delivery | **2.838%** | **2.578%** | 2.502% | 7.228% |
+
+The fence loses 28% of its large transitions on both routes. The tradeoff is visible in mid-distance spatial detail. Pan Laplacian variance goes from 874 to 734 there and from 701 to 699 near the camera. Walking values go from 901 to 751 and from 606 to 605. The figure crop retains its edge energy on both routes. Fine grass against the horizon still flickers during movement. [Side-by-side pan and walk](stills/r4-contours.mp4)
+
+For a reference that includes real motion, I rendered both routes on the same release at 3200 × 1800, with 8× MSAA, and area-downsampled to 1080p. All 61 logged poses agree. Against this reference, mean absolute mid-band image error falls from 2.201 to 1.991 luma levels in the pan and from 2.250 to 2.176 in the walk. Mean absolute error in the **change between frames** falls from 1.437 to 1.199 in the pan and from 1.816 to 1.624 walking. The lower flip rate comes with closer agreement to the higher-resolution motion. Per-crop results are in `shipping-ref-pan.txt` and `shipping-ref-walk.txt`.
+
+On the busy RTX 4090, the windowed six-game tour reported 1.245 ms GPU for delivery crisp (410 draw calls, frame p50 2.543 ms). The round’s opening classic control measured 1.236 ms (276 calls, frame p50 2.795 ms). Both used `perf run --scenario tour6 --no-record`. A frozen 1080p road trial isolated the passes on the same scene. With 30 warm-up draws and 100 measured draws per block, the median of three block medians was 1.242 ms with both new effects off, 1.241 ms with the grade and 1.313 ms with grade and history. The measured history increment was 0.072 ms. That trial preceded the teardown repair, which caches the effect’s object ID for cleanup. GPU data are in `road_timing2/run.log`.
+
+Two later classic tour requests timed out waiting for the shared test window. The 1.236 ms figure is from the completed opening control in `perf-classic.log`.
+
+### Verification
+
+`check --tier fast` passed all five gates, including 12/12 architecture rules and 229/229 devx tests. `check --tier full --only world,packs,kit.selftest` passed twice. The final run completed kit 95/95, packs 48/48 and world 8/8, with zero retries. All 48 pack reports match the reference in outcome and frame count, including all 46 state hashes. All eight world hashes, counts and results match the round-1 base. Logs are `shipping-fast.log`, `shipping-full.log` and `shipping-hashes.txt`.
+
+I repeated the game gates with `TL_STYLE=crisp` explicitly set. Packs again completed 48/48 and world 8/8, with zero retries. All 46 pack hashes and eight world rows match the base. See `crisp-game-gates.log` and `crisp-game-hashes.txt`.
+
+The frame fixture reported `CEL_FILL olive=55670d->506220 protected_delta=0`, `CEL_MOTION near_delta=0 distant_step_rms=27.2400928 -> 20.9473391` and `CEL_CONTOURS both_edges_px=[6, 4, 2] gap_delta=0`. The motion test sweeps equally wide rail cards at 8, 65 and 180 m through subpixel rotations. The nearest card is identical in both passes.
+
+Both styles produced all 27 native stills. Against `.tl/r0/classic`, the 18 reproducible classic frames are pixel-identical. In the nine historically variable frames, 0.0102%–0.9482% of pixels differed by more than 1/255. Fixed visitor shot 51 retains the round-3 spatial detail. Its centre-crop luma Laplacian variance goes from 521.8 to 531.1 and its near crop from 121.1 to 122.5. Raw tables are `shipping-classic-diff.txt`, `final-sharp.txt` and `r3r4-sharp.txt`. [Board and 11 classic/crisp pairs](contact-sheet.jpg)
+
+The continuous take follows the road to the bridge, then flies over the bluff. It contains 1,401 frames at 1920 × 1080 and 60 fps, lasting 23.35 s. [Road-to-flight clip](clip.mp4)
+
+| Selftest filter | Final selftest line |
+|---|---|
+| `rig.` | `selftest: 14 passed, 0 failed` |
+| `moves.` | `selftest: 14 passed, 0 failed` |
+| `wings` | `selftest: 2 passed, 0 failed` |
+| `flight.` | `selftest: 13 passed, 0 failed` |
+| `character.` | `selftest: 1 passed, 1 failed` |
+
+On the shipping source, `flight.replay` returned the same position on tick 240 with a difference of 0.000 m. `flight.dust` observed both puffs at the feet and freed them on time. Both exercise world teardown.
+
+Across the individually exercised cases, `style.` has nine passes and one failure, and `cel.` has two passes and two failures. The case-by-case log mapping is in `constituent-verdicts.txt`. At the 16:05 handoff the whole-filter repeat was waiting on the shared window. Its log destinations are `verified-style.log` and `verified-cel.log`.
+
+The two outstanding clean-load assertions share the partner-owned `toon.shade_k = 0.90` setting. The release logs the clamp to 0.85. The wardrobe fixture reports `wardrobes=12 tris=8420..9988 bones=29 clips=20 height=2.0 radius=0.3 grip_m=0.00000/0.00000 errors=["crisp load"]`. The boot fixture reports `CEL_EXE_AA ok=false fallback=msaa=2,taa=1 crisp=msaa=4,ss=fxaa,taa=0 override=ss=off,msaa=8`. The observed AA selections agree with all three expected profiles. Cel-fable has the authored-value correction in [PATCHES.md](PATCHES.md).
+
+### Reproduction
+
+The style keys live in `engine/style/style_crisp.json`. `tl_style.gd` registers their ranges and `cel/style_cel.gd` installs the grade and compositor. The new runtime files are `engine/style/cel/distant_aa.gd` and `engine/style/shaders/distant_aa.glsl`. The colour correction lives in `engine/style/shaders/grade.gdshader`. The frame fixture calls `engine/style/cel/distant_aa_case.gd` for the rail sweep.
+
+Raw captures and logs are under `.tl/astra-r4/`. The release is `shipping/ThirdLife.exe`, with PCK SHA-256 `9b21ccc67c2d6ebe0380da620add18651c8ad895951c74a59065f728d66e8f26`. From the worktree root in PowerShell, the following records both profiles and samples the principal cast.
+
+```powershell
+$lane = 'docs/shifts/2026-11-20-day/lanes/cel-astra'
+$round = '.tl/astra-r4'
+node "$lane/exe-motion.mjs" "$round/shipping/ThirdLife.exe" "$round/recheck-motion" crisp fxaa
+python "$lane/exe-motion.py" "$round/recheck-motion/fxaa-pan" "$round/recheck-motion/crisp-pan"
+python "$lane/exe-motion.py" "$round/recheck-motion/fxaa-walk" "$round/recheck-motion/crisp-walk"
+python "$lane/measure.py" rgb "$round/final-crisp/51_road_visitor.png" 3 780,545 300,600 1300,1010 700,1000
+```
+
+## Round 3
+
+Crisp now ships 4× MSAA with FXAA and TAA off. The eastward walk exposes two different problems. Distant rails and grass flicker as they cross pixels. A broad, regular stripe pattern on the road shoulder was directional shadow acne. Changing the screen-space AA helped the first. Changing the light removed the repeated pattern on the road. [Matched release footage](stills/r3-exe-motion.mp4) · [Native road evidence](stills/r3-road-shadow.jpg)
+
+### Motion through the exported game
+
+The same Windows release opened its regular village, rendered at 1920 × 1080 on D3D12 and advanced at 60 fixed physics ticks per in-game second. Each profile recorded 61 consecutive RGB8 frames, ticks 100–160. The walker moved 4.50 m. In the second route the stationary visitor panned 0.015° per tick. The recorded camera, direction, player, FOV and stage match at every logged tick in each comparison. Output values are mean absolute Rec.709 luma change in 8-bit levels, percentage changing by more than 24 levels, and spatial luma Laplacian variance. Each averages 60 transitions. The mid band covers rows 300–619 and the near band 700–1039. Real silhouette motion contributes to the change metric. Watch the thin flags, rails and grass in the slow pan.
+
+| Release viewport | Walk mid | Walk near | Pan mid | Pan near |
+|---|---:|---:|---:|---:|
+| Literal old override, inherited FXAA | 2.291 / 2.358% / 299.5 | 1.789 / 2.162% / 496.2 | 0.761 / 0.325% / 299.5 | 0.177 / 0.139% / 549.0 |
+| Historical 2x MSAA, SMAA, TAA | 2.390 / 2.490% / 352.2 | 1.811 / 2.189% / 497.5 | 0.823 / 0.450% / 379.0 | 0.195 / 0.163% / 554.0 |
+| Previous crisp 4x MSAA, SMAA | 3.001 / 3.619% / 1234.9 | 1.986 / 2.391% / 616.0 | 1.359 / 1.698% / 1176.8 | 0.252 / 0.300% / 700.4 |
+| Delivery 4x MSAA, FXAA | 2.765 / 3.181% / 891.3 | 1.901 / 2.323% / 603.1 | 1.186 / 1.309% / 866.8 | 0.226 / 0.231% / 698.4 |
+
+The literal old override only sets MSAA and TAA. On the new style it inherits FXAA. The historical viewport also used SMAA, so the second control pins that explicitly. The clip compares the historical viewport, the previous crisp viewport and the new default on the same delivery binary. It repeats each 1-second route at real time, then shows the same frames at half speed.
+
+Against prior crisp, large mid-band changes fall 12.1% on the walk and 22.9% on the pan. Historical TAA is calmer on the pan at 0.450% flips. FXAA retains 2.53× the historical walking edge energy and 2.29× in the pan. Thin rails and trees keep a readable edge. A slow sweep still reveals flicker in subpixel detail.
+
+On the earlier joined build, moving from 4× to 8× with FXAA moved the pan’s mid-band flips from 1.360% to 1.274%. I kept 4×. In a separate trial, an area-downsampled 3200 × 1800, 8× MSAA release capture gave a reference for true movement. The mid-band walk’s mean temporal residual was 2.019 for historical TAA, 1.944 for prior crisp and 1.825 for FXAA. In the pan it was 1.166, 1.533 and 1.446 respectively. A further spatial filter tested on raw FXAA footage reduced pan flips by about 0.05 percentage points while losing 14% of the edge energy. The shipped grade keeps its existing five-tap sharpen.
+
+### Board 2, the joined picture and the release
+
+The six board medians are the Director’s supplied samples. Both game columns use the Director’s exact boxes in the 1920 × 1080 visitor-road shot, including the old shadow coordinates.
+
+| Native patch | Board 2 | Joined crisp | Delivery crisp |
+|---|---|---|---|
+| Lit road | 249,150,68 | 241,149,70 | 241,148,70 |
+| Road in tree cast | 112,69,77 | 119,74,72 | 118,73,72 |
+| Lit grass | 200,182,22 | 182,185,27 | 182,185,27 |
+| Original grass-shadow coordinates | 80,104,35 | 90,121,11 | 184,186,27 |
+| Upper sky | 178,117,199 | 185,112,199 | 179,116,199 |
+| Sky above far hills | 253,177,138 | 254,178,137 | 254,178,137 |
+
+The new key moves the tree cast off the original grass box. On its interior at x745–784, y566–580 the grass is (90,123,11). Part of the original road box now includes the edge. Inside the road cast at x1110–1159, y612–635 the channel standard deviations are (0.64,0.50,0.85). The lit-road values are (0.48,0.42,0.45). The biggest colour gap in these ground samples is the 24 levels of missing blue in shaded grass.
+
+[Board, joined and delivery visitor](stills/r3-board.jpg) · [All fixed cameras](contact-sheet.jpg) · [Continuous road-to-flight take](clip.mp4)
+
+The joined release exposed a separate diagonal pattern on the sloped road shoulder in the eastward walk. At tick 160, a 160-pixel horizontal scan at x450–609/y875 had 35 adjacent luma changes over 24 levels. The 365 × 265 shoulder crop at x325–689/y740–1004 had 10,390 of 96,360 such vertical pairs. Switching AA alone left 5,888 pairs. With the delivery light and the previous crisp AA, 299 remained. With the delivery AA, **259 pairs remained (0.269%)**, including ordinary pebble and paint boundaries. The delivery scanline had two transitions. In a separate frozen control, removing directional casting reduced 10,425 crop transitions to 335. Ordinary depth-bias changes had little effect. Geometric normal bias and sun pitch removed the repeated diagonals. The comparison still shows the cast attached to the boot.
+
+The west-facing playable release stops 0.06 m from the official visitor position. The near vegetation differs between the two captures. The HUD also crosses the Director’s original near-road box. Three interior samples from native tick 1180 measure the actual paint. Lit road at x680–779/y990–1019 is (241,148,70), channel SD (0.36,0.49,0.50). The boot cast at x1120–1179/y981–997 is (118,73,72), SD (0,0,0). The thin tree cast at x930–948/y469–472 is (118,74,73), SD (0.41,0.39,0.00). Both west-road casts are flat in the playable window and the walking shoulder has lost its false hatch.
+
+The soft-edged patch under the big tree in shot 51 survived independent removal of ink, AO, directional casts, local lights, scatter, ground marks and the terrain patch control. A single grass pigment in a private terrain-shader control made the patch and its neighbour the same RGB. At (645,590) and (745,590) the original values were (165,173,26) and (186,188,27). In the one-paint control both were (186,188,27). A separate frozen-road control with plum density zero turned the road cast from (119,74,72) to (128,103,60). I kept the 0.88 plum separation. Ink AO is zero to keep the hand and leather paint clean. Fog sun scatter is zero. The yellow glow is local to the painted sky. [Surface measurements for cel-fable](PATCHES.md)
+
+### Figure and light
+
+At board scale the boot gap on row 643 is 20 pixels in the painting, 5.3 in the joined frame and 18.7 in the delivery. The rightmost and lowest pixels of the connected cast to the right of the boot are (963,711) on the board. The joined cast crosses both frame edges. The delivery cast bounds end at native (1512,1065), or (1008,710) at board scale. A frozen study of twelve pitch/bearing combinations kept ordinary road and grass swatches stable while moving the shadow tip. A 29° key still extended to x1145 at board scale. At 40° the right edge is 45 pixels to the right of the target and the bottom edge is one pixel above it. Within the rightmost three native columns, the median tip height is y682 on the delivery and y702 on the board, both at board scale. The painted tip is about 20 pixels lower.
+
+| Figure median | Board 2 | Joined | Delivery |
+|---|---|---|---|
+| Coat | 199,26,29 | 180,30,32 | 200,33,30 |
+| Hair | 115,46,16 | 122,39,28 | 116,47,14 |
+| Jeans | 46,52,118 | 47,32,125 | 41,43,120 |
+| Boot | 113,48,16 | 99,35,46 | 110,47,14 |
+
+The board coat, hair, jeans and boot rectangles begin at (610,514), (605,440), (602,582) and (594,641) and end, exclusively, at (655,553), (664,472), (623,619) and (624,655). The equivalent native game crops are x918–1003/y765–833, x915–1007/y664–707, x919–946/y867–912 and x905–939/y949–973. The jeans crop includes the stance change.
+
+The graduated sky’s upper pigment is `#a479ca`. The aureole uses `#ffeb69`, the disc radius is 0.026 radians and its yaw offset is 52.5°. Its draw elevation stays 9.8°. Linear tonemapping and exposure 0.93 retain the palette fit to the `#ffe4a6` key at energy 1.17. The directional light uses elevation 40°, azimuth 176°, normal bias 2.8 and depth bias 0.043. The fixed overhead sports camera selects its existing 39° lighting. The runtime frame fixture found 168 exposed pale-disc samples, 3,416 cream and 1,497 lavender cloud samples. At 8, 65 and 180 m the ink remained 3, 2 and 1 pixels per rail edge. The gap between the rails changed by zero levels.
+
+The crown now steps down from one broad amber lock into a smooth umber nape. The cuffs sit above open hands with visible thumbs. The cut of the jacket has a dark hem and a shoulder seam. Boot and hair have two paint faces. Cloth keeps three red levels. The six fixture swatches were `#b51b1b`, `#b61b1b`, `#ca211e`, `#ca211e`, `#ea3b22`, `#e83a22`. A standing cel ankle sits 0.168 m from the centre. The shared gait default is 0.115 m and the forward running track still converges to 0.09 m. Across 12 wardrobes the rig measured 8,420–9,988 triangles, 29 bones, 20 clips, height 2.0 m, radius 0.3 m and bar/stick grip error 0.00000/0.00000 m.
+
+### Gates, cost and reproduction
+
+Fast passed 5/5, including arch 12/12 and devx 229/229. Selected full passed all three steps with zero retries. The last lines were `PASS kit.selftest [95/95]`, `PASS packs ... verb runs 48 of 48` and `PASS world [8/8]`. All 48 pack statuses and frame counts, 46 state hashes and eight world hash/count rows match the baseline.
+
+| Selftest filter | Run | Passed | Failed | Affected case |
+|---|---:|---:|---:|---|
+| style. | 10 | 9 | 1 | style.cel.exe_aa |
+| rig. | 14 | 14 | 0 | Complete |
+| cel. | 4 | 2 | 2 | character.cel.wardrobe, style.cel.exe_aa |
+| moves. | 14 | 14 | 0 | Complete |
+| flight. | 13 | 13 | 0 | Complete |
+| wings | 2 | 2 | 0 | Complete |
+| character. | 2 | 1 | 1 | character.cel.wardrobe |
+
+The joined tree authors `toon.shade_k = 0.90`. The shared validator renders it at 0.85 and reports a clamp. The same two clean-load assertions appear under multiple filters. In a private engine copy with only the authoring correction, both original fixtures returned `PASS character.cel.wardrobe` and `PASS style.cel.exe_aa`. The latter verified the classic fallback, crisp profile, environment override and invalid requests. Cel-fable owns the edit. An earlier style pixel test timed out waiting for the shared window lock. Its final run passed. An initial SMAA pan produced empty frame and log files. The repeat supplied all 61 ticks and matched the other profiles. Only complete runs enter the comparisons.
+
+The full shot sets contain 27 native images each. All **18 reproducible classic shots match `.tl/r0/classic` exactly**, maximum channel error 0/255. The other nine historically variable shots had 0.0079–2.8769% of pixels differing by more than 1/255. Flight climb was largest at 2.8769%, above the recorded base-to-base 2.3685%. An independent second delivery flight gave 2.3043% against the base and 0.6025% against the first delivery climb. Both flights reproduced the three deterministic flight stills exactly. The capture directories are `delivery-classic` and `delivery-crisp`. The classic set uses the 21 standard nonflight shots and all six shots from one separately locked repeat of the standard flight.
+
+Across the 27 pairs, the centre-crop spatial variance is 0.763–1.760× classic and falls below classic in four views. The near band falls below classic in 18. Shot 10’s near field is 63.0 → 5.2 and shot 13’s centre is 391.6 → 298.6. Flat paint, removed hatching and the spatial AA all affect this metric. The visitor road rises from 403.1 to 521.8 in the centre (1.29×) and from 22.4 to 121.1 near the feet (5.41×). All individual crop and pixel-difference results are in `delivery-sharp.txt` and `delivery-classic-diff.txt`.
+
+The two deliberate test expectation changes are the normal-camera sun restoration angle in `engine/style/cel/frame_case.gd` and the release AA string in `engine/tools/selftest.d/603-cel-exe-aa.sh`. The tests still check the overhead camera, fallback, environment override, invalid requests, native scale, colour bands, sun-disc bounds and ink separation.
+
+Production edits are in `engine/style/style_crisp.json`, `engine/style/shaders/{sky_cel,body_cel}.gdshader`, and `engine/rigs/biped/{cel_biped,cel_rig,clay_form,tl_rig_biped_gait}.gd`. The two fixtures above reflect the art changes. Per-game authoring cost is zero. The sky reuses its existing material, the figure uses its existing hull pass and disabling contact shade skips its neighbourhood samples. The API, pack data, seeds and partner’s surface implementation keep their original interfaces.
+
+On the shared RTX 4090, the windowed six-game tour measured 1.140 ms GPU for crisp and 1.332 ms for classic (0.86×). Both runs used the same scenario, size and driver under shared-machine load. The raw timing records are `delivery-perf-crisp.log` and `delivery-perf-classic.log`. An earlier classic benchmark timed out waiting for the window lock. In a frozen visitor-road timing experiment the identical shipping setup ranged from 1.255 to 2.722 ms across three controls. That spread limits attribution of a per-pass GPU cost. The 0.13 contact-shade sample measured 3.151 ms between shipping controls of 2.722 and 2.554 ms.
+
+Run the following from the worktree. The measured release package is `delivery/ThirdLife.pck`, SHA-256 `b58d1075c0b2006a10e35a66c5ae840a29e1c1fe2e938cd01afbaf3af59ab4a4`. Use new capture directory names for each replay. The board capture uses normal movement from spawn. The raw sequences, release, gates, per-shot differences and scripts for the frozen controls are under `.tl/astra-r3/`.
+
+```powershell
+$lane = 'docs/shifts/2026-11-20-day/lanes/cel-astra'
+$r = '.tl/astra-r3'
+node "$lane/exe-motion.mjs" "$r/delivery/ThirdLife.exe" "$r/replay" old old-smaa smaa crisp
+node "$lane/exe-motion.mjs" "$r/delivery/ThirdLife.exe" "$r/replay-board" --board crisp
+foreach ($route in 'walk','pan') {
+    python "$lane/exe-motion.py" "$r/replay/old-$route" "$r/replay/old-smaa-$route" "$r/replay/smaa-$route" "$r/replay/crisp-$route"
+}
+python "$lane/measure.py" shoulder "$r/motion/crisp-walk/still.png" "$r/replay/crisp-walk/still.png"
+```
+
+The largest remaining frame gap is temporal stability at distant rails and thin grass. The largest composition difference is the near tree crossing the board’s open skyline and obscuring the distant mesas. The three follow-ups are to measure the contribution of distant ink versus the underlying geometry in the slow pan, check the shortened cast on more meadow slopes, and compare cel-fable’s next shaded bluff and grass paints against the fixed swatches.
+
 ## Round 2
 
 The exported game reads the new `env.exe_aa` key in `engine/style/style_crisp.json`. Crisp selects 4× MSAA, SMAA and TAA off. `TL_EXE_AA` takes precedence. An absent key retains `msaa=2,taa=1`. Boot selects the profile at frame two and `style_cel.gd` validates it.

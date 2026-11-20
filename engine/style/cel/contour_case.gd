@@ -42,6 +42,8 @@ static func measure(tree: SceneTree) -> bool:
 	var lined := await _photo(tree)
 	ink.visible = false
 	var plain := await _photo(tree)
+	ink.visible = true
+	var stable := await preload("res://style/cel/distant_aa_case.gd").measure(tree,rig.get_node("WorldEnvironment"),camera)
 	host.free()
 	if lined.get_size() != Vector2i(1920,1080) or lined.get_size() != plain.get_size():
 		return false
@@ -68,4 +70,4 @@ static func measure(tree: SceneTree) -> bool:
 	for i in widths.size():
 		if absi(widths[i]-expected[i]) > 1:
 			return false
-	return widths[0] > widths[1] and widths[1] > widths[2] and gap_delta <= 1
+	return widths[0] > widths[1] and widths[1] > widths[2] and gap_delta <= 1 and stable
