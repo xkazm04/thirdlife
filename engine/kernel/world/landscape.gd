@@ -261,8 +261,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var bm: Vector2 = main_path.pts[(bridge_a + bridge_b) / 2]
 		var bt: Vector2 = (main_path.pts[(bridge_a + bridge_b) / 2 + 1] - main_path.pts[(bridge_a + bridge_b) / 2 - 1]).normalized()
 		bridge_probe = [snappedf(bm.x, 0.01), snappedf(bm.y, 0.01), snappedf(-bt.y, 0.001), snappedf(bt.x, 0.001)]
-	if main_path != null and TLStyle.num("detail", "road_rails", 0.0) > 0.0:     # a style-keyed row of rails along the road, no colliders (terrain/road_rails.gd); absent key = none
-		stats["rail_m"] = preload("res://kernel/world/terrain/road_rails.gd").build(parent, terr, main_path, half, spur_paths, bridge_a, bridge_b, centres, rad, TLStyle.num("detail", "road_rails", 0.0))
+	if main_path != null and TLStyle.num("detail", "road_rails", 0.0) > 0.0:     # a style-keyed row of rails along the road, walls in the visitor's space (terrain/road_rails.gd); absent key = none
+		stats["rail_m"] = preload("res://kernel/world/terrain/road_rails.gd").build(parent, terr, main_path, half, spur_paths, bridge_a, bridge_b, centres, rad, TLStyle.num("detail", "road_rails", 0.0), ws)
 	_lap(stats, "roads")
 	# A pair of short rails marks the spur mouth. Both ends sit on the visitor's heightfield.
 	var mk_edge := TLMesh.new(33)
@@ -296,6 +296,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			if bool(cfg.get("pad_rocks", true)):
 				Parts.bank_rocks(rng6, terr, c, r, seg, dir.angle() + PI + 0.6 * sin(float(i) * 2.1), edge_rocks)
 		edge_jobs.append({"i": i, "rails": rails, "entrance": entrance, "dir": dir, "flags": not is_site and bool(cfg.get("gates", true))})
+		if not is_site and bool(cfg.get("gates", true)):
+			Parts.marker_solid(ws, terr, entrance, dir, half, TLStyle.num("detail", "sign_out", 0.0))     # 21 Nov L1: the gate's sign and flag stop the visitor
 	_lap(stats, "edges_loop")
 	# ---- the lots: worn ground, a crane, a scaffold, stacked timber and pallets: the next game is being built here
 	Parts.lots(parent, lots.size(), plots.size(), centres, rad, pad_h, gates, rng, ws, mk_edge, stats)
@@ -411,6 +413,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		stats["rocks"] = int(stats["rocks"]) + xs.size()
 	var bushes: Array = place.call(int(cfg.get("bushes", 90)), box, 6.5, 3.4, 0.7, 1.4, 0.4, 0.0, "any", 0.2)
 	Parts.multi(parent, TLKitNature.bush(300, 1.0), bushes, "WorldBushes")
+	Parts.bush_solids(ws, bushes, 1.0, road_pts, half)          # 21 Nov L1: a bush he cannot step over stops him (terrain/village_parts.gd)
 	stats["bushes"] = bushes.size()
 	_lap(stats, "scatter")
 	var road_side: Array = Parts.road_side(rng6, terr, road_pts, half, rv_half, is_free, int(cfg.get("road_trees", 44)), int(cfg.get("road_bushes", 70)))
@@ -420,6 +423,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	Parts.multi(parent, TLKitNature.bush(301, 0.9), road_bushes, "WorldRoadBushes")
 	if not road_bushes.is_empty():
 		(parent.get_node("WorldRoadBushes") as MultiMeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	Parts.bush_solids(ws, road_bushes, 0.9, road_pts, half)
 	ws.set("tag", "tree")
 	for x: Transform3D in road_trees:
 		ws.call("add_trunk", x.origin, 0.5 * x.basis.get_scale().x)

@@ -80,7 +80,9 @@ func measure() -> void:
 	var axis := Vector3(sqrt(3.0) * 0.5, 0, 0.5)
 	var footprint := Transform3D(Basis(axis, Vector3.UP, axis.cross(Vector3.UP)), CENTRE)
 	var centres := [Vector3(22.5, 3, -11.84), Vector3(-13, 1.7, -2.84), Vector3(0, 0.6, -2.84), Vector3(13, 0.6, -2.84)]
-	assert(legacy.boxes.size() == 4 and turned.boxes.size() == 4)
+	# 21 Nov L1: after the crane and three bays come the four posts of the sign and the plan board (draw.gd `_posts`) and
+	# the five stretches of the site fence on the footprint (B2, draw.gd `hoarding`); before: 4 boxes
+	assert(legacy.boxes.size() == 13 and turned.boxes.size() == 13, "boxes: crane, 3 bays, 4 posts, 5 fence stretches")
 	for i in centres.size():
 		var size := Vector3(4, 6, 4) if i == 0 else Vector3(12.2, 3.4 if i == 1 else 1.2, 10.6)
 		for pair: Array in [[legacy, gate], [turned, footprint]]:
@@ -102,7 +104,7 @@ func measure() -> void:
 		model.sites[lot].arrived_dir = "promoted/fixture"
 		model.sites[lot].radius = 20.0
 	var arrived := await capture(model, 0)
-	assert(arrived.visual.has("site_arrived") and arrived.boxes.size() == 2 and arrived.walls.size() == 2)
+	assert(arrived.visual.has("site_arrived") and arrived.boxes.size() == 4 and arrived.walls.size() == 2)     # 21 Nov L1: two pillars and the sign's two posts (before: 2); no site fence once the game is here
 	assert(arrived == await capture(model, 2), "refitted gate path, arch, masts and pillars")
 	host.free()
 	print("SITE EDITOR YAW OK")

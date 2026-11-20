@@ -86,6 +86,25 @@ A face with the first two sides' score (0 to 9 each) is laid over the fixed digi
 alone by the world's draw layer, which otherwise lays the same face over every kit scoreboard of a pack that has a
 `TLRules` (draw/FAR.md rule 5). New in P13 (`TLKitSite.bind_scoreboard`): the API version is settled at the merge.
 
+## Collision per part (night of 21 Nov 2026)
+A part's body follows its solid pieces, not one box round everything (`auto_box`): a walker or a ball passes where the
+picture is open. `auto_box` stays for parts that are a block anyway (kerb, tyre_stack, lumber, pallet, cone,
+barricade, cabin, stones). Changed that night (each changes the part's `TLKit.hash`; the asset manifest is re-scanned):
+
+| Part | Before | Now |
+|---|---|---|
+| `bush` | no body | `Body` (grass): a cylinder 0.75 x size wide and 1.1 x size tall round the leaves |
+| `sign` | one box round posts and board | two post boxes (0.12 m) and the board (2.0 x 1.2 x 0.16 m, its foot 1.4 m up) |
+| `scoreboard` | one box round legs and board (8.4 x 11.5 m: nothing passed under it) | two leg boxes (0.4 m) and the board (8.4 x 4.0 m, 7.4 m up): the way between the legs is open |
+| `marshal_post` | one box round the post, its ladder and flag | four posts, the deck (1.2 m up), its back board and the roof; the ladder and flag are not solid |
+| `watch_tower` | one box round the tower, its ladder and flag | the splayed legs and braces as one hull, the deck, three plank walls and the open side's rail, four roof posts and the roof (hull); ladder and flag not solid |
+
+`fence` (one box over its length and 1.2 m height, 0.14 m thick) already stopped a walker: unchanged. `pond` with
+`surface: water` still has no body: he wades through still water. A part's body is what a game's balls and cars meet
+too: a pack that uses these parts may see its hash move where something touches them (named in the lane's report).
+The visitor of the world meets the same shapes: the world copies a pack's static bodies into his space
+(`kernel/world/terrain/world_space.gd add_pack`).
+
 <!-- generated below: do not edit by hand -->
 
 ## Parts (36)
@@ -105,7 +124,7 @@ alone by the world's draw layer, which otherwise lays the same face over every k
 | `timber_frame` | wood |  | 1316 | Body (wood) | Timber frame of a building under construction (posts, beams, rafters). |
 | `tree` | wood |  | 80 | Body (wood) | A tree. Collision is the trunk only. |
 | `rock` | stone |  | 160 | Body (stone) | A boulder. |
-| `bush` | grass |  | 160 | none | A bush (no collision). |
+| `bush` | grass |  | 160 | Body (grass) | A bush. Collision: a cylinder round its leaves (0.75 x size wide, 1.1 x size tall). |
 | `fence` | wood |  | 308 | Body (wood) | Fence from the origin along +X. |
 | `light_mast` | steel |  | 1384 | Body (steel) | Floodlight mast with a warm light pool (the light is skipped in headless). |
 | `sign` | wood |  | 128 | Body (wood) | Board on two posts. |

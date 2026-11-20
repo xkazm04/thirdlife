@@ -30,6 +30,21 @@ var colliders: int = 0                # S2: how many bodies the site has in the 
 ## S2: how high a bay's collider stands, by the package's state (a merged package: its house, 7.6 m)
 const SOLID_H: Dictionary = {"queued": 1.2, "running": 3.4, "verifying": 5.4, "blocked": 1.9, "failed": 1.2, "promoted": 7.6}
 var _bay_z: float = 0.0
+## Night of 21 Nov 2026 (lane L1): the posts of the site's sign and of its plan board, [centre, size] in this node's
+## (the gate's) frame, made solid with the rest in `_solid`: a walker passes under a board (its foot is 2 m up and more)
+## but not through a post.
+var _posts: Array = []
+const POST_BOX: Vector3 = Vector3(0.3, 8.1, 0.3)
+## Night of 21 Nov 2026 (lane L1, owner's B2: "the site fence follows the footprint"): while the game is being built
+## the yard is fenced along its footprint, not a circle: the timber rail fence of the plots' entrances (TLKitSite
+## `add_fence`, 1.2 m, a post every 3.4 m: a steel mesh fence of a 32 m lot measured 66 ms of worker time and 10,352 triangles, this one 36 ms and 3,696, busy machine) on the
+## square of the lot's pad (landscape.gd pads a site plot with its footprint, a square of half side `radius` turned by
+## the player's yaw), `HOARD_IN` m inside its edge, in the construction frame, open for `HOARD_GAP` m where the path
+## from the gate meets it. Solid for the visitor (one box per straight stretch). It comes down when the game arrives.
+const HOARD_IN: float = 1.0
+const HOARD_GAP: float = 7.0
+const HOARD_H: float = 1.2
+var hoarding: int = 0                 # stretches of site fence in the last build (0 when the game is here)
 
 
 ## `centre`: the lot's centre on the ground (x, pad height, z); `gate`: the direction from the centre to its road
@@ -99,7 +114,7 @@ func _process(delta: float) -> void:
 ## S2. The site is solid: one box per bay (slab, walls or house, scaffold) and one for the crane's foot, in the world's
 ## space (terrain/world_space.gd) under the tag `site <lot>`, made again when the view changes and all taken away when
 ## the game arrives. Boxes use the construction frame (the gate frame for arch pillars). Rails always use the gate.
-func _solid(boxes: Array, rails: PackedVector3Array, layout: Transform3D = Transform3D.IDENTITY) -> void:
+func _solid(boxes: Array, rails: PackedVector3Array, layout: Transform3D = Transform3D.IDENTITY, fence: PackedVector3Array = PackedVector3Array()) -> void:
 	var land: Node = get_parent()
 	if land == null or not land.has_meta(&"tl_space"):
 		return
@@ -112,10 +127,16 @@ func _solid(boxes: Array, rails: PackedVector3Array, layout: Transform3D = Trans
 	var box_frame := xf * layout
 	for bx: Array in boxes:
 		ws.call("add_box", box_frame.translated_local(bx[0]), bx[1])
+	for bx: Array in _posts:
+		ws.call("add_box", xf.translated_local(bx[0]), bx[1])
 	for k: int in range(0, rails.size(), 2):
 		ws.call("add_wall", PackedVector3Array([xf * rails[k], xf * rails[k + 1]]), 1.2)
+	for k: int in range(0, fence.size(), 2):
+		var d: Vector3 = fence[k + 1] - fence[k]
+		var mid: Vector3 = (fence[k] + fence[k + 1]) * 0.5 + Vector3(0, HOARD_H * 0.5, 0)
+		ws.call("add_box", xf * Transform3D(Basis(Vector3.UP, atan2(-d.z, d.x)), mid), Vector3(Vector2(d.x, d.z).length(), HOARD_H, 0.15))
 	ws.set("tag", keep)
-	var count := boxes.size() + rails.size() / 2
+	var count := boxes.size() + _posts.size() + rails.size() / 2 + fence.size() / 2
 	if count != colliders:
 		print("[site] lot %d: scaffold colliders %d -> %d" % [lot, colliders, count])
 	colliders = count
@@ -136,6 +157,67 @@ func _rail_ends() -> PackedVector3Array:
 	return rails
 
 
+## B2 (21 Nov): the site fence's stretches, as pairs of ground points in this node's (the gate's) frame: the square of
+## half side `radius - HOARD_IN` in the construction frame `layout`, walked round from one side of the gate's opening to
+## the other (the opening is centred where the line from the centre to the gate meets the square), split at corners.
+func _hoarding(layout: Transform3D) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	var h: float = radius - HOARD_IN
+	if h < HOARD_GAP:
+		return out
+	var g: Vector3 = layout.basis.inverse() * Vector3(0, 0, 1)
+	var dir := Vector2(g.x, g.z).normalized()
+	var at: Vector2 = dir * (h / maxf(absf(dir.x), absf(dir.y)))
+	var sc: float = _perim_s(at, h)
+	var s0: float = sc + HOARD_GAP * 0.5
+	var s1: float = sc - HOARD_GAP * 0.5 + 8.0 * h
+	var marks: Array = [s0]
+	var c: float = (floorf(s0 / (2.0 * h)) + 1.0) * 2.0 * h
+	while c < s1:
+		marks.append(c)
+		c += 2.0 * h
+	marks.append(s1)
+	var terr: Variant = get_parent().get_meta(&"tl_terrain") if get_parent() != null and get_parent().has_meta(&"tl_terrain") else null
+	for k: int in marks.size() - 1:
+		for s: float in [float(marks[k]), float(marks[k + 1])]:
+			var q: Vector2 = _perim(s, h)
+			var v: Vector3 = layout * Vector3(q.x, 0.0, q.y)
+			if terr != null:
+				var w: Vector3 = transform * v
+				v.y = float((terr as RefCounted).call("gy", w.x, w.z)) - position.y
+			out.append(v)
+	return out
+
+
+## A point of the square of half side `h` at `s` metres along its edge (from the corner (-h, -h), along +x first).
+static func _perim(s: float, h: float) -> Vector2:
+	s = fposmod(s, 8.0 * h)
+	if s < 2.0 * h:
+		return Vector2(-h + s, -h)
+	if s < 4.0 * h:
+		return Vector2(h, -h + (s - 2.0 * h))
+	if s < 6.0 * h:
+		return Vector2(h - (s - 4.0 * h), h)
+	return Vector2(-h, h - (s - 6.0 * h))
+
+
+static func _perim_s(p: Vector2, h: float) -> float:
+	if absf(p.y + h) < 1e-3:
+		return p.x + h
+	if absf(p.x - h) < 1e-3:
+		return 2.0 * h + p.y + h
+	if absf(p.y - h) < 1e-3:
+		return 4.0 * h + (h - p.x)
+	return 6.0 * h + (h - p.y)
+
+
+static func _hoarding_mesh(fence: PackedVector3Array) -> TLMesh:
+	var mk: TLMesh = TLMesh.new(56)
+	for k: int in range(0, fence.size(), 2):
+		TLKitSite.add_fence(mk, fence[k], fence[k + 1], 3.4)
+	return mk
+
+
 static func _entrance_mesh(rails: PackedVector3Array, r: float, plot_r: float) -> TLMesh:
 	var mk: TLMesh = TLMesh.new(55)
 	for k: int in range(0, rails.size(), 2):
@@ -152,6 +234,7 @@ static func _key(v: Dictionary) -> String:
 		return ""
 	var parts: PackedStringArray = PackedStringArray([str(v["stage"]), str(v["title"]), str(v["arrived"]), str(v["job_state"]), str(v.get("radius", ""))])
 	parts.append(str(v.get("yaw_deg", 0.0)))
+	parts.append(str(v.get("phase_line", "")))     # 21 Nov, L3's PATCHES P1: the sign is built again when the phase moves
 	for b: Dictionary in v["packages"]:
 		parts.append("%s:%s:%s" % [str(b["id"]), str(b["state"]), str(b["merged"])])
 	return "|".join(parts)
@@ -164,6 +247,7 @@ func _build(v: Dictionary) -> void:
 	_parts.name = "Parts"
 	add_child(_parts)
 	_crane = null
+	_posts = []
 	if v.is_empty():
 		return
 	var t0: int = Time.get_ticks_usec()
@@ -171,6 +255,7 @@ func _build(v: Dictionary) -> void:
 	radius = minf(float(v.get("radius", plot_radius)), plot_radius)
 	var arrived: bool = bool(v["arrived"])
 	var r: float = radius
+	hoarding = 0
 	_sign(v, arrived)
 	var rails := _rail_ends()
 	if not rails.is_empty() or plot_radius - r > 1.0:
@@ -232,7 +317,11 @@ func _build(v: Dictionary) -> void:
 		var h: float = 7.6 if bool(b["merged"]) else float(SOLID_H.get(str(b["state"]), 1.2))
 		# the slab, the walls or house and the scaffold in front of it (z to +2 m beyond the slab)
 		boxes.append([Vector3(float(_bays_x[i]), h * 0.5, _bay_z + 1.0), Vector3(bw - 0.8, h, 8.6 + 2.0)])
-	_solid(boxes, rails, construction.transform)
+	var fence: PackedVector3Array = _hoarding(construction.transform)
+	hoarding = fence.size() / 2
+	if not fence.is_empty():
+		_show_mesh("hoarding %s %s" % [radius, yaw], _hoarding_mesh.bind(fence), "site_hoarding")
+	_solid(boxes, rails, construction.transform, fence)
 	var aim: Vector3 = Vector3(float(_bays_x[active]) if active >= 0 else 0.0, 0.0, _bay_z) - _crane.position
 	_target = atan2(-aim.z, aim.x)
 	if str(v["stage"]) == "failed":
@@ -397,6 +486,7 @@ func _plan_board(pk: Array, construction: Node3D, o: Vector3) -> void:
 	var h: float = 1.4 + row * float(pk.size())
 	for sx: float in [-4.6, 4.6]:
 		mk.bar(o + Vector3(sx, -0.5, 0), o + Vector3(sx, 2.4 + h, 0), 0.26, 0.26, "wood_dark", Color.WHITE, 0.02)
+		_posts.append([construction.transform * (o + Vector3(sx, (1.9 + h) * 0.5, 0)), Vector3(POST_BOX.x, 2.9 + h, POST_BOX.z)])
 	mk.box(Vector3(10.6, h + 0.4, 0.2), "sign", Color.WHITE, 0.05, o + Vector3(0, 2.2 + h * 0.5, 0))
 	mk.box(Vector3(10.0, h - 0.2, 0.06), "cabin", Color.WHITE, 0.0, o + Vector3(0, 2.2 + h * 0.5, 0.12))
 	construction.add_child(mk.instance("site_plan"))
@@ -424,6 +514,7 @@ func _sign(v: Dictionary, arrived: bool) -> void:
 	var failed: bool = str(v["stage"]) == "failed"
 	for sx: float in [-4.6, 4.6]:
 		mk.bar(o + Vector3(sx, -0.5, 0), o + Vector3(sx, 7.6, 0), 0.26, 0.26, "wood_dark", Color.WHITE, 0.02)
+		_posts.append([o + Vector3(sx, 3.55, 0), POST_BOX])
 	mk.box(Vector3(10.6, 5.2, 0.2), "hazard_red" if failed else ("grass_dark" if arrived else "sign"), Color.WHITE, 0.05, o + Vector3(0, 4.9, 0))
 	mk.box(Vector3(10.0, 4.6, 0.06), "cabin", Color.WHITE, 0.0, o + Vector3(0, 4.9, 0.12))
 	_parts.add_child(mk.instance("site_sign"))
@@ -433,6 +524,9 @@ func _sign(v: Dictionary, arrived: bool) -> void:
 		line = "This game could not be finished."
 	elif arrived:
 		line = "Ready. Walk in and press E to play."
+	elif v.has("phase_line"):                       # 21 Nov, L3's PATCHES P1: a phased plan shows its phase
+		var pl: String = str(v["phase_line"])
+		line = pl.substr(0, 1).to_upper() + pl.substr(1)      # "Phase 2 of 3: Rivals and cracks"
 	elif int(v["total"]) > 0:
 		line = "%d of %d built" % [int(v["built"]), int(v["total"])]
 	else:

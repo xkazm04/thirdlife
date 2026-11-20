@@ -1,0 +1,186 @@
+{
+ "schema": "tl.walk/1",
+ "name": "l1_site_air",
+ "note": "Lane L1 (21 Nov): site.json with stills of the big site from straight above and from 25 m, building and arrived.",
+ "visitor": true,
+ "ticks": 1720,
+ "mode": "bot",
+ "tiers": {
+  "sideline_m": 30,
+  "margin_m": {
+   "stage": 2,
+   "sideline": 8,
+   "backdrop": 40
+  },
+  "dwell_ticks": 90
+ },
+ "plots": [
+  {
+   "id": "wall",
+   "pack": "ex_wall",
+   "origin": [
+    -150,
+    0,
+    -10
+   ],
+   "radius": 30,
+   "footprint": {
+    "size_m": [
+     60,
+     60
+    ]
+   },
+   "seed": 1
+  }
+ ],
+ "road": [
+  [
+   -260,
+   70
+  ],
+  [
+   -150,
+   64
+  ],
+  [
+   -60,
+   66
+  ],
+  [
+   0,
+   66
+  ],
+  [
+   60,
+   68
+  ],
+  [
+   160,
+   66
+  ],
+  [
+   260,
+   70
+  ]
+ ],
+ "landscape": {
+  "seed": 7,
+  "trees": 60,
+  "broadleaf": 20,
+  "rocks": 20,
+  "bushes": 40,
+  "belt": 120,
+  "mesas": 10,
+  "haze": 0.4,
+  "lots": [
+   {
+    "at": [
+     60,
+     0
+    ],
+    "radius": 40,
+    "h": 0,
+    "job": "site/topple-tower-crates-three-20261118-1",
+    "replay": {
+     "ticks_per_event": 8
+    }
+   },
+   {
+    "at": [
+     -60,
+     6
+    ],
+    "radius": 18,
+    "h": 0,
+    "job": "engine/kernel/world/site/fixtures/failed",
+    "replay": {
+     "ticks_per_event": 20
+    }
+   }
+  ]
+ },
+ "player": [
+  [
+   0,
+   [
+    60,
+    0,
+    64
+   ]
+  ],
+  [
+   1720,
+   [
+    60,
+    0,
+    64
+   ]
+  ]
+ ],
+ "events": [
+  {
+   "t": 560,
+   "e": "shot",
+   "name": "air_building",
+   "cam": "crane",
+   "from": [
+    60,
+    95,
+    1
+   ],
+   "to": [
+    60,
+    0,
+    0
+   ]
+  },
+  {
+   "t": 565,
+   "e": "shot",
+   "name": "air_building_oblique",
+   "cam": "crane",
+   "from": [
+    60,
+    40,
+    75
+   ],
+   "to": [
+    60,
+    0,
+    0
+   ]
+  },
+  {
+   "t": 1640,
+   "e": "shot",
+   "name": "air_arrived",
+   "cam": "crane",
+   "from": [
+    60,
+    95,
+    1
+   ],
+   "to": [
+    60,
+    0,
+    0
+   ]
+  },
+  {
+   "t": 1645,
+   "e": "shot",
+   "name": "air_arrived_oblique",
+   "cam": "crane",
+   "from": [
+    60,
+    40,
+    75
+   ],
+   "to": [
+    60,
+    0,
+    0
+   ]
+  }
+ ]
+}

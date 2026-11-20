@@ -46,7 +46,10 @@ func measure() -> void:
 		assert(absf(mesh.position.z - (gate_z - 0.5 if arrived else gate_z)) < 0.15, "rail gate line")
 		assert(absf(mesh.end.z - (33.0 if arrived else gate_z)) < 0.15, "path back to the plot gate")
 		assert(site.find_child("site_fence", true, false) == null, "round fence mesh")
-		assert(space._bodies.size() == (4 if arrived else 3), "expected just two rails and the arch pillars or crane")
+		# 21 Nov L1: and the two posts of the site's sign (draw.gd `_posts`), and while building the stretches of the site
+		# fence along the footprint (draw.gd `hoarding`, B2); before: 4 arrived, 3 building
+		assert(site.hoarding == (0 if arrived else 5), "the site fence: five stretches round the square while building, none when arrived")
+		assert(space._bodies.size() == (6 if arrived else 5 + site.hoarding), "expected two rails, the sign's two posts and the arch pillars or crane and the site fence")
 		var sides := []
 		for body: RID in space._bodies:
 			var shape := PhysicsServer3D.body_get_shape(body, 0)
