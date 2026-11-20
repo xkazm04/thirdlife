@@ -1,7 +1,8 @@
 extends Node
 ## Bot (H4): the stick follows the aim. A person's mouse is the aim (ctx.input.set_aim stands in for the cursor).
 ##   shoot x10: drill carry_alone; he skates east (D held) while the aim sits north of him; after 20 frames Space:
-##     the puck must leave along the aim (angle error per try, from his position to the aim point)
+##     the puck must fly at the aim point (angle error per try, from the puck to the aim point; L5, 21 Nov: it flew
+##     parallel to the line from him to the aim point before, 1.24 m to its right)
 ##   pass x10: drill pass_two (mates north-east and south-east of him, both inside his facing's cone); the aim points
 ##     at one of them (alternating), Q: the pass must reach the one aimed at
 ##   dead zone: the aim on the figure itself: the stick keeps his facing, the shot leaves east
@@ -16,6 +17,7 @@ var phase: String = "start"
 var t0: int = 0
 var shot_at: int = -1
 var want: Vector3 = Vector3.ZERO
+var want_shot: Vector3 = Vector3.ZERO  # L5: the aim point on the frame Space was pressed (the aim moves with him)
 var target_mate: String = ""
 var shot_err: Array = []
 var pass_hits: int = 0
@@ -95,11 +97,15 @@ func _bot_tick(frame: int) -> void:
 			if age == 22:
 				ctx.input.tap(&"shoot")
 				shot_at = frame
+				want_shot = want
 				if idx == 0:
 					notes.append("shot 0: he skates at %.2f m/s, facing (%.2f,%.2f)" % [float(_sk("b0")["speed"]), face.x, face.y])
 			if shot_at >= 0 and frame - shot_at == 3:
 				var pv: Vector2 = _v(s["puck"]["vel"])
-				var e: float = absf(_deg(want - me, Vector3(pv.x, 0, pv.y)))
+				var pp: Vector2 = _v(s["puck"]["pos"])
+				# L5: the shot leaves the blade AT the aim point (it left parallel to the aim, from the blade, before):
+				# the error is the angle between the puck's flight and the line from the puck to the aim point
+				var e: float = absf(_deg(want_shot - Vector3(pp.x, 0, pp.y), Vector3(pv.x, 0, pv.y)))
 				shot_err.append(snappedf(e, 0.01))
 				_next()
 		"pass":

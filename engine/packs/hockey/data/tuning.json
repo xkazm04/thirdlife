@@ -8,7 +8,10 @@
   "puck": {"radius":0.12,"height":0.08,"max_speed":30,"drag":0},
   "chase_camera": {"distance":11,"height":13,"look_height":0,"fov":50},
   "camera": {"pos":[0,100.7,9.0],"target":[0,0,0.2],"fov":20},
-  "look": {"puck_scale":2.5,"puck_height_scale":1.5,"puck_rim":0.14,"puck_rim_key":"hot","ring_key":"pine_light","carry_width":0.5,"carrier_ring":true,"carrier_ring_after_frames":20,"team_keys":{"blue":"rink_blue","red":"rink_red"},"level_none":"Classic","goal":"GOAL: %s","again":"R: play again","keys":["W A S D: skate   |   Shift: sprint   |   E: poke   |   T: rule dial","With the puck   -   left button or Space: shoot   |   right button or Q: pass","Without it   -   left button or C: cross-check   |   right button or F: body check"]},
+  "follow": {"fov":46,"pitch_deg":50,"distance":20,"distance_max":30,"gap_free":8,"gap_zoom":0.6,"replay_distance":15,"attack_lead":5,"speed_lead_s":0.45,"speed_lead_max":7,"player_pull":0.35,"edge_x":6,"edge_z":5,"omega":3.5,"replay_omega":6.0,"zoom_ease":0.05,"look_height":0.5},
+  "fun": {"stop":true,"shake":true,"replay":true,"stop_closing":5.0,"hard_closing":10.0,"stop_frames_min":4,"stop_frames_max":9,"stop_radius":24,"shake_min":0.12,"shake_max":0.4,"goal_shake":0.25,"hold_frames":24,"before_shot":10,"replay_min":30,"replay_max":90,"slow_min":1.5,"slow_max":3.0,"card_tail":6,"save_frames":45,"save_shake":0.1,"end_replay_frames":150},
+  "goalie": {"on":true,"body_scale":2.4,"out":1.0,"post_out":0.7,"z_max":1.4,"speed":3.5,"turn_deg":8,"reaction_frames":10,"glove":0.9,"set_speed":1.2,"moving_reach":0.6,"catch_speed":2.5,"poke":2.2,"hold_frames":40,"prefer_human":4,"outlet_min":8,"cover":1.5,"drop_speed":4},
+  "look": {"puck_scale":2.5,"puck_height_scale":1.5,"puck_rim":0.14,"puck_rim_key":"hot","ring_key":"pine_light","carry_width":0.5,"carrier_ring":true,"carrier_ring_after_frames":20,"down_ring":1.25,"down_key":"hot","team_keys":{"blue":"rink_blue","red":"rink_red"},"level_none":"Classic","goal":"GOAL: %s","again":"R: rematch   |   Esc: leave","names":{"b0":"YOU","b1":"LEO","b2":"MAX","r0":"BRUNO","r1":"IGOR","r2":"OTTO","r3":"ZDENO","r4":"PAVEL","gb":"KUBA","gr":"VLAD"},"keys":["W A S D: skate   |   Shift: sprint   |   E: poke   |   T: rule dial","With the puck   -   left button or Space: shoot   |   right button or Q: pass","Without it   -   left button or C: cross-check   |   right button or F: body check"]},
   "goals": {"blue":[-26,0,0],"red":[26,0,0],"half_width":2,"depth":1.5},
   "roster": [
     {"id":"b0","team":"blue","role":"player","spawn":[-3.0,0]},
@@ -25,6 +28,7 @@
   "level": 1,
   "levels": ["none","rookie","pro","allstar"],
   "menu": {"auto_start_frames":600},
+  "intro": {"ring":[-6,2],"ring_r":1.6,"return_frames":20,"done_frames":100,"lost_frames":150,"lines":{"skate":"[ W A S D ]   skate to the ring","take":"the puck in your ring is yours","pass":"[ Q ]   pass it back to LEO","back":"LEO passes again","shoot":"[ CLICK ]   shoot into the net","done":"GOAL!   now the match","skip":"Enter: skip"}},
   "mode": 0,
   "modes": ["base","outnumbered","sudden_death","pond","big_ice"],
   "dial": {"names":["skate","shot","grip","sharpness"],"labels":["Skate speed","Shot speed","Ice grip","Bot sharpness"],"per_step":[0.08,0.1,0.25,0.05],"min":-3,"max":3}

@@ -10,5 +10,6 @@
     "check_min_closing_red": 5,
     "pressure_radius": 2.5,
     "open_radius": 3.5
-  }
+  },
+  "goalie": {"reaction_frames": 12, "speed": 3.4, "glove": 0.95, "poke": 2.1}
 }

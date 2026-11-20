@@ -27,6 +27,7 @@ var tries: Dictionary = {}             ## H7: id -> checks and cross-checks trie
 var by_id: Dictionary = {}            ## id -> checks and cross-checks he landed
 var events: Array = []                ## [kind, hitter, victim] since main drained it
 var _now: int = 0
+var shield: Dictionary = {}           ## L5: goalie id -> team: nobody checks him, he checks nobody
 var enabled: bool = true              ## H3: a mode without checks (pond): F and C do nothing
 
 
@@ -72,7 +73,7 @@ func can_act(id: String) -> bool:
 
 
 func can_check(id: String) -> bool:
-	return enabled and can_act(id) and api.carrier != id and _now >= int(ready_at[id])
+	return enabled and can_act(id) and api.carrier != id and _now >= int(ready_at[id]) and not shield.has(id)
 
 
 func _vel(id: String) -> Vector3:
@@ -87,7 +88,7 @@ func target(id: String, reach: float, cone_deg: float, stick: bool = false) -> S
 	var best: String = ""
 	var best_d: float = reach
 	for oid: String in order:
-		if str(teams[oid]) == str(teams[id]) or is_down(oid):
+		if str(teams[oid]) == str(teams[id]) or is_down(oid) or shield.has(oid):
 			continue
 		var to: Vector3 = api.pos_of(oid) - me
 		var d: float = to.length()

@@ -22,12 +22,27 @@ func _play(preset: String, pos = null) -> void:
 	TLAudio.play(preset, pos, _f("volume_db", 0.0))
 
 
+## L5: the burst at its place: TLVfx.burst positions its node after adding it, and with physics interpolation a one-shot
+## burst came out at the pack's origin, the centre spot (seen in a window, 21 Nov). A spot node placed before it enters
+## the tree holds it; freed 200 frames later.
+var _spots: Array = []
+
+
+func _burst(preset: String, pos: Vector3) -> void:
+	var spot: Node3D = Node3D.new()
+	spot.name = "FxSpot"
+	spot.position = ctx.root.global_transform.affine_inverse() * pos
+	ctx.root.add_child(spot)
+	TLVfx.burst(StringName(preset), pos, spot)
+	_spots.append([spot, _frame + 200])
+
+
 func on_event(name: String, pos: Vector3, _team: String) -> void:
 	match name:
 		"shot":
 			_play("hit_ice", pos)
 			_play("skate", pos)
-			TLVfx.burst("ice_spray", pos, ctx.root)
+			_burst("ice_spray", pos)
 		"board":
 			if _frame - _last_board >= int(_f("min_gap_frames", 12)):
 				_last_board = _frame
@@ -35,24 +50,30 @@ func on_event(name: String, pos: Vector3, _team: String) -> void:
 		"goal":
 			_play("horn")
 			_play("cheer")
-			TLVfx.burst("goal_flash", pos, ctx.root)
-			TLVfx.burst("confetti", pos + Vector3(0, 2, 0), ctx.root)
+			_burst("goal_flash", pos)
+			_burst("confetti", pos + Vector3(0, 2, 0))
 		"faceoff":
 			_play("whistle")
+		"big_save":
+			_play("hit_wood", pos)        # L5: the glove's thump
 		"hit_bump", "hit_stumble", "hit_knockdown", "hit_cross":
 			# H2: a hit is heard, never drawn: the figures show it (fall, stumble, the stick's swing)
 			_play("hit_wood", pos)
 		"win":
 			_play("cheer")
-			TLVfx.burst("confetti", pos + Vector3(0, 2, 0), ctx.root)
+			_burst("confetti", pos + Vector3(0, 2, 0))
 		"lose":
 			_play("beep")
 
 
 func tick(frame: int, env) -> void:
 	_frame = frame
-	if env.get("frozen", false):
-		return
+	while not _spots.is_empty() and int(_spots[0][1]) <= frame:
+		var sp: Node = _spots.pop_front()[0]
+		if is_instance_valid(sp):
+			sp.queue_free()
+	if env.get("frozen", false) or ctx.headless:
+		return                                # L5: sound and spray only: no picture, no work (budget: frame p50)
 	var fastest: float = 0.0
 	var fast_pos := Vector3.ZERO
 	for id in env["skaters"]:
@@ -68,4 +89,4 @@ func tick(frame: int, env) -> void:
 	var hit_recent: bool = env.has("hits") and not (env["hits"].last_hit as Dictionary).is_empty() and frame - int(env["hits"].last_hit["frame"]) < int(_f("no_spray_after_hit_frames", 45))
 	if not hit_recent and fastest > _f("spray_speed", 6.0) and frame - _last_spray >= int(_f("spray_every_frames", 30)):
 		_last_spray = frame
-		TLVfx.burst("ice_spray", fast_pos, ctx.root)
+		_burst("ice_spray", fast_pos)

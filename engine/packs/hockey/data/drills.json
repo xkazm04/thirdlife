@@ -1,6 +1,7 @@
 {
   "about": "H1 practice drills: a set start for one situation (who stands where, facing [fx, fz], the puck, who carries it). Each drill is a declared action drill_<id> with no key: a test presses it, nobody's keyboard can. Skaters a drill does not place stand on the park spots and hold still unless the drill moves them; with ai true the brain plays them.",
   "park": [[-20, -12], [-20, 12], [20, -12], [20, 12], [-6, -13], [6, 13]],
+  "bench": [[-27.5, -11], [27.5, 11]],
   "drills": [
     {"id": "still_beside", "place": {"b0": [0, 0, 1, 0]}, "puck": [0, 1.05]},
     {"id": "behind", "place": {"b0": [0, 0, 1, 0]}, "puck": [-1.15, 0]},
@@ -25,6 +26,12 @@
     {"id": "goal_own", "place": {"b0": [-20, 1.24, -1, 0]}, "puck": [-22.77, 0], "carrier": "b0"},
     {"id": "goal_released", "place": {"b0": [10, 0, 1, 0]}, "puck": [26.3, 0.4], "puck_vel": [0.5, 0]},
     {"id": "goal_lying", "place": {"b0": [10, 0, 1, 0]}, "puck": [26.9, -0.6]},
+    {"id": "intro", "place": {"b0": [-14, 4, 1, 0], "b1": [2, -7, -1, 0]}, "puck": [0.5, -5], "carrier": "b1"},
+    {"id": "goalie_straight", "goalies": true, "place": {"b0": [12, 0, 1, 0]}, "puck": [14.8, -1.2], "carrier": "b0", "script": [[20, "b0", "aim", 26, 0], [20, "b0", "shoot"]]},
+    {"id": "goalie_angle", "goalies": true, "place": {"b0": [15, -9, 1, 0.3]}, "puck": [17.5, -8], "carrier": "b0", "script": [[20, "b0", "aim", 26, 1.7], [20, "b0", "shoot"]]},
+    {"id": "goalie_cross", "goalies": true, "place": {"b1": [16, -8, 1, 0], "b0": [15, 2, 1, 0]}, "puck": [18.5, -7], "carrier": "b1",
+      "script": [[10, "b1", "aim", 17.8, 3.2], [10, "b1", "pass"], [60, "b0", "aim", 26, -1.7], [60, "b0", "shoot"]]},
+    {"id": "goalie_poke", "goalies": true, "place": {"b0": [17, 0.6, 1, 0]}, "puck": [19.8, 0], "carrier": "b0"},
     {"id": "behind_net", "place": {"b0": [29.2, -8, 0, 1]}, "puck": [27.96, -7.2], "carrier": "b0"}
   ]
 }

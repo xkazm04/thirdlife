@@ -34,6 +34,15 @@
     "tests/bot_ladder_pro_perfect.gd",
     "tests/bot_ladder_allstar_sharp.gd",
     "tests/bot_ladder_allstar_perfect.gd",
+    "tests/bot_ladder_rookie_regular.gd",
+    "tests/bot_ladder_rookie_sharp.gd",
+    "tests/bot_ladder_rookie_idle.gd",
+    "tests/bot_ladder_pro_newcomer.gd",
+    "tests/bot_ladder_pro_sharp.gd",
+    "tests/bot_ladder_pro_idle.gd",
+    "tests/bot_ladder_allstar_newcomer.gd",
+    "tests/bot_ladder_allstar_regular.gd",
+    "tests/bot_ladder_allstar_idle.gd",
     "tests/bot_hockey_ai.gd",
     "tests/bot_reach.gd",
     "tests/bot_match.gd",
@@ -48,7 +57,11 @@
     "tests/bot_faceoff_allstar.gd",
     "tests/bot_menu.gd",
     "tests/bot_hand_newcomer.gd",
-    "tests/bot_hand_perfect.gd"
+    "tests/bot_hand_perfect.gd",
+    "tests/bot_goalie.gd",
+    "tests/bot_intro.gd",
+    "tests/bot_fun.gd",
+    "tests/bot_intro_skip.gd"
   ],
   "cameras": [
     "arena",

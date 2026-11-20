@@ -21,6 +21,8 @@ var red_over: Dictionary = {}          ## H5: the level's ai keys, for red's dec
 var _team: String = ""                 ## the team of the skater being decided (for red_over)
 var _seen: Array = []                  ## the puck's last positions, newest first (red's reaction)
 var _ctx = null
+var _b0_act: int = -100000             ## L5: the frame b0 last passed or shot (his own press, never a puck that just came to him)
+var _b0_count: int = 0
 
 
 func setup(ctx, _env) -> void:
@@ -46,6 +48,10 @@ func _f(k: String) -> float:
 
 func think(frame: int, env: Dictionary) -> void:
 	_frame_no = frame
+	var n0: int = int(env["api"].passes.get("b0", 0)) + int(env["api"].shots.get("b0", 0))
+	if n0 != _b0_count:
+		_b0_count = n0
+		_b0_act = frame
 	_seen.push_front((env["api"]).puck_pos())
 	if _seen.size() > 40:
 		_seen.pop_back()
@@ -54,8 +60,8 @@ func think(frame: int, env: Dictionary) -> void:
 	for k: String in skaters:
 		_pos[k] = _flat((skaters[k] as Node3D).global_position)
 	for id: String in skaters:
-		if id == "b0" and not env["autopilot"]:
-			continue
+		if (id == "b0" and not env["autopilot"]) or str(env["roles"][id]) == "goalie":
+			continue                       # L5: the goalies are scripts/keeper.gd's
 		var sk: TLBiped = skaters[id]
 		if env["frozen"]:
 			sk.move(Vector3.ZERO)
@@ -205,14 +211,25 @@ func _carry(id: String, team: String, env: Dictionary, me: Vector3, opp_goal: Ve
 	var tol: float = minf(deg_to_rad(_f("aim_tolerance_deg")), atan2(_f("mouth_half"), maxf(from_puck.length(), 1.0)))
 	var lined: bool = fwd.dot(from_puck.normalized()) > cos(tol)
 	var carried: int = _frame_no - int(api.carry_since)
-	if dgoal < _f("shoot_range") and lined and absf(me.z) < 11.0 and carried >= int(_f("min_carry_frames")):
-		var err: float = _f("aim_error_deg")
-		if err > 0.0 and api.can_shoot(id):
-			api.stick_dir[id] = fwd.rotated(Vector3.UP, deg_to_rad(_ctx.rng.randf_range(-err, err)))
-			api.try_shoot(id)
+	# L5: the human's mates set him up. They shoot only within assist_frames of his own pass or shot (a give-and-go, a
+	# rebound of his shot); otherwise they pass to him. A match he does not play is not won for him (idle: 0 wins).
+	var feed: bool = team == "blue" and _human(env) and _frame_no - _b0_act > int(_f("assist_frames"))
+	if feed and carried >= int(_f("min_carry_frames")) and _pos["b0"].distance_to(me) > 4.0 and hits_ok(env, "b0"):
+		var to: Vector3 = api.lead_point("b0") - api.puck_pos()
+		if to.length() > 0.5 and (dgoal >= _f("shoot_range") or pressed or carried >= int(_f("feed_frames"))):
+			api.stick_dir[id] = to.normalized()
+			api.try_pass(id)
 			api.stick_dir.erase(id)
-		else:
-			api.try_shoot(id)
+			api.last_release["to"] = "b0"
+			return Vector3.ZERO
+	if not feed and dgoal < _f("shoot_range") and lined and absf(me.z) < 11.0 and carried >= int(_f("min_carry_frames")):
+		var err: float = _f("aim_error_deg")
+		var aim: Vector3 = _corner(team, env, opp_goal, api.puck_pos(), fwd)
+		if err > 0.0 and api.can_shoot(id):
+			aim = aim.rotated(Vector3.UP, deg_to_rad(_ctx.rng.randf_range(-err, err)))
+		api.stick_dir[id] = aim
+		api.try_shoot(id)
+		api.stick_dir.erase(id)
 	elif pressed and carried >= int(_f("min_carry_frames")):
 		var mid: String = api.pass_target(id)
 		if mid != "" and _open(mid, team, env):
@@ -222,7 +239,7 @@ func _carry(id: String, team: String, env: Dictionary, me: Vector3, opp_goal: Ve
 	if api.carrier == id and carried >= int(_f("stuck_frames")) and spd < 1.5:
 		if api.pass_target(id) != "":
 			api.try_pass(id)
-		else:
+		elif not feed:
 			api.try_shoot(id)
 	# skate at the goal mouth from in front of it, around the nearest opponent between
 	var target: Vector3 = Vector3(opp_goal.x - sgn * 5.0, 0.0, 0.0)
@@ -242,6 +259,23 @@ func _carry(id: String, team: String, env: Dictionary, me: Vector3, opp_goal: Ve
 		if rel2.length() < 5.0 and absf(lat) < 2.0:
 			target += Vector3(-g.z, 0, g.x) * (3.0 if lat < 0.0 else -3.0)
 	return (target - me).normalized()
+
+
+## L5: where a shot goes: at the far side of the goal from their goalie (corner_z from the middle), along the facing
+## when they have none.
+func _corner(team: String, env: Dictionary, opp_goal: Vector3, from: Vector3, fwd: Vector3) -> Vector3:
+	for oid: String in _pos:
+		if str(env["roles"][oid]) == "goalie" and str(env["teams"][oid]) != team:
+			var gz: float = (_pos[oid] as Vector3).z
+			var side: float = -signf(gz) if absf(gz) > 0.1 else (1.0 if from.z < 0.0 else -1.0)
+			var to: Vector3 = Vector3(opp_goal.x, 0.0, side * _f("corner_z")) - from
+			return to.normalized() if to.length() > 0.5 else fwd
+	return fwd
+
+
+## May he take a pass now (not down, not stumbling)?
+func hits_ok(env: Dictionary, id: String) -> bool:
+	return env["hits"].can_act(id)
 
 
 func _open(mid: String, team: String, env: Dictionary) -> bool:

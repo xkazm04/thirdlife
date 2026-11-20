@@ -27,7 +27,7 @@ func _bot_tick(_frame: int) -> void:
 	if str(s.get("level", "none")) != "none":
 		ctx.input.tap(&"level_none")      # H6: this bot measures against the opponents of data/ai.json; the default level is rookie
 		return
-	done = s["state"] == "over"
+	done = s["state"] == "over" and str(s.get("result", "")) != ""     # L5: at full time the result is written a tick after "over" (H9a); goalies made full-time ends common
 	var pk: Vector2 = _v(s["puck"]["pos"])
 	if have_prev:
 		var step: float = pk.distance_to(puck_prev)
@@ -40,6 +40,8 @@ func _bot_tick(_frame: int) -> void:
 	for k: Dictionary in s["skaters"]:
 		var p: Vector2 = _v(k["pos"])
 		var id: String = str(k["id"])
+		if str(k["role"]) == "goalie":
+			continue                      # L5: a goalie keeps to his crease (bot_goalie.gd holds that); "moved" is about skaters
 		if not spawn.has(id):
 			spawn[id] = p
 			maxd[id] = 0.0

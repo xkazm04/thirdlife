@@ -44,6 +44,9 @@ func setup(g) -> void:
 				var key: String = str(cfg["ring_key"]) if mine else str(cfg["team_keys"][str(g.teams[id])])
 				var ring: Node3D = lib.make_ring(sk, g.api.reach, float(cfg["carry_width"]), key, "CarryRing", 0.025)
 				ring.visible = false
+			if not sk.has_node("DownRing") and float(cfg["down_ring"]) > 0.0:
+				var dr: Node3D = lib.make_ring(sk, float(cfg["down_ring"]), 0.22, str(cfg["down_key"]), "DownRing", 0.035)    # L5: a man down reads as down
+				dr.visible = false
 	seen = {}
 	goal_by = ""
 	if g.dress_node != null:
@@ -69,6 +72,8 @@ func hud_lines(g) -> void:
 
 ## The keys, three lines in one label, until his first input (not while a bot-only match runs, not after the end).
 func keys_text(g) -> String:
+	if g.intro.active:
+		return g.intro.text(g)               # L5: the first-minute drill's one line instead
 	return "" if touched or g.autopilot or g.result != "" else "\n".join(PackedStringArray(cfg["keys"]))
 
 
@@ -81,7 +86,7 @@ func plates(g) -> void:
 		plated = {}
 		g.hud.set_align(&"keys", &"center")
 		g.hud.set_align(&"result", &"center")
-	var want: Dictionary = {&"keys": keys_text(g) != "", &"result": center_text(g) != "", &"dial": g.dial_open, &"rule": g.rule_line != ""}
+	var want: Dictionary = {&"keys": keys_text(g) != "", &"result": center_text(g) != "", &"dial": g.dial_open, &"rule": g.rule_line != "", &"game": not g.menu_lib.open}
 	for id: StringName in want:
 		if bool(want[id]) != bool(plated.get(id, false)):
 			plated[id] = want[id]
@@ -89,6 +94,8 @@ func plates(g) -> void:
 
 
 func center_text(g) -> String:
+	if g.fun != null:
+		return g.fun.card(g)                 # L5: the goal card and the match-end card (scripts/fun/fun.gd)
 	if g.result != "":
 		return "%s\n%s" % [g.result, str(cfg["again"])]
 	if g.reset_in > 0 and goal_by != "":
@@ -108,7 +115,12 @@ func tick(g) -> void:
 			goal_by = side
 		seen[side] = now
 	var c: String = g.api.carrier
+	if g.ctx.headless:
+		return                               # the rings are drawing only: no picture, no work (budget: frame p50)
 	for id: String in g.order:
+		var dring: Node3D = (g.skaters[id] as Node3D).get_node_or_null("DownRing") as Node3D
+		if dring != null:
+			dring.visible = (g.skaters[id] as TLBiped).is_down()
 		var ring: Node3D = (g.skaters[id] as Node3D).get_node_or_null("CarryRing") as Node3D
 		if ring != null:
 			# H9a: the human's carry ring at once; another carrier's only after carrier_ring_after_frames of holding, so a

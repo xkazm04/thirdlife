@@ -1,7 +1,8 @@
 {
   "id": "pond",
   "label": "Pond hockey",
-  "about": "No checks: F and C do nothing. Bots pass earlier and to closer-marked mates.",
+  "about": "No checks and no goalies: F and C do nothing, the nets are open. Bots pass earlier and to closer-marked mates.",
+  "goalies": false,
   "checks": false,
   "ai": {
     "pressure_radius": 5,

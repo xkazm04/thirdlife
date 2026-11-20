@@ -10,6 +10,7 @@ func yaw_of(fx_: float, fz: float) -> float:
 func start(g, d: Dictionary, frame: int) -> void:
 	g.api.reset()
 	g.hits.reset()
+	g.keeper.in_drill = bool(d.get("goalies", false))     # L5: a goalie drill keeps them in their nets
 	g.drill_brace = (d.get("brace", []) as Array).duplicate()
 	g.drill_id = str(d["id"])
 	g.drill_t0 = frame
@@ -28,6 +29,11 @@ func start(g, d: Dictionary, frame: int) -> void:
 		if place.has(id):
 			var p: Array = place[id]
 			sk.place(Vector3(float(p[0]), 0.1, float(p[1])), yaw_of(float(p[2]), float(p[3])))
+		elif g.keeper.is_goalie(id) and g.keeper.in_drill:
+			sk.place(g.spawns[id], g._face_yaw(str(g.teams[id])))
+		elif g.keeper.is_goalie(id):
+			var bq: Array = g.drills["bench"][0 if str(g.teams[id]) == "blue" else 1]      # L5: a drill has no goalies
+			sk.place(Vector3(float(bq[0]), 0.1, float(bq[1])), g._face_yaw(str(g.teams[id])))
 		elif rplace.has(id):
 			var b: Array = rplace[id]
 			sk.place(Vector3(g.ctx.rng.randf_range(float(b[0][0]), float(b[0][1])), 0.1, g.ctx.rng.randf_range(float(b[1][0]), float(b[1][1]))), g._face_yaw(str(g.teams[id])))
@@ -53,7 +59,7 @@ func start(g, d: Dictionary, frame: int) -> void:
 
 func tick(g, frame: int) -> void:
 	for id: String in g.order:
-		if id == "b0" and not g.autopilot:
+		if (id == "b0" and not g.autopilot) or (g.keeper.in_drill and g.keeper.is_goalie(id)):
 			continue
 		var sk: TLBiped = g.skaters[id]
 		var rc: Vector3 = g.api.receive_dir(id)
@@ -77,3 +83,7 @@ func tick(g, frame: int) -> void:
 				"poke": g.api.try_poke(str(st[1]))
 				"pass": g.api.try_pass(str(st[1]))
 				"shoot": g.api.try_shoot(str(st[1]))
+				"aim":       # L5: [frames, id, "aim", x, z]: his stick points at (x, z) for the step's pass or shot
+					var to: Vector3 = Vector3(float(st[3]), 0.0, float(st[4])) + g.ctx.root.global_position - g.api.puck_pos()
+					g.api.stick_dir[str(st[1])] = to.normalized()
+

@@ -8,5 +8,6 @@
     "shoot_range": 15,
     "aim_error_deg": 7,
     "check_min_closing_red": 4.5
-  }
+  },
+  "goalie": {"reaction_frames": 7, "speed": 4.2, "glove": 1.1, "poke": 2.3}
 }
