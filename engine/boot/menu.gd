@@ -21,6 +21,11 @@ var _main: Control = null
 var _list: Control = null
 var _first_main: Button = null
 var _first_list: Button = null
+var _screen: Control = null
+## L4c: the menu is laid out for 1920 x 1080 and scaled to the window (a 1280 x 720 window put the key line over Quit and
+## cut the dungeon list): the scale is the smaller of width / 1920 and height / 1080, never above 1; the screen keeps the
+## window's shape in those units, so the sky fills it and nothing overlaps.
+const DESIGN: Vector2 = Vector2(1920, 1080)
 
 
 func _init() -> void:
@@ -32,8 +37,10 @@ func open(dungeon_rows: Array, tag: String, create_ok: bool) -> void:
 	rows = dungeon_rows
 	var root: Control = Control.new()
 	root.name = "Screen"
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_screen = root
 	add_child(root)
+	_fit()
+	root.get_viewport().size_changed.connect(_fit)
 	root.add_child(UI.sky_backdrop())
 	var cols: HBoxContainer = HBoxContainer.new()
 	cols.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -91,6 +98,21 @@ func open(dungeon_rows: Array, tag: String, create_ok: bool) -> void:
 		t.offset_top = 10
 		root.add_child(t)
 	_first_main.grab_focus.call_deferred()
+
+
+func _fit() -> void:
+	if _screen == null or not _screen.is_inside_tree():
+		return
+	var vp: Vector2 = _screen.get_viewport().get_visible_rect().size
+	var k: float = minf(1.0, minf(vp.x / DESIGN.x, vp.y / DESIGN.y))
+	_screen.position = Vector2.ZERO
+	_screen.scale = Vector2(k, k)
+	_screen.size = vp / k
+
+
+## The scale the screen is drawn at now (selftest 640 reads it).
+func fit_scale() -> float:
+	return _screen.scale.x if _screen != null else 1.0
 
 
 func _add(box: Control, text: String, hint: String, on_press: Callable) -> Button:
