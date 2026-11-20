@@ -466,8 +466,7 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 	var sky_material := sky.sky_material as ShaderMaterial
 	sky_material.shader = _shader("sky_cotton" if cotton else "sky")
 	if cotton: sky_material.set_shader_parameter(&"cloud_wrap", float(data["sky"].get("cloud_wrap", 0.0)))
-	sky.radiance_size = Sky.RADIANCE_SIZE_512 if cotton else Sky.RADIANCE_SIZE_256
-	sky.process_mode = Sky.PROCESS_MODE_QUALITY if cotton else Sky.PROCESS_MODE_AUTOMATIC
+	_Dio.sky_bake(sky, cotton and e0.get("quality_sky_bake", true))
 	push("sky", sky.sky_material)
 	_apply_world(we.environment, sun)
 	# A style can opt into the tracked lens. Other styles keep their original far-only camera setting.
@@ -521,7 +520,7 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 			layer.add_child(rect)
 			rig.add_child(layer)
 		var grade_mat: ShaderMaterial = layer.get_node("Rect").material
-		grade_mat.shader = _Dio.variant("grade", "TL_PRINT_CURVE" if data["grade"].has("print_contrast") else "", _shaders)
+		grade_mat.shader = _Dio.variant("grade", "TL_PRINT_CURVE" if float(data["grade"].get("print_contrast", 0.0)) > 0.0 else "", _shaders)
 		push("grade", grade_mat)
 	elif layer != null:
 		layer.queue_free()
@@ -559,15 +558,15 @@ static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	sun.light_energy = 1.0
 	sun.rotation_degrees = Vector3(-float(s["elev"]), 180.0 - float(s["azim"]), 0.0)
 	sun.shadow_enabled = true
+	sun.shadow_opacity = clampf(float(s.get("shadow_opacity", 1.0)), 0.0, 1.0)
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	sun.directional_shadow_max_distance = float(s["shadow_max"])
 	sun.directional_shadow_blend_splits = true
-	sun.shadow_blur = float(s["shadow_blur"])
 	sun.shadow_bias = float(s["shadow_bias"])
 	sun.shadow_normal_bias = float(s.get("normal_bias", 1.4))
-	sun.light_angular_distance = float(s.get("angular_size", 0.0))
-	_Dio.shadow_filter(s)     # the PCSS filter is renderer-wide (dio/style_dio.gd)
+	_Dio.shadow_filter(sun, s)
 	var e: Dictionary = data["env"]
+	env.background_energy_multiplier = float(e.get("background_energy", 1.0))
 	env.tonemap_mode = {"linear": Environment.TONE_MAPPER_LINEAR, "filmic": Environment.TONE_MAPPER_FILMIC,
 		"aces": Environment.TONE_MAPPER_ACES, "reinhard": Environment.TONE_MAPPER_REINHARDT}.get(e["tonemap"], 0)
 	env.tonemap_exposure = float(e["exposure"])

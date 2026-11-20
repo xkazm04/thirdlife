@@ -58,15 +58,24 @@ float noise3(vec3 p) {
 float impression(vec2 p, vec2 size, float phase) {
 	vec2 q = p / size;
 	q.y += .18 * sin(2.4 * q.x + phase) + .08 * q.x * q.x;
-	// Only part of the fingertip touched the surface. Its centre is beyond
-	// the contact patch, leaving a few arches that lift away at each end.
-	float r = length(vec2(.82*q.x + .59 + .12 * sin(q.y * 2.3), q.y+.81));
-	float cycle = 6.2 * r + .18 * sin(3.0 * q.x - q.y);
+	// An eccentric loop with a short open end where the finger rolled away.
+	vec2 core = vec2(.86*q.x + .22*q.y - .27, q.y + .47);
+	float r = length(core) + .075 * sin(3.4*q.x - 1.6*q.y + phase);
+	float cycle = 4.8*r;
 	float ridge = cos(6.28318 * cycle);
 	float resolved = 1.0 - smoothstep(.17, .5, fwidth(cycle));
 	float patch = 1.0 - smoothstep(.28, 1.12, length(q));
-	patch *= smoothstep(-.68,.18,q.y + .57*q.x + .15*sin(phase + 4.0*q.x));
+	patch *= smoothstep(-.91,-.31,q.y + .47*q.x + .15*sin(phase + 4.0*q.x));
 	return ridge * patch * resolved;
+}
+
+// A shallow flake at a painted rim. The chip follows the edge and tears
+// obliquely across it. Use the existing pigment grain to break its silhouette.
+float edge_flake(vec2 q, float flakes) {
+	q.y += .36*q.x;
+	float edge = max(abs(q.y), .84*abs(q.x) + .52*abs(q.y)) + 1.72*(.53-flakes);
+	float aa = max(.055, .65*fwidth(edge));
+	return 1.0 - smoothstep(1.0-aa, 1.0+aa, edge);
 }
 
 // A rounded tool pulled through a soft piece leaves a tapered channel and a
@@ -106,8 +115,8 @@ void fragment() {
 	float handled = max(max(hair,boot),max(max(jacket,sleeve),denim));
 	float tooling = (tool-.5)*handled*smoothstep(.14,.66,cloud)*(1.0-smoothstep(.006,.025,footprint));
 	// The side of the thumb sweeps up the left side of the nape.
-	vec2 thumb = vec2(p.y-1.766+.18*(p.x+.12), -p.x-.124+.28*(p.z-.240));
-	float print_h = crown * 1.9 * impression(thumb, vec2(.116,.134), .8) * smoothstep(.04,.15,p.z)
+	vec2 thumb = vec2(p.x+.084+.50*(p.z-.25), p.y-1.759-.33*(p.x+.084));
+	float print_h = scalp * 1.66 * impression(thumb, vec2(.124,.098), .8) * smoothstep(.09,.19,p.z)
 		+ hair * impression(p.xy - vec2(.098,2.012), vec2(.092,.052), 2.1) * smoothstep(.06,.12,p.z)
 		+ jacket * impression(vec2(sheet.x,sheet.y-.27*sheet.x) - vec2(-.091, 1.10), vec2(.142,.066), 1.7)
 		+ sleeve * impression(sheet - vec2(-.29, 1.24), vec2(.085,.094), 2.9)
@@ -183,9 +192,20 @@ void fragment() {
 	float welt = boot * (1.0-smoothstep(.003,.016+footprint,abs(p.y - .077 - .004*sin(32.0*p.x))));
 	chip = max(chip, welt * smoothstep(.52-aa,.68+aa,flakes));
 	chip *= 1.0 - .70*smoothstep(.49,.74,grain)*fine;
+	// A hand catches the raised wrist roll when dressing the figure. The
+	// outside heel and opposite toe lose small islands of their brown slip.
+	float right = step(0.0,p.x);
+	vec2 cuff = vec2((abs(p.x)-mix(.324,.278,right))/mix(.030,.047,right), (p.y-.986)/.013);
+	float wrist_wear = sleeve * edge_flake(cuff,flakes) * smoothstep(.035,.087,p.z);
+	vec2 shoe = vec2((abs(p.x)-mix(.206,.148,right))/.047, (p.y-mix(.087,.081,right))/.014);
+	float shoe_side = mix(-p.z-.130, p.z-.041, right);
+	float shoe_wear = boot * edge_flake(shoe,flakes) * smoothstep(.0,.049,shoe_side);
+	// Tiny islands of fired colour survive in the middle of a larger flake.
+	float remnant = smoothstep(.50,.69,.71*grain + .29*stroke);
+	chip = max(chip, max(wrist_wear,shoe_wear)*(1.0-.90*remnant));
 	// A flake removes the painted skin. Its rim and the lip of a thumb
 	// impression catch light as the figure turns.
-	float height = (.0140*fold + .009 * cloud + .0025*tooling + fine * .0008 * grain + .00115 * print_h
+	float height = (.0140*fold + (.009-.004*crown)*cloud + .0025*tooling + fine * .0008 * grain + .00115 * print_h
 		- .0038*cuts - .003*yoke - .002*tread - .0017*chip + .0023*pocket) * (1.0 - .82 * glossy);
 	vec3 dx = dFdx(VERTEX), dy = dFdy(VERTEX);
 	vec3 bx = cross(dy, NORMAL), by = cross(NORMAL, dx);
@@ -198,11 +218,12 @@ void fragment() {
 	// Scuffed indigo first exposes the lighter blue wash underneath.
 	bisque = mix(bisque, mix(paint,vec3(.44,.49,.48),.36), denim);
 	bisque = mix(bisque, mix(paint,vec3(.54,.32,.14),.77),boot);
+	bisque = mix(bisque, vec3(.64,.39,.19)*(.86+.24*grain), .58*shoe_wear);
 	pigment *= 1.0 + .028*print_h + .14*fold;
 	pigment *= mix(vec3(1),vec3(.90,1.04,1.03),hair);
 	// The ochre clay and vermilion slip take a fuller colour on the broad flats.
 	float copper = crown * smoothstep(.035,.14,paint.r-paint.b);
-	pigment *= mix(vec3(1.0), vec3(2.44,1.91,.55), copper);
+	pigment *= mix(vec3(1.0), mix(vec3(2.44,1.91,.55),vec3(2.20,1.61,.52),scalp), copper);
 	pigment *= 1.0 + copper*(.18*(cloud-.5) + .26*tooling);
 	// Keep the garment's palette identity when a pack supplies its own colours.
 	float vermilion = coat * smoothstep(.04,.22,paint.r-max(paint.g,paint.b));

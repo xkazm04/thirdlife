@@ -117,6 +117,7 @@ static func far_dof(e0: Dictionary) -> CameraAttributesPractical:
 
 
 static var _shadow_filter_set: bool = false
+static var _shadow_atlas_override: int = 0
 
 
 class HorizonCompositor extends Compositor:
@@ -147,10 +148,28 @@ static func apply_anisotropy(vp: Viewport, env: Dictionary) -> void:
 		vp.remove_meta(SAVED)
 
 
-## The PCSS filter is renderer-wide. A live return to classic restores the project's sampling quality. A fresh
-## classic run never changes the filter (`sun.filter_quality` absent).
-static func shadow_filter(s: Dictionary) -> void:
-	if s.has("filter_quality") or _shadow_filter_set:
+## Both bake modes draw the same cotton material. The smaller cube uses the renderer's automatic update policy.
+static func sky_bake(sky: Sky, quality: bool) -> void:
+	sky.radiance_size = Sky.RADIANCE_SIZE_512 if quality else Sky.RADIANCE_SIZE_256
+	sky.process_mode = Sky.PROCESS_MODE_QUALITY if quality else Sky.PROCESS_MODE_AUTOMATIC
+
+
+## PCSS uses the sun's angular size and a renderer-wide sample count. Restore the project filter on a style swap.
+static func shadow_filter(sun: DirectionalLight3D, s: Dictionary) -> void:
+	# The atlas is renderer-wide. A style may cap it, and the next uncapped style restores the project size.
+	var atlas := maxi(0, int(s.get("shadow_atlas_size", 0)))
+	if atlas != _shadow_atlas_override:
+		const SETTING := "rendering/lights_and_shadows/directional_shadow/"
+		var project_size := int(ProjectSettings.get_setting_with_override(SETTING + "size"))
+		var size := mini(project_size, atlas) if atlas > 0 else project_size
+		RenderingServer.directional_shadow_atlas_set_size(size, bool(ProjectSettings.get_setting_with_override(SETTING + "16_bits")))
+		_shadow_atlas_override = atlas
+	var soft: bool = s.get("soft_shadows", true)
+	sun.shadow_blur = float(s["shadow_blur"]) if soft else 0.0
+	sun.light_angular_distance = float(s.get("angular_size", 0.0)) if soft else 0.0
+	var override_filter := not soft or s.has("filter_quality")
+	if override_filter or _shadow_filter_set:
 		var default_quality: int = ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality")
-		RenderingServer.directional_soft_shadow_filter_set_quality(clampi(int(s.get("filter_quality", default_quality)), 0, RenderingServer.SHADOW_QUALITY_SOFT_ULTRA))
-		_shadow_filter_set = s.has("filter_quality")
+		var quality: int = s.get("filter_quality", default_quality) if soft else RenderingServer.SHADOW_QUALITY_HARD
+		RenderingServer.directional_soft_shadow_filter_set_quality(clampi(quality, 0, RenderingServer.SHADOW_QUALITY_SOFT_ULTRA))
+		_shadow_filter_set = override_filter

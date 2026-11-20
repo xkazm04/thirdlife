@@ -1,0 +1,129 @@
+DIO-ASTRA (frame and figure of the toy diorama): REPORT, day of 20 Nov 2026
+Operator: Opus. Designer and builder: GPT 6.2 Astra via Codex (sessions 01a1f851 r1-r2, 01a1f8dd r3-r4,
+01a1f992 r5-r6). Worktree .claude/worktrees/d20-dio-astra, branch d20-dio-astra. Rounds 1-4 are committed by the
+Director (8cae07a, 008ee0c); rounds 5-6 are uncommitted in the worktree on d20-dio 8968ffe.
+
+WHAT WAS BUILT, AND WHY IT MOVES TOWARD BOARD 4 (all behind keys in style_diorama.json; absent key = today's look)
+1. Sharpness (the owner's first complaint).
+   - The tilted miniature lens blurred the near ground. It is now a far-only fall-off: the first 105 m are clear and
+     the blur rises gently to 20 % at 295 m (env.miniature_lens; dio/miniature_lens.gd, dof_distant.gdshader).
+   - 16x anisotropic filtering per viewport, diorama only (env.anisotropy_16x); project.godot is untouched.
+   - The exe window's anti-aliasing comes from the style (env.exe_aa = msaa=4,ss=smaa,taa=0; absent = today's
+     msaa=2,taa=1; TL_EXE_AA still first; Director's 11:35 decision). The shipping TAA was the exe's main blur:
+     Astra's boot-scene walk far / mid edge energy 43.5 / 24.8 -> 200.1 / 109.5.
+   - A temporal "horizon resolve" (dio/horizon_resolve.gd, compute pass, 31.6 MiB history at 1080p) steadies the far
+     horizon while walking without TAA; it switches itself off in fast flight and on camera cuts. Astra's exe walk:
+     horizon motion 1.443 (joined) -> 1.306, far/mid edge energy +23 % / +34 %.
+   - Operator sharpness figures (variance of a 3x3 luma Laplacian, geometric mean of the 16 tour views, 1920x1080):
+       base (old lens, old surfaces)      far 134.9  mid  97.3  near  18.9
+       r1-r2 (lens fixed)                 far 167.7  mid 110.5  near  50.5
+       integration 1 (+ fable r1-r2)      far 232.8  mid 224.7  near 204.3
+       r3-r4                              far 361.6  mid 333.4  near 277.5
+       integration 2 (+ fable r3-r5)      far 471.1  mid 467.2  near 506.5
+       final (r5-r6)                      far 614.4  mid 714.1  near 711.0
+     (later rows include dio-fable's sharper surfaces; the lens change alone was 18.9 -> 50.5 near.)
+2. Light and grade (the Director's notes: flat light at i1; sepia, streaky sky, black shadows at i2).
+   - Warm low key #ffb987, energy 1.67, elevation 28, azimuth -92, soft shadows with a broad penumbra, shadow
+     opacity 0.93; a warmer, wider contact shade.
+   - A print-style grade (grade.gdshader, grade.print_*): expands the meadow midtones, rolls saturation off before the
+     display ceiling, and fills broad backlit ground with a warm bias while narrow fence shadows keep their edge.
+   - Operator measurements, 1280x720, lower half luma p5 / p50 / p95 and share of pixels with any channel >= 250:
+       board 4             59 / 133 / 181   8.5 %
+       integration 1, 07   89 / 129 / 159   (flat)          4.3 %
+       integration 2, 07   63 / 158 / 193                   25.7 % (overexposed: the "mustard" grass)
+       final, 07           59 / 134 / 182                   4.8 %
+       final, 01           64 / 135 / 183                   4.0 %
+       final, 13 (river)   62 / 115 / 165 (i2: 50 / 79 / 157)  2.4 %
+     Lit grass hue now sits on the board's (about 43 deg); its value is near the board's in 07 (0.72 vs 0.54-0.74),
+     still higher in 01 (0.80).
+   - Sky: the brush texture is down (sky.brush 0.26 -> 0.012) to a clean warm gradient behind the cotton clouds; cloud
+     highlights moved to cream (top 5 % of the sky band (254,225,161) vs the board's (252,216,160)).
+3. The clay figure (the owner's pick from last night).
+   - The base's figure did not compile (clay_biped._face clashed with TLMesh._face): found at 10:40, fixed by the
+     rename the Director also committed (e191d8f).
+   - Under the new light: hair brightness at its brightest (p95) 69 -> about 170 (board 171), a matte broad hair surface
+     so it stops clipping when the figure turns; jacket red to the board's; tool flats, coat folds and cuff creases;
+     curved fingerprint ridges on the crown, chipped paint at wrists, heels and toes (body_clay.gdshader, clay_form.gd).
+   - Rails held: 12 wardrobes 9,888-11,788 tris, 29 bones, 20 clips, height 2.0, radius 0.3, palm errors 0.00000 m;
+     rig. 14/14, moves. 14/14, flight. 13/13, wings 2/2, character. 1/1.
+
+THE RULES, EACH WITH ITS EVIDENCE
+1. No pack, seed or contract changes: git diff against d20-base touches nothing under engine/packs, engine/seeds,
+   contracts/ or style.json. In style_diorama.json only the sun, env, sky, ink and grade sections changed; palette,
+   water, toon, mat and detail are byte for byte as dio-fable left them. Kernel v1 signatures kept (tl arch 12/12).
+2. Classic exact. My own proof each round: a pristine base archive (d20-base + the _face fix) against this tree,
+   seeded capture (Astra's harness), a fresh TL_CACHE_DIR per side (dio-fable's warning: diorama runs can leave felt
+   pictures under a classic key). Final: tour 16/16 and flight 6/6 at 0/255; figure close-ups and parkour 0/255 in
+   ordinary runs; hockey moves 91/255 in 0.01 % of pixels, as between two runs of the base. (09/10_paddle differed in
+   some earlier seeded runs by the same amount between two base runs: chimney-smoke noise.) Astra's seeded set: 26/26.
+3. No state hash moves: all 48 pack verb state hashes and frame counts and the 8 world rows are identical to the fixed
+   base archive's, checked after every round (base: PASS world 8/8, packs 48/48).
+4. Cache keys: no geometry generator changed in this arm; PIC_VERSION not bumped.
+5. Performance (machine shared by four arms; not a quiet-machine figure):
+   - Final windowed tour, same session: 2.518 ms diorama vs 1.377 ms classic = 1.83x (Astra: 1.89-1.96x).
+   - Before round 6 it was 2.23x; round 6 capped the directional shadow atlas at 4096 with a low soft filter
+     (sun.shadow_atlas_size, sun.filter_quality); the picture is unchanged by measurement.
+   - Switch-off keys, each tested (Astra's steady-pan costs, r5): sun.soft_shadows=false (0.48 ms), env.horizon_aa=false
+     (0.13 ms, frees 31.6 MiB), grade.print_contrast=0 (0.06 ms), env.anisotropy_16x=false (0.01 ms),
+     env.quality_sky_bake=false (frees about 100 MiB). Selftest 624 checks them.
+   - Cost per new game: none. A game picks up the frame and the figure through the existing style and rig calls.
+
+GATES (operator runs on the final tree)
+- node devx/bin/tl.mjs check --tier fast: PASS arch 12/12, assets 4/4, cards 3/3, devx.test 229/229,
+  foreman.typecheck clean.
+- node devx/bin/tl.mjs check --tier full --only world,packs,kit.selftest: PASS world 8/8, PASS packs 2/2 (48 of 48
+  verb runs), PASS kit.selftest 95/95. Hashes identical to the fixed base (rule 3).
+- selftest.sh style. 12/12 (includes this arm's 620 aperture, 621 boot AA, 622 anisotropy, 623 horizon,
+  624 frame switches, and last night's 570-572); rig. 14/14; flight. 13/13; wings 2/2; character. 1/1.
+- selftest.sh moves. 13/14 in the suite run: moves.replay failed on the corrupt file in the machine-wide picture
+  cache (see process notes); re-run alone with a private TL_CACHE_DIR: PASS (delta_m 0.000). The same happened and
+  passed the same way on round 5.
+- Classic proof: see rule 2. Not run by me: an unfiltered check --tier full (kernel.selftest, perf) - NOT RUN, not a
+  pass; perf windowed figures above come from the tour runs.
+
+CHANGED FILES (this arm, over the day)
+- engine/boot/boot.gd (EXE_AA from the style)
+- engine/rigs/biped/clay_biped.gd, clay_form.gd
+- engine/style/style_diorama.json (sun, env, sky, ink, grade)
+- engine/style/tl_style.gd (install: view, lens, AA, shadow filter hooks), engine/style/tl_style_fx.gd (lens moved out)
+- engine/style/dio/style_dio.gd (frame functions: anisotropy, shadow filter and atlas, sky bake, horizon compositor)
+- new: engine/style/dio/miniature_lens.gd, engine/style/dio/horizon_resolve.gd (+ .uid)
+- engine/style/shaders/sky_cotton.gdshader, grade.gdshader, body_clay.gdshader; new dof_distant.gdshader (+ .uid)
+- engine/tools/selftest.d/570-frame.sh, 571-frame-pixels.sh (now pass the old tilt settings explicitly: the default
+  lens changed; their thresholds unchanged); new 620-diorama-aperture, 621-boot-style-aa, 622-diorama-anisotropy,
+  623-diorama-horizon, 624-diorama-frame-switches
+- lane folder: STANDUP.md, PATCHES.md, ASTRA-NOTES.md (Astra's full measurements per round), ASTRA-BRIEF-r1..r6.md,
+  ASTRA-FEEDBACK-i1.md, ASTRA-FEEDBACK-r5.md, shotset.sh, flight_shots.devices.json, contact-sheet.jpg, clip.mp4
+  (27 s, 7.7 MB), stills/ (diorama, classic, evidence)
+
+PATCHES.md (for the Director and dio-fable)
+- The d20-base _face defect (settled, e191d8f).
+- Export AA: env.exe_aa (delivered).
+- For dio-fable, round 3: proposed grass and pine dyes and the river's three sky colours under the r3 light. The sky
+  and key changed again in r5 (sky zenith #685586, upper #976e92, mid #e79b8f, horizon #ffc78f; key -92 / 28 deg), so
+  the river colours want re-measuring on the joined tree. Round 5 adds pre-dye grass readings so the two arms do not
+  correct the same yellow.
+
+WHAT STILL FALLS SHORT OF THE BOARD
+- The river bank in 13 is still darker than the board (median 115 vs 133) when backlit.
+- 01's lit meadow is still brighter than the board's (V 0.80 vs 0.54-0.74).
+- The hair reads ginger-orange in the close-up; the board's is chestnut with warm highlights. The Director judges it.
+- The board's long shadows run toward the camera from a sun low on the left; ours come from -92 deg at 28 deg, a
+  compromise that lights the river bank.
+- Brightly lit timber (the scaffold) reads paler than the board's saturated wood.
+- GPU figures come from a busy machine; the Director measures on a quiet one at the verdict.
+
+PROCESS NOTES
+- Astra token use: about 0.90 M + 1.13 M + 1.16 M (three sessions), over the 2-2.5 M budget.
+- I stopped Astra twice in round 5 to pass on measured feedback (the Director's grade notes; a contrast regression),
+  resuming the same session each time.
+- My own moves. selftest's windowed replay hung at 16:26 holding the machine's window lock for 12 minutes; I stopped
+  it (my process). Astra once held the lock across a whole shot set (round 4); from round 5 it took it per capture.
+- The machine-wide picture cache holds a corrupt file (tl_cache/pictures/e1e656228ef45e5e3491bf4d1eb85361_mid.res,
+  "Unrecognized binary resource file"); moves.replay fails on it with the default cache and passes with a private
+  TL_CACHE_DIR. Worth deleting before the verdict runs.
+
+QUESTIONS FOR THE DIRECTOR; NEXT THREE THINGS
+- Measure the 2x budget on a quiet machine; the switch keys are ready.
+- Next: the backlit river bank (a fill or bank-side bounce), the hair hue under the review light, and a lower sun from
+  the board's side with shadow toward the camera, now that the grade can hold the contrast.

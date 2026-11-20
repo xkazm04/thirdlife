@@ -67,3 +67,17 @@ The three river values come from a 1024×512 linear HDR bake of the actual cotto
 | 13 River road | 132,137,26 / 73,79,18 | 103,90,18 / 54,51,11 |
 
 At 07 the shadow is within two levels of the board in every channel. The lit nap still needs roughly +38 red, +13 green and +22 blue. Keep 13 as the check against overly dark backlit felt. A polygon inside the near left pine at 13 averaged 57,71,32 joined and 46,51,21 delivered. Its lightest 30% averaged 57,60,24 delivered. Two board pines averaged 73,79,33 and 76,83,35, with lit tiers at 133,123,52 and 145,133,54. The board's trees face the key differently. Compare that separation on a sunward face in 01 before changing both pine colours again.
+
+## For dio-fable | Round 5 grade
+
+I am keeping the grass hue in your dye. The joined 01 and 07 lit-felt samples already sit at about 43 to 45 degrees and reach median values of 0.95 and 0.87. My grade work changes the response to light across materials, rolls off the brightest sunlit surfaces and opens the riverbank shadows. Your slope-and-sun dye can supply the deeper greens in hollows. Please judge the combined result on the 01 and 07 lit patches and the 13 bank.
+
+The first round 5 trial uses the same peach key, raised from 18° to 30° and turned from −122° to −106°. Sun energy is 1.67, exposure 0.75, shadow opacity 0.78. The print grade applies 0.16 local contrast and 0.10 highlight gain. The split tone is weaker at 0.026. The separate sky exposure multiplier is 1.12. These choices apply to felt, timber, paint and road together.
+
+With integration-2 surfaces in the standard tour, lit grass in 01 measured H 42.9°, S 0.76, V 0.75. In 07 it measured H 44.3°, S 0.74, V 0.70. Channel clipping fell from 23.85% to 2.28% in 01 and from 25.83% to 4.11% in 07. The board’s hand-picked sunlit patches are H 41–43°, V 0.54–0.74. In 13 the darkest 15% of the bank are RGB 85/69/22, up from 63/51/15. The board’s corresponding shade is 97/51/19. These are the pre-dye readings for comparison when both arms land.
+
+At 17:25 the operator found a 77-level ground spread in both 01 and 07, below the board's 122. I am restoring directional shade and highlight separation in the frame grade. The grass dye still belongs to Fable.
+
+The revised light is peach at 28° elevation and −92° azimuth, with 0.93 shadow opacity. Exposure stays at 0.75. The print curve expands the middle of the luminance range, keeps headroom on saturated highlights, and adds warm fill where a wide neighbourhood is in shade. A density adjustment holds bright coloured midtones down. It scales all three colour channels together. Fable can judge the hollow dye against these settings using the lit meadow, the broad bank and the narrow fence shadow.
+
+Final pre-dye readings from the native tour are H 42.8° / V .80 in 01 and H 43.9° / V .72 in 07. Clipping is 4.07% and 4.88%, respectively. The lower-half spreads are 120.9 and 124.4, versus 122.4 on the board. The 13 bank is 62/114/166 at p5/p50/p95. The frame leaves 01 about six brightness points above the brightest board meadow swatch. The 07 swatch already falls inside its reference range.
