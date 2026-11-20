@@ -436,9 +436,11 @@ fi
 
 # 3. the keys (pressed by boot.gd through the engine's input state; no person): Shift+W along the road, 600 pixels of
 #    mouse turn him south (P11), W into the kit court (P14: the compact village), E, Q, Esc. W and Esc decide the check; E and Q are shown and not
-#    counted (the route depends on where the landscape puts the court's gate).
+#    counted (the route depends on where the landscape puts the court's gate). L4c (21 Nov): Shift+W runs to frame 298 (was 263): the
+#    court's gate (its centre x = -20, 4.4 m each side) had moved off the old line x = -25.3, where he stopped at its fence
+#    (seen on 3a4580b too, before the menu); the turn is at 305 and W from 315.
 note "3. the keys: Shift+W east along the road, the mouse turns him south, W into the kit court, E at frame 720, Q at 1000, Esc at 1100 (nothing else ends this run)"
-TL_EXE_KEYS="30:+Shift;30:+W;263:-Shift;263:-W;270:~600,0;280:+W;700:-W;720:+E;722:-E;1000:+Q;1002:-Q;1100:+Escape;1102:-Escape" TL_EXE_TRACE="$W/keys_trace.jsonl" TL_EXE_CAPTURE="$W/on_stage.png" TL_EXE_CAPTURE_AT=900 TL_EXE_WINDOW_POS="$POS" limited 240 "$OUT/ThirdLife.exe" >"$W/keys.log" 2>&1; ck=$?
+TL_EXE_KEYS="30:+Shift;30:+W;298:-Shift;298:-W;305:~600,0;315:+W;700:-W;720:+E;722:-E;1000:+Q;1002:-Q;1100:+Escape;1102:-Escape" TL_EXE_TRACE="$W/keys_trace.jsonl" TL_EXE_CAPTURE="$W/on_stage.png" TL_EXE_CAPTURE_AT=900 TL_EXE_WINDOW_POS="$POS" limited 240 "$OUT/ThirdLife.exe" >"$W/keys.log" 2>&1; ck=$?
 node -e '
   const fs = require("fs"); let rows = [];
   try { rows = fs.readFileSync(process.argv[1], "utf8").split("\n").filter(l => l.startsWith("{")).map(l => JSON.parse(l)); } catch (e) {}

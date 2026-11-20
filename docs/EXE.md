@@ -138,6 +138,13 @@ which step runs ("building its parts (2 of 5: gen/art_hook.gd)"). One step that 
 still holds the picture for its own length. While it loads, the pack's nodes do not run and the physics server is
 off, so the stepped load is the worker's one-frame load: the dungeon still hashes as alone (selftest 640).
 
+**L4c (21 Nov).** The menu is laid out for 1920 x 1080 and scaled down to a smaller window (the smaller of width / 1920
+and height / 1080): at 1280 x 720 the key line no longer lies over Quit and the dungeon list is whole
+(`lanes/L4-dungeon/menu-1280x720.jpg`; 1920 x 1080 is pixel for pixel as before). `export.sh check` step 3 walks
+Shift+W to frame 298 (was 263): the kit court's gate is 4.4 m to each side of x = -20, and the old route stopped him
+at its fence at x = -25.3, so E and Q were "NOT SHOWN" (the same on 3a4580b, before the menu: the village had moved,
+not the menu). With the new route he is on stage from frame 750 to 990 and at the gate after Q.
+
 Not verified: a person's hands on the menu (keys and mouse were pressed by a script through the engine's input), a
 dungeon whose pack loads for long (the load screen is drawn before the load and does not move during it), the exe's
 static memory (a release template does not count it: the census leaves the key out there).

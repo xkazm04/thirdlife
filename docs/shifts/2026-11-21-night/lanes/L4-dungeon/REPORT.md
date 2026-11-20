@@ -233,3 +233,22 @@ changed: engine/kernel/dungeon/dungeon.gd (watch hooks, stepped load, moving bar
 2. For Try it, L3 sees exit code 0 from the process it started when the watchdog ends it; the record and the card are in
    the process the watchdog starts. If L3 wants the verdict in its own process, the record path could be passed with
    the launch (launch(dir, record_path)): a small change, not made.
+
+======================================================================================================================
+L4c (Director 23:35, on main 1187806): the menu at 1280x720, and export.sh check step 3
+======================================================================================================================
+1. Menu at 1280 x 720: the key line lay over Quit and the dungeon list ran off the right edge (the menu was laid out in
+   1920 x 1080 pixels and the project sets no stretch mode). engine/boot/menu.gd now lays the screen out in 1920 x 1080
+   units and scales it by min(1, width / 1920, height / 1080), again when the window changes size. Stills:
+   menu-1280x720.jpg (nothing overlaps, the list is whole), menu-1920x1080.jpg (pixel for pixel the image before the
+   change: PIL difference bounding box None).
+2. Step 3 "E and Q: NOT SHOWN": not caused by L4. The same scripted keys, run by the editor binary on a git-archive of
+   3a4580b (before the menu) and on 1187806, give the same trace: he stops at [-25.28, 1.99, 13.06] from frame 450, never
+   on stage. The kit court's gate is centred on x = -20 with 4.4 m to each side (landscape.gd: entrance = centre +
+   dir * (r + 3.6), wings from half * 0.8 + 2.0), so at x = -25.3 he walks into its left wing. The route moved, not the
+   menu. Fix in export.sh: Shift+W to frame 298 (was 263), the turn at 305, W from 315. Now: "E: a game was on stage from
+   frame 750 to 990 (plot index 4; he stood at [-20.03,2,30.82]); Q: he was walking again at frame 1080".
+Gates: PASS export.build (tag 1187806 2026-11-20 23:30), PASS export.check (step 3 SHOWN, Esc ended it at tick 1101);
+selftest 640 6/6 PASS (hockey hashes are new after L5's merge, still dungeon = alone: 3b76944a17a3 / 304ec388730e);
+fast gate PASS (arch 12/12, devx.test 229/229).
+Files: engine/boot/menu.gd, engine/tools/export.sh (step 3 keys and comment), docs/EXE.md (L4c paragraph), lane stills.
