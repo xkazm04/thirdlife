@@ -19,7 +19,7 @@
 | fast | PASS | PASS |
 | full kit / packs / world | 95/95, 48/48, 8/8 PASS | 95/95, 48/48, 8/8 PASS |
 | style. / rig. / character. | 10/0, 14/0, 2/0 | 11/0, 14/0, 1/0 |
-| arm blocks | cel. 4/0, celsurf. 9/0 | dio. 4/0, surf. 5/0; `diorama.` still running at 16:48 (not counted) |
+| arm blocks | cel. 4/0, celsurf. 9/0 | dio. 4/0, surf. 5/0, diorama. 3/0 |
 
 - The full-gate hashes are the base's: `seed.drive a2940a17@3441`.
 
