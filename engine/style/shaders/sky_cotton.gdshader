@@ -17,6 +17,7 @@ uniform float sun_draw_elev = 6.0;
 uniform float sun_draw_yaw = 0.0;
 uniform float brush = 0.12;
 uniform float cloud_scale = 1.0;
+uniform float fibre_spread_deg = 0.0;
 
 // Pins on the cyclorama, in painting order. Bearing is relative to the painted
 // light, followed by elevation, tuft size (degrees) and a shape seed. Leave
@@ -26,7 +27,7 @@ const vec4 PINS[27] = {
 	vec4(50, 8.2, 2.3, .83), vec4(93, 4, 1.6, .40), vec4(131, 8, 1.5, .68),
 	vec4(170, 4, 1.9, .19), vec4(-148, 7, 1.5, .78), vec4(-99, 6, 1.8, .35),
 	vec4(-20, 13, 3.2, .13), vec4(10, 14, 4.1, .70), vec4(36, 19, 4.6, .37),
-	vec4(65, 13.6, 3.8, .89), vec4(83, 10, 2.6, .21), vec4(110, 18, 4.4, .47),
+	vec4(54, 15.6, 4.1, .89), vec4(83, 10, 2.6, .21), vec4(110, 18, 4.4, .47),
 	vec4(152, 13, 3.3, .76), vec4(-175, 19, 4.4, .29), vec4(-137, 14, 3.8, .52),
 	vec4(-114, 21, 3.5, .92), vec4(-79, 12, 3.0, .17), vec4(-53, 21, 4.0, .63),
 	vec4(-12, 41, 6.3, .82), vec4(53, 49, 5.0, .14), vec4(109, 34, 4.6, .61),
@@ -60,13 +61,23 @@ float join_wool(float a, float b, float spread) {
 // hang low and the taller roll is offset differently in each cluster.
 float tuft(vec3 p, float seed) {
 	float crown_x = 0.94 * (seed - 0.5);
+	float spread = mix(0.87, 1.23, seed);
+	p.x /= spread;
+	p.y *= spread;
+	p.y -= 0.10*(seed-0.5)*p.x*p.x;
 	float body = length(p * vec3(0.87, 1.25, 1.1)) - 0.79;
 	float crown = length(p - vec3(crown_x, 0.31 + 0.20*seed, -0.08)) - (0.64 + 0.21*seed);
-	float left = length((p - vec3(-0.85, 0.03, -0.18)) * vec3(1.0, 1.12, 1.0)) - (0.59 + 0.18*seed);
-	float right = length(p - vec3(0.84, 0.08, -0.10)) - (0.78 - 0.19*seed);
-	float fold = length(p - vec3(crown_x - 0.49, -0.04, 0.51)) - (0.41 + 0.18*seed);
-	float cheek = length(p - vec3(0.54, -0.09, 0.46)) - (0.59 - 0.15*seed);
-	float knot = length(p - vec3(-0.87, -0.16, 0.24)) - 0.42;
+	float left = length((p - vec3(-0.92, 0.03, -0.18)) * vec3(1.0, 1.12, 1.0)) - (0.55 + 0.22*seed);
+	float right = length(p - vec3(0.87, 0.03, -0.10)) - (0.78 - 0.22*seed);
+	float fold = length(p - vec3(crown_x - 0.49, -0.04, 0.62)) - (0.41 + 0.18*seed);
+	float cheek = length(p - vec3(0.54, -0.09, 0.57)) - (0.59 - 0.15*seed);
+	float knot = length(p - vec3(-0.87, -0.16, 0.27)) - 0.42;
+	// Shorter locks run across the foot of the wadding. Offset the two
+	// creases so that a tuft does not end in a single straight cut.
+	float toe = length(p - vec3(0.92-seed*0.24, -0.27, 0.28)) - (0.27+0.12*seed);
+	float brow = length(p - vec3(crown_x+0.24, 0.40, 0.38)) - (0.32+0.12*seed);
+	cheek = join_wool(cheek, toe, 0.11);
+	fold = join_wool(fold, brow, 0.10);
 	return join_wool(join_wool(join_wool(body, crown, 0.23), join_wool(left, right, 0.16), 0.23),
 		join_wool(join_wool(fold, cheek, 0.12), knot, 0.16), 0.15);
 }
@@ -95,7 +106,7 @@ vec3 pinned_tuft(vec3 base, vec3 d, vec3 sun, vec2 bearing, vec4 pin) {
 	// A tuft stands slightly proud of the painted cloth. Its broad, displaced
 	// shadow is most visible at the bottom on the side away from the light.
 	float mounted = 1.0 - smoothstep(-0.13, 0.33, tuft(vec3(x + side*0.13, y + 0.23, -0.08), seed));
-	base *= mix(vec3(1.0), vec3(0.64, 0.53, 0.69), mounted*0.62);
+	base *= mix(vec3(1.0), vec3(0.64, 0.53, 0.69), mounted*0.42);
 	vec3 wool = vec3(x, y, seed*31.0);
 	float nap = noise3(wool*5.2) - 0.5;
 	float fibre = noise3(wool*19.0) - 0.5;
@@ -125,13 +136,16 @@ vec3 pinned_tuft(vec3 base, vec3 d, vec3 sun, vec2 bearing, vec4 pin) {
 	float backlight = smoothstep(-0.3, 0.97, dot(sun,d));
 	vec3 lamp = normalize(vec3(side*1.56, 0.78, mix(0.28,-0.30,backlight)));
 	float fluff = nap*0.11 + fibre*0.085 + (noise3(wool*47.0)-0.5)*0.045;
-	float diffuse = smoothstep(-0.33, 1.02, dot(n,lamp) + fluff);
+	float diffuse = smoothstep(-0.52, 0.96, dot(n,lamp) + fluff);
 	float bounce = smoothstep(-0.6, 1.1, y);
 	float seam = clamp(tuft(p + lamp*0.41, seed)/0.41, 0.0, 1.0);
-	vec3 shade = mix(cloud_shade, cloud, 0.045 + 0.12*bounce);
-	vec3 key_light = mix(cloud, glow, 0.27*backlight);
+	// The open front of each roll also receives diffuse light from the
+	// backing. Its underside and the groove between two rolls stay darker.
+	float fill = max(0.0, dot(n, normalize(vec3(-side*0.48, 0.34, 0.90))));
+	vec3 shade = mix(cloud_shade, cloud, 0.035 + 0.075*bounce + 0.23*fill*fill*(0.55+0.45*seam));
+	vec3 key_light = mix(cloud, glow, 0.22*backlight);
 	// Preserve the front folds when the viewer has the key at their back.
-	vec3 lit = mix(shade, key_light*mix(1.28,1.52,backlight), diffuse * (0.55+0.45*seam));
+	vec3 lit = mix(shade, key_light*mix(1.22,1.44,backlight), diffuse * (0.55+0.45*seam));
 	lit *= 1.0 + fluff*0.91 + (grain-0.5)*0.12;
 	// The nap scatters a little sunset light right around the silhouette.
 	lit += glow * (0.04 + 0.16*max(0.0,dot(d,sun))) * (1.0-clamp(n.z,0.0,1.0)) * (0.25+0.75*diffuse);
@@ -177,6 +191,20 @@ void sky() {
 		bearing = cos(turn)*bearing + sin(turn)*vec2(-bearing.y,bearing.x);
 		float el = radians(sun_draw_elev);
 		COLOR = paint(EYEDIR, vec3(bearing.x*cos(el), sin(el), bearing.y*cos(el)),key);
+	} else if (fibre_spread_deg > 0.0) {
+		// Resolve the fine nap at display resolution. The curls pick up colour
+		// from each side of a painted fold or wool edge. A flat patch stays flat.
+		vec3 d = EYEDIR;
+		float bend = noise3(d*63.0);
+		vec3 fibres = vec3(d.x*360.0, (d.y + 0.31*d.x - 0.22*d.z)*880.0, d.z*360.0);
+		fibres.y += 3.4*bend;
+		float footprint = max(length(dFdx(fibres)), length(dFdy(fibres)));
+		float resolved = 1.0-smoothstep(0.48, 1.35, footprint);
+		vec2 nap = vec2(noise3(fibres), noise3(fibres+19.3)) - 0.5;
+		vec3 right = vec3(-d.z, 0.0, d.x);
+		vec3 up = cross(d, right);
+		vec3 ray = d + (nap.x*right + nap.y*up) * (radians(fibre_spread_deg)*resolved);
+		COLOR = textureLod(RADIANCE, ray, 0.0).rgb;
 	} else {
 		COLOR = textureLod(RADIANCE, EYEDIR, 0.0).rgb;
 	}

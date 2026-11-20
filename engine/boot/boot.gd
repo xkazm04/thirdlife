@@ -55,10 +55,7 @@ const CAPTURE_FRAME: int = 120
 const TAG_FILE: String = "BUILD-TAG.txt"
 const TAG_MAX: int = 64
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
-## Walker-feel T3: the exe's window adds temporal antialiasing to the style's SMAA and lowers the project's 4x MSAA (project.godot
-## msaa_3d=2 is 4x) to 2x, which TAA makes up for. Measured on the replayed village walk (docs/reports/walker-feel/T.md): the ink
-## contours on fences and the figure stop breaking up from frame to frame (flicker in the horizon band -30 % walking), at no
-## measurable GPU cost on this machine; the price is a softer picture and a faint trail behind small far moving figures.
+## Classic's temporal AA steadies walking ink contours (docs/reports/walker-feel/T.md). Styles may supply env.exe_aa.
 const EXE_AA: String = "msaa=2,taa=1"
 
 var verb: String = ""
@@ -444,7 +441,11 @@ func _physics_process(_delta: float) -> void:
 			again.pressed = true
 			Input.parse_input_event(again)
 	if _frame == 2:
-		_set_aa(OS.get_environment("TL_EXE_AA") if not OS.get_environment("TL_EXE_AA").is_empty() else EXE_AA)
+		var aa := OS.get_environment("TL_EXE_AA")
+		if aa.is_empty():
+			TLStyle.ensure()
+			aa = str(TLStyle.data.get("env", {}).get("exe_aa", EXE_AA))
+		_set_aa(aa)
 	for k: Array in _keys.get(_frame, []):
 		if str(k[0]) == "move":
 			var mv: InputEventMouseMotion = InputEventMouseMotion.new()
@@ -501,8 +502,7 @@ var _frames_log: FileAccess = null
 var _frames_n: int = 0
 
 
-## Walker-feel T3: the window's antialiasing, set at physics frame 2 (after the style set its own): EXE_AA, or
-## TL_EXE_AA="msaa=2,ss=smaa,taa=0" (a test instrument): msaa 0/2/4/8, ss off/fxaa/smaa, taa 0/1. Prints what was set.
+## Applied after style setup on physics frame two. Specs accept msaa 0/2/4/8, ss off/fxaa/smaa and taa 0/1.
 func _set_aa(spec: String) -> void:
 	var vp: Viewport = get_viewport()
 	for part: String in spec.split(",", false):

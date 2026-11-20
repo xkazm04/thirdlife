@@ -201,6 +201,11 @@ func contact() -> Vector4:
 	return delta
 
 func test() -> void:
+	# The near-rail and pitched-card assertions below measure the original tilt
+	# prescription. The shipping small-aperture optics have their own ruler (620).
+	TLStyle.ensure()
+	TLStyle.data.env.miniature_lens = {"amount": 0.023, "tilt_deg": -15.0, "near_px": 5.0, "far_px": 1.5,
+		"vista_near": 27.0, "vista_far": 125.0, "vista_transition": 180.0, "vista_amount": 0.013}
 	var host := Node3D.new()
 	root.add_child(host)
 	TLStyle.install(host, {"ink": false, "grade": false})

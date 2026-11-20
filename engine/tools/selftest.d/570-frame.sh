@@ -17,6 +17,10 @@ func test() -> void:
 	var host := Node3D.new()
 	root.add_child(host)
 	var issues := TLStyle.load_style("res://style/style_diorama.json")
+	# This case exercises the tracked tilt prescription, including live style switches.
+	# Keep testing those optics after the day style moved to a distant-only aperture.
+	TLStyle.data.env.miniature_lens = {"amount": 0.023, "tilt_deg": -15.0, "near_px": 5.0, "far_px": 1.5,
+		"vista_near": 27.0, "vista_far": 125.0, "vista_transition": 180.0, "vista_amount": 0.013}
 	TLStyle.install(host)
 	var we: WorldEnvironment = host.get_node("TLStyleRig/WorldEnvironment")
 	var sun: DirectionalLight3D = host.get_node("TLStyleRig/Sun")
