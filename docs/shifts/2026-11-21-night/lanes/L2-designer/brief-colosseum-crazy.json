@@ -1,0 +1,155 @@
+{
+ "sentence": "a fight in a colosseum",
+ "creativity": "crazy",
+ "prompt": "foreman/prompts/designer.md iteration 1 (word-limit targets added)",
+ "model": "claude-opus-5-5",
+ "attempts": [
+  {
+   "durationMs": 112787,
+   "tokensIn": 19287,
+   "tokensOut": 11163,
+   "tokensCacheRead": 2861,
+   "transcript": "reports/designer-a1-s3.json"
+  }
+ ],
+ "brief": {
+  "pitch": "Shield-bash gladiators into walls while the crowd cheers, pelts tomatoes, and a runaway chariot crashes the party.",
+  "aspects": [
+   {
+    "id": "player_bash",
+    "icon": "player",
+    "title": "Your shield bash",
+    "line": "Charge with your shield and send rivals flying",
+    "detail": "TLBiped walker, 6 m/s run. Bash: 0.25 s lunge at 11 m/s; hit inside 1.6 m, 70° cone = TLBiped.shove 7 m/s plus stumble. Shoved into wall or pillar = TLBiped.down, one fall. 0.6 s cooldown. Three falls wins the bout. Hold Guard: blocks bashes, walk at half speed.",
+    "alternatives": [
+     {
+      "id": "club_swing",
+      "title": "Wooden club swing",
+      "line": "Swing a big club and knock helmets off"
+     },
+     {
+      "id": "net_thrower",
+      "title": "Net and pull",
+      "line": "Throw a net, then drag rivals into walls"
+     },
+     {
+      "id": "sumo_ring",
+      "title": "Push out ring",
+      "line": "Shove rivals off the edge of a raised ring"
+     }
+    ]
+   },
+   {
+    "id": "rival_ladder",
+    "icon": "rival",
+    "title": "Three champions",
+    "line": "Beat Brutus, Lucia, then giant Magnus for your freedom",
+    "detail": "Ladder from data. Brutus stamps 0.7 s then charges straight: sidestep and he splats the wall. Lucia circles left, lunges after two loops. Magnus is body_scale 1.6, shrugs off shoves; only walls and pillars drop him. Steering with TLSteer.pursue and separate; difficulty is reaction frames.",
+    "alternatives": [
+     {
+      "id": "twin_brothers",
+      "title": "Twins at once",
+      "line": "Two brothers attack together from both sides"
+     },
+     {
+      "id": "endless_waves",
+      "title": "Endless rookie waves",
+      "line": "Survive waves of rookies, each wave one bigger"
+     },
+     {
+      "id": "the_lion",
+      "title": "A lion instead",
+      "line": "Dodge a lion's pounce and bash it into walls"
+     }
+    ]
+   },
+   {
+    "id": "camera_shoulder",
+    "icon": "camera",
+    "title": "Over your shoulder",
+    "line": "See you and your rival, always face to face",
+    "detail": "ctx.cameras.orbit on the player, pitch 35°, distance 6 m, fov 50, framed at 0.26 via ctx.cameras.frame. Each frame orbit_by eases yaw 8% toward the line player-to-rival, so the rival stays ahead; right-drag still turns. Fixed view 'arena' high on the stands for captures.",
+    "alternatives": [
+     {
+      "id": "chase_low",
+      "title": "Low chase camera",
+      "line": "Camera trails behind you like a charging bull"
+     },
+     {
+      "id": "emperor_box",
+      "title": "The Emperor's view",
+      "line": "Watch the whole fight from the royal box"
+     }
+    ]
+   },
+   {
+    "id": "crowd_meter",
+    "icon": "crowd",
+    "title": "The roaring crowd",
+    "line": "Thrill them for super bashes; bore them, eat tomatoes",
+    "detail": "Meter 0 to 100 on the HUD: hit +10, fall +25, wall splat +35, drains 6 per second you stay away from your rival. Full: ROAR, next bash shoves at double speed. Under 20: TLSpawner lobs tomato balls from the stands at you every 2 s; a hit is TLBiped.stumble.",
+    "alternatives": [
+     {
+      "id": "thumbs_vote",
+      "title": "Emperor's thumb",
+      "line": "Lose a fall and the crowd votes if you continue"
+     },
+     {
+      "id": "crowd_weapons",
+      "title": "Crowd throws weapons",
+      "line": "Catch buckets and melons tossed from the stands, throw them"
+     }
+    ]
+   },
+   {
+    "id": "arena_pillars",
+    "icon": "arena",
+    "title": "Crumbling stone pillars",
+    "line": "Bash rivals into pillars and watch them crash down",
+    "detail": "Sand ring 36 m across, walled by stands. Six broken columns (barrier_wall, 2 m long, TLFracture) at 9 m radius. A rival shoved into one above 4 m/s shatters it: debris, 0.2 m shake, instant fall. Rubble stays, so cover vanishes as the bout goes on.",
+    "alternatives": [
+     {
+      "id": "spike_walls",
+      "title": "Closing spike walls",
+      "line": "Spiked walls creep inward every thirty seconds"
+     },
+     {
+      "id": "trapdoor_pits",
+      "title": "Trapdoor pits",
+      "line": "Floor tiles drop away; shove rivals into the holes"
+     }
+    ]
+   },
+   {
+    "id": "runaway_chariot",
+    "icon": "vehicle",
+    "title": "Runaway chariot",
+    "line": "Horn blows: a driverless chariot thunders through the fight",
+    "detail": "Every 25 s a horn, the gate flashes, and a TLVehicle cart on TLSteer.keep_lane laps a 13 m oval twice at 14 m/s. Anyone it touches gets TLBiped.down and a big shake; a rival you bashed into its path counts as your fall, with a double crowd bonus.",
+    "alternatives": [
+     {
+      "id": "rolling_boulders",
+      "title": "Rolling boulders",
+      "line": "Giant stone balls roll across the sand at random"
+     },
+     {
+      "id": "gate_lion",
+      "title": "Gate lion",
+      "line": "A lion bursts out and chases whoever the crowd boos"
+     }
+    ],
+    "crazy": true
+   }
+  ],
+  "rules": "A run is a ladder of three bouts: Brutus, Lucia, Magnus. A bout is won by giving the rival three falls before he gives you three; each bout has a 90 s clock (TLRules). A fall happens when a fighter is shoved into the outer wall, a pillar or the chariot (TLBiped.down, 1.2 s on the ground, then 1 s of flashing invulnerability; both fighters reset 6 m apart only at bout start). A bash that lands in open sand only shoves and stumbles. Juice: a whiffed bash gets a small dust puff and no shake; a bash that lands gets sparks (TLVfx.burst), hit_wood (TLAudio.play), TLVfx.squash 0.3 on the victim's visual, a 0.08 m shake over 8 frames and 4 frames of hit-stop (the pack freezes both fighters, the chariot and tomatoes); a guarded bash gets a clank (hit_metal) and both slide back 1 m; a wall splat gets dust and debris, a 0.2 m shake over 14 frames, 6 frames of hit-stop and a cheer; a pillar break adds TLFracture debris and the break sound; the bout-winning fall gets 6 frames of hit-stop, a 0.3 m shake over 20 frames, confetti, horn plus cheer, and the camera eases to frame 0.35 for 1.5 s. First minute: you stand 6 m from Brutus, already facing him, one HUD line reads 'WASD move - SPACE bash - SHIFT guard - bash him into the wall!'. Brutus waits 4 s, then his first charge has a slow 0.9 s stamp tell, so a sidestep makes him splat the wall within ten seconds; the chariot first comes at 30 s. Intensity: calm open, the crowd meter and chariot add pressure, and when the clock hits 20 s the crowd chants (cheer every 2 s), the chariot runs nonstop, and if the clock expires it is SUDDEN DEATH: next fall wins. Losing a bout replays that rival; the ladder clock keeps running. End screen (TLHud.set_text): 'FREEDOM! 3 champions in 4:12 - best 3:58' or 'MAGNUS WINS - he dropped you 3 times by the chariot' (the cause of the last fall), with the best ladder time and best crowd peak kept for the next run, and 'SPACE: fight again'.",
+  "arena": "A round colosseum floor: one terrain pad of sand 44 x 44 m (TLKit.build_layout from venue.json), play ring 36 m across bounded by 24 intact barrier_wall segments on an 18 m radius (fracture threshold set out of reach so only pillars break). Behind them 8 stands parts in an octagon at 21 m rising outward, red flags on each stand, 4 light_masts, a watch_tower on the south side as the Emperor's box, a scoreboard over the north wall showing falls. The entrance part at the north wall is the chariot gate. Six fracturable pillars (barrier_wall, 2 m long, sand-stone colour) stand on a 9 m radius; they break and stay as rubble, so the floor opens up each bout and is rebuilt for the next rival. The chariot is a 4-wheel TLVehicle cart with a crate body, steered along a closed 13 x 11 m oval path with TLSteer.keep_lane, 14 m/s, two laps then back out the gate. Tomatoes are small red TLBall balls spawned by TLSpawner at random stand positions, aimed with an 0.8 s lead at the player. Camera: ctx.cameras.orbit on the player, pitch 35 degrees, distance 6 m (range 4.5 to 9), fov 50, framed at 0.26 with ctx.cameras.frame; each frame the pack eases yaw 8% toward the player-to-rival direction with orbit_by, so the rival is always ahead and right-drag still adjusts. A fixed view 'arena' from the Emperor's box with set_subject on the player for captures.",
+  "ai": "Brutus the Bull (bout 1): speed 4.5 m/s, reaction 30 frames. Habit: stops, stamps his foot twice (0.7 s tell, 0.9 s in the first 30 s) and charges in a straight line for 8 m; sidestep and he slams the wall for a free fall. When he scores he beats his chest for 1.5 s (open to a bash); beaten, he kneels and throws his helmet. Lucia Quicknet (bout 2): speed 6 m/s, reaction 18 frames. Habit: always circles to her left at 4 m, lunges after two half-loops, and dodges a bash she sees early; step to her left to cut her off. Scoring, she bows to the crowd for 1 s; beaten, she salutes and walks out. Big Magnus (bout 3): body_scale 1.6, speed 3.8 m/s, reaction 12 frames, shoves against him at 40% strength and he never stumbles in open sand. Habit: walks you toward the nearest wall and bashes with a long 0.5 s wind-up raise of his shield; only a wall, pillar or the chariot can drop him, so you must bait him into position. Scoring, he laughs and stands still 2 s; beaten, he falls flat and the crowd chants your name. All steer with TLSteer.pursue and TLSteer.separate, flee the chariot path when they see it within 1 s (Brutus never does). The chariot is an actor with no aim, only its lane. Difficulty per rival is its reaction frames read through TLHand; after a lost bout the same rival gets 4 more reaction frames.",
+  "controls": "move (WASD / arrows: run relative to the camera yaw), bash (Space or left mouse: 0.25 s shield lunge, 0.6 s cooldown), guard (hold Shift: block bashes from the front, walk at half speed), taunt (T: stand still 1 s and raise your shield, +15 crowd if not hit), look (right-drag orbits the camera, wheel zooms).",
+  "mood": "Hot midday colosseum in the global inked toon style: pale gold sand, terracotta stands, red banners snapping, bronze shields catching sun; dust kicks with every bash. Sound is thuds and clanks from the hit sets, a cheer whose volume follows the crowd meter, and the horn for the chariot and for every bout won."
+ },
+ "estimate": {
+  "packages": 6,
+  "wallMinutes": 95,
+  "tokens": 950000
+ }
+}

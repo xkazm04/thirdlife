@@ -17,7 +17,9 @@ import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
 import { runHandChecks, sendBackHands } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
-import { critic, render, replanPackages, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
+import { briefText, critic, render, replanPackages, whoOwns, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
+import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
+import { writeGenerateCalls } from "./transcript.js";
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
 import { drainInbox } from "./inbox.js";
 import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls } from "./p10.js";
@@ -116,6 +118,7 @@ export class Foreman {
       append: (body) => this.append(body),
       reopen: (id, reason, detail) => this.reopen(id, reason, detail),
       verifyLogged: (a, packDir, stem, where) => this.verifyLogged(a, packDir, stem, where),
+      logGenerateCalls: (calls, model) => this.logGenerateCalls(calls, model),
     };
   }
   /** Report and transcript names carry the next seq, so a re-run never overwrites what an earlier event points at. */
@@ -174,6 +177,7 @@ export class Foreman {
     if (this.s.jobState?.state === "done" && !waiting) return this.s;
     // A cancelled job stays cancelled unless the caller explicitly asks for its failed packages to be retried.
     if (this.s.jobState?.state === "cancelled" && !this.o.retryFailed) return this.s;
+    if (waitsForVerdict(this.s)) return this.s; // a phase waits for the player's verdict: `foreman phase` answers it
     // The runner's option list comes from the engine. Without it nothing is started and nothing is written.
     this.verbs = this.o.verbs ?? verbsFor(this.o.verifier.location);
     // JOB.md 2026-11-17: the kernel version every pack.json declares is the engine's own; unreadable, nothing starts.
@@ -251,6 +255,9 @@ export class Foreman {
       if ((await this.applyChangeRequests()) > 0) continue;
       // An answer that arrived just now: the scheduler looks at its package again.
       if (took > 0) continue;
+      const step = await phaseStep(this.gateHost); // a phase whose packages are all merged is done: pass, or wait for the player
+      if (step === "paused") break;
+      if (step === "continue") continue;
       const views = this.s.order.map((id) => this.pkg(id));
       if (views.every((p) => p.state === "promoted")) {
         await this.catchUpMilestones();
@@ -271,7 +278,7 @@ export class Foreman {
       if (re.replanned) continue;
       const failed = views.filter((p) => p.state === "failed").map((p) => `${p.id} (${p.cause ?? "?"})`);
       const blocked = views.filter((p) => p.state === "blocked").map((p) => `${p.id} (${p.cause ?? "?"})`);
-      this.endJob("failed", clip([failed.length ? `failed: ${failed.join(", ")}` : "", blocked.length ? `blocked: ${blocked.join(", ")}` : "", re.reason].filter(Boolean).join("; "), 600), true);
+      this.endJob("failed", clip([stuckText(this.s), failed.length ? `failed: ${failed.join(", ")}` : "", blocked.length ? `blocked: ${blocked.join(", ")}` : "", re.reason].filter(Boolean).join("; "), 600), true);
       break;
     }
     return this.s;
@@ -300,40 +307,7 @@ export class Foreman {
   // ---------- re-plan on failure ----------
 
   private logGenerateCalls(calls: GenerateCall[], model: string | undefined): void {
-    for (const c of calls) {
-      const file = this.dir("reports", `${c.role}-a${c.attempt}-s${this.s.lastSeq + 1}.json`);
-      fs.mkdirSync(path.dirname(file), { recursive: true });
-      fs.writeFileSync(
-        file,
-        JSON.stringify(
-          {
-            schema: "tl.foreman.transcript/1",
-            adapter: this.o.builder.name,
-            role: c.role,
-            attempt: c.attempt,
-            mode: "generate",
-            prompt: c.prompt,
-            problems: c.problems,
-            result: { ok: c.result.ok, outcome: c.result.outcome, text: c.result.text, json: c.result.json, error: c.result.error, tokensIn: c.result.tokensIn, tokensOut: c.result.tokensOut, durationMs: c.result.durationMs, observed: c.result.observed },
-            raw: c.result.raw,
-          },
-          null,
-          1,
-        ) + "\n",
-      );
-      this.append({
-        type: "builder_run",
-        adapter: this.o.builder.name,
-        mode: "generate",
-        model: c.result.model ?? model ?? "default",
-        outcome: c.result.outcome,
-        durationMs: Math.max(0, Math.round(c.result.durationMs)),
-        ...(c.result.tokensIn !== undefined ? { tokensIn: c.result.tokensIn } : {}),
-        ...(c.result.tokensOut !== undefined ? { tokensOut: c.result.tokensOut } : {}),
-        ...(c.result.tokensCacheRead !== undefined ? { tokensCacheRead: c.result.tokensCacheRead } : {}),
-        transcript: this.rel(file),
-      });
-    }
+    writeGenerateCalls({ jobDir: this.jobDir, adapter: this.o.builder.name, lastSeq: () => this.s.lastSeq, append: (b) => this.append(b) }, calls, model);
   }
 
   /**
@@ -399,7 +373,7 @@ export class Foreman {
         changed: [...freshIds].filter((x) => oldIds.has(x)),
       });
     }
-    this.append({ type: "plan_set", packages: [...kept, ...fresh], ...(s.card !== undefined ? { card: s.card } : {}) }); // the job's card stays (JOB.md 2026-11-17)
+    this.append({ type: "plan_set", packages: [...kept, ...fresh], ...(s.card !== undefined ? { card: s.card } : {}), ...replanPhases(s, fresh, new Set([...failedIds, ...depIds])) }); // card and phases stay
     for (const p of fresh) this.append({ type: "package_state", package: p.id, state: "queued", round: 1, detail: "replanned" });
     return { replanned: true, reason: "" };
   }
@@ -459,7 +433,7 @@ export class Foreman {
           const p = this.pkg(id);
           if (running.has(id) || p.state === "promoted" || p.state === "failed") continue;
           if (p.state === "blocked" && p.cause === "question" && p.openQuestion !== undefined) continue;
-          if (this.busyThisRun.has(id)) continue;
+          if (this.busyThisRun.has(id) || !inReach(this.s, id)) continue; // a later phase waits for the player's pass
           if (!p.deps.every((d) => this.pkg(d).state === "promoted")) continue;
           const task = this.runPackage(id)
             .catch((e: unknown) => {
@@ -1565,7 +1539,8 @@ export class Foreman {
     let verdict = "critic not run";
     if (captures.length > 0 && this.o.critic !== false) {
       const model = this.o.criticModel ?? this.o.model;
-      const res = await critic(this.o.builder, captures.map((c) => this.dir(c)), DEFAULT_RUBRIC, {
+      const rubric = criticRubric(this.s, lastPackage); // L2 21 Nov: + fun_promise (the phase's try line, or the pitch)
+      const res = await critic(this.o.builder, captures.map((c) => this.dir(c)), rubric, {
         ...(model ? { model } : {}),
         context: [`Game: ${this.s.title ?? ""} (${this.s.sentence ?? ""})`, `Mood asked for: ${this.s.brief?.mood ?? "(none)"}`, bot !== undefined ? `The bot ${bot} was playing while the frames were taken.` : "No bot was playing."].join("\n"),
         packages: this.packageLines(),
@@ -1576,7 +1551,7 @@ export class Foreman {
       fs.writeFileSync(
         file,
         JSON.stringify(
-          { schema: "tl.foreman.critique/1", milestone: m, captures, rubric: DEFAULT_RUBRIC, ...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}) } : { error: res.reason }) },
+          { schema: "tl.foreman.critique/1", milestone: m, captures, rubric, ...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}) } : { error: res.reason }) },
           null,
           1,
         ) + "\n",
@@ -1727,7 +1702,7 @@ export class Foreman {
 
   private buildPrompt(id: string, spec: PackageSpec, round: number, selfCheck: string[]): string {
     const s = this.s;
-    const brief = s.brief ? Object.entries(s.brief).map(([k, v]) => `- ${k}: ${v}`).join("\n") : "(no brief in the log)";
+    const brief = s.brief ? briefText(s.brief) + phaseLine(s, id) : "(no brief in the log)";
     return render(this.template, {
       packId: s.packId ?? "",
       title: s.title ?? "",

@@ -4,6 +4,7 @@
 // Pure: no file, no process; foreman.ts, p10gate.ts (and `foreman explain`) read these functions, never the prefixes.
 import type { JobEvent } from "./events.js";
 import { CHANGE_REASON_RE, type JobState, type PackageView } from "./joblog.js";
+import { PHASE_HOLD_RE } from "./design_state.js";
 import { FINAL_FAILED } from "./p10.js";
 export { FINAL_FAILED };
 
@@ -46,7 +47,8 @@ export function detailKind(detail: string | undefined): RoundKind | undefined {
 
 /** Why a finished package was re-opened, from the `reopened` reason the Foreman wrote. */
 export function reopenKind(reason: string): ReopenKind {
-  if (CHANGE_REASON_RE.test(reason)) return "change";
+  // JOB.md 2026-11-20: a phase hold's change round is a change request whose text is the player's note.
+  if (CHANGE_REASON_RE.test(reason) || PHASE_HOLD_RE.test(reason)) return "change";
   const k = detailKind(reason);
   return k === "critic" || k === "final_failed" ? k : "dep_changed";
 }
@@ -133,6 +135,9 @@ export function requeueDetail(events: readonly JobEvent[], state: Pick<JobState,
     const m = CHANGE_REASON_RE.exec(reason);
     const change = m ? state.changes.find((c) => c.seq === Number(m[1])) : undefined;
     if (change) return `${CHANGE_ROUND}: ${change.text}`;
+    const h = PHASE_HOLD_RE.exec(reason);
+    const hold = h ? events.find((e) => e.seq === Number(h[1]) && e.type === "phase_reviewed") : undefined;
+    if (hold && hold.type === "phase_reviewed" && hold.note !== undefined) return `${CHANGE_ROUND}: ${hold.note}`;
   }
   return kind === "critic" || kind === "final_failed" ? reason : `${DEP_CHANGED}: ${reason}`;
 }

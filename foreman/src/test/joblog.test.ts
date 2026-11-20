@@ -14,9 +14,9 @@ const line = (o: object): string => JSON.stringify(o) + "\n";
 
 test("events: every type in JOB.md is known, nothing else", () => {
   assert.deepEqual([...EVENT_TYPES].sort(), [
-    "answer", "billing", "brief_approved", "brief_set", "budget", "builder_run", "change_requested", "comment", "job_created",
-    "job_state", "merge", "milestone", "note", "package_state", "plan_set", "promoted", "question", "reopened", "replan", "verify",
-  ]);
+    "answer", "aspect_reacted", "billing", "brief_approved", "brief_set", "budget", "builder_run", "change_requested", "comment", "job_created",
+    "job_state", "merge", "milestone", "note", "package_state", "phase_done", "phase_reviewed", "plan_set", "promoted", "question", "reopened", "replan", "verify",
+  ]); // + aspect_reacted, phase_done, phase_reviewed: JOB.md "Added 2026-11-20"
 });
 
 test("strict reader: unknown type is an error", () => {

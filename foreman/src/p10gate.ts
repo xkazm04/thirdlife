@@ -13,6 +13,7 @@ import { FOREMAN_NOTE, clip } from "./conduct.js";
 import { finalSentSince } from "./rounds.js";
 import type { GateFailure, Verified } from "./machine.js";
 import type { ForemanOptions } from "./options.js";
+import type { GenerateCall } from "./designer.js";
 
 /** What these functions need of the Foreman: its options, the job's state and log, and a few of its methods. */
 export interface GateHost {
@@ -25,6 +26,8 @@ export interface GateHost {
   append(body: Parameters<JobLog["append"]>[0]): JobEvent;
   reopen(id: string, reason: string, detail: string): void;
   verifyLogged(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<Verified>;
+  /** JOB.md 2026-11-20 (phases.ts): the generate calls a phase hold's owner question made, as builder_run events. */
+  logGenerateCalls(calls: GenerateCall[], model: string | undefined): void;
 }
 
 // ---------- P10 item 1: the pack's tests at the merge gate ----------

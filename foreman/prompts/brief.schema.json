@@ -1,28 +1,156 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["brief", "estimate"],
+  "required": [
+    "brief",
+    "estimate"
+  ],
   "properties": {
     "brief": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rules", "arena", "ai", "controls", "mood"],
+      "required": [
+        "pitch",
+        "aspects",
+        "rules",
+        "arena",
+        "ai",
+        "controls",
+        "mood"
+      ],
       "properties": {
-        "rules": { "type": "string", "minLength": 1 },
-        "arena": { "type": "string", "minLength": 1 },
-        "ai": { "type": "string", "minLength": 1 },
-        "controls": { "type": "string", "minLength": 1 },
-        "mood": { "type": "string", "minLength": 1 }
+        "pitch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aspects": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "icon",
+              "title",
+              "line",
+              "detail",
+              "alternatives"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "icon": {
+                "enum": [
+                  "player",
+                  "rival",
+                  "arena",
+                  "goal",
+                  "twist",
+                  "camera",
+                  "power",
+                  "time",
+                  "crowd",
+                  "ball",
+                  "vehicle",
+                  "weapon",
+                  "build",
+                  "music",
+                  "story"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line": {
+                "type": "string",
+                "minLength": 1
+              },
+              "detail": {
+                "type": "string",
+                "minLength": 1
+              },
+              "alternatives": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 3,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "line"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "line": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "crazy": {
+                "const": true
+              }
+            }
+          }
+        },
+        "rules": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arena": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ai": {
+          "type": "string",
+          "minLength": 1
+        },
+        "controls": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mood": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "estimate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["packages", "wallMinutes", "tokens"],
+      "required": [
+        "packages",
+        "wallMinutes",
+        "tokens"
+      ],
       "properties": {
-        "packages": { "type": "integer", "minimum": 1 },
-        "wallMinutes": { "type": "number", "minimum": 0 },
-        "tokens": { "type": "integer", "minimum": 0 }
+        "packages": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wallMinutes": {
+          "type": "number",
+          "minimum": 0
+        },
+        "tokens": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     }
   }

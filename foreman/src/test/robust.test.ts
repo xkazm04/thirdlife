@@ -8,7 +8,7 @@ import { cleanup, tempDir, tempJob, foremanFor, readEvents, packFiles, Kill } fr
 import { ledgerSpawn, reapOrphans } from "../orphans.js";
 import { killTree, runProcess } from "../proc.js";
 import { rebuildState } from "../joblog.js";
-import { eventSchemas } from "../events.js";
+import { briefSchema as readerBriefSchema, estimateSchema, eventSchemas } from "../events.js";
 import { ClaudeCliBuilder } from "../builder/claude-cli.js";
 import { schemaErrors } from "../builder/json.js";
 import { PKG_ROOT } from "../paths.js";
@@ -245,7 +245,9 @@ test("claude-cli: envelopes recorded from the real CLI (2.1.322) normalize to th
   const cut = b.normalize(proc(load("edit-timeout"), { timedOut: true, exitCode: undefined }), [], "", { prompt: "p", mode: "edit", cwd: "", timeoutMs: 1000 }, 1000);
   assert.deepEqual([cut.ok, cut.outcome, cut.tokensIn, cut.text], [false, "timeout", undefined, undefined]);
 
-  const briefSchema = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, "prompts", "brief.schema.json"), "utf8")) as object;
+  // The recorded answer is a v1 brief (five fields). Since 2026-11-20 the Designer's own schema asks for a pitch and
+  // aspects too, so the envelope is normalised here against the brief as the log READS it (both optional).
+  const briefSchema = { type: "object", additionalProperties: false, required: ["brief", "estimate"], properties: { brief: readerBriefSchema, estimate: estimateSchema } };
   const designer = b.normalize(proc(load("designer")), [], "", { prompt: "p", mode: "generate", cwd: "", schema: briefSchema, timeoutMs: 1000 }, 1000);
   assert.deepEqual([designer.ok, designer.outcome, designer.tokensIn, designer.tokensOut], [true, "ok", 3893, 987]);
   assert.deepEqual(schemaErrors(briefSchema, designer.json), []);

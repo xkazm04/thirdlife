@@ -1,8 +1,10 @@
 // Designer, Planner and capture critic: generate-mode calls whose answers are validated before they are accepted.
 import fs from "node:fs";
 import path from "node:path";
-import type { Brief, Estimate, PackageSpec } from "./events.js";
+import type { Brief, Creativity, Estimate, PackageSpec, Phase } from "./events.js";
 import { planProblems } from "./events.js";
+import { aspectProblems, crazyProblems, phaseProblems, LIMITS } from "./v2.js";
+import type { ReactionView } from "./joblog.js";
 import type { Builder, RunResult } from "./builder/types.js";
 import { schemaErrors } from "./builder/json.js";
 import { globToRegExp, scopeProblems } from "./scope.js";
@@ -49,12 +51,15 @@ export interface PlanLimits {
   cards?: string[];
   /** Lane C3: card id -> the hands its `hands` block checks; a plan naming that card must register tests/bot_hand_<hand>.gd for each. */
   cardHands?: Record<string, string[]>;
+  /** JOB.md 2026-11-20: the v2 Planner writes `phases` (2 to 5); a hand-written plan and a re-plan may leave them out. */
+  requirePhases?: boolean;
 }
 
-/** The Planner's answer: the packages and, when one fits, the recipe card for the whole job. */
+/** The Planner's answer: the packages, the phases they are built in and, when one fits, the recipe card for the whole job. */
 export interface PlanAnswer {
   packages: PackageSpec[];
   card?: string;
+  phases?: Phase[];
 }
 
 export async function generate<T>(
@@ -110,14 +115,126 @@ export interface DesignerOutput {
   estimate: Estimate;
 }
 
-/** One sentence in, a validated brief and estimate out. */
-export function designBrief(builder: Builder, sentence: string, opts: GenerateOptions = {}): Promise<Generated<DesignerOutput>> {
-  return generate<DesignerOutput>(builder, "designer", prompt("designer.md"), { sentence }, schema("brief.schema.json"), () => [], opts);
+/** JOB.md 2026-11-20: what the Designer is given besides the sentence. */
+export interface DesignerInput {
+  sentence: string;
+  /** Absent = standard. */
+  creativity?: Creativity;
+  /** What the engine can build (designctx.ts designerEngineText): the feasibility guard. */
+  engine?: string;
+  /** The recipe cards with their `fun` blocks (designctx.ts designerCardsText). */
+  cards?: string;
+  /** A redesign (`foreman redesign`): the latest brief and the reactions that stand on it. */
+  previous?: { brief: Brief; reactions: Record<string, ReactionView> };
 }
 
-/** Problems of a plan beyond its JSON shape: graph errors, scopes, the composed manifest, acceptance options. */
-export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: unknown): string[] {
+const CREATIVITY_TEXT: Record<"standard" | Creativity, string> = {
+  standard:
+    "STANDARD. Serve the player's words: every aspect serves the game they asked for, and every gap is filled with the most fun choice that fits it. Surprise them with depth, not with things they did not ask for. No aspect carries `crazy`.",
+  crazy:
+    "CRAZY. Keep every word the player said: the game they asked for is all still there, done as well as in standard mode. On top of it add ONE or TWO unexpected mechanics that make the player laugh or gasp: a rule from another kind of game, a place that behaves like a character, a rival nobody expects, a power with a cost. Crazy is not the standard twist made bigger (a standard design already has a hazard or a twist): a crazy mechanic bends a rule the player takes for granted, such as what scores, who they control, what a hit does, or what the place and the audience do. Each crazy mechanic is its own aspect with `\"crazy\": true` (so the player can drop it with one tap), and the rest of the design must still stand without it. Crazy is still buildable: a surprising use of what the engine has (a spawner, a rule, a law of a surface, a camera), never a new engine feature. Mark only those one or two aspects crazy.",
+};
+
+/** The brief as text for the Planner and the builders: the five fields, then the pitch and the aspect cards. */
+export function briefText(brief: Brief): string {
+  const lines = (["rules", "arena", "ai", "controls", "mood"] as const).map((k) => `- ${k}: ${brief[k]}`);
+  if (brief.pitch !== undefined) lines.push(`- pitch: ${brief.pitch}`);
+  if (brief.aspects !== undefined && brief.aspects.length > 0) {
+    lines.push("- aspects (the design as the player saw it):");
+    for (const a of brief.aspects) lines.push(`  - ${a.id} [${a.icon}]${a.crazy === true ? " (crazy)" : ""}: ${a.title}: ${a.line}. ${a.detail}`);
+  }
+  return lines.join("\n");
+}
+
+/** The player's reactions to the aspects of a brief, one line per aspect, as the Designer (redesign) and the Planner read them. */
+export function reactionsText(brief: Brief, reactions: Record<string, ReactionView>): string {
+  const out: string[] = [];
+  for (const a of brief.aspects ?? []) {
+    const r = reactions[a.id];
+    const note = r?.note !== undefined ? `; the player's note: "${r.note}"` : "";
+    if (r === undefined) out.push(`- ${a.id} ("${a.title}"): no reaction: as designed`);
+    else if (r.choice === "keep") out.push(`- ${a.id} ("${a.title}"): KEEP${note}`);
+    else if (r.choice === "drop") out.push(`- ${a.id} ("${a.title}"): DROP: the player does not want this aspect; it is not in the game${note}`);
+    else {
+      const alt = a.alternatives.find((x) => x.id === r.choice);
+      out.push(`- ${a.id} ("${a.title}"): the player CHOSE the alternative ${r.choice} ("${alt?.title ?? "?"}": ${alt?.line ?? "?"}) instead of "${a.title}"${note}`);
+    }
+  }
+  return out.join("\n");
+}
+
+function designerVars(input: DesignerInput): Record<string, string> {
+  const redesign =
+    input.previous === undefined
+      ? ""
+      : [
+          "",
+          "# This is a REDESIGN: the player reacted to your previous brief",
+          `Your previous brief (JSON):\n${JSON.stringify(input.previous.brief, null, 1)}`,
+          "The player's reactions (the latest per aspect):",
+          reactionsText(input.previous.brief, input.previous.reactions),
+          "How to answer:",
+          "- KEEP: the aspect stays; you may sharpen its words, not change its idea.",
+          "- DROP: the aspect is gone, and it does not come back under another id or another name. Close the gap it leaves so the game still plays.",
+          "- A chosen alternative becomes the aspect: its title and line are now the main ones, with the same id; write 2 or 3 fresh alternatives for it.",
+          "- A note is the player's own words: it wins over your design where the two disagree.",
+          "- An aspect with no reaction keeps its idea; adjust it where the reactions call for it.",
+          "Then check the whole design against the fun checklist again: the rules, arena, ai, controls and mood must describe the game as it is NOW.",
+          "",
+        ].join("\n");
+  return {
+    sentence: input.sentence,
+    creativity: CREATIVITY_TEXT[input.creativity ?? "standard"],
+    engine: input.engine ?? "(the engine was not described for this call: design with bipeds, vehicles, balls, cameras, effects, sound, a HUD and simple kit parts only)",
+    cards: input.cards ?? "(no recipe cards)",
+    redesign,
+  };
+}
+
+/** Problems of a Designer answer beyond the JSON schema: word limits, unique ids, the crazy rule, dropped aspects. */
+export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creativity" | "previous">): string[] {
+  const out = [...aspectProblems(brief.pitch, brief.aspects)];
+  if (brief.pitch === undefined || brief.aspects === undefined) out.push("the brief needs a pitch and 3 to 7 aspects");
+  out.push(...crazyProblems(brief.aspects, input.creativity, input.previous === undefined));
+  if (input.previous) {
+    const dropped = Object.entries(input.previous.reactions).filter(([, r]) => r.choice === "drop").map(([id]) => id);
+    for (const id of dropped) if ((brief.aspects ?? []).some((a) => a.id === id)) out.push(`aspect "${id}" was dropped by the player and must not be in the redesign`);
+  }
+  return out;
+}
+
+/**
+ * One sentence in, a validated brief and estimate out. A string is the sentence alone (standard, no engine text).
+ * JOB.md 2026-11-20: the v2 Designer writes a pitch and 3 to 7 aspects; crazy mode adds one or two crazy aspects.
+ */
+export function designBrief(builder: Builder, input: string | DesignerInput, opts: GenerateOptions = {}): Promise<Generated<DesignerOutput>> {
+  const i: DesignerInput = typeof input === "string" ? { sentence: input } : input;
+  return generate<DesignerOutput>(builder, "designer", prompt("designer.md"), designerVars(i), schema("brief.schema.json"), (v) => designerProblems((v as DesignerOutput).brief, i), opts);
+}
+
+/** The Designer prompt exactly as the first attempt of `designBrief` sends it (dry check; no model is called). */
+export function renderDesignerPrompt(input: DesignerInput): string {
+  return render(prompt("designer.md"), { ...designerVars(input), schema: JSON.stringify(schema("brief.schema.json"), null, 1), feedback: "" });
+}
+
+/** JOB.md 2026-11-20: problems of a plan's phases, and of a missing `phases` when the Planner must write them. */
+export function planPhaseProblems(packages: PackageSpec[], phases: unknown, required: boolean): string[] {
+  if (phases === undefined) {
+    return required
+      ? [`the plan has no "phases": group the packages into ${LIMITS.phasesMin} to ${LIMITS.phasesMax} phases the player tries one after another, each {id, title, try, packages}; the first phase is the smallest thing that plays`]
+      : [];
+  }
+  const list = phases as Phase[];
+  const out = phaseProblems(list, packages);
+  const root = packages.find((p) => p.deps.length === 0);
+  if (root && list[0] && !list[0].packages.includes(root.id)) out.push(`the root package "${root.id}" must be in the first phase "${list[0].id}": the first phase is the smallest thing that plays`);
+  return out;
+}
+
+/** Problems of a plan beyond its JSON shape: graph errors, scopes, the composed manifest, acceptance options, phases. */
+export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: unknown, phases?: unknown): string[] {
   const out = [...planProblems(packages), ...planCardProblems(card, limits.cards ?? []), ...planHandProblems(packages, typeof card === "string" ? card : undefined, limits.cardHands ?? {})];
+  out.push(...planPhaseProblems(packages, phases, limits.requirePhases === true));
   if (limits.maxPackages !== undefined && packages.length > limits.maxPackages) {
     out.push(`the plan has ${packages.length} packages; the limit for this job is ${limits.maxPackages}: merge concerns until it fits`);
   }
@@ -237,6 +354,10 @@ export interface PlannerInput {
   packId: string;
   title: string;
   brief: Brief;
+  /** JOB.md 2026-11-20: the reactions that stand on the approved brief (the Planner sees both). */
+  reactions?: Record<string, ReactionView>;
+  /** JOB.md 2026-11-20: absent = standard. */
+  creativity?: Creativity;
   packContract?: string;
   /** Text of the kernel's API.md, so that contracts name primitives that exist. */
   kernelApi?: string;
@@ -258,7 +379,14 @@ function plannerVars(input: PlannerInput, limits: PlanLimits, replan: string): R
     sentence: input.sentence,
     packId: input.packId,
     title: input.title,
-    brief: Object.entries(input.brief).map(([k, v]) => `- ${k}: ${v}`).join("\n"),
+    brief: briefText(input.brief),
+    reactions:
+      (input.brief.aspects ?? []).length > 0
+        ? [
+            `The player approved this brief${input.creativity === "crazy" ? " (made in CRAZY mode: the aspects marked crazy are unexpected mechanics added on top of the player's words)" : ""} with these reactions to its aspect cards. They are the player's decisions and win over the brief's text where the two disagree: a dropped aspect is NOT built, a chosen alternative is built instead of the aspect, a note is followed.`,
+            reactionsText(input.brief, input.reactions ?? {}),
+          ].join("\n")
+        : "The brief has no aspect cards (made before the designer v2): build what the brief says.",
     packContract,
     kernelApi: input.kernelApi ?? "(not available)",
     existing: input.existing ?? "Nothing but the kernel API below: no kit, no rigs, no style layer and no seed games were found for this job.",
@@ -286,7 +414,7 @@ export function planPackages(builder: Builder, input: PlannerInput, opts: Genera
     prompt("planner.md"),
     plannerVars(input, opts, ""),
     schema("plan.schema.json"),
-    (v) => planCheck((v as PlanAnswer).packages, opts, (v as PlanAnswer).card),
+    (v) => planCheck((v as PlanAnswer).packages, { requirePhases: true, ...opts }, (v as PlanAnswer).card, (v as PlanAnswer).phases),
     opts,
   );
 }
@@ -321,6 +449,7 @@ export function replanPackages(builder: Builder, input: ReplanInput, opts: Gener
       : "No other package depends on the failed ones.",
     `Return ONLY the replacement packages${room !== undefined ? ` (at most ${room})` : ""}. Their deps may name kept packages.`,
     "The job's recipe card (if it has one) stays as it is: omit `card` in this answer.",
+    "The job's phases stay as they are: omit `phases` in this answer. The Foreman puts each replacement package into the phase being built now, or into the phase of its latest dependency when that is later.",
   ].join("\n");
   return generate<{ packages: PackageSpec[] }>(
     builder,
@@ -331,7 +460,8 @@ export function replanPackages(builder: Builder, input: ReplanInput, opts: Gener
     (v) => {
       const fresh = (v as { packages: PackageSpec[] }).packages;
       const clash = fresh.filter((p) => keptIds.has(p.id)).map((p) => `package id "${p.id}" belongs to a kept package: do not return kept packages`);
-      return [...clash, ...planCheck([...input.kept, ...fresh.filter((p) => !keptIds.has(p.id))], opts, (v as PlanAnswer).card)];
+      const phases = (v as PlanAnswer).phases !== undefined ? ["omit `phases` in a re-plan: the job's phases stay, and the Foreman places the replacement packages"] : [];
+      return [...clash, ...phases, ...planCheck([...input.kept, ...fresh.filter((p) => !keptIds.has(p.id))], { ...opts, requirePhases: false }, (v as PlanAnswer).card)];
     },
     opts,
   );
@@ -385,6 +515,14 @@ export function whoOwns(
 export interface RubricItem {
   id: string;
   text: string;
+}
+
+/**
+ * L2 of 21 Nov: the critic's `fun_promise` dimension. Given the promise of the phase being judged (its `try` line) or,
+ * without phases, the brief's pitch: do the captures show it HAPPENING? Added to the default rubric when there is one.
+ */
+export function funPromiseItem(promise: string): RubricItem {
+  return { id: "fun_promise", text: `The frames show this promise to the player happening, not only a place where it could happen: "${promise}". Judge what you see in motion (the verb being done, the rival reacting, the effect of a hit); 0 when nothing of it is visible.` };
 }
 
 /** The V5 rubric of Phase 0 (brief WP3b, Part 1 item 4). */

@@ -6,7 +6,7 @@ import path from "node:path";
 import { main, parseArgs, statusTable, UsageError } from "../cli.js";
 import { rebuildState } from "../joblog.js";
 import { killTree, runProcess } from "../proc.js";
-import { cleanup, tempDir, tempJob, readEvents, fixtureScript, fixturePlan, packFiles, FIXTURE } from "./helpers.js";
+import { cleanup, tempDir, tempJob, readEvents, fixtureScript, fixturePhases, fixturePlan, packFiles, v2Brief, FIXTURE } from "./helpers.js";
 import { PKG_ROOT } from "../paths.js";
 import type { JobEvent } from "../events.js";
 
@@ -150,11 +150,13 @@ test("cli: new -> approve -> plan -> run, with the Designer and Planner answered
   const root = tempDir("cli-new");
   const site = path.join(root, "site");
   const script = fixtureScript();
-  const brief = { rules: "first to 5", arena: "walled court", ai: "follows the ball", controls: "paddle_up, paddle_down", mood: "flat" };
+  const brief = v2Brief();
   script.steps.unshift(
     { match: { role: "designer" }, json: { brief, estimate: { packages: 3, wallMinutes: 20, tokens: 150000 } }, tokensIn: 800, tokensOut: 150 },
     { match: { role: "planner" }, json: { packages: fixturePlan() }, tokensIn: 3000, tokensOut: 1200 },
   );
+  // JOB.md 2026-11-20: the Planner writes phases; a plan without them is sent back once (the first planner step above).
+  script.steps.unshift({ match: { role: "planner", attempt: 2 }, json: { packages: fixturePlan(), phases: fixturePhases() }, tokensIn: 3000, tokensOut: 1300 });
   const scriptFile = path.join(root, "fake.json");
   fs.writeFileSync(scriptFile, JSON.stringify(script));
   const made = await run(["new", "a ball-and-paddle game in a walled court", "--site", site, "--adapter", "fake", "--fake-script", scriptFile]);
@@ -174,14 +176,18 @@ test("cli: new -> approve -> plan -> run, with the Designer and Planner answered
   const planned = await run(["plan", jobId, "--site", site, "--adapter", "fake", "--fake-script", scriptFile, "--no-reference"]);
   assert.equal(planned.code, 0, planned.text);
   evs = readEvents(jobDir);
-  assert.deepEqual(evs.slice(4).map((e) => e.type), ["brief_approved", "builder_run", "plan_set", "package_state", "package_state", "package_state"]);
+  assert.deepEqual(evs.slice(4).map((e) => e.type), ["brief_approved", "builder_run", "builder_run", "plan_set", "package_state", "package_state", "package_state"]);
 
   // A second job on the same day gets the next number.
   await run(["new", "a ball-and-paddle game in a walled court", "--site", site, "--adapter", "fake", "--fake-script", scriptFile, "--auto-approve"]);
   assert.ok(fs.existsSync(path.join(site, jobId.replace(/-1$/, "-2"))));
 
   const engine = path.join(root, "engine");
-  const built = await run(["run", jobId, "--site", site, "--adapter", "fake", "--fake-script", scriptFile, "--runner", "fake", "--engine-dir", engine, "--quiet"]);
+  // Two phases, no run-through: the job stops after each one and `phase pass` continues it (JOB.md 2026-11-20).
+  const first = await run(["run", jobId, "--site", site, "--adapter", "fake", "--fake-script", scriptFile, "--runner", "fake", "--engine-dir", engine, "--quiet"]);
+  assert.equal(first.code, 3, first.text);
+  assert.equal((await run(["phase", jobId, "pass", "--site", site, "--adapter", "fake", "--fake-script", scriptFile, "--runner", "fake", "--engine-dir", engine, "--quiet"])).code, 3);
+  const built = await run(["phase", jobId, "pass", "--site", site, "--adapter", "fake", "--fake-script", scriptFile, "--runner", "fake", "--engine-dir", engine, "--quiet"]);
   // The fake builder still writes a pack.json with another id (game.paddle_court). It no longer matters: the
   // manifest is composed by the Foreman from the job's own packId, so the job finishes and the pack carries that id.
   assert.equal(built.code, 0, built.text);

@@ -1,0 +1,232 @@
+# foreman/fixtures/job-phases replayed through every stop (2026-11-20T19:54Z); fake adapter, fake runner
+
+$ foreman status   (before the first run: the crazy brief, the reactions, three phases)
+job      paddle-court-crazy-20261121-1  "Paddle Court"  pack game.paddle_court_crazy
+state    created   events 6
+brief    approved by player   plan 4 packages (revision 1)
+design   crazy: Slap a speeding ball past Rival Rex; every tenth hit the ball turns magnetic and sticks to a wall.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, a goal behind each end  -> keep
+aspect   magnet_ball    [twist] CRAZY Magnet ball: Every tenth hit the ball sticks, then flies  -> keep ("love it, but the hum should be loud")
+phase    1/3 court_plays    first    core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          later    paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         later    fx; try: Every tenth hit the ball sticks, then flies
+card     no card (the Planner named none)
+tokens   in 0  out 0
+
+package    state   round  milestone  runs  cause  last verify  detail
+---------  ------  -----  ---------  ----  -----  -----------  ------
+core       queued  1      blockout   0
+court      queued  1      blockout   0
+paddle_ai  queued  1      greybox    0
+fx         queued  1      tuned      0
+
+==================== STOP 1: foreman run -> phase 1 done, the job waits (exit 3) ====================
+job      paddle-court-crazy-20261121-1  "Paddle Court"  pack game.paddle_court_crazy
+state    paused  (phase)   events 36
+brief    approved by player   plan 4 packages (revision 1)
+design   crazy: Slap a speeding ball past Rival Rex; every tenth hit the ball turns magnetic and sticks to a wall.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, a goal behind each end  -> keep
+aspect   magnet_ball    [twist] CRAZY Magnet ball: Every tenth hit the ball sticks, then flies  -> keep ("love it, but the hum should be loud")
+phase    1/3 court_plays    WAITING  core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          later    paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         later    fx; try: Every tenth hit the ball sticks, then flies
+waiting  phase court_plays is done: try it ("Rally the ball off the walls with your paddle"), then: foreman phase paddle-court-crazy-20261121-1 pass   or   foreman phase paddle-court-crazy-20261121-1 hold --note "<what to change>"
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 10200  out 1580
+milestone blockout: 2 capture(s) (captures/blockout-hero-f120.png, captures/blockout-hero-f480.png)
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  1      blockout   1            smoke ok r1
+paddle_ai  queued    1      greybox    0
+fx         queued    1      tuned      0
+
+==================== foreman resume on a waiting job: nothing written, still waiting (exit 3) ====================
+job      paddle-court-crazy-20261121-1  "Paddle Court"  pack game.paddle_court_crazy
+state    paused  (phase)   events 36
+brief    approved by player   plan 4 packages (revision 1)
+design   crazy: Slap a speeding ball past Rival Rex; every tenth hit the ball turns magnetic and sticks to a wall.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, a goal behind each end  -> keep
+aspect   magnet_ball    [twist] CRAZY Magnet ball: Every tenth hit the ball sticks, then flies  -> keep ("love it, but the hum should be loud")
+phase    1/3 court_plays    WAITING  core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          later    paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         later    fx; try: Every tenth hit the ball sticks, then flies
+waiting  phase court_plays is done: try it ("Rally the ball off the walls with your paddle"), then: foreman phase paddle-court-crazy-20261121-1 pass   or   foreman phase paddle-court-crazy-20261121-1 hold --note "<what to change>"
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 10200  out 1580
+milestone blockout: 2 capture(s) (captures/blockout-hero-f120.png, captures/blockout-hero-f480.png)
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  1      blockout   1            smoke ok r1
+paddle_ai  queued    1      greybox    0
+fx         queued    1      tuned      0
+phase court_plays held: The rallies are too slow: make the court smaller
+
+==================== STOP 2: foreman phase hold --note ... -> change round on court, phase 1 done again (exit 3) ====================
+job      paddle-court-crazy-20261121-1  "Paddle Court"  pack game.paddle_court_crazy
+state    paused  (phase)   events 54
+brief    approved by player   plan 4 packages (revision 1)
+design   crazy: Slap a speeding ball past Rival Rex; every tenth hit the ball turns magnetic and sticks to a wall.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, a goal behind each end  -> keep
+aspect   magnet_ball    [twist] CRAZY Magnet ball: Every tenth hit the ball sticks, then flies  -> keep ("love it, but the hum should be loud")
+phase    1/3 court_plays    WAITING  core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          later    paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         later    fx; try: Every tenth hit the ball sticks, then flies
+waiting  phase court_plays is done: try it ("Rally the ball off the walls with your paddle"), then: foreman phase paddle-court-crazy-20261121-1 pass   or   foreman phase paddle-court-crazy-20261121-1 hold --note "<what to change>"
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 13900  out 1820
+milestone blockout: 2 capture(s) (captures/blockout-hero-f120.png, captures/blockout-hero-f480.png)
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  2      blockout   2            smoke ok r2
+paddle_ai  queued    1      greybox    0
+fx         queued    1      tuned      0
+phase court_plays passed
+
+==================== STOP 3: foreman phase pass -> phase 2 built, waits (exit 3) ====================
+job      paddle-court-crazy-20261121-1  "Paddle Court"  pack game.paddle_court_crazy
+state    paused  (phase)   events 77
+brief    approved by player   plan 4 packages (revision 1)
+design   crazy: Slap a speeding ball past Rival Rex; every tenth hit the ball turns magnetic and sticks to a wall.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, a goal behind each end  -> keep
+aspect   magnet_ball    [twist] CRAZY Magnet ball: Every tenth hit the ball sticks, then flies  -> keep ("love it, but the hum should be loud")
+phase    1/3 court_plays    passed   core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          WAITING  paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         later    fx; try: Every tenth hit the ball sticks, then flies
+waiting  phase rival is done: try it ("Beat Rival Rex, who lunges at every ball"), then: foreman phase paddle-court-crazy-20261121-1 pass   or   foreman phase paddle-court-crazy-20261121-1 hold --note "<what to change>"
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 24100  out 2900
+milestone blockout: 2 capture(s) (captures/blockout-hero-f120.png, captures/blockout-hero-f480.png)
+milestone greybox: 2 capture(s) (captures/greybox-hero-f150.png, captures/greybox-hero-f450.png)
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  2      blockout   2            smoke ok r2
+paddle_ai  promoted  2      greybox    2            bot ok r2
+fx         queued    1      tuned      0
+phase rival passed
+
+==================== STOP 4: foreman phase pass -> phase 3 (the crazy aspect) built, waits (exit 3) ====================
+job      paddle-court-crazy-20261121-1  "Paddle Court"  pack game.paddle_court_crazy
+state    paused  (phase)   events 95
+brief    approved by player   plan 4 packages (revision 1)
+design   crazy: Slap a speeding ball past Rival Rex; every tenth hit the ball turns magnetic and sticks to a wall.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, a goal behind each end  -> keep
+aspect   magnet_ball    [twist] CRAZY Magnet ball: Every tenth hit the ball sticks, then flies  -> keep ("love it, but the hum should be loud")
+phase    1/3 court_plays    passed   core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          passed   paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         WAITING  fx; try: Every tenth hit the ball sticks, then flies
+waiting  phase magnet is done: try it ("Every tenth hit the ball sticks, then flies"), then: foreman phase paddle-court-crazy-20261121-1 pass   or   foreman phase paddle-court-crazy-20261121-1 hold --note "<what to change>"
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 28500  out 3380
+milestone blockout: 2 capture(s) (captures/blockout-hero-f120.png, captures/blockout-hero-f480.png)
+milestone greybox: 2 capture(s) (captures/greybox-hero-f150.png, captures/greybox-hero-f450.png)
+milestone tuned: 2 capture(s) (captures/tuned-hero-f150.png, captures/tuned-hero-f450.png)
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  2      blockout   2            smoke ok r2
+paddle_ai  promoted  2      greybox    2            bot ok r2
+fx         promoted  1      tuned      1            bot ok r1
+phase magnet passed
+
+==================== STOP 5: foreman phase pass (last) -> final verification and promotion (exit 0) ====================
+job      paddle-court-crazy-20261121-1  "Paddle Court"  pack game.paddle_court_crazy
+state    done  (pack verified V0 to V4 and promoted under the job directory (promoted/game.paddle_court_crazy))   events 103
+brief    approved by player   plan 4 packages (revision 1)
+design   crazy: Slap a speeding ball past Rival Rex; every tenth hit the ball turns magnetic and sticks to a wall.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, a goal behind each end  -> keep
+aspect   magnet_ball    [twist] CRAZY Magnet ball: Every tenth hit the ball sticks, then flies  -> keep ("love it, but the hum should be loud")
+phase    1/3 court_plays    passed   core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          passed   paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         passed   fx; try: Every tenth hit the ball sticks, then flies
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 28500  out 3380
+promoted game.paddle_court_crazy 0.1.0 -> promoted/game.paddle_court_crazy
+milestone blockout: 2 capture(s) (captures/blockout-hero-f120.png, captures/blockout-hero-f480.png)
+milestone greybox: 2 capture(s) (captures/greybox-hero-f150.png, captures/greybox-hero-f450.png)
+milestone tuned: 2 capture(s) (captures/tuned-hero-f150.png, captures/tuned-hero-f450.png)
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  2      blockout   2            smoke ok r2
+paddle_ai  promoted  2      greybox    2            bot ok r2
+fx         promoted  1      tuned      1            bot ok r1
+
+==================== the phase events of the log ====================
+{"v":1,"seq":35,"ts":"2026-11-20T19:54:46.028Z","job":"paddle-court-crazy-20261121-1","type":"phase_done","phase":"court_plays"}
+{"v":1,"seq":36,"ts":"2026-11-20T19:54:46.031Z","job":"paddle-court-crazy-20261121-1","type":"job_state","state":"paused","reason":"phase"}
+{"v":1,"seq":37,"ts":"2026-11-20T19:54:48.598Z","job":"paddle-court-crazy-20261121-1","type":"phase_reviewed","phase":"court_plays","verdict":"hold","note":"The rallies are too slow: make the court smaller","by":"player"}
+{"v":1,"seq":40,"ts":"2026-11-20T19:54:48.628Z","job":"paddle-court-crazy-20261121-1","type":"reopened","package":"court","reason":"phase hold (event 37) on phase court_plays; the Planner names the package among the phase's core, court: the court's size decide
+{"v":1,"seq":53,"ts":"2026-11-20T19:54:50.439Z","job":"paddle-court-crazy-20261121-1","type":"phase_done","phase":"court_plays"}
+{"v":1,"seq":54,"ts":"2026-11-20T19:54:50.442Z","job":"paddle-court-crazy-20261121-1","type":"job_state","state":"paused","reason":"phase"}
+{"v":1,"seq":55,"ts":"2026-11-20T19:54:51.287Z","job":"paddle-court-crazy-20261121-1","type":"phase_reviewed","phase":"court_plays","verdict":"pass","by":"player"}
+{"v":1,"seq":76,"ts":"2026-11-20T19:54:54.572Z","job":"paddle-court-crazy-20261121-1","type":"phase_done","phase":"rival"}
+{"v":1,"seq":77,"ts":"2026-11-20T19:54:54.574Z","job":"paddle-court-crazy-20261121-1","type":"job_state","state":"paused","reason":"phase"}
+{"v":1,"seq":78,"ts":"2026-11-20T19:54:55.251Z","job":"paddle-court-crazy-20261121-1","type":"phase_reviewed","phase":"rival","verdict":"pass","by":"player"}
+{"v":1,"seq":94,"ts":"2026-11-20T19:54:57.208Z","job":"paddle-court-crazy-20261121-1","type":"phase_done","phase":"magnet"}
+{"v":1,"seq":95,"ts":"2026-11-20T19:54:57.211Z","job":"paddle-court-crazy-20261121-1","type":"job_state","state":"paused","reason":"phase"}
+{"v":1,"seq":96,"ts":"2026-11-20T19:54:58.686Z","job":"paddle-court-crazy-20261121-1","type":"phase_reviewed","phase":"magnet","verdict":"pass","by":"player"}
+
+==================== the same job with run_through: true ====================
+
+==================== run-through: one run, no stop (exit 0) ====================
+job      paddle-court-crazy-20261121-1  "Paddle Court"  pack game.paddle_court_crazy
+state    done  (pack verified V0 to V4 and promoted under the job directory (promoted/game.paddle_court_crazy))   events 79
+brief    approved by player   plan 4 packages (revision 1)
+design   crazy, run-through: Slap a speeding ball past Rival Rex; every tenth hit the ball turns magnetic and sticks to a wall.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, a goal behind each end  -> keep
+aspect   magnet_ball    [twist] CRAZY Magnet ball: Every tenth hit the ball sticks, then flies  -> keep ("love it, but the hum should be loud")
+phase    1/3 court_plays    passed   core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          passed   paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         passed   fx; try: Every tenth hit the ball sticks, then flies
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 24800  out 3140
+promoted game.paddle_court_crazy 0.1.0 -> promoted/game.paddle_court_crazy
+milestone blockout: 2 capture(s) (captures/blockout-hero-f120.png, captures/blockout-hero-f480.png)
+milestone greybox: 2 capture(s) (captures/greybox-hero-f150.png, captures/greybox-hero-f450.png)
+milestone tuned: 2 capture(s) (captures/tuned-hero-f150.png, captures/tuned-hero-f450.png)
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  1      blockout   1            smoke ok r1
+paddle_ai  promoted  2      greybox    2            bot ok r2
+fx         promoted  1      tuned      1            bot ok r1
+{"v":1,"seq":35,"ts":"2026-11-20T19:55:07.699Z","job":"paddle-court-crazy-20261121-1","type":"phase_done","phase":"court_plays"}
+{"v":1,"seq":36,"ts":"2026-11-20T19:55:07.702Z","job":"paddle-court-crazy-20261121-1","type":"phase_reviewed","phase":"court_plays","verdict":"pass","by":"auto"}
+{"v":1,"seq":56,"ts":"2026-11-20T19:55:11.662Z","job":"paddle-court-crazy-20261121-1","type":"phase_done","phase":"rival"}
+{"v":1,"seq":57,"ts":"2026-11-20T19:55:11.664Z","job":"paddle-court-crazy-20261121-1","type":"phase_reviewed","phase":"rival","verdict":"pass","by":"auto"}
+{"v":1,"seq":72,"ts":"2026-11-20T19:55:16.648Z","job":"paddle-court-crazy-20261121-1","type":"phase_done","phase":"magnet"}
+{"v":1,"seq":73,"ts":"2026-11-20T19:55:16.651Z","job":"paddle-court-crazy-20261121-1","type":"phase_reviewed","phase":"magnet","verdict":"pass","by":"auto"}

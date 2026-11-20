@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// foreman: probe | new | approve | plan | prompts | run | resume | change | follow | status | explain | verify | answer | comment | cancel | init-fixture
+// foreman: probe | new | react | redesign | approve | plan | prompts | run | resume | phase | change | follow | status | explain | verify | answer | comment | cancel | init-fixture
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -13,7 +13,9 @@ import { ClaudeCliBuilder } from "./builder/claude-cli.js";
 import { MessagesApiBuilder } from "./builder/messages-api.js";
 import { Verifier, resolveRunner } from "./verifier.js";
 import { Foreman, ForemanError, restsOnAClock } from "./foreman.js";
-import { designBrief, planCheck, planPackages, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
+import { designBrief, planCheck, planPackages, renderDesignerPrompt, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
+import { NEW_HELP, PHASE_HELP, creativityFlag, designCommand, designerInput, nextAfterBrief } from "./cli_design.js";
+import { writeGenerateCalls as writeCalls } from "./transcript.js";
 import { cardLimits, cardsPlannerText } from "./cards.js";
 import { cardLines, cardView } from "./handview.js";
 import { KernelApiError } from "./manifest.js";
@@ -39,13 +41,14 @@ const HELP = `foreman <command>
   place --in ASK.json --out ANSWER.json [--adapter A] [--fake-script FILE] [--model M] [--timeout-ms N]
   new "<sentence>" [--answers JSON] [--lot JSON] [--site DIR] [--adapter A] [--auto-approve] [--model M]
         creates site/<job_id>/ and asks the Designer for a brief
-  approve <job>                      the player approves the brief
+${NEW_HELP}
+  approve <job>                      the player approves the latest brief and the reactions that stand on it
   plan <job> [--from plan.json] [--adapter A] [--model M] [--max-packages N] [--builder-timeout-ms N]
         asks the Planner for packages, or takes a hand-written plan; a plan over the limit is sent back once.
         --builder-timeout-ms is the time limit of one builder run that the Planner sizes packages for (give the
         same number as run's --timeout-ms; default 1800000). Prepares <job>/ref/ from the engine directory.
-  prompts <job> [--max-packages N] [--timeout-ms N] [--round-limit N] [--package ID] [--planner-only|--builder-only]
-        dry check: prints the assembled Planner prompt and every package's builder prompt; calls no model
+  prompts <job> [--max-packages N] [--timeout-ms N] [--round-limit N] [--package ID] [--planner-only|--builder-only|--designer]
+        dry check: the Planner prompt and every package's builder prompt (--designer: what a redesign sends); no model
   run <job> [--adapter fake|claude-cli] [--parallel N] [--runner fake] [--fake-script FILE] [--allow-edit]
             [--budget tokens_per_hour:N|only_while_playing|overnight:HH:MM-HH:MM] [--round-limit N]
             [--timeout-ms N] [--model M] [--no-promote] [--retry-failed] [--force-subscription] [--quiet]
@@ -75,6 +78,7 @@ const HELP = `foreman <command>
                               the job ends done on the earlier promotion
             [--inbox-poll-ms N]  how often <job>/inbox.jsonl is read while builders run (default 1000)
   resume <job> [same options as run]  continues from job.jsonl; promoted packages are never rebuilt
+${PHASE_HELP}
   change <job> "<text>" [--decision JSON] [--package ID] [--no-run] [same options as run]
         a change request on a job with at least one merged package, also a finished (done) one. With --package that
         package is re-opened; without it the Planner is asked which package owns the problem (one short call). The
@@ -100,7 +104,8 @@ const HELP = `foreman <command>
         logs it and starts the asking package again while its other packages keep building (no resume needed).
   comment <job> <milestone> "<text>" the player's comment on a milestone the job has reached (a comment event)
   cancel <job> [--reason TEXT]       marks every unfinished package failed (cause cancelled) and the job cancelled
-  init-fixture <dest dir>            copies the three-package fixture job to a fresh directory
+  init-fixture <dest dir> [--phases] copies the three-package fixture job to a fresh directory (--phases: the crazy
+                                     four-package job in three phases that stops for foreman phase after each)
 
 <job> is a job directory or a job id under --site (default: <repo>/site).
 The runner's verbs and options are read from <engine>/kernel/runner/verbs.json (tl.verbs/1); plan, run, resume,
@@ -209,6 +214,11 @@ function plannerContext(a: Args, jobDir: string): { kernelApi?: string; existing
   return { ...(fs.existsSync(api) ? { kernelApi: fs.readFileSync(api, "utf8") } : {}), existing: existingText(refDir), cards: cardsPlannerText(refDir), ...(t !== undefined ? { builderTimeoutMs: t } : {}) };
 }
 
+/** The engine a Designer call reads (new, redesign, prompts --designer): --engine-dir, the job's config, TL_ENGINE_DIR, the default. */
+function designerEngineDir(a: Args, jobDir?: string): string {
+  return jobDir !== undefined ? engineDirFor(a, jobDir) : resolveRunner(process.env, str(a, "engine-dir") ? { engineDir: str(a, "engine-dir") as string } : {}).engineDir;
+}
+
 function printProbe(p: ProbeResult, out: (s: string) => void): void {
   out(`adapter     ${p.adapter}`);
   out(`available   ${p.ok ? "yes" : "no"}`);
@@ -235,40 +245,7 @@ function slugify(sentence: string): string {
 }
 
 function writeGenerateCalls(log: JobLog, builder: Builder, calls: GenerateCall[], model: string | undefined): void {
-  for (const c of calls) {
-    const file = path.join(log.jobDir, "reports", `${c.role}-a${c.attempt}-s${log.state.lastSeq + 1}.json`);
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(
-      file,
-      JSON.stringify(
-        {
-          schema: "tl.foreman.transcript/1",
-          adapter: builder.name,
-          role: c.role,
-          attempt: c.attempt,
-          mode: "generate",
-          prompt: c.prompt,
-          problems: c.problems,
-          result: { ok: c.result.ok, outcome: c.result.outcome, text: c.result.text, json: c.result.json, error: c.result.error, tokensIn: c.result.tokensIn, tokensOut: c.result.tokensOut, durationMs: c.result.durationMs, observed: c.result.observed },
-          raw: c.result.raw,
-        },
-        null,
-        1,
-      ) + "\n",
-    );
-    log.append({
-      type: "builder_run",
-      adapter: builder.name,
-      mode: "generate",
-      model: c.result.model ?? model ?? "default",
-      outcome: c.result.outcome,
-      durationMs: Math.max(0, Math.round(c.result.durationMs)),
-      ...(c.result.tokensIn !== undefined ? { tokensIn: c.result.tokensIn } : {}),
-      ...(c.result.tokensOut !== undefined ? { tokensOut: c.result.tokensOut } : {}),
-      ...(c.result.tokensCacheRead !== undefined ? { tokensCacheRead: c.result.tokensCacheRead } : {}),
-      transcript: toPosix(path.relative(log.jobDir, file)),
-    });
-  }
+  writeCalls({ jobDir: log.jobDir, adapter: builder.name, lastSeq: () => log.state.lastSeq, append: (b) => log.append(b) }, calls, model);
 }
 
 async function ensureBilling(log: JobLog, builder: Builder): Promise<ProbeResult> {
@@ -284,10 +261,10 @@ async function ensureBilling(log: JobLog, builder: Builder): Promise<ProbeResult
  * Copies the three-package fixture job in its pristine form: the log up to plan_set, the fake builder's script and
  * the job config. Whatever a run left behind in fixtures/job-paddle (if someone ran it in place) is not copied.
  */
-export function copyFixture(dest: string): void {
-  const src = path.join(PKG_ROOT, "fixtures", "job-paddle");
+export function copyFixture(dest: string, phases = false): void {
+  const src = path.join(PKG_ROOT, "fixtures", phases ? "job-phases" : "job-paddle"); // job-phases: JOB.md 2026-11-20, a crazy brief in three phases
   fs.mkdirSync(dest, { recursive: true });
-  const head = fs.readFileSync(path.join(src, "job.jsonl"), "utf8").split("\n").filter((l) => l.length > 0).slice(0, 4);
+  const head = fs.readFileSync(path.join(src, "job.jsonl"), "utf8").split("\n").filter((l) => l.length > 0).slice(0, phases ? 6 : 4);
   fs.writeFileSync(path.join(dest, "job.jsonl"), head.map((l) => l + "\n").join(""));
   for (const f of ["fake-builder.json", JOB_CONFIG_FILE]) fs.copyFileSync(path.join(src, f), path.join(dest, f));
 }
@@ -476,6 +453,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       const answers = editorFlag(a, "answers");
       const lot = editorFlag(a, "lot");
       const placeCalls = placeCallsFlag(a);
+      const creativity = creativityFlag(a);
       const slug = slugify(sentence);
       const d = new Date();
       const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
@@ -494,7 +472,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         const head = ((whole.includes(":") ? (whole.split(":")[0] as string) : whole).split(/\.\s/)[0] as string).trim().replace(/\.$/, "");
         const title = (head.length <= 80 ? head : head.slice(0, 80).replace(/\s+\S*$/, "")) || whole.slice(0, 80);
         log.append({ type: "job_created", sentence: sentence.trim(), packId: `game.${slug.replace(/-/g, "_")}`, title,
-          ...(answers && { answers }), ...(lot && { lot }) });
+          ...(answers && { answers }), ...(lot && { lot }), ...(creativity && { creativity }), ...(a.flags["run-through"] === true && { run_through: true as const }) });
         out(`job ${jobId} created in ${toPosix(jobDir)}`);
         const probe = await ensureBilling(log, builder);
         out(`billing: ${probe.billing.mode} (${probe.billing.evidence})`);
@@ -512,7 +490,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         if (placeCalls) out(`place calls logged: ${placeCalls.length}`);
         const model = str(a, "model");
         const t = num(a, "timeout-ms");
-        const res = await designBrief(builder, sentence.trim(), { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
+        const res = await designBrief(builder, designerInput(designerEngineDir(a), sentence.trim(), creativity), { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
         writeGenerateCalls(log, builder, res.calls, model);
         if (!res.ok) {
           log.append({ type: "job_state", state: "failed", reason: res.reason.slice(0, 400) });
@@ -524,7 +502,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         if (a.flags["auto-approve"] === true) {
           log.append({ type: "brief_approved", by: "auto" });
           out("brief approved (auto)");
-        } else out(`brief set; approve it with: foreman approve ${jobId}`);
+        } else out(`brief set; ${nextAfterBrief(jobId)}`);
         return 0;
       } finally {
         log.close();
@@ -538,13 +516,18 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         if (log.state.briefApprovedBy) out(`already approved by ${log.state.briefApprovedBy}`);
         else {
           log.append({ type: "brief_approved", by: "player" });
-          out("brief approved by player");
+          out(`brief approved by player${Object.keys(log.state.reactions).length > 0 ? ` with ${Object.keys(log.state.reactions).length} reaction(s) to its aspects; the Planner sees them` : ""}`);
         }
         return 0;
       } finally {
         log.close();
       }
     }
+
+    case "react":
+    case "redesign":
+    case "phase":
+      return designCommand(a, out, { jobDirOf, makeBuilder: (x, j) => makeBuilder(x, j), ensureBilling, writeGenerateCalls, engineDir: designerEngineDir, runJob });
 
     case "plan": {
       const jobDir = jobDirOf(a);
@@ -564,7 +547,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         if (from !== undefined) {
           const doc = JSON.parse(fs.readFileSync(path.resolve(from), "utf8")) as PlanAnswer;
           const errs = schemaErrors(JSON.parse(fs.readFileSync(path.join(PKG_ROOT, "prompts", "plan.schema.json"), "utf8")) as object, doc);
-          if (errs.length === 0) errs.push(...planCheck(doc.packages, known, doc.card));
+          if (errs.length === 0) errs.push(...planCheck(doc.packages, known, doc.card, doc.phases));
           if (errs.length > 0) {
             out(`plan rejected:\n${errs.map((e) => `  - ${e}`).join("\n")}`);
             return 1;
@@ -578,7 +561,8 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
             return 1;
           }
           const model = str(a, "model");
-          const res = await planPackages(builder, { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, ...ctx }, { ...(model ? { model } : {}), ...known });
+          const input = { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, reactions: s.reactions, ...(s.creativity && { creativity: s.creativity }), ...ctx };
+          const res = await planPackages(builder, input, { ...(model ? { model } : {}), ...known });
           writeGenerateCalls(log, builder, res.calls, model);
           if (!res.ok) {
             out(`Planner failed: ${res.reason}`);
@@ -586,7 +570,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
           }
           answer = res.value;
         }
-        const { packages, card } = answer;
+        const { packages, card, phases } = answer;
         if (log.state.plan.length > 0) {
           const old = new Set(log.state.order);
           const next = new Set(packages.map((p) => p.id));
@@ -598,9 +582,10 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
             changed: [...next].filter((x) => old.has(x) && JSON.stringify(log.state.plan.find((p) => p.id === x)) !== JSON.stringify(packages.find((p) => p.id === x))),
           });
         }
-        log.append({ type: "plan_set", packages, ...(card !== undefined ? { card } : {}) });
+        log.append({ type: "plan_set", packages, ...(card !== undefined ? { card } : {}), ...(phases !== undefined ? { phases } : {}) });
         for (const p of packages) if (!log.state.packages[p.id]?.announced) log.append({ type: "package_state", package: p.id, state: "queued", round: 1 });
         out(`plan set${card !== undefined ? ` (card ${card})` : ""}: ${packages.map((p) => `${p.id}${p.deps.length ? `<-${p.deps.join("+")}` : ""}`).join(", ")}`);
+        for (const [i, ph] of (phases ?? []).entries()) out(`  phase ${i + 1} ${ph.id}: ${ph.packages.join(", ")}; try: ${ph.try}`);
         return 0;
       } finally {
         log.close();
@@ -616,11 +601,16 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       const timeoutMs = num(a, "timeout-ms") ?? num(a, "builder-timeout-ms");
       const ctx = plannerContext(a, jobDir);
       const bar = (title: string): string => `\n==================== ${title} ====================\n`;
+      if (a.flags["designer"] === true) {
+        out(bar(`DESIGNER PROMPT (job ${s.job}, as a redesign would send it now)`));
+        out(renderDesignerPrompt(designerInput(designerEngineDir(a, jobDir), s.sentence, s.creativity, { brief: s.brief, reactions: s.reactions })));
+        return 0;
+      }
       if (a.flags["builder-only"] !== true) {
         out(bar(`PLANNER PROMPT (job ${s.job}, engine ${toPosix(engineDirFor(a, jobDir))})`));
         out(
           renderPlannerPrompt(
-            { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, ...ctx, ...(timeoutMs !== undefined ? { builderTimeoutMs: timeoutMs } : {}) },
+            { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, reactions: s.reactions, ...(s.creativity && { creativity: s.creativity }), ...ctx, ...(timeoutMs !== undefined ? { builderTimeoutMs: timeoutMs } : {}) },
             { ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}), verbs: verbsOf(a, jobDir) },
           ),
         );
@@ -807,7 +797,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       if (!dest) throw new UsageError("usage: foreman init-fixture <dest dir>");
       const abs = path.resolve(dest);
       if (fs.existsSync(abs) && fs.readdirSync(abs).length > 0) throw new UsageError(`${abs} exists and is not empty`);
-      copyFixture(abs);
+      copyFixture(abs, a.flags["phases"] === true);
       out(`fixture job copied to ${toPosix(abs)}`);
       out(`next: node dist/cli.js run ${toPosix(abs)} --adapter fake`);
       out(`(its ${JOB_CONFIG_FILE} selects the fake runner; the finished pack is promoted to ${toPosix(path.join(abs, "promoted"))}/<pack id>/)`);

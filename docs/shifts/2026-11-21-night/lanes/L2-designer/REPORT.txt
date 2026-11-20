@@ -1,0 +1,139 @@
+L2 designer-foreman: REPORT (night of 21 Nov 2026), written 20 Nov ~21:00 when the lane became landable
+Worktree .claude/worktrees/n21-designer, branch n21-designer, base main 3a4580b. No git that writes; the Director lands.
+
+WHAT THE DESIGNER NOW SAYS THAT IT DID NOT BEFORE (prompt diffs, for the owner)
+- Before (26 lines): "Write the brief ... Be concrete and small: a mini-game that can be built and verified by a bot,
+  not a wish list. Do not invent features the sentence does not ask for." Output: rules/arena/ai/controls/mood.
+- Now (foreman/prompts/designer.md):
+  * The goal is "the most fun game the sentence can become, built in phases". "A small, correct game that nobody plays
+    twice is a failure." Fill every gap with the most fun choice; never hand a decision back as a question.
+  * Wow: "the player should read your pitch and think 'I did not say that, but yes, exactly that'". Deeper means more
+    character and more play, not more systems.
+  * The fun checklist it works through, each made concrete with numbers: the verb; a camera that serves the verb
+    (named TL calls, figure at 0.2-0.3 of the frame, never a far top-down view); juice on the verbs that matter
+    (shake, burst, sound, 3-6 frames of hit-stop the pack holds itself; a miss gets less); rivals with a name, a habit,
+    reactions, difficulty = speed/reaction/aggression; a first minute that teaches by playing; stakes for the next
+    round; an intensity curve; one twist.
+  * Aspect cards for a 10-year-old and an expert: pitch (<=20 words), 3-7 aspects chosen for THIS game, each with an
+    icon, title/line in words a child feels, a 60-word expert detail naming the engine call, and 2-3 alternatives that
+    are other games, not tweaks. Word limits are hard and counted, with targets well under them (iteration 1).
+  * A compact worked example ("a race with ducks": shallow vs deep).
+  * Creativity: STANDARD serves the player's words; CRAZY keeps every word and adds 1-2 unexpected mechanics on top,
+    each its own aspect with crazy:true, removable in one tap, still buildable; "not the standard twist made bigger:
+    a crazy mechanic bends a rule the player takes for granted" (iteration 2).
+  * Feasibility guard: the prompt carries engine/kernel/API.md sections 0 (start here), 12 (cameras), 13 (HUD, VFX,
+    audio, steering) and 17 (what the kernel does not do), the list of all API sections, the 36 kit parts, and every
+    card's summary plus its new `fun` lines. "Map a wish the engine lacks onto what it has"; TLHand is not game AI.
+  * Redesign: the previous brief and every reaction (KEEP / DROP / CHOSE alternative / the player's note) with rules
+    for each; a dropped aspect may not come back (checked, not only asked).
+- Planner (planner.md): sees the pitch, the aspect cards and the player's reactions ("they win over the brief");
+  "the game must be fun, not only correct" (each fun ingredient lands in the contract of the package that owns it);
+  the camera serves the verb from the first package; 2-5 phases the player tries, the first the smallest thing that
+  plays, each with a try line (<=12 words).
+- Critic (critic.md): "You judge legibility and consistency, not fun" is gone; a `fun_promise` rubric item joins the
+  default four whenever there is a promise: the try line of the phase the milestone's last package is in, else the
+  pitch ("the frames show this promise happening, not only a place where it could").
+
+ACCEPTANCE
+1. tl check --tier fast green; foreman typecheck and tests green, count >= base + a test per new event and command.
+   MET for everything L2 touches; one gate step is red for a reason that is not L2's:
+     PASS  arch               [12/12] 12 rules
+     PASS  assets             [4/4] 4 checks passed
+     PASS  cards              [3/3] 4 cards, schema ok
+     FAIL  devx.test          [229/229] 228 pass, 1 fail: "scan twice gives identical rows, and they match the committed
+                              manifest" (devx/test/assets.test.mjs:249)
+     PASS  foreman.typecheck  tsc --noEmit clean
+   The devx.test failure is PRE-EXISTING at base: a control run on an untouched `git archive` of 3a4580b in a temp
+   directory fails the same test with the same hashes (kit.arch_rib scans c4d920d..., the committed manifest says
+   8e63f81...; all 36 kit parts differ). L2 changed no file under engine/kits, engine/style, engine/kernel or assets.
+   The manifest re-scan of 5144deb does not reproduce on this machine from a clean tree: worth a look on main.
+   Foreman tests: 245 tests, 239 pass, 6 skipped, 0 fail (base: 223 tests, 217 pass, 6 skipped). +22 tests:
+   one per new event (job_created creativity/run_through, brief_set pitch/aspects, aspect_reacted, plan_set.phases,
+   phase_done, phase_reviewed) and per command (new --creativity/--run-through, react, redesign, phase), plus the
+   Designer and Planner checks, replan phases, the critic rubric, the cards' fun check, and the phase replays.
+2. The fixture job goes through 3 phases (pause, hold+note change round, pass, run-through), shown by foreman status
+   at each stop. MET: lanes/L2-designer/phases-fixture-status.txt (replayed by .tl/replay-phases.sh in the worktree):
+   STOP 1 run -> phase_done court_plays, job_state paused "phase", status "WAITING" + the two commands; resume
+   writes nothing; STOP 2 phase hold --note -> the Planner names court among core/court, reopened "phase hold (event
+   37) on phase court_plays", court round 2 builds the note (pack/data/court.json 16 m -> 12 m), phase_done again,
+   paused; STOP 3/4 pass -> phase 2, phase 3 (the crazy aspect's package); STOP 5 last pass -> final verification,
+   promoted, done. Run-through: one run, three phase_done each followed by phase_reviewed pass by auto, no pause.
+   Same flows asserted in src/test/phases.test.ts (plus: a failing phase fails the job naming the phase).
+3. Two real Designer briefs, standard and crazy, in the lane folder with my checklist judgement. MET:
+   brief-colosseum-standard.json, brief-colosseum-crazy.json, briefs-judgement.md. Crazy has exactly 1 crazy aspect
+   (runaway_chariot); every aspect within its limits (longest title/line/detail 3/9/50 words; pitches 16 and 17).
+   Cost: standard 2 attempts (first sent back for 7 word-limit overruns) 66k in / 22.7k out, 216 s; crazy 1 attempt
+   19.3k in / 11.2k out, 113 s; Opus via claude-cli, subscription. Both meet all eight checklist items; one misuse
+   found (crazy: "difficulty read through TLHand"), fixed in prompt iteration 2. Iteration 2 is UNMEASURED (the
+   brief allows two calls; the Director's crazy proof job is its first real run).
+4. Every card has a fun block; tl cards check green. MET: knock_down, team_possession, timed_drive, two_sides_ball,
+   each `fun {camera, juice, rivals, first_minute, stakes}` drawn from what its example does (seed_wall's shake on a
+   break, seed_drive's chase camera and nitro kick, seed_paddle's goal jolt, hockey's horn/flash/confetti) and what
+   it should do (the hockey gap list: chase camera, a check that shakes and downs, a weak first goalie). Versions
+   raised one minor each (0.3.0). tl cards check: shape (every key, non-empty lists, strings, no duplicates) and
+   tree (a TLClass.member named in a fun string must be declared by the class; the example need not use it).
+5. Prompt diffs summarised for the owner: above.
+
+CHANGED FILES (all inside L2's column; nothing staged)
+- foreman/prompts: designer.md (rewrite), brief.schema.json (pitch + aspects required for the Designer),
+  planner.md (+reactions, +fun, +phases), plan.schema.json (+phases), critic.md (first lines).
+- foreman/src new: v2.ts (shapes, limits, word counts, phase partition), design_state.ts (the reducer of the new
+  events, PhaseView/ReactionView, current/waiting phase), designctx.ts (what the Designer reads of the engine),
+  phases.ts (scheduler: inReach, phaseStep, applyHolds, replanPhases, phaseLine, stuckText, criticRubric),
+  cli_design.ts (react, redesign, phase, --creativity), transcript.ts (the generate-call transcript writer, which
+  foreman.ts and cli.ts had as two identical copies: moved to one so both files stay under their size ratchets).
+- foreman/src changed: events.ts (types, schemas, validation), joblog.ts (state fields, calls design_state),
+  designer.ts (DesignerInput, briefText, reactionsText, designerProblems, planPhaseProblems, funPromiseItem),
+  foreman.ts (+11 lines net -25 after the transcript move: 1980 <= 2005 baseline), cli.ts (831 <= 861), cli_args.ts
+  (flags), status.ts (design lines, phase strip, waiting line), explain.ts (next step), rounds.ts (a hold is a
+  change round), p10gate.ts (GateHost.logGenerateCalls).
+- foreman/data/job-events.schema.json regenerated; foreman/scripts/write-event-schema.mjs note.
+- foreman/fixtures: make-phases-fixture.mjs + job-phases/ (crazy brief, reactions, 3 phases; fake adapter/runner);
+  `foreman init-fixture <dir> --phases` copies it.
+- tests: designer_v2.test.ts, phases.test.ts new; helpers.ts (v2Brief, fixturePhases); cli/designer/cards/
+  editor_flags/place_calls/joblog/robust tests updated (see behaviour changes).
+- engine/cards/*.json: fun blocks, versions 0.3.0. devx/lib/cards/check.mjs: the fun block only.
+- docs/shifts/2026-11-21-night/lanes/L2-designer/: STANDUP.md, PATCHES.md, REPORT.txt, briefs-judgement.md,
+  brief-colosseum-standard.json, brief-colosseum-crazy.json, phases-fixture-status.txt.
+
+BEHAVIOUR CHANGES THAT MOVED TEST EXPECTATIONS (named, with why)
+- The Designer must write a pitch and 3-7 aspects: tests whose fake Designer answered a v1 brief now answer v2Brief()
+  (cli, designer, editor_flags, place_calls). A v1 brief still READS (old logs are fine).
+- The Planner must write phases: fake Planner answers carry fixturePhases(); the cli new->plan->run test now sees the
+  first answer sent back once (one more builder_run) and the run stops after each of the two phases (exit 3 twice,
+  then `phase pass` -> 0).
+- joblog.test's list of event types gains aspect_reacted, phase_done, phase_reviewed (JOB.md 2026-11-20).
+- robust.test's recorded real designer envelope (a v1 brief, 2.1.322) is normalised against the reader's brief schema
+  instead of the Designer's prompt schema (which now requires pitch and aspects).
+- `foreman resume` on a job waiting for a phase verdict writes nothing and exits 3. `foreman phase` runs the job on
+  after the verdict (like `change`), `--no-run` only records it.
+
+THE OWNER SHOULD LOOK AT
+- The two colosseum briefs (lane folder) side by side: is this the "wow" he meant, and is crazy crazy enough?
+- `foreman init-fixture <dir> --phases`, then `foreman run <dir> --adapter fake`, `foreman status <dir>`,
+  `foreman phase <dir> hold --note "..."` / `pass`: the phase stops as a player meets them (the UI is L3's).
+
+QUESTIONS FOR THE DIRECTOR (contract text unchanged)
+1. Three narrowings where JOB.md 2026-11-20 is silent: alternative ids and phase ids are snake_case (the contract
+   says so only for aspect ids); an alternative id may not be "keep" or "drop" (needed for `choice` to be
+   unambiguous); notes are non-empty when present. Write them into JOB.md, or loosen the reader?
+2. `job_state paused` uses reason exactly "phase" (the contract's words); status/explain carry the phase id and the
+   command. OK, or should the reason name the phase ("phase court_plays")?
+3. A hold's change round is logged as `reopened {package, reason: "phase hold (event N) on phase <id>; ..."}` plus a
+   `queued` whose detail starts "CHANGE REQUEST: <note>" (no `change_requested` event). The owner among several
+   packages is asked of the Planner (one short call, as for a change without --package). Wire this into JOB.md?
+4. Proposed earlier and still open: `role` on a job-level builder_run (designer, planner, critic, placer); a redesign
+   is otherwise told apart from the first design only by its transcript name.
+5. LANDING ORDER: engine/kernel/world/site/event_schema.gd (L3) is strict; a v2 job (every new job: the Designer now
+   writes pitch and aspects; the Planner writes phases) breaks the village site until L3's mirror lands. Land L3's
+   reader with or before L2, or at least before the proof jobs reach the site.
+6. Builder briefs carry `tl cards brief <id>` text, which does not include the new `fun` block (devx/lib/cards/
+   brief.mjs is outside L2's column). Should the card's fun lines reach the builders, or only the Designer/Planner?
+
+NEXT THREE THINGS THIS LANE WOULD DO
+1. Watch the Director's two proof jobs (standard vs crazy, run-through): the first real Planner answer with phases,
+   and prompt iteration 2's first real crazy brief; tune planner.md on what they show.
+2. A Designer dry-run check (`foreman prompts <job> --designer`) into tl check: the prompt carries the engine
+   sections and every card's fun lines, so an API.md section rename turns the gate red instead of thinning the guard.
+3. Fun lines in builder briefs (question 6) and a per-phase capture at phase_done, so the player's "Try it" and the
+   critic's fun_promise look at the same moment.
