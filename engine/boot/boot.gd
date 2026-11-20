@@ -41,6 +41,8 @@ extends Node
 ## the games beside the exe. Walker-feel T: TL_EXE_FRAMES=<abs dir> (+ TL_EXE_FRAMES_RANGE=a:b, TL_EXE_FRAMES_FULL=1,
 ## TL_EXE_SKYMASK=1) writes every drawn frame for the blink detector; TL_EXE_AA=<spec> overrides the window's antialiasing (EXE_AA).
 ## No global class name is declared here, and none of the kernel's is used by name.
+## L4 (21 Nov): a person's start with nothing asked shows the main menu; every flag path and unattended start goes to the
+## village as before. The menu, --dungeon=<pack dir> and the `trips` verb live in boot/hub.gd (their usage is there).
 
 const WALK_RES: String = "res://boot/village.json"
 const VIEW_SCRIPT: String = "res://kernel/world/draw/view.gd"
@@ -48,6 +50,8 @@ const WORLD_SCRIPT: String = "res://kernel/world/world.gd"
 const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel/world/packs", "res://packs"]
 const KEYS_WALK: String = "W A S D  walk      mouse  look      Shift  run      Space  jump      C  slide (running)      F  fly (Space up, C down)      E  enter the game you stand in      Esc  quit"
 const KEYS_STAGE: String = "Q or Esc  leave the game"
+const Hub: GDScript = preload("res://boot/hub.gd")
+const Frames: GDScript = preload("res://boot/frames.gd")
 const CAPTURE_FRAME: int = 120
 ## Night jam-lessons-home T1: which build is this. export.sh writes one line beside the exe, "<short commit> <date
 ## time>" (for example "4e20087 2026-11-16 01:40"); it is read at start, printed to the log ("[boot] build: <tag>")
@@ -80,6 +84,11 @@ var _walk_tmp: String = ""
 var _ending: bool = false
 var _unattended: bool = false
 var tag: String = ""                    # the build tag: "dev" in the editor binary, "" when the exe has no tag file
+var hub: RefCounted = null              # L4: the menu and the dungeons (boot/hub.gd)
+var menu_mode: bool = false             # L4: the world, the dungeons and Create are reached from the menu and return to it
+var dungeon_only: bool = false          # L4: started with --dungeon: leaving the dungeon ends the process
+var _hint_layer: CanvasLayer = null
+var _frames: RefCounted = null          # TL_EXE_FRAMES (boot/frames.gd)
 
 
 func _ready() -> void:
@@ -93,7 +102,7 @@ func _ready() -> void:
 				opts[a.substr(2, eq - 2)] = a.substr(eq + 1)
 		elif verb.is_empty():
 			verb = a
-	for k: String in ["games", "out", "record", "input", "site-job", "edits"]:
+	for k: String in ["games", "out", "record", "input", "site-job", "edits", "dungeon"]:
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if opts.has("games"):
@@ -104,7 +113,9 @@ func _ready() -> void:
 		# the engine's own log (user://logs/godot.log) is shared with every other engine process on the machine and
 		# is rotated away by them within seconds: the last run of THIS exe is kept beside it
 		var rl: Logger = (load("res://boot/run_log.gd") as GDScript).new()
-		if bool(rl.call("open", OS.get_executable_path().get_base_dir().replace("\\", "/") + "/ThirdLife-last-run.log")):
+		# L4: a dungeon started by --dungeon (a second process: Create's "Try it") keeps its own log beside it
+		var log_name: String = "ThirdLife-last-dungeon.log" if opts.has("dungeon") else "ThirdLife-last-run.log"
+		if bool(rl.call("open", OS.get_executable_path().get_base_dir().replace("\\", "/") + "/" + log_name)):
 			OS.add_logger(rl)
 	if exported():
 		var seeded: int = int(PlotFile.call("seed_cache", OS.get_executable_path().get_base_dir().replace("\\", "/") + "/cache"))
@@ -112,9 +123,17 @@ func _ready() -> void:
 			print("[boot] %d cache files of this build copied to %s" % [seeded, str(PlotFile.call("cache_dir"))])
 	tag = build_tag()
 	print("[boot] build: %s" % (tag if not tag.is_empty() else "none (no readable %s beside the exe)" % TAG_FILE))
+	hub = Hub.new(self)
 	match verb:
 		"":
-			_visit()
+			if opts.has("dungeon"):
+				hub.call("dungeon_start")
+			elif bool(hub.call("menu_wanted")):
+				hub.call("menu_start")
+			else:
+				_visit()
+		"trips":
+			hub.call("trips_start")
 		"check":
 			_check()
 		"tag":
@@ -123,7 +142,7 @@ func _ready() -> void:
 			var p: RefCounted = (load("res://boot/probe.gd") as GDScript).new()
 			p.call("run", self, str(opts.get("out", "")))
 		_:
-			_stop("unknown verb '%s' (none: the village for a person; check; probe)" % verb, 2)
+			_stop("unknown verb '%s' (none: the menu or the village for a person; check; probe; tag; trips)" % verb, 2)
 
 
 ## True in a build made by export.sh (the preset's own feature tag), false under the editor binary.
@@ -292,8 +311,8 @@ func _site_lots(land: Dictionary) -> void:
 
 
 func _exit_tree() -> void:
-	if _frames_log != null:
-		_frames_log.flush()
+	if _frames != null:
+		_frames.call("flush")
 	if not _walk_tmp.is_empty() and FileAccess.file_exists(_walk_tmp):
 		DirAccess.remove_absolute(_walk_tmp)
 
@@ -310,6 +329,14 @@ func _identity() -> Dictionary:
 
 # ------------------------------------------------------------------------------------------------ a person walks
 func _visit() -> void:
+	_read_env()
+	if not _window_setup("the village needs a window (started headless); `-- check --out=<file>` is the run without one"):
+		return
+	_open_world()
+
+
+## The instruments of unattended starts (TL_EXE_CAPTURE, _QUIT_AT, _CAPTURE_AT, _KEYS).
+func _read_env() -> void:
 	_capture_path = _win_path(OS.get_environment("TL_EXE_CAPTURE")) if OS.has_environment("TL_EXE_CAPTURE") else ""
 	if OS.has_environment("TL_EXE_QUIT_AT") and OS.get_environment("TL_EXE_QUIT_AT").is_valid_int():
 		_quit_at = int(OS.get_environment("TL_EXE_QUIT_AT"))
@@ -331,9 +358,13 @@ func _visit() -> void:
 		else:
 			print("[boot] TL_EXE_KEYS: cannot read '%s' (wanted <frame>:+<Key> or <frame>:-<Key>)" % part)
 	_unattended = not _capture_path.is_empty() or _quit_at >= 0 or not _keys.is_empty()
+
+
+## The person's window: where it opens, its title, vsync. False (after `_stop`) when the run is headless.
+func _window_setup(headless_reason: String) -> bool:
 	if DisplayServer.get_name() == "headless":
-		_stop("the village needs a window (started headless); `-- check --out=<file>` is the run without one", 2)
-		return
+		_stop(headless_reason, 2)
+		return false
 	if OS.has_environment("TL_EXE_WINDOW_POS"):
 		var xy: PackedStringArray = OS.get_environment("TL_EXE_WINDOW_POS").split(",")
 		if xy.size() == 2 and xy[0].is_valid_int() and xy[1].is_valid_int():
@@ -341,6 +372,15 @@ func _visit() -> void:
 	get_window().title = "Third Life"
 	# the project runs windows without vsync (captures and benches); a person's window follows the screen
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
+	return true
+
+
+## The village in the window (the visitor, the games). From the menu (L4) Esc returns to the menu instead of ending.
+func _open_world() -> void:
+	if menu_mode:
+		kept.clear()
+		dropped.clear()
+		kept_sites.clear()
 	var path: String = _make_walk()
 	if path.is_empty():
 		return
@@ -367,12 +407,17 @@ func _visit() -> void:
 				why = "; ".join(PackedStringArray(world.get("errors")))
 		_stop("Third Life could not start: %s. What it printed is in ThirdLife-last-run.log beside ThirdLife.exe." % why, 1)
 		return
+	if menu_mode:
+		# L4: the end of the walk (Esc) returns to the menu; the viewer's own handler would end the process
+		world.disconnect("ended", Callable(view, "_on_world_ended"))
+		world.connect("ended", Callable(hub, "on_menu_world_ended"))
 	var layer: CanvasLayer = CanvasLayer.new()
+	_hint_layer = layer
 	layer.name = "BootHint"
 	layer.layer = 100
 	add_child(layer)
 	_hint = Label.new()
-	_hint.text = KEYS_WALK
+	_hint.text = _keys_walk()
 	_hint.add_theme_font_size_override("font_size", 22)
 	_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
 	_hint.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.08, 0.9))
@@ -395,18 +440,11 @@ func _visit() -> void:
 		tl.offset_right = -14
 		tl.offset_top = 10
 		layer.add_child(tl)
-	if OS.has_environment("TL_EXE_TRACE"):
+	if OS.has_environment("TL_EXE_TRACE") and _trace == null:
 		_trace = FileAccess.open(_win_path(OS.get_environment("TL_EXE_TRACE")), FileAccess.WRITE)
-	if OS.has_environment("TL_EXE_FRAMES"):
-		_frames_dir = _win_path(OS.get_environment("TL_EXE_FRAMES"))
-		var fr: PackedStringArray = OS.get_environment("TL_EXE_FRAMES_RANGE").split(":")
-		if fr.size() == 2 and fr[0].is_valid_int() and fr[1].is_valid_int():
-			_frames_range = Vector2i(int(fr[0]), int(fr[1]))
-		DirAccess.make_dir_recursive_absolute(_frames_dir)
-		_frames_log = FileAccess.open(_frames_dir + "/frames.jsonl", FileAccess.WRITE)
-		RenderingServer.frame_post_draw.connect(_frame_drawn)
-		if OS.get_environment("TL_EXE_SKYMASK") == "1":
-			_sky_mask()
+	if OS.has_environment("TL_EXE_FRAMES") and _frames == null:
+		_frames = Frames.new()
+		_frames.call("start", self, _win_path(OS.get_environment("TL_EXE_FRAMES")))
 	process_physics_priority = 200000              # after the viewer (100000): its `stage` of this tick is known
 	set_physics_process(true)
 
@@ -414,6 +452,8 @@ func _visit() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and view != null:
 		_end_world()
+	elif what == NOTIFICATION_WM_CLOSE_REQUEST and (menu_mode or dungeon_only):
+		_end_world()                               # L4: the menu, a dungeon or Create: the process ends
 
 
 ## Ends the world the way a scripted run ends: the world host stops its watchdog and its helper process, prints its
@@ -423,6 +463,10 @@ func _end_world() -> void:
 		return
 	_ending = true
 	set_physics_process(false)
+	var dg: Node = hub.get("dungeon") if hub != null else null
+	if dg != null and is_instance_valid(dg):
+		dg.call("close", "quit")                   # L4: its `left` ends the process (the hub sees _ending)
+		return
 	if world != null and is_instance_valid(world) and not bool(world.get("_ended")):
 		print("[boot] ending the world at frame %d" % _frame)
 		world.call("_end")
@@ -460,6 +504,9 @@ func _physics_process(_delta: float) -> void:
 			_keys_held[int(k[1])] = true
 		else:
 			_keys_held.erase(int(k[1]))
+	if view == null or not is_instance_valid(view):
+		_menu_frame()                              # L4: the menu, a dungeon or Create is on the screen, no world
+		return
 	var stage: int = int(view.get("stage"))
 	if _trace != null and _frame % 30 == 0:
 		var pos: Vector3 = world.get("player_pos")
@@ -469,7 +516,7 @@ func _physics_process(_delta: float) -> void:
 			"yaw_deg": snappedf(rad_to_deg(float((view.get("visitor") as Node3D).get("look_yaw"))), 0.01)}, "", false))
 		_trace.flush()
 	if _hint != null:
-		_hint.text = (str(view.get("visit").call("stage_hint")) if view.get("visit") != null else KEYS_STAGE) if stage >= 0 else KEYS_WALK   # K8: Esc alone when the game uses Q
+		_hint.text = (str(view.get("visit").call("stage_hint")) if view.get("visit") != null else KEYS_STAGE) if stage >= 0 else _keys_walk()   # K8: Esc alone when the game uses Q
 		_hint.position.y = get_viewport().get_visible_rect().size.y - 58
 	if not _capture_path.is_empty() and not _capture_done and _frame >= _capture_at:
 		_capture_done = true
@@ -490,17 +537,6 @@ func _capture() -> void:
 	_captured = true
 
 
-## Walker-feel T1 (a test instrument): TL_EXE_FRAMES=<abs dir> writes every drawn frame while the physics frame lies
-## in TL_EXE_FRAMES_RANGE=<from>:<to>, numbered in the order drawn (<dir>/f<n>.raw: RGB8 bytes, every other pixel of
-## the window, so 960x540 for 1920x1080; a raw copy costs a few milliseconds where a PNG costs 200, so the run keeps
-## the wall-clock pace a person meets), and one line per picture in <dir>/frames.jsonl (the physics frame, the
-## size, the camera's place and look, the stage). The blink detector (kernel/world/walks/blink_detect.py) reads it.
-var _frames_dir: String = ""
-var _frames_range: Vector2i = Vector2i(1, 1200)
-var _frames_log: FileAccess = null
-var _frames_n: int = 0
-
-
 ## Frame two uses TL_EXE_AA first, then the installed style's env.exe_aa, then the classic EXE_AA.
 ## Accepted controls are msaa 0/2/4/8, ss off/fxaa/smaa and taa 0/1. The boot report records the viewport values.
 func _set_aa(spec: String) -> void:
@@ -514,66 +550,6 @@ func _set_aa(spec: String) -> void:
 			"ss": vp.screen_space_aa = {"off": Viewport.SCREEN_SPACE_AA_DISABLED, "fxaa": Viewport.SCREEN_SPACE_AA_FXAA, "smaa": Viewport.SCREEN_SPACE_AA_SMAA}.get(kv[1], vp.screen_space_aa)
 			"taa": vp.use_taa = kv[1] == "1"
 	print(JSON.stringify({"schema": "thirdlife.exe/1", "kind": "aa", "msaa_3d": vp.msaa_3d, "screen_space_aa": vp.screen_space_aa, "taa": vp.use_taa}, "", false))
-
-
-## TL_EXE_SKYMASK=1 (with TL_EXE_FRAMES): every pixel where nothing was drawn (the depth buffer still holds the far
-## plane: sky) is painted pure magenta, so the detector reads "nothing drawn here" exactly instead of guessing sky by
-## its colour. An instrument only: the picture is otherwise the same.
-func _sky_mask() -> void:
-	var sh: Shader = Shader.new()
-	sh.code = """shader_type spatial;
-render_mode unshaded, blend_mix, depth_draw_never, depth_test_disabled, skip_vertex_transform, cull_disabled, fog_disabled;
-uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
-void vertex() { POSITION = vec4(VERTEX.xy, 1.0, 1.0); }
-void fragment() {
-	if (texture(depth_tex, SCREEN_UV).r > 0.0) { discard; }
-	ALBEDO = vec3(1.0, 0.0, 1.0);
-}
-"""
-	var mat: ShaderMaterial = ShaderMaterial.new()
-	mat.shader = sh
-	mat.render_priority = 127
-	var q: QuadMesh = QuadMesh.new()
-	q.size = Vector2(2.0, 2.0)
-	var mi: MeshInstance3D = MeshInstance3D.new()
-	mi.name = "SkyMask"
-	mi.mesh = q
-	mi.material_override = mat
-	mi.extra_cull_margin = 16384.0
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(mi)
-
-
-func _frame_drawn() -> void:
-	if _frame < _frames_range.x or _frame > _frames_range.y or view == null:
-		return
-	var img: Image = get_viewport().get_texture().get_image()
-	if img == null:
-		return
-	if img.get_format() != Image.FORMAT_RGB8:
-		img.convert(Image.FORMAT_RGB8)
-	if OS.get_environment("TL_EXE_FRAMES_FULL") != "1":            # T3: full size, for the antialiasing study
-		img.resize(img.get_width() / 2, img.get_height() / 2, Image.INTERPOLATE_NEAREST)
-	var f: FileAccess = FileAccess.open("%s/f%05d.raw" % [_frames_dir, _frames_n], FileAccess.WRITE)
-	if f != null:
-		f.store_buffer(img.get_data())
-		f.close()
-	var cam: Camera3D = get_viewport().get_camera_3d()
-	var line: Dictionary = {"n": _frames_n, "frame": _frame, "size": [img.get_width(), img.get_height()], "stage": int(view.get("stage")),
-		"usec": Time.get_ticks_usec()}
-	_frames_n += 1
-	if cam != null:
-		var o: Vector3 = cam.global_position
-		var fw: Vector3 = -cam.global_basis.z
-		line["cam"] = [snappedf(o.x, 0.01), snappedf(o.y, 0.01), snappedf(o.z, 0.01)]
-		line["look"] = [snappedf(fw.x, 0.001), snappedf(fw.y, 0.001), snappedf(fw.z, 0.001)]
-		line["fov"] = snappedf(cam.fov, 0.01)
-	if world != null:
-		var pos: Vector3 = world.get("player_pos")
-		line["player"] = [snappedf(pos.x, 0.01), snappedf(pos.z, 0.01)]
-	_frames_log.store_line(JSON.stringify(line, "", false))
-	if _frames_n % 60 == 0:
-		_frames_log.flush()
 
 
 # ------------------------------------------------------------------------------------------------ the check
@@ -598,3 +574,17 @@ func _check() -> void:
 	world.name = "World"
 	add_child(world)
 	world.call("start", {"walk": path, "out": str(opts["out"])})    # ends the process itself: 0, 1 (a pack failed) or 2 (refused)
+
+
+# ------------------------------------------------------------------------------------------------ L4
+func _keys_walk() -> String:
+	return KEYS_WALK.replace("Esc  quit", "Esc  menu") if menu_mode else KEYS_WALK
+
+
+## No world on the screen (the menu, a dungeon, Create): the unattended capture and quit frame still count.
+func _menu_frame() -> void:
+	if not _capture_path.is_empty() and not _capture_done and _frame >= _capture_at:
+		_capture_done = true
+		_capture()
+	if _quit_at >= 0 and _frame >= _quit_at and (_capture_path.is_empty() or _captured):
+		_end_world()

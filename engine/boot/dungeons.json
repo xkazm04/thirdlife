@@ -1,0 +1,8 @@
+{
+  "schema": "tl.dungeons/1",
+  "dungeons": [
+    {"pack": "packs/hockey", "title": "Ice hockey, three against three", "look": "crisp"},
+    {"pack": "packs/parkour", "title": "Parkour: Timber Run"},
+    {"pack": "seeds/seed_paddle", "title": "Paddle court: first to five"}
+  ]
+}

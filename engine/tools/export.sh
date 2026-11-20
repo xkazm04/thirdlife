@@ -13,8 +13,10 @@
 #       1. the scripted tour of the village, headless, 4000 ticks: the editor binary, the built exe, and a copy of
 #          the build in a folder with a space in its name outside the repository; PASS when every pack's state hash
 #          and tick count are the same in all three (the difference is printed when they are not);
+#       1b. (L4) the dungeons of engine/boot/dungeons.json, headless, each a counted run of 600 frames (-- --dungeon=<its
+#          folder in games/> --frames=600): the editor binary and the exe; PASS when each hashes the same in both;
 #       2. the exe with no arguments: a window, one picture after 120 frames (dist/ThirdLife-check/village.png), a
-#          clean end on request, exit code 0;
+#          clean end on request, exit code 0 (an unattended start goes past the main menu to the village, as before);
 #       3. the keys, pressed by a script through the engine's own input state: W walks the visitor, Esc ends the
 #          process by itself (these two decide); E enters the kit court and Q leaves it (shown, not counted);
 #          P11: the turn south is 600 pixels of mouse (A and D step aside since P11)
@@ -203,7 +205,16 @@ for (const g of games) {
   lines.push(`  ${g.name}: ${m.id} ${m.version}, "${m.title || ""}", plot ${plots.join(", ") || "none (not in the village)"}, from ${g.from}`);
 }
 for (const p of walk.plots) if (!games.some(g => g.name === p.pack)) { console.error(`export.sh: plot '${p.id}' of boot/village.json names the game '${p.pack}', which boot/games.json does not list`); process.exit(1); }
-fs.writeFileSync(path.join(stage, ".games.txt"), lines.join("\n") + "\n" + (missing.length ? "not in this build:\n" + missing.join("\n") + "\n" : ""));
+// L4: a dungeon (engine/boot/dungeons.json) runs from the folder of games/ its pack is copied to: it must be one of the games
+let dungeons = [];
+try { dungeons = JSON.parse(fs.readFileSync(path.join(path.dirname(gamesFile), "dungeons.json"), "utf8")).dungeons || []; } catch (e) { console.error(`export.sh: boot/dungeons.json does not parse: ${e.message}`); process.exit(1); }
+const dl = [];
+for (const d of dungeons) {
+  const g = games.find(x => x.from.replace(/\/$/, "") === "engine/" + d.pack);
+  if (!g) { console.error(`export.sh: the dungeon '${d.title}' (${d.pack}) is not one of boot/games.json: the build would not carry it`); process.exit(1); }
+  dl.push(`  ${d.title}: games/${g.name}${d.look ? ", look " + d.look : ""}`);
+}
+fs.writeFileSync(path.join(stage, ".games.txt"), lines.join("\n") + "\n" + (missing.length ? "not in this build:\n" + missing.join("\n") + "\n" : "") + "dungeons (boot/dungeons.json, from the main menu):\n" + dl.join("\n") + "\n");
 NODE
   # S (engine-world-next): the construction sites of the village (a lot with a `job`, kernel/world/site.gd). Each job's
   # job.jsonl and the game its LAST `promoted` event names go to sites/<job folder name>/ beside games/ (boot.gd looks
@@ -280,8 +291,12 @@ Third Life
 
 Start: double click ThirdLife.exe. Keep ThirdLife.pck and the folder "games" beside it.
 
-Keys while you walk:   W A S D  walk      Shift  run      E  enter the game whose plot you stand in      Esc  quit
+The main menu: World (the village), Dungeons (one game on its own: its camera, its look), Create, Quit.
+Arrows or W S choose, Enter opens, Esc goes back.
+
+Keys while you walk:   W A S D  walk      Shift  run      E  enter the game whose plot you stand in      Esc  back to the menu
 Keys inside a game:    Esc leaves the game; Q leaves it too unless the game uses Q (hockey passes on Q)
+Keys in a dungeon:     the game's own; Esc pauses it (Resume, Leave: back to the menu)
 
 The games are the folders in "games". BUILD.txt says what this build was made from.
 Which build is this: BUILD-TAG.txt (the commit and the time of the export) is shown small in the window's top right
@@ -385,6 +400,27 @@ node -e '
   if ((b.left_out || []).length) console.log("left out of the village: " + b.left_out.map(d => d.id + " (" + d.why + ")").join("; "));
   process.exit(bad);' "$W" || { note "the hashes are NOT the same in the three runs (table above)"; fail=1; }
 
+# 1b. L4: the dungeons, headless, a counted run in the editor binary (with the build's games) and in the exe
+note "1b. the dungeons (boot/dungeons.json), headless, 600 frames each: the editor binary and the exe"
+dg_rows="$(node -e '
+  const fs = require("fs"), [e, out] = process.argv.slice(1);
+  const games = JSON.parse(fs.readFileSync(e + "/boot/games.json", "utf8")).games;
+  for (const d of JSON.parse(fs.readFileSync(e + "/boot/dungeons.json", "utf8")).dungeons) {
+    const g = games.find(x => x.from.replace(/\/$/, "") === "engine/" + d.pack);
+    console.log(g ? g.name : "MISSING:" + d.pack); }' "$E" "$OUT")"
+dg_n=0
+for dg in $dg_rows; do
+  dg_n=$((dg_n + 1))
+  case "$dg" in MISSING:*) note "   FAILED: the dungeon ${dg#MISSING:} is not one of the build's games"; fail=1; continue;; esac
+  limited 180 "$G" --headless --fixed-fps 60 --path "$E" res://boot/boot.tscn -- "--dungeon=$OUT/games/$dg" --frames=600 "--out=$W/dungeon_editor_$dg.json" "--games=$OUT/games" >"$W/dungeon_editor_$dg.log" 2>&1; de=$?
+  limited 180 "$OUT/ThirdLife.exe" --headless --fixed-fps 60 --log-file "$W/dungeon_exe_$dg.log" -- "--dungeon=$OUT/games/$dg" --frames=600 "--out=$W/dungeon_exe_$dg.json" >/dev/null 2>&1; dx=$?
+  ha="$(grep -o '"state_hash":"[0-9a-f]*"' "$W/dungeon_editor_$dg.json" 2>/dev/null | sed 's/.*:"//; s/"//')"
+  hb="$(grep -o '"state_hash":"[0-9a-f]*"' "$W/dungeon_exe_$dg.json" 2>/dev/null | sed 's/.*:"//; s/"//')"
+  if [ $de -eq 0 ] && [ $dx -eq 0 ] && [ -n "$ha" ] && [ "$ha" = "$hb" ]; then note "   $dg: ${ha:0:16} in both (600 frames)"
+  else note "   FAILED: $dg: editor ${ha:-NO HASH} (exit $de), exe ${hb:-NO HASH} (exit $dx); see $W/dungeon_*_$dg.log"; fail=1; fi
+done
+[ $dg_n -gt 0 ] || { note "   FAILED: boot/dungeons.json lists no dungeon (found 0 is not a pass)"; fail=1; }
+
 if [ "$nowindow" = 1 ]; then
   note "2. and 3. NOT RUN (--no-window): the picture, the keys"
 else
@@ -423,6 +459,6 @@ fi
 left="$left$(running_from "$OUT")"
 if [ -n "${left// /}" ]; then note "4. FAILED: a process of the build is still running: $left"; fail=1; else note "4. no process of the build is left"; fi
 if [ $fail -eq 0 ] && [ "$nowindow" = 1 ]; then echo "PASS export.check --no-window: build '$said'; the exe runs the same games to the same hashes as the editor binary and leaves nothing behind; the window steps 2 and 3 were NOT run ($W)"
-elif [ $fail -eq 0 ]; then echo "PASS export.check: build '$said'; the exe runs the same games to the same hashes as the editor binary, shows the village, obeys W and Esc, and leaves nothing behind ($W)"
+elif [ $fail -eq 0 ]; then echo "PASS export.check: build '$said'; the exe runs the same games and $dg_n dungeons to the same hashes as the editor binary, shows the village, obeys W and Esc, and leaves nothing behind ($W)"
 else echo "FAIL export.check (the files of the runs are in $W)"; fi
 exit $fail
