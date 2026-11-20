@@ -1,3 +1,62 @@
 {
-  "sessions": []
+  "sessions": [
+    {
+      "id": "n21-L1-harden",
+      "scope": [
+        "engine/kits/**",
+        "engine/kernel/world/terrain/**",
+        "engine/kernel/world/site/draw.gd",
+        "engine/kernel/world/landscape.gd",
+        "engine/style/**",
+        "engine/kernel/world/WORLD.md"
+      ],
+      "note": "night of 21 Nov, until 08:00"
+    },
+    {
+      "id": "n21-L2-designer",
+      "scope": [
+        "foreman/**",
+        "engine/cards/**",
+        "devx/lib/**"
+      ],
+      "note": "night of 21 Nov, until 08:00"
+    },
+    {
+      "id": "n21-L3-create",
+      "scope": [
+        "engine/ui/**",
+        "engine/kernel/world/site/event_schema.gd",
+        "engine/kernel/world/site.gd"
+      ],
+      "note": "night of 21 Nov, until 08:00"
+    },
+    {
+      "id": "n21-L4-dungeon",
+      "scope": [
+        "engine/boot/**",
+        "engine/kernel/dungeon/**",
+        "engine/kernel/runner/**",
+        "engine/tools/world.sh",
+        "engine/tools/export.sh",
+        "docs/EXE.md"
+      ],
+      "note": "night of 21 Nov, until 08:00"
+    },
+    {
+      "id": "n21-L5-hockey",
+      "scope": [
+        "engine/packs/hockey/**"
+      ],
+      "note": "night of 21 Nov, until 08:00"
+    },
+    {
+      "id": "n21-director",
+      "scope": [
+        "docs/TWO-WORLDS.md",
+        "docs/shifts/2026-11-21-night/**",
+        "docs/shifts/STATE.md"
+      ],
+      "note": "night of 21 Nov, until 08:00"
+    }
+  ]
 }

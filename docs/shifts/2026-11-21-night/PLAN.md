@@ -13,11 +13,11 @@ The fast gate was green on `5144deb`.
 
 | Lane | Worktree / branch | Route | Selftest block | Agent | Started |
 |---|---|---|---|---|---|
-| L1 crisp-harden | `n21-harden` | Opus | 620-629 | (at launch) | |
-| L2 designer-foreman | `n21-designer` | Opus | n/a | | |
-| L3 create-screen | `n21-create` | Opus | 630-639 | | |
-| L4 dungeons-menu | `n21-dungeon` | Opus | 640-649 | | |
-| L5 hockey-fun | `n21-hockey` | Opus | 650-659 | | |
+| L1 crisp-harden | `n21-harden` | Opus | 620-629 | ab2ef60fcf14a5187 | 20:09 |
+| L2 designer-foreman | `n21-designer` | Opus | n/a | a47dddcca8a7c6285 | 20:09 |
+| L3 create-screen | `n21-create` | Opus | 630-639 | ae013ae4fbde5ef34 | 20:09 |
+| L4 dungeons-menu | `n21-dungeon` | Opus | 640-649 | af17442305448f2d5 | 20:09 |
+| L5 hockey-fun | `n21-hockey` | Opus | 650-659 | a40563e8a97f90704 | 20:09 |
 
 **Director's own work:**
 - The two proof jobs once L2 lands (target 02:30-03:00). The sentence is "a fight in a colosseum", run once standard and
