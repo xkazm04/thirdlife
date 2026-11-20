@@ -16,6 +16,7 @@ writes it back. Newest shift-log entry last.
 ## Open owner verdicts
 Asks from the evening of 19 Nov: W6 summon key; H4 HUD look; H5 PACK.md hud.json convention.
 Asks from the day of 19 Nov: E4 Designer call vs scorer (editor, owner tests first). The rest answered 19:00.
+Night of 20 Nov, D2 answered 10:10: the owner prefers the Astra character (Opus + Astra) over Fable; a combine with character-astra follows D1. D1, D3-D5 open.
 Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - E3 village too full by the road for 45 m venues.
 - P2 newcomer retry bot in the gate.
