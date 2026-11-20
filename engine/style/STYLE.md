@@ -214,3 +214,45 @@ Gain: 17 % fewer flips, 9 % less change per frame, on top of whatever antialiasi
 style's SMAA only, no TAA). It is a part, not a cure: the cure is ink that knows sub-pixel coverage (edge taps on a
 multisampled depth, or the contour drawn as geometry), which is a look pass of its own.
 All four keys are optional; absent = the old behaviour.
+
+## The diorama material model (night of 20 Nov 2026, surfaces)
+
+`style_diorama.json` (the default of the diorama branch; `TL_STYLE=classic` loads `style.json`) names a material model.
+A style file without these keys gets the shader files as they are and the same lookup texture: today's look cannot
+move (selftest `surf.classic_source`: toon.gdshader without its `TL_DIORAMA` branches is byte for byte the old file).
+
+| Key | What it does (absent = today) |
+|---|---|
+| `toon.model` = `"diorama"` | toon.gdshader is compiled with `TL_DIORAMA` defined: one smooth ramp from shade to sun (`band_lo` .. `band_hi`) instead of bands, no hatch, and every class is a handmade material. The marks are heights in the part's own space (land: the world's), turned into a normal for the light only. The prepass normal and the ROUGHNESS tags are untouched, so the ink pass sees what it saw. |
+| `mat.<key>.gloss` 0..1 | matte clay .. wet paint: a sun highlight and the sky standing in the surface. `toon.gloss` is the value of a key that names none. |
+| `mat.<key>.fuzz` 0..1 | felt: light caught where the surface turns from the eye, no highlight. |
+| `mat.<key>.chip` 0..1 | painted: brush strokes along the part, and chips that show `toon.chip_color`, first at the edges of a box. |
+| `mat.<key>.class` `clay`, `felt` | two more classes. A key with no class is clay (thumb dents, fingerprints up close). The old classes keep their names and are redrawn: wood (boards, grain), concrete (cast, pitted), steel (painted, a parting line), tarmac, ground (felt laid on clay, pebbles pressed in, clay slabs where steep), rock (slabs), roof, fabric (stitched), masonry. |
+| `detail.bump`, `bump_near`, `bump_far` | strength of the relief and the distance over which it fades (m). |
+| `detail.bevel` (m) | the soft edge of a box face. `TLMesh.box` writes where each vertex is on its face into UV2 (kits/tl_mesh_bake.gd); the shader rolls the last `bevel` metres of the face over by 45 degrees, so two faces end on one normal. |
+| `detail.round` 0..1 | a `blob` and the side of a `cyl` carry the round thing's own normal in UV2: lit as round (pines, logs, posts, rocks, bushes), and the tone a blob's facets were given apart is mostly taken back. Geometry, collision and `content_hash` are unchanged. |
+| `detail.chip`, `toon.sheen`, `toon.sky_refl`, `toon.spec`, `toon.wax` | global strengths: chips, felt sheen, sky in gloss, sun highlight, the warm turn from sun to shade of modelling clay. |
+| `water.model` = `"resin"` | the river is water_resin.gdshader: nothing flows; combed ripples stand still in the world and mirror the sky and the sun. `sky_top`, `bed`, `gloss`, `ripple`, `foam`. |
+| `water.shore` (m) > 0 | the resin reads the depth of its bed (compiled with `TL_SHORE`): the bed shows through the shallows, a meniscus at the bank. It is then drawn after the solid world, so a pass that reads depth sees the bed. 0 = a solid surface, the bank from the ribbon's width. |
+
+Rules that keep it still (the walker-feel lesson): every mark has a wavelength and is faded before a pixel is half of it
+(`keep()`); land is filtered by the mean of its two footprints (it is seen at a grazing angle); noise corners come from
+an integer hash (a float hash of a far cell rounds differently on its two sides: a grid in every gloss); where the lit
+normal turns faster than the pixels can follow, the gloss is spread instead of sparkling.
+Measured with `look.sh boil` (mean change per frame in grey levels / share of pixels that change by more than 24;
+lane script `docs/shifts/2026-11-20-night/lanes/surfaces-fable/crawl.sh`):
+
+| clip, band | classic | diorama (ink as on the base) | diorama with ink and paper off |
+|---|---|---|---|
+| review scene, slow pan, horizon (thin members) | 3.065 / 2.625 % | 2.804 / 2.471 % | 1.243 / 0.286 % |
+| review scene, slow pan, kit floor | 0.441 / 0.037 % | 0.547 / 0.037 % | 0.431 / 0.006 % |
+| village road, slow pan, far land and yard | 0.485 / 0.523 % | 0.524 / 0.464 % | 0.322 / 0.176 % |
+| village road, slow pan, near land | 0.040 / 0.000 % | 0.166 / 0.003 % | 0.159 / 0.003 % |
+| village road, camera still, near land | 0.000 / 0.000 % | 0.000 / 0.000 % | 0.000 / 0.000 % |
+
+Reading: nothing boils on a still camera; under the pan the textured land changes by a sixth of a grey level a frame
+where the flat land of today changed by a twenty-fifth, and 3 pixels in 100 000 flip. The ink is what boils: with it
+off the horizon band falls from 2.5 % of flipping pixels to 0.3 %.
+
+`engine/style/dio/style_dio.gd` holds the code a model needs (shader variants, the globals `g_dio` .. `g_dio5`); it is
+not part of the indexed API. `style_surfaces.json` is the diorama file with ink and paper off, a judging aid of that night.

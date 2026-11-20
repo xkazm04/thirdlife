@@ -29,6 +29,23 @@ uniform sampler2D pal_lut : filter_nearest, repeat_disable;
 global uniform vec4 g_detail;    // x strength, y fade near (m), z fade far (m), w line darkness
 global uniform vec4 g_strata;    // pass 4, drawn strata on steep terrain: x line strength, y layer height (m), z per-layer tone, w vertical crack strength
 global uniform vec4 g_detail2;   // x extra tone contrast at distance, y from (m), z to (m), w distance at which tone finally fades (m)
+#ifdef TL_DIORAMA
+// Diorama night (20 Nov 2026), surfaces. This file compiled with TL_DIORAMA defined (TLStyle, style key `toon.model` =
+// "diorama") is the toy-diorama material model: smooth light instead of bands, and every surface is a handmade
+// material: clay (thumb dents, fingerprints), felt and flocking (fibres, fuzz at grazing angles), painted wood (grain,
+// brush strokes), cast blocks, painted plastic (gloss). The marks are heights in the part's own space (or the world's
+// for land), turned into a normal for the light only: the prepass normal, and with it the ink pass, is untouched.
+// Nothing here is compiled without the define, so today's look cannot move.
+global uniform vec4 g_dio;       // x bump strength, y bump fade from (m), z to (m), w chip strength
+global uniform vec4 g_dio2;      // x gloss of a key that names none, y felt sheen, z sky reflection on gloss, w sun highlight
+global uniform vec4 g_dio3;      // rgb = what shows where paint has chipped (primer), a = soft edge radius (m) of a box face
+global uniform vec4 g_dio4;      // rgb = the dye of the grass felt (palette `grass`), a = how round a lump is lit (0 = its facets)
+global uniform vec4 g_dio5;      // x = wax: warm light bleeding through the clay where it turns from the sun (0 = none)
+varying vec3 sn_v;               // a round thing's own normal (view space; zero = this is not one), TLMesh UV2
+varying flat vec4 m3;            // lookup row 3: sway, gloss, fuzz, chip
+varying vec3 bn_l;               // the marked normal (view space), handed from fragment() to light()
+varying vec2 gf_l;               // gloss, fuzz of this fragment, handed from fragment() to light()
+#endif
 instance uniform float build = 1.0;
 // N5b: the plot of the pack this instance belongs to, relative to the stage pack: xyz = offset (m), w = yaw (rad).
 // Set once per GeometryInstance3D by the world's draw layer (kernel/world/draw/draw.gd); all zero = drawn where it is
@@ -271,6 +288,151 @@ vec3 ice_surface(vec3 base, vec3 lpos, vec2 half_s, vec3 wp, float fres) {
 	return c;
 }
 
+#ifdef TL_DIORAMA
+// Gradient noise (0..1) for heights: value noise has a crease along every cell line, and gloss shows it as a grid.
+// The corner's direction comes from an integer hash: a float hash of (cell + 1) can round differently from the hash of
+// that cell itself far from the origin, and the two sides of a cell line then disagree (seen: a grid in the river).
+vec2 gdir(ivec2 c) {
+	uvec2 i = uvec2(c);
+	uint h = (i.x * 1597334677u) ^ (i.y * 3812015801u);
+	h = (h ^ (h >> 16u)) * 2246822519u;
+	float a = float((h ^ (h >> 13u)) >> 8u) * (6.2831853 / 16777216.0);
+	return vec2(cos(a), sin(a));
+}
+float gn2(vec2 p) {
+	vec2 fl = floor(p); ivec2 i = ivec2(fl); vec2 f = p - fl;
+	vec2 w = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+	return 0.5 + 0.7 * mix(mix(dot(gdir(i), f), dot(gdir(i + ivec2(1, 0)), f - vec2(1.0, 0.0)), w.x),
+		mix(dot(gdir(i + ivec2(0, 1)), f - vec2(0.0, 1.0)), dot(gdir(i + ivec2(1, 1)), f - vec2(1.0, 1.0)), w.x), w.y);
+}
+// 1 = a mark of wavelength `wl` metres is drawn, 0 = it is finer than the pixels (`px` metres across): flat, so nothing boils
+float keep(float wl, float px) { return 1.0 - smoothstep(wl * 0.16, wl * 0.5, px); }
+
+// Flocking and felt: short fibres lying three ways (0, 60, 120 degrees), each way strong in its own soft patch, so the
+// pile has no one direction (two crossed sets read as a woven rug, one set as motion blur). Returns 0..1.
+float dio_flock(vec2 q) {
+	float a = vn2(vec2(q.y * 14.0, q.x * 6.0));
+	float b = vn2(vec2(q.y * 7.0 - q.x * 12.1, q.x * 3.0 + q.y * 5.2) + 5.0);
+	float c = vn2(vec2(-q.y * 7.0 - q.x * 12.1, q.y * 5.2 - q.x * 3.0) + 9.0);
+	float k1 = smoothstep(0.38, 0.62, gn2(q * 1.1 + 2.0));
+	float k2 = smoothstep(0.38, 0.62, gn2(q * 1.1 + 31.0));
+	return mix(mix(a, b, k1), c, k2 * 0.7);
+}
+
+// The handmade surface of a material class at P (metres, the part's own space): x = tone (-1..1), y = height (m).
+// `lin` = the slope (dh/dP) of what is a straight line on the part (a board joint), given exactly: a slope taken from
+// screen derivatives is one value per 2 x 2 pixels, and a thin straight highlight then breaks into dashes that run
+// along it when the eye moves.
+vec2 dio_surface(int cls, vec3 P, int fax, int gax, float px, out vec3 lin) {
+	lin = vec3(0.0);
+	vec2 q = fax == 0 ? P.zy : (fax == 1 ? P.xz : P.xy);
+	int ia = fax == 0 ? 2 : 0;
+	int ib = fax == 1 ? 2 : 1;
+	float u = P[ia]; float v = P[ib];
+	if (gax == ib) { u = P[ib]; v = P[ia]; }
+	float tn = 0.0; float h = 0.0;
+	if (cls == 1) {            // wood: boards with a soft groove between them, grain along the board, a tone per board
+		float pl = v / 0.24 + 0.5; float id = floor(pl + 0.5);   // half a board off: no joint runs down the middle of a post
+		float sd = abs(fract(pl + 0.5) - 0.5) * 0.24;
+		float kp = keep(0.10, px); float kg = keep(0.035, px);
+		float kj = keep(0.045, px);
+		float groove = (1.0 - smoothstep(0.0, 0.016, sd)) * kj;
+		float g = vn2(vec2(u * 1.3 + id * 7.0, v * 44.0 + vn2(vec2(u * 0.9, v * 3.0 + id)) * 2.5));
+		float g2 = vn2(vec2(u * 0.45 + id * 3.0, v * 9.0));
+		h = (g - 0.5) * 0.0022 * kg;
+		// the joint: h = -0.006 * groove(sd), sd = the distance across the board to the joint; its slope across the board
+		float jt = clamp(sd / 0.016, 0.0, 1.0);
+		float jslope = 0.006 * 6.0 * jt * (1.0 - jt) / 0.016 * sign(fract(pl + 0.5) - 0.5) * kj * kp;
+		int iv = (gax == ib) ? ia : ib;
+		lin = vec3(float(iv == 0), float(iv == 1), float(iv == 2)) * jslope;
+		tn = (h21(vec2(id, 1.0)) - 0.5) * 0.14 + (g - 0.5) * 0.20 * kg + (g2 - 0.5) * 0.12 * kp - groove * 0.26 * kp;
+	} else if (cls == 2) {     // cast block: pitted, a tone per pour
+		float pit = smoothstep(0.66, 0.82, gn2(q * 27.0) * 0.7 + vn2(q * 61.0) * 0.3) * keep(0.037, px);
+		float n3 = gn2(q * 4.6 + 2.0);
+		tn = (gn2(q * 0.7) - 0.5) * 0.12 + (h21(floor(vec2(u / 1.6, v / 1.2) + 0.5) + 3.7) - 0.5) * 0.07 - pit * 0.10 + (n3 - 0.5) * 0.08 * keep(0.2, px);
+		h = (n3 - 0.5) * 0.006 * keep(0.2, px) - pit * 0.0022;
+	} else if (cls == 3) {     // painted metal, moulded plastic: smooth, a shallow parting line, a tone per plate
+		float sd = min(abs(fract(u / 1.2) - 0.5) * 1.2, abs(fract(v / 0.9) - 0.5) * 0.9);   // half a plate off: none down the middle of a tube
+		float ks = keep(0.07, px);
+		float groove = 1.0 - smoothstep(0.0, 0.011, sd);
+		float n1 = gn2(q * 2.1);
+		h = -0.003 * groove * ks + (n1 - 0.5) * 0.004 * keep(0.45, px);
+		tn = -groove * 0.18 * ks + (h21(floor(vec2(u / 1.2, v / 0.9)) + 1.3) - 0.5) * 0.05 + (vn2(vec2(u * 0.6, v * 5.0)) - 0.5) * 0.05;
+	} else if (cls == 4) {     // tarmac: dark clay pressed with grit
+		float gr = vn2(q * 23.0);
+		float kg = keep(0.045, px);
+		tn = (vn2(q * 0.35) - 0.5) * 0.12 + (vn2(q * 0.11) - 0.5) * 0.12 + (gr - 0.5) * 0.18 * kg;
+		h = (gr - 0.5) * 0.004 * kg + (vn2(q * 3.0) - 0.5) * 0.006 * keep(0.3, px);
+	} else if (cls == 6) {     // rock: clay slabs pressed one on another, knife marks along each slab
+		float sv = P.y * 1.5 + vn2(P.xz * 0.5) * 1.1 + vn2(q * 1.7) * 0.25;
+		float layer = floor(sv + 0.5);
+		float gd = abs(fract(sv + 0.5) - 0.5) / 1.5;
+		float kl = keep(0.3, px); float kk = keep(0.035, px);
+		float joint = 1.0 - smoothstep(0.0, 0.06, gd);
+		float knife = vn2(vec2(q.x * 1.4 + layer * 5.0, P.y * 34.0));
+		h = -0.024 * joint * kl + (vn2(q * 2.3 + layer) - 0.5) * 0.022 * kl + (knife - 0.5) * 0.0025 * kk;
+		tn = (h21(vec2(layer, 9.0)) - 0.5) * 0.15 - joint * 0.24 * kl + (knife - 0.5) * 0.10 * kk;
+	} else if (cls == 7) {     // roof: pressed tiles
+		float row = floor(P.y / 0.33);
+		float sx = P.x / 0.5 + mod(row, 2.0) * 0.5;
+		float jr = (1.0 - smoothstep(0.0, 0.014, abs(fract(sx + 0.5) - 0.5) * 0.5)) * keep(0.08, px);
+		tn = (h21(vec2(floor(sx + 0.5), row)) - 0.5) * 0.2 + (mod(row, 2.0) - 0.5) * 0.07 + (h21(vec2(row, 5.0)) - 0.5) * 0.08 - jr * 0.2;
+		h = -0.005 * jr + (vn2(q * 5.0) - 0.5) * 0.004 * keep(0.2, px);
+	} else if (cls == 8) {     // fabric: the quilted bands of today, stitched, not inked
+		vec2 dt = surface_detail(8, P, fax, gax);
+		tn = dt.y - dt.x * 0.22;
+		h = -dt.x * 0.002;
+	} else if (cls == 9) {     // masonry: clay bricks with pressed joints
+		float row = floor(v / 0.34 + 0.5);
+		float bx = u / 0.62 + mod(row, 2.0) * 0.5;
+		float jd = min(abs(fract(v / 0.34 + 0.5) - 0.5) * 0.34, abs(fract(bx + 0.5) - 0.5) * 0.62);
+		float jm = (1.0 - smoothstep(0.0, 0.018, jd)) * keep(0.09, px);
+		float n3 = vn2(q * 5.5 + row);
+		tn = (h21(vec2(floor(bx + 0.5), row)) - 0.5) * 0.2 - jm * 0.24 + (n3 - 0.5) * 0.08 * keep(0.18, px);
+		h = -0.007 * jm + (n3 - 0.5) * 0.005 * keep(0.18, px);
+	} else if (cls == 11) {    // felt: short fibres every way, longer ones brushed down the part, soft blotches of pile
+		float kf = keep(0.07, px); float kc = keep(0.27, px); float kd = keep(0.10, px);
+		float f1 = kf > 0.0 ? dio_flock(q) : 0.5;
+		float f2 = vn2(vec2((P.x + P.z * 0.7) * 10.0, P.y * 2.4)) * 0.6 + vn2(vec2((P.z - P.x * 0.7) * 10.0 + 4.0, P.y * 2.4 + 3.0)) * 0.4;
+		float f3 = gn2(q * 3.6 + 4.0);
+		tn = (f1 - 0.5) * 0.22 * kf + (f2 - 0.5) * 0.26 * kd + (f3 - 0.5) * 0.20 * kc;
+		h = (f1 - 0.5) * 0.008 * kf + (f2 - 0.5) * 0.010 * kd + (f3 - 0.5) * 0.014 * kc;
+	} else {                   // clay (and any key that names no class): thumb dents, and fingerprints close up
+		float n1 = gn2(q * 3.1); float n2 = gn2(q * 9.3 + 3.7);
+		float k1 = keep(0.32, px); float k2 = keep(0.11, px);
+		h = (n1 - 0.5) * 0.012 * k1 + (n2 - 0.5) * 0.004 * k2;
+		tn = (n1 - 0.5) * 0.07 * k1 + (n2 - 0.5) * 0.04 * k2;
+		float kf = keep(0.02, px);
+		if (kf > 0.0) {
+			vec2 cq = q / 0.62;
+			vec2 cc = floor(cq);
+			vec2 f = cq - cc - 0.5 - (vec2(h21(cc), h21(cc + 3.1)) - 0.5) * 0.3;
+			float r = length(f * vec2(1.0, 1.35));
+			float pat = (1.0 - smoothstep(0.16, 0.30, r)) * step(0.5, h21(cc + 9.7)) * kf;
+			float ridge = sin(r * 0.62 / 0.018 * 6.2832 + atan(f.y, f.x) + n2 * 4.0);
+			h += ridge * 0.0007 * pat;
+			tn += ridge * 0.035 * pat;
+		}
+	}
+	return vec2(tn, h);
+}
+
+// Pebbles pressed into the clay of a road: x = body (0..1), y = height (m), z = the dark seat around one.
+vec3 dio_pebbles(vec2 q, float px) {
+	vec2 cq = q / 0.72;
+	vec2 c = floor(cq);
+	float hh = h21(c + 1.9);
+	vec2 d = (cq - c - 0.5 - (vec2(hh, h21(c + 5.1)) - 0.5) * 0.55) * 0.72;
+	float pr = 0.035 + 0.05 * h21(c + 9.1);
+	float pd = length(d * vec2(1.0, 1.0 + 0.5 * h21(c + 2.2)));
+	float on = step(hh, 0.24) * keep(0.09, px);
+	float aa = px * 0.8 + 0.002;
+	float body = (1.0 - smoothstep(pr - aa, pr + aa, pd)) * on;
+	float dome = sqrt(max(pr * pr - pd * pd, 0.0)) * 0.55 * on;
+	float seat = (1.0 - smoothstep(pr, pr * 1.9, pd)) * on * (1.0 - body);
+	return vec3(body, dome, seat);
+}
+#endif
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vdepth = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z;
@@ -281,6 +443,17 @@ void vertex() {
 	m1 = texelFetch(pal_lut, ivec2(idx, 1), 0);
 	m2 = texelFetch(pal_lut, ivec2(idx, 2), 0);
 	float sway = texelFetch(pal_lut, ivec2(idx, 3), 0).x;
+#ifdef TL_DIORAMA
+	m3 = texelFetch(pal_lut, ivec2(idx, 3), 0);
+	// a round thing (a blob: whole part 1; the side of a cylinder or cone: whole part 0): the fraction of UV2 is
+	// 0.5 + 0.45 * (n.x, n.z) of its own normal, n.y by the facet's sign
+	vec3 sn_o = vec3(0.0);
+	vec2 sw = floor(UV2);
+	if (g_dio4.a > 0.0 && sw.x == sw.y && sw.x <= 1.0 && UV2.x > sw.x && UV2.y > sw.y) {
+		vec2 se = (UV2 - sw - 0.5) / 0.45;
+		sn_o = vec3(se.x, sqrt(max(1.0 - dot(se, se), 0.0)) * (NORMAL.y < 0.0 ? -1.0 : 1.0), se.y);
+	}
+#endif
 	lp = vec4(CUSTOM0.xyz, float(code % 16));
 #ifdef TL_VILLAGE
 	if (tl_floor_rect.z > tl_floor_rect.x) {
@@ -341,6 +514,9 @@ void vertex() {
 		MODELVIEW_NORMAL_MATRIX = mat3(VIEW_MATRIX) * mat3(pm) * MODEL_NORMAL_MATRIX;
 		vdepth = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z;   // the distance fades follow the drawn place
 	}
+#ifdef TL_DIORAMA
+	sn_v = MODELVIEW_NORMAL_MATRIX * sn_o;
+#endif
 }
 
 void fragment() {
@@ -350,6 +526,12 @@ void fragment() {
 	}
 	vec3 c = m0.rgb * COLOR.rgb;
 	int mclass = int(m1.z + 0.5);
+#ifdef TL_DIORAMA
+	// a lump is one piece of clay or felt: the tone each of its facets was given apart is mostly taken back
+	if (g_dio4.a > 0.0 && floor(UV2.x) == 1.0 && floor(UV2.y) == 1.0) {
+		c = m0.rgb * mix(COLOR.rgb, COLOR.rgb / max(max(COLOR.r, max(COLOR.g, COLOR.b)), 0.05), 0.7 * g_dio4.a);
+	}
+#endif
 #ifdef TL_VILLAGE
 	vec3 pigment = COLOR.rgb;
 	if (tl_floor_rect.z > tl_floor_rect.x && tl_clip.x > 0.0) {
@@ -374,6 +556,152 @@ void fragment() {
 	float n = vnoise(vec3(mp.x * 0.30, mp.y * 0.8, mp.z * 0.30)) * 0.6 + vnoise(mp * 1.35) * 0.4;
 	c *= 1.0 + (n - 0.5) * 2.0 * mk;
 	float em = m0.a;
+#ifdef TL_DIORAMA
+	// the soft edge of a box face (TLMesh writes the place on the face into UV2): an eighth of a round, so two faces that
+	// meet at a right angle end on the same normal and the block reads as rolled clay or sanded wood, not as a cut solid
+	vec2 bev_g = vec2(0.0);   // the slope of the soft edge along the face's two sides (exact, as `lin` above)
+	vec2 bev_k = vec2(0.0);   // metres of face per unit of UV2
+	float edge_k = 0.0;
+	float thin_k = 1.0;   // 0.3 on a member thinner than a hand: its plate seams and board joints would read as dots along it
+	vec2 eq = floor(UV2);
+	if (g_dio3.a > 0.0 && eq.x > 1.5 && eq.y > 1.5) {   // 2 cm or more: a box face (0 and 1 are round things)
+		vec2 fsz = eq * 0.01;
+		thin_k = mix(0.3, 1.0, smoothstep(0.08, 0.22, min(fsz.x, fsz.y)));
+		vec2 fpos = clamp((UV2 - eq - 0.002) / 0.996, 0.0, 1.0) * fsz;
+		vec2 fd = min(fpos, fsz - fpos);
+		float bw = min(g_dio3.a, 0.5 * min(fsz.x, fsz.y));
+		float px_v = 2.0 * vdepth / (abs(PROJECTION_MATRIX[1][1]) * VIEWPORT_SIZE.y);
+		float bkeep = 1.0 - smoothstep(0.35, 1.0, px_v / bw);
+		float fdm = min(fd.x, fd.y);
+		if (fdm < bw && bkeep > 0.0) {
+			float R = bw / 0.7071;
+			float x = bw - fdm;
+			// the edge is an eighth of a round of radius R: h = sqrt(R^2 - x^2) - R, x = how far into the soft edge
+			float bsl = x / sqrt(max(R * R - x * x, 1e-8)) * bkeep;
+			if (fd.x <= fd.y) { bev_g.x = fpos.x < fsz.x * 0.5 ? bsl : -bsl; } else { bev_g.y = fpos.y < fsz.y * 0.5 ? bsl : -bsl; }
+			bev_k = fsz / 0.996;
+			edge_k = (x / bw) * bkeep * smoothstep(2.5, 5.0, min(fsz.x, fsz.y) / bw);   // a thin bar is all edge: no extra wear
+		}
+	}
+	// ---- the handmade surface: tone and height of this fragment, in the part's own space (land: the world's)
+	float hgt = 0.0;
+	vec3 lin_g = vec3(0.0);
+	float gloss = m3.y > 0.0 ? m3.y : g_dio2.x;
+	float fuzz = m3.z;
+	vec3 P_d = lp.xyz * m1.w;
+	float px_d = max(length(dFdx(P_d)), length(dFdy(P_d)));
+	{
+		int code = int(lp.w + 0.5);
+		int fax = code % 4;
+		float dk = g_detail.x * m2.x;
+		if (mclass == 5) {
+			// land: a sheet of felt (grass) laid on clay (earth, the road), clay slabs where it is steep
+			vec2 gq = lp.xz * m1.w;
+			px_d = sqrt(max(min(length(dFdx(P_d)), length(dFdy(P_d))), 1e-5) * px_d);   // seen at a grazing angle: the mean footprint
+#ifdef TL_VILLAGE
+			float grassy = pigment.g - pigment.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
+#else
+			float grassy = COLOR.g - COLOR.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
+#endif
+			float gfw = fwidth(grassy) * 2.5 + 0.006;
+			float gm = smoothstep(-gfw, gfw, grassy);
+			float flat_k = step(0.5, wn.y);
+			// felt: fibres brushed one way, cross fibres, soft blotches of pile; broad patches of two greens as today, gentler
+			float kf = keep(0.07, px_d); float kc = keep(0.30, px_d); float kb = keep(1.1, px_d);
+			float f1 = kf > 0.0 ? dio_flock(gq) : 0.5;
+			float f3 = gn2(gq * 3.3 + 4.0);
+			float f4 = gn2(gq * 0.9 + 8.0);
+			float felt_t = (f1 - 0.5) * 0.25 * kf + (f3 - 0.5) * 0.20 * kc + (f4 - 0.5) * 0.14 * kb;
+			float felt_h = (f1 - 0.5) * 0.012 * kf + (f3 - 0.5) * 0.016 * kc + (f4 - 0.5) * 0.02 * kb;
+			float gpa = vn2(gq * 0.034 + 5.0) * 0.6 + vn2(gq * 0.11 + 2.0) * 0.4;
+			vec3 gtint = mix(vec3(0.84, 0.97, 0.92), vec3(1.08, 1.03, 0.76), smoothstep(0.30, 0.70, gpa));
+			// one sheet of felt has one dye: where the land's pigment is a blur of grass and rock or earth, the felt side of
+			// the cut takes the grass colour back (its own lightness kept), so the cut is clean and nothing looks sprayed
+			float muddy = (1.0 - smoothstep(0.0, 0.07, grassy)) * gm;
+			float glum = clamp(dot(c, vec3(0.3, 0.6, 0.1)) / max(dot(g_dio4.rgb, vec3(0.3, 0.6, 0.1)), 0.01), 0.75, 1.15);
+			c = mix(c, g_dio4.rgb * glum, muddy * 0.8);
+			// ... and the clay beside the cut loses the green that bled into it (the blend undone, as far as it can be guessed)
+			float bled = (1.0 - smoothstep(0.0, 0.12, -grassy)) * (1.0 - gm);
+			c = max(c + (c - g_dio4.rgb * glum) * (bled * 0.45), vec3(0.0));
+			// clay: crumbs and thumb dents, pebbles pressed in
+			float c1 = gn2(gq * 1.7); float c2 = gn2(gq * 6.5 + 5.0); float c3 = vn2(gq * 21.0);
+			float kc1 = keep(0.58, px_d); float kc2 = keep(0.15, px_d); float kc3 = keep(0.048, px_d);
+			float clay_t = (c1 - 0.5) * 0.14 * kc1 + (c2 - 0.5) * 0.14 * kc2 + (c3 - 0.5) * 0.12 * kc3 + (vn2(gq * 0.3) - 0.5) * 0.10;
+			float clay_h = (c1 - 0.5) * 0.03 * kc1 + (c2 - 0.5) * 0.012 * kc2 + (c3 - 0.5) * 0.003 * kc3;
+			vec3 pb = dio_pebbles(gq, px_d) * (1.0 - gm) * flat_k;
+			c = mix(c, c * gtint, gm * 0.8);
+			c *= 1.0 + mix(clay_t, felt_t, gm) * dk;
+			c = mix(c, c * 0.62, pb.z * 0.8);
+			c = mix(c, mix(c, vec3(0.62, 0.58, 0.56), 0.55) * (1.0 + (h21(floor(gq / 0.72) + 4.0) - 0.5) * 0.3), pb.x);
+			// the felt lies on the clay: its cut edge is a step the low sun catches, and it throws a narrow seat shadow
+			float lip = (1.0 - smoothstep(0.0, gfw * 2.4, abs(grassy))) * (1.0 - smoothstep(0.2, 0.7, fwidth(lp.x) * 6.0));
+			c = mix(c, c * vec3(0.66, 0.62, 0.58), lip * (1.0 - gm) * 0.7 * g_detail.x);
+			hgt = mix(clay_h, felt_h + 0.03, gm) + pb.y;
+			gloss = mix(0.10, 0.0, gm);
+			gloss = mix(gloss, 0.30, pb.x);
+			fuzz = max(fuzz, gm * 0.55);
+			float steep = 1.0 - smoothstep(0.50, 0.74, wn.y);
+			if (steep > 0.0 && g_strata.y > 0.0) {
+				float sv = wpos.y / g_strata.y + vnoise(vec3(wpos.x * 0.07, 1.0, wpos.z * 0.07)) * 2.2 + vnoise(wpos * 0.6) * 0.35;
+				float layer = floor(sv + 0.5);
+				float sfw = fwidth(sv);
+				float skeep = 1.0 - smoothstep(0.25, 0.8, sfw);
+				float joint = (1.0 - smoothstep(0.03, 0.10 + sfw * 1.3, abs(fract(sv + 0.5) - 0.5))) * step(0.15, h21(vec2(layer, 7.0)));
+				float knife = vnoise(vec3(wpos.x * 0.9, wpos.y * 30.0, wpos.z * 0.9));
+				c *= 1.0 + (h21(vec2(layer, 3.0)) - 0.5) * g_strata.z * steep * (0.4 + 0.6 * skeep);
+				c *= 1.0 - joint * 0.30 * g_strata.x * steep * skeep + (knife - 0.5) * 0.10 * steep * keep(0.04, px_d);
+				float ss = fract(sv + 0.5) - 0.5;
+				c *= 1.0 + (smoothstep(-0.26, -0.12, ss) * (1.0 - smoothstep(-0.12, -0.03, ss)) - smoothstep(0.03, 0.10, ss) * (1.0 - smoothstep(0.10, 0.30, ss))) * 0.12 * steep * skeep;
+				hgt += (-0.05 * joint * skeep + (knife - 0.5) * 0.004 * keep(0.04, px_d)) * steep;
+				fuzz *= 1.0 - steep;
+			}
+		} else {
+			vec2 ds = dio_surface(mclass, P_d, fax, code / 4, px_d, lin_g);
+			lin_g *= dk * thin_k;
+			float tone_k = dk * (1.0 - smoothstep(g_detail2.w * 0.6, g_detail2.w, vdepth));
+			c *= 1.0 + ds.x * tone_k * thin_k;
+			hgt = ds.y * dk * thin_k;
+			if (mclass == 6 && g_strata.y > 0.0) {
+				// far bluffs and mesas: slabs of world height, a tone per slab and a pressed joint, at any distance
+				float farw = smoothstep(g_detail.y * 0.4, g_detail.z, vdepth);
+				float band = g_strata.y * 2.0;
+				float fsv = wpos.y / band + vnoise(vec3(wpos.x * 0.045, 2.0, wpos.z * 0.045)) * 1.4 + vnoise(wpos * 0.31) * 0.12;
+				float fl = floor(fsv + 0.5);
+				float ffw = fwidth(fsv);
+				float fkeep = 1.0 - smoothstep(0.7, 1.4, ffw);
+				float fjoint = (1.0 - smoothstep(max(0.03, ffw * 0.7), max(0.09, ffw * 0.7) + ffw * 1.3 + 0.002, abs(fract(fsv + 0.5) - 0.5))) * step(0.2, h21(vec2(fl, 6.0)));
+				float steepf = 1.0 - smoothstep(0.55, 0.85, wn.y);
+				c *= 1.0 + (h21(vec2(fl, 2.0)) - 0.5) * 0.26 * farw * steepf;
+				c *= 1.0 - fjoint * 0.30 * farw * steepf * fkeep;
+				// each slab is rolled: its top rim, under the joint, catches the sky; its foot, over the joint, turns away
+				float fs = fract(fsv + 0.5) - 0.5;
+				float frim = smoothstep(-0.26, -0.12, fs) * (1.0 - smoothstep(-0.12, -0.03, fs)) - smoothstep(0.03, 0.10, fs) * (1.0 - smoothstep(0.10, 0.30, fs));
+				c *= 1.0 + frim * 0.13 * farw * steepf * fkeep;
+				c = mix(c, c * vec3(1.10, 1.03, 0.94), farw * (1.0 - steepf) * 0.5);
+			}
+			// paint: brush strokes along the part, and chips that show what is under it
+			float chip = m3.w * g_dio.w;
+			if (chip > 0.0) {
+				vec2 q = fax == 0 ? P_d.zy : (fax == 1 ? P_d.xz : P_d.xy);
+				int gax = code / 4;
+				float along = P_d[gax];
+				float across = dot(q, vec2(1.0)) - along;
+				float br = vn2(vec2(along * 1.7, across * 36.0));
+				float kb = keep(0.05, px_d);
+				c *= 1.0 + (br - 0.5) * 0.12 * kb * chip;
+				hgt += (br - 0.5) * 0.0012 * kb;
+				float cn = vn2(q * 5.0 + 1.7) * 0.6 + vn2(q * 17.0 + 3.0) * 0.4;
+				float thr = 0.76 - 0.10 * chip - 0.30 * edge_k * edge_k * chip;   // paint wears first where a corner is knocked
+				float cfw = fwidth(cn) * 1.2 + 0.004;
+				float cm = smoothstep(thr - cfw, thr + cfw, cn) * keep(0.06, px_d);
+				c = mix(c, g_dio3.rgb * (0.85 + 0.3 * vn2(q * 9.0)), cm * 0.85);
+				hgt -= 0.0016 * cm;
+				gloss *= 1.0 - cm * 0.8;
+			}
+			if (m2.z > 0.5) { hgt *= 0.12; }   // a rink is poured smooth
+		}
+	}
+#else
 	if (mclass > 0) {
 		int code = int(lp.w + 0.5);
 		vec2 dt = surface_detail(mclass, lp.xyz * m1.w, code % 4, code / 4);
@@ -450,6 +778,7 @@ void fragment() {
 			}
 		}
 	}
+#endif
 	if (m2.z > 0.5) {
 		c = ice_surface(c, lp.xyz, uvv, wpos, fres);
 		c = mix(c, g_haze.rgb * 1.5, fres * 0.35);
@@ -499,14 +828,91 @@ void fragment() {
 	// Tag bodies and ground-class terrain in the normal/roughness prepass for ink.
 	ROUGHNESS = tl_body.x > 0.5 ? 0.5 : (mclass == 5 ? 0.9 : 1.0);
 	SPECULAR = 0.0;
+#ifdef TL_DIORAMA
+	// the marks tilt the normal the light sees (never NORMAL itself: the prepass and the ink stay as they are)
+	vec3 nv = normalize(NORMAL);
+	if (dot(sn_v, sn_v) > 0.2) { nv = normalize(mix(nv, normalize(sn_v), g_dio4.a)); }   // a lump is lit as the round thing it is
+	vec3 nb = nv;
+	float bump_k = g_dio.x * (1.0 - smoothstep(g_dio.y, g_dio.z, vdepth));
+	if (bump_k > 0.001 || bev_g != vec2(0.0)) {
+		vec3 dpx = dFdx(VERTEX); vec3 dpy = dFdy(VERTEX);
+		vec3 r1 = cross(dpy, nv); vec3 r2 = cross(nv, dpx);
+		float det = dot(dpx, r1);
+		float hsum = hgt * bump_k * 3.0;
+		vec3 lg = lin_g * (bump_k * 3.0);
+		vec2 bx = dFdx(UV2) * bev_k; vec2 by = dFdy(UV2) * bev_k;
+		vec3 grad = sign(det) * ((dFdx(hsum) + dot(dFdx(P_d), lg) + dot(bx, bev_g)) * r1 + (dFdy(hsum) + dot(dFdy(P_d), lg) + dot(by, bev_g)) * r2);
+		float gl = length(grad);
+		float gmax = abs(det) * 1.1;
+		if (gl > gmax) { grad *= gmax / gl; }
+		vec3 nt = abs(det) * nv - grad;
+		// a sliver of a triangle has no usable derivatives (seen: white sparks along terrain seams): keep its own normal
+		if (abs(det) > 1e-10 && dot(nt, nt) > 1e-20 && dot(nt, nt) < 1e20) { nb = normalize(nt); }
+	}
+	vec3 wnb = normalize((INV_VIEW_MATRIX * vec4(nb, 0.0)).xyz);
+	float ndv = clamp(dot(nb, VIEW), 0.0, 1.0);
+	gloss = max(gloss * (1.0 - step(0.001, fuzz) * 0.85), m1.x * 0.8);
+	// where the lit normal turns faster than the pixels can follow (a soft edge far off, fine marks), a tight highlight would
+	// break into sparks that move with the eye: the gloss is spread instead
+	gloss *= 1.0 - 0.9 * smoothstep(0.10, 0.55, length(dFdx(nb)) + length(dFdy(nb)));
+	vec3 amb = mix(g_amb_gnd.rgb, g_amb_sky.rgb, wnb.y * 0.5 + 0.5) * g_amb_sky.a;
+	vec3 bdir = normalize(vec3(-g_sun_dir.x, -0.55, -g_sun_dir.z));
+	float bk = pow(clamp(dot(wnb, bdir) * 0.5 + 0.5, 0.0, 1.0), 2.0);
+	// felt and flocking: the pile catches light where the surface turns away from the eye
+	float sheen = pow(1.0 - ndv, 2.5) * fuzz * g_dio2.y;
+	EMISSION = c * amb * (1.0 + sheen * 1.4) + c * em + c * g_bounce.rgb * (g_bounce.a * bk);
+	// gloss (painted plastic, varnish, wet clay): the sky stands in it, most at grazing angles
+	vec3 rdir = reflect(-vw, wnb);
+	vec3 skyc = mix(g_haze.rgb, g_amb_sky.rgb * 1.5, smoothstep(0.0, 0.7, rdir.y)) * smoothstep(-0.25, 0.05, rdir.y);
+	EMISSION += skyc * (0.04 + 0.96 * pow(1.0 - ndv, 5.0)) * gloss * g_dio2.z;
+	bn_l = nb;
+	gf_l = vec2(gloss, fuzz);
+	wn_l = wnb;
+#else
 	vec3 amb = mix(g_amb_gnd.rgb, g_amb_sky.rgb, wn.y * 0.5 + 0.5) * g_amb_sky.a;
 	// cheap bounce: sunlit ground throws warm light up and back at faces that look away from the sun and down
 	vec3 bdir = normalize(vec3(-g_sun_dir.x, -0.55, -g_sun_dir.z));
 	float bk = pow(clamp(dot(wn, bdir) * 0.5 + 0.5, 0.0, 1.0), 2.0);
 	EMISSION = c * amb + c * em + c * g_bounce.rgb * (g_bounce.a * bk);
 	wn_l = wn;
+#endif
 }
 
+#ifdef TL_DIORAMA
+void light() {
+	vec3 N = normalize(bn_l);
+	float ndl = dot(N, LIGHT);
+	float gloss = gf_l.x; float fuzz = gf_l.y;
+	vec3 hv = normalize(LIGHT + VIEW);
+	float pw = exp2(3.0 + gloss * 7.0);
+	float spec = pow(max(dot(N, hv), 0.0), pw) * (0.15 + gloss * 1.6) * gloss * smoothstep(0.0, 0.2, ndl) * g_dio2.w;
+	if (!LIGHT_IS_DIRECTIONAL) {
+		// local lights (windows, sparks): soft falloff, the same marks and gloss
+		float la = ATTENUATION * smoothstep(0.0, 0.25, ndl * 0.6 + 0.4);
+		DIFFUSE_LIGHT += LIGHT_COLOR * la * (2.0 - la) * 0.5 / PI;
+		SPECULAR_LIGHT += LIGHT_COLOR * spec * ATTENUATION / PI;
+	} else {
+		// one smooth ramp from the shade colour to the sun (g_bands: x = fully lit from, y = shade until, w = wrap)
+		float wrap = g_bands.w + fuzz * 0.2;
+		float lt = clamp((ndl + wrap) / (1.0 + wrap), 0.0, 1.0);
+		float lit = smoothstep(g_bands.y, g_bands.x, lt) * ATTENUATION;
+		vec3 litc = g_sun.rgb * g_sun.a;
+		vec3 shade_n = mix(g_shade2.rgb, g_shade.rgb, smoothstep(-0.3, 0.85, wn_l.y));
+		vec3 shc = mix(litc, mix(g_shade.rgb, shade_n, g_shade2.a), g_shade.a);
+		DIFFUSE_LIGHT += mix(shc, litc, lit);
+		// modelling clay is a little waxy: along the turn from light to shade the sun comes back out warm
+		float turn = (lt - 0.30) / 0.17;
+		DIFFUSE_LIGHT += litc * vec3(1.0, 0.42, 0.25) * (g_dio5.x * exp(-turn * turn) * ATTENUATION * (1.0 - fuzz));
+		SPECULAR_LIGHT += litc * spec * ATTENUATION;
+		float ndv = clamp(dot(N, VIEW), 0.0, 1.0);
+		float fr = pow(1.0 - ndv, 2.5);
+		DIFFUSE_LIGHT += litc * fr * fuzz * g_dio2.y * 0.5 * (0.2 + 0.8 * lit);
+		float back = clamp(ndl + 0.35, 0.0, 1.0);
+		SPECULAR_LIGHT += g_rim.rgb * g_rim.a * fr * back * smoothstep(0.1, 0.6, ATTENUATION) * rim_w;
+		SPECULAR_LIGHT += g_rim2.rgb * g_rim2.a * fr * smoothstep(0.1, -0.4, ndl) * rim_w;
+	}
+}
+#else
 void light() {
 	vec3 N = normalize(NORMAL);
 	float ndl = dot(N, LIGHT);
@@ -556,3 +962,4 @@ void light() {
 	SPECULAR_LIGHT += g_rim2.rgb * g_rim2.a * fr * smoothstep(0.1, -0.4, ndl) * rim_w;   // P3: the cool edge that turns a shape away from the light
 	}
 }
+#endif
