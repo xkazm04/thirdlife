@@ -58,7 +58,7 @@ func _jacket(team: bool) -> void:
 	part("Chest", Finish.CLAY)
 	piece(Vector3(0,1.445,-.004), Vector3(.121,.105,.126), "skin", EGG, 14)
 	# A rolled stand collar with a lower front and a shadow at the neck.
-	part("Backpack", Finish.ENAMEL, .31)
+	part("Backpack", Finish.ENAMEL if team else Finish.COLLAR, .31)
 	if team:
 		piece(Vector3(0,1.418,0), Vector3(.202,.044,.155), "trim", ROLL, 20, Vector3(6,0,0), Form.KNIT)
 	else:
@@ -201,14 +201,15 @@ func _sculpt_face(helmet: bool) -> void:
 
 func _hair() -> void:
 	# The scalp sits on the head. Only the crown and forelock have secondary motion.
-	part("Head", Finish.HAIR)
+	part("Head", Finish.SCALP)
 	piece(Vector3(0,1.798,.020), Vector3(.347,.184,.291), "hair", DOME, 40, Vector3(0,-4,0), Form.HAIRLINE, Color(1,.98,.94))
+	part("Head", Finish.HAIR_ROLL)
 	for s: float in [-1.0,1.0]:
 		piece(Vector3(s*.27,1.769,-.081), Vector3(.048,.089,.081), "hair", TIP, 14, Vector3(19,-s*17,s*13), Form.LOCK, SHADE)
 	# A low sweep from one temple melts into the nape.
 	piece(Vector3(-.222,1.792,.178), Vector3(.078,.153,.062), "hair", TIP, 16, Vector3(-24,21,-28), Form.LOCK)
-	part("Hair", Finish.HAIR)
-	piece(Vector3(.097,1.998,.072), Vector3(.147,.089,.120), "hair", EGG, 18, Vector3(18,-27,-31), Form.LOCK, Color(1,.95,.90))
+	part("Hair", Finish.HAIR_ROLL)
+	piece(Vector3(.097,1.998,.072), Vector3(.147,.089,.120), "hair", EGG, 18, Vector3(14,-27,-21), Form.LOCK, Color(1,.94,.86), .79)
 	piece(Vector3(-.103,1.936,.185), Vector3(.132,.128,.098), "hair", CURL, 24, Vector3(64,-18,22), Form.CURL)
 	piece(Vector3(.034,1.914,-.153), Vector3(.156,.079,.122), "hair", TIP, 16, Vector3(-26,-13,-62), Form.LOCK, Color(1,.97,.93))
 	# A flat thumb-swept fringe flows down one temple.

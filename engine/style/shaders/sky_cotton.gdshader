@@ -17,6 +17,7 @@ uniform float sun_draw_elev = 6.0;
 uniform float sun_draw_yaw = 0.0;
 uniform float brush = 0.12;
 uniform float cloud_scale = 1.0;
+uniform float cloud_wrap = 0.0;
 uniform float fibre_spread_deg = 0.0;
 
 // Pins on the cyclorama, in painting order. Bearing is relative to the painted
@@ -137,6 +138,9 @@ vec3 pinned_tuft(vec3 base, vec3 d, vec3 sun, vec2 bearing, vec4 pin) {
 	vec3 lamp = normalize(vec3(side*1.56, 0.78, mix(0.28,-0.30,backlight)));
 	float fluff = nap*0.11 + fibre*0.085 + (noise3(wool*47.0)-0.5)*0.045;
 	float diffuse = smoothstep(-0.52, 0.96, dot(n,lamp) + fluff);
+	// Light scattered by the batting reaches around the lit face. The seam
+	// below still occludes it where two cotton rolls meet.
+	diffuse += cloud_wrap * (1.0-diffuse) * smoothstep(-0.42, 0.38, dot(n,lamp));
 	float bounce = smoothstep(-0.6, 1.1, y);
 	float seam = clamp(tuft(p + lamp*0.41, seed)/0.41, 0.0, 1.0);
 	// The open front of each roll also receives diffuse light from the
@@ -145,7 +149,8 @@ vec3 pinned_tuft(vec3 base, vec3 d, vec3 sun, vec2 bearing, vec4 pin) {
 	vec3 shade = mix(cloud_shade, cloud, 0.035 + 0.075*bounce + 0.23*fill*fill*(0.55+0.45*seam));
 	vec3 key_light = mix(cloud, glow, 0.22*backlight);
 	// Preserve the front folds when the viewer has the key at their back.
-	vec3 lit = mix(shade, key_light*mix(1.22,1.44,backlight), diffuse * (0.55+0.45*seam));
+	float key_gain = mix(1.22,1.44,backlight) - cloud_wrap*mix(0.0286,0.0571,backlight);
+	vec3 lit = mix(shade, key_light*key_gain, diffuse * (0.55+0.45*seam));
 	lit *= 1.0 + fluff*0.91 + (grain-0.5)*0.12;
 	// The nap scatters a little sunset light right around the silhouette.
 	lit += glow * (0.04 + 0.16*max(0.0,dot(d,sun))) * (1.0-clamp(n.z,0.0,1.0)) * (0.25+0.75*diffuse);

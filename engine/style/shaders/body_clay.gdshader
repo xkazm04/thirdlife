@@ -5,6 +5,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 // even where two bones share a sleeve. UV.x is the sculptor's worn-edge mask.
 uniform sampler2D pal_lut : filter_nearest, repeat_disable;
 global uniform vec4 g_sun_dir;
+global uniform vec4 g_sun;
 global uniform vec4 g_bounce;
 global uniform vec4 g_amb_sky;
 instance uniform vec4 tl_plot = vec4(0.0);
@@ -81,12 +82,17 @@ float pressed_fold(vec2 q, vec2 span, float slope, float curl) {
 void fragment() {
 	vec3 p = clay;
 	vec2 sheet = vec2(p.x + .37 * p.z, p.y + .12 * p.z);
-	float hair = float(abs(finish - 2.0) < .1);
+	float roll = float(abs(finish - 11.0) < .1);
+	float scalp = float(abs(finish - 13.0) < .1);
+	float crown = max(scalp,roll);
+	float collar = float(abs(finish - 12.0) < .1);
+	float hair = max(crown, float(abs(finish - 2.0) < .1));
 	float jacket = float(abs(finish - 6.0) < .1);
 	float denim = float(abs(finish - 8.0) < .1);
 	float sleeve = float(abs(finish - 9.0) < .1);
 	float boot = float(abs(finish - 10.0) < .1);
-	float enamel = max(max(jacket,sleeve), float(abs(finish - 1.0) < .1));
+	float coat = max(collar,max(jacket,sleeve));
+	float enamel = max(coat, float(abs(finish - 1.0) < .1));
 	float glossy = float(abs(finish - 4.0) < .1);
 	float helmet = float(abs(finish - 5.0) < .1);
 	float cloud = noise3(p * 13.0 + vec3(5, 3, 9));
@@ -99,7 +105,9 @@ void fragment() {
 	float tool = noise3(vec3(31.0*p.x+9.0*p.y, 64.0*p.y+11.0*p.z+1.3*cloud, 36.0*p.z-8.0*p.x));
 	float handled = max(max(hair,boot),max(max(jacket,sleeve),denim));
 	float tooling = (tool-.5)*handled*smoothstep(.14,.66,cloud)*(1.0-smoothstep(.006,.025,footprint));
-	float print_h = hair * impression(sheet - vec2(-.075, 1.775), vec2(.137,.087), .3) * smoothstep(.03,.16,p.z)
+	// The side of the thumb sweeps up the left side of the nape.
+	vec2 thumb = vec2(p.y-1.766+.18*(p.x+.12), -p.x-.124+.28*(p.z-.240));
+	float print_h = crown * 1.9 * impression(thumb, vec2(.116,.134), .8) * smoothstep(.04,.15,p.z)
 		+ hair * impression(p.xy - vec2(.098,2.012), vec2(.092,.052), 2.1) * smoothstep(.06,.12,p.z)
 		+ jacket * impression(vec2(sheet.x,sheet.y-.27*sheet.x) - vec2(-.091, 1.10), vec2(.142,.066), 1.7)
 		+ sleeve * impression(sheet - vec2(-.29, 1.24), vec2(.085,.094), 2.9)
@@ -113,7 +121,7 @@ void fragment() {
 			+ 0.72*pressed_fold(p.xy - vec2(0.145,1.124), vec2(0.094,0.013), -0.31, 0.010);
 		fold *= back;
 	} else if (hair > 0.5) {
-		fold = back*pressed_fold(p.xy - vec2(0.025,1.744), vec2(0.229,0.020), -0.17, 0.067);
+		fold = .55*back*pressed_fold(p.xy - vec2(0.025,1.744), vec2(0.229,0.020), -0.17, 0.067);
 	} else if (denim > 0.5) {
 		vec2 leg = vec2(abs(p.x)-0.147, p.y-0.385-0.036*sign(p.x));
 		fold = smoothstep(0.005,0.090,p.z)*pressed_fold(leg, vec2(0.110,0.012), -0.30, 0.014);
@@ -192,6 +200,13 @@ void fragment() {
 	bisque = mix(bisque, mix(paint,vec3(.54,.32,.14),.77),boot);
 	pigment *= 1.0 + .028*print_h + .14*fold;
 	pigment *= mix(vec3(1),vec3(.90,1.04,1.03),hair);
+	// The ochre clay and vermilion slip take a fuller colour on the broad flats.
+	float copper = crown * smoothstep(.035,.14,paint.r-paint.b);
+	pigment *= mix(vec3(1.0), vec3(2.44,1.91,.55), copper);
+	pigment *= 1.0 + copper*(.18*(cloud-.5) + .26*tooling);
+	// Keep the garment's palette identity when a pack supplies its own colours.
+	float vermilion = coat * smoothstep(.04,.22,paint.r-max(paint.g,paint.b));
+	pigment *= mix(vec3(1.0), vec3(2.02,.74,.65), vermilion);
 	float leather = boot*smoothstep(.012,.085,paint.r-paint.b);
 	pigment *= mix(vec3(1),vec3(1.65,1.53,.87),leather);
 	pigment *= 1.0 + .52*welt*(.62+.38*cloud);
@@ -225,6 +240,25 @@ void fragment() {
 	EMISSION = g_amb_sky.a * (ALBEDO * (vec3(.045) + 1.55*bounce*sky*sky)
 		+ sheen * bounce * (.032 + .07*hair + .050*enamel + .08*boot + .08*helmet))
 		+ .40*floor_light*g_bounce.rgb*ALBEDO;
+	// Broad reflection of the sunlit surroundings on the burnished clay.
+	// A groove sees less of that light than the crest immediately beside it.
+	vec2 sky_azimuth = .53*g_sun_dir.xz + .85*vec2(g_sun_dir.z,-g_sun_dir.x);
+	vec3 warm_sky = normalize(vec3(sky_azimuth.x,.78,sky_azimuth.y));
+	float facing = max(dot(n,warm_sky),0.0);
+	float wax = pow(max(dot(reflection,warm_sky),0.0),4.0);
+	// A broad flat picks up colour from the whole sky patch. Roll that
+	// response off before adding the smaller reflection on a polished curl.
+	float plane = facing*facing;
+	float peak = max(plane-0.33,0.0);
+	float broad_light = plane-peak+peak/(1.0+4.0*peak);
+	vec3 bank_light = mix(vec3(1),g_sun.rgb,.48*smoothstep(.35,1.0,plane));
+	// Handling has polished the back of the head beneath the crown rolls.
+	float rubbed = scalp * smoothstep(.06,.23,p.z) * (.7 + .3*cloud);
+	float hair_fill = (2.0*scalp + .80*rubbed + 3.48*roll) * broad_light;
+	vec3 clay_fill = ALBEDO * (hair_fill + coat*1.18*mix(plane,broad_light,.5));
+	vec3 burnish = (1.42*roll + .20*scalp + .3*rubbed) * mix(paint,vec3(.31,.16,.024),copper)
+		+ coat * mix(.22*paint,vec3(.13,.045,.014),vermilion);
+	EMISSION += g_amb_sky.a * g_sun.a * (bank_light*clay_fill + burnish*wax);
 	ROUGHNESS = clamp(.56 - enamel * .11 - boot * .17 - hair * .065 - glossy * .25 - helmet * .18
 		+ .10 * (1.0 - cloud) + .13*tooling + chip * .16, .22, .83);
 	SPECULAR = .39 + .08 * enamel + .12 * glossy;

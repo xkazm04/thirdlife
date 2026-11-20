@@ -11,18 +11,36 @@ uniform float grain = 0.02;
 uniform float lift = 0.02;
 uniform float gamma = 1.0;
 uniform float paper = 0.03;   // gouache-on-paper: blotchy pigment + fibre grain
+#ifdef TL_PRINT_CURVE
+uniform float print_contrast = 0.0;
+uniform sampler2D grade_patch : hint_screen_texture, repeat_disable, filter_linear_mipmap;
+#endif
 
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 
 void fragment() {
 	vec3 c = textureLod(scr, SCREEN_UV, 0.0).rgb;
 	float l = dot(c, vec3(0.299, 0.587, 0.114));
+#ifdef TL_PRINT_CURVE
+	float paper_value = dot(textureLod(grade_patch, SCREEN_UV, 2.5).rgb, vec3(0.299, 0.587, 0.114));
+	float illumination_offset = clamp(paper_value - l, -0.085, 0.085);
+#endif
 	vec3 tone = mix(shadows, highlights, smoothstep(0.12, 0.85, l));
 	c += (tone - vec3(0.5)) * split * (0.35 + 0.65 * (1.0 - abs(l * 2.0 - 1.0)));
 	l = dot(c, vec3(0.299, 0.587, 0.114));
 	c = mix(vec3(l), c, sat);
 	c = (c - 0.5) * contrast + 0.5 + lift;
 	c = pow(max(c, vec3(0.0)), vec3(1.0 / gamma));
+#ifdef TL_PRINT_CURVE
+	// Separate cast shade from the lit felt, with less gain on the black boots
+	// and on the brightest cloud fibres. Scale RGB together to keep the dyes.
+	// Let the surrounding patch drive exposure so single bright fibres keep their shape.
+	float value = dot(c, vec3(0.299, 0.587, 0.114));
+	value += mix(0.68, 1.0, smoothstep(0.34, 0.59, value)) * contrast * illumination_offset;
+	float shade = smoothstep(0.07, 0.43, value) * (1.0 - smoothstep(0.31, 0.62, value));
+	float lit = smoothstep(0.44, 0.64, value) * (1.0 - smoothstep(0.70, 0.94, value));
+	c *= 1.0 + print_contrast * (0.39 * lit - shade);
+#endif
 	vec2 q = SCREEN_UV - 0.5;
 	q.x *= SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
 	c *= 1.0 - vignette * smoothstep(0.30, 0.95, length(q));

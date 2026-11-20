@@ -460,10 +460,12 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 		we.environment = env0
 		rig.add_child(we)
 	var e0: Dictionary = data["env"]
+	_Dio.horizon_aa(we, e0)
 	var sky: Sky = we.environment.sky
 	var cotton: bool = e0.get("cotton_sky", false)
 	var sky_material := sky.sky_material as ShaderMaterial
 	sky_material.shader = _shader("sky_cotton" if cotton else "sky")
+	if cotton: sky_material.set_shader_parameter(&"cloud_wrap", float(data["sky"].get("cloud_wrap", 0.0)))
 	sky.radiance_size = Sky.RADIANCE_SIZE_512 if cotton else Sky.RADIANCE_SIZE_256
 	sky.process_mode = Sky.PROCESS_MODE_QUALITY if cotton else Sky.PROCESS_MODE_AUTOMATIC
 	push("sky", sky.sky_material)
@@ -515,11 +517,12 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 			rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			var gm: ShaderMaterial = ShaderMaterial.new()
-			gm.shader = _shader("grade")
 			rect.material = gm
 			layer.add_child(rect)
 			rig.add_child(layer)
-		push("grade", (layer.get_node("Rect") as ColorRect).material)
+		var grade_mat: ShaderMaterial = layer.get_node("Rect").material
+		grade_mat.shader = _Dio.variant("grade", "TL_PRINT_CURVE" if data["grade"].has("print_contrast") else "", _shaders)
+		push("grade", grade_mat)
 	elif layer != null:
 		layer.queue_free()
 
@@ -543,6 +546,7 @@ static func _apply_view(host: Node) -> void:
 	var vp: Viewport = host.get_viewport()
 	if vp == null:
 		return
+	_Dio.apply_anisotropy(vp, data["env"])
 	match String((data.get("env", {}) as Dictionary).get("line_aa", "smaa")):
 		"smaa": vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_SMAA
 		"fxaa": vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA

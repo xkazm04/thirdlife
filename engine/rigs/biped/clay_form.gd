@@ -2,7 +2,7 @@ extends TLMesh
 ## Indexed, closed rings in bind space. Each piece has its own outline and paint.
 ## UV holds edge wear and finish. CUSTOM0 retains bind-space position through skinning.
 enum Form { PLAIN, COAT, COLLAR, HAIRLINE, LOCK, LEATHER, KNIT, DENIM, CURL, SLEEVE, FLAP }
-enum Finish { CLAY, ENAMEL, HAIR, SATIN, GLOSS, HELMET, JACKET, SOLE, DENIM, SLEEVE, BOOT }
+enum Finish { CLAY, ENAMEL, HAIR, SATIN, GLOSS, HELMET, JACKET, SOLE, DENIM, SLEEVE, BOOT, HAIR_ROLL, COLLAR, SCALP }
 
 const EGG := [Vector2(-1, .06), Vector2(-.91, .40), Vector2(-.68, .73), Vector2(-.36, .94),
 	Vector2(0, 1), Vector2(.36, .94), Vector2(.68, .73), Vector2(.91, .40), Vector2(1, .06)]
@@ -99,10 +99,10 @@ func piece(at: Vector3, size: Vector3, key: String, rings: Array = EGG, sides: i
 					y += .11 * cos(2.0*angle - .45)
 				Form.HAIRLINE:
 					# Low nape; high brow with pointed sides and a slant above one eye.
-					y += (1.0 - h) * .5 * (-.45 * s - .30 * maxf(s,0.0) + .09 * sin(3.0 * angle + .8) - .10 * c)
+					y += (1.0 - h) * .5 * (-.38 * s - .22 * maxf(s,0.0) + .09 * sin(3.0 * angle + .8) - .10 * c)
 					y += .35*pow(absf(c),5.0)*(1.0-h)*.5
 					var lock := cos(6.0 * angle + 2.7 * h + .5 * sin(3.0 * angle))
-					radius *= 1.0 + .04 * lock - .031 * pow(maxf(-lock,0.0), 8.0)
+					radius *= 1.0 + .060 * lock - .048 * pow(maxf(-lock,0.0), 6.0)
 					# A flattened sweep from the near temple to the middle
 					# of the nape. Give its upper edge a lip and its base a cut.
 					var sweep := (h + .48 + .66*c - .50*c*c) / .30
@@ -117,8 +117,8 @@ func piece(at: Vector3, size: Vector3, key: String, rings: Array = EGG, sides: i
 					# out at the centre. Its shadow is part of the same piece.
 					recess = pow(maxf(0.0,cos(angle - 6.8*radius + .6)), 3.0)
 					recess *= smoothstep(.08,.76,h) * smoothstep(.0,.32,radius)
-					y -= .25 * recess
-					radius *= 1.0 - .08*recess + .06*cos(3.0*angle+h)
+					y -= .16 * recess
+					radius *= 1.0 - .055*recess + .06*cos(3.0*angle+h)
 				Form.LEATHER:
 					z += .32 * (h + 1.0) * .5
 				Form.KNIT:
@@ -150,6 +150,9 @@ func piece(at: Vector3, size: Vector3, key: String, rings: Array = EGG, sides: i
 			# Pigment collects where the rim of one clay piece turns under another.
 			var lip := lerpf(.72, 1.0, smoothstep(-1.0, -.63, h)) if not pointed else 1.0
 			var shade := lip * (1.0 - .24*recess)
+			if form == Form.LOCK and finish == Finish.HAIR_ROLL:
+				# The exposed crest keeps the ochre wash; the pressed-in root holds umber.
+				shade *= lerpf(.48, 1.0, smoothstep(-.50,.48,h+.20*s-.16*c))
 			_vertex(point, Color(tint.r * shade, tint.g * shade, tint.b * shade), edge, palette_id)
 	for j in rings.size():
 		for i in sides:

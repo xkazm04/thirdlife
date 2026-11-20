@@ -36,3 +36,34 @@ At 07 the foreground pebbles and fence shadow now resolve separately. At the vis
 ## Round 2 integration | boot AA delivered
 
 The diorama boot now reads `env.exe_aa` and uses 4× MSAA plus SMAA. `TL_EXE_AA` takes priority, and classic keeps its prior settings. On the same boot walk, far and middle edge energy increased 4.60× and 4.42×. Horizon motion increased from 0.607 to 1.229 luma levels. The three uncaptured walks per build gave GPU medians of 2.462 and 2.497 ms on the shared machine. The frozen-frame and capture-on measurements are in the [round 2 notes](ASTRA-NOTES.md#round-2). The [native boot crops](stills/evidence/boot-window-round-2.jpg) show the effect on the distant rail and road.
+
+
+## For dio-fable | Round 3
+
+The new studio key is `#ffb987` at 1.83 energy, 18° elevation and −122° azimuth. Keep the lit meadow gold-olive and the pines distinctly greener. These are proposed source dyes for your next render.
+
+| Key | Joined | Proposed |
+|---|---|---|
+| `palette.grass` | `#7e9a3e` | `#a3b057` |
+| `palette.grass_dark` | `#4a7836` | `#496c36` |
+| `palette.grass_dry` | `#98a848` | `#b4be63` |
+| `palette.pine` | `#385c34` | `#405d31` |
+| `palette.pine_light` | `#517c40` | `#758945` |
+| `water.sky` | `#ffc59a` | `#f8b786` |
+| `water.sky_top` | `#8a78c8` | `#634d69` |
+| `water.cloud` | `#ffe2b4` | `#ffeeb9` |
+
+The grass and dry-felt proposals add red and blue to the lit nap. They leave green above red in the source dye because `toon.gdshader` uses that difference to identify felt. The rendered key already puts red above green. Use 01 and 07 for sunlit grass and 13 to check the backlit bank. The pine proposal brings up the sunward tier while keeping the underside green. These five dyes are estimates awaiting a material render.
+
+The three river values come from a 1024×512 linear HDR bake of the actual cotton sky. I rendered a second panorama with the tufts hidden, sampled bare sky at 0–3° and 45–60° elevation, trimmed the lowest and highest 10% of luminance in each band, then converted each linear mean to sRGB. For the broad cloud face I took texels at 4–57° whose linear luma exceeded the bare sky by 0.16, then averaged the 65th–90th percentile. The resin shader interpolates its two sky stops by reflected elevation and mixes in 20% shallow-water colour before the reflection is applied. The proposed values belong in its source-colour uniforms. The bakes are in `.tl/astra-r3/radiance/`.
+
+
+**Measured dye response.** RGB values below use the brightest 40% and darkest 15% of yellow-olive pixels in rows 300–719 at 1280×720, reselecting the groups in each frame as the shadows move. The board filter includes some ochre road. The operator's board swatches are 206, 162, 56 in light and 67, 62, 18 in shade. Our implementation of the mask measured 205, 160, 54 and 67, 62, 18.
+
+| View | Joined lit / shade | Round 3 lit / shade |
+|---|---|---|
+| 01 Walker road | 150,155,34 / 97,110,29 | 181,159,34 / 82,80,20 |
+| 07 Parkour road | 144,151,35 / 92,101,26 | 168,149,34 / 65,62,16 |
+| 13 River road | 132,137,26 / 73,79,18 | 103,90,18 / 54,51,11 |
+
+At 07 the shadow is within two levels of the board in every channel. The lit nap still needs roughly +38 red, +13 green and +22 blue. Keep 13 as the check against overly dark backlit felt. A polygon inside the near left pine at 13 averaged 57,71,32 joined and 46,51,21 delivered. Its lightest 30% averaged 57,60,24 delivered. Two board pines averaged 73,79,33 and 76,83,35, with lit tiers at 133,123,52 and 145,133,54. The board's trees face the key differently. Compare that separation on a sunward face in 01 before changing both pine colours again.

@@ -119,6 +119,34 @@ static func far_dof(e0: Dictionary) -> CameraAttributesPractical:
 static var _shadow_filter_set: bool = false
 
 
+class HorizonCompositor extends Compositor:
+	func _init() -> void:
+		compositor_effects = [preload("res://style/dio/horizon_resolve.gd").new()]
+
+
+static func horizon_aa(we: WorldEnvironment, env: Dictionary) -> void:
+	# An explicit AA comparison gets exactly the requested hardware/temporal modes.
+	var on: bool = env.get("horizon_aa", false) and OS.get_environment("TL_EXE_AA").is_empty()
+	if on and RenderingServer.get_current_rendering_method() == "forward_plus":
+		if we.compositor == null:
+			we.compositor = HorizonCompositor.new()
+	elif we.compositor is HorizonCompositor:
+		we.compositor = null
+
+
+## The felt is viewed at grazing angles. Save the caller's sampling level on each
+## viewport so a live style change also restores custom camera or preview settings.
+static func apply_anisotropy(vp: Viewport, env: Dictionary) -> void:
+	const SAVED := &"_tl_pre_diorama_anisotropy"
+	if env.get("anisotropy_16x", false):
+		if not vp.has_meta(SAVED):
+			vp.set_meta(SAVED, vp.anisotropic_filtering_level)
+		vp.anisotropic_filtering_level = Viewport.ANISOTROPY_16X
+	elif vp.has_meta(SAVED):
+		vp.anisotropic_filtering_level = vp.get_meta(SAVED)
+		vp.remove_meta(SAVED)
+
+
 ## The PCSS filter is renderer-wide. A live return to classic restores the project's sampling quality. A fresh
 ## classic run never changes the filter (`sun.filter_quality` absent).
 static func shadow_filter(s: Dictionary) -> void:
