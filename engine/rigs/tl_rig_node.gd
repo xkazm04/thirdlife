@@ -33,6 +33,8 @@ var _vel: Vector3 = Vector3.ZERO
 var _grounded: bool = true
 var _loco_on: bool = false
 var _phase: float = 0.0              # locomotion stride phase, in cycles
+var _bone_ix: Dictionary = {}        # bone name -> index (a pose names its bones every tick: looked up once)
+var _rest_q: Array = []              # rest rotation per bone (what a bone the pose does not name returns to)
 
 
 ## A Skeleton3D only schedules its skin update while it is inside the tree, and a pose set outside the tree leaves
@@ -182,7 +184,10 @@ func to_q(pose: Dictionary) -> Dictionary:
 		if key == "_hips":
 			h = pose[key]
 			continue
-		var bi: int = _sk.find_bone(key)
+		var bi: int = _bone_ix.get(key, -2)
+		if bi == -2:
+			bi = _sk.find_bone(key)
+			_bone_ix[key] = bi
 		if bi < 0:
 			continue
 		var e: Vector3 = pose[key]
@@ -208,11 +213,13 @@ static func mix(a: Dictionary, b: Dictionary, k: float) -> Dictionary:
 ## Rotation only: positions and scales of bones no clip names (the face) are the family's own.
 func _apply(pose: Dictionary) -> void:
 	var q: Dictionary = pose["q"]
-	for bi: int in _sk.get_bone_count():
-		if q.has(bi):
-			_sk.set_bone_pose_rotation(bi, q[bi])
-		else:
-			_sk.set_bone_pose_rotation(bi, _sk.get_bone_rest(bi).basis.get_rotation_quaternion())
+	var n: int = _sk.get_bone_count()
+	if _rest_q.size() != n:
+		_rest_q.clear()
+		for bi: int in n:
+			_rest_q.append(_sk.get_bone_rest(bi).basis.get_rotation_quaternion())
+	for bi: int in n:
+		_sk.set_bone_pose_rotation(bi, q[bi] if q.has(bi) else _rest_q[bi])
 	if _root_bone >= 0:
 		_sk.set_bone_pose_position(_root_bone, _root_rest + (pose["h"] as Vector3))
 
@@ -238,6 +245,11 @@ static func make_skeleton(bones: Array) -> Skeleton3D:
 
 
 func attach_skinned(model: Node3D, sk: Skeleton3D, mk: TLMesh, mesh_name: String) -> MeshInstance3D:
+	return _attach_mesh(model, sk, mk.build(mesh_name))
+
+
+## The same with a mesh that is already built (a family that shares one mesh between equal rigs). Internal to the rigs.
+func _attach_mesh(model: Node3D, sk: Skeleton3D, mesh: Mesh) -> MeshInstance3D:
 	_sk = sk
 	_root_bone = sk.find_bone("Hips")
 	_root_rest = sk.get_bone_rest(_root_bone).origin
@@ -251,7 +263,7 @@ func attach_skinned(model: Node3D, sk: Skeleton3D, mk: TLMesh, mesh_name: String
 		mi.skin = sk.create_skin_from_rest_transforms()
 		mi.skeleton = NodePath("..")
 		mi.extra_cull_margin = 2.0
-	mi.mesh = mk.build(mesh_name)
+	mi.mesh = mesh
 	return mi
 
 

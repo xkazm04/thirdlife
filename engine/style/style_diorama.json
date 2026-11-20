@@ -1,5 +1,13 @@
 {
  "name": "diorama",
+ "_figure": {
+  "variant": "toy",
+  "print": 1.0,
+  "chip": 1.0,
+  "sheen": 1.0,
+  "soft": 1.0,
+  "shade": 0.6
+ },
  "sun": {
   "color": "#ffd9a0",
   "energy": 1.12,

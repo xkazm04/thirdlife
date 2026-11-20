@@ -35,7 +35,8 @@ const FAMILIES: Dictionary = {
 }
 ## runtime-only params (set_param), documented in spec() under `runtime`
 const RUNTIME: Dictionary = {
-	"biped": {"look_at": "Vector3 in world space, or null to clear: neck and head turn towards it (clamped)"},
+	"biped": {"look_at": "Vector3 in world space, or null to clear: neck and head turn towards it (clamped)",
+		"grip": "{at: Vector3, along: Vector3} in world space (a ledge's edge, a bar), or null: on the toy figure of the diorama style both palms are solved onto that line above the shoulders (the classic figure ignores it). Unset, the toy asks the controller above it (TLBiped and the village visitor answer while he hangs, mantles or swings)"},
 	"vehicle": {},
 	"bot": {"look_at": "Vector3 in world space, or null to clear: the head turns towards it"},
 }
