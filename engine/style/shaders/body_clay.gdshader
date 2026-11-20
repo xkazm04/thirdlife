@@ -68,6 +68,16 @@ float impression(vec2 p, vec2 size, float phase) {
 	return ridge * patch * resolved;
 }
 
+// A rounded tool pulled through a soft piece leaves a tapered channel and a
+// low lip on one side. The lip and channel respond to the moving key together.
+float pressed_fold(vec2 q, vec2 span, float slope, float curl) {
+	float u = q.x / span.x;
+	float v = (q.y - slope*q.x - curl*u*u) / span.y;
+	float contact = 1.0 - smoothstep(0.36, 1.0, abs(u));
+	float lip = (v - 1.35) * 0.78;
+	return contact * (0.50*exp(-lip*lip) - exp(-v*v));
+}
+
 void fragment() {
 	vec3 p = clay;
 	vec2 sheet = vec2(p.x + .37 * p.z, p.y + .12 * p.z);
@@ -83,20 +93,37 @@ void fragment() {
 	float grain = noise3(p * 92.0);
 	float footprint = max(length(dFdx(p)), length(dFdy(p)));
 	float fine = 1.0 - smoothstep(.002, .014, footprint);
+	// A modelling tool drags soft clay into short overlapping flats. Its
+	// direction bends with the larger thumb-sized undulations. Use bind space
+	// to carry the relief through a sleeve bend and filter it at play distance.
+	float tool = noise3(vec3(31.0*p.x+9.0*p.y, 64.0*p.y+11.0*p.z+1.3*cloud, 36.0*p.z-8.0*p.x));
+	float handled = max(max(hair,boot),max(max(jacket,sleeve),denim));
+	float tooling = (tool-.5)*handled*smoothstep(.14,.66,cloud)*(1.0-smoothstep(.006,.025,footprint));
 	float print_h = hair * impression(sheet - vec2(-.075, 1.775), vec2(.137,.087), .3) * smoothstep(.03,.16,p.z)
+		+ hair * impression(p.xy - vec2(.098,2.012), vec2(.092,.052), 2.1) * smoothstep(.06,.12,p.z)
 		+ jacket * impression(vec2(sheet.x,sheet.y-.27*sheet.x) - vec2(-.091, 1.10), vec2(.142,.066), 1.7)
 		+ sleeve * impression(sheet - vec2(-.29, 1.24), vec2(.085,.094), 2.9)
 		+ boot * impression(sheet - vec2(.16, .17), vec2(.085,.057), 1.3);
+	// Large thumb pulls follow the nape, the coat's back panel and the two
+	// independently rolled trouser legs. Keep bare skin and team jerseys clear.
+	float fold = 0.0;
+	float back = smoothstep(0.035, 0.145, p.z);
+	if (jacket > 0.5) {
+		fold = pressed_fold(p.xy - vec2(-0.094,1.058), vec2(0.143,0.014), 0.37, -0.018)
+			+ 0.72*pressed_fold(p.xy - vec2(0.145,1.124), vec2(0.094,0.013), -0.31, 0.010);
+		fold *= back;
+	} else if (hair > 0.5) {
+		fold = back*pressed_fold(p.xy - vec2(0.025,1.744), vec2(0.229,0.020), -0.17, 0.067);
+	} else if (denim > 0.5) {
+		vec2 leg = vec2(abs(p.x)-0.147, p.y-0.385-0.036*sign(p.x));
+		fold = smoothstep(0.005,0.090,p.z)*pressed_fold(leg, vec2(0.110,0.012), -0.30, 0.014);
+	}
+	fold *= 1.0-smoothstep(0.012,0.036,footprint);
 	// Shallow gouges fan out through the back of the sculpted hair. The
 	// individual arcs lose depth as the modelling tool lifts at their ends.
 	float fan = atan(p.x, p.z + .025) * 7.0 + 15.0*(p.y-1.72) + 1.3*sin(8.0*p.y+5.0*p.x);
 	float cuts = pow(max(0.0, cos(fan)), 9.0);
 	cuts *= smoothstep(.04,.17,p.z) * smoothstep(1.58,1.72,p.y) * (1.0-smoothstep(1.92,2.02,p.y)) * hair;
-	// Three or four strokes of a blunt tool curl out from the left nape.
-	float comb = 29.0 * (p.y - 1.70 - .44*p.x + 2.6*(p.x+.10)*(p.x+.10));
-	float rake = pow(max(0.0,cos(6.28318*comb)), 4.0) * (1.0-smoothstep(.2,.52,fwidth(comb)));
-	vec2 nape = (p.xy - vec2(-.156,1.72)) / vec2(.181,.102);
-	cuts += .18*rake*(1.0-smoothstep(.28,1.12,length(nape))) * hair * smoothstep(.07,.20,p.z);
 	// A seam pressed into the back yoke; ends wrap around the armholes.
 	float yoke_line = p.y - 1.253 - 1.06 * p.x*p.x - .010*p.x;
 	float yoke = jacket * smoothstep(.04,.13,p.z) * (1.0-smoothstep(.001,.006+footprint,abs(yoke_line)));
@@ -132,14 +159,26 @@ void fragment() {
 	float aa = max(.018, fwidth(flakes));
 	float chip = smoothstep(threshold - aa, threshold + aa, flakes) * smoothstep(.12, .68, UV.x);
 	chip = max(chip, smoothstep(.77-aa,.77+aa,flakes+.40*rub) * smoothstep(.08,.75,rub));
+	// A dry brush skips across high spots on the shoulder and thigh. Torn
+	// strokes expose the undercoat in small groups at regular play distance.
+	vec2 shoulder = (vec2(abs(p.x), p.y)-vec2(0.315,1.265))/vec2(0.070,0.105);
+	vec2 thigh = (vec2(p.x,p.y)-vec2(0.164,0.595))/vec2(0.090,0.092);
+	float scuff = max(sleeve*(1.0-smoothstep(0.20,1.0,length(shoulder))),
+		denim*(1.0-smoothstep(0.24,1.0,length(thigh))));
+	scuff *= smoothstep(-0.02,0.075,p.z);
+	float stroke = noise3(vec3(43.0*p.x-14.0*p.y, 29.0*p.y+18.0*p.x, 49.0*p.z));
+	float skip = stroke*0.64 + flakes*0.36;
+	float feather = max(0.025, fwidth(skip));
+	float dry_paint = scuff*smoothstep(0.53-feather,0.65+feather,skip);
+	chip = max(chip, dry_paint*0.90);
 	// The raised welt takes the abrasion on a boot. Its upper stays polished.
 	float welt = boot * (1.0-smoothstep(.003,.016+footprint,abs(p.y - .077 - .004*sin(32.0*p.x))));
 	chip = max(chip, welt * smoothstep(.52-aa,.68+aa,flakes));
-	chip *= 1.0 - .56*smoothstep(.53,.75,grain)*fine;
+	chip *= 1.0 - .70*smoothstep(.49,.74,grain)*fine;
 	// A flake removes the painted skin. Its rim and the lip of a thumb
 	// impression catch light as the figure turns.
-	float height = (.008 * cloud + fine * .00055 * grain + .00135 * print_h
-		- .0055*cuts - .003*yoke - .002*tread - .0017*chip + .0023*pocket) * (1.0 - .82 * glossy);
+	float height = (.0140*fold + .009 * cloud + .0025*tooling + fine * .0008 * grain + .00115 * print_h
+		- .0038*cuts - .003*yoke - .002*tread - .0017*chip + .0023*pocket) * (1.0 - .82 * glossy);
 	vec3 dx = dFdx(VERTEX), dy = dFdy(VERTEX);
 	vec3 bx = cross(dy, NORMAL), by = cross(NORMAL, dx);
 	float det = dot(dx, bx);
@@ -147,10 +186,11 @@ void fragment() {
 		* sign(det) / max(abs(det), 0.00000000001));
 	vec3 bisque = mix(vec3(.52, .277, .123), vec3(.83,.60,.34), grain);
 	vec3 pigment = paint * (1.0 + (cloud - .5) * .24 + (grain - .5) * .05 * fine);
+	pigment *= 1.0 + (.12+.16*denim+.12*hair)*tooling;
 	// Scuffed indigo first exposes the lighter blue wash underneath.
 	bisque = mix(bisque, mix(paint,vec3(.44,.49,.48),.36), denim);
-	bisque = mix(bisque, mix(paint,vec3(.39,.21,.095),.55),boot);
-	pigment *= 1.0 + .028*print_h;
+	bisque = mix(bisque, mix(paint,vec3(.54,.32,.14),.77),boot);
+	pigment *= 1.0 + .028*print_h + .14*fold;
 	pigment *= mix(vec3(1),vec3(.90,1.04,1.03),hair);
 	float leather = boot*smoothstep(.012,.085,paint.r-paint.b);
 	pigment *= mix(vec3(1),vec3(1.65,1.53,.87),leather);
@@ -182,9 +222,10 @@ void fragment() {
 	vec3 bounce = mix(vec3(1), g_bounce.rgb, .48);
 	vec3 floor_dir = normalize(vec3(-g_sun_dir.x,-.62,-g_sun_dir.z));
 	float floor_light = smoothstep(-.25,.95,dot(n,floor_dir)) * g_bounce.a;
-	EMISSION = g_amb_sky.a * (ALBEDO * (vec3(.045) + 2.4*bounce*sky*sky)
-		+ sheen * bounce * (.045 + .12*hair + .080*enamel + .11*boot + .09*helmet))
-		+ .48*floor_light*g_bounce.rgb*ALBEDO;
-	ROUGHNESS = clamp(.54 - enamel * .11 - boot * .17 - hair * .065 - glossy * .25 - helmet * .18 + .07 * (1.0 - cloud) + chip * .16, .22, .83);
+	EMISSION = g_amb_sky.a * (ALBEDO * (vec3(.045) + 1.55*bounce*sky*sky)
+		+ sheen * bounce * (.032 + .07*hair + .050*enamel + .08*boot + .08*helmet))
+		+ .40*floor_light*g_bounce.rgb*ALBEDO;
+	ROUGHNESS = clamp(.56 - enamel * .11 - boot * .17 - hair * .065 - glossy * .25 - helmet * .18
+		+ .10 * (1.0 - cloud) + .13*tooling + chip * .16, .22, .83);
 	SPECULAR = .39 + .08 * enamel + .12 * glossy;
 }
