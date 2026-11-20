@@ -3,7 +3,7 @@
   "pause_s": 2,
   "skater": {"skate_speed":8,"skate_accel":12,"skate_lateral_grip":3,"skate_turn_rate":5,"body_mass":80,"body_scale":2.2},
   "skater_sprint_scale": 1.25,
-  "shoot": {"speed":18,"cooldown_s":0.4},
+  "shoot": {"speed":18,"cooldown_s":0.4,"one_timer_frames":14,"one_timer_scale":1.35},
   "carry": {"reach":1.45,"offset":[1.24,0.07,-2.77],"carry_min":1.0,"ease_frames":8,"own_lock_frames":12,"own_lock_speed":4,"flight_take_speed":7,"flight_take_dist":0.6,"pass_speed":14,"pass_cone_deg":50,"pass_lead_max_frames":60,"poke_reach":1.9,"poke_cooldown_frames":30,"poke_speed":4,"poke_lock_frames":20,"carry_speed_scale":0.92,"behind_net_frames":90,"behind_net_half_width":3.5,"ring_width":0.2},
   "puck": {"radius":0.12,"height":0.08,"max_speed":30,"drag":0},
   "chase_camera": {"distance":11,"height":13,"look_height":0,"fov":50},

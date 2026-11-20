@@ -54,6 +54,9 @@ func on_event(name: String, pos: Vector3, _team: String) -> void:
 			_burst("confetti", pos + Vector3(0, 2, 0))
 		"faceoff":
 			_play("whistle")
+		"one_timer":
+			_play("hit_ice", pos)
+			_play("hit_wood", pos)        # L5b: the crack of a one-timer
 		"big_save":
 			_play("hit_wood", pos)        # L5: the glove's thump
 		"hit_bump", "hit_stumble", "hit_knockdown", "hit_cross":

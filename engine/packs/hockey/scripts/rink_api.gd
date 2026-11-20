@@ -52,6 +52,10 @@ var _now: int = 0
 var _ready_at: Dictionary = {}
 var _poke_at: Dictionary = {}
 var aim_at: Dictionary = {}             ## L5: id -> the point the human's cursor is on: a shot leaves the blade at it
+var one_timer_frames: int = 0          ## L5b: a shot this soon after taking a mate's pass is a one-timer (0: none)
+var one_timer_scale: float = 1.0       ## L5b: its speed factor
+var from_pass: bool = false            ## L5b: the carrier took the puck from his own side's pass
+var one_timers: Dictionary = {}        ## L5b: id -> one-timers
 var goalies: Dictionary = {}            ## L5: goalie id -> team: no pass goes to him, nobody pokes the puck off him
 var stick_dir: Dictionary = {}          ## H4: id -> where his stick points (the human's aim); absent = his facing
 var poke_cone_dot: float = -1.0         ## H4: a poke with a stick direction reaches only inside this cone
@@ -67,6 +71,8 @@ func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Arr
 	var s: Dictionary = tune["shoot"]
 	speed = float(s["speed"])
 	cooldown_frames = int(round(float(s["cooldown_s"]) * 60.0))
+	one_timer_frames = int(s["one_timer_frames"])
+	one_timer_scale = float(s["one_timer_scale"])
 	var c: Dictionary = tune["carry"]
 	reach = float(c["reach"])
 	offset = Vector3(float(c["offset"][0]), float(c["offset"][1]), float(c["offset"][2]))
@@ -248,6 +254,8 @@ func update_possession() -> void:
 func give(id: String) -> void:
 	if carrier != "":
 		_drop()
+	from_pass = not last_release.is_empty() and str(last_release["kind"]) == "pass" and str(last_release["team"]) == str(teams[id]) \
+		and str(last_release["by"]) != id
 	carrier = id
 	carry_since = _now
 	behind_frames = 0
@@ -302,7 +310,12 @@ func can_shoot(id: String) -> bool:
 func try_shoot(id: String) -> bool:
 	if not can_shoot(id):
 		return false
-	_release("shot", id, shot_dir(id) * speed)
+	var sp: float = speed
+	if from_pass and one_timer_frames > 0 and _now - carry_since <= one_timer_frames:
+		sp *= one_timer_scale                # L5b: a one-timer: shot straight off a mate's pass, harder
+		one_timers[id] = int(one_timers.get(id, 0)) + 1
+		events.append(["one_timer", id])
+	_release("shot", id, shot_dir(id) * sp)
 	_clip(id, &"shoot")
 	_ready_at[id] = _now + cooldown_frames
 	shots[id] = int(shots[id]) + 1
@@ -440,6 +453,8 @@ func _inside(p: Vector3) -> bool:
 ## Possession for _pack_state(): absent values are omitted.
 func state() -> Dictionary:
 	var s: Dictionary = {"takes": takes.duplicate(), "passes": passes.duplicate(), "pokes": pokes.duplicate()}
+	if not one_timers.is_empty():
+		s["one_timers"] = one_timers.duplicate()     # L5b
 	if carrier != "":
 		s["carrier"] = carrier
 		s["team"] = str(teams[carrier])

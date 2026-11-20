@@ -4,11 +4,14 @@ extends Node
 ##     does not run for the stop's frames (tuning fun.stop_frames_min..max), then the play goes on (b0 and r0 move again)
 ##   a small bump (hit_head_on, b0 skates at r0 at 2 m/s and presses F): no stop
 ##   a goal (goal_released): the pause after it replays the shot (fun.replay_t counts up), then the face-off as before
-## ok: the three rows as stated. The stop's frames are counted in physics frames, as everything else.
+##   a one-timer (goalie_cross, L5b): b0 shoots at once off LEO's pass: one-timer counted, the puck above 22 m/s (18 x 1.35);
+##     held 16 frames first (the drill shoots by itself at 60): no one-timer, an ordinary 18 m/s shot
+## ok: the five rows as stated. The stop's frames are counted in physics frames, as everything else.
 
 var ctx
 var s: Dictionary = {}
-const ROWS: Array = [["hard check", "hit_head_on", 99.0], ["small bump", "hit_head_on", 2.0], ["goal and replay", "goal_released", 0.0]]
+const ROWS: Array = [["hard check", "hit_head_on", 99.0], ["small bump", "hit_head_on", 2.0], ["goal and replay", "goal_released", 0.0],
+	["one-timer", "goalie_cross", 0.0], ["held, then shot", "goalie_cross", 16.0]]
 var row: int = 0
 var t0: int = -1
 var stops0: int = 0
@@ -111,10 +114,41 @@ func _bot_tick(frame: int) -> void:
 			row += 1
 			t0 = -1
 		return
+	if row >= 3:
+		_one_timer_row(r, age)
+		return
 	replay_max = maxi(replay_max, int(fs.get("replay_t", 0)))
 	var replayed: bool = int(fs.get("replays", 0)) > replays0
 	if (replayed and not bool(s["frozen"]) and age > 30) or age > 400:
 		results.append({"row": str(r[0]), "ok": replayed and replay_max > 30, "detail": "replays %d, replay ticks %d, live again %s" % [int(fs.get("replays", 0)) - replays0, replay_max, str(not bool(s["frozen"]))]})
+		row += 1
+		t0 = -1
+
+
+## L5b: b0 takes LEO's pass across (drill goalie_cross, its own scripted shot comes later) and shoots after r[2] frames
+## with the puck: at once it is a one-timer (1.35x the shot speed), after 16 frames an ordinary shot.
+var _took: int = -1
+var _shot: int = -1
+var _ot0: int = 0
+
+
+func _one_timer_row(r: Array, age: int) -> void:
+	if age == 1:
+		_took = -1
+		_shot = -1
+		_ot0 = int(s["possession"].get("one_timers", {}).get("b0", 0))
+	if _took < 0 and str(s["puck"].get("holder", "")) == "b0":
+		_took = age
+	if _took >= 0 and _shot < 0 and age - _took >= int(r[2]) and bool(s.get("shoot_ready", false)):
+		ctx.input.tap(&"shoot")
+		_shot = age
+	if (_shot >= 0 and age - _shot == 4) or age > 200:
+		var v: Array = s["puck"]["vel"]
+		var spd: float = Vector2(float(v[0]), float(v[1])).length()
+		var n: int = int(s["possession"].get("one_timers", {}).get("b0", 0)) - _ot0
+		var want: bool = int(r[2]) == 0
+		var ok: bool = _shot >= 0 and (n == 1) == want and (spd > 22.0 if want else (spd > 15.0 and spd < 20.0))
+		results.append({"row": str(r[0]), "ok": ok, "detail": "took at %d, shot at %d, one-timers %d, puck %.1f m/s" % [_took, _shot, n, spd]})
 		row += 1
 		t0 = -1
 

@@ -108,6 +108,11 @@ func on_events(g, events: Array) -> void:
 		elif name == "goal":
 			_goal(g, str(e[2]))
 			save_left = 0
+		elif name == "one_timer":
+			save_text = "ONE-TIMER!"            # L5b: a short card and a kick of the camera (drawing only)
+			save_left = int(cfg["save_frames"])
+			if bool(cfg["shake"]):
+				g.ctx.cameras.shake(float(cfg["save_shake"]), 12)
 		elif name == "big_save":
 			_save(g, e[1], str(e[2]))
 		elif name == "faceoff":
@@ -164,6 +169,10 @@ func burst(g, preset: StringName, at: Vector3, opts: Dictionary = {}) -> void:
 ## A goalie caught a shot: a short card, a small shake, snow at his glove (visual only).
 func _save(g, at: Vector3, team: String) -> void:
 	save_text = "SAVE!  %s" % name_of(g, str(g.keeper.ids.get(team, "")))
+	var gk: TLBiped = g.skaters.get(str(g.keeper.ids.get(team, "")))
+	if gk != null and gk.rig != null and not g.ctx.headless:
+		gk.rig.play(&"pass")                  # L5b: the glove stab (his rig is ticked by tick(), drawing only)
+		TLVfx.squash(gk.rig, 0.22, 12)
 	save_left = int(cfg["save_frames"])
 	if bool(cfg["shake"]) and at.distance_to((g.skaters["b0"] as Node3D).global_position) <= float(cfg["stop_radius"]) * 1.5:
 		g.ctx.cameras.shake(float(cfg["save_shake"]), 14)
@@ -223,6 +232,7 @@ func tick(g) -> void:
 			rec.pop_front()
 	if live:
 		shot_age += 1
+	_tick_goalie_rigs(g)
 	var playing: bool = false
 	if save_left > 0:
 		save_left -= 1
@@ -232,6 +242,18 @@ func tick(g) -> void:
 		playing = _replay_step(g)
 	if cam != null:
 		cam.tick(g, playing, stop_left > 0)
+
+
+## L5b: the goalies' own biped step is off (the pack places them), so their figures are ticked here: a stance that
+## breathes and the stab of a save. Drawing only: nothing here is a body or in the state.
+func _tick_goalie_rigs(g) -> void:
+	if g.ctx.headless:
+		return
+	for t: String in g.keeper.ids:
+		var gk: TLBiped = g.skaters.get(str(g.keeper.ids[t]))
+		if gk != null and gk.rig != null and gk.is_inside_tree() and not gk.is_physics_processing():
+			gk.rig.set_locomotion(Vector3.ZERO, true)
+			gk.rig.tick(g.ctx.frame)
 
 
 func _replay_step(g) -> bool:

@@ -156,3 +156,37 @@ NEXT THREE THINGS THIS LANE WOULD DO (L5b, if the Director agrees)
 1. The goalie's save made visible (a stab or slide and a squash; drawing only, no hash change).
 2. AI spacing against the scrum: one chaser a side. This changes the sim, so the ladder and the gates run again.
 3. A one-timer bonus with an on-screen mark.
+
+======================================================================================================================
+L5b (22 Nov, 00:00-00:15), on top of the Director's commit 30c1372. Small changes, each gated.
+1. The goalie's figure is ticked by the fun layer: a stance, and on a caught shot a stab (pass clip) and a squash. His
+   biped step stays off. Drawing only: bot_goalie's hash was unchanged (667641179215f829) after this step alone.
+2. Nobody swarms a goalie. While a goalie holds the puck, the other side's skaters wait 10 m out in their lanes
+   (ai.json goalie_gap). The clip save_v3 (.tl) shows red backing off where five figures had crowded the goalie.
+   This changes the simulation.
+3. One-timer. A shot within 14 frames of taking your own side's pass flies 1.35x (18 -> 24.3 m/s), with a
+   "ONE-TIMER!" card, a crack and a kick of the camera. The shot frames and the factor are tuning values
+   (shoot.one_timer_frames, shoot.one_timer_scale). bot_fun gets 2 rows: a shot straight off the pass is a one-timer
+   at 24.3 m/s; a shot held 16 frames first is not, at 18.0 m/s.
+   bot_match also reports the crowd near the puck as a number, not a verdict: 1.2 to 1.6 skaters within 4 m, 4 or more
+   in 0 to 4 % of live frames, on seeds 1 to 10.
+
+Gates (L5b final code, 00:00 to 00:10):
+- PASS packs [2/2]: found 2, completed 2; verb runs 61 of 61.
+- PASS world [8/8]: world = alone.
+- hockey invariants: frame p50 0.974 ms (budget 1.0; busy machine, as before).
+- selftest hockeyfun.*: 6 of 6 PASS (bot_fun 5 rows, record = replay).
+- 20 tests on seeds 1 to 20: all 20 of 20.
+
+Ladder (tl ladder --pack engine/packs/hockey --seeds 20, L5b; hands as in L5):
+| level    | newcomer        | regular          | sharp            | perfect          | idle |
+| rookie   | 18/20 90        | 20/20 100        | 20/20 100        | 20/20 100        | 0/20 |
+| pro      | 5/20 25 (6..44) | 12/20 60 (39..81)| 12/20 60 (39..81)| 19/20 95 (85..100)| 0/20 |
+| all-star | 3/20 15 (0..31) | 10/20 50 (28..72)| 12/20 60 (39..81)| 14/20 70 (50..90)| 0/20 |
+The idle hand still wins nothing, and the perfect hand still wins every rookie match.
+
+Clip (20 s or less, in the lane folder): clips/l5b_fun_rows.mp4 (10 s, bot_fun). It shows the hit-stop, the bump, the
+goal replay, the one-timer card and the ordinary shot.
+Files: scripts/fun/fun.gd, scripts/ai/brain.gd, scripts/rink_api.gd, scripts/main.gd (one line: the shot event
+carries the one-timer), scripts/fx/fx.gd, data/tuning.json, data/ai.json, tests/bot_fun.gd, tests/bot_match.gd (crowd
+figure only), README.md.

@@ -68,7 +68,10 @@ seeds 1 to 20 unless the line says otherwise; the look was judged from clips rec
 | **Goalies** | One per side, white pads, a bigger figure (body scale 2.4). He stands 1.0 m out on the line from his goal's centre to the puck as he saw it `reaction_frames` ago, never more than 1.4 m off the middle. He moves there at `speed` and faces the puck. **Saves:** a puck shot at his net whose path passes within `glove` (0.9 m) is caught; a goalie on the move (faster than 1.2 m/s) reaches only 0.6 of that. A carrier who brings the puck within `poke` (2.2 m) of him loses it to a poke check. His body stops the rest, which gives a rebound. He holds a caught puck 40 frames, then passes to the mate with the most room, and to you when you have it. He passes only to a mate at least 8 m up ice; with nobody there he clears the puck up the middle. He covers a mate's puck at his own goal mouth. A puck a goalie holds is never a goal. These three came from own goals that won matches for an idle hand. Nobody checks him or pokes his puck. **Beaten by:** a shot to the far side from an angle; a one-timer after a pass across, while he is still moving; a shot outside his glove; a rebound. The level changes the red goalie only. | `scripts/keeper.gd`, tuning `goalie`, levels `goalie` | the mode key `"goalies": false` (pond hockey has none) |
 | **Shots go at the cursor** | With the mouse on the ice a shot leaves the blade at the point under the cursor. This applies when that point is at least 4 m away and in front of the stick. Before, the shot flew parallel to the stick from the blade, 1.24 m right of the cursor. | `scripts/rink_api.gd` `shot_dir` | none (the old way was a bug a goalie made visible) |
 | **Your mates set you up** | A blue mate shoots only within 240 frames (`ai.json` `assist_frames`) of your own pass or shot: a give-and-go, or the rebound of your shot. Otherwise he passes to you: at once from out of range, when pressed, or after `feed_frames` (40) of carrying. A match you do not play is not won for you. Before this, the idle hand won 17 of 20 against rookie: your mates won it. | `scripts/ai/brain.gd` (`feed`) | `assist_frames` 100000 |
+| **One-timer (L5b)** | A shot taken within 14 frames of taking your own side's pass flies 1.35x as hard (18 to 24.3 m/s). The card shows "ONE-TIMER!" with a crack and a kick of the camera. Against a goalie who is still moving across, this is the shot that scores. | `scripts/rink_api.gd` `try_shoot`, tuning `shoot.one_timer_frames` / `one_timer_scale` | `one_timer_frames` 0 |
+| **Nobody swarms a goalie (L5b)** | While a goalie holds the puck, the other side's skaters wait 10 m out (`ai.json` `goalie_gap`), each in his lane; nobody may check or poke him anyway. The clips showed five figures round a goalie with the puck. | `scripts/ai/brain.gd` | `goalie_gap` 0 |
 | **A save is an event** | When a goalie catches a shot (8 m/s or more), the card shows "SAVE!  VLAD" for 45 frames, with a small shake, snow at the glove and the glove's thump. | `scripts/fun/fun.gd` `_save`, `scripts/fx/fx.gd` | `fun.shake` false (the card stays) |
+| **The goalie's figure (L5b)** | His own biped step is off (the pack places him), so his figure is ticked by the fun layer. It holds a stance, and on a caught shot it stabs (the pass clip) and squashes. | `scripts/fun/fun.gd` `_tick_goalie_rigs` | - |
 | **AI shoots at corners** | The red and blue AI shoots at the far side from the goalie (`ai.json` `corner_z` 1.5), with the level's spread. | `scripts/ai/brain.gd` | `corner_z` 0 |
 | **Goal moment** | The pause after a goal (2 s) holds the net for 24 frames. It then replays the shot in slow motion: the bodies' recorded places, interpolated, from 10 frames before the shot, at 1.5x to 3x slower to fit the pause. The goal card stays over it: "GOAL!  LEO", "BLUE 2 : 1 RED", then "REPLAY". The face-off follows as before, with the camera cut there. The replay moves only bodies the pause already holds. The face-off then places everybody, so the next live frame is as it was without the replay. | `scripts/fun/fun.gd`, tuning `fun.hold_frames` .. `slow_max` | `fun.replay` false |
 | **Match-end card** | It shows the result and the score ("YOU WIN   3 : 1"), the best moment and "R: rematch \| Esc: leave". The best moment is the hardest check of the match ("LEO flattened IGOR at 9.3 m/s"), else the longest goal ("YOU scored from 14 m"). The winning goal's replay runs under it. | `scripts/fun/fun.gd` `card` | - |
@@ -109,7 +112,7 @@ bot's decisions pressed through TLHand of the named profile, with the cursor thr
 Pro through the regular hand is below its band on these 20 seeds and inside it on 40: at 20 seeds the interval is wider
 than the band. The lever is pro's reaction and speed in `data/levels/pro.json`.
 
-**The ladder with goalies (L5, 21 Nov 23:00, final code of the night).** Command:
+**The ladder with goalies (L5b, 22 Nov 00:00; L5's table of 23:00 is in lanes/L5-hockey/REPORT.txt).** Command:
 `tl ladder --pack engine/packs/hockey --seeds 20`, 20 seeds a cell, 95 % intervals by the normal approximation. The
 human side is one bot's decisions pressed through TLHand of the named profile, with the cursor through the hand,
 shooting at the goal's side away from the goalie (z 1.5). Idle presses nothing. The figures moved with goalies, shots
@@ -118,16 +121,16 @@ perfect hand wins every rookie match (the must-win cell).
 
 | level | newcomer | regular | sharp | perfect | idle |
 |---|---|---|---|---|---|
-| rookie | 20 / 20 (100) | 20 / 20 (100) | 20 / 20 (100) | **20 / 20** (100) | 0 / 20 (12 drawn at the time limit) |
-| pro | 11 / 20 (55, 33..77) | 11 / 20 (55, 33..77) | 14 / 20 (70, 50..90) | 20 / 20 (100) | 0 / 20 |
-| all-star | 5 / 20 (25, 6..44) | 15 / 20 (75, 56..94) | 14 / 20 (70, 50..90) | 16 / 20 (80, 62..98) | 0 / 20 |
+| rookie | 18 / 20 (90, 77..100) | 20 / 20 (100) | 20 / 20 (100) | **20 / 20** (100) | 0 / 20 (13 drawn at the time limit) |
+| pro | 5 / 20 (25, 6..44) | 12 / 20 (60, 39..81) | 12 / 20 (60, 39..81) | 19 / 20 (95, 85..100) | 0 / 20 |
+| all-star | 3 / 20 (15, 0..31) | 10 / 20 (50, 28..72) | 12 / 20 (60, 39..81) | 14 / 20 (70, 50..90) | 0 / 20 |
 
-Goals for : against per match: rookie perfect 3.00 : 0.05, pro regular 1.55 : 1.25, all-star sharp 2.05 : 1.20,
-all-star newcomer 0.95 : 1.80. The idle hand wins nothing, because your mates set you up instead of scoring for you.
+Goals for : against per match: rookie perfect 3.00 : 0.05, pro regular 2.05 : 1.45, all-star sharp 1.70 : 1.50,
+all-star newcomer 0.85 : 1.90. The idle hand wins nothing, because your mates set you up instead of scoring for you.
 It took four rounds: mates who scored alone, then red own goals from a goalie's outlet and a carrier circling his net,
 then a pass to a downed b0 that slid 50 m into the far net.
-Reading it: rookie is a level for anyone who presses keys. Pro separates a newcomer from a sharp hand. All-star punishes
-the newcomer. Regular and sharp come out level on all-star at 20 seeds, which is within the interval.
+Reading it: rookie is a level for anyone who presses keys. Pro and all-star order the hands newcomer, then regular and
+sharp (level with each other within the interval at 20 seeds), then perfect.
 
 The hand profiles (reaction, taps, lapses) and the cursor's numbers (lag, speed, miss) are the kernel lanes' reasoning,
 not measured on a person. Against "none"/Classic a person's hand lost almost always (regular 1 of 20, newcomer 2 of 20).
@@ -155,7 +158,7 @@ N seeds and prints the table above. Each test below passed on 20 of 20 seeds (1.
 | bot_goals | a puck carried in, released, lying in a net counts (own goal too); on the blade behind the net it does not |
 | bot_faceoff, bot_faceoff_idle, bot_faceoff_allstar | nobody owns the puck at the drop; doing nothing he is not first to it; who wins the draw skating at it is a number (rookie, all-star) |
 | bot_goalie (L5) | four drills, goalies in their nets, level none: a shot straight at him from 12 m is saved; a shot to the far side from an angle scores; a one-timer after a pass across scores; a puck carried into his crease is poke-checked; he never leaves his crease |
-| bot_fun (L5) | a hard check (10 m/s) stops the game: every skater still and the clock held for the stop's frames; a 2 m/s bump has no stop; a goal is replayed in the pause, then the face-off |
+| bot_fun (L5) | a hard check (10 m/s) stops the game: every skater still and the clock held for the stop's frames; a 2 m/s bump has no stop; a goal is replayed in the pause, then the face-off; L5b: a shot straight off a pass is a one-timer (24.3 m/s), held 16 frames it is not (18 m/s) |
 | bot_intro, bot_intro_skip (L5) | the first-minute drill played through (skate, take, pass, back, shoot, a goal into the empty net), then the match from 0 : 0; Enter at frame 30 skips it to the match |
 | bot_ladder_<level>_<hand> (L5: 15 cells) | levels rookie, pro, all-star x hands newcomer, regular, sharp, perfect, idle; idle presses nothing |
 | bot_hand_newcomer, bot_hand_perfect | card.team_possession's hand checks (contracts/CARDS.md): level rookie through the hand, played to the end; `won` counted by `tl cards hands engine/packs/hockey --card team_possession` (18 Nov: 18 and 20 of 20 seeds) |
