@@ -1,11 +1,3 @@
 {
-  "sessions": [
-    {
-      "id": "d20-looks",
-      "scope": [
-        "docs/shifts/2026-11-20-day/**"
-      ],
-      "note": "day of 20 Nov, crisp cel vs toy diorama: four arms on branches d20-<cel|dio>-<astra|fable> in .claude/worktrees/d20-*; nothing lands on main; until 21:00"
-    }
-  ]
+  "sessions": []
 }

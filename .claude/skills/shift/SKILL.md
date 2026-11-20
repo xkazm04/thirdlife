@@ -219,3 +219,6 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   its noise floor measures another village.
 - 2026-11-20: an Astra operator let round 1 re-run whole suites itself for 2 h; a Director time check ("end the round,
   verify yourself, spend the rest on the look") recovered the arm. Operators verify; Astra builds.
+- 2026-11-20 (day): integration gates ran world,packs in the default style only; a cel figure stance under
+  `TL_STYLE=crisp` moved example.kit's hash unseen through an integration (cel-astra caught it). When looks live behind a
+  style switch, run `world,packs` under every style the shift changes (and classic) before calling hashes held.
