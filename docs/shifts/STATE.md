@@ -182,3 +182,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 10:40 four arms launched (cel-astra, cel-fable, dio-astra, dio-fable). d20-base fast PASS; world/packs running.
 - 11:35 standup: base fix e191d8f (figure _face vs TLMesh._face), base re-gated green; four arms on track; exe AA (msaa2+TAA) found as a blur source, the Astra arms own it as a style key.
 - 12:35 standup: base fully green (e191d8f), pushed; four arms on track (cel-astra r1 and dio-astra r2 verified, both Fable arms on r2/r3); picture cache not keyed by style (dio-fable keys it).
+- 13:45 integration 1: d20-cel 597a374 and d20-dio 1070eea joined without conflicts; world 8/8 + packs 48/48 on both; exes in dist/day/cel and dist/day/dio; one cel seam (toon.shade_k clamp) sent to cel-fable; arms resumed on the joined trees.
