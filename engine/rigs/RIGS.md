@@ -127,54 +127,6 @@ casts no shadow on itself (its shadow on the ground is unchanged), and the ink p
 `ink.body_k` of the width. A mesh added to a rig after `build` (a prop parented to a socket by a pack) is a kit part and is
 shaded as the world is.
 
-## The toy figure of the diorama style (20 Nov 2026; `biped/tl_rig_biped_toy.gd`, `biped/tl_rig_biped_feel.gd`, `style/shaders/body_clay.gdshader`)
-A style file may ask for another figure on the same rig: `"_figure": {"variant": "toy"}` (`style_diorama.json`). An absent
-key is the classic figure, built and animated exactly as before. Nothing in the API changes: the same `TLRigs.build` /
-`TLBiped.create` calls, params, `colors` keys, clips, sockets, the 29 bones by name, and `metrics()` (height 2.0, radius 0.3,
-eye height 1.765).
-- **What it is.** Separate clay pieces on the classic skeleton (every body joint where it was: the gait, the grips, the
-  sockets and the wings fit unchanged): a large round head in a rolled collar, a short flared jacket with two buttons,
-  thick sleeves and trouser legs, bare mitten hands (gloves in the `boots` colour on a skater), cream cuffs (`trim`) at
-  the wrists and above tall bulbous boots, sculpted hair lobes solid on the head and a bun on the `Hair` bone. Every
-  piece is a closed smooth lump (ball, loft, rolled ring) displaced by a low noise; pieces overlap like pressed clay.
-  Skaters: a domed helmet in the `top` colour with a white stripe, ear guards and a brim, a white hem and collar, the
-  number patch. The backpack, stick, skates and hammer are dressed in the same clay.
-- **Budget.** 9812 triangles without the backpack, 10920 with it, 9112 for a skater (limit 12000); 29 bones. Equal looks
-  share one mesh (`TLRigBipedToy.mesh_for`): the first build of a variant (backpack or not, helmet or not) takes about
-  250 ms with its contact tone, another colouring of it about 80 ms, every later build of a look about 4 ms (the classic
-  figure: about 62 ms each).
-- **Two surfaces.** Surface 0 is a 5 cm lump of the `top` colour inside the chest on the style's palette material;
-  surface 1 is the figure in clay. The world's far tier draws a distant figure as a mark in the colour it reads from
-  surface 0 of the figure's largest mesh, and knows the palette material only (`kernel/world/draw/draw_life.gd`).
-- **Contact tone.** Where two lumps press together the clay is darker (under the collar, sleeve against trunk, hair
-  lobe against hair lobe): baked per vertex from the lumps as spheres (`biped/tl_rig_biped_clay.gd`), in the rest pose.
-  Dial: `_figure.contact` (0 = off).
-- **The clay material** takes the palette colour of each part from the style's own lookup, as toon does, and keeps toon's
-  contract with the world (`tl_plot`, `tl_clip`, `tl_body`, roughness 0.5 as the body tag of the ink pass). Its response is
-  a soft terminator with a warm band, a weak broad sheen, uneven pigment, combed marks on the hair, chipped paint where
-  the vertex alpha says paint wears (hem, cuffs, boot edges), and fingerprints: a few thumb presses, each an oval pad of
-  shallow loop ridges laid in the surface (large, because the toy is a miniature: ridges 19 mm apart; gone before a
-  ridge is under four pixels, so none at play distance). All of it is anchored to the piece's rest pose (CUSTOM0 holds
-  the rest position, UV the rest normal, octahedral), so nothing crawls when he moves. Dials in the style: `_figure.print`, `chip`, `sheen`, `soft` (0 = off, 1 = shipped) and
-  `shade` (how much of the style's shade colour the dark side takes: 0.6 shipped, 1 = as toon).
-- **Toy feel** (the bare-headed toy only: the village walker, the parkour runner, any `mode = walk` figure; the classic
-  figure has none of it): the bun is a damped spring on the head's and the body's acceleration, on top of what the clip
-  gives `Hair`, and the large head wobbles a few degrees on its peg; the figure stretches at a take-off and squashes at
-  a landing by the fall speed (about the soles, settled in two beats); standing, the trunk sways slowly and he looks to
-  one side and then the other every six seconds; walking, the head rolls and the arms swing a little wider. The legs
-  are the classic gait's, bone for bone (a pack may read a leg bone into its state: `ex_kit` does). Cost: about 7
-  microseconds a tick on top of the classic 36. A helmeted skater ticks exactly as the classic one (a hockey frame is
-  held to 1.0 ms and the classic figure meets it by under 1 %).
-- **Hands that meet what they grab.** Runtime param `grip` = `{at, along}` (a line in the world: a ledge's edge, a bar) or
-  null: both arms are solved so the palms lie on the line above the shoulders, and when the line is beyond the arms the
-  whole figure is drawn towards it. Unset, the toy asks the controller above it: the village visitor and `TLBiped` both
-  answer `ledge_top`, `wall_normal`, `mantle_progress`, `bar_point`, `bar_axis` while he hangs, mantles or swings (wrist
-  to the edge 0.30 m before, 0.074 m now: the palm is 0.075 m from the wrist). The stick is held as before (the left
-  hand by hand-tuned angles): solving it costs a skeleton update per skater per frame, which hockey's budget has not got.
-- Review: `review.tscn -- --sheet=<abs .png> --sheet-set=line|back|front|run [--cam=x,y,z,tx,ty,tz,fov]` writes a still of
-  posed figures (ten in two rows for `line`); `TL_STYLE=classic` shows the classic figure in the same poses.
-- Selftest block 590: `figure.toy`, `figure.classic`, `figure.grip`, `figure.clay`.
-
 <!-- generated below: do not edit by hand -->
 
 ## `biped`

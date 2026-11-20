@@ -55,9 +55,6 @@ func _ready() -> void:
 		for note: String in TLStyle.load_style(String(args["style"])):
 			print("[review] style: " + note)
 	TLStyle.install(self, {"ink": not args.has("no-ink"), "grade": not args.has("no-grade")})
-	if args.has("sheet"):                      # diorama night: the character sheet (stills of posed figures), see _setup_sheet
-		_setup_sheet()
-		return
 	if args.has("no-shadow"):                  # measurement only: is a crawl the sun's shadow map?
 		for n: Node in find_children("*", "DirectionalLight3D", true, false):
 			(n as DirectionalLight3D).shadow_enabled = false
@@ -149,9 +146,6 @@ func _fx_tick() -> void:
 
 func _physics_process(_dt: float) -> void:
 	frame += 1
-	if args.has("sheet"):
-		_sheet_tick()
-		return
 	if what == "fx":
 		_fx_tick()
 		return
@@ -343,88 +337,3 @@ func _print_contact() -> void:
 		sum += x
 		mx = maxf(mx, x)
 	print("[review] contact speed=%.2f dir=%.0f frames=%d on_floor=%d mean_ms=%.3f max_ms=%.3f none_on_floor=%d lowest_m=%.3f (sole points on the floor two frames running: speed over the floor, m/s)" % [speed, dir_deg, c_frames, c_log.size(), sum / maxf(1.0, float(c_log.size())), mx, c_none, c_low])
-
-
-# ------------------------------------------------------------------ the character sheet (diorama night, 20 Nov)
-## `--sheet=<abs path .png|.jpg>` writes one still of posed figures and quits. `--sheet-set=`:
-##   line   (default) ten figures in two rows: the village walker from the front, three-quarter, side and back, at a run, with
-##          the backpack, cheering (arms up beside the head), a blue and a red skater, a slide
-##   back   one walker seen from behind and a little above, as on the target board (idle)
-##   front  one walker from the front, close
-##   run    one walker at a run from behind, close
-## Each figure is ticked to its pose by frame count; nothing here reads a clock.
-var _sheet_rigs: Array = []     # [rig, {"v": speed, "clip": name, "at": frame the clip starts, "air": bool}]
-
-
-func _sheet_fig(p: Dictionary, at: Vector3, yaw_deg: float, drive: Dictionary) -> void:
-	var r: Node3D = TLRigs.build("biped", p)
-	r.position = at
-	r.rotation.y = deg_to_rad(yaw_deg)       # 0 = faces -Z (away from a camera on +Z)
-	add_child(r)
-	_sheet_rigs.append([r, drive])
-
-
-func _setup_sheet() -> void:
-	var fl: Node3D = TLKit.build("ground_patch", {"size_x": 120.0, "size_z": 120.0, "surface": String(args.get("floor", "dirt")), "thickness": 0.3})
-	add_child(fl)
-	cam = Camera3D.new()
-	cam.far = 500.0
-	add_child(cam)
-	cam.make_current()
-	var blue: Dictionary = {"top": "car_blue", "trim": "car_white", "legs": "bot_dark", "boots": "black"}
-	var red: Dictionary = {"top": "car_red", "trim": "car_white", "legs": "bot_dark", "boots": "black"}
-	match String(args.get("sheet-set", "line")):
-		"back":
-			_sheet_fig({"backpack": false}, Vector3.ZERO, float(args.get("yaw", "0")), {"v": 0.0})
-			cam.fov = 30.0
-			cam.look_at_from_position(Vector3(0.0, 2.3, 5.6), Vector3(0, 1.0, 0), Vector3.UP)
-		"front":
-			_sheet_fig({"backpack": false}, Vector3.ZERO, float(args.get("yaw", "160")), {"v": 0.0})
-			cam.fov = 30.0
-			cam.look_at_from_position(Vector3(0.0, 1.5, 5.0), Vector3(0, 1.05, 0), Vector3.UP)
-		"run":
-			_sheet_fig({"backpack": false}, Vector3.ZERO, float(args.get("yaw", "20")), {"v": 5.0})
-			cam.fov = 30.0
-			cam.look_at_from_position(Vector3(0.0, 2.3, 5.6), Vector3(0, 1.0, 0), Vector3.UP)
-		_:
-			var x0: float = -3.7
-			var dx: float = 1.85
-			var back_z: float = -7.0
-			_sheet_fig({"backpack": false}, Vector3(x0, 0, 0), 180.0, {"v": 0.0})
-			_sheet_fig({"backpack": false}, Vector3(x0 + dx, 0, 0), 140.0, {"v": 0.0})
-			_sheet_fig({"backpack": false}, Vector3(x0 + 2 * dx, 0, 0), 90.0, {"v": 1.4})
-			_sheet_fig({"backpack": false}, Vector3(x0 + 3 * dx, 0, 0), 0.0, {"v": 0.0})
-			_sheet_fig({"backpack": false}, Vector3(x0 + 4 * dx, 0, 0), 30.0, {"v": 5.0})
-			_sheet_fig({}, Vector3(x0, 0, back_z), -40.0, {"v": 0.0})
-			_sheet_fig({"backpack": false}, Vector3(x0 + dx, 0, back_z), 170.0, {"v": 0.0, "clip": "cheer", "at": 4})
-			_sheet_fig({"mode": "skate", "backpack": false, "colors": blue}, Vector3(x0 + 2 * dx, 0, back_z), 130.0, {"v": 5.0})
-			_sheet_fig({"mode": "skate", "backpack": false, "colors": red}, Vector3(x0 + 3 * dx, 0, back_z), 20.0, {"v": 5.0})
-			_sheet_fig({"backpack": false}, Vector3(x0 + 4 * dx, 0, back_z), 110.0, {"v": 0.0, "clip": "hang", "at": 4})
-			cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-			cam.size = 5.1
-			cam.look_at_from_position(Vector3(0.0, 7.2, 16.5), Vector3(0, 1.22, -3.5), Vector3.UP)
-	if args.has("cam"):                        # --cam=x,y,z,tx,ty,tz,fov : the camera of a single-figure set, by hand
-		var c: PackedStringArray = String(args["cam"]).split(",")
-		cam.projection = Camera3D.PROJECTION_PERSPECTIVE
-		cam.fov = float(c[6]) if c.size() > 6 else 30.0
-		cam.look_at_from_position(Vector3(float(c[0]), float(c[1]), float(c[2])), Vector3(float(c[3]), float(c[4]), float(c[5])), Vector3.UP)
-
-
-func _sheet_tick() -> void:
-	var n: int = int(args.get("frames", "46"))
-	for e: Array in _sheet_rigs:
-		var r: Node3D = e[0]
-		var d: Dictionary = e[1]
-		r.call("set_locomotion", Vector3(0, 0, -float(d.get("v", 0.0))), true)
-		if d.has("clip") and frame == int(d.get("at", 4)):
-			r.call("play", StringName(String(d["clip"])))
-		r.call("tick", frame)
-	if frame == n + 3:
-		var img: Image = get_viewport().get_texture().get_image()
-		var path: String = String(args["sheet"])
-		if path.ends_with(".jpg"):
-			img.save_jpg(path, 0.92)
-		else:
-			img.save_png(path)
-		print("[review] sheet %s" % path)
-		get_tree().quit()

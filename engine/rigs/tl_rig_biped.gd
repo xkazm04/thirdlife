@@ -28,7 +28,6 @@ var amp_override: float = -1.0   # P3 review tool, kept for API v1: the gait has
 var _gait: TLRigBipedGait = TLRigBipedGait.new()
 var _amp: float = 1.0   # swing amplitude of the walk and run clips played by name (their authored swing)
 var _face_now: Vector2 = Vector2(-1.0, -1.0)   # the (mood, blink) the face bones show (skips rewriting an unchanged face)
-var _feel: TLRigBipedFeel   # diorama night: not null = the style asks for the toy figure (biped/tl_rig_biped_toy.gd, _feel.gd); null = this figure as it was
 
 
 func setup(p: Dictionary) -> void:
@@ -39,8 +38,7 @@ func setup(p: Dictionary) -> void:
 	_model.name = "Model"
 	_model.scale = Vector3.ONE * float(p["scale"])
 	add_child(_model)
-	_feel = TLRigBipedFeel.new() if TLRigBipedToy.on() else null
-	var sk: Skeleton3D = make_skeleton(TLRigBipedToy.bones() if _feel != null else TLRigBipedMesh.final_bones())
+	var sk: Skeleton3D = make_skeleton(TLRigBipedMesh.final_bones())
 	var s: float = float(p["scale"])
 	_metrics = {"height": 2.0 * s, "radius": 0.3 * s, "eye_height": 1.765 * s, "bones": sk.get_bone_count(), "triangles": 0}
 	_rebuild_mesh(sk)
@@ -85,7 +83,9 @@ func _rebuild_mesh(sk: Skeleton3D) -> void:
 	var look: Dictionary = TLRigBipedMesh.LOOK.duplicate()
 	look.merge(params.get("colors", {}), true)
 	_helmet_built = _helmet()
-	_metrics["triangles"] = TLRigBipedToy.attach(self, _model, sk, look, bool(params["backpack"]), _helmet_built, _feel != null) + _tri_extra
+	var mk: TLMesh = TLRigBipedMesh.build_mesh(sk, look, bool(params["backpack"]), _helmet_built)
+	attach_skinned(_model, sk, mk, "biped")
+	_metrics["triangles"] = mk.tri_count + _tri_extra
 
 
 ## headgear "auto" = a team helmet (and the hockey kit) in skate mode, nothing in walk mode.
@@ -113,7 +113,7 @@ func _build_hammer() -> void:
 	mk.rbox(Vector3(0.095, 0.095, 0.07), "steel_light", Color.WHITE, 0.02, Vector3(0, -0.34, -0.17))
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	mi.name = "HammerMesh"
-	mi.mesh = TLRigBipedToy.dressed(mk.build("hammer"), _feel != null)
+	mi.mesh = mk.build("hammer")
 	_hammer.add_child(mi)
 	_hammer.rotation_degrees = Vector3(0.0, 0.0, 0.0)
 	socket(&"hand_r").add_child(_hammer)
@@ -128,7 +128,7 @@ func _build_stick() -> void:
 	var mk: TLMesh = TLRigBipedMesh._stick_mesh(params.get("colors", {}))
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	mi.name = "StickMesh"
-	mi.mesh = TLRigBipedToy.dressed(mk.build("stick"), _feel != null)
+	mi.mesh = mk.build("stick")
 	_stick.add_child(mi)
 	_stick.rotation_degrees = Vector3(40.0, -30.0, 0.0)   # blade end forward of the hand and out to the right; butt towards the left hip
 	socket(&"hand_r").add_child(_stick)
@@ -149,7 +149,7 @@ func _build_skates() -> void:
 		mk.box(Vector3(0.06, 0.03, 0.10), "steel_dark", Color.WHITE, 0.0, Vector3(0, 0.0, -0.15))
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.name = "Skate"
-		mi.mesh = TLRigBipedToy.dressed(mk.build("skate"), _feel != null)
+		mi.mesh = mk.build("skate")
 		socket(StringName(side[0])).add_child(mi)
 		_skates.append(mi)
 		_tri_extra += mk.tri_count
@@ -172,7 +172,7 @@ func _param_changed(pname: String, value: Variant) -> void:
 			_model.position.y = 0.05 * float(params["scale"]) if String(value) == "skate" else 0.0
 		"colors":
 			_rebuild_mesh(_sk)
-			(_stick.get_node("StickMesh") as MeshInstance3D).mesh = TLRigBipedToy.dressed(TLRigBipedMesh._stick_mesh(params.get("colors", {})).build("stick"), _feel != null)   # the stick is a part too
+			(_stick.get_node("StickMesh") as MeshInstance3D).mesh = TLRigBipedMesh._stick_mesh(params.get("colors", {})).build("stick")   # the stick is a part too
 		"expression":
 			_expr()
 
@@ -278,7 +278,6 @@ func _post_pose() -> void:
 			var bi: int = _sk.find_bone(b[0])
 			var extra: Quaternion = Quaternion.from_euler(Vector3(deg_to_rad(pitch * float(b[1])), deg_to_rad(yaw * float(b[1])), 0))
 			_sk.set_bone_pose_rotation(bi, extra * _sk.get_bone_pose_rotation(bi))
-	if _feel != null and not _helmet_built: _feel.post(self)   # the bare-headed toy's springs and hand solves; a helmeted skater ticks as he did
 
 
 # ------------------------------------------------------------------ the walking gait (biped/tl_rig_biped_gait.gd)
@@ -312,9 +311,8 @@ func _gait_pose(t: float) -> Dictionary:
 	}
 	if _stick_on:
 		up.merge(_stick_arms(pitch - 5.0, -4.0 * (1.0 - run_w)), true)
-	if _feel != null and not _helmet_built: _feel.upper(up, s, sw, run_w, _stick_on)
 	if still > 0.0:
-		var idle: Dictionary = _idle(t) if (_feel == null or _helmet_built) else _feel.idle(_idle(t), t, _stick_on)
+		var idle: Dictionary = _idle(t)
 		var iu: Dictionary = {}
 		for key: String in idle:
 			if UPPER.has(key):
