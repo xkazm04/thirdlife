@@ -1,6 +1,7 @@
 # Diorama night (20 Nov 2026), surfaces (engine/kernel/world/draw/surf_case.gd, headless). A missing SURF line is a FAIL.
 #   surf.classic_source  toon.gdshader without its TL_DIORAMA branches is byte for byte the shader of diorama-base
-#   surf.model           TL_STYLE unset names the diorama model and resin water; TL_STYLE=classic names neither
+#   surf.model           TL_STYLE=diorama names the diorama model and resin water; TL_STYLE=classic names neither
+#                        (until 20 Nov the diorama was the unset default; since then crisp is, so the case names it)
 #   surf.edges           a TLMesh box writes the place on each face into UV2, a cylinder side its round normal; content_hash as without UV2
 #   surf.keys            gloss, fuzz, chip, clay and felt are accepted; an unknown material key or class is still an error
 # The two constants were taken on diorama-base (781d32b): sha256 of engine/style/shaders/toon.gdshader, and
@@ -15,7 +16,7 @@ if [ "$surf_wanted" = 1 ]; then
   command -v cygpath >/dev/null 2>&1 && surf_engine="$(cygpath -m "$surf_engine")"
   surf_sha="e3aad816ec7178361b08bf8da2a419fd7f8fe719eef8852aa70d476420f8c20f"
   surf_box="c1a5ae1f297fb32f498f84cbeed5126cddc30809"
-  surf_out="$(env -u TL_STYLE MSYS_NO_PATHCONV=1 timeout 120 "$surf_godot" --headless --path "$surf_engine" --script res://kernel/world/draw/surf_case.gd -- "--sha=$surf_sha" "--box=$surf_box" 2>&1 | tr -d '\015' | grep -a '^SURF \|SCRIPT ERROR')"
+  surf_out="$(TL_STYLE=diorama MSYS_NO_PATHCONV=1 timeout 120 "$surf_godot" --headless --path "$surf_engine" --script res://kernel/world/draw/surf_case.gd -- "--sha=$surf_sha" "--box=$surf_box" 2>&1 | tr -d '\015' | grep -a '^SURF \|SCRIPT ERROR')"
   surf_cls="$(TL_STYLE=classic MSYS_NO_PATHCONV=1 timeout 120 "$surf_godot" --headless --path "$surf_engine" --script res://kernel/world/draw/surf_case.gd -- --classic 2>&1 | tr -d '\015' | grep -a '^SURF model \|SCRIPT ERROR')"
   surf_case() {   # name, the case's word in the SURF line, the output to read
     local line why=""
