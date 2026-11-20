@@ -53,3 +53,15 @@ moving them into `engine/` changes no path.
   as text in your final message.
 - **Report what is true.** The Director re-runs everything. Say plainly what failed, what you skipped and what you could
   not verify.
+
+## Exe-side files
+
+### Added 2026-11-21: `tl.dungeons/1` (`engine/boot/dungeons.json`)
+The dungeons of the main menu: `{"schema": "tl.dungeons/1", "dungeons": [{"pack", "title", "look"?}]}`.
+- `pack`: a folder relative to `engine/` (for example `packs/hockey`); no absolute path, no `..`. Listed once. In the
+  exported game it must be one of `engine/boot/games.json` (`export.sh` refuses a build otherwise).
+- `title`: a non-empty text of at most 80 characters, shown in the menu and on the load screen.
+- `look`: a `TL_STYLE` name (`crisp`, `classic`, or N for `style/style_N.json`); absent = the default look.
+
+Unknown keys are errors; an absent value is an absent key (never `null`). Reader: `engine/kernel/dungeon/dungeons.gd`.
+`--dungeon=<pack dir>` on the command line opens any pack as a dungeon (docs/EXE.md).
