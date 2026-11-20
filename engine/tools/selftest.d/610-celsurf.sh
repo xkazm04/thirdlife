@@ -6,10 +6,11 @@
 #   celsurf.pic_key_classic  (today's key byte-equal)
 #   celsurf.palette        style_crisp.json keeps the palette keys of style.json, same names, same order
 #   celsurf.globals        every shader global the cel shaders declare is one TLStyle registers; the eight land paints exist
+#   celsurf.rails          road_rails.gd: rails on both sides, no collision object, a gap at a spur's mouth, nothing without the key
 #   celsurf.paint          the land painted by numbers: grass to road is grass, then earth; never rock on level ground
 # The three constants are sha256 of the files on d20-cel (d966639), line ends as LF. A change to one of them moves
 # today's look on purpose: take the new value from the FAIL line, and say in the report why classic moved.
-cel_names="celsurf.classic_files celsurf.model celsurf.model_classic celsurf.pic_key celsurf.pic_key_classic celsurf.palette celsurf.globals celsurf.paint"
+cel_names="celsurf.classic_files celsurf.model celsurf.model_classic celsurf.pic_key celsurf.pic_key_classic celsurf.palette celsurf.globals celsurf.paint celsurf.rails"
 cel_wanted=0
 for cel_n in $cel_names; do if [ -z "$FILTER" ] || [[ "$cel_n" == *"$FILTER"* ]]; then cel_wanted=1; fi; done
 if [ "$cel_wanted" = 1 ]; then
@@ -37,4 +38,5 @@ if [ "$cel_wanted" = 1 ]; then
   cel_case celsurf.palette palette "$cel_out"
   cel_case celsurf.globals globals "$cel_out"
   cel_case celsurf.paint paint "$cel_out"
+  cel_case celsurf.rails rails "$cel_out"
 fi

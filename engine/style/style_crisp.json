@@ -14,8 +14,8 @@
  },
  "toon": {
   "shade": "#2b8fb1",
-  "shade_k": 0.9,
-  "band_hi": 0.42,
+  "shade_k": 0.85,
+  "band_hi": 0.5,
   "band_lo": 0.22,
   "band_soft": 0.005,
   "wrap": 0.5,
@@ -42,7 +42,12 @@
   "cel_rim": 1.0,
   "cel_top": 0.8,
   "cel_top_k": 0.14,
-  "cel_wind": 0.14
+  "cel_wind": 0.14,
+  "cel_rock_shade": [1.75, 1.7, 0.55],
+  "cel_cloud": 1.0,
+  "cel_cloud_m": 240.0,
+  "cel_cloud_speed": 3.0,
+  "cel_cloud_cover": 0.3
  },
  "env": {
   "tonemap": "linear",
@@ -162,13 +167,14 @@
   "streak": 0.5,
   "flow": 0.35,
   "shore": 0.6,
-  "priority": -110
+  "priority": -110,
+  "glade": 0.7
  },
  "palette": {
   "white": "#ffffff",
-  "grass": "#a5ba32",
-  "grass_dry": "#c9bd3c",
-  "grass_dark": "#93ac30",
+  "grass": "#9ab534",
+  "grass_dry": "#bfb23c",
+  "grass_dark": "#7aa02c",
   "dirt": "#d39762",
   "sand": "#e4b27c",
   "rock": "#c9aed2",
@@ -503,10 +509,15 @@
   "marks_m": 1.8,
   "patch": 1.0,
   "verge_m": 0.2,
-  "land_bias": {"grass_dry": -0.2, "rock": -0.1, "rock_warm": -0.1},
+  "land_bias": {"grass_dry": -0.2, "rock": -0.3, "rock_warm": -0.3},
   "flowers": 0.5,
-  "land_flat": 0.6,
-  "marks_far": 100.0
+  "land_flat": 0.0,
+  "marks_far": 100.0,
+  "pine_teeth": 9,
+  "land_dead": 0.1,
+  "strata_cream": 0.8,
+  "road_rails": 1.3,
+  "tree_shade": 1.25
  },
  "lights": {
   "window": 1.35,

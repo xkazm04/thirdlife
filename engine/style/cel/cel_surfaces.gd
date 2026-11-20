@@ -8,13 +8,24 @@ extends RefCounted
 ##                 shade keeps, 0 = today's multiply), cel_deep (the band of a form turned fully away, as a factor of
 ##                 the shade), cel_rim (0 = smooth rim light, 1 = a cut shape), cel_top and cel_top_k (where on a lump
 ##                 the top light begins, of the light 0..1, and how much lighter it is; 0 = none), cel_wind (metres the
-##                 top of a 10 m tree leans in the wind; it moves the keys whose `mat.<key>.sway` is negative).
+##                 top of a 10 m tree leans in the wind; it moves the keys whose `mat.<key>.sway` is negative),
+##                 cel_cloud (0..1: drifting cloud shadows, cut like any cast shadow; 0 = none), cel_cloud_m (their
+##                 size), cel_cloud_speed (m/s), cel_cloud_cover (0..1 of the land),
+##                 cel_rock_shade ([r, g, b]: the shade on rock is multiplied by it: mauve bluffs under a blue shade).
 ##   detail        edge (a painted highlight on the edges of a sunlit box face), round (0..1: a blob or a cone side lit
 ##                 as the round thing it is), land_wobble (how far the edge between two land paints strays), marks_m
 ##                 (scale of tufts and pebbles; 1 = today's), marks_far (m: where they end; 0 = at the detail fade), patch (light patches on earth and meadow), verge_m (the
-##                 dark cut of the turf beside a road), flowers (0..1: handfuls of flat dots in the meadow), land_flat (0..1: level
-##                 land is lit as flatter than it is, so a rolling meadow stays one lit field), land_bias {paint: number} (a paint with a larger bias wins more
+##                 dark cut of the turf beside a road), flowers (0..1: handfuls of flat dots in the meadow), pine_teeth (teeth cut
+##                 round the skirt of a pine tier, in its shadow and outline too; 0 = a plain rim), land_flat (0..1: level
+##                 land is lit as flatter than it is, so a rolling meadow stays one lit field), land_dead (0..0.6, the
+##                 sine of a lean: land that leans less is lit as level, so small waves give no islands of shade),
+##                 strata_cream (0..1: about one stratum in four of a bluff or a mesa is a cream bed), land_bias {paint: number} (a paint with a larger bias wins more
 ##                 ground when the land is painted by numbers).
+
+## What a style that names neither gets: `toon.cel_rock_shade` [r, g, b] = what the shade is multiplied by on rock
+## (1, 1, 1: the shade of everything else), `detail.pine_teeth` = teeth round the skirt of a pine tier (0: a plain rim).
+const ROCK_SHADE: Array = [1.0, 1.0, 1.0]
+const PINE_TEETH: float = 0.0
 
 ## The land's eight paints, in the order toon_cel.gdshader reads them (0..2 grass, 3..4 earth, 5..7 rock).
 const LAND: PackedStringArray = ["grass", "grass_dark", "grass_dry", "dirt", "sand", "rock", "cliff", "rock_warm"]
@@ -26,9 +37,15 @@ static func globals(data: Dictionary) -> Dictionary:
 	var dt: Dictionary = data.get("detail", {})
 	var pal: Dictionary = data.get("palette", {})
 	var bias: Dictionary = dt.get("land_bias", {})
+	var rs: Array = t.get("cel_rock_shade", ROCK_SHADE)
+	if rs.size() != 3:
+		rs = ROCK_SHADE
 	var out: Dictionary = {
 		"g_cel": Vector4(clampf(float(t.get("cel_shadow", 0.08)), 0.005, 0.5), float(t.get("cel_chroma", 0.0)), float(dt.get("edge", 0.0)), clampf(float(dt.get("round", 0.0)), 0.0, 1.0)),
 		"g_cel2": Vector4(float(dt.get("land_wobble", 0.05)), float(dt.get("marks_m", 1.0)), float(dt.get("patch", 0.0)), float(dt.get("verge_m", 0.0))),
+		"g_cel5": Vector4(float(rs[0]), float(rs[1]), float(rs[2]), float(dt.get("pine_teeth", PINE_TEETH))),
+		"g_cel6": Vector4(clampf(float(t.get("cel_cloud", 0.0)), 0.0, 1.0), 1.0 / maxf(float(t.get("cel_cloud_m", 220.0)), 10.0), float(t.get("cel_cloud_speed", 3.0)), clampf(float(t.get("cel_cloud_cover", 0.3)), 0.0, 1.0)),
+		"g_cel7": Vector4(clampf(float(dt.get("land_dead", 0.0)), 0.0, 0.6), clampf(float(dt.get("strata_cream", 0.0)), 0.0, 1.0), 0.0, 0.0),
 		"g_cel4": Vector4(float(t.get("cel_wind", 0.0)), clampf(float(dt.get("flowers", 0.0)), 0.0, 1.0), clampf(float(dt.get("land_flat", 0.0)), 0.0, 1.0), float(dt.get("marks_far", 0.0))),
 		"g_cel3": Vector4(float(t.get("cel_deep", 1.0)), clampf(float(t.get("cel_rim", 0.0)), 0.0, 1.0), float(t.get("cel_top", 0.8)), float(t.get("cel_top_k", 0.0))),
 	}

@@ -53,11 +53,12 @@ prows = (len(names) + 1) // 2
 H = head + bh + pad + head + vrows * (vh + pad) + head + prows * (ph + pad) + pad
 im = Image.new("RGB", (W, H), BG)
 d = ImageDraw.Draw(im)
-best = vnames[0] if vnames else ""
+# beside the board: the village road as the visitor sees it (51_road_visitor of the shot set), else the lane's first view
+best_dir, best = (crisp, "51_road_visitor.png") if os.path.exists(os.path.join(crisp, "51_road_visitor.png")) else (views, vnames[0] if vnames else "")
 d.text((pad, 4), "target: board 2, crisp cel", fill=(255, 255, 255), font=font)
-d.text((pad * 2 + bw, 4), "this arm: %s, %s" % (best[:-4], label), fill=(255, 255, 255), font=font)
+d.text((pad * 2 + bw, 4), "%s, %s" % (best[:-4], label), fill=(255, 255, 255), font=font)
 im.paste(tile(board, bw, bh), (pad, head))
-im.paste(tile(os.path.join(views, best), bw, bh), (pad * 2 + bw, head))
+im.paste(tile(os.path.join(best_dir, best), bw, bh), (pad * 2 + bw, head))
 y = head + bh + pad
 d.text((pad, y + 4), "the lane's own views (cel_views.walk.json), %s" % label, fill=(255, 255, 255), font=font)
 y += head

@@ -10,6 +10,7 @@ render_mode unshaded, cull_disabled;
 // Chosen by style `water.model` = "cel" (TLStyle, dio/style_dio.gd `water`); a style without that key keeps
 // water.gdshader. The same ribbon as there: UV.x along the flow (10 m per unit), UV.y across 0..1; UV.x < -0.5 = a pond.
 // Colours: style "water": deep, shallow, sky, stripe (as before); new: foam, streak (0..1 how many), flow (m/s),
+// glade (0..1: the sun's road, cream dashes towards the sun),
 // shore (m of water over the bed at which the shallows end; > 0 compiles TL_SHORE).
 // With TL_SHORE the water knows how deep it stands over its bed, from the depth of what was drawn before it: the
 // waterline is where the land really meets it (and round every rock and pier that stands in it), not where the ribbon
@@ -20,6 +21,8 @@ uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable
 uniform float shore = 0.6;
 #endif
 global uniform vec4 g_haze;
+global uniform vec4 g_sun;       // rgb sun colour (linear), a energy
+global uniform vec4 g_sun_dir;   // xyz = direction TO the sun (world)
 uniform vec3 deep : source_color = vec3(0.2, 0.4, 0.7);
 uniform vec3 shallow : source_color = vec3(0.4, 0.75, 0.8);
 uniform vec3 sky : source_color = vec3(1.0, 0.8, 0.6);
@@ -28,6 +31,7 @@ uniform vec3 foam : source_color = vec3(1.0, 1.0, 1.0);
 uniform float sky_k = 0.35;    // how strong the flat shapes of sky are
 uniform float streak = 0.5;    // how many light streaks (0 none .. 1 every cell)
 uniform float flow = 0.35;     // metres a second the streaks drift along the ribbon
+uniform float glade = 0.7;     // the sun's road on the water: cream dashes where the eye looks towards the sun (0 = none)
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(h21(i), h21(i + vec2(1,0)), f.x), mix(h21(i + vec2(0,1)), h21(i + vec2(1,1)), f.x), f.y); }
@@ -52,6 +56,7 @@ void vertex() {
 // `cell` = the size of a cell (m), `aa` = the size of a pixel in p. Returns 0..1.
 float streaks(vec2 p, vec2 cell, float amount, vec2 aa, float seed) {
 	vec2 q = p / cell;
+	q.x += h21(vec2(floor(q.y), seed + 2.7)) * 7.3;   // every row starts somewhere else: seen from above the streaks are not a grid
 	vec2 c = floor(q);
 	float on = step(h21(c + seed), amount);
 	vec2 j = vec2(h21(c + seed + 3.1), h21(c + seed + 7.7));
@@ -99,6 +104,15 @@ void fragment() {
 	float st = streaks(p - vec2(drift, 0.0), vec2(9.0, 1.7), streak, aa, 0.0);
 	st = max(st, streaks(p - vec2(drift * 0.6, 0.4), vec2(14.0, 2.6), streak * 0.7, aa, 21.0));
 	c = mix(c, stripe, st * 0.8 * (1.0 - shal * 0.5));
+	// the sun's road: where the mirrored line of sight meets the sun, the streaks turn to the sun's own cream and grow
+	// (a cut shape: it moves as the eye moves, as it does on water, and stands still when the eye does)
+	if (glade > 0.0) {
+		vec3 rd = reflect(-v, vec3(0.0, 1.0, 0.0));
+		float toward = dot(normalize(rd.xz + vec2(1e-5)), normalize(g_sun_dir.xz + vec2(1e-5)));
+		float gl = smoothstep(0.955, 0.962, toward + (vn(q * 0.6 + 9.0) - 0.5) * 0.03);
+		float dash = max(st, streaks(p * vec2(1.0, 1.0) - vec2(drift * 0.8, 0.9), vec2(5.0, 1.1), 0.55, aa, 43.0));
+		c = mix(c, mix(stripe, min(g_sun.rgb * 1.05, vec3(1.0)), 0.75), dash * gl * glade * (1.0 - shal * 0.4));
+	}
 	// the foam line at the waterline
 	c = mix(c, foam, edge);
 	ALBEDO = c;
