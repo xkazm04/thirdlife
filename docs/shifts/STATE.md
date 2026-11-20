@@ -7,16 +7,16 @@ writes it back. Newest shift-log entry last.
 - Focus (owner, 18 Nov): make the game playable and fun before measuring anything. The walking figure, camera and terrain
   immersion, the parkour course, and the minigame editor as the backbone of player-made games. Hockey decisions and win
   measurement are deferred; the construction process comes later. Since 19 Nov 22:35: the engine's look (art-engine-duo).
-- Next 3: (1) the owner plays `dist/arms/combined/ThirdLife/PLAY-DIORAMA.cmd` (and PLAY-CLASSIC) and answers the diorama
-  asks D1-D5 (page https://claude.ai/artifact/PDGjcWgSg1XN6NyujhjKyq): a) adopt diorama or b) evolve crisp cel;
-  (2) still open from 19 Nov evening: W6/H4/H5 on exe `79af060`; (3) day-shift findings: flight_review still mode draws no
-  wings since 8cae88f; COMMON tours need `--load=block`; the off-origin `--at` hash, the picture-cache proof, the site's
-  round fence (B2), editor E4 after his tests.
+- Next 3: (1) land crisp cel as the baseline: `d20-cel` 4ca822a onto main (run the full gate on the merged tree,
+  with world,packs under default, crisp and classic; re-run the final export check), then make crisp the default style;
+  (2) carry over the diorama ideas that pay for themselves into crisp behind keys (warm light, contact shade, the cleaner
+  sky, the exe sharpness settings); (3) still open from 19 Nov: W6/H4/H5, E4, flight_review wings, B2 round fence.
 
 ## Open owner verdicts
 Asks from the evening of 19 Nov: W6 summon key; H4 HUD look; H5 PACK.md hud.json convention.
 Asks from the day of 19 Nov: E4 Designer call vs scorer (editor, owner tests first). The rest answered 19:00.
-Night of 20 Nov, D2 answered 10:10: the owner prefers the Astra character (Opus + Astra) over Fable; a combine with character-astra follows D1. D1, D3-D5 open.
+Night of 20 Nov D1-D5 and day of 20 Nov D3 closed by the 20 Nov 20:00 decision (crisp cel). Still open from the day: road
+rails colliders (decoration or bodies); gate sign in front of the plot fence in every style or crisp only.
 Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - E3 village too full by the road for 45 m venues.
 - P2 newcomer retry bot in the gate.
@@ -36,6 +36,11 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-20 ~20:00 (owner, after playing both final exes and reading the Director's read on minigames and low-end PCs):
+  "ok, lets pick crisp cel as the baseline and remove artifacts and outputs from the session we won't need anymore."
+  Crisp cel (`d20-cel` 4ca822a) is the baseline look. The toy diorama is not pursued; its branches stay on origin as an
+  archive (`d20-dio` c41885a, `diorama-*`). Why: readability for minigames, cost that grows with content (diorama
+  1.8-2.1x vs cel 1.1x, busy machine), one look to keep right for every new kit part.
 - 2026-11-19 08:20 (owner, morning after the night of 19 Nov):
   - E1: "it is right direction, but needs more care for LLM to pick positioning, pathing in the map, good fit in the map.
     As player develops the requirements in the builder, the map representation should change with it. All constructions
@@ -191,3 +196,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 17:33 standup: four arms on track; dio felt-wood road rails + relief dye make the chase frame the closest to board 4 today; dio-astra steering Astra by the luma-spread figure (77 vs board 122); cel fixed the three i2 gaps (sign fence, C-band cloud shadow, river streaks); cel full gate PASS 17:07.
 - 18:33 standup: four arms on track and gated; cel road-visitor frame reads as board 2; dio grade now matches board luma (07 lower half 59/134/182 vs 59/133/181) but GPU 2.23x classic, over 2x: dio-astra round 6 cuts cost (five switch-off keys exist); cel about 1.1x (busy).
 - 19:20 stopped at the owner's word; final merges d20-cel 4ca822a (all gates incl. crisp+classic hashes PASS, export PASS) and d20-dio c41885a (default+diorama hashes PASS, export PASS; classic hash run broke at process level 0xC0000142 = NOT verified, re-run before any landing). Verdict: docs/shifts/2026-11-20-day/VERDICT.md. Owner playing the diorama. Open: D3 (which look), rails colliders, sign placement.
+- ~20:00 owner decision: crisp cel is the baseline (see Decisions). Cleanup: 13 worktrees removed via tl trees remove (d20-base, d20-dio, d20-dio-astra, d20-dio-fable, d20-cel-fable, all eight n20 diorama trees); d20-cel-astra lost its 58 GB of raw captures but its 0.5 GB checkout is held open by another process (remove later with `tl trees remove d20-cel-astra --apply`); dist/arms and dist/day/dio deleted; branches kept on origin; d20-cel worktree and dist/day/cel kept for the landing. Disk 221 -> 328 GB free.
