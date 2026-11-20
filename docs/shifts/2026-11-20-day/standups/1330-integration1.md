@@ -1,4 +1,4 @@
-# Integration 1, 13:00-13:45 (day of 20 Nov)
+# Integration 1, 13:00-13:30 (day of 20 Nov)
 
 | Team | Arms committed | Joined | Gates on the joined tree | Exe |
 |---|---|---|---|---|
