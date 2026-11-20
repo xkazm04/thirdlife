@@ -478,15 +478,7 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 	else:
 		if lens != null:
 			lens.free()
-		if float(e0.get("dof_far", 0.0)) > 0.0:
-			var ca: CameraAttributesPractical = CameraAttributesPractical.new()
-			ca.dof_blur_far_enabled = true
-			ca.dof_blur_far_distance = float(e0["dof_far"])
-			ca.dof_blur_far_transition = float(e0.get("dof_far_transition", 150.0))
-			ca.dof_blur_amount = clampf(float(e0.get("dof_amount", 0.05)), 0.0, 0.3)
-			we.camera_attributes = ca
-		else:
-			we.camera_attributes = null
+		we.camera_attributes = _Dio.far_dof(e0)     # N1. far blur for cameras without attributes (env.dof_far, 0 = off)
 	_apply_view(host)
 	var post: TLStyleFx.TabletopPost = rig.get_node_or_null("InkPost")
 	if bool(opt.get("ink", true)):
@@ -556,9 +548,6 @@ static func _apply_view(host: Node) -> void:
 		_: vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 
 
-static var _shadow_filter_set := false
-
-
 static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	var s: Dictionary = data["sun"]
 	sun.light_color = Color(String(s["color"]))
@@ -572,12 +561,7 @@ static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	sun.shadow_bias = float(s["shadow_bias"])
 	sun.shadow_normal_bias = float(s.get("normal_bias", 1.4))
 	sun.light_angular_distance = float(s.get("angular_size", 0.0))
-	# The PCSS filter is renderer-wide. A live return to classic restores the
-	# project's sampling quality. A fresh classic run never changes the filter.
-	if s.has("filter_quality") or _shadow_filter_set:
-		var default_quality: int = ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality")
-		RenderingServer.directional_soft_shadow_filter_set_quality(clampi(int(s.get("filter_quality", default_quality)), 0, RenderingServer.SHADOW_QUALITY_SOFT_ULTRA))
-		_shadow_filter_set = s.has("filter_quality")
+	_Dio.shadow_filter(s)     # the PCSS filter is renderer-wide (dio/style_dio.gd)
 	var e: Dictionary = data["env"]
 	env.tonemap_mode = {"linear": Environment.TONE_MAPPER_LINEAR, "filmic": Environment.TONE_MAPPER_FILMIC,
 		"aces": Environment.TONE_MAPPER_ACES, "reinhard": Environment.TONE_MAPPER_REINHARDT}.get(e["tonemap"], 0)

@@ -63,3 +63,28 @@ static func globals(data: Dictionary) -> Dictionary:
 		"g_dio5": Vector4(float(t.get("wax", 0.0)), 0.0, 0.0, 0.0),
 		"g_dio4": Vector4(grass.r, grass.g, grass.b, clampf(float(dt.get("round", 0.0)), 0.0, 1.0)),
 	}
+
+
+## Combine of 20 Nov (moved from tl_style.gd to keep it inside its size budget; behaviour unchanged).
+## N1. Far blur for every camera that has no attributes of its own: `env.dof_far` = metres where it starts (0 = off).
+static func far_dof(e0: Dictionary) -> CameraAttributesPractical:
+	if float(e0.get("dof_far", 0.0)) <= 0.0:
+		return null
+	var ca: CameraAttributesPractical = CameraAttributesPractical.new()
+	ca.dof_blur_far_enabled = true
+	ca.dof_blur_far_distance = float(e0["dof_far"])
+	ca.dof_blur_far_transition = float(e0.get("dof_far_transition", 150.0))
+	ca.dof_blur_amount = clampf(float(e0.get("dof_amount", 0.05)), 0.0, 0.3)
+	return ca
+
+
+static var _shadow_filter_set: bool = false
+
+
+## The PCSS filter is renderer-wide. A live return to classic restores the project's sampling quality. A fresh
+## classic run never changes the filter (`sun.filter_quality` absent).
+static func shadow_filter(s: Dictionary) -> void:
+	if s.has("filter_quality") or _shadow_filter_set:
+		var default_quality: int = ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality")
+		RenderingServer.directional_soft_shadow_filter_set_quality(clampi(int(s.get("filter_quality", default_quality)), 0, RenderingServer.SHADOW_QUALITY_SOFT_ULTRA))
+		_shadow_filter_set = s.has("filter_quality")
