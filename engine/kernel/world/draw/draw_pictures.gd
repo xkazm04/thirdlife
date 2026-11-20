@@ -192,7 +192,7 @@ func _cache_key(e: Dictionary) -> String:
 ## key is byte for byte what it was and its cache stays valid (selftest dio.tex, dio.tex_classic).
 static func style_rules() -> String:
 	var nature: int = int(TLStyle.num("detail", "nature", 0.0))
-	return "|felt%d" % nature if nature > 0 else ""
+	return ("|felt%d" % nature if nature > 0 else "") + ("|dowels" if TLStyle.num("detail", "dowels", 0.0) > 0.0 else "")
 
 
 ## The content hash of a pack directory reads every file of it (60 to 100 ms for the seeds): on a worker, never in a

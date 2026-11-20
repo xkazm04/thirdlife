@@ -1,0 +1,251 @@
+DIO-FABLE: REPORT (day of 20 Nov 2026, the toy diorama at concept fidelity; surfaces and nature)
+Worktree .claude/worktrees/d20-dio-fable, branch d20-dio-fable. Rounds 1-2 landed as 83c86ec (joined with dio-astra in 1070eea); rounds 3-5 are in the worktree for the 16:20 integration (no git that writes).
+"busy" = four arms and the Director load the machine all day; the window lock is shared. State: DRAFT at the second integration (the final text is written at the hard stop).
+
+HOW TO LOOK (two minutes)
+- contact-sheet.jpg: board 4 beside the village road as the visitor meets it (52_chase_b), then every shot as
+  base (round 0, d20-dio) | now.
+- stills/: the shot set at 1920x1080 (01..16 the village tour, 21..26 the flight, 51..53 behind the figure);
+  stills/base/: round 0 at 1280x720.
+- clip.mp4: last night's scripted visit (the road, the parkour yard by the river, up and over the bluff), 16.85 s, 1280x720 (taken 13:17 on the round-4 tree; a retake on round 5 waits for the window lock).
+
+WHAT I BUILT, AND WHY IT MOVES TOWARD THE BOARD
+
+The owner's word was "blurry, far below the concept's fidelity". In my scope the cause was one thing: last night's
+marks were formulas (value noise stretched into fibres) and last night's nature was the kit's facets lit as round.
+At 1080p a formula reads as a smear and a facet as a blob. Today every mark is a texture made fibre by fibre and
+every piece of nature has the form a hand would give it. Ten things:
+
+1. Six material textures (engine/style/dio/tex/*.res, 1024 px, mipmaps inside, anisotropic sampling; made by
+   engine/style/dio/make_tex.py, baked by bake_tex.gd): flock (46 000 fibres), felted wool (15 000 long curly
+   fibres, pills), clay (thumb dents with their prints, knife drags, crumbs), wood (growth lines, pores, knots),
+   cast block (air holes of the pour), soil (9 000 crumbs, stones pressed in). Each texel is a slope, a tone and a
+   height; the shader lights the slope. They load without an import step, in the editor binary and the exe alike.
+2. Flocked ground. The land samples the flock twice (fibres, and coarser clumps turned by 37 degrees, so no tile
+   shows), fibres of two dyes, places where it lies thinner. The sheet is cut clean against the earth: the pigment
+   near the cut is un-mixed into dye and earth, so there is no sprayed halo, and the cut edge itself is ragged
+   (fibres hang over it). Flock tufts stand over the whole meadow in drifts of two dyes, thickest near the roads,
+   and mounds of dark flock lie round the foot of every tree. The earth is crumbs on rolled clay at two scales,
+   so a road reads as earth from a walker's eye too.
+3. Felt pines in tiers: every cone of the kit recipe becomes a felt skirt (puffed, a rim cut in lobes that hang,
+   a rolled lip, a dark underside), felted wool wrapped around it without a seam.
+4. Felt bushes with form: a bush is a cluster of felt balls rolled one by one and pressed together (a ring and one
+   or two on top), darker where they meet. Crowns are balls of wool, the roadside tufts clumps of flock.
+5. Clay: rocks are lumps rolled in the hand and pressed flat here and there; the mesas are slabs of rolled clay
+   laid one on another with a rounded outline, a piece cut off each; rock pigment on a bank shows as clay slabs;
+   clay pebbles lie in strews on the roads, grit is strewn all over them and stones lie on the river bank (real
+   lumps; the drawn discs are gone). The roadsides are dressed with knee-high pines, felt balls and stones.
+6. A resin river that mirrors: the cotton clouds stand in it, and the mirrored ray is walked through the picture
+   drawn before the resin, so banks, bushes and pines stand in it too. The sun's glint is a soft pool, not sparks.
+7. Wood: grain along every dowel and rail (twice as coarse on a dowel, so it reads from the road); the village's
+   plot fences are turned posts and round rails; a scaffold's square steel bars are drawn as turned wooden dowels
+   and the arches as bent wood.
+8. Paint: a painted box gets uneven cream edges where the brush did not keep to the edge and the primer shows
+   (the striped beam, kerbs, signs), and brush strokes that read. A painted thing of plain clay is smooth.
+9. Kit and walls: a wall or slab of class concrete is laid of cast blocks with pressed joints; the primitives the
+   kernel makes for bodies (the grey slab walls of a simple pack: BoxMesh, SphereMesh) get the part's space, the
+   clay texture and soft edges; chamfered boxes carry the face record, so they get the soft edge and the paint.
+10. The colour key of the board: lit grass golden olive, pines dark, earth orange-tan; shade warmed so salmon
+    rock in shade is plum, not magenta. Retuned after the partner turned the sun.
+
+Geometry of the kit, collision, physics and every pack are untouched. Everything new is presentation, drawn from
+the kit's own recipes, which stay the source of colliders, crown hulls and hashes, and it is all behind keys of
+style_diorama.json: detail.tex, tex_felt_m, tex_clay_m, tex_relief, nature, pebbles, grit, tufts, dress, dowels;
+water.clouds, cloud, glint, mirror_world. A style without them (classic) loads no texture and draws the recipes.
+
+THE GOALS OF MY SECTION (TEAMS.md, dio-fable), each with its evidence
+- Fidelity, no smeared textures (resolution, mipmaps, anisotropy): MET for my part. Laplacian variance of the luma,
+  same views, 1920x1080 (sharp.py): near ground 12.6 .. 23.0 on the base, 511 .. 774 now (the joined tree, the lens far
+  only); near meadow of 13: 22.9 -> 774. Before the partner's lens fix the same surfaces measured 17.4 .. 79.7
+  with the base's lens on and 366 .. 420 with it off: the lens was the rest of "blurry". 16x anisotropy is the
+  partner's (PATCHES): at 4x the meadow goes soft from about 25 m.
+- Felt pines in tiers, felt bushes with real form: MET (stills 51..53, 13, the flight; selftest dio.nature).
+- Flocked ground, pebbles: MET (52_chase_b at full size: fibres, the ragged cut, stones with shadows).
+- Layered clay bluffs: MET for the mesas (slabs with a rounded outline, a piece cut off each); the terrain's own
+  bluff is shading only (see "what still falls short").
+- A glossy resin river with reflections: MET (banks, bushes and clouds stand in it; 13_lot_river_road, 14).
+- Wood grain along each dowel and rail: MET close up (31_parkour_run: boards, grain); from the road a dowel is a few
+  pixels wide and reads by its colour and roundness, not its grain.
+- Slightly uneven cream stripes with brushwork on the beam: MET (uneven band of primer along every painted edge).
+- Kit and buildings as painted plastic or clay with edges and bevels: MET for boxes, chamfered boxes and the
+  kernel's primitive bodies; hulls, prisms and lofts keep hard edges.
+- Calm in motion: see below.
+
+THE HARD RULES, EACH WITH ITS EVIDENCE
+1. No pack or seed changes; the kernel keeps every v1 signature.
+   - `git status --short engine/packs engine/seeds contracts`: empty.
+   - `tl arch` PASS [12/12] (api-v1, api-index-fresh): no public member was added (the kit hooks are private
+     `_mesh_nature`, a preload of kits/tl_felt.gd; `TLMesh` gained no member).
+   - Palette: no key added, renamed or reordered; colours of 9 keys changed in style_diorama.json only.
+   - Kit hashes: kit.selftest PASS [95/95]; selftest surf.edges: content_hash of the three solids as on diorama-base.
+     UV2 (the face records, now also on a chamfered box) is not hashed.
+2. Today's look stays exact (TL_STYLE=classic).
+   - By construction: surf.classic_source PASS (toon.gdshader without its TL_DIORAMA branches is byte for byte the
+     base's file, sha256 e3aad816..., 558 lines); style.json and water.gdshader untouched; every new behaviour is
+     behind a key that classic does not have (selftest dio.tex_classic: no `detail.tex`, no `detail.nature`, no
+     texture registered, felt nature off, the picture key adds '').
+   - By picture: the 16 pictures of the village tour under classic, a copy of e191d8f (git archive, its own class
+     cache and picture cache) against this tree, 1920x1080 PNG, `--load=block`, each on a FRESH picture cache
+     (cmp.py: largest difference of any channel, share of pixels over 1/255). Five takes through the day
+     (11:47, 12:14, 12:43, 13:28 on the joined tree, 15:02 on round 5): every time 11 of 16 are identical bit for bit
+     (01, 05, 06, 07, 08, 11, 12, 13, 14, 15, 16) and the same 5 show a pack with something moving in it
+     (02 walker above 0.04 %, 03 drive 0.11 .. 0.13 %, 04 drive above 0.03 %, 09 paddle 0.87 .. 1.00 %, 10 paddle
+     above 0.06 %). Last night two runs of one base differed in the same 5 by the same amounts (0.037 .. 0.95 %);
+     I did not repeat base against base today.
+   - What the proof found: on a cache filled by diorama runs the classic tour differed in 12 of 16 pictures. The
+     picture cache was not keyed by style. Fixed (Director, 12:35): draw_pictures.gd `style_rules()`.
+3. No game's state hash moves.
+   - `check --tier full --only world,packs,kit.selftest`: PASS every time it was run (11:26, 11:40, 12:27, 12:50,
+     13:00, 13:54, 15:12 on round 5): world [8/8] with the same eight hashes each time (seed.drive a2940a1735bc2b72@3441,
+     seed.wall d5aea03b46c33ee6@1220, seed.paddle dff1a390470352e7@4486, example.walker f1c7b53757c34040@371,
+     example.kit ca698e71d34d1021@332, example.car 3a459d0fe25e7853@1872, game.ice_hockey_three_against
+     a29dcdf02a16dd1c@4186, game.parkour f7abac006a45bd43@988), packs [2/2] 48 of 48.
+   - The 48 pack rows (46 state hashes) equal the rows dio-astra took from a gated archive of e191d8f
+     (.tl/base_rows.txt in its worktree): 48 of 48, compared by script at 11:41 and 13:00.
+4. Cache keys. PIC_VERSION is 1601, as on the base: no kit generator changed. What changed is how a diorama style
+   DRAWS a recipe, so the picture key carries the style's switches instead (`|felt<n>` under detail.nature,
+   `|dowels` under detail.dowels, nothing under classic: its key is byte for byte what it was).
+5. Performance: see PERFORMANCE.
+6. Style file seams: I changed only `toon` (shade), `water`, `palette`, `mat`, `detail` of style_diorama.json.
+
+PERFORMANCE (windowed GPU, RTX 4090, 1920x1080; every figure "busy": the machine never was quiet today)
+- `node devx/bin/tl.mjs perf run --scenario tour6 --no-record`, alternating styles, each time
+  "# machine BUSY ...; not recorded", so measured and not judged:
+    13:10 .. 13:11  joined tree 1070eea + round 4   diorama gpu 2.239 / 2.204 ms (frame p50 2.80 / 2.77)
+                                                    classic gpu 1.240 / 1.232 ms (frame p50 2.91 / 2.51)
+    15:12 / 15:15  round 5 (before the cut of counts)    diorama gpu 2.865 ms (frame p50 3.15), classic gpu 1.261 ms (frame p50 2.82): ONE pair, machine at 60 to 65 % use;
+                    the second pair did not come (the diorama run waited 900 s for the window lock and gave up).
+  Reading: the diorama as it stands costs about 1.8 times (round 4, two pairs) to 2.3 times (round 5, one pair before the counts were cut) of today's GPU frame (the rule allows 2x). That is both arms:
+  it includes the partner's frame (4x MSAA + SMAA is the exe's setting, not the tour's).
+- What each big thing of mine costs (render gpu ms of my 8-picture village tour, the same minutes, alternating):
+    textures instead of drawn marks      +0.08 ms   (1.423 without, 1.499 with; 11:05)
+    felt nature as first built           +0.9 ms    (2.343; 6.3 M primitives in the frame against 1.6 M)
+    ... with the sun's shadow cast by the recipe, trees a little coarser
+                                         +0.6 ms    (2.186 / 2.143 against 1.562 / 1.560 without nature; 3.37 M
+                                                     primitives; 12:05)
+    the mirror walk of the river         not measured apart (22 depth taps on the river's pixels only)
+    bush clusters, dowels, roadside dressing: not measured apart: the A/B of 15:24 ran into a saturated machine (one run reported 95 ms).
+                                         Primitives in the frame: 3.73 M (round 4) -> 4.28 M (round 5); counts cut after that
+                                         (tufts 9000 -> 5500, grit 5200 -> 3200, dressing 320 -> 220).
+- Memory: six textures, 1024 px RGBA8 with mipmaps: 33.5 MB of video memory, 21.5 MB in the repository.
+- Nothing costs per new game (see COST PER NEW GAME).
+
+CALM IN MOTION (crawl.sh: the village pan of last night, the view turns one mouse pixel every 11 ticks; boil.py:
+mean change per frame in grey levels / share of pixels that change by more than 24; 1920x1080, x264 crf 4)
+   tree, time                                   far land and yard     near land
+   classic (12:36)                              0.485 / 0.523 %       0.040 / 0.000 %
+   last night's diorama (its report)            0.524 / 0.464 %       0.166 / 0.003 %
+   today, round 3, the base's lens on (13:03)   0.372 / 0.083 %       0.257 / 0.016 %
+   today, the joined tree, lens far only (13:14) 0.506 / 0.237 %      0.489 / 0.122 %
+   round 5 (15:52)                               0.623 / 0.340 %       0.752 / 0.497 %
+ Reading. Nothing boils: on the frames in which the view stands still the near land changes by 0.006 to 0.009
+ grey levels (the codec): 238 of 291 frames on the joined tree, 252 of 291 on round 5, 0.0000 % of pixels flip.
+ Round 5 is higher because the near land now carries thousands of small things (tufts, grit, pebbles with
+ shadows): each of the 39 moving frames changes it by 5.5 grey levels and flips 3.7 % of its pixels. All of the figure is the 53 frames in which the view
+ steps by one mouse pixel: 5.2 grey levels a step now against 2.75 with the base's lens, because the near ground
+ is sharp now and a sharp texture that moves four pixels changes more than a blurred one. That is a picture
+ moving, not a surface crawling. What keeps it still: the marks are textures with mipmaps, sampled with the
+ gradients of the surface's own continuous position and anisotropic filtering; the river's mirror walks a calmer
+ surface than its glints use; the glint is a soft pool.
+ Not measured: a clip with the exe's own anti-aliasing (the partner's 4x MSAA + SMAA route measures that).
+
+WHAT STILL FALLS SHORT OF THE BOARD (honest)
+1. The board's road runs between long rail fences. The village has short fences at the plot entrances only: a
+   fence a walker can run through is an immersion bug, and my files cannot give it a collider. Not built.
+2. The terrain's own bluff and banks are shading: rock pigment drawn as clay slabs on the land's smooth slope.
+   The mesas have real slabs; the land has not (its heightfield is the visitor's collider, not mine to cut).
+   In shade the banks still read pink-plum against the olive meadow.
+3. Felt has no fibre at its silhouette. A pine's skirt and a felt ball end in a clean line; the fuzz is in the
+   texture and the sheen. Shells of fibre would give it and cost a multiple of the triangles.
+4. From the road a dowel or a rail is a few pixels wide: its grain is there up close (31_parkour_run) and
+   averaged away at distance. The scaffolds read as wood by colour and roundness.
+5. The crane and the lamp towers are still painted steel lattice (the board's crane is yellow too, but chunkier).
+   Only a scaffold's bars are redrawn as dowels; other kit frames (ladders apart, the house frame) keep their bars.
+6. Roadside tufts are one clump of flock repeated 1400 times; the dressing pines are the kit pine at knee height.
+   Variety is by turn and scale only.
+7. The stripes of a beam are still boxes: the uneven cream edge is drawn inside each box's faces, the boundary
+   between two boxes is still a straight line under it.
+8. Hulls, prisms and lofts (wedges, roofs, the arch ribs) have no face record: hard edges, no painted edge.
+9. The mirror in the river sees only what is on screen: a pine above the frame is not mirrored, the sky stands
+   there instead. At the screen's edge the mirror fades.
+10. Far land (beyond about 100 m) is tone only; the far plain between the village and the mesas is flat.
+11. Ruts along the road (Director, 14:36): not built. Tried at 14:57: the village's land wrote the distance to the
+    road's middle into its vertex colour and the shader pressed two ruts a wheel's width from it. The land's grid
+    is 3 m: a distance interpolated over 3 m cannot carry a rut 0.3 m wide (nothing showed), so it was taken out
+    again, whole. The road has grit strewn all over and pebbles in strews instead; the long knife drags of the
+    clay texture run any way, not along the road.
+12. The meadow's tufts are balls of twenty faces: close up a tuft is a small mound, not blades.
+
+COST PER NEW GAME
+None added. A game still names palette keys, places kit parts and calls the kernel. What it gets without asking,
+under a diorama style only: its kit trees, rocks and bushes drawn as felt and clay; its scaffolds as wooden dowels;
+its boxes (chamfered or not) with soft edges and painted edges; its primitive bodies as clay with soft edges;
+wood, concrete, clay and felt keys with their textures. Nothing is authored per pack, no pack file changed, no
+palette key was renamed or reordered, the kernel API is the base's (tl arch api-v1 PASS). A builder who wants
+none of it for a key sets nothing: a key without a class is clay, without `chip` it has no painted edge.
+One thing a pack author should know: a kit part's picture and look are the style's; a pack must not read a kit
+mesh's triangles for its simulation (none does: world 8/8, 48 of 48).
+
+
+GATES (the tree as handed over)
+- node devx/bin/tl.mjs check --tier fast (15:37): PASS arch [12/12], PASS assets [4/4], PASS cards [3/3], PASS devx.test [229/229], PASS foreman.typecheck.
+- node devx/bin/tl.mjs check --tier full --only world,packs,kit.selftest (15:12): PASS kit.selftest [95/95], PASS packs [2/2] 48 of 48, PASS world [8/8].
+- selftest style. 9 passed 0 failed (15:54; the run of 15:39 was 8 and 1: dio-astra's style.diorama.aperture waited 900 s for the window lock and gave up, a stopped run), surf. 5 passed 0 failed, dio. 4 passed 0 failed (15:37).
+
+CHANGED FILES (against the base e191d8f; mine only)
+ engine/style/shaders/toon.gdshader          the TL_DIORAMA branches: textures, the cut of the felt sheet, clay slabs
+                                             on banks, cast blocks, primitive bodies, painted edges (classic
+                                             branches untouched: surf.classic_source)
+ engine/style/shaders/water_resin.gdshader   clouds in the resin, the soft glint, the mirror walk
+ engine/style/style_diorama.json             toon.shade; water; palette (9 colours); mat (rib_built, rib_steel);
+                                             detail (tex, tex_felt_m, tex_clay_m, tex_relief, nature, pebbles,
+                                             grit, tufts, dress, dowels, bevel)
+ engine/style/tl_style.gd                    +1 line (a flat material says it is worn by a primitive); 596 of 600
+ engine/style/dio/style_dio.gd               the textures as global samplers, `prim`, g_dio5.y, g_dio6
+ engine/style/dio/tex/*.res                  new: six textures, 21.5 MB
+ engine/style/dio/make_tex.py, bake_tex.gd   new: how the textures are made and baked
+ engine/style/STYLE.md                       "The diorama at concept fidelity" (keys, rules)
+ engine/kits/tl_felt.gd                      new: felt skirts, balls and clusters, clay lumps, clumps
+ engine/kits/tl_felt_strew.gd                new: slab stacks, the turned fence, pebbles, grit, meadow tufts,
+                                             roadside dressing, wooden dowels (tl_felt.gd is size-ratcheted)
+ engine/kits/tl_kit_parts.gd                 tree, rock, bush and scaffold parts take the look (private helper)
+ engine/kits/tl_kit_layout_build.gd          a layout's forest takes the look from detail.nature 2
+ engine/kits/tl_mesh.gd                      3 lines: a chamfered box's main faces carry the face record (UV2)
+ engine/kernel/world/terrain/village_parts.gd  the village draws its scatter, mesas, fences (`fence_run`), pebbles,
+                                             grit, tufts, dressing and the lot scaffold through kits/tl_felt*.gd;
+                                             shadows cast by the recipe
+ engine/kernel/world/draw/draw_pictures.gd   `style_rules()`: the picture key carries the style's switches
+ engine/kernel/world/draw/draw_base.gd       a comment (PIC_VERSION stays 1601)
+ engine/kernel/world/draw/dio_case.gd        new: the headless cases of block 630
+ engine/tools/selftest.d/630-dio.sh          new: dio.tex, dio.tex_classic, dio.nature, dio.mesa
+ Lane folder: REPORT.txt, STANDUP.md, PATCHES.md, contact-sheet.jpg, stills/, clip.mp4 and the scripts that made
+ them (shots.sh, sheet.py, sharp.py, cmp.py, crawl.sh, clip.sh, chase.devices.json, flight_shots.devices.json).
+ Not changed: any pack, any seed, any contract, docs/generated, the sun, env, fog, sky, ink, grade, lights and
+ lens sections, tl_style_fx.gd, the cameras, the rigs, project.godot.
+
+BEHAVIOUR CHANGES (all presentation; none under TL_STYLE=classic)
+- Under a style with `detail.nature` the village's and a pack's kit trees, rocks and bushes are other meshes than
+  the recipe builds (more triangles, smooth normals); `tl_hash` and `tl_tris` of the mesh stay the recipe's.
+- A felt tree's or bush's sun shadow is cast by its recipe, 16 % narrower: a shadow on the ground is a little
+  smaller than the felt, and a felt tree does not shade itself.
+- TLMesh: a chamfered box has one more vertex channel on its six main faces (UV2). Classic never reads it.
+- A pack's picture (stand-in) is cached under another key per diorama switch; classic's key is unchanged.
+- No test expectation moved.
+
+PATCHES.md: Director (the picture cache and the style, PIC_VERSION, classic proofs on their own cache, textures in
+git, the window lock); dio-astra (anisotropy, the lens figures, the colour key against the sun, the river's three
+sky colours, contact shade and the new forms).
+
+QUESTIONS FOR THE DIRECTOR
+1. The picture cache key should carry the style's NAME (two styles without `nature`, classic and overcast, still
+   share baked ground colours). Mine to do in engine/kernel/world/draw if you want it; it changes classic's key
+   once, so every classic cache is rebuilt once.
+2. Roadside fences as on the board need a collider (`world_space` wall), which is the landscape's (not in my
+   files). Worth an hour of someone who owns landscape.gd?
+3. 21.5 MB of textures in git as lossless .res: fine, or BC7 (about 8 MB, a little softer)?
+
+THE NEXT THREE THINGS THIS LANE WOULD DO
+1. Fibre at the silhouette: two or three shells on pine skirts and felt balls near the eye only.
+2. The terrain's own bluff as real slabs (a presentation mesh over the collider's slope), and long rail fences
+   with colliders along the road.
+3. Face records for hulls and prisms, so ramps, roofs and wedges get the soft edge and the painted edge too.

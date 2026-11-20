@@ -13,7 +13,7 @@
   "normal_bias": 1.55
  },
  "toon": {
-  "shade": "#6c6494",
+  "shade": "#766078",
   "shade_k": 0.74,
   "band_hi": 0.78,
   "band_lo": 0.06,
@@ -121,30 +121,31 @@
  "water": {
   "deep": "#2f6f8c",
   "shallow": "#58b0b4",
-  "sky": "#ffc59a",
+  "sky": "#f8b786",
   "stripe": "#eef6f2",
   "sky_k": 0.05,
   "model": "resin",
-  "sky_top": "#8a78c8",
+  "sky_top": "#634d69",
   "bed": "#b07a4a",
   "gloss": 1.0,
   "ripple": 0.8,
   "foam": 0.22,
   "shore": 0.9,
-  "cloud": "#ffe2b4",
+  "cloud": "#ffeeb9",
   "clouds": 0.6,
-  "glint": 0.15
+  "glint": 0.15,
+  "mirror_world": 0.85
  },
  "palette": {
   "white": "#ffffff",
-  "grass": "#7e9a3e",
-  "grass_dry": "#98a848",
-  "grass_dark": "#4a7836",
-  "dirt": "#c88a56",
+  "grass": "#a3b057",
+  "grass_dry": "#b4be63",
+  "grass_dark": "#496c36",
+  "dirt": "#cfa258",
   "sand": "#d8a56c",
   "rock": "#b8957c",
   "rock_dark": "#8f7078",
-  "rock_warm": "#c88c74",
+  "rock_warm": "#bc9674",
   "cliff": "#b8847c",
   "tarmac": "#5c6478",
   "tarmac_light": "#747c90",
@@ -161,7 +162,7 @@
   "black": "#2b2532",
   "yellow": "#f2b230",
   "yellow_dark": "#c98720",
-  "orange": "#dc9450",
+  "orange": "#e8742c",
   "hazard_red": "#d8452e",
   "wood": "#b9794a",
   "wood_light": "#e2b472",
@@ -174,8 +175,8 @@
   "window": "#ffc462",
   "leaf": "#5a8f3c",
   "leaf_light": "#8fb440",
-  "pine": "#385c34",
-  "pine_light": "#517c40",
+  "pine": "#405d31",
+  "pine_light": "#5e7c3c",
   "trunk": "#6c4a3b",
   "skin": "#eab294",
   "hair": "#8a4a2c",
@@ -212,8 +213,8 @@
   "goal_net": "#d9d0dc",
   "seat": "#4a66c8",
   "seat_alt": "#e2b062",
-  "rib_built": "#8f8ca6",
-  "rib_steel": "#6d6a85",
+  "rib_built": "#d2a468",
+  "rib_steel": "#b98756",
   "cone": "#f0702c",
   "hazard_white": "#f3ece6",
   "grass_blade": "#7fae48",
@@ -300,13 +301,13 @@
   },
   "rib_built": {
    "dissolve": 1.0,
-   "metal": 0.25,
-   "class": "steel"
+   "class": "wood",
+   "gloss": 0.24
   },
   "rib_steel": {
    "dissolve": 1.0,
-   "metal": 0.25,
-   "class": "steel"
+   "class": "wood",
+   "gloss": 0.24
   },
   "terrain": {
    "mottle": 0.04,
@@ -388,8 +389,8 @@
    "gloss": 0.5
   },
   "orange": {
-   "class": "wood",
-   "gloss": 0.18
+   "class": "steel",
+   "gloss": 0.5
   },
   "rock": {
    "class": "rock",
@@ -580,7 +581,11 @@
   "tex_clay_m": 2.0,
   "tex_relief": 0.8,
   "nature": 1.0,
-  "pebbles": 1500
+  "pebbles": 1500,
+  "dress": 220,
+  "dowels": 1.0,
+  "tufts": 5500,
+  "grit": 3200
  },
  "lights": {
   "window": 1.35,
