@@ -304,11 +304,11 @@
    "name": "road_verge_walk",
    "from": [
     -60,
-    -4
+    -3.2
    ],
    "to": [
     -108,
-    -4
+    -3.2
    ],
    "expect": "pass"
   },
