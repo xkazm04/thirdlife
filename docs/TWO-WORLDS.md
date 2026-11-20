@@ -1,7 +1,7 @@
 # Two worlds: the Home and the Dungeons
 
 > Status: design, 21 Nov 2026 (night shift `2026-11-21-night`, spark `designer-and-two-worlds`). Nothing in "The Home" is
-> built yet. "The Dungeons" is being built tonight (lane L4). Owner decisions are marked **[owner]**; the Director's
+> built yet. "The Dungeons" v1 was built tonight (lane L4, main d0d0bd9). Owner decisions are marked **[owner]**; the Director's
 > proposals are marked **[proposal]** and wait for the owner. The open questions are at the end.
 
 ## The principle
@@ -28,21 +28,44 @@ Third Life has two kinds of place, made with one kernel.
 The Home can be infinite because nothing in it has to be a game. A dungeon can be anything because nothing in it has to
 fit the Home.
 
-## The Dungeons (as built tonight)
+## The Dungeons (built 21 Nov, L4: d0d0bd9)
 
-- **Its own scene.** The world is freed, a load screen shows, the dungeon's look is installed (`TLStyle.load_style` and
-  `install`), and the pack runs alone with its camera and HUD. Esc gives Resume / Leave, and Leave goes back to the menu
-  and the default look.
-- **The list and the flag.** The list is `engine/boot/dungeons.json` (`tl.dungeons/1`). `--dungeon=<pack dir>` opens any
-  pack, including a job's work in progress. The Create page uses it for "Try it" at every build phase.
+- **The menu.** The exe opens on World / Dungeons / Create / Quit (`engine/boot/hub.gd`, `menu.gd`). Esc in the world
+  goes back to the menu. Every verb, flag, headless start and `TL_EXE_*` setting still goes straight to the village, as
+  before (selftest 640 checks 19 of those decisions).
+- **Its own scene.** The world is never loaded with a dungeon: the menu sits between them. Leaving the world frees the
+  viewer, the world, its hint layer and its logger. Measured in a window: nodes 2869 → 33, video memory 897 → 629 MB.
+  Three round trips add 10 objects and 0.09 MB.
+- **The transform today:**
+
+| Part | What it is today |
+|---|---|
+| Body | the pack's own player (hockey's skater, parkour's runner, the paddle); the kernel lends no avatar yet |
+| Camera, HUD | the pack's `TLCameras` views and `TLHud` layers, exactly as `tl play` shows them |
+| Look | the list's `look`, loaded with `TLStyle.load_style` on entry, with the default restored on leaving; sky, sun and post installed under the dungeon's node and freed with it |
+| Interface | the menu, the load screen and the pause card (Resume / Leave), drawn by the kernel in the crisp 2D look |
+| Physics | the kernel's laws and gravity, the pack alone |
+
+- **Proof law held.** A counted `--dungeon --frames=N` run hashes exactly as `worker --mode=play`. This was checked for
+  hockey, parkour and the paddle court, both in the exe and in the editor binary (`export.sh check` step 1b).
+- **The list and the flag.** The list is `engine/boot/dungeons.json` (`tl.dungeons/1`, contracts/README.md), holding
+  hockey (crisp), parkour and the paddle court. `--dungeon=<pack dir>` opens any pack, including a job's work in progress.
+  An exported dungeon must be one of the exe's games.
+- **Try it.** The Create page starts a second process: `dungeons.gd` `launch(dir)` runs the same executable with
+  `--dungeon=<dir>`, and the child's pause card says "Back to Create". A runaway work-in-progress pack can only hang the
+  child. A watchdog for it is being built tonight (L4b).
 
 **Next [proposal]:**
-1. **A `dungeon` block in `contracts/PACK.md`**, with these fields:
-   - `avatar`: what the player becomes;
-   - `look`: a `TL_STYLE` name;
-   - `laws`: gravity scale, plus any of the pack's `TLLaws`;
-   - `results`: the keys a run reports back.
-   Today `dungeons.json` carries the look, and the pack's own player object is the avatar.
+1. **An optional `dungeon` block in `pack.json`** (`contracts/PACK.md`). L4 proposed it and the Director extends it.
+   Nothing in it reaches the hash, and `dungeons.json` stays the menu's list (which packs, in what order, with which
+   title). Fields:
+   - `look`: a `TL_STYLE` name. The list's `look` overrides it.
+   - `avatar`: `own` (the pack's player, as today) or `walker`. With `walker`, the kernel lends the Home's walker as
+     `ctx.avatar`, so you can be "the Home's person in another place".
+   - `stills`: up to 3 menu pictures.
+   - `pause`: `kernel` (the default card) or `pack` (the game's own pause screen, which must offer Leave).
+   - `laws`: a gravity scale, plus any of the pack's `TLLaws` (item 2).
+   - `results`: the keys a run reports back (item 3).
 2. **Own laws.** Gravity is global today (`kernel/world/pack.gd:172-175` copies `ProjectSettings`), but each pack already
    has its own `PhysicsServer3D` space. Space gravity is a space parameter, so the kernel can set a dungeon's declared
    gravity on its space. Pack scripts still never touch `PhysicsServer3D`. A low-gravity arena costs one manifest key.
@@ -162,7 +185,7 @@ The Home is a stack of layers. Each is edited, saved, undone and shared on its o
 - **Transport:** Steam networking first, matching SHARING.md's Steam Cloud first.
 
 ## Order of work [proposal]
-1. **Dungeons v1** (tonight, L4): the menu, the dungeon scene, `--dungeon`, hockey as the first one.
+1. **Dungeons v1** (done 21 Nov, L4 d0d0bd9): the menu, the dungeon scene, `--dungeon`, hockey as the first one.
 2. **The `dungeon` block in PACK.md and results back**: the trophy shelf at a portal.
 3. **Chunk today's village with the same heights**, and turn `ledger` on (proof: the same pictures and hashes).
 4. **Lots as footprints and free placement**: the Structures layer, saved per chunk. The exe saves the Home.
