@@ -47,7 +47,9 @@ func _initialize() -> void:
 GDSCRIPT
   origin_why=""
   origin_result=""
-  if bash "$HERE/world.sh" tour "$origin_dir/car.json" --pictures-only --load=block "--out-dir=$origin_dir" >"$origin_dir/window.log" 2>&1; then
+  # The measure reads green-dominant grass, a property of the classic palette (crisp paints dry olive patches where red
+  # leads); the case proves the live-to-picture cut, so it runs under classic since crisp became the default (20 Nov).
+  if TL_STYLE=classic bash "$HERE/world.sh" tour "$origin_dir/car.json" --pictures-only --load=block "--out-dir=$origin_dir" >"$origin_dir/window.log" 2>&1; then
     MSYS_NO_PATHCONV=1 "$origin_godot" --headless --path "$origin_engine" --script "$origin_dir/measure.gd" -- "$origin_dir" >"$origin_dir/measure.log" 2>&1
     origin_status=$?
     origin_result="$(grep -a '^ORIGIN ' "$origin_dir/measure.log" | tr -d '\r')"
