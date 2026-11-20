@@ -69,6 +69,38 @@ static func auto_box(n: Node3D, mk: TLMesh, material: String) -> StaticBody3D:
 	return b
 
 
+## Night of 21 Nov 2026 (lane L1): parts that are not a block get boxes where their solid pieces are (in the numbers
+## of their TLKitSite generator), not one box round everything: a walker passes between legs and under a high board.
+## `sign`: two posts and the board (its foot 1.4 m up: too low to walk under, so it stops him as before at its posts).
+static func _sign_body(b: StaticBody3D) -> void:
+	for sx: float in [-0.7, 0.7]:
+		box(b, Vector3(0.12, 2.6, 0.12), Vector3(sx, 1.3, 0))
+	box(b, Vector3(2.0, 1.2, 0.16), Vector3(0, 2.0, 0.07))
+
+
+## `watch_tower` of height `h`: the splayed legs and their braces as one hull, the deck, three plank walls and the rail
+## of the open side, the four roof posts and the roof. The ladder and the flag are not solid.
+static func _tower_body(b: StaticBody3D, h: float) -> void:
+	var legs: PackedVector3Array = PackedVector3Array()
+	for c: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
+		legs.append(Vector3(c.x * 2.0, 0.0, c.y * 2.0))
+		legs.append(Vector3(c.x * 1.37, h, c.y * 1.37))
+	hull(b, legs)
+	var t: float = 1.25 + 0.45
+	var dw: float = (1.25 + 0.6) * 2.0
+	box(b, Vector3(dw, 0.18, dw), Vector3(0, h + 0.1, 0))
+	box(b, Vector3(t * 2.0 + 0.1, 0.95, 0.1), Vector3(0, h + 0.7, -t))
+	box(b, Vector3(t * 2.0 + 0.1, 0.95, 0.1), Vector3(0, h + 0.7, t))
+	box(b, Vector3(0.1, 0.95, t * 2.0 + 0.1), Vector3(-t, h + 0.7, 0))
+	box(b, Vector3(0.1, 0.1, t * 2.0 + 0.1), Vector3(t, h + 1.15, 0))
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			box(b, Vector3(0.16, 2.1, 0.16), Vector3(sx * t, h + 1.25, sz * t))
+	var e: float = 1.25 + 1.1
+	hull(b, PackedVector3Array([Vector3(-e, h + 2.3, -e), Vector3(e, h + 2.3, -e), Vector3(e, h + 2.3, e), Vector3(-e, h + 2.3, e),
+		Vector3(-0.25, h + 3.5, -0.25), Vector3(0.25, h + 3.5, -0.25), Vector3(0.25, h + 3.5, 0.25), Vector3(-0.25, h + 3.5, 0.25)]))
+
+
 static func dynamic(n: Node3D, s: Shape3D, material: String, volume: float) -> void:
 	n.set_meta("tl_dynamic", true)
 	n.set_meta("tl_shape", s)
@@ -215,7 +247,9 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 			mesh(n, rk)
 			hull(body(n, "stone"), rk.all_points())
 		"bush":
-			mesh(n, TLKitNature.bush(int(p["seed"]), float(p["size"])))
+			var bsz: float = p["size"]
+			mesh(n, TLKitNature.bush(int(p["seed"]), bsz))
+			cyl(body(n, "grass"), bsz * 0.75, bsz * 1.1, Vector3(0, bsz * 0.55, 0))     # 21 Nov: the leaves stop a walker (pond water still does not)
 		"fence":
 			var fa: Vector3 = Vector3.ZERO
 			var fb2: Vector3 = Vector3(float(p["length"]), 0, 0)
@@ -249,7 +283,7 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 		"sign":
 			TLKitSite.add_sign(mk, Vector3.ZERO, 0.0, String(p["color"]))
 			mesh(n, mk)
-			auto_box(n, mk, "wood")
+			_sign_body(body(n, "wood"))
 		"flag":
 			TLKitSite.add_flag(mk, Vector3.ZERO, float(p["height"]), String(p["color"]))
 			mesh(n, mk)
@@ -257,7 +291,10 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 		"scoreboard":
 			TLKitSite.add_scoreboard(mk, Vector3.ZERO, 0.0)
 			mesh(n, mk)
-			auto_box(n, mk, "steel")
+			var sbb: StaticBody3D = body(n, "steel")     # 21 Nov: two legs and the board; the way under it stays open
+			for sx: float in [-3.2, 3.2]:
+				box(sbb, Vector3(0.4, 11.5, 0.4), Vector3(sx, 5.75, 0))
+			box(sbb, Vector3(8.4, 4.0, 0.56), Vector3(0, 9.4, 0.03))
 		"tyre_stack":
 			TLKitSite.add_tyres(mk, Vector3.ZERO, 0.0, int(p["columns"]))
 			mesh(n, mk)
@@ -265,7 +302,7 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 		"watch_tower":
 			TLKitSite.add_watch_tower(mk, Vector3.ZERO, 0.0, float(p["height"]))
 			mesh(n, mk)
-			auto_box(n, mk, "wood")
+			_tower_body(body(n, "wood"), float(p["height"]))
 		"pond":
 			var water: bool = String(p["surface"]) == "water"
 			mk.uv_fixed = true   # plain ice: no rink markings
@@ -302,7 +339,13 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 		"marshal_post":
 			TLKitSite.add_marshal_post(mk, Vector3.ZERO, 0.0)
 			mesh(n, mk)
-			auto_box(n, mk, "wood")
+			var mpb: StaticBody3D = body(n, "wood")      # 21 Nov: four posts, the deck, its back board and the roof
+			for sx: float in [-0.9, 0.9]:
+				for sz: float in [-0.7, 0.7]:
+					box(mpb, Vector3(0.12, 3.4, 0.12), Vector3(sx, 1.7, sz))
+			box(mpb, Vector3(2.2, 0.12, 1.8), Vector3(0, 1.2, 0))
+			box(mpb, Vector3(2.2, 0.7, 0.1), Vector3(0, 1.75, -0.86))
+			box(mpb, Vector3(2.6, 0.35, 2.2), Vector3(0, 3.575, 0))
 		"entrance":
 			TLKitSite.add_entrance(mk, Vector3.ZERO, 0.0)
 			mesh(n, mk)

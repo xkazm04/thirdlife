@@ -4,9 +4,12 @@ extends RefCounted
 ## `detail.road_rails` (metres from the road's edge to the row; absent or 0 = no rails: today's landscape, so classic
 ## and diorama are untouched).
 ##
-## Presentation only. No collider is made: the visitor and every game collide with exactly what they did before, so
-## no hash can move. It draws nothing from the landscape's random stream (posts stand at fixed steps along the road),
-## so the scatter that follows is the same with and without it.
+## Night of 21 Nov 2026 (lane L1, owner: "rails, sign and fences collide"): when the landscape hands it the visitor's
+## space (`ws`, terrain/world_space.gd), every drawn stretch of rail is a wall there too (`add_wall`, tag "rail",
+## `POST_H` tall from each post's foot), broken at every open span exactly where the drawing is: the visitor stops at a
+## rail and walks through every gap. The visitor's space is the world's own; no pack sees it, so no state hash can move.
+## It draws nothing from the landscape's random stream (posts stand at fixed steps along the road), so the scatter that
+## follows is the same with and without it.
 ## Gaps: on the spur's side at every spur mouth, both sides at the bridge, wherever a plot or a lot reaches the row,
 ## round every plot's gate (its own fence, flag and sign stand there),
 ## at the river, and one open span in every `PASS_EVERY` so a walker always has a way through nearby.
@@ -27,9 +30,9 @@ const SEEN_MARGIN: float = 8.0
 ## `main_path`: the main road (TLKitPath, 2 m samples); `half`: its half width; `spur_paths`: landscape.gd's
 ## [index, TLKitPath, ys] per spur (a spur ends on the main road); `bridge_a`..`bridge_b`: the bridge's samples (-1 = none);
 ## `centres`, `rad`: plots and lots. Adds MeshInstance3D nodes "WorldRoadRails<n>" to `parent` (one per piece of a row);
-## returns the metres of rail.
+## returns the metres of rail. `ws`: the visitor's space (null = drawn only, as before 21 Nov).
 static func build(parent: Node3D, terr: RefCounted, main_path: TLKitPath, half: float, spur_paths: Array, bridge_a: int, bridge_b: int,
-		centres: Array, rad: Array, off: float) -> float:
+		centres: Array, rad: Array, off: float, ws: RefCounted = null) -> float:
 	if main_path == null or off <= 0.0 or main_path.pts.size() < 4:
 		return 0.0
 	var pts: PackedVector2Array = main_path.pts
@@ -67,11 +70,33 @@ static func build(parent: Node3D, terr: RefCounted, main_path: TLKitPath, half: 
 			open = open or float(terr.call("river_dist", p.x, p.y)) < 9.0 or not bool(terr.call("inside", p.x, p.y, 6.0))
 			if open:
 				metres += _row(parent, run)
+				_walls(ws, run)
 				run = PackedVector3Array()
 			else:
 				run.append(Vector3(p.x, float(terr.call("gy", p.x, p.y)) - 0.05, p.y))
 		metres += _row(parent, run)
+		_walls(ws, run)
 	return snappedf(metres, 0.1)
+
+
+## The colliders of one unbroken row, as `_row` draws it: a wall over every span that carries rails (k % PASS_EVERY != 0),
+## one wall per stretch between two open spans. A row `_row` does not draw (one post) gets none.
+static func _walls(ws: RefCounted, run: PackedVector3Array) -> void:
+	if ws == null or run.size() < 2:
+		return
+	var was: String = str(ws.get("tag"))
+	ws.set("tag", "rail")
+	var stretch: PackedVector3Array = PackedVector3Array([run[0]])
+	for k: int in range(1, run.size()):
+		if k % PASS_EVERY == 0:
+			if stretch.size() >= 2:
+				ws.call("add_wall", stretch, POST_H)
+			stretch = PackedVector3Array([run[k]])
+		else:
+			stretch.append(run[k])
+	if stretch.size() >= 2:
+		ws.call("add_wall", stretch, POST_H)
+	ws.set("tag", was)
 
 
 ## One unbroken row: its posts, and two rails from post to post (every `PASS_EVERY`th span left open), in pieces of

@@ -151,6 +151,15 @@ with the landscape:
   game's colliders are in, those triangles stay as the plot's pad and are taken out then: bugfix-37 D3);
 * a wall matching each 1.2 m entrance rail, with the gate and the flanks open; trunks of trees and tall rocks
   (cylinders); the lots' cranes, scaffolds and timber piles; the bridge's deck, rails and piers;
+* (night of 21 Nov 2026, lane L1: crisp cel's things are solid) the road's rails of a style with `detail.road_rails`
+  (`terrain/road_rails.gd`: one wall per drawn stretch, 1.25 m from each post's foot, tag `rail`; every open span is
+  open here too: the one in nine, the spur mouths, the bridge, the river, 9 m round a plot's gate, wherever a plot or
+  lot reaches the row); each plot's and lot's gate marker, its sign and flag where `detail.sign_out` stands them
+  (`village_parts.gd marker_solid`: one 1.5 x 1.9 x 0.38 m box, tag `sign`); every bush he cannot step over (1.1 x
+  its radius x scale tall, at least 0.6 m: a cylinder of 0.75 x radius x scale, tag `bush`), except one whose cylinder
+  would reach onto a road (the scatter lets a roadside bush lean over the verge: solid, it narrowed the road and was a
+  block beside the rails he could stand on); a construction site's
+  sign and plan board stand on solid posts (site/draw.gd `_posts`; he walks under the boards);
 * for every plot a COPY of the pack's static colliders (`add_pack`): the shapes are shared (a shape belongs to no
   space), the bodies are new bodies in this space, clipped to the plot's circle, bent at the rim exactly as the draw
   layer bends the ground, moved to the plot's place and height. Only `StaticBody3D` (the venue's ground, walls,
@@ -176,7 +185,14 @@ road's verge (passes): 8 of 8 as expected. In the tour (script adjusted as said)
 
 Limits. A pack's static colliders are copied when the world is built: a wall a pack removes later is still there for
 the visitor. Authored obstacles can stop a crossing, and slopes above 55 degrees can make the visitor slide.
-Bushes, grass, flags and small rocks are walk-through. No swimming (the river is 1 m deep and he wades it).
+Grass, small bushes (under 0.6 m) and small rocks are walk-through; since 21 Nov a bush he cannot step over, the road's
+rails and the gate's sign and flag stop him (a jump of 1.0 m does not clear a 1.25 m rail). None of these is in any
+pack's space: no state hash can move by them. Proof: `tools/selftest.d/620-harden.sh` (`harden.*`, headless, the exe's
+village under crisp, and the compact village of walks/wf_feel.json): 193 and 199 places along the drawn rails stop him, the 19 open spans let him through, 10 gate markers
+and 50 bushes stop him, kit parts copied as a game's colliders stop him or let him through as drawn, and the spawn and
+every plot's gate (where Q puts him) are clear of every collider. The probe `road_verge_walk` of
+`walks/visitor_walk.json` walks at z = -4, the row of rails under crisp: it is stopped by `rail` there now (classic
+has no rails). No swimming (the river is 1 m deep and he wades it).
 The world's space is built by the landscape, so a world without a window has no visitor.
 
 ### A person's body has weight (walker-feel, 18 Nov 2026)
@@ -400,6 +416,16 @@ order): it is run then (selftest `site.solid`). The exe follows a running job: `
 (docs/EXE.md). Arrival time measured (S2.md): the worker starts the promoted game's preparation within 1 ms of the
 release and the game is attached on the next tick after it (hockey: 611-615 ms, against 663-695 ms to load it
 alone); a test window runs unpaced (about 740 ticks a second), so the same 0.6 s read as 450 to 510 ticks.
+
+**B2 (night of 21 Nov 2026, lane L1): the site fence follows the footprint.** The round fence went on 19 Nov (editor
+round 2) and the yard stood open; the owner's pick of 20 Nov is a fence on the footprint. While the game is being
+built, `site/draw.gd _hoarding` fences the square of the lot's pad (landscape.gd pads a site plot with its footprint, 2r
+x 2r turned by the player's yaw), 1 m inside its edge, in the construction frame, open for 7 m where the line from the
+centre to the gate meets it: the timber rail fence of the plots' entrances (`TLKitSite.add_fence`, 1.2 m, built on a
+worker once per size and yaw) and one 1.2 m box per straight stretch in the visitor's space (tag `site <lot>`). When
+the game arrives it comes down with the scaffold. The site's sign and plan board stand on solid posts (`_posts`); he
+walks under the boards. Proof: `harden.site_fence` (unturned and turned 30 degrees: stopped from behind, in through the
+gate along the path), `harden.site_sign`, `site.no_ring` and `site.editor_yaw` (body counts named there).
 **S3 (18 Nov).** The lot fits its game: when the log already names a promoted game (a finished job, a replay), the
 site plot's radius is the half-diagonal of that pack's `footprint` + 4 m (at least 12, at most the walk's radius; a
 pack without a footprint keeps the walk's radius; a job that promoted nothing yet too). The packages are listed on

@@ -38,6 +38,7 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 	var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
 	mmi.name = mname
 	mmi.multimesh = mm
+	mmi.set_meta(&"tl_xs", xs)       # 21 Nov L1: where each instance stands (a headless MultiMesh does not keep its transforms; harden_case.gd reads them)
 	parent.add_child(mmi)
 
 
@@ -294,6 +295,52 @@ static func edge_geometry(t: Dictionary) -> void:
 		TLKitSite.add_sign(mk, Vector3(0, 0, 0.30), 0.0)
 		mk.pop()
 	t["mesh"] = mk.build("WorldPlotFences") if mk.tri_count > 0 else null
+
+
+## Night of 21 Nov 2026 (lane L1): the gate marker `edge_geometry` draws (a sign and a flag, scaled 0.72, where
+## `marker_out` stands it) is solid in the visitor's space: one box round the sign's two posts, its board and the flag's
+## pole (1.5 x 1.9 x 0.38 m), tag "sign". Same placement as the drawing; the board's foot is 1.0 m up, so no one walks under.
+const MARKER_BOX: Vector3 = Vector3(1.5, 1.9, 0.38)
+const MARKER_AT: Vector3 = Vector3(0.0, 0.95, 0.14)      # the box's centre in the marker's frame (+Z: the board's face)
+static func marker_solid(ws: RefCounted, terr: RefCounted, entrance: Vector2, dir: Vector2, half: float, marker_out: float) -> void:
+	if ws == null:
+		return
+	var side := dir.orthogonal()
+	var post := entrance + side * (half * 0.8 + 1.9 + 1.2) - dir * 0.15 + dir * marker_out
+	var b := Basis(Vector3.UP, atan2(dir.x, dir.y))
+	var was: String = str(ws.get("tag"))
+	ws.set("tag", "sign")
+	ws.call("add_box", Transform3D(b, Vector3(post.x, float(terr.call("gy", post.x, post.y)), post.y) + b * MARKER_AT), MARKER_BOX)
+	ws.set("tag", was)
+
+
+## Night of 21 Nov 2026 (lane L1, owner: bushes block the visitor): a bush of the kit's `bush` mesh (radius `r`, its
+## top 1.1 r up), placed by `xs`, is a cylinder of 0.75 r x scale in the visitor's space, tag "bush"; one lower than
+## `BUSH_STEP` m he steps through, as a stone lower than a knee. A bush whose cylinder would reach onto a road (`road_pts`,
+## the 2 m samples of the main road and the spurs, `half` the main road's half width) is left walk-through: the scatter
+## lets a roadside bush lean over the verge (its clearance is measured on a 3 m grid), and a solid one there narrowed the
+## road and made a 1.5 m block beside the rails that he could be put on top of (found by harden.rails_village).
+const BUSH_STEP: float = 0.6
+static func bush_solids(ws: RefCounted, xs: Array, r: float, road_pts: PackedVector2Array = PackedVector2Array(), half: float = 0.0) -> void:
+	if ws == null:
+		return
+	var was: String = str(ws.get("tag"))
+	ws.set("tag", "bush")
+	for x: Transform3D in xs:
+		var s: Vector3 = x.basis.get_scale()
+		var h: float = 1.1 * r * s.y
+		var rad: float = snappedf(0.75 * r * s.x, 0.05)
+		if h < BUSH_STEP:
+			continue
+		var c: Vector2 = Vector2(x.origin.x, x.origin.z)
+		var on_road: bool = false
+		for q: Vector2 in road_pts:
+			if q.distance_to(c) < half + rad:
+				on_road = true
+				break
+		if not on_road:
+			ws.call("add_trunk", x.origin, rad, snappedf(h, 0.1))
+	ws.set("tag", was)
 
 
 static func edge_nodes(parent: Node3D, t: Dictionary) -> void:

@@ -63,7 +63,7 @@ const PARTS: Dictionary = {
 		"height": ["float", 9.0, 2.0, 25.0, "height (m); ignored by `hero`"], "seed": ["int", 100, 0, 1000000, "shape variation"]}],
 	"rock": ["A boulder.", "stone", false, {
 		"size": ["float", 1.0, 0.2, 6.0, "radius (m)"], "squash": ["float", 0.7, 0.2, 1.5, "height as a share of the radius"], "seed": ["int", 200, 0, 1000000, "shape variation"]}],
-	"bush": ["A bush (no collision).", "grass", false, {
+	"bush": ["A bush. Collision: a cylinder round its leaves (0.75 x size wide, 1.1 x size tall).", "grass", false, {
 		"size": ["float", 0.9, 0.3, 3.0, "radius (m)"], "seed": ["int", 300, 0, 1000000, "shape variation"]}],
 	"fence": ["Fence from the origin along +X.", "wood", false, {
 		"length": ["float", 8.0, 1.0, 200.0, "length (m)"], "style": ["enum", "rail", ["rail", "mesh"], "", "rail = wooden rail fence, mesh = steel site fence"]}],
