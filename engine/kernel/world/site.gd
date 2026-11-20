@@ -23,6 +23,9 @@ extends RefCounted
 ## size back and the queue builds it like any other arrival (a `built` event in the world log; a replay does the
 ## same). A later promotion replaces the pack by a `reload` from the new directory.
 ## The site is presentation: it never enters a state hash. Its report is one line `[site] {json}` at the world's end.
+## Designer v2 (JOB.md "Added 2026-11-20", night of 21 Nov): a plan with `phases` is shown by phase: `view_of` carries
+## `phase_line` ("phase n of m: <title>", the first phase not passed) and the report its `phase`; site/draw.gd puts it on
+## the sign where it put "N of M built" (L3 PATCHES.md for the draw side).
 
 const SiteLog: GDScript = preload("res://kernel/world/site/log.gd")
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")   # S5: the cache of measured extents
@@ -330,6 +333,9 @@ func tick(t: int) -> void:
 		if n != int(s["n"]):
 			s["n"] = n
 			s["view"] = SiteLog.fold((s["log"] as RefCounted).get("events"), n)
+			var ph: Dictionary = phase_of((s["log"] as RefCounted).get("events"), n)
+			if not ph.is_empty():
+				(s["view"] as Dictionary)["phase_line"] = str(ph["line"])
 			var st: String = str((s["view"] as Dictionary)["stage"])
 			if not (s["stage_ticks"] as Dictionary).has(st):
 				(s["stage_ticks"] as Dictionary)[st] = t
@@ -537,6 +543,8 @@ func report() -> Array:
 		for key: String in ["fit", "lot_from", "pad_h", "yaw_deg"]:
 			if s.has(key):
 				r[key] = s[key]
+		if v.has("phase_line"):
+			r["phase"] = str(v["phase_line"])
 		r["at"] = [float((s["at"] as Array)[0]), float((s["at"] as Array)[2])]
 		for key: String in ["radius_before", "measured_m", "measure_ms", "refit_ms"]:
 			if s.has(key):
@@ -548,6 +556,30 @@ func report() -> Array:
 			r["log_error"] = str((s["log"] as RefCounted).get("error"))
 		out.append(r)
 	return out
+
+
+## Designer v2. The phase the job is in after the first `n` events: the latest plan's `phases` (a plan without them gives
+## {}), each passed by a `phase_reviewed` pass after the plan; the first one not passed is the current one.
+## {n, m, id, title, line: "phase n of m: <title>"}, or {} when there is no phased plan or every phase passed.
+static func phase_of(evs: Array, n: int = -1) -> Dictionary:
+	var upto: int = evs.size() if n < 0 else mini(n, evs.size())
+	var phases: Array = []
+	var passed: Dictionary = {}
+	for k: int in upto:
+		var e: Dictionary = evs[k]
+		match str(e.get("type", "")):
+			"plan_set":
+				phases = e.get("phases", []) if typeof(e.get("phases")) == TYPE_ARRAY else []
+				passed = {}
+			"phase_reviewed":
+				if str(e.get("verdict", "")) == "pass":
+					passed[str(e.get("phase", ""))] = true
+	for i: int in phases.size():
+		var ph: Dictionary = phases[i]
+		if not passed.has(str(ph.get("id", ""))):
+			return {"n": i + 1, "m": phases.size(), "id": str(ph.get("id", "")), "title": str(ph.get("title", "")),
+				"line": "phase %d of %d: %s" % [i + 1, phases.size(), str(ph.get("title", ""))]}
+	return {}
 
 
 func _warn(text: String) -> void:

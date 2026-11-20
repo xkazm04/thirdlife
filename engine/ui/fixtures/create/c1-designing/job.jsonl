@@ -1,0 +1,2 @@
+{"v":1,"seq":1,"ts":"2026-11-21T19:02:00.000Z","job":"penguin-push-20261121-1","type":"job_created","sentence":"penguins pushing each other off an iceberg","packId":"game.penguin_push","title":"Penguin Push","creativity":"crazy"}
+{"v":1,"seq":2,"ts":"2026-11-21T19:02:01.000Z","job":"penguin-push-20261121-1","type":"billing","adapter":"claude-cli","mode":"subscription","evidence":"claude CLI login (no ANTHROPIC_API_KEY)"}
