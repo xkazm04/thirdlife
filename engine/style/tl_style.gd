@@ -281,6 +281,7 @@ static func _flat_material(c: Color, metal: float) -> Material:
 	var m: ShaderMaterial = ShaderMaterial.new()
 	m.shader = _shader("toon")
 	m.set_shader_parameter(&"pal_lut", ImageTexture.create_from_image(img))
+	_Dio.prim(m, data)
 	_flat[key] = m
 	return m
 

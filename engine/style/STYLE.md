@@ -256,3 +256,27 @@ off the horizon band falls from 2.5 % of flipping pixels to 0.3 %.
 
 `engine/style/dio/style_dio.gd` holds the code a model needs (shader variants, the globals `g_dio` .. `g_dio5`); it is
 not part of the indexed API. `style_surfaces.json` is the diorama file with ink and paper off, a judging aid of that night.
+
+## The diorama at concept fidelity (day of 20 Nov 2026, surfaces and nature)
+
+The owner found the diorama of that night blurry. The marks of felt and clay were formulas (value noise stretched into
+fibres): at 1080p they read as a smear. They are textures now, and nature has real form. All of it is behind keys of
+`style_diorama.json`; a style without them (classic) loads no texture and draws the kit recipes as they are
+(selftest block 630: `dio.tex`, `dio.tex_classic`, `dio.nature`, `dio.mesa`).
+
+| Key | What it does (absent = that night's behaviour; without `toon.model`, today's) |
+|---|---|
+| `detail.tex` 0..1.5 | the material textures: `style/dio/tex/{felt,clay,wood,cast,soil,wool}.res` (1024 px, mipmaps inside, loaded as they are: no import step). Each texel is a height's slope (rg), a tone (b) and the height (a). Felt is drawn fibre by fibre, clay print by print (`style/dio/make_tex.py`, baked by `bake_tex.gd`). The shader samples them with the surface's own continuous position (`textureGrad`), anisotropic, so they are sharp near and calm far; the drawn fine marks of that night are switched off where a texture carries them. Land: flocking twice (fibres, and coarser clumps turned by 37 degrees, so no tile shows), earth as crumbs on clay. A round thing (blob, turned side) wraps its texture around itself by its own normal; a dowel carries grain along its axis. |
+| `detail.tex_felt_m`, `tex_clay_m` | the size of one tile of flocking and of clay on the land (m). |
+| `detail.tex_relief` | how strongly the textures' slopes tilt the lit normal. |
+| `detail.nature` > 0 | the village draws each kit recipe as felt and clay (`kits/tl_felt.gd`; the village's scatter, and in a pack a layout's forest and the parts tree, rock, bush): a cone of a pine key becomes a felt skirt with a lobed, hanging rim, a rolled lip and a dark underside; a blob of a leaf key a ball of felted wool; a blob of a rock key a lump of rolled clay, pressed flat here and there; the mesas are slabs of clay laid one on another with a rounded outline; the plot fences have turned posts and round rails. The recipe stays the source of crowns, colliders and kit hashes, and casts the sun's shadow for the trees (a felt tree is fifteen times the recipe's triangles, and the shadow is drawn four times over). From 2 a layout's own forest is felt too (about a thousand pines a pack: off by default). The picture cache key carries `felt<n>`, so such a style never shares a pack's picture with classic. |
+| `detail.pebbles` (count) | clay pebbles strewn on the roads as real lumps (with `nature`); the discs the road shader drew are then left out. |
+| `water.clouds`, `water.cloud` | the cotton clouds stand in the resin: soft cream shapes where the mirrored ray meets a cloud layer. |
+| `water.glint` 0..1 | 1 = that night's tight spark of the sun in the ripples, 0 = a soft pool of light only (sparks flicker when the eye moves). |
+
+Also under a material model: the felt sheet is cut clean against the earth (the pigment near the cut is un-mixed into
+dye and earth by its green-minus-red); rock pigment on a bank shows as clay slabs like a wall does; felt takes no hard
+rim light; a wall or slab of class concrete is laid of cast blocks with pressed joints; and a primitive the kernel
+makes for a body (BoxMesh, SphereMesh with `TLStyle.flat_material`) gets the part's space and, on a box, the soft
+edge (`tl_prim`), so the grey walls of a simple pack are clay too.
+

@@ -183,7 +183,16 @@ func _cache_key(e: Dictionary) -> String:
 	if not WorkerThreadPool.is_task_completed(int(slot[0])) or slot.size() < 2:
 		return ""                      # its hash is still being read on a worker: no cache this time
 	var rules: String = "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [PIC_VERSION, mid_min, far_min, far_cell, far_flat, far_thin, far_small, standin_min, rim_band]
+	rules += style_rules()
 	return ("%s|%s|%s|%s|%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules, _band(e)]).md5_text()
+
+
+## Diorama day (Director, 12:35): a style's geometry-relevant switches are part of a picture's key. Under `detail.nature`
+## a pack's kit trees are drawn as felt (kits/tl_felt.gd): another picture. A style without the key adds nothing, so its
+## key is byte for byte what it was and its cache stays valid (selftest dio.tex, dio.tex_classic).
+static func style_rules() -> String:
+	var nature: int = int(TLStyle.num("detail", "nature", 0.0))
+	return "|felt%d" % nature if nature > 0 else ""
 
 
 ## The content hash of a pack directory reads every file of it (60 to 100 ms for the seeds): on a worker, never in a

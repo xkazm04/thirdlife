@@ -438,6 +438,9 @@ func _scatter(holder: Node3D, mk: TLMesh, count: int, box: Rect2, accept: Callab
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
 	mm.mesh = mk.build("scatter")
+	var felt: ArrayMesh = preload("res://kits/tl_felt.gd").look(mk, "scatter_%d" % seed_, 10, 1) if preload("res://kits/tl_felt.gd").forests() else null     # diorama day: drawn as felt and clay; the recipe stays the identity
+	if felt != null:
+		mm.mesh = felt
 	mm.instance_count = xs.size()
 	for i: int in xs.size():
 		mm.set_instance_transform(i, xs[i][0])

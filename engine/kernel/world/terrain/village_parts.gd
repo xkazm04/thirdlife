@@ -2,6 +2,8 @@ extends RefCounted
 ## P4. Parts of the village landscape that need no terrain object: the far plain, a road strip on the ground, a bridge,
 ## the far mesas, the helpers of the scatter. Static functions; landscape.gd is the assembly.
 
+const Felt := preload("res://kits/tl_felt.gd")
+
 ## Outside the terrain the far plain has no floor. Keep crowns reachable from its edge,
 ## including a downhill jump and the whole boom at any pitch. The far pines start above -1 m.
 static func camera_region(terrain: Rect2, highest: float, cam: Dictionary) -> Rect2:
@@ -31,6 +33,15 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 				return region.intersects(Rect2(bounds.position.x, bounds.position.z, bounds.size.x, bounds.size.z), true))
 		if not placed.is_empty():
 			crown_batches.append([mk, placed])
+	# diorama day: the recipe drawn as felt and clay (kits/tl_felt.gd); the recipe above stays the crowns' source
+	var far: bool = mname.begins_with("WorldMesa")
+	var near: bool = mname.begins_with("WorldRoadTrees") or mname.begins_with("WorldPines") or mname.begins_with("WorldPad")
+	var felt: ArrayMesh = Felt.look(mk, mname.to_snake_case(), 8 if far else (20 if near else 10), 1 if (far or mname.begins_with("WorldPebbles")) else (3 if near else 2))
+	if mname == "WorldTufts":
+		felt = Felt.tuft_look("world_tufts")
+	var recipe: Mesh = mm.mesh
+	if felt != null:
+		mm.mesh = felt
 	mm.instance_count = xs.size()
 	for i: int in xs.size():
 		mm.set_instance_transform(i, xs[i])
@@ -39,6 +50,22 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 	mmi.name = mname
 	mmi.multimesh = mm
 	parent.add_child(mmi)
+	if felt != null and (mname.begins_with("WorldPines") or mname.begins_with("WorldBelt") or mname.begins_with("WorldBroadleaf") or mname.begins_with("WorldRoadTrees")):
+		# a felt tree is fifteen times the recipe's triangles and the sun's shadow is drawn four times over: the SHADOW is
+		# cast by the recipe (a little smaller, so it stays inside the felt and never shades it from outside)
+		var sm: MultiMesh = MultiMesh.new()
+		sm.transform_format = MultiMesh.TRANSFORM_3D
+		sm.mesh = recipe
+		sm.instance_count = xs.size()
+		var inside: Transform3D = Transform3D(Basis.from_scale(Vector3(0.84, 0.97, 0.84)), Vector3.ZERO)
+		for i: int in xs.size():
+			sm.set_instance_transform(i, (xs[i] as Transform3D) * inside)
+		var shade: MultiMeshInstance3D = MultiMeshInstance3D.new()
+		shade.name = "Shade"
+		shade.multimesh = sm
+		shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mmi.add_child(shade)
 
 
 ## The far plain: the flat ground with a rectangular hole where the terrain is, so the valley is not covered.
@@ -177,6 +204,9 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 		for v: int in sides:
 			var pa: float = TAU * float(v) / float(sides)
 			unit.append(Vector2(cos(pa), sin(pa)) * (0.84 + 0.3 * rng.randf()))
+		var clay: bool = Felt.enabled()      # diorama day: the same mesa as slabs of rolled clay, its outline rounded
+		if clay:
+			unit = Felt.round_outline(unit, 44)
 		var outline: Callable = func(scale: float) -> PackedVector2Array:
 			var out: PackedVector2Array = PackedVector2Array()
 			for u: Vector2 in unit:
@@ -197,15 +227,21 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 			var ts: float = rng6.randf_range(1.5, 2.3)
 			trees_out.append(Transform3D(Basis(Vector3.UP, rng6.randf() * TAU).scaled(Vector3(ts, ts, ts)),
 				Vector3(at.x, at.y + h * 1.3 + 2.2, at.z) + rb * Vector3(cos(ta) * tr, 0.0, sin(ta) * tr * sz)))
-		mk_far.prism(outline.call(r * 1.28), 0.0, h * 0.34, "cliff", Color(tone * 0.88, tone * 0.88, tone * 0.88), 0.82)
-		for k: int in 3:
+		if clay:
+			Felt.slab_stack(mk_far, "cliff", unit, 0.0, h * 1.3, r * 1.30, r * 0.87, clampi(int(h * 1.3 / 11.0), 5, 10), Color(tone, tone * 0.98, tone * 0.96), 9100 + i)
+		else:
+			mk_far.prism(outline.call(r * 1.28), 0.0, h * 0.34, "cliff", Color(tone * 0.88, tone * 0.88, tone * 0.88), 0.82)
+		for k: int in (0 if clay else 3):
 			var kt: float = tone * (0.9 + 0.1 * float((k + i) % 2)) * (0.94 + 0.06 * float(k))
 			var y0: float = h * 0.3 + h * float(k) / 3.0
 			mk_far.prism(outline.call(r * (1.0 - 0.07 * float(k))), y0, y0 + h / 3.0, "cliff", Color(kt, kt * 0.98, kt * 0.96), 0.95)
 		mk_far.prism(outline.call(r * 0.81), h * 1.3, h * 1.3 + 2.5, "grass_dry", Color.WHITE, 0.96)
 		if rng.randf() > 0.5:
 			mk_far.push_at(Vector3(r * 0.18, 0.0, 0.0))
-			mk_far.prism(outline.call(r * 0.46), h * 1.3, h * 1.75, "cliff", Color(tone, tone, tone), 0.84)
+			if clay:
+				Felt.slab_stack(mk_far, "cliff", unit, h * 1.3, h * 1.75, r * 0.47, r * 0.40, clampi(int(h * 0.45 / 9.0), 2, 5), Color(tone, tone, tone), 9200 + i)
+			else:
+				mk_far.prism(outline.call(r * 0.46), h * 1.3, h * 1.75, "cliff", Color(tone, tone, tone), 0.84)
 			mk_far.prism(outline.call(r * 0.38), h * 1.75, h * 1.75 + 2.0, "grass_dry", Color.WHITE, 0.96)
 			mk_far.pop()
 		mk_far.pop()
@@ -278,7 +314,10 @@ static func edge_geometry(t: Dictionary) -> void:
 	for job: Dictionary in t["jobs"]:
 		var rails: PackedVector3Array = job["rails"]
 		for k: int in range(0, rails.size(), 2):
-			TLKitSite.add_fence(mk, rails[k], rails[k + 1], 3.4)
+			if Felt.enabled():
+				Felt.fence(mk, rails[k], rails[k + 1], 3.4)        # diorama day: turned posts and round rails
+			else:
+				TLKitSite.add_fence(mk, rails[k], rails[k + 1], 3.4)
 		if not job["flags"]:
 			continue
 		var dir: Vector2 = job["dir"]
@@ -392,6 +431,10 @@ static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2
 		var mi: MeshInstance3D = mk.instance("WorldSoftGround")
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(mi)
+	if Felt.enabled() and TLStyle.num("detail", "pebbles", 0.0) > 0.0:      # diorama day: clay pebbles on the roads, presentation only
+		var strewn: Array = Felt.pebbles(terr, seed_, box, road_half - 0.7, int(TLStyle.num("detail", "pebbles", 0.0)))
+		for v: int in 3:
+			multi(parent, TLKitNature.rock(220 + v, 1.0, 0.62 + 0.1 * float(v)), strewn[v], "WorldPebbles%d" % v)
 	return made
 
 
