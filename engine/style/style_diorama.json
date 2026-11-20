@@ -13,28 +13,35 @@
   "normal_bias": 1.55
  },
  "toon": {
-  "shade": "#5a60c0",
-  "shade_k": 0.7,
-  "band_hi": 0.42,
-  "band_lo": 0.22,
+  "shade": "#6c6494",
+  "shade_k": 0.74,
+  "band_hi": 0.78,
+  "band_lo": 0.06,
   "band_soft": 0.03,
   "wrap": 0.5,
-  "amb_sky": "#7a7ad0",
+  "amb_sky": "#8c86c8",
   "amb_ground": "#c98a6a",
   "amb_energy": 0.34,
-  "hatch": 0.2,
+  "hatch": 0.0,
   "hatch_px": 8.0,
   "hatch_fade_near": 22.0,
   "hatch_fade_far": 80.0,
   "rim": "#ffb070",
-  "rim_k": 0.55,
-  "mottle": 0.12,
-  "shade_ground": "#7a5a84",
+  "rim_k": 0.3,
+  "mottle": 0.05,
+  "shade_ground": "#7a5c6c",
   "shade_grad": 0.75,
   "bounce": "#ffb27a",
   "bounce_k": 0.42,
   "rim2": "#86a8ff",
-  "rim2_k": 0.6
+  "rim2_k": 0.3,
+  "model": "diorama",
+  "gloss": 0.14,
+  "sheen": 1.0,
+  "sky_refl": 0.5,
+  "spec": 1.0,
+  "chip_color": "#e6dac6",
+  "wax": 0.1
  },
  "env": {
   "tonemap": "linear",
@@ -111,23 +118,30 @@
   "scan": 0.35
  },
  "water": {
-  "deep": "#3c78b0",
-  "shallow": "#72c0d0",
+  "deep": "#2f6f8c",
+  "shallow": "#58b0b4",
   "sky": "#ffc59a",
-  "stripe": "#d8f4ff",
-  "sky_k": 0.1
+  "stripe": "#eef6f2",
+  "sky_k": 0.06,
+  "model": "resin",
+  "sky_top": "#8a78c8",
+  "bed": "#b07a4a",
+  "gloss": 1.0,
+  "ripple": 1.0,
+  "foam": 0.22,
+  "shore": 0.9
  },
  "palette": {
   "white": "#ffffff",
-  "grass": "#86b944",
-  "grass_dry": "#bdbb4c",
-  "grass_dark": "#4f8a3e",
-  "dirt": "#c99568",
-  "sand": "#dcb88a",
-  "rock": "#a8998f",
-  "rock_dark": "#7a6a80",
-  "rock_warm": "#b2917f",
-  "cliff": "#8c7088",
+  "grass": "#5fa044",
+  "grass_dry": "#98a848",
+  "grass_dark": "#357538",
+  "dirt": "#c8824e",
+  "sand": "#d8a56c",
+  "rock": "#b89c90",
+  "rock_dark": "#8f7078",
+  "rock_warm": "#c88c74",
+  "cliff": "#b8847c",
   "tarmac": "#5c6478",
   "tarmac_light": "#747c90",
   "curb_red": "#dc4238",
@@ -154,10 +168,10 @@
   "stone": "#aa9e98",
   "stone_dark": "#7e7480",
   "window": "#ffc462",
-  "leaf": "#6c9a3c",
-  "leaf_light": "#a9c243",
-  "pine": "#2f6b4c",
-  "pine_light": "#4c8c58",
+  "leaf": "#5a8f3c",
+  "leaf_light": "#8fb440",
+  "pine": "#2c6a48",
+  "pine_light": "#48895a",
   "trunk": "#6c4a3b",
   "skin": "#eab294",
   "hair": "#8a4a2c",
@@ -198,7 +212,7 @@
   "rib_steel": "#6d6a85",
   "cone": "#f0702c",
   "hazard_white": "#f3ece6",
-  "grass_blade": "#a2c24a",
+  "grass_blade": "#7fae48",
   "water": "#4a8ac0",
   "nitro_hot": "#ff8a2a",
   "nitro_core": "#fff2b0",
@@ -231,21 +245,26 @@
   },
   "steel": {
    "metal": 0.35,
-   "class": "steel"
+   "class": "steel",
+   "gloss": 0.5
   },
   "steel_light": {
    "metal": 0.6,
-   "class": "steel"
+   "class": "steel",
+   "gloss": 0.5
   },
   "yellow": {
    "metal": 0.25,
-   "class": "steel"
+   "class": "steel",
+   "gloss": 0.5
   },
   "car_red": {
-   "metal": 0.8
+   "metal": 0.8,
+   "gloss": 0.7
   },
   "car_blue": {
-   "metal": 0.8
+   "metal": 0.8,
+   "gloss": 0.7
   },
   "car_glass": {
    "metal": 1.0
@@ -317,7 +336,8 @@
   },
   "barrier": {
    "mottle": 0.05,
-   "class": "concrete"
+   "class": "concrete",
+   "gloss": 0.08
   },
   "dust": {
    "mottle": 0.0,
@@ -328,46 +348,60 @@
    "no_hatch": 1.0
   },
   "wood": {
-   "class": "wood"
+   "class": "wood",
+   "gloss": 0.22
   },
   "wood_light": {
-   "class": "wood"
+   "class": "wood",
+   "gloss": 0.22
   },
   "wood_dark": {
-   "class": "wood"
+   "class": "wood",
+   "gloss": 0.22
   },
   "plank": {
-   "class": "wood"
+   "class": "wood",
+   "gloss": 0.22
   },
   "concrete": {
-   "class": "concrete"
+   "class": "concrete",
+   "gloss": 0.08
   },
   "concrete_dark": {
-   "class": "concrete"
+   "class": "concrete",
+   "gloss": 0.08
   },
   "barrier_dark": {
-   "class": "concrete"
+   "class": "concrete",
+   "gloss": 0.08
   },
   "steel_dark": {
-   "class": "steel"
+   "class": "steel",
+   "gloss": 0.5
   },
   "yellow_dark": {
-   "class": "steel"
+   "class": "steel",
+   "gloss": 0.5
   },
   "orange": {
-   "class": "steel"
+   "class": "steel",
+   "gloss": 0.5
   },
   "rock": {
-   "class": "rock"
+   "class": "rock",
+   "gloss": 0.08
   },
   "rock_dark": {
-   "class": "rock"
+   "class": "rock",
+   "gloss": 0.08
   },
   "rock_warm": {
-   "class": "rock"
+   "class": "rock",
+   "gloss": 0.08
   },
   "cliff": {
-   "class": "rock"
+   "class": "rock",
+   "gloss": 0.08
   },
   "roof": {
    "class": "roof"
@@ -390,10 +424,12 @@
    "dscale": 0.8
   },
   "stone": {
-   "class": "masonry"
+   "class": "masonry",
+   "gloss": 0.08
   },
   "stone_dark": {
-   "class": "masonry"
+   "class": "masonry",
+   "gloss": 0.08
   },
   "beacon": {
    "emit": 3.0
@@ -404,7 +440,8 @@
   },
   "cabin": {
    "class": "steel",
-   "dk": 0.5
+   "dk": 0.5,
+   "gloss": 0.5
   },
   "fall_a": {
    "emit": 0.45,
@@ -420,6 +457,99 @@
    "metal": 0.5,
    "mottle": 0.1,
    "no_hatch": 1.0
+  },
+  "pine": {
+   "class": "felt",
+   "fuzz": 0.8
+  },
+  "pine_light": {
+   "class": "felt",
+   "fuzz": 0.8
+  },
+  "leaf": {
+   "class": "felt",
+   "fuzz": 0.8
+  },
+  "leaf_light": {
+   "class": "felt",
+   "fuzz": 0.8
+  },
+  "curb_red": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "curb_white": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "hazard_red": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "hazard_white": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "flag_a": {
+   "class": "felt",
+   "fuzz": 0.5
+  },
+  "flag_b": {
+   "class": "felt",
+   "fuzz": 0.5
+  },
+  "sign": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "boards": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "boards_kick": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "cone": {
+   "gloss": 0.42,
+   "chip": 0.45
+  },
+  "cabin_trim": {
+   "gloss": 0.5
+  },
+  "trunk": {
+   "gloss": 0.22,
+   "class": "wood"
+  },
+  "car_white": {
+   "gloss": 0.7
+  },
+  "bot_body": {
+   "gloss": 0.7
+  },
+  "bot_white": {
+   "gloss": 0.7
+  },
+  "bot_body2": {
+   "gloss": 0.7
+  },
+  "hat_a": {
+   "gloss": 0.7
+  },
+  "hat_b": {
+   "gloss": 0.7
+  },
+  "hat_c": {
+   "gloss": 0.7
+  },
+  "seat": {
+   "gloss": 0.7
+  },
+  "seat_alt": {
+   "gloss": 0.7
+  },
+  "goal_red": {
+   "gloss": 0.7
   }
  },
  "detail": {
@@ -434,7 +564,13 @@
   "strata": 0.8,
   "strata_m": 2.6,
   "strata_tone": 0.24,
-  "strata_crack": 0.55
+  "strata_crack": 0.55,
+  "bump": 1.4,
+  "bump_near": 16.0,
+  "bump_far": 70.0,
+  "chip": 1.0,
+  "bevel": 0.07,
+  "round": 0.85
  },
  "lights": {
   "window": 1.35,

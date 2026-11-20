@@ -26,13 +26,14 @@ static func _chosen_path() -> String:
 	return "res://style/style_%s.json" % name
 
 
+const _Dio: GDScript = preload("res://style/dio/style_dio.gd")   # diorama night: a style that names a material model
 const SPECIAL: PackedStringArray = ["glass", "water", "holo", "fx_add", "fx_mix"]
 const RIG_NODE: String = "TLStyleRig"
 ## material classes of the drawn surface language (toon.gdshader surface_detail)
-const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9}
+const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9, "clay": 10, "felt": 11}
 const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx"]
 const REQUIRED: PackedStringArray = ["sun", "toon", "env", "fog", "sky", "ink", "grade", "palette", "mat"]
-const MAT_KEYS: PackedStringArray = ["class", "dscale", "dk", "emit", "metal", "mottle", "no_hatch", "ice", "dissolve", "sway", "shader", "base_a", "fres_a"]
+const MAT_KEYS: PackedStringArray = ["class", "dscale", "dk", "emit", "metal", "mottle", "no_hatch", "ice", "dissolve", "sway", "shader", "base_a", "fres_a", "gloss", "fuzz", "chip"]
 ## Numeric parameters are clamped to ranges that were looked at: a bad style file cannot break the look.
 const RANGES: Dictionary = {
 	"fog.density": [0.0, 0.004], "fog.height_density": [0.0, 0.008], "fog.sun_scatter": [0.0, 0.6], "fog.aerial": [0.0, 1.0],
@@ -119,6 +120,9 @@ static func load_style(path: String = "res://style/style.json") -> PackedStringA
 		_build_lut()
 		if _pal_mat != null:
 			_pal_mat.set_shader_parameter(&"pal_lut", _lut)
+		for tm: ShaderMaterial in ([_pal_mat] if _pal_mat != null else []) + _flat.values():
+			if tm.shader != _shader("toon"):
+				tm.shader = _shader("toon")       # the material model may differ between two style files
 		for key: String in _mats:
 			_fill_special(key, _mats[key])
 	return out
@@ -211,6 +215,8 @@ static func is_toon(key: String) -> bool:
 
 
 static func _shader(sname: String) -> Shader:
+	if sname == "toon" or sname == "water":
+		return _Dio.toon(data, _shaders) if sname == "toon" else _Dio.water(data, _shaders)
 	if not _shaders.has(sname):
 		_shaders[sname] = load(SHADER_DIR + sname + ".gdshader")
 	return _shaders[sname]
@@ -348,6 +354,8 @@ static func push(section: String, m: ShaderMaterial) -> void:
 		var v: Variant = s[k]
 		if v is String and String(v).begins_with("#"):
 			m.set_shader_parameter(k, Color(String(v)))
+		elif v is String:
+			continue      # a name (water.model), not a uniform
 		else:
 			m.set_shader_parameter(k, v)
 
@@ -392,6 +400,9 @@ static func _register_globals() -> void:
 	_g("g_detail", Vector4(float(dt.get("k", 1.0)), float(dt.get("fade_near", 45.0)), float(dt.get("fade_far", 170.0)), float(dt.get("dark", 0.5))))
 	_g("g_strata", Vector4(float(dt.get("strata", 0.0)), float(dt.get("strata_m", 3.0)), float(dt.get("strata_tone", 0.2)), float(dt.get("strata_crack", 0.5))))
 	_g("g_detail2", Vector4(float(dt.get("macro", 0.0)), float(dt.get("macro_near", 20.0)), float(dt.get("macro_far", 90.0)), float(dt.get("tone_end", 400.0))))
+	var dio: Dictionary = _Dio.globals(data)
+	for gk: String in dio:
+		_g(gk, dio[gk])
 
 
 ## The palette lookup texture: one column per palette key, 4 rows of per-material values (see toon.gdshader).
@@ -410,7 +421,8 @@ static func _build_lut() -> void:
 		img.set_pixel(i + 1, 0, Color(c.r, c.g, c.b, float(ov.get("emit", 0.0))))
 		img.set_pixel(i + 1, 1, Color(float(ov.get("metal", 0.0)), float(ov.get("mottle", -1.0)), float(CLASSES.get(String(ov.get("class", "none")), 0)), float(ov.get("dscale", 1.0))))
 		img.set_pixel(i + 1, 2, Color(float(ov.get("dk", 1.0)), float(ov.get("no_hatch", 0.0)), float(ov.get("ice", 0.0)), float(ov.get("dissolve", 0.0))))
-		img.set_pixel(i + 1, 3, Color(float(ov.get("sway", 0.0)), 0, 0, 0))
+		# row 3: sway | read by the diorama model only: gloss, fuzz, chip (dio/style_dio.gd); absent = 0, as before
+		img.set_pixel(i + 1, 3, Color(float(ov.get("sway", 0.0)), float(ov.get("gloss", 0.0)), float(ov.get("fuzz", 0.0)), float(ov.get("chip", 0.0))))
 	if _lut == null or _lut.get_width() != img.get_width():
 		_lut = ImageTexture.create_from_image(img)
 	else:
