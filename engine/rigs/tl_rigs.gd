@@ -143,7 +143,9 @@ static func _build_rig(family: String, params: Dictionary) -> Node3D:
 	var p: Dictionary = TLKit.with_defaults(FAMILIES[family][3], params)
 	var rig: TLRigNode
 	match family:
-		"biped": rig = TLRigBiped.new()
+		"biped":
+			TLStyle.ensure()
+			rig = preload("res://rigs/biped/clay_rig.gd").new() if TLStyle.style_path.get_file() == "style_diorama.json" else TLRigBiped.new()
 		"vehicle": rig = TLRigVehicle.new()
 		_: rig = TLRigBot.new()
 	rig.set_meta("tl_kind", "rig." + family)
