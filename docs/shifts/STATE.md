@@ -181,3 +181,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - **Integrations** at 13:30, 16:30 and 19:45 export `dist/day/<cel|dio>`. Verdict 20:45. Branches only.
 - 10:40 four arms launched (cel-astra, cel-fable, dio-astra, dio-fable). d20-base fast PASS; world/packs running.
 - 11:35 standup: base fix e191d8f (figure _face vs TLMesh._face), base re-gated green; four arms on track; exe AA (msaa2+TAA) found as a blur source, the Astra arms own it as a style key.
+- 12:35 standup: base fully green (e191d8f), pushed; four arms on track (cel-astra r1 and dio-astra r2 verified, both Fable arms on r2/r3); picture cache not keyed by style (dio-fable keys it).
