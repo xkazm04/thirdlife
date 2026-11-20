@@ -2,6 +2,8 @@
 // Strict by construction: an unknown `type`, an unknown key or a missing required key is an error.
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type { ValidateFunction } from "ajv";
+import { CREATIVITY, VERDICTS, aspectProblems, aspectsSchema, phaseProblems, phasesSchema, type Aspect, type Creativity, type Phase, type PhaseVerdict } from "./v2.js";
+export type { Aspect, AspectAlternative, AspectIcon, Creativity, Phase, PhaseVerdict } from "./v2.js";
 
 export const PACKAGE_STATES = ["queued", "running", "blocked", "verifying", "promoted", "failed"] as const;
 export type PackageState = (typeof PACKAGE_STATES)[number];
@@ -49,6 +51,10 @@ export interface Brief {
   ai: string;
   controls: string;
   mood: string;
+  /** JOB.md 2026-11-20 (optional on read, written by every v2 Designer): the game in one sentence, at most 20 words. */
+  pitch?: string;
+  /** JOB.md 2026-11-20 (optional on read, written by every v2 Designer): 3 to 7 aspect cards the player reacts to. */
+  aspects?: Aspect[];
 }
 export interface Estimate {
   packages: number;
@@ -103,10 +109,34 @@ interface Base {
 export type JobEvent = Base & EventBody;
 
 export type EventBody =
-  | { type: "job_created"; sentence: string; packId: string; title: string; answers?: EditorFields["answers"]; lot?: EditorFields["lot"] }
+  | {
+      type: "job_created";
+      sentence: string;
+      packId: string;
+      title: string;
+      answers?: EditorFields["answers"];
+      lot?: EditorFields["lot"];
+      /** JOB.md 2026-11-20: absent = standard (serve the player's words). */
+      creativity?: Creativity;
+      /** JOB.md 2026-11-20: absent = the Foreman stops after every phase and waits for the player. */
+      run_through?: true;
+    }
   | { type: "brief_set"; brief: Brief; estimate: Estimate }
+  /** JOB.md 2026-11-20: the player's reaction to one aspect of the latest brief, before approval. */
+  | { type: "aspect_reacted"; aspect: string; choice: string; note?: string }
   | { type: "brief_approved"; by: "player" | "auto" }
-  | { type: "plan_set"; packages: PackageSpec[]; /** JOB.md 2026-11-17: the recipe card the Planner chose; omitted when none. */ card?: string }
+  | {
+      type: "plan_set";
+      packages: PackageSpec[];
+      /** JOB.md 2026-11-17: the recipe card the Planner chose; omitted when none. */
+      card?: string;
+      /** JOB.md 2026-11-20: 2 to 5 phases in build order; without them the plan runs as one phase. */
+      phases?: Phase[];
+    }
+  /** JOB.md 2026-11-20: every package of the phase is merged and the whole-pack checks after its last merge passed. */
+  | { type: "phase_done"; phase: string }
+  /** JOB.md 2026-11-20: the player's (or, with run_through, the Foreman's) verdict on a done phase. */
+  | { type: "phase_reviewed"; phase: string; verdict: PhaseVerdict; note?: string; by: "player" | "auto" }
   | { type: "package_state"; package: string; state: PackageState; round: number; cause?: Cause; detail?: string }
   | {
       type: "builder_run";
@@ -217,7 +247,7 @@ export const briefSchema = {
   type: "object",
   additionalProperties: false,
   required: ["rules", "arena", "ai", "controls", "mood"],
-  properties: { rules: nonEmpty, arena: nonEmpty, ai: nonEmpty, controls: nonEmpty, mood: nonEmpty },
+  properties: { rules: nonEmpty, arena: nonEmpty, ai: nonEmpty, controls: nonEmpty, mood: nonEmpty, pitch: nonEmpty, aspects: aspectsSchema },
 } as const;
 
 export const estimateSchema = {
@@ -235,11 +265,17 @@ interface Spec {
 const SPECS: Record<EventType, Spec> = {
   job_created: {
     required: { sentence: nonEmpty, packId: { type: "string", pattern: PACK_ID_RE.source }, title: nonEmpty },
-    optional: { answers: editorSchemas.answers, lot: editorSchemas.lot },
+    optional: { answers: editorSchemas.answers, lot: editorSchemas.lot, creativity: { enum: CREATIVITY }, run_through: { const: true } },
   },
   brief_set: { required: { brief: briefSchema, estimate: estimateSchema } },
+  aspect_reacted: { required: { aspect: pkgId, choice: pkgId }, optional: { note: nonEmpty } },
   brief_approved: { required: { by: { enum: ["player", "auto"] } } },
-  plan_set: { required: { packages: { type: "array", minItems: 1, items: packageSpecSchema } }, optional: { card: { type: "string", pattern: "^card\\.[a-z][a-z0-9_]*$" } } },
+  plan_set: {
+    required: { packages: { type: "array", minItems: 1, items: packageSpecSchema } },
+    optional: { card: { type: "string", pattern: "^card\\.[a-z][a-z0-9_]*$" }, phases: phasesSchema },
+  },
+  phase_done: { required: { phase: pkgId } },
+  phase_reviewed: { required: { phase: pkgId, verdict: { enum: VERDICTS }, by: { enum: ["player", "auto"] } }, optional: { note: nonEmpty } },
   package_state: {
     required: { package: pkgId, state: { enum: PACKAGE_STATES }, round: int1 },
     optional: { cause: { enum: CAUSES }, detail: str },
@@ -391,7 +427,15 @@ export function validateEvent(value: unknown): JobEvent {
   }
   if (ev.type === "plan_set") {
     const problems = planProblems(ev.packages);
+    if (ev.phases !== undefined) problems.push(...phaseProblems(ev.phases, ev.packages));
     if (problems.length > 0) throw new EventError(`plan_set: ${problems.join("; ")}`);
+  }
+  if (ev.type === "brief_set") {
+    const problems = aspectProblems(ev.brief.pitch, ev.brief.aspects);
+    if (problems.length > 0) throw new EventError(`brief_set: ${problems.join("; ")}`);
+  }
+  if (ev.type === "phase_reviewed" && ev.verdict === "hold" && ev.note === undefined) {
+    throw new EventError(`phase_reviewed: a "hold" needs a "note" (the player's request for the change round)`);
   }
   return ev;
 }

@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.timed_drive",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "title": "Drive a circuit: laps through checkpoints against a clock",
   "summary": "One vehicle on a road loop built from data, checkpoints in order make a lap, N laps before the clock runs out. Covers time trials, kart circuits, delivery runs with gates, slaloms.",
   "applies_when": [
@@ -105,6 +105,27 @@
     "Lint reports 0 bypasses and 0 kit parts added.",
     "The chase camera keeps the car in frame for the whole bot run and the HUD shows lap and clock."
   ],
+  "fun": {
+    "camera": [
+      "A chase camera low behind the car (TLCameras.chase, distance about 8.5 m, height 3 m), framed at about a fifth of the frame height (TLCameras.frame), as seed_drive does; one fixed overview for captures."
+    ],
+    "juice": [
+      "Nitro gets a kick of shake (about 0.06 m over 18 frames, TLCameras.shake) and a flame (the nitro_flame preset of TLVfx).",
+      "Hitting a cone or a barrier gets a sound and a small burst (TLAudio.play, TLVfx.burst); a lap gets a beep and the lap time on the HUD."
+    ],
+    "rivals": [
+      "A ghost or AI car that keeps to the racing line with TLSteer.keep_lane, with a name and a habit (brakes late, takes the inside).",
+      "Without a rival car the rival is the clock: show the time to beat all the time."
+    ],
+    "first_minute": [
+      "The car starts on a straight pointing down the road with one hint line naming the keys (TLHud.add_label); the first corner is gentle.",
+      "The nitro pad comes early so the player meets the boost in the first lap."
+    ],
+    "stakes": [
+      "Laps against a clock (TLRules) with the best lap shown; the end screen says THREE LAPS DONE or OUT OF TIME (TLHud.set_text).",
+      "A second run starts with the time to beat on screen."
+    ]
+  },
   "variants": [
     {
       "ask": "more laps, a tighter clock",

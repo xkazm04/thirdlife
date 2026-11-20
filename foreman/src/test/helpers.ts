@@ -8,7 +8,7 @@ import { Verifier } from "../verifier.js";
 import { inProcessFakeRunner } from "../testing/fake-runner-core.js";
 import { Foreman, type ForemanOptions } from "../foreman.js";
 import { PKG_ROOT, FAKE_RUNNER } from "../paths.js";
-import type { JobEvent, PackageSpec } from "../events.js";
+import type { Aspect, Brief, JobEvent, PackageSpec, Phase } from "../events.js";
 import { FAKE_VERBS_FILE, readVerbsFile } from "../verbs.js";
 
 /** The verbs of the fake runner (fixtures/engine/kernel/runner/verbs.json): what plan checks in tests are given. */
@@ -100,6 +100,30 @@ export function fixturePlan(): PackageSpec[] {
   const ev = readEvents(FIXTURE).find((e) => e.type === "plan_set");
   if (!ev || ev.type !== "plan_set") throw new Error("fixture has no plan_set");
   return ev.packages;
+}
+
+/** JOB.md 2026-11-20: the fixture plan's phases (the court plays first, the rival paddle second). */
+export function fixturePhases(): Phase[] {
+  return [
+    { id: "court_plays", title: "The court plays", try: "Rally the ball off the walls with your paddle", packages: ["core", "court"] },
+    { id: "rival", title: "A rival paddle", try: "Beat a rival paddle that chases the ball", packages: ["paddle_ai"] },
+  ];
+}
+
+/**
+ * A v2 brief (JOB.md 2026-11-20): the fixture's five fields plus a pitch and three aspect cards, as every v2 Designer
+ * writes it. `crazy`: one aspect carries `crazy: true` (a crazy job's brief).
+ */
+export function v2Brief(crazy = false): Brief {
+  const ev = readEvents(FIXTURE).find((e) => e.type === "brief_set");
+  if (!ev || ev.type !== "brief_set") throw new Error("fixture has no brief_set");
+  const aspects: Aspect[] = [
+    { id: "paddle", icon: "player", title: "Your paddle", line: "Slide along your goal and slap the ball back", detail: "paddle_up and paddle_down; a return speeds the ball up a little", alternatives: [{ id: "two_paddles", title: "Two paddles", line: "Steer a front and a back paddle at once" }, { id: "spinner", title: "A spinning bat", line: "Spin to whack the ball at an angle" }] },
+    { id: "rival", icon: "rival", title: "Rival Rex", line: "A greedy paddle that lunges at every ball", detail: "TLSteer.intercept_point with a reaction delay; lunges leave his corner open", alternatives: [{ id: "twin_rivals", title: "Twin rivals", line: "Two small paddles share the far goal" }, { id: "wall_bot", title: "The wall", line: "No rival: beat your own best rally" }] },
+    { id: "court", icon: "arena", title: "Walled court", line: "Walls bounce the ball, goals behind each end", detail: "16 m by 9 m, walls on the long sides, a kit rink floor for a fast slide", alternatives: [{ id: "ice_court", title: "Ice court", line: "Everything slides faster on ice" }, { id: "round_court", title: "Round court", line: "A ring with four goals" }] },
+  ];
+  if (crazy) aspects.push({ id: "magnet_ball", icon: "twist", title: "Magnet ball", line: "Every tenth hit the ball sticks to a wall", detail: "a timer in the pack holds the ball for 60 frames on the wall it hits, then releases it fast", alternatives: [{ id: "split_ball", title: "Splitting ball", line: "A hard hit splits the ball in two" }, { id: "gravity_flip", title: "Tilting court", line: "The court tilts toward the leader" }], crazy: true });
+  return { ...ev.brief, pitch: "Slap a speeding ball past Rival Rex on a walled court; first to five wins.", aspects };
 }
 
 export function packFiles(dir: string): Record<string, string> {

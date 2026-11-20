@@ -2,7 +2,7 @@
 // one command to type next. Pure: it reads the events and the state folded from them and returns data; the CLI
 // prints it. It writes nothing and appends no event. Why a round ran comes from rounds.ts (one classifier).
 import type { BuilderOutcome, JobEvent, Level, Verb } from "./events.js";
-import { weightedTokens, type JobState } from "./joblog.js";
+import { waitingPhase, weightedTokens, type JobState } from "./joblog.js";
 import { roundKindOf, roundKinds, type RoundFold, type RoundKind } from "./rounds.js";
 
 export interface RoundVerify {
@@ -142,13 +142,16 @@ export function nextStep(state: JobState, lock: { pid?: number; alive: boolean }
     const why = f ? `${f.id} failed: ${f.cause ?? "no cause"}${v && !v.ok ? `; last verify ${v.verb} ${v.level} FAILED ${v.report}` : ""}` : `the job failed${state.jobState?.reason ? `: ${state.jobState.reason}` : ""}`;
     return `foreman resume ${job} --retry-failed   (${why})`;
   }
+  // JOB.md 2026-11-20: a job waiting on a phase is never a hang: name the phase and the command that answers it.
+  const wait = waitingPhase(state);
+  if (wait && !state.runThrough && js === "paused" && !lock.alive) return `foreman phase ${job} pass   or   foreman phase ${job} hold --note "<what to change>"   (phase ${wait.id} is done; try it: "${wait.try}")`;
   if (js === "running" || js === "paused") {
     if (lock.alive) return `nothing to type; the Foreman is running (pid ${lock.pid})`;
     const gone = lock.pid !== undefined ? `: pid ${lock.pid} is gone` : "";
     return js === "running" ? `foreman resume ${job} (the Foreman is not running${gone}; log stops at event ${state.lastSeq})` : `foreman resume ${job}   (paused${state.jobState?.reason ? `: ${state.jobState.reason}` : ""})`;
   }
   if (!state.brief) return `nothing to explain yet: the job has no brief (foreman new)`;
-  if (!state.briefApprovedBy) return `foreman approve ${job}`;
+  if (!state.briefApprovedBy) return (state.brief.aspects ?? []).length > 0 ? `foreman approve ${job}   (or first: foreman react ${job} <aspect> keep|drop|<alternative>, foreman redesign ${job})` : `foreman approve ${job}`;
   if (state.plan.length === 0) return `foreman plan ${job}`;
   return `foreman run ${job}`;
 }

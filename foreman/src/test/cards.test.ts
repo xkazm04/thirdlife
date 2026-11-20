@@ -5,7 +5,7 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { cleanup, tempDir, tempJob, foremanFor, readEvents, fixturePlan, VERBS, type TempJob } from "./helpers.js";
+import { cleanup, tempDir, tempJob, foremanFor, readEvents, fixturePhases, fixturePlan, VERBS, type TempJob } from "./helpers.js";
 import { FakeBuilder } from "../builder/fake.js";
 import { planCheck, planPackages, renderPlannerPrompt } from "../designer.js";
 import { validateEvent, EventError, type JobEvent, type PackageSpec } from "../events.js";
@@ -112,18 +112,19 @@ test("cards 3 Planner: the prompt lists every card with its applies-when and NOT
   assert.match(text, /"card": \{\n\s*"type": "string"/, "the schema the Planner answers with has `card`");
 
   const plan = fixturePlan();
-  const good = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { card: "card.knock_down", packages: plan } }] });
+  const phases = fixturePhases(); // JOB.md 2026-11-20: the Planner writes phases
+  const good = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { card: "card.knock_down", packages: plan, phases } }] });
   const r = await planPackages(good, input, { verbs: VERBS, cards: cardIds(ref) });
   assert.ok(r.ok, r.ok ? "" : r.reason);
   assert.equal(r.value.card, "card.knock_down");
-  const none = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: plan } }] });
+  const none = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: plan, phases } }] });
   const n = await planPackages(none, input, { verbs: VERBS, cards: cardIds(ref) });
   assert.ok(n.ok);
   assert.equal("card" in n.value, false);
   const wrong = new FakeBuilder({
     steps: [
-      { match: { role: "planner", attempt: 1 }, json: { card: "card.topple_tower", packages: plan } },
-      { match: { role: "planner", attempt: 2 }, json: { card: "card.knock_down", packages: plan } },
+      { match: { role: "planner", attempt: 1 }, json: { card: "card.topple_tower", packages: plan, phases } },
+      { match: { role: "planner", attempt: 2 }, json: { card: "card.knock_down", packages: plan, phases } },
     ],
   });
   const w = await planPackages(wrong, input, { verbs: VERBS, cards: cardIds(ref) });

@@ -1,0 +1,156 @@
+{
+ "sentence": "a fight in a colosseum",
+ "creativity": "standard",
+ "prompt": "foreman/prompts/designer.md as of iteration 0 (before the word-limit targets)",
+ "model": "claude-opus-5-5",
+ "attempts": [
+  {
+   "durationMs": 116407,
+   "tokensIn": 19031,
+   "tokensOut": 10875,
+   "tokensCacheRead": 0,
+   "transcript": "reports/designer-a1-s3.json"
+  },
+  {
+   "durationMs": 99571,
+   "tokensIn": 47195,
+   "tokensOut": 11787,
+   "tokensCacheRead": 22327,
+   "transcript": "reports/designer-a2-s4.json"
+  }
+ ],
+ "brief": {
+  "pitch": "Shield-bash gladiators into walls, win the roaring crowd, and survive the lion that hunts whoever's winning.",
+  "aspects": [
+   {
+    "id": "player",
+    "icon": "player",
+    "title": "Rookie gladiator",
+    "line": "Shield-bash your rival into the walls, then dodge their charge",
+    "detail": "TLBiped gladiator, run 6 m/s. Bash: 0.25 s lunge at 10 m/s, 0.6 s cooldown. A bash that lands calls TLBiped.shove 7 m/s; on a rival mid-swing or mid-charge it is TLBiped.down for 1.5 s, a point. Dodge: 0.3 s sidestep at 9 m/s, 1 s cooldown.",
+    "alternatives": [
+     {
+      "id": "spear_thrower",
+      "title": "Spear thrower",
+      "line": "Keep your distance and throw blunt spears to knock rivals down"
+     },
+     {
+      "id": "chariot_ram",
+      "title": "Chariot rammer",
+      "line": "Drive a chariot and ram rivals across the sand"
+     }
+    ]
+   },
+   {
+    "id": "rival_ladder",
+    "icon": "rival",
+    "title": "Three champions",
+    "line": "Brutus charges, Vex circles, Magnus the Bull waits, then explodes",
+    "detail": "Ladder of three, steered by TLSteer. Brutus: stamps 0.8 s, then charges straight at 9 m/s. Vex: circles at 4 m, bashes from your left, tell 0.4 s. Magnus: tell 0.3 s, double charge, shoves 9 m/s. Difficulty is speed and reaction delay (20, 14, 9 frames).",
+    "alternatives": [
+     {
+      "id": "gauntlet_of_five",
+      "title": "Five in a row",
+      "line": "Five quick rookies, one after another, no rest"
+     },
+     {
+      "id": "two_on_one",
+      "title": "Two at once",
+      "line": "Two rivals team up and you fight both"
+     },
+     {
+      "id": "mirror_champion",
+      "title": "Your own shadow",
+      "line": "A rival that copies your last three moves"
+     }
+    ]
+   },
+   {
+    "id": "camera",
+    "icon": "camera",
+    "title": "Over your shoulder",
+    "line": "The camera stays behind you and turns toward your rival",
+    "detail": "TLCameras.chase on the player, distance 6.5 m, height 2.6 m, look_height 1.2, fov 58, framed at 0.26 (TLCameras.frame). The player always faces the rival (lock-on), so the camera behind that facing keeps both in view. Fixed arena view from the stands for captures (add_view, set_subject).",
+    "alternatives": [
+     {
+      "id": "orbit_free",
+      "title": "Free orbit",
+      "line": "Spin the camera yourself with the mouse"
+     },
+     {
+      "id": "stands_view",
+      "title": "From the stands",
+      "line": "Watch the whole fight like a spectator in row one"
+     }
+    ]
+   },
+   {
+    "id": "crowd",
+    "icon": "crowd",
+    "title": "The roaring crowd",
+    "line": "Fight with style and the crowd chants your name",
+    "detail": "Favour 0 to 100 per fighter on the HUD (TLHud.add_bound). A counter-bash +20, a wall slam +15, a dodge within 0.3 s of a hit +10, standing still 3 s -10. At 100 the crowd cheers (TLAudio cheer, confetti) and your next bash shoves 1.5x.",
+    "alternatives": [
+     {
+      "id": "thumbs_vote",
+      "title": "Thumbs up or down",
+      "line": "Lose a bout and the crowd decides if you continue"
+     },
+     {
+      "id": "crowd_throws",
+      "title": "Things from the stands",
+      "line": "Fans throw shields and fruit into the sand"
+     }
+    ]
+   },
+   {
+    "id": "arena",
+    "icon": "arena",
+    "title": "Sand and stone",
+    "line": "Slam rivals into walls and crate stacks that burst apart",
+    "detail": "28 m sand arena (ground_patch) ringed by twelve barrier_wall segments 1.2 m high, stands behind them. Four crate stacks of three at 7 m from centre. A fighter shoved into a wall or stack above 5 m/s is downed (TLBiped.down 1.5 s); crates shatter through TLFracture.",
+    "alternatives": [
+     {
+      "id": "pillar_ruins",
+      "title": "Broken pillars",
+      "line": "Hide behind stone pillars and slam rivals into them"
+     },
+     {
+      "id": "raised_platform",
+      "title": "Ring above a pit",
+      "line": "Fight on a raised stage; shove them off the edge"
+     }
+    ]
+   },
+   {
+    "id": "lion_gate",
+    "icon": "twist",
+    "title": "The lion gate",
+    "line": "Late in the bout, a lion charges whoever leads",
+    "detail": "With 25 s left a horn sounds and the lion, a tawny biped at 8 m/s, leaves the north entrance. It pursues the fighter with more downs (TLSteer.pursue), roars 0.5 s before pouncing; a pounce downs. Bash it to stun it 2 s.",
+    "alternatives": [
+     {
+      "id": "fire_ring",
+      "title": "Ring of fire",
+      "line": "A burning edge creeps inward; touching it knocks you down"
+     },
+     {
+      "id": "second_rival",
+      "title": "A rival jumps in",
+      "line": "A second gladiator joins the fight late"
+     }
+    ]
+   }
+  ],
+  "rules": "A bout is 90 s on the TLRules clock; first fighter to 3 downs wins, otherwise most downs at the horn; a tie goes to sudden death (next down wins, crowd chants, clock shows SUDDEN DEATH). A down is scored when a bash lands on a rival who is winding up or charging (a counter), or when a shove drives a fighter into a wall or crate stack above 5 m/s; the downed fighter lies 1.5 s (TLBiped.down) and gets 1 s of no-hit on rising. A plain bash on a guarded rival only shoves 7 m/s. Juice: bash that lands = hit_metal sound, sparks burst at the shield, shake 0.1 m over 8 frames, 4 frames of hit-stop (both fighters held still). A down = dust plus debris burst, shake 0.25 m over 16 frames, 6 frames hit-stop, crowd cheer; crate stack hit = break sound, debris, shake 0.12 m over 14 frames. Finishing (3rd) down = shake 0.35 m over 24 frames, confetti, horn, cheer, 6 frames hit-stop. A missed bash = a small dust puff only. A dodge = a dust puff and a short trail (TLVfx.trail). First minute: the player stands 10 m from Brutus facing him, one HUD hint line 'SPACE bash  SHIFT dodge  - bash Brutus while he stamps!'; Brutus waits 4 s before his first, slow, well-told charge so the first counter lands within 10 s. Intensity: calm open, crowd favour rising, the lion gate at 25 s left, sudden death if tied. Ladder: Brutus, then Vex, then Magnus; win to advance, lose to retry that rival. End screen (TLHud.set_text): 'BRUTUS IS DOWN - 3 to 1' or 'YOU FELL TO VEX - the lion got you twice', the ladder step, your best total ladder time and 'R for another bout'. Beating Magnus gives the title CHAMPION OF THE SAND and the next run shows the champion time to beat.",
+  "arena": "A 28 m by 28 m sand floor (kit ground_patch, sand colour) ringed by twelve barrier_wall segments 1.2 m high forming a near circle of radius 13 m, with kit stands rising behind them on all sides, a flag on each of four masts, and an entrance portal at the north (the lion gate) and south (the fighters' gate). Four crate stacks (three crates each, TLFracture) sit 7 m from centre on the diagonals; shattered crates leave pieces on the sand and are rebuilt between bouts. Fighters start 10 m apart on the north-south line. At 25 s left the north gate horn sounds and the lion enters. Camera: TLCameras.chase on the player (distance 6.5 m, height 2.6 m, look_height 1.2, fov 58), framed at 0.26 of frame height with TLCameras.frame; the player auto-faces the current rival so the rival is always ahead of the lens. A fixed 'arena' view from the south stands (add_view, set_subject on the player) for captures.",
+  "ai": "All rivals steer with TLSteer.arrive, separate and pursue; difficulty is move speed and reaction delay (frames before they answer your bash or dodge). Brutus the Ox (ladder 1, run 5 m/s, reaction 20 frames): always charges straight; tell is a 0.8 s foot stamp with dust; after a charge he stands winded 1 s. Cheers with arms up when he scores, slumps and kneels when beaten. Vex the Fox (ladder 2, run 6 m/s, reaction 14 frames): circles at 4 m (TLSteer.wander plus arrive on an orbit point), always attacks from your left with a 0.4 s crouch tell, dodges your bash 40% of the time. Taunts by hopping when she scores, flees to the wall when beaten. Magnus the Bull (ladder 3, run 6.5 m/s, reaction 9 frames): stands still guarding, then a 0.3 s head-dip tell and a double charge (second one curves toward your dodge using intercept_point); his shove is 9 m/s. Roars when he scores, falls slowly when beaten. The Lion (all bouts, 8 m/s, reaction 6 frames): enters at 25 s left, pursues the fighter with more downs (the player if tied), roars 0.5 s before a 6 m pounce that downs; a bash on it stuns it 2 s and gives +15 favour.",
+  "controls": "move: WASD, camera-relative run (6 m/s) while auto-facing the rival. bash: Space or left mouse, a 0.25 s shield lunge that shoves or counters. dodge: Shift, a 0.3 s sidestep in the move direction (backstep if still). taunt: T, hold 1 s for +15 crowd favour, defenceless while taunting. restart: R, next bout or retry after the end screen.",
+  "mood": "Sun-baked toon colosseum under the global inked style: warm sand, pale stone walls, red and gold banners, rivals in bold colour-coded armour (Brutus brown, Vex teal, Magnus crimson). Sound is clangs of shield on shield, crowd swells on every down, the horn for start, lion and finish."
+ },
+ "estimate": {
+  "packages": 6,
+  "wallMinutes": 95,
+  "tokens": 950000
+ }
+}

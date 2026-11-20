@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.team_possession",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
   "summary": "Two teams of a few walkers or skaters on a bounded rink; whoever has the puck inside his reach carries it on his stick, passes to a mate or shoots; a puck inside a goal volume is a point; periods and a score decide. The worked example is the house game hockey (engine/packs/hockey). Covers ice hockey, street hockey, five-a-side football, a team ball game with carriers and passes.",
   "applies_when": [
@@ -128,6 +128,29 @@
     "Every mode file ends by its own rules inside its frame budget.",
     "Lint reports 0 bypasses; the win share per level is quoted with the hand it was read through."
   ],
+  "fun": {
+    "camera": [
+      "A chase camera behind the player's skater (TLCameras.chase), so carrying, passing and shooting read from behind; the fixed arena view stays for captures (TLCameras.set_subject).",
+      "The camera must show the goal the player attacks; a view from 100 m up loses the puck and the player."
+    ],
+    "juice": [
+      "A goal gets the horn, a cheer, a goal flash and confetti (TLVfx.burst, TLAudio.play), as the hockey fx script does.",
+      "Fast skating throws ice spray; a check that lands should shake the view a little (TLCameras.shake) and knock the skater down (TLBiped.down).",
+      "A shot needs weight: a short wind-up, a sound on release, a spray where the puck leaves the stick."
+    ],
+    "rivals": [
+      "Opposing skaters play roles from data (chaser, defender, a goalie in the crease) and steer with TLSteer.arrive and TLSteer.separate; difficulty is their speed and reaction, read through a TLHand.",
+      "Give the other team a name and one habit the player can read: the chaser always goes for the carrier; the defender cheats toward the slot."
+    ],
+    "first_minute": [
+      "The puck drops near the player's skater and one hint line names the three keys (move, pass, shoot); the first opponent is slow to arrive.",
+      "No goalie or a weak one in the first round, so the first shot can score."
+    ],
+    "stakes": [
+      "Periods and a score on the HUD (TLHud.add_score, TLHud.add_clock); the end screen says WIN, LOSE or DRAW and by how much.",
+      "A ladder of difficulty levels (data) so a win unlocks a harder opponent."
+    ]
+  },
   "variants": [
     {
       "ask": "football instead of hockey",

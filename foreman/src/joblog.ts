@@ -17,7 +17,10 @@ import {
   type Verb,
   type BuilderOutcome,
   type JobRunState,
+  type Creativity,
 } from "./events.js";
+import { applyDesignEvent, type PhaseView, type ReactionView } from "./design_state.js";
+export { PHASE_HOLD_RE, currentPhase, holdReason, phaseIndexOf, waitingPhase, type PhaseView, type ReactionView } from "./design_state.js";
 
 export const LOG_FILE = "job.jsonl";
 export const STATE_FILE = "state.json";
@@ -161,6 +164,12 @@ export interface JobState {
   brief?: Brief;
   estimate?: Estimate;
   briefApprovedBy?: "player" | "auto";
+  /** JOB.md 2026-11-20 (design_state.ts): creativity and run_through of job_created; brief_set count; the reactions on the latest brief; the latest plan's phases ([] = one phase). */
+  creativity?: Creativity;
+  runThrough?: true;
+  briefs: number;
+  reactions: Record<string, ReactionView>;
+  phases: PhaseView[];
   planRevision: number;
   plan: PackageSpec[];
   /** The recipe card the last plan_set names (JOB.md 2026-11-17); absent when it names none. */
@@ -211,6 +220,9 @@ export function emptyState(job: string): JobState {
     plan: [],
     order: [],
     packages: {},
+    briefs: 0,
+    reactions: {},
+    phases: [],
     promotions: [],
     mergedSincePromotion: false,
     changes: [],
@@ -234,6 +246,9 @@ export function weightedTokens(tokensIn: number, tokensOut: number, cacheRead = 
 
 /** The reducer: the only place where the meaning of an event is decided. Pure. */
 export function applyEvent(s: JobState, ev: JobEvent): void {
+  applyDesignEvent(s, ev, (message) => {
+    throw new LogError(message, ev.seq);
+  });
   s.lastSeq = ev.seq;
   s.lastTs = ev.ts;
   switch (ev.type) {

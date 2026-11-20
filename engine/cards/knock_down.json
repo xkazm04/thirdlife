@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.knock_down",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "title": "Knock it down: a character throws things at breakable scenery against a clock",
   "summary": "A walker carries and throws balls at fracturable kit parts; every piece knocked out of place is a point; reach the score before time runs out. Covers demolition, target throwing, a snowball fight against a fort, bowling-like games.",
   "applies_when": [
@@ -108,6 +108,29 @@
     "Lint reports 0 bypasses and 0 kit parts added.",
     "The orbit camera keeps the walker and the targets in frame; HUD shows score and clock."
   ],
+  "fun": {
+    "camera": [
+      "An orbit camera over the walker's shoulder (TLCameras.orbit) framed at about a quarter of the frame height (TLCameras.frame): the throw and the wall it hits are both in view.",
+      "Keep the target wall in front of the camera's default yaw so the first throw needs no camera work."
+    ],
+    "juice": [
+      "A block that breaks gets debris and dust (TLVfx.burst), a break sound (TLAudio.play) and a shake of about 0.12 m over 14 frames (TLCameras.shake), as seed_wall does.",
+      "A hit that does not break gets a small dust puff only; the horn and a big HUD line mark the end.",
+      "Squash the thrown ball on impact (TLVfx.squash on its visual) so a hard throw reads as hard."
+    ],
+    "rivals": [
+      "The rival is the structure: give the fort or wall a name and a weak spot (a keystone crate) that topples a whole row.",
+      "In a versus variant the opponent throws back with a visible wind-up the player can dodge."
+    ],
+    "first_minute": [
+      "Start at throwing distance from the nearest block with a ball in hand and one hint line on the HUD (TLHud.add_label): the first throw lands within seconds.",
+      "The first blocks break in one good hit; tougher ones come later."
+    ],
+    "stakes": [
+      "A clock and a score to reach (TLRules) with the best result shown at the end, so the next round is a race against it.",
+      "End screen in words: THE WALL IS DOWN or TIME IS UP (TLHud.set_text), and the count of blocks left."
+    ]
+  },
   "variants": [
     {
       "ask": "kick instead of throw",

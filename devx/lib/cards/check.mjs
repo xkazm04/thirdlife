@@ -18,8 +18,28 @@ const SHAPE = {
   seed: [STR, false], pack: [STR, false], capabilities: [LIST, true], kit_parts: [LIST, true], swap_parts: [LIST, false],
   api: [LIST, true], rules_keys: [LIST, true], data_files: [LIST, true],
   do: [LIST, true], dont: [LIST, true], bot: ["object", true], acceptance: [LIST, true], variants: [LIST, false], hands: ["object", false],
-  interview: ["object", false], footprint: ["object", false],
+  interview: ["object", false], footprint: ["object", false], fun: ["object", false],
 };
+/** CARDS.md (added 2026-11-20): what makes this kind of game fun, for the Designer and the Planner. Every key, every list non-empty. */
+export const FUN_KEYS = ["camera", "juice", "rivals", "first_minute", "stakes"];
+const FUN_SHAPE = Object.fromEntries(FUN_KEYS.map((k) => [k, [LIST, true]]));
+/** A `TLClass.member` named in a fun string: the class must declare the member (checked against the tree). */
+const FUN_MEMBER_RE = /\b(TL[A-Za-z0-9]+)\.([a-z_][a-z0-9_]*)\b/g;
+
+/** The fun block of a card: shape only (every key present, every list non-empty, strings). */
+export function funErrors(f, where) {
+  const errs = shapeErrors(f, FUN_SHAPE, where);
+  if (errs.length) return errs;
+  for (const k of FUN_KEYS) errs.push(...stringsOnly(f[k], where, k), ...duplicates(f[k], where, k));
+  return errs;
+}
+
+/** The TLClass.member names a fun block's strings mention, as [class, member, key]. */
+export function funMembers(f) {
+  const out = [];
+  for (const k of FUN_KEYS) for (const line of f?.[k] ?? []) if (typeof line === "string") for (const m of line.matchAll(FUN_MEMBER_RE)) out.push([m[1], m[2], k]);
+  return out;
+}
 const BOT_SHAPE = { template: [STR, true], plays_by: [STR, true], wins_when: [STR, true] };
 const VARIANT_SHAPE = { ask: [STR, true], change: [STR, true] };
 /** Lane C2 (18 Nov): what a person's hand must find in a game of this kind; TLHand's profiles plus idle (presses nothing). */
@@ -178,6 +198,7 @@ export function validateCard(card, where = "card") {
   if (card.hands !== undefined) errs.push(...handsErrors(card.hands, `${where}.hands`));
   if (card.interview !== undefined) errs.push(...interviewErrors(card.interview, `${where}.interview`));
   if (card.footprint !== undefined) errs.push(...footprintErrors(card.footprint, `${where}.footprint`));
+  if (card.fun !== undefined) errs.push(...funErrors(card.fun, `${where}.fun`));
   const both = (card.swap_parts ?? []).filter((p) => card.kit_parts.includes(p));
   for (const p of both) errs.push(`${where}: '${p}' is in both kit_parts and swap_parts`);
   return errs;
@@ -282,6 +303,13 @@ export function checkCardAgainstTree(card, root, facts = engineFacts(root)) {
   for (const d of card.data_files) if (!seed.files.has(d.file)) errs.push(`${w}: data file '${d.file}' does not exist in ${ex.name}`);
   if (!seed.files.has(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' does not exist in ${ex.name}`);
   else if (!(seed.manifest.tests ?? []).includes(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' is not in ${ex.name}'s manifest tests`);
+  // CARDS.md 2026-11-20: a TLClass.member named in a fun string is declared by the class (the example need not use it:
+  // fun lines say what a game of this kind SHOULD do, and the hockey gap list is exactly what the example lacks).
+  for (const [cls, member, key] of funMembers(card.fun)) {
+    const members = facts.classes.get(cls);
+    if (!members) errs.push(`${w}: fun.${key} names ${cls}.${member}: no class ${cls} in engine/`);
+    else if (!members.has(member)) errs.push(`${w}: fun.${key} names ${cls}.${member}: ${cls} has no func, signal or var '${member}'`);
+  }
   for (const c of card.hands?.checks ?? []) {
     const t = `tests/bot_hand_${c.hand}.gd`;
     if (!seed.files.has(t)) errs.push(`${w}: hand check '${c.hand}': ${t} does not exist in ${ex.name} (the example a builder copies)`);

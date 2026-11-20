@@ -10,6 +10,16 @@ Player's sentence: "{{sentence}}"
 Brief:
 {{brief}}
 
+# The player's decisions on the design
+{{reactions}}
+
+# The game must be fun, not only correct
+The brief was written to be fun: a camera that serves the main verb, juice on the verbs that matter (a shake with
+`ctx.cameras.shake`, a burst with `TLVfx.burst`, a sound with `TLAudio.play`, a few frames of hit-stop the pack holds
+itself), rivals with a name and a habit, a first minute that teaches by playing (one hint line on the HUD), stakes for
+the next round, an intensity curve and one twist. Each of these lands in the contract of the package that owns it,
+with names and numbers a builder can follow; none of it is left for "later" without a package that owns it.
+
 # What already exists (use it; do not plan to rebuild it)
 {{existing}}
 
@@ -39,6 +49,22 @@ How to choose:
   nearest seed game and builds the venue from the kit. It must be playable and pass its bot on its own.
 - **Later packages carry the rest**: the second mechanic, the opponent's AI, the HUD, sound, the art pass, tuning.
   When in doubt, move work OUT of the root into a later package rather than making the root bigger.
+- **The camera serves the verb from the first package on.** The root registers the play camera the brief asks for
+  (a chase or orbit camera on the player's figure framed at 0.2 to 0.3 of the frame height with `ctx.cameras.frame`,
+  or a fixed view of the whole play space when the whole space is the play), never a far top-down view.
+
+# Phases: the player tries the game as it grows
+Group the packages into 2 to 5 **phases**, in build order. After each phase the Foreman stops, and the player plays
+the game as it is and says "pass" (go on) or "hold" with a note (change this first). So each phase must be something
+a person can PLAY and feel, not a layer of code:
+- The **first phase is the smallest thing that plays**: the root package, the main verb, the camera that serves it,
+  one rival or target and a way to score. It holds the root package.
+- Each later phase adds something the player feels: the rivals' character, the juice, the twist, the stakes, the look.
+  A crazy aspect the player kept usually gets a phase of its own after the core plays.
+- Every package is in exactly one phase; a package's deps are in its own phase or an earlier one.
+- Each phase is `{ "id": "<snake_case>", "title": "<a few words>", "try": "<what the player can do now, at most 12
+  words>", "packages": ["<package id>", ...] }`. The `try` line is a promise the player checks with their own hands,
+  for example "Dodge and punch one gladiator in a sand ring"; the capture critic checks it too.
 - Builders read the same reference copies you see named above (`ref/seeds/README.md` first). A contract should say
   which seed to start from and which kit parts, layout sections and rig to use, by the names listed above.
 

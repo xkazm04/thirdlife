@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.two_sides_ball",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "title": "Two sides and a ball: score in the other side's goal",
   "summary": "One ball, two ends, a goal behind each end, first to N points. Covers pong, air hockey, table football, a penalty duel: anything where a ball crossing a line is a point.",
   "applies_when": [
@@ -101,6 +101,26 @@
     "Lint reports 0 bypasses and 0 kit parts added.",
     "Both registered cameras show the whole court and both scores are on the HUD."
   ],
+  "fun": {
+    "camera": [
+      "A fixed view of the whole court is right here, because the whole court is the play: name the player's paddle as its subject (TLCameras.set_subject) so it is never tiny.",
+      "Put the player's own end nearest the camera so left and right mean what the keys say."
+    ],
+    "juice": [
+      "A goal jolts the view (about 0.08 m over 10 frames, TLCameras.shake), as seed_paddle does; add a sound and a flash at the goal line (TLAudio.play, TLVfx.burst).",
+      "A return off the paddle gets a click and a faster ball, so every rally builds tension."
+    ],
+    "rivals": [
+      "The rival paddle intercepts with TLSteer.intercept_point and a reaction delay; give it a name and one weakness (slow on the far edge) the player can learn to aim at."
+    ],
+    "first_minute": [
+      "The first serve goes to the player, slowly, with one hint line naming the keys (TLHud.add_label)."
+    ],
+    "stakes": [
+      "First to N on a score readout (TLHud.add_score); a rally that runs long speeds the ball up so every point ends; the end screen says who won (TLHud.set_text).",
+      "A best-of series or a rival who gets sharper after each win makes the next match matter."
+    ]
+  },
   "variants": [
     {
       "ask": "air hockey or ice hockey shoot-out",

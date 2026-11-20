@@ -2,12 +2,13 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { FakeBuilder } from "../builder/fake.js";
 import { designBrief, planPackages, planCheck, critic } from "../designer.js";
-import { cleanup, fixturePlan, VERBS } from "./helpers.js";
+import { cleanup, fixturePhases, fixturePlan, v2Brief, VERBS } from "./helpers.js";
 import type { PackageSpec } from "../events.js";
 
 after(cleanup);
 
-const brief = { rules: "first to 5", arena: "16 m by 9 m, walled", ai: "follows the ball", controls: "paddle_up, paddle_down", mood: "flat blocks" };
+// JOB.md 2026-11-20: every v2 Designer writes a pitch and aspect cards (a v1 brief of five fields is sent back now).
+const brief = v2Brief();
 const estimate = { packages: 3, wallMinutes: 20, tokens: 150000 };
 const sentence = "a ball-and-paddle game in a walled court";
 
@@ -60,7 +61,7 @@ test("designer: a timeout or a truncated answer is not retried and is reported a
 test("planner: the fixture plan passes; graph and scope mistakes are named", async () => {
   const plan = fixturePlan();
   assert.deepEqual(planCheck(plan, { verbs: VERBS }), []);
-  const b = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: plan } }] });
+  const b = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: plan, phases: fixturePhases() } }] });
   const r = await planPackages(b, { sentence, packId: "game.paddle_court", title: "Paddle Court", brief, packContract: "(contract)" }, { verbs: VERBS });
   assert.ok(r.ok);
   assert.equal(r.value.packages.length, 3);
