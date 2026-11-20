@@ -20,6 +20,7 @@ import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarr
 import { briefText, critic, render, replanPackages, whoOwns, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
+import { botFinish, planShots, shotFile, shotLabel } from "./shots.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
 import { drainInbox } from "./inbox.js";
 import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls } from "./p10.js";
@@ -1357,10 +1358,12 @@ export class Foreman {
    * the same camera and frame (JOB.md, second round). Different frames or cameras cannot be compared and do not count.
    */
   private identicalToPrevious(m: Milestone, captures: string[]): string | undefined {
-    if (captures.length === 0) return undefined;
-    const prev = this.s.milestones[this.s.milestones.length - 1];
-    if (!prev || prev.captures.length !== captures.length) return undefined;
     const tail = (rel: string, milestone: string): string => path.basename(rel).slice(milestone.length);
+    // L2b: only the first test's shot (<m>-<cam>-f<frame>.png) is the same every milestone; a package's own bot is not.
+    const firstShot = (list: string[], ms: string): string[] => list.filter((c) => /^-[a-z0-9_]+-f\d+\.png$/.test(tail(c, ms)));
+    captures = firstShot(captures, m);
+    const prev = this.s.milestones[this.s.milestones.length - 1];
+    if (captures.length === 0 || !prev || firstShot(prev.captures, prev.milestone).length !== captures.length) return undefined;
     const same = captures.every((c) => {
       const twin = prev.captures.find((p) => tail(p, prev.milestone) === tail(c, m));
       return twin !== undefined && fs.existsSync(this.dir(twin)) && hashFile(this.dir(twin)) === hashFile(this.dir(c));
@@ -1374,20 +1377,8 @@ export class Foreman {
    */
   captureFramesFor(bot: string | undefined): number[] {
     if (this.o.captureFrames) return this.o.captureFrames;
-    if (bot !== undefined) {
-      for (const e of [...this.log.events].reverse()) {
-        if (e.type !== "verify" || e.verb !== "bot" || !e.ok) continue;
-        try {
-          const r = JSON.parse(fs.readFileSync(this.dir(e.report), "utf8")) as { bot?: { test?: unknown; done?: unknown; frames?: unknown } };
-          const f = r.bot?.frames;
-          if (r.bot?.test !== bot || r.bot?.done !== true || typeof f !== "number" || !Number.isFinite(f) || f < 4) continue;
-          return [Math.max(1, Math.round(f * 0.25)), Math.max(2, Math.round(f * 0.75))];
-        } catch {
-          /* an unreadable report is not a passing report */
-        }
-      }
-    }
-    return [120, 480];
+    const f = bot !== undefined ? botFinish(this.jobDir, this.log.events, bot) : undefined;
+    return f !== undefined ? [Math.max(1, Math.round(f * 0.25)), Math.max(2, Math.round(f * 0.75))] : [120, 480];
   }
 
   /** A package left `failed` with cause no_visible_change and rounds to spare (a kill between the two events): next round. */
@@ -1486,12 +1477,13 @@ export class Foreman {
       /* no manifest: no captures */
     }
     const captures: string[] = [];
+    const labels: string[] = [];
     const notes: string[] = [];
-    const bot = tests[0];
-    const frames = this.captureFramesFor(bot);
-    for (const cam of cameras) {
-      for (const frame of frames) {
-        const out = this.dir("captures", `${m}-${cam}-f${frame}.png`);
+    const shots = planShots(this.s.plan, this.log.events, members, tests, (b) => botFinish(this.jobDir, this.log.events, b), this.o.captureFrames);
+    for (const [si, shot] of shots.entries()) for (const cam of cameras) {
+      const bot = shot.bot;
+      for (const frame of shot.frames) {
+        const out = this.dir("captures", shotFile(m, cam, frame, shot, si));
         let ok = false;
         for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
           fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -1515,7 +1507,10 @@ export class Foreman {
           });
           if (!ok) notes.push(`capture ${cam} frame ${frame}, attempt ${attempt} of 2, failed: ${clip(vr.summary, 160)}`);
         }
-        if (ok) captures.push(this.rel(out));
+        if (ok) {
+          captures.push(this.rel(out));
+          labels.push(shotLabel(cam, frame, shot));
+        }
       }
     }
     if (cameras.length === 0) notes.push("the pack declares no camera, so there is nothing to capture");
@@ -1542,8 +1537,9 @@ export class Foreman {
       const rubric = criticRubric(this.s, lastPackage); // L2 21 Nov: + fun_promise (the phase's try line, or the pitch)
       const res = await critic(this.o.builder, captures.map((c) => this.dir(c)), rubric, {
         ...(model ? { model } : {}),
-        context: [`Game: ${this.s.title ?? ""} (${this.s.sentence ?? ""})`, `Mood asked for: ${this.s.brief?.mood ?? "(none)"}`, bot !== undefined ? `The bot ${bot} was playing while the frames were taken.` : "No bot was playing."].join("\n"),
+        context: [`Game: ${this.s.title ?? ""} (${this.s.sentence ?? ""})`, `Mood asked for: ${this.s.brief?.mood ?? "(none)"}`, `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`].join("\n"),
         packages: this.packageLines(),
+        labels,
       });
       this.logGenerateCalls(res.calls, model);
       const file = this.reportPath(`critic-${m}`);
@@ -1551,7 +1547,7 @@ export class Foreman {
       fs.writeFileSync(
         file,
         JSON.stringify(
-          { schema: "tl.foreman.critique/1", milestone: m, captures, rubric, ...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}) } : { error: res.reason }) },
+          { schema: "tl.foreman.critique/1", milestone: m, captures, shots: captures.map((c, i) => ({ capture: c, label: labels[i] ?? "" })), rubric,...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}) } : { error: res.reason }) },
           null,
           1,
         ) + "\n",

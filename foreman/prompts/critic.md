@@ -29,5 +29,9 @@ Answer with ONE JSON object and nothing else, matching this JSON schema exactly:
   play space and its objects, often the root; colours, materials, props and effects to an art package). The extra
   round goes to that package's builder with your notes, so name the package that can really fix it. Leave `package`
   out when `ok` is true.
+Each capture line names its camera, its frame and the bot that was playing (and that bot's package). A bot plays
+one stretch of the game: judge `fun_promise` on the captures of the bot whose package makes the promise, and say in
+`notes` which capture shows it (or that none does). A promise that only a later stretch of the game keeps is not
+missing because the first test's frames come before it.
 If you cannot see a capture, say so in `notes`, score every item 0 and set `ok` to false. Never guess.
 {{feedback}}

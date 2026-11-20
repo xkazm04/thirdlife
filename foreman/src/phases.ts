@@ -57,7 +57,7 @@ export async function phaseStep(h: PhaseHost): Promise<"continue" | "paused" | "
 }
 
 /** The package lines (id, title, milestone, deps, files) of some packages of the plan, for the Planner's owner question. */
-function packageLinesOf(s: JobState, ids: string[]): PackageLine[] {
+export function packageLinesOf(s: JobState, ids: string[]): PackageLine[] {
   return s.plan
     .filter((p) => ids.includes(p.id))
     .map((p) => {
