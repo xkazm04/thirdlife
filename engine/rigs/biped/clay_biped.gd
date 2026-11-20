@@ -40,7 +40,7 @@ func sculpt(sk: Skeleton3D, colors: Dictionary, pack: bool, helmet: bool, skate:
 		var side := "Left" if sign_x < 0.0 else "Right"
 		_leg(side, sign_x)
 		_arm(side, sign_x, skate)
-	_face(helmet)
+	_sculpt_face(helmet)
 	if helmet:
 		_helmet()
 	else:
@@ -175,7 +175,7 @@ func _leg(side: String, s: float) -> void:
 	cord([Vector3(x-.059,.192,-.177),Vector3(x-.018,.201,-.179),Vector3(x+.020,.204,-.177),Vector3(x+.056,.197,-.163)], .010,"wood", SHADE)
 	cord([Vector3(x-.053,.217,-.146),Vector3(x-.012,.222,-.145),Vector3(x+.027,.220,-.148),Vector3(x+.050,.217,-.141)], .009,"wood", SHADE)
 
-func _face(helmet: bool) -> void:
+func _sculpt_face(helmet: bool) -> void:
 	part("Head", Finish.CLAY)
 	piece(Vector3(0,1.70,-.014), Vector3(.302,.278,.265), "skin", EGG, 28)
 	for s: float in [-1.0,1.0]:
