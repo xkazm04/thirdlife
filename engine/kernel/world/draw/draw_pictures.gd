@@ -180,6 +180,10 @@ func _cache_key(e: Dictionary) -> String:
 	if not WorkerThreadPool.is_task_completed(int(slot[0])) or slot.size() < 2:
 		return ""                      # its hash is still being read on a worker: no cache this time
 	var rules: String = "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [PIC_VERSION, mid_min, far_min, far_cell, far_flat, far_thin, far_small, standin_min, rim_band]
+	# Kit terrain and flat-colour props bake palette colours into cached pictures.
+	# Separate the miniature pigment mix from classic within the same picture version.
+	if TLStyle.num("detail", "handmade") > 0.5:
+		rules += "|pigment:%s" % (TLStyle.data["palette"] as Dictionary).hash()
 	return ("%s|%s|%s|%s|%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules, _band(e)]).md5_text()
 
 

@@ -97,21 +97,12 @@ float vnoise(vec3 x) {
 }
 
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
-#ifdef TL_VILLAGE
-// Each shared noise corner must have the same value from either cell. On D3D12 the
-// float hash of (cell + 1) can round differently from the hash of that cell directly.
-float land_corner(ivec2 cell) {
-	uvec2 i = uvec2(cell);
-	uint h = (i.x * 1597334677u) ^ (i.y * 3812015801u);
-	h = (h ^ (h >> 16u)) * 2246822519u;
-	return float(h ^ (h >> 13u)) * (1.0 / 4294967296.0);
-}
-#endif
+#include "res://style/shaders/material_noise.gdshaderinc"
 float vn2(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
 #ifdef TL_VILLAGE
 	ivec2 c = ivec2(i);
-	return mix(mix(land_corner(c), land_corner(c + ivec2(1, 0)), f.x),
-		mix(land_corner(c + ivec2(0, 1)), land_corner(c + ivec2(1, 1)), f.x), f.y);
+	return mix(mix(material_corner(c), material_corner(c + ivec2(1, 0)), f.x),
+		mix(material_corner(c + ivec2(0, 1)), material_corner(c + ivec2(1, 1)), f.x), f.y);
 #else
 	return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y);
 #endif
@@ -265,11 +256,19 @@ vec3 ice_surface(vec3 base, vec3 lpos, vec2 half_s, vec3 wp, float fres) {
 	float inside = step(g.x, 0.0) * (1.0 - smoothstep(1.75, 1.82, cr));
 	c = mix(c, vec3(0.62, 0.78, 0.98), inside * 0.8);
 	c = mix(c, red, line_aa(cr - 1.8, 0.06) * step(g.x, 0.0) * 0.9);
+	// The miniature's polished sheet takes its highlight from the material light.
+	if (g_mottle.y > 0.5) { return c; }
 	// slow travelling shine: a soft highlight band sweeping the sheet
 	float sh = sin((p.x * 0.9 + p.y * 0.55) * 0.11 - TIME * 0.45);
 	c += vec3(0.16, 0.14, 0.12) * smoothstep(0.93, 1.0, sh);
 	return c;
 }
+
+#include "res://style/shaders/handmade.gdshaderinc"
+
+varying flat vec3 craft_corner;
+varying vec3 craft_normal;
+varying vec2 craft_gloss; // highlight exponent and intensity
 
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -282,6 +281,8 @@ void vertex() {
 	m2 = texelFetch(pal_lut, ivec2(idx, 2), 0);
 	float sway = texelFetch(pal_lut, ivec2(idx, 3), 0).x;
 	lp = vec4(CUSTOM0.xyz, float(code % 16));
+	craft_corner = CUSTOM0.xyz;
+	if (g_mottle.y > 0.5 && code == 0) { lp.xyz = VERTEX; } // flat_material primitives have no CUSTOM0
 #ifdef TL_VILLAGE
 	if (tl_floor_rect.z > tl_floor_rect.x) {
 		vec2 axis = tl_land_plot.zw;
@@ -369,84 +370,97 @@ void fragment() {
 	vec3 wn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	vec3 vw = normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz);
 	float fres = pow(1.0 - clamp(dot(wn, vw), 0.0, 1.0), 3.0);
-	float mk = m1.y < 0.0 ? g_mottle.x : m1.y;
-	vec3 mp = tl_body.x > 0.5 ? lp.xyz : wpos;   // a moving body carries its mottle with it
-	float n = vnoise(vec3(mp.x * 0.30, mp.y * 0.8, mp.z * 0.30)) * 0.6 + vnoise(mp * 1.35) * 0.4;
-	c *= 1.0 + (n - 0.5) * 2.0 * mk;
 	float em = m0.a;
-	if (mclass > 0) {
-		int code = int(lp.w + 0.5);
-		vec2 dt = surface_detail(mclass, lp.xyz * m1.w, code % 4, code / 4);
-		float fade = g_detail.x * m2.x * (1.0 - smoothstep(g_detail.y, g_detail.z, vdepth));
-		// lines thin out with distance, but the tone pattern (planks, panels, courses) gains contrast so the surface still reads
-		float tone_k = g_detail.x * m2.x * (1.0 + g_detail2.x * smoothstep(g_detail2.y, g_detail2.z, vdepth)) * (1.0 - smoothstep(g_detail2.w * 0.6, g_detail2.w, vdepth));
-#ifdef TL_VILLAGE
-		if (tl_floor_rect.z > tl_floor_rect.x && mclass == 4) {
-			tone_k *= 0.45;
-			fade *= 0.55;
-		}
-#endif
-		c *= 1.0 + dt.y * tone_k;
-		if (mclass == 5) {   // ground: blade flecks one tone darker and greener, never ink-dark dashes
-			// N1: marks are a darker, cooler tone of the ground itself (grass: deep green, dirt: brown), never ink black;
-			// where grass meets dirt the blend of the two vertex colours is cut by one wobbly drawn edge
-#ifdef TL_VILLAGE
-			float grassy = pigment.g - pigment.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
-#else
-			float grassy = COLOR.g - COLOR.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
-#endif
-			float gfw = fwidth(grassy) * 1.6 + 0.0015;
-			float gm = smoothstep(-gfw, gfw, grassy);
-			vec2 away = -INV_VIEW_MATRIX[2].xz;
-			away = length(away) > 0.01 ? normalize(away) : vec2(0.0, -1.0);
-			vec4 gk = ground_marks(lp.xz * m1.w, away) * fade * step(0.5, wn.y);
-			// P3: grass is not one lime: broad soft patches run from a warm olive-yellow to a cool blue-green, in two scales
-			float gpa = vn2(lp.xz * m1.w * 0.034 + 5.0) * 0.6 + vn2(lp.xz * m1.w * 0.11 + 2.0) * 0.4;
-			float gpb = vn2(lp.xz * m1.w * 0.21 + 9.0);
-			vec3 gtint = mix(vec3(0.70, 0.95, 0.90), vec3(1.18, 1.05, 0.56), smoothstep(0.30, 0.70, gpa));
-			gtint *= 1.0 + (gpb - 0.5) * 0.10;
-			c = mix(c, c * gtint, gm * 0.9);
-			c = mix(c, c * vec3(0.50, 0.74, 0.46), gk.x * gm);                    // tufts grow in grass only
-			c = mix(c, c * vec3(0.70, 0.62, 0.60), gk.w * (1.0 - gm) * 0.9);      // scratches and grit lie on dirt only
-			c = mix(c, c * 1.22 + 0.02, gk.y * (1.0 - gk.z));                     // pebbles lie anywhere: a light body ...
-			c = mix(c, c * 0.52, gk.z * 0.9);                                     // ... with a dark rim on the shade side
-			float lip = (1.0 - smoothstep(0.0, gfw * 2.2, abs(grassy))) * (1.0 - smoothstep(0.2, 0.7, fwidth(lp.x) * 6.0));
-			c = mix(c, c * vec3(0.52, 0.50, 0.46), lip * 0.75 * g_detail.x);
-			c *= 1.0 + (gm - 0.5) * 0.10 * (1.0 - smoothstep(0.0, gfw * 30.0, abs(grassy)));
-			// pass 4: cliff faces carry drawn strata: wobbly layers in world height, a tone per layer, ink seams, broken by cracks
-			float steep = 1.0 - smoothstep(0.50, 0.74, wn.y);
-			if (steep > 0.0 && g_strata.y > 0.0) {
-				float sv = wpos.y / g_strata.y + vnoise(vec3(wpos.x * 0.07, 1.0, wpos.z * 0.07)) * 2.2 + vnoise(wpos * 0.6) * 0.35;
-				float layer = floor(sv + 0.5);
-				float sfw = fwidth(sv);
-				float keep = 1.0 - smoothstep(0.25, 0.8, sfw);
-				float sl = (1.0 - smoothstep(0.035, 0.035 + sfw * 1.3, abs(fract(sv + 0.5) - 0.5))) * step(0.22, h21(vec2(layer, 7.0)));
-				float cu = (wpos.x + wpos.z * 0.8) / (g_strata.y * 1.7) + h21(vec2(layer, 2.0)) * 5.0;
-				float cfw = fwidth(cu);
-				float cl = (1.0 - smoothstep(0.02, 0.02 + cfw * 1.3, abs(fract(cu + 0.5) - 0.5))) * step(0.5, h21(vec2(floor(cu + 0.5), layer))) * (1.0 - smoothstep(0.25, 0.8, cfw));
-				c *= 1.0 + (h21(vec2(layer, 3.0)) - 0.5) * g_strata.z * steep * (0.4 + 0.6 * keep);
-				c = mix(c, c * g_detail.w, max(sl * g_strata.x, cl * g_strata.w) * steep * keep);
-			}
+	bool handmade = g_mottle.y > 0.5 && tl_body.x < 0.5;
+	craft_normal = NORMAL;
+	craft_gloss = vec2(1.0, 0.0);
+	if (handmade) {
+		if (m2.z > 0.5) {
+			craft_gloss = vec2(58.0, 0.46);
 		} else {
-			c = mix(c, c * g_detail.w, dt.x * fade);
-			if (mclass == 6 && g_strata.y > 0.0) {
-				// P3: far cliffs and mesas keep drawn strata at any distance: bands of world height with a tone per band, ink seams
-				// that stay at least a pixel wide, and vertical erosion streaks. Near rock keeps its own pattern above.
-				float farw = smoothstep(g_detail.y * 0.4, g_detail.z, vdepth);
-				float band = g_strata.y * 2.0;
-				float fsv = wpos.y / band + vnoise(vec3(wpos.x * 0.045, 2.0, wpos.z * 0.045)) * 1.4 + vnoise(wpos * 0.31) * 0.12;
-				float fl = floor(fsv + 0.5);
-				float ffw = fwidth(fsv);
-				float fkeep = 1.0 - smoothstep(0.7, 1.4, ffw);
-				float fseam = (1.0 - smoothstep(max(0.02, ffw * 0.7), max(0.02, ffw * 0.7) + ffw * 1.3 + 0.002, abs(fract(fsv + 0.5) - 0.5))) * step(0.3, h21(vec2(fl, 6.0)));
-				float fu = (wpos.x * 0.8 + wpos.z) / 3.4 + h21(vec2(fl, 8.0)) * 7.0;
-				float fufw = fwidth(fu);
-				float fst = (1.0 - smoothstep(max(0.02, fufw * 0.6), max(0.02, fufw * 0.6) + fufw * 1.3 + 0.002, abs(fract(fu + 0.5) - 0.5))) * step(0.55, h21(vec2(floor(fu + 0.5), fl))) * (1.0 - smoothstep(0.5, 1.2, fufw));
-				float steepf = 1.0 - smoothstep(0.55, 0.85, wn.y);
-				c *= 1.0 + (h21(vec2(fl, 2.0)) - 0.5) * 0.30 * farw * steepf;
-				c = mix(c, c * vec3(0.55, 0.47, 0.66), max(fseam * 0.75, fst * 0.55) * farw * steepf * fkeep);
-				// the sunlit side of the mesa picks up the warm light; the top stays pale like a drawn cap
-				c = mix(c, c * vec3(1.14, 1.04, 0.92), farw * (1.0 - steepf) * 0.5);
+			float height;
+			handmade_surface(mclass, lp, craft_corner, wn, m1.x, c, height, craft_gloss);
+			craft_normal = relief_normal(NORMAL, dFdx(VERTEX), dFdy(VERTEX), height);
+		}
+	} else {
+		float mk = m1.y < 0.0 ? g_mottle.x : m1.y;
+		vec3 mp = tl_body.x > 0.5 ? lp.xyz : wpos;   // a moving body carries its mottle with it
+		float n = vnoise(vec3(mp.x * 0.30, mp.y * 0.8, mp.z * 0.30)) * 0.6 + vnoise(mp * 1.35) * 0.4;
+		c *= 1.0 + (n - 0.5) * 2.0 * mk;
+		if (mclass > 0) {
+			int code = int(lp.w + 0.5);
+			vec2 dt = surface_detail(mclass, lp.xyz * m1.w, code % 4, code / 4);
+			float fade = g_detail.x * m2.x * (1.0 - smoothstep(g_detail.y, g_detail.z, vdepth));
+			// lines thin out with distance, but the tone pattern (planks, panels, courses) gains contrast so the surface still reads
+			float tone_k = g_detail.x * m2.x * (1.0 + g_detail2.x * smoothstep(g_detail2.y, g_detail2.z, vdepth)) * (1.0 - smoothstep(g_detail2.w * 0.6, g_detail2.w, vdepth));
+#ifdef TL_VILLAGE
+			if (tl_floor_rect.z > tl_floor_rect.x && mclass == 4) {
+				tone_k *= 0.45;
+				fade *= 0.55;
+			}
+#endif
+			c *= 1.0 + dt.y * tone_k;
+			if (mclass == 5) {   // ground: blade flecks one tone darker and greener, never ink-dark dashes
+				// N1: marks are a darker, cooler tone of the ground itself (grass: deep green, dirt: brown), never ink black;
+				// where grass meets dirt the blend of the two vertex colours is cut by one wobbly drawn edge
+#ifdef TL_VILLAGE
+				float grassy = pigment.g - pigment.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
+#else
+				float grassy = COLOR.g - COLOR.r + (vn2(lp.xz * 0.8) - 0.5) * 0.05 + (vn2(lp.xz * 0.17) - 0.5) * 0.06;
+#endif
+				float gfw = fwidth(grassy) * 1.6 + 0.0015;
+				float gm = smoothstep(-gfw, gfw, grassy);
+				vec2 away = -INV_VIEW_MATRIX[2].xz;
+				away = length(away) > 0.01 ? normalize(away) : vec2(0.0, -1.0);
+				vec4 gk = ground_marks(lp.xz * m1.w, away) * fade * step(0.5, wn.y);
+				// P3: grass is not one lime: broad soft patches run from a warm olive-yellow to a cool blue-green, in two scales
+				float gpa = vn2(lp.xz * m1.w * 0.034 + 5.0) * 0.6 + vn2(lp.xz * m1.w * 0.11 + 2.0) * 0.4;
+				float gpb = vn2(lp.xz * m1.w * 0.21 + 9.0);
+				vec3 gtint = mix(vec3(0.70, 0.95, 0.90), vec3(1.18, 1.05, 0.56), smoothstep(0.30, 0.70, gpa));
+				gtint *= 1.0 + (gpb - 0.5) * 0.10;
+				c = mix(c, c * gtint, gm * 0.9);
+				c = mix(c, c * vec3(0.50, 0.74, 0.46), gk.x * gm);                    // tufts grow in grass only
+				c = mix(c, c * vec3(0.70, 0.62, 0.60), gk.w * (1.0 - gm) * 0.9);      // scratches and grit lie on dirt only
+				c = mix(c, c * 1.22 + 0.02, gk.y * (1.0 - gk.z));                     // pebbles lie anywhere: a light body ...
+				c = mix(c, c * 0.52, gk.z * 0.9);                                     // ... with a dark rim on the shade side
+				float lip = (1.0 - smoothstep(0.0, gfw * 2.2, abs(grassy))) * (1.0 - smoothstep(0.2, 0.7, fwidth(lp.x) * 6.0));
+				c = mix(c, c * vec3(0.52, 0.50, 0.46), lip * 0.75 * g_detail.x);
+				c *= 1.0 + (gm - 0.5) * 0.10 * (1.0 - smoothstep(0.0, gfw * 30.0, abs(grassy)));
+				// pass 4: cliff faces carry drawn strata: wobbly layers in world height, a tone per layer, ink seams, broken by cracks
+				float steep = 1.0 - smoothstep(0.50, 0.74, wn.y);
+				if (steep > 0.0 && g_strata.y > 0.0) {
+					float sv = wpos.y / g_strata.y + vnoise(vec3(wpos.x * 0.07, 1.0, wpos.z * 0.07)) * 2.2 + vnoise(wpos * 0.6) * 0.35;
+					float layer = floor(sv + 0.5);
+					float sfw = fwidth(sv);
+					float keep = 1.0 - smoothstep(0.25, 0.8, sfw);
+					float sl = (1.0 - smoothstep(0.035, 0.035 + sfw * 1.3, abs(fract(sv + 0.5) - 0.5))) * step(0.22, h21(vec2(layer, 7.0)));
+					float cu = (wpos.x + wpos.z * 0.8) / (g_strata.y * 1.7) + h21(vec2(layer, 2.0)) * 5.0;
+					float cfw = fwidth(cu);
+					float cl = (1.0 - smoothstep(0.02, 0.02 + cfw * 1.3, abs(fract(cu + 0.5) - 0.5))) * step(0.5, h21(vec2(floor(cu + 0.5), layer))) * (1.0 - smoothstep(0.25, 0.8, cfw));
+					c *= 1.0 + (h21(vec2(layer, 3.0)) - 0.5) * g_strata.z * steep * (0.4 + 0.6 * keep);
+					c = mix(c, c * g_detail.w, max(sl * g_strata.x, cl * g_strata.w) * steep * keep);
+				}
+			} else {
+				c = mix(c, c * g_detail.w, dt.x * fade);
+				if (mclass == 6 && g_strata.y > 0.0) {
+					// P3: far cliffs and mesas keep drawn strata at any distance: bands of world height with a tone per band, ink seams
+					// that stay at least a pixel wide, and vertical erosion streaks. Near rock keeps its own pattern above.
+					float farw = smoothstep(g_detail.y * 0.4, g_detail.z, vdepth);
+					float band = g_strata.y * 2.0;
+					float fsv = wpos.y / band + vnoise(vec3(wpos.x * 0.045, 2.0, wpos.z * 0.045)) * 1.4 + vnoise(wpos * 0.31) * 0.12;
+					float fl = floor(fsv + 0.5);
+					float ffw = fwidth(fsv);
+					float fkeep = 1.0 - smoothstep(0.7, 1.4, ffw);
+					float fseam = (1.0 - smoothstep(max(0.02, ffw * 0.7), max(0.02, ffw * 0.7) + ffw * 1.3 + 0.002, abs(fract(fsv + 0.5) - 0.5))) * step(0.3, h21(vec2(fl, 6.0)));
+					float fu = (wpos.x * 0.8 + wpos.z) / 3.4 + h21(vec2(fl, 8.0)) * 7.0;
+					float fufw = fwidth(fu);
+					float fst = (1.0 - smoothstep(max(0.02, fufw * 0.6), max(0.02, fufw * 0.6) + fufw * 1.3 + 0.002, abs(fract(fu + 0.5) - 0.5))) * step(0.55, h21(vec2(floor(fu + 0.5), fl))) * (1.0 - smoothstep(0.5, 1.2, fufw));
+					float steepf = 1.0 - smoothstep(0.55, 0.85, wn.y);
+					c *= 1.0 + (h21(vec2(fl, 2.0)) - 0.5) * 0.30 * farw * steepf;
+					c = mix(c, c * vec3(0.55, 0.47, 0.66), max(fseam * 0.75, fst * 0.55) * farw * steepf * fkeep);
+					// the sunlit side of the mesa picks up the warm light; the top stays pale like a drawn cap
+					c = mix(c, c * vec3(1.14, 1.04, 0.92), farw * (1.0 - steepf) * 0.5);
+				}
 			}
 		}
 	}
@@ -504,13 +518,39 @@ void fragment() {
 	vec3 bdir = normalize(vec3(-g_sun_dir.x, -0.55, -g_sun_dir.z));
 	float bk = pow(clamp(dot(wn, bdir) * 0.5 + 0.5, 0.0, 1.0), 2.0);
 	EMISSION = c * amb + c * em + c * g_bounce.rgb * (g_bounce.a * bk);
+	if (handmade) {
+		EMISSION = c * (amb * 0.60 + em + g_bounce.rgb * g_bounce.a * bk * 0.63);
+		// Broad reflected skylight across the coat also reaches the shade side.
+		// Felt and soil have a very weak lobe. Keep the geometric normal for ink.
+		vec3 coated_n = normalize(mat3(INV_VIEW_MATRIX) * craft_normal);
+		vec3 reflection = reflect(-vw, coated_n);
+		float horizon = exp(-7.0 * abs(reflection.y - 0.20));
+		float facing_sky = smoothstep(-0.16, 0.72, reflection.y);
+		EMISSION += craft_gloss.y * (0.08 + 0.42 * fres) *
+				(horizon * g_sun.rgb * 0.62 + facing_sky * vec3(0.37, 0.41, 0.48));
+	}
 	wn_l = wn;
 }
 
 void light() {
 	vec3 N = normalize(NORMAL);
 	float ndl = dot(N, LIGHT);
-	if (!LIGHT_IS_DIRECTIONAL) {
+	if (g_mottle.y > 0.5 && tl_body.x < 0.5) {
+		vec3 n = normalize(craft_normal);
+		float facing = dot(n, LIGHT);
+		float wrap = clamp((facing + 0.30) / 1.30, 0.0, 1.0);
+		// Warm pigment remains visible in occlusion. Specular is a separate,
+		// untinted lobe on the varnish and almost entirely absent on nap.
+		if (LIGHT_IS_DIRECTIONAL) {
+			vec3 pigment_fill = mix(g_amb_gnd.rgb, g_amb_sky.rgb, 0.50) * 0.48 + vec3(0.14, 0.12, 0.105);
+			DIFFUSE_LIGHT += pigment_fill + g_sun.rgb * g_sun.a * (wrap * ATTENUATION * 1.93);
+		} else {
+			DIFFUSE_LIGHT += LIGHT_COLOR * (wrap * ATTENUATION / PI);
+		}
+		vec3 halfway = normalize(VIEW + LIGHT);
+		float lobe = pow(max(dot(n, halfway), 0.0), craft_gloss.x);
+		SPECULAR_LIGHT += LIGHT_COLOR / PI * lobe * craft_gloss.y * ATTENUATION * smoothstep(-0.05, 0.23, facing);
+	} else if (!LIGHT_IS_DIRECTIONAL) {
 		// local glow lights (weld sparks, nitro, windows): one soft band, real light colour
 		// drawn as a pool with two flat bands (outer glow, inner core) instead of a smooth falloff
 		float la = ATTENUATION * smoothstep(0.0, 0.25, ndl * 0.6 + 0.4);

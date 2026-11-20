@@ -29,7 +29,7 @@ static func _chosen_path() -> String:
 const SPECIAL: PackedStringArray = ["glass", "water", "holo", "fx_add", "fx_mix"]
 const RIG_NODE: String = "TLStyleRig"
 ## material classes of the drawn surface language (toon.gdshader surface_detail)
-const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9}
+const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9, "felt": 10, "painted_wood": 11, "earth": 12}
 const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx"]
 const REQUIRED: PackedStringArray = ["sun", "toon", "env", "fog", "sky", "ink", "grade", "palette", "mat"]
 const MAT_KEYS: PackedStringArray = ["class", "dscale", "dk", "emit", "metal", "mottle", "no_hatch", "ice", "dissolve", "sway", "shader", "base_a", "fres_a"]
@@ -43,7 +43,7 @@ const RANGES: Dictionary = {
 	"ink.near_px": [0.0, 6.0], "ink.even": [0.0, 1.0], "ink.thin_keep": [0.0, 1.0], "ink.hair_alpha": [0.0, 1.0],
 	"grade.sat": [0.6, 1.4], "grade.contrast": [0.85, 1.25], "grade.vignette": [0.0, 0.5], "grade.grain": [0.0, 0.05], "grade.paper": [0.0, 0.06], "grade.split": [0.0, 0.3],
 	"lights.pool_smooth": [0.0, 1.0], "detail.strata": [0.0, 1.0], "detail.strata_m": [0.5, 12.0], "detail.strata_tone": [0.0, 0.6], "detail.strata_crack": [0.0, 1.0],
-	"detail.k": [0.0, 1.6], "detail.macro": [0.0, 2.5], "detail.dark": [0.25, 0.9], "env.exposure": [0.6, 1.6], "env.glow": [0.0, 1.2],
+	"detail.handmade": [0.0, 1.0], "detail.k": [0.0, 1.6], "detail.macro": [0.0, 2.5], "detail.dark": [0.25, 0.9], "env.exposure": [0.6, 1.6], "env.glow": [0.0, 1.2],
 }
 
 static var data: Dictionary = {}
@@ -328,7 +328,7 @@ static func _fill_special(k: String, m: ShaderMaterial) -> void:
 	var sh: String = String(ov.get("shader", k))
 	if not SPECIAL.has(sh):
 		sh = "glass"
-	m.shader = _shader(sh)
+	m.shader = _shader("water_resin" if sh == "water" and num("detail", "handmade") > 0.5 else sh)
 	if sh == "water" or sh == "holo":
 		push(sh, m)
 	if sh == "glass" or sh == "water":
@@ -378,7 +378,7 @@ static func _register_globals() -> void:
 	_g("g_amb_gnd", _v4(_lin(t["amb_ground"]), 1.0))
 	_g("g_hatch", Vector4(t["hatch"], t["hatch_px"], t["hatch_fade_near"], t["hatch_fade_far"]))
 	_g("g_rim", _v4(_lin(t["rim"]), float(t["rim_k"])))
-	_g("g_mottle", Vector4(t["mottle"], 0, 0, 0))
+	_g("g_mottle", Vector4(t["mottle"], num("detail", "handmade"), 0, 0))
 	_g("g_shade2", _v4(_lin(t.get("shade_ground", t["shade"])), float(t.get("shade_grad", 0.0))))
 	_g("g_rim2", _v4(_lin(t.get("rim2", "#000000")), float(t.get("rim2_k", 0.0))))   # P3: cool rim on the shade side
 	_g("g_bounce", _v4(_lin(t.get("bounce", "#000000")), float(t.get("bounce_k", 0.0))))

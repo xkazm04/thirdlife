@@ -126,54 +126,54 @@
   "scan": 0.35
  },
  "water": {
-  "deep": "#3c78b0",
-  "shallow": "#72c0d0",
-  "sky": "#ffc59a",
-  "stripe": "#d8f4ff",
-  "sky_k": 0.1
+  "deep": "#164e83",
+  "shallow": "#388e9b",
+  "sky": "#8dc9f8",
+  "stripe": "#ffe2a0",
+  "sky_k": 0.66
  },
  "palette": {
   "white": "#ffffff",
-  "grass": "#86b944",
-  "grass_dry": "#bdbb4c",
-  "grass_dark": "#4f8a3e",
-  "dirt": "#c99568",
-  "sand": "#dcb88a",
-  "rock": "#a8998f",
-  "rock_dark": "#7a6a80",
-  "rock_warm": "#b2917f",
-  "cliff": "#8c7088",
+  "grass": "#77a336",
+  "grass_dry": "#b4ad46",
+  "grass_dark": "#48772e",
+  "dirt": "#ff9758",
+  "sand": "#ffc47b",
+  "rock": "#ba9166",
+  "rock_dark": "#73523b",
+  "rock_warm": "#c48a54",
+  "cliff": "#bd734b",
   "tarmac": "#5c6478",
   "tarmac_light": "#747c90",
   "curb_red": "#dc4238",
-  "curb_white": "#f3e8dc",
+  "curb_white": "#f2dfbc",
   "line_white": "#efe6dc",
-  "concrete": "#cbbdb4",
-  "concrete_dark": "#9c8f98",
+  "concrete": "#c7b7a2",
+  "concrete_dark": "#a38f83",
   "barrier": "#d4c8bf",
   "barrier_dark": "#a89aa2",
   "steel": "#8a85a0",
   "steel_dark": "#4f4a60",
   "steel_light": "#b6b0c8",
   "black": "#2b2532",
-  "yellow": "#f2b230",
+  "yellow": "#dca654",
   "yellow_dark": "#c98720",
-  "orange": "#e8742c",
+  "orange": "#c3824d",
   "hazard_red": "#d8452e",
-  "wood": "#b9794a",
-  "wood_light": "#e2b472",
-  "wood_dark": "#7c4a30",
-  "plank": "#d9a868",
-  "roof": "#98443c",
+  "wood": "#c89159",
+  "wood_light": "#e6b880",
+  "wood_dark": "#a57751",
+  "plank": "#d9ae7b",
+  "roof": "#ad5e4d",
   "roof_slate": "#5c4c6c",
   "stone": "#aa9e98",
   "stone_dark": "#7e7480",
   "window": "#ffc462",
-  "leaf": "#6c9a3c",
-  "leaf_light": "#a9c243",
-  "pine": "#2f6b4c",
-  "pine_light": "#4c8c58",
-  "trunk": "#6c4a3b",
+  "leaf": "#628337",
+  "leaf_light": "#99a645",
+  "pine": "#477b40",
+  "pine_light": "#648947",
+  "trunk": "#9a653e",
   "skin": "#eab294",
   "hair": "#8a4a2c",
   "jacket": "#d24a3a",
@@ -213,7 +213,7 @@
   "rib_steel": "#6d6a85",
   "cone": "#f0702c",
   "hazard_white": "#f3ece6",
-  "grass_blade": "#a2c24a",
+  "grass_blade": "#9ca457",
   "water": "#4a8ac0",
   "nitro_hot": "#ff8a2a",
   "nitro_core": "#fff2b0",
@@ -254,7 +254,7 @@
   },
   "yellow": {
    "metal": 0.25,
-   "class": "steel"
+   "class": "painted_wood"
   },
   "car_red": {
    "metal": 0.8
@@ -278,10 +278,12 @@
    "metal": 0.6
   },
   "grass": {
-   "mottle": 0.2
+   "mottle": 0.2,
+   "class": "ground"
   },
   "grass_dry": {
-   "mottle": 0.22
+   "mottle": 0.22,
+   "class": "ground"
   },
   "tarmac": {
    "mottle": 0.07,
@@ -309,9 +311,10 @@
    "mottle": 0.0
   },
   "grass_blade": {
-   "sway": 0.22,
+   "sway": 0.0,
    "no_hatch": 1.0,
-   "mottle": 0.0
+   "mottle": 0.0,
+   "class": "felt"
   },
   "water": {
    "shader": "water"
@@ -370,7 +373,7 @@
    "class": "steel"
   },
   "orange": {
-   "class": "steel"
+   "class": "painted_wood"
   },
   "rock": {
    "class": "rock"
@@ -435,6 +438,45 @@
    "metal": 0.5,
    "mottle": 0.1,
    "no_hatch": 1.0
+  },
+  "pine": {
+   "class": "felt"
+  },
+  "pine_light": {
+   "class": "felt"
+  },
+  "leaf": {
+   "class": "felt"
+  },
+  "leaf_light": {
+   "class": "felt"
+  },
+  "grass_dark": {
+   "class": "ground"
+  },
+  "dirt": {
+   "class": "earth"
+  },
+  "sand": {
+   "class": "earth"
+  },
+  "curb_red": {
+   "class": "painted_wood"
+  },
+  "curb_white": {
+   "class": "painted_wood"
+  },
+  "hazard_red": {
+   "class": "painted_wood"
+  },
+  "hazard_white": {
+   "class": "painted_wood"
+  },
+  "sign": {
+   "class": "painted_wood"
+  },
+  "trunk": {
+   "class": "wood"
   }
  },
  "detail": {
@@ -449,7 +491,8 @@
   "strata": 0.8,
   "strata_m": 2.6,
   "strata_tone": 0.24,
-  "strata_crack": 0.55
+  "strata_crack": 0.55,
+  "handmade": 1.0
  },
  "lights": {
   "window": 1.35,

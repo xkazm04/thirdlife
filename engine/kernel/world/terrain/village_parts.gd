@@ -21,11 +21,15 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 	var mm: MultiMesh = MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
-	mm.mesh = mk.build(mname.to_snake_case())
+	var visual := mk
+	if not TLStyle.headless() and TLStyle.num("detail", "handmade") > 0.5:
+		if mk.surfs.has("pine") or mk.surfs.has("leaf"):
+			visual = _felt_foliage(mk, region.has_area())
+	mm.mesh = visual.build(mname.to_snake_case())
 	if crown_batches is Array:
 		var placed := xs
 		if region.has_area():
-			var mesh_bounds := mm.mesh.get_aabb()
+			var mesh_bounds := mk.aabb() if visual != mk else mm.mesh.get_aabb()
 			placed = xs.filter(func(xf: Transform3D) -> bool:
 				var bounds := xf * mesh_bounds
 				return region.intersects(Rect2(bounds.position.x, bounds.position.z, bounds.size.x, bounds.size.z), true))
@@ -39,6 +43,84 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 	mmi.name = mname
 	mmi.multimesh = mm
 	parent.add_child(mmi)
+
+
+## Reuse each scatter recipe and its trunk. Only the displayed crown is upholstered.
+## Camera queries still use the source recipe. A template serves every MultiMesh instance.
+static func _felt_foliage(source: TLMesh, distant: bool = false) -> TLMesh:
+	var felt := TLMesh.new()
+	for key: String in source.surfs:
+		var surf: TLMesh.Surf = source.surfs[key]
+		if key == "pine" or key == "pine_light":
+			# Kit pine tiers have one apex above a level ring. Read one side per tier.
+			var tiers := {}
+			for i in range(0, surf.v.size(), 3):
+				var a := surf.v[i]
+				var b := surf.v[i + 1]
+				var c := surf.v[i + 2]
+				var base_y := minf(a.y, minf(b.y, c.y))
+				var top_y := maxf(a.y, maxf(b.y, c.y))
+				if top_y <= base_y or tiers.has(base_y):
+					continue
+				tiers[base_y] = true
+				var rim := a if a.y == base_y else b
+				_felt_tier(felt, key, rim, top_y, surf.c[i], distant)
+		elif key == "leaf" or key == "leaf_light":
+			# Average adjacent faces around each tuft without changing its outer contour.
+			var mean := {}
+			for i in surf.v.size():
+				var v := surf.v[i]
+				mean[v] = Vector3(mean.get(v, Vector3.ZERO)) + surf.n[i]
+			for i in range(0, surf.v.size(), 3):
+				var a := surf.v[i]
+				var b := surf.v[i + 2]
+				var c := surf.v[i + 1]
+				felt.tri_n(a, b, c, Vector3(mean[a]).normalized(), Vector3(mean[b]).normalized(),
+						Vector3(mean[c]).normalized(), key, surf.c[i], surf.c[i + 2], surf.c[i + 1])
+		else:
+			felt.surfs[key] = surf
+			felt.tri_count += surf.v.size() / 3
+	return felt
+
+
+## The pressed cone turns under at its cut rim. The rim undulates a little in both
+## radius and height. The darker underside and lighter exposed nap separate the tiers.
+static func _felt_tier(mesh: TLMesh, key: String, rim: Vector3, top: float, tint: Color, distant: bool) -> void:
+	var sides := 8 if distant else 14
+	# radius / height (fractions of the cone), upward normal component, dyed value
+	const PROFILE := [Vector4(0.86, 0.018, -0.85, 0.55), Vector4(0.94, 0.032, -0.10, 0.82),
+			Vector4(0.90, 0.084, 0.44, 1.10), Vector4(0.48, 0.50, 0.49, 1.0), Vector4(0.085, 0.90, 0.63, 0.94)]
+	# The belt and mesa trees are mostly a few pixels tall. Their rolled rim needs
+	# fewer facets than a pine beside the visitor; keep the same cap and smooth normals.
+	var rings := [PROFILE[0], PROFILE[2], PROFILE[4]] if distant else PROFILE
+	var radius := Vector2(rim.x, rim.z).length()
+	var phase := atan2(rim.z, rim.x)
+	var points := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var colours := PackedColorArray()
+	for row: Vector4 in rings:
+		for i in sides:
+			var angle := phase + TAU * i / sides
+			var radial := Vector3(cos(angle), 0, sin(angle))
+			var fold := sin(5.0 * angle + top) * 0.6 + sin(3.0 * angle) * 0.4
+			var p := radial * radius * row.x * (1.0 + 0.032 * fold)
+			p.y = lerpf(rim.y, top, row.y + 0.022 * fold * (1.0 - row.y))
+			points.append(p)
+			normals.append((radial + Vector3.UP * row.z).normalized())
+			colours.append(tint * Color.WHITE.darkened(0.035 * (fold + 1.0)) * Color(row.w, row.w, row.w))
+	for i in sides:
+		var j := (i + 1) % sides
+		mesh.tri(Vector3(0, rim.y, 0), points[i], points[j], key, tint.darkened(0.48))
+		for row in rings.size() - 1:
+			var a := row * sides + i
+			var b := row * sides + j
+			var c := b + sides
+			var d := a + sides
+			mesh.tri_n(points[a], points[d], points[c], normals[a], normals[d], normals[c], key, colours[a], colours[d], colours[c])
+			mesh.tri_n(points[a], points[c], points[b], normals[a], normals[c], normals[b], key, colours[a], colours[c], colours[b])
+		var a := (rings.size() - 1) * sides + i
+		var b := (rings.size() - 1) * sides + j
+		mesh.tri_n(points[a], Vector3(0, top, 0), points[b], normals[a], Vector3.UP, normals[b], key, colours[a], tint, colours[b])
 
 
 ## The far plain: the flat ground with a rectangular hole where the terrain is, so the valley is not covered.
@@ -154,11 +236,44 @@ static func bridge(parent: Node3D, ws: RefCounted, terr: RefCounted, path: TLKit
 	parent.add_child(mk.instance("WorldBridge"))
 
 
+## A clay slab has a compressed foot, a rolled shoulder and a softly pinched top.
+## The original outline, tier heights and cap positions still set the silhouette.
+static func _mesa_layer(mesh: TLMesh, outline: PackedVector2Array, low: float, high: float, tone: Color, taper: float, handmade: bool) -> void:
+	if not handmade:
+		mesh.prism(outline, low, high, "cliff", tone, taper)
+		return
+	var centre := Vector2.ZERO
+	for p in outline:
+		centre += p
+	centre /= outline.size()
+	var last := PackedVector3Array()
+	for profile: Vector3 in [Vector3(0.0, 0.97, 0.72), Vector3(0.12, 1.02, 0.92),
+			Vector3(0.76, 1.0, 1.0), Vector3(0.90, 0.99, 1.07), Vector3(1.0, 0.95, 1.12)]:
+		var ring := PackedVector3Array()
+		for p in outline:
+			var ripple := sin(p.x * 0.11 + low * 0.33) + 0.7 * sin(p.y * 0.087)
+			var scale_ := lerpf(1.0, taper, profile.x) * profile.y
+			var at := centre + (p - centre) * scale_
+			var y := lerpf(low, high, profile.x) + ripple * minf(1.25, (high - low) * 0.043)
+			ring.append(Vector3(at.x, y, at.y))
+		var tint := tone * Color(profile.z, profile.z, profile.z)
+		var middle := Vector3(centre.x, (high + low) * 0.5, centre.y)
+		if last.is_empty():
+			mesh.face_out(Array(ring), middle, "cliff", tint)
+		else:
+			for i in ring.size():
+				var j := (i + 1) % ring.size()
+				mesh.face_out([last[i], last[j], ring[j], ring[i]], middle, "cliff", tint)
+		last = ring
+	mesh.face_out(Array(last), Vector3(centre.x, low, centre.y), "cliff", tone)
+
+
 ## Far mesas: flat-topped cliffs on the skyline, one mesh (N7). Returns how many.
 ## P6: every mesa has a grass foot (it rises from the plain instead of standing on it) and, in `trees_out`, the places
 ## of pines at its foot and on its cap (Transform3D each; the caller draws them).
 static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, reach: float, count: int, trees_out: Array = []) -> int:
 	var mk_far: TLMesh = TLMesh.new(35)
+	var handmade := not TLStyle.headless() and TLStyle.num("detail", "handmade") > 0.5
 	var rng6: RandomNumberGenerator = RandomNumberGenerator.new()      # the mesas keep the shapes they had
 	rng6.seed = 6060
 	for i: int in count:
@@ -197,15 +312,15 @@ static func mesas(parent: Node3D, rng: RandomNumberGenerator, centre: Vector2, r
 			var ts: float = rng6.randf_range(1.5, 2.3)
 			trees_out.append(Transform3D(Basis(Vector3.UP, rng6.randf() * TAU).scaled(Vector3(ts, ts, ts)),
 				Vector3(at.x, at.y + h * 1.3 + 2.2, at.z) + rb * Vector3(cos(ta) * tr, 0.0, sin(ta) * tr * sz)))
-		mk_far.prism(outline.call(r * 1.28), 0.0, h * 0.34, "cliff", Color(tone * 0.88, tone * 0.88, tone * 0.88), 0.82)
+		_mesa_layer(mk_far, outline.call(r * 1.28), 0.0, h * 0.34, Color(tone * 0.88, tone * 0.88, tone * 0.88), 0.82, handmade)
 		for k: int in 3:
 			var kt: float = tone * (0.9 + 0.1 * float((k + i) % 2)) * (0.94 + 0.06 * float(k))
 			var y0: float = h * 0.3 + h * float(k) / 3.0
-			mk_far.prism(outline.call(r * (1.0 - 0.07 * float(k))), y0, y0 + h / 3.0, "cliff", Color(kt, kt * 0.98, kt * 0.96), 0.95)
+			_mesa_layer(mk_far, outline.call(r * (1.0 - 0.07 * float(k))), y0, y0 + h / 3.0, Color(kt, kt * 0.98, kt * 0.96), 0.95, handmade)
 		mk_far.prism(outline.call(r * 0.81), h * 1.3, h * 1.3 + 2.5, "grass_dry", Color.WHITE, 0.96)
 		if rng.randf() > 0.5:
 			mk_far.push_at(Vector3(r * 0.18, 0.0, 0.0))
-			mk_far.prism(outline.call(r * 0.46), h * 1.3, h * 1.75, "cliff", Color(tone, tone, tone), 0.84)
+			_mesa_layer(mk_far, outline.call(r * 0.46), h * 1.3, h * 1.75, Color(tone, tone, tone), 0.84, handmade)
 			mk_far.prism(outline.call(r * 0.38), h * 1.75, h * 1.75 + 2.0, "grass_dry", Color.WHITE, 0.96)
 			mk_far.pop()
 		mk_far.pop()
@@ -346,6 +461,17 @@ static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Ar
 		stats["lots"] = int(stats.get("lots", 0)) + 1
 
 
+## One instanced draw for road grit and one for stones embedded in the resin.
+static func _draw_stones(parent: Node3D, terrain: RefCounted, seed_: int, is_free: Callable) -> void:
+	const Scatter := preload("res://kernel/world/draw/stone_scatter.gd")
+	var chip := TLMesh.new(101)
+	chip.blob(Vector3.ONE, 0, 0.22, "rock_warm", Color.WHITE, 0.06, Vector3.ZERO, true)
+	multi(parent, chip, Scatter.road_grit(terrain, seed_, is_free), "WorldRoadGrit")
+	var pebble := TLMesh.new(817)
+	pebble.blob(Vector3.ONE, 1, 0.17, "stone", Color(1.0, 0.93, 0.80), 0.045, Vector3.ZERO, true)
+	multi(parent, pebble, Scatter.waterline(terrain, seed_, is_free), "WorldWaterlineStones")
+
+
 ## Soft ground: paint wear and meadow colour into the heightfield before mesh upload. Only flowers
 ## need geometry, in one shadowless mesh. The patch generator has its own stream. Skipped by plots, pads, roads and the river (`is_free`).
 ## P14b: `pad_extra` (the scenery clearance outside a reserved plot) and `road_half` (a road with its
@@ -356,6 +482,8 @@ static func soft_ground(parent: Node3D, terr: RefCounted, seed_: int, box: Rect2
 		return 0
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed_ + 1313
+	if not TLStyle.headless() and TLStyle.num("detail", "handmade") > 0.5:
+		_draw_stones(parent, terr, seed_, is_free)
 	var mk: TLMesh = TLMesh.new(41)
 	var made: int = 0
 	var tries: int = 0
