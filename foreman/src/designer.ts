@@ -547,7 +547,7 @@ export async function critic(
   builder: Builder,
   captures: string[],
   rubric: RubricItem[] = DEFAULT_RUBRIC,
-  opts: GenerateOptions & { threshold?: number; handOff?: "generate" | "readonly-scan"; context?: string; packages?: PackageLine[] } = {},
+  opts: GenerateOptions & { threshold?: number; handOff?: "generate" | "readonly-scan"; context?: string; packages?: PackageLine[]; /** L2b: per capture, what it shows (camera, frame, which bot of which package). */ labels?: string[] } = {},
 ): Promise<Generated<CritiqueResult>> {
   const threshold = opts.threshold ?? 0.6;
   const handOff = opts.handOff ?? "generate";
@@ -559,7 +559,7 @@ export async function critic(
     {
       captures:
         captures
-          .map((cap, i) => (handOff === "readonly-scan" ? `- ${path.basename(cap)} (open it with your Read tool)` : `- image ${i + 1} of ${captures.length}, attached to this message: ${path.basename(cap)}`))
+          .map((cap, i) => (handOff === "readonly-scan" ? `- ${path.basename(cap)} (open it with your Read tool)` : `- image ${i + 1} of ${captures.length}, attached to this message: ${path.basename(cap)}`) + (opts.labels?.[i] ? `: ${opts.labels[i]}` : ""))
           .join("\n") || "(none)",
       context: opts.context ?? "(none given)",
       packages: packageLinesText(opts.packages ?? []),

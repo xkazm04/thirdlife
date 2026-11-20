@@ -16,6 +16,7 @@ import { Foreman, ForemanError, restsOnAClock } from "./foreman.js";
 import { designBrief, planCheck, planPackages, renderDesignerPrompt, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
 import { NEW_HELP, PHASE_HELP, creativityFlag, designCommand, designerInput, nextAfterBrief } from "./cli_design.js";
 import { writeGenerateCalls as writeCalls } from "./transcript.js";
+import { CRITIQUE_HELP, critiqueCommand } from "./cli_critique.js";
 import { cardLimits, cardsPlannerText } from "./cards.js";
 import { cardLines, cardView } from "./handview.js";
 import { KernelApiError } from "./manifest.js";
@@ -79,6 +80,7 @@ ${NEW_HELP}
             [--inbox-poll-ms N]  how often <job>/inbox.jsonl is read while builders run (default 1000)
   resume <job> [same options as run]  continues from job.jsonl; promoted packages are never rebuilt
 ${PHASE_HELP}
+${CRITIQUE_HELP}
   change <job> "<text>" [--decision JSON] [--package ID] [--no-run] [same options as run]
         a change request on a job with at least one merged package, also a finished (done) one. With --package that
         package is re-opened; without it the Planner is asked which package owns the problem (one short call). The
@@ -651,6 +653,11 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         return 0;
       }
       return runJob({ ...a, cmd: "resume", pos: [a.pos[0] as string] }, out);
+    }
+
+    case "critique": {
+      const jobDir = jobDirOf(a);
+      return critiqueCommand(a, out, { jobDir, builder: makeBuilder(a, jobDir), verifier: makeVerifier(a, undefined, readJobConfig(jobDir)) });
     }
 
     case "follow": {

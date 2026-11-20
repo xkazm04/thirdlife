@@ -1,0 +1,101 @@
+{
+ "schema": "tl.foreman.critique/1",
+ "dry": true,
+ "job": "fight-colosseum-20261120-2",
+ "milestone": "tuned",
+ "captures": [
+  "tuned-play-f116.png",
+  "tuned-play-f349.png",
+  "tuned-emperor-f116.png",
+  "tuned-emperor-f349.png",
+  "tuned-play-bot_flood-f646.png",
+  "tuned-play-bot_flood-f2453.png",
+  "tuned-emperor-bot_flood-f646.png",
+  "tuned-emperor-bot_flood-f2453.png"
+ ],
+ "shots": [
+  {
+   "capture": "tuned-play-f116.png",
+   "label": "camera play, frame 116, while tests/bot_bout.gd of package core plays, 25 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-play-f349.png",
+   "label": "camera play, frame 349, while tests/bot_bout.gd of package core plays, 75 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-f116.png",
+   "label": "camera emperor, frame 116, while tests/bot_bout.gd of package core plays, 25 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-f349.png",
+   "label": "camera emperor, frame 349, while tests/bot_bout.gd of package core plays, 75 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-play-bot_flood-f646.png",
+   "label": "camera play, frame 646, while tests/bot_flood.gd of package flood plays, 25 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-play-bot_flood-f2453.png",
+   "label": "camera play, frame 2453, while tests/bot_flood.gd of package flood plays, 95 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-bot_flood-f646.png",
+   "label": "camera emperor, frame 646, while tests/bot_flood.gd of package flood plays, 25 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-bot_flood-f2453.png",
+   "label": "camera emperor, frame 2453, while tests/bot_flood.gd of package flood plays, 95 % of the frame 2582 where it finished"
+  }
+ ],
+ "rubric": [
+  {
+   "id": "silhouette",
+   "text": "The objects that matter (players, balls, goals, the play surface) have clear, distinct silhouettes against the background."
+  },
+  {
+   "id": "readability",
+   "text": "A new viewer can tell at a glance what the play space is and where the action is; nothing important is hidden, cut off or too small."
+  },
+  {
+   "id": "style_consistency",
+   "text": "Shapes, palette and light are consistent with each other and with the mood the brief asks for."
+  },
+  {
+   "id": "shows_play",
+   "text": "The frame shows the game being played (things in motion or mid-action, in a plausible state), not an empty or broken scene."
+  },
+  {
+   "id": "fun_promise",
+   "text": "The frames show this promise to the player happening, not only a place where it could happen: \"Survive cabbages and the icy flood in the last seconds\". Judge what you see in motion (the verb being done, the rival reacting, the effect of a hit); 0 when nothing of it is visible."
+  }
+ ],
+ "ok": false,
+ "scores": {
+  "silhouette": 0.65,
+  "readability": 0.45,
+  "style_consistency": 0.75,
+  "shows_play": 0.75,
+  "fun_promise": 0.5
+ },
+ "notes": [
+  "I see two inked-toon fighters (blue with a white shield, red with a white helmet and yellow shield) on an orange sand arena ringed by sandstone walls, red banners and blue stands. In the late flood frames the floor has turned into a pale ice sheet and the red fighter is holding a long stick.",
+  "Worst issue: in tuned-play-bot_flood-f2453.png the play camera sits behind the south wall/emperor box. The wall and a red banner fill about 60% of the frame, so only the red fighter shows in the top-right corner and the blue fighter is out of view. The play camera needs occlusion handling: pull in, raise the pitch or fade the walls between camera and fighters. It belongs to the camera in core scripts/main.gd.",
+  "In tuned-play-bot_flood-f646.png a large dark shadow from the emperor box covers the bottom-left third of the frame near the fighters. The camera framing could be offset to keep that area clear.",
+  "In tuned-emperor-f116.png the two fighters are stacked on top of each other in the centre and are tiny against the large arena, so you can't tell them apart at a glance. Separate the spawn points further or tighten the emperor camera framing.",
+  "fun_promise (flood bot): tuned-emperor-bot_flood-f2453.png and tuned-play-bot_flood-f2453.png show the arena already frozen to ice, with blue shadows and both fighters still active, which is the 'icy flood in the last seconds'. No water, splash or rising flood is caught in the act, though: the ice reads as an alternate floor, not a threat.",
+  "Cabbages are barely visible. They are tiny green dots by the left wall in emperor-bot_flood-f2453 and on the right wall and fighter in play-bot_flood-f2453. Nothing shows a cabbage being thrown or hitting a fighter. Make them larger or brighter, or add a thrown arc or trail (flood package).",
+  "On the near-white ice, the white helmet and shields of the fighters lose contrast. A slightly bluer or darker ice tint, or thicker ink outlines on the fighters, would help.",
+  "No blue sky appears in any capture (the horizon is green fields), which is off the brief's 'hot blue sky'. Sand, sandstone, red banners and the toon ink outlines are otherwise consistent."
+ ],
+ "package": "core",
+ "calls": [
+  {
+   "attempt": 1,
+   "outcome": "ok",
+   "tokensIn": 14795,
+   "tokensOut": 2046,
+   "durationMs": 24771,
+   "problems": []
+  }
+ ]
+}

@@ -37,3 +37,31 @@ Everything else is the contract word for word (`creativity` only `"crazy"`, `run
 1. The three narrowings above: write them into JOB.md, or loosen the reader?
 2. Proposed: a job-level `builder_run` may carry `role` (designer, planner, critic, placer); the redesign calls are
    indistinguishable from the first design in the log otherwise (the transcript file name says the role).
+
+## L2b (23:35 re-dispatch): milestone captures film the newest package's own bot. Contract wording for the Director
+
+Replace, in `contracts/JOB.md` "Amendments of 2026-11-10, second round", the bullet **Capture frames**:
+
+> - **Capture frames.** 25 % and 75 % of the frame at which the first bot finished in its last passing report; 120
+>   and 480 when there is none.
+
+with:
+
+> - **Capture frames.** A milestone films at most two bots. First the manifest's first test, at 25 % and 75 % of the
+>   frame at which it finished in its last passing report (the same shot every milestone, which the no-visible-change
+>   rule compares). Then the milestone's packages, newest merge first: the first one with an own acceptance bot (a
+>   test its acceptance runs and its `registers.tests` lists, not the first test) is filmed at 25 % and 95 % of the
+>   frame at which THAT bot finished. 120 and 480 for a bot without such a report. The first bot's captures keep the
+>   name `captures/<milestone>-<cam>-f<frame>.png`; the second bot's are `captures/<milestone>-<cam>-<bot stem>-f<frame>.png`.
+>   No visible change compares the first bot's captures only. The critic is told, per capture, the camera, the frame
+>   and which bot of which package was playing; `reports/critic-<milestone>-s<seq>.json` carries `shots[]`
+>   (`{capture, label}`).
+> - `foreman critique <job> <milestone> --out DIR` (added 2026-11-21): the milestone's captures and one critic call
+>   again on `pack/` as it is, writing only into DIR (captures, runner reports, `critique.json` with `dry: true`);
+>   nothing is written to the job.
+
+Why 95 % and not 75 % for the package's own bot: the crazy job's `tests/bot_flood.gd` finishes at frame 2582 and the
+flood starts at 2402 (its own report). 75 % is 1937, still before the flood; 95 % is 2453, inside it (the Director's
+stills at f2460/f2560 show it). A late twist's bot ends shortly after the twist, so the last tenth of its run is where
+the twist is. Why the first test stays: dropping it would change every milestone's frames and blind the art-pass
+no-visible-change check, which compares like with like.
