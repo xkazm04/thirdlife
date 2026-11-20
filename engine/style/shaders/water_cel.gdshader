@@ -31,6 +31,7 @@ uniform vec3 foam : source_color = vec3(1.0, 1.0, 1.0);
 uniform float sky_k = 0.35;    // how strong the flat shapes of sky are
 uniform float streak = 0.5;    // how many light streaks (0 none .. 1 every cell)
 uniform float flow = 0.35;     // metres a second the streaks drift along the ribbon
+uniform float seg_m = 4.0;     // metres of one segment of the ribbon (the landscape's river is sampled every 4 m)
 uniform float glade = 0.7;     // the sun's road on the water: cream dashes where the eye looks towards the sun (0 = none)
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -67,7 +68,7 @@ float streaks(vec2 p, vec2 cell, float amount, vec2 aa, float seed) {
 	float w = half_w * (1.0 - t * t);
 	float s = 1.0 - smoothstep(w - aa.y * 0.6, w + aa.y * 0.6, abs(d.y));
 	// a streak thinner than a pixel is not drawn: far off the river is its flat colour, and nothing shimmers
-	return s * on * step(abs(d.x), half_l) * (1.0 - smoothstep(0.5, 1.4, aa.y / half_w));
+	return s * on * step(abs(d.x), half_l) * (1.0 - smoothstep(0.35, 0.9, aa.y / half_w));
 }
 void fragment() {
 	bool pond = UV.x < -0.5;
@@ -96,13 +97,23 @@ void fragment() {
 	float sn = vn(q * 0.07 + vec2(TIME * 0.010, 3.0)) * 0.65 + vn(q * 0.21 + vec2(7.0, -TIME * 0.016)) * 0.35;
 	float sfw = fwidth(sn) * 0.75 + 0.002;
 	float grazing = 1.0 - clamp(v.y, 0.0, 1.0);
-	c = mix(c, sky, smoothstep(0.66 - sfw, 0.66 + sfw, sn) * sky_k * (0.35 + 0.65 * grazing) * (1.0 - shal * 0.6));
+	c = mix(c, sky, smoothstep(0.66 - sfw, 0.66 + sfw, sn) * sky_k * smoothstep(0.25, 0.85, grazing) * (1.0 - shal * 0.6));   // from above the sky is not in it
 	// light streaks along the flow, two layers at two speeds; a pond has short still ones in the world's plane
-	vec2 p = pond ? vec2(q.x + q.y * 0.3, q.y) : vec2(UV.x * 10.0, (UV.y - 0.5) * 30.0);
+	// The ribbon (TLKitRoad.river_ribbon) is two triangles a segment and its width swells and narrows, so a line of
+	// constant UV.y runs along one bank in one triangle and along the other bank in the next: a streak drawn on it is a
+	// zigzag. The metres across are taken back from the ribbon's own rule instead: segments of `seg_m` metres (the
+	// landscape's river), half width W * (0.85 + 0.3 sin(0.31 i)) at sample i, the triangles (a, b, c) and (a, c, d).
+	float idx = UV.x * 10.0 / seg_m;
+	float si = floor(idx);
+	float sf = idx - si;
+	float w0 = 0.85 + 0.3 * sin(si * 0.31);
+	float w1 = 0.85 + 0.3 * sin((si + 1.0) * 0.31);
+	float m_across = UV.y >= sf ? w0 * (2.0 * UV.y - 1.0 - sf) + w1 * sf : w1 * (2.0 * UV.y - sf) - w0 * (1.0 - sf);
+	vec2 p = pond ? vec2(q.x + q.y * 0.3, q.y) : vec2(UV.x * 10.0, m_across * 15.0);
 	vec2 aa = pond ? vec2(px) : vec2(length(vec2(dFdx(p.x), dFdy(p.x))), length(vec2(dFdx(p.y), dFdy(p.y))));
 	float drift = pond ? 0.0 : TIME * flow;
 	float st = streaks(p - vec2(drift, 0.0), vec2(9.0, 1.7), streak, aa, 0.0);
-	st = max(st, streaks(p - vec2(drift * 0.6, 0.4), vec2(14.0, 2.6), streak * 0.7, aa, 21.0));
+	st = max(st, streaks(p - vec2(drift * 0.6, 0.4), vec2(24.0, 3.8), streak * 0.8, aa, 21.0));   // the long ones: what is left of them from above
 	c = mix(c, stripe, st * 0.8 * (1.0 - shal * 0.5));
 	// the sun's road: where the mirrored line of sight meets the sun, the streaks turn to the sun's own cream and grow
 	// (a cut shape: it moves as the eye moves, as it does on water, and stands still when the eye does)

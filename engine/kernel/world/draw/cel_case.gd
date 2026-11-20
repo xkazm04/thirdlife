@@ -20,7 +20,7 @@ extends SceneTree
 ##                  paint goes from a grass to an earth and is never a rock on level ground; on a steep face rock wins
 
 const CEL_TOON: PackedStringArray = ["cel_shadow", "cel_chroma", "cel_deep", "cel_rim", "cel_top", "cel_top_k", "cel_wind", "cel_rock_shade", "cel_cloud"]
-const CEL_DETAIL: PackedStringArray = ["edge", "land_wobble", "marks_m", "patch", "verge_m", "land_bias", "flowers", "land_flat", "marks_far", "pine_teeth", "land_dead", "strata_cream", "road_rails", "tree_shade"]
+const CEL_DETAIL: PackedStringArray = ["edge", "land_wobble", "marks_m", "patch", "verge_m", "land_bias", "flowers", "land_flat", "marks_far", "pine_teeth", "land_dead", "strata_cream", "road_rails", "tree_shade", "sign_out"]
 const _Cel: GDScript = preload("res://style/cel/cel_surfaces.gd")
 
 
@@ -210,11 +210,21 @@ func _rails() -> void:
 					across += int(v.z > mid.y)
 	var bare: Node3D = Node3D.new()
 	var none: float = rails.call("build", bare, terr, road, 3.0, [], -1, -1, [], [], 0.0)
+	# a plot whose gate stands by the road (a short spur): no rail within 8 m of the gate, where its flag and sign stand
+	var gate: Vector2 = Vector2(mid.x + 40.0, road.pts[road.pts.size() / 2 + 20].y - 7.0)
+	var short: TLKitPath = TLKitPath.new([gate, gate + Vector2(0, 7.0)], false, 2.0)
+	var near: Node3D = Node3D.new()
+	rails.call("build", near, terr, road, 3.0, [[0, short, PackedFloat32Array()]], -1, -1, [], [], 1.3)
+	var at_gate: int = 0
+	for n: Node in near.get_children():
+		for v: Vector3 in ((n as MeshInstance3D).mesh as ArrayMesh).get_faces():
+			at_gate += int(Vector2(v.x, v.z).distance_to(gate) < 8.0)
+	near.free()
 	var crisp: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://style/style_crisp.json"))
 	var classic: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://style/style.json"))
 	var keyed: bool = (crisp["detail"] as Dictionary).has("road_rails") and not (classic["detail"] as Dictionary).has("road_rails")
-	var ok: bool = metres > 300.0 and meshes >= 2 and thin == 0 and bodies == 0 and at_mouth == 0 and across > 0 and none == 0.0 and bare.get_child_count() == 0 and keyed
-	print("CEL rails %s rail_m=%.1f pieces=%d drawn_under_0.75_px=%d collision_objects=%d vertices_in_the_spur_mouth=%d across_from_it=%d without_key_m=%.1f nodes=%d key_in_crisp_only=%s" % [
-		"ok" if ok else "failed", metres, meshes, thin, bodies, at_mouth, across, none, bare.get_child_count(), str(keyed)])
+	var ok: bool = metres > 300.0 and meshes >= 2 and thin == 0 and bodies == 0 and at_mouth == 0 and across > 0 and none == 0.0 and bare.get_child_count() == 0 and keyed and at_gate == 0
+	print("CEL rails %s rail_m=%.1f pieces=%d drawn_under_0.75_px=%d collision_objects=%d vertices_in_the_spur_mouth=%d across_from_it=%d at_a_gate=%d without_key_m=%.1f nodes=%d key_in_crisp_only=%s" % [
+		"ok" if ok else "failed", metres, meshes, thin, bodies, at_mouth, across, at_gate, none, bare.get_child_count(), str(keyed)])
 	host.free()
 	bare.free()

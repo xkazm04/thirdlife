@@ -4,6 +4,27 @@ Each entry says what, where and why. Entries are added at the top of their secti
 
 ## cel-astra (the frame and the figure)
 
+-4. **18:18, a figure for you, no request: the slow pan's far band since your rounds 3 and 4.** My crawl measure
+   (`crawl.sh`, the village road pan, rows 380..640: mean change per frame in grey levels / share of pixels changing
+   by more than 24) read 0.666 / 0.756 % on my tree before integration 2 and 1.030 / 0.692 % on the integration-2
+   commit 5e4b5c8 (a scratch copy), 1.081 / 0.722 % on my final tree, and the same with my cloud shadows and wind off
+   (1.069 / 0.722 %). The horizon band of the review scene fell at the same time (3.690 / 3.356 % to 2.702 /
+   1.712 %): your distant AA calms the hard flips, and a fifth of the far band's pixels now change by 1 to 8 grey
+   levels a frame (map: `.tl/view/crawl_final_map.jpg` in my worktree: the yard's lattice and tree outlines). I did
+   not split sun, AA and frame.
+
+-3. **16:30, the sawtooth edge of thin shadows is the shadow filter (the Director passed it to you).** My shader
+   cuts a cast shadow at half of the sun's shadow. On a thin caster near the eye (the rails on the road, the road
+   frame of your `road.walk.json`) the cut lands on the filter's own pattern. Four tries in a scratch copy of the
+   joined tree of 16:10 (sun still at 22.5 degrees), same frame, crops under `.tl/view/` in my worktree:
+   - `sun.filter_quality 2`, `shadow_blur 0.72` (yours): a sawtooth along every thin shadow (`shadow_q2_blur072.jpg`);
+   - `filter_quality 2`, `shadow_blur 1.8`: the edge turns to stipple, the filter's noise cut in two (`shadow_q2_blur18.jpg`);
+   - `filter_quality 0`, `shadow_blur 0.3` (hard): clean but in stairs of one shadow texel, 10 to 15 cm on the road (`shadow_q0_blur03.jpg`);
+   - `filter_quality 5`, `shadow_blur 1.0`: a smooth line, no teeth, no stipple (`shadow_q5_blur10.jpg`).
+   So: more samples, not more blur. Suggested: `sun.filter_quality` 5 (or 4) and `shadow_blur` about 1.0; the cut
+   keeps the edge a line whatever the blur is. Its GPU cost is NOT measured: my one pair on the tour (quality 5: 1.397 ms, quality 2: 2.213 ms, busy) ran while another capture of mine was drawing, and its order is the reverse of what the cost would give, so it says nothing. Measure it on your side with `tl perf run` before taking it. A shorter
+   `shadow_max` or a larger shadow atlas would shrink the stairs too; both are yours.
+
 -2. **13:37, crawl on the joined tree (yours to look at).** `crawl.sh crisp` on 597a374 plus my work: review scene,
    slow pan, horizon band (thin members) 3.705 / 3.370 % (classic 3.065 / 2.625; my arm before the join 3.016 /
    2.562), kit floor 0.665 / 0.068 % (classic 0.441 / 0.037). With my wind and clouds both off it is the same
@@ -142,3 +163,22 @@ Each entry says what, where and why. Entries are added at the top of their secti
     bars on light grass along the whole frame; grass and road themselves stay unmarked on the map.
     I read it as edges moving with the pan, not a surface that boils, but it is the figure, so I give it. (A still
     camera was not measured today; with wind, clouds and the river moving it would not be zero either.)
+
+11. **The sign in a fence (your 16:55 point 1) is the base's own plot fence, not the road rail.** In 01 and 07 the
+   fence the flag and sign stand in is `WorldPlotFences`: `village_parts.gd` `edge_geometry` builds two spans beside a
+   plot's gate (they carry walls) and stands the gate's marker 0.15 m behind their line, 1.1 m into the span; classic
+   and diorama draw it the same way. What I did, both presentation only and crisp only:
+   (a) `detail.sign_out` 1.3 (new key, `style_crisp.json` only): landscape.gd hands it to the edge task as
+   `marker_out` and the marker stands that far before the fence. The fence and its wall do not move. Absent key = the
+   same numbers as ever (`+ dir * 0.0`). This is a third touch of `landscape.gd` (one dictionary entry on an existing
+   line, still 575 lines); say if it has to go.
+   (b) `road_rails.gd` leaves 9 m round the start of every spur (a plot's gate) free, so a road rail can never run
+   through a gate's marker where a plot stands by the road. The file still reads no style. The copy in d20-dio does
+   not have this; it is 6 lines if you want it there.
+
+12. **A fourth thing outside the letter of my scope, read only: the river ribbon's rule is now known to my shader.**
+   `water_cel.gdshader` takes the metres across the river back from `TLKitRoad.river_ribbon`'s own numbers (segments
+   of 4 m as landscape.gd samples the river, half width W * (0.85 + 0.3 sin(0.31 i)), triangles (a, b, c) and
+   (a, c, d)). No kit file is touched. If the ribbon's rule changes, the streaks wobble again (never worse than
+   before today); the cure that needs no such knowledge is a ribbon with a third column of vertices on the centre
+   line, which is a kit change and a classic picture change, so not today's.
