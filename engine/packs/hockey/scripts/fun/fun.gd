@@ -241,7 +241,7 @@ func tick(g) -> void:
 	elif replay_t >= 0:
 		playing = _replay_step(g)
 	if cam != null:
-		cam.tick(g, playing, stop_left > 0)
+		cam.tick(g, playing, stop_left > 0, hold_left > 0 and goal_text != "" and g.drill_id != "intro")
 
 
 ## L5b: the goalies' own biped step is off (the pack places them), so their figures are ticked here: a stance that

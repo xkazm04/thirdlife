@@ -190,3 +190,21 @@ goal replay, the one-timer card and the ordinary shot.
 Files: scripts/fun/fun.gd, scripts/ai/brain.gd, scripts/rink_api.gd, scripts/main.gd (one line: the shot event
 carries the one-timer), scripts/fx/fx.gd, data/tuning.json, data/ai.json, tests/bot_fun.gd, tests/bot_match.gd (crowd
 figure only), README.md.
+
+======================================================================================================================
+L5c (22 Nov, 00:25-00:55), on top of 981cf41. The camera at the moments a person meets first; drawing only.
+- Establishing shot: each match opens on the whole rink from 46 m and swoops in to the play over 100 frames. The
+  opening face-off's cut no longer kills it; the first try did (clip l5c_cam2, .tl), the second keeps it (l5c_cam3).
+- Goal: while the horn goes (hold_frames) the camera moves in close on the net at 12 m, then follows the replay at
+  15 m as before.
+- Cost: none headless. The camera's work is skipped headless, and no loop over skaters was added.
+- The simulation is unchanged: the gate's bot_hockey hash 3b372f91ecfe4c79@6751 equals L5b's, so the L5b ladder stands.
+Gates (00:40-00:52):
+- PASS packs [2/2]: verb runs 61 of 61.
+- PASS world [8/8]: world = alone.
+- hockey invariants: frame p50 0.971 ms (L5b 0.974; busy machine).
+- selftest hockeyfun.*: 6 of 6 PASS.
+Files: scripts/fun/cam.gd, scripts/fun/fun.gd (one argument), data/tuning.json (follow.goal_distance,
+establish_distance, establish_frames, establish_ease), README.md.
+Clip: clips/l5c_establish_and_goals.mp4 (19.6 s, rookie, perfect hand, seed 6): the opening swoop, two goals each in
+close on the net, then the replay.
