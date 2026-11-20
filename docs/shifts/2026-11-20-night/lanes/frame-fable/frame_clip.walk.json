@@ -1,0 +1,290 @@
+{
+ "schema": "tl.walk/1",
+ "name": "frame_clip",
+ "note": "Night of 20 Nov, frame-fable: the village of blend_views (8 plots) for the clip: he walks the road west, turns into the parkour yard, takes off and flies north-east over the bluff (frame_clip.devices.json beside this file).",
+ "visitor": true,
+ "ticks": 1260,
+ "mode": "bot",
+ "tiers": {
+  "sideline_m": 30,
+  "margin_m": {
+   "stage": 2,
+   "sideline": 8,
+   "backdrop": 40
+  },
+  "dwell_ticks": 90
+ },
+ "plots": [
+  {
+   "id": "walker",
+   "pack": "ex_walker",
+   "origin": [
+    -115,
+    4.0,
+    -47
+   ],
+   "radius": 30,
+   "footprint": {
+    "size_m": [
+     60,
+     60
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "drive",
+   "pack": "seed_drive",
+   "origin": [
+    4,
+    -2.5,
+    -81
+   ],
+   "radius": 64,
+   "footprint": {
+    "size_m": [
+     128,
+     128
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "wall",
+   "pack": "seed_wall",
+   "origin": [
+    131,
+    3.0,
+    -55
+   ],
+   "radius": 38,
+   "footprint": {
+    "size_m": [
+     76,
+     76
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "paddle",
+   "pack": "seed_paddle",
+   "origin": [
+    -125,
+    4.0,
+    57
+   ],
+   "radius": 40,
+   "footprint": {
+    "size_m": [
+     80,
+     80
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "kit",
+   "pack": "ex_kit",
+   "origin": [
+    -20,
+    2.0,
+    57
+   ],
+   "radius": 40,
+   "footprint": {
+    "size_m": [
+     80,
+     80
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "car",
+   "pack": "ex_car",
+   "origin": [
+    85,
+    0.5,
+    57
+   ],
+   "radius": 40,
+   "footprint": {
+    "size_m": [
+     80,
+     80
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "hockey",
+   "pack": "hockey",
+   "origin": [
+    194,
+    1.0,
+    61
+   ],
+   "radius": 44,
+   "footprint": {
+    "size_m": [
+     88,
+     88
+    ]
+   },
+   "seed": 1
+  },
+  {
+   "id": "parkour",
+   "pack": "parkour",
+   "origin": [
+    -186,
+    1.0,
+    -32
+   ],
+   "radius": 28,
+   "footprint": {
+    "size_m": [
+     56,
+     56
+    ]
+   },
+   "seed": 1
+  }
+ ],
+ "road": [
+  [
+   -270,
+   6
+  ],
+  [
+   -190,
+   3
+  ],
+  [
+   -100,
+   0
+  ],
+  [
+   0,
+   0
+  ],
+  [
+   100,
+   0
+  ],
+  [
+   190,
+   2
+  ],
+  [
+   290,
+   5
+  ]
+ ],
+ "landscape": {
+  "seed": 7,
+  "pad_h": [
+   4.0,
+   -2.5,
+   3.0,
+   4.0,
+   2.0,
+   0.5,
+   1.0,
+   1.0
+  ],
+  "river": {
+   "path": [
+    [
+     -236,
+     -200
+    ],
+    [
+     -254,
+     -130
+    ],
+    [
+     -250,
+     -30
+    ],
+    [
+     -252,
+     12
+    ],
+    [
+     -262,
+     80
+    ],
+    [
+     -246,
+     150
+    ]
+   ],
+   "half_m": 6.0,
+   "pond_m": 16
+  },
+  "margin_m": 90,
+  "road_half_m": 3.0,
+  "trees": 120,
+  "broadleaf": 40,
+  "rocks": 46,
+  "bushes": 90,
+  "belt": 180,
+  "mesas": 18,
+  "haze": 0.4,
+  "lots": [
+   {
+    "at": [
+     240,
+     -55
+    ],
+    "radius": 40,
+    "h": 2.0,
+    "job": "site/topple-tower-crates-three-20261118-1"
+   },
+   {
+    "at": [
+     310,
+     55
+    ],
+    "radius": 42,
+    "h": 1.0,
+    "job": "site/ice-hockey-three-against-20261111-1"
+   },
+   {
+    "at": [
+     -215,
+     110
+    ],
+    "radius": 20
+   },
+   {
+    "at": [
+     -75,
+     -185
+    ],
+    "radius": 18
+   }
+  ]
+ },
+ "player": [
+  [
+   0,
+   [
+    -150,
+    0,
+    3
+   ]
+  ],
+  [
+   330,
+   [
+    -180,
+    0,
+    3
+   ]
+  ]
+ ],
+ "events": []
+}

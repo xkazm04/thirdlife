@@ -28,6 +28,9 @@ static func _chosen_path() -> String:
 
 const SPECIAL: PackedStringArray = ["glass", "water", "holo", "fx_add", "fx_mix"]
 const RIG_NODE: String = "TLStyleRig"
+## Diorama night: the frame beyond the classic rig (which sky / post / grade shader, the sun's penumbra, the lens).
+## Every key it reads is optional and an absent key is the classic behaviour (frame/tl_style_frame.gd).
+const _FRAME: GDScript = preload("res://style/frame/tl_style_frame.gd")
 ## material classes of the drawn surface language (toon.gdshader surface_detail)
 const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9}
 const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx"]
@@ -499,6 +502,7 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 		push("grade", (layer.get_node("Rect") as ColorRect).material)
 	elif layer != null:
 		layer.queue_free()
+	_FRAME.call("apply", rig, we, sun, data)
 
 
 ## N1. Screen-space smoothing for the ink pass: the contour is drawn after the scene's multisampling, so its outer

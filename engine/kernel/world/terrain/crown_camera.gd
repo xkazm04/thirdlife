@@ -22,6 +22,10 @@ var side_ticks: int = 0                  ## read only: ticks the camera stood sw
 var bars: Dictionary = {}
 var ignore_bars: bool = true
 var max_side: float = 0.0                ## read only: the largest sideways swing so far (degrees)
+## Diorama night (20 Nov): what this camera says to the style's lens (style/frame/tl_style_frame.gd reads the meta `tl_lens`
+## of the camera in use; 1 = the full tilt-shift depth of field, 0 = none). On foot 1; in flight it goes to 0 over half a
+## second and comes back after landing: a flyer reads the whole land below, so nothing of it is blurred. Presentation only.
+var lens: float = 1.0
 
 
 func _init() -> void:
@@ -90,6 +94,13 @@ func _avoid(now: bool) -> void:
 				_ray.collision_mask = mask
 				return
 	_ray.collision_mask = mask
+
+
+func _physics_process(delta: float) -> void:
+	super(delta)
+	var flying: bool = is_instance_valid(target) and target.get("flying") == true
+	lens = move_toward(lens, 0.0 if flying else 1.0, 1.0 / 30.0)
+	set_meta(&"tl_lens", lens)
 
 
 func _bar_rids() -> Array[RID]:

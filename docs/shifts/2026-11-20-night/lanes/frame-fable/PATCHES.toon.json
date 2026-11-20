@@ -1,0 +1,10 @@
+{
+ "_note": "frame-fable PATCHES.md items 1-3 as data: the toon keys the frame asks surfaces to set in style_diorama.json. Not applied in this worktree. The contact sheet row 'with PATCHES' was taken with these merged into a scratch copy of the style.",
+ "toon": {
+  "band_soft": 0.2,
+  "hatch": 0.0,
+  "shade": "#6a4470",
+  "shade_ground": "#7a4a5c",
+  "rim2_k": 0.2
+ }
+}
