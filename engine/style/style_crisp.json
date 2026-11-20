@@ -10,28 +10,36 @@
   "shadow_bias": 0.05
  },
  "toon": {
-  "shade": "#5a60c0",
-  "shade_k": 0.7,
+  "shade": "#2b8fb1",
+  "shade_k": 0.9,
   "band_hi": 0.42,
   "band_lo": 0.22,
-  "band_soft": 0.03,
+  "band_soft": 0.005,
   "wrap": 0.5,
-  "amb_sky": "#7a7ad0",
+  "amb_sky": "#9a9ad0",
   "amb_ground": "#c98a6a",
   "amb_energy": 0.34,
-  "hatch": 0.2,
+  "hatch": 0.0,
   "hatch_px": 8.0,
   "hatch_fade_near": 22.0,
   "hatch_fade_far": 80.0,
   "rim": "#ffb070",
-  "rim_k": 0.55,
-  "mottle": 0.12,
-  "shade_ground": "#7a5a84",
+  "rim_k": 0.0,
+  "mottle": 0.0,
+  "shade_ground": "#5a8a9c",
   "shade_grad": 0.75,
   "bounce": "#ffb27a",
-  "bounce_k": 0.42,
+  "bounce_k": 0.26,
   "rim2": "#86a8ff",
-  "rim2_k": 0.6
+  "rim2_k": 0.0,
+  "model": "cel",
+  "cel_shadow": 0.05,
+  "cel_chroma": 0.2,
+  "cel_deep": 0.9,
+  "cel_rim": 1.0,
+  "cel_top": 0.8,
+  "cel_top_k": 0.14,
+  "cel_wind": 0.14
  },
  "env": {
   "tonemap": "filmic",
@@ -126,23 +134,29 @@
   "scan": 0.35
  },
  "water": {
-  "deep": "#3c78b0",
-  "shallow": "#72c0d0",
-  "sky": "#ffc59a",
-  "stripe": "#d8f4ff",
-  "sky_k": 0.1
+  "deep": "#818dae",
+  "shallow": "#a0a8cc",
+  "sky": "#e6d6f2",
+  "stripe": "#d6dcf4",
+  "sky_k": 0.6,
+  "model": "cel",
+  "foam": "#f4f6ff",
+  "streak": 0.5,
+  "flow": 0.35,
+  "shore": 0.6,
+  "priority": -110
  },
  "palette": {
   "white": "#ffffff",
-  "grass": "#86b944",
-  "grass_dry": "#bdbb4c",
-  "grass_dark": "#4f8a3e",
-  "dirt": "#c99568",
-  "sand": "#dcb88a",
-  "rock": "#a8998f",
+  "grass": "#a5ba32",
+  "grass_dry": "#c9bd3c",
+  "grass_dark": "#93ac30",
+  "dirt": "#d39762",
+  "sand": "#e4b27c",
+  "rock": "#c9aed2",
   "rock_dark": "#7a6a80",
-  "rock_warm": "#b2917f",
-  "cliff": "#8c7088",
+  "rock_warm": "#dca6b6",
+  "cliff": "#d49ab8",
   "tarmac": "#5c6478",
   "tarmac_light": "#747c90",
   "curb_red": "#dc4238",
@@ -169,10 +183,10 @@
   "stone": "#aa9e98",
   "stone_dark": "#7e7480",
   "window": "#ffc462",
-  "leaf": "#6c9a3c",
-  "leaf_light": "#a9c243",
-  "pine": "#2f6b4c",
-  "pine_light": "#4c8c58",
+  "leaf": "#679b3e",
+  "leaf_light": "#a5c133",
+  "pine": "#3a724c",
+  "pine_light": "#54934d",
   "trunk": "#6c4a3b",
   "skin": "#eab294",
   "hair": "#8a4a2c",
@@ -278,10 +292,10 @@
    "metal": 0.6
   },
   "grass": {
-   "mottle": 0.2
+   "mottle": 0.0
   },
   "grass_dry": {
-   "mottle": 0.22
+   "mottle": 0.0
   },
   "tarmac": {
    "mottle": 0.07,
@@ -301,7 +315,7 @@
    "class": "steel"
   },
   "terrain": {
-   "mottle": 0.04,
+   "mottle": 0.0,
    "no_hatch": 0.0,
    "class": "ground"
   },
@@ -435,6 +449,21 @@
    "metal": 0.5,
    "mottle": 0.1,
    "no_hatch": 1.0
+  },
+  "pine": {
+   "sway": -1.0
+  },
+  "pine_light": {
+   "sway": -1.0
+  },
+  "leaf": {
+   "sway": -1.0
+  },
+  "leaf_light": {
+   "sway": -1.0
+  },
+  "trunk": {
+   "sway": -1.0
   }
  },
  "detail": {
@@ -446,10 +475,20 @@
   "macro_near": 18.0,
   "macro_far": 90.0,
   "tone_end": 420.0,
-  "strata": 0.8,
+  "strata": 0.6,
   "strata_m": 2.6,
-  "strata_tone": 0.24,
-  "strata_crack": 0.55
+  "strata_tone": 0.34,
+  "strata_crack": 0.0,
+  "edge": 0.6,
+  "round": 1.0,
+  "land_wobble": 0.05,
+  "marks_m": 1.8,
+  "patch": 1.0,
+  "verge_m": 0.2,
+  "land_bias": {"grass_dry": -0.2, "rock": -0.1, "rock_warm": -0.1},
+  "flowers": 0.5,
+  "land_flat": 0.6,
+  "marks_far": 100.0
  },
  "lights": {
   "window": 1.35,

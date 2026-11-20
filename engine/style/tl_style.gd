@@ -337,6 +337,7 @@ static func _fill_special(k: String, m: ShaderMaterial) -> void:
 	m.shader = _shader(sh)
 	if sh == "water" or sh == "holo":
 		push(sh, m)
+		m.render_priority = int(num(sh, "priority", 0.0))     # cel water reads depth: drawn before the ink pass (-100), absent = 0
 	if sh == "glass" or sh == "water":
 		m.set_shader_parameter(&"albedo", color(k))
 	for p: String in ov:

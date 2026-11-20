@@ -183,7 +183,8 @@ func _cache_key(e: Dictionary) -> String:
 	if not WorkerThreadPool.is_task_completed(int(slot[0])) or slot.size() < 2:
 		return ""                      # its hash is still being read on a worker: no cache this time
 	var rules: String = "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [PIC_VERSION, mid_min, far_min, far_cell, far_flat, far_thin, far_small, standin_min, rim_band]
-	return ("%s|%s|%s|%s|%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules, _band(e)]).md5_text()
+	# + the paints a kit terrain bakes into vertex colours, when they are not today's (pic_salt.gd: "" for style.json, so today's key is byte-equal)
+	return ("%s|%s|%s|%s|%s%s" % [slot[1], snappedf(float(e["radius"]), 0.01), snappedf(float(e["rim"]), 0.01), rules, _band(e), preload("res://kernel/world/draw/pic_salt.gd").salt()]).md5_text()
 
 
 ## The content hash of a pack directory reads every file of it (60 to 100 ms for the seeds): on a worker, never in a
