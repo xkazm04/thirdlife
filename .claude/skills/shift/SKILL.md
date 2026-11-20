@@ -222,3 +222,4 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
 - 2026-11-20 (day): integration gates ran world,packs in the default style only; a cel figure stance under
   `TL_STYLE=crisp` moved example.kit's hash unseen through an integration (cel-astra caught it). When looks live behind a
   style switch, run `world,packs` under every style the shift changes (and classic) before calling hashes held.
+- 2026-11-21 (night): `tl assets scan` on a checkout whose engine/.godot class cache predates a merge writes the OLD kit hashes (the scan imports only when no cache exists); a Director "re-scan" overwrote a correct manifest and made every fresh lane tree red. After merging engine code, re-import (`$G --headless --path engine --import`) before any scan or gate in the main checkout; a hash disagreement between a fresh tree and main means main is stale.
