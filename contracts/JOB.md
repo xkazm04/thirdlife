@@ -252,3 +252,46 @@ the reader behaves as before (absent = omit the key, never `null`).
 - `foreman new --place-calls <json>` (added later on 19 Nov): the editor's "Find a place" model calls, written as job-level
   `builder_run` events (no `package`/`round`) right after the job is created, so `tl ledger` counts them. Proposed, not yet
   in the contract: an optional `role` on job-level `builder_run` (designer, planner, critic, placer).
+
+### Added 2026-11-20: the designer v2 (pitch, aspects, creativity, phases)
+
+Approved by the owner on 20 Nov (spark `designer-and-two-worlds`): the Designer aims at fun, shows a design as a few
+aspects the player reacts to, has a creativity switch, and the build runs in phases the player tries and passes. Every new
+key is optional; a job made before this reads as before (absent = omit the key, never `null`).
+
+- `job_created.creativity` (optional): `"crazy"`. Absent = standard: serve the player's words. Crazy keeps the player's
+  words and adds one or two unexpected mechanics on top; each is its own aspect with `crazy: true`.
+- `job_created.run_through` (optional): `true`. Absent = the Foreman stops after every phase and waits for the player.
+- `brief_set.brief.pitch` (optional on read, written by every v2 Designer): one sentence, at most 20 words, the game as a
+  player would tell a friend.
+- `brief_set.brief.aspects` (optional on read, written by every v2 Designer): 3 to 7 objects, chosen by the Designer for
+  this game: `{id, icon, title, line, detail, alternatives, crazy?}`.
+  - `id`: snake_case, unique in the brief.
+  - `icon`: one of `player`, `rival`, `arena`, `goal`, `twist`, `camera`, `power`, `time`, `crowd`, `ball`, `vehicle`,
+    `weapon`, `build`, `music`, `story`.
+  - `title` at most 4 words; `line` at most 12 words; `detail` at most 60 words (the expert's expand).
+  - `alternatives`: 2 or 3 `{id, title, line}` with the same limits; ids unique within the aspect.
+  - `crazy`: `true` only on an aspect crazy mode added. Absent otherwise.
+  `rules`, `arena`, `ai`, `controls`, `mood` stay and stay required: the Planner reads them.
+- `aspect_reacted` (new event, before approval): `aspect` (an aspect id of the latest `brief_set`), `choice` (`"keep"`,
+  `"drop"` or one of that aspect's alternative ids), `note` (optional string, the player's words). The latest reaction
+  per aspect counts. A redesign (`foreman redesign <job>`) runs the Designer again with the sentence, the latest brief and
+  the reactions, and writes a new `brief_set`; reactions to the old brief no longer count. `brief_approved` approves the
+  latest `brief_set` together with the reactions that stand on it; the Planner sees both.
+- `plan_set.phases` (optional on read, written by every v2 Planner): 2 to 5 `{id, title, try, packages}`, in build order.
+  `try` (at most 12 words) says what the player can do when this phase is done. `packages` lists package ids; every
+  package of the plan is in exactly one phase, and a package's deps are in its own phase or an earlier one. The first
+  phase is the smallest thing that plays. A `plan_set` without `phases` runs as one phase, as before.
+- `phase_done` (new event): `phase` (id). Written when every package of the phase is merged and the whole-pack checks after
+  its last merge passed. Unless `run_through` is set, the job then waits: `job_state {state: "paused", reason: "phase"}`.
+- `phase_reviewed` (new event): `phase` (id), `verdict` (`"pass"` or `"hold"`), `note` (optional string; required with
+  `"hold"`), `by` (`player` or `auto`). `pass` starts the next phase (`job_state running`); after the last phase it lets
+  the job go to final verification and promotion. `hold` with a note runs a change round on that phase's packages (the
+  note is the request), then writes `phase_done` again. With `run_through` the Foreman writes `phase_reviewed {verdict:
+  "pass", by: "auto"}` itself, right after `phase_done`.
+- A job waiting on a phase is never a hang: `foreman status` names the phase and the command that answers it.
+- Commands: `foreman new` takes `--creativity crazy` and `--run-through`; `foreman react <job> <aspect> <choice> [--note]`;
+  `foreman redesign <job>`; `foreman phase <job> pass|hold [--note "..."]`. Each checks its value against the shapes
+  above before writing.
+- Readers that mirror this table keep up: `foreman/data/job-events.schema.json`, `engine/ui/job_model.gd`,
+  `engine/kernel/world/site/event_schema.gd` (strict: an unknown key there breaks the village site).

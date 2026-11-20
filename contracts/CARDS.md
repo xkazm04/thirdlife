@@ -42,6 +42,7 @@ Unknown keys are errors. An absent optional value is an omitted key, never `null
 | `variants` (optional) | list of `{ask, change}` | common requests and the smallest change that answers each | shape |
 | `interview` (optional) | object | the editor's questions for this kind of game: see "Interview and footprint" | shape; every `propose` is one of its question's option ids; option ids unique per question |
 | `footprint` (optional) | object | `{size_m: [w, d], height_m, shape, source}`: the worked example's measured size on the ground; `shape` one of `rink`, `pitch`, `court`, `track`, `slalom`, `course`, `arena`, `yard` | numbers > 0; `source` names the file it was measured from |
+| `fun` (optional; added 2026-11-20) | object | what makes this kind of game fun, for the Designer and Planner: `{camera, juice, rivals, first_minute, stakes}`, each a non-empty list of short strings (the technique, naming the `TL*` call that does it where one exists). `camera`: how the view serves the main verb. `juice`: feedback on the verbs that matter (hit-stop, shake, sound, effect). `rivals`: what makes opponents feel like characters. `first_minute`: what a new player meets and learns first. `stakes`: what makes the next round matter | every key present, every list non-empty; a `TLClass.member` named in a string is declared by the class |
 
 Every seed must have at least one card (`cards.coverage`). A new seed therefore arrives with its card.
 
