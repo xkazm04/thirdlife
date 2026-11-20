@@ -105,16 +105,36 @@ func make_io(devices: bool) -> void:
 
 ## Generators, the entry and `_pack_setup`, then the laws on the tree. False (with a load error) when the pack cannot run.
 func load_entry() -> bool:
-	var m: Dictionary = ctx.manifest
-	for gen: String in m["assets"]:
-		var gs: GDScript = load_script(gen)
-		if gs == null:
+	for step: Callable in load_steps():
+		if not bool(step.call()):
 			return false
-		if not script_has(gs, "generate"):
-			return fail(gen, "an asset generator needs `static func generate(ctx) -> void`")
-		_begin("generate " + gen)
-		gs.call("generate", ctx)
-		_end("generate " + gen)
+	return true
+
+
+## L4b: the same load as separate steps, in load_entry's order (one per asset generator, then the entry), so a driver
+## may draw a frame between them (a dungeon's load screen). Each step returns false (with a load error) to stop.
+func load_steps() -> Array:
+	var steps: Array = []
+	for gen: String in ctx.manifest["assets"]:
+		steps.append(_generator_step.bind(gen))
+	steps.append(_entry_step)
+	return steps
+
+
+func _generator_step(gen: String) -> bool:
+	var gs: GDScript = load_script(gen)
+	if gs == null:
+		return false
+	if not script_has(gs, "generate"):
+		return fail(gen, "an asset generator needs `static func generate(ctx) -> void`")
+	_begin("generate " + gen)
+	gs.call("generate", ctx)
+	_end("generate " + gen)
+	return true
+
+
+func _entry_step() -> bool:
+	var m: Dictionary = ctx.manifest
 	_mark("assets")
 	var es: GDScript = load_script(str(m["entry"]))
 	if es == null:

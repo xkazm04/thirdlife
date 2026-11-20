@@ -102,7 +102,7 @@ func _ready() -> void:
 				opts[a.substr(2, eq - 2)] = a.substr(eq + 1)
 		elif verb.is_empty():
 			verb = a
-	for k: String in ["games", "out", "record", "input", "site-job", "edits", "dungeon"]:
+	for k: String in ["games", "out", "record", "input", "site-job", "edits", "dungeon", "tripped"]:
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))
 	if opts.has("games"):
@@ -126,7 +126,9 @@ func _ready() -> void:
 	hub = Hub.new(self)
 	match verb:
 		"":
-			if opts.has("dungeon"):
+			if opts.has("tripped"):
+				hub.call("tripped_start")              # L4b: the card of a dungeon the watchdog stopped
+			elif opts.has("dungeon"):
 				hub.call("dungeon_start")
 			elif bool(hub.call("menu_wanted")):
 				hub.call("menu_start")

@@ -1060,3 +1060,10 @@ driver beside the worker, so a pack can be a **dungeon**: entered from the exe's
   is a `TL_STYLE` name), `resolve`, `look_path`, and the launch seam `launch(<pack dir>)` (a second game process that
   opens that folder as a dungeon; its "Back to Create" ends it).
 - `kernel/dungeon/look_ui.gd`: the crisp 2D look of the menu and the cards (colours read from `style/style_crisp.json`).
+- L4b: `kernel/dungeon/watch.gd`, the dungeon's watchdog: the worker's limits (a tick 250 ms, a setup call 10 s, of
+  processor time, `kernel/host/cpuclock.gd` `verdict`) through PackLife's `on_begin` / `on_end`. A runaway ends the
+  process after it starts the card process on its record (`boot.tscn -- --tripped=<record>`). A pack meets the same
+  limits in a dungeon as in `tl.sh smoke` or `bot`.
+- L4b: `PackLife.load_steps()` returns `load_entry`'s load as separate steps (each asset generator, then the entry);
+  `load_entry()` runs them in one go, as before. A driver that draws frames between them keeps the pack's nodes from
+  running and the physics server off until the last step (the dungeon does).

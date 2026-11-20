@@ -122,6 +122,22 @@ Measured (21 Nov, RTX 4090, other lanes loading the machine; selftest 640 and th
 | what is not given back | the first world and the first dungeon each leave caches (scripts, shaders, the shadow atlas: menu 94 MB static / 67 MB video before, 172 / 629 MB after the first round trip); later trips add nothing measurable |
 | the clip | `lanes/L4-dungeon/exe-menu-dungeon-world.mp4` (28 s, the exe, scripted keys): menu, Dungeons, hockey (load screen, its camera and HUD, crisp), Esc, Leave, menu with the hockey still, World, walk, Esc, menu |
 
+**The dungeon's watchdog (L4b).** Every call into a dungeon's pack code is watched as the runner's worker watches it:
+a thread asks `kernel/host/cpuclock.gd` whether the call has used its limit of processor time (a step 250 ms, a setup
+call 10 s). A runaway step cannot be interrupted, so the game writes why to `%APPDATA%\ThirdLife\dungeon_trip_<pid>.json`,
+starts itself again on that record (`-- --tripped=<record>`) and ends: the person sees the window close and come back
+with a card "<title> was stopped by the watchdog: one step of the game (frame N) did not return within 250 ms of
+processor time" and Leave (to the menu; in a Try-it process "Back to Create", which ends it with exit code 3). The
+process that hung ends with exit code 0 (it ends itself with OS.kill). More than 20 script errors stop a dungeon in
+place: the game stands still under the same kind of card. Nothing of the watch reaches a hash or a game's result.
+Selftest 640 `dungeon.watchdog` (fixture `engine/kernel/dungeon/fixtures/runaway`: an endless step at frame 60).
+
+**The load screen moves (L4b).** The pack loads in steps (each asset generator, then the entry with its
+`_pack_setup`: `PackLife.load_steps`) with a drawn frame between them, so the bar sweeps and the line under it says
+which step runs ("building its parts (2 of 5: gen/art_hook.gd)"). One step that takes long (a big `_pack_setup`)
+still holds the picture for its own length. While it loads, the pack's nodes do not run and the physics server is
+off, so the stepped load is the worker's one-frame load: the dungeon still hashes as alone (selftest 640).
+
 Not verified: a person's hands on the menu (keys and mouse were pressed by a script through the engine's input), a
 dungeon whose pack loads for long (the load screen is drawn before the load and does not move during it), the exe's
 static memory (a release template does not count it: the census leaves the key out there).

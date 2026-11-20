@@ -3,8 +3,9 @@
 # dungeon.bypass: every old flag path and unattended instrument goes past the menu as before; dungeon.hash_alone:
 # `-- --dungeon=<pack> --frames=N` hashes as `worker --mode=play --frames=N` of the same pack and seed (hockey, parkour, paddle),
 # and --look=diorama is installed and the default look is back after;
-# dungeon.trips: menu -> World -> menu -> dungeon -> menu three times: no growth past the tolerance, same hashes each time.
-dg_cases="dungeon.list dungeon.bypass dungeon.refused dungeon.hash_alone dungeon.trips"
+# dungeon.trips: menu -> World -> menu -> dungeon -> menu three times: no growth past the tolerance, same hashes each time;
+# dungeon.watchdog (L4b): a runaway step ends to a card with its Leave.
+dg_cases="dungeon.list dungeon.bypass dungeon.refused dungeon.hash_alone dungeon.trips dungeon.watchdog"
 dg_any=0
 for dg_c in $dg_cases; do if [ -z "$FILTER" ] || [[ "$dg_c" == *"$FILTER"* ]]; then dg_any=1; fi; done
 if [ "$dg_any" = 1 ]; then
@@ -174,4 +175,22 @@ if [ -z "$FILTER" ] || [[ "dungeon.trips" == *"$FILTER"* ]]; then
   [ $dg_c -eq 0 ] || why="exit $dg_c${why:+; $why}"
   dg_m="$(grep -a '"at":"menu","n":[37]' "$dg_o/trips.log" | sed 's/.*"nodes":\([0-9]*\),"objects":\([0-9]*\),"resources":\([0-9]*\).*"static_mb":\([0-9.]*\).*/\1 nodes \2 objects \3 resources \4 MB/' | tr '\n' ';')"
   verdict dungeon.trips "$why" "3 round trips; menu 3 and 7: ${dg_m}; dungeon hash = alone ${dg_alone_hockey:0:12} each time; worlds alike"
+fi
+
+# ---------------------------------------------------------------------------------------------- L4b: the watchdog
+# A runaway step (kernel/dungeon/fixtures/runaway: an endless loop at frame 60) is stopped by the dungeon's watchdog (the
+# worker's processor-time rule, kernel/dungeon/watch.gd), which starts the card process on its record; that process
+# shows the card and its Leave (pressed here by TL_EXE_KEYS) ends it (exit code 3) and writes --out. The case reads
+# the card's text and its button from --out; it asserts no time.
+if [ -z "$FILTER" ] || [[ "dungeon.watchdog" == *"$FILTER"* ]]; then
+  why=""
+  rm -f "$dg_o/trip.json"
+  TL_EXE_KEYS="30:+Enter;32:-Enter" dg_run res://boot/boot.tscn -- "--dungeon=$dg_e/kernel/dungeon/fixtures/runaway" --frames=600 "--out=$dg_o/trip.json" > "$dg_o/trip.log" 2>&1
+  for dg_i in $(seq 1 120); do [ -s "$dg_o/trip.json" ] && break; sleep 1; done
+  grep -q '"why":"tripped"' "$dg_o/trip.json" 2>/dev/null || why="no card process result in $dg_o/trip.json (see $dg_o/trip.log)"
+  grep -q '"reason":"tick_timeout","phase":"_pack_tick","frame":60' "$dg_o/trip.json" 2>/dev/null || why="${why:+$why; }the record does not name the runaway step of frame 60"
+  grep -q '"card":{"kind":"tripped","text":"Runaway fixture: an endless step was stopped by the watchdog[^"]*","button":"Back to Create","pressed":true}' "$dg_o/trip.json" 2>/dev/null \
+    || why="${why:+$why; }the card's text or its button is not in $dg_o/trip.json"
+  grep -q '"state_hash"' "$dg_o/trip.json" 2>/dev/null && why="${why:+$why; }a stopped dungeon reported a hash"
+  verdict dungeon.watchdog "$why" "endless step at frame 60 -> watchdog record -> card 'was stopped by the watchdog' -> Back to Create pressed (the card process wrote --out)"
 fi

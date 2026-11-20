@@ -27,7 +27,7 @@ the dungeon's own node and freed with it.
 its `TLHud` layers are the screen. Hockey shows its own start panel (level, mode), its rink camera and its score line.
 
 **Entering and leaving.**
-- From the main menu: Dungeons, pick one. A load screen with the title (half a second, then the load, which blocks),
+- From the main menu: Dungeons, pick one. A load screen with the title (half a second, then the load in steps under a moving bar, L4b),
   then the game. Esc: the pause card (Resume, Leave), the tree and the physics paused. Leave: the pack's teardown,
   every node of the pack freed, the default look back, the menu.
 - From a second process (Create's "Try it", lane L3): `kernel/dungeon/dungeons.gd` `launch(<job dir>/pack)` starts the
@@ -41,6 +41,10 @@ equal, objects +10 of 2000, static memory +0.1 MB, video memory +0.25 MB in the 
 dungeon leave caches behind (scripts, shaders, the shadow atlas). The three worlds' games hash alike, and the dungeon
 between them hashes as alone each time: a dungeon leaves nothing in the process that changes the world after it.
 
-**What a dungeon does not have yet.** No watchdog thread (a pack whose tick runs away hangs the game, as in `tl play`);
-no input record; a pack cannot yet declare its own avatar, its look or its menu card (a proposal for `pack.json` is in
+**The watchdog (L4b).** The runner's own rule, reused: every call into the pack is watched from a thread with the
+worker's limits of processor time (`kernel/dungeon/watch.gd` over `kernel/host/cpuclock.gd`). A runaway step ends the
+process, which first starts the game again on a trip record: the person meets a card "<title> was stopped by the
+watchdog" with Leave. More than 20 script errors stop the dungeon in place under the same kind of card.
+
+**What a dungeon does not have yet.** No input record; a pack cannot yet declare its own avatar, its look or its menu card (a proposal for `pack.json` is in
 the L4 report); no in-process switch from Create (Try it is a second process); no sharing of a dungeon with a friend.
