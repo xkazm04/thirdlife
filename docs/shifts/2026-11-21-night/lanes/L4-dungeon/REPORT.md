@@ -156,3 +156,80 @@ lane:     STANDUP.md, REPORT.txt, PATCHES.md, WORLD-dungeons.md (for WORLD.md), 
 2. A watchdog for dungeons (the worker's processor-time guard on _pack_tick), so a runaway WIP pack from Try it cannot
    hang the game; and the load in a thread or in slices so the load screen can move.
 3. Dungeon share: a dungeon entry in an item.json (docs/SHARING.md) so a friend's menu lists it.
+
+======================================================================================================================
+L4b (after the landing of L4 as fe15b9c / d0d0bd9): the dungeon watchdog and a load screen that moves
+======================================================================================================================
+
+== What was asked (Director 22:50, corrected) ==
+Reuse the kernel runner's watchdog for dungeons (an endless loop in one step, a step that never returns); the person
+meets a card that says so, with Leave; nothing of a clock in a hash or a result; the selftest asserts the card and
+Leave, never a time. Plus a load screen that keeps moving. Not started: the pack.json `dungeon` block (owner's ruling).
+
+== What it is ==
+- kernel/dungeon/watch.gd: the worker's rule, reused. A thread asks kernel/host/cpuclock.gd `verdict` about the call
+  into pack code that runs now, with the worker's limits (a tick 250 ms, a setup call 10 s, of PROCESSOR time), through
+  PackLife's on_begin / on_end hooks, exactly as worker.gd `_wd_run` does. "starved" (the machine, not the pack) stops
+  nothing in a person's game.
+- A runaway cannot be interrupted inside its own thread (the worker and the world's guard end their process for it).
+  The dungeon does the same, but first writes a trip record (user dir, dungeon_trip_<pid>.json) and starts the same
+  executable on it: `-- --tripped=<record> --back=<label> --then=menu|quit [--out=]`. That process shows the card
+  "<title> was stopped by the watchdog: one step of the game (frame N) did not return within 250 ms of processor time"
+  with Leave (to the menu) or "Back to Create" (a Try-it run: exit code 3, RUNNER.md's watchdog code). It deletes the
+  record when read. Still: watchdog-card.jpg.
+- More than 20 script errors (the runner's limit) now stop a dungeon in place: the game stands still (tree paused)
+  under the same kind of card with Leave, instead of jumping back to the menu.
+- The load screen moves: PackLife.load_steps() gives load_entry's load as steps (each asset generator, then the entry
+  with _pack_setup); load_entry runs them in one go as before (worker and world unchanged). The dungeon draws a frame
+  between steps: a bar sweeps the track (16 px per drawn frame) and a line says which step runs ("building its parts
+  (2 of 5: gen/art_hook.gd)", "setting up the game"). Until the last step the pack's nodes are disabled and the
+  physics server is off, so the stepped load is the worker's one-frame load. Still: load-screen-steps.jpg (frames 26-40
+  of a --write-movie run of hockey). One long step (a big _pack_setup) still holds the picture for its own length.
+
+== Evidence ==
+- selftest 640, 6/6 PASS (dungeon.list, .bypass, .refused, .hash_alone, .trips, and the new .watchdog). hash_alone and
+  trips give the same hashes as before the stepped load (hockey 1d939cd60eab / ba40751d726a / a2f701657d43, parkour
+  1a399b4e5d06, paddle e54b1e3eec2b): the stepped load changes no hash.
+- dungeon.watchdog: fixture engine/kernel/dungeon/fixtures/runaway (a floor, a ball, an endless step at frame 60;
+  passes lint). Headless `--dungeon=<fixture> --frames=600 --out=<f>` with TL_EXE_KEYS pressing Enter: the record names
+  reason tick_timeout, phase _pack_tick, frame 60; the card process writes --out with
+  "card":{"kind":"tripped","text":"Runaway fixture: an endless step was stopped by the watchdog...","button":"Back to
+  Create","pressed":true} and no state hash. No time is asserted (the case waits for the file with an upper bound).
+- The same through the exported exe (ThirdLife.exe --headless -- --dungeon=<fixture> ...): the same card, pressed,
+  "why":"tripped"; no record left in %APPDATA%\ThirdLife.
+- In a window (editor binary): the card process opened and showed the card (watchdog-card.jpg), Enter on it ended it.
+- `tl check --tier full --only world`: PASS 8/8 (world = alone; the same hashes as at 21:39). PackLife changed, so this
+  is the proof that the world's load is unchanged.
+- `tl check --tier fast`: arch 12/12, assets, cards, devx.test 229/229, foreman.typecheck: all PASS (on main's contract
+  and assets fixes).
+- export.sh build + check on the final tree (fixture imported): PASS export.build (tag d0d0bd9 2026-11-20 22:54), PASS
+  export.check, step 1b: hockey a2f701657d4358ea, parkour fe29c683143553c3, paddle 6550cd894ead7dff in the exe and the
+  editor binary (unchanged by the stepped load); step 4 no process left.
+- seeds and packs steps (the worker loads through the refactored PackLife): PASS seeds 39/39 (+0 vs last green), PASS packs 2/2, 48/48 verb runs
+  (hockey bot_hockey a29dcdf02a16dd1c@4186, the same as before).
+- Not run for L4b: the whole kernel selftest (block 640 and the world step cover what changed; the full gate is the
+  Director's pre-merge list).
+
+== Behaviour changes ==
+- A runaway step in a dungeon used to hang the game forever; now the window closes and comes back with the card.
+- The process that hung ends with exit code 0 (it ends itself with OS.kill, which gives 0 on Windows); the card process
+  ends with 3 when it was a Try-it run. L3's parent sees the first pid end with 0: the trip is in the card process.
+- More than 20 script errors: a card in place instead of a jump to the menu.
+- PackLife.load_entry is now load_steps run in one go (same order, same marks, same calls).
+- The fixture's two scripts are imported (their .uid files are tracked): the arch rule uid-orphans wants every .gd
+  outside the pack folders it lists to have one, so the fixture is not under .gdignore and travels in the pck (unused).
+
+== Files ==
+new: engine/kernel/dungeon/watch.gd (+ .uid), engine/kernel/dungeon/fixtures/runaway/{pack.json, scripts/main.gd (+ .uid),
+     tests/bot.gd (+ .uid)}; lane: watchdog-card.jpg, load-screen-steps.jpg
+changed: engine/kernel/dungeon/dungeon.gd (watch hooks, stepped load, moving bar, _halt card, open_tripped, one card
+     builder), engine/boot/hub.gd (relaunch_args, tripped_start, exit code 3), engine/boot/boot.gd (+3 lines: --tripped,
+     592 lines), engine/kernel/runner/pack_life.gd (load_steps), engine/tools/selftest.d/640-dungeon.sh (dungeon.watchdog),
+     engine/kernel/API.md (section 23, two lines), docs/EXE.md (two paragraphs), lane WORLD-dungeons.md
+
+== Questions ==
+1. guard.gd (the world's) and the worker each keep their own watchdog thread; watch.gd is a third small one over the same
+   cpuclock verdict. A shared "watch" for all three would be a kernel/host change (not L4's column).
+2. For Try it, L3 sees exit code 0 from the process it started when the watchdog ends it; the record and the card are in
+   the process the watchdog starts. If L3 wants the verdict in its own process, the record path could be passed with
+   the launch (launch(dir, record_path)): a small change, not made.

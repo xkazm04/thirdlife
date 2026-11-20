@@ -15,6 +15,9 @@ extends RefCounted
 ##                    Create" ends the process (L3's "Try it" starts it so: kernel/dungeon/dungeons.gd `launch`)
 ##   ... --headless -- --dungeon=<dir> --frames=N [--seed=N] [--out=<abs file>]   a counted dungeon without a window:
 ##                    ends after N frames, prints (and writes) its state hash; exit 0, 1 (a script error), 2 (refused)
+##   ... -- --tripped=<record> [--back=<label>] [--then=menu|quit] [--out=<abs file>]   L4b: the card of a dungeon the
+##                    watchdog stopped (kernel/dungeon/watch.gd starts this process on its record, then ends its own):
+##                    Leave goes to the menu (then=menu) or ends this process with exit code 3 (then=quit, a Try-it run)
 ##   ... --headless -- trips --out=<abs file> [--trips=3] [--ticks=600] [--frames=600] [--dungeon-index=0]
 ##                    menu -> World -> menu -> dungeon -> menu, N times, a census at every menu (selftest 640)
 ## A census line (`"kind":"census"`) is printed at every menu, in the world once it stands (240 frames) and in a dungeon
@@ -233,6 +236,9 @@ func open_dungeon(dir: String, o: Dictionary) -> void:
 	dungeon = (load(DUNGEON_SCRIPT) as GDScript).new()
 	b.add_child(dungeon)
 	dungeon.connect("left", _on_dungeon_left)
+	var trip: String = "%s/dungeon_trip_%d.json" % [OS.get_user_data_dir().replace("\\", "/"), OS.get_process_id()]
+	o["trip"] = trip
+	o["relaunch"] = relaunch_args(trip, str(o.get("back", "Leave")))
 	var ok: bool = await dungeon.call("open", dir, o)
 	if ok and DisplayServer.get_name() != "headless":
 		_set_aa_of_style()                         # the dungeon's look names its own antialiasing
@@ -247,6 +253,39 @@ func _set_aa_of_style() -> void:
 	b._set_aa(override if not override.is_empty() else str(settings.get("exe_aa", b.EXE_AA)))
 
 
+## L4b: the arguments of the process the watchdog starts on its record: the same executable (the editor binary with
+## --path and the boot scene), headless when this one is, `-- --tripped=<record>`, where Leave goes, and --out.
+func relaunch_args(record: String, back: String) -> PackedStringArray:
+	var a: PackedStringArray = PackedStringArray()
+	if DisplayServer.get_name() == "headless":
+		a.append_array(["--headless", "--fixed-fps", "60"])
+	if not OS.has_feature("thirdlife_exe"):
+		a.append_array(["--path", ProjectSettings.globalize_path("res://").replace("\\", "/").trim_suffix("/"), "res://boot/boot.tscn"])
+	a.append_array(["--", "--tripped=" + record, "--back=" + back, "--then=" + ("quit" if b.dungeon_only else "menu")])
+	if str(b.opts.get("out", "")).is_absolute_path():
+		a.append("--out=" + str(b.opts["out"]))
+	return a
+
+
+## The process the watchdog started: the card, then the menu (then=menu) or the end (then=quit, exit code 3).
+func tripped_start() -> void:
+	var then: String = str(b.opts.get("then", "menu"))
+	b.dungeon_only = then == "quit"
+	b.menu_mode = then == "menu"
+	b._read_env()                                  # TL_EXE_KEYS press Leave in a scripted run (selftest 640), also headless
+	if DisplayServer.get_name() != "headless":
+		if not b._window_setup(""):
+			return
+		b.get_tree().auto_accept_quit = false
+	b.process_physics_priority = 200000
+	b.set_physics_process(true)
+	b.process_mode = Node.PROCESS_MODE_ALWAYS
+	dungeon = (load(DUNGEON_SCRIPT) as GDScript).new()
+	b.add_child(dungeon)
+	dungeon.connect("left", _on_dungeon_left)
+	dungeon.call("open_tripped", str(b.opts["tripped"]), {"back": str(b.opts.get("back", "Leave"))})
+
+
 func _on_dungeon_left(why: String) -> void:
 	var d: Node = dungeon
 	dungeon = null
@@ -258,6 +297,8 @@ func _on_dungeon_left(why: String) -> void:
 		var code: int = 0
 		if why == "refused":
 			code = 2
+		elif why == "tripped":
+			code = 3                               # RUNNER.md: the watchdog had to stop it
 		elif why == "error" or int(res.get("script_errors", 0)) > 0 or int(res.get("engine_errors", 0)) > 0:
 			code = 1
 		var out: String = str(b.opts.get("out", ""))

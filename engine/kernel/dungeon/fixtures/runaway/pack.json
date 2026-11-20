@@ -1,0 +1,10 @@
+{
+  "id": "fixture.dungeon_runaway",
+  "version": "0.1.0",
+  "kernelApi": "1.0",
+  "title": "Runaway fixture: an endless step",
+  "capabilities": ["physics", "camera"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot.gd"]
+}

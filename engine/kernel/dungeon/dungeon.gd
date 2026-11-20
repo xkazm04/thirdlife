@@ -12,18 +12,23 @@ extends Node
 ##          look back, `left` emitted.
 ## So a counted run (`frames` > 0) hashes as `worker --mode=play --frames=N` of the same pack and seed (selftest 640).
 ##
-## What the worker has and a dungeon does not: the watchdog thread (a tick that runs away hangs this process, as it
-## would hang a person's `tl play`), the input record (--record), --devices. Script errors are counted by the runner's
-## logger: more than 20 stop the dungeon with the reason on its card.
+## L4b, the watchdog (kernel/dungeon/watch.gd): the worker's rule, reused. Every call into pack code is watched from a
+## thread through kernel/host/cpuclock.gd `verdict` with the worker's limits (a tick 250 ms, a setup call 10 s, of
+## processor time). A runaway cannot be interrupted, so the process records why, starts the same executable on that
+## record (`--tripped=<record>`: a card "<title> was stopped" with Leave, `open_tripped`) and ends. More than 20 script
+## errors stop the dungeon to the same kind of card in this process. Nothing of the watch reaches a hash or a result.
+## What the worker has and a dungeon does not: the input record (--record), --devices.
 ##
-## The person's side: a load screen with the title while the pack loads (it stays LOAD_SCREEN_FRAMES drawn frames
-## before the load blocks), Esc opens the pause card (Resume, and Leave or the caller's `back` label), which freezes the tree
+## The person's side: a load screen with the title; the load runs in steps (each asset generator, then the entry and its
+## _pack_setup: PackLife.load_steps) with a drawn frame between them, so its bar moves; the pack's nodes do not run and
+## the physics server is off until the load is done (a step-wise load is still the worker's one-frame load). Esc opens the pause card (Resume, and Leave or the caller's `back` label), which freezes the tree
 ## (SceneTree.paused also stops the physics server). Leaving keeps a small still of the last frame the person saw in
 ## user://dungeon_stills/<pack id>.png, for the menu.
 ##
 ##   var d = load("res://kernel/dungeon/dungeon.gd").new(); parent.add_child(d)
 ##   var ok: bool = await d.open(<pack dir>, {title?, look?, seed?, frames?, back?})
-##   d.left -> (why: "leave" | "frames" | "error" | "refused");  d.result: {pack, seed, frames, state_hash?, ...}
+##   d.left -> (why: "leave" | "frames" | "error" | "refused" | "tripped");  d.result: {pack, seed, frames, state_hash?, ...}
+##   d.open_tripped(<record file>, {back?})   the card of a dungeon the watchdog stopped (in the process started for it)
 
 signal left(why: String)
 
@@ -33,6 +38,7 @@ const Lint: GDScript = preload("res://kernel/runner/lint.gd")
 const LoggerScript: GDScript = preload("res://kernel/runner/logger.gd")
 const List: GDScript = preload("res://kernel/dungeon/dungeons.gd")
 const UI: GDScript = preload("res://kernel/dungeon/look_ui.gd")
+const Watch: GDScript = preload("res://kernel/dungeon/watch.gd")
 
 const CENSUS_EVERY: int = 10            # as the worker (kernel/runner/worker.gd)
 const MAX_ERRORS: int = 20              # RUNNER.md: more than this stops a run
@@ -68,6 +74,10 @@ var _refused: Control = null
 var _resume: Button = null
 var _mouse_before: int = Input.MOUSE_MODE_VISIBLE
 var _still: Image = null
+var _watch: RefCounted = null           # L4b: kernel/dungeon/watch.gd
+var _load_bar: ColorRect = null         # the load screen's moving bar
+var _load_step: Label = null
+var _load_frames: int = 0
 
 
 func _init() -> void:
@@ -115,13 +125,23 @@ func open(dir: String, o: Dictionary = {}) -> bool:
 	_logger = LoggerScript.new()
 	_logger.set("pack_dir", pack_dir)
 	OS.add_logger(_logger)
+	if bool(o.get("watch", true)):
+		_watch = Watch.new()
+		var trip: String = str(o.get("trip", "user://dungeon_trip_%d.json" % OS.get_process_id()))
+		_watch.call("start", ProjectSettings.globalize_path(trip) if trip.begins_with("user://") else trip,
+			PackedStringArray(o.get("relaunch", PackedStringArray())), {"pack": str(m["id"]), "pack_dir": pack_dir, "title": title})
 	run = Node.new()
 	run.name = "Run"
-	run.process_mode = Node.PROCESS_MODE_PAUSABLE
+	run.process_mode = Node.PROCESS_MODE_DISABLED    # nothing of the pack runs before its frame 0 (the load is in steps)
 	add_child(run)
 	life = PackLife.new()
 	life.load_errors = load_errors
 	life.warnings = warnings
+	life.on_begin = func(phase: String) -> void:
+		if _watch != null:
+			_watch.call("begin", phase, frame if started else -1)
+	life.on_end = func(_phase: String) -> bool:
+		return bool(_watch.call("finish")) if _watch != null else true
 	ctx = life.make_context(run, m, pack_dir, seed_value, frames_target if frames_target > 0 else (1 << 40), "play")
 	TLContext.current = ctx                       # one pack in this process while the dungeon runs (as the worker)
 	life.make_scene()
@@ -130,10 +150,21 @@ func open(dir: String, o: Dictionary = {}) -> bool:
 	if not _headless:
 		TLStandin.install_look(run)
 	get_tree().node_added.connect(_on_node_added)
-	if not life.load_entry():
-		var first: Dictionary = load_errors[0] if not load_errors.is_empty() else {}
-		_free_pack()
-		return _refuse("it did not load: %s %s" % [str(first.get("file", "")), str(first.get("message", "see the log"))])
+	var steps: Array = life.load_steps()
+	PhysicsServer3D.set_active(false)                # no physics step between the load's steps: the worker loads in one frame
+	for i: int in steps.size():
+		_load_note(i, steps.size(), str(m["assets"][i]) if i < (m["assets"] as Array).size() else str(m["entry"]))
+		await (get_tree().process_frame if _headless else RenderingServer.frame_post_draw)
+		if finished:
+			PhysicsServer3D.set_active(true)
+			return false                               # the window was closed meanwhile
+		if not bool((steps[i] as Callable).call()):
+			PhysicsServer3D.set_active(true)
+			var first: Dictionary = load_errors[0] if not load_errors.is_empty() else {}
+			_free_pack()
+			return _refuse("it did not load: %s %s" % [str(first.get("file", "")), str(first.get("message", "see the log"))])
+	PhysicsServer3D.set_active(true)
+	run.process_mode = Node.PROCESS_MODE_PAUSABLE
 	if not _headless:
 		TLStandin.install_default_ground(run, ctx.root)
 	life.find_idle_scripts()
@@ -179,7 +210,7 @@ func _physics_process(_delta: float) -> void:
 	_logger.set("frame", frame)
 	life.tick(frame, true)
 	if int(_logger.call("total_errors")) > MAX_ERRORS:
-		_stop("more than %d script errors by frame %d" % [MAX_ERRORS, frame])
+		_halt("more than %d script errors by frame %d" % [MAX_ERRORS, frame])
 		return
 	if frame % CENSUS_EVERY == 0:
 		life.census(frame)
@@ -193,7 +224,7 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 	if _refused != null or not loaded:
 		if _refused != null:
-			close("refused")
+			_card_leave()
 		return
 	if paused:
 		resume()
@@ -273,15 +304,52 @@ func _free_pack() -> void:
 	if _logger != null:
 		OS.remove_logger(_logger)
 		_logger = null
+	if _watch != null:
+		_watch.call("stop")
+		_watch = null
 	loaded = false
 	# the default look again (TL_STYLE, else crisp): what the menu and the world are drawn with
 	TLStyle.load_style(TLStyle._chosen_path())
 
 
-func _stop(why: String) -> void:
-	problem = "the game stopped: " + why
+## The dungeon stops itself (more than 20 script errors): headless it ends; in a window the game stands still under a
+## card that says why, with Leave.
+func _halt(why: String) -> void:
+	problem = "%s stopped: %s" % [title, why]
 	print("[dungeon] " + problem)
-	close("error")
+	if _headless:
+		close("error")
+		return
+	set_physics_process(false)
+	get_tree().paused = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_refused = _make_card(problem, "error")
+	_layer.add_child(_refused)
+
+
+## L4b: the process started by the watchdog for a dungeon it stopped (boot.gd --tripped=<record>): the card that says
+## so, with Leave (or the caller's `back`). Leave emits `left("tripped")`.
+func open_tripped(record_file: String, o: Dictionary = {}) -> void:
+	_headless = DisplayServer.get_name() == "headless"
+	back_label = str(o.get("back", "Leave"))
+	_layer = CanvasLayer.new()
+	_layer.name = "DungeonCards"
+	_layer.layer = 110
+	add_child(_layer)
+	var rec: Variant = JSON.parse_string(FileAccess.get_file_as_string(record_file)) if FileAccess.file_exists(record_file) else null
+	var r: Dictionary = rec if rec is Dictionary else {}
+	if FileAccess.file_exists(record_file):
+		DirAccess.remove_absolute(record_file)       # read once: the card holds it now (--out keeps it)
+	title = str(r.get("title", "The game"))
+	result = {"schema": "thirdlife.dungeon/1", "kind": "dungeon", "trip": r}
+	if r.has("pack"):
+		result["pack"] = str(r["pack"])
+	var what: String = "its setup" if not str(r.get("phase", "")).ends_with("_tick") else "one step of the game (frame %d)" % int(r.get("frame", -1))
+	problem = "%s was stopped by the watchdog: %s did not return within %s of processor time." % [title, what,
+		"250 ms" if str(r.get("phase", "")).ends_with("_tick") else "10 s"] if not r.is_empty() else "the game was stopped by the watchdog (no record at %s)" % record_file
+	print("[dungeon] card: %s | button: %s" % [problem, back_label])
+	_refused = _make_card(problem, "tripped")
+	_layer.add_child(_refused)
 
 
 func _refuse(why: String) -> bool:
@@ -291,7 +359,7 @@ func _refuse(why: String) -> bool:
 	if _headless:
 		close.call_deferred("refused")
 		return false
-	_refused = _make_refused()
+	_refused = _make_card(problem, "refused")
 	_layer.add_child(_refused)
 	return false
 
@@ -338,9 +406,34 @@ func _show_loading() -> void:
 	v.add_child(UI.label("Entering", 26))
 	v.add_child(UI.label(title, 56))
 	v.add_child(UI.label("look: %s" % (look if not look.is_empty() else "default"), 22))
+	var track: ColorRect = ColorRect.new()                  # the bar moves every drawn frame, also between the load's steps
+	track.color = Color(UI.colors()["ink"], 0.15)
+	track.custom_minimum_size = Vector2(560, 14)
+	track.clip_contents = true
+	_load_bar = ColorRect.new()
+	_load_bar.color = UI.colors()["accent"]
+	_load_bar.size = Vector2(120, 14)
+	track.add_child(_load_bar)
+	v.add_child(track)
+	_load_step = UI.label("checking the game", 20)
+	v.add_child(_load_step)
 	card.add_child(v)
 	_loading.add_child(_centered(card))
 	_layer.add_child(_loading)
+
+
+func _load_note(i: int, n: int, file: String) -> void:
+	if _load_step != null:
+		_load_step.text = "%s  (%d of %d: %s)" % ["building its parts" if i < n - 1 else "setting up the game", i + 1, n, file]
+
+
+## The load screen's bar: a block that sweeps the track, one step per drawn frame (a picture, not a clock).
+func _process(_delta: float) -> void:
+	if _loading == null or _load_bar == null:
+		return
+	_load_frames += 1
+	var w: float = (_load_bar.get_parent() as Control).size.x
+	_load_bar.position.x = fmod(float(_load_frames) * 16.0, w + 120.0) - 120.0
 
 
 func _hide_loading() -> void:
@@ -376,22 +469,41 @@ func _make_pause() -> Control:
 	return root
 
 
-func _make_refused() -> Control:
+## A card with the title, why, and one button (Leave or the caller's `back`). `kind`: refused, error (the game stands
+## still behind it) or tripped. Leave ends the dungeon with `left(kind)`.
+func _make_card(text: String, kind: String) -> Control:
 	var root: Control = _full()
-	root.name = "Refused"
-	root.add_child(UI.sky_backdrop())
+	root.name = "Card_" + kind
+	if kind == "error":
+		var dim: ColorRect = ColorRect.new()
+		dim.color = Color(UI.colors()["ink"], 0.55)
+		dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		root.add_child(dim)
+	else:
+		root.add_child(UI.sky_backdrop())
 	var card: PanelContainer = UI.card()
 	var v: VBoxContainer = VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
 	v.custom_minimum_size = Vector2(760, 0)
 	v.add_child(UI.label(title if not title.is_empty() else "This game", 40))
-	var why: Label = UI.label(problem, 22)
+	var why: Label = UI.label(text, 22)
 	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(why)
 	var back: Button = UI.button(back_label)
-	back.pressed.connect(func() -> void: close("refused"))
+	back.name = "Leave"
+	_card_kind = kind
+	back.pressed.connect(_card_leave)
 	v.add_child(back)
 	card.add_child(v)
 	root.add_child(_centered(card))
 	back.grab_focus.call_deferred()
 	return root
+
+
+var _card_kind: String = "refused"
+
+
+func _card_leave() -> void:
+	print("[dungeon] card: %s pressed" % back_label)
+	result["card"] = {"kind": _card_kind, "text": problem, "button": back_label, "pressed": true}
+	close(_card_kind)
