@@ -29,6 +29,12 @@ func _init() -> void:
 	clearance.collision_mask = CANOPY
 
 
+func _miniature_focus() -> Vector2:
+	if is_instance_valid(target) and target.get("flying") == true:
+		return Vector2.ZERO
+	return super()
+
+
 func _avoid(now: bool) -> void:
 	var wanted := position
 	super(now)

@@ -90,6 +90,11 @@ func _place() -> void:
 	look_at(at, Vector3.UP)
 
 
+## The optical plane follows the actor through a pack's final camera turn or zoom.
+func _miniature_focus() -> Vector2:
+	return TLCameras._subject_focus(self, target, look_height)
+
+
 func _physics_process(_delta: float) -> void:
 	# P7: the mouse comes through ctx.input like every device (TLInput.LOOK_X, LOOK_Y, ZOOM: latched once per frame and
 	# part of the input record). The camera on screen turns 0.2 degrees per pixel of a right-button drag (0.15 of

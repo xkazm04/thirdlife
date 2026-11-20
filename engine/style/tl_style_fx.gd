@@ -6,6 +6,75 @@ static var _add: ShaderMaterial
 static var _mix: ShaderMaterial
 
 
+class TabletopPost extends MeshInstance3D:
+	var sun: DirectionalLight3D
+	var active := false
+
+	func _process(_delta: float) -> void:
+		if sun == null:
+			return
+		var cam := get_viewport().get_camera_3d()
+		var fixed_view := cam != null and cam.has_method(&"_miniature_tabletop")
+		var table := fixed_view and is_visible_in_tree() and bool(cam.call(&"_miniature_tabletop"))
+		if table != active and (active or sun.shadow_enabled): # Respect the reviewer's shadows-off setting.
+			active = table
+			sun.shadow_enabled = not table
+			(material_override as ShaderMaterial).set_shader_parameter(&"tabletop", table)
+
+
+## Opt-in optics for the active view. A camera's own attributes take precedence.
+class MiniatureLens extends MeshInstance3D:
+	var optics := CameraAttributesPractical.new()
+	var aperture := ShaderMaterial.new()
+	var settings: Dictionary
+	var last_subject := Vector2.INF
+
+	func configure(world: WorldEnvironment, options: Dictionary) -> void:
+		settings = options
+		if mesh == null:
+			aperture.shader = load("res://style/shaders/dof_tilt.gdshader")
+			TLStyle._screen_quad(self, aperture, -101)
+		aperture.set_shader_parameter(&"tilt", tan(deg_to_rad(clampf(options.get("tilt_deg", 0.0), -60.0, 60.0))))
+		for key: String in ["near_px", "far_px", "vista_near"]:
+			aperture.set_shader_parameter(key, maxf(0.0, options.get(key, 0.0)))
+		world.camera_attributes = optics
+		process_mode = Node.PROCESS_MODE_ALWAYS
+		process_priority = 80 # Read the finished camera pose, including the parkour skyline turn.
+		last_subject = Vector2.INF
+		if is_inside_tree():
+			_process(0.0)
+
+	func _process(_delta: float) -> void:
+		var camera := get_viewport().get_camera_3d()
+		# A zero depth requests deep focus across the entire play space.
+		var subject := Vector2(-1.0, 0.0)
+		if camera != null and camera.has_method(&"_miniature_focus"):
+			subject = camera.call(&"_miniature_focus")
+		var depth := subject.x
+		var scenic_foreground: bool = depth < 0.0 and settings.get("vista_near", 0.0) > 0.0
+		visible = (depth > 0.0 or scenic_foreground) and camera != null and camera.attributes == null
+		if subject.distance_squared_to(last_subject) < 0.000225 and signf(depth) == signf(last_subject.x):
+			return
+		last_subject = subject
+		optics.dof_blur_near_enabled = depth > 0.0
+		optics.dof_blur_far_enabled = depth != 0.0
+		if depth == 0.0:
+			return
+		aperture.set_shader_parameter(&"subject", subject)
+		if depth < 0.0:
+			optics.dof_blur_far_distance = settings.get("vista_far", 98.0)
+			optics.dof_blur_far_transition = settings.get("vista_transition", 160.0)
+			optics.dof_blur_amount = settings.get("vista_amount", 0.0)
+			return
+		# Keep the whole figure and the next foothold inside the clear interval.
+		var near_edge := maxf(0.05, depth - maxf(1.25, depth*0.24))
+		optics.dof_blur_near_distance = near_edge
+		optics.dof_blur_near_transition = maxf(0.4, near_edge*0.74)
+		optics.dof_blur_far_distance = depth + maxf(3.5, depth*0.55)
+		optics.dof_blur_far_transition = maxf(20.0, depth*4.5)
+		optics.dof_blur_amount = settings.get("amount", 0.0)
+
+
 static func _quad(additive: bool) -> QuadMesh:
 	if _add == null:
 		_add = ShaderMaterial.new()

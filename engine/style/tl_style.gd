@@ -442,45 +442,63 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 		we.name = "WorldEnvironment"
 		var env0: Environment = Environment.new()
 		env0.background_mode = Environment.BG_SKY
-		var sky: Sky = Sky.new()
-		var sm0: ShaderMaterial = ShaderMaterial.new()
-		sm0.shader = _shader("sky")
-		sky.sky_material = sm0
-		env0.sky = sky
+		env0.sky = Sky.new()
+		env0.sky.sky_material = ShaderMaterial.new()
 		we.environment = env0
 		rig.add_child(we)
-	push("sky", we.environment.sky.sky_material)
-	_apply_world(we.environment, sun)
-	# N1. Far blur for every camera that has no attributes of its own: `env.dof_far` = metres where it starts (0 = off)
 	var e0: Dictionary = data["env"]
-	if float(e0.get("dof_far", 0.0)) > 0.0:
-		var ca: CameraAttributesPractical = CameraAttributesPractical.new()
-		ca.dof_blur_far_enabled = true
-		ca.dof_blur_far_distance = float(e0["dof_far"])
-		ca.dof_blur_far_transition = float(e0.get("dof_far_transition", 150.0))
-		ca.dof_blur_amount = clampf(float(e0.get("dof_amount", 0.05)), 0.0, 0.3)
-		we.camera_attributes = ca
+	var sky: Sky = we.environment.sky
+	var cotton: bool = e0.get("cotton_sky", false)
+	var sky_material := sky.sky_material as ShaderMaterial
+	sky_material.shader = _shader("sky_cotton" if cotton else "sky")
+	sky.radiance_size = Sky.RADIANCE_SIZE_512 if cotton else Sky.RADIANCE_SIZE_256
+	sky.process_mode = Sky.PROCESS_MODE_QUALITY if cotton else Sky.PROCESS_MODE_AUTOMATIC
+	push("sky", sky.sky_material)
+	_apply_world(we.environment, sun)
+	# A style can opt into the tracked lens. Other styles keep their original far-only camera setting.
+	var lens := we.get_node_or_null("MiniatureLens") as TLStyleFx.MiniatureLens
+	if e0.has("miniature_lens"):
+		if lens == null:
+			lens = TLStyleFx.MiniatureLens.new()
+			lens.name = "MiniatureLens"
+			we.add_child(lens)
+		lens.configure(we, e0["miniature_lens"])
 	else:
-		we.camera_attributes = null
+		if lens != null:
+			lens.free()
+		if float(e0.get("dof_far", 0.0)) > 0.0:
+			var ca: CameraAttributesPractical = CameraAttributesPractical.new()
+			ca.dof_blur_far_enabled = true
+			ca.dof_blur_far_distance = float(e0["dof_far"])
+			ca.dof_blur_far_transition = float(e0.get("dof_far_transition", 150.0))
+			ca.dof_blur_amount = clampf(float(e0.get("dof_amount", 0.05)), 0.0, 0.3)
+			we.camera_attributes = ca
+		else:
+			we.camera_attributes = null
 	_apply_view(host)
-	var post: MeshInstance3D = rig.get_node_or_null("InkPost")
+	var post: TLStyleFx.TabletopPost = rig.get_node_or_null("InkPost")
 	if bool(opt.get("ink", true)):
 		if post == null:
-			post = MeshInstance3D.new()
+			post = TLStyleFx.TabletopPost.new()
 			post.name = "InkPost"
-			var q: QuadMesh = QuadMesh.new()
-			q.size = Vector2(2, 2)
-			post.mesh = q
-			var pm: ShaderMaterial = ShaderMaterial.new()
-			pm.shader = _shader("ink_post")
-			pm.render_priority = -100
-			post.material_override = pm
-			post.extra_cull_margin = 16384.0
-			post.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_screen_quad(post, ShaderMaterial.new(), -100)
 			rig.add_child(post)
-		push("ink", post.material_override)
+		var pm := post.material_override as ShaderMaterial
+		pm.shader = _shader("ink_post_contact" if e0.get("contact_only", false) else "ink_post")
+		push("ink", pm)
+		var tabletop: bool = e0.get("contact_only", false) and float(data["ink"].get("tabletop_reach", 0.0)) > 0.0
+		post.sun = sun if tabletop else null
+		post.active = false
+		post.process_mode = Node.PROCESS_MODE_ALWAYS
+		post.process_priority = 80
+		post.set_process(tabletop)
+		if e0.get("contact_only", false):
+			pm.set_shader_parameter(&"tabletop", false)
+			pm.set_shader_parameter(&"tabletop_opacity", float(data["ink"].get("tabletop_opacity", 0.47)))
+		if tabletop and post.is_inside_tree():
+			post._process(0.0)
 	elif post != null:
-		post.queue_free()
+		post.free()
 	var layer: CanvasLayer = rig.get_node_or_null("Grade")
 	if bool(opt.get("grade", true)):
 		if layer == null:
@@ -501,6 +519,16 @@ static func install(host: Node, opt: Dictionary = {}) -> void:
 		layer.queue_free()
 
 
+static func _screen_quad(node: MeshInstance3D, material: ShaderMaterial, priority: int) -> void:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(2, 2)
+	node.mesh = quad
+	material.render_priority = priority
+	node.material_override = material
+	node.extra_cull_margin = 16384.0
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
 ## N1. Screen-space smoothing for the ink pass: the contour is drawn after the scene's multisampling, so its outer
 ## side is a one-pixel stair. `env.line_aa` = "smaa" (default), "fxaa" or "off". Set on the host's viewport, because
 ## the engine project file is not the style's to edit.
@@ -516,6 +544,9 @@ static func _apply_view(host: Node) -> void:
 		_: vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 
 
+static var _shadow_filter_set := false
+
+
 static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	var s: Dictionary = data["sun"]
 	sun.light_color = Color(String(s["color"]))
@@ -527,8 +558,14 @@ static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	sun.directional_shadow_blend_splits = true
 	sun.shadow_blur = float(s["shadow_blur"])
 	sun.shadow_bias = float(s["shadow_bias"])
-	sun.shadow_normal_bias = 1.4
-	sun.light_angular_distance = 0.0
+	sun.shadow_normal_bias = float(s.get("normal_bias", 1.4))
+	sun.light_angular_distance = float(s.get("angular_size", 0.0))
+	# The PCSS filter is renderer-wide. A live return to classic restores the
+	# project's sampling quality. A fresh classic run never changes the filter.
+	if s.has("filter_quality") or _shadow_filter_set:
+		var default_quality: int = ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality")
+		RenderingServer.directional_soft_shadow_filter_set_quality(clampi(int(s.get("filter_quality", default_quality)), 0, RenderingServer.SHADOW_QUALITY_SOFT_ULTRA))
+		_shadow_filter_set = s.has("filter_quality")
 	var e: Dictionary = data["env"]
 	env.tonemap_mode = {"linear": Environment.TONE_MAPPER_LINEAR, "filmic": Environment.TONE_MAPPER_FILMIC,
 		"aces": Environment.TONE_MAPPER_ACES, "reinhard": Environment.TONE_MAPPER_REINHARDT}.get(e["tonemap"], 0)

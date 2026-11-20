@@ -18,6 +18,27 @@ var _log_px: bool = false
 var _log_cam: FileAccess = null
 
 
+# A named fixed play view can show both ends of a court. An actor registered
+# for HUD measurements must never pull its focus to one skater.
+class FixedPlayView extends Camera3D:
+	func _miniature_focus() -> Vector2:
+		return Vector2.ZERO
+
+	# The height field seen from above can cast short shadows onto a court.
+	func _miniature_tabletop() -> bool:
+		return get_camera_transform().basis.z.y >= cos(deg_to_rad(20.0))
+
+
+static func _subject_focus(cam: Camera3D, subject: Node3D, look_height: float) -> Vector2:
+	if not is_instance_valid(subject) or not subject.is_inside_tree():
+		return Vector2.ZERO
+	if subject is TLBiped and (subject as TLBiped).is_flying():
+		return Vector2.ZERO
+	var centre := subject.global_position + Vector3.UP * look_height
+	var eye := cam.get_camera_transform().affine_inverse() * centre
+	return Vector2(maxf(0.0, -eye.z), eye.y)
+
+
 func _ready() -> void:
 	_log_px = OS.get_environment("TL_LOOK_PX") != ""
 	if OS.get_environment("TL_LOOK_CAM") != "":   # P3: TL_LOOK_CAM=<file>: one line per frame, the active camera's place and aim (motion review)
@@ -29,7 +50,7 @@ func add_view(view: StringName, position: Vector3, target: Vector3, fov: float =
 	TLContext.require("camera", "ctx.cameras")
 	var cam: Camera3D = _views.get(view) as Camera3D
 	if cam == null:
-		cam = Camera3D.new()
+		cam = FixedPlayView.new()
 		cam.name = "View_" + String(view)
 		add_child(cam)
 		_register(view, cam)
