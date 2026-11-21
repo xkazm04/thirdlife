@@ -1,0 +1,368 @@
+{
+ "sentence": "a fight in a colosseum",
+ "creativity": "standard",
+ "model": "opus (claude-cli)",
+ "concept": {
+  "candidates": [
+   {
+    "pitch": "Gladiator duel with sword and shield: light, heavy, block, dodge, three rivals in a row before the emperor.",
+    "likelihood": 0.8
+   },
+   {
+    "pitch": "The crowd throws weapons into the sand; whoever the crowd loves gets the best throw.",
+    "likelihood": 0.35
+   },
+   {
+    "pitch": "Hits build knockback; slam rivals through the colosseum's stone columns, and falling stone crushes whoever stands beneath.",
+    "likelihood": 0.2
+   },
+   {
+    "pitch": "Retiarius against secutor: throw your net to tangle the armoured rival, reel in, strike before they cut free.",
+    "likelihood": 0.12
+   },
+   {
+    "pitch": "Fight for the emperor's thumb: the crowd boos safe play and releases lions onto the sand.",
+    "likelihood": 0.15
+   }
+  ],
+  "chosen": 2,
+  "why": "Destruction is the GIF: a rival smashed through a column, stone falling on the loser. Fracture and shove exist in the kernel. The obvious sword duel is the slop we shipped: nothing in the world changes.",
+  "hook": "slammed rivals crack the colosseum's columns, and falling stone crushes them",
+  "anchor": "arena brawler",
+  "references": [
+   {
+    "game": "Super Smash Bros. Ultimate",
+    "borrow": "damage percent scales knockback, so a battered rival flies further from the same hit"
+   },
+   {
+    "game": "For Honor",
+    "borrow": "three-direction guard read from the rival's weapon angle; a matched guard turns the swing into a parry"
+   },
+   {
+    "game": "Gang Beasts",
+    "borrow": "dazed rivals are thrown into stage hazards; the venue finishes fights, not health bars"
+   }
+  ]
+ },
+ "design": {
+  "pillars": [
+   {
+    "line": "Every fall involves stone",
+    "rules_out": "Health bars and finishing a rival with the sword alone"
+   },
+   {
+    "line": "Every hit is an exchange",
+    "rules_out": "One-hit knock-downs, unpunishable moves and a safe best move"
+   },
+   {
+    "line": "Aim with your feet",
+    "rules_out": "Auto-face, homing swings and attack arcs wider than 50 degrees"
+   }
+  ],
+  "verbs": [
+   {
+    "id": "light",
+    "input": "J: strike clip, 4% damage, 50 degree arc along your facing",
+    "anticipation_f": 4,
+    "active_f": 3,
+    "recovery_f": 14,
+    "cancel": "On hit: a second light (5%) or a roll from recovery frame 6; a whiff plays full recovery"
+   },
+   {
+    "id": "heavy",
+    "input": "K, hold up to 40 f to charge: strike_heavy clip, 12-20% damage, the column slammer",
+    "anticipation_f": 10,
+    "active_f": 4,
+    "recovery_f": 26,
+    "cancel": "None; an early release fires at 12%; a whiff leaves 26 f open"
+   },
+   {
+    "id": "guard",
+    "input": "L held: block clip, stops lights and heavies (heavy chips 3%); first 6 f of a press parries",
+    "anticipation_f": 2,
+    "active_f": 6,
+    "recovery_f": 8,
+    "cancel": "A parry cancels into any verb; a held guard drops straight into roll",
+    "defensive": true
+   },
+   {
+    "id": "roll",
+    "input": "Space plus direction: roll clip, 3.5 m, invulnerable frames 1 to 20",
+    "anticipation_f": 0,
+    "active_f": 22,
+    "recovery_f": 12,
+    "cancel": "Into light from recovery frame 8; never into guard",
+    "defensive": true
+   },
+   {
+    "id": "shoulder",
+    "input": "Shift: body_check clip, breaks guard, 3%, shoves 5 m/s base along your facing",
+    "anticipation_f": 14,
+    "active_f": 6,
+    "recovery_f": 22,
+    "cancel": "None; a light strike during its wind-up interrupts it"
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "shield_guard",
+    "title": "Gladius and Shield",
+    "line": "Hold ground, parry on an 8 f window, bash rivals into stone"
+   },
+   {
+    "id": "maul_breaker",
+    "title": "The Maul",
+    "line": "Slow charged heavies crack two at once; no parry, only a brace"
+   },
+   {
+    "id": "twin_blades",
+    "title": "Twin Blades",
+    "line": "Three-hit light chains, roll out of any recovery, guard stops lights only"
+   }
+  ],
+  "loops": {
+   "s3": "Read the rival's wind-up, guard, roll or strike first, land a hit and watch their percent jump",
+   "s30": "Build percent, step around to aim them at a cracked column, slam, then dodge or pin under the falling stone",
+   "m3": "A best-of-three bout against one ladder rival while the columns crumble; win and their gate opens to the next"
+  },
+  "context": [
+   "Columns crack and fall during a bout, opening space and leaving rubble drums that are still stone",
+   "Percent climbs: above 100% any stone touch at speed finishes, so both fighters fear the walls",
+   "At 20 s left every standing column sits one crack from collapse; at zero, sudden death",
+   "Each bout brings a rival with a new body, weapon and habit to read"
+  ],
+  "skill": {
+   "floor": "Press J to strike; a few hits and one heavy send Pip into the cracked column",
+   "ceiling": [
+    "Parry: tap guard within 6 f of a hit; the attacker staggers 30 f, open to a charged heavy",
+    "Bank slam: knockback follows your facing, so step around first and aim the rival at a cracked column",
+    "Shadow pin: shoulder a dazed rival back under the falling dust shadow before the stone lands"
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    4,
+    16
+   ],
+   "knockback": "Along the attacker's facing: TLBiped.shove(80 x (base + growth x victim%/100)); light 1+2, heavy 3+8, shoulder 5+3 m/s; mass divides it",
+   "reaction": "TLHit.react from the blow: 0.3 light flinch, 0.7 heavy stumble, 1.2 above 80%; TLHit.down only for stone slams, crushes, heavy over 120%",
+   "whiff": "Full recovery, a swish sound (TLAudio.play), no burst, no shake; the whiffer stays open 14 to 26 f",
+   "iframes_f": 20,
+   "telegraph_f": 24,
+   "shake": "None on lights; heavy 0.08 m over 10 f; column slam 0.18 over 16 f; collapse 0.35 over 30 f",
+   "camera": "ctx.cameras.orbit on a midpoint pivot, pitch 52, fov 50, player framed at 0.24; side-on yaw avoiding columns; 1.2 m outer wall"
+  },
+  "clips": [
+   {
+    "id": "brutus_rams_column",
+    "moment": "Brutus charges, the player rolls aside, Brutus smashes the cracked column and its drums fall on him"
+   },
+   {
+    "id": "slam_at_percent",
+    "moment": "A charged heavy at 130%: both freeze 16 f, the rival flies into a column, it creaks and topples"
+   },
+   {
+    "id": "shadow_pin",
+    "moment": "A dazed rival rolls out of the falling shadow; a shoulder shoves them back as the stone lands"
+   }
+  ],
+  "first_minute": "Opens on the sand facing Pip 6 m away, a twice-cracked column behind Pip, one hint line: J strike, K heavy, L guard",
+  "fail_state": "Two falls lose: the frame holds on the stone, then CRUSHED BY STONE, BRUTUS WINS 2-1 AT 87%; J restarts the bout at once",
+  "out_of_scope": [
+   "Health bars or sword-only knock-outs",
+   "More than one rival on the sand at once",
+   "Lions, nets, crowd-thrown weapons, an emperor's thumb vote",
+   "Character creator, online play, saved progress between sessions",
+   "Mounted combat or chariots"
+  ]
+ },
+ "design_reviewed": [
+  {
+   "type": "design_reviewed",
+   "round": 1,
+   "verdict": "ok",
+   "scores": {
+    "hook": 0.8,
+    "gif": 0.8,
+    "depth": 0.75,
+    "feel": 0.7,
+    "fit": 0.85
+   },
+   "notes": "No slop found. Before build: 1) Reconcile weapon sheet with rules: one parry window (6 f or 8 f), define the maul's brace (frames, what it stops), give twin blades' third light frame data. 2) Fix knockback units: drop the stray 80 multiplier or state it as impulse; light 1+2 m/s must stay below the 6 m/s crack speed. 3) Drop the For Honor reference or add directional guard."
+  }
+ ],
+ "brief": {
+  "pitch": "Batter gladiators until they fly, slam them into stone columns, and let the falling stone finish them.",
+  "aspects": [
+   {
+    "id": "falling_columns",
+    "icon": "twist",
+    "title": "Columns That Fall",
+    "line": "Slam rivals into columns, then stone falls on them",
+    "detail": "Eight stone columns, four drums each (TLBodies.make, stone). A slam at 6 m/s cracks one, 10 m/s two; third crack: 30 f creak, dust shadow on the sand, then the top drums fall along the slam line. Anyone beneath: TLHit.down 100 f, a fall. Rubble stays.",
+    "alternatives": [
+     {
+      "id": "spiked_outer_wall",
+      "title": "Spiked Outer Wall",
+      "line": "Slam rivals into the spiked wall around the sand"
+     },
+     {
+      "id": "sinking_sand",
+      "title": "Sinking Sand Pits",
+      "line": "Pits open under whoever is most battered"
+     },
+     {
+      "id": "falling_portcullis",
+      "title": "Falling Portcullis Gates",
+      "line": "Gates drop on whoever is shoved beneath them"
+     }
+    ]
+   },
+   {
+    "id": "percent_flight",
+    "icon": "power",
+    "title": "Hits Build Flight",
+    "line": "The more you hit them, the further they fly",
+    "detail": "No health bar. Each hit adds percent (light 4, heavy 12-20). Knockback follows the attacker's facing: base plus growth times percent, through TLBiped.shove, so heavy Brutus flies less. Above 100%, any slam into stone at 8 m/s is a fall.",
+    "alternatives": [
+     {
+      "id": "health_bar",
+      "title": "Classic Health Bar",
+      "line": "Hit until their health runs out"
+     },
+     {
+      "id": "stamina_break",
+      "title": "Stamina Break",
+      "line": "Tire them out, then shove them anywhere"
+     },
+     {
+      "id": "armour_plates",
+      "title": "Armour Plates",
+      "line": "Knock off armour pieces until they stand bare"
+     }
+    ]
+   },
+   {
+    "id": "weapon_racks",
+    "icon": "weapon",
+    "title": "Pick Your Weapon",
+    "line": "Sword and shield, a big maul, or twin blades",
+    "detail": "Three racks by the player's gate; walk through one between bouts. Gladius: 8 f parry window, shield bash. Maul: heavy charges to 60 f and cracks two. Twin blades: third light, roll cancels recovery, guard stops lights only. Same strike, strike_heavy, block, roll clips.",
+    "alternatives": [
+     {
+      "id": "one_fixed_gladiator",
+      "title": "One Fixed Gladiator",
+      "line": "Everyone fights with the same short sword"
+     },
+     {
+      "id": "rival_weapons",
+      "title": "Win Rivals' Weapons",
+      "line": "Beat a rival and take their weapon"
+     },
+     {
+      "id": "crowd_thrown",
+      "title": "Crowd Throws Weapons",
+      "line": "Grab whatever the crowd tosses onto the sand"
+     }
+    ]
+   },
+   {
+    "id": "rival_ladder",
+    "icon": "rival",
+    "title": "Four Rivals Climb",
+    "line": "Beat Pip, Brutus, Livia, then champion Castor",
+    "detail": "Each has its own body, weapon and habit: Pip (0.9 scale, wooden sword, 24 f raised swing), Brutus (1.35, maul, 36 f shoulder charge), Livia (twin knives, punishes repeated lights), Castor (shield and spear, parries long charges, herds you to cracked columns).",
+    "alternatives": [
+     {
+      "id": "endless_waves",
+      "title": "Endless Gladiator Waves",
+      "line": "Fight on until a rival finally beats you"
+     },
+     {
+      "id": "two_against_one",
+      "title": "Two Against One",
+      "line": "Face two rivals at once in later bouts"
+     },
+     {
+      "id": "copycat_rival",
+      "title": "Rival Who Learns",
+      "line": "One rival copies your favourite move each bout"
+     }
+    ]
+   },
+   {
+    "id": "side_camera",
+    "icon": "camera",
+    "title": "Side-On Arena View",
+    "line": "See both fighters and the column behind them",
+    "detail": "ctx.cameras.orbit on a pivot between the fighters, pitch 52 degrees, fov 50, player framed at 0.24 (ctx.cameras.frame). Yaw stays side-on to the fight line, turns at most 1.5 degrees a frame, and picks the side with no column within 2 m of the lens ray.",
+    "alternatives": [
+     {
+      "id": "over_shoulder",
+      "title": "Over the Shoulder",
+      "line": "Camera low behind your gladiator's back"
+     },
+     {
+      "id": "emperor_box",
+      "title": "Emperor's Box View",
+      "line": "One fixed view from the emperor's seat"
+     }
+    ]
+   },
+   {
+    "id": "last_twenty",
+    "icon": "time",
+    "title": "Final Twenty Seconds",
+    "line": "Every column left cracks; one slam drops it",
+    "detail": "Bouts are best of three falls, 90 s each. At 20 s left the remaining columns creak to one crack from collapse, the horn sounds and the crowd roars (TLAudio cheer). At zero with falls level: sudden death, the first stone touch is a fall.",
+    "alternatives": [
+     {
+      "id": "closing_gates",
+      "title": "Closing Walls",
+      "line": "Walls slide in and the sand gets smaller"
+     },
+     {
+      "id": "lions_released",
+      "title": "Lions Let Loose",
+      "line": "Lions join the fight when time runs low"
+     }
+    ]
+   }
+  ],
+  "rules": "A run is a ladder of four bouts (Pip, Brutus, Livia, Castor). A bout is best of three falls, 90 s. No health bar: hits add percent to the victim (light 4%, second light 5%, heavy 12-20% by charge, shoulder 3%, blocked heavy chips 3%). A FALL happens only through stone: (a) falling column drums land on a fighter at any percent, or (b) a fighter at 100%+ is knocked into stone (column, outer wall, rubble drum) at 8 m/s or more. After a fall both percents reset to 0, fighters restart 8 m apart; broken columns stay broken. VERBS (60 Hz): light J, strike clip, 4/3/14 f, 50 degree arc along facing, chains once on hit, roll-cancel from recovery f6. Heavy K, strike_heavy clip, 10 f wind-up, hold to charge to 40 f, 4 active, 26 recovery, no cancel. Guard L held, block clip, 2 f to raise, first 6 f of a press is a parry (attacker staggers 30 f, TLHit.react 0.7, held still), 8 f to lower. Roll Space+direction, roll clip, 3.5 m, invulnerable f1-20 of 22, 12 recovery, light from recovery f8. Shoulder Shift, body_check clip, 14/6/22 f, breaks guard (victim stumbles 24 f), shoves 5 m/s base, a light during its wind-up interrupts it. KNOCKBACK: along the attacker's facing (no auto-face), TLBiped.shove(facing * 80 * (base + growth * victim%/100)): light 1+2, heavy 3+8, shoulder 5+3 m/s; body mass divides it. FEEL: hit-stop on attacker and victim together (velocity and clip held): light 4 f, heavy 8-12 f by charge, stone slam 16 f; victim visual node vibrates 0.04 m decaying. TLHit.react on every hit (0.3 light, 0.7 heavy, 1.2 above 80%); TLHit.down only for stone slams (60 f), crushes (100 f), heavy over 120% (45 f, get-up roll from f30). Whiff: full recovery, swish sound, no burst, no shake. Shake: none on lights, heavy 0.08 m/10 f, column slam 0.18/16 f, collapse 0.35/30 f; debris and dust bursts and the break sound only on cracks and collapses. COLUMNS: 3 cracks each; a body hitting one at 6 m/s takes 1 crack, 10 m/s 2 (maul heavies always 2). On the third: 30 f creak with dust trickle and a dust shadow lane 1.2 x 4 m along the slam direction, then the top three drums fall into it. FIRST MINUTE: the run opens on the sand facing Pip 6 m away with a column at 2 cracks behind Pip; one hint line; Pip only walks in and swings. INTENSITY: calm open, columns fall as percent climbs, at 20 s left all standing columns drop to 1 crack, at 0 s with falls level sudden death. END: the screen names the cause, the score and the percent, shows run time against the best run this session; J restarts the same bout at once, a win walks the player back to the gate racks and the next rival's gate opens.",
+  "arena": "Oval sand floor 30 x 22 m (ground_patch, sand), ringed by a 1.2 m podium wall (stones kit row) that counts as stone; raked stands (stands kit) start 3 m behind it and rise away, red banners (flag) on top. Two entrance portals (entrance kit) at the long ends: the player's gate holds three weapon racks (fence segments with weapon props) in a 4 m bay. Eight columns on an ellipse of radii 9 x 6 m, each 0.9 m wide and 3.4 m tall, four stone drums of 0.85 m (TLBodies.make cylinders, stone, asleep until a collapse wakes them). Fallen drums stay as dynamic rubble on the sand, low obstacles that are still stone. Camera: ctx.cameras.orbit targeting a pivot node the pack keeps at the fighters' midpoint, pitch 52 degrees, fov 50, distance 9-16 m, player framed at 0.24 (ctx.cameras.frame), checked with subject_px. Yaw sits side-on to the fight line, eases at most 1.5 degrees a frame, and chooses the side where no standing column lies within 2 m of the lens-to-pivot ray; at 52 degrees pitch a 3.4 m column can only hide a fighter standing within 1.8 m behind it, which that rule excludes. The podium wall is 1.2 m and the stands are behind the lens, so nothing tall stands between lens and sand. Movement is relative to yaw_basis(). An off-screen rival gets a red edge arrow on the TLHud.",
+  "ai": "One rival at a time, steering with TLSteer.arrive to a preferred range, TLSteer.separate against the player, TLSteer.avoid around columns unless herding; capsules scaled with body_scale so bodies never overlap. Every tell is the rival's own wind-up clip, never a HUD marker. 1 PIP THE NOVICE: 0.9 scale, wooden practice sword, no shield, tunic. Habit: walks straight in and swings a light with a 24 f raised-sword wind-up; never guards or rolls. Scoring a fall: cheer clip. Beaten: falls and sits. 2 BRUTUS THE OX: 1.35 scale, heavy mass (flies about 40% less), bare-chested, two-hand maul. Habit: from 5-8 m lowers the shoulder and stamps dust for 36 f, then a body_check charge of 7 m; whiffed, he slides 18 f and is open. Roll aside near a cracked column and he cracks it himself. Scoring: taunt clip. Beaten: drops to a knee, crowd cheers. 3 LIVIA THE VIPER: 1.0 scale, lean, twin short knives, no helmet. Habit: reads repetition; after your second light in a row she side-steps (dodge clip) and answers with a light. Her heavy lunge has a 22 f crouched step-back tell. She circles to put a cracked column behind you. Scoring: taunt with crossed knives. Beaten: falls, the crowd boos her. 4 CASTOR THE CHAMPION: 1.2 scale, plumed helmet, tower shield and spear. Habit: holds guard and parries any heavy you charge longer than 20 f; his own overhead heavy has a 28 f spear-raised tell. He herds: shoulders you toward the most cracked column. Scoring: taunt clip. Beaten: kneels, the crowd roars. Difficulty grows by aggression (Pip attacks every 3 s, Livia every 1.5 s), reading (Livia counts your lights, Castor reads charge time), positioning (Livia and Castor use columns) and pattern chains (Castor: guard, parry, shoulder); speed, damage and percent rules are identical for all.",
+  "controls": "move: WASD, walk relative to the camera, facing follows movement (this is your aim). light: J, quick strike, tap twice for the chain. heavy: K, hold up to 40 f to charge, release to swing. guard: L, hold to block, press on impact to parry. roll: Space, roll in the move direction with invulnerable frames. shoulder: Shift, body_check charge that breaks guard and shoves.",
+  "mood": "Sunlit sandstone colosseum in the global inked toon style: ochre sand, pale stone drums, red banners, dust in the light. A crowd roar that swells with the highest percent, sharp metal clashes, a deep stone crack and a long rumbling collapse, a bronze horn at each bout."
+ },
+ "builder_runs": [
+  {
+   "transcript": "reports/concept-a1-s3.json",
+   "outcome": "ok",
+   "durationMs": 35251,
+   "tokensIn": 19030,
+   "tokensOut": 2738
+  },
+  {
+   "transcript": "reports/designer-a1-s4.json",
+   "outcome": "ok",
+   "durationMs": 201914,
+   "tokensIn": 28371,
+   "tokensOut": 18818
+  },
+  {
+   "transcript": "reports/design_review-a1-s5.json",
+   "outcome": "ok",
+   "durationMs": 22809,
+   "tokensIn": 14658,
+   "tokensOut": 1742
+  },
+  {
+   "transcript": "reports/design_review-a2-s6.json",
+   "outcome": "ok",
+   "durationMs": 17606,
+   "tokensIn": 14736,
+   "tokensOut": 1168
+  }
+ ]
+}

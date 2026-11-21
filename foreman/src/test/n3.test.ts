@@ -316,7 +316,7 @@ test("2 critic: it names the ROOT package while an art package has just merged: 
   const re = ofType(evs, "reopened");
   assert.equal(re.length, 1);
   assert.equal(re[0]?.package, "core");
-  assert.ok((re[0]?.reason ?? "").startsWith(`${CRITIC_ROUND} (milestone art_pass): the critic names this package`), re[0]?.reason);
+  assert.ok((re[0]?.reason ?? "").startsWith(`${CRITIC_ROUND} 1 of 2 (milestone art_pass): the critic names this package`), re[0]?.reason); // JOB.md 2026-11-21: revise round 1 of 2
   assert.match(re[0]?.reason ?? "", /the milestone's own package\(s\): paddle_ai/);
   // The round runs on the root; the art package that had just merged gets no round.
   assert.deepEqual(states(evs, "core"), ["queued1", "running1", "verifying1", "promoted1", "queued2", "running2", "verifying2", "promoted2"]);
@@ -324,7 +324,7 @@ test("2 critic: it names the ROOT package while an art package has just merged: 
   assert.ok(!states(evs, "paddle_ai").includes("queued3"));
   const sentBack = ofType(evs, "package_state").find((e) => e.package === "core" && e.state === "queued" && e.round === 2);
   assert.ok((sentBack?.detail ?? "").startsWith(CRITIC_ROUND));
-  assert.match(promptsOf(builder, "core")[1] ?? "", /sent back: critic \(V5\) NOT ok, one extra round: [^\n]*the ball is a dot: the court is far too wide for it/);
+  assert.match(promptsOf(builder, "core")[1] ?? "", /sent back: critic \(V5\) NOT ok, revise round 1 of 2 \(milestone art_pass\): [^\n]*the ball is a dot: the court is far too wide for it/);
   // The critic was given the package list with the files each owns.
   const criticPrompts = builder.calls.filter((c) => c.req.meta?.role === "critic").map((c) => c.req.prompt);
   assert.equal(criticPrompts.length, 3);
@@ -337,7 +337,7 @@ test("2 critic: it names the ROOT package while an art package has just merged: 
   const ms = ofType(evs, "milestone");
   assert.deepEqual(ms.map((m) => m.milestone), ["blockout", "art_pass"]);
   assert.ok((ms[1]?.seq ?? 0) > mergeAt, "the art_pass milestone waits for the round on the root");
-  assert.match(ms[1]?.summary ?? "", /critic \(V5\) ok: [^\n]*the ball reads now[^\n]*\(the verdict after the one extra round/);
+  assert.match(ms[1]?.summary ?? "", /critic \(V5\) ok: [^\n]*the ball reads now[^\n]*revise round 1 of 2: kept new/);
 });
 
 test("2 critic: an unknown or missing package falls back to the milestone's own packages and is logged as a note", async () => {
@@ -351,7 +351,7 @@ test("2 critic: an unknown or missing package falls back to the milestone's own 
     assert.equal(ofType(evs, "reopened").length, 0);
     const note = ofType(evs, "note").find((n) => why.test(n.text));
     assert.ok(note, JSON.stringify(ofType(evs, "note")));
-    assert.match(note?.text ?? "", /^\[foreman\] [^]*the critic's extra round goes to the package\(s\) of the art_pass milestone: paddle_ai/);
+    assert.match(note?.text ?? "", /^\[foreman\] [^]*revise round 1 goes to the package\(s\) of the art_pass milestone: paddle_ai/);
     assert.deepEqual(states(evs, "paddle_ai").slice(-4), ["queued3", "running3", "verifying3", "promoted3"]);
     assert.ok(!states(evs, "core").includes("queued2"));
   }

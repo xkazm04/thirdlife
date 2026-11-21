@@ -13,10 +13,11 @@ import { ClaudeCliBuilder } from "./builder/claude-cli.js";
 import { MessagesApiBuilder } from "./builder/messages-api.js";
 import { Verifier, resolveRunner } from "./verifier.js";
 import { Foreman, ForemanError, restsOnAClock } from "./foreman.js";
-import { designBrief, planCheck, planPackages, renderDesignerPrompt, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
+import { clipLimit, planCheck, planPackages, renderDesignerPrompt, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
 import { NEW_HELP, PHASE_HELP, creativityFlag, designCommand, designerInput, nextAfterBrief } from "./cli_design.js";
 import { writeGenerateCalls as writeCalls } from "./transcript.js";
 import { CRITIQUE_HELP, critiqueCommand } from "./cli_critique.js";
+import { QUALITY_HELP, qualityCommand } from "./cli_quality.js";
 import { cardLimits, cardsPlannerText } from "./cards.js";
 import { cardLines, cardView } from "./handview.js";
 import { KernelApiError } from "./manifest.js";
@@ -29,6 +30,7 @@ import { VerbsError, verbsFor, type RunnerVerbs } from "./verbs.js";
 import { RequestError, lockHolder, requestAnswer, requestChange } from "./requests.js";
 export { lockHolder };
 import { eventLine, statusTable } from "./status.js";
+import { appendRoom, designRoom } from "./room.js";
 export { statusTable };
 
 import { placeCommand } from "./place.js";
@@ -81,6 +83,7 @@ ${NEW_HELP}
   resume <job> [same options as run]  continues from job.jsonl; promoted packages are never rebuilt
 ${PHASE_HELP}
 ${CRITIQUE_HELP}
+${QUALITY_HELP}
   change <job> "<text>" [--decision JSON] [--package ID] [--no-run] [same options as run]
         a change request on a job with at least one merged package, also a finished (done) one. With --package that
         package is re-opened; without it the Planner is asked which package owns the problem (one short call). The
@@ -492,14 +495,14 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         if (placeCalls) out(`place calls logged: ${placeCalls.length}`);
         const model = str(a, "model");
         const t = num(a, "timeout-ms");
-        const res = await designBrief(builder, designerInput(designerEngineDir(a), sentence.trim(), creativity), { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
+        const res = await designRoom(builder, designerInput(designerEngineDir(a), sentence.trim(), creativity), { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
         writeGenerateCalls(log, builder, res.calls, model);
         if (!res.ok) {
           log.append({ type: "job_state", state: "failed", reason: res.reason.slice(0, 400) });
           out(`Designer failed: ${res.reason}`);
           return 1;
         }
-        log.append({ type: "brief_set", brief: res.value.brief, estimate: res.value.estimate });
+        appendRoom((b) => log.append(b), res.value);
         out(JSON.stringify(res.value, null, 1));
         if (a.flags["auto-approve"] === true) {
           log.append({ type: "brief_approved", by: "auto" });
@@ -545,7 +548,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         // reference copy (ref/) for both paths: a plan's `card` must be one of ref/cards/ (JOB.md 2026-11-17).
         const limits = { ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}), verbs: verbsOf(a, jobDir) };
         const ctx = plannerContext(a, jobDir);
-        const known = { ...limits, ...cardLimits(path.join(jobDir, "ref")) };
+        const known = { ...limits, ...cardLimits(path.join(jobDir, "ref")), ...clipLimit(s.brief) };
         if (from !== undefined) {
           const doc = JSON.parse(fs.readFileSync(path.resolve(from), "utf8")) as PlanAnswer;
           const errs = schemaErrors(JSON.parse(fs.readFileSync(path.join(PKG_ROOT, "prompts", "plan.schema.json"), "utf8")) as object, doc);
@@ -563,7 +566,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
             return 1;
           }
           const model = str(a, "model");
-          const input = { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, reactions: s.reactions, ...(s.creativity && { creativity: s.creativity }), ...ctx };
+          const input = { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, reactions: s.reactions, ...(s.creativity && { creativity: s.creativity }), ...ctx, ...(s.reviews.length > 0 && { review: (s.reviews.at(-1) as { notes: string }).notes }) };
           const res = await planPackages(builder, input, { ...(model ? { model } : {}), ...known });
           writeGenerateCalls(log, builder, res.calls, model);
           if (!res.ok) {
@@ -654,6 +657,9 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       }
       return runJob({ ...a, cmd: "resume", pos: [a.pos[0] as string] }, out);
     }
+
+    case "quality":
+      return qualityCommand(a, out, { jobDirOf, runJob });
 
     case "critique": {
       const jobDir = jobDirOf(a);

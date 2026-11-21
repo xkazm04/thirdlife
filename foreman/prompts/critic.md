@@ -5,6 +5,11 @@ against a rubric: whether the play reads at a glance, whether the look holds tog
 # Captures
 {{captures}}
 
+Some images may be MOTION STRIPS: a 4x3 tile of 12 consecutive moments, 5 frames apart, read left to right and top to
+bottom (each label says which frames). Judge motion on them: the wind-up before a hit, the impact (both bodies held for
+a few frames), the victim's body reacting away from the blow, a miss reading as a miss, a dodge or block showing in the
+body, fighters staying apart. A rubric item about feel is judged on the strips, not on the stills.
+
 # Context
 {{context}}
 

@@ -60,6 +60,11 @@ var _wd_tripped: bool = false
 var cpu: RefCounted                      # P1: processor time of this process (kernel/host/cpuclock.gd)
 var session: RefCounted                  # P7: this run's input record, kept or fed back (kernel/runner/session.gd)
 var _cut: bool = false                   # the run ended inside its last frame, before the physics step (a bot that was done)
+var strip_count: int = 0                 # L1 21 Nov: capture --strip=<count>x<step>; 0 = a still
+var strip_step: int = 0
+var strip_at: int = 0                    # the first strip frame (--frame); the run goes on to its last one
+var strip_images: Array[Image] = []
+var _grabbing: bool = false              # a strip image is being drawn (the tree is paused): this node does not tick
 
 
 func start(options: Dictionary) -> void:
@@ -76,6 +81,11 @@ func start(options: Dictionary) -> void:
 	frames_target = int(opts.get("frames", 3600))
 	if mode == "play":
 		frames_target = int(opts.get("frames", 1 << 40))   # interactive: until Esc or the window closes (--frames: a scripted session)
+	if mode == "capture" and not str(opts.get("strip", "")).is_empty():   # the host checked the text (2..16 x 1..60)
+		strip_count = str(opts["strip"]).get_slice("x", 0).to_int()
+		strip_step = str(opts["strip"]).get_slice("x", 1).to_int()
+		strip_at = frames_target
+		frames_target += strip_step * (strip_count - 1)
 	trace = Trace.new(opts)
 	session = Session.new()
 	session.call("begin", self)        # P7: --record, --input (mode replay: seed and length come from the record), --devices
@@ -157,7 +167,7 @@ func _notification(what: int) -> void:
 
 # ------------------------------------------------------------------------------------------------------ frames
 func _physics_process(_delta: float) -> void:
-	if finished:
+	if finished or _grabbing:            # PROCESS_MODE_ALWAYS: called while a strip image is drawn in a paused tree
 		return
 	var now: int = Time.get_ticks_usec()
 	if started:
@@ -166,6 +176,10 @@ func _physics_process(_delta: float) -> void:
 	if not started:
 		started = true
 		life.start()
+	if strip_count > 0 and frame < frames_target and frame >= strip_at and (frame - strip_at) % strip_step == 0 \
+			and strip_images.size() == (frame - strip_at) / strip_step:
+		_strip_grab()                  # frame `frame` is ticked on the next call, once the image is drawn
+		return
 	if mode == "play" and bool(session.call("ends_now")):     # Esc, unless the designer panel is open (ui/PATCHES.md 2)
 		_end_run()
 		return
@@ -244,20 +258,67 @@ func _capture() -> void:
 		load_errors.append({"kind": "load", "file": str(ctx.manifest["entry"]),
 			"message": "no camera view '%s'; the pack registered: %s" % [cam_name, ", ".join(ctx.cameras.views())]})
 	else:
-		ctx.cameras.activate(cam_name)
-		if str(opts.get("hud", "off")) != "on": TLHud.hide_all(ctx)    # captures are of the world, without the HUD (K2: --hud=on keeps it)
-		get_tree().paused = true        # freeze the sim at exactly this physics frame while the image is drawn
-		for i: int in 3:
-			await RenderingServer.frame_post_draw
-		var img: Image = get_viewport().get_texture().get_image()
+		var img: Image = await _grab(cam_name)
+		if strip_count > 0:
+			strip_images.append(img)
+			img = _strip_tile()
 		DirAccess.make_dir_recursive_absolute(out.get_base_dir())
 		var err: Error = img.save_png(out)
 		if err != OK:
 			load_errors.append({"kind": "engine", "file": out, "message": "could not write the image (error %d)" % err})
 		else:
-			capture_info = {"cam": cam_name, "frame": frame, "file": out, "width": img.get_width(), "height": img.get_height()}
-		get_tree().paused = false
+			capture_info = {"cam": cam_name, "frame": strip_at if strip_count > 0 else frame, "file": out,
+				"width": img.get_width(), "height": img.get_height()}
 	_end_run()
+
+
+## The view at this physics frame: the tree is paused (no physics step) while the image is drawn. The pack, its input,
+## cameras and bot are children of this PROCESS_MODE_ALWAYS node, so they inherit ALWAYS and a paused tree alone does
+## not stop their _physics_process: a strip, whose run goes on, makes this node pausable for the grab so that nothing
+## of the pack runs. A still keeps the drawing it always had (its run ends here).
+func _grab(cam_name: String) -> Image:
+	ctx.cameras.activate(cam_name)
+	if str(opts.get("hud", "off")) != "on": TLHud.hide_all(ctx)    # captures are of the world, without the HUD (K2: --hud=on keeps it)
+	if strip_count > 0:
+		process_mode = Node.PROCESS_MODE_PAUSABLE
+	get_tree().paused = true        # freeze the sim at exactly this physics frame while the image is drawn
+	for i: int in 3:
+		await RenderingServer.frame_post_draw
+	var img: Image = get_viewport().get_texture().get_image()
+	get_tree().paused = false
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	return img
+
+
+## L1 21 Nov: one strip image before frame `frame` is ticked; the run goes on afterwards. A view that cannot be drawn
+## (headless, no such camera) ends the run as a still would.
+func _strip_grab() -> void:
+	if ctx.headless or not ctx.cameras.has_view(str(opts.get("cam", ""))):
+		finished = true
+		_capture()
+		return
+	_grabbing = true
+	strip_images.append(await _grab(str(opts.get("cam", ""))))
+	_last_frame_usec = Time.get_ticks_usec()   # the drawing is not the frame's time
+	_grabbing = false
+
+
+## The strip images at half size, row-major in 4 columns (fewer when there are fewer images).
+func _strip_tile() -> Image:
+	var tw: int = strip_images[0].get_width() / 2
+	var th: int = strip_images[0].get_height() / 2
+	var cols: int = mini(4, strip_images.size())
+	var fmt: Image.Format = strip_images[0].get_format()
+	var tile: Image = Image.create_empty(tw * cols, th * ceili(strip_images.size() / float(cols)), false, fmt)
+	tile.fill(Color.BLACK)
+	for i: int in strip_images.size():
+		var im: Image = strip_images[i]
+		if im.get_format() != fmt:
+			im.convert(fmt)
+		im.resize(tw, th, Image.INTERPOLATE_LANCZOS)
+		tile.blit_rect(im, Rect2i(0, 0, tw, th), Vector2i((i % cols) * tw, (i / cols) * th))
+	strip_images.clear()
+	return tile
 
 
 # ------------------------------------------------------------------------------------------------------ watchdog

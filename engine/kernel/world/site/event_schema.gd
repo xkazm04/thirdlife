@@ -6,6 +6,8 @@ extends RefCounted
 ## aspect_reacted, plan_set.phases, phase_done, phase_reviewed. Word limits are part of the shape (`words<=N`). Where the
 ## contract is silent this mirrors the Foreman's own schema (foreman/data/job-events.schema.json, L2's three narrowings):
 ## alternative and phase ids are snake_case ids, an alternative id is never keep or drop, a note is never empty.
+## 2026-11-21 (the design room and the quality loop): brief.concept and brief.design are opaque objects, design_reviewed,
+## plan packages' serves, the milestone's round, kept and strips; a quality pause is job_state paused with reason "quality".
 const BASE := {"v": "version", "seq": "positive", "ts": "utc", "job": "nonempty", "type": "text"}
 const EVENTS := {
 	"job_created": {"sentence": "nonempty", "packId": "pack_id", "title": "nonempty", "answers": "answers?", "lot": "lot?",
@@ -23,7 +25,7 @@ const EVENTS := {
 	"reopened": {"package": "id", "reason": "nonempty"},
 	"question": {"package": "id", "text": "nonempty"},
 	"answer": {"package": "id", "text": "nonempty", "by": "nonempty", "inbox": "nonempty?"},
-	"milestone": {"milestone": "milestone", "captures": "path[]", "summary": "text"},
+	"milestone": {"milestone": "milestone", "captures": "path[]", "summary": "text", "round": "positive?", "kept": "kept?", "strips": "strip[]?"},
 	"comment": {"milestone": "milestone", "text": "nonempty", "by": "player"},
 	"replan": {"reason": "nonempty", "added": "id[]", "removed": "id[]", "changed": "id[]"},
 	"budget": {"policy": "policy", "state": "budget_state", "reason": "text"},
@@ -33,19 +35,22 @@ const EVENTS := {
 	"aspect_reacted": {"aspect": "id", "choice": "id", "note": "nonempty?"},
 	"phase_done": {"phase": "id"},
 	"phase_reviewed": {"phase": "id", "verdict": "verdict", "note": "nonempty?", "by": "approver"},
+	"design_reviewed": {"round": "positive", "verdict": "review_verdict", "scores": "review_scores", "notes": "text"},
 }
 const OBJECTS := {
 	"lot": {"at": "coordinate_pair", "yaw_deg": "yaw", "radius": "lot_radius"},
 	"decision": {"key": "id", "to": "option_id"},
 	"brief": {"rules": "nonempty", "arena": "nonempty", "ai": "nonempty", "controls": "nonempty", "mood": "nonempty",
-		"pitch": "words<=20?", "aspects": "aspects?"},
+		"pitch": "words<=20?", "aspects": "aspects?", "concept": "opaque?", "design": "opaque?"},
 	"aspect": {"id": "id", "icon": "icon", "title": "words<=4", "line": "words<=12", "detail": "words<=60",
 		"alternatives": "alternatives", "crazy": "true?"},
 	"alternative": {"id": "alternative_id", "title": "words<=4", "line": "words<=12"},
 	"phase": {"id": "id", "title": "nonempty", "try": "words<=12", "packages": "id[]"},
 	"estimate": {"packages": "positive", "wallMinutes": "number", "tokens": "count"},
 	"package": {"id": "id", "title": "nonempty", "milestone": "milestone", "deps": "id[]", "scope": "path[]",
-		"contract": "nonempty", "acceptance": "acceptance[]", "registers": "registers?"},
+		"contract": "nonempty", "acceptance": "acceptance[]", "registers": "registers?", "serves": "id[]?"},
+	"review_scores": {"hook": "unit", "gif": "unit", "depth": "unit", "feel": "unit", "fit": "unit"},
+	"strip": {"capture": "path", "label": "text"},
 	"acceptance": {"level": "level", "verb": "verb", "args": "text[]"},
 	"registers": {"capabilities": "capability[]?", "assets": "asset[]?", "tests": "test[]?", "cameras": "id[]?"},
 	"policy": {"kind": "budget_kind", "limit": "limit?"},
@@ -61,7 +66,7 @@ const ENUMS := {
 	"milestone": ["blockout", "greybox", "art_pass", "tuned"],
 	"budget_kind": ["tokens_per_hour", "only_while_playing", "overnight"], "budget_state": ["running", "paused"],
 	"billing_mode": ["subscription", "api_key", "none"], "job_state": ["running", "paused", "done", "failed", "cancelled"],
-	"creativity": ["crazy"], "verdict": ["pass", "hold"],
+	"creativity": ["crazy"], "verdict": ["pass", "hold"], "review_verdict": ["ok", "revise"], "kept": ["new", "previous"],
 	"icon": ["player", "rival", "arena", "goal", "twist", "camera", "power", "time", "crowd", "ball", "vehicle", "weapon", "build",
 		"music", "story"],
 	"capability": ["physics", "input", "ui", "audio", "vfx", "camera", "rules", "ai", "spawn", "fracture", "vehicle", "biped", "ball", "kit", "style"],
@@ -227,6 +232,8 @@ static func _valid_scalar(value: Variant, rule: String) -> bool:
 		"finite": return number
 		"yaw": return number and absf(value) <= 360
 		"lot_radius": return number and value >= 12
+		"opaque": return value is Dictionary     # 2026-11-21: brief.concept, brief.design (the site draws neither)
+		"unit": return number and value >= 0 and value <= 1
 		"number": return number and value >= 0
 		"version": return number and value == 1
 		"integer": return number and value == floor(value)

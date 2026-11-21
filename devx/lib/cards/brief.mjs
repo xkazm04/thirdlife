@@ -33,6 +33,11 @@ export function cardBrief(card) {
     L.push(`The example's hand tests, to copy (a plan without them is refused): ${card.hands.checks.map((c) => `${cardExample(card)}tests/bot_hand_${c.hand}.gd`).join(", ")}`);
   }
   if (card.variants?.length) { L.push("Known variants:"); for (const v of card.variants) L.push(`- "${v.ask}": ${v.change}`); }
+  // L1 of 21 Nov: the `fun` block (CARDS.md 2026-11-20) reaches the builders and the Planner too, not only the Designer.
+  if (card.fun) {
+    L.push("What makes this kind of game fun (the card's fun block: land it in the package that owns each part):");
+    for (const [k, items] of Object.entries(card.fun)) for (const i of items ?? []) L.push(`- ${k.replace(/_/g, " ")}: ${i}`);
+  }
   return L.join("\n") + "\n";
 }
 

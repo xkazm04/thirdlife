@@ -94,6 +94,8 @@ export function cardsPlannerText(refDir: string): string {
     lines.push(`- \`${c.id}\` (${c.pack !== undefined ? `house game engine/packs/${c.pack}` : `seed ${c.seed ?? "?"}`}): ${c.title}`);
     for (const w of c.applies_when) lines.push(`  - applies when: ${w}`);
     for (const w of c.not_when ?? []) lines.push(`  - NOT when: ${w}`);
+    // L1 of 21 Nov: the card's `fun` block reaches the Planner, so its contracts carry it (CARDS.md 2026-11-20).
+    for (const [k, v] of Object.entries((c as Card & { fun?: Record<string, string[]> }).fun ?? {})) lines.push(`  - fun, ${k.replace(/_/g, " ")}: ${v.join("; ")}`);
     const hands = (c as Card & { hands?: { checks: { hand: string }[] } }).hands;
     if (hands?.checks?.length) lines.push(`  - hand checks: when you name this card, some package must register ${hands.checks.map((h) => `tests/bot_hand_${h.hand}.gd`).join(", ")} (the Foreman plays them through a person's hand on many seeds before it promotes; the card's text tells the builder what each must find)`);
   }

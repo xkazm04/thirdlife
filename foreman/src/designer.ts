@@ -13,13 +13,17 @@ import { PKG_ROOT, REPO_ROOT } from "./paths.js";
 import { ENTRY_SCRIPT, MANIFEST_FILE, depClosure } from "./manifest.js";
 import { acceptanceOptions, verbOptionsText, type RunnerVerbs } from "./verbs.js";
 import { planCardProblems, planHandProblems } from "./cards.js";
+import { briefDesignText, conceptText, designAnswerSchema, qualityText, roomDesignProblems } from "./roomtext.js"; // JOB.md 2026-11-21: the design room
+import { servesProblems, type Concept } from "./room_wire.js";
+import { playerCheckProblems } from "./playercheck.js";
+export { PLAYER_CHECK_RE, playerCheckProblems, playerChecks } from "./playercheck.js";
 
 const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "prompts", name), "utf8");
 const schema = (name: string): object => JSON.parse(prompt(name)) as object;
 export const render = (template: string, vars: Record<string, string>): string => template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
 
 export interface GenerateCall {
-  role: "designer" | "planner" | "critic" | "placer";
+  role: "designer" | "concept" | "design_review" | "planner" | "critic" | "placer" | "critic_compare";
   attempt: number;
   prompt: string;
   result: RunResult;
@@ -53,6 +57,8 @@ export interface PlanLimits {
   cardHands?: Record<string, string[]>;
   /** JOB.md 2026-11-20: the v2 Planner writes `phases` (2 to 5); a hand-written plan and a re-plan may leave them out. */
   requirePhases?: boolean;
+  /** JOB.md 2026-11-21: the clip ids of the brief's design; a package's `serves` must name only these. */
+  clipIds?: string[];
 }
 
 /** The Planner's answer: the packages, the phases they are built in and, when one fits, the recipe card for the whole job. */
@@ -126,6 +132,9 @@ export interface DesignerInput {
   cards?: string;
   /** A redesign (`foreman redesign`): the latest brief and the reactions that stand on it. */
   previous?: { brief: Brief; reactions: Record<string, ReactionView> };
+  /** JOB.md 2026-11-21: the design room's chosen concept (step 1), and the producer's notes on a revise (step 3). */
+  concept?: Concept;
+  review?: string;
 }
 
 const CREATIVITY_TEXT: Record<"standard" | Creativity, string> = {
@@ -139,6 +148,7 @@ const CREATIVITY_TEXT: Record<"standard" | Creativity, string> = {
 export function briefText(brief: Brief): string {
   const lines = (["rules", "arena", "ai", "controls", "mood"] as const).map((k) => `- ${k}: ${brief[k]}`);
   if (brief.pitch !== undefined) lines.push(`- pitch: ${brief.pitch}`);
+  if (brief.design !== undefined) lines.push(briefDesignText(brief, "all"));
   if (brief.aspects !== undefined && brief.aspects.length > 0) {
     lines.push("- aspects (the design as the player saw it):");
     for (const a of brief.aspects) lines.push(`  - ${a.id} [${a.icon}]${a.crazy === true ? " (crazy)" : ""}: ${a.title}: ${a.line}. ${a.detail}`);
@@ -188,12 +198,15 @@ function designerVars(input: DesignerInput): Record<string, string> {
     engine: input.engine ?? "(the engine was not described for this call: design with bipeds, vehicles, balls, cameras, effects, sound, a HUD and simple kit parts only)",
     cards: input.cards ?? "(no recipe cards)",
     redesign,
+    concept: input.concept ? conceptText(input.concept) : "(no concept step ran: design the boldest game that fits the words)",
+    quality: qualityText(["1", "2", "6"]),
+    review: input.review ?? "",
   };
 }
 
 /** Problems of a Designer answer beyond the JSON schema: word limits, unique ids, the crazy rule, dropped aspects. */
 export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creativity" | "previous">): string[] {
-  const out = [...aspectProblems(brief.pitch, brief.aspects)];
+  const out = [...aspectProblems(brief.pitch, brief.aspects), ...roomDesignProblems(brief)];
   if (brief.pitch === undefined || brief.aspects === undefined) out.push("the brief needs a pitch and 3 to 7 aspects");
   out.push(...crazyProblems(brief.aspects, input.creativity, input.previous === undefined));
   if (input.previous) {
@@ -209,12 +222,12 @@ export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creat
  */
 export function designBrief(builder: Builder, input: string | DesignerInput, opts: GenerateOptions = {}): Promise<Generated<DesignerOutput>> {
   const i: DesignerInput = typeof input === "string" ? { sentence: input } : input;
-  return generate<DesignerOutput>(builder, "designer", prompt("designer.md"), designerVars(i), schema("brief.schema.json"), (v) => designerProblems((v as DesignerOutput).brief, i), opts);
+  return generate<DesignerOutput>(builder, "designer", prompt("designer.md"), designerVars(i), designAnswerSchema(), (v) => designerProblems((v as DesignerOutput).brief, i), opts);
 }
 
 /** The Designer prompt exactly as the first attempt of `designBrief` sends it (dry check; no model is called). */
 export function renderDesignerPrompt(input: DesignerInput): string {
-  return render(prompt("designer.md"), { ...designerVars(input), schema: JSON.stringify(schema("brief.schema.json"), null, 1), feedback: "" });
+  return render(prompt("designer.md"), { ...designerVars(input), schema: JSON.stringify(designAnswerSchema(), null, 1), feedback: "" });
 }
 
 /** JOB.md 2026-11-20: problems of a plan's phases, and of a missing `phases` when the Planner must write them. */
@@ -234,7 +247,7 @@ export function planPhaseProblems(packages: PackageSpec[], phases: unknown, requ
 /** Problems of a plan beyond its JSON shape: graph errors, scopes, the composed manifest, acceptance options, phases. */
 export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: unknown, phases?: unknown): string[] {
   const out = [...planProblems(packages), ...planCardProblems(card, limits.cards ?? []), ...planHandProblems(packages, typeof card === "string" ? card : undefined, limits.cardHands ?? {})];
-  out.push(...planPhaseProblems(packages, phases, limits.requirePhases === true));
+  out.push(...planPhaseProblems(packages, phases, limits.requirePhases === true), ...servesProblems(packages, limits.clipIds));
   if (limits.maxPackages !== undefined && packages.length > limits.maxPackages) {
     out.push(`the plan has ${packages.length} packages; the limit for this job is ${limits.maxPackages}: merge concerns until it fits`);
   }
@@ -309,46 +322,6 @@ export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: un
   return [...new Set(out)];
 }
 
-/** P10 item 6: the line a contract names the player's check with. */
-export const PLAYER_CHECK_RE = /^[ \t>*-]*PLAYER CHECK:[ \t]*`?(tests\/[A-Za-z0-9_\/.-]+\.gd)`?[ \t]*(.*)$/m;
-
-/** The player checks a plan names: the bot, the package whose contract names it, and what the line says it fails on. */
-export function playerChecks(packages: PackageSpec[]): { package: string; test: string; what: string }[] {
-  const out: { package: string; test: string; what: string }[] = [];
-  for (const p of packages) {
-    for (const m of p.contract.matchAll(new RegExp(PLAYER_CHECK_RE.source, "gm"))) out.push({ package: p.id, test: m[1] as string, what: (m[2] ?? "").trim() });
-  }
-  return out;
-}
-
-/**
- * P10 item 6 (the real hockey job, finding 7): a game the player takes part in needs a bot that FAILS when the
- * human-controlled side has nothing to do. A plan "has player input" when a package registers the capability
- * `input`. Such a plan must name the check in a contract, in one line a builder reads too:
- *   PLAYER CHECK: tests/<bot>.gd fails when <what the player's side can no longer do>
- * The bot must be registered by a package of the plan (the final verification runs every registered bot, whatever
- * the acceptance lists say), and the line must say what it fails on. Whether the bot really fails then is the
- * builder's work and the Verifier's: a plan check reads words.
- */
-export function playerCheckProblems(packages: PackageSpec[]): string[] {
-  const withInput = packages.filter((p) => (p.registers?.capabilities ?? []).includes("input"));
-  if (withInput.length === 0) return [];
-  const checks = playerChecks(packages);
-  const example = 'PLAYER CHECK: tests/<bot>.gd fails when <what the human-controlled side can no longer do>';
-  if (checks.length === 0) {
-    return [
-      `the game has player input (package "${withInput[0]?.id ?? ""}" registers the capability "input") but no contract names a player check. Add ONE line to the contract of the package that owns the bot: "${example}" (for example: "fails when the player's skater took no shot", "fails when the result is the same with and without the player's inputs", "fails when the player's side never touched the ball"). The bot drives the player's input actions, and its \`ok\` must depend on what the player's side did, not only on the game reaching its end`,
-    ];
-  }
-  const out: string[] = [];
-  const registered = new Set(packages.flatMap((p) => p.registers?.tests ?? []));
-  for (const c of checks) {
-    if (!registered.has(c.test)) out.push(`package "${c.package}": the PLAYER CHECK line names ${c.test}, which no package registers in registers.tests`);
-    if (c.what.replace(/[^A-Za-z]/g, "").length < 12) out.push(`package "${c.package}": the PLAYER CHECK line for ${c.test} must say what the bot fails on ("${example}")`);
-  }
-  return out;
-}
-
 export interface PlannerInput {
   sentence: string;
   packId: string;
@@ -367,6 +340,8 @@ export interface PlannerInput {
   cards?: string;
   /** The hard wall-clock limit of ONE builder run, so that packages are sized to fit it. */
   builderTimeoutMs?: number;
+  /** JOB.md 2026-11-21: the producer's last notes on the design (its warnings to the build). */
+  review?: string;
 }
 
 /** The Foreman's default builder time limit (foreman.ts), named to the Planner when the caller gives none. */
@@ -395,6 +370,10 @@ function plannerVars(input: PlannerInput, limits: PlanLimits, replan: string): R
     limit: limitLine(limits),
     verbOptions: verbOptionsText(limits.verbs),
     replan,
+    review: input.review !== undefined ? `
+The producer's last review of this design (its warnings: make each one true in a contract): ${input.review}
+` : "",
+    quality: input.brief.design !== undefined ? qualityText(["2", "6", "7:Planner"]) : "(the brief has no game design doc: build the brief as it is)",
   };
 }
 
@@ -404,8 +383,11 @@ export function renderPlannerPrompt(input: PlannerInput, limits: PlanLimits): st
 }
 
 function limitLine(limits: PlanLimits): string {
-  return limits.maxPackages !== undefined ? `At most ${limits.maxPackages} packages in total for this job (a hard limit).` : "Three to eight packages for a mini-game.";
+  return limits.maxPackages !== undefined ? `At most ${limits.maxPackages} packages in total for this job (a hard limit).` : "Four to ten packages for a mini-game: a real design needs room for the core exchange with its feel sheet, the rivals, the twist and the clip moments.";
 }
+
+/** JOB.md 2026-11-21: the clip ids a plan's `serves` may name (none without a design doc). */
+export const clipLimit = (brief: Brief): { clipIds?: string[] } => (brief.design ? { clipIds: brief.design.clips.map((c) => c.id) } : {});
 
 export function planPackages(builder: Builder, input: PlannerInput, opts: GenerateOptions & PlanLimits): Promise<Generated<PlanAnswer>> {
   return generate<PlanAnswer>(
@@ -414,7 +396,7 @@ export function planPackages(builder: Builder, input: PlannerInput, opts: Genera
     prompt("planner.md"),
     plannerVars(input, opts, ""),
     schema("plan.schema.json"),
-    (v) => planCheck((v as PlanAnswer).packages, { requirePhases: true, ...opts }, (v as PlanAnswer).card, (v as PlanAnswer).phases),
+    (v) => planCheck((v as PlanAnswer).packages, { requirePhases: true, ...opts, ...clipLimit(input.brief) }, (v as PlanAnswer).card, (v as PlanAnswer).phases),
     opts,
   );
 }
@@ -461,7 +443,7 @@ export function replanPackages(builder: Builder, input: ReplanInput, opts: Gener
       const fresh = (v as { packages: PackageSpec[] }).packages;
       const clash = fresh.filter((p) => keptIds.has(p.id)).map((p) => `package id "${p.id}" belongs to a kept package: do not return kept packages`);
       const phases = (v as PlanAnswer).phases !== undefined ? ["omit `phases` in a re-plan: the job's phases stay, and the Foreman places the replacement packages"] : [];
-      return [...clash, ...phases, ...planCheck([...input.kept, ...fresh.filter((p) => !keptIds.has(p.id))], { ...opts, requirePhases: false }, (v as PlanAnswer).card)];
+      return [...clash, ...phases, ...planCheck([...input.kept, ...fresh.filter((p) => !keptIds.has(p.id))], { ...opts, ...clipLimit(input.brief), requirePhases: false }, (v as PlanAnswer).card)];
     },
     opts,
   );

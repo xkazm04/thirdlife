@@ -44,6 +44,8 @@ export interface ForemanOptions {
   /** Model for job-level generate calls made by the loop (re-plan, critic). Default: `model`. */
   plannerModel?: string;
   criticModel?: string;
+  /** JOB.md 2026-11-21: film a motion strip per filmed point when the runner can (`--strip` in its verbs.json). Default true. */
+  strips?: boolean;
   /** Milestone captures: resolution and the physics frames to render for each declared camera. */
   captureRes?: string;
   /** Fixed capture frames. Default: 25 % and 75 % of the first bot's finish frame in its last passing report (120 and 480 without one). */

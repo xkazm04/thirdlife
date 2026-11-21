@@ -7,7 +7,7 @@ import { main, UsageError } from "../cli.js";
 import { drainInbox, readInbox } from "../inbox.js";
 import { JobLog, readLog, rebuildState } from "../joblog.js";
 import { PKG_ROOT } from "../paths.js";
-import { cleanup, FIXTURE, fixturePlan, tempDir, v2Brief } from "./helpers.js";
+import { cleanup, FIXTURE, fixturePlan, tempDir, v2Brief, roomSteps } from "./helpers.js";
 
 after(cleanup);
 const answers = { players: "3", sport: "ice_hockey" };
@@ -19,7 +19,7 @@ async function createJob() {
   const root = tempDir("editor");
   const site = path.join(root, "jobs"), script = path.join(root, "fake.json");
   const brief = readLog(FIXTURE).events.find((e) => e.type === "brief_set")!;
-  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer" }, json: { brief: v2Brief(), estimate: brief.estimate } }] }));
+  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer" }, json: { brief: v2Brief(), estimate: brief.estimate } }, ...roomSteps()] }));
   assert.equal(await main(["new", "ice hockey", "--site", site, "--adapter", "fake", "--fake-script", script,
     "--answers", JSON.stringify(answers), "--lot", JSON.stringify(lot)], quiet), 0);
   return path.join(site, fs.readdirSync(site)[0]!);

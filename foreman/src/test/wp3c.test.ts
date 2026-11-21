@@ -11,7 +11,7 @@ import { FakeBuilder, type FakeStep } from "../builder/fake.js";
 import { ClaudeCliBuilder } from "../builder/claude-cli.js";
 import { planPackages, renderPlannerPrompt } from "../designer.js";
 import { validateEvent, type JobEvent, type PackageSpec } from "../events.js";
-import { foldEvents, rebuildState, weightedTokens } from "../joblog.js";
+import { JobLog, foldEvents, rebuildState, weightedTokens } from "../joblog.js";
 import { budgetVerdict } from "../budget.js";
 import { Foreman, parseDeviations, CRITIC_ROUND, NO_VISIBLE_CHANGE } from "../foreman.js";
 import { existingText, prepareReference, refContents, referenceOf, referenceText } from "../reference.js";
@@ -167,7 +167,7 @@ test("2 planner: the prompt names what exists (kit parts, layout, rigs, style, s
   assert.match(text, /\*\*Seed games\*\* [^\n]*: seed_drive, seed_paddle, seed_wall\./);
   assert.match(text, /How to write a pack \(ten minutes\)/, "the seeds' own guide is in the prompt");
   assert.match(text, /hard time limit of 12 minutes\*\* of wall clock/);
-  assert.match(text, /\*\*The root package is the smallest thing that plays\*\*[^]*FEW files/);
+  assert.match(text, /\*\*The root package is the core verb exchange with its whole feel sheet, on greybox\*\*[^]*No file the package does not need/); // L1 21 Nov
   assert.match(text, /\*\*Later packages carry the rest\*\*/);
   assert.match(text, /\*\*An `art_pass` package must change what the camera sees\.\*\*[^]*no_visible_change/);
   assert.match(text, /At most 3 packages in total for this job \(a hard limit\)\./);
@@ -177,7 +177,7 @@ test("2 planner: the prompt names what exists (kit parts, layout, rigs, style, s
   assert.match(other, /At most 5 packages in total/);
   assert.match(other, /hard time limit of 25 minutes/);
   assert.match(other, /no kit, no rigs, no style layer and no seed games/);
-  assert.match(renderPlannerPrompt(input, { verbs: VERBS }), /hard time limit of 30 minutes[^]*Three to eight packages/);
+  assert.match(renderPlannerPrompt(input, { verbs: VERBS }), /hard time limit of 30 minutes[^]*Four to ten packages/);
   // The prompt a real Planner call sends is this same text.
   const b = new FakeBuilder({ steps: [{ outcome: "error", error: { kind: "exit", message: "stop here" } }] });
   await planPackages(b, { ...input, existing: existingText(ref), builderTimeoutMs: 12 * 60_000 }, { maxPackages: 3, verbs: VERBS });
@@ -331,23 +331,28 @@ test("5 critic: NOT ok gives the milestone's packages one extra round with the c
   assert.match(sentBack?.detail ?? "", /readability 0\.4[^]*Critic's notes: the ramp reads as a tangled pile[^]*\[reports\/critic-blockout-s\d+\.json\]/);
   for (const id of ["core", "court"]) {
     const p = promptsOf(builder, id)[1] ?? "";
-    assert.match(p, /Round 1 passed the Verifier and was merged, but the package was sent back: critic \(V5\) NOT ok, one extra round: [^\n]*the ramp reads as a tangled pile/, id);
+    assert.match(p, /Round 1 passed the Verifier and was merged, but the package was sent back: critic \(V5\) NOT ok, revise round 1 of 2 \(milestone blockout\): [^\n]*the ramp reads as a tangled pile/, id);
   }
   const ms = ofType(evs, "milestone");
   assert.deepEqual(ms.map((m) => m.milestone), ["blockout", "greybox"], "one milestone event per milestone");
-  assert.match(ms[0]?.summary ?? "", /critic \(V5\) ok: [^\n]*the court reads clearly now[^\n]*\(the verdict after the one extra round/);
+  assert.match(ms[0]?.summary ?? "", /critic \(V5\) ok: [^\n]*the court reads clearly now[^\n]*revise round 1 of 2: kept new \(the new version passes the critic\)/);
+  assert.deepEqual([ms[0]?.round, ms[0]?.kept], [1, "new"], "JOB.md 2026-11-21: the look after revise round 1 carries round and kept");
+  assert.ok(fs.existsSync(path.join(job.jobDir, "reports", "quality-blockout-r1", "pack", "scripts", "main.gd")), "the snapshot before the round");
   assert.equal(ofType(evs, "builder_run").filter((e) => e.package === undefined).length, 3, "three critic calls: blockout twice, greybox once");
 });
 
-test("5 critic: after the extra round the job continues whatever the verdict, and whatever happened in that round", async () => {
-  // NOT ok twice: no third round; the NOT ok verdict stays in the milestone event; the job is done.
+test("5 critic (JOB.md 2026-11-21): NOT ok after two revise rounds holds the job for the owner; a revise round that cannot be merged keeps the files before it", async () => {
+  // NOT ok three times: two revise rounds, then the job holds (paused, reason quality); the verdicts are in the milestone events.
   const job = tempJob("critic-twice");
-  const s = await foremanFor(job, { critic: true, script: scriptWith([criticSays(1, 0.4, "pile"), criticSays(2, 0.3, "still a pile")]) }).foreman.run();
-  assert.equal(s.jobState?.state, "done", JSON.stringify(s.jobState));
+  const s = await foremanFor(job, { critic: true, script: scriptWith([criticSays(1, 0.4, "pile"), criticSays(2, 0.3, "still a pile"), criticSays(3, 0.35, "a pile again")]) }).foreman.run();
+  assert.deepEqual(s.jobState, { state: "paused", reason: "quality" });
   const evs = readEvents(job.jobDir);
-  assert.equal(s.packages["core"]?.round, 2);
-  assert.equal(s.packages["court"]?.round, 2);
-  assert.match(ofType(evs, "milestone")[0]?.summary ?? "", /critic \(V5\) NOT ok: [^\n]*still a pile/);
+  assert.equal(s.packages["core"]?.round, 3);
+  assert.equal(s.packages["court"]?.round, 3);
+  assert.deepEqual(ofType(evs, "milestone").map((m) => [m.milestone, m.round]), [["blockout", 1], ["blockout", 2]]);
+  assert.match(ofType(evs, "milestone")[1]?.summary ?? "", /critic \(V5\) NOT ok: [^\n]*a pile again/);
+  assert.equal(s.qualityHeld?.milestone, "blockout");
+  assert.ok(!ofType(evs, "package_state").some((e) => e.package === "paddle_ai" && e.state === "running"), "a hold starts nothing");
 
   // The extra round itself fails (the builder errors): the package stays as it was merged, and the job goes on.
   const job2 = tempJob("critic-round-fails");
@@ -374,35 +379,42 @@ test("4+5 resume: kill at every event of a job with a critic round and a no-visi
   const blockoutBad: FakeStep = { match: { role: "critic", promptIncludes: "blockout-hero" }, json: { ok: false, scores: { silhouette: 0.8, readability: 0.4, style_consistency: 0.7, shows_play: 0.7 }, notes: ["pile"] } };
   const script = (): ReturnType<typeof scriptWith> => scriptWith([blockoutBad, invisible(1), visible(2)]);
   const ref = setup("killref");
-  const s0 = await foremanFor(ref, { critic: true, roundLimit: 3, script: script() }).foreman.run();
+  // JOB.md 2026-11-21: never liked, the blockout holds the job after two revise rounds; the owner accepts it.
+  const acceptQuality = async (job: TempJob, st: ReturnType<typeof foldEvents>, opts: Parameters<typeof foremanFor>[1] = { critic: true, roundLimit: 3, script: script() }): Promise<ReturnType<typeof foldEvents>> => {
+    if (st.jobState?.state !== "paused" || st.jobState.reason !== "quality") return st;
+    const log = JobLog.open(job.jobDir);
+    try {
+      log.append({ type: "comment", milestone: "blockout", text: "quality accept", by: "player" });
+    } finally {
+      log.close();
+    }
+    return foremanFor(job, opts).foreman.run();
+  };
+  const s0 = await acceptQuality(ref, await foremanFor(ref, { critic: true, roundLimit: 3, script: script() }).foreman.run());
   assert.equal(s0.jobState?.state, "done", JSON.stringify(s0.jobState));
   const refPack = packFiles(path.join(ref.jobDir, "pack"));
   const total = readEvents(ref.jobDir).length;
   assert.ok(total > 70, String(total));
+  const answeredAt = readEvents(ref.jobDir).find((e) => e.type === "comment")?.seq;
   for (let killAt = 5; killAt < total; killAt++) {
+    if (killAt === answeredAt) continue; // the owner's answer is written by the test, not by a Foreman that could stop
     const where = "stop after event " + String(killAt);
     const job = setup("k" + String(killAt));
-    await assert.rejects(
-      foremanFor(job, {
-        critic: true,
-        roundLimit: 3,
-        script: script(),
-        afterAppend: (ev) => {
-          if (ev.seq === killAt) throw new Error("simulated stop");
-        },
-      }).foreman.run(),
-      /simulated stop/,
-    );
-    const s = await foremanFor(job, { critic: true, roundLimit: 3, script: script() }).foreman.run();
+    const killing = { critic: true, roundLimit: 3, script: script(), afterAppend: (ev: JobEvent): void => {
+      if (ev.seq === killAt) throw new Error("simulated stop");
+    } };
+    // A stop after the hold happens in the run that follows the owner's answer.
+    await assert.rejects((async () => acceptQuality(job, await foremanFor(job, killing).foreman.run(), killing))(), /simulated stop/, where);
+    const s = await acceptQuality(job, await foremanFor(job, { critic: true, roundLimit: 3, script: script() }).foreman.run());
     const evs = readEvents(job.jobDir);
     assert.equal(s.jobState?.state, "done", where + ": " + JSON.stringify(s.jobState));
-    assert.deepEqual(ofType(evs, "milestone").map((m) => m.milestone), ["blockout", "art_pass"], where);
+    assert.deepEqual(ofType(evs, "milestone").map((m) => m.milestone), ["blockout", "blockout", "art_pass"], where + " (the looks after revise rounds 1 and 2, then accepted)");
     assert.deepEqual(s.order.map((id) => s.packages[id]?.state), ["promoted", "promoted", "promoted"], where);
     assert.equal(s.packages["paddle_ai"]?.round, 2, where);
     assert.deepEqual(packFiles(path.join(job.jobDir, "pack")), refPack, where + ": pack differs");
     const okRuns = ofType(evs, "builder_run").filter((e) => e.outcome === "ok" && e.package !== undefined).map((e) => String(e.package) + ":" + String(e.round));
     assert.equal(new Set(okRuns).size, okRuns.length, where + ": an ok builder round ran twice (" + okRuns.join(",") + ")");
-    assert.ok(ofType(evs, "package_state").filter((e) => e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND)).length <= 2, where + ": more than one critic round");
+    assert.ok(ofType(evs, "package_state").filter((e) => e.state === "queued" && (e.detail ?? "").startsWith(CRITIC_ROUND)).length <= 4, where + ": more than two revise rounds");
   }
 });
 

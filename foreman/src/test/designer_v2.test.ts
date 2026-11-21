@@ -12,7 +12,7 @@ import { criticRubric, replanPhases } from "../phases.js";
 import { designerCardsText, designerEngineText } from "../designctx.js";
 import { FakeBuilder } from "../builder/fake.js";
 import { main, UsageError } from "../cli.js";
-import { cleanup, tempDir, readEvents, fixturePhases, fixturePlan, v2Brief, VERBS, FIXTURE } from "./helpers.js";
+import { cleanup, tempDir, readEvents, fixturePhases, fixturePlan, v2Brief, roomSteps, VERBS, FIXTURE } from "./helpers.js";
 import { PKG_ROOT, REPO_ROOT } from "../paths.js";
 import type { JobEvent } from "../events.js";
 
@@ -239,7 +239,7 @@ function newJob(label: string, brief: Brief = v2Brief(), extra: string[] = []): 
   const root = tempDir(label);
   const site = path.join(root, "site");
   const script = path.join(root, "fake.json");
-  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer", promptIncludes: "REDESIGN" }, json: { brief: { ...brief, pitch: "A redesigned pitch." }, estimate } }, { match: { role: "designer" }, json: { brief, estimate } }] }));
+  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer", promptIncludes: "REDESIGN" }, json: { brief: { ...brief, pitch: "A redesigned pitch." }, estimate } }, { match: { role: "designer" }, json: { brief, estimate } }, ...roomSteps()] }));
   const made = run(["new", "a ball-and-paddle game in a walled court", "--site", site, "--adapter", "fake", "--fake-script", script, "--engine-dir", path.join(REPO_ROOT, "engine"), ...extra]);
   return { site, script, made, get jobDir() { return path.join(site, fs.readdirSync(site)[0] as string); } };
 }
@@ -296,7 +296,7 @@ test("command redesign: the Designer again with the brief and the reactions; a n
   const evs = readEvents(j.jobDir);
   const last = evs.at(-1);
   assert.ok(last?.type === "brief_set" && last.brief.pitch === "A redesigned pitch.");
-  const t = evs.filter((e) => e.type === "builder_run").at(-1);
+  const t = evs.filter((e) => e.type === "builder_run" && (e.transcript ?? "").startsWith("reports/designer-")).at(-1); // the design step (the room also ran concept and review)
   const prompt = (JSON.parse(fs.readFileSync(path.join(j.jobDir, t?.type === "builder_run" ? t.transcript ?? "" : ""), "utf8")) as { prompt: string }).prompt;
   assert.match(prompt, /- court \("Walled court"\): KEEP/);
   const st = await run(["status", j.jobDir]);

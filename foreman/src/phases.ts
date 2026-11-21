@@ -28,6 +28,7 @@ export function waitsForVerdict(s: JobState): boolean {
 
 /** May this package be started now? Without phases, always; with them, when its phase is the current one or earlier. */
 export function inReach(s: JobState, id: string): boolean {
+  if (s.qualityHeld) return false; // JOB.md 2026-11-21: a quality hold starts nothing until the owner answers it
   const cur = currentPhase(s);
   if (!cur) return true;
   const idx = phaseIndexOf(s, id);
