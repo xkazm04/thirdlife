@@ -8,6 +8,8 @@ import type { Brief } from "./events.js";
 import { designBrief, generate, type DesignerInput, type DesignerOutput, type GenerateCall, type GenerateOptions, type Generated } from "./designer.js";
 import { PKG_ROOT } from "./paths.js";
 import { REVIEW_SCORES, ROOM_LIMITS, conceptProblems, reviewProblems, type Concept, type DesignReview } from "./room_wire.js";
+import { takenProblems, takenText } from "./concepts.js";
+import { BRIEF_LIMITS, CONCEPT_LIMITS, REVIEW_LIMITS } from "./repair.js";
 import { REVIEW_THRESHOLD, conceptAnswerSchema, conceptText, qualityText, reviewAnswerSchema, slopIds, type ReviewAnswer } from "./roomtext.js";
 
 const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "prompts", name), "utf8");
@@ -23,21 +25,24 @@ function redesignBlock(input: DesignerInput): string {
   ].join("\n");
 }
 
+/** L1b: the room's input: a crazy job also carries the standard concepts made for the same sentence. */
+export type RoomInput = DesignerInput & { taken?: Concept[] };
+
 export interface RoomOutput extends DesignerOutput {
   /** The reviews in order (1 or 2), each written as a design_reviewed event before the brief_set. */
   reviews: DesignReview[];
 }
 
 /** The concept step alone (step 1). */
-export function conceptStep(builder: Parameters<typeof designBrief>[0], input: DesignerInput, vars: Record<string, string>, opts: GenerateOptions): Promise<Generated<{ concept: Concept }>> {
+export function conceptStep(builder: Parameters<typeof designBrief>[0], input: RoomInput, vars: Record<string, string>, opts: GenerateOptions): Promise<Generated<{ concept: Concept }>> {
   return generate<{ concept: Concept }>(
     builder,
     "concept",
     prompt("concept.md"),
-    { ...vars, quality: qualityText(["3", "4", "6"]), redesign: redesignBlock(input) },
+    { ...vars, quality: qualityText(["3", "4", "6"]), redesign: redesignBlock(input), taken: takenText(input.creativity, input.taken) },
     conceptAnswerSchema,
-    (v) => conceptProblems((v as { concept: Concept }).concept),
-    { ...opts, attempts: opts.attempts ?? 3 }, // word limits are counted: one more try than the default
+    (v) => [...conceptProblems((v as { concept: Concept }).concept), ...takenProblems((v as { concept: Concept }).concept, input.taken, input.sentence)],
+    { ...opts, attempts: opts.attempts ?? 3, limits: CONCEPT_LIMITS }, // word limits: a repair call first (repair.ts), then the attempts
   );
 }
 
@@ -64,7 +69,7 @@ export async function reviewStep(builder: Parameters<typeof designBrief>[0], inp
       const unknown = r.slop.filter((s) => known.length > 0 && !known.includes(s));
       return [...reviewProblems(r), ...(unknown.length > 0 ? [`slop ids ${unknown.join(", ")} are not in the slop list (${known.join(", ")})`] : [])];
     },
-    { ...opts, attempts: opts.attempts ?? 3 },
+    { ...opts, attempts: opts.attempts ?? 3, limits: REVIEW_LIMITS },
   );
   if (!res.ok) return res;
   const r = res.value;
@@ -80,7 +85,7 @@ export async function reviewStep(builder: Parameters<typeof designBrief>[0], inp
  * recorded and the brief is set whatever it says. The brief carries the concept and the design. A failed step fails
  * the room (nothing is written by this function; the caller logs the calls, the reviews and the brief).
  */
-export async function designRoom(builder: Parameters<typeof designBrief>[0], input: DesignerInput, opts: GenerateOptions = {}): Promise<Generated<RoomOutput>> {
+export async function designRoom(builder: Parameters<typeof designBrief>[0], input: RoomInput, opts: GenerateOptions = {}): Promise<Generated<RoomOutput>> {
   const calls: GenerateCall[] = [];
   const fail = (reason: string): Generated<RoomOutput> => ({ ok: false, reason, calls });
   const base = { sentence: input.sentence, creativity: creativityLine(input), engine: input.engine ?? "(the engine was not described for this call)", cards: input.cards ?? "(no recipe cards)" };
@@ -91,7 +96,7 @@ export async function designRoom(builder: Parameters<typeof designBrief>[0], inp
   const reviews: DesignReview[] = [];
   let feedback: string | undefined;
   for (let round = 1; round <= ROOM_LIMITS.reviewRounds; round++) {
-    const d = await designBrief(builder, { ...input, concept, ...(feedback !== undefined ? { review: feedback } : {}) }, { ...opts, attempts: opts.attempts ?? 3 });
+    const d = await designBrief(builder, { ...input, concept, ...(feedback !== undefined ? { review: feedback } : {}) }, { ...opts, attempts: opts.attempts ?? 3, limits: BRIEF_LIMITS });
     calls.push(...d.calls);
     if (!d.ok) return fail(d.reason);
     const brief: Brief = { ...d.value.brief, concept };

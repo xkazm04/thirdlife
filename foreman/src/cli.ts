@@ -31,6 +31,7 @@ import { RequestError, lockHolder, requestAnswer, requestChange } from "./reques
 export { lockHolder };
 import { eventLine, statusTable } from "./status.js";
 import { appendRoom, designRoom } from "./room.js";
+import { takenFor } from "./concepts.js"; // L1b: crazy reads the standard concepts of the same sentence
 export { statusTable };
 
 import { placeCommand } from "./place.js";
@@ -495,7 +496,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         if (placeCalls) out(`place calls logged: ${placeCalls.length}`);
         const model = str(a, "model");
         const t = num(a, "timeout-ms");
-        const res = await designRoom(builder, designerInput(designerEngineDir(a), sentence.trim(), creativity), { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
+        const res = await designRoom(builder, { ...designerInput(designerEngineDir(a), sentence.trim(), creativity), ...takenFor(site, sentence, creativity, jobDir) }, { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
         writeGenerateCalls(log, builder, res.calls, model);
         if (!res.ok) {
           log.append({ type: "job_state", state: "failed", reason: res.reason.slice(0, 400) });

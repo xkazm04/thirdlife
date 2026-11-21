@@ -352,6 +352,7 @@ export class Foreman {
       existing: existingText(this.refDir()),
       cards: cardsPlannerText(this.refDir()),
       builderTimeoutMs: this.o.builderTimeoutMs,
+      ...(s.reviews.length > 0 ? { review: (s.reviews.at(-1) as { notes: string }).notes } : {}), // L1b: the producer's last warnings
       kept,
       failed: allFailed.map((p) => {
         const report = p.lastVerify && !p.lastVerify.ok ? this.readClipped(this.dir(p.lastVerify.report), 4000) : undefined;

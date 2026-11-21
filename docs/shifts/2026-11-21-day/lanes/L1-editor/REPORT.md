@@ -140,3 +140,73 @@ NEXT THREE THINGS
 3. Give the critic the strip of each named clip moment first (aim the second filmed bot at the package that `serves`
    a clip), and have the Planner put the producer's last warnings into the root contract (done for `plan`; the
    re-plan path does not pass them yet).
+
+==================================================================================================================
+ROUND L1b (14:19-, same tree, base main 15d6ed5)
+
+P0. A word limit must never kill a good design (the crazy proof fight-colosseum-20261121-2 died on
+    "design playstyle 'murmillo' line has 17 words; at most 12"). MET.
+   - foreman/src/repair.ts: when an answer's ONLY problems are length limits (proved by cutting each offending field to
+     its limit: then the schema and every check pass), ONE repair call (role <role>_repair) lists each field with its
+     path, text, count and limit and asks for those fields alone ({"fixes":[{path,text}]}); the Foreman merges them
+     back and keeps everything else verbatim. A field still over after the repair is cut at its limit and the call's
+     problems say so. Content errors (a missing defensive verb, a wrong id) make no repair: the 3 attempts as before.
+   - Wired for the design step (BRIEF_LIMITS: pitch, aspects, every design text field, playstyle title 4 / line 12),
+     the concept step, the review's notes and the Planner's phase `try` lines.
+   - Fake test (quality.test.ts "repair:"): a design with two 20-word playstyle lines -> calls concept, designer,
+     designer_repair, design_review (no second design attempt); only the two fields in the repair prompt; the rest
+     verbatim; a stubborn repair answer is cut at 12 words; a content error beside the length problem goes to attempt 2.
+   - REAL opus crazy room (room-crazy-l1b.json): the design step overshot once ("thraex" line 13 > 12); the repair call
+     fixed it in 8.2 s (3081 tokens in, 230 out): "Small buckler: parry 10 f, roll 24 i-frames, guard 60 degrees".
+     4 model calls in all; review ok (hook 0.8, gif 0.74, depth 0.78, feel 0.76, fit 0.85).
+
+1. Crazy must not collapse onto the standard's idea family. MET.
+   - foreman/src/concepts.ts: a crazy `new`/`redesign` reads the STANDARD jobs of the same sentence in the same site;
+     their concepts go into the concept prompt ("Already designed: the STANDARD version ..."): a different idea family,
+     not a variation, not one of its candidates; `why` names the family left. Without one, the crazy prompt forbids the
+     most typical crazy move (for an arena: the arena breaking, falling stone, animals let loose) and asks for a rule
+     bent (what scores, who you control, what a hit does, the audience, time), 4+ idea families among the 5. A crude
+     guard sends back a chosen pitch+hook that shares most content words with a standard one (Jaccard > 0.4).
+   - Proof, the same real run: the site held the standard job (room-standard.json: "slam rivals into columns that
+     collapse"); the crazy concept prompt carried it; it chose candidate 1 (likelihood 0.12): "every clean hit rips the
+     weapon from your rival's hands" (one golden gladius; possession, not health; references For Honor, Nidhogg disarm,
+     NBA Jam on fire); `why`: "Left the standard's column-destruction and crowd-weapon families". Verbs: strike 4/3/14,
+     strike_heavy 10/4/28, guard (8 f parry, defensive), roll (i-frames 1-20, defensive), taunt; playstyles Murmillo
+     Wall / Thraex Dancer; crazy aspect "The Oiled Finale". The producer's notes name three frame contradictions
+     (feint cancel window, parry vs guard arc, a missing clip name) for the builders.
+
+2. The walkthrough log as a Create fixture with a site-reader check. MET in my files; the gate hook is PATCHES.md 4.
+   - engine/ui/fixtures/create/c13-quality-hold (79 events) and c14-quality-done (112), from a re-run of the fake
+     walkthrough on a fake engine that films strips (so `milestone.strips` is in them).
+   - engine/ui/quality_checks.gd (new): 6 checks, all PASS headless: 191 of 191 lines through the strict site reader;
+     all 13 new keys present; 5 broken copies refused (unknown scores key, verdict, score 1.5, kept "both", an absolute
+     strip path); the panel model shows c13 paused, pause_kind quality, the critic's words, reviews ["1 revise","2 ok"];
+     c14 done with no hold; Create's screen_of: c13 "building", c14 "done". create_checks.gd is not mine: the
+     three-line hunk that runs it inside ui.sh selftest and kernel block 630 is PATCHES.md 4.
+
+3. Clip moments first, and the producer's warnings on the re-plan path. MET.
+   - shots.ts: a milestone package that `serves` a clip is filmed before a newer one that serves none; a shot carries
+     its clip ids; its strips are labelled "CLIP MOMENT <ids> (its package serves it): MOTION STRIP ...", and the
+     critic gets them FIRST (then the stills, then the other strips).
+   - foreman.ts tryReplan passes the last design_reviewed notes; the Planner prompt carries "The producer's last review
+     of this design (its warnings: make each one true in a contract)". Test: quality.test.ts "L1b: ...".
+
+L1b GATES
+- quality.test.ts: 11 tests (L1 8 + L1b 3: repair, crazy concept, clip-first with re-plan warnings).
+- fast: PASS arch [12/12] (RUNNER.md --strip is landed), assets [4/4], cards [3/3], devx.test [229/229],
+  foreman.typecheck.
+- foreman suite: tests 261, pass 255, fail 0, skipped 6 (L1 landed with 258).
+
+L1b CHANGED FILES
+New: foreman/src/repair.ts, foreman/src/concepts.ts, engine/ui/quality_checks.gd (+ .uid),
+engine/ui/fixtures/create/c13-quality-hold/job.jsonl, c14-quality-done/job.jsonl, lane room-crazy-l1b.json.
+Changed: foreman/src/designer.ts (generate: the repair hook; Planner `try` limits; review into the re-plan prompt),
+room.ts (limits per step; taken concepts), cli.ts and cli_design.ts (takenFor), foreman.ts (re-plan review),
+shots.ts and quality.ts (clip strips first), prompts/concept.md ({{taken}}), src/test/quality.test.ts; lane
+walkthrough log and status re-run with strips.
+
+L1b BEHAVIOUR CHANGES
+- A length-only overshoot now costs one small repair call (role <role>_repair, logged as a job-level builder_run
+  with its transcript) instead of a whole new attempt or a failed job; a field still over is cut at its limit.
+- A crazy job in a site that holds a standard job of the same sentence reads its concept (a new input to the prompt).
+- The critic's images start with the clip-moment strips when a package serves a clip.

@@ -18,6 +18,8 @@ export interface Shot {
   finish?: number;
   /** "own": a package's own acceptance bot; "first": the pack's first test (the rule before L2b). */
   kind: "own" | "first";
+  /** L1b: the clip ids (brief.design.clips) its package `serves`: the critic sees this shot's strips first. */
+  clips?: string[];
 }
 
 /** At most this many bots are filmed per milestone (each at two frames, for every declared camera). */
@@ -65,11 +67,14 @@ export function planShots(
   const first = manifestTests[0];
   const firstFinish = first !== undefined ? finishOf(first) : undefined;
   const firstOwner = first !== undefined ? plan.find((p) => (p.registers?.tests ?? []).includes(first))?.id : undefined;
-  const shots: Shot[] = [{ ...(first !== undefined ? { bot: first } : {}), ...(firstOwner !== undefined ? { package: firstOwner } : {}), frames: fixed ?? shotFrames(firstFinish, "first"), ...(firstFinish !== undefined ? { finish: firstFinish } : {}), kind: "first" }];
+  const servesOf = (id: string | undefined): { clips?: string[] } => { const sv = plan.find((p) => p.id === id)?.serves ?? []; return sv.length > 0 ? { clips: sv } : {}; };
+  const shots: Shot[] = [{ ...(first !== undefined ? { bot: first } : {}), ...(firstOwner !== undefined ? { package: firstOwner } : {}), ...servesOf(firstOwner), frames: fixed ?? shotFrames(firstFinish, "first"), ...(firstFinish !== undefined ? { finish: firstFinish } : {}), kind: "first" }];
   const taken = new Set(first !== undefined ? [first] : []);
   const lastMerge = new Map<string, number>();
   for (const e of events) if (e.type === "merge" && e.files.length > 0) lastMerge.set(e.package, e.seq);
-  const newest = [...members].sort((a, b) => (lastMerge.get(b) ?? 0) - (lastMerge.get(a) ?? 0));
+  // L1b: a package that serves a clip moment is filmed before the newest one that serves none.
+  const serving = (id: string): number => ((plan.find((p) => p.id === id)?.serves ?? []).length > 0 ? 1 : 0);
+  const newest = [...members].sort((a, b) => serving(b) - serving(a) || (lastMerge.get(b) ?? 0) - (lastMerge.get(a) ?? 0));
   for (const id of newest) {
     if (shots.length >= MAX_SHOT_BOTS) break;
     const spec = plan.find((p) => p.id === id);
@@ -78,7 +83,7 @@ export function planShots(
     if (bot === undefined) continue;
     taken.add(bot);
     const finish = finishOf(bot);
-    shots.push({ bot, package: id, frames: fixed ?? shotFrames(finish, "own"), ...(finish !== undefined ? { finish } : {}), kind: "own" });
+    shots.push({ bot, package: id, frames: fixed ?? shotFrames(finish, "own"), ...(finish !== undefined ? { finish } : {}), kind: "own", ...servesOf(id) });
   }
   return shots;
 }
@@ -111,5 +116,5 @@ export function stripFile(milestone: string, cam: string, shot: Shot, from: numb
 /** What the critic is told about a strip: the tile's reading order and frames, the camera and the bot. */
 export function stripLabel(cam: string, from: number, shot: Shot): string {
   const last = from + STRIP.step * (STRIP.count - 1);
-  return `MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames ${from}, ${from + STRIP.step}, ... ${last}, ${STRIP.step} frames apart) of ${shotLabel(cam, from, shot).replace(/^camera /, "camera ")}`;
+  return `${shot.clips?.length ? `CLIP MOMENT ${shot.clips.join(", ")} (its package serves it): ` : ""}MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames ${from}, ${from + STRIP.step}, ... ${last}, ${STRIP.step} frames apart) of ${shotLabel(cam, from, shot).replace(/^camera /, "camera ")}`;
 }

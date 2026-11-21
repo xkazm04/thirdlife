@@ -5,6 +5,7 @@ import type { Builder, ProbeResult } from "./builder/types.js";
 import { JobLog, waitingPhase } from "./joblog.js";
 import { type DesignerInput, type GenerateCall } from "./designer.js";
 import { appendRoom, designRoom } from "./room.js";
+import { takenFor } from "./concepts.js";
 import { designerCardsText, designerEngineText } from "./designctx.js";
 import { choiceProblem, type Creativity } from "./v2.js";
 import { lockHolder } from "./requests.js";
@@ -100,7 +101,7 @@ export async function designCommand(a: Args, out: (s: string) => void, d: Design
       }
       const model = str(a, "model");
       const t = num(a, "timeout-ms");
-      const input = designerInput(d.engineDir(a, jobDir), s.sentence, s.creativity, { brief: s.brief, reactions: s.reactions });
+      const input = { ...designerInput(d.engineDir(a, jobDir), s.sentence, s.creativity, { brief: s.brief, reactions: s.reactions }), ...takenFor(path.dirname(jobDir), s.sentence, s.creativity, jobDir) };
       const res = await designRoom(builder, input, { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
       d.writeGenerateCalls(log, builder, res.calls, model);
       if (!res.ok) {

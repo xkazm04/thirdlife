@@ -62,7 +62,9 @@ test("room: round 2 is final (a second revise still sets the brief); word limits
   const long = { ...sampleConcept(), hook: Array.from({ length: 14 }, () => "very").join(" ") };
   const c = new FakeBuilder({ steps: [{ match: { role: "concept", attempt: 1 }, json: { concept: long } }, { match: { role: "concept", attempt: 2 }, json: { concept: sampleConcept() } }, { match: { role: "designer" }, json: { brief: v2Brief(), estimate } }, { match: { role: "design_review" }, json: { scores: scores(0.9), slop: [], verdict: "ok", notes: "ok" } }] });
   assert.ok((await designRoom(c, { sentence: "s" })).ok);
-  assert.match(c.calls[1]?.req.prompt ?? "", /concept hook has 14 words; at most 12/);
+  // L1b: a length-only problem gets one repair call for that field (this fake has no repair answer: the hook is cut).
+  assert.equal(c.calls[1]?.req.meta?.role, "concept_repair");
+  assert.match(c.calls[1]?.req.prompt ?? "", /- concept\.hook \(14 words, limit 12\)/);
   // A design without a defensive verb is sent back; an unknown slop id is refused.
   const soft = { ...v2Brief(), design: { ...sampleDesign(), verbs: sampleDesign().verbs.map((v) => ({ id: v.id, input: v.input, anticipation_f: v.anticipation_f, active_f: v.active_f, recovery_f: v.recovery_f, cancel: v.cancel })) } };
   const d = new FakeBuilder({ steps: [{ match: { role: "concept" }, json: { concept: sampleConcept() } }, { match: { role: "designer" }, json: { brief: soft, estimate } }] });
@@ -274,4 +276,88 @@ test("strips: with --strip in the engine's verbs.json every filmed point gets a 
   const p = foremanFor(plain, { critic: true, promoteTo: "job", captureFrames: [120], script: scriptWith([{ match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8 }, notes: ["fine"] } }]) });
   assert.equal((await p.foreman.run()).jobState?.state, "done");
   assert.equal(ofType(readEvents(plain.jobDir), "milestone")[0]?.strips, undefined);
+});
+
+// ---------------------------------------------------------------- L1b: the length repair and the crazy concept
+
+test("repair: an answer whose only problems are word limits gets ONE repair call for those fields; the rest is kept verbatim; still over is cut", async () => {
+  const long = "a long line that goes on and on about the murmillo and his big shield and his heavy short sword";
+  const rich = { ...v2Brief(), design: { ...sampleDesign(), playstyles: sampleDesign().playstyles.map((p) => ({ ...p, line: long })) } };
+  const fixed = { fixes: [{ path: "brief.design.playstyles[0].line", text: "Shield up, punish every lunge" }, { path: "brief.design.playstyles[1].line", text: "Brace, then counter with the slap" }] };
+  const steps: FakeStep[] = [
+    { match: { role: "concept" }, json: { concept: sampleConcept() } },
+    { match: { role: "designer" }, json: { brief: rich, estimate } },
+    { match: { role: "designer_repair" }, json: fixed },
+    { match: { role: "design_review" }, json: { scores: scores(0.8), slop: [], verdict: "ok", notes: "ok" } },
+  ];
+  const b = new FakeBuilder({ steps });
+  const r = await designRoom(b, { sentence: "s" });
+  assert.ok(r.ok, r.ok ? "" : r.reason);
+  assert.deepEqual(b.calls.map((c) => c.req.meta?.role), ["concept", "designer", "designer_repair", "design_review"], "one design call and one repair, no second design attempt");
+  assert.match(b.calls[2]?.req.prompt ?? "", /- brief\.design\.playstyles\[0\]\.line \(20 words, limit 12\): "a long line/);
+  assert.doesNotMatch(b.calls[2]?.req.prompt ?? "", /pillars/, "only the offending fields are sent");
+  assert.deepEqual(r.value.brief.design?.playstyles.map((p) => p.line), ["Shield up, punish every lunge", "Brace, then counter with the slap"]);
+  assert.deepEqual(r.value.brief.design?.verbs, sampleDesign().verbs, "the rest is kept verbatim");
+  // The repair answers with a field still too long: it is cut at its limit, and the call says so.
+  const stubborn = new FakeBuilder({ steps: [...steps.slice(0, 2), { match: { role: "designer_repair" }, json: { fixes: [{ path: "brief.design.playstyles[0].line", text: long }] } }, steps[3] as FakeStep] });
+  const s = await designRoom(stubborn, { sentence: "s" });
+  assert.ok(s.ok);
+  assert.equal(s.value.brief.design?.playstyles[0]?.line, "a long line that goes on and on about the murmillo and");
+  assert.ok(s.calls.some((c) => c.role === "designer_repair" && c.problems.some((p) => /playstyles\[1\]\.line was still 20 words after the repair: cut to its first 12/.test(p))));
+  // A content error beside the length problem: no repair, the usual attempts (and the second attempt is fine).
+  const noDefence = { ...rich, design: { ...rich.design, verbs: rich.design.verbs.map((v) => ({ id: v.id, input: v.input, anticipation_f: v.anticipation_f, active_f: v.active_f, recovery_f: v.recovery_f, cancel: v.cancel })) } };
+  const mixed = new FakeBuilder({ steps: [steps[0] as FakeStep, { match: { role: "designer", attempt: 1 }, json: { brief: noDefence, estimate } }, { match: { role: "designer", attempt: 2 }, json: { brief: v2Brief(), estimate } }, steps[3] as FakeStep] });
+  assert.ok((await designRoom(mixed, { sentence: "s" })).ok);
+  assert.ok(!mixed.calls.some((c) => c.req.meta?.role === "designer_repair"), "content errors are not a repair");
+});
+
+test("crazy concept: reads the standard concepts of the same sentence in the site, is told to leave their family, and a pick too close to them is sent back", async () => {
+  const site = tempJob("taken").root;
+  const std = path.join(site, "site", "fight-1");
+  fs.mkdirSync(std, { recursive: true });
+  const stdConcept = { ...sampleConcept(), hook: "slam rivals into columns that collapse on them", candidates: sampleConcept().candidates.map((c, i) => (i === 1 ? { ...c, pitch: "Slam rivals into stone columns until they collapse." } : c)) };
+  const ev = (seq: number, body: object): string => JSON.stringify({ v: 1, seq, ts: "2026-11-21T10:00:00.000Z", job: "fight-1", ...body });
+  fs.writeFileSync(path.join(std, "job.jsonl"), [ev(1, { type: "job_created", sentence: "A fight in a colosseum", packId: "game.fight", title: "Fight" }), ev(2, { type: "brief_set", brief: { ...v2Brief(), concept: stdConcept }, estimate })].join("\n") + "\n");
+  const { takenFor, takenText, takenProblems } = await import("../concepts.js");
+  const t = takenFor(path.join(site, "site"), "a fight in a colosseum", "crazy");
+  assert.equal(t.taken?.length, 1);
+  assert.deepEqual(takenFor(path.join(site, "site"), "a fight in a colosseum", undefined), {}, "standard reads nothing");
+  assert.match(takenText("crazy", t.taken), /Already designed: the STANDARD version[^]*chose "Slam rivals into stone columns until they collapse\."[^]*DIFFERENT idea family/);
+  assert.match(takenText("crazy", undefined), /Escape the obvious crazy move[^]*FORBIDDEN/);
+  assert.equal(takenText(undefined, t.taken), "");
+  const close = { ...sampleConcept(), hook: "slam rivals into stone columns that collapse", candidates: sampleConcept().candidates.map((c, i) => (i === 1 ? { ...c, pitch: "Slam gladiators into columns; the stone collapses on them." } : c)) };
+  assert.match(takenProblems(close, t.taken, "a fight in a colosseum").join(""), /too close to the standard design/);
+  assert.deepEqual(takenProblems(sampleConcept(), t.taken, "a fight in a colosseum"), []);
+  // In the room: the concept prompt carries the block, and a too-close pick is asked again.
+  const b = new FakeBuilder({ steps: [{ match: { role: "concept", attempt: 1 }, json: { concept: close } }, { match: { role: "concept", attempt: 2 }, json: { concept: sampleConcept() } }, { match: { role: "designer" }, json: { brief: v2Brief(true), estimate } }, { match: { role: "design_review" }, json: { scores: scores(0.8), slop: [], verdict: "ok", notes: "ok" } }] });
+  const r = await designRoom(b, { sentence: "a fight in a colosseum", creativity: "crazy", ...t });
+  assert.ok(r.ok, r.ok ? "" : r.reason);
+  assert.match(b.calls[0]?.req.prompt ?? "", /Already designed: the STANDARD version/);
+  assert.match(b.calls[1]?.req.prompt ?? "", /too close to the standard design/);
+});
+
+test("L1b: a package that serves a clip moment is filmed before a newer one that serves none; its strips come first, labelled; the re-plan reads the producer's last warnings", async () => {
+  const { planShots } = await import("../shots.js");
+  const { replanPackages } = await import("../designer.js");
+  const plan = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "foreman", "fixtures", "job-paddle", "job.jsonl"), "utf8").split("\n")[3] as string).packages as PackageSpec[];
+  const own = plan.map((p) => (p.id === "court" ? { ...p, serves: ["bank_past_rex"], acceptance: [...p.acceptance, { level: "V4" as const, verb: "bot" as const, args: ["--test=tests/bot_court.gd"] }], registers: { ...p.registers, tests: ["tests/bot_court.gd"] } } : p.id === "paddle_ai" ? { ...p, acceptance: [...p.acceptance, { level: "V4" as const, verb: "bot" as const, args: ["--test=tests/bot_ai.gd"] }], registers: { ...p.registers, tests: ["tests/bot_ai.gd"] } } : p));
+  const merges = [{ v: 1, seq: 10, ts: "t", job: "j", type: "merge", package: "court", files: ["a"] }, { v: 1, seq: 11, ts: "t", job: "j", type: "merge", package: "paddle_ai", files: ["b"] }] as unknown as JobEvent[];
+  const shots = planShots(own, merges, ["court", "paddle_ai"], ["tests/bot_rally.gd", "tests/bot_court.gd", "tests/bot_ai.gd"], () => 600);
+  assert.deepEqual(shots.map((s) => [s.bot, s.clips]), [["tests/bot_rally.gd", undefined], ["tests/bot_court.gd", ["bank_past_rex"]]], "court (serves a clip) beats paddle_ai (merged later, serves none)");
+  // In a run: core serves two clips and owns the first test: its strip is the critic's first image, labelled.
+  const job = designJob("clip-first");
+  const verbs = JSON.parse(fs.readFileSync(FAKE_VERBS_FILE, "utf8"));
+  verbs.verbs.capture.options.strip = { type: "string", default: "" };
+  fs.mkdirSync(path.join(job.engineDir, "kernel", "runner"), { recursive: true });
+  fs.writeFileSync(path.join(job.engineDir, "kernel", "runner", "verbs.json"), JSON.stringify(verbs, null, 1));
+  const critic: FakeStep = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, feel: 0.7, slop: 1 }, notes: ["ok"] } };
+  const { foreman, builder } = foremanFor(job, { critic: true, promoteTo: "job", captureFrames: [120], script: scriptWith([critic]) });
+  assert.equal((await foreman.run()).jobState?.state, "done");
+  const call = builder.calls.find((c) => c.req.meta?.role === "critic");
+  assert.match(call?.req.images?.[0] ?? "", /blockout-hero-bot_rally-strip-f90\.png$/);
+  assert.match(call?.req.prompt ?? "", /- image 1 of 2, attached to this message: blockout-hero-bot_rally-strip-f90\.png: CLIP MOMENT bank_past_rex, brace_counter \(its package serves it\): MOTION STRIP/);
+  // The re-plan prompt carries the producer's last warnings.
+  const b = new FakeBuilder({ steps: [{ match: { role: "planner" }, json: { packages: [] } }] });
+  await replanPackages(b, { sentence: "s", packId: "game.x", title: "X", brief: { ...v2Brief(), concept: sampleConcept() }, packContract: "(c)", review: "Give Rex a 24-frame telegraph.", kept: plan, failed: [], dependants: [] }, { verbs, attempts: 1 });
+  assert.match(b.calls[0]?.req.prompt ?? "", /The producer's last review of this design \(its warnings: make each one true in a contract\): Give Rex a 24-frame telegraph\./);
 });

@@ -98,8 +98,10 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   if (film.captures.length + film.strips.length === 0 || h.o.critic === false) return { line: "critic not run" };
   const model = h.o.criticModel ?? h.o.model;
   const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : [])];
-  const images = [...film.captures, ...film.strips.map((x) => x.capture)];
-  const labels = [...film.labels, ...film.strips.map((x) => x.label)];
+  // L1b: the strips of the named clip moments first, then the stills, then the other strips.
+  const clipFirst = [...film.strips.filter((x) => x.label.startsWith("CLIP MOMENT")), ...film.captures.map((c, i) => ({ capture: c, label: film.labels[i] ?? "" })), ...film.strips.filter((x) => !x.label.startsWith("CLIP MOMENT"))];
+  const images = clipFirst.map((x) => x.capture);
+  const labels = clipFirst.map((x) => x.label);
   const res = await critic(h.o.builder, images.map((c) => h.dir(c)), rubric, {
     ...(model ? { model } : {}),
     context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`].filter(Boolean).join("\n"),
