@@ -9,12 +9,12 @@ The fast gate is green on `df58f0b`.
 
 | Lane | Worktree / branch | Route | Selftest block | Agent | Started |
 |---|---|---|---|---|---|
-| L1 editor-quality | `n21d-editor` | Opus | foreman tests | (filled at launch) | |
-| L2 fight-clips | `n21d-clips` | Opus | 660-669 | | |
-| L3 falls | `n21d-falls` + arms `n21d-falls-a/-b/-c` | Opus director, 3 Astra arms | 670-679 | | |
-| L4 hockey-mechanics | `n21d-hockey` | Opus-directed Astra | 680-689 | | |
-| L5 hockey-crazy | `n21d-crazy` | Opus-directed Astra | 690-699 | | |
-| L6 crisp-harden | `n21d-harden` | Opus | 700-709 | | |
+| L1 editor-quality | `n21d-editor` | Opus | foreman tests | abe82e9cd3ac31cd2 | 10:35 |
+| L2 fight-clips | `n21d-clips` | Opus | 660-669 | abdeecd0bc705c999 | 10:35 |
+| L3 falls | `n21d-falls` + arms `n21d-falls-a/-b/-c` | Opus director, 3 Astra arms | 670-679 | acd2d67a6c917cc79 | 10:35 |
+| L4 hockey-mechanics | `n21d-hockey` | Opus-directed Astra | 680-689 | ae5b6ee06d0df4f21 | 10:35 |
+| L5 hockey-crazy | `n21d-crazy` | Opus-directed Astra | 690-699 | af7f0f974331308f8 | 10:35 |
+| L6 crisp-harden | `n21d-harden` | Opus | 700-709 | acb279a88b91ea27d | 10:35 |
 
 **Director's own work:**
 - Land L2 early (L4 waits on its clips and `stick_yaw`), then merge main into L4's tree.
