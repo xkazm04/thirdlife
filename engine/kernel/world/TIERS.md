@@ -71,7 +71,7 @@ at a tick boundary, and `due(tick)` is a pure function of the events applied so 
 - **Walk script** (`tl.walk/1`): `{name, ticks, mode: "smoke"|"bot", scenery?: "full"|"plot", tiers?: {overrides of
   tiers.json}, plots: [{id, pack, origin: [x, y, z], seed, yaw?, footprint?, on_leave?, mode?}], player: [[world tick,
   [x, y, z]], ...] (straight lines between the pairs), tickets?: [{tick, plot, tier, ticks}]}`.
-- **tiers.json** (`tl.tiers/1`): `sideline_m` 100, `backdrop_m` 0, `margin_m` {stage 2, sideline 10, backdrop 40},
+- **tiers.json** (`tl.tiers/1`): `sideline_m` 100, `backdrop_m` 960 (since 22 Nov, lane N5: ledger on beyond ten chunks; WORLD.md "Chunks"), `margin_m` {stage 2, sideline 10, backdrop 40},
   `adjacent_gap_m` 8, `dwell_ticks` 120, `default_footprint_m` [40, 40], `budget_ms` {front 6, backdrop 2}, `slice`
   {min 2, max 16: the owner's floor of one sixteenth of real time for a far game, set 2026-11-11; it was 30 when the
   numbers below were taken}, `valve` {every_ticks 30, hold_ticks 600, recover 0.7, speed_step_pm 100, speed_min_pm 100}, `cost`
