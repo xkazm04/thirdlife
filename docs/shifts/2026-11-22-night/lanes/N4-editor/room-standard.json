@@ -1,0 +1,377 @@
+{
+ "sentence": "a fight in a colosseum",
+ "creativity": "standard",
+ "model": "opus (claude-cli)",
+ "job": "fight-colosseum-20261121-1",
+ "concept": {
+  "template": {
+   "id": "duel",
+   "reference": "Dark Souls, Sekiro and For Honor duels, as docs/research/DUEL-PLAYBOOK.md",
+   "copies": [
+    "the DUEL-PLAYBOOK 6.4 state machine with its 8-frame input buffer",
+    "DUEL-PLAYBOOK 2 and 6.3 mutual reactions: every contact changes both fighters, hit-stop on both",
+    "DUEL-PLAYBOOK 6.7 rival archetypes by defence: the Wall absorbs, the Duelist parries, the Dancer avoids",
+    "Move table: light 18/4/16 strike, heavy 32/5/28 strike_heavy, charged 54/6/36 strike_heavy, bash 14/6/24 body_check",
+    "Defence table: block 4/held/6 block, parry 1/12/20 block, roll 3/18/15 roll, dodge 2/8/12 dodge, taunt 0/0/60 taunt"
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "Gladiator souls-like: duel three champions in the colosseum, each a different defence, to win your freedom.",
+    "likelihood": 0.8
+   },
+   {
+    "pitch": "Crowd favour from clean parries and taunts; at full favour the crowd throws you a heavier weapon.",
+    "likelihood": 0.4
+   },
+   {
+    "pitch": "Two gladiators chained wrist to wrist: every roll, bash and stagger yanks the other body too.",
+    "likelihood": 0.1
+   },
+   {
+    "pitch": "Colosseum duel ringed by stone walls; a parried or charged hit hurls rivals through them, and breaches stay.",
+    "likelihood": 0.15
+   },
+   {
+    "pitch": "Parry a heavy and the rival's weapon flies into the sand; whoever grabs it fights with its moves.",
+    "likelihood": 0.2
+   }
+  ],
+  "chosen": 3,
+  "why": "The breach is a GIF: a punish hurls a rival through shattering stone, built on kit barrier_wall fracture. Breaches change the space for later rounds. The obvious ladder has no hook; the chain needs physics we lack.",
+  "hook": "parries hurl rivals through stone walls that shatter and stay broken",
+  "anchor": "souls-like gladiator duel",
+  "references": [
+   {
+    "game": "For Honor",
+    "borrow": "a guard break or bash into a wall splats the rival, guaranteeing a follow-up heavy"
+   },
+   {
+    "game": "Sekiro: Shadows Die Twice",
+    "borrow": "posture bar fills on blocks and parries; full posture opens a deathblow regardless of health"
+   },
+   {
+    "game": "Injustice: Gods Among Us",
+    "borrow": "a charged hit at the arena edge sends the rival through the wall into a new area"
+   }
+  ]
+ },
+ "design": {
+  "pillars": [
+   {
+    "line": "Every contact changes both fighters.",
+    "rules_out": "Hits that only shove, blocks without attacker recoil, parries without a stunned attacker, one-sided clashes."
+   },
+   {
+    "line": "The wall is earned, never given.",
+    "rules_out": "Random collapses, breaches from plain lights, scripted destruction, walls that break without a parry or charge."
+   },
+   {
+    "line": "Skill is in the feet and the timing.",
+    "rules_out": "Auto-face, lock-on aim assist, attack arcs over 50 degrees, speed-stat difficulty, hidden help."
+   }
+  ],
+  "verbs": [
+   {
+    "id": "light",
+    "move": "light",
+    "input": "Light (J): gladius cut, clip strike; chain windup 12. Blocked: attacker recoils 0.15 m, -2 safe.",
+    "anticipation_f": 18,
+    "active_f": 4,
+    "recovery_f": 16,
+    "cancel": "Chains into light from the last 4 f of recovery; parried: attacker PARRIED 52, weapon knocked away."
+   },
+   {
+    "id": "heavy",
+    "move": "heavy",
+    "input": "Heavy (K): overhead, clip strike_heavy, armour f12-37; hold to charge 54/6/36, unblockable, red flash f20. Blocked: attacker recoils, -22.",
+    "anticipation_f": 32,
+    "active_f": 5,
+    "recovery_f": 28,
+    "cancel": "Feint with Guard before f20 (6 stamina); a charged hit or post-parry heavy near a wall breaches it."
+   },
+   {
+    "id": "bash",
+    "move": "bash",
+    "input": "Bash (E): shoulder charge, clip body_check, unblockable, unparryable. Lands: GUARDBROKEN 30, pushed 1.0 m; wall within 1.2 m: WALLSPLAT 60.",
+    "anticipation_f": 14,
+    "active_f": 6,
+    "recovery_f": 24,
+    "cancel": "Loses to any active hit and a roll; whiffed: 24 f open. A splat guarantees the follow-up heavy."
+   },
+   {
+    "id": "parry",
+    "move": "parry",
+    "defensive": true,
+    "input": "Guard (Shift) tap, clip block: parry window f2-13; hold becomes block 4/held/6. Parried: attacker PARRIED, weapon knocked wide.",
+    "anticipation_f": 1,
+    "active_f": 12,
+    "recovery_f": 20,
+    "cancel": "Whiffed: 20 f open, 8 stamina; re-tap within 30 f shrinks the window by 4. Parry then heavy breaches."
+   },
+   {
+    "id": "roll",
+    "move": "roll",
+    "defensive": true,
+    "input": "Roll (Space + direction), clip roll: i-frames f4-21, 20 stamina; recovery f22-36 is a counter-hit window.",
+    "anticipation_f": 3,
+    "active_f": 18,
+    "recovery_f": 15,
+    "cancel": "Beats attacks and bash, loses to a delayed heavy; starts from IDLE, BLOCK or last 4 f of recovery."
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "breaker",
+    "title": "Wall Breaker",
+    "line": "Armoured heavies and bashes walk rivals backwards into stone, then charge."
+   },
+   {
+    "id": "riposte",
+    "title": "Riposte Artist",
+    "line": "Wait, parry, and turn every punish into a hurl through stone."
+   },
+   {
+    "id": "runner",
+    "title": "Sand Runner",
+    "line": "Roll through swings, punish recoveries, fight through the breached corridor."
+   }
+  ],
+  "loops": {
+   "s3": "Read the rival's windup, answer with parry, block or roll, then punish the opening.",
+   "s30": "Drain stamina and posture, steer the rival's back to a wall, land a splat or breach.",
+   "m3": "Win a best-of-3 in an arena your breaches reshape, then face the next champion."
+  },
+  "context": [
+   "Each breach turns a splat wall into an opening onto the narrow corridor.",
+   "Rival phase 2 under 50 % HP adds a new string.",
+   "Round 3 Emperor's Decree: any landed heavy near a wall breaches it.",
+   "Under 30 HP a fighter's parries glow and load +50 % posture.",
+   "Each ladder rival defends differently: absorb, parry, avoid."
+  ],
+  "skill": {
+   "floor": "Press Light to cut; Orso's slow heavy and long return teach the punish.",
+   "ceiling": [
+    "Parry a light, take the guaranteed heavy while their back faces a wall: a breach.",
+    "Feint a heavy before f20 into a bash for a wall splat, then charge.",
+    "Fight in the corridor: two near walls make every bash splat and every charge breach."
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    3,
+    14
+   ],
+   "knockback": "TLBiped.shove impulse = base + growth x damage taken; light 0.25 m, heavy 0.6 m, breach 9 m/s through the wall.",
+   "reaction": "Both freeze; victim TLHit.react(dir, 0.3 light, 0.7 heavy, 1.2 counter-hit); blocked attacker recoils, parried attacker staggers, weapon flung wide; TLHit.down only on charged or breach.",
+   "whiff": "Full recovery plays, a swish sound (TLAudio.play), no burst, stamina regen paused 20 f; the swinger stays open.",
+   "iframes_f": 18,
+   "telegraph_f": 24,
+   "shake": "None on lights; heavy 0.08 over 10 f; wall splat 0.15 over 14 f; breach 0.3 over 20 f with debris.",
+   "camera": "Raised orbit over the player's shoulder, pitch 40, pivot between fighters, player 0.25 of frame; low walls never block the lens."
+  },
+  "clips": [
+   {
+    "id": "parry_breach",
+    "moment": "Livia's thrust is parried, sparks fly, the heavy hurls her through shattering stone."
+   },
+   {
+    "id": "splat_charge",
+    "moment": "Orso is bashed into the wall, splatted, then a red-flash charged hit breaks it."
+   },
+   {
+    "id": "corridor_catch",
+    "moment": "Kass rolls through a heavy in the corridor, gets caught in recovery and splatted."
+   }
+  ],
+  "first_minute": "The sand opens on Orso 4 m away, one HUD hint: 'Shift as his blade falls: parry'. His first heavy is slow; a parry leaves him open.",
+  "fail_state": "End screen names the cause ('Parried 3 times by Livia'), breaches made and the next champion; Light restarts in 1 s.",
+  "out_of_scope": [
+   "Weapon pickups or crowd-thrown weapons",
+   "Directional guard and stances",
+   "Ragdolls, jumping or climbing over walls",
+   "Two-player or online versus",
+   "Gear stats or a character creator"
+  ]
+ },
+ "design_reviewed": [
+  {
+   "round": 1,
+   "verdict": "ok",
+   "scores": {
+    "hook": 0.8,
+    "gif": 0.85,
+    "depth": 0.85,
+    "feel": 0.8,
+    "fit": 0.85
+   },
+   "notes": "No slop found; build it. Fix three gaps: breach damage reads \"40 total\" in the aspect but \"+10 on top of the hit\" in the rules, so pick one. Say whether the 1.0 m outer stones splat or breach, and what happens once all 8 segments are down. Name the 6 f input response next to the 8-frame buffer. Orso's tower shield needs its own block clip, not a plain body on his arm."
+  }
+ ],
+ "brief": {
+  "pitch": "Duel gladiators in a stone ring; parry or charge a hit and hurl your rival through the wall.",
+  "aspects": [
+   {
+    "id": "breach_hurl",
+    "icon": "twist",
+    "title": "Walls That Break",
+    "line": "Parry, then smash your rival through stone that stays broken.",
+    "detail": "A charged hit, or a heavy within 44 f after a parry, on a rival within 1.5 m of a wall: TLFracture wakes the segment, TLBiped.shove 9 m/s, TLHit.down 45 f, 40 damage total. The gap stays all match: no splat there, an opening to the corridor.",
+    "alternatives": [
+     {
+      "id": "pillar_topple",
+      "title": "Falling Pillars",
+      "line": "Hurl rivals into pillars that crush whoever stands below."
+     },
+     {
+      "id": "ring_out_pit",
+      "title": "Pit Ring-Out",
+      "line": "Knock rivals off the sand ledge into the lion pit."
+     },
+     {
+      "id": "crowd_weapon",
+      "title": "Crowd Weapons",
+      "line": "Clean parries make the crowd throw you a heavier weapon."
+     }
+    ]
+   },
+   {
+    "id": "guard_parry",
+    "icon": "player",
+    "title": "Parry Or Pay",
+    "line": "Tap guard as the blade comes; their sword flies wide.",
+    "detail": "Copied DUEL-PLAYBOOK core: light 18/4/16, heavy 32/5/28 (hold: charged 54/6/36), bash 14/6/24, parry window f2-13, roll i-frames 4-21. Stamina 100 and posture 100 fill and drain per 6.1; full posture BROKEN 90 f, a heavy then is a deathblow.",
+    "alternatives": [
+     {
+      "id": "directional_guard",
+      "title": "Three-Way Guard",
+      "line": "Hold guard high, left or right to match their swing."
+     },
+     {
+      "id": "stamina_only",
+      "title": "Stamina Souls",
+      "line": "No parry; roll and block, stamina decides every trade."
+     },
+     {
+      "id": "one_cut",
+      "title": "One-Cut Duel",
+      "line": "Any clean hit kills; rounds are five seconds of nerves."
+     }
+    ]
+   },
+   {
+    "id": "rival_ladder",
+    "icon": "rival",
+    "title": "Three Champions",
+    "line": "A shield brute, a parry master, a twin-blade dancer.",
+    "detail": "DUEL-PLAYBOOK 6.7 archetypes on own builds: Orso the Wall (body_scale 1.25, tower shield, poise 40, HP 120), Livia Ferro the Duelist (slim, long blade, parry 14), Kass the Dancer (0.9 scale, twin blades, roll 30). Tiers 6.6: react 30/22/18/15 f, defend 0.30-0.70.",
+    "alternatives": [
+     {
+      "id": "beast_rivals",
+      "title": "Beasts Of Arena",
+      "line": "Fight a bear, a lion and a bull, each charging differently."
+     },
+     {
+      "id": "two_on_one",
+      "title": "Two On One",
+      "line": "Two gladiators at once; hurl one into the other."
+     }
+    ]
+   },
+   {
+    "id": "ring_walls",
+    "icon": "arena",
+    "title": "Ring Of Stone",
+    "line": "Low stone walls ring the sand; a corridor waits behind.",
+    "detail": "Sand octagon 14.5 m across inside 8 barrier_wall segments, 1.2 m high, 6 m long. Behind them a 2.5 m corridor before a 1.0 m stones wall. Intact walls splat (bash: WALLSPLAT 60); breaches open the corridor, where walls are close on both sides.",
+    "alternatives": [
+     {
+      "id": "closing_spikes",
+      "title": "Closing Spikes",
+      "line": "Spiked walls creep inward each round until the ring is tiny."
+     },
+     {
+      "id": "ledge_over_lions",
+      "title": "Ledge Over Lions",
+      "line": "A raised platform; fall off its edge and lose the round."
+     }
+    ]
+   },
+   {
+    "id": "shoulder_cam",
+    "icon": "camera",
+    "title": "Over The Shoulder",
+    "line": "See your rival over your shoulder, never through a wall.",
+    "detail": "ctx.cameras.orbit on a pivot 35 % from player to rival, clamped inside 9 m radius; pitch 40 deg, distance 5-7 m, fov 50, ctx.cameras.frame(player, 0.25). Walls are 1.2 m, so the lens clears them; stands start at 17 m, beyond reach. Edge arrow for off-screen swings.",
+    "alternatives": [
+     {
+      "id": "side_view",
+      "title": "Side-On Duel",
+      "line": "A fixed side camera like a fighting game, ring flattened."
+     },
+     {
+      "id": "emperor_box",
+      "title": "Emperor's Box",
+      "line": "Watch from the emperor's box high above the whole sand."
+     }
+    ]
+   },
+   {
+    "id": "title_stakes",
+    "icon": "crowd",
+    "title": "Win Your Freedom",
+    "line": "Beat three champions, then defend your title against them, remixed.",
+    "detail": "Best of 3 rounds, 75 s each (TLRules). Breaches persist across rounds, so round 3 is a different arena. After the ladder, Title Defense: the same rivals at Champion tier with new strings. Under 30 HP your parries load +50 % posture: a visible comeback glow.",
+    "alternatives": [
+     {
+      "id": "endless_arena",
+      "title": "Endless Arena",
+      "line": "Rivals keep coming; how many can you beat before falling?"
+     },
+     {
+      "id": "thumbs_vote",
+      "title": "Thumbs Up Or Down",
+      "line": "Win the crowd's favour or they vote for your death."
+     }
+    ]
+   }
+  ],
+  "rules": "A match is best of 3 rounds of 75 s against one champion (TLRules clock). A round ends at HP 0, or on a deathblow: a heavy on a BROKEN fighter (posture 100, 90 f) wins the round outright. Time out: the higher HP share wins. Core copied from DUEL-PLAYBOOK 6.1-6.5 at 60 Hz with the 8-frame input buffer: light 18/4/16 (strike, chain windup 12, 9 dmg), heavy 32/5/28 (strike_heavy, armour f12-37, feint until f20 for 6 stamina, 20 dmg), charged 54/6/36 (strike_heavy held, red flash f20, unblockable, 30 dmg), bash 14/6/24 (body_check, unblockable, unparryable), guard tap = parry f2-13, 20 f recovery on a whiff, hold = block 4/held/6 (front 120 deg, chip 10 %), roll 3/18/15 (i-frames 4-21, 20 stamina). Stamina, posture, poise tiers and EXHAUSTED exactly as 6.1. Every contact changes both bodies with hit-stop on both: light hit 5 f, heavy 9; blocked light 3 f, attacker recoils 0.15 m, -2; blocked heavy 6 f, attacker bounces 40 f, -22, light guaranteed; parried light: attacker PARRIED 52, weapon knocked wide, +44; parried heavy PARRIED 36; bash lands GUARDBROKEN 30, pushed 1.0 m; bash with an intact wall within 1.2 m behind WALLSPLAT 60, +50; clash rebounds both 20 f (heavy-heavy 30); hit in windup or roll recovery is a counter-hit (+10 hitstun, +25 % dmg); a whiff plays full recovery. THE BREACH (the twist): a charged hit, or any heavy landed within 44 f after a parry, on a fighter within 1.5 m of an intact wall segment hurls him through it: hit-stop 14 f on both, TLFracture wakes the segment, TLBiped.shove 9 m/s along the hit, TLHit.down 45 f + 30 getup (i-frames 1-20), 10 damage on top of the hit. The segment stays broken for the rest of the match; the gap no longer splats and opens the corridor. Rivals can breach the player the same way. Round 3, Emperor's Decree: any landed heavy near a wall breaches. Comeback: under 30 HP a fighter's blade glows and his parries load +50 % posture. Feel: no shake on lights, heavy 0.08/10 f, splat 0.15/14 f, breach 0.3/20 f with debris, dust, the break sound and a crowd roar. First minute: Orso 4 m away, one HUD hint, slow heavies to parry. Intensity: a calm 3 s spacing open, rival PRESS waves broken by RESET after a parry or under 30 stamina, phase 2 under 50 % HP, the decree in round 3. End screen names the cause and the next champion; Light restarts in 1 s.",
+  "arena": "A sand octagon 14.5 m across (apothem 7.24 m) on a ground_patch, ringed by 8 kit barrier_wall segments 6 m long and 1.2 m high, stone-tinted, pre-fractured. Behind them a 2.5 m sand corridor, closed by a kit stones row 1.0 m high; raked kit stands from 17 m radius, two flags and an entrance portal at the north gate, out of the fight. Intact inner walls splat; broken ones become 6 m openings into the corridor, where both walls are within 2.5 m, so bashes splat and charges breach more often. Breaches persist through all 3 rounds of a match; the walls are rebuilt before the next champion. Fighters start 4 m apart at the centre each round. Camera: ctx.cameras.orbit on a pivot node 35 % of the way from player to rival, pivot clamped inside 9 m radius, pitch 40 deg, distance 5-7 m, fov 50, ctx.cameras.frame(player, 0.25); right-drag turns it. Every wall is lower than the lens line at 40 deg and the stands begin beyond the camera's farthest reach (9 m + 5.4 m), so no scenery ever sits between lens and fighters; an edge arrow on TLHud marks an off-screen swing.",
+  "ai": "All rivals run the DUEL-PLAYBOOK 6.6 machine (SPACING at threat range +0.3 m, PRESS, DEFEND, PUNISH, RESET), seeing only visible states after react_frames, remembering the player's last 8 responses, never one string 3 times, every string ending in a return window. In PUNISH they choose a heavy when the player's back is within 1.5 m of a wall, to breach him. None stands idle over 2 s. 1) ORSO THE WALL (rung 1: react 30, defend 0.30, read 0.10, return 36): body_scale 1.25, bare-chested brute with a tall tower shield (a plain body on his arm) and a short club; poise 40, HP 120, blocks at x0.7 stamina, rarely parries. Habit: shield bash with a shoulder dip at f4; armoured heavy raised high for 32 f; guard counter after a block; taunts after 2 blocked hits. Weak to bash and stamina pressure. Phase 2 under 50 % HP: a 3-hit heavy string with one fixed 18 f delay. 2) LIVIA FERRO THE DUELIST (rung 2: react 22, defend 0.45, read 0.30, return 28): slim, normal scale, long blade, crested helmet; poise 20, HP 100, parry window 14. 3-light chain, thrust heavy, feint into bash, riposte after her own parry; parries the 3rd hit of a string, punishes every whiff, pokes at max range. Tell: taps her blade 24 f before a riposte string (hit her then for a counter-hit). Weak to delayed or feinted heavies and bashes. 3) KASS THE DANCER (rung 3: react 18, defend 0.60, read 0.50, return 22): body_scale 0.9, twin short blades, sash; poise 10, HP 85, roll 30 f (i-frames 3-18). Dash light 2.5 m, roll-attack, 4-hit flurry (12 f chains, ender -20 on block), delayed spin heavy (always a 30 f hold), taunt after a flurry; rolls through the player's heavy windup with read_p, rolls away under 40 stamina; any heavy staggers her. TITLE DEFENSE: the three again at Champion tier (react 15, defend 0.70, read 0.65, return 18), each with one new string. Reactions: a rival who breaches the player taunts (taunt clip, 60 f, hittable for a counter-hit); a rival breached roars and presses for 4 s; a beaten rival stays down while the winner plays cheer. Harder means sharper reading, defence and shorter return windows, never faster stats.",
+  "controls": "Move: WASD, camera-relative, also sets facing (no auto-face, attack arc 50 deg). Light: J or left mouse, strike; press again to chain. Heavy: K, tap for a heavy, hold for the charged hit. Guard: Shift, tap to parry, hold to block, pressed during a heavy windup before f20 it feints. Roll: Space with a direction. Bash: E, shoulder charge. Right-drag turns the orbit camera; Light restarts on the end screen.",
+  "mood": "Sun-baked inked toon arena: ochre sand, pale stone walls, red banners, a crowd that hushes on windups and roars on breaches; steel clangs, a heavy stone crack and a horn between rounds."
+ },
+ "estimate": {
+  "packages": 8,
+  "wallMinutes": 240,
+  "tokens": 3000000
+ },
+ "runs": [
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 48698,
+   "tokensIn": 48847,
+   "tokensOut": 4877
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 161063,
+   "tokensIn": 37686,
+   "tokensOut": 17290
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 16633,
+   "tokensIn": 23843,
+   "tokensOut": 1156
+  }
+ ],
+ "failed": []
+}

@@ -660,7 +660,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
     }
 
     case "quality":
-      return qualityCommand(a, out, { jobDirOf, runJob });
+      return qualityCommand(a, out, { jobDirOf });
 
     case "critique": {
       const jobDir = jobDirOf(a);

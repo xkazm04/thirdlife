@@ -5,7 +5,8 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Brief, DesignDoc } from "./events.js";
 import { PKG_ROOT, REPO_ROOT, stripBom } from "./paths.js";
-import { conceptSchema, designProblems, designSchema, reviewScoresSchema, type Concept, type ReviewScore } from "./room_wire.js";
+import { conceptSchema, designProblems, designSchema, reviewScoresSchema, type Concept, type ConceptTemplate, type ReviewScore } from "./room_wire.js";
+import { templateExcerpt, templateLines } from "./templates.js";
 
 /** The handbook every room prompt cites. */
 export const QUALITY_DOC = path.join(REPO_ROOT, "docs", "GAME-QUALITY.md");
@@ -36,6 +37,43 @@ export function qualityText(wanted: string[], file = QUALITY_DOC): string {
   return out.join("\n\n");
 }
 
+/** N4 of 22 Nov: the plays-twice checklist of the handbook (section 10), one row per item: number, criterion, verify. */
+export function checklistRows(file = QUALITY_DOC): { n: number; text: string; verify: string }[] {
+  return qualityText(["10"], file)
+    .split("\n")
+    .map((l) => /^\| (\d+) \| (.+?) \| (.+?) \|/.exec(l))
+    .filter((m): m is RegExpExecArray => m !== null)
+    .map((m) => ({ n: Number(m[1]), text: m[2] as string, verify: (m[3] as string).replace(/\*/g, "") }));
+}
+
+/** The line every critic answer ends with (GAME-QUALITY.md section 7, rule 30). */
+export const H_LINE = "[H] items not judged: a person must play it";
+const H_FALLBACK = [2, 4, 13, 21, 26, 28, 30];
+export const hItems = (): number[] => {
+  const rows = checklistRows().filter((r) => r.verify.includes("[H]")).map((r) => r.n);
+  return rows.length > 0 ? rows : H_FALLBACK;
+};
+
+/** The critic's notes with the [H] line last, exactly once, naming the [H] items (the model's own version replaced). */
+export function withHLine(notes: string[]): string[] {
+  return [...notes.filter((n) => !n.trim().startsWith("[H] items not judged")), `${H_LINE} (items ${hItems().join(", ")})`];
+}
+
+/** The critic prompt's checklist block: the [C] items frames can show, and the [H] items no capture can pass. */
+export function criticChecklistText(): string {
+  const rows = checklistRows();
+  if (rows.length === 0) return `(docs/GAME-QUALITY.md has no checklist) End the notes with: ${H_LINE}`;
+  const c = rows.filter((r) => r.verify.includes("[C]"));
+  const h = rows.filter((r) => r.verify.includes("[H]"));
+  return [
+    "Judge these from the frames ([C]: a capture can show them); name each one you see failing, by number:",
+    ...c.map((r) => `- ${r.n}. ${r.text}`),
+    "Never judge these ([H]: only a person playing can); list their numbers in the last note:",
+    ...h.map((r) => `- ${r.n}. ${r.text}`),
+    `The last note is: ${H_LINE} (items ${h.map((r) => r.n).join(", ")})`,
+  ].join("\n");
+}
+
 /** The slop ids of the handbook, in order (the lines "- **`<id>`** ..." of section 6). */
 export function slopIds(file = QUALITY_DOC): string[] {
   return qualityText(["6"], file)
@@ -54,7 +92,8 @@ export function designAnswerSchema(): object {
   return s;
 }
 
-export const conceptAnswerSchema = { type: "object", additionalProperties: false, required: ["concept"], properties: { concept: conceptSchema } };
+/** The concept step's answer: the wire's concept with `template` required (N4 of 22 Nov: one proven template per core loop). */
+export const conceptAnswerSchema = { type: "object", additionalProperties: false, required: ["concept"], properties: { concept: { ...conceptSchema, required: ["template", ...(conceptSchema as { required: string[] }).required] } } };
 
 /** The producer's answer: scores, the slop ids it found, a verdict and notes (design_reviewed is written from it). */
 export const reviewAnswerSchema = {
@@ -80,6 +119,7 @@ export function conceptText(c: Concept): string {
     `- chosen pitch: ${chosen?.pitch ?? "?"} (likelihood ${chosen?.likelihood ?? "?"})`,
     `- why this one: ${c.why}`,
     `- the line: ${c.anchor} where ${c.hook}`,
+    ...templateLines(c),
     ...c.references.map((r) => `- borrow from ${r.game}: ${r.borrow}`),
     `- the candidates it beat: ${c.candidates.filter((_, i) => i !== c.chosen).map((x) => `"${x.pitch}" (${x.likelihood})`).join("; ")}`,
   ].join("\n");
@@ -88,7 +128,7 @@ export function conceptText(c: Concept): string {
 /** The design doc as text: what the Planner reads whole and every builder reads (verbs, feel, clips). */
 export function designText(d: DesignDoc, parts: "all" | "builder" = "all"): string {
   const L: string[] = [];
-  const verbs = d.verbs.map((v) => `  - ${v.id}${v.defensive === true ? " (DEFENSIVE)" : ""}: ${v.input}; anticipation ${v.anticipation_f} f, active ${v.active_f} f, recovery ${v.recovery_f} f; cancel: ${v.cancel}`);
+  const verbs = d.verbs.map((v) => `  - ${v.id}${v.defensive === true ? " (DEFENSIVE)" : ""}${v.move !== undefined ? ` (copies the template move ${v.move})` : ""}: ${v.input}; anticipation ${v.anticipation_f} f, active ${v.active_f} f, recovery ${v.recovery_f} f; cancel: ${v.cancel}`);
   const f = d.feel;
   const feel = [
     `  - hit-stop: ${f.hitstop_f[0]} to ${f.hitstop_f[1]} frames on attacker AND victim, scaled by force`,
@@ -141,6 +181,11 @@ export function servesLine(brief: Brief, spec: { serves?: string[] }): string {
 }
 
 /** The builder prompt's Feel section for a brief with a design doc ("" otherwise): the rules, then the handbook. */
-export function builderFeelSection(): string {
-  return "# Feel (docs/GAME-QUALITY.md): this game is designed to be sold, so it must feel good in the hand\nThe brief above carries the game design doc: the verbs with their frames, the feel sheet in numbers and the three clip\nmoments. For every verb, hit and miss your package owns, build what the sheet says, with these rules:\n- Hit-stop on attacker AND victim together, in the sheet's range, scaled by the hit's force (the pack holds both\n  actors still for N physics frames; the engine has no global time freeze).\n- Every hit calls `TLHit.react(victim, from_dir, strength)`; only a big hit calls `TLHit.down(victim, frames, from_dir)`.\n  `from_dir` points from the victim toward the blow. Never a hit without a body reaction, never every hit a floor.\n- Each verb plays its OWN clip: `strike`, `strike_heavy`, `block`, `roll`, `dodge`, `body_check`, `cross_check`,\n  `taunt` (check `rig.has_method(\"clips\") and (rig.call(\"clips\") as PackedStringArray).has(\"strike\")` first; until a\n  clip exists, hold the nearest pose of the right kind and say so under DEVIATIONS; never play `shoot` as a strike,\n  `slide` as a roll or `cheer` as a tell).\n- A whiff plays its recovery and its own sound, no burst, no shake. Shake only on meaningful hits, decaying.\n- Defensive verbs are invulnerable from frame 1 for their frames; rival attacks show a wind-up of at least the sheet's\n  telegraph frames in the body; input to the first visible response is at most 6 frames.\n- The camera is never behind scenery and keeps both fighters in frame; bodies never overlap (they push apart).\n- Aim at the clip moments your package serves (the contract names them): they are what the critic films first.\n" + qualityText(["2", "6", "7:Builder"]) + "\n";
+export function builderFeelSection(template?: ConceptTemplate): string {
+  const excerpt = templateExcerpt(template, "builder");
+  return feelRules() + (excerpt !== "" ? `\n${excerpt}` : "");
+}
+
+function feelRules(): string {
+  return "# Feel (docs/GAME-QUALITY.md): this game is designed to be sold, so it must feel good in the hand\nThe brief above carries the game design doc: the verbs with their frames, the feel sheet in numbers and the three clip\nmoments. For every verb, hit and miss your package owns, build what the sheet says, with these rules:\n- Hit-stop on attacker AND victim together, in the sheet's range, scaled by the hit's force (the pack holds both\n  actors still for N physics frames; the engine has no global time freeze).\n- Every hit calls `TLHit.react(victim, from_dir, strength)`; only a big hit calls `TLHit.down(victim, frames, from_dir)`.\n  `from_dir` points from the victim toward the blow. Never a hit without a body reaction, never every hit a floor.\n- Each verb plays its OWN clip: `strike`, `strike_heavy`, `block`, `roll`, `dodge`, `body_check`, `cross_check`,\n  `taunt` (check `rig.has_method(\"clips\") and (rig.call(\"clips\") as PackedStringArray).has(\"strike\")` first; until a\n  clip exists, hold the nearest pose of the right kind and say so under DEVIATIONS; never play `shoot` as a strike,\n  `slide` as a roll or `cheer` as a tell).\n- A whiff plays its recovery and its own sound, no burst, no shake. Shake only on meaningful hits, decaying.\n- Defensive verbs are invulnerable from frame 1 for their frames; rival attacks show a wind-up of at least the sheet's\n  telegraph frames in the body; visible feedback within 3 frames of the press, the full pose by 6.\n- Every contact changes BOTH bodies: a blocked heavy recoils the attacker, a parry stuns him, a clash rebounds both.\n- The camera is never behind scenery and keeps both fighters in frame; bodies never overlap (they push apart).\n- Aim at the clip moments your package serves (the contract names them): they are what the critic films first.\n" + qualityText(["2", "6", "7:Builder"]) + "\n";
 }

@@ -1,0 +1,377 @@
+{
+ "sentence": "a fight in a colosseum",
+ "creativity": "crazy",
+ "model": "opus (claude-cli)",
+ "job": "fight-colosseum-20261121-2",
+ "concept": {
+  "template": {
+   "id": "duel",
+   "reference": "Dark Souls, Sekiro and For Honor duels, per DUEL-PLAYBOOK",
+   "copies": [
+    "DUEL-PLAYBOOK 6.4 state machine with its 8-frame input buffer and punish windows",
+    "DUEL-PLAYBOOK 2 and 6.3 mutual reactions: every contact changes both fighters, hit-stop on both",
+    "DUEL-PLAYBOOK 6.7 archetypes by defence: the Wall absorbs, the Duelist parries, the Dancer avoids",
+    "Move table: light 18/4/16, heavy 32/5/28, charged 54/6/36, bash 14/6/24, taunt 0/0/60",
+    "Defence frames: block 4/held/6, parry 1/12/20, roll 3/18/15, dodge 2/8/12",
+    "Sekiro posture: full posture opens a deathblow; the deathblow triggers the body swap"
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "Souls-like gladiator duel where wounds stay: each heavy hit taken slows that limb for the round.",
+    "likelihood": 0.6
+   },
+   {
+    "pitch": "Gladiator duel where every deathblow swaps you into the loser's body, and your abandoned body fights on.",
+    "likelihood": 0.1
+   },
+   {
+    "pitch": "Colosseum duel where each new round, your last round's recorded self joins the rival against you.",
+    "likelihood": 0.12
+   },
+   {
+    "pitch": "Colosseum duel under a sundial: shade restores posture, sunlight drains it, and the shadow sweeps the sand.",
+    "likelihood": 0.25
+   },
+   {
+    "pitch": "Night games: torches ring the sand; every parry snuffs one, and the duel ends in darkness.",
+    "likelihood": 0.15
+   }
+  ],
+  "chosen": 1,
+  "why": "Left the standard's families (wall breaches, crowd weapons, chains, disarms, champion ladder) for who-you-control. A swap changes your archetype every kill, and your abandoned body hunts you. The obvious wounds idea only tunes damage.",
+  "hook": "every deathblow swaps you into the body you just beat",
+  "anchor": "souls-like gladiator duel",
+  "references": [
+   {
+    "game": "Sekiro: Shadows Die Twice",
+    "borrow": "posture bar fills on blocked and parried hits; a full bar opens a one-press deathblow"
+   },
+   {
+    "game": "For Honor",
+    "borrow": "parry a heavy and a light is guaranteed; parry a light and a heavy is"
+   },
+   {
+    "game": "Messiah",
+    "borrow": "possess any enemy body and play with its moves, health and weaknesses"
+   }
+  ]
+ },
+ "design": {
+  "pillars": [
+   {
+    "line": "Every contact changes both bodies",
+    "rules_out": "Hits that only shove, blocks with no attacker recoil, parries without a stunned attacker"
+   },
+   {
+    "line": "Skill is in the feet and the timing",
+    "rules_out": "Auto-face, lock-on aim, wide arcs over 60 degrees, speed stats"
+   },
+   {
+    "line": "Winning costs you your body",
+    "rules_out": "Snowballing leads; the scorer always inherits the wounded body"
+   }
+  ],
+  "verbs": [
+   {
+    "id": "light",
+    "move": "light",
+    "input": "J: light swing, clip strike; chain windup 12; hit 9 HP, +2; blocked: -2, safe",
+    "anticipation_f": 18,
+    "active_f": 4,
+    "recovery_f": 16,
+    "cancel": "Roll in the last 4 recovery frames; 8-frame buffer; whiff plays the full 16 frames"
+   },
+   {
+    "id": "heavy",
+    "move": "heavy",
+    "input": "K: heavy, clip strike_heavy; hyper armour f12-37; hold to f54 for a charged unblockable",
+    "anticipation_f": 32,
+    "active_f": 5,
+    "recovery_f": 28,
+    "cancel": "Feint before f20 for 6 stamina; blocked: attacker recoils, -22, light guaranteed"
+   },
+   {
+    "id": "bash",
+    "move": "bash",
+    "input": "I: shoulder or shield bash, clip body_check; unblockable, GUARDBROKEN 30; wall behind: WALLSPLAT 60",
+    "anticipation_f": 14,
+    "active_f": 6,
+    "recovery_f": 24,
+    "cancel": "Loses to any active hit and to a roll; whiffed bash is -24"
+   },
+   {
+    "id": "parry",
+    "move": "parry",
+    "defensive": true,
+    "input": "L tap: parry, clip block; parried light +44, heavy +28; hold L: block 4/held/6",
+    "anticipation_f": 1,
+    "active_f": 12,
+    "recovery_f": 20,
+    "cancel": "Whiffed parry costs 8 stamina and 20 frames; re-tap within 30 f shrinks the window by 4"
+   },
+   {
+    "id": "roll",
+    "move": "roll",
+    "defensive": true,
+    "input": "Space plus a direction: roll, clip roll; i-frames 4-21; costs 20 stamina",
+    "anticipation_f": 3,
+    "active_f": 18,
+    "recovery_f": 15,
+    "cancel": "Hits in roll recovery are counter-hits; exhausted adds 12 recovery frames"
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "wall_body",
+    "title": "The Wall",
+    "line": "Absorb hits on the shield, punish with armoured heavies and wall bashes"
+   },
+   {
+    "id": "duelist_body",
+    "title": "The Duelist",
+    "line": "Wait at sword range, parry, take the guaranteed punish"
+   },
+   {
+    "id": "dancer_body",
+    "title": "The Dancer",
+    "line": "Roll through swings and stab the recovery from behind"
+   }
+  ],
+  "loops": {
+   "s3": "Read the rival's wind-up, then block, parry, roll or trade, and punish the opening",
+   "s30": "Fill the rival's posture with parries and splats, land a deathblow, wake in the beaten body",
+   "m3": "Win a best-of-3 against one soul, climb to the next rival, finally the Red Lion"
+  },
+  "context": [
+   "Every deathblow swaps bodies, so your defence, reach and HP change mid-round",
+   "The rival soul now drives your old body with its own habit",
+   "At 40 s the gates open and the ring shrinks from 24 m to 18 m",
+   "Full crowd meter throws a palm: stamina and posture regen boost for 5 s",
+   "Last 15 s war horn: a tied round goes to sudden death"
+  ],
+  "skill": {
+   "floor": "Press light at a rival who only walks in and swings slowly; it hits and he flinches",
+   "ceiling": [
+    "Parry a heavy and take the guaranteed light, then chain into a heavy",
+    "Bash a rival against the wall for a splat, then charge a heavy into it",
+    "Feint a heavy to bait the parry, then bash the parry window"
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    3,
+    20
+   ],
+   "knockback": "Impulse = base by move (light 0.25 m, heavy 0.6 m, bash 1.0 m) plus 0.01 m per HP lost, via TLBiped.shove over body mass",
+   "reaction": "TLHit.react from the blow's side: flinch 0.3, stagger 0.7; attacker recoils on block, staggers when parried; TLHit.down only for charged, exhausted bash, deathblow",
+   "whiff": "Full recovery, a swish via TLAudio.play, no burst, the swinging arm overextends and the body leans forward",
+   "iframes_f": 18,
+   "telegraph_f": 24,
+   "shake": "None on light; 0.08 m over 10 f on heavy hits; 0.2 m on wall splat; 0.3 m over 24 f on a soul swap",
+   "camera": "Raised orbit, pitch 40 deg, framing a pivot between both fighters at 0.26 frame height; low parapet only on the camera side"
+  },
+  "clips": [
+   {
+    "id": "soul_swap",
+    "moment": "The deathblow lands, white flash, and the player stands up in the giant shield body"
+   },
+   {
+    "id": "own_body_splat",
+    "moment": "The player bashes their own former body into the wall for a splat"
+   },
+   {
+    "id": "heavy_parry_punish",
+    "moment": "A charged heavy is parried, sword flies wide, the guaranteed light lands"
+   }
+  ],
+  "first_minute": "The sand opens on Old Varro walking in slowly with a shoulder dip; one HUD line: J strike, L parry, break his guard",
+  "fail_state": "End screen names the cause, like PARRIED HEAVY or WALLSPLAT, shows deathblows per soul, and Light restarts in under 2 s",
+  "out_of_scope": [
+   "Online multiplayer",
+   "Ragdoll deaths and gore",
+   "Mounted or chariot combat",
+   "Weapon pickups or crafting",
+   "Story cutscenes and menus before the first fight"
+  ]
+ },
+ "design_reviewed": [
+  {
+   "round": 1,
+   "verdict": "ok",
+   "scores": {
+    "hook": 0.85,
+    "gif": 0.75,
+    "depth": 0.8,
+    "feel": 0.8,
+    "fit": 0.85
+   },
+   "notes": "Ship it. Before the build: give the player's soul a persistent marker (gold plume glow and ground ring) that moves to the new body on the swap, so nobody loses track of who they are. Say how long an HP-0 deathblow window lasts (use BROKEN 90 f). Clamp the right-drag orbit to the parapet side, or set the stands back so the lens never enters them. No slop found."
+  }
+ ],
+ "brief": {
+  "pitch": "Duel gladiators in a colosseum; break their guard, deathblow them, and wake up inside their beaten body.",
+  "aspects": [
+   {
+    "id": "soul_swap",
+    "icon": "twist",
+    "crazy": true,
+    "title": "Deathblow Swaps Bodies",
+    "line": "Finish them and you wake up inside their body",
+    "detail": "A heavy on a BROKEN body is a deathblow: both freeze 20 f, then souls swap. You play the beaten body (HP kept, at least 25); the rival soul drives your old body with its own habits. Both postures reset to 0, 45 f of i-frames. First soul to 3 deathblows wins.",
+    "alternatives": [
+     {
+      "id": "plain_finisher",
+      "title": "Plain Finisher",
+      "line": "A deathblow just ends the round, like any duel"
+     },
+     {
+      "id": "ghost_body",
+      "title": "Ghost Body",
+      "line": "Your old body keeps fighting beside the rival, two against one"
+     }
+    ]
+   },
+   {
+    "id": "three_bodies",
+    "icon": "player",
+    "title": "Three Gladiator Bodies",
+    "line": "Big shield, quick sword or twin blades: each defends differently",
+    "detail": "Wall: poise 40, HP 120, blocks at x0.7 stamina. Duelist: poise 20, HP 100, parry window 14. Dancer: poise 10, HP 85, roll i-frames 3-18. Same move frames from the duel table; each body is its own TLKit build and size, body_scale on the capsule.",
+    "alternatives": [
+     {
+      "id": "one_body_loadouts",
+      "title": "Weapon Loadouts",
+      "line": "One gladiator, swap weapons between rounds instead of bodies"
+     },
+     {
+      "id": "beast_bodies",
+      "title": "Beast Bodies",
+      "line": "Swap into a lion or a bull as well"
+     }
+    ]
+   },
+   {
+    "id": "soul_rivals",
+    "icon": "rival",
+    "title": "Souls With Habits",
+    "line": "Each rival keeps their tricks, whatever body they steal",
+    "detail": "A rival is a soul: name, voice, one habit with a 24 f tell, kept across swaps. Varro taunts after two blocked hits; Sabina taps her blade before a riposte; Ixi spins after a flurry. Ladder AI tiers: react 30/22/18/15 f, defend_p 0.30-0.70, read_p 0.10-0.65, return window 36-18 f.",
+    "alternatives": [
+     {
+      "id": "body_only_rivals",
+      "title": "Body Rivals",
+      "line": "Rivals are just their bodies; a swap gives you their tricks"
+     },
+     {
+      "id": "rival_gauntlet",
+      "title": "Endless Gauntlet",
+      "line": "Fresh rival after every deathblow, survive as long as you can"
+     }
+    ]
+   },
+   {
+    "id": "shoulder_camera",
+    "icon": "camera",
+    "title": "Raised Duel Camera",
+    "line": "Look over your shoulder at both fighters at once",
+    "detail": "ctx.cameras.orbit on a pivot the pack keeps between the fighters, pitch 40 deg, ctx.cameras.frame(pivot, 0.26). Parapet on the camera side is 1.2 m low stone. Off-screen attacker gets a red TLHud edge arrow. Shake only on heavy hits, splats and swaps.",
+    "alternatives": [
+     {
+      "id": "side_view",
+      "title": "Side-On View",
+      "line": "Fixed side camera like a fighting game"
+     },
+     {
+      "id": "high_overview",
+      "title": "Emperor's Box",
+      "line": "Watch from the emperor's seat high above the sand"
+     }
+    ]
+   },
+   {
+    "id": "sand_ring",
+    "icon": "arena",
+    "title": "Walled Sand Ring",
+    "line": "Slam them into the stone wall for a big stagger",
+    "detail": "Sand circle 24 m across ringed by a 1.2 m stones wall. Bash with a wall within 1.2 m behind = WALLSPLAT 60; knocked into the wall in hitstun = WALLSPLAT 40. Gates (entrance kit) open at 40 s and the wall ring shrinks to 18 m.",
+    "alternatives": [
+     {
+      "id": "ledge_pit",
+      "title": "Lion Pit Edge",
+      "line": "A pit in the middle; shove them in to win"
+     },
+     {
+      "id": "open_sand",
+      "title": "Open Sand",
+      "line": "No walls at all, pure footwork and spacing"
+     }
+    ]
+   },
+   {
+    "id": "turning_crowd",
+    "icon": "crowd",
+    "title": "Crowd That Turns",
+    "line": "The crowd cheers parries and boos the runner",
+    "detail": "Crowd meter fed by parries, splats, punished taunts and deathblows; drained by retreating over 2 s. At full meter the crowd throws a palm: +20 stamina and posture regen x2 for 5 s, visible as a TLVfx confetti burst and cheer.",
+    "alternatives": [
+     {
+      "id": "silent_arena",
+      "title": "Empty Stands",
+      "line": "No crowd, just two fighters and the wind"
+     },
+     {
+      "id": "thumbs_vote",
+      "title": "Thumbs Vote",
+      "line": "The crowd votes who lives when the clock ends"
+     }
+    ]
+   }
+  ],
+  "rules": "Best of 3 rounds of 75 s. A round is won by the first soul to land 3 deathblows; a deathblow opens when a body's posture fills (BROKEN 90 f) or its HP hits 0, and is a heavy on that body. Every deathblow swaps souls: you inherit the beaten body (HP kept, minimum 25) and the rival takes your fresher one, so the leader always fights wounded: the visible comeback rule. Clock out: more deathblows, then higher body HP. Verbs copy the duel table: light 18/4/16, heavy 32/5/28 (hold to 54 charged, unblockable), bash 14/6/24, parry tap 1/12/20, block hold 4/held/6, roll 3/18/15. Resources HP 100, stamina 100, posture 100 per the playbook 6.1. Every contact changes both bodies with hit-stop on both: hit 5/9 f, block 3/6 f (blocked heavy recoils the attacker, -22, light guaranteed), parry 10 f (attacker PARRIED 52 light / 36 heavy, weapon knocked away), clash 8 f both REBOUND 20, bash GUARDBROKEN 30, wall splat 12 f. Whiffs play full recovery with a swish, no burst. Hits react by poise tier with TLHit.react; only charged hits, exhausted bashes and deathblows use TLHit.down. Intensity: calm 10 s open, pressure waves as stamina runs out and resets, gates open at 40 s and the ring shrinks, last 15 s a war horn and sudden-death if tied. End screen names the cause (PARRIED HEAVY, WALLSPLAT, DEATHBLOW 3) and one key restarts in under 2 s.",
+  "arena": "A 24 m sand circle, flat ground_patch, ringed by a 1.2 m stones wall that splats; behind it raked stands on three sides, entrance gates at north and south, flags and two light masts. At 40 s the gates open and stones slide in to an 18 m ring, forcing close range. The camera is a raised orbit, pitch 40 degrees, framing a pivot between the fighters at 0.26 of frame height; the camera side has only the low parapet and no pillars, so the lens never sits behind scenery. Scoreboard behind the far wall shows deathblows per soul.",
+  "ai": "Seeded state machine SPACING, PRESS, DEFEND, PUNISH, RESET, perceiving only visible states after react_frames; remembers the last 8 player responses and never repeats a string 3 times. Rung 1 Old Varro, a soul who starts in the Wall body (big, broad, tower shield, bronze helm): taunts after 2 blocked hits, shield bash with a shoulder dip tell 24 f before contact; roars when he scores, sags and slaps the sand when beaten. Rung 2 Sabina Quickhand in the Duelist body (lean, gladius, crested helm): parries the 3rd hit of a string, taps her blade 24 f before a riposte; bows on scoring, curses when parried. Rung 3 Little Ixi in the Dancer body (small, twin blades, no helm): 4-hit flurry then a delayed spin heavy held 30 f; giggles and taunts after a flurry, spins in place when beaten. Champion, the Red Lion, uses all three habits and the champion tier. After a swap each soul keeps its habit but plays the new body's defence. Harder rungs mean shorter return windows (36, 28, 22, 18 f), higher defend_p and read_p, never speed or damage.",
+  "controls": "Move: WASD camera-relative, the body turns to its walk direction, no auto-face. Light: J or left mouse. Heavy: K or right mouse, hold for charged. Guard: L, tap to parry, hold to block. Roll: Space plus a direction. Bash: I. Camera: right-drag orbits. Light restarts on the end screen.",
+  "mood": "Sun-bleached sand, inked toon stone and red cloth under the house style; brass horns, a roaring crowd that hushes on a broken guard, a deep gong and a white flash on every soul swap."
+ },
+ "estimate": {
+  "packages": 8,
+  "wallMinutes": 260,
+  "tokens": 3200000
+ },
+ "runs": [
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 40768,
+   "tokensIn": 22830,
+   "tokensOut": 3589
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 163119,
+   "tokensIn": 37919,
+   "tokensOut": 16424
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 92905,
+   "tokensIn": 38206,
+   "tokensOut": 8555
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 21710,
+   "tokensIn": 22137,
+   "tokensOut": 1895
+  }
+ ],
+ "failed": []
+}

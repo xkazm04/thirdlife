@@ -19,6 +19,7 @@ import { PKG_ROOT, toPosix } from "./paths.js";
 import { slopIds } from "./roomtext.js";
 import type { RunnerVerbs } from "./verbs.js";
 import type { CritiqueResult } from "./verifier.js";
+import { judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } from "./tofu.js";
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -89,6 +90,8 @@ export interface Verdict {
   notes: string[];
   package?: string;
   report: string;
+  /** N4 of 22 Nov: who judged: the critic (absent), the tofu stage alone, or both. */
+  by?: "tofu stage" | "critic (V5) and tofu stage";
 }
 
 const scoresText = (v: Pick<Verdict, "scores">): string => Object.entries(v.scores).map(([k, x]) => `${k} ${x}`).join(", ");
@@ -118,7 +121,41 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   return { verdict, line: verdictText(verdict) };
 }
 
-export const verdictText = (v: Verdict): string => `critic (V5) ${v.ok ? "ok" : "NOT ok"}: ${scoresText(v)}; ${clip(v.notes.join(" | "), 500)} [${v.report}]`;
+export const verdictText = (v: Verdict): string => `${v.by ?? "critic (V5)"} ${v.ok ? "ok" : "NOT ok"}: ${scoresText(v)}; ${clip(v.notes.join(" | "), 500)} [${v.report}]`;
+
+// ---------- N4 of 22 Nov: the tofu stage (tofu.ts) judged with the look ----------
+
+/** The tofu check of milestone `m`: undefined unless the plan has a TOFU CHECK line and `m` is its package's milestone. */
+export function tofuLook(h: GateHost, m: Milestone): (TofuResult & { package: string; report: string }) | undefined {
+  const t = tofuOf(h.s.plan);
+  if (t === undefined || h.s.plan.find((p) => p.id === t.package)?.milestone !== m) return undefined;
+  const read = readTofuMetrics(h.dir(), h.events, t.test);
+  const res = judgeTofu(read.metrics, tofuMetricsFor(h.s.brief?.concept?.template), t.test, read.hand, read.from);
+  const file = reportPath(h, `tofu-${m}`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.tofu/1", milestone: m, test: t.test, package: t.package, ...res }, null, 1) + "\n");
+  return { ...res, package: t.package, report: h.rel(file) };
+}
+
+/**
+ * The critic's verdict with the tofu stage's: a failed tofu check makes the look NOT ok and names the tofu package
+ * (the core verb is its), whatever the critic said; a passed one adds the score `tofu` 1. The merged verdict is written
+ * over the tofu report (shape of a critique), so a revise round sent from the log reads it back (verdictOfLook).
+ */
+export function withTofu(h: GateHost, judged: { verdict?: Verdict; line: string }, tofu: (TofuResult & { package: string; report: string }) | undefined): { verdict?: Verdict; line: string } {
+  if (tofu === undefined) return judged;
+  const v = judged.verdict;
+  if (tofu.ok && v === undefined) return { line: `${judged.line}; ${tofu.line} [${tofu.report}]` };
+  const merged: Verdict = tofu.ok
+    ? { ...(v as Verdict), scores: { ...(v as Verdict).scores, tofu: 1 }, notes: [...(v as Verdict).notes, tofu.line] }
+    : { ok: false, scores: { ...(v?.scores ?? {}), tofu: 0 }, notes: [tofu.line, ...(v?.notes ?? [])], package: tofu.package, report: tofu.report, by: v ? "critic (V5) and tofu stage" : "tofu stage" };
+  if (!tofu.ok) {
+    const file = h.dir(...tofu.report.split("/"));
+    const body = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
+    fs.writeFileSync(file, JSON.stringify({ ...body, ok: false, scores: merged.scores, notes: merged.notes, package: merged.package, by: merged.by, ...(v ? { critic: v.report } : {}) }, null, 1) + "\n");
+  }
+  return { verdict: merged, line: verdictText(merged) };
+}
 
 // ---------- snapshots ----------
 
@@ -237,11 +274,11 @@ export function sendBack(h: GateHost, m: Milestone, members: string[], lastPacka
 
 /** The verdict a look's summary points at (its critic report), for a revise round sent from the log (resume, retry). */
 export function verdictOfLook(h: GateHost, look: Look): Verdict | undefined {
-  const rel = /\[(reports\/critic-[^\]]+\.json)\]/.exec(look.summary)?.[1];
+  const rel = /\[(reports\/(?:tofu|critic)-[^\]]+\.json)\]/.exec(look.summary)?.[1];
   if (rel === undefined) return undefined;
   try {
-    const r = JSON.parse(fs.readFileSync(h.dir(...rel.split("/")), "utf8")) as Partial<CritiqueResult>;
-    return r.scores ? { ok: r.ok === true, scores: r.scores, notes: r.notes ?? [], ...(r.package !== undefined ? { package: r.package } : {}), report: rel } : undefined;
+    const r = JSON.parse(fs.readFileSync(h.dir(...rel.split("/")), "utf8")) as Partial<CritiqueResult> & { by?: Verdict["by"] };
+    return r.scores ? { ok: r.ok === true, scores: r.scores, notes: r.notes ?? [], ...(r.package !== undefined ? { package: r.package } : {}), report: rel, ...(r.by !== undefined ? { by: r.by } : {}) } : undefined;
   } catch {
     return undefined;
   }
@@ -253,7 +290,7 @@ export function verdictOfLook(h: GateHost, look: Look): Verdict | undefined {
  * version back. A look still NOT ok at the last round is left for the hold (the state reads it from the event).
  */
 export async function decideLook(h: GateHost, m: Milestone, members: string[], lastPackage: string, film: Film, shots: Shot[], round: number, notes: string[]): Promise<void> {
-  const judged = await judge(h, m, film, shots, lastPackage, round);
+  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round), tofuLook(h, m));
   const fresh = judged.verdict;
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;
@@ -267,7 +304,9 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   }
   const prev = readSnapshot(h, m, round);
   // A new version the critic passes beats a version it sent back; otherwise the critic compares the two.
-  const cmp = fresh?.ok === true ? { kept: "new" as const, why: "the new version passes the critic" } : prev ? await compareLooks(h, prev, film, fresh) : { kept: "new" as const, why: "no snapshot of the version before this round was found" };
+  // N4: a version that passes the tofu stage beats one that fails it, whatever the images say.
+  const tofuPick: "new" | "previous" | undefined = prev?.verdict?.scores["tofu"] !== undefined && fresh?.scores["tofu"] !== undefined && prev.verdict.scores["tofu"] !== fresh.scores["tofu"] ? (fresh.scores["tofu"] > prev.verdict.scores["tofu"] ? "new" : "previous") : undefined;
+  const cmp = fresh?.ok === true ? { kept: "new" as const, why: "the new version passes the critic" } : tofuPick !== undefined ? { kept: tofuPick, why: `the ${tofuPick} version passes the tofu stage and the other does not` } : prev ? await compareLooks(h, prev, film, fresh) : { kept: "new" as const, why: "no snapshot of the version before this round was found" };
   if (cmp.kept === "previous" && prev) restore(h, m, prev);
   const keptVerdict = cmp.kept === "previous" ? prev?.verdict : fresh;
   const keptFilm = cmp.kept === "previous" && prev ? { captures: prev.captures, strips: prev.strips } : { captures: film.captures, strips: film.strips };

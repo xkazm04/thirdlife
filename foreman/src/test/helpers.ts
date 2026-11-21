@@ -103,6 +103,12 @@ export function fixturePlan(): PackageSpec[] {
 }
 
 /** JOB.md 2026-11-20: the fixture plan's phases (the court plays first, the rival paddle second). */
+/** N4 of 22 Nov: the fixture plan with the tofu stage: core carries the TOFU CHECK line on its rally bot and runs it. */
+export function fixturePlanTofu(): PackageSpec[] {
+  const line = "TOFU CHECK: tests/bot_rally.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds";
+  return fixturePlan().map((p) => (p.id === "core" ? { ...p, contract: `${p.contract}\n${line}`, acceptance: [...p.acceptance, { level: "V4", verb: "bot", args: ["--test=tests/bot_rally.gd", "--frames=1200"] }] } : p));
+}
+
 export function fixturePhases(): Phase[] {
   return [
     { id: "court_plays", title: "The court plays", try: "Rally the ball off the walls with your paddle", packages: ["core", "court"] },
@@ -160,6 +166,7 @@ export function sampleDesign(): DesignDoc {
 /** JOB.md 2026-11-21: the design room's concept (step 1). */
 export function sampleConcept(): Concept {
   return {
+    template: { id: "own", reference: "Pong and Windjammers", copies: ["Pong: the return angle from where the ball meets the paddle", "Windjammers: wall bank shots that curve past the keeper", "Windjammers: a brace that answers a power shot"] },
     candidates: [
       { pitch: "Classic paddle duel against a rival.", likelihood: 0.8 },
       { pitch: "Paddle duel where walls bank shots past Rival Rex.", likelihood: 0.3 },
@@ -181,6 +188,8 @@ export function sampleConcept(): Concept {
 /** The design room's concept step and an ok review, for a fake script whose designer step answers the brief. */
 export function roomSteps(): FakeStep[] {
   return [
+    // N4 of 22 Nov: a team game with a puck copies the arcade-sport template (the room refuses an `own` concept for it).
+    { match: { role: "concept", promptIncludes: '"ice hockey' }, json: { concept: { ...sampleConcept(), template: { id: "arcade_sport", reference: "NHL 94 and Rocket League", copies: ["possession as a state with readable loss causes", "the utility AI for shoot, pass and carry", "roles re-sorted by time to the puck"] } } } },
     { match: { role: "concept" }, json: { concept: sampleConcept() } },
     { match: { role: "design_review" }, json: { scores: { hook: 0.8, gif: 0.7, depth: 0.7, feel: 0.8, fit: 0.9 }, slop: [], verdict: "ok", notes: "Sell the bank shot." } },
   ];

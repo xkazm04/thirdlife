@@ -167,7 +167,7 @@ test("2 planner: the prompt names what exists (kit parts, layout, rigs, style, s
   assert.match(text, /\*\*Seed games\*\* [^\n]*: seed_drive, seed_paddle, seed_wall\./);
   assert.match(text, /How to write a pack \(ten minutes\)/, "the seeds' own guide is in the prompt");
   assert.match(text, /hard time limit of 12 minutes\*\* of wall clock/);
-  assert.match(text, /\*\*The root package is the core verb exchange with its whole feel sheet, on greybox\*\*[^]*No file the package does not need/); // L1 21 Nov
+  assert.match(text, /\*\*The root package is the core verb exchange with its whole feel sheet, on flat shapes\*\*[^]*No file the package does not need/); // L1 21 Nov; N4 22 Nov: the tofu stage is blockout
   assert.match(text, /\*\*Later packages carry the rest\*\*/);
   assert.match(text, /\*\*An `art_pass` package must change what the camera sees\.\*\*[^]*no_visible_change/);
   assert.match(text, /At most 3 packages in total for this job \(a hard limit\)\./);

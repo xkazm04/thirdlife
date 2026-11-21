@@ -6,7 +6,7 @@ import path from "node:path";
 import { main, parseArgs, statusTable, UsageError } from "../cli.js";
 import { rebuildState } from "../joblog.js";
 import { killTree, runProcess } from "../proc.js";
-import { cleanup, tempDir, tempJob, readEvents, fixtureScript, fixturePhases, fixturePlan, packFiles, v2Brief, roomSteps, FIXTURE } from "./helpers.js";
+import { cleanup, tempDir, tempJob, readEvents, fixtureScript, fixturePhases, fixturePlan, fixturePlanTofu, packFiles, v2Brief, roomSteps, FIXTURE } from "./helpers.js";
 import { PKG_ROOT } from "../paths.js";
 import type { JobEvent } from "../events.js";
 
@@ -157,7 +157,8 @@ test("cli: new -> approve -> plan -> run, with the Designer and Planner answered
     ...roomSteps(), // JOB.md 2026-11-21: the design room runs concept, design and review before the brief
   );
   // JOB.md 2026-11-20: the Planner writes phases; a plan without them is sent back once (the first planner step above).
-  script.steps.unshift({ match: { role: "planner", attempt: 2 }, json: { packages: fixturePlan(), phases: fixturePhases() }, tokensIn: 3000, tokensOut: 1300 });
+  // N4 of 22 Nov: a brief whose concept names a template is planned with the tofu stage (the TOFU CHECK line on core).
+  script.steps.unshift({ match: { role: "planner", attempt: 2 }, json: { packages: fixturePlanTofu(), phases: fixturePhases() }, tokensIn: 3000, tokensOut: 1300 });
   const scriptFile = path.join(root, "fake.json");
   fs.writeFileSync(scriptFile, JSON.stringify(script));
   const made = await run(["new", "a ball-and-paddle game in a walled court", "--site", site, "--adapter", "fake", "--fake-script", scriptFile]);

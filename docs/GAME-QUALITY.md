@@ -1,9 +1,15 @@
-# Game quality: designing a game we could sell
+# Game quality: designing a game we could sell (v2, 22 Nov 2026)
 
 This handbook is read by the Designer (concept and design doc), the design review (producer and marketer), the Planner,
 the builders and the capture critic. The Foreman pastes its sections into prompts by heading, so each section stands
 alone. Every rule here is checkable: a reviewer can point at a line of the design doc, a number, or a motion strip and
 say yes or no. Numbers are frames at 60 Hz. A figure from a source says so; a figure without one is a house number.
+
+v2 folds in the research of 21 Nov (`docs/research/`): what made games last (R1-R14, section 8), the anti-patterns
+(section 9), the 30-item plays-twice checklist with who can judge each item (section 10), the genre templates every
+design copies its core from (section 11) and the tofu stage that kills a core verb which is not fun (section 12). The
+owner's ruling behind it: "there are hundreds of duel games (souls like, for honor duels) with well known game design
+paths we can mimic". **Copy the proven core; be new only in the hook.**
 
 ## 1. Design practice
 
@@ -63,7 +69,9 @@ Each line is a check. The engine call is named where one exists.
   (API.md, the hands); a telegraph under 20 f cannot be read, only memorised. The tell is the rival's own body (a wind-up
   clip), not a HUD marker.
 - **Player anticipation 2-5 f light, 8-10 f heavy.** The heavy wind-up is the price of its power (`strike`, `strike_heavy`).
-- **Input to visible response at most 6 f.** The first frame of the clip or the step shows within 6 f of the press.
+- **Visible feedback within 3 f, the full pose by 6 f.** Something the player sees answers the press within 3 frames
+  (the step, the first frame of the clip, a flash on the weapon); the verb's pose is readable by frame 6 (checklist item
+  1, section 10). The tofu bot reports it as `feedback_f` (section 12).
 - **Camera shake on meaningful hits only, decaying.** `ctx.cameras.shake(amount, frames)`: about 0.05 a tap, 0.3 a crash.
   A light hit does not shake; a knock-down does. Sakurai: the screen shakes when the move is especially powerful.
 - **The camera is never behind scenery and keeps both fighters in frame.** The camera API cannot fade occluders, so place
@@ -122,7 +130,11 @@ Each line is a check. The engine call is named where one exists.
   hit-stop, a shake, a roll or a whiff cannot be seen in a still at all. Ours: the critic judges motion strips.
 - **Mode collapse.** Aligned models give the typical answer (Verbalized Sampling, 2025: typicality bias in preference data).
   Asking for five candidates with probabilities raised creative diversity about 1.6-2.1x. Ours: the concept step writes
-  five pitches with likelihoods and picks a less typical one that still fits the words.
+  five pitches with likelihoods and picks a less typical HOOK that still fits the words. The core loop is not where
+  the boldness goes: v1 of this pipeline swapped a proven duel for an invented system and got a generic brawler.
+- **Invented cores.** A core loop made up from scratch has none of the tuning thousands of shipped games gave the proven
+  ones (the reaction floor, the whiff cost, the punish window). Ours: the concept names ONE genre template (section 11)
+  per core loop and the design copies its rules and frame tables word for word; only the hook is new.
 - **Defaults nobody chose.** The model's first idea is the genre average. Ours: the slop list (section 6) names the defaults
   to avoid, and the concept names 2-3 reference games and the exact mechanic borrowed from each.
 - **One shot is worse than a revised one.** Self-Refine (2023): generate, critique, revise gave about 20 % absolute better
@@ -146,43 +158,251 @@ Each line is a check. The engine call is named where one exists.
 - **`no_defensive_verb`** The player cannot block, dodge, roll or parry. Why: every exchange is a trade; the player's only answer is to hit first. Check: no verb has `defensive: true`. Instead: one defensive verb with i-frames or a guard, a tell, and a punishable recovery.
 - **`juice_on_everything`** Shake, sparks and flashes fire on every contact. Why: nothing stands out, so the big hit no longer reads; the screen is noise. Check: shake or bursts on light hits and whiffs in the strip. Instead: scale effects by force; shake only for big hits; a whiff gets no burst.
 - **`menu_first_minute`** The first minute is menus, text or a tutorial wall. Why: the player meets the game as homework and the GIF is a menu. Check: the first 60 s of the run show no exchange. Instead: open on the first exchange; teach by a rival who can only do the first verb (World 1-1).
+- **`generic_brawler`** The core loop is invented instead of copied: no state machine, no frame table, no punish window, moves that only differ in damage. Why: the owner's word for it is slop; a brawler with no proven core has nothing to learn. Check: the design names no genre template (section 11), or its verbs carry no template `move`, or their frames differ from the template's table. Instead: copy the template's state machine, frame table and contact results; spend the novelty on the hook.
+- **`one_sided_contact`** A contact changes only one body: the defender flinches and the attacker swings on as if nothing happened (a blocked heavy with no recoil, a parry with no stun on the attacker, a clash where nobody rebounds). Why: "arena mutual reaction on attacks and collision is almost non-existing" (the owner, 21 Nov). Check: a strip of a block, a parry or a clash where the attacker's body does not change. Instead: the mutual-reaction table (section 11; DUEL-PLAYBOOK sections 2 and 6.3): every contact changes BOTH fighters, with hit-stop on both.
+- **`oatmeal_variety`** Variety that is only numbers: ten rivals that are one rival with other health, rounds that are only more of the same (anti-pattern 3, "10,000 bowls of oatmeal"). Why: the main risk of an LLM pipeline; the second round feels like the first. Check: rivals or rounds that differ only in a stat, a colour or a count. Instead: each rival differs in its DEFENCE and its habit (absorb, parry, avoid), each round in its context (checklist items 20 and 21).
+- **`passive_ai`** An opponent stands, waits or wanders for seconds (anti-pattern 4). Why: there is no pressure and nothing to read. Check: the tofu bot's `idle_max_f` over 120, or a strip where a rival does nothing for 2 s. Instead: every opponent acts within 2 s (spacing, pressing, feinting and resetting count as acts); pressure comes in waves (checklist items 9 and 12).
 
 ## 7. Rules by role
 
 Designer:
-1. Write the concept as five pitches with likelihoods; choose a less typical one that still fits the words, and say why.
-2. Name 2-3 reference games and the exact mechanic borrowed from each; write the line "<anchor genre> where <hook>".
-3. Write three pillars, each with what it rules out.
-4. List 2-5 verbs, each with input, anticipation, active and recovery frames, cancel, and its own clip id; one defensive.
-5. Write 2-3 playstyles that differ in verbs and positioning, and a skill ladder: floor plus three ceiling techniques in order.
-6. Fill the feel sheet with numbers from section 2: hit-stop range, knockback, reaction by strength, whiff, i-frames,
-   telegraph, shake, camera.
-7. Make difficulty from aggression, tells, patterns and positioning; no speed, damage or health stats; no hidden help.
-8. Name three clip moments, the first minute (it opens on an exchange), the fail state, and what is out of scope; check the
-   design against every slop-list id.
+1. Name ONE genre template per core loop (section 11) and what is copied from it. The core loop is the template's, word
+   for word: its state machine, its frame table, its contact results, its rival archetypes.
+2. Write the concept as five pitches with likelihoods; choose a less typical HOOK that still fits the words, and say why.
+   The boldness is in the hook and the twist, never in replacing the proven core.
+3. Name 2-3 reference games and the exact mechanic borrowed from each; write the line "<anchor genre> where <hook>".
+4. Write three pillars, each with what it rules out.
+5. List 2-5 verbs, each with input, anticipation, active and recovery frames, cancel, and its own clip id; one defensive.
+   A verb copied from the template names its `move` and carries the template's frames exactly.
+6. Write 2-3 playstyles that differ in verbs and positioning, and a skill ladder: floor plus three ceiling techniques in order.
+7. Fill the feel sheet with numbers from section 2 and the template: hit-stop range, knockback, reaction by strength,
+   whiff, i-frames, telegraph, shake, camera.
+8. Make difficulty from aggression, tells, patterns and positioning (the template's AI tiers); no speed, damage or health
+   stats; no hidden help. Rivals differ in their defence and habit (the template's archetypes), never only in numbers.
+9. Name three clip moments, the first minute (it opens on an exchange), the fail state, and what is out of scope; check the
+   design against every slop-list id and every checklist item of section 10 that can be answered on paper.
 
 Planner:
-9. The first package lands the core verb exchange with its whole feel sheet on greybox, before any art or content.
-10. Every package's `serves` names the clip moment it serves; a needed clip the rig lacks is a question, not a package.
+10. The first phase is the tofu stage (section 12): the core verb exchange on flat shapes (milestone `blockout`) with
+    its whole feel sheet, and one bot that reports the tofu metrics. Nothing else is built before it passes.
+11. The root contract carries the line `TOFU CHECK: tests/<bot>.gd reports metrics ...` (section 12), and every
+    package's contract carries the template rules its verbs need, copied, not paraphrased.
+12. Every package's `serves` names the clip moment it serves; a needed clip the rig lacks is a question, not a package.
 
 Builder:
-11. Hit-stop on attacker and victim together, in the sheet's range, scaled by force, counted in physics frames.
-12. Every hit calls `TLHit.react(victim, from_dir, strength)` or, for a big hit only, `TLHit.down(victim, frames, from_dir)`.
-13. A miss plays its recovery and its own sound, with no burst and no shake.
-14. Defensive verbs are invulnerable from frame 1 for their sheet frames, and show it in their clip.
-15. Rival attacks show a wind-up of at least 20 f in the body, are active 2-4 f, and leave a punish window.
-16. Input to the first visible frame of the response is at most 6 f; shake only on meaningful hits, decaying.
-17. The camera is never behind scenery and keeps both fighters in frame; fighters never overlap (colliding capsules,
+13. Hit-stop on attacker and victim together, in the sheet's range, scaled by force, counted in physics frames.
+14. Every hit calls `TLHit.react(victim, from_dir, strength)` or, for a big hit only, `TLHit.down(victim, frames, from_dir)`.
+15. Every contact changes BOTH bodies (the template's contact table): a blocked heavy recoils the attacker, a parry
+    stuns him, a clash rebounds both.
+16. A miss plays its recovery and its own sound, with no burst and no shake.
+17. Defensive verbs are invulnerable from frame 1 for their sheet frames, and show it in their clip.
+18. Rival attacks show a wind-up of at least 20 f in the body (12 f for a chained follow-up that must be read), are
+    active 2-4 f, and leave a punish window.
+19. Visible feedback within 3 f of the press, the full pose by 6 f; shake only on meaningful hits, decaying.
+20. The camera is never behind scenery and keeps both fighters in frame; fighters never overlap (colliding capsules,
     `body_scale`).
-18. Each verb plays its own clip (check `rig.call("clips")`); never borrow a clip made for another action: ask instead.
+21. Each verb plays its own clip (check `rig.call("clips")`); never borrow a clip made for another action: ask instead.
+22. The tofu bot measures; it does not pass by construction. Each metric of section 12 is counted from what happened in
+    the frames it played, never written as a constant.
 
 Critic:
-19. Judge the motion strips (12 frames, 5 apart, a 4x3 tile) before the stills.
-20. For each hit in a strip, name the frames that show anticipation, impact (hit-stop) and the victim's reaction.
-21. For each whiff, check it reads as a miss; for each dodge or block, check the body shows it.
-22. Any slop-list item seen is a fail; name its id and the strip frame.
-23. Judge each named clip moment by the GIF test: would these 3 seconds make someone want to play?
-24. Compare with the previous version, say which is better and why, and keep the better one.
+23. Judge the motion strips (12 frames, 5 apart, a 4x3 tile) before the stills.
+24. For each hit in a strip, name the frames that show anticipation, impact (hit-stop) and the victim's reaction; for a
+    block, a parry or a clash, the frames that show the ATTACKER's body answering too.
+25. For each whiff, check it reads as a miss; for each dodge or block, check the body shows it.
+26. Any slop-list item seen is a fail; name its id and the strip frame.
+27. Judge, by number, the [C] items of the checklist (section 10) that the frames can show.
+28. Judge each named clip moment by the GIF test: would these 3 seconds make someone want to play?
+29. Compare with the previous version, say which is better and why, and keep the better one.
+30. End the notes with the line `[H] items not judged: a person must play it`, followed by the numbers of the [H]
+    items (section 10). No capture passes an [H] item.
+
+## 8. What made games last: R1-R14
+
+From `docs/research/WHAT-MADE-GAMES-POPULAR.md` (Pong to Balatro). Almost none of it is graphics: one verb that is fun
+with nothing around it, few rules that interact, cause and effect shown at once, opponents with personalities and
+tells, a comeback in the rules, rounds short enough to restart on impulse, one hook nobody else has. Each principle
+names where this pipeline checks it.
+
+- **R1 The core verb is fun in an empty room.** Splatoon was tofu blocks; Mario 64 stalled until turning felt right.
+  Checked by the tofu stage (section 12) before any content exists.
+- **R2 Cause and effect are readable and immediate.** "If the AI didn't say it, it didn't happen" (F.E.A.R. callouts).
+  Feedback within 3 f (checklist 1), a loss with a nameable cause (13), state at a glance (26).
+- **R3 Low floor, high ceiling.** One button does something on day one; three ceiling techniques (section 1). Ladder:
+  checklist 6-8.
+- **R4 Opponents are fair and learnable:** personalities, tells, pressure in waves (Left 4 Dead's Director: build-up,
+  peak, relax). Checklist 9-12, 14; the template's archetypes (section 11).
+- **R5 Few rules, many interactions.** Three rules or objects that combine into outcomes nobody scripted (checklist 17).
+- **R6 Risk/reward and a comeback are part of the rules.** A strong move leaves you open; a losing side has a way back
+  that is a visible rule (Smash percent, Counter-Strike's loss bonus). Checklist 15-16.
+- **R7 It works socially and as a show.** Clips, rivalry, a crowd. Checklist 28-29; the GIF test (section 3).
+- **R8 Short sessions, "one more go".** Rounds of 30 s to 5 min, restart within 2 s (checklist 18, 30).
+- **R9 Progress makes failure productive.** A loss gives knowledge, an unlock or a laugh (checklist 22).
+- **R10 Onboarding by play, not text.** World 1-1: the first threat is safe (checklist 5; section 1 first minute).
+- **R11 Strong feedback (juice) and forgiving controls.** Hit-stop, shake, burst, sound, number pop; coyote time and an
+  input buffer (checklist 24-25; section 2). This is presentation, not fidelity.
+- **R12 A distinct hook you can say in one line.** "<anchor> where <hook>" (section 3; checklist 27).
+- **R13 Variety of context around a stable core** (kishotenketsu: introduce, develop, twist, test). The core stays the
+  template's; the context changes (section 1 loops; checklist 20-21).
+- **R14 Decisions, not only execution.** Sid Meier's "series of interesting decisions": a risk/reward choice at least
+  every 30 s (checklist 16).
+
+## 9. Anti-patterns
+
+Each is a way a competent game fails. The one in bold is the main risk of an LLM pipeline like ours.
+
+1. **A feature list with no core** (Anthem): systems around a verb that was never fun alone. Ours: the tofu stage.
+2. **No identity** (Concord): nothing a stranger remembers. Ours: the hook (section 3), the slop id `recoloured_rivals`.
+3. **Variety that is only numbers: "10,000 bowls of oatmeal"** (No Man's Sky). Procedural or generated variety that
+   changes stats, colours and counts while the play stays the same. **The main risk for us**: a model fills a list
+   with plausible variants at no cost. Ours: rivals differ in their defence and habit, rounds in their context; the
+   slop id `oatmeal_variety`.
+4. **Passive AI** (Aliens: Colonial Marines: enemies "wander around and forget you're there"). Ours: `idle_max_f`
+   (section 12), the slop id `passive_ai`.
+5. **AI that cheats where you can see it** (visible rubber-banding). Ours: checklist 14; difficulty from design
+   (section 1).
+6. **Mushy controls** (Rocket League at 30 fps). Ours: feedback within 3 f, 60 Hz, an input buffer.
+7. **Stakes framed as punishment** (WoW's rest penalty, accepted once reframed as a bonus). Ours: checklist 23.
+8. **Unreadable goals or state** (Halo 3 testers wandered until objectives flashed). Ours: checklist 4 and 26.
+9. **No stakes and no end.** Ours: rounds that end, a ladder, a score to beat (section 1).
+
+How professionals test fun: prototype the verb ugly and kill freely (Splatoon came from about 70 ideas; Supercell
+celebrates kills). A prototype asks "is it fun?", a vertical slice asks "can we build it to final quality?". **Our
+pipeline used to jump to the slice**; the tofu stage is the prototype. Metrics show where, feel shows why; the real test
+is whether someone plays it without us.
+
+## 10. The plays-twice checklist
+
+A small generated game a real person plays twice. Verify: **[B]** a bot metric, **[C]** a capture or a log, **[H]** a
+person's playtest. No bot result and no capture can mark an [H] item PASS: the owner's hand is the bar. "Who" names
+the step of this pipeline that judges the item: the design review on paper, the tofu bot (section 12), the capture
+critic, the card's hand checks (`tl ladder`), or a person.
+
+| # | Criterion | Verify | Who |
+|---|---|---|---|
+| 1 | The core verb gives visible feedback within 3 frames, at a steady 60 Hz | [B] | tofu bot `feedback_f` |
+| 2 | With no opponent or goal, a newcomer keeps using the verb for >= 30 s | [H]; [B] proxy: >= 2 outcome dimensions | person; tofu `skill_spread` is the proxy |
+| 3 | The verb has an analogue skill dimension (different inputs, measurably different results) | [B] | tofu bot `skill_spread` |
+| 4 | The rules fit in one sentence shown in the first 5 s | [C]; [H] | critic (HUD line), person |
+| 5 | The first 30 s teach with a safe first threat, not a text wall | [C]; [B] newcomer survives >= 90 % | critic, hand checks |
+| 6 | Win rate rises with skill: newcomer < regular < sharp < perfect, gaps >= 15 points | [B] ladder | hand checks, `tl ladder` |
+| 7 | The newcomer wins sometimes (10-20 %+) | [B] | hand checks |
+| 8 | The perfect hand keeps a ceiling (score still rising across levels) | [B] | `tl ladder` |
+| 9 | Every opponent acts: none idle > 2 s | [B] | tofu bot `idle_max_f` |
+| 10 | >= 2 opponent archetypes with distinct documented rules | [B] | design review (the template's archetypes) |
+| 11 | Each dangerous opponent action has a tell >= 12 frames before it lands | [C] | tofu bot `tell_min_f`; critic on strips |
+| 12 | Pressure in waves: >= 2 peaks and troughs per match | [B] | tofu bot `pressure_waves` |
+| 13 | Most losses have a visible, nameable cause | [C]; [H] | critic, person |
+| 14 | No hidden cheating: AI within player limits; any catch-up is a visible rule | [B] | design review; builder rule |
+| 15 | A comeback rule; leads change hands in >= 30 % of close matches | [B] | tofu bot `lead_change_share` |
+| 16 | >= 1 risk/reward choice per 30 s | [B] | design review |
+| 17 | >= 3 rules or objects that interact into unscripted outcomes | [B] | design review |
+| 18 | Rounds of 30 s to 5 min; restart <= 2 s with one button | [B] | design review; bot frames |
+| 19 | The ending has drama (share of rounds decided in the final 10 %) | [B] | later bots |
+| 20 | Each round differs in context while the core stays | [B] | design review (`design.context`) |
+| 21 | Variation is perceptual, not only numeric | [C]; [H] | critic, person |
+| 22 | Failure gives something: progress, unlock, knowledge or a laugh | [C]; [B] | design review, critic |
+| 23 | Stakes framed as a bonus, not a penalty | [C] | design review |
+| 24 | Juice on every hit or score: >= 3 of hit pause, shake, particle, sound, number pop | [C] | critic on strips |
+| 25 | Forgiveness windows: coyote time, input buffer, generous hitboxes | [B] | design (the template's buffer) |
+| 26 | State readable at a glance: score, threat, goal | [C]; [H] | critic, person |
+| 27 | One-line hook absent from the genre baseline | [C] | design review (`hook`) |
+| 28 | A 10-s clip of the best moment is understandable to a non-player | [C]; [H] | critic (GIF test), person |
+| 29 | Rivalry: 2-player or beat-my-score/ghost | [C] | design review |
+| 30 | Voluntary replay: offered "stop or play again", a tester plays again | **[H] only** | the owner |
+
+The [C] items a capture critic can judge from frames: 4, 5, 11, 13, 21, 22, 24, 26, 28. The [H] items no machine can
+pass: 2, 4, 13, 21, 26, 28, 30. The critic ends its notes with `[H] items not judged: a person must play it` and their
+numbers (section 7, rule 30).
+
+## 11. Genre templates: copy a proven design
+
+The owner, 21 Nov: "there are hundreds of duel games (souls like, for honor duels) with well known game design paths we
+can mimic". Every core loop of a design copies ONE proven template. The concept step names it (`concept.template`:
+`id`, `reference`, `copies`); the design step copies its rules and frame tables word for word (a verb taken from the
+template names its `move` and carries the template's frames exactly); the Planner and the builders read the template's
+research excerpt, pasted by the Foreman from `docs/research/`, the relevant one only. The hook and the twist are where
+the game is new; the template is where it is right.
+
+- **`duel`: a melee duel** (one against one, or one at a time; fists, swords, shields, a gladiator, a knight, a boxer).
+  Reference: Dark Souls / Sekiro / For Honor, as `docs/research/DUEL-PLAYBOOK.md`. Copied, never paraphrased:
+  - the state machine (6.4): `IDLE/MOVE -> WINDUP -> ACTIVE -> RECOVERY`, plus `BLOCK`, `PARRY_WINDOW`, `ROLL`, `DODGE`,
+    `HITSTOP`, `HITSTUN`, `BLOCKSTUN`, `PARRIED`, `GUARDBROKEN`, `REBOUND`, `STAGGER`, `WALLSPLAT`, `KNOCKDOWN -> GETUP`,
+    `BROKEN`, with an 8-frame input buffer;
+  - the move table (6.2) and the contact results (6.3), hit-stop on both: every contact changes BOTH fighters (section 2
+    of the playbook);
+  - the interaction matrix (6.5) and the triangle (guard beats attack, bash beats guard, attack beats bash);
+  - the resources (6.1: HP, stamina, posture, poise tiers) and the AI tiers (6.6);
+  - three rival archetypes defined by their DEFENCE (6.7): THE WALL absorbs, THE DUELIST parries, THE DANCER avoids.
+  The move frames the Foreman checks (windup = `anticipation_f`, then `active_f`, `recovery_f` on a whiff):
+
+  | `move` | anticipation_f | active_f | recovery_f | clip |
+  |---|---|---|---|---|
+  | `light` | 18 | 4 | 16 | `strike` |
+  | `heavy` | 32 | 5 | 28 | `strike_heavy` |
+  | `charged` | 54 | 6 | 36 | `strike_heavy` |
+  | `bash` | 14 | 6 | 24 | `body_check` |
+  | `block` | 4 | (held) | 6 | `block` |
+  | `parry` | 1 | 12 | 20 | `block` (a tap) |
+  | `roll` | 3 | 18 | 15 | `roll` |
+  | `dodge` | 2 | 8 | 12 | `dodge` |
+  | `taunt` | 0 | 0 | 60 | `taunt` |
+
+  The duel's tofu bot also reports `contact_types` (>= 3 of the 6.3 rows met) and `one_sided_contacts` (0: a contact
+  that left one fighter's state unchanged fails the playbook's own acceptance).
+- **`arcade_sport`: an arcade team sport with a ball or puck** (hockey, football, basketball, any "get the thing into
+  the goal"). Reference: NHL '94 / Rocket League / Buckland's Simple Soccer, as `docs/research/HOCKEY-ARCADE.md`.
+  Copied: possession as a state (`LOOSE`, `CARRIED(owner)`, `PASS_IN_FLIGHT`, `SHOT_IN_FLIGHT`) with readable loss
+  causes (5.1); the speed RATIOS of the speed table (5.2: passing beats skating, the carrier is slower); the utility AI
+  for shoot / pass / carry with hard vetoes and a re-decision every 15 f (5.3); the roles re-sorted by time to the ball
+  (5.4); the anti ping-pong rule. Its tofu bot also reports `possession_median_f` (240 to 600: 4-10 s; over 900 is
+  glued, under 120 random).
+- **`own`: any other genre** names its own proven reference: a real released game (or a family of them) and the exact
+  mechanics copied, with their numbers where the source has them (a racer copies Mario Kart's item roulette by
+  position and its mini-turbo; a platformer copies Celeste's coyote time of 5 f and its jump buffer). A template whose
+  `copies` are moods ("the feel of Dark Souls") is not a template.
+
+When a recipe card exists for the template (the duel card `card.duel`, written by the duel lane), it is the default card
+for the job; the Planner takes it unless one of its `NOT when` lines matches.
+
+## 12. The tofu stage
+
+The strongest single change the research suggests: build the core verb with flat shapes, and kill it unless it is fun
+in an empty room. Our first phase is the tofu stage.
+
+- **What is built.** The first phase holds the root package (and at most the package it needs to stand on): the core
+  verb exchange on flat shapes (milestone `blockout`: kit primitives, no art), the template's verbs and contact results
+  with their whole feel sheet, one rival that answers, the camera of the feel sheet, the rule that decides a round, and
+  one bot: the tofu bot. No art, no HUD beyond one hint line, no second rival, no twist.
+- **The line in the root contract** (the plan is refused without it when the brief has a design doc):
+  `TOFU CHECK: tests/<bot>.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells,
+  pressure_waves, lead_change_share, close_rounds`. The bot is registered by the root package and run in its acceptance.
+- **The metrics.** The tofu bot's `_bot_result()` returns a `metrics` object beside `ok` and `summary` (PACK.md allows
+  any numbers in the result; the runner reports it as `bot.result.metrics`). Every value is counted from the frames the
+  bot played, never written as a constant. A metric that is absent is not measured, and not measured is a fail.
+
+  | Metric | Item | Passes when | How the bot counts it |
+  |---|---|---|---|
+  | `feedback_f` | 1 | <= 3 | over every press of the core verb the bot made: the most frames from the press to the first frame the player's body or weapon visibly changed (a clip started, a step, a flash) |
+  | `skill_spread` | 3 | >= 0.25 | the bot plays the verb with different inputs (timing, spacing, charge, angle); (best mean outcome - worst mean outcome) / best mean outcome, the outcome being damage, knockback or frame advantage |
+  | `skill_variants` | 3 | >= 3 | how many input variants `skill_spread` compared |
+  | `idle_max_f` | 9 | <= 120 | the longest run of frames any opponent spent with no action (not moving with intent, not attacking, not defending) |
+  | `tell_min_f` | 11 | >= 12 | over every dangerous opponent action that started: the fewest frames from the first frame of its tell pose to its first active frame |
+  | `tells` | 11 | >= 3 | how many dangerous opponent actions `tell_min_f` counted |
+  | `pressure_waves` | 12 | >= 2 | opponent attacks started per 60-frame window; a peak is a window with at least 2 attacks and twice the lowest window since the last trough, a trough a window at or below half the last peak; the count of peak-then-trough pairs |
+  | `lead_change_share` | 15 | >= 0.30 | the bot plays at least 3 rounds; a round is close when the loser ends within 25 % of the winner's health or one point; the share of close rounds in which the lead changed hands at least once |
+  | `close_rounds` | 15 | >= 1 | how many close rounds `lead_change_share` is over |
+
+  Template metrics join them (section 11): the duel's `contact_types` (>= 3) and `one_sided_contacts` (0); the arcade
+  sport's `possession_median_f` (240 to 600). The bot also names `hand`: the `TLHand` profile it played the player's
+  side through; every figure is quoted with it.
+- **The hold.** When the `blockout` milestone's packages are merged, the Foreman reads the newest report of the tofu bot
+  and judges the metrics with the critic's look, exactly like the quality loop: NOT ok sends the root package a revise
+  round with the failed rows (at most 2 rounds), the critic keeps the better version, and still NOT ok holds the job
+  (`job_state paused`, reason `quality`) until the owner answers `foreman quality <job> accept|retry`. Nothing of the
+  second phase is started while the tofu stage is held.
+- **And a person.** The metrics are the floor, not the bar: after the tofu phase the player plays it in an empty room
+  (the phase pause) and says pass or hold. Checklist item 2 ([H]) is judged there.
 
 ## Sources
 
@@ -225,3 +445,6 @@ Critic:
 22. Described from the games, no page verified: NHL Hitz, Mutant League, Rocket League, Absolver, Gang Beasts.
 23. House numbers: reaction times of the hands (`engine/kernel/API.md`, `TLHand`), the hit and camera calls
     (`engine/kernel/API.md`). Telegraph, active, anticipation and input-response frames are house numbers.
+24. The research of 21 Nov, with its own sources inline: `docs/research/WHAT-MADE-GAMES-POPULAR.md` (R1-R14, the
+    anti-patterns, the checklist, the tofu stage), `docs/research/DUEL-PLAYBOOK.md` (the duel template),
+    `docs/research/HOCKEY-ARCADE.md` (the arcade-sport template).
