@@ -358,6 +358,9 @@ func decide(tick: int, pos: Vector3) -> Array:
 		else:
 			var near: int = _rank_by(d, 0.0, 0.0)
 			var far: int = _rank_by(d, float(margin["sideline"]), float(margin["backdrop"]))
+			if (p["size"] as Vector2).x < 0.0:     # N5 chunks: a held site plot (site.gd HELD_SIZE) is out of reach, never unloaded for distance
+				near = mini(near, 2)
+				far = mini(far, 2)
 			if c == 99:
 				want = near
 				why = "start"

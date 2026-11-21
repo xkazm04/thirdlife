@@ -16,6 +16,8 @@ extends RefCounted
 const GROUND_Y: float = 0.0
 const MAX_GRADE: float = 66.0
 
+var base_seed: int
+var fixed_chunks := {}
 var x0: float = 0.0
 var z0: float = 0.0
 var cell: float = 3.0
@@ -53,6 +55,7 @@ func _init(seed_: int, box: Rect2, cell_m: float = 3.0) -> void:
 	cell = cell_m
 	nx = int(round(box.size.x / cell))
 	nz = int(round(box.size.y / cell))
+	base_seed = seed_
 	_nl.seed = seed_
 	_nl.frequency = 0.0075
 	_nl.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
@@ -306,6 +309,10 @@ func _stamp(pts: PackedVector2Array, ys: PackedFloat32Array, reach: float, dist:
 						hh[k] = half
 
 
+func alternating_diagonal(i: int, j: int) -> bool:
+	return (i + j) % 2 == 0 and (fixed_chunks.is_empty() or not fixed_chunks.has(Vector2i(i >> 5, j >> 5)))
+
+
 ## The height at (x, z), consistent with the mesh triangles (the same diagonal rule as the kit's terrain).
 func h(x: float, z: float) -> float:
 	var fx: float = clampf((x - x0) / cell, 0.0, float(nx) - 0.0001)
@@ -314,11 +321,15 @@ func h(x: float, z: float) -> float:
 	var j: int = int(fz)
 	var u: float = fx - float(i)
 	var v: float = fz - float(j)
-	var a: float = heights[_v(i, j)]
-	var b: float = heights[_v(i + 1, j)]
-	var c: float = heights[_v(i + 1, j + 1)]
-	var d: float = heights[_v(i, j + 1)]
-	if (i + j) % 2 == 0:
+	var pitch := nx + 1
+	var k := j * pitch + i
+	var right := j * pitch + mini(i + 1, nx)
+	var below := mini(j + 1, nz) * pitch
+	var a := heights[k]
+	var b := heights[right]
+	var c := heights[below + mini(i + 1, nx)]
+	var d := heights[below + i]
+	if (fixed_chunks.is_empty() or not fixed_chunks.has(Vector2i(i >> 5, j >> 5))) and ((i + j) & 1) == 0:
 		if u >= v:
 			return a + (b - a) * u + (c - b) * v
 		return a + (c - d) * u + (d - a) * v
@@ -398,87 +409,12 @@ func _col(x: float, y: float, z: float, n: Vector3, rd: float, rvd: float, wear:
 
 
 func build_mesh(mat: Material, name_: String = "WorldTerrain") -> MeshInstance3D:
-	var t0: int = Time.get_ticks_msec()
-	var w: int = nx + 1
-	var count: int = w * (nz + 1)
-	var vs: PackedVector3Array = PackedVector3Array()
-	var ns: PackedVector3Array = PackedVector3Array()
-	var cs: PackedColorArray = PackedColorArray()
-	var uv: PackedVector2Array = PackedVector2Array()
-	var cu: PackedFloat32Array = PackedFloat32Array()
-	vs.resize(count)
-	ns.resize(count)
-	uv.resize(count)
-	cu.resize(count * 4)
-	var code: float = 1.0 + 16.0 * float(TLStyle.index("terrain"))
-	for j: int in nz + 1:
-		var z: float = z0 + float(j) * cell
-		for i: int in w:
-			var k: int = j * w + i
-			var x: float = x0 + float(i) * cell
-			var y: float = heights[k] + GROUND_Y
-			var nrm: Vector3 = Vector3(heights[_v(i - 1, j)] - heights[_v(i + 1, j)], 2.0 * cell, heights[_v(i, j - 1)] - heights[_v(i, j + 1)]).normalized()
-			vs[k] = Vector3(x, y, z)
-			ns[k] = nrm
-			cu[k * 4] = x
-			cu[k * 4 + 1] = y
-			cu[k * 4 + 2] = z
-			cu[k * 4 + 3] = code
-	# The same colours drive the mesh and the pack-rim map. Workers read the finished grid and normals;
-	# each writes a private slice, joined in vertex order before upload.
-	var bands := clampi(OS.get_processor_count() - 1, 1, 8)
-	var per := ceili(float(count) / bands)
-	var slices: Array[PackedColorArray] = []
-	slices.resize(bands)
-	var paint := func(b: int) -> void:
-		var start := mini(b * per, count)
-		var end := mini(start + per, count)
-		var colours := PackedColorArray()
-		colours.resize(end - start)
-		for k: int in range(start, end):
-			var p := vs[k]
-			colours[k - start] = _col(p.x, p.y, p.z, ns[k], road_d[k], river_d[k], wear_map[k], meadow_map[k])
-		slices[b] = colours
-	WorkerThreadPool.wait_for_group_task_completion(WorkerThreadPool.add_group_task(paint, bands))
-	for colours: PackedColorArray in slices:
-		cs.append_array(colours)
-	if not pads.is_empty():
-		rim_material = _rim_material(cs, Vector2i(w, nz + 1), Vector2(x0, z0), cell)
-	var ix: PackedInt32Array = PackedInt32Array()
-	ix.resize(nx * nz * 6)
-	var q: int = 0
-	for j: int in nz:
-		for i: int in nx:
-			var a: int = j * w + i
-			var b: int = a + 1
-			var d: int = a + w
-			var c: int = d + 1
-			# the faces look up (+y): Godot winds front faces clockwise seen from outside
-			if (i + j) % 2 == 0:
-				ix[q] = a; ix[q + 1] = b; ix[q + 2] = c
-				ix[q + 3] = a; ix[q + 4] = c; ix[q + 5] = d
-			else:
-				ix[q] = a; ix[q + 1] = b; ix[q + 2] = d
-				ix[q + 3] = b; ix[q + 4] = c; ix[q + 5] = d
-			q += 6
-	var arr: Array = []
-	arr.resize(Mesh.ARRAY_MAX)
-	arr[Mesh.ARRAY_VERTEX] = vs
-	arr[Mesh.ARRAY_NORMAL] = ns
-	arr[Mesh.ARRAY_COLOR] = cs
-	arr[Mesh.ARRAY_TEX_UV] = uv
-	arr[Mesh.ARRAY_CUSTOM0] = cu
-	arr[Mesh.ARRAY_INDEX] = ix
-	var mesh: ArrayMesh = ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
-	mesh.surface_set_material(0, mat)
-	var mi: MeshInstance3D = MeshInstance3D.new()
-	mi.name = name_
-	mi.mesh = mesh
-	mi.material_override = mat
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	build_ms += Time.get_ticks_msec() - t0
-	return mi
+	var start := Time.get_ticks_msec()
+	var samples := preload("res://kernel/world/land/chunk_mesh.gd").new()
+	samples.prepare(self, {})
+	var mesh := samples.build(self, Rect2i(0, 0, nx, nz), mat, name_, 0, false)
+	build_ms += Time.get_ticks_msec() - start
+	return mesh
 
 
 ## Compile the village pigment path once. A pack running alone keeps the original shader program.
@@ -535,7 +471,7 @@ func collision_faces(skip: Callable) -> PackedVector3Array:
 					if absf(xa + cell * 0.5 - q.x) < q.z + cell and absf(za + cell * 0.5 - q.y) < q.z + cell:
 						ask = true
 						break
-			var even: bool = (i + j) % 2 == 0
+			var even: bool = alternating_diagonal(i, j)
 			var t0a: Vector3 = a
 			var t0b: Vector3 = b
 			var t0c: Vector3 = c if even else d
@@ -573,7 +509,7 @@ func faces_in_disc(c: Vector2, r: float) -> PackedVector3Array:
 			var b: Vector3 = Vector3(xa + cell, heights[_v(i + 1, j)] + GROUND_Y, za)
 			var cc: Vector3 = Vector3(xa + cell, heights[_v(i + 1, j + 1)] + GROUND_Y, za + cell)
 			var d: Vector3 = Vector3(xa, heights[_v(i, j + 1)] + GROUND_Y, za + cell)
-			var even: bool = (i + j) % 2 == 0
+			var even: bool = alternating_diagonal(i, j)
 			var t0c: Vector3 = cc if even else d
 			var t1a: Vector3 = a if even else b
 			if Vector2((a.x + b.x + t0c.x) / 3.0, (a.z + b.z + t0c.z) / 3.0).distance_to(c) < r:

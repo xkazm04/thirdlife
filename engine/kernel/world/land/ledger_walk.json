@@ -1,0 +1,8 @@
+{
+  "schema": "tl.walk/1",
+  "name": "land ledger",
+  "ticks": 340,
+  "mode": "bot",
+  "plots": [{"id": "bounce", "pack": "ex_bounce", "origin": [0, 0, 0], "seed": 7}],
+  "player": [[0, [0, 0, 0]], [100, [0, 0, 0]], [101, [1200, 0, 0]], [250, [1200, 0, 0]], [251, [0, 0, 0]]]
+}

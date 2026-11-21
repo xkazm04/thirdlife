@@ -38,7 +38,7 @@ func _line(name: String, why: Array, ok_detail: String) -> void:
 
 
 # ------------------------------------------------------------------------------------------------ the village
-func _build_village(path: String = "") -> void:
+func _build_village(path: String = "", plot_ground := false) -> Dictionary:
 	var walk_path: String = path if not path.is_empty() else OS.get_environment("TL_HARDEN_WALK")      # another walk's village (a clip's), for a look
 	_walk = JSON.parse_string(FileAccess.get_file_as_string(walk_path if not walk_path.is_empty() else "res://boot/village.json"))
 	if _land != null:
@@ -60,7 +60,7 @@ func _build_village(path: String = "") -> void:
 		var o: Array = p["origin"]
 		plots.append(Transform3D(Basis(), Vector3(float(o[0]), float(o[1]), float(o[2]))))
 		radii.append(float(p["radius"]))
-		has_ground.append(false)
+		has_ground.append(plot_ground)
 		var fp: Variant = (p.get("footprint", {}) as Dictionary).get("size_m", null)
 		footprints.append(Vector2(float(fp[0]), float(fp[1])) if fp is Array else Vector2.ONE * float(p["radius"]) * 2.0)
 	var cfg: Dictionary = (_walk["landscape"] as Dictionary).duplicate(true)
@@ -68,13 +68,14 @@ func _build_village(path: String = "") -> void:
 	cfg["footprints"] = footprints
 	cfg["edges_now"] = true
 	_half = float(cfg.get("road_half_m", 2.6))
-	Landscape.call("build", _land, plots, radii, has_ground, cfg)
+	var stats: Dictionary = Landscape.call("build", _land, plots, radii, has_ground, cfg)
 	_ws = _land.get_meta(&"tl_space")
 	_terr = _land.get_meta(&"tl_terrain")
 	var cps: Array = []
 	for q: Variant in _walk["road"]:
 		cps.append(Vector2(float((q as Array)[0]), float((q as Array)[1])))
 	_road = TLKitPath.new(cps, false, 2.0)
+	return stats
 
 
 ## Walks the body from `from` (x, z; the ground gives y) with the wish `dir` * WALK for `ticks`; returns the feet.

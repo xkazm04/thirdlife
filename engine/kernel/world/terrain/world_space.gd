@@ -20,6 +20,7 @@ extends "res://kernel/world/terrain/walker_space.gd"
 
 var stats: Dictionary = {"bodies": 0, "faces": 0, "boxes": 0, "trunks": 0, "boulders": 0, "pack_shapes": 0, "pack_faces": 0}
 var _bodies: Array = []
+var ensure_land: Callable  # Streaming worlds ensure the visitor has ground before motion.
 var crown_batches: Array = []  # [kit recipe, instance transforms], supplied by Landscape.build
 var drawn_crowns := {}  # body RID -> [kit crown, landscape-to-kit transform] for exact head containment
 var tag: String = ""                  # set by the builder: the tag of the bodies made next
@@ -75,7 +76,7 @@ func free_all() -> void:
 	_keep.clear()
 
 
-func _static(shape: Shape3D, xf: Transform3D) -> void:
+func _static(shape: Shape3D, xf: Transform3D) -> RID:
 	var b: RID = PhysicsServer3D.body_create()
 	PhysicsServer3D.body_set_mode(b, PhysicsServer3D.BODY_MODE_STATIC)
 	PhysicsServer3D.body_set_space(b, space)
@@ -85,6 +86,7 @@ func _static(shape: Shape3D, xf: Transform3D) -> void:
 	_bodies.append(b)
 	_tags[b] = tag
 	stats["bodies"] = int(stats["bodies"]) + 1
+	return b
 
 
 ## S2: frees every body that was made under the tag `t` (a construction site's scaffold, when its game arrives; a
@@ -391,6 +393,8 @@ func _add_pack_walk(n: Node, holder: Node3D, inv: Transform3D, plot: Transform3D
 ## follows the ground down; a move that would end on a slope steeper than `max_slope_deg` is refused (he stays).
 ## Returns the new feet position. `blocked` says whether anything held him back this tick.
 func walk(from: Vector3, delta: Vector3) -> Dictionary:
+	if ensure_land.is_valid():
+		ensure_land.call(Vector2(from.x, from.z))
 	var pos: Vector3 = from
 	last_hit = {}
 	var rest: Vector3 = Vector3(delta.x, 0.0, delta.z)
@@ -441,6 +445,8 @@ func walk(from: Vector3, delta: Vector3) -> Dictionary:
 ## Walker-feel (18 Nov 2026): a person's body moves by velocity (terrain/world_body.gd, which uses this space's tests).
 ## One call per world tick; see world_body.gd for the numbers.
 func drive(from: Vector3, wish: Vector3, jump: bool, slide: bool, toggle_fly: bool = false, climb: float = 0.0) -> Dictionary:
+	if ensure_land.is_valid():
+		ensure_land.call(Vector2(from.x, from.z))
 	ensure_mover()
 	var result: Dictionary = _mover.drive(from, wish, jump, slide, false, toggle_fly, climb)
 	place(result["pos"])

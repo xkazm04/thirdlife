@@ -141,6 +141,47 @@ Only the small flowers stand above their meadow. The village material uses integ
 of painted light meet continuously. The lighting bands, hatching and depth-based crest strokes still follow the original 3 m mesh. Grass returns around offset strips of worn ground on each game's terrain, sampling the village colours and grass detail in
 village coordinates. The live mesh and its cached pictures use the same colour map.
 
+## Chunks (night of 22 Nov 2026, lane N5: TWO-WORLDS order of work, item 3)
+
+The village's land is cut into chunks of 32 x 32 cells (96 x 96 m). Code: `land/land.gd` (the chunk table, records,
+rings, the stream), `land/land_record.gd` (`tl.land/1`), `land/chunk_mesh.gd`, `land/chunk_collider.gd`. Nothing
+visible changed: with no record the land is today's heightfield, drawn and collided triangle for triangle.
+
+| | how |
+|---|---|
+| lattice | the chunk grid starts at the village terrain's own low corner (`terr.x0`, `terr.z0`), so a chunk's cells are whole grid cells and a cell's diagonal is the grid's (32 is even); a chunk at the far edge holds fewer cells, so the land still ends where the far plain begins. Tour: 232 x 204 cells = 8 x 7 = 56 chunks; the exe's village 282 x 204 = 9 x 7 = 63 |
+| source of truth | one `tl.land/1` record per chunk: a sparse delta (u16 heights, a material id per cell, water levels) over the procedural base, today's `VillageTerrain` heights after `build_grid` (land noise, hills, bluff, pads, roads, river, ponds, all from the walk's landscape block and seed). Records are applied right after `build_grid`, so roads, rails, scatter, mesh and colliders all see the sculpted land. No walk has records: the base plus nothing. A walk may name them: `landscape.land` = `{"records": "<dir>", "near", "mid", "budget", "all_near_max"}` (unknown keys are errors). The contract text is proposed in the lane's PATCHES.md |
+| mesh | the vertex arrays (positions, normals from the whole grid, colours painted in worker bands, uv, custom0, the plot-rim colour map) are made once for the whole grid exactly as the single mesh made them; each chunk is a `MeshInstance3D` `WorldTerrain_<cx>_<cz>` cut from them, all under one `Node3D` `WorldTerrain`, all sharing the ONE ground material (holes, `close_holes`, tree shade). Seams: the shared border vertices are the same samples, so heights and normals are equal across every seam |
+| collider | one `ConcavePolygonShape3D` body per chunk (tag `terrain`) with exactly the triangles the single trimesh had (same skip round a plot with its own ground). Not a `HeightMapShape3D`: Jolt splits every quad on the anti-diagonal and the village alternates, so a height field sat more than 10 cm off the drawn ground on 3,407 walkable cells of the exe's village (max 1.1 m). Land drawn with `split: "fixed"` (every quad on Jolt's diagonal) gets a `HeightMapShape3D` per chunk, the same surface (selftest `land.heightmap`); no village uses it |
+| rings | Chebyshev distance in chunks from the focus (the visitor): near <= 2 (full mesh and collider), mid <= 6 (half resolution, every second vertex, with skirts; no collider), far: nothing (the far impostor is not built). A chunk is demoted only beyond its ring + 1. A land of at most 100 chunks is everything near, so both villages build every chunk at load, as before, and never change |
+| budget | `step(focus, budget)` does at most `budget` chunk jobs a frame (build a mesh, build or drop a collider), nearest first; counted in jobs, never in milliseconds; the same focus path gives the same jobs. Before the visitor's body moves, the chunk under him and its 8 neighbours have colliders (built at once if not: `forced`). Stepped from `landscape.gd arrive` |
+
+What it costs (22 Nov, other lanes on the machine: figures under load). Building the landscape, headless, the pristine
+engine against this one, five interleaved runs each, medians: the exe's village 940 -> 622 ms, the tour's 750 -> 548
+ms (faster in all ten pairs: the chunks' mesh arrays and collider faces are prepared in one worker group, and the
+scatter's terrain queries are typed calls). In the tour's window: 34 to 52 more draw calls per picture (181 -> 233 at
+the first), 27 to 38 % fewer primitives (chunks outside the camera and the shadow cascades are culled). The pictures:
+every hash, tick count and the visitor's path are the same; the visitor-camera pictures differ from before by up to
+0.18 % of pixels by more than 8 levels (the same size as two runs of the same engine), because his capsule settles up
+to 1.4 mm differently on 56 shapes than on one (Jolt compresses a mesh shape's vertices against its bounds: a ray meets
+the chunks within 0.05 mm of the drawn ground, the old single shape within 0.29 mm), which moves the chase camera by a
+hair; a stage camera's picture is identical bit for bit.
+
+`stats["land"]` in the landscape's stats: `chunks`, `records`, `delta_vertices`, `painted_cells`, `water_cells`,
+`near`, `mid`, `far`, `all_near`, `mesh_ms`, `collider_ms`, `forced`. Proof: selftest block 740 (`land.same_mesh`:
+both villages' chunk meshes equal the single mesh in every vertex channel and triangle, and the tree-shade map is the
+same bytes; `land.seams`; `land.colliders`: 119 terrain bodies, the same face totals, 2,000 seeded rays per village hit
+where the single trimesh hit, at `gy` within 1 mm, and miss where it missed; `land.heightmap`; `land.record`;
+`land.rings`; `land.ledger`).
+
+**Ledger is on** (`tiers.json` `backdrop_m` 960, ten chunks): a game farther than 960 + 40 m from the player is unloaded
+and keeps its ticks, summary and saved data; brought back, it is rebuilt from them (its round starts again from its seed,
+as from a world file). No walk of today reaches 960 m (the farthest is heavy.json's far plot, 880 m), so no tour or proof
+changed. A held construction-site plot (its size negative, out of reach) is never ranked past `backdrop` (tiers.gd), so a
+site still arrives through the build queue. The 1/16 floor (`slice.max` 16) stays for every game in memory. Selftest
+`land.ledger` (ex_bounce, no override: the record is unchanged while it is away; the rebuilt game has the same ticks and
+score).
+
 ## The visitor's body (P4)
 
 What was chosen, and why. A pack's bodies live in a space of its own and must stay untouched; the visitor belongs to no
