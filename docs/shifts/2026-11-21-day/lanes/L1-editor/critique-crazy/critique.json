@@ -1,0 +1,146 @@
+{
+ "schema": "tl.foreman.critique/1",
+ "dry": true,
+ "job": "fight-colosseum-20261120-2",
+ "milestone": "tuned",
+ "captures": [
+  "tuned-play-f116.png",
+  "tuned-play-f349.png",
+  "tuned-emperor-f116.png",
+  "tuned-emperor-f349.png",
+  "tuned-play-bot_flood-f646.png",
+  "tuned-play-bot_flood-f2453.png",
+  "tuned-emperor-bot_flood-f646.png",
+  "tuned-emperor-bot_flood-f2453.png"
+ ],
+ "shots": [
+  {
+   "capture": "tuned-play-f116.png",
+   "label": "camera play, frame 116, while tests/bot_bout.gd of package core plays, 25 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-play-f349.png",
+   "label": "camera play, frame 349, while tests/bot_bout.gd of package core plays, 75 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-f116.png",
+   "label": "camera emperor, frame 116, while tests/bot_bout.gd of package core plays, 25 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-f349.png",
+   "label": "camera emperor, frame 349, while tests/bot_bout.gd of package core plays, 75 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-play-bot_flood-f646.png",
+   "label": "camera play, frame 646, while tests/bot_flood.gd of package flood plays, 25 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-play-bot_flood-f2453.png",
+   "label": "camera play, frame 2453, while tests/bot_flood.gd of package flood plays, 95 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-bot_flood-f646.png",
+   "label": "camera emperor, frame 646, while tests/bot_flood.gd of package flood plays, 25 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-bot_flood-f2453.png",
+   "label": "camera emperor, frame 2453, while tests/bot_flood.gd of package flood plays, 95 % of the frame 2582 where it finished"
+  }
+ ],
+ "strips": [
+  {
+   "capture": "tuned-play-bot_bout-strip-f86.png",
+   "label": "MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames 86, 91, ... 141, 5 frames apart) of camera play, frame 86, while tests/bot_bout.gd of package core plays, 18 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-play-bot_bout-strip-f319.png",
+   "label": "MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames 319, 324, ... 374, 5 frames apart) of camera play, frame 319, while tests/bot_bout.gd of package core plays, 69 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-bot_bout-strip-f86.png",
+   "label": "MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames 86, 91, ... 141, 5 frames apart) of camera emperor, frame 86, while tests/bot_bout.gd of package core plays, 18 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-bot_bout-strip-f319.png",
+   "label": "MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames 319, 324, ... 374, 5 frames apart) of camera emperor, frame 319, while tests/bot_bout.gd of package core plays, 69 % of the frame 465 where it finished"
+  },
+  {
+   "capture": "tuned-play-bot_flood-strip-f616.png",
+   "label": "MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames 616, 621, ... 671, 5 frames apart) of camera play, frame 616, while tests/bot_flood.gd of package flood plays, 24 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-play-bot_flood-strip-f2423.png",
+   "label": "MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames 2423, 2428, ... 2478, 5 frames apart) of camera play, frame 2423, while tests/bot_flood.gd of package flood plays, 94 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-bot_flood-strip-f616.png",
+   "label": "MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames 616, 621, ... 671, 5 frames apart) of camera emperor, frame 616, while tests/bot_flood.gd of package flood plays, 24 % of the frame 2582 where it finished"
+  },
+  {
+   "capture": "tuned-emperor-bot_flood-strip-f2423.png",
+   "label": "MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames 2423, 2428, ... 2478, 5 frames apart) of camera emperor, frame 2423, while tests/bot_flood.gd of package flood plays, 94 % of the frame 2582 where it finished"
+  }
+ ],
+ "rubric": [
+  {
+   "id": "silhouette",
+   "text": "The objects that matter (players, balls, goals, the play surface) have clear, distinct silhouettes against the background."
+  },
+  {
+   "id": "readability",
+   "text": "A new viewer can tell at a glance what the play space is and where the action is; nothing important is hidden, cut off or too small."
+  },
+  {
+   "id": "style_consistency",
+   "text": "Shapes, palette and light are consistent with each other and with the mood the brief asks for."
+  },
+  {
+   "id": "shows_play",
+   "text": "The frame shows the game being played (things in motion or mid-action, in a plausible state), not an empty or broken scene."
+  },
+  {
+   "id": "fun_promise",
+   "text": "The frames show this promise to the player happening, not only a place where it could happen: \"Survive cabbages and the icy flood in the last seconds\". Judge what you see in motion (the verb being done, the rival reacting, the effect of a hit); 0 when nothing of it is visible."
+  },
+  {
+   "id": "feel",
+   "text": "In the MOTION STRIPS: an attack shows its anticipation (a wind-up), its impact (a hit-stop: the two bodies held for a few frames) and the victim's body reacting away from the blow (a flinch, a stumble, a fall); a miss reads as a miss; a dodge or block shows in the body. 0 when hits are a shove, a squash or nothing; 0 when no exchange is filmed at all."
+  },
+  {
+   "id": "slop",
+   "text": "1.0 when you see NO item of the slop list, 0.0 when you see ANY (name its id and the image in `notes`). The slop list: one_attack_button, recoloured_rivals, borrowed_clips, hit_without_reaction, camera_behind_scenery, hud_only_twist, skill_removing_autoaim, every_hit_floors, fighters_overlap, placeholder_in_clip_moment, speed_stat_difficulty, no_defensive_verb, juice_on_everything, menu_first_minute. Strong signs: every fighter has the same body in another colour; a figure plays a clip that is not its action; a wall or pillar hides the fighters; two bodies merge into one blob."
+  }
+ ],
+ "ok": false,
+ "scores": {
+  "silhouette": 0.55,
+  "readability": 0.4,
+  "style_consistency": 0.7,
+  "shows_play": 0.6,
+  "fun_promise": 0.35,
+  "feel": 0.1,
+  "slop": 0
+ },
+ "notes": [
+  "What the captures show: two chibi fighters (blue jacket with a white shield, red with a white helmet and a yellow shield) walk into each other on ochre sand in an inked-toon sandstone octagon with blue seats and red banners. In the flood captures the floor turns into a white ice sheet, both fighters hold hockey sticks, and a few tiny green balls (the cabbages) sit near the walls.",
+  "slop: fighters_overlap. In image 3 (emperor f116) and strip 11 the two fighters stand one behind the other and merge into one stacked blob. In strip 9, frames 86–101, their shields and bodies are fused. Fighter collision or separation needs a minimum distance (core: fighter.gd, tuning.json).",
+  "slop: camera_behind_scenery. In image 6 (play f2453) and strip 14, frames 2438–2458, the play camera drops behind the near wall and its red flag. The wall fills half the frame, and in frames 2443–2453 the blue fighter is hidden or cut off at the screen edge. The camera needs wall occlusion handling or a clamp inside the ring (core: main.gd camera).",
+  "slop: hit_without_reaction. In strip 10, frames 364–374, the blue fighter shoves into the red one with a small sparkle at the feet. There is no wind-up, no hit-stop hold and no flinch or stumble from the red fighter. Strip 9 has the same problem: the bodies collide and drift apart.",
+  "feel: no strip shows a readable attack. There is no shield raise before the bash, no frames where both bodies are held, and the victim never recoils away from the blow. The shield bash reads as two figures bumping.",
+  "fun_promise (flood package): images 6 and 8 and strips 14 and 16 show the ice floor and the fighters skating. The cabbages are tiny green dots (about 4 px on the emperor camera) and none is seen hitting or knocking anyone. 'Survive cabbages' is not visible. The icy flood reads as a finished ice rink: no water arriving, no splash and no slipping fighter. Make the cabbages bigger and give them a visible arc and impact.",
+  "In the flood, the hockey sticks look like a prop borrowed from another sport. On the white ice the red fighter's white helmet and the white shield lose their silhouette, so add an outline or a darker shield colour on ice.",
+  "readability: on the emperor camera (images 3, 4, 7, 8) the fighters take up about 3% of the frame height, and the front wall slab covers the lower quarter of the screen. Pull the camera in, or lower the foreground wall that sits in the camera's view.",
+  "style: the sandstone, ochre sand, red banners and ink lines are consistent with the brief. The camera pitch never shows the hot blue sky the brief asks for; only green fields appear behind the stands."
+ ],
+ "package": "core",
+ "calls": [
+  {
+   "attempt": 1,
+   "outcome": "ok",
+   "tokensIn": 45147,
+   "tokensOut": 2414,
+   "durationMs": 31890,
+   "problems": []
+  }
+ ]
+}

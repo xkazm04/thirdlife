@@ -7,10 +7,14 @@ extends RefCounted
 ##   (the latest per aspect, on the latest brief); briefs (how many brief_set); phases [{id, title, try, packages, state,
 ##   note, done_count, holds}] (a plan without phases is one phase with id ""); phases_given bool; phase_events [];
 ##   phase_wait (the phase whose phase_done waits for a review, ""); phase_now (index of the first phase not passed, -1)
+## L1 of 21 Nov (JOB.md "Added 2026-11-21", the design room and the quality loop): concept_pitch (the chosen concept's
+##   pitch, ""); design_reviews [{round, verdict, notes}]; quality_hold {milestone, round, notes} while a milestone the
+##   critic still finds NOT ok after its last revise round waits for `foreman quality` (pause_kind "quality").
 
 
 const DEFAULTS: Dictionary = {"creativity": "standard", "run_through": false, "pitch": "", "aspects": [], "reactions": {}, "briefs": 0,
-	"phases": [], "phases_given": false, "phase_events": [], "phase_wait": "", "phase_now": -1}
+	"phases": [], "phases_given": false, "phase_events": [], "phase_wait": "", "phase_now": -1,
+	"concept_pitch": "", "design_reviews": [], "quality_hold": {}}
 
 
 static func defaults() -> Dictionary:
@@ -28,6 +32,10 @@ static func on_brief(job: Dictionary, e: Dictionary) -> void:
 	job["pitch"] = str(brief.get("pitch", ""))
 	job["aspects"] = (brief.get("aspects", []) as Array).duplicate(true) if brief.get("aspects", []) is Array else []
 	job["reactions"] = {}          # reactions to an earlier brief no longer count
+	var concept: Dictionary = brief.get("concept", {}) if brief.get("concept", {}) is Dictionary else {}
+	var cands: Array = concept.get("candidates", []) if concept.get("candidates", []) is Array else []
+	var k: int = int(concept.get("chosen", -1)) if concept.get("chosen", -1) is float or concept.get("chosen", -1) is int else -1
+	job["concept_pitch"] = str((cands[k] as Dictionary).get("pitch", "")) if k >= 0 and k < cands.size() and cands[k] is Dictionary else ""
 
 
 static func on_plan(job: Dictionary, e: Dictionary, order: Array) -> void:
@@ -78,9 +86,30 @@ static func take(job: Dictionary, e: Dictionary) -> bool:
 			(job["phase_events"] as Array).append(rev)
 			job["phase_wait"] = ""
 			job["activity"] = "phase %s: %s" % [str(e.get("phase", "")), "passed" if rev["type"] == "pass" else "held for a change"]
+		"design_reviewed":
+			(job["design_reviews"] as Array).append({"round": int(e.get("round", 0)), "verdict": str(e.get("verdict", "")), "notes": str(e.get("notes", ""))})
+			job["activity"] = "the producer reviewed the design (round %d): %s" % [int(e.get("round", 0)), str(e.get("verdict", ""))]
+		"milestone":
+			on_look(job, e)
+			return false            # job_model reads the milestone itself
+		"comment":
+			var hold: Dictionary = job["quality_hold"]
+			if not hold.is_empty() and str(e.get("milestone", "")) == str(hold["milestone"]) and str(e.get("text", "")).begins_with("quality "):
+				job["quality_hold"] = {}
 		_:
 			return false
 	return true
+
+
+## A look of the quality loop: round 2 or later still NOT ok holds the job for the owner; any later look clears it.
+static func on_look(job: Dictionary, e: Dictionary) -> void:
+	var summary: String = str(e.get("summary", ""))
+	var at: int = summary.find("critic (V5) NOT ok: ")
+	if int(e.get("round", 0)) >= 2 and at >= 0:
+		var notes: String = summary.substr(at + 20).get_slice("[", 0).strip_edges()
+		job["quality_hold"] = {"milestone": str(e.get("milestone", "")), "round": int(e.get("round", 0)), "notes": notes}
+	elif not (job["quality_hold"] as Dictionary).is_empty() and str(e.get("milestone", "")) == str(job["quality_hold"]["milestone"]):
+		job["quality_hold"] = {}
 
 
 ## After job_model's reduce: the phases' states, and a pause on a phase (pause_kind "phase").
@@ -88,6 +117,10 @@ static func finish(job: Dictionary) -> Dictionary:
 	fold_phases(job)
 	if str(job["phase"]) == "paused" and str(job["pause_kind"]) == "other" and waits_on_phase(job):
 		job["pause_kind"] = "phase"
+	var hold: Dictionary = job["quality_hold"]
+	if str(job["phase"]) == "paused" and str(job["job_reason"]) == "quality" and not hold.is_empty():
+		job["pause_kind"] = "quality"     # Create and the panel print job_reason: the critic's words, not the bare reason
+		job["job_reason"] = "the critic still finds %s weak: %s" % [str(hold["milestone"]), str(hold["notes"])]
 	return job
 
 

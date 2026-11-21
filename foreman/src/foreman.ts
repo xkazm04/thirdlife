@@ -17,10 +17,13 @@ import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
 import { runHandChecks, sendBackHands } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
+import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
 import { briefText, critic, render, replanPackages, whoOwns, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
-import { botFinish, planShots, shotFile, shotLabel } from "./shots.js"; // L2b: each milestone filmed with its newest packages' own bots
+import { botFinish, planShots } from "./shots.js";
+import { decideLook, filmLook, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
+import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
 import { drainInbox } from "./inbox.js";
 import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls } from "./p10.js";
@@ -179,6 +182,7 @@ export class Foreman {
     // A cancelled job stays cancelled unless the caller explicitly asks for its failed packages to be retried.
     if (this.s.jobState?.state === "cancelled" && !this.o.retryFailed) return this.s;
     if (waitsForVerdict(this.s)) return this.s; // a phase waits for the player's verdict: `foreman phase` answers it
+    if (this.s.qualityHeld && this.s.jobState?.state === "paused") return this.s; // JOB.md 2026-11-21: `foreman quality` answers it
     // The runner's option list comes from the engine. Without it nothing is started and nothing is written.
     this.verbs = this.o.verbs ?? verbsFor(this.o.verifier.location);
     // JOB.md 2026-11-17: the kernel version every pack.json declares is the engine's own; unreadable, nothing starts.
@@ -256,12 +260,17 @@ export class Foreman {
       if ((await this.applyChangeRequests()) > 0) continue;
       // An answer that arrived just now: the scheduler looks at its package again.
       if (took > 0) continue;
+      if (this.s.qualityHeld) { // JOB.md 2026-11-21: still NOT ok after the last revise round: the owner decides (also with run_through)
+        this.append({ type: "job_state", state: "paused", reason: QUALITY_PAUSE });
+        break;
+      }
       const step = await phaseStep(this.gateHost); // a phase whose packages are all merged is done: pass, or wait for the player
       if (step === "paused") break;
       if (step === "continue") continue;
       const views = this.s.order.map((id) => this.pkg(id));
       if (views.every((p) => p.state === "promoted")) {
         await this.catchUpMilestones();
+        if (this.s.qualityHeld) continue; // a look just held the job: the pause above, never a promotion
         // P10 item 2: a failed final verification after a change sends the failure back to a package.
         if (await this.finish()) continue;
         break;
@@ -1362,7 +1371,7 @@ export class Foreman {
     // L2b: only the first test's shot (<m>-<cam>-f<frame>.png) is the same every milestone; a package's own bot is not.
     const firstShot = (list: string[], ms: string): string[] => list.filter((c) => /^-[a-z0-9_]+-f\d+\.png$/.test(tail(c, ms)));
     captures = firstShot(captures, m);
-    const prev = this.s.milestones[this.s.milestones.length - 1];
+    const prev = [...this.s.milestones].reverse().find((x) => x.milestone !== m); // 21 Nov: not a revise round's own earlier look
     if (captures.length === 0 || !prev || firstShot(prev.captures, prev.milestone).length !== captures.length) return undefined;
     const same = captures.every((c) => {
       const twin = prev.captures.find((p) => tail(p, prev.milestone) === tail(c, m));
@@ -1459,61 +1468,27 @@ export class Foreman {
    * tried once more (the window can die in the graphics driver under GPU load); the critic does not gate the job.
    */
   private async runMilestone(m: Milestone, lastPackage: string): Promise<void> {
-    if (this.s.milestones.some((x) => x.milestone === m)) return;
     const members = this.s.plan.filter((p) => p.milestone === m).map((p) => p.id);
     if (members.length === 0 || !members.every((x) => this.pkg(x).state === "promoted")) return;
-    // N3: the critic's extra round for this milestone went to another package (the one it named) and is not over
-    // yet: the second look waits for it.
+    // N3: a revise round for this milestone went to another package (the one the critic named) and is not over yet.
     const stillOut = this.log.events.some((e) => e.type === "reopened" && isCriticReopenFor(e.reason, m) && this.s.packages[e.package] !== undefined && !["promoted", "failed"].includes(this.pkg(e.package).state));
     if (stillOut) return;
-    const packDir = this.dir("pack");
+    // JOB.md 2026-11-21, the quality loop (quality_state.ts decides from the log, quality.ts acts).
+    const q = qualityNext(this.log.events, m, members);
+    if (q.next === "closed" || q.next === "held") return;
+    if (q.next === "send") return sendBack(this.gateHost, m, members, lastPackage, q.round, { ...q.look, verdict: verdictOfLook(this.gateHost, q.look) }, q.note);
     let cameras: string[] = [];
     let tests: string[] = [];
     try {
-      const mf = readManifest(packDir);
+      const mf = readManifest(this.dir("pack"));
       cameras = mf.cameras;
       tests = mf.tests;
     } catch {
       /* no manifest: no captures */
     }
-    const captures: string[] = [];
-    const labels: string[] = [];
-    const notes: string[] = [];
     const shots = planShots(this.s.plan, this.log.events, members, tests, (b) => botFinish(this.jobDir, this.log.events, b), this.o.captureFrames);
-    for (const [si, shot] of shots.entries()) for (const cam of cameras) {
-      const bot = shot.bot;
-      for (const frame of shot.frames) {
-        const out = this.dir("captures", shotFile(m, cam, frame, shot, si));
-        let ok = false;
-        for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
-          fs.mkdirSync(path.dirname(out), { recursive: true });
-          fs.rmSync(out, { force: true });
-          const vr = await this.o.verifier.run({
-            verb: "capture",
-            args: [`--cam=${cam}`, `--frame=${frame}`, `--out=${toPosix(out)}`, `--res=${this.o.captureRes ?? "1280x720"}`, ...(bot !== undefined ? [`--test=${bot}`] : [])],
-            packDir,
-            reportFile: this.reportPath(`milestone-${m}-capture-${cam}-f${frame}`),
-          });
-          ok = vr.ok && fs.existsSync(out);
-          this.append({
-            type: "verify",
-            round: 1,
-            level: vr.level,
-            verb: vr.verb,
-            ok,
-            report: this.rel(vr.reportFile),
-            ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}),
-            after: lastPackage,
-          });
-          if (!ok) notes.push(`capture ${cam} frame ${frame}, attempt ${attempt} of 2, failed: ${clip(vr.summary, 160)}`);
-        }
-        if (ok) {
-          captures.push(this.rel(out));
-          labels.push(shotLabel(cam, frame, shot));
-        }
-      }
-    }
-    if (cameras.length === 0) notes.push("the pack declares no camera, so there is nothing to capture");
+    const film = await filmLook(this.gateHost, m, shots, cameras, lastPackage, this.o.strips !== false && stripsOn(this.verbs));
+    const { captures, notes } = film;
     // Rendering is deterministic, so a milestone that changed nothing a camera can see gives the very same bytes
     // as the milestone before it. Seen in the first real job: an art pass that passed V0 to V3 and drew nothing.
     const sameAs = this.identicalToPrevious(m, captures);
@@ -1530,61 +1505,7 @@ export class Foreman {
       return;
     }
     if (sameAs !== undefined) notes.push(`NO VISIBLE CHANGE: every capture is byte-identical to the "${sameAs}" milestone's (same camera, same frame)`);
-
-    let verdict = "critic not run";
-    if (captures.length > 0 && this.o.critic !== false) {
-      const model = this.o.criticModel ?? this.o.model;
-      const rubric = criticRubric(this.s, lastPackage); // L2 21 Nov: + fun_promise (the phase's try line, or the pitch)
-      const res = await critic(this.o.builder, captures.map((c) => this.dir(c)), rubric, {
-        ...(model ? { model } : {}),
-        context: [`Game: ${this.s.title ?? ""} (${this.s.sentence ?? ""})`, `Mood asked for: ${this.s.brief?.mood ?? "(none)"}`, `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`].join("\n"),
-        packages: this.packageLines(),
-        labels,
-      });
-      this.logGenerateCalls(res.calls, model);
-      const file = this.reportPath(`critic-${m}`);
-      fs.mkdirSync(path.dirname(file), { recursive: true });
-      fs.writeFileSync(
-        file,
-        JSON.stringify(
-          { schema: "tl.foreman.critique/1", milestone: m, captures, shots: captures.map((c, i) => ({ capture: c, label: labels[i] ?? "" })), rubric,...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}) } : { error: res.reason }) },
-          null,
-          1,
-        ) + "\n",
-      );
-      verdict = res.ok
-        ? `critic (V5) ${res.value.ok ? "ok" : "NOT ok"}: ${Object.entries(res.value.scores).map(([k, v]) => `${k} ${v}`).join(", ")}; ${clip(res.value.notes.join(" | "), 500)} [${this.rel(file)}]`
-        : `critic (V5) gave no usable answer: ${clip(res.reason, 200)} [${this.rel(file)}]`;
-      // JOB.md: "NOT ok" gives the milestone's packages ONE extra round with the critic's notes as feedback. After
-      // that round the milestone is written whatever the verdict.
-      // N3 item 2: that round goes to the package the critic NAMES (the one whose files most likely cause what it
-      // sees), through the re-open path, and not to whichever package just merged. A missing or unknown name falls
-      // back to the milestone's own packages and is logged as a `note`.
-      const events = this.log.events;
-      const hadRound =
-        events.some((e) => e.type === "reopened" && isCriticReopenFor(e.reason, m)) ||
-        events.some((e, i) => e.type === "package_state" && members.includes(e.package) && e.state === "queued" && detailKind(e.detail) === "critic" && events[i - 1]?.type !== "reopened");
-      if (res.ok && !res.value.ok && !hadRound) {
-        const detail = `${CRITIC_ROUND}: ${Object.entries(res.value.scores).map(([k, v]) => `${k} ${v}`).join(", ")}. Critic's notes: ${res.value.notes.join(" | ")} [${this.rel(file)}]`;
-        const named = res.value.package;
-        const target = named !== undefined ? this.s.packages[named] : undefined;
-        if (named !== undefined && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
-          this.reopen(named, `${criticReopenFor(m)}: the critic names this package as the cause of what it sees${members.includes(named) ? "" : ` (the milestone's own package(s): ${members.join(", ")})`}`, detail);
-          return;
-        }
-        const why = named === undefined ? "the critic named no package" : !target ? `the critic named "${clip(named, 60)}", which is not a package of this plan` : `the critic named ${named}, which is not merged (state ${target.state})`;
-        this.append({ type: "note", package: lastPackage, round: this.pkg(lastPackage).round, text: `${FOREMAN_NOTE}${why}; the critic's extra round goes to the package(s) of the ${m} milestone: ${members.join(", ")}` });
-        for (const id of members) this.append({ type: "package_state", package: id, state: "queued", round: this.pkg(id).round + 1, detail: clip(detail, 1500) });
-        return;
-      }
-      if (hadRound) verdict += " (the verdict after the one extra round that the critic's first NOT ok gave)";
-    }
-    this.append({
-      type: "milestone",
-      milestone: m,
-      captures,
-      summary: clip([`all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`, `${captures.length} capture(s)`, verdict, ...notes].join("; "), 1500),
-    });
+    await decideLook(this.gateHost, m, members, lastPackage, film, shots, q.round, notes);
   }
 
   // ---------- builder calls ----------
@@ -1698,7 +1619,7 @@ export class Foreman {
 
   private buildPrompt(id: string, spec: PackageSpec, round: number, selfCheck: string[]): string {
     const s = this.s;
-    const brief = s.brief ? briefText(s.brief) + phaseLine(s, id) : "(no brief in the log)";
+    const brief = s.brief ? briefText(s.brief) + phaseLine(s, id) + servesLine(s.brief, spec) : "(no brief in the log)";
     return render(this.template, {
       packId: s.packId ?? "",
       title: s.title ?? "",
@@ -1730,6 +1651,7 @@ export class Foreman {
       optionalFields: this.optionalFieldsText(),
       reference: this.referenceText(),
       card: cardBriefSection(this.refDir(), s.card),
+      feel: s.brief?.design !== undefined ? builderFeelSection() : "",
     });
   }
 

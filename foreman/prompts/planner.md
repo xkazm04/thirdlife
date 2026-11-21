@@ -9,7 +9,7 @@ Player's sentence: "{{sentence}}"
 
 Brief:
 {{brief}}
-
+{{review}}
 # The player's decisions on the design
 {{reactions}}
 
@@ -19,6 +19,18 @@ The brief was written to be fun: a camera that serves the main verb, juice on th
 itself), rivals with a name and a habit, a first minute that teaches by playing (one hint line on the HUD), stakes for
 the next round, an intensity curve and one twist. Each of these lands in the contract of the package that owns it,
 with names and numbers a builder can follow; none of it is left for "later" without a package that owns it.
+
+**The game design doc is the spec.** When the brief carries a game design doc (verbs with frames, a feel sheet, three
+clip moments), every number in it lands in the contract of the package that owns that verb or that hit, word for
+word: hit-stop frames on attacker and victim, the knockback rule, the victim's reaction (`TLHit.react` /
+`TLHit.down`), the whiff, the i-frames, the rival's telegraph, the shake, the camera. Name each verb's own clip
+(`strike`, `strike_heavy`, `block`, `roll`, `dodge`, `body_check`, `cross_check`, `taunt`); never plan a borrowed
+one. **Never cut the feel sheet to fit a package**: cut content (fewer rivals, fewer props, a simpler twist), never feel.
+Every package lists in `serves` the clip ids (from the design's clip moments) it brings closer; every clip id is
+served by some package.
+
+# The design handbook (docs/GAME-QUALITY.md): feel numbers and the slop list your contracts must avoid
+{{quality}}
 
 # What already exists (use it; do not plan to rebuild it)
 {{existing}}
@@ -44,11 +56,13 @@ How to choose:
 - Each package is built by ONE builder run with a **hard time limit of {{timeLimit}} minutes** of wall clock. A run
   that is not finished by then is killed and its round is lost. For scale: in the first real job a root package of
   about 550 lines of script in 7 files took 10.8 minutes. Plan every package to fit well inside the limit.
-- **The root package is the smallest thing that plays**: the venue from a layout file, the one rule that decides the
-  game, the entry script, one camera and one bot, in FEW files (aim for five or fewer, mostly data). It starts from the
-  nearest seed game and builds the venue from the kit. It must be playable and pass its bot on its own.
-- **Later packages carry the rest**: the second mechanic, the opponent's AI, the HUD, sound, the art pass, tuning.
-  When in doubt, move work OUT of the root into a later package rather than making the root bigger.
+- **The root package is the core verb exchange with its whole feel sheet, on greybox**: the venue from a layout file,
+  the player's verbs and one rival who answers them (attack, defence, reaction, whiff, hit-stop, i-frames and the
+  camera of the feel sheet, with the verbs' own clips), the rule that decides the game, the entry script and one bot.
+  No file the package does not need, but nothing of the feel sheet left out. It starts from the nearest seed game and
+  builds the venue from the kit. It must be playable and pass its bot on its own.
+- **Later packages carry the rest**: more rivals and their characters, the playstyles, the twist, the HUD, sound, the
+  art pass, tuning. When in doubt, move CONTENT out of the root into a later package; never move feel out of it.
 - **The camera serves the verb from the first package on.** The root registers the play camera the brief asks for
   (a chase or orbit camera on the player's figure framed at 0.2 to 0.3 of the frame height with `ctx.cameras.frame`,
   or a fixed view of the whole play space when the whole space is the play), never a far top-down view.
@@ -57,8 +71,8 @@ How to choose:
 Group the packages into 2 to 5 **phases**, in build order. After each phase the Foreman stops, and the player plays
 the game as it is and says "pass" (go on) or "hold" with a note (change this first). So each phase must be something
 a person can PLAY and feel, not a layer of code:
-- The **first phase is the smallest thing that plays**: the root package, the main verb, the camera that serves it,
-  one rival or target and a way to score. It holds the root package.
+- The **first phase is the smallest thing that plays**: the root package, the core verb exchange with its feel, the
+  camera that serves it, one rival or target and a way to score. It holds the root package.
 - Each later phase adds something the player feels: the rivals' character, the juice, the twist, the stakes, the look.
   A crazy aspect the player kept usually gets a phase of its own after the core plays.
 - Every package is in exactly one phase; a package's deps are in its own phase or an earlier one.
@@ -84,6 +98,8 @@ a person can PLAY and feel, not a layer of code:
 {{verbOptions}}
   Any other option makes the runner refuse the run. Do not use `capture`: the Foreman takes captures itself at each
   milestone.
+- `serves`: the clip ids of the design's clip moments this package brings closer (for example `["roll_under_lion"]`);
+  omit it only when the brief has no game design doc.
 - `registers`: what this package adds to the pack's manifest, as
   `{ "capabilities": [...], "assets": ["gen/x.gd"], "tests": ["tests/bot_x.gd"], "cameras": ["hero"] }` (each key
   optional). `capabilities` are the kernel capabilities its scripts use (a script that names a kernel class without

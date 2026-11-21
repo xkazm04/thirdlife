@@ -1,0 +1,277 @@
+// The quality loop and motion strips (JOB.md "Added 2026-11-21"), acted out: film a milestone's look (stills and
+// strips), have the critic judge it, compare a revise round with the version before and keep the better (restoring
+// the snapshot when the previous one wins), send a NOT ok look back for a revise round, or leave it for the owner's
+// hold. quality_state.ts decides from the log; these functions write. Kept out of foreman.ts (its line ratchet),
+// over the Foreman's gate host as p10gate.ts is.
+import fs from "node:fs";
+import path from "node:path";
+import type { Milestone, Strip } from "./events.js";
+import type { GateHost } from "./p10gate.js";
+import { critic, generate, type RubricItem } from "./designer.js";
+import { criticRubric, packageLinesOf } from "./phases.js";
+import { CRITIC_ROUND, criticReopenFor } from "./rounds.js";
+import { QUALITY_ROUNDS, type Look } from "./quality_state.js";
+import { STRIP, shotLabel, stripFile, stripFrom, stripLabel, type Shot } from "./shots.js";
+import { foldEvents } from "./joblog.js";
+import { copyDir } from "./scope.js";
+import { FOREMAN_NOTE, clip } from "./conduct.js";
+import { PKG_ROOT, toPosix } from "./paths.js";
+import { slopIds } from "./roomtext.js";
+import type { RunnerVerbs } from "./verbs.js";
+import type { CritiqueResult } from "./verifier.js";
+
+/** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
+export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
+  const opts = (verbs?.verbs["capture"] as { options?: Record<string, unknown> } | undefined)?.options ?? {};
+  return Object.prototype.hasOwnProperty.call(opts, "strip");
+}
+
+/** The rubric items a look with strips adds: feel (seen in motion) and slop (any slop-list item seen fails). */
+export function feelItems(): RubricItem[] {
+  const ids = slopIds();
+  return [
+    { id: "feel", text: "In the MOTION STRIPS: an attack shows its anticipation (a wind-up), its impact (a hit-stop: the two bodies held for a few frames) and the victim's body reacting away from the blow (a flinch, a stumble, a fall); a miss reads as a miss; a dodge or block shows in the body. 0 when hits are a shove, a squash or nothing; 0 when no exchange is filmed at all." },
+    { id: "slop", text: `1.0 when you see NO item of the slop list, 0.0 when you see ANY (name its id and the image in \`notes\`). The slop list: ${ids.join(", ") || "one_attack_button, recoloured_rivals, borrowed_clips, hit_without_reaction, camera_behind_scenery, hud_only_twist, skill_removing_autoaim, every_hit_floors, fighters_overlap, placeholder_in_clip_moment"}. Strong signs: every fighter has the same body in another colour; a figure plays a clip that is not its action; a wall or pillar hides the fighters; two bodies merge into one blob.` },
+  ];
+}
+
+export interface Film {
+  captures: string[];
+  labels: string[];
+  strips: Strip[];
+  notes: string[];
+}
+
+const reportPath = (h: GateHost, stem: string): string => h.dir("reports", `${stem}-s${h.s.lastSeq + 1}.json`);
+
+/** One capture run with one retry (the window can die in the graphics driver under GPU load), logged as `verify`. */
+async function captureOnce(h: GateHost, args: string[], out: string, stem: string, after: string, notes: string[], what: string): Promise<boolean> {
+  let ok = false;
+  for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.rmSync(out, { force: true });
+    const vr = await h.o.verifier.run({ verb: "capture", args: [...args, `--out=${toPosix(out)}`], packDir: h.dir("pack"), reportFile: reportPath(h, stem) });
+    ok = vr.ok && fs.existsSync(out);
+    h.append({ type: "verify", round: 1, level: vr.level, verb: vr.verb, ok, report: h.rel(vr.reportFile), ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}), after });
+    if (!ok) notes.push(`${what}, attempt ${attempt} of 2, failed: ${clip(vr.summary, 160)}`);
+  }
+  return ok;
+}
+
+/** The stills of every shot and camera (JOB.md second round), and with `withStrips` one strip per filmed point. */
+export async function filmLook(h: GateHost, m: Milestone, shots: Shot[], cameras: string[], after: string, withStrips: boolean): Promise<Film> {
+  const film: Film = { captures: [], labels: [], strips: [], notes: [] };
+  const res = `--res=${h.o.captureRes ?? "1280x720"}`;
+  for (const [si, shot] of shots.entries()) for (const cam of cameras) {
+    const bot = shot.bot !== undefined ? [`--test=${shot.bot}`] : [];
+    for (const frame of shot.frames) {
+      const out = h.dir("captures", si === 0 ? `${m}-${cam}-f${frame}.png` : `${m}-${cam}-${path.basename(shot.bot ?? "nobot", ".gd")}-f${frame}.png`);
+      if (await captureOnce(h, [`--cam=${cam}`, `--frame=${frame}`, res, ...bot], out, `milestone-${m}-capture-${cam}-f${frame}`, after, film.notes, `capture ${cam} frame ${frame}`)) {
+        film.captures.push(h.rel(out));
+        film.labels.push(shotLabel(cam, frame, shot));
+      }
+      if (!withStrips) continue;
+      const from = stripFrom(frame);
+      const strip = h.dir("captures", stripFile(m, cam, shot, from));
+      if (await captureOnce(h, [`--cam=${cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${STRIP.step}`, res, ...bot], strip, `milestone-${m}-strip-${cam}-f${from}`, after, film.notes, `strip ${cam} from frame ${from}`)) {
+        film.strips.push({ capture: h.rel(strip), label: stripLabel(cam, from, shot) });
+      }
+    }
+  }
+  if (cameras.length === 0) film.notes.push("the pack declares no camera, so there is nothing to capture");
+  return film;
+}
+
+/** What a look's critic said, as the loop and a revise round's feedback read it. */
+export interface Verdict {
+  ok: boolean;
+  scores: Record<string, number>;
+  notes: string[];
+  package?: string;
+  report: string;
+}
+
+const scoresText = (v: Pick<Verdict, "scores">): string => Object.entries(v.scores).map(([k, x]) => `${k} ${x}`).join(", ");
+
+/** The critic on a look: stills and strips together, the strips labelled as such. Undefined when it gave no usable answer or did not run. */
+export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[], lastPackage: string, round: number): Promise<{ verdict?: Verdict; line: string }> {
+  if (film.captures.length + film.strips.length === 0 || h.o.critic === false) return { line: "critic not run" };
+  const model = h.o.criticModel ?? h.o.model;
+  const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : [])];
+  const images = [...film.captures, ...film.strips.map((x) => x.capture)];
+  const labels = [...film.labels, ...film.strips.map((x) => x.label)];
+  const res = await critic(h.o.builder, images.map((c) => h.dir(c)), rubric, {
+    ...(model ? { model } : {}),
+    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`].filter(Boolean).join("\n"),
+    packages: packageLinesOf(h.s, h.s.plan.map((p) => p.id)),
+    labels,
+  });
+  h.logGenerateCalls(res.calls, model);
+  const file = reportPath(h, `critic-${m}`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const body = res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}) } : { error: res.reason };
+  fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.critique/1", milestone: m, ...(round > 0 ? { round } : {}), captures: film.captures, shots: film.captures.map((c, i) => ({ capture: c, label: film.labels[i] ?? "" })), strips: film.strips, rubric, ...body }, null, 1) + "\n");
+  if (!res.ok) return { line: `critic (V5) gave no usable answer: ${clip(res.reason, 200)} [${h.rel(file)}]` };
+  const verdict: Verdict = { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}), report: h.rel(file) };
+  return { verdict, line: verdictText(verdict) };
+}
+
+export const verdictText = (v: Verdict): string => `critic (V5) ${v.ok ? "ok" : "NOT ok"}: ${scoresText(v)}; ${clip(v.notes.join(" | "), 500)} [${v.report}]`;
+
+// ---------- snapshots ----------
+
+/** What a snapshot keeps besides pack/: the look that was judged before the round (its files copied), and its verdict. */
+interface Snapshot {
+  atSeq: number;
+  round: number;
+  captures: string[];
+  strips: Strip[];
+  verdict?: Verdict;
+  summary: string;
+}
+
+const snapDir = (m: string, round: number): string => `reports/quality-${m}-r${round}`;
+
+/** Before revise round `round`: pack/ and the judged look's images into reports/quality-<m>-r<round>/. */
+export function snapshot(h: GateHost, m: Milestone, round: number, look: { captures: string[]; strips: Strip[]; verdict?: Verdict; summary: string }): void {
+  const rel = snapDir(m, round);
+  const dir = h.dir(...rel.split("/"));
+  fs.rmSync(dir, { recursive: true, force: true });
+  copyDir(h.dir("pack"), path.join(dir, "pack"));
+  const copy = (c: string): string => {
+    const to = `${rel}/captures/${path.basename(c)}`;
+    if (fs.existsSync(h.dir(c))) {
+      fs.mkdirSync(path.join(dir, "captures"), { recursive: true });
+      fs.copyFileSync(h.dir(c), h.dir(...to.split("/")));
+    }
+    return to;
+  };
+  const snap: Snapshot = { atSeq: h.s.lastSeq, round, captures: look.captures.map(copy), strips: look.strips.map((x) => ({ capture: copy(x.capture), label: x.label })), ...(look.verdict ? { verdict: look.verdict } : {}), summary: look.summary };
+  fs.writeFileSync(path.join(dir, "look.json"), JSON.stringify(snap, null, 1) + "\n");
+}
+
+function readSnapshot(h: GateHost, m: string, round: number): Snapshot | undefined {
+  try {
+    return JSON.parse(fs.readFileSync(h.dir(...snapDir(m, round).split("/"), "look.json"), "utf8")) as Snapshot;
+  } catch {
+    return undefined;
+  }
+}
+
+/** kept = "previous": pack/ back to the snapshot, and `merge` events so that each package's merged files agree again. */
+function restore(h: GateHost, m: string, snap: Snapshot): void {
+  const src = h.dir(...snapDir(m, snap.round).split("/"), "pack");
+  const packDir = h.dir("pack");
+  const tmp = h.dir(`.pack-quality-${process.pid}`);
+  fs.rmSync(tmp, { recursive: true, force: true });
+  copyDir(src, tmp);
+  fs.rmSync(packDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  fs.renameSync(tmp, packDir);
+  const then = foldEvents(h.s.job, h.events.filter((e) => e.seq <= snap.atSeq));
+  for (const id of h.s.order) {
+    const now = h.s.packages[id]?.mergedFiles ?? [];
+    const was = then.packages[id]?.mergedFiles ?? [];
+    const removed = now.filter((f) => !was.includes(f));
+    const files = was.filter((f) => !now.includes(f));
+    if (removed.length > 0 || files.length > 0) h.append({ type: "merge", package: id, files, ...(removed.length > 0 ? { removed } : {}) });
+  }
+}
+
+// ---------- the pairwise compare ----------
+
+const compareSchema = { type: "object", additionalProperties: false, required: ["keep", "why"], properties: { keep: { enum: ["new", "previous"] }, why: { type: "string", minLength: 1 } } };
+
+/** The critic compares the previous version's images with the new ones and keeps the better. Falls back on the scores. */
+export async function compareLooks(h: GateHost, prev: Snapshot, film: Film, fresh: Verdict | undefined): Promise<{ kept: "new" | "previous"; why: string }> {
+  const side = (stills: string[], strips: Strip[]): string[] => (strips.length > 0 ? strips.map((x) => x.capture) : stills).slice(0, 8);
+  const a = side(prev.captures, prev.strips).filter((c) => fs.existsSync(h.dir(c)));
+  const b = side(film.captures, film.strips);
+  const mean = (v: Verdict | undefined): number => (v ? Object.values(v.scores).reduce((x, y) => x + y, 0) / Math.max(1, Object.values(v.scores).length) : -1);
+  const byScores = (why: string): { kept: "new" | "previous"; why: string } => (mean(prev.verdict) > mean(fresh) && fresh !== undefined ? { kept: "previous", why: `${why}; by the critic's mean score (${mean(prev.verdict).toFixed(2)} before, ${mean(fresh).toFixed(2)} now)` } : { kept: "new", why: `${why}; the new version is kept${fresh ? ` (mean score ${mean(fresh).toFixed(2)}, before ${mean(prev.verdict).toFixed(2)})` : ""}` });
+  if (a.length === 0 || b.length === 0 || h.o.critic === false) return byScores("no images to compare");
+  const model = h.o.criticModel ?? h.o.model;
+  const tpl = fs.readFileSync(path.join(PKG_ROOT, "prompts", "critic-compare.md"), "utf8");
+  const list = (xs: string[], from: number, tag: string): string => xs.map((c, i) => `- image ${from + i} of ${a.length + b.length}: ${tag}, ${path.basename(c)}`).join("\n");
+  const res = await generate<{ keep: "new" | "previous"; why: string }>(
+    h.o.builder,
+    "critic_compare",
+    tpl,
+    {
+      game: `${h.s.title ?? ""} (${h.s.sentence ?? ""})`,
+      previous: list(a, 1, "PREVIOUS version"),
+      fresh: list(b, a.length + 1, "NEW version"),
+      before: prev.verdict ? `${scoresText(prev.verdict)}; ${clip(prev.verdict.notes.join(" | "), 400)}` : "(no verdict)",
+      now: fresh ? `${scoresText(fresh)}; ${clip(fresh.notes.join(" | "), 400)}` : "(no verdict)",
+    },
+    compareSchema,
+    () => [],
+    { ...(model ? { model } : {}) },
+    "generate",
+    "",
+    [...a, ...b].map((c) => h.dir(c)),
+  );
+  h.logGenerateCalls(res.calls, model);
+  return res.ok ? { kept: res.value.keep, why: clip(res.value.why, 300) } : byScores(`the compare gave no usable answer (${clip(res.reason, 120)})`);
+}
+
+// ---------- the loop ----------
+
+/** Sends a NOT ok version back for revise round `round` (snapshot first): the named package, or the milestone's own. */
+export function sendBack(h: GateHost, m: Milestone, members: string[], lastPackage: string, round: number, look: { captures: string[]; strips: Strip[]; verdict?: Verdict; summary: string }, note?: string): void {
+  snapshot(h, m, round, look);
+  const v = look.verdict;
+  const owner = note !== undefined ? ` The owner held the job and asks: ${note}` : "";
+  const detail = `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: ${v ? `${scoresText(v)}. Critic's notes: ${v.notes.join(" | ")} [${v.report}]` : clip(look.summary, 600)}.${owner} The version before this round is kept in ${snapDir(m, round)}/; after the round the critic compares both and keeps the better.`;
+  const named = v?.package;
+  const target = named !== undefined ? h.s.packages[named] : undefined;
+  if (named !== undefined && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
+    h.reopen(named, `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: the critic names this package as the cause of what it sees${members.includes(named) ? "" : ` (the milestone's own package(s): ${members.join(", ")})`}`, detail);
+    return;
+  }
+  const why = named === undefined ? "the critic named no package" : !target ? `the critic named "${clip(named, 60)}", which is not a package of this plan` : `the critic named ${named}, which is not merged (state ${target.state})`;
+  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: `${FOREMAN_NOTE}${why}; revise round ${round} goes to the package(s) of the ${m} milestone: ${members.join(", ")}` });
+  for (const id of members) h.append({ type: "package_state", package: id, state: "queued", round: h.pkg(id).round + 1, detail: clip(detail, 1500) });
+}
+
+/** The verdict a look's summary points at (its critic report), for a revise round sent from the log (resume, retry). */
+export function verdictOfLook(h: GateHost, look: Look): Verdict | undefined {
+  const rel = /\[(reports\/critic-[^\]]+\.json)\]/.exec(look.summary)?.[1];
+  if (rel === undefined) return undefined;
+  try {
+    const r = JSON.parse(fs.readFileSync(h.dir(...rel.split("/")), "utf8")) as Partial<CritiqueResult>;
+    return r.scores ? { ok: r.ok === true, scores: r.scores, notes: r.notes ?? [], ...(r.package !== undefined ? { package: r.package } : {}), report: rel } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * A look was filmed (round 0 = the first): judge it, and for a revise round compare with the snapshot and keep the
+ * better. Writes the `milestone` event (not for a NOT ok first look: the milestone is not reached), or sends the
+ * version back. A look still NOT ok at the last round is left for the hold (the state reads it from the event).
+ */
+export async function decideLook(h: GateHost, m: Milestone, members: string[], lastPackage: string, film: Film, shots: Shot[], round: number, notes: string[]): Promise<void> {
+  const judged = await judge(h, m, film, shots, lastPackage, round);
+  const fresh = judged.verdict;
+  const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
+  const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;
+  if (round === 0) {
+    if (fresh && !fresh.ok) {
+      sendBack(h, m, members, lastPackage, 1, { captures: film.captures, strips: film.strips, verdict: fresh, summary: verdictText(fresh) });
+      return;
+    }
+    h.append({ type: "milestone", milestone: m, captures: film.captures, ...(film.strips.length > 0 ? { strips: film.strips } : {}), summary: clip([head, counts, judged.line, ...notes].join("; "), 1500) });
+    return;
+  }
+  const prev = readSnapshot(h, m, round);
+  // A new version the critic passes beats a version it sent back; otherwise the critic compares the two.
+  const cmp = fresh?.ok === true ? { kept: "new" as const, why: "the new version passes the critic" } : prev ? await compareLooks(h, prev, film, fresh) : { kept: "new" as const, why: "no snapshot of the version before this round was found" };
+  if (cmp.kept === "previous" && prev) restore(h, m, prev);
+  const keptVerdict = cmp.kept === "previous" ? prev?.verdict : fresh;
+  const keptFilm = cmp.kept === "previous" && prev ? { captures: prev.captures, strips: prev.strips } : { captures: film.captures, strips: film.strips };
+  const loop = `revise round ${round} of ${Math.max(QUALITY_ROUNDS, round)}: kept ${cmp.kept} (${cmp.why})${cmp.kept === "previous" ? `; pack/ was put back to ${snapDir(m, round)}/pack` : ""}${fresh && cmp.kept === "previous" ? `; the new version was ${verdictText(fresh)}` : ""}`;
+  const verdict = keptVerdict ? verdictText(keptVerdict) : judged.line;
+  h.append({ type: "milestone", milestone: m, captures: keptFilm.captures, summary: clip([head, counts, verdict, loop, ...notes].join("; "), 1500), round, kept: cmp.kept, ...(keptFilm.strips.length > 0 ? { strips: keptFilm.strips } : {}) });
+  if (!keptVerdict || keptVerdict.ok) return;
+  if (round < QUALITY_ROUNDS) sendBack(h, m, members, lastPackage, round + 1, { captures: keptFilm.captures, strips: keptFilm.strips, verdict: keptVerdict, summary: verdict });
+}

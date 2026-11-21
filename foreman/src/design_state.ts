@@ -4,6 +4,7 @@
 import type { JobEvent, PhaseVerdict } from "./events.js";
 import type { JobState } from "./joblog.js";
 import { choiceProblem } from "./v2.js";
+import { QUALITY_ANSWER_RE, QUALITY_ROUNDS, lookOk } from "./quality_state.js";
 
 /** The fixed start of the `reason` of a `reopened` event that answers a phase `hold` (its seq is the phase_reviewed). */
 export const PHASE_HOLD_RE = /^phase hold \(event (\d+)\)/;
@@ -63,6 +64,11 @@ export function applyDesignEvent(s: JobState, ev: JobEvent, fail: (message: stri
     case "brief_set":
       s.briefs += 1;
       s.reactions = {}; // reactions to the old brief no longer count
+      s.reviews = s.pendingReviews; // JOB.md 2026-11-21: the reviews written before a brief judged it
+      s.pendingReviews = [];
+      break;
+    case "design_reviewed":
+      s.pendingReviews.push({ round: ev.round, verdict: ev.verdict, scores: ev.scores, notes: ev.notes });
       break;
     case "aspect_reacted": {
       if (s.briefApprovedBy !== undefined) fail(`aspect_reacted after brief_approved: the brief is approved, reactions come before`);
@@ -110,6 +116,16 @@ export function applyDesignEvent(s: JobState, ev: JobEvent, fail: (message: stri
       }
       break;
     }
+    case "milestone": {
+      // JOB.md 2026-11-21: a look still NOT ok after the last revise round holds the job for the owner.
+      const held = ev.round !== undefined && ev.round >= QUALITY_ROUNDS && !lookOk(ev.summary);
+      if (held) s.qualityHeld = { milestone: ev.milestone, round: ev.round as number, seq: ev.seq };
+      else if (s.qualityHeld?.milestone === ev.milestone) delete s.qualityHeld;
+      break;
+    }
+    case "comment":
+      if (s.qualityHeld?.milestone === ev.milestone && QUALITY_ANSWER_RE.test(ev.text)) delete s.qualityHeld;
+      break;
     default:
       break;
   }

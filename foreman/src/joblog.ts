@@ -168,6 +168,9 @@ export interface JobState {
   creativity?: Creativity;
   runThrough?: true;
   briefs: number;
+  /** JOB.md 2026-11-21 (design_state.ts): the design room's reviews of the latest brief (pending: written before it). */
+  reviews: { round: number; verdict: string; scores: Record<string, number>; notes: string }[];
+  pendingReviews: { round: number; verdict: string; scores: Record<string, number>; notes: string }[];
   reactions: Record<string, ReactionView>;
   phases: PhaseView[];
   planRevision: number;
@@ -199,7 +202,9 @@ export interface JobState {
    * WEIGHTED figure (JOB.md: cache-read tokens count at 0.1); the raw figures stay in the events.
    */
   tokenLedger: { ts: string; tokens: number }[];
-  milestones: { milestone: string; captures: string[]; summary: string }[];
+  milestones: { milestone: string; captures: string[]; summary: string; round?: number; kept?: "new" | "previous"; strips?: { capture: string; label: string }[]; seq?: number }[];
+  /** JOB.md 2026-11-21 (design_state.ts): a milestone still NOT ok after its last revise round, until `foreman quality` answers it. */
+  qualityHeld?: { milestone: string; round: number; seq: number };
   /** Deviations builders stated (`note` events), in log order. */
   notes: { package: string; round: number; text: string }[];
   /** Number of `replan` events so far (JOB.md: at most three per job). */
@@ -221,6 +226,8 @@ export function emptyState(job: string): JobState {
     order: [],
     packages: {},
     briefs: 0,
+    reviews: [],
+    pendingReviews: [],
     reactions: {},
     phases: [],
     promotions: [],
@@ -386,7 +393,7 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
       break;
     }
     case "milestone":
-      s.milestones.push({ milestone: ev.milestone, captures: ev.captures, summary: ev.summary });
+      s.milestones.push({ milestone: ev.milestone, captures: ev.captures, summary: ev.summary, ...(ev.round !== undefined ? { round: ev.round } : {}), ...(ev.kept !== undefined ? { kept: ev.kept } : {}), ...(ev.strips !== undefined ? { strips: ev.strips } : {}), seq: ev.seq });
       break;
     case "comment":
       break;

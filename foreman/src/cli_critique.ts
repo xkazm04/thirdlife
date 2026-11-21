@@ -12,11 +12,13 @@ import { foldEvents, readLog } from "./joblog.js";
 import { readManifest } from "./promoter.js";
 import { critic } from "./designer.js";
 import { criticRubric, packageLinesOf } from "./phases.js";
-import { botFinish, planShots, shotFile, shotLabel } from "./shots.js";
+import { STRIP, botFinish, planShots, shotFile, shotLabel, stripFile, stripFrom, stripLabel } from "./shots.js";
+import { feelItems, stripsOn } from "./quality.js";
+import { verbsFor } from "./verbs.js";
 import { UsageError, str, type Args } from "./cli_args.js";
 import { toPosix } from "./paths.js";
 
-export const CRITIQUE_HELP = `  critique <job> <milestone> --out DIR [--adapter A] [--model M] [--capture-res WxH] [--engine-dir DIR]
+export const CRITIQUE_HELP = `  critique <job> <milestone> --out DIR [--adapter A] [--model M] [--capture-res WxH] [--engine-dir DIR] [--no-strips]
         dry run: the milestone's captures (the first test, plus the newest package's own acceptance bot) and one V5
         critic call on pack/ as it is now; writes only into DIR (captures, reports, critique.json), never the job`;
 
@@ -37,6 +39,9 @@ export async function critiqueCommand(a: Args, out: (s: string) => void, d: { jo
   fs.mkdirSync(dest, { recursive: true });
   const captures: string[] = [];
   const labels: string[] = [];
+  // JOB.md 2026-11-21: one motion strip per filmed point when the engine's runner can film one (--no-strips: stills only).
+  const strips: { capture: string; label: string }[] = [];
+  const withStrips = a.flags["no-strips"] !== true && stripsOn(verbsFor(d.verifier.location));
   for (const [si, shot] of shots.entries()) {
     out(`shot ${si + 1}: ${shot.bot ?? "no bot"}${shot.package ? ` (package ${shot.package})` : ""}, finish ${shot.finish ?? "unknown"}, frames ${shot.frames.join(", ")}`);
     for (const cam of mf.cameras) {
@@ -54,17 +59,29 @@ export async function critiqueCommand(a: Args, out: (s: string) => void, d: { jo
           captures.push(file);
           labels.push(shotLabel(cam, frame, shot));
         }
+        if (!withStrips) continue;
+        const from = stripFrom(frame);
+        const sf = path.join(dest, stripFile(m, cam, shot, from));
+        const sr = await d.verifier.run({
+          verb: "capture",
+          args: [`--cam=${cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${STRIP.step}`, `--out=${toPosix(sf)}`, `--res=${str(a, "capture-res") ?? "1280x720"}`, ...(shot.bot !== undefined ? [`--test=${shot.bot}`] : [])],
+          packDir,
+          reportFile: path.join(dest, `${path.basename(sf, ".png")}.json`),
+        });
+        const sok = sr.ok && fs.existsSync(sf);
+        out(`  strip ${path.basename(sf)} ${sok ? "ok" : `FAILED: ${sr.summary}`}`);
+        if (sok) strips.push({ capture: sf, label: stripLabel(cam, from, shot) });
       }
     }
   }
   const last = [...members].sort((x, y) => (events.filter((e) => e.type === "merge" && e.package === y).at(-1)?.seq ?? 0) - (events.filter((e) => e.type === "merge" && e.package === x).at(-1)?.seq ?? 0))[0] as string;
-  const rubric = criticRubric(s, last);
+  const rubric = [...criticRubric(s, last), ...(strips.length > 0 ? feelItems() : [])];
   const model = str(a, "model");
-  const res = await critic(d.builder, captures, rubric, {
+  const res = await critic(d.builder, [...captures, ...strips.map((x) => x.capture)], rubric, {
     ...(model ? { model } : {}),
     context: [`Game: ${s.title ?? ""} (${s.sentence ?? ""})`, `Mood asked for: ${s.brief?.mood ?? "(none)"}`, `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`].join("\n"),
     packages: packageLinesOf(s, s.plan.map((p) => p.id)),
-    labels,
+    labels: [...labels, ...strips.map((x) => x.label)],
   });
   const verdict = {
     schema: "tl.foreman.critique/1",
@@ -73,6 +90,7 @@ export async function critiqueCommand(a: Args, out: (s: string) => void, d: { jo
     milestone: m,
     captures: captures.map((c) => path.basename(c)),
     shots: captures.map((c, i) => ({ capture: path.basename(c), label: labels[i] ?? "" })),
+    strips: strips.map((x) => ({ capture: path.basename(x.capture), label: x.label })),
     rubric,
     ...(res.ok ? { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}) } : { error: res.reason }),
     calls: res.calls.map((c) => ({ attempt: c.attempt, outcome: c.result.outcome, tokensIn: c.result.tokensIn, tokensOut: c.result.tokensOut, durationMs: c.result.durationMs, problems: c.problems })),

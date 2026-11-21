@@ -26,7 +26,7 @@ const OPTIONS: Dictionary = {
 	"invariants": ["pack", "report", "seed", "frames", "bot-frames"],   # --bot-frames: budget of the bot replays (WP5)
 	"bot": ["pack", "report", "seed", "frames", "test", "record"],
 	"replay": ["pack", "report", "input", "record"],   # P7: a recorded session (tl.input/1) again, headless; seed and length are the record's
-	"capture": ["pack", "report", "seed", "cam", "frame", "out", "res", "test", "hud"],   # --test: kernel extension, see API.md
+	"capture": ["pack", "report", "seed", "cam", "frame", "out", "res", "test", "hud", "strip"],   # --test: kernel extension, see API.md
 }
 ## N2: the world modes (kernel/world/). They are not verify verbs: no tl.verify/1 report, no --pack, no level.
 ## kernel/runner/verbs.json lists them under "modes"; a selftest case compares both tables with that file.
@@ -248,11 +248,11 @@ func _supervise(bad_args: PackedStringArray) -> void:
 			var res_text: String = str(opts.get("res", "1920x1080"))
 			if res_text.split("x").size() != 2 or not res_text.get_slice("x", 0).is_valid_int() or not res_text.get_slice("x", 1).is_valid_int():
 				return _not_run("engine", "--res must look like 1920x1080")
-			if FileAccess.file_exists(str(opts["out"])):
-				DirAccess.remove_absolute(str(opts["out"]))
+			if FileAccess.file_exists(str(opts["out"])): DirAccess.remove_absolute(str(opts["out"]))
 			var extra: Dictionary = {"seed": seed_value, "frames": at, "cam": cam, "out": str(opts["out"]), "hud": str(opts.get("hud", "off"))}   # K2: hud on = the HUD is in the still
-			if opts.has("test"): extra["test"] = str(opts["test"])      # a bot plays up to the captured frame
+			for k: String in ["test", "strip"]: if opts.has(k): extra[k] = str(opts[k])      # a bot plays up to the captured frame; L1: --strip films count frames step apart
 			if opts.has("hud") and not ["on", "off"].has(str(opts["hud"])): return _not_run("engine", "--hud is on or off")
+			if opts.has("strip") and "%dx%d" % [clampi(str(opts["strip"]).get_slice("x", 0).to_int(), 2, 16), clampi(str(opts["strip"]).get_slice("x", 1).to_int(), 1, 60)] != str(opts["strip"]): return _not_run("engine", "--strip must look like 12x5 (count 2..16 x step 1..60)")
 			var run: Dictionary = await _run_worker("capture", extra, res_text)
 			_smoke_checks(run, at)
 			var res: Dictionary = run.get("result", {})

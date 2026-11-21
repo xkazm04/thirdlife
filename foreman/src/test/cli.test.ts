@@ -6,7 +6,7 @@ import path from "node:path";
 import { main, parseArgs, statusTable, UsageError } from "../cli.js";
 import { rebuildState } from "../joblog.js";
 import { killTree, runProcess } from "../proc.js";
-import { cleanup, tempDir, tempJob, readEvents, fixtureScript, fixturePhases, fixturePlan, packFiles, v2Brief, FIXTURE } from "./helpers.js";
+import { cleanup, tempDir, tempJob, readEvents, fixtureScript, fixturePhases, fixturePlan, packFiles, v2Brief, roomSteps, FIXTURE } from "./helpers.js";
 import { PKG_ROOT } from "../paths.js";
 import type { JobEvent } from "../events.js";
 
@@ -154,6 +154,7 @@ test("cli: new -> approve -> plan -> run, with the Designer and Planner answered
   script.steps.unshift(
     { match: { role: "designer" }, json: { brief, estimate: { packages: 3, wallMinutes: 20, tokens: 150000 } }, tokensIn: 800, tokensOut: 150 },
     { match: { role: "planner" }, json: { packages: fixturePlan() }, tokensIn: 3000, tokensOut: 1200 },
+    ...roomSteps(), // JOB.md 2026-11-21: the design room runs concept, design and review before the brief
   );
   // JOB.md 2026-11-20: the Planner writes phases; a plan without them is sent back once (the first planner step above).
   script.steps.unshift({ match: { role: "planner", attempt: 2 }, json: { packages: fixturePlan(), phases: fixturePhases() }, tokensIn: 3000, tokensOut: 1300 });
@@ -165,8 +166,9 @@ test("cli: new -> approve -> plan -> run, with the Designer and Planner answered
   assert.match(jobId, /^ball-paddle-walled-court-\d{8}-1$/);
   const jobDir = path.join(site, jobId);
   let evs = readEvents(jobDir);
-  assert.deepEqual(evs.map((e) => e.type), ["job_created", "billing", "builder_run", "brief_set"]);
-  const designerRun = evs[2];
+  // JOB.md 2026-11-21: the design room: concept, design and review runs, the review, then the brief it judged.
+  assert.deepEqual(evs.map((e) => e.type), ["job_created", "billing", "builder_run", "builder_run", "builder_run", "design_reviewed", "brief_set"]);
+  const designerRun = evs[3];
   assert.ok(designerRun?.type === "builder_run" && designerRun.mode === "generate" && designerRun.package === undefined && designerRun.tokensIn === 800);
   assert.equal(evs[0]?.type === "job_created" ? evs[0].packId : "", "game.ball_paddle_walled_court");
 
@@ -176,7 +178,7 @@ test("cli: new -> approve -> plan -> run, with the Designer and Planner answered
   const planned = await run(["plan", jobId, "--site", site, "--adapter", "fake", "--fake-script", scriptFile, "--no-reference"]);
   assert.equal(planned.code, 0, planned.text);
   evs = readEvents(jobDir);
-  assert.deepEqual(evs.slice(4).map((e) => e.type), ["brief_approved", "builder_run", "builder_run", "plan_set", "package_state", "package_state", "package_state"]);
+  assert.deepEqual(evs.slice(7).map((e) => e.type), ["brief_approved", "builder_run", "builder_run", "plan_set", "package_state", "package_state", "package_state"]);
 
   // A second job on the same day gets the next number.
   await run(["new", "a ball-and-paddle game in a walled court", "--site", site, "--adapter", "fake", "--fake-script", scriptFile, "--auto-approve"]);

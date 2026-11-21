@@ -335,7 +335,7 @@ static func reduce(events: Array, now: float) -> Dictionary:
 				if reason.begins_with("hand check failed"):
 					(job["hand_rounds"] as Array).append(pid)     # lane C4: a round a failed hand check cost
 				job["activity"] = "%s re-opened" % pid
-			"comment", "aspect_reacted", "phase_done", "phase_reviewed":
+			"comment", "aspect_reacted", "phase_done", "phase_reviewed", "design_reviewed":
 				pass
 			_:
 				if not (job["unknown_types"] as Array).has(t):

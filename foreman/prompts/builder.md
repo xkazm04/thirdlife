@@ -33,6 +33,8 @@ So: the entry script is `scripts/main.gd`; a script that uses a kernel class who
 `capabilities` above fails lint; a bot or generator that is not listed above is not run. If you need a capability,
 test, generator or camera that is not listed, end with a `QUESTION:` line (see Rules) instead of editing pack.json.
 
+{{feel}}
+
 {{optionalFields}}
 {{card}}
 ## Reference material (read before you write)
@@ -49,7 +51,9 @@ before you say you are done.
 
 # Round {{round}} of {{roundLimit}}
 This run has a hard time limit of {{timeLimit}} of wall clock; a run that is not finished by then is killed and the
-round is lost. Get the smallest thing that passes the acceptance working first, check it, then improve it.
+round is lost. Your job is two things: make the acceptance pass AND land the feel sheet (the Feel section above, when the brief has a design doc) for the verbs your
+package owns. Get it passing first and check it; then make it feel right before you stop. A package that passes and
+feels like nothing is not done: the capture critic films it in motion and sends it back.
 {{feedback}}
 
 # Rules

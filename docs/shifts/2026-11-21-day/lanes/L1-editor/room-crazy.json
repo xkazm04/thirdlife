@@ -1,0 +1,343 @@
+{
+ "sentence": "a fight in a colosseum",
+ "creativity": "crazy",
+ "model": "opus (claude-cli)",
+ "concept": {
+  "candidates": [
+   {
+    "pitch": "Gladiator duel: light, heavy, block and dodge against three champion rivals, each with a signature weapon and tell.",
+    "likelihood": 0.8
+   },
+   {
+    "pitch": "The crowd throws weapons into the sand; whoever they cheer loudest gets the better blade.",
+    "likelihood": 0.35
+   },
+   {
+    "pitch": "Slam rivals into cracked stone walls; each impact weakens the colosseum until sections collapse and bury whoever stands below.",
+    "likelihood": 0.12
+   },
+   {
+    "pitch": "You are the lion: a freed beast hunting armoured gladiators who block, net and spear you back.",
+    "likelihood": 0.15
+   },
+   {
+    "pitch": "Two gladiators chained together at the ankle; the only way to win is dragging your rival into the lion pit.",
+    "likelihood": 0.08
+   }
+  ],
+  "chosen": 2,
+  "why": "Keeps fight and colosseum but makes the place the weapon: shoves aim rivals at walls, the fracture kit drops real stone, the GIF is masonry burying a rival. The plain duel is what was called slop.",
+  "hook": "Slam rivals into walls until the colosseum collapses on them",
+  "anchor": "arena brawler",
+  "references": [
+   {
+    "game": "Super Smash Bros. Ultimate",
+    "borrow": "damage percent rises with each hit, so later blows knock the rival farther"
+   },
+   {
+    "game": "Red Faction: Guerrilla",
+    "borrow": "a structure collapses once enough supports are broken, crushing whoever stands beneath"
+   },
+   {
+    "game": "For Honor",
+    "borrow": "guard matched to the side the attacker's weapon is raised, left, right or top"
+   }
+  ]
+ },
+ "design": {
+  "pillars": [
+   {
+    "line": "The arena is the weapon.",
+    "rules_out": "Health bars emptied by punching alone; every knockout needs a wall, a gap or falling stone."
+   },
+   {
+    "line": "Every hit is an exchange.",
+    "rules_out": "One-hit knock-downs, hits that only shove, and a safe best move; every recovery is a punish window."
+   },
+   {
+    "line": "Skill is in the feet.",
+    "rules_out": "Auto-face, auto-aim, wide arcs and speed stats; you aim slams with position and facing."
+   }
+  ],
+  "verbs": [
+   {
+    "id": "jab",
+    "input": "J or left mouse: quick strike (clip strike), 50-degree arc, 1.6 m reach, +4%, knockback 1.5 + 3 x percent.",
+    "anticipation_f": 4,
+    "active_f": 3,
+    "recovery_f": 12,
+    "cancel": "Into a second jab or guard on hit; a second jab cancels into heavy on hit; a whiff plays full recovery."
+   },
+   {
+    "id": "heavy",
+    "input": "K: two-handed swing (clip strike_heavy), 40-degree arc, 1.9 m reach, +12%, knockback 4 + 9 x percent.",
+    "anticipation_f": 10,
+    "active_f": 4,
+    "recovery_f": 26,
+    "cancel": "Nothing on a whiff; on hit, into roll after 10 frames. A parried heavy leaves the swinger open 30 frames."
+   },
+   {
+    "id": "shove",
+    "input": "L: shoulder charge (clip body_check), 1.2 m reach, +3%, goes through guard, knockback 5 + 2 x percent.",
+    "anticipation_f": 8,
+    "active_f": 5,
+    "recovery_f": 22,
+    "cancel": "Nothing; a jab interrupts its 8-frame wind-up. Guarded or not, it moves the target toward the wall."
+   },
+   {
+    "id": "guard",
+    "input": "Hold Shift: raised guard (clip block), covers 100 degrees ahead; the first 6 frames are a parry.",
+    "anticipation_f": 2,
+    "active_f": 6,
+    "recovery_f": 8,
+    "cancel": "Release into an instant jab after a parry; a shove, or any hit from side or back, breaks through.",
+    "defensive": true
+   },
+   {
+    "id": "roll",
+    "input": "Space plus direction: roll (clip roll), 3 m, invulnerable for its 18 active frames.",
+    "anticipation_f": 1,
+    "active_f": 18,
+    "recovery_f": 14,
+    "cancel": "Its last 6 recovery frames cancel into heavy (reversal slam); otherwise punishable while rising.",
+    "defensive": true
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "wrecker",
+    "title": "Wrecker",
+    "line": "Close in, shove through guards and pin rivals against walls."
+   },
+   {
+    "id": "duelist",
+    "title": "Duelist",
+    "line": "Hold the centre, parry swings, launch with heavies at high percent."
+   },
+   {
+    "id": "architect",
+    "title": "Architect",
+    "line": "Crack sections early, then bait rivals under them and roll away."
+   }
+  ],
+  "loops": {
+   "s3": "Read the rival's wind-up, guard or roll, then jab, heavy or shove into the opening.",
+   "s30": "Build a rival's percent, steer them to a cracked wall, slam, and dodge what falls.",
+   "m3": "Beat Pell, Brakka and Sabine in one crumbling colosseum before your three helmets run out."
+  },
+  "context": [
+   "Each new rival changes the fight: a jabber, a shield charger, then a reader who baits you.",
+   "Collapsed sections open gaps for ring-outs and leave rubble piles that splat but never crack.",
+   "Rising percent turns light hits into launches; late blows reach walls from the centre.",
+   "A collapsed stand spills panicking spectators onto the sand as moving obstacles.",
+   "At 3:00 the last stand: remaining sections fall one by one every 4 seconds."
+  ],
+  "skill": {
+   "floor": "One button: shove pushes through any guard and splats light Pell into the cracked wall, which falls.",
+   "ceiling": [
+    "Parry: press guard in the 6 frames before a hit; the attacker staggers, open for 30 frames.",
+    "Reversal slam: roll past Brakka's charge, cancel the roll's last 6 frames into a heavy at his back.",
+    "Bury bait: splat a rival into a two-crack wall, then roll clear during the 40-frame rumble."
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    4,
+    18
+   ],
+   "knockback": "Impulse = base + growth x percent, over mass, via TLBiped.shove: jab 1.5+3, heavy 4+9, shove 5+2 m/s; walls splat above 4.5 m/s.",
+   "reaction": "TLHit.react on every hit: jab 0.3 flinch, shove 0.6, heavy 0.8 stumble; splat is TLHit.down 50 frames; heavy at 70%+ floors 40.",
+   "whiff": "Full recovery, a swish sound, no burst or shake; the swinger lurches 0.3 m forward and stays open.",
+   "iframes_f": 18,
+   "telegraph_f": 30,
+   "shake": "Jab none; heavy 0.08 m over 10 frames; wall splat 0.15 over 14; collapse 0.35 over 30.",
+   "camera": "Orbit at 48 degrees over the player, framing the fighters' midpoint at 0.24 fill; yaw held to the open south half."
+  },
+  "clips": [
+   {
+    "id": "charge_splat",
+    "moment": "Brakka's charge rolled past; he splats a cracked wall and its stones bury him."
+   },
+   {
+    "id": "gap_launch",
+    "moment": "A heavy at 110% launches Sabine through a fresh gap, out of the colosseum."
+   },
+   {
+    "id": "last_stand",
+    "moment": "In the last stand, three sections fall in a row while both fighters roll between them."
+   }
+  ],
+  "first_minute": "The gate opens 3 m from Pell, beside two-crack section VII; one HUD line: L shove him into the wall. Pell only jabs.",
+  "fail_state": "Win: THE COLOSSEUM IS YOURS with time against best; lose all helmets: BURIED BY SECTION VII and the killer; any key rematches.",
+  "out_of_scope": [
+   "Weapons picked up or thrown",
+   "Health bars, items and power-ups",
+   "Multiplayer and online play",
+   "Character select or loadout menus",
+   "Beasts, chariots and mounted combat"
+  ]
+ },
+ "design_reviewed": [
+  {
+   "type": "design_reviewed",
+   "round": 1,
+   "verdict": "ok",
+   "scores": {
+    "hook": 0.85,
+    "gif": 0.85,
+    "depth": 0.8,
+    "feel": 0.8,
+    "fit": 0.85
+   },
+   "notes": "No slop found; it goes to the builders. Polish for them: Pell can be buried by one shove within seconds, so make the first splat crack section VII and teach the jab before the collapse. Confirm cross_check exists in rig clips, or give Sabine body_check. Say how many knockouts each rival takes. The For Honor directional guard was dropped; the 100-degree guard is fine, so remove the reference."
+  }
+ ],
+ "brief": {
+  "pitch": "Slam rival gladiators into cracked colosseum walls until the stone gives way and buries them.",
+  "aspects": [
+   {
+    "id": "fighter",
+    "icon": "player",
+    "title": "Your Gladiator",
+    "line": "Jab, swing, shove, guard and roll to win each exchange.",
+    "detail": "Five verbs on their own clips: strike 4/3/12, strike_heavy 10/4/26, body_check 8/5/22 beats guard, block parries in its first 6 f, roll gives 18 i-frames. Strikes beat shove, guard beats strikes, shove beats guard. TLHit.react on every hit.",
+    "alternatives": [
+     {
+      "id": "shield_bearer",
+      "title": "Shield Bearer",
+      "line": "No swing: block and bash rivals backwards into stone."
+     },
+     {
+      "id": "long_spear",
+      "title": "Long Spear",
+      "line": "Keep them at spear's length, poke them toward walls."
+     }
+    ]
+   },
+   {
+    "id": "rivals",
+    "icon": "rival",
+    "title": "Three Champions",
+    "line": "Pell jabs, Brakka charges, Sabine tricks you under cracks.",
+    "detail": "Pell: small (body_scale 0.85), pole prop, jabs then steps back. Brakka: body_scale 1.3, mass 1.6, slab shield, guards front, 36 f lowered-shoulder charge. Sabine: twin blades, 24 f wind-up, circles to your open side, baits under two-crack walls. Each taunts on scoring.",
+    "alternatives": [
+     {
+      "id": "endless_waves",
+      "title": "Endless Waves",
+      "line": "Survive ever-bigger groups of gladiators until the roof falls."
+     },
+     {
+      "id": "learning_champion",
+      "title": "Rival Champion",
+      "line": "One champion who learns your habits over five rounds."
+     }
+    ]
+   },
+   {
+    "id": "crumbling_walls",
+    "icon": "twist",
+    "title": "Crumbling Walls",
+    "line": "Slam a rival into stone three times and it falls.",
+    "detail": "Ten barrier_wall sections hold 3 cracks each. A victim hitting a wall above 4.5 m/s cracks it and splats (TLHit.down 50 f). The third crack wakes TLFracture; after a 40 f dust rumble, TLSpawner drops six stone blocks on a 4 x 3 m zone: buried means knocked out.",
+    "alternatives": [
+     {
+      "id": "shrinking_pit",
+      "title": "Shrinking Ring",
+      "line": "The sand floor crumbles into the pit, edge first."
+     },
+     {
+      "id": "spiked_walls",
+      "title": "Spiked Walls",
+      "line": "Walls never break, but every splat hurts double."
+     }
+    ]
+   },
+   {
+    "id": "rising_damage",
+    "icon": "power",
+    "title": "Rising Damage",
+    "line": "The more you hit them, the farther they fly.",
+    "detail": "Each fighter carries a damage percent. Knockback impulse = base + growth x percent, divided by mass through TLBiped.shove: a jab at 0% nudges 0.3 m; a heavy at 100% throws 9 m, far enough to reach a wall or a gap from the centre.",
+    "alternatives": [
+     {
+      "id": "health_bars",
+      "title": "Health Bars",
+      "line": "Plain health bars; walls just deal bonus damage."
+     },
+     {
+      "id": "stamina_duel",
+      "title": "Stamina Duel",
+      "line": "Every swing tires you; the tired one gets thrown."
+     }
+    ]
+   },
+   {
+    "id": "camera",
+    "icon": "camera",
+    "title": "Over the Shoulder",
+    "line": "See both fighters and the wall behind them.",
+    "detail": "ctx.cameras.orbit at 48 degrees pitch, fov 50, distance 8-14 m, framing a pivot kept at the fighters' midpoint at 0.24 fill (ctx.cameras.frame). Yaw stays in the south half, eased away from the nearest tall wall; the south wall is 0.8 m stones, so no stand blocks the lens.",
+    "alternatives": [
+     {
+      "id": "emperor_box",
+      "title": "Emperor's Box",
+      "line": "One fixed view of the whole arena from above."
+     },
+     {
+      "id": "low_chase",
+      "title": "Low Chase",
+      "line": "A low camera close behind you, dramatic and tight."
+     }
+    ]
+   },
+   {
+    "id": "crowd_spill",
+    "icon": "crowd",
+    "title": "Crowd Spills In",
+    "line": "Break a stand and the crowd tumbles into the fight.",
+    "detail": "When a section collapses, TLSpawner drops eight small bipeds (body_scale 0.7, tunics) from its stand. They flee the nearest fighter (TLSteer.flee, TLSteer.separate). A flying fighter bowls them like pins (TLHit.down), keeps half its speed and gains 3% per fan. They climb out after 20 s.",
+    "alternatives": [
+     {
+      "id": "emperor_thumb",
+      "title": "Emperor's Thumb",
+      "line": "The Emperor points, and stones fall on that fighter."
+     },
+     {
+      "id": "crowd_stones",
+      "title": "Crowd Throws Stones",
+      "line": "Fans pelt whoever the crowd boos loudest."
+     }
+    ],
+    "crazy": true
+   }
+  ],
+  "rules": "A match is a ladder of three rivals (Pell, Brakka, Sabine) fought one after another in one colosseum that never resets between them; beat all three before losing three helmets (stocks). A fighter is knocked out by burial (inside a collapse zone when its blocks land) or by ring-out (knocked through a collapsed 4 m gap past the trigger line 1.5 m outside the wall). Every fighter has a damage percent from 0; knockback impulse = base + growth x percent/100, divided by body_mass via TLBiped.shove. Verbs at 60 Hz (anticipation/active/recovery): jab (clip strike) 4/3/12 f, 50-degree arc, 1.6 m, +4%, base 1.5 growth 3 m/s; heavy (clip strike_heavy) 10/4/26 f, 40 degrees, 1.9 m, +12%, base 4 growth 9; shove (clip body_check) 8/5/22 f, 1.2 m, +3%, base 5 growth 2, goes through guard, interrupted by a jab; guard (clip block) held, covers 100 degrees ahead, a blocked hit pushes 0.4 m and chips 1%, guard pressed within 6 f before a hit is a parry (attacker TLHit.react 0.7, open 30 f); roll (clip roll) 1/18/14 f, 3 m, invulnerable through its 18 active frames, the last 6 recovery frames cancel into heavy. No auto-face: attacks go where the fighter faces. Wall splat: a fighter reaching a wall above 4.5 m/s cracks that section (3 cracks), takes +8% and TLHit.down 50 f away from the wall. Third crack: TLFracture wakes the section, dust streams from its arch for 40 f, then TLSpawner drops six stone blocks onto the 4 x 3 m zone in front; anyone inside is buried. The rubble stays as a pile that splats but never cracks, and a gap opens. Feel: hit-stop on attacker and victim, floor(damage/3+3): jab and shove 4 f, heavy 7 f, splat 12 f, burial 18 f; the victim's visual node vibrates, decaying. Reactions: jab react 0.3 flinch, shove 0.6, heavy 0.8 stumble, heavy at 70%+ is TLHit.down 40 f. A whiff plays full recovery, a swish, no burst, no shake. Shake: none on jab, 0.08 m/10 f heavy, 0.15/14 splat, 0.35/30 collapse. First minute: the gate opens 3 m from Pell beside section VII, already at two cracks; the HUD line says L: shove him into the wall; one shove buries him; then the line becomes J jab, K heavy, Shift guard, Space roll. Intensity: Pell is the calm open, Brakka rising pressure, Sabine the climax; at 3:00 on the match clock the last stand begins and a remaining section collapses every 4 s (rng order). End: a win shows THE COLOSSEUM IS YOURS with time and best time; a loss shows BURIED BY SECTION VII or RING-OUT with the rival and their percent; any key starts again at once. The best clear time and sections dropped stay on screen for the next run.",
+  "arena": "A sand oval 28 m x 20 m (ground_patch, sand) ringed on the north, east and west arcs by ten barrier_wall sections, each 4 m long and 2.4 m high, numbered I to X on a sign above each. Behind every section a stands segment rises 6 m away from the sand, with an arch_rib over it that sheds dust when cracked. Crack state reads in the world: each crack darkens the section's colour and fires a debris burst; at two cracks smoke trickles from the arch (TLVfx.attach). The south arc is the ruined side: a row of stones 0.8 m high, no stands, the gate (entrance part) in the middle. Section VII (north centre) starts at two cracks, III and IX at one. A 3 m outer corridor runs behind the walls with a ring-out trigger 1.5 m outside the wall line. During a round collapsed sections leave 4 x 3 m rubble piles and 4 m gaps, spilled spectators wander the sand, and the last stand drops what remains. Camera: ctx.cameras.orbit, pitch 48 degrees, fov 50, distance 8 to 14 m, framing a pivot node the pack keeps at the midpoint of player and rival at 0.24 fill (ctx.cameras.frame); yaw is held within 70 degrees of looking north and eased away from the nearest tall wall, so the lens sits over the sand or the low south stones, never inside a stand; at 10 m the lens is 7.4 m up, above the 2.4 m walls. An off-screen rival gets a red edge arrow on the TLHud. A fixed south tribune view exists for captures.",
+  "ai": "All rivals steer with TLSteer.arrive to a preferred range and TLSteer.separate (1.5 m); capsules are scaled with body_scale so bodies never overlap. Pell the Net-Boy: slight, body_scale 0.85, mass 0.8, blue tunic, a long pole prop (TLBodies.make cylinder). Habit: walks in, holds the pole raised for a 30 f strike wind-up, jabs (+4%), then steps 1 m straight back; never guards, never charges, so he backs himself toward walls. Scoring: cheer clip. Beaten: buried with the pole sticking out of the rubble. Brakka the Wall: huge, body_scale 1.3, mass 1.6 (a shove alone never splats him), tall slab shield prop, holds block toward the player, so frontal strikes bounce. Every 5 to 7 s he lowers his shoulder for 36 f (body_check wind-up, dust at his feet) and charges 6 m/s straight for 1 s; a roll aside sends him into whatever was behind you, and at a wall he splats and cracks it. Beat him from the side or back, or by baiting charges. Scoring: taunt. Beaten: falls back, one arm raised. Sabine the Twin Blade: medium build, body_scale 1.0, red crest, two short blade props. She reads: circles to the player's unguarded side, punishes whiffed recovery, answers a guard held over 1 s with cross_check (24 f wind-up), and herds the player toward two-crack sections, then shoves; her string is jab, jab, heavy with a 24 f strike_heavy wind-up. Scoring: taunt. Beaten: falls to her knees. Champion tier (a second ladder, unlocked by a clear): rivals track the player's last three habits (roll side, guard length), Pell retreats sideways instead of straight, Brakka feints one charge, Sabine chains herding with shoves; never more speed, damage or health. Spectators (crowd spill): body_scale 0.7, flee the nearest fighter, fall like pins when a flying fighter hits them.",
+  "controls": "move: WASD, walks and runs relative to the camera yaw; the fighter faces the move direction (720 deg/s turn, 360 while guarding), no auto-face. jab: J or left mouse, clip strike. heavy: K, clip strike_heavy. shove: L, clip body_check. guard: hold Shift, clip block, parry in its first 6 frames. roll: Space, clip roll in the move direction (forward when none). Built-in camera input: right-drag turns the orbit within the south half, wheel zooms. On the end screen any key restarts.",
+  "mood": "Late-afternoon sun on pale sand and honey stone in the house's inked toon look, ochre walls, blue, grey and red rival tunics. Sound: hit_stone thuds, a deep break and rumble on collapse, crowd cheers that swell with every crack, a horn on each knockout."
+ },
+ "builder_runs": [
+  {
+   "transcript": "reports/concept-a1-s3.json",
+   "outcome": "ok",
+   "durationMs": 37531,
+   "tokensIn": 19050,
+   "tokensOut": 3002
+  },
+  {
+   "transcript": "reports/designer-a1-s4.json",
+   "outcome": "ok",
+   "durationMs": 276846,
+   "tokensIn": 28574,
+   "tokensOut": 28171
+  },
+  {
+   "transcript": "reports/design_review-a1-s5.json",
+   "outcome": "ok",
+   "durationMs": 22739,
+   "tokensIn": 14633,
+   "tokensOut": 2043
+  }
+ ]
+}

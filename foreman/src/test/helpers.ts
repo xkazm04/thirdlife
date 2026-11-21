@@ -8,7 +8,7 @@ import { Verifier } from "../verifier.js";
 import { inProcessFakeRunner } from "../testing/fake-runner-core.js";
 import { Foreman, type ForemanOptions } from "../foreman.js";
 import { PKG_ROOT, FAKE_RUNNER } from "../paths.js";
-import type { Aspect, Brief, JobEvent, PackageSpec, Phase } from "../events.js";
+import type { Aspect, Brief, Concept, DesignDoc, JobEvent, PackageSpec, Phase } from "../events.js";
 import { FAKE_VERBS_FILE, readVerbsFile } from "../verbs.js";
 
 /** The verbs of the fake runner (fixtures/engine/kernel/runner/verbs.json): what plan checks in tests are given. */
@@ -123,7 +123,67 @@ export function v2Brief(crazy = false): Brief {
     { id: "court", icon: "arena", title: "Walled court", line: "Walls bounce the ball, goals behind each end", detail: "16 m by 9 m, walls on the long sides, a kit rink floor for a fast slide", alternatives: [{ id: "ice_court", title: "Ice court", line: "Everything slides faster on ice" }, { id: "round_court", title: "Round court", line: "A ring with four goals" }] },
   ];
   if (crazy) aspects.push({ id: "magnet_ball", icon: "twist", title: "Magnet ball", line: "Every tenth hit the ball sticks to a wall", detail: "a timer in the pack holds the ball for 60 frames on the wall it hits, then releases it fast", alternatives: [{ id: "split_ball", title: "Splitting ball", line: "A hard hit splits the ball in two" }, { id: "gravity_flip", title: "Tilting court", line: "The court tilts toward the leader" }], crazy: true });
-  return { ...ev.brief, pitch: "Slap a speeding ball past Rival Rex on a walled court; first to five wins.", aspects };
+  return { ...ev.brief, pitch: "Slap a speeding ball past Rival Rex on a walled court; first to five wins.", aspects, design: sampleDesign() };
+}
+
+/** JOB.md 2026-11-21: a valid game design doc (the design room's step 2) for the paddle fixture. */
+export function sampleDesign(): DesignDoc {
+  return {
+    pillars: [
+      { line: "Every return is a read", rules_out: "auto-aim and a ball that tracks the paddle" },
+      { line: "Rex has a body and a habit", rules_out: "a recoloured copy of the player" },
+      { line: "Speed is earned", rules_out: "a flat speed boost" },
+    ],
+    verbs: [
+      { id: "slap", input: "paddle_hit (space)", anticipation_f: 4, active_f: 3, recovery_f: 12, cancel: "none" },
+      { id: "brace", input: "paddle_brace (shift)", anticipation_f: 2, active_f: 20, recovery_f: 8, cancel: "slap", defensive: true },
+    ],
+    playstyles: [
+      { id: "wall_banker", title: "Wall banker", line: "Bank shots off the walls past Rex" },
+      { id: "brick", title: "The brick", line: "Brace and punish his lunges" },
+    ],
+    loops: { s3: "read the ball, slap or brace", s30: "a rally that speeds up until someone scores", m3: "first to five against Rex" },
+    context: ["the ball speeds up every return", "Rex lunges when he trails", "the last point is sudden death"],
+    skill: { floor: "slap the ball back", ceiling: ["bank shots", "brace into a counter slap", "bait the lunge of Rex"] },
+    feel: { hitstop_f: [3, 6], knockback: "the ball leaves faster the later the slap", reaction: "Rex staggers 8 frames when beaten", whiff: "a swish and a 12-frame recovery", iframes_f: 14, telegraph_f: 24, shake: "only on a goal", camera: "fixed view of the whole court from the side, low walls" },
+    clips: [
+      { id: "bank_past_rex", moment: "a bank shot that beats the lunge of Rex" },
+      { id: "brace_counter", moment: "a brace that turns his smash back at him" },
+      { id: "sudden_death", moment: "the last point at full speed" },
+    ],
+    first_minute: "the ball comes slow; one hint line: space slaps",
+    fail_state: "Rex scores five; the end screen names your best rally",
+    out_of_scope: ["power-ups", "a second rival"],
+  };
+}
+
+/** JOB.md 2026-11-21: the design room's concept (step 1). */
+export function sampleConcept(): Concept {
+  return {
+    candidates: [
+      { pitch: "Classic paddle duel against a rival.", likelihood: 0.8 },
+      { pitch: "Paddle duel where walls bank shots past Rival Rex.", likelihood: 0.3 },
+      { pitch: "A paddle duel on ice.", likelihood: 0.4 },
+      { pitch: "Four-goal ring paddle brawl.", likelihood: 0.15 },
+      { pitch: "Paddle tennis against your own ghost.", likelihood: 0.1 },
+    ],
+    chosen: 1,
+    why: "Bank shots give a skill ceiling; the classic duel has none.",
+    hook: "bank shots past a lunging rival",
+    anchor: "arcade paddle duel",
+    references: [
+      { game: "Windjammers", borrow: "wall bank shots that curve past the keeper" },
+      { game: "Pong", borrow: "the return angle from where the ball hits the paddle" },
+    ],
+  };
+}
+
+/** The design room's concept step and an ok review, for a fake script whose designer step answers the brief. */
+export function roomSteps(): FakeStep[] {
+  return [
+    { match: { role: "concept" }, json: { concept: sampleConcept() } },
+    { match: { role: "design_review" }, json: { scores: { hook: 0.8, gif: 0.7, depth: 0.7, feel: 0.8, fit: 0.9 }, slop: [], verdict: "ok", notes: "Sell the bank shot." } },
+  ];
 }
 
 export function packFiles(dir: string): Record<string, string> {

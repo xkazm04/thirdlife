@@ -3,7 +3,8 @@
 import path from "node:path";
 import type { Builder, ProbeResult } from "./builder/types.js";
 import { JobLog, waitingPhase } from "./joblog.js";
-import { designBrief, type DesignerInput, type GenerateCall } from "./designer.js";
+import { type DesignerInput, type GenerateCall } from "./designer.js";
+import { appendRoom, designRoom } from "./room.js";
 import { designerCardsText, designerEngineText } from "./designctx.js";
 import { choiceProblem, type Creativity } from "./v2.js";
 import { lockHolder } from "./requests.js";
@@ -100,14 +101,14 @@ export async function designCommand(a: Args, out: (s: string) => void, d: Design
       const model = str(a, "model");
       const t = num(a, "timeout-ms");
       const input = designerInput(d.engineDir(a, jobDir), s.sentence, s.creativity, { brief: s.brief, reactions: s.reactions });
-      const res = await designBrief(builder, input, { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
+      const res = await designRoom(builder, input, { ...(model ? { model } : {}), ...(t !== undefined ? { timeoutMs: t } : {}) });
       d.writeGenerateCalls(log, builder, res.calls, model);
       if (!res.ok) {
         // The earlier brief and its reactions stand: a failed redesign changes nothing the player decided.
         out(`Designer failed: ${res.reason}; the earlier brief stands`);
         return 1;
       }
-      log.append({ type: "brief_set", brief: res.value.brief, estimate: res.value.estimate });
+      appendRoom((b) => log.append(b), res.value);
       out(JSON.stringify(res.value, null, 1));
       out(`brief set (design ${log.state.briefs}); ${nextAfterBrief(log.job)}`);
       return 0;

@@ -10,7 +10,10 @@ export { FINAL_FAILED };
 
 /** Fixed starts of the `detail` of a package sent back after its merge; the feedback and the resume read them. */
 export const NO_VISIBLE_CHANGE = "NO VISIBLE CHANGE";
-export const CRITIC_ROUND = "critic (V5) NOT ok, one extra round";
+/** JOB.md 2026-11-21 (the quality loop): a revise round, followed by " <k> of <n> (milestone <m>)". */
+export const CRITIC_ROUND = "critic (V5) NOT ok, revise round";
+/** The start a log written before 2026-11-21 has for the same round (the critic's one extra round). */
+export const CRITIC_ROUND_LEGACY = "critic (V5) NOT ok, one extra round";
 /** N3: fixed starts of the `detail` of a package that goes back to work after it was finished. */
 export const CHANGE_ROUND = "CHANGE REQUEST";
 export const DEP_CHANGED = "DEPENDENCY CHANGED";
@@ -30,6 +33,7 @@ export type ReopenKind = Extract<RoundKind, "change" | "critic" | "dep_changed" 
 
 const DETAIL_KINDS: ReadonlyArray<readonly [string, RoundKind]> = [
   [CRITIC_ROUND, "critic"],
+  [CRITIC_ROUND_LEGACY, "critic"],
   [KIT_REGRESSION, "kit_regression"],
   [NO_VISIBLE_CHANGE, "no_visible_change"],
   [CHANGE_ROUND, "change"],
@@ -54,9 +58,16 @@ export function reopenKind(reason: string): ReopenKind {
 }
 
 /** The start of the `reopened` reason of the critic's extra round for milestone `m`. */
-export const criticReopenFor = (m: string): string => `${CRITIC_ROUND} (milestone ${m})`;
+export const criticReopenFor = (m: string, round = 1, of = 2): string => `${CRITIC_ROUND} ${round} of ${of} (milestone ${m})`;
 /** True for the `reopened` reason of the critic's extra round for milestone `m`. */
-export const isCriticReopenFor = (reason: string, m: string): boolean => reason.startsWith(criticReopenFor(m));
+export const isCriticReopenFor = (reason: string, m: string): boolean => criticRoundOf(reason, m) !== undefined;
+/** The revise round a reason or detail names for milestone `m` (a legacy "one extra round" is round 1), else undefined. */
+export function criticRoundOf(text: string | undefined, m: string): number | undefined {
+  const t = text ?? "";
+  if (t.startsWith(`${CRITIC_ROUND_LEGACY} (milestone ${m})`)) return 1;
+  const r = /^critic \(V5\) NOT ok, revise round (\d+) of \d+ \(milestone ([a-z_]+)\)/.exec(t);
+  return r && r[2] === m ? Number(r[1]) : undefined;
+}
 
 export interface RoundFold {
   /** package -> round -> kind. A round queued more than once keeps the first kind a constant named (an `any` rule). */

@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { main, UsageError } from "../cli.js";
 import { readLog } from "../joblog.js";
-import { cleanup, FIXTURE, tempDir, v2Brief } from "./helpers.js";
+import { cleanup, FIXTURE, tempDir, v2Brief, roomSteps } from "./helpers.js";
 
 after(cleanup);
 const quiet = () => {};
@@ -19,7 +19,7 @@ async function newJob(extra: string[]): Promise<{ code: number; site: string }> 
   const root = tempDir("placecalls");
   const site = path.join(root, "jobs"), script = path.join(root, "fake.json");
   const brief = readLog(FIXTURE).events.find((e) => e.type === "brief_set")!;
-  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer" }, json: { brief: v2Brief(), estimate: brief.estimate } }] }));
+  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer" }, json: { brief: v2Brief(), estimate: brief.estimate } }, ...roomSteps()] }));
   const code = await main(["new", "ice hockey", "--site", site, "--adapter", "fake", "--fake-script", script, ...extra], quiet);
   return { code, site };
 }
@@ -51,7 +51,7 @@ test("new without --place-calls writes no extra builder run", async () => {
   const { code, site } = await newJob([]);
   assert.equal(code, 0);
   const events = readLog(path.join(site, fs.readdirSync(site)[0]!)).events;
-  assert.equal(events.filter((e) => e.type === "builder_run").length, 1, "only the Designer's run");
+  assert.equal(events.filter((e) => e.type === "builder_run").length, 3, "only the design room's three runs (concept, design, review: JOB.md 2026-11-21)");
 });
 
 test("a bad --place-calls value is refused before anything is written", async () => {
@@ -78,7 +78,7 @@ test("the title is the idea's first sentence: the workbench's '<idea>. Decided: 
   const root = tempDir("title");
   const site = path.join(root, "jobs"), script = path.join(root, "fake.json");
   const brief = readLog(FIXTURE).events.find((e) => e.type === "brief_set")!;
-  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer" }, json: { brief: v2Brief(), estimate: brief.estimate } }] }));
+  fs.writeFileSync(script, JSON.stringify({ steps: [{ match: { role: "designer" }, json: { brief: v2Brief(), estimate: brief.estimate } }, ...roomSteps()] }));
   const cases: [string, string][] = [
     ["ice hockey, three against three by the river. Decided: ice hockey on a rink; three against three.", "Ice hockey, three against three by the river"],
     ["balls roll down a ramp: three of them", "Balls roll down a ramp"],

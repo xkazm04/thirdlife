@@ -1,0 +1,95 @@
+new exit 0
+}
+brief set; react to an aspect with: foreman react ball-paddle-walled-court-20261121-1 <aspect> keep|drop|<alternative> [--note "..."], redesign with: foreman redesign ball-paddle-walled-court-20261121-1, approve with: foreman approve ball-paddle-walled-court-20261121-1
+
+=================== STOP: after foreman new (the design room ran) ===================
+job      ball-paddle-walled-court-20261121-1  "A ball-and-paddle game in a walled court"  pack game.ball_paddle_walled_court
+state    created   events 10
+brief    set, not approved   plan none
+design   standard, run-through: Bank the ball past Rival Rex, brace his smash, win at sudden death.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, goals behind each end
+next     foreman react ball-paddle-walled-court-20261121-1 <aspect> keep|drop|<alternative> [--note "..."]  |  foreman redesign ball-paddle-walled-court-20261121-1  |  foreman approve ball-paddle-walled-court-20261121-1
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 0  out 0  (5 runs reported none)
+
+package  state  round  milestone  runs  cause  last verify  detail
+-------  -----  -----  ---------  ----  -----  -----------  ------
+brief approved by player
+plan set: core, court<-core, paddle_ai<-core
+  phase 1 court_plays: core, court; try: Rally the ball off the walls with your paddle
+  phase 2 rival: paddle_ai; try: Beat a rival paddle that chases the ball
+
+=================== STOP: after foreman plan (phases, serves) ===================
+job      ball-paddle-walled-court-20261121-1  "A ball-and-paddle game in a walled court"  pack game.ball_paddle_walled_court
+state    created   events 16
+brief    approved by player   plan 3 packages (revision 1)
+design   standard, run-through: Bank the ball past Rival Rex, brace his smash, win at sudden death.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, goals behind each end
+phase    1/2 court_plays    first    core, court; try: Rally the ball off the walls with your paddle
+phase    2/2 rival          later    paddle_ai; try: Beat a rival paddle that chases the ball
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 0  out 0  (6 runs reported none)
+
+package    state   round  milestone  runs  cause  last verify  detail
+---------  ------  -----  ---------  ----  -----  -----------  ------
+core       queued  1      blockout   0
+court      queued  1      blockout   0
+paddle_ai  queued  1      greybox    0
+run exit 3
+
+=================== STOP: after foreman run (the quality hold) ===================
+job      ball-paddle-walled-court-20261121-1  "A ball-and-paddle game in a walled court"  pack game.ball_paddle_walled_court
+state    paused  (quality)   events 73
+brief    approved by player   plan 3 packages (revision 1)
+design   standard, run-through: Bank the ball past Rival Rex, brace his smash, win at sudden death.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, goals behind each end
+phase    1/2 court_plays    BUILDING core, court; try: Rally the ball off the walls with your paddle
+phase    2/2 rival          later    paddle_ai; try: Beat a rival paddle that chases the ball
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 17500  out 2700  (11 runs reported none)
+milestone blockout round 1 kept new: NOT ok, 2 capture(s) (captures/blockout-hero-f150.png, captures/blockout-hero-f450.png)
+milestone blockout round 2 kept new: NOT ok, 2 capture(s) (captures/blockout-hero-f150.png, captures/blockout-hero-f450.png)
+HELD     quality: milestone blockout is still NOT ok after revise round 2
+critic   silhouette 0.8, readability 0.45, style_consistency 0.7, shows_play 0.6, fun_promise 0.3; the court is a grey slab; the ball is hard to find
+answer   foreman quality ball-paddle-walled-court-20261121-1 accept [--note "..."]   or   foreman quality ball-paddle-walled-court-20261121-1 retry --note "<what to change>"
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  3      blockout   3            smoke ok r3
+paddle_ai  queued    1      greybox    0
+quality accept on milestone blockout (note: ship the blockout, the art pass fixes the slab)
+quality exit 0
+
+=================== STOP: after foreman quality accept (done) ===================
+job      ball-paddle-walled-court-20261121-1  "A ball-and-paddle game in a walled court"  pack game.ball_paddle_walled_court
+state    done  (pack verified V0 to V4 and promoted under the job directory (promoted/game.ball_paddle_walled_court))   events 104
+brief    approved by player   plan 3 packages (revision 1)
+design   standard, run-through: Bank the ball past Rival Rex, brace his smash, win at sudden death.
+aspect   paddle         [player] Your paddle: Slide along your goal and slap the ball back
+aspect   rival          [rival] Rival Rex: A greedy paddle that lunges at every ball
+aspect   court          [arena] Walled court: Walls bounce the ball, goals behind each end
+phase    1/2 court_plays    passed   core, court; try: Rally the ball off the walls with your paddle
+phase    2/2 rival          passed   paddle_ai; try: Beat a rival paddle that chases the ball
+card     no card (the Planner named none)
+billing  fake none: fake adapter: no model is called and nothing is billed
+tokens   in 26800  out 3700  (12 runs reported none)
+promoted game.ball_paddle_walled_court 0.1.0 -> promoted/game.ball_paddle_walled_court
+milestone blockout round 1 kept new: NOT ok, 2 capture(s) (captures/blockout-hero-f150.png, captures/blockout-hero-f450.png)
+milestone blockout round 2 kept new: NOT ok, 2 capture(s) (captures/blockout-hero-f150.png, captures/blockout-hero-f450.png)
+milestone greybox: 2 capture(s) (captures/greybox-hero-f150.png, captures/greybox-hero-f450.png)
+
+package    state     round  milestone  runs  cause  last verify  detail
+---------  --------  -----  ---------  ----  -----  -----------  ------
+core       promoted  1      blockout   1            smoke ok r1
+court      promoted  3      blockout   3            smoke ok r3
+paddle_ai  promoted  2      greybox    2            bot ok r2

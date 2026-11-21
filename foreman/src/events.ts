@@ -4,6 +4,8 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 import type { ValidateFunction } from "ajv";
 import { CREATIVITY, VERDICTS, aspectProblems, aspectsSchema, phaseProblems, phasesSchema, type Aspect, type Creativity, type Phase, type PhaseVerdict } from "./v2.js";
 export type { Aspect, AspectAlternative, AspectIcon, Creativity, Phase, PhaseVerdict } from "./v2.js";
+import { conceptSchema, designProblems, designReviewedSpec, designSchema, milestoneRoomSpec, type Concept, type DesignDoc, type Kept, type ReviewScore, type ReviewVerdict, type Strip } from "./room_wire.js";
+export type { Concept, DesignDoc, DesignReview, Kept, Strip } from "./room_wire.js";
 
 export const PACKAGE_STATES = ["queued", "running", "blocked", "verifying", "promoted", "failed"] as const;
 export type PackageState = (typeof PACKAGE_STATES)[number];
@@ -55,6 +57,10 @@ export interface Brief {
   pitch?: string;
   /** JOB.md 2026-11-20 (optional on read, written by every v2 Designer): 3 to 7 aspect cards the player reacts to. */
   aspects?: Aspect[];
+  /** JOB.md 2026-11-21 (the design room, step 1): five candidate pitches, the chosen one, hook, anchor, references. */
+  concept?: Concept;
+  /** JOB.md 2026-11-21 (the design room, step 2): the game design doc with its feel sheet. */
+  design?: DesignDoc;
 }
 export interface Estimate {
   packages: number;
@@ -87,6 +93,8 @@ export interface PackageSpec {
   contract: string;
   acceptance: Acceptance[];
   registers?: Registers;
+  /** JOB.md 2026-11-21: clip ids of brief.design.clips that this package brings closer. */
+  serves?: string[];
 }
 export interface BudgetPolicy {
   kind: BudgetKind;
@@ -175,7 +183,20 @@ export type EventBody =
   | { type: "reopened"; package: string; reason: string }
   | { type: "question"; package: string; text: string }
   | { type: "answer"; package: string; text: string; by: string; /** P10: the id of the inbox entry this event was written from. */ inbox?: string }
-  | { type: "milestone"; milestone: Milestone; captures: string[]; summary: string }
+  | {
+      type: "milestone";
+      milestone: Milestone;
+      captures: string[];
+      summary: string;
+      /** JOB.md 2026-11-21, the quality loop: absent = round 0 (the first look). */
+      round?: number;
+      /** With round >= 1: which version the critic kept; on "previous" the Foreman restored the snapshot. */
+      kept?: Kept;
+      /** The motion strips of this look (4x3 tiles of 12 frames, 5 apart). */
+      strips?: Strip[];
+    }
+  /** JOB.md 2026-11-21: the design room's producer review, written before the brief_set it judged. */
+  | { type: "design_reviewed"; round: number; verdict: ReviewVerdict; scores: Record<ReviewScore, number>; notes: string }
   | { type: "comment"; milestone: Milestone; text: string; by: "player" }
   | { type: "replan"; reason: string; added: string[]; removed: string[]; changed: string[] }
   | { type: "budget"; policy: BudgetPolicy; state: "running" | "paused"; reason: string }
@@ -240,6 +261,7 @@ export const packageSpecSchema = {
     scope: { type: "array", minItems: 1, items: relPath },
     contract: nonEmpty,
     acceptance: { type: "array", items: acceptanceSchema },
+    serves: { type: "array", items: pkgId },
   },
 } as const;
 
@@ -247,7 +269,7 @@ export const briefSchema = {
   type: "object",
   additionalProperties: false,
   required: ["rules", "arena", "ai", "controls", "mood"],
-  properties: { rules: nonEmpty, arena: nonEmpty, ai: nonEmpty, controls: nonEmpty, mood: nonEmpty, pitch: nonEmpty, aspects: aspectsSchema },
+  properties: { rules: nonEmpty, arena: nonEmpty, ai: nonEmpty, controls: nonEmpty, mood: nonEmpty, pitch: nonEmpty, aspects: aspectsSchema, concept: conceptSchema, design: designSchema },
 } as const;
 
 export const estimateSchema = {
@@ -268,6 +290,7 @@ const SPECS: Record<EventType, Spec> = {
     optional: { answers: editorSchemas.answers, lot: editorSchemas.lot, creativity: { enum: CREATIVITY }, run_through: { const: true } },
   },
   brief_set: { required: { brief: briefSchema, estimate: estimateSchema } },
+  design_reviewed: designReviewedSpec,
   aspect_reacted: { required: { aspect: pkgId, choice: pkgId }, optional: { note: nonEmpty } },
   brief_approved: { required: { by: { enum: ["player", "auto"] } } },
   plan_set: {
@@ -300,7 +323,7 @@ const SPECS: Record<EventType, Spec> = {
   reopened: { required: { package: pkgId, reason: nonEmpty } },
   question: { required: { package: pkgId, text: nonEmpty } },
   answer: { required: { package: pkgId, text: nonEmpty, by: nonEmpty }, optional: { inbox: nonEmpty } },
-  milestone: { required: { milestone: { enum: MILESTONES }, captures: { type: "array", items: relPath }, summary: str } },
+  milestone: { required: { milestone: { enum: MILESTONES }, captures: { type: "array", items: relPath }, summary: str }, optional: milestoneRoomSpec },
   comment: { required: { milestone: { enum: MILESTONES }, text: nonEmpty, by: { enum: ["player"] } } },
   replan: { required: { reason: nonEmpty, added: pkgIdList, removed: pkgIdList, changed: pkgIdList } },
   budget: {
@@ -431,9 +454,10 @@ export function validateEvent(value: unknown): JobEvent {
     if (problems.length > 0) throw new EventError(`plan_set: ${problems.join("; ")}`);
   }
   if (ev.type === "brief_set") {
-    const problems = aspectProblems(ev.brief.pitch, ev.brief.aspects);
+    const problems = [...aspectProblems(ev.brief.pitch, ev.brief.aspects), ...(ev.brief.design ? designProblems(ev.brief.design) : [])];
     if (problems.length > 0) throw new EventError(`brief_set: ${problems.join("; ")}`);
   }
+  if (ev.type === "milestone" && ev.kept !== undefined && ev.round === undefined) throw new EventError(`milestone: "kept" comes with a "round" (a revise round of the quality loop)`);
   if (ev.type === "phase_reviewed" && ev.verdict === "hold" && ev.note === undefined) {
     throw new EventError(`phase_reviewed: a "hold" needs a "note" (the player's request for the change round)`);
   }

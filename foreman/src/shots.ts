@@ -96,3 +96,20 @@ export function shotLabel(cam: string, frame: number, shot: Shot): string {
   const whose = shot.package !== undefined ? ` of package ${shot.package}` : "";
   return `camera ${cam}, frame ${frame}, while ${shot.bot}${whose} plays${share}`;
 }
+
+/** JOB.md 2026-11-21: a motion strip is a 4x3 tile of 12 frames, 5 apart (`capture --strip=12x5`). */
+export const STRIP = { count: 12, step: 5 } as const;
+
+/** The first frame of the strip around a filmed point: 30 frames before it, so the strip holds the lead-up and the result. */
+export const stripFrom = (frame: number): number => Math.max(1, frame - 30);
+
+/** `captures/<milestone>-<cam>-<bot stem>-strip-f<from>.png` (JOB.md 2026-11-21). */
+export function stripFile(milestone: string, cam: string, shot: Shot, from: number): string {
+  return `${milestone}-${cam}-${shot.bot !== undefined ? path.basename(shot.bot, ".gd") : "nobot"}-strip-f${from}.png`;
+}
+
+/** What the critic is told about a strip: the tile's reading order and frames, the camera and the bot. */
+export function stripLabel(cam: string, from: number, shot: Shot): string {
+  const last = from + STRIP.step * (STRIP.count - 1);
+  return `MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames ${from}, ${from + STRIP.step}, ... ${last}, ${STRIP.step} frames apart) of ${shotLabel(cam, from, shot).replace(/^camera /, "camera ")}`;
+}

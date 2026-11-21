@@ -1,6 +1,8 @@
 // The text of `foreman status` and of the event lines `run` prints: moved verbatim out of cli.ts (re-exported there).
 import type { JobEvent } from "./events.js";
 import { currentPhase, waitingPhase, type JobState } from "./joblog.js";
+import { qualityLines } from "./cli_quality.js";
+import { lookOk } from "./quality_state.js";
 
 export function eventLine(ev: JobEvent): string {
   const head = `${String(ev.seq).padStart(4)} ${ev.ts.slice(11, 19)} ${ev.type.padEnd(13)}`;
@@ -49,6 +51,9 @@ export function eventLine(ev: JobEvent): string {
 export function designLines(s: JobState): string[] {
   const out: string[] = [];
   const mode = [s.creativity === "crazy" ? "crazy" : "standard", s.runThrough ? "run-through" : "", s.briefs > 1 ? `design ${s.briefs}` : ""].filter(Boolean).join(", ");
+  const c = s.brief?.concept; // JOB.md 2026-11-21: the design room
+  if (c) out.push(`concept  ${c.anchor} where ${c.hook} (candidate ${c.chosen + 1} of ${c.candidates.length}, likelihood ${c.candidates[c.chosen]?.likelihood ?? "?"})`);
+  for (const r of s.reviews) out.push(`review   round ${r.round} ${r.verdict}: ${Object.entries(r.scores).map(([k, v]) => `${k} ${v}`).join(", ")}; ${r.notes.replace(/\s+/g, " ").slice(0, 160)}`);
   if (s.brief?.pitch !== undefined || s.creativity !== undefined || s.runThrough) out.push(`design   ${mode}${s.brief?.pitch !== undefined ? `: ${s.brief.pitch}` : ""}`);
   for (const a of s.brief?.aspects ?? []) {
     const r = s.reactions[a.id];
@@ -88,7 +93,8 @@ export function statusTable(s: JobState, card: string[] = []): string {
   if (s.promoted) lines.push(`promoted ${s.promoted.packId} ${s.promoted.version} -> ${s.promoted.dest}${s.promotions.length > 1 ? `  (promotion ${s.promotions.length}; earlier: ${s.promotions.slice(0, -1).map((p) => `${p.version} ${p.dest}`).join(", ")})` : ""}`);
   for (const c of s.changes) lines.push(`change   #${c.seq} ${c.state}${c.owner ? ` -> ${c.owner}` : c.package ? ` (for ${c.package})` : ""}: ${c.text.replace(/\s+/g, " ").slice(0, 100)}`);
   if (s.replans > 0) lines.push(`replans  ${s.replans}${s.pendingReplan ? " (the last one has no plan_set yet)" : ""}`);
-  for (const m of s.milestones) lines.push(`milestone ${m.milestone}: ${m.captures.length} capture(s)${m.captures.length > 0 ? ` (${m.captures.join(", ")})` : ""}`);
+  for (const m of s.milestones) lines.push(`milestone ${m.milestone}${m.round !== undefined ? ` round ${m.round} kept ${m.kept ?? "?"}` : ""}: ${lookOk(m.summary) ? "" : "NOT ok, "}${m.captures.length} capture(s)${m.strips?.length ? `, ${m.strips.length} strip(s)` : ""}${m.captures.length > 0 ? ` (${m.captures.join(", ")})` : ""}`);
+  lines.push(...qualityLines(s));
   const rows = s.order.map((id) => {
     const p = s.packages[id];
     if (!p) return [id, "?", "", "", "", "", ""];
