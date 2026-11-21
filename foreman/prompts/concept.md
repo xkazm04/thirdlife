@@ -27,7 +27,7 @@ The owner called it slop. The first idea that comes to mind is the typical one; 
 
 # Creativity
 {{creativity}}
-
+{{taken}}
 # What makes a concept sellable (from docs/GAME-QUALITY.md)
 {{quality}}
 

@@ -1,0 +1,364 @@
+{
+ "sentence": "a fight in a colosseum",
+ "creativity": "crazy",
+ "model": "opus (claude-cli)",
+ "site_had_standard": "fight-colosseum-20261121-1 (room-standard.json): its concept was in the crazy concept prompt (Already designed)",
+ "concept": {
+  "candidates": [
+   {
+    "pitch": "Gladiator ladder: five rival types, each with a signature weapon and tell; light, heavy, block, roll to freedom.",
+    "likelihood": 0.8
+   },
+   {
+    "pitch": "Every clean hit steals the rival's weapon; parries steal it back. Hold the golden gladius when the horn sounds.",
+    "likelihood": 0.12
+   },
+   {
+    "pitch": "Each round, your earlier bouts replay as bronze ghosts fighting beside the rival; beat your own habits.",
+    "likelihood": 0.07
+   },
+   {
+    "pitch": "Iron-ball duel: catch the rival's throw on timing, hurl it back faster until someone can't catch.",
+    "likelihood": 0.25
+   },
+   {
+    "pitch": "Two gladiators chained ankle to ankle: every blow yanks the chain, and footwork is a tug-of-war.",
+    "likelihood": 0.15
+   }
+  ],
+  "chosen": 1,
+  "why": "Bends what a hit does: a hit transfers the weapon, so the fight is possession, not health. Left the standard's column-destruction and crowd-weapon families: weapons come from the rival's hands, not the crowd. Obvious ladder was already drafted.",
+  "hook": "every clean hit rips the weapon from your rival's hands",
+  "anchor": "gladiator arena brawler",
+  "references": [
+   {
+    "game": "For Honor",
+    "borrow": "a three-way directional guard; a matched-direction parry, read from the attacker's weapon angle, opens a punish."
+   },
+   {
+    "game": "Nidhogg",
+    "borrow": "disarm by matching sword height then thrusting; the disarmed fighter rolls and dives to recover the blade."
+   },
+   {
+    "game": "NBA Jam",
+    "borrow": "three steals in a row set the holder on fire, visible to all, until the rival steals back."
+   }
+  ]
+ },
+ "design": {
+  "pillars": [
+   {
+    "line": "A hit moves the sword, not a health bar",
+    "rules_out": "Health bars, damage numbers and fights decided by attrition"
+   },
+   {
+    "line": "Every verb has an answer",
+    "rules_out": "Safe best moves, unpunishable heavies, a guard that blocks everything"
+   },
+   {
+    "line": "Skill is in the feet and facing",
+    "rules_out": "Auto-face, attack arcs over 60 degrees, speed-stat difficulty"
+   }
+  ],
+  "verbs": [
+   {
+    "id": "strike",
+    "input": "J tap; strike clip; armed a sword cut, unarmed a grabbing jab that steals",
+    "anticipation_f": 4,
+    "active_f": 3,
+    "recovery_f": 14,
+    "cancel": "Roll from recovery frame 6; a landed hit cancels into strike_heavy"
+   },
+   {
+    "id": "strike_heavy",
+    "input": "K; strike_heavy clip; armed a cleave that floors 40 f, unarmed a rip through guard",
+    "anticipation_f": 10,
+    "active_f": 4,
+    "recovery_f": 28,
+    "cancel": "Wind-up cancels into guard before frame 6 (a feint); nothing once active"
+   },
+   {
+    "id": "guard",
+    "input": "Hold L; block clip; first 8 f facing within 45 degrees is a parry",
+    "anticipation_f": 1,
+    "active_f": 8,
+    "recovery_f": 10,
+    "cancel": "A parry cancels into strike; release returns to idle after 10 f",
+    "defensive": true
+   },
+   {
+    "id": "roll",
+    "input": "Space; roll clip along move direction, invulnerable frames 1-20",
+    "anticipation_f": 1,
+    "active_f": 20,
+    "recovery_f": 12,
+    "cancel": "Recovery cancels into strike from frame 8; never into another roll",
+    "defensive": true
+   },
+   {
+    "id": "taunt",
+    "input": "T, holder only; taunt clip; next landed hit counts double toward Burning Blade",
+    "anticipation_f": 6,
+    "active_f": 30,
+    "recovery_f": 14,
+    "cancel": "None: fully punishable, the rival's open window"
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "murmillo",
+    "title": "Murmillo Wall",
+    "line": "Big shield: guard covers 120 degrees, roll replaced by a body_check shove"
+   },
+   {
+    "id": "thraex",
+    "title": "Thraex Dancer",
+    "line": "Small buckler: parry 10 f, roll 24 i-frames, guard 60 degrees"
+   }
+  ],
+  "loops": {
+   "s3": "Read the tell, then guard, jab, roll or rip; the sword changes hands or holds",
+   "s30": "One 45 s round: keep or chase the gladius, ignite the blade, survive the oiled finale",
+   "m3": "A bout of best-of-three rounds per rival, climbing Pulex, Ursa, then Calyx for the laurel"
+  },
+  "context": [
+   "Possession flips: the holder walks and defends, the unarmed runs and hunts",
+   "Burning Blade ignites after three hits in a row, visible to both",
+   "Oiled Finale at 15 s left turns the centre into skating",
+   "Each rival brings a new habit: rolls, charges, then feints"
+  ],
+  "skill": {
+   "floor": "Press J to jab the holder and take the gladius",
+   "ceiling": [
+    "Parry-steal: tap guard in the 8 f before the holder's cut lands",
+    "Roll-cancel rip: roll behind a whiffed cleave and rip the unguarded back",
+    "Oil slide-rip: roll across the oiled disc into a rip before the horn"
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    4,
+    12
+   ],
+   "knockback": "Impulse 3 + 0.4 x hits taken this round, cleave x2.5, via TLBiped.shove so Ursa slides less",
+   "reaction": "Jab TLHit.react 0.3 flinch; steal 0.7 stumble from the blow; cleave 1.2 then TLHit.down 40 f",
+   "whiff": "Full recovery, a sand-scuff sound via TLAudio.play, no burst, sword arm left open",
+   "iframes_f": 20,
+   "telegraph_f": 24,
+   "shake": "None on jabs; 0.08 m over 10 f on a steal; 0.25 m over 18 f on knock-down",
+   "camera": "Orbit at 42 degrees on the fighters' midpoint, frame 0.26, near wall 0.8 m, red edge arrow off-screen"
+  },
+  "clips": [
+   {
+    "id": "parry_steal",
+    "moment": "The holder's cut is parried, gold sparks freeze both 10 f, the sword flips hands"
+   },
+   {
+    "id": "burning_cleave",
+    "moment": "A burning-blade cleave floors Ursa: shake, smoke, crowd roar"
+   },
+   {
+    "id": "horn_slide_rip",
+    "moment": "On the oil, a sliding rip steals the sword as the horn sounds"
+   }
+  ],
+  "first_minute": "Opens face to face with Pulex holding the gold; hint 'J: jab him to steal it'. He only jabs, with slow 24 f tells",
+  "fail_state": "Horn screen names who held the gold and the deciding move; loser kneels, crowd cheers; J rematches at once",
+  "out_of_scope": [
+   "Health bars and blood",
+   "More than one gladius in play",
+   "Crowd-thrown weapons",
+   "More than two fighters or online play",
+   "Menus before the first exchange"
+  ]
+ },
+ "design_reviewed": [
+  {
+   "type": "design_reviewed",
+   "round": 1,
+   "verdict": "ok",
+   "scores": {
+    "hook": 0.8,
+    "gif": 0.74,
+    "depth": 0.78,
+    "feel": 0.76,
+    "fit": 0.85
+   },
+   "notes": "No slop; this goes to the builders. Fix three contradictions while building. Calyx's feint cancels at frame 14, but the heavy wind-up is 10 f and feints must cancel before frame 6, so give rival feints their own 22 f tell and cancel window. Align the parry facing (45 degrees) with the guard arc (60). Name the clip for a steal stumble and for Ursa's charge, so the parry_steal moment is not a placeholder."
+  }
+ ],
+ "length_repair": {
+  "prompt": "Some text fields of your answer are over their word limit. Everything else in it is accepted and kept as it is.\nRewrite ONLY these fields, each to at most its limit (aim two words under it), keeping its meaning, its numbers and its names. A word is whatever stands between two spaces.\n- brief.design.playstyles[1].line (13 words, limit 12): \"Small buckler: parry window 10 f, roll 24 i-frames, guard covers 60 degrees\"\nAnswer with ONE JSON object and nothing else: {\"fixes\": [{\"path\": \"<the path above>\", \"text\": \"<the shorter text>\"}]}, one entry per field above.",
+  "answer": {
+   "fixes": [
+    {
+     "path": "brief.design.playstyles[1].line",
+     "text": "Small buckler: parry 10 f, roll 24 i-frames, guard 60 degrees"
+    }
+   ]
+  },
+  "durationMs": 8187,
+  "tokensIn": 3081,
+  "tokensOut": 230
+ },
+ "brief": {
+  "pitch": "One golden sword: hit clean to steal it, parry to snatch it back, hold it at the horn.",
+  "aspects": [
+   {
+    "id": "golden_gladius",
+    "icon": "weapon",
+    "title": "The Golden Gladius",
+    "line": "Only one sword. Hit clean and it jumps to your hand.",
+    "detail": "One gladius prop on the holder's hand. Unarmed strike or rip landing unguarded transfers it; parrying the holder's swing transfers it. Holder walks only (no run), so must fight. Holder at the horn wins the round. Transfer: 6 f hit-stop both, TLHit.react 0.7, gold sparks.",
+    "alternatives": [
+     {
+      "id": "loose_drop",
+      "title": "Knocked Loose",
+      "line": "Hits knock the sword flying; dive and roll to grab it."
+     },
+     {
+      "id": "two_blades",
+      "title": "Two Blades, One Gold",
+      "line": "Both armed; only the gold blade counts at the horn."
+     },
+     {
+      "id": "glory_clock",
+      "title": "Glory Clock",
+      "line": "Every second holding scores; most glory wins, not the horn."
+     }
+    ]
+   },
+   {
+    "id": "verb_triangle",
+    "icon": "player",
+    "title": "Guard, Rip, Jab",
+    "line": "Guard stops jabs, rips break guards, jabs stop rips.",
+    "detail": "Light strike 4/3/14 f interrupts a wind-up. Heavy 10/4/28: unarmed it is a rip that beats guard; armed a cleave that floors for 40 f via TLHit.down. Guard (block clip) stops lights; its first 8 f are a parry facing within 45 degrees. Roll: 20 i-frames.",
+    "alternatives": [
+     {
+      "id": "directional_guard",
+      "title": "Three-Way Guard",
+      "line": "Pick left, right or high guard to match the swing."
+     },
+     {
+      "id": "grapple_only",
+      "title": "Grab and Throw",
+      "line": "No swords swung: grab, throw, and wrestle the gold away."
+     }
+    ]
+   },
+   {
+    "id": "rival_ladder",
+    "icon": "rival",
+    "title": "Three Rival Gladiators",
+    "line": "A tiny roller, a charging bear, a champion who fakes.",
+    "detail": "Pulex (0.85 body_scale, bare head) jabs and rolls behind your heavy; tell 24 f arm-back. Ursa (1.3 scale, bronze helm) body_check charge, 30 f stamp tell. Calyx (crested helm) feints heavies after you parry twice. Each taunts on a steal, kneels via TLHit.down when beaten.",
+    "alternatives": [
+     {
+      "id": "mirror_rival",
+      "title": "Your Own Ghost",
+      "line": "The rival copies how you fought last round."
+     },
+     {
+      "id": "tag_team",
+      "title": "Two on One",
+      "line": "Two weak rivals pass the stolen sword between them."
+     }
+    ]
+   },
+   {
+    "id": "ring_orbit",
+    "icon": "camera",
+    "title": "High Ring Camera",
+    "line": "See both fighters from above the low arena wall.",
+    "detail": "ctx.cameras.orbit on a pivot kept at the fighters' midpoint, pitch 42 degrees, fov 50, distance 9-16 m widening with their gap; ctx.cameras.frame(pivot, 0.26). Near wall is 0.8 m stone; stands only on the far side. Off-screen rival gets a red TLHud edge arrow.",
+    "alternatives": [
+     {
+      "id": "shoulder_cam",
+      "title": "Over the Shoulder",
+      "line": "Camera behind your gladiator, rival charging at the lens."
+     },
+     {
+      "id": "side_view",
+      "title": "Side-On Duel",
+      "line": "Flat side view like a stage, fighters left and right."
+     }
+    ]
+   },
+   {
+    "id": "burning_blade",
+    "icon": "power",
+    "title": "Burning Blade",
+    "line": "Land three hits in a row and the sword catches fire.",
+    "detail": "Holder landing 3 hits without losing the gladius ignites it: TLVfx.attach nitro_flame on the blade, a cheer. Burning, the holder may run and a light strike stumbles at 0.9. One steal douses it with smoke. Seen by both, so the rival must gamble on a rip.",
+    "alternatives": [
+     {
+      "id": "crowd_favour",
+      "title": "Crowd Favour",
+      "line": "Taunts fill a meter; the crowd throws you a shield."
+     },
+     {
+      "id": "closing_gates",
+      "title": "Closing Gates",
+      "line": "Every steal, the arena wall steps one metre inward."
+     }
+    ]
+   },
+   {
+    "id": "oiled_finale",
+    "icon": "arena",
+    "title": "The Oiled Finale",
+    "line": "Last fifteen seconds, the sand turns to slippery oil!",
+    "detail": "At 15 s left the horn blares and a 14 m centre disc switches to an ice-tagged patch: TLBiped skate locomotion, knockback slides 3x farther, rolls glide. Fighters steer by momentum; a rip becomes a slide-tackle. Drop it and the finale is just a countdown.",
+    "alternatives": [
+     {
+      "id": "emperor_whim",
+      "title": "Emperor's Whim",
+      "line": "At the final horn the Emperor swaps who holds it."
+     },
+     {
+      "id": "fruit_rain",
+      "title": "Rain of Fruit",
+      "line": "The crowd pelts the holder; every hit makes them flinch."
+     }
+    ],
+    "crazy": true
+   }
+  ],
+  "rules": "Duel for one golden gladius. Round 45 s; whoever holds it when the horn sounds wins; best of three per rival. Holder walks only and defends; unarmed runs and hunts. Verbs at 60 Hz: strike (J) 4/3/14 f, armed a cut (react 0.3 flinch, shove back), unarmed a jab that steals if it lands unguarded or from side/back; strike_heavy (K) 10/4/28 f, armed a cleave (react 1.2, TLHit.down 40 f, blockable, parryable), unarmed a rip that beats guard and steals; guard (hold L, block clip) stops lights from the front 60 degrees, first 8 f are a parry: parrying the holder steals, the holder parrying a rip stumbles the rival 0.7 for a punish; roll (Space) 20 i-frames, 12 f recovery; taunt (T, holder only) 50 f fully punishable, next hit counts double toward Burning Blade. Three hits in a row ignite the blade (holder may run, jabs stumble 0.9) until a steal. Feel: hit-stop 4 f jab, 6 f steal, 10 f parry, 12 f cleave on both fighters, decaying visual vibration; knockback impulse 3 + 0.4 x hits taken, cleave x2.5, through TLBiped.shove; whiffs play full recovery, a scuff sound, no burst; shake only on steals (0.08/10 f) and knock-downs (0.25/18 f). Intensity: calm open, steals speed up, Oiled Finale at 15 s, horn countdown beeps in last 5 s. End screen names who held the gold and the deciding move; J rematches, a win climbs to the next rival.",
+  "arena": "Round sand floor 22 m across, a ground_patch inside a ring of stones. Far side (-Z): raked kit stands with crowd, an entrance portal and two flags. Near side (+Z, camera side): a stones row only 0.8 m high, so the lens never sits behind scenery. A 14 m centre disc turns into an ice-tagged patch at 15 s left (Oiled Finale). Camera: ctx.cameras.orbit on a pivot the pack keeps at the fighters' midpoint, pitch 42 degrees, fov 50, distance 9-16 m widening with their gap, framed at 0.26; default yaw looks from +Z toward the stands; right-drag turns it; a red edge arrow on the TLHud marks an off-screen rival.",
+  "ai": "Rivals steer with TLSteer.arrive, TLSteer.separate (radius 1.4 m) and flee, colliding capsules scaled by body_scale. Pulex the Flea: 0.85 scale, bare head, red loincloth; jabs and rolls behind any whiffed heavy; tell 24 f arm pulled back; on a steal he hops in a taunt, beaten he kneels (TLHit.down). Ursa the Bear: 1.3 scale, bronze full helm, mass shoves him less; charges with body_check after a 30 f stamp tell, a landed charge steals; beaten he falls and sits. Calyx the Champion: player height, crested helm and banner prop; mixes cuts and rips, after two player parries he feints a heavy (cancels at frame 14) then jabs; tell 22 f. Harder means more aggression, reading the player's last answer, feints and cornering at the wall, never speed or damage.",
+  "controls": "move (WASD, camera-relative, facing follows movement); strike (J, light cut or jab); heavy (K, cleave or rip); guard (hold L, tap timed is a parry); roll (Space, along move direction); taunt (T, holder only). Right-drag and wheel turn and zoom the camera.",
+  "mood": "Sun-baked toon colosseum in the global inked look: ochre sand, white stone, a roaring crowd, the gladius glinting gold. Sounds: horn blasts, metallic clangs on parries, crowd cheers swelling as the sword changes hands."
+ },
+ "builder_runs": [
+  {
+   "transcript": "reports/concept-a1-s3.json",
+   "outcome": "ok",
+   "durationMs": 42493,
+   "tokensIn": 19489,
+   "tokensOut": 3559
+  },
+  {
+   "transcript": "reports/designer-a1-s4.json",
+   "outcome": "ok",
+   "durationMs": 146082,
+   "tokensIn": 28617,
+   "tokensOut": 14413
+  },
+  {
+   "transcript": "reports/designer_repair-a1-s5.json",
+   "outcome": "ok",
+   "durationMs": 8187,
+   "tokensIn": 3081,
+   "tokensOut": 230
+  },
+  {
+   "transcript": "reports/design_review-a1-s6.json",
+   "outcome": "ok",
+   "durationMs": 15499,
+   "tokensIn": 13141,
+   "tokensOut": 859
+  }
+ ]
+}

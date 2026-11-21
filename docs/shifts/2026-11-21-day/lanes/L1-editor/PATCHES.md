@@ -43,3 +43,24 @@ line. Landed in this tree because the strip cannot be filmed without it; named h
 - A new version the critic scores ok is kept without a compare call (an ok version beats one it sent back).
 - `job_created`/`builder_run` unchanged; job-level runs now also come from the roles `concept`, `design_review` and
   `critic_compare` (transcripts `reports/<role>-a<n>-s<seq>.json`).
+
+## 4. L1b: engine/ui/create/create_checks.gd: run the v3 reader checks (ui/quality_checks.gd) with the Create checks
+
+`engine/ui/quality_checks.gd` (new, L1b) checks the two new fixtures `ui/fixtures/create/c13-quality-hold` and
+`c14-quality-done` (a real Foreman run with the fake adapter: room with a revise, plan with `serves`, two revise rounds,
+the quality hold, `quality accept`, strips): every line through the strict site reader, all 13 new keys present, 5
+broken copies refused, the panel model shows the hold with the critic's words, Create shows c13 building and c14 done.
+Run alone it gives 6 PASS (`.tl/walk/qc.gd` in the L1 tree). To gate it in `tools/ui.sh selftest` and kernel selftest
+block 630, three lines in create_checks.gd (SCREENS and its count of 12 stay as they are):
+
+```diff
+ const Dungeons = preload("res://kernel/dungeon/dungeons.gd")
++const QualityChecks = preload("res://ui/quality_checks.gd")   # L1b: the 2026-11-21 readers (fixtures c13, c14)
+@@
+-const CHECKS: int = 27
++const CHECKS: int = 27 + QualityChecks.CHECKS
+@@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
+ 	_site(counted)
++	QualityChecks.run(counted)
+ 	check.call("create.complete: all %d checks ran" % CHECKS, count[0] == CHECKS, "%d ran" % count[0])
+```

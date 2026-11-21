@@ -15,6 +15,7 @@ import { acceptanceOptions, verbOptionsText, type RunnerVerbs } from "./verbs.js
 import { planCardProblems, planHandProblems } from "./cards.js";
 import { briefDesignText, conceptText, designAnswerSchema, qualityText, roomDesignProblems } from "./roomtext.js"; // JOB.md 2026-11-21: the design room
 import { servesProblems, type Concept } from "./room_wire.js";
+import { repairLengths, type LengthRule } from "./repair.js";
 import { playerCheckProblems } from "./playercheck.js";
 export { PLAYER_CHECK_RE, playerCheckProblems, playerChecks } from "./playercheck.js";
 
@@ -22,8 +23,9 @@ const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "pr
 const schema = (name: string): object => JSON.parse(prompt(name)) as object;
 export const render = (template: string, vars: Record<string, string>): string => template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
 
+export type GenerateRole = "designer" | "concept" | "design_review" | "planner" | "critic" | "placer" | "critic_compare";
 export interface GenerateCall {
-  role: "designer" | "concept" | "design_review" | "planner" | "critic" | "placer" | "critic_compare";
+  role: GenerateRole | `${GenerateRole}_repair`;
   attempt: number;
   prompt: string;
   result: RunResult;
@@ -38,6 +40,8 @@ export interface GenerateOptions {
   timeoutMs?: number;
   /** Total attempts when the answer does not validate. Default 2. */
   attempts?: number;
+  /** L1b: word limits of the answer; an answer whose only problems are these gets ONE repair call (repair.ts). */
+  limits?: LengthRule[];
 }
 
 export interface PlanLimits {
@@ -70,7 +74,7 @@ export interface PlanAnswer {
 
 export async function generate<T>(
   builder: Builder,
-  role: GenerateCall["role"],
+  role: GenerateRole,
   template: string,
   vars: Record<string, string>,
   jsonSchema: object,
@@ -102,6 +106,11 @@ export async function generate<T>(
       if (!problems.length) problems = check(result.json);
       calls.push({ role, attempt, prompt: text, result, problems });
       if (problems.length === 0) return { ok: true, value: result.json as T, calls };
+      if (opts.limits && !calls.some((c) => c.role === `${role}_repair`)) {
+        const r = await repairLengths<T>(builder, role, result.json, opts.limits, jsonSchema, check, { ...(opts.model ? { model: opts.model } : {}), timeoutMs: opts.timeoutMs ?? 10 * 60_000 });
+        if (r.result) calls.push({ role: `${role}_repair`, attempt, prompt: r.prompt ?? "", result: r.result, problems: r.problems });
+        if (r.value !== undefined) return { ok: true, value: r.value, calls };
+      }
     } else {
       calls.push({ role, attempt, prompt: text, result, problems });
       // Only an answer that came back but did not validate is worth asking again; a timeout or refusal is not.
@@ -397,7 +406,7 @@ export function planPackages(builder: Builder, input: PlannerInput, opts: Genera
     plannerVars(input, opts, ""),
     schema("plan.schema.json"),
     (v) => planCheck((v as PlanAnswer).packages, { requirePhases: true, ...opts, ...clipLimit(input.brief) }, (v as PlanAnswer).card, (v as PlanAnswer).phases),
-    opts,
+    { ...opts, limits: [{ path: "phases[*].try", max: LIMITS.try }] }, // L1b: a too-long try line is repaired, not a lost plan
   );
 }
 
