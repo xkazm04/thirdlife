@@ -102,7 +102,9 @@ How hit-stop meets falls arm A (TLHit.react / TLHit.down), made explicit in API.
    - Older blocks PASS: rig.fight 4/4 (golden 222 runs, no older clip changed), falls. 6/6, k2. 11/11.
    - Astra's run saw k2.down_invariants fail the same p50 budget under load. Mine passed at the start of the night.
    - The gate's kernel.selftest was killed at its 1800 s cap with 81 of 82 units done and 0 failed. A stopped run is
-     not a pass, so the whole suite is rerun without the cap: SEE "Whole kernel selftest" below.
+     not a pass, so I ran the whole suite again with no cap (bash engine/tools/selftest.sh): 429 passed, 0 failed,
+     exit 0, at 22:29. k2.down_invariants passed in that run. For comparison, main's last full run (21 Nov day final)
+     had 408 cases; this lane adds 15.
 6. API.md K8 section: MET (section 6, "K8 feel kit (addition in 1.13)").
 7. The Director was messaged the moment the names were final: MET, at about 19:50, well before 23:30.
 
@@ -114,7 +116,7 @@ How hit-stop meets falls arm A (TLHit.react / TLHit.down), made explicit in API.
   - FAIL packs 73/74: hockey many_budget, wall clock; base fails the same check; hashes identical.
   - FAIL kernel.selftest: killed at the 1800 s cap with 81/82 units and 0 failed.
   - NOT RUN perf: the machine was busy.
-- Whole kernel selftest: (filled in below)
+- Whole kernel selftest, run without the cap: 429 passed, 0 failed, exit 0 (.tl/selftest-full.log).
 
 ## Changed files
 - Kernel:
