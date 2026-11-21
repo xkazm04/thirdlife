@@ -50,6 +50,10 @@ Then read the spark note `.spark/Spark/ideas/game-quality-bar.md` (main checkout
      column.
    - Judge it by eye in a window; produce, judge, tune, at least 3 rounds.
 
+## Test files (your claim)
+Name your bots `tests/crazy_shotgun.gd`, `crazy_hipcheck.gd`, `crazy_shield.gd`, `crazy_slowpuck.gd`, `crazy_pickups.gd` and `crazy_modes.gd`.
+If you need another name, say so in your STANDUP. Their `pack.json` registration goes to L4 through your PATCHES.md.
+
 ## Acceptance
 - The base mode's hashes are unchanged: pickups and abilities are off in base, and drawing has no hash effect. Prove it
   with `bot_hockey` and the packs step.
