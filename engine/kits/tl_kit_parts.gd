@@ -6,6 +6,7 @@ extends RefCounted
 ## for fracturable parts; dynamic props carry tl_shape / tl_material / tl_mass_hint on the root and have no body.
 
 const SURFACE_KEY: Dictionary = {"grass": "grass", "dirt": "dirt", "concrete": "concrete", "asphalt": "tarmac", "ice": "ice", "snow": "white", "stone": "stone", "wood": "plank"}
+const _Bodies := preload("res://kits/part_bodies.gd")     # 21 Nov L6: bodies that follow a part's solid pieces (internal, not API)
 const DENSITY: Dictionary = {"concrete": 2400.0, "wood": 600.0, "rubber": 1100.0, "plastic": 950.0, "steel": 7800.0, "stone": 2600.0}
 
 
@@ -210,8 +211,7 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 		"house":
 			var hm: TLMesh = TLKitHouse.house(float(p["width"]), float(p["depth"]), float(p["wall_h"]), float(p["roof_rise"]))
 			mesh(n, hm)
-			var hb: StaticBody3D = body(n, "wood")
-			box(hb, Vector3(float(p["width"]), float(p["wall_h"]) + float(p["roof_rise"]) * 0.5, float(p["depth"])), Vector3(0, (float(p["wall_h"]) + float(p["roof_rise"]) * 0.5) * 0.5, 0))
+			_Bodies.house(body(n, "wood"), float(p["width"]), float(p["depth"]), float(p["wall_h"]), float(p["roof_rise"]))     # 21 Nov L6: its walls, gable roof, chimney and porch (was one box to mid-roof)
 			if bool(p["lights"]) and not TLStyle.headless():
 				var kx: float = float(p["width"]) / 8.0
 				var kz: float = float(p["depth"]) / 5.6
@@ -227,10 +227,7 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 		"timber_frame":
 			var tfm: TLMesh = TLKitHouse.frame(float(p["width"]), float(p["depth"]), float(p["height"]), float(p["roof_rise"]))
 			mesh(n, tfm)
-			var tb: StaticBody3D = body(n, "wood")
-			for sx: float in [-1.0, 1.0]:
-				for sz: float in [-1.0, 1.0]:
-					box(tb, Vector3(0.3, float(p["height"]), 0.3), Vector3(sx * float(p["width"]) * 0.5, float(p["height"]) * 0.5, sz * float(p["depth"]) * 0.5))
+			_Bodies.frame(body(n, "wood"), float(p["width"]), float(p["depth"]), float(p["height"]))     # 21 Nov L6: its footing, floor, posts and top beams (was four posts from the ground)
 		"tree":
 			var th2: float = p["height"]
 			var tm: TLMesh
@@ -331,11 +328,11 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 		"barricade":
 			TLKitSite.add_barricade(mk, Vector3.ZERO, float(p["width"]), 0.0)
 			mesh(n, mk)
-			auto_box(n, mk, "wood")
+			_Bodies.barricade(body(n, "wood"), float(p["width"]))
 		"cabin":
 			TLKitSite.add_cabin(mk, Vector3.ZERO, 0.0)
 			mesh(n, mk)
-			auto_box(n, mk, "steel")
+			_Bodies.cabin(body(n, "steel"))
 		"marshal_post":
 			TLKitSite.add_marshal_post(mk, Vector3.ZERO, 0.0)
 			mesh(n, mk)
@@ -345,7 +342,8 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 					box(mpb, Vector3(0.12, 3.4, 0.12), Vector3(sx, 1.7, sz))
 			box(mpb, Vector3(2.2, 0.12, 1.8), Vector3(0, 1.2, 0))
 			box(mpb, Vector3(2.2, 0.7, 0.1), Vector3(0, 1.75, -0.86))
-			box(mpb, Vector3(2.6, 0.35, 2.2), Vector3(0, 3.575, 0))
+			hull(mpb, PackedVector3Array([Vector3(-1.3, 3.4, -1.1), Vector3(1.3, 3.4, -1.1), Vector3(-1.3, 3.4, 1.1), Vector3(1.3, 3.4, 1.1),
+				Vector3(-1.3, 3.75, -1.1), Vector3(1.3, 3.75, -1.1), Vector3(-1.3, 3.5, 1.1), Vector3(1.3, 3.5, 1.1)]))     # 21 Nov L6: the roof's slope (was a flat box at its high side)
 		"entrance":
 			TLKitSite.add_entrance(mk, Vector3.ZERO, 0.0)
 			mesh(n, mk)

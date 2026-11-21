@@ -32,9 +32,7 @@ func capture(model: RefCounted, lot: int) -> Dictionary:
 	site.set_process(false)  # sample the crane before it slews
 	var view: Dictionary = model.view_of(lot)
 	site._build(view)
-	while not site._tasks.is_empty():
-		await physics_frame
-		site._collect()
+	site.wait_meshes()  # 21 Nov L6: the worker meshes, waited for (it counted frames for them: 502 ran out of frames when busy)
 	site._build(view)
 	var visual := {}
 	for mesh: MeshInstance3D in site.find_children("*", "MeshInstance3D", true, false):

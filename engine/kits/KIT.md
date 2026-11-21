@@ -89,7 +89,7 @@ alone by the world's draw layer, which otherwise lays the same face over every k
 ## Collision per part (night of 21 Nov 2026)
 A part's body follows its solid pieces, not one box round everything (`auto_box`): a walker or a ball passes where the
 picture is open. `auto_box` stays for parts that are a block anyway (kerb, tyre_stack, lumber, pallet, cone,
-barricade, cabin, stones). Changed that night (each changes the part's `TLKit.hash`; the asset manifest is re-scanned):
+stones; barricade and cabin got bodies of their pieces on 21 Nov, below). Changed that night (each changes the part's `TLKit.hash`; the asset manifest is re-scanned):
 
 | Part | Before | Now |
 |---|---|---|
@@ -104,6 +104,25 @@ barricade, cabin, stones). Changed that night (each changes the part's `TLKit.ha
 too: a pack that uses these parts may see its hash move where something touches them (named in the lane's report).
 The visitor of the world meets the same shapes: the world copies a pack's static bodies into his space
 (`kernel/world/terrain/world_space.gd add_pack`).
+
+### Collider top = mesh top (day of 21 Nov 2026, lane L6)
+Every part, straight and turned 30 degrees, is held to it by the kernel selftest `harden.kit_tops`
+(`kernel/world/terrain/kit_tops_case.gd`): rays straight down on a grid over the part meet its drawn mesh and its
+static bodies, and wherever a thing 0.25 m wide could stand the body's top is the mesh's top within 0.12 m (higher is a
+wall or a floor in the air, lower a hole he walks into or a stacked thing sinks into). A part that differs on purpose
+is named there with why: `arch_rib`, `crane`, `tree`, `light_mast` (out-of-reach pieces not solid), `entrance` (the
+lintel over its opening), `goal` (its net's top is one flat box: a question for the hockey lanes, whose hashes it moves).
+The `auto_box` parts that were not blocks got bodies of their pieces (`kits/part_bodies.gd`, internal to TLKitParts):
+
+| Part | Before | Now |
+|---|---|---|
+| `barricade` | one box round boards and legs (0.77 m deep: 0.3 m of air before and behind the boards) | the two rows of boards (0.55-0.95 m up, 0.1 m thick) and each end's A-frame legs as a hull; a ball rolls under the boards between the legs |
+| `cabin` | one box over the door's step up to the roof unit's top (3.37 m) | the skids, the box with its trims to the roof (2.89 m), the roof unit and the step |
+| `house` | one box over the walls to mid-roof (2.1 m under the ridge; eaves and porch open) | footing, walls, the gable roof as one hull to its eaves, the ridge board, chimney and cap, the porch's slab, step, posts and roof |
+| `timber_frame` | four posts from the ground (he walked into the 0.7 m footing) | the footing, the first bay's floor, the eight posts and the two long top beams (rafters stay open) |
+| `marshal_post` | the roof a flat box at its high side | the roof's slope (a hull, as drawn) |
+
+`auto_box` stays for the parts that are a block (kerb, tyre_stack, lumber, pallet, cone, stones; crate is a box).
 
 <!-- generated below: do not edit by hand -->
 

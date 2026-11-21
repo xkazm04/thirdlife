@@ -22,6 +22,7 @@ const VillageTerrain: GDScript = preload("res://kernel/world/terrain/village_ter
 const WorldSpace: GDScript = preload("res://kernel/world/terrain/world_space.gd")
 const Parts: GDScript = preload("res://kernel/world/terrain/village_parts.gd")
 const SiteDraw: GDScript = preload("res://kernel/world/site/draw.gd")    # S: a construction site's look
+const RoadClear := preload("res://kernel/world/terrain/road_clear.gd")     # 21 Nov L6: the scatter's exact road clearance
 
 const GROUND_Y: float = 0.0              # the terrain and the far plain: a pack's rim and the ground meet at the same height
 const FLAT_GROUND_Y: float = -0.06      # the flat ground of single shots (`ground()`), as in N7
@@ -310,13 +311,16 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	else:
 		edge_task["task"] = WorkerThreadPool.add_task(Parts.edge_geometry.bind(edge_task))
 		parent.set_meta(&"tl_land_rest", edge_task)     # landscape.gd `arrive` adds the nodes when the worker is done
+	var clear := RoadClear.new(terr.get("roads"), TLStyle.num("detail", "road_rails", 0.0), terr)     # 21 Nov L6: what the scatter places keeps off the roads (and crisp's rails), by the exact distance
+	var prk: TLMesh = TLKitNature.rock(210, 1.3, 0.78)
+	edge_rocks = clear.keep(edge_rocks, prk, true)
 	if not edge_rocks.is_empty():
-		Parts.multi(parent, TLKitNature.rock(210, 1.3, 0.78), edge_rocks, "WorldPadRocks")
+		Parts.multi(parent, prk, edge_rocks, "WorldPadRocks")
 		(parent.get_node("WorldPadRocks") as MultiMeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF      # 337 rocks in four cascades cost more than they showed
 		ws.set("tag", "rock")
 		for x: Transform3D in edge_rocks:
 			if x.basis.get_scale().x * 1.3 * 0.78 >= 0.9:
-				ws.call("add_trunk", x.origin, x.basis.get_scale().x * 1.1, 1.4)
+				ws.call("add_trunk", x.origin, x.basis.get_scale().x * 1.1, snappedf(prk.aabb().end.y * x.basis.get_scale().y, 0.1))     # 21 Nov L6: to its own top (was 1.4 m)
 		ws.set("tag", "wall")
 	stats["pad_rocks"] = edge_rocks.size()
 	stats["fence_m"] = snappedf(float(stats["fence_m"]), 0.1)
@@ -390,35 +394,38 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	var probe: Dictionary = {}
 	var trees: int = int(cfg.get("trees", 120))
 	for v: int in 3:
-		var xs: Array = Parts.clear_views(place.call(trees / 3, box, 9.0, 6.0, 0.8, 1.35, 0.9, -0.2, "ridge", 0.3), cams)
+		var xs: Array = clear.keep(Parts.clear_views(place.call(trees / 3, box, 9.0, 6.0, 0.8, 1.35, 0.9, -0.2, "ridge", 0.3), cams), TLKitNature.pine(100 + v, 8.5 + float(v) * 2.0, 5, 2.1 + float(v) * 0.3), true, 0.42)
 		Parts.multi(parent, TLKitNature.pine(100 + v, 8.5 + float(v) * 2.0, 5, 2.1 + float(v) * 0.3), xs, "WorldPines%d" % v, crown_batches)
 		for x: Transform3D in xs:
 			ws.call("add_trunk", x.origin, 0.42 * x.basis.get_scale().x)
 			Parts.probe_candidate(probe, "tree", terr, x.origin, 0.42 * x.basis.get_scale().x)
 		stats["trees"] = int(stats["trees"]) + xs.size()
-	var leaf: Array = Parts.clear_views(place.call(int(cfg.get("broadleaf", 40)), box, 10.0, 6.5, 0.8, 1.3, 0.7, 0.0, "any", 0.22), cams)
+	var leaf: Array = clear.keep(Parts.clear_views(place.call(int(cfg.get("broadleaf", 40)), box, 10.0, 6.5, 0.8, 1.3, 0.7, 0.0, "any", 0.22), cams), TLKitNature.broadleaf(120, 7.5), true, 0.5)
 	Parts.multi(parent, TLKitNature.broadleaf(120, 7.5), leaf, "WorldBroadleaf", crown_batches)
 	for x: Transform3D in leaf:
 		ws.call("add_trunk", x.origin, 0.5 * x.basis.get_scale().x)
 	stats["trees"] = int(stats["trees"]) + leaf.size()
 	for v: int in 2:
 		ws.set("tag", "rock")
-		var xs: Array = place.call(int(cfg.get("rocks", 46)) / 2, box, 6.5, 3.6, 0.7, 2.0, 0.0, -0.25, "bank", 0.9)
-		Parts.multi(parent, TLKitNature.rock(200 + v, 1.2 + float(v) * 0.5, 0.65), xs, "WorldRocks%d" % v)
+		var rmk: TLMesh = TLKitNature.rock(200 + v, 1.2 + float(v) * 0.5, 0.65)
+		var xs: Array = clear.keep(place.call(int(cfg.get("rocks", 46)) / 2, box, 6.5, 3.6, 0.7, 2.0, 0.0, -0.25, "bank", 0.9), rmk, true)
+		Parts.multi(parent, rmk, xs, "WorldRocks%d" % v)
 		for x: Transform3D in xs:
 			var rvis: float = x.basis.get_scale().x * (1.2 + float(v) * 0.5)
+			var rtop: float = snappedf(rmk.aabb().end.y * x.basis.get_scale().y, 0.1)     # 21 Nov L6: to the rock's own top (1.4 m stood over every rock: a pillar over a knee-high stone)
 			if rvis * 0.65 >= 0.5:           # a rock lower than a knee is a stone he walks over, not an obstacle
-				ws.call("add_trunk", x.origin, rvis * 0.85, 1.4)
-				Parts.probe_candidate(probe, "rock", terr, x.origin, rvis * 0.85)
+				ws.call("add_trunk", x.origin, rvis * 0.85, rtop)
+				if rtop - 0.25 > 0.8:            # the probe's rock stops him (a lower one he steps or jumps onto)
+					Parts.probe_candidate(probe, "rock", terr, x.origin, rvis * 0.85)
 		stats["rocks"] = int(stats["rocks"]) + xs.size()
-	var bushes: Array = place.call(int(cfg.get("bushes", 90)), box, 6.5, 3.4, 0.7, 1.4, 0.4, 0.0, "any", 0.2)
+	var bushes: Array = clear.keep(place.call(int(cfg.get("bushes", 90)), box, 6.5, 3.4, 0.7, 1.4, 0.4, 0.0, "any", 0.2), TLKitNature.bush(300, 1.0), true)
 	Parts.multi(parent, TLKitNature.bush(300, 1.0), bushes, "WorldBushes")
 	Parts.bush_solids(ws, bushes, 1.0, road_pts, half)          # 21 Nov L1: a bush he cannot step over stops him (terrain/village_parts.gd)
 	stats["bushes"] = bushes.size()
 	_lap(stats, "scatter")
 	var road_side: Array = Parts.road_side(rng6, terr, road_pts, half, rv_half, is_free, int(cfg.get("road_trees", 44)), int(cfg.get("road_bushes", 70)))
-	var road_trees: Array = Parts.clear_views(road_side[0], cams)     # P13: trees give way to fixed cameras            # P6: density where the eye goes: trees and bushes along the roads
-	var road_bushes: Array = road_side[1]
+	var road_trees: Array = clear.keep(Parts.clear_views(road_side[0], cams), TLKitNature.broadleaf(121, 6.5), true, 0.5)     # P13: trees give way to fixed cameras            # P6: density where the eye goes: trees and bushes along the roads
+	var road_bushes: Array = clear.keep(road_side[1], TLKitNature.bush(301, 0.9), true)
 	Parts.multi(parent, TLKitNature.broadleaf(121, 6.5), road_trees, "WorldRoadTrees", crown_batches)
 	Parts.multi(parent, TLKitNature.bush(301, 0.9), road_bushes, "WorldRoadBushes")
 	if not road_bushes.is_empty():
@@ -442,6 +449,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			continue
 		var sc: float = rng.randf_range(0.8, 1.6)
 		tufts.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(p.x, float(terr.call("gy", p.x, p.y)) + 0.04, p.y)))
+	tufts = clear.keep(tufts, TLKitNature.grass_tuft(400, 4, 0.5), false)          # grass: off the road's surface only
 	if not tufts.is_empty():
 		Parts.multi(parent, TLKitNature.grass_tuft(400, 4, 0.5), tufts, "WorldTufts")
 		var tm: MultiMeshInstance3D = parent.get_node("WorldTufts") as MultiMeshInstance3D

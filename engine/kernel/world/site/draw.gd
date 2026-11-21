@@ -389,6 +389,19 @@ func _collect() -> void:
 			_shown = ""                         # built again next frame, with the new mesh
 
 
+## Day of 21 Nov 2026 (lane L6): waits for every worker mesh in flight and takes it, as `_collect` does once one is
+## done (the site is built again on the next `_process`, or by the caller). For a caller that must see the finished
+## site whatever the machine's load: a selftest that waited for them by counting frames ran out of frames on a busy
+## machine (block 502, site.editor_yaw: the main loop spins frames while the worker builds).
+func wait_meshes() -> void:
+	for key: Variant in _tasks.keys():
+		var t: Array = _tasks[key]
+		WorkerThreadPool.wait_for_task_completion(int(t[0]))
+		_meshes[key] = (t[1] as Dictionary).get("mesh", null)
+		_tasks.erase(key)
+		_shown = ""
+
+
 func _exit_tree() -> void:
 	for key: Variant in _tasks.keys():
 		WorkerThreadPool.wait_for_task_completion(int((_tasks[key] as Array)[0]))

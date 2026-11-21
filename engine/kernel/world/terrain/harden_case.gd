@@ -269,6 +269,7 @@ func _site_sign() -> void:
 	land.add_child(site)
 	var waited: int = 0
 	while (not site.has_node("Parts/site_rails") or not (site.get("_tasks") as Dictionary).is_empty()) and waited < 600:
+		site.call("wait_meshes")        # 21 Nov L6: the worker meshes waited for, not raced by frames
 		await physics_frame
 		waited += 1
 	var z: float = 32.0 + 6.2
@@ -305,6 +306,7 @@ func _site_fence() -> void:
 		land.add_child(site)
 		var waited: int = 0
 		while (not site.has_node("Parts/site_rails") or not (site.get("_tasks") as Dictionary).is_empty()) and waited < 600:
+			site.call("wait_meshes")
 			await physics_frame
 			waited += 1
 		var h: float = r - 1.0

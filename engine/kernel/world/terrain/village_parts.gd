@@ -352,12 +352,18 @@ static func edge_nodes(parent: Node3D, t: Dictionary) -> void:
 
 
 ## A crane, scaffold and stacked supplies on a patch of worked earth coloured into the heightfield.
+## Day of 21 Nov 2026 (lane L6, walking the village as a person): every prop of a plain lot is solid where it is drawn,
+## turned as it is drawn: the crane's base, ballast and mast; the scaffold (its box stood 0.65 m off its bays); both
+## timber stacks (one had no body, the other an unturned box 0.3 m over it); the pallets of blocks, the barricades (a
+## slab under the boards: walked along it he slides off its end) and the cones (he walked through them). Each prop is listed in the parent's meta `tl_lot_props` ([kind, centre, yaw
+## (radians), the lot's radius], the centre at the prop's middle on the ground), which harden.lot_props walks into.
 static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Array, pad_h: Array, gates: Array, rng: RandomNumberGenerator,
 		ws: RefCounted, mk_edge: TLMesh, stats: Dictionary) -> void:
 	if count == 0:
 		return
 	var first_crane := TLKitSite.crane(26.0, 2.0, 20.0, 8.0)
 	var scaffold_mesh := TLKitSite.scaffold(3, 2).build("LotScaffold")
+	var props: Array = []
 	for k: int in count:
 		var li: int = first + k
 		var lc: Vector2 = centres[li]
@@ -370,28 +376,44 @@ static func lots(parent: Node3D, count: int, first: int, centres: Array, rad: Ar
 		crane.position = base + Vector3(-lr * 0.38, 0.0, -lr * 0.22)
 		crane.rotation.y = rng.randf() * TAU
 		parent.add_child(crane)
-		ws.call("add_box", Transform3D(Basis(), crane.position + Vector3(0.0, 3.0, 0.0)), Vector3(4.0, 6.0, 4.0))
+		_prop(ws, props, "crane", crane.position, crane.rotation.y, [[Vector3(5.2, 0.8, 5.2), 0.4], [Vector3(5.0, 0.85, 5.0), 1.225], [Vector3(2.0, 6.0, 2.0), 3.0]], lr)
 		var sc := MeshInstance3D.new()
 		sc.mesh = scaffold_mesh
 		sc.name = "WorldLotScaffold%d" % k
 		sc.position = base + Vector3(lr * 0.05, 0.0, -lr * 0.4)
 		parent.add_child(sc)
-		ws.call("add_box", Transform3D(Basis(), sc.position + Vector3(3.6, 2.0, 0.0)), Vector3(7.4, 4.0, 1.6))
-		TLKitSite.add_lumber(mk_edge, base + Vector3(lr * 0.38, 0.0, lr * 0.2), 3.2, 1.0, 6, 20.0)
-		TLKitSite.add_lumber(mk_edge, base + Vector3(lr * 0.12, 0.0, lr * 0.5), 3.2, 1.0, 4, -35.0)
-		ws.call("add_box", Transform3D(Basis(), base + Vector3(lr * 0.38, 0.5, lr * 0.2)), Vector3(3.4, 1.2, 1.8))
+		_prop(ws, props, "scaffold", sc.position + Vector3(3.6, 0.0, 0.65), 0.0, [[Vector3(7.36, 4.0, 1.46), 2.0]], lr)
+		for st: Array in [[Vector3(lr * 0.38, 0.0, lr * 0.2), 6, 20.0], [Vector3(lr * 0.12, 0.0, lr * 0.5), 4, -35.0]]:
+			TLKitSite.add_lumber(mk_edge, base + (st[0] as Vector3), 3.2, 1.0, int(st[1]), float(st[2]))
+			var lh: float = 0.14 + 0.11 * float(st[1])
+			_prop(ws, props, "timber", base + (st[0] as Vector3), deg_to_rad(float(st[2])), [[Vector3(3.2, lh, 1.0), lh * 0.5]], lr)
 		for j: int in 3:
 			TLKitSite.add_pallet(mk_edge, base + Vector3(-lr * 0.15 + float(j) * 2.7, 0.0, lr * 0.08), 2 + j % 2, 12.0 * float(j))
+			var ph: float = 0.14 + 0.4 * float(2 + j % 2)
+			_prop(ws, props, "pallet", base + Vector3(-lr * 0.15 + float(j) * 2.7, 0.0, lr * 0.08), deg_to_rad(12.0 * float(j)), [[Vector3(2.0, ph, 1.2), ph * 0.5]], lr)
 		var lg: Variant = gates[li]
 		if lg != null:
 			var gd: Vector3 = Vector3((lg as Vector2).x, 0.0, (lg as Vector2).y)
 			var side: Vector3 = Vector3(-gd.z, 0.0, gd.x)
 			var yaw: float = rad_to_deg(atan2(gd.x, gd.z))
-			TLKitSite.add_barricade(mk_edge, base + gd * (lr - 3.0) + side * 2.6, 1.8, yaw)
-			TLKitSite.add_barricade(mk_edge, base + gd * (lr - 3.0) - side * 2.6, 1.8, yaw)
+			for hand: float in [1.0, -1.0]:
+				TLKitSite.add_barricade(mk_edge, base + gd * (lr - 3.0) + side * 2.6 * hand, 1.8, yaw)
+				_prop(ws, props, "barricade", base + gd * (lr - 3.0) + side * 2.6 * hand, deg_to_rad(yaw), [[Vector3(1.8, 0.95, 0.1), 0.475]], lr)     # boards to the ground: its splayed feet (7 cm bars) are not solid, so he slides off its end instead of sticking in the corner between a foot and the boards
 			for j: int in 4:
 				TLKitSite.add_cone(mk_edge, base + gd * (lr - 5.0 - float(j) * 1.6) + side * (1.4 if j % 2 == 0 else -1.4))
+				var cp: Vector3 = base + gd * (lr - 5.0 - float(j) * 1.6) + side * (1.4 if j % 2 == 0 else -1.4)
+				ws.call("add_trunk", cp, 0.2, 0.6)
+				props.append(["cone", cp, 0.0, lr])
 		stats["lots"] = int(stats.get("lots", 0)) + 1
+	parent.set_meta(&"tl_lot_props", props)
+
+
+## One prop of a lot: boxes [size, centre height, along its X (optional)] turned by `yaw` at `at` in the visitor's space.
+static func _prop(ws: RefCounted, props: Array, kind: String, at: Vector3, yaw: float, boxes: Array, lot_r: float = 0.0) -> void:
+	var b := Basis(Vector3.UP, yaw)
+	for bx: Array in boxes:
+		ws.call("add_box", Transform3D(b, at + b * Vector3(float(bx[2]) if bx.size() > 2 else 0.0, float(bx[1]), 0.0)), bx[0])
+	props.append([kind, at, yaw, lot_r])
 
 
 ## Soft ground: paint wear and meadow colour into the heightfield before mesh upload. Only flowers
