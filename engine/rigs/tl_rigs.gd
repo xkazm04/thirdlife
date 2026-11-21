@@ -10,7 +10,7 @@ const BIPED_COLORS: Array = ["skin", "hair", "top", "trim", "legs", "boots", "pa
 
 ## family -> [doc, "", false, {param: [type, default, min, max, doc]}]  (the row format of TLKit.PARTS)
 const FAMILIES: Dictionary = {
-	"biped": ["Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air.", "", false, {
+	"biped": ["Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air, fly, hang, mantle, swing; fight: strike, strike_heavy, block, roll, dodge, body_check, cross_check, taunt.", "", false, {
 		"seed": ["int", 1, 0, 1000000, "reserved for variation (no effect in v0.1)"], "scale": ["float", 1.0, 0.5, 2.0, "uniform scale (1 = 2.0 m tall with hair)"],
 		"colors": ["dict", {}, ["skin", "hair", "top", "trim", "legs", "boots", "pack", "strap", "stick"], "", "palette key per part; absent parts keep the default look"],
 		"mode": ["enum", "walk", ["walk", "skate"], "", "locomotion mode: walk = one planted gait from standing to a sprint, read from the speed and direction; skate = glide / stride by speed, skate blades shown"],
@@ -35,7 +35,8 @@ const FAMILIES: Dictionary = {
 }
 ## runtime-only params (set_param), documented in spec() under `runtime`
 const RUNTIME: Dictionary = {
-	"biped": {"look_at": "Vector3 in world space, or null to clear: neck and head turn towards it (clamped)"},
+	"biped": {"look_at": "Vector3 in world space, or null to clear: neck and head turn towards it (clamped)",
+		"stick_yaw": "radians, + = left, clamped to -1.2..2.0; 0 = no turn: with a stick in hand the upper body, both hands and the blade turn about the vertical (set it every frame)"},
 	"vehicle": {},
 	"bot": {"look_at": "Vector3 in world space, or null to clear: the head turns towards it"},
 }

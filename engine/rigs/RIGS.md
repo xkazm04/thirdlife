@@ -56,9 +56,54 @@ TLRigs.spec("biped"); TLRigs.validate("biped", params); TLRigs.list()
 | `air` | yes | 1.0 | the air pose by name (locomotion shows it by itself when `grounded` is false): rising above +4 m/s, apex round 0, falling below -5 m/s |
 | `fly` | yes | 1.6 | flight (lane flight, 19 Nov): body long and straight, legs together trailing with soft knees and pointed toes, arms back along the sides with the hands out, head lifted; a slow breath. The controller leans the whole figure into the flight; wings are not part of the rig |
 
+The fight clips (`strike`, `strike_heavy`, `block`, `roll`, `dodge`, `body_check`, `cross_check`, `taunt`) are in
+"Fight clips" below, with their frame timings.
+
 With `stick = true` the arms of idle, walk, run, skate and skate_stop take the two-handed stick hold; `shoot` and
 `pass` always use it. The stick is a child of the `hand_r` socket; `socket(&"stick_blade")` is the blade (for a
 puck-contact test). The left hand is posed near the butt of the stick by hand-tuned angles: there is no IK.
+
+## Fight clips (lane L2, 21 Nov 2026; `biped/tl_rig_biped_fight.gd`, internal to the rig)
+The moves every action game needs, played by name as any clip: `rig.play(&"strike")`. Frames are physics frames at
+60 Hz counted from the `play` call (the tick after it is frame 1). A pack reads the table to time its own rules: the
+hit box is live in **Active**, a defender can read **Anticipation**, and from **Control returns** the pack may play the
+next clip (a combo, a cancel) without cutting the move short. Each clip takes at most a 2 or 3 frame blend-in (taunt
+0.15 s), so the wind-up always shows; when a one-shot ends, the rig blends back to locomotion over 12 frames.
+The clips only animate: the pack moves the body (a roll travels, a dodge steps aside, a check lunges).
+
+| Clip | Frames | Anticipation | Active | Recovery | Control returns | Ends | Upper | What it is |
+|---|---|---|---|---|---|---|---|---|
+| `strike` | 16 | 0-3 | 3-6 | 6-16 | 12 | returns | yes | a light one-handed swing: the right arm drawn back and out with the shoulders turned away, whipped flat across the front (fastest at f4-5), followed through past the left shoulder, back on guard |
+| `strike_heavy` | 30 | 0-10 | 10-14 | 14-30 | 26 | returns | no | a two-handed overhead chop: a big coil (arms up behind the head, chest arched back, knees loaded) peaking at f8 and held to f10, the chop down through f14 as the body folds after it, the low follow-through held to f20 |
+| `block` | 5 | 0-0 | 0-4 | on release | 4 | holds | yes | a raised guard: the left forearm up across the face, the right fist under the chin, chin tucked, a wide braced stance; holds like `fall` until another `play` (`play(&"")` drops it); he can walk behind it |
+| `roll` | 24 | 0-4 | 4-20 | 20-24 | 20 | returns | no | a forward roll: a drop and reach (f0-4), one full turn over a tucked ball about a point 0.45 m over the floor (upside down at f12), opening into a crouch; low through f3-21 (i-frames, if the pack wants them) |
+| `dodge` | 14 | 0-2 | 2-9 | 9-14 | 11 | returns | no | a quick side step: a dip and push off the far foot, the body leaning hard into the step, head ducked (to f9), back on guard. It goes to the side the body moves at the clip's first tick (`velocity_local.x`, + = right; standing still = right) |
+| `body_check` | 30 | 0-7 | 7-15 | 15-30 | 24 | returns | no | a shoulder drive: loads low with the hip turned in and the left arm tucked across the chest, drives the left shoulder through (contact about f12), holds it to f19, back to the stance. On skates the hockey stance, the stick held low in both hands |
+| `cross_check` | 14 | 0-6 | 6-11 | on release | 11 | holds | yes | both hands on the stick, the shaft turned level across the chest (butt at the left hand, blade hanging at the right), pulled in (f0-6), punched forward chest-high with straight arms (f6-11) and held: the cross-check reads by the figure, not by a marker. Holds until `play(&"")`; with `upper`, he skates in with it. Without a stick the arms make the same shove |
+| `taunt` | 90 | 0-0 | 0-78 | 78-90 | 60 | returns | no | a cocky pose, not `cheer`: chest out, chin up, the right fist on the hip with the elbow out, the left hand held out beckoning twice (f20-80), the weight rocking back |
+
+- The guard the fist clips start from and return to: left foot ahead, knees soft, the left shoulder leading, both fists
+  up in front of the chin. On skates `body_check` and `cross_check` start from the hockey stance instead.
+- Measured, not guessed: the selftest block 660 (`rig.fight.*`, `engine/rigs/review/fight_case.gd`) holds this table,
+  `TLRigBipedFight.TIMING` and the registered clip lengths together, and checks each clip ends as the table says.
+- See them: `engine/rigs/review/move_lab.tscn` (stills sheets at game scale and a clip of all of them; its header has
+  the command lines).
+
+### `stick_yaw` (runtime param, radians; hockey)
+`rig.set_param(&"stick_yaw", a)`: + turns the stick to the left, - to the right; clamped to -1.2..+2.0 rad; 0 is the
+pose without it, bit for bit. The upper body turns about the vertical (Chest 0.45 and UpperChest 0.55 of `a`, the Neck
+back by 0.55 so the head stays on the play), so both hands and the blade sweep round the body at the same height (the
+blade's height changes by 0.00 m): the blade follows a cursor within the stick's reach. Only with a stick in hand. It
+costs one comparison per tick at 0 and nine bone reads at most otherwise: set it every frame. `socket(&"stick_blade")`
+moves with it. Layered on every clip, before `look_at`.
+- `a` is relative to where the blade rests, and it rests out to the right: bearing -0.46 rad (26 degrees right of
+  straight ahead) on the classic figure, -0.98 rad (56 degrees right) on the cel (crisp) and clay figures, 1.38 m from
+  the body's axis on both. So the reach across to the left is the longer one (+2.0). To put the blade on a cursor at
+  bearing `b` (+ = left, rig space): `a = b - rest`, where `rest` is the bearing of `socket(&"stick_blade")` in the
+  rig's space read once with `stick_yaw` 0 (`atan2(-x, -z)`). Measured: +1 rad turns the bearing by +0.86 (classic) /
+  +0.88 (cel), -1 rad by -0.87 / -0.96 (block 660, `rig.fight.yaw`).
+- During `cross_check` the right hand turns the shaft level across the chest and the stick slides 0.47 m up through the
+  hand (its middle between the two hands); the stick's position is zero again 6 ticks after the clip ends.
 
 ## Sockets
 - biped: `hand_r`, `hand_l` (palms), `head` (top of the head), `back` (between the shoulder blades), `foot_r`,
@@ -130,11 +175,11 @@ shaded as the world is.
 <!-- generated below: do not edit by hand -->
 
 ## `biped`
-Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air.
+Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air, fly, hang, mantle, swing; fight: strike, strike_heavy, block, roll, dodge, body_check, cross_check, taunt.
 
-Metrics at scale 1: `{"bones":29,"eye_height":1.765,"height":2.0,"radius":0.3,"triangles":10296}`
+Metrics at scale 1: `{"bones":29,"eye_height":1.765,"height":2.0,"radius":0.3,"triangles":9292}`
 
-Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air
+Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air, fly, hang, mantle, swing, strike, strike_heavy, block, roll, dodge, body_check, cross_check, taunt
 
 Build params (also the initial values of the runtime params of the same name):
 | Param | Type | Default | Range / values | Meaning |
@@ -151,6 +196,8 @@ Build params (also the initial values of the runtime params of the same name):
 | `lean` | float | `0.0` | -1.0..1.0 | side lean of the locomotion pose, + = right |
 
 Runtime only: `look_at`: Vector3 in world space, or null to clear: neck and head turn towards it (clamped)
+
+Runtime only: `stick_yaw`: radians, + = left, clamped to -1.2..2.0; 0 = no turn: with a stick in hand the upper body, both hands and the blade turn about the vertical (set it every frame)
 
 ## `vehicle`
 Coupe. Clips: idle. Wheels steer and spin, each wheel moves with its suspension value, nitro flame, brake lights.
