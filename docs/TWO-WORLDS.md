@@ -55,6 +55,12 @@ fit the Home.
   `--dungeon=<dir>`, and the child's pause card says "Back to Create". A runaway work-in-progress pack can only hang the
   child. A watchdog for it is being built tonight (L4b).
 
+- **A made game is a dungeon.** Tonight's two proof jobs started from the same vague sentence, "a fight in a colosseum".
+  The Designer v2 wrote a standard and a crazy brief, and the Foreman built them in 4 and 5 phases. Both promoted packs
+  open with `--dungeon=<job>/promoted/game.fight_colosseum`: 900 frames, 0 script errors, crisp look. So the loop from
+  sentence to dungeon (Create → phases → Try it → Play) runs end to end without the Home. Getting into the Home
+  is the portal's job (item 4 below).
+
 **Next [proposal]:**
 1. **An optional `dungeon` block in `pack.json`** (`contracts/PACK.md`). L4 proposed it and the Director extends it.
    Nothing in it reaches the hash, and `dungeons.json` stays the menu's list (which packs, in what order, with which
