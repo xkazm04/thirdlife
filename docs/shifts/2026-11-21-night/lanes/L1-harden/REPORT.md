@@ -204,3 +204,10 @@ ROUND 3 (23:35, the Director: apply L3's PATCHES P1)
   frames on a busy machine, the same flake no_ring showed with the steel fence. P1 adds no worker mesh, so this is the
   fixture's frame-bounded wait, not the patch.
 
+
+ROUND 4 (01:10, the Director: arch size-ratchet)
+- harden_case.gd (626 lines, budget 600) is split. harden_case.gd (368 lines: header, _run and the 9 cases) extends the new
+  harden_walks.gd (264 lines, plus its .uid). harden_walks.gd holds the village build, the walks, the rail looks and
+  places, _on_road, _clear_at, _top_tag, and the site stubs. Behaviour unchanged.
+- Block 620: 9/9 PASS.
+- tl check --tier fast: all PASS (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, foreman.typecheck clean).
