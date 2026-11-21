@@ -232,3 +232,9 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   classic packs and `tl perf run --quiet-only` read them alone (377/0, p50 0.921 ms, perf 6/6).
 - 2026-11-21: edit tracked JSON by text, never by re-serialising (7.0 became 7 across a whole file); and a critic that
   captures early misses a late twist: proof jobs need the Director's own late captures until the contract films late.
+- 2026-11-21 (day): merging a lane while the pre-merge list ran in the main checkout changed files under the running
+  gate (twice). Run integration lists in a dedicated worktree at the merged SHA, or hold merges until the list ends.
+- 2026-11-21 (day): an agent's backgrounded `cd <tree> && ... &` line left a later relative write in the main checkout
+  (twice, it blocked a merge): briefs say "absolute paths only, never cd in a backgrounded line".
+- 2026-11-21 (day): Director-chained `foreman quality retry --adapter ...` ran the job in the foreground and queued the
+  next command for hours; run Foreman job commands detached, one per line.

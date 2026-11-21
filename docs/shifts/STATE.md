@@ -9,11 +9,15 @@ writes it back. Newest shift-log entry last.
   measurement are deferred (hockey re-opened as the first dungeon on 20 Nov); the construction process comes later. Since 19 Nov 22:35: the engine's look (art-engine-duo).
 - Since 21 Nov: two worlds (docs/TWO-WORLDS.md): the exe opens a menu (World / Dungeons / Create); hockey is the first
   dungeon; designer v2 (pitch, aspect cards, standard/crazy, phases) builds through Create.
-- Next 3: (1) the owner plays the 21 Nov night (menu, hockey, Create crazy, the two colosseum games) and answers the asks
-  in its VERDICT.md; (2) designer fixes from the proof jobs: camera never behind scenery, twist timing asserted by the
-  package's bot, card names carried to the game; (3) the TWO-WORLDS owner questions decide the Home's first lane.
+- Since 21 Nov day: the game quality bar (spark game-quality-bar): every generated game goes through a design room (concept
+  candidates, a design doc with a feel sheet, a producer review), builders get the feel sheet, and a weak milestone holds
+  for the owner. Hockey carries thirdjam's real mechanics and crazy modes.
+- Next 3: (1) the owner answers the 21 Nov day asks (falls arm, the two held colosseum games, an engine "feel kit");
+  (2) an engine feel kit (kernel hit-stop on both bodies, contact push-apart, occluder fading) since the critic's repeated
+  findings are engine-level; (3) the owner plays hockey (thirdjam mechanics, Glow/Arsenal/Shotgun) by hand.
 
 ## Open owner verdicts
+Asks from the day of 21 Nov (docs/shifts/2026-11-21-day/VERDICT.md, page https://claude.ai/artifact/LbYntZUxaofK1eDgFb8mfv): falls arm A/B/C (branches n21d-falls-a/b/c); the two colosseum proof jobs held on quality (accept / retry / drop and fix engine first); an engine feel kit; big puck past the TL API; bots' body-check rate after the wind-up.
 Asks from the night of 21 Nov (docs/shifts/2026-11-21-night/VERDICT.md): L2 1-4 (camera behind scenery, twist timing,
 card-name drift, card fun lines to builders); L4 1-3 (pack.json dungeon block, shared watchdog, dungeon sharing); L3 1-2
 (strict word limits, foreman new --card); L5 1-3 (TLVfx.burst kernel fix, HUD title widget, next fun); L1 1 (next
@@ -229,3 +233,10 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 15:20 standup: L2b, L1b, L6 landed (manifest = 5 kit rows); pre-merge full gate functional steps green (load items for the final quiet list); proof standard held on quality (critic precise), retried with a note; crazy at phase 3.
 - 16:20 standup: hockey (L4+L5) landed 4fbf72d; falls arms committed to branches a/b/c (all eligible); L4b budget work; proof standard retry 4 after quality round 3 (bots drive no exchange), crazy answered (Ursus earlier).
 - 17:20 standup: L4b landed f389454; all lanes done; final list running; both proof jobs HELD on quality (left for the owner), filmed as they stand.
+- 18:20 final list on f389454 green on a quiet machine (perf 2/2, packs 74/74, kernel 407/408 then the celsurf style pin updated for L5's appended neon keys, e2a46a2); pushed.
+
+### 2026-11-21 day: wrap (18:40)
+- Done: L1 editor quality (e672fe2, L1b 90f0c0c+23d8cf2: design room, feel sheet to builders, quality loop with hold, strips, length repair, crazy idea diversity); L2 fight clips (f3e1e18, L2b 5b89bdf); L6 crisp hardening (df7762f, 7eba720); L4 hockey thirdjam mechanics + L5 crazy modes (4fbf72d, L4b f389454); contracts JOB.md design room + quality loop (df58f0b, c25ce00), RUNNER.md capture --strip, PACK.md tests counted apart (686213c); kernel TLHit (API 1.12). Falls arms on branches n21d-falls-a 074fa5c / -b 74935d2 / -c 4c70e93 for the owner's pick.
+- Proof: colosseum re-run with the new editor; standard (-1) held after 4 revise rounds, crazy (-3) held after 2, both at phase 3 greybox; 34.5 M tokens in. Better rivals/HUD/verbs; still no hit-stop, bodies overlap, the breach not on camera.
+- Open: owner asks; a person's play of hockey and the arenas; foreman `quality retry` runs the job in the foreground (backlog).
+- Route: 4 Opus + 2 Opus-directed Astra lanes + 3 Astra arms; Astra hockey 0.89 M + crazy 1.18 M (over budget), falls 1.65 M.
