@@ -357,11 +357,18 @@ read; a job made before this reads as before (absent = omit the key, never `null
   - A `"NOT ok"` verdict gives the milestone's packages a revise round with the critic's notes; at most 2 rounds.
   - Before each round the Foreman snapshots the pack. After the round the critic compares the new captures with the
     previous ones.
-  - The `milestone` event of a round carries `round` (1 or 2) and `kept` (`"new"` or `"previous"`). On `"previous"`
-    the Foreman restores the snapshot.
+  - The `milestone` event of a round carries `round` (1, 2, and 3 and up after a `retry`) and `kept` (`"new"` or
+    `"previous"`). On `"previous"` the Foreman restores the snapshot. A new version the critic scores ok is kept without
+    a compare call.
+  - A first look that is NOT ok writes no `milestone` event (the milestone is not reached). The version it judged is
+    kept in `reports/quality-<milestone>-r1/` (`pack/`, the look's images, `look.json`); each revise round k snapshots to
+    `reports/quality-<milestone>-r<k>/` before it starts.
+  - A look without a verdict (no critic, no usable answer) closes the milestone. Quality is never auto-passed on a
+    verdict the critic did give.
   - Still `"NOT ok"` after round 2: the job writes `job_state {state: "paused", reason: "quality"}` and waits, also with
     `run_through`. Quality is never auto-passed.
-  - `foreman quality <job> accept|retry [--note "..."]` answers it. `accept` continues as if ok. `retry` runs one more
+  - `foreman quality <job> accept|retry [--note "..."]` answers it. The answer is a `comment` on the held milestone whose text starts
+    `quality accept` or `quality retry` (`by: player`): no new event type. `accept` continues as if ok. `retry` runs one more
     round with the note.
   - `milestone` without `round` is round 0, as before.
 - **Motion strips.**
@@ -369,6 +376,8 @@ read; a job made before this reads as before (absent = omit the key, never `null
     5 frames apart, from frame `<from>`.
   - The `milestone` event carries `strips` (`[{capture, label}]`), and the critic sees strips and stills.
   - The "no visible change" rule compares stills only.
+- **Job-level runs** also come from the roles `concept`, `design_review` and `critic_compare` (transcripts
+  `reports/<role>-a<n>-s<seq>.json`).
 - **Readers keep up**: `foreman/data/job-events.schema.json`, `engine/ui/job_model.gd`, `engine/ui/job_v2.gd` and
   `engine/kernel/world/site/event_schema.gd`. The site reader takes `concept` and `design` as opaque objects, and
   accepts `design_reviewed` and the pause reason `"quality"`.

@@ -23,7 +23,7 @@ WP1 implements this. WP3 (the Foreman's Verifier) and every builder call it. It 
 | `smoke` | V2 | `--seed=<int>` (default 1), `--frames=<int>` (default 3600) | loads the pack, runs the frames, fails on any script error or watchdog trip |
 | `invariants` | V3 | `--seed`, `--frames` | `smoke` twice with the same seed and compares `state_hash`; plus budgets below |
 | `bot` | V4 | `--test=<tests/x.gd>`, `--seed`, `--frames=<max>` (default 36000) | runs one bot to `_bot_done()` or the frame budget |
-| `capture` | V5 input | `--cam=<name>`, `--frame=<int>` (default 120), `--out=<file.png>`, `--res=1920x1080`, `--hud=off|on` (default off: the world alone; on: the pack's HUD is in the still) | renders one named view at an exact physics frame |
+| `capture` | V5 input | `--cam=<name>`, `--frame=<int>` (default 120), `--out=<file.png>`, `--res=1920x1080`, `--hud=off|on` (default off: the world alone; on: the pack's HUD is in the still), `--strip=<count>x<step>` (count 2..16, step 1..60; one png of count frames step apart from `--frame`) | renders one named view at an exact physics frame |
 
 ## Exit codes
 
@@ -62,6 +62,12 @@ A bot that simply does not finish within `--frames` is exit `1`, outcome `failed
 - `lint` adds `"composability": { "gdscript_lines": {"scripts": 0, "gen": 0, "tests": 0}, "kit_parts_added": 0, "bypasses": [] }`.
 - `bot` adds `"bot": { "test": "tests/bot_match.gd", "done": true, "frames": 5400, "result": { "ok": true, "summary": "..." } }`.
 - `capture` adds `"capture": { "cam": "hero", "frame": 120, "file": "<abs path>", "width": 1920, "height": 1080 }`.
+- `capture --strip=<count>x<step>` (2026-11-21) films count views in one run, at frames F, F+step, ... F+step*(count-1),
+  where F is `--frame`. Each view is taken before that frame is ticked, with the sim paused, so the sim and its frame
+  counter advance exactly as in a run with no captures. The png is the views at half size, row-major in 4 columns
+  (fewer when count < 4), rows = ceil(count/4): `--res=1280x720` with 12x5 gives 2560x1080. The `capture` object keeps
+  its keys: `frame` is F, `width`/`height` are the tiled png's. The run ticks F+step*(count-1) frames. A malformed
+  value is not run (exit 2).
 - Absent values are omitted. `errors` and `checks` are always present (possibly empty).
 
 ## Amendments of 2026-11-10 (after WP1)
