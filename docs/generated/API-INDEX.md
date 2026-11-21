@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 43
+Classes: 44
 
 ## TLAudio
 
@@ -224,6 +224,15 @@ Properties: `params: Dictionary`, `profile: String`
 - `func steer(left: StringName, right: StringName, up: StringName, down: StringName, direction: Vector2) -> void`
 - `func tap(action: StringName, frames: int = 1) -> void`
 - `func tick() -> void`
+
+## TLHit
+
+`engine/kernel/api/tl_hit.gd` extends `RefCounted`
+
+> K7 (21 Nov 2026, spark game-quality-bar): how a figure takes a hit. One place every pack calls, so the way a hit
+
+- `static func down(who: TLBiped, frames: int, from_dir: Vector3 = Vector3.ZERO) -> void`
+- `static func react(who: TLBiped, from_dir: Vector3, strength: float) -> void`
 
 ## TLHud
 

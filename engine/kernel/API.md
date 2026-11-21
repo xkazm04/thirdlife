@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.11)
+# Third Life kernel API (kernelApi 1.12)
 
-**Version 1.11 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.12 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.11"` in `pack.json` (any
-`"1.x"` up to 1.11 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.12"` in `pack.json` (any
+`"1.x"` up to 1.12 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -265,6 +265,7 @@ default `TLRigs.build("biped")` when installed, else the stand-in), `rig_params`
 | `down(frames: int)`, `is_down() -> bool`, `down_frames_left() -> int`, signals `downed()`, `got_up()` | **K2: a figure on the ground.** He lies `frames` frames, then rises over `get_up_frames` (24); all that time `move`, `brake`, `jump` are ignored and he slides to a stop with the brake on. The TLRigs biped plays its `fall` clip (holds, flat on the front) and blends back to its locomotion while he rises; a rig without a fall clip (the kernel's stand-in capsule) is tipped flat and tipped back. `down` while down keeps the longer time; while rising he goes down again. In the state hash while down |
 | `shove(impulse: Vector3)` | moves him without a fall: `impulse` (N s) / `body_mass` is added to his velocity, also while down |
 | `stumble(frames: int, lean: float = 0.7)`, `is_stumbling() -> bool` | a short loss of control: a third of the intent reaches the legs, no brake, the rig leans to the side (`lean` -1 left .. 1 right, fading out). TLRigs biped: a side lean of the whole locomotion pose; the stand-in: nothing visible. Ignored while down |
+| `TLHit.react(who: TLBiped, from_dir: Vector3, strength: float)`, `TLHit.down(who: TLBiped, frames: int, from_dir := Vector3.ZERO)` (1.12) | **K7: how a figure takes a hit**, one call for every pack so the look of a hit can change without changing packs. `from_dir` points from the victim toward where the blow came from (world; zero = unknown); `strength` about 0.3 a tap, 0.7 solid, 1.2+ big. v1 stand-in: `react` = `stumble(8 + 10*strength)` from 0.4 up, leaning away from a side blow, nothing below 0.4; `down` = `down(frames)` (direction not yet shown). The falls experiment of 21 Nov replaces the bodies; the signatures stay. Use these instead of calling `stumble`/`down` for a hit |
 | `set_body_scale(scale: float)`, `body_radius() -> float`; create option `body_scale` | **K2: the body follows the figure.** The capsule is the rig's metrics (radius 0.3, height 2.0 for the TLRigs biped at scale 1) times the scale; give it the scale you give the rig (`rig.scale`). Default 1: the body every pack had |
 | tuning | `get_up_frames` 24, `walk_speed` 2.3, `run_speed` 6.0, `accel` 28, `turn_rate` 10, `skate_speed` 9.5, `skate_accel` 6.5, `skate_lateral_grip` 2.2, `skate_turn_rate` 2.8, `skate_brake` 9, `jump_speed` 4.5, `body_mass` 80, `push_strength` 1, `sole_material` rubber, `blade_material` steel |
 

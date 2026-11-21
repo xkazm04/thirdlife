@@ -103,7 +103,8 @@ Unknown `type` or unknown keys are errors when the log is read.
 - **No visible change.** When every capture of a milestone is byte-identical to the same capture of the previous
   milestone, and the milestone is `art_pass`, its packages fail that round with the cause `no_visible_change`.
 - **Critic.** A "NOT ok" verdict gives the milestone's packages one extra round with the critic's notes as feedback.
-  After that round the job continues whatever the verdict; the verdict stays in the `milestone` event.
+  After that round the job continues whatever the verdict; the verdict stays in the `milestone` event. (Replaced on
+  2026-11-21 by "the quality loop": up to 2 revise rounds, keep the better, then hold.)
 - **Capture frames.** A milestone films at most two bots. First the manifest's first test, at 25 % and 75 % of the
   frame at which it finished in its last passing report (the same shot every milestone, which the no-visible-change
   rule compares). Then the milestone's packages, newest merge first: the first one with an own acceptance bot (a
@@ -312,3 +313,62 @@ key is optional; a job made before this reads as before (absent = omit the key, 
   - The pause written after `phase_done` without `run_through` is `job_state {state: "paused", reason: "phase"}`.
   - The word limits stay strict in the site reader: the Foreman refuses to write an over-long line, so the reader never
     meets one from a v2 Foreman.
+
+### Added 2026-11-21: the design room and the quality loop
+
+Approved by the owner on 21 Nov (spark `game-quality-bar`). Every game is designed like a standalone game a small studio
+must sell, and a milestone the critic finds weak is revised or held instead of shipped. Every new key is optional on
+read; a job made before this reads as before (absent = omit the key, never `null`). Ids are snake_case.
+
+- **The design room.** Before the first `brief_set` the Designer runs three steps:
+  1. concept, which writes `brief.concept`;
+  2. design, which writes `brief.design` together with the v2 fields (pitch, aspects, rules, arena, ai, controls, mood);
+  3. review, which writes `design_reviewed`.
+  A `"revise"` review runs the design step once more with the review's notes, then reviews again. Round 2 is final:
+  whatever its verdict, the brief is set. A redesign (`foreman redesign`) runs all three steps again.
+- **`brief_set.brief.concept`**:
+  - `{candidates, chosen, why, hook, anchor, references}`.
+  - `candidates` holds exactly 5 `{pitch, likelihood}`. `pitch` is at most 20 words; `likelihood` is a number in 0..1,
+    the Designer's estimate of how typical the pitch is.
+  - `chosen` is an index 0..4. `why` (at most 40 words) says why that one was chosen and the obvious one was not.
+  - `hook` is at most 12 words, the novel thing. `anchor` is at most 6 words, the familiar genre.
+  - `references` holds 2 or 3 `{game, borrow}`: a real game's name, and what to borrow from it in at most 20 words.
+- **`brief_set.brief.design`** (the game design doc; text fields at most 30 words unless named):
+  - `pillars`: exactly 3 `{line, rules_out}`.
+  - `verbs`: 2 to 5 `{id, input, anticipation_f, active_f, recovery_f, cancel, defensive?}`. Frames are integers at
+    60 Hz; at least one verb has `defensive: true`.
+  - `playstyles`: 2 or 3 `{id, title, line}`. `title` is at most 4 words, `line` at most 12.
+  - `loops`: `{s3, s30, m3}`.
+  - `context`: at least 3 strings, the things that change the context within a match.
+  - `skill`: `{floor, ceiling}`. `ceiling` is exactly 3 strings.
+  - `feel`: `{hitstop_f, knockback, reaction, whiff, iframes_f, telegraph_f, shake, camera}`. `hitstop_f` is
+    `[min, max]` frames, `iframes_f` and `telegraph_f` are integers, the rest are text.
+  - `clips`: exactly 3 `{id, moment}`. `moment` is what a viewer would clip.
+  - `first_minute`, `fail_state`, and `out_of_scope` (a list of strings).
+- **`design_reviewed`** (new event, written by the review step before the `brief_set` it judged):
+  - `{round, verdict, scores, notes}`.
+  - `round` is 1 or 2. `verdict` is `"ok"` or `"revise"`.
+  - `scores` is `{hook, gif, depth, feel, fit}`, each a number in 0..1. `notes` is at most 80 words.
+- **`plan_set.packages[].serves`** (optional): a list of clip ids of `brief.design.clips` that the package brings closer.
+  The Planner's first package is the core verb exchange with its whole `feel` sheet on greybox.
+- **Builders read the design.** Every package prompt carries `brief.design.verbs`, `brief.design.feel`,
+  `brief.design.clips` and the card's `fun` block.
+- **The quality loop.** This replaces the 2026-11-10 "Critic" paragraph.
+  - A `"NOT ok"` verdict gives the milestone's packages a revise round with the critic's notes; at most 2 rounds.
+  - Before each round the Foreman snapshots the pack. After the round the critic compares the new captures with the
+    previous ones.
+  - The `milestone` event of a round carries `round` (1 or 2) and `kept` (`"new"` or `"previous"`). On `"previous"`
+    the Foreman restores the snapshot.
+  - Still `"NOT ok"` after round 2: the job writes `job_state {state: "paused", reason: "quality"}` and waits, also with
+    `run_through`. Quality is never auto-passed.
+  - `foreman quality <job> accept|retry [--note "..."]` answers it. `accept` continues as if ok. `retry` runs one more
+    round with the note.
+  - `milestone` without `round` is round 0, as before.
+- **Motion strips.**
+  - Each filmed point also writes `captures/<milestone>-<cam>-<bot stem>-strip-f<from>.png`: a 4x3 tile of 12 frames,
+    5 frames apart, from frame `<from>`.
+  - The `milestone` event carries `strips` (`[{capture, label}]`), and the critic sees strips and stills.
+  - The "no visible change" rule compares stills only.
+- **Readers keep up**: `foreman/data/job-events.schema.json`, `engine/ui/job_model.gd`, `engine/ui/job_v2.gd` and
+  `engine/kernel/world/site/event_schema.gd`. The site reader takes `concept` and `design` as opaque objects, and
+  accepts `design_reviewed` and the pause reason `"quality"`.
