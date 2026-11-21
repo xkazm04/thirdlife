@@ -74,7 +74,8 @@ global generator (`randf_range(`, `randi_range(`, `randfn(`, `.shuffle(`, `.pick
 that is not inside the pack, `res://kits/`, `res://rigs/`, `res://style/` or `res://kernel/api/`.
 
 Reading the pack's own `data/` goes through the kernel (`ctx` gives a JSON reader). Size limits (V1): one script at
-most 600 lines, the pack at most 6,000 lines of GDScript, `data/` at most 2 MB.
+most 600 lines, the pack at most 6,000 lines of game GDScript (`scripts/` and `gen/`) and at most 4,000 lines under
+`tests/` (counted apart since 21 Nov 2026, so tests never compete with the game for room), `data/` at most 2 MB.
 
 ## Composability figures (reported by lint for every pack, never a pass/fail)
 

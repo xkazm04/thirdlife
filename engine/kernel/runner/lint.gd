@@ -377,7 +377,7 @@ static func run(pack_dir: String) -> Dictionary:
 	var bypasses: Array = []
 	var lines: Dictionary = {"scripts": 0, "gen": 0, "tests": 0}
 	var kit_parts_added: int = 0
-	var total_lines: int = 0
+	var total_lines: int = 0; var test_lines: int = 0     # 21 Nov: tests/ has its own cap (PACK.md)
 	var declared: Array = m.get("capabilities", []) if typeof(m.get("capabilities")) == TYPE_ARRAY else []
 	var fence_re: Array = []
 	for f: Array in FENCE:
@@ -413,7 +413,7 @@ static func run(pack_dir: String) -> Dictionary:
 		var top_dir: String = rel.get_slice("/", 0)
 		if lines.has(top_dir):
 			lines[top_dir] = int(lines[top_dir]) + _code_lines(code)
-		total_lines += nlines
+		total_lines += nlines; test_lines += nlines if top_dir == "tests" else 0
 		if nlines > MAX_SCRIPT_LINES:
 			size_err.append({"kind": "size", "file": rel, "line": MAX_SCRIPT_LINES + 1, "message": "%d lines; one script may have at most %d" % [nlines, MAX_SCRIPT_LINES]})
 		for k: int in fence_re.size():
@@ -457,8 +457,8 @@ static func run(pack_dir: String) -> Dictionary:
 		kit_build_calls += kit_call_re.search_all(code).size()
 		for hit: RegExMatch in kit_build_re.search_all(src):      # the kind is a string literal: read it from the source text
 			kit_kinds[hit.get_string(1)] = int(kit_kinds.get(hit.get_string(1), 0)) + 1
-	if total_lines > MAX_PACK_LINES:
-		size_err.append({"kind": "size", "file": "scripts/", "message": "%d lines of GDScript in the pack; at most %d" % [total_lines, MAX_PACK_LINES]})
+	if total_lines - test_lines > MAX_PACK_LINES or test_lines > 4000:
+		size_err.append({"kind": "size", "file": "scripts/", "message": "%d lines of game GDScript (scripts/, gen/; at most %d), %d lines in tests/ (at most 4000)" % [total_lines - test_lines, MAX_PACK_LINES, test_lines]})
 	if data_bytes > MAX_DATA_BYTES:
 		size_err.append({"kind": "size", "file": "data/", "message": "%d bytes in data/; at most %d" % [data_bytes, MAX_DATA_BYTES]})
 	errors.append_array(fence)
