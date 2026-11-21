@@ -103,3 +103,43 @@ NEXT THREE
   1. Mirrored variants where a game needs them (strike from the left hand, dodge to a named side via a param).
   2. A hit-frame marker in TIMING (strike f5, heavy f13, body_check f12) for packs' hit boxes and the falls lab (L3).
   3. Weapon props on hand_r (sword, shield) so strike / block read as armed at game scale in the colosseum.
+
+==========================================================================================================
+ROUND L2b (14:00-14:30, on main 6155428; Director: exaggerate 4 clips, hit frames, dodge_side)
+==========================================================================================================
+Outcome: LANDABLE. Not committed (the Director lands).
+
+1. Exaggerated for game scale (frame counts unchanged): MET, by eye, before/after sheets at both cameras in lab/:
+   L2b_before_after_arena.jpg (11 m arena camera), L2b_before_after_broadcast_walker.jpg (hockey broadcast camera,
+   100.7 m up, fov 20, walking figure), L2b_before_after_broadcast_skater.jpg (same camera, skater with stick vs an
+   opponent), block_compare.jpg (5 block tries side by side at both cameras), clip_fight_L2b.mp4 / clip_hockey_L2b.mp4.
+   - block: covering guard, forearms up with the elbows thrown out wide (a W from the front; from above both hands
+     now stick out either side of the head, before nothing did), crouch deeper, side-on 30 deg; held from f4.
+     Of 5 tries (forearm bar across, X across the face, hands over the head, side-on shield arm) only the wide
+     elbows read at both cameras: the big head hides anything held in front of the face.
+   - body_check: contact pose side-on, pitched -46 deg, pelvis 0.35 m forward, left elbow out ahead of the shoulder,
+     right arm flung back (a long diagonal at the arena camera), held f11-15. With a stick: the stick trails low in the
+     right hand out to the side; the left hand no longer goes onto the shaft (STICK_CLIPS = cross_check only).
+   - cross_check: pull-in with elbows out wide and the body rocked back; punch forward and up with a long step and a
+     -30 deg lean, held from f10. Measured (block 660): shaft level, hands 0.45-0.52 m apart, 0.92 m ahead (was 0.68).
+     At the broadcast camera the bar now lies across the opponent.
+   - taunt: arms thrown open wide and up with the chest out (in by f9, held to f28), then akimbo with the left hand
+     raised high beckoning twice (f40-80). Reads at both cameras (the widest silhouette of all eight clips).
+2. hit frame per clip: MET. TIMING "hit": strike 5, strike_heavy 13, block 4 (guard counts), body_check 12,
+   cross_check 10; roll, dodge, taunt have none (key omitted, "-" in the table). RIGS.md table has a Hit column.
+   Block 660 checks: table = TIMING (incl. Hit), hit within anticipation..active, and the key pose of block,
+   body_check and cross_check holds 3 frames from the hit (negative check: putting strike in that list fails it).
+3. dodge_side: MET. rig.set_param(&"dodge_side", -1 | 0 | 1); 0 (default) = by motion as before. Block 660 checks
+   the four combinations under all three looks (hips lean sign). Through the same set_param line as stick_yaw:
+   tl_rig_biped.gd stays at 597 lines.
+
+GATES (L2b tree): fast PASS (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, typecheck clean);
+  block 660 4/4 PASS (rig.fight.golden runs=120: no older clip moved; rig.fight.clips checked=48 incl. hit, hold and
+  dodge_side); kit.selftest 103/103 PASS.
+
+CHANGED (L2b): engine/rigs/biped/tl_rig_biped_fight.gd (399 lines), engine/rigs/tl_rig_biped.gd (1 line, same count),
+  engine/rigs/tl_rigs.gd (dodge_side doc), engine/rigs/RIGS.md (table + Hit + dodge_side), engine/rigs/review/
+  fight_case.gd, engine/rigs/review/move_lab.gd (taunt key frames), lane lab/ + STANDUP + this file.
+
+FOR L4 (pose changes they will see): body_check with a stick now trails the stick one-handed; cross_check holds
+  its punch further forward (0.92 m) and higher; both clips' frame counts, hit and control frames as in the table.

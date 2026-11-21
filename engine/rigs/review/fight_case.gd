@@ -16,6 +16,8 @@ extends SceneTree
 const F := preload("res://rigs/biped/tl_rig_biped_fight.gd")
 const LOOKS: Array = ["res://style/style.json", "res://style/style_crisp.json", "res://style/style_diorama.json"]
 const SKIP: Array = ["Hair", "Backpack"]     # secondary motion of the cel and clay figures keeps settling in a hold
+const SKIP_HOLD: Array = ["Hair", "Backpack", "LeftShoulder", "RightShoulder"]   # + the clay shoulders easing up over 7 ticks
+const HELD: Array = ["block", "body_check", "cross_check"]   # round L2b: the key pose holds 3 frames from the hit
 
 var fails: Dictionary = {"clips": [], "golden": [], "yaw": [], "cross": []}
 var notes: Dictionary = {"clips": 0, "golden": 0, "yaw": "", "cross": ""}
@@ -112,6 +114,7 @@ func _initialize() -> void:
 		_done = true
 		quit()
 		return
+	_check_dodge_side()
 	if golden.size() != int(notes["golden"]):
 		fails["golden"].append("%d golden lines, %d clip runs: an existing clip is missing" % [golden.size(), int(notes["golden"])])
 
@@ -142,7 +145,7 @@ func _rigs_md_table() -> Dictionary:
 			on = line.begins_with("## Fight clips")
 		if on and line.begins_with("| `"):
 			var c: PackedStringArray = line.split("|")
-			t[c[1].strip_edges().trim_prefix("`").trim_suffix("`")] = [c[2].strip_edges(), c[3].strip_edges(), c[4].strip_edges(), c[6].strip_edges(), c[7].strip_edges()]
+			t[c[1].strip_edges().trim_prefix("`").trim_suffix("`")] = [c[2].strip_edges(), c[3].strip_edges(), c[4].strip_edges(), c[7].strip_edges(), c[8].strip_edges(), c[5].strip_edges()]
 	return t
 
 
@@ -159,9 +162,12 @@ func _check_clip(look: String, mode: String, pset: Dictionary, clip: String, nam
 	if roundi(float(c["dur"]) * 60.0) != n or bool(c["loop"]) or bool(c["hold"]) != holds or bool(c["upper"]) != bool(tm["upper"]):
 		fails["clips"].append(where + ": registered %.3f s loop=%s hold=%s upper=%s" % [float(c["dur"]), c["loop"], c["hold"], c["upper"]])
 	var row: Array = table.get(clip, [])
-	var want: Array = [str(n), str(tm["anticipation"]), str(tm["active"]), str(tm["control"]), "holds" if holds else "returns"]
-	if row.size() != 5 or row[0] != want[0] or row[1] != "0-" + want[1] or row[2] != want[1] + "-" + want[2] or row[3] != want[3] or not String(row[4]).begins_with(want[4]):
+	var want: Array = [str(n), str(tm["anticipation"]), str(tm["active"]), str(tm["control"]), "holds" if holds else "returns", str(tm["hit"]) if tm.has("hit") else "-"]
+	if row.size() != 6 or row[0] != want[0] or row[1] != "0-" + want[1] or row[2] != want[1] + "-" + want[2] or row[3] != want[3] or not String(row[4]).begins_with(want[4]) or row[5] != want[5]:
 		fails["clips"].append(where + ": RIGS.md row %s, TIMING %s" % [str(row), str(want)])
+	if tm.has("hit") and (int(tm["hit"]) < int(tm["anticipation"]) or int(tm["hit"]) > int(tm["active"])):
+		fails["clips"].append(where + ": hit f%d is outside anticipation..active" % int(tm["hit"]))
+	var hold_at: int = int(tm["hit"]) if HELD.has(clip) else -1
 	var runs: Array = []
 	for rep: int in 2:
 		var rig: Node3D = TLRigs.build("biped", pset)
@@ -172,10 +178,15 @@ func _check_clip(look: String, mode: String, pset: Dictionary, clip: String, nam
 		var seq: PackedStringArray = []
 		var end_ok: bool = true
 		var held: String = ""
+		var held_key: String = ""
 		for f: int in n + 41:
 			rig.call("set_locomotion", Vector3(2.0 if clip == "dodge" and f < 3 else 0.0, 0, 0), true)
 			rig.call("tick", f + 1)
 			seq.append(pose_hash(rig))
+			if f + 1 == hold_at:
+				held_key = pose_hash(rig, SKIP_HOLD)
+			if hold_at > 0 and f + 1 == hold_at + 3 and pose_hash(rig, SKIP_HOLD) != held_key:
+				fails["clips"].append(where + ": the key pose does not hold from the hit f%d to f%d" % [hold_at, hold_at + 3])
 			if f + 1 == n - 1 and String(rig.get("clip")) != clip:
 				end_ok = false
 			if f + 1 == n + 1 and not holds and String(rig.get("clip")) != "":
@@ -190,6 +201,26 @@ func _check_clip(look: String, mode: String, pset: Dictionary, clip: String, nam
 		rig.free()
 	if runs[0] != runs[1]:
 		fails["clips"].append(where + ": two runs differ")
+
+
+## dodge_side: -1 steps left and +1 right whatever the body does; 0 = the side the body moves (the hips lean that way).
+func _check_dodge_side() -> void:
+	for look: String in LOOKS:
+		TLStyle.load_style(look)
+		for c: Array in [[-1.0, 3.0, 1.0], [1.0, -3.0, -1.0], [0.0, -3.0, 1.0], [0.0, 3.0, -1.0]]:
+			var rig: Node3D = TLRigs.build("biped", {})
+			root.add_child(rig)
+			if float(c[0]) != 0.0:
+				rig.call("set_param", &"dodge_side", float(c[0]))
+			rig.call("play", &"dodge", 0.0)
+			for f: int in 6:
+				rig.call("set_locomotion", Vector3(float(c[1]), 0, 0), true)
+				rig.call("tick", f + 1)
+			var sk: Skeleton3D = rig.find_child("Skeleton3D", true, false)
+			var z: float = sk.get_bone_pose_rotation(sk.find_bone("Hips")).get_euler().z
+			if z * float(c[2]) < 0.2:
+				fails["clips"].append("%s dodge_side %+.0f moving %+.0f m/s: hips roll %.2f rad, want sign %+.0f" % [look.get_file(), float(c[0]), float(c[1]), z, float(c[2])])
+			rig.free()
 
 
 ## The stick in the rig's own space, from the bone poses (a BoneAttachment3D only follows its bone once a frame is drawn).

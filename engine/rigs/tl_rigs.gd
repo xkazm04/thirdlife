@@ -36,7 +36,8 @@ const FAMILIES: Dictionary = {
 ## runtime-only params (set_param), documented in spec() under `runtime`
 const RUNTIME: Dictionary = {
 	"biped": {"look_at": "Vector3 in world space, or null to clear: neck and head turn towards it (clamped)",
-		"stick_yaw": "radians, + = left, clamped to -1.2..2.0; 0 = no turn: with a stick in hand the upper body, both hands and the blade turn about the vertical (set it every frame)"},
+		"stick_yaw": "radians, + = left, clamped to -1.2..2.0; 0 = no turn: with a stick in hand the upper body, both hands and the blade turn about the vertical (set it every frame)",
+		"dodge_side": "-1 = the dodge clip steps left, +1 = right, 0 (default) = the side the body moves at the play"},
 	"vehicle": {},
 	"bot": {"look_at": "Vector3 in world space, or null to clear: the head turns towards it"},
 }

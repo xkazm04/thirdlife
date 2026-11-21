@@ -13,19 +13,21 @@ const Z: Vector3 = Vector3.ZERO
 ## clip -> frames (the clip's length), anticipation (frames 0..a: the wind-up a defender can read), active (a..b: the
 ## blow or the move itself), control (the frame from which the pack may play the next clip), end ("returns" to
 ## locomotion after `frames`, or "holds" its last pose until another play), upper (the legs keep the locomotion while
-## the rig moves faster than 0.8 m/s), blend (the most blend-in it takes, seconds: the wind-up must show at once).
+## the rig moves faster than 0.8 m/s), blend (the most blend-in it takes, seconds: the wind-up must show at once),
+## hit (the frame a pack tests its hit box, or for block the frame the guard counts; absent for a move that hits nothing).
 const TIMING: Dictionary = {
-	"strike": {"frames": 16, "anticipation": 3, "active": 6, "control": 12, "end": "returns", "upper": true, "blend": 0.034},
-	"strike_heavy": {"frames": 30, "anticipation": 10, "active": 14, "control": 26, "end": "returns", "upper": false, "blend": 0.05},
-	"block": {"frames": 5, "anticipation": 0, "active": 4, "control": 4, "end": "holds", "upper": true, "blend": 0.034},
+	"strike": {"frames": 16, "anticipation": 3, "active": 6, "hit": 5, "control": 12, "end": "returns", "upper": true, "blend": 0.034},
+	"strike_heavy": {"frames": 30, "anticipation": 10, "active": 14, "hit": 13, "control": 26, "end": "returns", "upper": false, "blend": 0.05},
+	"block": {"frames": 5, "anticipation": 0, "active": 4, "hit": 4, "control": 4, "end": "holds", "upper": true, "blend": 0.034},
 	"roll": {"frames": 24, "anticipation": 4, "active": 20, "control": 20, "end": "returns", "upper": false, "blend": 0.034},
 	"dodge": {"frames": 14, "anticipation": 2, "active": 9, "control": 11, "end": "returns", "upper": false, "blend": 0.034},
-	"body_check": {"frames": 30, "anticipation": 7, "active": 15, "control": 24, "end": "returns", "upper": false, "blend": 0.05},
-	"cross_check": {"frames": 14, "anticipation": 6, "active": 11, "control": 11, "end": "holds", "upper": true, "blend": 0.05},
+	"body_check": {"frames": 30, "anticipation": 7, "active": 15, "hit": 12, "control": 24, "end": "returns", "upper": false, "blend": 0.05},
+	"cross_check": {"frames": 14, "anticipation": 6, "active": 11, "hit": 10, "control": 11, "end": "holds", "upper": true, "blend": 0.05},
 	"taunt": {"frames": 90, "anticipation": 0, "active": 78, "control": 60, "end": "returns", "upper": false, "blend": 0.15},
 }
 ## Clips whose left hand the cel and clay figures put on the shaft when the biped holds a stick (clay_rig._post_pose).
-const STICK_CLIPS: Array[StringName] = [&"body_check", &"cross_check"]
+## (body_check is not one: there the stick trails in the right hand while the left arm drives.)
+const STICK_CLIPS: Array[StringName] = [&"cross_check"]
 const SLIDE: float = 0.47           # cross_check: the stick slides this far up through the right hand (the shaft centred between the hands)
 const YAW_MIN: float = -1.2          # stick_yaw is clamped to -1.2 .. +2.0 rad: the blade rests out to the right (bearing
 const YAW_MAX: float = 2.0           # -0.46 rad classic, -0.98 rad cel / clay), so the reach across to the left is the longer
@@ -33,6 +35,7 @@ const YAW_SHARE: Vector3 = Vector3(0.45, 0.55, -0.55)   # of stick_yaw: Chest, U
 
 var yaw: float = 0.0                 # stick_yaw (radians, + = left), set through set_param
 var side: float = 1.0                # the dodge: +1 = to the right, -1 = to the left (latched on the clip's first tick)
+var dodge_side: float = 0.0          # set_param dodge_side: -1 left, +1 right, 0 = the side the body moves
 var grip: float = 0.0                # 0..1: how far the right hand has turned the shaft across the chest (cross_check)
 var _frame: int = -1
 var _bones: PackedInt32Array = PackedInt32Array()
@@ -53,6 +56,14 @@ func add_clips(rig: TLRigBiped) -> void:
 	for cname: String in TIMING:
 		var tm: Dictionary = TIMING[cname]
 		rig.add_clip(cname, float(tm["frames"]) * DT, false, fns[cname], bool(tm["upper"]), String(tm["end"]) == "holds")
+
+
+## The fight params of TLRigBiped.set_param: stick_yaw (radians), dodge_side (-1, 0, +1).
+func set_param(pname: String, value: Variant) -> void:
+	if pname == "stick_yaw":
+		yaw = float(value)
+	else:
+		dodge_side = signf(float(value))
 
 
 ## The blend-in a clip really gets (TLRigBiped._blend_of): a fight clip's wind-up is never hidden in a long blend.
@@ -165,18 +176,21 @@ static func strike_heavy(t: float) -> Dictionary:
 	return _ease_keys(t, [[0.0, g, 0], [8 * DT, coil, 2], [10 * DT, coil2, 0], [14 * DT, chop, 1], [17 * DT, low, 2], [20 * DT, low, 3], [30 * DT, g, 0]])
 
 
-## A raised guard that holds (5 f, then holds until another play): the left forearm up across the face, the right fist
-## tight under the chin, the chin tucked behind the arm, a wide braced stance. With `upper`, he can walk behind it.
+## A covering guard that holds (5 f, then holds until another play): both forearms up in front of the face with the
+## elbows thrown out wide (a W from the front, a wide ring from above), shoulders shrugged, the body turned a little
+## side-on and crouched low on a wide braced stance. Overshoots at f3; the guard counts from f4 (hit). With `upper`,
+## he can walk behind it. (Round L2b: of five tries the wide elbows were the one that read at both game cameras.)
 static func block(t: float) -> Dictionary:
 	var g: Dictionary = guard()
 	var b: Dictionary = _over(g, {
-		"_hips": Vector3(0, _drop(34.0, 12.0, 11.0), 0.03), "Hips": Vector3(-14.0, -22.0, 0),
-		"Spine": Vector3(-8.0, 6.0, 0), "Chest": Vector3(-8.0, 6.0, 0), "Neck": Vector3(-8.0, 4.0, 0), "Head": Vector3(-2.0, 8.0, 0),
-		"LeftShoulder": Vector3(0, 0, 8.0), "LeftUpperArm": Vector3(92.0, -34.0, -4.0), "LeftLowerArm": Vector3(92.0, 0, 0), "LeftHand": Vector3(0, 0, 0),
-		"RightUpperArm": Vector3(46.0, 24.0, 12.0), "RightLowerArm": Vector3(132.0, 0, 0), "RightHand": Vector3(-14.0, 0, 0)})
-	b.merge(_legs(34.0, -14.0, 12.0, 11.0), true)
-	var over: Dictionary = TLRigNode.add_pose(b, {"LeftUpperArm": Vector3(8.0, 0, 0), "Chest": Vector3(-3.0, 0, 0), "_hips": Vector3(0, -0.015, 0)})
-	return _ease_keys(t, [[0.0, g, 0], [3 * DT, over, 2], [5 * DT, b, 0]])
+		"_hips": Vector3(0, _drop(40.0, 12.0, 13.0), 0.05), "Hips": Vector3(-16.0, -30.0, 0),
+		"Spine": Vector3(-10.0, 8.0, 0), "Chest": Vector3(-10.0, 6.0, 0), "UpperChest": Vector3(-4.0, 0, 0), "Neck": Vector3(-4.0, 4.0, 0), "Head": Vector3(2.0, 10.0, 0),
+		"LeftShoulder": Vector3(0, 0, -14.0), "RightShoulder": Vector3(0, 0, 14.0),
+		"LeftUpperArm": Vector3(96.0, -10.0, -62.0), "LeftLowerArm": Vector3(84.0, 0, 0), "LeftHand": Vector3(-10.0, 0, 0),
+		"RightUpperArm": Vector3(96.0, 10.0, 62.0), "RightLowerArm": Vector3(84.0, 0, 0), "RightHand": Vector3(-10.0, 0, 0)})
+	b.merge(_legs(40.0, -16.0, 12.0, 13.0), true)
+	var over: Dictionary = TLRigNode.add_pose(b, {"LeftUpperArm": Vector3(10.0, 0, -6.0), "RightUpperArm": Vector3(10.0, 0, 6.0), "Chest": Vector3(-4.0, 0, 0), "_hips": Vector3(0, -0.03, 0)})
+	return _ease_keys(t, [[0.0, g, 0], [3 * DT, over, 2], [4 * DT, b, 0], [5 * DT, b, 3]])
 
 
 ## A forward roll (24 f): he drops and reaches (f0-4), turns once over a tucked ball (thighs to the chest, chin down,
@@ -221,10 +235,11 @@ static func roll(t: float) -> Dictionary:
 
 ## A quick side step with a lean (14 f): a dip and push off the far foot (f0-2), the body leaning hard into the step
 ## with the pelvis out over the near foot and the head ducked (to f9), back on guard by f14. The side is the side the
-## body is moving at the clip's first tick (`velocity_local.x`: + = right; standing still = right).
+## body is moving at the clip's first tick (`velocity_local.x`: + = right; standing still = right), unless the param
+## `dodge_side` names it (-1 left, +1 right).
 func dodge(t: float, rig: TLRigBiped) -> Dictionary:
 	if rig.clip_t <= DT * 1.5:
-		side = -1.0 if rig._vel.x < 0.0 else 1.0
+		side = dodge_side if dodge_side != 0.0 else (-1.0 if rig._vel.x < 0.0 else 1.0)
 	var s: float = side
 	var g: Dictionary = guard()
 	var dip: Dictionary = _over(g, {"_hips": Vector3(0, _drop(28.0, 12.0, 7.0), 0)})
@@ -250,76 +265,88 @@ func dodge(t: float, rig: TLRigBiped) -> Dictionary:
 	return _ease_keys(t, [[0.0, g, 0], [2 * DT, dip, 2], [5 * DT, lean, 2], [9 * DT, lean, 3], [14 * DT, g, 0]])
 
 
-## A shoulder drive (30 f): he loads low with the hip turned in and the left arm tucked across the chest (f0-7),
-## drives the left shoulder through the target with the legs extending and the pelvis surging forward (f7-15), holds
-## the contact a moment, and comes back to his stance by f30. On skates or with a stick he keeps the stick in both
-## hands, low (the cel and clay figures put the left hand on the shaft).
+## A shoulder drive (30 f): he loads low and turned away with the trailing arm swung back (f0-7), then drives the left
+## shoulder through the target: the body turned side-on and pitched forward, the pelvis surging 0.35 m, the left arm
+## tucked with its elbow out ahead of the shoulder, the right arm flung back (f7-11). The contact pose holds f11-15 (hit
+## f12); back to his stance by f30. With a stick it trails low in the right hand instead of being flung back.
 func body_check(t: float, rig: TLRigBiped) -> Dictionary:
 	var skate: bool = String(rig.params.get("mode", "walk")) == "skate"
 	var base: Dictionary = rig._stance(-26.0) if skate else guard()
 	var load: Dictionary = _over(base, {
-		"_hips": Vector3(0.02, _drop(36.0, 10.0, 8.0), 0.06), "Hips": Vector3(-24.0, -34.0, 0),
-		"Spine": Vector3(-8.0, -10.0, 0), "Chest": Vector3(-6.0, -12.0, 0), "UpperChest": Z, "Neck": Vector3(6.0, 22.0, 0), "Head": Vector3(16.0, 30.0, 0),
-		"LeftUpperArm": Vector3(6.0, 0, -6.0), "LeftLowerArm": Vector3(104.0, 0, 0), "LeftHand": Z,
-		"RightUpperArm": Vector3(30.0, 0, 16.0), "RightLowerArm": Vector3(116.0, 0, 0), "RightHand": Z})
-	load.merge(_legs(36.0, -24.0, 10.0, 8.0), true)
+		"_hips": Vector3(0.04, _drop(42.0, 10.0, 9.0), 0.10), "Hips": Vector3(-26.0, -24.0, 0),
+		"Spine": Vector3(-8.0, -12.0, 0), "Chest": Vector3(-8.0, -16.0, 0), "UpperChest": Z, "Neck": Vector3(8.0, 20.0, 0), "Head": Vector3(18.0, 28.0, 0),
+		"LeftShoulder": Z, "RightShoulder": Z,
+		"LeftUpperArm": Vector3(30.0, 0, -24.0), "LeftLowerArm": Vector3(118.0, 0, 0), "LeftHand": Z,
+		"RightUpperArm": Vector3(-40.0, 0, 44.0), "RightLowerArm": Vector3(40.0, 0, 0), "RightHand": Z})
+	load.merge(_legs(42.0, -26.0, 10.0, 9.0), true)
 	var drive: Dictionary = _over(load, {
-		"_hips": Vector3(0.05, _drop(26.0, 30.0, 8.0), -0.26), "Hips": Vector3(-40.0, -50.0, 0),
-		"Spine": Vector3(-8.0, -12.0, 6.0), "Chest": Vector3(-6.0, -10.0, 12.0), "Neck": Vector3(12.0, 26.0, -6.0), "Head": Vector3(26.0, 34.0, -8.0),
-		"LeftShoulder": Vector3(0, 14.0, 0), "LeftUpperArm": Vector3(16.0, 0, -14.0), "LeftLowerArm": Vector3(110.0, 0, 0),
-		"RightUpperArm": Vector3(30.0, 0, 16.0), "RightLowerArm": Vector3(120.0, 0, 0)})
-	drive.merge(_legs(26.0, -40.0, 30.0, 8.0), true)
-	if rig._stick_on:
-		for p: Dictionary in [load, drive]:
-			var pitch: float = (p["Hips"] as Vector3).x + (p["Spine"] as Vector3).x + (p["Chest"] as Vector3).x
-			p.merge(rig._stick_arms(pitch, -10.0), true)
-			p["LeftUpperArm"] = (p["LeftUpperArm"] as Vector3) + Vector3(0, 0, -10.0)
-	var held: Dictionary = TLRigNode.add_pose(drive, {"_hips": Vector3(0, 0, -0.03), "Chest": Vector3(-2.0, 0, 0)})
-	return _ease_keys(t, [[0.0, base, 0], [7 * DT, load, 2], [12 * DT, drive, 1], [15 * DT, held, 2], [19 * DT, held, 3], [30 * DT, base, 0]])
+		"_hips": Vector3(0.06, _drop(30.0, 30.0, 9.0), -0.35), "Hips": Vector3(-46.0, -44.0, 0),
+		"Spine": Vector3(-10.0, -18.0, 4.0), "Chest": Vector3(-8.0, -22.0, 10.0), "UpperChest": Vector3(-4.0, -6.0, 0),
+		"Neck": Vector3(16.0, 34.0, -6.0), "Head": Vector3(30.0, 40.0, -8.0),
+		"LeftShoulder": Vector3(0, 16.0, 0), "LeftUpperArm": Vector3(44.0, 0, -36.0), "LeftLowerArm": Vector3(124.0, 0, 0),
+		"RightUpperArm": Vector3(-14.0, 0, 78.0), "RightLowerArm": Vector3(16.0, 0, 0)})
+	drive.merge(_legs(30.0, -46.0, 30.0, 9.0), true)
+	if rig._stick_on:      # the stick trails low in the right hand
+		load["RightUpperArm"] = Vector3(-20.0, 0, 46.0)
+		load["RightLowerArm"] = Vector3(16.0, 0, 0)
+		drive["RightUpperArm"] = Vector3(-30.0, 0, 62.0)
+		drive["RightLowerArm"] = Vector3(10.0, 0, 0)
+	var rise: Dictionary = TLRigNode.add_pose(drive, {"_hips": Vector3(0, 0.03, 0.05)})
+	return _ease_keys(t, [[0.0, base, 0], [7 * DT, load, 2], [11 * DT, drive, 1], [15 * DT, drive, 3], [19 * DT, rise, 2], [30 * DT, base, 0]])
 
 
-## A cross-check (14 f, then holds until another play): both hands on the stick, the shaft turned across the chest
-## (the butt at the left hand, the blade hanging at the right), pulled in to the chest (f0-6), then punched forward
-## chest-high with the arms straight (f6-11) and held there, the body leaning into it. Without a stick the arms make the
+## A cross-check (14 f, then holds until another play): both hands on the stick, the shaft turned level across the
+## chest (the butt at the left hand, the blade hanging at the right), pulled in tight with the elbows out wide and the
+## body rocked back (f0-6), then punched forward and up to the opponent's face with the arms straight, a long step in
+## and the whole body leaning into it (f6-10). The punch pose holds from f10 (hit). Without a stick the arms make the
 ## same shove. End it with play(&"") (or the next clip).
 func cross_check(t: float, rig: TLRigBiped) -> Dictionary:
 	var skate: bool = String(rig.params.get("mode", "walk")) == "skate"
 	var base: Dictionary = rig._stance(-24.0) if skate else guard()
+	var a: float = 32.0 if skate else 26.0
 	var pull: Dictionary = _over(base, {
-		"Hips": Vector3(-16.0, 0, 0), "Spine": Vector3(6.0, 0, 0), "Chest": Vector3(6.0, 0, 0), "UpperChest": Vector3(2.0, 0, 0),
-		"Neck": Vector3(2.0, 0, 0), "Head": Vector3(10.0, 0, 0), "LeftShoulder": Z, "RightShoulder": Z,
-		"RightUpperArm": Vector3(36.0, 0, 10.0), "RightLowerArm": Vector3(104.0, 0, 0), "RightHand": Z,
-		"LeftUpperArm": Vector3(36.0, 0, -6.0), "LeftLowerArm": Vector3(108.0, 0, 0), "LeftHand": Z})
-	var a: float = 30.0 if skate else 22.0
-	pull["_hips"] = Vector3(0, _drop(a, 10.0, 8.0), 0.04)
-	pull.merge(_legs(a, -16.0, 10.0, 8.0), true)
+		"_hips": Vector3(0, _drop(a, 10.0, 9.0), 0.08), "Hips": Vector3(-8.0, 0, 0), "Spine": Vector3(8.0, 0, 0), "Chest": Vector3(8.0, 0, 0), "UpperChest": Vector3(4.0, 0, 0),
+		"Neck": Vector3(-2.0, 0, 0), "Head": Vector3(4.0, 0, 0), "LeftShoulder": Vector3(0, 0, -8.0), "RightShoulder": Vector3(0, 0, 8.0),
+		"RightUpperArm": Vector3(44.0, 0, 46.0), "RightLowerArm": Vector3(112.0, 0, 0), "RightHand": Z,
+		"LeftUpperArm": Vector3(44.0, 0, -46.0), "LeftLowerArm": Vector3(112.0, 0, 0), "LeftHand": Z})
+	pull.merge(_legs(a, -8.0, 10.0, 9.0), true)
 	var push: Dictionary = _over(pull, {
-		"_hips": Vector3(0, _drop(a, 16.0, 8.0), -0.08), "Hips": Vector3(-20.0, 0, 0), "Spine": Vector3(4.0, 0, 0), "Chest": Vector3(4.0, 0, 0),
-		"Neck": Vector3(4.0, 0, 0), "Head": Vector3(14.0, 0, 0),
-		"RightUpperArm": Vector3(92.0, 0, -12.0), "RightLowerArm": Vector3(10.0, 0, 0), "RightHand": Vector3(0, 0, 0),
-		"LeftUpperArm": Vector3(90.0, 0, 6.0), "LeftLowerArm": Vector3(14.0, 0, 0), "LeftHand": Vector3(0, 0, 0)})
-	push.merge(_legs(a, -20.0, 16.0, 8.0), true)
-	var held: Dictionary = TLRigNode.add_pose(push, {"RightUpperArm": Vector3(-4.0, 0, 0), "LeftUpperArm": Vector3(-4.0, 0, 0), "_hips": Vector3(0, 0, 0.02)})
-	return _ease_keys(t, [[0.0, base, 0], [6 * DT, pull, 2], [10 * DT, push, 1], [14 * DT, held, 2]])
+		"_hips": Vector3(0, _drop(a, 24.0, 9.0), -0.18), "Hips": Vector3(-30.0, 0, 0), "Spine": Vector3(-2.0, 0, 0), "Chest": Vector3(2.0, 0, 0), "UpperChest": Z,
+		"Neck": Vector3(10.0, 0, 0), "Head": Vector3(22.0, 0, 0), "LeftShoulder": Vector3(0, 8.0, 0), "RightShoulder": Vector3(0, -8.0, 0),
+		"RightUpperArm": Vector3(122.0, 0, -12.0), "RightLowerArm": Vector3(6.0, 0, 0), "RightHand": Z,
+		"LeftUpperArm": Vector3(120.0, 0, 8.0), "LeftLowerArm": Vector3(8.0, 0, 0), "LeftHand": Z})
+	push.merge(_legs(a, -30.0, 24.0, 9.0), true)
+	return _ease_keys(t, [[0.0, base, 0], [6 * DT, pull, 2], [10 * DT, push, 1], [14 * DT, push, 3]])
 
 
-## A taunt (90 f, then back to locomotion): chest out, chin up, the right fist on the hip with the elbow out, and the
-## left hand held out ahead beckoning twice (f20-80), the weight rocking onto the back foot.
+## A taunt (90 f, then back to locomotion): "come on": the arms thrown open wide and up with the chest pushed out and
+## the chin up (in by f9 with the blend-in, held to f28), then the right fist on the hip with the elbow out and the left
+## hand raised high, beckoning twice (f40-80), the weight rocking back; settles by f90.
 static func taunt(t: float) -> Dictionary:
 	var f: float = t / DT
 	var beck: float = 0.0
-	if f > 20.0 and f < 80.0:
-		beck = pow(sin(PI * (f - 20.0) / 30.0), 2.0)
-	var rock: float = sin(PI * clampf((f - 12.0) / 66.0, 0.0, 1.0))
-	var p: Dictionary = {
-		"_hips": Vector3(0.03 * rock, _drop(8.0, 8.0, 10.0), 0.02 * rock - 0.02), "Hips": Vector3(4.0, -12.0, -3.0 * rock),
-		"Spine": Vector3(5.0, 2.0, 0), "Chest": Vector3(9.0, 6.0, 1.5 * rock), "UpperChest": Z, "Neck": Vector3(2.0, 0, 0), "Head": Vector3(11.0 - 3.0 * beck, 8.0, 7.0),
-		"LeftShoulder": Z, "RightShoulder": Z, "Backpack": Z, "Hair": Z,
-		"RightUpperArm": Vector3(-12.0, 0, 55.0), "RightLowerArm": Vector3(10.0, 0, -90.0), "RightHand": Vector3(0, 0, -20.0),
-		"LeftUpperArm": Vector3(70.0, 14.0, -12.0), "LeftLowerArm": Vector3(16.0 + 72.0 * beck, 0, 0), "LeftHand": Vector3(-12.0 + 46.0 * beck, 0, 0),
+	if f > 40.0 and f < 80.0:
+		beck = pow(sin(PI * (f - 40.0) / 20.0), 2.0)
+	var rock: float = sin(PI * clampf((f - 30.0) / 50.0, 0.0, 1.0))
+	var open: Dictionary = {
+		"_hips": Vector3(0, _drop(10.0, 6.0, 14.0), -0.04), "Hips": Vector3(6.0, 0, 0),
+		"Spine": Vector3(8.0, 0, 0), "Chest": Vector3(14.0, 0, 0), "UpperChest": Vector3(4.0, 0, 0), "Neck": Vector3(2.0, 0, 0), "Head": Vector3(16.0, 0, 0),
+		"LeftShoulder": Vector3(0, 0, -10.0), "RightShoulder": Vector3(0, 0, 10.0), "Backpack": Z, "Hair": Z,
+		"LeftUpperArm": Vector3(24.0, 0, -112.0), "LeftLowerArm": Vector3(14.0, 0, 0), "LeftHand": Vector3(0, 0, -20.0),
+		"RightUpperArm": Vector3(24.0, 0, 112.0), "RightLowerArm": Vector3(14.0, 0, 0), "RightHand": Vector3(0, 0, 20.0),
 	}
-	p.merge(_legs(8.0, 4.0, 8.0, 10.0))
-	return p
+	open.merge(_legs(10.0, 6.0, 6.0, 14.0))
+	if f <= 28.0:
+		return open
+	var beckon: Dictionary = {
+		"_hips": Vector3(0.03 * rock, _drop(8.0, 8.0, 12.0), 0.03 * rock - 0.03), "Hips": Vector3(6.0, -14.0, -4.0 * rock),
+		"Spine": Vector3(6.0, 2.0, 0), "Chest": Vector3(12.0, 8.0, 2.0 * rock), "UpperChest": Z, "Neck": Vector3(2.0, 0, 0), "Head": Vector3(14.0 - 4.0 * beck, 8.0, 9.0),
+		"LeftShoulder": Z, "RightShoulder": Z, "Backpack": Z, "Hair": Z,
+		"RightUpperArm": Vector3(-14.0, 0, 62.0), "RightLowerArm": Vector3(10.0, 0, -96.0), "RightHand": Vector3(0, 0, -20.0),
+		"LeftUpperArm": Vector3(118.0, 14.0, -14.0), "LeftLowerArm": Vector3(10.0 + 80.0 * beck, 0, 0), "LeftHand": Vector3(-10.0 + 50.0 * beck, 0, 0),
+	}
+	beckon.merge(_legs(8.0, 6.0, 8.0, 12.0))
+	return TLRigBiped._mixe(open, beckon, smoothstep(28.0, 40.0, f))
 
 
 # ------------------------------------------------------------------ after the pose: the stick turn and the cross-check grip

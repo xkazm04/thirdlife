@@ -88,7 +88,7 @@ static func keyframes(clip: String) -> Array:
 	var b: int = int(tm["active"])
 	var n: int = int(tm["frames"])
 	if clip == "taunt":
-		return [1, 12, 35, 50, 65, 89]
+		return [9, 25, 36, 50, 60, 70]
 	var out: Array = [1, maxi(1, a), (a + b + 1) / 2, b, (b + n) / 2, n if String(tm["end"]) == "returns" else n + 20]
 	var uniq: Array = []
 	for f: int in out:
