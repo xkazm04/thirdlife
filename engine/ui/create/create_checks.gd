@@ -16,6 +16,7 @@ const Door = preload("res://ui/foreman_door.gd")
 const Model = preload("res://ui/create/create_model.gd")
 const CreateScene = preload("res://ui/create/create.tscn")
 const Dungeons = preload("res://kernel/dungeon/dungeons.gd")
+const QualityChecks = preload("res://ui/quality_checks.gd")   # L1b: the 2026-11-21 readers (fixtures c13, c14)
 
 const FIXTURES: String = "res://ui/fixtures/create"
 const STUB: String = "res://seeds/seed_wall"
@@ -44,7 +45,7 @@ static func events_of(name: String) -> Array:
 	return JobModel.read_events(dir_of(name))["events"]
 
 
-const CHECKS: int = 27
+const CHECKS: int = 27 + QualityChecks.CHECKS
 
 
 static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
@@ -57,6 +58,7 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	_door(counted, tmp)
 	await _page(tree, counted, tmp)
 	_site(counted)
+	QualityChecks.run(counted)
 	check.call("create.complete: all %d checks ran" % CHECKS, count[0] == CHECKS, "%d ran" % count[0])
 	return count[0] == CHECKS
 
