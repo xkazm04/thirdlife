@@ -259,6 +259,37 @@
         "references"
        ],
        "properties": {
+        "template": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "id",
+          "reference",
+          "copies"
+         ],
+         "properties": {
+          "id": {
+           "enum": [
+            "duel",
+            "arcade_sport",
+            "own"
+           ]
+          },
+          "reference": {
+           "type": "string",
+           "minLength": 1
+          },
+          "copies": {
+           "type": "array",
+           "minItems": 3,
+           "maxItems": 6,
+           "items": {
+            "type": "string",
+            "minLength": 1
+           }
+          }
+         }
+        },
         "candidates": {
          "type": "array",
          "minItems": 5,
@@ -410,6 +441,10 @@
            },
            "defensive": {
             "const": true
+           },
+           "move": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
            }
           }
          }

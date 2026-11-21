@@ -105,7 +105,8 @@ test("critic (V5 seam): scores per rubric item; ok is recomputed from the scores
   const good = new FakeBuilder({ steps: [{ match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.9, readability: 0.7 }, notes: ["clear"] } }] });
   const r = await critic(good, ["/captures/blockout-hero.png"], rubric);
   assert.ok(r.ok);
-  assert.deepEqual(r.value, { ok: true, scores: { silhouette: 0.9, readability: 0.7 }, notes: ["clear"] });
+  // N4 of 22 Nov: every answer ends with the line naming the [H] items no capture can pass.
+  assert.deepEqual(r.value, { ok: true, scores: { silhouette: 0.9, readability: 0.7 }, notes: ["clear", "[H] items not judged: a person must play it (items 2, 4, 13, 21, 26, 28, 30)"] });
   assert.equal(good.calls[0]?.req.mode, "generate");
   assert.match(good.calls[0]?.req.prompt ?? "", /blockout-hero\.png/);
 

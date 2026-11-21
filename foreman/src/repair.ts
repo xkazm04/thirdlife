@@ -35,6 +35,8 @@ export const CONCEPT_LIMITS: LengthRule[] = [
   { path: "concept.hook", max: ROOM_LIMITS.hook },
   { path: "concept.anchor", max: ROOM_LIMITS.anchor },
   { path: "concept.references[*].borrow", max: ROOM_LIMITS.borrow },
+  { path: "concept.template.reference", max: ROOM_LIMITS.reference },
+  { path: "concept.template.copies[*]", max: ROOM_LIMITS.copy },
 ];
 /** The review step's answer. */
 export const REVIEW_LIMITS: LengthRule[] = [{ path: "notes", max: ROOM_LIMITS.notes }];

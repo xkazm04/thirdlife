@@ -1652,7 +1652,7 @@ export class Foreman {
       optionalFields: this.optionalFieldsText(),
       reference: this.referenceText(),
       card: cardBriefSection(this.refDir(), s.card),
-      feel: s.brief?.design !== undefined ? builderFeelSection() : "",
+      feel: s.brief?.design !== undefined ? builderFeelSection(s.brief.concept?.template) : "",
     });
   }
 

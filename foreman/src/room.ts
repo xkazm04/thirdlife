@@ -9,6 +9,7 @@ import { designBrief, generate, type DesignerInput, type DesignerOutput, type Ge
 import { PKG_ROOT } from "./paths.js";
 import { REVIEW_SCORES, ROOM_LIMITS, conceptProblems, reviewProblems, type Concept, type DesignReview } from "./room_wire.js";
 import { takenProblems, takenText } from "./concepts.js";
+import { conceptTemplateProblems, templateExcerpt, templatesMenuText } from "./templates.js";
 import { BRIEF_LIMITS, CONCEPT_LIMITS, REVIEW_LIMITS } from "./repair.js";
 import { REVIEW_THRESHOLD, conceptAnswerSchema, conceptText, qualityText, reviewAnswerSchema, slopIds, type ReviewAnswer } from "./roomtext.js";
 
@@ -39,9 +40,9 @@ export function conceptStep(builder: Parameters<typeof designBrief>[0], input: R
     builder,
     "concept",
     prompt("concept.md"),
-    { ...vars, quality: qualityText(["3", "4", "6"]), redesign: redesignBlock(input), taken: takenText(input.creativity, input.taken) },
+    { ...vars, quality: qualityText(["3", "4", "6", "8"]), templates: templatesMenuText(), redesign: redesignBlock(input), taken: takenText(input.creativity, input.taken) },
     conceptAnswerSchema,
-    (v) => [...conceptProblems((v as { concept: Concept }).concept), ...takenProblems((v as { concept: Concept }).concept, input.taken, input.sentence)],
+    (v) => [...conceptProblems((v as { concept: Concept }).concept), ...conceptTemplateProblems((v as { concept: Concept }).concept, input.sentence), ...takenProblems((v as { concept: Concept }).concept, input.taken, input.sentence)],
     { ...opts, attempts: opts.attempts ?? 3, limits: CONCEPT_LIMITS }, // word limits: a repair call first (repair.ts), then the attempts
   );
 }
@@ -58,7 +59,8 @@ export async function reviewStep(builder: Parameters<typeof designBrief>[0], inp
       creativity: input.creativity === "crazy" ? "The job is CRAZY: one or two unexpected mechanics are added on top of the player's words (aspects marked crazy)." : "The job is STANDARD: serve the player's words.",
       concept: conceptText(concept),
       design: JSON.stringify(brief, null, 1),
-      quality: qualityText(["6", "3"]),
+      quality: qualityText(["6", "3", "10"]),
+      template: templateExcerpt(concept.template, "design"),
       threshold: String(REVIEW_THRESHOLD),
       round: String(round),
       final: round >= ROOM_LIMITS.reviewRounds ? " (the final round: the brief is set whatever you say, so make the notes the builders' warnings)" : "",
@@ -121,7 +123,7 @@ export async function designRoom(builder: Parameters<typeof designBrief>[0], inp
 /** The creativity text the concept step reads (the design step has its own, longer one in designer.ts). */
 function creativityLine(input: DesignerInput): string {
   return input.creativity === "crazy"
-    ? "CRAZY. Keep every word the player said; on top add one or two unexpected mechanics that bend a rule the player takes for granted (what scores, who they control, what a hit does, what the place does). Let at least two candidates be crazy in different ways."
+    ? "CRAZY. Keep every word the player said; on top add one or two unexpected mechanics that bend a rule the player takes for granted (what scores, who they control, what a hit leaves behind, what the place and the crowd do). The crazy part sits ON TOP of the copied template's core, never instead of it. Let at least two candidates be crazy in different ways."
     : "STANDARD. Serve the player's words: every candidate is the game they asked for; the boldness is in the fantasy, the core exchange and the twist, not in things they did not ask for.";
 }
 

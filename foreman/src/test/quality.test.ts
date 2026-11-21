@@ -81,8 +81,8 @@ test("handbook: the sections the prompts carry are found by number, the slop ids
   assert.match(qualityText(["2"]), /^## 2\. Feel numbers at 60 Hz[^]*Hit-stop on attacker and victim together/);
   assert.doesNotMatch(qualityText(["2"]), /## 3\./);
   const builderRules = qualityText(["7:Builder"]);
-  assert.match(builderRules, /^## 7\. Rules by role \(Builder\)\n11\. /);
-  assert.doesNotMatch(builderRules, /Critic|19\. /);
+  assert.match(builderRules, /^## 7\. Rules by role \(Builder\)\n13\. /); // N4 of 22 Nov: v2 added Designer and Planner rules
+  assert.doesNotMatch(builderRules, /Critic|23\. /);
   const designer = fs.readFileSync(path.join(REPO_ROOT, "foreman", "prompts", "designer.md"), "utf8");
   assert.doesNotMatch(designer, /Difficulty is their speed, reaction and aggression/);
   assert.doesNotMatch(designer, /no ragdoll/);
@@ -330,7 +330,8 @@ test("crazy concept: reads the standard concepts of the same sentence in the sit
   assert.deepEqual(takenProblems(sampleConcept(), t.taken, "a fight in a colosseum"), []);
   // In the room: the concept prompt carries the block, and a too-close pick is asked again.
   const b = new FakeBuilder({ steps: [{ match: { role: "concept", attempt: 1 }, json: { concept: close } }, { match: { role: "concept", attempt: 2 }, json: { concept: sampleConcept() } }, { match: { role: "designer" }, json: { brief: v2Brief(true), estimate } }, { match: { role: "design_review" }, json: { scores: scores(0.8), slop: [], verdict: "ok", notes: "ok" } }] });
-  const r = await designRoom(b, { sentence: "a fight in a colosseum", creativity: "crazy", ...t });
+  // N4 of 22 Nov: a fight must copy the duel template, so the paddle fixture's concept runs on a paddle sentence here.
+  const r = await designRoom(b, { sentence: "a paddle match in a walled court", creativity: "crazy", ...t });
   assert.ok(r.ok, r.ok ? "" : r.reason);
   assert.match(b.calls[0]?.req.prompt ?? "", /Already designed: the STANDARD version/);
   assert.match(b.calls[1]?.req.prompt ?? "", /too close to the standard design/);

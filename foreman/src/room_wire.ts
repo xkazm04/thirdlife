@@ -26,6 +26,11 @@ export const ROOM_LIMITS = {
   clips: 3,
   refsMin: 2,
   refsMax: 3,
+  /** N4 of 22 Nov: the genre template the concept copies its core loop from. */
+  reference: 20,
+  copy: 20,
+  copiesMin: 3,
+  copiesMax: 6,
   /** Review rounds: a "revise" at round 1 runs the design step once more; round 2 is final. */
   reviewRounds: 2,
 } as const;
@@ -35,7 +40,19 @@ export interface ConceptCandidate {
   /** The Designer's estimate of how typical the pitch is, 0..1. */
   likelihood: number;
 }
+/** N4 of 22 Nov (GAME-QUALITY.md section 11): the proven design one core loop copies. `own` names its own reference. */
+export const TEMPLATE_IDS = ["duel", "arcade_sport", "own"] as const;
+export type TemplateId = (typeof TEMPLATE_IDS)[number];
+export interface ConceptTemplate {
+  id: TemplateId;
+  /** The real, released games (or the research file) the core loop is copied from, at most 20 words. */
+  reference: string;
+  /** 3 to 6 lines, each at most 20 words: what is copied (rules, tables, archetypes), never a mood. */
+  copies: string[];
+}
 export interface Concept {
+  /** Optional on read (a concept made before 22 Nov has none); the concept step writes it. */
+  template?: ConceptTemplate;
   candidates: ConceptCandidate[];
   chosen: number;
   why: string;
@@ -51,6 +68,8 @@ export interface DesignVerb {
   recovery_f: number;
   cancel: string;
   defensive?: true;
+  /** N4 of 22 Nov: the template move this verb copies (GAME-QUALITY.md section 11); its frames are the template's. */
+  move?: string;
 }
 export interface DesignFeel {
   hitstop_f: [number, number];
@@ -99,7 +118,14 @@ const frames = { type: "integer", minimum: 0, maximum: 600 } as const;
 const obj = (required: readonly string[], properties: Record<string, object>): object => ({ type: "object", additionalProperties: false, required, properties });
 const list = (items: object, minItems: number, maxItems?: number): object => ({ type: "array", minItems, ...(maxItems !== undefined ? { maxItems } : {}), items });
 
+export const templateSchema = obj(["id", "reference", "copies"], {
+  id: { enum: TEMPLATE_IDS },
+  reference: nonEmpty,
+  copies: list(nonEmpty, ROOM_LIMITS.copiesMin, ROOM_LIMITS.copiesMax),
+});
+
 export const conceptSchema = obj(["candidates", "chosen", "why", "hook", "anchor", "references"], {
+  template: templateSchema,
   candidates: list(obj(["pitch", "likelihood"], { pitch: nonEmpty, likelihood: unit }), ROOM_LIMITS.candidates, ROOM_LIMITS.candidates),
   chosen: { type: "integer", minimum: 0, maximum: ROOM_LIMITS.candidates - 1 },
   why: nonEmpty,
@@ -112,7 +138,7 @@ export const designSchema = obj(["pillars", "verbs", "playstyles", "loops", "con
   pillars: list(obj(["line", "rules_out"], { line: nonEmpty, rules_out: nonEmpty }), ROOM_LIMITS.pillars, ROOM_LIMITS.pillars),
   verbs: list(
     obj(["id", "input", "anticipation_f", "active_f", "recovery_f", "cancel"], {
-      id: snake, input: nonEmpty, anticipation_f: frames, active_f: frames, recovery_f: frames, cancel: nonEmpty, defensive: { const: true },
+      id: snake, input: nonEmpty, anticipation_f: frames, active_f: frames, recovery_f: frames, cancel: nonEmpty, defensive: { const: true }, move: snake,
     }),
     ROOM_LIMITS.verbsMin,
     ROOM_LIMITS.verbsMax,
@@ -153,6 +179,10 @@ export function conceptProblems(c: Concept): string[] {
   c.candidates.forEach((x, i) => out.push(...over(`concept candidate ${i} pitch`, x.pitch, ROOM_LIMITS.pitch)));
   out.push(...over("concept why", c.why, ROOM_LIMITS.why), ...over("concept hook", c.hook, ROOM_LIMITS.hook), ...over("concept anchor", c.anchor, ROOM_LIMITS.anchor));
   c.references.forEach((r, i) => out.push(...over(`concept reference ${i} (${r.game}) borrow`, r.borrow, ROOM_LIMITS.borrow)));
+  if (c.template !== undefined) {
+    out.push(...over("concept template reference", c.template.reference, ROOM_LIMITS.reference));
+    c.template.copies.forEach((x, i) => out.push(...over(`concept template copies ${i}`, x, ROOM_LIMITS.copy)));
+  }
   return out;
 }
 

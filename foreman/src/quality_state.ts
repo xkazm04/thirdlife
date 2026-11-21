@@ -17,7 +17,7 @@ export const QUALITY_ANSWER_RE = /^quality (accept|retry)(?:: ([\s\S]+))?$/;
 export const qualityAnswerText = (answer: "accept" | "retry", note?: string): string => `quality ${answer}${note !== undefined ? `: ${note}` : ""}`;
 
 /** A look whose summary carries the critic's NOT ok is not ok; ok, no verdict and no critic are (they do not gate). */
-export const lookOk = (summary: string): boolean => !/critic \(V5\) NOT ok/.test(summary);
+export const lookOk = (summary: string): boolean => !/(critic \(V5\)|tofu stage) NOT ok/.test(summary); // N4: the tofu stage gates like the critic
 
 export interface Look {
   seq: number;

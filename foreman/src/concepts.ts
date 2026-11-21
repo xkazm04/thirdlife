@@ -48,7 +48,8 @@ export function takenText(creativity: Creativity | undefined, taken: Concept[] |
       "",
       "# Escape the obvious crazy move",
       "Before you write, name to yourself the most typical crazy twist for this sentence: the one any designer reaches for first (for a fight in an arena that is the arena breaking apart, stone or hazards falling on the fighters, or animals let loose). That move and every variation of it are FORBIDDEN as the crazy mechanic: a bigger version, the same hazard on another object, the same destruction later in the round.",
-      "Each candidate bends a rule the player takes for granted instead: what scores, who or what the player controls, what a hit does, who the audience is, how time works. The five candidates come from at least four different idea families; `why` names the typical move you left out.",
+      "Each candidate bends a rule the player takes for granted instead: what scores, who or what the player controls, what a hit leaves behind, who the audience is, how time works. The five candidates come from at least four different idea families; `why` names the typical move you left out.",
+      "The core loop stays the proven template's (a fight is still the duel template, copied): crazy bends what sits on top of it, never the template's verbs, frames or contact results.",
       "",
     ].join("\n");
   }
@@ -60,7 +61,8 @@ export function takenText(creativity: Creativity | undefined, taken: Concept[] |
     "",
     "# Already designed: the STANDARD version of this same sentence",
     ...lines,
-    "Your crazy concept must come from a DIFFERENT idea family than every concept above: not the chosen one, not a variation of it (the same verb on another object, the same hazard bigger or later, the same destruction), and not one of its other candidates. A player who has played the standard version must meet a game whose core twist they have not seen. Bend a rule the player takes for granted: what scores, who or what they control, what a hit does, who the audience is, how time works. The five candidates come from at least four different idea families; `why` names which standard family you left and why yours is not a variation of it.",
+    "Your crazy concept must come from a DIFFERENT idea family than every concept above: not the chosen one, not a variation of it (the same verb on another object, the same hazard bigger or later, the same destruction), and not one of its other candidates. A player who has played the standard version must meet a game whose core twist they have not seen. Bend a rule the player takes for granted: what scores, who or what they control, what a hit leaves behind, who the audience is, how time works. The five candidates come from at least four different idea families; `why` names which standard family you left and why yours is not a variation of it.",
+    "The core loop stays the proven template's, the same one the standard design copies (a fight is still the duel template): the idea family is the hook on top of it, not a new combat system.",
     "",
   ].join("\n");
 }

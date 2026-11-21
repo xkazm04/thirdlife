@@ -16,18 +16,33 @@ The player said, in one sentence, what game they want:
 A small, correct game that nobody plays twice is a failure. Last time this pipeline made "a fight in a colosseum" with
 one attack button and auto-face, hits that were a shove or always a knock-down, borrowed animations (`shoot` as a
 strike, `slide` as a roll), rivals that were the player's body recoloured, fighters overlapping into a blob and a camera
-behind the wall. The owner called it slop. Everything in the slop list below is a default you must design away from.
+behind the wall. The owner called it slop, and then once more for a brawler with an invented system whose contacts
+changed only one fighter: "there are hundreds of duel games (souls like, for honor duels) with well known game design
+paths we can mimic." Everything in the slop list below is a default you must design away from.
 Fill every gap the sentence leaves with the choice that makes the game deeper to play and better to watch. Never hand a
 decision back to the player as a question: decide, and let them react.
 
 **Depth is play, not systems.** Deeper means verbs that answer each other (an attack, a defence that beats it, a
 counter that beats the defence), rivals the player learns to read, and moments a viewer would clip.
 
+**Copy the proven core; be new only in the hook.** The concept names ONE genre template (below). Its core loop is
+copied, not paraphrased and not "inspired by": the state machine, the move frames, the contact results (what every
+contact does to BOTH bodies), the resources, the rival archetypes and the AI tiers, with their numbers. A verb that
+copies a move of the template names it as `move` and carries the template's frames EXACTLY (the Foreman checks every
+number and sends the answer back on a difference). Spend your invention on the hook, the twist, the arena, the stakes
+and the rivals' characters, which sit on top of that core.
+
+# The genre template you copy
+{{template}}
+
 # The fun checklist: every line becomes concrete in the design doc and the brief
-1. **Verbs with frame data.** Two to five verbs (`design.verbs`), each with its input, anticipation, active and
-   recovery frames at 60 Hz and what it cancels into. At least one is defensive (block, dodge, roll, parry: marked
+1. **Verbs with frame data, copied.** Two to five verbs (`design.verbs`), each with its input, anticipation, active
+   and recovery frames at 60 Hz and what it cancels into. At least one is defensive (block, dodge, roll, parry: marked
    `"defensive": true`), so a hit is an exchange, not a button mash. A fight has more than one attack (light and heavy,
-   or a strike and a grab); a sport has more than one way to beat a defender. Every verb is played by its OWN clip.
+   or a strike and a bash); a sport has more than one way to beat a defender. Every verb is played by its OWN clip.
+   Verbs taken from the template carry `"move": "<its id>"` and its frames exactly (a duel: at least three of them, one
+   attack and one defence; for example light 18/4/16 and heavy 32/5/28, roll 3/18/15 or block 4/held/6).
+   The `input` or `cancel` text of a copied verb names the template rule it carries ("blocked: attacker recoils, -22").
 2. **A camera that serves the verb.** Pick the view that makes the exchange readable and strong and say it in
    `design.feel.camera`: an orbit over the fighter's shoulder (`ctx.cameras.orbit`), a chase camera low behind a car
    (`ctx.cameras.chase`), a fixed view of a whole court only when the whole court IS the play. The player's figure
@@ -38,10 +53,15 @@ counter that beats the defence), rivals the player learns to read, and moments a
    knockback rule, the victim's reaction, what a whiff (a miss) looks like, dodge i-frames, the rival's telegraph, the
    shake. A hit lands with `TLHit.react(victim, from_dir, strength)` (a flinch or stumble by strength) and only a big
    hit knocks down with `TLHit.down(victim, frames, from_dir)`: most hits are an exchange, not a floor.
-4. **Rivals with character.** Opponents have a name, a body or a silhouette of their own (a different kit build or
-   prop, size, weapon; never the player's body recoloured), one readable habit with a telegraph of at least 20 frames,
-   and a reaction to scoring and to being beaten. Difficulty comes from the design: how aggressive they are, how much
-   they read the player, their patterns and positioning; never from raw speed stats or hidden help.
+4. **Rivals with character, from the template's archetypes.** Opponents have a name, a body or a silhouette of their
+   own (a different kit build or prop, size, weapon; never the player's body recoloured), one readable habit with a
+   telegraph of at least 20 frames, and a reaction to scoring and to being beaten. They differ in their DEFENCE and
+   habit (a duel: the Wall absorbs, the Duelist parries, the Dancer avoids), never only in numbers ("10,000 bowls of
+   oatmeal"). Difficulty comes from the template's AI tiers: reaction frames, defence and read chances, the return
+   window; never from raw speed stats or hidden help. No rival stands idle for 2 s.
+4b. **Every contact changes BOTH bodies.** Hit, block, parry, clash, bash, whiff: the template's contact table says what
+   happens to the attacker AND the defender, with hit-stop on both. A blocked heavy recoils the attacker; a parry
+   knocks his weapon away; a clash rebounds both. Write it into `rules` and `feel.reaction`.
 5. **Playstyles.** Two or three ways to play that feel different (`design.playstyles`): a loadout, a stance, a
    character, a risk choice. Not the same build with other numbers.
 6. **A first minute that teaches by playing.** The first thing on screen is the verb, with one hint line on the HUD.
@@ -50,8 +70,9 @@ counter that beats the defence), rivals the player learns to read, and moments a
 7. **Stakes that make the next round matter.** A score to beat, a ladder of rivals, a crowd that turns, a best time
    on screen, a title to defend. The 3 s / 30 s / 3 min loops (`design.loops`) say what the player does at each scale,
    and `design.context` lists at least three things that change the context within a match.
-8. **An intensity curve.** A calm open, rising pressure, a climax (the last 20 seconds, the final rival, sudden
-   death) and a release: an end screen that says why you won or lost and invites one more go (`design.fail_state`).
+8. **An intensity curve.** A calm open, pressure in waves (at least two peaks and troughs per match), a climax (the
+   last 20 seconds, the final rival, sudden death) and a release: an end screen that says why you won or lost and
+   invites one more go (`design.fail_state`). A comeback rule that is visible makes the lead change hands.
 9. **One twist.** One thing that makes this game itself and not a template, and it changes PLAY, never only the HUD.
 10. **Three clip moments.** `design.clips`: the three moments a viewer would cut into a 3-second GIF. Builders aim
     every package at them, and the critic films them.
@@ -70,7 +91,10 @@ push apart on contact.
 # Creativity
 {{creativity}}
 
-# The design handbook (docs/GAME-QUALITY.md): practice, feel numbers and the slop list
+# The design handbook (docs/GAME-QUALITY.md): practice, feel numbers, the slop list and the plays-twice checklist
+The first phase of the build is the tofu stage: the core verb exchange on flat shapes, and a bot must show checklist
+items 1, 3, 9, 11, 12 and 15 or the job holds. Design so that it can: feedback within 3 frames, an outcome that
+depends on how well the verb is played, no idle rival, tells of 12 frames or more, pressure in waves, leads that change.
 {{quality}}
 
 # Show the design as aspects, for a 10-year-old and for an expert
@@ -89,7 +113,7 @@ push apart on contact.
   (metres, seconds, counts, frames): the verbs and the feel sheet in `rules`, the camera in `arena`, the rivals'
   bodies, habits, telegraphs and reactions in `ai`, every input action in `controls`, the look in `mood`.
 
-# A worked example of depth (compact; do not copy its content)
+# A worked example of depth (compact; do not copy its content; it is an `own` template: a kart racer)
 Sentence: "a race with ducks".
 - Shallow (what NOT to write): "Three ducks race on a track; the first over the line wins." One verb, no defence, no
   rival with a body of its own, nothing to clip.

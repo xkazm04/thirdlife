@@ -13,7 +13,10 @@ import { PKG_ROOT, REPO_ROOT } from "./paths.js";
 import { ENTRY_SCRIPT, MANIFEST_FILE, depClosure } from "./manifest.js";
 import { acceptanceOptions, verbOptionsText, type RunnerVerbs } from "./verbs.js";
 import { planCardProblems, planHandProblems } from "./cards.js";
-import { briefDesignText, conceptText, designAnswerSchema, qualityText, roomDesignProblems } from "./roomtext.js"; // JOB.md 2026-11-21: the design room
+import { briefDesignText, conceptText, criticChecklistText, designAnswerSchema, qualityText, roomDesignProblems, withHLine } from "./roomtext.js"; // JOB.md 2026-11-21: the design room
+import { designTemplateProblems, templateExcerpt } from "./templates.js"; // N4 of 22 Nov: genre templates
+import { tofuPlanProblems, tofuPlannerText } from "./tofu.js"; // N4 of 22 Nov: the tofu stage
+import type { ConceptTemplate } from "./room_wire.js";
 import { servesProblems, type Concept } from "./room_wire.js";
 import { repairLengths, type LengthRule } from "./repair.js";
 import { playerCheckProblems } from "./playercheck.js";
@@ -63,6 +66,9 @@ export interface PlanLimits {
   requirePhases?: boolean;
   /** JOB.md 2026-11-21: the clip ids of the brief's design; a package's `serves` must name only these. */
   clipIds?: string[];
+  /** N4 of 22 Nov: a fresh plan of a design-room brief carries the TOFU CHECK line (tofu.ts); `template` gives its rows. */
+  requireTofu?: boolean;
+  template?: ConceptTemplate;
 }
 
 /** The Planner's answer: the packages, the phases they are built in and, when one fits, the recipe card for the whole job. */
@@ -150,7 +156,7 @@ const CREATIVITY_TEXT: Record<"standard" | Creativity, string> = {
   standard:
     "STANDARD. Serve the player's words: every aspect serves the game they asked for, and every gap is filled with the most fun choice that fits it. Surprise them with depth, not with things they did not ask for. No aspect carries `crazy`.",
   crazy:
-    "CRAZY. Keep every word the player said: the game they asked for is all still there, done as well as in standard mode. On top of it add ONE or TWO unexpected mechanics that make the player laugh or gasp: a rule from another kind of game, a place that behaves like a character, a rival nobody expects, a power with a cost. Crazy is not the standard twist made bigger (a standard design already has a hazard or a twist): a crazy mechanic bends a rule the player takes for granted, such as what scores, who they control, what a hit does, or what the place and the audience do. Each crazy mechanic is its own aspect with `\"crazy\": true` (so the player can drop it with one tap), and the rest of the design must still stand without it. Crazy is still buildable: a surprising use of what the engine has (a spawner, a rule, a law of a surface, a camera), never a new engine feature. Mark only those one or two aspects crazy.",
+    "CRAZY. Keep every word the player said: the game they asked for is all still there, done as well as in standard mode. On top of it add ONE or TWO unexpected mechanics that make the player laugh or gasp: a rule from another kind of game, a place that behaves like a character, a rival nobody expects, a power with a cost. Crazy is not the standard twist made bigger (a standard design already has a hazard or a twist): a crazy mechanic bends a rule the player takes for granted, such as what scores, who they control, what a hit leaves behind, or what the place and the audience do. It sits ON TOP of the copied template: the template's verbs, frames and contact results stay as they are. Each crazy mechanic is its own aspect with `\"crazy\": true` (so the player can drop it with one tap), and the rest of the design must still stand without it. Crazy is still buildable: a surprising use of what the engine has (a spawner, a rule, a law of a surface, a camera), never a new engine feature. Mark only those one or two aspects crazy.",
 };
 
 /** The brief as text for the Planner and the builders: the five fields, then the pitch and the aspect cards. */
@@ -208,14 +214,15 @@ function designerVars(input: DesignerInput): Record<string, string> {
     cards: input.cards ?? "(no recipe cards)",
     redesign,
     concept: input.concept ? conceptText(input.concept) : "(no concept step ran: design the boldest game that fits the words)",
-    quality: qualityText(["1", "2", "6"]),
+    quality: qualityText(["1", "2", "6", "10"]),
+    template: templateExcerpt(input.concept?.template, "design") || "(the concept names no template with a research file: copy the core loop from the reference it names, with its numbers)",
     review: input.review ?? "",
   };
 }
 
 /** Problems of a Designer answer beyond the JSON schema: word limits, unique ids, the crazy rule, dropped aspects. */
-export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creativity" | "previous">): string[] {
-  const out = [...aspectProblems(brief.pitch, brief.aspects), ...roomDesignProblems(brief)];
+export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creativity" | "previous" | "concept">): string[] {
+  const out = [...aspectProblems(brief.pitch, brief.aspects), ...roomDesignProblems(brief), ...(brief.design !== undefined && input.concept?.template !== undefined ? designTemplateProblems(brief.design, input.concept.template) : [])];
   if (brief.pitch === undefined || brief.aspects === undefined) out.push("the brief needs a pitch and 3 to 7 aspects");
   out.push(...crazyProblems(brief.aspects, input.creativity, input.previous === undefined));
   if (input.previous) {
@@ -256,7 +263,7 @@ export function planPhaseProblems(packages: PackageSpec[], phases: unknown, requ
 /** Problems of a plan beyond its JSON shape: graph errors, scopes, the composed manifest, acceptance options, phases. */
 export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: unknown, phases?: unknown): string[] {
   const out = [...planProblems(packages), ...planCardProblems(card, limits.cards ?? []), ...planHandProblems(packages, typeof card === "string" ? card : undefined, limits.cardHands ?? {})];
-  out.push(...planPhaseProblems(packages, phases, limits.requirePhases === true), ...servesProblems(packages, limits.clipIds));
+  out.push(...planPhaseProblems(packages, phases, limits.requirePhases === true), ...servesProblems(packages, limits.clipIds), ...tofuPlanProblems(packages, phases as Phase[] | undefined, limits.requireTofu === true, limits.template));
   if (limits.maxPackages !== undefined && packages.length > limits.maxPackages) {
     out.push(`the plan has ${packages.length} packages; the limit for this job is ${limits.maxPackages}: merge concerns until it fits`);
   }
@@ -382,7 +389,9 @@ function plannerVars(input: PlannerInput, limits: PlanLimits, replan: string): R
     review: input.review !== undefined ? `
 The producer's last review of this design (its warnings: make each one true in a contract): ${input.review}
 ` : "",
-    quality: input.brief.design !== undefined ? qualityText(["2", "6", "7:Planner"]) : "(the brief has no game design doc: build the brief as it is)",
+    quality: input.brief.design !== undefined ? qualityText(["2", "6", "7:Planner", "12"]) : "(the brief has no game design doc: build the brief as it is)",
+    template: templateExcerpt(input.brief.concept?.template, "design"),
+    tofu: input.brief.design !== undefined ? tofuPlannerText(input.brief.concept?.template) : "(the brief has no game design doc: no tofu stage; the first phase is the smallest thing that plays)",
   };
 }
 
@@ -396,7 +405,7 @@ function limitLine(limits: PlanLimits): string {
 }
 
 /** JOB.md 2026-11-21: the clip ids a plan's `serves` may name (none without a design doc). */
-export const clipLimit = (brief: Brief): { clipIds?: string[] } => (brief.design ? { clipIds: brief.design.clips.map((c) => c.id) } : {});
+export const clipLimit = (brief: Brief): { clipIds?: string[]; template?: ConceptTemplate } => (brief.design ? { clipIds: brief.design.clips.map((c) => c.id), ...(brief.concept?.template ? { template: brief.concept.template } : {}) } : {});
 
 export function planPackages(builder: Builder, input: PlannerInput, opts: GenerateOptions & PlanLimits): Promise<Generated<PlanAnswer>> {
   return generate<PlanAnswer>(
@@ -405,7 +414,7 @@ export function planPackages(builder: Builder, input: PlannerInput, opts: Genera
     prompt("planner.md"),
     plannerVars(input, opts, ""),
     schema("plan.schema.json"),
-    (v) => planCheck((v as PlanAnswer).packages, { requirePhases: true, ...opts, ...clipLimit(input.brief) }, (v as PlanAnswer).card, (v as PlanAnswer).phases),
+    (v) => planCheck((v as PlanAnswer).packages, { requirePhases: true, ...opts, ...clipLimit(input.brief), requireTofu: input.brief.design !== undefined && input.brief.concept?.template !== undefined }, (v as PlanAnswer).card, (v as PlanAnswer).phases),
     { ...opts, limits: [{ path: "phases[*].try", max: LIMITS.try }] }, // L1b: a too-long try line is repaired, not a lost plan
   );
 }
@@ -556,6 +565,7 @@ export async function critic(
       packages: packageLinesText(opts.packages ?? []),
       rubric: rubric.map((r) => `- ${r.id}: ${r.text}`).join("\n"),
       threshold: String(threshold),
+      checklist: criticChecklistText(),
     },
     critiqueSchema,
     (v) => {
@@ -577,5 +587,5 @@ export async function critic(
   if (res.value.ok !== allPass) notes.push(`critic said ok=${res.value.ok}; scores against threshold ${threshold} give ok=${allPass}`);
   if (captures.length === 0) notes.push("no captures were given");
   const named = typeof res.value.package === "string" && res.value.package.trim() !== "" ? res.value.package.trim() : undefined;
-  return { ok: true, value: { ok: allPass, scores: res.value.scores, notes, ...(named !== undefined ? { package: named } : {}) }, calls: res.calls };
+  return { ok: true, value: { ok: allPass, scores: res.value.scores, notes: withHLine(notes), ...(named !== undefined ? { package: named } : {}) }, calls: res.calls };
 }

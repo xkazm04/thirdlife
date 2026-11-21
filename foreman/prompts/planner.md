@@ -29,6 +29,16 @@ one. **Never cut the feel sheet to fit a package**: cut content (fewer rivals, f
 Every package lists in `serves` the clip ids (from the design's clip moments) it brings closer; every clip id is
 served by some package.
 
+**The genre template is the spec of the core loop.** The concept names the proven design the core loop copies, and its
+research excerpt is below. Every contract of a package that owns a verb, a contact or a rival carries the template's
+rules for it COPIED, not paraphrased: the state names, the move frames, the contact results (what happens to the
+attacker AND the defender, with hit-stop on both), the rival archetype's habits and the AI tier numbers. A builder
+sees only its contract; a rule you summarise is a rule it rebuilds wrong.
+{{template}}
+
+# The tofu stage: the first phase proves the core verb is fun on flat shapes
+{{tofu}}
+
 # The design handbook (docs/GAME-QUALITY.md): feel numbers and the slop list your contracts must avoid
 {{quality}}
 
@@ -48,6 +58,8 @@ How to choose:
 - If one card fits, put its id in the answer as `"card"` (for example `"card": "card.knock_down"`) and write the
   root package's contract from it: start from the card's seed or house game, use its data files and kit parts, copy
   its bot. If two fit, take the one whose `applies when` lines match more of the request.
+- The concept's genre template may have its own card (the duel template: `card.duel`). When that card is in the list,
+  it is the default for this job: take it unless one of its `NOT when` lines matches.
 - If no card fits, OMIT the `card` key (never `null`, never an empty string). A card that does not fit sends every
   builder the wrong way; no card is better than a wrong one.
 - Name only an id from the list above; any other id is refused.
@@ -56,11 +68,12 @@ How to choose:
 - Each package is built by ONE builder run with a **hard time limit of {{timeLimit}} minutes** of wall clock. A run
   that is not finished by then is killed and its round is lost. For scale: in the first real job a root package of
   about 550 lines of script in 7 files took 10.8 minutes. Plan every package to fit well inside the limit.
-- **The root package is the core verb exchange with its whole feel sheet, on greybox**: the venue from a layout file,
-  the player's verbs and one rival who answers them (attack, defence, reaction, whiff, hit-stop, i-frames and the
-  camera of the feel sheet, with the verbs' own clips), the rule that decides the game, the entry script and one bot.
-  No file the package does not need, but nothing of the feel sheet left out. It starts from the nearest seed game and
-  builds the venue from the kit. It must be playable and pass its bot on its own.
+- **The root package is the core verb exchange with its whole feel sheet, on flat shapes** (milestone `blockout`
+  when the brief has a design doc: the tofu stage): the venue from a layout file of kit primitives, the player's verbs
+  and one rival who answers them (attack, defence, reaction, whiff, hit-stop, i-frames and the camera of the feel
+  sheet, the template's contact results on BOTH bodies, with the verbs' own clips), the rule that decides a round, the
+  entry script and the tofu bot. No file the package does not need, but nothing of the feel sheet left out. It starts
+  from the nearest seed game and builds the venue from the kit. It must be playable and pass its bot on its own.
 - **Later packages carry the rest**: more rivals and their characters, the playstyles, the twist, the HUD, sound, the
   art pass, tuning. When in doubt, move CONTENT out of the root into a later package; never move feel out of it.
 - **The camera serves the verb from the first package on.** The root registers the play camera the brief asks for
@@ -72,7 +85,9 @@ Group the packages into 2 to 5 **phases**, in build order. After each phase the 
 the game as it is and says "pass" (go on) or "hold" with a note (change this first). So each phase must be something
 a person can PLAY and feel, not a layer of code:
 - The **first phase is the smallest thing that plays**: the root package, the core verb exchange with its feel, the
-  camera that serves it, one rival or target and a way to score. It holds the root package.
+  camera that serves it, one rival or target and a way to score. It holds the root package. With a design doc it is
+  the tofu stage: only `blockout` packages, flat shapes, no art, no second rival, no twist; the job holds there until
+  the tofu bot's metrics pass.
 - Each later phase adds something the player feels: the rivals' character, the juice, the twist, the stakes, the look.
   A crazy aspect the player kept usually gets a phase of its own after the core plays.
 - Every package is in exactly one phase; a package's deps are in its own phase or an earlier one.

@@ -52,7 +52,9 @@ before you say you are done.
 # Round {{round}} of {{roundLimit}}
 This run has a hard time limit of {{timeLimit}} of wall clock; a run that is not finished by then is killed and the
 round is lost. Your job is two things: make the acceptance pass AND land the feel sheet (the Feel section above, when the brief has a design doc) for the verbs your
-package owns. Get it passing first and check it; then make it feel right before you stop. A package that passes and
+package owns. A `TOFU CHECK:` line in your contract names the bot whose `metrics` the Foreman judges before the game
+may grow: count each metric from what the bot saw in the frames it played; a metric written as a constant, or a
+game tuned to the bot instead of to a player, is found when a person plays the tofu phase. Get it passing first and check it; then make it feel right before you stop. A package that passes and
 feels like nothing is not done: the capture critic films it in motion and sends it back.
 {{feedback}}
 
