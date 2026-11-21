@@ -1,0 +1,32 @@
+{
+  "_about": "DUEL-PLAYBOOK section 6.3: what every contact does to BOTH fighters. hitstop freezes both bodies and rigs (frames); push is metres the defender slides, recoil metres the attacker slides back. Stun lengths are frames. poses: the clip a state shows and how its time runs ([state frame, clip frame]); strength sizes the flinch (TLHit scale: 0.3 tap, 0.7 solid, 1.2+ big).",
+  "light_hit": {"hitstop": 5, "push": 0.25},
+  "heavy_hit": {"hitstop": 9, "push": 0.6},
+  "charged_hit": {"hitstop": 11, "push": 0.9},
+  "light_block": {"hitstop": 3, "blockstun": 14, "push": 0.35, "recoil": 0.15},
+  "heavy_block": {"hitstop": 6, "blockstun": 18, "push": 0.35, "rebound": 40, "recoil": 0.2},
+  "light_parried": {"hitstop": 10, "parried": 52, "defender": 8, "recoil": 0.35},
+  "heavy_parried": {"hitstop": 10, "parried": 36, "defender": 8, "recoil": 0.35},
+  "charged_parried": {"hitstop": 10, "parried": 60, "defender": 8, "recoil": 0.45},
+  "bash": {"hitstop": 6, "guardbroken": 30, "push": 1.0, "attacker": 10},
+  "bash_wall": {"hitstop": 12, "wallsplat": 60, "within": 1.2},
+  "bash_stun": {"hitstop": 4, "push": 0.6},
+  "counter_bash": {"window": 8, "hitstop": 6, "push": 0.6, "rebound": 20},
+  "clash": {"hitstop": 8, "rebound": 20, "rebound_heavy": 30, "posture": 12, "push": 0.45, "lead": 5},
+  "counter_hit": {"hitstop": 2, "stun": 10, "damage_k": 1.25},
+  "wall_knock": {"hitstop": 8, "wallsplat": 40},
+  "exhausted_block": {"guardbroken": 40},
+  "finisher": {"damage": 30, "hitstop": 14},
+  "tiers": {"flinch": 15, "stagger": 35, "flinch_frames": 18, "stagger_frames": 40, "stagger_push": 0.6, "knockdown_frames": 45, "armour": 40},
+  "chip": 0.1,
+  "broken_frames": 90,
+  "poses": {
+    "HITSTUN": {"clip": "hit_front", "strength": 0.8, "anim": [[0, 0], [3, 3.2], [8, 4.4], [18, 20]]},
+    "STAGGER": {"clip": "hit_front", "strength": 1.3, "anim": [[0, 0], [4, 3.4], [26, 4.6], [40, 22]]},
+    "PARRIED": {"clip": "hit_front", "strength": 1.4, "anim": [[0, 0], [4, 3.3], [-14, 4.3], [-1, 21]]},
+    "GUARDBROKEN": {"clip": "hit_front", "strength": 1.0, "anim": [[0, 0], [4, 3.4], [-12, 4.5], [-1, 21]]},
+    "REBOUND": {"clip": "hit_front", "strength": 0.9, "anim": [[0, 0], [3, 3.3], [-10, 4.8], [-1, 21]]},
+    "WALLSPLAT": {"clip": "hit_back", "strength": 1.4, "anim": [[0, 0], [3, 3.4], [-16, 4.0], [-1, 21]]},
+    "BROKEN": {"clip": "hit_front", "strength": 1.4, "anim": [[0, 0], [5, 3.6], [-12, 4.6], [-1, 21]]}
+  }
+}

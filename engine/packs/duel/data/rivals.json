@@ -1,0 +1,65 @@
+{
+  "_about": "DUEL-PLAYBOOK 6.6 (tiers) and 6.7 (rivals). A rival is an archetype defined by its defence (Absolver): the Wall absorbs, the Duelist parries, the Dancer avoids. tier: react (frames from a visible animation start to the rival's answer), defend (share of the player's attacks it answers), read (share of string enders swapped for the counter to the player's commonest answer), return (frames the rival stands open after every string), pace (frames it waits between strings, drawn in this range: later rungs add density, not randomness). strings: steps of m (light heavy charged bash roll dodge taunt tell), optional delay (frames held before the press: the same every time), feint (heavy cancelled at that windup frame into the next step), dash (extra metres of lunge), frames (a tell's length). weight: how often it is picked. moves: this rival's changes to data/moves.json.",
+  "tiers": {
+    "rung1": {"react": 30, "defend": 0.30, "read": 0.10, "return": 36, "pace": [24, 50]},
+    "rung2": {"react": 22, "defend": 0.45, "read": 0.30, "return": 28, "pace": [16, 44]},
+    "rung3": {"react": 18, "defend": 0.60, "read": 0.50, "return": 22, "pace": [8, 30]},
+    "champion": {"react": 15, "defend": 0.70, "read": 0.65, "return": 18, "pace": [4, 20]}
+  },
+  "ladder": ["wall", "duelist", "dancer"],
+  "rivals": {
+    "wall": {
+      "name": "THE WALL", "line": "Shield brute. Bash his guard; punish his heavy when you block it.",
+      "tier": "rung1", "hp": 110, "poise": 20, "walk": 2.0, "scale": 1.12, "block_stamina_k": 0.7,
+      "colors": {"top": "steel_dark", "trim": "steel_light", "legs": "stone_dark", "boots": "boots"}, "arms": ["mace", "shield"],
+      "guard_up": 0.3, "space": 2.35, "parry_seen": 4,
+      "defence": {"block": 0.85, "parry": 0.05, "dodge": 0.0, "roll": 0.0, "interrupt": 0.10},
+      "guard_counter": "light", "taunt_after_blocks": 2,
+      "moves": {"light": {"windup": 22}, "heavy": {"windup": 36, "anim": [[0, 0], [28, 8.0], [34, 10.0], [36, 11.4], [39, 13.0], [41, 14.4], [69, 30]]}},
+      "strings": [
+        {"id": "jab", "weight": 3, "steps": [{"m": "light"}]},
+        {"id": "jab_jab", "weight": 2, "steps": [{"m": "light"}, {"m": "light"}]},
+        {"id": "crush", "weight": 2, "steps": [{"m": "heavy"}]},
+        {"id": "shield", "weight": 2, "steps": [{"m": "bash"}, {"m": "light"}]},
+        {"id": "jab_crush", "weight": 1, "steps": [{"m": "light"}, {"m": "heavy"}]}
+      ],
+      "phase2": {"below": 0.5, "strings": [
+        {"id": "quake", "weight": 3, "steps": [{"m": "heavy"}, {"m": "heavy", "delay": 18}, {"m": "heavy"}]}
+      ]}
+    },
+    "duelist": {
+      "name": "THE DUELIST", "line": "Parry master. He reads the third hit: feint, delay, bash. Hit him when he taps his blade.",
+      "tier": "rung2", "hp": 100, "poise": 10, "walk": 2.6, "scale": 1.0, "block_stamina_k": 1.0,
+      "colors": {"top": "car_red", "trim": "yellow", "legs": "black", "boots": "boots"}, "arms": ["rapier"],
+      "guard_up": 0.45, "space": 2.45, "parry_seen": 2, "parry_window": [2, 15], "parry_third": true,
+      "defence": {"block": 0.45, "parry": 0.45, "dodge": 0.05, "roll": 0.0, "interrupt": 0.05},
+      "riposte": "heavy", "punish_whiffs": true,
+      "moves": {"heavy": {"windup": 28, "anim": [[0, 0], [20, 8.0], [26, 10.0], [28, 11.4], [31, 13.0], [33, 14.4], [61, 30]]}},
+      "strings": [
+        {"id": "triple", "weight": 3, "steps": [{"m": "light"}, {"m": "light"}, {"m": "light"}]},
+        {"id": "pair", "weight": 2, "steps": [{"m": "light"}, {"m": "light"}]},
+        {"id": "thrust", "weight": 2, "steps": [{"m": "heavy"}]},
+        {"id": "feint_bash", "weight": 2, "steps": [{"m": "heavy", "feint": 14}, {"m": "bash"}, {"m": "light"}]},
+        {"id": "poke", "weight": 2, "steps": [{"m": "light", "dash": 0.6}]},
+        {"id": "riposte", "weight": 2, "steps": [{"m": "tell", "frames": 24}, {"m": "light"}, {"m": "light"}, {"m": "heavy"}]}
+      ]
+    },
+    "dancer": {
+      "name": "THE DANCER", "line": "Dual blades, never still. Any heavy staggers her; punish the end of her roll.",
+      "tier": "rung3", "hp": 85, "poise": 8, "walk": 3.0, "scale": 0.94, "block_stamina_k": 1.2,
+      "colors": {"top": "neon_violet", "trim": "white", "legs": "pants", "boots": "boots"}, "arms": ["blade", "blade_l"],
+      "guard_up": 0.0, "space": 2.6, "parry_seen": 99, "flee_stamina": 40,
+      "defence": {"block": 0.25, "parry": 0.0, "dodge": 0.35, "roll": 0.4, "interrupt": 0.0},
+      "roll_through_heavy": true, "taunt_after": "flurry", "punish_whiffs": true,
+      "roll": {"frames": 30, "iframes": [3, 18], "anim": [[0, 0], [22, 22], [30, 24]]}, "dodge_stamina": 8,
+      "moves": {"light": {"chain_max": 4, "damage": 11, "chain_damage": 9}},
+      "strings": [
+        {"id": "dash", "weight": 3, "steps": [{"m": "light", "dash": 1.6}]},
+        {"id": "flurry", "weight": 2, "steps": [{"m": "light"}, {"m": "light"}, {"m": "light"}, {"m": "light"}]},
+        {"id": "roll_cut", "weight": 2, "steps": [{"m": "roll"}, {"m": "light"}]},
+        {"id": "spin", "weight": 2, "steps": [{"m": "heavy", "delay": 0, "hold": 30}]},
+        {"id": "pair", "weight": 1, "steps": [{"m": "light"}, {"m": "light"}]}
+      ]
+    }
+  }
+}

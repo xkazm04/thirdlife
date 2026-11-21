@@ -1,0 +1,16 @@
+{
+  "_about": "Resources (DUEL-PLAYBOOK 6.1), the player, the ring, the rounds, the camera. rival: the ladder rung to start on (0 Wall, 1 Duelist, 2 Dancer, 3 the champion remix); hand_hint keeps the key card on screen for that many frames of the first round.",
+  "rival": 0,
+  "rules": {"sides": ["you", "rival"], "score_to_win": 2},
+  "rounds": {"seconds": 70, "intro_frames": 90, "end_frames": 150, "max_rounds": 5, "start_gap": 5.0},
+  "player": {"name": "YOU", "hp": 100, "poise": 10, "walk": 2.6, "scale": 1.0, "block_stamina_k": 1.0,
+    "colors": {"top": "car_blue", "trim": "white", "legs": "pants", "boots": "boots"}, "arms": ["sword"]},
+  "stamina": {"max": 100, "regen": 0.6, "wait_attack": 20, "wait_dodge": 24, "wait_blocked": 30, "exhausted_until": 40, "windup_k": 1.25},
+  "posture": {"max": 100, "regen": 0.25, "wait": 45, "low_hp_k": 0.5},
+  "rally": {"below": 0.35, "stamina_k": 1.5},
+  "move": {"accel": 40.0, "turn": 14.0, "turn_recovery": 3.0, "turn_active": 1.5, "windup_walk_k": 0.3, "recovery_walk_k": 0.35},
+  "ring": {"inner": 8.35, "centre_gap": 0.06},
+  "buffer": 8,
+  "camera": {"back": 4.6, "up": 2.6, "side": 2.6, "look_up": 1.0, "fov": 52, "follow": 0.2},
+  "crowd": {"parry": 2, "splat": 3, "star": 2, "clash": 1, "finisher": 3, "taunt_hit": 2}
+}

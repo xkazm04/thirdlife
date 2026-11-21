@@ -1,0 +1,249 @@
+extends RefCounted
+## What the player sees and hears: the HUD (health, stamina and posture bars, rounds, clock, the rival's name and line),
+## banners for the big moments (PARRY, GUARD BREAK, WALL SPLAT, CLASH, COUNTER, K.O.), the charged heavy's red flash,
+## cues that teach in the first round, effects, sounds and shake, and the cameras. Drawing only: nothing here is read
+## by the rules or the state hash.
+
+const BAR: int = 16
+
+var g
+var hud: TLHud
+var banner_left: int = 0
+var cue_left: int = 0
+var hint_left: int = 0
+var cam_pos: Vector3 = Vector3.ZERO
+var cam_look: Vector3 = Vector3.ZERO
+var views: Array = [&"duel", &"side", &"arena"]
+var view_i: int = 0
+var side_sign: float = 1.0
+var flames: Array = []                 ## [node, frames left]
+
+
+func setup(main) -> void:
+	g = main
+	hud = TLHud.create()
+	g.ctx.root.add_child(hud)
+	hud.font_size = 21
+	hud.add_label(&"you", "", &"top_left")
+	hud.add_label(&"rival", "", &"top_right")
+	hud.set_align(&"rival", &"right")
+	hud.add_label(&"round", "", &"top")
+	hud.set_align(&"round", &"center")
+	hud.font_size = 44
+	hud.add_label(&"banner", "", &"center")
+	hud.font_size = 20
+	hud.set_align(&"banner", &"center")
+	hud.add_label(&"cue", "", &"bottom")
+	hud.set_align(&"cue", &"center")
+	hud.add_label(&"keys", "", &"bottom")
+	hud.set_align(&"keys", &"center")
+	for id: StringName in [&"you", &"rival", &"round"]:
+		hud.set_plate(id, true)
+	var c: Dictionary = g.tune["camera"]
+	g.ctx.cameras.add_view(&"duel", Vector3(0, 3, 9), Vector3(0, 1, 0), float(c["fov"]))
+	g.ctx.cameras.add_view(&"side", Vector3(8, 2, 0), Vector3(0, 1, 0), 50.0)
+	g.ctx.cameras.add_view(&"arena", Vector3(0, 15, 15), Vector3(0, 0, 0), 55.0)
+	g.ctx.cameras.activate(&"duel")
+	hint_left = int(g.tune["hand_hint"]) if g.tune.has("hand_hint") else 1500
+
+
+func bar(v: float, top: float) -> String:
+	var n: int = clampi(roundi(v / maxf(top, 1.0) * BAR), 0, BAR)
+	return "█".repeat(n) + "░".repeat(BAR - n)
+
+
+func _side(f, title: String) -> String:
+	var tags: String = ""
+	if f.exhausted:
+		tags += "  EXHAUSTED"
+	if f.rally():
+		tags += "  RALLY"
+	if f.st == "BROKEN":
+		tags += "  BROKEN"
+	return "%s%s\nHP %s %d\nST %s\nPO %s%s" % [title, tags, bar(f.hp, f.hp_max), ceili(f.hp), bar(f.stamina, 100.0),
+		bar(f.posture, 100.0), "  ★%d" % f.stars if f.stars > 0 else ""]
+
+
+func _pips(n: int) -> String:
+	return "●".repeat(n) + "○".repeat(maxi(0, int(g.tune["rules"]["score_to_win"]) - n))
+
+
+func banner(text: String, frames: int = 50) -> void:
+	hud.set_text(&"banner", text)
+	banner_left = frames
+
+
+func cue(text: String, frames: int = 100) -> void:
+	hud.set_text(&"cue", text)
+	cue_left = frames
+
+
+## Every frame (also in a hit-stop): the HUD and the camera.
+func tick() -> void:
+	var you = g.you
+	var rv = g.rival
+	hud.set_text(&"you", _side(you, "YOU"))
+	hud.set_text(&"rival", _side(rv, rv.name))
+	var w: Dictionary = g.wins
+	var time_text: String = g.round_rules.clock_text() if g.round_rules != null else ""
+	hud.set_text(&"round", "ROUND %d   %s  %s  %s   %s
+CROWD %s" % [g.round_no, _pips(int(w["you"])), time_text,
+		_pips(int(w["rival"])), g.rung_name(), "▮".repeat(clampi(int(g.crowd_level), 0, 12))])
+	if banner_left > 0:
+		banner_left -= 1
+		if banner_left == 0:
+			hud.set_text(&"banner", "")
+	if cue_left > 0:
+		cue_left -= 1
+		if cue_left == 0:
+			hud.set_text(&"cue", "")
+	if hint_left > 0:
+		hint_left -= 1
+		hud.set_text(&"keys", "WASD move    LMB / J light    RMB / K heavy (hold = unblockable)    SPACE block (tap = parry)    SHIFT roll    E bash" if hint_left > 0 else "")
+	for i in range(flames.size() - 1, -1, -1):
+		flames[i][1] -= 1
+		if flames[i][1] <= 0:
+			if is_instance_valid(flames[i][0]):
+				(flames[i][0] as Node).queue_free()
+			flames.remove_at(i)
+	_camera()
+
+
+func next_view() -> void:
+	view_i = (view_i + 1) % views.size()
+	g.ctx.cameras.activate(views[view_i])
+
+
+func _camera() -> void:
+	var c: Dictionary = g.tune["camera"]
+	var p: Vector3 = g.you.pos()
+	var r: Vector3 = g.rival.pos()
+	var fwd: Vector3 = Vector3(r.x - p.x, 0.0, r.z - p.z)
+	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3(0, 0, -1)
+	var right := Vector3(-fwd.z, 0.0, fwd.x)
+	var want: Vector3 = p - fwd * float(c["back"]) + right * float(c["side"]) + Vector3.UP * float(c["up"])
+	var look: Vector3 = p.lerp(r, 0.5) + Vector3.UP * float(c["look_up"])
+	var k: float = float(c["follow"])
+	if cam_pos == Vector3.ZERO:
+		cam_pos = want
+		cam_look = look
+	cam_pos = cam_pos.lerp(want, k)
+	cam_look = cam_look.lerp(look, k)
+	var root: Node3D = g.ctx.root
+	g.ctx.cameras.add_view(&"duel", root.to_global(cam_pos), root.to_global(cam_look), float(c["fov"]))
+	var mid: Vector3 = p.lerp(r, 0.5)
+	var gap: float = Vector2(r.x - p.x, r.z - p.z).length()
+	var off: Vector3 = right * (4.2 + gap * 0.7) * side_sign
+	if (mid + off).length() > (mid - off).length() + 2.5:
+		side_sign = -side_sign                       # the side that looks out of the ring, so the wall never cuts the view
+		off = -off
+	var side_pos: Vector3 = mid + off + Vector3.UP * 1.6
+	if Vector2(side_pos.x, side_pos.z).length() > 7.6:
+		var k2: float = 7.6 / Vector2(side_pos.x, side_pos.z).length()
+		side_pos = Vector3(side_pos.x * k2, side_pos.y + 0.8, side_pos.z * k2)
+	g.ctx.cameras.add_view(&"side", root.to_global(side_pos), root.to_global(mid + Vector3.UP * 1.05), 48.0)
+
+
+func snap_camera() -> void:
+	cam_pos = Vector3.ZERO
+
+
+## The tick's events from both fighters: juice and cues.
+func on_event(f, e: Array) -> void:
+	var name: String = str(e[0])
+	var data = e[1]
+	var root: Node3D = g.ctx.root
+	var mid: Vector3 = f.pos().lerp(f.foe.pos(), 0.5) + Vector3.UP * 1.3
+	var is_you: bool = f.id == "you"
+	match name:
+		"hit":
+			var big: bool = str(data["mv"]) != "light"
+			TLVfx.burst(&"sparks", root.to_global(f.foe.pos() + Vector3.UP * 1.3), root, {"scale": 1.4 if big else 0.9})
+			TLAudio.play(&"hit_metal", root.to_global(mid), 2.0 if big else -2.0)
+			g.ctx.cameras.shake(0.14 if big else 0.06, 12 if big else 8)
+			var kind: String = str(data["kind"])
+			if kind.begins_with("finisher"):
+				banner("FINISHER!", 60)
+			elif kind.begins_with("knockdown"):
+				banner("KNOCKDOWN", 50)
+			elif bool(data["counter"]) and is_you:
+				banner("COUNTER!", 40)
+			if kind == "ko":
+				banner("K.O.", 120)
+				TLAudio.play(&"cheer")
+		"blocked":
+			TLVfx.burst(&"sparks", root.to_global(f.pos() + f.forward() * 0.4 + Vector3.UP * 1.3), root, {"scale": 0.6, "color": Color(1, 1, 0.85)})
+			TLAudio.play(&"hit_metal", root.to_global(mid), -6.0)
+			if is_you and bool(data["heavy"]) == false:
+				pass
+			if not is_you and bool(data["heavy"]) and g.round_no == 1:
+				cue("You hit his guard with a heavy: he bounces off - get out or block.")
+			if is_you and bool(data["heavy"]) and g.round_no <= 2:
+				cue("You blocked his HEAVY: he is open - LIGHT now!")
+		"parry":
+			TLVfx.burst(&"goal_flash", root.to_global(mid), root, {"color": Color(1.0, 0.85, 0.3), "scale": 0.8})
+			TLAudio.play(&"hit_metal", root.to_global(mid), 4.0)
+			g.ctx.cameras.shake(0.1, 10)
+			banner("PARRY!" if is_you else "PARRIED", 45)
+			if is_you:
+				cue("Parried a %s: %s guaranteed." % ["light - a HEAVY is" if str(data["mv"]) == "light_parried" else "heavy - a LIGHT is", ""], 90)
+		"clash":
+			TLVfx.burst(&"sparks", root.to_global(mid), root, {"scale": 2.0, "color": Color(1.0, 0.95, 0.7)})
+			TLAudio.play(&"hit_metal", root.to_global(mid), 6.0)
+			g.ctx.cameras.shake(0.12, 12)
+			banner("CLASH!", 40)
+		"guardbreak":
+			TLVfx.burst(&"dust", root.to_global(f.foe.pos() + Vector3.UP * 0.2), root, {"scale": 1.0})
+			TLAudio.play(&"hit_wood", root.to_global(mid), 2.0)
+			g.ctx.cameras.shake(0.1, 10)
+			if is_you:
+				banner("GUARD BREAK!", 40)
+		"splat":
+			var at: Vector3 = f.foe.pos() + (f.foe.pos() - f.pos()).normalized() * 0.4 + Vector3.UP * 1.0
+			TLVfx.burst(&"debris", root.to_global(at), root, {"scale": 1.2})
+			TLVfx.burst(&"dust", root.to_global(at), root, {"scale": 1.6})
+			TLAudio.play(&"hit_stone", root.to_global(at), 6.0)
+			g.ctx.cameras.shake(0.26, 18)
+			banner("WALL SPLAT!", 55)
+			TLAudio.play(&"cheer")
+		"charged_flash":
+			var hand = f.rig.socket(&"hand_r") if f.rig != null else null
+			if hand != null:
+				TLVfx.burst(&"goal_flash", hand.global_position, root, {"scale": 0.7, "color": Color(1.0, 0.12, 0.08)})
+				TLVfx.burst(&"sparks", hand.global_position, root, {"scale": 2.2, "color": Color(1.0, 0.15, 0.1)})
+				if f.tip != null:                           # the unblockable's arc is drawn red
+					var tr: Node3D = TLVfx.trail(f.tip, {"width": 0.42, "frames": 10, "color": Color(1.0, 0.15, 0.1)})
+					if tr != null:
+						flames.append([tr, f.windup - f.mf + f.active + 10])
+				var fl: Node3D = TLVfx.attach(&"nitro_flame", hand, {"color": Color(1.0, 0.2, 0.1), "scale": 0.6})
+				if fl != null:
+					flames.append([fl, f.windup - f.mf + 6])
+			TLAudio.play(&"horn", root.to_global(f.pos()), -4.0)
+			if not is_you:
+				cue("RED = UNBLOCKABLE: roll, or hit him first.", 80)
+		"tell":
+			TLVfx.burst(&"sparks", root.to_global(f.pos() + Vector3.UP * 1.9), root, {"scale": 0.7, "color": Color(0.6, 0.9, 1.0)})
+			TLAudio.play(&"beep", root.to_global(f.pos()), -6.0)
+		"star":
+			banner("★ STAR!", 40)
+			TLAudio.play(&"cheer")
+		"broken":
+			banner("POSTURE BROKEN" if f.id != "you" else "YOUR GUARD IS BROKEN", 50)
+			if f.id != "you":
+				cue("He is BROKEN: a HEAVY now is a finisher.", 90)
+		"exhausted":
+			if is_you:
+				cue("Out of stamina: you are slow, a bash floors you. Back off.", 90)
+		"evade":
+			TLVfx.burst(&"dust", root.to_global(f.pos()), root, {"scale": 0.7})
+		"whiff":
+			if not is_you and g.round_no == 1 and g.rung <= 0:
+				cue("He missed: hit him while he recovers.", 70)
+		"windup":
+			if str(data) != "bash" and f.tip != null:     # the blade's arc: wider and longer for a heavy
+				var heavy: bool = str(data) != "light"
+				var tr: Node3D = TLVfx.trail(f.tip, {"width": 0.3 if heavy else 0.16, "frames": 9 if heavy else 6, "color": "white"})
+				if tr != null:
+					flames.append([tr, f.windup + f.active + 10])
+			if not is_you and str(data) == "bash" and g.round_no == 1:
+				cue("Shoulder dip = BASH coming: roll or hit him first.", 60)
