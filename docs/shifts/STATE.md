@@ -252,3 +252,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 
 ### 2026-11-22 night: plan (feel kit, duel reference, hockey playability, editor know-how, the Home)
 - 19:00 planned with the owner after the day verdict ("still mediocre slop"; mimic proven duel designs; research first). Research landed c7dad86 (docs/research: DUEL-PLAYBOOK, HOCKEY-ARCADE, WHAT-MADE-GAMES-POPULAR). Falls arm A merged aa82c4f. Lanes: N1 feel kit (Astra), N2 duel reference pack + card (Opus), N3 hockey playability (Astra), N4 editor know-how + tofu stage (Opus), N5 world chunks (Astra), N6 world directions (3 Astra-solo arms, grind loops; owner picks). Colosseum proof retry at the end. Plan: docs/shifts/2026-11-22-night/PLAN.md.
+- 20:17 standup: N4 landed edf4337 (+contract cfa2155); N1 API final (relayed), full tier running; N2, N3, N5 on track; N6 arms A, B through 12 rounds.
