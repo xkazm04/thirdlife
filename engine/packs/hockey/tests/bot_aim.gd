@@ -1,4 +1,4 @@
-extends Node
+extends "rink_bot.gd"
 ## Bot (H4): the stick follows the aim. A person's mouse is the aim (ctx.input.set_aim stands in for the cursor).
 ##   shoot x10: drill carry_alone; he skates east (D held) while the aim sits north of him; after 20 frames Space:
 ##     the puck must fly at the aim point (angle error per try, from the puck to the aim point; L5, 21 Nov: it flew
@@ -9,8 +9,6 @@ extends Node
 ##   cleared: aim north 20 frames, then clear_aim and Space on the same frame: the shot leaves along his facing
 ## ok: every shot within 3 degrees of its aim, 9 of 10 passes to the aimed mate, dead zone and cleared within 1 degree.
 
-var ctx
-var s: Dictionary = {}
 var tests: Array = []                  # [kind, index]
 var t: int = 0
 var phase: String = "start"
@@ -25,11 +23,9 @@ var pass_log: Array = []
 var dead_err: float = -1.0
 var clear_err: float = -1.0
 var notes: Array = []
-var done: bool = false
-
 
 func _bot_setup(c) -> void:
-	ctx = c
+	super(c)
 	for i: int in 10:
 		tests.append(["shoot", i])
 	for i: int in 10:
@@ -37,34 +33,16 @@ func _bot_setup(c) -> void:
 	tests.append(["dead", 0])
 	tests.append(["clear", 0])
 
-
-func _v(a: Array) -> Vector2:
-	return Vector2(float(a[0]), float(a[1]))
-
-
-func _sk(id: String) -> Dictionary:
-	for k: Dictionary in s["skaters"]:
-		if k["id"] == id:
-			return k
-	return {}
-
-
 func _p3(id: String) -> Vector3:
 	var p: Vector2 = _v(_sk(id)["pos"])
 	return Vector3(p.x, 0.0, p.y)
 
-
 func _deg(a: Vector3, b: Vector3) -> float:
 	return rad_to_deg(Vector2(a.x, a.z).angle_to(Vector2(b.x, b.z))) if a.length() > 0.01 and b.length() > 0.01 else 999.0
 
-
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
-	if str(s.get("mode", "base")) != "base":
-		ctx.input.tap(&"mode_base")
-		return
-	if str(s.get("level", "none")) != "none":
-		ctx.input.tap(&"level_none")      # H6: this bot measures against the opponents of data/ai.json; the default level is rookie
+	if not classic():
 		return
 	if done:
 		return
@@ -153,15 +131,9 @@ func _bot_tick(frame: int) -> void:
 		notes.append("%s %d timed out" % [kind, idx])
 		_next()
 
-
 func _next() -> void:
 	t += 1
 	phase = "start"
-
-
-func _bot_done() -> bool:
-	return done
-
 
 func _bot_result() -> Dictionary:
 	var worst: float = 0.0

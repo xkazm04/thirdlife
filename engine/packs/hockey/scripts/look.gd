@@ -6,12 +6,19 @@ extends RefCounted
 
 var cfg: Dictionary = {}               # data/tuning.json "look"
 var ring_lib = null                    # gen/ring_hook.gd (meshes are made in a generator)
+var neon = null                        # L5 crazy: a windowed neon match owns its light and ribbons
 var touched: bool = false              # a person pressed a key or a button: the keys' lines go away
 var goal_by: String = ""               # the side that scored last, shown during the pause after the goal
 var seen: Dictionary = {}              # side -> the score the HUD last saw
 var plated_hud = null                  # L2: the HUD whose labels were aligned (a new match makes a new HUD)
 var plated: Dictionary = {}            # L2: widget id -> a plate is under it now (a plate only while there is a text)
 const HAND: Array = [&"up", &"down", &"left", &"right", &"shoot", &"pass", &"poke", &"sprint", &"check", &"cross", &"dial"]
+
+## L5 crazy: the goalie's silver-blue pads keep his larger silhouette readable at the net.
+func neon_colors(team: String, role: String) -> Dictionary:
+	var trim := "cyan" if team == "blue" else "tail_light"
+	return {"top": "cabin_trim" if team == "blue" else "roof", "trim": trim,
+		"legs": "steel_dark" if role == "goalie" else "black", "boots": "tire", "pack": "bot_dark", "stick": "steel_dark"}
 
 
 ## The puck is drawn larger than its body (the body, and so the play, is unchanged) with a rim in a colour nothing
@@ -33,6 +40,12 @@ func _lib(g):
 
 ## After every build: his reach ring (always there), a wider ring under whoever carries, the boards on this match.
 func setup(g) -> void:
+	if neon != null:
+		neon.clear()
+		neon = null
+	if not g.ctx.headless and g.modes[g.mode_id].has("neon"):
+		neon = g.ctx.load_script("scripts/fx/neon.gd").new()
+		neon.setup(g, g.modes[g.mode_id]["neon"])
 	var lib = _lib(g)
 	if lib != null:
 		for id: String in g.order:
@@ -70,11 +83,14 @@ func hud_lines(g) -> void:
 	g.hud.add_bound(&"keys", func() -> String: return keys_text(g), &"top")
 
 
-## The keys, three lines in one label, until his first input (not while a bot-only match runs, not after the end).
+## Opening controls and the selected mode's ability hint for a human player.
 func keys_text(g) -> String:
 	if g.intro.active:
 		return g.intro.text(g)               # L5: the first-minute drill's one line instead
-	return "" if touched or g.autopilot or g.result != "" else "\n".join(PackedStringArray(cfg["keys"]))
+	if g.autopilot or g.result != "":
+		return ""
+	var controls := "" if touched else "\n".join(PackedStringArray(cfg["keys"]))
+	return g.crazy.boosts.with_ability_hint(g, controls)
 
 
 ## L2 (kernel API 1.5): a plate under every text that lies on the picture, only while it has a text (an empty
@@ -117,6 +133,8 @@ func tick(g) -> void:
 	var c: String = g.api.carrier
 	if g.ctx.headless:
 		return                               # the rings are drawing only: no picture, no work (budget: frame p50)
+	if neon != null:
+		neon.tick(g, goal_by)
 	for id: String in g.order:
 		var dring: Node3D = (g.skaters[id] as Node3D).get_node_or_null("DownRing") as Node3D
 		if dring != null:

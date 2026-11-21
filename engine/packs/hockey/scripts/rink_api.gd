@@ -1,17 +1,36 @@
 extends RefCounted
-## Possession (H1): who has the puck, carrying it, shooting, passing and poking. Created by main.gd, no class_name.
-## The rule: a loose puck that comes inside a skater's reach circle (or that his body skates through) becomes his on
-## that frame, whatever he faces, at any speed, with any button held. He carries it at his stick side (TLBall.hold)
-## until he shoots, passes, is poked or (H2) is hit. Every number is in data/tuning.json "shoot" and "carry".
+## Possession, blade placement, release and recovery. Distances and timings come from carry and shoot tuning.
 
+var skate
+var rink_root: Node3D
 var puck: TLBall
 var skaters: Dictionary = {}
 var teams: Dictionary = {}
 var order: Array = []
 var speed: float = 18.0                ## shot speed, m/s
+var charge_frames: int
+var charge_bonus: float
+var tap_frames: int
+var shot_held := false
+var held_frames := 0
 var cooldown_frames: int = 24
 var reach: float = 1.1                 ## carry: the reach circle's radius, m
-var offset: Vector3 = Vector3(0.3, 0.07, -0.75)
+var blade_base: float
+var blade_reach: float
+var blade_yaw: float
+var carry_reach_mult: float
+var assist: float
+var sweep_angle: float
+var sweep_shield_frames: int
+var sprint_shield_frames: int
+var last_carried: Dictionary = {}      ## Last frame each skater released or lost possession.
+var shield_left: int = 0
+var yaw_rigs: Array[Node3D] = []
+var yaw_ids: Array[String] = []
+var yaw_bodies: Array[TLBiped] = []
+var headless := false                  ## no stick posing without a window (set by main.gd)
+var yaw_now: PackedFloat32Array = []   ## per yaw rig: the stick_yaw it is given now (rad, + = left)
+var last_blade: Vector3 = Vector3.ZERO
 var own_lock_frames: int = 12
 var own_lock_speed: float = 4.0
 var flight_take_speed: float = 7.0
@@ -23,8 +42,6 @@ var poke_reach: float = 1.7
 var poke_cooldown_frames: int = 30
 var poke_speed: float = 4.0
 var poke_lock_frames: int = 20
-var carry_speed_scale: float = 0.92
-var sprint_speed_scale: float = 1.25
 var rink_half: Vector2 = Vector2(30.0, 15.0)
 var rink_corner: float = 5.0
 var rink_margin: float = 0.35
@@ -35,10 +52,10 @@ var behind_frames: int = 0             ## H6: frames the carrier has stayed in t
 var behind_limit: int = 90
 var net_zone_half: float = 3.5
 var own_goal_x: Dictionary = {}         ## team -> x of its own goal line
-var ease_frames: int = 8               ## H9: a taken puck slides out to the blade over this many frames (no snap)
-var ease_left: int = 0
-var ease_from: Vector3 = Vector3.ZERO
+var configured_carry_min: float
+var puck_radius: float
 var carry_min: float = 1.0             ## H9a: the nearest the puck is carried to his centre (clear of his body)
+var blade_socket: Node3D
 var hold_at: Vector3 = Vector3.ZERO      ## where on him the puck is held now (the stick side, or another side at the boards)
 var last_release: Dictionary = {}      ## {kind: shot|pass|poked|board, by, team, frame}; empty after a face-off
 var shots: Dictionary = {}
@@ -46,8 +63,6 @@ var passes: Dictionary = {}
 var pokes: Dictionary = {}
 var takes: Dictionary = {}
 var events: Array = []                 ## [kind, id] since main last drained it (kind: shot, pass, poke, take)
-var base_speed: Dictionary = {}
-var sprinting: Dictionary = {}
 var _now: int = 0
 var _ready_at: Dictionary = {}
 var _poke_at: Dictionary = {}
@@ -66,16 +81,37 @@ var hits = null:                       ## scripts/hits.gd (H2): a man down or st
 		_hits_ref = weakref(v) if v != null else null
 var _hits_ref: WeakRef = null
 
-
-func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Array) -> void:
+func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Array, root: Node3D) -> void:
+	rink_root = root
 	var s: Dictionary = tune["shoot"]
+	# JamSim.cpp:2786-2809,2850-2854; JamCartridge.h:320-321,340.
+	for key: String in s:
+		if key not in ["speed", "cooldown_s", "one_timer_frames", "one_timer_scale", "charge_frames", "charge_bonus", "tap_frames"]:
+			push_error("tuning.json: unknown shoot.%s" % key)
+	charge_frames = s["charge_frames"]
+	charge_bonus = s["charge_bonus"]
+	tap_frames = s["tap_frames"]
 	speed = float(s["speed"])
 	cooldown_frames = int(round(float(s["cooldown_s"]) * 60.0))
 	one_timer_frames = int(s["one_timer_frames"])
 	one_timer_scale = float(s["one_timer_scale"])
 	var c: Dictionary = tune["carry"]
 	reach = float(c["reach"])
-	offset = Vector3(float(c["offset"][0]), float(c["offset"][1]), float(c["offset"][2]))
+	# JamSim.cpp:1478-1545,4160-4177; JamCartridge.h:159,182-189,295. Radians and frames are fixed per rink.
+	blade_yaw = -deg_to_rad(float(c["blade_yaw_deg"]))
+	sweep_angle = deg_to_rad(float(c["sweep_deg"]))
+	sweep_shield_frames = c["sweep_shield_frames"]
+	sprint_shield_frames = roundi(sweep_shield_frames * float(c["sweep_sprint_mult"]))
+	blade_base = c["blade_base"]
+	blade_reach = c["blade_reach"]
+	carry_reach_mult = c["carry_reach_mult"]
+	assist = c["assist"]
+	for key: String in c:
+		if key not in ["reach", "carry_min", "blade_base", "blade_reach", "blade_yaw_deg", "carry_reach_mult", "assist", "sweep_deg",
+				"sweep_shield_frames", "sweep_sprint_mult", "own_lock_frames", "own_lock_speed", "flight_take_speed", "flight_take_dist",
+				"pass_speed", "pass_cone_deg", "pass_lead_max_frames", "poke_reach", "poke_cooldown_frames", "poke_speed",
+				"poke_lock_frames", "carry_speed_scale", "behind_net_frames", "behind_net_half_width", "ring_width"]:
+			push_error("tuning.json: unknown carry.%s" % key)
 	own_lock_frames = int(c["own_lock_frames"])
 	own_lock_speed = float(c["own_lock_speed"])
 	flight_take_speed = float(c["flight_take_speed"])
@@ -87,10 +123,8 @@ func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Arr
 	poke_cooldown_frames = int(c["poke_cooldown_frames"])
 	poke_speed = float(c["poke_speed"])
 	poke_lock_frames = int(c["poke_lock_frames"])
-	carry_speed_scale = float(c["carry_speed_scale"])
-	sprint_speed_scale = float(tune["skater_sprint_scale"])
-	carry_min = float(c["carry_min"])
-	ease_frames = int(c["ease_frames"])
+	configured_carry_min = float(c["carry_min"])
+	puck_radius = tune["puck"]["radius"]
 	behind_limit = int(c["behind_net_frames"])
 	net_zone_half = float(c["behind_net_half_width"])
 	own_goal_x = {"blue": float(tune["goals"]["blue"][0]), "red": float(tune["goals"]["red"][0])}
@@ -103,31 +137,31 @@ func setup(tune: Dictionary, p: TLBall, sk: Dictionary, tm: Dictionary, ord: Arr
 	teams = tm
 	order = ord
 	for id: String in order:
+		var rig = (skaters[id] as TLBiped).rig
+		# L2's fight clips came with the rig param stick_yaw (engine/rigs/RIGS.md "stick_yaw"): a rig that has them turns its stick
+		if rig != null and rig.clips().has("cross_check") and rig.socket(&"stick_blade") != null:
+			yaw_rigs.append(rig)
+			yaw_ids.append(id)
+			yaw_bodies.append(sk[id])
+			yaw_now.append(0.0)
 		shots[id] = 0
 		passes[id] = 0
 		pokes[id] = 0
 		takes[id] = 0
 		_ready_at[id] = 0
 		_poke_at[id] = 0
-		base_speed[id] = (skaters[id] as TLBiped).skate_speed
-		sprinting[id] = false
-
 
 func tick(frame: int) -> void:
 	_now = frame
 
-
 func _flat(v: Vector3) -> Vector3:
 	return Vector3(v.x, 0.0, v.z)
-
 
 func pos_of(id: String) -> Vector3:
 	return _flat((skaters[id] as Node3D).global_position)
 
-
 func fwd_of(id: String) -> Vector3:
 	return _flat((skaters[id] as TLBiped).forward()).normalized()
-
 
 ## H4: where a skater's stick points: the aim's heading when the human has one, else the way he faces (as before H4).
 func stick_of(id: String) -> Vector3:
@@ -135,25 +169,21 @@ func stick_of(id: String) -> Vector3:
 		return stick_dir[id]
 	return fwd_of(id)
 
-
 func puck_pos() -> Vector3:
 	return _flat(puck.global_position)
-
 
 ## Distance from a skater to the puck's path of the last physics step (a fast puck cannot jump his circle).
 func dist_to_puck(id: String) -> float:
 	var step: Array = puck.last_step()
-	var a: Vector3 = _flat(step[0])
-	var b: Vector3 = _flat(step[1])
-	var p: Vector3 = pos_of(id)
-	var ab: Vector3 = b - a
-	var t: float = 0.0 if ab.length_squared() < 1e-8 else clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
-	return p.distance_to(a + ab * t)
+	return _path_distance(pos_of(id), _flat(step[0]), _flat(step[1]) - _flat(step[0]))
 
+func _path_distance(p: Vector3, a: Vector3, ab: Vector3) -> float:
+	var length_sq := ab.length_squared()
+	var t := 0.0 if length_sq < 1e-8 else clampf((p - a).dot(ab) / length_sq, 0.0, 1.0)
+	return p.distance_to(a + ab * t)
 
 func in_reach(id: String) -> bool:
 	return carrier == "" and dist_to_puck(id) <= reach
-
 
 ## Whether the loose puck may become his now (the locks after a release, the rule for a puck in flight).
 func may_take(id: String, d: float) -> bool:
@@ -173,7 +203,6 @@ func may_take(id: String, d: float) -> bool:
 		return true
 	return spd < flight_take_speed or d < flight_take_dist
 
-
 ## Called once a tick before anybody acts: the carried puck stays on the ice, a loose one becomes the nearest
 ## eligible skater's whose reach it is inside.
 func update_possession() -> void:
@@ -182,7 +211,7 @@ func update_possession() -> void:
 		# an opponent whose reach it is in takes it (else a match could stall there until the time limit)
 		var gx: float = float(own_goal_x[str(teams[carrier])])
 		var pp: Vector3 = puck_pos()
-		if (pp.x - gx) * signf(gx) > 0.0 and absf(pp.z) < net_zone_half:
+		if (puck.position.x - gx) * signf(gx) > 0.0 and absf(puck.position.z) < net_zone_half:
 			behind_frames += 1
 		else:
 			behind_frames = 0
@@ -201,55 +230,95 @@ func update_possession() -> void:
 				give(best_o)
 				return
 			if behind_frames > behind_limit * 2:
-				# H9a: nobody can reach him there (the puck on his blade, 2.8 m out, can lie in the corner past the net):
-				# he loses it in front of his net; he may not take it back for poke_lock_frames (the lock of a hit)
+				# Nobody can reach him behind the net:
+				# place it in front in pack coordinates, with the lock of a hit.
 				var by: String = carrier
 				behind_frames = 0
 				_release("hit", by, Vector3.ZERO)
-				puck.place(Vector3(gx - signf(gx) * 2.0, 0.07, clampf(pp.z, -3.0, 3.0)))
+				var spot := Vector3(gx - signf(gx) * 2.0, 0.07, clampf(puck.position.z, -3.0, 3.0))
+				puck.place(rink_root.to_global(spot))
 				return
-		# at the boards the stick side would be outside them: he moves the puck to a side of him that is inside
-		# (a release there gave it straight back to him every second frame, a loop a person reads as a frozen game;
-		# a puck tucked UNDER him was a kinematic body inside his capsule and shoved him through the boards)
-		# H9a: the puck rides on the stick's blade (carry.offset: the rig's blade socket measured on the ice), turned with
-		# the stick when the human aims (H4's stick heading); at the boards it comes in along the stick, then to his front
-		var tf: Transform3D = (skaters[carrier] as Node3D).global_transform
-		var y: float = offset.y
-		var base: Vector3 = offset
-		if stick_dir.has(carrier):
-			var turn: float = fwd_of(carrier).signed_angle_to(stick_dir[carrier], Vector3.UP)
-			base = offset.rotated(Vector3.UP, turn)
-			base.y = y
-		if ease_left > 0:
-			# H9: the take eases the puck from where it was (inside his ring) out to the blade
-			base = ease_from.lerp(base, 1.0 - float(ease_left) / float(maxi(ease_frames, 1)))
-			base.y = y
-			ease_left -= 1
-		var want: Vector3 = base
-		if not _inside(_flat(tf * base)):
-			want = Vector3(0.0, y, carry_min)
-			var cm: float = carry_min
-			for c: Vector3 in [Vector3(base.x * 0.8, y, base.z * 0.8), Vector3(base.x * 0.6, y, base.z * 0.6), Vector3(base.x * 0.45, y, base.z * 0.45),
-					Vector3(-base.x, y, base.z), Vector3(0.0, y, -cm), Vector3(-cm, y, 0.0), Vector3(cm, y, 0.0), Vector3(0.0, y, cm)]:
-				if Vector2(c.x, c.z).length() >= cm - 0.01 and _inside(_flat(tf * c)):
-					want = c
-					break
-		if want != hold_at:
-			hold_at = want
-			puck.hold(skaters[carrier], want)
 		return
 	var best: String = ""
 	var best_d: float = 1e9
+	var step := puck.last_step()
+	var a := _flat(step[0])
+	var ab := _flat(step[1]) - a
+	var contacts = hits
 	for id: String in order:
-		if hits != null and not hits.can_act(id):
+		if contacts != null and not contacts.can_act(id):
 			continue
-		var d: float = dist_to_puck(id)
+		var d := _path_distance(pos_of(id), a, ab)
 		if d <= reach and d < best_d and may_take(id, d):
 			best = id
 			best_d = d
 	if best != "":
 		give(best)
 
+## JamSim.cpp:1478-1500. The un-aimed blade rests on the rig's right side.
+func blade_dir(id: String) -> Vector3:
+	if goalies.has(id):
+		# L4 (21 Nov): a goalie holds the puck on the ice side of his body, never toward his own net: his outlet pass left
+		# from a blade 1.1 m behind him, inside the net, and an idle hand won a rookie match by it (ladder seed 6)
+		return Vector3(-signf(float(own_goal_x[str(teams[id])])), 0.0, 0.0)
+	if stick_dir.has(id):
+		return stick_of(id)
+	return fwd_of(id).rotated(Vector3.UP, blade_yaw)
+
+func pose_sticks() -> void:
+	if headless:
+		return                               # drawing only (the rig's stick pose; nothing hashed reads it), as fun.gd's bursts
+	for i in yaw_rigs.size():
+		if yaw_bodies[i].is_down():
+			continue
+		var id := yaw_ids[i]
+		var rig: Node3D = yaw_rigs[i]
+		# RIGS.md stick_yaw: + = left, relative to where the blade rests, which moves with the pose: steer it in a loop on the
+		# drawn blade's bearing (the socket, read after the rig's last tick) toward the puck's blade bearing, half the gap a frame
+		var at: Vector3 = rig.global_transform.affine_inverse() * (rig.socket(&"stick_blade") as Node3D).global_position
+		var gap: float = angle_difference(atan2(-at.x, -at.z), fwd_of(id).signed_angle_to(blade_dir(id), Vector3.UP))
+		yaw_now[i] = clampf(yaw_now[i] + 0.5 * gap, -1.2, 2.0)
+		rig.set_param(&"stick_yaw", yaw_now[i])
+
+func _follow_blade() -> void:
+	if carrier == "":
+		return
+	var body: TLBiped = skaters[carrier]
+	var dir := blade_dir(carrier)
+	var sprint: bool = skate.is_sprinting(carrier)
+	# JamSim.cpp:1500-1545, JamCartridge.h:182-189. A new sweep renews the shield.
+	var duration := sprint_shield_frames if sprint else sweep_shield_frames
+	shield_left = clampi(shield_left - 1, 0, duration)
+	if hits.can_act(carrier) and last_blade.angle_to(dir) > sweep_angle:
+		shield_left = duration
+	last_blade = dir
+
+	# JamSim.h:494, JamCartridge.h:159,187, JamSim.cpp:1484-1499. Aim extends the blade.
+	var frac := 1.0 if stick_dir.has(carrier) else 0.5
+	var dist := blade_base + frac * blade_reach
+	if not sprint:
+		dist *= carry_reach_mult
+	var blade := body.global_transform.basis.inverse() * (dir * maxf(carry_min, dist))
+	blade.y = 0.07
+	# JamSim.cpp:4160-4177, JamCartridge.h:295. Keep the puck moving with its holder
+	# and close a fraction of the remaining local gap, including on a take.
+	var point := hold_at.lerp(blade, assist)
+	if not _inside(body.transform * point):
+		point = _board_point(body, blade)
+	if point != hold_at:
+		hold_at = point
+		blade_socket.position = point
+
+func _board_point(body: TLBiped, blade: Vector3) -> Vector3:
+	var cm := carry_min
+	for p: Vector3 in [_flat(blade).normalized() * cm, Vector3(-blade.x, 0, blade.z),
+			Vector3.FORWARD * cm, Vector3.LEFT * cm, Vector3.RIGHT * cm, Vector3.BACK * cm]:
+		p.y = blade.y
+		if _inside(body.transform * p):
+			return p
+	var inward := body.transform.basis.inverse() * -_flat(body.position).normalized() * cm
+	inward.y = blade.y
+	return inward
 
 func give(id: String) -> void:
 	if carrier != "":
@@ -257,62 +326,77 @@ func give(id: String) -> void:
 	from_pass = not last_release.is_empty() and str(last_release["kind"]) == "pass" and str(last_release["team"]) == str(teams[id]) \
 		and str(last_release["by"]) != id
 	carrier = id
+	carry_min = maxf(configured_carry_min, (skaters[id] as TLBiped).body_radius() + puck_radius)
 	carry_since = _now
 	behind_frames = 0
 	takes[id] = int(takes[id]) + 1
 	var local: Vector3 = (skaters[id] as Node3D).global_transform.affine_inverse() * puck.global_position
-	local.y = offset.y
-	if Vector2(local.x, local.z).length() < carry_min:
-		local = Vector3(local.x, offset.y, local.z).normalized() * carry_min if Vector2(local.x, local.z).length() > 0.01 else Vector3(0.0, offset.y, -carry_min)
-		local.y = offset.y
-	ease_from = local
-	ease_left = ease_frames
+	local.y = 0.07
 	hold_at = local
-	puck.hold(skaters[id], local)
+	last_blade = blade_dir(id)
+	var body: TLBiped = skaters[id]
+	blade_socket = body.get_node_or_null("PuckSocket")
+	if blade_socket == null:
+		blade_socket = Node3D.new()
+		blade_socket.name = "PuckSocket"
+		body.add_child(blade_socket)
+	blade_socket.position = local
+	puck.hold(blade_socket)
 	events.append(["take", id])
 
-
 func _drop() -> void:
+	cancel_charge()
+	last_carried[carrier] = _now
 	carrier = ""
+	shield_left = 0
 	puck.release(Vector3.ZERO)
-
 
 ## A face-off or a drill: nobody has it, no lock.
 func reset() -> void:
 	if carrier != "":
 		_drop()
 	last_release = {}
-
+	last_carried.clear()
 
 func _release(kind: String, by: String, vel: Vector3) -> void:
+	cancel_charge()
+	last_carried[by] = _now
 	carrier = ""
+	shield_left = 0
 	puck.release(vel)
 	last_release = {"kind": kind, "by": by, "team": str(teams[by]), "frame": _now}
 
-
 ## Sets each skater's top speed for this frame: carrying is slower, sprinting faster (numbers in data).
 func apply_speeds() -> void:
-	for id: String in order:
-		var v: float = float(base_speed[id])
-		if id == carrier:
-			v *= carry_speed_scale
-		if bool(sprinting[id]):
-			v *= sprint_speed_scale
-		if hits != null:
-			v *= hits.speed_scale(id)
-		(skaters[id] as TLBiped).skate_speed = v
-
+	skate.tick()
 
 func can_shoot(id: String) -> bool:
 	return carrier == id and _now >= int(_ready_at[id])
 
+func cancel_charge() -> void:
+	shot_held = false
+	held_frames = 0
 
-func try_shoot(id: String) -> bool:
+## JamSim.cpp:2786-2809, JamCartridge.h:73. Only a fresh carrier press arms a release.
+func charge_input(pressed: bool, first: bool, released: bool) -> void:
+	if first:
+		shot_held = carrier == "b0"
+	if pressed:
+		if shot_held and can_shoot("b0"):
+			held_frames = mini(held_frames + 1, charge_frames)
+		return
+	if released and shot_held and held_frames > 0:
+		try_shoot("b0", held_frames)
+	cancel_charge()
+
+func try_shoot(id: String, frames := 0) -> bool:
 	if not can_shoot(id):
 		return false
-	var sp: float = speed
+	var sp := speed
+	if frames > tap_frames:
+		sp += charge_bonus * mini(frames, charge_frames) / charge_frames
 	if from_pass and one_timer_frames > 0 and _now - carry_since <= one_timer_frames:
-		sp *= one_timer_scale                # L5b: a one-timer: shot straight off a mate's pass, harder
+		sp = maxf(sp, speed * one_timer_scale)                # L5b: a one-timer: shot straight off a mate's pass, harder
 		one_timers[id] = int(one_timers.get(id, 0)) + 1
 		events.append(["one_timer", id])
 	_release("shot", id, shot_dir(id) * sp)
@@ -321,7 +405,6 @@ func try_shoot(id: String) -> bool:
 	shots[id] = int(shots[id]) + 1
 	events.append(["shot", id])
 	return true
-
 
 ## L5: where a shot goes: from the blade at the cursor's point when he has one at least 4 m away and in front of the
 ## stick (before, it left parallel to the stick from the blade, 1.24 m to the right of the cursor), else along the stick.
@@ -332,7 +415,6 @@ func shot_dir(id: String) -> Vector3:
 		if to.length() >= 4.0 and to.normalized().dot(st) > 0.5:
 			return to.normalized()
 	return st
-
 
 ## The mate nearest his facing inside the pass cone, or "".
 func pass_target(id: String) -> String:
@@ -352,7 +434,6 @@ func pass_target(id: String) -> String:
 			best = mid
 	return best
 
-
 ## Where a pass to `mid` should go: where he will be when it arrives (two refinements, lead bounded in data).
 func lead_point(mid: String) -> Vector3:
 	var from: Vector3 = puck_pos()
@@ -363,7 +444,6 @@ func lead_point(mid: String) -> Vector3:
 		var t: float = minf(from.distance_to(tgt) / pass_speed, float(pass_lead_max_frames) / 60.0)
 		tgt = mp + mv * t
 	return tgt
-
 
 func try_pass(id: String) -> bool:
 	if carrier != id:
@@ -381,7 +461,6 @@ func try_pass(id: String) -> bool:
 	passes[id] = int(passes[id]) + 1
 	events.append(["pass", id])
 	return true
-
 
 ## The mate a pass is meant for skates to meet it while it is loose and moving: towards the nearest point of its
 ## path ahead of the puck. Vector3.ZERO when he is not receiving.
@@ -401,25 +480,22 @@ func receive_dir(id: String) -> Vector3:
 	var to: Vector3 = meet - me
 	return to.normalized() if to.length() > 0.2 else Vector3.ZERO
 
-
 ## A hit takes the puck off him: loose, with a velocity (H2).
 func knock_loose(victim: String, vel: Vector3) -> void:
 	if carrier != victim:
 		return
 	_release("hit", victim, vel)
 
-
 func can_poke(id: String) -> bool:
 	return carrier != "" and carrier != id and not goalies.has(carrier) and str(teams[carrier]) != str(teams[id]) and _now >= int(_poke_at[id]) \
 		and pos_of(id).distance_to(puck_pos()) <= poke_reach
-
 
 ## A stick poke at an opponent's carried puck: it comes loose towards the poker. A miss costs the cooldown too.
 func try_poke(id: String) -> bool:
 	if _now < int(_poke_at[id]) or carrier == "" or carrier == id or goalies.has(carrier) or str(teams[carrier]) == str(teams[id]):
 		return false
 	_poke_at[id] = _now + poke_cooldown_frames
-	if pos_of(id).distance_to(puck_pos()) > poke_reach:
+	if shield_left > 0 or pos_of(id).distance_to(puck_pos()) > poke_reach:
 		return false
 	if stick_dir.has(id) and pos_of(id).distance_to(puck_pos()) > 0.05 and (stick_dir[id] as Vector3).dot((puck_pos() - pos_of(id)).normalized()) < poke_cone_dot:
 		return false
@@ -432,12 +508,10 @@ func try_poke(id: String) -> bool:
 	events.append(["poke", id])
 	return true
 
-
 func _clip(id: String, clip: StringName) -> void:
 	var r = (skaters[id] as TLBiped).rig
 	if r != null:
 		r.play(clip)
-
 
 func _inside(p: Vector3) -> bool:
 	var hx: float = rink_half.x - rink_margin
@@ -449,7 +523,6 @@ func _inside(p: Vector3) -> bool:
 	var dz: float = maxf(absf(p.z) - (hz - r), 0.0)
 	return Vector2(dx, dz).length() <= r
 
-
 ## Possession for _pack_state(): absent values are omitted.
 func state() -> Dictionary:
 	var s: Dictionary = {"takes": takes.duplicate(), "passes": passes.duplicate(), "pokes": pokes.duplicate()}
@@ -459,13 +532,15 @@ func state() -> Dictionary:
 		s["carrier"] = carrier
 		s["team"] = str(teams[carrier])
 		s["since"] = carry_since
+	if shot_held:
+		s["charge_frames"] = held_frames
+	if shield_left > 0:
+		s["shield_left"] = shield_left
 	if not last_release.is_empty():
 		s["last"] = last_release.duplicate()
 	return s
 
-
 const GOAL_TOP := 1.55   ## the crossbar: data/venue.json's goals stand at y 0.05 and are 1.5 m high
-
 
 ## H11 (moved from main.gd in H13, its 600-line limit): the side that scores when the puck's centre lies in a goal volume (the trigger's box: 1.5 m deep behind the line,
 ## the goal's width, under the goal's crossbar), else "". hunt2 A7: a puck flying over the net is no goal.

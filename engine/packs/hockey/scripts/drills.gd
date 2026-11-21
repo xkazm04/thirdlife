@@ -2,16 +2,21 @@ extends RefCounted
 ## Drills (H1): set starts from data/drills.json, called by a test through keyless declared actions drill_<id>.
 ## Skaters a drill does not place go to the park spots and hold still unless it moves them. Created by main.gd.
 
+var sprint_slots := PackedInt32Array()
+
 func yaw_of(fx_: float, fz: float) -> float:
 	return atan2(-fx_, -fz)
 
-
 ## A drill: a set start (data/drills.json). Skaters it does not place go to the park spots and hold still.
 func start(g, d: Dictionary, frame: int) -> void:
+	g.skate.reset()
+	g.skate.stamina.fill(g.skate.stamina_full)
+	sprint_slots.clear()
+	for id: String in d.get("sprint", []):
+		sprint_slots.append(g.skate.slots[id])
 	g.api.reset()
 	g.hits.reset()
 	g.keeper.in_drill = bool(d.get("goalies", false))     # L5: a goalie drill keeps them in their nets
-	g.drill_brace = (d.get("brace", []) as Array).duplicate()
 	g.drill_id = str(d["id"])
 	g.drill_t0 = frame
 	g.frozen = false
@@ -22,13 +27,22 @@ func start(g, d: Dictionary, frame: int) -> void:
 	var park: Array = g.drills["park"]
 	var pi: int = 0
 	var place: Dictionary = d.get("place", {})
+	var relative: Dictionary = d.get("place_from", {})
 	var rplace: Dictionary = d.get("random_place", {})
 	for id: String in g.order:
 		var sk: TLBiped = g.skaters[id]
-		sk.brake(false)
+		g.skate.brake(id, false)
 		if place.has(id):
 			var p: Array = place[id]
 			sk.place(Vector3(float(p[0]), 0.1, float(p[1])), yaw_of(float(p[2]), float(p[3])))
+		elif relative.has(id):
+			# [fixed skater, surface gap x/z, facing x/z]. Read the fixed mark before either body moves.
+			var p: Array = relative[id]
+			var anchor: Array = place[p[0]]
+			var gap := Vector2(p[1], p[2])
+			var radii := sk.body_radius() + (g.skaters[p[0]] as TLBiped).body_radius()
+			var center := Vector2(anchor[0], anchor[1]) + gap + gap.normalized() * radii
+			sk.place(Vector3(center.x, 0.1, center.y), yaw_of(p[3], p[4]))
 		elif g.keeper.is_goalie(id) and g.keeper.in_drill:
 			sk.place(g.spawns[id], g._face_yaw(str(g.teams[id])))
 		elif g.keeper.is_goalie(id):
@@ -41,6 +55,11 @@ func start(g, d: Dictionary, frame: int) -> void:
 			var q: Array = park[pi % park.size()]
 			pi += 1
 			sk.place(Vector3(float(q[0]), 0.1, float(q[1])), g._face_yaw(str(g.teams[id])))
+	for id: String in d.get("velocity", {}):
+		if g.skaters.has(id):
+			var v: Array = d["velocity"][id]
+			var sk: TLBiped = g.skaters[id]
+			sk.shove(Vector3(float(v[0]), 0, float(v[1])) * sk.body_mass)
 	for id: String in d.get("move", {}):
 		if g.skaters.has(id):
 			var m: Array = d["move"][id]
@@ -56,25 +75,26 @@ func start(g, d: Dictionary, frame: int) -> void:
 	if d.has("carrier") and g.skaters.has(str(d["carrier"])):
 		g.api.give(str(d["carrier"]))
 
+func pace(g) -> void:
+	if g.drill_id == "":
+		return
+	for i in sprint_slots:
+		g.skate.pace(i, true, g.drill_moves.get(g.skate.ids[i], Vector3.ZERO))
 
 func tick(g, frame: int) -> void:
 	for id: String in g.order:
 		if (id == "b0" and not g.autopilot) or (g.keeper.in_drill and g.keeper.is_goalie(id)):
 			continue
-		var sk: TLBiped = g.skaters[id]
 		var rc: Vector3 = g.api.receive_dir(id)
 		if rc != Vector3.ZERO:
-			sk.brake(false)
-			sk.move(rc)
+			g.skate.brake(id, false)
+			g.skate.want(id, rc)
 		elif g.drill_moves.has(id):
-			sk.brake(false)
-			sk.move(g.drill_moves[id])
+			g.skate.brake(id, false)
+			g.skate.want(id, g.drill_moves[id])
 		else:
-			sk.move(Vector3.ZERO)
-			sk.brake(true)
-	for id in g.drill_brace:
-		if g.skaters.has(str(id)):
-			g.hits.braced[str(id)] = true
+			g.skate.want(id, Vector3.ZERO)
+			g.skate.brake(id, true)
 	for st: Array in g.drill_script:
 		if frame - g.drill_t0 == int(st[0]) and g.skaters.has(str(st[1])):
 			match str(st[2]):

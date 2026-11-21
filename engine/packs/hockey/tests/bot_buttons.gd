@@ -1,4 +1,4 @@
-extends Node
+extends "rink_bot.gd"
 ## Bot (H7): the mouse buttons and the jam's held-button trap. A mouse button is two declared actions (left: shoot and
 ## cross; right: pass and check); a real button presses both on the same frame, so this bot does too.
 ## Drill held_buttons: the puck slides into b0's reach from behind (he takes it about frame 30), r0 pokes it off him at
@@ -10,8 +10,6 @@ extends Node
 ##   right held: gaining must not pass (row), losing must not body-check (row); pressed again: the check is tried
 ## ok: the four rows hold, and each re-press acted.
 
-var ctx
-var s: Dictionary = {}
 const BUTTONS: Array = [["left", &"shoot", &"cross"], ["right", &"pass", &"check"]]
 var b: int = 0
 var t0: int = -1
@@ -23,24 +21,13 @@ var lost_puck: int = -1
 var acted_while_held: Array = []
 var reacted: bool = false
 var rows: Array = []
-var done: bool = false
-
-
-func _bot_setup(c) -> void:
-	ctx = c
-
 
 func _given() -> int:
 	return int(s["hits"]["tries"].get("b0", 0))      # checks and cross-checks b0 tried, whiffs included
 
-
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
-	if str(s.get("mode", "base")) != "base":
-		ctx.input.tap(&"mode_base")
-		return
-	if str(s.get("level", "none")) != "none":
-		ctx.input.tap(&"level_none")
+	if not classic():
 		return
 	if done:
 		return
@@ -92,11 +79,6 @@ func _bot_tick(frame: int) -> void:
 			"acted_while_held": acted_while_held.duplicate(), "repress_acted": reacted})
 		b += 1
 		t0 = -1
-
-
-func _bot_done() -> bool:
-	return done
-
 
 func _bot_result() -> Dictionary:
 	var ok: bool = done and rows.size() == 2

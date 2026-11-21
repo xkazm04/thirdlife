@@ -47,6 +47,7 @@
     "tests/bot_reach.gd",
     "tests/bot_match.gd",
     "tests/bot_check.gd",
+    "tests/bot_contact.gd",
     "tests/bot_modes.gd",
     "tests/bot_dial.gd",
     "tests/bot_aim.gd",
@@ -61,7 +62,17 @@
     "tests/bot_goalie.gd",
     "tests/bot_intro.gd",
     "tests/bot_fun.gd",
-    "tests/bot_intro_skip.gd"
+    "tests/bot_intro_skip.gd",
+    "tests/bot_charge.gd",
+    "tests/bot_sprint.gd",
+    "tests/bot_carry_turn.gd",
+    "tests/bot_reverse_stop.gd",
+    "tests/crazy_shotgun.gd",
+    "tests/crazy_hipcheck.gd",
+    "tests/crazy_shield.gd",
+    "tests/crazy_slowpuck.gd",
+    "tests/crazy_pickups.gd",
+    "tests/crazy_modes.gd"
   ],
   "cameras": [
     "arena",
@@ -136,9 +147,9 @@
       "file": "data/tuning.json",
       "path": "mode",
       "min": 0,
-      "max": 4,
+      "max": 7,
       "step": 1,
-      "label": "Mode: 0 base 1 3v5 2 sudden 3 pond 4 big"
+      "label": "Mode: 0-4 classic, 5-7 crazy"
     },
     {
       "name": "level",

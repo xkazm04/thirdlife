@@ -1,4 +1,4 @@
-extends Node
+extends "rink_bot.gd"
 ## Bot (H1): the reach table, played the way a person's hand meets it. Each row starts a drill (a declared action with
 ## no key) and then presses only the game's keys: it faces away, skates through at three speeds, holds Space or Q
 ## through the take, holds Space through a poke, reacts late to a poke chance. It measures from the state it sees
@@ -6,8 +6,6 @@ extends Node
 ## Then 10 passes in open ice to a mate the drill places (and moves) from the seeded generator.
 ## ok: every row within its bound and at least 8 of 10 passes reach the mate.
 
-var ctx
-var s: Dictionary = {}
 const ROWS: Array = [
 	# name, drill, bound (frames), inputs
 	["still beside him", "still_beside", 1, "none"],
@@ -41,32 +39,15 @@ var early_retake: bool = false
 var lock_in_reach: int = 0
 var other_took: String = ""
 var other_frames: int = -1
+var poke_chance := -1
 var stretch_start: int = -1
 var walk_reached: bool = false
 var passes_tried: int = 0
 var passes_ok: int = 0
 var pass_log: Array = []
-var done: bool = false
-
-
-func _bot_setup(c) -> void:
-	ctx = c
-
-
-func _v(a: Array) -> Vector2:
-	return Vector2(float(a[0]), float(a[1]))
-
-
-func _me() -> Dictionary:
-	for k: Dictionary in s["skaters"]:
-		if k["id"] == "b0":
-			return k
-	return {}
-
 
 func _holder() -> String:
 	return str(s["puck"].get("holder", ""))
-
 
 func _keys(right: float, sprint: bool, shoot: bool, pss: bool) -> void:
 	ctx.input.set_axis(&"left", &"right", right)
@@ -84,7 +65,6 @@ func _keys(right: float, sprint: bool, shoot: bool, pss: bool) -> void:
 	else:
 		ctx.input.release(&"pass")
 
-
 func _reset_row() -> void:
 	first_in = -1
 	first_his = -1
@@ -95,17 +75,13 @@ func _reset_row() -> void:
 	lock_in_reach = 0
 	other_took = ""
 	other_frames = -1
+	poke_chance = -1
 	stretch_start = -1
 	walk_reached = false
 
-
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
-	if str(s.get("mode", "base")) != "base":
-		ctx.input.tap(&"mode_base")      # H3: this bot tests the base game; under another mode param it switches to it first
-		return
-	if str(s.get("level", "none")) != "none":
-		ctx.input.tap(&"level_none")      # H6: this bot measures against the opponents of data/ai.json; the default level is rookie
+	if not classic():
 		return
 	if done:
 		_keys(0.0, false, false, false)
@@ -114,7 +90,6 @@ func _bot_tick(frame: int) -> void:
 		_row_tick(frame)
 	else:
 		_pass_tick(frame)
-
 
 func _row_tick(frame: int) -> void:
 	var r: Array = ROWS[row]
@@ -164,7 +139,9 @@ func _row_tick(frame: int) -> void:
 		"poked":
 			_keys(0.0, false, true, false)
 		"poke_late":
-			if age == 14:
+			if poke_chance < 0 and s.poke_ready:
+				poke_chance = frame
+			if poke_chance >= 0 and frame - poke_chance == 12:
 				ctx.input.tap(&"poke")
 		_:
 			_keys(0.0, false, false, false)
@@ -202,11 +179,9 @@ func _row_tick(frame: int) -> void:
 		return
 	_maybe_end(frame, age)
 
-
 func _maybe_end(frame: int, age: int) -> void:
 	if age >= ROW_FRAMES:
 		_finish(frame)
-
 
 func _finish(_frame: int) -> void:
 	var r: Array = ROWS[row]
@@ -228,7 +203,6 @@ func _finish(_frame: int) -> void:
 	results.append({"row": str(r[0]), "frames": frames, "bound": int(r[2]), "ok": ok, "note": note})
 	row += 1
 	phase = "start"
-
 
 func _pass_tick(frame: int) -> void:
 	if passes_tried >= PASS_TRIES:
@@ -257,11 +231,6 @@ func _pass_tick(frame: int) -> void:
 		pass_log.append("%s@%d(%.0f,%.0f)" % [h if h != "" else "none", age, mate.x, mate.y])
 		passes_tried += 1
 		phase = "start"
-
-
-func _bot_done() -> bool:
-	return done
-
 
 func _bot_result() -> Dictionary:
 	var all_ok: bool = results.size() == ROWS.size()

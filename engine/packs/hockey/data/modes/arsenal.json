@@ -1,0 +1,20 @@
+{
+  "id": "arsenal",
+  "label": "Arsenal",
+  "about": "Race for glowing packages. Take a speed boost or press F to turn the next play.",
+  "neon": {"accent":"beacon"},
+  "pickups": {
+    "first_frames": 120, "every_frames": 240, "max_alive": 5, "take_margin": 0.5,
+    "zones": [[-16,-2,16,2],[-22,-13,22,-7],[-22,7,22,13]],
+    "kinds": [
+      {"kind":"speed","weight":2}, {"kind":"precision","weight":2},
+      {"kind":"big_puck","weight":1}, {"kind":"heavy_puck","weight":1},
+      {"kind":"shotgun","weight":5}, {"kind":"hip_check","weight":2},
+      {"kind":"shield","weight":3}, {"kind":"slow_puck","weight":4}
+    ]
+  },
+  "abilities": [
+    {"kind":"shotgun","trigger":"pickup"}, {"kind":"hip_check","trigger":"pickup"},
+    {"kind":"shield","trigger":"pickup"}, {"kind":"slow_puck","trigger":"pickup"}
+  ]
+}

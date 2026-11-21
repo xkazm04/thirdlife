@@ -1,0 +1,29 @@
+{
+  "about": "Arsenal packages and F abilities. Distances are metres, velocities are metres per second, and durations are 60 Hz physics frames.",
+  "key_hints": {
+    "arsenal": "F: your ability (bottom right)   |   skate over a beacon to take it",
+    "shotgun": "F: load the shotgun, then shoot through them"
+  },
+  "effects": [
+    {"kind":"speed","color":"beacon","frames":300,"magnitude":1.5},
+    {"kind":"precision","color":"cyan","frames":480,"cone_deg":30},
+    {"kind":"big_puck","color":"window","frames":600,"magnitude":1.5},
+    {"kind":"heavy_puck","color":"nitro_hot","frames":360,"drag":0.8,"magnitude":0.5},
+    {"kind":"shotgun","color":"neon_pink","frames":120,"magnitude":1.5,"down_frames":90,"path_margin":1.0,"min_speed":6},
+    {"kind":"hip_check","color":"neon_lime","frames":60,"magnitude":1.5,"down_frames":60,"shove_m":3.0},
+    {"kind":"shield","color":"head_light","frames":360},
+    {"kind":"slow_puck","color":"neon_violet","frames":120,"magnitude":0.5}
+  ],
+  "drills": [
+    {"id":"shot_line","place":{"b0":[-6.36,-0.506,1,0]},"random_place":{"r0":[[-0.23,-0.23],[-0.6,0.6]],"r1":[[4.77,4.77],[-0.6,0.6]]},"carrier":"b0","puck":[-5.23,0]},
+    {"id":"hip","place":{"b0":[-1.6,0,1,0],"r0":[0,0,-1,0]},"carrier":"r0","puck":[-2.77,1.24]},
+    {"id":"hip_loaded","place":{"b0":[-1.6,0,1,0],"r0":[0,0,-1,0]},"carrier":"r0","puck":[-2.77,1.24],"grant":"hip_check"},
+    {"id":"hip_side","place":{"b0":[-1.6,0,1,0],"r0":[0,0,0,1]},"carrier":"r0","puck":[-1.24,2.77],"grant":"hip_check"},
+    {"id":"rush","place":{"b0":[0,0,1,0],"r0":[7.55,0,-1,0]},"move":{"r0":[-1,0]},"carrier":"b0","puck":[2.77,-1.24],"script":[[58,"r0","check"]]},
+    {"id":"rush_shield","place":{"b0":[0,0,1,0],"r0":[7.55,0,-1,0]},"move":{"r0":[-1,0]},"carrier":"b0","puck":[2.77,-1.24],"script":[[58,"r0","check"]],"grant":"shield"},
+    {"id":"open_ice","place":{"b0":[-18,-5,1,0]},"carrier":"b0","puck":[-15.23,-6.24]},
+    {"id":"slow","place":{"b0":[-18,-5,1,0]},"carrier":"b0","puck":[-15.23,-6.24],"grant":"slow_puck"},
+    {"id":"packages","place":{"b0":[-10,2,1,0]},"puck":[15,4],"packages":[{"kind":"speed","pos":[-10,2]},{"kind":"shield","pos":[-7,2]},{"kind":"speed","pos":[-4,-2]}]},
+    {"id":"modifiers","place":{"b0":[-18,-6,1,0]},"carrier":"b0","puck":[-15.23,-4.76],"packages":[{"kind":"precision","pos":[-18,-6]},{"kind":"big_puck","pos":[-18,-6]},{"kind":"heavy_puck","pos":[-18,-6]}]}
+  ]
+}
