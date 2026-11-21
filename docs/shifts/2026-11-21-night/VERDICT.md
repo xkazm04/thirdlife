@@ -3,7 +3,9 @@
 **All five lanes landed on main.** The two proof jobs ("a fight in a colosseum", standard and crazy) were built with
 the new designer, and both open as dungeons.
 
-**Main:** FINAL_SHA. **Pushed:** PUSHED. **Final list on 3461190:** see § Gates.
+**Main:** ed18f44 (code 3461190, then docs). **Pushed:** yes, origin/main = main at 03:25. **Final list on 3461190:** green read alone (see § Gates).
+
+**Page:** https://claude.ai/artifact/EQNBzJqgk84JsLevxbPncq (stills and clips inline).
 
 ## Read this first: what to play (10 minutes)
 
