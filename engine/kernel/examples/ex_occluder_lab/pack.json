@@ -1,0 +1,19 @@
+{
+  "id": "example.occluder_lab",
+  "version": "0.1.0",
+  "kernelApi": "1.13",
+  "title": "Pillar fade",
+  "capabilities": [
+    "physics",
+    "biped",
+    "camera"
+  ],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": [
+    "tests/bot_occluder.gd"
+  ],
+  "cameras": [
+    "play"
+  ]
+}

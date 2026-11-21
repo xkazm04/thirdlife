@@ -16,6 +16,7 @@ var _shake_cam: Camera3D = null
 var _tick: int = 0
 var _log_px: bool = false
 var _log_cam: FileAccess = null
+var _fade: RefCounted = null       # K8: the occluder fade (kernel/feel/occluder_fade.gd), made by fade_occluders
 
 
 # A named fixed play view can show both ends of a court. An actor registered
@@ -190,8 +191,40 @@ func shake(amount: float, frames: int) -> void:
 	_shake_left = frames
 
 
+## K8 (feel kit, 22 Nov 2026): scenery between the play camera and its subjects fades, so a pillar never hides the
+## rival and an arena wall never hides the fight. Options: `view` (default: the active view), `subjects` (a list of
+## nodes; default: the view's subject from `frame` / `set_subject`; give both fighters of a duel), `alpha` (0.3: what
+## remains of a faded mesh), `frames` (8: frames to fade out and back in), `max_size` (12 m: a larger mesh, such as the
+## ground or a layout's merged statics, never fades). Drawing only (GeometryInstance3D.transparency of the occluding
+## body's kit part): the state hash is the same with it on or off. Off until a pack turns it on.
+func fade_occluders(on: bool = true, opts: Dictionary = {}) -> void:
+	TLContext.require("camera", "ctx.cameras")
+	if _fade == null:
+		_fade = preload("res://kernel/feel/occluder_fade.gd").new()
+	_fade.call("configure", on, opts)
+
+
+func _name_of(cam: Camera3D) -> StringName:
+	for k: Variant in _views.keys():
+		if _views[k] == cam:
+			return StringName(str(k))
+	return &""
+
+
+## The bodies the occluder fade found between the camera and its subjects in the last physics frame ([] when off).
+func faded() -> Array:
+	return _fade.call("blocking") if _fade != null else []
+
+
 func _physics_process(_delta: float) -> void:
 	_tick += 1
+	if _fade != null:
+		var fv: StringName = _fade.get(&"view")
+		var fcam: Camera3D = active if fv == &"" else _views.get(fv) as Camera3D
+		var fs: Node3D = subject_of(fv if fv != &"" else _name_of(fcam))
+		if fs == null and fcam != null and fcam.get(&"target") is Node3D:
+			fs = fcam.get(&"target")          # a chase or orbit camera without a named subject: what it follows
+		_fade.call("tick", fcam, fs, TLContext.of(self))
 	if _shake_cam != null and is_instance_valid(_shake_cam) and (_shake_left <= 0 or _shake_cam != active):
 		_shake_cam.h_offset = 0.0
 		_shake_cam.v_offset = 0.0

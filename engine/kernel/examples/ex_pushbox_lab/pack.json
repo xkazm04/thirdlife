@@ -1,0 +1,19 @@
+{
+  "id": "example.pushbox_lab",
+  "version": "0.1.0",
+  "kernelApi": "1.13",
+  "title": "Charging pairs",
+  "capabilities": [
+    "physics",
+    "biped",
+    "camera"
+  ],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": [
+    "tests/bot_pushbox.gd"
+  ],
+  "cameras": [
+    "play"
+  ]
+}

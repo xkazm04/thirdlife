@@ -28,6 +28,8 @@ var _pos_now: Vector3 = Vector3.ZERO       # for swept trigger tests (TLTrigger)
 var _pos_before: Vector3 = Vector3.ZERO
 var _pos_stamp: int = -1
 var _hold_offset: Vector3 = Vector3.ZERO
+var _shape_node: CollisionShape3D = null   # K8: what set_radius resizes
+var _visual: Node3D = null
 
 
 ## Options: kind, radius, height (puck), material, mass (default density x volume), position, planar (bool: a puck
@@ -97,6 +99,8 @@ static func create(opts: Dictionary = {}) -> TLBall:
 		(mi as MeshInstance3D).material_override = TLStandin.material(opts["color"], b.material_id) if opts.has("color") else TLStandin.material_for(b.material_id)
 	b.add_child(cs)
 	b.add_child(mi)
+	b._shape_node = cs
+	b._visual = mi
 	b.continuous_cd = true
 	if bool(opts.get("planar", false)):
 		b.axis_lock_angular_x = true
@@ -126,6 +130,37 @@ static func create(opts: Dictionary = {}) -> TLBall:
 
 func _on_hit(other: Node, _impulse: float, hit_speed: float) -> void:
 	bounced.emit(other, hit_speed)
+
+
+## K8 (feel kit, 22 Nov 2026): a new radius in metres, now (the hockey big puck). The collision shape and the drawn
+## ball or puck grow or shrink with it (a kit part's visual is scaled: x and z for a puck, all three for a ball); the
+## puck's height, the mass, the material and the motion are kept. Deterministic; it moves the state hash only from the
+## frame it is called (the shape is part of the physics, not of the hashed bytes).
+func set_radius(r: float) -> void:
+	if not (r > 0.0) or not is_finite(r):
+		push_error("TLBall.set_radius: the radius must be a positive number (got %s)" % r)
+		return
+	var k: float = r / radius if radius > 0.0 else 1.0
+	radius = r
+	if _shape_node != null and _shape_node.shape != null:
+		var sh: Shape3D = _shape_node.shape.duplicate() as Shape3D   # a kit part's shape is shared: never resize it in place
+		if sh is CylinderShape3D:
+			(sh as CylinderShape3D).radius = r
+		elif sh is SphereShape3D:
+			(sh as SphereShape3D).radius = r
+		_shape_node.shape = sh
+	if _visual is MeshInstance3D and ((_visual as MeshInstance3D).mesh is CylinderMesh or (_visual as MeshInstance3D).mesh is SphereMesh):
+		var m: Mesh = (_visual as MeshInstance3D).mesh.duplicate() as Mesh
+		if m is CylinderMesh:
+			(m as CylinderMesh).top_radius = r
+			(m as CylinderMesh).bottom_radius = r
+		else:
+			(m as SphereMesh).radius = r
+			(m as SphereMesh).height = r * 2.0
+		(_visual as MeshInstance3D).mesh = m
+	elif _visual != null:
+		_visual.scale = Vector3(_visual.scale.x * k, _visual.scale.y if kind == &"puck" else _visual.scale.y * k, _visual.scale.z * k)
+	sleeping = false
 
 
 ## Hits the ball: an impulse in N*s (mass x change of velocity).
