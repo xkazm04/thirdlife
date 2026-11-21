@@ -160,6 +160,12 @@ with the landscape:
   would reach onto a road (the scatter lets a roadside bush lean over the verge: solid, it narrowed the road and was a
   block beside the rails he could stand on); a construction site's
   sign and plan board stand on solid posts (site/draw.gd `_posts`; he walks under the boards);
+* (day of 21 Nov 2026, lane L6) every prop of a plain lot is solid where it is drawn and turned as drawn
+  (`village_parts.gd lots` / `_prop`): the crane's base (5.2 m), ballast and mast; the scaffold (its box had stood
+  0.65 m off its bays); both timber stacks (one had no body, the other an unturned box 0.3 m over it); the pallets of
+  blocks, the barricades (a slab under the boards; its splayed 7 cm feet are not solid, so walked along it he slides
+  off its end instead of sticking in the corner of a foot) and the cones (he had walked through them). The lot's props are in the
+  landscape's meta `tl_lot_props`;
 * for every plot a COPY of the pack's static colliders (`add_pack`): the shapes are shared (a shape belongs to no
   space), the bodies are new bodies in this space, clipped to the plot's circle, bent at the rim exactly as the draw
   layer bends the ground, moved to the plot's place and height. Only `StaticBody3D` (the venue's ground, walls,
@@ -193,6 +199,27 @@ and 50 bushes stop him, kit parts copied as a game's colliders stop him or let h
 every plot's gate (where Q puts him) are clear of every collider. The probe `road_verge_walk` of
 `walks/visitor_walk.json` walks at z = -4, the row of rails under crisp: it is stopped by `rail` there now (classic
 has no rails). No swimming (the river is 1 m deep and he wades it).
+
+Road edges (day of 21 Nov 2026, lane L6, `terrain/road_clear.gd`). The scatter keeps its objects off the roads by the
+terrain's `road_dist`, the nearest 3 m grid vertex's distance to the nearest 2 m road sample: up to about 2 m wrong.
+After each kind is placed (trees, rocks, bushes, the pads' rocks, the roadside trees and bushes, grass), `keep_off`
+measures the exact distance to each road's line (the main road and every spur, each by its own half width) against
+the instance's foot (its mesh's widest point under 1.2 m, or its collider's radius when wider). A solid thing must
+stay off the road and, in a look with `detail.road_rails`, off the main road's verge and its row of rails (rails +
+0.15 m); one that does not is moved straight out until it does (at most 3.5 m, on the land as it stood), so the
+roadside keeps its bushes behind the rails, not across them. Grass on a road's surface is left out. It draws nothing
+from the random stream: every other object stands where it stood. In the exe's village (crisp) 18 roadside bushes
+moved and 15 tufts went; in wf_feel 10 roadside bushes and one bush (it stood 1.8 m onto the road) moved and 18 tufts
+went; under classic 4 roadside bushes (those on the road's surface) moved and the same 15 tufts went. Proof:
+`tools/selftest.d/700-harden-day.sh` `harden.road_edge` (on the base: 46 findings, meshes and bodies, of the exe's
+village on a road or across its rails under crisp, 36 in wf_feel, 19 under classic) and
+`harden.lot_props` (every lot prop walked into from 8 sides: he stops at what is drawn).
+
+Rocks (same day). A scatter rock's body was a 1.4 m cylinder over every rock that got one, a knee-high stone among
+them (and under a 1.6 m boulder). It now stands to the rock's own top (`TLMesh.aabb` of its mesh x its scale, in
+0.1 m), for the scatter's rocks and the pads' rocks: he steps onto a low one and jumps onto a waist-high one as drawn.
+The visitor probe's rock is one that stops him (over 0.8 m). Proof: `harden.rock_tops` (on the base 44 of 60 rocks of
+the exe's village were off by more than 0.25 m).
 The world's space is built by the landscape, so a world without a window has no visitor.
 
 ### A person's body has weight (walker-feel, 18 Nov 2026)

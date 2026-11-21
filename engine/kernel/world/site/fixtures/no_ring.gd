@@ -35,7 +35,10 @@ func measure() -> void:
 		model.view.arrived = arrived
 		model.view.radius = 20.0 if arrived else 32.0
 		# Wait for the first build (including a refit) and for its worker mesh to be displayed.
+		# 21 Nov L6: the worker meshes are waited for (`wait_meshes`), the rebuilds take frames; it raced frames against the
+		# worker before and could run out of its --quit-after on a busy machine
 		while site.radius != model.view.radius or not site.has_node("Parts/site_rails") or not site._tasks.is_empty() or (arrived and not site.has_node("Parts/site_arrived")):
+			site.wait_meshes()
 			await physics_frame
 		var rail := site.get_node("Parts/site_rails") as MeshInstance3D
 		var gate_z := float(model.view.radius) + 3.6
