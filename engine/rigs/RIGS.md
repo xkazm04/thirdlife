@@ -108,6 +108,20 @@ moves with it. Layered on every clip, before `look_at`.
   +0.88 (cel), -1 rad by -0.87 / -0.96 (block 660, `rig.fight.yaw`).
 - During `cross_check` the right hand turns the shaft level across the chest and the stick slides 0.47 m up through the
   hand (its middle between the two hands); the stick's position is zero again 6 ticks after the clip ends.
+## Directional hits (falls arm A)
+
+| Clips | What the figure does |
+|---|---|
+| `hit_front`, `hit_back`, `hit_left`, `hit_right` | The suffix names the source of the blow. The chest snaps away in three ticks and the head and arms follow a tick later. Recoil fades over the next 18 ticks. Legs keep their stride on a moving figure. |
+| `fall_back`, `fall_front`, `fall_left`, `fall_right` | The suffix names where the figure lands. Knees fold before the seat meets the ground, hands catch a forward fall, and a side fall lands on the hip then shoulder. Each holds its last pose. |
+| `get_up_back`, `get_up_front`, `get_up_left`, `get_up_right` | Start from the matching landing pose. Sit up from the back, press up from the front, or roll onto the hands from one side. Gather a knee, push off the boot, and return to the live gait. |
+
+These clips work with ordinary `play`. A controller can call the optional rig method `_size_hit(clip, amount, frames)`
+before playback. For recoil, `amount` is hit strength. For a fall it is horizontal speed in m/s and `frames` is the
+available lie window. Between 2.16 and 3.60 m/s the arms throw wider, the body travels farther before contact, and
+the head and hips rebound once. A side landing leaves the upper arm outstretched and one knee across the body.
+For a rise, `frames` is its exact length in physics ticks. Direct playback defaults to a
+0.7-strength flinch and a 24-frame fall or rise. The held stick follows the right wrist throughout.
 
 ## Sockets
 - biped: `hand_r`, `hand_l` (palms), `head` (top of the head), `back` (between the shoulder blades), `foot_r`,
@@ -183,7 +197,7 @@ Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, s
 
 Metrics at scale 1: `{"bones":29,"eye_height":1.765,"height":2.0,"radius":0.3,"triangles":9292}`
 
-Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air, fly, hang, mantle, swing, strike, strike_heavy, block, roll, dodge, body_check, cross_check, taunt
+Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air, fly, hang, mantle, swing, strike, strike_heavy, block, roll, dodge, body_check, cross_check, taunt, hit_front, fall_front, get_up_front, hit_back, fall_back, get_up_back, hit_left, fall_left, get_up_left, hit_right, fall_right, get_up_right
 
 Build params (also the initial values of the runtime params of the same name):
 | Param | Type | Default | Range / values | Meaning |

@@ -11,7 +11,8 @@ extends SceneTree
 ##           one again on the tick after it goes back to 0
 ##   cross   cross_check with a stick, held: the shaft lies level across the chest (butt to the left), both hands on it
 ##           and apart, chest-high; roll is upside down at its middle frame
-## Regenerate the golden file only when an existing clip changes on purpose: --golden=<abs path> on that tree.
+## Regenerate the golden file only when an existing clip changes on purpose: --golden=<abs path> on that tree. New clips
+## append their lines (21 Nov: falls arm A added 72 lines for its hit, fall and get-up clips; the 120 older lines are unchanged).
 
 const F := preload("res://rigs/biped/tl_rig_biped_fight.gd")
 const LOOKS: Array = ["res://style/style.json", "res://style/style_crisp.json", "res://style/style_diorama.json"]

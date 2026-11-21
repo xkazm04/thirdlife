@@ -360,6 +360,14 @@ The village visitor's hard swing ends softly: pumping adds no energy once the sw
 above that (a fast entry) is bled off, so it peaks near 85 degrees instead of stopping dead at the 100 degree limit. A
 pack biped keeps the plain swing (it stops at 100 degrees), so a pack tuned to it (parkour's Skyline) is unchanged.
 
+### Falls arm A (21 Nov, experiment)
+
+`TLHit.react` snaps the upper body away from the blow. Strength sets the size of the flinch, and a hit of 0.4 or
+more also triggers the usual stumble. `TLHit.down` uses the dominant front, back or side direction. With an unknown
+direction, including a plain `biped.down(frames)`, the figure falls along its horizontal velocity above 0.5 m/s
+and forward at lower speeds. The standard biped rises from its landing pose within the pack's `get_up_frames`.
+Rigs with only the original fall clip still use it, and the stand-in capsule still tips.
+
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
 
 `TLVehicle.create(opts) -> TLVehicle` (a `RigidBody3D`, origin on the ground under the middle, forward -z, wheel order
