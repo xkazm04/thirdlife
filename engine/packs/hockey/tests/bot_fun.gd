@@ -1,15 +1,6 @@
-extends Node
-## Bot (L5, 21 Nov): the fun layer's three promises, one drill a row (level none):
-##   a hard check (hit_head_on, b0 sprints at r0 and presses F): a hit-stop: every skater stands exactly still and the clock
-##     does not run for the stop's frames (tuning fun.stop_frames_min..max), then the play goes on (b0 and r0 move again)
-##   a small bump (hit_head_on, b0 skates at r0 at 2 m/s and presses F): no stop
-##   a goal (goal_released): the pause after it replays the shot (fun.replay_t counts up), then the face-off as before
-##   a one-timer (goalie_cross, L5b): b0 shoots at once off LEO's pass: one-timer counted, the puck above 22 m/s (18 x 1.35);
-##     held 16 frames first (the drill shoots by itself at 60): no one-timer, an ordinary 18 m/s shot
-## ok: the five rows as stated. The stop's frames are counted in physics frames, as everything else.
+extends "rink_bot.gd"
+## Measures both skaters and the clock through hit-stop, goal replay, and immediate versus delayed shots off a pass.
 
-var ctx
-var s: Dictionary = {}
 const ROWS: Array = [["hard check", "hit_head_on", 99.0], ["small bump", "hit_head_on", 2.0], ["goal and replay", "goal_released", 0.0],
 	["one-timer", "goalie_cross", 0.0], ["held, then shot", "goalie_cross", 16.0]]
 var row: int = 0
@@ -24,19 +15,6 @@ var prev: Dictionary = {}
 var replay_max: int = 0
 var given0: int = 0
 var results: Array = []
-var done: bool = false
-
-
-func _bot_setup(c) -> void:
-	ctx = c
-
-
-func _pos(id: String) -> Vector2:
-	for k: Dictionary in s["skaters"]:
-		if str(k["id"]) == id:
-			return Vector2(float(k["pos"][0]), float(k["pos"][1]))
-	return Vector2.ZERO
-
 
 func _snap() -> Dictionary:
 	var d: Dictionary = {"clock": int(s.get("clock_frames", 0))}
@@ -44,14 +22,9 @@ func _snap() -> Dictionary:
 		d[str(k["id"])] = k["pos"]
 	return d
 
-
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
-	if str(s.get("mode", "base")) != "base":
-		ctx.input.tap(&"mode_base")
-		return
-	if str(s.get("level", "none")) != "none":
-		ctx.input.tap(&"level_none")
+	if not classic():
 		return
 	if done:
 		return
@@ -87,7 +60,7 @@ func _bot_tick(frame: int) -> void:
 		ctx.input.set_axis(&"left", &"right", 1.0 if not pressed and spd < float(r[2]) else 0.0)     # a person keeps his speed
 		if row == 0:
 			ctx.input.press(&"sprint")
-		if not pressed and age > 3 and _pos("b0").distance_to(_pos("r0")) < 1.5:
+		if not pressed and age > 3 and _pos("b0").distance_to(_pos("r0")) < 2.0 * float(s.body_radius) + 0.18:
 			ctx.input.tap(&"check")
 			pressed = true
 			pressed_at = age
@@ -124,13 +97,11 @@ func _bot_tick(frame: int) -> void:
 		row += 1
 		t0 = -1
 
-
-## L5b: b0 takes LEO's pass across (drill goalie_cross, its own scripted shot comes later) and shoots after r[2] frames
+## L5b: b0 takes LEO's pass across (drill goalie_cross) and shoots after r[2] frames
 ## with the puck: at once it is a one-timer (1.35x the shot speed), after 16 frames an ordinary shot.
 var _took: int = -1
 var _shot: int = -1
 var _ot0: int = 0
-
 
 func _one_timer_row(r: Array, age: int) -> void:
 	if age == 1:
@@ -141,7 +112,7 @@ func _one_timer_row(r: Array, age: int) -> void:
 		_took = age
 	if _took >= 0 and _shot < 0 and age - _took >= int(r[2]) and bool(s.get("shoot_ready", false)):
 		ctx.input.tap(&"shoot")
-		_shot = age
+		_shot = age + 1
 	if (_shot >= 0 and age - _shot == 4) or age > 200:
 		var v: Array = s["puck"]["vel"]
 		var spd: float = Vector2(float(v[0]), float(v[1])).length()
@@ -152,7 +123,6 @@ func _one_timer_row(r: Array, age: int) -> void:
 		row += 1
 		t0 = -1
 
-
 ## Body checks blue has landed so far (every class).
 func _given() -> int:
 	var n: int = 0
@@ -160,11 +130,6 @@ func _given() -> int:
 	for k: String in gv:
 		n += int(gv[k])
 	return n
-
-
-func _bot_done() -> bool:
-	return done
-
 
 func _bot_result() -> Dictionary:
 	var ok: bool = done and results.size() == ROWS.size()

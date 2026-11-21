@@ -1,13 +1,5 @@
 extends Node
-## game.ice_hockey_three_against, hockey_core: rink, puck, skaters, rules, HUD.
-## Venue: data/venue.json (kit rink + goals). Tuning: data/tuning.json. Handlers only set flags; _pack_tick acts last.
-## H1: possession (scripts/rink_api.gd): a puck in a skater's reach is his; he carries, shoots (Space), passes (Q),
-## pokes (E), sprints (Shift). Drills (data/drills.json) are set starts a test calls by declared actions with no key.
-## H2: body check (F; held while standing = brace) and cross-check (C) in scripts/hits.gd.
-## H3: modes are data (data/modes/<id>.json, chosen by the `mode` param or a keyless action mode_<id>); the match has
-## periods (TLRules), and once a period the player may open the rule dial (T: pause; A/D choose, W/S move one step).
-## L1: what the player reads from the play camera is scripts/look.gd and data/tuning.json "look" and "camera": the puck's
-## drawn size and rim, his ring and the carrier's, the keys' lines, GOAL, play again, the scoreboards. Drawing only.
+## Builds the rink and roster. Input handlers set flags for the physics tick, which resolves possession, hits and goals.
 
 var ctx
 var base_tune: Dictionary              # data/tuning.json as read
@@ -29,6 +21,8 @@ var rules: TLRules
 var hud: TLHud
 var puck: TLBall
 var api
+var player
+var skate
 var hits                               # scripts/hits.gd (H2)
 var brain = null
 var fx = null
@@ -37,6 +31,7 @@ var fun = null                         # L5: scripts/fun/fun.gd (hit-stop, shake
 var keeper = null                      # L5: scripts/keeper.gd (the goalies)
 var intro = null                       # L5: scripts/intro.gd (the first minute: a drill before the first match)
 var state_lib = null                   # scripts/state.gd (_pack_state)
+var crazy = null                       # L5 crazy: scripts/abilities.gd (F abilities, pickups via scripts/boosts.gd); off unless the mode names them
 var skaters: Dictionary = {}           # id -> TLBiped
 var order: Array = []                  # ids in roster order
 var teams: Dictionary = {}
@@ -50,11 +45,13 @@ var result: String = ""
 var _flag_goal: String = ""            # side that scored, set by a goal trigger
 var _events: Array = []                # [name, pos, team] for the fx hook
 var drills: Dictionary = {}
+var drill_actions: Dictionary = {}
+var drill_pressed := false
+var settings_pressed := false
 var drill_id: String = ""              # the drill running ("" = a match)
 var drill_t0: int = 0
 var drill_moves: Dictionary = {}       # id -> Vector3 intent for a drill's scripted skaters
 var drill_script: Array = []           # [frames_after, id, act]
-var drill_brace: Array = []            # ids that brace in a drill
 var autopilot: bool = false            # the brain plays b0 too (a bot-only play)
 var dials: Dictionary = {}             # dial name -> steps (both teams)
 var dial_open: bool = false
@@ -66,9 +63,7 @@ var levels: Dictionary = {}            # H5: id -> level file (validated); "none
 var level_id: String = "none"
 var stick_heading: Vector3 = Vector3.ZERO   # H4: the human's stick, turning toward the aim at a turn rate
 var _faceoff_period: int = 0           # H13: the period whose face-off was played
-const DRILL_KEYS: Array = ["id", "place", "random_place", "move", "random_move", "puck", "puck_vel", "carrier", "script", "ai", "brace", "goalies"]
-
-
+const DRILL_KEYS: Array = ["id", "place", "place_from", "random_place", "move", "random_move", "puck", "puck_vel", "carrier", "script", "ai", "velocity", "goalies", "sprint"]
 
 func _pack_setup(c) -> void:
 	ctx = c
@@ -81,7 +76,9 @@ func _pack_setup(c) -> void:
 	keeper = ctx.load_script("scripts/keeper.gd").new()
 	fun = ctx.load_script("scripts/fun/fun.gd").new()
 	intro = ctx.load_script("scripts/intro.gd").new()
+	player = ctx.load_script("scripts/player.gd").new()
 	state_lib = ctx.load_script("scripts/state.gd").new()
+	crazy = ctx.load_script("scripts/abilities.gd").new()
 	look.cfg = base_tune["look"]
 	ai_base = ctx.read_json("ai.json")
 	drills = ctx.read_json("drills.json")
@@ -118,6 +115,7 @@ func _pack_setup(c) -> void:
 	mode_id = str(list[pick]) if modes.has(str(list[pick])) else "base"
 
 	menu_lib.setup(self)
+	crazy.setup_pack(self)                 # L5 crazy: the ability key (F) and the crazy drills' keyless actions
 	for a: Array in [[&"up", KEY_W], [&"down", KEY_S], [&"left", KEY_A], [&"right", KEY_D], [&"poke", KEY_E], [&"sprint", KEY_SHIFT],
 			[&"dial", KEY_T], [&"restart", KEY_R], [&"view", KEY_V], [&"skip", KEY_ENTER]]:
 		ctx.input.declare(a[0], [a[1]])
@@ -128,13 +126,17 @@ func _pack_setup(c) -> void:
 	ctx.input.declare(&"pass", [KEY_Q], [MOUSE_BUTTON_RIGHT])
 	ctx.input.declare(&"check", [KEY_F], [MOUSE_BUTTON_RIGHT])
 	ctx.input.declare(&"autopilot", [])
+	ctx.input.action_pressed.connect(_action_pressed)
 	ctx.input.declare(&"intro", [])        # L5: a test starts the first-minute drill with it (a person's session starts it by itself)
 	var am: Dictionary = base_tune["aim"]
 	ctx.input.declare_aim(&"aim", float(am["height"]), float(am["reach"]))
 	for d: Dictionary in drills["drills"]:
-		ctx.input.declare(StringName("drill_" + str(d["id"])), [])
+		var action := StringName("drill_" + str(d["id"]))
+		drill_actions[action] = d
+		ctx.input.declare(action, [])
 	for mid: String in base_tune["modes"]:
-		ctx.input.declare(StringName("mode_" + mid), [])
+		if not modes_lib.is_crazy(modes.get(mid, {})):     # L5 crazy: a declared action is in the input hash; crazy modes come from the panel
+			ctx.input.declare(StringName("mode_" + mid), [])
 	for lid: String in base_tune["levels"]:
 		ctx.input.declare(StringName("level_" + lid), [])
 	if ctx.root.has_meta(&"hockey_ai"):
@@ -143,8 +145,7 @@ func _pack_setup(c) -> void:
 	if ctx.root.has_meta(&"hockey_fx"):
 		fx = ctx.load_script(str(ctx.root.get_meta(&"hockey_fx"))).new()
 		fx.setup(ctx, env)
-	_build(mode_id)
-
+	_build(mode_id, not ctx.headless)  # L5 crazy: warm both uniforms during windowed loading
 
 ## hunt2 A14, B1: the venues, the dress and the benched skaters kept out of the tree go with the pack, never left behind.
 func _notification(what: int) -> void:
@@ -153,9 +154,8 @@ func _notification(what: int) -> void:
 			if is_instance_valid(n) and not (n as Node).is_inside_tree():
 				(n as Node).free()
 
-
 ## Builds the match of a mode from nothing: venue, puck, skaters, goal volumes, rules, HUD, the helpers.
-func _build(mid: String) -> void:
+func _build(mid: String, warm_kits: bool = false) -> void:
 	# a rebuild runs inside one tick (a mode change, R): only what changed is made again, so it stays far under the runner's 250 ms tick limit (the whole arena rebuilt in a tick took 254 ms of processor time)
 	if arena != null:
 		ctx.root.remove_child(arena)
@@ -237,23 +237,29 @@ func _build(mid: String) -> void:
 			ctx.root.remove_child(old)       # every pooled skater lives directly under ctx.root
 
 	var opts: Dictionary = (tune["skater"] as Dictionary).duplicate()
+	var skin := ":neon" if not ctx.headless and m.has("neon") and bool(m["neon"].get("trim", true)) else ""  # L5 crazy
+	var skins: Array = ["", ":neon"] if warm_kits else [skin]
 	for entry: Dictionary in (tune["roster"] as Array) + keeper.entries(self, m):
 		var id: String = str(entry["id"])
 		var team: String = str(entry["team"])
 		var sp: Array = entry["spawn"]
 		var at := Vector3(float(sp[0]), 0.1, float(sp[1]))
 		var pid: String = id + ":" + team
-		if not pool.has(pid):
-			var o: Dictionary = opts.duplicate()
-			var kit: String = "car_blue" if team == "blue" else "car_red"
-			o.merge({"mode": "skate", "position": at, "facing": _face_yaw(team), "name": "skater_" + id, "rig_params": {"colors": entry.get("colors", {"top": kit, "trim": kit, "legs": kit})}})
-			o["body_scale"] = float(entry.get("scale", opts["body_scale"]))
-			var made: TLBiped = TLBiped.create(o)
-			if made.rig != null:
-				var bs: float = float(o["body_scale"])
-				made.rig.scale = Vector3(bs, bs, bs)      # H7: the body is the figure's size too (create option body_scale)
-			pool[pid] = made
-		var sk: TLBiped = pool[pid]
+		for suffix: String in skins:
+			if not pool.has(pid + suffix):
+				var o: Dictionary = opts.duplicate()
+				var kit: String = "car_blue" if team == "blue" else "car_red"
+				var colors: Dictionary = look.neon_colors(team, str(entry["role"])) if suffix == ":neon" else entry.get("colors", {"top": kit, "trim": kit, "legs": kit})
+				o.merge({"mode": "skate", "position": at, "facing": _face_yaw(team), "name": "skater_" + id, "rig_params": {"colors": colors}})
+				o["body_scale"] = float(entry.get("scale", opts["body_scale"]))
+				var made: TLBiped = TLBiped.create(o)
+				var drawn: float = o["body_scale"]
+				# The skate pose spreads beyond the rig metric. Goalies keep the same contact-to-drawn ratio.
+				made.set_body_scale(float(tune["contact_body_scale"]) * drawn / float(opts["body_scale"]))
+				if made.rig != null:
+					made.rig.scale = Vector3.ONE * drawn
+				pool[pid + suffix] = made
+		var sk: TLBiped = pool[pid + skin]
 		ctx.root.add_child(sk)
 		sk.skate_accel = float(opts["skate_accel"])
 		sk.skate_turn_rate = float(opts["skate_turn_rate"])
@@ -265,6 +271,8 @@ func _build(mid: String) -> void:
 		teams[id] = team
 		roles[id] = str(entry["role"])
 		spawns[id] = at
+	# The held ball samples its holder after that body has skated this frame.
+	ctx.root.move_child(puck, -1)
 	goal_pos = {"blue": _v3(g["blue"]), "red": _v3(g["red"])}
 
 	# goal volumes just behind each line, inside the nets; the trigger decides "the whole puck crossed"
@@ -275,12 +283,17 @@ func _build(mid: String) -> void:
 		arena.add_child(trig)
 		trig.entered.connect(_on_goal.bind(side))
 
+	skate = ctx.load_script("scripts/skate.gd").new()
+	skate.setup(self)
 	api = ctx.load_script("scripts/rink_api.gd").new()
-	api.setup(tune, puck, skaters, teams, order)
+	api.setup(tune, puck, skaters, teams, order, ctx.root)
 	hits = ctx.load_script("scripts/hits.gd").new()
-	hits.setup(tune, api, skaters, teams, order)
+	hits.setup(tune, api, skaters, teams, order, ctx.rng)
+	hits.human = "" if autopilot else "b0"
 	hits.enabled = bool(m.get("checks", true))
+	api.skate = skate
 	api.hits = hits
+	api.headless = ctx.headless
 	api.poke_cone_dot = cos(deg_to_rad(float(tune["aim"]["poke_cone_deg"])))
 	for t: String in keeper.ids:
 		api.goalies[keeper.ids[t]] = t
@@ -305,21 +318,19 @@ func _build(mid: String) -> void:
 	fun.setup(self)                        # L5: the play camera ("follow") is on screen; V shows the old top view
 
 	env.merge({"puck": puck, "skaters": skaters, "teams": teams, "roles": roles, "spawns": spawns, "goals": goal_pos,
-		"frozen": false, "api": api, "hits": hits, "tuning": tune, "rules": rules, "autopilot": autopilot, "drill": false}, true)
+		"frozen": false, "api": api, "skate": skate, "hits": hits, "tuning": tune, "rules": rules, "autopilot": autopilot, "drill": false}, true)
 	if brain != null:
 		brain.override(m.get("ai", {}))
 		brain.red_over = (levels[level_id]["ai"] as Dictionary).duplicate() if levels.has(level_id) else {}
 	dial_lib.apply(self)
-
+	crazy.build(self, m)                   # L5 crazy: pickups and abilities of this mode (none: off, nothing changes)
 
 func _v3(a: Array) -> Vector3:
 	return Vector3(float(a[0]), float(a[1]), float(a[2]))
 
-
 ## Heading (radians about y) that makes a skater face the opponent's goal: blue +x, red -x.
 func _face_yaw(team: String) -> float:
 	return -PI * 0.5 if team == "blue" else PI * 0.5
-
 
 func _new_rules() -> void:
 	rules = TLRules.create(tune["rules"])
@@ -330,10 +341,10 @@ func _new_rules() -> void:
 	hud.add_score(rules, "red", &"top_right", "RED")
 	hud.add_clock(rules, &"top")
 	look.hud_lines(self)
+	hud.add_bound(&"stamina", skate.stamina_bar, &"bottom")
 	hud.add_bound(&"rule", func() -> String: return rule_line, &"top")
 	hud.add_bound(&"game", _game_line, &"bottom_left")
 	hud.add_bound(&"dial", func() -> String: return dial_lib.text(self), &"right")
-
 
 ## H6: which game this is, on screen from the first frame: the level and the mode in one line.
 func _game_line() -> String:
@@ -342,40 +353,15 @@ func _game_line() -> String:
 	var lv: String = str(levels[level_id]["label"]) if levels.has(level_id) else str(base_tune["look"]["level_none"])
 	return "Level: %s | Mode: %s" % [lv, str(modes[mode_id].get("label", mode_id))]
 
-
 func _pack_start() -> void:
 	if intro.wanted(self):
 		intro.begin(self, 0)                 # L5: a person's first minute is a drill, then the match
 	else:
 		_start_match()
 
-
-## The human's keys and mouse for this frame (the match and the first-minute drill).
-func player_input() -> void:
-	var player: TLBiped = skaters["b0"]
-	var v := Vector3(ctx.input.axis(&"left", &"right"), 0.0, ctx.input.axis(&"up", &"down"))
-	if v.length() > 1.0:
-		v = v.normalized()
-	player.brake(false)
-	player.move(v)
-	_aim_stick()
-	api.sprinting["b0"] = ctx.input.pressed(&"sprint")
-	if ctx.input.just_pressed(&"shoot"):
-		api.try_shoot("b0")
-	if ctx.input.just_pressed(&"pass"):
-		api.try_pass("b0")
-	if ctx.input.just_pressed(&"poke"):
-		api.try_poke("b0")
-	if ctx.input.just_pressed(&"check"):
-		hits.try_check("b0")
-	if ctx.input.just_pressed(&"cross"):
-		hits.try_cross("b0")
-
-
 func _start_match() -> void:
 	if not menu_lib.hold(self):
 		_begin()
-
 
 func _begin() -> void:
 	rules.start()
@@ -383,51 +369,66 @@ func _begin() -> void:
 	puck.place(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
 	_event("faceoff", Vector3.ZERO, "")
 
-
 func _on_puck_bounced(other: Node, speed: float) -> void:
 	if speed >= 6.0 and not (other is TLBiped):
 		_event("board", puck.global_position, "")
-
 
 func _on_goal(body: Node3D, side: String) -> void:
 	if body == puck and puck.holder() == null and _flag_goal == "" and reset_in <= 0 and not frozen and rules.is_running():
 		_flag_goal = "red" if side == "blue" else "blue"
 
-
-func _event(name: String, pos: Vector3, team: String) -> void:
+func _event(name: String, pos: Vector3, team: String, skater: String = "") -> void:
 	_events.append([name, pos, team])
+	if name == "skate_stop":
+		skate.stops[skater] = int(skate.stops.get(skater, 0)) + 1
 
+func _action_pressed(action: StringName) -> void:
+	if drill_actions.has(action):
+		drill_pressed = true
+	elif action.begins_with("mode_") or action.begins_with("level_"):
+		settings_pressed = true
 
 func _pack_tick(frame: int) -> void:
+	var check_settings := settings_pressed
+	settings_pressed = false
+	var check_drills := drill_pressed
+	drill_pressed = false
 	if menu_lib.tick(self):
 		_hold_all()
 		look.plates(self)     # the keys' lines keep their plate (only the plates: a panel key is no skating touch)
 		return
 	if intro.tick(self, frame):
 		return
-	for mid: String in modes:
-		if ctx.input.just_pressed(StringName("mode_" + mid)):
-			_build(mid)
-			_start_match()
-			_flush_events(frame)
-			return
-	for lid: String in base_tune["levels"]:
-		if ctx.input.just_pressed(StringName("level_" + lid)):
-			level_id = lid if levels.has(lid) else "none"
-			if brain != null:
-				brain.red_over = (levels[level_id]["ai"] as Dictionary).duplicate() if levels.has(level_id) else {}
+	if check_settings:
+		for mid: String in modes:
+			if not modes_lib.is_crazy(modes[mid]) and ctx.input.just_pressed(StringName("mode_" + mid)):
+				_build(mid)
+				_start_match()
+				_flush_events(frame)
+				return
+		for lid: String in base_tune["levels"]:
+			if ctx.input.just_pressed(StringName("level_" + lid)):
+				level_id = lid if levels.has(lid) else "none"
+				if brain != null:
+					brain.red_over = (levels[level_id]["ai"] as Dictionary).duplicate() if levels.has(level_id) else {}
 	api.tick(frame)
 	hits.tick(frame)
 	if fun.stop(self):                     # L5: a hard check holds the picture for a few frames (everything frozen)
 		_flush_events(frame)
 		return
-	if not autopilot and ctx.input.pressed(&"check"):
-		hits.braced["b0"] = true      # holding F braces him (standing still: he holds a hit from the side)
 	if ctx.input.just_pressed(&"autopilot"):
 		autopilot = not autopilot
-	for d: Dictionary in drills["drills"]:
-		if ctx.input.just_pressed(StringName("drill_" + str(d["id"]))):
-			drill_lib.start(self, d, frame)
+		hits.human = "" if autopilot else "b0"
+		hits.release_hold()
+		if autopilot:
+			stick_heading = Vector3.ZERO
+			api.stick_dir.erase("b0")
+			api.aim_at.erase("b0")
+			api.cancel_charge()
+	if check_drills:
+		for action: StringName in drill_actions:
+			if ctx.input.just_pressed(action):
+				drill_lib.start(self, drill_actions[action], frame)
 	env["autopilot"] = autopilot
 	env["drill"] = drill_id != ""
 	env["rules"] = rules
@@ -457,9 +458,18 @@ func _pack_tick(frame: int) -> void:
 	env["frozen"] = stopped
 
 	if not stopped:
+		if not autopilot:
+			player.aim(self)
+		crazy.pre(self)                    # L5 crazy: pickups taken, the shotgun's path downs (before any reach or catch)
 		if drill_id == "" or keeper.in_drill:
 			keeper.save(self)                 # L5: a goalie's catch or poke check comes before anybody's reach
 		api.update_possession()
+		if not autopilot:
+			player.live_input(self)
+		else:
+			skate.pace(skate.human_slot, false, Vector3.ZERO)
+		drill_lib.pace(self)
+		api._follow_blade()
 	if drill_id != "":
 		drill_lib.tick(self, frame)
 	elif brain != null:
@@ -467,25 +477,28 @@ func _pack_tick(frame: int) -> void:
 	elif not stopped:
 		for id: String in order:
 			if id != "b0":
-				skaters[id].move(Vector3.ZERO)
+				skate.want(id, Vector3.ZERO)
 	if not stopped and (drill_id == "" or keeper.in_drill):
 		keeper.move(self)
 	if stopped:
 		_hold_all()
 	elif not autopilot:
-		player_input()
+		player.input(self)
 	if not stopped:
+		hits.step_actions()
 		hits.enforce()
 		for id: String in order:
 			if drill_id == "" and (id != "b0" or autopilot) and not keeper.is_goalie(id):
-				(skaters[id] as TLBiped).brake(hits.is_down(id))
+				skate.brake(id, hits.is_down(id))
+	api.pose_sticks()
 	api.apply_speeds()
+	crazy.post(self)                       # L5 crazy: boosts on speeds, this frame's shots, the bots' F, crazy drills
 	for e: Array in api.events:
 		if str(e[0]) == "shot" or str(e[0]) == "one_timer":
 			_event(str(e[0]), (skaters[str(e[1])] as Node3D).global_position, str(teams[str(e[1])]))
 	api.events.clear()
 	for e: Array in hits.events:
-		_event("hit_" + str(e[0]), (skaters[str(e[2])] as Node3D).global_position, str(teams[str(e[1])]))
+		_events.append(["hit_" + str(e[0]), (skaters[str(e[2])] as Node3D).global_position, teams[e[1]], e[3]])
 	hits.events.clear()
 
 	# the pause after a goal, then the face-off
@@ -511,41 +524,18 @@ func _pack_tick(frame: int) -> void:
 			reset_in = int(round(float(tune["pause_s"]) * 60.0))
 	_flush_events(frame)
 
-
-## H4: the stick follows the aim. Valid aim off the figure: the stick heading turns toward it at most stick_turn_deg_per_frame; on the figure (TLInput.AIM_DEAD): held; invalid: none, and every stick action uses his facing exactly as before H4. The rig has no upper-body or stick yaw (only the head's look_at): the head looks at the aim, the body keeps skating where W A S D send it.
-func _aim_stick() -> void:
-	var player: TLBiped = skaters["b0"]
-	var at: Vector3 = player.global_position
-	if not ctx.input.aim_valid(&"aim"):
-		stick_heading = Vector3.ZERO
-		api.stick_dir.erase("b0")
-		api.aim_at.erase("b0")
-		if player.rig != null:
-			player.rig.set_param(&"look_at", null)
-		return
-	var fwd: Vector3 = api.fwd_of("b0")
-	if stick_heading == Vector3.ZERO:
-		stick_heading = fwd
-	var want: Vector3 = ctx.input.aim_direction(&"aim", at, Vector3.ZERO)
-	if want != Vector3.ZERO:
-		var turn: float = deg_to_rad(float(tune["aim"]["stick_turn_deg_per_frame"]))
-		var ang: float = stick_heading.signed_angle_to(want, Vector3.UP)
-		stick_heading = stick_heading.rotated(Vector3.UP, clampf(ang, -turn, turn)).normalized()
-	api.stick_dir["b0"] = stick_heading
-	api.aim_at["b0"] = ctx.input.aim(&"aim")
-	if player.rig != null:
-		player.rig.set_param(&"look_at", ctx.input.aim(&"aim") + Vector3(0, 1.0, 0))
-
-
 func _hold_all() -> void:
+	api.cancel_charge()
+	skate.sprinting.fill(0)
 	for id: String in order:
-		skaters[id].move(Vector3.ZERO)
-		skaters[id].brake(true)
-
+		skate.want(id, Vector3.ZERO)
+		skate.brake(id, true)
 
 func _faceoff() -> void:
+	skate.reset()
 	api.reset()
 	hits.reset()
+	crazy.faceoff(self)                    # L5 crazy: puck effects end at a face-off
 	var j: float = float(tune["faceoff_jitter"])
 	puck.place(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
 	for id: String in order:
@@ -555,11 +545,9 @@ func _faceoff() -> void:
 	frozen = false
 	_event("faceoff", Vector3.ZERO, "")
 
-
 func _restart() -> void:
 	_build(mode_id)
 	_start_match()
-
 
 func _flush_events(_frame: int) -> void:
 	for e: Array in keeper.events:
@@ -573,7 +561,6 @@ func _flush_events(_frame: int) -> void:
 	_events.clear()
 	fun.tick(self)
 	look.tick(self)
-
 
 func _pack_state() -> Dictionary:
 	return state_lib.state(self)

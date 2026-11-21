@@ -104,7 +104,9 @@ func on_events(g, events: Array) -> void:
 			shot_age = 0
 			shot_from = e[1]
 		elif name == "hit_stumble" or name == "hit_knockdown":
-			_hit(g)
+			_hit(g, e[3])
+		elif name == "skate_stop":
+			burst(g, &"ice_spray", e[1], {"scale": 1.2, "color": Color(0.45, 0.7, 1.0)})
 		elif name == "goal":
 			_goal(g, str(e[2]))
 			save_left = 0
@@ -125,10 +127,7 @@ func on_events(g, events: Array) -> void:
 			goal_text = ""
 
 
-func _hit(g) -> void:
-	var lh: Dictionary = g.hits.last_hit
-	if lh.is_empty() or bool(lh.get("braced", false)):
-		return
+func _hit(g, lh: Dictionary) -> void:
 	var c: float = float(lh["closing"])
 	if c > float(best.get("hit", 0.0)):
 		best["hit"] = c

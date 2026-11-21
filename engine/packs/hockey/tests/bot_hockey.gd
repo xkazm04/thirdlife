@@ -1,4 +1,4 @@
-extends Node
+extends "rink_bot.gd"
 ## Bot: plays blue b0. It gets behind the puck (far side from the red goal), dribbles toward the goal around the red
 ## skaters, and shoots at the goal mouth when within reach and lined up.
 ## H5: its keys go through TLHand (hand_profile, "perfect" here: the same calls as before the port, so the same hash).
@@ -18,10 +18,9 @@ var shoot_range: float = 16.0          # H9: a person's range: he shoots from in
 var aim_tolerance_deg: float = 6.0     # H9: he presses when the game's stick points at his aim within this
 var corner_z: float = 1.5              # L5: the side of the mouth he aims at, away from the goalie (was 1.2 before goalies)
 var pass_target: Vector2 = Vector2.ZERO
-var ctx
+
 var hand: TLHand
-var s: Dictionary = {}
-var done: bool = false
+
 var trace: Array = []
 var down_frames: int = 0               # frames b0 spent down after a hit
 var max_period: int = 1
@@ -29,15 +28,16 @@ var passes_seen: int = 0
 var passes_reached: int = 0
 var pass_pending: bool = false
 
+func ladder(division: String, profile: String) -> void:
+	level = division
+	hand_profile = profile
+	use_aim = true
+	use_pass = true
+	require_win = false
 
 func _bot_setup(c) -> void:
-	ctx = c
+	super(c)
 	hand = TLHand.create(ctx, "perfect" if hand_profile == "idle" else hand_profile)     # L5: idle presses nothing
-
-
-func _v(a: Array) -> Vector2:
-	return Vector2(float(a[0]), float(a[1]))
-
 
 func _bot_tick(frame: int) -> void:
 	var _frame: int = frame
@@ -121,27 +121,9 @@ func _bot_tick(frame: int) -> void:
 		if absf(zg) < 2.5 and clear:
 			hand.tap(&"shoot")
 	elif use_pass and bool(s.get("pass_ready", false)):
-		_maybe_pass(pos, face)
+		if _open_mate(pos, face) != Vector2.ZERO:
+			hand.tap(&"pass")
 	hand.tick()
-
-
-## A person's pass (ladder bots only): pressed by a red skater close in front, a blue mate ahead and open.
-func _maybe_pass(pos: Vector2, face: Vector2) -> void:
-	var pressed: bool = false
-	var mate_ok: bool = false
-	for k: Dictionary in s["skaters"]:
-		var p: Vector2 = _v(k["pos"])
-		if str(k["team"]) == "red" and (p - pos).length() < 2.5 and (p - pos).dot(face) > 0.0:
-			pressed = true
-		if str(k["team"]) == "blue" and k["id"] != "b0" and (p - pos).length() > 4.0 and (p - pos).normalized().dot(face) > 0.64:
-			var open: bool = true
-			for o: Dictionary in s["skaters"]:
-				if str(o["team"]) == "red" and (_v(o["pos"]) - p).length() < 3.0:
-					open = false
-			mate_ok = mate_ok or open
-	if pressed and mate_ok:
-		hand.tap(&"pass")
-
 
 ## H9: the cursor's play. With the puck: the cursor on the goal mouth's open side (or on an open mate when pressed); he
 ## presses Space / Q (the left / right button's action) once the game's stick (state "stick", the aim's heading, turned
@@ -177,15 +159,7 @@ func _aim_play(pos: Vector2, puck: Vector2, others: Array) -> void:
 	elif bool(s["shoot_ready"]) and puck.distance_to(goal) < shoot_range:
 		hand.tap(&"shoot")
 
-
-func _me() -> Dictionary:
-	for k: Dictionary in s["skaters"]:
-		if k["id"] == "b0":
-			return k
-	return {}
-
-
-## An open blue mate ahead when a red skater presses him (the same rule as _maybe_pass), or Vector2.ZERO.
+## An open blue mate ahead when a red skater presses him, or Vector2.ZERO.
 func _open_mate(pos: Vector2, face: Vector2) -> Vector2:
 	var pressed: bool = false
 	var best: Vector2 = Vector2.ZERO
@@ -202,7 +176,6 @@ func _open_mate(pos: Vector2, face: Vector2) -> Vector2:
 				best = p
 	return best if pressed else Vector2.ZERO
 
-
 func _measure() -> void:
 	max_period = maxi(max_period, int(s.get("period", 1)))
 	if (s["hits"].get("down", {}) as Dictionary).has("b0"):
@@ -217,24 +190,12 @@ func _measure() -> void:
 		if str(s["skaters"].filter(func(k): return k["id"] == h)[0]["team"]) == "blue":
 			passes_reached += 1
 
-
-func _bot_done() -> bool:
-	return done
-
-
 func _bot_result() -> Dictionary:
 	var tally: Dictionary = s.get("scores", {})
 	var mine: int = int(tally.get("blue", 0))
 	var theirs: int = int(tally.get("red", 0))
 	var shots: int = int(s.get("shots", {}).get("b0", 0))
 	var won: bool = done and str(s.get("winner", "")) == "blue"
-	# H8: a win, not "3 goals": since H3 a match can be won at the end of its periods with fewer (seed 18: 2:1 at full time)
-	# H9a: with the puck on the blade (2.8 m out) the bot shoots less (it shoots only when the puck, not his body, is lined
-	# up); a win with "at least 3 shots" held on 8 of 20 seeds. The verdict it can hold: a win, at least one shot.
-	# H9a: even "a win" is a coin now (rookie, perfect hand: 18 of 20 on seeds 1..20, lost 1:3 on seed 4 and 0:1 on 14).
-	# The verdict it holds: the match is played to its result (WIN / LOSE / DRAW on the HUD) and he shot; who won is a number.
-	# H9: "he shot" failed on 5 of 20 seeds that blue won 3:0 or 3:1 through his mates' goals (the puck on the blade, 2.8 m
-	# out, is lined up less often for this bot's key-only shot rule): the proof that he played is that he took the puck.
 	var took: int = int(s.get("possession", {}).get("takes", {}).get("b0", 0))
 	var ok: bool = done and str(s.get("result", "")) in ["WIN", "LOSE", "DRAW"] and took >= 1
 	if must_win:

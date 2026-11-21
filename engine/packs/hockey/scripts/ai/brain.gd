@@ -1,15 +1,6 @@
 extends RefCounted
-## Brain for the AI skaters (and for b0 on autopilot). H1: the three roles know the carry.
-##   carrier: skates at the goal, shoots inside a range when lined up, passes when an opponent closes and a mate is open.
-##   our puck: chaser and support open lanes ahead; back holds the middle behind them.
-##   their puck: chaser (and support when near) close on the carrier and poke; back guards the goal; support marks.
-##   loose puck: chaser goes for it (support when near, back when it is in his zone); the nearest skater in reach takes it.
-## H2: a closer arriving with speed checks the carrier (red from a lower closing speed than blue: red hits more).
-## Yield to the human: blue mates leave a loose puck to b0 when he is as near; red does not poke b0 in his first
-## `yield_frames` with the puck. Numbers in data/ai.json.
-## H5: a level (data/levels/<id>.json) overrides ai keys for the OPPOSING team (red) only: slower to react (red sees
-## the puck where it was reaction_frames ago), slower skating, shorter range, a wider shot (aim_error_deg, drawn
-## from ctx.rng), less ready to check, worse at finding an open mate. Never absent: a rookie still plays every role.
+## Chasers press the puck, support opens a lane, and backs guard the goal. The carrier can skate, pass or shoot.
+## Modes override data/ai.json. Level overrides apply to red only.
 
 var cfg: Dictionary = {}
 var base_cfg: Dictionary = {}          ## data/ai.json as read; a mode overrides some keys (H3)
@@ -24,12 +15,10 @@ var _ctx = null
 var _b0_act: int = -100000             ## L5: the frame b0 last passed or shot (his own press, never a puck that just came to him)
 var _b0_count: int = 0
 
-
 func setup(ctx, _env) -> void:
 	_ctx = ctx
 	base_cfg = ctx.read_json("ai.json")
 	cfg = base_cfg.duplicate()
-
 
 ## A mode's "ai" keys over data/ai.json (validated by main.gd).
 func override(over: Dictionary) -> void:
@@ -37,14 +26,12 @@ func override(over: Dictionary) -> void:
 	cfg.merge(over, true)
 	_c.clear()
 
-
 func _f(k: String) -> float:
 	if _team == "red" and red_over.has(k):
 		return float(red_over[k])
 	if not _c.has(k):
 		_c[k] = float(cfg[k])
 	return _c[k]
-
 
 func think(frame: int, env: Dictionary) -> void:
 	_frame_no = frame
@@ -62,9 +49,8 @@ func think(frame: int, env: Dictionary) -> void:
 	for id: String in skaters:
 		if (id == "b0" and not env["autopilot"]) or str(env["roles"][id]) == "goalie":
 			continue                       # L5: the goalies are scripts/keeper.gd's
-		var sk: TLBiped = skaters[id]
 		if env["frozen"]:
-			sk.move(Vector3.ZERO)
+			env["skate"].want(id, Vector3.ZERO)
 			continue
 		var team: String = str(env["teams"][id])
 		_team = team
@@ -72,9 +58,8 @@ func think(frame: int, env: Dictionary) -> void:
 		var dir: Vector3 = _decide(id, team, env)
 		if dir.length() > 1.0:
 			dir = dir.normalized()
-		sk.move(dir * sc)
+		env["skate"].want(id, dir * sc)
 	_team = ""
-
 
 ## H6: the x of the goal line a point is behind (inside the net's width), or 0.0.
 func _behind_net(p: Vector3, env: Dictionary) -> float:
@@ -83,7 +68,6 @@ func _behind_net(p: Vector3, env: Dictionary) -> float:
 		if (p.x - gx) * signf(gx) > -0.2 and absf(p.z) < _f("net_zone_half"):
 			return gx
 	return 0.0
-
 
 ## H6: a target behind a net is reached round the frame, not through it: from in front, go first to the post on the
 ## near side (side = 1.0) or the far side (side = -1.0, the second man); once level with the goal line, go straight.
@@ -96,7 +80,6 @@ func _around_net(me: Vector3, target: Vector3, env: Dictionary, side: float) -> 
 	var zs: float = signf(me.z) if absf(me.z) > 0.3 else (signf(target.z) if absf(target.z) > 0.1 else 1.0)
 	return Vector3(gx + signf(gx) * 0.8, 0.0, zs * side * _f("net_round_z"))
 
-
 ## Where this skater sees the puck: now, or (red under a level) reaction_frames ago.
 func _puck_seen() -> Vector3:
 	var lag: int = int(_f("reaction_frames"))
@@ -104,18 +87,14 @@ func _puck_seen() -> Vector3:
 		return _seen[0] if not _seen.is_empty() else Vector3.ZERO
 	return _seen[mini(lag, _seen.size() - 1)]
 
-
 func _flat(v: Vector3) -> Vector3:
 	return Vector3(v.x, 0.0, v.z)
-
 
 func _goto(me: Vector3, target: Vector3) -> Vector3:
 	return TLSteer.arrive(me, target, 1.5)
 
-
 func _human(env: Dictionary) -> bool:
 	return not env["autopilot"]
-
 
 func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 	var api = env["api"]
@@ -162,9 +141,12 @@ func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 			out = _goto(me, wait)
 		elif closes:
 			var may: bool = not (car == "b0" and _human(env) and _frame_no - int(api.carry_since) < int(_f("yield_frames")))
-			if may and hits.can_check(id) and hits.target(id, hits._f("check_reach"), hits._f("check_cone_deg")) == car and hits.closing(id, car) >= _f("check_min_closing_" + team):
+			var gap: float = dc - hits.touch_distance(id, car)
+			if may and gap <= hits.check_gap and not hits.graced(car) and hits.can_check(id) and hits.target(id, hits.check_gap, hits.check_cone_deg) == car and hits.closing(id, car) >= _f("check_min_closing_" + team):
 				hits.try_check(id)
-			elif may and api.can_poke(id):
+			elif may and role == "chaser" and gap <= hits.cross_gap and not hits.graced(car) and hits.can_cross(id) and hits.closing(id, car) > _f("cross_min_closing") and hits.in_cross_cone(id, car):
+				hits.try_cross(id, car)
+			elif may and not hits.swinging(id) and api.can_poke(id):
 				api.try_poke(id)
 			var cv: Vector3 = _flat((env["skaters"][car] as TLBiped).velocity)
 			out = (_around_net(me, pp + cv * clampf(dc / 10.0, 0.0, 0.5), env, 1.0) - me).normalized()
@@ -193,7 +175,6 @@ func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 			out = _goto(me, between)
 	out += TLSteer.separate(me, others, 2.0) * 1.2
 	return out
-
 
 ## The carrier: at the goal, shoot inside the range when lined up, pass when pressed and a mate is open.
 func _carry(id: String, team: String, env: Dictionary, me: Vector3, opp_goal: Vector3, sgn: float) -> Vector3:
@@ -266,7 +247,6 @@ func _carry(id: String, team: String, env: Dictionary, me: Vector3, opp_goal: Ve
 			target += Vector3(-g.z, 0, g.x) * (3.0 if lat < 0.0 else -3.0)
 	return (target - me).normalized()
 
-
 ## L5: where a shot goes: at the far side of the goal from their goalie (corner_z from the middle), along the facing
 ## when they have none.
 func _corner(team: String, env: Dictionary, opp_goal: Vector3, from: Vector3, fwd: Vector3) -> Vector3:
@@ -278,11 +258,9 @@ func _corner(team: String, env: Dictionary, opp_goal: Vector3, from: Vector3, fw
 			return to.normalized() if to.length() > 0.5 else fwd
 	return fwd
 
-
 ## May he take a pass now (not down, not stumbling)?
 func hits_ok(env: Dictionary, id: String) -> bool:
 	return env["hits"].can_act(id)
-
 
 func _open(mid: String, team: String, env: Dictionary) -> bool:
 	for oid: String in _pos:

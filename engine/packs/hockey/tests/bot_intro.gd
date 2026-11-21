@@ -1,4 +1,4 @@
-extends Node
+extends "rink_bot.gd"
 ## Bot (L5, 21 Nov): the first minute. It starts the drill with the keyless action `intro` (a person's session starts it
 ## by itself) and plays it as a person would, keys and the cursor (the aim), no hand profile:
 ##   skate: W A S D to the ring; take: wait for LEO's pass; pass: the cursor on LEO, Q; back: wait; shoot: skate in, the
@@ -9,35 +9,17 @@ extends Node
 
 var skip: bool = false
 var max_frames: int = 1800
-var ctx
-var s: Dictionary = {}
+
 var started: int = -1
 var seen_steps: Array = []
-var done: bool = false
+
 var ended_at: int = -1
 var match_frames: int = 0
-
-
-func _bot_setup(c) -> void:
-	ctx = c
-
-
-func _v(a: Array) -> Vector2:
-	return Vector2(float(a[0]), float(a[1]))
-
-
-func _pos(id: String) -> Vector2:
-	for k: Dictionary in s["skaters"]:
-		if str(k["id"]) == id:
-			return _v(k["pos"])
-	return Vector2.ZERO
-
 
 func _steer(d: Vector2) -> void:
 	var n: Vector2 = d.normalized() if d.length() > 0.3 else Vector2.ZERO
 	ctx.input.set_axis(&"left", &"right", n.x)
 	ctx.input.set_axis(&"up", &"down", n.y)
-
 
 func _aimed(at: Vector2) -> bool:
 	ctx.input.set_aim(&"aim", Vector3(at.x, 0.0, at.y))
@@ -45,7 +27,6 @@ func _aimed(at: Vector2) -> bool:
 		return false
 	var to: Vector2 = at - _pos("b0")
 	return rad_to_deg(absf(_v(s["stick"]).angle_to(to))) < 4.0
-
 
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
@@ -72,12 +53,12 @@ func _bot_tick(frame: int) -> void:
 					ctx.input.tap(&"pass")
 			"shoot":
 				var goal: Vector2 = Vector2(26.0, 0.0)
-				if me.distance_to(goal) > 14.0:
+				if me.x > 20.0 or me.distance_to(goal) > 14.0:
 					_steer(Vector2(14.0, 0.0) - me)
 				else:
 					_steer(Vector2.ZERO)
 				var tgt: Vector2 = Vector2(26.0, -1.2)
-				if _aimed(tgt) and bool(s.get("shoot_ready", false)) and me.distance_to(goal) < 16.0:
+				if _aimed(tgt) and bool(s.get("shoot_ready", false)) and me.x < 20.0 and me.distance_to(goal) < 16.0:
 					ctx.input.tap(&"shoot")
 			_:
 				_steer(Vector2.ZERO)
@@ -92,11 +73,6 @@ func _bot_tick(frame: int) -> void:
 		match_frames += 1
 	if match_frames >= 60 or frame - ended_at > 300:
 		done = true
-
-
-func _bot_done() -> bool:
-	return done
-
 
 func _bot_result() -> Dictionary:
 	var want: Array = ["skate", "take", "pass", "back", "shoot", "done"]

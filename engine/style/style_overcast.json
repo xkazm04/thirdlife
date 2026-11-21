@@ -223,7 +223,10 @@
   "flag_b": "#3a78d8",
   "fall_a": "#c4d6de",
   "fall_b": "#eef2f4",
-  "pond_ice": "#d5e2e8"
+  "pond_ice": "#d5e2e8",
+  "neon_pink": "#ff3fa4",
+  "neon_lime": "#a3ff3d",
+  "neon_violet": "#9b6bff"
  },
  "mat": {
   "window": {
@@ -426,7 +429,10 @@
    "metal": 0.5,
    "mottle": 0.1,
    "no_hatch": 1.0
-  }
+  },
+  "neon_pink": {"emit": 2.4, "no_hatch": 1.0, "mottle": 0.0},
+  "neon_lime": {"emit": 2.2, "no_hatch": 1.0, "mottle": 0.0},
+  "neon_violet": {"emit": 2.4, "no_hatch": 1.0, "mottle": 0.0}
  },
  "detail": {
   "k": 1.0,

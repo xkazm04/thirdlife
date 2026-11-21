@@ -1,0 +1,6 @@
+{
+  "id": "shotgun",
+  "label": "Shotgun",
+  "about": "Press F to load your next shot. Send it through a crowd. Your teammates can fall too.",
+  "abilities": [{"kind":"shotgun","trigger":"mode","cooldown_frames":1200}]
+}

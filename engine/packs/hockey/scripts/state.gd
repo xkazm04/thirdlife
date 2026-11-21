@@ -26,6 +26,9 @@ func state(g) -> Dictionary:
 	if g.api.carrier != "":
 		s["puck"]["holder"] = g.api.carrier
 	s["possession"] = g.api.state()
+	var skating: Dictionary = g.skate.state()
+	if not skating.is_empty():
+		s["skate"] = skating
 	s["hits"] = g.hits.state()
 	s["reach"] = g.api.reach
 	s["poke_reach"] = g.api.poke_reach
@@ -51,7 +54,7 @@ func state(g) -> Dictionary:
 	s["skaters"] = list
 	s["shots"] = g.api.shots.duplicate()
 	s["frozen"] = g.frozen
-	s["shoot_ready"] = g.api.can_shoot("b0")
+	s["shoot_ready"] = g.api.can_shoot("b0") and not g.api.shot_held
 	s["pass_ready"] = g.api.carrier == "b0"
 	s["poke_ready"] = g.api.can_poke("b0")
 	s["check_ready"] = g.hits.can_check("b0")
@@ -63,6 +66,8 @@ func state(g) -> Dictionary:
 		s["stick"] = _p2(g.api.stick_dir["b0"])       # H4: only while the aim is valid (absent: as before H4)
 	if not g.keeper.ids.is_empty():
 		s["saves"] = g.keeper.saves.duplicate()      # L5: the goalies' saves by the side that made them
+	if g.crazy != null and g.crazy.on:
+		s["crazy"] = g.crazy.state()                 # L5 crazy: only in a mode with pickups or abilities
 	var fs: Dictionary = g.fun.state()
 	if not fs.is_empty():
 		s["fun"] = fs

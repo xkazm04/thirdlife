@@ -41,7 +41,6 @@ func tick(g) -> bool:
 		g.rules.resume()
 	return g.dial_open
 
-
 func text(g) -> String:
 	if not g.dial_open:
 		return ""
@@ -52,14 +51,13 @@ func text(g) -> String:
 	lines.append("A/D choose   W/S one step   T close")
 	return "\n".join(lines)
 
-
 ## The dials act on both teams: skate speed, shot speed, ice grip (sideways grip), bot sharpness.
 func apply(g) -> void:
 	var per: Array = g.tune["dial"]["per_step"]
 	var sk_speed: float = float(g.tune["skater"]["skate_speed"]) * (1.0 + float(per[0]) * int(g.dials["skate"]))
 	var grip: float = float(g.tune["skater"]["skate_lateral_grip"]) * (1.0 + float(per[2]) * int(g.dials["grip"]))
+	g.skate.base_speed = sk_speed
 	for id: String in g.order:
-		g.api.base_speed[id] = sk_speed
 		(g.skaters[id] as TLBiped).skate_lateral_grip = grip
 	g.api.speed = float(g.tune["shoot"]["speed"]) * (1.0 + float(per[1]) * int(g.dials["shot"]))
 	if g.brain != null:

@@ -1,4 +1,4 @@
-extends Node
+extends "rink_bot.gd"
 ## Bot (L5, 21 Nov): the goalies. One drill a row, the goalies in their nets (drills.json "goalies": true), level none
 ## (the goalie of data/tuning.json "goalie"); each row reads the red goalie's saves and the score:
 ##   straight at him: b0 shoots from 12 m in the middle at the goal's centre: a save, no goal
@@ -8,8 +8,6 @@ extends Node
 ##   tracking: before each shot the goalie stands between the puck and his goal's centre, inside the posts
 ## ok: the four rows as stated, and he never left his crease (|z| <= z_max, at most `out` + 0.1 m in front of his line).
 
-var ctx
-var s: Dictionary = {}
 const ROWS: Array = [["straight at him from 12 m", "goalie_straight", "save", 0.0], ["far side from an angle", "goalie_angle", "goal", 0.0],
 	["one-timer after a pass across", "goalie_cross", "goal", 0.0], ["carried into his crease", "goalie_poke", "save", 1.0]]
 var row: int = 0
@@ -17,14 +15,9 @@ var t0: int = -1
 var before: Dictionary = {}
 var saves0: int = 0
 var results: Array = []
-var done: bool = false
+
 var crease_ok: bool = true
 var worst: String = ""
-
-
-func _bot_setup(c) -> void:
-	ctx = c
-
 
 func _goalie() -> Dictionary:
 	for k: Dictionary in s["skaters"]:
@@ -32,14 +25,9 @@ func _goalie() -> Dictionary:
 			return k
 	return {}
 
-
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
-	if str(s.get("mode", "base")) != "base":
-		ctx.input.tap(&"mode_base")
-		return
-	if str(s.get("level", "none")) != "none":
-		ctx.input.tap(&"level_none")
+	if not classic():
 		return
 	if done:
 		return
@@ -60,6 +48,13 @@ func _bot_tick(frame: int) -> void:
 		t0 = frame
 		return
 	var age: int = frame - t0
+	if row < 3:
+		var target_z := 0.0 if row == 0 else (1.7 if row == 1 else -1.7)
+		ctx.input.set_aim(&"aim", Vector3(26, 0, target_z))
+		if (row < 2 and age == 20) or (row == 2 and s.shoot_ready and s.puck.get("holder", "") == "b0"):
+			ctx.input.tap(&"shoot")
+	else:
+		ctx.input.clear_aim(&"aim")
 	ctx.input.set_axis(&"left", &"right", float(r[3]))
 	var gk: Dictionary = _goalie()
 	if age > 2 and not gk.is_empty():
@@ -77,11 +72,6 @@ func _bot_tick(frame: int) -> void:
 		ctx.input.set_axis(&"left", &"right", 0.0)
 		row += 1
 		t0 = -1
-
-
-func _bot_done() -> bool:
-	return done
-
 
 func _bot_result() -> Dictionary:
 	var ok: bool = done and results.size() == ROWS.size() and crease_ok

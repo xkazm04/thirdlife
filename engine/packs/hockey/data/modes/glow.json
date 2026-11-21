@@ -1,0 +1,6 @@
+{
+  "id": "glow",
+  "label": "Glow Ice",
+  "about": "Chase a white-hot puck across midnight ice. First to three takes the lights.",
+  "neon": {"accent": "window", "trails": true, "trim": true, "lines": true}
+}

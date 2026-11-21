@@ -16,14 +16,11 @@ var steps: int = 0                     ## steps completed
 var _ring: Node3D = null
 var _loose: int = 0
 
-
 func wanted(g) -> bool:
 	return not ran and g.menu_lib.enabled and g.ctx.on_stage
 
-
 func cfg(g) -> Dictionary:
 	return g.tune["intro"]
-
 
 func begin(g, frame: int) -> void:
 	active = true
@@ -49,18 +46,15 @@ func begin(g, frame: int) -> void:
 		_ring.visible = true
 	_go("skate")
 
-
 func _go(s: String) -> void:
 	if step != "" and step != s:
 		steps += 1
 	step = s
 	t = 0
 
-
 func text(g) -> String:
 	var lines: Dictionary = cfg(g)["lines"]
 	return "%s\n%s" % [str(lines.get(step, "")), str(lines["skip"])]
-
 
 ## Every tick before the match's own work: true while the drill runs (main then does nothing else this tick).
 func tick(g, frame: int) -> bool:
@@ -77,9 +71,14 @@ func tick(g, frame: int) -> bool:
 	var c: Dictionary = cfg(g)
 	api.tick(frame)
 	g.hits.tick(frame)
+	g.player.aim(g)
 	api.update_possession()
+	g.player.live_input(g)
+	api._follow_blade()
 	g.drill_lib.tick(g, frame)
-	g.player_input()
+	g.player.input(g)
+	g.hits.step_actions()
+	api.pose_sticks()
 	api.apply_speeds()
 	t += 1
 	var me: Vector3 = api.pos_of("b0")
@@ -129,7 +128,6 @@ func tick(g, frame: int) -> bool:
 	g._flush_events(frame)
 	return true
 
-
 ## The mate's pass to b0 (led to where he will be).
 func _feed(g, from: String) -> void:
 	var api = g.api
@@ -141,7 +139,6 @@ func _feed(g, from: String) -> void:
 	api.try_pass(from)
 	api.stick_dir.erase(from)
 	api.last_release["to"] = "b0"
-
 
 func finish(g) -> void:
 	active = false
