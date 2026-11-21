@@ -7,6 +7,7 @@ var base_cfg: Dictionary = {}          ## data/ai.json as read; a mode overrides
 var sharpness: float = 0.0             ## the rule dial (H3): added to speed_scale, both teams
 var _c: Dictionary = {}
 var _pos: Dictionary = {}
+var _all: Array = []
 var _frame_no: int = 0
 var red_over: Dictionary = {}          ## H5: the level's ai keys, for red's decisions only
 var _team: String = ""                 ## the team of the skater being decided (for red_over)
@@ -46,6 +47,7 @@ func think(frame: int, env: Dictionary) -> void:
 	_pos.clear()
 	for k: String in skaters:
 		_pos[k] = _flat((skaters[k] as Node3D).global_position)
+	_all = _pos.values()                   # L4b: one list for every skater's separation (TLSteer.separate skips his own point)
 	for id: String in skaters:
 		if (id == "b0" and not env["autopilot"]) or str(env["roles"][id]) == "goalie":
 			continue                       # L5: the goalies are scripts/keeper.gd's
@@ -107,10 +109,7 @@ func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 		role = "chaser"
 	var sgn: float = signf(opp_goal.x)
 	var lane: float = float(env["spawns"][id].z)
-	var others: Array = []
-	for oid: String in _pos:
-		if oid != id:
-			others.append(_pos[oid])
+	var others: Array = _all
 	var car: String = api.carrier
 	var hits = env["hits"]
 	if not hits.can_act(id):
@@ -142,7 +141,9 @@ func _decide(id: String, team: String, env: Dictionary) -> Vector3:
 		elif closes:
 			var may: bool = not (car == "b0" and _human(env) and _frame_no - int(api.carry_since) < int(_f("yield_frames")))
 			var gap: float = dc - hits.touch_distance(id, car)
-			if may and gap <= hits.check_gap and not hits.graced(car) and hits.can_check(id) and hits.target(id, hits.check_gap, hits.check_cone_deg) == car and hits.closing(id, car) >= _f("check_min_closing_" + team):
+			# L4b: the press winds up hits.check_windup frames: press when he will be in reach as it ends (thirdjam's bots time it too)
+			var lead: float = hits.check_gap + maxf(hits.closing(id, car), 0.0) * float(hits.check_windup) / 60.0
+			if may and gap <= lead and not hits.graced(car) and hits.can_check(id) and hits.target(id, lead, hits.check_cone_deg) == car and hits.closing(id, car) >= _f("check_min_closing_" + team):
 				hits.try_check(id)
 			elif may and role == "chaser" and gap <= hits.cross_gap and not hits.graced(car) and hits.can_cross(id) and hits.closing(id, car) > _f("cross_min_closing") and hits.in_cross_cone(id, car):
 				hits.try_cross(id, car)

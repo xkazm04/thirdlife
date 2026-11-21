@@ -8,7 +8,7 @@ const KEYS := ["check_gap", "check_cone_deg", "check_cooldown_frames", "whiff_co
 	"full_ratio", "down_frames_min", "down_frames_max", "grace_frames", "speed_kept", "give_share",
 	"restitution", "scatter_speed", "loose_back_speed", "strip_speed", "cross_gap", "cross_cone_deg",
 	"cross_cooldown_frames", "cross_windup", "bot_cross_windup", "cross_live_frames", "recent_carry_frames",
-	"hold_frames", "hold_speed", "hold_turn", "hold_exposed", "hold_margin", "hold_clip_frames", "cross_clip_hit"]
+	"hold_frames", "hold_speed", "hold_turn", "hold_exposed", "hold_margin", "hold_clip_frames", "cross_clip_hit", "check_windup", "check_pull", "downed_radius", "downed_push", "lying_length"]
 
 var api
 var skaters: Dictionary
@@ -60,6 +60,12 @@ var hold_turn: float
 var hold_exposed: float
 var hold_margin: float
 var hold_clip_frames: int
+var check_windup: int               ## JamCartridge.h:461 (8), here the body_check clip's hit frame 12 (RIGS.md)
+var check_pull: float              ## JamCartridge.h:479 check_pull_m 1.0: the human is drawn to his man over the wind-up
+var downed_radius: float             ## JamCartridge.h:416-422 DownedRadiusM: a lying man's body, for those on their feet
+var lying_length: float             ## how far a fallen man lies along his facing from his feet (measured: the fall clip, 3.1 m at 2.2x)
+var downed_push: float               ## the most a standing skater is moved out of it in one frame (m)
+var windups: Dictionary = {}       ## id -> {"end": frame the window opens, "on": the man pressed at, "pulled": m}
 var cross_clip_hit: int            ## RIGS.md "Fight clips": the cross_check clip shows its hit on this frame
 var bodies: Array[TLBiped] = []
 var blue_side := PackedByteArray()
@@ -135,7 +141,7 @@ func _eligible(id: String) -> bool:
 	return enabled and id != api.carrier and not shield.has(id) and can_act(id)
 
 func can_check(id: String) -> bool:
-	return _eligible(id) and not swinging(id) and not is_braced(id) and _now >= int(ready_at.get(id, 0))
+	return _eligible(id) and not windups.has(id) and not swinging(id) and not is_braced(id) and _now >= int(ready_at.get(id, 0))
 
 func can_cross(id: String) -> bool:
 	return _eligible(id) and not swinging(id) and not is_braced(id) and _now >= int(cross_ready.get(id, 0))
@@ -186,6 +192,8 @@ func in_cross_cone(id: String, vic: String) -> bool:
 	return (api.stick_of(id) as Vector3).dot(_dir(id, vic)) >= cos(deg_to_rad(cross_cone_deg))
 
 func _clip(id: String, name: StringName) -> void:
+	if api.headless:
+		return                               # L4b: the figure's clips are drawing only; nothing hashed reads a pose (budget: p50)
 	var rig = (skaters[id] as TLBiped).rig
 	if rig == null:
 		return
@@ -199,11 +207,49 @@ func try_check(id: String) -> String:
 		return ""
 	tries[id] += 1
 	_clip(id, &"body_check")
-	# JamSim.h:510-514. The press frame counts as the first frame of the window.
-	body_until[id] = _now + (body_window if id == human else bot_body_window) - 1
-	ready_at[id] = _now + whiff_cooldown_frames
+	# JamSim.cpp:1968-1983, 2105-2177 (StepWindups, EndWindupOnContact, StepCheckPull): the press winds up check_windup frames
+	# (the clip shows its hit on that frame), the window opens after it; a meeting inside the wind-up is the hit.
 	immune_counted.erase(id)
-	return _body_contact(id)
+	var on := target(id, check_gap + check_pull + maxf(0.0, _vel(id).length()) * float(check_windup) / 60.0, check_cone_deg)
+	_count_immune(id)
+	windups[id] = {"end": _now + check_windup, "on": on, "pulled": 0.0}
+	ready_at[id] = _now + check_windup + whiff_cooldown_frames
+	return ""
+
+## One wind-up frame: meet the man (the hit, on the velocities before the bodies touch), draw a human toward him, or open
+## the window at its end. JamSim.cpp:2105-2177.
+func _step_windup(id: String) -> void:
+	var w: Dictionary = windups[id]
+	if not _eligible(id):
+		windups.erase(id)
+		return
+	var on: String = w.on
+	if on != "" and _opponent(id, on):
+		var gap: float = api.pos_of(on).distance_to(api.pos_of(id)) - touch_distance(id, on)
+		var c := closing(id, on)
+		# he meets him inside this physics step: the bodies are stepped one after another, so his own speed along the line
+		# can close the gap before the other man has moved (a same-way meeting too); resolved here, on the velocities before contact
+		if gap - maxf(maxf(c, _vel(id).dot(_dir(id, on))), 0.0) / 60.0 <= 0.02 and in_cone(id, on, check_cone_deg):
+			windups.erase(id)
+			ready_at[id] = _now + check_cooldown_frames
+			resolve(id, on, _dir(id, on), "body")
+			return
+		var left := int(w.end) - _now
+		if id == human and check_pull > 0.0 and left > 0 and gap > 0.0:
+			# drawn so the bodies meet as the wind-up ends; his speed is not changed (the hit stays his momentum's)
+			var step := clampf((gap - maxf(c, 0.0) * float(left) / 60.0) / float(left), 0.0, check_pull - float(w.pulled))
+			if step > 0.0:
+				var me: TLBiped = skaters[id]
+				me.global_position += _dir(id, on) * step
+				w.pulled = float(w.pulled) + step
+	if _now >= int(w.end):
+		windups.erase(id)
+		# JamSim.h:510-514. The frame the wind-up ends counts as the first frame of the window.
+		body_until[id] = _now + (body_window if id == human else bot_body_window) - 1
+		_body_contact(id)
+
+func in_cone(id: String, vic: String, cone_deg: float) -> bool:
+	return (api.fwd_of(id) as Vector3).dot(_dir(id, vic)) >= cos(deg_to_rad(cone_deg))
 
 ## L5 crazy: one block per press, on the first frame of its window that passed over a shielded man.
 func _count_immune(id: String) -> void:
@@ -286,6 +332,9 @@ func _held_contact() -> void:
 			return
 
 func step_actions() -> void:
+	if not windups.is_empty():
+		for id: String in windups.keys():
+			_step_windup(id)
 	if not body_until.is_empty():
 		for id: String in body_until.keys():
 			if _now > int(body_until[id]) or not _eligible(id):
@@ -458,8 +507,46 @@ func enforce() -> void:
 	if red > 0:
 		down_frames["red"] += red
 		side_down["red"] += 1
+	if blue + red > 0 and downed_radius > 0.0:
+		_keep_off_downed()
+
+## JamCartridge.h:416-422, JamSim.cpp:2467-2487 (PushOutOfDowned): nobody stands in a man who is down. His lying body is the
+## segment from his feet lying_length along his facing (TLHit.down v1 falls forward; when the falls experiment lands, follow
+## its direction here), downed_radius thick; a skater on his feet alone gives way (at most downed_push a frame) and the speed
+## he had into it turns along it. Read from the body, never the rig's pose: the pose is drawing only (clips skip headless).
+func _lying(i: int) -> Array:
+	var down: TLBiped = bodies[i]
+	var a := Vector3(down.global_position.x, 0.0, down.global_position.z)
+	return [a, a + (api.fwd_of(order[i]) as Vector3) * lying_length]
+
+func _keep_off_downed() -> void:
+	for i in bodies.size():
+		var down: TLBiped = bodies[i]
+		if not down.is_down():
+			continue
+		var seg := _lying(i)
+		var a: Vector3 = seg[0]
+		var ab: Vector3 = seg[1] - a
+		for j in bodies.size():
+			var up: TLBiped = bodies[j]
+			if j == i or up.is_down() or shield.has(order[j]):
+				continue
+			var p := Vector3(up.global_position.x, 0.0, up.global_position.z)
+			var t := 0.0 if ab.length_squared() < 1e-6 else clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+			var q := a + ab * t
+			var d := p.distance_to(q)
+			var keep := up.body_radius() + downed_radius
+			if d >= keep:
+				continue
+			var side := Vector3(-ab.z, 0.0, ab.x).normalized() if ab.length_squared() > 1e-6 else Vector3.RIGHT
+			var n := (p - q) / d if d >= 1e-4 else side      # on his centre line (he fell onto the hitter): out to one side
+			up.global_position += n * minf(keep - d + maxf(-Vector3(up.velocity.x, 0.0, up.velocity.z).dot(n), 0.0) / 60.0, downed_push)   # and this frame's step into him
+			var into := Vector3(up.velocity.x, 0.0, up.velocity.z).dot(n)
+			if into < 0.0:
+				up.shove(-n * into * up.body_mass)
 
 func reset() -> void:
+	windups.clear()
 	body_until.clear()
 	swings.clear()
 	grace_until.clear()
@@ -485,4 +572,10 @@ func state() -> Dictionary:
 		s["swings"] = swings.duplicate(true)
 	if not last_hit.is_empty():
 		s["last"] = last_hit.duplicate()
+	if not windups.is_empty():
+		s["windups"] = windups.duplicate(true)
+	for i in bodies.size():
+		if (bodies[i] as TLBiped).is_down():
+			var seg := _lying(i)
+			s.get_or_add("lying", {})[order[i]] = [snappedf(seg[0].x, 0.001), snappedf(seg[0].z, 0.001), snappedf(seg[1].x, 0.001), snappedf(seg[1].z, 0.001)]
 	return s

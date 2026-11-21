@@ -169,6 +169,8 @@ func tick() -> void:
 			resting[i] = mini(resting[i] + 1, rest_frames)
 			burst_left[i] = maxi(burst_left[i] - 1, 0)
 			reversing[i] = 0
+			sk.skate_speed = base_speed * _scale(false, false)   # L4b: reset while down too, so a boost (L5, x on top each frame) cannot compound
+			sk.skate_accel = base_accel * _scale(false, false)
 			continue
 		var scale := _scale(id == carrier, sprinting[i] != 0)
 		sk.skate_turn_rate = base_turn
@@ -211,7 +213,7 @@ func _step(i: int, sk: TLBiped) -> void:
 	var stop := reverse and speed > stop_speed
 	if stop and not reversing[i]:
 		var rig = sk.rig
-		if rig != null and rig.has_method("clips") and (rig.clips() as PackedStringArray).has("skate_stop"):
+		if rig != null and not game.ctx.headless and rig.has_method("clips") and (rig.clips() as PackedStringArray).has("skate_stop"):   # drawing only
 			rig.play(&"skate_stop")
 		game._event("skate_stop", sk.global_position, game.teams[ids[i]], ids[i])
 	reversing[i] = int(stop)
