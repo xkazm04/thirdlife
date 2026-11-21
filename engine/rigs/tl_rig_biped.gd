@@ -177,7 +177,7 @@ func _param_changed(pname: String, value: Variant) -> void:
 			(_stick.get_node("StickMesh") as MeshInstance3D).mesh = TLRigBipedMesh._stick_mesh(params.get("colors", {})).build("stick")   # the stick is a part too
 		"expression":
 			_expr()
-		"stick_yaw": _fight.yaw = float(value)
+		"stick_yaw", "dodge_side": _fight.set_param(pname, value)
 
 
 func _apply_prop() -> void:

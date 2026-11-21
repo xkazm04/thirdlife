@@ -66,26 +66,30 @@ puck-contact test). The left hand is posed near the butt of the stick by hand-tu
 ## Fight clips (lane L2, 21 Nov 2026; `biped/tl_rig_biped_fight.gd`, internal to the rig)
 The moves every action game needs, played by name as any clip: `rig.play(&"strike")`. Frames are physics frames at
 60 Hz counted from the `play` call (the tick after it is frame 1). A pack reads the table to time its own rules: the
-hit box is live in **Active**, a defender can read **Anticipation**, and from **Control returns** the pack may play the
-next clip (a combo, a cancel) without cutting the move short. Each clip takes at most a 2 or 3 frame blend-in (taunt
-0.15 s), so the wind-up always shows; when a one-shot ends, the rig blends back to locomotion over 12 frames.
+hit box is live in **Active** and is tested at **Hit** (for `block`: the frame the guard counts; `-` = the move hits
+nothing), a defender can read **Anticipation**, and from **Control returns** the pack may play the next clip (a combo,
+a cancel) without cutting the move short. Each clip takes at most a 2 or 3 frame blend-in (taunt 0.15 s), so the
+wind-up always shows; when a one-shot ends, the rig blends back to locomotion over 12 frames.
 The clips only animate: the pack moves the body (a roll travels, a dodge steps aside, a check lunges).
 
-| Clip | Frames | Anticipation | Active | Recovery | Control returns | Ends | Upper | What it is |
-|---|---|---|---|---|---|---|---|---|
-| `strike` | 16 | 0-3 | 3-6 | 6-16 | 12 | returns | yes | a light one-handed swing: the right arm drawn back and out with the shoulders turned away, whipped flat across the front (fastest at f4-5), followed through past the left shoulder, back on guard |
-| `strike_heavy` | 30 | 0-10 | 10-14 | 14-30 | 26 | returns | no | a two-handed overhead chop: a big coil (arms up behind the head, chest arched back, knees loaded) peaking at f8 and held to f10, the chop down through f14 as the body folds after it, the low follow-through held to f20 |
-| `block` | 5 | 0-0 | 0-4 | on release | 4 | holds | yes | a raised guard: the left forearm up across the face, the right fist under the chin, chin tucked, a wide braced stance; holds like `fall` until another `play` (`play(&"")` drops it); he can walk behind it |
-| `roll` | 24 | 0-4 | 4-20 | 20-24 | 20 | returns | no | a forward roll: a drop and reach (f0-4), one full turn over a tucked ball about a point 0.45 m over the floor (upside down at f12), opening into a crouch; low through f3-21 (i-frames, if the pack wants them) |
-| `dodge` | 14 | 0-2 | 2-9 | 9-14 | 11 | returns | no | a quick side step: a dip and push off the far foot, the body leaning hard into the step, head ducked (to f9), back on guard. It goes to the side the body moves at the clip's first tick (`velocity_local.x`, + = right; standing still = right) |
-| `body_check` | 30 | 0-7 | 7-15 | 15-30 | 24 | returns | no | a shoulder drive: loads low with the hip turned in and the left arm tucked across the chest, drives the left shoulder through (contact about f12), holds it to f19, back to the stance. On skates the hockey stance, the stick held low in both hands |
-| `cross_check` | 14 | 0-6 | 6-11 | on release | 11 | holds | yes | both hands on the stick, the shaft turned level across the chest (butt at the left hand, blade hanging at the right), pulled in (f0-6), punched forward chest-high with straight arms (f6-11) and held: the cross-check reads by the figure, not by a marker. Holds until `play(&"")`; with `upper`, he skates in with it. Without a stick the arms make the same shove |
-| `taunt` | 90 | 0-0 | 0-78 | 78-90 | 60 | returns | no | a cocky pose, not `cheer`: chest out, chin up, the right fist on the hip with the elbow out, the left hand held out beckoning twice (f20-80), the weight rocking back |
+| Clip | Frames | Anticipation | Active | Hit | Recovery | Control returns | Ends | Upper | What it is |
+|---|---|---|---|---|---|---|---|---|---|
+| `strike` | 16 | 0-3 | 3-6 | 5 | 6-16 | 12 | returns | yes | a light one-handed swing: the right arm drawn back and out with the shoulders turned away, whipped flat across the front (fastest at f4-5) with a step in, followed through past the left shoulder, back on guard |
+| `strike_heavy` | 30 | 0-10 | 10-14 | 13 | 14-30 | 26 | returns | no | a two-handed overhead chop: a big coil (arms up behind the head, chest arched back, knees loaded) peaking at f8 and held to f10, the chop down through f14 as the body folds after it, the low follow-through held to f20 |
+| `block` | 5 | 0-0 | 0-4 | 4 | on release | 4 | holds | yes | a covering guard: both forearms up in front of the face with the elbows thrown out wide (a W from the front, a wide ring from above), shoulders shrugged, turned a little side-on, crouched low on a wide stance; overshoots at f3, the pose from f4 holds until another `play` (`play(&"")` drops it); he can walk behind it |
+| `roll` | 24 | 0-4 | 4-20 | - | 20-24 | 20 | returns | no | a forward roll: a drop and reach (f0-4), one full turn over a tucked ball about a point 0.45 m over the floor (upside down at f12), opening into a crouch; low through f3-21 (i-frames, if the pack wants them) |
+| `dodge` | 14 | 0-2 | 2-9 | - | 9-14 | 11 | returns | no | a quick side step: a dip and push off the far foot, the body leaning hard into the step, head ducked (to f9), back on guard. The side: the param `dodge_side` (-1 left, +1 right), or with it 0 (the default) the side the body moves at the clip's first tick (`velocity_local.x`, + = right; standing still = right) |
+| `body_check` | 30 | 0-7 | 7-15 | 12 | 15-30 | 24 | returns | no | a shoulder drive: loads low, turned away, the trailing arm swung back (f0-7); then side-on and pitched forward with the pelvis surging 0.35 m, the left elbow out ahead of the lead shoulder and the right arm flung back: that contact pose holds f11-15; back to the stance by f30. On skates the hockey stance, and the stick trails low in the right hand (out to the side) |
+| `cross_check` | 14 | 0-6 | 6-11 | 10 | on release | 11 | holds | yes | both hands on the stick, the shaft turned level across the chest (butt at the left hand, blade hanging at the right), pulled in tight with the elbows out wide and the body rocked back (f0-6), then punched forward and up to face height with straight arms, a long step in and the whole body leaning into it; the punch pose holds from f10 until `play(&"")`: the cross-check reads by the figure, not by a marker. With `upper`, he skates in with it. Without a stick the arms make the same shove |
+| `taunt` | 90 | 0-0 | 0-78 | - | 78-90 | 60 | returns | no | "come on", not `cheer`: the arms thrown open wide and up, chest out, chin up (in by f9, held to f28); then the right fist on the hip with the elbow out and the left hand raised high, beckoning twice (f40-80), the weight rocking back |
 
 - The guard the fist clips start from and return to: left foot ahead, knees soft, the left shoulder leading, both fists
   up in front of the chin. On skates `body_check` and `cross_check` start from the hockey stance instead.
 - Measured, not guessed: the selftest block 660 (`rig.fight.*`, `engine/rigs/review/fight_case.gd`) holds this table,
-  `TLRigBipedFight.TIMING` and the registered clip lengths together, and checks each clip ends as the table says.
+  `TLRigBipedFight.TIMING` and the registered clip lengths together, checks each clip ends as the table says, that each
+  Hit lies in Anticipation..Active, that the key pose of `block`, `body_check` and `cross_check` holds 3 frames from the
+  hit (round L2b: readable at game scale), and that `dodge_side` picks the side.
+- `dodge_side` (runtime param): `rig.set_param(&"dodge_side", -1 | 0 | 1)`. Read at the dodge's first tick.
 - See them: `engine/rigs/review/move_lab.tscn` (stills sheets at game scale and a clip of all of them; its header has
   the command lines).
 
