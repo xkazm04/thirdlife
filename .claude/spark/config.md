@@ -143,3 +143,4 @@ One AskUserQuestion call of up to 4 questions.
 - 2026-11-21 (designer-and-two-worlds): a design whose promise is "fun" needs a proof by a real build on the merged tree
   (here two Foreman jobs); the proof found camera-vs-scenery, twist timing and name drift that no lane gate measured.
   When a design wave settles a fun promise, also ask when it happens on screen, so the critic's capture rule can see it.
+- 2026-11-21 game-quality-bar: when the operator says "you ignored my notes", scout his own past words (memory, STATE, spark notes, briefs) and map each to the hop that dropped it; the gap table made the design obvious. A quality gate needs the primitives it demands: pair a critic rubric with the engine features it checks (hit-stop, push-apart, camera occlusion), or builders cannot satisfy it.
