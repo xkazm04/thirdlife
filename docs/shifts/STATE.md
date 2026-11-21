@@ -225,3 +225,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 11:23 standup: all six lanes on track; L5 unblocked (lint counts tests apart, lazy declares, neon glow keys append-only); L4 watch: busy p50 1.400 vs 1.275 ms base; L2 first to land.
 - 12:20 standup: L1 landed (e672fe2; contract c25ce00); post-L1 checks running, then the proof re-run (cap 8 packages); L2/L5/L6 near landable; L3 arm A r1 hashes = base.
 - 13:20 standup: L2 landed (f3e1e18); lint split 686213c; proof re-run started 13:04 (standard + crazy, cap 8); main merged into L4/L5 trees (unblocked); pre-merge list on main running.
+- 14:20 standup: proof standard paused on a good builder question (rival silhouettes), answered + resumed; crazy failed in design on word limits, restarted, L1b fixing (repair call). L3 falls clips in; L4 joined L5.
