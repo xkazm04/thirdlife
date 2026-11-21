@@ -1,0 +1,102 @@
+{
+  "id": "game.duel",
+  "version": "0.1.0",
+  "kernelApi": "1.13",
+  "title": "Duel: the ring and three rivals",
+  "capabilities": [
+    "physics",
+    "input",
+    "ui",
+    "camera",
+    "rules",
+    "kit",
+    "style",
+    "biped",
+    "ai",
+    "audio",
+    "vfx"
+  ],
+  "entry": "scripts/main.gd",
+  "assets": [
+    "gen/arms.gd"
+  ],
+  "tests": [
+    "tests/bot_contact_light_hit.gd",
+    "tests/bot_contact_bash.gd",
+    "tests/bot_contact_bash_wall.gd",
+    "tests/bot_contact_charged.gd",
+    "tests/bot_contact_clash.gd",
+    "tests/bot_contact_counter_bash.gd",
+    "tests/bot_contact_counter_hit.gd",
+    "tests/bot_contact_evade.gd",
+    "tests/bot_contact_exhausted_block.gd",
+    "tests/bot_contact_finisher.gd",
+    "tests/bot_contact_heavy_beats_light.gd",
+    "tests/bot_contact_heavy_block.gd",
+    "tests/bot_contact_heavy_hit.gd",
+    "tests/bot_contact_heavy_parried.gd",
+    "tests/bot_contact_light_block.gd",
+    "tests/bot_contact_light_parried.gd",
+    "tests/bot_contact_parry_riposte.gd",
+    "tests/bot_contact_punish_heavy.gd",
+    "tests/bot_contact_splat.gd",
+    "tests/bot_contact_taunt_star.gd",
+    "tests/bot_contact_tell_puzzle.gd",
+    "tests/bot_contact_wall_knock.gd",
+    "tests/bot_ladder_wall_newcomer.gd",
+    "tests/bot_ladder_wall_regular.gd",
+    "tests/bot_ladder_wall_sharp.gd",
+    "tests/bot_ladder_wall_perfect.gd",
+    "tests/bot_ladder_duelist_newcomer.gd",
+    "tests/bot_ladder_duelist_regular.gd",
+    "tests/bot_ladder_duelist_sharp.gd",
+    "tests/bot_ladder_duelist_perfect.gd",
+    "tests/bot_ladder_dancer_newcomer.gd",
+    "tests/bot_ladder_dancer_regular.gd",
+    "tests/bot_ladder_dancer_sharp.gd",
+    "tests/bot_ladder_dancer_perfect.gd",
+    "tests/bot_checklist_wall.gd",
+    "tests/bot_checklist_duelist.gd",
+    "tests/bot_checklist_dancer.gd",
+    "tests/bot_ladder_champion_newcomer.gd",
+    "tests/bot_ladder_champion_regular.gd",
+    "tests/bot_ladder_champion_sharp.gd",
+    "tests/bot_ladder_champion_perfect.gd",
+    "tests/bot_hand_idle.gd",
+    "tests/bot_hand_perfect.gd"
+  ],
+  "cameras": [
+    "duel",
+    "side",
+    "arena"
+  ],
+  "on_leave": "pause",
+  "subject": "Fighter_you",
+  "footprint": {
+    "size_m": [
+      36,
+      36
+    ],
+    "height_m": 16
+  },
+  "params": [
+    {
+      "name": "rival",
+      "file": "data/tuning.json",
+      "path": "rival",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "label": "Rival 0-2, champions 3-5"
+    },
+    {
+      "name": "round_seconds",
+      "file": "data/tuning.json",
+      "path": "rounds.seconds",
+      "min": 30,
+      "max": 120,
+      "step": 5,
+      "label": "Round length (s)"
+    }
+  ]
+}

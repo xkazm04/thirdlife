@@ -1,0 +1,121 @@
+{
+  "schema": "tl.card/1",
+  "id": "card.duel",
+  "version": "0.1.0",
+  "title": "Duel: one fighter against a ladder of rivals, Souls / For Honor rules, every contact changes both",
+  "summary": "A 1v1 melee duel in a walled ring, best of 3 rounds. Light, heavy (hold to charge an unblockable), block (a tap is a parry), roll, bash. Stamina, posture and poise decide who flinches; a hit-stop freezes both fighters on every contact and each takes his own reaction (blockstun and recoil, parried, guard broken, wall splat, clash). Three rivals defined by their defence (the Wall absorbs, the Duelist parries, the Dancer avoids) climb a ladder of AI tiers. The worked example is the house game engine/packs/duel; the rules come from docs/research/DUEL-PLAYBOOK.md section 6.",
+  "applies_when": [
+    "two fighters (or a fighter and an AI rival) trade melee attacks face to face: swords, fists, sticks, shields",
+    "the request names a duel, a sword fight, a gladiator or colosseum bout, a boss fight, a boxing or fencing match, souls-like or For Honor-like combat",
+    "the fun is in reading the opponent: blocking, parrying, punishing, spacing, rather than in aiming or racing"
+  ],
+  "not_when": [
+    "many enemies at once or a horde (the duel's state machine and AI read one foe; use it per enemy and add crowd rules first)",
+    "ranged combat or shooting (aim and projectiles: see two_sides_ball for a thrown object)",
+    "a team sport with body checks (team_possession: the hockey house game)"
+  ],
+  "pack": "duel",
+  "capabilities": ["physics", "input", "ui", "camera", "rules", "kit", "style", "biped", "ai", "audio", "vfx"],
+  "kit_parts": ["ground_patch", "barrier_wall", "stands", "entrance", "flag", "light_mast"],
+  "swap_parts": ["stones", "rock", "fence", "tyre_stack", "watch_tower"],
+  "api": [
+    "TLKit.build_layout",
+    "TLBiped.create",
+    "TLBiped.move",
+    "TLBiped.place",
+    "TLHit.down",
+    "TLRules.create",
+    "TLRules.add_score",
+    "TLRules.clock_text",
+    "TLRules.snapshot",
+    "TLHud.create",
+    "TLHud.add_label",
+    "TLHud.set_text",
+    "TLCameras.add_view",
+    "TLCameras.activate",
+    "TLCameras.shake",
+    "TLVfx.burst",
+    "TLAudio.play",
+    "TLInput.declare",
+    "TLInput.just_pressed",
+    "TLHand.create",
+    "TLHand.steer",
+    "TLHand.tap"
+  ],
+  "rules_keys": ["sides", "score_to_win"],
+  "data_files": [
+    {"file": "data/moves.json", "role": "the frame table (6.2): per move windup / active / recovery frames, damage, stamina, poise damage, posture, reach, arc, lunge, armour frames, the rig clip and the [move frame, clip frame] map that stretches a 16-30 frame fight clip over a readable wind-up; block, parry window, roll and dodge i-frames"},
+    {"file": "data/contacts.json", "role": "the contact table (6.3): per contact the hit-stop on both, the defender's stun and push, the attacker's recoil or rebound; poise tiers; the pose each stun shows"},
+    {"file": "data/rivals.json", "role": "the AI tiers (react frames, defend share, read share, return window) and the three archetypes: hp, poise, walk speed, scale, colours, arms, defence weights, strings of moves with fixed delays, phase 2"},
+    {"file": "data/tuning.json", "role": "resources (stamina, posture, rally), the player, the ring radius, the round clock, the match rules (sides, score_to_win), the camera"},
+    {"file": "data/venue.json", "role": "the ring: a dirt floor, 20 barrier_wall blocks in a circle (the splat wall, 1.25 m: low enough to see over), stands, gate, flags, light masts"},
+    {"file": "data/drills.json", "role": "scripted situations for the contact bots and the review clips: both fighters placed, the rival's moves by frame, the contact expected"}
+  ],
+  "do": [
+    "Write the fighter as a frame-counted state machine: IDLE -> WINDUP -> ACTIVE -> RECOVERY -> IDLE plus BLOCK (its first frames are the parry window), ROLL, DODGE, TAUNT and the stuns HITSTUN, BLOCKSTUN, PARRIED, GUARDBROKEN, REBOUND, STAGGER, WALLSPLAT, BROKEN, KNOCKDOWN -> GETUP, KO; HITSTOP is a frozen sub-state, EXHAUSTED a flag. Every transition by counters, never by clip events.",
+    "Give player and AI the same door: an 8-frame input buffer, a block hold, a walk intent in the lock-on frame. Actions start only from IDLE, the last 4 frames of RECOVERY, BLOCK, and the end of a stun (the buffer fires that frame).",
+    "Frame table (60 Hz): light 18 windup (12 in a chain) / 4 active / 16 recovery, 9 damage (7 chained); heavy 32 / 5 / 28, 20 damage, hyper armour frames 12-37, feint until f20; held past f20 it becomes the charged heavy 54 / 6 / 36, 30 damage, red flash, unblockable; bash 14 / 6 / 24, unblockable and unparryable, loses to any active hit; block up in 4; parry window f2-13 (a re-tap within 30 f shrinks it by 4); roll i-frames 4-21 of 36; dodge 3-10 of 22.",
+    "Contact table: light hit stop 5, flinch 18, 0.25 m (+2 for the attacker); heavy hit stop 9, stagger 40, 0.6 m (+12); light blocked stop 3, blockstun 14, 0.35 m, attacker recoils 0.15 m (-2, safe); heavy blocked stop 6, blockstun 18, attacker rebounds 40 (-22: a light is guaranteed); parried light: attacker PARRIED 52 (+44: a heavy is guaranteed), parried heavy PARRIED 36 (+28: a light); bash GUARDBROKEN 30, 1.0 m, the wall within 1.2 m behind = WALLSPLAT 60 (stop 12); same-class clash: both REBOUND 20 (30 heavy), stop 8; heavy against light: the heavy wins; hit in a wind-up, a roll's end, a tell or a taunt: counter-hit, stun +10, damage x1.25; in i-frames: nothing.",
+    "Hit-stop freezes BOTH bodies and rigs (and the pack's own counters) for the contact's frames, then each fighter takes his own reaction: that one rule is most of the feel.",
+    "Resources: stamina 100 (light 12, heavy 22, bash 15, roll 20, regen 0.6/f after 20-30 f; at 0 EXHAUSTED until 40: slower wind-ups, a blocked hit breaks the guard, a bash floors); posture fills (blocks, parried attacks, clashes) and at 100 is BROKEN 90 frames, where a heavy is a finisher; poise damage minus the defender's poise picks absorb / flinch / stagger / knockdown.",
+    "Stretch the rig's fight clips over the rules' frames: play the clip and set its clock every frame from a [move frame, clip frame] map, so the wind-up (the tell) lasts as long as the rules say and the coil can be held.",
+    "Hold the duellists' facing on each other (TLBiped turn_rate 0, the pack turns the body): fast tracking in neutral, slow in a wind-up, almost none in the active frames, so a roll beats a committed swing.",
+    "Make the AI see only what a person sees (the player's animation, react frames late), defend a share of attacks in its archetype's way, read what is faster than a reaction (a light chain), never repeat a string three times, and end every string in an open return window.",
+    "Three rivals defined by their defence: the Wall absorbs (guard up, armoured heavy, shield bash with a shoulder-dip tell; weak to bash and stamina pressure), the Duelist parries (the third hit of a chain, heavies he has seen; a blade-tap tell before his riposte string; weak to feints and delays), the Dancer avoids (rolls through heavies, dash lights, flurries; any heavy staggers her).",
+    "Keep every contact and the feel-kit calls behind one adapter file (scripts/feel.gd) so a kernel rename is a one-file change.",
+    "Write one drill bot per contact type that asserts both fighters' states changed (tests/bot_contact_*.gd), and a ladder bot per rival and TLHand profile."
+  ],
+  "dont": [
+    "Do not let a contact change only one fighter: a hit that does not freeze and move the attacker too reads as a hit on a dummy.",
+    "Do not make defence free: a whiffed parry is 20 frames open, blocking drains stamina and posture, a held guard loses to a bash.",
+    "Do not give the AI reactions faster than a person (about 15 frames at best) or let it read the player's input; a move faster than a reaction must be read from habits.",
+    "Do not use the rig clips at their own speed for the rules: an 18-frame wind-up on a 3-frame anticipation is unreadable.",
+    "Do not leave a fighter with arms hanging between moves: hold the fight clips' guard as the stance.",
+    "Do not put the camera straight behind the player: he hides the rival. Over the shoulder, offset to the side, looking between them.",
+    "Do not count a timeout or a frozen round as a result: every round ends by KO or by the clock with the health lead."
+  ],
+  "bot": {
+    "template": "tests/bot_ladder_wall_regular.gd",
+    "plays_by": "tests/support/pilot.gd through a TLHand (regular): it watches the rival's animation, blocks or parries what comes (rolls a bash or a red heavy), punishes a blocked heavy with a light and a parried light with a heavy, bashes a raised guard, hits a rival who missed, taunted or tapped his blade, chains lights in the cancel window, backs off when tired.",
+    "wins_when": "the match is over (best of 3) and the hand acted; won is reported, not required. The contact bots (tests/bot_contact_<type>.gd) pass when their contact happened with both fighters' states changed and no contact of the run left one unchanged."
+  },
+  "acceptance": [
+    "Every contact type of the playbook's 6.3 has a drill bot that sees it with BOTH fighters' states changed (the i-frame evade is the one by-design exception: nothing happens to either); no contact in any run leaves a fighter unchanged.",
+    "Win rate rises with the hand: newcomer < regular < sharp < perfect against each rival, read through TLHand over several seeds.",
+    "The newcomer wins sometimes against the first rival.",
+    "The rival never stands idle more than 2 s (120 frames) of a fight; every dangerous rival attack has a wind-up of at least 12 frames.",
+    "The lead changes hands within matches.",
+    "Lint reports 0 bypasses; the only geometry the pack generates is its weapons."
+  ],
+  "fun": {
+    "camera": [
+      "An over-the-shoulder lock-on view moved every frame with TLCameras.add_view: 4.6 m behind the player and 2.6 m to his right, looking at the point between the two, so both fighters and the rival's wind-up are always in frame.",
+      "A side view of the pair (V) for watching the exchange, and a fixed wide view of the ring."
+    ],
+    "juice": [
+      "Hit-stop on both fighters on every contact, 3 to 14 frames by weight; sparks (TLVfx.burst) and a steel sound (TLAudio.play) on a hit, a gold flash and the word PARRY! on a parry, dust and debris with a 0.26 m shake (TLCameras.shake) on a wall splat.",
+      "The charged heavy's red flash and flame at frame 20 of its wind-up: the one unblockable attack reads at once.",
+      "Banners for the big moments: PARRY!, CLASH!, GUARD BREAK!, WALL SPLAT!, COUNTER!, FINISHER!, K.O."
+    ],
+    "rivals": [
+      "Three archetypes defined by their defence, each with a name, a one-line weakness shown at the match start, and a tell (the Wall's shoulder dip before a bash, the Duelist's blade tap before his string, the Dancer's long spin coil).",
+      "The ladder tiers change how fast they react and how often they defend and read, not their health: harder means smarter."
+    ],
+    "first_minute": [
+      "The first rival is the slowest (the Wall reacts in 30 frames and stays open 36 frames after each string): a newcomer lands hits from the first exchange.",
+      "A key card for the first round and one cue line at the moment it matters: You blocked his HEAVY: LIGHT now!, Shoulder dip = BASH coming, RED = UNBLOCKABLE."
+    ],
+    "stakes": [
+      "Best of 3 rounds of up to 70 s; a ladder of three rivals, then the same three at the champion tier.",
+      "A crowd meter fed by parries, splats, clashes and stars (a hit during a taunt or a tell), and a rally rule under 35 % health that both sides can see."
+    ]
+  },
+  "hands": {
+    "seeds": 20,
+    "checks": [
+      {"hand": "idle", "wins_max": 0, "measured": "duel idle 0 of 20 against the Wall, every round ended by a KO (N2, 21 Nov, seeds 1-20, tests/bot_hand_idle.gd)"},
+      {"hand": "perfect", "wins_min": 16, "measured": "duel perfect 20 of 20 against the Wall, Wilson 95 % 84..100 (N2, 21 Nov, seeds 1-20, tests/bot_hand_perfect.gd)"}
+    ]
+  },
+  "footprint": {"size_m": [36, 36], "height_m": 16, "shape": "arena", "source": "engine/packs/duel/data/venue.json: ring wall at 8.6 m, stands to about 13 m, light masts at 15 m"}
+}
