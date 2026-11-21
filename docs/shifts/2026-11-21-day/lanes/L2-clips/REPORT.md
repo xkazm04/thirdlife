@@ -20,6 +20,15 @@ ACCEPTANCE
        packs         FAIL 1/2 units, verb runs 60 of 61, on base AND here, the same single failure: hockey
                      invariants.many_budget, a wall-clock frame budget (p50 1.140 ms here, 1.388 ms on base, budget 1.0).
                      Busy machine (perf probe: use 65 %): not evidence either way. Everything else in packs passed.
+   - Other steps of the full tier on this tree: ui.selftest 195/195, foreman.test 250/250 (244 pass, 6 skipped),
+     devx.test 229/229, arch 12/12, assets 4/4, cards 3/3, typecheck clean.
+     NOT a pass (busy machine, stopped runs): kernel.selftest completed 81 of 82 units, 0 failed, then the gate's
+     1800 s cap killed it; item.selftest 59 of 60 units, 0 failed, then the 600 s cap; perf NOT RUN (machine BUSY,
+     use 65 %). An uncapped kernel run was crawling (82 cases in 45 min under the other lanes' load); I stopped it (my
+     own process) and ran every kernel case that builds or poses the biped instead, by filter:
+       rig. 18/18, character. 2/2, moves. 14/14, walker. 8/8, flight.pose 1/1, blend.shoulder 1/1 = 44/44 PASS, 0 FAIL
+     (rig.feet_plant, rig.moves, rig.bugfix.* 7, rig.walker.slide_*, the four rig.fight.*, character.clay/cel, moves.*,
+     walker.*). The Director's merge-time full tier on a quiet machine is still owed for kernel / item / perf.
    - Block 660: 4/4 PASS (rig.fight.clips, rig.fight.golden, rig.fight.yaw, rig.fight.cross).
    - Fast gate: PASS (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, foreman.typecheck clean).
 2. Move-lab sheet and clip + hockey stick sheet in the lane folder: MET. lanes/L2-clips/lab/:
