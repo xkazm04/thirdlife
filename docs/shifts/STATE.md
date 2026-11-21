@@ -249,3 +249,6 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - Proof: colosseum re-run with the new editor; standard (-1) held after 4 revise rounds, crazy (-3) held after 2, both at phase 3 greybox; 34.5 M tokens in. Better rivals/HUD/verbs; still no hit-stop, bodies overlap, the breach not on camera.
 - Open: owner asks; a person's play of hockey and the arenas; foreman `quality retry` runs the job in the foreground (backlog).
 - Route: 4 Opus + 2 Opus-directed Astra lanes + 3 Astra arms; Astra hockey 0.89 M + crazy 1.18 M (over budget), falls 1.65 M.
+
+### 2026-11-22 night: plan (feel kit, duel reference, hockey playability, editor know-how, the Home)
+- 19:00 planned with the owner after the day verdict ("still mediocre slop"; mimic proven duel designs; research first). Research landed c7dad86 (docs/research: DUEL-PLAYBOOK, HOCKEY-ARCADE, WHAT-MADE-GAMES-POPULAR). Falls arm A merged aa82c4f. Lanes: N1 feel kit (Astra), N2 duel reference pack + card (Opus), N3 hockey playability (Astra), N4 editor know-how + tofu stage (Opus), N5 world chunks (Astra), N6 world directions (3 Astra-solo arms, grind loops; owner picks). Colosseum proof retry at the end. Plan: docs/shifts/2026-11-22-night/PLAN.md.
