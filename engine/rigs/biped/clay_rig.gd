@@ -80,7 +80,7 @@ func _post_pose() -> void:
 			_save_arm("Right")
 	else:
 		_pocket_weight = 0.0
-	if _stick_on and clip in [&"", &"idle", &"walk", &"run", &"skate", &"skate_stop", &"pass", &"shoot"]:
+	if _stick_on and (clip in [&"", &"idle", &"walk", &"run", &"skate", &"skate_stop", &"pass", &"shoot"] or clip in TLRigBipedFight.STICK_CLIPS):
 		var hand := _sk.get_bone_global_pose(_sk.find_bone("RightHand"))
 		var shaft := (hand.basis * _stick.basis.y).normalized()
 		var grip := hand * _Motion.PALM

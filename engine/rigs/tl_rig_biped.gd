@@ -2,9 +2,9 @@ class_name TLRigBiped
 extends TLRigNode
 ## The standard biped: 29 bones on Godot humanoid names (+ Backpack, Hair and five face bones), rigid-weighted toy
 ## forms from lane B, and a procedural clip library driven by tick(frame).
-## Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air.
+## Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air, fly, hang, mantle, swing; fight (biped/tl_rig_biped_fight.gd): strike, strike_heavy, block, roll, dodge, body_check, cross_check, taunt.
 ## Params (set_param): mode (&"walk" | &"skate"), look_at (Vector3 world, or null to clear), expression (&"happy" |
-## &"focus" | &"blink"), lean (-1..1, + = right), stick (bool), colors ({part: palette key}).
+## &"focus" | &"blink"), lean (-1..1, + = right), stick (bool), colors ({part: palette key}), stick_yaw (radians, + = left).
 ## Sockets: hand_r, hand_l, head, back, foot_r, foot_l.
 
 const UPPER: PackedStringArray = ["Spine", "Chest", "UpperChest", "Neck", "Head", "LeftShoulder", "RightShoulder",
@@ -28,6 +28,7 @@ var amp_override: float = -1.0   # P3 review tool, kept for API v1: the gait has
 var _gait: TLRigBipedGait = TLRigBipedGait.new()
 var _amp: float = 1.0   # swing amplitude of the walk and run clips played by name (their authored swing)
 var _face_now: Vector2 = Vector2(-1.0, -1.0)   # the (mood, blink) the face bones show (skips rewriting an unchanged face)
+var _fight: TLRigBipedFight = TLRigBipedFight.new()   # the fight clips and the stick_yaw turn (biped/tl_rig_biped_fight.gd)
 
 
 func setup(p: Dictionary) -> void:
@@ -72,6 +73,7 @@ func setup(p: Dictionary) -> void:
 	add_clip("hang", 2.0, true, TLRigBipedMoves.hang)
 	add_clip("mantle", 0.47, false, TLRigBipedMoves.mantle, false, true)
 	add_clip("swing", 1.3, true, TLRigBipedMoves.swing)
+	_fight.add_clips(self)
 	_build_hammer()
 	_param_changed("stick", p["stick"])
 	_param_changed("mode", p["mode"])
@@ -175,6 +177,7 @@ func _param_changed(pname: String, value: Variant) -> void:
 			(_stick.get_node("StickMesh") as MeshInstance3D).mesh = TLRigBipedMesh._stick_mesh(params.get("colors", {})).build("stick")   # the stick is a part too
 		"expression":
 			_expr()
+		"stick_yaw": _fight.yaw = float(value)
 
 
 func _apply_prop() -> void:
@@ -269,6 +272,7 @@ func _post_pose() -> void:
 		_face(0.0 if ex == "focus" else 1.0, 1.0 if ph < 4 else 0.5)
 	else:
 		_expr()
+	_fight.post_pose(self)
 	var la: Variant = params.get("look_at", null)
 	if la is Vector3:
 		var a: Vector2 = look_angles(la, Vector3(0, 1.75 * float(params["scale"]), 0))
@@ -326,10 +330,6 @@ func _gait_pose(t: float) -> Dictionary:
 ## A leg with knee half-angle a under a pelvis pitched by `pitch` (the foot stays flat): returns [upper, lower, foot] x angles.
 static func _leg(a: float, pitch: float, swing: float = 0.0) -> Array:
 	return [a - pitch + swing, -2.0 * a, a - swing]
-
-
-static func _sm(t: float, t0: float, t1: float) -> float:
-	return smoothstep(t0, t1, t)
 
 
 ## Interpolates keyed poses: keys = [[time, pose], ...] in time order (smooth in and out of every key).
@@ -432,7 +432,7 @@ func _land(t: float) -> Dictionary:
 
 ## The landing takes the fall at once: its blend is never longer than 4 frames.
 func _blend_of(cname: StringName, blend: float) -> float:
-	return minf(blend, 0.07) if cname == &"land" else blend
+	return minf(blend, 0.07) if cname == &"land" else TLRigBipedFight.blend_of(cname, blend)
 
 
 func _locomotion_changes(velocity_local: Vector3, grounded_now: bool) -> void:
@@ -488,7 +488,7 @@ func _skate_pose(phase: float, amp: float) -> Dictionary:
 ## Hockey stop: the body snaps sideways (left shoulder back), both skates across the line of travel, deep knees, lean
 ## away from the direction of travel, head still looking where it was going. Holds its last pose.
 func _skate_stop(t: float) -> Dictionary:
-	var k: float = _sm(t, 0.0, 0.28)
+	var k: float = smoothstep(0.0, 0.28, t)
 	var settle: float = 0.5 + 0.5 * cos(minf(t, 0.4) / 0.4 * PI)   # 1 -> 0: the over-rotation settles
 	var a: float = 46.0
 	var pitch: float = -14.0
