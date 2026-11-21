@@ -255,3 +255,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 20:17 standup: N4 landed edf4337 (+contract cfa2155); N1 API final (relayed), full tier running; N2, N3, N5 on track; N6 arms A, B through 12 rounds.
 - 21:17 standup: N1 landed 8e2202a (API 1.13), main merged into duel/hockey; N6 done (arms on branches, compare on main d4155dd); N2 near landable; N3, N5 on track.
 - 22:17 standup: N2 near landable on the kernel kit (ladder order right); N3 tuning rookie newcomer; N5 near landable (load faster 940->622 ms).
+- 23:17 standup: N5 landed 637573d (+LAND.md 64f26a1); N2 quiet since 22:07, nudged (land core by 00:30); N3 final verification (budget busy 1.080 vs base ~0.95).
