@@ -89,6 +89,6 @@ func _bot_done() -> bool:
 
 ## Return the verdict and the measurements that establish it.
 func _bot_result() -> Dictionary:
-	var ok: bool = done and base and zone and not missed and ability and count >= 1 and expired and first.get("boosts",{}).get("speed") == 300 and last.get("boosts",{}).get("speed") == 1 and is_equal_approx(first.get("skate_speed"), 13.8) and is_equal_approx(first.get("skate_accel"), 20.7)
+	var ok: bool = done and base and zone and not missed and ability and count >= 1 and expired and first.get("boosts",{}).get("speed") == 300 and last.get("boosts",{}).get("speed") == 1 and is_equal_approx(first.get("skate_speed"), 13.8) and is_equal_approx(first.get("skate_accel"), 20.7) and is_equal_approx(last.get("skate_accel", 0.0), 20.7)   # L4b: the boost does not compound (skate.gd resets accel every frame)
 	ok = ok and absf(modifiers.get("radius",0)-0.18) < 0.001 and absf(modifiers.get("collision_radius",0)-0.18) < 0.001 and absf(modifiers.get("drag",0)-0.8) < 0.001 and modifiers.get("max_speed",0) == 15 and drag_ended and size_ended and aim_ended and aim_error < 0.25
 	return {"ok":ok,"summary":"base %s, zone %s, shield %s, speed %s, puck %s, aim error %.3f deg, expired speed/heavy/big/aim %s" % [base,zone,ability,first,modifiers,aim_error,[expired,drag_ended,size_ended,aim_ended]]}

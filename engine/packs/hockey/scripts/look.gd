@@ -120,6 +120,8 @@ func center_text(g) -> String:
 
 
 func tick(g) -> void:
+	if g.ctx.headless:
+		return                               # L4b: plates, key lines, goal card and rings are drawing only (budget: frame p50)
 	plates(g)
 	if not touched and not g.autopilot:
 		for a: StringName in HAND:

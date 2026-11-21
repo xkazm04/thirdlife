@@ -1,3 +1,80 @@
+L4b (round 2 of the day, 15:30-16:50; tree = main 4fbf72d + this round, uncommitted). The round-1 report follows below.
+================================================================================================================
+1. BUDGET [met, measured busy]
+   - Profile (headless smoke, pack tick by section, us/frame): pack scripts tree 277-310 vs base 286-340 (no script
+     regression). Hot: brain 103-115, keeper.move 26-28, skate 27, look.tick 25, live_input 12, hits 12, fun 11.
+   - Variant A/Bs (alternating invariants): the wider contact capsule costs nothing; the figures' clips (body_check,
+     cross_check, skate_stop, now played far more often) cost ~0.06 ms headless.
+   - Done, all hash-neutral unless said:
+     - The figures' clips (hits, skate_stop, shot and pass) and the stick posing are skipped headless as drawing only.
+       To keep that honest, no hashed value reads a pose any more: the lying body (item 3) is read from the body, not
+       from the rig's head socket. This one did move hashes, because the downed segment changed from "head socket" to
+       "feet + 3.1 m".
+     - look.tick returns at once headless (HUD plates, key lines, rings).
+     - The brain shares one positions list for every skater's separation (TLSteer.separate skips a skater's own point;
+       bot_hockey and bot_match hashes equal before and after).
+   - Proof (alternating invariants, 3 pairs, against `git show c770f3f:engine/packs/hockey`, labelled busy: other lanes
+     on the machine): base 0.997 / 0.961 / 0.956 ms vs tree 0.952 / 0.978 / 0.996 ms p50 (mean 0.971 vs 0.975: parity).
+     Before this round the same A/B was 0.971 vs 1.018 (+0.047).
+     Final snapshot (.tl/b16 = the tree), after the ladder: base 0.984 / 1.007 / 0.993 vs tree 0.971 / 0.985 / 0.986 ms
+     (mean 0.995 vs 0.981: the tree is 0.014 ms under base).
+   - In the final packs gate run alone: many_budget p50 0.971 ms PASS (p99 1.400).
+   - The quiet figure is still the Director's final-list run.
+2. BODY CHECK WIND-UP + PULL [met] (JamSim.cpp:1968-2177, JamCartridge.h:461,479).
+   - The press winds up 12 frames: thirdjam's 8, set to the body_check clip's hit frame 12 (RIGS.md TIMING).
+   - The human is drawn up to 1.0 m toward the man he pressed at (check_pull_m), so the bodies meet as the wind-up ends.
+   - A meeting inside the wind-up is the hit, resolved before the bodies touch. The bodies are stepped one after another,
+     so the meeting test uses his own speed along the line as well as the closing speed.
+   - Then the 12/6-frame window opens as before.
+   - Bots press when their man will be in reach as the wind-up ends.
+   - tests/bot_windup.gd 20/20: from 1.6 m the hit lands ON frame 12 (0 frames early); from 0.33 m it lands at the
+     meeting (9 frames before).
+   - Re-derived tests (named in each):
+     - bot_check reads the first hit after the press, or none once the window is out (was press+3);
+     - bot_contact's matched-glide row glides through the wind-up;
+     - crazy_modes plays a too-short Arsenal match once more (seed 1: 3:0 in 1,412 frames, a shield taken but never
+       used, after the flow changed).
+   - Effect on play: bots land fewer body checks. bot_modes base saw 107 hits before this round and 36 after.
+3. DOWNED-BODY RADIUS [met] (JamCartridge.h:416-422; JamSim.cpp:2467-2487).
+   - A lying man is the segment from his feet 3.1 m along his facing (measured on the fall clip; TLHit.down v1 falls
+     forward, so the direction follows the falls experiment when it lands). It is 0.6 m thick.
+   - A skater on his feet is moved out (at most 0.3 m plus this frame's step a frame, to one side when he lies on the
+     hitter's line), and the speed he had into it is taken off.
+   - tests/bot_downed.gd 20/20: after the 15-frame fall, the standing skater's capsule edge stays 0.45 m or more off the
+     lying centre line (closest +0.15 m beyond that), and he gets past.
+   - bot_contact's held cross-check row now steers round the man it floored to reach the second opponent.
+4. L5 CHECK (Director): skate.gd resets every field skater's speed and acceleration each frame, so the boost (x1.5 on top)
+   cannot compound. It was not reset while a skater is down; it is now. crazy_pickups also asserts the boost's 20.7 at
+   its last frame.
+
+GATES (this round, the final snapshot .tl/b16 = the tree)
+- packs (TL_GATE_PACKS_DIR, run alone): PASS 53 of 53 verb runs (2 new bots: bot_windup, bot_downed); many_budget 0.971 ms.
+- world PASS 8/8, world = alone (hockey 83bcd2ed6136227d@2450). Fast tier PASS (arch 12/12, devx 229/229).
+- selftest filter "hockey": 30/30 (block 680 now replays bot_windup and bot_downed too).
+- 20/20 seeds: bot_windup, bot_downed, bot_contact, bot_check, crazy_shield, crazy_hipcheck; crazy_modes 5/5.
+- LADDER: all 15 cells complete, 300 of 300 runs. Scripted TLHand profiles, not a person.
+  | level    | newcomer      | regular      | sharp        | perfect       | idle |
+  | rookie   | 17/20         | 19/20        | 20/20        | 20/20         | 0/20 |
+  | pro      | 3/20          | 14/20        | 15/20        | 20/20         | 0/20 |
+  | all-star | 4/20          | 8/20         | 13/20        | 18/20         | 0/20 |
+  - The idle hand wins nothing.
+  - Hands keep their order at every level.
+  - Pro newcomer fell from 8 to 3 of 20.
+  - The idle hand now lies down 6-16 % of frames (bots time their checks on a standing man); the playing hands lie down
+    1-2.7 % (was ~0.8).
+
+STRAY WRITES INTO MAIN (found)
+- One command backgrounded a whole line, `cd <tree> && ... &`, and its next line appended to a relative `docs/...` path.
+  That append ran in the session's default cwd, which is the main checkout. Every write now uses an absolute path
+  inside the tree.
+
+L4b FILES: hits.gd, skate.gd, rink_api.gd, look.gd, ai/brain.gd, data/{tuning,drills}.json, pack.json, README.md (rules
+3 and 8, test table, known limits), tests/bot_windup.gd and bot_downed.gd (new), tests/{bot_check,bot_contact,
+crazy_modes,crazy_pickups}.gd, engine/tools/selftest.d/680-hockey-mechanics.sh.
+
+NEXT: a person's play session of the wind-up and pull; whether the bots' lower hit rate (107 -> 36 in bot_modes) wants a
+bot check pull (thirdjam BotCheckPullM, 0 there); the lying direction when the falls arm lands.
+
 L4 hockey-mechanics: REPORT (shift 2026-11-21-day; worktree n21d-hockey, branch n21d-hockey on main 5b89bdf + uncommitted work)
 Director: Opus (this lane). Builder: GPT 6.2 Astra through codex, 4 rounds. Everything below was re-run by the director
 unless it says "Astra's". The tree also carries L5's crazy-mode hunks (the Director asked for one tested hockey tree).

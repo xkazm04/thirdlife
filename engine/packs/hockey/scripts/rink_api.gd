@@ -510,7 +510,7 @@ func try_poke(id: String) -> bool:
 
 func _clip(id: String, clip: StringName) -> void:
 	var r = (skaters[id] as TLBiped).rig
-	if r != null:
+	if r != null and not headless:          # L4b: drawing only (no hashed value reads a pose)
 		r.play(clip)
 
 func _inside(p: Vector3) -> bool:

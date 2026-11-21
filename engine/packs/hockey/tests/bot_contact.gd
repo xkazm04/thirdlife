@@ -30,6 +30,7 @@ func _finish(label: String, ok: bool, detail := "") -> void:
 	ctx.input.release(&"cross")
 	ctx.input.release(&"sprint")
 	ctx.input.set_axis(&"left", &"right", 0)
+	ctx.input.set_axis(&"up", &"down", 0)
 	start = -1
 
 func _bot_tick(frame: int) -> void:
@@ -86,7 +87,9 @@ func _bot_tick(frame: int) -> void:
 				ctx.input.set_axis(&"left", &"right", 1)
 				ctx.input.press(&"sprint")
 				ctx.input.tap(&"check")
-			_: ctx.input.tap(&"check")
+			_:
+				ctx.input.set_axis(&"left", &"right", 0)   # L4b: glide through the 12-frame wind-up (an axis left from the last row braked him)
+				ctx.input.tap(&"check")
 	if hs.get("braced", false) and hs.get("hold_frames", 0) >= 20:
 		observed_brace = true
 	var n := int(hs.by.b0) - baseline
@@ -99,7 +102,10 @@ func _bot_tick(frame: int) -> void:
 		if n == 0 and age > 20:
 			ctx.input.set_axis(&"left", &"right", 1)
 		elif n == 1:
-			ctx.input.set_axis(&"left", &"right", 1)
+			# L4b: r0 now lies where he fell and b0 is kept off him (rule 8): steer round him to r1
+			var to_r1: Vector2 = _v(_sk("r1").pos) - _v(me.pos)
+			ctx.input.set_axis(&"left", &"right", clampf(to_r1.x, -1, 1))
+			ctx.input.set_axis(&"up", &"down", clampf(to_r1.y, -1, 1))
 			if _distance(me, _sk("r1")) <= 2.0 * float(s.body_radius) + 0.2:
 				held_contact = true
 		if held_contact or n > 1 or age > 420:

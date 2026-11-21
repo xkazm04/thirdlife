@@ -26,6 +26,7 @@
     {"id":"contact_front_1","place":{"r0":[0,0,-1,0]},"place_from":{"b0":["r0",-0.33,0,1,0]},"velocity":{"b0":[1,0],"r0":[0,0]},"puck":[-14,10]},
     {"id":"contact_front_2_75","place":{"r0":[0,0,-1,0]},"place_from":{"b0":["r0",-0.33,0,1,0]},"velocity":{"b0":[2.75,0],"r0":[0,0]},"puck":[-14,10]},
     {"id":"contact_front_4_5","place":{"r0":[0,0,-1,0]},"place_from":{"b0":["r0",-0.33,0,1,0]},"velocity":{"b0":[4.5,0],"r0":[0,0]},"puck":[-14,10]},
+    {"id":"windup_front","place":{"r0":[0,0,-1,0]},"place_from":{"b0":["r0",-1.6,0,1,0]},"velocity":{"b0":[4.5,0],"r0":[0,0]},"puck":[-14,10]},
     {"id":"contact_front_6_25","place":{"r0":[0,0,-1,0]},"place_from":{"b0":["r0",-0.33,0,1,0]},"velocity":{"b0":[6.25,0],"r0":[0,0]},"puck":[-14,10]},
     {"id":"contact_front_8","place":{"r0":[0,0,-1,0]},"place_from":{"b0":["r0",-0.33,0,1,0]},"velocity":{"b0":[8,0],"r0":[0,0]},"puck":[-14,10]},
     {"id":"contact_side_8","place":{"r0":[0,0,0,1]},"place_from":{"b0":["r0",-0.33,0,1,0]},"velocity":{"b0":[8,0],"r0":[0,0]},"puck":[-14,10]},

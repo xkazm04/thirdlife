@@ -67,6 +67,8 @@
     "tests/bot_sprint.gd",
     "tests/bot_carry_turn.gd",
     "tests/bot_reverse_stop.gd",
+    "tests/bot_windup.gd",
+    "tests/bot_downed.gd",
     "tests/crazy_shotgun.gd",
     "tests/crazy_hipcheck.gd",
     "tests/crazy_shield.gd",

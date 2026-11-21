@@ -63,7 +63,8 @@ func _bot_tick(frame: int) -> void:
 	var hs: Dictionary = s["hits"]
 	if hs.get("down", {}).has("r0"):
 		down_seen += 1
-	if pressed_at >= 0 and frame - pressed_at == (11 if r[3] == &"cross" else 3):
+	# L4b: the body check winds up 12 frames and meets its man inside them; read the first hit, or none once the window is out
+	if pressed_at >= 0 and not result.has("class") and (frame - pressed_at == 11 if r[3] == &"cross" else (int(s.hits.by.b0) > given_before or frame - pressed_at == 26)):
 		var last: Dictionary = hs.get("last", {})
 		var fresh: bool = int(s.hits.by.b0) > given_before
 		result["class"] = str(last.get("class", "none")) if fresh else "none"

@@ -30,7 +30,7 @@
     "stumble_ratio":0.4,"loose_ratio":0.7,"down_ratio":1.0,"full_ratio":3.0,"down_frames_min":60,"down_frames_max":150,"grace_frames":120,
     "speed_kept":0.5,"give_share":0.5,"restitution":0.2,"scatter_speed":1.0,"loose_back_speed":1.0,"strip_speed":3.0,
     "cross_gap":0.88,"cross_cone_deg":70,"cross_cooldown_frames":45,"cross_windup":10,"bot_cross_windup":12,"cross_live_frames":10,"recent_carry_frames":12,
-    "hold_frames":10,"hold_speed":0.9,"hold_turn":0.7,"hold_exposed":0.75,"hold_margin":0.2,"hold_clip_frames":20,"cross_clip_hit":10},
+    "hold_frames":10,"hold_speed":0.9,"hold_turn":0.7,"hold_exposed":0.75,"hold_margin":0.2,"hold_clip_frames":20,"cross_clip_hit":10,"check_windup":12,"check_pull":1.0,"downed_radius":0.6,"downed_push":0.3,"lying_length":3.1},
   "rink": {"half_length":30,"half_width":15,"corner_r":5,"margin":0.35},
   "faceoff_jitter": 0.4,
   "aim": {"height":0.05,"reach":200,"stick_turn_deg_per_frame":12,"poke_cone_deg":60},
