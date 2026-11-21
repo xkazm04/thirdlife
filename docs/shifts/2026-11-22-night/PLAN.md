@@ -21,12 +21,12 @@
 
 | Lane | Worktree / branch | Route | Selftest | Agent | Started |
 |---|---|---|---|---|---|
-| N1 feel-kit | `n22-kit` | Opus-directed Astra | 710-719 | | |
-| N2 duel-reference | `n22-duel` | Opus | 720-729 | | |
-| N3 hockey-play | `n22-hockey` | Opus-directed Astra | 730-739 | | |
-| N4 editor-knowhow | `n22-editor` | Opus | foreman | | |
-| N5 world-chunks | `n22-chunks` | Opus-directed Astra | 740-749 | | |
-| N6 world-directions | `n22-world` + arms `-a/-b/-c` | Opus director, 3 Astra-solo arms | 750-759 | | |
+| N1 feel-kit | `n22-kit` | Opus-directed Astra | 710-719 | a5127c7a3843ee698 | 19:08 |
+| N2 duel-reference | `n22-duel` | Opus | 720-729 | a5afb3d7e6d5b6f71 | 19:08 |
+| N3 hockey-play | `n22-hockey` | Opus-directed Astra | 730-739 | aef7cd78bbf010b09 | 19:08 |
+| N4 editor-knowhow | `n22-editor` | Opus | foreman | ac9c7895446eb2fa2 | 19:08 |
+| N5 world-chunks | `n22-chunks` | Opus-directed Astra | 740-749 | aeb738484570e7c5b | 19:08 |
+| N6 world-directions | `n22-world` + arms `-a/-b/-c` | Opus director, 3 Astra-solo arms | 750-759 | a7bc8f93124c83678 | 19:08 |
 
 **Landing order:**
 1. N1 API early, then N1 full.
