@@ -17,7 +17,7 @@ writes it back. Newest shift-log entry last.
   findings are engine-level; (3) the owner plays hockey (thirdjam mechanics, Glow/Arsenal/Shotgun) by hand.
 
 ## Open owner verdicts
-Asks from the day of 21 Nov (docs/shifts/2026-11-21-day/VERDICT.md, page https://claude.ai/artifact/LbYntZUxaofK1eDgFb8mfv): falls arm A/B/C (branches n21d-falls-a/b/c); the two colosseum proof jobs held on quality (accept / retry / drop and fix engine first); an engine feel kit; big puck past the TL API; bots' body-check rate after the wind-up.
+Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
 Asks from the night of 21 Nov (docs/shifts/2026-11-21-night/VERDICT.md): L2 1-4 (camera behind scenery, twist timing,
 card-name drift, card fun lines to builders); L4 1-3 (pack.json dungeon block, shared watchdog, dungeon sharing); L3 1-2
 (strict word limits, foreman new --card); L5 1-3 (TLVfx.burst kernel fix, HUD title widget, next fun); L1 1 (next
@@ -46,6 +46,15 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-21 ~18:50 (owner, on the day verdict): "The games are still mediocre slop. even though improved no real person
+  would play and enjoy the games, because they miss quality gameplay elements. Arena mutual reaction on attacks and
+  collision is almost non-existing, we don't need to reinvent wheel, there are hundreds of duel games (souls like, for
+  honor duels) with well known game design paths we can mimic. We don't have ambition to reach the amount of graphical
+  detail, but regarding gameplay elements and rules our engine is much more flexible to reach similar level of choices
+  and creativity." Verdicts: 1 falls arm A (authored) lands; 2 colosseum retry AFTER researching the know-how ("what's
+  making games popular in videogame history"); 3 engine feel kit next shift; 4 big puck: add a kernel radius setter;
+  5 hockey bots' body-check rate: keep. And: hockey "is unplayable through inbalancing of puck stickiness, players
+  speed, ability AI to decide what to do, when to pass and shoot."
 - 2026-11-20 ~20:00 (owner, after playing both final exes and reading the Director's read on minigames and low-end PCs):
   "ok, lets pick crisp cel as the baseline and remove artifacts and outputs from the session we won't need anymore."
   Crisp cel (`d20-cel` 4ca822a) is the baseline look. The toy diorama is not pursued; its branches stay on origin as an
