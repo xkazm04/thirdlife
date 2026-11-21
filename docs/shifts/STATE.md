@@ -6,13 +6,19 @@ writes it back. Newest shift-log entry last.
 ## Now
 - Focus (owner, 18 Nov): make the game playable and fun before measuring anything. The walking figure, camera and terrain
   immersion, the parkour course, and the minigame editor as the backbone of player-made games. Hockey decisions and win
-  measurement are deferred; the construction process comes later. Since 19 Nov 22:35: the engine's look (art-engine-duo).
-- Next 3: (1) land crisp cel as the baseline: `d20-cel` 4ca822a onto main (run the full gate on the merged tree,
-  with world,packs under default, crisp and classic; re-run the final export check), then make crisp the default style;
-  (2) carry over the diorama ideas that pay for themselves into crisp behind keys (warm light, contact shade, the cleaner
-  sky, the exe sharpness settings); (3) still open from 19 Nov: W6/H4/H5, E4, flight_review wings, B2 round fence.
+  measurement are deferred (hockey re-opened as the first dungeon on 20 Nov); the construction process comes later. Since 19 Nov 22:35: the engine's look (art-engine-duo).
+- Since 21 Nov: two worlds (docs/TWO-WORLDS.md): the exe opens a menu (World / Dungeons / Create); hockey is the first
+  dungeon; designer v2 (pitch, aspect cards, standard/crazy, phases) builds through Create.
+- Next 3: (1) the owner plays the 21 Nov night (menu, hockey, Create crazy, the two colosseum games) and answers the asks
+  in its VERDICT.md; (2) designer fixes from the proof jobs: camera never behind scenery, twist timing asserted by the
+  package's bot, card names carried to the game; (3) the TWO-WORLDS owner questions decide the Home's first lane.
 
 ## Open owner verdicts
+Asks from the night of 21 Nov (docs/shifts/2026-11-21-night/VERDICT.md): L2 1-4 (camera behind scenery, twist timing,
+card-name drift, card fun lines to builders); L4 1-3 (pack.json dungeon block, shared watchdog, dungeon sharing); L3 1-2
+(strict word limits, foreman new --card); L5 1-3 (TLVfx.burst kernel fix, HUD title widget, next fun); L1 1 (next
+hardening pass); TWO-WORLDS 1-5 (Home shape, single-player first, residents' cost, guest building, small games in the Home).
+Answered by the night of 21 Nov: road rails are bodies (L1 built them solid); B2 site fence follows the footprint (built).
 Asks from the evening of 19 Nov: W6 summon key; H4 HUD look; H5 PACK.md hud.json convention.
 Asks from the day of 19 Nov: E4 Designer call vs scorer (editor, owner tests first). The rest answered 19:00.
 Night of 20 Nov D1-D5 and day of 20 Nov D3 closed by the 20 Nov 20:00 decision (crisp cel). Still open from the day: road
@@ -207,3 +213,9 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 00:17 standup: pre-merge on 630c387 green but for the kernel suite (cut; k2.down_invariants failed under load, 4/4 alone); uncapped run going. Re-dispatched and committed: L2b 4280f7d (critic films the newest package's own bot; contract 52837d5), L4c dd8a658 (menu fits 720p, export step 3 route), L5b 981cf41 (goalie figure, one-timer). L5c running to 05:30; L1 waits.
 - 01:17 standup: all lanes landed: L2b de9b3b9, L4c b280393, L5b+c ea5645a, L1 4318c0b (+43e8ea9 manifest re-scan matching L1's 5 kit parts, +3461190 harden_case split for the size budget). Pre-merge on 630c387 green (uncapped kernel suite 368/0). Final list on 3461190 running on the quiet machine.
 - 02:17 standup: final full gate on 3461190 11/14 PASS (world 8/8 = alone); kernel suite cut at 1800 s (115/116, 0 failed), hockey many_budget 1.339 ms and perf NOT RUN at CPU 100 % from the gate itself: re-read alone (uncapped suite, classic packs, quiet perf).
+- 03:15 verdict (early): final list on 3461190 green when read alone: full gate 11/14 with its 3 load items re-read alone (uncapped kernel suite 377/0; classic world,packs PASS with hockey p50 0.921 ms; quiet perf 6/6 PASS, ledger line 11), tours headless + window PASS, export + check PASS (step 3 SHOWN). arch --index unchanged. Proof-game clips recorded (proof/*.mp4). VERDICT.md + page.
+
+### 2026-11-21 night: wrap (03:20)
+- Done: L1 crisp-harden (4318c0b, 43e8ea9, 3461190), L2 designer v2 (32918b6, L2b de9b3b9), L3 Create (7f53372), L4 menu + dungeons (d0d0bd9, L4b 344a4e7, L4c b280393), L5 hockey fun (630c387, L5b+c ea5645a); contracts tl.dungeons/1 (342ca06), JOB v2 narrowings (91a86cd), capture frames (52837d5); docs/TWO-WORLDS.md. Proof jobs: standard and crazy colosseum both done, both open as dungeons.
+- Open: the owner's asks (above); proof-job findings (camera blocked by the arena wall in both, flood at 0:42 not 0:20, standard HUD title overlap, card-name drift); hockey invariants p50 0.92-0.97 ms against 1.0 (tight); site fixtures without an owner (L1); nobody has played any of it by hand.
+- Route: 5 Opus lanes + 7 follow-up rounds, all landed; no Codex. Proof jobs 26.0 M tokens in.

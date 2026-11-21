@@ -223,3 +223,12 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   `TL_STYLE=crisp` moved example.kit's hash unseen through an integration (cel-astra caught it). When looks live behind a
   style switch, run `world,packs` under every style the shift changes (and classic) before calling hashes held.
 - 2026-11-21 (night): `tl assets scan` on a checkout whose engine/.godot class cache predates a merge writes the OLD kit hashes (the scan imports only when no cache exists); a Director "re-scan" overwrote a correct manifest and made every fresh lane tree red. After merging engine code, re-import (`$G --headless --path engine --import`) before any scan or gate in the main checkout; a hash disagreement between a fresh tree and main means main is stale.
+- 2026-11-21 (night): the Director's proof-job script lacked `--allow-edit` and both jobs failed in 0 ms; a script that
+  starts real work gets one dry start checked within 5 minutes, not at the next standup.
+- 2026-11-21: a lane's late rounds pushed a file over the size ratchet only at merge (harden_case.gd 626/600): run the
+  fast tier on the merged tree before the slow list, every landing (second sighting after 20 Nov: now a rule of § 5).
+- 2026-11-21: the full gate saturates the machine by itself (its own parallel steps, CPU 100 %): its kernel cut, hockey
+  many_budget and perf NOT RUN are not evidence even on an otherwise empty machine. The final list's uncapped suite,
+  classic packs and `tl perf run --quiet-only` read them alone (377/0, p50 0.921 ms, perf 6/6).
+- 2026-11-21: edit tracked JSON by text, never by re-serialising (7.0 became 7 across a whole file); and a critic that
+  captures early misses a late twist: proof jobs need the Director's own late captures until the contract films late.

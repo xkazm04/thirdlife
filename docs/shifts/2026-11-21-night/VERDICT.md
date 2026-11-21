@@ -151,7 +151,7 @@ Other details:
 **Evidence:**
 - packs 61/61 verb runs; world 8/8; selftest hockeyfun 6/6.
 - Ladder (20 seeds), rookie: newcomer 18/20, regular 20/20, perfect 20/20; idle 0/20 at every level.
-- Frame p50 HOCKEY_P50 (budget 1.0 ms).
+- Frame p50 0.921 ms on the quiet classic run (0.971 busy) (budget 1.0 ms).
 - Clips: `lanes/L5-hockey/clips/` (l5c_establish_and_goals, l5b_fun_rows, big_checks, goalie_saves, first_minute).
 - All figures come from scripted hands. Nobody has played it by hand yet.
 
@@ -210,7 +210,18 @@ in the Home section is **[proposal]**. The order of work starts with an optional
 
 ## Gates
 
-GATES_BLOCK
+The final list ran on 3461190 (the code of main; later commits are docs), 01:01-03:10, after every landing:
+
+| Step | Result |
+|---|---|
+| Full gate | 11/14 steps PASS: arch 12/12, devx 229/229, foreman 250 (245 + 5 skipped), kit 95/95, seeds 39/39, item 91/91, ui 195/195, world 8/8 (world = alone) |
+| Full gate's 3 load items | kernel.selftest cut at 1800 s (115/116, 0 failed); hockey many_budget 1.339 ms; perf NOT RUN (machine BUSY). The gate's own parallel steps put the CPU at 99-100 %. All three were re-read alone below |
+| Kernel suite, uncapped | **377 passed, 0 failed** |
+| `TL_STYLE=classic` world,packs | PASS: world 8/8 = alone; packs 2/2, 61/61 verb runs; hockey frame p50 **0.921 ms** (budget 1.0) |
+| Tour headless and in a window | PASS world.tour (tour = alone = replay) |
+| Export + `export.sh check` | PASS. Same hashes as the editor for the games and 3 dungeons; step 3 SHOWN (a game on stage at frames 750-990) |
+| perf, alone (`--quiet-only`, use 37 %) | **6/6 PASS**, recorded in perf/ledger.jsonl line 11 |
+| `tl arch --index` | unchanged (the generated docs were current) |
 
 ## Route scoreboard and cost
 

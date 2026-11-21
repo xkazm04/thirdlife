@@ -140,3 +140,6 @@ One AskUserQuestion call of up to 4 questions.
   `file <changed .md>` for CRLF at review.
 - 2026-11-18 astra-trial: for model comparisons, blind judge agents on anonymised copies worked; the copies must keep generated
   files (a judge read a missing API index as every arm's failure) and strip arm words from report text.
+- 2026-11-21 (designer-and-two-worlds): a design whose promise is "fun" needs a proof by a real build on the merged tree
+  (here two Foreman jobs); the proof found camera-vs-scenery, twist timing and name drift that no lane gate measured.
+  When a design wave settles a fun promise, also ask when it happens on screen, so the critic's capture rule can see it.
