@@ -2,9 +2,7 @@ class_name TLRigBiped
 extends TLRigNode
 ## The standard biped: 29 bones on Godot humanoid names (+ Backpack, Hair and five face bones), rigid-weighted toy
 ## forms from lane B, and a procedural clip library driven by tick(frame).
-## Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air.
-## Params (set_param): mode (&"walk" | &"skate"), look_at (Vector3 world, or null to clear), expression (&"happy" |
-## &"focus" | &"blink"), lean (-1..1, + = right), stick (bool), colors ({part: palette key}).
+## Clips and runtime params are documented in RIGS.md.
 ## Sockets: hand_r, hand_l, head, back, foot_r, foot_l.
 
 const UPPER: PackedStringArray = ["Spine", "Chest", "UpperChest", "Neck", "Head", "LeftShoulder", "RightShoulder",
@@ -12,6 +10,7 @@ const UPPER: PackedStringArray = ["Spine", "Chest", "UpperChest", "Neck", "Head"
 const CROUCH: float = 0.84   # two leg segments of 0.42 m: hips drop = CROUCH * (1 - cos(a)) for a knee half-angle a
 
 var _model: Node3D
+var _hits := preload("res://rigs/biped/authored_hits.gd").new()
 var _stick: Node3D
 var _hammer: Node3D
 var _helmet_built: bool = false
@@ -72,12 +71,16 @@ func setup(p: Dictionary) -> void:
 	add_clip("hang", 2.0, true, TLRigBipedMoves.hang)
 	add_clip("mantle", 0.47, false, TLRigBipedMoves.mantle, false, true)
 	add_clip("swing", 1.3, true, TLRigBipedMoves.swing)
+	_hits.install(self)
 	_build_hammer()
 	_param_changed("stick", p["stick"])
 	_param_changed("mode", p["mode"])
 	_expr()
 	tick(0)
 
+
+func _size_hit(action: StringName, amount: float, frames: int) -> void:
+	_hits.size_clip(self, action, amount, frames)
 
 func _rebuild_mesh(sk: Skeleton3D) -> void:
 	var look: Dictionary = TLRigBipedMesh.LOOK.duplicate()
@@ -260,9 +263,9 @@ static func _mixe(a: Dictionary, b: Dictionary, k: float) -> Dictionary:
 
 
 func _post_pose() -> void:
-	# blink: closed for 6 frames every 204 frames, unless the expression holds the eyes shut. The face is a function of
-	# this frame alone (not of the frames ticked before it): a biped first ticked late, or one whose ticks skipped the end
-	# of a blink, shows the expression's face, not the half-shut eyes of the last blink it happened to see
+	if clip != &"":
+		preload("res://rigs/biped/hit_contacts.gd").support(self)
+	# Blink for 6 of every 204 frames. Skipped ticks still give the current frame's face.
 	var ex: String = String(params.get("expression", "happy"))
 	var ph: int = frame % 204
 	if ex != "blink" and ph < 6:

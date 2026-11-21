@@ -8,15 +8,22 @@ extends RefCounted
 ##
 ## `from_dir` is the direction FROM the victim TOWARD where the blow came from (world space; length ignored; zero =
 ## unknown). `strength` is the hit's size: about 0.3 a tap, 0.7 a solid hit, 1.2 and up a big one.
-## v1 is a stand-in: `react` is a stumble from 0.4 up (nothing below), `down` is `TLBiped.down(frames)` and ignores
-## `from_dir`. The falls experiment of 21 Nov replaces the bodies (directional flinch, a fall away from the blow, a
-## get-up); the signatures stay.
 
 
-## A hit that does not floor him: below 0.4 nothing, from 0.4 a stumble of 8 + 10 * strength frames, leaning away from
-## the blow when `from_dir` says where it came from. Ignored while he is down (as `stumble` is).
+const _AWAY := {"front": "back", "back": "front", "right": "left", "left": "right"}
+
+
+## Recoil on the live gait. Solid contact also costs a few frames of control.
 static func react(who: TLBiped, from_dir: Vector3, strength: float) -> void:
-	if who == null or strength < 0.4:
+	if who == null or who.is_down() or strength <= 0.0:
+		return
+	var side_name := _side(who, from_dir)
+	var clip := StringName("hit_" + side_name)
+	if who._rig_has(clip):
+		if who.rig.has_method("_size_hit"):
+			who.rig.call("_size_hit", clip, strength, 0)
+		who.rig.call("play", clip, 0.05)
+	if strength < 0.4:
 		return
 	var lean := 0.7
 	var basis: Basis = who.global_basis if who.is_inside_tree() else who.basis
@@ -28,11 +35,80 @@ static func react(who: TLBiped, from_dir: Vector3, strength: float) -> void:
 	who.stumble(int(round(8.0 + 10.0 * strength)), lean)
 
 
-## Floors him for `frames` physics frames, falling away from `from_dir` (v1: `TLBiped.down(frames)`, the rig's `fall`
-## clip, whatever the direction). Everything `TLBiped.down` says holds: he rises over `get_up_frames`, `downed` and
-## `got_up` fire, `down` while down keeps the longer time.
+## Floors him for the same lie and rise windows as down(frames).
 static func down(who: TLBiped, frames: int, from_dir: Vector3 = Vector3.ZERO) -> void:
 	if who == null:
 		return
 	assert(from_dir.is_finite(), "TLHit.down: from_dir must be finite")
-	who.down(frames)
+	_down(who, frames, from_dir)
+
+
+static func _side(who: TLBiped, from_dir: Vector3) -> String:
+	var basis := who.global_basis if who.is_inside_tree() else who.basis
+	var local := basis.orthonormalized().inverse() * Vector3(from_dir.x, 0, from_dir.z)
+	if absf(local.x) > absf(local.z):
+		return "right" if local.x > 0.0 else "left"
+	return "front" if local.z <= 0.0 else "back"
+
+
+static func _down(who: TLBiped, frames: int, source: Vector3) -> void:
+	if frames <= 0:
+		return
+	var standing := not who.is_down()
+	var rising := who._rise_left > 0
+	who._down_left = maxi(who._down_left, frames)
+	who._rise_left = 0
+	if who._stumble_left > 0:
+		who._stumble_left = 0
+		who._rig_param(&"lean", 0.0)
+	if standing or rising:
+		_fall(who, source, frames)
+	if standing:
+		who.downed.emit()
+
+
+static func _fall(who: TLBiped, source: Vector3, frames: int) -> void:
+	var speed := who.speed()
+	var direction := "front"
+	if source.x != 0.0 or source.z != 0.0:
+		direction = _AWAY[_side(who, source)]
+	elif speed > 0.5:
+		direction = _AWAY[_side(who, -who.velocity)]
+	var fall := StringName("fall_" + direction)
+	who._get_up_clip = &""
+	if who._rig_has(fall):
+		who._get_up_clip = StringName("get_up_" + direction)
+		# down() has no strength argument. The speed just after the shove
+		# determines how quickly the hip hits the floor.
+		if who.rig.has_method("_size_hit"):
+			who.rig.call("_size_hit", fall, speed, frames)
+		who.rig.call("play", fall, minf(0.067, frames / 60.0))
+	elif who._rig_has(&"fall"):
+		who.rig.call("play", &"fall", 0.15)
+	elif who.rig != null:
+		who._lying_by_tip = true
+		who.rig.rotation.x = -PI * 0.5
+
+
+static func _step_down(who: TLBiped) -> void:
+	if who._down_left > 0:
+		who._down_left -= 1
+		if who._down_left == 0:
+			who._rise_left = maxi(who.get_up_frames, 1)
+			if who._get_up_clip != &"" and who._rig_has(who._get_up_clip):
+				if who.rig.has_method("_size_hit"):
+					who.rig.call("_size_hit", who._get_up_clip, 1.0, who._rise_left)
+				who.rig.call("play", who._get_up_clip, minf(2.0, who._rise_left) / 60.0)
+			elif who.rig != null and (who._get_up_clip != &"" or who._rig_has(&"fall")):
+				who.rig.call("play", &"", who._rise_left / 60.0)
+	elif who._rise_left > 0:
+		who._rise_left -= 1
+		if who._lying_by_tip and who.rig != null:
+			who.rig.rotation.x = -PI * 0.5 * who._rise_left / float(maxi(who.get_up_frames, 1))
+		if who._rise_left == 0:
+			who._lying_by_tip = false
+			who._get_up_clip = &""
+			who.got_up.emit()
+	if who._stumble_left > 0:
+		who._stumble_left -= 1
+		who._rig_param(&"lean", who._stumble_lean * float(who._stumble_left) / float(maxi(who._stumble_frames, 1)))

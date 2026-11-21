@@ -94,7 +94,8 @@ var _rise_left: int = 0                # K2: frames still rising
 var _stumble_left: int = 0
 var _stumble_frames: int = 0
 var _stumble_lean: float = 0.0
-var _lying_by_tip: bool = false        # the rig has no fall clip (the kernel's stand-in): the rig node is tipped over
+var _lying_by_tip := false
+var _get_up_clip: StringName = &""
 var _on_held: bool = false             # K2: the last step stood on a held ball
 var _was_on_held: bool = false
 var _kept_platform: Array = []         # the platform settings to give back when he steps off it
@@ -313,29 +314,10 @@ func _body_radius() -> float:
 
 # ---- K2: down, shove, stumble, a body sized with the rig ------------------------------------------------------------
 
-## Puts him on the ground for `frames` physics frames, then he rises over `get_up_frames`; all that time `move`,
-## `brake` and `jump` are ignored (he slides to a stop with the brake on). The rig plays its `fall` clip (it holds,
-## flat on the front) and blends back to its locomotion while he rises; a rig without a fall clip (the kernel's
-## stand-in) is tipped over flat and tipped back. Called while down, it keeps the longer of the two; while rising,
-## he goes down again. `downed` fires when he goes down from standing, `got_up` when he stands again.
+## Holds him down for `frames` ticks, then plays the rise over `get_up_frames`.
+## A moving biped falls along his horizontal velocity. At rest he falls forward.
 func down(frames: int) -> void:
-	if frames <= 0:
-		return
-	var was: bool = is_down()
-	var rising: bool = _rise_left > 0
-	_down_left = maxi(_down_left, frames)
-	_rise_left = 0
-	if _stumble_left > 0:
-		_stumble_left = 0
-		_rig_param(&"lean", 0.0)
-	if not was or rising:
-		if _rig_has(&"fall"):
-			rig.call("play", &"fall", 0.15)
-		elif rig != null:
-			_lying_by_tip = true
-			rig.rotation.x = -PI * 0.5
-	if not was:
-		downed.emit()
+	TLHit._down(self, frames, Vector3.ZERO)
 
 
 ## True from `down()` until he stands again (lying and rising).
@@ -419,26 +401,6 @@ func _rig_param(p: StringName, v: Variant) -> void:
 		rig.call("set_param", p, v)
 
 
-## One frame of down / rise / stumble, after the step.
-func _step_down() -> void:
-	if _down_left > 0:
-		_down_left -= 1
-		if _down_left == 0:
-			_rise_left = maxi(get_up_frames, 1)
-			if _rig_has(&"fall"):
-				rig.call("play", &"", float(_rise_left) / 60.0)    # the rig blends from lying back to its locomotion
-	elif _rise_left > 0:
-		_rise_left -= 1
-		if _lying_by_tip and rig != null:
-			rig.rotation.x = -PI * 0.5 * float(_rise_left) / float(maxi(get_up_frames, 1))
-		if _rise_left == 0:
-			_lying_by_tip = false
-			got_up.emit()
-	if _stumble_left > 0:
-		_stumble_left -= 1
-		_rig_param(&"lean", _stumble_lean * float(_stumble_left) / float(maxi(_stumble_frames, 1)))
-
-
 func _set_low(low: bool) -> void:
 	if low == _low:
 		return
@@ -510,7 +472,7 @@ func _physics_process(delta: float) -> void:
 	surface = str(under.get("material", "")) if under.get("hit", false) else ""
 	if _walker != null:
 		_walker_tick(delta, mv, brk)
-		_step_down()
+		TLHit._step_down(self)
 		_tick_rig(grounded)
 		return
 	grounded = is_on_floor()
@@ -585,7 +547,7 @@ func _physics_process(delta: float) -> void:
 				pushed.emit(rb, impulse)
 				TLDamage.report(rb, impulse, self)
 	if _down_left > 0 or _rise_left > 0 or _stumble_left > 0:
-		_step_down()
+		TLHit._step_down(self)
 	_tick_rig(is_on_floor())
 
 

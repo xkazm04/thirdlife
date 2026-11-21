@@ -1,0 +1,11 @@
+{
+  "id": "example.hit_lab",
+  "version": "0.1.0",
+  "kernelApi": "1.12",
+  "title": "Hit lab: hits from three sides at three strengths, get-ups, a body check",
+  "capabilities": ["physics", "biped", "camera", "ui"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_lab.gd"],
+  "cameras": ["lab", "check"]
+}
