@@ -1,8 +1,5 @@
 extends RefCounted
 ## N7 / P4. The world's own landscape: everything between the plots. Drawn once, owned by the world, never by a pack.
-##
-##   var stats: Dictionary = Landscape.build(parent, plots, radii, has_ground, cfg)
-##
 ## P4: the ground has height (terrain/village_terrain.gd: rolling land, a ring of hills, a bluff, a valley with a river
 ## and two ponds). Every plot stands on a flat pad of its own height (`pad_h`, the walk's plot origin y) with a graded
 ## shoulder and a spur road that climbs to the entrance; the main road follows the land and crosses the
@@ -18,7 +15,8 @@ extends RefCounted
 ## Cost is in the returned stats (`build_ms`, `terrain_ms`, instance counts); kernel/world/WORLD.md has the figures.
 
 const DrawBase := preload("res://kernel/world/draw/draw_base.gd")
-const VillageTerrain: GDScript = preload("res://kernel/world/terrain/village_terrain.gd")
+const VillageTerrain := preload("res://kernel/world/terrain/village_terrain.gd")
+const Land := preload("res://kernel/world/land/land.gd")
 const WorldSpace: GDScript = preload("res://kernel/world/terrain/world_space.gd")
 const Parts: GDScript = preload("res://kernel/world/terrain/village_parts.gd")
 const SiteDraw: GDScript = preload("res://kernel/world/site/draw.gd")    # S: a construction site's look
@@ -127,7 +125,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	var bz0: float = floorf((lo.y - margin) / cell) * cell
 	var bx1: float = ceilf((hi.x + margin) / cell) * cell
 	var bz1: float = ceilf((hi.y + margin) / cell) * cell
-	var terr: RefCounted = VillageTerrain.new(int(cfg.get("seed", 7)), Rect2(bx0, bz0, bx1 - bx0, bz1 - bz0), cell)
+	var terr := VillageTerrain.new(int(cfg.get("seed", 7)), Rect2(bx0, bz0, bx1 - bx0, bz1 - bz0), cell)
 	terr.set("centre", (lo + hi) * 0.5)
 	terr.set("relief", float(cfg.get("relief", 1.0)))
 	for k: int in lots.size():
@@ -209,6 +207,9 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		terr.set("ponds", [{"c": rv_path.pts[0], "r": pr, "y": ry[0]}, {"c": rv_path.pts[rv_path.pts.size() - 1], "r": pr * 1.2, "y": ry[ry.size() - 1]}])
 	_lap(stats, "grid_prep")
 	terr.call("build_grid")
+	var land := Land.new(terr, cfg.get("land", {}))
+	parent.set_meta(&"tl_land", land)
+	stats["land"] = land.stats
 	_lap(stats, "grid")
 	var ws: RefCounted = WorldSpace.new()
 	var crown_batches := []
@@ -336,16 +337,16 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		for i: int in centres.size():
 			if p.distance_to(centres[i]) < float(rad[i]) + clear:
 				return false
-		if float(terr.call("road_dist", p.x, p.y)) < road_clear:
+		if terr.road_dist(p.x, p.y) < road_clear:
 			return false
-		return float(terr.call("river_dist", p.x, p.y)) > river_clear
+		return terr.river_dist(p.x, p.y) > river_clear
 	stats["soft_patches"] = Parts.soft_ground(parent, terr, int(cfg.get("seed", 7)), box, is_free, int(cfg.get("soft_patches", 150)), SCATTER_MARGIN, half + 0.7)     # P13, P14b
 	var gmat: ShaderMaterial = _ground_material(plots, radii, has_ground, true)
 	var tmat: Material = gmat
 	if tmat == null:
 		tmat = TLStyle.material(&"terrain")
-	var tmi: MeshInstance3D = terr.call("build_mesh", tmat)
-	parent.add_child(tmi)
+	land.configure_plot_holes(centres, radii, has_ground)
+	land.build_meshes(parent, tmat, Land.focus(parent, true))
 	if gmat != null:
 		parent.set_meta(&"tl_ground_mat", gmat)            # walker-feel T: draw/view_seam.gd `close_holes`
 	Parts.far_ground(parent, terr, str(cfg.get("ground_key", "")))
@@ -373,20 +374,20 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var water: float = rv_half + (4.0 if mode != "bank" else 0.5)
 			if not bool(is_free.call(p, clear, road_clear, water)):
 				continue
-			var sl: float = float(terr.call("slope", p.x, p.y))
+			var sl: float = terr.slope(p.x, p.y)
 			if sl > max_slope:
 				continue
 			if mode == "ridge":
-				var conv: float = float(terr.call("h", p.x, p.y)) - 0.25 * (float(terr.call("h", p.x + 12.0, p.y)) + float(terr.call("h", p.x - 12.0, p.y)) + float(terr.call("h", p.x, p.y + 12.0)) + float(terr.call("h", p.x, p.y - 12.0)))
+				var conv: float = terr.h(p.x, p.y) - 0.25 * (terr.h(p.x + 12.0, p.y) + terr.h(p.x - 12.0, p.y) + terr.h(p.x, p.y + 12.0) + terr.h(p.x, p.y - 12.0))
 				if rng.randf() > 0.12 + 0.88 * smoothstep(-0.8, 1.6, conv):
 					continue
 			elif mode == "bank":
-				var rdist: float = float(terr.call("river_dist", p.x, p.y))
+				var rdist: float = terr.river_dist(p.x, p.y)
 				if sl < 0.06 and rdist > rv_half + 9.0 and rng.randf() > 0.06:
 					continue
 			var sc: float = rng.randf_range(s_min, s_max)
 			var b: Basis = Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.9, 1.15), sc))
-			xs.append(Transform3D(b, Vector3(p.x, float(terr.call("gy", p.x, p.y)) + y_off, p.y)))
+			xs.append(Transform3D(b, Vector3(p.x, terr.gy(p.x, p.y) + y_off, p.y)))
 		return xs
 	_lap(stats, "scatter_setup")
 	var cams: Array = Parts.cameras(cfg.get("events", []))
@@ -445,10 +446,10 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		var q: Vector2 = road_pts[rng.randi_range(0, road_pts.size() - 1)]
 		var a: float = rng.randf() * TAU
 		var p: Vector2 = q + Vector2(cos(a), sin(a)) * (half + 1.2 + rng.randf() * rng.randf() * 16.0)
-		if not bool(is_free.call(p, 6.5, half + 1.0, rv_half + 2.0)) or float(terr.call("slope", p.x, p.y)) > 0.3:
+		if not bool(is_free.call(p, 6.5, half + 1.0, rv_half + 2.0)) or terr.slope(p.x, p.y) > 0.3:
 			continue
 		var sc: float = rng.randf_range(0.8, 1.6)
-		tufts.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(p.x, float(terr.call("gy", p.x, p.y)) + 0.04, p.y)))
+		tufts.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(p.x, terr.gy(p.x, p.y) + 0.04, p.y)))
 	tufts = clear.keep(tufts, TLKitNature.grass_tuft(400, 4, 0.5), false)          # grass: off the road's surface only
 	if not tufts.is_empty():
 		Parts.multi(parent, TLKitNature.grass_tuft(400, 4, 0.5), tufts, "WorldTufts")
@@ -476,19 +477,19 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var a: float = rng.randf() * TAU
 			var d: float = reach * 0.7 + spread * 0.6 + rng.randf() * rng.randf() * 260.0
 			var p: Vector2 = centre + Vector2(cos(a), sin(a)) * d
-			if bool(terr.call("inside", p.x, p.y, 8.0)):
-				if not bool(is_free.call(p, 9.0, 6.0, rv_half + 4.0)) or float(terr.call("slope", p.x, p.y)) > 0.34:
+			if terr.inside(p.x, p.y, 8.0):
+				if not bool(is_free.call(p, 9.0, 6.0, rv_half + 4.0)) or terr.slope(p.x, p.y) > 0.34:
 					continue
-				if float(terr.call("h", p.x, p.y)) < 3.0 and rng.randf() > 0.3:
+				if terr.h(p.x, p.y) < 3.0 and rng.randf() > 0.3:
 					continue            # the belt stands on the hills; the plain is left open
-			elif float(terr.call("road_dist", p.x, p.y)) < 7.0:
+			elif terr.road_dist(p.x, p.y) < 7.0:
 				continue
 			var sc: float = rng.randf_range(0.9, 1.7)
-			var py: float = float(terr.call("gy", p.x, p.y)) - 0.2 if bool(terr.call("inside", p.x, p.y)) else -0.26
+			var py: float = terr.gy(p.x, p.y) - 0.2 if terr.inside(p.x, p.y) else -0.26
 			xs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.95, 1.2), sc)), Vector3(p.x, py, p.y)))
 		Parts.multi(parent, TLKitNature.pine(110 + v, 10.0 + float(v) * 2.5, 5, 2.4 + float(v) * 0.3), xs, "WorldBelt%d" % v, crown_batches, crown_region)
 		for x: Transform3D in xs:
-			if bool(terr.call("inside", x.origin.x, x.origin.z)):
+			if terr.inside(x.origin.x, x.origin.z):
 				ws.call("add_trunk", x.origin, 0.5 * x.basis.get_scale().x)
 		stats["trees"] = int(stats["trees"]) + xs.size()
 	_lap(stats, "belt")
@@ -503,21 +504,13 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	# ---- the visitor's collider: the terrain (left open where a plot's own ground carries him) and a copy of every
 	# pack's static colliders
 	var cs0: int = Time.get_ticks_msec()
-	var skip: Callable = func(cx: float, cz: float) -> bool:
-		for i: int in plots.size():
-			if bool(has_ground[i]) and float(radii[i]) > 0.0 and Vector2(cx, cz).distance_to(centres[i]) < float(radii[i]) - 1.0:
-				return true
-		return false
 	ws.set("tag", "terrain")
-	var near: PackedVector3Array = PackedVector3Array()
-	for i: int in plots.size():
-		if bool(has_ground[i]) and float(radii[i]) > 0.0:
-			near.append(Vector3((centres[i] as Vector2).x, (centres[i] as Vector2).y, float(radii[i])))
-	terr.set("skip_near", near)
-	var cfaces: PackedVector3Array = terr.call("collision_faces", skip)
-	_lap(stats, "coll_faces")
-	ws.call("add_faces", cfaces)
+	land.build_colliders(ws)
 	_lap(stats, "add_faces")
+	stats.laps_ms.coll_faces = snappedf(land.face_usec / 1000.0, 0.1)
+	stats.laps_ms.terrain -= stats.laps_ms.coll_faces  # Face preparation already ran with the meshes.
+	if not land.stats.all_near and not parent.has_meta(&"tl_land_rest"):
+		parent.set_meta(&"tl_land_rest", {})
 	ws.call("add_pads", terr, centres, has_ground, radii, (world as Node).get("packs") if world != null else [])     # bugfix-37 D3: world_space.gd
 	if world != null:
 		var holders: Array = (world as Node).get("packs")
@@ -530,7 +523,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	ws.call("finish")
 	_lap(stats, "crowns")
 	stats["space"] = ws.get("stats")
-	stats["space_ms"] = Time.get_ticks_msec() - cs0
+	stats["space_ms"] = Time.get_ticks_msec() - cs0 + roundi(land.face_usec / 1000.0)
 	parent.set_meta(&"tl_terrain", terr)
 	parent.set_meta(&"tl_probe", probe)
 	if not bridge_probe.is_empty():
@@ -549,12 +542,19 @@ static func arrive(parent: Node3D) -> bool:
 	if not parent.has_meta(&"tl_land_rest"):
 		return true
 	var t: Dictionary = parent.get_meta(&"tl_land_rest")
-	if not WorkerThreadPool.is_task_completed(int(t["task"])):
-		return false
-	WorkerThreadPool.wait_for_task_completion(int(t["task"]))
-	parent.remove_meta(&"tl_land_rest")
-	Parts.edge_nodes(parent, t)
-	return true
+	var land: Land = parent.get_meta(&"tl_land")
+	if not land.stats.all_near:
+		land.step(Land.focus(parent), land.budget)
+	if t.has("task"):
+		if not WorkerThreadPool.is_task_completed(int(t.task)):
+			return false
+		WorkerThreadPool.wait_for_task_completion(int(t.task))
+		Parts.edge_nodes(parent, t)
+	if land.stats.all_near:
+		parent.remove_meta(&"tl_land_rest")
+	elif t.has("task"):
+		parent.set_meta(&"tl_land_rest", {})  # Keep observing focus after the final queued job.
+	return not land.pending
 
 
 ## P13: where the landscape's time goes, section by section (stats "laps_ms").

@@ -15,11 +15,21 @@ const TEXEL_M: float = 1.5
 
 
 ## Returns the number of trees and bushes stamped into the map.
-static func build(parent: Node3D, k: float) -> int:
-	var ground: MeshInstance3D = parent.get_node_or_null("WorldTerrain") as MeshInstance3D
-	if ground == null or k <= 0.0 or not (ground.material_override is ShaderMaterial):
+static func build(parent: Node3D, k: float, inspect_image := Callable()) -> int:
+	var ground := parent.get_node_or_null("WorldTerrain")
+	if ground == null or k <= 0.0:
 		return 0
-	var box: AABB = ground.get_aabb()
+	var box: AABB
+	var mat: ShaderMaterial
+	if ground is MeshInstance3D:
+		box = ground.get_aabb()
+		mat = ground.material_override as ShaderMaterial
+	else:
+		var land = parent.get_meta(&"tl_land")
+		box = land.samples.bounds
+		mat = land.material as ShaderMaterial
+	if mat == null:
+		return 0
 	var w: int = clampi(ceili(box.size.x / TEXEL_M), 8, 2048)
 	var h: int = clampi(ceili(box.size.z / TEXEL_M), 8, 2048)
 	var data: PackedByteArray = PackedByteArray()
@@ -48,8 +58,10 @@ static func build(parent: Node3D, k: float) -> int:
 					if v > data[pz * w + px]:
 						data[pz * w + px] = v
 			count += 1
-	var tex: ImageTexture = ImageTexture.create_from_image(Image.create_from_data(w, h, false, Image.FORMAT_R8, data))
-	var mat: ShaderMaterial = ground.material_override as ShaderMaterial
+	var image := Image.create_from_data(w, h, false, Image.FORMAT_R8, data)
+	var tex := ImageTexture.create_from_image(image)
+	if inspect_image.is_valid():
+		inspect_image.call(image)  # The headless renderer has no GPU texture readback.
 	mat.set_shader_parameter(&"cel_shade", tex)
 	mat.set_shader_parameter(&"cel_shade_uv", Vector4(1.0 / (float(w) * TEXEL_M), 1.0 / (float(h) * TEXEL_M),
 		-box.position.x / (float(w) * TEXEL_M), -box.position.z / (float(h) * TEXEL_M)))

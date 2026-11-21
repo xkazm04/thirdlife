@@ -1,0 +1,1 @@
+{"schema":"tl.land/1","chunk":[0,0],"origin_m":[-48,27],"cell_m":3,"cells":[32,32],"base":{"kind":"village","seed":19},"split":"alternate","h_zero_m":-32,"h_step_m":0.002,"heights":[[0,5],[32,34000]],"materials":[[0,3]],"water":[{"level_m":1.25,"cells":[7,8]}]}
