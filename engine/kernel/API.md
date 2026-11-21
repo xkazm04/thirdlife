@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.12)
+# Third Life kernel API (kernelApi 1.13)
 
-**Version 1.12 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.13 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.12"` in `pack.json` (any
-`"1.x"` up to 1.12 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.13"` in `pack.json` (any
+`"1.x"` up to 1.13 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -241,6 +241,7 @@ ball then takes its shape, material and mass from the part and wears it; without
 | `speed()`, `is_moving()`, `surface()` | m/s; above 0.05 m/s; material id under it |
 | signals `bounced(other, speed)`, `stopped()`, `held(holder)`, `released(holder)` | hit something; came to rest; picked up; let go |
 | `contact: TLContact`, `max_speed`, `radius`, `material_id` | |
+| `set_radius(r: float)` (1.13) | K8: a new radius now (the hockey big puck): the shape and the drawn ball or puck follow (a kit part's visual is scaled, x and z for a puck); height, mass, material and motion are kept |
 
 ```gdscript
 var puck: TLBall = TLBall.create({"kind": &"puck", "material": "rubber", "planar": true, "position": Vector3(0, 0.02, 0), "group": "pucks"})
@@ -368,6 +369,51 @@ direction, including a plain `biped.down(frames)`, the figure falls along its ho
 and forward at lower speeds. The standard biped rises from its landing pose within the pack's `get_up_frames`.
 Rigs with only the original fall clip still use it, and the stand-in capsule still tips.
 
+### K8 feel kit: hit-stop, mutual reactions, the pushbox (addition in 1.13)
+
+Every contact of a duel changes BOTH fighters (`docs/research/DUEL-PLAYBOOK.md` sections 2 and 6.3). One call per
+contact; each freezes both bodies in hit-stop, then gives each side his reaction. Frames are physics frames (60 Hz).
+
+| Call | Hit-stop | Defender / victim | Attacker |
+|---|---|---|---|
+| `TLHit.hit(attacker, victim, heavy := false, counter := false, tune := {})` | 5 / 9 (+2 counter) | `hitstun` 18 / 40 (+10 counter), knocked 0.25 / 0.6 m, the directional `hit_<side>` flinch; knocked into a wall: `wallsplat` 40 (hit-stop 8, him alone); on the ground: no contact | the hit-stop only |
+| `TLHit.blocked(attacker, defender, heavy := false, tune := {})` | 3 / 6 | `blockstun` 14 / 18, pushed 0.35 / 0.5 m on his guard (`block_stun`) | light: recoils 0.15 m; heavy: `recoil` 40, 0.3 m back (`recoil`) |
+| `TLHit.parried(attacker, defender, heavy := false, tune := {})` | 10 | `recover` 8 | `parried` 52 / 36, weapon knocked away (`parried`), 0.2 m back |
+| `TLHit.clash(a, b, a_heavy := false, b_heavy := false, tune := {})` | 8 | same class: both `rebound` 20 (heavy against heavy 30), 0.3 m apart each (`recoil`); heavy against light: the light one takes `TLHit.hit(heavy_one, light_one, true)` (hit-stop 9) | |
+| `TLHit.guard_break(attacker, defender, tune := {})` | 6 (12 at a wall) | `guardbroken` 30, shoved 1.0 m (`guard_broken`); a `StaticBody3D` within `TLHit.WALL_REACH` (1.2 m) behind him: `wallsplat` 60, slammed back onto it over the 3 frames after the hit-stop; a wall met during the shove: `wallsplat` 60 | the hit-stop only |
+| `TLHit.wall_splat(victim, wall_normal, attacker := null, frames := 60, tune := {})` | 12 (8 without an attacker) | turned with his back to the wall, `wallsplat` (`wall_splat`) | |
+| `TLHit.impact(attacker, victim, frames) -> int` | `frames`, clamped to `TLHit.STOP_CAP` (20) | the hit-stop only; either side may be null | |
+
+- Every contact returns `{contact, stop, attacker, attacker_frames, defender, defender_frames}`: the stun each side is in
+  now (`&""` = none) and its frames. `tune` overrides `stop`, `frames` (the defender's), `attacker_frames`, `push` and
+  `recoil` (metres); an unknown key is an error.
+- **Hit-stop:** for its frames the body does not move, its rig does not tick (the pose holds), its down, stumble and
+  stun counters hold, and `move`, `brake`, `jump` are ignored; velocity is kept and resumes after. The struck body's rig
+  shakes along the blow (drawing only). The rest of the world goes on. **A pack holds its own counters** of a frozen
+  fighter (a windup, an AI timer) with `TLHit.stop_left(b) > 0`. A longer hit-stop still running is kept.
+- **With `react` and `down`:** calls of one frame stack. `impact` then `TLHit.react` or `TLHit.down` freezes first; the
+  flinch or the fall plays when the freeze ends. `TLHit.down` ends a stun and its push (a knockdown wins); a hit-stop
+  still running keeps running.
+- **A stun** counts from the frame its hit-stop ends. While it runs no intent reaches the legs (the brake is on); the
+  horizontal velocity is zeroed when it starts, and the push-back travels over 4 to 10 frames (`move_and_collide`: a wall
+  stops it). The reaction clips are the rig's (`engine/rigs/RIGS.md`, "Reaction clips"), sized to the stun; a rig without
+  them (the stand-in) shows nothing, and the stun still runs.
+- `TLHit.stop_left(who)`, `TLHit.stun_of(who) -> StringName` (`&""`, `hitstun`, `blockstun`, `recoil`, `parried`,
+  `recover`, `rebound`, `guardbroken`, `wallsplat`), `TLHit.stun_left(who)`, `TLHit.busy_left(who)` (hit-stop + stun +
+  lying and rising: the frames until he can act; frame advantage = `busy_left(defender) - busy_left(attacker)` minus the
+  attacker's own recovery), `TLHit.clear(who)` (ends all three: a round restart).
+- **Pushbox (opt-in per body):** `TLHit.pushbox(who, on := true, radius := -1.0)`; -1 = `body_radius() + 0.02`. Bodies of
+  one pack in its pushbox never end a physics frame overlapping: after every other node, each overlapping pair is pushed
+  apart by half the penetration each, in the order they joined (walls still stop them); a body in hit-stop does not move,
+  a stunned or downed body does not push back (one that stands free walks him along). `TLHit.pushbox_gap(who)` is the
+  smallest centre distance minus the radii over the pack's pairs (>= 0: nothing overlaps; INF with fewer than two).
+  Without it, the 1.0 guarantee of section 6 stands (two bodies closing in one step overlap for that step).
+- **Determinism:** no randomness, no clock. A biped that never took a K8 contact and never joined a pushbox hashes
+  exactly as before; while a hit-stop, stun or push runs it is in the state hash (the `down` text of the biped).
+- **Skating body checks:** `hit` and `guard_break` stop the victim dead. For a check that should carry momentum use
+  `TLHit.impact` + `TLHit.react` / `TLHit.down` + `shove`, or `tune.push`.
+- The lab: `kernel/examples/ex_feel_lab` (every contact of the table between two figures; its bot asserts both change).
+
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
 
 `TLVehicle.create(opts) -> TLVehicle` (a `RigidBody3D`, origin on the ground under the middle, forward -z, wheel order
@@ -486,6 +532,7 @@ a part in the same convention from boxes.
 | `ctx.cameras.set_subject(view, subject)`, `subject_of(view) -> Node3D` | names the main actor of a view without moving it (a fixed view that must keep a whole court in sight) |
 | `ctx.cameras.shake(amount, frames)` | impact shake on the active view: `amount` metres at the lens (0.05 a tap, 0.3 a crash), fading over `frames` physics frames. A stronger shake still running is kept |
 | `TLOrbitCam.orbit_by(yaw_deg, pitch_deg)`, `zoom_by(metres)`, `bind_actions(input, {yaw_left, yaw_right, pitch_up, pitch_down, zoom_in, zoom_out})`, `yaw_basis() -> Basis` | the camera on screen also turns with the pointer actions of `ctx.input` (`TLInput.LOOK_X`, `LOOK_Y`, `ZOOM`: right-button drag, 0.2 degrees of yaw and 0.15 of pitch per pixel; the wheel, 0.4 m per notch). They are input like any key: latched per frame, recorded, replayed |
+| `ctx.cameras.fade_occluders(on = true, opts = {})`, `faded() -> Array` (1.13) | **K8 occluder fade**: scenery between the play camera and its subjects fades, so a pillar never hides the rival. Options `view` (default the active view), `subjects` (a list: give both duellists; default the view's subject, else the chase or orbit target), `alpha` (0.3 remains), `frames` (8 to fade out and back), `max_size` (12 m: a larger mesh, the ground or a layout's merged statics, never fades). Rays in the pack's own space each physics frame; an occluder is a static or rigid body (not a biped, not a ball) and its kit part's meshes fade through `GeometryInstance3D.transparency`. Off until turned on. Props merged by `TLKit.build_layout` cannot fade one by one: build a pillar meant to fade with `TLKit.build` or `TLBodies.make`. In a world of several packs the draw layer's copies do not fade (yet). `faded()`: the occluding bodies of the last frame |
 | `TLChaseCam.snap()`, `TLOrbitCam.snap()` | puts the camera where it wants to be at once (after a teleport, a cut, or a change of `distance`); a chase camera stands behind the target's facing at that moment |
 
 **Everything here is visual only.** `frame`, `shake`, `follow`, `aim` and `smooth` move or offset cameras; none of them

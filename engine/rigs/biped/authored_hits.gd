@@ -96,6 +96,7 @@ const PUSH_OFF := {
 	"RightUpperArm": Vector3(13, 0, 20), "RightLowerArm": Vector3(23, 0, 0)}
 
 var _strength := 0.7
+var _reactions := preload("res://rigs/biped/reaction_poses.gd").new()
 var _impact := 0.0
 const TRAVEL := {"back": Vector3.BACK, "front": Vector3.FORWARD,
 	"left": Vector3.LEFT, "right": Vector3.RIGHT}
@@ -108,9 +109,13 @@ func install(rig: TLRigBiped) -> void:
 		rig.add_clip("hit_" + side, 24.0 / 60.0, false, _flinch.bind(rig, side), true)
 		rig.add_clip("fall_" + side, FALL_FRAMES / 60.0, false, _fall.bind(rig, side), false, true)
 		rig.add_clip("get_up_" + side, RISE_FRAMES / 60.0, false, _rise.bind(rig, side))
+	_reactions.install(rig)
 
 
 func size_clip(rig: TLRigBiped, action: StringName, amount: float, frames: int) -> void:
+	if _reactions.FRAMES.has(action):
+		_reactions.size_clip(rig, action, amount, frames)
+		return
 	var spec: Dictionary = rig._clips[action]
 	if action.begins_with("hit_"):
 		_strength = clampf(amount, 0.0, 1.4)

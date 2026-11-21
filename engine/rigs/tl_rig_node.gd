@@ -83,6 +83,8 @@ func play(cname: StringName, blend: float = 0.15) -> void:
 		return
 	clip = cname
 	clip_t = 0.0
+	if _clips.has(cname):
+		blend = minf(blend, _clips[cname].get("max_blend", blend))
 	_start_blend(_blend_of(cname, blend))
 
 

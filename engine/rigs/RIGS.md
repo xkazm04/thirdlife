@@ -123,6 +123,21 @@ the head and hips rebound once. A side landing leaves the upper arm outstretched
 For a rise, `frames` is its exact length in physics ticks. Direct playback defaults to a
 0.7-strength flinch and a 24-frame fall or rise. The held stick follows the right wrist throughout.
 
+## Reaction clips (feel kit, N1)
+
+| Clip | Frames | Key frame | Ends | What it is |
+|---|---|---|---|---|
+| `block_stun` | 14 | 3 | holds | The blow drives both forearms toward the face. The knees give and the head ducks, then the fighter settles into the held `block` pose. |
+| `recoil` | 30 | 5 | returns | The weapon arm bounces up behind the shoulder. The hips shift back and the free arm balances the fighter through 60% of the clip. |
+| `parried` | 52 | 5 | returns | The weapon arm flies wide with the elbow extended. The chest twists open and wobbles until recovery begins at 75%. |
+| `guard_broken` | 30 | 5 | returns | Both arms fly low and apart as the fighter stumbles back onto bent knees. The guard reforms in the last quarter. |
+| `wall_splat` | 60 | 3 | returns | The back hits the wall with both arms at shoulder height. The hips slide down and the chin drops by 60%. The fighter rises in the last 20%. |
+
+Frames count from `play` at 60 Hz. All five blend in over at most two ticks. The four returning clips reach the fist
+guard on their last tick and resume locomotion on the next. Call `_size_hit(clip, amount, frames)` before playback
+to set that clip's throw strength (0 to 1.5, initially 1.0) and length in physics frames. Contact keeps its early
+frame when the window allows, while the hold and recovery scale with the window.
+
 ## Sockets
 - biped: `hand_r`, `hand_l` (palms), `head` (top of the head), `back` (between the shoulder blades), `foot_r`,
   `foot_l` (soles), `stick_blade`.
@@ -197,7 +212,7 @@ Standard biped on Godot humanoid bone names, 29 bones. Clips: idle, walk, run, s
 
 Metrics at scale 1: `{"bones":29,"eye_height":1.765,"height":2.0,"radius":0.3,"triangles":9292}`
 
-Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air, fly, hang, mantle, swing, strike, strike_heavy, block, roll, dodge, body_check, cross_check, taunt, hit_front, fall_front, get_up_front, hit_back, fall_back, get_up_back, hit_left, fall_left, get_up_left, hit_right, fall_right, get_up_right
+Clips: idle, walk, run, skate, skate_stop, shoot, pass, cheer, fall, carry, work, jump, land, slide, slope_slide, air, fly, hang, mantle, swing, strike, strike_heavy, block, roll, dodge, body_check, cross_check, taunt, hit_front, fall_front, get_up_front, hit_back, fall_back, get_up_back, hit_left, fall_left, get_up_left, hit_right, fall_right, get_up_right, block_stun, recoil, parried, guard_broken, wall_splat
 
 Build params (also the initial values of the runtime params of the same name):
 | Param | Type | Default | Range / values | Meaning |
@@ -216,6 +231,8 @@ Build params (also the initial values of the runtime params of the same name):
 Runtime only: `look_at`: Vector3 in world space, or null to clear: neck and head turn towards it (clamped)
 
 Runtime only: `stick_yaw`: radians, + = left, clamped to -1.2..2.0; 0 = no turn: with a stick in hand the upper body, both hands and the blade turn about the vertical (set it every frame)
+
+Runtime only: `dodge_side`: -1 = the dodge clip steps left, +1 = right, 0 (default) = the side the body moves at the play
 
 ## `vehicle`
 Coupe. Clips: idle. Wheels steer and spin, each wheel moves with its suspension value, nitro flame, brake lights.

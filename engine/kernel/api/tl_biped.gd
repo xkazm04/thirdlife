@@ -99,6 +99,7 @@ var _get_up_clip: StringName = &""
 var _on_held: bool = false             # K2: the last step stood on a held ball
 var _was_on_held: bool = false
 var _kept_platform: Array = []         # the platform settings to give back when he steps off it
+var _feel = null                       # K8: hit-stop, stun, push-back (kernel/feel/hit_state.gd), made by TLHit
 
 
 ## Options: rig (a rig node; default: TLRigs when installed, else the stand-in), rig_params, mode, position,
@@ -387,9 +388,10 @@ func body_radius() -> float:
 
 ## Kernel side: the state of down and stumble, for the state hash ("" while he stands and does not stumble).
 func _down_text() -> String:
-	if _down_left <= 0 and _rise_left <= 0 and _stumble_left <= 0:
+	var feel: String = _feel.text() if _feel != null else ""   # K8: "" unless a hit-stop, stun or push runs
+	if _down_left <= 0 and _rise_left <= 0 and _stumble_left <= 0 and feel.is_empty():
 		return ""
-	return "%d,%d,%d" % [_down_left, _rise_left, _stumble_left]
+	return "%d,%d,%d" % [_down_left, _rise_left, _stumble_left] + feel
 
 
 func _rig_has(clip: StringName) -> bool:
@@ -464,9 +466,12 @@ func _walker_tick(delta: float, mv: Vector3, brk: bool) -> void:
 		_grip.call("pose", self, rig, _walker, _body_scale)
 
 func _physics_process(delta: float) -> void:
-	# K2: down (lying or rising): no intent, the brake on; stumbling: a third of the intent, no brake
-	var mv: Vector3 = Vector3.ZERO if is_down() else (_move * 0.3 if _stumble_left > 0 else _move)
-	var brk: bool = true if is_down() else (false if _stumble_left > 0 else _brake)
+	var held: int = _feel.step(self) if _feel != null else 0   # K8: 1 = hit-stop (everything holds), 2 = stunned
+	if held == 1:
+		return
+	# K2: down (lying or rising) or K8 stunned: no intent, the brake on; stumbling: a third of the intent, no brake
+	var mv: Vector3 = Vector3.ZERO if is_down() or held == 2 else (_move * 0.3 if _stumble_left > 0 else _move)
+	var brk: bool = true if is_down() or held == 2 else (false if _stumble_left > 0 else _brake)
 	_frame += 1
 	var under: Dictionary = TLLaws.surface_under(self, global_position + Vector3.UP * 0.2, 0.6, [get_rid()])
 	surface = str(under.get("material", "")) if under.get("hit", false) else ""

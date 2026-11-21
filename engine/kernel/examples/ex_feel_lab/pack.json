@@ -1,0 +1,20 @@
+{
+  "id": "example.feel_lab",
+  "version": "0.1.0",
+  "kernelApi": "1.13",
+  "title": "Duel contacts",
+  "capabilities": [
+    "physics",
+    "biped",
+    "camera",
+    "ui"
+  ],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": [
+    "tests/bot_contacts.gd"
+  ],
+  "cameras": [
+    "play"
+  ]
+}
