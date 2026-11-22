@@ -75,7 +75,8 @@ The body-check model and its rate were kept (the owner's ruling).
   `fresh_frames`, `fresh_check_frames`).
 - **Speeds** (research ratios): cruise 9.2 / sprint 10.58 m/s; carrier x0.88 (8.1 / 9.31) with 0.8 of the thrust; turn
   4.5 rad/s, x0.85 carrying, x0.67 sprinting; pass 18 m/s (23 beyond 15 m); wrist shot 24, full charge 32; puck cap 34.
-- **The bots** (`scripts/ai/`: `brain.gd`, `sense.gd`, `carrier.gd`, `roles.gd`): decide every 15 frames (staggered, and
+- **The bots** (`scripts/ai/`: `brain.gd`, `sense.gd`, `carrier.gd`, `roles.gd`): decide every 15 frames (staggered; the
+  carrier every 7-8, loop round 3 of 22 Nov: he saw the pressure late and was hit before his pass; and
   at once on a change of carrier, a pass toward them, a loose puck within 3 m, a hit), from what anybody could see
   `reaction_frames` ago, with aim and score noise by level (rookie 18 f / 6 deg / 0.08, pro 12 / 4 / 0.05, all-star
   7 / 2.5 / 0.03; Classic and your mates 5 / 1.5 / 0.02). The carrier scores SHOOT, PASS to each mate, CARRY, PROTECT and
