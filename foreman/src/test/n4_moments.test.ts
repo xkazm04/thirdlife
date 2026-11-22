@@ -68,3 +68,12 @@ test("round 12: the critic gets the tofu bot's figures as claims to check agains
   const prompt = fs.readFileSync(path.join(PKG_ROOT, "prompts", "critic.md"), "utf8");
   assert.match(prompt, /they are claims: check them against what the strips show/);
 });
+
+test("round 13: the house strip reads the duel pilot's top-level `moments` (proof -5 and -6 filmed the house game's KO at its finish - 60 instead of its parry)", async () => {
+  const { contactFrame, HOUSE_BOTS } = await import("../house.js");
+  const duel = HOUSE_BOTS["duel"]?.strip?.moments;
+  // The real pilot result (engine/packs/duel, seed 1, 22 Nov 04:58): moments beside metrics, finished at 4593.
+  const real = { bot: { frames: 4593, result: { moments: { hit_heavy: [176, 321], blocked_heavy: [437], parried: [2269, 3331], clash: [2697] }, metrics: { hand: "regular" } } } };
+  assert.equal(contactFrame(real, duel), 2269);
+  assert.equal(contactFrame({ bot: { frames: 4593, result: {} } }, duel), 4533, "no moments: the old fallback");
+});
