@@ -39,7 +39,9 @@ export const HOUSE_BOTS: Record<string, HouseBot> = {
     // Read from the real runner on 22 Nov 02:00: the pilot's result carries these (the verify report has no pack_state).
     // contact_types is left out: the house game counts every 6.3 row (and ko, absorbed); a build's own names are coarser.
     map: { idle_max_f: "result.rival_passive_max|pack_state.rival_passive_max", tell_min_f: "result.rival_tells_min|pack_state.rival_tells_min", one_sided_contacts: "result.failures|pack_state.failures" },
-    strip: { test: "tests/bot_contact_heavy_block.gd", cam: "side", args: ["--seed=1"], label: "a heavy blocked: both freeze 6 frames, the defender slides back in blockstun, the attacker's blade bounces off and he rebounds 40 frames" },
+    // Round 11: a moment of a real match (N2's pilot returns `moments` since duel round 8): the measuring bot itself, at its
+    // first parry (real seed 1: parried at 2269; the drill's blocked heavy is the fallback when no moment is reported).
+    strip: { test: "tests/bot_checklist_wall.gd", cam: "side", args: ["--seed=1", "--frames=36000"], moments: ["parried", "blocked_heavy", "clash", "guard_break", "wall_splat", "hit_heavy"], label: "a moment of a real match against the Wall, regular hand (a parry: both freeze, the gold flash, the attacker flung open; or a blocked heavy, a clash, a guard break): what each body does on contact" },
   },
   arcade_sport: {
     pack: "hockey",
