@@ -217,3 +217,16 @@ critic's slop rubric says to check the side strip of the same moment first.
 No contract change. The critic's context gets the tofu bot's figures, labelled as claims, and is asked to write a note
 starting "claim contradicted:" where a strip shows otherwise (proof -3: idle_max_f 37 against two strips of both fighters
 still for 55+ frames).
+
+# Loop round 14 (22 Nov 05:10-05:30): rival silhouettes to the builders
+
+No contract change: the builder's house numbers add the duel's rival silhouettes, read live from `data/rivals.json`
+(duel round 9: THE WALL scale 1.12 mace+shield+helm+pauldrons; THE DUELIST 1.0 rapier+hat+cape; THE DANCER 0.94 twin
+blades+hood), with the rule "the first rival differs from the player in silhouette (head gear, back gear, scale, weapon)
+from the first phase, never in colour alone" and the socket-axis trap (+X right, +Y back, +Z down: build Y-up, face -Z,
+turn -90 degrees about X). The README section "Each rival reads by silhouette" joins the design and Planner excerpt.
+
+## ENGINE-NEED (for N1 / rigs, through the Director)
+- **Gear on the biped's sockets as kernel API.** The duel builds helm, pauldrons, hat, cape and hood by hand on the head
+  and back sockets, with axes found by a probe (N2's README). Every editor game that needs a distinct rival repeats that
+  trap. Proposed: `TLRigs` gear slots (head, back, shoulders) taking a kit-style part, oriented by the rig.
