@@ -22,6 +22,7 @@ import type { CritiqueResult } from "./verifier.js";
 import { judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } from "./tofu.js";
 import { HOUSE_BOTS, contactFrame, houseBaseline, houseCompare, saveBaseline, type HouseBaseline } from "./house.js";
 import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./filmcheck.js";
+import { revisePair } from "./revisepair.js";
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -323,11 +324,12 @@ export async function compareLooks(h: GateHost, prev: Snapshot, film: Film, fres
 // ---------- the loop ----------
 
 /** Sends a NOT ok version back for revise round `round` (snapshot first): the named package, or the milestone's own. */
-export function sendBack(h: GateHost, m: Milestone, members: string[], lastPackage: string, round: number, look: { captures: string[]; strips: Strip[]; verdict?: Verdict; summary: string }, note?: string): void {
+export function sendBack(h: GateHost, m: Milestone, members: string[], lastPackage: string, round: number, look: { captures: string[]; strips: Strip[]; verdict?: Verdict; summary: string }, note?: string, pair?: string): void {
   snapshot(h, m, round, look);
   const v = look.verdict;
   const owner = note !== undefined ? ` The owner held the job and asks: ${note}` : "";
-  const detail = `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: ${v ? `${scoresText(v)}. Critic's notes: ${v.notes.join(" | ")} [${v.report}]` : clip(look.summary, 600)}.${owner} The version before this round is kept in ${snapDir(m, round)}/; after the round the critic compares both and keeps the better.`;
+  // D3 of 22 Nov: the pair (revisepair.ts) goes first, so the 1500-character clip of the detail never cuts it.
+  const detail = `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: ${pair !== undefined ? `${pair} ` : ""}${v ? `${scoresText(v)}. Critic's notes: ${v.notes.join(" | ")} [${v.report}]` : clip(look.summary, 600)}.${owner} The version before this round is kept in ${snapDir(m, round)}/; after the round the critic compares both and keeps the better.`;
   const named = v?.package;
   const target = named !== undefined ? h.s.packages[named] : undefined;
   if (named !== undefined && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
@@ -375,7 +377,7 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;
   if (round === 0) {
     if (fresh && !fresh.ok) {
-      sendBack(h, m, members, lastPackage, 1, { captures: film.captures, strips: film.strips, verdict: fresh, summary: verdictText(fresh) });
+      sendBack(h, m, members, lastPackage, 1, { captures: film.captures, strips: film.strips, verdict: fresh, summary: verdictText(fresh) }, undefined, revisePair(h, m, 1, film.strips, base !== undefined ? { pack: base.pack, strips } : undefined, template?.id));
       return;
     }
     h.append({ type: "milestone", milestone: m, captures: film.captures, ...(film.strips.length > 0 ? { strips: film.strips } : {}), summary: clip([head, counts, judged.line, ...notes].join("; "), 1500) });
@@ -393,5 +395,5 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const verdict = keptVerdict ? verdictText(keptVerdict) : judged.line;
   h.append({ type: "milestone", milestone: m, captures: keptFilm.captures, summary: clip([head, counts, verdict, loop, ...notes].join("; "), 1500), round, kept: cmp.kept, ...(keptFilm.strips.length > 0 ? { strips: keptFilm.strips } : {}) });
   if (!keptVerdict || keptVerdict.ok) return;
-  if (round < QUALITY_ROUNDS) sendBack(h, m, members, lastPackage, round + 1, { captures: keptFilm.captures, strips: keptFilm.strips, verdict: keptVerdict, summary: verdict });
+  if (round < QUALITY_ROUNDS) sendBack(h, m, members, lastPackage, round + 1, { captures: keptFilm.captures, strips: keptFilm.strips, verdict: keptVerdict, summary: verdict }, undefined, revisePair(h, m, round + 1, keptFilm.strips, base !== undefined ? { pack: base.pack, strips } : undefined, template?.id));
 }
