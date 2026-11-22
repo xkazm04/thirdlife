@@ -65,12 +65,14 @@
     "tests/bot_hand_idle.gd",
     "tests/bot_hand_perfect.gd",
     "tests/bot_contact_wall_quake.gd",
-    "tests/bot_contact_dancer_roll_cut.gd"
+    "tests/bot_contact_dancer_roll_cut.gd",
+    "tests/bot_contact_ko.gd"
   ],
   "cameras": [
     "duel",
     "side",
-    "arena"
+    "arena",
+    "ko"
   ],
   "on_leave": "pause",
   "subject": "Fighter_you",

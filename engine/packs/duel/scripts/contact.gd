@@ -141,7 +141,7 @@ func _hit(att, def) -> void:
 	var kind: String = "hit_" + mv
 	var heavy: bool = mv != "light"
 	if def.hp <= 0.0 or finisher or excess > float(tiers["stagger"]):
-		g.feel.impact(att, def, hs)
+		g.feel.impact(att, def, int(g.tune["ko"]["stop"]) if def.hp <= 0.0 else hs)   # the round-ending blow holds longest
 		var ko: bool = def.hp <= 0.0
 		var lie: int = int(g.tune["rounds"]["end_frames"]) - 50 if ko else int(tiers["knockdown_frames"])
 		def.stun("KO" if ko else "KNOCKDOWN", 0 if ko else lie)

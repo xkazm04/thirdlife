@@ -12,5 +12,6 @@
   "ring": {"inner": 8.35, "centre_gap": 0.06},
   "buffer": 8,
   "camera": {"angle": 50, "dist": 4.3, "dist_k": 0.7, "up": 2.8, "look_up": 1.0, "look_at": 0.55, "fov": 50, "follow": 0.2},
+  "ko": {"stop": 20, "frames": 130, "dist": 5.0, "up": 1.7, "look_up": 1.0},
   "crowd": {"parry": 2, "splat": 3, "star": 2, "clash": 1, "finisher": 3, "taunt_hit": 2}
 }

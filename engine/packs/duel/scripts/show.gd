@@ -16,7 +16,10 @@ var cam_look: Vector3 = Vector3.ZERO
 var views: Array = [&"duel", &"side", &"arena"]
 var view_i: int = 0
 var side_sign: float = 1.0
-var flames: Array = []                 ## [node, frames left]
+var flames: Array = []
+var ko_left: int = 0                    ## frames the KO camera still holds
+var ko_body = null                     ## the fighter who fell
+var ko_prev: StringName = &"duel"                 ## [node, frames left]
 
 
 func setup(main) -> void:
@@ -46,6 +49,7 @@ func setup(main) -> void:
 	g.ctx.cameras.add_view(&"duel", Vector3(0, 3, 9), Vector3(0, 1, 0), float(c["fov"]))
 	g.ctx.cameras.add_view(&"side", Vector3(8, 2, 0), Vector3(0, 1, 0), 50.0)
 	g.ctx.cameras.add_view(&"arena", Vector3(0, 15, 15), Vector3(0, 0, 0), 55.0)
+	g.ctx.cameras.add_view(&"ko", Vector3(4, 1.2, 0), Vector3(0, 0.7, 0), 44.0)
 	g.ctx.cameras.activate(&"duel")
 	hint_left = int(g.tune["hand_hint"]) if g.tune.has("hand_hint") else 1500
 
@@ -111,6 +115,7 @@ CROWD %s" % [g.round_no, _pips(int(w["you"])), time_text,
 				(flames[i][0] as Node).queue_free()
 			flames.remove_at(i)
 	_camera()
+	_ko_camera()
 
 
 ## The glint (Sekiro's, For Honor's indicator): a flash on the rival's weapon 16 frames before a light or heavy lands,
@@ -167,6 +172,45 @@ func _camera() -> void:
 
 func snap_camera() -> void:
 	cam_pos = Vector3.ZERO
+	if ko_left > 0 or g.ctx.cameras.active == g.ctx.cameras.view(&"ko"):
+		ko_left = 0
+		g.ctx.cameras.activate(ko_prev)
+
+
+## The blow that ends a round lands like one (plays-twice items 19 and 28): the longest hit-stop, then a low camera cut
+## beside the fallen fighter, the winner over him, dust where he hits the sand, the crowd's roar; back to the play view
+## when the next round starts.
+func ko_moment(loser) -> void:
+	var c: Dictionary = g.tune["ko"]
+	if int(c["frames"]) <= 0:
+		return                                        # (tuning: the KO moment off, as before round 5)
+	ko_body = loser
+	ko_left = int(c["frames"])
+	ko_prev = views[view_i]
+	g.ctx.cameras.activate(&"ko")
+	TLAudio.play(&"cheer")
+	TLAudio.play(&"horn", g.ctx.root.to_global(loser.pos()), 2.0)
+
+
+func _ko_camera() -> void:
+	if ko_left <= 0 or ko_body == null:
+		return
+	ko_left -= 1
+	var c: Dictionary = g.tune["ko"]
+	var l: Vector3 = ko_body.pos()
+	var w: Vector3 = ko_body.foe.pos()
+	var line: Vector3 = Vector3(w.x - l.x, 0.0, w.z - l.z)
+	line = line.normalized() if line.length() > 0.01 else Vector3(0, 0, -1)
+	var side := Vector3(-line.z, 0.0, line.x)
+	if (l + side * 3.0).length() > (l - side * 3.0).length():
+		side = -side                                  # look out of the ring, never into the wall
+	var at: Vector3 = l - line * 0.6 + side * float(c["dist"]) + Vector3.UP * float(c["up"])
+	var look: Vector3 = l.lerp(w, 0.45) + Vector3.UP * float(c["look_up"])
+	var root: Node3D = g.ctx.root
+	g.ctx.cameras.add_view(&"ko", root.to_global(at), root.to_global(look), 44.0)
+	if ko_left == int(c["frames"]) - 24:              # he meets the sand
+		TLVfx.burst(&"dust", root.to_global(l), root, {"scale": 2.2})
+		g.ctx.cameras.shake(0.12, 12)
 
 
 ## The tick's events from both fighters: juice and cues.
