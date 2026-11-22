@@ -42,7 +42,7 @@ Answer with ONE JSON object and nothing else, matching this JSON schema exactly:
 - `scores`: one number per rubric item, keyed by the item's id.
 - `ok`: true only if every score is at least {{threshold}}.
 - `notes`: short, concrete observations a builder can act on (what, where in which capture). The first note says in
-  one sentence what you actually see in the captures. Name, by number, every item of the plays-twice checklist below
+  one sentence what you actually see in the captures, then the worst thing a first-time player would feel in them. Name, by number, every item of the plays-twice checklist below
   that you can see failing in the frames. The LAST note is exactly the line `[H] items not judged: a person must play
   it` followed by the numbers of the [H] items: no capture can pass them, and you never score them.
 - `package`: when `ok` is false, the id of the ONE package from the list above whose files most likely cause the

@@ -86,7 +86,7 @@ export function playtestCard(brief: Pick<Brief, "rules"> | undefined, job: strin
   if (first) for (const t of l.thirty) out.push(`playtest first 30 s: ${t}`);
   out.push(`playtest promise: ${phase.try}`);
   for (const k of l.kill) out.push(`playtest kill if: ${k}`);
-  out.push(`playtest then: did you want one more go? yes: foreman phase ${job} pass   no or a kill line seen: foreman phase ${job} hold --note "<what you felt, where it stopped being fun>"`);
+  out.push(`playtest then: did you want one more go? yes: foreman phase ${job} pass   no or a kill line seen: foreman phase ${job} hold --note "<the worst three things you felt, worst first; where it stopped being fun>"`);
   return out;
 }
 

@@ -69,82 +69,133 @@ goalie can move." Aesthetics: sensation (speed, the hit, the goal) and challenge
    burst check punishes a carrier who holds on. Rules out a glued puck, a carrier who outruns everyone, and random
    turnovers with no cause the player can name.
 3. **You can read the rink at a glance.** You always know which skater is yours, where the puck is and who will hit
-   you. Rules out a low chase camera, a puck the size of a coin, and scrums of merged bodies.
+   you, and there is open ice between the players. Rules out a camera that loses your skater, a puck the size of a
+   coin, figures so big the rink is a corridor, and scrums of merged bodies.
 
 ### Stage 3: the core loop
 - **3 s:** carry, then pass or shoot; on defence, switch to the nearest skater and poke or burst-check. The decision:
   pass now, or carry one more stride into the hit.
 - **30 s:** a rush: a zone entry, a pass across, the one-timer or the save; a turnover from a check and the rush the
   other way. The decision: the safe pass to the point or the risky pass across the crease.
-- **3 min:** a period with a score state (protect a lead, press when behind; the CPU pulls its goalie when it trails
-  late [A3]).
+- **3 min:** one continuous match to three goals (thirdjam [A9]), with a score state: protect a lead, press when
+  behind (NHL '94's CPU pulls its goalie when it trails late [A3]).
 - **Dynamics we want to see:** players pass to beat the check (because the carrier is slower), cut across the crease
   (because the goalie cannot get across in time), and switch defenders before the pass lands.
 
 ### Stage 4: the 30-second test
-- **0-5 s:** the faceoff drops by itself; the newcomer's skater has a ring under him; the stick moves him with a small
-  skid; one hint line: "B pass, C shoot".
-- **5-15 s:** a slow first defender lets him carry; he passes once (B) and control jumps to the receiver: he made a
+- **0-5 s:** the faceoff drops after a short countdown and a clean press wins it (thirdjam [A9]); a chevron and a ring
+  mark the newcomer's skater; the controls panel stays on screen; he skates with a small skid.
+- **5-15 s:** a slow first defender lets him carry; he passes once (RMB) and control jumps to the receiver: he made a
   play.
-- **15-30 s:** a teammate cuts across the crease, he passes and shoots as it arrives: the one-timer is in, the organ
-  plays, the camera holds the goal for a moment. "I scored off a pass."
+- **15-30 s:** a teammate cuts across the crease, he passes and shoots (LMB) as it arrives: the one-timer is in, the
+  horn sounds, the camera holds the goal for a moment. "I scored off a pass."
 
 ### Stage 5: the feel spec (starting numbers to tune by hand)
-- Inputs: three (move, pass/switch, shoot/burst) [A2, A3]. Visible response within 3 frames (METHOD.md section 8).
-- The carrier at about 0.88 of a free skater's speed, a pass about twice cruise speed (HOCKEY-ARCADE.md section 5.2,
-  house numbers, not NHL '94's own).
+- **The size of the world first** (N1's first lesson [A9]): body size, the rink in body widths, speeds in body heights
+  a second, the camera distance in body heights, written down before any mechanic. thirdjam: a 90 x 45 m rink and a
+  contact circle of 0.4 m, so the rink is 112 body widths long (a real rink is about 100) and a cruising skater moves
+  about 7 of his own heights a second. Ours: 60 x 30 m and a contact radius of 0.879 m (figures drawn 2.2x), 34 body
+  widths, about 2.1 heights a second: the same crossing time, but it looks like a jog in a corridor [A9].
+- Inputs: few, with a second meaning on defence (NHL '94's move, pass, shoot [A2, A3]; thirdjam's LMB shoot or
+  cross-check, RMB pass or check [A9]). Visible response within 3 frames (METHOD.md section 8).
+- The carrier slower than a free skater (thirdjam x0.92, ours x0.88 [A9]); everyone may sprint, bots too (thirdjam by
+  level; ours: only the human [A9]).
 - A skid on reversal before the turn [A3]: a deceleration the player can learn, not an instant stop.
+- **The puck slows on the ice** (thirdjam: drag 0.5/s plus friction 0.147 m/s^2, so a 14 m/s pass stops after about
+  26 m) and **a pass is solved to arrive** at about 8 m/s where the receiver will be, held to cross a third of the
+  rink [A9]. Ours has no drag and fixed 18 or 23 m/s passes, patched by a dozen own-goal guards [A9].
 - The one-timer window: the shot pressed while the pass is in flight, shooting harder than a wrist shot [A3]. The
   window length in NHL '94 is unmeasured; start wide and narrow it by hand.
-- The burst check: a big, loud hit with a quick get-up (NHL Hitz [A6]; GAME-QUALITY.md section 4).
-- The camera: a broadcast view down the rink at about 50 degrees (the house hockey's `follow` numbers), the puck drawn
-  bigger with a rim (GAME-QUALITY.md section 13).
-- The goal: a hold of the camera, the horn and organ, the scorer's own reaction.
-- Periods: short (2 to 5 minutes for us), restart within 2 s.
+- **Shooting forgives the screen**: thirdjam snaps the shot to the goal inside 8 degrees (16 on a one-timer) and
+  doubled the shot speed on the owner's order [A9]; aiming exactly at a cursor through a moving camera is not a skill.
+- The check: big in the body, with a quick get-up (NHL Hitz [A6]), but drawn as the figure only: the owner ruled out
+  rings and boxes at a hit in thirdjam, "the player animation should reflect the crosscheck movement and that should
+  be all" [A9]. Hit-stop is presentation only, only on a knockdown that involves you (thirdjam [A9]), never a freeze
+  of the whole game.
+- **The camera keeps YOU in one place on the screen** (thirdjam: behind and above you, 6 m back, 3.5 m up, a 4-frame
+  lag, with an aim anchor so a still hand keeps its stick point through camera moves [A9]), and the screen points at
+  the puck when it is off it (a far-net badge, edge chevrons, a radar [A9]). Ours follows the puck, and the stick swings
+  when the hand does not [A9]. NHL '94's vertical rink [A4] is the other proven answer; the person decides between
+  them on the greybox, as a tuning knob.
+- The goal: a hold of the camera, the horn, the scorer's own reaction; a face-off after it, no replay in the way.
 
 ### Stage 6: the teardown (copy, change, drop)
-- **Copy:** the three inputs with a second meaning on defence; switch to the nearest skater on the pass button; the
-  one-timer as the loudest goal; momentum with a skid; the burst check; invulnerable goalies; no offside and no
-  penalties by default; short periods; a goal that is celebrated.
-- **Change:** five a side to three a side (NHL Hitz [A6]) so the rink reads and the AI has room; the "on fire" streak
-  as a visible comeback rule (three goals, ended when the other side scores).
-- **Drop:** line changes, fatigue, icing, the fight minigame (until the core plays), and the dominant deke the players
-  had to ban [A5] (keep an AI answer to it instead).
+- **Copy from NHL '94:** the few inputs with a second meaning on defence; switch to the nearest skater on the pass
+  button; the one-timer as the loudest goal; momentum with a skid; invulnerable goalies; no offside and no penalties by
+  default; a goal that is celebrated.
+- **Copy from thirdjam** [A9]: the scale; the puck's friction and the solved pass; teammates who shoot and drive the
+  net; difficulty by clumsiness, never by absence ("a level is easy by clumsiness, never by absence", the owner's
+  ruling); the camera behind you with the aim anchor; the snap cone on shots; the controls panel that stays; one run
+  to three goals; and the owner's 75 rulings, verbatim, as design assets.
+- **Change:** NHL '94's five a side to three a side (NHL Hitz [A6]) only if the greybox shows the rink reads better;
+  thirdjam plays five a side with no goalies.
+- **Drop:** line changes, fatigue, icing, fights, loud hit effects, whole-game freezes, 36-second periods, and the
+  dominant deke players had to ban [A5] (keep an AI answer to it instead).
 
 ### Stage 6b: thirdjam, our own reference (N1, 23 Nov)
-(N1's teardown interim is due at about 01:00; its findings go here: the controls, the numbers, the AI and what it got
-right that the house hockey lost.)
+thirdjam is the hockey game this studio shipped for a jam (15-16 Nov). The owner: "a mediocre hockey game we delivered
+but at least it has set basic gameplay mechanics, AI, bugless graphics and balanced speed." N1 ran it on this machine
+beside our `engine/packs/hockey` and read both system by system, with file and line on each side [A9]. Its top ten,
+ranked by what each costs the player:
+1. **There is no ice in ours**: 34 body widths of rink against thirdjam's 112; four or more of the six field skaters
+   within 5 m of the puck in 15-16 % of live play. The scale came from a drawing fix on 16 Nov, never from a design
+   decision.
+2. **Our teammates refuse to play**: they shoot only within 4 s of your own pass or shot and hold 8 m out of the net, a
+   rule made so an idle hand loses the ladder. thirdjam's mates shoot and drive the net.
+3. **Our camera follows the puck, not you**, and the stick moves when the hand does not.
+4. **Our puck has no friction and our passes leave at a fixed speed.**
+5. **Our game keeps stopping**: 36-second periods, a whole-game freeze on hard hits 3.8 times a minute, goal holds,
+   replays. thirdjam is one run to three goals.
+6. **Our figures glitch**, and our own README lists it.
+7. **Hits decide our game and are drawn loudly**, which the owner had ruled out in thirdjam.
+8. **Our bots read the play 5-18 frames late, decide at 4 Hz, and never sprint**; thirdjam's decide every frame with
+   no delay.
+9. **Our shooting asks for a precision the screen cannot give**; thirdjam snaps to the net.
+10. **Our screen stops explaining itself after the first key**; thirdjam keeps its controls panel, chevron and radar.
+
+**The finding under all ten:** by thirdjam's own first-five-minutes measures ours scores better (first touch 0.6-0.7 s
+against 1.8 s; the puck on your blade 18-21 % of the time against 10 %), and the owner calls ours garbage. Our
+measures cannot see what he sees [A9]. thirdjam was judged differently: the owner played it five times and each verdict
+became numbered rulings in his words; a standing "design eye" ranked "the ten things a first-time player feels in five
+minutes", and that list outranked every lane's own bars [A9].
 
 ### Stage 7: the greybox
-Flat rink, boards, two nets, a big puck, three skaters a side and goalies as capsules with sticks; move, pass/switch,
-shoot/burst; the broadcast camera; the tuning file with every number above. The person plays it 5 minutes with the
-playtest card. Nothing else is built until he passes it.
+Flat rink at the scale of stage 5, boards, two nets, a big puck that slows on the ice, three skaters a side and
+goalies as capsules with sticks; move, pass/switch, shoot/check; the camera behind you with the aim anchor and the
+broadcast view as a tuning knob; the controls panel; the tuning file with every number above. The person plays it 5
+minutes with the playtest card and ranks what he felt. Nothing else is built until he passes it.
 
 ### Stage 8: kill criteria
 - KILL IF: after a turnover the newcomer cannot find the puck or his own skater within 2 seconds.
 - KILL IF: in 5 minutes no goal comes from a pass; every goal is a long shot or a goalie error.
-- KILL IF: skaters merge into one blob at the boards, so nobody can tell who has the puck.
+- KILL IF: skaters bunch into one scrum round the puck, so nobody can tell who has it or skate into open ice.
 - KILL IF: the carrier is caught within 2 seconds every time, so nobody skates with the puck.
+- KILL IF: the game stops (a freeze, a clock, a replay) more often than the newcomer gets the puck.
 
-### What our build did instead (19-22 Nov)
+### What our build did instead (16-22 Nov)
 - The house hockey has skating, passing, pokes, checks, one-timers and goals through the mouth; its metrics are in band
-  (shots 2.2 to 3.0 a minute, 2.6 to 3.4 goals a match, a ladder that rises with skill; 22 Nov night verdict).
-- The owner played it and called it "unplayable garbage" (22 Nov, 18:35). Earlier he named the causes: "puck
-  stickiness, players speed, ability AI to decide what to do, when to pass and shoot" (21 Nov, HOCKEY-ARCADE.md).
+  (shots 2.2 to 3.0 a minute, 2.6 to 3.4 goals a match, a ladder that rises with skill; 22 Nov night verdict), and it
+  beats thirdjam on thirdjam's own first-five-minutes measures [A9].
+- The owner played it twice and called it "unplayable" both times (21 Nov; 22 Nov, 18:35: "unplayable garbage"). He
+  had named the causes: "puck stickiness, players speed, ability AI to decide what to do, when to pass and shoot"
+  (HOCKEY-ARCADE.md).
+- It ported thirdjam's skating and contact line by line into a world three times smaller, with another camera:
+  "ports move numbers, not experience" (N1 [A9]). Rules were added to pass bot metrics (teammates who hold back so an
+  idle hand loses) without a person ever facing them.
 - The editor's hockey jobs (-2, -3) passed every tofu row and still showed board scrums, a puck too small to find and
   no hit-stop (D3 report).
-- What the method would have caught: stage 2's third pillar (read the rink at a glance) and the kill lines on the blob
-  and the lost puck are things a person sees in the first minute; no person was asked to look for them.
+- What the method would have caught: stage 5's scale sheet (34 body widths is a corridor), the third pillar and the
+  kill lines on the scrum and the lost puck are things a person sees in the first minute; no person was asked to look.
 
 ### The method lines a hockey brief carries
 ```
 FANTASY: I'm the playmaker: I slip the big hit and thread the pass across the crease for a one-timer. Sensation, challenge.
-TEARDOWN: NHL 94: pass with B, press C while the pass travels: the receiver one-times it, harder than a wrist shot.
-TEARDOWN: NHL 94: B on defence switches to the skater nearest the puck; C bursts into a body check.
-30 SECONDS: 0-5 s the puck drops, a ring marks you, B passes and C shoots; 5-15 s you pass and control jumps to the receiver; 15-30 s a teammate cuts across, you pass and one-time it in, the horn sounds.
+TEARDOWN: NHL 94: pass, then press shoot while the pass travels: the receiver one-times it, harder than a wrist shot.
+TEARDOWN: thirdjam: a 90 x 45 m rink, 112 body widths long; the puck slows on the ice and a pass arrives at 8 m/s.
+30 SECONDS: 0-5 s a countdown, you win the draw, a chevron marks you; 5-15 s you pass and control jumps to the receiver; 15-30 s a teammate cuts across, you pass and one-time it in, the horn sounds.
 KILL IF: after a turnover a newcomer cannot find the puck or his own skater within 2 seconds.
 KILL IF: in 5 minutes no goal comes from a pass.
-KILL IF: skaters merge into one blob at the boards.
+KILL IF: skaters bunch into one scrum round the puck, so nobody skates into open ice.
 ```
 
 ### Sources (Case A)
@@ -160,8 +211,12 @@ KILL IF: skaters merge into one blob at the boards.
 - A6. "NHL Hitz 20-02", Wikipedia: https://en.wikipedia.org/wiki/NHL_Hitz_2002
 - A7. Greg Wyshynski, "Blades of Steel vs. Nintendo Ice Hockey, 30 years later", ESPN (2018):
   https://www.espn.com/nhl/story/_/id/25155303
-- A8. Our own: `docs/research/HOCKEY-ARCADE.md`, the 22 Nov night and day verdicts, the D3 editor report, N1's thirdjam
-  teardown (23 Nov).
+- A8. Our own: `docs/research/HOCKEY-ARCADE.md`, the 22 Nov night and day verdicts, the D3 editor report.
+- A9. N1 (night of 22-23 Nov), the thirdjam teardown: interim
+  `docs/shifts/2026-11-23-night/lanes/N1-teardown/INTERIM.md` (20:09), full text with
+  file and line on both sides `docs/research/hockey-teardown/TEARDOWN.md`, and the owner's 75 thirdjam rulings
+  distilled, verbatim, `docs/research/hockey-teardown/RULINGS.md` (both on main);
+  thirdjam itself: https://github.com/xkazm04/thirdjam (HEAD 8dc713c6, read and run by N1).
 
 ---
 

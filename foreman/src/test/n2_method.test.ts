@@ -6,10 +6,12 @@
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import path from "node:path";
+import { REPO_ROOT } from "../paths.js";
 import { METHOD_LINES, VERBS, cleanup, sampleConcept, v2Brief } from "./helpers.js";
 import { FakeBuilder, type FakeStep } from "../builder/fake.js";
 import { designRoom } from "../room.js";
-import { critic, renderPlannerPrompt } from "../designer.js";
+import { critic, renderDesignerPrompt, renderPlannerPrompt } from "../designer.js";
 import { METHOD_DOC, killItem, methodBlock, methodLines, methodProblems, methodText, playtestCard } from "../method.js";
 import { builderFeelSection } from "../roomtext.js";
 import { designLines } from "../status.js";
@@ -24,7 +26,7 @@ const noMethod = (): ReturnType<typeof v2Brief> => ({ ...v2Brief(), rules: v2Bri
 test("METHOD.md: sections 1-14 by number, the role rules of section 14, and every cited source listed", () => {
   const doc = fs.readFileSync(METHOD_DOC, "utf8");
   for (let n = 1; n <= 14; n++) assert.match(doc, new RegExp(`^## ${n}\\. `, "m"), `section ${n}`);
-  for (const role of ["Concept", "Designer", "Reviewer", "Planner", "Builder", "Critic", "Person"]) assert.ok(methodText([`14:${role}`]).includes(`(${role})`), `role ${role}`);
+  for (const role of ["Concept", "Designer", "Reviewer", "Planner", "Builder", "Critic", "Director", "Person"]) assert.ok(methodText([`14:${role}`]).includes(`(${role})`), `role ${role}`);
   const sources = doc.slice(doc.indexOf("## Sources"));
   const cited = new Set([...doc.slice(0, doc.indexOf("## Sources")).matchAll(/\[([0-9][0-9, ]*)\]/g)].flatMap((m) => (m[1] as string).split(",").map((x) => Number(x.trim()))));
   assert.ok(cited.size >= 25, `${cited.size} sources cited`);
@@ -103,4 +105,34 @@ test("status: the paper check before approval, the playtest card at a phase paus
   const card = designLines(waiting).filter((l) => l.startsWith("playtest"));
   assert.match(card.join("\n"), /^playtest phase core: play it yourself[^]*playtest the fantasy: I am the wall-banking ace[^]*playtest first 30 s: 0-5 s[^]*playtest promise: Bank a slap past Rex[^]*playtest kill if: a newcomer never banks[^]*playtest then: did you want one more go\? yes: foreman phase j1 pass/);
   assert.deepEqual(designLines({ ...waiting, runThrough: true } as unknown as JobState).filter((l) => l.startsWith("playtest")), []);
+});
+
+test("CASES.md: the hockey and duel method lines pass the editor's own checks, and each case walks the eight stages with its sources", () => {
+  const doc = fs.readFileSync(path.join(REPO_ROOT, "docs", "design", "CASES.md"), "utf8");
+  const blocks = [...doc.matchAll(/```\n([^`]*?)```/g)].map((m) => m[1] as string);
+  assert.equal(blocks.length, 2, "one block of method lines per case");
+  for (const b of blocks) assert.deepEqual(methodProblems({ rules: b }), [], b.slice(0, 60));
+  for (const c of ["## Case A: arcade hockey", "## Case B: a melee duel"]) {
+    const next = doc.indexOf("\n## Case", doc.indexOf(c) + 5);
+    const part = doc.slice(doc.indexOf(c), next < 0 ? doc.length : next);
+    for (const st of ["Stage 1: the fantasy", "Stage 2: pillars", "Stage 3: the core loop", "Stage 4: the 30-second test", "Stage 5: the feel spec", "Stage 6: the teardown", "Stage 7: the greybox", "Stage 8: kill criteria", "What our build did instead", "### Sources"]) assert.ok(part.includes(st), `${c}: ${st}`);
+  }
+  assert.match(doc, /Stage 6b: thirdjam, our own reference \(N1, 23 Nov\)[^]*112[^]*34 body widths/);
+});
+
+test("round 2 (N1's lessons): the designer states the size of the world in the player's units; the playtest card asks for the worst three things, worst first", () => {
+  const p = renderDesignerPrompt({ sentence: "ice hockey", concept: sampleConcept() });
+  assert.match(p, /5\. \*\*The feel spec\*\*: first, in `rules`, the size of the world in the player's units[^]*No rule exists only to pass a bot figure/);
+  assert.match(p, /## 8\. Stage 5: the feel spec, in numbers[^]*\*\*The size of the world comes first, in the player's units\*\*/);
+  const card = playtestCard(v2Brief(), "j1", { id: "core", try: "t" }, true).join("\n");
+  assert.match(card, /hold --note "<the worst three things you felt, worst first; where it stopped being fun>"/);
+});
+
+test("round 2: the keep-the-better compare reads the design's method lines and lets a seen kill line lose; METHOD names N1's central finding", () => {
+  const tpl = fs.readFileSync(path.join(REPO_ROOT, "foreman", "prompts", "critic-compare.md"), "utf8");
+  assert.match(tpl, /# The design's method lines[^\n]*\n\{\{method\}\}[^]*one of the design's kill lines\nis plainly seen loses/);
+  assert.match(fs.readFileSync(path.join(REPO_ROOT, "foreman", "src", "quality.ts"), "utf8"), /method: methodBlock\(h\.s\.brief\) \|\| "\(the design carries no method lines\)"/);
+  const doc = fs.readFileSync(METHOD_DOC, "utf8");
+  assert.match(doc, /\*\*Our measures cannot see what he sees\*\* \(N1's central finding\)/);
+  assert.match(methodText(["14:Director"]), /accepts an experience: a minute of play from the player's camera/);
 });
