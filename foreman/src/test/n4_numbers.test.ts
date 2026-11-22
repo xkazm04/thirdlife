@@ -41,8 +41,9 @@ test("round 7: an arcade-sport brief keeps the owner's three hockey words; the r
   const room = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "foreman", "fixtures", "room-hockey-22nov.json"), "utf8")) as { brief: { rules: string; ai: string; controls: string; arena: string } };
   const real = `${room.brief.rules} ${room.brief.controls} ${room.brief.arena} ${room.brief.ai}`;
   const p = houseKeepProblems(real, sport);
-  assert.deepEqual(p.map((x) => /keeps the (\w+ \w+)/.exec(x)?.[1]), ["speed ratios"], "the carry and the utility AI were copied; the speed ratio was not");
-  assert.deepEqual(houseKeepProblems(`${real} The carrier is slower than a free skater (x0.88) and a pass beats skating.`, sport), []);
+  // D3 round 5 (22 Nov): the house camera and the readable puck are kept too; the 22 Nov room said neither.
+  assert.deepEqual(p.map((x) => /keeps the (\w+ \w+)/.exec(x)?.[1]), ["speed ratios", "play camera", "puck and"], "the carry and the utility AI were copied; the speed ratio, the house camera and the readable puck were not");
+  assert.deepEqual(houseKeepProblems(`${real} The carrier is slower than a free skater (x0.88) and a pass beats skating. A broadcast camera looks down on the play; a ring under your skater.`, sport), []);
   const hockey = houseExcerpt(templateOf("arcade_sport") as Template, "builder");
   assert.match(hockey, /skating and the carrier's handicap[^\n]*: \{"free_speed_mult":/);
   assert.match(hockey, /the carry, the stickiness[^\n]*"spring_k":400/);

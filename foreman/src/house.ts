@@ -20,7 +20,7 @@ export interface HouseBot {
   pack: string;
   test: string;
   args: string[];
-  /** metric id -> a path in the report: "pack_state.x", "result.x", or "keys:pack_state.x" (how many keys have a count above 0). */
+  /** metric id -> a path in the report: "pack_state.x", "result.x", "keys:pack_state.x" (how many keys have a count above 0), "median:x" or "ratio:x/y". */
   map: Record<string, string>;
   /** The TLHand profile the bot plays through (said in every comparison). */
   hand: string;
@@ -54,7 +54,8 @@ export const HOUSE_BOTS: Record<string, HouseBot> = {
     args: ["--seed=1"],
     // N3's ladder bots return `metrics` (main b61300f): possession_median_f and the tofu names directly; the median of
     // the raw lengths stays as the fallback for an older pack.
-    map: { possession_median_f: "median:result.metrics.lengths|result.metrics.raw.lengths" },
+    // D3 of 22 Nov: the spacing rows from the house's raw counts (crowd4, overlap_frames over live frames).
+    map: { possession_median_f: "median:result.metrics.lengths|result.metrics.raw.lengths", scrum_share: "ratio:result.metrics.raw.crowd4/result.metrics.raw.live", overlap_share: "ratio:result.metrics.raw.overlap_frames/result.metrics.raw.live" },
     // idle_max_f was a dead puck until N3's round 2 (fc2961f) and was skipped; since then it is the tofu row's own
     // definition (tests/metrics.gd: a red field skater under 0.5 m/s, not carrying, not down, the longest live stretch;
     // 70 f on pro regular seed 1, read 22 Nov 12:53), the dead puck is dead_puck_max_f. Compared now (D3 22 Nov).
@@ -134,6 +135,11 @@ export function houseFigures(report: unknown, bot: HouseBot): { metrics: Record<
   const src = { result: r?.bot?.result, pack_state: r?.pack_state };
   for (const [id, at] of Object.entries(bot.map)) {
     if (out[id] !== undefined) continue;
+    if (at.startsWith("ratio:")) {
+      const [num, den] = at.slice(6).split("/").map((x) => dig(src, x));
+      if (typeof num === "number" && typeof den === "number" && Number.isFinite(num) && den > 0) out[id] = Math.round((num / den) * 1000) / 1000;
+      continue;
+    }
     const keys = at.startsWith("keys:");
     const median = at.startsWith("median:");
     const paths = (keys ? at.slice(5) : median ? at.slice(7) : at).split("|");

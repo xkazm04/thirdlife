@@ -82,6 +82,16 @@ const readJsonKey = (packDir: string, file: string, key: string): string | undef
     return undefined;
   }
 };
+/** Some keys of one object of a JSON file, as JSON (undefined when the file or the object is gone). */
+const readJsonKeys = (packDir: string, file: string, key: string, keys: string[]): string | undefined => {
+  try {
+    const v = (JSON.parse(stripBom(fs.readFileSync(path.join(packDir, ...file.split("/")), "utf8"))) as Record<string, unknown>)[key];
+    if (v === null || typeof v !== "object") return undefined;
+    return JSON.stringify(Object.fromEntries(keys.filter((k) => k in (v as object)).map((k) => [k, (v as Record<string, unknown>)[k]])));
+  } catch {
+    return undefined;
+  }
+};
 const rivalBuilds = (packDir: string): string | undefined => {
   try {
     const r = (JSON.parse(stripBom(fs.readFileSync(path.join(packDir, "data", "rivals.json"), "utf8"))) as { rivals?: Record<string, { name?: string; scale?: number; arms?: string[]; colors?: Record<string, string> }> }).rivals;
@@ -181,7 +191,14 @@ export const TEMPLATES: Template[] = [
       poke: { anticipation_f: 5, active_f: 7, recovery_f: 12, clip: "cross_check", kind: "attack" },
     },
     movesMin: 0,
-    metrics: [{ id: "possession_median_f", min: 240, max: 600, item: "HOCKEY-ARCADE 5.5: possession median 4-10 s (over 15 s glued, under 2 s random)" }],
+    metrics: [
+      { id: "possession_median_f", min: 240, max: 600, item: "HOCKEY-ARCADE 5.5: possession median 4-10 s (over 15 s glued, under 2 s random)" },
+      // D3 of 22 Nov: hockey -2's tofu bot passed every row while every strip showed 3 to 6 skaters merged into one blob
+      // at the boards (critic: fighters_overlap, feel 0.25). The house hockey's own measures (tests/metrics.gd crowd4 and
+      // overlap_frames, pro regular seed 1: 1225 and 0 of 6598 live frames) are the spacing rows.
+      { id: "scrum_share", max: 0.3, item: "spacing, no scrum: the share of live frames in which 4 or more field skaters (not goalies) stand within 5 m of the puck (the house hockey: 0.19)" },
+      { id: "overlap_share", max: 0.02, item: "spacing, bodies apart: the share of live frames in which two upright field skaters' bodies overlap by more than 0.1 m (body radius from the contact scale; the house hockey: 0)" },
+    ],
     filmFirst: ["one_timer", "poke", "check", "hit", "goal", "shot", "pass"],
     house: {
       pack: "hockey",
@@ -208,12 +225,18 @@ export const TEMPLATES: Template[] = [
         { what: "the speed ratios: the carrier is slower than a free skater (about x0.88) and a pass travels about twice skating speed, so passing beats carrying", re: /carrier[^.]{0,60}(slower|x\s?0\.\d|0\.\d+\s?x)|(slower|x\s?0\.\d)[^.]{0,40}carr|0\.88|pass(es)?[^.]{0,40}(beats?|faster than) (skating|carrying)/i },
         { what: "the possession rules: the puck sticks to the carrier's blade (a spring) and leaves only by a readable cause (a poke, a check, an intercepted pass, the carrier's own sprint-and-turn, a bobble)", re: /spring|stick(s|y)? to (the|his) blade|on the blade/i },
         { what: "the AI decides from scored options (shoot, pass, carry) every few frames with vetoes, never by chance alone", re: /utility|scor(e|es|ing) (shoot|SHOOT)|SHOOT, PASS|decid\w* every \d+/i },
+        // D3 of 22 Nov: hockey -2's design chose "a low chase camera right behind your skater": the near skater covered every
+        // exchange (camera_hides_exchange) and the critic could find neither the puck nor the controlled player.
+        { what: "the play camera: a broadcast camera from the near side looking DOWN at the play (about 50 degrees, 20 to 30 m), following the puck or its carrier and keeping your skater in the picture (its data/tuning.json `follow`, read below); never low behind a skater", re: /broadcast|look(s|ing)? down|from above|overhead|top[- ]down|high (follow|camera)|50 ?(°|deg)/i },
+        { what: "the puck and your skater readable at a glance: the puck drawn larger than life with a hot-coloured rim, and a ring under your skater (its data/tuning.json `look`, read below)", re: /ring under|green ring|(puck|it)[^.]{0,60}(rim|outline|larger|bigger|oversized|scaled)|(rim|outline)[^.]{0,30}puck/i },
       ],
       numbers: [
         { what: "the skater (data/tuning.json `skater`: speed m/s, acceleration, turn rate rad/s, mass, body scale)", read: (d) => readJsonKey(d, "data/tuning.json", "skater") },
         { what: "skating and the carrier's handicap (data/tuning.json `skate`: free-skater and sprint multipliers, the carrier's sprint cap, acceleration and turn ratios)", read: (d) => readJsonKey(d, "data/tuning.json", "skate") },
         { what: "the carry, the stickiness (data/tuning.json `carry`: reach, blade, spring k, dangle, the loss rule)", read: (d) => readJsonKey(d, "data/tuning.json", "carry") },
         { what: "the shot (data/tuning.json `shoot`)", read: (d) => readJsonKey(d, "data/tuning.json", "shoot") },
+        { what: "the play camera (data/tuning.json `follow`: field of view, pitch in degrees looking down, distance and its widening, the lead in the attack direction, the pull toward your skater): copy it, never a low chase camera", read: (d) => readJsonKey(d, "data/tuning.json", "follow") },
+        { what: "the readable puck and rings (data/tuning.json `look`: puck_scale and puck_height_scale over the real puck, puck_rim in metres and its colour key, the carrier ring, the down ring)", read: (d) => readJsonKeys(d, "data/tuning.json", "look", ["puck_scale", "puck_height_scale", "puck_rim", "puck_rim_key", "ring_key", "carry_width", "carrier_ring", "carrier_ring_after_frames", "down_ring", "down_key"]) },
       ],
     },
   },

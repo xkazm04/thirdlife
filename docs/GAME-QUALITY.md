@@ -501,6 +501,13 @@ played by a person.
   - possession_median_f 377 against the house hockey's 164 was "not short", because a band row (240 to 600) had only
     its bounds checked. A band row is now judged by its distance to the house figure, and a house figure outside the
     template's bound is said (the house hockey's 164 is under 240: the Director decides which is wrong).
+  - its design chose a low chase camera behind the skater, and nothing told it otherwise. An arcade-sport brief now
+    keeps the house camera (a broadcast camera looking down at about 50 degrees, its `follow` numbers read live) and
+    the readable puck and rings (`look`: puck_scale, the rim, the ring under your skater), as a duel keeps its
+    shoulder camera;
+  - its tofu bot counted nothing about spacing, so a game of board scrums passed. Two tofu rows now measure it the way
+    the house hockey does: `scrum_share` <= 0.3 (live frames with 4+ field skaters within 5 m of the puck; house 0.19)
+    and `overlap_share` <= 0.02 (two upright skaters overlapping by more than 0.1 m; house 0).
 - **The same sentence twice gives the same hook.** The walls broke four times and souls swapped three times. Each
   concept now reads the earlier designs of its sentence; -5 and -6 chose new hook families.
 - **A package's bot films what the package adds.** -5's greybox look filmed its rivals bot still fighting the opener
