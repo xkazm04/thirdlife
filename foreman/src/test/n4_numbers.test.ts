@@ -32,3 +32,26 @@ test("round 6: the builder excerpt carries the duel's camera, pushbox and never-
   fs.rmSync(path.join(pack, "scripts", "feel.gd"));
   assert.doesNotMatch(houseExcerpt(duel, "builder", engine), /pushbox per duellist/);
 });
+
+test("round 7: an arcade-sport brief keeps the owner's three hockey words; the real 22 Nov hockey room wrote no speed ratio and is sent back; builders get the house hockey's tuning", async () => {
+  const { houseKeepProblems } = await import("../templates.js");
+  const sport = { id: "arcade_sport" as const, reference: "NHL 94", copies: ["possession", "utility", "roles"] };
+  const room = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "foreman", "fixtures", "room-hockey-22nov.json"), "utf8")) as { brief: { rules: string; ai: string; controls: string; arena: string } };
+  const real = `${room.brief.rules} ${room.brief.controls} ${room.brief.arena} ${room.brief.ai}`;
+  const p = houseKeepProblems(real, sport);
+  assert.deepEqual(p.map((x) => /keeps the (\w+ \w+)/.exec(x)?.[1]), ["speed ratios"], "the carry and the utility AI were copied; the speed ratio was not");
+  assert.deepEqual(houseKeepProblems(`${real} The carrier is slower than a free skater (x0.88) and a pass beats skating.`, sport), []);
+  const hockey = houseExcerpt(templateOf("arcade_sport") as Template, "builder");
+  assert.match(hockey, /skating and the carrier's handicap[^\n]*: \{"free_speed_mult":/);
+  assert.match(hockey, /the carry, the stickiness[^\n]*"spring_k":400/);
+});
+
+test("round 7: the keeps read the brief's ai text too (the real hockey room put its utility AI there)", async () => {
+  const { briefTemplateProblems } = await import("../templates.js");
+  const sport = { id: "arcade_sport" as const, reference: "NHL 94", copies: ["possession", "utility", "roles"] };
+  const room = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "foreman", "fixtures", "room-hockey-22nov.json"), "utf8")) as { brief: { rules: string; ai: string; controls: string; arena: string } };
+  const design = { verbs: [], feel: { camera: "chase" } } as unknown as Parameters<typeof briefTemplateProblems>[0]["design"];
+  const p = briefTemplateProblems({ ...room.brief, design }, sport).join(" | ");
+  assert.match(p, /keeps the speed ratios/);
+  assert.doesNotMatch(p, /keeps the AI decides/, "its utility AI is in `ai`");
+});
