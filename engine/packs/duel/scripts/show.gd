@@ -11,6 +11,8 @@ var hud: TLHud
 var banner_left: int = 0
 var cue_left: int = 0
 var hint_left: int = 0
+var tag_left: int = 0                   ## frames the tag over the rival still shows
+var tag_st: String = ""                 ## the state the tag lasts through ("" = by time)
 var cam_pos: Vector3 = Vector3.ZERO
 var cam_look: Vector3 = Vector3.ZERO
 var views: Array = [&"duel", &"side", &"arena"]
@@ -36,10 +38,14 @@ func setup(main) -> void:
 	hud.add_label(&"banner", "", &"center")
 	hud.font_size = 20
 	hud.set_align(&"banner", &"center")
+	hud.set_plate(&"banner", true)               # a coloured word on the sand needs its plate (round 7)
 	hud.font_size = 30                          # the cue teaches: it must read at a glance (round 1 of N2's loop)
 	hud.add_label(&"cue", "", &"bottom")
 	hud.set_align(&"cue", &"center")
 	hud.set_plate(&"cue", true)
+	hud.font_size = 26
+	hud.add_tag(&"tag", g.rival.body, "", Vector3(0, 2.45, 0))   # what he is about to do, over his head (E4)
+	hud.set_plate(&"tag", true)
 	hud.font_size = 20
 	hud.add_label(&"keys", "", &"bottom")
 	hud.set_align(&"keys", &"center")
@@ -75,14 +81,38 @@ func _pips(n: int) -> String:
 	return "●".repeat(n) + "○".repeat(maxi(0, int(g.tune["rules"]["score_to_win"]) - n))
 
 
-func banner(text: String, frames: int = 50) -> void:
+## Colours carry the meaning (E3): red is a threat you cannot block, gold a win of timing (a parry), the accent a
+## call to act; "" is the theme's paper.
+func banner(text: String, frames: int = 50, color: String = "") -> void:
 	hud.set_text(&"banner", text)
+	hud.set_color(&"banner", color)
 	banner_left = frames
 
 
-func cue(text: String, frames: int = 100) -> void:
+func cue(text: String, frames: int = 100, color: String = "") -> void:
 	hud.set_text(&"cue", text)
+	hud.set_color(&"cue", color)
 	cue_left = frames
+
+
+## A word over the rival's head while he does it (For Honor's indicator sits on the attacker): HEAVY, BASH, the red
+## UNBLOCKABLE, OPEN in the Wall's breath. Kept through `st` (his state) or for `frames`.
+func tag(text: String, color: String, frames: int, st: String = "") -> void:
+	if g.rival == null or g.rival.body == null:
+		return
+	hud.add_tag(&"tag", g.rival.body, text, Vector3(0, 2.45, 0))
+	hud.set_color(&"tag", color)
+	tag_left = frames
+	tag_st = st
+
+
+func _tag_tick() -> void:
+	if tag_left <= 0:
+		return
+	tag_left -= 1
+	if tag_left == 0 or (tag_st != "" and g.rival.st != tag_st and g.rival.st != "ACTIVE"):
+		tag_left = 0
+		hud.set_text(&"tag", "")
 
 
 ## Every frame (also in a hit-stop): the HUD and the camera.
@@ -108,6 +138,7 @@ CROWD %s" % [g.round_no, _pips(int(w["you"])), time_text,
 		hint_left -= 1
 		hud.set_text(&"keys", "WASD move    LMB / J light    RMB / K heavy (hold = unblockable)    SPACE block (tap = parry)    SHIFT roll    E bash" if hint_left > 0 else "")
 	_glint(rv)
+	_tag_tick()
 	for i in range(flames.size() - 1, -1, -1):
 		flames[i][1] -= 1
 		if flames[i][1] <= 0:
@@ -249,7 +280,7 @@ func on_event(f, e: Array) -> void:
 			TLVfx.burst(&"goal_flash", root.to_global(mid), root, {"color": Color(1.0, 0.85, 0.3), "scale": 0.8})
 			TLAudio.play(&"hit_metal", root.to_global(mid), 4.0)
 			g.ctx.cameras.shake(0.1, 10)
-			banner("PARRY!" if is_you else "PARRIED", 45)
+			banner("PARRY!" if is_you else "PARRIED", 45, "yellow" if is_you else "hazard_red")
 			if is_you:
 				cue("Parried his light: a HEAVY is guaranteed." if str(data["mv"]) == "light_parried" else "Parried his heavy: a LIGHT is guaranteed.", 90)
 		"clash":
@@ -276,23 +307,24 @@ func on_event(f, e: Array) -> void:
 			if hand != null:
 				TLVfx.burst(&"goal_flash", hand.global_position, root, {"scale": 0.7, "color": Color(1.0, 0.12, 0.08)})
 				TLVfx.burst(&"sparks", hand.global_position, root, {"scale": 2.2, "color": Color(1.0, 0.15, 0.1)})
-				if f.tip != null:                           # the unblockable's arc is drawn red
-					var tr: Node3D = TLVfx.trail(f.tip, {"width": 0.42, "frames": 10, "color": Color(1.0, 0.15, 0.1)})
-					if tr != null:
-						flames.append([tr, f.windup - f.mf + f.active + 10])
+				g.feel.trail(f, 1.0, f.windup - f.mf + f.active + 10, "hazard_red", 0.42)   # the unblockable's arc is drawn red
 				var fl: Node3D = TLVfx.attach(&"nitro_flame", hand, {"color": Color(1.0, 0.2, 0.1), "scale": 0.6})
 				if fl != null:
 					flames.append([fl, f.windup - f.mf + 6])
 			TLAudio.play(&"horn", root.to_global(f.pos()), -4.0)
 			if not is_you:
-				cue("RED = UNBLOCKABLE: roll, or hit him first.", 80)
+				cue("RED = UNBLOCKABLE: roll, or hit him first.", 80, "hazard_red")
+				tag("UNBLOCKABLE", "hazard_red", f.windup - f.mf + 4, "WINDUP")
 		"phase2":
-			banner("%s ROARS" % f.name, 70)
+			banner("%s ROARS" % f.name, 70, "hazard_red")
 			TLAudio.play(&"horn", root.to_global(f.pos()), 4.0)
 			TLVfx.burst(&"dust", root.to_global(f.pos()), root, {"scale": 2.0})
 			g.ctx.cameras.shake(0.18, 20)
 			if str(data) != "":
 				cue(str(data), 150)
+		"breathe":
+			if not is_you and not bool(f.cfg["rhythm"].get("breath_counters", false)):
+				tag("OPEN", "flag_b", 90)               # the Wall's breath: he only weathers it (rivals.json rhythm)
 		"tell":
 			TLVfx.burst(&"sparks", root.to_global(f.pos() + Vector3.UP * 1.9), root, {"scale": 0.7, "color": Color(0.6, 0.9, 1.0)})
 			TLAudio.play(&"beep", root.to_global(f.pos()), -6.0)
@@ -300,7 +332,7 @@ func on_event(f, e: Array) -> void:
 			banner("★ STAR!", 40)
 			TLAudio.play(&"cheer")
 		"broken":
-			banner("POSTURE BROKEN" if f.id != "you" else "YOUR GUARD IS BROKEN", 50)
+			banner("POSTURE BROKEN" if f.id != "you" else "YOUR GUARD IS BROKEN", 50, "yellow" if f.id != "you" else "hazard_red")
 			if f.id != "you":
 				cue("He is BROKEN: a HEAVY now is a finisher.", 90)
 		"exhausted":
@@ -312,10 +344,11 @@ func on_event(f, e: Array) -> void:
 			if not is_you and g.round_no == 1 and g.rung <= 0:
 				cue("He missed: hit him while he recovers.", 70)
 		"windup":
-			if str(data) != "bash" and f.tip != null:     # the blade's arc by weight: a light is a thin quick flick, a heavy a broad slow sweep
-				var heavy: bool = str(data) != "light"
-				var tr: Node3D = TLVfx.trail(f.tip, {"width": 0.36 if heavy else 0.12, "frames": 12 if heavy else 5, "color": "white"})
-				if tr != null:
-					flames.append([tr, f.windup + f.active + 10])
+			if str(data) != "bash":                       # the blade's arc by weight: a light is a thin quick flick, a heavy a broad slow sweep
+				g.feel.trail(f, 0.0 if str(data) == "light" else 1.0, f.windup + f.active + 10)
+			if not is_you and str(data) == "heavy":
+				tag("HEAVY", "yellow", f.windup + 4, "WINDUP")
+			elif not is_you and str(data) == "bash":
+				tag("BASH", "orange", f.windup + 4, "WINDUP")
 			if not is_you and str(data) == "bash" and g.round_no == 1:
 				cue("Shoulder dip = BASH coming: roll or hit him first.", 60)

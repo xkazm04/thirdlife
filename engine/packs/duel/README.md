@@ -58,6 +58,12 @@ glint to parry." (plays-twice items 13 and 22). `_pack_state` carries `causes` a
 - **Time on the card**: a match ends on its fight time, and a won match shows the best against this rival in the
   session (BEST!).
 
+## What he is about to do, over his head (API 1.15)
+A tag rides over the rival while he does it (`TLHud.add_tag`, For Honor's indicator on the attacker): HEAVY in gold,
+BASH in orange, UNBLOCKABLE in red through his wind-up, OPEN in blue while the Wall breathes. Banners and cues carry
+their colour (`TLHud.set_color`): PARRY! gold, PARRIED and the roar red. The weapon's arc is the kernel's
+`TLHit.swing_trail` through `feel.trail` (a light weight 0, a heavy 1, the unblockable red and wider).
+
 ## The blow that ends a round (`tuning.json` "ko")
 The round-ending blow holds the longest hit-stop the kernel allows (20 frames), then the camera cuts low beside the
 fallen fighter with the winner over him: dust as he meets the sand, the crowd's roar, the winner's cheer; the play
