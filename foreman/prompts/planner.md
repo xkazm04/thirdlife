@@ -98,6 +98,12 @@ How to choose:
 - **The tofu bot plays every verb.** Its contract says it presses each verb of the design (the duel: light, heavy,
   block or parry, roll, bash) at least 3 times in its run and reports `verbs_used` (how many of the design's verbs it
   pressed): a strip that never shows a parry or a roll cannot prove the exchange.
+- **Every package's bot reports the moments of what its package adds.** The look films a package's own bot at the
+  `moments` it reports (frames by kind), so a twist's bot reports its twist (`echo_strike: [frames]`), a rivals bot the
+  frames each new rival acts (`duelist_riposte`, `dancer_flurry`), and it gets there early (within its first 600 frames:
+  start the drill at that rival or that twist). The crazy colosseum proof -5 filmed its rivals bot at frames 117 and 127,
+  still fighting the opener, so its greybox look matched the core's pixel for pixel and showed neither the Duelist,
+  the Dancer nor the echoes.
 
 # Phases: the player tries the game as it grows
 Group the packages into 2 to 5 **phases**, in build order. After each phase the Foreman stops, and the player plays

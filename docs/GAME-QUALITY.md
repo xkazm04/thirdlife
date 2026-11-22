@@ -473,6 +473,9 @@ played by a person.
   frames show".
 - **The same sentence twice gives the same hook.** The walls broke four times and souls swapped three times. Each
   concept now reads the earlier designs of its sentence; -5 and -6 chose new hook families.
+- **A package's bot films what the package adds.** -5's greybox look filmed its rivals bot still fighting the opener
+  (the same pixels as the core) and its twist never on screen (fun_promise 0.15). Each package's bot reports the
+  `moments` of its own addition and reaches them within its first 600 frames (section 7 Planner rule, 22 Nov).
 - **Copy the house numbers live.** The duel's camera was retuned during the night. Builders read the house game's
   camera, pushbox, never-idle rule and rival silhouettes from the pack at build time, not from this text.
 

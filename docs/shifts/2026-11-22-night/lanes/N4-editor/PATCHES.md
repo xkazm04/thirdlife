@@ -243,3 +243,9 @@ night and the rule that now catches it.
   roll or dodge, a fall, a wall splat, a blocked heavy, a clash, a guard break before anything else; the arcade sport a
   one-timer, a poke, a check. Without a template, the first kinds the bot saw.
 ```
+
+# Loop round 17 (22 Nov 05:42-05:50): a package's bot films what the package adds
+
+No contract change: a Planner rule (each package's bot reports the `moments` of what its package adds, within its first
+600 frames) and a line in GAME-QUALITY 13. Proof -5's greybox look filmed its rivals bot at frames 117/127, still
+fighting the opener (the same pixels as the core): no Duelist, no Dancer, no echo on screen, fun_promise 0.15.
