@@ -80,6 +80,15 @@ const readJsonKey = (packDir: string, file: string, key: string): string | undef
     return undefined;
   }
 };
+const rivalBuilds = (packDir: string): string | undefined => {
+  try {
+    const r = (JSON.parse(stripBom(fs.readFileSync(path.join(packDir, "data", "rivals.json"), "utf8"))) as { rivals?: Record<string, { name?: string; scale?: number; arms?: string[]; colors?: Record<string, string> }> }).rivals;
+    if (r === undefined) return undefined;
+    return Object.values(r).map((v) => `${v.name ?? "?"} scale ${v.scale ?? 1} gear ${(v.arms ?? []).join("+")} top ${v.colors?.["top"] ?? "?"}`).join("; ");
+  } catch {
+    return undefined;
+  }
+};
 const readConst = (packDir: string, file: string, name: string): string | undefined => {
   try {
     return new RegExp(`const ${name}\\s*(?::\\s*\\w+)?\\s*=\\s*([^\\s#]+)`).exec(fs.readFileSync(path.join(packDir, ...file.split("/")), "utf8"))?.[1];
@@ -122,7 +131,7 @@ export const TEMPLATES: Template[] = [
     house: {
       pack: "duel",
       game: "game.duel",
-      readme: ["## How to play", "## What you see", "## The rules", "## The rivals", "## What changed from the playbook"],
+      readme: ["## How to play", "## What you see", "## The rules", "## The rivals", "## Each rival reads by silhouette", "## What changed from the playbook"],
       files: [
         { file: "data/moves.json", role: "the frame table (6.2), the source of truth: windup / active / recovery, damage, stamina, poise, reach, arc, armour, and the [move frame, clip frame] map that stretches a fight clip over a readable wind-up" },
         { file: "data/contacts.json", role: "the contact table (6.3): hit-stop on both, the defender's stun and push, the attacker's recoil or rebound, the poise tiers, the pose each stun shows" },
@@ -132,7 +141,7 @@ export const TEMPLATES: Template[] = [
         { file: "scripts/brain.gd", role: "the rival's mind (6.6): sees only the player's animation react frames late, defends in its archetype's way, reads chains, never a string three times, a return window after each" },
         { file: "data/rivals.json", role: "the AI tiers and the three archetypes (Wall, Duelist, Dancer): hp, poise, defence weights, strings with fixed delays, phase 2" },
         { file: "scripts/show.gd", role: "HUD bars (health, stamina, posture), banners (PARRY!, WALL SPLAT!), cues, the three cameras" },
-        { file: "gen/arms.gd", role: "the weapons (sword, rapier, mace, shield, twin blades) on the hand sockets, kit-style meshes: a duel is fought with them from the first phase, never with bare fists" },
+        { file: "gen/arms.gd", role: "the weapons (sword, rapier, mace, shield, twin blades) on the hand sockets and each rival's head and back gear (the Wall's bucket helm and pauldrons, the Duelist's plumed hat and cape, the Dancer's hood and ribbons) on the head and back sockets: a duel is fought with them from the first phase, and a rival reads by silhouette, never by colour" },
         { file: "tests/support/pilot.gd", role: "the bot that plays the player's side through a TLHand; tests/bot_contact_<type>.gd: one drill per contact, passing when BOTH fighters changed" },
       ],
       moves: "data/moves.json",
@@ -146,6 +155,9 @@ export const TEMPLATES: Template[] = [
         { what: "the play camera (data/tuning.json `camera`, metres and degrees: raised and angled so both bodies show; never low behind the player)", read: (d) => readJsonKey(d, "data/tuning.json", "camera") },
         { what: "the pushbox per duellist at scale 1, in metres (scripts/feel.gd PUSHBOX, times the body radius / 0.3; TLHit.pushbox on both from the first frame): two bodies never read as one", read: (d) => readConst(d, "scripts/feel.gd", "PUSHBOX") },
         { what: "never idle (scripts/brain.gd last_action): a wind-up, an active or recovery frame, a roll, a dodge, a tell, a taunt, a block, a stun or closing in counts as acting; anything else past 120 frames is idle, so the mind presses, feints or repositions before that", read: () => "120 frames at most" },
+        // Round 14: proofs -5 and -6 failed recoloured_rivals in their first look: the rival in the player's body with
+        // another shirt. The house game's rivals differ in scale, arms and colours from the first round.
+        { what: "the rival silhouettes (data/rivals.json `rivals`: scale, the hand weapons AND the head and back gear gen/arms.gd builds on the rig's head and back sockets, colours; the player is scale 1.0, a sword, his own hair): the first rival differs from the player in silhouette from the first phase (head gear, back gear, scale, weapon), never in colour alone. The sockets turn their axes (+X right, +Y back, +Z down): build the gear Y-up, face -Z, then turn it -90 degrees about X, as gen/arms.gd does", read: (d) => rivalBuilds(d) },
       ],
     },
   },

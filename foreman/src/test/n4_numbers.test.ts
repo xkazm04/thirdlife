@@ -17,6 +17,8 @@ test("round 6: the builder excerpt carries the duel's camera, pushbox and never-
   assert.ok(text.includes(`never low behind the player): ${camera}`), "the camera object as the pack has it now");
   assert.match(text, /pushbox per duellist at scale 1[^\n]*: 0\.45\n/);
   assert.match(text, /never idle \(scripts\/brain\.gd last_action\)[^\n]*: 120 frames at most/);
+  // Round 14: the house rivals' silhouettes, read live (duel round 9: gear on the head and back sockets).
+  assert.match(text, /the rival silhouettes[^\n]*turn it -90 degrees about X, as gen\/arms\.gd does: THE WALL scale 1\.12 gear mace\+shield\+helm\+pauldrons top steel_dark; THE DUELIST scale 1 gear rapier\+hat\+cape[^\n]*; THE DANCER scale 0\.94 gear blade\+blade_l\+hood/);
   assert.doesNotMatch(text, /back 4\.6 m/, "no stale camera numbers in the text");
   // A pack whose camera moved: the excerpt follows it; a pack without the files says nothing it cannot read.
   const engine = tempDir("numbers");
