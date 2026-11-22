@@ -33,7 +33,7 @@ export function feelItems(): RubricItem[] {
   const ids = slopIds();
   return [
     { id: "feel", text: "In the MOTION STRIPS: an attack shows its anticipation (a wind-up), its impact (a hit-stop: the two bodies held for a few frames) and the victim's body reacting away from the blow (a flinch, a stumble, a fall); a miss reads as a miss; a dodge or block shows in the body. 0 when hits are a shove, a squash or nothing; 0 when no exchange is filmed at all." },
-    { id: "slop", text: `1.0 when you see NO item of the slop list, 0.0 when you see ANY (name its id and the image in \`notes\`). The slop list: ${ids.join(", ") || "one_attack_button, recoloured_rivals, borrowed_clips, hit_without_reaction, camera_behind_scenery, hud_only_twist, skill_removing_autoaim, every_hit_floors, fighters_overlap, placeholder_in_clip_moment"}. Strong signs: every fighter has the same body in another colour; a figure plays a clip that is not its action; a wall or pillar hides the fighters; two bodies merge into one blob.` },
+    { id: "slop", text: `1.0 when you see NO item of the slop list, 0.0 when you see ANY (name its id and the image in \`notes\`). The slop list: ${ids.join(", ") || "one_attack_button, recoloured_rivals, borrowed_clips, hit_without_reaction, camera_behind_scenery, hud_only_twist, skill_removing_autoaim, every_hit_floors, fighters_overlap, placeholder_in_clip_moment"}. Strong signs: every fighter has the same body in another colour; a figure plays a clip that is not its action; a wall or pillar hides the fighters; two bodies merge into one blob on a SIDE view. On an over-the-shoulder view a body covering the other is \`camera_hides_exchange\` (check the side strip of the same moment before you call \`fighters_overlap\`).` },
   ];
 }
 
