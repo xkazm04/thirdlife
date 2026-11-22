@@ -255,6 +255,7 @@ Consts: `STOP_CAP`, `WALL_REACH`
 - `static func stop_left(who: TLBiped) -> int`
 - `static func stun_left(who: TLBiped) -> int`
 - `static func stun_of(who: TLBiped) -> StringName`
+- `static func swing_trail(who: TLBiped, weight: float = 0.5, frames: int = 30, opts: Dictionary = {}) -> Node3D`
 - `static func wall_splat(victim: TLBiped, wall_normal: Vector3, attacker: TLBiped = null, frames: int = 60, tune: Dictionary = {}) -> Dictionary`
 
 ## TLHud
@@ -272,10 +273,13 @@ Properties: `font_size: int`
 - `func add_label(id: StringName, text: String, anchor: StringName = &"top_left") -> void`
 - `func add_score(rules: TLRules, side: String, anchor: StringName = &"top_left", caption: String = "") -> void`
 - `func add_speed(source: Callable, unit: String = "km/h", anchor: StringName = &"bottom_right") -> void`
+- `func add_tag(id: StringName, node: Node3D, text: String = "", offset: Vector3 = Vector3(0, 2.3, 0)) -> void`
 - `func configure_widgets(catalog: Variant, layout: Variant) -> bool`
 - `static func create() -> TLHud`
 - `static func hide_all(of_pack: TLContext = null) -> void`
+- `func remove_widget(id: StringName) -> void`
 - `func set_align(id: StringName, align: StringName) -> void`
+- `func set_color(id: StringName, color: Variant) -> void`
 - `func set_phase(phase: StringName) -> void`
 - `func set_plate(id: StringName, on: bool = true) -> void`
 - `func set_readout(id: StringName, reading: Dictionary) -> void`
