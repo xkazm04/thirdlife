@@ -3,7 +3,7 @@ extends RefCounted
 
 const KEYS := ["speed_scale", "red_skill", "lead_frames", "yield_frames", "check_min_closing_red",
 	"check_min_closing_blue", "cross_min_closing", "reaction_frames", "aim_sigma_deg", "score_noise",
-	"commit_bonus", "feed_bonus", "shoot_min_xg", "pass_min_lane", "pass_weight", "poke_min_odds", "fresh_frames", "fresh_check_frames", "protect_weight", "net_zone_half", "net_round_z", "corner_z", "assist_frames", "goalie_gap"]
+	"commit_bonus", "feed_bonus", "shoot_min_xg", "pass_min_lane", "pass_weight", "poke_min_odds", "fresh_frames", "fresh_check_frames", "pressure_m", "protect_weight", "net_zone_half", "net_round_z", "corner_z", "assist_frames", "goalie_gap"]
 var cfg := {}
 var base_cfg := {}
 var red_over := {}
@@ -109,9 +109,17 @@ func think(frame_no: int, env: Dictionary) -> void:
 			var near: bool = obs.loose and now.pos[id].distance_squared_to(obs.puck) <= 9.0
 			# A skater feels a take or loss at his own stick immediately.
 			var car: String = id if now.car == id else ("" if obs.car == id else obs.car)
-			var event := [car, obs.receiver == id, near, now.up[id]]
+			# day of 22 Nov (N3's r2a, landed after E6): a carrier also re-decides the moment an opponent (as he saw him)
+			# comes inside pressure_m: the pass out of pressure (HOCKEY-ARCADE 5.3) no longer waits for his next slot
+			var pressed: bool = false
+			if now.car == id:
+				for oid: String in roles.roster[roles.other(team)]:
+					if oid != roles.keeper[roles.other(team)] and now.pos[id].distance_to(obs.pos[oid]) < value(team, "pressure_m"):
+						pressed = true
+						break
+			var event := [car, obs.receiver == id, near, now.up[id], pressed]
 			var old: Array = previous.get(id, [])
-			if scheduled or not plans.has(id) or old.is_empty() or old[0] != car or (event[1] and not old[1]) or (near and not old[2]) or old[3] != event[3]:
+			if scheduled or not plans.has(id) or old.is_empty() or old[0] != car or (event[1] and not old[1]) or (near and not old[2]) or old[3] != event[3] or (pressed and not old[4]):
 				due[id] = true
 			previous[id] = event
 		if not due.is_empty():

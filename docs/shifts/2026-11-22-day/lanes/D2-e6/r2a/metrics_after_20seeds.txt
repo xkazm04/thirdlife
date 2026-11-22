@@ -1,0 +1,7 @@
+| cell | completed | blue wins | possession median (4-10 s) | passes per poss (1.5-3) / completion (70-85%) | shots/min/team (1.5-3) / slot+OT (>=40%) | turnovers by cause (none >45%, self <15%, bobble <15%) | OZ share blue / red = OZ / (OZ + DZ) (35-55%), entry (50-70%) | goals/game (3-7) | checks/min: stumble+down (down, bump) | near the puck (5 m) / scrum share (>=4) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| rookie_newcomer | 20/20 | 16 | 4.0 s | 1.6 (b 1.7, r 1.6) / 89% (red AI 84%) | 2.6 (b 3.2, r 2.1) / 46% (ot 12%) | 7.2/min: check 39%, intercept 34%, poke 11%, bobble 10%, goalie 6%, dump 0% | 50% / 50% (raw 26% / 25%), entry 59% | 2.7 | 4.9 (red 2.6, down 3.7, bump 2.4) | 2.2 / 16% |
+| pro_regular | 20/20 | 11 | 3.4 s | 1.3 (b 0.9, r 1.8) / 87% (red AI 90%) | 3.0 (b 1.9, r 4.0) / 42% (ot 9%) | 7.9/min: check 40%, intercept 25%, poke 19%, goalie 9%, bobble 7% | 35% / 65% (raw 18% / 33%), entry 68% | 3.5 | 6.2 (red 4.0, down 4.5, bump 2.1) | 2.2 / 15% |
+| allstar_sharp | 20/20 | 6 | 3.2 s | 1.4 (b 0.5, r 2.3) / 88% (red AI 93%) | 2.6 (b 1.4, r 3.8) / 31% (ot 10%) | 8.4/min: check 50%, poke 20%, intercept 15%, bobble 8%, goalie 6% | 44% / 56% (raw 20% / 25%), entry 70% | 3.4 | 6.0 (red 3.9, down 4.6, bump 2.2) | 2.3 / 16% |
+| ai_pro | 20/20 | 16 | 3.3 s | 1.9 (b 2.5, r 1.3) / 89% (red AI 89%) | 2.5 (b 3.3, r 1.8) / 56% (ot 20%) | 8.6/min: check 60%, intercept 23%, bobble 11%, poke 4%, goalie 2% | 65% / 35% (raw 33% / 18%), entry 61% | 3.0 | 8.0 (red 4.8, down 5.9, bump 3.2) | 2.2 / 16% |
+elapsed 372 s, 80 runs
