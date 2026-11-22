@@ -21,7 +21,9 @@
         "engine/kernel/cameras/**",
         "engine/kernel/examples/ex_feel_lab/**",
         "engine/rigs/biped/**",
-        "engine/kernel/api/tl_hud.gd"
+        "engine/kernel/api/tl_hud.gd",
+        "engine/kernel/world/**",
+        "engine/kernel/runner/**"
       ],
       "note": "N1"
     },
@@ -48,13 +50,6 @@
         "devx/lib/cards/**"
       ],
       "note": "N4"
-    },
-    {
-      "id": "n22-N6-world",
-      "scope": [
-        "engine/kernel/world/home/**"
-      ],
-      "note": "N6 arms (branches only)"
     }
   ]
 }
