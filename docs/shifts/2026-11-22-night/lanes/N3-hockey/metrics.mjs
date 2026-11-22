@@ -34,7 +34,8 @@ function run(cell, seed) {
       const v = JSON.parse(line);
       const done = (v.checks ?? []).some((c) => c.id === "bot.completed" && c.ok === true);
       const bad = (v.checks ?? []).filter((c) => c.ok !== true && c.id !== "bot.ok").map((c) => c.id);
-      res({ cell, seed, done: done && bad.length === 0, bad, code, r: v.bot?.result ?? {}, hash: v.metrics?.state_hash });
+      const rr = v.bot?.result ?? {}; if (rr.metrics?.raw) rr.metrics = rr.metrics.raw;
+      res({ cell, seed, done: done && bad.length === 0, bad, code, r: rr, hash: v.metrics?.state_hash });
     });
   });
 }

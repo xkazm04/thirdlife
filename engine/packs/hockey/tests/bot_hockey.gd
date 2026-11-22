@@ -211,4 +211,4 @@ func _bot_result() -> Dictionary:
 		dbg = " TRACE " + " | ".join(trace)
 	return {"ok": ok, "summary": "blue %d : %d red in %d frames, %d shots, result %s%s" % [mine, theirs, ctx.frame, shots, str(s.get("result", "")), dbg],
 		"frames": ctx.frame, "shots": shots, "goals": mine, "against": theirs, "won": won, "hand": hand.stats(), "taps_lost": int(hand.stats().get("taps_lost", 0)), "aim": use_aim, "level": level,
-		"down_frames": down_frames, "period_reached": max_period, "passes": passes_seen, "passes_reached": passes_reached, "metrics": metrics.result()}
+		"down_frames": down_frames, "period_reached": max_period, "passes": passes_seen, "passes_reached": passes_reached, "metrics": metrics.figures(hand_profile)}   # N3: named figures (HOCKEY-ARCADE 5.5, tofu names), raw counts under "raw"

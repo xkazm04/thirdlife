@@ -48,6 +48,13 @@ var _passes_seen: Dictionary = {}
 var _prev_x: float = 0.0
 var _was_live: bool = false
 var frame: int = 0
+var idle: int = 0                      # live frames since the last take, shot, pass or release
+var idle_max: int = 0                  # tofu idle_max_f: the longest such stretch
+var lead_changes: int = 0              # goals after which a different side leads (from level or from behind)
+var goal_count: int = 0
+var rounds: int = 0                    # periods played to their end
+var close_rounds: int = 0              # ...that ended with the score within one goal
+var _period: int = 0
 var crowd_sum: int = 0                 # LOOP r1: field skaters within 5 m of the puck, summed over live frames
 var crowd4: int = 0                    # live frames with 4 or more of them there (a scrum)
 var crowd_roles: Dictionary = {}       # in scrum frames: the AI roles present (roles_now)
@@ -88,6 +95,22 @@ func observe(s: Dictionary) -> void:
 	for sd: String in sc:
 		if int(sc[sd]) > int(_scores.get(sd, 0)) and not _pre.is_empty():
 			goals_how.append([sd] + _pre)
+	var lead_before: int = signi(int(_scores.get("blue", 0)) - int(_scores.get("red", 0)))
+	var lead_after: int = signi(int(sc.get("blue", 0)) - int(sc.get("red", 0)))
+	var scored: int = int(sc.get("blue", 0)) + int(sc.get("red", 0)) - int(_scores.get("blue", 0)) - int(_scores.get("red", 0))
+	if scored > 0:
+		goal_count += scored
+		if lead_after != 0 and lead_after != lead_before:
+			lead_changes += 1
+	var per: int = int(s.get("period", 0))
+	var over: bool = str(s.get("state", "")) == "over"
+	if (_period > 0 and per != _period) or (over and _period > 0):
+		rounds += 1
+		if absi(int(sc.get("blue", 0)) - int(sc.get("red", 0))) <= 1:
+			close_rounds += 1
+		_period = 0 if over else per
+	elif _period == 0 and not over:
+		_period = per
 	_scores = sc.duplicate()
 	var lr: Dictionary = pos.get("last", {})
 	if str(lr) != _rel_sig:
@@ -110,6 +133,7 @@ func observe(s: Dictionary) -> void:
 		return
 	_was_live = true
 	live += 1
+	idle += 1
 	given = (s.get("hits", {}) as Dictionary).get("given", {})
 	var px: float = float(s["puck"]["pos"][0])
 	var pz: float = float(s["puck"]["pos"][1])
@@ -117,6 +141,8 @@ func observe(s: Dictionary) -> void:
 	var last: Dictionary = pos.get("last", {})
 	var sig: String = str(last)
 	var released_now: bool = sig != _last_sig
+	if released_now:
+		idle = 0
 	if released_now and str(last.get("kind", "")) in ["poked", "lost", "bobble"]:
 		(moments.get_or_add(str(last["kind"]), []) as Array).append(frame)
 	_last_sig = sig
@@ -172,7 +198,9 @@ func observe(s: Dictionary) -> void:
 			cur_start = frame
 			cur_passes = 0
 		take_frame = frame
+		idle = 0
 	prev_holder = holder
+	idle_max = maxi(idle_max, idle)
 	# crowding round the puck
 	var near: int = 0
 	var near_ids: Array = []
@@ -209,6 +237,41 @@ func observe(s: Dictionary) -> void:
 					_entry_side = ""
 	_prev_x = px
 
+
+## N3 (22 Nov, for the editor's comparison, N4): the named figures of HOCKEY-ARCADE 5.5 and the tofu-stage names, with
+## the raw counts under "raw". Frames are 60 Hz physics frames (_f); shares 0..1; per minute = per 3600 live frames.
+func figures(hand: String) -> Dictionary:
+	var r: Dictionary = result()
+	var mins: float = maxf(live / 3600.0, 1e-6)
+	var sl: Array = lengths.duplicate()
+	sl.sort()
+	var pp: int = 0
+	for n: int in per_poss_passes:
+		pp += n
+	var pas: int = passes.blue + passes.red
+	var shots_n: int = shots.blue + shots.red
+	var tov: int = 0
+	for k: String in turnovers:
+		tov += int(turnovers[k])
+	var share: Dictionary = {}
+	for k: String in turnovers:
+		share[k] = snappedf(float(turnovers[k]) / maxf(tov, 1), 0.001)
+	var ozt: int = oz.blue + oz.red
+	var ent: int = entries.blue + entries.red
+	var f: Dictionary = {"hand": hand, "live_f": live,
+		"possession_median_f": sl[sl.size() / 2] if not sl.is_empty() else 0,
+		"passes_per_possession": snappedf(float(pp) / maxf(per_poss_passes.size(), 1), 0.001),
+		"pass_completion": snappedf(float(complete.blue + complete.red) / maxf(pas, 1), 0.001),
+		"shots_per_min_team": snappedf(shots_n / mins / 2.0, 0.001),
+		"slot_or_one_timer_share": snappedf(minf(1.0, float(slot_shots.blue + slot_shots.red + one_timers.blue + one_timers.red) / maxf(shots_n, 1)), 0.001),
+		"turnovers_per_min": snappedf(tov / mins, 0.001), "turnover_share": share,
+		"oz_share_blue": snappedf(float(oz.blue) / maxf(ozt, 1), 0.001),
+		"entry_success": snappedf(float(entries_ok.blue + entries_ok.red) / maxf(ent, 1), 0.001),
+		"goals": goal_count,
+		"idle_max_f": idle_max, "pressure_waves": entries_ok.blue + entries_ok.red,
+		"lead_change_share": snappedf(float(lead_changes) / maxf(goal_count, 1), 0.001),
+		"close_rounds": close_rounds, "rounds": rounds, "raw": r}
+	return f
 
 func result() -> Dictionary:
 	return {"live": live, "lengths": lengths, "poss_passes": per_poss_passes, "passes": passes, "complete": complete,
