@@ -29,6 +29,11 @@ node "$TL" check --tier "$TIER"; code=$?
 export function hookPath(repo) {
   const r = sh("git", ["rev-parse", "--git-path", "hooks"], { cwd: repo });
   if (r.code !== 0) throw new Error(`not a git repository: ${repo}`);
+  // Only the repository rooted AT `repo`: git also answers from an enclosing or ambient (GIT_DIR) repository, and a
+  // test whose temp `git init` failed once rewrote the real checkout's hook that way (22 Nov night).
+  const top = sh("git", ["rev-parse", "--show-toplevel"], { cwd: repo });
+  const real = (p) => fs.realpathSync.native(p).toLowerCase();
+  if (top.code !== 0 || real(top.stdout.trim()) !== real(repo)) throw new Error(`not the top of its own git repository: ${repo}`);
   return path.join(path.resolve(repo, r.stdout.trim()), "pre-push");
 }
 

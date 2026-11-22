@@ -145,9 +145,18 @@ test("history is appended and --trend prints medians", async () => {
   fs.rmSync(dir, { recursive: true });
 });
 
+/** A temp repo that is surely its own: git init must succeed, and no enclosing or ambient repository may answer. */
+function gitInit(repo) {
+  const env = { ...process.env, GIT_CEILING_DIRECTORIES: path.dirname(repo) };
+  for (const k of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]) delete env[k];
+  const r = spawnSync("git", ["init", "-q"], { cwd: repo, env, encoding: "utf8" });
+  assert.equal(r.status, 0, `git init failed in ${repo}: ${r.stderr}`);
+  assert.ok(fs.existsSync(path.join(repo, ".git")), "git init made no .git");
+}
+
 test("hook: install/remove round-trip in a temp repo, refuses a foreign hook", () => {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), "tlk_"));
-  spawnSync("git", ["init", "-q"], { cwd: repo });
+  gitInit(repo);
   const hook = path.join(repo, ".git", "hooks", "pre-push");
   assert.match(hookAction("status", repo).message, /not installed/);
   assert.ok(hookAction("install", repo).ok);
@@ -160,12 +169,14 @@ test("hook: install/remove round-trip in a temp repo, refuses a foreign hook", (
   const r = hookAction("remove", repo); assert.equal(r.ok, false);
   assert.equal(fs.readFileSync(hook, "utf8"), "#!/bin/sh\necho mine\n");
   assert.match(hookAction("status", repo).message, /foreign/);
+  const sub = path.join(repo, "sub"); fs.mkdirSync(sub);
+  const s = hookAction("install", sub); assert.equal(s.ok, false, "a folder inside a repo is not its own repo"); assert.match(s.message, /not the top/);
   fs.rmSync(repo, { recursive: true, force: true });
 });
 
 test("hook script blocks a push on a failing gate (run under sh with a stub tl)", () => {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), "tlp_"));
-  spawnSync("git", ["init", "-q"], { cwd: repo });
+  gitInit(repo);
   fs.mkdirSync(path.join(repo, "devx", "bin"), { recursive: true });
   const hook = path.join(repo, ".git", "hooks", "pre-push");
   hookAction("install", repo);
