@@ -130,3 +130,29 @@ test("a cached house baseline without the current key is measured again (the pro
   assert.equal(runs, 2, "the house pack changed: measured again");
   assert.match(again?.note ?? "", /the house pack, its bot or its moment kinds changed/);
 });
+
+// ---------- after hockey -2 (D3 of 22 Nov): a band row against the house game; a still strip named with its bot ----------
+
+test("a band row (possession_median_f 240-600) is short when far from the house figure; a house figure outside the bound is said", async () => {
+  const { houseCompare } = await import("../house.js");
+  const { judgeTofu, tofuMetricsFor } = await import("../tofu.js");
+  const rows = tofuMetricsFor({ id: "arcade_sport", reference: "r", copies: [] }).filter((m) => ["possession_median_f", "idle_max_f", "pressure_waves"].includes(m.id));
+  // The real figures of hockey -2's held look (reports/tofu-blockout-s65.json) and the house hockey (pro regular, seed 1).
+  const built = judgeTofu({ possession_median_f: 377, idle_max_f: 15, pressure_waves: 6 }, rows, "tests/bot_tofu.gd");
+  assert.equal(built.ok, true, "inside every bound of its own");
+  const base = { schema: "tl.foreman.house/1" as const, pack: "hockey", test: "tests/bot_ladder_pro_regular.gd", hand: "regular", metrics: { possession_median_f: 164, idle_max_f: 70, pressure_waves: 6 } };
+  const c = houseCompare(built, base, rows);
+  assert.deepEqual(c.short, ["possession_median_f"], "377 against the house's 164 is short (it read 'not short on any figure')");
+  assert.match(c.line, /possession_median_f 377 vs 164 SHORT/);
+  assert.match(c.line, /The house game itself sits outside the template's bound on possession_median_f 164 \(the template's bound: 240 to 600\)/);
+  const near = houseCompare(judgeTofu({ possession_median_f: 190, idle_max_f: 15, pressure_waves: 6 }, rows, "tests/bot_tofu.gd"), base, rows);
+  assert.deepEqual(near.short, [], "within the margin of the house figure: not short, though under the band's 240 (the house game wins)");
+});
+
+test("a still strip with no claim of its own bot against it is named with its bot for the critic (hockey -2's misattribution)", async () => {
+  const { filmCheckText } = await import("../filmcheck.js");
+  const check = { measured: 2, unmeasured: [], findings: [], line: "", strips: [{ capture: "captures/blockout-chase-bot_player-strip-f9537.png", bot: "tests/bot_player.gd", still_f: 55, moved: "0 of 11 tile steps moved" }, { capture: "captures/blockout-chase-bot_tofu-strip-f71.png", bot: "tests/bot_tofu.gd", moved: "11 of 11 tile steps moved" }] };
+  const text = filmCheckText(check) ?? "";
+  assert.match(text, /no bot claim is contradicted\. STILL ON FILM, no claim of its own bot against it: blockout-chase-bot_player-strip-f9537\.png \(tests\/bot_player\.gd\) changes in no tile for 55 frames\. Each is that bot's run only/);
+  assert.doesNotMatch(text, /bot_tofu-strip-f71/);
+});

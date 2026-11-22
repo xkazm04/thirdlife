@@ -185,6 +185,8 @@ export interface HouseRow {
   short: boolean;
   /** The build's figure is contradicted by its own film. */
   contradicted?: true;
+  /** D3 of 22 Nov: the house game's own figure is outside the template's bound for the row. */
+  houseOutside?: true;
 }
 
 /** How much worse than the house game a figure may be before it is a shortfall (a share of the house figure, or 1 for a count). */
@@ -208,10 +210,17 @@ export function houseCompare(built: TofuResult | undefined, base: HouseBaseline,
         // Lower is better for a bound with only a max (idle, feedback, one-sided contacts); higher for a min.
         if (m.max !== undefined && m.min === undefined && b > hv + slack) short = true;
         if (m.min !== undefined && m.max === undefined && b < hv - slack) short = true;
+        // D3 of 22 Nov: a band (possession_median_f 240-600) has no better side: the house game's figure is the bar, and a
+        // build further from it than the margin is short. Hockey -2 held possession 377 frames against the house's 164
+        // (endless board scrums on its strips) and the line said "not short on any figure".
+        if (m.min !== undefined && m.max !== undefined && Math.abs(b - hv) > slack) short = true;
       }
     }
-    return { id: m.id, ...(b !== undefined ? { built: b } : {}), ...(hv !== undefined ? { house: hv } : {}), short, ...(row?.contradicted !== undefined ? { contradicted: true as const } : {}) };
+    const outside = hv !== undefined && ((m.min !== undefined && hv < m.min) || (m.max !== undefined && hv > m.max));
+    return { id: m.id, ...(b !== undefined ? { built: b } : {}), ...(hv !== undefined ? { house: hv } : {}), short, ...(row?.contradicted !== undefined ? { contradicted: true as const } : {}), ...(outside ? { houseOutside: true as const } : {}) };
   });
+  // D3 of 22 Nov: a house figure outside the template's own bound is said: the bound or the house game is wrong, and the Director decides which.
+  const outsideRows = out.filter((r) => r.houseOutside === true).map((r) => { const m = rows.find((x) => x.id === r.id); return `${r.id} ${r.house} (the template's bound: ${m?.min !== undefined && m.max !== undefined ? `${m.min} to ${m.max}` : m?.min !== undefined ? `>= ${m.min}` : `<= ${m?.max}`})`; });
   // D3 of 22 Nov: a claim the build's film contradicts where the house game has no figure (moments_on_film, hockey's
   // idle_max_f) still cannot pass this compare: it is named short, with why.
   const filmOnly = (built?.rows ?? []).filter((r) => r.contradicted !== undefined && !out.some((o) => o.id === r.id && o.house !== undefined)).map((r) => r.id);
@@ -223,5 +232,6 @@ export function houseCompare(built: TofuResult | undefined, base: HouseBaseline,
     cells.length === 0
       ? `house game engine/packs/${base.pack} (${base.test}): no figure to compare by the tofu names${base.note ? ` (${base.note})` : ""}`
       : `house game engine/packs/${base.pack} (${base.test}${by}), yours vs the house game's: ${cells.join(", ")}${unmeasured.length > 0 ? `; the house game does not report ${unmeasured.join(", ")}${(base.skipped ?? []).length > 0 ? ` (it measures ${(base.skipped ?? []).join(", ")} another way)` : ""}` : ""}${shortIds.length > 0 ? `. SHORT of the house game on ${shortIds.join(", ")}: copy how engine/packs/${base.pack} does it` : ". Not short of the house game on any figure it reports"}`;
-  return { rows: out, line: filmOnly.length > 0 ? `${line}. The build's own film contradicts its ${filmOnly.join(", ")} (no house figure to compare): short until the film agrees` : line, short: shortIds };
+  const said = outsideRows.length > 0 ? `${line}. The house game itself sits outside the template's bound on ${outsideRows.join(", ")}: judged against the house figure` : line;
+  return { rows: out, line: filmOnly.length > 0 ? `${said}. The build's own film contradicts its ${filmOnly.join(", ")} (no house figure to compare): short until the film agrees` : said, short: shortIds };
 }
