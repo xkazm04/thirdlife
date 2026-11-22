@@ -15,6 +15,7 @@ extends "res://ui/create/create_build.gd"
 ##   dry: true           never start a process: every command line is recorded in door.dry_steps / last_launch
 ##   now: <unix s>       a fixed clock (fixtures, stills): no polling, the job is read once per show_job()
 ##   try_stub: <dir>     a pack to try/play when the job's own pack is not there (fixtures)
+##   door: {..}          more options for ui/foreman_door.gd setup (selftest 780: res_dir "" and exe, as in an exe)
 
 signal closed
 
@@ -23,7 +24,14 @@ func setup(o: Dictionary) -> void:
 	opts = o
 	jobs_root = str(o.get("jobs", "")).replace("\\", "/").trim_suffix("/")
 	door = Door.new()
-	door.setup(jobs_root, {"dry": bool(o.get("dry", false)), "flags": o.get("flags", {}), "flags_name": str(o.get("flags_name", ""))})
+	var d: Dictionary = {"dry": bool(o.get("dry", false)), "flags": o.get("flags", {}), "flags_name": str(o.get("flags_name", ""))}
+	if o.get("door") is Dictionary:
+		d.merge(o["door"])                      # N4: a selftest's door options (res_dir + exe: the exe's layout)
+	door.setup(jobs_root, d)
+	if not door.dry:
+		# N4: the exe's log says whether GO can start the Foreman, and why not (the toast alone left no trace)
+		print("[create] jobs %s; Foreman %s; starter %s; node %s; settings '%s': %s" % [jobs_root, door.cli_path, door.runner_path,
+			door.node_version, door.flags_name, "ready" if door.available else door.problem])
 
 
 func _ready() -> void:
@@ -63,7 +71,7 @@ func _setup_from_environment() -> void:
 		if not env.is_empty():
 			o["jobs"] = env
 		else:
-			var cli: String = Door.find_cli(ProjectSettings.globalize_path("res://"))
+			var cli: String = Door.find_cli(Door.disk_dir())   # N4: res:// is no disk folder in an exe
 			o["jobs"] = cli.get_base_dir().get_base_dir().get_base_dir().path_join("site") if not cli.is_empty() else OS.get_user_data_dir().path_join("site")
 	if not o.has("flags"):
 		var path: String = OS.get_environment("TL_CREATE_FLAGS")
@@ -157,6 +165,7 @@ func _poll() -> void:
 		var err: String = door.last_error(job_dir if not job_dir.is_empty() else "new")
 		if not err.is_empty():
 			message = err
+			print("[create] the Foreman stopped: " + err)
 			busy = ""
 			waiting_for = ""
 	if not waiting_for.is_empty() and not jobs_root.is_empty():

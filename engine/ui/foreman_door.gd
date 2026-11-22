@@ -4,7 +4,8 @@ extends RefCounted
 
 var jobs_root: String = ""
 var cli_path: String = ""          # <repo>/foreman/dist/cli.js
-var runner_path: String = ""       # ui/foreman_run.mjs
+var runner_path: String = ""       # ui/foreman_run.mjs on disk (find_runner)
+var from_dir: String = ""          # where the Foreman was looked for from (disk_dir)
 var node_exe: String = "node"
 var node_version: String = ""
 var available: bool = false
@@ -22,12 +23,16 @@ var _n: int = 0
 func setup(root: String, opts: Dictionary = {}) -> void:
 	jobs_root = root
 	dry = bool(opts.get("dry", false))
-	runner_path = ProjectSettings.globalize_path("res://ui/foreman_run.mjs")
+	# res_dir + exe: what res:// globalizes to and where the executable is (selftests give an exe's: "" and dist/...)
+	from_dir = disk_dir_of(str(opts["res_dir"]), str(opts.get("exe", OS.get_executable_path()))) if opts.has("res_dir") else disk_dir()
 	cli_path = str(opts.get("cli", ""))
 	if cli_path.is_empty() and OS.has_environment("TL_FOREMAN_CLI"):
 		cli_path = OS.get_environment("TL_FOREMAN_CLI")
 	if cli_path.is_empty():
-		cli_path = find_cli(ProjectSettings.globalize_path("res://"))
+		cli_path = find_cli(from_dir)
+	runner_path = str(opts.get("runner", ""))
+	if runner_path.is_empty():
+		runner_path = find_runner(from_dir, cli_path)
 	if OS.has_environment("TL_NODE") and not OS.get_environment("TL_NODE").is_empty():
 		node_exe = OS.get_environment("TL_NODE")
 	if opts.has("node"):
@@ -38,9 +43,39 @@ func setup(root: String, opts: Dictionary = {}) -> void:
 	check()
 
 
-## Walks up from the engine directory to the repository that holds foreman/dist/cli.js.
-static func find_cli(from_dir: String) -> String:
-	var d: String = from_dir.trim_suffix("/")
+## N4 (night of 22-23 Nov): the folder the Foreman is looked for from. Under the editor binary (--path <engine>) it is the
+## engine directory. In an exported build res:// globalizes to "" (the files are in the .pck; boot/probe.gd), and the walk
+## up from "" found nothing: Create's GO said "Foreman not found" in every exe. There it is the executable's folder
+## (dist/ThirdLife beside a checkout: the walk up finds that checkout's foreman/dist/cli.js).
+static func disk_dir() -> String:
+	return disk_dir_of(ProjectSettings.globalize_path("res://"), OS.get_executable_path())
+
+
+static func disk_dir_of(res_dir: String, exe_path: String) -> String:
+	var r: String = res_dir.replace("\\", "/").trim_suffix("/")
+	if r.is_absolute_path() and DirAccess.dir_exists_absolute(r):
+		return r
+	return exe_path.replace("\\", "/").get_base_dir()
+
+
+## N4: the door's runner (ui/foreman_run.mjs) as a file node can read: the engine's own under the editor binary, else the
+## one of the checkout whose Foreman was found (<repo>/engine/ui/foreman_run.mjs). An exported build carries no .mjs, and
+## node cannot read a .pck: its globalized res://ui/foreman_run.mjs was the relative "ui/foreman_run.mjs".
+static func find_runner(dir: String, cli: String) -> String:
+	var own: String = dir.path_join("ui/foreman_run.mjs")
+	if dir.is_absolute_path() and FileAccess.file_exists(own):
+		return own
+	if not cli.is_empty():
+		var repo: String = cli.replace("\\", "/").get_base_dir().get_base_dir().get_base_dir()
+		var theirs: String = repo.path_join("engine/ui/foreman_run.mjs")
+		if FileAccess.file_exists(theirs):
+			return theirs
+	return ""
+
+
+## Walks up from the engine directory (disk_dir()) to the repository that holds foreman/dist/cli.js.
+static func find_cli(start: String) -> String:
+	var d: String = start.trim_suffix("/")
 	for i: int in 8:
 		var c: String = d.path_join("foreman/dist/cli.js")
 		if FileAccess.file_exists(c):
@@ -57,7 +92,10 @@ func check() -> bool:
 	available = false
 	problem = ""
 	if cli_path.is_empty() or not FileAccess.file_exists(cli_path):
-		problem = "Foreman not found (%s)" % ("no foreman/dist/cli.js above the engine" if cli_path.is_empty() else cli_path)
+		problem = "Foreman not found (%s)" % (("no foreman/dist/cli.js in %s or a folder above it" % from_dir) if cli_path.is_empty() else cli_path)
+		return false
+	if runner_path.is_empty() or not FileAccess.file_exists(runner_path):
+		problem = "Foreman found, but not its starter engine/ui/foreman_run.mjs beside it (%s)" % cli_path.get_base_dir().get_base_dir().get_base_dir()
 		return false
 	if node_version.is_empty():
 		var out: Array = []

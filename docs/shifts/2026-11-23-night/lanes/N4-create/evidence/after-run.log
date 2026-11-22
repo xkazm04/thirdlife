@@ -1,0 +1,8 @@
+Third Life, started 2026-11-22 19:39:59 (C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/dist/ThirdLife/ThirdLife.exe)
+[boot] build: 1fa3b56 2026-11-22 19:37
+{"schema":"thirdlife.exe/1","kind":"boot","verb":"menu","exported":true,"godot":"4.7.2-stable (official)","executable":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/dist/ThirdLife/ThirdLife.exe","games":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/dist/ThirdLife/games","display":"Windows","user_dir":"C:/Users/kazda/AppData/Roaming/ThirdLife","plots":[],"sites":[],"left_out":[],"build":"1fa3b56 2026-11-22 19:37"}
+{"schema":"thirdlife.exe/1","kind":"aa","msaa_3d":1,"screen_space_aa":0,"taa":true}
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":1,"frame":11,"nodes":32,"objects":1592,"resources":56,"orphans":0,"video_mb":75.2}
+[boot] menu: Create
+[create] jobs C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/site; Foreman C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/foreman/dist/cli.js; starter C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/engine/ui/foreman_run.mjs; node v24.14.0; settings 'fake adapter (the Designer answers)': ready
+[create] GO: foreman new 'penguins pushing each other off an iceberg' started

@@ -167,8 +167,11 @@ func go() -> void:
 	var err: String = door.new_game(s, hint_answers(), {}, [], {"creativity": creativity, "run_through": run_through})
 	if not err.is_empty() and not door.dry:
 		message = "The builders cannot start: " + err
+		print("[create] GO: " + message)
 		_rebuild()
 		return
+	if not door.dry:
+		print("[create] GO: foreman new '%s' started" % s)
 	message = ""
 	waiting_for = s
 	started_at = _now()

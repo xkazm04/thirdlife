@@ -1,0 +1,6 @@
+Third Life, started 2026-11-22 19:19:42 (C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/.tl/repro48/ThirdLife/ThirdLife.exe)
+[boot] build: 48c4f59 2026-11-22 17:58
+{"schema":"thirdlife.exe/1","kind":"boot","verb":"menu","exported":true,"godot":"4.7.2-stable (official)","executable":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/.tl/repro48/ThirdLife/ThirdLife.exe","games":"C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/.tl/repro48/ThirdLife/games","display":"Windows","user_dir":"C:/Users/kazda/AppData/Roaming/ThirdLife","plots":[],"sites":[],"left_out":[],"build":"48c4f59 2026-11-22 17:58"}
+{"schema":"thirdlife.exe/1","kind":"aa","msaa_3d":1,"screen_space_aa":0,"taa":true}
+{"schema":"thirdlife.exe/1","kind":"census","at":"menu","n":1,"frame":13,"nodes":32,"objects":1594,"resources":56,"orphans":0,"video_mb":75.2}
+[boot] menu: Create
