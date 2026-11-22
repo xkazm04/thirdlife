@@ -1,0 +1,1556 @@
+{
+  "_about": "Each rival's own place and beat (scripts/arena.gd; plays-twice items 6 and 21). dress: kit parts outside the ring wall (radius 8.6; the stands run from 9.7 to about 17): the near ring of banners (10.3 m out, 2.9 m poles, in his colours) is what the play camera sees over his shoulder; the far parts (towers, trees, tall flags) are seen in the intro shot, built when the match's rival is chosen; champion.dress is added for rungs 3-5. beat: one tap of `preset` every `every` frames during the fight, `accent_preset` 6 dB louder each `accent` taps; x quicken.push_k while the rival pushes (rivals.json rhythm), x quicken.k when a fighter is below quicken.below of his health or the rival roars, x champion.beat_k on rungs 3-5; silent while a hit-stop holds. intro: round 1 of a match opens on a slow shot of him from the player's side, swinging from_deg to to_deg.",
+  "intro": {
+    "on": true,
+    "from_deg": -40,
+    "to_deg": 15,
+    "dist": 5.6,
+    "push": -1.4,
+    "up": 1.5,
+    "look_up": 1.5,
+    "fov": 50
+  },
+  "quicken": {
+    "below": 0.35,
+    "k": 0.7,
+    "push_k": 0.8
+  },
+  "champion": {
+    "beat_k": 0.85,
+    "dress": [
+      {
+        "id": "cflag_0",
+        "kind": "flag",
+        "p": [
+          11.0,
+          0,
+          -19.05
+        ],
+        "params": {
+          "height": 20,
+          "color": "yellow"
+        }
+      },
+      {
+        "id": "cflag_1",
+        "kind": "flag",
+        "p": [
+          22.0,
+          0,
+          -0.0
+        ],
+        "params": {
+          "height": 20,
+          "color": "yellow"
+        }
+      },
+      {
+        "id": "cflag_2",
+        "kind": "flag",
+        "p": [
+          11.0,
+          0,
+          19.05
+        ],
+        "params": {
+          "height": 20,
+          "color": "yellow"
+        }
+      },
+      {
+        "id": "cflag_3",
+        "kind": "flag",
+        "p": [
+          -11.0,
+          0,
+          19.05
+        ],
+        "params": {
+          "height": 20,
+          "color": "yellow"
+        }
+      },
+      {
+        "id": "cflag_4",
+        "kind": "flag",
+        "p": [
+          -22.0,
+          0,
+          0.0
+        ],
+        "params": {
+          "height": 20,
+          "color": "yellow"
+        }
+      },
+      {
+        "id": "cflag_5",
+        "kind": "flag",
+        "p": [
+          -11.0,
+          0,
+          -19.05
+        ],
+        "params": {
+          "height": 20,
+          "color": "yellow"
+        }
+      }
+    ]
+  },
+  "arenas": {
+    "wall": {
+      "dress": [
+        {
+          "id": "wnear_0",
+          "kind": "flag",
+          "p": [
+            2.01,
+            0,
+            -10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wnear_1",
+          "kind": "flag",
+          "p": [
+            5.72,
+            0,
+            -8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_light"
+          }
+        },
+        {
+          "id": "wnear_2",
+          "kind": "flag",
+          "p": [
+            8.56,
+            0,
+            -5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wnear_3",
+          "kind": "flag",
+          "p": [
+            10.1,
+            0,
+            -2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_light"
+          }
+        },
+        {
+          "id": "wnear_4",
+          "kind": "flag",
+          "p": [
+            10.1,
+            0,
+            2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wnear_5",
+          "kind": "flag",
+          "p": [
+            8.56,
+            0,
+            5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_light"
+          }
+        },
+        {
+          "id": "wnear_6",
+          "kind": "flag",
+          "p": [
+            5.72,
+            0,
+            8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wnear_7",
+          "kind": "flag",
+          "p": [
+            2.01,
+            0,
+            10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_light"
+          }
+        },
+        {
+          "id": "wnear_8",
+          "kind": "flag",
+          "p": [
+            -2.01,
+            0,
+            10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wnear_9",
+          "kind": "flag",
+          "p": [
+            -5.72,
+            0,
+            8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_light"
+          }
+        },
+        {
+          "id": "wnear_10",
+          "kind": "flag",
+          "p": [
+            -8.56,
+            0,
+            5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wnear_11",
+          "kind": "flag",
+          "p": [
+            -10.1,
+            0,
+            2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_light"
+          }
+        },
+        {
+          "id": "wnear_12",
+          "kind": "flag",
+          "p": [
+            -10.1,
+            0,
+            -2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wnear_13",
+          "kind": "flag",
+          "p": [
+            -8.56,
+            0,
+            -5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_light"
+          }
+        },
+        {
+          "id": "wnear_14",
+          "kind": "flag",
+          "p": [
+            -5.72,
+            0,
+            -8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wnear_15",
+          "kind": "flag",
+          "p": [
+            -2.01,
+            0,
+            -10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "steel_light"
+          }
+        },
+        {
+          "id": "wflag_0",
+          "kind": "flag",
+          "p": [
+            5.74,
+            0,
+            -13.86
+          ],
+          "params": {
+            "height": 13,
+            "color": "stone_dark"
+          }
+        },
+        {
+          "id": "wflag_1",
+          "kind": "flag",
+          "p": [
+            13.86,
+            0,
+            -5.74
+          ],
+          "params": {
+            "height": 13,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wflag_2",
+          "kind": "flag",
+          "p": [
+            13.86,
+            0,
+            5.74
+          ],
+          "params": {
+            "height": 13,
+            "color": "stone_dark"
+          }
+        },
+        {
+          "id": "wflag_3",
+          "kind": "flag",
+          "p": [
+            5.74,
+            0,
+            13.86
+          ],
+          "params": {
+            "height": 13,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wflag_4",
+          "kind": "flag",
+          "p": [
+            -5.74,
+            0,
+            13.86
+          ],
+          "params": {
+            "height": 13,
+            "color": "stone_dark"
+          }
+        },
+        {
+          "id": "wflag_5",
+          "kind": "flag",
+          "p": [
+            -13.86,
+            0,
+            5.74
+          ],
+          "params": {
+            "height": 13,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "wflag_6",
+          "kind": "flag",
+          "p": [
+            -13.86,
+            0,
+            -5.74
+          ],
+          "params": {
+            "height": 13,
+            "color": "stone_dark"
+          }
+        },
+        {
+          "id": "wflag_7",
+          "kind": "flag",
+          "p": [
+            -5.74,
+            0,
+            -13.86
+          ],
+          "params": {
+            "height": 13,
+            "color": "steel_dark"
+          }
+        },
+        {
+          "id": "tower_0",
+          "kind": "watch_tower",
+          "p": [
+            6.51,
+            0,
+            -15.71
+          ],
+          "yaw": -22.5,
+          "params": {
+            "height": 10
+          }
+        },
+        {
+          "id": "tower_1",
+          "kind": "watch_tower",
+          "p": [
+            6.51,
+            0,
+            15.71
+          ],
+          "yaw": -157.5,
+          "params": {
+            "height": 10
+          }
+        },
+        {
+          "id": "tower_2",
+          "kind": "watch_tower",
+          "p": [
+            -6.51,
+            0,
+            15.71
+          ],
+          "yaw": -202.5,
+          "params": {
+            "height": 10
+          }
+        },
+        {
+          "id": "tower_3",
+          "kind": "watch_tower",
+          "p": [
+            -6.51,
+            0,
+            -15.71
+          ],
+          "yaw": -337.5,
+          "params": {
+            "height": 10
+          }
+        },
+        {
+          "id": "wrock_0",
+          "kind": "rock",
+          "p": [
+            0.0,
+            0,
+            -21.0
+          ],
+          "params": {
+            "size": 3.5,
+            "squash": 0.9,
+            "seed": 210
+          }
+        },
+        {
+          "id": "wrock_1",
+          "kind": "rock",
+          "p": [
+            18.19,
+            0,
+            -10.5
+          ],
+          "params": {
+            "size": 3.5,
+            "squash": 0.9,
+            "seed": 211
+          }
+        },
+        {
+          "id": "wrock_2",
+          "kind": "rock",
+          "p": [
+            18.19,
+            0,
+            10.5
+          ],
+          "params": {
+            "size": 3.5,
+            "squash": 0.9,
+            "seed": 212
+          }
+        },
+        {
+          "id": "wrock_3",
+          "kind": "rock",
+          "p": [
+            0.0,
+            0,
+            21.0
+          ],
+          "params": {
+            "size": 3.5,
+            "squash": 0.9,
+            "seed": 213
+          }
+        },
+        {
+          "id": "wrock_4",
+          "kind": "rock",
+          "p": [
+            -18.19,
+            0,
+            10.5
+          ],
+          "params": {
+            "size": 3.5,
+            "squash": 0.9,
+            "seed": 214
+          }
+        },
+        {
+          "id": "wrock_5",
+          "kind": "rock",
+          "p": [
+            -18.19,
+            0,
+            -10.5
+          ],
+          "params": {
+            "size": 3.5,
+            "squash": 0.9,
+            "seed": 215
+          }
+        }
+      ],
+      "beat": {
+        "preset": "hit_fabric",
+        "accent_preset": "hit_concrete",
+        "every": 44,
+        "accent": 4,
+        "db": -8
+      }
+    },
+    "duelist": {
+      "dress": [
+        {
+          "id": "dnear_0",
+          "kind": "flag",
+          "p": [
+            2.01,
+            0,
+            -10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dnear_1",
+          "kind": "flag",
+          "p": [
+            5.72,
+            0,
+            -8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dnear_2",
+          "kind": "flag",
+          "p": [
+            8.56,
+            0,
+            -5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dnear_3",
+          "kind": "flag",
+          "p": [
+            10.1,
+            0,
+            -2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dnear_4",
+          "kind": "flag",
+          "p": [
+            10.1,
+            0,
+            2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dnear_5",
+          "kind": "flag",
+          "p": [
+            8.56,
+            0,
+            5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dnear_6",
+          "kind": "flag",
+          "p": [
+            5.72,
+            0,
+            8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dnear_7",
+          "kind": "flag",
+          "p": [
+            2.01,
+            0,
+            10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dnear_8",
+          "kind": "flag",
+          "p": [
+            -2.01,
+            0,
+            10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dnear_9",
+          "kind": "flag",
+          "p": [
+            -5.72,
+            0,
+            8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dnear_10",
+          "kind": "flag",
+          "p": [
+            -8.56,
+            0,
+            5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dnear_11",
+          "kind": "flag",
+          "p": [
+            -10.1,
+            0,
+            2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dnear_12",
+          "kind": "flag",
+          "p": [
+            -10.1,
+            0,
+            -2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dnear_13",
+          "kind": "flag",
+          "p": [
+            -8.56,
+            0,
+            -5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dnear_14",
+          "kind": "flag",
+          "p": [
+            -5.72,
+            0,
+            -8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dnear_15",
+          "kind": "flag",
+          "p": [
+            -2.01,
+            0,
+            -10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dflag_0",
+          "kind": "flag",
+          "p": [
+            3.75,
+            0,
+            -14.01
+          ],
+          "params": {
+            "height": 11,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dflag_1",
+          "kind": "flag",
+          "p": [
+            10.25,
+            0,
+            -10.25
+          ],
+          "params": {
+            "height": 14,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dflag_2",
+          "kind": "flag",
+          "p": [
+            14.01,
+            0,
+            -3.75
+          ],
+          "params": {
+            "height": 11,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dflag_3",
+          "kind": "flag",
+          "p": [
+            14.01,
+            0,
+            3.75
+          ],
+          "params": {
+            "height": 14,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dflag_4",
+          "kind": "flag",
+          "p": [
+            10.25,
+            0,
+            10.25
+          ],
+          "params": {
+            "height": 11,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dflag_5",
+          "kind": "flag",
+          "p": [
+            3.75,
+            0,
+            14.01
+          ],
+          "params": {
+            "height": 14,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dflag_6",
+          "kind": "flag",
+          "p": [
+            -3.75,
+            0,
+            14.01
+          ],
+          "params": {
+            "height": 11,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dflag_7",
+          "kind": "flag",
+          "p": [
+            -10.25,
+            0,
+            10.25
+          ],
+          "params": {
+            "height": 14,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dflag_8",
+          "kind": "flag",
+          "p": [
+            -14.01,
+            0,
+            3.75
+          ],
+          "params": {
+            "height": 11,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dflag_9",
+          "kind": "flag",
+          "p": [
+            -14.01,
+            0,
+            -3.75
+          ],
+          "params": {
+            "height": 14,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dflag_10",
+          "kind": "flag",
+          "p": [
+            -10.25,
+            0,
+            -10.25
+          ],
+          "params": {
+            "height": 11,
+            "color": "yellow"
+          }
+        },
+        {
+          "id": "dflag_11",
+          "kind": "flag",
+          "p": [
+            -3.75,
+            0,
+            -14.01
+          ],
+          "params": {
+            "height": 14,
+            "color": "car_red"
+          }
+        },
+        {
+          "id": "dmast_0",
+          "kind": "light_mast",
+          "p": [
+            0.0,
+            0,
+            -19.0
+          ],
+          "params": {
+            "height": 20,
+            "light": false
+          }
+        },
+        {
+          "id": "dmast_1",
+          "kind": "light_mast",
+          "p": [
+            19.0,
+            0,
+            -0.0
+          ],
+          "params": {
+            "height": 20,
+            "light": false
+          }
+        },
+        {
+          "id": "dmast_2",
+          "kind": "light_mast",
+          "p": [
+            0.0,
+            0,
+            19.0
+          ],
+          "params": {
+            "height": 20,
+            "light": false
+          }
+        },
+        {
+          "id": "dmast_3",
+          "kind": "light_mast",
+          "p": [
+            -19.0,
+            0,
+            0.0
+          ],
+          "params": {
+            "height": 20,
+            "light": false
+          }
+        }
+      ],
+      "beat": {
+        "preset": "hit_rubber",
+        "accent_preset": "hit_wood",
+        "every": 34,
+        "accent": 4,
+        "db": -9
+      }
+    },
+    "dancer": {
+      "dress": [
+        {
+          "id": "dnear_0",
+          "kind": "flag",
+          "p": [
+            2.01,
+            0,
+            -10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "dnear_1",
+          "kind": "flag",
+          "p": [
+            5.72,
+            0,
+            -8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "dnear_2",
+          "kind": "flag",
+          "p": [
+            8.56,
+            0,
+            -5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "dnear_3",
+          "kind": "flag",
+          "p": [
+            10.1,
+            0,
+            -2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "dnear_4",
+          "kind": "flag",
+          "p": [
+            10.1,
+            0,
+            2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "dnear_5",
+          "kind": "flag",
+          "p": [
+            8.56,
+            0,
+            5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "dnear_6",
+          "kind": "flag",
+          "p": [
+            5.72,
+            0,
+            8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "dnear_7",
+          "kind": "flag",
+          "p": [
+            2.01,
+            0,
+            10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "dnear_8",
+          "kind": "flag",
+          "p": [
+            -2.01,
+            0,
+            10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "dnear_9",
+          "kind": "flag",
+          "p": [
+            -5.72,
+            0,
+            8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "dnear_10",
+          "kind": "flag",
+          "p": [
+            -8.56,
+            0,
+            5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "dnear_11",
+          "kind": "flag",
+          "p": [
+            -10.1,
+            0,
+            2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "dnear_12",
+          "kind": "flag",
+          "p": [
+            -10.1,
+            0,
+            -2.01
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "dnear_13",
+          "kind": "flag",
+          "p": [
+            -8.56,
+            0,
+            -5.72
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "dnear_14",
+          "kind": "flag",
+          "p": [
+            -5.72,
+            0,
+            -8.56
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "dnear_15",
+          "kind": "flag",
+          "p": [
+            -2.01,
+            0,
+            -10.1
+          ],
+          "params": {
+            "height": 2.9,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "ntree_0",
+          "kind": "tree",
+          "p": [
+            5.25,
+            0,
+            -16.17
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 12,
+            "seed": 400
+          }
+        },
+        {
+          "id": "ntree_1",
+          "kind": "tree",
+          "p": [
+            13.75,
+            0,
+            -9.99
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 14,
+            "seed": 401
+          }
+        },
+        {
+          "id": "ntree_2",
+          "kind": "tree",
+          "p": [
+            17.0,
+            0,
+            -0.0
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 16,
+            "seed": 402
+          }
+        },
+        {
+          "id": "ntree_3",
+          "kind": "tree",
+          "p": [
+            13.75,
+            0,
+            9.99
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 12,
+            "seed": 403
+          }
+        },
+        {
+          "id": "ntree_4",
+          "kind": "tree",
+          "p": [
+            5.25,
+            0,
+            16.17
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 14,
+            "seed": 404
+          }
+        },
+        {
+          "id": "ntree_5",
+          "kind": "tree",
+          "p": [
+            -5.25,
+            0,
+            16.17
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 16,
+            "seed": 405
+          }
+        },
+        {
+          "id": "ntree_6",
+          "kind": "tree",
+          "p": [
+            -13.75,
+            0,
+            9.99
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 12,
+            "seed": 406
+          }
+        },
+        {
+          "id": "ntree_7",
+          "kind": "tree",
+          "p": [
+            -17.0,
+            0,
+            0.0
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 14,
+            "seed": 407
+          }
+        },
+        {
+          "id": "ntree_8",
+          "kind": "tree",
+          "p": [
+            -13.75,
+            0,
+            -9.99
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 16,
+            "seed": 408
+          }
+        },
+        {
+          "id": "ntree_9",
+          "kind": "tree",
+          "p": [
+            -5.25,
+            0,
+            -16.17
+          ],
+          "params": {
+            "species": "broadleaf",
+            "height": 12,
+            "seed": 409
+          }
+        },
+        {
+          "id": "nflag_0",
+          "kind": "flag",
+          "p": [
+            0.0,
+            0,
+            -14.0
+          ],
+          "params": {
+            "height": 12,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "nflag_1",
+          "kind": "flag",
+          "p": [
+            9.9,
+            0,
+            -9.9
+          ],
+          "params": {
+            "height": 12,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "nflag_2",
+          "kind": "flag",
+          "p": [
+            14.0,
+            0,
+            -0.0
+          ],
+          "params": {
+            "height": 12,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "nflag_3",
+          "kind": "flag",
+          "p": [
+            9.9,
+            0,
+            9.9
+          ],
+          "params": {
+            "height": 12,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "nflag_4",
+          "kind": "flag",
+          "p": [
+            0.0,
+            0,
+            14.0
+          ],
+          "params": {
+            "height": 12,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "nflag_5",
+          "kind": "flag",
+          "p": [
+            -9.9,
+            0,
+            9.9
+          ],
+          "params": {
+            "height": 12,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "nflag_6",
+          "kind": "flag",
+          "p": [
+            -14.0,
+            0,
+            0.0
+          ],
+          "params": {
+            "height": 12,
+            "color": "neon_violet"
+          }
+        },
+        {
+          "id": "nflag_7",
+          "kind": "flag",
+          "p": [
+            -9.9,
+            0,
+            -9.9
+          ],
+          "params": {
+            "height": 12,
+            "color": "neon_pink"
+          }
+        },
+        {
+          "id": "nbush_0",
+          "kind": "bush",
+          "p": [
+            4.82,
+            0,
+            -11.64
+          ],
+          "params": {
+            "size": 1.6,
+            "seed": 330
+          }
+        },
+        {
+          "id": "nbush_1",
+          "kind": "bush",
+          "p": [
+            11.64,
+            0,
+            -4.82
+          ],
+          "params": {
+            "size": 1.6,
+            "seed": 331
+          }
+        },
+        {
+          "id": "nbush_2",
+          "kind": "bush",
+          "p": [
+            11.64,
+            0,
+            4.82
+          ],
+          "params": {
+            "size": 1.6,
+            "seed": 332
+          }
+        },
+        {
+          "id": "nbush_3",
+          "kind": "bush",
+          "p": [
+            4.82,
+            0,
+            11.64
+          ],
+          "params": {
+            "size": 1.6,
+            "seed": 333
+          }
+        },
+        {
+          "id": "nbush_4",
+          "kind": "bush",
+          "p": [
+            -4.82,
+            0,
+            11.64
+          ],
+          "params": {
+            "size": 1.6,
+            "seed": 334
+          }
+        },
+        {
+          "id": "nbush_5",
+          "kind": "bush",
+          "p": [
+            -11.64,
+            0,
+            4.82
+          ],
+          "params": {
+            "size": 1.6,
+            "seed": 335
+          }
+        },
+        {
+          "id": "nbush_6",
+          "kind": "bush",
+          "p": [
+            -11.64,
+            0,
+            -4.82
+          ],
+          "params": {
+            "size": 1.6,
+            "seed": 336
+          }
+        },
+        {
+          "id": "nbush_7",
+          "kind": "bush",
+          "p": [
+            -4.82,
+            0,
+            -11.64
+          ],
+          "params": {
+            "size": 1.6,
+            "seed": 337
+          }
+        }
+      ],
+      "beat": {
+        "preset": "hit_wood",
+        "accent_preset": "hit_plastic",
+        "every": 26,
+        "accent": 3,
+        "db": -10
+      }
+    }
+  }
+}

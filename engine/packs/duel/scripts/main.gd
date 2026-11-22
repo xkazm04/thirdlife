@@ -40,6 +40,7 @@ var lead_changes: int = 0
 var lead_round: int = 0                ## lead changes in this round
 var round_log: Array = []              ## [winner, reason, frames]
 var match_log: Array = []
+var arena                              ## the rival's place and beat (scripts/arena.gd)
 var hitstop_frames: int = 0
 var fight_frames: int = 0
 var spacing: Dictionary = {}           ## centre distance over the live fight: frames, sum, close (< 1.3 m), min
@@ -91,6 +92,9 @@ func _pack_setup(c) -> void:
 	show.setup(self)
 	lessons = ctx.load_script("scripts/lessons.gd").new()
 	lessons.setup(self)
+	arena = ctx.load_script("scripts/arena.gd").new()
+	arena.setup(self)
+	arena.dress(str(rival.cfg["key"]), rung >= 3)
 	feel.fade_occluders(you, rival)
 	_new_brain()
 
@@ -175,7 +179,9 @@ func _start_round() -> void:
 	phase = "intro"
 	phase_t = 0
 	show.snap_camera()
-	show.banner("ROUND %d" % round_no if round_no > 1 or rung > 0 else "%s\n%s" % [rival.name, str(rival.cfg.get("line", ""))], int(tune["rounds"]["intro_frames"]))
+	show.banner("ROUND %d" % round_no if round_no > 1 else "%s\n%s" % [rival.name, str(rival.cfg.get("line", ""))], int(tune["rounds"]["intro_frames"]))
+	if arena != null:
+		arena.intro()
 
 
 func _pack_tick(frame: int) -> void:
@@ -199,6 +205,7 @@ func _pack_tick(frame: int) -> void:
 		"match_end":
 			_idle_bodies(true)
 	show.tick()
+	arena.tick()
 
 
 func _meta_input() -> void:
@@ -228,6 +235,7 @@ func _restart_match(r: int) -> void:
 		feel.join(rival)
 		feel.fade_occluders(you, rival)
 		_new_brain()
+		arena.dress(str(rival.cfg["key"]), rung >= 3)
 	wins = {"you": 0, "rival": 0}
 	ctx.root.remove_child(match_rules)
 	match_rules.queue_free()
@@ -496,7 +504,7 @@ func _after_round() -> void:
 			match_rules.finish(match_rules.leader(), "rounds")
 		match_log.append([rung, match_rules.winner, wins.duplicate(), round_log.duplicate()])
 		var won: bool = match_rules.winner == "you"
-		show.banner(("YOU BEAT %s" % rival.name if won else "%s WINS" % rival.name) + "\n%s   R: again" % ("ENTER: next rival" if won and rung < 5 else ""), 100000)
+		show.banner(("YOU BEAT %s" % rival.name if won else "%s WINS" % rival.name) + "\n%s\n%s   R: again" % [arena.time_line(won), "ENTER: next rival" if won and rung < 5 else ""], 100000)
 		return
 	round_no += 1
 	_start_round()
@@ -526,5 +534,5 @@ func _pack_state() -> Dictionary:
 		"drill": str(drill.get("id", "")), "stops": feel.stops, "lead_changes": lead_changes, "crowd": snappedf(crowd_level, 0.01),
 		"rounds": round_log.duplicate(true), "matches": match_log.size(), "rival_passive_max": brain.passive_max, "rival_passive_note": brain.passive_note,
 		"rival_tells_min": brain.tells_min, "rival_attacks": brain.attacks, "rival_strings": brain.strings_used.duplicate(), "rival_mind": brain.choices.duplicate(),
-		"you_counts": you.counts.duplicate(), "rival_counts": rival.counts.duplicate(), "pushbox_gap": snappedf(feel.pushbox_gap(you, rival), 0.001), "first_minute": first_minute.duplicate(), "spacing": {"mean": snappedf(float(spacing.get("sum", 0.0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.01), "close_share": snappedf(float(spacing.get("close", 0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.001), "min": snappedf(float(spacing.get("min", 0.0)), 0.01)}, "lessons": lessons.snapshot() if lessons != null else {}, "causes": causes.duplicate(true), "loss_causes": cause_log.duplicate(true),
+		"you_counts": you.counts.duplicate(), "rival_counts": rival.counts.duplicate(), "pushbox_gap": snappedf(feel.pushbox_gap(you, rival), 0.001), "first_minute": first_minute.duplicate(), "spacing": {"mean": snappedf(float(spacing.get("sum", 0.0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.01), "close_share": snappedf(float(spacing.get("close", 0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.001), "min": snappedf(float(spacing.get("min", 0.0)), 0.01)}, "lessons": lessons.snapshot() if lessons != null else {}, "causes": causes.duplicate(true), "loss_causes": cause_log.duplicate(true), "arena": arena.snapshot() if arena != null else {},
 		"metrics_feed": metrics.duplicate(), "rival_attack_frames": brain.attack_frames.duplicate()}

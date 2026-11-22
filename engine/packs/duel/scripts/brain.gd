@@ -55,6 +55,10 @@ var phase2_on: bool = false            ## the second phase was announced (rivals
 var attacks: int = 0
 var strings_used: Dictionary = {}
 var attack_frames: Array = []          ## the frames the rival started an attack (pressure waves)
+var pushing: bool = true               ## the rhythm (rivals.json rhythm): a push of strings, then a breath behind the guard
+var rhythm_t: int = 0
+var step_left: int = 0                 ## frames left of a feint step in his breath
+var waves: int = 0                     ## pushes started (checklist item 12: the rival brings waves)
 var choices: Dictionary = {}           ## what the mind chose, counted (defences, reads, punishes): the bots read it
 
 
@@ -89,6 +93,8 @@ func reset_round() -> void:
 	blocks_row = 0
 	punish_left = 0
 	counter_next = ""
+	pushing = true
+	rhythm_t = 0
 	last_action = -1
 	log_seen = g.contact.log.size() if g.contact != null else 0
 
@@ -116,6 +122,7 @@ func tick(f: int) -> void:
 	_read_log()
 	if g.lessons != null and g.lessons.tick(f):
 		return                                           # the first minute: a lesson drives him (scripts/lessons.gd)
+	_rhythm()
 	if me.walk.y > 0.5 and me.dist() > 2.0:
 		last_action = f                                  # last frame it was closing in: pressure, not idling
 	me.walk = Vector2.ZERO
@@ -140,9 +147,10 @@ func tick(f: int) -> void:
 	if _defence_running():
 		return
 	if me.st == "BLOCKSTUN" or me.st == "PARRY_OK":
-		_queue_counter()
+		if pushing or not cfg.has("rhythm") or bool(cfg["rhythm"].get("breath_counters", false)):
+			_queue_counter()                             # in his breath he only weathers it: your window
 		return
-	if _punish(p):
+	if (pushing or not cfg.has("rhythm")) and _punish(p):
 		return
 	if str(p["state"]) == "WINDUP" and str(p["mv"]) in ["heavy", "charged"] and me.dist() < 3.2 and me.st != "WINDUP":
 		me.walk = Vector2(strafe, -0.6)                   # a heavy is coming: no light into its armour; step out of it
@@ -396,6 +404,29 @@ func _start_reset() -> void:
 
 
 ## SPACING and PRESS.
+## Breathe, then push (For Honor's and Souls' bosses come in waves; checklist item 12): `push` frames of strings at
+## `push_pace` x his pace, then `breathe` frames behind his guard `back` metres further off (the Dancer circles and
+## side-rolls instead), opened by a taunt you can punish. In phase 2 the breath is shorter. Off without `rhythm`.
+func _rhythm() -> void:
+	if not cfg.has("rhythm"):
+		return
+	var r: Dictionary = cfg["rhythm"]
+	rhythm_t += 1
+	var lim: int = int(r["push"]) if pushing else int(float(r["breathe"]) * (float(r["phase2_k"]) if phase2_on else 1.0))
+	if rhythm_t < lim or not plan.is_empty():
+		return
+	rhythm_t = 0
+	pushing = not pushing
+	if pushing:
+		waves += 1
+		press_wait = mini(press_wait, 6)
+		me.events.append(["push", ""])
+	else:
+		me.events.append(["breathe", ""])
+		if bool(r.get("taunt", false)) and me.can_act():
+			_do("taunt", {})
+
+
 func _space() -> void:
 	var d: float = me.dist()
 	var want: float = float(cfg["space"])
@@ -407,11 +438,24 @@ func _space() -> void:
 	if guard_left <= 0:
 		guard_walk = _rand() < float(cfg.get("guard_up", 0.0))
 		guard_left = 50 + int(_rand() * 60.0)
+	if not pushing:
+		var r: Dictionary = cfg["rhythm"]
+		want += float(r["back"])                         # the breath: he gives ground and lets you come
+		if bool(r["guard"]):
+			guard_walk = true                            # the Wall breathes behind his shield
+		elif frame - last_action >= int(r["step_every"]):
+			step_left = int(r["step_frames"])            # the others breathe on their feet: circling, a feint step in
 	me.block_held = guard_walk
 	if guard_walk and me.st != "BLOCK" and me.can_act():
 		me.press("block")
 	var fwd: float = clampf((d - want) * 1.5, -1.0, 1.0)
+	if step_left > 0:
+		step_left -= 1
+		fwd = 1.0
 	me.walk = Vector2(strafe * 0.7, fwd)
+	if not pushing:
+		last_action = frame if me.st in ["BLOCK", "ROLL"] or absf(d - want) > 0.4 else last_action
+		return                                           # no string starts in a breath (a punish or a defence still does)
 	press_wait -= 1
 	if press_wait <= 0 and d <= want + 2.5 and me.can_act():          # a string closes in by itself (_run_plan)
 		_pick_string()
@@ -494,6 +538,9 @@ func _run_plan() -> void:
 		if plan.is_empty():
 			return_left = int(tier["return"])
 			press_wait = int(tier["pace"][0]) + int(_rand() * float(int(tier["pace"][1]) - int(tier["pace"][0])))
+			if cfg.has("rhythm"):
+				press_wait = int(float(press_wait) * float(cfg["rhythm"]["push_pace"]))
+				return_left = int(float(return_left) * float(cfg["rhythm"]["push_pace"]))   # a push presses: less standing open
 		else:
 			step_wait = int(plan[0].get("delay", 0))
 

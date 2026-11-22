@@ -16,10 +16,10 @@ var cam_look: Vector3 = Vector3.ZERO
 var views: Array = [&"duel", &"side", &"arena"]
 var view_i: int = 0
 var side_sign: float = 1.0
-var flames: Array = []
+var flames: Array = []                 ## [node, frames left]
 var ko_left: int = 0                    ## frames the KO camera still holds
 var ko_body = null                     ## the fighter who fell
-var ko_prev: StringName = &"duel"                 ## [node, frames left]
+var ko_prev: StringName = &"duel"
 
 
 func setup(main) -> void:

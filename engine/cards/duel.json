@@ -51,6 +51,7 @@
     {"file": "data/venue.json", "role": "the ring: a dirt floor, 20 barrier_wall blocks in a circle (the splat wall, 1.25 m: low enough to see over), stands, gate, flags, light masts"},
     {"file": "data/lessons.json", "role": "the first minute against the first rival: each answer (block, parry, bash) shown once with a cue before a slower, held blow, then he stands open for the punish"},
     {"file": "data/causes.json", "role": "what beat you: the cause each hit the player takes is filed under, and the answer a lost round ends on"},
+    {"file": "data/arenas.json", "role": "each rival's own place (kit parts outside the ring wall, a near ring of banners in his colours), his drum beat, the round-1 intro shot; with rivals.json rhythm (push, then breathe) the rival brings waves"},
     {"file": "data/drills.json", "role": "scripted situations for the contact bots and the review clips: both fighters placed, the rival's moves by frame, the contact expected"}
   ],
   "do": [
