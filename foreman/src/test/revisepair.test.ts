@@ -84,3 +84,49 @@ test("revisePair copies both strips into ref/look/ and sendBack puts the pair fi
   assert.match(queued?.detail ?? "", /^[^:]+: THE PAIR/, "the pair comes before the critic's notes, so the 1500-character clip never cuts it");
   assert.match(queued?.detail ?? "", /heavy_block\.hitstop: yours 3, house 6/);
 });
+
+// ---------- the house baseline's cache key (D3 of 22 Nov, after the pair) ----------
+
+test("houseKey changes with the house pack's files and the strip's moment kinds; contactMoment says the kind it filmed", async () => {
+  const { HOUSE_BOTS, houseKey, contactMoment } = await import("../house.js");
+  const dir = tempDir("house-key");
+  fs.mkdirSync(path.join(dir, "data"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "data", "contacts.json"), "{\"a\": 1}");
+  const bot = HOUSE_BOTS["duel"] as NonNullable<(typeof HOUSE_BOTS)["duel"]>;
+  const k0 = houseKey(dir, bot);
+  assert.equal(houseKey(dir, bot), k0, "the same pack and bot: the same key");
+  fs.writeFileSync(path.join(dir, "data", "contacts.json"), "{\"a\": 2}");
+  const k1 = houseKey(dir, bot);
+  assert.notEqual(k1, k0, "a house pack file changed");
+  assert.notEqual(houseKey(dir, { ...bot, strip: { ...(bot.strip as NonNullable<typeof bot.strip>), moments: ["clash"] } }), k1, "the strip's moment kinds changed");
+  const report = { bot: { frames: 9000, result: { moments: { hit_heavy: [300], parried: [2269] } } } };
+  assert.deepEqual(contactMoment(report, ["parried", "hit_heavy"]), { frame: 2269, kind: "parried" });
+  assert.deepEqual(contactMoment(report, ["clash"]), { frame: 8940 }, "no listed kind: the finish fallback, with no kind");
+});
+
+test("a cached house baseline without the current key is measured again (the proofs' KO-fallback strip); a current one is kept", async () => {
+  const { houseBaseline, houseKey, HOUSE_BOTS } = await import("../house.js");
+  const dir = tempDir("house-stale");
+  fs.mkdirSync(path.join(dir, "ref", "packs", "duel"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "reports"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "ref", "packs", "duel", "pack.json"), "{}");
+  const stale = { schema: "tl.foreman.house/1", pack: "duel", test: "tests/bot_checklist_wall.gd", metrics: { idle_max_f: 64 }, strips: [{ capture: "reports/house-duel/strip-side-f4523.png", label: "KO" }] };
+  fs.writeFileSync(path.join(dir, "reports", "house-duel.json"), JSON.stringify(stale));
+  let runs = 0;
+  const h = {
+    dir: (...p: string[]) => path.join(dir, ...p),
+    rel: (abs: string) => path.relative(dir, abs).split(path.sep).join("/"),
+    verifyLogged: async () => { runs++; return { ok: true, summary: "bot passed", reportFile: path.join(dir, "reports", "house-duel-s9.json"), report: { bot: { result: { metrics: { idle_max_f: 50 } } } } }; },
+  } as unknown as GateHost;
+  const template = { id: "duel" as const, reference: "r", copies: [] };
+  const fresh = await houseBaseline(h, template);
+  assert.equal(runs, 1, "no key: measured again");
+  assert.deepEqual([fresh?.metrics["idle_max_f"], fresh?.strips, fresh?.key], [50, undefined, houseKey(path.join(dir, "ref", "packs", "duel"), HOUSE_BOTS["duel"] as NonNullable<(typeof HOUSE_BOTS)["duel"]>)]);
+  assert.match(fresh?.note ?? "", /measured again: the cached baseline was stale \(it has no key/);
+  await houseBaseline(h, template);
+  assert.equal(runs, 1, "the current key: the cache is kept");
+  fs.writeFileSync(path.join(dir, "ref", "packs", "duel", "pack.json"), "{\"changed\": true}");
+  const again = await houseBaseline(h, template);
+  assert.equal(runs, 2, "the house pack changed: measured again");
+  assert.match(again?.note ?? "", /the house pack, its bot or its moment kinds changed/);
+});

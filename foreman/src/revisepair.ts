@@ -103,11 +103,12 @@ export function pairStrips(jobDir: string, events: readonly JobEvent[], strips: 
  * The pair for revise round `round`: both strips copied into ref/look/<m>-r<round>/ (the builder's readable reference),
  * and the text the round's feedback carries. Undefined when the job has no house strip or no contact strip of its own.
  */
-export function revisePair(h: GateHost, m: string, round: number, strips: { capture: string; label: string }[], base: { pack: string; strips?: { capture: string; label: string }[] } | undefined, template: string | undefined): string | undefined {
+export function revisePair(h: GateHost, m: string, round: number, strips: { capture: string; label: string }[], base: { pack: string; strips?: { capture: string; label: string; kind?: string }[] } | undefined, template: string | undefined): string | undefined {
   if (base === undefined || template === undefined) return undefined;
   const houseStrip = (base.strips ?? []).find((x) => fs.existsSync(h.dir(...x.capture.split("/"))));
   const contactF = houseStrip !== undefined ? stripInfo(houseStrip.capture, houseStrip.label)?.contact : undefined;
-  const pair = houseStrip !== undefined ? pairStrips(h.dir(), h.events, strips, houseStrip, contactF !== undefined ? houseStripKind(h.dir(), base.pack, contactF) : undefined) : undefined;
+  const kind = houseStrip?.kind ?? (contactF !== undefined ? houseStripKind(h.dir(), base.pack, contactF) : undefined); // D3: the strip's own kind first
+  const pair = houseStrip !== undefined ? pairStrips(h.dir(), h.events, strips, houseStrip, kind) : undefined;
   const diff = contactDiff(h.dir("pack"), h.dir("ref", "packs", base.pack), template, base.pack);
   const parts: string[] = [];
   if (pair !== undefined) {

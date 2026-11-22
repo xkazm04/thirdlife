@@ -11,7 +11,7 @@ import { critic, generate, type RubricItem } from "./designer.js";
 import { criticRubric, packageLinesOf } from "./phases.js";
 import { CRITIC_ROUND, criticReopenFor } from "./rounds.js";
 import { QUALITY_ROUNDS, type Look } from "./quality_state.js";
-import { CONTACT_STRIP, STRIP, shotLabel, stripFile, stripFrom, stripLabel, type Shot } from "./shots.js";
+import { CONTACT_STRIP, STRIP, botMoments, shotLabel, stripFile, stripFrom, stripLabel, type Shot } from "./shots.js";
 import { foldEvents } from "./joblog.js";
 import { copyDir } from "./scope.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
@@ -20,9 +20,9 @@ import { slopIds } from "./roomtext.js";
 import type { RunnerVerbs } from "./verbs.js";
 import type { CritiqueResult } from "./verifier.js";
 import { judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } from "./tofu.js";
-import { HOUSE_BOTS, contactFrame, houseBaseline, houseCompare, saveBaseline, type HouseBaseline } from "./house.js";
+import { HOUSE_BOTS, contactMoment, houseBaseline, houseCompare, saveBaseline, type HouseBaseline } from "./house.js";
 import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./filmcheck.js";
-import { revisePair } from "./revisepair.js";
+import { revisePair, sameKind } from "./revisepair.js";
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -67,14 +67,17 @@ async function captureOnce(h: GateHost, args: string[], out: string, stem: strin
  * drill bot of ref/packs/<pack> finds the contact frame, then one capture with --strip from 15 frames before it). The
  * strips are kept in the house baseline; [] when the pack, the bot or the capture failed (said in `notes`).
  */
-export async function houseStrips(h: GateHost, base: HouseBaseline, template: string, after: string, notes: string[]): Promise<{ capture: string; label: string }[]> {
+export async function houseStrips(h: GateHost, base: HouseBaseline, template: string, after: string, notes: string[], buildKinds: string[] = []): Promise<{ capture: string; label: string }[]> {
   if (base.strips !== undefined) return base.strips;
   const s = HOUSE_BOTS[template]?.strip;
   const packDir = h.dir("ref", "packs", base.pack);
   let strips: { capture: string; label: string }[] = [];
   if (s !== undefined && fs.existsSync(packDir)) {
     const vr = await h.verifyLogged({ verb: "bot", args: [`--test=${s.test}`, ...s.args] }, packDir, `house-${base.pack}-drill`, { round: 1 });
-    const f = contactFrame(vr.report, s.moments);
+    // D3 of 22 Nov: a kind this build's bots also reported is filmed first (poked for a build's poke_free), so the revise pair compares like with like.
+    const order = [...(s.moments ?? []).filter((k) => buildKinds.some((b) => sameKind(k, b))), ...(s.moments ?? []).filter((k) => !buildKinds.some((b) => sameKind(k, b)))];
+    const cm = contactMoment(vr.report, order);
+    const f = cm?.frame;
     if (f !== undefined) {
       // Round 9: the house strip is a CONTACT strip too (2 frames apart from 10 before), so the bar and the build compare like with like.
       const from = Math.max(1, f - CONTACT_STRIP.before);
@@ -82,7 +85,8 @@ export async function houseStrips(h: GateHost, base: HouseBaseline, template: st
       const out = h.dir("reports", `house-${base.pack}`, `strip-${s.cam}-f${from}.png`);
       const res = `--res=${h.o.captureRes ?? "1280x720"}`;
       if (await captureOnce(h, [`--cam=${s.cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${st}`, res, `--test=${s.test}`], out, `house-${base.pack}-strip`, after, notes, `house strip ${s.cam} from frame ${from}`, packDir)) {
-        strips = [{ capture: h.rel(out), label: `HOUSE GAME engine/packs/${base.pack} (the bar, not this build): CONTACT MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + st}, ... ${from + st * (STRIP.count - 1)}, ${st} frames apart; the contact at frame ${f}), ${s.test} on camera ${s.cam}: ${s.label}` }];
+        // D3 of 22 Nov: the strip keeps its contact kind (the revise pair matches the build's strip to it); a fallback frame has none.
+        strips = [{ capture: h.rel(out), label: `HOUSE GAME engine/packs/${base.pack} (the bar, not this build): CONTACT MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + st}, ... ${from + st * (STRIP.count - 1)}, ${st} frames apart; the contact at frame ${f}${cm?.kind !== undefined ? `, ${cm.kind}` : ""}), ${s.test} on camera ${s.cam}: ${s.label}`, ...(cm?.kind !== undefined ? { kind: cm.kind } : {}) }];
       }
     } else notes.push(`house strip: ${s.test} on ref/packs/${base.pack} gave no contact frame (${clip(vr.summary, 160)})`);
   }
@@ -370,7 +374,7 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template, h.s.brief?.design?.verbs.length), t.test, r.hand, r.from, filmed); })() : undefined);
   const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
-  const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes) : [];
+  const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes, [...new Set(shots.flatMap((x) => (x.bot !== undefined ? botMoments(h.dir(), h.events, x.bot).map((mm) => mm.kind) : [])))]) : [];
   const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined, claimsLine(built, filmed)), tofu);
   const fresh = judged.verdict;
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
