@@ -510,3 +510,6 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   house pack's files, the house bot (test, args, map, skip, strip config and moment kinds) and the reader's version. A
   cached baseline with another key, or none, is stale and measured and filmed again. Each house strip records its
   contact `kind`; the house strip films first a kind the build's own bots reported (by family), then the template's order.
+- **Two-bound rows (round 4).** A tofu row with both bounds is SHORT of the house game when the build's figure is further
+  from the house figure than the margin (25 %); the compare line says when the house figure itself sits outside the
+  template's bound. A still strip with no claim of its own bot against it is named to the critic with that bot.
