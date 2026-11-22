@@ -77,7 +77,8 @@ func _clip_v4(e: Dictionary, g: Node) -> Vector4:
 
 
 ## The picture builder can keep a slab that overlaps the plot. Its merged instance is centred on the plot.
-## Live instances still use the shader's origin cut, including those with the overlap bit set in tl_clip.w.
+## N3 (22-23 Nov): a live instance with the overlap bit (tl_clip.w bit 2) is no longer dropped by its origin; it is cut
+## per fragment at the radius + 3 m like the picture, so near and far show the same floor (ex_car's asphalt was grass near).
 static func reaches_in(holder: Node, g: Node, radius: float) -> bool:
 	if radius <= 0.0 or not (g is GeometryInstance3D) or not (holder is Node3D):
 		return false

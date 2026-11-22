@@ -498,7 +498,7 @@ void vertex() {
 	if (tl_clip.x > 0.0) {
 		vec3 org = MODEL_MATRIX[3].xyz;
 		float ro = length(org.xz);
-		if (ro > tl_clip.x) {
+		if (ro > tl_clip.x && tl_clip.w < 1.5) {   // N3: w >= 2 = a slab that reaches into the plot (draw layer): cut per fragment below, not dropped
 			VERTEX = vec3(0.0);   // every vertex on one point: nothing is drawn
 		} else if (tl_clip.z > 0.0) {
 			bool sheet = tl_clip.w > 0.5;
