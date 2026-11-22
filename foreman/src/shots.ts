@@ -43,6 +43,43 @@ export function botFinish(jobDir: string, events: readonly JobEvent[], bot: stri
   return undefined;
 }
 
+/**
+ * N4 loop round 8 (22 Nov): the frames where the bot saw the exchange happen, from its last passing report: the result's
+ * `moments` (or `metrics.moments`), an object of kind -> frames. The crazy proof -3 was filmed at fixed fractions of its
+ * bot's run and two of its strips were 60 frames of both fighters standing still.
+ */
+export function botMoments(jobDir: string, events: readonly JobEvent[], bot: string): { kind: string; frame: number }[] {
+  for (const e of [...events].reverse()) {
+    if (e.type !== "verify" || e.verb !== "bot" || !e.ok) continue;
+    try {
+      const r = JSON.parse(fs.readFileSync(path.join(jobDir, e.report), "utf8")) as { bot?: { test?: unknown; result?: { moments?: unknown; metrics?: { moments?: unknown } } } };
+      if (r.bot?.test !== bot) continue;
+      const m = r.bot.result?.moments ?? r.bot.result?.metrics?.moments;
+      if (m === null || typeof m !== "object" || Array.isArray(m)) return [];
+      const out: { kind: string; frame: number }[] = [];
+      for (const [kind, v] of Object.entries(m as Record<string, unknown>)) for (const f of Array.isArray(v) ? v : []) if (typeof f === "number" && Number.isFinite(f) && f > 0) out.push({ kind, frame: Math.round(f) });
+      return out.sort((a, b) => a.frame - b.frame);
+    } catch {
+      /* an unreadable report has no moments */
+    }
+  }
+  return [];
+}
+
+/** Up to `n` moments to film: the first frame of each kind in turn (variety first), at least 31 frames in (a strip's lead-up), sorted by frame. */
+export function pickMoments(moments: { kind: string; frame: number }[], n: number): number[] {
+  const usable = moments.filter((m) => m.frame > 30);
+  const kinds = [...new Set(usable.map((m) => m.kind))];
+  const out: number[] = [];
+  for (let round = 0; out.length < n && round < usable.length; round++) {
+    for (const k of kinds) {
+      const f = usable.filter((m) => m.kind === k)[round]?.frame;
+      if (f !== undefined && !out.includes(f) && out.length < n) out.push(f);
+    }
+  }
+  return out.sort((a, b) => a - b);
+}
+
 /** The two capture frames for a finish frame: [25 %, 95 %] for a package's own bot, [25 %, 75 %] for the first test; 120 and 480 without one. */
 export function shotFrames(finish: number | undefined, kind: Shot["kind"]): number[] {
   if (finish === undefined) return [120, 480];
@@ -63,12 +100,21 @@ export function planShots(
   manifestTests: string[],
   finishOf: (bot: string) => number | undefined,
   fixed?: number[],
+  momentsOf: (bot: string) => { kind: string; frame: number }[] = () => [],
 ): Shot[] {
+  // Round 8: where the bot reports its moments, film them. The first test keeps its 25 % frame (the art-pass check compares
+  // the same frame milestone to milestone) and films its first moment second; a package's own bot films two moments.
+  const atMoments = (bot: string | undefined, base: number[], keepFirst: boolean): number[] => {
+    if (bot === undefined) return base;
+    const m = pickMoments(momentsOf(bot), keepFirst ? 1 : 2);
+    if (m.length === 0) return base;
+    return keepFirst ? [base[0] as number, ...m.filter((f) => f !== base[0])] : m.length === 1 ? [...m, ...base.slice(1).filter((f) => f !== m[0])].slice(0, 2) : m;
+  };
   const first = manifestTests[0];
   const firstFinish = first !== undefined ? finishOf(first) : undefined;
   const firstOwner = first !== undefined ? plan.find((p) => (p.registers?.tests ?? []).includes(first))?.id : undefined;
   const servesOf = (id: string | undefined): { clips?: string[] } => { const sv = plan.find((p) => p.id === id)?.serves ?? []; return sv.length > 0 ? { clips: sv } : {}; };
-  const shots: Shot[] = [{ ...(first !== undefined ? { bot: first } : {}), ...(firstOwner !== undefined ? { package: firstOwner } : {}), ...servesOf(firstOwner), frames: fixed ?? shotFrames(firstFinish, "first"), ...(firstFinish !== undefined ? { finish: firstFinish } : {}), kind: "first" }];
+  const shots: Shot[] = [{ ...(first !== undefined ? { bot: first } : {}), ...(firstOwner !== undefined ? { package: firstOwner } : {}), ...servesOf(firstOwner), frames: fixed ?? atMoments(first, shotFrames(firstFinish, "first"), true), ...(firstFinish !== undefined ? { finish: firstFinish } : {}), kind: "first" }];
   const taken = new Set(first !== undefined ? [first] : []);
   const lastMerge = new Map<string, number>();
   for (const e of events) if (e.type === "merge" && e.files.length > 0) lastMerge.set(e.package, e.seq);
@@ -83,7 +129,7 @@ export function planShots(
     if (bot === undefined) continue;
     taken.add(bot);
     const finish = finishOf(bot);
-    shots.push({ bot, package: id, frames: fixed ?? shotFrames(finish, "own"), ...(finish !== undefined ? { finish } : {}), kind: "own", ...servesOf(id) });
+    shots.push({ bot, package: id, frames: fixed ?? atMoments(bot, shotFrames(finish, "own"), false), ...(finish !== undefined ? { finish } : {}), kind: "own", ...servesOf(id) });
   }
   return shots;
 }
