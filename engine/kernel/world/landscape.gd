@@ -21,6 +21,7 @@ const WorldSpace: GDScript = preload("res://kernel/world/terrain/world_space.gd"
 const Parts: GDScript = preload("res://kernel/world/terrain/village_parts.gd")
 const SiteDraw: GDScript = preload("res://kernel/world/site/draw.gd")    # S: a construction site's look
 const RoadClear := preload("res://kernel/world/terrain/road_clear.gd")     # 21 Nov L6: the scatter's exact road clearance
+const Home := preload("res://kernel/world/home/hook.gd")     # D1 22 Nov: the Home (Wren Valley) instead of the far plain; TL_HOME=plain
 
 const GROUND_Y: float = 0.0              # the terrain and the far plain: a pack's rim and the ground meet at the same height
 const FLAT_GROUND_Y: float = -0.06      # the flat ground of single shots (`ground()`), as in N7
@@ -68,6 +69,8 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	if TLStyle.headless():
 		ground(parent, plots, radii, has_ground, str(cfg.get("ground_key", "")))
 		return stats
+	var home: bool = Home.wanted(cfg)
+	cfg = Home.trim(cfg, home)
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = int(cfg.get("seed", 7))
 	# ---- plots and lots: centre, radius, own ground, pad height
@@ -349,7 +352,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 	land.build_meshes(parent, tmat, Land.focus(parent, true))
 	if gmat != null:
 		parent.set_meta(&"tl_ground_mat", gmat)            # walker-feel T: draw/view_seam.gd `close_holes`
-	Parts.far_ground(parent, terr, str(cfg.get("ground_key", "")))
+	if not home: Parts.far_ground(parent, terr, str(cfg.get("ground_key", "")))
 	var tms: int = int(terr.get("build_ms"))
 	stats["terrain_ms"] = tms
 	stats["terrain_verts"] = (int(terr.get("nx")) + 1) * (int(terr.get("nz")) + 1)
@@ -487,6 +490,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 			var sc: float = rng.randf_range(0.9, 1.7)
 			var py: float = terr.gy(p.x, p.y) - 0.2 if terr.inside(p.x, p.y) else -0.26
 			xs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.95, 1.2), sc)), Vector3(p.x, py, p.y)))
+		xs = Home.keep(xs, terr, home)
 		Parts.multi(parent, TLKitNature.pine(110 + v, 10.0 + float(v) * 2.5, 5, 2.4 + float(v) * 0.3), xs, "WorldBelt%d" % v, crown_batches, crown_region)
 		for x: Transform3D in xs:
 			if terr.inside(x.origin.x, x.origin.z):
@@ -520,6 +524,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 				ws.set("tag", "pack %d" % i)
 				ws.call("add_pack", holders[i], plots[i], float(radii[i]), float(pad_h[i]) - (plots[i] as Transform3D).origin.y, DrawBase.rim_width(float(radii[i]), configured_band) if bool(has_ground[i]) else 0.0)
 	_lap(stats, "space")
+	if home: stats["home"] = Home.grow(parent, cfg, terr, ws)
 	ws.call("finish")
 	_lap(stats, "crowns")
 	stats["space"] = ws.get("stats")

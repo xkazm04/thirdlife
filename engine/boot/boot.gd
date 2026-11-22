@@ -254,6 +254,9 @@ func _make_walk() -> String:
 		walk["events"] = evs
 	if opts.has("ticks") and str(opts["ticks"]).is_valid_int():
 		walk["ticks"] = int(opts["ticks"])
+	if OS.get_environment("TL_EXE_START").split_floats(",").size() == 4:     # D1 22 Nov, a test instrument: start at x,z facing x2,z2
+		var at: PackedFloat64Array = OS.get_environment("TL_EXE_START").split_floats(",")
+		walk["player"] = [[0, [at[0], 0, at[1]]], [60, [at[0], 0, at[1]]], [61, [at[2], 0, at[3]]]]
 	if opts.has("edits"):
 		# S3: a test instrument (the walk's `edits`, kernel/world/jobs.gd): [[world tick, file, replacement file]]
 		# from a JSON file; a file is copied over another at a tick, so a "job that grows" is a function of the ticks
