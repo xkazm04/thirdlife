@@ -198,6 +198,10 @@ toy scale; not yet a game that sells itself by its feel". It is still one shared
    -5 is the one worth it.
 5. **Contracts:** PACK.md names `metrics` and `moments`?
 
+**Answered by the owner (~10:30):** 1 duel kept as is, returned to later; 2 hockey bots kept, r2a lands once E6 is
+fixed; 3 the Home is A; 4 all six proofs accepted for now (not resumed); 5 PACK.md amended (`metrics`, `moments`).
+Recorded in STATE.md `## Decisions`.
+
 ## Route scoreboard
 | Route | Lanes | Result |
 |---|---|---|

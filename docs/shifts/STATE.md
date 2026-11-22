@@ -14,8 +14,8 @@ writes it back. Newest shift-log entry last.
   for the owner. Hockey carries thirdjam's real mechanics and crazy modes.
 - Since 22 Nov night: duel (engine/packs/duel) and hockey are the reference games; the editor copies them (templates
   name the house files and numbers, the critic sees the house strip). Engine needs from them land as kernel API (1.16).
-- Next 3: (1) the owner plays the duel (Wall, Duelist) and hockey (rookie, pro) by hand and answers VERDICT 2026-11-22-night;
-  (2) E6: the kernel world = alone physics breach (diagnosed 10:02: bodies moved by adopt()/body_set_space get a different Jolt order; fix = one insertion path + a frame-3 body-order selftest), then hockey r2a; (3) editor: cross-check bot claims
+- Next 3 (verdict of 22 Nov night answered ~10:30): (1) land the Home arm A (n22-world-a) behind the boot hook, far plain
+  removed, chunked through land/; (2) E6: the kernel world = alone physics breach (diagnosed 10:02: bodies moved by adopt()/body_set_space get a different Jolt order; fix = one insertion path + a frame-3 body-order selftest), then hockey r2a; (3) editor: cross-check bot claims
   against film, build one hockey job through the editor.
 
 ## Open owner verdicts
@@ -37,6 +37,9 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - H1 hockey C4/C6 (deferred topic); H2 should `place()` take pack coordinates; H3 the hockey frame budget under load.
 
 ## Backlog (accepted by the owner, not yet scheduled)
+- Duel: return later (owner 22 Nov); its lane's next three (a person plays 10 min; one signature animation per rival; E5
+  music) wait for that.
+- Colosseum: the owner's next direction for the fight jobs (six proofs accepted, not resumed).
 - Editor placement intelligence (E1): the LLM/editor proposes position, pathing and fit on the map. The map updates as the
   requirements change in the builder. Constructions blend into the terrain, with no circular ring that does not match it.
 - Contract additions (E2, approved): CARDS.md `interview` and `footprint`; JOB.md `job_created.answers`,
@@ -48,6 +51,16 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-22 ~10:30 (owner, on the night verdict of 22 Nov; verbatim: "A. Keep duel as is, we will return there later
+  2.Keep bots as is for now, land 'pass out of pressure' once E6 is fidex 3. Home - A 4. Accept for now, the game does
+  not play well but I will need to think more before next directions 5. PACK.md per your recmmomendation"):
+  1 duel stays as landed (cliff, 0.4 lesson damage, regular ordering, drum all kept); returned to later.
+  2 hockey bots as they are (no keep_off_m spacing); r2a "pass out of pressure" lands once E6 is fixed.
+  3 the Home is arm A, one continuous land (branch n22-world-a, 71e80bf); it lands behind the boot hook with the far
+    plain removed, chunked through N5's land/ format (N6 REPORT next 2).
+  4 the six colosseum proofs (fight-colosseum-20261122-1..6) accepted with `foreman quality ... accept`, NOT resumed:
+    the game does not play well and the owner decides the next direction first.
+  5 contracts/PACK.md names `metrics` and `moments` in a bot's result (amendment of 2026-11-22).
 - 2026-11-21 ~18:50 (owner, on the day verdict): "The games are still mediocre slop. even though improved no real person
   would play and enjoy the games, because they miss quality gameplay elements. Arena mutual reaction on attacks and
   collision is almost non-existing, we don't need to reinvent wheel, there are hundreds of duel games (souls like, for

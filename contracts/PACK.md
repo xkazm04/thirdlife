@@ -197,3 +197,20 @@ The state hash covers every action's value; an aim enters it from the first fram
 ## Ladder tests
 
 A pack may carry a difficulty ladder: tests named `tests/bot_ladder_<level>_<hand>.gd`, each also listed in `tests`, one per level and hand profile (`TLHand`). `tl ladder --pack <dir>` runs every such cell over N seeds and prints wins per cell; the gate runs one seed of each. The cells are found by this name; the manifest has no key for them. A test read through a person's hand passes when it played to the end and the hand acted, not when it won.
+
+## Amendments of 2026-11-22 (owner, after the night of 22 Nov): a bot's figures and moments
+
+A bot's `_bot_result()` may carry two more keys, both optional (absent = omit the key). The editor's tofu stage and its
+critic read them (`foreman/src/house.ts`, `foreman/src/shots.ts`); the gate does not judge them.
+
+| Key | Shape | Meaning | Read by |
+|---|---|---|---|
+| `metrics` | object: figure name -> number; raw counts behind them under `metrics.raw` | the game's named figures as this bot's hand played them (possession length, pressure waves, idle frames ...), quoted with the hand | the tofu stage (`tofuMetricsFor`), the house baseline; the critic receives them as claims, never as proof |
+| `moments` | object: kind -> ascending list of frames (`{"parried": [412, 1630], "wall_splat": [2051]}`) | the frames where a named contact happened in this run | capture: the editor films the first frame of each kind as a dense contact strip |
+
+- Figure names and moment kinds are the pack's own words; a card or a house game may name the ones it expects.
+- Both come from game state and input the bot already sees; neither enters `state_hash`.
+- Not the manifest's `moments` (a list of `{name, frame}` or `{name, event}` declared ahead of a run): these are what one
+  run saw.
+- The house hockey still reports its moments as `metrics.moments`; readers accept both until it moves them to the top
+  level.
