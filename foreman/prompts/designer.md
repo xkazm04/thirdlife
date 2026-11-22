@@ -49,9 +49,13 @@ feel sheet cannot deliver the fantasy, change the design, not the fantasy line.
 4. **The 30-second test**: `30 SECONDS:` line: the beats a newcomer meets, 0-5 s (he knows who he is and what to
    press; the answer within 3 frames), 5-15 s (his first success against a safe first threat), 15-30 s (the fantasy
    happens once, in the bodies). `design.first_minute` is its short form.
-5. **The feel spec**: `design.feel`, the verbs' frames, and in `rules` the speeds (m/s), accelerations, turn rates,
-   the camera's distance and angle, the juice by force. Every one of these numbers goes in the pack's tuning file so a
-   person can change it between two plays.
+5. **The feel spec**: first, in `rules`, the size of the world in the player's units: the body's size, the arena in
+   body lengths, speeds in body lengths a second, the camera's distance in body heights (a real rink is about 100 body
+   widths long; our hockey's figures drawn 2.2x made it 34, a corridor of scrums, and nobody had chosen it). Then
+   `design.feel`, the verbs' frames, and in `rules` the speeds (m/s), accelerations, turn rates, the camera's distance
+   and angle, the juice by force. Every one of these numbers goes in the pack's tuning file so a person can change it
+   between two plays. No rule exists only to pass a bot figure (our hockey's teammates held back so an idle hand would
+   lose its ladder); when a rule answers a figure, say so, so a person judges it.
 6. **The reference teardown**: 1 to 3 `TEARDOWN:` lines: a real game's moment as a player meets it (what you press,
    what you see, its numbers) that this design copies, changes or drops. Never a mood.
 7. **The greybox**: the Planner's first phase builds only the core loop with its feel sheet on flat shapes, and a

@@ -38,6 +38,21 @@ templates); this file decides when those numbers are chosen and who says they ar
   were not allowed to give a hint [11]. Never help him during the run.
 - **Say who played.** Every verdict on fun names who played, which build, for how long, and what they did. A build no
   person has played is "unplayed", never "fun" or "done".
+- **The owner's standing rulings.** He judged thirdjam, our jam hockey, in 75 rulings with his own words (12-15 Nov);
+  the ones about how ANY game is made stand for every game we make [35, section 10]:
+  1. The owner's eye is the bar: say what a person sees or feels, and measure that (R-0067).
+  2. Reproduce a fault as he meets it before a cure, and accept the cure on the same reproduction (R-0069).
+  3. A list of what a first-time player feels outranks a lane's own bars (R-0068, R-0047).
+  4. His numbers are taken as given; what they break is fixed (R-0067).
+  5. A level is easy by clumsiness, never by absence (R-0067).
+  6. Nothing technical is drawn on or in front of a figure; the animation is the message (R-0069, R-0070).
+  7. The camera stays bound to the player and never moves under his aim; the HUD points at what is off screen (R-0038,
+     R-0064).
+  8. The arena's size is chosen by measured pacing, and measured again when the head count changes (R-0010, R-0041).
+  9. Proof comes through the real input path in the packaged build (R-0032, R-0043).
+  10. Gameplay over fidelity, collisions and mechanics before modes (R-0036); the genre first, the theme in the menu
+      (R-0021).
+  A design that breaks one says so and why, for the owner to judge.
 
 ## 2. What our games missed
 
@@ -62,8 +77,29 @@ Our own evidence, 19 to 22 Nov. The research on LLM-built games says the same (G
   paper, and still no answer to "why would anyone play this twice?".
 - **No person in the loop.** Jobs ran with `--run-through` (the Foreman passes its own phases); the held jobs waited
   for an owner who had not been asked to play anything specific.
-- **The reference from memory.** Our hockey was rebuilt from memory of thirdjam (21 Nov day verdict). The teardown of
-  thirdjam (N1, 23 Nov night) is in CASES.md.
+- **Our measures cannot see what he sees** (N1's central finding). By thirdjam's own first-five-minutes measures our
+  hockey scores better (first touch 0.6-0.7 s against 1.8 s, the puck on your blade 18-21 % of the time against
+  10 %), and the owner calls it garbage (`docs/research/hockey-teardown/TEARDOWN.md` section 0; CASES.md stage 6b). The lesson "his hand is
+  the bar" had been written down four times and was lost each time it crossed into a brief: the next night's brief
+  made five bot metrics its acceptance. thirdjam had been judged by his hand: five plays, each verdict turned
+  into numbered rulings in his words.
+- **A world size nobody chose.** Our hockey's figures were drawn 2.2 times bigger by a drawing fix on 16 Nov, so the
+  rink is 34 body widths long (thirdjam 112, a real rink about 100) and every play is a scrum. "At no point did anyone
+  ask how big the ice is for the players" (N1).
+- **Rules made to pass a metric.** Teammates who shoot only within 4 s of your own pass, so that an idle hand loses the
+  ladder; a hit rate kept because a figure asked for it. A rule invented to pass a measure is a design decision, and no
+  person ever faced it (N1).
+- **Ports move numbers, not experience.** thirdjam's skating and contact were ported line by line into a world three
+  times smaller, with another camera and goalies (N1). The numbers were right; the frame they lived in was not.
+- **The reference from memory.** Our hockey was rebuilt from memory of thirdjam (21 Nov day verdict), and research that
+  did not read the last game prescribed what thirdjam had already measured as wrong (N1).
+- **Juice instead of a core.** Our hockey's fun pass added hit-stop, shake, bursts, a replay and rings at downed men on
+  a match whose space, teammates and puck did not work, and re-added marks the owner had ruled out of thirdjam six days
+  before ("the player animation should reflect the crosscheck movement and that should be all") (N1).
+- **Breadth hides the core.** Modes, abilities, rivals and menus were added while the base match was unplayable, in
+  both games (N1).
+- **Briefs that accept a mechanic, not a minute of play.** The briefs asked for clips of "a poke that frees the puck"
+  and bands of bot figures; nothing in their acceptance could fail on what the owner meets (N1).
 
 What fixes it: design from the feeling backwards (sections 4 to 6), write the first 30 seconds as the player meets
 them (7), tune the feel by hand on a greybox (8, 10), decide before the build what would kill it (11), and let a
@@ -159,6 +195,8 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
 - **No menu, no text wall, no wait.** The game opens on play; one hint line at most. "Start onboarding at launch" and
   "let them start self-directed gameplay as soon as possible" [33]. Later minutes teach the same way: introduce,
   develop, twist, conclude (kishotenketsu, Hayashida on Super Mario 3D Land [32]).
+- **The 30 seconds are the acceptance of a game, not its mechanics' clips.** A brief accepts "a minute of play from the
+  player's camera, with what he should feel at each moment", never "a clip of a poke that frees the puck" (N1).
 - **The script names the player's feeling at each beat**, and what he says afterwards ("I scored off a pass I
   threaded", "I parried him and he staggered").
 - **The person checks** on the greybox (stage 7): hand it to someone who has never seen it, start a clock, say
@@ -171,6 +209,11 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
   response the player sees and hears, the space it happens in, and the effects that sell it: "real-time control of
   virtual objects in a simulated space, with interactions emphasized by polish" [2]. Each of those is a number someone
   chose, and Swink's minimum feel prototype is the mapping, a basic layout and the camera [2].
+- **The size of the world comes first, in the player's units**: the body's size, the arena in body lengths, speeds in
+  body lengths (or heights) a second, the camera's distance in body heights, a figure's height on the screen. Written before any mechanic, owned by the
+  design, and changed only as a design change (N1's first lesson: our rink of 34 body widths against thirdjam's 112).
+  A real rink is about 100 body widths long; a figure that moves 2 of its heights a second reads as a jog whatever its
+  speed in metres.
 - **The sheet lists, per verb:** the input; frames from the press to the first visible response (at most 3, the full
   pose by 6: GAME-QUALITY.md section 2); anticipation, active and recovery frames; speeds and accelerations in m/s and
   m/s^2, turn rates; the camera (distance, angle, lag, what it frames); the juice by force (hit-stop, shake, burst,
@@ -186,8 +229,8 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
   sound make a hit read and feel strong [14, 15, 31], but scaled by force (GAME-QUALITY.md slop id
   `juice_on_everything`). Juice on a verb nobody wants to press is lipstick.
 - **The numbers are a starting point to tune by hand.** Every feel number lives in one tuning file
-  (`data/tuning.json`) the person can change between two plays. "You want to make it feel good, not look good" (NHL
-  '94's developers, HOCKEY-ARCADE.md). The feel spec passes when a person's hand says the verb feels good, not when the
+  (`data/tuning.json`) the person can change between two plays. "You want to make it feel good, not look good" (Mark
+  Lesser, NHL '94's programmer; CASES.md [A1]). The feel spec passes when a person's hand says the verb feels good, not when the
   numbers match the reference.
 - **The person checks**: the verb alone, in an empty room (stage 7): does pressing it feel good ten times in a row?
 
@@ -204,6 +247,13 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
 - **Then three lists: copy, change, drop.** Copy the core that made it fun, with its numbers; change what our engine
   or our fantasy needs; drop what does not serve a pillar. GAME-QUALITY.md section 11 holds the copied cores of our two
   templates; CASES.md holds the teardowns.
+- **Read the last game first.** When this studio has built the kind of game before (thirdjam for hockey), its code, its
+  measurements and the owner's rulings on it are the first reference: research that skips it rediscovers what it had
+  already measured and dropped. The owner's rulings, in his own words, are design assets: thirdjam keeps 75 of them
+  (N1 collects them verbatim in `docs/research/hockey-teardown/RULINGS.md`), and a game of the same kind reads them
+  before its design.
+- **Port the frame of reference and the reasons first, the numbers last.** A number copied into a world of another
+  size, with another camera, is another number. Copy the scale, the camera and why each rule exists before any table.
 - **A teardown line is concrete**: "NHL '94: pass across the crease and shoot as it arrives; the goalie cannot get
   across", never "the fast feel of NHL '94".
 - **The person checks**: someone who played the reference reads it: "is this what made it fun?"
@@ -218,6 +268,7 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
 - **A prototype asks one question: is it fun?** A vertical slice asks another: can we build it to final quality? Our
   pipeline used to jump to the slice. Content goes on a core that a person has called fun, never on one that only
   passed its bots [7, 9].
+- **Breadth hides the core.** No mode, ability, menu or second rival while the base match is not called fun.
 - **Iterate in minutes.** Play, change one number, play again. A prototype that takes a day to change is not a
   prototype. The tuning file (section 8) is what makes this possible.
 - **Kill freely.** Most prototypes should die. Supercell: "when a project gets killed, we pop champagne" [16]; nine
@@ -254,6 +305,12 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
   gave about 100 action items each [11].
 - **For 5 minutes, then three questions**: what were you doing? what was the best moment? what was the worst? Then
   offer "stop or play again": the act is the answer to "is it fun".
+- **Rank what he felt.** The output of a playtest is a ranked list: the things a first-time player feels in his first
+  five minutes, worst first (thirdjam's standing "design eye" kept exactly this list, and it outranked every lane's own
+  bars; N1). The worst line of the list is the next change.
+- **One change between two plays**, so the person can tell what it did; and the owner plays the package that lands.
+- **A rule made to pass a metric faces a person** before it stays: say which figure asked for it, and let the player
+  judge what it does to the game.
 - **Record it** in the phase answer (`foreman phase <job> pass|hold --note`): who played, which build, how long, the
   best and worst moment, the kill lines seen. The editor reads that note in the next round.
 - **What the machine still does**: bots guard against regressions (crash, idle rivals, determinism) and measure
@@ -299,8 +356,12 @@ Designer:
 3. Pillars are experiences that rule something out; every verb and aspect serves one of them.
 4. The loops name the decision at each scale and the dynamics the rules produce.
 5. The 30-second script is beats a newcomer meets: 0-5 s, 5-15 s, 15-30 s, the fantasy happening once by 30 s.
-6. The feel sheet is numbers, and every number lives in the tuning file a person changes between two plays.
+6. The feel sheet is numbers, and every number lives in the tuning file a person changes between two plays. It opens
+   with the size of the world in the player's units (body size, arena in body lengths, speeds in body lengths a
+   second, camera distance in body heights).
 7. Kill lines are things a person sees or does in the first phase, never a bot figure.
+8. No rule exists only to pass a bot figure; when a rule answers a figure, say so in `rules` so a person judges it.
+9. Keep the owner's standing rulings (section 1); a design that breaks one says which and why.
 
 Reviewer:
 1. Read the 30-second script as the newcomer: second by second, could he do it, and would he feel the fantasy by 30 s?
@@ -329,11 +390,22 @@ Critic:
    happened and why? Say what you see first, in plain words.
 2. Judge the kill lines the frames can show (`kill_criteria`), and name each one you see happening.
 3. Never call the game fun: no frame can show it. The last note lists what only a person can judge.
+4. Rank what a first-time player would feel first in these frames, worst first, and put the worst in the first note.
+
+Director:
+1. A lane brief for a game accepts an experience: a minute of play from the player's camera, with what the player
+   should feel at each moment, through a person's hand; mechanic clips and bot figures are its parts, never its bar.
+2. A lane that changes a verb the player uses shows that verb played through a person's hand, from the player's camera,
+   before and after; the owner plays the package that lands, not its description.
+3. A rule a lane adds to pass a figure (an idle hand must lose, a hit rate to keep) is named in the report as a design
+   decision for a person to judge.
+4. A game of a kind we built before reads the last game and the owner's rulings on it first (section 1, [35]).
 
 Person:
 1. Play the build as a player meets it, 5 minutes, with the playtest card (section 12); or hand it to a newcomer and
    watch without helping.
-2. Answer `pass` only when you wanted another go. Otherwise `hold` with what you felt and where it stopped being fun.
+2. Answer `pass` only when you wanted another go. Otherwise `hold` with what you felt and where it stopped being fun,
+   the worst three things first.
 3. A kill line you saw is a hold, whatever the bot figures say.
 
 ## Sources
@@ -410,3 +482,6 @@ Quotes from web pages were read through a fetch tool and are worth a check befor
 34. Our own evidence: the shift verdicts of 19 to 22 Nov (`docs/shifts/*/VERDICT.md`), the D3 editor report of 22 Nov
     (`docs/shifts/2026-11-22-day/lanes/D3-editor/REPORT.md`), `docs/GAME-QUALITY.md` sections 5 and 13, and N1's
     thirdjam teardown (CASES.md).
+35. The owner's thirdjam rulings, distilled by N1 (R-0001 to R-0075, 12-15 Nov 2026, his words verbatim; section 10
+    is the ten a method cites first): `docs/research/hockey-teardown/RULINGS.md`; the teardown beside it:
+    `docs/research/hockey-teardown/TEARDOWN.md`.

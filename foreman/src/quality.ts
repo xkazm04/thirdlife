@@ -149,8 +149,7 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   const labels = all.map((x) => x.label);
   const res = await critic(h.o.builder, images.map((c) => h.dir(c)), rubric, {
     ...(model ? { model } : {}),
-    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, methodBlock(h.s.brief) !== "" ? `The design's method lines (what the player should feel, and what would kill the game):
-${methodBlock(h.s.brief)}` : "", h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, claims !== undefined ? claims : "", house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
+    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, methodBlock(h.s.brief) !== "" ? `The design's method lines (what the player should feel, and what would kill the game):\n${methodBlock(h.s.brief)}` : "", h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, claims !== undefined ? claims : "", house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
     packages: packageLinesOf(h.s, h.s.plan.map((p) => p.id)),
     labels,
   });
@@ -312,6 +311,7 @@ export async function compareLooks(h: GateHost, prev: Snapshot, film: Film, fres
     tpl,
     {
       game: `${h.s.title ?? ""} (${h.s.sentence ?? ""})`,
+      method: methodBlock(h.s.brief) || "(the design carries no method lines)",
       previous: list(a, 1, "PREVIOUS version"),
       fresh: list(b, a.length + 1, "NEW version"),
       before: prev.verdict ? `${scoresText(prev.verdict)}; ${clip(prev.verdict.notes.join(" | "), 400)}` : "(no verdict)",

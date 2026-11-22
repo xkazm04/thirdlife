@@ -13,8 +13,13 @@ Motion strips are 4x3 tiles of 12 frames, 5 frames apart, read left to right, to
 - PREVIOUS: {{before}}
 - NEW: {{now}}
 
+# The design's method lines (what the player should feel, and what would kill the game)
+{{method}}
+
 # How to choose
-Judge what you SEE: the exchange in motion (anticipation, impact with a hit-stop, the victim's body reacting), the
+First, as a newcomer meets it (docs/design/METHOD.md): in which version could a first-time player tell who he is,
+where the puck, the ball or the rival is, and what just happened? A version in which one of the design's kill lines
+is plainly seen loses to one in which it is not. Then judge what you SEE: the exchange in motion (anticipation, impact with a hit-stop, the victim's body reacting), the
 camera (both sides in frame, nothing in the way), distinct rivals, readable play. A version with fewer slop-list items
 (one attack button, recoloured rivals, borrowed clips, a hit without a reaction, a camera behind scenery, a twist only
 in the HUD, auto-aim, every hit a knock-down, fighters overlapping, placeholders in a clip moment) is better. When
