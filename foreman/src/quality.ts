@@ -20,7 +20,7 @@ import { slopIds } from "./roomtext.js";
 import type { RunnerVerbs } from "./verbs.js";
 import type { CritiqueResult } from "./verifier.js";
 import { judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } from "./tofu.js";
-import { houseBaseline, houseCompare } from "./house.js";
+import { HOUSE_BOTS, contactFrame, houseBaseline, houseCompare, saveBaseline, type HouseBaseline } from "./house.js";
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -47,17 +47,44 @@ export interface Film {
 const reportPath = (h: GateHost, stem: string): string => h.dir("reports", `${stem}-s${h.s.lastSeq + 1}.json`);
 
 /** One capture run with one retry (the window can die in the graphics driver under GPU load), logged as `verify`. */
-async function captureOnce(h: GateHost, args: string[], out: string, stem: string, after: string, notes: string[], what: string): Promise<boolean> {
+async function captureOnce(h: GateHost, args: string[], out: string, stem: string, after: string, notes: string[], what: string, packDir = h.dir("pack")): Promise<boolean> {
   let ok = false;
   for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.rmSync(out, { force: true });
-    const vr = await h.o.verifier.run({ verb: "capture", args: [...args, `--out=${toPosix(out)}`], packDir: h.dir("pack"), reportFile: reportPath(h, stem) });
+    const vr = await h.o.verifier.run({ verb: "capture", args: [...args, `--out=${toPosix(out)}`], packDir, reportFile: reportPath(h, stem) });
     ok = vr.ok && fs.existsSync(out);
     h.append({ type: "verify", round: 1, level: vr.level, verb: vr.verb, ok, report: h.rel(vr.reportFile), ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}), after });
     if (!ok) notes.push(`${what}, attempt ${attempt} of 2, failed: ${clip(vr.summary, 160)}`);
   }
   return ok;
+}
+
+/**
+ * N4 loop round 2: the house game's own exchange as a motion strip, filmed once per job beside the build's strips (a
+ * drill bot of ref/packs/<pack> finds the contact frame, then one capture with --strip from 15 frames before it). The
+ * strips are kept in the house baseline; [] when the pack, the bot or the capture failed (said in `notes`).
+ */
+export async function houseStrips(h: GateHost, base: HouseBaseline, template: string, after: string, notes: string[]): Promise<{ capture: string; label: string }[]> {
+  if (base.strips !== undefined) return base.strips;
+  const s = HOUSE_BOTS[template]?.strip;
+  const packDir = h.dir("ref", "packs", base.pack);
+  let strips: { capture: string; label: string }[] = [];
+  if (s !== undefined && fs.existsSync(packDir)) {
+    const vr = await h.verifyLogged({ verb: "bot", args: [`--test=${s.test}`, ...s.args] }, packDir, `house-${base.pack}-drill`, { round: 1 });
+    const f = contactFrame(vr.report);
+    if (f !== undefined) {
+      const from = Math.max(1, f - 15);
+      const out = h.dir("reports", `house-${base.pack}`, `strip-${s.cam}-f${from}.png`);
+      const res = `--res=${h.o.captureRes ?? "1280x720"}`;
+      if (await captureOnce(h, [`--cam=${s.cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${STRIP.step}`, res, `--test=${s.test}`], out, `house-${base.pack}-strip`, after, notes, `house strip ${s.cam} from frame ${from}`, packDir)) {
+        strips = [{ capture: h.rel(out), label: `HOUSE GAME engine/packs/${base.pack} (the bar, not this build): MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + STRIP.step}, ... ${from + STRIP.step * (STRIP.count - 1)}, ${STRIP.step} frames apart), ${s.test} on camera ${s.cam}: ${s.label}` }];
+      }
+    } else notes.push(`house strip: ${s.test} on ref/packs/${base.pack} gave no contact frame (${clip(vr.summary, 160)})`);
+  }
+  const kept = { ...base, strips };
+  saveBaseline(h, kept);
+  return strips;
 }
 
 /** The stills of every shot and camera (JOB.md second round), and with `withStrips` one strip per filmed point. */
@@ -98,14 +125,16 @@ export interface Verdict {
 const scoresText = (v: Pick<Verdict, "scores">): string => Object.entries(v.scores).map(([k, x]) => `${k} ${x}`).join(", ");
 
 /** The critic on a look: stills and strips together, the strips labelled as such. Undefined when it gave no usable answer or did not run. */
-export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[], lastPackage: string, round: number, house?: { line: string; pack: string }): Promise<{ verdict?: Verdict; line: string }> {
+export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[], lastPackage: string, round: number, house?: { line: string; pack: string; strips?: { capture: string; label: string }[] }): Promise<{ verdict?: Verdict; line: string }> {
   if (film.captures.length + film.strips.length === 0 || h.o.critic === false) return { line: "critic not run" };
   const model = h.o.criticModel ?? h.o.model;
   const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : []), ...(house !== undefined ? [houseItem(house.pack)] : [])];
   // L1b: the strips of the named clip moments first, then the stills, then the other strips.
   const clipFirst = [...film.strips.filter((x) => x.label.startsWith("CLIP MOMENT")), ...film.captures.map((c, i) => ({ capture: c, label: film.labels[i] ?? "" })), ...film.strips.filter((x) => !x.label.startsWith("CLIP MOMENT"))];
-  const images = clipFirst.map((x) => x.capture);
-  const labels = clipFirst.map((x) => x.label);
+  // N4 loop round 2: the house game's strip last, labelled as the bar.
+  const all = [...clipFirst, ...(house?.strips ?? []).filter((x) => fs.existsSync(h.dir(x.capture)))];
+  const images = all.map((x) => x.capture);
+  const labels = all.map((x) => x.label);
   const res = await critic(h.o.builder, images.map((c) => h.dir(c)), rubric, {
     ...(model ? { model } : {}),
     context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
@@ -124,7 +153,7 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
 
 /** N4 loop round 2: the rubric item of a job whose template has a house game: this build against the house game. */
 export function houseItem(pack: string): RubricItem {
-  return { id: "house_game", text: `Against the house game engine/packs/${pack} (the reference implementation of this game's template, its figures in the context above): do the frames show its exchange as clearly (wind-up, hit-stop on both, each body's own reaction, the guard and the roll in the body)? Name in \`notes\` each place this build falls short of the house game, by what you see and by the SHORT figures. 1.0 as good as the house game, 0.5 its core with gaps, 0 none of it.` };
+  return { id: "house_game", text: `Against the house game engine/packs/${pack} (the reference implementation of this game's template, its figures in the context above): do the frames show its exchange as clearly (wind-up, hit-stop on both, each body's own reaction, the guard and the roll in the body)? When an image is labelled HOUSE GAME, set this build's strips beside it: the same moment of the exchange, is it as readable in the bodies? Name in \`notes\` each place this build falls short of the house game, by what you see and by the SHORT figures. 1.0 as good as the house game, 0.5 its core with gaps, 0 none of it.` };
 }
 
 export const verdictText = (v: Verdict): string => `${v.by ?? "critic (V5)"} ${v.ok ? "ok" : "NOT ok"}: ${scoresText(v)}; ${clip(v.notes.join(" | "), 500)} [${v.report}]`;
@@ -304,7 +333,8 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template), t.test, r.hand, r.from); })() : undefined);
   const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
-  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack } : undefined), tofu);
+  const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes) : [];
+  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined), tofu);
   const fresh = judged.verdict;
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;

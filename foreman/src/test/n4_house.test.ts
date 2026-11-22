@@ -49,6 +49,9 @@ test("house: the design step and the Planner read the house README's rules; a bu
   assert.doesNotMatch(builder, /## How to play/, "builders read the files, not the README");
   const hockey = houseExcerpt(sport, "design");
   assert.match(hockey, /engine\/packs\/hockey[^]*scripts\/hits\.gd[^]*## How to play[^]*## Contact and skating/);
+  // Refreshed from N3's landing (main b024967): the carry, the poke and the utility AI are read, with its README section.
+  assert.match(hockey, /scripts\/carry\.gd: the puck as a state[^]*scripts\/ai\/carrier\.gd: the carrier's utility scores[^]*tests\/metrics\.gd[^]*## Puck, speed and the bots' decisions/);
+  assert.equal(houseFigures({ bot: { result: { metrics: { lengths: [120, 300, 180, 240] } } } }, HOUSE_BOTS["arcade_sport"] as (typeof HOUSE_BOTS)["arcade_sport"] & object).metrics["possession_median_f"], 210, "N3's possession lengths: the median");
   assert.match(templatesMenuText(), /`duel`[^\n]*House game \(the reference implementation on this engine\): engine\/packs\/duel \(game\.duel\)/);
   assert.equal(houseExcerpt(duel, "design", path.join(tempDir("no-engine"), "engine")), "", "no house pack: no excerpt");
 });
@@ -67,9 +70,14 @@ test("house: a duel brief keeps the house game's lock-on and shoulder camera; fa
 
 // ---------------------------------------------------------------- the critic compares with the house game
 
-test("house compare: the house bot's figures by the tofu names (its own metrics first, then the map over its pack state); shortfalls named", () => {
-  const report = { bot: { result: { ok: true, summary: "s" } }, pack_state: { rival_passive_max: 64, rival_tells_min: 18, kinds: { light_hit: 3, heavy_block: 1, parry: 0 }, failures: 0 } };
-  assert.deepEqual(houseFigures(report, HOUSE_BOTS["duel"] as (typeof HOUSE_BOTS)["duel"] & object).metrics, { idle_max_f: 64, tell_min_f: 18, contact_types: 2, one_sided_contacts: 0 });
+test("house compare: the house bot's figures by the tofu names (its own metrics first, then the map over its result and pack state); shortfalls named", async () => {
+  // The real pilot's result (engine/packs/duel tests/bot_checklist_wall.gd, seed 1, read 22 Nov 02:00): idle 45, tell 14, failures 0.
+  const report = { bot: { result: { ok: true, summary: "s", rival_passive_max: 45, rival_tells_min: 14, kinds: { clash: 3, hit_heavy: 13 }, failures: 0, hand: { decisions: 156 } } } };
+  assert.deepEqual(houseFigures(report, HOUSE_BOTS["duel"] as (typeof HOUSE_BOTS)["duel"] & object), { metrics: { idle_max_f: 45, tell_min_f: 14, one_sided_contacts: 0 } }, "the hand's stats object is not a hand name");
+  assert.deepEqual(houseFigures({ pack_state: { rival_passive_max: 64 } }, HOUSE_BOTS["duel"] as (typeof HOUSE_BOTS)["duel"] & object).metrics, { idle_max_f: 64 }, "pack_state when the result lacks it");
+  const { contactFrame } = await import("../house.js");
+  assert.equal(contactFrame({ bot: { frames: 148, result: { contact: { f: 46 } } } }), 46, "the real heavy_block drill: contact at frame 46");
+  assert.equal(contactFrame({ bot: { frames: 600 } }), 540);
   const own = { bot: { result: { metrics: { idle_max_f: 50, feedback_f: 2, hand: "regular" } } }, pack_state: { rival_passive_max: 64 } };
   assert.deepEqual(houseFigures(own, HOUSE_BOTS["duel"] as (typeof HOUSE_BOTS)["duel"] & object), { metrics: { idle_max_f: 50, feedback_f: 2 }, hand: "regular" });
   const rows = tofuMetricsFor(duelTemplate);
@@ -88,7 +96,8 @@ function fakeHouse(): { reference: { cardsDir: string; housePacks: string[] } } 
   const pack = path.join(engine, "packs", "duel");
   fs.mkdirSync(path.join(pack, "tests"), { recursive: true });
   fs.mkdirSync(path.join(pack, "scripts"), { recursive: true });
-  fs.writeFileSync(path.join(pack, "pack.json"), JSON.stringify({ id: "game.duel", version: "0.1.0", kernelApi: "0.1", title: "Duel", capabilities: ["physics"], entry: "scripts/main.gd", assets: [], tests: ["tests/bot_checklist_wall.gd"] }, null, 1));
+  fs.writeFileSync(path.join(pack, "pack.json"), JSON.stringify({ id: "game.duel", version: "0.1.0", kernelApi: "0.1", title: "Duel", capabilities: ["physics"], entry: "scripts/main.gd", assets: [], tests: ["tests/bot_checklist_wall.gd", "tests/bot_contact_heavy_block.gd"], cameras: ["side"] }, null, 1));
+  fs.writeFileSync(path.join(pack, "tests", "bot_contact_heavy_block.gd"), "extends Node\n");
   fs.writeFileSync(path.join(pack, "scripts", "main.gd"), "extends Node\nfunc _pack_setup(ctx) -> void:\n\tpass\n");
   fs.writeFileSync(path.join(pack, "tests", "bot_checklist_wall.gd"), `extends Node\n# FAKE_METRICS(${JSON.stringify({ idle_max_f: 64, tell_min_f: 18, contact_types: 6, one_sided_contacts: 0, feedback_f: 2, hand: "regular" })})\n`);
   fs.writeFileSync(path.join(pack, "README.md"), "# Duel\n");
@@ -98,8 +107,13 @@ function fakeHouse(): { reference: { cardsDir: string; housePacks: string[] } } 
   return { reference: { cardsDir: cards, housePacks: [pack] } };
 }
 
-test("house compare: a duel job measures the house game once (reports/house-duel.json), sets its tofu figures beside it at every look, and the critic scores house_game", async () => {
+test("house compare: a duel job measures the house game once (reports/house-duel.json), sets its tofu figures beside it at every look, films the house game's exchange as a strip, and the critic scores house_game", async () => {
   const job = tempJob("house-look");
+  const { FAKE_VERBS_FILE } = await import("../verbs.js");
+  const verbs = JSON.parse(fs.readFileSync(FAKE_VERBS_FILE, "utf8"));
+  verbs.verbs.capture.options.strip = { type: "string", default: "" };
+  fs.mkdirSync(path.join(job.engineDir, "kernel", "runner"), { recursive: true });
+  fs.writeFileSync(path.join(job.engineDir, "kernel", "runner", "verbs.json"), JSON.stringify(verbs, null, 1));
   const file = path.join(job.jobDir, "job.jsonl");
   const lines = fs.readFileSync(file, "utf8").split("\n").filter(Boolean);
   const brief = JSON.parse(lines[1] as string) as { brief: Brief };
@@ -112,7 +126,7 @@ test("house compare: a duel job measures the house game once (reports/house-duel
   const base = scriptWith().steps.find((x) => x.match?.package === "core") as FakeStep;
   const metrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 110, tell_min_f: 18, tells: 5, pressure_waves: 2, lead_change_share: 0.4, close_rounds: 2, contact_types: 3, one_sided_contacts: 0, hand: "regular" };
   const core: FakeStep = { ...base, write: { ...(base.write ?? {}), "tests/bot_rally.gd": ((base.write ?? {})["tests/bot_rally.gd"] as string).replace(/# FAKE_METRICS\(.*\)\n/, "") + `# FAKE_METRICS(${JSON.stringify(metrics)})\n` } };
-  const criticStep: FakeStep = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, house_game: 0.7 }, notes: ["the rival waits longer than the Wall does"] } };
+  const criticStep: FakeStep = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, feel: 0.7, slop: 1, house_game: 0.7 }, notes: ["the rival waits longer than the Wall does"] } };
   const { foreman, builder } = foremanFor(job, { promoteTo: "job", critic: true, ...fakeHouse(), script: scriptWith([criticStep, core]) });
   const s = await foreman.run();
   assert.equal(s.jobState?.state, "done", JSON.stringify(s.jobState));
@@ -122,7 +136,13 @@ test("house compare: a duel job measures the house game once (reports/house-duel
   assert.match(ms[0]?.type === "milestone" ? ms[0].summary : "", /house game engine\/packs\/duel \(tests\/bot_checklist_wall\.gd through the regular hand\), yours vs the house game's: [^]*idle_max_f 110 vs 64 SHORT/);
   const call = builder.calls.find((c) => c.req.meta?.role === "critic");
   assert.match(call?.req.prompt ?? "", /The house game of this game's template, engine\/packs\/duel, is the bar[^]*SHORT of the house game on idle_max_f, contact_types[^]*- house_game: Against the house game engine\/packs\/duel/);
-  assert.equal(readEvents(job.jobDir).filter((e) => e.type === "verify" && e.verb === "bot" && /house-duel/.test(e.report)).length, 1, "measured once per job");
+  assert.equal(readEvents(job.jobDir).filter((e) => e.type === "verify" && e.verb === "bot" && /house-duel-s/.test(e.report)).length, 1, "measured once per job");
+  // Round 2: the house game's own exchange, filmed once from 15 frames before its contact (the fake drill finishes at 600: 540), last in the critic's images.
+  const kept = JSON.parse(fs.readFileSync(path.join(job.jobDir, "reports", "house-duel.json"), "utf8")) as HouseBaseline;
+  assert.deepEqual(kept.strips?.map((x) => x.capture), ["reports/house-duel/strip-side-f525.png"]);
+  assert.ok(fs.existsSync(path.join(job.jobDir, "reports", "house-duel", "strip-side-f525.png")));
+  assert.match(call?.req.prompt ?? "", /image (\d+) of \1, attached to this message: strip-side-f525\.png: HOUSE GAME engine\/packs\/duel \(the bar, not this build\): MOTION STRIP[^\n]*a heavy blocked/);
+  assert.match(call?.req.prompt ?? "", /When an image is labelled HOUSE GAME, set this build's strips beside it/);
 });
 
 test("planner: contracts name the house game's rows instead of retyping them, and a Planner call has 20 minutes (the standard proof timed out at 10)", async () => {

@@ -409,8 +409,8 @@ in an empty room. Our first phase is the tofu stage.
   | Metric | Item | Passes when | How the bot counts it |
   |---|---|---|---|
   | `feedback_f` | 1 | <= 3 | over every press of the core verb the bot made: the most frames from the press to the first frame the player's body or weapon visibly changed (a clip started, a step, a flash) |
-  | `skill_spread` | 3 | >= 0.25 | the bot plays the verb with different inputs (timing, spacing, charge, angle); (best mean outcome - worst mean outcome) / best mean outcome, the outcome being damage, knockback or frame advantage |
-  | `skill_variants` | 3 | >= 3 | how many input variants `skill_spread` compared |
+  | `skill_spread` | 3 | 0.25 to 0.95 | the bot plays the CORE verb with different inputs (timing, spacing, charge, angle; a different move is not a variant), each at least 5 times; (best mean outcome - worst mean outcome) / best mean outcome, the outcome being damage, knockback or frame advantage. 1.0 means a variant that never works (the crazy colosseum proof of 22 Nov counted a bash as a variant of its light and reported 1.0): that is another verb, not skill |
+  | `skill_variants` | 3 | >= 3 | how many variants of the core verb `skill_spread` compared, each tried at least 5 times |
   | `idle_max_f` | 9 | <= 120 | the longest run of frames any opponent spent with no action (not moving with intent, not attacking, not defending) |
   | `tell_min_f` | 11 | >= 12 | over every dangerous opponent action that started: the fewest frames from the first frame of its tell pose to its first active frame |
   | `tells` | 11 | >= 3 | how many dangerous opponent actions `tell_min_f` counted |
