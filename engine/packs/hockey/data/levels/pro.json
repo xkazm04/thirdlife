@@ -1,16 +1,14 @@
 {
   "id": "pro",
   "label": "Pro",
-  "about": "Reacts 16 frames late, skates at 79.5 % of your speed, shoots from 14 m with 9 degrees of spread, checks from 5 m/s closing.",
+  "about": "Reads the play 12 frames late, with 4 degrees of aim spread. Checks from 3.0 m/s closing.",
   "ai": {
     "cross_min_closing": 1.0,
-    "reaction_frames": 16,
+    "reaction_frames": 12,
     "red_skill": 0.795,
-    "shoot_range": 14,
-    "aim_error_deg": 9,
-    "check_min_closing_red": 5,
-    "pressure_radius": 2.5,
-    "open_radius": 3.5
+    "aim_sigma_deg": 4,
+    "score_noise": 0.05,
+    "check_min_closing_red": 3.0
   },
   "goalie": {"reaction_frames": 12, "speed": 3.4, "glove": 0.95, "poke": 2.1}
 }

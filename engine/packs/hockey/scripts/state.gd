@@ -33,6 +33,10 @@ func state(g) -> Dictionary:
 	s["reach"] = g.api.reach
 	s["poke_reach"] = g.api.poke_reach
 	s["autopilot"] = g.autopilot
+	if g.brain != null and (g.drill_id == "" or g.drill_lib.ai) and not g.intro.active:
+		s["roles_now"] = g.brain.roles_now.duplicate()
+		if not g.autopilot and not g.frozen and g.api.carrier == "b0" and g.brain.caller != "":
+			s["call"] = g.brain.caller
 	if g.drill_id != "":
 		s["drill"] = g.drill_id
 	var dl: Dictionary = {"values": g.dials.duplicate(), "open": g.dial_open, "refused": g.dial_refused}
@@ -50,7 +54,7 @@ func state(g) -> Dictionary:
 	for id: String in g.order:
 		var sk: TLBiped = g.skaters[id]
 		var f: Vector3 = sk.forward()
-		list.append({"id": id, "team": g.teams[id], "role": g.roles[id], "pos": _p2(sk.global_position), "vel": _p2(sk.velocity), "facing": _p2(f), "speed": _r3(sk.speed())})
+		list.append({"id": id, "team": g.teams[id], "role": g.roles[id], "pos": _p2(sk.global_position), "vel": _p2(sk.velocity), "facing": _p2(f), "speed": _r3(sk.speed()), "turn_rate": _r3(sk.skate_turn_rate)})
 	s["skaters"] = list
 	s["shots"] = g.api.shots.duplicate()
 	s["frozen"] = g.frozen

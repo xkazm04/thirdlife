@@ -229,8 +229,7 @@ func _build(mid: String, warm_kits: bool = false) -> void:
 		look.dress_puck(self, part, puck)
 		puck.bounced.connect(_on_puck_bounced)
 	if puck.holder() != null:
-		puck.release()
-	puck.place(Vector3(0, 0.07, 0))
+		api._drop()
 	for pid: String in pool:
 		var old: TLBiped = pool[pid]
 		if old.is_inside_tree():
@@ -286,7 +285,11 @@ func _build(mid: String, warm_kits: bool = false) -> void:
 	skate = ctx.load_script("scripts/skate.gd").new()
 	skate.setup(self)
 	api = ctx.load_script("scripts/rink_api.gd").new()
+	api.carry = ctx.load_script("scripts/carry.gd").new()
+	api.poke = ctx.load_script("scripts/poke.gd").new()
+	api.poke.rng = ctx.rng
 	api.setup(tune, puck, skaters, teams, order, ctx.root)
+	api.place_puck(Vector3(0, 0.07, 0))
 	hits = ctx.load_script("scripts/hits.gd").new()
 	hits.setup(tune, api, skaters, teams, order, ctx.rng)
 	hits.human = "" if autopilot else "b0"
@@ -366,16 +369,17 @@ func _start_match() -> void:
 func _begin() -> void:
 	rules.start()
 	var j: float = float(tune["faceoff_jitter"])
-	puck.place(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
+	api.place_puck(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
 	_event("faceoff", Vector3.ZERO, "")
 
 func _on_puck_bounced(other: Node, speed: float) -> void:
+	if api != null and api.puck_state == "pass" and TLLaws.material_of(other) != "ice":
+		api.carry.deflection(api)
 	if speed >= 6.0 and not (other is TLBiped):
 		_event("board", puck.global_position, "")
 
-func _on_goal(body: Node3D, side: String) -> void:
-	if body == puck and puck.holder() == null and _flag_goal == "" and reset_in <= 0 and not frozen and rules.is_running():
-		_flag_goal = "red" if side == "blue" else "blue"
+func _on_goal(_body: Node3D, _side: String) -> void:
+	pass   # N3 (22 Nov): goals are decided by api.goal_by_position alone (it knows whether the puck came in through the mouth)
 
 func _event(name: String, pos: Vector3, team: String, skater: String = "") -> void:
 	_events.append([name, pos, team])
@@ -470,11 +474,12 @@ func _pack_tick(frame: int) -> void:
 			skate.pace(skate.human_slot, false, Vector3.ZERO)
 		drill_lib.pace(self)
 		api._follow_blade()
+	var ai_play := drill_id == "" or bool(drill_lib.ai)
 	if drill_id != "":
 		drill_lib.tick(self, frame)
-	elif brain != null:
+	if ai_play and brain != null:
 		brain.think(frame, env)
-	elif not stopped:
+	elif ai_play and not stopped:
 		for id: String in order:
 			if id != "b0":
 				skate.want(id, Vector3.ZERO)
@@ -485,11 +490,12 @@ func _pack_tick(frame: int) -> void:
 	elif not autopilot:
 		player.input(self)
 	if not stopped:
+		api.step_sticks()
 		hits.step_actions()
 		hits.enforce()
 		for id: String in order:
-			if drill_id == "" and (id != "b0" or autopilot) and not keeper.is_goalie(id):
-				skate.brake(id, hits.is_down(id))
+			if ai_play and (id != "b0" or autopilot) and not keeper.is_goalie(id):
+				skate.brake(id, hits.is_down(id) or (brain != null and brain.braking.has(id)))
 	api.pose_sticks()
 	api.apply_speeds()
 	crazy.post(self)                       # L5 crazy: boosts on speeds, this frame's shots, the bots' F, crazy drills
@@ -532,12 +538,14 @@ func _hold_all() -> void:
 		skate.brake(id, true)
 
 func _faceoff() -> void:
+	if brain != null:
+		brain.reset()
 	skate.reset()
 	api.reset()
 	hits.reset()
 	crazy.faceoff(self)                    # L5 crazy: puck effects end at a face-off
 	var j: float = float(tune["faceoff_jitter"])
-	puck.place(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
+	api.place_puck(Vector3(ctx.rng.randf_range(-j, j), 0.07, ctx.rng.randf_range(-j, j)))
 	for id: String in order:
 		var sk: TLBiped = skaters[id]
 		sk.brake(false)

@@ -1,4 +1,5 @@
 extends Node
+## N3 checks the 24 m/s wrist shot and its 12 m/s slow release at the original expiry frames.
 ## Measure a slow release against a plain one and the consecutive frames around wake-up.
 var ctx
 var done := false
@@ -50,5 +51,5 @@ func _bot_done() -> bool:
 
 ## Return the verdict and the measurements that establish it.
 func _bot_result() -> Dictionary:
-	var ok: bool = done and rows[0].shots == 1 and rows[1].shots == 1 and absf(rows[1]["21"]/maxf(0.01,rows[0]["21"])-0.5) < 0.025 and rows[1].left21 == 120 and rows[1].left140 == 1 and rows[1].left141 == 0 and absf(rows[1]["141"]/maxf(0.01,rows[1]["140"])-2.0) < 0.035
+	var ok: bool = done and absf(rows[0]["21"] - 24.0) < 0.03 and absf(rows[1]["21"] - 12.0) < 0.03 and rows[0].shots == 1 and rows[1].shots == 1 and absf(rows[1]["21"]/maxf(0.01,rows[0]["21"])-0.5) < 0.025 and rows[1].left21 == 120 and rows[1].left140 == 1 and rows[1].left141 == 0 and absf(rows[1]["141"]/maxf(0.01,rows[1]["140"])-2.0) < 0.035
 	return {"ok":ok,"summary":str(rows),"rows":rows}

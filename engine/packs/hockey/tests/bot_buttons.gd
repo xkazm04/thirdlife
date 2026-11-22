@@ -1,7 +1,8 @@
 extends "rink_bot.gd"
+## N3 uses a scripted stick lift for repeatable loss while a mouse button spans both changes of possession.
 ## Bot (H7): the mouse buttons and the jam's held-button trap. A mouse button is two declared actions (left: shoot and
 ## cross; right: pass and check); a real button presses both on the same frame, so this bot does too.
-## Drill held_buttons: the puck slides into b0's reach from behind (he takes it about frame 30), r0 pokes it off him at
+## Drill held_buttons: the puck slides into b0's reach from behind (he takes it about frame 30), r0 strips it from him after frame
 ## frame 60. The bot holds a button from frame 4 (before the take: a press without the puck, so a cross-check or a check is
 ## tried then, as it should be) to frame 90, then presses it again at frame 96. Counted from frame 7: shots, passes, and
 ## the checks and cross-checks b0 tried (state hits.tries, whiffs included).

@@ -2,6 +2,7 @@ extends RefCounted
 ## Drills (H1): set starts from data/drills.json, called by a test through keyless declared actions drill_<id>.
 ## Skaters a drill does not place go to the park spots and hold still unless it moves them. Created by main.gd.
 
+var ai := false
 var sprint_slots := PackedInt32Array()
 
 func yaw_of(fx_: float, fz: float) -> float:
@@ -15,8 +16,12 @@ func start(g, d: Dictionary, frame: int) -> void:
 	for id: String in d.get("sprint", []):
 		sprint_slots.append(g.skate.slots[id])
 	g.api.reset()
+	g.api.stick_dir.clear()
 	g.hits.reset()
 	g.keeper.in_drill = bool(d.get("goalies", false))     # L5: a goalie drill keeps them in their nets
+	ai = bool(d.get("ai", false))
+	if ai and g.brain != null:
+		g.brain.reset()
 	g.drill_id = str(d["id"])
 	g.drill_t0 = frame
 	g.frozen = false
@@ -69,9 +74,9 @@ func start(g, d: Dictionary, frame: int) -> void:
 			var b2: Array = d["random_move"][id]
 			g.drill_moves[id] = Vector3(g.ctx.rng.randf_range(float(b2[0][0]), float(b2[0][1])), 0.0, g.ctx.rng.randf_range(float(b2[1][0]), float(b2[1][1])))
 	var pk: Array = d["puck"]
-	g.puck.place(Vector3(float(pk[0]), 0.07, float(pk[1])))
+	g.api.place_puck(Vector3(float(pk[0]), 0.07, float(pk[1])))
 	if d.has("puck_vel"):
-		g.puck.linear_velocity = Vector3(float(d["puck_vel"][0]), 0.0, float(d["puck_vel"][1]))
+		g.api.set_puck_velocity(Vector3(float(d["puck_vel"][0]), 0.0, float(d["puck_vel"][1])))
 	if d.has("carrier") and g.skaters.has(str(d["carrier"])):
 		g.api.give(str(d["carrier"]))
 
@@ -81,7 +86,7 @@ func pace(g) -> void:
 	for i in sprint_slots:
 		g.skate.pace(i, true, g.drill_moves.get(g.skate.ids[i], Vector3.ZERO))
 
-func tick(g, frame: int) -> void:
+func _move_skaters(g) -> void:
 	for id: String in g.order:
 		if (id == "b0" and not g.autopilot) or (g.keeper.in_drill and g.keeper.is_goalie(id)):
 			continue
@@ -95,13 +100,28 @@ func tick(g, frame: int) -> void:
 		else:
 			g.skate.want(id, Vector3.ZERO)
 			g.skate.brake(id, true)
+
+func tick(g, frame: int) -> void:
+	if not ai:
+		_move_skaters(g)
 	for st: Array in g.drill_script:
 		if frame - g.drill_t0 == int(st[0]) and g.skaters.has(str(st[1])):
 			match str(st[2]):
+				"pinch", "puck_vel":
+					var v := Vector3(float(st[3]), 0.0, float(st[4]))
+					if st[2] == "pinch":
+						# Inject the speed a body contact would leave before the next possession step.
+						g.puck.linear_velocity = v
+					else:
+						g.api.set_puck_velocity(v)
 				"check": g.hits.try_check(str(st[1]))
 				"cross": g.hits.try_cross(str(st[1]))
 				"poke": g.api.try_poke(str(st[1]))
 				"pass": g.api.try_pass(str(st[1]))
+				"feed":       # A prescribed incoming pass for reception drills: [frame, passer, "feed", target, vx, vz].
+					if g.api.carrier == str(st[1]):
+						g.api._release("pass", str(st[1]), Vector3(float(st[4]), 0, float(st[5])))
+						g.api.last_release["to"] = str(st[3])
 				"shoot": g.api.try_shoot(str(st[1]))
 				"aim":       # L5: [frames, id, "aim", x, z]: his stick points at (x, z) for the step's pass or shot
 					var to: Vector3 = Vector3(float(st[3]), 0.0, float(st[4])) + g.ctx.root.global_position - g.api.puck_pos()

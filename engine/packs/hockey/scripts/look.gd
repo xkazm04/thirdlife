@@ -57,6 +57,9 @@ func setup(g) -> void:
 				var key: String = str(cfg["ring_key"]) if mine else str(cfg["team_keys"][str(g.teams[id])])
 				var ring: Node3D = lib.make_ring(sk, g.api.reach, float(cfg["carry_width"]), key, "CarryRing", 0.025)
 				ring.visible = false
+			if not g.ctx.headless and not mine and g.teams[id] == "blue" and not g.keeper.is_goalie(id) and not sk.has_node("CallRing"):
+				var call_ring: Node3D = lib.make_ring(sk, g.api.reach + 0.25, 0.12, "car_white", "CallRing", 0.04)
+				call_ring.visible = false
 			if not sk.has_node("DownRing") and float(cfg["down_ring"]) > 0.0:
 				var dr: Node3D = lib.make_ring(sk, float(cfg["down_ring"]), 0.22, str(cfg["down_key"]), "DownRing", 0.035)    # L5: a man down reads as down
 				dr.visible = false
@@ -138,6 +141,9 @@ func tick(g) -> void:
 	if neon != null:
 		neon.tick(g, goal_by)
 	for id: String in g.order:
+		var call_ring := (g.skaters[id] as Node3D).get_node_or_null("CallRing")
+		if call_ring != null:
+			call_ring.visible = g.brain != null and g.brain.caller == id and c == "b0" and not g.autopilot and not g.frozen and g.drill_id == "" and not g.intro.active
 		var dring: Node3D = (g.skaters[id] as Node3D).get_node_or_null("DownRing") as Node3D
 		if dring != null:
 			dring.visible = (g.skaters[id] as TLBiped).is_down()

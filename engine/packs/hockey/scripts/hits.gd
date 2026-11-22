@@ -454,7 +454,7 @@ func resolve(att: String, vic: String, dir: Vector3, kind: String) -> String:
 			TLHit.down(victim, down_time, -dir)
 	if api.carrier == vic:
 		var strip: bool = cross and not held and (not back or back_strip)
-		if strip and api.shield_left == 0:
+		if strip and api.can_strip(att, vic):
 			api.knock_loose(vic, va * speed_kept - dir * strip_speed)
 		elif outcome == "knockdown" or (outcome == "stumble" and ratio >= loose_ratio):
 			# JamSim.cpp:2700-2705,2777-2784. The stumble has already halved his speed.

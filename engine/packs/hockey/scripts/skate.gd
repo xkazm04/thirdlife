@@ -20,6 +20,9 @@ var free_speed_mult: float
 var sprint_bonus: float
 var sprint_carry_bonus: float
 var carrier_sprint_cap: float
+var carry_accel_ratio: float
+var carry_turn_mult: float
+var sprint_turn_mult: float
 var carry_scale: float
 var carry_sprint_scale: float
 var free_sprint_scale: float
@@ -54,7 +57,7 @@ func setup(g) -> void:
 	var burst: Dictionary = cfg["burst"]
 	for key: String in cfg:
 		if key not in ["free_speed_mult", "sprint_bonus", "sprint_carry_bonus", "carrier_sprint_cap", "sprint_drain_frames", "sprint_refill_frames",
-				"reverse_decel", "reverse_dot", "intent_min", "stop_speed", "pivot_speed", "burst"]:
+				"reverse_decel", "reverse_dot", "intent_min", "stop_speed", "pivot_speed", "burst", "carry_accel_ratio", "carry_turn_mult", "sprint_turn_mult"]:
 			push_error("tuning.json: unknown skate.%s" % key)
 	for key: String in burst:
 		if key not in ["frames", "accel_mult", "own_stop", "rest_frames", "rest_kept", "rest_speed", "slow_speed", "cut_frames", "cut_dot"]:
@@ -64,6 +67,9 @@ func setup(g) -> void:
 	sprint_bonus = cfg["sprint_bonus"]
 	sprint_carry_bonus = cfg["sprint_carry_bonus"]
 	carrier_sprint_cap = cfg["carrier_sprint_cap"]
+	carry_accel_ratio = cfg.carry_accel_ratio
+	carry_turn_mult = cfg.carry_turn_mult
+	sprint_turn_mult = cfg.sprint_turn_mult
 	carry_scale = g.tune["carry"]["carry_speed_scale"]
 	carry_sprint_scale = minf(carry_scale * (1.0 + sprint_carry_bonus), carrier_sprint_cap * (1.0 + sprint_bonus))
 	free_sprint_scale = free_speed_mult * (1.0 + sprint_bonus)
@@ -146,7 +152,7 @@ func stamina_bar() -> String:
 func is_sprinting(id: String) -> bool:
 	return sprinting[slots[id]] != 0
 
-## JamSim.cpp:1281-1300,1338-1342. Both top speed and thrust use the same pace.
+## The dial scales top speed. Carrier thrust has its own ratio to free thrust.
 func _scale(carrying: bool, sprint: bool) -> float:
 	if carrying:
 		return carry_sprint_scale if sprint else carry_scale
@@ -173,12 +179,15 @@ func tick() -> void:
 			sk.skate_accel = base_accel * _scale(false, false)
 			continue
 		var scale := _scale(id == carrier, sprinting[i] != 0)
-		sk.skate_turn_rate = base_turn
+		sk.skate_turn_rate = base_turn * (carry_turn_mult if id == carrier else 1.0)
+		if sprinting[i]:
+			sk.skate_turn_rate *= sprint_turn_mult
+		sk.skate_turn_rate *= game.api.whiff_turn(id)
 		sk.skate_speed = base_speed * scale
 		if id == braced:
 			sk.skate_speed *= hits.hold_speed
 			sk.skate_turn_rate *= hits.hold_turn
-		sk.skate_accel = base_accel * scale
+		sk.skate_accel = base_accel * _scale(false, sprinting[i] != 0) * (carry_accel_ratio if id == carrier else 1.0)
 		_step(i, sk)
 
 ## JamSim.cpp:1302-1317, JamSim.h:501-502. An old direction can earn exactly one cut.

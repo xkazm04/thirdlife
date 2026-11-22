@@ -1,14 +1,14 @@
 {
   "id": "allstar",
   "label": "All-star",
-  "about": "Reacts 13 frames late, skates at 83 % of your speed, shoots from 15 m with 7 degrees of spread, checks from 4.5 m/s closing.",
+  "about": "Reads the play 7 frames late, with 2.5 degrees of aim spread. Checks from 2.6 m/s closing.",
   "ai": {
     "cross_min_closing": 0.25,
-    "reaction_frames": 13,
+    "reaction_frames": 7,
     "red_skill": 0.83,
-    "shoot_range": 15,
-    "aim_error_deg": 7,
-    "check_min_closing_red": 4.5
+    "aim_sigma_deg": 2.5,
+    "score_noise": 0.03,
+    "check_min_closing_red": 2.6
   },
-  "goalie": {"reaction_frames": 7, "speed": 4.2, "glove": 1.1, "poke": 2.3}
+  "goalie": {"reaction_frames": 7, "speed": 4.0, "glove": 1.1, "poke": 2.3}
 }

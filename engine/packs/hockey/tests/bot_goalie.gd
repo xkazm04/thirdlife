@@ -1,4 +1,6 @@
 extends "rink_bot.gd"
+## N3 depth now interpolates from 1 to 2 m. Check both settled endpoints and the speed cap as well as all four save/goal outcomes.
+## N3 the cross-ice goal must come from the four-frame, 28.8 m/s one-timer.
 ## Bot (L5, 21 Nov): the goalies. One drill a row, the goalies in their nets (drills.json "goalies": true), level none
 ## (the goalie of data/tuning.json "goalie"); each row reads the red goalie's saves and the score:
 ##   straight at him: b0 shoots from 12 m in the middle at the goal's centre: a save, no goal
@@ -6,7 +8,7 @@ extends "rink_bot.gd"
 ##   after a pass across: b1 passes from the left side to b0 on the right, b0 shoots at once at the far post: a goal
 ##   carried at him: b0 skates the puck into the crease (D held): his poke check takes it, no goal
 ##   tracking: before each shot the goalie stands between the puck and his goal's centre, inside the posts
-## ok: the four rows as stated, and he never left his crease (|z| <= z_max, at most `out` + 0.1 m in front of his line).
+## ok: the four rows as stated, and he never left his crease (|z| <= z_max, 1..2 m in front of his line).
 
 const ROWS: Array = [["straight at him from 12 m", "goalie_straight", "save", 0.0], ["far side from an angle", "goalie_angle", "goal", 0.0],
 	["one-timer after a pass across", "goalie_cross", "goal", 0.0], ["carried into his crease", "goalie_poke", "save", 1.0]]
@@ -15,9 +17,12 @@ var t0: int = -1
 var before: Dictionary = {}
 var saves0: int = 0
 var results: Array = []
+var timer_ok := false
 
 var crease_ok: bool = true
 var worst: String = ""
+var prev_keeper := Vector2.ZERO
+var depth_rows: Array = []
 
 func _goalie() -> Dictionary:
 	for k: Dictionary in s["skaters"]:
@@ -33,7 +38,7 @@ func _bot_tick(frame: int) -> void:
 		return
 	if row >= ROWS.size():
 		ctx.input.set_axis(&"left", &"right", 0.0)
-		done = true
+		_depth(frame)
 		return
 	var r: Array = ROWS[row]
 	if t0 < 0:
@@ -60,9 +65,11 @@ func _bot_tick(frame: int) -> void:
 	if age > 2 and not gk.is_empty():
 		var gx: float = float(gk["pos"][0])
 		var gz: float = float(gk["pos"][1])
-		if absf(gz) > 1.5 + 0.01 or gx < 26.0 - 1.3 - 0.1 or gx > 26.0:
+		if absf(gz) > 1.401 or gx < 23.999 or gx > 25.001:
 			crease_ok = false
 			worst = "row %d frame %d at (%.2f, %.2f)" % [row, age, gx, gz]
+	if row == 2 and int(s.possession.get("one_timers", {}).get("b0", 0)) > 0 and s.possession.get("last", {}).get("frame") == frame - 1:
+		timer_ok = absf(_v(s.puck.vel).length() - 28.8) < 0.02
 	var sc: Dictionary = s.get("scores", {})
 	var goal: bool = int(sc.get("blue", 0)) > int(before.get("blue", 0))
 	var saved: bool = int(s.get("saves", {}).get("red", 0)) > saves0
@@ -73,11 +80,40 @@ func _bot_tick(frame: int) -> void:
 		row += 1
 		t0 = -1
 
+## A stationary loose puck with no shot gives the tracking test time to settle after the reaction lag.
+func _depth(frame: int) -> void:
+	var far := depth_rows.is_empty()
+	if depth_rows.size() == 2:
+		done = true
+		return
+	if t0 < 0:
+		if s.state == "over":
+			ctx.input.tap(&"restart")
+			return
+		if s.frozen or s.state != "running":
+			return
+		ctx.input.tap(&"drill_goalie_far" if far else &"drill_goalie_near")
+		t0 = frame
+		return
+	var at := _pos("gr")
+	var age := frame - t0
+	if age > 2 and prev_keeper.distance_to(at) > 4.0 / 60.0 + 0.0015:
+		crease_ok = false
+		worst = "speed cap at %d" % age
+	prev_keeper = at
+	if age >= 60:
+		var puck := _v(s.puck.pos)
+		var depth := 2.0 if far else 1.0
+		var expected := Vector2(26.0 - depth, depth * puck.y / (26.0 - puck.x))
+		depth_rows.append(at.distance_to(expected) <= 0.002)
+		t0 = -1
+
 func _bot_result() -> Dictionary:
-	var ok: bool = done and results.size() == ROWS.size() and crease_ok
+	var ok: bool = done and results.size() == ROWS.size() and crease_ok and timer_ok and depth_rows == [true, true]
 	var parts: Array = []
 	for x: Dictionary in results:
 		ok = ok and bool(x["ok"])
 		parts.append("%s: %s after %d frames (wanted %s)%s" % [x["row"], x["got"], int(x["frames"]), x["want"], "" if x["ok"] else " MISS"])
+	parts.append("depth endpoints %s" % str(depth_rows))
 	parts.append("crease kept" if crease_ok else "LEFT HIS CREASE " + worst)
 	return {"ok": ok, "summary": " | ".join(parts), "rows": results}

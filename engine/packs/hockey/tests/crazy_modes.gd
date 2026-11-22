@@ -1,7 +1,8 @@
 extends Node
+## N3 exercises the panel's starting level and Classic. Each full match must demonstrate its mode's abilities.
 ## Play two full matches through the start panel, with both sides on autopilot.
 ## The result requires natural pickup takes in Arsenal and bot ability use in both modes.
-const MODES := ["arsenal","shotgun"]
+const MODES := ["arsenal","shotgun","arsenal","shotgun"]
 var ctx
 var rows := []
 var start := 0
@@ -34,9 +35,10 @@ func _bot_tick(frame: int) -> void:
 			return
 		selecting = false
 		start = frame
+		if rows.size() >= 2:
+			ctx.input.tap(&"level_none")
 		if not s.autopilot:
 			ctx.input.tap(&"autopilot")
-		ctx.input.tap(&"level_none")
 		return
 	if mode == "arsenal" and frame-start >= 600:
 		var alive: int = s.crazy.pickups.size()
@@ -44,11 +46,11 @@ func _bot_tick(frame: int) -> void:
 	if s.state != "over" and frame-start < 18200:
 		return
 	var c: Dictionary = s.get("crazy",{})
-	var row := {"mode":s.mode,"frames":frame-start,"reason":s.get("reason",""),"score":s.scores,
+	var row := {"mode":s.mode,"level":s.get("level","none"),"frames":frame-start,"reason":s.get("reason",""),"score":s.scores,
 		"used":c.get("used",{}),"taken":c.get("taken",{})}
 	if mode == "arsenal":
 		row["packages_after_10s"] = on_ice.duplicate()
-	row.ok = s.mode == mode and s.autopilot and s.state == "over" and frame-start > 120 and row.reason in ["time","score"] and not row.used.is_empty() and (mode != "arsenal" or not row.taken.is_empty())
+	row.ok = row.level == ("rookie" if rows.size() < 2 else "none") and s.mode == mode and s.autopilot and s.state == "over" and frame-start > 120 and row.reason in ["time","score"] and not row.used.is_empty() and (mode != "arsenal" or not row.taken.is_empty())
 	if not row.ok and not retried and row.used.is_empty() and frame-start < 3000:
 		# L4b: a match won 3:0 inside 24 s can end before a bot holds an ability near an opponent (seed 1 after the body
 		# check's wind-up: Arsenal 3:0 in 1412 frames, a shield taken, never used); that mode is played once more
@@ -56,6 +58,8 @@ func _bot_tick(frame: int) -> void:
 		need_menu = true
 		on_ice = {}
 		return
+	retried = false
+	on_ice = {}
 	rows.append(row)
 	need_menu = rows.size() < MODES.size()
 
@@ -65,4 +69,4 @@ func _bot_done() -> bool:
 
 ## Keep scores, duration and per-kind counts alongside the verdict.
 func _bot_result() -> Dictionary:
-	return {"ok":_bot_done() and rows[0].ok and rows[1].ok,"summary":str(rows),"matches":rows}
+	return {"ok":_bot_done() and rows.all(func(r): return r.ok),"summary":str(rows),"matches":rows}

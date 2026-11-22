@@ -1,7 +1,7 @@
 {
   "id": "game.ice_hockey_three_against",
   "version": "0.1.1",
-  "kernelApi": "0.1",
+  "kernelApi": "1.13",
   "title": "Ice hockey, three against three",
   "capabilities": [
     "physics",
@@ -44,6 +44,8 @@
     "tests/bot_ladder_allstar_regular.gd",
     "tests/bot_ladder_allstar_idle.gd",
     "tests/bot_hockey_ai.gd",
+    "tests/bot_metrics_ai.gd",
+    "tests/bot_ai_play.gd",
     "tests/bot_reach.gd",
     "tests/bot_match.gd",
     "tests/bot_check.gd",
@@ -69,6 +71,10 @@
     "tests/bot_reverse_stop.gd",
     "tests/bot_windup.gd",
     "tests/bot_downed.gd",
+    "tests/bot_poke.gd",
+    "tests/bot_dangle.gd",
+    "tests/bot_reception.gd",
+    "tests/bot_own_net.gd",
     "tests/crazy_shotgun.gd",
     "tests/crazy_hipcheck.gd",
     "tests/crazy_shield.gd",

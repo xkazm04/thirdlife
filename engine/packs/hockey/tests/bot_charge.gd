@@ -1,4 +1,5 @@
 extends "rink_bot.gd"
+## N3 wrist/full charge are 24/32 m/s. A reception press releases four frames after the take.
 ## Observe the actual puck velocity on the first frame after release. The opposing poker returns the
 ## puck to the same held button so a release cannot pass the loss test just because the puck is absent.
 
@@ -8,6 +9,7 @@ var row := 0
 var phase := "start"
 var since := 0
 var shots_before := 0
+var take_frame := 0
 var timers_before := 0
 var speeds: Array[float] = []
 var saw_poke := false
@@ -32,23 +34,24 @@ func _bot_tick(frame: int) -> void:
 			phase = "ready"
 		"ready":
 			if holder == "b0" and s.shoot_ready:
+				take_frame = s.possession.since
 				ctx.input.press(&"shoot")
 				shots_before = shots
 				timers_before = timers
 				since = frame
-				phase = "loss" if row == HOLDS.size() else "hold"
+				phase = "loss" if row == HOLDS.size() else ("timer" if row == HOLDS.size() - 1 else "hold")
 		"hold":
 			clean = clean and shots == shots_before and holder == "b0" and s.possession.get("charge_frames", -1) == mini(age, 30)
 			if age == HOLDS[row]:
 				ctx.input.release(&"shoot")
 				phase = "flight"
-		"flight":
-			var vel := Vector2(s.puck.vel[0], s.puck.vel[1])
-			speeds.append(vel.length())
-			clean = clean and shots == shots_before + 1 and s.possession.last.kind == "shot" and holder == "" \
-				and timers - timers_before == int(row == HOLDS.size() - 1)
-			row += 1
-			phase = "start"
+		"timer":
+			clean = clean and not s.possession.has("charge_frames")
+			if shots > shots_before:
+				clean = clean and s.possession.last.frame - take_frame == 4
+				ctx.input.release(&"shoot")
+				phase = "flight"
+
 		"loss":
 			clean = clean and shots == shots_before
 			if s.possession.get("last", {}).get("kind") == "poked":
@@ -67,11 +70,18 @@ func _bot_tick(frame: int) -> void:
 		"repress":
 			if shots == shots_before + 1:
 				done = true
+	if phase == "flight" and shots > shots_before:
+		var vel := Vector2(s.puck.vel[0], s.puck.vel[1])
+		speeds.append(vel.length())
+		clean = clean and shots == shots_before + 1 and s.possession.last.kind == "shot" and holder == "" \
+			and timers - timers_before == int(row == HOLDS.size() - 1)
+		row += 1
+		phase = "start"
 	if frame > 1000:
 		done = true
 
 func _bot_result() -> Dictionary:
-	var expected := [18.0, 18.0, 18.0 + 8.0 * 5 / 30, 22.0, 26.0, 26.0, 24.3]
+	var expected := [24.0, 24.0, 24.0 + 8.0 * 5 / 30, 28.0, 32.0, 32.0, 28.8]
 	var ok := done and clean and saw_poke and regained and phase == "repress" and speeds.size() == expected.size()
 	for i in speeds.size():
 		ok = ok and absf(speeds[i] - expected[i]) <= 0.02

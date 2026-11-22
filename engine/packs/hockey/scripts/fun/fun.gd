@@ -93,7 +93,7 @@ func _thaw(g) -> void:
 		if g.puck.holder() == null:
 			g.puck.freeze = false
 			g.puck.sleeping = false
-			g.puck.linear_velocity = _puck_vel
+			g.api.set_puck_velocity(_puck_vel)
 
 
 ## The tick's events (main's _flush_events, before fx): shots, hits, goals, face-offs.
@@ -273,7 +273,7 @@ func _replay_step(g) -> bool:
 		sk.place(g.ctx.root.global_transform * p, lerp_angle((a[2] as PackedFloat32Array)[j], (b[2] as PackedFloat32Array)[j], f))
 		sk.velocity = (a[3] as PackedVector3Array)[j] / replay_slow
 	if g.puck.holder() == null:
-		g.puck.place(g.ctx.root.global_transform * (a[0] as Vector3).lerp(b[0] as Vector3, f))
+		g.api.place_puck(g.ctx.root.global_transform * (a[0] as Vector3).lerp(b[0] as Vector3, f))
 	return true
 
 

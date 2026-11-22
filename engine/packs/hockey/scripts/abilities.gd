@@ -174,7 +174,7 @@ func step_flight(g) -> void:
 		return
 	if flight.kind == "slow_puck":
 		if now >= int(flight.until):
-			g.puck.linear_velocity = (g.puck.linear_velocity / magnitude("slow_puck")).limit_length(g.puck.max_speed)
+			g.api.set_puck_velocity((g.puck.linear_velocity / magnitude("slow_puck")).limit_length(g.puck.max_speed))
 			end_flight(g)
 		return
 	if now > int(flight.until):
@@ -250,7 +250,7 @@ func released(g, id: String, event: String) -> void:
 		return
 	slot.erase("armed")
 	flight = {"kind":k,"by":id,"until":now + duration(k)}
-	g.puck.linear_velocity *= magnitude(k)
+	g.api.set_puck_velocity(g.puck.linear_velocity * magnitude(k))
 	if k == "shotgun":
 		boosts.speed_cap(g,magnitude(k))
 		flash(g,"shotgun",g.puck.global_position,id)
