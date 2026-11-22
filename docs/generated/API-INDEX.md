@@ -41,7 +41,9 @@ Properties: `contact: TLContact`, `height: float`, `kind: StringName`, `material
 - `func last_step() -> Array`
 - `func place(at: Vector3) -> void`
 - `func release(velocity: Vector3 = Vector3.ZERO) -> void`
+- `func set_max_gain(per_frame: float, floor_speed: float = 0.0) -> void`
 - `func set_radius(r: float) -> void`
+- `func set_velocity(v: Vector3) -> void`
 - `func shoot(impulse: Vector3) -> void`
 - `func shoot_at(target: Vector3, speed_: float) -> void`
 - `func speed() -> float`
