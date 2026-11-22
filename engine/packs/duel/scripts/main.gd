@@ -463,6 +463,8 @@ func _round_checks() -> void:
 	if reason == "":
 		return
 	round_rules.finish(winner, reason)
+	if reason == "ko":
+		show.ko_moment(rival if winner == "you" else you)
 	round_log.append([winner, reason, round_rules.total_frames, snappedf(you.hp, 0.1), snappedf(rival.hp, 0.1), lead_round,
 		snappedf((you.hp / you.hp_max) if winner == "you" else (rival.hp / rival.hp_max), 0.001)])
 	var why: String = ""

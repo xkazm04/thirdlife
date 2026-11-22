@@ -42,6 +42,11 @@ your roll. A lost round ends on the biggest one by damage and its answer, on scr
 "WHAT BEAT YOU: his quick lights (6 hits, 50 damage) / Keep your guard up close in (hold SPACE) and tap SPACE on the
 glint to parry." (plays-twice items 13 and 22). `_pack_state` carries `causes` and `loss_causes`.
 
+## The blow that ends a round (`tuning.json` "ko")
+The round-ending blow holds the longest hit-stop the kernel allows (20 frames), then the camera cuts low beside the
+fallen fighter with the winner over him: dust as he meets the sand, the crowd's roar, the winner's cheer; the play
+camera comes back with the next round (plays-twice items 19 and 28).
+
 ## What you see
 - Top left / right: health, stamina and posture bars for you and the rival, with EXHAUSTED, RALLY, BROKEN and stars.
 - Top: round, rounds won (filled pips), the round clock, the rival's name, the crowd meter.
