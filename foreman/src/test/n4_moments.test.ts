@@ -1,4 +1,4 @@
-// N4 loop round 8 (22 Nov): the look films the exchange where the bot saw it (its `moments`), not at fixed fractions of
+// N4 loop rounds 8 and 9 (22 Nov): the look films the exchange where the bot saw it (its `moments`), not at fixed fractions of
 // its run. The crazy colosseum proof -3 was filmed at 25 % and 95 % and two strips were 60 frames of standing still.
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
@@ -26,6 +26,12 @@ test("round 8: moments are picked for variety (one of each kind first), after a 
 
 test("round 8: a job's look films the frames its bot reported (FAKE_METRICS moments through the fake runner)", async () => {
   const job = tempJob("moments-look");
+  // Strips on (the fake engine's verbs.json learns --strip): round 9 films a moment as a dense CONTACT strip.
+  const { FAKE_VERBS_FILE } = await import("../verbs.js");
+  const verbs = JSON.parse(fs.readFileSync(FAKE_VERBS_FILE, "utf8"));
+  verbs.verbs.capture.options.strip = { type: "string", default: "" };
+  fs.mkdirSync(path.join(job.engineDir, "kernel", "runner"), { recursive: true });
+  fs.writeFileSync(path.join(job.engineDir, "kernel", "runner", "verbs.json"), JSON.stringify(verbs, null, 1));
   const file = path.join(job.jobDir, "job.jsonl");
   const lines = fs.readFileSync(file, "utf8").split("\n").filter(Boolean);
   const brief = JSON.parse(lines[1] as string) as { brief: Brief };
@@ -44,4 +50,9 @@ test("round 8: a job's look films the frames its bot reported (FAKE_METRICS mome
   const caps = ms[0]?.type === "milestone" ? ms[0].captures : [];
   assert.ok(caps.some((c) => /blockout-hero-f150\.png$/.test(c)), "the 25 % frame of the first test stays");
   assert.ok(caps.some((c) => /blockout-hero-f200\.png$/.test(c)), `the parried moment is filmed: ${caps.join(", ")}`);
+  const strips = ms[0]?.type === "milestone" ? (ms[0].strips ?? []) : [];
+  const contact = strips.find((x) => /strip-f190\.png$/.test(x.capture));
+  assert.ok(contact, `a strip from 10 frames before the moment: ${strips.map((x) => x.capture).join(", ")}`);
+  assert.match(contact?.label ?? "", /^CONTACT \(a moment the bot reported, frame 200; 2 frames apart[^]*frames 190, 192, \.\.\. 212, 2 frames apart/);
+  assert.ok(strips.some((x) => /strip-f120\.png$/.test(x.capture) && /5 frames apart/.test(x.label)), "the 25 % frame keeps its ordinary strip");
 });

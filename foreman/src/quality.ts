@@ -11,7 +11,7 @@ import { critic, generate, type RubricItem } from "./designer.js";
 import { criticRubric, packageLinesOf } from "./phases.js";
 import { CRITIC_ROUND, criticReopenFor } from "./rounds.js";
 import { QUALITY_ROUNDS, type Look } from "./quality_state.js";
-import { STRIP, shotLabel, stripFile, stripFrom, stripLabel, type Shot } from "./shots.js";
+import { CONTACT_STRIP, STRIP, shotLabel, stripFile, stripFrom, stripLabel, type Shot } from "./shots.js";
 import { foldEvents } from "./joblog.js";
 import { copyDir } from "./scope.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
@@ -74,11 +74,13 @@ export async function houseStrips(h: GateHost, base: HouseBaseline, template: st
     const vr = await h.verifyLogged({ verb: "bot", args: [`--test=${s.test}`, ...s.args] }, packDir, `house-${base.pack}-drill`, { round: 1 });
     const f = contactFrame(vr.report, s.moments);
     if (f !== undefined) {
-      const from = Math.max(1, f - 15);
+      // Round 9: the house strip is a CONTACT strip too (2 frames apart from 10 before), so the bar and the build compare like with like.
+      const from = Math.max(1, f - CONTACT_STRIP.before);
+      const st = CONTACT_STRIP.step;
       const out = h.dir("reports", `house-${base.pack}`, `strip-${s.cam}-f${from}.png`);
       const res = `--res=${h.o.captureRes ?? "1280x720"}`;
-      if (await captureOnce(h, [`--cam=${s.cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${STRIP.step}`, res, `--test=${s.test}`], out, `house-${base.pack}-strip`, after, notes, `house strip ${s.cam} from frame ${from}`, packDir)) {
-        strips = [{ capture: h.rel(out), label: `HOUSE GAME engine/packs/${base.pack} (the bar, not this build): MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + STRIP.step}, ... ${from + STRIP.step * (STRIP.count - 1)}, ${STRIP.step} frames apart), ${s.test} on camera ${s.cam}: ${s.label}` }];
+      if (await captureOnce(h, [`--cam=${s.cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${st}`, res, `--test=${s.test}`], out, `house-${base.pack}-strip`, after, notes, `house strip ${s.cam} from frame ${from}`, packDir)) {
+        strips = [{ capture: h.rel(out), label: `HOUSE GAME engine/packs/${base.pack} (the bar, not this build): CONTACT MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + st}, ... ${from + st * (STRIP.count - 1)}, ${st} frames apart; the contact at frame ${f}), ${s.test} on camera ${s.cam}: ${s.label}` }];
       }
     } else notes.push(`house strip: ${s.test} on ref/packs/${base.pack} gave no contact frame (${clip(vr.summary, 160)})`);
   }
@@ -100,10 +102,12 @@ export async function filmLook(h: GateHost, m: Milestone, shots: Shot[], cameras
         film.labels.push(shotLabel(cam, frame, shot));
       }
       if (!withStrips) continue;
-      const from = stripFrom(frame);
+      const contact = shot.moments?.includes(frame) === true; // round 9: a contact moment gets a dense strip
+      const from = contact ? Math.max(1, frame - CONTACT_STRIP.before) : stripFrom(frame);
+      const step = contact ? CONTACT_STRIP.step : STRIP.step;
       const strip = h.dir("captures", stripFile(m, cam, shot, from));
-      if (await captureOnce(h, [`--cam=${cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${STRIP.step}`, res, ...bot], strip, `milestone-${m}-strip-${cam}-f${from}`, after, film.notes, `strip ${cam} from frame ${from}`)) {
-        film.strips.push({ capture: h.rel(strip), label: stripLabel(cam, from, shot) });
+      if (await captureOnce(h, [`--cam=${cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${step}`, res, ...bot], strip, `milestone-${m}-strip-${cam}-f${from}`, after, film.notes, `strip ${cam} from frame ${from}`)) {
+        film.strips.push({ capture: h.rel(strip), label: stripLabel(cam, from, shot, step) });
       }
     }
   }

@@ -20,6 +20,8 @@ export interface Shot {
   kind: "own" | "first";
   /** L1b: the clip ids (brief.design.clips) its package `serves`: the critic sees this shot's strips first. */
   clips?: string[];
+  /** N4 loop round 9: the frames of `frames` that are the bot's contact moments (filmed as dense CONTACT strips). */
+  moments?: number[];
 }
 
 /** At most this many bots are filmed per milestone (each at two frames, for every declared camera). */
@@ -110,11 +112,18 @@ export function planShots(
     if (m.length === 0) return base;
     return keepFirst ? [base[0] as number, ...m.filter((f) => f !== base[0])] : m.length === 1 ? [...m, ...base.slice(1).filter((f) => f !== m[0])].slice(0, 2) : m;
   };
+  // Round 9: which of a shot's frames are contact moments (their strips are dense: see CONTACT_STRIP).
+  const momentsIn = (bot: string | undefined, frames: number[]): { moments?: number[] } => {
+    if (bot === undefined) return {};
+    const all = new Set(momentsOf(bot).map((x) => x.frame));
+    const hit = frames.filter((f) => all.has(f));
+    return hit.length > 0 ? { moments: hit } : {};
+  };
   const first = manifestTests[0];
   const firstFinish = first !== undefined ? finishOf(first) : undefined;
   const firstOwner = first !== undefined ? plan.find((p) => (p.registers?.tests ?? []).includes(first))?.id : undefined;
   const servesOf = (id: string | undefined): { clips?: string[] } => { const sv = plan.find((p) => p.id === id)?.serves ?? []; return sv.length > 0 ? { clips: sv } : {}; };
-  const shots: Shot[] = [{ ...(first !== undefined ? { bot: first } : {}), ...(firstOwner !== undefined ? { package: firstOwner } : {}), ...servesOf(firstOwner), frames: fixed ?? atMoments(first, shotFrames(firstFinish, "first"), true), ...(firstFinish !== undefined ? { finish: firstFinish } : {}), kind: "first" }];
+  const shots: Shot[] = [{ ...(first !== undefined ? { bot: first } : {}), ...(firstOwner !== undefined ? { package: firstOwner } : {}), ...servesOf(firstOwner), frames: fixed ?? atMoments(first, shotFrames(firstFinish, "first"), true), ...(fixed === undefined ? momentsIn(first, atMoments(first, shotFrames(firstFinish, "first"), true)) : {}), ...(firstFinish !== undefined ? { finish: firstFinish } : {}), kind: "first" }];
   const taken = new Set(first !== undefined ? [first] : []);
   const lastMerge = new Map<string, number>();
   for (const e of events) if (e.type === "merge" && e.files.length > 0) lastMerge.set(e.package, e.seq);
@@ -129,7 +138,8 @@ export function planShots(
     if (bot === undefined) continue;
     taken.add(bot);
     const finish = finishOf(bot);
-    shots.push({ bot, package: id, frames: fixed ?? atMoments(bot, shotFrames(finish, "own"), false), ...(finish !== undefined ? { finish } : {}), kind: "own", ...servesOf(id) });
+    const own = fixed ?? atMoments(bot, shotFrames(finish, "own"), false);
+    shots.push({ bot, package: id, frames: own, ...(fixed === undefined ? momentsIn(bot, own) : {}), ...(finish !== undefined ? { finish } : {}), kind: "own", ...servesOf(id) });
   }
   return shots;
 }
@@ -151,6 +161,13 @@ export function shotLabel(cam: string, frame: number, shot: Shot): string {
 /** JOB.md 2026-11-21: a motion strip is a 4x3 tile of 12 frames, 5 apart (`capture --strip=12x5`). */
 export const STRIP = { count: 12, step: 5 } as const;
 
+/**
+ * N4 loop round 9: a CONTACT strip around a moment the bot reported: 12 frames 2 apart from 10 before it, so a 6-frame
+ * hit-stop holds both bodies still over 3 tiles (5 apart it is one tile, and the critic of the proofs read "no visible
+ * hit-stop" on cores that freeze both bodies). Real house duel heavy_block, contact at 46: tiles 6-9 of f36 hold.
+ */
+export const CONTACT_STRIP = { count: 12, step: 2, before: 10 } as const;
+
 /** The first frame of the strip around a filmed point: 30 frames before it, so the strip holds the lead-up and the result. */
 export const stripFrom = (frame: number): number => Math.max(1, frame - 30);
 
@@ -160,7 +177,8 @@ export function stripFile(milestone: string, cam: string, shot: Shot, from: numb
 }
 
 /** What the critic is told about a strip: the tile's reading order and frames, the camera and the bot. */
-export function stripLabel(cam: string, from: number, shot: Shot): string {
-  const last = from + STRIP.step * (STRIP.count - 1);
-  return `${shot.clips?.length ? `CLIP MOMENT ${shot.clips.join(", ")} (its package serves it): ` : ""}MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames ${from}, ${from + STRIP.step}, ... ${last}, ${STRIP.step} frames apart) of ${shotLabel(cam, from, shot).replace(/^camera /, "camera ")}`;
+export function stripLabel(cam: string, from: number, shot: Shot, step: number = STRIP.step): string {
+  const last = from + step * (STRIP.count - 1);
+  const contact = step !== STRIP.step ? `CONTACT (a moment the bot reported, frame ${from + CONTACT_STRIP.before}; ${step} frames apart, so a hit-stop shows as tiles that hold still) ` : "";
+  return `${shot.clips?.length ? `CLIP MOMENT ${shot.clips.join(", ")} (its package serves it): ` : ""}${contact}MOTION STRIP (4 columns x 3 rows, read left to right, top to bottom: frames ${from}, ${from + step}, ... ${last}, ${step} frames apart) of ${shotLabel(cam, from, shot).replace(/^camera /, "camera ")}`;
 }
