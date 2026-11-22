@@ -1,0 +1,527 @@
+{
+ "v": 1,
+ "seq": 17,
+ "ts": "2026-11-22T03:33:49.540Z",
+ "job": "ice-hockey-three-against-20261122-1",
+ "type": "plan_set",
+ "packages": [
+  {
+   "id": "core",
+   "title": "Lake hockey core exchange (tofu)",
+   "milestone": "blockout",
+   "deps": [],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/carry.gd",
+    "scripts/poke.gd",
+    "scripts/skate.gd",
+    "scripts/hits.gd",
+    "scripts/dodge.gd",
+    "scripts/keeper.gd",
+    "scripts/show.gd",
+    "scripts/ai/**",
+    "data/tuning.json",
+    "data/ai.json",
+    "data/venue.json",
+    "data/rules.json",
+    "data/teams.json",
+    "tests/bot_tofu.gd",
+    "tests/bot_hand_perfect.gd",
+    "tests/bot_hand_newcomer.gd",
+    "tests/support/**"
+   ],
+   "contract": "START: copy the house game ref/packs/hockey (card.team_possession): scripts/carry.gd, poke.gd, skate.gd, hits.gd, keeper.gd, scripts/ai/brain.gd, sense.gd, carrier.gd, roles.gd, data/ai.json, the skater/skate/carry/shoot/hits sections of data/tuning.json, its goals, stamina bar and possession rings (scripts/show.gd), tests/metrics.gd as tests/support/metrics.gd. Keep their numbers; this contract lists only differences. Drop: cross-check and held brace (C), rule dial (T), boosts/big puck, modes panel, menu. Flat shapes: kit primitives, no dressing.\nVENUE data/venue.json (tl.layout/1): one flat terrain pad, the kit rink at the house size, ice top y = 0.05 (boards kept for collision, glass off if the part allows), two kit goals. Nothing else.\nRULES data/rules.json (TLRules): sides [blue, red], periods 3, period_seconds 60, intermission_seconds 2, score_to_win 5, sudden_death true.\nSKATERS ids: blue_0 (the player), blue_1, blue_2, red_0 (captain), red_1, red_2, goalies blue_g, red_g. TLBiped skate mode, house skater numbers, TLHit.pushbox on. data/teams.json (owned here): teams {bears: {name 'Millpond Bears', captain 'Borje', body_scale 2.5, colors brown, stability_mult 1.4, turn_mult 0.8, poke_reach_mult 1.0, checks true}, pikes: {name 'Hollow Reach Pikes', body_scale 2.2, colors green, stability_mult 1.0, poke_reach_mult 1.2, checks false}, wolves: {name 'Northdeep Wolves', body_scale 2.2, colors grey, stability_mult 1.0, checks true}}, tiers {rookie: {reaction_frames 18, aim_deg 6, noise 0.08, tell_frames 24}, pro: {12, 4, 0.05, 22}, allstar: {7, 2.5, 0.03, 20}}, mates {reaction_frames 5, aim_deg 1.5, noise 0.02}. Core applies body_scale (rig and capsule), colours, stability_mult, turn_mult, poke_reach_mult and checks generically; speeds and mass never change by tier. Red defaults to bears at rookie.\nINPUT: up/down/left/right W S A D, sprint Shift, shoot Space + left button, pass_or_check Q + right button, check F, poke E, dodge Ctrl, skip Enter, restart R, view V; aim 'stick' (declare_aim at 0.05).\nVERBS (60 Hz, each its own clip by play_clip, started on the press frame so feedback <= 3 f):\n- shoot (shoot clip): house shoot tuning: tap 4 f 24 m/s, charge to 30 f 32 m/s, one-timer 8 f before to 6 f after arrival fires 4 f after the take at 28.8 m/s; recovery 12 f, cancels into dodge; losing the puck cancels the charge; no pickup 6 f.\n- pass (pass clip, a short sweep): anticipation 3 f, recovery 10 f; house pass 18 m/s, 23 beyond 15 m, window +0.6 m, +-100 deg, 18 f magnet; led to the mate nearest the stick; passer no pickup 6 f.\n- poke (template move poke 5/7/12 on the strike clip as a short stick jab): house poke.gd: reach 2.3 m, +-35 deg, 65 / 45.5 / 26 % front/side/behind, x0.6 on a fresh cut, cooldown 40, whiff halves turning 15 f, success frees 4-6 m/s, anti ping-pong 24 / 30 f.\n- body_check (body_check clip; F, or Q / right without the puck): house hits.gd: 12 f wind-up, 12 f window, impulse = mass x (closing + 1.5 m/s) over stability; hit recovery 40 f, miss 20 f.\n- dodge NEW, DEFENSIVE (dodge clip, Ctrl): side step about 2 m (TLBiped.shove) away from the nearest checker (one in wind-up first, else the nearest opponent): 3 f start, immune to checks and pokes for 14 f from frame 1, 16 f recovery (no poke, check or dodge), cooldown 45; the carrier keeps the puck at 0.7 speed.\nCONTACT, both bodies, r = impulse / stability:\n- bump r < 0.4: TLHit.impact both 3 f; TLHit.react(victim, dir, 0.3); hitter rebounds at restitution 0.2; no shake, no burst.\n- stumble 0.4 <= r < 1.0: both 6 f; TLHit.react 0.7, victim half speed; puck free from r 0.7 (cause hit); hitter loses half his lunge; ctx.cameras.shake(0.08, 8); small TLVfx ice_spray burst.\n- knockdown r >= 1.0: both 10 f; TLHit.down(victim, 60 to 150 f by r 1..3, dir); TLBiped.shove(impulse) so he slides 2-4 m; hitter recoils 1 m/s; shake 0.18 over 14 f; ice_spray + debris burst and a hit sound (TLAudio.play).\n- dodged: a check meeting an immune dodger whiffs, slides 1.5 m on, open 20 f.\n- whiff: slides 1.5 m on with a continuous ice_spray (TLVfx.attach, stopped after) and a scrape sound, NO burst, 20 f recovery.\nKnockdowns at most 30 % of landed hits in bot runs.\nCAMERAS: chase = ctx.cameras.chase(player, {distance 15, height 10, look_height 1, fov 58, use_velocity true, avoid_space: the pack's space}) then ctx.cameras.frame(player, 0.22); registered first (active). lake = add_view of the whole lake, oblique from the near side, set_subject(lake, player) (>= 0.08). V toggles; state view.\nHUD (TLHud): score_blue, score_red, clock, stamina (ten steps, bottom), hint (one key line, bottom_left), banner (center, empty).\nMODULES (later packages join here; works with none): main.gd reads ctx.root.get_meta('tl_modules', []) (gen/mod_<name>.gd generators append 'scripts/<name>.gd'), sorts it, makes each with ctx.load_script(path).new(); calls setup(game, ctx) at the end of _pack_setup, on_event(ev) for each event of the frame, tick(frame) at the end of _pack_tick, and merges state() as _pack_state()[<name>].\nGAME API (main.gd, others rely on): skaters {id: TLBiped}, side_of(id), player_id, puck (TLBall), rules, hud, tuning, teams, red_team, red_tier, phase ('play'; modules set 'drill' or 'end'), hazard (null or object with stage_at(pos)->int 0..3, hole_near(pos, r)->bool), crack_scale 1, crack_extra {blue 0, red 0}, ai_hooks [] (objects with check_bonus(hitter, victim)->float, lane_penalty(a, b)->float, carry_penalty(pos)->float, obstacles()->Array of {position, radius}, override(id, frame)->Dictionary: {} or {move: Vector3, action: 'check'|'poke'|'dodge'|'', target}); the AI sums them and steers round obstacles with TLSteer.avoid. bench(id, frames, return_pos): rig visual sinks 30 f, then parked off-rink with collision off, action 'sunk', back at return_pos; a carried puck drops with cause water. puck_out(frames, return_pos) (puck_state 'out'). freeze(id, frames) = TLHit.impact(null, body, frames). play_reaction(id, clip, frames). ai_dodge(id). set_matchup(team, tier) (applies at the next face-off). restart_match().\nEVENTS ev.kind: contact {result bump|stumble|knockdown|whiff|dodged, hitter, victim, hitter_side, victim_side, pos, ratio}, possession {cause poked|hit|intercept|lost|bobble|dump|shot|pass|water|take, from, to}, goal {side}, period_start {n}, period_end {n}, faceoff, sink {who, side, by}, puck_water.\nSTATE: rules.snapshot() + puck_state loose|carried|pass|shot|out, carrier, last_loss {kind, from, to, frame}, puck {pos, vel}, skaters {id: {side, pos, vel, facing, down, stumble, action idle|shoot|pass|poke|check_windup|check_active|recover|dodge|dodge_recover|sunk|reaction, action_f, immune, tell, tell_f, role}}, contacts {bump, stumble, knockdown, whiff, dodged}, player, red_team, red_tier, view, phase.\nThe rookie Bears' tell here: the body_check clip from its first wind-up frame, 12 f before the window (rivals lengthen it). Core bots tap skip whenever phase is 'drill'.\nTOFU CHECK: tests/bot_tofu.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, verbs_used, possession_median_f\n- feedback_f <= 3: over every press of the core verb, the most frames from the press to the first frame the player's body or weapon visibly changed\n- skill_spread 0.25 to 0.95: (best mean outcome - worst mean outcome) / best mean outcome over variants of the CORE verb alone, each mean over at least 5 tries\n- skill_variants >= 3\n- idle_max_f <= 120: the longest run of frames any opponent spent with no action\n- tell_min_f >= 12: over every dangerous opponent action, the fewest frames from its tell's first frame to its first active frame\n- tells >= 3\n- pressure_waves >= 2: opponent attacks started per 180-frame window; a wave is a busy window (3+) after a quiet one (<= 1)\n- lead_change_share >= 0.3 over at least 3 rounds\n- close_rounds >= 1 (ended within one goal)\n- verbs_used >= 5: shoot, pass, poke, body_check, dodge each pressed at least 3 times\n- possession_median_f 240 to 600 (HOCKEY-ARCADE 5.5: 4-10 s; over 15 s glued, under 2 s random). The house measured 3.0-4.1 s: raise it with ai.json fresh_frames / fresh_check_frames and the PROTECT weight, never by gluing.\nTofu bot: hand regular on blue_0, at least 3 matches (round = match) against bears rookie. Core verb = body_check; variants: standing (closing < 2 m/s), cruise, sprint, from behind (unseen), each >= 5 tries; outcome = mean impulse ratio. Dangerous opponent action = a body check. Returns {ok, summary, hand, metrics, moments: {check, knockdown, poke, dodge, whiff, one_timer, goal: [frames]}}, every value counted from play.\nHAND CHECKS (card): tests/bot_hand_perfect.gd (perfect hand, one match) and tests/bot_hand_newcomer.gd (newcomer hand, one match; passes when it played to the end and the hand acted; reports takes, shots, possession median).\nPLAYER CHECK: tests/bot_hand_perfect.gd fails when the player's skater blue_0 can no longer take the puck, shoot, pass or body check (it needs >= 5 takes, >= 3 shots, >= 3 passes, >= 2 landed checks by blue_0 and >= 1 goal by blue)",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--bot-frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd",
+      "--frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_newcomer.gd",
+      "--frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_tofu.gd",
+      "--frames=60000"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "physics",
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "rules",
+     "ai",
+     "biped",
+     "ball",
+     "kit"
+    ],
+    "tests": [
+     "tests/bot_hand_perfect.gd",
+     "tests/bot_tofu.gd",
+     "tests/bot_hand_newcomer.gd"
+    ],
+    "cameras": [
+     "chase",
+     "lake"
+    ]
+   },
+   "serves": [
+    "check_into_water",
+    "dodge_swim",
+    "one_timer_hole"
+   ]
+  },
+  {
+   "id": "ice",
+   "title": "Cracking ice grid and holes",
+   "milestone": "greybox",
+   "deps": [
+    "core"
+   ],
+   "scope": [
+    "scripts/ice.gd",
+    "scripts/ice_draw.gd",
+    "data/ice.json",
+    "gen/mod_ice.gd",
+    "tests/bot_ice.gd"
+   ],
+   "contract": "THE HOOK. gen/mod_ice.gd (static generate(ctx)) appends 'scripts/ice.gd' to ctx.root meta 'tl_modules'. scripts/ice.gd is a core module (setup(game, ctx), on_event(ev), tick(frame), state()) and sets game.hazard = self.\ndata/ice.json: {cell_m 4, cols 25, rows 12 (cover the core rink; cols along x, centred on the rink centre), cracks_per_stumble 1, knockdown_centre 2, knockdown_ring 1, hole_radius 2.5, sink_frames 180, puck_return_frames 90, refreeze_frames 1500, refreeze_stage 2, max_holes 4, crease_clear_m 6, touch_freeze_frames 12, open_shake [0.3, 20]}. cracks_per_stumble is the tuning dial.\nRULES on contact events: stumble adds cracks_per_stumble to the victim's cell; knockdown adds 2 there and 1 to each of its 8 neighbours, and a knockdown on a cell already at stage 2 opens a hole at once. Each addition is multiplied by game.crack_scale and gets game.crack_extra[hitter_side] more on the victim's cell. Stage 3 opens a hole. Cracks never heal by themselves. At most 4 open holes; cells whose centre is within 6 m of a crease, and any cell while 4 holes are open, cap at stage 2. A hole refreezes after 1500 f to stage 2 (flag refrozen) so the next knockdown reopens it.\nHOLE OPEN: a 2.5 m disk at the cell centre; TLVfx.burst splash, TLAudio.play crack sound ('break'), ctx.cameras.shake(0.3, 20), game.freeze(id, 12) on everyone whose body touches the disk; event hole_open {cell}.\nWATER: a skater whose centre enters an open disk (standing or sliding down) -> game.bench(id, 180, his side's blue-line edge point), event sink {who, side, by: last hitter within 60 f}. His side plays two against three. A puck entering a disk -> game.puck_out(90, centre ice), event puck_water.\nAPI for others: stage_at(pos)->int (3 = open hole), hole_near(pos, r)->bool, cell_of(pos)->Vector2i, add_cracks(cell: Vector2i, n), worsen_all(n) (rotten ice: every cracked cell n stages worse, normal caps), refreeze_zone(side) (every hole in that side's defensive zone refreezes now), holes()->Array of {cell, x, z, frames_left}.\nDRAW scripts/ice_draw.gd: thin flat TLBodies.make plates (box 4 x 0.01 x 4 or less, layer 0, mask 0, y 0.051+), made lazily per cell: stage 1 white hairlines (3 thin boxes), stage 2 grey web (6 thin boxes, a knockdown's web visibly spreads over the 8 neighbours), stage 3 a dark near-black water cylinder r 2.5 with a white splash ring; refrozen cells a pale blue thin-ice plate. Keep under 600 bodies.\nSTATE ice: {stages (flat int array cols*rows), holes, opened_by_period [p1, p2, p3, sd], cracks_total, sinks, puck_waters}.\nEXPECTED rate: about 1 hole in period one, 2 in period two, 3 in period three.\nBOT tests/bot_ice.gd: regular hand on blue_0, one match vs bears rookie, the player side checks carriers near cracks. metrics: holes_per_period [p1, p2, p3] each >= 1, knockdown_share = knockdowns / landed hits <= 0.30, sinks >= 1, puck_waters, refreezes; moments {hole_open, sink, knockdown}. ok = match over and those bounds. Tune cracks_per_stumble before any juice.\nPLAYER CHECK bot tests/bot_hand_perfect.gd must still pass.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--bot-frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_ice.gd",
+      "--frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd",
+      "--frames=20000"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "physics",
+     "vfx",
+     "audio",
+     "camera"
+    ],
+    "assets": [
+     "gen/mod_ice.gd"
+    ],
+    "tests": [
+     "tests/bot_ice.gd"
+    ]
+   },
+   "serves": [
+    "check_into_water",
+    "dodge_swim",
+    "one_timer_hole"
+   ]
+  },
+  {
+   "id": "ice_sense",
+   "title": "AI reads holes and thin ice",
+   "milestone": "greybox",
+   "deps": [
+    "core",
+    "ice"
+   ],
+   "scope": [
+    "scripts/ice_sense.gd",
+    "gen/mod_ice_sense.gd",
+    "tests/bot_sense.gd"
+   ],
+   "contract": "gen/mod_ice_sense.gd appends 'scripts/ice_sense.gd' to ctx.root meta 'tl_modules'. In setup(game, ctx) it appends itself to game.ai_hooks and implements the core hook interface exactly: check_bonus(hitter, victim)->float = +0.25 when the victim is within 3 m of an open hole or a stage-2 cell (game.hazard.stage_at / hole_near), else 0; lane_penalty(a, b)->float = 0.6 when the pass segment crosses an open hole disk, 0.25 when it crosses stage-2 cells, else 0; carry_penalty(pos)->float = 0.6 over a hole, 0.2 over thin ice; obstacles()->Array = each open hole {position, radius 2.5 + 0.5}; override(id, frame)->{}. All return neutral values when game.hazard is null. Applies to rivals and to your mates (mates read at 5 f through core's sense lag). Also tick(), on_event(), state() -> {checks_near_water, lanes_penalised}.\nBOT tests/bot_sense.gd: regular hand, one match vs bears rookie; metrics: near_water_check_share (bot checks landed with the victim within 3 m of water or stage-2 ice, over bot checks) >= 0.2, ai_carrier_sinks (bot carriers that skated into water) <= 2, passes_over_holes; ok on those and match over.\nPLAYER CHECK bot tests/bot_hand_perfect.gd must still pass.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--bot-frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_sense.gd",
+      "--frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd",
+      "--frames=20000"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "ai"
+    ],
+    "assets": [
+     "gen/mod_ice_sense.gd"
+    ],
+    "tests": [
+     "tests/bot_sense.gd"
+    ]
+   },
+   "serves": [
+    "check_into_water",
+    "one_timer_hole"
+   ]
+  },
+  {
+   "id": "rivals",
+   "title": "Bears, Pikes and Wolves habits",
+   "milestone": "greybox",
+   "deps": [
+    "core",
+    "ice",
+    "ice_sense"
+   ],
+   "scope": [
+    "scripts/rivals.gd",
+    "scripts/habits/**",
+    "data/habits.json",
+    "gen/mod_rivals.gd",
+    "tests/bot_rivals.gd"
+   ],
+   "contract": "gen/mod_rivals.gd appends 'scripts/rivals.gd'; it appends itself to game.ai_hooks (check_bonus, lane_penalty, carry_penalty return 0, obstacles []), and drives habits through override(id, frame). Builds, stability, reach and checks come from core data/teams.json (read only); tier numbers from its tiers (tell_frames 24 / 22 / 20 rookie / pro / allstar). data/habits.json holds the numbers below. The tell is the rival's body: set skaters' tell and tell_f through game.play_reaction / play_clip timing.\n1) Millpond Bears: Borje (red_0, D1) lines up a body check on the carrier from 6 m: shoulder drop (body_check clip held at its first wind-up pose) and a straight glide with no steering for tell_frames before the window, the last 12 being the wind-up. Defence absorbs (stability x1.4: bumps where others stumble); they turn slowly (turn_mult 0.8), so dodges beat them.\n2) Hollow Reach Pikes: never check (checks false); poke in pairs: two skaters within 3 m of the carrier, each poke telegraphed by a stick tap on the ice (strike clip, slow first frames) 20 f before it, the second poke 10 f after the first; defence is the long stick (poke_reach_mult 1.2), so a hard pass or a check beats them.\n3) Northdeep Wolves: two skaters herd the carrier toward the nearest hole or stage-2 ice (game.hazard; the boards without one): a wide skate and a stick raise tell_frames before the second man's check. Defence avoids: when your check winds up on a Wolf within 4 m of water or stage-2 ice he dodges (game.ai_dodge after his reaction frames).\nTiers: harder react faster, read lanes better (score noise), hide more of the glide (24 to 20 f) and team up on herding (pro and allstar both herders commit together); never speeds or mass.\nReactions (all teams, both sides' bots): on a goal the scorers' side plays cheer clip 60 f; on a sink of an opponent the side of ev.by plays taunt; the conceding side slumps and skates a slow circle for 40 f; no bot idle past 120 f.\nstate rivals: {habit_counts {lineups, pair_pokes, herds, water_dodges}, tells [{team, frames}]}.\nBOT tests/bot_rivals.gd: regular hand; one period each against bears, pikes, wolves at pro (game.set_matchup), then wolves allstar. metrics: tell_min_f per team (bears and wolves >= 22 at pro, >= 20 allstar; pikes >= 20), pikes_checks == 0, pikes_pair_pokes >= 3, wolves_herds >= 2, wolves_water_dodges, bears_bump_share, poke_share of turnovers >= 0.10 (dodge must not starve pokes), idle_max_f <= 120, cheers, taunts, slumps; moments {lineup, pair_poke, herd, water_dodge}. ok on those bounds.\nPLAYER CHECK bot tests/bot_hand_perfect.gd must still pass.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--bot-frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_rivals.gd",
+      "--frames=30000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd",
+      "--frames=20000"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "ai",
+     "biped"
+    ],
+    "assets": [
+     "gen/mod_rivals.gd"
+    ],
+    "tests": [
+     "tests/bot_rivals.gd"
+    ]
+   },
+   "serves": [
+    "dodge_swim",
+    "check_into_water"
+   ]
+  },
+  {
+   "id": "match_flow",
+   "title": "Drill, fire, lantern, ladder, end",
+   "milestone": "greybox",
+   "deps": [
+    "core",
+    "ice",
+    "rivals"
+   ],
+   "scope": [
+    "scripts/match.gd",
+    "scripts/endscreen.gd",
+    "data/ladder.json",
+    "data/flow.json",
+    "gen/mod_match.gd",
+    "tests/bot_flow.gd"
+   ],
+   "contract": "gen/mod_match.gd appends 'scripts/match.gd' (a core module). Uses core actions skip (Enter) and restart (R), game.phase, banner/hint HUD ids, game.hazard API.\nFIRST MINUTE (first match of a run): phase 'drill': puck at blue_0's stick, red goalie and skaters held at their bench line, hint 'Space: shoot at the open net'; after the first goal or 600 f a slow rookie Bear (red_0, reaction 30 f) skates in and body-checks blue_1 down (override through a hook in game.ai_hooks), the ice cracks, hint 'F: check them back. Ctrl: side-step a lunge', then face-off and phase 'play'. Enter skips. Never a menu.\nFIRE: three straight goals by a side -> on fire until the other side scores: game.crack_extra[side] = 1, TLVfx.trail flames (orange) on its skaters, banner 'ON FIRE'.\nLANTERN: a side trailing by two gets a lit lantern on its bench beyond the far boards (a TLBodies.make post and a bright yellow box, layer 0 mask 0, visible to both) and each of its goals calls game.hazard.refreeze_zone(own side).\nINTENSITY: last 20 s of period three game.crack_scale = 2, banner 'CRACKS COUNT TWICE'; sudden death (tie after three) starts with game.hazard.worsen_all(1), banner 'SUDDEN DEATH ON ROTTEN ICE'.\nEND (phase 'end'): banner WIN or LOSE and the score; a line 'WHAT BEAT YOU: <top causes with counts>' from blue's losses by cause (Borje's checks / pokes / intercepts), swims (blue sinks) and lanes lost (blue possessions ended by water); one tip from data/flow.json tips[cause]; the next team on the ladder. R restarts after 120 f (a win steps the ladder): game.set_matchup then game.restart_match().\ndata/ladder.json: [{team bears, tier rookie}, {pikes, pro}, {wolves, pro}, {bears, allstar}, {pikes, allstar}, {wolves, allstar}]. data/flow.json: drill frames, fire_streak 3, lantern_deficit 2, double_last_s 20, restart_frames 120, tips.\nstate match: {ladder_index, streak, on_fire {blue, red}, lantern {blue, red}, double_cracks, sudden_death, end {result, causes, tip, next}}.\nBOT tests/bot_flow.gd: regular hand; plays the drill (shoots the open net), a match to the end, checks the end text names a cause and the next team, presses R and sees the next match start. metrics: drill_goal_f, end_causes, fire_events, lanterns, double_frames; ok on drill goal, end text and restart.\nPLAYER CHECK bot tests/bot_hand_perfect.gd must still pass.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--bot-frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_flow.gd",
+      "--frames=30000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd",
+      "--frames=20000"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "ui",
+     "vfx",
+     "rules"
+    ],
+    "assets": [
+     "gen/mod_match.gd"
+    ],
+    "tests": [
+     "tests/bot_flow.gd"
+    ]
+   },
+   "serves": [
+    "check_into_water",
+    "one_timer_hole"
+   ]
+  },
+  {
+   "id": "lake_look",
+   "title": "Mountain lake at dusk",
+   "milestone": "art_pass",
+   "deps": [
+    "core",
+    "ice",
+    "rivals"
+   ],
+   "scope": [
+    "scripts/look.gd",
+    "data/shore.json",
+    "gen/mod_look.gd"
+   ],
+   "contract": "gen/mod_look.gd appends 'scripts/look.gd'; in setup it builds data/shore.json with TLKit.build_layout(ctx.read_json('shore.json'), ctx.root). shore.json (tl.layout/1, props only, no terrain): the kit pond under and around the rink, 0.8 m snowbank strips along the boards (TLBodies.make white snow boxes, visual height 0.8 m, collision off: core boards keep the collision), a dark pine shore (kit tree) and two kit cabins, a kit watch_tower and a kit scoreboard ONLY beyond the far side (at least 12 m past the far boards; tower 20 m+). Nothing taller than 0.8 m beyond the ends or the near side, so the turning chase camera never looks through scenery on reverse rushes. Team looks: Bears fur hats (brown), Pikes green scarves, Wolves grey masks, blue team orange rims, by rig_params colours (and a small visual-only TLBodies.make piece on the head only if the rig gives a head socket; else report it as a question). Style palette only: no materials or lights. Visible result: the chase view shows snowbanks, the blue-white ice and the pine shore with cabins beyond the far boards; the lake view shows the whole lake ringed by pines. lint, smoke, invariants pass.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--bot-frames=20000"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "kit",
+     "physics"
+    ],
+    "assets": [
+     "gen/mod_look.gd"
+    ]
+   },
+   "serves": [
+    "check_into_water",
+    "dodge_swim",
+    "one_timer_hole"
+   ]
+  },
+  {
+   "id": "sound_mood",
+   "title": "Creaks, splashes, horn and crowd",
+   "milestone": "tuned",
+   "deps": [
+    "core",
+    "ice",
+    "match_flow"
+   ],
+   "scope": [
+    "scripts/mood.gd",
+    "data/mood.json",
+    "gen/mod_mood.gd"
+   ],
+   "contract": "gen/mod_mood.gd appends 'scripts/mood.gd' (core module, on_event only). data/mood.json maps events to TLAudio presets and volumes (each preset must be in TLAudio.presets()): ice creak (a quiet 'skate' every 240-400 f from ctx.rng while play runs), a crack pop on every crack added (quiet 'break', louder on knockdown webs), a deep splash on sink and puck_water ('hit_water' plus TLVfx splash), a village horn ('horn') and a small cheering crowd ('cheer') on goal with TLVfx goal_flash and confetti at the goal, a short whistle at each period start. Effects only on these events, never on bumps or whiffs. state mood: {sounds_played}.\nPLAYER CHECK bot tests/bot_hand_perfect.gd must still pass.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--bot-frames=20000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd",
+      "--frames=20000"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "audio",
+     "vfx"
+    ],
+    "assets": [
+     "gen/mod_mood.gd"
+    ]
+   },
+   "serves": [
+    "check_into_water",
+    "dodge_swim",
+    "one_timer_hole"
+   ]
+  }
+ ],
+ "card": "card.team_possession",
+ "phases": [
+  {
+   "id": "tofu",
+   "title": "Hockey core on flat ice",
+   "try": "Check, poke, dodge and one-time past the rookie Bears",
+   "packages": [
+    "core"
+   ]
+  },
+  {
+   "id": "cracking_lake",
+   "title": "Checks crack the ice",
+   "try": "Knock Bears down until the ice opens and swallows them",
+   "packages": [
+    "ice",
+    "ice_sense"
+   ]
+  },
+  {
+   "id": "rivals_stakes",
+   "title": "Village rivals and stakes",
+   "try": "Climb the ladder: Bears, Pikes, Wolves, fire, lanterns, sudden death",
+   "packages": [
+    "rivals",
+    "match_flow"
+   ]
+  },
+  {
+   "id": "dusk_lake",
+   "title": "The lake at dusk",
+   "try": "Play on a pine-shored lake with splashes, creaks and horns",
+   "packages": [
+    "lake_look",
+    "sound_mood"
+   ]
+  }
+ ]
+}

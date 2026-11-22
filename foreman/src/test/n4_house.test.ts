@@ -147,7 +147,7 @@ test("house compare: a duel job measures the house game once (reports/house-duel
   const kept = JSON.parse(fs.readFileSync(path.join(job.jobDir, "reports", "house-duel.json"), "utf8")) as HouseBaseline;
   assert.deepEqual(kept.strips?.map((x) => x.capture), ["reports/house-duel/strip-side-f530.png"]);
   assert.ok(fs.existsSync(path.join(job.jobDir, "reports", "house-duel", "strip-side-f530.png")));
-  assert.match(call?.req.prompt ?? "", /image (\d+) of \1, attached to this message: strip-side-f530\.png: HOUSE GAME engine\/packs\/duel \(the bar, not this build\): CONTACT MOTION STRIP[^\n]*2 frames apart; the contact at frame 540[^\n]*a heavy blocked/);
+  assert.match(call?.req.prompt ?? "", /image (\d+) of \1, attached to this message: strip-side-f530\.png: HOUSE GAME engine\/packs\/duel \(the bar, not this build\): CONTACT MOTION STRIP[^\n]*2 frames apart; the contact at frame 540[^\n]*a moment of a real match against the Wall/);
   assert.match(call?.req.prompt ?? "", /When an image is labelled HOUSE GAME, set this build's strips beside it/);
 });
 
