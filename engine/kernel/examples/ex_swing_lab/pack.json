@@ -1,0 +1,11 @@
+{
+  "id": "example.swing_lab",
+  "version": "0.1.0",
+  "kernelApi": "1.15",
+  "title": "Swing trails",
+  "capabilities": ["physics", "biped", "camera", "ui", "vfx", "style"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_swing.gd"],
+  "cameras": ["play"]
+}

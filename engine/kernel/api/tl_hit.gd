@@ -70,6 +70,11 @@ static func down(who: TLBiped, frames: int, from_dir: Vector3 = Vector3.ZERO) ->
 
 # ---- K8 feel kit: hit-stop, the contacts of DUEL-PLAYBOOK 6.3, the pushbox ----------------------------------------
 
+## Draw the weapon's path for this many unfrozen physics frames. A new swing replaces the previous ribbon.
+static func swing_trail(who: TLBiped, weight: float = 0.5, frames: int = 30, opts: Dictionary = {}) -> Node3D:
+	return preload("res://kernel/feel/swing_trail.gd").start(who, weight, frames, opts)
+
+
 ## Hit-stop on both bodies for `frames` (clamped to 0..STOP_CAP); either may be null (a wall, a prop). The struck body's
 ## rig shakes along the blow while it lasts (drawing only). A longer stop still running is kept. Returns the frames set.
 static func impact(attacker: TLBiped, victim: TLBiped, frames: int) -> int:
