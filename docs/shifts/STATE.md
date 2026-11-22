@@ -291,3 +291,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 13:44 standup: D3 r1 (9f7f077) + r2 (b0bb985) landed with JOB.md notes; D1 r1+r2 in its full tier; D2 asked for status (silent since 12:45).
 - 14:44 standup: D1 r1+2 landed (efbf00f; integration list running in d22-int); D3 r3 (d060ac8) + r4 (9f9ca12) landed, re-dispatched; D2 E6 fix verified (selftest 760 3/3 vs 0/3 on main), A/B next.
 - 15:44 standup: D2 r1 integration PASS (2fdfef2), D2 r2 r2a landed (59ada89); D3 r5 landed (167698c), hockey job -3 building; D1 round 3 in its gates.
+- 16:44 standup: D1 done (r3 2fdaee0), D3 done (r6 6fb5ea3), D2 wrapping; verdict list started early in d22-int.
