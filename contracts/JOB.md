@@ -501,3 +501,8 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   passes, whatever its figure. A contradicted contact adds the row `moments_on_film`. The tofu report may carry `film`.
   The house compare marks a contradicted figure SHORT, and the critic receives "MEASURED FROM THE FILM ... CLAIM
   CONTRADICTED" before the bot's claims.
+- **The revise pair (round 2).** When a look is sent back and the job has a house strip, the send-back copies the build's
+  contact strip at the house strip's contact kind (kinds match by family: poke/poked, parry/parried; else the build's
+  first contact strip, said so) and the house strip into `ref/look/<milestone>-r<round>/` (`yours-<kind>.png`,
+  `house-<kind>.png`). The queued detail starts with "THE PAIR ..." and the build's contact numbers against the house
+  game's (duel `data/contacts.json`; arcade sport `data/tuning.json` hits and fun).
