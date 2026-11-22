@@ -309,3 +309,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   research), N3 World flicker and far structures (Opus-directed Astra), N4 Create fix (Opus). Standups :17; lanes stop
   06:45; verdict 07:15; push by 08:00. Plan: docs/shifts/2026-11-23-night/PLAN.md.
 - 20:27 standup: N4 done (88ae2cd, fc59f3a); N1 r1+r2 landed (065f28e, 17973df), re-dispatched to a duel teardown; N2 r1 landed (a9b5447); N3 r1 landed (484f58e).
+- 21:25 standup: N1 done (11e8936 duel teardown); N2 r2 42b1097 + r3 85d9953 landed, r4 (WORLD line) approved; N3 on floors and tufts.
