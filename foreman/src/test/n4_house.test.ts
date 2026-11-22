@@ -124,7 +124,7 @@ test("house compare: a duel job measures the house game once (reports/house-duel
   lines[3] = JSON.stringify(plan);
   fs.writeFileSync(file, lines.map((l) => l + "\n").join(""));
   const base = scriptWith().steps.find((x) => x.match?.package === "core") as FakeStep;
-  const metrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 110, tell_min_f: 18, tells: 5, pressure_waves: 2, lead_change_share: 0.4, close_rounds: 2, contact_types: 3, one_sided_contacts: 0, hand: "regular" };
+  const metrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 110, tell_min_f: 18, tells: 5, pressure_waves: 2, lead_change_share: 0.4, close_rounds: 2, contact_types: 3, one_sided_contacts: 0, verbs_used: 2, hand: "regular" };
   const core: FakeStep = { ...base, write: { ...(base.write ?? {}), "tests/bot_rally.gd": ((base.write ?? {})["tests/bot_rally.gd"] as string).replace(/# FAKE_METRICS\(.*\)\n/, "") + `# FAKE_METRICS(${JSON.stringify(metrics)})\n` } };
   const criticStep: FakeStep = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, feel: 0.7, slop: 1, house_game: 0.7 }, notes: ["the rival waits longer than the Wall does"] } };
   const { foreman, builder } = foremanFor(job, { promoteTo: "job", critic: true, ...fakeHouse(), script: scriptWith([criticStep, core]) });
@@ -187,4 +187,22 @@ test("planner timeout: `plan --timeout-ms` reaches the Planner call (a slow answ
   const plan = fixturePlan();
   await replanPackages(b, { sentence: "s", packId: "game.paddle_court", title: "P", brief: v2Brief(), packContract: "(c)", kept: plan.slice(0, 2), failed: [{ spec: plan[2] as PackageSpec, cause: "rounds", detail: "x" }], dependants: [] }, { verbs });
   assert.equal(b.calls[0]?.req.timeoutMs, PLANNER_TIMEOUT_MS);
+});
+
+test("round 3: the tofu bot must press every verb of the design (verbs_used = the verb count); the root copies the house cameras, declares no wide view, shows the resource bars", async () => {
+  const { judgeTofu, tofuMetricsFor, tofuPlannerText } = await import("../tofu.js");
+  const rows = tofuMetricsFor(duelTemplate, 5);
+  assert.equal(rows.find((m) => m.id === "verbs_used")?.min, 5);
+  const all = { feedback_f: 1, skill_spread: 0.4, skill_variants: 4, idle_max_f: 42, tell_min_f: 12, tells: 57, pressure_waves: 4, lead_change_share: 1, close_rounds: 1, contact_types: 5, one_sided_contacts: 0 };
+  // The crazy proof's figures (blockout round 1): every row passed, yet no strip showed a parry, a roll or a bash.
+  assert.match(judgeTofu({ ...all, verbs_used: 2 }, rows, "tests/bot_tofu.gd").line, /verbs_used 2 \(wants >= 5; item the whole exchange/);
+  assert.equal(judgeTofu({ ...all, verbs_used: 5 }, rows, "tests/bot_tofu.gd").ok, true);
+  assert.match(tofuPlannerText(duelTemplate, 5), /`verbs_used` >= 5/);
+  const { renderPlannerPrompt } = await import("../designer.js");
+  const { FAKE_VERBS_FILE } = await import("../verbs.js");
+  const text = renderPlannerPrompt({ sentence: "a fight", packId: "game.x", title: "X", brief: { ...v2Brief(), concept: { ...sampleConcept(), template: duelTemplate } }, packContract: "(c)" }, { verbs: JSON.parse(fs.readFileSync(FAKE_VERBS_FILE, "utf8")) });
+  assert.match(text, /copy its cameras \(the duel: over the shoulder offset to the side, and a side view[^]*\*\*Every\s+camera a package declares is filmed and judged at every milestone\*\*[^]*resource bars the template uses \(the duel: health,\s+stamina and posture[^]*\*\*The tofu bot plays every verb\.\*\*/);
+  assert.match(text, /\*\*Flat shapes are not bare bodies\.\*\*[^]*gen\/arms\.gd[^]*data\/rivals\.json/);
+  assert.match(templateExcerpt(duelTemplate, "builder"), /gen\/arms\.gd: the weapons/);
+  assert.match(text, /`verbs_used` >= 2/, "the fixture design has two verbs");
 });

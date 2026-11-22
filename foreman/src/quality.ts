@@ -165,7 +165,7 @@ export function tofuLook(h: GateHost, m: Milestone): (TofuResult & { package: st
   const t = tofuOf(h.s.plan);
   if (t === undefined || h.s.plan.find((p) => p.id === t.package)?.milestone !== m) return undefined;
   const read = readTofuMetrics(h.dir(), h.events, t.test);
-  const res = judgeTofu(read.metrics, tofuMetricsFor(h.s.brief?.concept?.template), t.test, read.hand, read.from);
+  const res = judgeTofu(read.metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length), t.test, read.hand, read.from);
   const file = reportPath(h, `tofu-${m}`);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.tofu/1", milestone: m, test: t.test, package: t.package, ...res }, null, 1) + "\n");
@@ -330,7 +330,7 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const base = h.s.brief?.design !== undefined ? await houseBaseline(h, template) : undefined;
   const tofu = tofuLook(h, m);
   const t = tofuOf(h.s.plan);
-  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template), t.test, r.hand, r.from); })() : undefined);
+  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template, h.s.brief?.design?.verbs.length), t.test, r.hand, r.from); })() : undefined);
   const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
   const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes) : [];

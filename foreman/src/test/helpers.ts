@@ -105,7 +105,7 @@ export function fixturePlan(): PackageSpec[] {
 /** JOB.md 2026-11-20: the fixture plan's phases (the court plays first, the rival paddle second). */
 /** N4 of 22 Nov: the fixture plan with the tofu stage: core carries the TOFU CHECK line on its rally bot and runs it. */
 export function fixturePlanTofu(): PackageSpec[] {
-  const line = "TOFU CHECK: tests/bot_rally.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds";
+  const line = "TOFU CHECK: tests/bot_rally.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, verbs_used";
   return fixturePlan().map((p) => (p.id === "core" ? { ...p, contract: `${p.contract}\n${line}`, acceptance: [...p.acceptance, { level: "V4", verb: "bot", args: ["--test=tests/bot_rally.gd", "--frames=1200"] }] } : p));
 }
 
