@@ -1,6 +1,6 @@
 N1 teardown: thirdjam against our hockey (night of 22-23 Nov 2026). Lane report.
 Opus, solo apart from three read-only scouts on thirdjam's code. Worktree n23-teardown. Research only: nothing in engine/ or foreman/.
-Round 1 landed (merge 065f28e on main). Round 2 is this report.
+Round 1 landed (merge 065f28e), round 2 landed (merge 17973df). Round 3 (the duel teardown) is the last section.
 
 OUTCOME AGAINST THE ACCEPTANCE
 1. TEARDOWN.md backs every claim with file:line on both sides: MET.
@@ -94,3 +94,57 @@ NEXT THREE THINGS THIS LANE WOULD DO
    are read with one instrument.
 3. Write the "world in the player's units" page for hockey as a proposal for the owner: sizes, speeds in body lengths, camera,
    with stills of each option.
+
+ROUND 3: THE DUEL TEARDOWN (the Director's ask after round 2)
+------------------------------------------------------------
+Deliverable: docs/research/duel-teardown/TEARDOWN.md, docs only. Same method as the hockey teardown:
+- the verdict;
+- the references with URLs (section 2);
+- side by side in 12 systems with file:line;
+- the ranked top 10;
+- what the references get wrong;
+- 7 process lessons;
+- 10 recommendations.
+media/ holds 2 clips of 25 s, 3 JPGs and rounds.md; 5.1 MB.
+
+How it was read and played:
+- Ours:
+  - engine/packs/duel: README, data, fighter, lessons, brain, show.
+  - The rig's clip table, the DUEL-PLAYBOOK spec, and N2's brief and report.
+  - In a window: tl play duel with nothing pressed (25 s), and the newcomer TLHand against the Wall (45 s).
+  - Headless: 5 ladder cells x 8 seeds (93 rounds), for round length and endings.
+- References: For Honor (Ubisoft patch notes and fight updates, Kotaku), Souls and Sekiro (Game Developer's anatomy of a DS3 enemy
+  attack, wiki.gg, Fextralife, Activision), fighting-game basics (Infil's glossary, SmashWiki, Capcom). A research scout gathered
+  them with URLs; community-measured and snippet-only figures are marked. "Not found" is stated for a duel round length and for any
+  tutorial opponent that waits until the player succeeds.
+
+THE TOP 10 (why ours is not fun)
+1. The bodies do not tell, text does. Every attack is one of two generic rig clips slowed through a frame map; the light's 18-frame
+   wind-up is the clip's 3-frame draw-back slowed about five times. The Duelist's "blade tap" tell is a half-raised heavy. Intent is
+   written over his head in words (HEAVY, BASH, UNBLOCKABLE), where For Honor and Sekiro use a glyph over a body that does the
+   telling.
+2. The tutorial hits you while it teaches. The lesson blows are real. A newcomer who touches nothing is at 14 of 100 health 19 s in.
+3. A round lasts about 20 s: 93 of 93 rounds measured ended by KO, median 18-24 s, against a 70 s clock. The rival may never idle
+   more than 120 frames by rule; the longest idle measured was 35 frames. Published guidance says an enemy attacks every 2-3 s.
+4. The threats are faster than a person reacts. Chains wind up in 12 frames, the light in 18, the heavy in 32. For Honor's lights
+   take 24-30 frames and its heavies 48-60; a Souls attack's signal plus attack takes at least 20; average reaction is about 15.
+   The checklist accepts 12, below the playbook's own floor of 16.
+5. A dashboard of meters: three bars a fighter, a crowd meter, stars, rally, tags, cues, banners, a key strip, cause cards.
+6. Three rivals are one fighter in three hats: one move set, three reaction speeds.
+7. Toy figures, stick weapons, beeps. The light hit-stop is 5 frames, lighter than the references' 6-19.
+8. Difficulty is a reaction dial with a cliff: the newcomer wins 4 of 8 against the Wall and 1 of 8 against the Duelist; the regular
+   hand wins 8 of 8 against both later rivals.
+9. A round ends in a KO show and a cause card, not in a moment the player remembers.
+10. Nobody has played it. It was built in five hours by twelve self-judged loops that only added; it was accepted on clips of
+    mechanics.
+N2's own report says so: "It is not yet a game that sells itself by its feel. Nobody has played it."
+
+Gate (round 3): tl check --tier fast PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, foreman.typecheck clean).
+Changed in round 3: docs/research/duel-teardown/ (TEARDOWN.md, media/ with rounds.md, 2 mp4, 3 jpg), INTERIM.md (a line for N2),
+STANDUP.md, REPORT.txt. Nothing in engine/ or foreman/.
+
+Next three for the duel:
+1. A person plays the Wall for five minutes, then the Duelist; read where he is hit and whether he reads a body or a word.
+2. A per-rival animation brief: the light, the heavy and one signature move with anticipation poses of at least 24 frames.
+3. Run the duel's lesson round with zero damage and a wait-until-done step as a measured arm (in a copy), against the
+   untouched-first-25-s clip.
