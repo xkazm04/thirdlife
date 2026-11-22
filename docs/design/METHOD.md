@@ -130,7 +130,7 @@ first stage it touches; it never moves on with a note.
 | 2 | Pillars (5) | `design.pillars`: three experiences, each ruling something out | the review | [P] |
 | 3 | Core loop (6) | `design.loops`, `design.verbs`, the decision in the loop | the review | [P] |
 | 4 | The 30-second test (7) | `30 SECONDS:` line; `design.first_minute` | the review on paper; the person on the greybox | [P], then [H] |
-| 5 | The feel spec (8) | `design.feel`, verb frames, speeds and the camera in `rules` | the builders build it; the critic's strips; the person | [C] fails, [H] passes |
+| 5 | The feel spec (8) | `WORLD:` line (the size of the world in the player's units); `design.feel`, verb frames, speeds and the camera in `rules` | the builders build it; the critic's strips; the person | [C] fails, [H] passes |
 | 6 | The reference-game teardown (9) | `TEARDOWN:` lines; the concept's `references` and `template` | the review (is it concrete?); a person who played the reference | [P] |
 | 7 | The greybox prototype (10) | the first phase of the plan (the tofu stage) | the person at the phase pause | [H] only |
 | 8 | Kill criteria (11) | `KILL IF:` lines, written before the build | the person at the phase pause; the critic flags those the film shows | [H]; [C] can kill, never save |
@@ -138,11 +138,12 @@ first stage it touches; it never moves on with a note.
 Stages 1 to 6 and 8 are on paper and take minutes; stage 7 is the first build. Content (more rivals, the twist, art,
 modes) comes only after stage 7 passes by a person's hand.
 
-**The method lines.** The brief has keys for stages 2, 3 and 5. The other four are labelled lines at the head of
+**The method lines.** The brief has keys for stages 2, 3 and 5 (and stage 5's scale has a line of its own). The others are labelled lines at the head of
 `brief.rules`, each on its own line, so the Planner, every builder and the critic read them:
 
 ```
 FANTASY: <who the player is and what it feels like, at most 25 words>
+WORLD: <body size; the arena in body widths or lengths; speeds in body lengths a second; camera distance in body heights; at most 45 words>
 TEARDOWN: <reference game>: <one moment of it: what you press, what you see, the numbers; at most 45 words>   (1 to 3)
 30 SECONDS: <0-5 s ...; 5-15 s ...; 15-30 s ...: what the newcomer sees, does and feels; at most 70 words>
 KILL IF: <what a person playing the first phase would see that stops this game; at most 30 words>   (2 to 4)
@@ -226,6 +227,7 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
 - **The size of the world comes first, in the player's units**: the body's size, the arena in body lengths, speeds in
   body lengths (or heights) a second, the camera's distance in body heights, a figure's height on the screen. Written before any mechanic, owned by the
   design, and changed only as a design change (N1's first lesson: our rink of 34 body widths against thirdjam's 112).
+  It is the brief's `WORLD:` line, and a design without one, or with one that names no body unit, is sent back.
   A real rink is about 100 body widths long; a figure that moves 2 of its heights a second reads as a jog whatever its
   speed in metres.
 - **The sheet lists, per verb:** the input; frames from the press to the first visible response (at most 3, the full
@@ -364,7 +366,7 @@ Concept:
 3. `why` names the fantasy and the moment of the first 30 seconds where the player feels it.
 
 Designer:
-1. Write the method lines first (section 3): FANTASY, 1 to 3 TEARDOWN, 30 SECONDS, 2 to 4 KILL IF, at the head of
+1. Write the method lines first (section 3): FANTASY, WORLD, 1 to 3 TEARDOWN, 30 SECONDS, 2 to 4 KILL IF, at the head of
    `rules`, then design everything else to serve them.
 2. Name the one or two MDA aesthetics the game aims at (in the FANTASY line or the first pillar).
 3. Pillars are experiences that rule something out; every verb and aspect serves one of them.

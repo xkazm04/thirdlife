@@ -15,13 +15,14 @@ import { critic, renderDesignerPrompt, renderPlannerPrompt } from "../designer.j
 import { METHOD_DOC, killItem, methodBlock, methodLines, methodProblems, methodText, playtestCard } from "../method.js";
 import { builderFeelSection } from "../roomtext.js";
 import { designLines } from "../status.js";
+import { tofuMetricsFor } from "../tofu.js";
 import type { JobState } from "../joblog.js";
 
 after(cleanup);
 
 const estimate = { packages: 6, wallMinutes: 60, tokens: 900000 };
 const ok = { scores: { hook: 0.8, gif: 0.8, depth: 0.8, feel: 0.8, fit: 0.8 }, slop: [], verdict: "ok", notes: "Sell the bank shot." };
-const noMethod = (): ReturnType<typeof v2Brief> => ({ ...v2Brief(), rules: v2Brief().rules.split("\n").filter((l) => !/^(FANTASY|TEARDOWN|30 SECONDS|KILL IF):/.test(l)).join("\n") });
+const noMethod = (): ReturnType<typeof v2Brief> => ({ ...v2Brief(), rules: v2Brief().rules.split("\n").filter((l) => !/^(FANTASY|WORLD|TEARDOWN|30 SECONDS|KILL IF):/.test(l)).join("\n") });
 
 test("METHOD.md: sections 1-14 by number, the role rules of section 14, and every cited source listed", () => {
   const doc = fs.readFileSync(METHOD_DOC, "utf8");
@@ -42,8 +43,8 @@ test("method lines: parsed from brief.rules by label; counts and word limits are
   assert.equal(l.kill.length, 2);
   assert.deepEqual(methodProblems(v2Brief()), []);
   const none = methodProblems(noMethod());
-  assert.equal(none.length, 4, none.join("\n"));
-  assert.match(none.join("\n"), /exactly one "FANTASY: [^]*1 to 3 "TEARDOWN: [^]*exactly one "30 SECONDS: [^]*2 to 4 "KILL IF: /);
+  assert.equal(none.length, 5, none.join("\n"));
+  assert.match(none.join("\n"), /exactly one "FANTASY: [^]*exactly one "WORLD: [^]*1 to 3 "TEARDOWN: [^]*exactly one "30 SECONDS: [^]*2 to 4 "KILL IF: /);
   const long = methodProblems({ rules: `${METHOD_LINES}\nKILL IF: ${"word ".repeat(31)}` });
   assert.match(long.join("\n"), /KILL IF line \(31 words, limit 30\)/);
   assert.equal(methodBlock(noMethod()), "");
@@ -122,7 +123,7 @@ test("CASES.md: the hockey and duel method lines pass the editor's own checks, a
 
 test("round 2 (N1's lessons): the designer states the size of the world in the player's units; the playtest card asks for the worst three things, worst first", () => {
   const p = renderDesignerPrompt({ sentence: "ice hockey", concept: sampleConcept() });
-  assert.match(p, /5\. \*\*The feel spec\*\*: first, in `rules`, the size of the world in the player's units[^]*No rule exists only to pass a bot figure/);
+  assert.match(p, /5\. \*\*The feel spec\*\*: first, the `WORLD:` line: the size of the world in the player's units[^]*No rule exists only to pass a bot figure[^]*\nWORLD: <body size; the arena in body widths or lengths/);
   assert.match(p, /## 8\. Stage 5: the feel spec, in numbers[^]*\*\*The size of the world comes first, in the player's units\*\*/);
   const card = playtestCard(v2Brief(), "j1", { id: "core", try: "t" }, true).join("\n");
   assert.match(card, /hold --note "<the worst three things you felt, worst first; where it stopped being fun>"/);
@@ -135,4 +136,17 @@ test("round 2: the keep-the-better compare reads the design's method lines and l
   const doc = fs.readFileSync(METHOD_DOC, "utf8");
   assert.match(doc, /\*\*Our measures cannot see what he sees\*\* \(N1's central finding\)/);
   assert.match(methodText(["14:Director"]), /accepts an experience: a minute of play from the player's camera/);
+});
+
+test("round 4: the WORLD line (N1's top finding) is required, names the player's units, reaches the paper check; the tell floor is 20 frames", () => {
+  const l = methodLines(v2Brief().rules);
+  assert.equal(l.world.length, 1);
+  const without = { rules: v2Brief().rules.split("\n").filter((x) => !x.startsWith("WORLD:")).join("\n") };
+  assert.match(methodProblems(without).join("\n"), /exactly one "WORLD: <body size/);
+  const metres = { rules: v2Brief().rules.replace(/^WORLD: .*$/m, "WORLD: the court is 16 m by 9 m and the ball flies at 12 m/s.") };
+  assert.match(methodProblems(metres).join("\n"), /WORLD line names no size in the player's units/);
+  assert.match(methodBlock(v2Brief()), /- the world in the player's units: paddles 1\.6 m wide; the court 10 body widths long/);
+  const tell = tofuMetricsFor(undefined, 2).find((m) => m.id === "tell_min_f");
+  assert.equal(tell?.min, 20, "a person's reliable reaction (CASES.md [B25]); was 12");
+  assert.match(fs.readFileSync(path.join(REPO_ROOT, "docs", "GAME-QUALITY.md"), "utf8"), /\| 11 \| Each dangerous opponent action has a tell >= 20 frames/);
 });

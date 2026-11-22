@@ -127,7 +127,7 @@ test("template: the Planner reads the duel excerpt and the tofu block; builders 
 
 // ---------------------------------------------------------------- the tofu stage
 
-const goodMetrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 60, tell_min_f: 18, tells: 6, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 2, hand: "regular" };
+const goodMetrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 60, tell_min_f: 24, tells: 6, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 2, hand: "regular" };
 const badMetrics = { feedback_f: 7, skill_spread: 0.1, skill_variants: 3, idle_max_f: 300, tell_min_f: 8, tells: 6, lead_change_share: 0, close_rounds: 2, hand: "regular" };
 
 test("tofu: the metrics judge checklist items 1, 3, 9, 11, 12 and 15; an absent metric is not measured, and not measured fails; the duel adds its contact rows", () => {
@@ -138,7 +138,7 @@ test("tofu: the metrics judge checklist items 1, 3, 9, 11, 12 and 15; an absent 
   assert.match(ok.line, /^tofu stage ok \(tests\/bot_tofu\.gd through the regular hand\): feedback_f 2, skill_spread 0\.4/);
   const bad = judgeTofu(badMetrics, rows, "tests/bot_tofu.gd", "regular", "reports/x.json");
   assert.equal(bad.ok, false);
-  assert.match(bad.line, /^TOFU STAGE NOT ok[^]*feedback_f 7 \(wants <= 3; item 1 feedback within 3 f\)[^]*idle_max_f 300 \(wants <= 120[^]*tell_min_f 8 \(wants >= 12[^]*pressure_waves not reported \(wants >= 2/);
+  assert.match(bad.line, /^TOFU STAGE NOT ok[^]*feedback_f 7 \(wants <= 3; item 1 feedback within 3 f\)[^]*idle_max_f 300 \(wants <= 120[^]*tell_min_f 8 \(wants >= 20[^]*pressure_waves not reported \(wants >= 2/);
   assert.match(judgeTofu(undefined, rows, "tests/bot_tofu.gd", undefined, "reports/x.json").line, /reported no `metrics` object/);
   assert.match(judgeTofu(undefined, rows, "tests/bot_tofu.gd").line, /no finished report of tests\/bot_tofu\.gd was found/);
   const duelRows = tofuMetricsFor(duelTemplate);

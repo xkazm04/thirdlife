@@ -107,7 +107,7 @@ test("a strip where nothing moves for 55 frames contradicts idle_max_f 37 (proof
   const m = stripMotion(path.join(dir, "still.png"), stripInfo("still.png", motionLabel(9550)) as NonNullable<ReturnType<typeof stripInfo>>);
   assert.ok(!("unmeasured" in m));
   assert.deepEqual(m.longestStill, { firstTile: 1, lastTile: 12, fromFrame: 9550, toFrame: 9605, frames: 55 });
-  const metrics = { feedback_f: 1, skill_spread: 0.4, skill_variants: 3, idle_max_f: 37, tell_min_f: 14, tells: 9, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 5 };
+  const metrics = { feedback_f: 1, skill_spread: 0.4, skill_variants: 3, idle_max_f: 37, tell_min_f: 22, tells: 9, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 5 };
   const check = crossCheckFilm([{ capture: "moving.png", label: motionLabel(1571) }, { capture: "still.png", label: motionLabel(9550) }], () => ({ metrics }), (c) => path.join(dir, c));
   assert.equal(check.measured, 2);
   assert.equal(check.findings.length, 1);
@@ -208,7 +208,7 @@ test("the look: filmCheckOf writes reports/film-*.json and tofuLook fails a cont
   fs.mkdirSync(path.join(dir, "captures"), { recursive: true });
   fs.mkdirSync(path.join(dir, "reports"), { recursive: true });
   drawStrip(path.join(dir, "captures", "blockout-side-bot_tofu-strip-f9550.png"), () => 30);
-  const metrics = { feedback_f: 1, skill_spread: 0.4, skill_variants: 3, idle_max_f: 37, tell_min_f: 14, tells: 9, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 5, hand: "regular" };
+  const metrics = { feedback_f: 1, skill_spread: 0.4, skill_variants: 3, idle_max_f: 37, tell_min_f: 22, tells: 9, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 5, hand: "regular" };
   fs.writeFileSync(path.join(dir, "reports", "core-r1-bot-s5.json"), JSON.stringify({ bot: { test: "tests/bot_tofu.gd", done: true, frames: 12000, result: { ok: true, metrics, moments: { hit: [400] } } } }));
   const events = [{ v: 1, seq: 5, ts: "t", job: "j", type: "verify", round: 1, level: "V4", verb: "bot", ok: true, report: "reports/core-r1-bot-s5.json" }] as unknown as JobEvent[];
   const plan: PackageSpec[] = [{ id: "core", title: "c", milestone: "blockout", deps: [], scope: ["scripts/main.gd"], contract: "TOFU CHECK: tests/bot_tofu.gd reports metrics x", acceptance: [{ level: "V4", verb: "bot", args: ["--test=tests/bot_tofu.gd"] }], registers: { tests: ["tests/bot_tofu.gd"] } }];

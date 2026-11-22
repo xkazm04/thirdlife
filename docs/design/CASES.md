@@ -190,6 +190,7 @@ minutes with the playtest card and ranks what he felt. Nothing else is built unt
 ### The method lines a hockey brief carries
 ```
 FANTASY: I'm the playmaker: I slip the big hit and thread the pass across the crease for a one-timer. Sensation, challenge.
+WORLD: skaters 0.8 m wide; the rink 112 body widths long, 56 wide; cruise about 7 body heights a second; the camera 3 body heights behind you.
 TEARDOWN: NHL 94: pass, then press shoot while the pass travels: the receiver one-times it, harder than a wrist shot.
 TEARDOWN: thirdjam: a 90 x 45 m rink, 112 body widths long; the puck slows on the ice and a pass arrives at 8 m/s.
 30 SECONDS: 0-5 s a countdown, you win the draw, a chevron marks you; 5-15 s you pass and control jumps to the receiver; 15-30 s a teammate cuts across, you pass and one-time it in, the horn sounds.
@@ -395,6 +396,7 @@ felt.
 ### The method lines a duel brief carries
 ```
 FANTASY: I read him like a book: I see him coil for the heavy, parry it, and punish him while he staggers. Challenge, fantasy.
+WORLD: life-size fighters 0.9 m wide; the ring 12 body widths across; a step closes 1 body width; the camera 2 body heights behind your shoulder.
 TEARDOWN: For Honor: lights wind up 24-30 frames, heavies 48-60; a parried light gives a free heavy.
 TEARDOWN: Sekiro: two bars, a 12-frame deflect that shrinks when spammed, and a practice partner who cannot hurt you.
 30 SECONDS: 0-5 s the Wall waits 3 m away, light swings within 3 frames; 5-15 s he coils a slow heavy, you guard, he bounces off, you strike; 15-30 s you tap guard as it lands, he staggers, your heavy lands.

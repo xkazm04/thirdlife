@@ -49,7 +49,7 @@ feel sheet cannot deliver the fantasy, change the design, not the fantasy line.
 4. **The 30-second test**: `30 SECONDS:` line: the beats a newcomer meets, 0-5 s (he knows who he is and what to
    press; the answer within 3 frames), 5-15 s (his first success against a safe first threat), 15-30 s (the fantasy
    happens once, in the bodies). `design.first_minute` is its short form.
-5. **The feel spec**: first, in `rules`, the size of the world in the player's units: the body's size, the arena in
+5. **The feel spec**: first, the `WORLD:` line: the size of the world in the player's units: the body's size, the arena in
    body lengths, speeds in body lengths a second, the camera's distance in body heights (a real rink is about 100 body
    widths long; our hockey's figures drawn 2.2x made it 34, a corridor of scrums, and nobody had chosen it). Then
    `design.feel`, the verbs' frames, and in `rules` the speeds (m/s), accelerations, turn rates, the camera's distance
@@ -66,6 +66,7 @@ feel sheet cannot deliver the fantasy, change the design, not the fantasy line.
 The method lines are the first lines of `brief.rules`, each on its own line, exactly these labels:
 ```
 FANTASY: <at most 25 words>
+WORLD: <body size; the arena in body widths or lengths; speeds in body lengths a second; camera distance in body heights; at most 45 words>
 TEARDOWN: <reference game>: <its moment, what you press, what you see, the numbers; at most 45 words>
 30 SECONDS: <0-5 s ...; 5-15 s ...; 15-30 s ...; at most 70 words>
 KILL IF: <at most 30 words>
@@ -138,7 +139,8 @@ push apart on contact.
 The first phase of the build is the tofu stage: the core verb exchange on flat shapes. A person plays it for 5 minutes
 and passes or holds it (the 30 SECONDS and KILL IF lines are what he checks); under that, a bot must show checklist
 items 1, 3, 9, 11, 12 and 15 or the job holds. Design so that it can: feedback within 3 frames, an outcome that
-depends on how well the verb is played, no idle rival, tells of 12 frames or more, pressure in waves, leads that change.
+depends on how well the verb is played, no idle rival, tells of 20 frames or more (a person's reliable reaction), pressure
+in waves, leads that change.
 {{quality}}
 
 # Show the design as aspects, for a 10-year-old and for an expert
@@ -170,6 +172,8 @@ Sentence: "a race with ducks".
   Its method lines:
   - "FANTASY: I am the cheekiest duck on the river, stealing bread from bigger birds and diving away laughing.
     Sensation and challenge."
+  - "WORLD: a duck 0.5 m long; the river 12 body lengths wide, 400 long; cruise 4 body lengths a second; the camera
+    6 body heights behind and above."
   - "TEARDOWN: Mario Kart: a drift held through a bend charges a mini-turbo (blue, then orange sparks); release for a
     burst; copied as the paddle-hold into a bread zoom."
   - "30 SECONDS: 0-5 s the river pulls you, hold paddle and you surge; 5-15 s a slow duck carries a crust, bump it and
@@ -202,7 +206,7 @@ Field guidance:
 - brief.design: the game design doc above (pillars, verbs, playstyles, loops, context, skill, feel, clips,
   first_minute, fail_state, out_of_scope). Ids are snake_case. Frames are integers at 60 Hz.
 - brief.pitch, brief.aspects: as above; word limits are counted and an answer over them is sent back.
-- brief.rules: FIRST the method lines (FANTASY, 1 to 3 TEARDOWN, 30 SECONDS, 2 to 4 KILL IF, one per line, as above);
+- brief.rules: FIRST the method lines (FANTASY, WORLD, 1 to 3 TEARDOWN, 30 SECONDS, 2 to 4 KILL IF, one per line, as above);
   then how a round is played and won, every verb with its frames, the feel sheet in words with its speeds and the
   camera, the first minute, the intensity curve, the end screen and what makes the next round matter.
 - brief.arena: the play space with dimensions in metres, what is in it, what it does during a round; the camera and

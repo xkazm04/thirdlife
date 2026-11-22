@@ -136,6 +136,7 @@ ${ev.brief.rules}`, pitch: "Slap a speeding ball past Rival Rex on a walled cour
 /** N2 of 23 Nov: the method lines a room design writes at the head of `brief.rules` (docs/design/METHOD.md section 3). */
 export const METHOD_LINES = [
   "FANTASY: I am the wall-banking ace who sends the ball past Rival Rex at a speed he cannot reach. Challenge.",
+  "WORLD: paddles 1.6 m wide; the court 10 body widths long; the ball crosses it in 1.5 s; the camera 6 body heights above the side wall.",
   "TEARDOWN: Windjammers: a throw banked off the side wall curves past the keeper; copied as the bank shot.",
   "30 SECONDS: 0-5 s the ball comes slow and space slaps it back; 5-15 s Rex misses a bank shot; 15-30 s you brace his smash and win the point.",
   "KILL IF: a newcomer never banks a shot in three rallies, because the wall angle cannot be read.",
