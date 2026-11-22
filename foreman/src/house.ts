@@ -5,12 +5,15 @@
 // look of a job with a template, the built game's tofu figures are set beside the house game's: a row where the house
 // game passes and the build does not, or where the build is worse than the house game by more than a margin, is a
 // shortfall; the critic reads the table and the job's verdict names the shortfalls. Not measured is said, never zero.
+import crypto from "node:crypto";
 import fs from "node:fs";
+import path from "node:path";
 import type { GateHost } from "./p10gate.js";
 import type { ConceptTemplate } from "./room_wire.js";
 import { templateOf } from "./templates.js";
 import { tofuMetricsFor, type TofuMetric, type TofuResult } from "./tofu.js";
 import { resultMoments } from "./shots.js";
+import { snapshot } from "./scope.js";
 
 /** How one house game is measured: the bot, and where each metric is in its report when it has no `metrics` object. */
 export interface HouseBot {
@@ -74,7 +77,33 @@ export interface HouseBaseline {
   /** Round 4: tofu names the house bot reported under another definition, left out of the comparison. */
   skipped?: string[];
   /** Round 2: the house game's exchange as motion strips (job-relative), filmed once; [] when it could not be. */
-  strips?: { capture: string; label: string }[];
+  strips?: { capture: string; label: string; kind?: string }[];
+  /**
+   * D3 of 22 Nov: what the baseline was measured from: the house pack's files, the house bot and its strip moment kinds,
+   * and HOUSE_MEASURE. A baseline whose key differs from today's is measured and filmed again (proofs -5 and -6 kept a
+   * KO-fallback house strip, filmed before N4 round 13 taught the reader where the duel pilot keeps its moments).
+   */
+  key?: string;
+}
+
+/** Bumped when the way the house baseline is read or filmed changes (a cached baseline from before is then stale). */
+export const HOUSE_MEASURE = "d3-2026-11-22-1";
+
+/** The key of a house baseline: the house pack's files, the bot (test, args, strip and its moment kinds), HOUSE_MEASURE. */
+export function houseKey(packDir: string, bot: HouseBot): string {
+  const files = fs.existsSync(packDir) ? snapshot(packDir) : {};
+  return crypto.createHash("sha1").update(JSON.stringify({ m: HOUSE_MEASURE, files, test: bot.test, args: bot.args, map: bot.map, skip: bot.skip ?? [], strip: bot.strip ?? null })).digest("hex").slice(0, 16);
+}
+
+/** The first listed moment the house bot saw, with its kind; else the drill's contact frame or 60 before the finish (no kind). */
+export function contactMoment(report: unknown, moments: string[] = []): { frame: number; kind?: string } | undefined {
+  const m = resultMoments((report as { bot?: { result?: unknown } } | undefined)?.bot?.result);
+  for (const k of moments) {
+    const f = Array.isArray(m?.[k]) ? (m?.[k] as unknown[])[0] : undefined;
+    if (typeof f === "number" && Number.isFinite(f)) return { frame: f, kind: k };
+  }
+  const f = contactFrame(report, []);
+  return f !== undefined ? { frame: f } : undefined;
 }
 
 /** The frame of the first contact a house drill logged (pack_state.log[0].f), else 60 frames before the bot finished. */
@@ -127,18 +156,22 @@ export async function houseBaseline(h: GateHost, template: ConceptTemplate | und
   const bot = template !== undefined ? HOUSE_BOTS[template.id] : undefined;
   if (bot === undefined || templateOf(template?.id)?.house === undefined) return undefined;
   const file = h.dir("reports", `house-${bot.pack}.json`);
+  const packDir = h.dir("ref", "packs", bot.pack);
+  const key = houseKey(packDir, bot);
+  let stale: string | undefined;
   try {
-    return JSON.parse(fs.readFileSync(file, "utf8")) as HouseBaseline;
+    const cached = JSON.parse(fs.readFileSync(file, "utf8")) as HouseBaseline;
+    if (cached.key === key) return cached;
+    stale = cached.key === undefined ? "it has no key (measured before D3 of 22 Nov)" : "the house pack, its bot or its moment kinds changed";
   } catch {
     /* not measured yet */
   }
-  const packDir = h.dir("ref", "packs", bot.pack);
-  let base: HouseBaseline = { schema: "tl.foreman.house/1", pack: bot.pack, test: bot.test, metrics: {} };
+  let base: HouseBaseline = { schema: "tl.foreman.house/1", pack: bot.pack, test: bot.test, metrics: {}, key, ...(stale !== undefined ? { note: `measured again: the cached baseline was stale (${stale})` } : {}) };
   if (!fs.existsSync(packDir)) base = { ...base, note: `the job's reference copy has no ref/packs/${bot.pack}/` };
   else {
     const vr = await h.verifyLogged({ verb: "bot", args: [`--test=${bot.test}`, ...bot.args] }, packDir, `house-${bot.pack}`, { round: 1 });
     const fig = houseFigures(vr.report, bot);
-    base = { ...base, hand: bot.hand, ...fig, from: h.rel(vr.reportFile), ...(vr.ok ? {} : { note: `the house bot did not pass: ${vr.summary.slice(0, 200)}` }) };
+    base = { ...base, hand: bot.hand, ...fig, from: h.rel(vr.reportFile), ...(vr.ok ? {} : { note: `${base.note !== undefined ? `${base.note}; ` : ""}the house bot did not pass: ${vr.summary.slice(0, 200)}` }) };
   }
   fs.mkdirSync(h.dir("reports"), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(base, null, 1) + "\n");

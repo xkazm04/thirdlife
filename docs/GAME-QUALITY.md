@@ -487,6 +487,11 @@ played by a person.
   hockey: `data/tuning.json` `hits` and `fun`). On -5 and -6 that diff is empty: both builds copied the duel's
   contact numbers row for row and still read short of it, so the gap is in how the numbers are played, not in the
   numbers.
+- **A cached bar goes stale.** -5 and -6 kept a house strip filmed at the duel's KO fallback (frame 4523, no contact
+  kind) because the baseline was cached in the job before N4 round 13 fixed where the duel pilot keeps its moments. The
+  house baseline now carries a key (the house pack's files, the house bot, its strip moment kinds, the reader's version)
+  and is measured and filmed again when the key changes. The house strip films a kind this build's bots also reported
+  first, and keeps its kind: on a copy of -5 the stale KO strip became the Wall's parry at frame 2269.
 - **The same sentence twice gives the same hook.** The walls broke four times and souls swapped three times. Each
   concept now reads the earlier designs of its sentence; -5 and -6 chose new hook families.
 - **A package's bot films what the package adds.** -5's greybox look filmed its rivals bot still fighting the opener
