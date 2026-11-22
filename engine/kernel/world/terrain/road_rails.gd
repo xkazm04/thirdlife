@@ -20,11 +20,12 @@ const POST_H: float = 1.25
 const RAIL_H: Array = [0.50, 0.98]
 ## A rail is 0.15 m tall and a post 0.17 m wide: at 1080 lines and the visitor's lens (75 degrees) that is one pixel at
 ## about 105 m and 120 m. Thinner than a pixel they would flicker as the eye moves, so the row is cut into pieces of `CHUNK` spans
-## (about 31 m) and a piece is not drawn when its middle is further than `SEEN_M` (+ `SEEN_MARGIN` before it returns).
+## (about 31 m) and a piece fades out (dithered) between `SEEN_M` and `SEEN_M` + `SEEN_MARGIN` from its middle.
 const CHUNK: int = 12
 const GATE_CLEAR: float = 9.0      # metres round a plot's gate (the start of its spur) that stay free: its fence, flag and sign stand there
 const SEEN_M: float = 108.0
-const SEEN_MARGIN: float = 8.0
+const SEEN_MARGIN: float = 24.0    # N3 (22-23 Nov): a piece fades out over these metres beyond SEEN_M (dithered) instead of
+                                   # popping as a whole: 12 posts of 11 px at 108 m appeared and went at once (was 8 m, no fade)
 
 
 ## `main_path`: the main road (TLKitPath, 2 m samples); `half`: its half width; `spur_paths`: landscape.gd's
@@ -118,5 +119,6 @@ static func _row(parent: Node3D, run: PackedVector3Array) -> float:
 		var mi: MeshInstance3D = mk.instance("WorldRoadRails%d" % parent.get_child_count())
 		mi.visibility_range_end = SEEN_M
 		mi.visibility_range_end_margin = SEEN_MARGIN
+		mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		parent.add_child(mi)
 	return metres
