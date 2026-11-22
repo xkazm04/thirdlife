@@ -92,9 +92,19 @@ func banner(text: String, frames: int = 50, color: String = "") -> void:
 
 
 func cue(text: String, frames: int = 100, color: String = "") -> void:
-	hud.set_text(&"cue", text)
+	hud.set_text(&"cue", say(text))
 	hud.set_color(&"cue", color)
 	cue_left = frames
+
+
+## The rival's pronoun (round 12): cue lines are written for "he"; a rival with "she" in rivals.json reads as she.
+func say(text: String) -> String:
+	if g.rival == null or not bool(g.rival.cfg.get("she", false)):
+		return text
+	var t: String = " " + text
+	for pair: Array in [[" his ", " her "], [" His ", " Her "], [" him", " her"], [" he ", " she "], [" He ", " She "], ["\nHe ", "\nShe "], ["\nHis ", "\nHer "]]:
+		t = t.replace(pair[0], pair[1])
+	return t.substr(1)
 
 
 ## A word over the rival's head while he does it (For Honor's indicator sits on the attacker): HEAVY, BASH, the red
