@@ -513,3 +513,8 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
 - **Two-bound rows (round 4).** A tofu row with both bounds is SHORT of the house game when the build's figure is further
   from the house figure than the margin (25 %); the compare line says when the house figure itself sits outside the
   template's bound. A still strip with no claim of its own bot against it is named to the critic with that bot.
+- **The arcade sport (round 5).** Its tofu stage adds `possession_median_f` 240-600, `scrum_share` <= 0.3 (live frames
+  with 4+ field skaters within 5 m of the puck) and `overlap_share` <= 0.02 (live frames with two upright skaters
+  overlapping more than 0.1 m), as the house hockey's tests/metrics.gd counts them. Its keeps: the house play camera
+  (high, looking down at the play, never low behind a skater) and a readable puck (larger than life, a hot rim, a ring
+  under your skater); builders get the house numbers (`follow`, the puck and ring keys of `look`) read live.
