@@ -506,3 +506,7 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   first contact strip, said so) and the house strip into `ref/look/<milestone>-r<round>/` (`yours-<kind>.png`,
   `house-<kind>.png`). The queued detail starts with "THE PAIR ..." and the build's contact numbers against the house
   game's (duel `data/contacts.json`; arcade sport `data/tuning.json` hits and fun).
+- **The house baseline's key (round 3).** `reports/house-<pack>.json` (`tl.foreman.house/1`) carries `key`: a sha1 over the
+  house pack's files, the house bot (test, args, map, skip, strip config and moment kinds) and the reader's version. A
+  cached baseline with another key, or none, is stale and measured and filmed again. Each house strip records its
+  contact `kind`; the house strip films first a kind the build's own bots reported (by family), then the template's order.
