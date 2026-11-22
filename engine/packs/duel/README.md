@@ -64,6 +64,13 @@ BASH in orange, UNBLOCKABLE in red through his wind-up, OPEN in blue while the W
 their colour (`TLHud.set_color`): PARRY! gold, PARRIED and the roar red. The weapon's arc is the kernel's
 `TLHit.swing_trail` through `feel.trail` (a light weight 0, a heavy 1, the unblockable red and wider).
 
+## Where your health went (round 8)
+Every hit you take is filed under a cause, also the chip through your guard and his bash. A lost round's card names the
+top three by damage out of your health ("his heavy swings 40, hits after a broken guard 36, his shoulder bash 20 (of
+your 100 health)") and the answer to the first; `loss_causes[i][4]` keeps every cause of that round for the bots. The
+HUD word RALLY is explained the first time it is yours in a match. The pilot also returns `moments` (contact kind ->
+frames: parried, blocked_heavy, clash, guard_break, wall_splat, hit_heavy, ko) so a look can film a real match.
+
 ## The blow that ends a round (`tuning.json` "ko")
 The round-ending blow holds the longest hit-stop the kernel allows (20 frames), then the camera cuts low beside the
 fallen fighter with the winner over him: dust as he meets the sand, the crowd's roar, the winner's cheer; the play

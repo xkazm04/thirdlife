@@ -180,6 +180,8 @@ func _blocked(att, def) -> void:
 	var m: Dictionary = att.move_data()
 	def.block_contact = true
 	def.hurt(float(m["damage"]) * float(c["chip"]), false)
+	if def == g.you:
+		g.note_hit(att, def, "BLOCK", "chip", float(m["damage"]) * float(c["chip"]))   # chip is a cause too (round 8)
 	def.spend_stamina(float(m["block_stamina"]) * float(def.cfg.get("block_stamina_k", 1.0)))
 	var broke: bool = def.lose_posture(float(m["block_posture"]))
 	def._count("blocks")
@@ -265,6 +267,8 @@ func _bash(att, def) -> void:
 	var away: Vector3 = -def.to_foe()
 	var r: Dictionary = c["bash"]
 	def.hurt(float(att.move_data()["damage"]), false)
+	if def == g.you:
+		g.note_hit(att, def, d0, "bash", float(att.move_data()["damage"]))
 	att._count("bashes_landed")
 	var cb: Dictionary = c["counter_bash"]
 	if def.mv == "bash" and (def.st == "ACTIVE" or (def.st == "WINDUP" and def.windup - def.mf <= int(cb["window"]))):

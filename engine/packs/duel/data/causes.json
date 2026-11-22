@@ -1,5 +1,5 @@
 {
-  "_about": "What beat you (main.gd note_hit / _loss_line): every hit the player takes is filed under a cause from his state and the move; a lost round ends on the biggest cause by damage, with its answer.",
+  "_about": "What beat you (main.gd note_hit / _loss_line): every hit the player takes is filed under a cause from his state and the move; a lost round ends on the biggest cause by damage, with its answer. Round 8: chip through a block and his bash are filed too, and the card names the top two causes and the rest, of your health.",
   "causes": {
     "light": {
       "name": "his quick lights",
@@ -36,6 +36,10 @@
     "roll_end": {
       "name": "hits at the end of your rolls",
       "answer": "Roll through his swing, not before it: the end of a roll is open."
+    },
+    "chip": {
+      "name": "blows on your guard",
+      "answer": "A held guard still costs health: tap SPACE on the glint to parry, or roll out."
     }
   }
 }
