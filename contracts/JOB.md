@@ -473,3 +473,6 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   to 4 earlier jobs on the same site with the same sentence and the same mode (a crazy job also keeps reading the
   standard ones as before). Its chosen `hook` must not share more than 40 % of its content words with an earlier hook
   (the sentence's own words do not count); an answer that does is sent back. The core template stays the same.
+  An arcade-sport brief must also keep the house hockey's speed ratios (the carrier slower than a free skater, a pass
+  faster than skating), the puck on the blade by a spring with readable loss causes, and an AI that decides from scored
+  options (said in `rules`, `controls`, `arena`, `ai` or `design.feel.camera`; `ai` now joins the duel keeps' text too).
