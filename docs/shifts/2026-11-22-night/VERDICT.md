@@ -115,7 +115,12 @@ toy scale; not yet a game that sells itself by its feel". It is still one shared
 - **What diverges:** a skater touching the static net or boards integrates about 1e-3 m differently in the world
   runner than in the lone runner (identical to frame 2015, divergent at 2016).
 - **Who it hits:** landed hockey passes only because its trajectories never make that contact.
-- **Status:** open. N1 has not reported a diagnosis: it went silent after 03:27 and missed both the 06:00 and the 07:15 stops. The repro is kept (n22-hockey/.tl/w_r2a, wcmp.sh 2015/2016), and the next shift starts there.
+- **Status:** diagnosed, not fixed. N1 went silent after 03:27, missed both the 06:00 and the 07:15 stops, and reported at 10:02, after the push.
+  - **Where:** on a copy of N3's r2a tree, the two runners hash the same through frame 2049 and differ at 2050 (N3 saw 2016 on its own run).
+  - **What:** both spaces hold the same 105 colliders, but a whole-space query at frame 3 returns them in a different order in the world. goal_red/Frame, the net skaters[4] touches, is one of the bodies that moved. Body lists: `lanes/N1-kit/e6/body_order_{world,alone}.txt`.
+  - **Why (N1's reading, not proven to the line):** in a world each body is created in the viewport's default space, then moved into the pack's own space by `adopt()` (`engine/kernel/world/pack.gd`, called from world.gd `_on_node_added`) through `body_set_space`. Alone it is created once. Jolt therefore orders its bodies differently, and a contact with several board or net shapes at once is solved in another order and rounds about 1 mm apart.
+  - **Ruled out:** the material laws, the pack space's gravity and damping, the body set, the origin, frame counters, own vs shared space.
+  - **Fix direction (not built):** one way of inserting bodies in both runners. Either the lone runner also gets its own space and goes through `adopt()`, which moves every lone hash once, or the world creates a pack's bodies directly in its own space. Either way, add a selftest comparing the body order in world and alone at frame 3, so the breach is caught without waiting for a rare contact.
 
 ### N4 editor (Opus): landed, 17 loop rounds after the first brief
 **What the editor now does:**

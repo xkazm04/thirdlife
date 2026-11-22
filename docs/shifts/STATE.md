@@ -15,7 +15,7 @@ writes it back. Newest shift-log entry last.
 - Since 22 Nov night: duel (engine/packs/duel) and hockey are the reference games; the editor copies them (templates
   name the house files and numbers, the critic sees the house strip). Engine needs from them land as kernel API (1.16).
 - Next 3: (1) the owner plays the duel (Wall, Duelist) and hockey (rookie, pro) by hand and answers VERDICT 2026-11-22-night;
-  (2) E6: the kernel world = alone physics breach (static contact), then hockey r2a; (3) editor: cross-check bot claims
+  (2) E6: the kernel world = alone physics breach (diagnosed 10:02: bodies moved by adopt()/body_set_space get a different Jolt order; fix = one insertion path + a frame-3 body-order selftest), then hockey r2a; (3) editor: cross-check bot claims
   against film, build one hockey job through the editor.
 
 ## Open owner verdicts
@@ -268,3 +268,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 06:37 standup: editor r17 + duel r13 landed (4bfd439); N2/N3/N4 done with reports; N1 silent on E6 (hard stop 07:15); full gate running in n22-int.
 - 07:37 standup: final list: full gate green but wall-clock; uncapped 478/2 (one load flake, one test patch fixed 7ba57e4); export, check, tours PASS; quiet perf running; N1 still silent.
 - 07:55 verdict: perf 6/6 quiet, packs 129/129 (hockey p50 0.979 ms), world 8/8, export+tours PASS. Page https://claude.ai/artifact/AmANyNo8b2bxNYHZ99BoHU. N1 never reported on E6 (open). Claims released.
+- 10:02 late: N1 final report, E6 diagnosed not fixed (body insertion order differs world vs alone); recorded in VERDICT, ENGINE-NEEDS, lanes/N1-kit/REPORT.md + e6/.

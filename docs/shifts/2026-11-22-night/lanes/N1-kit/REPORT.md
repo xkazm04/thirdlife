@@ -185,3 +185,81 @@ How hit-stop meets falls arm A (TLHit.react / TLHit.down), made explicit in API.
    column.
 3. Give the pushbox a per-pack default radius from the rig's shoulder width, and add an optional "both rebound" counter
    for a counter-bash within 8 f (playbook 6.3).
+
+# The 09:00 loop (N1 engine needs, 01:00-07:45)
+
+The owner extended the shift: the duel and hockey become the reference games, and what they needed from the engine
+becomes kernel API. N1 turned their ENGINE-NEEDS rows into kernel API, one landable round at a time. Every round was
+checked by a hash A/B: main at the round's base and n22-kit went through the same `packs` and `world` gate steps (base
+extracted read-only with git archive), and every hashed verb run and the world table had to be identical.
+
+## Round 1 (landed de6581e / c1cca38, KERNEL_API 1.14): E1 clip timing, E2 swing weight
+- E1 `TLBiped.play_clip(clip, timing, blend)` ([frame, clip frame] knots; hit-stop holds the timeline; a kernel reaction
+  ends it), `set_clip_speed(speed)`, `clip_now()`, `clip_frame()`; kernel/feel/clip_clock.gd; block 716 clock.* 4/4.
+  The duel adopted it in its round 4 (shim deleted; 27 bot hashes identical before and after, N2's figures).
+- E2 `strike` / `strike_heavy` re-posed by Astra R3 with timings unchanged: the heavy coils overhead on a loaded rear
+  knee and folds 40 degrees into a long low lunge with the hands stalled near the knee; the light stays compact. Golden:
+  old lines kept, new lines appended under a dated comment, the reader skips '#'. Evidence swing_weight.jpg / .mp4.
+- A/B against 90ce6a4: world 8/8 identical, packs 117 hashed verb runs identical.
+
+## Round 2 (landed 96ac91b / 8741c9a, KERNEL_API 1.15): E2b swing trail, E3 HUD colour, E4 HUD tag
+- `TLHit.swing_trail(who, weight, frames, opts)` (on TLHit: tl_biped.gd sits at its 600 cap): the weapon's arc by weight
+  (0.12-0.36 m wide, 5-12 frames long), freed by the kernel after `frames` unfrozen frames.
+- `TLHud.set_color(id, Color or palette key)`, `TLHud.add_tag(id, node, text, offset)` (a label over a 3D node in the
+  active camera), `TLHud.remove_widget(id)`. Lab ex_swing_lab, blocks 717 swing.* 4/4 and 718 hud.* 12/12.
+- Evidence swing_trail_tag.jpg. A/B against 8042875: world 8/8 identical, packs 125 hashed verb runs identical.
+
+## Round 3 (KERNEL_API 1.16): H1 a ball no contact can launch (hockey's row)
+- `TLBall.set_max_gain(per_frame, floor_speed := 0.0)`, `TLBall.set_velocity(v)`; shoot, shoot_at, release and place
+  declare their velocity. Off by default. Block 719 ball.gain_* 4/4: a 60 kg block slid at 24 m/s into a resting puck
+  sends it off at 28.8 m/s without the limit, at 14 / 18 / 22 m/s with set_max_gain(4, 10).
+
+## Every round's packs step failed one check, on main too
+hockey invariants.many_budget (a wall-clock p50 budget of 1.0 ms) failed on both trees at 1.26-1.45 ms on this loaded
+machine; it is not evidence either way (COMMON.md) and needs a quiet-machine run.
+
+## Bug found (devx, not N1's column)
+devx/test/check.test.mjs, the tests at line 148 ("hook: install/remove round-trip in a temp repo") and line 166 ("hook
+script blocks a push"), call `git init` in a temp dir without checking it succeeded. When it fails (it did in Astra's
+sandbox), devx/lib/commands/hook.mjs `hookPath()` asks `git rev-parse --git-path hooks` from that dir, git resolves an
+enclosing or ambient repository, and the test installs and removes the pre-push hook of the REAL checkout
+(C:/Users/kazda/kiro/third-life/.git/hooks/pre-push was rewritten once at 02:32; its content equals the managed hook,
+`tl hook status` says installed). Fix: assert the init status, and run git with GIT_CEILING_DIRECTORIES set to the temp
+dir's parent (and GIT_DIR unset) in both tests.
+
+## Hockey rows left for the verdict (outside N1's claim, wider kernel surfaces)
+- TLTrigger `entry_side` (goals only through the mouth); TLContext.history(frames) (bot perception lag);
+  ctx.own_tick (a deterministic sub-rate equal alone and in a world). N3 has local shims for each.
+
+## Round 3 LANDED (6c30148 / 69d0513, index 514f33d, KERNEL_API 1.16)
+A/B against 2b9f404: world 8/8 identical, packs 126 hashed verb runs identical (hockey many_budget p50 FAIL on both,
+busy). feel.pushbox_invariants failed once on its p50 budget (1.148 ms, busy); its determinism passed.
+
+## E6: a game in a world does not always play as it does alone (Director's priority, 04:05). NOT FIXED: diagnosis
+- Repro: N3's snapshot tree C:/Users/kazda/kiro/third-life/.claude/worktrees/n22-hockey/.tl/w_r2a, compared with
+  N3's .tl/wcmp.sh (world.sh run --packs=hockey --mode=bot --frames=N against tl.sh bot --frames=N). In my runs frames
+  up to 2049 hash the same, 2050 differs (bisect over 2030..2450; N3 saw 2016 on its run). Equal at 2016/2017/2018/2030,
+  three times; the same at --space=own and --space=shared for 2016.
+- Ruled out: law tables (the world's adopt() and the worker's node_added both call TLLaws.apply on the same bodies),
+  gravity and damping of the pack space (pack.gd sets the four World3D parameters), the set of bodies (identical: 105
+  colliders in both spaces at frame 3), the origin (0,0,0), frame counters.
+- What differs: the ORDER of the bodies inside the physics space. A whole-space intersect_shape at frame 3 (probe in my
+  copy of the tree, .tl/wr2a, and the two lists .tl/dbg_world.txt / .tl/dbg_alone.txt) returns the same 105 colliders
+  in a different order: the sign_e1 bodies and the three goal_red/Frame bodies move. Jolt's broadphase tree and body
+  ids are built in a different order in the world, because there every body is first created in the viewport's default
+  space (on entering the tree) and then moved into the pack's own space by `body_set_space` in
+  engine/kernel/world/pack.gd `adopt()` (called from world.gd `_on_node_added`), while alone it is created once in the
+  default space. Contact pairs are then found and solved in another order, and a skater touching several boards/net
+  shapes at once (skaters[4] behind red's goal line, against goal_red/Frame) rounds differently by ~1e-3 m. Hashes stay
+  equal as long as no such multi-contact happens, which is why the landed hockey passes world 8/8 and an AI change can
+  re-roll it.
+- Fix direction (not built tonight): give the pack's bodies ONE insertion path in both runners. Either (a) the lone
+  runner also creates its own space and moves every body into it through the same adopt() (cheapest, moves every
+  pack's alone hash once, and both sides then match by construction), or (b) the world creates a pack's bodies directly
+  in its space (an own World3D per pack holder), so no body is ever moved. After either: `world.sh same` over all
+  games, plus a selftest that compares the body order of a pack's space in both runners at frame 3 (the probe above),
+  which catches this class of bug without waiting for a rare contact.
+- The repro is a pack-side probe in a copy of N3's tree (not in the gate). No selftest was added for it tonight.
+
+## Astra tokens (whole night)
+R1 127,486 (reaction clips) + R2 152,170 (labs) + R3 154,309 (swing weight) + R4 181,790 (trail, HUD) = 615,755.
