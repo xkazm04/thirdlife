@@ -1,0 +1,35 @@
+units A 129, B 129; same 95; moved 34; missing 0
+MOVED hockey.bot_bot_ai_play.log: c191d120d63d9cdc@7185 -> 0fde845fcd33a3d6@6089
+MOVED hockey.bot_bot_hand_newcomer.log: 889c61984c3a842f@8220 -> fb1c1f33381f3711@4221
+MOVED hockey.bot_bot_hand_perfect.log: c9ddabead5fb2eb0@5943 -> bca72c2e8852f744@2063
+MOVED hockey.bot_bot_hockey.log: ecd7591b103f6205@6738 -> bcc1f5dc0fa482d9@5256
+MOVED hockey.bot_bot_hockey_ai.log: fdea89b826d30ce8@10876 -> 495aabe85ce9e972@6238
+MOVED hockey.bot_bot_hockey_newcomer.log: 4a0d4542f70b768b@8412 -> 9f5ad336fd508947@9151
+MOVED hockey.bot_bot_hockey_regular.log: b9f7bee762a95bac@2657 -> 4887cbbb44a66e07@6317
+MOVED hockey.bot_bot_intro.log: 3943a249c0dbe944@430 -> b293b225629da3eb@430
+MOVED hockey.bot_bot_intro_skip.log: 013bfa93654ec9ef@91 -> 90d21662b6ed5f3a@91
+MOVED hockey.bot_bot_ladder_allstar_idle.log: f9e0dc410a6bfbe3@8519 -> 2e92a96e570941b7@5364
+MOVED hockey.bot_bot_ladder_allstar_newcomer.log: 6c2870e04dfa31bf@6821 -> 5ec5b5934b632ccd@6788
+MOVED hockey.bot_bot_ladder_allstar_perfect.log: f1d7707cd8ee71d7@4720 -> 7e1740a922794e3d@5269
+MOVED hockey.bot_bot_ladder_allstar_regular.log: 010cf7315e0fb560@6811 -> ceca7faf04770fa5@6774
+MOVED hockey.bot_bot_ladder_allstar_sharp.log: c161fcc9b0bcbc03@5723 -> 4a985cea15681bfd@2525
+MOVED hockey.bot_bot_ladder_pro_idle.log: 41db9f5b92a528c2@6770 -> a38890f765ae8e45@6799
+MOVED hockey.bot_bot_ladder_pro_newcomer.log: 652de77386e05f84@4293 -> c7d7fcc02882cec0@6792
+MOVED hockey.bot_bot_ladder_pro_perfect.log: 7fedfdc7e5a1d3dd@3591 -> 5fc146141ae3058b@2140
+MOVED hockey.bot_bot_ladder_pro_regular.log: 8e9218397ff2701d@7079 -> 43eda48b9fabb9f4@2679
+MOVED hockey.bot_bot_ladder_pro_sharp.log: 8c5072ac469ae438@4416 -> 8f508b81eea940b7@6761
+MOVED hockey.bot_bot_ladder_rookie_idle.log: 4617e03b61d7311e@6768 -> dca0a6bfa2505fa4@14798
+MOVED hockey.bot_bot_ladder_rookie_newcomer.log: 889c61984c3a842f@8220 -> fb1c1f33381f3711@4221
+MOVED hockey.bot_bot_ladder_rookie_perfect.log: c9ddabead5fb2eb0@5943 -> bca72c2e8852f744@2063
+MOVED hockey.bot_bot_ladder_rookie_regular.log: e3bb45604a6ce836@6777 -> a784dbd0431392a2@6785
+MOVED hockey.bot_bot_ladder_rookie_sharp.log: 157c13869a8c5290@6186 -> ff083615b068c55c@5803
+MOVED hockey.bot_bot_match.log: 7d302acc27156be2@6838 -> 4faf687995036828@6001
+MOVED hockey.bot_bot_menu.log: b7a7b5db7f9ccc7d@1365 -> 5be60616241d629c@3620
+MOVED hockey.bot_bot_metrics_ai.log: 8f0dbc8264a49716@6024 -> ba80637ae44b5f22@4426
+MOVED hockey.bot_bot_modes.log: ba518f22165515ce@20148 -> 1cbf3318a493b2b0@22098
+MOVED hockey.bot_bot_own_net.log: b02c505b132a36ee@289 -> 9954dff64c608bec@289
+MOVED hockey.bot_bot_reverse_stop.log: d2a6981d0cbda3a4@1898 -> b6af8cf5cb51f835@1898
+MOVED hockey.bot_crazy_modes.log: 83c13c6bf43b30da@12601 -> dc78c5e291185d44@19101
+MOVED hockey.bot_crazy_pickups.log: ea5a68107d052dfe@1039 -> fb03ca8def38de5a@1039
+MOVED hockey.invariants.log: 44a2443d912f0413@3600(not ok) -> d3398e69321487bc@3600(not ok)
+MOVED hockey.smoke.log: 44a2443d912f0413@3600 -> d3398e69321487bc@3600

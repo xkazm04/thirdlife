@@ -77,7 +77,9 @@ The body-check model and its rate were kept (the owner's ruling).
   4.5 rad/s, x0.85 carrying, x0.67 sprinting; pass 18 m/s (23 beyond 15 m); wrist shot 24, full charge 32; puck cap 34.
 - **The bots** (`scripts/ai/`: `brain.gd`, `sense.gd`, `carrier.gd`, `roles.gd`): decide every 15 frames (staggered; the
   carrier every 7-8, loop round 3 of 22 Nov: he saw the pressure late and was hit before his pass; and
-  at once on a change of carrier, a pass toward them, a loose puck within 3 m, a hit), from what anybody could see
+  at once on a change of carrier, a pass toward them, a loose puck within 3 m, a hit, and, for the carrier, the moment
+  an opponent he saw comes inside `pressure_m` 3.5 m: the pass out of pressure, N3's r2a, landed 22 Nov after E6),
+  from what anybody could see
   `reaction_frames` ago, with aim and score noise by level (rookie 18 f / 6 deg / 0.08, pro 12 / 4 / 0.05, all-star
   7 / 2.5 / 0.03; Classic and your mates 5 / 1.5 / 0.02). The carrier scores SHOOT, PASS to each mate, CARRY, PROTECT and
   DUMP (utility, research 5.3; weights in `ai.json`). Roles F1/F2/F3 and D1/D2/D3 by time to the puck; F2 takes the best

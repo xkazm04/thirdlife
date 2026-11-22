@@ -17,6 +17,7 @@
   "poke_min_odds": 0.25,
   "fresh_frames": 60,
   "fresh_check_frames": 15,
+  "pressure_m": 3.5,
   "protect_weight": 0.9,
   "net_zone_half": 3.5,
   "net_round_z": 3.6,
