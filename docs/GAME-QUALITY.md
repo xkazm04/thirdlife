@@ -480,6 +480,13 @@ played by a person.
     (`moments_on_film`).
   The check is one-sided: motion proves nothing (a camera, dust), stillness proves the bodies did not move. Over the
   six proofs (`foreman filmcheck <job>`) it finds exactly -3's two strips, in two of its looks, and nothing else.
+- **A revise round works from a pair, not from notes (day of 22 Nov).** The proofs stalled at house_game 0.45-0.5 after
+  two rounds of the critic's words. A look sent back now copies the build's contact strip and the house game's strip at
+  the same contact kind into `ref/look/<milestone>-r<round>/` (the builder reads ref/) and puts first in the round's
+  feedback the diff of the build's contact numbers against the house game's (the duel: `data/contacts.json`; the
+  hockey: `data/tuning.json` `hits` and `fun`). On -5 and -6 that diff is empty: both builds copied the duel's
+  contact numbers row for row and still read short of it, so the gap is in how the numbers are played, not in the
+  numbers.
 - **The same sentence twice gives the same hook.** The walls broke four times and souls swapped three times. Each
   concept now reads the earlier designs of its sentence; -5 and -6 chose new hook families.
 - **A package's bot films what the package adds.** -5's greybox look filmed its rivals bot still fighting the opener
