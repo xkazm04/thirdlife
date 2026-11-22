@@ -145,3 +145,11 @@ Check ids added: `replay.complete`, `record.written`.
   "stage" | "end"]`) count the games that were needed before they were built and were built at once.
 - Windowed test runs (`world.sh tour`, `visit-test`, `visit-proof`, `view.sh`) take a machine-wide lock so that two
   never overlap, and start with the engine's silent sound driver.
+
+## Amendment of 2026-11-22 (day, D2): a world builds a pack's physics space as the lone runner does
+- A world moves each body of a pack from the viewport's default space into the pack's own space
+  (`engine/kernel/world/pack.gd` `adopt()`). Right after the move it states the body's transform again: Jolt files a
+  moved body at its next-step transform and a first join where it stands, and the two orders solved a multi-shape
+  contact differently (E6, hockey r2a at frame 2050). Selftest `760-e6-world-alone.sh` holds the rule.
+- `TL_BODY_ORDER=<file>`: a diagnostic. Both runners write the pack space's collider order (a whole-space query) at
+  frame 3, one path per line after `n=<count>`; a world writes `<file>.<instance>`. Unset, it does nothing.
