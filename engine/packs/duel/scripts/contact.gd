@@ -125,6 +125,8 @@ func _hit(att, def) -> void:
 		dmg = float(c["finisher"]["damage"])
 	if counter:
 		dmg *= float(ch["damage_k"])
+	if def == g.rival and g.lessons != null and g.lessons.on:
+		dmg *= g.lessons.damage_k                       # a sparring round: he stays up until his lessons are taught (round 11)
 	var star: bool = def.st == "TELL" or def.st == "TAUNT"
 	def.hurt(dmg)
 	g.note_hit(att, def, d0, mv, dmg)

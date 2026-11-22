@@ -64,6 +64,14 @@ BASH in orange, UNBLOCKABLE in red through his wind-up, OPEN in blue while the W
 their colour (`TLHud.set_color`): PARRY! gold, PARRIED and the roar red. The weapon's arc is the kernel's
 `TLHit.swing_trail` through `feel.trail` (a light weight 0, a heavy 1, the unblockable red and wider).
 
+## The Duelist teaches too (round 11)
+His first round (rung 1; never a champion) opens like the Wall's: three lessons from `data/lessons.json` rivals.duelist,
+each with its cue read before the move: his blade tap (strike in it: a counter), his first blade (do not swing into it:
+block, then strike in the gap) and his thrust (parry it). While they run he takes 0.4 of the damage (`damage_k`), so a
+newcomer's punishes do not end the round before he has taught them. In every match, the first time you swing into his
+swing a red cue says so: "His blade was out FIRST: block it, then strike in the gap after." The Wall's helm got wider
+(no hair at its sides).
+
 ## Where your health went (round 8)
 Every hit you take is filed under a cause, also the chip through your guard and his bash. A lost round's card names the
 top three by damage out of your health ("his heavy swings 40, hits after a broken guard 36, his shoulder bash 20 (of

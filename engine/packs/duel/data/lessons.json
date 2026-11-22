@@ -1,5 +1,5 @@
 {
-  "_about": "The first minute against the first rival (scripts/lessons.gd): each step is shown once with a held wind-up and a cue read before the blow; one retry; then he fights for real. read_frames: the cue is up this long before he strikes. hold: extra wind-up frames at the coil (a slower, readable blow). open_frames: how long he stands open after the right answer. max_frames: the lessons end by this round frame whatever happened.",
+  "_about": "The first minute against the first rival (scripts/lessons.gd): each step is shown once with a held wind-up and a cue read before the blow; one retry; then he fights for real. read_frames: the cue is up this long before he strikes. hold: extra wind-up frames at the coil (a slower, readable blow). open_frames: how long he stands open after the right answer. max_frames: the lessons end by this round frame whatever happened. rivals.<key>: the same steps for a later rival's first round (rung 1-2, never a champion); the Duelist teaches his tap, blocking his first blade and his thrust (round 11); damage_k: the share of damage he takes while they run, so a newcomer's punishes do not KO him before he has taught them.",
   "enabled": true,
   "read_frames": 75,
   "cue_frames": 150,
@@ -10,14 +10,81 @@
   "again": "Not quite - again.",
   "done": "That is all he knows. Now he fights for real.",
   "steps": [
-    {"id": "block", "move": "heavy", "hold": 18, "distance": 2.0, "ok": ["heavy_block", "heavy_parried"],
+    {
+      "id": "block",
+      "move": "heavy",
+      "hold": 18,
+      "distance": 2.0,
+      "ok": [
+        "heavy_block",
+        "heavy_parried"
+      ],
       "cue": "He raises the mace: HOLD SPACE (or L) to block it.",
-      "next_cue": "Blocked! He bounced off your guard: hit him NOW (LMB / J)."},
-    {"id": "parry", "move": "light", "hold": 14, "distance": 2.0, "ok": ["light_parried"],
+      "next_cue": "Blocked! He bounced off your guard: hit him NOW (LMB / J)."
+    },
+    {
+      "id": "parry",
+      "move": "light",
+      "hold": 14,
+      "distance": 2.0,
+      "ok": [
+        "light_parried"
+      ],
       "cue": "Watch for the glint on his mace, then TAP SPACE as it lands: PARRY.",
-      "next_cue": "PARRY! He is thrown open: a HEAVY (RMB / K) cannot miss."},
-    {"id": "bash", "distance": 1.8, "ok": ["bash", "bash_wallsplat"],
+      "next_cue": "PARRY! He is thrown open: a HEAVY (RMB / K) cannot miss."
+    },
+    {
+      "id": "bash",
+      "distance": 1.8,
+      "ok": [
+        "bash",
+        "bash_wallsplat"
+      ],
       "cue": "He hides behind his shield. E: your shoulder breaks a guard.",
-      "next_cue": "Guard broken! Strike!"}
-  ]
+      "next_cue": "Guard broken! Strike!"
+    }
+  ],
+  "rivals": {
+    "duelist": {
+      "done": "His tap, his first blade, his thrust. Now he fights for real.",
+      "steps": [
+        {
+          "id": "tell",
+          "move": "tell",
+          "frames": 40,
+          "distance": 2.0,
+          "ok": [
+            "hit_light_counter",
+            "hit_heavy_counter"
+          ],
+          "cue": "He TAPS HIS BLADE before every string: strike him WHILE he taps (LMB / J).",
+          "next_cue": "COUNTER! A hit in his tap is a counter-hit: that is your way in."
+        },
+        {
+          "id": "gap",
+          "move": "light",
+          "hold": 10,
+          "distance": 2.0,
+          "ok": [
+            "light_block",
+            "light_parried"
+          ],
+          "cue": "His blade is out FIRST: do not swing into it. HOLD SPACE to block his light.",
+          "next_cue": "Blocked! Now strike in the GAP after his swing (LMB / J)."
+        },
+        {
+          "id": "parry",
+          "move": "heavy",
+          "hold": 18,
+          "distance": 2.0,
+          "ok": [
+            "heavy_parried"
+          ],
+          "cue": "He draws back for a THRUST: TAP SPACE as it lands to PARRY.",
+          "next_cue": "PARRIED! A LIGHT (LMB / J) is guaranteed now."
+        }
+      ],
+      "damage_k": 0.4
+    }
+  }
 }
