@@ -247,3 +247,9 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   missed two stops. A lane with no STANDUP line for 60 min gets a status ask at the next standup and a stop at the second.
 - 2026-11-22: the uncapped suite at the end caught a test whose fixed sample point a game change had moved a skater into
   (style.frame.rink): a game lane's AI change needs the uncapped suite (or its style.frame blocks) before the verdict.
+- 2026-11-22 (day): a lane told "verify the cause first" proved E6 both ways in an hour and found the real mechanism (a
+  moved body filed at its next-step transform), where the night's lane chased a symptom (body order) silently for hours:
+  for a determinism bug, the brief asks for a two-way probe (make A behave like B, and B like A) before any fix.
+- 2026-11-22 (day): with all lanes done by 16:45, starting the verdict's final list then (full gate, uncapped suite,
+  quiet perf, export) and cancelling the later timers kept the push inside the land-by time with every wall-clock step
+  read alone.

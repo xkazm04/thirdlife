@@ -14,9 +14,12 @@ writes it back. Newest shift-log entry last.
   for the owner. Hockey carries thirdjam's real mechanics and crazy modes.
 - Since 22 Nov night: duel (engine/packs/duel) and hockey are the reference games; the editor copies them (templates
   name the house files and numbers, the critic sees the house strip). Engine needs from them land as kernel API (1.16).
-- Next 3 (verdict of 22 Nov night answered ~10:30): (1) land the Home arm A (n22-world-a) behind the boot hook, far plain
-  removed, chunked through land/; (2) E6: the kernel world = alone physics breach (diagnosed 10:02: bodies moved by adopt()/body_set_space get a different Jolt order; fix = one insertion path + a frame-3 body-order selftest), then hockey r2a; (3) editor: cross-check bot claims
-  against film, build one hockey job through the editor.
+- Since 22 Nov day: the Home is Wren Valley (arm A, walkable); E6 fixed (a world builds a pack's space as a first join
+  does); the editor checks bot claims against the film and holds hockey to the house camera and puck.
+- Next 3 (day of 22 Nov wrap): (1) the owner plays the Home walk and hockey and answers VERDICT 2026-11-22-day (possession
+  bar, clock-only re-run, Home details, jobs -2/-3); (2) editor: a Foreman-owned spacing measure, a clock-only failure
+  re-run, a "boards hold the puck" rule, then hockey job -4; (3) kernel: TLTrigger entry_side, a long all-AI world-gate
+  test, the TLAudio exit leak; Home: remaining colliders, faster first load, tl.land/1.
 
 ## Open owner verdicts
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
@@ -292,3 +295,6 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 14:44 standup: D1 r1+2 landed (efbf00f; integration list running in d22-int); D3 r3 (d060ac8) + r4 (9f9ca12) landed, re-dispatched; D2 E6 fix verified (selftest 760 3/3 vs 0/3 on main), A/B next.
 - 15:44 standup: D2 r1 integration PASS (2fdfef2), D2 r2 r2a landed (59ada89); D3 r5 landed (167698c), hockey job -3 building; D1 round 3 in its gates.
 - 16:44 standup: D1 done (r3 2fdaee0), D3 done (r6 6fb5ea3), D2 wrapping; verdict list started early in d22-int.
+- 17:00-18:30 verdict: lanes done (D1 efbf00f/2fdaee0, D2 2fdfef2/59ada89, D3 9f7f077..6fb5ea3). Final list at 48c4f59 in
+  d22-int: full gate green but hockey many_budget (1.072 ms, busy), uncapped kernel 492/0, perf 6/6 quiet, export + check;
+  packs alone stopped by low memory (not re-run). Page https://claude.ai/artifact/Hzud79BFgAamu4A5yS35dg. Claims released, timers deleted. Hockey jobs -2/-3 held for the owner.
