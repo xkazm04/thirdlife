@@ -62,6 +62,8 @@ Properties: `accel: float`, `bar_axis: Vector3`, `bar_omega: float`, `bar_point:
 - `func body_radius() -> float`
 - `func brake(on: bool = true) -> void`
 - `func climb(v: float) -> void`
+- `func clip_frame() -> float`
+- `func clip_now() -> StringName`
 - `static func create(opts: Dictionary = {}) -> TLBiped`
 - `func down(frames: int) -> void`
 - `func down_frames_left() -> int`
@@ -75,7 +77,9 @@ Properties: `accel: float`, `bar_axis: Vector3`, `bar_omega: float`, `bar_point:
 - `static func mark_bar(body: CollisionObject3D) -> void`
 - `func move(direction: Vector3, run: bool = false) -> void`
 - `func place(at: Vector3, facing: float = 0.0) -> void`
+- `func play_clip(clip: StringName, timing: Array = [], blend: float = 0.034) -> void`
 - `func set_body_scale(scale_: float) -> void`
+- `func set_clip_speed(speed: float) -> void`
 - `func set_mode(mode_: StringName) -> void`
 - `func shove(impulse: Vector3) -> void`
 - `func slide() -> void`
