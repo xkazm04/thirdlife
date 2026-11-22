@@ -18,6 +18,10 @@ extends RefCounted
 ##   ... -- --tripped=<record> [--back=<label>] [--then=menu|quit] [--out=<abs file>]   L4b: the card of a dungeon the
 ##                    watchdog stopped (kernel/dungeon/watch.gd starts this process on its record, then ends its own):
 ##                    Leave goes to the menu (then=menu) or ends this process with exit code 3 (then=quit, a Try-it run)
+##   ... -- --menu  with TL_EXE_CREATE_GO=<sentence>   N4 (22-23 Nov, export.sh check step 3b): the menu opens Create at
+##                    once, the sentence goes in and GO is pressed (the page's own go()); one "create_go" line, then the
+##                    process ends: exit 0 when the Designer's pitch is on the page, 1 on a toast or after
+##                    TL_EXE_CREATE_FRAMES frames (default 3600); TL_EXE_CREATE_SHOT=<abs png> keeps a picture of it
 ##   ... --headless -- trips --out=<abs file> [--trips=3] [--ticks=600] [--frames=600] [--dungeon-index=0]
 ##                    menu -> World -> menu -> dungeon -> menu, N times, a census at every menu (selftest 640)
 ## A census line (`"kind":"census"`) is printed at every menu, in the world once it stands (240 frames) and in a dungeon
@@ -80,6 +84,8 @@ func menu_start() -> void:
 	b.process_physics_priority = 200000
 	b.set_physics_process(true)
 	show_menu()
+	if OS.has_environment("TL_EXE_CREATE_GO"):
+		_menu_create.call_deferred()               # N4: the same function the Create button calls
 
 
 ## The dungeons of engine/boot/dungeons.json with their folders in this build ("" when it does not carry one).
@@ -216,6 +222,37 @@ func _menu_create() -> void:
 		create_node.connect("closed", _on_create_closed)
 	if create_node.has_method("open"):
 		create_node.call("open")
+	if OS.has_environment("TL_EXE_CREATE_GO"):
+		_create_go(OS.get_environment("TL_EXE_CREATE_GO"))
+
+
+## N4: TL_EXE_CREATE_GO (usage at the top): GO with that sentence, then wait for the pitch or a toast, counted in frames.
+func _create_go(sentence: String) -> void:
+	var page: Node = create_node
+	page.set("sentence", sentence)
+	page.call("go")
+	var limit: int = int(OS.get_environment("TL_EXE_CREATE_FRAMES")) if OS.get_environment("TL_EXE_CREATE_FRAMES").is_valid_int() else 3600
+	var waited: int = 0
+	var shown: String = str(page.call("shown_screen"))
+	while waited < limit and shown != "pitch" and str(page.get("message")).is_empty():
+		await b.get_tree().process_frame
+		waited += 1
+		if not is_instance_valid(page):
+			return                                 # the window was closed meanwhile
+		shown = str(page.call("shown_screen"))
+	var ok: bool = shown == "pitch"
+	var shot: String = OS.get_environment("TL_EXE_CREATE_SHOT").replace("\\", "/")
+	var saved: bool = false
+	if not shot.is_empty() and DisplayServer.get_name() != "headless":
+		for i: int in 3:
+			await RenderingServer.frame_post_draw
+		DirAccess.make_dir_recursive_absolute(shot.get_base_dir())
+		saved = b.get_viewport().get_texture().get_image().save_png(shot) == OK
+	var door: RefCounted = page.get("door")
+	print(JSON.stringify({"schema": "thirdlife.exe/1", "kind": "create_go", "ok": ok, "screen": shown, "frames": waited,
+		"message": str(page.get("message")), "job": str(page.get("job_dir")), "settings": str(door.get("flags_name")) if door != null else "",
+		"shot": shot if saved else ""}, "", false))
+	b.get_tree().quit(0 if ok else 1)
 
 
 func _on_create_closed() -> void:
