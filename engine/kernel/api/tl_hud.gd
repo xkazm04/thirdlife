@@ -31,6 +31,8 @@ const PLATE_MARGIN: Vector2 = Vector2(18, 8)
 
 var font_size: int = 36
 var _widgets: Dictionary = {}      # id -> {label: Label, source: Callable or null}
+var _tags: Dictionary = {}         # id -> {node, offset}, outside the anchor stacks
+var _cameras: TLCameras
 var _sheet                  # The optional style module owns this Control.
 var _stock: GDScript
 var _layout: GDScript
@@ -50,6 +52,7 @@ static func create() -> TLHud:
 	var h: TLHud = TLHud.new()
 	h.name = "TLHud"
 	if TLContext.current != null:
+		h._cameras = TLContext.current.cameras
 		TLContext.current.huds.append(h)
 		h.visible = TLContext.current.on_stage      # N7 (N5b patch 2): in a world only the stage pack's HUD is shown
 		h._village_hud = not TLContext.current.instance.is_empty()
@@ -102,6 +105,15 @@ func configure_widgets(catalog: Variant, layout: Variant) -> bool:
 		_sheet = (load(_SHEET_PATH) as GDScript).new()
 		add_child(_sheet)
 	_sheet.install(catalog, layout)
+	_inks = _stock.colors(layout.get("theme", "signal"))
+	for id: StringName in _widgets:
+		var w: Dictionary = _widgets[id]
+		var label: Label = w.label
+		if not w.custom_color:
+			label.add_theme_color_override("font_color", _inks.paper)
+		label.add_theme_color_override("font_outline_color", _inks.ink)
+		if w.plate:
+			set_plate(id)
 	if is_inside_tree():
 		_resized()
 	return true
@@ -138,6 +150,9 @@ func _make(id: StringName, anchor: StringName, source: Callable) -> Label:
 		anchor = &"top_left"
 	if _widgets.has(id):
 		_widgets[id].source = source
+		if _tags.erase(id):
+			_widgets[id].anchor = anchor
+			_layout_dirty = true
 		return _widgets[id].label
 	var label := Label.new()
 	label.name = String(id)
@@ -152,7 +167,7 @@ func _make(id: StringName, anchor: StringName, source: Callable) -> Label:
 	label.add_theme_constant_override("outline_size", 3)
 	label.add_theme_constant_override("line_spacing", 0)
 	add_child(label)
-	_widgets[id] = {"label": label, "source": source, "anchor": anchor, "fitted": "", "plate": false}
+	_widgets[id] = {"label": label, "source": source, "anchor": anchor, "fitted": "", "plate": false, "custom_color": false}
 	if instrument and _stock != null:
 		set_plate(id)
 	_layout_dirty = true
@@ -205,6 +220,53 @@ func set_align(id: StringName, align: StringName) -> void:
 ## A free label. Change it later with `set_text(id, text)`.
 func add_label(id: StringName, text: String, anchor: StringName = &"top_left") -> void:
 	_make(id, anchor, Callable()).text = text
+
+
+## Centre a text widget just above a local-space point on a target, using this pack's active view.
+func add_tag(id: StringName, node: Node3D, text: String = "", offset: Vector3 = Vector3(0, 2.3, 0)) -> void:
+	var label := _make(id, &"top_left", Callable())
+	label.text = text
+	label.hide()
+	_tags[id] = {"node": node, "offset": offset}
+	_layout_dirty = true
+
+
+## Remove an anchored text widget or a tag and release its label.
+func remove_widget(id: StringName) -> void:
+	if not _widgets.has(id):
+		return
+	var label: Label = _widgets[id].label
+	remove_child(label)
+	label.queue_free()
+	_widgets.erase(id)
+	_tags.erase(id)
+	_layout_dirty = true
+
+
+## Set a text widget's ink to a Color or palette key. An empty key restores the HUD's paper.
+func set_color(id: StringName, color: Variant) -> void:
+	if not _widgets.has(id):
+		push_error("TLHud.set_color: no widget '%s'" % id)
+		return
+	var ink: Color
+	var custom := true
+	if color is Color:
+		ink = color
+	elif color is String or color is StringName:
+		var key := String(color)
+		custom = not key.is_empty()
+		ink = _inks.paper
+		if not key.is_empty():
+			var style := TLStandin.ext("TLStyle")
+			if style == null or not style.call("has_key", key):
+				push_error("TLHud.set_color: unknown palette key '%s'" % key)
+				return
+			ink = style.call("color", key)
+	else:
+		push_error("TLHud.set_color: expected a Color or palette key")
+		return
+	_widgets[id].custom_color = custom
+	(_widgets[id].label as Label).add_theme_color_override("font_color", ink)
 
 
 func set_text(id: StringName, text: String) -> void:
@@ -265,7 +327,10 @@ func _arrange_labels() -> void:
 	margin.y = maxf(margin.y, clearance.x)
 	room.y = extent.y - margin.y - lower_margin
 	var stacks := {}
-	for w: Dictionary in _widgets.values():
+	for id: StringName in _widgets:
+		if _tags.has(id):
+			continue
+		var w: Dictionary = _widgets[id]
 		var label: Label = w.label
 		label.visible = not label.text.is_empty()
 		if label.visible:
@@ -290,3 +355,32 @@ func _arrange_labels() -> void:
 			label.scale = Vector2.ONE * fit
 			label.position = Vector2(margin.x + (room.x - label.size.x * fit) * alignment.x, y).round()
 			y += (4.0 + label.size.y) * fit
+
+
+func _process(_delta: float) -> void:
+	if not visible or _tags.is_empty():
+		return
+	var cam := _cameras.active if is_instance_valid(_cameras) else null
+	var rect := get_viewport().get_visible_rect()
+	var fit := minf(rect.size.x / 1280.0, rect.size.y / 720.0)
+	for id: StringName in _tags:
+		var label: Label = _widgets[id].label
+		label.visible = _place_tag(label, _tags[id], cam, rect, fit)
+
+
+func _place_tag(label: Label, tag: Dictionary, cam: Camera3D, rect: Rect2, fit: float) -> bool:
+	if not is_instance_valid(cam) or not cam.is_inside_tree() or not is_instance_valid(tag.node):
+		return false
+	var target: Node3D = tag.node
+	if label.text.is_empty() or not target.is_inside_tree():
+		return false
+	var point: Vector3 = target.global_transform * tag.offset
+	if cam.is_position_behind(point):
+		return false
+	var screen := cam.unproject_position(point)
+	if not rect.has_point(screen):
+		return false
+	label.reset_size()
+	label.scale = Vector2.ONE * fit
+	label.position = (screen - label.size * fit * Vector2(0.5, 1.0)).round()
+	return true

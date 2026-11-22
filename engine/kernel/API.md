@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.14)
+# Third Life kernel API (kernelApi 1.15)
 
-**Version 1.14 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.15 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.14"` in `pack.json` (any
-`"1.x"` up to 1.14 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.15"` in `pack.json` (any
+`"1.x"` up to 1.15 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -435,6 +435,29 @@ rig clip on a frame timeline, so the pack no longer writes the rig's clip time i
 fighter.play_clip(&"strike_heavy", [[0, 0.0], [24, 8.0], [30, 10.0], [37, 14.4], [65, 30.0]])
 ```
 
+### E2b-E4 swing trail, HUD colour and tags (addition in 1.15)
+
+Show the path of a fighter's weapon and place a teaching cue above the fighter in the pack's active view.
+
+| Member | Meaning |
+|---|---|
+| `TLHit.swing_trail(who: TLBiped, weight: float = 0.5, frames: int = 30, opts: Dictionary = {}) -> Node3D` | Draw one ribbon for `frames` physics frames. Hit-stop holds its lifetime and path. A new call replaces that fighter's previous ribbon. The kernel frees it when its time is up. |
+| `TLHud.set_color(id: StringName, color: Variant) -> void` | Set a label or tag to a `Color` or a style palette key (`String` or `StringName`). An empty key restores the current theme's paper. A missing widget or unknown key reports an error. |
+| `TLHud.add_tag(id: StringName, node: Node3D, text: String = "", offset: Vector3 = Vector3(0, 2.3, 0)) -> void` | Centre a label just above the screen point of `node.global_transform * offset` in `ctx.cameras.active`. The tag hides behind the camera, outside the viewport, when the target goes away, or when its HUD is hidden. |
+
+- The ribbon uses the `vfx` capability. It follows `opts.node` (a weapon tip) or the rig's `opts.socket`. The default is `stick_blade` when available, then `hand_r`. `opts.offset` is in the followed node's local space.
+- Weight is clamped to 0..1. Width rises linearly from 0.12 to 0.36 metres, and the path keeps 5 to 12 samples, rounded to the nearest whole frame. Override these with `opts.width` and `opts.keep`. The ribbon renderer clamps the sample count to 2..120. `opts.color` accepts a Color or palette key and defaults to `"white"`.
+- The call returns the ribbon, or null if the target or style layer is unavailable or the requested lifetime is zero or less. With style installed a headless run can measure the ribbon's lifetime. These drawing calls add no physics or state-hash inputs.
+- Tags share widget ids, text, colour and plates with ordinary labels. They sit outside the anchor stacks. Explicit colours survive `configure_widgets` and theme changes. After a reset the widget follows the theme's paper. Palette keys require the style layer. Direct colours and paper reset also work in a kernel-only install.
+- The lab in `kernel/examples/ex_swing_lab` measures a light swing, a heavy swing and a heavy blocked swing.
+
+```gdscript
+fighter.play_clip(&"strike_heavy")
+TLHit.swing_trail(fighter, 1.0, 40)
+hud.add_tag(&"cue", fighter, "HEAVY")
+hud.set_color(&"cue", &"car_red")
+```
+
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
 
 `TLVehicle.create(opts) -> TLVehicle` (a `RigidBody3D`, origin on the ground under the middle, forward -z, wheel order
@@ -607,6 +630,7 @@ their text values. `TLHud.create()` registers the layer with its pack. Captures 
 - `set_plate(id, on = true)` toggles a backing on a text widget. Scores, clocks and speed start plated.
   `set_align(id, align)` aligns lines inside a label (`left`, `center`, `right`). Text on a shared anchor stacks
   by its measured size. Empty text takes no space. The first bottom label keeps its bottom edge.
+- (1.15) `add_tag(id, node, text = "", offset = Vector3(0, 2.3, 0))` follows a point in the pack's active view. `set_color(id, color)` colours a tag or anchored text widget, and `set_color(id, &"")` restores theme paper. `remove_widget(id)` removes either kind.
 - The nine anchors are `top_left`, `top`, `top_right`, `left`, `center`, `right`, `bottom_left`, `bottom` and `bottom_right`.
 
 **Editable instruments (1.11).** A pack opts into the creator's HUD workshop with two ordinary pack data files.
