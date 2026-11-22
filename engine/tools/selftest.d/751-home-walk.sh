@@ -1,8 +1,8 @@
 # D1 (day of 22 Nov 2026): the Home (arm A, Wren Valley) is walkable in the normal World. The landscape of
 # boot/village.json is built (landscape.home "wren", kernel/world/home/hook.gd) and the visitor's own body walks out of
-# the village over the mill bridge to Mill Green, then is dropped at five far places (kernel/world/home/walk_case.gd).
+# the village over the mill bridge to Mill Green, runs at five valley trunks, then is dropped at five far places (kernel/world/home/walk_case.gd).
 # Frames, not wall clock: one body step per physics frame. The final marker is required even on a clean exit.
-home_walk_cases=(home.walk home.bridge home.drops)
+home_walk_cases=(home.walk home.bridge home.trees home.drops)
 if [ -z "$FILTER" ] || [[ "${home_walk_cases[*]}" == *"$FILTER"* ]]; then
   home_walk_engine="$(cd "$HERE/.." && pwd)"
   command -v cygpath >/dev/null 2>&1 && home_walk_engine="$(cygpath -am "$home_walk_engine")"

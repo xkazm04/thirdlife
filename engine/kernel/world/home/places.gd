@@ -11,6 +11,8 @@ var phase_ms := {}
 var approach_sample := {}
 var lane_faces := PackedVector3Array()   # D1: the lanes and the bridge deck as the visitor's ground (hook.gd)
 var rail_faces := PackedVector3Array()   # D1: the bridge's two rails, walls of 1.6 m (hook.gd)
+var trunks := []                         # D1: [foot, radius] of every valley tree: its trunk stops the visitor (hook.gd)
+var solids := []                         # D1: [transform, size] boxes of the mill that stop the visitor (hook.gd)
 
 func grow(root: Node3D,valley: RefCounted) -> Dictionary:
 	parent=root
@@ -213,6 +215,7 @@ func plots() -> void:
 	for loc: Vector2 in [Vector2(-850,67),Vector2(-864,62),Vector2(-880,60),Vector2(-898,65),Vector2(-910,85)]:
 		pollards.append(tree_at(loc,rng.randf_range(0.85,1.16)))
 	Parts.multi(parent,TLKitNature.broadleaf(521,9.5),pollards,"MillGreenPollards")
+	add_trunks(pollards,0.38)
 
 func farms() -> void:
 	preload("res://kernel/world/home/husbandry.gd").place(self)
@@ -258,10 +261,15 @@ func scatter() -> void:
 		var p := Vector2(x,z)
 		if sin(x*0.009)+0.65*cos(z*0.019)>-0.2 and clear(p) and land.parcel_at(x,z).is_empty():
 			larches.append(tree_at(p,rng.randf_range(0.7,1.45)))
+	# Trunk radii are the kit's own (TLKitNature: a pine 0.22 h / 9, a broadleaf 0.28 h / 7) times each tree's scale.
+	for group: Array in [[larches,0.42],[fir,0.42],[pear,0.30],[willow,0.46]]: add_trunks(group[0],group[1])
 	Parts.multi(parent,TLKitNature.pine(402,17,3,4.8),larches,"DownsCoppices")
 	Parts.multi(parent,TLKitNature.pine(201,17,5,4.6),fir,"HemlockFold")
 	Parts.multi(parent,TLKitNature.broadleaf(217,7.5),pear,"PerryBank")
 	Parts.multi(parent,TLKitNature.broadleaf(232,11.5),willow,"WrenAlders")
+
+func add_trunks(xs: Array,radius: float) -> void:
+	for xf: Transform3D in xs: trunks.append([xf.origin,radius*xf.basis.get_scale().x])
 
 func river_reeds() -> void:
 	var seed_rng := RandomNumberGenerator.new()

@@ -5,6 +5,8 @@ extends RefCounted
 ## raw copy costs a few milliseconds where a PNG costs 200, so the run keeps the wall-clock pace a person meets), and one
 ## line per picture in <dir>/frames.jsonl (the physics frame, the size, the camera's place and look, the stage). The blink
 ## detector (kernel/world/walks/blink_detect.py) reads it. TL_EXE_FRAMES_FULL=1: full size. TL_EXE_SKYMASK=1: sky magenta.
+## D1 (22 Nov): TL_EXE_FRAMES_TIMES=1 writes only the lines (no picture, so the copy costs nothing) and turns vsync off:
+## the drawn frames' `usec` are what the frame costs, for a frame-time read of a walk.
 ## No class_name; `b` is the boot node (its `_frame`, `view`, `world`).
 
 var b: Node = null
@@ -23,6 +25,8 @@ func start(boot: Node, dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(_frames_dir)
 	_frames_log = FileAccess.open(_frames_dir + "/frames.jsonl", FileAccess.WRITE)
 	RenderingServer.frame_post_draw.connect(_frame_drawn)
+	if OS.get_environment("TL_EXE_FRAMES_TIMES") == "1":
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	if OS.get_environment("TL_EXE_SKYMASK") == "1":
 		_sky_mask()
 
@@ -66,20 +70,22 @@ func _frame_drawn() -> void:
 	var frame: int = int(b.get("_frame"))
 	if frame < _frames_range.x or frame > _frames_range.y or view == null or not is_instance_valid(view):
 		return
-	var img: Image = b.get_viewport().get_texture().get_image()
-	if img == null:
-		return
-	if img.get_format() != Image.FORMAT_RGB8:
-		img.convert(Image.FORMAT_RGB8)
-	if OS.get_environment("TL_EXE_FRAMES_FULL") != "1":            # T3: full size, for the antialiasing study
-		img.resize(img.get_width() / 2, img.get_height() / 2, Image.INTERPOLATE_NEAREST)
-	var f: FileAccess = FileAccess.open("%s/f%05d.raw" % [_frames_dir, _frames_n], FileAccess.WRITE)
-	if f != null:
-		f.store_buffer(img.get_data())
-		f.close()
+	var line: Dictionary = {"n": _frames_n, "frame": frame, "stage": int(view.get("stage"))}
+	if OS.get_environment("TL_EXE_FRAMES_TIMES") != "1":
+		var img: Image = b.get_viewport().get_texture().get_image()
+		if img == null:
+			return
+		if img.get_format() != Image.FORMAT_RGB8:
+			img.convert(Image.FORMAT_RGB8)
+		if OS.get_environment("TL_EXE_FRAMES_FULL") != "1":            # T3: full size, for the antialiasing study
+			img.resize(img.get_width() / 2, img.get_height() / 2, Image.INTERPOLATE_NEAREST)
+		var f: FileAccess = FileAccess.open("%s/f%05d.raw" % [_frames_dir, _frames_n], FileAccess.WRITE)
+		if f != null:
+			f.store_buffer(img.get_data())
+			f.close()
+		line["size"] = [img.get_width(), img.get_height()]
+	line["usec"] = Time.get_ticks_usec()
 	var cam: Camera3D = b.get_viewport().get_camera_3d()
-	var line: Dictionary = {"n": _frames_n, "frame": frame, "size": [img.get_width(), img.get_height()], "stage": int(view.get("stage")),
-		"usec": Time.get_ticks_usec()}
 	_frames_n += 1
 	if cam != null:
 		var o: Vector3 = cam.global_position

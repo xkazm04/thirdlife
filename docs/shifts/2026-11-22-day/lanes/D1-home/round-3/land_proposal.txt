@@ -1,0 +1,28 @@
+tl.land/1 and the Home (a proposal only; contracts/LAND.md not edited)
+
+The Home's chunks today: 96 m, world-anchored (chunk (cx, cz) covers [96 cx, 96 cx + 96) x [96 cz, ...)), 68 x 68 over
++-3264 m. Its colliders go through land/chunk_collider.gd (`build`, `drop`), one body per chunk, streamed 5 x 5 round the
+visitor. What does NOT fit tl.land/1 as written, and what I propose:
+
+1. Lattice origin. LAND.md: "the chunk lattice starts at the land's own grid origin (today the village terrain's low
+   corner)": (-393, -330) for the exe village, which is not on the 96 m world lattice. Proposal: a world's land is a list
+   of lands, each with its own `base` and lattice origin; the Home's origin is (-3264, -3264) (34 chunks of 96 m), so its
+   chunk ids are world-anchored. The village keeps its own lattice; the Home leaves the village's rectangle to it.
+2. Base kind. Proposal: `"base": {"kind": "wren", "seed": 7}` = home/valley.gd (`height`, `material`, `water`), which
+   already blends into the village at its border. A chunk nobody edited is a header only, so the whole Home is 4,624
+   header records, or none at all if "no record" means "the base".
+3. Resolution. The Home draws 12 m cells near and 48 m cells beyond 1536 m (ground.gd); tl.land/1 cells are 3 m. A
+   3 m delta cannot be laid on a 12 m mesh. Proposal: a chunk with any `heights` or `materials` entry is meshed and
+   collided at 3 m from base + delta with `"split": "fixed"` (a Jolt HeightMapShape3D can then be its collider, N5's
+   tested path); an unedited chunk stays on the coarse grid. The seam between a 3 m chunk and its 12 m neighbour needs
+   a skirt rule (as N5's mid-LOD skirts).
+4. Materials. Arm A's palette has 9 keys: grass, grass_dark, grass_dry, sand, rock_warm, cliff, dirt, stone, terrain
+   (= the village's own). tl.land/1 ids: 1 grass, 2 dirt, 3 rock, 4 sand, 5 cliff. Proposal: add 6 grass_dark,
+   7 grass_dry, 8 stone (arm A's "rock_warm" maps to 3 rock).
+5. Water. Arm A: per-cell [cell, level]. tl.land/1: groups {level_m, cells}. Fits as is (group by level; the Wren's
+   level changes with z, so a river chunk has a few groups).
+6. Heights. Arm A's proposal: offset -128 m, step 0.01 m (u16). Fits as is: h_zero_m -128, h_step_m 0.01 per record.
+
+Arm A's own export (valley.gd `chunk`, "proposal_version": 1, 33 x 33 full heights, palette strings) is still what
+home.a.chunk checks; I left it. Once 1-6 are decided, `chunk` should emit tl.land/1 and home.a.chunk should round-trip
+it through land_record.gd.

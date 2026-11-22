@@ -5,6 +5,8 @@ static func mill(places: RefCounted) -> void:
 	var deck := Vector3(bank.x,4.5,bank.y)
 	var mk := TLMesh.new()
 	mk.box(Vector3(14,10,19),"stone",Color.WHITE,0.25,deck-Vector3.UP*4.7)
+	places.solids.append([Transform3D(Basis.IDENTITY,deck-Vector3.UP*4.7),Vector3(14,10,19)])     # D1: the visitor stands on it
+	places.solids.append([Transform3D(Basis(Vector3.UP,PI*0.5),deck+Vector3.UP*4.0),Vector3(15,8,9)*Vector3(1.45,1,1.45)])
 	var hall: Node3D=places.kit("house",{"width":15.0,"depth":9.0,"wall_h":5.5,"roof_rise":4.5,"lights":false},bank,90,1.45)
 	hall.position=deck
 	var tower: Node3D=places.kit("house",{"width":5.5,"depth":6.0,"wall_h":5.9,"roof_rise":4,"lights":false},bank,90,1.45)
@@ -28,6 +30,7 @@ static func mill(places: RefCounted) -> void:
 	# Loading platform on the side of the wheelhouse facing the road.
 	var porch := deck+Vector3(-1,0.3,12)
 	mk.box(Vector3(13,0.65,5),"plank",Color.WHITE,0.07,porch)
+	places.solids.append([Transform3D(Basis.IDENTITY,porch),Vector3(13,0.65,5)])
 	for x: float in [-5,5]:
 		mk.box(Vector3(0.65,8,0.65),"wood_dark",Color.WHITE,0,porch+Vector3(x,-4,1.7))
 	places.parent.add_child(mk.instance("WheelhouseAndLanding"))

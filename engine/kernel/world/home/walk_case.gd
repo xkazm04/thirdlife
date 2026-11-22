@@ -8,6 +8,8 @@ extends SceneTree
 ##                 drawn ground; no floating: never above what is drawn under him), the distance out of the village
 ##                 is stated
 ##   home.bridge   the frames over Wren Water: on the deck (above the water, on the plank quads)
+##   home.trees    he runs at the trunks of five lone valley trees of different sizes: each stops him at its bark (made with the
+##                 ground chunk it stands in)
 ##   home.drops    he is dropped from 25 m at five far places of the valley (streamed chunks): he lands on the drawn
 ##                 ground there, and he does not fall through it in 120 frames of standing
 const Landscape := preload("res://kernel/world/landscape.gd")
@@ -63,8 +65,9 @@ func run() -> void:
 	valley = preload("res://kernel/world/home/valley.gd").new(int(cfg.seed), terr)
 	print("[home] landscape build %d ms, home %s" % [int(stats.get("build_ms", -1)), JSON.stringify(stats.get("home", {}))])
 	walk_route()
+	trees()
 	drops()
-	print("[home] chunks made %d dropped %d faces %d build %.1f ms" % [home.stats.made, home.stats.dropped, home.stats.faces, home.stats.build_usec / 1000.0])
+	print("[home] chunks made %d dropped %d faces %d trunks %d build %.1f ms" % [home.stats.made, home.stats.dropped, home.stats.faces, home.stats.trunks, home.stats.build_usec / 1000.0])
 	print("HOME DONE")
 	quit(0)
 
@@ -162,6 +165,41 @@ func walk_route() -> void:
 		frames, out_m, out_frames, off, worst_sink, worst_float, worst_at])
 	say("bridge", bridge_frames > 30 and bridge_bad == 0,
 		"%d frames over Wren Water, %d not on the deck; lowest feet %.2f m (water %.2f m); over the water from %s to %s" % [bridge_frames, bridge_bad, deck_low, valley.level(95.0), str(deck_span.get("from")), str(deck_span.get("to"))])
+
+
+func trees() -> void:
+	var picked := []
+	var seen := {}
+	var ids: Array = home.trees.keys()
+	ids.sort()
+	for id: Vector2i in ids:
+		for t: Array in home.trees[id]:
+			var near := false
+			for q: Array in home.trees[id]:
+				near = near or (q != t and Vector2(q[0].x - t[0].x, q[0].z - t[0].z).length() < 9.0)
+			var band := int(t[1] * 100.0)
+			if not near and not seen.has(band) and picked.size() < 5:
+				seen[band] = true
+				picked.append(t)
+	var bad := []
+	var report := []
+	for t: Array in picked:
+		var foot: Vector3 = t[0]
+		var pos := Vector3(foot.x + 6.0, 0.0, foot.z)
+		pos.y = drawn(pos.x, pos.z, 1000.0)
+		ws.call("place", pos)
+		ws.call("drive", pos, Vector3.ZERO, false, false)     # the chunk round him is made before he moves
+		pos.y = drawn(pos.x, pos.z, 1000.0)
+		var closest := INF
+		for f: int in 150:
+			var r: Dictionary = ws.call("drive", pos, Vector3(foot.x - pos.x, 0.0, foot.z - pos.z).normalized() * 4.5, false, false)
+			pos = r.pos
+			closest = minf(closest, Vector2(pos.x - foot.x, pos.z - foot.z).length())
+		report.append("(%.0f, %.0f) r %.2f closest %.2f" % [foot.x, foot.z, t[1], closest])
+		if closest < t[1] + 0.25:
+			bad.append("(%.0f, %.0f)" % [foot.x, foot.z])
+	say("trees", picked.size() == 5 and bad.is_empty(), "%d trunks: %s%s" % [picked.size(), "; ".join(report),
+		"" if bad.is_empty() else "; walked into " + ", ".join(bad)])
 
 
 func drops() -> void:
