@@ -65,7 +65,9 @@
       },
       "arms": [
         "mace",
-        "shield"
+        "shield",
+        "helm",
+        "pauldrons"
       ],
       "guard_up": 0.3,
       "space": 2.35,
@@ -224,7 +226,9 @@
         "boots": "boots"
       },
       "arms": [
-        "rapier"
+        "rapier",
+        "hat",
+        "cape"
       ],
       "guard_up": 0.45,
       "space": 2.45,
@@ -391,7 +395,8 @@
       },
       "arms": [
         "blade",
-        "blade_l"
+        "blade_l",
+        "hood"
       ],
       "guard_up": 0.0,
       "space": 2.6,
