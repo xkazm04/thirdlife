@@ -55,3 +55,22 @@ N6's arms stay on branches for the owner's pick.
 - Lanes stop at 06:30.
 - Verdict 07:15.
 - Push by 08:00.
+
+## Extension to 09:00 (the owner, 00:55)
+"continue nightly shift until 9:00 looping the same goal to reach points both duel and hockey are high quality
+standalone games to set example and engine needs for all future games coming form editor". The loop is in `LOOP.md`,
+and the kernel asks in `ENGINE-NEEDS.md`.
+
+| Lane | Re-dispatched | Loop job |
+|---|---|---|
+| N2 | 01:05 (landed a6fc8ad / 90ce6a4) | duel rounds |
+| N3 | told 01:05 | lands, then hockey rounds |
+| N1 | 01:05 | engine needs (E1 clip speed, E2 swing weight), API 1.14 |
+| N4 | 01:05 | templates cite the house games; the critic compares to them; reads the proof jobs |
+
+- **Proof re-run:** started 00:56. Jobs `site/fight-colosseum-20261122-1` (standard) and `-2` (crazy).
+- **Times:**
+  - Lanes stop at 07:45.
+  - Verdict 08:13.
+  - Push by 09:00.
+- **Integration worktree:** `.claude/worktrees/n22-int` (detached).

@@ -256,3 +256,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 21:17 standup: N1 landed 8e2202a (API 1.13), main merged into duel/hockey; N6 done (arms on branches, compare on main d4155dd); N2 near landable; N3, N5 on track.
 - 22:17 standup: N2 near landable on the kernel kit (ladder order right); N3 tuning rookie newcomer; N5 near landable (load faster 940->622 ms).
 - 23:17 standup: N5 landed 637573d (+LAND.md 64f26a1); N2 quiet since 22:07, nudged (land core by 00:30); N3 final verification (budget busy 1.080 vs base ~0.95).
+- 00:35 standup: N2 past target, told to stop at a clean point; Director fast tier on n22-duel red only on cards.references (card lists TLVfx.squash, unused since the kernel switch); N3 re-verifying on t20 after the frame-cost cuts.
+- 00:58 N2 landed a6fc8ad (merge 90ce6a4; fast 5/5 on merged; card dropped unused TLVfx.squash). Owner extended the shift to 09:00 (LOOP.md): N2 duel / N3 hockey quality rounds, N1 engine needs (API 1.14), N4 editor copies the house games. Colosseum proof re-run started 00:56 (jobs 20261122-1 standard, -2 crazy).
