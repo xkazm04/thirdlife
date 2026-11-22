@@ -288,3 +288,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - Lanes (launched 12:41): D1 home (Home arm A into the World, Opus), D2 e6 (world = alone fix + selftest, then hockey r2a; Opus-directed Astra),
   D3 editor (critic cross-checks bot claims against film; one hockey job; Opus). Standups :17 hourly; lanes stop 17:15; verdict 17:30; push by 18:30.
   Plan: docs/shifts/2026-11-22-day/PLAN.md.
+- 13:44 standup: D3 r1 (9f7f077) + r2 (b0bb985) landed with JOB.md notes; D1 r1+r2 in its full tier; D2 asked for status (silent since 12:45).
