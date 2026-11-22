@@ -92,3 +92,9 @@ test("round 16: the look films the template's signature contacts first (a parry,
   assert.deepEqual(shots[1]?.frames, [820, 1400]);
   assert.deepEqual(templateOf("arcade_sport")?.filmFirst?.[0], "one_timer");
 });
+
+test("round 17: the Planner tells every package's bot to report the moments of what its package adds, early", async () => {
+  const { PKG_ROOT } = await import("../paths.js");
+  const planner = fs.readFileSync(path.join(PKG_ROOT, "prompts", "planner.md"), "utf8");
+  assert.match(planner, /\*\*Every package's bot reports the moments of what its package adds\.\*\*[^]*within its first 600 frames[^]*proof -5 filmed its rivals bot at frames 117 and 127/);
+});
