@@ -265,6 +265,11 @@ Ranked by how much each costs the player. Each names its evidence on both sides 
 - **Cost:** law 3 of thirdjam's vision ("the carrier wins by changing speed and direction") needs room; passing lanes need room;
   speed needs room to be seen. In ours, a carrier is inside someone's reach almost always, the puck is decided by pokes, bobbles
   and checks in a pile, and the figures look slow (2.1 heights a second against about 7).
+- **Measured arms (round 2, copies of the pack in `.tl/arms`, the AI on all six at pro, 8 seeds; `media/probe.md`):** life-size
+  bodies alone leave the four-man piles where they are (17 % against 16 % of play: the AI gathers round the puck in metres
+  whatever the body size; the pile is AI behaviour too) but cut knockdowns by a third; thirdjam's 90 x 45 m rink alone cuts the
+  piles to 12 % and doubles the AI's carry; both together halve the knockdowns (5.3 to 2.6 a minute) and the freezes (4.8 to 1.5).
+  So scale is necessary and not sufficient: the AI's own pull to the puck is the second half of item 1.
 - **Process:** a drawing fix (H7) changed the game's geometry, and no lane owned "how big is the world for its players".
 
 ### 2. Your teammates refuse to play.
@@ -423,6 +428,17 @@ Against NHL 94, NHL Hitz, Blades of Steel, Hockey Heroes and the like:
    hockey experience." A brief for a game must name the experience it accepts (a minute of a match from the player's camera,
    with what he should feel at each moment) and the mechanics' clips are only its parts.
 
+12. **The jam's lessons were written down for reuse and still did not reach the next brief.** On 16 Nov thirdjam's last lane filed
+   40 lessons for the registry (`.tl/thirdjam/docs/registry/LESSONS.md`, 33 leads in `.ai/registry-leads.jsonl`). Two of them
+   name what our hockey did afterwards: J18 "draw nothing of the mechanics on or in front of them (no bar, arc, ring, plate or
+   streak)" (`LESSONS.md:62`), broken by L5's down ring and bursts on 21 Nov; J01 "reproduce the fault as the person meets it"
+   (`LESSONS.md:30`), absent from N3's brief. J07 ("clumsy, never absent", `LESSONS.md:36`) allows "a later read" as clumsiness,
+   which weakens our item 8. A registry query tonight for those lessons returns generic techniques, not these: the leads may not
+   have landed, and no hockey brief queried it. Lessons are only useful where the next brief is written.
+13. **A world's constraint set a game's size.** Our big-ice mode says why it stops at 80 x 40 m: "the largest rink that fits the
+   village plot (88 m)" (`data/modes/big_ice.json`, `about`). The world's plot, not play, capped the ice. A game's size is
+   decided by its play first; the world makes room for it or the conflict goes to the owner.
+
 ## 6. Recommendations (accept or reject each; none is built)
 
 1. **Stop all game-feature work on hockey until a one-page "world in the player's units" for it is agreed with the owner**: body
@@ -438,8 +454,9 @@ Against NHL 94, NHL Hitz, Blades of Steel, Hockey Heroes and the like:
 7. **Remove the hit presentation the owner ruled out in thirdjam** (rings at downed men, bursts, punches) and make the hit-stop
    presentation only; no whole-game freeze for hits not involving the player.
 8. **One continuous match to three goals** (no 36-s periods) as the default.
-9. **Carry thirdjam's rulings into third-life**: a short `docs/research/THIRDJAM-RULINGS.md` of the owner's verbatim words and the
-   rule each became, read by every game lane's brief.
+9. **Carry thirdjam's rulings into third-life**: done as a draft in round 2: `docs/research/hockey-teardown/RULINGS.md` (the
+   owner's verbatim words, the rule each became, ANY or HOCKEY, and whether ours follows it). Recommendation: every game lane's
+   brief cites the rulings marked ANY.
 10. **A standing "eye" for every game**: a lane that plays PLAY NOW as a stranger, films it, and writes a ranked list that outranks
     the building lanes' own metrics; and a probe like this lane's in `tl` that reports what the player meets (first touch, first
     shot, his time on the puck, crowding, stoppages) next to the bot metrics.
@@ -456,3 +473,6 @@ Against NHL 94, NHL Hitz, Blades of Steel, Hockey Heroes and the like:
 | ours, rookie + newcomer hand, seed 1, 20 s | `media/ours_rookie_newcomer_s1.mp4`, `media/sheet_ours_rookie_newcomer.jpg` |
 | ours, pro + regular hand, seed 1, 20 s | `media/ours_pro_regular_s1.mp4`, `media/sheet_ours_pro_regular.jpg` |
 | the probe (test, runner, summary) | `.tl/probe/hockey/tests/probe_human.gd`, `.tl/probe/run.sh`, `.tl/probe/sum.mjs`; results `.tl/probe/out/*/s*.json`; summary table in `media/probe.md` |
+| the owner's thirdjam rulings, distilled (round 2) | `RULINGS.md` (this folder) |
+| scale arms (round 2): A main, B life-size bodies, C 90 x 45 rink, D both | `.tl/arms/{A,B,C,D}/hockey` (tuning and venue edited in the copies), `.tl/arms/run.sh`, results `.tl/arms/out/`; table in `media/probe.md` |
+| thirdjam's own lessons for the registry (16 Nov) | `.tl/thirdjam/docs/registry/LESSONS.md` |

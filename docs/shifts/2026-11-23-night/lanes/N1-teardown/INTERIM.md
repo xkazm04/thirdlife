@@ -3,6 +3,10 @@
 Full text with file:line on both sides: `docs/research/hockey-teardown/TEARDOWN.md` (this tree). Media and the probe's
 numbers: `docs/research/hockey-teardown/media/` (`probe.md`, clips of 20 s, sheets). Written 20:10, 22 Nov; updated as the lane goes.
 
+**For N2: the owner's thirdjam rulings, distilled, are in `docs/research/hockey-teardown/RULINGS.md`** (his verbatim words, the
+rule each became, ANY game or HOCKEY only, whether our hockey follows it; section 10 lists the ten a design method should cite
+first). Round 2, written about 20:40 on 22 Nov.
+
 ## How it was read
 - thirdjam cloned read-only (`.tl/thirdjam`, HEAD 8dc713c6) and **run on this machine** from a built thirdjam tree of 15 Nov
   (copied to `.tl/tj-run`; UE 5.9 `-game`, its own measured person hand `jam.ScriptHuman 2`, stills from its viewport).
