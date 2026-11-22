@@ -187,3 +187,14 @@ never-idle limit of `scripts/brain.gd` (120 frames). Read live, so a retuned hou
   keeps its 25 % frame (the art-pass compare looks at the same frame milestone to milestone) and films its first moment
   second. The tofu bot reports `moments` beside `metrics`.
 ```
+
+# Loop round 9 (22 Nov 04:15-04:35): contact strips that show a hit-stop
+
+## 12. contracts/JOB.md: append to the motion-strips paragraph
+
+```markdown
+  A filmed point that is a bot moment gets a CONTACT strip: 12 frames 2 apart from 10 frames before the moment
+  (`--strip=12x2`), labelled with the moment's frame, so a hit-stop of 6 frames holds both bodies still over 3 tiles.
+  The house strip is a contact strip too (10 frames before the house drill's contact). Other points keep 12 x 5 from
+  30 before.
+```

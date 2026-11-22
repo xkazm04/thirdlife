@@ -143,11 +143,11 @@ test("house compare: a duel job measures the house game once (reports/house-duel
   const call = builder.calls.find((c) => c.req.meta?.role === "critic");
   assert.match(call?.req.prompt ?? "", /The house game of this game's template, engine\/packs\/duel, is the bar[^]*SHORT of the house game on idle_max_f[^]*- house_game: Against the house game engine\/packs\/duel/);
   assert.equal(readEvents(job.jobDir).filter((e) => e.type === "verify" && e.verb === "bot" && /house-duel-s/.test(e.report)).length, 1, "measured once per job");
-  // Round 2: the house game's own exchange, filmed once from 15 frames before its contact (the fake drill finishes at 600: 540), last in the critic's images.
+  // Round 2: the house game's own exchange, filmed once from 15 frames before its contact (the fake drill finishes at 600: 540; round 9: a CONTACT strip from 10 before), last in the critic's images.
   const kept = JSON.parse(fs.readFileSync(path.join(job.jobDir, "reports", "house-duel.json"), "utf8")) as HouseBaseline;
-  assert.deepEqual(kept.strips?.map((x) => x.capture), ["reports/house-duel/strip-side-f525.png"]);
-  assert.ok(fs.existsSync(path.join(job.jobDir, "reports", "house-duel", "strip-side-f525.png")));
-  assert.match(call?.req.prompt ?? "", /image (\d+) of \1, attached to this message: strip-side-f525\.png: HOUSE GAME engine\/packs\/duel \(the bar, not this build\): MOTION STRIP[^\n]*a heavy blocked/);
+  assert.deepEqual(kept.strips?.map((x) => x.capture), ["reports/house-duel/strip-side-f530.png"]);
+  assert.ok(fs.existsSync(path.join(job.jobDir, "reports", "house-duel", "strip-side-f530.png")));
+  assert.match(call?.req.prompt ?? "", /image (\d+) of \1, attached to this message: strip-side-f530\.png: HOUSE GAME engine\/packs\/duel \(the bar, not this build\): CONTACT MOTION STRIP[^\n]*2 frames apart; the contact at frame 540[^\n]*a heavy blocked/);
   assert.match(call?.req.prompt ?? "", /When an image is labelled HOUSE GAME, set this build's strips beside it/);
 });
 
