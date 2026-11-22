@@ -128,3 +128,23 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
 Planner text only (no contract change): the root copies the house game's cameras and declares only views that frame the
 action (every declared camera is filmed); it shows the template's resource bars (duel: health, stamina, posture); the
 tofu bot presses every verb.
+
+# Loop round 4 (22 Nov 02:40-03:00): the hockey house strip
+
+## 7. contracts/JOB.md: one line in the house-strip paragraph
+
+```markdown
+  For the arcade sport the strip is filmed from the house measuring bot itself (`tests/bot_ladder_pro_regular.gd`,
+  camera `chase`) at the first moment its `metrics.moments` names, in the order one_timer, poked, poke, lost, bobble.
+```
+
+## 8. Round 4: house figures by definition (JOB.md, the house-baseline paragraph)
+
+```markdown
+  A house bot's figure is compared only where its definition is the tofu row's. Each house bot names the rows it
+  measures another way (`skipped` in `reports/house-<pack>.json`, said in the comparison line): the duel's
+  `skill_spread`, `skill_variants`, `contact_types`; the hockey's `idle_max_f` (a dead-puck stretch, not an idle
+  opponent). The tofu rows `pressure_waves` and `lead_change_share` take the duel house game's definitions (busy 3 s
+  windows after a quiet one; the share of rounds with a lead change); a sport reads them its own way (zone entries
+  held 2 s or ending in a shot; goals after which another side leads).
+```

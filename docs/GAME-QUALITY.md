@@ -356,6 +356,8 @@ were measured on this kernel.
   | `dodge` | 2 | 8 | 12 | `dodge` |
   | `taunt` | 0 | 0 | 60 | `taunt` |
 
+  The house figures (22 Nov): the duel's pilot reports the tofu names, but its `skill_spread` is over all hits and its
+  `skill_variants` the verbs used, so those two and `contact_types` (its own count of 6.3 rows) are not compared.
   The duel's tofu bot also reports `contact_types` (>= 3 of the 6.3 rows met) and `one_sided_contacts` (0: a contact
   that left one fighter's state unchanged fails the playbook's own acceptance).
 - **`arcade_sport`: an arcade team sport with a ball or puck** (hockey, football, basketball, any "get the thing into
@@ -364,7 +366,11 @@ were measured on this kernel.
   causes (5.1); the speed RATIOS of the speed table (5.2: passing beats skating, the carrier is slower); the utility AI
   for shoot / pass / carry with hard vetoes and a re-decision every 15 f (5.3); the roles re-sorted by time to the ball
   (5.4); the anti ping-pong rule. Its tofu bot also reports `possession_median_f` (240 to 600: 4-10 s; over 900 is
-  glued, under 120 random).
+  glued, under 120 random). In a sport the generic rows read the sport's way (the house hockey, 22 Nov): `pressure_waves`
+  counts zone entries held 2 s or ending in a shot, `lead_change_share` the goals after which another side leads.
+  `idle_max_f` stays checklist item 9, an OPPONENT doing nothing for 2 s (a skater carrying, supporting or covering
+  acts); the house hockey's own `idle_max_f` is a dead-puck stretch (606 frames on pro regular, seed 1) and is not
+  compared until it measures the opponents.
 - **`own`: any other genre** names its own proven reference: a real released game (or a family of them) and the exact
   mechanics copied, with their numbers where the source has them (a racer copies Mario Kart's item roulette by
   position and its mini-turbo; a platformer copies Celeste's coyote time of 5 f and its jump buffer). A template whose
@@ -418,9 +424,9 @@ in an empty room. Our first phase is the tofu stage.
   | `idle_max_f` | 9 | <= 120 | the longest run of frames any opponent spent with no action (not moving with intent, not attacking, not defending) |
   | `tell_min_f` | 11 | >= 12 | over every dangerous opponent action that started: the fewest frames from the first frame of its tell pose to its first active frame |
   | `tells` | 11 | >= 3 | how many dangerous opponent actions `tell_min_f` counted |
-  | `pressure_waves` | 12 | >= 2 | opponent attacks started per 60-frame window; a peak is a window with at least 2 attacks and twice the lowest window since the last trough, a trough a window at or below half the last peak; the count of peak-then-trough pairs |
-  | `lead_change_share` | 15 | >= 0.30 | the bot plays at least 3 rounds; a round is close when the loser ends within 25 % of the winner's health or one point; the share of close rounds in which the lead changed hands at least once |
-  | `close_rounds` | 15 | >= 1 | how many close rounds `lead_change_share` is over |
+  | `pressure_waves` | 12 | >= 2 | opponent attacks started per 3 s (180-frame) window; a wave is a busy window (3 or more starts) after a quiet one (1 or fewer); the count of waves (the duel house game's definition, 22 Nov) |
+  | `lead_change_share` | 15 | >= 0.30 | the bot plays at least 3 rounds; the share of rounds in which the lead changed hands at least once (the duel house game's definition, 22 Nov) |
+  | `close_rounds` | 15 | >= 1 | how many rounds ended close (the loser within 35 % of his health, or one point) |
   | `verbs_used` | the exchange | = the design's verb count | how many of the design's verbs the bot pressed at least 3 times each (the crazy colosseum proof of 22 Nov passed every other row while no strip showed its parry, roll or bash) |
 
   Template metrics join them (section 11): the duel's `contact_types` (>= 3) and `one_sided_contacts` (0); the arcade

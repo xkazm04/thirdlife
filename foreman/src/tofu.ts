@@ -36,9 +36,9 @@ export const TOFU_METRICS: TofuMetric[] = [
   { id: "idle_max_f", item: "9 no idle opponent", max: 120, how: "the longest run of frames any opponent spent with no action (not moving with intent, not attacking, not defending)" },
   { id: "tell_min_f", item: "11 tells of 12 f or more", min: 12, how: "over every dangerous opponent action that started: the fewest frames from the first frame of its tell pose to its first active frame" },
   { id: "tells", item: "11 tells of 12 f or more", min: 3, how: "how many dangerous opponent actions tell_min_f counted" },
-  { id: "pressure_waves", item: "12 pressure in waves", min: 2, how: "opponent attacks started per 60-frame window; a peak is a window with at least 2 attacks and twice the lowest window since the last trough, a trough a window at or below half the last peak; the count of peak-then-trough pairs" },
-  { id: "lead_change_share", item: "15 leads change hands", min: 0.3, how: "over at least 3 rounds: the share of close rounds (loser within 25 % of the winner's health, or one point) in which the lead changed hands at least once" },
-  { id: "close_rounds", item: "15 leads change hands", min: 1, how: "how many close rounds lead_change_share is over" },
+  { id: "pressure_waves", item: "12 pressure in waves", min: 2, how: "opponent attacks started per 3 s (180-frame) window; a wave is a busy window (3 or more starts) after a quiet one (1 or fewer); the count of waves (the duel house game's definition, tests/support/pilot.gd)" },
+  { id: "lead_change_share", item: "15 leads change hands", min: 0.3, how: "over at least 3 rounds: the share of rounds in which the lead changed hands at least once (the duel house game's definition)" },
+  { id: "close_rounds", item: "15 leads change hands", min: 1, how: "how many rounds ended close (the loser within 35 % of his health, or one point)" },
   // N4 loop round 3: the crazy colosseum proof's tofu bot passed every row while no strip showed a parry, a roll or a bash.
   { id: "verbs_used", item: "the whole exchange: every verb of the design pressed", min: 2, how: "how many of the design's verbs the bot pressed at least 3 times each in its run (the duel: light, heavy, block or parry, roll, bash); it must be all of them" },
 ];
