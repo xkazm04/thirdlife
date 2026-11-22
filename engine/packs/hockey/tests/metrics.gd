@@ -64,6 +64,8 @@ var goal_count: int = 0
 var rounds: int = 0                    # periods played to their end
 var close_rounds: int = 0              # ...that ended with the score within one goal
 var _period: int = 0
+var overlap_frames: int = 0           # round 4b: live frames where two upright field skaters' bodies overlap by more than 0.1 m
+var overlap_max: float = 0.0           # the deepest overlap seen (m)
 var crowd_sum: int = 0                 # LOOP r1: field skaters within 5 m of the puck, summed over live frames
 var crowd4: int = 0                    # live frames with 4 or more of them there (a scrum)
 var crowd_roles: Dictionary = {}       # in scrum frames: the AI roles present (roles_now)
@@ -246,6 +248,20 @@ func observe(s: Dictionary) -> void:
 			opp_idle_max = maxi(opp_idle_max, int(opp_still[kid]))
 		else:
 			opp_still[kid] = 0
+	# bodies inside each other (upright field skaters; body radius from the state)
+	var br: float = float(s.get("body_radius", 0.879))
+	var downs2: Dictionary = (s.get("hits", {}) as Dictionary).get("down", {})
+	var pts: Array = []
+	for k: Dictionary in s.get("skaters", []):
+		if str(k["role"]) != "goalie" and not downs2.has(str(k["id"])):
+			pts.append(Vector2(float(k["pos"][0]), float(k["pos"][1])))
+	var deepest: float = 0.0
+	for i: int in pts.size():
+		for j: int in range(i + 1, pts.size()):
+			deepest = maxf(deepest, 2.0 * br - (pts[i] as Vector2).distance_to(pts[j]))
+	overlap_max = maxf(overlap_max, deepest)
+	if deepest > 0.1:
+		overlap_frames += 1
 	# crowding round the puck
 	var near: int = 0
 	var near_ids: Array = []
@@ -336,4 +352,4 @@ func _completion(side: String = "") -> float:
 func result() -> Dictionary:
 	return {"live": live, "lengths": lengths, "poss_passes": per_poss_passes, "passes": passes, "complete": complete,
 		"shots": shots, "slot_shots": slot_shots, "one_timers": one_timers, "turnovers": turnovers, "after_shot": after_shot,
-		"oz": oz, "entries": entries, "entries_ok": entries_ok, "given": given, "goals_how": goals_how, "moments": moments, "crowd_sum": crowd_sum, "crowd4": crowd4, "crowd_roles": crowd_roles, "pass_out": pass_out, "pass_ai": pass_ai, "side_poss": side_poss}
+		"oz": oz, "entries": entries, "entries_ok": entries_ok, "given": given, "goals_how": goals_how, "moments": moments, "crowd_sum": crowd_sum, "crowd4": crowd4, "crowd_roles": crowd_roles, "pass_out": pass_out, "pass_ai": pass_ai, "side_poss": side_poss, "overlap_frames": overlap_frames, "overlap_max": snappedf(overlap_max, 0.001)}
