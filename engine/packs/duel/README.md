@@ -71,6 +71,10 @@ block, then strike in the gap) and his thrust (parry it). While they run he take
 newcomer's punishes do not end the round before he has taught them. In every match, the first time you swing into his
 swing a red cue says so: "His blade was out FIRST: block it, then strike in the gap after." The Wall's helm got wider
 (no hair at its sides).
+The Dancer's first round (round 12) teaches her held spin heavy (block it, then a heavy staggers her) and her first
+cut (block, then strike in the gap), with the same 0.4 damage while it runs.
+Cue and card lines are written for "he"; a rival with `"she": true` in rivals.json (the Dancer) reads as she / her
+(`show.say`).
 
 ## Where your health went (round 8)
 Every hit you take is filed under a cause, also the chip through your guard and his bash. A lost round's card names the

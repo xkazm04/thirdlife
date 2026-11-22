@@ -1,5 +1,5 @@
 {
-  "_about": "The first minute against the first rival (scripts/lessons.gd): each step is shown once with a held wind-up and a cue read before the blow; one retry; then he fights for real. read_frames: the cue is up this long before he strikes. hold: extra wind-up frames at the coil (a slower, readable blow). open_frames: how long he stands open after the right answer. max_frames: the lessons end by this round frame whatever happened. rivals.<key>: the same steps for a later rival's first round (rung 1-2, never a champion); the Duelist teaches his tap, blocking his first blade and his thrust (round 11); damage_k: the share of damage he takes while they run, so a newcomer's punishes do not KO him before he has taught them.",
+  "_about": "The first minute against the first rival (scripts/lessons.gd): each step is shown once with a held wind-up and a cue read before the blow; one retry; then he fights for real. read_frames: the cue is up this long before he strikes. hold: extra wind-up frames at the coil (a slower, readable blow). open_frames: how long he stands open after the right answer. max_frames: the lessons end by this round frame whatever happened. rivals.<key>: the same steps for a later rival's first round (rung 1-2, never a champion); the Duelist teaches his tap, blocking his first blade and his thrust (round 11), the Dancer her spin heavy and her first cut (round 12); damage_k: the share of damage he takes while they run, so a newcomer's punishes do not KO him before he has taught them.",
   "enabled": true,
   "read_frames": 75,
   "cue_frames": 150,
@@ -85,6 +85,36 @@
         }
       ],
       "damage_k": 0.4
+    },
+    "dancer": {
+      "done": "Her spin, her flurry. Now she dances for real.",
+      "damage_k": 0.4,
+      "steps": [
+        {
+          "id": "spin",
+          "move": "heavy",
+          "hold": 30,
+          "distance": 2.0,
+          "ok": [
+            "heavy_block",
+            "heavy_parried"
+          ],
+          "cue": "She coils for a SPIN: HOLD SPACE to block it.",
+          "next_cue": "Blocked! Any HEAVY staggers her: RMB / K now."
+        },
+        {
+          "id": "gap",
+          "move": "light",
+          "hold": 10,
+          "distance": 2.0,
+          "ok": [
+            "light_block",
+            "light_parried"
+          ],
+          "cue": "Her blades are FAST: do not swing into them. HOLD SPACE to block her first cut.",
+          "next_cue": "Blocked! Strike in the GAP before her next cut (LMB / J)."
+        }
+      ]
     }
   }
 }
