@@ -33,8 +33,9 @@ would clip.
 **Copy the proven core; be new only in the hook.** The concept names ONE genre template (below). Its core loop is
 copied, not paraphrased and not "inspired by": the state machine, the move frames, the contact results (what every
 contact does to BOTH bodies), the resources, the rival archetypes and the AI tiers, with their numbers. A verb that
-copies a move of the template names it as `move` and carries the template's frames EXACTLY (the Foreman checks every
-number and sends the answer back on a difference). Spend your invention on the fantasy, the hook, the twist, the
+copies a move of the template names it as `move` and carries the template's frames (the Foreman checks every number
+and sends the answer back on a difference); only its wind-up (`anticipation_f`) may be slower, up to the template's
+bar (a duel light up to 30 frames, a heavy up to 60: For Honor's readable speeds), never faster. Spend your invention on the fantasy, the hook, the twist, the
 arena, the stakes and the rivals' characters, which sit on top of that core.
 
 # Work in the method's order (docs/design/METHOD.md)
@@ -84,7 +85,7 @@ The rest of `rules` follows them. An answer without them, or with a line over it
    and recovery frames at 60 Hz and what it cancels into. At least one is defensive (block, dodge, roll, parry: marked
    `"defensive": true`), so a hit is an exchange, not a button mash. A fight has more than one attack (light and heavy,
    or a strike and a bash); a sport has more than one way to beat a defender. Every verb is played by its OWN clip.
-   Verbs taken from the template carry `"move": "<its id>"` and its frames exactly (a duel: at least three of them, one
+   Verbs taken from the template carry `"move": "<its id>"` and its frames, a wind-up at most as slow as the bar allows (a duel: at least three of them, one
    attack and one defence; for example light 18/4/16 and heavy 32/5/28, roll 3/18/15 or block 4/held/6).
    The `input` or `cancel` text of a copied verb names the template rule it carries ("blocked: attacker recoils, -22").
 2. **A camera that serves the verb.** Pick the view that makes the exchange readable and strong and say it in

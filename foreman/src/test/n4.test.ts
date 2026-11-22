@@ -65,7 +65,7 @@ test("template: a fight copies the duel; its copies name the state machine, the 
 test("template: a verb that copies a move carries the table's frames exactly; a duel copies at least three moves, an attack and a defence", () => {
   assert.deepEqual(designTemplateProblems(duelDesign(), duelTemplate), []);
   const para = { ...duelDesign(), verbs: duelDesign().verbs.map((v) => (v.move === "light" ? { ...v, anticipation_f: 6, recovery_f: 12 } : v)) };
-  assert.match(designTemplateProblems(para, duelTemplate).join(""), /verb "slash" copies the duel move "light" but changes its frames: anticipation_f 6 \(the table: 18\), recovery_f 12 \(the table: 16\)\. Copy the table, not a paraphrase/);
+  assert.match(designTemplateProblems(para, duelTemplate).join(""), /verb "slash" copies the duel move "light" but changes its frames: anticipation_f 6 \(the table: 18 to 30: at least the house game's, at most the bar's\), recovery_f 12 \(the table: 16\)\. Copy the table, not a paraphrase/);
   const unmove = (v: DesignDoc["verbs"][number]): DesignDoc["verbs"][number] => { const { move: _m, ...rest } = v; return rest; };
   const few = { ...duelDesign(), verbs: duelDesign().verbs.map((v) => (v.move === "light" || v.move === "heavy" ? unmove(v) : v)) };
   const pf = designTemplateProblems(few, duelTemplate).join(" | ");
@@ -104,7 +104,7 @@ test("template: the room on 'a fight in a colosseum' sends an invented core and 
   assert.match(design, /# The genre template: duel[^]*### 6\.3 Contact results[^]*### 6\.4 State machine[^]*### 6\.7 Three rivals/);
   assert.doesNotMatch(design, /Puck carry/);
   assert.match(design, /## 10\. The plays-twice checklist/);
-  assert.match(b.calls[3]?.req.prompt ?? "", /changes its frames: anticipation_f 10 \(the table: 32\)/);
+  assert.match(b.calls[3]?.req.prompt ?? "", /changes its frames: anticipation_f 10 \(the table: 32 to 60/);
   assert.match(b.calls[4]?.req.prompt ?? "", /# The genre template the concept copies[^]*### 6\.2 Moves/);
   // An `own` concept reads no research excerpt.
   assert.equal(templateExcerpt(sampleConcept().template, "design"), "");
