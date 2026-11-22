@@ -3,13 +3,13 @@
     {
       "id": "n22-director",
       "scope": [
-        "docs/shifts/2026-11-22-night/PLAN.md",
+        "docs/shifts/2026-11-22-night/PLAN.md", "docs/shifts/2026-11-22-night/LOOP.md", "docs/shifts/2026-11-22-night/ENGINE-NEEDS.md",
         "docs/shifts/2026-11-22-night/standups/**",
         "docs/shifts/STATE.md",
         "contracts/**",
         "docs/research/**"
       ],
-      "note": "night of 22 Nov, until 08:00"
+      "note": "night of 22 Nov, extended to 09:00"
     },
     {
       "id": "n22-N1-kit",
@@ -20,7 +20,8 @@
         "engine/kernel/api/feel/**",
         "engine/kernel/cameras/**",
         "engine/kernel/examples/ex_feel_lab/**",
-        "engine/rigs/biped/**"
+        "engine/rigs/biped/**",
+        "engine/kernel/api/tl_hud.gd"
       ],
       "note": "N1"
     },
@@ -47,16 +48,6 @@
         "devx/lib/cards/**"
       ],
       "note": "N4"
-    },
-    {
-      "id": "n22-N5-chunks",
-      "scope": [
-        "engine/kernel/world/landscape.gd",
-        "engine/kernel/world/terrain/**",
-        "engine/kernel/world/land/**",
-        "engine/kernel/world/WORLD.md"
-      ],
-      "note": "N5"
     },
     {
       "id": "n22-N6-world",

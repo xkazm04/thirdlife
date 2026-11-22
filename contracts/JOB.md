@@ -427,3 +427,21 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
 - **`foreman quality <job> accept|retry`** records the answer (the `comment` above) and prints
   `recorded; the job is not started. continue with: foreman resume <job> <the options given>`. It no longer runs the
   job (`--no-run` is accepted and changes nothing).
+- **House games** (owner 22 Nov 00:55). A template names its house game, the reference implementation on this engine:
+  `duel` -> `engine/packs/duel` (`game.duel`), `arcade_sport` -> `engine/packs/hockey`. The design step and the Planner
+  read the house game's README rules; builders read its files in `ref/packs/<pack>/`. A copied `move` is checked against
+  the house game's own frame table (`engine/packs/duel/data/moves.json`) when it can be read, else the research's.
+  A duel brief must also keep the house game's lock-on facing and its over-the-shoulder camera (said in `rules`,
+  `controls`, `arena` or `design.feel.camera`).
+- **The house baseline.** Once per job whose brief has a design and whose template has a house game, the Foreman plays
+  the house game's measuring bot on `ref/packs/<pack>/` (a job-level `verify` with stem `house-<pack>`) and writes
+  `reports/house-<pack>.json` (`tl.foreman.house/1`: `pack`, `test`, `hand`, `metrics` by the tofu names, `from`,
+  `note`). It reads the bot result's `metrics` object first and the house pack's own state through a fixed map second.
+- **Every look** of such a job sets the tofu bot's figures beside the house game's (a line in the milestone summary:
+  "house game engine/packs/<pack> (...), yours vs the house game's: ..."; a figure is SHORT when the house game passes
+  its bound and the build does not, or the build is worse by more than 25 % of the house figure). The critic gets the
+  line in its context and one more rubric item, `house_game` (0..1: the build's exchange against the house game's).
+  The comparison itself does not gate; the critic's `house_game` score does, like every rubric item.
+- **The Planner's time limit.** A Planner call (plan and re-plan) has 20 minutes unless `foreman plan --timeout-ms N`
+  (or `--planner-timeout-ms N`) says otherwise. `run` and `resume` take `--planner-timeout-ms N` for a re-plan; their
+  `--timeout-ms` stays the builder's. Contracts name the house game's files and rows instead of retyping its tables.
