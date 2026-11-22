@@ -168,6 +168,19 @@ func _initialize() -> void:
 	real.setup(tmp, {"cli": repo.path_join("foreman/dist/cli.js"), "flags": {"new": []}})
 	check("the repository's Foreman is found and node answers", real.available and real.node_version.begins_with("v"), real.problem)
 	eq("Foreman found by walking up from the engine", Door.find_cli(ProjectSettings.globalize_path("res://")).ends_with("foreman/dist/cli.js"), true)
+	# N4 (night of 22-23 Nov): in an exported build res:// globalizes to "" (boot/probe.gd), and the walk up from "" found no
+	# Foreman: GO in Create said "The builders cannot start: Foreman not found" in every exe. The door as an exe sets it up.
+	var exe_path: String = repo.path_join("dist/ThirdLife/ThirdLife.exe")
+	eq("exe layout: the walk up from res:// as the exe globalizes it ('') finds nothing (the bug of 22 Nov)", Door.find_cli(""), "")
+	eq("exe layout: the Foreman is looked for from the executable's folder", Door.disk_dir_of("", exe_path), repo.path_join("dist/ThirdLife"))
+	var exe: Door = Door.new()
+	exe.setup(tmp, {"res_dir": "", "exe": exe_path, "flags": {"new": []}})
+	check("exe layout: the door finds the checkout's Foreman and its starter, and node answers", exe.available, exe.problem)
+	eq("exe layout: cli and starter are the checkout's files on disk", [exe.cli_path, exe.runner_path],
+		[repo.path_join("foreman/dist/cli.js"), repo.path_join("engine/ui/foreman_run.mjs")])
+	var far: Door = Door.new()
+	far.setup(tmp, {"res_dir": "", "exe": tmp.path_join("no_repo/ThirdLife/ThirdLife.exe"), "flags": {"new": []}})
+	check("exe with no checkout above it: says where it looked", not far.available and far.problem.contains(tmp.path_join("no_repo/ThirdLife")), far.problem)
 	var noflags: Door = Door.new()
 	noflags.setup(tmp, {"cli": repo.path_join("foreman/dist/cli.js")})
 	check("no Foreman settings: nothing can be started, and it says so", not noflags.available and noflags.problem.begins_with("No Foreman settings"), noflags.problem)
