@@ -16,6 +16,7 @@ extends RefCounted
 
 const StateHash: GDScript = preload("res://kernel/host/statehash.gd")
 
+const ORDER_FRAME: int = 3              # E6: TL_BODY_ORDER=<file> writes the pack space's body order at this frame
 const BELOW_Y: float = -50.0            # pack-local height under which a body has fallen out of the game
 const MAX_WARNINGS: int = 8
 const BOT_RESULT_BAD: String = "_bot_result() did not return {ok: bool, summary: String}"
@@ -267,6 +268,8 @@ func start() -> void:
 ## run (the driver is stopping it). `bot_on`: the bot plays this frame (a world's person-played pack: false).
 func tick(f: int, bot_on: bool = true, pre_sample: Callable = Callable()) -> bool:
 	ctx.frame = f
+	if f == ORDER_FRAME and OS.has_environment("TL_BODY_ORDER"):
+		write_body_order(OS.get_environment("TL_BODY_ORDER"))
 	if bot != null and bot_on:
 		_begin("_bot_tick")
 		bot.call("_bot_tick", f)
@@ -297,6 +300,31 @@ func bot_result() -> Dictionary:
 		return plain(r)
 	load_errors.append({"kind": "bot", "file": test, "message": BOT_RESULT_ERROR})
 	return {"ok": false, "summary": BOT_RESULT_BAD}
+
+
+## E6 (selftest 760-e6-world-alone.sh): the colliders of the pack's physics space in the order a whole-space query
+## lists them (its broadphase order), one path relative to the pack per line after `n=<count>`. Both drivers write it at
+## frame ORDER_FRAME when TL_BODY_ORDER names a file (a world writes `<file>.<instance>`). Equal files in a world and
+## alone mean the two spaces were built alike; a probe only, it changes nothing the pack can see.
+func write_body_order(path: String) -> void:
+	var st: PhysicsDirectSpaceState3D = TLContext.space_state_of(pack_node, ctx)
+	var q: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = Vector3(100000.0, 100000.0, 100000.0)
+	q.shape = box
+	q.transform = Transform3D(Basis.IDENTITY, ctx.origin)
+	q.collide_with_areas = true
+	q.collision_mask = 0xFFFFFFFF
+	var hits: Array[Dictionary] = st.intersect_shape(q, 65536)
+	var lines: PackedStringArray = ["n=%d" % hits.size()]
+	for h: Dictionary in hits:
+		var c: Object = h.get("collider")
+		lines.append(str(pack_node.get_path_to(c as Node)) if c is Node and pack_node.is_ancestor_of(c as Node) else "<outside:%s>" % str(c))
+	var file: String = path if ctx.instance.is_empty() else "%s.%s" % [path, ctx.instance]
+	var fa: FileAccess = FileAccess.open(file, FileAccess.WRITE)
+	if fa != null:
+		fa.store_string("\n".join(lines) + "\n")
+		fa.close()
 
 
 ## Counts nodes, bodies and awake bodies under the pack, notes bodies below the ground budget (pack-local height),

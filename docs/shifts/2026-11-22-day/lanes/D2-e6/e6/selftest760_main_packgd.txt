@@ -1,0 +1,4 @@
+FAIL e6.space_order: E6SPACE order fail DIFFERS: 51 colliders alone, 51 in the moved space, frame 3
+FAIL e6.space_contact: E6SPACE contact fail: movers in the bin 4/4, differ slider00 0.000019 m, frame 360
+FAIL e6.body_order: body order differs at frame 3 in 38 lines (/c/Users/kazda/kiro/third-life/.claude/worktrees/d22-e6/.tl/st_nofix/e6_order)
+selftest: 0 passed, 3 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/d22-e6/.tl/st_nofix)

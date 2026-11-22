@@ -225,6 +225,12 @@ func _load_scripts(m: Dictionary, options: Dictionary) -> bool:
 
 
 ## Called by the world for every node that enters the tree under this holder.
+## E6 (day of 22 Nov): the node has just joined the viewport's default space (on entering the tree) and is moved here.
+## A body moved into a space is placed in its broadphase as if it stood where it will be at the next step, while a
+## body that joins its first space is placed where it stands now and moved there by the next transform: the two
+## broadphases then list (and solve) the same bodies in another order, and a body touching several static shapes at
+## once rounds differently from the lone run. Stating the transform again right after the move places it as a first
+## join does, so the pack's space is built as the lone worker's default space is (selftest 760-e6-world-alone.sh).
 func adopt(n: Node) -> void:
 	if not (n is CollisionObject3D):
 		return
@@ -233,8 +239,10 @@ func adopt(n: Node) -> void:
 	if space.is_valid():
 		if co is Area3D:
 			PhysicsServer3D.area_set_space(co.get_rid(), space)
+			PhysicsServer3D.area_set_transform(co.get_rid(), co.global_transform)
 		else:
 			PhysicsServer3D.body_set_space(co.get_rid(), space)
+			PhysicsServer3D.body_set_state(co.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, co.global_transform)
 	if co.has_meta(&"tl_material") and not co.has_meta(&"tl_law_applied") and pack_node != null and pack_node.is_ancestor_of(co):
 		TLLaws.apply(co)
 
