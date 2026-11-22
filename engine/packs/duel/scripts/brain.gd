@@ -109,6 +109,8 @@ func tick(f: int) -> void:
 	if hist.size() > react + 2:
 		hist.pop_front()
 	_read_log()
+	if g.lessons != null and g.lessons.tick(f):
+		return                                           # the first minute: a lesson drives him (scripts/lessons.gd)
 	if me.walk.y > 0.5 and me.dist() > 2.0:
 		last_action = f                                  # last frame it was closing in: pressure, not idling
 	me.walk = Vector2.ZERO
