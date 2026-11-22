@@ -1,205 +1,305 @@
-N4 editor-knowhow: REPORT (shift 2026-11-22-night, worktree n22-editor, base e6bbb13, nothing committed)
+N4 editor-knowhow / editor-example: FINAL REPORT, shift 2026-11-22-night (19:07 to 07:45)
+Worktree n22-editor. Opus solo. Nothing committed by me; the Director landed every round.
 
-The editor now designs from proven genre templates. A melee fight copies DUEL-PLAYBOOK: its state machine, its move
-frames (checked number by number), the contact table that changes both bodies, and the Wall, Duelist and Dancer
-archetypes. A team ball game copies HOCKEY-ARCADE. Any other genre has to name its own reference. The first phase is
-now a tofu stage, and the job holds there unless the tofu bot's metrics pass. The critic always lists the [H] items it
-cannot judge. `foreman quality retry` records the answer and prints the resume command; it no longer runs the job.
-I made two real Opus room runs and one real Opus Planner run on "a fight in a colosseum". Neither design is a generic
-brawler.
+The editor now designs from proven genre templates, and since 01:00 it copies the two house games, not only the
+research: engine/packs/duel and engine/packs/hockey are the reference implementations every editor game is built
+against. Seventeen rounds landed or are landable. Every figure below was read on the real runner or from a real Opus call,
+except where it says fake.
 
-OUTCOME PER ACCEPTANCE ITEM
+Nobody has played any of this by hand. The proofs are judged by the critic and by me from strips, not by the owner's
+hand and eye.
 
-1. The foreman tests are green, with new tests for the template choice, the tofu-stage hold and the retry fix. MET.
-   - Suite: 271 tests, 265 pass, 0 fail, 6 skipped. The base was 261 tests, 255 pass and 6 skipped; the 10 new
-     tests are in src/test/n4.test.ts.
-   - Template tests (4):
-     - a fight must copy the duel, and its copies must name the state machine, the mutual reactions and the
-       archetypes;
-     - a copied move must carry the table's frames exactly; a duel needs 3 or more copied moves, including an attack
-       and a defence;
-     - the room sends an invented core and paraphrased frames back;
-     - the design step and the review read DUEL-PLAYBOOK, never the hockey research;
-     - the Planner gets the duel excerpt and the tofu block;
-     - builders get only their genre's implementable spec.
-   - Tofu tests (4):
-     - the six checklist items as metrics; an absent metric fails;
-     - the duel's contact rows are checked;
-     - plan checks: the TOFU CHECK line must be in the root and name every metric, and the tofu phase must be
-       exactly the blockout milestone;
-     - required for a fresh plan of a template brief; an older brief plans as before;
-     - fail, then pass in round 1: the job goes on;
-     - fail through round 2: the job holds with reason "quality", and status names the hold;
-     - a passing critic does not pass a failing tofu stage.
-   - Retry test (1): the answer is recorded as one comment event; no builder runs; the output reads
-     "recorded; the job is not started. continue with: foreman resume <job> --adapter claude-cli --model opus
-     --engine "C:/tl engine"". Resuming then runs revise round 3.
-   - Critic test (1): the checklist block lists the [C] items frames can show and the [H] items they cannot; every
-     critic answer ends with "[H] items not judged: a person must play it (items 2, 4, 13, 21, 26, 28, 30)".
+=====================================================================================================================
+PART A (19:07 to 20:10): the first brief
+=====================================================================================================================
+All acceptance items were met. Detail is in the earlier part of this file's history; in short:
 
-2. Two real Opus room runs on "a fight in a colosseum", standard and crazy. MET.
-   Files: room-standard.json and room-crazy.json in this folder. Both ran on claude-cli, opus, subscription.
-   - STANDARD (job fight-colosseum-20261121-1; 3 calls; about 110k tokens in, 23k out; 226 s).
-     - Template: duel, copied from "Dark Souls, Sekiro and For Honor duels, as docs/research/DUEL-PLAYBOOK.md". Its
-       copies name the 6.4 state machine with the 8-frame buffer, the 2/6.3 mutual reactions, the 6.7 archetypes,
-       and both move tables.
-     - Verbs, each copying its move with exact frames: light 18/4/16, heavy 32/5/28, bash 14/6/24, parry 1/12/20,
-       roll 3/18/15. Parry and roll are defensive.
-     - The rules text carries the whole contact table with hit-stop on both fighters:
-       - blocked heavy: the attacker bounces for 40 f, -22, and a light is guaranteed;
-       - parried light: the attacker is PARRIED for 52 f, +44;
-       - bash: GUARDBROKEN 30, or WALLSPLAT 60 with a wall within 1.2 m;
-       - clash: both rebound for 20 f;
-       - counter-hits.
-       It also carries the stamina, posture, poise tiers and the EXHAUSTED state of 6.1.
-     - Rivals: ORSO THE WALL, LIVIA FERRO THE DUELIST and KASS THE DANCER, each at its AI tier from 6.6, with the
-       playbook's tells, plus a Title Defense at Champion tier.
-     - Hook: "parries hurl rivals through stone walls that shatter and stay broken" (the arena changes for later
-       rounds).
-     - The producer passed it in round 1 (hook 0.8, gif 0.85, depth 0.85, feel 0.8, fit 0.85), with notes to fix
-       Orso's shield clip and the breach-damage wording.
-   - CRAZY (job fight-colosseum-20261121-2; 4 calls; about 121k tokens in, 30k out; 318 s). It read the standard
-     design as taken.
-     - Same template: duel. Its copies add Sekiro's posture deathblow.
-     - Same five copied moves with exact frames, and the same contact table.
-     - Hook: "every deathblow swaps you into the body you just beat". The leader always fights wounded, which is the
-       visible comeback rule.
-     - The bodies are the Wall, the Duelist and the Dancer. The rival souls (Old Varro, Sabina Quickhand, Little Ixi,
-       and the Red Lion as champion) keep their habits in whatever body they take.
-     - The concept's `why` says it left the standard's families (wall breaches, crowd weapons, chains, disarms).
-     - The producer passed it in round 1 (0.85 / 0.75 / 0.8 / 0.8 / 0.85), with notes asking for a persistent marker
-       on the player's soul and an orbit clamp.
-   - My judgement against the owner's words. Neither design is a generic brawler. Both copy the core instead of
-     inventing it. "Mutual reaction on attacks and collision" is written into each design, contact by contact, from
-     the playbook's table. Each rival differs in its defence. Difficulty comes from the playbook's tiers, never from
-     speed stats.
-     - Weak point 1: the standard design's hook is again in the stone-wall family (L1 of 21 Nov also chose
-       "slam into stone"). It now sits on a copied duel core, so it is a hook, not the game.
-     - Weak point 2: neither run used the revise path for real; the producer said ok in round 1 both times.
-   - Extra evidence, which the brief did not ask for: one real Opus Planner run on the standard job (plan-standard.json).
-     - A single 571 s call (85k in, 59k out); its first answer was accepted.
-     - It wrote the TOFU CHECK line on duel_core with the duel rows (contact_types, one_sided_contacts).
-     - The tofu phase is duel_core plus rival_ai, both milestone blockout.
-     - It pasted the metric rows and the contact table (PARRIED, BLOCKSTUN, WALLSPLAT, the attacker's recoil) into
-       the root contract.
-     - So a real Planner can satisfy the new plan rules. The Director's proof re-run will not stop at the plan step
-       because of them.
+- docs/GAME-QUALITY.md v2:
+  - new sections: R1-R14, the anti-patterns, the 30-item checklist (each item [B]/[C]/[H] with who judges it), the genre
+    templates and the tofu stage;
+  - four new slop ids.
+- foreman/src/templates.ts:
+  - templates: duel, arcade_sport, own;
+  - the sentence picks the template;
+  - a verb's `move` must carry the table's frames exactly.
+- foreman/src/tofu.ts:
+  - TOFU CHECK line and metrics;
+  - judged together with the critic;
+  - a failing tofu stage holds the job like the quality loop.
+- The critic adds an [H] line naming the items only a person can judge.
+- `foreman quality retry` now records and prints the resume command instead of running the job.
+- Real Opus rooms on "a fight in a colosseum", standard and crazy: both copy the duel exactly. See room-standard.json
+  and room-crazy.json.
 
-3. The proposed JOB.md text is in PATCHES.md. MET. It is item 1: "Added 2026-11-22: genre templates and the tofu stage".
+=====================================================================================================================
+PART B (01:00 to 07:45): the loop. The editor copies the house games
+=====================================================================================================================
+Round by round. Each round's gap was named first, from the proofs or the owner's words, then built, then shown.
 
-GATES
-- foreman (npm test): 271 tests, 265 pass, 0 fail, 6 skipped.
-- tl check --tier fast: all PASS.
-  - arch [12/12]
-  - assets [4/4]
-  - cards [3/3]
-  - devx.test [229/229]
-  - foreman.typecheck
-- The full tier was not run. Nothing in kernel, kits, rigs, style or seeds changed.
+Round 1 (landed c4d3e95). Templates name their house game; the Planner timeout.
+- Gap 1: the editor copied the research, not the tuned house games.
+- Gap 2: the standard proof's Planner timed out at 10 minutes. It retyped the tables into every contract; my own run
+  wrote 23,000-character contracts in 571 s.
+- Built, house games:
+  - each template names its house game, with README sections for the design step and the Planner and a file list for
+    builders (the files are in every job's ref/packs/<pack>/);
+  - copied moves are checked against engine/packs/duel/data/moves.json. N2's question answered: the frames match the
+    playbook; poise, pushes, Wall hp, lock-on, parry-as-block-press, rally and camera differ, and GAME-QUALITY 11 says
+    the house game wins;
+  - a duel brief must keep lock-on and the shoulder camera. The crazy proof's review had caught "facing follows
+    movement".
+- Built, the critic's yardstick:
+  - a house baseline per job (reports/house-<pack>.json);
+  - a "yours vs the house game's" line at every quality check, which the Foreman calls a "look": it films the build
+    and the critic judges it;
+  - a house_game rubric item.
+- Built, the Planner:
+  - contracts NAME the house rows instead of retyping them;
+  - a 20-minute Planner limit, `plan --timeout-ms`, and `--planner-timeout-ms` for re-plans;
+  - card tests updated for card.duel.
+- Evidence: a real Opus plan of the same design took 207 s and wrote 21.8k tokens (it had been 571 s and 58.7k). It
+  took card.duel; the root contract was 8.3k characters, the others 0.7k-2k. The standard proof re-planned in 224 s.
 
-WORK ITEMS
-1. docs/GAME-QUALITY.md v2.
-   - The header says "Copy the proven core; be new only in the hook".
-   - Feel numbers: visible feedback within 3 f and the full pose by 6 f (was "at most 6 f").
-   - Section 5 adds "invented cores", and mode collapse now applies to the hook only.
-   - Slop list: four new ids, appended after the old 14:
-     - generic_brawler
-     - one_sided_contact
-     - oatmeal_variety
-     - passive_ai
-   - Rules by role, now 30:
-     - Designer: the template rule;
-     - Planner: the tofu rules;
-     - Builder: contacts change both bodies, feedback within 3 f, the tofu bot measures;
-     - Critic: judge the [C] items by number; end with the [H] line.
-   - New sections:
-     - 8: R1-R14, each saying where the pipeline checks it;
-     - 9: the anti-patterns, with "10,000 bowls of oatmeal" in bold as our main risk;
-     - 10: the 30-item checklist with [B]/[C]/[H] and a column naming who judges each item;
-     - 11: the genre templates, with the duel move table the code checks;
-     - 12: the tofu stage, with its metric table.
-2. Genre templates (foreman/src/templates.ts).
-   - The concept must carry `template` {id, reference, copies}.
-   - The sentence picks the template: a fight is a duel, hockey/football/basketball and similar are an arcade sport.
-   - `copies` must name what the template requires.
-   - A design verb's `move` must carry the table's frames exactly.
-   - The design step, the review and the Planner get that template's research excerpt; builders get the
-     implementable spec. `own` gets no excerpt.
-   - The duel template names `card.duel` as the default card, and planner.md says to take it when it is listed. N2's
-     card is not on this tree yet, so this path is untested against the real card.
-3. The tofu stage (foreman/src/tofu.ts, quality.ts).
-   - The TOFU CHECK line and its metrics: feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells,
-     pressure_waves, lead_change_share and close_rounds. A duel adds contact_types and one_sided_contacts; an arcade
-     sport adds possession_median_f.
-   - The metrics are read from `bot.result.metrics` of the bot's newest finished report. The hand is read from
-     metrics.hand or result.hand.
-   - The tofu rows are judged with the critic's look into one verdict, and the existing loop does the rest: revise
-     rounds, keep the better version, then the hold.
-   - The report is reports/tofu-<m>-s<seq>.json.
-4. The critic. The prompt now carries a checklist block, and the code appends the [H] line when the model leaves it
-   out (roomtext.ts withHLine, designer.ts critic).
-5. The 21 Nov fixes.
-   - `foreman quality` records the answer and prints the resume command, with paths in forward slashes and quoted
-     values. It never runs the job; `--no-run` is still accepted and changes nothing.
-   - The producer's notes do reach the re-plan path: checked. L1b did it in foreman.ts line 355, and the
-     quality.test L1b test asserts it.
+Round 2 (landed 61fcb86). The critic sees the house game's own exchange.
+- House strip: a drill bot gives the contact frame, one --strip capture is taken there, and the critic sees it last,
+  labelled HOUSE GAME. Real: heavy_block, contact at frame 46.
+- House figures are read from the real pilot's result. The verify report has no pack_state.
+- arcade_sport now reads N3's hockey.
+- skill_spread passes only from 0.25 to 0.95, over variants of the core verb. The crazy proof reported 1.0 by counting a
+  bash as a variant of its light.
 
-CHANGED FILES
-- New:
-  - foreman/src/templates.ts
-  - foreman/src/tofu.ts
-  - foreman/src/test/n4.test.ts
-  - in this lane folder: PATCHES.md, STANDUP.md, REPORT.txt, room-standard.json, room-crazy.json,
-    plan-standard.json
-- Changed docs and data:
-  - docs/GAME-QUALITY.md
-  - foreman/data/job-events.schema.json (regenerated)
-- Changed prompts: concept.md, designer.md, design-review.md, planner.md, builder.md, critic.md.
-- Changed foreman/src: room_wire.ts, roomtext.ts, room.ts, designer.ts (591 lines; the budget is 600), quality.ts,
-  quality_state.ts, cli_quality.ts, cli.ts, concepts.ts, repair.ts, foreman.ts, testing/fake-runner-core.ts.
-- Changed tests and fixtures:
-  - helpers.ts
-  - cli.test.ts
-  - designer.test.ts
-  - quality.test.ts
-  - wp3c.test.ts
-  - foreman/fixtures/job-paddle/fake-builder.json (edited as text: one line)
-- Nothing outside my column. The site reader treats concept and design as opaque, so it needs no change.
+Round 3 (landed 564a3a0). The root builds a readable exchange.
+- Gap: proof roots with bare-fisted twin bodies (recoloured_rivals), a wide camera, no HUD, and no parry or roll in any
+  strip.
+- Built:
+  - tofu row verbs_used: every design verb pressed at least 3 times;
+  - Planner rules: copy the house cameras, declare only views that frame the action, resource bars plus a hint line;
+  - weapons (gen/arms.gd) and rival builds (rivals.json) from the first phase.
+- Evidence: a real plan's root (9.2k characters) names all of these.
 
-BEHAVIOUR CHANGES (each test expectation that moved is named here)
-- The concept answer must carry `template`, and a design verb may carry `move`. The fixture sampleConcept now carries
-  an `own` template, and the roomSteps hockey concept carries arcade_sport.
-- quality.test "crazy concept" now designs on "a paddle match in a walled court", because a fight must copy the duel.
-  The handbook test's Builder rules now start at rule 13 because v2 added rules.
-- A fresh plan of a brief whose concept has a template needs the tofu stage. cli.test's planner fixture now uses
-  fixturePlanTofu.
-  - The fixture's rally bot now reports passing FAKE_METRICS (a new fake-runner marker), so tofu stages built on it
-    pass.
-  - Older briefs, with no template, plan exactly as before.
-- The Planner prompt says the root is "on flat shapes (milestone blockout)", not "on greybox" (wp3c regex updated).
-- Critic answers gain a last note, the [H] line (designer.test "critic (V5 seam)" deep-equal updated).
-- `foreman quality` no longer runs the job.
-- A milestone summary can read "tofu stage NOT ok" or "critic (V5) and tofu stage NOT ok". lookOk,
-  verdictOfLook and the status line read all three forms.
+Round 4 (landed 6252c28). House figures compared only by matching definition.
+- N2 and N3 now return `metrics`. Rows they define differently are skipped and named:
+  - duel: skill_spread, skill_variants, contact_types;
+  - hockey: idle_max_f, which is a dead-puck spell (606 frames), not an idle opponent.
+- pressure_waves and lead_change_share now use the duel house game's definitions.
+- Hockey house strip: filmed at a metrics.moments frame (real: poked at 523).
+- Real duel pilot: pressure_waves 1, under its own bound of 2 (reported to N2).
 
-FOR THE OWNER TO LOOK AT
-- Read room-standard.json and room-crazy.json, in the brief's rules and ai fields: they are the designs the next
-  colosseum attempt starts from.
-- The real proof is a person playing the tofu phase: "Parry, block, roll and punish Orso in a walled ring" (the
-  real Planner's first phase).
+Round 5 (landed c2584dd). Hook families.
+- Gap: the standard broke the stone walls 4 times; crazy swapped souls on a parry 3 times.
+- Built:
+  - every concept step reads up to 4 earlier concepts of its sentence and mode;
+  - a hook too close to one of them (hook-word overlap over 0.4) is sent back.
+- Evidence: a real crazy room on a copy of the proof site chose a new family: "only the awning's moving shade refills
+  your stamina" (room-crazy-r5.json).
 
-QUESTIONS FOR THE DIRECTOR (also in PATCHES.md item 2)
-1. Land the JOB.md text in PATCHES.md item 1.
-2. PACK.md says a bot returns "plus any numbers". Should it name `metrics` as the object that holds named bot figures?
-3. The real Planner call took 571 s on Opus (the prompt is bigger with the duel excerpt). Check the generate timeout
-   the Director's proof run uses for the planner role.
-4. When N2's card.duel lands, check that its `applies_when` lines match a fight. The Planner is told to take it as the
-   default, but no code enforces that.
+Round 6 (landed a87924c). Builders get the house numbers, read live.
+- Gap: -3's critic named the camera low behind the player, overlap, and passive_ai.
+- Built: the builder excerpt carries the duel's data/tuning.json camera (retuned tonight by N2: angle 50, dist 4.3,
+  up 2.8, fov 50), feel.gd PUSHBOX 0.45 m, and the 120-frame never-idle rule. Stale 4.6/2.6/2.6 text was removed.
 
+Round 7 (landed 4a58f08). arcade_sport keeps the owner's hockey words.
+- A real Opus hockey room copied puck stickiness (spring, dangle, pickup, anti ping-pong) and the AI's pass/shoot
+  decisions (utility with vetoes, roles). It wrote no speed ratio.
+- Built:
+  - keeps for the speed ratios (carrier x0.88, pass beats skating), the puck on the blade, and scored AI decisions;
+  - the keep check also reads the brief's ai text;
+  - builders get the hockey tuning blocks live.
+- Fixture: foreman/fixtures/room-hockey-22nov.json.
+
+Round 8 (landed 944a2bd). Film the exchange.
+- Gap: -3's look filmed two strips of 60 frames standing still (fixed 25/95 %).
+- Built:
+  - bots report `moments` (kind -> frames) and the look films them, variety first;
+  - the first test keeps its 25 % frame for the art-pass compare;
+  - the tofu contract asks for moments.
+
+Round 9 (landed 69f1ae4). Contact strips.
+- Gap: every proof critic said "no visible hit-stop" on cores that call TLHit.impact. A 6-frame freeze is one tile at
+  5 frames apart.
+- Built: a moment gets a 12x2 strip from 10 frames before it, and the house strip does too.
+- Real: the house heavy_block holds still over 3 tiles.
+
+Round 10 (landed f5c84b7). The critic tells a camera fault from overlap.
+- Gap: the critics of -3 and -4 named fighters_overlap first in every round, but on the duel camera the near body
+  simply covers the other; the side strips showed the bodies apart.
+- Built:
+  - fighters_overlap is judged on a side view;
+  - new slop id camera_hides_exchange;
+  - the critic checks the side strip of the same moment first.
+- ENGINE-NEED to N1: the pushbox against a wall. A pinned defender lets the attacker walk in.
+
+Round 11 (landed ba65ecf). The duel house strip comes from a real match moment.
+- Uses N2's moments: the first parry, seed 1 at frame 2269.
+- arcade_sport through a real Opus Planner: card.team_possession, the TOFU line with possession_median_f, and a root
+  that says "copy ref/packs/hockey carry/skate/ai ...; keep their numbers; this contract lists only differences".
+
+Round 12 (landed 6c14a49). The bot's figures are claims.
+- The critic gets the tofu figures labelled as claims and writes "claim contradicted:" where a strip shows otherwise.
+- Proof -6's critic did: "one_sided_contacts 1 understates what the frames show".
+
+Round 13 (landed e27958d). A bug the proofs showed.
+- -5 and -6 filmed the house duel's KO (its finish minus 60) instead of its parry: contactFrame read only
+  metrics.moments, and the duel pilot puts moments at the result's top level.
+- Fixed; tested on the real pilot result (parry at frame 2269).
+
+Round 14 (landed b96491b). Rival silhouettes.
+- Gap: -5 and -6 failed recoloured_rivals at their first look.
+- Reference: duel round 9 gives each rival a silhouette on the rig's head and back sockets.
+- Built:
+  - builders get the house silhouettes read live from rivals.json (Wall: helm and pauldrons; Duelist: hat and cape;
+    Dancer: hood);
+  - the rule "differ in silhouette from the first phase, never in colour alone";
+  - the socket-axis trap;
+  - the README section joins the design and Planner excerpt.
+- ENGINE-NEED: gear slots as rig API.
+
+Round 15 (landed 166a98d, docs only). GAME-QUALITY.md section 13: what the six proofs taught the editor.
+- Each failure of the night is listed with the rule that now catches it.
+
+Round 16 (landed 166a98d). The look films the template's signature contacts first.
+- Gap: -5 and -6 showed no parry flash, roll or fall on film, although their bots pressed them.
+- Built: templates name the moment kinds a look films first.
+  - duel: parry, roll/dodge, fall, wall splat, blocked heavy, clash, guard break;
+  - arcade sport: one-timer, poke, check.
+
+Round 17 (landed 263b552). Each package's bot reports the moments of what its package adds.
+- Gap: -5's greybox look filmed its rivals bot at frames 117 and 127, still fighting the opener. The look matched the
+  core's pixels and showed neither the Duelist, the Dancer nor the echoes.
+- Built: a Planner rule (each package's bot reports its addition's moments within its first 600 frames) and a line in
+  GAME-QUALITY 13.
+
+=====================================================================================================================
+THE PROOF JOBS (site/fight-colosseum-20261122-*, the Director's runs). Two-line verdicts
+=====================================================================================================================
+-1 standard (round-0 prompts, re-planned after the round-1 timeout fix)
+  Held on quality after round 2: feel 0.5, house_game 0.45. Swords and shields came in revise round 1; the bodies still
+  press together. The design copies the duel; the build reads as one only on the side camera.
+-2 crazy (round-0 prompts)
+  Held after round 2: feel 0.35, no house strip. It calls the feel kit like the house game, but its strips showed no
+  parry, roll or bash, no HUD, and a wide camera.
+-3 crazy (round-3 prompts)
+  The best colosseum build of the night: weapons, a distinct rival, feel 0.6, house_game 0.45-0.5. The tofu stage caught
+  verbs_used 4/5 and skill_spread 0.219, and the build fixed both. The critic compared it with the house strip
+  directly. Held after round 2 on overlap on the duel camera, a mace through the torso at idle, and two still strips.
+-4 standard (round-3/4 prompts)
+  Hook: a 5th wall family (it predates round 5). Held after round 2: feel 0.55, house_game 0.5; rivals distinct. A
+  readable duel on the side camera, lost on its duel camera.
+-5 crazy (round-11 foreman)
+  New hook family: "every swing leaves a ghost that strikes again two seconds later". PASSED its blockout look at revise
+  round 1, the first colosseum core of the night to clear the tofu stage and the critic: feel 0.75, house_game 0.7,
+  slop clean, verbs_used 5/5, not short of the house game on any figure. The critic on a contact strip: "Tiles 6-10 hold
+  still, which reads as a hit-stop. Then red snaps back with the head thrown up and the mace flung open." Still missing:
+  a parry flash, a clear roll, a fall, and a Wall with a silhouette of its own. Phase 2 (echo_blows) merged at 05:32.
+  Its greybox look (05:42, rivals and echoes) is NOT ok: fun_promise 0.15, house_game 0.4. The echoes never show as
+  their own effect. The rivals bot was filmed at the opener, so no Duelist or Dancer is on screen (round 17). The rival
+  is still the player's body.
+  Revise round 1 (05:52): better, still NOT ok. Silhouette 0.8, fun_promise 0.45, house_game 0.5, feel 0.6.
+  - The rivals now read by silhouette: the Wall in a box helm, the Duelist in a crested helm and cape, on the rivals
+    bot's own frames.
+  - The hit-stop holds over tiles 6-10.
+  - Still wrong: the echo ribbons are opaque white bands covering a third of the frame; no Dancer; no fall; no parry
+    flash; no HUD; camera_hides_exchange on the duel camera.
+  Revise round 2 (06:01): slop clean, house_game 0.55, feel 0.6, fun_promise 0.35. The job is held on quality for the
+  owner.
+  - The critic: "the knight's raised mace is the wind-up, tiles 6-10 hold still as a hit-stop with gold sparks, and in
+    tiles 11-12 the blue fighter's head snaps back and the hat flies off. This reads well."
+  - The crazy hook (an echo that strikes again 2 s later) is never filmed striking. The echo ribbon hangs frozen, then
+    fades.
+  - Its house strip is still the KO (cached in the job before round 13), so that comparison is weak.
+-6 standard (round-11 foreman)
+  New hook family, the first standard tonight that is not a wall: "every parry knocks a piece of the rival's armour
+  flying". Held after round 2: feel 0.45, house_game 0.45. Faults: hit_without_reaction at a sword thrust,
+  recoloured_rivals, a shield held like a plank; the tofu stage failed lead_change_share 0.2 and one_sided_contacts 1.
+
+=====================================================================================================================
+WHAT THE EDITOR STILL GETS WRONG, against the owner's words
+=====================================================================================================================
+"Arena mutual reaction on attacks and collision is almost non-existing"
+  The designs carry the mutual-reaction table word for word, and the cores call the kernel feel kit. No proof build
+  reached the house game's readability: house_game sits at 0.45-0.5 and feel at 0.5-0.6. In the strips, the blocked
+  heavy's slide-back and rebound are not visible the way they are in the house game. Builders copy the files, but not
+  yet the result.
+
+"well known game design paths we can mimic"
+  Met on paper for the duel: template, frames, archetypes, house numbers. For hockey (arcade_sport) it is met on paper
+  through one room and one plan; no hockey job has been built through the editor.
+
+The gate itself
+  - The tofu metrics are the bot's own claims. -3's bot reported idle 37 while its strips showed 55+ frames of both
+    fighters standing still. The Foreman does not yet cross-check a metric against what it films.
+  - Every proof is held at quality, for the owner.
+    - Five of the six held at their first look (blockout) after 2 revise rounds.
+    - -5, on the foreman with rounds 1-11, passed its tofu look and built two more phases, then held at greybox: its
+      twist is never seen striking.
+    - The loop now judges against the bar and can converge on the core, not yet on the twist.
+  - The owner's hand is the bar, and no proof has been played by a person.
+
+=====================================================================================================================
+GATES (last round)
+=====================================================================================================================
+foreman: 290 tests, 284 pass, 0 fail, 6 skipped. The Director's merged main counts 5 skipped.
+tl check --tier fast: PASS on all five steps.
+- arch [12/12]
+- assets [4/4]
+- cards [3/3]
+- devx.test [229/229]
+- foreman.typecheck
+The full tier is not mine: no kernel, kit, rig, style or seed change.
+
+=====================================================================================================================
+FILES
+=====================================================================================================================
+foreman/src (changed by the loop):
+- templates.ts: house games, keeps, numbers, briefTemplateProblems
+- house.ts: new. House bots, figures by definition, compare, contactFrame, strips
+- quality.ts: house baseline, line and strip; house_game item; contact strips
+- shots.ts: moments, pickMoments, CONTACT_STRIP
+- tofu.ts: verbs_used, moments; definitions
+- concepts.ts: earlier designs; earlierProblems
+- room.ts
+- designer.ts: Planner timeout, tofu verbs
+- cli.ts: plan --timeout-ms and --planner-timeout-ms
+- options.ts: plannerTimeoutMs
+- foreman.ts: re-plan timeout, moments to shots
+
+Tests:
+- new: n4_house.test.ts, n4_numbers.test.ts, n4_moments.test.ts
+- updated: cards.test.ts, designer_v2.test.ts, quality.test.ts, helpers.ts (fixturePlanTofu, designerSteps),
+  editor_flags.test.ts, place_calls.test.ts, n4.test.ts
+
+Fixtures: foreman/fixtures/room-hockey-22nov.json; job-paddle/fake-builder.json (verbs_used).
+
+Prompts: planner.md (name, don't retype; cameras; bars; weapons; every verb), critic.md (contact strips).
+
+Docs: docs/GAME-QUALITY.md, sections 6, 11, 12 and the new 13 (what the six proofs taught the editor).
+
+Lane folder:
+- PATCHES.md: items 1-13, the engine needs, the requests to N2 and N3
+- STANDUP.md
+- this REPORT.txt
+- room-*.json, plan-*.json
+- house strips: house-duel-strip-heavy_block-side-f31.jpg, house-duel-contact-strip-12x2-side-f36.jpg,
+  house-duel-match-parried-12x2-side-f2259.jpg, house-hockey-strip-poked-chase-f508.jpg
+
+=====================================================================================================================
+QUESTIONS FOR THE DIRECTOR
+=====================================================================================================================
+1. PACK.md: name `metrics` and `moments` as the bot result's places for named figures and filmed frames. Both house
+   games and the tofu stage use them.
+2. ENGINE-NEEDs for N1:
+   - when one body of a pushbox pair is pinned against a wall, push the free body the whole penetration;
+   - rig gear slots (head, back, shoulders), oriented by the rig.
+3. N3: an opponent-idle figure under idle_max_f, with dead_puck_max_f for the old figure. N2: pressure_waves 1 on the
+   Wall, seed 1, is under the tofu bound of 2.
+
+=====================================================================================================================
 NEXT THREE THINGS
-1. Run the Director's colosseum proof through the tofu phase, then play it by hand: do the metrics a builder's bot
-   reports match what a person feels?
-2. Add a [B] check to the tofu bot for DUEL-PLAYBOOK's own acceptance, per contact type: both fighters' states change
-   on each 6.3 row. Today it is one count, one_sided_contacts.
-3. Stop the stone-wall hook from recurring: record each sentence's chosen hook families site-wide, for standard
-   too, not only crazy.
+=====================================================================================================================
+1. Cross-check the bot's claims against what was filmed. A strip with no body moving for 50 frames while idle_max_f
+   reports under 120 is a finding: the critic gets both.
+2. Give the build's revise round a pair to work from: the build's contact strip beside the house strip at the same
+   contact kind, plus the diff of its contact numbers against data/contacts.json. Today the proofs stall at
+   house_game 0.45-0.5 after 2 rounds.
+3. Run one hockey job through the editor to a tofu look, and judge it against the owner's three hockey words in a
+   window.
