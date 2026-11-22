@@ -36,7 +36,7 @@ func _bot_tick(frame: int) -> void:
 			seen = e
 	if not seen.is_empty():
 		frames_after += 1
-	done = frames_after > 100 or k > 420                 # 100 frames after the contact: the reactions play out (and a clip shows them)
+	done = frames_after > int(drill.get("tail", 100)) or k > 600                 # 100 frames after the contact: the reactions play out (and a clip shows them)
 
 
 func _bot_done() -> bool:

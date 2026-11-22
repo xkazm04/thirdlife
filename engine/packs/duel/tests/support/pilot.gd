@@ -186,4 +186,4 @@ func _bot_result() -> Dictionary:
 			int(s["rival_tells_min"]), str(s["kinds"]), int(s["failures"])],
 		"rounds": s["rounds"], "lead_changes": s["lead_changes"], "rival_passive_max": s["rival_passive_max"], "rival_passive_note": s["rival_passive_note"],
 		"rival_tells_min": s["rival_tells_min"], "kinds": s["kinds"], "failures": s["failures"], "hand": st, "you_counts": s["you_counts"],
-		"rival_counts": s["rival_counts"], "rival_mind": s["rival_mind"], "first_minute": s["first_minute"], "lessons": s["lessons"]}
+		"rival_counts": s["rival_counts"], "rival_mind": s["rival_mind"], "first_minute": s["first_minute"], "lessons": s["lessons"], "spacing": s["spacing"]}

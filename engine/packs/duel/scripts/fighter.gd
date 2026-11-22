@@ -538,7 +538,7 @@ func drive() -> void:
 			var n: float = float(data["anim"][1][0])
 			if t <= n:
 				want = roll_dir * float(data["distance"]) / (n / 60.0) * 2.0 * (1.0 - float(t) / n)
-			turn = 0.0 if st == "ROLL" and t < int(data["anim"][1][0]) else turn
+			turn = 0.0 if st == "ROLL" and t < int(data["anim"][1][0]) else (30.0 if st == "ROLL" else turn)   # out of a roll: square up at once
 		"TAUNT", "TELL", "PARRY_OK", "PARRY_WHIFF":
 			turn = 4.0
 		_:

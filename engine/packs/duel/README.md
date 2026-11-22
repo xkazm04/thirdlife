@@ -20,7 +20,7 @@ node devx/bin/tl.mjs play duel          # or: bash engine/tools/tl.sh play --pac
 | SHIFT | roll (with W / S or no direction: away) or dodge (with A / D, a side step). Both pass through blows in their first frames |
 | E | bash with the shoulder: breaks a guard, splats a rival against the wall. Any attack already swinging beats it |
 | Q | taunt (the crowd likes it; a hit during it gives the hitter a star) |
-| V | camera: over the shoulder, side, wide |
+| V | camera: the two-shot (behind your right shoulder, 50 degrees off the line between you, pulled back by the gap: both of you and his wind-up stay on screen), side, wide |
 | R / ENTER | restart the match / after a win, the next rival |
 
 The first round shows the keys and a cue line at the moments that matter: "You blocked his HEAVY: LIGHT now!",
@@ -91,9 +91,9 @@ share. Rivals: 0 the Wall, 1 the Duelist, 2 the Dancer; 3-5 the same three at th
 
 | Rival | Defence | Tier (react / defend / read / return) | Hp, poise | Tell | Weak to |
 |---|---|---|---|---|---|
-| THE WALL | absorbs: walks behind his shield, guard counter after a block, taunts after 2 blocked hits; phase 2 under 50 %: 3 heavies with one fixed 18-frame delay | rung 1: 30 / 0.30 / 0.10 / 36 | 110, 20 | the shoulder dip of his bash | bash, stamina pressure, the light after his blocked heavy |
+| THE WALL | absorbs: walks behind his shield, guard counter after a block, taunts after 2 blocked hits; phase 2 under 50 %: he ROARS (a banner, a horn, a cue that names the pattern) and opens with 3 heavies, the second always 18 frames late | rung 1: 30 / 0.30 / 0.10 / 36 | 110, 20 | the shoulder dip of his bash | bash, stamina pressure, the light after his blocked heavy |
 | THE DUELIST | parries: the third hit of a chain (read), heavies he has seen twice; ripostes with a heavy; feints into a bash | rung 2: 22 / 0.45 / 0.30 / 28 | 100, 10 | taps his blade 24 frames before his string: hit him then for a star | delayed or feinted attacks (his parry whiffs), bashes |
-| THE DANCER | avoids: rolls and dodges, rolls through heavies, side-steps the next hit of a chain (read); dash lights, 4-hit flurry (her blades: light 11, chained 9), a spin heavy always held 30 frames | rung 3: 18 / 0.60 / 0.50 / 22 | 85, 8 | the long spin coil | any heavy staggers her; the end of her roll |
+| THE DANCER | avoids: rolls and dodges, rolls through heavies, side-steps the next hit of a chain (read); dash lights, the roll-cut (she rolls in, squares up out of the roll and cuts with a dashing light), 4-hit flurry (her blades: light 11, chained 9), a spin heavy always held 30 frames | rung 3: 18 / 0.60 / 0.50 / 22 | 85, 8 | the long spin coil | any heavy staggers her; the end of her roll |
 
 The mind sees only the player's animation, `react` frames late; it answers a share `defend` of the player's attacks in
 its archetype's way; a light (18 frames) is faster than its reaction, so a chain is READ (the Duelist times a parry for

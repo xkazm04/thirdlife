@@ -136,8 +136,15 @@ func _camera() -> void:
 	var fwd: Vector3 = Vector3(r.x - p.x, 0.0, r.z - p.z)
 	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3(0, 0, -1)
 	var right := Vector3(-fwd.z, 0.0, fwd.x)
-	var want: Vector3 = p - fwd * float(c["back"]) + right * float(c["side"]) + Vector3.UP * float(c["up"])
-	var look: Vector3 = p.lerp(r, 0.5) + Vector3.UP * float(c["look_up"])
+	# a two-shot (round 2 of N2's loop): the camera stands `angle` degrees off the line between the duellists, behind your
+	# right shoulder, far enough back that both bodies, the gap between them and his wind-up are always on screen (the
+	# old over-the-shoulder view put your head over his weapon in half the frames)
+	var gap: float = Vector2(r.x - p.x, r.z - p.z).length()
+	var a: float = deg_to_rad(float(c["angle"]))
+	var back_dir: Vector3 = -fwd * cos(a) + right * sin(a)
+	var pivot: Vector3 = p.lerp(r, float(c["look_at"]))
+	var want: Vector3 = pivot + back_dir * (float(c["dist"]) + gap * float(c["dist_k"])) + Vector3.UP * float(c["up"])
+	var look: Vector3 = pivot + Vector3.UP * float(c["look_up"])
 	var k: float = float(c["follow"])
 	if cam_pos == Vector3.ZERO:
 		cam_pos = want
@@ -147,7 +154,6 @@ func _camera() -> void:
 	var root: Node3D = g.ctx.root
 	g.ctx.cameras.add_view(&"duel", root.to_global(cam_pos), root.to_global(cam_look), float(c["fov"]))
 	var mid: Vector3 = p.lerp(r, 0.5)
-	var gap: float = Vector2(r.x - p.x, r.z - p.z).length()
 	var off: Vector3 = right * (4.2 + gap * 0.7) * side_sign
 	if (mid + off).length() > (mid - off).length() + 2.5:
 		side_sign = -side_sign                       # the side that looks out of the ring, so the wall never cuts the view
@@ -236,6 +242,13 @@ func on_event(f, e: Array) -> void:
 			TLAudio.play(&"horn", root.to_global(f.pos()), -4.0)
 			if not is_you:
 				cue("RED = UNBLOCKABLE: roll, or hit him first.", 80)
+		"phase2":
+			banner("%s ROARS" % f.name, 70)
+			TLAudio.play(&"horn", root.to_global(f.pos()), 4.0)
+			TLVfx.burst(&"dust", root.to_global(f.pos()), root, {"scale": 2.0})
+			g.ctx.cameras.shake(0.18, 20)
+			if str(data) != "":
+				cue(str(data), 150)
 		"tell":
 			TLVfx.burst(&"sparks", root.to_global(f.pos() + Vector3.UP * 1.9), root, {"scale": 0.7, "color": Color(0.6, 0.9, 1.0)})
 			TLAudio.play(&"beep", root.to_global(f.pos()), -6.0)
@@ -255,9 +268,9 @@ func on_event(f, e: Array) -> void:
 			if not is_you and g.round_no == 1 and g.rung <= 0:
 				cue("He missed: hit him while he recovers.", 70)
 		"windup":
-			if str(data) != "bash" and f.tip != null:     # the blade's arc: wider and longer for a heavy
+			if str(data) != "bash" and f.tip != null:     # the blade's arc by weight: a light is a thin quick flick, a heavy a broad slow sweep
 				var heavy: bool = str(data) != "light"
-				var tr: Node3D = TLVfx.trail(f.tip, {"width": 0.3 if heavy else 0.16, "frames": 9 if heavy else 6, "color": "white"})
+				var tr: Node3D = TLVfx.trail(f.tip, {"width": 0.36 if heavy else 0.12, "frames": 12 if heavy else 5, "color": "white"})
 				if tr != null:
 					flames.append([tr, f.windup + f.active + 10])
 			if not is_you and str(data) == "bash" and g.round_no == 1:
