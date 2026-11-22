@@ -1,0 +1,16 @@
+N3 round 1: far structures cut at 2 km (owner finding 3, first half: "in far there are seen incomplete structures")
+
+Repro (window, boot.tscn, the exe's World; scripted keys, every drawn frame kept; .tl/cap.sh in the lane tree):
+  TL_EXE_START=-1100,20,0,0  keys 90:F, 100-330 Space (climb), 100- W+Shift: a flight east over Wren Valley to the village.
+Cause: kernel/api/tl_chase_cam.gd:69 `far = 2000.0` (setup). The visitor's camera is a TLChaseCam
+  (kernel/world/visitor.gd setup); the Home is 6528 x 6528 m (home/valley.gd LIMIT 3264), so the peaks, far hills and woods
+  beyond 2 km were sliced by the far plane and slid in and out as he moved (frame 863 before: the twin peak cut in half).
+Fix: kernel/world/visitor.gd: when the landscape has the Home (meta tl_home), cam.far = 9300 m (the valley's diagonal
+  9232 m, rounded up). kernel/api is not touched; TL_HOME=plain keeps 2000 m.
+Evidence: far_before_after_f209_f536_f863.jpg (same frames of the same scripted flight, before | after),
+  fly_east_before_far2000_20s.mp4, fly_east_after_far9300_20s.mp4.
+Selftest 770 n3.sight: camera far 9300 m >= the drawn valley's diagonal 9232 m; seeded red on the old visitor.gd
+  ("camera far 2000 m >= ... 9232 m" FAIL).
+Frame cost (BUSY machine: CPU 82 %, 5 other Godot processes; TL_EXE_FRAMES_TIMES=1, frames 300-1300 of the same flight,
+  interleaved): before p50 5.62 / 3.65 ms, after p50 4.20 / 4.86 ms; p99 37 / 23 vs 56 / 20 ms. No difference readable
+  above the noise; not a quiet-machine figure.
