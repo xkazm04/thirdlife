@@ -282,3 +282,9 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 07:37 standup: final list: full gate green but wall-clock; uncapped 478/2 (one load flake, one test patch fixed 7ba57e4); export, check, tours PASS; quiet perf running; N1 still silent.
 - 07:55 verdict: perf 6/6 quiet, packs 129/129 (hockey p50 0.979 ms), world 8/8, export+tours PASS. Page https://claude.ai/artifact/AmANyNo8b2bxNYHZ99BoHU. N1 never reported on E6 (open). Claims released.
 - 10:02 late: N1 final report, E6 diagnosed not fixed (body insertion order differs world vs alone); recorded in VERDICT, ENGINE-NEEDS, lanes/N1-kit/REPORT.md + e6/.
+
+### 2026-11-22 day: plan (the three steps of the night verdict)
+- Owner ~10:40: "run next shift now with all three steps as daily shift, I will play the game after before major directions for night shift".
+- Lanes (launched 12:41): D1 home (Home arm A into the World, Opus), D2 e6 (world = alone fix + selftest, then hockey r2a; Opus-directed Astra),
+  D3 editor (critic cross-checks bot claims against film; one hockey job; Opus). Standups :17 hourly; lanes stop 17:15; verdict 17:30; push by 18:30.
+  Plan: docs/shifts/2026-11-22-day/PLAN.md.

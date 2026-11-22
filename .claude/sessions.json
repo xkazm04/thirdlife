@@ -1,3 +1,7 @@
 {
-  "sessions": []
+  "sessions": [
+    {"id": "d22-home", "scope": ["engine/kernel/world/home/**", "engine/kernel/world/landscape.gd", "engine/kernel/world/land/**", "engine/boot/**"], "note": "day 22 Nov D1: Home arm A into the World, until 18:30"},
+    {"id": "d22-e6", "scope": ["engine/kernel/world/pack.gd", "engine/kernel/world/world.gd", "engine/kernel/runner/**", "engine/packs/hockey/**"], "note": "day 22 Nov D2: E6 world = alone, then hockey r2a, until 18:30"},
+    {"id": "d22-editor", "scope": ["foreman/**", "docs/GAME-QUALITY.md", "devx/lib/cards/**"], "note": "day 22 Nov D3: editor claims vs film, one hockey job, until 18:30"}
+  ]
 }
