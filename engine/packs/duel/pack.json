@@ -72,7 +72,8 @@
     "duel",
     "side",
     "arena",
-    "ko"
+    "ko",
+    "intro"
   ],
   "on_leave": "pause",
   "subject": "Fighter_you",

@@ -42,6 +42,22 @@ your roll. A lost round ends on the biggest one by damage and its answer, on scr
 "WHAT BEAT YOU: his quick lights (6 hits, 50 damage) / Keep your guard up close in (hold SPACE) and tap SPACE on the
 glint to parry." (plays-twice items 13 and 22). `_pack_state` carries `causes` and `loss_causes`.
 
+## Each rival's place, beat and rhythm (`data/arenas.json`, `scripts/arena.gd`, `rivals.json` rhythm)
+- **Arena**: kit parts outside the ring wall, built when the match's rival is chosen. A near ring of 16 low banners in
+  his colours (10.3 m, seen over his shoulder in play), then his far parts seen in the intro shot: the Wall's watch
+  towers and boulders, the Duelist's tall red and gold flags and masts (their shadows lattice his floor), the Dancer's
+  trees and pink and violet flags. The champion rungs (3-5) add six tall gold flags.
+- **Intro**: round 1 of every match opens on a slow shot of him from your side, his arena behind him, under his name
+  and his line.
+- **Beat**: a stand-in drum (TLAudio presets: no music in the kernel, engine need E5): the Wall a slow thud, the
+  Duelist a tighter knock, the Dancer a quick wood tap; louder accents; faster while he pushes, when a fighter is low or
+  he roars, and on the champion rungs; silent while a hit-stop holds.
+- **Rhythm** (checklist item 12, the rival brings waves): a push (strings at about half his pace, less standing open),
+  then a breath: the Wall backs off behind his shield and only weathers what you do (no counter, no punish: bash him);
+  the Duelist and the Dancer back off on their feet, circling with a feint step in, their ripostes and punishes kept. The Wall and the Dancer open the breath with a taunt you can punish.
+- **Time on the card**: a match ends on its fight time, and a won match shows the best against this rival in the
+  session (BEST!).
+
 ## The blow that ends a round (`tuning.json` "ko")
 The round-ending blow holds the longest hit-stop the kernel allows (20 frames), then the camera cuts low beside the
 fallen fighter with the winner over him: dust as he meets the sand, the crowd's roar, the winner's cheer; the play
