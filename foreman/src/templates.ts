@@ -334,9 +334,12 @@ export function templatesMenuText(): string {
   return out.join("\n");
 }
 
+// D3 of 22 Nov: the line said "poke 5/7/12 (`cross_check`)" and the first hockey job's concept wrote "Poke 5/7/12 as move
+// cross_check"; the design step then named the clip as the move three times and the job failed. The id and the clip are
+// now said by name.
 const movesLine = (t: Template): string =>
   Object.entries(movesOf(t))
-    .map(([id, m]) => `${id} ${m.anticipation_f}/${m.active_f ?? "held"}/${m.recovery_f} (\`${m.clip}\`)`)
+    .map(([id, m]) => `move "${id}" ${m.anticipation_f}/${m.active_f ?? "held"}/${m.recovery_f} (its clip \`${m.clip}\`, not a move id)`)
     .join(", ");
 
 /** The research excerpt of the concept's template for a reader ("" for `own` or a concept without a template). */
@@ -390,7 +393,8 @@ export function designTemplateProblems(d: DesignDoc, template: ConceptTemplate |
   for (const v of copied) {
     const m = table[v.move as string];
     if (m === undefined) {
-      out.push(`design verb "${v.id}" names move "${v.move}", which is not in the ${t.id} move table (${Object.keys(t.moves).join(", ")})`);
+      const byClip = Object.entries(table).find(([, x]) => x.clip === v.move)?.[0];
+      out.push(`design verb "${v.id}" names move "${v.move}", which is not in the ${t.id} move table (${Object.keys(t.moves).join(", ")})${byClip !== undefined ? `: "${v.move}" is the CLIP of move "${byClip}"; write "move": "${byClip}" (and fix the concept's words if they say otherwise)` : ""}`);
       continue;
     }
     const diff: string[] = [];

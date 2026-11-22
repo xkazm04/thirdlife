@@ -10,6 +10,7 @@ import type { GateHost } from "./p10gate.js";
 import type { ConceptTemplate } from "./room_wire.js";
 import { templateOf } from "./templates.js";
 import { tofuMetricsFor, type TofuMetric, type TofuResult } from "./tofu.js";
+import { resultMoments } from "./shots.js";
 
 /** How one house game is measured: the bot, and where each metric is in its report when it has no `metrics` object. */
 export interface HouseBot {
@@ -51,11 +52,10 @@ export const HOUSE_BOTS: Record<string, HouseBot> = {
     // N3's ladder bots return `metrics` (main b61300f): possession_median_f and the tofu names directly; the median of
     // the raw lengths stays as the fallback for an older pack.
     map: { possession_median_f: "median:result.metrics.lengths|result.metrics.raw.lengths" },
-    // idle_max_f there is the longest live stretch without a take, shot, pass or release (a dead puck: 606 f on pro
-    // regular seed 1). The tofu row is checklist item 9, an OPPONENT that does nothing for 2 s; a skater carrying or
-    // supporting acts. Different definitions: not compared, never loosened (N4 round 4; asked of N3: opponent idle).
-    skip: ["idle_max_f"],
-    // Round 4: the house hockey's own moment filmed from the same ladder bot (metrics.moments: frames by kind, read on
+    // idle_max_f was a dead puck until N3's round 2 (fc2961f) and was skipped; since then it is the tofu row's own
+    // definition (tests/metrics.gd: a red field skater under 0.5 m/s, not carrying, not down, the longest live stretch;
+    // 70 f on pro regular seed 1, read 22 Nov 12:53), the dead puck is dead_puck_max_f. Compared now (D3 22 Nov).
+    // Round 4: the house hockey's own moment filmed from the same ladder bot (metrics.raw.moments since N3 round 1, see shots.resultMoments: frames by kind, read on
     // the real runner 22 Nov 02:40: seed 1 gave poked [523], bobble [2819, ...]); the chase camera follows the play.
     strip: { test: "tests/bot_ladder_pro_regular.gd", cam: "chase", args: ["--seed=1"], moments: ["one_timer", "poked", "poke", "lost", "bobble"], label: "a moment of the house hockey's play (a one-timer, a poke or a lost puck): the carry on the blade, the stick, the puck's readable loss" },
   },
@@ -80,7 +80,7 @@ export interface HouseBaseline {
 /** The frame of the first contact a house drill logged (pack_state.log[0].f), else 60 frames before the bot finished. */
 export function contactFrame(report: unknown, moments: string[] = []): number | undefined {
   const r = report as { pack_state?: { log?: { f?: unknown }[] }; bot?: { frames?: unknown; result?: { contact?: { f?: unknown }; moments?: Record<string, unknown>; metrics?: { moments?: Record<string, unknown> } } } } | undefined;
-  const m = r?.bot?.result?.moments ?? r?.bot?.result?.metrics?.moments; // the duel pilot: result.moments; hockey: metrics.moments
+  const m = resultMoments(r?.bot?.result); // the duel pilot: result.moments; hockey: metrics.raw.moments (D3 22 Nov)
   // Round 4: the first listed moment the bot saw (hockey's metrics.moments), before a drill's contact frame.
   const moment = moments.map((k) => (Array.isArray(m?.[k]) ? (m?.[k] as unknown[])[0] : undefined)).find((x) => typeof x === "number");
   const f = moment ?? r?.bot?.result?.contact?.f ?? r?.pack_state?.log?.[0]?.f; // the duel's drill reports result.contact.f
@@ -150,6 +150,8 @@ export interface HouseRow {
   built?: number;
   house?: number;
   short: boolean;
+  /** The build's figure is contradicted by its own film. */
+  contradicted?: true;
 }
 
 /** How much worse than the house game a figure may be before it is a shortfall (a share of the house figure, or 1 for a count). */
@@ -158,10 +160,13 @@ const MARGIN = 0.25;
 /** The built game's figures beside the house game's, by the template's tofu rows. */
 export function houseCompare(built: TofuResult | undefined, base: HouseBaseline, rows: TofuMetric[] = tofuMetricsFor(undefined)): { rows: HouseRow[]; line: string; short: string[] } {
   const out: HouseRow[] = rows.map((m) => {
-    const b = built?.rows.find((r) => r.id === m.id)?.value;
+    const row = built?.rows.find((r) => r.id === m.id);
+    const b = row?.value;
     const hv = base.metrics[m.id];
     let short = false;
-    if (hv !== undefined) {
+    // D3 of 22 Nov: a figure the film contradicts is never as good as the house game's (filmcheck.ts).
+    if (hv !== undefined && row?.contradicted !== undefined) short = true;
+    else if (hv !== undefined) {
       const passes = (v: number): boolean => (m.min === undefined || v >= m.min) && (m.max === undefined || v <= m.max);
       if (b === undefined) short = true;
       else if (passes(hv) && !passes(b)) short = true;
@@ -172,15 +177,18 @@ export function houseCompare(built: TofuResult | undefined, base: HouseBaseline,
         if (m.min !== undefined && m.max === undefined && b < hv - slack) short = true;
       }
     }
-    return { id: m.id, ...(b !== undefined ? { built: b } : {}), ...(hv !== undefined ? { house: hv } : {}), short };
+    return { id: m.id, ...(b !== undefined ? { built: b } : {}), ...(hv !== undefined ? { house: hv } : {}), short, ...(row?.contradicted !== undefined ? { contradicted: true as const } : {}) };
   });
-  const shortIds = out.filter((r) => r.short).map((r) => r.id);
+  // D3 of 22 Nov: a claim the build's film contradicts where the house game has no figure (moments_on_film, hockey's
+  // idle_max_f) still cannot pass this compare: it is named short, with why.
+  const filmOnly = (built?.rows ?? []).filter((r) => r.contradicted !== undefined && !out.some((o) => o.id === r.id && o.house !== undefined)).map((r) => r.id);
+  const shortIds = [...out.filter((r) => r.short).map((r) => r.id), ...filmOnly];
   const by = base.hand !== undefined ? ` through the ${base.hand} hand` : "";
-  const cells = out.filter((r) => r.house !== undefined).map((r) => `${r.id} ${r.built ?? "not reported"} vs ${r.house}${r.short ? " SHORT" : ""}`);
+  const cells = out.filter((r) => r.house !== undefined).map((r) => `${r.id} ${r.built ?? "not reported"}${r.contradicted ? " (CONTRADICTED by the film)" : ""} vs ${r.house}${r.short ? " SHORT" : ""}`);
   const unmeasured = out.filter((r) => r.house === undefined).map((r) => r.id);
   const line =
     cells.length === 0
       ? `house game engine/packs/${base.pack} (${base.test}): no figure to compare by the tofu names${base.note ? ` (${base.note})` : ""}`
       : `house game engine/packs/${base.pack} (${base.test}${by}), yours vs the house game's: ${cells.join(", ")}${unmeasured.length > 0 ? `; the house game does not report ${unmeasured.join(", ")}${(base.skipped ?? []).length > 0 ? ` (it measures ${(base.skipped ?? []).join(", ")} another way)` : ""}` : ""}${shortIds.length > 0 ? `. SHORT of the house game on ${shortIds.join(", ")}: copy how engine/packs/${base.pack} does it` : ". Not short of the house game on any figure it reports"}`;
-  return { rows: out, line, short: shortIds };
+  return { rows: out, line: filmOnly.length > 0 ? `${line}. The build's own film contradicts its ${filmOnly.join(", ")} (no house figure to compare): short until the film agrees` : line, short: shortIds };
 }

@@ -471,6 +471,15 @@ played by a person.
   names. It scored house_game 0.4 to 0.5 on five builds and 0.7 on the one that passed.
 - **The bot's figures are claims.** -6's critic wrote "claim contradicted: one_sided_contacts 1 understates what the
   frames show".
+- **The film checks the claims (day of 22 Nov).** -3's bot reported idle_max_f 42, then 37, while its side and duel
+  strips at f4772 and f9550 changed in no tile for 55 frames. The Foreman now measures motion from the strips it took
+  (frame differences between tiles, `foreman/src/filmcheck.ts`, about 50 ms a strip) and a claim the film contradicts
+  fails its tofu row and the house compare, whatever its figure:
+  - a strip with nothing moving for 50 frames or more against an `idle_max_f` under that;
+  - a contact strip (2 frames apart around a reported moment) in which nothing moves at all against that moment
+    (`moments_on_film`).
+  The check is one-sided: motion proves nothing (a camera, dust), stillness proves the bodies did not move. Over the
+  six proofs (`foreman filmcheck <job>`) it finds exactly -3's two strips, in two of its looks, and nothing else.
 - **The same sentence twice gives the same hook.** The walls broke four times and souls swapped three times. Each
   concept now reads the earlier designs of its sentence; -5 and -6 chose new hook families.
 - **A package's bot films what the package adds.** -5's greybox look filmed its rivals bot still fighting the opener
