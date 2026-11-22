@@ -1,0 +1,15 @@
+N2 round 3: the playtest card at a phase pause, on the FAKE adapter and the FAKE runner (20:39; no model, no Godot, nothing billed, nothing built)
+the job: a copy of foreman/fixtures/job-phases (the paddle fixture, 3 phases) whose brief.rules got the test fixture's method lines; command: node foreman/dist/cli.js run <copy> --adapter fake, then foreman status <copy>
+
+state    paused  (phase)   events 37
+phase    1/3 court_plays    WAITING  core, court; try: Rally the ball off the walls with your paddle
+phase    2/3 rival          later    paddle_ai; try: Beat Rival Rex, who lunges at every ball
+phase    3/3 magnet         later    fx; try: Every tenth hit the ball sticks, then flies
+waiting  phase court_plays is done: try it ("Rally the ball off the walls with your paddle"), then: foreman phase paddle-court-crazy-20261121-1 pass   or   foreman phase paddle-court-crazy-20261121-1 hold --note "<what to change>"
+playtest phase court_plays: play it yourself (or hand it to a newcomer and watch without helping) for 5 minutes; a bot figure is not this answer
+playtest the fantasy: I am the wall-banking ace who sends the ball past Rival Rex at a speed he cannot reach. Challenge.
+playtest first 30 s: 0-5 s the ball comes slow and space slaps it back; 5-15 s Rex misses a bank shot; 15-30 s you brace his smash and win the point.
+playtest promise: Rally the ball off the walls with your paddle
+playtest kill if: a newcomer never banks a shot in three rallies, because the wall angle cannot be read.
+playtest kill if: a slap reads as the ball sliding off the paddle, with no pause and no sound.
+playtest then: did you want one more go? yes: foreman phase paddle-court-crazy-20261121-1 pass   no or a kill line seen: foreman phase paddle-court-crazy-20261121-1 hold --note "<the worst three things you felt, worst first; where it stopped being fun>"

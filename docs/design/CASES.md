@@ -220,7 +220,7 @@ KILL IF: skaters bunch into one scrum round the puck, so nobody skates into open
 
 ---
 
-## Case B: a melee duel (For Honor, with Souls and fighting games)
+## Case B: a melee duel (For Honor, with Souls, Sekiro and fighting games)
 
 ### What makes a duel fun: rules, numbers, moments
 
@@ -228,119 +228,179 @@ KILL IF: skaters bunch into one scrum round the puck, so nobody skates into open
 - **Defence is a choice, not a button.** For Honor guards and attacks in three directions; you "brace on the same side
   they attack", with no "magical 'block button'". Jason VandenBerghe (creative director): "You choose where you block,
   you choose where you attack, you can bluff, you can strategize, you can adapt on the fly" [B1].
-- **Reaction windows are designed, in milliseconds.** For Honor runs at 30 fps; guard switch takes 100 ms; the team
-  keeps at least 100 ms between a successful and a failed block because 33 ms "felt too close" [B4, B5]. Since 2020 the
-  first 100 ms of every attack is hidden, so a 500 ms light shows 400 ms, and after the 100 ms guard switch about 200 ms
-  are left to react: parrying fast attacks "becomes a read rather than a reaction" [B4]. A 500 ms light is 30 frames
-  (conv.).
+- **Attacks are timed for a human eye.** For Honor's neutral lights were slowed from 400 ms (24 frames) to 500 ms (30)
+  in 2020; heavies take 800 to 1000 ms (48 to 60) [B18, B6]. A person's average reaction is about 250 ms (15 frames), and
+  reacting reliably to 20 frames of startup is good [B25]. A Souls attack's signal plus attack lasts at least 340 ms
+  (20 frames), its hitbox is live 2 to 4 frames, and then comes the punish window, "generally the longest" phase [B26].
+- **The reaction window is designed.** For Honor keeps at least 100 ms between a successful and a failed block because
+  33 ms "felt too close" [B5]; the first 100 ms of an attack are hidden, so parrying a fast attack "becomes a read
+  rather than a reaction" [B4]. Sekiro's deflect window is 12 frames, shrinking to 4 with repeated presses and reset
+  after about 30 frames ([CM]) [B20].
+- **The body tells; a glyph confirms.** "Its silhouette should be discernable and naturally hints the incoming attack"
+  (the opening pose of a Souls attack [B26]). Where For Honor and Sekiro draw a signal, it is a colour or a glyph on the
+  weapon or the guard icon (an unblockable's red trail; Sekiro's red "Danger" kanji, each perilous attack with ONE
+  answer) [B19, B20], read at a glance while the body does the attack. Never words.
 - **The reward is uneven, so the guess matters** (Sirlin: rock-paper-scissors needs "way different payoffs for winning
-  with each option" [B9]). For Honor: parrying a heavy gives a fast punish, parrying a light a free heavy (2018 notes,
-  [search]) [B6].
-- **Passive play loses.** Blocks take 18 % chip damage (it cannot kill); stamina regeneration pauses 400 to 600 ms
-  after a dodge and 500 ms after a block; a player who runs gets -20 % speed and the chaser +30 %; at the timeout the
-  higher health share wins [B3].
-- **Out of stamina is a visible state**: no parry, dodges 200 ms longer, attacks "much slower", throws knock you down
-  [B3].
-- **Evasion pays in recovery.** Elden Ring's roll has 14 invulnerable frames at 30 fps at light or medium load, 13 at
-  heavy (about 28 and 26 at 60 Hz, conv.) [B7]; Dark Souls rolls all have 11 i-frames, but a fat roll lasts 46 to 48
-  frames against a fast roll's 21 to 24, with 25 frames of extra damage taken [B8].
-- **Fighting-game timing**: Street Fighter 6's standing light punch has 4 frames of startup, 3 active, -1 on block
-  ([search]) [B11]; SF6 widened its dash input buffer from 4 to 7 frames [B12]. Hit-stop figures of 8/12/16 frames for
-  light/medium/heavy appear in a Capcom column only as an illustration ([search]) [B13]; our house range is 3 to 8,
-  scaled by force (GAME-QUALITY.md section 2).
-- **Short rounds with a clear end**: first to two rounds; on time over the round goes to more health (Street Fighter
-  II) [B10].
+  with each option" [B9]). For Honor: a parried heavy leaves the attacker 600 ms (36 frames) unable to block, parry or
+  dodge (a free light); a parried light 900 ms (54 frames), a free heavy, because "parrying a Light is generally more
+  difficult and should lead to a larger punishment" [B17].
+- **Passive play loses.** Blocks take 18 % chip damage "to make blocking less effective as a stalling tool"; stamina
+  regeneration pauses 400 to 600 ms after a dodge and 500 ms after a block; a runner gets -20 % speed and the chaser
+  +30 % [B3]. Its known flaw all the same: "predictable defensive play is unpunishable" [B28].
+- **Pressure has a rhythm.** "An enemy attacks the player every two-to-three seconds on average" (120 to 180 frames),
+  in a survey of melee games [B23].
+- **Evasion pays in recovery.** Elden Ring's roll has 14 invulnerable frames at 30 fps at light or medium load (about 28
+  at 60 Hz, conv.) [B7]; Dark Souls' fat roll lasts 46 to 48 frames against a fast roll's 21 to 24 [B8].
+- **Weight comes from hit-stop.** Sakurai: "both parties momentarily freeze, emphasizing the power of impact" [B27];
+  Smash's hitlag is about 6 frames at 1 % damage, 12 at 10 %, 19 at 20 % [B27]; Capcom's illustration is 8 / 12 / 16 for
+  light / medium / heavy ([search]) [B13].
+- **Teaching waits for you.** For Honor's tutorial runs dummies, then the guards, then one easy soldier, and repeats each
+  task "two or three times, from each side, before progressing" [B19]; Sekiro's practice partner, Hanbei, cannot die
+  [B22]. (For Honor later "drastically shortened" its tutorial and replaced it with a match against the AI [B29]: long
+  scripted teaching is not the goal either.)
+- **A loss feels justified.** Miyazaki: players should "understand why they were killed ... and it feels justified"
+  [B24]; FromSoftware gets there through an attack whose body tells it, not through a card afterwards.
+- **Few meters.** Sekiro builds its whole duel on two bars, vitality and posture [B21].
 - **Minimal duels prove the core**: FOOTSIES has one attack button and movement, and "spacing, hit confirm and whiff
   punish are keys to achieve victory" [B14]; Divekick has two buttons and one hit ends a round [B15].
+- **Not found in any source** (N1 [B30]): how long a duel round should last, and that a tutorial opponent waits until
+  the player succeeds. Both are OUR design calls below, to be tested by hand.
 
 **Moments players remember**
 1. Holding your ground. VandenBerghe: "The most important emotion of battle is the decision to not run", and of the
    1v1, "that moment is the entire point of the game" [B2].
-2. The parry punish: reading his heavy, parrying, landing the free heavy [B6].
+2. The parry punish: reading his heavy as he coils, parrying, landing the free heavy [B17].
 3. The whiff punish: his attack misses at the edge of reach and you hit his recovery [B14].
 4. The last-instant roll through a swing [B7, B8].
 5. The feint that lands: a heavy cancelled into a guard break while he committed to the parry [B3].
 
 ### Stage 1: the fantasy
-"I read him like a book: I see his heavy coming, parry it, and punish him while he staggers." Aesthetics: challenge
-and fantasy (the duellist).
+"I read him like a book: I see him coil for the heavy, parry it, and punish him while he staggers." Aesthetics:
+challenge and fantasy (the duellist). N1's sentence for the first minute: "I see him coil, I hold block, he bounces off,
+I hit him, he is hurt, I am pleased" [B30].
 
 ### Stage 2: pillars
-1. **Every exchange is a read.** Rules out attacks with no readable wind-up (under 20 frames from a rival), auto-block,
-   and hit outcomes decided by chance.
+1. **His body tells you everything.** Rules out words over his head, tells shorter than a person can read (under 20
+   frames from a rival), and two generic clips slowed down to stand for every attack.
 2. **Holding your ground is the decision** [B2]. Rules out kiting and running as a winning plan (For Honor's runner
-   penalty [B3]) and attacks from out of reach.
+   penalty [B3]) and a round so short there is no second exchange.
 3. **A mistake shows, and it costs.** Rules out safe whiffs, moves without recovery, and damage the player cannot see
    coming or name afterwards.
 
 ### Stage 3: the core loop
-- **3 s:** at the edge of reach, attack or wait; the defender blocks, parries or rolls. The decision: commit now, or
-  wait for his whiff.
-- **30 s:** a round against one rival whose habit is his defence (the Wall absorbs, the Duelist parries, the Dancer
-  avoids; DUEL-PLAYBOOK 6.7). The decision: press him, or bait his habit.
-- **3 min:** best of three against him, then the next rival; the rally rule (under 35 % health) as the comeback.
+- **3 s:** at the edge of reach, attack or wait; the rival coils, and the player blocks, parries or rolls. The
+  decision: commit now, or wait for his whiff. A rival attacks about every 2 to 3 seconds [B23].
+- **30 s:** a few exchanges in which the player learns this rival's habit: his defence (absorb, parry, avoid;
+  DUEL-PLAYBOOK 6.7) AND his own moves (For Honor's moves are per hero; each of Sekiro's perilous attacks has one named
+  answer [B20]). The decision: press him, or bait his habit.
+- **3 min:** best of three rounds [B10] of **45 to 90 seconds each (our design call: no source gives a duel round length;
+  tested by hand)**, then the next rival, a new problem, not the same fighter faster.
 - **Dynamics we want to see:** players bait the heavy because its recovery is long; they space at the edge of reach;
   they mix a parry with a roll because a repeated parry shrinks its window.
 
 ### Stage 4: the 30-second test
-- **0-5 s:** the ring, your fighter over the shoulder, the Wall 3 m away; press light and the sword moves within 3
-  frames; one hint line: "LMB light, SPACE guard (tap it to parry)" (the house duel's keys).
-- **5-15 s:** the Wall walks in and winds up a slow heavy (32 frames, the tag HEAVY over his head); you hold guard, his
-  weapon bounces off and he recoils; OPEN shows; you strike him.
-- **15-30 s:** he winds up again; you tap guard on the swing: his weapon is knocked away, he staggers, your heavy lands
-  with both bodies held still for a moment. "I parried him."
+- **0-5 s:** the ring, your fighter over the shoulder, the Wall 3 m away, **waiting**; press light and the sword moves
+  within 3 frames; one hint line: "LMB light, SPACE guard (tap it to parry)" (the house duel's keys).
+- **5-15 s:** the Wall coils for a slow heavy, **in his body** (a wind-up of 48 frames or more, the weapon drawn far
+  back); you hold guard, his weapon bounces off and he recoils; you strike him. **He does not attack again until you have
+  blocked once (our design call: For Honor repeats each task, Sekiro's partner cannot die, but no source says the
+  partner waits [B19, B22, B30]; tested by hand).**
+- **15-30 s:** he coils again; you tap guard as it lands: his weapon is knocked away, he staggers, your heavy lands with
+  both bodies held still for a moment. "I parried him."
 
-### Stage 5: the feel spec (the house duel's numbers, `engine/packs/duel/data/moves.json`)
-- light 18 / 4 / 16 (wind-up, active, recovery), chained follow-ups 12; heavy 32 / 5 / 28; charged 54 / 6 / 36,
-  unblockable; bash 14 / 6 / 24; parry frames 2 to 13 of a guard press (Sekiro's deflect: press = window, hold =
-  block), a repeated tap shrinks it; roll 3 / 18 / 15.
-- A rival's dangerous attack shows at least 20 frames of wind-up in the body (For Honor's readable floor is about 24
-  visible frames for a 500 ms light, conv. [B4]).
-- Hit-stop 3 to 8 frames on both bodies, scaled by force; every contact changes both bodies (DUEL-PLAYBOOK section 2).
-- Input buffer 8 frames (house; SF6's dash buffer is 7 [B12]).
-- Stamina pauses after a block or a dodge (For Honor's 400 to 600 ms [B3], about 24 to 36 frames, conv.).
-- The camera over the shoulder, offset, looking between the fighters, over a low ring wall (the duel's
-  `data/tuning.json` `camera`).
+### Stage 5: the feel spec (starting numbers to tune by hand; the house duel's in brackets)
+- **Wind-ups timed for a person**: a rival's light at least 24 frames of readable wind-up, ideally 30 (For Honor
+  [B18]); a heavy 48 to 60 [B6]; a chained follow-up never under 20 (the reliable-reaction floor [B25]). [House: light
+  18, chained light 12, heavy 32: about 40 % faster than For Honor's, and the plays-twice checklist accepts a 12-frame
+  tell [B30].]
+- **The tell is in the body**: a coil of the weapon and the torso that a person reads from the shoulder camera; at most
+  a colour or glyph on the weapon for the unblockable (For Honor's red trail [B19]); no words over the head. [House:
+  HEAVY / BASH / UNBLOCKABLE / OPEN tags, cue lines and banners carry the tell; every attack is one of two rig clips
+  through a frame map [B30].]
+- **The answers**: a parry window of about 12 frames that shrinks when spammed (Sekiro [B20]); a parried heavy leaves
+  the attacker open about 36 frames, a parried light about 54 (For Honor [B17]); roll i-frames about 28 (Elden Ring
+  [B7]) with a punishable recovery; chip on a held block. [House: parry frames 2-13 of a guard press.]
+- **Weight**: hit-stop on both bodies, about 6 to 8 frames on a light and 12 to 16 on a heavy (Smash, Capcom [B27,
+  B13]). [House: 5 and 9 [B30].]
+- **Pacing**: a rival attack every 2 to 3 seconds [B23], with room between exchanges for the player to try something;
+  rounds of 45 to 90 seconds (our call). [House: 93 of 93 measured rounds ended by a knockout, median 18 to 24 s,
+  against a 70 s clock; the rival never idles past 120 frames [B30].]
+- **The screen**: two bars a fighter (vitality and posture, Sekiro [B21]) and the round state. [House: health,
+  stamina and posture bars, EXHAUSTED, RALLY, BROKEN, stars, a crowd meter, tags, cues, banners, a key strip, cause
+  cards: a dashboard [B30].]
+- Input buffer 8 frames (house; SF6's dash buffer is 7 [B12]). The camera over the shoulder, offset, looking between
+  the fighters, over a low ring wall (the duel's `data/tuning.json` `camera`).
 
 ### Stage 6: the teardown (copy, change, drop)
-- **Copy:** the uneven parry reward (parry a heavy: a light is guaranteed; parry a light: a heavy); chip damage on a
-  held block and a stamina pause after it, so turtling loses; roll i-frames with a punishable recovery; best of three;
-  FOOTSIES' whiff punish as the first skill.
+- **Copy:** For Honor's attack speeds (lights 24 to 30 frames, heavies 48 to 60) and its uneven parry reward; chip on
+  a held block and a stamina pause after it; Souls' attack anatomy (a readable opening pose, a short live hitbox, the
+  longest phase the punish window); Sekiro's two bars, its shrinking deflect window and one named answer per perilous
+  attack; a practice partner who cannot hurt you while you learn; FOOTSIES' whiff punish as the first skill; best of
+  three.
 - **Change:** For Honor's three-direction guard becomes one guard with lock-on (one stick, mouse and keyboard); its
-  500 ms lights become 18-frame wind-ups we can read on our camera; posture from Sekiro replaces a long stamina game.
-- **Drop:** feints and guard-break mix-ups until the core is called fun (they are the ceiling, not the floor); Revenge
-  (a team mechanic); ledges.
+  glyph over the guard becomes a colour on the weapon at most, because the shoulder camera shows the weapon.
+- **Drop:** feints and guard-break mix-ups until the core is called fun (the ceiling, not the floor); Revenge (a team
+  mechanic); ledges; every meter beyond two bars; tags, cue lines and banners as the carrier of a tell; 2D fighting
+  games' 4-frame normals [B11], which work only on a side view where both bodies are whole on screen [B30].
+
+### Stage 6b: our house duel, torn down (N1, 23 Nov)
+N1 played the house duel in a window and set it beside For Honor, Souls, Sekiro and fighting-game basics [B30]. "On
+paper ours is a faithful copy of the right rules ... The rules are not what fails. What fails is everything a person
+reads the rules through: the bodies, the timing, the tutorial, the pace." Its top ten, ranked by cost to the player:
+1. **The bodies do not tell; text does.** A wind-up is a 3-frame pose of one generic clip, stretched about five times;
+   the rival's intent is written over his head.
+2. **The tutorial beats you up while it teaches**, and moves on when you fail: a newcomer who has not found the keys is
+   at 14 of 100 health 19 s into his first match.
+3. **A round is over in 20 seconds**: no time to read the opponent.
+4. **The rival's fastest threats are faster than a person can react** (12-frame chains and tells), and the checklist
+   was set to accept them, below its own research's floor of 16.
+5. **Too many systems, all on the screen at once.**
+6. **Three rivals are one fighter in three hats**: one move set, three reaction speeds, gear.
+7. **The figures are toys and the weapons are sticks**: no weight, synthesised beeps, a light hit-stop.
+8. **Difficulty is a reaction dial and a cliff**: the newcomer hand wins 4 of 8 against the Wall and 1 of 8 against
+   the Duelist.
+9. **Rounds end in a KO show, not in a story**: a person learns why he lost from a card, not from a moment.
+10. **Nobody has played it**: built in five hours by twelve self-graded loops that only added.
 
 ### Stage 7: the greybox
 A flat ring with a low wall, two fighters with their weapons and their own silhouettes, light, heavy, guard/parry and
-roll, the Wall alone, the health, stamina and posture bars, the over-the-shoulder camera, every number in the tuning
-file. The person plays it 5 minutes with the playtest card.
+roll, the Wall alone, two bars a fighter, the over-the-shoulder camera, every number of stage 5 in the tuning file,
+and **a wind-up clip of the rival's own** for his heavy (the body is the work: when a game needs a body to speak, the
+rig is the first package, not the HUD [B30]). The person plays it 5 minutes with the playtest card and ranks what he
+felt.
 
 ### Stage 8: kill criteria
+- KILL IF: a newcomer needs a word over the rival's head to know a heavy is coming.
+- KILL IF: the newcomer loses health in the first lesson before he has once pressed guard.
+- KILL IF: a round ends before the player has tried two different answers.
 - KILL IF: in 5 minutes the newcomer never parries on purpose, because he cannot see the heavy coming.
 - KILL IF: from the shoulder camera a hit and a block look the same (no recoil, no stagger, no different sound).
-- KILL IF: mashing light beats the Wall in more than one round of three.
-- KILL IF: the newcomer loses a round and cannot say why.
 
 ### What our build did instead (21-22 Nov)
 - The house duel landed 13 rounds: every contact changes both bodies, hit-stop on both, the Wall, the Duelist and the
-  Dancer, threat tags, lesson rounds, a loss card; its ladder rises from newcomer to perfect (22 Nov night verdict).
-- The lane's own read: "a readable, teachable duel with distinct opponents, a vertical slice of the For Honor loop at
-  toy scale; not yet a game that sells itself by its feel. It is still one shared move set, re-dressed per rival."
+  Dancer, threat tags, lesson rounds, a loss card; its ladder rises from newcomer to perfect (22 Nov night verdict;
+  its numbers in `engine/packs/duel/data/moves.json` [B16]).
+- Its own lane: "a readable, teachable duel with distinct opponents ... not yet a game that sells itself by its feel.
+  It is still one shared move set, re-dressed per rival."
 - The owner, playing it: "the fact players can punch in arena and take damage does not mean we delivered fun fighting
   game" (22 Nov, 18:35).
-- What the method would have caught: nobody played the greybox before the rivals, the tags and the lessons were built
-  on it. Kill lines 1 and 2 are a 5-minute check by hand; the ladder figures were read through scripted hands only.
+- N1's lessons that the method takes from it [B30]: a spec is not a game, and a faithful build of a spec is not either;
+  the identity sat in the HUD because the rig could not carry it; the rubric was set below the research (a checklist
+  number must come from the human limit it protects); "teach by play" was built as "teach while hitting" (a copied idea
+  needs its conditions copied with it); a loop that only adds is decoration; acceptance by mechanic clips, judged by the
+  lane that built them.
+- What the method would have caught: pillar 1 and kill lines 1 to 3 are a 5-minute check by hand on the greybox,
+  before any rival, tag or lesson was built on it.
 
 ### The method lines a duel brief carries
 ```
-FANTASY: I read him like a book: I see his heavy coming, parry it, and punish him while he staggers. Challenge, fantasy.
-TEARDOWN: For Honor: parry a heavy and a light is guaranteed; parry a light and a heavy is; blocks chip 18 percent.
-TEARDOWN: FOOTSIES: one attack and movement; the round is won by spacing and punishing the other's whiff.
-30 SECONDS: 0-5 s the Wall stands 3 m away, light swings within 3 frames; 5-15 s he winds up a slow heavy, you guard, he recoils, you strike; 15-30 s you tap guard on his swing, he staggers, your heavy lands.
-KILL IF: in 5 minutes a newcomer never parries on purpose, because he cannot see the heavy coming.
-KILL IF: from the shoulder camera a hit and a block look the same.
-KILL IF: mashing light beats the Wall in more than one round of three.
+FANTASY: I read him like a book: I see him coil for the heavy, parry it, and punish him while he staggers. Challenge, fantasy.
+TEARDOWN: For Honor: lights wind up 24-30 frames, heavies 48-60; a parried light gives a free heavy.
+TEARDOWN: Sekiro: two bars, a 12-frame deflect that shrinks when spammed, and a practice partner who cannot hurt you.
+30 SECONDS: 0-5 s the Wall waits 3 m away, light swings within 3 frames; 5-15 s he coils a slow heavy, you guard, he bounces off, you strike; 15-30 s you tap guard as it lands, he staggers, your heavy lands.
+KILL IF: a newcomer needs a word over the rival's head to know a heavy is coming.
+KILL IF: the newcomer loses health in the first lesson before he has once pressed guard.
+KILL IF: a round ends before the player has tried two different answers.
 ```
 
 ### Sources (Case B)
@@ -353,8 +413,8 @@ KILL IF: mashing light beats the Wall in more than one round of three.
   https://www.ubisoft.com/en-us/game/for-honor/news-updates/9OPowoU28h2YRO8zSvw5z/testing-grounds-how-attacks-are-changing
 - B5. Ubisoft, "Input delay in For Honor" (2018):
   https://www.ubisoft.com/en-us/game/for-honor/news-updates/4qgcoZf3m61lpWD8GlN4JO/input-delay-in-for-honor
-- B6. For Honor patch notes v1.19 (2018) [search]:
-  https://www.ubisoft.com/en-us/game/for-honor/news-updates/4Gac0PdHqfVBpbfa3UeWmF/patch-notes-v119
+- B6. For Honor patch notes 2.39.0 (2022), heavies [search]:
+  https://www.ubisoft.com/en-us/game/for-honor/news-updates/2203fmh7jD1gohfN25aDRi/patch-notes-2390-for-honor
 - B7. Elden Ring wiki, "Invincibility Frames": https://eldenring.wiki.gg/wiki/Invincibility_Frames
 - B8. Dark Souls wiki, "Equip Load": https://darksouls.wiki.fextralife.com/Equip+Load
 - B9. David Sirlin, "Designing Yomi" (2014): https://www.sirlin.net/articles/designing-yomi
@@ -369,3 +429,33 @@ KILL IF: mashing light beats the Wall in more than one round of three.
 - B15. "Divekick", Wikipedia: https://en.wikipedia.org/wiki/Divekick
 - B16. Our own: `docs/research/DUEL-PLAYBOOK.md`, `engine/packs/duel` (README, `data/moves.json`), the 22 Nov night
   verdict.
+- B17. Ubisoft, "Season 5 core fight update" (parry rewards):
+  https://www.ubisoft.com/en-us/game/for-honor/news-updates/1ZO1qG5mqCaURiMFVgwlJl/season-5-core-fight-update
+- B18. Ubisoft, "Testing Grounds fight system improvements debrief" (lights 400 to 500 ms):
+  https://www.ubisoft.com/en-au/game/for-honor/news-updates/3zofBwXiVX8PXzYZv6PBAA/testing-grounds-fight-system-improvements-debrief
+- B19. Kotaku, "For Honor's tutorial is very good" (2017): https://kotaku.com/for-honors-tutorial-is-very-good-1792358053 ;
+  For Honor terminology guide (the unblockable's red trail):
+  https://www.ubisoft.com/en-us/game/for-honor/news-updates/6XEM2qUiwcokp753uCzgkz/for-honor-terminology-guide
+- B20. Sekiro wiki (Fextralife), "Deflection" and "Perilous Attacks" [CM]:
+  https://sekiroshadowsdietwice.wiki.fextralife.com/Deflection ;
+  https://sekiroshadowsdietwice.wiki.fextralife.com/Perilous+Attacks
+- B21. Activision support, "Sekiro: Shadows Die Twice game mechanics":
+  https://support.activision.com/sekiro/articles/sekiro-shadows-die-twice-game-mechanics
+- B22. Sekiro wiki (Fextralife), "Hanbei The Undying": https://sekiroshadowsdietwice.wiki.fextralife.com/Hanbei+The+Undying
+- B23. Bart Vossen, "Enemy design and enemy AI for melee combat systems", Game Developer (2015):
+  https://gamedeveloper.com/design/enemy-design-and-enemy-ai-for-melee-combat-systems
+- B24. Game Informer, Hidetaka Miyazaki on his approach to difficulty (2024):
+  https://gameinformer.com/interview/2024/06/24/from-softwares-hidetaka-miyazaki-discusses-his-approach-to-difficulty
+- B25. Infil's fighting game glossary (reaction time, frame data): https://glossary.infil.net/
+- B26. Jerry Zhang, "Anatomy of an Enemy Attack in Dark Souls 3", Game Developer (2022):
+  https://www.gamedeveloper.com/game-platforms/anatomy-of-an-enemy-attack-in-dark-souls-3
+- B27. Masahiro Sakurai on hitstop (Source Gaming translation, 2015):
+  https://sourcegaming.info/2015/11/11/thoughts-on-hitstop-sakurais-famitsu-column-vol-490-1/ ; SmashWiki, "Hitlag":
+  https://www.ssbwiki.com/Hitlag
+- B28. "Rock, paper, guard breaks: a mechanics deep dive into For Honor", Game Developer:
+  https://gamedeveloper.com/design/rock-paper-guard-breaks-a-mechanics-deep-dive-into-for-honor
+- B29. Ubisoft, "New onboarding process FAQ" (For Honor):
+  https://www.ubisoft.com/en-gb/game/for-honor/news-updates/2WLJVU7sD6bHeX721QFxdW/new-onboarding-process-faq
+- B30. N1 (night of 22-23 Nov), the duel teardown, with file and line on our side and the references' URLs:
+  `docs/research/duel-teardown/TEARDOWN.md` and `docs/research/duel-teardown/media/` (rounds.md: 93 rounds, all KO,
+  median 18-24 s; clips of the first 25 s and of a newcomer against the Wall).
