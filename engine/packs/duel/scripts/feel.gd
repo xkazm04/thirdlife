@@ -194,6 +194,17 @@ static func clip_frame(anim: Array, t: float, length: int) -> float:
 
 
 ## An exact slide for the pack's own moves: `metres` along `dir` over `frames`, fastest first, added to the walk.
+## The weapon's arc (TLHit.swing_trail, API 1.15; engine need E2b): weight 0 = a light's thin quick flick (0.12 m, 5
+## samples), 1 = a heavy's broad slow sweep (0.36 m, 12); follows the weapon's tip; hit-stop holds it.
+func trail(f, weight: float, frames: int, color: Variant = "white", width: float = -1.0) -> void:
+	if f.tip == null:
+		return
+	var o: Dictionary = {"node": f.tip, "color": color}
+	if width > 0.0:
+		o["width"] = width
+	TLHit.swing_trail(f.body, weight, frames, o)
+
+
 func slide(f, dir: Vector3, metres: float, frames: int) -> void:
 	var d := Vector3(dir.x, 0.0, dir.z)
 	if d.length() < 0.001 or metres <= 0.0 or frames <= 0:
