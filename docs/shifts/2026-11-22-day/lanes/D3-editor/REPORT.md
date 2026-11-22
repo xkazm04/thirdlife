@@ -1,6 +1,8 @@
-D3 editor: REPORT, day shift of 22 Nov 2026 (12:41 to about 14:15 CEST)
-Worktree d22-editor. Route: Opus solo. Nothing committed by me; the Director landed rounds 1-3. Round 4 is this
-report's round and is landable.
+D3 editor: REPORT, day shift of 22 Nov 2026 (12:41 to 17:15 CEST)
+Worktree d22-editor. Route: Opus solo. Nothing committed by me; the Director landed rounds 1-5 (9f7f077, b0bb985,
+d060ac8, 9f9ca12, 167698c). Round 6 (hockey job -3's notes and strips) is the last.
+Rounds 5-6 and hockey -3 are in the section "AFTER THE RE-DISPATCH" at the end. The rest is the round-4 report as
+landed.
 
 Nobody has played any of this by hand. The hockey job was judged by the critic and by me from its strips, not in a
 window by a person.
@@ -204,3 +206,128 @@ NEXT THREE THINGS
    house_game past 0.35 when the builder has the poke pair and the possession SHORT in hand.
 3. A spacing figure for arcade sports (bodies inside one blob, which the house hockey measures as overlap_frames and
    crowd4) as a tofu row, so a scrum fails the tofu stage, not only the critic.
+
+=====================================================================================================================
+AFTER THE RE-DISPATCH (14:16 to 17:15): round 5 (landed 167698c) and round 6 (hockey job -3)
+=====================================================================================================================
+Round 5 (foreman/src/templates.ts, house.ts): met.
+- arcade_sport keeps the house camera and the readable puck. These are two keeps checked on the brief, like the duel's
+  shoulder camera:
+  - "a broadcast camera from the near side looking DOWN at the play (about 50 degrees, 20 to 30 m) ... never low behind
+    a skater";
+  - "the puck drawn larger than life with a hot-coloured rim, and a ring under your skater".
+- The builders read the house's data/tuning.json `follow` and the puck and ring keys of `look`, live.
+- Checked against hockey -2's real brief: it now fails both keeps.
+- Two spacing tofu rows, with the house hockey's own definitions (tests/metrics.gd crowd4 and overlap_frames over live
+  frames):
+  - scrum_share <= 0.3 (house 0.186);
+  - overlap_share <= 0.02 (house 0).
+- npm test: 310 tests, 305 pass, 0 fail, 5 skip. tl check --tier fast: PASS 5/5.
+
+Round 6: hockey job ice-hockey-frozen-pond-20261122-3, same sentence, round-5 dist (rounds 1-5), started 14:47,
+detached.
+- Design (6 calls): hook "a farm dog (Biscuit) chases whoever carries the puck" (candidate 1, likelihood 0.12).
+  - Its camera line: "House broadcast camera, pitch 50, 20-30 m, fov 46; puck drawn 2.5x with a hot rim, green ring
+    under you". The new keeps reached the design word for word; -2's had been "Low Chase Camera".
+- Plan (3 min): 7 packages; the tofu phase is core alone.
+  - The TOFU CHECK line names 13 metrics, scrum_share and overlap_share among them.
+  - The root contract carries the follow camera, the puck scale and rim, and the spacing rows.
+- Core:
+  - round 1: failed invariants.many_budget (p50 1.363 ms against 1.0);
+  - round 2: failed the same check (1.134 ms);
+  - round 3: passed and merged at 15:48.
+  - Builder notes:
+    - "shell copy was refused", so the house scripts were rewritten from their numbers, not copied;
+    - the puck rim and the ring need `gen/` meshes outside core's scope, so they were drawn with kit ball parts.
+- Look 0 (critic-blockout-s64, tofu-blockout-s61, film-blockout-s61):
+  - Critic NOT ok: silhouette 0.45, readability 0.25, style 0.4, shows_play 0.3, fun_promise 0.15, feel 0.1, slop 0,
+    house_game 0.15.
+  - Tofu NOT ok on three rows: feedback_f 9 (wants <= 3), idle_max_f 436 (<= 120), possession_median_f 120 (240-600).
+  - Tofu rows that passed: scrum_share 0.0026, overlap_share 0, moments_on_film 0, the rest in bounds.
+  - Film check: 4 strips, 0 contradicted.
+    - The tofu bot's strip f9970 is still for 55 frames: the puck is off the rink. The bot's own idle_max_f 436 already
+      admits that, so it is not a contradiction.
+  - The critic, in its own words:
+    - "the play camera frames empty grass and the dark puck sits on the field outside the rink for 55 frames";
+    - "the red and blue skaters ride up onto and over the top boards";
+    - "the goal net sits tight to the right side boards";
+    - "claim contradicted: overlap_share 0 ... the two centers merged";
+    - "Biscuit the dog does not appear in any frame".
+  - The camera, though, now looks down like the house game's: see the pair JPG.
+  - The pair went out with revise round 1, as built in round 2:
+    - the build's poke_hit contact strip beside the house strip at the same kind ("poked" at 523, kind-matched by
+      round 3);
+    - "70 house contact row(s) your pack does not have: data/tuning.json hits.check_gap (house 0.43) ...".
+    - The builder copied the house `hits` rows (its note: "`hits` has the house rows plus three of mine").
+- Revise round 1 was LOST to a wall-clock check.
+  - The round failed invariants.many_budget at p50 1.005 ms against a 1.0 ms budget, so nothing merged.
+  - The look filmed the same pack again; the compare said "Each NEW image looks the same as its PREVIOUS match".
+  - Critic: house_game 0.15, feel 0.05.
+  - The brief says wall-clock checks are not evidence on a busy machine. Here such a check cost the job a whole revise
+    round, and the pair it carried.
+- Revise round 2 passed invariants and merged.
+  - The compare KEPT NEW: "The new version marks the puck carrier with a ring. In image 7 a check lands and the red
+    skater visibly stumbles".
+  - Critic NOT ok: silhouette 0.6, readability 0.4, style 0.4, shows_play 0.35, fun_promise 0.2, feel 0.1, slop 0,
+    house_game 0.25.
+  - Tofu NOT ok on one row: possession_median_f 142 (wants 240-600; the house plays 164).
+    - The rows now in bounds: feedback_f 1, idle_max_f 89, close_rounds 3, scrum_share 0.0031, overlap_share 0.
+  - Film check: 4 strips, 0 contradicted.
+  - The critic, in its own words:
+    - "the puck has escaped the rink and lies on the grass";
+    - "the red skater gets launched up and over the boards";
+    - "claim contradicted: overlap_share 0 ... red and blue bodies merged into one blob at the puck";
+    - "scrum_share 0.0031 is also hard to square with image 4";
+    - no hit-stop at the f37 contact;
+    - Biscuit absent;
+    - summer grass where the brief asks for winter.
+- HELD on quality at blockout at 16:17 (job_state paused, quality). I did not accept or retry it.
+- Tokens (tl ledger): in 14,734,726, out 220,670, cache-read 13,644,124, weighted 2,675,684; 90 min wall, 78 min run;
+  11 rounds; 2 critic looks. Subscription billing, so no money figure.
+- Strips (lane folder):
+  - hockey3-PAIR-r1-yours-poke_hit-f37-over-house-poked-f523.jpg: the pair the builder got, shown as the Foreman
+    copied it to ref/look/blockout-r1/. Look at it beside -2's pair: the camera now looks down like the house's.
+  - hockey3-PAIR-final-build-poke_hit-f37-over-house-poked-f523.jpg: the kept version, with a dotted green ring under
+    the carrier.
+  - hockey3-r0-blockout-play-bot_tofu-strip-f9970.jpg: the puck off the rink, 55 frames still.
+  - hockey3-r0-* and hockey3-final-*: the other strips (f1436, f5539, f2078, f7979, f6761).
+
+What the editor got right and wrong on -3, against -2
+- Right:
+  - The camera keep reached the design word for word, and the build looks down on the play.
+  - The ring arrived in revise round 2.
+  - The pair reached the builder, and it copied the house's hits rows.
+  - The kind-matched house strip (poked) set a poke beside a poke.
+  - The spacing rows reached the TOFU line and the bot.
+- Wrong:
+  1. The spacing rows are the bot's claims, and the bot counts them nearly zero (scrum_share 0.003, overlap_share 0)
+     while the critic sees merged blobs.
+     - The film check cannot measure spacing from frame differences, so the claim stands.
+     - The house's crowd4 counts skaters within 5 m of the puck; when the puck sits off the rink nobody is near it, and
+       the row passes.
+     - A spacing figure needs a measure the Foreman owns, not the build's bot. That could be a runner probe over pack
+       state, or the overlap counted from body positions the runner already records.
+  2. A wall-clock check (invariants.many_budget, p50 1.005 ms against 1.0 ms) threw away a whole revise round.
+     - Core also lost its first two rounds to the same check.
+     - A quality round should not be lost to a wall-clock check on a busy machine. That is the Foreman's call (not
+       re-running a clock-only failure) or the runner's; this is a question for you.
+  3. Containment is not a template rule. The puck and bodies leave the rink in both looks, and nothing in the
+     arcade_sport keeps says the boards hold the puck and the skaters.
+  4. Builders cannot copy house files ("shell copy was refused"), so they re-derive the house game from its numbers.
+     The puck rim and ring need gen/ meshes outside core's scope, so they were drawn with kit ball parts.
+  5. possession_median_f: the build (142) sits near the house (164) and fails the band, as you decided it should.
+
+GATES (rounds 5-6)
+- npm test (foreman, round 5): 310 tests, 305 pass, 0 fail, 5 skip.
+  - One earlier run had 1 fail: the wall-clock "hung CLI is killed" test, while my own fast gate ran beside it. The
+    same gate run failed arch's "under 5 s". Both passed when run alone.
+- tl check --tier fast: PASS 5/5.
+- Round 6 changes no code: the job's notes and strips only.
+
+NEXT THREE THINGS (replacing the round-4 list)
+1. A spacing measure the Foreman owns: count overlapping and crowded bodies from the runner's own body positions
+   (a probe on pack state), not from the build's bot.
+2. Do not let a clock-only invariants failure cost a quality revise round. Re-run it once, as the verify CLI already
+   does for clock-based verdicts, or treat it as inconclusive on a busy machine.
+3. arcade_sport containment: the boards hold the puck and the skaters (a keep and a tofu row such as puck_out_f), and
+   let the root package scope include the gen/ meshes the house builds its rim and ring with.
