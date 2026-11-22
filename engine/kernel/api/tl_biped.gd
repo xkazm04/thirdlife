@@ -24,6 +24,7 @@ const OPTIONS: Array = ["rig", "rig_params", "mode", "position", "facing", "name
 
 const _Walker = preload("res://kernel/world/terrain/world_body.gd")
 const _Grip = preload("res://kernel/world/terrain/grip_pose.gd")
+const _Clock = preload("res://kernel/feel/clip_clock.gd")
 var _grip: RefCounted = null
 var _wings: RefCounted
 const _WalkerSpace = preload("res://kernel/world/terrain/walker_space.gd")
@@ -100,6 +101,7 @@ var _on_held: bool = false             # K2: the last step stood on a held ball
 var _was_on_held: bool = false
 var _kept_platform: Array = []         # the platform settings to give back when he steps off it
 var _feel = null                       # K8: hit-stop, stun, push-back (kernel/feel/hit_state.gd), made by TLHit
+var _clock = null                      # E1: the rig clip's timeline (kernel/feel/clip_clock.gd), made by play_clip
 
 
 ## Options: rig (a rig node; default: TLRigs when installed, else the stand-in), rig_params, mode, position,
@@ -386,6 +388,26 @@ func body_radius() -> float:
 	return 0.3
 
 
+## E1 (1.14): plays a rig clip on a frame timeline: `timing` [[frame, clip frame], ...] from this call (the next tick is
+## frame 1), rising, linear between; [] = its own pace, as after the last knot. Hit-stop holds it; another play ends it.
+func play_clip(clip: StringName, timing: Array = [], blend: float = 0.034) -> void:
+	_clock = _Clock.play(self, clip, timing, blend)
+
+
+## E1 (1.14): the clip playing now runs at `speed` clip frames per tick (1 = as authored, 0 = held) until it changes.
+func set_clip_speed(speed: float) -> void:
+	_clock = _Clock.paced(rig, speed, _clock)
+
+
+## E1 (1.14): the rig clip now (&"" = locomotion) and its time in frames. Drawing only, like the two above (no hash).
+func clip_now() -> StringName:
+	return _Clock.now(rig)
+
+
+func clip_frame() -> float:
+	return _Clock.frame_of(rig)
+
+
 ## Kernel side: the state of down and stumble, for the state hash ("" while he stands and does not stumble).
 func _down_text() -> String:
 	var feel: String = _feel.text() if _feel != null else ""   # K8: "" unless a hit-stop, stun or push runs
@@ -561,6 +583,8 @@ func _tick_rig(on_ground: bool) -> void:
 		rig.call("set_locomotion", global_transform.basis.inverse() * velocity, on_ground)
 		if _ctx == null:
 			_ctx = TLContext.of(self)        # N2: the pack this biped belongs to, not "the pack of the process"
+		if _clock != null and not _clock.step(rig):
+			_clock = null                    # E1: the timeline ended, or the rig plays another clip
 		rig.call("tick", _ctx.frame if _ctx != null else _frame)
 		if _walker != null and _walker.mode in ["bar", "hang", "mantle"] and rig.has_method("_fit_grip"):
 			var bar := _walker.mode == "bar"

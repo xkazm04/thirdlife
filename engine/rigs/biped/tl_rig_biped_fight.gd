@@ -128,52 +128,86 @@ static func guard() -> Dictionary:
 
 
 # ------------------------------------------------------------------ the clips
-## A light one-handed swing (16 f): the right arm drawn back and out with the shoulders turned away (3 f), whipped
-## flat across the front (fastest at f4-5), followed through past the left shoulder, back on guard by f16.
+## The left foot leads. Each leg has its own [knee half-angle, swing from vertical] in degrees.
+## Lower the pelvis to the longer leg's standing height, so the shorter leg can unweight its foot.
+static func _swing_stance(p: Dictionary, shift: Vector2, lead: Vector2, rear: Vector2, spread: float) -> void:
+	var pitch: float = p["Hips"].x
+	var l := TLRigBiped._leg(lead.x, pitch, lead.y)
+	var r := TLRigBiped._leg(rear.x, pitch, rear.y)
+	p["LeftUpperLeg"] = Vector3(l[0], 0, -spread)
+	p["LeftLowerLeg"] = Vector3(l[1], 0, 0)
+	p["LeftFoot"] = Vector3(l[2], 0, spread)
+	p["RightUpperLeg"] = Vector3(r[0], 0, spread)
+	p["RightLowerLeg"] = Vector3(r[1], 0, 0)
+	p["RightFoot"] = Vector3(r[2], 0, -spread)
+	p["_hips"] = Vector3(shift.x, maxf(_drop(lead.x, lead.y, spread), _drop(rear.x, rear.y, spread)), shift.y)
+
+
+## Light swing. The fist stays at the ear while the hips start the step, then cuts across at shoulder height.
 static func strike(t: float) -> Dictionary:
-	var g: Dictionary = guard()
-	var wind: Dictionary = _over(g, {
-		"Hips": Vector3(-5.0, -30.0, 0), "Spine": Vector3(-2.0, -12.0, 0), "Chest": Vector3(0, -24.0, 0), "Neck": Vector3(3.0, 22.0, 0), "Head": Vector3(6.0, 36.0, 0),
-		"RightUpperArm": Vector3(0, -62.0, 78.0), "RightLowerArm": Vector3(64.0, 0, 0), "RightHand": Vector3(-30.0, 0, 0),
-		"LeftUpperArm": Vector3(40.0, 6.0, -10.0), "LeftLowerArm": Vector3(118.0, 0, 0)})
-	wind.merge(_legs(22.0, -5.0, 12.0, 7.0), true)
-	wind["_hips"] = Vector3(0.03, _drop(22.0, 12.0, 7.0), 0.03)
+	var g := guard()
+	var wind := _over(g, {
+		"Hips": Vector3(-5, -22, 0), "Spine": Vector3(1, -12, -2), "Chest": Vector3(1, -18, -2),
+		"Neck": Vector3(1, 17, 0), "Head": Vector3(3, 24, 0),
+		"RightUpperArm": Vector3(109, -28, 49), "RightLowerArm": Vector3(109, 0, -40),
+		"LeftUpperArm": Vector3(48, 0, -16), "LeftLowerArm": Vector3(104, 0, 0)})
+	_swing_stance(wind, Vector2(.055, .075), Vector2(18, 23), Vector2(27, -6), 7)
+	# Counterturn the chest for one frame as the pelvis comes through underneath it.
+	var step := _over(wind, {"Hips": Vector3(-8, 2, 1), "Spine": Vector3(-1, -29, -1),
+		"Chest": Vector3(1, -22, -2), "RightUpperArm": Vector3(111, -30, 52)})
+	_swing_stance(step, Vector2(.01, -.035), Vector2(23, 23), Vector2(20, -19), 7)
+	# Recoil and parried start from this exact contact key.
 	var hit: Dictionary = _over(g, {
 		"Hips": Vector3(-12.0, 8.0, 0), "Spine": Vector3(-6.0, 10.0, 0), "Chest": Vector3(-6.0, 18.0, 0), "Neck": Vector3(4.0, -10.0, 0), "Head": Vector3(8.0, -16.0, 0),
 		"RightUpperArm": Vector3(0, 84.0, 86.0), "RightLowerArm": Vector3(0, 0, 0), "RightHand": Vector3(8.0, 0, 0),
 		"LeftUpperArm": Vector3(14.0, -10.0, -30.0), "LeftLowerArm": Vector3(110.0, 0, 0)})
 	hit.merge(_legs(22.0, -12.0, 16.0, 7.0), true)
 	hit["_hips"] = Vector3(-0.02, _drop(22.0, 16.0, 7.0), -0.10)
-	var follow: Dictionary = _over(hit, {
-		"Hips": Vector3(-8.0, 16.0, 0), "Spine": Vector3(-4.0, 12.0, 0), "Chest": Vector3(-4.0, 22.0, 0), "Neck": Vector3(2.0, -12.0, 0), "Head": Vector3(4.0, -24.0, 0),
-		"RightUpperArm": Vector3(0, 124.0, 70.0), "RightLowerArm": Vector3(18.0, 0, 0), "RightHand": Vector3(20.0, 0, 0),
-		"LeftUpperArm": Vector3(8.0, -10.0, -34.0)})
-	return _ease_keys(t, [[0.0, g, 0], [3 * DT, wind, 2], [5 * DT, hit, 1], [9 * DT, follow, 2], [11 * DT, follow, 3], [16 * DT, g, 0]])
+	var follow := _over(hit, {
+		"Hips": Vector3(-8, 16, 2), "Spine": Vector3(-3, 18, 2), "Chest": Vector3(1, 28, 0),
+		"Neck": Vector3(1, -18, 0), "Head": Vector3(6, -26, 0),
+		"RightUpperArm": Vector3(32, 128, 100), "RightLowerArm": Vector3(32, 0, -1),
+		"LeftUpperArm": Vector3(12, -18, -26)})
+	_swing_stance(follow, Vector2(-.065, -.17), Vector2(26, 19), Vector2(18, -25), 7)
+	return _ease_keys(t, [[0, g, 0], [3 * DT, wind, 2], [4 * DT, step, 3], [5 * DT, hit, 1],
+		[8 * DT, follow, 2], [12 * DT, follow, 3], [16 * DT, g, 0]])
 
 
-## A heavy two-handed overhead chop (30 f): a big readable coil (arms up and back behind the head, the chest arched
-## back, knees loaded) peaking at f8 and held to f10, the chop down through f14 with the body folding after it, the
-## low follow-through held to f20, back on guard by f30.
+## Overhead chop. Sink onto the rear leg under the raised hands, then catch the fall on the bent lead knee.
 static func strike_heavy(t: float) -> Dictionary:
-	var g: Dictionary = guard()
-	var coil: Dictionary = _over(g, {
-		"_hips": Vector3(0, _drop(28.0, 12.0, 8.0), 0.06), "Hips": Vector3(6.0, -12.0, 0),
-		"Spine": Vector3(10.0, -4.0, 0), "Chest": Vector3(14.0, -4.0, 0), "Neck": Vector3(-6.0, 6.0, 0), "Head": Vector3(-12.0, 10.0, 0),
-		"RightUpperArm": Vector3(184.0, 0, -8.0), "RightLowerArm": Vector3(46.0, 0, 0), "RightHand": Vector3(-36.0, 0, 0),
-		"LeftUpperArm": Vector3(184.0, 0, 8.0), "LeftLowerArm": Vector3(46.0, 0, 0), "LeftHand": Vector3(-36.0, 0, 0)})
-	coil.merge(_legs(28.0, 4.0, 12.0, 8.0), true)
-	var coil2: Dictionary = TLRigNode.add_pose(coil, {"Chest": Vector3(3.0, 0, 0), "RightUpperArm": Vector3(4.0, 0, 0), "LeftUpperArm": Vector3(4.0, 0, 0)})
-	var chop: Dictionary = _over(g, {
-		"_hips": Vector3(0, _drop(34.0, 20.0, 8.0), -0.10), "Hips": Vector3(-18.0, 4.0, 0),
-		"Spine": Vector3(-10.0, 2.0, 0), "Chest": Vector3(-10.0, 2.0, 0), "Neck": Vector3(8.0, 0, 0), "Head": Vector3(18.0, -4.0, 0),
-		"RightUpperArm": Vector3(58.0, 0, -12.0), "RightLowerArm": Vector3(10.0, 0, 0), "RightHand": Vector3(14.0, 0, 0),
-		"LeftUpperArm": Vector3(58.0, 0, 12.0), "LeftLowerArm": Vector3(10.0, 0, 0), "LeftHand": Vector3(14.0, 0, 0)})
-	chop.merge(_legs(34.0, -18.0, 20.0, 8.0), true)
-	var low: Dictionary = _over(chop, {
-		"_hips": Vector3(0, _drop(36.0, 20.0, 8.0), -0.12), "Hips": Vector3(-22.0, 6.0, 0), "Spine": Vector3(-12.0, 2.0, 0), "Head": Vector3(22.0, -4.0, 0),
-		"RightUpperArm": Vector3(34.0, 0, -12.0), "LeftUpperArm": Vector3(34.0, 0, 12.0)})
-	low.merge(_legs(36.0, -22.0, 20.0, 8.0), true)
-	return _ease_keys(t, [[0.0, g, 0], [8 * DT, coil, 2], [10 * DT, coil2, 0], [14 * DT, chop, 1], [17 * DT, low, 2], [20 * DT, low, 3], [30 * DT, g, 0]])
+	var g := guard()
+	var coil := _over(g, {
+		"Hips": Vector3(7, -12, 0), "Spine": Vector3(11, -4, -2), "Chest": Vector3(12, -5, -2),
+		"RightShoulder": Vector3(0, 0, 34), "LeftShoulder": Vector3(0, 0, -34),
+		"Neck": Vector3(-11, 6, 0), "Head": Vector3(-24, 10, 0),
+		"RightUpperArm": Vector3(156, -8, 55), "RightLowerArm": Vector3(34, 0, -33), "RightHand": Vector3(-24, 0, 0),
+		"LeftUpperArm": Vector3(158, 12, -52), "LeftLowerArm": Vector3(34, 0, 41), "LeftHand": Vector3(-25, 0, 0)})
+	_swing_stance(coil, Vector2(.09, .14), Vector2(23, 30), Vector2(34, -4), 10)
+	var peak := TLRigNode.add_pose(coil, {
+		"Spine": Vector3(3, -2, 0), "Chest": Vector3(4, -2, 0),
+		"RightUpperArm": Vector3(-8, 9, -5), "LeftUpperArm": Vector3(-8, -9, 5),
+		"RightLowerArm": Vector3(-10, 0, 5), "LeftLowerArm": Vector3(-10, 0, -5)})
+	_swing_stance(peak, Vector2(.105, .16), Vector2(24, 31), Vector2(35, -3), 10)
+	var hit := _over(g, {
+		"Hips": Vector3(-22, 1, 0), "Spine": Vector3(-10, 1, 0), "Chest": Vector3(-8, 2, 0),
+		"Neck": Vector3(8, 0, 0), "Head": Vector3(16, -2, 0),
+		"RightUpperArm": Vector3(98, 4, -13), "RightLowerArm": Vector3(9, 0, -5), "RightHand": Vector3(4, 0, 0),
+		"LeftUpperArm": Vector3(100, -4, 12), "LeftLowerArm": Vector3(12, 0, 5), "LeftHand": Vector3(4, 0, 0)})
+	_swing_stance(hit, Vector2(-.08, -.25), Vector2(41, 21), Vector2(21, -40), 9)
+	var low := _over(hit, {
+		"Hips": Vector3(-25, 3, 0), "Spine": Vector3(-12, 1, 0), "Chest": Vector3(-8, 2, 0),
+		"RightHand": Vector3(38, 0, 0), "LeftHand": Vector3(30, 0, 0),
+		"Head": Vector3(12, -3, 0), "RightUpperArm": Vector3(55, 2, -15), "LeftUpperArm": Vector3(58, -2, 15)})
+	_swing_stance(low, Vector2(-.105, -.32), Vector2(46, 19), Vector2(22, -44), 9)
+	# Recover the weight first. The hands still hang low when control returns.
+	var rise := _over(low, {
+		"Hips": Vector3(-14, -3, 0), "Spine": Vector3(-9, 0, 0), "Chest": Vector3(-6, 2, 0),
+		"RightUpperArm": Vector3(33, 2, -6), "LeftUpperArm": Vector3(38, -3, 8),
+		"RightHand": Vector3(18, 0, 0), "LeftHand": Vector3(14, 0, 0),
+		"RightLowerArm": Vector3(32, 0, 0), "LeftLowerArm": Vector3(38, 0, 0)})
+	_swing_stance(rise, Vector2(-.04, -.14), Vector2(33, 12), Vector2(20, -29), 8)
+	return _ease_keys(t, [[0, g, 0], [8 * DT, coil, 2], [10 * DT, peak, 3], [13 * DT, hit, 1],
+		[16 * DT, low, 2], [20 * DT, low, 3], [26 * DT, rise, 1], [30 * DT, g, 0]])
 
 
 ## A covering guard that holds (5 f, then holds until another play): both forearms up in front of the face with the
