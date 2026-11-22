@@ -17,6 +17,7 @@ import { clipLimit, planCheck, planPackages, renderDesignerPrompt, renderPlanner
 import { NEW_HELP, PHASE_HELP, creativityFlag, designCommand, designerInput, nextAfterBrief } from "./cli_design.js";
 import { writeGenerateCalls as writeCalls } from "./transcript.js";
 import { CRITIQUE_HELP, critiqueCommand } from "./cli_critique.js";
+import { FILMCHECK_HELP, filmcheckCommand } from "./cli_filmcheck.js";
 import { QUALITY_HELP, qualityCommand } from "./cli_quality.js";
 import { cardLimits, cardsPlannerText } from "./cards.js";
 import { cardLines, cardView } from "./handview.js";
@@ -86,6 +87,7 @@ ${NEW_HELP}
   resume <job> [same options as run]  continues from job.jsonl; promoted packages are never rebuilt
 ${PHASE_HELP}
 ${CRITIQUE_HELP}
+${FILMCHECK_HELP}
 ${QUALITY_HELP}
   change <job> "<text>" [--decision JSON] [--package ID] [--no-run] [same options as run]
         a change request on a job with at least one merged package, also a finished (done) one. With --package that
@@ -671,6 +673,9 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       const jobDir = jobDirOf(a);
       return critiqueCommand(a, out, { jobDir, builder: makeBuilder(a, jobDir), verifier: makeVerifier(a, undefined, readJobConfig(jobDir)) });
     }
+
+    case "filmcheck":
+      return filmcheckCommand(a, out, jobDirOf);
 
     case "follow": {
       const jobDir = jobDirOf(a);

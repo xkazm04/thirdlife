@@ -95,7 +95,9 @@ test("template: the room on 'a fight in a colosseum' sends an invented core and 
   assert.equal(r.value.brief.concept?.template?.id, "duel");
   assert.deepEqual(r.value.brief.design?.verbs.map((v) => [v.move, v.anticipation_f, v.active_f, v.recovery_f]), [["light", 18, 4, 16], ["heavy", 32, 5, 28], ["roll", 3, 18, 15], ["block", 4, 0, 6]]);
   // The concept prompt carries the template menu and v2's principles; attempt 2 is told why attempt 1 failed.
-  assert.match(b.calls[0]?.req.prompt ?? "", /# The genre templates[^]*`duel`: a melee duel[^]*light 18\/4\/16 \(`strike`\)[^]*`arcade_sport`[^]*`own`[^]*## 8\. What made games last/);
+  // D3 of 22 Nov: the move line names the move id and the clip apart (the first hockey job's concept read "poke 5/7/12
+  // (`cross_check`)" as "move cross_check" and its design step failed three times on it).
+  assert.match(b.calls[0]?.req.prompt ?? "", /# The genre templates[^]*`duel`: a melee duel[^]*move "light" 18\/4\/16 \(its clip `strike`, not a move id\)[^]*`arcade_sport`[^]*move "poke" 5\/7\/12 \(its clip `cross_check`, not a move id\)[^]*`own`[^]*## 8\. What made games last/);
   assert.match(b.calls[1]?.req.prompt ?? "", /the template is "duel"/);
   // The design step reads the duel research (the contact table and the state machine), never the hockey one.
   const design = b.calls[2]?.req.prompt ?? "";

@@ -12,6 +12,7 @@ import path from "node:path";
 import type { JobEvent, PackageSpec, Phase } from "./events.js";
 import type { ConceptTemplate } from "./room_wire.js";
 import { templateOf } from "./templates.js";
+import { contradictionsOf, type FilmCheck } from "./filmcheck.js";
 
 /** The milestone the tofu stage is (flat shapes, kit primitives, no art). */
 export const TOFU_MILESTONE = "blockout";
@@ -112,6 +113,8 @@ export interface TofuRow {
   want: string;
   value?: number;
   ok: boolean;
+  /** D3 of 22 Nov: what the film shows against this claim (filmcheck.ts); a contradicted row never passes. */
+  contradicted?: string;
 }
 export interface TofuResult {
   ok: boolean;
@@ -140,17 +143,27 @@ export function readTofuMetrics(jobDir: string, events: readonly JobEvent[], tes
   return {};
 }
 
-/** Judges the metrics: every row present and a finite number inside its bound. */
-export function judgeTofu(metrics: Record<string, unknown> | undefined, rows: TofuMetric[], test: string, hand?: string, from?: string): TofuResult {
+/**
+ * Judges the metrics: every row present and a finite number inside its bound. D3 of 22 Nov: with `film` (the cross-check
+ * of the look's strips, filmcheck.ts), a metric the film contradicts fails whatever its figure, and when the bot's contact
+ * strips were measured a row `moments_on_film` counts the claimed contacts that show nothing moving (0 to pass).
+ */
+export function judgeTofu(metrics: Record<string, unknown> | undefined, rows: TofuMetric[], test: string, hand?: string, from?: string, film?: FilmCheck): TofuResult {
+  const against = contradictionsOf(film, test);
   const out: TofuRow[] = rows.map((m) => {
     const v = metrics?.[m.id];
     const value = typeof v === "number" && Number.isFinite(v) ? v : undefined;
-    const ok = value !== undefined && (m.min === undefined || value >= m.min) && (m.max === undefined || value <= m.max);
-    return { id: m.id, item: m.item, want: bound(m), ...(value !== undefined ? { value } : {}), ok };
+    const c = against.metrics.get(m.id);
+    const ok = c === undefined && value !== undefined && (m.min === undefined || value >= m.min) && (m.max === undefined || value <= m.max);
+    return { id: m.id, item: m.item, want: bound(m), ...(value !== undefined ? { value } : {}), ok, ...(c !== undefined ? { contradicted: c.measured } : {}) };
   });
+  if (against.contactStrips > 0) {
+    const n = against.contacts.length;
+    out.push({ id: "moments_on_film", item: "the bot's claimed contacts show on film", want: `0 of ${against.contactStrips} contact strip(s) still`, value: n, ok: n === 0, ...(n > 0 ? { contradicted: against.contacts.map((f) => `${f.claim}: ${f.measured}`).join("; ") } : {}) });
+  }
   const ok = out.every((r) => r.ok);
   const by = hand !== undefined ? ` through the ${hand} hand` : "";
-  const bad = out.filter((r) => !r.ok).map((r) => `${r.id} ${r.value === undefined ? "not reported" : r.value} (wants ${r.want}; item ${r.item})`);
+  const bad = out.filter((r) => !r.ok).map((r) => (r.contradicted !== undefined ? `${r.id} ${r.value ?? "not reported"} CONTRADICTED by the film (${r.contradicted})` : `${r.id} ${r.value === undefined ? "not reported" : r.value} (wants ${r.want}; item ${r.item})`));
   const where = from === undefined ? `no finished report of ${test} was found` : metrics === undefined ? `${test} reported no \`metrics\` object in its result` : "";
   const line = ok
     ? `tofu stage ok (${test}${by}): ${out.map((r) => `${r.id} ${r.value}`).join(", ")}`

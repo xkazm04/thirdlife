@@ -21,6 +21,7 @@ import type { RunnerVerbs } from "./verbs.js";
 import type { CritiqueResult } from "./verifier.js";
 import { judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } from "./tofu.js";
 import { HOUSE_BOTS, contactFrame, houseBaseline, houseCompare, saveBaseline, type HouseBaseline } from "./house.js";
+import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./filmcheck.js";
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -159,10 +160,11 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
  * N4 loop round 12: the tofu bot's figures are its own claims. The critic gets them and checks them against the strips
  * (proof -3: the bot reported idle_max_f 37 while two of its strips held both fighters still for 55+ frames).
  */
-export function claimsLine(built: TofuResult | undefined): string | undefined {
-  const rows = (built?.rows ?? []).filter((r) => r.value !== undefined);
-  if (rows.length === 0) return undefined;
-  return `The tofu bot's own figures (claims, counted by the build's bot, not by the Foreman): ${rows.map((r) => `${r.id} ${r.value}`).join(", ")}. Where a strip contradicts one (a fighter standing still for more than 120 frames against idle_max_f, no parry or roll in any strip against verbs_used, no held tiles on a contact strip against the hit-stop), write a note that starts "claim contradicted:" with the figure and the image.`;
+export function claimsLine(built: TofuResult | undefined, film?: FilmCheck): string | undefined {
+  const rows = (built?.rows ?? []).filter((r) => r.value !== undefined && r.id !== "moments_on_film");
+  const measured = filmCheckText(film); // D3 of 22 Nov: the claims and what the Foreman measured from the frames
+  if (rows.length === 0) return measured;
+  return `${measured !== undefined ? `${measured}\n` : ""}The tofu bot's own figures (claims, counted by the build's bot, not by the Foreman): ${rows.map((r) => `${r.id} ${r.value}`).join(", ")}. Where a strip contradicts one (a fighter standing still for more than 120 frames against idle_max_f, no parry or roll in any strip against verbs_used, no held tiles on a contact strip against the hit-stop), write a note that starts "claim contradicted:" with the figure and the image.`;
 }
 
 /** N4 loop round 2: the rubric item of a job whose template has a house game: this build against the house game. */
@@ -175,14 +177,14 @@ export const verdictText = (v: Verdict): string => `${v.by ?? "critic (V5)"} ${v
 // ---------- N4 of 22 Nov: the tofu stage (tofu.ts) judged with the look ----------
 
 /** The tofu check of milestone `m`: undefined unless the plan has a TOFU CHECK line and `m` is its package's milestone. */
-export function tofuLook(h: GateHost, m: Milestone): (TofuResult & { package: string; report: string }) | undefined {
+export function tofuLook(h: GateHost, m: Milestone, film?: FilmCheck): (TofuResult & { package: string; report: string }) | undefined {
   const t = tofuOf(h.s.plan);
   if (t === undefined || h.s.plan.find((p) => p.id === t.package)?.milestone !== m) return undefined;
   const read = readTofuMetrics(h.dir(), h.events, t.test);
-  const res = judgeTofu(read.metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length), t.test, read.hand, read.from);
+  const res = judgeTofu(read.metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length), t.test, read.hand, read.from, film);
   const file = reportPath(h, `tofu-${m}`);
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.tofu/1", milestone: m, test: t.test, package: t.package, ...res }, null, 1) + "\n");
+  fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.tofu/1", milestone: m, test: t.test, package: t.package, ...res, ...(film !== undefined && film.measured + film.unmeasured.length > 0 ? { film: filmReport(film) } : {}) }, null, 1) + "\n");
   return { ...res, package: t.package, report: h.rel(file) };
 }
 
@@ -204,6 +206,22 @@ export function withTofu(h: GateHost, judged: { verdict?: Verdict; line: string 
     fs.writeFileSync(file, JSON.stringify({ ...body, ok: false, scores: merged.scores, notes: merged.notes, package: merged.package, by: merged.by, ...(v ? { critic: v.report } : {}) }, null, 1) + "\n");
   }
   return { verdict: merged, line: verdictText(merged) };
+}
+
+/** What a report keeps of a film check (no line: the rows and findings say it). */
+const filmReport = (c: FilmCheck): Omit<FilmCheck, "line"> => ({ measured: c.measured, unmeasured: c.unmeasured, findings: c.findings, strips: c.strips });
+
+/**
+ * D3 of 22 Nov: the look's strips measured against the claims of the bots that played them (filmcheck.ts), each bot's
+ * newest finished report. Written to reports/film-<m>-s<seq>.json when a strip was there to measure.
+ */
+export function filmCheckOf(h: GateHost, m: Milestone, film: Film): FilmCheck | undefined {
+  if (film.strips.length === 0) return undefined;
+  const check = crossCheckFilm(film.strips, (bot) => botClaims(h.dir(), h.events, bot), (c) => h.dir(...c.split("/")));
+  const file = reportPath(h, `film-${m}`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.film/1", milestone: m, ok: check.findings.length === 0, ...filmReport(check) }, null, 1) + "\n");
+  return check;
 }
 
 // ---------- snapshots ----------
@@ -342,13 +360,16 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   // N4 loop round 2: a job whose template has a house game is set beside it (bot figures by the tofu names, the critic's rubric).
   const template = h.s.brief?.concept?.template;
   const base = h.s.brief?.design !== undefined ? await houseBaseline(h, template) : undefined;
-  const tofu = tofuLook(h, m);
+  // D3 of 22 Nov: the bots' claims against motion measured from the strips; a contradicted claim fails its tofu row and the house compare.
+  const filmed = filmCheckOf(h, m, film);
+  if (filmed !== undefined) notes.push(filmed.line);
+  const tofu = tofuLook(h, m, filmed);
   const t = tofuOf(h.s.plan);
-  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template, h.s.brief?.design?.verbs.length), t.test, r.hand, r.from); })() : undefined);
+  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template, h.s.brief?.design?.verbs.length), t.test, r.hand, r.from, filmed); })() : undefined);
   const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
   const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes) : [];
-  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined, claimsLine(built)), tofu);
+  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined, claimsLine(built, filmed)), tofu);
   const fresh = judged.verdict;
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;

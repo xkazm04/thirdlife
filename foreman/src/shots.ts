@@ -46,6 +46,17 @@ export function botFinish(jobDir: string, events: readonly JobEvent[], bot: stri
 }
 
 /**
+ * Where a bot result keeps its moments (kind -> frames): the top level (PACK.md 2026-11-22, the duel pilot),
+ * `metrics.moments`, or `metrics.raw.moments` (the house hockey since N3's round 1: read on the real runner 22 Nov 12:53,
+ * pro regular seed 1 gave poked [523], one_timer [761]; the readers that looked only at the first two filmed its end).
+ */
+export function resultMoments(result: unknown): Record<string, unknown> | undefined {
+  const r = result as { moments?: unknown; metrics?: { moments?: unknown; raw?: { moments?: unknown } } } | undefined;
+  const m = r?.moments ?? r?.metrics?.moments ?? r?.metrics?.raw?.moments;
+  return m !== null && typeof m === "object" && !Array.isArray(m) ? (m as Record<string, unknown>) : undefined;
+}
+
+/**
  * N4 loop round 8 (22 Nov): the frames where the bot saw the exchange happen, from its last passing report: the result's
  * `moments` (or `metrics.moments`), an object of kind -> frames. The crazy proof -3 was filmed at fixed fractions of its
  * bot's run and two of its strips were 60 frames of both fighters standing still.
@@ -54,12 +65,12 @@ export function botMoments(jobDir: string, events: readonly JobEvent[], bot: str
   for (const e of [...events].reverse()) {
     if (e.type !== "verify" || e.verb !== "bot" || !e.ok) continue;
     try {
-      const r = JSON.parse(fs.readFileSync(path.join(jobDir, e.report), "utf8")) as { bot?: { test?: unknown; result?: { moments?: unknown; metrics?: { moments?: unknown } } } };
+      const r = JSON.parse(fs.readFileSync(path.join(jobDir, e.report), "utf8")) as { bot?: { test?: unknown; result?: unknown } };
       if (r.bot?.test !== bot) continue;
-      const m = r.bot.result?.moments ?? r.bot.result?.metrics?.moments;
-      if (m === null || typeof m !== "object" || Array.isArray(m)) return [];
+      const m = resultMoments(r.bot.result);
+      if (m === undefined) return [];
       const out: { kind: string; frame: number }[] = [];
-      for (const [kind, v] of Object.entries(m as Record<string, unknown>)) for (const f of Array.isArray(v) ? v : []) if (typeof f === "number" && Number.isFinite(f) && f > 0) out.push({ kind, frame: Math.round(f) });
+      for (const [kind, v] of Object.entries(m)) for (const f of Array.isArray(v) ? v : []) if (typeof f === "number" && Number.isFinite(f) && f > 0) out.push({ kind, frame: Math.round(f) });
       return out.sort((a, b) => a.frame - b.frame);
     } catch {
       /* an unreadable report has no moments */
