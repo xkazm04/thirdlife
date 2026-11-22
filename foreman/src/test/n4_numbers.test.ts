@@ -55,3 +55,11 @@ test("round 7: the keeps read the brief's ai text too (the real hockey room put 
   assert.match(p, /keeps the speed ratios/);
   assert.doesNotMatch(p, /keeps the AI decides/, "its utility AI is in `ai`");
 });
+
+test("round 10: the slop list tells a body covering the other on the shoulder camera (camera_hides_exchange) from bodies inside each other (fighters_overlap, judged on a side view)", async () => {
+  const { slopIds, qualityText } = await import("../roomtext.js");
+  const { feelItems } = await import("../quality.js");
+  assert.equal(slopIds().at(-1), "camera_hides_exchange");
+  assert.match(qualityText(["6"]), /`fighters_overlap`[^\n]*Check: a SIDE view[^\n]*name it `camera_hides_exchange`/);
+  assert.match(feelItems().find((i) => i.id === "slop")?.text ?? "", /camera_hides_exchange[^]*check the side strip of the same moment before you call `fighters_overlap`/);
+});

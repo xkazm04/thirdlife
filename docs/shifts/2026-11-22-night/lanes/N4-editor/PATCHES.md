@@ -198,3 +198,16 @@ never-idle limit of `scripts/brain.gd` (120 frames). Read live, so a retuned hou
   The house strip is a contact strip too (10 frames before the house drill's contact). Other points keep 12 x 5 from
   30 before.
 ```
+
+# Loop round 10 (22 Nov 04:25-04:45): the critic tells a camera fault from bodies inside each other
+
+No contract change: GAME-QUALITY.md section 6 sharpens `fighters_overlap` (judged on a side view; a weapon through a
+body at idle) and adds the slop id `camera_hides_exchange` (the shoulder camera's body covers the other one); the
+critic's slop rubric says to check the side strip of the same moment first.
+
+## ENGINE-NEED (for N1, through the Director)
+- Pushbox against a wall: the proof -4 critic saw "when the bot drives the rival into a wall corner the push resolution
+  lets the attacker walk into the defender". With the defender pinned on a static body, half the penetration is not
+  enough: the free body should take the whole push. Proposed: `TLHit.pushbox` resolves a pair where one body cannot move
+  (a wall within the push) by moving the other the full penetration. Shim in a game: an idle distance longer than the
+  weapon's reach and a wall-aware step-out.
