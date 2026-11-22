@@ -2,7 +2,6 @@
   "sessions": [
     {"id": "n23-teardown", "scope": ["docs/research/hockey-teardown/**"], "note": "night 23 Nov N1: thirdjam teardown (research), until 08:00"},
     {"id": "n23-method", "scope": ["docs/design/**", "docs/GAME-QUALITY.md", "foreman/**", "engine/cards/**", "devx/lib/cards/**"], "note": "night 23 Nov N2: design method + editor prompts, until 08:00"},
-    {"id": "n23-world", "scope": ["engine/kernel/world/home/**", "engine/kernel/world/land/**", "engine/kernel/world/draw/**", "engine/kernel/world/terrain/**", "engine/kernel/world/landscape.gd", "engine/kernel/world/tiers.gd"], "note": "night 23 Nov N3: world flicker and far structures, until 08:00"},
-    {"id": "n23-create", "scope": ["engine/ui/**", "engine/boot/menu.gd", "engine/boot/hub.gd"], "note": "night 23 Nov N4: Create fix, until 08:00"}
+    {"id": "n23-world", "scope": ["engine/kernel/world/home/**", "engine/kernel/world/land/**", "engine/kernel/world/draw/**", "engine/kernel/world/terrain/**", "engine/kernel/world/landscape.gd", "engine/kernel/world/tiers.gd"], "note": "night 23 Nov N3: world flicker and far structures, until 08:00"}
   ]
 }
