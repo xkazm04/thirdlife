@@ -27,15 +27,16 @@ static func attach(rig, kind: String) -> Node3D:
 		"sword":
 			_grip(mk, 0.2)
 			mk.box(Vector3(0.26, 0.035, 0.05), "steel_dark", Color.WHITE, 0.01, Vector3(0, -0.11, 0))
-			mk.hull([Vector3(-0.032, -0.13, -0.008), Vector3(0.032, -0.13, -0.008), Vector3(-0.032, -0.13, 0.008), Vector3(0.032, -0.13, 0.008),
-				Vector3(-0.026, -0.95, -0.006), Vector3(0.026, -0.95, -0.006), Vector3(-0.026, -0.95, 0.006), Vector3(0.026, -0.95, 0.006),
-				Vector3(0, -1.04, 0)], "steel_light")
+			mk.hull([Vector3(-0.05, -0.13, -0.017), Vector3(0.05, -0.13, -0.017), Vector3(-0.05, -0.13, 0.017), Vector3(0.05, -0.13, 0.017),
+				Vector3(-0.042, -0.95, -0.013), Vector3(0.042, -0.95, -0.013), Vector3(-0.042, -0.95, 0.013), Vector3(0.042, -0.95, 0.013),
+				Vector3(0, -1.06, 0)], "steel_light")
+			mk.box(Vector3(0.012, 0.8, 0.036), "steel_dark", Color.WHITE, 0.0, Vector3(0, -0.53, 0))      # the fuller: reads as a blade at range
 		"rapier":
 			_grip(mk, 0.18)
 			mk.capsule(Vector3(-0.09, -0.1, 0), Vector3(0.09, -0.1, 0), 0.018, "yellow")
 			mk.capsule(Vector3(0.0, -0.1, -0.07), Vector3(0.0, -0.1, 0.07), 0.014, "yellow")
-			mk.hull([Vector3(-0.024, -0.12, -0.01), Vector3(0.024, -0.12, -0.01), Vector3(-0.024, -0.12, 0.01), Vector3(0.024, -0.12, 0.01),
-				Vector3(0, -1.08, 0)], "steel_light")
+			mk.hull([Vector3(-0.034, -0.12, -0.016), Vector3(0.034, -0.12, -0.016), Vector3(-0.034, -0.12, 0.016), Vector3(0.034, -0.12, 0.016),
+				Vector3(-0.012, -1.0, -0.008), Vector3(0.012, -1.0, -0.008), Vector3(0, -1.1, 0)], "steel_light")
 		"mace":
 			mk.bar(Vector3(0, 0.12, 0), Vector3(0, -0.62, 0), 0.04, 0.045, "wood_dark", Color.WHITE, 0.006)
 			mk.rbox(Vector3(0.17, 0.2, 0.17), "steel_dark", Color.WHITE, 0.03, Vector3(0, -0.66, 0))
@@ -52,8 +53,8 @@ static func attach(rig, kind: String) -> Node3D:
 		"blade", "blade_l":
 			_grip(mk, 0.15)
 			mk.box(Vector3(0.14, 0.03, 0.04), "steel_dark", Color.WHITE, 0.008, Vector3(0, -0.09, 0))
-			mk.hull([Vector3(-0.03, -0.1, -0.006), Vector3(0.03, -0.1, -0.006), Vector3(-0.03, -0.1, 0.006), Vector3(0.03, -0.1, 0.006),
-				Vector3(0.012, -0.62, 0), Vector3(-0.02, -0.55, 0)], "neon_violet" if kind == "blade_l" else "steel_light")
+			mk.hull([Vector3(-0.048, -0.1, -0.014), Vector3(0.048, -0.1, -0.014), Vector3(-0.048, -0.1, 0.014), Vector3(0.048, -0.1, 0.014),
+				Vector3(0.02, -0.66, 0), Vector3(-0.034, -0.58, 0)], "neon_violet" if kind == "blade_l" else "steel_light")
 	var mi := mk.instance("arm_" + kind)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.add_child(mi)

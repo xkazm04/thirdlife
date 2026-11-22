@@ -11,6 +11,6 @@
   "move": {"accel": 40.0, "turn": 14.0, "turn_recovery": 3.0, "turn_active": 1.5, "windup_walk_k": 0.3, "recovery_walk_k": 0.35},
   "ring": {"inner": 8.35, "centre_gap": 0.06},
   "buffer": 8,
-  "camera": {"back": 4.6, "up": 2.6, "side": 2.6, "look_up": 1.0, "fov": 52, "follow": 0.2},
+  "camera": {"angle": 50, "dist": 4.3, "dist_k": 0.7, "up": 2.8, "look_up": 1.0, "look_at": 0.55, "fov": 50, "follow": 0.2},
   "crowd": {"parry": 2, "splat": 3, "star": 2, "clash": 1, "finisher": 3, "taunt_hit": 2}
 }

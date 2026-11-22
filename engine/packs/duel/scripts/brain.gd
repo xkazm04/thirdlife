@@ -50,6 +50,8 @@ var passive_note: String = ""         ## where the longest idle ended (for tunin
 var tells_min: int = 1000              ## the shortest wind-up of a dangerous rival attack (>= 12: plays-twice item 11)
 var frame: int = 0
 var fled_at: int = -1000
+var force_string: String = ""
+var phase2_on: bool = false            ## the second phase was announced (rivals.json phase2)
 var attacks: int = 0
 var strings_used: Dictionary = {}
 var choices: Dictionary = {}           ## what the mind chose, counted (defences, reads, punishes): the bots read it
@@ -79,6 +81,8 @@ func reset_round() -> void:
 	block_until = -1
 	release_at = -1
 	seen_moves = {}
+	phase2_on = false
+	force_string = ""
 	guard_walk = false
 	guard_left = 0
 	blocks_row = 0
@@ -156,6 +160,16 @@ func tick(f: int) -> void:
 		reset_left -= 1
 		me.walk = Vector2(strafe * 0.4, -1.0)
 		me.block_held = guard_walk
+		return
+	if cfg.has("phase2") and not phase2_on and me.hp < me.hp_max * float(cfg["phase2"]["below"]) and me.can_act():
+		if not bool(cfg["phase2"].get("roar", true)):
+			phase2_on = true                             # (the pre-round-3 behaviour: phase 2 slips in unannounced)
+			return
+		phase2_on = true                                 # the boss's second phase is announced, not slipped in (a roar)
+		plan = []
+		_do("taunt", {})
+		force_string = str(cfg["phase2"]["strings"][0]["id"])   # and its signature string comes first
+		me.events.append(["phase2", str(cfg["phase2"].get("cue", ""))])
 		return
 	if me.stamina < float(cfg.get("flee_stamina", 30)) and me.can_act() and f - fled_at > 150:
 		fled_at = f
@@ -404,7 +418,7 @@ func _space() -> void:
 
 func _pick_string() -> void:
 	var pool: Array = cfg["strings"]
-	if cfg.has("phase2") and me.hp < me.hp_max * float(cfg["phase2"]["below"]):
+	if phase2_on:
 		pool = pool + cfg["phase2"]["strings"]
 	var opts: Array = []
 	for s: Dictionary in pool:
@@ -413,6 +427,9 @@ func _pick_string() -> void:
 			continue                                     # never the same string three times running
 		opts.append([id, float(s["weight"])])
 	var pick: String = _weighted(opts)
+	if force_string != "":
+		pick = force_string
+		force_string = ""
 	for s: Dictionary in pool:
 		if str(s["id"]) == pick:
 			plan = (s["steps"] as Array).duplicate(true)

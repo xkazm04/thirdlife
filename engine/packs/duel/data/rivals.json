@@ -23,7 +23,7 @@
         {"id": "shield", "weight": 2, "steps": [{"m": "bash"}, {"m": "light"}]},
         {"id": "jab_crush", "weight": 1, "steps": [{"m": "light"}, {"m": "heavy"}]}
       ],
-      "phase2": {"below": 0.5, "strings": [
+      "phase2": {"below": 0.5, "cue": "Phase 2: three heavies in a row, and the second comes LATE. Block, wait, block.", "strings": [
         {"id": "quake", "weight": 3, "steps": [{"m": "heavy"}, {"m": "heavy", "delay": 18}, {"m": "heavy"}]}
       ]}
     },
@@ -56,7 +56,7 @@
       "strings": [
         {"id": "dash", "weight": 3, "steps": [{"m": "light", "dash": 1.6}]},
         {"id": "flurry", "weight": 2, "steps": [{"m": "light"}, {"m": "light"}, {"m": "light"}, {"m": "light"}]},
-        {"id": "roll_cut", "weight": 2, "steps": [{"m": "roll"}, {"m": "light"}]},
+        {"id": "roll_cut", "weight": 2, "steps": [{"m": "roll"}, {"m": "light", "dash": 0.8}]},
         {"id": "spin", "weight": 2, "steps": [{"m": "heavy", "delay": 0, "hold": 30}]},
         {"id": "pair", "weight": 1, "steps": [{"m": "light"}, {"m": "light"}]}
       ]

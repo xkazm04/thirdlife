@@ -41,6 +41,7 @@ var round_log: Array = []              ## [winner, reason, frames]
 var match_log: Array = []
 var hitstop_frames: int = 0
 var fight_frames: int = 0
+var spacing: Dictionary = {}           ## centre distance over the live fight: frames, sum, close (< 1.3 m), min
 var first_minute: Dictionary = {}     ## the player's first 60 s of round 1: blocked, parried, punished, bashed, hit_landed, hit_taken
 const SPOT_YOU := Vector3(0, 0.05, 2.5)
 const SPOT_RIVAL := Vector3(0, 0.05, -2.5)
@@ -265,6 +266,8 @@ func _start_drill(d: Dictionary) -> void:
 				rival.posture = float(rs[k])
 			"exhausted":
 				rival.exhausted = bool(rs[k])
+			"hp":
+				rival.hp = float(rs[k])
 			_:
 				push_error("drills.json: drill %s has the unknown rival_set key %s" % [d["id"], k])
 
@@ -293,6 +296,9 @@ func _drill_rival() -> void:
 			rival.block_held = true
 			rival.press("block")
 			drill_release = drill_t + 9
+		elif act == "roll_in":
+			if not rival.act("roll", {"dir": (rival.to_foe() + Vector3(-rival.to_foe().z, 0, rival.to_foe().x) * 0.4).normalized()}):
+				continue
 		elif act == "dodge_side":
 			if not rival.act("dodge", {"dir": Vector3(-rival.to_foe().z, 0, rival.to_foe().x)}):
 				continue
@@ -325,11 +331,17 @@ func _fight(frame: int) -> void:
 	if feel.holding(you, rival):        # the hit-stop holds every counter of ours too: wind-ups, buffers, the rival's mind
 		hitstop_frames += 1
 		return
-	if drill.is_empty():
+	if drill.is_empty() or bool(drill.get("mind", false)):
 		brain.tick(frame)
-	else:
+	if not drill.is_empty():
 		_drill_rival()
 	fight_frames += 1
+	var gap: float = you.dist()
+	spacing["frames"] = int(spacing.get("frames", 0)) + 1
+	spacing["sum"] = float(spacing.get("sum", 0.0)) + gap
+	if gap < 1.3:
+		spacing["close"] = int(spacing.get("close", 0)) + 1
+	spacing["min"] = minf(float(spacing.get("min", 99.0)), gap)
 	you.advance(frame)
 	rival.advance(frame)
 	you.try_act()
@@ -456,4 +468,4 @@ func _pack_state() -> Dictionary:
 		"drill": str(drill.get("id", "")), "stops": feel.stops, "lead_changes": lead_changes, "crowd": snappedf(crowd_level, 0.01),
 		"rounds": round_log.duplicate(true), "matches": match_log.size(), "rival_passive_max": brain.passive_max, "rival_passive_note": brain.passive_note,
 		"rival_tells_min": brain.tells_min, "rival_attacks": brain.attacks, "rival_strings": brain.strings_used.duplicate(), "rival_mind": brain.choices.duplicate(),
-		"you_counts": you.counts.duplicate(), "rival_counts": rival.counts.duplicate(), "pushbox_gap": snappedf(feel.pushbox_gap(you, rival), 0.001), "first_minute": first_minute.duplicate(), "lessons": lessons.snapshot() if lessons != null else {}}
+		"you_counts": you.counts.duplicate(), "rival_counts": rival.counts.duplicate(), "pushbox_gap": snappedf(feel.pushbox_gap(you, rival), 0.001), "first_minute": first_minute.duplicate(), "spacing": {"mean": snappedf(float(spacing.get("sum", 0.0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.01), "close_share": snappedf(float(spacing.get("close", 0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.001), "min": snappedf(float(spacing.get("min", 0.0)), 0.01)}, "lessons": lessons.snapshot() if lessons != null else {}}
