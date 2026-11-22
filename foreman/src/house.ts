@@ -79,8 +79,8 @@ export interface HouseBaseline {
 
 /** The frame of the first contact a house drill logged (pack_state.log[0].f), else 60 frames before the bot finished. */
 export function contactFrame(report: unknown, moments: string[] = []): number | undefined {
-  const r = report as { pack_state?: { log?: { f?: unknown }[] }; bot?: { frames?: unknown; result?: { contact?: { f?: unknown }; metrics?: { moments?: Record<string, unknown> } } } } | undefined;
-  const m = r?.bot?.result?.metrics?.moments;
+  const r = report as { pack_state?: { log?: { f?: unknown }[] }; bot?: { frames?: unknown; result?: { contact?: { f?: unknown }; moments?: Record<string, unknown>; metrics?: { moments?: Record<string, unknown> } } } } | undefined;
+  const m = r?.bot?.result?.moments ?? r?.bot?.result?.metrics?.moments; // the duel pilot: result.moments; hockey: metrics.moments
   // Round 4: the first listed moment the bot saw (hockey's metrics.moments), before a drill's contact frame.
   const moment = moments.map((k) => (Array.isArray(m?.[k]) ? (m?.[k] as unknown[])[0] : undefined)).find((x) => typeof x === "number");
   const f = moment ?? r?.bot?.result?.contact?.f ?? r?.pack_state?.log?.[0]?.f; // the duel's drill reports result.contact.f
