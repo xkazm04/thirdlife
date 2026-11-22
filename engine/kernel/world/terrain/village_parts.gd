@@ -42,6 +42,49 @@ static func multi(parent: Node3D, mk: TLMesh, xs: Array, mname: String, crown_ba
 	parent.add_child(mmi)
 
 
+## N3 (night of 22-23 Nov 2026): small things that are only drawn near (`seen_m`, with `margin` of hysteresis), one
+## multimesh per cell of `cell` metres (named `<mname><i>`), each node standing at its cell's middle with its instances
+## relative to it, so each cell appears and goes by its own distance. The tufts were ONE multimesh over the whole village
+## with one visibility range, measured to its middle: all of them appeared and went at once, about 120 m from there.
+## `tl_xs` keeps the world transforms of the cell's instances (harden_day_case.gd reads them). Returns the cells made.
+static func multi_near(parent: Node3D, mk: TLMesh, xs: Array, mname: String, cell: float, seen_m: float, margin: float) -> int:
+	var cells: Dictionary = {}
+	for xf: Transform3D in xs:
+		var k: Vector2i = Vector2i(floori(xf.origin.x / cell), floori(xf.origin.z / cell))
+		if not cells.has(k):
+			cells[k] = []
+		(cells[k] as Array).append(xf)
+	var keys: Array = cells.keys()
+	keys.sort()
+	var mesh: Mesh = mk.build(mname.to_snake_case())
+	var n: int = 0
+	for k: Vector2i in keys:
+		var part: Array = cells[k]
+		var mid: Vector3 = Vector3.ZERO
+		for xf: Transform3D in part:
+			mid += xf.origin
+		mid /= float(part.size())
+		var mm: MultiMesh = MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.mesh = mesh
+		mm.instance_count = part.size()
+		for i: int in part.size():
+			mm.set_instance_transform(i, (part[i] as Transform3D).translated(-mid))
+			mm.set_instance_color(i, Color.WHITE)
+		var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
+		mmi.name = "%s%d" % [mname, n]
+		mmi.multimesh = mm
+		mmi.position = mid
+		mmi.set_meta(&"tl_xs", part)
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mmi.visibility_range_end = seen_m
+		mmi.visibility_range_end_margin = margin
+		parent.add_child(mmi)
+		n += 1
+	return n
+
+
 ## The far plain: the flat ground with a rectangular hole where the terrain is, so the valley is not covered.
 static func far_ground(parent: Node3D, t: RefCounted, key: String) -> void:
 	if TLStyle.headless():

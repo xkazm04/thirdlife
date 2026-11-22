@@ -455,11 +455,7 @@ static func build(parent: Node3D, plots: Array, radii: Array, has_ground: Array,
 		tufts.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(p.x, terr.gy(p.x, p.y) + 0.04, p.y)))
 	tufts = clear.keep(tufts, TLKitNature.grass_tuft(400, 4, 0.5), false)          # grass: off the road's surface only
 	if not tufts.is_empty():
-		Parts.multi(parent, TLKitNature.grass_tuft(400, 4, 0.5), tufts, "WorldTufts")
-		var tm: MultiMeshInstance3D = parent.get_node("WorldTufts") as MultiMeshInstance3D
-		tm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		tm.visibility_range_end = 120.0
-		tm.visibility_range_end_margin = 12.0
+		Parts.multi_near(parent, TLKitNature.grass_tuft(400, 4, 0.5), tufts, "WorldTufts", 32.0, 120.0, 12.0)     # N3: each 32 m cell by its own distance
 	stats["tufts"] = tufts.size()
 	_lap(stats, "tufts")
 	# a forest belt on the hills round the village: the skyline between the venues and the mesas

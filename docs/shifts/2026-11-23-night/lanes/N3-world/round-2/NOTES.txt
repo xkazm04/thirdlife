@@ -1,0 +1,33 @@
+N3 round 2: two distance-level faults (owner findings 2 and 3, second half: "green ground closer up")
+
+A. Venue floors: dark slab far, grass near (style shaders)
+Repro: walk south from (85, 200) toward the car course (plot car, (85, 0.5, 57), radius 40), W+Shift, 20 s, window, boot.tscn.
+  From 30 m+ the course is its picture: a bare dark asphalt slab (an "incomplete structure"). Near (full draw) the same
+  course is grass with cars on it. Alone (--dungeon, ex_car_alone_dungeon.jpg) the course is asphalt + ice. The same with
+  TL_HOME=plain: pre-existing, not the Home's.
+Cause: engine/style/shaders/toon_cel.gdshader:433 and toon.gdshader:501 drop a live instance whole when its ORIGIN is
+  outside the plot radius (`ro > tl_clip.x` -> VERTEX = 0). ex_car's asphalt box is centred 65 m from the plot centre
+  (it runs from local z -160 to +30) though it covers the plot, so it was never drawn near. The draw layer already marks
+  such slabs (draw_base.gd `reaches_in`, tl_clip.w bit 2) and the picture builder keeps them; the shaders ignored the bit.
+  Trace: 3 live meshes carry the bit (ex_car's asphalt, two ex_kit floors).
+Fix: both toon shaders drop by origin only when the bit is absent (tl_clip.w < 1.5); the existing per-fragment cut at
+  radius + 3 m trims the slab. STYLE.md's tl_clip line and the draw_base.gd comment say so. Drawing only.
+Evidence: car_crisp_before_after.jpg and car_classic_before_after.jpg (frames 209, 754, 1081, 1300 of the same scripted
+  walk, both looks), car_approach_before_20s.mp4 / car_approach_after_20s.mp4 (crisp).
+  Remaining difference by design: the picture blends the slab's edge into turf; the live slab ends at radius + 3 m.
+Selftest: none (a shader branch; headless runs draw nothing). Measured by the window frames above.
+
+B. Grass tufts: all on or all off by the distance to the village middle (landscape.gd)
+Cause: engine/kernel/world/landscape.gd:458-462 made ONE MultiMeshInstance3D of all 1385 village tufts (589 x 41 m along
+  the road) with visibility_range_end 120 m, margin 12 m. A visibility range is one decision per instance node, measured
+  to its middle (9, 2): the whole field appeared at once inside 120 m and went at once beyond 132 m, and at both ends of
+  the village (and wherever the visitor stood > 132 m from the middle) tufts beside him were never drawn.
+Fix: village_parts.gd `multi_near`: one multimesh per 32 m cell (38 cells), each node at its cell's middle with its
+  instances relative to it, same range 120 / 12 m: each cell appears by its own distance. tl_xs keeps world transforms
+  (harden_day_case reads them by the WorldTufts prefix).
+Evidence: tufts_before_after_4_spots.jpg (crane shots at both village ends and two mid-road spots, crisp: the ends get
+  their tufts), tufts_after_classic_4_spots.jpg.
+Selftest 770 n3.tufts: every WorldTufts* node has a range and no tuft stands more than 23 m from the node whose distance
+  decides it: 18.9 m now; seeded red on the old landscape.gd: 304.0 m in 1 multimesh.
+Frame cost (BUSY: a classic packs gate ran beside it), road run east frames 300-1300, TL_EXE_FRAMES_TIMES=1:
+  before p50 7.79 ms p99 26.3, after p50 5.24 ms p99 42.3. One pair each: noise, not a quiet figure.
