@@ -220,3 +220,29 @@ style_diorama.json|skate|recoil|ee2c028a0d78,97b3a6cc0cd2,c08e03e7c7fc,145412a07
 style_diorama.json|skate|parried|250497cd84f0,84adf34134fb,defbeed06b9a,8f2375c81bbe,9253d18d8799,05838b484314
 style_diorama.json|skate|guard_broken|602f59ba39b7,902dfb990948,26395aa265b4,145412a0774c,53ac48711964,05838b484314
 style_diorama.json|skate|wall_splat|786bc97362bd,e98d28499c1a,2b1993ffa73c,be6b9bd1479e,ccfa9eec2fbc,05838b484314
+# Pre-E2 swing poses sampled from the original rig, 2026-11-22.
+style.json|walk|strike|f666f4f35ff2,2ebb3db11ca3,d2c1c8af03e9,142ac141aba0,181f1dc6c5b1,2510844811c1
+style.json|walk|strike_heavy|27ba0a360768,abb164e945dd,3a71f7be2e8a,7a45f623d6ae,181f1dc6c5b1,2510844811c1
+style.json|skate|strike|f666f4f35ff2,2ebb3db11ca3,fc170623f351,354b9884c64c,84f3ee222bbd,42f114639251
+style.json|skate|strike_heavy|27ba0a360768,abb164e945dd,3a71f7be2e8a,2bc48541f143,84f3ee222bbd,42f114639251
+style_crisp.json|walk|strike|cdd0574c5c6b,3c73e4ca11af,9a601a372d51,24775167e7f5,977429360b8d,56a24ef8eba5
+style_crisp.json|walk|strike_heavy|408961e3b53f,b3e862c219a4,4859042f85dc,bab8a81b00c8,977429360b8d,56a24ef8eba5
+style_crisp.json|skate|strike|eebe6f91bf58,d3b9fdd5a323,2e45bd5a6252,ec87986aeab5,c6bdb32507e7,05838b484314
+style_crisp.json|skate|strike_heavy|6051633ddeeb,03c854bf4155,35f2cf348a13,145412a0774c,53ac48711964,05838b484314
+style_diorama.json|walk|strike|cdd0574c5c6b,3c73e4ca11af,892943f64c3e,a72897e9ac1b,977429360b8d,56a24ef8eba5
+style_diorama.json|walk|strike_heavy|408961e3b53f,b3e862c219a4,4859042f85dc,70819d0f94eb,977429360b8d,56a24ef8eba5
+style_diorama.json|skate|strike|eebe6f91bf58,d3b9fdd5a323,2e45bd5a6252,ec87986aeab5,c6bdb32507e7,05838b484314
+style_diorama.json|skate|strike_heavy|6051633ddeeb,03c854bf4155,35f2cf348a13,145412a0774c,53ac48711964,05838b484314
+# 2026-11-22 E2 swing weight (lane N1, loop round 1): strike and strike_heavy re-posed, timings unchanged. The older swing lines above are superseded.
+style.json|walk|strike|4265700065d8,1ecba5533b22,a58aca259ba2,142ac141aba0,181f1dc6c5b1,2510844811c1
+style.json|walk|strike_heavy|77bab3c2537c,dab5c1271591,61d57746c069,7a45f623d6ae,181f1dc6c5b1,2510844811c1
+style.json|skate|strike|4265700065d8,1ecba5533b22,61903df37101,354b9884c64c,84f3ee222bbd,42f114639251
+style.json|skate|strike_heavy|77bab3c2537c,dab5c1271591,61d57746c069,2bc48541f143,84f3ee222bbd,42f114639251
+style_crisp.json|walk|strike|65cb1b5a175b,839b24c18ae1,f4bac6f52a04,24775167e7f5,977429360b8d,56a24ef8eba5
+style_crisp.json|walk|strike_heavy|97642fb5a538,d548e41312c6,476b7e698844,bab8a81b00c8,977429360b8d,56a24ef8eba5
+style_crisp.json|skate|strike|8ba244fc40e7,4a1021b6be24,b2875ef02b63,ec87986aeab5,c6bdb32507e7,05838b484314
+style_crisp.json|skate|strike_heavy|a483d7c45d37,0579f72c2990,61d3945c6cfc,145412a0774c,53ac48711964,05838b484314
+style_diorama.json|walk|strike|65cb1b5a175b,839b24c18ae1,251a997e95d4,a72897e9ac1b,977429360b8d,56a24ef8eba5
+style_diorama.json|walk|strike_heavy|97642fb5a538,d548e41312c6,476b7e698844,70819d0f94eb,977429360b8d,56a24ef8eba5
+style_diorama.json|skate|strike|8ba244fc40e7,4a1021b6be24,b2875ef02b63,ec87986aeab5,c6bdb32507e7,05838b484314
+style_diorama.json|skate|strike_heavy|a483d7c45d37,0579f72c2990,61d3945c6cfc,145412a0774c,53ac48711964,05838b484314

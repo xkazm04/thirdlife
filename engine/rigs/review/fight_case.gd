@@ -5,8 +5,8 @@ extends SceneTree
 ##           TLRigBipedFight.TIMING and of the "Fight clips" table of rigs/RIGS.md (frames, anticipation, active,
 ##           control, ends); a "returns" clip is back to locomotion one tick after its last frame, a "holds" clip
 ##           still shows its last pose 40 ticks later; two runs of every clip give the same poses
-##   golden  every clip that existed before (idle .. swing) gives the pose hashes of the base tree (fight_golden.txt,
-##           written by `--golden=<file>` on df58f0b), with stick_yaw never set and with stick_yaw set to 0 every tick
+##   golden  the baseline clips and both swings match their latest entries in fight_golden.txt, with stick_yaw
+##           never set and with stick_yaw set to 0 every tick
 ##   yaw     stick_yaw turns the blade to the side it names (+ = left), costs nothing at 0, and the pose is the golden
 ##           one again on the tick after it goes back to 0
 ##   cross   cross_check with a stick, held: the shaft lies level across the chest (butt to the left), both hands on it
@@ -76,6 +76,8 @@ func _initialize() -> void:
 			fails["golden"].append("no fight_golden.txt")
 		else:
 			for line: String in gf.get_as_text().split("\n", false):
+				if line.begins_with("#"):
+					continue
 				var parts: PackedStringArray = line.split("|")
 				golden["%s|%s|%s" % [parts[0], parts[1], parts[2]]] = parts[3]
 	var table: Dictionary = _rigs_md_table()
@@ -90,7 +92,7 @@ func _initialize() -> void:
 			probe.free()
 			for clip: String in names:
 				var key: String = "%s|%s|%s" % [look.get_file(), mode, clip]
-				if F.TIMING.has(clip):
+				if F.TIMING.has(clip) and clip not in ["strike", "strike_heavy"]:
 					continue
 				var h: String = golden_run(pset, clip, 0)
 				if gold_out != "":

@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.13)
+# Third Life kernel API (kernelApi 1.14)
 
-**Version 1.13 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.14 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.13"` in `pack.json` (any
-`"1.x"` up to 1.13 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.14"` in `pack.json` (any
+`"1.x"` up to 1.14 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -413,6 +413,27 @@ contact; each freezes both bodies in hit-stop, then gives each side his reaction
 - **Skating body checks:** `hit` and `guard_break` stop the victim dead. For a check that should carry momentum use
   `TLHit.impact` + `TLHit.react` / `TLHit.down` + `shove`, or `tune.push`.
 - The lab: `kernel/examples/ex_feel_lab` (every contact of the table between two figures; its bot asserts both change).
+
+### E1 rig clip timing (addition in 1.14)
+
+A fight game times its moves by a frame table (a wind-up of 18 to 54 frames on a 16 to 30 frame clip). The biped plays a
+rig clip on a frame timeline, so the pack no longer writes the rig's clip time itself.
+
+| Member | Meaning |
+|---|---|
+| `play_clip(clip: StringName, timing: Array = [], blend: float = 0.034)` | plays `clip` (`&""` = back to locomotion). `timing` is a list of `[frame, clip frame]` knots: frames counted from this call (the tick after it is frame 1), starting at 0 and rising; the clip frame is linear between knots. `[]` = the clip's own pace, as after the last knot. A timeline that does not rise is an error and plays nothing |
+| `set_clip_speed(speed: float)` | the clip playing now runs at `speed` clip frames per tick (1 = as authored, 0.5 = half, 0 = held) until another clip plays |
+| `clip_now() -> StringName`, `clip_frame() -> float` | the rig clip now (`&""` = locomotion) and its time in frames |
+
+- A hit-stop (K8) holds the timeline together with the pose; it resumes where it stood.
+- A kernel reaction (`TLHit.*` playing `block_stun`, `hit_<side>`, a fall) takes the rig over and ends the timeline.
+- The rig shows at least clip frame 1 on the first tick after a play (the rig advances a whole frame per tick).
+- Drawing only: nothing here reaches physics or the state hash. The stand-in rig has no clips: the calls do nothing.
+
+```gdscript
+# a duel heavy: the 30-frame clip stretched over a 37-frame wind-up and chop, then its recovery
+fighter.play_clip(&"strike_heavy", [[0, 0.0], [24, 8.0], [30, 10.0], [37, 14.4], [65, 30.0]])
+```
 
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
 
