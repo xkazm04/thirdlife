@@ -91,6 +91,7 @@ var _cam_flight := 0.0
 # Lane flight: the mechanical wings on the rig's `back` socket (kernel/world/flight_wings.gd, assets/engine/wings.glb) and
 # the figure's lean into the flight (degrees forward, about his middle) and bank (degrees, + = rolled left, into a left turn)
 const FlightWings: GDScript = preload("res://kernel/world/flight_wings.gd")
+const HOME_SIGHT_M: float = 9300.0      # N3: the Home's diagonal (2 x 3264 m x sqrt 2 = 9232 m, home/valley.gd LIMIT), rounded up
 const LEAN_HOVER: float = 12.0
 const LEAN_CRUISE: float = 62.0
 const BANK_MAX: float = 28.0
@@ -147,6 +148,10 @@ func setup(at: Vector3, facing: Vector3 = Vector3.FORWARD, cam_opts: Dictionary 
 		o["avoid_mask"] = 1 | 4                 # the ground and solid things, and the trees' crowns (world_space CANOPY)
 		cam.near = 0.05
 	cam.setup(self, o)
+	# N3 (night of 22-23 Nov 2026): TLChaseCam's far plane is 2000 m; the Home (home/valley.gd, +-LIMIT m) is seen across
+	# its whole extent, so its hills, peaks and woods were cut at 2 km and slid in and out of the picture as he moved.
+	if land != null and land.has_meta(&"tl_home"):
+		cam.far = maxf(cam.far, HOME_SIGHT_M)
 	_cam_dist = Vector2(float(o["distance"]), float(o["height"]) - float(o["look_height"])).length()
 	_cam_look_h = float(o["look_height"])
 	look_pitch = atan2(float(o["height"]) - float(o["look_height"]), float(o["distance"]))
