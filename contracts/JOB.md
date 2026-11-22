@@ -485,3 +485,6 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   (`--strip=12x2`), labelled with the moment's frame, so a hit-stop of 6 frames holds both bodies still over 3 tiles.
   The house strip is a contact strip too (10 frames before the house drill's contact). Other points keep 12 x 5 from
   30 before.
+  The template names the moment kinds filmed first (`filmFirst`, keys or their prefixes): the duel films a parry, a
+  roll or dodge, a fall, a wall splat, a blocked heavy, a clash, a guard break before anything else; the arcade sport a
+  one-timer, a poke, a check. Without a template, the first kinds the bot saw.
