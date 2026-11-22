@@ -1,0 +1,41 @@
+{
+  "_about": "What beat you (main.gd note_hit / _loss_line): every hit the player takes is filed under a cause from his state and the move; a lost round ends on the biggest cause by damage, with its answer.",
+  "causes": {
+    "light": {
+      "name": "his quick lights",
+      "answer": "Keep your guard up close in (hold SPACE) and tap SPACE on the glint to parry."
+    },
+    "heavy": {
+      "name": "his heavy swings",
+      "answer": "Hold SPACE when he raises his weapon; he bounces off your guard: hit him then."
+    },
+    "charged": {
+      "name": "the red unblockable",
+      "answer": "RED cannot be blocked: roll away (SHIFT) or hit him before it lands."
+    },
+    "bash": {
+      "name": "his shoulder bash",
+      "answer": "A shoulder dip means BASH: roll (SHIFT) or strike him first."
+    },
+    "traded": {
+      "name": "swinging into his swing",
+      "answer": "His blow was out first: block it, then strike in the gap after."
+    },
+    "whiff": {
+      "name": "punished misses",
+      "answer": "Strike only in reach (step in first); a miss leaves you open."
+    },
+    "early_parry": {
+      "name": "parries tapped too early",
+      "answer": "Tap SPACE when the blow lands (on the glint), not when it starts."
+    },
+    "guard_broken": {
+      "name": "hits after a broken guard",
+      "answer": "Do not hold your guard against a bash; roll or bash back."
+    },
+    "roll_end": {
+      "name": "hits at the end of your rolls",
+      "answer": "Roll through his swing, not before it: the end of a roll is open."
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
   "id": "game.duel",
   "version": "0.1.0",
-  "kernelApi": "1.13",
+  "kernelApi": "1.14",
   "title": "Duel: the ring and three rivals",
   "capabilities": [
     "physics",

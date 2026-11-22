@@ -67,10 +67,7 @@ var slide_dir: Vector3 = Vector3.ZERO
 var slide_m: float = 0.0
 var slide_n: int = 0
 var slide_i: int = 0
-var anim_clip: StringName = &""
-var anim_map: Array = []
-var anim_len: int = 0
-var anim_t: int = 0
+var anim_clip: StringName = &""            ## the clip the pack last played on him (feel.pose)
 
 var stars: int = 0
 var counts: Dictionary = {}            ## what this fighter did: attacks, hits, blocks, parries, whiffs, rolls ...
@@ -121,7 +118,7 @@ func reset_round() -> void:
 	frozen = false
 	_enter("IDLE", 0)
 	if rig != null:
-		rig.play(&"", 0.05)
+		body.play_clip(&"", [], 0.05)
 	anim_clip = &""
 
 
@@ -243,7 +240,7 @@ func advance(frame: int) -> void:
 					_enter("PARRY_WHIFF", int(moves["parry"]["whiff"]))
 				else:
 					_enter("IDLE", 0)
-				rig.play(&"", 0.1)
+				body.play_clip(&"", [], 0.1)
 				anim_clip = &""
 		"KNOCKDOWN":
 			if t >= length:
@@ -285,8 +282,7 @@ func _become_charged() -> void:
 	stamina = maxf(0.0, stamina - (float(moves["charged"]["stamina"]) - float(moves["heavy"]["stamina"])))
 	flash_done = true
 	events.append(["charged_flash", mv])
-	feel.pose(self, StringName(moves["charged"]["clip"]), _scaled_anim(moves["charged"]["anim"], k), 0)
-	anim_t = mf
+	feel.pose(self, StringName(moves["charged"]["clip"]), _scaled_anim(moves["charged"]["anim"], k), 0, -1.0, 0.034, mf)
 
 
 func _feint(into: String) -> void:
@@ -299,7 +295,7 @@ func _feint(into: String) -> void:
 		_start_attack("bash")
 	else:
 		_enter("IDLE", 0)
-		rig.play(&"", 0.08)
+		body.play_clip(&"", [], 0.08)
 
 
 ## The buffer turns into an action when the state allows one.
@@ -324,8 +320,7 @@ func try_act() -> void:
 			"block":
 				_start_block()
 			"tell":
-				_start_simple("TELL", int(cfg.get("tell_frames", 24)), StringName(moves["tell"]["clip"]))
-				anim_map = moves["tell"]["anim"]
+				_start_simple("TELL", int(cfg.get("tell_frames", 24)), StringName(moves["tell"]["clip"]), moves["tell"]["anim"])
 				events.append(["tell", ""])
 		return
 	if block_held and (st == "IDLE" or (st == "RECOVERY" and t >= length - 4)):
@@ -373,8 +368,7 @@ func act(m: String, opts: Dictionary = {}) -> bool:
 	elif m == "taunt":
 		_start_simple("TAUNT", int(moves["taunt"]["frames"]), &"taunt")
 	elif m == "tell":
-		_start_simple("TELL", int(opts.get("frames", 24)), StringName(moves["tell"]["clip"]))
-		anim_map = moves["tell"]["anim"]
+		_start_simple("TELL", int(opts.get("frames", 24)), StringName(moves["tell"]["clip"]), moves["tell"]["anim"])
 		events.append(["tell", ""])
 	return true
 
@@ -424,10 +418,10 @@ func _start_roll(dir: Vector3, force_dodge: bool = false) -> void:
 	events.append([key, ""])
 
 
-func _start_simple(state: String, frames: int, clip: StringName) -> void:
+func _start_simple(state: String, frames: int, clip: StringName, anim: Array = []) -> void:
 	_count(state.to_lower())
 	_enter(state, frames)
-	feel.pose(self, clip, [], frames)
+	feel.pose(self, clip, anim, frames)
 
 
 ## A fresh press opens the parry window (its first frames); a guard held on from a stun or a move does not: no parry,
@@ -551,12 +545,11 @@ func drive() -> void:
 		want = want * 0.5
 	var target: float = atan2(-fwd.x, -fwd.z)
 	facing = rotate_toward(facing, target, turn / 60.0)
-	if st == "IDLE" and rig != null and (rig.clip == &"" or rig.clip == &"block_stun"):
+	if st == "IDLE" and rig != null and (body.clip_now() == &"" or body.clip_now() == &"block_stun"):
 		feel.stance(self)
 	if feel.owns_body(self):                         # a kernel stun, push or fall moves him: no intent, no facing
 		facing = body.rotation.y
 		body.move(Vector3.ZERO)
-		feel.run_pose(self)
 		return
 	if st != "KNOCKDOWN" and st != "KO" and st != "GETUP":
 		body.rotation.y = facing
@@ -566,7 +559,6 @@ func drive() -> void:
 	body.move(want.normalized() if want.length() > 0.001 else Vector3.ZERO)
 	body.velocity.x = want.x
 	body.velocity.z = want.z
-	feel.run_pose(self)
 
 
 ## The attack's lunge: its metres spread over the last 8 wind-up frames and the active frames; it stops at the foe.

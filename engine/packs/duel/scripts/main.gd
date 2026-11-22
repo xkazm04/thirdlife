@@ -37,11 +37,15 @@ var drill_release: int = -1
 var drill_wait: Array = []           ## rival actions of the drill waiting for a state that allows them
 var lead: int = 0                      ## sign of the health lead (share of max): +1 you, -1 rival
 var lead_changes: int = 0
+var lead_round: int = 0                ## lead changes in this round
 var round_log: Array = []              ## [winner, reason, frames]
 var match_log: Array = []
 var hitstop_frames: int = 0
 var fight_frames: int = 0
 var spacing: Dictionary = {}           ## centre distance over the live fight: frames, sum, close (< 1.3 m), min
+var causes: Dictionary = {}            ## this round: what took the player's health, cause id -> [hits, damage]
+var cause_log: Array = []              ## per lost round: [round, cause id, hits, damage]
+var metrics: Dictionary = {}           ## the tofu-stage figures fed here, read by the bots (JOB.md 2026-11-22)
 var first_minute: Dictionary = {}     ## the player's first 60 s of round 1: blocked, parried, punished, bashed, hit_landed, hit_taken
 const SPOT_YOU := Vector3(0, 0.05, 2.5)
 const SPOT_RIVAL := Vector3(0, 0.05, -2.5)
@@ -163,6 +167,8 @@ func _start_round() -> void:
 		f.body.place(SPOT_YOU if f == you else SPOT_RIVAL, 0.0 if f == you else PI)
 		f.facing = 0.0 if f == you else PI
 	brain.reset_round()
+	causes = {}
+	lead_round = 0
 	if lessons != null:
 		lessons.start()
 	lead = 0
@@ -230,6 +236,8 @@ func _restart_match(r: int) -> void:
 	match_rules.start()
 	round_no = 1
 	round_log = []
+	cause_log = []
+	metrics = {}
 	first_minute = {}
 	lead_changes = 0
 	drill = {}
@@ -317,6 +325,9 @@ func _read_player() -> void:
 	for a: StringName in [&"light", &"heavy", &"bash", &"taunt"]:
 		if inp.just_pressed(a):
 			you.press(String(a))
+	for a2: StringName in [&"light", &"heavy", &"bash"]:
+		if inp.just_pressed(a2) and you.can_act():
+			metrics["press_f"] = ctx.frame              # feedback: frames from a press the fighter can take to its wind-up
 	if inp.just_pressed(&"roll"):
 		var fwd: Vector3 = you.to_foe()
 		var right := Vector3(-fwd.z, 0.0, fwd.x)
@@ -358,8 +369,46 @@ func _fight(frame: int) -> void:
 func _drain_events() -> void:
 	for f in [you, rival]:
 		for e: Array in f.events:
+			if f == you and str(e[0]) == "windup" and metrics.has("press_f"):
+				metrics["feedback_f"] = maxi(int(metrics.get("feedback_f", 0)), ctx.frame - int(metrics["press_f"]))
+				metrics.erase("press_f")
 			show.on_event(f, e)
 		f.events = []
+
+
+## A loss has a name (plays-twice items 13 and 22): every hit the player takes is filed under a cause, and a lost round
+## ends on the biggest one and its answer (data/causes.json).
+func note_hit(att, def, d0: String, mv: String, dmg: float) -> void:
+	if att == you:
+		metrics["hit_min"] = minf(float(metrics.get("hit_min", 1000.0)), dmg)
+		metrics["hit_max"] = maxf(float(metrics.get("hit_max", 0.0)), dmg)
+		return
+	var id: String = mv
+	if d0 == "WINDUP":
+		id = "traded"
+	elif d0 == "RECOVERY" and you.whiffed:
+		id = "whiff"
+	elif d0 == "PARRY_WHIFF":
+		id = "early_parry"
+	elif d0 in ["GUARDBROKEN", "WALLSPLAT"]:
+		id = "guard_broken"
+	elif d0 == "ROLL" or d0 == "DODGE":
+		id = "roll_end"
+	var c: Array = causes.get(id, [0, 0.0])
+	causes[id] = [int(c[0]) + 1, float(c[1]) + dmg]
+
+
+func _loss_line() -> String:
+	var top: String = ""
+	for k: String in causes:
+		if top == "" or float(causes[k][1]) > float(causes[top][1]):
+			top = k
+	if top == "":
+		return ""
+	var tips: Dictionary = ctx.read_json("causes.json")
+	var t: Dictionary = tips["causes"].get(top, tips["causes"]["light"])
+	cause_log.append([round_no, top, int(causes[top][0]), snappedf(float(causes[top][1]), 0.1)])
+	return "WHAT BEAT YOU: %s (%d hits, %d damage)\n%s" % [str(t["name"]), int(causes[top][0]), roundi(float(causes[top][1])), str(t["answer"])]
 
 
 ## What the player did in the first 60 s of the match (round 1): the learning curve a person meets (plays-twice 5, 10).
@@ -392,6 +441,7 @@ func _track_lead() -> void:
 	var s: int = 1 if d > 0.04 else (-1 if d < -0.04 else 0)
 	if s != 0 and lead != 0 and s != lead:
 		lead_changes += 1
+		lead_round += 1
 	if s != 0:
 		lead = s
 	crowd_level = maxf(0.0, crowd_level - 0.004)
@@ -413,7 +463,11 @@ func _round_checks() -> void:
 	if reason == "":
 		return
 	round_rules.finish(winner, reason)
-	round_log.append([winner, reason, round_rules.total_frames, snappedf(you.hp, 0.1), snappedf(rival.hp, 0.1)])
+	round_log.append([winner, reason, round_rules.total_frames, snappedf(you.hp, 0.1), snappedf(rival.hp, 0.1), lead_round,
+		snappedf((you.hp / you.hp_max) if winner == "you" else (rival.hp / rival.hp_max), 0.001)])
+	var why: String = ""
+	if winner == "rival":
+		why = _loss_line()
 	if winner != "":
 		wins[winner] = int(wins[winner]) + 1
 		match_rules.add_score(winner)
@@ -425,6 +479,8 @@ func _round_checks() -> void:
 		show.banner("K.O.  ROUND TO YOU", 120)
 	else:
 		show.banner("K.O.  ROUND TO %s" % rival.name, 120)
+	if why != "":
+		show.cue(why, int(tune["rounds"]["end_frames"]) + int(tune["rounds"]["intro_frames"]))
 	TLAudio.play(&"cheer" if winner == "you" else &"horn")
 	if not drill.is_empty():
 		drill = {}
@@ -456,7 +512,7 @@ func _idle_bodies(winner_cheers: bool = false) -> void:
 		f.body.velocity.x = 0.0
 		f.body.velocity.z = 0.0
 		if winner_cheers and phase_t == 30 and f.st != "KO" and f.rig != null and round_log.size() > 0 and str(round_log[-1][0]) == f.id:
-			f.rig.play(&"taunt" if f.id == "rival" else &"cheer")
+			f.body.play_clip(&"taunt" if f.id == "rival" else &"cheer")
 			f.anim_clip = &""
 
 
@@ -468,4 +524,5 @@ func _pack_state() -> Dictionary:
 		"drill": str(drill.get("id", "")), "stops": feel.stops, "lead_changes": lead_changes, "crowd": snappedf(crowd_level, 0.01),
 		"rounds": round_log.duplicate(true), "matches": match_log.size(), "rival_passive_max": brain.passive_max, "rival_passive_note": brain.passive_note,
 		"rival_tells_min": brain.tells_min, "rival_attacks": brain.attacks, "rival_strings": brain.strings_used.duplicate(), "rival_mind": brain.choices.duplicate(),
-		"you_counts": you.counts.duplicate(), "rival_counts": rival.counts.duplicate(), "pushbox_gap": snappedf(feel.pushbox_gap(you, rival), 0.001), "first_minute": first_minute.duplicate(), "spacing": {"mean": snappedf(float(spacing.get("sum", 0.0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.01), "close_share": snappedf(float(spacing.get("close", 0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.001), "min": snappedf(float(spacing.get("min", 0.0)), 0.01)}, "lessons": lessons.snapshot() if lessons != null else {}}
+		"you_counts": you.counts.duplicate(), "rival_counts": rival.counts.duplicate(), "pushbox_gap": snappedf(feel.pushbox_gap(you, rival), 0.001), "first_minute": first_minute.duplicate(), "spacing": {"mean": snappedf(float(spacing.get("sum", 0.0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.01), "close_share": snappedf(float(spacing.get("close", 0)) / maxf(1.0, float(spacing.get("frames", 1))), 0.001), "min": snappedf(float(spacing.get("min", 0.0)), 0.01)}, "lessons": lessons.snapshot() if lessons != null else {}, "causes": causes.duplicate(true), "loss_causes": cause_log.duplicate(true),
+		"metrics_feed": metrics.duplicate(), "rival_attack_frames": brain.attack_frames.duplicate()}

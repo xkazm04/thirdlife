@@ -35,6 +35,13 @@ before each blow, the blow comes with a held wind-up, and after the right answer
 A missed lesson is shown once more; after the third (or 50 s) he fights for real. Every rival's light and heavy flash
 a glint on the weapon 16 frames before they land (the moment a person reacting to it presses block in time to parry).
 
+## A loss has a name (`data/causes.json`)
+Every hit you take is filed under a cause from your state and his move: his lights, his heavies, the red unblockable,
+his bash, swinging into his swing, a punished miss, a parry tapped too early, hits after a broken guard, the end of
+your roll. A lost round ends on the biggest one by damage and its answer, on screen through the next round's intro:
+"WHAT BEAT YOU: his quick lights (6 hits, 50 damage) / Keep your guard up close in (hold SPACE) and tap SPACE on the
+glint to parry." (plays-twice items 13 and 22). `_pack_state` carries `causes` and `loss_causes`.
+
 ## What you see
 - Top left / right: health, stamina and posture bars for you and the rival, with EXHAUSTED, RALLY, BROKEN and stars.
 - Top: round, rounds won (filled pips), the round clock, the rival's name, the crowd meter.

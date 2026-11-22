@@ -16,10 +16,9 @@ extends RefCounted
 ##   join(f) / leave(f) / pushbox_gap(a, b)    TLHit.pushbox at 0.45 m per duellist (scaled), N1's measurement
 ##   fade_occluders(a, b)                      ctx.cameras.fade_occluders with both duellists as subjects
 ##   clear(f)                                  TLHit.clear at a round restart
-## Pack-side, kept: the rig clocks. A fight clip is 14 to 30 frames, a duel wind-up 18 to 54; pose() plays the clip and
-## sets its time each frame from a [move frame, clip frame] map, so the wind-up (the tell) lasts as the rules say. The
-## posture break (BROKEN, not a kernel stun) is a pose too. The fallback of the night (pack-held stops and slides) is
-## gone with the switch; slide() below is only for the pack's own moves (lunges, rolls, a knockdown's slide).
+## Rig clocks: TLBiped.play_clip (1.14) runs a fight clip (14-30 frames) on the rules' frames (wind-ups 18-54) from a
+## [move frame, clip frame] map, so the wind-up (the tell) lasts as the rules say; the pack's own rig.clip_t shim is
+## gone. The posture break (BROKEN, not a kernel stun) is a pose too. slide() is only for the pack's own moves.
 
 const DT: float = 1.0 / 60.0
 const PUSHBOX: float = 0.45
@@ -142,40 +141,40 @@ func fade_occluders(a, b) -> void:
 
 
 ## --- rig clocks (pack-side) ----------------------------------------------------------------------------------------
-## A state pose: the clip's clock runs from `anim` ([state frame, clip frame]; a negative state frame counts back from
-## `frames`, the state's length). An empty clip returns the rig to its locomotion (and drops a held block).
-func pose(f, clip: StringName, anim: Array, frames: int, strength: float = -1.0, blend: float = 0.034) -> void:
+## A state pose through the kernel's clip clock (TLBiped.play_clip, API 1.14; engine need E1): the clip's time runs
+## from `anim` ([state frame, clip frame] knots; a negative state frame counts back from `frames`, the state's length;
+## [] = the clip's own pace). `start` > 0 joins the timeline at that frame (a heavy that turns into the charged heavy
+## mid wind-up). An empty clip returns the rig to its locomotion (and drops a held block).
+func pose(f, clip: StringName, anim: Array, frames: int, strength: float = -1.0, blend: float = 0.034, start: int = 0) -> void:
 	if f.rig == null:
 		return
 	if strength >= 0.0 and String(clip).begins_with("hit_"):
 		_size(f, clip, strength)
 	f.anim_clip = clip
-	f.anim_map = anim
-	f.anim_len = frames
-	f.anim_t = 0
-	f.rig.play(clip, blend if clip != &"" else 0.1)
+	f.body.play_clip(clip, timeline(anim, frames, start), blend if clip != &"" else 0.1)
+
+
+## The kernel's timeline from a duel map: negative knots resolved against `frames`, shifted to start at `start`.
+static func timeline(anim: Array, frames: int, start: int = 0) -> Array:
+	if anim.is_empty():
+		return []
+	var out: Array = []
+	if start > 0:
+		out.append([0, clip_frame(anim, float(start), frames)])
+	for p: Array in anim:
+		var x: float = float(p[0]) if float(p[0]) >= 0.0 else float(frames) + float(p[0])
+		x -= float(start)
+		if x < 0.0 or (start > 0 and x <= 0.0):
+			continue
+		if not out.is_empty() and x <= float(out[-1][0]):
+			continue                                  # the kernel takes rising frames only
+		out.append([x, float(p[1])])
+	return out
 
 
 ## The duellist's stance between moves: the fight clips' guard (fists up, left foot ahead) held, legs on the gait.
 func stance(f) -> void:
 	pose(f, &"strike", [[0, 0.0], [1000000, 0.0]], 0, -1.0, 0.12)
-
-
-## Every live frame, before the bodies move: the rig clip's clock for this frame (the rig adds one tick itself).
-func run_pose(f) -> void:
-	if f.rig == null or f.anim_clip == &"" or f.anim_map.is_empty():
-		return
-	if f.rig.clip != f.anim_clip:        # something else took the rig (a kernel reaction, a fall): stop steering it
-		f.anim_clip = &""
-		return
-	f.anim_t += 1
-	var last: float = float(f.anim_map[-1][0])
-	if last < 0.0:
-		last += float(f.anim_len)
-	if float(f.anim_t) > last:                 # the map is done: the clip runs out at its own pace, then the stance
-		f.anim_clip = &""
-		return
-	f.rig.clip_t = maxf(0.0, clip_frame(f.anim_map, f.anim_t, f.anim_len) * DT - DT)
 
 
 ## Piecewise linear [frame, clip frame] map; negative frames are counted back from `length`.

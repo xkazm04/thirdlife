@@ -127,6 +127,7 @@ func _hit(att, def) -> void:
 		dmg *= float(ch["damage_k"])
 	var star: bool = def.st == "TELL" or def.st == "TAUNT"
 	def.hurt(dmg)
+	g.note_hit(att, def, d0, mv, dmg)
 	att._count("hits")
 	def._count("hits_taken")
 	var key: String = mv + "_hit"
