@@ -23,8 +23,10 @@ var border: Rect2
 var space: WeakRef
 var lanes := {}         # chunk -> triangles of the lanes and the bridge deck whose centre lies in it
 var bodies := {}        # chunk -> collider (chunk_collider.gd `build`)
+var trees := {}         # chunk -> [[foot, radius], ...]: trunks ride on that chunk's body
+var cylinders := {}     # radius (cm) -> CylinderShape3D, shared
 var centre := Vector2i(1 << 30, 1 << 30)
-var stats := {"made": 0, "dropped": 0, "faces": 0, "build_usec": 0}
+var stats := {"made": 0, "dropped": 0, "faces": 0, "trunks": 0, "build_usec": 0}
 
 
 static func wanted(cfg: Dictionary) -> bool:
@@ -62,6 +64,16 @@ static func grow(parent: Node3D, cfg: Dictionary, terr: RefCounted, ws: Object) 
 	home.border = valley.border
 	home.space = weakref(ws)
 	home.bucket(artist.lane_faces)
+	for t: Array in artist.trunks:
+		var tid := chunk_of(Vector2(t[0].x, t[0].z))
+		if not home.trees.has(tid):
+			home.trees[tid] = []
+		home.trees[tid].append(t)
+	var was_tag: String = ws.get("tag")
+	ws.set("tag", "home solid")
+	for box: Array in artist.solids:
+		ws.call("add_box", box[0], box[1])
+	ws.set("tag", was_tag)
 	if not artist.rail_faces.is_empty():
 		var was: String = ws.get("tag")
 		ws.set("tag", "home rail")
@@ -172,9 +184,23 @@ func ensure(p: Vector2) -> void:
 			if tri.is_empty():
 				continue
 			bodies[id] = Collider.build(null, Rect2i(), tri, "faces", ws, "home ground", "home_faces")
+			for t: Array in trees.get(id, []):
+				PhysicsServer3D.body_add_shape(bodies[id].body, cylinder(t[1]).get_rid(), Transform3D(Basis(), t[0] + Vector3.UP * 2.0))
+				stats.trunks += 1
 			stats.made += 1
 			stats.faces += tri.size() / 3
 	stats.build_usec += Time.get_ticks_usec() - t0
+
+
+## A trunk 4 m tall (as world_space.gd `add_trunk`), one shape per radius in centimetres.
+func cylinder(radius: float) -> CylinderShape3D:
+	var key := roundi(radius * 100.0)
+	if not cylinders.has(key):
+		var c := CylinderShape3D.new()
+		c.radius = key / 100.0
+		c.height = 4.0
+		cylinders[key] = c
+	return cylinders[key]
 
 
 ## The height of what the visitor stands on at (x, z) outside the village: the rendered ground (lanes and deck aside).
