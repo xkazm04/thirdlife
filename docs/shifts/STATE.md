@@ -289,3 +289,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   D3 editor (critic cross-checks bot claims against film; one hockey job; Opus). Standups :17 hourly; lanes stop 17:15; verdict 17:30; push by 18:30.
   Plan: docs/shifts/2026-11-22-day/PLAN.md.
 - 13:44 standup: D3 r1 (9f7f077) + r2 (b0bb985) landed with JOB.md notes; D1 r1+r2 in its full tier; D2 asked for status (silent since 12:45).
+- 14:44 standup: D1 r1+2 landed (efbf00f; integration list running in d22-int); D3 r3 (d060ac8) + r4 (9f9ca12) landed, re-dispatched; D2 E6 fix verified (selftest 760 3/3 vs 0/3 on main), A/B next.
