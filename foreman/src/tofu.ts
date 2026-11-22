@@ -62,7 +62,7 @@ export function tofuPlannerText(template: ConceptTemplate | undefined, verbs?: n
   return [
     "The first phase is the tofu stage (docs/GAME-QUALITY.md section 12): the core verb exchange on flat shapes. Its packages are milestone `blockout` (and no package of a later phase is). The root package's contract carries this line, word for word (the plan is refused without it):",
     `  ${tofuLine(template)}`,
-    "That bot is registered by the root package and runs in its acceptance. Its `_bot_result()` returns `{ok, summary, metrics: {...}}` with every metric below COUNTED from the frames it played (never a constant), plus `hand` (the TLHand profile it played the player's side through). When the blockout milestone is reached the Foreman judges them; any metric absent or out of bounds sends the root back (two revise rounds) and then holds the job, before the second phase starts. Paste the rows into the root contract:",
+    "That bot is registered by the root package and runs in its acceptance. Its `_bot_result()` returns `{ok, summary, metrics: {...}, moments: {<kind>: [frames]}}` (moments: the frames where each kind of contact happened, parried, blocked, hit, rolled, bashed...: the Foreman films the exchange there) with every metric below COUNTED from the frames it played (never a constant), plus `hand` (the TLHand profile it played the player's side through). When the blockout milestone is reached the Foreman judges them; any metric absent or out of bounds sends the root back (two revise rounds) and then holds the job, before the second phase starts. Paste the rows into the root contract:",
     ...tofuMetricsFor(template, verbs).map((m) => `  - \`${m.id}\` ${bound(m)} (checklist item ${m.item}): ${m.how}`),
   ].join("\n");
 }

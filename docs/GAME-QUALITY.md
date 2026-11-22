@@ -433,7 +433,10 @@ in an empty room. Our first phase is the tofu stage.
 
   Template metrics join them (section 11): the duel's `contact_types` (>= 3) and `one_sided_contacts` (0); the arcade
   sport's `possession_median_f` (240 to 600). The bot also names `hand`: the `TLHand` profile it played the player's
-  side through; every figure is quoted with it.
+  side through; every figure is quoted with it. And it reports `moments` beside `metrics`: kind -> the frames where that
+  kind of contact happened (parried, blocked, hit, rolled, bashed; a sport's one-timer, poke, check). The Foreman films
+  the look there, not at fixed fractions of the run (the crazy proof of 22 Nov filmed two strips of 60 frames of both
+  fighters standing still).
 - **The hold.** When the `blockout` milestone's packages are merged, the Foreman reads the newest report of the tofu bot
   and judges the metrics with the critic's look, exactly like the quality loop: NOT ok sends the root package a revise
   round with the failed rows (at most 2 rounds), the critic keeps the better version, and still NOT ok holds the job

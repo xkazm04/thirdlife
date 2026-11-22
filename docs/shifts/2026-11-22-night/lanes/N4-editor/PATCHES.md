@@ -175,3 +175,15 @@ never-idle limit of `scripts/brain.gd` (120 frames). Read live, so a retuned hou
   faster than skating), the puck on the blade by a spring with readable loss causes, and an AI that decides from scored
   options (said in `rules`, `controls`, `arena`, `ai` or `design.feel.camera`; `ai` now joins the duel keeps' text too).
 ```
+
+# Loop round 8 (22 Nov 04:05-04:25): film the exchange
+
+## 11. contracts/JOB.md: append to the motion-strips paragraph
+
+```markdown
+- **Filmed at the bot's moments.** A bot result may carry `moments` (or `metrics.moments`): kind -> the frames where
+  that kind of contact happened. A milestone's shots then film those frames instead of fixed fractions of the run: a
+  package's own bot films two moments (the first of each kind first, each at least 31 frames in); the pack's first test
+  keeps its 25 % frame (the art-pass compare looks at the same frame milestone to milestone) and films its first moment
+  second. The tofu bot reports `moments` beside `metrics`.
+```
