@@ -46,6 +46,7 @@ const pc = (x) => (Number.isFinite(x) ? Math.round(x * 100) + "%" : "-");
 
 function aggregate(runs) {
   const ok = runs.filter((r) => r.done && r.r.metrics);
+  const ok_runs = ok;
   const L = [], PP = [];
   let live = 0, passes = 0, comp = 0, shots = 0, slot = 0, ot = 0, after = 0, ozB = 0, ozR = 0, ent = 0, entOk = 0, goals = 0, wins = 0;
   const tov = {};
@@ -75,7 +76,10 @@ function aggregate(runs) {
     runs: runs.length, completed: ok.length, wins,
     poss_median_s: median(L) / 60, poss_n: L.length,
     passes_per_poss: PP.length ? PP.reduce((x, y) => x + y, 0) / PP.length : NaN,
-    completion: passes ? comp / passes : NaN,
+    completion: (() => { let ok = 0, all = 0; for (const r of ok_runs) for (const [k, n] of Object.entries(r.r.metrics.pass_out ?? {})) { const o = k.split(":")[1]; if (o === "whistle") continue; all += n; if (o !== "intercepted") ok += n; } return all ? ok / all : (passes ? comp / passes : NaN); })(),
+    completion_red_ai: (() => { let ok = 0, all = 0; for (const r of ok_runs) for (const [k, n] of Object.entries(r.r.metrics.pass_ai ?? {})) { if (!k.startsWith("red:")) continue; const o = k.split(":")[1]; if (o === "whistle") continue; all += n; if (o !== "intercepted") ok += n; } return all ? ok / all : NaN; })(),
+    ppp_red: (() => { const xs = ok_runs.flatMap((r) => r.r.metrics.side_poss?.red ?? []); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN; })(),
+    ppp_blue: (() => { const xs = ok_runs.flatMap((r) => r.r.metrics.side_poss?.blue ?? []); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN; })(),
     shots_per_min_team: mins ? shots / mins / 2 : NaN,
     shots_blue_per_min: mins ? side.blue.shots / mins : NaN, shots_red_per_min: mins ? side.red.shots / mins : NaN,
     slot_or_ot_share: shots ? Math.min(1, (slot + ot) / shots) : NaN, slot_share: shots ? slot / shots : NaN, ot_share: shots ? ot / shots : NaN,
@@ -92,7 +96,7 @@ function aggregate(runs) {
 
 function line(cell, g) {
   const sh = Object.entries(g.turnover_share).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${pc(v)}`).join(", ");
-  return `| ${cell} | ${g.completed}/${g.runs} | ${g.wins} | ${f1(g.poss_median_s)} s | ${f1(g.passes_per_poss)} / ${pc(g.completion)} | ${f1(g.shots_per_min_team)} (b ${f1(g.shots_blue_per_min)}, r ${f1(g.shots_red_per_min)}) / ${pc(g.slot_or_ot_share)} (ot ${pc(g.ot_share)}) | ${f1(g.turnovers_per_min)}/min: ${sh} | ${pc(g.oz_blue / (g.oz_blue + g.oz_red))} / ${pc(g.oz_red / (g.oz_blue + g.oz_red))} (raw ${pc(g.oz_blue)} / ${pc(g.oz_red)}), entry ${pc(g.entry_success)} | ${f1(g.goals_per_game)} | ${f1(g.checks_per_min)} (down ${f1(g.knockdowns_per_min)}, bump ${f1(g.bumps_per_min)}) | ${f1(g.crowd_mean)} / ${pc(g.scrum_share)} |`;
+  return `| ${cell} | ${g.completed}/${g.runs} | ${g.wins} | ${f1(g.poss_median_s)} s | ${f1(g.passes_per_poss)} (b ${f1(g.ppp_blue)}, r ${f1(g.ppp_red)}) / ${pc(g.completion)} (red AI ${pc(g.completion_red_ai)}) | ${f1(g.shots_per_min_team)} (b ${f1(g.shots_blue_per_min)}, r ${f1(g.shots_red_per_min)}) / ${pc(g.slot_or_ot_share)} (ot ${pc(g.ot_share)}) | ${f1(g.turnovers_per_min)}/min: ${sh} | ${pc(g.oz_blue / (g.oz_blue + g.oz_red))} / ${pc(g.oz_red / (g.oz_blue + g.oz_red))} (raw ${pc(g.oz_blue)} / ${pc(g.oz_red)}), entry ${pc(g.entry_success)} | ${f1(g.goals_per_game)} | ${f1(g.checks_per_min)} (down ${f1(g.knockdowns_per_min)}, bump ${f1(g.bumps_per_min)}) | ${f1(g.crowd_mean)} / ${pc(g.scrum_share)} |`;
 }
 
 const jobs = [];

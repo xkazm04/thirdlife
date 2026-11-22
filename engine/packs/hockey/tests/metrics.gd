@@ -32,6 +32,13 @@ var per_poss_passes: Array = []
 var passes: Dictionary = {"blue": 0, "red": 0}
 var complete: Dictionary = {"blue": 0, "red": 0}
 var pending_pass: String = ""          # side of a pass in flight not yet resolved
+var pending_to: String = ""            # its intended receiver ("" when the release named none)
+var pending_by: String = ""            # its passer
+var pending_frame: int = 0
+var pass_out: Dictionary = {}          # round 2: how passes ended, by the passer's side: received (the man it was meant for),
+									   # mate (another of his side), intercepted (an opponent, ever: within or after the flight), whistle
+var side_poss: Dictionary = {}         # round 2: side -> passes of each of its possessions
+var pass_ai: Dictionary = {}           # the same for passes by AI skaters only (not b0, not a goalie)
 var shots: Dictionary = {"blue": 0, "red": 0}
 var slot_shots: Dictionary = {"blue": 0, "red": 0}
 var one_timers: Dictionary = {"blue": 0, "red": 0}
@@ -49,7 +56,9 @@ var _prev_x: float = 0.0
 var _was_live: bool = false
 var frame: int = 0
 var idle: int = 0                      # live frames since the last take, shot, pass or release
-var idle_max: int = 0                  # tofu idle_max_f: the longest such stretch
+var idle_max: int = 0                  # dead_puck_max_f: the longest such stretch (renamed for N4, 22 Nov)
+var opp_still: Dictionary = {}         # red field skater -> live frames in a row under 0.5 m/s, not carrying, not down
+var opp_idle_max: int = 0              # tofu idle_max_f (checklist item 9): an OPPONENT doing nothing, the longest stretch
 var lead_changes: int = 0              # goals after which a different side leads (from level or from behind)
 var goal_count: int = 0
 var rounds: int = 0                    # periods played to their end
@@ -75,12 +84,19 @@ func _end(cause: String) -> void:
 	if cur != "":
 		lengths.append(frame - cur_start)
 		per_poss_passes.append(cur_passes)
+		(side_poss.get_or_add(cur, []) as Array).append(cur_passes)
 		if cause != "":
 			turnovers[cause] = int(turnovers.get(cause, 0)) + 1
 	cur = ""
 	cur_passes = 0
 	_entry_side = ""
 
+
+func _pass_end(out: String) -> void:
+	var k: String = pending_pass + ":" + out
+	pass_out[k] = int(pass_out.get(k, 0)) + 1
+	if pending_by != "b0" and role_of.get(pending_by, "") != "goalie":
+		pass_ai[k] = int(pass_ai.get(k, 0)) + 1
 
 func observe(s: Dictionary) -> void:
 	frame += 1
@@ -123,6 +139,8 @@ func observe(s: Dictionary) -> void:
 	if not is_live:
 		if _was_live:
 			_end("")                   # a goal, a period's end: the possession stops with the whistle
+			if pending_pass != "":
+				_pass_end("whistle")
 			pending_pass = ""
 		_was_live = false
 		_shots_seen = shot_ids.duplicate()
@@ -173,6 +191,19 @@ func observe(s: Dictionary) -> void:
 			if ps == cur:
 				cur_passes += n3
 			pending_pass = ps
+			pending_by = id
+			pending_to = str(last.get("to", "")) if str(last.get("by", "")) == id else ""
+			pending_frame = frame
+			if ps == "red":
+				# a red pass made with a blue skater within 3.5 m of the passer: a pass out of pressure (for clips)
+				var pp: Vector2 = Vector2.ZERO
+				for k2: Dictionary in s.get("skaters", []):
+					if str(k2["id"]) == id:
+						pp = Vector2(float(k2["pos"][0]), float(k2["pos"][1]))
+				for k2: Dictionary in s.get("skaters", []):
+					if str(k2["team"]) == "blue" and str(k2["role"]) != "goalie" and pp.distance_to(Vector2(float(k2["pos"][0]), float(k2["pos"][1]))) < 3.5:
+						(moments.get_or_add("red_pass_pressed", []) as Array).append(frame)
+						break
 	_passes_seen = pass_ids.duplicate()
 	# possession changes
 	if holder != "" and holder != prev_holder:
@@ -180,6 +211,8 @@ func observe(s: Dictionary) -> void:
 		if pending_pass != "":
 			if side2 == pending_pass:
 				complete[pending_pass] += 1
+			var out: String = "intercepted" if side2 != pending_pass else ("received" if holder == pending_to else "mate")
+			_pass_end(out)
 			pending_pass = ""
 		if side2 != cur:
 			if cur != "":
@@ -201,6 +234,18 @@ func observe(s: Dictionary) -> void:
 		idle = 0
 	prev_holder = holder
 	idle_max = maxi(idle_max, idle)
+	var downs: Dictionary = (s.get("hits", {}) as Dictionary).get("down", {})
+	for k: Dictionary in s.get("skaters", []):
+		var kid: String = str(k["id"])
+		if str(k["team"]) != "red" or str(k["role"]) == "goalie":
+			continue
+		var job: String = str((s.get("roles_now", {}) as Dictionary).get(kid, ""))
+		var covering: bool = job in ["F2", "F3", "D2", "D3"]     # supporting and covering count as acting (N4's definition)
+		if float(k.get("speed", 0.0)) < 0.5 and kid != holder and not downs.has(kid) and not covering:
+			opp_still[kid] = int(opp_still.get(kid, 0)) + 1
+			opp_idle_max = maxi(opp_idle_max, int(opp_still[kid]))
+		else:
+			opp_still[kid] = 0
 	# crowding round the puck
 	var near: int = 0
 	var near_ids: Array = []
@@ -261,19 +306,34 @@ func figures(hand: String) -> Dictionary:
 	var f: Dictionary = {"hand": hand, "live_f": live,
 		"possession_median_f": sl[sl.size() / 2] if not sl.is_empty() else 0,
 		"passes_per_possession": snappedf(float(pp) / maxf(per_poss_passes.size(), 1), 0.001),
-		"pass_completion": snappedf(float(complete.blue + complete.red) / maxf(pas, 1), 0.001),
+		"pass_completion": snappedf(_completion(), 0.001),
 		"shots_per_min_team": snappedf(shots_n / mins / 2.0, 0.001),
 		"slot_or_one_timer_share": snappedf(minf(1.0, float(slot_shots.blue + slot_shots.red + one_timers.blue + one_timers.red) / maxf(shots_n, 1)), 0.001),
 		"turnovers_per_min": snappedf(tov / mins, 0.001), "turnover_share": share,
 		"oz_share_blue": snappedf(float(oz.blue) / maxf(ozt, 1), 0.001),
 		"entry_success": snappedf(float(entries_ok.blue + entries_ok.red) / maxf(ent, 1), 0.001),
 		"goals": goal_count,
-		"idle_max_f": idle_max, "pressure_waves": entries_ok.blue + entries_ok.red,
+		"idle_max_f": opp_idle_max, "dead_puck_max_f": idle_max, "pressure_waves": entries_ok.blue + entries_ok.red,
 		"lead_change_share": snappedf(float(lead_changes) / maxf(goal_count, 1), 0.001),
 		"close_rounds": close_rounds, "rounds": rounds, "raw": r}
 	return f
 
+## Round 2: a pass is complete when one of the passer's side takes it next, intercepted when the other side does; a pass
+## whose flight a whistle ends is neither (it was counted as a miss before 22 Nov 03:20).
+func _completion(side: String = "") -> float:
+	var ok: int = 0
+	var all: int = 0
+	for k: String in pass_out:
+		var sd: String = k.get_slice(":", 0)
+		var out: String = k.get_slice(":", 1)
+		if (side != "" and sd != side) or out == "whistle":
+			continue
+		all += int(pass_out[k])
+		if out != "intercepted":
+			ok += int(pass_out[k])
+	return float(ok) / maxf(all, 1)
+
 func result() -> Dictionary:
 	return {"live": live, "lengths": lengths, "poss_passes": per_poss_passes, "passes": passes, "complete": complete,
 		"shots": shots, "slot_shots": slot_shots, "one_timers": one_timers, "turnovers": turnovers, "after_shot": after_shot,
-		"oz": oz, "entries": entries, "entries_ok": entries_ok, "given": given, "goals_how": goals_how, "moments": moments, "crowd_sum": crowd_sum, "crowd4": crowd4, "crowd_roles": crowd_roles}
+		"oz": oz, "entries": entries, "entries_ok": entries_ok, "given": given, "goals_how": goals_how, "moments": moments, "crowd_sum": crowd_sum, "crowd4": crowd4, "crowd_roles": crowd_roles, "pass_out": pass_out, "pass_ai": pass_ai, "side_poss": side_poss}
