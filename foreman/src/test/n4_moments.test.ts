@@ -77,3 +77,18 @@ test("round 13: the house strip reads the duel pilot's top-level `moments` (proo
   assert.equal(contactFrame(real, duel), 2269);
   assert.equal(contactFrame({ bot: { frames: 4593, result: {} } }, duel), 4533, "no moments: the old fallback");
 });
+
+test("round 16: the look films the template's signature contacts first (a parry, a roll, a fall), not merely the first kinds the bot saw", async () => {
+  const { templateOf } = await import("../templates.js");
+  const first = templateOf("duel")?.filmFirst ?? [];
+  // A tofu bot's moments as -5's could have been: hits early and often, a parry and a roll later.
+  const m = [{ kind: "hit_light", frame: 120 }, { kind: "blocked", frame: 150 }, { kind: "hit_light", frame: 200 }, { kind: "rolled", frame: 820 }, { kind: "parried", frame: 1400 }, { kind: "knockdown", frame: 2100 }];
+  assert.deepEqual(pickMoments(m, 2), [120, 150], "without a template: the first kinds seen");
+  assert.deepEqual(pickMoments(m, 2, first), [820, 1400], "with the duel's order: the parry and the roll");
+  assert.deepEqual(pickMoments(m, 1, first), [1400], "one moment: the parry");
+  assert.deepEqual(pickMoments(m, 3, first), [820, 1400, 2100], "then the fall");
+  const plan = [{ id: "core", title: "c", milestone: "blockout" as const, deps: [], scope: ["scripts/main.gd"], contract: "x", acceptance: [{ level: "V4" as const, verb: "bot" as const, args: ["--test=tests/bot_tofu.gd"] }], registers: { tests: ["tests/bot_tofu.gd", "tests/bot_rally.gd"] } }] as PackageSpec[];
+  const shots = planShots(plan, [], ["core"], ["tests/bot_rally.gd", "tests/bot_tofu.gd"], () => 3000, undefined, (b) => (b === "tests/bot_tofu.gd" ? m : []), first);
+  assert.deepEqual(shots[1]?.frames, [820, 1400]);
+  assert.deepEqual(templateOf("arcade_sport")?.filmFirst?.[0], "one_timer");
+});
