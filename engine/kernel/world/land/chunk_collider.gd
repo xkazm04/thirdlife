@@ -51,7 +51,9 @@ static func faces(t, rect: Rect2i, skip: Callable) -> PackedVector3Array:
 	return faces
 
 
-static func build(t, rect: Rect2i, triangles: PackedVector3Array, kind: String, ws) -> Dictionary:
+## `tag` and `stat`: the body's tag in the space and the stats key its faces count under (D1: the Home's chunks are
+## "home ground" / "home_faces", so the village's terrain bodies and face total stay what they were).
+static func build(t, rect: Rect2i, triangles: PackedVector3Array, kind: String, ws, tag := "terrain", stat := "faces") -> Dictionary:
 	var shape: Shape3D
 	var transform := Transform3D.IDENTITY
 	var count := 0
@@ -76,11 +78,11 @@ static func build(t, rect: Rect2i, triangles: PackedVector3Array, kind: String, 
 		count = triangles.size() / 3
 		shape = concave
 	var previous: String = ws.tag
-	ws.tag = "terrain"
+	ws.tag = tag
 	var body: RID = ws._static(shape, transform)
 	ws.tag = previous
-	ws.stats.faces += count
-	return {"body": body, "shape": shape, "faces": count}
+	ws.stats[stat] = int(ws.stats.get(stat, 0)) + count
+	return {"body": body, "shape": shape, "faces": count, "stat": stat}
 
 
 static func drop(collider: Dictionary, ws) -> void:
@@ -89,4 +91,4 @@ static func drop(collider: Dictionary, ws) -> void:
 	ws._tags.erase(body)
 	PhysicsServer3D.free_rid(body)
 	ws.stats.bodies -= 1
-	ws.stats.faces -= collider.faces
+	ws.stats[collider.get("stat", "faces")] -= collider.faces
