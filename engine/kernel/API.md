@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.15)
+# Third Life kernel API (kernelApi 1.16)
 
-**Version 1.15 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.16 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.15"` in `pack.json` (any
-`"1.x"` up to 1.15 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.16"` in `pack.json` (any
+`"1.x"` up to 1.16 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -241,6 +241,7 @@ ball then takes its shape, material and mass from the part and wears it; without
 | `speed()`, `is_moving()`, `surface()` | m/s; above 0.05 m/s; material id under it |
 | signals `bounced(other, speed)`, `stopped()`, `held(holder)`, `released(holder)` | hit something; came to rest; picked up; let go |
 | `contact: TLContact`, `max_speed`, `radius`, `material_id` | |
+| `set_max_gain(per_frame, floor_speed = 0.0)`, `set_velocity(v)` (1.16) | H1: no contact launches the ball past max(last speed, floor_speed) + per_frame a frame; game-set velocities are never cut (section 6, "H1") |
 | `set_radius(r: float)` (1.13) | K8: a new radius now (the hockey big puck): the shape and the drawn ball or puck follow (a kit part's visual is scaled, x and z for a puck); height, mass, material and motion are kept |
 
 ```gdscript
@@ -456,6 +457,28 @@ fighter.play_clip(&"strike_heavy")
 TLHit.swing_trail(fighter, 1.0, 40)
 hud.add_tag(&"cue", fighter, "HEAVY")
 hud.set_color(&"cue", &"car_red")
+```
+
+### H1 a ball no contact can launch (addition in 1.16)
+
+A puck squeezed between two skaters, or run into by a body, can leave at a speed nobody shot it with (hockey: 27 m/s
+out of a face-off, an own goal for an idle hand). A ball can refuse any speed the game did not give it.
+
+| Member | Meaning |
+|---|---|
+| `set_max_gain(per_frame: float, floor_speed: float = 0.0)` | from now on a contact may raise the planar speed by at most `per_frame` m/s a frame over max(the speed a frame before, `floor_speed`). A faster gain is cut back at the start of the next frame (the ball has moved one step at it). 0 = off, the default |
+| `set_velocity(v: Vector3)` | sets the velocity as the game's own: never cut |
+
+- A velocity the game gives is never cut: `shoot`, `shoot_at`, `release`, `place` and `set_velocity` declare it. A raw
+  `linear_velocity = ...` write is not declared and is cut like a contact: use `set_velocity`.
+- A held ball is not limited. The vertical speed is never touched. Off by default: a ball without the call is the ball
+  it always was (no state hash moves).
+- Measured (block 719): a 60 kg block slid at 24 m/s into a resting puck sends it off at 28.8 m/s; with
+  `set_max_gain(4, 10)` it leaves at 14, 18, then 22 m/s.
+
+```gdscript
+puck.set_max_gain(4.0, 10.0)      # hockey's pinch rule: no contact adds more than 4 m/s a frame over max(last, 10)
+puck.set_velocity(pass_dir * 14.0)  # a pass the game makes
 ```
 
 ## 7. `TLVehicle` (capability `vehicle`): raycast wheels
