@@ -185,6 +185,20 @@ export const TEMPLATES: Template[] = [
         { file: "data/ai.json", role: "the utility weights, reaction frames, fresh-carrier delays" },
         { file: "tests/metrics.gd", role: "the five HOCKEY-ARCADE 5.5 metrics read from the state every frame (possession, passes, shots, turnovers by cause, zone share)" },
       ],
+      // Round 7: the owner's three hockey words (21 Nov: "puck stickiness, players speed, ability AI to decide what to do,
+      // when to pass and shoot"). The real arcade-sport room of 22 Nov copied the carry and the utility AI but wrote no
+      // speed ratio at all: the brief must say the carrier is slower and the pass beats skating.
+      keeps: [
+        { what: "the speed ratios: the carrier is slower than a free skater (about x0.88) and a pass travels about twice skating speed, so passing beats carrying", re: /carrier[^.]{0,60}(slower|x\s?0\.\d|0\.\d+\s?x)|(slower|x\s?0\.\d)[^.]{0,40}carr|0\.88|pass(es)?[^.]{0,40}(beats?|faster than) (skating|carrying)/i },
+        { what: "the possession rules: the puck sticks to the carrier's blade (a spring) and leaves only by a readable cause (a poke, a check, an intercepted pass, the carrier's own sprint-and-turn, a bobble)", re: /spring|stick(s|y)? to (the|his) blade|on the blade/i },
+        { what: "the AI decides from scored options (shoot, pass, carry) every few frames with vetoes, never by chance alone", re: /utility|scor(e|es|ing) (shoot|SHOOT)|SHOOT, PASS|decid\w* every \d+/i },
+      ],
+      numbers: [
+        { what: "the skater (data/tuning.json `skater`: speed m/s, acceleration, turn rate rad/s, mass, body scale)", read: (d) => readJsonKey(d, "data/tuning.json", "skater") },
+        { what: "skating and the carrier's handicap (data/tuning.json `skate`: free-skater and sprint multipliers, the carrier's sprint cap, acceleration and turn ratios)", read: (d) => readJsonKey(d, "data/tuning.json", "skate") },
+        { what: "the carry, the stickiness (data/tuning.json `carry`: reach, blade, spring k, dangle, the loss rule)", read: (d) => readJsonKey(d, "data/tuning.json", "carry") },
+        { what: "the shot (data/tuning.json `shoot`)", read: (d) => readJsonKey(d, "data/tuning.json", "shoot") },
+      ],
     },
   },
 ];
@@ -258,15 +272,15 @@ Your reference copy holds it whole: ref/packs/${h.pack}/ (read the files below b
 }
 
 /** A brief's template problems: the design's copied moves, and what the house game keeps (in rules and controls). */
-export function briefTemplateProblems(brief: { design?: DesignDoc; rules: string; controls: string; arena: string }, template: ConceptTemplate | undefined): string[] {
+export function briefTemplateProblems(brief: { design?: DesignDoc; rules: string; controls: string; arena: string; ai?: string }, template: ConceptTemplate | undefined): string[] {
   if (brief.design === undefined || template === undefined) return [];
-  return [...designTemplateProblems(brief.design, template), ...houseKeepProblems(`${brief.rules} ${brief.controls} ${brief.arena} ${brief.design.feel.camera}`, template)];
+  return [...designTemplateProblems(brief.design, template), ...houseKeepProblems(`${brief.rules} ${brief.controls} ${brief.arena} ${brief.ai ?? ""} ${brief.design.feel.camera}`, template)];
 }
 
 /** Problems of a brief against its template's house game: the rules it must keep (rules and controls text). */
 export function houseKeepProblems(text: string, template: ConceptTemplate | undefined): string[] {
   const t = templateOf(template?.id);
-  return (t?.house?.keeps ?? []).filter((k) => !k.re.test(text)).map((k) => `the ${t?.id} house game (engine/packs/${t?.house?.pack}) keeps ${k.what}: say it in \`rules\`, \`controls\`, \`arena\` or \`design.feel.camera\``);
+  return (t?.house?.keeps ?? []).filter((k) => !k.re.test(text)).map((k) => `the ${t?.id} house game (engine/packs/${t?.house?.pack}) keeps ${k.what}: say it in \`rules\`, \`controls\`, \`arena\`, \`ai\` or \`design.feel.camera\``);
 }
 
 /** The template a sentence calls for by its words (a fight is a duel), or undefined. */

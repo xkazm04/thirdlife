@@ -1,0 +1,433 @@
+{
+ "sentence": "ice hockey, three against three on a frozen lake",
+ "creativity": "standard",
+ "model": "opus (claude-cli)",
+ "job": "ice-hockey-three-against-20261122-1",
+ "concept": {
+  "template": {
+   "id": "arcade_sport",
+   "reference": "NHL '94, Rocket League, Buckland's Simple Soccer; house game engine/packs/hockey (game.ice_hockey_three_against)",
+   "copies": [
+    "Possession as a state (loose, carried, passed, shot) with readable loss causes: poke, check, intercept (HOCKEY-ARCADE 5.1).",
+    "Utility AI scoring shoot, pass and carry each tick by lane, angle and pressure (HOCKEY-ARCADE 5.3).",
+    "Roles re-sorted by time to the puck: chaser, support, defender, swapped every tick (HOCKEY-ARCADE 5.4).",
+    "The poke move 5/7/12 as `cross_check`: a short stick-reach steal with a punishable recovery.",
+    "House game rink, puck, goals and periods; NHL '94 one-timer: pass, then shoot on arrival."
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "Three-on-three pond hockey on a frozen lake with NHL '94 checks, first to five goals.",
+    "likelihood": 0.8
+   },
+   {
+    "pitch": "Lake hockey where big checks crack the ice; cracks open into water swallowing puck and skaters.",
+    "likelihood": 0.12
+   },
+   {
+    "pitch": "Village feud: three brothers defend their lake against the next valley's team, one match per village.",
+    "likelihood": 0.35
+   },
+   {
+    "pitch": "Blizzard hockey: snowbanks drift across the lake each period, reshaping the rink's boundaries and lanes.",
+    "likelihood": 0.2
+   },
+   {
+    "pitch": "Dusk lake hockey where the goals are fishing huts that splinter a little with every goal.",
+    "likelihood": 0.15
+   }
+  ],
+  "chosen": 1,
+  "why": "It serves every word, and the frozen lake becomes the mechanic. Checks change the space, and the hazard rewards deliberate use, making a GIF. Plain pond hockey has no hook; any hockey game could ship it.",
+  "hook": "every big check cracks the ice, and cracks become holes",
+  "anchor": "arcade three-on-three hockey",
+  "references": [
+   {
+    "game": "NHL Hitz 20-02",
+    "borrow": "Open-ice checks knock the skater down loudly, with a fast get-up so he is soon back."
+   },
+   {
+    "game": "Mutant League Hockey",
+    "borrow": "Rink hazards that swallow players; using them on rivals on purpose is part of winning."
+   },
+   {
+    "game": "NBA Jam",
+    "borrow": "Three goals in a row put a side on fire until the other side scores."
+   }
+  ]
+ },
+ "design": {
+  "pillars": [
+   {
+    "line": "Every big hit changes the ice for both teams.",
+    "rules_out": "Checks that only shove; hazards placed by script, random timers or falling from the sky."
+   },
+   {
+    "line": "The puck is a state and every loss has a cause.",
+    "rules_out": "Glued pucks, random turnovers, ghost pokes and instant re-steals."
+   },
+   {
+    "line": "Water punishes the reckless and rewards the planner.",
+    "rules_out": "Instant deaths, health bars, lost goals; a swim costs 3 s, never the match."
+   }
+  ],
+  "verbs": [
+   {
+    "id": "shoot",
+    "input": "Space or left button: shoot clip; tap wrist 24 m/s, hold up to 30 f for 32 m/s; one-timer 8 f before to 6 after.",
+    "anticipation_f": 4,
+    "active_f": 1,
+    "recovery_f": 12,
+    "cancel": "Losing the puck cancels the charge; no pickup for 6 f after release; recovery cancels into dodge."
+   },
+   {
+    "id": "pass",
+    "input": "Q or right button with the puck: pass clip, a short sweep; 18 m/s led pass to the mate nearest the stick, 23 m/s beyond 15 m.",
+    "anticipation_f": 3,
+    "active_f": 1,
+    "recovery_f": 10,
+    "cancel": "Receiver gets the pass window (+0.6 m, 100 deg, 18 f magnet); passer cannot pick up 6 f."
+   },
+   {
+    "id": "poke",
+    "move": "poke",
+    "input": "E: template poke 5/7/12 on the strike clip as a short stick jab; reach 2.3 m, 35 deg cone, odds 65/45.5/26 % front/side/back.",
+    "anticipation_f": 5,
+    "active_f": 7,
+    "recovery_f": 12,
+    "cancel": "Cooldown 40; a whiff halves turning 15 f; success frees the puck 4-6 m/s; anti ping-pong 24/30 f."
+   },
+   {
+    "id": "body_check",
+    "input": "F or right button without the puck: body_check clip, 12 f wind-up, 12 f window, impulse over stability gives bump, stumble or down.",
+    "anticipation_f": 12,
+    "active_f": 12,
+    "recovery_f": 40,
+    "cancel": "A hit costs 40 f, a miss 20 f sliding 1.5 m on; stumble cracks one cell, knockdown nine."
+   },
+   {
+    "id": "dodge",
+    "defensive": true,
+    "input": "Ctrl: the dodge clip, a side step away from the nearest checker; 3 f start, 14 f immune to checks and pokes.",
+    "anticipation_f": 3,
+    "active_f": 14,
+    "recovery_f": 16,
+    "cancel": "Recovery 16 f cannot poke, check or dodge; cooldown 45; the carrier keeps the puck at 0.7 speed."
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "playmaker",
+    "title": "Playmaker",
+    "line": "Pass in triangles, set up one-timers, skate around open holes."
+   },
+   {
+    "id": "ice_breaker",
+    "title": "Ice Breaker",
+    "line": "Check carriers near cracks and open holes in their lanes."
+   },
+   {
+    "id": "hole_dancer",
+    "title": "Hole Dancer",
+    "line": "Carry beside water, side-step the lunge, let checkers swim."
+   }
+  ],
+  "loops": {
+   "s3": "Read the carrier and the cracks: poke, check, dodge or pass, and see the ice and both bodies answer.",
+   "s30": "A possession: enter the zone, crack a lane or thread it, shoot or one-time, and a hole reshapes the next rush.",
+   "m3": "Three periods: about 1, 2, then 3 holes open and refreeze, streaks catch fire, sudden death on rotten ice."
+  },
+  "context": [
+   "Holes open where checks land and refreeze to thin ice after 25 s, moving the lanes.",
+   "Knockdowns spread cracks over nine cells, so the lake worsens each period: about 1, 2, 3 holes.",
+   "A swallowed skater sinks 3 s, so his side plays two against three.",
+   "Three straight goals set a side on fire until the other side scores.",
+   "The last 20 s of period three: every crack counts twice.",
+   "Sudden death on rotten ice: every cracked cell starts one stage worse.",
+   "Each ladder team defends its own way: absorb, poke or dodge."
+  ],
+  "skill": {
+   "floor": "Space shoots toward the cursor; the first shot into the open drill net scores.",
+   "ceiling": [
+    "One-timer: press shoot up to 8 f before a pass arrives for a 28.8 m/s release past the goalie.",
+    "Lane cracking: knock carriers down on stage-2 ice where breakout passes go, so a hole blocks that lane.",
+    "Edge dodge: carry beside a hole and side-step a lunge so the checker slides into the water."
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    3,
+    12
+   ],
+   "knockback": "Impulse over stability: TLBiped.shove of impulse over mass on the victim; the hitter loses half his lunge; at ratio 1.0+ the victim slides 2-4 m.",
+   "reaction": "Bump: both 3 f, flinch 0.3. Stumble: both 6 f, TLHit.react 0.7, puck free. Down: both 10 f, TLHit.down 60-150 f, hitter recoils.",
+   "whiff": "A missed check slides 1.5 m on with snow spray and a scrape sound, no burst, 20 f open; a whiffed poke halves turning 15 f.",
+   "iframes_f": 14,
+   "telegraph_f": 24,
+   "shake": "None on bumps; 0.08 m over 8 f on a stumble; 0.18 over 14 f on a knockdown; 0.3 over 20 f when a hole opens.",
+   "camera": "High chase behind your skater, 15 m back, 10 m up, fov 58, framed at 0.22, facing the goal you attack."
+  },
+  "clips": [
+   {
+    "id": "check_into_water",
+    "moment": "A knockdown check drops a Wolf on grey ice, it bursts open under him and he sinks into black water with a splash."
+   },
+   {
+    "id": "dodge_swim",
+    "moment": "Borje lunges at the player beside a hole, the player side-steps, and Borje slides on into the water."
+   },
+   {
+    "id": "one_timer_hole",
+    "moment": "A pass across a fresh hole meets a one-timer that beats the sliding goalie into the net."
+   }
+  ],
+  "first_minute": "The puck drops at your stick, hint 'Space: shoot at the open net'; then a slow Bear knocks your mate down, the ice cracks, face-off.",
+  "fail_state": "End screen names the cause, 'WHAT BEAT YOU: Borje's checks, 2 swims, 1 lane lost', one tip line, the next team; R replays in 2 s.",
+  "out_of_scope": [
+   "Penalties, fights, line changes and offsides.",
+   "Swimming or climbing out: a sunk skater returns at his blue line.",
+   "Online play, seasons, player stats and contracts.",
+   "The house stick check and held stick brace."
+  ]
+ },
+ "design_reviewed": [
+  {
+   "round": 1,
+   "verdict": "revise",
+   "scores": {
+    "hook": 0.85,
+    "gif": 0.7,
+    "depth": 0.55,
+    "feel": 0.75,
+    "fit": 0.85
+   },
+   "notes": "The hook may almost never fire. The house game gets 2.7-4.9 hits per minute, spread over about 300 cells, and each cell needs three cracks, so a 3-minute match may open no holes. Fix: a knockdown also cracks the 8 neighbouring cells once, and a knockdown on a stage-2 cell opens a hole at once. Quote the expected holes per period. Name the dodge clip that exists, and give pass its own pass clip, not the shoot clip."
+  },
+  {
+   "round": 2,
+   "verdict": "ok",
+   "scores": {
+    "hook": 0.85,
+    "gif": 0.85,
+    "depth": 0.8,
+    "feel": 0.75,
+    "fit": 0.85
+   },
+   "notes": "Builders' warnings. A third of hits as knockdowns is near every_hit_floors, so keep the knockdown share at most 30% in bot runs. Because the chase camera turns, the cabins and tower sit behind the lens on reverse rushes. Keep the shore low or cut it on the camera side. Dodge is immune to pokes and checks; check with bots that it doesn't push the poke share under 10%. Tune holes_per_period with the dial before adding juice."
+  }
+ ],
+ "brief": {
+  "pitch": "Three-on-three hockey on a frozen lake where big checks crack the ice into holes.",
+  "aspects": [
+   {
+    "id": "cracking_ice",
+    "icon": "twist",
+    "title": "Checks Crack Ice",
+    "line": "Hit someone hard and the ice under you both breaks.",
+    "detail": "Stumble: one crack on the victim's 4 m cell. Knockdown: two there, one on each of 8 neighbours; on a stage-2 cell a hole opens at once. Three cracks open a 2.5 m hole. Expect 1, 2, 3 holes in periods one to three. Sinkers return in 3 s; holes refreeze after 25 s.",
+    "alternatives": [
+     {
+      "id": "slush_not_holes",
+      "title": "Slush Not Holes",
+      "line": "Cracks turn to slush that slows skaters and pucks."
+     },
+     {
+      "id": "drifting_floes",
+      "title": "Drifting Floes",
+      "line": "Big hits split the lake into floating pieces that drift."
+     },
+     {
+      "id": "snowbank_walls",
+      "title": "Snowbank Walls",
+      "line": "Big hits throw up snowbanks that block passing lanes."
+     }
+    ]
+   },
+   {
+    "id": "village_rivals",
+    "icon": "rival",
+    "title": "Three Village Teams",
+    "line": "Bears shove, Pikes steal, Wolves dodge you into the water.",
+    "detail": "A ladder of teams, each with its own defence: Millpond Bears absorb (stability x1.4, body_scale 2.5, fur hats), Hollow Reach Pikes poke and never check (long sticks), Northdeep Wolves dodge checks near holes. Tiers set reaction 18/12/7 f, aim 6/4/2.5 deg, score noise 0.08/0.05/0.03; speeds stay equal.",
+    "alternatives": [
+     {
+      "id": "one_star_enforcer",
+      "title": "One Star Enforcer",
+      "line": "One huge rival hunts you all match long."
+     },
+     {
+      "id": "even_teams",
+      "title": "Even Teams",
+      "line": "Both sides play the same; only skill differs."
+     },
+     {
+      "id": "lake_tournament",
+      "title": "Lake Tournament",
+      "line": "Eight teams in a bracket, lose once and go home."
+     }
+    ]
+   },
+   {
+    "id": "chase_camera",
+    "icon": "camera",
+    "title": "High Chase View",
+    "line": "You skate from behind, the goal and holes ahead.",
+    "detail": "TLCameras.chase behind your skater: distance 15 m, height 10 m, look_height 1, fov 58, use_velocity, avoid_space on, framed at 0.22 with TLCameras.frame. Boards are 0.8 m snowbanks, so nothing stands between lens and ice. V toggles the fixed whole-lake view.",
+    "alternatives": [
+     {
+      "id": "fixed_top",
+      "title": "Whole Lake Above",
+      "line": "See the whole lake from high above, like a board."
+     },
+     {
+      "id": "broadcast_side",
+      "title": "TV Side View",
+      "line": "Watch from the side as the play runs left and right."
+     }
+    ]
+   },
+   {
+    "id": "skater_verbs",
+    "icon": "player",
+    "title": "Your Skater's Tricks",
+    "line": "Shoot, pass, poke, check, or side-step a big hit.",
+    "detail": "Copied house hockey core: the puck as a state; poke 5/7/12 at 65/45.5/26 % odds; body check 12 f wind-up, impulse over stability; one-timer 8 f before to 6 f after arrival at 1.2x; pass on the pass clip. New: a dodge side-step (dodge clip), 14 f immune to checks, keeping the puck.",
+    "alternatives": [
+     {
+      "id": "switch_control",
+      "title": "Control Nearest Skater",
+      "line": "You always play the skater closest to the puck."
+     },
+     {
+      "id": "goalie_mode",
+      "title": "Play the Goalie",
+      "line": "Guard the net and dive across the cracked ice."
+     }
+    ]
+   },
+   {
+    "id": "fire_ladder",
+    "icon": "goal",
+    "title": "Fire and Ladder",
+    "line": "Score three in a row and your hits crack double.",
+    "detail": "First to 5 goals or the better score after three 60 s periods; a tie plays sudden death on rotten ice. Three straight goals set a side on fire (TLVfx.trail flames, each check adds one extra crack) until the other side scores. Beat Bears, Pikes, Wolves, then all three at all-star.",
+    "alternatives": [
+     {
+      "id": "last_skater_dry",
+      "title": "Last Skater Dry",
+      "line": "No goals: the last team with dry skaters wins."
+     },
+     {
+      "id": "season_score",
+      "title": "Best Season Score",
+      "line": "Points for goals and swims; beat your best season."
+     }
+    ]
+   },
+   {
+    "id": "frozen_lake",
+    "icon": "arena",
+    "title": "Frozen Mountain Lake",
+    "line": "A lake rink with snowbanks, cabins, pines and dark water.",
+    "detail": "TLKit rink at the house size on a pond part, 0.8 m snowbank boards, the house goals, cabins and pines beyond the far side only. A 4 m grid of ice cells holds crack stages, drawn as thin flat TLBodies.make plates, white then grey, and pond water for holes.",
+    "alternatives": [
+     {
+      "id": "village_pond",
+      "title": "Small Village Pond",
+      "line": "A tiny pond, two on two, holes everywhere fast."
+     },
+     {
+      "id": "frozen_river",
+      "title": "Frozen River",
+      "line": "A long narrow river rink where holes block whole lanes."
+     }
+    ]
+   }
+  ],
+  "rules": "Three against three plus goalies on a frozen lake, the house hockey core copied: the puck is a state (loose, carried, pass, shot) with named loss causes (poked, hit, intercept, lost, bobble); carry spring, dangle loss only on sprint plus hard turn, pickup under 15 m/s clean, 15-20 bobble, pass window +0.6 m and +-100 deg with an 18 f magnet. Verbs at 60 Hz: shoot (Space, shoot clip, 4 f, wrist 24 m/s, charge up to 30 f to 32 m/s, one-timer 8 f before to 6 f after arrival fires 4 f after the take at 28.8 m/s); pass (Q, its own pass clip, a short sweep, 3 f, 18 m/s, 23 beyond 15 m, led to the mate nearest the stick); poke (E, the template poke 5/7/12 on the strike clip as a short stick jab, reach 2.3 m, +-35 deg, odds 65 / 45.5 / 26 % front / side / behind, x0.6 on a fresh cut, cooldown 40, whiff halves turning 15 f, anti ping-pong 24 / 30 f); body check (F or right button without the puck, body_check clip, 12 f wind-up, 12 f window, impulse = mass x (closing + 1.5 m/s) over stability; hit recovery 40 f, miss 20 f); dodge (Ctrl, the dodge clip, defensive side step, 3 f start, 14 f immune to checks and pokes, 16 f recovery, cooldown 45, carrier keeps the puck at 0.7 speed). Contact changes both bodies: bump (ratio under 0.4) both freeze 3 f, victim flinches 0.3, hitter rebounds at restitution 0.2; stumble (0.4+) both freeze 6 f, victim TLHit.react 0.7 and half speed, puck free from 0.7, hitter loses half his lunge; knockdown (1.0+) both freeze 10 f, TLHit.down 60-150 f, hitter recoils 1 m/s, 0.18 m shake; a dodged check whiffs, slides 1.5 m on and stays open 20 f. THE HOOK: the lake is a grid of 4 m cells (about 25 x 12) with crack stages 0-3. A stumble adds one crack to the victim's cell. A knockdown adds two to the victim's cell and one to each of its 8 neighbours, and a knockdown on a cell already at stage 2 opens a hole at once. Cracks never heal by themselves, so the lake gets worse each period. Stage 3 opens a 2.5 m hole of black water (splash, crack sound, 0.3 m shake, 12 f freeze on everyone touching it). Expected rate from the house game's 2.7-4.9 hits a minute per side (about 7 a minute both sides, a third of them knockdowns): about 1 hole in period one, 2 in period two, 3 in period three; the bot metric holes_per_period must read at least 1 in every period, tuned by the dial cracks_per_stumble. A skater whose centre enters a hole, standing or sliding down, sinks for 180 f (3 s) and returns at his blue line edge: his side plays two against three. A puck entering a hole is lost and drops at center ice after 90 f. Holes refreeze to thin ice (stage 2) after 25 s, so the next knockdown there reopens them; at most four holes at once, none within 6 m of a crease. Match: first to 5, or three periods of 60 s with 2 s between; on fire after three straight goals (each check adds one extra crack) until the other side scores; a side trailing by two gets a lit lantern on its bench and its goals refreeze every hole in its own zone, visible to both. Intensity: a calm first period with few cracks, waves of holes and refreezes, the last 20 s of period three count every crack twice, then sudden death on rotten ice (every cracked cell one stage worse). First minute: a drill with the puck at your stick and an open net, then a rookie Bear who checks slowly. End screen: WIN or LOSE, the score, the cause that beat you with counts, one tip, the next team on the ladder; R restarts in 2 s.",
+  "arena": "A frozen mountain lake: the house hockey rink (TLKit rink, the house game's size, ice at y = 0.05) laid over a pond part, boarded by 0.8 m snowbanks instead of glass, the house goals at each end, a dark pine shore, two log cabins, a watch tower and a scoreboard placed only beyond the far side so nothing sits between the lens and the ice. Under the rink a 4 m grid of ice cells (about 25 x 12) holds crack stages, drawn as thin flat TLBodies.make plates: white hairlines, grey webs, then a 2.5 m disk of pond water with a splash ring; refrozen cells show pale blue thin ice. A knockdown's crack web spreads visibly over its 8 neighbours. Holes move the lanes every period: about 1, 2 and 3 open in periods one to three. Camera: TLCameras.chase behind the player's skater, distance 15 m, height 10 m (about 34 deg down), look_height 1, fov 58, use_velocity, avoid_space on the pack space, framed at 0.22 of the frame height with TLCameras.frame so the goal attacked and nearby holes are in view; V switches to a fixed whole-lake view for captures (TLCameras.set_subject on the player).",
+  "ai": "The house brains copied: decide every 15 f staggered and at once on events, from state reaction frames old; carrier utility SHOOT, PASS, CARRY, PROTECT, DUMP with vetoes; roles F1/F2/F3 and D1/D2/D3 by time to the puck; your mates at 5 f. New hole sense: a check scores +0.25 when the victim is within 3 m of a hole or a stage-2 cell; carriers penalise lanes over holes and thin ice. Rival teams, a ladder at rookie (18 f, 6 deg, 0.08), pro (12, 4, 0.05) and all-star (7, 2.5, 0.03): 1) Millpond Bears, bulky (body_scale 2.5, fur hats, brown kit); habit: their D1 Borje lines up a body check from 6 m, telegraphed by a shoulder drop and a straight glide 24 f before contact; defence absorbs (stability x1.4, bumps where others stumble), but they turn slowly, so dodges beat them. 2) Hollow Reach Pikes, slim with long sticks and green scarves; habit: they never check and poke in pairs, telegraphed by a stick tap on the ice 20 f before each poke; defence is the stick, so a hard pass or a check beats them. 3) Northdeep Wolves, grey masks; habit: two skaters herd the carrier toward a hole, telegraphed by a wide skate and a stick raise 24 f before the second man checks; defence avoids: they dodge your checks near water (dodge clip). Reactions: on a goal they cheer (cheer clip), on swallowing a skater they taunt (taunt clip), on conceding they slump and skate a slow circle for 40 f, never idle past 2 s. Harder tiers react faster, read lanes better, hide less of the telegraph glide (24 to 20 f) and team up on herding; speeds, mass of a given team and puck physics never change by tier.",
+  "controls": "skate: W A S D (the cursor on the ice aims the stick). sprint: hold Shift, ten-step stamina bar. shoot: Space or left button, tap for a wrist shot, hold to charge, press as a pass arrives for a one-timer. pass_or_check: Q or right button, with the puck a led pass to the mate nearest the stick, without it a body check (F as well). poke: E, a stick jab at the carrier's puck. dodge: Ctrl, a side step away from the nearest checker, 14 f immune. Meta: R plays again, Enter skips the drill, V the whole-lake view, Esc quits.",
+  "mood": "Dusk on a mountain lake in the house inked toon style: blue-white ice, black water, orange team rims, pine shore; ice creaks, crack pops, deep splashes, a village horn and a small cheering crowd."
+ },
+ "estimate": {
+  "packages": 8,
+  "wallMinutes": 240,
+  "tokens": 2500000
+ },
+ "runs": [
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 23823,
+   "tokensIn": 23907,
+   "tokensOut": 2014
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 13442,
+   "tokensIn": 3110,
+   "tokensOut": 737
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 167470,
+   "tokensIn": 46189,
+   "tokensOut": 17095
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 154374,
+   "tokensIn": 46419,
+   "tokensOut": 16022
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 19469,
+   "tokensIn": 30489,
+   "tokensOut": 1333
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 84215,
+   "tokensIn": 53549,
+   "tokensOut": 10543
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 78224,
+   "tokensIn": 53610,
+   "tokensOut": 10116
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 16637,
+   "tokensIn": 30934,
+   "tokensOut": 1071
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 10964,
+   "tokensIn": 3184,
+   "tokensOut": 911
+  }
+ ],
+ "failed": []
+}
