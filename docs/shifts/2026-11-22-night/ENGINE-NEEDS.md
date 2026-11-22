@@ -7,5 +7,5 @@ What the duel and hockey needed that the kernel lacks:
 
 | # | Need | Proposed API | Who needs it | Shim today | Status |
 |---|---|---|---|---|---|
-| E1 | Play a rig clip faster or slower (wind-ups sized to frame tables) | `TLBiped.set_clip_speed(who, s)` or similar (N1's call) | duel (the frame tables), hockey (stick handling); every fight game from the editor | duel `feel.gd` writes `rig.clip_t` every frame | open |
+| E1 | Play a rig clip faster or slower (wind-ups sized to frame tables) | `TLBiped.set_clip_speed(who, s)` or similar (N1's call) | duel (the frame tables), hockey (stick handling); every fight game from the editor | duel `feel.gd` writes `rig.clip_t` every frame | API final in n22-kit (1.14: `TLBiped.play_clip(clip, timing, blend)`, `set_clip_speed`, `clip_now`, `clip_frame`; block 716 4/4); lands with N1 round 1 |
 | E2 | Swings with weight: anticipation, follow-through and a heavy arc that reads as heavy | rig fight clips `strike` / `strike_heavy` re-authored with wind-up and recovery poses; `TLVfx.trail` weight by class | duel; every melee game | duel swing trails only | open |
