@@ -212,5 +212,5 @@ critic read them (`foreman/src/house.ts`, `foreman/src/shots.ts`); the gate does
 - Both come from game state and input the bot already sees; neither enters `state_hash`.
 - Not the manifest's `moments` (a list of `{name, frame}` or `{name, event}` declared ahead of a run): these are what one
   run saw.
-- The house hockey still reports its moments as `metrics.moments`; readers accept both until it moves them to the top
-  level.
+- The house hockey reports its moments at `metrics.raw.moments`; readers accept the top level, `metrics.moments` and
+  `metrics.raw.moments` (`foreman/src/shots.ts` `resultMoments`) until it moves them to the top level.

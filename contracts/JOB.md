@@ -488,3 +488,16 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   The template names the moment kinds filmed first (`filmFirst`, keys or their prefixes): the duel films a parry, a
   roll or dodge, a fall, a wall splat, a blocked heavy, a clash, a guard break before anything else; the arcade sport a
   one-timer, a poke, a check. Without a template, the first kinds the bot saw.
+
+### Amendment of 2026-11-22 (day, D3): the film checks the claims
+- **The film report.** Every look writes `reports/film-<milestone>-s<seq>.json` (`tl.foreman.film/1`): per measured strip
+  its moving tile steps and longest still run, and the findings below. `foreman filmcheck <job>` re-reads a job read-only.
+- **One-sided findings.** Motion is measured from the strips the look already takes (tile to tile, 8 px block means). A
+  strip in which nothing changes proves the bodies did not move; a strip that changes proves nothing (camera, particles).
+  A strip that cannot be read is unmeasured, never still.
+  - idle: a strip still for 50 frames or more while the bot's `idle_max_f` claims fewer frames;
+  - contact: a CONTACT strip around a moment the bot reported in which nothing moves.
+- **What a contradiction does.** A tofu row may carry `contradicted` (what the film shows); a contradicted row never
+  passes, whatever its figure. A contradicted contact adds the row `moments_on_film`. The tofu report may carry `film`.
+  The house compare marks a contradicted figure SHORT, and the critic receives "MEASURED FROM THE FILM ... CLAIM
+  CONTRADICTED" before the bot's claims.
