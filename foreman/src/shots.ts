@@ -68,10 +68,16 @@ export function botMoments(jobDir: string, events: readonly JobEvent[], bot: str
   return [];
 }
 
-/** Up to `n` moments to film: the first frame of each kind in turn (variety first), at least 31 frames in (a strip's lead-up), sorted by frame. */
-export function pickMoments(moments: { kind: string; frame: number }[], n: number): number[] {
+/**
+ * Up to `n` moments to film: the first frame of each kind in turn (variety first), at least 31 frames in (a strip's
+ * lead-up), sorted by frame. N4 loop round 16: kinds named in `first` come first, in that order (the template's
+ * signature contacts: proofs -5 and -6 never showed a parry, a roll or a fall although their bots pressed them).
+ */
+export function pickMoments(moments: { kind: string; frame: number }[], n: number, first: string[] = []): number[] {
   const usable = moments.filter((m) => m.frame > 30);
-  const kinds = [...new Set(usable.map((m) => m.kind))];
+  const seen = [...new Set(usable.map((m) => m.kind))];
+  const rank = (k: string): number => { const i = first.findIndex((f) => k === f || k.startsWith(f)); return i < 0 ? first.length : i; };
+  const kinds = [...seen].sort((a, b) => rank(a) - rank(b));
   const out: number[] = [];
   for (let round = 0; out.length < n && round < usable.length; round++) {
     for (const k of kinds) {
@@ -103,12 +109,13 @@ export function planShots(
   finishOf: (bot: string) => number | undefined,
   fixed?: number[],
   momentsOf: (bot: string) => { kind: string; frame: number }[] = () => [],
+  filmFirst: string[] = [],
 ): Shot[] {
   // Round 8: where the bot reports its moments, film them. The first test keeps its 25 % frame (the art-pass check compares
   // the same frame milestone to milestone) and films its first moment second; a package's own bot films two moments.
   const atMoments = (bot: string | undefined, base: number[], keepFirst: boolean): number[] => {
     if (bot === undefined) return base;
-    const m = pickMoments(momentsOf(bot), keepFirst ? 1 : 2);
+    const m = pickMoments(momentsOf(bot), keepFirst ? 1 : 2, filmFirst);
     if (m.length === 0) return base;
     return keepFirst ? [base[0] as number, ...m.filter((f) => f !== base[0])] : m.length === 1 ? [...m, ...base.slice(1).filter((f) => f !== m[0])].slice(0, 2) : m;
   };

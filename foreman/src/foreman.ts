@@ -22,6 +22,7 @@ import { briefText, critic, render, replanPackages, whoOwns, type GenerateCall, 
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
+import { templateOf } from "./templates.js";
 import { decideLook, filmLook, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
@@ -1488,7 +1489,7 @@ export class Foreman {
     } catch {
       /* no manifest: no captures */
     }
-    const shots = planShots(this.s.plan, this.log.events, members, tests, (b) => botFinish(this.jobDir, this.log.events, b), this.o.captureFrames, (b) => botMoments(this.jobDir, this.log.events, b)); // N4 round 8: film the exchange
+    const shots = planShots(this.s.plan, this.log.events, members, tests, (b) => botFinish(this.jobDir, this.log.events, b), this.o.captureFrames, (b) => botMoments(this.jobDir, this.log.events, b), templateOf(this.s.brief?.concept?.template?.id)?.filmFirst); // N4 rounds 8, 16: film the exchange, its signature contacts first
     const film = await filmLook(this.gateHost, m, shots, cameras, lastPackage, this.o.strips !== false && stripsOn(this.verbs));
     const { captures, notes } = film;
     // Rendering is deterministic, so a milestone that changed nothing a camera can see gives the very same bytes

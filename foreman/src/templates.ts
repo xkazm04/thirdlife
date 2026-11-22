@@ -49,6 +49,8 @@ export interface Template {
   metrics: TemplateMetric[];
   /** The recipe card that is the default for this template when the job offers it. */
   card?: string;
+  /** N4 loop round 16: the moment kinds a look films first (a bot's `moments` keys or their prefixes), in order. */
+  filmFirst?: string[];
   /** The house game: the reference implementation the editor copies (N4 loop round 1). */
   house?: House;
 }
@@ -128,6 +130,7 @@ export const TEMPLATES: Template[] = [
       { id: "one_sided_contacts", max: 0, item: "DUEL-PLAYBOOK acceptance: no contact leaves one fighter's state unchanged" },
     ],
     card: "card.duel",
+    filmFirst: ["parr", "roll", "dodge", "down", "knock", "ko", "fall", "wall", "splat", "blocked_heavy", "heavy_block", "clash", "guard"],
     house: {
       pack: "duel",
       game: "game.duel",
@@ -179,6 +182,7 @@ export const TEMPLATES: Template[] = [
     },
     movesMin: 0,
     metrics: [{ id: "possession_median_f", min: 240, max: 600, item: "HOCKEY-ARCADE 5.5: possession median 4-10 s (over 15 s glued, under 2 s random)" }],
+    filmFirst: ["one_timer", "poke", "check", "hit", "goal", "shot", "pass"],
     house: {
       pack: "hockey",
       game: "game.ice_hockey_three_against",

@@ -230,3 +230,16 @@ turn -90 degrees about X). The README section "Each rival reads by silhouette" j
 - **Gear on the biped's sockets as kernel API.** The duel builds helm, pauldrons, hat, cape and hood by hand on the head
   and back sockets, with axes found by a probe (N2's README). Every editor game that needs a distinct rival repeats that
   trap. Proposed: `TLRigs` gear slots (head, back, shoulders) taking a kit-style part, oriented by the rig.
+
+# Loop rounds 15-16 (22 Nov 05:25-05:50)
+
+Round 15 (docs only): GAME-QUALITY.md section 13, "What six colosseum proofs taught the editor": each failure of the
+night and the rule that now catches it.
+
+## 13. contracts/JOB.md: one line in the "Filmed at the bot's moments" item (round 16)
+
+```markdown
+  The template names the moment kinds filmed first (`filmFirst`, keys or their prefixes): the duel films a parry, a
+  roll or dodge, a fall, a wall splat, a blocked heavy, a clash, a guard break before anything else; the arcade sport a
+  one-timer, a poke, a check. Without a template, the first kinds the bot saw.
+```

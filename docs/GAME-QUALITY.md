@@ -446,6 +446,36 @@ in an empty room. Our first phase is the tofu stage.
 - **And a person.** The metrics are the floor, not the bar: after the tofu phase the player plays it in an empty room
   (the phase pause) and says pass or hold. Checklist item 2 ([H]) is judged there.
 
+## 13. What six colosseum proofs taught the editor (night of 22 Nov)
+
+Six real jobs on "a fight in a colosseum", standard and crazy, built from the design room to the tofu look while the
+editor changed under them. Each line: what the proof showed, and the rule that now catches it. One of the six, the
+crazy -5, passed its tofu look (feel 0.75, house_game 0.7): it was the first built on the rules below. None has been
+played by a person.
+
+- **A Planner that retypes the template times out.** -1's plan died at 10 minutes. Contracts NAME the house game's files
+  and rows; the Planner has 20 minutes (section 11).
+- **The core reads only with weapons, a rival of its own and its bars.** -1's first core was bare-fisted twins, -2's had no
+  HUD and a wide camera. The tofu stage drops dressing, never weapons, rival silhouettes (head gear, back gear, scale, weapon) or the
+  resource bars (section 12).
+- **A bot can pass every row and still not play the exchange.** -2 passed while no strip showed a parry, a roll or a
+  bash, and counted a bash as a "variant" of its light (skill_spread 1.0). `verbs_used` equals the design's verbs;
+  skill_spread is 0.25 to 0.95 over variants of the core verb.
+- **A strip filmed at a fixed fraction of the run films a quiet spell.** -3 had two strips of 60 frames of standing
+  still. Bots report `moments`, and the look films them.
+- **A hit-stop is invisible 5 frames apart.** Every critic said "no visible hit-stop" until the moments were filmed 2
+  frames apart. -5's critic then read "tiles 6-10 hold still, which reads as a hit-stop".
+- **Overlap on the shoulder camera is usually the camera.** The side strip of the same moment showed the bodies apart.
+  `fighters_overlap` is judged on a side view; `camera_hides_exchange` names the camera.
+- **The bar must be shown, not described.** The critic gets the house game's own strip and its figures by the same
+  names. It scored house_game 0.4 to 0.5 on five builds and 0.7 on the one that passed.
+- **The bot's figures are claims.** -6's critic wrote "claim contradicted: one_sided_contacts 1 understates what the
+  frames show".
+- **The same sentence twice gives the same hook.** The walls broke four times and souls swapped three times. Each
+  concept now reads the earlier designs of its sentence; -5 and -6 chose new hook families.
+- **Copy the house numbers live.** The duel's camera was retuned during the night. Builders read the house game's
+  camera, pushbox, never-idle rule and rival silhouettes from the pack at build time, not from this text.
+
 ## Sources
 
 1. Masahiro Sakurai, hit-stop episodes of "Masahiro Sakurai on Creating Games" (YouTube, 2022). Coverage:
