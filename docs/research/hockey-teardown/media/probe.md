@@ -31,3 +31,22 @@ The puck (third run, rookie newcomer, 4 seeds, the same test plus a counter): a 
 3.5 m and away from the boards loses **0.97 / 1.05 / 1.00 / 0.98 m/s every second** (130-424 such frames a seed): the ice's contact
 friction, constant, with `drag` 0 in `data/tuning.json:19`. thirdjam's law (`JamSim.cpp:4044-4057`, `regular.json:120,136`) is
 dv/dt = -0.5 v - 0.147: 7.1 m/s2 at 14 m/s, 2.1 at 4 m/s.
+
+## Scale arms (round 2; research only, in copies of the pack under `.tl/arms`, nothing in `engine/`)
+
+The AI on all six skaters at pro (`tests/probe_ai.gd` = `bot_metrics_ai.gd`'s autopilot, measured by the probe), 8 seeds an arm,
+headless. A = the pack as on main. B = life-size bodies (`body_scale` 1.0, contact 1.33, goalie 1.09: radius 0.40 m) on the same
+60 x 30 m rink. C = our 2.2x figures on thirdjam's 90 x 45 m (goals at +-41, spawns x1.5). D = both. Nothing else retuned (reach,
+carry, poke and check distances stay at the 2.2x figure's values), so B and D are a first look, not a design.
+
+| arm | 4+ of 6 within 5 m of the puck | mean within 5 m | b0 within 6 m of the puck | knockdowns / min | hit-stops / min | b0 lies down | carry median s |
+|---|---|---|---|---|---|---|---|
+| A main | 16.2 % | 2.19 | 62 % | 5.29 | 4.83 | 3.9 % | 0.52 |
+| B life-size bodies | 17.2 % | 2.38 | 61 % | 3.68 | 2.79 | 4.0 % | 0.53 |
+| C 90 x 45 rink | 11.6 % | 2.11 | 57 % | 5.78 | 4.53 | 5.1 % | 0.97 |
+| D both | 12.2 % | 2.05 | 49 % | 2.60 | 1.47 | 2.1 % | 1.00 |
+
+Reading: in metres, the AI gathers round the puck about as much at any body size (B = A): the pile is AI behaviour, not only
+geometry. With life-size bodies that same pile is about 6 body widths across instead of 3, and knockdowns fall by a third. The
+bigger rink cuts the four-man piles by a quarter and doubles the carry. Both together halve the knockdowns and cut the freezes by
+two thirds. Eight seeds an arm: directions, not figures to tune to.
