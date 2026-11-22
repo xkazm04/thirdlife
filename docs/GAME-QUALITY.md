@@ -324,6 +324,14 @@ template names its `move` and carries the template's frames exactly); the Planne
 research excerpt, pasted by the Foreman from `docs/research/`, the relevant one only. The hook and the twist are where
 the game is new; the template is where it is right.
 
+**Each template has a house game** (the owner, 22 Nov 00:55: duel and hockey "high quality standalone games to set
+example and engine needs for all future games coming from editor"). The house game is the reference implementation of
+the template on this kernel: `engine/packs/duel` (`game.duel`) for the duel, `engine/packs/hockey` for the arcade sport.
+Every job's reference copy holds it (`ref/packs/<pack>/`). The design step and the Planner read its README rules; the
+builders read its files; the Foreman checks a copied move against the house game's own frame table
+(`engine/packs/duel/data/moves.json`), not the research's. **Where the two differ, the house game wins**: its numbers
+were measured on this kernel.
+
 - **`duel`: a melee duel** (one against one, or one at a time; fists, swords, shields, a gladiator, a knight, a boxer).
   Reference: Dark Souls / Sekiro / For Honor, as `docs/research/DUEL-PLAYBOOK.md`. Copied, never paraphrased:
   - the state machine (6.4): `IDLE/MOVE -> WINDUP -> ACTIVE -> RECOVERY`, plus `BLOCK`, `PARRY_WINDOW`, `ROLL`, `DODGE`,
@@ -361,6 +369,23 @@ the game is new; the template is where it is right.
   mechanics copied, with their numbers where the source has them (a racer copies Mario Kart's item roulette by
   position and its mini-turbo; a platformer copies Celeste's coyote time of 5 f and its jump buffer). A template whose
   `copies` are moods ("the feel of Dark Souls") is not a template.
+
+**The duel house game against DUEL-PLAYBOOK** (read 22 Nov 01:20 from `engine/packs/duel`, README "What changed from
+the playbook"). The move frames above are the same in both (the Foreman compares them: `houseFrameDiff`, none). The
+house game changed, and its numbers win:
+- poise damage light 22, heavy 42, charged 70 and poise you 10, Wall 20, Duelist 10, Dancer 8 (the playbook's light 10
+  minus Duelist 20 absorbed every light, against its own contact table); the Wall has 110 health, not 120;
+- the parry is the first frames of a block press (Sekiro's deflect: press = window f2-13, hold = block), one button;
+- a clash also when one swing is active and the other at most 5 frames from its own active frame;
+- a blocked heavy pushes 0.35 m and 0.2 m (playbook 0.5 and 0.3) and the light lunges 0.5 m, so the guaranteed light
+  reaches; a pushbox of 0.45 m per duellist at scale 1;
+- lock-on: each fighter always faces his rival (the pack turns the body, `turn_rate` 0), so the guard holds while
+  circling; a design whose facing follows the walk breaks the 120-degree block;
+- the rig's fight clips are stretched over the rules' frames by a [move frame, clip frame] map, so an 18-frame wind-up
+  reads on a short clip;
+- rally (under 35 % health, stamina back half as fast again) as the visible comeback rule, and a crowd meter;
+- the camera over the shoulder, offset to the side, looking between the two (back 4.6 m, up 2.6 m, side 2.6 m), over a
+  ring wall of 1.25 m that is low enough to see over, the stands behind it.
 
 When a recipe card exists for the template (the duel card `card.duel`, written by the duel lane), it is the default card
 for the job; the Planner takes it unless one of its `NOT when` lines matches.

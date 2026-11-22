@@ -29,11 +29,15 @@ one. **Never cut the feel sheet to fit a package**: cut content (fewer rivals, f
 Every package lists in `serves` the clip ids (from the design's clip moments) it brings closer; every clip id is
 served by some package.
 
-**The genre template is the spec of the core loop.** The concept names the proven design the core loop copies, and its
-research excerpt is below. Every contract of a package that owns a verb, a contact or a rival carries the template's
-rules for it COPIED, not paraphrased: the state names, the move frames, the contact results (what happens to the
-attacker AND the defender, with hit-stop on both), the rival archetype's habits and the AI tier numbers. A builder
-sees only its contract; a rule you summarise is a rule it rebuilds wrong.
+**The genre template is the spec of the core loop; its house game is the implementation.** The concept names the proven
+design the core loop copies; its research excerpt and its house game (a tracked game of this engine that plays it) are
+below. Every builder gets the template's implementable spec in its Feel section and the whole house game in its
+reference copy (`ref/packs/<pack>/`). So a contract **names, it does not retype**: "copy the light, heavy and bash rows
+of `ref/packs/duel/data/moves.json` and the heavy_block, light_parried and bash_wall rows of `data/contacts.json`; the
+state machine of `scripts/fighter.gd`", plus every number where this game DIFFERS from the house game and the names
+other packages rely on. Never paste the tables, the state list or the AI tiers into a contract: a pasted table is a
+second copy that drifts, and a plan that retypes them runs past the Planner's time limit (a colosseum plan with
+23,000-character contracts took 571 s; the next one timed out at 10 minutes). Keep each contract under about 900 words.
 {{template}}
 
 # The tofu stage: the first phase proves the core verb is fun on flat shapes

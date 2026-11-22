@@ -81,7 +81,7 @@ test("cards 2 plan check: a known card is kept, an unknown one is refused like a
   const known = { verbs: VERBS, cards: ids() };
   assert.deepEqual(planCheck(plan, known, "card.knock_down"), []);
   assert.deepEqual(planCheck(plan, known), [], "absent: no card is a valid answer");
-  assert.match(planCheck(plan, known, "card.topple_tower").join("\n"), /"card": "card\.topple_tower" is not a card of this job \(ref\/cards\/ holds card\.knock_down/);
+  assert.match(planCheck(plan, known, "card.topple_tower").join("\n"), /"card": "card\.topple_tower" is not a card of this job \(ref\/cards\/ holds card\.duel, card\.knock_down/); // N2 of 22 Nov added card.duel
   assert.match(planCheck(plan, { verbs: VERBS }, "card.knock_down").join("\n"), /this job's reference copy has no cards; omit "card"/);
   assert.match(planCheck(plan, known, "").join("\n"), /must be a card id/);
 
@@ -236,7 +236,8 @@ test("cards 7 kernel version: every pack.json declares the KERNEL_API of the eng
 test("cards 8 house pack: the reference copies a house game a card names (hockey for card.team_possession) whole to ref/packs/<name>/, and that card's brief points there", async () => {
   const live = referenceOf(path.join(REPO_ROOT, "engine"));
   const hockey = path.join(REPO_ROOT, "engine", "packs", "hockey");
-  assert.deepEqual(live.housePacks, [hockey], "only the house games a card names");
+  // N2 of 22 Nov: card.duel names the duel house game, so it travels too.
+  assert.deepEqual(live.housePacks, [path.join(REPO_ROOT, "engine", "packs", "duel"), hockey], "only the house games a card names");
   const ref = path.join(tempDir("cards-house"), "ref");
   prepareReference(ref, { cardsDir: CARDS, housePacks: [hockey] });
   const want = listFiles(hockey).sort();

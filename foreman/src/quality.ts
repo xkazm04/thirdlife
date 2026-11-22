@@ -20,6 +20,7 @@ import { slopIds } from "./roomtext.js";
 import type { RunnerVerbs } from "./verbs.js";
 import type { CritiqueResult } from "./verifier.js";
 import { judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } from "./tofu.js";
+import { houseBaseline, houseCompare } from "./house.js";
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -97,17 +98,17 @@ export interface Verdict {
 const scoresText = (v: Pick<Verdict, "scores">): string => Object.entries(v.scores).map(([k, x]) => `${k} ${x}`).join(", ");
 
 /** The critic on a look: stills and strips together, the strips labelled as such. Undefined when it gave no usable answer or did not run. */
-export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[], lastPackage: string, round: number): Promise<{ verdict?: Verdict; line: string }> {
+export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[], lastPackage: string, round: number, house?: { line: string; pack: string }): Promise<{ verdict?: Verdict; line: string }> {
   if (film.captures.length + film.strips.length === 0 || h.o.critic === false) return { line: "critic not run" };
   const model = h.o.criticModel ?? h.o.model;
-  const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : [])];
+  const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : []), ...(house !== undefined ? [houseItem(house.pack)] : [])];
   // L1b: the strips of the named clip moments first, then the stills, then the other strips.
   const clipFirst = [...film.strips.filter((x) => x.label.startsWith("CLIP MOMENT")), ...film.captures.map((c, i) => ({ capture: c, label: film.labels[i] ?? "" })), ...film.strips.filter((x) => !x.label.startsWith("CLIP MOMENT"))];
   const images = clipFirst.map((x) => x.capture);
   const labels = clipFirst.map((x) => x.label);
   const res = await critic(h.o.builder, images.map((c) => h.dir(c)), rubric, {
     ...(model ? { model } : {}),
-    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`].filter(Boolean).join("\n"),
+    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
     packages: packageLinesOf(h.s, h.s.plan.map((p) => p.id)),
     labels,
   });
@@ -119,6 +120,11 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   if (!res.ok) return { line: `critic (V5) gave no usable answer: ${clip(res.reason, 200)} [${h.rel(file)}]` };
   const verdict: Verdict = { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}), report: h.rel(file) };
   return { verdict, line: verdictText(verdict) };
+}
+
+/** N4 loop round 2: the rubric item of a job whose template has a house game: this build against the house game. */
+export function houseItem(pack: string): RubricItem {
+  return { id: "house_game", text: `Against the house game engine/packs/${pack} (the reference implementation of this game's template, its figures in the context above): do the frames show its exchange as clearly (wind-up, hit-stop on both, each body's own reaction, the guard and the roll in the body)? Name in \`notes\` each place this build falls short of the house game, by what you see and by the SHORT figures. 1.0 as good as the house game, 0.5 its core with gaps, 0 none of it.` };
 }
 
 export const verdictText = (v: Verdict): string => `${v.by ?? "critic (V5)"} ${v.ok ? "ok" : "NOT ok"}: ${scoresText(v)}; ${clip(v.notes.join(" | "), 500)} [${v.report}]`;
@@ -290,7 +296,15 @@ export function verdictOfLook(h: GateHost, look: Look): Verdict | undefined {
  * version back. A look still NOT ok at the last round is left for the hold (the state reads it from the event).
  */
 export async function decideLook(h: GateHost, m: Milestone, members: string[], lastPackage: string, film: Film, shots: Shot[], round: number, notes: string[]): Promise<void> {
-  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round), tofuLook(h, m));
+  // N4 loop round 2: a job whose template has a house game is set beside it (bot figures by the tofu names, the critic's rubric).
+  const template = h.s.brief?.concept?.template;
+  const base = h.s.brief?.design !== undefined ? await houseBaseline(h, template) : undefined;
+  const tofu = tofuLook(h, m);
+  const t = tofuOf(h.s.plan);
+  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template), t.test, r.hand, r.from); })() : undefined);
+  const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
+  if (vsHouse !== undefined) notes.push(vsHouse.line);
+  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack } : undefined), tofu);
   const fresh = judged.verdict;
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;

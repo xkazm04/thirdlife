@@ -47,8 +47,10 @@ const HELP = `foreman <command>
         creates site/<job_id>/ and asks the Designer for a brief
 ${NEW_HELP}
   approve <job>                      the player approves the latest brief and the reactions that stand on it
-  plan <job> [--from plan.json] [--adapter A] [--model M] [--max-packages N] [--builder-timeout-ms N]
+  plan <job> [--from plan.json] [--adapter A] [--model M] [--max-packages N] [--builder-timeout-ms N] [--timeout-ms N]
         asks the Planner for packages, or takes a hand-written plan; a plan over the limit is sent back once.
+        --timeout-ms (or --planner-timeout-ms) is the limit of the Planner call itself (default 1200000, 20 min);
+        run and resume take --planner-timeout-ms for a re-plan (their --timeout-ms is the builder's).
         --builder-timeout-ms is the time limit of one builder run that the Planner sizes packages for (give the
         same number as run's --timeout-ms; default 1800000). Prepares <job>/ref/ from the engine directory.
   prompts <job> [--max-packages N] [--timeout-ms N] [--round-limit N] [--package ID] [--planner-only|--builder-only|--designer]
@@ -322,6 +324,7 @@ async function runJob(a: Args, out: (s: string) => void): Promise<number> {
     const maxReplans = num(a, "max-replans");
     const maxPackages = num(a, "max-packages");
     const plannerModel = str(a, "planner-model");
+    const plannerTimeoutMs = num(a, "planner-timeout-ms");
     const criticModel = str(a, "critic-model");
     const captureRes = str(a, "capture-res");
     const promoteTo = str(a, "promote-to") ?? "job";
@@ -341,6 +344,7 @@ async function runJob(a: Args, out: (s: string) => void): Promise<number> {
       ...(maxReplans !== undefined ? { maxReplans: Math.max(0, Math.floor(maxReplans)) } : {}),
       ...(maxPackages !== undefined ? { maxPackages: Math.max(1, Math.floor(maxPackages)) } : {}),
       ...(plannerModel ? { plannerModel } : {}),
+      ...(plannerTimeoutMs !== undefined ? { plannerTimeoutMs } : {}),
       ...(criticModel ? { criticModel } : {}),
       ...(captureRes ? { captureRes } : {}),
       ...(!isEmptyReference(reference) ? { reference } : {}),
@@ -568,7 +572,8 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
           }
           const model = str(a, "model");
           const input = { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, reactions: s.reactions, ...(s.creativity && { creativity: s.creativity }), ...ctx, ...(s.reviews.length > 0 && { review: (s.reviews.at(-1) as { notes: string }).notes }) };
-          const res = await planPackages(builder, input, { ...(model ? { model } : {}), ...known });
+          const pt = num(a, "planner-timeout-ms") ?? num(a, "timeout-ms"); // N4: the Planner call's limit (default 20 min)
+          const res = await planPackages(builder, input, { ...(model ? { model } : {}), ...(pt !== undefined ? { timeoutMs: pt } : {}), ...known });
           writeGenerateCalls(log, builder, res.calls, model);
           if (!res.ok) {
             out(`Planner failed: ${res.reason}`);

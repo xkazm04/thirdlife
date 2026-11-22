@@ -1,0 +1,556 @@
+{
+ "v": 1,
+ "seq": 10,
+ "ts": "2026-11-22T00:37:25.257Z",
+ "job": "fight-colosseum-20261121-1",
+ "type": "plan_set",
+ "packages": [
+  {
+   "id": "core_duel",
+   "title": "Core duel exchange vs Orso (tofu)",
+   "milestone": "blockout",
+   "deps": [],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/fighter.gd",
+    "scripts/contact.gd",
+    "scripts/feel.gd",
+    "scripts/brain.gd",
+    "scripts/duel_cam.gd",
+    "data/moves.json",
+    "data/contacts.json",
+    "data/tuning.json",
+    "data/rules.json",
+    "data/venue.json",
+    "data/arena.json",
+    "data/rivals/orso.json",
+    "tests/bot_tofu.gd",
+    "tests/bot_match.gd",
+    "tests/support/**",
+    "README.md"
+   ],
+   "serves": [
+    "parry_breach",
+    "splat_charge",
+    "corridor_catch"
+   ],
+   "registers": {
+    "capabilities": [
+     "physics",
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "rules",
+     "ai",
+     "biped",
+     "kit"
+    ],
+    "tests": [
+     "tests/bot_tofu.gd",
+     "tests/bot_match.gd"
+    ],
+    "cameras": [
+     "duel"
+    ]
+   },
+   "contract": "ROOT. Start from the house game ref/packs/duel (copy, do not reinvent): scripts/fighter.gd (state machine 6.4, resources, 8-frame buffer), contact.gd (matrix 6.5), feel.gd (TLHit K8 adapter, pushbox), brain.gd (6.6), data/moves.json rows light, heavy, charged, bash, block, parry, roll, dodge, taunt, data/contacts.json all rows, tuning.json resources; its pilot tests/support/pilot.gd. House numbers win where research differs (poise scale: player 10, Orso 20 = brief's 40; lights 22/heavy 42/charged 70 poise damage). Write in README where this game differs.\n\nDIFFERENCES FROM THE HOUSE GAME (brief wins): rounds 75 s (rules.json, best of 3, score_to_win 2; drive TLRules the way ref/packs/duel does). NO lock-on: the player's facing follows WASD camera-relative (cam.yaw_basis()), turn_rate fast; attack hits only when the defender is inside a 50 deg arc (+-25) of the attacker's facing and within reach; block front 120 deg of facing. Rival turns toward the player by its own turn rate, never snaps. Keys: move_left A, move_right D, move_forward W, move_back S, light J + MOUSE_BUTTON_LEFT, heavy K (tap heavy, hold past f20 = charged), guard Shift (tap = parry f2-13, hold = block 4/held/6, during heavy windup before f20 = feint for 6 stamina), roll Space (+direction; none = away), bash E. Right-drag is the kernel pointer (orbit). No player dodge/taunt key.\n\nFEEL (every number lands here): light 18/4/16 strike (chain windup 12, 9 dmg, chain 7), heavy 32/5/28 strike_heavy (armour f12-37, 20 dmg), charged 54/6/36 strike_heavy held (red flash TLVfx.burst goal_flash tinted red at f20, unblockable, 30 dmg), bash 14/6/24 body_check (unblockable, unparryable, loses to any active hit and a roll), parry 1/12/20 block, block 4/held/6 block (chip 10 %), roll 3/18/15 roll (i-frames 4-21, 20 stamina; recovery f22-36 counter-hit window), getup i-frames 1-20 of 30. Input: 8-frame buffer; input response = first clip frame or step within 3 f of the press, the verb's pose readable by 6 f. Contacts via TLHit with hit-stop on BOTH: light hit 5 (react 0.3, push 0.25 m), heavy hit 9 (react 0.7, 0.6 m), counter-hit +2 stop, +10 hitstun, +25 % dmg, react 1.2; light blocked 3 (attacker recoils 0.15 m, -2); heavy blocked 6 (attacker recoil 40, -22, light guaranteed); light parried 10 (attacker PARRIED 52, weapon wide, +44); heavy parried 10 (PARRIED 36); charged parried PARRIED 60; bash GUARDBROKEN 30 pushed 1.0 m; bash with a StaticBody within 1.2 m behind (inner wall or outer stones) WALLSPLAT 60, +50, stop 12; clash rebound 20 (heavy-heavy 30); whiff = full recovery, TLAudio.play swish (a hit_fabric preset), NO burst, stamina regen paused 20 f. Knockback push = base (0.25/0.6) + 0.004 m x damage the victim has taken this round, as TLHit tune.push. TLHit.down only on charged hits, breach, the 6.1 exhausted-bash knockdown and KO. Shake: none on lights; heavy 0.08/10 f; splat 0.15/14 f. Sparks + TLAudio hit_steel on hits, gold flash on parry. Stamina, posture, poise tiers, EXHAUSTED, BROKEN 90 f, deathblow = a heavy on a BROKEN fighter wins the round outright. Pushbox on both (TLHit.pushbox).\n\nVENUE: data/venue.json (tl.layout/1): ground_patch sand octagon 14.5 m across, colour ochre; outer ring of kit stones rows 1.0 m high at apothem 7.24 + wall thickness + 2.5 m (the corridor). data/arena.json: {apothem 7.24, segments 8, seg_len 6.0, wall_h 1.2, corridor_w 2.5, start_gap 4.0, wall_color pale stone}. main builds the 8 inner segments with TLKit.build(\"barrier_wall\", ...) (not in the layout) into game.walls. Fighters start 4 m apart at centre every round.\n\nCAMERA duel (scripts/duel_cam.gd): ctx.cameras.orbit(pivot, {pitch 40, distance 6, distance_min 5, distance_max 7, fov 50}, &\"duel\"); pivot Node3D 35 % from player to rival, clamped inside 9 m radius; ctx.cameras.frame(player, 0.25). Walls 1.2 m never block.\n\nRIVAL: data/rivals/orso.json (schema fixed for all rivals): {id, name, rung (rung1|rung2|rung3|champion), body_scale, hp, poise, parry_window, roll {frames, iframes [a,b]}, block_stamina_mult, defend_style (absorb|parry|avoid), moves {<id>: {base, clip, lunge_m, hold_f, ...}}, strings [{id, moves [{move, delay}], tell {clip, frames}}], phase2 {below_hp_share 0.5, strings}, champion_strings, habits {}, hooks (\"\" or scripts/rivals/<x>.gd)}. Tiers in tuning.json tiers {rung1 30/0.30/0.10/36, rung2 22/0.45/0.30/28, rung3 18/0.60/0.50/22, champion 15/0.70/0.65/18} as react_frames, defend_p, read_p, return_f. Orso: body_scale 1.25 (TLBiped body_scale + rig scale), HP 120, blocks at x0.7 stamina, rarely parries; bash with shoulder-dip tell (12 f held pose, then 14 f windup), armoured heavy raised 32 f, guard counter after a block, taunt (taunt clip) after 2 blocked hits, phase 2 under 50 % HP: 3-heavy string with one fixed 18 f delay. In PUNISH every rival picks a heavy when the player's back is within 1.5 m of a wall. Every string opener, heavy, charged and bash has >= 24 f from tell to active; none stands idle over 120 f; a calm 180 f SPACING open (circling at threat range +0.3 m), PRESS waves broken by RESET after being parried or under 30 stamina. First minute: Orso's first 3 strings are single slow heavies; TLHud label id hint at bottom: 'Shift as his blade falls: parry', cleared at the first parry or 30 s. brain loads rival.hooks with ctx.load_script when non-empty: hook.setup(brain), hook.choose(brain, sit) -> string id or \"\", hook.on_contact(brain, ev).\n\nMODULES: later packages register gen/mod_<id>.gd whose generate(ctx) appends {id, script, order} to ctx.root meta \"fc_mods\" (Array). main loads each (sorted by order) with ctx.load_script(script).new() and calls mod.setup(game), mod.tick(frame) after its own tick, mod.event(name, data), mod.pre_contact(ev) -> bool (true = handled, skip the default feel), mod.post_contact(ev), mod.state() -> Dictionary (merged into pack state under mods.<id>). Events: match_start {rival, match_index}, round_start {round}, round_end {round, winner, cause}, match_end {winner, cause, rival}. ev = {type: hit|counter|blocked|parried|bash|wallsplat|clash|whiff|iframe, move: light|chain|heavy|charged|bash|<rival move>, attacker, defender, frame, after_parry_f (frames since attacker's last successful parry, -1 none), dir Vector3}. game (the Entry) exposes ctx, tune, moves, rules, hud (TLHud), cam, pivot, player, rival, walls [{node, index, centre, normal, intact}], stones [], round_no, match_no, rival_id, feel (hitstop(a, b, f), shake(amount, frames)), restart_match(rival_id), emit(name, data). Fighter: side, id, body (TLBiped), state (lowercase 6.4 names + tell, ko), state_f, move, move_f, hp, max_hp, stamina, posture, poise, exhausted, broken, last_parry_frame; hurt(n, by), add_posture(n), set_state(s, frames), knockdown(frames, from_dir), facing_dir(), play_clip(id).\n\nPACK STATE: rules.snapshot() + round, match_no, rival_id, player and rival {state, state_f, move, hp, stamina, posture, pos [x,z], facing, exhausted, broken, stop_left}, rival.brain {state, string, tell, tell_f}, contacts {type: count}, last_contact, mods.\n\nTOFU CHECK: tests/bot_tofu.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, contact_types, one_sided_contacts\nRows (every value counted from played frames, plus hand = the TLHand profile, regular): feedback_f <= 3 (most frames press->first visible change of the player's body or weapon); skill_spread >= 0.25 ((best-worst)/best mean outcome over input variants: parry timing, spacing, charge, angle; outcome = damage, knockback or frame advantage); skill_variants >= 3; idle_max_f <= 120 (longest opponent run with no action); tell_min_f >= 12 (fewest frames tell pose->active over dangerous rival actions); tells >= 3; pressure_waves >= 2 (rival attacks per 60 f window, peak-then-trough pairs as defined); lead_change_share >= 0.3 over >= 3 rounds (close = loser within 25 % of winner's health or one point); close_rounds >= 1; contact_types >= 3 (hit, block, parry, bash, clash, whiff); one_sided_contacts <= 0. Plays >= 3 rounds (restart_match) within 30000 f.\nPLAYER CHECK: tests/bot_match.gd fails when the player's side can no longer land hits or parries on the rival\nbot_match: perfect hand, one match vs Orso; ok = match over AND player landed >= 6 hits AND >= 1 parry, within 20000 f.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_tofu.gd",
+      "--seed=1",
+      "--frames=36000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match.gd",
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match.gd",
+      "--seed=2"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "rival_livia",
+   "title": "Livia Ferro the Duelist",
+   "milestone": "greybox",
+   "deps": [
+    "core_duel"
+   ],
+   "scope": [
+    "data/rivals/livia.json",
+    "scripts/rivals/duelist.gd"
+   ],
+   "serves": [
+    "parry_breach"
+   ],
+   "registers": {
+    "capabilities": [
+     "ai",
+     "biped",
+     "vfx"
+    ]
+   },
+   "contract": "Rung 2 rival on the root's rival schema (data/rivals/orso.json is the example; brain.gd, game and ev as fixed in core_duel). Copy the Duelist row of ref/packs/duel/data/rivals.json and its brain behaviour; differences listed here. data/rivals/livia.json: id livia, name 'Livia Ferro', title 'The Duelist', rung rung2, body_scale 1.0 (slim), hp 100, poise 10 (house scale; brief 20), parry_window 14, defend_style parry, hooks scripts/rivals/duelist.gd. Strings: 3-light chain (strike, chain windup 12), thrust heavy (strike_heavy, 28 dmg, reach +0.4 m), feint into bash (heavy feinted before f20 then body_check), riposte heavy after her own parry. Tell: taps her blade (block clip held 24 f) before a riposte string; a hit in the tell is a counter-hit. Parries the 3rd hit of a player string, blocks the first two, punishes every whiff, pokes at max reach. Weak to delayed/feinted heavies (her whiffed parry recovers 20 f) and bashes. Champion string: champion_strings [thrust heavy, delayed 18 f, bash]. Every opener >= 24 f tell->active; never idle over 120 f; every string ends in a return window of the tier. duelist.gd implements hook.setup(brain), hook.choose(brain, sit) -> string id or \"\", hook.on_contact(brain, ev). Harder tiers change only react/defend/read/return, never speed or damage. Loaded when match_flow's ladder names livia (or param rival=livia).",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match.gd",
+      "--seed=1"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "rival_kass",
+   "title": "Kass the Dancer",
+   "milestone": "greybox",
+   "deps": [
+    "core_duel"
+   ],
+   "scope": [
+    "data/rivals/kass.json",
+    "scripts/rivals/dancer.gd"
+   ],
+   "serves": [
+    "corridor_catch"
+   ],
+   "registers": {
+    "capabilities": [
+     "ai",
+     "biped",
+     "vfx"
+    ]
+   },
+   "contract": "Rung 3 rival on the root's rival schema (brain.gd, game, ev fixed in core_duel). Copy the Dancer row of ref/packs/duel/data/rivals.json and its brain behaviour. data/rivals/kass.json: id kass, name 'Kass', title 'The Dancer', rung rung3, body_scale 0.9, hp 85, poise 8 (house scale; brief 10), roll {frames 30, iframes [3,18]}, dodge (dodge clip, 8 stamina), defend_style avoid, hooks scripts/rivals/dancer.gd. Moves: dash_light (base light, strike, lunge 2.5 m, 11 dmg), roll_light (roll then strike), 4-hit flurry (chain windup 12, chained 9, ender -20 on block), spin_heavy (strike_heavy, always a 30 f hold = her coil tell), taunt (taunt clip) after a flurry. Rolls through the player's heavy windup with read_p; rolls away under 40 stamina; any heavy staggers her; punish her roll recovery f19-30 (counter-hit). Champion string: roll_light into spin_heavy. Every opener >= 24 f tell->active; never idle over 120 f; strings end in the tier's return window. dancer.gd: hook.setup, hook.choose(brain, sit), hook.on_contact(brain, ev). Harder = sharper reading only.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match.gd",
+      "--seed=1"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "match_flow",
+   "title": "Ladder, title defense, comeback, end screen",
+   "milestone": "greybox",
+   "deps": [
+    "core_duel",
+    "rival_livia",
+    "rival_kass"
+   ],
+   "scope": [
+    "gen/mod_match.gd",
+    "scripts/match.gd",
+    "data/ladder.json",
+    "tests/bot_hand_idle.gd",
+    "tests/bot_hand_perfect.gd",
+    "tests/bot_ladder.gd"
+   ],
+   "serves": [
+    "parry_breach",
+    "splat_charge",
+    "corridor_catch"
+   ],
+   "registers": {
+    "capabilities": [
+     "ui",
+     "rules",
+     "input",
+     "audio",
+     "vfx",
+     "biped"
+    ],
+    "assets": [
+     "gen/mod_match.gd"
+    ],
+    "tests": [
+     "tests/bot_hand_idle.gd",
+     "tests/bot_hand_perfect.gd",
+     "tests/bot_ladder.gd"
+    ]
+   },
+   "contract": "A root module (gen/mod_match.gd appends {id: \"match\", script: \"scripts/match.gd\", order: 10} to ctx.root meta fc_mods). data/ladder.json: {rungs: [{rival: orso, tier: rung1}, {rival: livia, tier: rung2}, {rival: kass, tier: rung3}, {rival: orso, tier: champion}, {rival: livia, tier: champion}, {rival: kass, tier: champion}], restart_delay_f 60, comeback_hp 30, comeback_posture_mult 1.5}. Title Defense = rungs 3-5: the tier's numbers plus each rival's champion_strings. On match_end: winner plays cheer clip, the beaten fighter stays down (knockdown until the next match); end screen (TLHud set_text id end, centre) names the cause in words (e.g. 'Parried 3 times by Livia', 'Deathblow', 'Time: higher health'), breaches made (read mods.breach.breaches if present, else 0) and the next champion; Light (action light) restarts after restart_delay_f via game.restart_match(next or same rival). TLAudio horn between rounds. Comeback: under 30 HP a fighter's blade glows (TLVfx.attach sparks on the weapon socket; null-safe) and in post_contact a parry he makes loads 1.5x posture onto the attacker (add_posture of the extra half). Rival reactions owned here: none beyond the cheer (breach owns breach reactions). State: mods.match {rung, tier, rival, cause, next, comeback_player, comeback_rival}. Hand bots per card.duel's text for what each must find. bot_ladder: perfect hand, wins Orso, then confirms the next match is Livia at rung2 (restart via Light), ok within 36000 f. Must keep PLAYER CHECK bot_match passing.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match.gd",
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_ladder.gd",
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd",
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_idle.gd",
+      "--seed=1"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "breach",
+   "title": "The Breach: hurl through stone",
+   "milestone": "greybox",
+   "deps": [
+    "core_duel"
+   ],
+   "scope": [
+    "gen/mod_breach.gd",
+    "scripts/breach.gd",
+    "data/breach.json",
+    "tests/bot_breach.gd"
+   ],
+   "serves": [
+    "parry_breach",
+    "splat_charge",
+    "corridor_catch"
+   ],
+   "registers": {
+    "capabilities": [
+     "fracture",
+     "physics",
+     "vfx",
+     "audio",
+     "camera",
+     "biped",
+     "kit"
+    ],
+    "assets": [
+     "gen/mod_breach.gd"
+    ],
+    "tests": [
+     "tests/bot_breach.gd"
+    ]
+   },
+   "contract": "A root module (gen/mod_breach.gd appends {id: \"breach\", script: \"scripts/breach.gd\", order: 5}). setup: TLFracture.attach(wall.node, {hp 100, bake \"remove\", max_awake_frames 180}) on every game.walls entry. data/breach.json: {reach_m 1.5, after_parry_f 44, stop_f 14, shove_mps 9.0, down_f 45, getup_f 30, extra_dmg 10, shake [0.3, 20], decree_round 3, rival_roar_press_f 240, taunt_f 60}. RULE (pre_contact): a landed hit (type hit or counter) with move charged, OR a heavy with ev.after_parry_f in 0..44, OR in round 3 (Emperor's Decree) any landed heavy, on a defender whose position is within 1.5 m of an INTACT inner segment lying behind him along ev.dir (+-60 deg) = BREACH, and pre_contact returns true: game.feel.hitstop(attacker, defender, 14) on both, break_now on that segment (push along the hit), wall.intact = false, TLBiped.shove(dir x 9 x body_mass), TLHit.down(defender, 45, -dir) with get_up 30 (i-frames 1-20), damage = the hit's own damage (counter bonus included) + 10 (charged: 30 + 10 = 40 total; post-parry heavy 20 + 10 = 30; one figure, this one), ctx.cameras.shake(0.3, 20), TLVfx.burst debris + dust at the break, TLAudio.play break + cheer (crowd roar). Rivals breach the player the same way. A broken segment stays broken through all 3 rounds; the gap neither splats nor breaches (no body remains after bake remove). The outer 1.0 m stones never break: a bash near them splats (root rule), a charge near them is a plain charged hit. When all 8 segments are down, no breach can happen: every hit resolves as the root's contact (charged = knockdown). On match_start rebuild all 8 (free and TLKit.build again, attach, intact true). Reactions: a rival who breaches the player taunts (taunt clip, 60 f, a hit then is a counter-hit); a rival breached roars on getup (taunt clip) and brain stays PRESS for 240 f. State mods.breach {breaches, intact [8 bools], last_breach_frame}. bot_breach: perfect hand vs Orso: parries, heavies him into a wall; ok when breaches >= 1 and that segment stays broken in the next round. Must keep bot_match passing.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_breach.gd",
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match.gd",
+      "--seed=1"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "hud_juice",
+   "title": "HUD bars, banners, crowd",
+   "milestone": "greybox",
+   "deps": [
+    "core_duel"
+   ],
+   "scope": [
+    "gen/mod_hud.gd",
+    "scripts/hud.gd",
+    "data/hud.json"
+   ],
+   "serves": [
+    "parry_breach",
+    "splat_charge"
+   ],
+   "registers": {
+    "capabilities": [
+     "ui",
+     "audio",
+     "vfx",
+     "camera"
+    ],
+    "assets": [
+     "gen/mod_hud.gd"
+    ]
+   },
+   "contract": "A root module (order 20) on game.hud (TLHud the root made). Copy ref/packs/duel/scripts/show.gd's bars and banners. data/hud.json {banner_f 45, arrow_margin_px ...}. Top left/right: health, stamina, posture text bars for player and rival with EXHAUSTED and BROKEN, rival name and title; top: round, rounds won pips, clock (TLHud.add_clock(game.rules, top)). Centre banners from post_contact: PARRY!, CLASH!, GUARD BREAK!, WALL SPLAT!, COUNTER!, BREACH! (when mods.breach.last_breach_frame changes), DEATHBLOW!, K.O. Edge arrow label (left/right/top/bottom anchor) when the rival is in WINDUP and ctx.cameras.subject_px(rival.body) is 0. Crowd: a hush (TLAudio.play beep at -18 dB) when a rival heavy/charged windup starts, cheer on parries and splats, horn at round_start. No shake or bursts here (the root and breach own those). Keeps the root's hint label. Visual and audio only: no state change.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--seed=1"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "rival_looks",
+   "title": "Fighter builds and weapons",
+   "milestone": "art_pass",
+   "deps": [
+    "core_duel"
+   ],
+   "scope": [
+    "gen/mod_looks.gd",
+    "scripts/looks.gd",
+    "data/looks.json"
+   ],
+   "serves": [
+    "parry_breach",
+    "splat_charge",
+    "corridor_catch"
+   ],
+   "registers": {
+    "capabilities": [
+     "kit",
+     "physics",
+     "biped",
+     "vfx"
+    ],
+    "assets": [
+     "gen/mod_looks.gd"
+    ]
+   },
+   "contract": "A root module (order 15). On match_start dresses player and rival from data/looks.json {<rival id>: {rig_params colors, props: [{shape, dims, color, socket}]}}: visual-only TLBodies.make(..., {visual true}) props with no collision on the rig's hand sockets (null-safe). Player: gladius, red sash. Orso: bare chest, tall tower shield 1.4 x 0.7 m on the off hand, short club. His shield block uses the `block` clip with the shield held in front (if the rig lacks a shield-raised pose, report it as a question; never borrow a clip). Livia: long blade, crested helmet, slim colours. Kass: twin short blades, sash. Body scale stays the root's (body_scale from rival json). Visible result: in view duel each champion has a distinct silhouette (Orso's tower shield and club clearly framed at the 0.25 fill). No physics bodies added, so the hash is unchanged.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--seed=1"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "arena_dress",
+   "title": "Colosseum stands, flags, gate",
+   "milestone": "art_pass",
+   "deps": [
+    "core_duel"
+   ],
+   "scope": [
+    "gen/mod_dress.gd",
+    "scripts/dress.gd",
+    "data/venue_dress.json"
+   ],
+   "serves": [
+    "corridor_catch"
+   ],
+   "registers": {
+    "capabilities": [
+     "kit",
+     "camera"
+    ],
+    "assets": [
+     "gen/mod_dress.gd"
+    ],
+    "cameras": [
+     "wide"
+    ]
+   },
+   "contract": "A root module (order 1). setup: TLKit.build_layout(ctx.read_json(\"venue_dress.json\"), ctx.root) with props only: raked kit stands in a ring from 17 m radius (beyond the camera's farthest reach 9 + 5.4 m), two red flags and a kit entrance portal at the north gate, red sign banners on the stones row (below 1.0 m, outside the fight). Nothing inside 14.4 m of centre above 1.2 m. Registers ctx.cameras.add_view(&\"wide\", Vector3(0, 22, 24), Vector3.ZERO, 50) showing the whole octagon, corridor and stands; set_subject(&\"wide\", game.player.body). Does not activate it (duel stays active). Visible result: view wide shows filled stands, flags and the gate around the ochre sand; view duel shows stands in the background.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": [
+      "--seed=1"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": [
+      "--seed=1"
+     ]
+    }
+   ]
+  }
+ ],
+ "card": "card.duel",
+ "phases": [
+  {
+   "id": "tofu",
+   "title": "Core duel on tofu",
+   "try": "Parry, block, roll and punish Orso in a walled sand ring",
+   "packages": [
+    "core_duel"
+   ]
+  },
+  {
+   "id": "champions",
+   "title": "Three champions and the ladder",
+   "try": "Beat Orso, Livia and Kass best of three, then defend",
+   "packages": [
+    "rival_livia",
+    "rival_kass",
+    "match_flow"
+   ]
+  },
+  {
+   "id": "breach",
+   "title": "Walls that break",
+   "try": "Parry then heavy: hurl a champion through a stone wall",
+   "packages": [
+    "breach"
+   ]
+  },
+  {
+   "id": "show",
+   "title": "Crowd, looks and colosseum",
+   "try": "See shields, blades, stands, bars and hear the crowd roar",
+   "packages": [
+    "hud_juice",
+    "rival_looks",
+    "arena_dress"
+   ]
+  }
+ ]
+}

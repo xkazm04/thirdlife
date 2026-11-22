@@ -14,7 +14,7 @@ import { ENTRY_SCRIPT, MANIFEST_FILE, depClosure } from "./manifest.js";
 import { acceptanceOptions, verbOptionsText, type RunnerVerbs } from "./verbs.js";
 import { planCardProblems, planHandProblems } from "./cards.js";
 import { briefDesignText, conceptText, criticChecklistText, designAnswerSchema, qualityText, roomDesignProblems, withHLine } from "./roomtext.js"; // JOB.md 2026-11-21: the design room
-import { designTemplateProblems, templateExcerpt } from "./templates.js"; // N4 of 22 Nov: genre templates
+import { briefTemplateProblems, templateExcerpt } from "./templates.js"; // N4 of 22 Nov: genre templates
 import { tofuPlanProblems, tofuPlannerText } from "./tofu.js"; // N4 of 22 Nov: the tofu stage
 import type { ConceptTemplate } from "./room_wire.js";
 import { servesProblems, type Concept } from "./room_wire.js";
@@ -222,7 +222,7 @@ function designerVars(input: DesignerInput): Record<string, string> {
 
 /** Problems of a Designer answer beyond the JSON schema: word limits, unique ids, the crazy rule, dropped aspects. */
 export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creativity" | "previous" | "concept">): string[] {
-  const out = [...aspectProblems(brief.pitch, brief.aspects), ...roomDesignProblems(brief), ...(brief.design !== undefined && input.concept?.template !== undefined ? designTemplateProblems(brief.design, input.concept.template) : [])];
+  const out = [...aspectProblems(brief.pitch, brief.aspects), ...roomDesignProblems(brief), ...briefTemplateProblems(brief, input.concept?.template)];
   if (brief.pitch === undefined || brief.aspects === undefined) out.push("the brief needs a pitch and 3 to 7 aspects");
   out.push(...crazyProblems(brief.aspects, input.creativity, input.previous === undefined));
   if (input.previous) {
@@ -362,6 +362,8 @@ export interface PlannerInput {
 
 /** The Foreman's default builder time limit (foreman.ts), named to the Planner when the caller gives none. */
 export const DEFAULT_BUILDER_TIMEOUT_MS = 30 * 60_000;
+/** N4 loop of 22 Nov: a Planner call's limit (the standard colosseum proof timed out at the generic 10 minutes). */
+export const PLANNER_TIMEOUT_MS = 20 * 60_000;
 
 function plannerVars(input: PlannerInput, limits: PlanLimits, replan: string): Record<string, string> {
   const packContract = input.packContract ?? fs.readFileSync(path.join(REPO_ROOT, "contracts", "PACK.md"), "utf8");
@@ -390,7 +392,7 @@ function plannerVars(input: PlannerInput, limits: PlanLimits, replan: string): R
 The producer's last review of this design (its warnings: make each one true in a contract): ${input.review}
 ` : "",
     quality: input.brief.design !== undefined ? qualityText(["2", "6", "7:Planner", "12"]) : "(the brief has no game design doc: build the brief as it is)",
-    template: templateExcerpt(input.brief.concept?.template, "design"),
+    template: templateExcerpt(input.brief.concept?.template, "planner"),
     tofu: input.brief.design !== undefined ? tofuPlannerText(input.brief.concept?.template) : "(the brief has no game design doc: no tofu stage; the first phase is the smallest thing that plays)",
   };
 }
@@ -415,7 +417,7 @@ export function planPackages(builder: Builder, input: PlannerInput, opts: Genera
     plannerVars(input, opts, ""),
     schema("plan.schema.json"),
     (v) => planCheck((v as PlanAnswer).packages, { requirePhases: true, ...opts, ...clipLimit(input.brief), requireTofu: input.brief.design !== undefined && input.brief.concept?.template !== undefined }, (v as PlanAnswer).card, (v as PlanAnswer).phases),
-    { ...opts, limits: [{ path: "phases[*].try", max: LIMITS.try }] }, // L1b: a too-long try line is repaired, not a lost plan
+    { ...opts, timeoutMs: opts.timeoutMs ?? PLANNER_TIMEOUT_MS, limits: [{ path: "phases[*].try", max: LIMITS.try }] }, // L1b: a too-long try line is repaired; N4: 20 min
   );
 }
 
@@ -463,7 +465,7 @@ export function replanPackages(builder: Builder, input: ReplanInput, opts: Gener
       const phases = (v as PlanAnswer).phases !== undefined ? ["omit `phases` in a re-plan: the job's phases stay, and the Foreman places the replacement packages"] : [];
       return [...clash, ...phases, ...planCheck([...input.kept, ...fresh.filter((p) => !keptIds.has(p.id))], { ...opts, ...clipLimit(input.brief), requirePhases: false }, (v as PlanAnswer).card)];
     },
-    opts,
+    { ...opts, timeoutMs: opts.timeoutMs ?? PLANNER_TIMEOUT_MS },
   );
 }
 
