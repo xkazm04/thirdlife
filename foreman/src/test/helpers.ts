@@ -187,10 +187,11 @@ export function sampleConcept(): Concept {
 
 /**
  * The designer step of a fake script: the paddle brief, and for an "ice hockey" sentence the same brief saying what the
- * arcade-sport house game keeps (N4 loop round 7: a hockey brief must state the speed ratios, the carry and the AI).
+ * arcade-sport house game keeps (N4 loop round 7: a hockey brief must state the speed ratios, the carry and the AI;
+ * D3 round 5: also the house camera and the readable puck and ring).
  */
 export function designerSteps(estimate: unknown): FakeStep[] {
-  const hockey = { ...v2Brief(), rules: `${v2Brief().rules} The carrier is slower than a free skater (x0.88) and a pass beats skating; the puck sits on the blade on a spring.`, ai: `${v2Brief().ai} The AI scores SHOOT, PASS and CARRY every 15 frames (utility, with vetoes).` };
+  const hockey = { ...v2Brief(), rules: `${v2Brief().rules} The carrier is slower than a free skater (x0.88) and a pass beats skating; the puck sits on the blade on a spring. A broadcast camera looks down at the play from the near side; the puck is drawn bigger with a hot rim and a ring under your skater marks you.`, ai: `${v2Brief().ai} The AI scores SHOOT, PASS and CARRY every 15 frames (utility, with vetoes).` };
   return [
     { match: { role: "designer", promptIncludes: '"ice hockey' }, json: { brief: hockey, estimate } },
     { match: { role: "designer" }, json: { brief: v2Brief(), estimate } },
