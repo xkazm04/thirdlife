@@ -492,6 +492,15 @@ played by a person.
   house baseline now carries a key (the house pack's files, the house bot, its strip moment kinds, the reader's version)
   and is measured and filmed again when the key changes. The house strip films a kind this build's bots also reported
   first, and keeps its kind: on a copy of -5 the stale KO strip became the Wall's parry at frame 2269.
+- **The first hockey job through the editor (ice-hockey-frozen-pond-20261122-2) held at its tofu look.** Its bot passed
+  every tofu row and the film contradicted none. The critic still saw board scrums of 3 to 6 merged bodies, a puck too
+  small to find, no hit-stop or reaction on any contact strip, and a chase camera with a near skater covering the play
+  (feel 0.25, house_game 0.35). Two editor faults it showed:
+  - the move line read "poke 5/7/12 (`cross_check`)", and the first job (-1) died in design naming the clip as the
+    move; move lines now name the move and the clip apart;
+  - possession_median_f 377 against the house hockey's 164 was "not short", because a band row (240 to 600) had only
+    its bounds checked. A band row is now judged by its distance to the house figure, and a house figure outside the
+    template's bound is said (the house hockey's 164 is under 240: the Director decides which is wrong).
 - **The same sentence twice gives the same hook.** The walls broke four times and souls swapped three times. Each
   concept now reads the earlier designs of its sentence; -5 and -6 chose new hook families.
 - **A package's bot films what the package adds.** -5's greybox look filmed its rivals bot still fighting the opener

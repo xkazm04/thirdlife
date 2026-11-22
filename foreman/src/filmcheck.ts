@@ -302,6 +302,11 @@ export function claimsOfResult(result: { metrics?: unknown; moments?: unknown } 
 /** What the critic is told: the claims, then what the frames measured, finding by finding. */
 export function filmCheckText(check: FilmCheck | undefined): string | undefined {
   if (check === undefined || check.measured === 0) return undefined;
-  if (check.findings.length === 0) return `MEASURED FROM THE FILM by the Foreman (frame differences between tiles, ${check.measured} strip(s)): no bot claim is contradicted.`;
-  return `MEASURED FROM THE FILM by the Foreman (frame differences between tiles, not a model): ${check.findings.map((f) => `CLAIM CONTRADICTED: ${f.bot} claims ${f.claim}; ${f.measured}`).join(" | ")}. These fail the tofu check and the house compare; say in your notes what the strip shows instead.`;
+  // D3 of 22 Nov: hockey -2's critic pinned a still strip of bot_player on the tofu bot's idle_max_f. A strip that is still
+  // with no claim of its own bot against it is named with its bot, so it is judged as that bot's run and nothing else.
+  const found = new Set(check.findings.map((f) => f.capture));
+  const still = check.strips.filter((x) => x.house !== true && (x.still_f ?? 0) >= STILL_MIN_F && !found.has(x.capture)).map((x) => `${path.basename(x.capture)} (${x.bot ?? "no bot"}) changes in no tile for ${x.still_f} frames`);
+  const stillText = still.length > 0 ? ` STILL ON FILM, no claim of its own bot against it: ${still.join("; ")}. Each is that bot's run only: judge it as play that stands still (a dead spell, a pause), never as a contradiction of another bot's figures.` : "";
+  if (check.findings.length === 0) return `MEASURED FROM THE FILM by the Foreman (frame differences between tiles, ${check.measured} strip(s)): no bot claim is contradicted.${stillText}`;
+  return `MEASURED FROM THE FILM by the Foreman (frame differences between tiles, not a model): ${check.findings.map((f) => `CLAIM CONTRADICTED: ${f.bot} claims ${f.claim}; ${f.measured}`).join(" | ")}. These fail the tofu check and the house compare; say in your notes what the strip shows instead.${stillText}`;
 }
