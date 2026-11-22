@@ -469,3 +469,7 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   opponent). The tofu rows `pressure_waves` and `lead_change_share` take the duel house game's definitions (busy 3 s
   windows after a quiet one; the share of rounds with a lead change); a sport reads them its own way (zone entries
   held 2 s or ending in a shot; goals after which another side leads).
+- **Earlier designs of the same sentence.** The concept step of every job (standard and crazy) reads the concepts of up
+  to 4 earlier jobs on the same site with the same sentence and the same mode (a crazy job also keeps reading the
+  standard ones as before). Its chosen `hook` must not share more than 40 % of its content words with an earlier hook
+  (the sentence's own words do not count); an answer that does is sent back. The core template stays the same.
