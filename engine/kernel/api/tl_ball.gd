@@ -30,6 +30,10 @@ var _pos_stamp: int = -1
 var _hold_offset: Vector3 = Vector3.ZERO
 var _shape_node: CollisionShape3D = null   # K8: what set_radius resizes
 var _visual: Node3D = null
+var _gain: float = 0.0                     # H1: largest planar speed gain per frame from contacts (0 = off)
+var _gain_floor: float = 0.0
+var _speed_ref: float = 0.0                # H1: the planar speed the next frame is measured against
+var _trust: int = 0                        # H1: frames in which a declared velocity is taken as it is
 
 
 ## Options: kind, radius, height (puck), material, mass (default density x volume), position, planar (bool: a puck
@@ -163,8 +167,30 @@ func set_radius(r: float) -> void:
 	sleeping = false
 
 
+## H1 (1.16, hockey): a contact (a puck squeezed between two skaters, a body run into it) may raise the planar speed
+## by at most `per_frame` m/s a frame over max(the speed a frame ago, `floor_speed`); a faster gain is cut back at the start of
+## the next frame. A velocity the game sets is never cut: shoot, shoot_at, release, place and set_velocity declare it
+## (writing `linear_velocity` yourself does not: use set_velocity). Held: nothing. 0 = off (the default: no hash moves).
+func set_max_gain(per_frame: float, floor_speed: float = 0.0) -> void:
+	_gain = maxf(0.0, per_frame)
+	_gain_floor = maxf(0.0, floor_speed)
+	_declare()
+
+
+## H1 (1.16): sets the velocity (m/s) as the game's own: max_gain does not cut it.
+func set_velocity(v: Vector3) -> void:
+	sleeping = false
+	linear_velocity = v
+	_declare()
+
+
+func _declare() -> void:
+	_trust = 2                               # this frame, and the physics step after an impulse
+
+
 ## Hits the ball: an impulse in N*s (mass x change of velocity).
 func shoot(impulse: Vector3) -> void:
+	_declare()
 	sleeping = false
 	apply_central_impulse(impulse)
 
@@ -174,6 +200,7 @@ func shoot_at(target: Vector3, speed_: float) -> void:
 	var d: Vector3 = target - global_position
 	if d.length() < 0.001:
 		return
+	_declare()
 	sleeping = false
 	linear_velocity = d.normalized() * speed_
 
@@ -189,6 +216,7 @@ func place(at: Vector3) -> void:
 		PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY, Vector3.ZERO)
 	sleeping = false
 	_was_moving = false
+	_declare()
 	_pos_stamp = -1          # a teleport is not a path: it must not count as passing through a trigger
 	if is_inside_tree():
 		reset_physics_interpolation()   # D15: drawn at the new place at once, never a glide from the old one (draw only)
@@ -212,6 +240,7 @@ func release(velocity: Vector3 = Vector3.ZERO) -> void:
 	var was: Node3D = _holder if is_instance_valid(_holder) else null
 	_holder = null
 	_held = false
+	_declare()
 	freeze = false
 	sleeping = false
 	linear_velocity = velocity
@@ -256,7 +285,24 @@ func _physics_process(_delta: float) -> void:
 		return
 	if max_speed > 0.0 and linear_velocity.length() > max_speed:
 		linear_velocity = linear_velocity.normalized() * max_speed
+	if _gain > 0.0:
+		_limit_gain()
 	var moving: bool = is_moving()
 	if _was_moving and not moving:
 		stopped.emit()
 	_was_moving = moving
+
+
+## H1: cut a planar speed gain the game did not declare (see set_max_gain).
+func _limit_gain() -> void:
+	var flat := Vector2(linear_velocity.x, linear_velocity.z)
+	var spd := flat.length()
+	if _trust > 0:
+		_trust -= 1
+	else:
+		var cap := maxf(_speed_ref, _gain_floor) + _gain
+		if spd > cap:
+			var k := cap / spd
+			linear_velocity = Vector3(linear_velocity.x * k, linear_velocity.y, linear_velocity.z * k)
+			spd = cap
+	_speed_ref = spd
