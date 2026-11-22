@@ -412,7 +412,7 @@ func _rhythm() -> void:
 		return
 	var r: Dictionary = cfg["rhythm"]
 	rhythm_t += 1
-	var lim: int = int(r["push"]) if pushing else int(float(r["breathe"]) * (float(r["phase2_k"]) if phase2_on else 1.0))
+	var lim: int = int(r["push"]) if pushing else int(float(r["breathe"]) * (float(r["phase2_k"]) if phase2_on else 1.0) * float(tier.get("breathe_k", 1.0)))   # round 13: a champion rests briefly
 	if rhythm_t < lim or not plan.is_empty():
 		return
 	rhythm_t = 0
