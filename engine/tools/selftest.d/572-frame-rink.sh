@@ -15,14 +15,27 @@ func mean_color(im: Image, region: Rect2i) -> Vector3:
 			sum += Vector3(c.r8,c.g8,c.b8)
 	return sum/(ceili(region.size.x/2.0)*ceili(region.size.y/2.0))
 
+func median_color(im: Image, region: Rect2i) -> Vector3:
+	# The median ignores a skater standing in the patch (22 Nov: the bots moved; a red skater sat in the east patch).
+	var r: Array[float] = []
+	var g: Array[float] = []
+	var b: Array[float] = []
+	for y in range(region.position.y, region.end.y, 2):
+		for x in range(region.position.x, region.end.x, 2):
+			var c := im.get_pixel(x,y)
+			r.append(c.r8); g.append(c.g8); b.append(c.b8)
+	r.sort(); g.sort(); b.sort()
+	var m := r.size() / 2
+	return Vector3(r[m], g[m], b[m])
+
 func _initialize() -> void:
 	var im := Image.load_from_file(OS.get_cmdline_user_args()[0])
 	if im == null or im.get_size() != Vector2i(960,540):
 		quit(1)
 		return
 	# Symmetric open ice on each side of centre, between the faceoff rings.
-	var west := mean_color(im, Rect2i(218,210,109,107))
-	var east := mean_color(im, Rect2i(633,210,109,107))
+	var west := median_color(im, Rect2i(218,210,109,107))
+	var east := median_color(im, Rect2i(633,210,109,107))
 	var delta := (west-east).abs()
 	# The blue line between the samples also has to remain visible on the ice.
 	var blue := mean_color(im, Rect2i(368,102,4,64))
