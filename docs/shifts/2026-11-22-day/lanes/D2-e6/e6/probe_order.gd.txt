@@ -1,0 +1,60 @@
+extends SceneTree
+# Micro-probe: whole-space intersect order of static boxes, created in the default space (A), created in the default
+# space and moved into a new space at node_added (B), created with a disabled parent (REMOVE) and placed by RID (C).
+var mode: String = "A"
+var space: RID
+var frame: int = 0
+var holder: Node3D
+
+func _initialize() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--mode="): mode = a.substr(7)
+	if mode != "A":
+		space = PhysicsServer3D.space_create()
+		PhysicsServer3D.space_set_active(space, true)
+		node_added.connect(_adopt)
+	holder = Node3D.new()
+	holder.name = "H"
+	if mode.contains("C"):
+		holder.process_mode = Node.PROCESS_MODE_DISABLED
+	root.add_child(holder)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	for i in 40:
+		var b := StaticBody3D.new()
+		b.name = "b%02d" % i
+		var cs := CollisionShape3D.new()
+		var bs := BoxShape3D.new()
+		bs.size = Vector3(rng.randf_range(0.2, 3), rng.randf_range(0.2, 3), rng.randf_range(0.2, 3))
+		cs.shape = bs
+		b.add_child(cs)
+		var at := Vector3(rng.randf_range(-30, 30), rng.randf_range(0, 3), rng.randf_range(-30, 30))
+		if mode.contains("D"):
+			b.position = at
+		holder.add_child(b)
+		b.position = at
+
+func _adopt(n: Node) -> void:
+	if n is CollisionObject3D:
+		PhysicsServer3D.body_set_space((n as CollisionObject3D).get_rid(), space)
+		if mode.contains("Q"):
+			var pq := PhysicsPointQueryParameters3D.new()
+			PhysicsServer3D.space_get_direct_state(space).intersect_point(pq, 1)
+		if mode.contains("T"):
+			PhysicsServer3D.body_set_state((n as CollisionObject3D).get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, (n as Node3D).global_transform)
+
+func _physics_process(_d: float) -> bool:
+	frame += 1
+	if frame == 3:
+		var st: PhysicsDirectSpaceState3D = PhysicsServer3D.space_get_direct_state(space) if mode != "A" else holder.get_world_3d().direct_space_state
+		var q := PhysicsShapeQueryParameters3D.new()
+		var big := BoxShape3D.new()
+		big.size = Vector3(500, 500, 500)
+		q.shape = big
+		var res := st.intersect_shape(q, 256)
+		var names: PackedStringArray = []
+		for r in res:
+			names.append(String((r["collider"] as Node).name))
+		print("ORDER ", mode, " ", res.size(), " ", ",".join(names))
+		return true
+	return false

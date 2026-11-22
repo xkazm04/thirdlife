@@ -1,0 +1,14 @@
+seed=1 N=20000 world "frames":20000,"state_hash":"85c0a58e25d20969 | alone "frames":20000 "state_hash":"85c0a58e25d20969
+seed=2 N=20000 world "frames":20000,"state_hash":"a4fabbbd9c00a41d | alone "frames":20000 "state_hash":"a4fabbbd9c00a41d
+seed=3 N=20000 world "frames":20000,"state_hash":"62c46196908954ef | alone "frames":20000 "state_hash":"62c46196908954ef
+# main pack.gd (control)
+seed=1 N=20000 world "frames":20000,"state_hash":"85c0a58e25d20969 | alone "frames":20000 "state_hash":"85c0a58e25d20969
+seed=2 N=20000 world "frames":20000,"state_hash":"e702acb72a329656 | alone "frames":20000 "state_hash":"a4fabbbd9c00a41d
+seed=3 N=20000 world "frames":20000,"state_hash":"dbbdcd647a5ee144 | alone "frames":20000 "state_hash":"62c46196908954ef
+seed=1 N=20000 world "frames":6743,"state_hash":"4f3a3e1e96b6dcdf | alone "frames":6750 "state_hash":"f48b4964b924e761
+seed=2 N=20000 world "frames":3177,"state_hash":"2d49e9449211ff41 | alone "frames":3177 "state_hash":"2d49e9449211ff41
+seed=3 N=20000 world "frames":2688,"state_hash":"149425c319623bfd | alone "frames":2688 "state_hash":"149425c319623bfd
+# fix, bot_hockey (ends at the bot's result)
+seed=1 N=20000 world "frames":6750,"state_hash":"f48b4964b924e761 | alone "frames":6750 "state_hash":"f48b4964b924e761
+seed=2 N=20000 world "frames":3177,"state_hash":"2d49e9449211ff41 | alone "frames":3177 "state_hash":"2d49e9449211ff41
+seed=3 N=20000 world "frames":2688,"state_hash":"149425c319623bfd | alone "frames":2688 "state_hash":"149425c319623bfd
