@@ -21,7 +21,7 @@ var standin_min: float = 1.2            # metres: a mesh instance whose longest 
 # P6: the pictures of a far game (draw/FAR.md has the study these numbers come from)
 var mid_min: float = 2.5                # "mid": instances shorter than this are clutter at 100 m and more
 var far_min: float = 5.0                # "far": only the forms that make the skyline and the plan
-var far_cell: float = 6.0               # "far": the pack's own ground is re-meshed on a grid of this size (0 = kept as it is)
+var far_cell: float = 0.0               # "far": the pack's own ground is re-meshed on a grid of this size (0 = kept as it is). N3 (22-23 Nov): 0; the 6 m grid moved seed_drive's ground by up to 2.07 m under objects that kept their height, so they sank or rose at the mid/far switch
 var far_flat: float = 0.0               # "far": how far every normal leans to straight up (P6 had 0.5; P13: 0, the tone of the middle picture, so the change does not show)
 var far_thin: float = 0.1               # "far": a triangle narrower than this is a thin member (rail, wire, lattice): dropped (0 = kept)
 var far_small: float = 0.4              # "far": a triangle whose longest edge is shorter is small detail: dropped (0 = kept)

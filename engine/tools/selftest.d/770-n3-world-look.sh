@@ -2,7 +2,8 @@
 # landscape.gd builds for boot/village.json, headless (kernel/world/home/n3_case.gd). The final marker is required.
 #   n3.sight   the visitor's camera far plane reaches across the whole drawn valley (was 2000 m: hills cut at 2 km)
 #   n3.tufts   the grass tufts appear and go by their own 32 m cell, not all at once 120 m from the village middle
-n3_cases=(n3.sight n3.tufts)
+#   n3.far_ground   a pack's far picture keeps its own ground where the mid picture has it (the 6 m grid moved it up to 2 m)
+n3_cases=(n3.sight n3.tufts n3.far_ground)
 if [ -z "$FILTER" ] || [[ "${n3_cases[*]}" == *"$FILTER"* ]]; then
   n3_engine="$(cd "$HERE/.." && pwd)"
   command -v cygpath >/dev/null 2>&1 && n3_engine="$(cygpath -am "$n3_engine")"
