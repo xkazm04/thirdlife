@@ -77,6 +77,7 @@ func tick(g, frame: int) -> bool:
 	api._follow_blade()
 	g.drill_lib.tick(g, frame)
 	g.player.input(g)
+	api.step_sticks()
 	g.hits.step_actions()
 	api.pose_sticks()
 	api.apply_speeds()
@@ -91,6 +92,8 @@ func tick(g, frame: int) -> bool:
 				_feed(g, "b1")
 				_go("take")
 		"take":
+			if api.carrier == "b1":
+				_feed(g, "b1")
 			if api.carrier == "b0":
 				_go("pass")
 		"pass":
@@ -134,11 +137,16 @@ func _feed(g, from: String) -> void:
 	if api.carrier != from:
 		return
 	var to: Vector3 = api.lead_point("b0") - api.puck_pos()
-	if to.length() > 0.2:
-		api.stick_dir[from] = to.normalized()
-	api.try_pass(from)
+	if to.length() <= 0.2:
+		return
+	var dir := to.normalized()
+	api.stick_dir[from] = dir
+	# Let the blade swing to the passing side before the return feed crosses his skates.
+	var body_offset: Vector3 = api.pos_of(from) - api.puck_pos()
+	if body_offset.dot(dir) > 0.0 and body_offset.cross(dir).length() < g.skaters[from].body_radius() + api.puck_radius:
+		return
+	api.try_pass(from, "b0")
 	api.stick_dir.erase(from)
-	api.last_release["to"] = "b0"
 
 func finish(g) -> void:
 	active = false

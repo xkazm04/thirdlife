@@ -1,4 +1,5 @@
 extends "rink_bot.gd"
+## N3 times clean eligible pickups after the six-frame release lock and a late poke through its active window.
 ## Bot (H1): the reach table, played the way a person's hand meets it. Each row starts a drill (a declared action with
 ## no key) and then presses only the game's keys: it faces away, skates through at three speeds, holds Space or Q
 ## through the take, holds Space through a poke, reacts late to a poke chance. It measures from the state it sees
@@ -20,7 +21,7 @@ const ROWS: Array = [
 	["skates through with Q held", "through", 1, "pass_held"],
 	["own pass to nobody, he chases it", "own_pass", 1, "own_pass"],
 	["an opponent pokes it, Space held through", "poked", 1, "poked"],
-	["he pokes theirs, 12 frames late", "poke_them", 1, "poke_late"],
+	["he pokes theirs, 12 frames late", "poke_them", 12, "poke_late"],
 ]
 const PASS_TRIES: int = 10
 const ROW_FRAMES: int = 420
@@ -40,6 +41,10 @@ var lock_in_reach: int = 0
 var other_took: String = ""
 var other_frames: int = -1
 var poke_chance := -1
+var tries_before := 0
+var pokes_before := 0
+var poke_resolved := false
+var poke_age := -1
 var stretch_start: int = -1
 var walk_reached: bool = false
 var passes_tried: int = 0
@@ -96,6 +101,10 @@ func _row_tick(frame: int) -> void:
 	var mode: String = str(r[3])
 	if phase == "start":
 		_reset_row()
+		tries_before = s.possession.poke_tries.b0
+		pokes_before = s.possession.pokes.b0
+		poke_resolved = false
+		poke_age = -1
 		_keys(0.0, false, mode == "poked", false)
 		ctx.input.tap(StringName("drill_" + str(r[1])))
 		t0 = frame
@@ -112,6 +121,11 @@ func _row_tick(frame: int) -> void:
 	var h: String = _holder()
 	var reach: float = float(s["reach"])
 	var inside: bool = h == "" and pos.distance_to(puck) <= reach
+	if mode == "own_pass" and released_at >= 0:
+		var rel := (_v(s.puck.vel) - _v(me.vel)).length()
+		var last: Dictionary = s.possession.last
+		var lock := 10 if last.kind == "bobble" else 6
+		inside = inside and rel < 11 and frame - int(last.frame) >= lock
 	# the hand
 	match mode:
 		"walk":
@@ -143,6 +157,12 @@ func _row_tick(frame: int) -> void:
 				poke_chance = frame
 			if poke_chance >= 0 and frame - poke_chance == 12:
 				ctx.input.tap(&"poke")
+			if poke_chance >= 0 and s.possession.poke_tries.b0 == tries_before + 1:
+				if s.possession.pokes.b0 == pokes_before + 1 or float(me.turn_rate) == 2.25:
+					poke_age = frame - 1 - (poke_chance + 12)
+					poke_resolved = true
+					_finish(frame)
+					return
 		_:
 			_keys(0.0, false, false, false)
 	# the measurement
@@ -159,7 +179,7 @@ func _row_tick(frame: int) -> void:
 		if h != "" and h != "b0" and other_took == "":
 			other_took = h
 			other_frames = frame - released_at
-		if h == "b0" and frame - released_at <= 3:
+		if h == "b0" and frame - released_at < (6 if mode == "own_pass" else 30):
 			early_retake = true
 		if inside and frame - released_at <= 40:
 			lock_in_reach += 1
@@ -193,11 +213,15 @@ func _finish(_frame: int) -> void:
 	var note: String = ""
 	if mode == "own_pass":
 		ok = ok and not early_retake
-		note = "released, in his reach %d frames right after (not taken: lock %d frames / below %s m/s), retaken %s; taken meanwhile by %s at %d frames" % [lock_in_reach, 12, "4", "no" if not early_retake else "YES", other_took if other_took != "" else "nobody", other_frames]
+		note = "released, in his reach %d frames right after (not taken: lock %d frames), retaken %s; taken meanwhile by %s at %d frames" % [lock_in_reach, 6, "yes" if first_his >= 0 else "no", other_took if other_took != "" else "nobody", other_frames]
+	elif mode == "poke_late":
+		frames = poke_age
+		ok = poke_resolved and frames >= 6 and frames <= 12
+		note = "one start after the 12-frame reaction; success or measured whiff"
 	elif mode == "poked":
 		frames = other_frames
 		ok = other_took == "r0" and other_frames >= 0 and other_frames <= 12 and first_his < 0
-		note = "r0 had it %d frames after the poke; b0 (Space held) in his reach %d frames, not his (poke lock 20)" % [other_frames, lock_in_reach]
+		note = "r0 had it %d frames after the poke; b0 (Space held) in his reach %d frames, not his (poke lock 30)" % [other_frames, lock_in_reach]
 	elif mode in ["walk", "full", "sprint", "shoot_held", "pass_held"]:
 		note = "top %.1f m/s, %.1f m/s at the take" % [top_speed, take_speed]
 	results.append({"row": str(r[0]), "frames": frames, "bound": int(r[2]), "ok": ok, "note": note})

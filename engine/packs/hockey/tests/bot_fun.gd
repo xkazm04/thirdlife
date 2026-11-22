@@ -1,4 +1,5 @@
 extends "rink_bot.gd"
+## N3 measures the 1.2x replay shot and the 24 m/s wrist shot after the press window.
 ## Measures both skaters and the clock through hit-stop, goal replay, and immediate versus delayed shots off a pass.
 
 const ROWS: Array = [["hard check", "hit_head_on", 99.0], ["small bump", "hit_head_on", 2.0], ["goal and replay", "goal_released", 0.0],
@@ -98,7 +99,7 @@ func _bot_tick(frame: int) -> void:
 		t0 = -1
 
 ## L5b: b0 takes LEO's pass across (drill goalie_cross) and shoots after r[2] frames
-## with the puck: at once it is a one-timer (1.35x the shot speed), after 16 frames an ordinary shot.
+## with the puck: at once it is a one-timer (1.2x the shot speed), after 16 frames an ordinary shot.
 var _took: int = -1
 var _shot: int = -1
 var _ot0: int = 0
@@ -118,7 +119,7 @@ func _one_timer_row(r: Array, age: int) -> void:
 		var spd: float = Vector2(float(v[0]), float(v[1])).length()
 		var n: int = int(s["possession"].get("one_timers", {}).get("b0", 0)) - _ot0
 		var want: bool = int(r[2]) == 0
-		var ok: bool = _shot >= 0 and (n == 1) == want and (spd > 22.0 if want else (spd > 15.0 and spd < 20.0))
+		var ok: bool = _shot >= 0 and (n == 1) == want and absf(spd - (28.8 if want else 24.0)) < 0.35
 		results.append({"row": str(r[0]), "ok": ok, "detail": "took at %d, shot at %d, one-timers %d, puck %.1f m/s" % [_took, _shot, n, spd]})
 		row += 1
 		t0 = -1

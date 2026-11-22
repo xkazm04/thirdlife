@@ -1,15 +1,13 @@
 {
   "id": "sudden_death",
   "label": "Sudden death",
-  "about": "One goal ends it. The bots are sharper: full speed, red as fast as blue, and they shoot only from 12 m in (no long hopeful shot decides it).",
+  "about": "One goal ends it. The bots are sharper: full speed, red as fast as blue under Classic rules.",
   "rules": {
     "score_to_win": 1
   },
   "ai": {
     "speed_scale": 1,
     "red_skill": 1,
-    "aim_tolerance_deg": 24,
-    "check_min_closing_red": 3.5,
-    "shoot_range": 12
+    "check_min_closing_red": 3.5
   }
 }

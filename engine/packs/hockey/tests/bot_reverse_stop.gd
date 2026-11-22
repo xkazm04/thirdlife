@@ -1,4 +1,7 @@
 extends "rink_bot.gd"
+## N3 (22 Nov, director): the carrying burst is read on whichever red skater carries (the utility AI rotates roles; r0 is no
+## longer always the chaser who carries).
+## N3 uses 14.95 m/s² free thrust for the control push, with the same 26 m/s² reverse stop.
 ## Drive the warm-up, reversal and control through the same two movement keys.
 ## A fresh set start facing the push gives the control no cut, own stop or rest credit.
 
@@ -73,8 +76,9 @@ func _bot_tick(frame: int) -> void:
 		"match":
 			if s.autopilot and not s.has("drill") and bursts.has("r0"):
 				red_frames += 1
-				if s.puck.get("holder", "") == "r0":
-					red_carried += 1
+			var h: String = str(s.puck.get("holder", ""))
+			if s.autopilot and not s.has("drill") and h.begins_with("r") and bursts.has(h):
+				red_carried += 1   # N3: roles rotate (F1/D1 by time to the puck), so any red carrier's burst counts, not r0's alone
 			if age == 1800:
 				done = true
 	if frame > 2400:
@@ -82,6 +86,6 @@ func _bot_tick(frame: int) -> void:
 
 func _bot_result() -> Dictionary:
 	var ok := done and free_skate and entry >= 7.99 and stop_frames > 0 and stop_frames <= 22 and travel <= 1.6 \
-		and stops == 1 and control_clean and control10 > 0 and push10 >= 1.5 * control10 and push20 > control20 and red_carried > 0
+		and stops == 1 and control_clean and absf(control10 - (14.95 - 9.8 * 0.015) * 10 / 60) < 0.02 and push10 >= 1.5 * control10 and push20 > control20 and red_carried > 0
 	return {"ok": ok, "summary": "from %.3f m/s to under 0.3 in %d frames over %.3f m, stops %d, push vs control at 10f %.3f/%.3f, at 20f %.3f/%.3f, free %s clean %s, r0 burst frames %d (carrying %d)" % [entry, stop_frames, travel, stops, push10, control10, push20, control20, free_skate, control_clean, red_frames, red_carried]}
 

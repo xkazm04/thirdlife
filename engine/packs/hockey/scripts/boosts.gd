@@ -92,19 +92,26 @@ func build(g, m: Dictionary) -> void:
 	next_spawn = g.ctx.frame + int(config.get("first_frames", 1))
 	radius = g.puck.radius
 	puck_visuals.clear()
-	# The kit's dynamic part publicly exposes the same tl_shape used by TLBall.create.
+	# N3 (22 Nov): the kit part (its drawing and its shape) is resized by the kernel (TLBall.set_radius, API 1.13); only the
+	# pack's own drawn parts on the puck (the rim) are scaled here.
+	_read_shape(g)
 	for child in g.puck.get_children():
-		if child.has_meta(&"tl_shape"):
-			puck_shape = child.get_meta(&"tl_shape") as CylinderShape3D
-			puck_visuals[child] = child.scale
-		elif child is MeshInstance3D:
+		if child is MeshInstance3D and not child.has_meta(&"tl_shape"):
 			puck_visuals[child] = child.scale
 
-## Resize the kit cylinder, its public radius and the puck's drawn parts together.
+## The puck's collision cylinder as it is now (set_radius gives the body a fresh shape: re-read after each resize).
+func _read_shape(g) -> void:
+	for child in g.puck.get_children():
+		if child is CollisionShape3D and (child as CollisionShape3D).shape is CylinderShape3D:
+			puck_shape = (child as CollisionShape3D).shape as CylinderShape3D
+
+## The big puck (the one adapter for N1's kernel call): TLBall.set_radius resizes the body's shape and the kit part's
+## drawing; the pack's own rim follows here.
 func resize(g, factor: float) -> void:
-	g.puck.radius = radius * factor
-	if puck_shape != null:
-		puck_shape.radius = g.puck.radius
+	var r: float = radius * factor
+	if not is_equal_approx(g.puck.radius, r):
+		g.puck.set_radius(r)
+		_read_shape(g)
 	if not g.ctx.headless:
 		for part in puck_visuals:
 			if is_instance_valid(part):
@@ -239,7 +246,7 @@ func aim(g, id: String) -> void:
 	var velocity: Vector3 = g.puck.linear_velocity
 	# Thirdjam's default cone was 15 degrees. Precision doubles it to 30.
 	if to.length_squared() > 0.001 and velocity.angle_to(to) <= deg_to_rad(effects.precision.cone_deg):
-		g.puck.linear_velocity = to.normalized() * velocity.length()
+		g.api.set_puck_velocity(to.normalized() * velocity.length())
 
 ## Animate nearby beacons and equipped waist rings using the simulation frame.
 func render(g, slots: Dictionary) -> void:

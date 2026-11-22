@@ -1,7 +1,7 @@
 extends RefCounted
 ## L5 (21 Nov): the goalies, one per side (data/tuning.json "goalie"; a mode turns them off with "goalies": false).
 ## A goalie is a TLBiped in main's lists (skaters, teams, order; role "goalie") that the brain leaves alone. He stands in
-## his crease on the line from his goal's centre to the puck as he saw it reaction_frames ago, `out` metres in front of
+## his crease on the line from his goal's centre to the puck as he saw it reaction_frames ago, one to two metres in front of
 ## the line (never past z_max from the middle), moves there at `speed` m/s at most and faces the puck.
 ## Saves: a loose puck coming at his net whose last step passed inside his `glove` reach is his (a catch; on the move,
 ## faster than set_speed, his reach is moving_reach of it: a one-timer after a pass across beats him); an opponent's
@@ -32,6 +32,10 @@ func entries(g, m: Dictionary) -> Array:
 	_held = 0
 	_cache_level = "?"
 	var base: Dictionary = g.tune["goalie"]
+	for key: String in base:
+		if key not in ["on", "body_scale", "out", "z_max", "speed", "turn_deg", "reaction_frames", "glove", "set_speed",
+				"moving_reach", "catch_speed", "poke", "hold_frames", "prefer_human", "outlet_min", "cover", "drop_speed", "slow_speed", "slow_reach"]:
+			push_error("tuning.json: unknown goalie." + key)
 	if not bool(m.get("goalies", base["on"])):
 		return []
 	var out: Array = []
@@ -92,18 +96,34 @@ func save(g) -> void:
 			g.api.give(id)                     # net swept the blade-carried puck into it: own goals with an idle b0, 21 Nov)
 			_face_up(g, team, id)
 			return
-		if front < 0.0:
-			continue                           # behind his line (or in the net): no save there
 		if api.carrier == "":
-			var toward: float = g.puck.linear_velocity.x * sg
+			var pv: Vector3 = g.puck.linear_velocity
+			var toward: float = pv.x * sg
 			var reach: float = float(c["glove"]) * (float(c["moving_reach"]) if float(_moving.get(team, 0.0)) > float(c["set_speed"]) else 1.0)
-			if toward > float(c["catch_speed"]) and api.dist_to_puck(id) <= reach:
+			if front >= 0.0 and toward > float(c["catch_speed"]) and api.dist_to_puck(id) <= reach:
 				_take(g, team, id)
 				return
-		elif api.carrier != id and str(g.teams[api.carrier]) != team and pp.distance_to(api.pos_of(id) - o) <= float(c["poke"]):
+			# N3: a slow puck sliding into his mouth (a missed pass, a poke, a dump) is his within slow_reach: own goals from
+			# rookie's missed back passes won matches for an idle hand (22 Nov)
+			var own_pass: bool = str(api.last_release.get("kind", "")) == "pass" and str(api.last_release.get("team", "")) == team
+			if (own_pass or Vector2(pv.x, pv.z).length() < float(c["slow_speed"])) and api.dist_to_puck(id) <= float(c["slow_reach"]):
+				if _enters_mouth(front, pp.z, toward, pv.z, float(g.tune["goals"]["half_width"])):
+					_take(g, team, id)
+					return
+		elif front >= 0.0 and api.carrier != id and str(g.teams[api.carrier]) != team and pp.distance_to(api.pos_of(id) - o) <= float(c["poke"]):
 			_take(g, team, id)
 			return
 
+
+## A board rebound can cross the line wide, then slide into the scoring volume beside the post.
+func _enters_mouth(front: float, z: float, toward: float, vz: float, half_width: float) -> bool:
+	if front >= 0.0 and toward > 0.1 and absf(z + vz * front / toward) < half_width + 0.3:
+		return true
+	if absf(z) <= half_width or vz * z >= 0.0:
+		return false
+	var time_to_post := (signf(z) * half_width - z) / vz
+	var depth := toward * time_to_post - front
+	return depth >= 0.0 and depth <= 1.5    # same depth as the goal trigger and goal_by_position
 
 func _take(g, team: String, id: String) -> void:
 	var shot: bool = g.api.carrier == "" and g.puck.linear_velocity.length() >= 8.0     # a shot caught (not a poke check)
@@ -148,14 +168,12 @@ func move(g) -> void:
 		var p: Vector3 = (_seen[lag] if lag >= 0 else api.puck_pos()) - o
 		var zmax: float = float(c["z_max"])
 		var goal: Vector3 = Vector3(x, 0.0, 0.0)
-		var want: Vector3
-		if (p.x - x) * -sg < float(c["out"]):
-			want = Vector3(x - sg * float(c["post_out"]), 0.0, clampf(p.z, -zmax, zmax))     # puck level with him or behind: hug the post
-		else:
-			want = goal + (p - goal).normalized() * float(c["out"])
-			want.z = clampf(want.z, -zmax, zmax)
+		var depth := lerpf(1.0, 2.0, clampf((goal.distance_to(p) - 6.0) / 14.0, 0.0, 1.0))
+		var front := (x - p.x) * sg
+		var z := p.z * depth / front if front > depth else p.z
+		var want := Vector3(x - sg * depth, 0.0, clampf(z, -zmax, zmax))
 		var at: Vector3 = api.pos_of(id) - o
-		var nxt: Vector3 = at.move_toward(want, float(c["speed"]) / 60.0)
+		var nxt: Vector3 = at.move_toward(want, minf(float(c["speed"]), 4.0) / 60.0)
 		_moving[team] = at.distance_to(nxt) * 60.0
 		var face: Vector3 = p - nxt
 		var yaw: float = sk.rotation.y
@@ -192,7 +210,7 @@ func _outlet(g, team: String, id: String, c: Dictionary) -> void:
 		var lead: Vector3 = api.lead_point(best) - api.puck_pos()
 		if lead.length() > 0.2:
 			to = lead.normalized()
-			spd = api.pass_speed
+			spd = api.pass_speed_to(best)
 	elif _held < int(c["hold_frames"]) * 3:
 		return
 	api._release("pass", id, to * spd)

@@ -27,6 +27,7 @@ var max_period: int = 1
 var passes_seen: int = 0
 var passes_reached: int = 0
 var pass_pending: bool = false
+var metrics = preload("metrics.gd").new()   # N3 (22 Nov): the five bot metrics (HOCKEY-ARCADE 5.5), in the result
 
 func ladder(division: String, profile: String) -> void:
 	level = division
@@ -42,6 +43,7 @@ func _bot_setup(c) -> void:
 func _bot_tick(frame: int) -> void:
 	var _frame: int = frame
 	s = ctx.pack_state()
+	metrics.observe(s)
 	if str(s.get("mode", "base")) != "base":
 		ctx.input.tap(&"mode_base")      # H3: this bot tests the base game; under another mode param it switches to it first
 		return
@@ -209,4 +211,4 @@ func _bot_result() -> Dictionary:
 		dbg = " TRACE " + " | ".join(trace)
 	return {"ok": ok, "summary": "blue %d : %d red in %d frames, %d shots, result %s%s" % [mine, theirs, ctx.frame, shots, str(s.get("result", "")), dbg],
 		"frames": ctx.frame, "shots": shots, "goals": mine, "against": theirs, "won": won, "hand": hand.stats(), "taps_lost": int(hand.stats().get("taps_lost", 0)), "aim": use_aim, "level": level,
-		"down_frames": down_frames, "period_reached": max_period, "passes": passes_seen, "passes_reached": passes_reached}
+		"down_frames": down_frames, "period_reached": max_period, "passes": passes_seen, "passes_reached": passes_reached, "metrics": metrics.result()}

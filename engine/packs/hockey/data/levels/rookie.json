@@ -1,16 +1,14 @@
 {
   "id": "rookie",
   "label": "Rookie",
-  "about": "Reacts 40 frames late, skates at 55 % of your speed, shoots only from 7 m with 28 degrees of spread, checks only from 8.5 m/s closing, marks loosely. Plays every role.",
+  "about": "Reads the play 18 frames late, with 6 degrees of aim spread. Checks from 9.5 m/s closing.",
   "ai": {
     "cross_min_closing": 2.0,
-    "reaction_frames": 40,
+    "reaction_frames": 18,
     "red_skill": 0.55,
-    "shoot_range": 7,
-    "aim_error_deg": 28,
-    "check_min_closing_red": 8.5,
-    "pressure_radius": 1.5,
-    "open_radius": 5
+    "aim_sigma_deg": 6,
+    "score_noise": 0.08,
+    "check_min_closing_red": 9.5
   },
   "goalie": {"reaction_frames": 26, "speed": 2.4, "glove": 0.75, "poke": 1.7}
 }
