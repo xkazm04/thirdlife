@@ -93,13 +93,16 @@ Wins of 8; each seed is one best-of-3 match; 8 seeds give about +-30 points. The
 | The Duelist (rung 2) | 1 (2)    | 8 (5)   | 8 (8) | 8 (8)   |
 | The Dancer (rung 3)  | 0 (0)    | 8 (4)   | 8 (8) | 8 (8)   |
 | Champion (Duelist)   | 0 (0)    | 1 (1)   | 8 (5) | 8 (8)   |
+| Champion, round 13   | 0        | 4       | 5     | 8       |
 
 What moved, and why:
 - The Duelist and Dancer regular cells went up through rounds 11-12. Their lesson rounds take 0.4 damage, so round 1
   is near-certain for any hand that punishes. Round 1 is now usually the newcomer's too (0.75 and 0.63 rounds won a
   match); the matches are still lost.
 - The champion's sharp cell 5 -> 8 most likely comes from round 6's breathe windows; I did not measure that cell in
-  round 6.
+  round 6. Round 13 (the last row, 8 seeds, all four hands) restores his ceiling: the champion tier breathes 0.4 as
+  long (rivals.json tiers.champion.breathe_k), sharp 5 of 8, perfect 8 of 8; his punishes are kept and he still comes
+  in waves (pressure_waves 3-7 on 6 runs). His regular cell moved 1 -> 4, inside the noise and still under sharp.
 - The regular hand is no longer ordered Wall < Duelist < Dancer.
 - The newcomer is unchanged within the noise.
 
@@ -150,8 +153,8 @@ ASKS (for the owner)
    then the Duelist.
 2. The lesson rounds now make round 1 an easy win for any hand that punishes (0.4 damage). Keep them easy (a sparring
    round), or let the lesson end at full damage?
-3. The champion is now beaten 8/8 by the sharp hand (was 5). Should the champion keep a ceiling under perfect, e.g.
-   breathe less (rivals.json rhythm per tier)?
+3. The champion's ceiling: answered in round 13 (a per-tier breath, sharp 8 -> 5 of 8). Open: whether his regular cell
+   (1 -> 4) is right by hand.
 4. rig.clip_t / E-rows: the clip_t question of 21:30 is closed by E1 (play_clip). Open: E5 music, and the socket axes
    in RIGS.md.
 5. The stand-in drum: does it help or grate? It lives in data/arenas.json (each arena's beat block); removing the block turns it off.
@@ -162,4 +165,4 @@ NEXT THREE
    cliff and the lesson damage from that.
 2. Give each rival one signature animation of his own: the Wall's two-handed overhead, the Duelist's lunge, the
    Dancer's spin. Today they share one move set. A rig ask to N1.
-3. Real music per arena (E5), and a per-tier breath so the champion keeps a ceiling under the sharp hand.
+3. Real music per arena (E5). (The per-tier breath was done in round 13.)

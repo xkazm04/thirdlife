@@ -54,7 +54,8 @@ glint to parry." (plays-twice items 13 and 22). `_pack_state` carries `causes` a
   he roars, and on the champion rungs; silent while a hit-stop holds.
 - **Rhythm** (checklist item 12, the rival brings waves): a push (strings at about half his pace, less standing open),
   then a breath: the Wall backs off behind his shield and only weathers what you do (no counter, no punish: bash him);
-  the Duelist and the Dancer back off on their feet, circling with a feint step in, their ripostes and punishes kept. The Wall and the Dancer open the breath with a taunt you can punish.
+  the Duelist and the Dancer back off on their feet, circling with a feint step in, their ripostes and punishes kept. The Wall and the Dancer open the breath with a taunt you can punish. A tier can shorten the breath
+  (`tiers.<tier>.breathe_k`): the champion rests 0.4 as long (round 13), so a sharp hand cannot farm it.
 - **Time on the card**: a match ends on its fight time, and a won match shows the best against this rival in the
   session (BEST!).
 
