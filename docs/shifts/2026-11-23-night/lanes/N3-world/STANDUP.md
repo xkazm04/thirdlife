@@ -14,3 +14,4 @@
 22:35 | state: working | did: round 3 landed; after-sheets from the four before spots (walk W, fly W, road E, pass N) in final/ | next: road rails per-segment pop, marks from 38 m | gates: -
 22:47 | state: working | did: road rails fade (dithered) over 108-132 m per 31 m piece instead of popping at 116 m (road_rails.gd, side-on shots 100-140 m before/after); after-clips from the 4 before spots in final/ | next: gates, landable round 4 with the sideline proposal | gates: running
 22:52 | state: working | did: round 4 ready: fast 5/5, world 8/8, harden.rail* 3/3, n3. 3/3 | next: landable round 4; then final report | gates: PASS world [8/8]
+23:06 | state: working | did: round 5 ready (village sideline 30 -> 60, margin 10): drive at 54 m a real car not a box; tour --headless PASS, village at 60 m --headless PASS 10/10; cost busy +0.65 ms p50 (3+3); fast 5/5, world 8/8, home. 9/9; REPORT.txt written | next: landable round 5, then done | gates: PASS world [8/8]

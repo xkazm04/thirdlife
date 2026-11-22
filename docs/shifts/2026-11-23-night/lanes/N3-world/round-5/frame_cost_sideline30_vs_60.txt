@@ -1,0 +1,6 @@
+{"run": "scost_30_1", "frames": 1000, "p50_ms": 3.03, "p90_ms": 4.86, "p99_ms": 11.23} cpu_before=36 godot_procs=4
+{"run": "scost_60_1", "frames": 1000, "p50_ms": 4.13, "p90_ms": 6.36, "p99_ms": 15.31} cpu_before=32 godot_procs=4
+{"run": "scost_30_2", "frames": 1000, "p50_ms": 3.58, "p90_ms": 6.39, "p99_ms": 20.44} cpu_before=41 godot_procs=4
+{"run": "scost_60_2", "frames": 1000, "p50_ms": 3.74, "p90_ms": 5.95, "p99_ms": 17.91} cpu_before=35 godot_procs=2
+{"run": "scost_30_3", "frames": 1000, "p50_ms": 3.24, "p90_ms": 5.0, "p99_ms": 12.9} cpu_before=28 godot_procs=2
+{"run": "scost_60_3", "frames": 1000, "p50_ms": 3.89, "p90_ms": 6.15, "p99_ms": 14.56} cpu_before=43 godot_procs=6
