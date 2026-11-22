@@ -233,7 +233,7 @@ test("tofu: still failing after round 2 holds the job exactly like the quality l
   assert.match(ms.at(-1)?.summary ?? "", /tofu stage NOT ok: tofu 0; TOFU STAGE NOT ok/);
   // With the critic on, its verdict joins: a passing critic does not pass a failing tofu stage.
   const both = tofuJob("tofu-hold-critic");
-  const ok = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8 }, notes: ["a clean rally"] } };
+  const ok = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, kill_criteria: 0.9 }, notes: ["a clean rally"] } };
   const s2 = await foremanFor(both, { ...opts, critic: true, script: scriptWith([ok, coreWith(badMetrics)]) }).foreman.run();
   assert.deepEqual(s2.jobState, { state: "paused", reason: "quality" });
   const tofuFile = fs.readdirSync(path.join(both.jobDir, "reports")).filter((f) => f.startsWith("tofu-blockout")).at(-1) as string;

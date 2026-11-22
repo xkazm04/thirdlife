@@ -20,6 +20,7 @@ import type { ConceptTemplate } from "./room_wire.js";
 import { servesProblems, type Concept } from "./room_wire.js";
 import { repairLengths, type LengthRule } from "./repair.js";
 import { playerCheckProblems } from "./playercheck.js";
+import { methodProblems, methodText } from "./method.js"; // N2 of 23 Nov: docs/design/METHOD.md
 export { PLAYER_CHECK_RE, playerCheckProblems, playerChecks } from "./playercheck.js";
 
 const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "prompts", name), "utf8");
@@ -214,7 +215,8 @@ function designerVars(input: DesignerInput): Record<string, string> {
     cards: input.cards ?? "(no recipe cards)",
     redesign,
     concept: input.concept ? conceptText(input.concept) : "(no concept step ran: design the boldest game that fits the words)",
-    quality: qualityText(["1", "2", "6", "10"]),
+    quality: qualityText(["2", "6", "10"]),
+    method: methodText(["1", "7", "8", "11", "14:Designer"]),
     template: templateExcerpt(input.concept?.template, "design") || "(the concept names no template with a research file: copy the core loop from the reference it names, with its numbers)",
     review: input.review ?? "",
   };
@@ -222,7 +224,7 @@ function designerVars(input: DesignerInput): Record<string, string> {
 
 /** Problems of a Designer answer beyond the JSON schema: word limits, unique ids, the crazy rule, dropped aspects. */
 export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creativity" | "previous" | "concept">): string[] {
-  const out = [...aspectProblems(brief.pitch, brief.aspects), ...roomDesignProblems(brief), ...briefTemplateProblems(brief, input.concept?.template)];
+  const out = [...aspectProblems(brief.pitch, brief.aspects), ...roomDesignProblems(brief), ...briefTemplateProblems(brief, input.concept?.template), ...(input.concept !== undefined ? methodProblems(brief) : [])];
   if (brief.pitch === undefined || brief.aspects === undefined) out.push("the brief needs a pitch and 3 to 7 aspects");
   out.push(...crazyProblems(brief.aspects, input.creativity, input.previous === undefined));
   if (input.previous) {
@@ -393,6 +395,7 @@ The producer's last review of this design (its warnings: make each one true in a
 ` : "",
     quality: input.brief.design !== undefined ? qualityText(["2", "6", "7:Planner", "12"]) : "(the brief has no game design doc: build the brief as it is)",
     template: templateExcerpt(input.brief.concept?.template, "planner"),
+    method: input.brief.design !== undefined ? methodText(["14:Planner"]) : "",
     tofu: input.brief.design !== undefined ? tofuPlannerText(input.brief.concept?.template, input.brief.design.verbs.length) : "(the brief has no game design doc: no tofu stage; the first phase is the smallest thing that plays)",
   };
 }
@@ -568,6 +571,7 @@ export async function critic(
       rubric: rubric.map((r) => `- ${r.id}: ${r.text}`).join("\n"),
       threshold: String(threshold),
       checklist: criticChecklistText(),
+      method: methodText(["14:Critic"]),
     },
     critiqueSchema,
     (v) => {

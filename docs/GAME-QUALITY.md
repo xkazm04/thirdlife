@@ -5,6 +5,10 @@ the builders and the capture critic. The Foreman pastes its sections into prompt
 alone. Every rule here is checkable: a reviewer can point at a line of the design doc, a number, or a motion strip and
 say yes or no. Numbers are frames at 60 Hz. A figure from a source says so; a figure without one is a house number.
 
+**Read `docs/design/METHOD.md` first** (23 Nov). It is how a game is designed for fun and who decides it; this file
+is the handbook of numbers, slop ids, checklist rows and templates the method uses. Every check in this file can fail a
+game; none of them can pass its fun. Only a person playing it can (METHOD.md section 1).
+
 v2 folds in the research of 21 Nov (`docs/research/`): what made games last (R1-R14, section 8), the anti-patterns
 (section 9), the 30-item plays-twice checklist with who can judge each item (section 10), the genre templates every
 design copies its core from (section 11) and the tofu stage that kills a core verb which is not fun (section 12). The
@@ -13,15 +17,12 @@ paths we can mimic". **Copy the proven core; be new only in the hook.**
 
 ## 1. Design practice
 
-Design the game before building it, as a studio that has to sell it would.
+**The method is `docs/design/METHOD.md`** (v1, 23 Nov): the order in which a game is decided (fantasy, pillars, core
+loop, the 30-second test, the feel spec, the reference teardown, the greybox, kill criteria), what a person checks at
+each stage, and what evidence counts (a person's hand; never a bot figure alone). It replaces what this section said
+about pillars, loops, the first minute and the one-page design (METHOD.md sections 5, 6, 7 and 13). The rules below are
+the ones METHOD.md leaves to this handbook: what the verbs, the skill ladder and the opponents must hold.
 
-- **Pillars: three, and each rules something out.** A pillar that excludes nothing is a slogan. Write each as a pair:
-  - "Every hit is an exchange" / rules out one-hit knock-downs and hits that only shove.
-  - "Skill is in the feet" / rules out speed stats, auto-aim and auto-face.
-  - "Failure is fun to watch" / rules out stiff deaths and a fade-to-menu on a loss.
-- **Loops at 3 s, 30 s and 3 min, with context that keeps changing.** Griesemer (Halo): not "30 seconds of fun" repeated,
-  but a 3-second loop inside a 30-second loop inside a 3-minute loop that is always different. Name what changes the
-  context: a new rival type, a hazard, a shrinking arena, a score state. At least three context changers.
 - **Verbs with frame data.** Every verb lists input, anticipation, active and recovery frames, and what cancels it. At
   least one verb is defensive (block, dodge, roll, parry, a catch). A game with only an attack is not a fight.
 - **Skill floor and ceiling.** One button does something useful on day one; deeper techniques are revealed in order. In
@@ -34,11 +35,6 @@ Design the game before building it, as a studio that has to sell it would.
 - **Difficulty comes from design.** Harder rivals are more aggressive, hide their tells better, chain patterns, take better
   positions, and team up. Never faster stats, never hidden help (rubber-banding the player, aim assist that plays for him).
   Super Mega Baseball's Ego sets difficulty per skill (pitching, batting, fielding, running), not one speed knob.
-- **The first minute teaches by playing.** World 1-1: the first enemy is one that can only walk at you, so the first thing
-  the player learns is to jump on it. No menu, no text wall: the arena opens on the first exchange.
-- **One-page design doc.** Librande (GDC 2010): a design that fits one page is read; a long one is not. The design doc is
-  one page: pillars, verbs with frames, playstyles, loops, skill ladder, feel sheet, three clip moments, first minute,
-  fail state, what is out of scope.
 - **Animation is part of the design.** Every verb names its clip; a verb without a clip is not designed. A sim rule and the
   figure's reaction are designed together: "a side hit at strength 0.7 tips him away from the blow for 14 f" is one line,
   not a physics line and an art line written by different people.
@@ -267,10 +263,9 @@ Each is a way a competent game fails. The one in bold is the main risk of an LLM
 8. **Unreadable goals or state** (Halo 3 testers wandered until objectives flashed). Ours: checklist 4 and 26.
 9. **No stakes and no end.** Ours: rounds that end, a ladder, a score to beat (section 1).
 
-How professionals test fun: prototype the verb ugly and kill freely (Splatoon came from about 70 ideas; Supercell
-celebrates kills). A prototype asks "is it fun?", a vertical slice asks "can we build it to final quality?". **Our
-pipeline used to jump to the slice**; the tofu stage is the prototype. Metrics show where, feel shows why; the real test
-is whether someone plays it without us.
+How professionals test fun (prototype ugly, kill freely, playtest with people who get no help) is METHOD.md sections
+10 to 12, with sources. **Our pipeline used to jump to the slice**; the tofu stage is the prototype, and a person's
+hand is its gate.
 
 ## 10. The plays-twice checklist
 
@@ -444,7 +439,8 @@ in an empty room. Our first phase is the tofu stage.
   (`job_state paused`, reason `quality`) until the owner answers `foreman quality <job> accept|retry`. Nothing of the
   second phase is started while the tofu stage is held.
 - **And a person.** The metrics are the floor, not the bar: after the tofu phase the player plays it in an empty room
-  (the phase pause) and says pass or hold. Checklist item 2 ([H]) is judged there.
+  (the phase pause) and says pass or hold, with the playtest card `foreman status` prints (the design's FANTASY,
+  30 SECONDS and KILL IF lines; METHOD.md sections 10 to 12). Checklist item 2 ([H]) is judged there.
 
 ## 13. What six colosseum proofs taught the editor (night of 22 Nov)
 

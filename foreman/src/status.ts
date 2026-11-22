@@ -3,6 +3,7 @@ import type { JobEvent } from "./events.js";
 import { currentPhase, waitingPhase, type JobState } from "./joblog.js";
 import { qualityLines } from "./cli_quality.js";
 import { lookOk } from "./quality_state.js";
+import { methodBlock, playtestCard } from "./method.js";
 
 export function eventLine(ev: JobEvent): string {
   const head = `${String(ev.seq).padStart(4)} ${ev.ts.slice(11, 19)} ${ev.type.padEnd(13)}`;
@@ -60,6 +61,8 @@ export function designLines(s: JobState): string[] {
     const react = r === undefined ? "" : `  -> ${r.choice}${r.note !== undefined ? ` ("${r.note.replace(/\s+/g, " ").slice(0, 60)}")` : ""}`;
     out.push(`aspect   ${a.id.padEnd(14)} [${a.icon}]${a.crazy === true ? " CRAZY" : ""} ${a.title}: ${a.line}${react}`);
   }
+  // N2 of 23 Nov (docs/design/METHOD.md section 3): before approval the person reads the paper stages aloud.
+  if (s.brief !== undefined && !s.briefApprovedBy && methodBlock(s.brief) !== "") out.push("paper    read these aloud before you approve: would you want to be that for five minutes?", ...methodBlock(s.brief).split("\n").map((l) => `paper    ${l.slice(2)}`));
   if (s.brief?.aspects?.length && !s.briefApprovedBy) out.push(`next     foreman react ${s.job} <aspect> keep|drop|<alternative> [--note "..."]  |  foreman redesign ${s.job}  |  foreman approve ${s.job}`);
   const cur = currentPhase(s);
   s.phases.forEach((ph, i) => {
@@ -73,6 +76,7 @@ export function designLines(s: JobState): string[] {
         ? `waiting  phase ${wait.id} is done; run-through passes it when the Foreman runs: foreman resume ${s.job}`
         : `waiting  phase ${wait.id} is done: try it ("${wait.try}"), then: foreman phase ${s.job} pass   or   foreman phase ${s.job} hold --note "<what to change>"`,
     );
+    if (!s.runThrough) out.push(...playtestCard(s.brief, s.job, wait, s.phases.indexOf(wait) === 0));
   } else if (cur?.state === "held" && cur.hold !== undefined) {
     out.push(`held     phase ${cur.id}: ${cur.hold.applied ? "its change round runs" : "its change round starts when the Foreman runs"} for: ${cur.hold.note.replace(/\s+/g, " ").slice(0, 120)}`);
   }

@@ -129,8 +129,18 @@ export function v2Brief(crazy = false): Brief {
     { id: "court", icon: "arena", title: "Walled court", line: "Walls bounce the ball, goals behind each end", detail: "16 m by 9 m, walls on the long sides, a kit rink floor for a fast slide", alternatives: [{ id: "ice_court", title: "Ice court", line: "Everything slides faster on ice" }, { id: "round_court", title: "Round court", line: "A ring with four goals" }] },
   ];
   if (crazy) aspects.push({ id: "magnet_ball", icon: "twist", title: "Magnet ball", line: "Every tenth hit the ball sticks to a wall", detail: "a timer in the pack holds the ball for 60 frames on the wall it hits, then releases it fast", alternatives: [{ id: "split_ball", title: "Splitting ball", line: "A hard hit splits the ball in two" }, { id: "gravity_flip", title: "Tilting court", line: "The court tilts toward the leader" }], crazy: true });
-  return { ...ev.brief, pitch: "Slap a speeding ball past Rival Rex on a walled court; first to five wins.", aspects, design: sampleDesign() };
+  return { ...ev.brief, rules: `${METHOD_LINES}
+${ev.brief.rules}`, pitch: "Slap a speeding ball past Rival Rex on a walled court; first to five wins.", aspects, design: sampleDesign() };
 }
+
+/** N2 of 23 Nov: the method lines a room design writes at the head of `brief.rules` (docs/design/METHOD.md section 3). */
+export const METHOD_LINES = [
+  "FANTASY: I am the wall-banking ace who sends the ball past Rival Rex at a speed he cannot reach. Challenge.",
+  "TEARDOWN: Windjammers: a throw banked off the side wall curves past the keeper; copied as the bank shot.",
+  "30 SECONDS: 0-5 s the ball comes slow and space slaps it back; 5-15 s Rex misses a bank shot; 15-30 s you brace his smash and win the point.",
+  "KILL IF: a newcomer never banks a shot in three rallies, because the wall angle cannot be read.",
+  "KILL IF: a slap reads as the ball sliding off the paddle, with no pause and no sound.",
+].join("\n");
 
 /** JOB.md 2026-11-21: a valid game design doc (the design room's step 2) for the paddle fixture. */
 export function sampleDesign(): DesignDoc {

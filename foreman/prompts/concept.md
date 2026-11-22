@@ -6,16 +6,25 @@ The player said, in one sentence, what game they want:
 
 "{{sentence}}"
 
-# The game must be one we could sell
-A game that runs but that nobody plays twice is a failure. Twice this pipeline made "a fight in a colosseum" that the
-owner called slop: one attack button, rivals that were the player's body recoloured, hits that were a shove, a camera
-behind the wall, and then a brawler with an invented system whose contacts changed only one fighter. His ruling:
-"there are hundreds of duel games (souls like, for honor duels) with well known game design paths we can mimic."
+# The test: a person wants to play it again
+Not "the mechanics exist" and not "the bot figures are green": a person, offered "stop or play again", plays again.
+The owner played what this pipeline made and said: "The fact players can skate and shoot puck does not mean we
+delivered entertaining hockey experience, the fact players can punch in arena and take damage does not mean we
+delivered fun fighting game. Both are slop nobody would touch for fun." Before that he called a colosseum fight slop
+twice: one attack button, rivals recoloured, hits that were a shove, then an invented combat system whose contacts
+changed only one fighter. His ruling: "there are hundreds of duel games (souls like, for honor duels) with well known
+game design paths we can mimic."
 
-**Copy the proven core; be new only in the hook.** The core loop (the verbs, how they answer each other, what every
-contact does to BOTH bodies, how rivals behave) is copied from ONE proven genre template, with its numbers. The
-boldness goes into the hook, the twist, the fantasy and the stakes that sit ON TOP of that core. A concept that invents
-its own combat system instead of copying a proven one is the slop we shipped.
+So you work in this order (docs/design/METHOD.md, the method below):
+1. **The fantasy first.** Who is the player, what does he do, how does it feel, in a sentence he would say about
+   himself ("I'm the fastest skater on the pond and I thread passes through anyone"). Players meet the feeling first,
+   never the mechanics; a concept is chosen by the fantasy a stranger most wants to be for five minutes.
+2. **Copy the proven core; be new only in the hook.** The core loop (the verbs, how they answer each other, what every
+   contact does to BOTH bodies, how opponents behave) is copied from ONE proven genre template, with its numbers. The
+   boldness goes into the fantasy, the hook, the twist and the stakes that sit ON TOP of that core.
+3. **Tear the reference down; never remember it.** Each reference is one moment of a real game as a player meets it:
+   what you press, what you see, its numbers. "NHL 94: pass across the crease and shoot as it arrives; the goalie
+   cannot get across" is a reference; "the fast feel of NHL 94" is a mood, and a mood is not a reference.
 
 # How to answer
 1. `template`: the ONE proven genre template the core loop copies (the menu below).
@@ -26,17 +35,23 @@ its own combat system instead of copying a proven one is the slop we shipped.
      6.4 state machine with its 8-frame input buffer"). Name everything the template's menu line says to copy. A mood is
      not a copy.
 2. Write FIVE candidate concepts for this sentence, each a pitch of at most 20 words. They share the proven core and
-   differ as five studios would make them: a different fantasy, hook, twist or stakes on top of it (not five tunings of
-   one idea). Give each a `likelihood` in 0..1: how typical it is, how likely ANY designer would write it first (the
-   obvious one about 0.6 to 0.9, a bold one 0.05 to 0.2).
-3. Choose one (`chosen` is its index 0..4): the boldest HOOK that still serves every word the player said and that this
-   engine can build. Usually that is NOT the most likely one. `why` (at most 40 words) says why this one, and why not
-   the obvious one.
+   differ as five studios would make them: each is a different FANTASY (who the player is and what it feels like),
+   with its own hook, twist or stakes on top (not five tunings of one idea). Give each a `likelihood` in 0..1: how
+   typical it is, how likely ANY designer would write it first (the obvious one about 0.6 to 0.9, a bold one 0.05 to
+   0.2).
+3. Choose one (`chosen` is its index 0..4): the fantasy a stranger most wants to live, with the boldest HOOK that
+   still serves every word the player said and that this engine can deliver in the first 30 seconds of play. Usually
+   that is NOT the most likely one. `why` (at most 40 words) names the fantasy, the moment of the first 30 seconds
+   where the player feels it, and why not the obvious one.
 4. `hook` (at most 12 words): the one novel thing a stranger would remember. `anchor` (at most 6 words): the familiar
    genre a player already knows how to play ("souls-like duel", "arcade hockey").
    Together they read "<anchor> where <hook>".
-5. `references`: 2 or 3 REAL, released games, each with the exact mechanic to borrow in at most 20 words ("For Honor:
-   parry a heavy and a light is guaranteed; parry a light and a heavy is"). Name a mechanic, never a mood.
+5. `references`: 2 or 3 REAL, released games, each a teardown line in at most 20 words: the moment and the mechanic
+   to borrow, with a number where you know one ("For Honor: parry a heavy and a light is guaranteed; parry a light and
+   a heavy is"). Never a mood.
+
+# The method (docs/design/METHOD.md)
+{{method}}
 
 # The genre templates (docs/GAME-QUALITY.md section 11; their research is in docs/research/)
 {{templates}}

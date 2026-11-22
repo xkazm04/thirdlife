@@ -143,7 +143,7 @@ test("builders: every package prompt carries the design's verbs, feel sheet and 
   assert.match(core, /- hit-stop: 3 to 6 frames on attacker AND victim/);
   assert.match(core, /- clip moments [^]*bank_past_rex: a bank shot that beats the lunge of Rex/);
   assert.match(core, /your package serves these clip moments \(make them happen and look good first\): bank_past_rex \("a bank shot/);
-  assert.match(core, /# Feel \(docs\/GAME-QUALITY\.md\)[^]*## 2\. Feel numbers at 60 Hz[^]*## 6\. The slop list[^]*## 7\. Rules by role \(Builder\)/);
+  assert.match(core, /# Feel \(docs\/GAME-QUALITY\.md, docs\/design\/METHOD\.md\)[^]*## 2\. Feel numbers at 60 Hz[^]*## 6\. The slop list[^]*## 7\. Rules by role \(Builder\)/);
   assert.match(core, /make the acceptance pass AND land the feel sheet/);
   const court = builder.calls.find((c) => c.req.meta?.package === "court")?.req.prompt ?? "";
   assert.doesNotMatch(court, /your package serves these clip moments/, "court serves no clip");
@@ -168,7 +168,7 @@ test("builders: every package prompt carries the design's verbs, feel sheet and 
 
 const criticAt = (attempt: number, ok: boolean, note: string, pkg = "court"): FakeStep => ({
   match: { role: "critic", attempt },
-  json: { ok, scores: { silhouette: 0.8, readability: ok ? 0.8 : 0.4, style_consistency: 0.7, shows_play: 0.7, fun_promise: ok ? 0.8 : 0.3 }, notes: [note], ...(ok ? {} : { package: pkg }) },
+  json: { ok, scores: { silhouette: 0.8, readability: ok ? 0.8 : 0.4, style_consistency: 0.7, shows_play: 0.7, fun_promise: ok ? 0.8 : 0.3, kill_criteria: 0.9 }, notes: [note], ...(ok ? {} : { package: pkg }) },
 });
 const courtRound = (round: number, marker: string): FakeStep => ({ match: { role: "builder", package: "court", round }, write: { "data/court.json": `{"width_m": 16, "depth_m": 9, "wall_height_m": 1.2, "mark": "${marker}"}\n` }, text: "Done.\nDEVIATIONS: none" });
 const answer = (job: TempJob, text: string): void => {
@@ -258,7 +258,7 @@ test("strips: with --strip in the engine's verbs.json every filmed point gets a 
   verbs.verbs.capture.options.strip = { type: "string", default: "" };
   fs.mkdirSync(path.join(job.engineDir, "kernel", "runner"), { recursive: true });
   fs.writeFileSync(path.join(job.engineDir, "kernel", "runner", "verbs.json"), JSON.stringify(verbs, null, 1));
-  const critic: FakeStep = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, feel: 0.7, slop: 1 }, notes: ["a slap with a 4-frame hold"] } };
+  const critic: FakeStep = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, feel: 0.7, slop: 1, kill_criteria: 0.9 }, notes: ["a slap with a 4-frame hold"] } };
   const { foreman, builder } = foremanFor(job, { critic: true, promoteTo: "job", captureFrames: [120], script: scriptWith([critic]) });
   assert.equal((await foreman.run()).jobState?.state, "done");
   const ms = ofType(readEvents(job.jobDir), "milestone");
@@ -273,7 +273,7 @@ test("strips: with --strip in the engine's verbs.json every filmed point gets a 
   assert.equal(verify.length, 1);
   // The fixture engine has no --strip: stills only, the rubric as before.
   const plain = designJob("strips-off");
-  const p = foremanFor(plain, { critic: true, promoteTo: "job", captureFrames: [120], script: scriptWith([{ match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8 }, notes: ["fine"] } }]) });
+  const p = foremanFor(plain, { critic: true, promoteTo: "job", captureFrames: [120], script: scriptWith([{ match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, kill_criteria: 0.9 }, notes: ["fine"] } }]) });
   assert.equal((await p.foreman.run()).jobState?.state, "done");
   assert.equal(ofType(readEvents(plain.jobDir), "milestone")[0]?.strips, undefined);
 });
@@ -353,7 +353,7 @@ test("L1b: a package that serves a clip moment is filmed before a newer one that
   verbs.verbs.capture.options.strip = { type: "string", default: "" };
   fs.mkdirSync(path.join(job.engineDir, "kernel", "runner"), { recursive: true });
   fs.writeFileSync(path.join(job.engineDir, "kernel", "runner", "verbs.json"), JSON.stringify(verbs, null, 1));
-  const critic: FakeStep = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, feel: 0.7, slop: 1 }, notes: ["ok"] } };
+  const critic: FakeStep = { match: { role: "critic" }, json: { ok: true, scores: { silhouette: 0.8, readability: 0.8, style_consistency: 0.8, shows_play: 0.8, fun_promise: 0.8, feel: 0.7, slop: 1, kill_criteria: 0.9 }, notes: ["ok"] } };
   const { foreman, builder } = foremanFor(job, { critic: true, promoteTo: "job", captureFrames: [120], script: scriptWith([critic]) });
   assert.equal((await foreman.run()).jobState?.state, "done");
   const call = builder.calls.find((c) => c.req.meta?.role === "critic");

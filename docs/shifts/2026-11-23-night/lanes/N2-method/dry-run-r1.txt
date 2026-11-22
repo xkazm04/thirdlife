@@ -1,0 +1,21 @@
+N2 round 1: dry design-room run on the FAKE adapter (19:58, no model called, nothing billed)
+command: node foreman/dist/cli.js new "ice hockey on a frozen pond, three against three" --site .tl/dry-site --adapter fake --fake-script .tl/dry-fake-script.json
+(the fake answers are the test fixtures: a paddle concept and pitch with the hockey brief's rules and CASES.md's hockey method lines; the point is the prompts and the status lines, not the answers)
+
+== method text found in each transcript's prompt (reports/<role>-a1-s<seq>.json)
+concept-a1-s3.json (60154 chars): # The test: a person wants to play it again | ## 4. Stage 1: the fantasy | ## 9. Stage 6: the reference-game teardown
+designer-a1-s4.json (116089 chars): # Work in the method | ## 7. Stage 4: the 30-second test | ## 11. Stage 8: kill criteria | ## 14. Rules by role (Designer)
+design_review-a1-s5.json (62208 chars): # The method lines of this design | - kill if: skaters merge | ## 14. Rules by role (Reviewer) | walk the 30 SECONDS line
+
+== foreman status (before approval: the paper check)
+concept  arcade paddle duel where bank shots past a lunging rival (candidate 2 of 5, likelihood 0.3)
+review   round 1 ok: hook 0.8, gif 0.7, depth 0.7, feel 0.8, fit 0.9; Sell the bank shot.
+paper    read these aloud before you approve: would you want to be that for five minutes?
+paper    the fantasy: I'm the playmaker: I slip the big hit and thread the pass across the crease for a one-timer. Sensation, challenge.
+paper    teardown of a reference game: NHL 94: pass with B, press C while the pass travels: the receiver one-times it, harder than a wrist shot.
+paper    teardown of a reference game: NHL 94: B on defence switches to the skater nearest the puck; C bursts into a body check.
+paper    the 30-second test: 0-5 s the puck drops, a ring marks you, B passes and C shoots; 5-15 s you pass and control jumps to the receiver; 15-30 s a teammate cuts across, you pass and one-time it in, the horn sounds.
+paper    kill if: after a turnover a newcomer cannot find the puck or his own skater within 2 seconds.
+paper    kill if: in 5 minutes no goal comes from a pass.
+paper    kill if: skaters merge into one blob at the boards.
+next     foreman react ice-hockey-frozen-pond-20261122-1 <aspect> keep|drop|<alternative> [--note "..."]  |  foreman redesign ice-hockey-frozen-pond-20261122-1  |  foreman approve ice-hockey-frozen-pond-20261122-1

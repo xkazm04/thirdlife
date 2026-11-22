@@ -12,30 +12,69 @@ The player said, in one sentence, what game they want:
 # The concept you design (step 1, chosen from five candidates)
 {{concept}}
 
-# Your goal: a game a stranger plays twice
-A small, correct game that nobody plays twice is a failure. Last time this pipeline made "a fight in a colosseum" with
-one attack button and auto-face, hits that were a shove or always a knock-down, borrowed animations (`shoot` as a
-strike, `slide` as a roll), rivals that were the player's body recoloured, fighters overlapping into a blob and a camera
-behind the wall. The owner called it slop, and then once more for a brawler with an invented system whose contacts
-changed only one fighter: "there are hundreds of duel games (souls like, for honor duels) with well known game design
-paths we can mimic." Everything in the slop list below is a default you must design away from.
+# Your goal: a game a person wants to play again
+Not "the mechanics exist" and not "the bot figures are green": a person, offered "stop or play again", plays again.
+The owner played what this pipeline made: "The fact players can skate and shoot puck does not mean we delivered
+entertaining hockey experience, the fact players can punch in arena and take damage does not mean we delivered fun
+fighting game. Both are slop nobody would touch for fun." Before that, "a fight in a colosseum" came out with one
+attack button and auto-face, hits that were a shove or always a knock-down, borrowed animations (`shoot` as a strike,
+`slide` as a roll), rivals that were the player's body recoloured, fighters overlapping into a blob and a camera
+behind the wall; then a brawler with an invented system whose contacts changed only one fighter: "there are hundreds
+of duel games (souls like, for honor duels) with well known game design paths we can mimic." Every bot figure of our
+hockey was in band when he called it unplayable. Everything in the slop list below is a default you must design away
+from, and a filled field is not a decision.
 Fill every gap the sentence leaves with the choice that makes the game deeper to play and better to watch. Never hand a
 decision back to the player as a question: decide, and let them react.
 
 **Depth is play, not systems.** Deeper means verbs that answer each other (an attack, a defence that beats it, a
-counter that beats the defence), rivals the player learns to read, and moments a viewer would clip.
+counter that beats the defence), a decision in every loop, opponents the player learns to read, and moments a viewer
+would clip.
 
 **Copy the proven core; be new only in the hook.** The concept names ONE genre template (below). Its core loop is
 copied, not paraphrased and not "inspired by": the state machine, the move frames, the contact results (what every
 contact does to BOTH bodies), the resources, the rival archetypes and the AI tiers, with their numbers. A verb that
 copies a move of the template names it as `move` and carries the template's frames EXACTLY (the Foreman checks every
-number and sends the answer back on a difference). Spend your invention on the hook, the twist, the arena, the stakes
-and the rivals' characters, which sit on top of that core.
+number and sends the answer back on a difference). Spend your invention on the fantasy, the hook, the twist, the
+arena, the stakes and the rivals' characters, which sit on top of that core.
+
+# Work in the method's order (docs/design/METHOD.md)
+Decide in this order, and write each stage where it lives. A later stage never overrides an earlier one: when the
+feel sheet cannot deliver the fantasy, change the design, not the fantasy line.
+1. **Fantasy**: `FANTASY:` line at the head of `brief.rules`: who the player is and what it feels like, and the one or
+   two aesthetics it aims at (sensation, fantasy, narrative, challenge, fellowship, discovery, expression, submission).
+2. **Pillars**: `design.pillars`: three experiences the player must have, each ruling something out. Every verb and
+   aspect serves one of them; one that serves none is cut.
+3. **Core loop**: `design.loops` (the decision at 3 s, 30 s and 3 min, and the dynamics the rules produce: what players
+   will DO), `design.verbs` (copied), `design.context`, `design.skill`, `design.playstyles`.
+4. **The 30-second test**: `30 SECONDS:` line: the beats a newcomer meets, 0-5 s (he knows who he is and what to
+   press; the answer within 3 frames), 5-15 s (his first success against a safe first threat), 15-30 s (the fantasy
+   happens once, in the bodies). `design.first_minute` is its short form.
+5. **The feel spec**: `design.feel`, the verbs' frames, and in `rules` the speeds (m/s), accelerations, turn rates,
+   the camera's distance and angle, the juice by force. Every one of these numbers goes in the pack's tuning file so a
+   person can change it between two plays.
+6. **The reference teardown**: 1 to 3 `TEARDOWN:` lines: a real game's moment as a player meets it (what you press,
+   what you see, its numbers) that this design copies, changes or drops. Never a mood.
+7. **The greybox**: the Planner's first phase builds only the core loop with its feel sheet on flat shapes, and a
+   person plays it for 5 minutes. Design so that the 30 seconds and the kill lines can be judged there.
+8. **Kill criteria**: 2 to 4 `KILL IF:` lines: what a person playing the first phase would SEE or DO that means this
+   core is not fun ("KILL IF: after three rounds a newcomer cannot say why he lost the puck"). Never a bot figure.
+
+The method lines are the first lines of `brief.rules`, each on its own line, exactly these labels:
+```
+FANTASY: <at most 25 words>
+TEARDOWN: <reference game>: <its moment, what you press, what you see, the numbers; at most 45 words>
+30 SECONDS: <0-5 s ...; 5-15 s ...; 15-30 s ...; at most 70 words>
+KILL IF: <at most 30 words>
+KILL IF: <at most 30 words>
+```
+The rest of `rules` follows them. An answer without them, or with a line over its limit, is sent back.
+
+{{method}}
 
 # The genre template you copy
 {{template}}
 
-# The fun checklist: every line becomes concrete in the design doc and the brief
+# What each part of the design must hold (the fun checklist: every line becomes concrete in the design doc)
 1. **Verbs with frame data, copied.** Two to five verbs (`design.verbs`), each with its input, anticipation, active
    and recovery frames at 60 Hz and what it cancels into. At least one is defensive (block, dodge, roll, parry: marked
    `"defensive": true`), so a hit is an exchange, not a button mash. A fight has more than one attack (light and heavy,
@@ -91,8 +130,9 @@ push apart on contact.
 # Creativity
 {{creativity}}
 
-# The design handbook (docs/GAME-QUALITY.md): practice, feel numbers, the slop list and the plays-twice checklist
-The first phase of the build is the tofu stage: the core verb exchange on flat shapes, and a bot must show checklist
+# The design handbook (docs/GAME-QUALITY.md): feel numbers, the slop list and the plays-twice checklist
+The first phase of the build is the tofu stage: the core verb exchange on flat shapes. A person plays it for 5 minutes
+and passes or holds it (the 30 SECONDS and KILL IF lines are what he checks); under that, a bot must show checklist
 items 1, 3, 9, 11, 12 and 15 or the job holds. Design so that it can: feedback within 3 frames, an outcome that
 depends on how well the verb is played, no idle rival, tells of 12 frames or more, pressure in waves, leads that change.
 {{quality}}
@@ -123,6 +163,15 @@ Sentence: "a race with ducks".
   bump freezes both ducks 5 frames and spins the victim with a quack; a whiffed bump splashes and slows you. Clips:
   "a dive under Gus's charge", "a crust stolen in a bump", "the flood on the last lap". Twist: the dam breaks on the
   last lap and the river doubles speed.
+  Its method lines:
+  - "FANTASY: I am the cheekiest duck on the river, stealing bread from bigger birds and diving away laughing.
+    Sensation and challenge."
+  - "TEARDOWN: Mario Kart: a drift held through a bend charges a mini-turbo (blue, then orange sparks); release for a
+    burst; copied as the paddle-hold into a bread zoom."
+  - "30 SECONDS: 0-5 s the river pulls you, hold paddle and you surge; 5-15 s a slow duck carries a crust, bump it and
+    it flies to you; 15-30 s Gus honks behind you, you dive, he thunders over, you surface laughing."
+  - "KILL IF: a newcomer does not dive the first time Gus honks, because he cannot see who the honk is for." and
+    "KILL IF: a bump reads as two ducks sliding past each other, with no spin and no quack."
 
 # Word limits are hard and counted
 A word is whatever stands between two spaces ("6 m/s" is two words). Aim well under them: a pitch of 12 to 18 words,
@@ -149,8 +198,9 @@ Field guidance:
 - brief.design: the game design doc above (pillars, verbs, playstyles, loops, context, skill, feel, clips,
   first_minute, fail_state, out_of_scope). Ids are snake_case. Frames are integers at 60 Hz.
 - brief.pitch, brief.aspects: as above; word limits are counted and an answer over them is sent back.
-- brief.rules: how a round is played and won, every verb with its frames, the feel sheet in words, the first minute,
-  the intensity curve, the end screen and what makes the next round matter.
+- brief.rules: FIRST the method lines (FANTASY, 1 to 3 TEARDOWN, 30 SECONDS, 2 to 4 KILL IF, one per line, as above);
+  then how a round is played and won, every verb with its frames, the feel sheet in words with its speeds and the
+  camera, the first minute, the intensity curve, the end screen and what makes the next round matter.
 - brief.arena: the play space with dimensions in metres, what is in it, what it does during a round; the camera and
   why it is never behind scenery.
 - brief.ai: each rival or actor: its name, its body (how it looks different), its habit and telegraph, its reactions,
