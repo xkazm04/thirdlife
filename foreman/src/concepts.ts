@@ -14,7 +14,7 @@ const norm = (s: string): string => s.trim().toLowerCase().replace(/\s+/g, " ").
  * The concepts of STANDARD jobs in `siteDir` whose sentence is this one (case and spacing ignored), newest last.
  * `except`: a job directory to leave out (the job being designed). A log that cannot be read is skipped.
  */
-export function standardConcepts(siteDir: string, sentence: string, except?: string): Concept[] {
+export function standardConcepts(siteDir: string, sentence: string, except?: string, mode: "standard" | "crazy" = "standard"): Concept[] {
   if (!fs.existsSync(siteDir)) return [];
   const out: { mtime: number; concept: Concept }[] = [];
   for (const d of fs.readdirSync(siteDir, { withFileTypes: true })) {
@@ -23,7 +23,7 @@ export function standardConcepts(siteDir: string, sentence: string, except?: str
     try {
       const { events } = readLog(dir);
       const created = events.find((e) => e.type === "job_created");
-      if (created?.type !== "job_created" || created.creativity !== undefined || norm(created.sentence) !== norm(sentence)) continue;
+      if (created?.type !== "job_created" || (mode === "crazy" ? created.creativity !== "crazy" : created.creativity !== undefined) || norm(created.sentence) !== norm(sentence)) continue;
       const brief = [...events].reverse().find((e) => e.type === "brief_set");
       if (brief?.type === "brief_set" && brief.brief.concept) out.push({ mtime: fs.statSync(path.join(dir, "job.jsonl")).mtimeMs, concept: brief.brief.concept });
     } catch {
@@ -33,11 +33,30 @@ export function standardConcepts(siteDir: string, sentence: string, except?: str
   return out.sort((a, b) => a.mtime - b.mtime).map((x) => x.concept);
 }
 
-/** What a crazy concept step is given: the standard concepts of the same sentence (none for a standard job). */
-export function takenFor(siteDir: string, sentence: string, creativity: Creativity | undefined, except?: string): { taken?: Concept[] } {
-  if (creativity !== "crazy") return {};
-  const taken = standardConcepts(siteDir, sentence, except);
-  return taken.length > 0 ? { taken } : {};
+/** How many earlier designs of the same sentence and mode the concept step is shown (the newest). */
+export const EARLIER_MAX = 4;
+
+/**
+ * What a concept step is given: for a crazy job the standard concepts of the same sentence (`taken`); for both modes
+ * the earlier concepts of the same sentence in the same mode (`earlier`, N4 loop round 5: three crazy colosseum runs in
+ * a row chose "a parry swaps your soul into the rival's body"; four standard ones broke the stone walls).
+ */
+export function takenFor(siteDir: string, sentence: string, creativity: Creativity | undefined, except?: string): { taken?: Concept[]; earlier?: Concept[] } {
+  const earlier = standardConcepts(siteDir, sentence, except, creativity === "crazy" ? "crazy" : "standard").slice(-EARLIER_MAX);
+  const taken = creativity === "crazy" ? standardConcepts(siteDir, sentence, except) : [];
+  return { ...(taken.length > 0 ? { taken } : {}), ...(earlier.length > 0 ? { earlier } : {}) };
+}
+
+/** The concept prompt's block about earlier designs of the same sentence in the same mode ("" without any). */
+export function earlierText(earlier: Concept[] | undefined): string {
+  if (earlier === undefined || earlier.length === 0) return "";
+  return [
+    "",
+    "# Earlier designs of this same sentence in this mode (other jobs on this site)",
+    ...earlier.map((c, i) => `- earlier design ${i + 1}: "${c.anchor} where ${c.hook}" (it chose "${c.candidates[c.chosen]?.pitch ?? "?"}")`),
+    "The core loop stays the proven template (the same template is right). The HOOK must come from another idea family than every one above: not the same twist on another object, not the same twist bigger or later. A player who asks for this game again must meet a hook they have not seen. `why` names the earlier family you left.",
+    "",
+  ].join("\n");
 }
 
 /** The concept prompt's block about what is taken; the crazy fallback when nothing is. "" for a standard job. */
@@ -74,7 +93,26 @@ const words = (s: string): Set<string> => new Set(s.toLowerCase().replace(/[^a-z
  * A crude guard against the collapse: the chosen crazy pitch and hook share most of their content words with a taken
  * concept's chosen pitch and hook (Jaccard over content words above `max`). Words of the sentence itself do not count.
  */
-export function takenProblems(concept: Concept, taken: Concept[] | undefined, sentence: string, max = 0.4): string[] {
+/**
+ * N4 loop round 5: the chosen HOOK against the hooks of earlier designs of the same sentence and mode (content words of
+ * the hooks alone, Jaccard above `max`): the hook is the family; pitches dilute it. Real 22 Nov hooks: "parrying a heavy
+ * swaps your soul into your rival's body" and "a perfect parry swaps your soul into the rival's body" share 4 of 6.
+ */
+export function earlierProblems(concept: Concept, earlier: Concept[] | undefined, sentence: string, max = 0.4): string[] {
+  if (!earlier?.length) return [];
+  const own = words(sentence);
+  const bag = (h: string): Set<string> => new Set([...words(h)].filter((w) => !own.has(w)));
+  const mine = bag(concept.hook);
+  const out: string[] = [];
+  for (const e of earlier) {
+    const theirs = bag(e.hook);
+    const inter = [...mine].filter((w) => theirs.has(w));
+    if (inter.length / Math.max(1, new Set([...mine, ...theirs]).size) > max) out.push(`the chosen hook is too close to an earlier design of this sentence ("${e.hook}"): they share ${inter.join(", ")}. Choose a hook from another idea family (see "Earlier designs of this same sentence"); the core template stays`);
+  }
+  return out;
+}
+
+export function takenProblems(concept: Concept, taken: Concept[] | undefined, sentence: string, max = 0.4, what = "the standard design"): string[] {
   if (!taken?.length) return [];
   const own = words(sentence);
   const bag = (c: Concept): Set<string> => new Set([...words(`${c.candidates[c.chosen]?.pitch ?? ""} ${c.hook}`)].filter((w) => !own.has(w)));
@@ -84,7 +122,7 @@ export function takenProblems(concept: Concept, taken: Concept[] | undefined, se
     const theirs = bag(t);
     const inter = [...mine].filter((w) => theirs.has(w));
     const j = inter.length / Math.max(1, new Set([...mine, ...theirs]).size);
-    if (j > max) out.push(`the chosen crazy concept is too close to the standard design ("${t.hook}"): they share ${inter.join(", ")}. Choose a concept from another idea family (see "Already designed")`);
+    if (j > max) out.push(what === "the standard design" ? `the chosen crazy concept is too close to the standard design ("${t.hook}"): they share ${inter.join(", ")}. Choose a concept from another idea family (see "Already designed")` : `the chosen hook is too close to ${what} ("${t.hook}"): they share ${inter.join(", ")}. Choose a hook from another idea family (see "Earlier designs of this same sentence")`);
   }
   return out;
 }

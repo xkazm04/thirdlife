@@ -212,3 +212,28 @@ test("round 3: the tofu bot must press every verb of the design (verbs_used = th
   assert.match(templateExcerpt(duelTemplate, "builder"), /gen\/arms\.gd: the weapons/);
   assert.match(text, /`verbs_used` >= 2/, "the fixture design has two verbs");
 });
+
+test("round 5: every concept step sees the earlier designs of its sentence in its mode; the third soul-swap crazy is sent back", async () => {
+  const { takenFor, earlierText, earlierProblems } = await import("../concepts.js");
+  const site = path.join(tempDir("earlier"), "site");
+  const ev = (job: string, seq: number, body: object): string => JSON.stringify({ v: 1, seq, ts: "2026-11-22T01:00:00.000Z", job, ...body });
+  const make = (job: string, crazy: boolean, hook: string, pitch: string): void => {
+    fs.mkdirSync(path.join(site, job), { recursive: true });
+    const concept = { ...sampleConcept(), hook, candidates: sampleConcept().candidates.map((c, i) => (i === sampleConcept().chosen ? { ...c, pitch } : c)) };
+    fs.writeFileSync(path.join(site, job, "job.jsonl"), [ev(job, 1, { type: "job_created", sentence: "A fight in a colosseum", packId: "game.fight", title: "Fight", ...(crazy ? { creativity: "crazy" } : {}) }), ev(job, 2, { type: "brief_set", brief: { ...v2Brief(), concept }, estimate: { packages: 6, wallMinutes: 60, tokens: 900000 } })].join("\n") + "\n");
+  };
+  // The hooks of 22 Nov, verbatim: the standard proofs broke the walls; the crazy ones swapped souls on a parry.
+  make("fight-1", false, "wall splats smash the arena open and breaches drop rivals to lions", "Colosseum duel where wall splats shatter the arena wall, and a splat through the breach drops rivals to lions.");
+  make("fight-2", true, "parrying a heavy swaps your soul into your rival's body", "Parry a heavy and souls swap: you wake inside your rival's body, his health and archetype, fighting your old self.");
+  const crazy = takenFor(site, "a fight in a colosseum", "crazy");
+  assert.deepEqual([crazy.taken?.length, crazy.earlier?.map((c) => c.hook)], [1, ["parrying a heavy swaps your soul into your rival's body"]]);
+  assert.match(earlierText(crazy.earlier), /# Earlier designs of this same sentence in this mode[^]*parrying a heavy swaps your soul[^]*The HOOK must come from another idea family/);
+  const third = { ...sampleConcept(), hook: "a perfect parry swaps your soul into the rival's body", candidates: sampleConcept().candidates.map((c, i) => (i === sampleConcept().chosen ? { ...c, pitch: "Souls-like duel where a perfect parry swaps your soul into the rival's body." } : c)) };
+  assert.match(earlierProblems(third, crazy.earlier, "a fight in a colosseum").join(""), /the chosen hook is too close to an earlier design of this sentence \("parrying a heavy swaps your soul into your rival's body"\): they share parry, swap, soul, body/);
+  // Another family passes: the hook of the -2 room's own candidate list ("Night games: torches ring the sand ...").
+  assert.deepEqual(earlierProblems({ ...third, hook: "every parry snuffs a torch until the duel ends in darkness" }, crazy.earlier, "a fight in a colosseum"), []);
+  // And the standard walls: the fourth "breach" hook is sent back too.
+  const std = takenFor(site, "a fight in a colosseum", undefined);
+  assert.match(earlierProblems({ ...third, hook: "wall splats break the arena open into a lion pit" }, std.earlier, "a fight in a colosseum").join(""), /too close/);
+  assert.equal(earlierText(undefined), "");
+});
