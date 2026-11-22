@@ -20,8 +20,10 @@ export interface HouseBot {
   map: Record<string, string>;
   /** The TLHand profile the bot plays through (said in every comparison). */
   hand: string;
+  /** Round 4: tofu names the house bot reports under another definition: never compared (said in the line). */
+  skip?: string[];
   /** Round 2: the house game's own exchange filmed as a motion strip for the critic: a drill bot and a camera. */
-  strip?: { test: string; cam: string; args: string[]; label: string };
+  strip?: { test: string; cam: string; args: string[]; label: string; moments?: string[] };
 }
 
 /** The house games' measuring bots (their own names, read from the packs on 22 Nov). */
@@ -30,6 +32,9 @@ export const HOUSE_BOTS: Record<string, HouseBot> = {
     pack: "duel",
     test: "tests/bot_checklist_wall.gd",
     hand: "regular",
+    // N2's pilot returns `metrics` under the tofu names (main 3004e58). Its skill_spread is over all hits and its
+    // skill_variants the distinct verbs used; the tofu rows count variants of the core verb only: not compared.
+    skip: ["skill_spread", "skill_variants", "contact_types"],
     args: ["--seed=1", "--frames=36000"],
     // Read from the real runner on 22 Nov 02:00: the pilot's result carries these (the verify report has no pack_state).
     // contact_types is left out: the house game counts every 6.3 row (and ko, absorbed); a build's own names are coarser.
@@ -41,8 +46,16 @@ export const HOUSE_BOTS: Record<string, HouseBot> = {
     test: "tests/bot_ladder_pro_regular.gd",
     hand: "regular",
     args: ["--seed=1"],
-    // N3's tests/metrics.gd in the ladder bot's result (main b024967): possession lengths in frames.
-    map: { possession_median_f: "median:result.metrics.lengths" },
+    // N3's ladder bots return `metrics` (main b61300f): possession_median_f and the tofu names directly; the median of
+    // the raw lengths stays as the fallback for an older pack.
+    map: { possession_median_f: "median:result.metrics.lengths|result.metrics.raw.lengths" },
+    // idle_max_f there is the longest live stretch without a take, shot, pass or release (a dead puck: 606 f on pro
+    // regular seed 1). The tofu row is checklist item 9, an OPPONENT that does nothing for 2 s; a skater carrying or
+    // supporting acts. Different definitions: not compared, never loosened (N4 round 4; asked of N3: opponent idle).
+    skip: ["idle_max_f"],
+    // Round 4: the house hockey's own moment filmed from the same ladder bot (metrics.moments: frames by kind, read on
+    // the real runner 22 Nov 02:40: seed 1 gave poked [523], bobble [2819, ...]); the chase camera follows the play.
+    strip: { test: "tests/bot_ladder_pro_regular.gd", cam: "chase", args: ["--seed=1"], moments: ["one_timer", "poked", "poke", "lost", "bobble"], label: "a moment of the house hockey's play (a one-timer, a poke or a lost puck): the carry on the blade, the stick, the puck's readable loss" },
   },
 };
 
@@ -56,14 +69,19 @@ export interface HouseBaseline {
   /** The bot report it was read from (job-relative), or why there is none. */
   from?: string;
   note?: string;
+  /** Round 4: tofu names the house bot reported under another definition, left out of the comparison. */
+  skipped?: string[];
   /** Round 2: the house game's exchange as motion strips (job-relative), filmed once; [] when it could not be. */
   strips?: { capture: string; label: string }[];
 }
 
 /** The frame of the first contact a house drill logged (pack_state.log[0].f), else 60 frames before the bot finished. */
-export function contactFrame(report: unknown): number | undefined {
-  const r = report as { pack_state?: { log?: { f?: unknown }[] }; bot?: { frames?: unknown; result?: { contact?: { f?: unknown } } } } | undefined;
-  const f = r?.bot?.result?.contact?.f ?? r?.pack_state?.log?.[0]?.f; // the duel's drill reports result.contact.f
+export function contactFrame(report: unknown, moments: string[] = []): number | undefined {
+  const r = report as { pack_state?: { log?: { f?: unknown }[] }; bot?: { frames?: unknown; result?: { contact?: { f?: unknown }; metrics?: { moments?: Record<string, unknown> } } } } | undefined;
+  const m = r?.bot?.result?.metrics?.moments;
+  // Round 4: the first listed moment the bot saw (hockey's metrics.moments), before a drill's contact frame.
+  const moment = moments.map((k) => (Array.isArray(m?.[k]) ? (m?.[k] as unknown[])[0] : undefined)).find((x) => typeof x === "number");
+  const f = moment ?? r?.bot?.result?.contact?.f ?? r?.pack_state?.log?.[0]?.f; // the duel's drill reports result.contact.f
   if (typeof f === "number" && Number.isFinite(f)) return f;
   const done = r?.bot?.frames;
   return typeof done === "number" && Number.isFinite(done) ? Math.max(1, done - 60) : undefined;
@@ -77,7 +95,7 @@ export function saveBaseline(h: Pick<GateHost, "dir">, base: HouseBaseline): voi
 const dig = (o: unknown, at: string): unknown => at.split(".").reduce<unknown>((x, k) => (x !== null && typeof x === "object" ? (x as Record<string, unknown>)[k] : undefined), o);
 
 /** The figures of a house bot's report: its result's `metrics` first, then the map (a pure function of the report). */
-export function houseFigures(report: unknown, bot: HouseBot): { metrics: Record<string, number>; hand?: string } {
+export function houseFigures(report: unknown, bot: HouseBot): { metrics: Record<string, number>; hand?: string; skipped?: string[] } {
   const out: Record<string, number> = {};
   const r = report as { bot?: { result?: Record<string, unknown> }; pack_state?: unknown } | undefined;
   const own = r?.bot?.result?.["metrics"];
@@ -95,9 +113,11 @@ export function houseFigures(report: unknown, bot: HouseBot): { metrics: Record<
     } else if (keys && v !== null && typeof v === "object") out[id] = Object.values(v as Record<string, unknown>).filter((x) => typeof x === "number" ? x > 0 : x !== undefined && x !== null).length;
     else if (!keys && typeof v === "number" && Number.isFinite(v)) out[id] = v;
   }
+  const skipped = (bot.skip ?? []).filter((k) => out[k] !== undefined);
+  for (const k of skipped) delete out[k];
   const handOwn = (own as Record<string, unknown> | undefined)?.["hand"];
   const hand = typeof handOwn === "string" ? handOwn : typeof r?.bot?.result?.["hand"] === "string" ? (r.bot.result["hand"] as string) : undefined;
-  return { metrics: out, ...(hand !== undefined ? { hand } : {}) };
+  return { metrics: out, ...(hand !== undefined ? { hand } : {}), ...(skipped.length > 0 ? { skipped } : {}) };
 }
 
 /** The job's house baseline for its template: read from reports/house-<pack>.json, or measured once and written there. */
@@ -159,6 +179,6 @@ export function houseCompare(built: TofuResult | undefined, base: HouseBaseline,
   const line =
     cells.length === 0
       ? `house game engine/packs/${base.pack} (${base.test}): no figure to compare by the tofu names${base.note ? ` (${base.note})` : ""}`
-      : `house game engine/packs/${base.pack} (${base.test}${by}), yours vs the house game's: ${cells.join(", ")}${unmeasured.length > 0 ? `; the house game does not report ${unmeasured.join(", ")}` : ""}${shortIds.length > 0 ? `. SHORT of the house game on ${shortIds.join(", ")}: copy how engine/packs/${base.pack} does it` : ". Not short of the house game on any figure it reports"}`;
+      : `house game engine/packs/${base.pack} (${base.test}${by}), yours vs the house game's: ${cells.join(", ")}${unmeasured.length > 0 ? `; the house game does not report ${unmeasured.join(", ")}${(base.skipped ?? []).length > 0 ? ` (it measures ${(base.skipped ?? []).join(", ")} another way)` : ""}` : ""}${shortIds.length > 0 ? `. SHORT of the house game on ${shortIds.join(", ")}: copy how engine/packs/${base.pack} does it` : ". Not short of the house game on any figure it reports"}`;
   return { rows: out, line, short: shortIds };
 }

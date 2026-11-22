@@ -78,8 +78,14 @@ test("house compare: the house bot's figures by the tofu names (its own metrics 
   const { contactFrame } = await import("../house.js");
   assert.equal(contactFrame({ bot: { frames: 148, result: { contact: { f: 46 } } } }), 46, "the real heavy_block drill: contact at frame 46");
   assert.equal(contactFrame({ bot: { frames: 600 } }), 540);
-  const own = { bot: { result: { metrics: { idle_max_f: 50, feedback_f: 2, hand: "regular" } } }, pack_state: { rival_passive_max: 64 } };
-  assert.deepEqual(houseFigures(own, HOUSE_BOTS["duel"] as (typeof HOUSE_BOTS)["duel"] & object), { metrics: { idle_max_f: 50, feedback_f: 2 }, hand: "regular" });
+  // Round 4: hockey's ladder bot reports its moments (real seed 1: poked at 523); the first listed kind it saw wins.
+  const moments = (HOUSE_BOTS["arcade_sport"] as (typeof HOUSE_BOTS)["arcade_sport"] & object).strip?.moments;
+  assert.equal(contactFrame({ bot: { frames: 6770, result: { metrics: { moments: { poked: [523], bobble: [2819, 4445] } } } } }, moments), 523);
+  assert.equal(contactFrame({ bot: { frames: 6770, result: { metrics: { moments: { one_timer: [900], poked: [523] } } } } }, moments), 900);
+  assert.equal(contactFrame({ bot: { frames: 6770, result: { metrics: { moments: {} } } } }, moments), 6710);
+  // N2's pilot `metrics` (main 3004e58): read first; skill_spread / skill_variants / contact_types are its own definitions and dropped.
+  const own = { bot: { result: { metrics: { idle_max_f: 50, feedback_f: 2, skill_spread: 0.9, skill_variants: 6, contact_types: 10, hand: "regular" } } }, pack_state: { rival_passive_max: 64 } };
+  assert.deepEqual(houseFigures(own, HOUSE_BOTS["duel"] as (typeof HOUSE_BOTS)["duel"] & object), { metrics: { idle_max_f: 50, feedback_f: 2 }, hand: "regular", skipped: ["skill_spread", "skill_variants", "contact_types"] });
   const rows = tofuMetricsFor(duelTemplate);
   const base: HouseBaseline = { schema: "tl.foreman.house/1", pack: "duel", test: "tests/bot_checklist_wall.gd", hand: "regular", metrics: { idle_max_f: 64, tell_min_f: 18, contact_types: 6, one_sided_contacts: 0 } };
   const built = judgeTofu({ feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 110, tell_min_f: 18, tells: 5, pressure_waves: 2, lead_change_share: 0.4, close_rounds: 2, contact_types: 3, one_sided_contacts: 0 }, rows, "tests/bot_tofu.gd");
@@ -131,11 +137,11 @@ test("house compare: a duel job measures the house game once (reports/house-duel
   const s = await foreman.run();
   assert.equal(s.jobState?.state, "done", JSON.stringify(s.jobState));
   const house = JSON.parse(fs.readFileSync(path.join(job.jobDir, "reports", "house-duel.json"), "utf8")) as HouseBaseline;
-  assert.deepEqual([house.test, house.hand, house.metrics["idle_max_f"], house.metrics["contact_types"]], ["tests/bot_checklist_wall.gd", "regular", 64, 6]);
+  assert.deepEqual([house.test, house.hand, house.metrics["idle_max_f"], house.metrics["contact_types"], house.skipped], ["tests/bot_checklist_wall.gd", "regular", 64, undefined, ["contact_types"]], "round 4: contact_types is the house game's own count, not compared");
   const ms = readEvents(job.jobDir).filter((e) => e.type === "milestone");
   assert.match(ms[0]?.type === "milestone" ? ms[0].summary : "", /house game engine\/packs\/duel \(tests\/bot_checklist_wall\.gd through the regular hand\), yours vs the house game's: [^]*idle_max_f 110 vs 64 SHORT/);
   const call = builder.calls.find((c) => c.req.meta?.role === "critic");
-  assert.match(call?.req.prompt ?? "", /The house game of this game's template, engine\/packs\/duel, is the bar[^]*SHORT of the house game on idle_max_f, contact_types[^]*- house_game: Against the house game engine\/packs\/duel/);
+  assert.match(call?.req.prompt ?? "", /The house game of this game's template, engine\/packs\/duel, is the bar[^]*SHORT of the house game on idle_max_f[^]*- house_game: Against the house game engine\/packs\/duel/);
   assert.equal(readEvents(job.jobDir).filter((e) => e.type === "verify" && e.verb === "bot" && /house-duel-s/.test(e.report)).length, 1, "measured once per job");
   // Round 2: the house game's own exchange, filmed once from 15 frames before its contact (the fake drill finishes at 600: 540), last in the critic's images.
   const kept = JSON.parse(fs.readFileSync(path.join(job.jobDir, "reports", "house-duel.json"), "utf8")) as HouseBaseline;
