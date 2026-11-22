@@ -49,6 +49,8 @@
     {"file": "data/rivals.json", "role": "the AI tiers (react frames, defend share, read share, return window) and the three archetypes: hp, poise, walk speed, scale, colours, arms, defence weights, strings of moves with fixed delays, phase 2"},
     {"file": "data/tuning.json", "role": "resources (stamina, posture, rally), the player, the ring radius, the round clock, the match rules (sides, score_to_win), the camera"},
     {"file": "data/venue.json", "role": "the ring: a dirt floor, 20 barrier_wall blocks in a circle (the splat wall, 1.25 m: low enough to see over), stands, gate, flags, light masts"},
+    {"file": "data/lessons.json", "role": "the first minute against the first rival: each answer (block, parry, bash) shown once with a cue before a slower, held blow, then he stands open for the punish"},
+    {"file": "data/causes.json", "role": "what beat you: the cause each hit the player takes is filed under, and the answer a lost round ends on"},
     {"file": "data/drills.json", "role": "scripted situations for the contact bots and the review clips: both fighters placed, the rival's moves by frame, the contact expected"}
   ],
   "do": [
@@ -103,7 +105,9 @@
     ],
     "first_minute": [
       "The first rival is the slowest (the Wall reacts in 30 frames and stays open 36 frames after each string): a newcomer lands hits from the first exchange.",
-      "A key card for the first round and one cue line at the moment it matters: You blocked his HEAVY: LIGHT now!, Shoulder dip = BASH coming, RED = UNBLOCKABLE."
+      "A key card for the first round and one cue line at the moment it matters: You blocked his HEAVY: LIGHT now!, Shoulder dip = BASH coming, RED = UNBLOCKABLE.",
+      "The first rival teaches by play: a cue before each slower, held blow (block, parry, bash), then he stands open for the punish; a glint on the weapon 16 frames before every light and heavy lands.",
+      "A lost round ends on its biggest cause and the answer: WHAT BEAT YOU: his quick lights (6 hits, 50 damage) / Keep your guard up close in."
     ],
     "stakes": [
       "Best of 3 rounds of up to 70 s; a ladder of three rivals, then the same three at the champion tier.",

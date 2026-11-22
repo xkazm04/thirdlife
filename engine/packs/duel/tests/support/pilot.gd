@@ -175,6 +175,7 @@ func _bot_result() -> Dictionary:
 		if int(s["failures"]) > 0:
 			why += " %d contacts left a fighter unchanged;" % int(s["failures"])
 		ok = ok and why == ""
+	var mt: Dictionary = _metrics(s, st)
 	var gf: int = 0
 	var ga: int = 0
 	for r: Array in s["rounds"]:
@@ -186,4 +187,53 @@ func _bot_result() -> Dictionary:
 			int(s["rival_tells_min"]), str(s["kinds"]), int(s["failures"])],
 		"rounds": s["rounds"], "lead_changes": s["lead_changes"], "rival_passive_max": s["rival_passive_max"], "rival_passive_note": s["rival_passive_note"],
 		"rival_tells_min": s["rival_tells_min"], "kinds": s["kinds"], "failures": s["failures"], "hand": st, "you_counts": s["you_counts"],
-		"rival_counts": s["rival_counts"], "rival_mind": s["rival_mind"], "first_minute": s["first_minute"], "lessons": s["lessons"], "spacing": s["spacing"]}
+		"rival_counts": s["rival_counts"], "rival_mind": s["rival_mind"], "first_minute": s["first_minute"], "lessons": s["lessons"], "spacing": s["spacing"], "metrics": mt, "loss_causes": s["loss_causes"]}
+
+
+## The tofu-stage figures (contracts/JOB.md, added 2026-11-22), named as the editor reads them; absent = not measured.
+func _metrics(s: Dictionary, st: Dictionary) -> Dictionary:
+	var feed: Dictionary = s["metrics_feed"]
+	var rounds: Array = s["rounds"]
+	var m: Dictionary = {"hand": hand_profile}
+	if feed.has("feedback_f"):
+		m["feedback_f"] = int(feed["feedback_f"])                       # press -> wind-up on screen (item 1)
+	if feed.has("hit_max") and float(feed["hit_max"]) > 0.0:
+		m["skill_spread"] = snappedf((float(feed["hit_max"]) - float(feed["hit_min"])) / float(feed["hit_max"]), 0.001)   # item 3
+	var mine: Dictionary = {}
+	for k: String in (s["you_counts"] as Dictionary):
+		if k in ["light", "heavy", "bash", "parries", "blocks", "rolls", "dodges", "feints", "bashes_landed", "clashes"]:
+			mine[k] = true
+	m["skill_variants"] = mine.size()                                    # distinct verbs the player used to an end (item 3)
+	m["idle_max_f"] = int(s["rival_passive_max"])                        # item 9
+	m["tell_min_f"] = int(s["rival_tells_min"])                          # item 11
+	m["tells"] = int(s["rival_attacks"])
+	var frames: Array = s["rival_attack_frames"]
+	var waves: int = 0
+	var hot: bool = false
+	if not frames.is_empty():
+		var last: int = int(frames[-1])
+		var w: int = int(frames[0])
+		while w <= last:                                                  # 3 s windows: a wave is a run of busy windows after a quiet one
+			var n: int = 0
+			for f: Variant in frames:
+				if int(f) >= w and int(f) < w + 180:
+					n += 1
+			if n >= 3 and not hot:
+				waves += 1
+				hot = true
+			elif n <= 1:
+				hot = false
+			w += 180
+	m["pressure_waves"] = waves                                          # item 12
+	var changed: int = 0
+	var close: int = 0
+	for r: Array in rounds:
+		if r.size() > 6:
+			changed += 1 if int(r[5]) > 0 else 0
+			close += 1 if float(r[6]) <= 0.35 else 0
+	m["lead_change_share"] = snappedf(float(changed) / maxf(1.0, float(rounds.size())), 0.001)   # item 15
+	m["close_rounds"] = close
+	m["contact_types"] = (s["kinds"] as Dictionary).size()
+	m["one_sided_contacts"] = int(s["failures"])
+	var _u = st
+	return m

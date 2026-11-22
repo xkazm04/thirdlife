@@ -54,6 +54,7 @@ var force_string: String = ""
 var phase2_on: bool = false            ## the second phase was announced (rivals.json phase2)
 var attacks: int = 0
 var strings_used: Dictionary = {}
+var attack_frames: Array = []          ## the frames the rival started an attack (pressure waves)
 var choices: Dictionary = {}           ## what the mind chose, counted (defences, reads, punishes): the bots read it
 
 
@@ -507,6 +508,7 @@ func _do(m: String, opts: Dictionary) -> bool:
 		last_action = frame
 		if m in ["light", "heavy", "charged", "bash"]:
 			attacks += 1
+			attack_frames.append(frame)
 			var w: int = me.windup
 			if m != "bash" or true:
 				tells_min = mini(tells_min, w)
