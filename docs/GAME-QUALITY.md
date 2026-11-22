@@ -390,8 +390,10 @@ house game changed, and its numbers win:
 - the rig's fight clips are stretched over the rules' frames by a [move frame, clip frame] map, so an 18-frame wind-up
   reads on a short clip;
 - rally (under 35 % health, stamina back half as fast again) as the visible comeback rule, and a crowd meter;
-- the camera over the shoulder, offset to the side, looking between the two (back 4.6 m, up 2.6 m, side 2.6 m), over a
-  ring wall of 1.25 m that is low enough to see over, the stands behind it.
+- the camera over the shoulder, offset to the side, looking between the two (its numbers are `data/tuning.json`
+  `camera`, retuned by the duel lane during the night; the Foreman reads them live for the builders), over a ring wall
+  of 1.25 m that is low enough to see over, the stands behind it; the pushbox 0.45 m per duellist; a rival never idle
+  past 120 frames (round 6: the critic's three faults in the crazy proof -3).
 
 When a recipe card exists for the template (the duel card `card.duel`, written by the duel lane), it is the default card
 for the job; the Planner takes it unless one of its `NOT when` lines matches.

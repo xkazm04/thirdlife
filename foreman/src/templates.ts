@@ -65,7 +65,28 @@ export interface House {
   moves?: string;
   /** Rules of the house game a design must keep, each with a pattern over the brief's rules and controls text. */
   keeps?: { what: string; re: RegExp }[];
+  /**
+   * N4 loop round 6: the house game's own numbers a builder copies, read live from the pack (they move as the game is
+   * tuned): what each is, and how to read it from the pack directory (undefined when the file or key is gone).
+   */
+  numbers?: { what: string; read: (packDir: string) => string | undefined }[];
 }
+
+const readJsonKey = (packDir: string, file: string, key: string): string | undefined => {
+  try {
+    const v = (JSON.parse(stripBom(fs.readFileSync(path.join(packDir, ...file.split("/")), "utf8"))) as Record<string, unknown>)[key];
+    return v === undefined ? undefined : JSON.stringify(v);
+  } catch {
+    return undefined;
+  }
+};
+const readConst = (packDir: string, file: string, name: string): string | undefined => {
+  try {
+    return new RegExp(`const ${name}\\s*(?::\\s*\\w+)?\\s*=\\s*([^\\s#]+)`).exec(fs.readFileSync(path.join(packDir, ...file.split("/")), "utf8"))?.[1];
+  } catch {
+    return undefined;
+  }
+};
 
 export const TEMPLATES: Template[] = [
   {
@@ -117,7 +138,14 @@ export const TEMPLATES: Template[] = [
       moves: "data/moves.json",
       keeps: [
         { what: "the lock-on: each fighter always faces his rival (the house game turns the body; facing never follows the walk), so the 120-degree guard holds while circling", re: /lock[- ]?on|always faces?|faces? (his|her|their|the) (rival|opponent|foe)|face each other/i },
-        { what: "the camera over the shoulder, offset to the side, looking between the two fighters (back 4.6 m, up 2.6 m, side 2.6 m), over a ring wall low enough to see over", re: /shoulder|offset to the side|side[- ]on|between (the|both) fighters|between them/i },
+        { what: "the camera over the shoulder, offset to the side, looking between the two fighters (its data/tuning.json `camera`, read below), over a ring wall low enough to see over", re: /shoulder|offset to the side|side[- ]on|between (the|both) fighters|between them/i },
+      ],
+      // Round 6: the three faults the critic named in the crazy proof -3 (a camera low behind the player, two bodies
+      // pressed into one blob, both fighters frozen 55 frames) are numbers the house game already has.
+      numbers: [
+        { what: "the play camera (data/tuning.json `camera`, metres and degrees: raised and angled so both bodies show; never low behind the player)", read: (d) => readJsonKey(d, "data/tuning.json", "camera") },
+        { what: "the pushbox per duellist at scale 1, in metres (scripts/feel.gd PUSHBOX, times the body radius / 0.3; TLHit.pushbox on both from the first frame): two bodies never read as one", read: (d) => readConst(d, "scripts/feel.gd", "PUSHBOX") },
+        { what: "never idle (scripts/brain.gd last_action): a wind-up, an active or recovery frame, a roll, a dodge, a tell, a taunt, a block, a stun or closing in counts as acting; anything else past 120 frames is idle, so the mind presses, feints or repositions before that", read: () => "120 frames at most" },
       ],
     },
   },
@@ -220,12 +248,13 @@ export function houseExcerpt(t: Template, part: "design" | "builder", engine = H
   if (!fs.existsSync(path.join(dir, "README.md"))) return "";
   const files = h.files.map((f) => `- engine/packs/${h.pack}/${f.file}: ${f.role}`);
   const keeps = (h.keeps ?? []).map((k) => `- keep ${k.what}`);
+  const numbers = (h.numbers ?? []).map((n) => [n, n.read(dir)] as const).filter(([, v]) => v !== undefined).map(([n, v]) => `- ${n.what}: ${v}`);
   const head = `# The house game: engine/packs/${h.pack} (${h.game}), the reference implementation of this template
 It is a tracked game of this engine that plays the template on the kernel, tuned there. Copy its rules, its numbers and
 its structure; where its numbers differ from the research, the house game's win (they are measured on this kernel).${part === "builder" ? `
 Your reference copy holds it whole: ref/packs/${h.pack}/ (read the files below before you write yours).` : ""}`;
   const body = part === "design" ? researchSections(`engine/packs/${h.pack}/README.md`, h.readme, path.dirname(engine)) : "";
-  return [head, "", "The files that carry it:", ...files, ...(keeps.length > 0 ? ["", "What a design of this template keeps from it:", ...keeps] : []), ...(body !== "" ? ["", body] : [])].join("\n") + "\n";
+  return [head, "", "The files that carry it:", ...files, ...(keeps.length > 0 ? ["", "What a design of this template keeps from it:", ...keeps] : []), ...(numbers.length > 0 ? ["", "The house game's numbers to copy (read from the pack now):", ...numbers] : []), ...(body !== "" ? ["", body] : [])].join("\n") + "\n";
 }
 
 /** A brief's template problems: the design's copied moves, and what the house game keeps (in rules and controls). */

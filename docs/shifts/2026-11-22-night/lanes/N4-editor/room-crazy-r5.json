@@ -1,0 +1,383 @@
+{
+ "sentence": "a fight in a colosseum",
+ "creativity": "crazy",
+ "model": "opus (claude-cli)",
+ "job": "fight-colosseum-20261122-4",
+ "concept": {
+  "template": {
+   "id": "duel",
+   "reference": "Dark Souls, Sekiro and For Honor duels, as DUEL-PLAYBOOK.md; house game engine/packs/duel.",
+   "copies": [
+    "DUEL-PLAYBOOK 6.4 state machine: idle, windup, active, recovery, blockstun, stagger, down, with 8-frame input buffer.",
+    "Move table frames exactly: light 18/4/16, heavy 32/5/28, charged 54/6/36, bash 14/6/24.",
+    "Defence frames exactly: block 4/held/6, parry 1/12/20, roll 3/18/15, dodge 2/8/12, taunt 0/0/60.",
+    "Mutual reactions DUEL-PLAYBOOK 2 and 6.3: every contact changes both fighters, hit-stop on both, blockstun and recoil.",
+    "Three rival archetypes DUEL-PLAYBOOK 6.7: the Wall absorbs, the Duelist parries, the Dancer avoids, each with tell.",
+    "Stamina and posture from card.duel: actions spend stamina, blocked hits fill posture, full posture is guard break."
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "Gladiator duel against three champions: a shield wall, a trident parrier, a net-throwing dancer, best of three.",
+    "likelihood": 0.75
+   },
+   {
+    "pitch": "Colosseum duel at noon: sailors drag the awning, and only its moving shade refills your stamina.",
+    "likelihood": 0.12
+   },
+   {
+    "pitch": "Naumachia duel: the colosseum floods a handspan each round, until rolls and knockdowns become blinding splashes.",
+    "likelihood": 0.15
+   },
+   {
+    "pitch": "A fixed fight: you are paid to lose round three convincingly; overwin and the bookmakers' archers fire.",
+    "likelihood": 0.08
+   },
+   {
+    "pitch": "Colosseum duel where every clean hit ages your rival a decade, greyer and stiffer, until dust.",
+    "likelihood": 0.1
+   }
+  ],
+  "chosen": 1,
+  "why": "The shade bends the place: the sun becomes a resource you fight over, bash rivals out of, and chase. Not the standard's breakable walls, crowd or thumb, nor earlier soul swaps; the obvious ladder has no hook.",
+  "hook": "only the awning's moving shade refills your stamina",
+  "anchor": "souls-like gladiator duel",
+  "references": [
+   {
+    "game": "Dark Souls",
+    "borrow": "every attack, block and roll spends stamina; empty stamina means a guard break on the next block"
+   },
+   {
+    "game": "Splatoon",
+    "borrow": "standing in your own ink refills the ink tank fast; enemy ink slows you and drains health."
+   },
+   {
+    "game": "For Honor",
+    "borrow": "parry a heavy and a light is guaranteed; parry a light and a heavy is."
+   }
+  ]
+ },
+ "design": {
+  "pillars": [
+   {
+    "line": "The shade is the stamina bar you fight for.",
+    "rules_out": "Rules out fixed regen everywhere, shade as decoration, and a twist that lives only on the HUD."
+   },
+   {
+    "line": "Every contact changes both fighters.",
+    "rules_out": "Rules out one-sided hits, blocks without recoil, parries without stun, and overlapping bodies."
+   },
+   {
+    "line": "Copied souls-like core, new only in the place.",
+    "rules_out": "Rules out invented moves, changed frames, speed-stat difficulty, auto-aim and bare fists."
+   }
+  ],
+  "verbs": [
+   {
+    "id": "light",
+    "move": "light",
+    "input": "LMB or J, strike clip; chain of 3 from the last 4 recovery frames at windup 12; hit flinches 18, +2.",
+    "anticipation_f": 18,
+    "active_f": 4,
+    "recovery_f": 16,
+    "cancel": "Last 4 recovery frames into chained light, block or roll; blocked: attacker recoils 0.15 m, -2; parried: PARRIED 52."
+   },
+   {
+    "id": "heavy",
+    "move": "heavy",
+    "input": "RMB or K, strike_heavy clip; hyper armour f12-37; held past f20 flashes red into charged 54/6/36, unblockable.",
+    "anticipation_f": 32,
+    "active_f": 5,
+    "recovery_f": 28,
+    "cancel": "Feint until f20 (6 stamina) into block or bash; blocked: attacker rebounds 40, -22, light guaranteed."
+   },
+   {
+    "id": "parry",
+    "move": "parry",
+    "defensive": true,
+    "input": "SPACE or L, block clip; a fresh tap opens parry frames 2-13; held it is block 4/held/6, front 120 degrees.",
+    "anticipation_f": 1,
+    "active_f": 12,
+    "recovery_f": 20,
+    "cancel": "Whiffed tap: 20 f open, 8 stamina; parried light: attacker PARRIED 52, heavy guaranteed; parried heavy: PARRIED 36."
+   },
+   {
+    "id": "roll",
+    "move": "roll",
+    "defensive": true,
+    "input": "SHIFT with W/S, roll clip, 3.2 m, 20 stamina; with A/D the dodge clip, 2/8/12, 1.4 m sideways.",
+    "anticipation_f": 3,
+    "active_f": 18,
+    "recovery_f": 15,
+    "cancel": "Hit in i-frames: nothing; hit in recovery: counter-hit, damage x1.25; beats bash, loses to a delayed heavy."
+   },
+   {
+    "id": "bash",
+    "move": "bash",
+    "input": "E, body_check clip; unblockable, unparryable; guard broken 30, pushed 1.0 m; wall within 1.2 m: WALLSPLAT 60.",
+    "anticipation_f": 14,
+    "active_f": 6,
+    "recovery_f": 24,
+    "cancel": "Loses to any active attack and to a roll; counter-bash within 8 f rebounds both 0.6 m apart."
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "shade_keeper",
+    "title": "Shade Keeper",
+    "line": "Hold shade, block, parry; rival burns stamina in the sun."
+   },
+   {
+    "id": "sun_raider",
+    "title": "Sun Raider",
+    "line": "Heavies and chains in the sun; quick shade dips refill."
+   },
+   {
+    "id": "shepherd",
+    "title": "The Shepherd",
+    "line": "Bash, wall-splat rival out of shade, then block his return."
+   }
+  ],
+  "loops": {
+   "s3": "Read a tell and answer it with block, parry, roll or bash; both fighters freeze, react, and stamina bars move.",
+   "s30": "Spend stamina in the sun, then fight your way under the drifting shade to refill while the rival tries to bash you out.",
+   "m3": "Best of three 70 s rounds against one champion; the shade narrows each round and noon pins it to a stripe."
+  },
+  "context": [
+   "The awning drifts: the shade's place and speed change every 8-15 s on a seeded sailor pattern.",
+   "Each round narrows the shade from 6 m to 5 m to 4 m; at 50 s noon furls it to a fixed 2 m stripe.",
+   "The Wall's phase 2 under 50 % health: he roars and opens with three heavies, the second 18 f late.",
+   "Rally under 35 % health and EXHAUSTED flags flip who can afford to attack.",
+   "A new rival each match: the Wall, the Duelist, the Dancer, then all three at champion tier."
+  ],
+  "skill": {
+   "floor": "Press light when the rival stands open; walk into the shade when your stamina bar runs low.",
+   "ceiling": [
+    "Parry the Duelist's third chained light for a guaranteed heavy.",
+    "Bash a rival off the shade edge, then hold the edge so he cannot refill.",
+    "Feint a heavy before f20 into a bash to guard-break a parry-happy rival at the wall."
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    3,
+    14
+   ],
+   "knockback": "Template pushes via TLBiped.shove scaled by body_mass: light 0.25 m, heavy 0.6 m, block 0.35 m, bash 1.0 m; stun into wall splats.",
+   "reaction": "Both freeze, victim vibrates; TLHit.react 0.3 flinch, 0.7 stagger; TLHit.down only for charged or exhausted bash; attacker recoils, rebounds or is PARRIED.",
+   "whiff": "Full recovery plays, a swish sound, no sparks, stamina spent and regen paused 20 f; the rival's punish window opens.",
+   "iframes_f": 18,
+   "telegraph_f": 24,
+   "shake": "None on lights; heavy hit 0.08 over 8 f; wall splat 0.26 over 16 f; knockdown and finisher 0.3 over 20 f.",
+   "camera": "Shoulder two-shot via add_view, 4.6 m back, 2.6 up, 2.6 right, aimed between fighters; player 0.25 of frame; low wall, masts fade."
+  },
+  "clips": [
+   {
+    "id": "bash_into_sun",
+    "moment": "A shoulder bash shoves the Wall out of the shade; he stands panting in the glare as his guard breaks."
+   },
+   {
+    "id": "noon_stripe_parry",
+    "moment": "At high noon both share a 2 m stripe of shade; a gold PARRY! flings the rival out into the sun."
+   },
+   {
+    "id": "crowd_drags_sail",
+    "moment": "The crowd roars, sailors haul the awning across the ring, and the shade slides over the gasping player."
+   }
+  ],
+  "first_minute": "Round one opens mid-shade against the Wall at rung 1; cue lines name the shade, his shoulder dip and the light after his blocked heavy.",
+  "fail_state": "KO or time: the end screen names the cause, such as his bashes kept you in the sun, 4 guard breaks; R rematches within 1 s.",
+  "out_of_scope": [
+   "Bare-fist fighting",
+   "Several rivals at once",
+   "Online or local versus play",
+   "Chariots or mounted combat",
+   "Weapon pickups or loot",
+   "Story cutscenes"
+  ]
+ },
+ "design_reviewed": [
+  {
+   "round": 1,
+   "verdict": "ok",
+   "scores": {
+    "hook": 0.82,
+    "gif": 0.7,
+    "depth": 0.85,
+    "feel": 0.8,
+    "fit": 0.82
+   },
+   "notes": "No slop found; send it to build. Three fixes. 1) The bash_into_sun clip needs a body cue for low stamina that shows without the HUD: heat shimmer plus a sagging guard pose. Name the clip that plays it. 2) The shade aspect says 5 m wide but the rules say 6/5/4 m by round; make them match. 3) Put back the template's Q taunt so the player can also feed the crowd meter and stars."
+  }
+ ],
+ "brief": {
+  "pitch": "Gladiator duel at noon: sailors drag a giant awning, and only its moving shade refills your stamina.",
+  "aspects": [
+   {
+    "id": "shade_awning",
+    "icon": "twist",
+    "title": "The Moving Shade",
+    "line": "Stand in the shade to get your breath back.",
+    "detail": "Shade is a data rectangle under the velarium, 5 m wide, swept by sailors at 0.4-0.9 m/s on seeded patterns. In shade stamina regen is the template's 0.6/f; in sun 0.15/f. A bash shoves 1.0 m: enough to push a rival into sun.",
+    "alternatives": [
+     {
+      "id": "shade_heals",
+      "title": "Shade Heals Wounds",
+      "line": "Shade slowly closes cuts instead of refilling breath."
+     },
+     {
+      "id": "sun_burns",
+      "title": "The Sun Burns",
+      "line": "Shade is safe; sunlight slowly drains your posture away."
+     },
+     {
+      "id": "pillar_shadows",
+      "title": "Pillar Shadows",
+      "line": "Fixed pillar shadows swing round the ring like clock hands."
+     }
+    ]
+   },
+   {
+    "id": "three_champions",
+    "icon": "rival",
+    "title": "Three Shade Champions",
+    "line": "A shield giant, a fencer, a dancer: each wants shade.",
+    "detail": "Template archetypes from rivals.json: the Wall absorbs (camps in shade, shoulder-dip bash tell), the Duelist parries (fights at the shade edge, blade tap 24 f), the Dancer avoids (dips in and out, 30 f spin coil). Tiers change react, defend, read and return frames, never speed.",
+    "alternatives": [
+     {
+      "id": "one_champion_moods",
+      "title": "One Changing Champion",
+      "line": "One veteran who switches style each time you win."
+     },
+     {
+      "id": "tag_team",
+      "title": "Gladiator Pairs",
+      "line": "Two rivals take turns; the resting one waits in shade."
+     }
+    ]
+   },
+   {
+    "id": "shoulder_two_shot",
+    "icon": "camera",
+    "title": "Over the Shoulder",
+    "line": "See your rival's wind-up and the shade edge together.",
+    "detail": "A view added with ctx.cameras.add_view, moved each frame: 4.6 m back, 2.6 m up, 2.6 m right, looking at the midpoint between fighters; player 0.25 of frame height. The ring wall is 1.0 m; masts fade with fade_occluders. V cycles side and wide views.",
+    "alternatives": [
+     {
+      "id": "sun_eye_view",
+      "title": "Sun's-Eye View",
+      "line": "Look straight down like the sun; shade reads as a map."
+     },
+     {
+      "id": "side_stage",
+      "title": "Side Stage",
+      "line": "A side-on view like an old arcade fighting game."
+     }
+    ]
+   },
+   {
+    "id": "gladiator_kit",
+    "icon": "weapon",
+    "title": "Sword and Shield",
+    "line": "Fast cuts, heavy blows, a shield to block and parry.",
+    "detail": "The player is a murmillo: sword and round shield from gen/arms.gd on hand sockets. Moves are the template's: light 18/4/16, heavy 32/5/28 (hold past f20: charged, unblockable), block 4/held/6 with tap parry f2-13, roll 3/18/15, bash 14/6/24.",
+    "alternatives": [
+     {
+      "id": "trident_net",
+      "title": "Trident and Net",
+      "line": "Long reach pokes, but no shield to hide behind."
+     },
+     {
+      "id": "twin_blades",
+      "title": "Twin Blades",
+      "line": "Quick double cuts, a weaker guard, longer rolls."
+     }
+    ]
+   },
+   {
+    "id": "crowd_hauls_awning",
+    "icon": "crowd",
+    "title": "The Crowd Pulls Ropes",
+    "line": "Wow the crowd and sailors drag the shade to you.",
+    "detail": "The crowd meter fills on parries (+15), wall splats (+20), stars (+10), clashes (+5). At 100 the sailors (biped walk clip on the wall top) haul the awning toward the favourite for 240 f, then the meter empties. Rivals fill it too. Off: awning follows its seeded pattern only.",
+    "alternatives": [
+     {
+      "id": "crowd_throws_water",
+      "title": "Water From the Stands",
+      "line": "The crowd tosses water skins; grab one for breath."
+     },
+     {
+      "id": "crowd_boos_sail",
+      "title": "Boos Fold the Sail",
+      "line": "A dull fight makes the sailors fold the awning away."
+     }
+    ],
+    "crazy": true
+   },
+   {
+    "id": "high_noon",
+    "icon": "time",
+    "title": "High Noon Climax",
+    "line": "Last twenty seconds: the shade shrinks to a thin strip.",
+    "detail": "Round clock 70 s. Shade width per round: 6 m, 5 m, 4 m. At 50 s a horn sounds and the sailors furl the awning to a 2 m strip that stops still mid-ring: both fighters fight over one stripe of breath.",
+    "alternatives": [
+     {
+      "id": "sudden_cloud",
+      "title": "Sudden Cloud",
+      "line": "A cloud shades the whole ring for a ten-second breather."
+     },
+     {
+      "id": "awning_falls",
+      "title": "The Awning Falls",
+      "line": "The sail tears and drops; all shade vanishes at once."
+     }
+    ]
+   }
+  ],
+  "rules": "Best of 3 rounds (score_to_win 2), each up to 70 s; KO or, at time, the larger health share. The core is the house game engine/packs/duel unchanged: state machine 6.4, 8-frame buffer, lock-on facing. Verbs: light 18/4/16 (strike clip, 9 dmg, 12 stamina, chain of 3 at windup 12, chained 7 dmg); heavy 32/5/28 (strike_heavy, 20 dmg, 22 stamina, hyper armour f12-37, feint until f20); charged heavy held past f20 54/6/36 (red flash, 30 dmg, unblockable, parryable: PARRIED 60); block 4/held/6 (block clip, front 120 deg, chip 10 %, never kills); parry = fresh tap of block, window f2-13, whiff 20 f open, re-tap within 30 f shrinks it by 4; roll 3/18/15 (roll clip, 3.2 m, 20 stamina); dodge 2/8/12 (dodge clip, 1.4 m side, 12 stamina); bash 14/6/24 (body_check clip, unblockable, unparryable, loses to active attacks and rolls). Contacts, hit-stop on BOTH: light hit 5 f, flinch 18, 0.25 m, +2; heavy hit 9 f, stagger 40, 0.6 m, +12; light blocked 3 f, blockstun 14, attacker recoils 0.15 m, -2; heavy blocked 6 f, attacker rebounds 40, -22, light guaranteed; light parried 10 f, PARRIED 52, +44; heavy parried PARRIED 36, +28; bash 6 f, GUARDBROKEN 30, 1.0 m, +20 (exhausted: knockdown 45 + getup 30); bash with wall within 1.2 m: 12 f, WALLSPLAT 60; counter-bash within 8 f: both rebound 0.6 m; clash 8 f, both rebound 20 (heavy 30); hit in windup, roll end, tell or taunt: counter-hit x1.25, +10 stun; i-frames: nothing. Resources from tuning.json: stamina 100, posture fills to BROKEN 90 (heavy = 30 finisher), house poise tiers, EXHAUSTED at 0 until 40, Rally under 35 % health. THE HOOK: stamina regenerates at the template's 0.6/f (after its 20/24/30 f delays; 0.2/f while blocking) only while the fighter's feet are inside the shade rectangle; in sun it trickles at 0.15/f. Shade width 6 / 5 / 4 m by round; sailors move it on a seeded pattern (sweep, pause, reverse every 8-15 s). At 50 s, HIGH NOON: horn, the awning furls to a 2 m strip fixed mid-ring for the last 20 s. Crowd meter (crazy, droppable): parries, splats, stars and clashes fill it; full, the sailors haul the shade toward that fighter for 240 f. Feel: lights no shake, heavies 0.08 shake, splat 0.26 with dust and debris, parry gold flash and PARRY!, sparks and steel sound on hits, whiffs a swish only. First minute: open mid-shade against the Wall, key card plus cue lines. Intensity: calm open in shade, waves as the shade drifts away (peaks when both stand in sun), noon climax, release on the end screen naming the cause of the loss or win; R rematches, ENTER climbs the ladder.",
+  "arena": "An oval sand floor 16 m by 12 m, ringed by a 1.0 m stone wall (kit stones and barrier_wall), so the shoulder camera always sees over it. Six timber masts (TLBodies.make, built singly so fade_occluders can fade them) stand on the wall top; the velarium is a red-and-cream cloth slab at 9 m height, 16 m long and 6 m wide (5, 4 in later rounds), sliding along the long axis on data waypoints. Under it a thin dark non-colliding shade slab at y 0.01 marks the shade exactly where the rule reads it. Four sailor bipeds walk the wall top hauling ropes (thin boxes) with the walk clip; their motion telegraphs the next shade move 60 f ahead. Raked stands (kit stands) sit 6 m behind the wall on every side, low first tier, with flags and an entrance portal. Camera: a view added with ctx.cameras.add_view and moved each frame 4.6 m behind the player, 2.6 m up, 2.6 m to the right, aimed at the midpoint between fighters, framed so the player covers 0.25 of frame height; occluder fade on for masts with both duellists as subjects. V cycles a side two-shot and a fixed wide view of the whole ring.",
+  "ai": "brain.gd from the house game, unchanged tiers (rung 1: react 30, defend 0.30, read 0.10, return 36; rung 2: 22/0.45/0.30/28; rung 3: 18/0.60/0.50/22; champion 15/0.70/0.65/18). Added: SPACING prefers a point inside the shade, weighted by the rival's archetype; RESET under 30 stamina walks toward shade. THE WALL (rung 1): a hulking secutor, scale 1.25, tower shield and mace, bronze helmet; absorbs; camps dead centre of the shade and walks behind his shield as it drifts; tell: a shoulder dip 24 f before his bash; taunts after 2 blocked hits; phase 2 under 50 %: he roars and throws 3 heavies, the second 18 f late. Scores: pounds his shield; beaten: drops to one knee in the sun. THE DUELIST (rung 2): a lean fencer in a crested helm with a rapier and buckler; parries the third chained light and heavies seen twice, ripostes with a heavy, feints into bash; fights on the shade edge, keeping you in sun; tell: taps his blade 24 f before his string. Scores: salutes; beaten: snaps his blade down. THE DANCER (rung 3): a small masked fighter with twin blades and ribbons; avoids with rolls and dodges, dips into shade for a few seconds then out; dash lights, roll-cut, 4-hit flurry, spin heavy with a 30 f coil; taunts after a flurry; rolls away under 40 stamina. Scores: spins in place; beaten: sits cross-legged. Ladder 3-5: all three at champion tier. Harder means faster reactions, more defence and reads, shorter return windows, never speed or damage. No rival idles over 2 s; it reads only visible animation states.",
+  "controls": "Six actions: move (W A S D, lock-on: always facing the rival), light (LMB or J, tap again as it ends to chain), heavy (RMB or K, hold past frame 20 for the charged unblockable), guard (SPACE or L, hold to block, tap to parry), evade (SHIFT: roll with W/S or none, dodge with A/D), bash (E, shoulder check). System keys: V cycles the camera, R or ENTER restarts or climbs to the next rival.",
+  "mood": "Blazing white noon over hot ochre sand and a cool blue-violet shade stripe in the global inked toon look; red-and-cream sail cloth flapping, cicadas, sailors' rope creaks and work chants, steel rings on hits and a horn at high noon."
+ },
+ "estimate": {
+  "packages": 8,
+  "wallMinutes": 240,
+  "tokens": 3500000
+ },
+ "runs": [
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 55018,
+   "tokensIn": 24705,
+   "tokensOut": 4487
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 202621,
+   "tokensIn": 98418,
+   "tokensOut": 21729
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 9191,
+   "tokensIn": 3208,
+   "tokensOut": 586
+  },
+  {
+   "mode": "generate",
+   "model": "claude-opus-5-5",
+   "outcome": "ok",
+   "durationMs": 15289,
+   "tokensIn": 28716,
+   "tokensOut": 1031
+  }
+ ],
+ "failed": []
+}

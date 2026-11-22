@@ -159,3 +159,9 @@ tofu bot presses every verb.
   standard ones as before). Its chosen `hook` must not share more than 40 % of its content words with an earlier hook
   (the sentence's own words do not count); an answer that does is sent back. The core template stays the same.
 ```
+
+# Loop round 6 (22 Nov 03:30-03:50): builders copy the house game's numbers
+
+No contract change. The builder's template excerpt adds "The house game's numbers to copy (read from the pack now)":
+the duel's `data/tuning.json` `camera` object, `scripts/feel.gd` PUSHBOX (0.45 m per duellist at scale 1), and the
+never-idle limit of `scripts/brain.gd` (120 frames). Read live, so a retuned house game reaches the next job.
