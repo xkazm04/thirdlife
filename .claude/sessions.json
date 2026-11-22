@@ -1,6 +1,5 @@
 {
   "sessions": [
-    {"id": "n23-method", "scope": ["docs/design/**", "docs/GAME-QUALITY.md", "foreman/**", "engine/cards/**", "devx/lib/cards/**"], "note": "night 23 Nov N2: design method + editor prompts, until 08:00"},
     {"id": "n23-world", "scope": ["engine/kernel/world/home/**", "engine/kernel/world/land/**", "engine/kernel/world/draw/**", "engine/kernel/world/terrain/**", "engine/kernel/world/landscape.gd", "engine/kernel/world/tiers.gd", "engine/style/shaders/toon_cel.gdshader", "engine/style/shaders/toon.gdshader", "engine/style/STYLE.md"], "note": "night 23 Nov N3: world flicker and far structures, until 08:00"}
   ]
 }

@@ -1,11 +1,35 @@
 N2 method: REPORT, night of 22-23 Nov 2026 (19:12 to the last STANDUP line, CEST)
 Worktree n23-method. Route: Opus solo, with two read-only web-research subagents (craft and process; the two cases).
 Nothing committed by me; the Director landed round 1 (a9b5447), round 2 (42b1097), round 3 (85d9953), round 4
-(6be8539; JOB.md tell_min_f >= 20 in 2599ebe) and round 5 (5910b8a). Round 6 is in this tree.
+(6be8539; JOB.md tell_min_f >= 20 in 2599ebe), round 5 (5910b8a) and round 6 (f4f71d2; JOB.md worded in b925a54).
+All six rounds are on main; nothing of this lane is left unlanded but this report.
 
 Nobody has played anything this lane made: it is a method, prompts and checks. No Foreman build job was started; the two
 dry runs used the FAKE adapter (and, for the playtest card, the FAKE runner on a test fixture), so no model was called,
 nothing was billed and nothing was built.
+
+=====================================================================================================================
+FOR THE OWNER'S VERDICT PAGE
+=====================================================================================================================
+The editor's stance, before and after. Before tonight the editor designed a game by filling a checklist and passed it
+on bot figures: a design was "done" when every field was filled, a build when its tofu bot's metrics were in band and
+it looked as good as our house game, which was "the bar". Tonight the test became "a person wants to play it again":
+every design now starts from the player's fantasy and states the size of its world in the player's units, the
+reference game's moment it copies, the first 30 seconds as a newcomer meets them, and what a person would see that
+kills it (FANTASY, WORLD, TEARDOWN, 30 SECONDS, KILL IF, checked by the Foreman); the first phase is a greybox a
+person plays with a playtest card; the critic can fail a game but never pass its fun; and our house hockey and duel,
+which you called slop, are a working base for the engine and a floor, while the bar is the reference game's numbers
+and the teardown's "do not copy" lines. Nobody has played anything built this way yet.
+
+Asks:
+1. The person gate: with run_through the Foreman passes its own phases. Should it still stop after the FIRST phase (the
+   greybox) for your pass or hold? Recommended: yes; it is the one stage only a person can pass (METHOD.md 10).
+2. JOB.md design keys versus labelled lines: the five method stages live tonight as labelled lines at the head of
+   brief.rules (no contract change). Make them keys of brief.design (fantasy, world, teardown[], thirty_s, kill[]) so
+   readers and the village site can show them, or keep the lines?
+3. The house duel now fails tell 20: its chained lights wind up 12 frames, under a person's reliable reaction, and the
+   editor now refuses that floor (checklist item 11, tofu row tell_min_f >= 20). Slowing its rival's tells (and, per the
+   duel teardown, putting them in the body instead of words over the head) is the duel's next change, not tonight's.
 
 =====================================================================================================================
 OUTCOME AGAINST THE ACCEPTANCE
@@ -205,19 +229,17 @@ FOR THE OWNER (how to look)
 - Read docs/design/METHOD.md sections 1 to 3 (5 minutes): the test, the evidence, the stages.
 - Read docs/design/CASES.md: each case's "Stage 4: the 30-second test" and "Stage 8: kill criteria" are what you would
   check with your hands; "What our build did instead" says where we went wrong.
-- The next editor job (when you allow one) shows you, before you approve, the FANTASY, TEARDOWN, 30 SECONDS and KILL IF
+- The next editor job (when you allow one) shows you, before you approve, the FANTASY, WORLD, TEARDOWN, 30 SECONDS and KILL IF
   lines ("foreman status": paper lines), and at the first phase pause the playtest card.
 
 =====================================================================================================================
 QUESTIONS AND PROPOSALS FOR THE DIRECTOR (contracts are Director-only)
 =====================================================================================================================
-1. ASK FOR THE OWNER: the person gate. With run_through the Foreman passes its own phases (JOB.md 2026-11-20). Should it
-   still pause after the FIRST (greybox) phase for a person's pass or hold (METHOD.md section 10)? Recommended: yes.
-2. JOB.md proposal: brief_set.brief.design could carry the method stages as keys (fantasy, teardown[], thirty_s, kill[])
-   instead of labelled lines in brief.rules; the readers (job-events schema, job_model.gd, event_schema.gd) would follow.
-   Held by the Director for the verdict; tonight's labelled lines need no contract change.
-3. DONE in round 4 on the Director's word: tell_min_f >= 20. JOB.md's 2026-11-22 paragraph still reads "`tell_min_f`
-   >= 12": that sentence is the Director's to update. The house duel (12) now fails item 11: its next change.
+1. ASK FOR THE OWNER (verdict page, ask 1): the person gate after the first phase with run_through.
+2. ASK FOR THE OWNER (ask 2): JOB.md design keys versus the labelled rules lines; the readers (job-events schema,
+   job_model.gd, event_schema.gd) would follow a key change.
+3. DONE (rounds 4 and 6, JOB.md worded by the Director in 2599ebe and b925a54): tell_min_f >= 20; a copied move's
+   wind-up may be slower than the house game's up to the bar. The house duel now fails item 11 (ask 3).
 4. CARDS.md proposal: recipe cards could carry a card's own FANTASY and KILL IF lines, so a card-built game starts from
    a tested fantasy (engine/cards is in my scope, the card schema is a contract).
 
