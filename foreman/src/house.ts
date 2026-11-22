@@ -18,6 +18,10 @@ export interface HouseBot {
   args: string[];
   /** metric id -> a path in the report: "pack_state.x", "result.x", or "keys:pack_state.x" (how many keys have a count above 0). */
   map: Record<string, string>;
+  /** The TLHand profile the bot plays through (said in every comparison). */
+  hand: string;
+  /** Round 2: the house game's own exchange filmed as a motion strip for the critic: a drill bot and a camera. */
+  strip?: { test: string; cam: string; args: string[]; label: string };
 }
 
 /** The house games' measuring bots (their own names, read from the packs on 22 Nov). */
@@ -25,14 +29,20 @@ export const HOUSE_BOTS: Record<string, HouseBot> = {
   duel: {
     pack: "duel",
     test: "tests/bot_checklist_wall.gd",
+    hand: "regular",
     args: ["--seed=1", "--frames=36000"],
-    map: { idle_max_f: "pack_state.rival_passive_max", tell_min_f: "pack_state.rival_tells_min", contact_types: "keys:pack_state.kinds", one_sided_contacts: "pack_state.failures" },
+    // Read from the real runner on 22 Nov 02:00: the pilot's result carries these (the verify report has no pack_state).
+    // contact_types is left out: the house game counts every 6.3 row (and ko, absorbed); a build's own names are coarser.
+    map: { idle_max_f: "result.rival_passive_max|pack_state.rival_passive_max", tell_min_f: "result.rival_tells_min|pack_state.rival_tells_min", one_sided_contacts: "result.failures|pack_state.failures" },
+    strip: { test: "tests/bot_contact_heavy_block.gd", cam: "side", args: ["--seed=1"], label: "a heavy blocked: both freeze 6 frames, the defender slides back in blockstun, the attacker's blade bounces off and he rebounds 40 frames" },
   },
   arcade_sport: {
     pack: "hockey",
     test: "tests/bot_ladder_pro_regular.gd",
+    hand: "regular",
     args: ["--seed=1"],
-    map: {},
+    // N3's tests/metrics.gd in the ladder bot's result (main b024967): possession lengths in frames.
+    map: { possession_median_f: "median:result.metrics.lengths" },
   },
 };
 
@@ -46,6 +56,22 @@ export interface HouseBaseline {
   /** The bot report it was read from (job-relative), or why there is none. */
   from?: string;
   note?: string;
+  /** Round 2: the house game's exchange as motion strips (job-relative), filmed once; [] when it could not be. */
+  strips?: { capture: string; label: string }[];
+}
+
+/** The frame of the first contact a house drill logged (pack_state.log[0].f), else 60 frames before the bot finished. */
+export function contactFrame(report: unknown): number | undefined {
+  const r = report as { pack_state?: { log?: { f?: unknown }[] }; bot?: { frames?: unknown; result?: { contact?: { f?: unknown } } } } | undefined;
+  const f = r?.bot?.result?.contact?.f ?? r?.pack_state?.log?.[0]?.f; // the duel's drill reports result.contact.f
+  if (typeof f === "number" && Number.isFinite(f)) return f;
+  const done = r?.bot?.frames;
+  return typeof done === "number" && Number.isFinite(done) ? Math.max(1, done - 60) : undefined;
+}
+
+/** Writes the job's house baseline back (after its strips were filmed). */
+export function saveBaseline(h: Pick<GateHost, "dir">, base: HouseBaseline): void {
+  fs.writeFileSync(h.dir("reports", `house-${base.pack}.json`), JSON.stringify(base, null, 1) + "\n");
 }
 
 const dig = (o: unknown, at: string): unknown => at.split(".").reduce<unknown>((x, k) => (x !== null && typeof x === "object" ? (x as Record<string, unknown>)[k] : undefined), o);
@@ -60,8 +86,13 @@ export function houseFigures(report: unknown, bot: HouseBot): { metrics: Record<
   for (const [id, at] of Object.entries(bot.map)) {
     if (out[id] !== undefined) continue;
     const keys = at.startsWith("keys:");
-    const v = dig(src, keys ? at.slice(5) : at);
-    if (keys && v !== null && typeof v === "object") out[id] = Object.values(v as Record<string, unknown>).filter((x) => typeof x === "number" ? x > 0 : x !== undefined && x !== null).length;
+    const median = at.startsWith("median:");
+    const paths = (keys ? at.slice(5) : median ? at.slice(7) : at).split("|");
+    const v = paths.map((x) => dig(src, x)).find((x) => x !== undefined);
+    if (median) {
+      const xs = (Array.isArray(v) ? v : []).filter((x): x is number => typeof x === "number" && Number.isFinite(x)).sort((a, b) => a - b);
+      if (xs.length > 0) out[id] = xs.length % 2 === 1 ? (xs[(xs.length - 1) / 2] as number) : ((xs[xs.length / 2 - 1] as number) + (xs[xs.length / 2] as number)) / 2;
+    } else if (keys && v !== null && typeof v === "object") out[id] = Object.values(v as Record<string, unknown>).filter((x) => typeof x === "number" ? x > 0 : x !== undefined && x !== null).length;
     else if (!keys && typeof v === "number" && Number.isFinite(v)) out[id] = v;
   }
   const handOwn = (own as Record<string, unknown> | undefined)?.["hand"];
@@ -85,7 +116,7 @@ export async function houseBaseline(h: GateHost, template: ConceptTemplate | und
   else {
     const vr = await h.verifyLogged({ verb: "bot", args: [`--test=${bot.test}`, ...bot.args] }, packDir, `house-${bot.pack}`, { round: 1 });
     const fig = houseFigures(vr.report, bot);
-    base = { ...base, ...fig, from: h.rel(vr.reportFile), ...(vr.ok ? {} : { note: `the house bot did not pass: ${vr.summary.slice(0, 200)}` }) };
+    base = { ...base, hand: bot.hand, ...fig, from: h.rel(vr.reportFile), ...(vr.ok ? {} : { note: `the house bot did not pass: ${vr.summary.slice(0, 200)}` }) };
   }
   fs.mkdirSync(h.dir("reports"), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(base, null, 1) + "\n");

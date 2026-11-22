@@ -31,8 +31,8 @@ export interface TofuMetric {
 /** The six checklist items of the tofu stage (GAME-QUALITY.md section 12), as bot metrics. */
 export const TOFU_METRICS: TofuMetric[] = [
   { id: "feedback_f", item: "1 feedback within 3 f", max: 3, how: "over every press of the core verb: the most frames from the press to the first frame the player's body or weapon visibly changed" },
-  { id: "skill_spread", item: "3 an analogue skill dimension", min: 0.25, how: "(best mean outcome - worst mean outcome) / best mean outcome over the input variants the bot tried (timing, spacing, charge, angle); outcome = damage, knockback or frame advantage" },
-  { id: "skill_variants", item: "3 an analogue skill dimension", min: 3, how: "how many input variants skill_spread compared" },
+  { id: "skill_spread", item: "3 an analogue skill dimension", min: 0.25, max: 0.95, how: "(best mean outcome - worst mean outcome) / best mean outcome over variants of the CORE verb alone (the same light or heavy pressed at another timing, spacing, charge or angle; a different move such as a bash is NOT a variant), each mean over at least 5 tries; outcome = damage, knockback or frame advantage. 1.0 means a variant that never works: that is a different verb, not skill" },
+  { id: "skill_variants", item: "3 an analogue skill dimension", min: 3, how: "how many variants of the core verb skill_spread compared, each tried at least 5 times" },
   { id: "idle_max_f", item: "9 no idle opponent", max: 120, how: "the longest run of frames any opponent spent with no action (not moving with intent, not attacking, not defending)" },
   { id: "tell_min_f", item: "11 tells of 12 f or more", min: 12, how: "over every dangerous opponent action that started: the fewest frames from the first frame of its tell pose to its first active frame" },
   { id: "tells", item: "11 tells of 12 f or more", min: 3, how: "how many dangerous opponent actions tell_min_f counted" },

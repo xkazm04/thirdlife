@@ -95,3 +95,22 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   re-plan) has 20 minutes unless `foreman plan --timeout-ms N` (or `--planner-timeout-ms N`) says otherwise; `run` and
   `resume` take `--planner-timeout-ms N` for a re-plan (their `--timeout-ms` stays the builder's). Contracts name the
   house game's files and rows instead of retyping its tables.
+
+# Loop round 2 (22 Nov 01:50-02:15): the critic sees the house game's own exchange
+
+## 5. contracts/JOB.md: append to the house-baseline paragraph
+
+```markdown
+- **The house strip.** When a look films motion strips, the Foreman also films the house game's exchange once per job:
+  it plays the house drill bot on `ref/packs/<pack>/` (duel: `tests/bot_contact_heavy_block.gd`, stem
+  `house-<pack>-drill`), takes the contact frame from the bot result (`contact.f`; else 60 frames before the bot
+  finished) and captures one strip from 15 frames before it (camera `side`, stem `house-<pack>-strip`) into
+  `reports/house-<pack>/strip-<cam>-f<from>.png`, kept in `reports/house-<pack>.json` as `strips` ([] when it could not
+  be filmed). The critic gets it as the last image, labelled `HOUSE GAME engine/packs/<pack> (the bar, not this build)`,
+  and the `house_game` item asks it to set the build's strips beside it.
+- **The house figures** are read from the house bot's result first (the duel pilot returns `rival_passive_max`,
+  `rival_tells_min`, `failures` in its result; the verify report carries no `pack_state`), then from `pack_state`.
+  `contact_types` is not compared: the house game counts every 6.3 row, a build its own coarser names.
+- **`skill_spread` passes from 0.25 to 0.95** (was >= 0.25) and counts variants of the core verb only: the crazy
+  colosseum proof of 22 Nov reported 1.0 by counting a bash (0 damage) as a variant of its light.
+```
