@@ -129,7 +129,7 @@ export interface Verdict {
 const scoresText = (v: Pick<Verdict, "scores">): string => Object.entries(v.scores).map(([k, x]) => `${k} ${x}`).join(", ");
 
 /** The critic on a look: stills and strips together, the strips labelled as such. Undefined when it gave no usable answer or did not run. */
-export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[], lastPackage: string, round: number, house?: { line: string; pack: string; strips?: { capture: string; label: string }[] }): Promise<{ verdict?: Verdict; line: string }> {
+export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[], lastPackage: string, round: number, house?: { line: string; pack: string; strips?: { capture: string; label: string }[] }, claims?: string): Promise<{ verdict?: Verdict; line: string }> {
   if (film.captures.length + film.strips.length === 0 || h.o.critic === false) return { line: "critic not run" };
   const model = h.o.criticModel ?? h.o.model;
   const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : []), ...(house !== undefined ? [houseItem(house.pack)] : [])];
@@ -141,7 +141,7 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   const labels = all.map((x) => x.label);
   const res = await critic(h.o.builder, images.map((c) => h.dir(c)), rubric, {
     ...(model ? { model } : {}),
-    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
+    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, claims !== undefined ? claims : "", house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
     packages: packageLinesOf(h.s, h.s.plan.map((p) => p.id)),
     labels,
   });
@@ -153,6 +153,16 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   if (!res.ok) return { line: `critic (V5) gave no usable answer: ${clip(res.reason, 200)} [${h.rel(file)}]` };
   const verdict: Verdict = { ok: res.value.ok, scores: res.value.scores, notes: res.value.notes, ...(res.value.package !== undefined ? { package: res.value.package } : {}), report: h.rel(file) };
   return { verdict, line: verdictText(verdict) };
+}
+
+/**
+ * N4 loop round 12: the tofu bot's figures are its own claims. The critic gets them and checks them against the strips
+ * (proof -3: the bot reported idle_max_f 37 while two of its strips held both fighters still for 55+ frames).
+ */
+export function claimsLine(built: TofuResult | undefined): string | undefined {
+  const rows = (built?.rows ?? []).filter((r) => r.value !== undefined);
+  if (rows.length === 0) return undefined;
+  return `The tofu bot's own figures (claims, counted by the build's bot, not by the Foreman): ${rows.map((r) => `${r.id} ${r.value}`).join(", ")}. Where a strip contradicts one (a fighter standing still for more than 120 frames against idle_max_f, no parry or roll in any strip against verbs_used, no held tiles on a contact strip against the hit-stop), write a note that starts "claim contradicted:" with the figure and the image.`;
 }
 
 /** N4 loop round 2: the rubric item of a job whose template has a house game: this build against the house game. */
@@ -338,7 +348,7 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
   const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes) : [];
-  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined), tofu);
+  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined, claimsLine(built)), tofu);
   const fresh = judged.verdict;
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;
