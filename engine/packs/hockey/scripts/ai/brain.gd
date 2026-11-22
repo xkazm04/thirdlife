@@ -99,6 +99,8 @@ func think(frame_no: int, env: Dictionary) -> void:
 		for id: String in roles.field[team]:
 			@warning_ignore("integer_division")
 			var scheduled := (frame + slot * 15 / 6) % 15 == 0
+			if now.car == id and (frame + slot * 15 / 6) % 15 == 7:
+				scheduled = true                    # round 3 (22 Nov): the carrier looks again every 7-8 frames (twice the off-puck rate)
 			slot += 1
 			if id == "b0" and not env.autopilot:
 				roles_now.erase(id)
