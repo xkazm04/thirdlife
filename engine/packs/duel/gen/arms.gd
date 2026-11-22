@@ -29,12 +29,12 @@ static func attach(rig, kind: String) -> Node3D:
 	var node := Node3D.new()
 	node.name = "Arm_" + kind
 	match kind:
-		"helm":                                      # the Wall: a bucket helm over the whole head, a T visor slit, a ridge
+		"helm":                                      # the Wall: a bucket helm over the head, a T visor slit, a ridge (round 10: smaller)
 			mk.push_at(Vector3.ZERO, Vector3(-90, 0, 0))     # the head socket: +X his right, +Y back, +Z down (probe, round 9): build Y up, -Z face
-			mk.rbox(Vector3(0.64, 0.56, 0.62), "steel_dark", Color.WHITE, 0.08, Vector3(0, -0.27, 0))
-			mk.box(Vector3(0.44, 0.05, 0.04), "black", Color.WHITE, 0.0, Vector3(0, -0.3, -0.31))
-			mk.box(Vector3(0.06, 0.2, 0.04), "black", Color.WHITE, 0.0, Vector3(0, -0.4, -0.31))
-			mk.box(Vector3(0.07, 0.08, 0.6), "steel_light", Color.WHITE, 0.02, Vector3(0, 0.02, 0))
+			mk.rbox(Vector3(0.58, 0.52, 0.58), "steel_dark", Color.WHITE, 0.08, Vector3(0, -0.27, -0.08))
+			mk.box(Vector3(0.4, 0.045, 0.04), "black", Color.WHITE, 0.0, Vector3(0, -0.29, -0.37))
+			mk.box(Vector3(0.05, 0.18, 0.04), "black", Color.WHITE, 0.0, Vector3(0, -0.39, -0.37))
+			mk.box(Vector3(0.06, 0.07, 0.56), "steel_light", Color.WHITE, 0.02, Vector3(0, 0.0, -0.08))
 			mk.pop()
 		"pauldrons":
 			for sx: float in [-1.0, 1.0]:
@@ -53,12 +53,14 @@ static func attach(rig, kind: String) -> Node3D:
 			mk.hull([Vector3(-0.3, 0.05, 0.12), Vector3(0.3, 0.05, 0.12), Vector3(-0.3, 0.05, 0.16), Vector3(0.3, 0.05, 0.16),
 				Vector3(-0.42, -1.0, 0.24), Vector3(0.42, -1.0, 0.24), Vector3(-0.42, -1.0, 0.28), Vector3(0.42, -1.0, 0.28)], "black")
 			mk.pop()
-		"hood":                                      # the Dancer: a hood framing the face, two long ribbons flaring behind
+		"hood":                                      # the Dancer (round 10): a headband, a high ponytail, two ribbons from the knot
 			mk.push_at(Vector3.ZERO, Vector3(-90, 0, 0))
-			mk.rbox(Vector3(0.74, 0.5, 0.56), "neon_pink", Color.WHITE, 0.16, Vector3(0, -0.12, 0.18))
+			mk.cyl(0.33, 0.08, 16, "neon_violet", Color.WHITE, -1.0, Vector3(0, -0.2, 0.04))
+			mk.capsule(Vector3(0, 0.02, 0.14), Vector3(0, 0.3, 0.3), 0.09, "neon_pink")
+			mk.capsule(Vector3(0, 0.3, 0.3), Vector3(0, 0.12, 0.62), 0.075, "neon_pink")
 			for sx: float in [-1.0, 1.0]:
-				mk.hull([Vector3(0.2 * sx, -0.3, 0.3), Vector3(0.3 * sx, -0.3, 0.3), Vector3(0.24 * sx, -0.34, 0.34),
-					Vector3(0.5 * sx, -1.0, 0.55), Vector3(0.6 * sx, -0.98, 0.52), Vector3(0.56 * sx, -1.04, 0.6)], "neon_violet")
+				mk.hull([Vector3(0.03 * sx, -0.2, 0.36), Vector3(0.09 * sx, -0.2, 0.36), Vector3(0.05 * sx, -0.24, 0.38),
+					Vector3(0.22 * sx, -0.8, 0.6), Vector3(0.3 * sx, -0.78, 0.58), Vector3(0.27 * sx, -0.84, 0.64)], "neon_violet")
 			mk.pop()
 		"sword":
 			_grip(mk, 0.2)

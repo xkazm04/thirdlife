@@ -19,6 +19,7 @@ var cam_look: Vector3 = Vector3.ZERO
 var views: Array = [&"duel", &"side", &"arena"]
 var view_i: int = 0
 var side_sign: float = 1.0
+var cam_side: float = 1.0                ## the play camera's shoulder: 1 right, -1 left (round 10: it swings at the wall)
 var flames: Array = []                 ## [node, frames left]
 var ko_left: int = 0                    ## frames the KO camera still holds
 var ko_body = null                     ## the fighter who fell
@@ -180,12 +181,26 @@ func _camera() -> void:
 	# right shoulder, far enough back that both bodies, the gap between them and his wind-up are always on screen (the
 	# old over-the-shoulder view put your head over his weapon in half the frames)
 	var gap: float = Vector2(r.x - p.x, r.z - p.z).length()
-	var a: float = deg_to_rad(float(c["angle"]))
-	var back_dir: Vector3 = -fwd * cos(a) + right * sin(a)
 	var pivot: Vector3 = p.lerp(r, float(c["look_at"]))
-	var want: Vector3 = pivot + back_dir * (float(c["dist"]) + gap * float(c["dist_k"])) + Vector3.UP * float(c["up"])
+	var back: float = float(c["dist"]) + gap * float(c["dist_k"])
+	# at the ring wall (round 10): swing round the pair to the shoulder that stays inside the ring, then a lower angle,
+	# and only last pull in and look down; the camera never goes over the stands, and it never looks straight down
+	var want: Vector3 = Vector3.ZERO
+	var picked: bool = false
+	for deg: float in [float(c["angle"]) * cam_side, -float(c["angle"]) * cam_side, 20.0 * cam_side, -20.0 * cam_side]:
+		var a: float = deg_to_rad(deg)
+		var w: Vector3 = pivot + (-fwd * cos(a) + right * sin(a)) * back + Vector3.UP * float(c["up"])
+		if Vector2(w.x, w.z).length() <= float(c["max_r"]):
+			want = w
+			picked = true
+			if deg == -float(c["angle"]) * cam_side:
+				cam_side = -cam_side                    # stay on the new shoulder until that one meets the wall
+			break
+	if not picked:
+		var a2: float = deg_to_rad(float(c["angle"]) * cam_side)
+		want = pivot + (-fwd * cos(a2) + right * sin(a2)) * back + Vector3.UP * float(c["up"])
 	var flat: float = Vector2(want.x, want.z).length()
-	if flat > float(c["max_r"]):                    # never over the stands or into the banners (round 9): pull in, look down steeper
+	if flat > float(c["max_r"]):                    # the last resort: pull in, look down a little steeper
 		var over: float = flat - float(c["max_r"])
 		want = Vector3(want.x * float(c["max_r"]) / flat, want.y + over * float(c["rise_k"]), want.z * float(c["max_r"]) / flat)
 	var look: Vector3 = pivot + Vector3.UP * float(c["look_up"])
@@ -211,6 +226,7 @@ func _camera() -> void:
 
 func snap_camera() -> void:
 	cam_pos = Vector3.ZERO
+	cam_side = 1.0
 	if ko_left > 0 or g.ctx.cameras.active == g.ctx.cameras.view(&"ko"):
 		ko_left = 0
 		g.ctx.cameras.activate(ko_prev)

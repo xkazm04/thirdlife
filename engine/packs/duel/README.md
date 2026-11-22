@@ -76,9 +76,10 @@ frames: parried, blocked_heavy, clash, guard_break, wall_splat, hit_heavy, ko) s
 closed bucket helm with a T visor and pauldrons, the Duelist a wide-brimmed black hat with a gold band, a red plume and
 a black cape, the Dancer a pink hood with two violet ribbons. You keep your hair. Both sockets turn their axes (+X right,
 +Y back, +Z down, found with a probe), so the gear is built Y-up, face -Z and turned -90 degrees about X. The round-1
-name card sits at the bottom so the intro shot keeps his face clear. The play camera stays within `camera.max_r` (8.9
-m) of the centre and looks down steeper instead (`rise_k`): near the wall it no longer goes over the stands into the
-banners.
+name card sits at the bottom so the intro shot keeps his face clear. At the ring wall the play camera swings round the pair to
+the shoulder that stays inside `camera.max_r` (9.2 m), then to a lower angle, and only last pulls in and looks down a
+little (`rise_k` 0.35) (round 10: it no longer goes over the stands into the banners, nor looks down on his hat). Round
+10 also made the Wall's helm head-sized and gave the Dancer a headband and a high ponytail instead of the hood.
 
 ## The blow that ends a round (`tuning.json` "ko")
 The round-ending blow holds the longest hit-stop the kernel allows (20 frames), then the camera cuts low beside the
