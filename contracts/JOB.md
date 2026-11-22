@@ -481,3 +481,7 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   package's own bot films two moments (the first of each kind first, each at least 31 frames in); the pack's first test
   keeps its 25 % frame (the art-pass compare looks at the same frame milestone to milestone) and films its first moment
   second. The tofu bot reports `moments` beside `metrics`.
+  A filmed point that is a bot moment gets a CONTACT strip: 12 frames 2 apart from 10 frames before the moment
+  (`--strip=12x2`), labelled with the moment's frame, so a hit-stop of 6 frames holds both bodies still over 3 tiles.
+  The house strip is a contact strip too (10 frames before the house drill's contact). Other points keep 12 x 5 from
+  30 before.
