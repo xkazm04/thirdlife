@@ -54,6 +54,11 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-22 ~18:35 (owner, after playing the day's exe; verbatim in docs/shifts/2026-11-23-night/PLAN.md): the World
+  is "very nice" but objects blink at the ground and between distance levels, with incomplete far structures; Create
+  cannot start a new idea; "Hockey is unplayable garbage"; thirdjam is the floor; NO new minigame development until we
+  research how games are designed and build "processes and prompts to go much deeper in game design". Night handshake
+  ~19:05: all four lanes (teardown, method, world flicker, Create fix), land by 08:00, everything lands.
 - 2026-11-22 ~10:30 (owner, on the night verdict of 22 Nov; verbatim: "A. Keep duel as is, we will return there later
   2.Keep bots as is for now, land 'pass out of pressure' once E6 is fidex 3. Home - A 4. Accept for now, the game does
   not play well but I will need to think more before next directions 5. PACK.md per your recmmomendation"):
@@ -298,3 +303,8 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 17:00-18:30 verdict: lanes done (D1 efbf00f/2fdaee0, D2 2fdfef2/59ada89, D3 9f7f077..6fb5ea3). Final list at 48c4f59 in
   d22-int: full gate green but hockey many_budget (1.072 ms, busy), uncapped kernel 492/0, perf 6/6 quiet, export + check;
   packs alone stopped by low memory (not re-run). Page https://claude.ai/artifact/Hzud79BFgAamu4A5yS35dg. Claims released, timers deleted. Hockey jobs -2/-3 held for the owner.
+
+### 2026-11-23 night: plan (research before any more game building)
+- Lanes launched 19:12: N1 thirdjam teardown (Opus, research only), N2 game-design method + editor prompts (Opus, web
+  research), N3 World flicker and far structures (Opus-directed Astra), N4 Create fix (Opus). Standups :17; lanes stop
+  06:45; verdict 07:15; push by 08:00. Plan: docs/shifts/2026-11-23-night/PLAN.md.
