@@ -42,7 +42,7 @@ test("round 8: a job's look films the frames its bot reported (FAKE_METRICS mome
   lines[3] = JSON.stringify(plan);
   fs.writeFileSync(file, lines.map((l) => l + "\n").join(""));
   const base = scriptWith().steps.find((x) => x.match?.package === "core") as FakeStep;
-  const metrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 60, tell_min_f: 18, tells: 6, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 2, hand: "regular", moments: { parried: [200], hit: [350, 380] } };
+  const metrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 60, tell_min_f: 24, tells: 6, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 2, hand: "regular", moments: { parried: [200], hit: [350, 380] } };
   const core: FakeStep = { ...base, write: { ...(base.write ?? {}), "tests/bot_rally.gd": ((base.write ?? {})["tests/bot_rally.gd"] as string).replace(/# FAKE_METRICS\(.*\)\n/, "") + `# FAKE_METRICS(${JSON.stringify(metrics)})\n` } };
   const { foreman } = foremanFor(job, { promoteTo: "job", script: scriptWith([core]) });
   assert.equal((await foreman.run()).jobState?.state, "done");

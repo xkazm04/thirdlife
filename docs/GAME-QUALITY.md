@@ -193,7 +193,7 @@ Builder:
     stuns him, a clash rebounds both.
 16. A miss plays its recovery and its own sound, with no burst and no shake.
 17. Defensive verbs are invulnerable from frame 1 for their sheet frames, and show it in their clip.
-18. Rival attacks show a wind-up of at least 20 f in the body (12 f for a chained follow-up that must be read), are
+18. Rival attacks show a wind-up of at least 20 f in the body (a chained follow-up too: 20 f is a person's reliable reaction, and 12 was damage from nowhere; 23 Nov), are
     active 2-4 f, and leave a punish window.
 19. Visible feedback within 3 f of the press, the full pose by 6 f; shake only on meaningful hits, decaying.
 20. The camera is never behind scenery and keeps both fighters in frame; fighters never overlap (colliding capsules,
@@ -286,7 +286,7 @@ critic, the card's hand checks (`tl ladder`), or a person.
 | 8 | The perfect hand keeps a ceiling (score still rising across levels) | [B] | `tl ladder` |
 | 9 | Every opponent acts: none idle > 2 s | [B] | tofu bot `idle_max_f` |
 | 10 | >= 2 opponent archetypes with distinct documented rules | [B] | design review (the template's archetypes) |
-| 11 | Each dangerous opponent action has a tell >= 12 frames before it lands | [C] | tofu bot `tell_min_f`; critic on strips |
+| 11 | Each dangerous opponent action has a tell >= 20 frames before it lands (a person's reliable reaction; 23 Nov, was 12) | [C] | tofu bot `tell_min_f`; critic on strips |
 | 12 | Pressure in waves: >= 2 peaks and troughs per match | [B] | tofu bot `pressure_waves` |
 | 13 | Most losses have a visible, nameable cause | [C]; [H] | critic, person |
 | 14 | No hidden cheating: AI within player limits; any catch-up is a visible rule | [B] | design review; builder rule |
@@ -420,7 +420,7 @@ in an empty room. Our first phase is the tofu stage.
   | `skill_spread` | 3 | 0.25 to 0.95 | the bot plays the CORE verb with different inputs (timing, spacing, charge, angle; a different move is not a variant), each at least 5 times; (best mean outcome - worst mean outcome) / best mean outcome, the outcome being damage, knockback or frame advantage. 1.0 means a variant that never works (the crazy colosseum proof of 22 Nov counted a bash as a variant of its light and reported 1.0): that is another verb, not skill |
   | `skill_variants` | 3 | >= 3 | how many variants of the core verb `skill_spread` compared, each tried at least 5 times |
   | `idle_max_f` | 9 | <= 120 | the longest run of frames any opponent spent with no action (not moving with intent, not attacking, not defending) |
-  | `tell_min_f` | 11 | >= 12 | over every dangerous opponent action that started: the fewest frames from the first frame of its tell pose to its first active frame |
+  | `tell_min_f` | 11 | >= 20 | over every dangerous opponent action that started: the fewest frames from the first frame of its tell pose to its first active frame |
   | `tells` | 11 | >= 3 | how many dangerous opponent actions `tell_min_f` counted |
   | `pressure_waves` | 12 | >= 2 | opponent attacks started per 3 s (180-frame) window; a wave is a busy window (3 or more starts) after a quiet one (1 or fewer); the count of waves (the duel house game's definition, 22 Nov) |
   | `lead_change_share` | 15 | >= 0.30 | the bot plays at least 3 rounds; the share of rounds in which the lead changed hands at least once (the duel house game's definition, 22 Nov) |
