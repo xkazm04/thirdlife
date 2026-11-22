@@ -16,7 +16,7 @@ test("arcade_sport keeps the house camera and the readable puck: hockey -2's cam
   // hockey -2's own words (its brief's arena and design.feel.camera).
   const lowChase = "Low Chase Camera: ride right behind your skater with the net ahead. The camera sits low behind the player.";
   const problems = houseKeepProblems(lowChase, tpl);
-  assert.ok(problems.some((p) => /keeps the play camera: a broadcast camera from the near side looking DOWN/.test(p)));
+  assert.ok(problems.some((p) => /keeps the play camera bound to YOUR skater and raised/.test(p)));
   assert.ok(problems.some((p) => /keeps the puck and your skater readable at a glance/.test(p)));
   const house = "A broadcast camera looks down at 50 degrees from the near side and follows the puck. The puck is drawn bigger with a hot rim, and a green ring under your skater marks you. The puck sticks to the blade on a spring. Passing beats skating: the carrier is slower (x0.88). The AI scores SHOOT, PASS and CARRY every 15 frames with vetoes.";
   assert.deepEqual(houseKeepProblems(house, tpl), []);
@@ -24,7 +24,7 @@ test("arcade_sport keeps the house camera and the readable puck: hockey -2's cam
 
 test("the builder reads the house hockey's camera and puck look live from its data/tuning.json", () => {
   const ex = houseExcerpt(sport, "builder");
-  assert.match(ex, /- the play camera \(data\/tuning\.json `follow`[^\n]*: \{"fov":\d+,"pitch_deg":\d+/);
+  assert.match(ex, /- the house game's play camera \(data\/tuning\.json `follow`[^\n]*: \{"fov":\d+,"pitch_deg":\d+/);
   assert.match(ex, /- the readable puck and rings \(data\/tuning\.json `look`[^\n]*: \{"puck_scale":[\d.]+,"puck_height_scale":[\d.]+,"puck_rim":[\d.]+/);
   assert.doesNotMatch(ex, /"names":\{/, "only the puck and ring keys of `look`, not its labels");
 });

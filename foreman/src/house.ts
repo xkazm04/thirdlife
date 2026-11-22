@@ -1,4 +1,5 @@
 // N4 loop round 2 (22 Nov): the critic compares a built game with its template's HOUSE GAME, by the same metric names.
+// N2 of 23 Nov (round 5): the owner called both house games slop; the compare stays as a FLOOR check, never the bar.
 // Once per job the Foreman plays one bot of the house game (its reference copy ref/packs/<pack>/, the regular hand) and
 // keeps what it measured (reports/house-<pack>.json). The house bot reports either a `metrics` object in its result
 // under the tofu names (GAME-QUALITY.md section 12), or the figures its pack state carries, read through a map. At every
@@ -237,7 +238,7 @@ export function houseCompare(built: TofuResult | undefined, base: HouseBaseline,
   const line =
     cells.length === 0
       ? `house game engine/packs/${base.pack} (${base.test}): no figure to compare by the tofu names${base.note ? ` (${base.note})` : ""}`
-      : `house game engine/packs/${base.pack} (${base.test}${by}), yours vs the house game's: ${cells.join(", ")}${unmeasured.length > 0 ? `; the house game does not report ${unmeasured.join(", ")}${(base.skipped ?? []).length > 0 ? ` (it measures ${(base.skipped ?? []).join(", ")} another way)` : ""}` : ""}${shortIds.length > 0 ? `. SHORT of the house game on ${shortIds.join(", ")}: copy how engine/packs/${base.pack} does it` : ". Not short of the house game on any figure it reports"}`;
+      : `house game engine/packs/${base.pack} (${base.test}${by}), yours vs the house game's: ${cells.join(", ")}${unmeasured.length > 0 ? `; the house game does not report ${unmeasured.join(", ")}${(base.skipped ?? []).length > 0 ? ` (it measures ${(base.skipped ?? []).join(", ")} another way)` : ""}` : ""}${shortIds.length > 0 ? `. SHORT of the house game on ${shortIds.join(", ")}: reach at least its figure (how engine/packs/${base.pack} does it shows the engine calls); it is a floor, not the bar: the bar is the reference game (docs/design/CASES.md)` : ". Not short of the house game on any figure it reports"}`;
   const said = outsideRows.length > 0 ? `${line}. The house game itself sits outside the template's bound on ${outsideRows.join(", ")}: judged against the house figure` : line;
   return { rows: out, line: filmOnly.length > 0 ? `${said}. The build's own film contradicts its ${filmOnly.join(", ")} (no house figure to compare): short until the film agrees` : said, short: shortIds };
 }

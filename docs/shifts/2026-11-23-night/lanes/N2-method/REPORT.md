@@ -1,7 +1,7 @@
 N2 method: REPORT, night of 22-23 Nov 2026 (19:12 to the last STANDUP line, CEST)
 Worktree n23-method. Route: Opus solo, with two read-only web-research subagents (craft and process; the two cases).
-Nothing committed by me; the Director landed round 1 (a9b5447), round 2 (42b1097) and round 3 (85d9953). Round 4 is
-in this tree.
+Nothing committed by me; the Director landed round 1 (a9b5447), round 2 (42b1097), round 3 (85d9953) and round 4
+(6be8539; JOB.md tell_min_f >= 20 in 2599ebe). Round 5 is in this tree.
 
 Nobody has played anything this lane made: it is a method, prompts and checks. No Foreman build job was started; the two
 dry runs used the FAKE adapter (and, for the playtest card, the FAKE runner on a test fixture), so no model was called,
@@ -89,7 +89,7 @@ OUTCOME AGAINST THE ACCEPTANCE
    the concept, design and review prompts; the paper check in status) and dry-run-r3.txt (the fixture job-phases with
    method lines on the FAKE adapter and runner, run to its first phase pause: the playtest card).
 
-   Round 4 (the Director's go, 21:40):
+   Round 4 (the Director's go after round 3 landed):
    - WORLD, a fifth required method line: the size of the world in the player's units (body size, the arena in body
      widths or lengths, speeds in body lengths a second, the camera's distance in body heights), at most 45 words. A
      design without it, or with one that names no body unit (/body widths|lengths|heights/), is sent back (method.ts
@@ -102,9 +102,52 @@ OUTCOME AGAINST THE ACCEPTANCE
      lights), so it now fails item 11, and a build that copies it fails its tofu row; the duel is out of tonight's
      scope (no game work), so that is the next duel change, not tonight's.
 
+   Round 5 (the Director's go after round 4 landed): a house game is a working base, not the quality bar.
+   - Before (templates.ts houseExcerpt, pasted to the design step, the Planner and every builder):
+       "# The house game: engine/packs/<pack> (<game>), the reference implementation of this template
+        It is a tracked game of this engine that plays the template on the kernel, tuned there. Copy its rules, its
+        numbers and its structure; where its numbers differ from the research, the house game's win (they are
+        measured on this kernel)."
+     After:
+       "# The house game: engine/packs/<pack> (<game>), a working base on this engine, NOT the quality bar
+        It is a tracked game that runs this template on the kernel: read it for how the engine is driven (its files,
+        calls, data layout, the frame table the Foreman checks). The owner played it and called it slop (22 Nov), and
+        no person has accepted it since: its feel, timing, scale, camera and screen are a floor, not the bar. The bar
+        is the reference below ("The bar"): where the reference's numbers and the house game's differ, the
+        reference's win unless the design says why."
+     followed by "# The bar: the reference games, not the house game": 8 reference numbers per template (CASES.md) and
+     the teardown's top ten as "Do NOT copy these from the house game" lines (templates.ts `bar`, barLines).
+   - The arcade_sport bar takes the scale and the puck from thirdjam: contact radius 0.4 m, rink 90 x 45 m = 112 body
+     widths, cruise about 7 body heights a second, carrier x0.92, bots sprint, puck drag 0.5/s + friction 0.147 m/s^2,
+     a pass solved to arrive at 8 m/s, a snap shot cone of 8 degrees, the camera bound to you with an aim anchor,
+     mates who shoot, bots deciding every frame, one run to three goals, presentation-only hit-stop, nothing drawn at
+     a hit. Its camera keep changed from "a broadcast camera ... following the puck" to "the play camera bound to YOUR
+     skater and raised (behind and above, with an aim anchor), or a raised broadcast view that keeps you in one place;
+     never low behind the skater, never one that follows the puck and loses you". The house numbers `skater` and
+     `follow` are labelled as the house game's, with their faults named (body_scale 2.2; a camera on the puck).
+   - The duel bar: lights 24-30 frames, heavies 48-60, every dangerous tell >= 20, parry rewards 36/54, a shrinking
+     12-frame parry, i-frames about 28, hit-stop 6-8 / 12-16, an attack every 2-3 s, rounds 45-90 s and a waiting first
+     rival (both our calls, to test by hand), two bars.
+   - The floor stays: the frame check, the house compare and the house strip still run. Their words change: the
+     compare's "SHORT ... copy how engine/packs/<pack> does it" became "reach at least its figure (how ... does it shows
+     the engine calls); it is a floor, not the bar: the bar is the reference game (docs/design/CASES.md)"; the critic's
+     context "is the bar" became "is a floor, not the bar: a working base the owner called slop and no person has
+     accepted"; the strip label "(the bar, not this build)" became "(a floor, not the bar, not this build)"; the
+     house_game rubric item says "a FLOOR and not the bar ... Reaching the house game is not reaching the bar"; the
+     critic's context gains the template's "do not copy" lines (quality.ts barContext); the revise pair asks for "at
+     least like the house one" and not to copy what its teardown names.
+   - GAME-QUALITY.md section 11 ("Where the two differ, the house game wins") rewritten: "A house game is a working
+     base, not the quality bar"; the house numbers still win only on how the kernel is driven (pushbox, camera API, clip
+     clocks). planner.md and METHOD.md section 9 say the same.
+   - Open: the frame check still makes a copied duel move carry the house frames (light 18, heavy 32; JOB.md 2026-11-22
+     "a copied move is checked against the house game's own frame table"). The bar asks a rival's light for 24-30. A
+     design can meet both only by not copying the light; proposal for the Director: check a copied move against the bar
+     where the template has one, or let a verb carry frames at least the house game's.
+
 =====================================================================================================================
-GATES (round 4 tree)
+GATES (round 5 tree)
 =====================================================================================================================
+- npm test (foreman), round 5: 321 tests, 314 pass, 0 fail, 7 skip (22:10; +1 round-5 test). Fast tier 5/5 PASS.
 - npm test (foreman), round 4: 320 tests, 313 pass, 0 fail, 7 skip (21:46). Fast tier 5/5 PASS.
 - npm test (foreman), round 3: 319 tests, 312 pass, 0 fail, 7 skip (21:30). One earlier full run of the same tree had 2
   environment failures (robust.test "the child never appeared in the ledger"; wp3c.test cleanup "EPERM, Permission
@@ -113,6 +156,9 @@ GATES (round 4 tree)
 - Test expectations moved in round 4, with why: the passing tofu fixtures' tell_min_f 14/18 -> 22/24 (the floor is 20),
   including the shared fixture bot foreman/fixtures/job-paddle/fake-builder.json (18 -> 24; without it the cli test
   "new -> approve -> plan -> run" held at its tofu look, which showed the floor working);
+- Test expectations moved in round 5, with why (the stance changed, so the words did): d3_hockey's camera keep message
+  and the house numbers' label; n4_house's excerpt head, menu line, compare line, critic context and strip label. The
+  checks themselves (hockey -2's low chase camera fails; the house compare's SHORT rows) are unchanged.
   the failing fixture's message "wants >= 12" -> ">= 20"; the crazy colosseum proof's real figures (tell 12) now fail
   the tofu row, asserted as such, and pass with 20; n2 tests count five method lines. No test was loosened.
 - Fast tier: PASS arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, foreman.typecheck.
@@ -124,8 +170,8 @@ CHANGED FILES (all rounds)
 new:     docs/design/METHOD.md, docs/design/CASES.md, foreman/src/method.ts, foreman/src/test/n2_method.test.ts,
          lanes/N2-method/{STANDUP.md, REPORT.txt, dry-run-r1.txt, dry-run-r3.txt}
 changed: docs/GAME-QUALITY.md; foreman/fixtures/job-paddle/fake-builder.json; foreman/prompts/{concept,designer,design-review,critic,critic-compare,planner,builder}.md;
-         foreman/src/{designer,quality,room,roomtext,status,tofu}.ts;
-         foreman/src/test/{helpers,n4.test,n4_house.test,n4_moments.test,filmcheck.test,quality.test}.ts
+         foreman/src/{designer,quality,room,roomtext,status,tofu,templates,house,revisepair}.ts;
+         foreman/src/test/{helpers,n4.test,n4_house.test,n4_moments.test,filmcheck.test,quality.test,d3_hockey.test}.ts
 Prompt size: the designer prompt grows about 8 KB net (method 7990 chars in, GAME-QUALITY section 1's 3015 out).
 designer.ts is at 597 lines of its 600-line budget.
 

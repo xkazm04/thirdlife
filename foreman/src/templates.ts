@@ -8,6 +8,11 @@
 // design step and the Planner copy, its files are what the builders read (every job's ref/packs/<pack>/ holds a copy),
 // and its own data (the duel's data/moves.json) is the frame table the Foreman checks against: the house numbers are
 // tuned on the kernel, so where they differ from the research, the house game wins.
+// N2 of 23 Nov (round 5): the owner called both house games slop, and N1's teardowns showed why (the bodies, the
+// timing, the scale, the camera, the puck). A house game is now a WORKING BASE for the API (its files show how the
+// kernel is driven; the frame check and the house compare stay as a floor), NOT the quality bar until a person has
+// accepted it. The bar is the template's `bar`: the reference game's numbers (docs/design/CASES.md) and the teardown's
+// top ten as "do not copy" lines (docs/research/<kind>-teardown/TEARDOWN.md).
 import fs from "node:fs";
 import path from "node:path";
 import { REPO_ROOT, stripBom } from "./paths.js";
@@ -51,8 +56,20 @@ export interface Template {
   card?: string;
   /** N4 loop round 16: the moment kinds a look films first (a bot's `moments` keys or their prefixes), in order. */
   filmFirst?: string[];
-  /** The house game: the reference implementation the editor copies (N4 loop round 1). */
+  /** The house game: a working base on this engine (N4 loop round 1; N2 round 5: not the quality bar). */
   house?: House;
+  /** N2 round 5: the quality bar: the reference game's numbers and the teardown's "do not copy" lines. */
+  bar?: Bar;
+}
+
+/** The quality bar of a template (docs/design/CASES.md, docs/research/<kind>-teardown/TEARDOWN.md). */
+export interface Bar {
+  /** The teardown that set the house game beside the reference games. */
+  teardown: string;
+  /** The reference game's numbers a design starts from (each with its source). */
+  numbers: string[];
+  /** The teardown's top ten: what the house game does that a design must NOT copy. */
+  dont: string[];
 }
 
 /** A house game (engine/packs/<pack>): what to copy and where. */
@@ -140,6 +157,31 @@ export const TEMPLATES: Template[] = [
       { id: "one_sided_contacts", max: 0, item: "DUEL-PLAYBOOK acceptance: no contact leaves one fighter's state unchanged" },
     ],
     card: "card.duel",
+    bar: {
+      teardown: "docs/research/duel-teardown/TEARDOWN.md",
+      numbers: [
+        "a rival's light winds up at least 24 frames of readable body, ideally 30; a heavy 48 to 60 (For Honor; CASES.md B18, B6)",
+        "every dangerous rival action, chained follow-ups too, shows at least 20 frames of tell in the body: a person's reliable reaction (CASES.md B25)",
+        "a parried heavy leaves the attacker open about 36 frames (a free light), a parried light about 54 (a free heavy) (For Honor, B17)",
+        "a parry window of about 12 frames that shrinks when spammed (Sekiro, B20); roll i-frames about 28 with a punishable recovery (Elden Ring, B7)",
+        "hit-stop on both bodies about 6 to 8 frames on a light, 12 to 16 on a heavy (Smash, Capcom; B27, B13)",
+        "a rival attacks about every 2 to 3 seconds, with room between exchanges (B23); rounds of 45 to 90 seconds (our design call, test it by hand)",
+        "two bars a fighter: vitality and posture (Sekiro, B21)",
+        "the first rival waits until the player has blocked once, and cannot hurt him while he learns (our design call from For Honor's and Sekiro's tutorials; test it by hand)",
+      ],
+      dont: [
+        "a wind-up that is a 3-frame pose of one generic clip stretched, with the intent written over the rival's head (HEAVY, BASH): the body tells, a colour on the weapon at most",
+        "a tutorial that hits for real while it teaches and moves on when the player fails",
+        "rounds over in 20 seconds (93 of 93 house rounds ended by a knockout at 18 to 24 s)",
+        "threats that wind up in 12 frames (the house chains), under a person's reaction",
+        "a dashboard: three bars a fighter, crowd meter, stars, rally, tags, cues, banners, a key strip, cause cards",
+        "three rivals that are one fighter in three hats (one move set, three reaction speeds)",
+        "toy figures with stick weapons and synthesised beeps; a light hit-stop (house 5 and 9)",
+        "difficulty as a reaction dial with a cliff after the first rival",
+        "a round that ends in a KO show and a cause card instead of a moment the player remembers",
+        "loops that only add, judged by the lane that built them, never played by a person",
+      ],
+    },
     filmFirst: ["parr", "roll", "dodge", "down", "knock", "ko", "fall", "wall", "splat", "blocked_heavy", "heavy_block", "clash", "guard"],
     house: {
       pack: "duel",
@@ -200,6 +242,31 @@ export const TEMPLATES: Template[] = [
       { id: "overlap_share", max: 0.02, item: "spacing, bodies apart: the share of live frames in which two upright field skaters' bodies overlap by more than 0.1 m (body radius from the contact scale; the house hockey: 0)" },
     ],
     filmFirst: ["one_timer", "poke", "check", "hit", "goal", "shot", "pass"],
+    bar: {
+      teardown: "docs/research/hockey-teardown/TEARDOWN.md",
+      numbers: [
+        "the size of the world: life-size skaters, a contact radius of 0.4 m, a rink of 90 x 45 m: 112 body widths long (a real rink is about 100) (thirdjam; CASES.md A9)",
+        "speed in the player's units: a cruising skater about 12.65 m/s, about 7 of his own heights a second; the carrier x0.92 of a free skater; bots sprint by level (thirdjam)",
+        "the puck slows on the ice: drag 0.5/s plus friction 0.147 m/s^2, so a 14 m/s pass stops after about 26 m (thirdjam)",
+        "a pass is solved to ARRIVE at about 8 m/s where the receiver will be (a tap 14 m/s; held, it crosses a third of the rink), never a fixed launch speed (thirdjam)",
+        "a shot snaps to the goal inside 8 degrees (16 on a one-timer) and is fast: a tap 36 m/s, full charge 52 (the owner's order in thirdjam)",
+        "the camera bound to YOUR skater: behind and above, about 6 m back and 3.5 m up, a 4-frame lag, and an aim anchor so a still hand keeps its stick point; the HUD points at an off-screen puck (thirdjam, rulings R-0038, R-0064)",
+        "teammates shoot and drive the net; every bot decides every frame with no reaction delay; a level is easy by clumsiness, never by absence (R-0067)",
+        "one continuous match to three goals; hit-stop of about 3 frames, presentation only, only on a knockdown that involves you; nothing technical drawn at a hit (R-0069, R-0070)",
+      ],
+      dont: [
+        "figures drawn 2.2x on a 60 x 30 m rink: 34 body widths, every play a scrum",
+        "teammates who hold back (shoot only within 4 s of your own pass) so an idle hand loses a bot ladder",
+        "a camera that follows the puck and zooms, so the stick moves when the hand does not",
+        "a puck with no drag and passes at a fixed 18 or 23 m/s, patched by own-goal guards",
+        "a game that keeps stopping: 36-second periods, whole-game freezes on hard hits, goal holds, replays",
+        "figures that glitch (a statue goalie, sticks through boards, overlaps)",
+        "hits that decide the game, drawn loudly with rings, bursts and punches",
+        "bots that read the play 5-18 frames late, decide at 4 Hz and never sprint",
+        "shots aimed exactly at a cursor through a moving camera",
+        "a screen that stops explaining itself after the first key (no chevron, no radar, no off-screen marker)",
+      ],
+    },
     house: {
       pack: "hockey",
       game: "game.ice_hockey_three_against",
@@ -227,15 +294,16 @@ export const TEMPLATES: Template[] = [
         { what: "the AI decides from scored options (shoot, pass, carry) every few frames with vetoes, never by chance alone", re: /utility|scor(e|es|ing) (shoot|SHOOT)|SHOOT, PASS|decid\w* every \d+/i },
         // D3 of 22 Nov: hockey -2's design chose "a low chase camera right behind your skater": the near skater covered every
         // exchange (camera_hides_exchange) and the critic could find neither the puck nor the controlled player.
-        { what: "the play camera: a broadcast camera from the near side looking DOWN at the play (about 50 degrees, 20 to 30 m), following the puck or its carrier and keeping your skater in the picture (its data/tuning.json `follow`, read below); never low behind a skater", re: /broadcast|look(s|ing)? down|from above|overhead|top[- ]down|high (follow|camera)|50 ?(°|deg)/i },
+        // N2 round 5: the teardown's third fault is a camera that follows the puck; thirdjam's, after the owner's rulings, is bound to you.
+        { what: "the play camera bound to YOUR skater and raised: behind and above you (thirdjam: about 6 m back, 3.5 m up, a 4-frame lag) with an aim anchor, or a raised broadcast view looking down that keeps you in one place; never low behind the skater, never one that follows the puck and loses you (the house game's `follow` below is a working base, not the bar)", re: /behind and above|above and behind|bound to (you|your)|aim anchor|raised|broadcast|look(s|ing)? down|from above|overhead|top[- ]down|high (follow|camera)|50 ?(°|deg)/i },
         { what: "the puck and your skater readable at a glance: the puck drawn larger than life with a hot-coloured rim, and a ring under your skater (its data/tuning.json `look`, read below)", re: /ring under|green ring|(puck|it)[^.]{0,60}(rim|outline|larger|bigger|oversized|scaled)|(rim|outline)[^.]{0,30}puck/i },
       ],
       numbers: [
-        { what: "the skater (data/tuning.json `skater`: speed m/s, acceleration, turn rate rad/s, mass, body scale)", read: (d) => readJsonKey(d, "data/tuning.json", "skater") },
+        { what: "the house game's skater (data/tuning.json `skater`: speed m/s, acceleration, turn rate rad/s, mass, body scale): its body_scale 2.2 is the teardown's first fault; take the size of the world from the bar", read: (d) => readJsonKey(d, "data/tuning.json", "skater") },
         { what: "skating and the carrier's handicap (data/tuning.json `skate`: free-skater and sprint multipliers, the carrier's sprint cap, acceleration and turn ratios)", read: (d) => readJsonKey(d, "data/tuning.json", "skate") },
         { what: "the carry, the stickiness (data/tuning.json `carry`: reach, blade, spring k, dangle, the loss rule)", read: (d) => readJsonKey(d, "data/tuning.json", "carry") },
         { what: "the shot (data/tuning.json `shoot`)", read: (d) => readJsonKey(d, "data/tuning.json", "shoot") },
-        { what: "the play camera (data/tuning.json `follow`: field of view, pitch in degrees looking down, distance and its widening, the lead in the attack direction, the pull toward your skater): copy it, never a low chase camera", read: (d) => readJsonKey(d, "data/tuning.json", "follow") },
+        { what: "the house game's play camera (data/tuning.json `follow`: field of view, pitch in degrees looking down, distance and its widening, the lead in the attack direction, the pull toward your skater): how the camera API is driven; it follows the puck, which the teardown names as a fault, so bind it to your skater (the bar's camera line)", read: (d) => readJsonKey(d, "data/tuning.json", "follow") },
         { what: "the readable puck and rings (data/tuning.json `look`: puck_scale and puck_height_scale over the real puck, puck_rim in metres and its colour key, the carrier ring, the down ring)", read: (d) => readJsonKeys(d, "data/tuning.json", "look", ["puck_scale", "puck_height_scale", "puck_rim", "puck_rim_key", "ring_key", "carry_width", "carrier_ring", "carrier_ring_after_frames", "down_ring", "down_key"]) },
       ],
     },
@@ -302,12 +370,21 @@ export function houseExcerpt(t: Template, part: "design" | "builder", engine = H
   const files = h.files.map((f) => `- engine/packs/${h.pack}/${f.file}: ${f.role}`);
   const keeps = (h.keeps ?? []).map((k) => `- keep ${k.what}`);
   const numbers = (h.numbers ?? []).map((n) => [n, n.read(dir)] as const).filter(([, v]) => v !== undefined).map(([n, v]) => `- ${n.what}: ${v}`);
-  const head = `# The house game: engine/packs/${h.pack} (${h.game}), the reference implementation of this template
-It is a tracked game of this engine that plays the template on the kernel, tuned there. Copy its rules, its numbers and
-its structure; where its numbers differ from the research, the house game's win (they are measured on this kernel).${part === "builder" ? `
+  const head = `# The house game: engine/packs/${h.pack} (${h.game}), a working base on this engine, NOT the quality bar
+It is a tracked game that runs this template on the kernel: read it for how the engine is driven (its files, calls,
+data layout, the frame table the Foreman checks). The owner played it and called it slop (22 Nov), and no person has
+accepted it since: its feel, timing, scale, camera and screen are a floor, not the bar. The bar is the reference below
+("The bar"): where the reference's numbers and the house game's differ, the reference's win unless the design says why.${part === "builder" ? `
 Your reference copy holds it whole: ref/packs/${h.pack}/ (read the files below before you write yours).` : ""}`;
   const body = part === "design" ? researchSections(`engine/packs/${h.pack}/README.md`, h.readme, path.dirname(engine)) : "";
-  return [head, "", "The files that carry it:", ...files, ...(keeps.length > 0 ? ["", "What a design of this template keeps from it:", ...keeps] : []), ...(numbers.length > 0 ? ["", "The house game's numbers to copy (read from the pack now):", ...numbers] : []), ...(body !== "" ? ["", body] : [])].join("\n") + "\n";
+  return [head, "", "The files that carry it:", ...files, ...(keeps.length > 0 ? ["", "What a design of this template keeps from it:", ...keeps] : []), ...(numbers.length > 0 ? ["", "The house game's numbers (read from the pack now; how it drives the engine, not the bar where the bar below differs):", ...numbers] : []), ...barLines(t), ...(body !== "" ? ["", body] : [])].join("\n") + "\n";
+}
+
+/** N2 round 5: the template's quality bar as lines ([] without one): the reference numbers and the "do not copy" list. */
+export function barLines(t: Template | undefined): string[] {
+  const b = t?.bar;
+  if (b === undefined) return [];
+  return ["", `# The bar: the reference games, not the house game (docs/design/CASES.md; ${b.teardown})`, "Start from these numbers (tune them by hand on the greybox):", ...b.numbers.map((x) => `- ${x}`), "", "Do NOT copy these from the house game (the teardown's top ten, each a reason the owner called it slop):", ...b.dont.map((x) => `- ${x}`)];
 }
 
 /** A brief's template problems: the design's copied moves, and what the house game keeps (in rules and controls). */
@@ -349,7 +426,7 @@ export function researchSections(file: string, headings: string[], root = REPO_R
 export function templatesMenuText(): string {
   const out: string[] = [];
   for (const t of TEMPLATES) {
-    out.push(`- \`${t.id}\`: ${t.title}. Reference: ${t.reference}.${t.house ? ` House game (the reference implementation on this engine): engine/packs/${t.house.pack} (${t.house.game}).` : ""}`);
+    out.push(`- \`${t.id}\`: ${t.title}. Reference: ${t.reference}.${t.house ? ` House game (a working base on this engine, not the quality bar; the bar is the reference and its teardown): engine/packs/${t.house.pack} (${t.house.game}).` : ""}`);
     out.push(`  - copies (name each in \`copies\`): ${t.must.map((m) => m.what).join("; ")}.`);
     if (Object.keys(t.moves).length > 0) out.push(`  - its move table (a verb that copies a move names it as \`move\` and carries these frames exactly): ${movesLine(t)}.`);
   }

@@ -268,6 +268,9 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
   already measured and dropped. The owner's rulings, in his own words, are design assets: thirdjam keeps 75 of them
   (N1 collects them verbatim in `docs/research/hockey-teardown/RULINGS.md`), and a game of the same kind reads them
   before its design.
+- **Our own house games are a working base, not the reference.** Until a person has accepted it, a game this studio
+  built shows how the engine is driven; its feel is not the bar (both house games were called slop). The editor gives
+  each template a bar: the reference game's numbers and the teardown's "do not copy" lines (GAME-QUALITY.md section 11).
 - **Port the frame of reference and the reasons first, the numbers last.** A number copied into a world of another
   size, with another camera, is another number. Copy the scale, the camera and why each rule exists before any table.
 - **A teardown line is concrete**: "NHL '94: pass across the crease and shoot as it arrives; the goalie cannot get
