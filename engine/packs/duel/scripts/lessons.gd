@@ -20,6 +20,8 @@ var log_from: int = 0
 var results: Array = []                ## [id, "ok" | "missed"] per step
 var punished: int = 0                  ## punishes landed in an open window
 var cfg: Dictionary = {}
+var done_line: String = ""
+var damage_k: float = 1.0                ## share of damage he takes while his lessons run (rivals.<key>.damage_k)
 
 
 func setup(main) -> void:
@@ -30,7 +32,12 @@ func setup(main) -> void:
 
 ## Called at every round start: lessons run in round 1 against the first rung, never in a drill.
 func start() -> void:
-	on = g.rung == 0 and g.round_no == 1 and g.drill.is_empty() and bool(cfg["enabled"])
+	var key: String = str(g.rival.cfg.get("key", ""))
+	var mine: Dictionary = (cfg.get("rivals", {}) as Dictionary).get(key, {})
+	steps = mine.get("steps", []) if g.rung > 0 else cfg["steps"]   # round 11: the Duelist teaches his own tell and parry
+	done_line = str(mine.get("done", cfg["done"]))
+	damage_k = float(mine.get("damage_k", 1.0)) if g.rung > 0 else 1.0
+	on = g.rung < 3 and not steps.is_empty() and g.round_no == 1 and g.drill.is_empty() and bool(cfg["enabled"])
 	if not on:
 		return                                      # later rounds keep the record of round 1
 	i = 0
@@ -73,7 +80,7 @@ func tick(f: int) -> bool:
 				if str(step["id"]) == "bash":
 					phase = "strike"
 					t = 0
-				elif me.act(str(step["move"]), {"hold": int(step["hold"])}):
+				elif me.act(str(step["move"]), {"frames": int(step["frames"])} if step.has("frames") else {"hold": int(step["hold"])}):
 					serial = me.serial
 					phase = "strike"
 					t = 0
@@ -138,7 +145,7 @@ func _next() -> void:
 
 func _finish() -> void:
 	if on:
-		g.show.cue(str(cfg["done"]), 90)
+		g.show.cue(done_line, 90)
 	on = false
 
 

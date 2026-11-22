@@ -41,6 +41,7 @@ var lead_round: int = 0                ## lead changes in this round
 var round_log: Array = []              ## [winner, reason, frames]
 var match_log: Array = []
 var arena                              ## the rival's place and beat (scripts/arena.gd)
+var traded_told: bool = false          ## 'swinging into his swing' told once a match (round 11)
 var hitstop_frames: int = 0
 var fight_frames: int = 0
 var spacing: Dictionary = {}           ## centre distance over the live fight: frames, sum, close (< 1.3 m), min
@@ -242,6 +243,7 @@ func _restart_match(r: int) -> void:
 		arena.dress(str(rival.cfg["key"]), rung >= 3)
 	wins = {"you": 0, "rival": 0}
 	show.rally_told = false
+	traded_told = false
 	ctx.root.remove_child(match_rules)
 	match_rules.queue_free()
 	match_rules = TLRules.create(tune["rules"])
@@ -407,6 +409,9 @@ func note_hit(att, def, d0: String, mv: String, dmg: float) -> void:
 		id = "guard_broken"
 	elif d0 == "ROLL" or d0 == "DODGE":
 		id = "roll_end"
+	if id == "traded" and not traded_told:
+		traded_told = true                                # the top cause of a newcomer's losses, told on the screen once (round 11)
+		show.cue("His blade was out FIRST: block it, then strike in the gap after.", 110, "hazard_red")
 	var c: Array = causes.get(id, [0, 0.0])
 	causes[id] = [int(c[0]) + 1, float(c[1]) + dmg]
 

@@ -31,7 +31,7 @@ static func attach(rig, kind: String) -> Node3D:
 	match kind:
 		"helm":                                      # the Wall: a bucket helm over the head, a T visor slit, a ridge (round 10: smaller)
 			mk.push_at(Vector3.ZERO, Vector3(-90, 0, 0))     # the head socket: +X his right, +Y back, +Z down (probe, round 9): build Y up, -Z face
-			mk.rbox(Vector3(0.58, 0.52, 0.58), "steel_dark", Color.WHITE, 0.08, Vector3(0, -0.27, -0.08))
+			mk.rbox(Vector3(0.66, 0.52, 0.6), "steel_dark", Color.WHITE, 0.08, Vector3(0, -0.27, -0.08))   # wide enough to hide the hair at its sides
 			mk.box(Vector3(0.4, 0.045, 0.04), "black", Color.WHITE, 0.0, Vector3(0, -0.29, -0.37))
 			mk.box(Vector3(0.05, 0.18, 0.04), "black", Color.WHITE, 0.0, Vector3(0, -0.39, -0.37))
 			mk.box(Vector3(0.06, 0.07, 0.56), "steel_light", Color.WHITE, 0.02, Vector3(0, 0.0, -0.08))
