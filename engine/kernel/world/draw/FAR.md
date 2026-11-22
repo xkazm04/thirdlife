@@ -118,7 +118,7 @@ Three things the study found that the brief did not ask:
 |---|---|---|---|---|
 | near | tier `stage`, `sideline` | all of it, at its plot (N5b) | all of it; the real score on its boards | nothing |
 | middle | tier `backdrop`, `ledger`; camera within 240 m of the plot edge | one merged mesh: instances of 2.5 m and more | marks, smoke, 4 lights, score | once, with the far picture, in one walk over the pack |
-| far | the same tiers; camera beyond | one merged mesh: instances of 5 m and more; inside them no triangle narrower than 0.1 m (rails, wire, lattice) and none whose longest edge is under 0.4 m; the kit's terrain re-meshed on a 6 m grid (the last 12 m before the rim kept, so the rim still meets the world's ground); normals leaning up; no shadow | marks x1.6, smoke, score | the same walk |
+| far | the same tiers; camera beyond | one merged mesh: instances of 5 m and more; inside them no triangle narrower than 0.1 m (rails, wire, lattice) and none whose longest edge is under 0.4 m; the kit's terrain kept as it is (N3, 22-23 Nov: it was re-meshed on a 6 m grid, which moved seed_drive's ground by up to 2.07 m under objects that kept their height: they sank or rose when the picture changed between mid and far); normals leaning up; no shadow | marks x1.6, smoke, score | the same walk |
 | still | only with `TL_DRAW_PICTURE=still` | N5b's stand-in (1.2 m and more) | none | for comparison |
 
 Thresholds proposed for `tiers.json` (the loading builder's file; `PATCHES-P6.md` entry 1). Until they are there the

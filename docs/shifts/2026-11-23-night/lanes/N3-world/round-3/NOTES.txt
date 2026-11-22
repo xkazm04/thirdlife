@@ -1,0 +1,33 @@
+N3 round 3: objects sinking or rising when a venue changes between its mid and far picture (owner finding 1, "objects
+blinking below/above the ground", at the distance level where it is proved)
+
+How it was found: Astra (gpt-6.2-astra, read-only, 177k tokens) listed every remaining distance- or camera-dependent
+mechanism in the landscape and draw code; each was then checked here. This one is measured.
+Cause: engine/kernel/world/draw/draw_pictures.gd:393-430 (`_append`, grid branch) with draw_base.gd:24 far_cell 6.0:
+  the far picture re-meshes a pack's own ground on a 6 m grid, every vertex of a cell snapped to the FIRST vertex met
+  there (its height too), while everything standing on that ground keeps its height. Measured in a window with an
+  instrument in `_append` (removed): seed_drive's far ground moved by up to 2.07 m (2871 vertices snapped); paddle,
+  wall, parkour 0.00 m (flat pads); walker, car, hockey, kit, sites have no own ground in the far picture. So on the
+  drive's hollow, things sank into or floated over the ground each time the venue crossed 210/270 m from the camera.
+Fix: far_cell 0.0 (the "kept as it is" setting the code already had): the far picture keeps the pack's ground exactly
+  as the mid picture has it. The picture cache key includes far_cell, so old far pictures are rebuilt, not reused.
+  FAR.md's far row says so.
+Evidence: drive_mid_vs_far_before_after.jpg (forced mid and far pictures, two crane shots at 250-280 m, before and
+  after). Honest reading: at 250-280 m the 2 m shows as a few pixels; the measured figure is the evidence, the sheet
+  shows nothing else moved.
+Selftest 770 n3.far_ground: a rolling 100 m ground sheet merged by the draw layer's own `_append` into mid and far:
+  far ground within 0.05 m of mid under 400 points: 0.00 m now; seeded red with far_cell 6: 0.21 m (1328 far triangles
+  against 4988).
+Cost: the far picture of a pack with own ground keeps its ground triangles (synthetic sheet: 4988 instead of 1328);
+  one merged mesh per pack, so no draw call is added.
+
+Not changed, for the Director / owner (measured or read, not fixed):
+- ex_car's course as drawn since round 2: the asphalt box is 60 m wide, local z -160..+30, cut at radius 40 + 3 m:
+  60 x 73 m drawn (world z 14..87, x 55..115), 4155 m2 = 83 % of the plot disc, 214 m2 of it beyond the 40 m radius.
+  It reaches the plot's own entry path, not the village road (9 m short). ex_car is a primitive example with no kerbs or
+  markings: from a rise or walking past, the owner will most likely read it as "a big dark square". That is the pack's
+  own art, now shown as the pack shows it alone; changing it is a pack change (not done, as asked).
+- Moving bodies of a venue in a picture are marks: a car becomes a box in its colour, a figure a slim box, from 38 m
+  (the village's sideline 30 m + margin 8) on: visible at that distance (tour5 shots). P13 design; the village's
+  sideline distance is in boot/village.json (not this lane's).
+- Road rails (terrain/road_rails.gd:119) switch per 48 m segment at 108 m (+8): small, thin, left as is.
