@@ -1,0 +1,500 @@
+PASS min.lint
+PASS min.smoke
+PASS min.smoke_again
+PASS min.smoke_seed2
+PASS min.determinism  (seed 1: d8d8ca923cd99b3a twice; seed 2: 2f8d6d52c88903c8)
+PASS min.invariants
+PASS min.bot
+PASS min.capture
+PASS min.capture_file  (104183 bytes)
+PASS min.res_path
+PASS min.res_path_smoke
+PASS bad.schema
+PASS bad.schema_smoke
+PASS bad.layout
+PASS bad.fence
+PASS bad.fence_each_line  (38 fenced patterns, each reported once with its line; comments and strings ignored)
+PASS bad.capability
+PASS bad.capability_run
+PASS bad.bypass
+PASS bad.bypass_kit_part
+PASS bad.bypass_look
+PASS bad.bypass_gen_not_double_counted  (gen/part.gd: ArrayMesh and MeshInstance3D only in kit_parts_added)
+PASS bad.size
+PASS bad.nondeterminism_lint
+PASS bad.reach_assets
+PASS bad.reach_filetype
+PASS bad.reach_reflection
+PASS bad.reach_classes
+PASS bad.reach_tree
+PASS bad.reach_alias
+PASS bad.reach_load
+PASS bad.script_error
+PASS bad.parse_error
+PASS bad.watchdog
+PASS bad.watchdog_bot
+PASS bad.error_storm
+PASS bad.setup_loop
+PASS bad.bot_never_done
+PASS bad.nondeterminism
+PASS bad.bot_nondeterminism
+PASS diverge.late_frame
+PASS diverge.late_part
+PASS diverge.bot_state_key
+PASS diverge.frame_zero
+PASS bad.budget
+PASS norun.missing_pack
+PASS norun.bad_verb
+PASS norun.bad_option
+PASS ex.slide.lint
+PASS ex.bounce.lint
+PASS ex.shuffle.lint
+PASS ex.wall.lint
+PASS ex.walker.lint
+PASS ex.car.lint
+PASS ex.slide.bot
+PASS ex.bounce.bot
+PASS ex.shuffle.bot
+PASS ex.wall.bot
+PASS ex.walker.bot
+PASS ex.car.bot
+PASS ex.car.invariants
+PASS ex.wall.invariants
+PASS ex.walker.invariants
+PASS ex.bounce.invariants
+PASS ex.shuffle.invariants
+PASS ex.slide.invariants
+PASS kit.lint
+PASS kit.bot
+PASS kit.ball_on_ice_slides_by_law  (a TLKit ball on a TLKit ice patch: friction 0.1005, law 0.1)
+PASS kit.wall_and_crate_break  (barrier_wall into 16 pieces, crate into 6, settled and baked)
+PASS rig.biped_walks_and_skates  (TLRigs biped: walk 2.3 m/s, leg swing 0.8838, skate 9.4976 m/s)
+PASS rig.vehicle_drives  (TLRigs vehicle: top 10.3987 m/s, wheel yaw -0.2234 rad when steering right)
+PASS standin.fallback_still_works  (stand-in rigs given by hand: walk 2.3 m/s, car 10.2834 m/s)
+PASS kit.invariants
+     ex.kit: kit ball on kit ice: slid 4.57 m from 3 m/s (friction 0.101, law 0.10); kit wall settled into 16 pieces, kit crate settled into 6; real biped rig (29 bones) walked at 2.30 m/s with a leg swing of 0.88, skated to 9.5 m/s and kept 9.2 after 2 s; real car rig reached 10.4 m/s, wheels spun, steering right turned the wheel -0.22 rad and the car right
+     ex.slide: slide from 3.0 m/s: rubber_on_ice 4.57 m, rubber_on_asphalt 0.43 m, wood_on_ice 15.28 m, wood_on_asphalt 0.89 m
+     ex.bounce: restitution measured from the first rebound: rubber_on_concrete 0.65 (law 0.65), rubber_on_wood 0.60 (law 0.60), rubber_on_ice 0.30 (law 0.30), plastic_on_steel 0.55 (law 0.55); 12 pellets spawned, 5 scored, game over by score
+     ex.shuffle: fast puck at 30 m/s: turned back at z = -19.94 (rail face at -20.00), 1 bounces, stayed flat (1.000) and on the lane, gate saw it 2 times; carried puck: held 60 frames, then slid 4.59 m from 3 m/s (friction 0.100, law 0.10)
+     ex.wall: light ball 31.6 N*s left the wall intact (threshold 260 N*s); heavy ball 17661 N*s broke it at frame 251; 18 pieces settled after 201 frames
+     ex.walker: walker: walked at 2.30 m/s, stopped in 6 frames on concrete, ran at 6.00 m/s, pushed the crate 6 times, lap done (walker by laps); skater: 9.50 m/s after 2 s of thrust, still 9.20 m/s after 2 s of coasting on ice
+     ex.car: slalom of 4 gates done in 685 frames (top speed 14.1 m/s, 1 nitro burst, 0 cone hits); braking from 14.0 m/s: 10.1 m on asphalt, 96.2 m on ice; AI pace car followed the line for 143 of 147 m, at most 1.26 m off it
+PASS verbs.json_matches_host  (6 verbs and 3 world modes, the same options on both sides)
+PASS world.same  (pack_min, ex_bounce and two ex_wall in one process: 4 hashes equal to the solo runs, three times)
+PASS world.sliced_and_paused  (ex_wall on 1 world tick in 8, ex_bounce on 1 in 3 with a 100-tick pause: a5d0e53800b3acd3 545cd7c35ab2a361 )
+PASS world.walk_proof  (walk = alone = replay: seed.paddle 1880 ticks 591a3941906458db; seed.drive 1812 ticks 225dc7b8b401a8d1; seed.wall 1221 ticks 5896844ee2a7bb24; )
+PASS world.walk_valve  (4 demotions farthest first, then speed 800 per mille; all 7 packs kept ticking, longest wait 6 world ticks)
+PASS world.walk_boundary  (2400 ticks of zigzag along the lines: tier changes a:0 b:0 c:1 )
+PASS world.file  (save = load (example.bounce 241,example.pack_min 228,example.wall 300); rev 2 keeps rev 1; a cut file is refused with exit 2)
+PASS world.tour  (6 games, 2 entered and left, no next round; tour = alone = replay: drive 2417 ticks 32065a6b5b5b3f93; wall 439 ticks 3d57666335f9251d; walker 371 ticks f1c7b53757c34040; paddle 1893 ticks 6de9106ab316d94e; kit 332 ticks ca698e71d34d1021; car 1570 ticks 3acf0838cac2c012; )
+PASS world.next_round  (8 next rounds, each pack rebuilt from its seed; tour = alone = replay)
+PASS p1.runaway_cpu
+PASS p1.world_runaway  (pack_min, a runaway, ex_bounce, ex_wall: the runaway tripped at its tick 20, the three others ended with their solo hashes (af629d32898632eb 03cf606c9e988b3e fb85105823b65534 ))
+PASS p7.api_1_0_lint
+PASS p7.api_1_0_runs
+PASS p7.api_0_1_is_1_0
+PASS p7.api_2_0_refused
+PASS p7.api_2_0_not_run
+PASS p7.api_next_refused
+PASS p7.record_bot
+PASS p7.record_replay
+PASS p7.record_same_hash  (seed_paddle: bot dff1a390470352e7 = replay dff1a390470352e7; 2361 frames with input of 4486)
+PASS p7.record_wrong_pack
+PASS p7.record_unknown_key
+PASS p7.record_needs_input
+PASS p7.mouse_replay
+PASS p7.mouse_same_hash  (seed_wall, 600 frames: session a9e62096879b5a5a = replay a9e62096879b5a5a; without the mouse 23133b05cc1e3bef)
+PASS p7.keys_field_takes_keyboard  (pack_min: Space held 70 frames, 30 of them typed into a field: the game got 40)
+PASS p7.keys_esc_panel_open  (pack_min: Esc with the panel open at frame 20 went on, Esc at frame 50 ended the run)
+PASS p7.keys_window_closed_keeps_record  (pack_min: closed at frame 30, the record has 30 frames and the key's 20)
+PASS p7.fence_seam
+PASS p7.fence_holder_call  (a call of TLBall.holder() is not the kernel's holder node)
+PASS p7.fence_handler_switched_off
+PASS world.reload  (ex_slide reloaded at tick 300 with start_speed 4.5: 299 ticks, 4110f895d484fd1c = the changed pack alone, not 60190cf741705be4 ; pack_min and ex_wall as undisturbed (4b2e6b48d74aa8e2 6e4d234f59fef9ef); the log replays)
+PASS site.replay_same  ("stage":"building","title":"Bounce court","built":2,"total":3 at tick 300, twice)
+PASS site.failed  ("stage":"failed" "packages":["tower_core:failed","tower_look:blocked"] )
+PASS site.missing_log  ([site] warning: lot 0: no job log at 'C:/Users/kazda/kiro/third-life/.claude/worktrees/d22...; the lot stays plain, the world runs)
+PASS site.live  (6 events, the log grew to 21 at tick 100, read at tick 120, the game arrived; "reads":7,"read_ms":1.36)
+PASS site.refit  (lot 30 m -> 25.0 m after the live arrival at tick 120; "measured_m":25.0 "measure_ms":0.07 )
+PASS site.ring  (second world on the same cache: "radius":25.0 "fit":"measured 25.0 m (what the game built, at tick 2); declared: measured 25.0 m before (cache, example.bounce@0.1.0)" )
+PASS site.arrival  (the promoted game arrives at tick 380 and hashes as alone and as the replay: 241 ticks 545cd7c35ab2a361)
+PASS site.unmade  (after the restore: "built":1,"total":2 "packages":["core:promoted+merged","cups:failed"] )
+PASS site.follow_exe  (three runs, the log grown by ticks 100 to 400: {"bays":0,"building":240,"promoted":420}; {"bays":0,"building":240,"promoted":420}; {"bays":0,"building":240,"promoted":420}; )
+PASS site.solid  (gate: ok:true end:[40.0  -0.06  7.0] stopped_by:none ; bay while building: ok:true end:[40.0  -0.06  4.04] stopped_by:site 0 ; after arrival: ok:true end:[40.0  0.0  -11.96] stopped_by:none )
+PASS world.queue  (3 seeds built by the worker, arrived at ticks a 0 c 1 b 2 ; walk = alone = replay)
+PASS p11.world_alone  (seed.paddle | 4486 | dff1a390470352e7 ;example.kit | 332 | ca698e71d34d1021 ;example.walker | 371 | f1c7b53757c34040 ;)
+PASS p11.world_handler_off  (a pack's _unhandled_input in a world: switched off at ready, got no device event)
+PASS p11.input_handler_fence
+PASS kit.score_bound  (shows 2:1 after three goals)
+PASS world.compact  (six games of the compact village: walk = alone = replay)
+PASS world.prepare_capped  (seed_wall prepared in 465 ms with free frames, 458 ms (3 frames) with 250 ms frames)
+PASS world.needed_now  (forced "forced_list":[["a",0,514.0,"stage"],["b",664,414.1,"stage"]]; walk = alone = replay)
+PASS world.reload_script  (ex_slide's main.gd changed at tick 299, reloaded at 300: 299 ticks, 4110f895d484fd1c = the changed pack alone, not 60190cf741705be4)
+PASS world.tools_tr_filter  (no tool deletes newlines from a log by a mangled tr -d)
+PASS k1.pointer_lint
+PASS k1.pointer_smoke
+PASS k1.pointer_bot
+PASS k1.pointer_replay
+PASS k1.pointer_invariants
+PASS k1.pointer_replay_hash  (ex_pointer: bot 4a378038637b80c2 = replay 4a378038637b80c2; 550 frames with a valid aim)
+PASS k2.held_lint
+PASS k2.held_bot
+PASS k2.down_lint
+PASS k2.down_smoke
+PASS k2.down_bot
+PASS k2.down_invariants
+PASS k2.capture_hud_on
+PASS k2.capture_hud_off
+PASS k2.capture_hud_bad
+PASS k2.capture_hud_differs  (with the HUD 89561 bytes, without 75644 bytes)
+PASS k2.button_is_a_key  (ex_down: knock from the left button in 6 frames, not from the right button, from K in 3)
+PASS k3.held_big_lint
+PASS k3.held_big_bot
+PASS k4.hand_aim_square_plain
+PASS k4.hand_aim_square_hand
+PASS k4.hand_aim_perfect_same_hash  (ex_pointer: 4a378038637b80c2 with and without the perfect hand)
+PASS k4.hand_aim_lint
+PASS k4.hand_aim_perfect
+PASS k4.hand_aim_sharp
+PASS k4.hand_aim_regular
+PASS k4.hand_aim_newcomer
+PASS k4.hand_aim_profiles_fall  (hits of 20 on seed 1, perfect to newcomer)
+PASS k5.hud_lint
+PASS k5.hud_bot
+PASS k5.hud_still_short
+PASS k5.hud_still_grown
+PASS k5.hud_stills_differ  (one line 326296 bytes, four lines 295163 bytes)
+PASS k6.world_ball_floor  (ex_held_big and ex_held: world = alone)
+PASS k8.stage_keys  (hockey: Q is the game's pass (5 frames), Esc leaves; kit court: Q leaves)
+PASS life.alone_bot_result
+PASS life.alone_idle_script
+PASS life.alone_below
+PASS life.world_bot_result  (a summary-less _bot_result fails the bot in a world as alone)
+PASS life.world_below  ("below":{"node":"World/@RigidBody3D@4","frame":200,"y":-52.72})
+PASS life.world_idle_script  (set_script after add_child is named in a world as alone)
+PASS life.one_owner  (context, setup, bot calls and census live only in runner/pack_life.gd)
+PASS life.case  (18 calls, 5 frames, last hash 99b48a5062b9a0e6 in both drives)
+PASS walk.idle_bank  (drift placed / after a walk, 600 ticks: 20 deg: 0.0000 / 0.0000 m, 35 deg: 0.0000 / 0.0000 m, 50 deg: 0.0000 / 0.0000 m)
+PASS walk.jump  (height 0.943 m, 33 ticks in the air, jump in the air pressed 4 / 12 ticks after walking off a 1 m step: [true, false], buffered press 4 ticks before landing jumps again: true)
+PASS walk.ledge  (3 m ledge at 4.5 m/s: 30 ticks falling, largest drop in one tick 0.193 m, landed true, feet y [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 2.99, 2.96, 2.91, 2.91, 2.9, 2.89, 2.87, 2.84, 2.81, 2.77, 2.72, 2.67, 2.61, 2.54, 2.47, 2.39, 2.3, 2.21, 2.11, 2.0, 1.89, 1.77, 1.64])
+PASS walk.steep  (65 deg bank 8 m: walked off the top, 54 ticks sliding, top speed 14.00 m/s, stopped at tick 83 at z 0.67 y 0.000 (foot at z 0); walking up into it from below ends at y -0.02)
+PASS walk.pace  (rest to 4.5 m/s in 8 ticks (then 4.500 m in 60 ticks), 4.5 to 9.0 in 8 ticks, 9.0 to rest in 13 ticks over 0.89 m, a 6-tick tap moves 0.62 m, W 180 ticks from rest 13.24 m)
+PASS walk.slide  (a run slide from 9 m/s: 54 ticks low, 5.31 m to a stop (a stop without it: 0.97 m), ends into a run at 9.00 m/s when W stays held)
+PASS walk.camera  (camera height over the ground, lowest of 240 ticks along a 30 deg hill, view pitched -10 deg: without avoid_space -1.94 m (under the ground), with it 0.35 m)
+PASS walk.canopy  (360 ticks at 9 m/s past 5 trees: camera mask 1 (round 1): the view through a crown in 221 ticks, the camera inside one in 73; mask 1|4: 0 and 0, nearest camera 2.83 m from the point looked at)
+PASS walk.biped_parity  (visitor { "apex": 0.9434986114502, "air": 33, "run": 16, "slide": 5.25555419921875, "slide_ticks": 54, "slope": 54, "peak": 14.0000009536743, &"foot": 0.00041705369949 }; pack { "apex": 0.9434986114502, "air": 33, "run": 16, "slide": 5.25555419921875, "slide_ticks": 54, "slope": 54, "peak": 14.0000009536743, &"foot": 0.00041705369949 })
+PASS walk.steep_rest  (put at rest, 60 ticks idle: 65 deg: first tick slope, grounded 0 of 60 ticks, 7.54 m down, 50 deg: first tick ground, grounded 60 of 60 ticks, 0.00 m down)
+PASS walk.slope_pit  (0.8 m pit, W out + jump every 10 ticks: 45 deg walls out at tick 57, 62 deg walls (in slope mode) out at tick 15; 65 deg bank 8 m, W 9 m/s into it for 1200 ticks: highest standing or sliding on it 1.62 m with ground jumps only, 1.62 m with a jump pressed every tick (highest in the air 1.62 / 2.56 m))
+PASS walk.jump_buffer  (first jump at tick 5 lands at tick 38; a second press k ticks before it jumps at: k1:tick 38 k2:tick 38 k3:tick 38 k4:tick 38 k5:tick 38 k6:tick 38 k7:tick 38 k8:tick 38 k9:no k10:no (BUFFER 8))
+PASS walk.stage_pose  (run slide: mode/clip slide/slide, hidden 30 ticks: clip '', put at the gate and 60 ticks walking: ground/; put on a 65 deg bank: slope/slope_slide, hidden: clip '', put on the flat: ground/)
+PASS walk.edge_slide  (C pressed on the edge tick (49): clip '' that tick, 10 ticks into the fall mode/clip air/)
+PASS ground.no_sky_pit  (ex_car's boxes cover 6 % of the rim: no hole; a terrain sheet: rim 1.5; a hole shut and opened again; no rim bend without ground)
+PASS rig.feet_plant  (sole slide, mean m/s: 4.5 m/s dir 0 = 0.067, 9.0 m/s dir 0 = 0.097, 4.5 m/s dir 90 = 0.066, 4.5 m/s dir 180 = 0.057, 1.4 m/s dir 0 = 0.025)
+PASS rig.moves  (clips jump, land, slide, slope_slide, air; a run with a jump: sole slide 0.246 m/s)
+PASS cam.wall_start  (wall m behind the point looked at: inside the wall after snap and 30 ticks: 1.2:out 1.2:out 0.2:out 0.2:out 0.1:out 0.1:out (camera z 0.05 with the wall at 0.2 m))
+PASS cam.crown_band  (pine 1.1, 21 standing heights -0.80..+0.06 m: nearest camera 8.71 m from the point looked at (avoid_min 2.5; was 0.04 m before bugfix-37), 0 bad)
+PASS cam.canopy_jump  (90 ticks, jump at 20: point looked at in the crown 22 ticks, camera 22 (alone 0; was 10 before bugfix-37), camera inside the trunk 0)
+PASS cam.avoid_min  (setup {avoid_min = 4.0}: 4.0 m)
+PASS cam.rebase  (parent re-based on (40, 3, 0) yaw 30: camera 8.71 m from the point looked at on the snap, 8.71 m after 120 ticks (wanted 8.71; was 4.58 before bugfix-37), avoid_pull 0.00)
+PASS cam.snap_heading  (teleport and quarter turn, then snap(): 8.00 m behind the new facing (wanted 8.00))
+PASS cam.reverse  (use_velocity, travel reversed for 300 ticks: camera 7.00 m behind the travel (wanted 7.00))
+PASS cam.cut_wall  (quarter turn in one tick past a box, 31 frames drawn over 16 ticks: physics poses inside 0, drawn frames inside 0 (was 1 before bugfix-37))
+PASS ground.ledger_shapes  (a pack's 6 m box floor in the world's copy, top y before -> after its holder is freed: at once 0.50 -> 0.5, sliced 0.50 -> 0.5)
+PASS ground.shut_pad_solid  (shut hole radius 0.0, pad y 0.00, ground under it 0.00, feet after 60 idle ticks 0.00; 408 pad triangles; after the game's copy: floor 0.30, pad 20 m out 0.00 -> none; a game built with the landscape: no pad)
+PASS ground.rotated_cover  (yaw 0: 48/144 under the deck, cover 0.333, hole none; yaw 45: 48/144 under the deck, cover 0.333, hole none)
+PASS ground.crossing_faces  (0 subdivisions: mid 2, far 2 triangles; 3 subdivisions: mid 30, far 30 triangles)
+PASS ground.flat_holes  (flat ground (--landscape=off): the material is on the landscape node; a pending plot's hole 27.5 m -> 0.0 m)
+PASS ground.bridge_end  (a road ending 16 m from the river: built, no bridge)
+PASS ground.pad_lift  (a pack whose floor is 5 m up (rim 5.00, plot lifted to -5.00): with pad_h: pad 0.00, without pad_h: pad 0.00)
+PASS ground.road_width  (8 m from a 9 m half-width road at y 20: 19.98 listed first, 19.98 listed after a 2 m road)
+PASS rig.bugfix.pose_rest  (shoulder_diff_deg=0.00)
+PASS rig.bugfix.gaze  (look_share_of_neck_peak_deg=28.0 limit=28)
+PASS rig.bugfix.land_turn  (boot_yaw_control=0.0 turned_in_air=0.0)
+PASS rig.bugfix.spawn_face  (eye_late=1.00 eye_control=1.00)
+PASS rig.bugfix.build_blink  (eye_built=0.07 (at build 0.07) eye_set_param=0.07)
+PASS rig.bugfix.stick_color  (distinct_at_build=true runtime_matches_build=true)
+PASS rig.bugfix.review_team  (red: car_red, default: car_blue)
+PASS runner.stage_record_rebuilt  (written=true length=20 rows=1)
+PASS runner.stage_handover  (control_held=30/30 on_stage_down=0/30 bot_off=true)
+PASS runner.place_no_glide  (placements=24 frames ball=58 biped=58 vehicle=58 worst_m ball=0.000 biped=0.000 vehicle=0.000 control_glides=51/51)
+PASS gate.world_same_stopped  (world.sh same stopped before its first hash: FAIL world.same, exit 1)
+PASS gate.empty_filter  (selftest.sh walk.jmup: 0 cases, exit 2)
+PASS gate.walk_case_filter  (walk_case.gd -- walk.ledge runs 1 case (exit 0); -- walk.no_such_case runs 0 (exit 2))
+PASS gate.stale_kit_claim  ((TLRigs vehicle: top 10.3987 m/s, wheel yaw -0.2234 rad when steering right))
+PASS gate.stopped_world_walk_proof  (world.sh proof stopped before its verdict: FAIL world.walk_proof, exit 1)
+PASS gate.stopped_world_compact  (world.sh proof stopped before its verdict: FAIL world.compact, exit 1)
+PASS gate.stopped_p11_world_alone  (world.sh alone stopped before its verdict: FAIL p11.world_alone, exit 1)
+PASS hunt2.ball_holder_freed  (holder freed: frozen false, dropped 1.27 m in 30 ticks (wanted unfrozen, > 0.5 m))
+PASS hunt2.chase_slow_travel  (behind the travel at 3.0 / 0.6 m/s then 30 ticks at rest: 7.00 / 7.00 m; after snap() behind the facing 7.00 / 7.00 m (wanted 7.00))
+PASS hunt2.chase_pull_scaled  (avoid_pull vs metres moved in: scale 1 4.30 / 4.30, scale 2 4.30 / 4.30)
+PASS hunt2.nitro_crumb  (empty tank, Shift tapped 30 times: 0 boost ticks (wanted 0))
+PASS hunt2.nitro_full_tank  (full tank, Shift held: 70 boost ticks (wanted nitro_frames 70))
+PASS hunt2.goal_over_net  (puck 1.75 m above the ice behind the goal line (the crossbar is at 1.5 m): 0 goals (wanted 0))
+PASS hunt2.goal_in_net  (puck 1.0 m above the ice inside the net: 1 goals (wanted 1))
+PASS hunt2.goal_offset_pack  (pack at (300, 2, -40), puck 0.3 m up inside the net: 1 goals (wanted 1))
+PASS hunt2.hockey_helpers_freed  (mode switched true; helpers alive after unload: 0 of 4 (wanted 0))
+PASS hunt2.hockey_venue_freed  (the first rink after a switch to big ice and an unload: freed (wanted freed))
+PASS hunt2.hockey_bench_freed  (benched skaters alive after unload: 0 of 2 (wanted 0 of at least 1))
+PASS hunt2.boot_editor_games  (8 of 8 village plots resolve in the editor binary; missing [])
+PASS hunt2.parkour_retry_pressing  (forward held into the beam: stopped 0.35 m short; one C tap: 4.50 m short of the beam, falls 0 (wanted > 3.5 m, 0 falls))
+PASS hunt2.hand_double_tap  (regular hand, 32 pairs of taps: 64 taps, 64 presses, 64 edges the game saw (wanted 64))
+PASS hunt2.laws_material_copy  (rubber friction 1.00000, after editing a returned row 1.00000 (wanted unchanged))
+PASS hunt2.input_at_reserved  (declared after declare(aim@x), declare(shoot): ["shoot"] (wanted shoot only))
+PASS hunt2.drive_time_hud  (rules finished (car, time): HUD 'OUT OF TIME (time)' (wanted OUT OF TIME))
+PASS hunt2.parkour_offset_pack  (120 idle ticks at the origin / 100 m away: station 0.00 / 0.00 m, falls 0 / 0 (wanted 0))
+PASS hunt2.wall_origin_at_break  (bot_knock seed 1: 48 pieces, ended by score true, ticks where the score and the pieces past 0.6 m from the wall disagree: 0 (wanted 0))
+PASS hunt2.chase_margin_scaled  (wall clearance at parent scale 0.5 / 1 / 2: 0.30 / 0.30 / 0.30 m (wanted 0.30))
+PASS hunt2.seed_target_paddle  (score_to_win = 1 in a copy: the bot won 1 : 0 in 1015 frames (17 s); longest rally 12 paddle hits)
+PASS hunt2.seed_target_drive  (laps_to_win = 4 in a copy: 4 laps in 76.3 s (limit 90 s), ended by laps; top speed 23.1 m/s; nitro pad 4 times, 4 nitro bursts;)
+PASS hunt2.stopped_cam  (fake Godot printed every case line, then stopped itself: FAIL cam.wall_start, exit 1)
+PASS hunt2.stopped_cam_cut  (fake Godot printed every case line, then stopped itself: FAIL cam.cut_wall, exit 1)
+PASS hunt2.stopped_world  (fake Godot printed every case line, then stopped itself: FAIL ground.ledger_shapes, exit 1)
+PASS hunt2.stopped_rig  (fake Godot printed every case line, then stopped itself: FAIL rig.bugfix.pose_rest, exit 1)
+PASS hunt2.stopped_rig_team  (fake Godot printed every case line, then stopped itself: FAIL rig.bugfix.review_team, exit 1)
+PASS hunt2.stopped_runner  (fake Godot printed every case line, then stopped itself: FAIL runner.stage_record_rebuilt, exit 1)
+PASS hunt2.stopped_runner_place  (fake Godot printed every case line, then stopped itself: FAIL runner.place_no_glide, exit 1)
+PASS hunt2.stopped_control  (the same fake Godot exiting 0: PASS cam.wall_start, exit 0)
+PASS hunt2.boot_check_unwritable  (a directory where <out>.boot.json goes: exit 2)
+PASS hunt2.boot_probe_unwritable  (a directory where the probe report goes: exit 2)
+PASS hunt2.boot_probe_writable  (control: writable --out, exit 0, report written)
+PASS hunt2.tuning_typo_drive  (tuning.json with mass_typo (first 'mass' key): smoke exit 1, the key named in the report)
+PASS hunt2.tuning_typo_paddle  (tuning.json with speed_typo (first 'speed' key): smoke exit 1, the key named in the report)
+PASS hunt2.tuning_typo_wall  (tuning.json with hp_typo (first 'hp' key): smoke exit 1, the key named in the report)
+PASS walker.crown  (frames=34560 poses=2880 head_out=[26592, 0, 0] head_in=[7968, 2057, 2328] side=1453 max_side=150)
+PASS rig.walker.slide_floor  (lowest=0.006 m at LeftToes@f30 (tolerance -0.02))
+PASS rig.walker.slide_entry  (lowest=-0.018 m at RightFoot@f4 (tolerance -0.02))
+PASS walk.v_wedge  (62deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 75deg settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true | 15% grade ground_inside=0 exit_x=11.54 | 5% grade ground_inside=0 exit_x=10.82)
+PASS walk.v_asymmetric  (settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true)
+PASS walk.v_yaw  (settled=ground lands=1 walk_ground=120/120 changes=0 x=8.74 jump=true rise=0.94 exit=true)
+PASS walk.v_terrain  (settled=ground lands=1 walk_ground=120/120 changes=0 x=8.73 jump=true rise=0.94 exit=true skew_contacts=100/120)
+PASS walk.single_face  (62deg slope=68 ground=0 downhill=6.90 y=-12.71)
+PASS walk.step_edge  (0.60m air=12 lands=1 slope=0 max_drop=0.073 end=ground y=0.001)
+PASS walk.pad_swap  (faces+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | faces+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | faces+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | faces+0.65 first=0.000 idle60=-11.800 overlaps=19/60 walk90=-26.700 | box+0.20 first=0.200 idle60=0.200 overlaps=0/60 walk90=0.201 | box+0.40 first=0.400 idle60=0.400 overlaps=0/60 walk90=0.401 | box+0.55 first=0.550 idle60=0.550 overlaps=0/60 walk90=0.551 | box+0.65 first=0.000 idle60=0.000 overlaps=60/60 walk90=0.650 | pitched=0.242 roof=0.000)
+PASS style.walker.ink  (7 body/depth cases, 4 terrain tap profiles, 1 strong silhouette and 2 brush flanks)
+PASS world.site_warm_cache  (cold = warm: 220 51b227f5682175d607b8d848d67debb438d1abb4cd63ae4b554bf25fa32dd681 events=21 arrived=19 radius=25)
+PASS runner.input_backslash  (recorded gas 71; forward-slash feeds 1 gas 71; backslash feeds 1 gas 71)
+PASS walk.coyote_limit  (jumps at offsets 6/7 = [1, 0])
+PASS walk.wall_still  (45 ticks x_span=0.00000 m peak_speed=0.000 m/s grounded=45/45 along=2.09 m)
+PASS walk.down_brake  (start=1.70 peak=1.70 end=0.00 m/s increases=0/6)
+PASS ground.concave_cover  (immediate 2 faces y=0.00, arriving 2 faces y=0.00 at tick 90)
+PASS site.log_schema  (25/25 invalid rows refused, 1 warnings, arrive=21, failed=11, unmade=33)
+PASS site.late_files  (arrival tick 120, 21 events, 5 polls, 1 warnings)
+PASS style.first_reject  (palette keys after a rejected first load 103, default 103, rejected reload after the default 103)
+PASS site.editor_lot  (lot 0 from the draft at 100,-30 ring 26 m; lot 1 without a draft stays at the walk's lot ("radius":30.0))
+PASS walker.crown_swing_behind  (frames=34560 poses=2880 head_out=[26592, 196, 1332] head_in=[7968, 2057, 2328] side=0 max_side=0)
+PASS site.editor_lot_job  (two logged lots, one conflicting draft, one walk placement)
+PASS site.editor_pad  (base_h(-225,68)=5.558897 m, moved pad=5.558897 m, stationary pad=1 m)
+PASS site.no_ring  (worker mesh and two 1.2 m entrance walls checked before and after refit)
+Zero-yaw mesh and shape digest bbdf90e92c38d107532f7405eaefa842c2ffecc668f684aa1346bba7a7d360f1
+PASS site.editor_yaw  (four crane/bay boxes, two rail walls, job and draft, repeat build)
+PASS site.auto_pad  (stationary auto, old reservation and moved pad at 5.56 m; stationary explicit pad at 13.375 m)
+PASS site.arrived_yaw_entry  (40 x 12 m, +30/-30/0 degrees, oriented gaps and held/released entry)
+PASS site.arrived_yaw_solids  (initial and sliced copies: turned bin wall, clear old position, bent rim and pack-local rays)
+PASS site.arrived_yaw_record  (job -30, draft +15, legacy/zero omitted; arrival 38, reload 42, enter 50; save/load and changed-draft replay)
+PASS site.arrived_yaw_hash  (seed 1, 241 bot frames, world 0 = editor +30 = replay = tl.sh bot: 545cd7c35ab2a3611fe216bd9e48335399463b31117faaaa8caee8f24963fb1b)
+PASS site.arrived_yaw_stage  (turned visitor marker, local stage camera, relative second plot, road-facing return 5 m outside)
+PASS blend.footprint  (rotated floor, walkable grade, supported clip and sink)
+PASS blend.shoulder  (axis=54.25m diagonal=76.25m ratio=1.406 max_second_difference=0.614m at 3m (72 rays, limit 0.65m) Drive_rim=-1.09m ground_only=-1.09m)
+PASS blend.pigment  (pairs=6050 edge_p99.9=7.42/255 (limit 12) tone_span_5_95=53.64/255 (min 30))
+PASS blend.car_origin  (live_grass=99.8% distant_asphalt=100.0% (5500 samples per view, minimum 90% each))
+PASS flight.ratio  (run=9.000 cruise=45.000 ratio=5.000)
+PASS flight.accel  (ticks95=60 max_dv=1.500 lift_m=2.540 glide_ticks=89 turns_deg_s=140.0/-140.0)
+PASS flight.ceiling  (ticks=1800 height=119.993 max=119.993)
+PASS flight.sweep  (ticks=20800 flying=20800 headings=16 cruise_ticks=15636 low_ticks=20492 blocked=40 overlaps=0 cam_crown=0 cam_under=0 max_yaw_deg=0.000 max_pitch_deg=2.085 arm_ratio=1.800 pitch_drop_deg=5.997)
+PASS flight.collide  (cruise=45 near_side_m bluff=0.351 trunk=0.351 wall=0.351 trunk_at=[26.0,14.9] trunks_tried=2)
+PASS flight.land  (fly_land=true overlap=false masks=5/1 fly_end=["fly_end"] fell=true final=ground crown_stays_flying=true)
+PASS flight.gate  (plot=1 previous_height=12.075 gate_error_m=0.0000 mode=ground fly_t=-1 walked_m=8.739 inside_m=3.739 entered_stage=1)
+PASS flight.biped  (frames=600 sha256=896a9c9dfce48bd87e10a7dd393e3a8d6c7bcc5f6dd4f1fbd85bde3dd29ff214 run=9.000 cruise=45.000 ratio=5.000 climb_m=12.251 mapped_controls=true)
+PASS flight.replay  (ticks=240 record=[23.109,11.188,1.987] replay=[23.109,11.188,1.987] delta_m=0.000)
+PASS flight.pose  (cruise_mps=45.000 lean_deg=61.995 max_lean_step_deg=5.000 bank_left/right_deg=23.330/-26.414 max_abs_bank_deg=26.414 fly_clip_ticks=328/328 clip_exit_ticks=0 back_socket=true lean40=0.000 bank40=0.0000 pitch40=-0.000 roll40=0.0000 offset40_m=0.00000 neutral_ticks=24)
+PASS moves.ledge_reach  (height_m=[1.99,2.00,2.01,2.79,2.80,2.81] catches=[false, true, true, true, true, false] no_room_refused=true grounded_90=true)
+PASS moves.mantle  (ticks=28 gain_m=1.601000 overlaps=0 end=ground blocked_safe=true)
+PASS moves.drop  (push_mps=1.000 landed_tick=23 below=true first_regrab_tick=21)
+PASS moves.bar_catch  (jump_0.35/0.36=[true, false] grounded_walk=true outside_end_refused=true)
+PASS moves.bar_swing  (period_s=1.344014 theoretical_s=1.345150 crossings=5 amplitude_after_360=0.49775 pump_30deg_tick=68 wall_stopped=true)
+PASS moves.bar_release  (hop_error_mps=0.000000000 drop_error_mps=0.000000000 identical_bytes=936 first_regrab_tick=21)
+PASS moves.flight_unchanged  (in_range_fly_wall/bar=true/true flight_cases=13)
+PASS moves.optin  (frames=600 sha256=1c2a24d2e3af1bdff8f2a852a4b2b1c917230fd52a8416a46a9ae08c6d2ecf1d off_hang/bar=false/false on_hang/bar=true/true independent=true)
+PASS moves.replay  (wf_feel/ex_walker ticks=120 hang=true mantle=true feet=[-115,7.001,-26.835] replay=[-115,7.001,-26.835] delta_m=0.000)
+PASS flight.wings  (parts=17 tris=1236 unfold_ticks=30 fold_ticks=36 tip_step_max_m=0.197 span_m=4.39 folded_box=[-0.33,0.59,0.33]..[0.32,1.70,0.59] tidy=true same=true)
+PASS moves.pose  (hang_clip=true faces_wall=true sink_m=-0.400 hands_to_edge_m=0.077 mantle_clip=true on_top=true upright_after_mantle=0 swing_clip=true hands_to_bar_max_m=0.077 max_theta_deg=84.8 upright_after_release=13 same=true)
+PASS flight.dust  (takeoff_tick=30 landing_tick=201 puffs=2 born=[30, 201] at_feet_emitting=true freed_in_time=true)
+PASS moves.cam_bar  (ignore: walk+swing max_lift_deg=0.000000 max_pull_m=0.000000 max_cam_step_m=0.236 caught=true max_theta_deg=84.8 | control (old): max_lift_deg=60.000 max_pull_m=0.000 max_cam_step_m=4.493)
+PASS moves.swing_soft  (pump: max_theta_deg=84.89 guard_ticks=0 max_domega=0.445 | entry 9 m/s: entry_omega=8.18 max_theta_deg=81.06 guard_ticks=0 max_domega=0.850)
+PASS moves.biped_grip  (hang_clip=true sink_m=-0.400 hands_to_lip_m=0.077 on_top=true upright_after_mantle=0 swing_clip=true hands_to_bar_m=0.077 max_theta_deg=100.0 facing_drift_deg=0.000 upright_after_release=16 cam_lift_deg=0.0000 cam_pull_m=0.1284 cam_step_m=0.558 | camera with nothing to avoid (mask 0): cam_lift_deg=0.000 cam_pull_m=0.128 | control (bar not in tl_bar): cam_lift_deg=70.000 cam_pull_m=6.082)
+PASS moves.ledge_fit  (ledges=[2.90:hang/top, 2.95:hang/top, 3.00:hang/top, 3.05:hang/top, 3.10:hang/top])
+PASS flight.wings_summon  (frames=144 summon=36 land_fold=36 land_dismiss=36 air_dismiss=36 errors=[])
+PASS hud550.editor_save
+PASS hud550.strict_data
+PASS hud550.layout_applies
+PASS hud550.village_clearance
+PASS hud550.state_hash  (f7abac006a45bd43b7c7987e7400a234ac9060deae54f3b681be2f5803ab2af0@988)
+PASS hud550.bad_key
+PASS style.switch  (unset -> style_crisp.json, TL_STYLE=classic -> style.json (golden))
+PASS style.frame.focus
+PASS style.frame.rig
+PASS style.frame.pixels  (west_p99=1 nearby=1 cloud_samples=2176 wool_drawn_clipped=(1775, 0) contrast=[0.26958060264587, 1.0, 0.4279473721981] flight_delta=0 contact_delta=(20.77778, 0.0, 22.33333, 0.0) pitched=[1.00228893756866, 0.99560624361038, 0.50407111644745, 1.00002527236938, 0.36273592710495])
+PASS style.frame.rink  (west=(253.0, 213.0, 196.0) east=(251.0, 210.0, 194.0) blue=(187.0, 172.5, 192.0))
+PASS surf.classic_source  (sha256=e3aad816ec7178361b08bf8da2a419fd7f8fe719eef8852aa70d476420f8c20f want=e3aad816ec7178361b08bf8da2a419fd7f8fe719eef8852aa70d476420f8c20f lines=558 diorama_lines=407)
+PASS surf.model  (style=diorama model='diorama' water='resin' diorama_mat_keys=63 errors=0)
+PASS surf.model_classic  (style=golden model='' water='' diorama_mat_keys=0 errors=0)
+PASS surf.edges  (box_corners=36 off_corner=0 face_cm=[50, 100, 200] rotated_bar_cm=[30, 400] cylinder_side=48 not_radial=0 uv2=84 of 120 vertices content_hash=c1a5ae1f297fb32f498f84cbeed5126cddc30809 want=c1a5ae1f297fb32f498f84cbeed5126cddc30809)
+PASS surf.keys  (diorama_file_errors=0 unknown_key_and_class_caught=2 of 2)
+PASS character.clay  (wardrobes=12 triangles=9888..11788 bones=29 clips=45 height=2.0 radius=0.3 palm_max_m hang=0.00000 bar=0.00000 stick=0.00000 jump_leads=["R", "L", "L", "R"] pocket_rest_hold_m=0.327/0.041 chest_roll_deg=-7.2..7.2 launch_knee_deg=26.0 bank_arm_deg=22.0 errors=[])
+PASS character.cel.wardrobe  (wardrobes=12 tris=8420..9988 bones=29 clips=45 height=2.0 radius=0.3 grip_m=0.00000/0.00000 errors=[])
+PASS style.cel.frame  (CEL_SHADOW splits=(0.027, 0.07, 0.22) restored=(0.1, 0.2, 0.5) CEL_LIGHT road=-39.9999961853027 overhead=-39.0 CEL_SUN road_pale_samples=297 bounds=[P: (12, 22), S: (42, 34)] CEL_SKY west_p99=0 neighbour=10 cream=3796 lavender=1989 changed=6102 CEL_BANDS ["b51b1b", "b61b1b", "ca211e", "ca211e", "ea3b22", "e83a22"] CEL_FILL olive=55670d->506220 protected_delta=0 CEL_MOTION near_delta=0 rest_delta=0 distant_step_rms=29.7056457702067 -> 10.9912251933076 CEL_CONTOURS both_edges_px=[6, 4, 2] gap_delta=0 )
+PASS style.cel.camera  (ground_eye=(0.0, 3.299, 4.335) aim=(0.0, 2.33, 0.0) flight=(0.0, 3.6, 8.5) max_step=0.17399464547634 classic=(0.0, 3.6, 8.5))
+PASS style.cel.exe_aa  (fallback=msaa=2,taa=1 crisp=msaa=4,ss=smaa,taa=0 override=ss=off,msaa=8)
+PASS celsurf.classic_files  (toon.gdshader, water.gdshader, style.json as on the base)
+PASS celsurf.model  (style=golden file=style_crisp.json model='cel' water='cel' cel_keys=24 errors=0 clamped=0)
+PASS celsurf.model_classic  (style=golden file=style.json model='' water='' cel_keys=0 errors=0 clamped=0)
+PASS celsurf.pic_key  (style=style_crisp.json salt='|paints:#9ab534,#bfb23c,#7aa02c,#d39762,')
+PASS celsurf.pic_key_classic  (style=style.json salt='')
+PASS celsurf.palette  (keys=103 crisp_keys=103 same_names_and_order=true colours_changed=12)
+PASS celsurf.globals  (declared=35 not_registered=[] cel_globals=15 land_paints_in_palette=8 of 8)
+PASS celsurf.paint  (grass_to_road=grass>dirt rock_on_level=0 back_to_grass=0 steep_face=cliff)
+PASS celsurf.rails  (rail_m=488.0 pieces=12 drawn_under_0.75_px=0 collision_objects=0 vertices_in_the_spur_mouth=0 across_from_it=660 at_a_gate=0 without_key_m=0.0 nodes=0 key_in_crisp_only=true)
+PASS harden.rails_block  (193 places along the drawn rails (crisp, 1.3 m from the road's edge) walked into from the road for 70 ticks: stopped at all of them)
+PASS harden.rails_village  (199 places along the drawn rails of the wf_feel village walked into from the road (each start on the land) for 70 ticks: stopped at all)
+PASS harden.rail_gaps  (19 open spans (one in nine) walked through from the road in 70 ticks: all passed)
+PASS harden.gate_sign  (10 gate markers (sign and flag, 1.3 m before the fence) walked into from the road for 60 ticks: stopped at all)
+PASS harden.site_sign  (a site's sign after 14 frames: its posts x 5.4 stopped, x 14.6 stopped; under the board between them x 10.0 passed)
+PASS harden.site_fence  (yaw 0: 5 stretches, from behind stopped 31.4 m from the centre, from the gate 25.5 m; yaw 30: 5 stretches, from behind stopped 33.0 m from the centre, from the gate 25.5 m)
+PASS harden.bush_block  (50 bushes taller than 0.6 m walked into for 60 ticks: never in the middle third of one)
+PASS harden.kit_parts  (fence stopped, fence(mesh) stopped, bush stopped, sign stopped, marshal_post stopped, watch_tower stopped, scoreboard passed, pond passed)
+PASS harden.spawn_clear  (9 places (spawn, walker, drive, wall, paddle, kit, car, hockey, parkour): on the land, his capsule touches nothing; the control box is found (his capsule meets control))
+PASS create.schema  (4 checks)
+PASS create.model  (12 checks)
+PASS create.door  (3 checks)
+PASS create.page  (7 checks)
+PASS create.site  (1 checks)
+PASS create.complete  (1 checks)
+PASS create_site.read  (c5-building 22/22 events, "phase 1 of 3: Slide and bump"; c8-phase2 52/52 events, "phase 2 of 3: Rivals and cracks")
+PASS create_site.phase  (phase 1 of 3: Slide and bump | phase 2 of 3: Rivals and cracks)
+PASS dungeon.list  (listed=["packs/hockey", "packs/parkour", "seeds/seed_paddle"] unresolved=[] bad_accepted=[] launch=["--path", "C:/Users/kazda/kiro/third-life/.claude/worktrees/d22-e6/engine", "res://boot/boot.tscn", "--", "--dungeon=C:/job/pack"])
+PASS dungeon.bypass  (cases=19 wrong=[]; tag, headless village refusal, --record, check: as before)
+PASS dungeon.refused  (no --frames headless 2, missing 2, lint 2, script error 1)
+PASS dungeon.hash_alone  (hockey_1200_1=c4f625006fa1 hockey_600_7=c0141b75426c parkour_900_1=1a399b4e5d06 seed_paddle_900_3=e54b1e3eec2b)
+PASS dungeon.trips  (3 round trips; menu 3 and 7: 33 nodes 1923 objects 198 resources 120.63 MB;33 nodes 1923 objects 198 resources 120.65 MB;; dungeon hash = alone c4f625006fa1 each time; worlds alike)
+PASS dungeon.watchdog  (endless step at frame 60 -> watchdog record -> card 'was stopped by the watchdog' -> Back to Create pressed (the card process wrote --out))
+PASS hockeyfun.record_bot
+PASS hockeyfun.record_replay
+PASS hockeyfun.record_same_hash  (bot_fun seed 1: bot 330fa64c731985cc = replay 330fa64c731985cc)
+PASS hockeyfun.goalie_bot
+PASS hockeyfun.goalie_replay
+PASS hockeyfun.goalie_same_hash  (bot_goalie seed 1: bot 5e1dfb9967b29206 = replay 5e1dfb9967b29206)
+PASS rig.fight.clips  (checked=48 )
+PASS rig.fight.golden  (runs=234 )
+PASS rig.fight.yaw  (style blade at rest: bearing -0.46 rad, 1.38 m out; turns +0.86 / -0.87 rad at +1 / -1 rad (height change 0.00 m), style_crisp blade at rest: bearing -0.98 rad, 1.38 m out; turns +0.88 / -0.96 rad at +1 / -1 rad (height change 0.00 m), style_diorama blade at rest: bearing -0.98 rad, 1.38 m out; turns +0.88 / -0.96 rad at +1 / -1 rad (height change 0.00 m) )
+PASS rig.fight.cross  (style shaft.y 0.00 hands apart 0.52 m at 1.27 m, 0.92 m ahead, shaft middle 0.10 m off, style_crisp shaft.y -0.00 hands apart 0.45 m at 1.27 m, 0.92 m ahead, shaft middle 0.03 m off, style_diorama shaft.y -0.00 hands apart 0.45 m at 1.27 m, 0.92 m ahead, shaft middle 0.03 m off )
+PASS falls.lab_lint
+PASS falls.lab_bot
+PASS falls.lab_spec  (big hits fall away from the blow, flinches away and scaled by strength)
+PASS falls.lab_invariants
+PASS falls.authored_crisp  (fall direction relative to rotated hips and get-up within the pack's window)
+PASS falls.authored_classic  (fall direction relative to rotated hips and get-up within the pack's window)
+PASS hockeymech.bot_carry_turn_bot
+PASS hockeymech.bot_carry_turn_replay
+PASS hockeymech.bot_carry_turn_same  (bot_carry_turn seed 1: bot b31a756795312ad5 = replay b31a756795312ad5)
+PASS hockeymech.bot_reverse_stop_bot
+PASS hockeymech.bot_reverse_stop_replay
+PASS hockeymech.bot_reverse_stop_same  (bot_reverse_stop seed 1: bot b6af8cf5cb51f835 = replay b6af8cf5cb51f835)
+PASS hockeymech.bot_contact_bot
+PASS hockeymech.bot_contact_replay
+PASS hockeymech.bot_contact_same  (bot_contact seed 1: bot e299f47e09066e28 = replay e299f47e09066e28)
+PASS hockeymech.bot_sprint_bot
+PASS hockeymech.bot_sprint_replay
+PASS hockeymech.bot_sprint_same  (bot_sprint seed 1: bot 28c4f2f3e35898b2 = replay 28c4f2f3e35898b2)
+PASS hockeymech.bot_charge_bot
+PASS hockeymech.bot_charge_replay
+PASS hockeymech.bot_charge_same  (bot_charge seed 1: bot 3938bc03d3331a7c = replay 3938bc03d3331a7c)
+PASS hockeymech.bot_windup_bot
+PASS hockeymech.bot_windup_replay
+PASS hockeymech.bot_windup_same  (bot_windup seed 1: bot cf338544729f1c88 = replay cf338544729f1c88)
+PASS hockeymech.bot_downed_bot
+PASS hockeymech.bot_downed_replay
+PASS hockeymech.bot_downed_same  (bot_downed seed 1: bot 87f1ab2a7f50ac98 = replay 87f1ab2a7f50ac98)
+PASS harden.road_edge  (crisp village: 1809 objects, 519 trunks clear; crisp wf_feel: 1793 objects, 528 trunks clear; classic village: 1809 objects, 519 trunks clear)
+PASS harden.lot_props  (wf_feel: 13 props (1 crane, 1 scaffold, 2 timber, 3 pallet, 2 barricade, 4 cone), 82 walks (0 starts inside another prop left out); tour: 13 props (1 crane, 1 scaffold, 2 timber, 3 pallet, 2 barricade, 4 cone), 79 walks (0 starts inside another prop left out): he stops at what is drawn, from every side)
+PASS harden.rock_tops  (village: 60 rocks with a body, wf_feel: 47 rocks with a body: each body's top within 0.25 m of its rock's)
+PASS harden.kit_tops  (36 parts straight and turned 30 degrees, 205937 columns: every body top within 0.12 m of its mesh top (a 0.25 m foot; allowed by name: arch_rib holes, crane holes, tree holes, light_mast holes, entrance holes, goal phantom))
+PASS harden.site_waits  (editor_yaw (7 site builds) and no_ring (build and refit) finish inside 120 frames: worker meshes waited for, not counted in frames)
+PASS harden.site_fixtures  (11 fixtures, each with its row and the files that run it)
+PASS rig.react.clips  (checked=60 )
+PASS rig.react.pose  (checked=60 min_angle=44.1deg min_wall_drop=0.251m )
+PASS feel.lab_lint
+PASS feel.lab_smoke
+PASS feel.lab_bot
+PASS feel.lab_invariants
+PASS feel.pushbox_lint
+PASS feel.pushbox_smoke
+PASS feel.pushbox_bot
+PASS feel.pushbox_invariants
+PASS feel.occluder_lint
+PASS feel.occluder_smoke
+PASS feel.occluder_bot
+PASS feel.occluder_invariants
+PASS feel.ball_radius  (3 shapes and meshes, unchanged masses, 0.25 m hits puck, 0.32 m hits floor)
+PASS clock.map  (71 ticks, hit-stop 10..14 held at 3.000, coil 8 -> 10 over 6, chop at 37 = 14.4)
+PASS clock.same  (two runs equal)
+PASS clock.speed  (half [1.5, 2.0, 2.5, 3.0, 3.5, 4.0], held 4.00 -> 4.00, reaction block_stun clock ended)
+PASS clock.bad  (refused; the clip stays block_stun (the error above is expected))
+PASS swing.lint
+PASS swing.smoke
+PASS swing.bot
+PASS swing.invariants
+PASS hud.color_direct
+PASS hud.color_palette
+PASS hud.color_bad
+PASS hud.color_theme
+PASS hud.color_reset
+PASS hud.tag_front
+PASS hud.tag_offscreen
+PASS hud.tag_behind
+PASS hud.tag_view
+PASS hud.tag_offstage
+PASS hud.tag_freed
+PASS hud.tag_remove
+PASS ball.gain_cut  (free peak 28.78 m/s; capped peak 22.05, first moving frame 14.00 (cap max(prev,10)+4))
+PASS ball.gain_declared  (shoot_at 25.00, set_velocity 30.00, release 17.98, shoot 20.00 kept; raw write cut to 14.00)
+PASS ball.gain_off  (max_gain 0 = no call, 30 moving frames: equal)
+PASS ball.gain_same  (6bd6d782053ad02e in both processes)
+PASS duel.lint
+PASS duel.contact_light_parried
+PASS duel.contact_heavy_block
+PASS duel.contact_clash
+PASS duel.contact_bash_wall
+PASS duel.replay_bot
+PASS duel.replay_replay
+PASS duel.replay_same  (parry_riposte seed 1: bot 8275aac045792af3 = replay 8275aac045792af3)
+PASS hockeyplay.bot_poke_bot
+PASS hockeyplay.bot_poke_replay
+PASS hockeyplay.bot_poke_same  (bot_poke seed 1: bot 470d69e77ecab999 = replay 470d69e77ecab999)
+PASS hockeyplay.bot_dangle_bot
+PASS hockeyplay.bot_dangle_replay
+PASS hockeyplay.bot_dangle_same  (bot_dangle seed 1: bot 1a633935c04f46a6 = replay 1a633935c04f46a6)
+PASS hockeyplay.bot_reception_bot
+PASS hockeyplay.bot_reception_replay
+PASS hockeyplay.bot_reception_same  (bot_reception seed 1: bot e3b157198bd7c2c5 = replay e3b157198bd7c2c5)
+PASS hockeyplay.bot_ai_play_bot
+PASS hockeyplay.bot_ai_play_replay
+PASS hockeyplay.bot_ai_play_same  (bot_ai_play seed 1: bot 0fde845fcd33a3d6 = replay 0fde845fcd33a3d6)
+PASS land.same_mesh  (exe and tour: all vertex channels, triangles, shared material and tree shade match)
+PASS land.seams  (every shared edge matches and the mid skirt covers the near border)
+PASS land.colliders  (119 terrain bodies, exact face totals, 2000 seeded rays per village including holes)
+PASS land.heightmap  (fixed-split mesh, Jolt rays and a NaN hole)
+PASS land.record  (canonical bytes, sparse heights, paint, water and seam/error checks)
+PASS land.rings  (20 x 20 chunks, budget 2, hysteresis, forced neighbours and identical replay)
+PASS land.ledger  (unloaded beyond the shipped backdrop_m 960.0 m: record unchanged while away ({"clock":"00:01","clock_frames":119,"over":false,"phase":"running","score":{"bin":4},"ticks":119}), rebuilt with ticks 119 and score {"bin":4})
+PASS home.a.determinism  (546d7692f5b0b83e5fb9710bafb3ba1f96860f7a2242bf9e11d9736a554455bb repeat 546d7692f5b0b83e5fb9710bafb3ba1f96860f7a2242bf9e11d9736a554455bb)
+PASS home.a.extent  ([-3264, -3264, 3264, 3264])
+PASS home.a.reach  (5 graded venues, 2 portals)
+PASS home.a.chunk  (3 chunks, 66 shared samples)
+PASS home.a.village  (max interior/edge delta 0.00000004450888)
+PASS home.walk  (arrived at Mill Green in 4796 frames; 518.4 m out of the village over 3457 frames, 0 frames off the drawn ground (lowest 0.000 m under it at his centre, highest 0.002 m over it under his sole; worst (-821.3, 1.30, 79.6) sink 0.002 lift 0.002 ground))
+PASS home.bridge  (817 frames over Wren Water, 0 not on the deck; lowest feet 1.30 m (water -4.88 m); over the water from [-648.5, 106.5, 3223] to [-769.4, 87.7, 4039])
+PASS home.drops  (5 of 5 places: (-1300, -420) landed at frame 87, sink 0.000 lift 0.002; (957, 198) landed at frame 87, sink 0.000 lift 0.000; (-2500, 0) landed at frame 87, sink 0.002 lift -0.005; (1900, -2100) landed at frame 86, sink 0.118 lift -0.097; (-1140, 390) landed at frame 87, sink 0.001 lift 0.001)
+PASS e6.space_order  (same: 51 colliders alone, 51 in the moved space, frame 3)
+PASS e6.space_contact  (movers in the bin 4/4, differ none, frame 360)
+PASS e6.body_order  (hockey n=105 colliders, world = alone at frame 3)
+selftest: 491 passed, 0 failed (reports in /c/Users/kazda/kiro/third-life/.claude/worktrees/d22-e6/.tl/st_full)
