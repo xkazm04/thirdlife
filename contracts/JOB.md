@@ -399,7 +399,9 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
     reactions, the rival archetypes; arcade_sport: possession as a state, the utility AI, the roles).
 - **`brief_set.brief.design.verbs[].move`** (optional): the template move a verb copies (duel: `light`, `heavy`,
   `charged`, `bash`, `block`, `parry`, `roll`, `dodge`, `taunt`; arcade_sport: `poke`). The writer refuses a verb whose
-  frames differ from the template's table (GAME-QUALITY.md section 11) and a duel design with fewer than three copied
+  frames differ from the template's table (GAME-QUALITY.md section 11), except its wind-up (`anticipation_f`): since the
+  night of 23 Nov a copied move may wind up slower than the house game's, up to the template's bar where it has one
+  (duel: light 30, heavy 60, For Honor's 400-500 / 800-1000 ms), never faster and a duel design with fewer than three copied
   moves, or none that is an attack, or none that is a defence. A defence move is `defensive: true`.
 - **Readers of the design**: the design step, the review, the Planner and the builders receive the template's research
   excerpt (the sections of its file; builders get the implementable spec only). `own` gets none.
