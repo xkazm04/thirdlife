@@ -325,8 +325,17 @@ example and engine needs for all future games coming from editor"). The house ga
 the template on this kernel: `engine/packs/duel` (`game.duel`) for the duel, `engine/packs/hockey` for the arcade sport.
 Every job's reference copy holds it (`ref/packs/<pack>/`). The design step and the Planner read its README rules; the
 builders read its files; the Foreman checks a copied move against the house game's own frame table
-(`engine/packs/duel/data/moves.json`), not the research's. **Where the two differ, the house game wins**: its numbers
-were measured on this kernel.
+(`engine/packs/duel/data/moves.json`), not the research's.
+
+**A house game is a working base, not the quality bar** (23 Nov). The owner played both house games and called them
+slop; N1's teardowns (`docs/research/hockey-teardown/TEARDOWN.md`, `docs/research/duel-teardown/TEARDOWN.md`) showed
+why: the rules were copied faithfully, and the bodies, timing, scale, camera, puck and screen were not. So until a person
+has accepted it, a house game shows how the engine is driven (its files, calls and data layout; the frame check and the
+house compare stay as a floor), and **the bar is the reference game**: its numbers (`docs/design/CASES.md`) and the
+teardown's top ten as "do not copy" lines. The Foreman pastes both to the design step, the Planner, the builders and
+the critic as the template's bar (`foreman/src/templates.ts` `bar`). Where the reference's numbers and the house
+game's differ, the reference's win unless the design says why. The house numbers still win on how the kernel is driven
+(the pushbox, the camera API, the clip clocks).
 
 - **`duel`: a melee duel** (one against one, or one at a time; fists, swords, shields, a gladiator, a knight, a boxer).
   Reference: Dark Souls / Sekiro / For Honor, as `docs/research/DUEL-PLAYBOOK.md`. Copied, never paraphrased:

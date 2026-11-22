@@ -150,3 +150,25 @@ test("round 4: the WORLD line (N1's top finding) is required, names the player's
   assert.equal(tell?.min, 20, "a person's reliable reaction (CASES.md [B25]); was 12");
   assert.match(fs.readFileSync(path.join(REPO_ROOT, "docs", "GAME-QUALITY.md"), "utf8"), /\| 11 \| Each dangerous opponent action has a tell >= 20 frames/);
 });
+
+test("round 5: a house game is a working base, not the bar; each template carries its bar (the reference numbers and the teardown's do-not-copy lines) to the design step, the builders and the critic", async () => {
+  const { templateExcerpt, templateOf, houseKeepProblems } = await import("../templates.js");
+  const { barContext, houseItem } = await import("../quality.js");
+  const sportT = { id: "arcade_sport" as const, reference: "NHL 94", copies: ["possession", "utility AI", "roles"] };
+  const duelT = { id: "duel" as const, reference: "For Honor", copies: ["state machine", "mutual", "archetypes"] };
+  for (const part of ["design", "builder"] as const) {
+    const sport = templateExcerpt(sportT, part);
+    assert.match(sport, /a working base on this engine, NOT the quality bar[^]*# The bar: the reference games, not the house game \(docs\/design\/CASES\.md; docs\/research\/hockey-teardown\/TEARDOWN\.md\)[^]*112 body widths[^]*drag 0\.5\/s[^]*ARRIVE at about 8 m\/s[^]*Do NOT copy these from the house game[^]*figures drawn 2\.2x/, part);
+    const duel = templateExcerpt(duelT, part);
+    assert.match(duel, /# The bar: the reference games[^]*at least 24 frames[^]*Do NOT copy[^]*written over the rival's head/, part);
+  }
+  assert.equal(templateOf("arcade_sport")?.bar?.dont.length, 10);
+  assert.equal(templateOf("duel")?.bar?.dont.length, 10);
+  assert.match(barContext(duelT), /^The bar is the reference games, not the house game \(docs\/research\/duel-teardown\/TEARDOWN\.md\)\. What the house game does that a build must NOT copy/);
+  assert.equal(barContext(undefined), "");
+  assert.match(houseItem("duel").text, /a FLOOR and not the bar[^]*Reaching the house game is not reaching the bar/);
+  // The camera keep: hockey -2's low chase camera still fails; thirdjam's camera bound to you, behind and above, passes.
+  const tj = "The camera is bound to your skater, behind and above, with an aim anchor. The puck is drawn bigger with a hot rim and a ring under your skater. The puck sticks to the blade on a spring. The carrier is slower (x0.92) and a pass beats skating. The AI scores SHOOT, PASS and CARRY every frame (utility).";
+  assert.deepEqual(houseKeepProblems(tj, sportT), []);
+  assert.ok(houseKeepProblems("Low chase camera right behind your skater.", sportT).some((p) => /keeps the play camera bound to YOUR skater and raised/.test(p)));
+});

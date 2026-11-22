@@ -40,7 +40,7 @@ test("house: the duel template reads engine/packs/duel's data/moves.json as its 
 
 test("house: the design step and the Planner read the house README's rules; a builder reads the file list in ref/packs/<pack>/", () => {
   const design = templateExcerpt(duelTemplate, "design");
-  assert.match(design, /### 6\.3 Contact results[^]*# The house game: engine\/packs\/duel \(game\.duel\)[^]*the house game's win[^]*data\/moves\.json: the frame table[^]*## How to play[^]*## The rules[^]*## The rivals[^]*## What changed from the playbook/);
+  assert.match(design, /### 6\.3 Contact results[^]*# The house game: engine\/packs\/duel \(game\.duel\), a working base on this engine, NOT the quality bar[^]*the reference's win[^]*data\/moves\.json: the frame table[^]*## How to play[^]*## The rules[^]*## The rivals[^]*## What changed from the playbook/);
   const planner = templateExcerpt(duelTemplate, "planner");
   assert.match(planner, /### 6\.4 State machine[^]*# The house game[^]*## What changed from the playbook/);
   assert.doesNotMatch(planner, /## 1\. The proven models/, "the Planner reads the implementable spec, not the history");
@@ -52,7 +52,7 @@ test("house: the design step and the Planner read the house README's rules; a bu
   // Refreshed from N3's landing (main b024967): the carry, the poke and the utility AI are read, with its README section.
   assert.match(hockey, /scripts\/carry\.gd: the puck as a state[^]*scripts\/ai\/carrier\.gd: the carrier's utility scores[^]*tests\/metrics\.gd[^]*## Puck, speed and the bots' decisions/);
   assert.equal(houseFigures({ bot: { result: { metrics: { lengths: [120, 300, 180, 240] } } } }, HOUSE_BOTS["arcade_sport"] as (typeof HOUSE_BOTS)["arcade_sport"] & object).metrics["possession_median_f"], 210, "N3's possession lengths: the median");
-  assert.match(templatesMenuText(), /`duel`[^\n]*House game \(the reference implementation on this engine\): engine\/packs\/duel \(game\.duel\)/);
+  assert.match(templatesMenuText(), /`duel`[^\n]*House game \(a working base on this engine, not the quality bar; the bar is the reference and its teardown\): engine\/packs\/duel \(game\.duel\)/);
   assert.equal(houseExcerpt(duel, "design", path.join(tempDir("no-engine"), "engine")), "", "no house pack: no excerpt");
 });
 
@@ -91,7 +91,7 @@ test("house compare: the house bot's figures by the tofu names (its own metrics 
   const built = judgeTofu({ feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 110, tell_min_f: 24, tells: 5, pressure_waves: 2, lead_change_share: 0.4, close_rounds: 2, contact_types: 3, one_sided_contacts: 0 }, rows, "tests/bot_tofu.gd");
   const c = houseCompare(built, base, rows);
   assert.deepEqual(c.short, ["idle_max_f", "contact_types"], "passes its own bounds, yet worse than the house game beyond the margin");
-  assert.match(c.line, /^house game engine\/packs\/duel \(tests\/bot_checklist_wall\.gd through the regular hand\), yours vs the house game's: idle_max_f 110 vs 64 SHORT, tell_min_f 24 vs 24, contact_types 3 vs 6 SHORT, one_sided_contacts 0 vs 0; the house game does not report feedback_f[^]*SHORT of the house game on idle_max_f, contact_types: copy how engine\/packs\/duel does it$/);
+  assert.match(c.line, /^house game engine\/packs\/duel \(tests\/bot_checklist_wall\.gd through the regular hand\), yours vs the house game's: idle_max_f 110 vs 64 SHORT, tell_min_f 24 vs 24, contact_types 3 vs 6 SHORT, one_sided_contacts 0 vs 0; the house game does not report feedback_f[^]*SHORT of the house game on idle_max_f, contact_types: reach at least its figure \(how engine\/packs\/duel does it shows the engine calls\); it is a floor, not the bar: the bar is the reference game \(docs\/design\/CASES\.md\)$/);
   assert.deepEqual(houseCompare(undefined, base, rows).short, ["idle_max_f", "tell_min_f", "contact_types", "one_sided_contacts"], "not reported where the house game reports is short");
   assert.match(houseCompare(built, { ...base, metrics: {} }, rows).line, /no figure to compare by the tofu names/);
 });
@@ -141,13 +141,13 @@ test("house compare: a duel job measures the house game once (reports/house-duel
   const ms = readEvents(job.jobDir).filter((e) => e.type === "milestone");
   assert.match(ms[0]?.type === "milestone" ? ms[0].summary : "", /house game engine\/packs\/duel \(tests\/bot_checklist_wall\.gd through the regular hand\), yours vs the house game's: [^]*idle_max_f 110 vs 64 SHORT/);
   const call = builder.calls.find((c) => c.req.meta?.role === "critic");
-  assert.match(call?.req.prompt ?? "", /The house game of this game's template, engine\/packs\/duel, is the bar[^]*SHORT of the house game on idle_max_f[^]*- house_game: Against the house game engine\/packs\/duel/);
+  assert.match(call?.req.prompt ?? "", /The house game of this game's template, engine\/packs\/duel, is a floor, not the bar[^]*SHORT of the house game on idle_max_f[^]*- house_game: Against the house game engine\/packs\/duel/);
   assert.equal(readEvents(job.jobDir).filter((e) => e.type === "verify" && e.verb === "bot" && /house-duel-s/.test(e.report)).length, 1, "measured once per job");
   // Round 2: the house game's own exchange, filmed once from 15 frames before its contact (the fake drill finishes at 600: 540; round 9: a CONTACT strip from 10 before), last in the critic's images.
   const kept = JSON.parse(fs.readFileSync(path.join(job.jobDir, "reports", "house-duel.json"), "utf8")) as HouseBaseline;
   assert.deepEqual(kept.strips?.map((x) => x.capture), ["reports/house-duel/strip-side-f530.png"]);
   assert.ok(fs.existsSync(path.join(job.jobDir, "reports", "house-duel", "strip-side-f530.png")));
-  assert.match(call?.req.prompt ?? "", /image (\d+) of \1, attached to this message: strip-side-f530\.png: HOUSE GAME engine\/packs\/duel \(the bar, not this build\): CONTACT MOTION STRIP[^\n]*2 frames apart; the contact at frame 540[^\n]*a moment of a real match against the Wall/);
+  assert.match(call?.req.prompt ?? "", /image (\d+) of \1, attached to this message: strip-side-f530\.png: HOUSE GAME engine\/packs\/duel \(a floor, not the bar, not this build\): CONTACT MOTION STRIP[^\n]*2 frames apart; the contact at frame 540[^\n]*a moment of a real match against the Wall/);
   assert.match(call?.req.prompt ?? "", /When an image is labelled HOUSE GAME, set this build's strips beside it/);
 });
 

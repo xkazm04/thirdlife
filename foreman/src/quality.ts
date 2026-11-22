@@ -24,6 +24,7 @@ import { HOUSE_BOTS, contactMoment, houseBaseline, houseCompare, saveBaseline, t
 import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./filmcheck.js";
 import { revisePair, sameKind } from "./revisepair.js";
 import { killItem, methodBlock } from "./method.js";
+import { templateOf } from "./templates.js";
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -87,7 +88,7 @@ export async function houseStrips(h: GateHost, base: HouseBaseline, template: st
       const res = `--res=${h.o.captureRes ?? "1280x720"}`;
       if (await captureOnce(h, [`--cam=${s.cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${st}`, res, `--test=${s.test}`], out, `house-${base.pack}-strip`, after, notes, `house strip ${s.cam} from frame ${from}`, packDir)) {
         // D3 of 22 Nov: the strip keeps its contact kind (the revise pair matches the build's strip to it); a fallback frame has none.
-        strips = [{ capture: h.rel(out), label: `HOUSE GAME engine/packs/${base.pack} (the bar, not this build): CONTACT MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + st}, ... ${from + st * (STRIP.count - 1)}, ${st} frames apart; the contact at frame ${f}${cm?.kind !== undefined ? `, ${cm.kind}` : ""}), ${s.test} on camera ${s.cam}: ${s.label}`, ...(cm?.kind !== undefined ? { kind: cm.kind } : {}) }];
+        strips = [{ capture: h.rel(out), label: `HOUSE GAME engine/packs/${base.pack} (a floor, not the bar, not this build): CONTACT MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + st}, ... ${from + st * (STRIP.count - 1)}, ${st} frames apart; the contact at frame ${f}${cm?.kind !== undefined ? `, ${cm.kind}` : ""}), ${s.test} on camera ${s.cam}: ${s.label}`, ...(cm?.kind !== undefined ? { kind: cm.kind } : {}) }];
       }
     } else notes.push(`house strip: ${s.test} on ref/packs/${base.pack} gave no contact frame (${clip(vr.summary, 160)})`);
   }
@@ -149,7 +150,7 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   const labels = all.map((x) => x.label);
   const res = await critic(h.o.builder, images.map((c) => h.dir(c)), rubric, {
     ...(model ? { model } : {}),
-    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, methodBlock(h.s.brief) !== "" ? `The design's method lines (what the player should feel, and what would kill the game):\n${methodBlock(h.s.brief)}` : "", h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, claims !== undefined ? claims : "", house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
+    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, methodBlock(h.s.brief) !== "" ? `The design's method lines (what the player should feel, and what would kill the game):\n${methodBlock(h.s.brief)}` : "", h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, claims !== undefined ? claims : "", barContext(h.s.brief?.concept?.template), house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is a floor, not the bar: a working base the owner called slop and no person has accepted (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
     packages: packageLinesOf(h.s, h.s.plan.map((p) => p.id)),
     labels,
   });
@@ -176,7 +177,13 @@ export function claimsLine(built: TofuResult | undefined, film?: FilmCheck): str
 
 /** N4 loop round 2: the rubric item of a job whose template has a house game: this build against the house game. */
 export function houseItem(pack: string): RubricItem {
-  return { id: "house_game", text: `Against the house game engine/packs/${pack} (the reference implementation of this game's template, its figures in the context above): do the frames show its exchange as clearly (wind-up, hit-stop on both, each body's own reaction, the guard and the roll in the body)? When an image is labelled HOUSE GAME, set this build's strips beside it: the same moment of the exchange, is it as readable in the bodies? Name in \`notes\` each place this build falls short of the house game, by what you see and by the SHORT figures. 1.0 as good as the house game, 0.5 its core with gaps, 0 none of it.` };
+  return { id: "house_game", text: `Against the house game engine/packs/${pack} (a working base of this game's template on this engine, a FLOOR and not the bar: the owner called it slop; its figures in the context above): do the frames show its exchange as clearly (wind-up, hit-stop on both, each body's own reaction, the guard and the roll in the body)? When an image is labelled HOUSE GAME, set this build's strips beside it: the same moment of the exchange, is it as readable in the bodies? Name in \`notes\` each place this build falls short of the house game, by what you see and by the SHORT figures. 1.0 at least as readable as the house game, 0.5 its core with gaps, 0 none of it. Reaching the house game is not reaching the bar: a build that copies one of the teardown's "do not copy" lines (context) is named for it.` };
+}
+
+/** N2 round 5: the template's quality bar for the critic: the teardown's "do not copy" lines ("" without a bar). */
+export function barContext(template: { id: string } | undefined): string {
+  const b = templateOf(template?.id)?.bar;
+  return b === undefined ? "" : `The bar is the reference games, not the house game (${b.teardown}). What the house game does that a build must NOT copy (name any you see, with the image): ${b.dont.join("; ")}.`;
 }
 
 export const verdictText = (v: Verdict): string => `${v.by ?? "critic (V5)"} ${v.ok ? "ok" : "NOT ok"}: ${scoresText(v)}; ${clip(v.notes.join(" | "), 500)} [${v.report}]`;

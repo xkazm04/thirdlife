@@ -29,9 +29,11 @@ one. **Never cut the feel sheet to fit a package**: cut content (fewer rivals, f
 Every package lists in `serves` the clip ids (from the design's clip moments) it brings closer; every clip id is
 served by some package.
 
-**The genre template is the spec of the core loop; its house game is the implementation.** The concept names the proven
-design the core loop copies; its research excerpt and its house game (a tracked game of this engine that plays it) are
-below. Every builder gets the template's implementable spec in its Feel section and the whole house game in its
+**The genre template is the spec of the core loop; its house game is a working base, not the bar.** The concept names
+the proven design the core loop copies; its research excerpt, its house game (a tracked game of this engine that plays
+it; the owner called it slop, so it shows how the engine is driven, not how good the game must be) and the template's
+bar (the reference game's numbers and the teardown's "do not copy" lines) are below. Where the bar's numbers differ
+from the house game's, the contract names the bar's. Every builder gets the template's implementable spec in its Feel section and the whole house game in its
 reference copy (`ref/packs/<pack>/`). So a contract **names, it does not retype**: "copy the light, heavy and bash rows
 of `ref/packs/duel/data/moves.json` and the heavy_block, light_parried and bash_wall rows of `data/contacts.json`; the
 state machine of `scripts/fighter.gd`", plus every number where this game DIFFERS from the house game and the names
