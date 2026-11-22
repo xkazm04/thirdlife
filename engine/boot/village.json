@@ -5,7 +5,7 @@
   "visitor": true,
   "ticks": 4000,
   "mode": "bot",
-  "tiers": {"sideline_m": 30, "margin_m": {"stage": 2, "sideline": 8, "backdrop": 40}, "dwell_ticks": 90},
+  "tiers": {"sideline_m": 60, "margin_m": {"stage": 2, "sideline": 10, "backdrop": 40}, "dwell_ticks": 90},
   "plots": [
     {"id": "walker", "pack": "ex_walker", "origin": [-115, 4.0, -47], "radius": 30, "footprint": {"size_m": [60, 60]}, "seed": 1},
     {"id": "drive", "pack": "seed_drive", "origin": [4, -2.5, -81], "radius": 64, "footprint": {"size_m": [128, 128]}, "seed": 1},

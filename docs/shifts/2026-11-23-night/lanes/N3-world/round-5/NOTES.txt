@@ -1,0 +1,19 @@
+N3 round 5: venues drawn in full out to 60 m in the village (marks only beyond), Director's go of 22:53
+
+Change: engine/boot/village.json tiers.sideline_m 30 -> 60, margin_m.sideline 8 -> 10. Nothing else.
+(a) Evidence, same spots:
+  - road_e_sideline60.jpg, pass_n_sideline60.jpg: the same scripted routes (frames 427/645/972/1190 and 536/645/754/863),
+    before (30) and after (60). At this size the routes show the same village; neither route brings a car inside 60 m
+    (the car plot's edge stays 63 m+ from pass N; road E ends at x -45), so a targeted pair was added:
+  - drive54_sideline.jpg / drive54_crop.jpg: standing at (-110, -110), 54 m from the drive track's edge, frames
+    280-295. Before: tier backdrop (log `"to":"backdrop","why":"start"`), the car is a static blue box on the track
+    (its mark, slow motion). After: tier sideline, the real car drives (a different place in every crop).
+(b) `world.sh tour tour --headless`: PASS (walks/tour.json keeps its own tiers, 30 m). And the village itself at 60 m
+    (boot/village.json resolved to pack folders, .tl/village60.json): `world.sh tour <it> --headless` PASS: all 10 plots
+    hash as alone and as the replay (drive a2940a17@3441, wall 5896844e@1221, paddle 67d58344@2547, kit ca698e71@332,
+    car 3a459d0f@1872, hockey 27ec3f7e@2575, parkour f7abac00@988, walker f1c7b537@371, sites 18f7d0ac@560, 56773154@1995).
+(c) Frame cost, BUSY (CPU 28-43 % before each run, 2-6 other Godot processes): road E, TL_EXE_FRAMES_TIMES=1,
+    frames 300-1300, 3 + 3 interleaved (frame_cost_sideline30_vs_60.txt):
+      sideline 30: p50 3.03 / 3.58 / 3.24 ms (median 3.24), p99 11.2 / 20.4 / 12.9
+      sideline 60: p50 4.13 / 3.74 / 3.89 ms (median 3.89), p99 15.3 / 17.9 / 14.6
+    +0.65 ms p50 on the median, under the 1 ms bar, but a busy read: a quiet re-read should confirm before the export.
