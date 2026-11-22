@@ -98,6 +98,20 @@ Our own evidence, 19 to 22 Nov. The research on LLM-built games says the same (G
   before ("the player animation should reflect the crosscheck movement and that should be all") (N1).
 - **Breadth hides the core.** Modes, abilities, rivals and menus were added while the base match was unplayable, in
   both games (N1).
+- **The rules were right; everything a person reads them through was not** (N1's duel teardown,
+  `docs/research/duel-teardown/TEARDOWN.md`). The house duel copies For Honor's, Souls' and Sekiro's rules faithfully;
+  its bodies do not tell (a 3-frame pose of a generic clip, stretched, with the intent written over the rival's head),
+  its tutorial hits while it teaches, its rounds end in 20 seconds, and its fastest threats wind up in 12 frames where
+  For Honor's take 24 to 30. A spec is not a game, and a faithful build of a spec is not either.
+- **The identity went into the HUD because the rig could not carry it.** Each gap that needed the player to see
+  something added a word (a tag, a cue, a banner, a card). When a game needs a body to speak, the body is the work.
+- **A checklist number set below the human limit it protects.** The duel's rubric accepts a 12-frame tell; the same
+  research names about 15 frames as a person's average reaction and 20 as reliable (CASES.md [B25]). A threshold comes
+  from the person it protects, never from what the build already does.
+- **A copied idea without its conditions.** "Teach by play" was copied from For Honor and Sekiro without their rule that
+  the practice partner cannot hurt you while you learn; a copied design idea needs its conditions copied with it.
+- **Loops that only add.** Twelve 20-minute rounds, each adding (lessons, tags, cards, drums, hats), none removing, and
+  the base exchange never shown to a person. A loop that only adds is decoration.
 - **Briefs that accept a mechanic, not a minute of play.** The briefs asked for clips of "a poke that frees the puck"
   and bands of bot figures; nothing in their acceptance could fail on what the owner meets (N1).
 
