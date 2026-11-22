@@ -70,6 +70,11 @@ export interface Bar {
   numbers: string[];
   /** The teardown's top ten: what the house game does that a design must NOT copy. */
   dont: string[];
+  /**
+   * N2 round 6 (the Director's ruling, 23 Nov): the slowest wind-up (anticipation_f) a copied move may carry, by move id.
+   * A copied move carries at least the house game's wind-up and at most this; faster than the house game is refused.
+   */
+  maxAnticipation?: Record<string, number>;
 }
 
 /** A house game (engine/packs/<pack>): what to copy and where. */
@@ -159,6 +164,7 @@ export const TEMPLATES: Template[] = [
     card: "card.duel",
     bar: {
       teardown: "docs/research/duel-teardown/TEARDOWN.md",
+      maxAnticipation: { light: 30, heavy: 60 }, // For Honor: lights 400-500 ms (24-30 f), heavies 800-1000 ms (48-60 f)
       numbers: [
         "a rival's light winds up at least 24 frames of readable body, ideally 30; a heavy 48 to 60 (For Honor; CASES.md B18, B6)",
         "every dangerous rival action, chained follow-ups too, shows at least 20 frames of tell in the body: a person's reliable reaction (CASES.md B25)",
@@ -428,7 +434,7 @@ export function templatesMenuText(): string {
   for (const t of TEMPLATES) {
     out.push(`- \`${t.id}\`: ${t.title}. Reference: ${t.reference}.${t.house ? ` House game (a working base on this engine, not the quality bar; the bar is the reference and its teardown): engine/packs/${t.house.pack} (${t.house.game}).` : ""}`);
     out.push(`  - copies (name each in \`copies\`): ${t.must.map((m) => m.what).join("; ")}.`);
-    if (Object.keys(t.moves).length > 0) out.push(`  - its move table (a verb that copies a move names it as \`move\` and carries these frames exactly): ${movesLine(t)}.`);
+    if (Object.keys(t.moves).length > 0) out.push(`  - its move table (a verb that copies a move names it as \`move\` and carries these frames; a wind-up may be slower, up to the bar${t.bar?.maxAnticipation ? ` (${Object.entries(t.bar.maxAnticipation).map(([k, x]) => `${k} up to ${x}`).join(", ")})` : ""}, never faster): ${movesLine(t)}.`);
   }
   out.push("- `own`: any other genre. Name a real, released game (or a family of them) as `reference`, and in `copies` the exact mechanics with their numbers where the source has them (Mario Kart's item roulette by race position; Celeste's 5-frame coyote time). Never a mood.");
   return out.join("\n");
@@ -448,7 +454,7 @@ export function templateExcerpt(template: ConceptTemplate | undefined, part: "de
   if (t === undefined) return "";
   const head =
     part !== "builder"
-      ? `# The genre template: ${t.id} (${t.title}), copied from ${t.reference}\nThe core loop is copied from this, not invented: its state machine, its frame tables, its contact results and its rivals. Verbs that copy a move name it as \`move\` with these frames exactly: ${movesLine(t)}. Only the hook and the twist are new.`
+      ? `# The genre template: ${t.id} (${t.title}), copied from ${t.reference}\nThe core loop is copied from this, not invented: its state machine, its frame tables, its contact results and its rivals. Verbs that copy a move name it as \`move\` with these frames (a wind-up may be slower, up to the bar, never faster): ${movesLine(t)}. Only the hook and the twist are new.`
       : `# The genre template: ${t.id} (${t.title}), from ${t.file}\nThe design copies this proven design. Build its rules and tables as written; where your contract gives a number, the contract wins.`;
   // The Planner reads the research's implementable spec and the house game's rules (its prompt is long enough).
   const house = houseExcerpt(t, part === "builder" ? "builder" : "design", path.join(root, "engine"));
@@ -498,7 +504,9 @@ export function designTemplateProblems(d: DesignDoc, template: ConceptTemplate |
       continue;
     }
     const diff: string[] = [];
-    if (v.anticipation_f !== m.anticipation_f) diff.push(`anticipation_f ${v.anticipation_f} (the table: ${m.anticipation_f})`);
+    // N2 round 6: a wind-up may be slower than the house game's, up to the bar's (the duel: light 30, heavy 60); never faster.
+    const hi = Math.max(m.anticipation_f, t.bar?.maxAnticipation?.[v.move as string] ?? m.anticipation_f);
+    if (v.anticipation_f < m.anticipation_f || v.anticipation_f > hi) diff.push(`anticipation_f ${v.anticipation_f} (the table: ${m.anticipation_f}${hi > m.anticipation_f ? ` to ${hi}: at least the house game's, at most the bar's` : ""})`);
     if (m.active_f !== undefined && v.active_f !== m.active_f) diff.push(`active_f ${v.active_f} (the table: ${m.active_f})`);
     if (v.recovery_f !== m.recovery_f) diff.push(`recovery_f ${v.recovery_f} (the table: ${m.recovery_f})`);
     if (diff.length > 0) out.push(`design verb "${v.id}" copies the ${t.id} move "${v.move}" but changes its frames: ${diff.join(", ")}. Copy the table, not a paraphrase`);

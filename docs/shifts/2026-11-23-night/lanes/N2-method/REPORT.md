@@ -1,7 +1,7 @@
 N2 method: REPORT, night of 22-23 Nov 2026 (19:12 to the last STANDUP line, CEST)
 Worktree n23-method. Route: Opus solo, with two read-only web-research subagents (craft and process; the two cases).
-Nothing committed by me; the Director landed round 1 (a9b5447), round 2 (42b1097), round 3 (85d9953) and round 4
-(6be8539; JOB.md tell_min_f >= 20 in 2599ebe). Round 5 is in this tree.
+Nothing committed by me; the Director landed round 1 (a9b5447), round 2 (42b1097), round 3 (85d9953), round 4
+(6be8539; JOB.md tell_min_f >= 20 in 2599ebe) and round 5 (5910b8a). Round 6 is in this tree.
 
 Nobody has played anything this lane made: it is a method, prompts and checks. No Foreman build job was started; the two
 dry runs used the FAKE adapter (and, for the playtest card, the FAKE runner on a test fixture), so no model was called,
@@ -139,14 +139,25 @@ OUTCOME AGAINST THE ACCEPTANCE
    - GAME-QUALITY.md section 11 ("Where the two differ, the house game wins") rewritten: "A house game is a working
      base, not the quality bar"; the house numbers still win only on how the kernel is driven (pushbox, camera API, clip
      clocks). planner.md and METHOD.md section 9 say the same.
-   - Open: the frame check still makes a copied duel move carry the house frames (light 18, heavy 32; JOB.md 2026-11-22
-     "a copied move is checked against the house game's own frame table"). The bar asks a rival's light for 24-30. A
-     design can meet both only by not copying the light; proposal for the Director: check a copied move against the bar
-     where the template has one, or let a verb carry frames at least the house game's.
+   - The frame-check question this round raised was decided by the Director and built in round 6 (below).
+
+   Round 6 (the Director's ruling after round 5 landed): a copied move may wind up slower than the house game's, up to
+   the template's bar, never faster.
+   - templates.ts: Bar.maxAnticipation (the duel: light 30, heavy 60, For Honor's 400-500 ms and 800-1000 ms);
+     designTemplateProblems accepts anticipation_f from the house game's figure to that maximum; active and recovery
+     frames, and every move without a bar maximum, are still copied exactly. The refusal names the range:
+     "anticipation_f 31 (the table: 18 to 30: at least the house game's, at most the bar's)".
+   - Before (the refusal): "changes its frames: anticipation_f 6 (the table: 18)"; after: "anticipation_f 6 (the
+     table: 18 to 30: at least the house game's, at most the bar's)".
+   - The concept menu, the template excerpt, the designer prompt and GAME-QUALITY.md (rule 5, section 11) say a wind-up
+     may be slower, up to the bar, never faster. JOB.md's 2026-11-22 paragraph is the Director's to word.
+   - Tests both ways (n2_method round 6): a duel light at 18 and 26 accepted, 31 and 16 refused; a heavy at 60
+     accepted, 61 refused; a slower block (no bar maximum) still refused. Two n4 expectations name the range now.
 
 =====================================================================================================================
-GATES (round 5 tree)
+GATES (round 6 tree)
 =====================================================================================================================
+- npm test (foreman), round 6: 322 tests, 315 pass, 0 fail, 7 skip (22:26; +1 round-6 test). Fast tier 5/5 PASS.
 - npm test (foreman), round 5: 321 tests, 314 pass, 0 fail, 7 skip (22:10; +1 round-5 test). Fast tier 5/5 PASS.
 - npm test (foreman), round 4: 320 tests, 313 pass, 0 fail, 7 skip (21:46). Fast tier 5/5 PASS.
 - npm test (foreman), round 3: 319 tests, 312 pass, 0 fail, 7 skip (21:30). One earlier full run of the same tree had 2

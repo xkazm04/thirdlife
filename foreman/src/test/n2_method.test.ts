@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { REPO_ROOT } from "../paths.js";
-import { METHOD_LINES, VERBS, cleanup, sampleConcept, v2Brief } from "./helpers.js";
+import { METHOD_LINES, VERBS, cleanup, sampleConcept, sampleDesign, v2Brief } from "./helpers.js";
 import { FakeBuilder, type FakeStep } from "../builder/fake.js";
 import { designRoom } from "../room.js";
 import { critic, renderDesignerPrompt, renderPlannerPrompt } from "../designer.js";
@@ -171,4 +171,29 @@ test("round 5: a house game is a working base, not the bar; each template carrie
   const tj = "The camera is bound to your skater, behind and above, with an aim anchor. The puck is drawn bigger with a hot rim and a ring under your skater. The puck sticks to the blade on a spring. The carrier is slower (x0.92) and a pass beats skating. The AI scores SHOOT, PASS and CARRY every frame (utility).";
   assert.deepEqual(houseKeepProblems(tj, sportT), []);
   assert.ok(houseKeepProblems("Low chase camera right behind your skater.", sportT).some((p) => /keeps the play camera bound to YOUR skater and raised/.test(p)));
+});
+
+test("round 6 (the Director's ruling): a copied move may wind up slower than the house game's, up to the bar (duel light 30, heavy 60), never faster", async () => {
+  const { designTemplateProblems } = await import("../templates.js");
+  const duelT = { id: "duel" as const, reference: "For Honor", copies: ["state machine", "mutual", "archetypes"] };
+  const base = sampleDesign();
+  const design = (light: number, heavy = 32): typeof base => ({
+    ...base,
+    verbs: [
+      { id: "slash", input: "LMB", anticipation_f: light, active_f: 4, recovery_f: 16, cancel: "none", move: "light" },
+      { id: "cleave", input: "RMB", anticipation_f: heavy, active_f: 5, recovery_f: 28, cancel: "none", move: "heavy" },
+      { id: "guard", input: "SPACE", anticipation_f: 4, active_f: 1, recovery_f: 6, cancel: "slash", defensive: true, move: "block" },
+    ],
+  });
+  const lightProblems = (f: number): string => designTemplateProblems(design(f), duelT).filter((p) => p.includes('"slash"')).join(" | ");
+  assert.equal(lightProblems(18), "", "the house game's light (18)");
+  assert.equal(lightProblems(26), "", "slower, inside For Honor's 24-30");
+  assert.match(lightProblems(31), /anticipation_f 31 \(the table: 18 to 30: at least the house game's, at most the bar's\)/);
+  assert.match(lightProblems(16), /anticipation_f 16 \(the table: 18 to 30/);
+  const heavy = (f: number): string => designTemplateProblems(design(18, f), duelT).filter((p) => p.includes('"cleave"')).join(" | ");
+  assert.equal(heavy(60), "");
+  assert.match(heavy(61), /anticipation_f 61 \(the table: 32 to 60/);
+  // A move with no bar maximum is still copied exactly: the block's 4-frame raise.
+  const blockSlow = { ...design(18), verbs: design(18).verbs.map((v) => (v.move === "block" ? { ...v, anticipation_f: 8 } : v)) };
+  assert.match(designTemplateProblems(blockSlow, duelT).join(" | "), /"guard" copies the duel move "block" but changes its frames: anticipation_f 8 \(the table: 4\)/);
 });

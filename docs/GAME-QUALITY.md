@@ -170,7 +170,8 @@ Designer:
 3. Name 2-3 reference games and the exact mechanic borrowed from each; write the line "<anchor genre> where <hook>".
 4. Write three pillars, each with what it rules out.
 5. List 2-5 verbs, each with input, anticipation, active and recovery frames, cancel, and its own clip id; one defensive.
-   A verb copied from the template names its `move` and carries the template's frames exactly.
+   A verb copied from the template names its `move` and carries the template's frames (its wind-up may be slower, up
+   to the template's bar: section 11).
 6. Write 2-3 playstyles that differ in verbs and positioning, and a skill ladder: floor plus three ceiling techniques in order.
 7. Fill the feel sheet with numbers from section 2 and the template: hit-stop range, knockback, reaction by strength,
    whiff, i-frames, telegraph, shake, camera.
@@ -316,7 +317,8 @@ numbers (section 7, rule 30).
 The owner, 21 Nov: "there are hundreds of duel games (souls like, for honor duels) with well known game design paths we
 can mimic". Every core loop of a design copies ONE proven template. The concept step names it (`concept.template`:
 `id`, `reference`, `copies`); the design step copies its rules and frame tables word for word (a verb taken from the
-template names its `move` and carries the template's frames exactly); the Planner and the builders read the template's
+template names its `move` and carries the template's frames; since 23 Nov its wind-up may be slower, up to the
+template's bar: a duel light up to 30 frames, a heavy up to 60, never faster than the house game's); the Planner and the builders read the template's
 research excerpt, pasted by the Foreman from `docs/research/`, the relevant one only. The hook and the twist are where
 the game is new; the template is where it is right.
 
