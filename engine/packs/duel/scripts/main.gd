@@ -237,6 +237,7 @@ func _restart_match(r: int) -> void:
 		_new_brain()
 		arena.dress(str(rival.cfg["key"]), rung >= 3)
 	wins = {"you": 0, "rival": 0}
+	show.rally_told = false
 	ctx.root.remove_child(match_rules)
 	match_rules.queue_free()
 	match_rules = TLRules.create(tune["rules"])
@@ -415,8 +416,18 @@ func _loss_line() -> String:
 		return ""
 	var tips: Dictionary = ctx.read_json("causes.json")
 	var t: Dictionary = tips["causes"].get(top, tips["causes"]["light"])
-	cause_log.append([round_no, top, int(causes[top][0]), snappedf(float(causes[top][1]), 0.1)])
-	return "WHAT BEAT YOU: %s (%d hits, %d damage)\n%s" % [str(t["name"]), int(causes[top][0]), roundi(float(causes[top][1])), str(t["answer"])]
+	cause_log.append([round_no, top, int(causes[top][0]), snappedf(float(causes[top][1]), 0.1), causes.duplicate(true)])   # [5]: every cause of the round
+	var ids: Array = causes.keys()
+	ids.sort_custom(func(x, y): return float(causes[x][1]) > float(causes[y][1]))
+	var parts: Array = []                              # where ALL the health went (round 8): the top three by damage, the rest
+	var shown: float = 0.0
+	for k: String in ids.slice(0, 3):
+		parts.append("%s %d" % [str(tips["causes"].get(k, tips["causes"]["light"])["name"]), roundi(float(causes[k][1]))])
+		shown += float(causes[k][1])
+	var lost: float = you.hp_max - maxf(you.hp, 0.0)
+	if lost - shown >= 5.0:
+		parts.append("the rest %d" % roundi(lost - shown))
+	return "WHAT BEAT YOU: %s  (of your %d health)\n%s" % [", ".join(parts), roundi(you.hp_max), str(t["answer"])]
 
 
 ## What the player did in the first 60 s of the match (round 1): the learning curve a person meets (plays-twice 5, 10).

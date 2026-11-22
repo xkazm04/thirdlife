@@ -25,6 +25,8 @@ var last_attack: int = -100
 var strafe: float = 1.0
 var results: Array = []
 var acted: int = 0
+var moments: Dictionary = {}           ## N4's looks: contact kind -> the frames it happened (read from pack_state, no hash input)
+var kinds_seen: Dictionary = {}
 var checklist: bool = false            ## also hold the plays-twice items this bot can measure (9, 11, contacts both-change)
 
 
@@ -38,6 +40,7 @@ func _bot_setup(c) -> void:
 func _bot_tick(frame: int) -> void:
 	frame_now = frame
 	var s: Dictionary = ctx.pack_state()
+	_moments(s, frame)
 	if not started:
 		if frame == 2:
 			ctx.input.tap(StringName("rung_%d" % rung))
@@ -187,7 +190,7 @@ func _bot_result() -> Dictionary:
 			int(s["rival_tells_min"]), str(s["kinds"]), int(s["failures"])],
 		"rounds": s["rounds"], "lead_changes": s["lead_changes"], "rival_passive_max": s["rival_passive_max"], "rival_passive_note": s["rival_passive_note"],
 		"rival_tells_min": s["rival_tells_min"], "kinds": s["kinds"], "failures": s["failures"], "hand": st, "you_counts": s["you_counts"],
-		"rival_counts": s["rival_counts"], "rival_mind": s["rival_mind"], "first_minute": s["first_minute"], "lessons": s["lessons"], "spacing": s["spacing"], "metrics": mt, "loss_causes": s["loss_causes"]}
+		"rival_counts": s["rival_counts"], "rival_mind": s["rival_mind"], "first_minute": s["first_minute"], "lessons": s["lessons"], "spacing": s["spacing"], "metrics": mt, "loss_causes": s["loss_causes"], "moments": moments.duplicate(true)}
 
 
 ## The tofu-stage figures (contracts/JOB.md, added 2026-11-22), named as the editor reads them; absent = not measured.
@@ -237,3 +240,37 @@ func _metrics(s: Dictionary, st: Dictionary) -> Dictionary:
 	m["one_sided_contacts"] = int(s["failures"])
 	var _u = st
 	return m
+
+
+## The moments a look can film (N4, 2026-11-22): the frame each named contact happened, from the pack's contact counts.
+## Names: parried, blocked_heavy, clash, guard_break, wall_splat, hit_heavy, ko; at most 12 frames each.
+func _moments(s: Dictionary, frame: int) -> void:
+	var kinds: Dictionary = s["kinds"]
+	for k: String in kinds:
+		var n: int = int(kinds[k])
+		if n > int(kinds_seen.get(k, 0)):
+			var name: String = _moment_name(k)
+			if name != "":
+				var at: Array = moments.get(name, [])
+				if at.size() < 12:
+					at.append(frame)
+				moments[name] = at
+		kinds_seen[k] = n
+
+
+static func _moment_name(k: String) -> String:
+	if k.ends_with("_parried"):
+		return "parried"
+	if k.begins_with("heavy_block"):
+		return "blocked_heavy"
+	if k == "clash":
+		return "clash"
+	if k == "bash" or k.contains("guardbreak") or k.contains("posture_break"):
+		return "guard_break"
+	if k == "bash_wallsplat" or k == "wall_knock":
+		return "wall_splat"
+	if k.begins_with("hit_heavy") or k.begins_with("hit_charged"):
+		return "hit_heavy"
+	if k == "ko":
+		return "ko"
+	return ""

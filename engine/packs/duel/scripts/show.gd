@@ -11,6 +11,7 @@ var hud: TLHud
 var banner_left: int = 0
 var cue_left: int = 0
 var hint_left: int = 0
+var rally_told: bool = false             ## RALLY explained once a match (round 8)
 var tag_left: int = 0                   ## frames the tag over the rival still shows
 var tag_st: String = ""                 ## the state the tag lasts through ("" = by time)
 var cam_pos: Vector3 = Vector3.ZERO
@@ -139,6 +140,9 @@ CROWD %s" % [g.round_no, _pips(int(w["you"])), time_text,
 		hud.set_text(&"keys", "WASD move    LMB / J light    RMB / K heavy (hold = unblockable)    SPACE block (tap = parry)    SHIFT roll    E bash" if hint_left > 0 else "")
 	_glint(rv)
 	_tag_tick()
+	if not rally_told and g.phase == "fight" and you.rally():
+		rally_told = true                       # the HUD word RALLY, told the first time it is yours
+		cue("RALLY: under 35 % health your stamina comes back faster. Press him!", 120, "yellow")
 	for i in range(flames.size() - 1, -1, -1):
 		flames[i][1] -= 1
 		if flames[i][1] <= 0:
