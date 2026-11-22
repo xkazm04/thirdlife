@@ -238,3 +238,12 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   (twice, it blocked a merge): briefs say "absolute paths only, never cd in a backgrounded line".
 - 2026-11-21 (day): Director-chained `foreman quality retry --adapter ...` ran the job in the foreground and queued the
   next command for hours; run Foreman job commands detached, one per line.
+- 2026-11-22 (night, extended to 09:00 as a quality loop): lanes in 60-75 min rounds (gap -> build -> window clip -> landable)
+  landed 13 duel, 17 editor, 4 hockey and 3 kernel rounds. The first round handed over while the lane kept editing mixed
+  two rounds in one tree and could not be split: rule "after a landable message, no edits until landed" from then on.
+- 2026-11-22: two proof jobs started in the same second both took the first new site/ folder (a folder diff); proof.sh now
+  reads the job id from its own log. And the Director's message times drifted 30 min ahead of `date`: stamp from `date`.
+- 2026-11-22: an Opus-directed Astra lane (N1 on the world = alone bug) went silent for 4+ hours with Codex running and
+  missed two stops. A lane with no STANDUP line for 60 min gets a status ask at the next standup and a stop at the second.
+- 2026-11-22: the uncapped suite at the end caught a test whose fixed sample point a game change had moved a skater into
+  (style.frame.rink): a game lane's AI change needs the uncapped suite (or its style.frame blocks) before the verdict.

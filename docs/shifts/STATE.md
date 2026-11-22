@@ -12,9 +12,11 @@ writes it back. Newest shift-log entry last.
 - Since 21 Nov day: the game quality bar (spark game-quality-bar): every generated game goes through a design room (concept
   candidates, a design doc with a feel sheet, a producer review), builders get the feel sheet, and a weak milestone holds
   for the owner. Hockey carries thirdjam's real mechanics and crazy modes.
-- Next 3: (1) the owner answers the 21 Nov day asks (falls arm, the two held colosseum games, an engine "feel kit");
-  (2) an engine feel kit (kernel hit-stop on both bodies, contact push-apart, occluder fading) since the critic's repeated
-  findings are engine-level; (3) the owner plays hockey (thirdjam mechanics, Glow/Arsenal/Shotgun) by hand.
+- Since 22 Nov night: duel (engine/packs/duel) and hockey are the reference games; the editor copies them (templates
+  name the house files and numbers, the critic sees the house strip). Engine needs from them land as kernel API (1.16).
+- Next 3: (1) the owner plays the duel (Wall, Duelist) and hockey (rookie, pro) by hand and answers VERDICT 2026-11-22-night;
+  (2) E6: the kernel world = alone physics breach (static contact), then hockey r2a; (3) editor: cross-check bot claims
+  against film, build one hockey job through the editor.
 
 ## Open owner verdicts
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
@@ -265,3 +267,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 05:39 standup: landed editor r11-r16 (e6b1e7f), duel r9-r12 (9d06a97). Proof -5 passed its blockout look (feel 0.75, house 0.7); -6 held. N2/N4 writing reports; N1 silent on E6, asked.
 - 06:37 standup: editor r17 + duel r13 landed (4bfd439); N2/N3/N4 done with reports; N1 silent on E6 (hard stop 07:15); full gate running in n22-int.
 - 07:37 standup: final list: full gate green but wall-clock; uncapped 478/2 (one load flake, one test patch fixed 7ba57e4); export, check, tours PASS; quiet perf running; N1 still silent.
+- 07:55 verdict: perf 6/6 quiet, packs 129/129 (hockey p50 0.979 ms), world 8/8, export+tours PASS. Page https://claude.ai/artifact/AmANyNo8b2bxNYHZ99BoHU. N1 never reported on E6 (open). Claims released.
