@@ -38,6 +38,9 @@ const duelDesign = (): DesignDoc => ({
   ],
 });
 
+/** The paddle fixture's brief as a duel: the duel design, and the house game's lock-on and shoulder camera said. */
+const duelBrief = (): Brief => ({ ...v2Brief(), design: duelDesign(), rules: `${v2Brief().rules} Lock-on: each fighter always faces his rival.`, arena: `${v2Brief().arena} The camera looks over the shoulder, between the fighters.` });
+
 // ---------------------------------------------------------------- the template choice
 
 test("template: a fight copies the duel; its copies name the state machine, the mutual reactions and the archetypes; an `own` reference passes for another genre", () => {
@@ -77,12 +80,12 @@ test("template: a verb that copies a move carries the table's frames exactly; a 
 });
 
 test("template: the room on 'a fight in a colosseum' sends an invented core and paraphrased frames back; the design step and the review read DUEL-PLAYBOOK, not the hockey research", async () => {
-  const paraphrased = { ...v2Brief(), design: { ...duelDesign(), verbs: duelDesign().verbs.map((v) => (v.move === "heavy" ? { ...v, anticipation_f: 10 } : v)) } };
+  const paraphrased = { ...duelBrief(), design: { ...duelDesign(), verbs: duelDesign().verbs.map((v) => (v.move === "heavy" ? { ...v, anticipation_f: 10 } : v)) } };
   const steps: FakeStep[] = [
     { match: { role: "concept", attempt: 1 }, json: { concept: { ...sampleConcept(), hook: "a stone-slam brawler" } } },
     { match: { role: "concept", attempt: 2 }, json: { concept: duelConcept() } },
     { match: { role: "designer", attempt: 1 }, json: { brief: paraphrased, estimate } },
-    { match: { role: "designer", attempt: 2 }, json: { brief: { ...v2Brief(), design: duelDesign() }, estimate } },
+    { match: { role: "designer", attempt: 2 }, json: { brief: duelBrief(), estimate } },
     { match: { role: "design_review" }, json: { scores: { hook: 0.8, gif: 0.8, depth: 0.8, feel: 0.8, fit: 0.8 }, slop: [], verdict: "ok", notes: "Copies the duel; sell the crowd's weapon." } },
   ];
   const b = new FakeBuilder({ steps });

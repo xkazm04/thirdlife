@@ -59,3 +59,39 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
    (`engine/kernel/world/site/event_schema.gd`) takes concept and design as opaque, so it needs no change.
 3. Hand checks (`tl ladder`, card `hands`) stay where they were (final verification); the tofu stage does not replace
    them.
+
+# Loop round 1 (22 Nov 01:00-01:45): the editor copies the house games
+
+## 3. contracts/JOB.md: append to "### Added 2026-11-22: genre templates and the tofu stage"
+
+```markdown
+- **House games** (owner 22 Nov 00:55). A template names its house game, the reference implementation on this engine:
+  `duel` -> `engine/packs/duel` (`game.duel`), `arcade_sport` -> `engine/packs/hockey`. The design step and the Planner
+  read the house game's README rules; builders read its files in `ref/packs/<pack>/`. A copied `move` is checked against
+  the house game's own frame table (`engine/packs/duel/data/moves.json`) when it can be read, else the research's.
+  A duel brief must also keep the house game's lock-on facing and its over-the-shoulder camera (said in `rules`,
+  `controls`, `arena` or `design.feel.camera`).
+- **The house baseline.** Once per job whose brief has a design and whose template has a house game, the Foreman plays
+  the house game's measuring bot on `ref/packs/<pack>/` (a job-level `verify` with stem `house-<pack>`) and writes
+  `reports/house-<pack>.json` (`tl.foreman.house/1`: `pack`, `test`, `hand`, `metrics` by the tofu names, `from`,
+  `note`). It reads the bot result's `metrics` object first and the house pack's own state through a fixed map second.
+- **Every look** of such a job sets the tofu bot's figures beside the house game's (a line in the milestone summary:
+  "house game engine/packs/<pack> (...), yours vs the house game's: ..."; a figure is SHORT when the house game passes
+  its bound and the build does not, or the build is worse by more than 25 % of the house figure). The critic gets the
+  line in its context and one more rubric item, `house_game` (0..1: the build's exchange against the house game's).
+  The comparison itself does not gate; the critic's `house_game` score does, like every rubric item.
+```
+
+## 4. Requests to the game lanes (the Director relays)
+- **N2 (duel):** have `tests/support/pilot.gd` return `metrics` in `_bot_result()` under the tofu names
+  (`feedback_f`, `skill_spread`, `skill_variants`, `idle_max_f`, `tell_min_f`, `tells`, `pressure_waves`,
+  `lead_change_share`, `close_rounds`, `contact_types`, `one_sided_contacts`) plus `hand`. Until then the Foreman reads
+  four of them from `pack_state` (`rival_passive_max`, `rival_tells_min`, the keys of `kinds`, `failures`;
+  `foreman/src/house.ts` HOUSE_BOTS). The house game is the bar only for the figures it reports.
+- **N3 (hockey):** the same for one regular-hand bot (`tests/bot_ladder_pro_regular.gd` today), with
+  `possession_median_f` and the HOCKEY-ARCADE 5.5 figures by name. Until then the arcade-sport compare has no figures
+  ("no figure to compare by the tofu names") and the critic judges the house game by the README alone.
+- **The Planner's time limit** (22 Nov: the standard proof's Planner timed out at 10 minutes): a Planner call (plan and
+  re-plan) has 20 minutes unless `foreman plan --timeout-ms N` (or `--planner-timeout-ms N`) says otherwise; `run` and
+  `resume` take `--planner-timeout-ms N` for a re-plan (their `--timeout-ms` stays the builder's). Contracts name the
+  house game's files and rows instead of retyping its tables.

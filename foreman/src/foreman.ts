@@ -365,6 +365,7 @@ export class Foreman {
       ? await this.o.replanner(input)
       : await replanPackages(this.o.builder, input, {
           ...(model ? { model } : {}),
+          ...(this.o.plannerTimeoutMs !== undefined ? { timeoutMs: this.o.plannerTimeoutMs } : {}),
           ...(this.o.maxPackages !== undefined ? { maxPackages: this.o.maxPackages } : {}),
           verbs: this.verbs ?? verbsFor(this.o.verifier.location),
           ...cardLimits(this.refDir()),

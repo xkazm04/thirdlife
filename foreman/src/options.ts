@@ -43,6 +43,8 @@ export interface ForemanOptions {
   critic?: boolean;
   /** Model for job-level generate calls made by the loop (re-plan, critic). Default: `model`. */
   plannerModel?: string;
+  /** N4 loop of 22 Nov: the limit of one re-plan call (default designer.ts PLANNER_TIMEOUT_MS, 20 minutes). */
+  plannerTimeoutMs?: number;
   criticModel?: string;
   /** JOB.md 2026-11-21: film a motion strip per filmed point when the runner can (`--strip` in its verbs.json). Default true. */
   strips?: boolean;
