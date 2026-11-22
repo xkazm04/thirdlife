@@ -7,6 +7,10 @@ numbers: `docs/research/hockey-teardown/media/` (`probe.md`, clips of 20 s, shee
 rule each became, ANY game or HOCKEY only, whether our hockey follows it; section 10 lists the ten a design method should cite
 first). Round 2, written about 20:40 on 22 Nov.
 
+**Round 3: the same teardown for the duel** is in `docs/research/duel-teardown/TEARDOWN.md` (references: For Honor, Souls / Sekiro,
+fighting-game frame data, each with its URL; top 10: the bodies do not tell and text does, the tutorial hits you while it
+teaches, rounds of 20 s, threats faster than reaction, a dashboard of meters, three rivals in three hats).
+
 ## How it was read
 - thirdjam cloned read-only (`.tl/thirdjam`, HEAD 8dc713c6) and **run on this machine** from a built thirdjam tree of 15 Nov
   (copied to `.tl/tj-run`; UE 5.9 `-game`, its own measured person hand `jam.ScriptHuman 2`, stills from its viewport).
