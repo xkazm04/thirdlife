@@ -321,7 +321,9 @@ test("crazy concept: reads the standard concepts of the same sentence in the sit
   const { takenFor, takenText, takenProblems } = await import("../concepts.js");
   const t = takenFor(path.join(site, "site"), "a fight in a colosseum", "crazy");
   assert.equal(t.taken?.length, 1);
-  assert.deepEqual(takenFor(path.join(site, "site"), "a fight in a colosseum", undefined), {}, "standard reads nothing");
+  // N4 loop round 5: a standard job reads the earlier STANDARD designs of its sentence (none of the crazy ones).
+  assert.deepEqual(takenFor(path.join(site, "site"), "a fight in a colosseum", undefined).earlier?.map((c) => c.hook), ["slam rivals into columns that collapse on them"]);
+  assert.equal(takenFor(path.join(site, "site"), "a fight in a colosseum", undefined).taken, undefined, "standard is given no crazy family to leave");
   assert.match(takenText("crazy", t.taken), /Already designed: the STANDARD version[^]*chose "Slam rivals into stone columns until they collapse\."[^]*DIFFERENT idea family/);
   assert.match(takenText("crazy", undefined), /Escape the obvious crazy move[^]*FORBIDDEN/);
   assert.equal(takenText(undefined, t.taken), "");

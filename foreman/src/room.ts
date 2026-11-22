@@ -8,7 +8,7 @@ import type { Brief } from "./events.js";
 import { designBrief, generate, type DesignerInput, type DesignerOutput, type GenerateCall, type GenerateOptions, type Generated } from "./designer.js";
 import { PKG_ROOT } from "./paths.js";
 import { REVIEW_SCORES, ROOM_LIMITS, conceptProblems, reviewProblems, type Concept, type DesignReview } from "./room_wire.js";
-import { takenProblems, takenText } from "./concepts.js";
+import { earlierProblems, earlierText, takenProblems, takenText } from "./concepts.js";
 import { conceptTemplateProblems, templateExcerpt, templatesMenuText } from "./templates.js";
 import { BRIEF_LIMITS, CONCEPT_LIMITS, REVIEW_LIMITS } from "./repair.js";
 import { REVIEW_THRESHOLD, conceptAnswerSchema, conceptText, qualityText, reviewAnswerSchema, slopIds, type ReviewAnswer } from "./roomtext.js";
@@ -27,7 +27,7 @@ function redesignBlock(input: DesignerInput): string {
 }
 
 /** L1b: the room's input: a crazy job also carries the standard concepts made for the same sentence. */
-export type RoomInput = DesignerInput & { taken?: Concept[] };
+export type RoomInput = DesignerInput & { taken?: Concept[]; /** N4 round 5: earlier concepts of the sentence in this mode. */ earlier?: Concept[] };
 
 export interface RoomOutput extends DesignerOutput {
   /** The reviews in order (1 or 2), each written as a design_reviewed event before the brief_set. */
@@ -40,9 +40,9 @@ export function conceptStep(builder: Parameters<typeof designBrief>[0], input: R
     builder,
     "concept",
     prompt("concept.md"),
-    { ...vars, quality: qualityText(["3", "4", "6", "8"]), templates: templatesMenuText(), redesign: redesignBlock(input), taken: takenText(input.creativity, input.taken) },
+    { ...vars, quality: qualityText(["3", "4", "6", "8"]), templates: templatesMenuText(), redesign: redesignBlock(input), taken: takenText(input.creativity, input.taken) + earlierText(input.earlier) },
     conceptAnswerSchema,
-    (v) => [...conceptProblems((v as { concept: Concept }).concept), ...conceptTemplateProblems((v as { concept: Concept }).concept, input.sentence), ...takenProblems((v as { concept: Concept }).concept, input.taken, input.sentence)],
+    (v) => [...conceptProblems((v as { concept: Concept }).concept), ...conceptTemplateProblems((v as { concept: Concept }).concept, input.sentence), ...takenProblems((v as { concept: Concept }).concept, input.taken, input.sentence), ...earlierProblems((v as { concept: Concept }).concept, input.earlier, input.sentence)],
     { ...opts, attempts: opts.attempts ?? 3, limits: CONCEPT_LIMITS }, // word limits: a repair call first (repair.ts), then the attempts
   );
 }
