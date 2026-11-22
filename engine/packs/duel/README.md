@@ -71,6 +71,15 @@ your 100 health)") and the answer to the first; `loss_causes[i][4]` keeps every 
 HUD word RALLY is explained the first time it is yours in a match. The pilot also returns `moments` (contact kind ->
 frames: parried, blocked_heavy, clash, guard_break, wall_splat, hit_heavy, ko) so a look can film a real match.
 
+## Each rival reads by silhouette (round 9; slop id `recoloured_rivals`)
+`gen/arms.gd` (the pack's one geometry generator) builds the rivals' gear on the rig's head and back sockets: the Wall a
+closed bucket helm with a T visor and pauldrons, the Duelist a wide-brimmed black hat with a gold band, a red plume and
+a black cape, the Dancer a pink hood with two violet ribbons. You keep your hair. Both sockets turn their axes (+X right,
++Y back, +Z down, found with a probe), so the gear is built Y-up, face -Z and turned -90 degrees about X. The round-1
+name card sits at the bottom so the intro shot keeps his face clear. The play camera stays within `camera.max_r` (8.9
+m) of the centre and looks down steeper instead (`rise_k`): near the wall it no longer goes over the stands into the
+banners.
+
 ## The blow that ends a round (`tuning.json` "ko")
 The round-ending blow holds the longest hit-stop the kernel allows (20 frames), then the camera cuts low beside the
 fallen fighter with the winner over him: dust as he meets the sand, the crowd's roar, the winner's cheer; the play

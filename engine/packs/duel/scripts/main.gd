@@ -179,7 +179,11 @@ func _start_round() -> void:
 	phase = "intro"
 	phase_t = 0
 	show.snap_camera()
-	show.banner("ROUND %d" % round_no if round_no > 1 else "%s\n%s" % [rival.name, str(rival.cfg.get("line", ""))], int(tune["rounds"]["intro_frames"]))
+	if round_no > 1:
+		show.banner("ROUND %d" % round_no, int(tune["rounds"]["intro_frames"]))
+	else:                                              # his name card sits under him, his face in the intro shot stays clear (round 9)
+		show.banner("", 1)
+		show.cue("%s\n%s" % [rival.name, str(rival.cfg.get("line", ""))], int(tune["rounds"]["intro_frames"]))
 	if arena != null:
 		arena.intro()
 

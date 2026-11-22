@@ -184,6 +184,10 @@ func _camera() -> void:
 	var back_dir: Vector3 = -fwd * cos(a) + right * sin(a)
 	var pivot: Vector3 = p.lerp(r, float(c["look_at"]))
 	var want: Vector3 = pivot + back_dir * (float(c["dist"]) + gap * float(c["dist_k"])) + Vector3.UP * float(c["up"])
+	var flat: float = Vector2(want.x, want.z).length()
+	if flat > float(c["max_r"]):                    # never over the stands or into the banners (round 9): pull in, look down steeper
+		var over: float = flat - float(c["max_r"])
+		want = Vector3(want.x * float(c["max_r"]) / flat, want.y + over * float(c["rise_k"]), want.z * float(c["max_r"]) / flat)
 	var look: Vector3 = pivot + Vector3.UP * float(c["look_up"])
 	var k: float = float(c["follow"])
 	if cam_pos == Vector3.ZERO:

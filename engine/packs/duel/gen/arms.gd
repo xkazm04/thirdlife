@@ -1,5 +1,6 @@
 extends RefCounted
-## The duellists' arms: a sword, a rapier, a mace, a round shield, dual blades. Kit-style meshes (TLMesh, palette keys,
+## The duellists' arms: a sword, a rapier, a mace, a round shield, dual blades; and the rivals' gear (round 9: a helm and
+## pauldrons for the Wall, a plumed hat and a cape for the Duelist, a hood with ribbons for the Dancer). Kit-style meshes (TLMesh, palette keys,
 ## the style's one toon material), visual only, parented to the rig's hand sockets. No kit part is a weapon; this is
 ## the pack's one generator of geometry (lint counts it in kit_parts_added). In a hand socket -Y runs along the grip
 ## out of the fist (the rig's hammer convention), so a blade is built along -Y.
@@ -17,6 +18,10 @@ static func attach(rig, kind: String) -> Node3D:
 	if rig == null:
 		return null
 	var sock_name: StringName = &"hand_l" if kind in ["shield", "blade_l"] else &"hand_r"
+	if kind in ["helm", "hat", "hood"]:
+		sock_name = &"head"                          # the rival reads by silhouette (round 9): head socket (its Y points into the head)
+	elif kind in ["pauldrons", "cape"]:
+		sock_name = &"back"                          # between the shoulder blades, +Z behind him
 	var sock: Node3D = rig.socket(sock_name)
 	if sock == null:
 		return null
@@ -24,6 +29,37 @@ static func attach(rig, kind: String) -> Node3D:
 	var node := Node3D.new()
 	node.name = "Arm_" + kind
 	match kind:
+		"helm":                                      # the Wall: a bucket helm over the whole head, a T visor slit, a ridge
+			mk.push_at(Vector3.ZERO, Vector3(-90, 0, 0))     # the head socket: +X his right, +Y back, +Z down (probe, round 9): build Y up, -Z face
+			mk.rbox(Vector3(0.64, 0.56, 0.62), "steel_dark", Color.WHITE, 0.08, Vector3(0, -0.27, 0))
+			mk.box(Vector3(0.44, 0.05, 0.04), "black", Color.WHITE, 0.0, Vector3(0, -0.3, -0.31))
+			mk.box(Vector3(0.06, 0.2, 0.04), "black", Color.WHITE, 0.0, Vector3(0, -0.4, -0.31))
+			mk.box(Vector3(0.07, 0.08, 0.6), "steel_light", Color.WHITE, 0.02, Vector3(0, 0.02, 0))
+			mk.pop()
+		"pauldrons":
+			for sx: float in [-1.0, 1.0]:
+				mk.rbox(Vector3(0.34, 0.16, 0.38), "steel_dark", Color.WHITE, 0.06, Vector3(0.36 * sx, 0.02, -0.06))
+				mk.rbox(Vector3(0.3, 0.06, 0.34), "steel_light", Color.WHITE, 0.03, Vector3(0.36 * sx, 0.11, -0.06))
+		"hat":                                       # the Duelist: a wide brim, a crown, a red plume sweeping back
+			mk.push_at(Vector3.ZERO, Vector3(-90, 0, 0))
+			mk.cyl(0.46, 0.04, 16, "black", Color.WHITE, -1.0, Vector3(0, -0.06, 0))
+			mk.cyl(0.24, 0.2, 12, "black", Color.WHITE, -1.0, Vector3(0, 0.04, 0))
+			mk.cyl(0.25, 0.05, 12, "yellow", Color.WHITE, -1.0, Vector3(0, -0.03, 0))
+			mk.hull([Vector3(-0.03, 0.08, 0.05), Vector3(0.03, 0.08, 0.05), Vector3(0, 0.12, 0.0), Vector3(-0.05, 0.42, 0.42),
+				Vector3(0.05, 0.42, 0.42), Vector3(0, 0.3, 0.55)], "car_red")
+			mk.pop()
+		"cape":                                      # the back socket turns like the head's: build Y up, +Z behind
+			mk.push_at(Vector3.ZERO, Vector3(-90, 0, 0))
+			mk.hull([Vector3(-0.3, 0.05, 0.12), Vector3(0.3, 0.05, 0.12), Vector3(-0.3, 0.05, 0.16), Vector3(0.3, 0.05, 0.16),
+				Vector3(-0.42, -1.0, 0.24), Vector3(0.42, -1.0, 0.24), Vector3(-0.42, -1.0, 0.28), Vector3(0.42, -1.0, 0.28)], "black")
+			mk.pop()
+		"hood":                                      # the Dancer: a hood framing the face, two long ribbons flaring behind
+			mk.push_at(Vector3.ZERO, Vector3(-90, 0, 0))
+			mk.rbox(Vector3(0.74, 0.5, 0.56), "neon_pink", Color.WHITE, 0.16, Vector3(0, -0.12, 0.18))
+			for sx: float in [-1.0, 1.0]:
+				mk.hull([Vector3(0.2 * sx, -0.3, 0.3), Vector3(0.3 * sx, -0.3, 0.3), Vector3(0.24 * sx, -0.34, 0.34),
+					Vector3(0.5 * sx, -1.0, 0.55), Vector3(0.6 * sx, -0.98, 0.52), Vector3(0.56 * sx, -1.04, 0.6)], "neon_violet")
+			mk.pop()
 		"sword":
 			_grip(mk, 0.2)
 			mk.box(Vector3(0.26, 0.035, 0.05), "steel_dark", Color.WHITE, 0.01, Vector3(0, -0.11, 0))
