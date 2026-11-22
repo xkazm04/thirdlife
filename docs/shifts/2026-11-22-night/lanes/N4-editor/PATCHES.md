@@ -114,3 +114,17 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
 - **`skill_spread` passes from 0.25 to 0.95** (was >= 0.25) and counts variants of the core verb only: the crazy
   colosseum proof of 22 Nov reported 1.0 by counting a bash (0 damage) as a variant of its light.
 ```
+
+# Loop round 3 (22 Nov 02:10-02:40): the tofu stage proves the whole exchange, the root frames it
+
+## 6. contracts/JOB.md: append to the tofu-stage metrics
+
+```markdown
+- **`verbs_used`** joins the tofu rows: how many of the design's verbs the tofu bot pressed at least 3 times each; it
+  passes at the design's verb count (`brief.design.verbs.length`; 2 when a plan is checked without a design). The TOFU
+  CHECK line names it. (The crazy colosseum proof of 22 Nov passed every other row while no strip showed its parry, roll
+  or bash.)
+```
+Planner text only (no contract change): the root copies the house game's cameras and declares only views that frame the
+action (every declared camera is filmed); it shows the template's resource bars (duel: health, stamina, posture); the
+tofu bot presses every verb.

@@ -39,12 +39,15 @@ export const TOFU_METRICS: TofuMetric[] = [
   { id: "pressure_waves", item: "12 pressure in waves", min: 2, how: "opponent attacks started per 60-frame window; a peak is a window with at least 2 attacks and twice the lowest window since the last trough, a trough a window at or below half the last peak; the count of peak-then-trough pairs" },
   { id: "lead_change_share", item: "15 leads change hands", min: 0.3, how: "over at least 3 rounds: the share of close rounds (loser within 25 % of the winner's health, or one point) in which the lead changed hands at least once" },
   { id: "close_rounds", item: "15 leads change hands", min: 1, how: "how many close rounds lead_change_share is over" },
+  // N4 loop round 3: the crazy colosseum proof's tofu bot passed every row while no strip showed a parry, a roll or a bash.
+  { id: "verbs_used", item: "the whole exchange: every verb of the design pressed", min: 2, how: "how many of the design's verbs the bot pressed at least 3 times each in its run (the duel: light, heavy, block or parry, roll, bash); it must be all of them" },
 ];
 
 /** The rows for a job: the six items, then the template's own (the duel's contacts, the sport's possession). */
-export function tofuMetricsFor(template: ConceptTemplate | undefined): TofuMetric[] {
+export function tofuMetricsFor(template: ConceptTemplate | undefined, verbs?: number): TofuMetric[] {
   const t = templateOf(template?.id);
-  return [...TOFU_METRICS, ...(t?.metrics ?? []).map((m) => ({ id: m.id, item: m.item, ...(m.min !== undefined ? { min: m.min } : {}), ...(m.max !== undefined ? { max: m.max } : {}), how: m.item }))];
+  const base = verbs !== undefined ? TOFU_METRICS.map((m) => (m.id === "verbs_used" ? { ...m, min: verbs } : m)) : TOFU_METRICS;
+  return [...base, ...(t?.metrics ?? []).map((m) => ({ id: m.id, item: m.item, ...(m.min !== undefined ? { min: m.min } : {}), ...(m.max !== undefined ? { max: m.max } : {}), how: m.item }))];
 }
 
 const bound = (m: Pick<TofuMetric, "min" | "max">): string => (m.min !== undefined && m.max !== undefined ? `${m.min} to ${m.max}` : m.min !== undefined ? `>= ${m.min}` : `<= ${m.max}`);
@@ -55,12 +58,12 @@ export function tofuLine(template: ConceptTemplate | undefined, test = "tests/bo
 }
 
 /** The Planner's tofu block: the line to write, the metrics with their bounds and how the bot counts them. */
-export function tofuPlannerText(template: ConceptTemplate | undefined): string {
+export function tofuPlannerText(template: ConceptTemplate | undefined, verbs?: number): string {
   return [
     "The first phase is the tofu stage (docs/GAME-QUALITY.md section 12): the core verb exchange on flat shapes. Its packages are milestone `blockout` (and no package of a later phase is). The root package's contract carries this line, word for word (the plan is refused without it):",
     `  ${tofuLine(template)}`,
     "That bot is registered by the root package and runs in its acceptance. Its `_bot_result()` returns `{ok, summary, metrics: {...}}` with every metric below COUNTED from the frames it played (never a constant), plus `hand` (the TLHand profile it played the player's side through). When the blockout milestone is reached the Foreman judges them; any metric absent or out of bounds sends the root back (two revise rounds) and then holds the job, before the second phase starts. Paste the rows into the root contract:",
-    ...tofuMetricsFor(template).map((m) => `  - \`${m.id}\` ${bound(m)} (checklist item ${m.item}): ${m.how}`),
+    ...tofuMetricsFor(template, verbs).map((m) => `  - \`${m.id}\` ${bound(m)} (checklist item ${m.item}): ${m.how}`),
   ].join("\n");
 }
 

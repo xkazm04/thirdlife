@@ -397,11 +397,15 @@ in an empty room. Our first phase is the tofu stage.
 
 - **What is built.** The first phase holds the root package (and at most the package it needs to stand on): the core
   verb exchange on flat shapes (milestone `blockout`: kit primitives, no art), the template's verbs and contact results
-  with their whole feel sheet, one rival that answers, the camera of the feel sheet, the rule that decides a round, and
-  one bot: the tofu bot. No art, no HUD beyond one hint line, no second rival, no twist.
+  with their whole feel sheet, one rival that answers, the house game's cameras (only views that frame the action: every
+  declared camera is filmed), the rule that decides a round, and one bot: the tofu bot. The HUD holds the template's
+  resource bars (the duel: health, stamina, posture) and one hint line, nothing more; no second rival, no twist. Flat
+  shapes drop dressing, never what reads the exchange: the fighters carry their weapons (the duel house game's
+  `gen/arms.gd`) and the rival has its own build (scale, arms, colours) from the first phase.
 - **The line in the root contract** (the plan is refused without it when the brief has a design doc):
   `TOFU CHECK: tests/<bot>.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells,
-  pressure_waves, lead_change_share, close_rounds`. The bot is registered by the root package and run in its acceptance.
+  pressure_waves, lead_change_share, close_rounds, verbs_used`. The bot is registered by the root package and run in its
+  acceptance.
 - **The metrics.** The tofu bot's `_bot_result()` returns a `metrics` object beside `ok` and `summary` (PACK.md allows
   any numbers in the result; the runner reports it as `bot.result.metrics`). Every value is counted from the frames the
   bot played, never written as a constant. A metric that is absent is not measured, and not measured is a fail.
@@ -417,6 +421,7 @@ in an empty room. Our first phase is the tofu stage.
   | `pressure_waves` | 12 | >= 2 | opponent attacks started per 60-frame window; a peak is a window with at least 2 attacks and twice the lowest window since the last trough, a trough a window at or below half the last peak; the count of peak-then-trough pairs |
   | `lead_change_share` | 15 | >= 0.30 | the bot plays at least 3 rounds; a round is close when the loser ends within 25 % of the winner's health or one point; the share of close rounds in which the lead changed hands at least once |
   | `close_rounds` | 15 | >= 1 | how many close rounds `lead_change_share` is over |
+  | `verbs_used` | the exchange | = the design's verb count | how many of the design's verbs the bot pressed at least 3 times each (the crazy colosseum proof of 22 Nov passed every other row while no strip showed its parry, roll or bash) |
 
   Template metrics join them (section 11): the duel's `contact_types` (>= 3) and `one_sided_contacts` (0); the arcade
   sport's `possession_median_f` (240 to 600). The bot also names `hand`: the `TLHand` profile it played the player's

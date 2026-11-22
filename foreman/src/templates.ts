@@ -111,6 +111,7 @@ export const TEMPLATES: Template[] = [
         { file: "scripts/brain.gd", role: "the rival's mind (6.6): sees only the player's animation react frames late, defends in its archetype's way, reads chains, never a string three times, a return window after each" },
         { file: "data/rivals.json", role: "the AI tiers and the three archetypes (Wall, Duelist, Dancer): hp, poise, defence weights, strings with fixed delays, phase 2" },
         { file: "scripts/show.gd", role: "HUD bars (health, stamina, posture), banners (PARRY!, WALL SPLAT!), cues, the three cameras" },
+        { file: "gen/arms.gd", role: "the weapons (sword, rapier, mace, shield, twin blades) on the hand sockets, kit-style meshes: a duel is fought with them from the first phase, never with bare fists" },
         { file: "tests/support/pilot.gd", role: "the bot that plays the player's side through a TLHand; tests/bot_contact_<type>.gd: one drill per contact, passing when BOTH fighters changed" },
       ],
       moves: "data/moves.json",

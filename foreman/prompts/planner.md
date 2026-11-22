@@ -82,7 +82,22 @@ How to choose:
   art pass, tuning. When in doubt, move CONTENT out of the root into a later package; never move feel out of it.
 - **The camera serves the verb from the first package on.** The root registers the play camera the brief asks for
   (a chase or orbit camera on the player's figure framed at 0.2 to 0.3 of the frame height with `ctx.cameras.frame`,
-  or a fixed view of the whole play space when the whole space is the play), never a far top-down view.
+  or a fixed view of the whole play space when the whole space is the play), never a far top-down view. With a house
+  game, copy its cameras (the duel: over the shoulder offset to the side, and a side view of both fighters). **Every
+  camera a package declares is filmed and judged at every milestone**: declare only views that frame the action (the
+  crazy colosseum proof of 22 Nov declared a wide "ring" view and the critic found the fighters under 2 % of its
+  frame); an establishing shot belongs to the menu, not to `registers.cameras`.
+- **Flat shapes are not bare bodies.** The tofu stage drops dressing (stands, banners, the look), never what reads the
+  exchange: the fighters carry their weapons from the first phase (the house game's `gen/arms.gd`: sword, shield,
+  blades) and every rival has its own build (scale, arms, colours: the house game's `data/rivals.json`). The standard
+  colosseum proof of 22 Nov built its core with two identical bare-fisted bodies and the critic failed it on
+  `recoloured_rivals` before any later package could add them.
+- **The root shows the exchange's state** from the first phase: the resource bars the template uses (the duel: health,
+  stamina and posture for both fighters, as the house game's `scripts/show.gd`) and one hint line. Without them nobody,
+  person or critic, can read why a guard broke or a fighter is open.
+- **The tofu bot plays every verb.** Its contract says it presses each verb of the design (the duel: light, heavy,
+  block or parry, roll, bash) at least 3 times in its run and reports `verbs_used` (how many of the design's verbs it
+  pressed): a strip that never shows a parry or a roll cannot prove the exchange.
 
 # Phases: the player tries the game as it grows
 Group the packages into 2 to 5 **phases**, in build order. After each phase the Foreman stops, and the player plays

@@ -113,7 +113,7 @@ test("template: the Planner reads the duel excerpt and the tofu block; builders 
   const plan = renderPlannerPrompt({ sentence: "a fight in a colosseum", packId: "game.x", title: "X", brief, packContract: "(c)" }, { verbs: JSON.parse(fs.readFileSync(FAKE_VERBS_FILE, "utf8")) });
   assert.match(plan, /- genre template: duel, copied from Dark Souls[^]*copies the template move heavy/);
   assert.match(plan, /# The genre template: duel[^]*### 6\.5 Interaction matrix/);
-  assert.match(plan, /# The tofu stage[^]*TOFU CHECK: tests\/bot_tofu\.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, contact_types, one_sided_contacts/);
+  assert.match(plan, /# The tofu stage[^]*TOFU CHECK: tests\/bot_tofu\.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, verbs_used, contact_types, one_sided_contacts/);
   assert.match(plan, /`feedback_f` <= 3 \(checklist item 1 feedback within 3 f\)/);
   assert.match(plan, /`card\.duel`\)\. When that card is in the list,\s+it is the default/);
   const feel = builderFeelSection(duelTemplate);
@@ -125,11 +125,11 @@ test("template: the Planner reads the duel excerpt and the tofu block; builders 
 
 // ---------------------------------------------------------------- the tofu stage
 
-const goodMetrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 60, tell_min_f: 18, tells: 6, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, hand: "regular" };
+const goodMetrics = { feedback_f: 2, skill_spread: 0.4, skill_variants: 3, idle_max_f: 60, tell_min_f: 18, tells: 6, pressure_waves: 3, lead_change_share: 0.5, close_rounds: 2, verbs_used: 2, hand: "regular" };
 const badMetrics = { feedback_f: 7, skill_spread: 0.1, skill_variants: 3, idle_max_f: 300, tell_min_f: 8, tells: 6, lead_change_share: 0, close_rounds: 2, hand: "regular" };
 
 test("tofu: the metrics judge checklist items 1, 3, 9, 11, 12 and 15; an absent metric is not measured, and not measured fails; the duel adds its contact rows", () => {
-  assert.deepEqual(TOFU_METRICS.map((m) => m.item.split(" ")[0]), ["1", "3", "3", "9", "11", "11", "12", "15", "15"]);
+  assert.deepEqual(TOFU_METRICS.map((m) => m.item.split(" ")[0]), ["1", "3", "3", "9", "11", "11", "12", "15", "15", "the"]);
   const rows = tofuMetricsFor(undefined);
   const ok = judgeTofu(goodMetrics, rows, "tests/bot_tofu.gd", "regular", "reports/x.json");
   assert.equal(ok.ok, true);
@@ -163,7 +163,7 @@ test("tofu: a fresh plan of a design-room brief must carry the TOFU CHECK line i
   const moved = tofuPlan(packages).map((p) => (p.id === "paddle_ai" ? { ...p, milestone: "blockout" as const } : p));
   assert.match(tofuPlanProblems(moved, phases, true, undefined).join(""), /package "paddle_ai" is milestone "blockout" but not in the tofu phase "tofu"/);
   const short = tofuPlan(packages).map((p) => (p.id === "core" ? { ...p, contract: p.contract.replace(/, pressure_waves.*$/m, "") } : p));
-  assert.match(tofuPlanProblems(short, phases, true, undefined).join(""), /must name every metric \(missing: pressure_waves, lead_change_share, close_rounds\)/);
+  assert.match(tofuPlanProblems(short, phases, true, undefined).join(""), /must name every metric \(missing: pressure_waves, lead_change_share, close_rounds, verbs_used\)/);
   const grey = tofuPlan(packages).map((p) => (p.id === "core" ? { ...p, milestone: "greybox" as const } : p));
   assert.match(tofuPlanProblems(grey, phases, true, undefined).join(""), /the tofu package "core" is milestone "greybox"; the tofu stage is flat shapes: milestone "blockout"/);
   // planCheck carries it: required for a fresh plan of a design brief.
