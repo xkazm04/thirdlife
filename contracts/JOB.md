@@ -457,3 +457,7 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   `contact_types` is not compared: the house game counts every 6.3 row, a build its own coarser names.
 - **`skill_spread` passes from 0.25 to 0.95** (was >= 0.25) and counts variants of the core verb only: the crazy
   colosseum proof of 22 Nov reported 1.0 by counting a bash (0 damage) as a variant of its light.
+- **`verbs_used`** joins the tofu rows: how many of the design's verbs the tofu bot pressed at least 3 times each; it
+  passes at the design's verb count (`brief.design.verbs.length`; 2 when a plan is checked without a design). The TOFU
+  CHECK line names it. (The crazy colosseum proof of 22 Nov passed every other row while no strip showed its parry, roll
+  or bash.)
