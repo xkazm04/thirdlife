@@ -56,3 +56,15 @@ test("round 8: a job's look films the frames its bot reported (FAKE_METRICS mome
   assert.match(contact?.label ?? "", /^CONTACT \(a moment the bot reported, frame 200; 2 frames apart[^]*frames 190, 192, \.\.\. 212, 2 frames apart/);
   assert.ok(strips.some((x) => /strip-f120\.png$/.test(x.capture) && /5 frames apart/.test(x.label)), "the 25 % frame keeps its ordinary strip");
 });
+
+test("round 12: the critic gets the tofu bot's figures as claims to check against the strips", async () => {
+  const { claimsLine } = await import("../quality.js");
+  const { judgeTofu, tofuMetricsFor } = await import("../tofu.js");
+  // Proof -3, blockout round 2: the bot said idle 37 while two strips held both fighters still for 55+ frames.
+  const built = judgeTofu({ feedback_f: 0, idle_max_f: 37, verbs_used: 5 }, tofuMetricsFor(undefined, 5), "tests/bot_tofu.gd");
+  assert.match(claimsLine(built) ?? "", /^The tofu bot's own figures \(claims[^)]*\): feedback_f 0, idle_max_f 37, verbs_used 5\. Where a strip contradicts one[^]*"claim contradicted:"/);
+  assert.equal(claimsLine(undefined), undefined);
+  const { PKG_ROOT } = await import("../paths.js");
+  const prompt = fs.readFileSync(path.join(PKG_ROOT, "prompts", "critic.md"), "utf8");
+  assert.match(prompt, /they are claims: check them against what the strips show/);
+});

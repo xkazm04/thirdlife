@@ -211,3 +211,9 @@ critic's slop rubric says to check the side strip of the same moment first.
   enough: the free body should take the whole push. Proposed: `TLHit.pushbox` resolves a pair where one body cannot move
   (a wall within the push) by moving the other the full penetration. Shim in a game: an idle distance longer than the
   weapon's reach and a wall-aware step-out.
+
+# Loop round 12 (22 Nov 04:45-05:00): the bot's figures are claims the critic checks
+
+No contract change. The critic's context gets the tofu bot's figures, labelled as claims, and is asked to write a note
+starting "claim contradicted:" where a strip shows otherwise (proof -3: idle_max_f 37 against two strips of both fighters
+still for 55+ frames).

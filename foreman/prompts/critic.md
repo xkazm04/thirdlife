@@ -44,5 +44,7 @@ Each capture line names its camera, its frame and the bot that was playing (and 
 one stretch of the game: judge `fun_promise` on the captures of the bot whose package makes the promise, and say in
 `notes` which capture shows it (or that none does). A promise that only a later stretch of the game keeps is not
 missing because the first test's frames come before it.
+If the context gives the bot's own figures, they are claims: check them against what the strips show, and name any
+you see contradicted in a note that starts "claim contradicted:".
 If you cannot see a capture, say so in `notes`, score every item 0 and set `ok` to false. Never guess.
 {{feedback}}
