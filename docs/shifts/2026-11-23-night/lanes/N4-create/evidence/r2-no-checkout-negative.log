@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4090
+
+[boot] build: 88ae2cd 2026-11-22 19:52
+{"schema":"thirdlife.exe/1","kind":"boot","verb":"menu","exported":true,"godot":"4.7.2-stable (official)","executable":"C:/Users/kazda/AppData/Local/Temp/tl-n4-noco/ThirdLife/ThirdLife.exe","games":"C:/Users/kazda/AppData/Local/Temp/tl-n4-noco/ThirdLife/games","display":"Windows","user_dir":"C:/Users/kazda/AppData/Roaming/ThirdLife","plots":[],"sites":[],"left_out":[],"build":"88ae2cd 2026-11-22 19:52"}
+[boot] menu: Create
+[create] jobs C:/Users/kazda/AppData/Local/Temp/tl-n4-noco/jobs; Foreman ; starter ; node ; settings 'fake adapter (the Designer answers)': Foreman not found (no foreman/dist/cli.js in C:/Users/kazda/AppData/Local/Temp/tl-n4-noco/ThirdLife or a folder above it)
+[create] screen: idea
+[create] GO: The builders cannot start: Foreman not found (no foreman/dist/cli.js in C:/Users/kazda/AppData/Local/Temp/tl-n4-noco/ThirdLife or a folder above it)
+{"schema":"thirdlife.exe/1","kind":"create_go","ok":false,"screen":"idea","frames":0,"message":"The builders cannot start: Foreman not found (no foreman/dist/cli.js in C:/Users/kazda/AppData/Local/Temp/tl-n4-noco/ThirdLife or a folder above it)","job":"","settings":"fake adapter (the Designer answers)","shot":""}

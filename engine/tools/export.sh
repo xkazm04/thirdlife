@@ -20,11 +20,13 @@
 #       3. the keys, pressed by a script through the engine's own input state: W walks the visitor, Esc ends the
 #          process by itself (these two decide); E enters the kit court and Q leaves it (shown, not counted);
 #          P11: the turn south is 600 pixels of mouse (A and D step aside since P11)
+#       3b. (N4, 22-23 Nov) Create: the exe with -- --menu and TL_EXE_CREATE_GO: GO with the fake adapter (no model is
+#          called; jobs in the check's own folder) must reach the Designer's pitch (needs foreman/dist built and node)
 #       4. no process of the build is left.
 #       0. (first) the build tag: the exe, headless, prints "[boot] build: <tag>"; FAIL when it is not the tag this
 #          tool wrote into the build (BUILD.txt "tag:") or its commit is not the commit of the tree now (HEAD, read
 #          from the .git files, no git run; --expect <hash> names another), or dist/PLAY-LATEST.cmd does not start it.
-#       --no-window: steps 0, 1 and 4 only (nothing opens a window); --tag-only: step 0 only. Both say what they skipped.
+#       --no-window: steps 0, 1 and 4 only (nothing opens a window: 2, 3 and 3b are not run); --tag-only: step 0 only. Both say what they skipped.
 #   export.sh build --dry-run [--out <dir>]
 #       no export: prints the tag, the folder and the PLAY-LATEST.cmd it would write, and writes the tag file into
 #       <dist>/ThirdLife-dry-run/BUILD-TAG.txt (the real build is not touched).
@@ -455,12 +457,38 @@ node -e '
 if [ $ck -eq 0 ] && grep -q "^\[visit\] the visitor quit at tick 110[0-9]" "$W/keys.log"; then note "   Esc ended the process by itself at $(grep -o "tick 110[0-9]" "$W/keys.log" | head -1), exit code 0"
 else note "   FAILED: Esc did not end the process cleanly (exit code $ck; see $W/keys.log)"; fail=1; fi
 [ -s "$W/on_stage.png" ] && note "   picture at frame 900: $(cygpath -w "$W/on_stage.png" 2>/dev/null || echo "$W/on_stage.png")"
+
+# 3b. N4 (night of 22-23 Nov): Create's GO in the exe. Every exe until 88ae2cd said "Foreman not found" there (res:// is
+#     no folder on disk in an exe) and no test saw it: they ran the editor binary or a dry door. The menu opens Create, GO
+#     runs `foreman new` with the fake adapter (engine/ui/fixtures/make_designer_fake.mjs: no model is called) into a jobs
+#     folder of this check, and the exe must show the Designer's pitch (boot/hub.gd TL_EXE_CREATE_GO).
+note "3b. Create: the menu opens Create, GO on the fake adapter (no model is called) must reach the Designer's pitch"
+CG="$W/create"
+mkdir -p "$CG/jobs"
+if ! node "$E/ui/fixtures/make_designer_fake.mjs" "$REPO" "$CG" >"$CG/fake.log" 2>&1; then
+  note "   FAILED: no fake Designer settings: $(tail -1 "$CG/fake.log" | tr -d '\r')"; fail=1
+elif ! node -e 'const f = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).flags;
+    process.exit(Object.values(f).every(a => a[a.indexOf("--adapter") + 1] === "fake" && a.indexOf("--adapter") >= 0) ? 0 : 1)' "$CG/flags.fake-designer.json"; then
+  note "   FAILED: $CG/flags.fake-designer.json names an adapter other than fake: not started"; fail=1
+else
+  TL_CREATE_FLAGS="$CG/flags.fake-designer.json" TL_CREATE_JOBS="$CG/jobs" TL_EXE_CREATE_GO="penguins pushing each other off an iceberg" TL_EXE_CREATE_SHOT="$W/create_pitch.png" TL_EXE_WINDOW_POS="$POS" limited 240 "$OUT/ThirdLife.exe" -- --menu >"$W/create.log" 2>&1; cc=$?
+  cg_line="$(grep -a '"kind":"create_go"' "$W/create.log" | head -1 | tr -d '\r')"
+  cg_ready="$(grep -a '^\[create\] jobs ' "$W/create.log" | head -1 | tr -d '\r')"
+  cg_job="$(ls "$CG"/jobs/*/job.jsonl 2>/dev/null | head -1)"      # a job folder (jobs/_ui_logs holds the door's logs)
+  cg_job="${cg_job%/job.jsonl}"
+  if [ $cc -eq 0 ] && echo "$cg_line" | grep -q '"ok":true,"screen":"pitch"' && echo "$cg_ready" | grep -q "settings 'fake adapter[^']*': ready$" && [ -n "$cg_job" ] && grep -q '"type":"brief_set"' "$cg_job/job.jsonl" 2>/dev/null; then
+    note "   GO reached the pitch in $(echo "$cg_line" | grep -o '"frames":[0-9]*' | cut -d: -f2) frames, job $(basename "$cg_job") (fake adapter); picture: $(cygpath -w "$W/create_pitch.png" 2>/dev/null || echo "$W/create_pitch.png")"
+  else
+    note "   FAILED: exit code $cc; ${cg_line:-no create_go line}; ${cg_ready:-no [create] line} (see $W/create.log)"; fail=1
+    grep -aE "^\[create\]|^\[boot\]|SCRIPT ERROR" "$W/create.log" | head -8
+  fi
+fi
 fi
 
 # 4. nothing left behind
 left="$left$(running_from "$OUT")"
 if [ -n "${left// /}" ]; then note "4. FAILED: a process of the build is still running: $left"; fail=1; else note "4. no process of the build is left"; fi
 if [ $fail -eq 0 ] && [ "$nowindow" = 1 ]; then echo "PASS export.check --no-window: build '$said'; the exe runs the same games to the same hashes as the editor binary and leaves nothing behind; the window steps 2 and 3 were NOT run ($W)"
-elif [ $fail -eq 0 ]; then echo "PASS export.check: build '$said'; the exe runs the same games and $dg_n dungeons to the same hashes as the editor binary, shows the village, obeys W and Esc, and leaves nothing behind ($W)"
+elif [ $fail -eq 0 ]; then echo "PASS export.check: build '$said'; the exe runs the same games and $dg_n dungeons to the same hashes as the editor binary, shows the village, obeys W and Esc, starts a new idea in Create up to the pitch (fake adapter), and leaves nothing behind ($W)"
 else echo "FAIL export.check (the files of the runs are in $W)"; fi
 exit $fail

@@ -19,6 +19,8 @@ extends "res://ui/create/create_build.gd"
 
 signal closed
 
+var _logged_screen: String = ""          # N4: the screen last named on the log ("[create] screen: <name>")
+
 
 func setup(o: Dictionary) -> void:
 	opts = o
@@ -206,6 +208,9 @@ func _rebuild() -> void:
 	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(_body)
 	var shown: String = shown_screen()
+	if shown != _logged_screen and door != null and not door.dry:
+		_logged_screen = shown
+		print("[create] screen: %s%s" % [shown, (" (" + job_dir + ")") if not job_dir.is_empty() else ""])
 	_top_bar(shown)
 	match shown:
 		"idea": _idea()

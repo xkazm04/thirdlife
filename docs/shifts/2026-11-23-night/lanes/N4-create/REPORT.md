@@ -1,5 +1,6 @@
 N4 create: the editor cannot start a new idea (night of 22-23 Nov 2026)
-Lane N4, Opus solo, worktree .claude/worktrees/n23-create (branch n23-create, from main 1fa3b56). Landable round 1 at 19:44.
+Lane N4, Opus solo, worktree .claude/worktrees/n23-create (branch n23-create, from main 1fa3b56).
+Round 1 (the fix) landable 19:44, LANDED as merge 88ae2cd. Round 2 (export.sh check step 3b) landable 20:09.
 
 WHAT THE OWNER MET
 In the exe (d22-int/dist, build 48c4f59), Menu > Create > type an idea > GO puts a red toast on the page and nothing starts:
@@ -78,14 +79,44 @@ BEHAVIOUR CHANGES (owner and Director, read this)
   run build) and node on PATH.
 - The 780 block needs foreman/dist built (as ui.selftest already does); without it it FAILS with that instruction.
 
-QUESTIONS FOR THE DIRECTOR
-1. Should Build it (approve, plan, run) also be proven from the exe? The builders' verification needs a Godot binary;
-   the exe sets neither TL_GODOT nor TL_ENGINE_DIR for the Foreman, so plan/run from an exe likely needs them (untested).
-2. export.sh check could add a step that opens Create in the built exe and asserts the "[create] ... ready" line (fake
-   settings): the only test that sees the real res:// of an exe. It is the export script (not my claim).
-3. Should the exe ship its own starter (copy foreman_run.mjs beside the exe in export.sh) instead of using the checkout's?
+ROUND 2: export.sh check step 3b, Create (the Director's answer to question 2)
+- engine/tools/export.sh check, step 3b (with the window steps 2 and 3; --no-window skips it): writes the fake Designer
+  settings into the check folder (engine/ui/fixtures/make_designer_fake.mjs), refuses to start when any adapter there
+  is not "fake", then starts the exe with `-- --menu` and TL_EXE_CREATE_GO="penguins pushing each other off an
+  iceberg", TL_CREATE_JOBS=<check>/create/jobs. PASS needs: exit 0, a create_go line with ok and screen pitch, the
+  "[create] jobs ...; settings 'fake adapter ...': ready" line, and a job folder whose job.jsonl holds brief_set.
+  The final PASS line now also says "starts a new idea in Create up to the pitch (fake adapter)".
+- engine/boot/hub.gd: the TL_EXE_CREATE_GO instrument (with TL_EXE_CREATE_FRAMES, default 3600, and TL_EXE_CREATE_SHOT):
+  the menu opens Create through _menu_create (the button's function), the sentence goes in, the page's own go() is
+  pressed, and after the pitch or a toast (counted in frames) one "create_go" JSON line is printed and the process ends
+  (exit 0 pitch, 1 otherwise).
+- engine/ui/create/create.gd: "[create] screen: <name> (<job>)" on the log whenever the shown screen changes (not dry).
+Evidence:
+- My tree at 88ae2cd + round 2: export "PASS export.build: tag 88ae2cd 2026-11-22 19:52"; then export.sh check:
+  "PASS export.check: build '88ae2cd 2026-11-22 19:52'; the exe runs the same games and 3 dungeons to the same hashes as
+  the editor binary, shows the village, obeys W and Esc, starts a new idea in Create up to the pitch (fake adapter), and
+  leaves nothing behind". 3b: "GO reached the pitch in 27 frames, job penguins-pushing-each-other-20261122-1 (fake
+  adapter)". evidence/r2-export-check.log, r2-export-check-create.log, r2-export-check-create-pitch.jpg.
+- The first check run FAILED 3b although the exe reached the pitch: my condition picked jobs/_ui_logs (the door's
+  log folder) as the job. Fixed to the folder that holds a job.jsonl; the second run is the PASS above.
+- Negative: the same exe copied to %TEMP% (no checkout above it) with the step's environment prints create_go ok:false,
+  "The builders cannot start: Foreman not found (no foreman/dist/cli.js in .../Temp/tl-n4-noco/ThirdLife or a folder above
+  it)", exit 1: 3b would FAIL on the 22 Nov condition (evidence/r2-no-checkout-negative.log). An exe from before round
+  2 has no instrument: it prints no create_go line, and 3b FAILS after its 240 s limit.
+- Gates for round 2: tl check --tier fast PASS (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, foreman.typecheck);
+  ui.selftest 206/206; selftest create. 9 passed, 0 failed.
+- Round 2 changed files: M engine/tools/export.sh, engine/boot/hub.gd, engine/ui/create/create.gd; lane folder.
+
+QUESTIONS FOR THE DIRECTOR (answered 19:47)
+1. Prove Build it from the exe? No: no real job tonight.
+2. A Create step in export.sh check? Yes: round 2 above.
+3. Ship foreman_run.mjs beside the exe? Not tonight; the exe borrows the checkout's copy (next item 1 below).
+Open: export.sh check step 3b, like selftest 780, needs foreman/dist built in the checkout (main has it); a fresh
+worktree without it FAILS 3b with "build the Foreman first".
 
 NEXT THREE THINGS THIS LANE WOULD DO
-1. The export.sh check step of question 2 (with your OK).
-2. Build it -> phase 1 from the exe with the fake builder (question 1), fixing what the exe lacks for plan/run.
+1. Ship the starter with the exe (export.sh copies engine/ui/foreman_run.mjs beside ThirdLife.exe; the door already
+   looks in the exe's folder first), so an exe moved away from its checkout needs only a Foreman, not the engine files.
+2. Build it -> phase 1 from the exe with the fake builder, when real jobs are allowed again (TL_GODOT / TL_ENGINE_DIR for
+   the Foreman's verifier are not set by the exe today; untested).
 3. A probe row (boot/probe.gd) for "Create's Foreman: ready | <problem>", so `ThirdLife.exe -- probe` tells it at once.

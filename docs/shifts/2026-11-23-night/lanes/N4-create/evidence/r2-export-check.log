@@ -1,0 +1,34 @@
+export.sh check: 0. the build tag: the exe, headless, says which build it is
+export.sh check:    the exe says '88ae2cd 2026-11-22 19:52': the tag the export wrote, of commit 88ae2cd
+export.sh check:    dist/PLAY-LATEST.cmd starts ThirdLife\ThirdLife.exe (relative)
+export.sh check: 1. the scripted tour of the village, headless (editor binary, the exe, the exe copied to a folder with a space in its name)
+plot | game | own ticks | tiers seen | hash, editor binary | hash, exe | hash, exe copied elsewhere | verdict
+walker | example.walker | 371 | backdrop | f1c7b53757c34040 | f1c7b53757c34040 | f1c7b53757c34040 | same
+drive | seed.drive | 2972 | sideline,backdrop,stage | 87c5fe7e12bb5bea | 87c5fe7e12bb5bea | 87c5fe7e12bb5bea | same
+wall | seed.wall | 1221 | backdrop,sideline | 5896844ee2a7bb24 | 5896844ee2a7bb24 | 5896844ee2a7bb24 | same
+paddle | seed.paddle | 1967 | sideline,backdrop | d7c7ce91fe77ff36 | d7c7ce91fe77ff36 | d7c7ce91fe77ff36 | same
+kit | example.kit | 332 | sideline,stage,backdrop | ca698e71d34d1021 | ca698e71d34d1021 | ca698e71d34d1021 | same
+car | example.car | 1872 | backdrop,sideline | 3a459d0fe25e7853 | 3a459d0fe25e7853 | 3a459d0fe25e7853 | same
+hockey | game.ice_hockey_three_against | 2386 | backdrop,sideline,stage | 92839d2371bb3f58 | 92839d2371bb3f58 | 92839d2371bb3f58 | same
+parkour | game.parkour | 988 | backdrop | f7abac006a45bd43 | f7abac006a45bd43 | f7abac006a45bd43 | same
+site_0 | game.topple_tower_crates_three | 560 | backdrop | 18f7d0ac6497466d | 18f7d0ac6497466d | 18f7d0ac6497466d | same
+site_1 | game.ice_hockey_three_against | 1905 | backdrop | 8402edd126aeb6a7 | 8402edd126aeb6a7 | 8402edd126aeb6a7 | same
+editor binary: 4000 world ticks, 10 games, tick p50 4.304 ms, loaded in 6433 ms, 0 script errors, 0 engine errors, on stage: kit@450 drive@1500 hockey@3570
+exe: 4000 world ticks, 10 games, tick p50 3.527 ms, loaded in 8028 ms, 0 script errors, 0 engine errors, on stage: kit@450 drive@1500 hockey@3570
+exe copied elsewhere: 4000 world ticks, 10 games, tick p50 4.128 ms, loaded in 5142 ms, 0 script errors, 0 engine errors, on stage: kit@450 drive@1500 hockey@3570
+export.sh check: 1b. the dungeons (boot/dungeons.json), headless, 600 frames each: the editor binary and the exe
+export.sh check:    ice_hockey_three_against: c4f625006fa12c34 in both (600 frames)
+export.sh check:    parkour: fe29c683143553c3 in both (600 frames)
+export.sh check:    seed_paddle: 6550cd894ead7dff in both (600 frames)
+export.sh check: 2. the exe with no arguments: one picture after 120 frames, then a clean end on request
+export.sh check:    picture: C:\Users\kazda\kiro\third-life\.claude\worktrees\n23-create\dist\ThirdLife-check\village.png (1097519 bytes; driver:d3d12,adapter:NVIDIA GeForce RTX 4090), exit code 0
+export.sh check: 3. the keys: Shift+W east along the road, the mouse turns him south, W into the kit court, E at frame 720, Q at 1000, Esc at 1100 (nothing else ends this run)
+   W: the visitor ran 30.38 m in 210 frames of Shift+W (9 m/s would be 31.5 m), from [-60,0.47,2] to [-29.62,0.88,2]
+   E: a game was on stage from frame 750 to 990 (plot index 4; he stood at [-20.03,2,30.82]); Q: he was walking again at frame 1080
+export.sh check:    Esc ended the process by itself at tick 1101, exit code 0
+export.sh check:    picture at frame 900: C:\Users\kazda\kiro\third-life\.claude\worktrees\n23-create\dist\ThirdLife-check\on_stage.png
+export.sh check: 3b. Create: the menu opens Create, GO on the fake adapter (no model is called) must reach the Designer's pitch
+export.sh check:    GO reached the pitch in 27 frames, job penguins-pushing-each-other-20261122-1 (fake adapter); picture: C:\Users\kazda\kiro\third-life\.claude\worktrees\n23-create\dist\ThirdLife-check\create_pitch.png
+export.sh check: 4. no process of the build is left
+PASS export.check: build '88ae2cd 2026-11-22 19:52'; the exe runs the same games and 3 dungeons to the same hashes as the editor binary, shows the village, obeys W and Esc, starts a new idea in Create up to the pitch (fake adapter), and leaves nothing behind (C:/Users/kazda/kiro/third-life/.claude/worktrees/n23-create/dist/ThirdLife-check)
+rc=0
