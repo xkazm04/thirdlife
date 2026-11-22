@@ -410,7 +410,7 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
     later phase is: the first phase IS the blockout milestone.
   - The bot's `_bot_result()` carries `metrics` (PACK.md's "plus any numbers"; the runner reports `bot.result.metrics`),
     and `metrics.hand` (string, the TLHand profile): `feedback_f` <= 3 (checklist item 1), `skill_spread` >= 0.25 and
-    `skill_variants` >= 3 (3), `idle_max_f` <= 120 (9), `tell_min_f` >= 12 and `tells` >= 3 (11), `pressure_waves` >= 2
+    `skill_variants` >= 3 (3), `idle_max_f` <= 120 (9), `tell_min_f` >= 20 (12 until the night of 23 Nov: below the human reaction floor) and `tells` >= 3 (11), `pressure_waves` >= 2
     (12), `lead_change_share` >= 0.3 and `close_rounds` >= 1 (15); a duel adds `contact_types` >= 3 and
     `one_sided_contacts` <= 0, an arcade sport `possession_median_f` 240 to 600. An absent metric fails (not measured
     is not zero).
