@@ -11,6 +11,7 @@ import { REVIEW_SCORES, ROOM_LIMITS, conceptProblems, reviewProblems, type Conce
 import { earlierProblems, earlierText, takenProblems, takenText } from "./concepts.js";
 import { conceptTemplateProblems, templateExcerpt, templatesMenuText } from "./templates.js";
 import { BRIEF_LIMITS, CONCEPT_LIMITS, REVIEW_LIMITS } from "./repair.js";
+import { methodBlock, methodText } from "./method.js"; // N2 of 23 Nov: docs/design/METHOD.md
 import { REVIEW_THRESHOLD, conceptAnswerSchema, conceptText, qualityText, reviewAnswerSchema, slopIds, type ReviewAnswer } from "./roomtext.js";
 
 const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "prompts", name), "utf8");
@@ -40,7 +41,7 @@ export function conceptStep(builder: Parameters<typeof designBrief>[0], input: R
     builder,
     "concept",
     prompt("concept.md"),
-    { ...vars, quality: qualityText(["3", "4", "6", "8"]), templates: templatesMenuText(), redesign: redesignBlock(input), taken: takenText(input.creativity, input.taken) + earlierText(input.earlier) },
+    { ...vars, method: methodText(["1", "4", "9", "14:Concept"]), quality: qualityText(["3", "4", "6", "8"]), templates: templatesMenuText(), redesign: redesignBlock(input), taken: takenText(input.creativity, input.taken) + earlierText(input.earlier) },
     conceptAnswerSchema,
     (v) => [...conceptProblems((v as { concept: Concept }).concept), ...conceptTemplateProblems((v as { concept: Concept }).concept, input.sentence), ...takenProblems((v as { concept: Concept }).concept, input.taken, input.sentence), ...earlierProblems((v as { concept: Concept }).concept, input.earlier, input.sentence)],
     { ...opts, attempts: opts.attempts ?? 3, limits: CONCEPT_LIMITS }, // word limits: a repair call first (repair.ts), then the attempts
@@ -59,6 +60,8 @@ export async function reviewStep(builder: Parameters<typeof designBrief>[0], inp
       creativity: input.creativity === "crazy" ? "The job is CRAZY: one or two unexpected mechanics are added on top of the player's words (aspects marked crazy)." : "The job is STANDARD: serve the player's words.",
       concept: conceptText(concept),
       design: JSON.stringify(brief, null, 1),
+      method: methodBlock(brief) || "(the brief carries no method lines)",
+      methodRules: methodText(["3", "14:Reviewer"]),
       quality: qualityText(["6", "3", "10"]),
       template: templateExcerpt(concept.template, "design"),
       threshold: String(REVIEW_THRESHOLD),

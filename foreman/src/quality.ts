@@ -23,6 +23,7 @@ import { judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } f
 import { HOUSE_BOTS, contactMoment, houseBaseline, houseCompare, saveBaseline, type HouseBaseline } from "./house.js";
 import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./filmcheck.js";
 import { revisePair, sameKind } from "./revisepair.js";
+import { killItem, methodBlock } from "./method.js";
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -138,7 +139,8 @@ const scoresText = (v: Pick<Verdict, "scores">): string => Object.entries(v.scor
 export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[], lastPackage: string, round: number, house?: { line: string; pack: string; strips?: { capture: string; label: string }[] }, claims?: string): Promise<{ verdict?: Verdict; line: string }> {
   if (film.captures.length + film.strips.length === 0 || h.o.critic === false) return { line: "critic not run" };
   const model = h.o.criticModel ?? h.o.model;
-  const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : []), ...(house !== undefined ? [houseItem(house.pack)] : [])];
+  const kill = killItem(h.s.brief); // N2 of 23 Nov: the design's KILL IF lines (docs/design/METHOD.md section 11)
+  const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : []), ...(house !== undefined ? [houseItem(house.pack)] : []), ...(kill !== undefined ? [kill] : [])];
   // L1b: the strips of the named clip moments first, then the stills, then the other strips.
   const clipFirst = [...film.strips.filter((x) => x.label.startsWith("CLIP MOMENT")), ...film.captures.map((c, i) => ({ capture: c, label: film.labels[i] ?? "" })), ...film.strips.filter((x) => !x.label.startsWith("CLIP MOMENT"))];
   // N4 loop round 2: the house game's strip last, labelled as the bar.
@@ -147,7 +149,8 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   const labels = all.map((x) => x.label);
   const res = await critic(h.o.builder, images.map((c) => h.dir(c)), rubric, {
     ...(model ? { model } : {}),
-    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, claims !== undefined ? claims : "", house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
+    context: [`Game: ${h.s.title ?? ""} (${h.s.sentence ?? ""})`, `Mood asked for: ${h.s.brief?.mood ?? "(none)"}`, methodBlock(h.s.brief) !== "" ? `The design's method lines (what the player should feel, and what would kill the game):
+${methodBlock(h.s.brief)}` : "", h.s.brief?.design ? `The design's clip moments: ${h.s.brief.design.clips.map((c) => `${c.id}: ${c.moment}`).join("; ")}` : "", `Bots playing while the frames were taken: ${shots.map((x) => (x.bot ? `${x.bot}${x.package ? ` (package ${x.package})` : ""}` : "none")).join("; ")}. Each capture above names its bot and frame.`, claims !== undefined ? claims : "", house !== undefined ? `The house game of this game's template, engine/packs/${house.pack}, is the bar (README and clips in the engine). The bot figures, this build against it: ${house.line}` : ""].filter(Boolean).join("\n"),
     packages: packageLinesOf(h.s, h.s.plan.map((p) => p.id)),
     labels,
   });

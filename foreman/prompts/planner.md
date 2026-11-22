@@ -43,6 +43,9 @@ second copy that drifts, and a plan that retypes them runs past the Planner's ti
 # The tofu stage: the first phase proves the core verb is fun on flat shapes
 {{tofu}}
 
+# The method (docs/design/METHOD.md): the first phase is a greybox a person plays
+{{method}}
+
 # The design handbook (docs/GAME-QUALITY.md): feel numbers and the slop list your contracts must avoid
 {{quality}}
 
@@ -112,8 +115,16 @@ a person can PLAY and feel, not a layer of code:
 - The **first phase is the smallest thing that plays**: the root package, the core verb exchange with its feel, the
   camera that serves it, one rival or target and a way to score. It holds the root package. With a design doc it is
   the tofu stage: only `blockout` packages, flat shapes, no art, no second rival, no twist; the job holds there until
-  the tofu bot's metrics pass.
-- Each later phase adds something the player feels: the rivals' character, the juice, the twist, the stakes, the look.
+  the tofu bot's metrics pass, and then a PERSON plays it for 5 minutes and passes or holds it (docs/design/METHOD.md
+  section 10). The bots are the floor; the person is the gate. So the first phase is judged by the brief's
+  `30 SECONDS:` line and its `KILL IF:` lines: its `try` line is the 30-second promise in the player's words, and its
+  packages make the 30 seconds happen as written.
+- **Feel numbers live in one tuning file.** Every speed, acceleration, turn rate, frame count, hit-stop, shake and
+  camera number of the design goes into the pack's `data/tuning.json` (the root's contract names its keys, by the
+  design's names), read by the scripts at start, so a person can change one number between two plays. A feel number
+  written as a constant in a script is a package the person cannot tune.
+- Each later phase adds something the player feels and serves one pillar of the design: the rivals'
+  character, the juice, the twist, the stakes, the look.
   A crazy aspect the player kept usually gets a phase of its own after the core plays.
 - Every package is in exactly one phase; a package's deps are in its own phase or an earlier one.
 - Each phase is `{ "id": "<snake_case>", "title": "<a few words>", "try": "<what the player can do now, at most 12

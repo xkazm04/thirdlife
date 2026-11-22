@@ -55,7 +55,9 @@ round is lost. Your job is two things: make the acceptance pass AND land the fee
 package owns. A `TOFU CHECK:` line in your contract names the bot whose `metrics` the Foreman judges before the game
 may grow: count each metric from what the bot saw in the frames it played; a metric written as a constant, or a
 game tuned to the bot instead of to a player, is found when a person plays the tofu phase. Get it passing first and check it; then make it feel right before you stop. A package that passes and
-feels like nothing is not done: the capture critic films it in motion and sends it back.
+feels like nothing is not done: the capture critic films it in motion and sends it back, and after the first phase a
+person plays it with the brief's 30 SECONDS and KILL IF lines in hand. Passing the bots is the floor; the bar is that
+person wanting another go. Put every feel number your package uses in `data/tuning.json`, never as a constant.
 {{feedback}}
 
 # Rules
