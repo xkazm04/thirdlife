@@ -342,6 +342,7 @@ func _log(kind: String, att, def, a0: String, d0: String) -> void:
 	if not both:
 		failures += 1
 	kinds[kind] = int(kinds.get(kind, 0)) + 1
+	g.first_minute_note(kind, att, def, d0)
 	log.append({"f": g.ctx.frame, "type": kind, "by": att.id, "a": [a0, a1, att.st], "d": [d0, d1, def.st], "both": both})
 	if log.size() > 24:
 		log.pop_front()

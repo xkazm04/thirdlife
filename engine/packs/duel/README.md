@@ -26,6 +26,15 @@ node devx/bin/tl.mjs play duel          # or: bash engine/tools/tl.sh play --pac
 The first round shows the keys and a cue line at the moments that matter: "You blocked his HEAVY: LIGHT now!",
 "Shoulder dip = BASH coming", "RED = UNBLOCKABLE: roll, or hit him first", "He is BROKEN: a HEAVY now is a finisher".
 
+## The first minute (round 1 against the Wall; `scripts/lessons.gd`, `data/lessons.json`)
+The Wall teaches by play, as For Honor's first duel and Sekiro's sparring partner do: a cue line goes up 75 frames
+before each blow, the blow comes with a held wind-up, and after the right answer he stands open for the punish.
+1. a slow heavy: "HOLD SPACE to block it" -> blocked, he bounces off -> "hit him NOW";
+2. a slow light with the glint: "TAP SPACE as it lands: PARRY" -> "a HEAVY cannot miss";
+3. he walks in behind his shield: "E: your shoulder breaks a guard" -> "Strike!".
+A missed lesson is shown once more; after the third (or 50 s) he fights for real. Every rival's light and heavy flash
+a glint on the weapon 16 frames before they land (the moment a person reacting to it presses block in time to parry).
+
 ## What you see
 - Top left / right: health, stamina and posture bars for you and the rival, with EXHAUSTED, RALLY, BROKEN and stars.
 - Top: round, rounds won (filled pips), the round clock, the rival's name, the crowd meter.

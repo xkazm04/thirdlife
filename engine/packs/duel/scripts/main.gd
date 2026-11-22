@@ -17,6 +17,7 @@ var feel
 var contact
 var show
 var brain
+var lessons                            ## scripts/lessons.gd: the first minute teaches by play
 var fighter_lib
 var arms_lib = null
 var you
@@ -40,6 +41,7 @@ var round_log: Array = []              ## [winner, reason, frames]
 var match_log: Array = []
 var hitstop_frames: int = 0
 var fight_frames: int = 0
+var first_minute: Dictionary = {}     ## the player's first 60 s of round 1: blocked, parried, punished, bashed, hit_landed, hit_taken
 const SPOT_YOU := Vector3(0, 0.05, 2.5)
 const SPOT_RIVAL := Vector3(0, 0.05, -2.5)
 
@@ -82,6 +84,8 @@ func _pack_setup(c) -> void:
 	ctx.root.add_child(match_rules)
 	show = ctx.load_script("scripts/show.gd").new()
 	show.setup(self)
+	lessons = ctx.load_script("scripts/lessons.gd").new()
+	lessons.setup(self)
 	feel.fade_occluders(you, rival)
 	_new_brain()
 
@@ -158,6 +162,8 @@ func _start_round() -> void:
 		f.body.place(SPOT_YOU if f == you else SPOT_RIVAL, 0.0 if f == you else PI)
 		f.facing = 0.0 if f == you else PI
 	brain.reset_round()
+	if lessons != null:
+		lessons.start()
 	lead = 0
 	phase = "intro"
 	phase_t = 0
@@ -223,6 +229,7 @@ func _restart_match(r: int) -> void:
 	match_rules.start()
 	round_no = 1
 	round_log = []
+	first_minute = {}
 	lead_changes = 0
 	drill = {}
 	_start_round()
@@ -234,6 +241,7 @@ func _start_drill(d: Dictionary) -> void:
 		_restart_match(int(d["rung"]))
 	_start_round()
 	drill = d
+	lessons.stop()
 	drill_wait = []
 	show.banner("", 1)
 	if d.has("view"):
@@ -342,6 +350,27 @@ func _drain_events() -> void:
 		f.events = []
 
 
+## What the player did in the first 60 s of the match (round 1): the learning curve a person meets (plays-twice 5, 10).
+func first_minute_note(kind: String, att, def, d0: String) -> void:
+	if round_no != 1 or round_rules == null or round_rules.total_frames > 3600 or not drill.is_empty():
+		return
+	var k: String = ""
+	if def == you and kind.find("block") >= 0:
+		k = "blocked"
+	elif def == you and kind.find("parried") >= 0:
+		k = "parried"
+	elif att == you and d0 in ["REBOUND", "PARRIED", "GUARDBROKEN", "WALLSPLAT", "STAGGER", "BROKEN", "TAUNT", "TELL"]:
+		k = "punished"
+	elif att == you and kind.begins_with("bash"):
+		k = "bashed"
+	elif def == you and (kind.begins_with("hit") or kind == "ko" or kind == "knockdown"):
+		k = "hit_taken"
+	elif att == you and (kind.begins_with("hit") or kind == "ko"):
+		k = "hit_landed"
+	if k != "":
+		first_minute[k] = int(first_minute.get(k, 0)) + 1
+
+
 func crowd(_f, why: String) -> void:
 	crowd_level = minf(12.0, crowd_level + float(tune["crowd"].get(why, 1)))
 
@@ -427,4 +456,4 @@ func _pack_state() -> Dictionary:
 		"drill": str(drill.get("id", "")), "stops": feel.stops, "lead_changes": lead_changes, "crowd": snappedf(crowd_level, 0.01),
 		"rounds": round_log.duplicate(true), "matches": match_log.size(), "rival_passive_max": brain.passive_max, "rival_passive_note": brain.passive_note,
 		"rival_tells_min": brain.tells_min, "rival_attacks": brain.attacks, "rival_strings": brain.strings_used.duplicate(), "rival_mind": brain.choices.duplicate(),
-		"you_counts": you.counts.duplicate(), "rival_counts": rival.counts.duplicate(), "pushbox_gap": snappedf(feel.pushbox_gap(you, rival), 0.001)}
+		"you_counts": you.counts.duplicate(), "rival_counts": rival.counts.duplicate(), "pushbox_gap": snappedf(feel.pushbox_gap(you, rival), 0.001), "first_minute": first_minute.duplicate(), "lessons": lessons.snapshot() if lessons != null else {}}

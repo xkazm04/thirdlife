@@ -1,0 +1,23 @@
+{
+  "_about": "The first minute against the first rival (scripts/lessons.gd): each step is shown once with a held wind-up and a cue read before the blow; one retry; then he fights for real. read_frames: the cue is up this long before he strikes. hold: extra wind-up frames at the coil (a slower, readable blow). open_frames: how long he stands open after the right answer. max_frames: the lessons end by this round frame whatever happened.",
+  "enabled": true,
+  "read_frames": 75,
+  "cue_frames": 150,
+  "strike_frames": 150,
+  "open_frames": 70,
+  "gap_frames": 45,
+  "max_frames": 3000,
+  "again": "Not quite - again.",
+  "done": "That is all he knows. Now he fights for real.",
+  "steps": [
+    {"id": "block", "move": "heavy", "hold": 18, "distance": 2.0, "ok": ["heavy_block", "heavy_parried"],
+      "cue": "He raises the mace: HOLD SPACE (or L) to block it.",
+      "next_cue": "Blocked! He bounced off your guard: hit him NOW (LMB / J)."},
+    {"id": "parry", "move": "light", "hold": 14, "distance": 2.0, "ok": ["light_parried"],
+      "cue": "Watch for the glint on his mace, then TAP SPACE as it lands: PARRY.",
+      "next_cue": "PARRY! He is thrown open: a HEAVY (RMB / K) cannot miss."},
+    {"id": "bash", "distance": 1.8, "ok": ["bash", "bash_wallsplat"],
+      "cue": "He hides behind his shield. E: your shoulder breaks a guard.",
+      "next_cue": "Guard broken! Strike!"}
+  ]
+}

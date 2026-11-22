@@ -33,8 +33,11 @@ func setup(main) -> void:
 	hud.add_label(&"banner", "", &"center")
 	hud.font_size = 20
 	hud.set_align(&"banner", &"center")
+	hud.font_size = 30                          # the cue teaches: it must read at a glance (round 1 of N2's loop)
 	hud.add_label(&"cue", "", &"bottom")
 	hud.set_align(&"cue", &"center")
+	hud.set_plate(&"cue", true)
+	hud.font_size = 20
 	hud.add_label(&"keys", "", &"bottom")
 	hud.set_align(&"keys", &"center")
 	for id: StringName in [&"you", &"rival", &"round"]:
@@ -100,6 +103,7 @@ CROWD %s" % [g.round_no, _pips(int(w["you"])), time_text,
 	if hint_left > 0:
 		hint_left -= 1
 		hud.set_text(&"keys", "WASD move    LMB / J light    RMB / K heavy (hold = unblockable)    SPACE block (tap = parry)    SHIFT roll    E bash" if hint_left > 0 else "")
+	_glint(rv)
 	for i in range(flames.size() - 1, -1, -1):
 		flames[i][1] -= 1
 		if flames[i][1] <= 0:
@@ -107,6 +111,17 @@ CROWD %s" % [g.round_no, _pips(int(w["you"])), time_text,
 				(flames[i][0] as Node).queue_free()
 			flames.remove_at(i)
 	_camera()
+
+
+## The glint (Sekiro's, For Honor's indicator): a flash on the rival's weapon 16 frames before a light or heavy lands,
+## the moment a person who reacts to it (about 15 frames) presses block in time to parry. Drawing only.
+func _glint(rv) -> void:
+	if rv.st != "WINDUP" or not (rv.mv in ["light", "heavy"]) or rv.windup - rv.mf != 16 or rv.tip == null or g.feel.stop_left(rv) > 0:
+		return
+	var root: Node3D = g.ctx.root
+	TLVfx.burst(&"goal_flash", rv.tip.global_position, root, {"scale": 0.35, "color": Color(1.0, 1.0, 0.92)})
+	TLVfx.burst(&"sparks", rv.tip.global_position, root, {"scale": 0.6, "color": Color(1.0, 1.0, 0.9)})
+	TLAudio.play(&"beep", root.to_global(rv.pos()), -10.0)
 
 
 func next_view() -> void:
@@ -186,7 +201,7 @@ func on_event(f, e: Array) -> void:
 			g.ctx.cameras.shake(0.1, 10)
 			banner("PARRY!" if is_you else "PARRIED", 45)
 			if is_you:
-				cue("Parried a %s: %s guaranteed." % ["light - a HEAVY is" if str(data["mv"]) == "light_parried" else "heavy - a LIGHT is", ""], 90)
+				cue("Parried his light: a HEAVY is guaranteed." if str(data["mv"]) == "light_parried" else "Parried his heavy: a LIGHT is guaranteed.", 90)
 		"clash":
 			TLVfx.burst(&"sparks", root.to_global(mid), root, {"scale": 2.0, "color": Color(1.0, 0.95, 0.7)})
 			TLAudio.play(&"hit_metal", root.to_global(mid), 6.0)
