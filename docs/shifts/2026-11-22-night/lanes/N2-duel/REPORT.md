@@ -1,85 +1,165 @@
-# N2 duel-reference: report (night of 22 Nov 2026, branch n22-duel)
+N2 duel-reference: report of the extended night (22 Nov 2026, LOOP.md rounds 1-12, 01:00 to 05:41), branch n22-duel
+====================================================================================================================
 
-Saved by the Director from the lane's final message (00:53). The earlier draft, REPORT.txt, was written before the
-kernel switch and is superseded.
+What this is: engine/packs/duel (the duel house game, game.duel) and its card engine/cards/duel.json. It starts from
+the state of 21:30 / 00:53 (REPORT.md beside this file, landed as a6fc8ad). Twelve loop rounds followed. Each round:
+- named one gap against Souls / For Honor and the plays-twice checklist;
+- built it inside the pack;
+- showed it in a window clip on the play camera, through the newcomer or regular hand;
+- ran the gates (lint, smoke, all 49 duel units, the selftest block duel., the fast tier);
+- was landed on main by the Director.
+My `date` was about 12 minutes behind the Director's clock until about 04:30; the times here are mine.
 
-## What it is
-`engine/packs/duel` (game.duel 0.1.0), a hand-built duel house game.
-- **Format:** one fighter against a ladder of three rivals (the Wall, the Duelist, the Dancer), then the Duelist at the
-  champion tier. Matches are best of 3 rounds of up to 70 s, in a walled ring whose wall splats.
-- **Rules:** from `docs/research/DUEL-PLAYBOOK.md` §6; every contact changes BOTH fighters.
-- **Recipe card:** `engine/cards/duel.json`.
-- **Play:** `node devx/bin/tl.mjs play duel`. V cycles the camera, R restarts, ENTER after a win takes the next rival.
+NOBODY HAS PLAYED IT BY HAND. Every figure below comes from a scripted TLHand: newcomer, regular, sharp or perfect.
+A person's hand is the bar, and the scripted newcomer does not read on-screen cues.
 
-## Since 22:07: on N1's feel kit (kernel API 1.13)
-- **Contacts:** `feel.gd` calls TLHit.impact / hit / blocked / parried / clash / guard_break / wall_splat with the
-  duel's tune. The kernel plays the reaction clips.
-- **Bodies:** `stop_left` holds the duel's counters during hit-stop. While `busy_left` > 0 the fighter writes no
-  velocity or facing.
-- **Pushbox and camera:** the pushbox is 0.45 x scale; `fade_occluders` covers both duellists; `clear` runs at round
-  restart.
-- **Walls:** the kernel's wall test decides the bash splat and the knocked-into-wall splat. The attacker gets the same
-  8-frame stop, so both freeze.
-- **Fixes found by the contact drills:**
-  - A guard held on from a stun is no longer a parry.
-  - The blocked heavy pushes 0.35 / 0.2 m (the playbook has 0.5 / 0.3), and the light steps in 0.5 m. With the
-    kernel's pushes the fighters ended 2.46 m apart, and the "guaranteed" light fell short.
-- **Look:** weapon swing trails, with a red arc on the unblockable charged heavy.
-- **Evidence:** clips re-recorded, the ladder re-run and the hand checks re-measured, all on the kernel.
+Play it: node devx/bin/tl.mjs play duel. V cycles the camera, R restarts, ENTER after a won match takes the next
+rival.
 
-## Gates
-| Run | Result |
-|---|---|
-| Lane: duel's packs units (lint, smoke, 43 bots, invariants) | 46/46; 0 bypasses; invariants hash 0082d470fa428493 on both runs; p50 0.587 ms |
-| Lane: `selftest.sh duel.` | 8/8 (the replay hash equals the bot hash) |
-| Lane: contact drills | 22/22; both fighters change in every contact |
-| Lane: hand checks, 20 seeds vs the Wall | idle 0/20, perfect 20/20 |
-| Director, 00:58: fast tier | arch 12/12, assets 4/4, cards 3/3, devx 229/229; foreman.typecheck NOT RUN (the tree has no node_modules) |
-| Director, 00:58: `tl cards check` | PASS |
+ROUNDS (commit on main; the clip to watch is in clips/)
+------
+ 1  83aefce   Gap: the first minute taught nothing; a newcomer met the Wall with a key card.
+              Built: the Wall teaches block, parry and bash by play (lessons.gd: a held blow, a cue read first, then he
+              stands open), and a parry glint 16 frames before every rival light or heavy lands.
+              Newcomer vs the Wall, first 60 s, 8 seeds: hits taken 43 -> 13, punishes 0 -> 6.
+              Watch: r1_after.mp4
+ 2  816983e   Gap: your head covered his wind-up, and the thin blades did not read.
+              Built: the two-shot play camera, broader blades, trails by class.
+              Watch: r2_after.mp4
+ 3  816983e   Gap: the rivals' signature moments were never seen.
+              Built: the Wall ROARS into phase 2 (banner, horn, a named pattern); the Dancer squares up out of her roll
+              into a dashing roll-cut.
+              Watch: r3_after_wall_quake.mp4, r3_after_dancer_roll_cut.mp4
+ 4  3004e58   Gap: a lost round said nothing about why.
+              Built: every hit is filed under a cause, and the card ends on WHAT BEAT YOU and its answer. pilot.gd
+              returns N4's tofu metrics. E1 adopted (play_clip, kernelApi 1.14): 27 bot hashes are identical across the
+              swap.
+              Watch: r4_after.mp4, r4_card.png
+ 5  563bf48   Gap: the round-ending blow landed like any other.
+              Built: a 20-frame freeze, a low KO camera beside the fallen fighter, dust, the crowd.
+              Watch: r5_after_ko.mp4
+ 6  c30db3e   Gap: one bare ring at one pace, and the rival flat (N4: pressure_waves 1 on the Wall).
+              Built: each rival's arena (banners in his colours, towers / masts / trees, a round-1 intro shot), a
+              stand-in drum per rival, TIME and BEST on the card, and a push-then-breathe rhythm.
+              pressure_waves on the Wall, regular hand, seed 1: 1 -> 4.
+              Watch: r6_after_duelist.mp4
+ 7  efa2537   Gap: the pack drew its own trails, and every cue sat at the bottom of the screen.
+              Built: API 1.15 adopted: TLHit.swing_trail; a tag over the rival's head (HEAVY gold, BASH orange,
+              UNBLOCKABLE red, OPEN blue in the Wall's breath); coloured banners on a plate.
+              Watch: r7_wall_newcomer.mp4, r7_tags_wall_quake.mp4
+ 8  4f442a1   Gap: the card named one cause worth 40 of 100 health.
+              Built: chip and bash are filed as causes; the card names the top three out of your health; a one-time
+              RALLY cue. pilot.gd returns `moments` (contact kind -> frames) for the editor's house strip.
+              Watch: r8_after.mp4, r8_card.png
+ 9  f4a6d13   Gap: the rivals were the player recoloured (slop id recoloured_rivals).
+              Built: helm and pauldrons, a plumed hat and cape, a hood (gen/arms.gd on the head and back sockets; the
+              socket axes were found with a probe). The camera no longer rises over the stands into the banners.
+              Watch: r9_gear_sheet.jpg, r9_after_dancer.mp4
+10  d32f691   Gap: the Director's look notes, and at the ring wall the camera looked down on the Duelist's hat, where
+              his tells cannot be read.
+              Built: a head-sized helm; the Dancer's headband and ponytail; at the wall the camera swings to the inside
+              shoulder.
+              Watch: r10_before_duelist.mp4 vs r10_after_duelist.mp4
+11  764d38f   Gap: the cliff after the Wall. The newcomer loses 5 of 6 to the Duelist, 100 -> 18 health in 14 s, and
+              nobody tells him why.
+              Built: the Duelist's first round teaches his tap, his first blade (block, then strike in the gap: the
+              newcomer's top loss cause) and his thrust, with 0.4 damage while it runs; a one-time red cue the first
+              time a trade costs you.
+              Watch: r11_after_duelist_lessons.mp4
+12  2c9e4a7   Gap: the Dancer taught nothing, and every line called her "he".
+              Built: her first round teaches her spin heavy and her first cut; show.say reads she / her for her.
+              Watch: r12_after_dancer_lessons.mp4, r12_card.png
 
-The Director removed one line from the card first: `TLVfx.squash` was still listed though the pack no longer calls it.
+Gates on the last landed tree (round 12):
+- duel units 49/49; invariants: the same hash on both runs (9aa07fa3bb7f85a3); frame p99 1.64 ms (budget 4); 514
+  nodes and 71 bodies.
+- selftest duel. 8/8.
+- Fast tier: arch, assets, cards and devx.test (229/229) PASS; foreman.typecheck NOT RUN (no node_modules in this
+  worktree).
+- The Director's fast tier on every merged tree: 5/5.
 
-## Ladder on the kernel (wins of 8; each seed is one best-of-3)
-| Rival | newcomer | regular | sharp | perfect |
-|---|---|---|---|---|
-| The Wall | 5 | 8 | 8 | 8 |
-| The Duelist | 2 | 5 | 8 | 8 |
-| The Dancer | 0 | 4 | 8 | 8 |
-| Champion (the Duelist) | 0 | 1 | 5 | 8 |
+THREE CLIPS TO WATCH FIRST
+--------------------------
+r11_after_duelist_lessons.mp4 (a new rival teaches himself), r10_after_duelist.mp4 (a real exchange at the wall,
+tags and splats), r8_card.png (a loss that explains itself).
 
-8 seeds give about +-30 points. Nobody has played it by hand.
+LADDER (tl ladder --pack engine/packs/duel --seeds 8 on the final tree 9d06a97, 05:38-05:41)
+------
+Wins of 8; each seed is one best-of-3 match; 8 seeds give about +-30 points. The 21:30 figures are in brackets.
 
-## Clips (`clips/`, each with a contact sheet)
-- `parry_riposte.mp4`: the parry flash; the attacker's arms are flung open and held; the heavy riposte lands.
-- `punish_heavy.mp4`: the Wall's heavy bounces off your guard; your light lands before he recovers.
-- `splat.mp4`: a bash slams the Wall into the ring wall, then your heavy follows.
-- `clash.mp4`: both lights are thrown back. The weakest of the six.
-- `tell_puzzle.mp4`: the Duelist raises his blade; strike during the raise for a counter-hit.
-- `round_won.mp4` (15 s, the play camera): a real match against the Wall. **Watch this first.**
+| rival                | newcomer | regular | sharp | perfect |
+|----------------------|----------|---------|-------|---------|
+| The Wall (rung 1)    | 4 (5)    | 6 (8)   | 8 (8) | 8 (8)   |
+| The Duelist (rung 2) | 1 (2)    | 8 (5)   | 8 (8) | 8 (8)   |
+| The Dancer (rung 3)  | 0 (0)    | 8 (4)   | 8 (8) | 8 (8)   |
+| Champion (Duelist)   | 0 (0)    | 1 (1)   | 8 (5) | 8 (8)   |
 
-**Souls / For Honor read: partly.**
-- What reads: the mutual reactions, the guard / parry / punish loop and the splat.
-- What does not: light and heavy differ by wind-up, arc and banner, not by the figure's weight. The toy figures and the
-  thin blades limit it.
+What moved, and why:
+- The Duelist and Dancer regular cells went up through rounds 11-12. Their lesson rounds take 0.4 damage, so round 1
+  is near-certain for any hand that punishes. Round 1 is now usually the newcomer's too (0.75 and 0.63 rounds won a
+  match); the matches are still lost.
+- The champion's sharp cell 5 -> 8 most likely comes from round 6's breathe windows; I did not measure that cell in
+  round 6.
+- The regular hand is no longer ordered Wall < Duelist < Dancer.
+- The newcomer is unchanged within the noise.
 
-## Rules changed from the playbook (also in the README)
-- **Poise:** reset, because the playbook's figures absorbed every light.
-- **Parry:** the window is the first frames of a block press.
-- **Clash:** two swings of the same class clash within 5 frames of each other.
-- **Additions:** a visible rally rule and a crowd meter.
-- **The Wall:** slowed as the first rival.
-- **Pace:** a per-tier "pace" between rival strings.
-- **Rival reads:** rivals read light chains and swings out of range.
-- **The Dancer:** her blade hits do 11, 9 when chained.
+ENGINE NEEDS (ENGINE-NEEDS.md)
+------------
+- E1 clip timing (TLBiped.play_clip): ADOPTED round 4 (1.14). rig.clip_t is no longer written anywhere in the pack.
+- E2 swing weight: ADOPTED. N1 re-posed strike / strike_heavy (round 1); TLHit.swing_trail adopted in round 7 (1.15).
+- E3 HUD colour (TLHud.set_color): ADOPTED round 7.
+- E4 tags over a body (TLHud.add_tag): ADOPTED round 7.
+- E5 music with a tempo the game pushes (TLAudio.music / set_tempo): OPEN. The beat is a stand-in drum from the hit
+  presets.
+- Found tonight, for RIGS.md (a doc ask, not a need): the biped's head and back sockets are not Y-up. They are +X
+  right, +Y back and +Z down, so gear on them is built Y-up and turned -90 degrees about X. RIGS.md lists the sockets
+  without their axes.
 
-## Questions (PATCHES.md)
-- The duel stretches fight clips by writing `rig.clip_t` every frame. Document it as pack API, or add a kernel clip
-  speed?
-- CARDS.md has no key for data tables, so the frame table is in the card's `do` text.
-- `engine/packs/README.md` needs one line for the duel.
-- N4's duel genre template has not been checked against `data/moves.json`.
+SOULS / FOR HONOR READ, NOW AGAINST 21:30
+-----------------------------------------
+At 21:30: "partly". The mutual reactions, the guard / parry / punish loop and the splat read; light against heavy read
+only by the wind-up and the banner. The toy figures and the thin blades limited it, and all four fighters were the
+same figure recoloured.
 
-## Next three
-1. A person plays 10 minutes against the Wall; read why they lose.
-2. Give the swings weight; thicken the rapier and blades.
-3. Clips of the Dancer's roll-attack and the Wall's phase 2.
+Now, read from the clips only:
+
+Closer:
+- Each rival is a character by silhouette and arena: the knight in a bucket helm among towers; the duellist in a plumed
+  hat and cape among red and gold flags; the dancer with a ponytail among trees and pink flags.
+- His intent is on the screen: HEAVY / BASH / UNBLOCKABLE ride over his head, the glint comes before the parry moment,
+  the wind-ups read by the body (N1's re-pose and kernel trails by weight).
+- He comes in waves, and the Wall's breath is a real opening.
+- A new rival shows his signature before he fights for real (Sekiro's sparring, For Honor's first duels).
+- A loss explains itself in one line of causes and an answer.
+- The killing blow is a moment worth a clip.
+
+Still short of the reference:
+- The fighting is one move set re-dressed. The three rivals differ in AI, timing and gear, not in their animations: no
+  rival-specific strikes, no directional guard, no feints the player can do.
+- The bodies are toys: contact reads by freeze, flinch and fall, not by weight or blade on armour.
+- The sound is synthesised beeps.
+- The difficulty curve is uneven: a newcomer cliff at the Duelist; easy regular-hand wins after the lesson rounds.
+
+My honest word: a readable, teachable duel with distinct opponents, a good vertical slice of the For Honor loop at
+toy scale. It is not yet a game that sells itself by its feel. Nobody has played it.
+
+ASKS (for the owner)
+----
+1. The Duelist cliff. The newcomer hand wins 4 of 8 against the Wall and 1 of 8 against the Duelist. The Director
+   kept his numbers for your hand. Rounds 11-12 added lessons; whether the cliff is right is a feel call: play the Wall,
+   then the Duelist.
+2. The lesson rounds now make round 1 an easy win for any hand that punishes (0.4 damage). Keep them easy (a sparring
+   round), or let the lesson end at full damage?
+3. The champion is now beaten 8/8 by the sharp hand (was 5). Should the champion keep a ceiling under perfect, e.g.
+   breathe less (rivals.json rhythm per tier)?
+4. rig.clip_t / E-rows: the clip_t question of 21:30 is closed by E1 (play_clip). Open: E5 music, and the socket axes
+   in RIGS.md.
+5. The stand-in drum: does it help or grate? It lives in data/arenas.json (each arena's beat block); removing the block turns it off.
+
+NEXT THREE
+----------
+1. A person plays 10 minutes: the Wall, then the Duelist. Read where they lose and whether the cues are read; tune the
+   cliff and the lesson damage from that.
+2. Give each rival one signature animation of his own: the Wall's two-handed overhead, the Duelist's lunge, the
+   Dancer's spin. Today they share one move set. A rig ask to N1.
+3. Real music per arena (E5), and a per-tier breath so the champion keeps a ceiling under the sharp hand.
