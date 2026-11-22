@@ -197,3 +197,37 @@ NEXT THREE THINGS THIS LANE WOULD DO
 2. Cut the first-load cost: build the far half of the valley ground (48 m cells) on a worker after the first draw, as
    landscape.gd already does for the edges.
 3. Answer tl.land/1 once decided: make valley.gd `chunk` emit tl.land/1, and round-trip it in home.a.chunk.
+
+ADDENDUM: the ObjectDB leak at exit, traced (diagnosis only, no code changed)
+- What leaks:
+  - Repro: 10 more Home windows with --verbose, one at a time; lk8 leaked. Log: .tl/d1/lk8/window.log, lines 1537-1549.
+  - The objects: "Leaked instance: AudioStreamWAV ... Reference count: 1" and "Leaked instance: AudioStreamPlaybackWAV
+    ... Reference count: 1". These are the 2 instances of "2 ObjectDB instances were leaked at exit". The same log has
+    an orphan StringName "Master", the audio bus.
+  - The 5-instance leak in s1 is the same kind of thing with more sounds at once (s1 was not verbose).
+- Where they come from: engine/kernel/api/tl_audio.gd `_play` / `_stream`, not the Home.
+  - A pack's sound makes an AudioStreamPlayer(3D) under the pack's root and plays a cached AudioStreamWAV (the static
+    `_streams`). The player is freed only on `finished` (queue_free).
+  - Wall, hockey, car and both construction sites play sounds all through a World run, about 190 events per 1510-tick run
+    (pack lines, audio_events).
+  - When the world quits (TL_EXE_QUIT_AT or Esc) while a sound is still sounding, the tree frees the player. The
+    AudioServer's playback for it is stopped only on its next mix, after ObjectDB cleanup has already run. So the
+    playback and the stream it holds are reported.
+  - It depends on whether a sound is live in the last instant, hence intermittent: 4 of 20 Home windows, 0 of 5
+    old-landscape windows here.
+- Why it is not the Home:
+  - The leaked classes are audio.
+  - home/*.gd makes no audio, and its RefCounted graph has no cycle: the hook's closure holds the Home, the Home holds
+    only a WeakRef to the space, and grow() is static, so the closure has no self.
+  - The same warning, with the same two classes, is in lanes that never had the Home: n21d-crazy/.tl/codex-B2.log
+    (verbose: AudioStreamWAV + AudioStreamPlaybackWAV), and 2-12 instance leaks in the e19-hud world tours of 19 Nov.
+  - The 4-of-20 vs 0-of-5 split is chance at this count.
+- The fix I would make (kernel/api is not my claim; untested):
+  1. In tl_audio.gd `_play`, connect each player's `tree_exiting` to its `stop()`, so a player leaving the tree stops
+     its playback at once instead of waiting for `finished`.
+  2. In the place that ends the world for a quit (boot.gd `_end_world`, and the view's own quit), free the world, then
+     wait one process frame before `get_tree().quit()`, so the AudioServer drops the stopped playbacks before
+     ObjectDB cleanup.
+  3. Test: a window run that quits during a known sound (for example a wall knock at its tick) has no "leaked at exit"
+     line with --verbose, repeated 10 times.
+  This is harmless at exit (the process ends), so it is a log-noise and test-hygiene fix, not a player-facing bug.
