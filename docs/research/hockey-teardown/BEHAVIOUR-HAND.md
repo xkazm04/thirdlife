@@ -1,7 +1,7 @@
 # Hockey behaviour, the player's own body: thirdjam against ours, measured
 
 Lane H1 "hand", day shift of 23 Nov 2026. Research only: nothing in `engine/`, `foreman/`, `contracts/` or `devx/` changed.
-**Round 1 (this text): areas 1 and 3, section 0 drafted.** Round 2 adds area 2 (hits and cross-checks) and sections 4 to 6.
+Round 1 (landed 23 Nov, merge 5d07c50): areas 1 and 3. Round 2 (this text): area 2 (hits, cross-checks, pokes), the behaviour sheet (section 4), the method proposal (5), what could not be seen (6), and section 0 with the hits.
 
 **The owner, 23 Nov, after the first teardown (verbatim):** "Hockey - the points you identify plays minority role. You are focused
 on visual perspective where as the core of gameplay design is in behavior, which is almost untouched by your analysis. Please do
@@ -51,31 +51,29 @@ Every row of every table below names one of these.
 **What none of this is:** a person. Neither game was played by a person's hands in this lane. Where a line says "the hand feels",
 it is read from the measured response, not from a person.
 
-## 0. The verdict in ten lines (draft of round 1: movement and puck; round 2 adds hits)
+## 0. The verdict in ten lines
 
-1. **In metres the two bodies answer the keys almost alike** (plot below): the first step adds 0.41 m/s a frame in thirdjam and
-   0.45 in ours, a 6-frame tap carries 2.5 m and 2.8 m in the next second, a released stick glides at the same 0.15 m/s each second.
-   The first teardown was right that the law was ported. It was wrong to stop there: the same law sits on another body.
-2. **Speed against his own size: 7.0 statures a second in thirdjam, 2.1 in ours** (12.65 m/s on a figure under 1.8 m; 9.2 m/s on a
-   4.4 m figure). In body widths: 15.8 against 5.2 a second. On screen ours moves at about a third of thirdjam's pace.
-3. **No build-up in ours:** full speed after 19 frames and 0.8 of a body width; thirdjam takes 34 frames and 4.7 body widths. Ours is
-   at its (low) top before the eye sees it start; thirdjam has half a second of push you can feel.
-4. **The stop:** stick reversed at top speed, ours is still in 19 frames inside 0.8 of a body width (1.4 m); thirdjam slides 29 to
-   30 frames and 3.7 body widths (3.0 m). Ours stops dead; thirdjam's stop carries.
-5. **Chasing the man with the puck:** a free skater is 2.5 m/s faster than a carrier in thirdjam (3.6 m/s when both sprint); in ours
-   1.1 (1.3). In thirdjam you catch him; in ours you trail him.
-6. **The puck is glued in ours:** in play it leaves his stick and comes back by itself 24.8 times a minute of carrying in thirdjam
-   and 0.3 times in ours; in all 7 of our carry drills (stops, 90-degree turns, sprint turns) it never once came off. A carry lasts a median
-   0.57 s in thirdjam and 1.22 s in ours.
-7. **A loose puck becomes his alike** in both below 12 m/s: on the frame it enters his ring. The owner's bar R-0069 ("puck is not
-   controlled by player if in his circle area") holds in ours: a still puck within 1.45 m of his centre is his on the first frame at
-   every angle (16 of 16 positions), and never at 1.6 m or more. Above 15 m/s ours bobbles (his 11 frames later) where thirdjam
-   takes a 12 m/s puck clean and bounces a 20 m/s one.
-8. **What takes the puck from him in play** (pro, scripted hands): ours: a hit strips it 13.9 times a minute of carrying and a poke
-   10.0; thirdjam: he is knocked down with it 7.2 times a minute, and loses it otherwise about 30 times (trace only, section 3.2).
-9. Both move the body on the frame of the key (1 frame). thirdjam's keys are camera-relative (W = away from the camera behind
-   you); ours are fixed to the rink under a camera that does not turn with you.
-10. Round 2 adds hits and cross-checks (area 2), the behaviour sheet of target numbers (section 4) and the method note (5).
+1. **In metres the two games answer alike**: the first step adds 0.41 m/s a frame in thirdjam and 0.45 in ours, a 6-frame tap
+   carries 2.5 and 2.8 m, and a hit's outcome is the same law to three digits (a standing man hit from the front at 9 m/s: ratio
+   1.17, down 67 against 68 frames). The first teardown was right that the laws were ported, and wrong to stop there.
+2. **Speed against his own size: 15.8 body widths a second in thirdjam, 5.2 in ours** (12.65 m/s on a 0.8 m body; 9.2 m/s on
+   1.76 m). Our figure reads as a jog whatever it does; the rink is crossed in the same time (7.1 against 6.5 s).
+3. **No build-up and a dead stop:** ours is at 90 % of top after 19 frames and 0.8 of a body width (thirdjam 34 frames, 4.7);
+   reversed at top it is still after 19 frames and 0.8 of a body width (thirdjam 29-30 frames, 3.7).
+4. **The man with the puck is nearly as fast as you:** a free skater gains 2.5 m/s on him in thirdjam, 1.1 in ours.
+5. **The puck is glued:** it leaves his stick and comes back by itself 24.8 times a minute of carrying in thirdjam, 0.3 in ours.
+   Picking a loose puck up is alike, and the owner's R-0069 holds in ours (16 of 16 still pucks in the ring his on frame 1).
+6. **A hit takes your hand away longer:** knocked down from the front at 9 m/s, your keys move you again at frame 104 in ours,
+   frame 70 in thirdjam (ours adds a 24-frame rise and an 8-frame freeze of the whole game).
+7. **The whole game freezes about four times a minute** (5-9 frames on any hit of 5 m/s or more near you); thirdjam holds the
+   picture 3 frames on a knockdown that involves you, and play runs.
+8. **Bodies are walls in ours:** skate into a man without a press and you stop dead (9 to 0 m/s) and he does not move; in
+   thirdjam he is pushed off at 4.3 m/s and you keep 2.5.
+9. **Our hits are slow and our poke is luck:** wind-ups 12 / 10 frames against 8 / 8; the same press again after 42 (check),
+   46 (cross), 41 (poke) frames against none, 30, 14; a cross pressed within 10 frames of the meeting only pushes; the poke takes
+   the puck 14 / 7 times in 20 (front / side) and sends it away, where thirdjam's takes it every time and rolls it to you.
+10. **The sheet (section 4):** 19 rows that hold whatever the size (mostly data), then a size route: A keeps our body and
+    matches thirdjam's clock, B goes life-size on 90 x 45 with thirdjam's numbers. I would build the 19 rows now and choose B.
 
 ## 1. Movement sensitivity
 
@@ -171,7 +169,111 @@ Body widths: thirdjam 0.80 m, ours 1.76 m. Turns and stops act at frame 0 after 
 
 ## 2. Tackles and cross-checks, and their reactivity
 
-Round 2.
+![Hits and pokes, frame by frame](media/beh_hits.jpg)
+
+`media/beh_hits.jpg`: frame timelines from the press: wind-up or active window, contact, hit-stop, the victim without his
+keys, and the frame the same press works again. Ours [O-hit], thirdjam [T-test] and its code where a test prints no frame.
+
+**Instruments for this area.**
+- **[O-hit] Ours, two skaters, headless.** The same `probes/hand_step.gd` with presses (`taps`, `holds`) of the pack's own
+  actions (`check` = F / right button, `cross` = C / left button, `poke` = E) and the drill script for a red press when b0 is
+  the victim. b0 glides at 4, 6, 9 or 11 m/s (no keys) from a 0.45 m surface gap into a standing man's front, side or back,
+  and presses at once; the cross-check also from a gap timed to its wind-up; the poke 20 times each from the front and the side
+  of a standing carrier (it is a dice roll). 48 hit scenes and 40 poke scenes; timelines by `probes/hand_hits.mjs`.
+- **[O-window] The same in a window:** four of the scenes (check, timed cross, b0 hit, poke) re-run rendered: the same contact,
+  freeze, down and free frames as headless. Clip `media/beh_hits_window.mp4` (20 s), stills `media/beh_hits_window_sheet.jpg`.
+- **[T-test] thirdjam's own contact tests** of the build (the same automation run as round 1, 90 of 90 Success): `JAMSTAND`
+  "the rule" rows (a standing man hit from the front, side, behind at 4, 9, 11 m/s, pressed and not), `JAMBRACE` (the
+  cross-check pressed and held, 4 to 16 m/s), `JAMHIT` (wind-up and window frames), `POKEDRILL` / `POKEREACH` (the poke).
+  Where no test prints a frame, the number is the shipped code constant (`C:/t/t5/Game/Source/JamCore/Public/JamCartridge.h`
+  `FJamContactConfig`, `FJamStickConfig`; `JamSim.h`), and says "code".
+- **[T-match] / [O-match]** as in round 1, for rates in play.
+
+### 2.1 The frame timeline (frame 1 = the frame of the press)
+
+| | thirdjam | ours |
+|---|---|---|
+| **Body check** wind-up (the press shows at once; a meeting inside it is the hit) | 8 frames (code `CheckWindupFrames` 8; `JAMHIT shipped ... wind-up 8`) | 12 frames [O-hit: a whiff winds up 12] |
+| contact, from 0.45 m at 9 m/s | frame 3 (`JAMSTAND ... met at frame 3`) | frame 2 [O-hit] |
+| window after the wind-up | 12 frames (code `HumanCheckWindowFrames`; `JAMHIT`: in reach from frame 11 or 12 is hit, from 20 nobody) | 12 frames (`body_window`) [O-hit] |
+| pull toward the man | up to 1.0 m (code `CheckPullM`) | up to 1.0 m (`check_pull`) |
+| the check works again | after the window: no cooldown (code `CheckCooldownFrames` 0) | 42 frames after a hit, 33 after a whiff [O-hit] |
+| **Cross-check**: the stick's strip of a carrier | at the press (code `TryLift` -> `ResolveLift`, range 1.0 m, cone 70 degrees) | when the swing lands, frame 12 [O-hit `carrier_crosst_side`: the puck is b0's at 12] |
+| the body shove lands | 8 frames after the press (code `CrossWindupFrames` 8), live 10 more (`CrossLiveFrames`) | 10 frames after (`cross_windup`), live 10 more: contact at frame 11-12 [O-hit] |
+| ... pressed late (the bodies meet inside the wind-up) | not measured | the bodies collide first and the attacker stops dead (9 to 0 m/s); the swing then lands as a 3 m/s push: ratio 0.50 front, 0.33 side, a stumble or a bump, never a knockdown at any speed [O-hit `crosst_*`]. Pressed 0.5 m earlier it knocks down: front 9 m/s ratio 2.00 [O-hit `crosse_*`] |
+| the cross works again | 30 frames (code `LiftReadyFrame` + 30) | 46 frames [O-hit] |
+| **Held cross-check** (the brace) | braced while held; a meeting is the hit at full closing: 8 m/s down 97 frames, 12 m/s 127 (`JAMBRACE held`) | braced after 10 frames held (`hold_frames`), x 0.9 speed, x 0.7 turn; into a man at 9 m/s: knockdown, ratio 2.00, down 105 + rise 24 [O-hit `held_front_v9`] |
+| **Poke** active frames | 1-8 (code `PokeWindowFrames` 8) | 7-13, resolved once (`poke_first` 6, `poke_last` 12); the take at frame 7 [O-hit] |
+| ... the take | certain within the stick's reach and 60 degrees of the aim: 99 of 99 passes, at 0 or 3 frames late (`POKEDRILL`) | a dice roll: 65 % in front, 45.5 % at the side, 26 % behind (code); measured 14 of 20 in front, 7 of 20 at the side [O-hit] |
+| ... the puck after a take | to the poker: 0.6 of his velocity plus 1.5 m/s toward him (code `ResolvePokes`) | away from the poker, 5 m/s along his stick plus 0.3 of the carrier's velocity (`scripts/poke.gd:62`); loose in all 21 takes [O-hit] |
+| ... the poke works again | 14 frames after a take; a miss locks the stick 20 frames (code `MissRecoveryFrames`) | 41 frames; a miss also halves his turning for 15 frames (`whiff_frames`) [O-hit] |
+| **Hit-stop** | 3 frames, the picture only, play runs; only on a knockdown that involves the human (TEARDOWN 2.1, `JamPawns.cpp:144-150`) | the whole game frozen 5 frames at 6 m/s closing, 8 at 9, 9 at 11, for any hit of 5 m/s or more within 24 m of b0 [O-hit; `scripts/fun/fun.gd:130-155`] |
+| **YOU are hit** (front, 9 m/s): your keys move you again | frame 70 (contact 3 + down 67; the sim has no rise) | frame 104: contact 2 + freeze 8 + down 68 + rise 24, his speed answers the up key 2 frames after [O-hit `victim_front_v9`] |
+| ... hit from behind, 9 m/s | frame 116 (3 + 113) | frame 149 [O-hit `victim_behind_v9`] |
+
+### 2.2 The outcome by closing speed and angle (a standing man, the attacker presses the check)
+
+thirdjam: `JAMSTAND` "the rule" rows [T-test]. Ours: [O-hit]. Ratio = the hit's force over the victim's stability; a stumble from
+0.4, a knockdown from 1.0, down 60 frames at 1.0 rising to 150 at 3.0, the same law in both (`scripts/hits.gd:407-493`,
+ported from `JamSim.cpp`).
+
+| victim hit at | thirdjam | ours |
+|---|---|---|
+| front, 4 m/s | stumble, ratio 0.61, 16 frames; he leaves at 2.24 m/s, the attacker 3.98 -> 1.74 | stumble, ratio 0.61, 13 frames; 1.93 m/s, attacker 4.0 -> 1.4 |
+| front, 6 m/s | not staged | stumble, ratio 0.83; the attacker recoils (stumbles) 18 frames |
+| front, 9 m/s | **down, ratio 1.17, 67 frames**; he leaves at 5.24, the attacker 8.99 -> 3.75 | **down, ratio 1.17, 68 frames + 24 rising**; 5.25, attacker 9.0 -> 3.75 |
+| front, 11 m/s | not staged | down, ratio 1.39, 78 + 24 |
+| side, 4 m/s | bump, ratio 0.18 (the side brace) | bump, ratio 0.18 |
+| side, 9 m/s | bump, ratio 0.35; the attacker stops (0 m/s) and recoils 16 frames | bump, ratio 0.35; the attacker stops and recoils 17 frames |
+| side, 11 m/s | stumble, ratio 0.42; attacker recoils 16 | stumble, ratio 0.42; attacker recoils 18 |
+| behind, 4 / 6 m/s | not staged | down, ratio 1.15 / 1.56: 67 / 85 + 24 |
+| behind, 9 m/s | **down, ratio 2.19, 113 frames** | **down, ratio 2.19, 113 + 24** |
+| behind, 11 m/s | not staged | down, ratio 2.60, 132 + 24 |
+| a carrier, side, 9 m/s | down, ratio 1.17, 67 frames (a carrier has no side brace); the puck loose | down, ratio 1.17; the puck loose [O-hit `carrier_check_side_v9`] |
+| **no press, 9 m/s, front / behind / side** | a collision, no hit: he leaves at 4.32 / 5.39 / 1.80 m/s, the attacker keeps 2.52 / 3.60 / 0.00 | the attacker stops dead (9.0 -> 0) and the man does not move (0 m/s), all three [O-hit `bump_*`] |
+| timed cross-check, front / side / behind, 9 m/s | pressed: down 97 frames at 8 m/s, 127 at 12 (`JAMBRACE`) | down, ratio 2.00 / down 1.33 / bump (from behind only a carrier's strip) [O-hit `crosse_*`] |
+
+### 2.3 In play (pro level, the same matches as round 1)
+
+| per minute of live play | thirdjam [T-match: its own counts] | ours [O-match] |
+|---|---|---|
+| he is knocked down | 1.99 (165 in 82.9 min) | 1.68 (71 in 42.3 min) |
+| share of play he lies on the ice | 6.8 % | 5.4 % |
+| knockdowns of anybody | 5.45 (10 skaters) | 4.70 (6 skaters) |
+| whole-game freezes (hit-stops) | 0 (its hold is the picture only) | 3.97 |
+| his own landed hits | 5.5 (459, 431 of them cross-checks: the playtester's choice) | 0 (our TLHand never checks: the hand's choice) |
+
+### 2.4 What the hand feels
+
+- **The same hit law, a slower clock.** Closing speed against stability decides bump, stumble or knockdown alike in both,
+  to three digits. What differs is when things happen: our check winds up 12 frames (8), our cross 10 (8), and the same
+  press works again after 42 frames (no cooldown in thirdjam), the cross after 46 (30), the poke after 41 (14).
+- **A hit takes the hand away for longer.** Knocked down from the front at 9 m/s, your keys move you again at frame 104 in
+  ours, at frame 70 in thirdjam: 24 frames of rising and 8 frames of a frozen game are added to the same down time.
+- **The whole game stops about four times a minute.** Every hit of 5 m/s or more near you freezes everything 5 to 9 frames,
+  including your own keys; thirdjam holds the picture 3 frames on a knockdown that involves you, and play runs.
+- **Bodies are walls.** Without a press, two skaters that meet in ours stop dead: the man you skate into does not move and you
+  lose all your speed. In thirdjam he is pushed off at 4 to 5 m/s and you keep 2.5 to 3.6. This is the pile the owner sees.
+- **The cross-check is a timing puzzle.** Pressed later than 10 frames before the bodies meet, it lands after the collision
+  has stopped you and only pushes him (never a knockdown); pressed 0.5 m earlier it flattens him. A hand that presses when
+  the man is close, as a person does, gets the push.
+- **The poke is luck.** In thirdjam a poke within reach and aimed takes the puck every time, at once, and the puck rolls to
+  you; in ours it is a dice roll 6 frames later, and the puck flies away from you even when it works.
+
+### 2.5 Why ours does this (file:line)
+
+- **Wind-ups and cooldowns:** `data/tuning.json:35-41` `hits.check_windup` 12 (the `body_check` clip's hit frame, `scripts/hits.gd:63`),
+  `check_cooldown_frames` 40, `whiff_cooldown_frames` 20, `cross_windup` 10, `cross_cooldown_frames` 45; `scripts/hits.gd:205-217, 273-292`.
+- **The rise:** the kernel's `get_up_frames` 24 after every `down()` (`engine/kernel/api/tl_biped.gd:90, 320-330`; `down()` at :322), on top of the
+  ported down time (`scripts/hits.gd:449-454`); thirdjam's sim returns control when `KnockFrames` reaches 0 (`JamSim.cpp` `StepSkater`, `IsDown`).
+- **The freeze:** `scripts/fun/fun.gd:130-155` (`_hit` -> `_freeze`), `data/tuning.json:23` `fun.stop` true, `stop_closing` 5,
+  `stop_frames_min/max` 4/9, `stop_radius` 24; `scripts/main.gd:420` returns from the tick while it runs.
+- **Bodies as walls:** skaters are kinematic `CharacterBody3D`s; `move_and_slide` slides one along the other and the kernel
+  pushes only rigid bodies (`engine/kernel/api/tl_biped.gd:561-575`). Only a pressed hit exchanges momentum (`scripts/hits.gd:471-477`).
+- **The late cross:** the swing waits for its due frame (`scripts/hits.gd:348-366`), and the collision has already taken the
+  attacker's speed when it resolves on the velocities of that frame (`scripts/hits.gd:410-413`); the check, by contrast, resolves a
+  meeting inside its wind-up on the velocities before contact (`scripts/hits.gd:221-236`).
+- **The poke:** `scripts/poke.gd:23-30` (the odds), `:45-68` (frames 6-12, one roll, the puck's velocity), `data/tuning.json:16-18`.
 
 ## 3. Stick control with the puck, and the puck sticking to players
 
@@ -227,7 +329,7 @@ spin (E: the puck to the far side of the body, a shield) and a sweep (the puck f
 tests: from 6 m against a pro defender the cut alone gets past 35.5 % of 200 tries, the deke with the cut 48.0 %, the spin with
 the cut 48.5 % (`LATE` lines of the build's tests [T-test]). Ours has the cursor-driven blade (`scripts/carry.gd:84-89`), a dangle
 of up to 0.82 m outward in a turn (`scripts/carry.gd:111`), and a loss rule only for a sprinting carrier in a hard turn
-(`scripts/carry.gd:113-117`); no deke or spin key. Round 2 measures the cursor sweep and the dangle in both.
+(`scripts/carry.gd:113-117`); no deke or spin key. The cursor sweep and the dangle were not measured in this lane.
 
 ### 3.4 What the hand feels
 
@@ -256,33 +358,148 @@ of up to 0.82 m outward in a turn (`scripts/carry.gd:111`), and a loss rule only
 
 ## 4. The behaviour sheet for our hockey
 
-Round 2.
+Every row: what the hand should get back (in frames, the hand's clock, and in the player's units), the file, key and present
+value, the target, thirdjam's number beside it, and the kind of change. `tuning.json` is `engine/packs/hockey/data/tuning.json`;
+line numbers are this tree's (main a9f7477). Frames count from the press (the press frame is 1). thirdjam is the floor, not the
+bar; where `docs/design/CASES.md` (case A: NHL '94, NHL Hitz, Blades of Steel) has a public number or rule, it stands beside.
 
-## 5. What a design must measure before a build
+**The size question first, because it decides some rows.** Round 1 showed that in metres the two bodies answer alike and in
+the player's units they do not: thirdjam's skater moves 15.8 body widths a second, ours 5.2; it slides 3.7 body widths to
+stop, ours 0.8. Both rinks are crossed in about the same time (7.1 against 6.5 s). On a rink of 34 body widths no speed
+can match thirdjam in body widths and in rink lengths at once: at 15.8 body widths a second ours would cross the rink in 2.2 s.
+So there are two honest routes, and section 4.1 holds in either.
 
-Round 2.
+### 4.1 Rows for either route (the hand's clock; nothing here depends on the size)
 
-## 6. What this could not see, and the evidence index (round 1 part)
+| # | the hand gets back | file : key (present) | target | thirdjam | kind |
+|---|---|---|---|---|---|
+| S1 | the check's wind-up | `tuning.json:41` `hits.check_windup` (12) | **8** | 8 (`CheckWindupFrames`) | data, plus pack code: the `body_check` clip shows its hit on frame 12 (`scripts/hits.gd:63`, `_clip` at `:194-203`): play it at 12/8 speed or re-time it |
+| S2 | the check works again after a hit | `tuning.json:35` `hits.check_cooldown_frames` (40) | **0** (the window closing is the only gate) | none (`CheckCooldownFrames` 0) | data |
+| S3 | the check works again after a whiff | `tuning.json:35` `hits.whiff_cooldown_frames` (20) | **12**: the next press works at frame 21 (8 wind-up + 12 window), as thirdjam's | 8 + 12 | data |
+| S4 | the cross-check's wind-up | `tuning.json:40` `hits.cross_windup` (10), `:41` `cross_clip_hit` (10) | **8**, **8** | 8 (`CrossWindupFrames`); bots 12 (`bot_cross_windup` 12 already) | data |
+| S5 | the cross-check works again | `tuning.json:40` `hits.cross_cooldown_frames` (45) | **30** | 30 (`LiftReadyFrame` + 30) | data |
+| S6 | a cross-check whose man is met inside its wind-up lands at the meeting, on the velocities before the bodies touch (as the check does) | `scripts/hits.gd:348-366` `_step_swing` (waits for the due frame) | land at contact; target measured: pressed 0.45 m from a standing man at 9 m/s, front: down (ratio about 2.0), not a 0.5 push | the stick part resolves at the press | pack code |
+| S7 | the cross-check's strip of a carrier happens at the press | `scripts/hits.gd:273-292` `try_cross`, `:455-460` (strip on landing) | strip at the press when the puck is within 1.0 m of his blade and 70 degrees; the body shove still lands at frame 8 | `TryLift`/`ResolveLift`, `LiftRangeM` 1.0, `LiftConeDeg` 70 | pack code |
+| S8 | two bodies that meet without a press exchange speed instead of stopping dead | none (kinematic bodies: `engine/kernel/api/tl_biped.gd:561-575` pushes rigid bodies only) | at 9 m/s into a standing man: front, he leaves at 4.3 m/s and you keep 2.5; from behind 5.4 / 3.6; at his side 1.8 / 0 (his side brace) | `JAMSTAND` "no press" rows | pack code: the momentum exchange of `scripts/hits.gd:471-477` (restitution `hits.restitution` 0.2, the victim's brace as effective mass) applied to every skater-skater contact with no hit; a kernel collision response is the alternative |
+| S9 | your keys come back when thirdjam's do after a knockdown (front 9 m/s: frame 70) | `tuning.json:38` `hits.down_frames_min` (60), `down_frames_max` (150); kernel rise `get_up_frames` 24 (`engine/kernel/api/tl_biped.gd:90`) | **36** and **126** (the 24-frame rise stays, now inside the same total) | 60 / 150 down, no rise in the sim | data. NHL Hitz: "a quick get-up" (CASES.md [A6]) |
+| S10 | no whole-game freeze | `tuning.json:23` `fun.stop` (true; 4-9 frames from `stop_closing` 5) | **false**; optionally a 3-frame hold of the picture only on a knockdown that involves b0, play running | 3 frames, picture only, knockdowns involving the human | data (the optional hold: pack code in `scripts/fun/fun.gd:130-155`). CASES.md: "never a freeze of the whole game" |
+| S11 | a poke within reach and aimed always takes the puck; never through his body | `tuning.json:17` `carry.poke_chance` (0.65), `poke_side` (0.7), `poke_back` (0.4) | **1.0**, **1.0**, **0** | certain within reach and 60 degrees of the aim (`POKEDRILL` 99 of 99); the body shields from behind | data |
+| S12 | the poke is live from the press | `tuning.json:16` `carry.poke_first` (6), `poke_last` (12), `poke_frames` (24) | **0**, **7**, **8** (frames 1-8) | `PokeWindowFrames` 8 | data |
+| S13 | the poke works again | `tuning.json:16` `carry.poke_cooldown_frames` (40); `:18` `whiff_frames` (15, half turning) | **14** after a take; a miss locks it **20** frames after the window (frame 29), no turning penalty: `whiff_turn_mult` 0.5 -> **1.0** | +14; `MissRecoveryFrames` 20 | data + pack code (`scripts/poke.gd:64-67` sets the miss's ready frame) |
+| S14 | the poked puck comes to the poker | `scripts/poke.gd:62`: stick x `poke_speed` 5 + carrier x `poke_carry_share` 0.3 | the poker's velocity x 0.6 + 1.5 m/s toward him | `ResolvePokes` | pack code |
+| S15 | the carrier is the slower man: a free skater gains 0.20 of his own top speed a second on him (now 0.12) | `tuning.json:18` `carry.carry_speed_scale` (1.012) | **0.92** (carrier 0.80 of a free skater) | 0.92 x base, free x 1.15 | data |
+| S16 | ... and when both sprint, 0.25 of a free sprinter's top (now 0.12) | `tuning.json:6` `skate.sprint_carry_bonus` (0.15), `carrier_sprint_cap` (1.012) | **0.08**, **0.97** (carrier sprint 0.9936 x base) | 0.08, 0.97 | data |
+| S17 | turning | `tuning.json:4` `skater.skate_turn_rate` (4.5) | **5.0** (rad/s; the body faces a 90-degree change in 19 frames) | 5 | data |
+| S18 | the puck is alive on the blade: it leaves the stick in hard turns and stops and comes back by itself, about 25 times a minute of carrying, carries a median of about 0.6 s | `scripts/carry.gd:120-125` (a critically damped spring, `spring_k` 400, `tuning.json:12`): measured 0.3 times a minute, 1.22 s | thirdjam's carry assist: each of 4 substeps a frame the puck moves 0.6 of its gap toward the blade; carried while within the carrier's reach (thirdjam 1.65 m, its carry distance + 0.45) | `CarryAssist` 0.6 (`JamCartridge.h:291`), `PuckSubsteps` 4 (`JamSim.h:493`); measured 24.8 a minute, 0.57 s | pack code |
+| S19 | pick-up and R-0069 | `carry.reach`, `clean_speed` 15, `bobble_speed` 20 | **no change**: a still puck in the ring is his on frame 1 (16 of 16), a loose puck below 15 m/s on the frame it enters | alike below 12 m/s | none |
 
-Could not see in round 1:
-- **A person's hands.** Every number here is a scripted hand's. The owner plays this evening; his hand is the bar.
-- **thirdjam's body in a window.** Its skating was measured on a port of its law, checked against its own automation tests (the
-  real sim of the build, headless), not filmed. Its camera-relative keys were not measured: the 90-degree turn above is a turn of the
-  stick on the ice, which in thirdjam a person makes by turning the camera with A or D.
+Tests whose expectations S1-S19 move (each to be re-read, never loosened): `tests/bot_windup.gd` (wind-ups), `bot_check.gd`,
+`bot_contact.gd`, `bot_downed.gd`, `bot_fun.gd` (the freeze), `bot_poke.gd`, `bot_reach.gd`, `bot_sprint.gd` (carrier
+9.31 m/s), `bot_carry_turn.gd` and `bot_dangle.gd` (the spring), `metrics.gd`, and the ladder cells (`tl ladder`).
+
+### 4.2 Route A: keep our body and rink; match thirdjam in frames and in rink lengths
+
+Scale every skating acceleration and every speed threshold of the hit law by k = 9.2 / 12.65 = **0.727** (our free top over
+thirdjam's), so each curve of `media/beh_move.jpg` is thirdjam's in frames and each speed is the same share of the rink.
+
+| # | the hand gets back | file : key (present) | target A | thirdjam | kind |
+|---|---|---|---|---|---|
+| A1 | top speed, 6.5 s end to end (thirdjam 7.1) | `tuning.json:4` `skater.skate_speed` (8; free x 1.15 = 9.2) | **8** (no change; 8.43 would be 7.1 s exactly) | 11 x 1.15 = 12.65 | none |
+| A2 | the build-up: 50 % of top in 16 frames, 90 % in 34 (now 11 and 19) | `tuning.json:4` `skater.skate_accel` (13) | **8.73** (thrust 10.04 m/s2; the burst x 1.8 for 20 frames stays) | 12 (13.8 with the free bonus) | data |
+| A3 | the stop: reversed at top, still in 29 frames over 2.2 m (now 19 frames, 1.4 m) | `tuning.json:8` `skate.reverse_decel` (26) | **18.9** | 26 from 12.65 m/s | data |
+| A4 | a hit at the same share of top speed gives thirdjam's outcome (a full-speed front check: ratio 1.57, down 86 frames; now 1.19, 69) | `tuning.json:36-37` `hits.stability_speed` (6.0), `lunge_speed` (1.5), `cross_thrust` (3.0), `stand_speed` (1.0), `behind_match` (3.0) | **4.36**, **1.09**, **2.18**, **0.73**, **2.18** | 6, 1.5, 3, 1, 3 at 12.65 m/s | data |
+| A5 | the bots' hit thresholds in the same scale | `data/ai.json` `check_min_closing_red` (4), `check_min_closing_blue` (8), `cross_min_closing` (1.5) | **2.9**, **5.8**, **1.09** | | data (lane H2's ground: check with it) |
+
+What A keeps and what it cannot change: the art, the camera, the drills, `data/ai.json` distances, the rink. In body widths
+ours still moves 5.2 a second (thirdjam 15.8), stops in 1.3 body widths (3.7), and carries the puck 1.1 body widths out
+(1.5): the figure still reads as a jog. A2 and A3 make the start heavier and the stop longer in frames than today (34 and
+29 frames against 19 and 19): that is thirdjam's clock, and the plot shows it. Tests moved: `bot_reverse_stop.gd` (the
+14.95 m/s2 control thrust), `bot_sprint.gd`, `bot_charge.gd`, `bot_check.gd`, `bot_contact.gd`.
+
+### 4.3 Route B: life-size bodies on thirdjam's rink, thirdjam's metric numbers
+
+The body, the rink and the speeds all become thirdjam's, so every row of sections 1 to 3 matches in frames, metres, body
+widths and rink lengths at once. The skating and hit laws need no change beyond S1-S19: they are thirdjam's already.
+
+| # | what | file : key (present) | target B | thirdjam | kind |
+|---|---|---|---|---|---|
+| B1 | life-size figures | `tuning.json:4` `skater.body_scale` (2.2), `:5` `contact_body_scale` (2.93: radius 0.879 m), `:24` `goalie.body_scale` (2.4) | **1.0**, **1.33** (radius 0.40 m), **1.09** | radius 0.40 m | data (N1's arm B used these) |
+| B2 | the rink 90 x 45 m (112 body widths) | `tuning.json:42` `rink.half_length` (30), `half_width` (15), `corner_r` (5); `:26` `goals` x (+-26); `:27-34` roster spawns; `data/venue.json` `length` (60) and the arena art (`data/venue_art.json`) | **45**, **22.5**, **3.75**; goals **+-41**; spawns x **1.5**; the venue at 90 x 45 | 90 x 45, corner 3.75 | data; the art: an art job (not checked here) |
+| B3 | thirdjam's speeds | `tuning.json:4` `skater.skate_speed` (8), `skate_accel` (13) | **11**, **12** (free top 12.65, sprint 14.55, carrier 10.12 with S15) | 11, 12 | data |
+| B4 | the stick and the puck at life size | `tuning.json:11` `carry.reach` (1.45), `blade_base` (0.66), `blade_reach` (1.98); `:16` `poke_reach` (2.3); `:18` `steal_dist` (2.5) | **1.1**, **0.40**, **1.20** (carry 1.2 m skating, 1.6 sprinting); **2.07**; **1.14** | ring 1.1, blade 1.2 / 1.6, poke reach 2.07 (0.4 + 1.2 + 0.12 + 0.35) | data |
+| B5 | contact at life size | `tuning.json:40` `hits.cross_gap` (0.88); `:41` `lying_length` (3.1), `downed_radius` (0.6) | **0.50**; **1.41**; **0.27** | `CrossReachM` 0.5; the lying body x 1/2.2 | data |
+| B6 | the puck drawn its size | `tuning.json:25` `look.puck_scale` (2.5), `puck_height_scale` (1.5) | **1.0**, **1.0** | | data |
+| B7 | the camera keeps a life-size figure readable | `tuning.json:22` `follow.distance` (20), `distance_max` (30) | **9**, **14** (the figure the same height on screen as today); a camera decision to make on the greybox: thirdjam's chase camera sits 6 m behind and 3.5 m up | 6 m behind, 3.5 m up, fov 70 | data (a design decision; not measured here) |
+| B8 | the bots' and drills' distances | `data/ai.json` `pressure_m` (3.5), `net_zone_half` (3.5), `net_round_z` (3.6), `corner_z` (1.5), `goalie_gap` (10); `data/drills.json` places; `tuning.json:48` `intro.ring` | re-derive: rink places x 1.5, gaps between bodies x 0.45; to be measured with the bots | | data (lane H2's ground) |
+
+What B breaks: the arena art and the venue (sized for 60 x 30), the camera framing (B7), every metre in `data/ai.json`,
+`data/drills.json` and the intro, the goalie, about fifteen tests with metric expectations (`bot_sprint.gd` 10.58 m/s,
+`bot_reverse_stop.gd` 14.95, `bot_carry_turn.gd` 1.98 / 2.64 m, `bot_reach.gd`, `bot_goals.gd`, `bot_faceoff*.gd`,
+`bot_goalie.gd`, `bot_intro*.gd`, the crazy pickups), and every ladder figure. What it brought in N1's measured arm D (life-size
+on 90 x 45, 8 seeds, the AI on all six skaters; TEARDOWN "Scale arms"): four-man piles 16.2 % -> 12.2 % of play, knockdowns
+5.29 -> 2.60 a minute, freezes 4.83 -> 1.47, the median carry 0.52 -> 1.00 s.
+
+### 4.4 Which I would choose
+
+**Build S1-S19 this afternoon: they are the hand's clock and hold in either route.** Then **route B**: it is the only one in
+which the response matches thirdjam in frames, metres and the player's own units at once, its numbers are thirdjam's and
+are measured above, and N1's arm D measured its effect on play. Route A makes the clock right (A2-A5 are four data rows) and
+leaves the figure reading as a jog; it is the fallback if the art and the camera of B cannot be done today. Either way the
+acceptance is the same probe: `probes/hand_step.gd` and `probes/hand_hits.mjs` on the built pack must reproduce the target
+column (within 2 frames and 10 %), and the owner's hand decides.
+
+## 5. What a design must measure before a build (a proposal for `docs/design/METHOD.md`; the Director decides)
+
+METHOD.md section 8 asks for a feel sheet of chosen numbers. This lane found that chosen numbers ported line for line still
+gave another game, because nobody measured what they give back. Proposal: **the step-response sheet is a required artefact,
+measured, not chosen, on both games with one instrument, before a build and again as its acceptance.**
+1. A drill harness first: one or two bodies on empty ground, the keys held frame by frame through the game's own input path,
+   one row a frame. The reference game gets the same scenes through its own tests or a port of its law that reproduces its
+   own printed numbers (round 1: 9 of 10 exactly) before any number from the port is used.
+2. Per verb (move from rest, release, reverse, 90-degree turn, sprint, taps of 3 / 6 / 12 frames, carry, pick-up, each hit,
+   each stick action, being hit): frames from the press to the first effect, to the full effect, and until both bodies answer
+   their keys again; the outcome by speed and angle.
+3. Every distance and speed three times: metres, the body's own widths or heights, and shares of the arena. A row that matches
+   in one unit and not in the others is a size decision, written in the brief's `WORLD:` line, not a tuning knob.
+4. Every target is a row: file, key, present value, target, the reference's number, data / pack code / kernel.
+5. Acceptance: the built game's sheet within 2 frames and 10 % of the target rows, by the same probe, plus one row filmed in a
+   window. Then the person's hand, which is the bar: matching numbers never pass a verb alone.
+
+## 6. What this could not see, and the evidence index
+
+Could not see:
+- **A person's hands.** Every number here is a scripted hand's or a drill's. The owner plays this evening; his hand is the bar.
+- **thirdjam's body in a window.** Its skating was measured on a port of its law that reproduces its own automation timings,
+  and its hits and pokes from its own build's tests (headless), not filmed. Its camera-relative keys were not measured: the
+  90-degree turn above is a turn of the stick on the ice, which in thirdjam a person makes by turning the camera with A or D.
+- **thirdjam's late cross-check** (pressed when the bodies already meet) and its hit timelines at speeds its tests do not stage
+  (front 6 and 11, behind 4, 6 and 11 m/s): ours are measured, thirdjam's are left blank rather than computed.
+- **thirdjam's window and cooldown frames for the check, the cross and the poke** are its shipped code constants (section 2.1
+  says "code"), not frames a test printed; its hit-stop is from the first teardown (TEARDOWN 2.1).
 - **Screen speed.** "About a third of thirdjam's pace on screen" is from statures a second, not measured on screen.
-- **The cursor's sweep, dekes and the spin** (3.3) are from code and thirdjam's test lines; round 2 measures them.
-- **Match rates depend on the hand** (3.2): thirdjam's playtester and our TLHand choose differently.
+- **The cursor's sweep, dekes and the spin** (3.3): from code and thirdjam's test lines; not measured in either game here.
+- **Match rates depend on the hand**: thirdjam's playtester checks 5.5 times a minute and our TLHand never does; its passes and
+  shots are the hand's choice. Rates that are the game's are marked in 3.2 and 2.3.
+- **Route B's effect on the bots, the camera and the art** is measured only as far as N1's eight-seed arms went (AI only).
 
 Evidence (all under `.tl/h1/` in this worktree unless named):
-- Instruments (committed): `probes/hand_step.gd` and `probes/hand_match.gd` (each with a hand-written `.gd.uid`: arch rule 3 wants one for every .gd; these scripts run only when copied into a pack copy's `tests/`), `probes/hand_scenes.mjs`, `probes/hand_measure.mjs`, `probes/hand_tj_skate.mjs`,
-  `probes/hand_match.gd`, `probes/hand_carry.mjs`, `probes/hand_plot.py`.
-- Our step responses: `ours_move/*.csv` (15 scenes), `ours_pick/*.csv` (78), `ours_ring/*.csv` (24), `ours_recv/*.csv` (8);
-  windowed run `win/*.csv`, `win/win.avi`; measures `measure_move.json`.
-- thirdjam: port curves `tj_move/*.csv`; automation log `auto/auto1.log` (90 of 90 Success; `TIMING`, `POSSTAGE`, `full aim`,
-  `LATE` lines); tournament traces `tour/pro_regular30.log` (30 seeds) and `tour/pro_regular.log` (8).
-- Match reads: `carry_ours.json`, `carry_tj.json` (own rings), `carry_ours2.0.json`, `carry_tj2.0.json` (2 m disc); our 24 match
-  logs `ours_match/match_s*.csv`.
-- To run again: `node probes/hand_scenes.mjs <pack copy> <out>`; `.tl/h1/run_step.sh <scenes.json> <out>`;
-  `node probes/hand_tj_skate.mjs --scenes <scenes.json> <out>`; `node probes/hand_measure.mjs <ours> <tj>`;
-  `.tl/h1/run_match.sh pro regular 24 <out>`; `node probes/hand_carry.mjs ours <out>` / `tj <trace log> [disc m]`;
-  `python probes/hand_plot.py .tl/h1 media`.
+- Instruments (committed, `probes/`): `hand_step.gd` and `hand_match.gd` (each with a hand-written `.gd.uid`: arch rule 3 wants
+  one for every .gd; these scripts run only when copied into a pack copy's `tests/`), `hand_scenes.mjs` (drills and scene
+  lists: move, pick, ring, hit), `hand_measure.mjs`, `hand_tj_skate.mjs`, `hand_carry.mjs`, `hand_hits.mjs`, `hand_plot.py`
+  (`beh_move.jpg`, `beh_puck.jpg`), `hand_plot_hits.py` (`beh_hits.jpg`).
+- Ours: `ours_move/` (15 scenes), `ours_pick/` (78), `ours_ring/` (24), `ours_recv/` (8), `ours_hit/` (88: 48 hits, 40 pokes),
+  windowed runs `win/` and `winhit/` (CSV and `.avi`); measures `measure_move.json`, `hits_ours.jsonl`, `pokes_ours.jsonl`;
+  24 ladder matches `ours_match/match_s*.csv` and `s*.json`.
+- thirdjam: port curves `tj_move/`; automation log `auto/auto1.log` (90 of 90 Success; `TIMING`, `POSSTAGE`, `full aim`, `LATE`,
+  `JAMSTAND`, `JAMBRACE`, `JAMHIT`, `JAMLATE`, `JAMLUNGE`, `JAMRESTART`, `POKEDRILL`, `POKEREACH` lines); tournament traces
+  `tour/pro_regular30.log` (30 seeds, with its `thirdjam.playtest/1` lines) and `tour/pro_regular.log` (8).
+- Match reads: `carry_ours.json`, `carry_tj.json`, `carry_ours2.0.json`, `carry_tj2.0.json`.
+- Media: `media/beh_move.jpg`, `beh_puck.jpg`, `beh_hits.jpg`; `beh_window.mp4` and `beh_window_sheet.jpg` (areas 1 and 3),
+  `beh_hits_window.mp4` and `beh_hits_window_sheet.jpg` (area 2).
+- To run again: `node probes/hand_scenes.mjs <pack copy> <out>`; `.tl/h1/run_step.sh <scenes_*.json> <out>`;
+  `node probes/hand_tj_skate.mjs --scenes <scenes_move.json> <out>`; `node probes/hand_measure.mjs <ours> <tj>`;
+  `node probes/hand_hits.mjs <ours_hit>`; `.tl/h1/run_match.sh pro regular 24 <out>`; `node probes/hand_carry.mjs ours <out>` /
+  `tj <trace log> [disc m]`; `python probes/hand_plot.py .tl/h1 media`; `python probes/hand_plot_hits.py .tl/h1 media`.
+  thirdjam's tests: `UnrealEditor-Cmd.exe .tl/tj-run/Game/ThirdJam.uproject -ExecCmds="Automation RunTests Jam.Core.Movement+
+  Jam.Core.Possession+Jam.Core.Contact+...; Quit" -nullrhi -Multiprocess -unattended`; its matches: the same exe with
+  `-run=JamTournament -sim=jam -cartridge=hockey.regular -difficulty=pro -player=regular -playersprint -seeds=1-30 -trace=1`.
