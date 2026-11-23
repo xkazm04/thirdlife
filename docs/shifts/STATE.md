@@ -21,9 +21,10 @@ writes it back. Newest shift-log entry last.
   and duel (vs For Honor / Souls / Sekiro) in docs/research/; the owner's 75 thirdjam rulings in RULINGS.md.
 - Since 23 Nov day: a game is analysed and designed by BEHAVIOUR first (what a hand and the bots get back, measured in the
   running game), not by code or looks. Hockey must prove the method before any other game ("robot soccer" is next).
-- Next 3 (day of 23 Nov): (1) land the behaviour teardowns (H1 hand, H2 bots and sandbox) and the person gate (H3);
-  (2) a hockey behaviour pass from their sheets, on a branch with an exe for the owner's evening; (3) his verdict on
-  hockey, then the method on "robot soccer".
+- Next 3 (after the day of 23 Nov): (1) the owner plays hockey from branch d23-hockey (exe in n23-int/dist) and says
+  whether it lands and his worst three; (2) a quiet reading of hockey's frame budget, the re-place bug after a hit,
+  the missed targets (pass completion, mates' shots); (3) his method test on "robot soccer"; the editor's prompts
+  enforce METHOD 8a.
 
 ## Open owner verdicts
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
@@ -333,3 +334,8 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   (5d07c50, f1659f1: BEHAVIOUR-HAND.md) and H2 bots rounds 1-2 (2e33922, 22f9aa4: BEHAVIOUR-BOTS.md), fast tier green
   each time. Then the hockey behaviour pass started: H1 builds its 19 shared rows + route A, H2 its 18 bot lines, each on
   its branch (not main), landable 14:30; an exe from the combined branch for the owner's evening.
+- ~14:00 verdict: the hockey behaviour pass is on branch d23-hockey (7c7c996), not main: hand rows S1-S17 + route A,
+  18 bot lines, the stick ladder by level; hockey 56 bot tests, world 8/8, export check PASS; many_budget FAIL busy
+  (1.31 ms, main 1.07), not read quietly. METHOD 8a on main (6106c56). Exe: .claude/worktrees/n23-int/dist/PLAY-LATEST.cmd.
+  Open: the owner's hand; body size (route B); the sandbox's first toys. docs/shifts/2026-11-23-day/VERDICT.md.
+
