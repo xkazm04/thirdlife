@@ -19,6 +19,7 @@ Generated from `context-map.json` by `tl arch --index`; do not edit between the 
 | kit | engine | `engine/kits/**`, `engine/kits_lab/**` | look | references nothing outside itself; `tl arch` module-walls; `engine/kits_lab` is the kit's layout lab |
 | rigs | engine | `engine/rigs/**` | look | references nothing outside itself; `tl arch` module-walls |
 | style | engine | `engine/style/**` | look | references nothing outside itself; `tl arch` module-walls |
+| cores | engine | `engine/cores/**` | engine | a game core (docs/design/DIRECTIONS.md, direction 10): may use the kernel API, kits, rigs and style; packs reach it through one kernel entry; `engine/cores/rink/native/thirdjam*` is thirdjam's source byte for byte (patches listed in native/PATCHES.md); `engine/tools/selftest.sh rink` stays green |
 | seeds | engine | `engine/seeds/**` | engine | every seed passes all verbs (`engine/tools/seeds.sh`) |
 | packs | engine | `engine/packs/**` | engine | every house game passes all verbs (`tl check --tier full --only packs`); `engine/packs/README.md` |
 | look | engine | `engine/look/**` | look | stills and journal only |

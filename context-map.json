@@ -10,6 +10,8 @@
      "owner": "look", "rule": "references nothing outside itself; `tl arch` module-walls"},
     {"name": "style", "group": "engine", "paths": ["engine/style/**"],
      "owner": "look", "rule": "references nothing outside itself; `tl arch` module-walls"},
+    {"name": "cores", "group": "engine", "paths": ["engine/cores/**"], "touches": ["engine/kernel/API.md"],
+     "owner": "engine", "rule": "a game core (docs/design/DIRECTIONS.md, direction 10): may use the kernel API, kits, rigs and style; packs reach it through one kernel entry; `engine/cores/rink/native/thirdjam*` is thirdjam's source byte for byte (patches listed in native/PATCHES.md); `engine/tools/selftest.sh rink` stays green"},
     {"name": "seeds", "group": "engine", "paths": ["engine/seeds/**"],
      "owner": "engine", "rule": "every seed passes all verbs (`engine/tools/seeds.sh`)"},
     {"name": "packs", "group": "engine", "paths": ["engine/packs/**"], "touches": ["engine/boot/games.json", "devx/lib/gate/steps/packs.mjs"],
