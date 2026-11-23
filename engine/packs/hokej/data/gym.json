@@ -1,0 +1,8 @@
+{
+  "note": "The gym: the human alone at his spawn (hockey.regular.cartridge.json game.teams[0].skaters[0].spawn [-7.5, 0]), facing +x (UJamSim SpawnYaw 0 for team 0, JamSim.cpp:159). The far net is the one team 0 attacks: x = +(L/2 - NetInsetM 4) (HokejGameMode.cpp:1616-1617, HUDFeed.cpp:8-12).",
+  "spawn": [-7.5, 0.0],
+  "spawn_yaw": 0.0,
+  "attack_sign": 1,
+  "net_inset_m": 4.0,
+  "net_height_m": 3.0
+}
