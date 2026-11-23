@@ -815,11 +815,14 @@ Consts: `BULB_KEYS`, `CROWD_KEYS`, `ICE_KEYS`, `MAX_LIGHTS`, `POST_GRADE`, `POST
 
 > Felt and clay for a figure (K7, hockey port, 23-24 Nov 2026): thirdjam's skater materials on its clay look tier, as a
 
-Consts: `CLAY_NORMALS`, `DIR`, `KEYS`, `LOOK`, `MAX_LIGHTS`, `RENDER_PRIORITY`, `SHADER_PATH`
+Consts: `CLAY_NORMALS`, `DIR`, `FALLBACK_EXPOSURE`, `KEYS`, `LOOK`, `MAX_LIGHTS`, `RENDER_PRIORITY`, `SHADER_PATH`
 
+- `static func contact_material(darkest: float = 0.45, flat_k: float = 0.0) -> ShaderMaterial`
 - `static func material(params: Dictionary = {}) -> ShaderMaterial`
 - `static func rig_size() -> int`
+- `static func set_floor(albedo: Color) -> void`
 - `static func set_params(m: ShaderMaterial, params: Dictionary) -> bool`
+- `static func set_review_linear(k: float) -> void`
 - `static func set_rig(lights: Array, exposure: float, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1), sky: Color = Color(0, 0, 0)) -> bool`
 - `static func texture(path: String) -> Texture2D`
 
