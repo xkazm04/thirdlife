@@ -50,7 +50,7 @@ static func settings(cart_cam: Dictionary) -> Dictionary:
 		"CornerLiftM": 3.0,                       # cpp:39 jam.camera.CornerLift 3 (cpp:1212); zeroed by the boards view (cpp:269-275)
 		"CornerNearM": 5.0, "CornerFullM": 2.0, "CornerLookAheadKeep": 0.2,   # h:97-103
 		"KeepHumanFrac": 0.31,                    # cpp:42 jam.camera.KeepHuman 0.31 (cpp:1213); zeroed by the boards view
-		"KeepAspect": 16.0 / 9.0,                 # h:128; the game sets the viewport's (cpp:1226-1230): DEVIATION, fixed 16:9
+		"KeepAspect": 16.0 / 9.0,                 # h:128; main.gd sets the window's each frame (ctx.cameras.aspect, 1.17) as StepSimFrame does (cpp:1226-1230)
 		"BoundPx": 0.0,                           # cpp:62 jam.camera.Bound 0 (cpp:1220)
 		"bRigYaw": true,                          # cpp:64 jam.camera.RigYaw 1 (cpp:1221)
 		"BoardsView": 1.0,                        # cpp:71 jam.camera.Boards 1 (cpp:1222)

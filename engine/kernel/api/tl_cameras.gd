@@ -46,6 +46,18 @@ func _ready() -> void:
 		_log_cam = FileAccess.open(OS.get_environment("TL_LOOK_CAM"), FileAccess.WRITE)
 
 
+## 1.17 (K3, hockey port): the width over the height of the picture the views draw into: the window's (the viewport's
+## visible rect) in a windowed run, read each call so a resized window answers at once; 16 / 9 in a headless run (there is
+## no picture, and every verify run must give the same numbers on every machine). For a camera whose framing depends on
+## the frame's shape (thirdjam's follow camera reads its viewport each frame).
+func aspect() -> float:
+	TLContext.require("camera", "ctx.cameras")
+	if DisplayServer.get_name() == "headless" or not is_inside_tree():
+		return 16.0 / 9.0
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	return size.x / size.y if size.x >= 1.0 and size.y >= 1.0 else 16.0 / 9.0
+
+
 ## A fixed named view. List the name in pack.json `cameras` so the verifier knows it exists.
 func add_view(view: StringName, position: Vector3, target: Vector3, fov: float = 60.0) -> Camera3D:
 	TLContext.require("camera", "ctx.cameras")
