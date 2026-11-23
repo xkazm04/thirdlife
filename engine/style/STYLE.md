@@ -341,3 +341,26 @@ TLStyleFelt.set_params(m, {"number_ones": 7.0})              # a number or a col
 - Cost: ten skaters before the game camera at 1280 x 720 draw in the same time in felt and in flat cel (whole frame
   1.0 to 1.1 ms either way on this machine, 0.8 ms with the ten hidden; `look_gym.tscn --mode=cost`).
 
+
+## A hall: `TLStyleHall`, `TLStyleArena` (hockey port, 23-24 Nov 2026)
+
+Two entries a game played indoors asks for; neither changes a shader or a style file that existed.
+
+- `TLStyleHall.apply(anchor, {color, energy, shadows})` (lane K3): the installed style's sun becomes a light from the
+  roof (straight down), the fog is switched off. `TLStyleHall.clear(anchor)` gives the style back.
+- `TLStyleArena` (lane K6): the surfaces of a hall ported from another engine, lit by that hall's own rig by the
+  numbers. `set_rig(lights, exposure, gain, gain_shadows)` takes up to 24 spot lights (position, direction, colour,
+  candela, radius, cone); every hall material sums them per fragment (`shaders/hall_rig.gdshaderinc`, no shadow, no
+  engine light node) and shows the result through Unreal's film curve (`hall_tone`). The picture is written as
+  emission, so the style's sun adds nothing to it; the ink and grade passes run over it.
+  - `surface({...})` (`hall_surface.gdshader`): wood (world triplanar grain, a warm wash rising from the floor, a
+    spill outside the boards) and painted clay pieces (bands by height, board panels with joints, a felt band, wear,
+    a dented or thumbed normal, a felt sheen).
+  - `ice({...})` (`hall_ice.gdshader`): an ice sheet with painted lines under the surface, scratches, snow at the
+    boards, the lamps' sheen. It takes the style sun's shadow for the share of the lights that cast shadows.
+  - `crowd({...})` (`hall_crowd.gdshader`): vertex-coloured figures with per-instance values and a cheering pose
+    (`set_cheer(plus, minus, seconds)`); `bulb({...})` (`hall_bulb.gdshader`): a lamp's bulb.
+  - `post(anchor, {"grade": {...}, "ink": {...}})`: values of the installed grade and ink passes for a hall (no plum
+    wash, the contour gone by a given distance). `TLStyleHall.clear` restores them.
+  - `tone(colour, gain, gain_shadows)`: the same film curve in GDScript, for the light handed to the toon materials.
+  Colours are linear numbers of the source material. Headless: one shared material with no shader.
