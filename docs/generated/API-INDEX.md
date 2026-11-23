@@ -319,9 +319,12 @@ Properties: `unit_h: float`
 - `func extent() -> Vector2`
 - `func eye() -> Vector3`
 - `func ground_ring(center: Vector3, radius: float, near: float = 0.5) -> Rect2`
+- `func image(tex: Texture2D, rect: Rect2, tint: Color = Color.WHITE, scale_k: float = 1.0) -> void`
+- `func image_of(rel: String) -> Texture2D`
 - `func line(a: Vector2, b: Vector2, color: Color, width: float = 1.0) -> void`
 - `func measure(s: String, pt: float, face: String = "bold", tracking: int = 0) -> Vector2`
 - `func minimap(pos: Vector2, size_u: Vector2, field: Vector2, dots: Array) -> void`
+- `func nine(tex: Texture2D, rect: Rect2, margin: Vector4, px_per_unit: float = 1.0, tint: Color = Color.WHITE) -> void`
 - `func polygon(points: PackedVector2Array, color: Color) -> void`
 - `func project(world: Vector3) -> Vector3`
 - `func ring(r: Rect2, color: Color, band: float = 0.082, edge: float = 0.0086, edge_color: Color = Color(0.078, 0.078, 0.13, 1.0)) -> void`

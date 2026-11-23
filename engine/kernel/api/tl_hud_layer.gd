@@ -93,7 +93,7 @@ func chevron(pos: Vector2, size_u: float, color: Color, edge: Color = Color(0, 0
 	queue_redraw()
 
 
-## K5 (1.21). A picture of the pack (a .png path relative to the pack, never outside it), loaded once; null with an error
+## K5 (1.22). A picture of the pack (a .png path relative to the pack, never outside it), loaded once; null with an error
 ## when it is missing or not a PNG. Pictures are inert data: the pack's own art, drawn with image() and nine().
 func image_of(rel: String) -> Texture2D:
 	if _images.has(rel):
@@ -112,7 +112,7 @@ func image_of(rel: String) -> Texture2D:
 	return tex
 
 
-## K5 (1.21). A picture stretched into `rect` (units), multiplied by `tint` (as a tinted Unreal image brush), scaled by
+## K5 (1.22). A picture stretched into `rect` (units), multiplied by `tint` (as a tinted Unreal image brush), scaled by
 ## `scale` about the rect's centre.
 func image(tex: Texture2D, rect: Rect2, tint: Color = Color.WHITE, scale_k: float = 1.0) -> void:
 	if tex == null:
@@ -124,7 +124,7 @@ func image(tex: Texture2D, rect: Rect2, tint: Color = Color.WHITE, scale_k: floa
 	queue_redraw()
 
 
-## K5 (1.21). A nine-slice picture (an Unreal box brush): `margin` is each edge's unscaled share of the picture
+## K5 (1.22). A nine-slice picture (an Unreal box brush): `margin` is each edge's unscaled share of the picture
 ## (left, top, right, bottom as fractions of its size), drawn at `px_per_unit` texture pixels a unit.
 func nine(tex: Texture2D, rect: Rect2, margin: Vector4, px_per_unit: float = 1.0, tint: Color = Color.WHITE) -> void:
 	if tex == null:
