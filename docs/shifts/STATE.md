@@ -329,3 +329,7 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 ### 2026-11-23 day: plan
 - 09:35 three lanes from the owner's answers (no handshake): H1 hand and H2 bots repeat the hockey teardown on behaviour,
   measured in both running games; H3 makes the first (greybox) phase a person gate. Plan: docs/shifts/2026-11-23-day/PLAN.md.
+- ~11:00 landed on main: H3 the person gate (624fb73, JOB.md worded a9f7477; foreman 325 tests, 0 fail); H1 hand rounds 1-2
+  (5d07c50, f1659f1: BEHAVIOUR-HAND.md) and H2 bots rounds 1-2 (2e33922, 22f9aa4: BEHAVIOUR-BOTS.md), fast tier green
+  each time. Then the hockey behaviour pass started: H1 builds its 19 shared rows + route A, H2 its 18 bot lines, each on
+  its branch (not main), landable 14:30; an exe from the combined branch for the owner's evening.
