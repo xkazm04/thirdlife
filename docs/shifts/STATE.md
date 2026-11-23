@@ -355,3 +355,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 17:37 standup: K1's native build of thirdjam's own sim and bots gives 611,543 of 611,543 trace lines identical to the
   Unreal build; K2 exported 202 of 202 clips within 0.19 mm of Unreal's poses; K3 round 1 landed on hokej (c7c8149).
 - 18:37 standup: K1 round 2 landed on hokej (aa609ce; thirdjam's code compiled with zero edits, trace-identical); K2 (figure: 92 pose pairs within 0.09 mm of thirdjam's own render) and K3 (camera equals thirdjam's rendered camera on 9,329 steps) built and gating; K4 reference started.
+- 19:37 standup: on hokej: K2 round 1 (99b06df), K3 round 2 (camera = thirdjam's rendered camera; kernel 1.17), cores context (503861d). K1 published GAMEMODE.md (14 play rules into core glue); K3 builds the whole match from the core with stand-ins; K4 lab runner and ladder running.
