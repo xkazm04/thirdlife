@@ -1,8 +1,8 @@
 {
   "id": "game.hokej",
   "version": "0.1.0",
-  "kernelApi": "1.18",
-  "title": "Hokej gym: thirdjam's rink, camera and keys, one skater",
+  "kernelApi": "1.19",
+  "title": "Hokej: thirdjam's match, five against five",
   "capabilities": [
     "input",
     "camera",
@@ -20,7 +20,8 @@
     "tests/bot_rule_s_lock.gd",
     "tests/bot_rule_aim.gd",
     "tests/bot_rule_aim_anchor.gd",
-    "tests/bot_tj_replay.gd"
+    "tests/bot_tj_replay.gd",
+    "tests/bot_rule_restart.gd"
   ],
   "cameras": [
     "follow",
