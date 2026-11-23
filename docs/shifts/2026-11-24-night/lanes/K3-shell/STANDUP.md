@@ -26,3 +26,6 @@ landable round 6
 21:35 | state: done | did: round 7: invariants budget class (solo_budget p50 8 ms for a dungeon without a village plot; selftest budget.class 12 checks); hokej invariants PASS honestly (solo p50 2.16 ms, figures ticking); YOU chevron at the figure's head-socket height via screen.view.head_m (no hud file touched; XY is K5's); film with HUD beside thirdjam looked at (r7_*); window cost HUD+figures 6.13 ms vs HUD+capsules 3.70 ms | gates: lint, bots, invariants PASS, fast PASS (foreman NOT RUN), export check --no-window PASS
 
 landable round 7
+22:05 | state: done | did: round 8: hit_stop.gd port and puck rule replaced by K2's skater_show (bus events, step_sim, pawns, after_pawns, render, in thirdjam's order); carried puck on the blade; match hash unchanged ab881a00fb9af8ef; film looked at (r8_*); export check --no-window PASS | note: stage p99 3.78 ms of 4 (4.02 under load) | gates: lint, bots, invariants PASS, fast PASS (foreman NOT RUN) | next: rest until K6's arena
+
+landable round 8
