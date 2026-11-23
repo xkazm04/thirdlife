@@ -77,6 +77,7 @@ shipped (not built), **GAP** needs something another lane owns (named).
 | HOME: ONE MATCH panel, YOUR STICK | the feature panel and the first-run stick panel (MenuWidget.cpp:1448-1452, 2795-2800) | **R3 built** |
 | HOME: SEASON, MODES, PLAY WITH A FRIEND, CONTROLS, SETTINGS, CREDITS, QUIT | the other entries and their screens | not yet (not drawn) |
 | The lit level kept for the next time | FJamSettings save | not yet (data/match.json's level is the default each time) |
+| The level in the record | (ours: the run must replay from its record) | **R4 built**: PLAY NOW taps a key-less action (level_rookie / level_pro / level_all_star) for frame 0; the shell applies it before the first step (selftest hokej.level_record) |
 
 ## 4. Layout: thirdjam against ours (layout units; px = units x 1 at 1920 x 1080, x 2/3 at 1280 x 720)
 
@@ -110,5 +111,14 @@ still exists, its submission still h43-02 / h43-07 (1080p, before the one look l
   and HOME come before the match's frame 0), owns its pause card, reads Up / Down / Left / Right / Enter / Esc / click while
   paused, resumes, restarts (the R key the glue restarts on) and leaves (ctx.leave_game).
 - More of device B's kit exported once (buttons, segments, header bar, backdrop) into assets/hud/.
-- The bark bubbles and the bark lane (BarkSystem.cpp 622 lines, BarkWidget.cpp 385; `jam.hud.BarkLane` 1): on as shipped, not
-  built yet (round 4).
+- The bark bubbles and the bark lane: built in round 4 (section 7).
+
+## 7. Round 4: the barks (HEAD ships them on: `jam.Barks` -1 = the cartridge's game.barks {enabled, normal}; `jam.hud.BarkLane` 1)
+| Element | Rule | thirdjam | Status |
+|---|---|---|---|
+| Bank | 1,340 lines (situation, speaker, tone, text): goal_for, goal_against, check_landed, check_received, steal, stall, near_miss, faceoff, win, lose, directors_call, signal_ack_defend/space/pass, praise_reply | BarkData.inl = Content/Barks/barks.json | **R4** data/hud_barks.json |
+| Triggers | a goal (the human's: a mate praises; a bot mate's: an opponent complains; against: the scorer or the nearest opponent); the human's check landed; the human knocked down; a faceoff; the end (win: a mate, lose: an opponent); a near miss (a shot, then a board hit by the net within 45 frames); a steal (the puck changes team: the taker mocks, or an opponent complains when the human took it); a stall (300 frames untouched, puck under 2 m/s, at most every 600) | BarkSystem.cpp:212-256, 418-505 | **R4** barks.gd (directors_call, the signal acks and praise replies: not yet: the call and the signals' replies are not ported) |
+| Picker | at most one bark each 240 frames, one speaker each 480; the tone by a roll (normal: an opponent mocks 50 %, complains 30 %, bravado 20 %; a mate encourages 40 %, praises 35 %, complains 25 %), else the first tone of the side with lines; a line not among the last ten | BarkSystem.cpp:182-328 | **R4** (its own seeded stream) |
+| The lane | one bubble a side, the newest of a team whose speaker (2.35 m over his feet) is in the frame and within 24 m of the camera; bottom at y 84, its near end 262 from the centre (8 from the edge at most); no tail; never over a figure (feet to 1.8 m), the puck or the human's box; never while a HUD line of words stands (the caption, the faceoff hint); held 150, faded over 90; a pause clears them | BarkWidget.cpp:18-38, 78-86, 240-370 | **R4** |
+| Look | the panel at 0.9, a 4 corner, the team's edge 2 (#1D4ED8 / #E8651A), Bold 18 text, padding 14 / 7 | HUDOneLook.cpp:241-251; BarkWidget.cpp:184-216 | **R4** |
+| The booth yields | a bark at the human (all but goal_against, a faceoff, and a goal_for of the other side) holds the commentator 150 frames and cuts a line older than 30 frames, except a priority-5 call | CommentarySystem.cpp:520-534, 735-742 | **R4** captions.gd |
