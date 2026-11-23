@@ -2,14 +2,14 @@ extends Node
 ## Hokej: thirdjam's whole match in our engine (K3 shell, round 3; docs/design/DIRECTIONS.md). The simulation and the bots
 ## are thirdjam's own C++ (lane K1's RinkCore, `ctx.cores.open("rink")`, engine/cores/rink/SNAPSHOT.md): the regular cartridge,
 ## 5 v 5, first to 3, at the level of data/match.json. This pack keeps the keys and the drawing: thirdjam's camera (cam.gd,
-## equal to thirdjam's rendered camera within 0.54 cm, round 2), thirdjam's key and mouse mapping (human_input.gd), stand-in
-## figures (match_view.gd) until lane K2's pawn.
+## equal to thirdjam's rendered camera within 0.54 cm, round 2), the devices for the core's raw glue (human_input.gd), and
+## thirdjam's figure through thirdjam's pawn for every skater (match_view.gd: lane K2's TLRigSkater and skater_pawn).
 ## The order inside a frame is AHokejGameMode's (StepOnce, HokejGameMode.cpp:1636-1712): the human's input is read through
 ## the camera of the last sim frame (ReadHumanInput cpp:937), the sim steps, the figures take the frame (ApplySimFrame), then
 ## the camera steps once on it (PushPresentation -> StepSimFrame, CameraFollow.cpp:1183). The engine's physics interpolation
 ## draws camera and figures between the 60 Hz frames (TickComponent cpp:1319-1337, ApplyRender JamPawns.cpp:824-846).
 ## Two proof modes, chosen by a key-less action pressed on frame 0 (a bot's): `gym` (one skater on empty ice under the
-## stand-in law, rounds 1-2: the control rules' tests), `replay` (thirdjam's own logged path through our camera, round 2).
+## other nine parked: the control rules' tests), `replay` (thirdjam's own logged path through our camera, round 2).
 
 const Cam := preload("cam.gd")
 const Human := preload("human_input.gd")
@@ -20,10 +20,12 @@ var ctx
 var cart: Dictionary
 var gym: Dictionary
 var match_cfg: Dictionary
+var view_cfg: Dictionary
+var replay_base: Dictionary = {}   # the replay mode's skater: a real snapshot entry, its place and motion set from the log
 var rink                 # thirdjam's core (RinkCore): set_raw_input / step / snapshot / state_hash
 var mode: String = "match"
 var cam                  # thirdjam's follow camera (scripts/cam.gd)
-var view                 # the stand-in figures (scripts/match_view.gd)
+var view                 # the figures: thirdjam's pawn and K2's figure a skater, or the stand-ins (scripts/match_view.gd)
 var hit_stop             # thirdjam's hit-stop, presentation only (scripts/hit_stop.gd)
 var rink_c: Dictionary   # FJamCameraRink {L, W, R}
 var follow: Camera3D
@@ -40,6 +42,7 @@ func _pack_setup(c) -> void:
 	cart = ctx.read_json("hockey.regular.cartridge.json")
 	gym = ctx.read_json("gym.json")
 	match_cfg = ctx.read_json("match.json")
+	view_cfg = ctx.read_json("view.json")
 	var g: Dictionary = cart["game"]
 	var rk: Dictionary = g["rink"]
 	var rink_gen = ctx.load_script("gen/tj_rink.gd")
@@ -50,7 +53,7 @@ func _pack_setup(c) -> void:
 	rink.set_human_mode("raw")                     # the person's devices; thirdjam's game-mode rules in the core's glue (GAMEMODE.md)
 	rink.reset(ctx.seed)
 	snap = rink.snapshot()
-	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]))
+	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), g, ctx.cores.view_script("rink", "skater_pawn"), bool(view_cfg.get("figures", true)))
 	hit_stop = HitStop.new({"BumpRatio": 0.4, "DownRatio": 1.0, "DownFullRatio": 3.0})   # FJamContactConfig defaults (JamCartridge.h:396-399): no game.contact in the cartridge
 	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = max(shot.reach_m, SkaterRadius 0.4 +
 	# stick.reach_m 1.2 (FJamStickConfig default)) + 0.05 (JamSim.cpp:862-869); FJamPassConfig defaults SaucerHalfFrames 8,
@@ -85,7 +88,8 @@ func _pack_tick(frame: int) -> void:
 		mode = "replay"
 		replay = (ctx.read_json("tj_trace_regular_pro.json") as Dictionary)["rows"]
 		cam = Cam.new(cam.C)                       # thirdjam's first logged frame starts its filter
-		_one_skater()
+		replay_base = (snap["Skaters"][0] as Dictionary).duplicate()
+		view.show_only(0)
 	elif frame == 0 and inp.pressed(&"gym"):
 		# the gym (the control rules' tests): the same core, the other nine parked (RinkCore.set_bot_mode, SNAPSHOT.md v1.1),
 		# and the opening faceoff stepped through here so the hand starts on open ice at the drop (a test stand, not a match)
@@ -98,11 +102,7 @@ func _pack_tick(frame: int) -> void:
 		snap = rink.snapshot()
 		cam = Cam.new(cam.C)
 		_camera_step()
-		for i: int in range(view.bodies.size()):
-			if i != int(snap["HumanIndex"]):
-				(view.bodies[i] as Node3D).visible = false
-				(view.sticks[i] as Node3D).visible = false
-		view.puck.visible = false
+		view.show_only(int(snap["HumanIndex"]))
 	if mode == "replay":
 		_replay_tick()
 		return
@@ -122,9 +122,11 @@ func _pack_tick(frame: int) -> void:
 		hit_stop = HitStop.new(hit_stop.contact)
 	snap = rink.snapshot()
 	if mode == "match":
-		hit_stop.route(snap)                        # HitStopRoute, before the pawns apply the frame (HokejGameMode.cpp:1665)
+		var hold: int = hit_stop.route(snap)        # HitStopRoute, before the pawns apply the frame (HokejGameMode.cpp:1665)
+		if hold > 0:
+			view.begin_hit_stop([hit_stop.victim, hit_stop.checker], hold)   # the two pawns and the puck hold (cpp:1767-1768)
 		if hit_stop.held(int(snap["Frame"])):
-			view.draw(snap, {hit_stop.victim: true, hit_stop.checker: true, -1: true})   # the two figures and the puck hold
+			view.draw(snap, {hit_stop.victim: true, hit_stop.checker: true, -1: true})   # (the hold dictionary: stand-ins only)
 			return                                  # the presentation frame holds: no camera step (HokejGameMode.cpp:1708)
 	_camera_step()
 	_draw()
@@ -152,19 +154,16 @@ func _replay_tick() -> void:
 	var r: Array = replay[replay_i]
 	var p := Vector2(float(r[1]), float(r[2]))
 	var yaw: float = deg_to_rad(float(r[3]))
+	# the skater: a real snapshot entry (every key the pawn reads), its place, motion and blade from the log
+	var prev: Dictionary = snap["Skaters"][0] if replay_i > 0 else {"Pos": p, "Yaw": yaw}
+	var sk: Dictionary = replay_base.duplicate()
+	sk.merge({"Index": 0, "Team": 0, "Pos": p, "PrevPos": prev["Pos"], "Yaw": yaw, "PrevYaw": prev["Yaw"], "Vel": (p - (prev["Pos"] as Vector2)) / View.DT,
+		"YawRate": wrapf(yaw - float(prev["Yaw"]), -PI, PI) / View.DT, "BladePos": p + Vector2(cos(yaw), sin(yaw)) * 1.0, "bHasPuck": false, "bAtFaceoff": false,
+		"bSprinting": false, "Stamina": 0, "bBraking": false}, true)
 	snap = {"Frame": int(r[0]), "HumanIndex": 0, "Carrier": -1, "Puck": {"Pos": Vector2(1000, 1000), "Z": 0.0, "LastTouch": -1, "PrevPos": Vector2(1000, 1000)},
-		"Skaters": [{"Team": 0, "Pos": p, "Vel": Vector2.ZERO, "Yaw": yaw, "PrevPos": p, "PrevYaw": yaw, "BladePos": p + Vector2(cos(yaw), sin(yaw)) * 1.0,
-		"bSprinting": false, "Stamina": 0, "bBraking": false}]}
+		"Skaters": [sk]}
 	_camera_step()
 	_draw()
-
-
-## The proof modes have one skater: the others and the puck are put away.
-func _one_skater() -> void:
-	for i: int in range(1, view.bodies.size()):
-		(view.bodies[i] as Node3D).visible = false
-		(view.sticks[i] as Node3D).visible = false
-	view.puck.visible = false
 
 
 func _camera_step() -> void:
@@ -181,7 +180,7 @@ func _draw() -> void:
 		view.draw(snap)
 	else:
 		var me: int = int(snap["HumanIndex"])
-		view.draw_skater(me, snap["Skaters"][me])
+		view.draw_skater(me, snap["Skaters"][me], int(snap["Frame"]))
 	var pose: Dictionary = cam.pose
 	var cp: Vector2 = pose["pos"]
 	var pr: float = deg_to_rad(float(pose["pitch"]))
