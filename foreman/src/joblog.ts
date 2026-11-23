@@ -20,7 +20,7 @@ import {
   type Creativity,
 } from "./events.js";
 import { applyDesignEvent, type PhaseView, type ReactionView } from "./design_state.js";
-export { PHASE_HOLD_RE, currentPhase, holdReason, phaseIndexOf, waitingPhase, type PhaseView, type ReactionView } from "./design_state.js";
+export { PHASE_HOLD_RE, currentPhase, holdReason, isGreybox, passesItself, phaseIndexOf, waitingPhase, type PhaseView, type ReactionView } from "./design_state.js";
 
 export const LOG_FILE = "job.jsonl";
 export const STATE_FILE = "state.json";

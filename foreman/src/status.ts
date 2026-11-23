@@ -1,6 +1,6 @@
 // The text of `foreman status` and of the event lines `run` prints: moved verbatim out of cli.ts (re-exported there).
 import type { JobEvent } from "./events.js";
-import { currentPhase, waitingPhase, type JobState } from "./joblog.js";
+import { currentPhase, isGreybox, passesItself, waitingPhase, type JobState } from "./joblog.js";
 import { qualityLines } from "./cli_quality.js";
 import { lookOk } from "./quality_state.js";
 import { methodBlock, playtestCard } from "./method.js";
@@ -71,12 +71,13 @@ export function designLines(s: JobState): string[] {
   });
   const wait = waitingPhase(s);
   if (wait) {
-    out.push(
-      s.runThrough
-        ? `waiting  phase ${wait.id} is done; run-through passes it when the Foreman runs: foreman resume ${s.job}`
-        : `waiting  phase ${wait.id} is done: try it ("${wait.try}"), then: foreman phase ${s.job} pass   or   foreman phase ${s.job} hold --note "<what to change>"`,
-    );
-    if (!s.runThrough) out.push(...playtestCard(s.brief, s.job, wait, s.phases.indexOf(wait) === 0));
+    const answer = `then: foreman phase ${s.job} pass   or   foreman phase ${s.job} hold --note "<what to change>"`;
+    if (passesItself(s, wait)) out.push(`waiting  phase ${wait.id} is done; run-through passes it when the Foreman runs: foreman resume ${s.job}`);
+    else {
+      // The person gate (owner, 23 Nov): with run-through too, the greybox waits for a person's hand.
+      out.push(s.runThrough === true && isGreybox(s, wait) ? `waiting  phase ${wait.id} is the greybox and waits for your hand (run-through passes only the phases after it): try it ("${wait.try}"), ${answer}` : `waiting  phase ${wait.id} is done: try it ("${wait.try}"), ${answer}`);
+      out.push(...playtestCard(s.brief, s.job, wait, isGreybox(s, wait)));
+    }
   } else if (cur?.state === "held" && cur.hold !== undefined) {
     out.push(`held     phase ${cur.id}: ${cur.hold.applied ? "its change round runs" : "its change round starts when the Foreman runs"} for: ${cur.hold.note.replace(/\s+/g, " ").slice(0, 120)}`);
   }

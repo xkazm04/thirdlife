@@ -14,7 +14,8 @@ import { UsageError, num, str, type Args } from "./cli_args.js";
 export const NEW_HELP = `      [--creativity crazy|standard] [--run-through] [--engine-dir DIR]
         the Designer answers with a pitch, 3 to 7 aspect cards and the five fields. --creativity crazy adds one or two
         unexpected mechanics on top of the sentence (each an aspect marked crazy; standard, the default, writes no
-        key). --run-through: the Foreman does not stop after each phase.
+        key). --run-through: the Foreman passes the phases after the first itself; the first phase (the greybox)
+        always stops for a person's hand (foreman phase <job> pass|hold), with or without it.
   react <job> <aspect> <choice> [--note "..."]
         the player's reaction to one aspect of the latest brief, before approval: choice is keep, drop or one of the
         aspect's alternative ids. The latest reaction per aspect counts.

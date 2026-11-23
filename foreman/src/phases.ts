@@ -3,10 +3,12 @@
 //   - a package of a later phase is not started before the player passed the phases before it;
 //   - a phase whose packages are all merged (and whose whole-pack checks after the last merge passed: the merge gate)
 //     is done: `phase_done`, then `job_state paused` reason "phase", or with run_through the Foreman's own pass;
+//   - the first phase is the greybox (docs/design/METHOD.md section 10): only a person passes it, also with run_through
+//     (the owner's decision of 23 Nov); run_through passes the phases after it;
 //   - `hold` with a note is a change round on that phase's packages (the package the Planner names among them);
 //   - a re-plan keeps the phases; a stuck phase is named when the job fails.
 import type { JobEvent, PackageSpec, Phase } from "./events.js";
-import { currentPhase, holdReason, phaseIndexOf, waitingPhase, type JobState } from "./joblog.js";
+import { currentPhase, holdReason, passesItself, phaseIndexOf, waitingPhase, type JobState } from "./joblog.js";
 import { funPromiseItem, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type RubricItem } from "./designer.js";
 import { CHANGE_ROUND } from "./rounds.js";
 import { clip } from "./conduct.js";
@@ -23,7 +25,8 @@ export interface PhaseHost {
 
 /** A job paused for the player's verdict on a phase stays paused on `run`/`resume`: `foreman phase` answers it. */
 export function waitsForVerdict(s: JobState): boolean {
-  return waitingPhase(s) !== undefined && !s.runThrough && s.jobState?.state === "paused" && !s.changes.some((c) => c.state === "pending");
+  const wait = waitingPhase(s);
+  return wait !== undefined && !passesItself(s, wait) && s.jobState?.state === "paused" && !s.changes.some((c) => c.state === "pending");
 }
 
 /** May this package be started now? Without phases, always; with them, when its phase is the current one or earlier. */
@@ -37,8 +40,9 @@ export function inReach(s: JobState, id: string): boolean {
 
 /**
  * After the scheduler returned: a phase hold without its change round gets one ("continue"); a current phase whose
- * packages are all merged is done (`phase_done`), then passed by the Foreman itself with run_through ("continue"), or
- * the job waits for the player (`job_state paused`, reason "phase": "paused"). "none": the rest of the loop decides
+ * packages are all merged is done (`phase_done`), then passed by the Foreman itself with run_through ("continue";
+ * never the first phase, the greybox: passesItself), or the job waits for the player (`job_state paused`, reason
+ * "phase": "paused"). "none": the rest of the loop decides
  * (a failure, a question, the end of the job).
  */
 export async function phaseStep(h: PhaseHost): Promise<"continue" | "paused" | "none"> {
@@ -49,7 +53,7 @@ export async function phaseStep(h: PhaseHost): Promise<"continue" | "paused" | "
   if (!cur.packages.every((id) => h.s.packages[id]?.state === "promoted")) return "none";
   if (cur.state === "held" && cur.hold !== undefined && !cur.hold.applied) return "none";
   if (cur.state !== "done") h.append({ type: "phase_done", phase: cur.id });
-  if (h.s.runThrough) {
+  if (passesItself(h.s, cur)) {
     h.append({ type: "phase_reviewed", phase: cur.id, verdict: "pass", by: "auto" });
     return "continue";
   }

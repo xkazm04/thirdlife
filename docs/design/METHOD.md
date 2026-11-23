@@ -296,7 +296,9 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
   hour; a finished game nobody plays costs a week.
 - **The gate**: the person plays the first phase for 5 minutes at its phase pause and answers `pass` or `hold` with
   what he felt. Only `pass` lets the content phases start. The bot metrics of the tofu stage are the floor under this
-  gate, never the gate.
+  gate, never the gate. Enforced since 23 Nov (the owner's decision): the Foreman always pauses after the first phase
+  for a person, also on a job started with `--run-through`, which passes only the phases after it
+  (`foreman/src/design_state.ts`, `passesItself`).
 
 ## 11. Stage 8: kill criteria
 

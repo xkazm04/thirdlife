@@ -90,7 +90,8 @@ func _drawer() -> void:
 	p.position = Vector2(190, 596)
 	p.size = Vector2(900, 108)
 	_body.add_child(p)
-	# run-through: a keycap that stays down (the default is up: the build stops after each phase)
+	# run-through: a keycap that stays down (the default is up: the build stops after each phase). With it down the
+	# build still stops once, after the first phase (the greybox), for the person's hand (the owner's gate of 23 Nov).
 	var rt: Button = _button("RunThrough", "Build straight through", "check" if run_through else "pause", GREEN if run_through else CREAM, Vector2(18, 14), Vector2(360, 52), 21)
 	rt.toggle_mode = true
 	rt.button_pressed = run_through
@@ -98,7 +99,7 @@ func _drawer() -> void:
 		run_through = on
 		_rebuild())
 	p.add_child(rt)
-	var stops: Label = _label("No stops: you try it at the end" if run_through else "Stops after each phase to try it", 18, 500, MUTED)
+	var stops: Label = _label("Stops once: you try the greybox first" if run_through else "Stops after each phase to try it", 18, 500, MUTED)
 	stops.name = "RunThroughLine"
 	stops.position = Vector2(24, 74)
 	p.add_child(stops)

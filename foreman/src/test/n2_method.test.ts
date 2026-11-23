@@ -105,7 +105,16 @@ test("status: the paper check before approval, the playtest card at a phase paus
   const waiting = { ...base, briefApprovedBy: "player", phases, jobState: { state: "paused", reason: "phase" } } as unknown as JobState;
   const card = designLines(waiting).filter((l) => l.startsWith("playtest"));
   assert.match(card.join("\n"), /^playtest phase core: play it yourself[^]*playtest the fantasy: I am the wall-banking ace[^]*playtest first 30 s: 0-5 s[^]*playtest promise: Bank a slap past Rex[^]*playtest kill if: a newcomer never banks[^]*playtest then: did you want one more go\? yes: foreman phase j1 pass/);
-  assert.deepEqual(designLines({ ...waiting, runThrough: true } as unknown as JobState).filter((l) => l.startsWith("playtest")), []);
+  // The person gate (owner, 23 Nov): with run-through too, the first phase (the greybox) waits for a hand with the card;
+  // run-through passes only a later phase, which shows no card.
+  const rtFirst = designLines({ ...waiting, runThrough: true } as unknown as JobState);
+  assert.deepEqual(rtFirst.filter((l) => l.startsWith("playtest")), card);
+  assert.ok(rtFirst.some((l) => l.startsWith("waiting  phase core is the greybox and waits for your hand (run-through passes only the phases after it)")), rtFirst.join("\n"));
+  const second = [{ ...phases[0], state: "passed" as const }, { ...phases[1], state: "done" as const, doneCount: 1 }];
+  const rtLater = designLines({ ...waiting, phases: second, runThrough: true } as unknown as JobState);
+  assert.deepEqual(rtLater.filter((l) => l.startsWith("playtest")), []);
+  assert.ok(rtLater.some((l) => l === "waiting  phase rex is done; run-through passes it when the Foreman runs: foreman resume j1"), rtLater.join("\n"));
+  assert.ok(designLines({ ...waiting, phases: second } as unknown as JobState).some((l) => l.startsWith("playtest phase rex")), "without run-through a later phase gets its card");
 });
 
 test("CASES.md: the hockey and duel method lines pass the editor's own checks, and each case walks the eight stages with its sources", () => {

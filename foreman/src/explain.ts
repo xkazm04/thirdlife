@@ -2,7 +2,7 @@
 // one command to type next. Pure: it reads the events and the state folded from them and returns data; the CLI
 // prints it. It writes nothing and appends no event. Why a round ran comes from rounds.ts (one classifier).
 import type { BuilderOutcome, JobEvent, Level, Verb } from "./events.js";
-import { waitingPhase, weightedTokens, type JobState } from "./joblog.js";
+import { isGreybox, passesItself, waitingPhase, weightedTokens, type JobState } from "./joblog.js";
 import { roundKindOf, roundKinds, type RoundFold, type RoundKind } from "./rounds.js";
 
 export interface RoundVerify {
@@ -144,7 +144,8 @@ export function nextStep(state: JobState, lock: { pid?: number; alive: boolean }
   }
   // JOB.md 2026-11-20: a job waiting on a phase is never a hang: name the phase and the command that answers it.
   const wait = waitingPhase(state);
-  if (wait && !state.runThrough && js === "paused" && !lock.alive) return `foreman phase ${job} pass   or   foreman phase ${job} hold --note "<what to change>"   (phase ${wait.id} is done; try it: "${wait.try}")`;
+  // The person gate (owner, 23 Nov): the greybox waits for a person's hand, also with run-through.
+  if (wait && !passesItself(state, wait) && js === "paused" && !lock.alive) return `foreman phase ${job} pass   or   foreman phase ${job} hold --note "<what to change>"   (phase ${wait.id} ${state.runThrough === true && isGreybox(state, wait) ? "is the greybox and waits for your hand even with run-through" : "is done"}; try it: "${wait.try}")`;
   if (js === "running" || js === "paused") {
     if (lock.alive) return `nothing to type; the Foreman is running (pid ${lock.pid})`;
     const gone = lock.pid !== undefined ? `: pid ${lock.pid} is gone` : "";
