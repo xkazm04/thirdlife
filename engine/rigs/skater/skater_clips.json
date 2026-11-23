@@ -1,0 +1,1113 @@
+{
+ "bones": [
+  "root",
+  "pelvis",
+  "spine_01",
+  "spine_02",
+  "spine_03",
+  "neck_01",
+  "head",
+  "head_socket",
+  "clavicle_l",
+  "upperarm_l",
+  "lowerarm_l",
+  "hand_l",
+  "clavicle_r",
+  "upperarm_r",
+  "lowerarm_r",
+  "hand_r",
+  "stick_socket",
+  "thigh_l",
+  "calf_l",
+  "foot_l",
+  "thigh_r",
+  "calf_r",
+  "foot_r",
+  "puck_socket"
+ ],
+ "clips": [
+  {
+   "keys": 30,
+   "name": "Aim_FarReach",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_Front",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_Left",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N30_R100",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N30_R130",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N30_R145",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N30_R160",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N46_R100",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N46_R130",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N46_R145",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N46_R160",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N63_R100",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N63_R130",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N63_R145",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_N63_R160",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P00_R100",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P00_R130",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P00_R145",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P00_R160",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P35_R100",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P35_R130",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P35_R145",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P35_R160",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P70_R100",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P70_R130",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P70_R145",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_P70_R160",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Aim_Right",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 29,
+   "name": "Board_Fall_Back",
+   "seconds": 0.466667
+  },
+  {
+   "keys": 29,
+   "name": "Board_Fall_Front",
+   "seconds": 0.466667
+  },
+  {
+   "keys": 29,
+   "name": "Board_Fall_Left",
+   "seconds": 0.466667
+  },
+  {
+   "keys": 29,
+   "name": "Board_Fall_Right",
+   "seconds": 0.466667
+  },
+  {
+   "keys": 31,
+   "name": "Board_Hit",
+   "seconds": 0.5
+  },
+  {
+   "keys": 60,
+   "name": "Board_Pin",
+   "seconds": 0.983333
+  },
+  {
+   "keys": 12,
+   "name": "Boost_Take",
+   "seconds": 0.183333
+  },
+  {
+   "keys": 21,
+   "name": "Burst",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 16,
+   "name": "CallForPass",
+   "seconds": 0.25
+  },
+  {
+   "keys": 31,
+   "name": "Cannon_Carry",
+   "seconds": 0.5
+  },
+  {
+   "keys": 25,
+   "name": "Cannon_Fire",
+   "seconds": 0.4
+  },
+  {
+   "keys": 31,
+   "name": "Cannon_Kick",
+   "seconds": 0.5
+  },
+  {
+   "keys": 73,
+   "name": "Celebrate",
+   "seconds": 1.2
+  },
+  {
+   "keys": 91,
+   "name": "Celebrate_ArmsUp",
+   "seconds": 1.5
+  },
+  {
+   "keys": 111,
+   "name": "Celebrate_KneeGlide",
+   "seconds": 1.833333
+  },
+  {
+   "keys": 61,
+   "name": "Celebrate_Mate",
+   "seconds": 1.0
+  },
+  {
+   "keys": 91,
+   "name": "Celebrate_StickRaise",
+   "seconds": 1.5
+  },
+  {
+   "keys": 31,
+   "name": "Check",
+   "seconds": 0.5
+  },
+  {
+   "keys": 31,
+   "name": "Check_Deliver_Left",
+   "seconds": 0.5
+  },
+  {
+   "keys": 25,
+   "name": "Check_Deliver_Left_Heavy",
+   "seconds": 0.4
+  },
+  {
+   "keys": 32,
+   "name": "Check_Deliver_Left_Heavy_Wind",
+   "seconds": 0.516667
+  },
+  {
+   "keys": 19,
+   "name": "Check_Deliver_Left_Light",
+   "seconds": 0.3
+  },
+  {
+   "keys": 26,
+   "name": "Check_Deliver_Left_Light_Wind",
+   "seconds": 0.416667
+  },
+  {
+   "keys": 38,
+   "name": "Check_Deliver_Left_Wind",
+   "seconds": 0.616667
+  },
+  {
+   "keys": 31,
+   "name": "Check_Deliver_Right",
+   "seconds": 0.5
+  },
+  {
+   "keys": 25,
+   "name": "Check_Deliver_Right_Heavy",
+   "seconds": 0.4
+  },
+  {
+   "keys": 32,
+   "name": "Check_Deliver_Right_Heavy_Wind",
+   "seconds": 0.516667
+  },
+  {
+   "keys": 19,
+   "name": "Check_Deliver_Right_Light",
+   "seconds": 0.3
+  },
+  {
+   "keys": 14,
+   "name": "Check_Deliver_Right_Light_Half",
+   "seconds": 0.216667
+  },
+  {
+   "keys": 26,
+   "name": "Check_Deliver_Right_Light_Wind",
+   "seconds": 0.416667
+  },
+  {
+   "keys": 38,
+   "name": "Check_Deliver_Right_Wind",
+   "seconds": 0.616667
+  },
+  {
+   "keys": 25,
+   "name": "Check_Heavy",
+   "seconds": 0.4
+  },
+  {
+   "keys": 21,
+   "name": "Check_Hit_Back",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "Check_Hit_Front",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "Check_Hit_Left",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "Check_Hit_Right",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 14,
+   "name": "Check_Light",
+   "seconds": 0.216667
+  },
+  {
+   "keys": 25,
+   "name": "Check_Whiff_Left",
+   "seconds": 0.4
+  },
+  {
+   "keys": 25,
+   "name": "Check_Whiff_Right",
+   "seconds": 0.4
+  },
+  {
+   "keys": 60,
+   "name": "CrossCheck_Hold",
+   "seconds": 0.983333
+  },
+  {
+   "keys": 7,
+   "name": "CrossCheck_Hold_In",
+   "seconds": 0.1
+  },
+  {
+   "keys": 7,
+   "name": "CrossCheck_Hold_Out",
+   "seconds": 0.1
+  },
+  {
+   "keys": 25,
+   "name": "CrossCheck_Release",
+   "seconds": 0.4
+  },
+  {
+   "keys": 16,
+   "name": "CrossCheck_Whiff",
+   "seconds": 0.25
+  },
+  {
+   "keys": 33,
+   "name": "CrossCheck_Wind",
+   "seconds": 0.533333
+  },
+  {
+   "keys": 40,
+   "name": "Crossover_Left",
+   "seconds": 0.65
+  },
+  {
+   "keys": 40,
+   "name": "Crossover_Right",
+   "seconds": 0.65
+  },
+  {
+   "keys": 10,
+   "name": "Dash_Bump",
+   "seconds": 0.15
+  },
+  {
+   "keys": 10,
+   "name": "Dash_Bump_Left",
+   "seconds": 0.15
+  },
+  {
+   "keys": 10,
+   "name": "Dash_Bump_Right",
+   "seconds": 0.15
+  },
+  {
+   "keys": 25,
+   "name": "Dash_Carry",
+   "seconds": 0.4
+  },
+  {
+   "keys": 13,
+   "name": "Dash_End",
+   "seconds": 0.2
+  },
+  {
+   "keys": 25,
+   "name": "Dash_Loop",
+   "seconds": 0.4
+  },
+  {
+   "keys": 21,
+   "name": "Dash_Skid",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "Dash_Skid_Left",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 11,
+   "name": "Dash_Start",
+   "seconds": 0.166667
+  },
+  {
+   "keys": 25,
+   "name": "Dash_Wipeout",
+   "seconds": 0.4
+  },
+  {
+   "keys": 23,
+   "name": "Dash_Wipeout_Light",
+   "seconds": 0.366667
+  },
+  {
+   "keys": 17,
+   "name": "Deke_Left",
+   "seconds": 0.266667
+  },
+  {
+   "keys": 17,
+   "name": "Deke_Right",
+   "seconds": 0.266667
+  },
+  {
+   "keys": 39,
+   "name": "Dive_Block_Front",
+   "seconds": 0.633333
+  },
+  {
+   "keys": 13,
+   "name": "Dive_Block_Hit_Left",
+   "seconds": 0.2
+  },
+  {
+   "keys": 13,
+   "name": "Dive_Block_Hit_Right",
+   "seconds": 0.2
+  },
+  {
+   "keys": 41,
+   "name": "Dive_Block_Left",
+   "seconds": 0.666667
+  },
+  {
+   "keys": 41,
+   "name": "Dive_Block_Right",
+   "seconds": 0.666667
+  },
+  {
+   "keys": 19,
+   "name": "Faceoff_Draw",
+   "seconds": 0.3
+  },
+  {
+   "keys": 30,
+   "name": "Faceoff_Ready",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 27,
+   "name": "Fall",
+   "seconds": 0.433333
+  },
+  {
+   "keys": 29,
+   "name": "Fall_B",
+   "seconds": 0.466667
+  },
+  {
+   "keys": 19,
+   "name": "Fall_Bonk",
+   "seconds": 0.3
+  },
+  {
+   "keys": 27,
+   "name": "Fall_Forward",
+   "seconds": 0.433333
+  },
+  {
+   "keys": 35,
+   "name": "Fall_Heavy",
+   "seconds": 0.566667
+  },
+  {
+   "keys": 27,
+   "name": "Fall_Legs_Back",
+   "seconds": 0.433333
+  },
+  {
+   "keys": 27,
+   "name": "Fall_Legs_Front",
+   "seconds": 0.433333
+  },
+  {
+   "keys": 19,
+   "name": "Fall_Light",
+   "seconds": 0.3
+  },
+  {
+   "keys": 49,
+   "name": "Foul_Reaction",
+   "seconds": 0.8
+  },
+  {
+   "keys": 37,
+   "name": "GetUp",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_Front",
+   "seconds": 0.6
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Late",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_LateLong",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_LateLong_Front",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_LateLong_Side_Left",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_LateLong_Side_Right",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_LateLong_Wall",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_LateLong_Wall_Back",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_LateLong_Wall_Left",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_LateLong_Wall_Right",
+   "seconds": 0.6
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Late_Front",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Late_Side_Left",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Late_Side_Right",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Late_Wall",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Late_Wall_Back",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Late_Wall_Left",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Late_Wall_Right",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Quick",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Quick_Front",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Quick_Side_Left",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Quick_Side_Right",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_Side_Left",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_Side_Right",
+   "seconds": 0.6
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Snap",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Snap_Front",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Snap_Side_Left",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 21,
+   "name": "GetUp_Snap_Side_Right",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_Wall",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_Wall_Back",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_Wall_Left",
+   "seconds": 0.6
+  },
+  {
+   "keys": 37,
+   "name": "GetUp_Wall_Right",
+   "seconds": 0.6
+  },
+  {
+   "keys": 31,
+   "name": "Giant_Carry",
+   "seconds": 0.5
+  },
+  {
+   "keys": 18,
+   "name": "Giant_Poke",
+   "seconds": 0.283333
+  },
+  {
+   "keys": 23,
+   "name": "Giant_Sweep",
+   "seconds": 0.366667
+  },
+  {
+   "keys": 120,
+   "name": "Glide",
+   "seconds": 1.983333
+  },
+  {
+   "keys": 25,
+   "name": "Goalie_Block_Left",
+   "seconds": 0.4
+  },
+  {
+   "keys": 25,
+   "name": "Goalie_Block_Right",
+   "seconds": 0.4
+  },
+  {
+   "keys": 30,
+   "name": "Goalie_Hold",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 120,
+   "name": "Idle",
+   "seconds": 1.983333
+  },
+  {
+   "keys": 120,
+   "name": "Idle_Faceoff",
+   "seconds": 1.983333
+  },
+  {
+   "keys": 27,
+   "name": "Knockdown_Back",
+   "seconds": 0.433333
+  },
+  {
+   "keys": 29,
+   "name": "Knockdown_Back_B",
+   "seconds": 0.466667
+  },
+  {
+   "keys": 35,
+   "name": "Knockdown_Back_Heavy",
+   "seconds": 0.566667
+  },
+  {
+   "keys": 19,
+   "name": "Knockdown_Back_Light",
+   "seconds": 0.3
+  },
+  {
+   "keys": 27,
+   "name": "Knockdown_Left",
+   "seconds": 0.433333
+  },
+  {
+   "keys": 31,
+   "name": "Knockdown_Left_B",
+   "seconds": 0.5
+  },
+  {
+   "keys": 35,
+   "name": "Knockdown_Left_Heavy",
+   "seconds": 0.566667
+  },
+  {
+   "keys": 19,
+   "name": "Knockdown_Left_Light",
+   "seconds": 0.3
+  },
+  {
+   "keys": 27,
+   "name": "Knockdown_Right",
+   "seconds": 0.433333
+  },
+  {
+   "keys": 31,
+   "name": "Knockdown_Right_B",
+   "seconds": 0.5
+  },
+  {
+   "keys": 35,
+   "name": "Knockdown_Right_Heavy",
+   "seconds": 0.566667
+  },
+  {
+   "keys": 19,
+   "name": "Knockdown_Right_Light",
+   "seconds": 0.3
+  },
+  {
+   "keys": 30,
+   "name": "Lean_Left",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 30,
+   "name": "Lean_Right",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 108,
+   "name": "Lie_Loop",
+   "seconds": 1.783333
+  },
+  {
+   "keys": 108,
+   "name": "Lie_Loop_Front",
+   "seconds": 1.783333
+  },
+  {
+   "keys": 108,
+   "name": "Lie_Loop_Side_Left",
+   "seconds": 1.783333
+  },
+  {
+   "keys": 108,
+   "name": "Lie_Loop_Side_Right",
+   "seconds": 1.783333
+  },
+  {
+   "keys": 108,
+   "name": "Lie_Loop_Wall",
+   "seconds": 1.783333
+  },
+  {
+   "keys": 108,
+   "name": "Lie_Loop_Wall_Back",
+   "seconds": 1.783333
+  },
+  {
+   "keys": 108,
+   "name": "Lie_Loop_Wall_Left",
+   "seconds": 1.783333
+  },
+  {
+   "keys": 108,
+   "name": "Lie_Loop_Wall_Right",
+   "seconds": 1.783333
+  },
+  {
+   "keys": 25,
+   "name": "Lift",
+   "seconds": 0.4
+  },
+  {
+   "keys": 25,
+   "name": "Lift_Heavy",
+   "seconds": 0.4
+  },
+  {
+   "keys": 29,
+   "name": "Lift_Hit",
+   "seconds": 0.466667
+  },
+  {
+   "keys": 14,
+   "name": "Lift_Light",
+   "seconds": 0.216667
+  },
+  {
+   "keys": 31,
+   "name": "Mallet_Carry",
+   "seconds": 0.5
+  },
+  {
+   "keys": 50,
+   "name": "Mallet_Miss",
+   "seconds": 0.816667
+  },
+  {
+   "keys": 37,
+   "name": "Mallet_Swing",
+   "seconds": 0.6
+  },
+  {
+   "keys": 19,
+   "name": "Pass",
+   "seconds": 0.3
+  },
+  {
+   "keys": 30,
+   "name": "Pass_Charge",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 27,
+   "name": "Pass_Snap",
+   "seconds": 0.433333
+  },
+  {
+   "keys": 31,
+   "name": "Pin_Carry",
+   "seconds": 0.5
+  },
+  {
+   "keys": 41,
+   "name": "Pin_Miss",
+   "seconds": 0.666667
+  },
+  {
+   "keys": 31,
+   "name": "Pin_Roll",
+   "seconds": 0.5
+  },
+  {
+   "keys": 22,
+   "name": "Poke",
+   "seconds": 0.35
+  },
+  {
+   "keys": 25,
+   "name": "Poke_Hit",
+   "seconds": 0.4
+  },
+  {
+   "keys": 120,
+   "name": "Ready_Glide",
+   "seconds": 1.983333
+  },
+  {
+   "keys": 9,
+   "name": "Receive",
+   "seconds": 0.133333
+  },
+  {
+   "keys": 30,
+   "name": "Shot_Charge",
+   "seconds": 0.483333
+  },
+  {
+   "keys": 43,
+   "name": "Shot_Slap",
+   "seconds": 0.7
+  },
+  {
+   "keys": 22,
+   "name": "Shot_Wrist",
+   "seconds": 0.35
+  },
+  {
+   "keys": 25,
+   "name": "Slide_Tackle",
+   "seconds": 0.4
+  },
+  {
+   "keys": 25,
+   "name": "Slide_Tackle_Left",
+   "seconds": 0.4
+  },
+  {
+   "keys": 25,
+   "name": "Slide_Tackle_Right",
+   "seconds": 0.4
+  },
+  {
+   "keys": 37,
+   "name": "Stop",
+   "seconds": 0.6
+  },
+  {
+   "keys": 25,
+   "name": "Stop_Hard",
+   "seconds": 0.4
+  },
+  {
+   "keys": 25,
+   "name": "Stop_Hard_Left",
+   "seconds": 0.4
+  },
+  {
+   "keys": 60,
+   "name": "Stride",
+   "seconds": 0.983333
+  },
+  {
+   "keys": 60,
+   "name": "Stride_Sprint",
+   "seconds": 0.983333
+  },
+  {
+   "keys": 21,
+   "name": "Stumble",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 33,
+   "name": "Stumble_Back",
+   "seconds": 0.533333
+  },
+  {
+   "keys": 33,
+   "name": "Stumble_Front",
+   "seconds": 0.533333
+  },
+  {
+   "keys": 33,
+   "name": "Stumble_Left",
+   "seconds": 0.533333
+  },
+  {
+   "keys": 33,
+   "name": "Stumble_Right",
+   "seconds": 0.533333
+  },
+  {
+   "keys": 21,
+   "name": "Stumble_Short",
+   "seconds": 0.333333
+  },
+  {
+   "keys": 27,
+   "name": "Trip",
+   "seconds": 0.433333
+  }
+ ],
+ "fps": 60,
+ "schema": "tl.skater.clips/1",
+ "slots": [
+  "Pads",
+  "Jersey",
+  "Trim",
+  "Skin",
+  "Helmet",
+  "Gloves",
+  "Skate",
+  "Blade",
+  "Stick"
+ ],
+ "sockets": [
+  {
+   "bone": "stick_socket",
+   "location_cm": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "name": "stick_socket",
+   "rotation_deg": {
+    "pitch": 0.0,
+    "roll": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "bone": "head_socket",
+   "location_cm": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "name": "head_socket",
+   "rotation_deg": {
+    "pitch": 0.0,
+    "roll": -90.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "bone": "stick_socket",
+   "location_cm": [
+    19.42,
+    -141.45,
+    4.8
+   ],
+   "name": "puck_socket",
+   "rotation_deg": {
+    "pitch": 0.0,
+    "roll": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  }
+ ],
+ "source": "thirdjam SK_SkaterTB1_P3, AS_SkaterTB1_P3_*"
+}
