@@ -2,7 +2,10 @@ extends "rink_bot.gd"
 ## L4 director (21 Nov 14:50): the cross-check winds up 10 frames (was thirdjam's 8) so it lands on L2b's cross_check clip hit frame 10.
 ## Measures the speed ladder against a standing front and side, attacker recoil, carrier lockout and a rear cross.
 
-const SPEEDS: Array = [1.0, 2.75, 4.5, 6.25, 8.0]
+## H1 build (23 Nov), sheet row A4: the hit law's speeds are scaled by K = 9.2 / 12.65 (our top over thirdjam's), so the ladder is
+## driven at K x the old speeds and gives the same ratios; row S9: down frames 36-126 (the 24-frame rise comes on top).
+const K := 9.2 / 12.65
+const SPEEDS: Array = [1.0 * K, 2.75 * K, 4.5 * K, 6.25 * K, 8.0 * K]
 const RANK: Dictionary = {"none": 0, "bump": 1, "stumble": 2, "knockdown": 3}
 var rows: Array = []                  # [label, drill, speed, key]
 var row: int = 0
@@ -20,9 +23,9 @@ func _bot_setup(c) -> void:
 		rows.append(["head-on %.2f m/s" % v, "hit_head_on", v, &"check"])
 	for v: float in SPEEDS:
 		rows.append(["side %.2f m/s" % v, "hit_side", v, &"check"])
-	rows.append(["braced, side, 8.00 m/s", "hit_braced", 8.0, &"check"])
-	rows.append(["the carrier checks, 8.00 m/s", "hit_as_carrier", 8.0, &"check"])
-	rows.append(["cross-check (C) on a carrier, 2.00 m/s", "cross_carrier", 2.0, &"cross"])
+	rows.append(["braced, side, %.2f m/s" % (8.0 * K), "hit_braced", 8.0 * K, &"check"])
+	rows.append(["the carrier checks, %.2f m/s" % (8.0 * K), "hit_as_carrier", 8.0 * K, &"check"])
+	rows.append(["cross-check (C) on a carrier, %.2f m/s" % (2.0 * K), "cross_carrier", 2.0 * K, &"cross"])
 
 func _bot_tick(frame: int) -> void:
 	s = ctx.pack_state()
@@ -107,7 +110,7 @@ func _bot_result() -> Dictionary:
 				notes.append("NOT MONOTONE at " + str(x["row"]))
 			if str(x.get("class", "")) == "knockdown":
 				var dn: int = int(x.get("down_frames", 0))
-				if dn < prev_down or dn < 60 or dn > 150:
+				if dn < prev_down or dn < 36 or dn > 126:
 					ok = false
 					notes.append("DOWN FRAMES out of bounds at " + str(x["row"]))
 				prev_down = dn

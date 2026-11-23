@@ -60,13 +60,15 @@ var hold_turn: float
 var hold_exposed: float
 var hold_margin: float
 var hold_clip_frames: int
-var check_windup: int               ## JamCartridge.h:461 (8), here the body_check clip's hit frame 12 (RIGS.md)
+var check_windup: int               ## JamCartridge.h:461 (8); H1 build (23 Nov): 8 as thirdjam, the clip re-timed (BODY_CHECK_HIT)
+const BODY_CHECK_HIT := 12          ## RIGS.md: the body_check clip shows its hit on this frame; played so that it lands on the wind-up's end
 var check_pull: float              ## JamCartridge.h:479 check_pull_m 1.0: the human is drawn to his man over the wind-up
 var downed_radius: float             ## JamCartridge.h:416-422 DownedRadiusM: a lying man's body, for those on their feet
 var lying_length: float             ## how far a fallen man lies along his facing from his feet (measured: the fall clip, 3.1 m at 2.2x)
 var downed_push: float               ## the most a standing skater is moved out of it in one frame (m)
 var windups: Dictionary = {}       ## id -> {"end": frame the window opens, "on": the man pressed at, "pulled": m}
 var cross_clip_hit: int            ## RIGS.md "Fight clips": the cross_check clip shows its hit on this frame
+var contact                         ## H1 build: scripts/contact.gd (the lift at the press, the bounce), set by main.gd
 var bodies: Array[TLBiped] = []
 var blue_side := PackedByteArray()
 var rng: RandomNumberGenerator
@@ -191,14 +193,18 @@ func target(id: String, gap: float, cone_deg: float, stick := false) -> String:
 func in_cross_cone(id: String, vic: String) -> bool:
 	return (api.stick_of(id) as Vector3).dot(_dir(id, vic)) >= cos(deg_to_rad(cross_cone_deg))
 
-func _clip(id: String, name: StringName) -> void:
+func _clip(id: String, name: StringName, land_on := 0, clip_hit := 0) -> void:
 	if api.headless:
 		return                               # L4b: the figure's clips are drawing only; nothing hashed reads a pose (budget: p50)
-	var rig = (skaters[id] as TLBiped).rig
+	var body: TLBiped = skaters[id]
+	var rig = body.rig
 	if rig == null:
 		return
 	if rig.has_method("clips") and (rig.clips() as PackedStringArray).has(name):
-		rig.play(name)
+		if land_on > 0 and clip_hit > 0 and land_on != clip_hit:
+			body.play_clip(name, [[land_on, clip_hit]])   # H1 build: the clip's hit frame lands on the press's own frame
+		else:
+			rig.play(name)
 	elif name == &"cross_check":
 		rig.play(&"shoot")
 
@@ -206,7 +212,7 @@ func try_check(id: String) -> String:
 	if not can_check(id):
 		return ""
 	tries[id] += 1
-	_clip(id, &"body_check")
+	_clip(id, &"body_check", check_windup, BODY_CHECK_HIT)
 	# JamSim.cpp:1968-1983, 2105-2177 (StepWindups, EndWindupOnContact, StepCheckPull): the press winds up check_windup frames
 	# (the clip shows its hit on that frame), the window opens after it; a meeting inside the wind-up is the hit.
 	immune_counted.erase(id)
@@ -227,21 +233,20 @@ func _step_windup(id: String) -> void:
 	if on != "" and _opponent(id, on):
 		var gap: float = api.pos_of(on).distance_to(api.pos_of(id)) - touch_distance(id, on)
 		var c := closing(id, on)
-		# he meets him inside this physics step: the bodies are stepped one after another, so his own speed along the line
-		# can close the gap before the other man has moved (a same-way meeting too); resolved here, on the velocities before contact
-		if gap - maxf(maxf(c, _vel(id).dot(_dir(id, on))), 0.0) / 60.0 <= 0.02 and in_cone(id, on, check_cone_deg):
+		var left := int(w.end) - _now
+		var step := 0.0
+		if id == human and check_pull > 0.0 and left > 0 and gap > 0.0:
+			# drawn so the bodies meet as the wind-up ends; his speed is not changed (the hit stays his momentum's)
+			step = clampf((gap - maxf(c, 0.0) * float(left) / 60.0) / float(left), 0.0, check_pull - float(w.pulled))
+		# he meets him in this step: bodies step one after another, so his own speed and this frame's pull (H1) can close the gap
+		if gap - step - maxf(maxf(c, _vel(id).dot(_dir(id, on))), 0.0) / 60.0 <= 0.02 and in_cone(id, on, check_cone_deg):
 			windups.erase(id)
 			ready_at[id] = _now + check_cooldown_frames
 			resolve(id, on, _dir(id, on), "body")
 			return
-		var left := int(w.end) - _now
-		if id == human and check_pull > 0.0 and left > 0 and gap > 0.0:
-			# drawn so the bodies meet as the wind-up ends; his speed is not changed (the hit stays his momentum's)
-			var step := clampf((gap - maxf(c, 0.0) * float(left) / 60.0) / float(left), 0.0, check_pull - float(w.pulled))
-			if step > 0.0:
-				var me: TLBiped = skaters[id]
-				me.global_position += _dir(id, on) * step
-				w.pulled = float(w.pulled) + step
+		if step > 0.0:
+			(skaters[id] as TLBiped).global_position += _dir(id, on) * step
+			w.pulled = float(w.pulled) + step
 	if _now >= int(w.end):
 		windups.erase(id)
 		# JamSim.h:510-514. The frame the wind-up ends counts as the first frame of the window.
@@ -278,7 +283,8 @@ func try_cross(id: String, aimed := "") -> bool:
 	_immune_target = ""
 	immune_counted.erase(id)
 	if aimed == "":
-		aimed = target(id, cross_gap, cross_cone_deg, true)
+		# H1 build (S6): the man is judged where the wind-up brings him, as thirdjam's lane A209 and our check do
+		aimed = target(id, cross_gap + maxf(0.0, _vel(id).length()) * float(cross_windup if id == human else bot_cross_windup) / 60.0, cross_cone_deg, true)
 	_count_immune(id)
 	# JamSim.cpp:1742-1768, 1819-1845; JamCartridge.h:461-470,486. Misses can meet a later opponent.
 	var due := _now + (cross_windup if id == human else bot_cross_windup)
@@ -288,7 +294,9 @@ func try_cross(id: String, aimed := "") -> bool:
 	if due - _now > cross_clip_hit:
 		swings[id]["clip"] = due - cross_clip_hit
 	else:
-		_clip(id, &"cross_check")
+		_clip(id, &"cross_check", due - _now, cross_clip_hit)
+	if contact != null:
+		contact.strip_at_press(self, id)
 	return true
 
 func release_hold() -> void:
@@ -353,7 +361,17 @@ func _step_swing(id: String) -> void:
 	if not _eligible(id) or _now > int(s.end):
 		swings.erase(id)
 		return
-	if _now < int(s.due) or (id == human and hold_age > 0):
+	if id == human and hold_age > 0:
+		return
+	if _now < int(s.due):
+		# H1 build (S6): the man met inside the wind-up takes the swing at the meeting, on the velocities before the bodies
+		# touch (as the check does in _step_windup); before, the collision stopped the attacker first and the swing landed a push
+		var on: String = s.target
+		if on != "" and _opponent(id, on) and in_cross_cone(id, on):
+			var gap: float = api.pos_of(on).distance_to(api.pos_of(id)) - touch_distance(id, on)
+			if gap - maxf(maxf(closing(id, on), _vel(id).dot(_dir(id, on))), 0.0) / 60.0 <= 0.02:
+				resolve(id, on, _dir(id, on), "cross")
+				swings.erase(id)
 		return
 	var vic: String = s.target
 	if vic == "" or not _opponent(id, vic) or api.pos_of(vic).distance_to(api.pos_of(id)) > touch_distance(id, vic) + cross_gap or not in_cross_cone(id, vic):

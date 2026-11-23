@@ -59,10 +59,16 @@ func tick(a) -> void:
 			continue
 		act.resolved = true
 		if p > 0.0 and rng.randf() < p:
-			var vel: Vector3 = a.stick_of(id) * float(c.poke_speed) + a.carry.velocity(a, a.carrier) * float(c.poke_carry_share)
+			# H1 build (S14): thirdjam's take (JamSim.cpp ResolvePokes): the puck comes to the poker, 0.6 of his velocity plus
+			# 1.5 m/s toward him, and his blade has it: it is his at once (before: 5 m/s along his stick, away from him, loose)
+			var to_me: Vector3 = a.pos_of(id) - a.puck_pos()
+			to_me.y = 0.0
+			var vel: Vector3 = a.carry.velocity(a, id) * 0.6 + to_me.normalized() * 1.5
 			a._release("poked", a.carrier, vel)
+			a.give(id)
 			a.pokes[id] += 1
 			a.events.append(["poke", id])
 		else:
 			whiff_until[id] = a._now + int(c.whiff_frames)
+			ready[id] = maxi(int(ready.get(id, 0)), a._now + int(c.whiff_frames))   # H1 build (S13): a miss locks the stick whiff_frames (thirdjam MissRecoveryFrames 20)
 			a.events.append(["whiff", id])

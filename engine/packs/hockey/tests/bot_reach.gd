@@ -158,7 +158,8 @@ func _row_tick(frame: int) -> void:
 			if poke_chance >= 0 and frame - poke_chance == 12:
 				ctx.input.tap(&"poke")
 			if poke_chance >= 0 and s.possession.poke_tries.b0 == tries_before + 1:
-				if s.possession.pokes.b0 == pokes_before + 1 or float(me.turn_rate) == 2.25:
+				# H1 build (S12, S13): the window is frames 0-7 of the press and a miss no longer halves the turning: a whiff is its window running out
+				if s.possession.pokes.b0 == pokes_before + 1 or frame - 1 - (poke_chance + 12) >= 8:
 					poke_age = frame - 1 - (poke_chance + 12)
 					poke_resolved = true
 					_finish(frame)
@@ -216,7 +217,7 @@ func _finish(_frame: int) -> void:
 		note = "released, in his reach %d frames right after (not taken: lock %d frames), retaken %s; taken meanwhile by %s at %d frames" % [lock_in_reach, 6, "yes" if first_his >= 0 else "no", other_took if other_took != "" else "nobody", other_frames]
 	elif mode == "poke_late":
 		frames = poke_age
-		ok = poke_resolved and frames >= 6 and frames <= 12
+		ok = poke_resolved and frames >= 0 and frames <= 7   # H1 build (S12): was 6-12
 		note = "one start after the 12-frame reaction; success or measured whiff"
 	elif mode == "poked":
 		frames = other_frames

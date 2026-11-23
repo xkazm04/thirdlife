@@ -113,6 +113,9 @@ func _bot_result() -> Dictionary:
 		if str(id) != "b0" and float(maxd[id]) < 3.0:
 			moved = false
 	var res: String = str(s.get("result", ""))
-	var ok: bool = done and str(s.get("winner", "")) != "" and (res == "WIN" or res == "LOSE") and ai_shots >= 1 and moved and puck_total > 30.0
+	# H1 build (23 Nov): with the behaviour sheet built (BUILD.md), seed 1 ends 2:2 at the 300 s time limit (reason "time", result DRAW);
+	# this bot measures that the AI skaters act, so a match played out to the limit counts as a result, as H9a writes it
+	var played_out: bool = (str(s.get("winner", "")) != "" and (res == "WIN" or res == "LOSE")) or (res == "DRAW" and str(s.get("reason", "")) == "time")
+	var ok: bool = done and played_out and ai_shots >= 1 and moved and puck_total > 30.0
 	return {"ok": ok, "summary": "winner %s scores %s shots %s puck %.1f m frames %d ai_shots %d moved %s max %s" % [str(s.get("winner", "")), str(sc), str(shots), puck_total, ctx.frame, ai_shots, str(moved), str(maxd)],
 		"frames": ctx.frame, "puck_distance": puck_total}

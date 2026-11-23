@@ -292,6 +292,8 @@ func _build(mid: String, warm_kits: bool = false) -> void:
 	api.place_puck(Vector3(0, 0.07, 0))
 	hits = ctx.load_script("scripts/hits.gd").new()
 	hits.setup(tune, api, skaters, teams, order, ctx.rng)
+	hits.contact = ctx.load_script("scripts/contact.gd").new()   # H1 build: the lift at the press, the bounce
+	hits.contact.setup(tune["contact"])
 	hits.human = "" if autopilot else "b0"
 	hits.enabled = bool(m.get("checks", true))
 	api.skate = skate
@@ -493,6 +495,7 @@ func _pack_tick(frame: int) -> void:
 		api.step_sticks()
 		hits.step_actions()
 		hits.enforce()
+		hits.contact.bounce_bodies(hits)
 		for id: String in order:
 			if ai_play and (id != "b0" or autopilot) and not keeper.is_goalie(id):
 				skate.brake(id, hits.is_down(id) or (brain != null and brain.braking.has(id)))
