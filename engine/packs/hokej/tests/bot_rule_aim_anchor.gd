@@ -28,6 +28,8 @@ func _check(tag: String, s: Dictionary, want: Vector2, anchored: bool) -> void:
 
 
 func _bot_tick(frame: int) -> void:
+	if frame == 0:
+		ctx.input.press(&"gym")          # the control rules are tested on the gym (one skater, empty ice)
 	var s: Dictionary = ctx.pack_state()
 	var me := Vector3(float(s["x"]), 0.0, float(s["y"]))
 	# what the game showed after the last frame: the stick of frame - 1
@@ -43,7 +45,7 @@ func _bot_tick(frame: int) -> void:
 	elif f >= 150 and f < 180:
 		if float(s["speed"]) >= 0.3:
 			_check("E", s, Vector2(1, 0), false)
-	ctx.input.release(&"forward")
+	ctx.input.release(&"k_w")
 	if frame < 30:
 		ctx.input.set_aim(&"aim", me + Vector3(2, 0, 0), Vector2(600, 300))
 	elif frame < 60:
@@ -53,7 +55,7 @@ func _bot_tick(frame: int) -> void:
 	elif frame < 120:
 		ctx.input.set_aim(&"aim", me + Vector3(0, 0, -2))
 	elif frame < 180:
-		ctx.input.press(&"forward")
+		ctx.input.press(&"k_w")
 		ctx.input.set_aim(&"aim", me + Vector3(2, 0, 0), Vector2(610, 300))
 	done = frame >= 180
 

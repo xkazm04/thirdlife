@@ -6,7 +6,7 @@ extends Node
 ## last sim frame, re-decided every `react` frames. Its result carries the per-frame trace (skater and camera) that
 ## the side-by-side compares with thirdjam's own camera code (docs/shifts/2026-11-24-night/lanes/K3-shell/).
 
-const KEYS: Dictionary = {"W": &"forward", "S": &"back", "A": &"left", "D": &"right", "+": &"sprint", "C": &"brake"}
+const KEYS: Dictionary = {"W": &"k_w", "S": &"k_s", "A": &"k_a", "D": &"k_d", "+": &"k_shift", "C": &"k_ctrl"}
 
 var ctx
 var hand: Dictionary
@@ -41,6 +41,8 @@ func _press(keys: String) -> void:
 
 
 func _bot_tick(frame: int) -> void:
+	if frame == 0:
+		ctx.input.press(&"gym")          # the control rules are tested on the gym (one skater, empty ice)
 	var s: Dictionary = ctx.pack_state()
 	if true:
 		trace.append([int(s["frame"]), snappedf(s["x"], 1e-5), snappedf(s["y"], 1e-5), snappedf(s["yaw_deg"], 1e-4),

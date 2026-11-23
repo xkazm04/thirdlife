@@ -81,8 +81,8 @@ static func _mt(a: float, b: float, d: float) -> float:
 	return b if absf(b - a) <= d else a + signf(b - a) * d
 
 
-## One frame: hand_tj_skate.mjs step() (lines 25-71), statement for statement.
-func step() -> void:
+## One frame: hand_tj_skate.mjs step() (lines 25-71), statement for statement. True, as RinkCore.step() while the match runs.
+func step() -> bool:
 	prev_p = p
 	prev_yaw = yaw
 	var move: Vector2 = input.get("Move", Vector2.ZERO)
@@ -176,6 +176,7 @@ func step() -> void:
 	p = p + v * DT
 	_collide_static()
 	frame += 1
+	return true
 
 
 # ---- UJamSim::CollideSkaterStatic (HEAD JamSim.cpp:2211-2296), as UJamSim::Step calls it after StepSkater (cpp:1015):
@@ -266,5 +267,9 @@ func _collide_static() -> void:
 
 
 func snapshot() -> Dictionary:
-	return {"Frame": frame, "HumanIndex": 0, "Skaters": [{"Pos": p, "Vel": v, "Yaw": yaw, "PrevPos": prev_p, "PrevYaw": prev_yaw,
-		"bSprinting": sprinting, "Stamina": int(stam), "bBraking": braking, "Stick": input.get("Stick", Vector2.ZERO)}]}
+	# the stand-in blade: FJamInput::Stick's direction at 0.4 + size x 1.2 m (SkaterRadius + reach); no aim: ahead at half size
+	var st: Vector2 = input.get("Stick", Vector2.ZERO)
+	var bd: Vector2 = Vector2(cos(yaw), sin(yaw)) * (0.4 + 0.5 * 1.2) if st == Vector2.ZERO else st.normalized() * (0.4 + st.length() * 1.2)
+	return {"Frame": frame, "HumanIndex": 0, "Carrier": -1, "Puck": {"Pos": Vector2(1000, 1000), "PrevPos": Vector2(1000, 1000), "Z": 0.0, "LastTouch": -1},
+		"Skaters": [{"Team": 0, "Pos": p, "Vel": v, "Yaw": yaw, "PrevPos": prev_p, "PrevYaw": prev_yaw, "BladePos": p + bd,
+		"bSprinting": sprinting, "Stamina": int(stam), "bBraking": braking, "Stick": st}]}

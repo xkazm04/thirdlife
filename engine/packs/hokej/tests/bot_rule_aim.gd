@@ -17,6 +17,8 @@ func _bot_setup(c) -> void:
 
 
 func _bot_tick(frame: int) -> void:
+	if frame == 0:
+		ctx.input.press(&"gym")          # the control rules are tested on the gym (one skater, empty ice)
 	var s: Dictionary = ctx.pack_state()
 	var i: int = frame / 5
 	if frame > 0 and frame % 5 == 4 and i < STEPS.size():

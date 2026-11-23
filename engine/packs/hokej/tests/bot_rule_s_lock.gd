@@ -20,6 +20,8 @@ func _bot_setup(c) -> void:
 
 
 func _bot_tick(frame: int) -> void:
+	if frame == 0:
+		ctx.input.press(&"gym")          # the control rules are tested on the gym (one skater, empty ice)
 	var s: Dictionary = ctx.pack_state()
 	if float(s["axis_y"]) < -0.3:
 		if not bool(s["back_held"]):
@@ -36,12 +38,12 @@ func _bot_tick(frame: int) -> void:
 		if frame == 240:
 			end_heading_err = absf(wrapf(float(s["yaw_deg"]) - (lock_yaw + 180.0), -180.0, 180.0))
 	prev_cam_yaw = float(s["cam_yaw"])
-	ctx.input.release(&"forward")
-	ctx.input.release(&"back")
+	ctx.input.release(&"k_w")
+	ctx.input.release(&"k_s")
 	if frame < 90:
-		ctx.input.press(&"forward")
+		ctx.input.press(&"k_w")
 	elif frame < 240 or (frame >= 250 and frame < 300):
-		ctx.input.press(&"back")
+		ctx.input.press(&"k_s")
 	done = frame >= 300
 
 
