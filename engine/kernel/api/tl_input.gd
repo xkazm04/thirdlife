@@ -52,6 +52,24 @@ func _init() -> void:
 		_actions[a] = {"keys": [], "injected": 0.0, "hold": -1, "now": 0.0, "prev": 0.0, "analog": true}
 
 
+var _menu: PackedStringArray = PackedStringArray()   # K5 (1.24): menu keys pressed while the frame is paused
+
+
+## K5 (1.24). While the frame is paused (ctx.paused) the pack's tick does not run and no action is latched; a pack that
+## draws its own pause card reads its keys here: "up", "down", "left", "right", "enter", "esc" and "click" (the left mouse
+## button), in the order pressed since the last call
+## (the call empties the list). Never recorded, never hashed: a pause is not a frame of the game.
+func menu_keys() -> PackedStringArray:
+	var out: PackedStringArray = _menu
+	_menu = PackedStringArray()
+	return out
+
+
+## Kernel side (the frame): a menu key pressed while paused.
+func _menu_key(name: String) -> void:
+	_menu.append(name)
+
+
 ## Declares an action. `keys` are physical key codes (KEY_W, KEY_SPACE, ...); K2: `buttons` are mouse buttons
 ## (MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE) that press it too, in interactive play. A bot needs neither.
 func declare(action: StringName, keys: Array = [], buttons: Array = []) -> void:

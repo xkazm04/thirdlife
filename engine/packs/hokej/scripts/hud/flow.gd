@@ -101,9 +101,10 @@ static func end_card_score(mine: int, theirs: int) -> String:      # cpp:464-467
 
 
 ## One drawn frame. Returns {"banner": bool, "end": bool} for the HUD's stand-down rules (the panel, the markers).
-func frame(snap: Dictionary, phase: String, vw: float, vh: float) -> Dictionary:
+func frame(snap: Dictionary, phase: String, vw: float, vh: float, paused: bool = false) -> Dictionary:
 	shown = {}
-	tick += 1
+	if not paused:
+		tick += 1                                  # a paused world stands still (its banner and the end's wait too)
 	var sk: Array = snap["Skaters"]
 	var me: int = int(snap["HumanIndex"])
 	var hu: Dictionary = sk[me]

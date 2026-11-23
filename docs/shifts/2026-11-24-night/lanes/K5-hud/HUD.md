@@ -61,7 +61,7 @@ shipped (not built), **GAP** needs something another lane owns (named).
 | Fade from black | a real-time hold (the light rig visible 3 ticks, 2 s at most), then a 0.35 s fade; at the match's build only (HokejGameMode.cpp:581, 607-673) | built by K3 (main.gd, cameras.screen_fade): not duplicated |
 | GOAL banner | the kit's T_UI_Banner_Goal plate (it carries the word GOAL) tinted lerp(white, scorer team, 0.25), 760 x 176 centred at 0.30 H (0.205 H when the scorer's figure is under the band); in over 12, out over 12, gone 6 before the pause ends; only when a score grew (HUDGoalBanner.cpp:34-252) | **R2 built** (flow.gd; the art exported to assets/hud/; also in the end card's wait on the match-ending goal) |
 | End card | after 1.9 s: "YOU WIN" (in his team's accent) / "BEATEN" / "NO WINNER"; "YOU  3 : 1  THEM"; the stats table SHOTS, GOALS, PASSES THAT ARRIVED a OF p, HITS LANDED, WITH THE PUCK m:ss; key caps "R / VIEW REMATCH", "ESC / START MENU"; panel 704 wide at (0.5 W, 0.4 H) (cpp:446-497, 772-799, 952-982; HUDEndWait.cpp; HUDEndStats.cpp; HUDOneLook.cpp:123-181) | **R2 built** (flow.gd; the panel is device B's T_UI_Panel, exported; the wait is 114 frames) |
-| Pause card | Esc: PAUSED, "PERIOD 1   -   PRO (YOUR LEVEL)", RESUME / CHANGE A RULE / RESTART / CONTROLS / QUIT TO MENU, the stick lines, key hints (DirectorsCallWidget.cpp:174-252, 373-382) | **not built**: the kernel's frame owns Esc (dungeon.gd:220-260 pauses the tree with its own card; `tl play` ends the run) and gives a pack no pause hook (ROUND-2.md) |
+| Pause card | Esc: PAUSED, "PERIOD 1   -   PRO (YOUR LEVEL)", RESUME / CHANGE A RULE / RESTART / CONTROLS / QUIT TO MENU, the stick lines, key hints (DirectorsCallWidget.cpp:174-252, 373-382) | **R3 built** (pausecard.gd on kernel 1.24: the pack owns the card, the frame keeps the freeze; CHANGE A RULE and CONTROLS stand disabled: not ported; the rule line not shown) |
 | Restart | R: the sim back to frame 0, the MATCH card again, no light hold (HokejGameMode.cpp:789-816) | the core's glue restarts (K1/K3); the HUD resets on the frame count going back and opens the MATCH card (tested) |
 | Commentator captions | 415 lines on ~30 events; one line per 150 frames; held for the line's duration then a 30-frame fade; docked bottom centre (-24), OL plate(0.72), Regular 18 TextDim (CommentarySystem.cpp; HUDWidget.cpp:1467-1525). Its choice is clock-salted in thirdjam (not deterministic): ours will draw from a seeded stream | **R2 built** (captions.gd + generated commentary_lines.gd, its own seeded stream; barks and the bark lane: not built) |
 | Teach pulses | the panel's PASS / CHECK row lights yellow 90 frames, 3 times a session, 900 apart (HUDTeach.cpp) | not yet (the pass half needs HumanPassTarget: GAP) |
@@ -69,9 +69,14 @@ shipped (not built), **GAP** needs something another lane owns (named).
 | One line at a time | prompt > faceoff hint > caption (the contact line is off) (HUDOneLine.cpp) | **R2 built** for hint > caption (no prompt yet) |
 
 ## 3. The menu (round 3)
-Landing "HOKEJ" / "HOCKEY WITH THE WHISTLE TAKEN OUT." / "PRESS ENTER"; HOME with PLAY NOW (level row ROOKIE / PRO / ALL-STAR),
-SEASON, MODES, PLAY WITH A FRIEND, CONTROLS, SETTINGS, CREDITS, QUIT; PLAY NOW opens the regular cartridge at the lit level
-(MenuWidget.cpp:806-967, 2138-2150; MenuFlow.cpp:387-425). Status R3.
+| Element | Words / rule (shipped) | Status |
+|---|---|---|
+| Title (landing) | the barn backdrop under the scrim; HOKEJ (Black 176 tracked 120), the team rule 480 x 6, HOCKEY WITH THE WHISTLE TAKEN OUT., PRESS ENTER breathing 0.55 to 1 over 1.6 s, OR A, OR A CLICK; footer ENTER / A START, CLICK START (MenuWidget.cpp:806-846, 2378-2412) | **R3 built** (front.gd; Esc leaves to the exe's menu: thirdjam's title has no way out) |
+| HOME: header, footer | T_UI_HeaderBar 80 high: HOKEJ, the rule, HOME, LEVEL and its chip; team rule 8; footer ENTER / A PLAY, LEFT / RIGHT LEVEL, UP / DOWN MOVE, ESC / B TITLE (MenuWidget.cpp:773-804, 1266-1276) | **R3 built** |
+| HOME: PLAY NOW, level row, the level's line | PLAY NOW (Black 48) "ONE MATCH, <LEVEL>.  ENTER / A, OR CLICK."; ROOKIE / PRO / ALL-STAR on the kit's segments; the level's line (MenuWidget.cpp:877-921; MenuFlow.cpp:408-425); Enter plays at the lit level (ChooseCut, 2138-2150) | **R3 built** (the level feeds the core: ctx.cores.opened("rink").set_difficulty + reset; the MATCH card says it) |
+| HOME: ONE MATCH panel, YOUR STICK | the feature panel and the first-run stick panel (MenuWidget.cpp:1448-1452, 2795-2800) | **R3 built** |
+| HOME: SEASON, MODES, PLAY WITH A FRIEND, CONTROLS, SETTINGS, CREDITS, QUIT | the other entries and their screens | not yet (not drawn) |
+| The lit level kept for the next time | FJamSettings save | not yet (data/match.json's level is the default each time) |
 
 ## 4. Layout: thirdjam against ours (layout units; px = units x 1 at 1920 x 1080, x 2/3 at 1280 x 720)
 
@@ -99,3 +104,11 @@ still exists, its submission still h43-02 / h43-07 (1080p, before the one look l
 - The panel's possession reads the glue's `Controls.HasPuckForButtons` (asked of K1; absent today, so the panel shows WITHOUT THE PUCK).
 - Bark bubbles and the bark lane (UJamBarkWidget, BarkWidget.cpp; `jam.hud.BarkLane` 1: a team's bark beside its score plate) are
   thirdjam screen elements not in this inventory's first pass: not built (thirdjam's one-look still 03 shows one).
+
+## 6. Round 3 additions
+- The front end and the pause card run on kernel 1.24 (API.md section 26): the pack pauses itself during its load (the title
+  and HOME come before the match's frame 0), owns its pause card, reads Up / Down / Left / Right / Enter / Esc / click while
+  paused, resumes, restarts (the R key the glue restarts on) and leaves (ctx.leave_game).
+- More of device B's kit exported once (buttons, segments, header bar, backdrop) into assets/hud/.
+- The bark bubbles and the bark lane (BarkSystem.cpp 622 lines, BarkWidget.cpp 385; `jam.hud.BarkLane` 1): on as shipped, not
+  built yet (round 4).

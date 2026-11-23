@@ -252,7 +252,11 @@ static func _shift_group(g: Dictionary, delta: Vector2) -> void:
 		g["arrow"]["at"] = (g["arrow"]["at"] as Vector2) + delta
 
 
+var label_boxes: Array = []      # this frame's distance labels' plates (the caption yields to them, HUDOneLine.cpp:88-114)
+
+
 func paint(groups: Array) -> void:
+	label_boxes = []
 	# canvas order: far diamond, far plate, far text, far arrow, own diamond, own plate, own text, own arrow, puck arrow, puck plate, puck text
 	for g: Dictionary in [groups[1], groups[2], groups[0]]:
 		if not g.get("show", false):
@@ -278,6 +282,7 @@ func paint(groups: Array) -> void:
 			lay.box(plate_at - psz * al, psz, pc, 4.0)
 			lay.text(tl, t, R.LINE_PT, R.ML_TEXT, {"face": "bold_condensed", "alpha": a, "shadow": Vector2(0, 1), "shadow_color": Color(0, 0, 0, 0.45)})
 			hud.shown[k + "_label"] = t
+			label_boxes.append(Rect2(plate_at - psz * al, psz))
 		if k == "puck":
 			lay.chevron(g["arrow"], g["arrow_size"], c, Color(0, 0, 0, 0.9), 1.5, g["arrow_angle"])
 			hud.shown["puck_arrow"] = true
