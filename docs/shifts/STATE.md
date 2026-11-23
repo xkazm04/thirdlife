@@ -19,9 +19,11 @@ writes it back. Newest shift-log entry last.
 - Since 22-23 Nov night: NO minigame building until the owner accepts a design process. docs/design/METHOD.md (a
   person wants to play it again; only a hand passes fun) and the editor rewritten to it; teardowns of hockey (vs thirdjam)
   and duel (vs For Honor / Souls / Sekiro) in docs/research/; the owner's 75 thirdjam rulings in RULINGS.md.
-- Next 3 (night of 23 Nov wrap): (1) the owner reads the teardowns and METHOD, walks the World, answers VERDICT
-  2026-11-23-night (hockey world-size page, person gate, method keys, car slab, method on paper); (2) the method on paper
-  with the owner for one idea, no build; (3) World: body stand-ins beyond 70 m, a window selftest counting distance pops.
+- Since 23 Nov day: a game is analysed and designed by BEHAVIOUR first (what a hand and the bots get back, measured in the
+  running game), not by code or looks. Hockey must prove the method before any other game ("robot soccer" is next).
+- Next 3 (day of 23 Nov): (1) land the behaviour teardowns (H1 hand, H2 bots and sandbox) and the person gate (H3);
+  (2) a hockey behaviour pass from their sheets, on a branch with an exe for the owner's evening; (3) his verdict on
+  hockey, then the method on "robot soccer".
 
 ## Open owner verdicts
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
@@ -56,6 +58,13 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-23 ~09:10 (owner, after reading the night's verdict; verbatim in docs/shifts/2026-11-23-day/PLAN.md): (1) the
+  hockey teardown is rejected as focused on the visual side: "the core of gameplay design is in behavior, which is almost
+  untouched by your analysis. Please do repeat it" on movement sensitivity (speed, acceleration, deceleration), tackles
+  and cross-checks and their reactivity, bot aggressivity and ability to play hockey, openness to a sandbox (weapons,
+  special equipment, boosts), stick control and the puck sticking to players; (2) person gate after the first greybox
+  phase: yes; (3) design lines stay labelled lines (no contract keys); (4) he tests the method on "robot soccer" in the
+  evening, once hockey shows we can design an entertaining game.
 - 2026-11-22 ~18:35 (owner, after playing the day's exe; verbatim in docs/shifts/2026-11-23-night/PLAN.md): the World
   is "very nice" but objects blink at the ground and between distance levels, with incomplete far structures; Create
   cannot start a new idea; "Hockey is unplayable garbage"; thirdjam is the floor; NO new minigame development until we
@@ -316,3 +325,7 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 19:12-23:07 lanes: N1 teardowns (065f28e, 17973df, 11e8936), N2 method (a9b5447..f4f71d2; JOB.md 2599ebe, b925a54),
   N3 world six fixes (484f58e..ea65073), N4 Create (88ae2cd, fc59f3a). All done by 23:07; verdict started early (23:08).
 - 03:20 verdict: re-check at bf75b0d green (world 8/8 crisp+classic, uncapped kernel 498/0, tours, perf 6/6, export + check incl. Create); 4 tests red at fa086cb fixed by N3 round 6. Page https://claude.ai/artifact/5og2f2Jykp6iMSUg8NqBJQ. Claims released, timers deleted.
+
+### 2026-11-23 day: plan
+- 09:35 three lanes from the owner's answers (no handshake): H1 hand and H2 bots repeat the hockey teardown on behaviour,
+  measured in both running games; H3 makes the first (greybox) phase a person gate. Plan: docs/shifts/2026-11-23-day/PLAN.md.
