@@ -55,7 +55,7 @@ func open(id: String, cartridge: String = "") -> Object:
 	return core
 
 
-## A presentation script of the core `id` (1.20): `engine/cores/<id>/view/<name>.gd`, the core's own drawing side that a
+## A presentation script of the core `id` (1.21): `engine/cores/<id>/view/<name>.gd`, the core's own drawing side that a
 ## pack may use beside the core (rink: "skater_pawn", thirdjam's AJamSkater, one per skater). `name` is a plain file name
 ## without `.gd`. Null and an error when the id is unknown or there is no such script. Presentation only: what the script
 ## does never enters the core's hash.

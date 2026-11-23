@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.20)
+# Third Life kernel API (kernelApi 1.21)
 
-**Version 1.20 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.21 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.20"` in `pack.json` (any
-`"1.x"` up to 1.20 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.21"` in `pack.json` (any
+`"1.x"` up to 1.21 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1204,7 +1204,7 @@ core today is `rink`: thirdjam's hockey (JamCore, compiled unchanged; `engine/co
 | Member | Does |
 |---|---|
 | `ctx.cores.open(id, cartridge = "") -> Object` | the core `id` as an object (`"rink"`: a `RinkCore`). `cartridge`: a file under the pack's `data/`, loaded into the core as text. Null and an error when the id is unknown, the core is not built (the error names the build command), or the cartridge does not load |
-| `ctx.cores.view_script(id, name) -> GDScript` (1.20) | the core's drawing side: `engine/cores/<id>/view/<name>.gd` (`name` a plain file name without `.gd`), e.g. `ctx.cores.view_script("rink", "skater_pawn")`, thirdjam's skater pawn (one a skater, fed its snapshot entry each frame). Null and an error when the id is unknown or the script is not there. Presentation only: never part of the core's hash. A pack may not `preload` under `res://cores/` itself (lint N4); this is the door |
+| `ctx.cores.view_script(id, name) -> GDScript` (1.21) | the core's drawing side: `engine/cores/<id>/view/<name>.gd` (`name` a plain file name without `.gd`), e.g. `ctx.cores.view_script("rink", "skater_pawn")`, thirdjam's skater pawn (one a skater, fed its snapshot entry each frame). Null and an error when the id is unknown or the script is not there. Presentation only: never part of the core's hash. A pack may not `preload` under `res://cores/` itself (lint N4); this is the door |
 | `ctx.cores.state() -> Dictionary` | `{"<id>": {"hash": 16 hex digits, "frame": int, "score": [a, b]}}` for every core the pack opened (`"<id>#2"` for a second one). Return it from `_pack_state()` (or put it under a key of it): the core's own state hash then enters the run's `state_hash`, so the determinism laws hold for what the core simulates |
 
 ```gdscript
