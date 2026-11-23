@@ -454,7 +454,7 @@ func _case_core() -> void:
 		frames += 1
 	_t(missing.is_empty(), "the snapshot lacks %s" % str(missing))
 	_eq(frames, 1800, "frames")
-	_eq(String(core.call("state_hash_hex")), "ee65d6ad51f4b067", "the verb gym's match (state hash)")
+	_eq(String(core.call("state_hash_hex")), "3ba801e4fee31b2b", "the verb gym's match (state hash)")
 	_eq(bad_back, 0, "a fast-forward lasts one sim frame")
 	_eq(fast_frames, retimes.size(), "one fast-forwarded frame a re-time")
 	var told: Dictionary = {}
