@@ -8,6 +8,12 @@ var assigned := {}
 var spot := {}
 var sampled := {}
 var sense
+const HIGH_M := 12.0
+const RING_MIN := 9.0       # H2 sheet line 2: the support ring round the carrier, metres
+const RING_MAX := 18.0
+const CROWD_M := 5.0
+const RESAMPLE := 10        # H2 sheet line 17: the support spot is re-chosen every 10 frames (30 before)
+const BLOCK_MIN_M := 5.0    # H2 sheet line 1
 
 func setup(env: Dictionary, perception) -> void:
 	sense = perception
@@ -54,7 +60,7 @@ func inside(p: Vector3, env: Dictionary) -> Vector3:
 	return center + core + (local - core).limit_length(r - 1.5)
 
 func safety(team: String, obs: Dictionary, env: Dictionary, goal: Vector3, attack: float, reaction: float) -> Vector3:
-	var high: float = obs.puck.x * attack - 8.0
+	var high: float = obs.puck.x * attack - HIGH_M      # sheet line 2 (H2): the high man 12 m behind the puck (8 before)
 	for oid: String in field[other(team)]:
 		high = minf(high, obs.pos[oid].x * attack - 0.5)
 	# Keep the high man's depth, then choose the open side for a return pass.
@@ -75,7 +81,7 @@ func safety(team: String, obs: Dictionary, env: Dictionary, goal: Vector3, attac
 
 func guard(obs: Dictionary, goal: Vector3, attack: float) -> Vector3:
 	var depth := clampf(absf(obs.puck.x - goal.x) * 0.35, 4.0, 7.0)
-	return goal + Vector3(attack * depth, 0, clampf((obs.puck.z - goal.z) * 0.30, -2.5, 2.5))
+	return goal + Vector3(attack * depth, 0, clampf((obs.puck.z - goal.z) * 0.5, -3.5, 3.5))   # sheet line 17: the post follows the puck
 
 func block(team: String, obs: Dictionary, env: Dictionary, reaction: float) -> Vector3:
 	var opp := other(team)
@@ -93,10 +99,15 @@ func block(team: String, obs: Dictionary, env: Dictionary, reaction: float) -> V
 		if score > best:
 			best = score
 			target = p
-	return cp.lerp(target, 0.4)
+	# sheet line 1 (H2): the lane-blocker stands in the lane but never inside BLOCK_MIN_M of the carrier (he was the pile's
+	# second body); the hunter, not he, goes at the carrier
+	var spot: Vector3 = cp.lerp(target, 0.4)
+	if spot.distance_to(cp) < BLOCK_MIN_M and target.distance_to(cp) > 0.1:
+		spot = cp + (target - cp).normalized() * minf(BLOCK_MIN_M, target.distance_to(cp))
+	return spot
 
 func support(id: String, team: String, frame: int, obs: Dictionary, env: Dictionary, goal: Vector3, attack: float, reaction: float) -> Vector3:
-	if frame < int(sampled.get(team, -30)) + 30:
+	if frame < int(sampled.get(team, -30)) + RESAMPLE:
 		return spot[team]
 	var opp := other(team)
 	var anchor: Vector3 = obs.pos.get(obs.car, obs.puck)
@@ -104,21 +115,23 @@ func support(id: String, team: String, frame: int, obs: Dictionary, env: Diction
 	var target := anchor
 	# A rink-fixed grid remains stable while the carrier moves across it.
 	var origin: Vector3 = env.api._flat(env.api.rink_root.global_position)
-	var base := origin + (anchor - origin).snapped(Vector3(1.5, 1, 1.5))
-	for ix in range(-10, 11):
-		for iz in range(-10, 11):
-			var p := base + Vector3(ix * 1.5, 0, iz * 1.5)
+	# sheet line 2 (H2): the ring is RING_MIN-RING_MAX m from the carrier (it was 6-14), ideal 12-15, on a 2 m grid, and a
+	# spot within CROWD_M of a mate (the chaser among them) is marked crowded
+	var base := origin + (anchor - origin).snapped(Vector3(2.0, 1, 2.0))
+	for ix in range(-9, 10):
+		for iz in range(-9, 10):
+			var p := base + Vector3(ix * 2.0, 0, iz * 2.0)
 			var d := p.distance_to(anchor)
-			if d < 6 or d > 14 or not inside(p, env).is_equal_approx(p):
+			if d < RING_MIN or d > RING_MAX or not inside(p, env).is_equal_approx(p):
 				continue
 			var safe: float = sense.lane(obs.puck, p, env.api.pass_speed_at(obs.puck.distance_to(p)), roster[opp], obs, reaction)
 			var xg: float = sense.xg(p, goal, attack, roster[opp], keeper[opp], obs)
-			var ideal := (d - 6.0) / 3.0 if d < 9.0 else (14.0 - d) / 5.0
+			var ideal := (d - RING_MIN) / 3.0 if d < 12.0 else (1.0 if d <= 15.0 else (RING_MAX - d) / 3.0)
 			var crowded := 0.0
 			for mate: String in field[team]:
-				if mate != id and p.distance_squared_to(obs.pos[mate]) < 16.0:
+				if mate != id and p.distance_squared_to(obs.pos[mate]) < CROWD_M * CROWD_M:
 					crowded = 1.0
-			var score := 0.35 * safe + 0.30 * xg + 0.20 * ideal - 0.15 * crowded
+			var score := 0.35 * safe + 0.30 * xg + 0.20 * ideal - 0.30 * crowded
 			if score > best or (is_equal_approx(score, best) and p.distance_squared_to(obs.pos[id]) < target.distance_squared_to(obs.pos[id])):
 				best = score
 				target = p

@@ -10,7 +10,8 @@ extends Node
 var ctx
 var s: Dictionary = {}
 const MODES: Array = ["base", "outnumbered", "sudden_death", "pond", "big_ice"]
-const CAP: int = 9000      # H9a: big ice 1:1 at 7,000 was still in its third period (seed 4); 3 x 36 s + intermissions + overtime
+const CAP: int = 18600     # H2 build (23 Nov): the rules' own end, 300 s of play (time_limit_seconds) + two 2 s intermissions + 1 s; the
+                           # sheet's all-AI base match went 0:0 into overtime past 9,000. Before: 9000 (H9a: big ice 1:1 at 7,000, seed 4)
 const FLOOR: int = 120
 var i: int = 0
 var phase: String = "start"

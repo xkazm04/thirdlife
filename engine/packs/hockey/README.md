@@ -71,8 +71,8 @@ The body-check model and its rate were kept (the owner's ruling).
 - **Poke (E)**: a 24-frame action, live on frames 6-12, cooldown 40; reach 2.3 m inside +-35 deg of the stick; odds 65 %
   from in front, 45.5 % from the side, 26 % from behind, x0.6 on a carrier who just cut; a whiff halves your turn rate for
   15 frames. **Anti ping-pong**: a new owner cannot be poked for 24 frames; the old owner and opponents within 2.5 m cannot
-  steal for 30. Bots give any fresh carrier 60 frames before a stick and 15 before a body check (`ai.json`
-  `fresh_frames`, `fresh_check_frames`).
+  steal for 30. Bots give a fresh carrier `fresh_frames` before a stick (H2, 23 Nov: by level, rookie 60,
+  pro 6, all-star 0; the mates 6; it was 60 for everybody) and 15 before a body check (`fresh_check_frames`).
 - **Speeds** (research ratios): cruise 9.2 / sprint 10.58 m/s; carrier x0.88 (8.1 / 9.31) with 0.8 of the thrust; turn
   4.5 rad/s, x0.85 carrying, x0.67 sprinting; pass 18 m/s (23 beyond 15 m); wrist shot 24, full charge 32; puck cap 34.
 - **The bots** (`scripts/ai/`: `brain.gd`, `sense.gd`, `carrier.gd`, `roles.gd`): decide every 15 frames (staggered; the
@@ -86,8 +86,26 @@ The body-check model and its rate were kept (the owner's ruling).
   support spot on a 1.5 m grid, F3 stays high; D1 pressures from the inside, D2 stands in the lane to the best receiver,
   D3 guards the slot. A mate who is open calls for your pass (a light ring under him). Goalie depth 1-2 m by the puck's
   distance, lateral speed under 4 m/s.
-- **Own-goal guards** (each from an idle hand's win in the measurements): no bot pass, shot or dump that risks its own
-  net (`carrier.gd` `_near_own_net`); your mates never carry it into the net themselves; a goalie takes a slow puck, or his
+- **The behaviour pass (H2, 23 Nov; `docs/research/hockey-teardown/BEHAVIOUR-BOTS.md` section 4.1, the line numbers in
+  the code; before / after figures in `docs/shifts/2026-11-23-day/lanes/H2-bots/BUILD.md`).** Spacing: mates keep
+  `sep_m` 8 m apart with weight `sep_weight` 2.5, the man contesting a loose puck included; two mates within `clump_m`
+  2.5 m for `clump_frames` 45 split to `split_m` 5 m (the higher id gives way, anybody gives way to you); the lane-blocker
+  stays 5 m off the carrier. Support spots 9-18 m from the carrier (ideal 12-15), re-chosen every 10 frames; the high man
+  12 m behind the puck. A carrier settles the puck `settle_frames` 10 before a pass or dump (no one-touch re-pass). Passes
+  need a lane of `pass_min_lane` 0.25, weight `pass_weight` 1.8, and a pass up ice counts 0.45 (0.3 before). Your mates shoot like
+  anybody and carry it in; when you are open ahead a mate feeds you in `feed_share` of his carries by level (rookie 0.6,
+  pro 0.4, all-star 0.2). The level is clumsiness, not slowness: red skates at full pace (`red_skill` 1.0 / 1.0 / 1.05),
+  reads 10 / 7 / 5 frames late, aims 8 / 4 / 2 deg wide, shoots from `shoot_min_xg` 0.25 / 0.15 / 0.05 with
+  `shoot_weight` 1.6 / 1.9 / 3.0 (all-star shoots from anywhere), pokes after 60 / 6 / 0 frames (all-star at
+  `poke_min_odds` 0.15), checks from 6 / 2 / 2 m/s closing and never cross-checks at rookie. Pressure grows with the level: a
+  hunter (the nearest non-D1 defender within `hunt_m` 0 / 6 / 20 m) goes at the carrier and may poke and cross-check;
+  `forecheck_men` 1 / 2 / 2 enter the carrier's end (the second in `forecheck_share` 1 / 0.6 / 1 of his carries), the
+  rest hold at the blue line. Chasers and pressers sprint in `sprint_share` 0.2 / 0.35 / 1.0 of their chases. A skater
+  brakes onto his spot only above `brake_above` 3 m/s and keeps his feet moving on it. The sheet's share rolls (feed, forecheck, sprint)
+  hash the run's seed and the decision (`brain.gd` `roll`) instead of drawing from `ctx.rng`.
+- **Own-goal guards** (each from an idle hand's win in the measurements): no bot pass across its own goal mouth and no
+  shot or dump from behind its own net (`carrier.gd` `_near_own_net`; H2 removed the back-pass and corner guards and the
+  rule that your mates never carry it into the net themselves); a goalie takes a slow puck, or his
   own side's pass, sliding into his mouth; a loose puck can gain at most 4 m/s a frame without a stick's release (bodies
   squeezed a face-off puck out at 27 m/s); a puck counts only through the mouth, not in from behind the goal line.
 - **Big puck** (Arsenal): `TLBall.set_radius` (kernel API 1.13), through `scripts/boosts.gd` `resize`.
@@ -173,7 +191,7 @@ seeds 1 to 20 unless the line says otherwise; the look was judged from clips rec
 | **A man down reads as down** | An orange ring (1.25 m) lies under a skater for as long as he is down (lying and rising), under his flat fall pose. | `scripts/look.gd`, tuning `look.down_ring` | `look.down_ring` 0 |
 | **Goalies** | One per side, white pads, a bigger figure (body scale 2.4). He stands on the line from his goal's centre to the puck as he saw it `reaction_frames` ago. His target depth increases linearly from 1 m at 6 m or closer to 2 m at 20 m or farther. He stays within 1.4 m of the middle and moves at up to 4 m/s and faces the puck. **Saves:** a puck shot at his net whose path passes within `glove` (0.9 m) is caught; a goalie on the move (faster than 1.2 m/s) reaches only 0.6 of that. A carrier who brings the puck within `poke` (2.2 m) of him loses it to a poke check. His body stops the rest, which gives a rebound. He holds a caught puck 40 frames, then passes to the mate with the most room, and to you when you have it. He passes only to a mate at least 8 m up ice; with nobody there he clears the puck up the middle. He covers a mate's puck at his own goal mouth. A puck a goalie holds is never a goal. These three came from own goals that won matches for an idle hand. Nobody checks him or pokes his puck. **Beaten by:** a shot to the far side from an angle; a one-timer after a pass across, while he is still moving; a shot outside his glove; a rebound. The level changes the red goalie only. | `scripts/keeper.gd`, tuning `goalie`, levels `goalie` | the mode key `"goalies": false` (pond hockey has none) |
 | **Shots go at the cursor** | With the mouse on the ice a shot leaves the blade at the point under the cursor. This applies when that point is at least 4 m away and in front of the stick. Before, the shot flew parallel to the stick from the blade, 1.24 m right of the cursor. | `scripts/rink_api.gd` `shot_dir` | none (the old way was a bug a goalie made visible) |
-| **Your mates set you up** | A blue mate shoots only within 240 frames (`ai.json` `assist_frames`) of your own pass or shot: a give-and-go, or the rebound of your shot. A pass to you gets the `feed_bonus` of 0.4. An open supporting mate signals with a light ring. A match you do not play is not won for you. Before this, the idle hand won 17 of 20 against rookie: your mates won it. | `scripts/ai/carrier.gd` | `assist_frames` 100000 |
+| **Your mates set you up** | When you are open ahead of a mate who carries, he passes to you in `feed_share` of his carries by level (0.6 / 0.4 / 0.2). Otherwise your mates play: they shoot and carry it in themselves (H2, 23 Nov: the 240-frame shooting ban and the 8 m hold are gone; the idle hand may win rookie again, which the ladder reports and does not tune back). An open supporting mate signals with a light ring. | `scripts/ai/carrier.gd` | `feed_share` 0 |
 | **One-timer** | Press shoot up to eight frames before receiving a pass or six frames after taking a teammate’s pass. The shot fires four frames after the take, or immediately on a later press, at 1.2× wrist speed (28.8 m/s by default). | `scripts/rink_api.gd`, `scripts/carry.gd`, tuning `shoot.one_timer_before`, `one_timer_after`, `one_timer_release`, `one_timer_scale` | Shoot after the reception window for an ordinary shot. |
 | **Nobody swarms a goalie (L5b)** | While a goalie holds the puck, the other side's skaters wait 10 m out (`ai.json` `goalie_gap`), each in his lane; nobody may check or poke him anyway. The clips showed five figures round a goalie with the puck. | `scripts/ai/brain.gd` | `goalie_gap` 0 |
 | **A save is an event** | When a goalie catches a shot (8 m/s or more), the card shows "SAVE!  VLAD" for 45 frames, with a small shake, snow at the glove and the glove's thump. | `scripts/fun/fun.gd` `_save`, `scripts/fx/fx.gd` | `fun.shake` false (the card stays) |

@@ -1,14 +1,22 @@
 {
   "id": "pro",
   "label": "Pro",
-  "about": "Reads the play 12 frames late, with 4 degrees of aim spread. Checks from 3.0 m/s closing.",
+  "about": "Reads the play 7 frames late with 4 degrees of aim spread; a second man hunts the carrier within 6 m and joins the forecheck in 6 of 10 carries; pokes after 6 frames.",
   "ai": {
     "cross_min_closing": 1.0,
-    "reaction_frames": 12,
-    "red_skill": 0.795,
+    "reaction_frames": 7,
+    "red_skill": 1.0,
     "aim_sigma_deg": 4,
     "score_noise": 0.05,
-    "check_min_closing_red": 3.0
+    "check_min_closing_red": 2.0,
+    "shoot_min_xg": 0.15,
+    "shoot_weight": 1.9,
+    "fresh_frames": 6,
+    "hunt_m": 6,
+    "forecheck_men": 2,
+    "forecheck_share": 0.6,
+    "sprint_share": 0.35,
+    "feed_share": 0.4
   },
   "goalie": {"reaction_frames": 12, "speed": 3.4, "glove": 0.95, "poke": 2.1}
 }
