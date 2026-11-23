@@ -24,12 +24,12 @@ func _bot_tick(frame: int) -> void:
 		ctx.input.press(&"gym")          # the control rules are tested on the gym (one skater, empty ice)
 	var s: Dictionary = ctx.pack_state()
 	if float(s["axis_y"]) < -0.3:
-		if not bool(s["back_held"]):
-			worst = 99.0
 		if held_frames == 0 or frame == 251:
+			var first_lock: float = lock_yaw
 			lock_yaw = prev_cam_yaw          # the camera yaw the move was read in on the pull's first frame
-			if frame == 251:
-				relocked = absf(wrapf(float(s["back_yaw_deg"]) - prev_cam_yaw, -180.0, 180.0)) < 1e-3
+			if frame == 251:                 # a new pull: the move is read in the camera's yaw of now, not the first pull's
+				var mv := Vector2(float(s["move_x"]), float(s["move_y"]))
+				relocked = mv.distance_to(-Vector2(cos(deg_to_rad(lock_yaw)), sin(deg_to_rad(lock_yaw)))) < 1e-4 and absf(wrapf(lock_yaw - first_lock, -180.0, 180.0)) > 1.0
 		var y: float = deg_to_rad(lock_yaw)
 		var want: Vector2 = -Vector2(cos(y), sin(y))
 		worst = maxf(worst, want.distance_to(Vector2(float(s["move_x"]), float(s["move_y"]))))

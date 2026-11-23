@@ -1,5 +1,6 @@
 extends SceneTree
-# K3 round 3 proof: the FJamInput stream the pack sent to the human's skater (bot_match_hand's result, metrics.raw.inputs),
+# K3 round 3 proof (human mode "input"; NOT valid since round 5: the glue gives the skater a double-precision stick, and
+# last_human_input reports it in single precision, so this replay drifts by a few ulp; round 5's proof is rawtrace_compare.py): the FJamInput stream the pack sent to the human's skater (bot_match_hand's result, metrics.raw.inputs),
 # fed straight into a fresh RinkCore (no shell, no camera, no keys), must give the core hash the pack's run reported, frame
 # for frame (metrics.raw.hashes). Proves the shell drives thirdjam's core with exactly the input it reports.
 #   godot --headless --path engine --script <this file> -- --report=<bot report.json> [--difficulty=pro] [--seed=1]

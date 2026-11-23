@@ -1,6 +1,0 @@
-{
-  "note": "STAND-IN law constants = docs/research/hockey-teardown/probes/hand_tj_skate.mjs REG (hockey.regular: speed 11, accel 12, turn 5, grip 3, glide 0.147, brake 6 from the cartridge's game.skater; the rest FJamSkaterConfig defaults of the t5 build). Replaced by lane K1's core.",
-  "speed": 11, "accel": 12, "turn": 5, "grip": 3, "glide": 0.147, "brake": 6, "free": 1.15, "carry": 0.92,
-  "sprint": 0.15, "sprintCarry": 0.08, "drain": 180, "refill": 360, "rev": 26, "burstFrames": 20, "burstMult": 1.8,
-  "ownStop": true, "restFrames": 6, "restKept": 3.0, "restHold": 1.0
-}

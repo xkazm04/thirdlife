@@ -19,6 +19,7 @@ func _bot_setup(c) -> void:
 func _bot_tick(frame: int) -> void:
 	if frame == 0:
 		ctx.input.press(&"gym")          # the control rules are tested on the gym (one skater, empty ice)
+		return                           # no cursor yet: the gym places him at the drop on this frame (a point read now would be stale)
 	var s: Dictionary = ctx.pack_state()
 	var i: int = frame / 5
 	if frame > 0 and frame % 5 == 4 and i < STEPS.size():
@@ -33,7 +34,7 @@ func _bot_tick(frame: int) -> void:
 		return
 	var d: float = float(STEPS[i][0])
 	var yaw: float = deg_to_rad(float(s["yaw_deg"]))
-	ctx.input.set_aim(&"aim", Vector3(float(s["x"]) + cos(yaw) * d, 0.0, float(s["y"]) + sin(yaw) * d))
+	ctx.input.set_aim(&"aim", Vector3(float(s["x"]) + cos(yaw) * d, 0.0, float(s["y"]) + sin(yaw) * d), Vector2(400.0 + 10.0 * i, 300.0))   # each step a new pixel: the hand moved
 
 
 func _bot_done() -> bool:

@@ -21,7 +21,8 @@
     "tests/bot_rule_aim.gd",
     "tests/bot_rule_aim_anchor.gd",
     "tests/bot_tj_replay.gd",
-    "tests/bot_rule_restart.gd"
+    "tests/bot_rule_restart.gd",
+    "tests/bot_rule_signals.gd"
   ],
   "cameras": [
     "follow",
