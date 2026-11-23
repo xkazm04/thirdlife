@@ -15,6 +15,7 @@ const Cam := preload("cam.gd")
 const Human := preload("human_input.gd")
 const View := preload("match_view.gd")
 const HitStop := preload("hit_stop.gd")
+const Screen := preload("hud/screen.gd")   # lane K5: thirdjam's HUD (scripts/hud/)
 
 var ctx
 var cart: Dictionary
@@ -33,6 +34,7 @@ var last_in: Dictionary = {}
 var over: bool = false
 var replay: Array = []
 var replay_i: int = -1
+var screen               # lane K5: the HUD (scripts/hud/screen.gd)
 
 
 func _pack_setup(c) -> void:
@@ -189,6 +191,8 @@ func _draw() -> void:
 	var eye := Vector3(cp.x, float(pose["height"]), cp.y)
 	var fwd := Vector3(cos(pr) * cos(yr), sin(pr), cos(pr) * sin(yr))   # FRotator(pitch, yaw, 0)'s forward, z up -> y up
 	ctx.cameras.add_view(&"follow", eye, eye + fwd, float(cam.C["FovDeg"]))
+	if mode == "match":
+		screen = Screen.frame_of(screen, ctx, snap, human, last_in, last_raw)   # lane K5: the HUD, one call a drawn frame
 
 
 func _pack_state() -> Dictionary:

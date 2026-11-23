@@ -231,6 +231,23 @@ func add_tag(id: StringName, node: Node3D, text: String = "", offset: Vector3 = 
 	_layout_dirty = true
 
 
+## K5 (1.20). A painter layer (TLHudLayer) in layout units over the whole screen, drawn under this HUD's labels; the
+## same id gives the same layer. A pack draws its own screen furniture with it (plates, rings on the ground, bars, a
+## minimap, chevrons) without making Controls of its own.
+func add_layer(id: StringName, unit_h: float = 1080.0) -> TLHudLayer:
+	var name_ := "layer_" + String(id)
+	var have := get_node_or_null(NodePath(name_))
+	if have is TLHudLayer:
+		return have
+	var lay := TLHudLayer.new()
+	lay.name = name_
+	lay.unit_h = unit_h
+	lay._cameras = _cameras
+	add_child(lay)
+	move_child(lay, 0)
+	return lay
+
+
 ## Remove an anchored text widget or a tag and release its label.
 func remove_widget(id: StringName) -> void:
 	if not _widgets.has(id):

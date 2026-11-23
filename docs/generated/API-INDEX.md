@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 46
+Classes: 47
 
 ## TLAudio
 
@@ -286,6 +286,7 @@ Properties: `font_size: int`
 - `func add_bound(id: StringName, source: Callable, anchor: StringName = &"top_left") -> void`
 - `func add_clock(rules: TLRules, anchor: StringName = &"top") -> void`
 - `func add_label(id: StringName, text: String, anchor: StringName = &"top_left") -> void`
+- `func add_layer(id: StringName, unit_h: float = 1080.0) -> TLHudLayer`
 - `func add_score(rules: TLRules, side: String, anchor: StringName = &"top_left", caption: String = "") -> void`
 - `func add_speed(source: Callable, unit: String = "km/h", anchor: StringName = &"bottom_right") -> void`
 - `func add_tag(id: StringName, node: Node3D, text: String = "", offset: Vector3 = Vector3(0, 2.3, 0)) -> void`
@@ -300,6 +301,31 @@ Properties: `font_size: int`
 - `func set_readout(id: StringName, reading: Dictionary) -> void`
 - `func set_text(id: StringName, text: String) -> void`
 - `func text_of(id: StringName) -> String`
+
+## TLHudLayer
+
+`engine/kernel/api/tl_hud_layer.gd` extends `Control`
+
+> K5 (API 1.20): a painter for a sports HUD, made with `TLHud.add_layer(id)`. A pack lays out its screen furniture every
+
+Properties: `unit_h: float`
+
+- `func bar(pos: Vector2, size_u: Vector2, frac: float, fill: Color, back: Color = Color(0, 0, 0, 0.55), radius: float = 0.0) -> void`
+- `func box(pos: Vector2, size_u: Vector2, fill: Color, radius: float = 0.0, edge: Color = Color(0, 0, 0, 0), edge_w: float = 0.0, angle_deg: float = 0.0) -> void`
+- `func camera_local(world: Vector3) -> Vector3`
+- `func chevron(pos: Vector2, size_u: float, color: Color, edge: Color = Color(0, 0, 0, 0.9), edge_w: float = 1.5, angle_deg: float = 0.0, align: Vector2 = Vector2(0.5, 0.5)) -> void`
+- `func clear() -> void`
+- `func extent() -> Vector2`
+- `func eye() -> Vector3`
+- `func ground_ring(center: Vector3, radius: float, near: float = 0.5) -> Rect2`
+- `func line(a: Vector2, b: Vector2, color: Color, width: float = 1.0) -> void`
+- `func measure(s: String, pt: float, face: String = "bold", tracking: int = 0) -> Vector2`
+- `func minimap(pos: Vector2, size_u: Vector2, field: Vector2, dots: Array) -> void`
+- `func polygon(points: PackedVector2Array, color: Color) -> void`
+- `func project(world: Vector3) -> Vector3`
+- `func ring(r: Rect2, color: Color, band: float = 0.082, edge: float = 0.0086, edge_color: Color = Color(0.078, 0.078, 0.13, 1.0)) -> void`
+- `func text(pos: Vector2, s: String, pt: float, color: Color, opts: Dictionary = {}) -> Rect2`
+- `func unit() -> float`
 
 ## TLInput
 

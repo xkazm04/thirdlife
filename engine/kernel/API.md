@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.19)
+# Third Life kernel API (kernelApi 1.20)
 
-**Version 1.19 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.20 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.19"` in `pack.json` (any
-`"1.x"` up to 1.19 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.20"` in `pack.json` (any
+`"1.x"` up to 1.20 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1230,3 +1230,42 @@ func _pack_state() -> Dictionary:
 - What the core's methods are and every field of its per-frame `snapshot()`: `engine/cores/rink/SNAPSHOT.md`.
 - Proof that the same seed and input give the same hash through the runner (two bot runs, a replay of the record, a
   window replayed headless): selftest `800-rink-core.sh`; the probe pack `engine/cores/rink/test_pack`.
+
+## 25. A sports HUD: `TLHud.add_layer` and `TLHudLayer` (capability `ui`, addition in 1.20)
+
+Lane K5 (the hockey port's screen). `TLHud`'s text widgets cannot carry a sports game's screen furniture: score plates,
+rings lying on the ice under a skater, chevrons and diamonds at the frame's edge, bars, a minimap, banners and cards. A
+pack draws them with one painter layer instead of making Controls of its own.
+
+| Member | Does |
+|---|---|
+| `TLHud.add_layer(id: StringName, unit_h: float = 1080.0) -> TLHudLayer` | the painter layer `id` of this HUD (the same id gives the same layer), full screen, under the HUD's labels |
+| `lay.clear()` | forget the shapes queued last frame; call once a frame, then queue this frame's shapes (drawn in the order queued) |
+| `lay.unit() -> float`, `lay.extent() -> Vector2` | pixels per layout unit (`viewport height / unit_h`), the screen in units (1920 x 1080 at 16:9) |
+| `lay.box(pos, size, fill, radius = 0, edge = transparent, edge_w = 0, angle_deg = 0)` | a box (top left `pos`), rounded, its edge drawn inside it, turned about its centre |
+| `lay.text(pos, s, pt, color, opts = {}) -> Rect2` | text whose box's `opts.align` point (0..1 each axis) stands at `pos`; `pt` in Unreal points (drawn at pt x 4/3 units); opts `face` (regular, bold, bold_condensed, black), `tracking` (1/1000 em), `outline` and `outline_color`, `shadow` and `shadow_color`, `alpha`. Returns its box |
+| `lay.measure(s, pt, face = "bold", tracking = 0) -> Vector2` | the box a text takes (its advance and the face's line height), in units |
+| `lay.ring(rect, color, band = 0.082, edge = 0.0086, edge_color = ink)` | a ring stretched into `rect` (an ellipse): a band of `band` of the box's size with an ink edge on both sides |
+| `lay.chevron(pos, size, color, edge, edge_w, angle_deg = 0, align = (0.5, 0.5))` | a V of two rounded bars pointing down (at angle 0) in a `size` square |
+| `lay.polygon(points, color)`, `lay.line(a, b, color, width)` | a filled polygon, a straight line (units) |
+| `lay.bar(pos, size, frac, fill, back, radius)` | a bar filled to `frac` of its width over its back |
+| `lay.minimap(pos, size, field, dots)` | a field of `field` metres (centred on the origin) in a box; `dots`: `{at, size, color, mark: dot, hollow, x}` |
+| `lay.project(world) -> Vector3` | a world point on the screen of the pack's active view in units (x, y) and its depth in front of the camera (z; <= 0 behind). It uses the camera's pose of THIS frame (as last set), not the interpolated one being rendered |
+| `lay.camera_local(world) -> Vector3`, `lay.eye() -> Vector3` | the point in camera space (x right, y up, -z ahead); the camera's position |
+| `lay.ground_ring(center, radius, near = 0.5) -> Rect2` | a circle of `radius` metres lying on the ground round `center`, as the screen box of its four compass points and centre; an empty Rect2 when the centre is within `near` m of the camera plane or a point is behind it |
+
+```gdscript
+var lay := hud.add_layer(&"screen")
+func _pack_tick(_f: int) -> void:
+	lay.clear()
+	lay.box(Vector2(860, 14), Vector2(200, 66), Color("#141821e6"), 4.0, Color(1, 1, 1, 0.12), 1.0)
+	lay.text(Vector2(960, 47), "FIRST TO 3", 18, Color("#f5f6f8"), {"face": "bold_condensed", "tracking": 60, "align": Vector2(0.5, 0.5)})
+	var r: Rect2 = lay.ground_ring(Vector3(p.x, 0.03, p.y), 1.1)
+	if r.size != Vector2.ZERO:
+		lay.ring(r, Color("#1d4ed8"))
+```
+
+- The faces are the style's `style/hud/faces.gd`: Roboto Regular, Bold, Bold Condensed and Black as Unreal 5.9 ships them
+  (Apache License 2.0, `style/hud/ROBOTO_License.txt`); the engine's fallback font without the style.
+- Presentation only: a layer touches no body, no input and nothing in the state hash. Captures include it with `--hud=on`.
+- Selftest `830-hokej-hud.sh`; the pack that uses it: `engine/packs/hokej/scripts/hud/`.
