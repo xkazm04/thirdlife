@@ -1,0 +1,10 @@
+{
+  "id": "core.rink_probe",
+  "version": "0.1.0",
+  "kernelApi": "1.18",
+  "title": "Rink core probe: thirdjam's 5 v 5 through ctx.cores",
+  "capabilities": ["input"],
+  "entry": "scripts/main.gd",
+  "assets": [],
+  "tests": ["tests/bot_hand.gd"]
+}

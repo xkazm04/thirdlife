@@ -18,7 +18,20 @@ static void DefaultSink(const char* Category, ELogVerbosity::Type Verbosity, con
 }
 static FJamShimLogSink GSink = &DefaultSink;
 void JamShimSetLogSink(FJamShimLogSink Sink) { GSink = Sink ? Sink : &DefaultSink; }
-void JamShimLog(const FJamShimLogCategory& Cat, ELogVerbosity::Type Verbosity, const wchar_t* Text) { GSink(Cat.Name, Verbosity, Text); }
+double FPlatformTime::Seconds() { LARGE_INTEGER F, C; QueryPerformanceFrequency(&F); QueryPerformanceCounter(&C); return (double)C.QuadPart / (double)F.QuadPart; }
+static FJamShimLog GLogObject;
+FJamShimLog* GLog = &GLogObject;
+void FJamShimLog::AddOutputDevice(FOutputDevice* D) { Devices.push_back(D); }
+void FJamShimLog::RemoveOutputDevice(FOutputDevice* D) { Devices.erase(std::remove(Devices.begin(), Devices.end(), D), Devices.end()); }
+void JamShimLog(const FJamShimLogCategory& Cat, ELogVerbosity::Type Verbosity, const wchar_t* Text)
+{
+	GSink(Cat.Name, Verbosity, Text);
+	if (!GLogObject.Devices.empty())
+	{
+		const FName CatName(Cat.Name);
+		for (FOutputDevice* D : std::vector<FOutputDevice*>(GLogObject.Devices)) D->Serialize(Text, Verbosity, CatName);
+	}
+}
 void JamShimFatal(const char* What, const char* File, int Line)
 {
 	std::fprintf(stderr, "JAMSHIM FATAL check(%s) failed at %s:%d\n", What, File, Line);
@@ -124,6 +137,9 @@ FString FPlatformMisc::GetEnvironmentVariable(const TCHAR* Name)
 static FString GContentDir;
 void JamShimSetContentDir(const FString& Dir) { GContentDir = Dir; }
 FString FPaths::ProjectContentDir() { return GContentDir; }
+static FString GSourceDir;
+void JamShimSetSourceDir(const FString& Dir) { GSourceDir = Dir; }
+FString FPaths::GameSourceDir() { return GSourceDir; }
 bool FPaths::FileExists(const FString& Path) { const DWORD A = GetFileAttributesW(*Path); return A != INVALID_FILE_ATTRIBUTES && !(A & FILE_ATTRIBUTE_DIRECTORY); }
 bool FFileHelper::LoadFileToString(FString& Out, const TCHAR* Path)
 {
@@ -136,6 +152,18 @@ bool FFileHelper::LoadFileToString(FString& Out, const TCHAR* Path)
 	Out = FString(JamShimFromUtf8(B.c_str()));
 	return true;
 }
+bool FFileHelper::LoadFileToArray(TArray<uint8>& Out, const TCHAR* Path)
+{
+	std::ifstream F(Path, std::ios::binary);
+	if (!F) return false;
+	std::stringstream SS;
+	SS << F.rdbuf();
+	const std::string B = SS.str();
+	Out.Reset();
+	for (unsigned char C : B) Out.Add((uint8)C);
+	return true;
+}
+void FPlatformMisc::SetEnvironmentVar(const TCHAR* Name, const TCHAR* Value) { SetEnvironmentVariableW(Name, (Value && *Value) ? Value : nullptr); }
 bool FFileHelper::SaveStringToFile(const FString& Text, const TCHAR* Path)
 {
 	std::ofstream F(Path, std::ios::binary);
@@ -164,6 +192,16 @@ static float SrgbToLinear(uint8 C)
 {
 	const double V = C / 255.0;
 	return (float)(V <= 0.04045 ? V / 12.92 : std::pow((V + 0.055) / 1.055, 2.4));
+}
+FColor FLinearColor::ToFColorSRGB() const
+{
+	auto Enc = [](float V) -> uint8
+	{
+		V = V < 0.f ? 0.f : (V > 1.f ? 1.f : V);
+		const double S = V <= 0.0031308 ? V * 12.92 : 1.055 * std::pow((double)V, 1.0 / 2.4) - 0.055;
+		return (uint8)FMath::FloorToInt(S * 255.999);
+	};
+	return FColor(Enc(R), Enc(G), Enc(B), (uint8)FMath::FloorToInt((A < 0.f ? 0.f : (A > 1.f ? 1.f : A)) * 255.999f));
 }
 FLinearColor::FLinearColor(const FColor& C) : R(SrgbToLinear(C.R)), G(SrgbToLinear(C.G)), B(SrgbToLinear(C.B)), A(C.A / 255.f) {}
 

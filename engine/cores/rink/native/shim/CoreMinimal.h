@@ -120,6 +120,22 @@ void JamShimLog(const FJamShimLogCategory& Cat, ELogVerbosity::Type Verbosity, c
 #define DECLARE_LOG_CATEGORY_EXTERN(Name, Default, Compile) extern FJamShimLogCategory Name;
 #define DEFINE_LOG_CATEGORY(Name) FJamShimLogCategory Name{ #Name };
 #define DEFINE_LOG_CATEGORY_STATIC(Name, Default, Compile) static FJamShimLogCategory Name{ #Name };
+inline FJamShimLogCategory LogTemp{ "LogTemp" };
+class FName;
+class FOutputDevice
+{
+public:
+	virtual ~FOutputDevice() = default;
+	virtual void Serialize(const wchar_t* V, ELogVerbosity::Type Verbosity, const FName& Category) = 0;
+};
+class FJamShimLog
+{
+public:
+	void AddOutputDevice(FOutputDevice* D);
+	void RemoveOutputDevice(FOutputDevice* D);
+	std::vector<FOutputDevice*> Devices;
+};
+extern FJamShimLog* GLog;
 #define UE_LOG(Cat, Verb, Fmt, ...) JamShimLog(Cat, ELogVerbosity::Verb, *FString::Printf(Fmt, ##__VA_ARGS__))
 
 [[noreturn]] void JamShimFatal(const char* What, const char* File, int Line);
@@ -244,10 +260,29 @@ struct FMath
 		while (A < -180.f) { A += 360.f; }
 		return A;
 	}
+	template <class T> static T Modulo(T A, T B) { if constexpr (std::is_floating_point_v<T>) return (T)std::fmod(A, B); else return A % B; }
+	template <class T> static constexpr T Wrap(const T X, const T Min, const T Max)
+	{
+		T Size = Max - Min;
+		if (Size == 0) return Max;
+		T EndVal = X;
+		if (EndVal < Min) { T Mod = Modulo(Min - EndVal, Size); EndVal = (Mod != (T)0) ? Max - Mod : Min; }
+		else if (EndVal > Max) { T Mod = Modulo(EndVal - Max, Size); EndVal = (Mod != (T)0) ? Min + Mod : Max; }
+		return EndVal;
+	}
+	template <class T, class T2> static auto FindDeltaAngleRadians(T A1, T2 A2) { auto Delta = A2 - A1; using D = decltype(Delta); return Wrap(Delta, (D)-UE_PI, (D)UE_PI); }
+	template <class T, class T2> static auto FindDeltaAngleDegrees(T A1, T2 A2) { auto Delta = A2 - A1; using D = decltype(Delta); return Wrap(Delta, (D)-180, (D)180); }
 	static int32 Rand() { return rand(); }   // not reached by the simulation (JamRandom.h is its only randomness)
 };
 
-inline uint64 GFrameCounter = 0;   // UE engine frame counter (JamEventBus logs it when no sim frame is set)
+inline uint64 GFrameCounter = 0;
+struct FPlatformTime { static double Seconds(); };
+struct FMemory
+{
+	static void Memzero(void* P, size_t N) { std::memset(P, 0, N); }
+	template <class T> static void Memzero(T& V) { std::memset(&V, 0, sizeof(T)); }
+	static void* Memcpy(void* D, const void* S, size_t N) { return std::memcpy(D, S, N); }
+};   // UE engine frame counter (JamEventBus logs it when no sim frame is set)
 
 // ---------------------------------------------------------------- containers
 struct FDefaultAllocator {};
@@ -415,6 +450,8 @@ class TMap
 	int32 IndexOf(const K& Key) const { for (size_t i = 0; i < D.Slots.size(); ++i) if (D.Slots[i] && D.Slots[i]->Key == Key) return (int32)i; return INDEX_NONE; }
 public:
 	typedef TPair<K, V> ElementType;
+	TMap() = default;
+	TMap(std::initializer_list<TPair<K, V>> L) { for (const auto& P : L) Add(P.Key, P.Value); }
 	int32 Num() const { return D.Count; }
 	bool IsEmpty() const { return D.Count == 0; }
 	V& Add(const K& Key, const V& Value) { const int32 i = IndexOf(Key); if (i != INDEX_NONE) { D.Slots[i]->Value = Value; return D.Slots[i]->Value; } return D.Slots[D.AddSlot(TPair<K, V>(Key, Value))]->Value; }
@@ -438,6 +475,14 @@ public:
 	int32 GetKeys(TArray<K>& Out) const { Out.Reset(); for (const auto& P : D) Out.Add(P.Key); return Out.Num(); }
 	void GenerateKeyArray(TArray<K>& Out) const { GetKeys(Out); }
 	void GenerateValueArray(TArray<V>& Out) const { Out.Reset(); for (const auto& P : D) Out.Add(P.Value); }
+	template <class Pr> void KeySort(Pr Pred)
+	{
+		std::vector<TPair<K, V>> All;
+		for (const auto& P : D) All.push_back(P);
+		std::stable_sort(All.begin(), All.end(), [&](const TPair<K, V>& A, const TPair<K, V>& B) { return Pred(A.Key, B.Key); });
+		D.Clear();
+		for (auto& P : All) D.AddSlot(std::move(P));
+	}
 	auto begin() { return D.begin(); }
 	auto end() { return D.end(); }
 	auto begin() const { return D.begin(); }
@@ -493,6 +538,11 @@ public:
 template <class T, class... A> TSharedPtr<T> MakeShared(A&&... Args) { return TSharedPtr<T>(std::make_shared<T>(std::forward<A>(Args)...)); }
 template <class T> TSharedPtr<T> MakeShareable(T* Raw) { return TSharedPtr<T>(std::shared_ptr<T>(Raw)); }
 
+template <class T> using TUniquePtr = std::unique_ptr<T>;
+template <class T, class... A> std::unique_ptr<T> MakeUnique(A&&... Args) { return std::make_unique<T>(std::forward<A>(Args)...); }
+template <class T = void> struct TLess { template <class A, class B> bool operator()(const A& X, const B& Y) const { return X < Y; } };
+template <class F> using TFunction = std::function<F>;
+template <class F> using TFunctionRef = std::function<F>;
 template <class T> T&& MoveTemp(T& X) { return static_cast<T&&>(X); }
 template <class T> T&& MoveTemp(T&& X) { return static_cast<T&&>(X); }
 template <class T> T CopyTemp(const T& X) { return X; }

@@ -1,6 +1,7 @@
-# Rink core snapshot: the per-frame interface (v1, 23 Nov 18:00)
+# Rink core snapshot: the per-frame interface (v1.1, 23 Nov 19:10)
 
-**Status: built (v1).** Draft v0 went out at 17:02 for lanes K2 (figure) and K3 (shell); at 17:41 the class below exists
+**Status: built (v1.1: additions only; no v1 name changed).** v1.1 adds `set_raw_input`, `set_bot_mode`, `restart`,
+`last_human_input`, the snapshot's `Controls`, and the enum tables below; the per-skater dictionary is unchanged. Draft v0 went out at 17:02 for lanes K2 (figure) and K3 (shell); at 17:41 the class below exists
 and runs (engine/tools/selftest.d/800-rink-core.sh). The field names are thirdjam's own, read from its source by
 `native/tools/gen_fields.py` at build time (the snapshot code is generated from the same list, so the table and the
 class cannot disagree). A change will be announced in K1's STANDUP.md.
@@ -31,6 +32,16 @@ core.set_human_mode("input")                       # input (default: set_human_i
 core.reset(seed)                                   # the tournament's setup + RunMatch's: FJamSimAdapter (sim + rules, zones,
                                                    # effects) Reset, FJamBrain with the resolved difficulty (JamBotMatch.cpp)
 core.set_human_input({"Move": Vector2(1, 0), "bSprint": true, ...})   # FJamInput, keys below; absent key = false / zero
+# v1.1: human mode "raw" takes the person's devices and applies thirdjam's game-mode rules (GAMEMODE.md): two-role buttons by
+# possession, held keys dead across a change of possession, saucer and brace hold times, camera-relative move, stick aim,
+# team signals 1-4, R to restart. This is what the shell should use; "input" stays for scripted FJamInput.
+core.set_human_mode("raw")
+core.set_raw_input({"Down": PackedStringArray(["LeftMouseButton", "LeftShift"]), "Pressed": PackedStringArray(["LeftMouseButton"]),
+	"Axis": Vector2(0, 1), "CameraYaw": cam_yaw, "CursorOnIce": true, "CursorPx": px, "CursorHitM": ice_xy, "MouseDeltaPx": Vector2.ZERO,
+	"StickAxis": Vector2.ZERO})                    # Unreal key names (InputMapping.cpp:98-120); held keys in Down, new presses in Pressed
+core.set_bot_mode("parked")                        # brain (default) | parked: the other nine get no input and stand (the skating gym)
+core.restart()                                     # AHokejGameMode::RestartMatch: same cartridge and seed, a new match
+core.last_human_input()                            # the FJamInput the human's skater got on the last step (thirdjam's names)
 core.step()                                        # one frame (false once the match is over): RunMatch's frame
 var s: Dictionary = core.snapshot()                # the frame just stepped (about 0.3 ms for all of it)
 var h: int = core.state_hash()                     # FJamSimAdapter::StateHash = UJamSim::StateHash (thirdjam's FNV)
@@ -58,9 +69,11 @@ the sim, not by us (humans to length 1, JamSim.h:31-34).
   "FaceoffDot": Vector2,   # GetFaceoffDot (JamSim.h:710)
   "HumanIndex": int,       # GetHumanIndex (JamSim.h:703)
   "Carrier": int,          # UJamSim::CarrierIndex() (-1 = loose) (JamSim.h:849)
-  "Skaters": [ {<FJamSkaterState fields>, "IsDown", "IsStumbling", "CanAct", "SpinVisualYawDeg"} ... ],
+  "Skaters": [ {<FJamSkaterState fields>, "IsDown", "IsStumbling", "InBox", "CanAct", "IsSpinning", "SpinVisualYawDeg"} ... ],
   "Puck": {<FJamPuckState fields>},
-  "Events": [ {<FJamSimEvent fields>} ... ]   # GetFrameEvents (JamSim.h:693): this frame's only
+  "Events": [ {<FJamSimEvent fields>} ... ],  # GetFrameEvents (JamSim.h:693): this frame's only
+  "Controls": {"PassHoldSteps", "CrossHoldSteps",                 # v1.1: the human's two-role buttons (InputMapping.h:101-108; the HUD badge's fill)
+               "IntentKind", "IntentTarget", "IntentIssuedFrame", "IntentFrames"}   # the team signal (SignalIntent.h); IntentKind 0 = none
 }
 ```
 
@@ -77,6 +90,35 @@ AHokejGameMode::Tick does), `BladePos` (the stick blade on the ice, rink metres)
 `PassChargeFrames`, `CheckWindupLeft`, `LiftWindupLeft`, `CrossHoldFrames`/`bCrossBraced`, `WindupFrames`,
 `PenaltyFrames` (in the box), the one-frame triggers `b*ThisFrame` (shot, pass, check, poke, lift, deke, spin, sweep,
 bump, board hit, recoil, ability). Puck: `Pos`, `Z`, `Vel`, `VZ`, `LastTouch`.
+
+## The skating gym: one human on empty-ish ice (for K2)
+
+`core.set_bot_mode("parked")` after `reset(seed)`: the nine others get an empty FJamInput every frame and stand where the
+opening faceoff put them (the human is skater 0, the team-0 centre at the dot). thirdjam has no gym cartridge, and a cartridge
+with one skater is not a thirdjam game; parked bots keep the cartridge whole (rink, puck, rules). The opening faceoff still
+counts down (`Phase` 3, `FaceoffCountdown`) and drops the puck; skate away from the dot. This is a test stand, not a thirdjam
+mode (listed as a deviation). Bots stand, so a skater that runs into one meets a body.
+**Known gap (19:30):** over 600 frames the parked wingers and backs move 0.000 m, but the opposing centre (at the dot) moves
+about 40 m from frame 108 with no input (about 3 m/s); not explained yet. Skate away from the dot.
+
+## Enum values
+
+| Field | Values | Source |
+|---|---|---|
+| `Phase` (snapshot) | 0 Playing, 1 GoalPause, 2 Over, 3 Faceoff | JamSim.h:110-116 `EJamSimPhase` |
+| `ContactOutcome` | 0 none, 1 bump, 2 stumble, 3 down | JamSim.h:717-720 `UJamSim::ContactNone/Bump/Stumble/Down`; JamSim.h:289-293 |
+| `StickHitResult` | 0 none, 1 a clean poke took the puck from him, 2 a lift took it | JamSim.h:287-288 |
+| `PokeResult` | 0 none, 1 clean, -1 missed (one frame) | JamSim.h:270-272 |
+| `DrawResult` | 0 none, 1 won, -1 lost (one frame) | JamSim.h:270-273 |
+| `DekeSide` | +1 towards +y (rink z), -1 towards -y, 0 none | JamSim.h:225-227 |
+| `SweepSide` | sign of Cross(Forward, blade - body): +1 / -1, 0 none | JamSim.h:230-234 |
+| `SpinDir` | +1 = the sim's yaw sense (to the right), -1 the other way | JamSim.h:235-240 |
+| `Role` | "player", "chaser", "support", "back" | JamSim.h:126-127 |
+| `Team` | 0 (defends -x, skaters first), 1 | JamSim.h:125; JamAICore.h world comment |
+| `Stamina` | ticks: full = drain_frames x refill_frames (UJamSim::StaminaFull()); a sprinting frame takes refill_frames, a resting frame gives drain_frames back; -1 = unset, read as full (JamSim.cpp:1277, 1606) | JamSim.h:148-150 |
+| Event `Name` | shot, board, goal, faceoff, check, knockdown, pickup_spawn, pickup_take, win, lose, directors_call, period, bark, signal, announce, pass, effect_start, effect_end, zone_enter, zone_exit, poke, lift, foul, shot_blocked, save, post, breakaway, carry, period_end, clock, season_take, deke, ability, possess | JamEventBus.h:12-55 (each line says its Who / Where / Strength / Kind) |
+| Event `Kind` (examples) | faceoff: drop / won / lost; poke, lift: clean / miss; foul: foul_from_behind / foul_no_puck; shot: one_timer; deke: left / right; possess: body / none | JamEventBus.h comments |
+| `Controls.IntentKind` | 0 none, 1 defend, 2 space, 3 pass, 4 praise | SignalIntent.h `EJamTeamIntent` |
 
 ## Fields (generated from thirdjam HEAD JamSim.h)
 
