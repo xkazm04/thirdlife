@@ -192,7 +192,7 @@ func _draw() -> void:
 	var fwd := Vector3(cos(pr) * cos(yr), sin(pr), cos(pr) * sin(yr))   # FRotator(pitch, yaw, 0)'s forward, z up -> y up
 	ctx.cameras.add_view(&"follow", eye, eye + fwd, float(cam.C["FovDeg"]))
 	if mode == "match":
-		screen = Screen.frame_of(screen, ctx, snap, human, last_in, last_raw)   # lane K5: the HUD, one call a drawn frame
+		screen = Screen.frame_of(screen, ctx, snap, null, last_in, last_raw)   # lane K5: the HUD, one call a drawn frame (possession for the buttons: from the glue's snapshot Controls, K5 round 2)
 
 
 func _pack_state() -> Dictionary:
