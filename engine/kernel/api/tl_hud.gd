@@ -251,7 +251,7 @@ func add_layer(id: StringName, unit_h: float = 1080.0) -> TLHudLayer:
 var _paused_handler: Callable = Callable()
 
 
-## K5 (1.24). `handler(frame: int)` runs once a drawn frame while the frame has the pack paused (the pack's own tick
+## K5 (1.25). `handler(frame: int)` runs once a drawn frame while the frame has the pack paused (the pack's own tick
 ## is frozen then): a pack that owns its pause card (ctx.own_pause) draws the card in it. One handler per HUD.
 func on_paused(handler: Callable) -> void:
 	_paused_handler = handler

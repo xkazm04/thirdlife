@@ -144,9 +144,11 @@ fi
 
 # ---------------------------------------------------------------------------------------------- three round trips
 if [ -z "$FILTER" ] || [[ "dungeon.trips" == *"$FILTER"* ]]; then
-  if [ -z "$dg_alone_hockey" ]; then
-    dg_run res://kernel/host/host.tscn -- worker --mode=play "--pack=$dg_e/packs/hockey" --frames=600 --seed=1 "--result=$dg_o/alone_hockey_600_1.json" > /dev/null 2>&1
-    dg_alone_hockey="$(dg_hash "$dg_o/alone_hockey_600_1.json")"
+  # the trips open the FIRST dungeon of boot/dungeons.json (hokej since 23 Nov): its own alone hash is the one to hold
+  dg_first="$(node -e 'const d=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); console.log(d.dungeons[0].pack)' "$dg_e/boot/dungeons.json")"
+  if [ "$dg_first" != "packs/hockey" ] || [ -z "$dg_alone_hockey" ]; then
+    dg_run res://kernel/host/host.tscn -- worker --mode=play "--pack=$dg_e/$dg_first" --frames=600 --seed=1 "--result=$dg_o/alone_first_600_1.json" > /dev/null 2>&1
+    dg_alone_hockey="$(dg_hash "$dg_o/alone_first_600_1.json")"
   fi
   dg_run res://boot/boot.tscn -- trips "--out=$dg_o/trips.jsonl" --trips=3 --ticks=600 --frames=600 > "$dg_o/trips.log" 2>&1; dg_c=$?
   # tolerance, from the third menu (after one whole round trip: the caches of the first world and dungeon are made)

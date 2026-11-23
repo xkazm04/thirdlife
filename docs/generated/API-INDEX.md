@@ -162,20 +162,25 @@ Properties: `body: RigidBody3D`, `material: String`, `min_hit_speed: float`, `su
 
 > The kernel's context object, handed to `_pack_setup(ctx)`, `generate(ctx)` and `_bot_setup(ctx)`.
 
-Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras`, `cores: TLCores`, `static current: TLContext`, `frame: int`, `headless: bool`, `holder: Node`, `huds: Array`, `input: TLInput`, `instance: String`, `manifest: Dictionary`, `max_frames: int`, `mode: String`, `on_stage: bool`, `origin: Vector3`, `pack_dir: String`, `pack_id: String`, `rng: RandomNumberGenerator`, `root: Node3D`, `scenery: String`, `seed: int`, `space: RID`
+Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras`, `cores: TLCores`, `static current: TLContext`, `frame: int`, `headless: bool`, `holder: Node`, `huds: Array`, `input: TLInput`, `instance: String`, `manifest: Dictionary`, `max_frames: int`, `mode: String`, `on_stage: bool`, `origin: Vector3`, `owns_pause: bool`, `pack_dir: String`, `pack_id: String`, `paused: bool`, `rng: RandomNumberGenerator`, `root: Node3D`, `scenery: String`, `seed: int`, `space: RID`
 
+- `func can_pause() -> bool`
 - `static func enter(ctx: TLContext) -> TLContext`
 - `static func first_time(key: String, ctx: TLContext = null) -> bool`
 - `func frames(seconds_: float) -> int`
 - `func has_capability(cap: String) -> bool`
 - `func info(message: String) -> void`
 - `static func leave(before: TLContext) -> void`
+- `func leave_game() -> void`
 - `func load_script(rel: String) -> GDScript`
 - `static func of(node: Node) -> TLContext`
+- `func own_pause(on: bool = true) -> void`
 - `func pack_state() -> Dictionary`
+- `func pause() -> void`
 - `func pick(items: Array) -> Variant`
 - `func read_json(rel: String) -> Variant`
 - `static func require(cap: String, who: String) -> void`
+- `func resume() -> void`
 - `func seconds(frame_count: int) -> float`
 - `func shuffle(items: Array) -> void`
 - `static func space_state_of(node: Node3D, ctx: TLContext = null) -> PhysicsDirectSpaceState3D`
@@ -189,6 +194,7 @@ Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras
 Consts: `KNOWN`, `PARTS`
 
 - `func open(id: String, cartridge: String = "") -> Object`
+- `func opened(id: String) -> Object`
 - `func part(id: String, pname: String) -> GDScript`
 - `func state() -> Dictionary`
 - `func view_script(id: String, name: String) -> GDScript`
@@ -295,6 +301,7 @@ Properties: `font_size: int`
 - `func configure_widgets(catalog: Variant, layout: Variant) -> bool`
 - `static func create() -> TLHud`
 - `static func hide_all(of_pack: TLContext = null) -> void`
+- `func on_paused(handler: Callable) -> void`
 - `func remove_widget(id: StringName) -> void`
 - `func set_align(id: StringName, align: StringName) -> void`
 - `func set_color(id: StringName, color: Variant) -> void`
@@ -356,6 +363,7 @@ Properties: `accept_devices: bool`
 - `func just_pressed(action: StringName) -> bool`
 - `func just_released(action: StringName) -> bool`
 - `func keys_taken() -> bool`
+- `func menu_keys() -> PackedStringArray`
 - `func press(action: StringName, value: float = 1.0) -> void`
 - `func pressed(action: StringName) -> bool`
 - `func release(action: StringName) -> void`

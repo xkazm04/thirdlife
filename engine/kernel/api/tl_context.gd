@@ -53,7 +53,7 @@ var _script_cache: Dictionary = {}
 
 
 ## True when the manifest declares the capability.
-## K5 (1.24): the frame's pause, for a pack that draws its own pause card. In a dungeon (the exe) the frame freezes the
+## K5 (1.25): the frame's pause, for a pack that draws its own pause card. In a dungeon (the exe) the frame freezes the
 ## pack's tick on Esc and draws its card; a pack that calls own_pause() gets the freeze without the frame's card, and
 ## draws its own: TLHud.on_paused(handler) runs while paused, ctx.input.menu_keys() gives Up / Down / Enter / Esc,
 ## ctx.resume() ends the pause, ctx.leave_game() leaves as the frame's Leave does. Where no frame can pause (a verify run,

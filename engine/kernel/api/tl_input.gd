@@ -52,10 +52,10 @@ func _init() -> void:
 		_actions[a] = {"keys": [], "injected": 0.0, "hold": -1, "now": 0.0, "prev": 0.0, "analog": true}
 
 
-var _menu: PackedStringArray = PackedStringArray()   # K5 (1.24): menu keys pressed while the frame is paused
+var _menu: PackedStringArray = PackedStringArray()   # K5 (1.25): menu keys pressed while the frame is paused
 
 
-## K5 (1.24). While the frame is paused (ctx.paused) the pack's tick does not run and no action is latched; a pack that
+## K5 (1.25). While the frame is paused (ctx.paused) the pack's tick does not run and no action is latched; a pack that
 ## draws its own pause card reads its keys here: "up", "down", "left", "right", "enter", "esc" and "click" (the left mouse
 ## button), in the order pressed since the last call
 ## (the call empties the list). Never recorded, never hashed: a pause is not a frame of the game.

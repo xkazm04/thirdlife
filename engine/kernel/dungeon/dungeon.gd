@@ -78,7 +78,7 @@ var _watch: RefCounted = null           # L4b: kernel/dungeon/watch.gd
 var _load_bar: ColorRect = null         # the load screen's moving bar
 var _load_step: Label = null
 var _load_frames: int = 0
-var _pause_asked: bool = false           # K5 (1.24): the pack paused itself during its load: the pause starts with frame 0
+var _pause_asked: bool = false           # K5 (1.25): the pack paused itself during its load: the pause starts with frame 0
 
 
 func _init() -> void:
@@ -145,7 +145,7 @@ func open(dir: String, o: Dictionary = {}) -> bool:
 		return bool(_watch.call("finish")) if _watch != null else true
 	ctx = life.make_context(run, m, pack_dir, seed_value, frames_target if frames_target > 0 else (1 << 40), "play")
 	TLContext.current = ctx                       # one pack in this process while the dungeon runs (as the worker)
-	# K5 (1.24): the frame's pause and Leave, reachable from the pack (ctx.pause / resume / leave_game)
+	# K5 (1.25): the frame's pause and Leave, reachable from the pack (ctx.pause / resume / leave_game)
 	ctx._pause_hook = func(on: bool) -> void:
 		if on:
 			if loaded:
@@ -234,7 +234,7 @@ func _physics_process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# K5 (1.24): a pack that owns its pause card reads the menu keys while paused; Esc opens the pause, then is the card's
+	# K5 (1.25): a pack that owns its pause card reads the menu keys while paused; Esc opens the pause, then is the card's
 	var mb: InputEventMouseButton = event as InputEventMouseButton
 	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and paused and _pack_owns_pause() and _refused == null:
 		ctx.input._menu_key("click")
@@ -261,7 +261,7 @@ func _input(event: InputEvent) -> void:
 		pause()
 
 
-## K5 (1.24): the pack draws its own pause card (ctx.own_pause) and has a HUD to draw it on.
+## K5 (1.25): the pack draws its own pause card (ctx.own_pause) and has a HUD to draw it on.
 func _pack_owns_pause() -> bool:
 	return ctx != null and ctx.owns_pause and not ctx.huds.is_empty()
 
@@ -470,7 +470,7 @@ func _load_note(i: int, n: int, file: String) -> void:
 ## The load screen's bar: a block that sweeps the track, one step per drawn frame (a picture, not a clock).
 func _process(_delta: float) -> void:
 	if paused and not finished and _pack_owns_pause():
-		for h: Variant in ctx.huds:                # K5 (1.24): the pack draws its own pause card, once a drawn frame
+		for h: Variant in ctx.huds:                # K5 (1.25): the pack draws its own pause card, once a drawn frame
 			if is_instance_valid(h):
 				(h as TLHud)._paused_tick(frame)
 	if _loading == null or _load_bar == null:

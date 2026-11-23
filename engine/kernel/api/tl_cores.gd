@@ -103,3 +103,12 @@ func part(id: String, pname: String) -> GDScript:
 		push_error("ctx.cores.part: the core '%s' has no part '%s' (known: %s)" % [id, pname, ", ".join(PackedStringArray(of_core.keys()))])
 		return null
 	return load(str(of_core[pname])) as GDScript
+
+
+## K5 (1.25). The first core `id` this pack opened (null when none): a part of the pack other than the one that opened it
+## (its screen, its menu) reaches the same core.
+func opened(id: String) -> Object:
+	for e: Array in _open:
+		if str(e[0]) == id:
+			return e[1]
+	return null

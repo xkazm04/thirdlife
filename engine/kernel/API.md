@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.24)
+# Third Life kernel API (kernelApi 1.25)
 
-**Version 1.24 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.25 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.24"` in `pack.json` (any
-`"1.x"` up to 1.24 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.25"` in `pack.json` (any
+`"1.x"` up to 1.25 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1287,3 +1287,26 @@ part of the indexed surface of style and rigs.
   (the default: thirdjam's material instances, the number, the crest) and `cel` (`apply`, `chosen`, `default_variant`,
   `digits`, `felt_params`, `look_mesh`, `slot_colour`); on the figure `TLRigSkaterBody.set_look(variant)` and
   `look_refresh()`. Visual only: nothing here is read by a simulation, and headless nothing is drawn.
+
+## 27. A pack's own pause card and front end in the dungeon frame (addition in 1.25)
+
+Lane K5 (the hockey port's screen). In the exe a dungeon frame (`kernel/dungeon/dungeon.gd`) owns Esc: it freezes the
+pack's tick (`SceneTree.paused`) and draws its own card (Resume, Leave). A game whose own pause card is part of what a
+player meets (thirdjam's) takes the card over; the frame keeps the freeze. Every other pack keeps the frame's card unchanged.
+
+| Member | Does |
+|---|---|
+| `ctx.own_pause(on = true)` | the pack draws its own pause card (call it in `_pack_setup`); needs a `TLHud` to draw it on |
+| `ctx.can_pause() -> bool` | true where a frame can pause this pack (a dungeon of the exe); false in verify runs and `tl play` |
+| `ctx.pause()` | freezes the pack's tick now, as Esc does; called during the load it takes effect before frame 0 (a menu before the match) |
+| `ctx.resume()` | ends a pause |
+| `ctx.leave_game()` | leaves as the frame's Leave does (back to the exe's menu), after the current call returns. (`ctx.leave` is the context's own static) |
+| `ctx.paused: bool` | set by the frame while the tick is frozen |
+| `TLHud.on_paused(handler: Callable)` | `handler(frame: int)` runs once a drawn frame while paused, for a pack that owns its card: it draws the card |
+| `ctx.input.menu_keys() -> PackedStringArray` | the keys pressed while paused, in order, since the last call: "up", "down", "left", "right", "enter", "esc", "click" (the left mouse button). Never latched, recorded or hashed: a pause is not a frame of the game |
+| `ctx.cores.opened(id) -> Object` | the first core `id` this pack opened (null when none): another part of the pack (its menu) reaches the same core |
+
+- With `own_pause`, Esc on a running game pauses without the frame's card; while paused every key above goes to the pack
+  (Esc included: the pack decides when to resume). Without it, nothing changes: Esc opens the frame's card and Esc again resumes.
+- Selftest `830-hokej-hud.sh` (`hokej.pause_own`, `hokej.pause_frame`); the pack that uses it: `engine/packs/hokej/scripts/hud/`
+  (`front.gd`, `pausecard.gd`, `screen.gd`).
