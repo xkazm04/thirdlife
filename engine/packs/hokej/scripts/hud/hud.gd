@@ -11,17 +11,27 @@ const R := preload("rules.gd")
 const PanelView := preload("panel.gd")
 const Markers := preload("markers.gd")
 const Cards := preload("cards.gd")
+const Flow := preload("flow.gd")
+const Captions := preload("captions.gd")
 
 var lay                       # TLHudLayer
 var length_m: float = 90.0
 var width_m: float = 45.0
 var team_col: Array = [R.BLUE, R.ORANGE]
 var take_grace_total: int = 30          # FJamStickConfig::TakeGraceFrames (JamCartridge.h:202); the cartridge has no game.stick
+var head_override: Vector3 = Vector3.INF   # this frame's head anchor from the figure (screen.gd head_world)
 var head_m: float = 1.64                # the head anchor: the stand-in's top of bounds (HumanHeadWorld source 1, cpp:1089-1131)
 var figure_box_m: Vector3 = Vector3(0.42, 1.64, 0.25)   # the stand-in's bounds (x ahead, height, half width) for the figure's box
 var panel                               # panel.gd
 var markers                             # markers.gd
+var art_ring: Texture2D                 # assets/hud/: thirdjam's own UI textures, exported once from its project (K5 round 2)
+var art_dial: Texture2D
 var cards                               # cards.gd: the take and the MATCH card
+var flow                                # flow.gd: the GOAL banner, the end card, IN THE BOX
+var captions                            # captions.gd: the commentator's lines
+var booth_frame: int = -1
+var booth_end_said: bool = false
+var last_take: int = 0
 
 # memories (HUDWidget.h private state)
 var last_sim_frame: int = -1
@@ -47,7 +57,7 @@ var grace_from_hit: bool = false
 var shown: Dictionary = {}
 
 
-func _init(layer, game: Dictionary, level_id: String = "pro") -> void:
+func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 0) -> void:
 	lay = layer
 	var rk: Dictionary = game["rink"]
 	length_m = float(rk["length_m"])
@@ -60,6 +70,11 @@ func _init(layer, game: Dictionary, level_id: String = "pro") -> void:
 	panel = PanelView.new()
 	markers = Markers.new(self)
 	cards = Cards.new(game, level_id)
+	flow = Flow.new(self, game)
+	captions = Captions.new(game, match_seed)
+	if lay.has_method("image_of"):
+		art_ring = lay.image_of("assets/hud/T_UI_RingPlain.png")
+		art_dial = lay.image_of("assets/hud/T_UI_Ring.png")
 
 
 func col(team: int) -> Color:
@@ -86,6 +101,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	var puck: Dictionary = snap["Puck"]
 	var puck_pos: Vector2 = puck["Pos"]
 	var paused: bool = bool(ui.get("paused", false))
+	head_override = ui.get("head", Vector3.INF)
 
 	# ---- the frame's memories (cpp:903, 1012-1027)
 	if f < last_sim_frame:
@@ -124,21 +140,39 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	var b_count: bool = frames > 0 and phase == "play"
 	var end: bool = phase == "win" or phase == "lose"
 	var match_card: bool = cards.step(snap, phase)
+	var fl: Dictionary = flow.frame(snap, phase, vw, vh)
+	# the booth: once a sim frame (the end phase holds its frame: its events are not heard twice); the game mode's events
+	# `period` (UpdateTake's broadcast, HokejGameMode.cpp:385-397: at the build, a restart and every take change) and `win` / `lose`
+	if f != booth_frame:
+		var extra: Array = []
+		if f < booth_frame or booth_frame < 0 or cards.take != last_take:
+			extra.append(["period", "take_%d" % cards.take])
+			booth_end_said = false
+		if end and not booth_end_said:
+			extra.append(["win" if phase == "win" else "lose", ""])
+			booth_end_said = true
+		last_take = cards.take
+		booth_frame = f
+		var said: Dictionary = captions.step(snap, extra)
+		if not said.is_empty():
+			captions.show(said, flow.tick)
+			shown["line_started"] = said["id"]          # UpdateGoalBanner runs early in RefreshFromFrame (cpp:950): its state rules the rest
+	var banner: bool = bool(fl["banner"])
 
 	# ---- the human's figure box on the screen (UpdateKeepClear's HumanBoxNow: the bounds plus FigurePadCm 14, HUDClearDown.cpp)
 	var hbox: Rect2 = _figure_box(hpos, float(hu["Yaw"]), down_now)
 
 	# ---- the panel's state first: its top is what the markers keep clear of (ControlsPanelTopNow)
-	var panel_on: bool = R.show_controls_panel(phase, paused, false)
+	var panel_on: bool = R.show_controls_panel(phase, paused, banner)
 	var panel_top: float = (R.EDGE_PX + R.PANEL_RESERVE_H) if panel_on else 0.0
 
 	# ================================================================ z -1: rings made on first use, under every element
 	var rings: Dictionary = _rings(snap, phase, me, hu, carrier, b_count, hbox, f, advanced)
 	if rings.has("you_have"):
-		lay.ring(rings["you_have"][0], rings["you_have"][1])
+		_ring(rings["you_have"][0], rings["you_have"][1])
 		shown["you_have_ring"] = true
 	if rings.has("loose"):
-		lay.ring(rings["loose"][0], rings["loose"][1])
+		_ring(rings["loose"][0], rings["loose"][1])
 		shown["loose_ring"] = true
 
 	# ================================================================ the scoreboard (cpp:522-569, one look HUDOneLook.cpp:59-78)
@@ -146,16 +180,16 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 
 	# ================================================================ the rings (cpp:591-595)
 	if rings.has("you"):
-		lay.ring(rings["you"][0], rings["you"][1])
+		_ring(rings["you"][0], rings["you"][1])
 		shown["you_ring"] = true
 	if rings.has("carrier"):
-		lay.ring(rings["carrier"][0], rings["carrier"][1])
+		_ring(rings["carrier"][0], rings["carrier"][1])
 		shown["carrier_ring"] = true
 
 	# ================================================================ the markers (UpdateMarker, UpdateOwnMarker, UpdatePuckMarker, ResolveEdgeSlots)
 	var covered: bool = b_count or frames > 0 or f < R.PUCK_MARKER_CARD_FRAMES
 	var marks: Array = markers.build(snap, phase, hpos, attack, carrier, puck_pos, vw, vh, panel_top, covered, paused, advanced, f)
-	if not R.labels_stand_down(match_card, false, paused, end):     # HideLabelsUnderCards (HUDOneLook.cpp:277-295); the GOAL banner: round 2
+	if not R.labels_stand_down(match_card, banner, paused, end):     # HideLabelsUnderCards (HUDOneLook.cpp:277-295)
 		markers.paint(marks)
 
 	# ================================================================ the YOU chevron and tag (UpdateYours cpp:1629-1687)
@@ -178,6 +212,13 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	else:
 		panel.hide()
 
+	# ================================================================ the commentator's caption (cpp:713-722, 1467-1525); the one-line rule:
+	# the faceoff hint wins over it (HUDOneLine.cpp)
+	var hint_up: bool = b_count and faceoffs_this_session <= R.FACEOFF_HINT_COUNT and not R.faceoff_cue_hidden_in_box(int(hu.get("PenaltyFrames", 0)))
+	var cap: String = captions.paint(lay, vw, vh, flow.tick, paused, hint_up, hbox)
+	if cap != "":
+		shown["caption"] = cap
+
 	# ================================================================ the radar (cpp:724-733, RadarWidget.cpp; one look frame HUDOneLook.cpp:110-112)
 	_radar(snap, vw, vh, me)
 
@@ -187,6 +228,10 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 		_dial(vw, vh, frames, b_count, b_drop, b_result, col(my_team))
 	if b_count and faceoffs_this_session <= R.FACEOFF_HINT_COUNT and not cue_hidden:
 		_faceoff_hint(vw, vh)
+
+	# ================================================================ the GOAL banner (z 40), IN THE BOX, the end card (flow.gd)
+	flow.paint()
+	shown.merge(flow.shown)
 
 	# ================================================================ the MATCH card (UJamDirectorsCallHudWidget, viewport z 5: over the HUD)
 	if match_card:
@@ -369,7 +414,8 @@ func _figure_box(pos: Vector2, yaw: float, down: bool) -> Rect2:
 # ---------------------------------------------------------------- the YOU chevron and tag
 func _you_marker(hu: Dictionary, puck_pos: Vector2, ring_ok: bool, counting: bool, advanced: bool) -> void:
 	var hp: Vector2 = hu["Pos"]
-	var head3: Vector3 = lay.project(Vector3(hp.x, head_m, hp.y))
+	var hw: Vector3 = head_override if head_override != Vector3.INF else Vector3(hp.x, head_m, hp.y)   # the head socket, else the stand-in's bounds top
+	var head3: Vector3 = lay.project(hw)
 	var b_head: bool = ring_ok and head3.z > 0.0
 	if not b_head:
 		return
@@ -442,7 +488,10 @@ func _radar(snap: Dictionary, vw: float, vh: float, me: int) -> void:
 func _dial(vw: float, vh: float, frames: int, counting: bool, drop: bool, result: bool, human_c: Color) -> void:
 	var c := Vector2(vw * 0.5 + R.RING_OFFSET_CLEAR_X, vh * 0.66)
 	var s: float = R.RING_BOX_PX
-	_ring_art(c, s)
+	if art_dial != null:
+		lay.image(art_dial, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)))   # S::Ring(220): T_UI_Ring, untinted (MenuStyle.h:156-160)
+	else:
+		_ring_art(c, s)
 	if counting:
 		var digit := str(ceili(frames / 60.0))
 		var dsz: Vector2 = lay.measure(digit, 72, "black")
@@ -460,6 +509,15 @@ func _dial(vw: float, vh: float, frames: int, counting: bool, drop: bool, result
 
 ## T_UI_Ring (the film leader's ring, an AI-made texture we do not have): drawn here as its parts read on thirdjam's stills
 ## (h43-02-faceoff-stands.png): a chalk ring with an ink edge, the home blue and away orange arcs inside it, four ticks.
+## The ground ring: T_UI_RingPlain (exported from thirdjam's project, 512 px) stretched into the ellipse's box and tinted
+## (MakeGroundRing cpp:351-361); without the picture, the band drawn to its measure.
+func _ring(r: Rect2, c: Color) -> void:
+	if art_ring != null:
+		lay.image(art_ring, r, c)
+	else:
+		lay.ring(r, c)
+
+
 func _ring_art(c: Vector2, s: float) -> void:
 	var r := Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s))
 	lay.ring(r, R.PAPER, 0.03, 0.006)

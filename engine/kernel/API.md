@@ -1231,7 +1231,7 @@ func _pack_state() -> Dictionary:
 - Proof that the same seed and input give the same hash through the runner (two bot runs, a replay of the record, a
   window replayed headless): selftest `800-rink-core.sh`; the probe pack `engine/cores/rink/test_pack`.
 
-## 25. A sports HUD: `TLHud.add_layer` and `TLHudLayer` (capability `ui`, addition in 1.20)
+## 25. A sports HUD: `TLHud.add_layer` and `TLHudLayer` (capability `ui`, addition in 1.20; pictures in 1.21)
 
 Lane K5 (the hockey port's screen). `TLHud`'s text widgets cannot carry a sports game's screen furniture: score plates,
 rings lying on the ice under a skater, chevrons and diamonds at the frame's edge, bars, a minimap, banners and cards. A
@@ -1253,6 +1253,9 @@ pack draws them with one painter layer instead of making Controls of its own.
 | `lay.project(world) -> Vector3` | a world point on the screen of the pack's active view in units (x, y) and its depth in front of the camera (z; <= 0 behind). It uses the camera's pose of THIS frame (as last set), not the interpolated one being rendered |
 | `lay.camera_local(world) -> Vector3`, `lay.eye() -> Vector3` | the point in camera space (x right, y up, -z ahead); the camera's position |
 | `lay.ground_ring(center, radius, near = 0.5) -> Rect2` | a circle of `radius` metres lying on the ground round `center`, as the screen box of its four compass points and centre; an empty Rect2 when the centre is within `near` m of the camera plane or a point is behind it |
+| `lay.image_of(rel) -> Texture2D` (1.21) | a picture of the pack (a `.png` path relative to the pack, never outside it), loaded once; null with an error when missing |
+| `lay.image(tex, rect, tint = white, scale = 1)` (1.21) | a picture stretched into `rect` (units), multiplied by `tint` (an Unreal image brush's tint), scaled about the centre |
+| `lay.nine(tex, rect, margin: Vector4, px_per_unit = 1, tint = white)` (1.21) | a nine-slice picture (an Unreal box brush): `margin` = each edge's unscaled share of the picture (left, top, right, bottom), drawn at `px_per_unit` texture pixels a unit |
 
 ```gdscript
 var lay := hud.add_layer(&"screen")
