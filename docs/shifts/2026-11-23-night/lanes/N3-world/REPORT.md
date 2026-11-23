@@ -2,7 +2,7 @@ N3 world | night shift 22-23 Nov 2026 | tree .claude/worktrees/n23-world (branch
 
 The owner's three findings in the World (Wren Valley), each reproduced in a boot.tscn window with scripted keys
 (.tl/cap.sh: TL_EXE_START, TL_EXE_KEYS, every drawn frame kept), its cause found with file:line, then fixed and shot
-again from the same spots. Five rounds; rounds 1-4 are landed, round 5 is sent as landable.
+again from the same spots. Six rounds; rounds 1-5 are landed, round 6 (the verdict's four failures) is sent as landable.
 
 ROUNDS
 1. Far structures cut at 2 km (finding 3, "incomplete structures in the far"). LANDED (74f935a).
@@ -28,10 +28,20 @@ ROUNDS
 4. After-clips from the four before spots (final/), and road rails (finding 2). LANDED (4b57b71).
    terrain/road_rails.gd: rail pieces of 31 m (12 posts about 11 px tall) popped whole at 108 + 8 m; now each fades
    (dithered) over 108..132 m. round-4/rails_fade_side_on_100_to_140m.jpg.
-5. Venues in full to 60 m in the village (finding 2: a car became a box from 38 m). SENT as landable round 5.
+5. Venues in full to 60 m in the village (finding 2: a car became a box from 38 m). LANDED (c6d7f8a).
    engine/boot/village.json tiers.sideline_m 30 -> 60, margin_m.sideline 8 -> 10 (the Director's go).
    round-5/drive54_crop.jpg: 54 m from the track, before a static blue box, after the real car driving.
-
+6. The verdict's uncapped kernel suite found four failures from rounds 2 and 4 (494 passed, 4 failed). SENT as landable.
+   - Round 2's shader change broke the 19 Nov blend (blend.car_origin live_grass 0.0 %) and two classic sha pins
+     (surf.classic_source, celsurf.classic_files). The Director kept the blend: the two shader lines and STYLE.md are
+     back to 1fa3b56 byte for byte, and the PICTURES now drop a slab that reaches in, as the live draw does
+     (draw_pictures.gd, PIC_VERSION 2311). ex_car's course is village grass near and far; no dark square anywhere.
+     blend.car_origin's expectation moved from "distant asphalt" to "distant grass" (named in the test): 99.8 / 97.2 %.
+   - Round 4's rails fade drew rails under 0.75 px (celsurf.rails drawn_under_0.75_px=12). Fitted, test unchanged:
+     the fade runs 92..116 m, ending where the old piece popped (drawn_under_0.75_px=0).
+   - round-6/car_r6_crisp.jpg, car_r6_classic.jpg: 22 Nov main | round 2 | round 6 at the same four frames.
+   Lesson for this lane: I ran the blocks my rounds touched by name, not the whole uncapped kernel suite, so a test
+   that pinned the old behaviour (blend.car_origin) and two byte pins were found only by the verdict.
 OUTCOME AGAINST THE ACCEPTANCE
 - Before and after clips and stills from the same spots, all three findings: MET.
   before/ (4 clips + sheets, before any fix), final/ (the same 4 routes after rounds 1-3 + rails), and per round the
@@ -70,15 +80,14 @@ engine/kernel/world/visitor.gd, engine/kernel/world/landscape.gd, engine/kernel/
 engine/kernel/world/terrain/road_rails.gd, engine/kernel/world/draw/draw_base.gd, engine/kernel/world/draw/FAR.md,
 engine/style/shaders/toon_cel.gdshader, engine/style/shaders/toon.gdshader, engine/style/STYLE.md,
 engine/kernel/world/home/n3_case.gd (+.uid), engine/tools/selftest.d/770-n3-world-look.sh,
-engine/boot/village.json (round 5), this lane folder.
+engine/boot/village.json (round 5), engine/kernel/world/draw/draw_pictures.gd, DRAW.md,
+engine/tools/selftest.d/513-blend-car-origin.sh (round 6; the round-2 shader and STYLE.md changes are reverted), this lane folder.
 
 BEHAVIOUR CHANGES THE OWNER WILL SEE
 - The far peaks, hills and woods of Wren Valley are whole; nothing is cut 2 km away.
-- ex_car's course is asphalt near as well as far: a 60 x 73 m dark plane (83 % of its plot disc, 3 m past its edge).
-  It has no kerbs or markings, so he will likely read it as "a big dark square": that is the pack's own art as it
-  looks alone (not changed; the Director holds it as an ask for the owner).
+- ex_car's course is village grass near AND far (round 6; the 19 Nov blend). The dark slab seen from 38 m is gone.
 - Grass tufts stand along the whole village road and appear by 32 m cells, not all at once.
-- Road rails thin out between 108 and 132 m instead of popping by 31 m pieces.
+- Road rails thin out between 92 and 116 m instead of popping by 31 m pieces (round 6 fit).
 - (Round 5) venues within 60 m play in full, real bodies instead of boxes; about one more pack ticks in full on average.
 
 HOW TO LOOK
@@ -95,7 +104,7 @@ ASTRA (gpt-6.2-astra, codex exec, high effort)
 
 QUESTIONS FOR THE DIRECTOR
 1. Round 5's frame cost is a busy read (+0.65 ms p50): keep 60 if a quiet re-read stays under 1 ms.
-2. ex_car's dark square: an owner ask (pack art), as you noted.
+2. ex_car: grass near and far now (round 6); the owner ask about its asphalt is no longer needed unless he wants the course drawn.
 3. Marks are still boxes beyond 70 m (P13 design). If the owner still sees "blinking with distance levels" in the
    village, the next lever is the mark's shape (a low-poly copy of the body instead of a box), in draw_life.gd.
 

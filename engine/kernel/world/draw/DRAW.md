@@ -344,3 +344,5 @@ to the rules by the pack itself (`TLKitSite.bind_scoreboard`); the layer leaves 
 - **A slab that reaches in** (draw_base.gd `reaches_in`): an instance whose origin lies outside the plot but whose box
   reaches into it gets 2 added to `tl_clip.w`; with lane L's toon.gdshader patch (T2-PATCHES.md) it is cut, not
   dropped (ex_car's course). The far pictures keep it already.
+  N3 round 6 (23 Nov): that patch never landed (the toon shaders still drop it by its origin), so the pictures now drop
+  it too: ex_car's course is village grass near and far, as the blend of 19 Nov chose (blend.car_origin).

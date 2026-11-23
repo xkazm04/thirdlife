@@ -118,9 +118,7 @@ Three parameters were added for the world's draw layer; a single pack never sets
   (shadow pass included). World-anchored noise (`wpos`) stays in the pack's own coordinates.
 - `instance uniform vec4 tl_clip` in toon: x = plot radius (0 = no cut), y = height of the world's ground at the
   plot edge in pack coordinates, z = width of the band in which the pack's ground is bent to it, w = 1 on terrain
-  sheets, + 2 on a slab whose origin lies outside the radius but which reaches into the plot (draw layer `reaches_in`).
-  Outside the radius an instance is dropped (by its origin) unless it carries the + 2, and every fragment is cut 3 m
-  further out (N3, 22-23 Nov: a slab with + 2 was dropped too, so ex_car's asphalt showed grass near and asphalt far).
+  sheets. Outside the radius an instance is dropped (by its origin) or cut (per fragment, 3 m further out).
 - `uniform int tl_hole_n`, `uniform vec4 tl_holes[32]` in toon: only on the world ground's own material; the plots
   are cut out of it (xy = centre in the ground's part-local x and z, z = radius).
 

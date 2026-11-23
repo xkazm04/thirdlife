@@ -45,7 +45,7 @@ var _shader_ok: Dictionary = {}         # Shader -> bool (declares tl_plot)
 var _pal: Material = null
 var _mark: ArrayMesh = null             # P6: the unit box every mark is an instance of
 const PlotFile: GDScript = preload("res://kernel/world/plotfile.gd")
-const PIC_VERSION: int = 1601           # P13: part of the picture cache's key; count it up when a picture's rules change (T2: 14; bugfix-37 D13: 15).
+const PIC_VERSION: int = 2311           # P13: part of the picture cache's key; count it up when a picture's rules change (T2: 14; bugfix-37 D13: 15; N3 23 Nov: 2311, slabs reaching in dropped as live).
 # Diorama night (surfaces arm, Fable): pictures carry UV2 (box faces, round things). 1601, not 16: the cache is shared by
 # every checkout of this machine, so this arm took a number no other arm would pick; the Director sets the one that lands.
 var pic_worker: bool = true             # P13: pictures are merged on a worker (false: in the frame, as P6 did)
@@ -77,8 +77,8 @@ func _clip_v4(e: Dictionary, g: Node) -> Vector4:
 
 
 ## The picture builder can keep a slab that overlaps the plot. Its merged instance is centred on the plot.
-## N3 (22-23 Nov): a live instance with the overlap bit (tl_clip.w bit 2) is no longer dropped by its origin; it is cut
-## per fragment at the radius + 3 m like the picture, so near and far show the same floor (ex_car's asphalt was grass near).
+## Live instances still use the shader's origin cut, including those with the overlap bit set in tl_clip.w. N3 (23 Nov,
+## round 6): the pictures now drop such a slab too, so near and far agree (ex_car's course is village grass in both).
 static func reaches_in(holder: Node, g: Node, radius: float) -> bool:
 	if radius <= 0.0 or not (g is GeometryInstance3D) or not (holder is Node3D):
 		return false
