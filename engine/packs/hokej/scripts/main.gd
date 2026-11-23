@@ -36,6 +36,7 @@ var last_in: Dictionary = {}
 var over: bool = false
 var replay: Array = []
 var replay_i: int = -1
+var arena                # thirdjam's hall, the core's own part (ctx.cores.part; lane K6)
 var screen               # lane K5: the HUD (scripts/hud/screen.gd)
 
 
@@ -48,7 +49,10 @@ func _pack_setup(c) -> void:
 	var g: Dictionary = cart["game"]
 	var rk: Dictionary = g["rink"]
 	var rink_gen = ctx.load_script("gen/tj_rink.gd")
-	rink_gen.build(ctx.root, rk, gym.get("hall", {}))
+	arena = ctx.cores.part("rink", "arena")
+	rink_gen.build(ctx.root, rk, {} if arena != null else gym.get("hall", {}))   # no dark box inside thirdjam's hall
+	if arena != null:
+		arena.build(ctx.root, {"rink": rk})
 	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
 	rink = ctx.cores.open("rink", "hockey.regular.cartridge.json")
 	rink.set_difficulty(String(match_cfg["difficulty"]))
@@ -83,7 +87,9 @@ func _pack_start() -> void:
 
 func _pack_tick(frame: int) -> void:
 	var inp = ctx.input
-	if frame == 0 and gym.get("hall", {}).has("light"):
+	if frame == 0 and arena != null:
+		arena.light(ctx.root)                       # thirdjam's rig light and post (lane K6)
+	elif frame == 0 and gym.get("hall", {}).has("light"):
 		TLStyleHall.apply(ctx.root, gym["hall"]["light"])   # the style's roof light (visual only; nothing headless)
 	_light_hold(frame)
 	if frame == 0 and inp.pressed(&"replay"):

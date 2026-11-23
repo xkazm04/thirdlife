@@ -86,3 +86,20 @@ func state() -> Dictionary:
 		var core: Object = e[1]
 		out[key] = {"hash": str(core.call("state_hash_hex")), "frame": int(core.call("get_frame")), "score": core.call("get_score")}
 	return out
+
+
+## A core's own presentation part (1.24): a script the core brings beside its simulation (engine/cores/<id>/<part>/), for
+## what a game on that core shows or plays and no pack should rebuild: `ctx.cores.part("rink", "arena")` is thirdjam's
+## hall (engine/cores/rink/arena/rink_arena.gd: build, light, set_cheer). Returns the script (its functions are static),
+## or null with an error when the core has no such part. A part is never state: it draws and sounds, the core simulates.
+const PARTS: Dictionary = {
+	"rink": {"arena": "res://cores/rink/arena/rink_arena.gd"},
+}
+
+
+func part(id: String, pname: String) -> GDScript:
+	var of_core: Dictionary = PARTS.get(id, {})
+	if not of_core.has(pname):
+		push_error("ctx.cores.part: the core '%s' has no part '%s' (known: %s)" % [id, pname, ", ".join(PackedStringArray(of_core.keys()))])
+		return null
+	return load(str(of_core[pname])) as GDScript

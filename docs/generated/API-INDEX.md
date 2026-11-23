@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 48
+Classes: 49
 
 ## TLAudio
 
@@ -186,9 +186,10 @@ Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras
 
 > `ctx.cores`: the engine's game cores (engine/cores/<id>/), compiled native simulations a pack drives frame by frame.
 
-Consts: `KNOWN`
+Consts: `KNOWN`, `PARTS`
 
 - `func open(id: String, cartridge: String = "") -> Object`
+- `func part(id: String, pname: String) -> GDScript`
 - `func state() -> Dictionary`
 - `func view_script(id: String, name: String) -> GDScript`
 
@@ -781,6 +782,24 @@ Properties: `static data: Dictionary`, `static style_name: String`, `static styl
 - `static func palette() -> PackedStringArray`
 - `static func push(section: String, m: ShaderMaterial) -> void`
 - `static func set_headless(on: bool) -> void`
+
+## TLStyleArena
+
+`engine/style/tl_style_arena.gd` extends `RefCounted`
+
+> Materials for an indoor hall and the light rig that lights them (K6, hockey port, 23-24 Nov 2026). New entries beside
+
+Consts: `BULB_KEYS`, `CROWD_KEYS`, `ICE_KEYS`, `MAX_LIGHTS`, `POST_GRADE`, `POST_INK`, `SURFACE_KEYS`
+
+- `static func bulb(p: Dictionary = {}) -> Material`
+- `static func crowd(p: Dictionary = {}) -> Material`
+- `static func ice(p: Dictionary = {}) -> Material`
+- `static func post(anchor: Node, opt: Dictionary) -> bool`
+- `static func set_cheer(plus: float, minus: float, seconds: float) -> void`
+- `static func set_exposure(exposure: float) -> void`
+- `static func set_rig(lights: Array, exposure: float, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1)) -> bool`
+- `static func surface(p: Dictionary = {}) -> Material`
+- `static func tone(c: Color, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1)) -> Color`
 
 ## TLStyleFelt
 
