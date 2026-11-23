@@ -205,6 +205,37 @@ casts no shadow on itself (its shadow on the ground is unchanged), and the ink p
 `ink.body_k` of the width. A mesh added to a rig after `build` (a prop parented to a socket by a pack) is a kit part and is
 shaded as the world is.
 
+## The skater (`TLRigSkater`, hockey campaign lane K2, round 1 of 23 Nov 2026; `skater/`)
+thirdjam's own skater, not a member of `TLRigs` yet: its shipped figure `SK_SkaterTB1_P3` (12,040 triangles, 24 bones,
+nine material slots, the stick skinned into the mesh on the bone `stick_socket`), 1.637 m tall at rest, with its 202
+clips (6,923 keys at 60 a second, 112 s). Exported from a copy of the Unreal project and baked, nothing resampled:
+
+| File | What |
+|---|---|
+| `skater/skater_body.scn` (0.23 MB) | `SkaterBody` > `Skeleton3D` > `Mesh`; surfaces named by slot: Pads, Jersey, Trim, Skin, Helmet, Gloves, Skate, Blade, Stick. No vertex colour (thirdjam's is material data, kept in CUSTOM1) |
+| `skater/skater_clips.res` (1.67 MB) | `AnimationLibrary`, one `Animation` per clip, named without `AS_SkaterTB1_P3_` (`Stride`, `Glide`, `Shot_Slap`, ...) |
+| `skater/skater_clips.json` | the clip table: name, keys, seconds; the bones, the slots, thirdjam's sockets |
+| `skater/review/reference_poses.json` | where thirdjam's figure stands in the Unreal editor at 27 poses (the gate holds ours to it within 0.5 mm) |
+
+```gdscript
+var sk := TLRigSkater.new()
+sk.setup({"team": 0})                    # 0 blue #1D4ED8, 1 orange #E8651A; or {"colour": Color}
+body.add_child(sk)                       # VISUAL ONLY; faces -Z, right is +X
+sk.play_clip(&"Stride", true)            # loop = true wraps at N - 1 ticks; false holds the last key
+sk.tick()                                # one physics frame = one key at rate 1; never reads a clock
+sk.pose_at(&"Shot_Slap", 16.0)           # a pose without playing
+sk.socket_transform(&"puck_socket")      # in the figure's space: where a carried puck is drawn (on the blade)
+sk.bone_transform(&"stick_socket")       # any bone, chained by hand (works outside the tree)
+TLRigSkater.clip_names(); TLRigSkater.clip_keys(&"Stride")   # 202 names; 60
+```
+- Round 1 is the body and plain clip playback. The driver that mirrors thirdjam's `IJamSkaterVisual` call for call
+  (blend spaces, states, the stick aim) is round 2; packs do not reach this class yet.
+- Rebuild: `engine/tools/skater/export_skater.py` (inside Unreal, a commandlet), then
+  `godot --headless --path engine -s res://tools/skater/build_skater.gd -- --src=<export> --check=1`.
+- See it: `rigs/skater/gym/skater_gym.tscn` (its header has the command lines); thirdjam's own render of the same
+  shots: `engine/tools/skater/reference_capture.py`, pairs by `engine/tools/skater/pair_sheets.py`.
+- Gate: selftest block 810 (`rig.skater.body`, `.clips`, `.ref`, `.play`).
+
 <!-- generated below: do not edit by hand -->
 
 ## `biped`
