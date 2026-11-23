@@ -1,0 +1,1997 @@
+# graph EventGraph of BP_SkaterVisual_TB1_P3.t3d: 5766 nodes, 143 entries
+
+== BoardFall()   # CustomEvent_22
+    KdCount = (KdCount - 1)   # VariableSet_1806
+    if (((Abs(BreakVector(K2_GetActorLocation(self)).X) - (RinkHX - RinkR)) > 0) and ((Abs(BreakVector(K2_GetActorLocation(self)).Y) - (RinkHY - RinkR)) > 0)):   # IfThenElse_740
+        WallYaw = DegAtan2((SignOfFloat(BreakVector(K2_GetActorLocation(self)).Y) * (Abs(BreakVector(K2_GetActorLocation(self)).Y) - (RinkHY - RinkR))), (SignOfFloat(BreakVector(K2_GetActorLocation(self)).X) * (Abs(BreakVector(K2_GetActorLocation(self)).X) - (RinkHX - RinkR))))   # VariableSet_1807
+        WallD = (RinkR - Sqrt((((Abs(BreakVector(K2_GetActorLocation(self)).X) - (RinkHX - RinkR)) * (Abs(BreakVector(K2_GetActorLocation(self)).X) - (RinkHX - RinkR))) + ((Abs(BreakVector(K2_GetActorLocation(self)).Y) - (RinkHY - RinkR)) * (Abs(BreakVector(K2_GetActorLocation(self)).Y) - (RinkHY - RinkR))))))   # VariableSet_1808
+    else:
+        if ((RinkHX - Abs(BreakVector(K2_GetActorLocation(self)).X)) < (RinkHY - Abs(BreakVector(K2_GetActorLocation(self)).Y))):   # IfThenElse_741
+            WallYaw = SelectFloat(0.0, 180.0, (BreakVector(K2_GetActorLocation(self)).X > 0))   # VariableSet_1809
+            WallD = (RinkHX - Abs(BreakVector(K2_GetActorLocation(self)).X))   # VariableSet_1810
+        else:
+            WallYaw = SelectFloat(90.0, -90.0, (BreakVector(K2_GetActorLocation(self)).Y > 0))   # VariableSet_1811
+            WallD = (RinkHY - Abs(BreakVector(K2_GetActorLocation(self)).Y))   # VariableSet_1812
+    TurnYaw = 0.0   # VariableSet_1813
+    if (DegCos((WallYaw - FacingYaw)) >= 0.7071):   # IfThenElse_742
+        DownKind = 5   # VariableSet_1814
+        DownYaw = WallYaw   # VariableSet_1815
+        TurnYaw = 90.0   # VariableSet_1816
+    else:
+        if (DegCos((WallYaw - FacingYaw)) <= -0.7071):   # IfThenElse_743
+            DownKind = 8   # VariableSet_1817
+            DownYaw = (WallYaw + 180.0)   # VariableSet_1818
+            TurnYaw = -90.0   # VariableSet_1819
+        else:
+            if (DegSin((WallYaw - FacingYaw)) < 0):   # IfThenElse_744
+                DownKind = 6   # VariableSet_1820
+                DownYaw = (WallYaw + 90.0)   # VariableSet_1821
+            else:
+                DownKind = 7   # VariableSet_1822
+                DownYaw = (WallYaw - 90.0)   # VariableSet_1823
+    WallShift = SelectFloat(0.0, FClamp((WallD - 35.0), -15.0, 30.0), (UpMode == 4))   # VariableSet_1824
+    DownStart = 0.033333   # VariableSet_1825
+    HoldAt = SelectFloat(0.366667, 0.35, ((DownKind == 5) or (DownKind == 8)))   # VariableSet_1826
+    bLie = false   # VariableSet_1827
+    PickLens()   # CallFunction_4183
+    if (DownKind == 5):   # IfThenElse_745
+        SetLen(Anim=AS_SkaterTB1_P3_Board_Fall_Front, bUp=false)   # CallFunction_4184
+    else:
+        if (DownKind == 6):   # IfThenElse_746
+            SetLen(Anim=AS_SkaterTB1_P3_Board_Fall_Left, bUp=false)   # CallFunction_4185
+        else:
+            if (DownKind == 7):   # IfThenElse_747
+                SetLen(Anim=AS_SkaterTB1_P3_Board_Fall_Right, bUp=false)   # CallFunction_4186
+            else:
+                SetLen(Anim=AS_SkaterTB1_P3_Board_Fall_Back, bUp=false)   # CallFunction_4187
+    DownRate = 1.0   # VariableSet_1828
+    UpRateS = SelectFloat(FMax(1.0, ((DownLen + UpLen) / FMax((Conv_IntToDouble(DownFrames) / 60.0), 0.1))), 1.0, (DownFrames > 0))   # VariableSet_1829
+    DownRate = UpRateS   # VariableSet_1830
+    UpAt = SelectFloat(((Conv_IntToDouble(DownFrames) / 60.0) - (UpLen / UpRateS)), -1.0, (DownFrames > 0))   # VariableSet_1831
+    ShadeYaw = DownYaw   # VariableSet_1832
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK21 boardfall kind , Conv_IntToString(DownKind)), Concat_StrStr( yaw , Conv_DoubleToString(DownYaw))), Concat_StrStr(Concat_StrStr( wall_cm , Conv_DoubleToString(WallD)), Concat_StrStr( shift , Conv_DoubleToString(WallShift)))))   # CallFunction_4196
+    if (DownKind == 5):   # IfThenElse_748
+        PlayDown(Anim=AS_SkaterTB1_P3_Board_Fall_Front, Rate=DownRate)   # CallFunction_4197
+    else:
+        if (DownKind == 6):   # IfThenElse_749
+            PlayDown(Anim=AS_SkaterTB1_P3_Board_Fall_Left, Rate=DownRate)   # CallFunction_4198
+        else:
+            if (DownKind == 7):   # IfThenElse_750
+                PlayDown(Anim=AS_SkaterTB1_P3_Board_Fall_Right, Rate=DownRate)   # CallFunction_4199
+            else:
+                PlayDown(Anim=AS_SkaterTB1_P3_Board_Fall_Back, Rate=DownRate)   # CallFunction_4200
+
+== BonkArm(K)   # CustomEvent_40
+    BonkKind = K   # VariableSet_1671
+    BonkT = GetTimeSeconds()   # VariableSet_1672
+    Log(S=Concat_StrStr(SK28 victim kind , Conv_IntToString(K)))   # CallFunction_3465
+    if (bDown and (Abs((GetTimeSeconds() - DownT0)) < 0.02)):   # IfThenElse_603
+        DownKind = SelectInt(3, 0, (K == 2))   # VariableSet_1673
+        DownYaw = FacingYaw   # VariableSet_1674
+        bLie = false   # VariableSet_1675
+        DownStart = SelectFloat(0.0, 0.033333, (K == 1))   # VariableSet_1676
+        FallPick(bPlay=true)   # CallFunction_3470
+
+== BonkPick(bPlay)   # CustomEvent_39
+    if (BonkKind == 2):   # IfThenElse_601
+        FallDo(Anim=AS_SkaterTB1_P3_Fall_Legs_Front, bPlay=bPlay, Hold=19)   # CallFunction_3460
+    else:
+        if (BonkKind == 3):   # IfThenElse_602
+            FallDo(Anim=AS_SkaterTB1_P3_Fall_Legs_Back, bPlay=bPlay, Hold=19)   # CallFunction_3461
+        else:
+            FallDo(Anim=AS_SkaterTB1_P3_Fall_Bonk, bPlay=bPlay, Hold=14)   # CallFunction_3462
+
+== BoostBeatEnd()   # CustomEvent_77
+    bBoostBeat = false   # VariableSet_4457
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_436
+    bCarry4 = false   # VariableSet_4458
+    PushAnim()   # CallFunction_8946
+
+== ChargeMix()   # CustomEvent_112
+    ChargeTime = (ShootCharge * 0.26667)   # VariableSet_2767
+    ChargeAlpha = FClamp((ShootCharge * 5.0), 0.0, 1.0)   # VariableSet_2768
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_102
+    PassW = (FMax(PassChg, PassHoldW) * SelectFloat(0.0, 1.0, (bDown or bUpRun)))   # VariableSet_2769
+    PushAnim()   # CallFunction_2738
+
+== ChkCut(bRight, Start, BlendIn)   # CustomEvent_54
+    if bWindupTakes:   # IfThenElse_230
+        ChkCutWind(bRight=bRight, BlendIn=BlendIn)   # CallFunction_2949
+    else:
+        if (bRight and (ChkSize == 0)):   # IfThenElse_231
+            PlayCut1(Anim=AS_SkaterTB1_P3_Check_Deliver_Right_Light, Pri=7, Start=Start, BlendIn=BlendIn)   # CallFunction_2950
+        else:
+            if (bRight and (ChkSize == 2)):   # IfThenElse_232
+                PlayCut(Anim=AS_SkaterTB1_P3_Check_Deliver_Right_Heavy, Pri=7, Start=Start, BlendIn=BlendIn)   # CallFunction_2951
+            else:
+                if bRight:   # IfThenElse_233
+                    PlayCut(Anim=AS_SkaterTB1_P3_Check_Deliver_Right, Pri=7, Start=Start, BlendIn=BlendIn)   # CallFunction_2952
+                else:
+                    if (ChkSize == 0):   # IfThenElse_234
+                        PlayCut1(Anim=AS_SkaterTB1_P3_Check_Deliver_Left_Light, Pri=7, Start=Start, BlendIn=BlendIn)   # CallFunction_2953
+                    else:
+                        if (ChkSize == 2):   # IfThenElse_235
+                            PlayCut(Anim=AS_SkaterTB1_P3_Check_Deliver_Left_Heavy, Pri=7, Start=Start, BlendIn=BlendIn)   # CallFunction_2954
+                        else:
+                            PlayCut(Anim=AS_SkaterTB1_P3_Check_Deliver_Left, Pri=7, Start=Start, BlendIn=BlendIn)   # CallFunction_2955
+
+== ChkCutWind(bRight, BlendIn)   # CustomEvent_104
+    if (((GetTimeSeconds() - WindT0) < 0.4) and (ActPri == 7) and IsAnyMontagePlaying(GetAnimInstance(Mesh))):   # IfThenElse_222
+        Log(S=E2 wind kept)   # CallFunction_2896
+    else:
+        WindT0 = GetTimeSeconds()   # VariableSet_2929
+        Log(S=Concat_StrStr(E2 check wind n , Conv_IntToString(SelectInt(WindN, 8, (WindN > 0)))))   # CallFunction_2900
+        if (bRight and (ChkSize == 0)):   # IfThenElse_223
+            PlayCut1(Anim=AS_SkaterTB1_P3_Check_Deliver_Right_Light_Wind, Pri=7, Start=(Conv_IntToDouble(Clamp((10 - SelectInt(WindN, 8, (WindN > 0))), 0, 10)) / 60.0), BlendIn=BlendIn)   # CallFunction_2904
+        else:
+            if (bRight and (ChkSize == 2)):   # IfThenElse_224
+                PlayCut(Anim=AS_SkaterTB1_P3_Check_Deliver_Right_Heavy_Wind, Pri=7, Start=(Conv_IntToDouble(Clamp((10 - SelectInt(WindN, 8, (WindN > 0))), 0, 10)) / 60.0), BlendIn=BlendIn)   # CallFunction_2908
+            else:
+                if bRight:   # IfThenElse_225
+                    PlayCut(Anim=AS_SkaterTB1_P3_Check_Deliver_Right_Wind, Pri=7, Start=(Conv_IntToDouble(Clamp((10 - SelectInt(WindN, 8, (WindN > 0))), 0, 10)) / 60.0), BlendIn=BlendIn)   # CallFunction_2912
+                else:
+                    if (ChkSize == 0):   # IfThenElse_226
+                        PlayCut1(Anim=AS_SkaterTB1_P3_Check_Deliver_Left_Light_Wind, Pri=7, Start=(Conv_IntToDouble(Clamp((10 - SelectInt(WindN, 8, (WindN > 0))), 0, 10)) / 60.0), BlendIn=BlendIn)   # CallFunction_2916
+                    else:
+                        if (ChkSize == 2):   # IfThenElse_227
+                            PlayCut(Anim=AS_SkaterTB1_P3_Check_Deliver_Left_Heavy_Wind, Pri=7, Start=(Conv_IntToDouble(Clamp((10 - SelectInt(WindN, 8, (WindN > 0))), 0, 10)) / 60.0), BlendIn=BlendIn)   # CallFunction_2920
+                        else:
+                            PlayCut(Anim=AS_SkaterTB1_P3_Check_Deliver_Left_Wind, Pri=7, Start=(Conv_IntToDouble(Clamp((10 - SelectInt(WindN, 8, (WindN > 0))), 0, 10)) / 60.0), BlendIn=BlendIn)   # CallFunction_2924
+
+== ChkMissTick()   # CustomEvent_90
+    if (bChkWait and (not bDown) and (not bUpRun) and (ActPri == 7) and IsAnyMontagePlaying(GetAnimInstance(Mesh))):   # IfThenElse_10
+        Log(S=SK30 check miss by rule)   # CallFunction_349
+        PlayCheckMiss()   # CallFunction_350
+    bChkWait = false   # VariableSet_267
+
+== ChkPlay(bRight)   # CustomEvent_35
+    ChkSize = SelectInt(0, SelectInt(2, 1, (ChkClose >= 11.0)), (ChkClose < 0))   # VariableSet_1772
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK25 check close , Conv_DoubleToString(ChkClose)),  size ), Conv_IntToString(ChkSize)))   # CallFunction_3858
+    ChkCut(bRight=bRight, Start=0.0, BlendIn=0.03)   # CallFunction_3859
+
+== ChkScan()   # CustomEvent_53
+    ChkClose = 0.0   # VariableSet_4299
+    ChkBest = 100000.0   # VariableSet_4300
+    ChkSide = 0.0   # VariableSet_4301
+    GetAllActorsOfClass(ActorClass=BP_SkaterVisual_TB1_P3_C)   # CallFunction_8337
+    MacroInstance(Array=CallFunction_8337.OutActors)   # MacroInstance_12
+    Cast<BlueprintGeneratedClass'BP_SkaterVisual_TB1_P3_C>(Object=MacroInstance_12.Array Element)   # DynamicCast_403
+    if (PendingTeamId != PendingTeamId):   # IfThenElse_1297
+        if (VSizeXY((K2_GetActorLocation(DynamicCast_403.AsBP Skater Visual TB1 P3) - K2_GetActorLocation(self))) < ChkBest):   # IfThenElse_1298
+            ChkBest = VSizeXY((K2_GetActorLocation(DynamicCast_403.AsBP Skater Visual TB1 P3) - K2_GetActorLocation(self)))   # VariableSet_4302
+            ChkSide = ((BreakVector((K2_GetActorLocation(DynamicCast_403.AsBP Skater Visual TB1 P3) - K2_GetActorLocation(self))).Y * DegCos(FacingYaw)) - (BreakVector((K2_GetActorLocation(DynamicCast_403.AsBP Skater Visual TB1 P3) - K2_GetActorLocation(self))).X * DegSin(FacingYaw)))   # VariableSet_4303
+            ChkClose = (((BreakVector((K2_GetActorLocation(DynamicCast_403.AsBP Skater Visual TB1 P3) - K2_GetActorLocation(self))).X * ((SpdPrev * DegCos(FacingYaw)) - (SpdPrev * DegCos(FacingYaw)))) + (BreakVector((K2_GetActorLocation(DynamicCast_403.AsBP Skater Visual TB1 P3) - K2_GetActorLocation(self))).Y * ((SpdPrev * DegSin(FacingYaw)) - (SpdPrev * DegSin(FacingYaw))))) / FMax(VSizeXY((K2_GetActorLocation(DynamicCast_403.AsBP Skater Visual TB1 P3) - K2_GetActorLocation(self))), 1.0))   # VariableSet_4304
+
+== CrossRelease(Why)   # CustomEvent_96
+    if bHoldOn:   # IfThenElse_38
+        HoldW0 = HoldE   # VariableSet_547
+        HoldT0 = GetTimeSeconds()   # VariableSet_548
+        HoldRate = 20.0   # VariableSet_549
+        bHoldOn = false   # VariableSet_550
+        HoldOffT = GetTimeSeconds()   # VariableSet_551
+        bHoldRun = true   # VariableSet_552
+    if (bDown or bUpRun):   # IfThenElse_39
+        Log(S=E2 cross release skipped down)   # CallFunction_679
+    else:
+        ActPri = 6   # VariableSet_553
+        LiftPlayT = GetTimeSeconds()   # VariableSet_554
+        Log(S=Concat_StrStr(E2 cross release why , Conv_IntToString(Why)))   # CallFunction_682
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_CrossCheck_Release, SlotNodeName=DefaultSlot, BlendInTime=0.05, BlendOutTime=0.15, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_684
+
+== CrossWind(Frames)   # CustomEvent_106
+    if (bDown or bUpRun):   # IfThenElse_53
+        Log(S=E2 cross wind skipped down)   # CallFunction_1785
+    else:
+        ActPri = 6   # VariableSet_1575
+        LiftPlayT = GetTimeSeconds()   # VariableSet_1576
+        Log(S=Concat_StrStr(E2 cross wind n , Conv_IntToString(SelectInt(Frames, SelectInt(WindN, 8, (WindN > 0)), (Frames > 0)))))   # CallFunction_1790
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_CrossCheck_Wind, SlotNodeName=DefaultSlot, BlendInTime=0.05, BlendOutTime=0.15, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=(Conv_IntToDouble(Clamp((10 - SelectInt(Frames, SelectInt(WindN, 8, (WindN > 0)), (Frames > 0))), 0, 10)) / 60.0))   # CallFunction_1796
+        if (SelectInt(Frames, SelectInt(WindN, 8, (WindN > 0)), (Frames > 0)) > 10):   # IfThenElse_54
+            WindHoldMon = GetCurrentActiveMontage(GetAnimInstance(Mesh))   # VariableSet_1577
+            WindHoldLeft = (Conv_IntToDouble((SelectInt(Frames, SelectInt(WindN, 8, (WindN > 0)), (Frames > 0)) - 10)) / 60.0)   # VariableSet_1578
+            Log(S=Concat_StrStr(XC12 wind hold frames , Conv_IntToString((SelectInt(Frames, SelectInt(WindN, 8, (WindN > 0)), (Frames > 0)) - 10))))   # CallFunction_1839
+        else:
+            WindHoldLeft = 0.0   # VariableSet_1579
+
+== DashBegin(Rate, Loops)   # CustomEvent_70
+    if (bDown or bUpRun):   # IfThenElse_35
+        Log(S=SK26 dash skipped down)   # CallFunction_1012
+    else:
+        DashRate = Rate   # VariableSet_997
+        DashN = Loops   # VariableSet_998
+        bDash = true   # VariableSet_999
+        DashStep = 1   # VariableSet_1000
+        if bWeaponShown:   # IfThenElse_36
+            WeaponShow(bShow=false)   # CallFunction_1013
+            StickHide(bHide=false)   # CallFunction_1014
+        ActPri = 3   # VariableSet_1001
+        Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK26 dash start rate , Conv_DoubleToString(Rate)),  loops ), Conv_IntToString(Loops)))   # CallFunction_1017
+        Snd(Sound=MS_dash_start)   # CallFunction_1018
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Dash_Start, SlotNodeName=DefaultSlot, BlendInTime=0.067, BlendOutTime=0.0, InPlayRate=Rate, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_1020
+        DashMont = CallFunction_1020.ReturnValue   # VariableSet_1002
+        DashEndT = (GetTimeSeconds() + ((0.166667 + (GetPlayLength() * Conv_IntToDouble(Loops))) / Rate))   # VariableSet_1003
+        K2_SetTimer(Object=self, FunctionName=DashNext, Time=(0.15 / Rate), bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_1024
+
+== DashCut(bA, AnimA, AnimB, BlendIn, BlendOut, Pri)   # CustomEvent_75
+    ActPri = Pri   # VariableSet_1733
+    if bA:   # IfThenElse_659
+        RxLog(Kind=dash, Anim=AnimA, Pri=Pri)   # CallFunction_3686
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AnimA, SlotNodeName=DefaultSlot, BlendInTime=BlendIn, BlendOutTime=BlendOut, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_3688
+        DashMont = CallFunction_3688.ReturnValue   # VariableSet_1734
+    else:
+        RxLog(Kind=dash, Anim=AnimB, Pri=Pri)   # CallFunction_3689
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AnimB, SlotNodeName=DefaultSlot, BlendInTime=BlendIn, BlendOutTime=BlendOut, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_3691
+        DashMont = CallFunction_3691.ReturnValue   # VariableSet_1735
+
+== DashLoopGo()   # CustomEvent_83
+    DashStep = 2   # VariableSet_2693
+    ActPri = 3   # VariableSet_2694
+    if bPuck:   # IfThenElse_122
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Dash_Carry, SlotNodeName=DefaultSlot, BlendInTime=0.0, BlendOutTime=0.0, InPlayRate=DashRate, LoopCount=DashN, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_2565
+        DashMont = CallFunction_2565.ReturnValue   # VariableSet_2695
+        Log(S=SK30 dash carry)   # CallFunction_2566
+    else:
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Dash_Loop, SlotNodeName=DefaultSlot, BlendInTime=0.0, BlendOutTime=0.0, InPlayRate=DashRate, LoopCount=DashN, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_2568
+        DashMont = CallFunction_2568.ReturnValue   # VariableSet_2696
+    K2_SetTimer(Object=self, FunctionName=DashNext, Time=(((GetPlayLength() * Conv_IntToDouble(DashN)) - 0.016667) / DashRate), bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_2571
+
+== DashNext()   # CustomEvent_73
+    if ((bDown or bUpRun) or (DashStep == 0)):   # IfThenElse_64
+        DashStep = 0   # VariableSet_285
+        K2_ClearTimer(Object=self, FunctionName=DashNext)   # CallFunction_435
+        DashSndOff()   # CallFunction_436
+        SkidRelease(bHeld=true)   # CallFunction_437
+    else:
+        if (DashStep == 1):   # IfThenElse_65
+            DashSndOn()   # CallFunction_438
+            DashLoopGo()   # CallFunction_439
+        else:
+            if (DashStep == 4):   # IfThenElse_66
+                DashLoopGo()   # CallFunction_440
+            else:
+                if (DashStep == 2):   # IfThenElse_67
+                    EndDash(Reason=0, DirX=0.0, DirZ=0.0)   # CallFunction_441
+                else:
+                    if (DashStep == 3):   # IfThenElse_68
+                        DashStep = 0   # VariableSet_286
+                        ActPri = 1   # VariableSet_287
+                        Log(S=SK26 dash hand-over to Stride frame 34)   # CallFunction_442
+                        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Stride, SlotNodeName=DefaultSlot, BlendInTime=0.0, BlendOutTime=0.2, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.566667)   # CallFunction_444
+                        DashMont = CallFunction_444.ReturnValue   # VariableSet_288
+                    else:
+                        if ((DashStep == 5) and bBrkOn):   # IfThenElse_69
+                            Montage_Pause(self=GetAnimInstance(Mesh), Montage=DashMont)   # CallFunction_446
+                            DashStep = 6   # VariableSet_289
+                            SkidT0 = GetTimeSeconds()   # VariableSet_290
+                            if IsValid(SkidSnd):   # IfThenElse_73
+                                SetFloatParameter(self=SkidSnd, InName=HoldSeconds, InFloat=5.0)   # CallFunction_449
+                            Log(S=SK28 skid hold begins)   # CallFunction_450
+                            K2_SetTimer(Object=self, FunctionName=DashNext, Time=0.016667, bLooping=true, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_451
+                        else:
+                            if (DashStep == 5):   # IfThenElse_74
+                                DashStep = 0   # VariableSet_291
+                                SkidRelease(bHeld=false)   # CallFunction_452
+                            else:
+                                if ((DashStep == 6) and ((not bBrkOn) or ((GetTimeSeconds() - SkidT0) > 2.0))):   # IfThenElse_75
+                                    Montage_Resume(self=GetAnimInstance(Mesh), Montage=DashMont)   # CallFunction_456
+                                    DashStep = 0   # VariableSet_292
+                                    K2_ClearTimer(Object=self, FunctionName=DashNext)   # CallFunction_457
+                                    Log(S=Concat_StrStr(SK28 skid hold ends after frames , Conv_DoubleToString(((GetTimeSeconds() - SkidT0) * 60.0))))   # CallFunction_460
+                                    SkidRelease(bHeld=true)   # CallFunction_461
+                                else:
+                                    if (DashStep == 6):   # IfThenElse_76
+                                        Montage_SetPosition(self=GetAnimInstance(Mesh), Montage=DashMont, NewPosition=((8.0 + (SkidSway * Sin((7.854 * (GetTimeSeconds() - SkidT0))))) / 60.0))   # CallFunction_489
+
+== DashSndOff()   # CustomEvent_52
+    if IsValid(DashSnd):   # IfThenElse_641
+        FadeOut(self=DashSnd, FadeOutDuration=0.05, FadeVolumeLevel=0.0, FadeCurve=Linear)   # CallFunction_3622
+        DashSnd = <none>   # VariableSet_1711
+        Log(S=SK28 snd MS_dash_loop faded out)   # CallFunction_3623
+
+== DashSndOn()   # CustomEvent_51
+    DashSndOff()   # CallFunction_3614
+    SpawnSound2D(Sound=MS_dash_loop, VolumeMultiplier=1.000000, PitchMultiplier=1.000000, StartTime=0.000000, ConcurrencySettings=None, bPersistAcrossLevelTransition=false, bAutoDestroy=true)   # CallFunction_3615
+    DashSnd = CallFunction_3615.ReturnValue   # VariableSet_1710
+    SetFloatParameter(self=DashSnd, InName=PitchShift, InFloat=(12.0 * Log(DashRate, 2.0)))   # CallFunction_3617
+    Log(S=Concat_StrStr(SK28 snd MS_dash_loop spawned pitch , Conv_DoubleToString((12.0 * Log(DashRate, 2.0)))))   # CallFunction_3620
+
+== DiveAdopt(N)   # CustomEvent_56
+    bDiveOwn = false   # VariableSet_1787
+    DownFrames = (Round(((GetTimeSeconds() - DownT0) * 60.0)) + N)   # VariableSet_1788
+    UpAt = ((Conv_IntToDouble(DownFrames) / 60.0) - (UpLen / UpRateS))   # VariableSet_1789
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK26 dive adopted n , Conv_IntToString(N)),  total ), Conv_IntToString(DownFrames)))   # CallFunction_3966
+
+== DiveGo(Kind, DX, DY, Frames, Def)   # CustomEvent_57
+    if (bDown or bUpRun):   # IfThenElse_606
+        Log(S=SK26 dive skipped down)   # CallFunction_3477
+    else:
+        DiveKind = Kind   # VariableSet_1677
+        bDiveOwn = true   # VariableSet_1678
+        DownFrames = SelectInt(Frames, Def, (Frames >= 64))   # VariableSet_1679
+        Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK26 dive kind , Conv_IntToString(Kind)),  frames ), Conv_IntToString(DownFrames)))   # CallFunction_3481
+        DiveSnd()   # CallFunction_3482
+        KnockDown(bDown=true, DirX=DX, DirZ=DY, bTrip=false)   # CallFunction_3483
+
+== DiveHitPlay(bLeft)   # CustomEvent_61
+    if bLeft:   # IfThenElse_1368
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Dive_Block_Hit_Left, SlotNodeName=DefaultSlot, BlendInTime=0.067, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_8592
+    else:
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Dive_Block_Hit_Right, SlotNodeName=DefaultSlot, BlendInTime=0.067, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_8594
+
+== DiveSnd()   # CustomEvent_42
+    if ((DiveKind == 1) or ((DiveKind == 4) and (SlideSide == 5))):   # IfThenElse_607
+        Snd(Sound=MS_dive_block)   # CallFunction_3484
+    else:
+        if (DiveKind == 2):   # IfThenElse_608
+            Snd(Sound=MS_slide_tackle)   # CallFunction_3485
+        else:
+            if (DiveKind == 3):   # IfThenElse_609
+                K2_SetTimer(Object=self, FunctionName=SndKick, Time=0.125, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_3486
+            else:
+                K2_SetTimer(Object=self, FunctionName=SndWipe, Time=0.208333, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_3487
+
+== EndDash(Reason, DirX, DirZ)   # CustomEvent_74
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK26 EndDash reason , Conv_IntToString(Conv_ByteToInt(Reason))),  dash ), Conv_BoolToString(bDash)))   # CallFunction_2575
+    bDash = (Conv_ByteToInt(Reason) == 2)   # VariableSet_2697
+    if (Conv_ByteToInt(Reason) != 2):   # IfThenElse_123
+        DashSndOff()   # CallFunction_2578
+    if (bDown or bUpRun):   # IfThenElse_124
+        DashStep = 0   # VariableSet_2698
+    else:
+        if (Conv_ByteToInt(Reason) == 3):   # IfThenElse_125
+            DashStep = 0   # VariableSet_2699
+            SlideSide = 0   # VariableSet_2700
+            DiveGo(Kind=4, DX=DegCos(FacingYaw), DY=DegSin(FacingYaw), Frames=0, Def=86)   # CallFunction_2582
+        else:
+            if (Conv_ByteToInt(Reason) == 2):   # IfThenElse_126
+                DashStep = 4   # VariableSet_2701
+                DashCut(bA=(DirZ >= 0), AnimA=AS_SkaterTB1_P3_Dash_Bump_Left, AnimB=AS_SkaterTB1_P3_Dash_Bump_Right, BlendIn=0.05, BlendOut=0.0, Pri=3)   # CallFunction_2584
+                DashN = Max(1, Round(((((DashEndT - GetTimeSeconds()) - 0.15) * DashRate) / GetPlayLength())))   # VariableSet_2702
+                K2_SetTimer(Object=self, FunctionName=DashNext, Time=0.133333, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_2588
+            else:
+                if (Conv_ByteToInt(Reason) == 1):   # IfThenElse_127
+                    DashStep = 5   # VariableSet_2703
+                    DashCut(bA=(DirZ >= 0), AnimA=AS_SkaterTB1_P3_Dash_Skid_Left, AnimB=AS_SkaterTB1_P3_Dash_Skid, BlendIn=0.06, BlendOut=0.15, Pri=4)   # CallFunction_2590
+                    K2_SetTimer(Object=self, FunctionName=SndSkid, Time=0.025, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_2591
+                    K2_SetTimer(Object=self, FunctionName=DashNext, Time=0.116667, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_2592
+                else:
+                    if (Conv_ByteToInt(Reason) == 4):   # IfThenElse_128
+                        DashStep = 0   # VariableSet_2704
+                        Log(S=SK30 dash wipeout light)   # CallFunction_2594
+                        DashCut(bA=true, AnimA=AS_SkaterTB1_P3_Dash_Wipeout_Light, AnimB=AS_SkaterTB1_P3_Dash_Wipeout_Light, BlendIn=0.05, BlendOut=0.15, Pri=4)   # CallFunction_2595
+                    else:
+                        DashStep = 3   # VariableSet_2705
+                        DashCut(bA=true, AnimA=AS_SkaterTB1_P3_Dash_End, AnimB=AS_SkaterTB1_P3_Dash_End, BlendIn=0.1, BlendOut=0.0, Pri=3)   # CallFunction_2596
+                        K2_SetTimer(Object=self, FunctionName=DashNext, Time=0.183333, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_2597
+
+== EquipApply()   # CustomEvent_101
+    bEqHid = (bDown or bUpRun)   # VariableSet_1287
+    EquipShow(C=BoostShotgun, Sock=spine_03, bOn=(bEqShotgun and (not bEqHid)))   # CallFunction_1598
+    EquipShow(C=BoostHip, Sock=pelvis, bOn=(bEqHip and (not bEqHid)))   # CallFunction_1600
+    EquipShow(C=BoostShield, Sock=spine_03, bOn=(bEqShield and (not bEqHid)))   # CallFunction_1602
+    EquipShow(C=BoostSlow, Sock=head, bOn=(bEqSlow and (not bEqHid)))   # CallFunction_1604
+
+== EquipShow(C, Sock, bOn)   # CustomEvent_98
+    if bOn:   # IfThenElse_41
+        K2_AttachToComponent(self=C, Parent=Mesh, SocketName=Sock, LocationRule=KeepRelative, RotationRule=KeepRelative, ScaleRule=KeepRelative, bWeldSimulatedBodies=false)   # CallFunction_689
+    SetVisibility(self=C, bNewVisibility=bOn, bPropagateToChildren=false)   # CallFunction_690
+
+== EquipTick()   # CustomEvent_102
+    if ((bDown or bUpRun) != bEqHid):   # IfThenElse_180
+        EquipApply()   # CallFunction_1605
+        Log(S=Concat_StrStr(E2 equipped hidden , Conv_BoolToString(bEqHid)))   # CallFunction_1607
+
+== FallDo(Anim, bPlay, Hold)   # CustomEvent_24
+    if bPlay:   # IfThenElse_217
+        HoldAt = (Conv_IntToDouble(Hold) / 60.0)   # VariableSet_722
+        PlayDown(Anim=Anim, Rate=DownRate)   # CallFunction_1328
+    else:
+        SetLen(Anim=Anim, bUp=false)   # CallFunction_1329
+
+== FallPick(bPlay)   # CustomEvent_25
+    if ((DiveKind == 1) and (DownKind == 1)):   # IfThenElse_579
+        FallDo(Anim=AS_SkaterTB1_P3_Dive_Block_Left, bPlay=bPlay, Hold=37)   # CallFunction_3435
+    else:
+        if (DiveKind == 1):   # IfThenElse_580
+            FallDo(Anim=AS_SkaterTB1_P3_Dive_Block_Right, bPlay=bPlay, Hold=37)   # CallFunction_3436
+        else:
+            if (DiveKind == 2):   # IfThenElse_581
+                SlidePick(bPlay=bPlay)   # CallFunction_3437
+            else:
+                if (DiveKind == 3):   # IfThenElse_582
+                    FallDo(Anim=AS_SkaterTB1_P3_Cannon_Kick, bPlay=bPlay, Hold=23)   # CallFunction_3438
+                else:
+                    if (DiveKind == 4):   # IfThenElse_583
+                        WipePick(bPlay=bPlay)   # CallFunction_3439
+                    else:
+                        if (Abs((GetTimeSeconds() - BonkT)) < 0.02):   # IfThenElse_584
+                            BonkPick(bPlay=bPlay)   # CallFunction_3442
+                        else:
+                            if (DownKind == 4):   # IfThenElse_585
+                                FallDo(Anim=AS_SkaterTB1_P3_Trip, bPlay=bPlay, Hold=19)   # CallFunction_3443
+                            else:
+                                if (DownKind == 1):   # IfThenElse_586
+                                    if (FallSize == 0):   # IfThenElse_587
+                                        FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Left_Light, bPlay=bPlay, Hold=13)   # CallFunction_3444
+                                    else:
+                                        if (FallSize == 2):   # IfThenElse_588
+                                            FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Left_Heavy, bPlay=bPlay, Hold=28)   # CallFunction_3445
+                                        else:
+                                            if bSpin:   # IfThenElse_589
+                                                FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Left_B, bPlay=bPlay, Hold=21)   # CallFunction_3446
+                                            else:
+                                                FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Left, bPlay=bPlay, Hold=18)   # CallFunction_3447
+                                else:
+                                    if (DownKind == 2):   # IfThenElse_590
+                                        if (FallSize == 0):   # IfThenElse_591
+                                            FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Right_Light, bPlay=bPlay, Hold=13)   # CallFunction_3448
+                                        else:
+                                            if (FallSize == 2):   # IfThenElse_592
+                                                FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Right_Heavy, bPlay=bPlay, Hold=28)   # CallFunction_3449
+                                            else:
+                                                if bSpin:   # IfThenElse_593
+                                                    FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Right_B, bPlay=bPlay, Hold=23)   # CallFunction_3450
+                                                else:
+                                                    FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Right, bPlay=bPlay, Hold=18)   # CallFunction_3451
+                                    else:
+                                        if (DownKind == 3):   # IfThenElse_594
+                                            if (FallSize == 0):   # IfThenElse_595
+                                                FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Back_Light, bPlay=bPlay, Hold=13)   # CallFunction_3452
+                                            else:
+                                                if (FallSize == 2):   # IfThenElse_596
+                                                    FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Back_Heavy, bPlay=bPlay, Hold=28)   # CallFunction_3453
+                                                else:
+                                                    if bSpin:   # IfThenElse_597
+                                                        FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Back_B, bPlay=bPlay, Hold=25)   # CallFunction_3454
+                                                    else:
+                                                        FallDo(Anim=AS_SkaterTB1_P3_Knockdown_Back, bPlay=bPlay, Hold=19)   # CallFunction_3455
+                                        else:
+                                            if (FallSize == 0):   # IfThenElse_598
+                                                FallDo(Anim=AS_SkaterTB1_P3_Fall_Light, bPlay=bPlay, Hold=13)   # CallFunction_3456
+                                            else:
+                                                if (FallSize == 2):   # IfThenElse_599
+                                                    FallDo(Anim=AS_SkaterTB1_P3_Fall_Heavy, bPlay=bPlay, Hold=28)   # CallFunction_3457
+                                                else:
+                                                    if bSpin:   # IfThenElse_600
+                                                        FallDo(Anim=AS_SkaterTB1_P3_Fall_B, bPlay=bPlay, Hold=24)   # CallFunction_3458
+                                                    else:
+                                                        FallDo(Anim=AS_SkaterTB1_P3_Fall, bPlay=bPlay, Hold=18)   # CallFunction_3459
+
+== FindRink()   # CustomEvent_12
+    RinkHX = 0.0   # VariableSet_394
+    GetAllActorsOfClass(ActorClass=RinkActor)   # CallFunction_533
+    MacroInstance(Array=CallFunction_533.OutActors)   # MacroInstance_5
+    MacroInstance(Array=K2_GetComponentsByClass(MacroInstance_5.Array Element, ProceduralMeshComponent))   # MacroInstance_6
+    if (GetObjectName(MacroInstance_6.Array Element) == Ice):   # IfThenElse_70
+        Cast<SceneComponent>(Object=MacroInstance_6.Array Element)   # DynamicCast_23
+        RinkHX = BreakVector(GetComponentBounds(DynamicCast_23.AsScene Component).BoxExtent).X   # VariableSet_395
+        RinkHY = BreakVector(GetComponentBounds(DynamicCast_23.AsScene Component).BoxExtent).Y   # VariableSet_396
+        RinkR = (BreakVector(GetComponentBounds(DynamicCast_23.AsScene Component).BoxExtent).Y / 6.0)   # VariableSet_397
+        Cast<PrimitiveComponent>(Object=MacroInstance_6.Array Element)   # DynamicCast_24
+        Cast<MaterialInstanceDynamic>(Object=GetMaterial(DynamicCast_24.AsPrimitive Component, 0))   # DynamicCast_25
+        if IsValid(DynamicCast_25.AsMaterial Instance Dynamic):   # IfThenElse_71
+            K2_GetScalarParameterValue(self=DynamicCast_25.AsMaterial Instance Dynamic, ParameterName=CornerRadiusCm)   # CallFunction_543
+            if (CallFunction_543.ReturnValue > 1.0):   # IfThenElse_72
+                K2_GetScalarParameterValue(self=DynamicCast_25.AsMaterial Instance Dynamic, ParameterName=CornerRadiusCm)   # CallFunction_544
+                RinkR = CallFunction_544.ReturnValue   # VariableSet_398
+
+== HoldTick()   # CustomEvent_95
+    HoldE = FClamp((HoldW0 + (SelectFloat(1.0, -1.0, bHoldOn) * ((GetTimeSeconds() - HoldT0) * HoldRate))), 0.0, 1.0)   # VariableSet_1
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_0
+    HoldW = (HoldE * SelectFloat(0.0, 1.0, (bDown or bUpRun)))   # VariableSet_2
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_1
+    bHoldIn = (bHoldOn and ((GetTimeSeconds() - HoldT0) < 0.1))   # VariableSet_3
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_2
+    bHoldOut = false   # VariableSet_4
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_3
+    HoldInT = FMin((GetTimeSeconds() - HoldT0), 0.1)   # VariableSet_5
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_4
+    HoldOutT = FMin((GetTimeSeconds() - HoldT0), 0.1)   # VariableSet_6
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_5
+    HoldLoopT = Percent_FloatFloat(FMax(((GetTimeSeconds() - HoldT0) - 0.1), 0.0), 0.9833)   # VariableSet_7
+    if ((not bHoldOn) and (HoldE <= 0)):   # IfThenElse_16
+        bHoldRun = false   # VariableSet_8
+        Log(S=E2 cross hold layer ends)   # CallFunction_17
+    if (bHoldOn and IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh))) and (ActPri == 6) and (GetPlayLength(GetCurrentActiveMontage(GetAnimInstance(Mesh))) > 0.5) and (Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) >= 0.165)):   # IfThenElse_20
+        Log(S=E4 hold cuts the wind at contact)   # CallFunction_28
+        HoldT0 = (GetTimeSeconds() - 0.1)   # VariableSet_9
+        HoldW0 = 0.0   # VariableSet_10
+        ActPri = 0   # VariableSet_11
+        Montage_Stop(self=GetAnimInstance(Mesh), InBlendOutTime=0.1, Montage=GetCurrentActiveMontage(GetAnimInstance(Mesh)))   # CallFunction_33
+    if (bHoldOn and bStop and (ActPri == 5) and IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh)))):   # IfThenElse_22
+        Log(S=E4 hold keeps over a stop take)   # CallFunction_37
+        bStop = false   # VariableSet_12
+        ActPri = 0   # VariableSet_13
+        Montage_Stop(self=GetAnimInstance(Mesh), InBlendOutTime=0.1, Montage=GetCurrentActiveMontage(GetAnimInstance(Mesh)))   # CallFunction_41
+
+== KegGone()   # CustomEvent_86
+    if bKegDropped:   # IfThenElse_632
+        SetVisibility(self=KegDrop, bNewVisibility=false, bPropagateToChildren=false)   # CallFunction_3588
+        bKegDropped = false   # VariableSet_1701
+        Log(S=SK28 dropped keg removed)   # CallFunction_3589
+
+== KickDrop()   # CustomEvent_50
+    if ((bDown and (DiveKind == 3)) and (not bKegDropped)):   # IfThenElse_631
+        bKegDropped = true   # VariableSet_1697
+        SetStaticMesh(self=KegDrop, NewMesh=SM_Prop_PuckCannon_TB1_P3)   # CallFunction_3573
+        SetAbsolute(self=KegDrop, bNewAbsoluteLocation=true, bNewAbsoluteRotation=true, bNewAbsoluteScale=false)   # CallFunction_3574
+        K2_SetWorldLocationAndRotation(self=KegDrop, NewLocation=TransformLocation(K2_GetComponentToWorld(Mesh), MakeVector(1.4, -162.7, 48.0)), NewRotation=ComposeRotators(MakeRotator(0.0, 90.0, 0.0), K2_GetComponentRotation(Mesh)), bSweep=false, bTeleport=true)   # CallFunction_3581
+        SetVisibility(self=KegDrop, bNewVisibility=true, bPropagateToChildren=false)   # CallFunction_3582
+        Log(S=SK28 keg dropped)   # CallFunction_3583
+        WeaponShow(bShow=false)   # CallFunction_3584
+        WeaponKind = 0   # VariableSet_1698
+        bWeapon = false   # VariableSet_1699
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_77
+        bCarry3 = false   # VariableSet_1700
+        PushAnim()   # CallFunction_3586
+        K2_SetTimer(Object=self, FunctionName=KegGone, Time=4.0, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_3587
+
+== KnockDown(bDown, DirX, DirZ, bTrip)   # CustomEvent_5
+    if bDown:   # IfThenElse_206
+        StartYaw = FacingYaw   # VariableSet_2179
+        if (DiveKind == 0):   # IfThenElse_207
+            WhipGo(DX=DirX, DY=DirZ, K=0.5)   # CallFunction_2268
+        bFwd = (((DirX * DegCos(FacingYaw)) + (DirZ * DegSin(FacingYaw))) >= 0)   # VariableSet_2180
+        if bTrip:   # IfThenElse_208
+            DownKind = 4   # VariableSet_2181
+            DownYaw = FacingYaw   # VariableSet_2182
+        else:
+            if (((DirX * DegCos(FacingYaw)) + (DirZ * DegSin(FacingYaw))) >= 0.7071):   # IfThenElse_209
+                DownKind = 3   # VariableSet_2183
+                DownYaw = DegAtan2(DirZ, DirX)   # VariableSet_2184
+            else:
+                if (((DirX * DegCos(FacingYaw)) + (DirZ * DegSin(FacingYaw))) <= -0.7071):   # IfThenElse_210
+                    DownKind = 0   # VariableSet_2185
+                    DownYaw = (DegAtan2(DirZ, DirX) + 180.0)   # VariableSet_2186
+                else:
+                    if (((DirZ * DegCos(FacingYaw)) - (DirX * DegSin(FacingYaw))) > 0):   # IfThenElse_211
+                        DownKind = 1   # VariableSet_2187
+                        DownYaw = (DegAtan2(DirZ, DirX) - 90.0)   # VariableSet_2188
+                    else:
+                        DownKind = 2   # VariableSet_2189
+                        DownYaw = (DegAtan2(DirZ, DirX) + 90.0)   # VariableSet_2190
+        DownAge = 0   # VariableSet_2191
+        if (Abs((GetTimeSeconds() - BonkT)) < 0.02):   # IfThenElse_212
+            DownKind = SelectInt(3, 0, (BonkKind == 2))   # VariableSet_2192
+            DownYaw = FacingYaw   # VariableSet_2193
+        if ((not bTrip) and (DiveKind == 0) and (not (Abs((GetTimeSeconds() - BonkT)) < 0.02))):   # IfThenElse_213
+            WallFix(DirX=DirX, DirZ=DirZ)   # CallFunction_2278
+        if (DownKind == 0):   # IfThenElse_214
+            bSpin = (Percent_IntInt(KdFront, 2) == 1)   # VariableSet_2194
+            KdFront = (KdFront + 1)   # VariableSet_2195
+        else:
+            if (DownKind == 3):   # IfThenElse_215
+                bSpin = (Percent_IntInt(KdBack, 2) == 1)   # VariableSet_2196
+                KdBack = (KdBack + 1)   # VariableSet_2197
+            else:
+                bSpin = (Percent_IntInt(KdCount, 3) == 1)   # VariableSet_2198
+        DownStart = SelectFloat(0.0, 0.033333, (bTrip or (DiveKind != 0) or ((Abs((GetTimeSeconds() - BonkT)) < 0.02) and (BonkKind == 1))))   # VariableSet_2199
+        bQuick = ((DownFrames > 0) and (DownFrames < 90))   # VariableSet_2200
+        bSnap = ((DownFrames > 0) and (DownFrames < 70))   # VariableSet_2201
+        FallSize = SelectInt(0, SelectInt(2, 1, (DownFrames >= 130)), ((DownFrames > 0) and (DownFrames < 90)))   # VariableSet_2202
+        TurnYaw = 0.0   # VariableSet_2203
+        bLie = false   # VariableSet_2204
+        WallShift = 0.0   # VariableSet_2205
+        PickLens()   # CallFunction_2287
+        DownRate = 1.0   # VariableSet_2206
+        HitStr = -1.0   # VariableSet_2207
+        UpRateS = SelectFloat(FMax(1.0, (((DownLen / DownRate) + UpLen) / FMax((Conv_IntToDouble(DownFrames) / 60.0), 0.1))), 1.0, (DownFrames > 0))   # VariableSet_2208
+        DownRate = (DownRate * UpRateS)   # VariableSet_2209
+        UpAt = SelectFloat(((Conv_IntToDouble(DownFrames) / 60.0) - (UpLen / UpRateS)), -1.0, (DownFrames > 0))   # VariableSet_2210
+        DownT0 = GetTimeSeconds()   # VariableSet_2211
+        bUpEarly = false   # VariableSet_2212
+        bUpRun = false   # VariableSet_2213
+        GetUpFrames = 0   # VariableSet_2214
+        bPinned = false   # VariableSet_2215
+        bDown = true   # VariableSet_2216
+        if bEqAny:   # IfThenElse_216
+            EquipApply()   # CallFunction_2291
+        SK2Down()   # CallFunction_2292
+        Activate(self=SlideFx, bReset=true)   # CallFunction_2293
+        bShade = true   # VariableSet_2217
+        ShadeYaw = DownYaw   # VariableSet_2218
+        SetRelativeScale3D(self=ContactShadow, NewScale3D=MakeVector(2.2, 0.95, 1.0))   # CallFunction_2295
+        SetScalarParameterValueOnMaterials(self=ContactShadow, ParameterName=Darkest, ParameterValue=0.75)   # CallFunction_2296
+        SetScalarParameterValueOnMaterials(self=ContactShadow, ParameterName=Flat, ParameterValue=0.7)   # CallFunction_2297
+        Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(SK6KD down_f , Conv_IntToString(DownFrames)),  fall ), Conv_DoubleToString(DownLen)),  getup ), Conv_DoubleToString(UpLen)),  scale ), Conv_DoubleToString(UpRateS)),  up_at_f ), Conv_DoubleToString((UpAt * 60.0))))   # CallFunction_2303
+        FallPick(bPlay=true)   # CallFunction_2304
+    else:
+        if bDown:   # IfThenElse_218
+            LastGap = DownAge   # VariableSet_2219
+            bDown = false   # VariableSet_2220
+            DiveKind = 0   # VariableSet_2221
+            bDiveOwn = false   # VariableSet_2222
+            GetUpN = 54   # VariableSet_2223
+            Deactivate(self=SlideFx)   # CallFunction_2305
+            bShade = false   # VariableSet_2224
+            SetRelativeScale3D(self=ContactShadow, NewScale3D=MakeVector(0.5, 0.7, 1.0))   # CallFunction_2307
+            K2_SetRelativeLocationAndRotation(self=ContactShadow, NewLocation=MakeVector(3.0, 0.0, 0.4), NewRotation=MakeRotator(0.0, 0.0, 0.0), bSweep=false, bTeleport=true)   # CallFunction_2310
+            SetScalarParameterValueOnMaterials(self=ContactShadow, ParameterName=Darkest, ParameterValue=0.45)   # CallFunction_2311
+            SetScalarParameterValueOnMaterials(self=ContactShadow, ParameterName=Flat, ParameterValue=0.0)   # CallFunction_2312
+            GetUpFrames = GetUpN   # VariableSet_2225
+            LastGapS = (GetTimeSeconds() - DownT0)   # VariableSet_2226
+            SK2Down()   # CallFunction_2314
+            if bUpEarly:   # IfThenElse_219
+                Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(SK6REL rel_f , Conv_DoubleToString((LastGapS * 60.0))),  end_f ), Conv_DoubleToString(((UpEndEst - DownT0) * 60.0))),  down_f ), Conv_IntToString(DownFrames)),  end_minus_rel_f ), Conv_DoubleToString(((UpEndEst - GetTimeSeconds()) * 60.0))))   # CallFunction_2320
+                if ((UpEndEst - GetTimeSeconds()) > 0.1):   # IfThenElse_220
+                    Log(S=Concat_StrStr(SK19REL fast rem_f , Conv_DoubleToString(((UpEndEst - GetTimeSeconds()) * 60.0))))   # CallFunction_2324
+                    GetUpN = 8   # VariableSet_2227
+                    GetUpFrames = 8   # VariableSet_2228
+                    Montage_SetPlayRate(self=GetAnimInstance(Mesh), Montage=<none>, NewPlayRate=FMin(8.0, (FMax(UpPlayRate, 0.5) * ((UpEndEst - GetTimeSeconds()) / 0.1))))   # CallFunction_2327
+            else:
+                UpStart = SelectFloat((UpLen * 0.6667), 0.0, (DownFrames > 0))   # VariableSet_2229
+                UpPlayRate = SelectFloat(2.0, 1.0, (DownFrames > 0))   # VariableSet_2230
+                if (DownFrames > 0):   # IfThenElse_221
+                    GetUpN = 8   # VariableSet_2231
+                    GetUpFrames = 8   # VariableSet_2232
+                Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK6REL fallback rel_f , Conv_DoubleToString((LastGapS * 60.0))),  down_f ), Conv_IntToString(DownFrames)))   # CallFunction_2332
+                UpBlend = 0.083   # VariableSet_2233
+                PlayGetUp()   # CallFunction_2333
+
+== LayerTick()   # CustomEvent_89
+    LockE = (SelectFloat(1.0, 0.0, (bLock and ((GetTimeSeconds() - LockT0) < LockLen) and (not (bDown or bUpRun or (IsAnyMontagePlaying(GetAnimInstance(Mesh)) and (ActPri >= 5)))))) * (FClamp(((GetTimeSeconds() - LockT0) / 0.05), 0.0, 1.0) * FClamp(((LockLen - (GetTimeSeconds() - LockT0)) / 0.0667), 0.0, 1.0)))   # VariableSet_1638
+    GraceE = (SelectFloat(1.0, 0.0, (bGrace and ((GetTimeSeconds() - GraceT0) < GraceLen) and (not (bDown or bUpRun or (IsAnyMontagePlaying(GetAnimInstance(Mesh)) and (ActPri >= 5)))))) * (FClamp(((GetTimeSeconds() - GraceT0) / 0.1), 0.0, 1.0) * FClamp(((GraceLen - (GetTimeSeconds() - GraceT0)) / 0.1333), 0.0, 1.0)))   # VariableSet_1639
+    LockAng = ((GraceLift * GraceE) + (LockE * (LockLift + (LockShake * (Exp((-14.0 * (GetTimeSeconds() - LockT0))) * Sin((56.5 * (GetTimeSeconds() - LockT0))))))))   # VariableSet_1640
+    DrawAng = (GraceDraw * GraceE)   # VariableSet_1641
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_94
+    LockRot = MakeRotator((LockRoll * LockE), LockAng, DrawAng)   # VariableSet_1642
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_95
+    StickA = 1.0   # VariableSet_1643
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_96
+    GraceRot = MakeRotator((GraceRoll * GraceE), (GracePitch * GraceE), (GraceYaw * GraceE))   # VariableSet_1644
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_97
+    GraceA = 1.0   # VariableSet_1645
+    if (((not bLock) or ((GetTimeSeconds() - LockT0) >= LockLen)) and ((not bGrace) or ((GetTimeSeconds() - GraceT0) >= GraceLen))):   # IfThenElse_111
+        bLayer = false   # VariableSet_1646
+        bLock = false   # VariableSet_1647
+        bGrace = false   # VariableSet_1648
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_98
+        StickA = 0.0   # VariableSet_1649
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_99
+        GraceA = 0.0   # VariableSet_1650
+        Log(S=SK30 layer ends)   # CallFunction_1907
+
+== LiftPlay()   # CustomEvent_55
+    ChkSize = SelectInt(0, SelectInt(2, 1, (ChkClose >= 11.0)), (ChkClose < 0))   # VariableSet_1786
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK26 lift close , Conv_DoubleToString(ChkClose)),  size ), Conv_IntToString(ChkSize)))   # CallFunction_3957
+    if (ChkSize == 0):   # IfThenElse_723
+        PlayCut1(Anim=AS_SkaterTB1_P3_Lift_Light, Pri=6, Start=0.0, BlendIn=0.03)   # CallFunction_3958
+    else:
+        if (ChkSize == 2):   # IfThenElse_724
+            PlayCut1(Anim=AS_SkaterTB1_P3_Lift_Heavy, Pri=6, Start=0.0, BlendIn=0.03)   # CallFunction_3959
+        else:
+            PlayCut1(Anim=AS_SkaterTB1_P3_Lift, Pri=6, Start=0.0, BlendIn=0.03)   # CallFunction_3960
+
+== Log(S)   # CustomEvent_36
+    if bLog:   # IfThenElse_552
+        PrintString(InString=S, bPrintToScreen=false, bPrintToLog=true, TextColor=(R=0.000000,G=0.660000,B=1.000000,A=1.000000), Duration=2.000000, Key=None)   # CallFunction_3291
+
+== LookTick()   # CustomEvent_113
+    if ((not IsValid(PuckRef)) and ((GetTimeSeconds() - PuckSeekT) > 1.0)):   # IfThenElse_15
+        PuckSeekT = GetTimeSeconds()   # VariableSet_276
+        GetActorOfClass(ActorClass=JamPuck)   # CallFunction_242
+        PuckRef = CallFunction_242.ReturnValue   # VariableSet_277
+    LookDbg = 0.0   # VariableSet_278
+    if IsValid(PuckRef):   # IfThenElse_17
+        if ((not bNoLook) and (not bPuck) and (not bDown) and (not bUpRun) and (not bGoalie) and (not bFaceoff) and (not (IsAnyMontagePlaying(GetAnimInstance(Mesh)) and (ActPri >= 5))) and (VSizeXY((K2_GetActorLocation(PuckRef) - GetSocketLocation(Mesh, spine_03))) > 60.0)):   # IfThenElse_18
+            LookDbg = NormalizeAxis((DegAtan2((BreakVector(K2_GetActorLocation(PuckRef)).Y - BreakVector(GetSocketLocation(Mesh, spine_03)).Y), (BreakVector(K2_GetActorLocation(PuckRef)).X - BreakVector(GetSocketLocation(Mesh, spine_03)).X)) - DegAtan2(BreakVector(GetForwardVector(Mesh)).Y, BreakVector(GetForwardVector(Mesh)).X)))   # VariableSet_279
+            if (Abs(LookDbg) > 150.0):   # IfThenElse_19
+                LookDbg = SelectFloat(60.0, -60.0, (LookYaw >= 0))   # VariableSet_280
+            else:
+                LookDbg = FClamp(LookDbg, -60.0, 60.0)   # VariableSet_281
+    LookYaw = (LookYaw + ((LookDbg - LookYaw) * FClamp((GetWorldDeltaSeconds() * SelectFloat(25.0, 8.0, (bDown or bUpRun))), 0.0, 1.0)))   # VariableSet_282
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_8
+    LookRot1 = MakeRotator(0.0, 0.0, (LookYaw * 0.4))   # VariableSet_283
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_9
+    LookRot2 = MakeRotator(0.0, 0.0, (LookYaw * 0.6))   # VariableSet_284
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_10
+    bReady = (not bPuck)   # VariableSet_293
+
+== OnBusEvent(Event, Payload)   # CustomEvent_17
+    if (Event == knockdown):   # IfThenElse_109
+        Cast<JamSkater>(Object=GetAttachParentActor())   # DynamicCast_21
+        if (BreakStruct(Payload).Who == GetSimIndex(DynamicCast_21.AsJam Skater)):   # IfThenElse_110
+            HitStr = FClamp(BreakStruct(Payload).Strength, 0.0, 1.0)   # VariableSet_565
+            Log(S=Concat_StrStr(SK5KDSTR , Conv_DoubleToString(BreakStruct(Payload).Strength)))   # CallFunction_775
+            if (bDown and (DownAge <= 1)):   # IfThenElse_129
+                DownRate = (DownRate * (0.95 + (0.2 * HitStr)))   # VariableSet_566
+                HitStr = -1.0   # VariableSet_567
+                Montage_SetPlayRate(self=GetAnimInstance(Mesh), Montage=<none>, NewPlayRate=DownRate)   # CallFunction_777
+    if (Event == check):   # IfThenElse_130
+        Cast<JamSkater>(Object=GetAttachParentActor())   # DynamicCast_22
+        if (BreakStruct(Payload).Who == GetSimIndex(DynamicCast_22.AsJam Skater)):   # IfThenElse_131
+            bChkWait = false   # VariableSet_568
+            ChkBusT = GetTimeSeconds()   # VariableSet_569
+            bRelNow = (bHoldSeen and (bHoldOn or ((GetTimeSeconds() - HoldOffT) < 0.1)))   # VariableSet_570
+            if bRelNow:   # IfThenElse_132
+                CrossRelease(Why=2)   # CallFunction_782
+            if ((not bRelNow) and ((not IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh)))) or (ActPri != 7) or (Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) < 0.0667))):   # IfThenElse_133
+                ChkSize = SelectInt(ChkSize, SelectInt(0, SelectInt(2, 1, (BreakStruct(Payload).Strength >= 0.7)), (BreakStruct(Payload).Strength < 0.35)), (IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh))) and (ActPri == 7)))   # VariableSet_571
+                Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK26 check bus strength , Conv_DoubleToString(BreakStruct(Payload).Strength)),  size ), Conv_IntToString(ChkSize)))   # CallFunction_800
+                ChkCut(bRight=((((BreakVector(BreakStruct(Payload).Where).Y - BreakVector(K2_GetActorLocation(self)).Y) * DegCos(FacingYaw)) - ((BreakVector(BreakStruct(Payload).Where).X - BreakVector(K2_GetActorLocation(self)).X) * DegSin(FacingYaw))) >= 0), Start=0.1, BlendIn=0.0)   # CallFunction_809
+    if (Event == knockdown):   # IfThenElse_134
+        KdSeen = (KdSeen + 1)   # VariableSet_572
+        Cast<JamSkater>(Object=GetAttachParentActor())   # DynamicCast_26
+        if (BreakStruct(Payload).Who == GetSimIndex(DynamicCast_26.AsJam Skater)):   # IfThenElse_135
+            LieRule = Percent_IntInt(KdSeen, 2)   # VariableSet_573
+            WhipStr(S=BreakStruct(Payload).Strength)   # CallFunction_813
+    if (Event == check):   # IfThenElse_136
+        Cast<JamSkater>(Object=GetAttachParentActor())   # DynamicCast_27
+        if (BreakStruct(Payload).Who == GetSimIndex(DynamicCast_27.AsJam Skater)):   # IfThenElse_137
+            WhipK = 0.0   # VariableSet_574
+            WhipGoS(DX=BreakVector((BreakStruct(Payload).Where - K2_GetActorLocation(self))).X, DY=BreakVector((BreakStruct(Payload).Where - K2_GetActorLocation(self))).Y, S=(0.4 * FClamp(BreakStruct(Payload).Strength, 0.0, 1.0)))   # CallFunction_821
+        else:
+            if (VSizeXY((BreakStruct(Payload).Where - K2_GetActorLocation(self))) < 150.0):   # IfThenElse_138
+                WhipStr(S=BreakStruct(Payload).Strength)   # CallFunction_824
+    if (Event == lift):   # IfThenElse_139
+        Cast<JamSkater>(Object=GetAttachParentActor())   # DynamicCast_28
+        if ((BreakStruct(Payload).Who == GetSimIndex(DynamicCast_28.AsJam Skater)) and (BreakStruct(Payload).Strength > 0.5)):   # IfThenElse_140
+            LiftYaw = FClamp(NormalizeAxis((DegAtan2((BreakVector(BreakStruct(Payload).Where).Y - BreakVector(K2_GetActorLocation(self)).Y), (BreakVector(BreakStruct(Payload).Where).X - BreakVector(K2_GetActorLocation(self)).X)) - FacingYaw)), -60.0, 60.0)   # VariableSet_575
+            LiftEvT = GetTimeSeconds()   # VariableSet_576
+            if ((GetTimeSeconds() - LiftPlayT) < 0.05):   # IfThenElse_141
+                LiftN = 22   # VariableSet_577
+    if (Event == deke):   # IfThenElse_142
+        Cast<JamSkater>(Object=GetAttachParentActor())   # DynamicCast_30
+        if (BreakStruct(Payload).Who == GetSimIndex(DynamicCast_30.AsJam Skater)):   # IfThenElse_143
+            if (BreakStruct(Payload).Kind == right):   # IfThenElse_144
+                PlayCut1(Anim=AS_SkaterTB1_P3_Deke_Right, Pri=4, Start=0.0, BlendIn=0.05)   # CallFunction_840
+            else:
+                PlayCut1(Anim=AS_SkaterTB1_P3_Deke_Left, Pri=4, Start=0.0, BlendIn=0.05)   # CallFunction_841
+
+== PassHoldTick()   # CustomEvent_117
+    if ((not IsValid(PassMon)) or (not Montage_IsPlaying(GetAnimInstance(Mesh), PassMon)) or (Montage_GetPosition(GetAnimInstance(Mesh), PassMon) >= 0.1217)):   # IfThenElse_228
+        PassHoldW = 0.0   # VariableSet_2770
+        ChargeMix()   # CallFunction_2746
+
+== PickLens()   # CustomEvent_18
+    FallPick(bPlay=false)   # CallFunction_981
+    if (bQuick and (DownKind < 5)):   # IfThenElse_163
+        SetLen(Anim=AS_SkaterTB1_P3_GetUp_Quick, bUp=true)   # CallFunction_982
+    else:
+        SetLen(Anim=AS_SkaterTB1_P3_GetUp, bUp=true)   # CallFunction_983
+
+== PinOn()   # CustomEvent_10
+    Log(S=SK6RX pin on AS_SkaterTB1_P3_Board_Pin played)   # CallFunction_4275
+    bPinned = true   # VariableSet_1851
+    bPinWant = false   # VariableSet_1852
+    PinT = GetTimeSeconds()   # VariableSet_1853
+    ActPri = 6   # VariableSet_1854
+    PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Board_Pin, SlotNodeName=DefaultSlot, BlendInTime=0.15, BlendOutTime=0.250000, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_4278
+
+== PlayAct(Anim, Pri, Rate, Start)   # CustomEvent_1
+    if IsValid(GetAnimInstance(Mesh)):   # IfThenElse_8
+        if ((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (Pri >= ActPri))):   # IfThenElse_9
+            ActPri = Pri   # VariableSet_135
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=Anim, SlotNodeName=DefaultSlot, BlendInTime=0.08, BlendOutTime=0.2, InPlayRate=Rate, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=Start)   # CallFunction_168
+
+== PlayBoardHit()   # Event_20
+    FindRink()   # CallFunction_4014
+    if ((not bDown) or (Abs((GetTimeSeconds() - DownT0)) < 0.001)):   # IfThenElse_734
+        WhipGo(DX=SelectFloat(SignOfFloat(BreakVector(K2_GetActorLocation(self)).X), 0.0, ((RinkHX - Abs(BreakVector(K2_GetActorLocation(self)).X)) < (RinkHY - Abs(BreakVector(K2_GetActorLocation(self)).Y)))), DY=SelectFloat(0.0, SignOfFloat(BreakVector(K2_GetActorLocation(self)).Y), ((RinkHX - Abs(BreakVector(K2_GetActorLocation(self)).X)) < (RinkHY - Abs(BreakVector(K2_GetActorLocation(self)).Y)))), K=0.5)   # CallFunction_4090
+    Log(S=Concat_StrStr(SK21 board wall_cm , Conv_DoubleToString(FMin((RinkHX - Abs(BreakVector(K2_GetActorLocation(self)).X)), (RinkHY - Abs(BreakVector(K2_GetActorLocation(self)).Y))))))   # CallFunction_4098
+    if (bDown and (Abs((GetTimeSeconds() - DownT0)) < 0.001)):   # IfThenElse_735
+        BoardFall()   # CallFunction_4101
+    else:
+        if (Abs((GetTimeSeconds() - StumT)) < 0.001):   # IfThenElse_736
+            Log(S=SK6RX board skipped stumble)   # CallFunction_4104
+        else:
+            if ((not bDown) and (not bUpRun) and (Abs((GetTimeSeconds() - LastHitT)) < 0.001)):   # IfThenElse_737
+                RxLog(Kind=board, Anim=AS_SkaterTB1_P3_Board_Hit, Pri=6)   # CallFunction_4109
+                PlayAct(Anim=AS_SkaterTB1_P3_Board_Hit, Pri=6, Rate=1.0, Start=0.0)   # CallFunction_4110
+            else:
+                if (bDown or bUpRun or ((GetTimeSeconds() - LastHitT) < 0.6)):   # IfThenElse_738
+                    Log(S=Concat_StrStr(SK6RX board skipped dt , Conv_DoubleToString((GetTimeSeconds() - LastHitT))))   # CallFunction_4114
+                else:
+                    RxLog(Kind=board, Anim=AS_SkaterTB1_P3_Board_Hit, Pri=6)   # CallFunction_4115
+                    PlayAct(Anim=AS_SkaterTB1_P3_Board_Hit, Pri=6, Rate=1.0, Start=0.0)   # CallFunction_4116
+                    LastHitT = GetTimeSeconds()   # VariableSet_1798
+
+== PlayBoostPickup()   # CustomEvent_76
+    Log(S=SK26 PlayBoostPickup)   # CallFunction_3692
+    Snd(Sound=MS_boost_take)   # CallFunction_3693
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_78
+    bCarry4 = true   # VariableSet_1736
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_79
+    AimW = 1.0   # VariableSet_1737
+    bBoostBeat = true   # VariableSet_1738
+    K2_SetTimer(Object=self, FunctionName=BoostBeatEnd, Time=0.2, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_3696
+
+== PlayCallForPass()   # CustomEvent_110
+    Log(S=E3 call for pass)   # CallFunction_978
+    if ((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (2 >= ActPri))):   # IfThenElse_46
+        ActPri = 2   # VariableSet_846
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_CallForPass, SlotNodeName=DefaultSlot, BlendInTime=0.05, BlendOutTime=0.12, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_988
+
+== PlayCelebrate(Which)   # CustomEvent_100
+    Log(S=Concat_StrStr(E2 celebrate , Conv_IntToString(Which)))   # CallFunction_700
+    if (bDown or bUpRun):   # IfThenElse_91
+        Log(S=E2 celebrate skipped down)   # CallFunction_701
+    else:
+        ActPri = 6   # VariableSet_555
+        if (Which == 1):   # IfThenElse_92
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Celebrate_StickRaise, SlotNodeName=DefaultSlot, BlendInTime=0.15, BlendOutTime=0.250000, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_703
+        else:
+            if (Which == 2):   # IfThenElse_93
+                PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Celebrate_KneeGlide, SlotNodeName=DefaultSlot, BlendInTime=0.15, BlendOutTime=0.250000, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_705
+            else:
+                if (Which == 3):   # IfThenElse_94
+                    PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Celebrate_Mate, SlotNodeName=DefaultSlot, BlendInTime=0.15, BlendOutTime=0.250000, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_707
+                else:
+                    PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Celebrate_ArmsUp, SlotNodeName=DefaultSlot, BlendInTime=0.15, BlendOutTime=0.250000, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_709
+
+== PlayCheck()   # Event_7
+    ChkScan()   # CallFunction_1025
+    if ((GetTimeSeconds() < WhiffT) and (not bDown) and (not bUpRun)):   # IfThenElse_81
+        Log(S=WF1 check cuts a whiff)   # CallFunction_1029
+        WhiffT = -10.0   # VariableSet_678
+        WindT0 = -10.0   # VariableSet_679
+        ActPri = 0   # VariableSet_680
+    if ((not IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh)))) or (ActPri != 7)):   # IfThenElse_85
+        ChkPlay(bRight=(ChkSide >= 0))   # CallFunction_1034
+        if (bAutoCheckMiss and ((GetTimeSeconds() - ChkBusT) > 0.1)):   # IfThenElse_86
+            bChkWait = true   # VariableSet_681
+            K2_SetTimer(Object=self, FunctionName=ChkMissTick, Time=0.108, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_1036
+
+== PlayCheckMiss()   # CustomEvent_91
+    bChkWait = false   # VariableSet_670
+    if (bDown or bUpRun):   # IfThenElse_80
+        Log(S=SK30 check miss skipped down)   # CallFunction_1007
+    else:
+        ActPri = 7   # VariableSet_676
+        WhiffT = (GetTimeSeconds() + 0.4)   # VariableSet_677
+        Log(S=SK30 check miss)   # CallFunction_1009
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Stumble_Back, SlotNodeName=DefaultSlot, BlendInTime=0.1, BlendOutTime=0.15, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.033)   # CallFunction_1011
+
+== PlayCheckWhiff()   # CustomEvent_115
+    if (bDown or bUpRun):   # IfThenElse_32
+        Log(S=E3 whiff skipped down)   # CallFunction_1676
+    else:
+        if (SpeedNow < 4.0):   # IfThenElse_33
+            Log(S=E3 whiff slow: miss)   # CallFunction_1677
+            PlayCheckMiss()   # CallFunction_1678
+        else:
+            if (IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh))) and (ActPri == 7) and ((GetTimeSeconds() - WindT0) < 0.7)):   # IfThenElse_37
+                WhiffF = FMax(((Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) * 60.0) - 10.0), 0.0)   # VariableSet_1413
+                WhiffBl = SelectFloat(0.05, 0.083, (ChkSize == 1))   # VariableSet_1414
+                WhiffGo()   # CallFunction_1688
+            else:
+                WhiffF = 0.0   # VariableSet_1415
+                WhiffBl = 0.083   # VariableSet_1416
+                WhiffGo()   # CallFunction_1689
+
+== PlayCheckWindup(Frames)   # CustomEvent_105
+    Log(S=Concat_StrStr(E2 PlayCheckWindup frames , Conv_IntToString(Frames)))   # CallFunction_1841
+    if (bWindupTakes and ((GetTimeSeconds() - WindT0) < 0.02) and (Frames > 0) and IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh)))):   # IfThenElse_56
+        Montage_SetPosition(self=GetAnimInstance(Mesh), Montage=GetCurrentActiveMontage(GetAnimInstance(Mesh)), NewPosition=(Conv_IntToDouble(Clamp((10 - Frames), 0, 10)) / 60.0))   # CallFunction_1851
+        if (Frames > 10):   # IfThenElse_57
+            WindHoldMon = GetCurrentActiveMontage(GetAnimInstance(Mesh))   # VariableSet_1580
+            WindHoldLeft = (Conv_IntToDouble((Frames - 10)) / 60.0)   # VariableSet_1581
+            Log(S=Concat_StrStr(XC12 wind hold frames , Conv_IntToString((Frames - 10))))   # CallFunction_1856
+        else:
+            WindHoldLeft = 0.0   # VariableSet_1582
+
+== PlayCrossCheck(Frames)   # CustomEvent_97
+    WhiffT = -10.0   # VariableSet_682
+    Log(S=Concat_StrStr(E2 PlayCrossCheck frames , Conv_IntToString(Frames)))   # CallFunction_1038
+    if (bHoldSeen and (bHoldOn or ((GetTimeSeconds() - HoldOffT) < 0.1))):   # IfThenElse_88
+        CrossRelease(Why=1)   # CallFunction_1040
+    else:
+        if bWindupTakes:   # IfThenElse_89
+            CrossWind(Frames=Frames)   # CallFunction_1041
+
+== PlayCrossWhiff()   # CustomEvent_118
+    if (bDown or bUpRun):   # IfThenElse_49
+        Log(S=E4 cross whiff skipped down)   # CallFunction_972
+    else:
+        if (IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh))) and (ActPri == 6) and ((GetTimeSeconds() - LiftPlayT) < 0.7)):   # IfThenElse_79
+            WhiffF = FMax(((Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) * 60.0) - SelectFloat(3.0, 10.0, (GetPlayLength(GetCurrentActiveMontage(GetAnimInstance(Mesh))) < 0.45))), 0.0)   # VariableSet_665
+            ActPri = 7   # VariableSet_666
+            WhiffT = (GetTimeSeconds() + 0.3)   # VariableSet_667
+            Log(S=Concat_StrStr(E4 cross whiff from , Conv_DoubleToString(WhiffF)))   # CallFunction_1000
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_CrossCheck_Whiff, SlotNodeName=DefaultSlot, BlendInTime=0.05, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=0.0, InTimeToStartMontageAt=(WhiffF / 60.0))   # CallFunction_1002
+        else:
+            ActPri = 7   # VariableSet_668
+            WhiffT = (GetTimeSeconds() + 0.3)   # VariableSet_669
+            Log(S=E4 cross whiff from 0)   # CallFunction_1004
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_CrossCheck_Whiff, SlotNodeName=DefaultSlot, BlendInTime=0.067, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=0.0, InTimeToStartMontageAt=0.000000)   # CallFunction_1006
+
+== PlayCut(Anim, Pri, Start, BlendIn)   # CustomEvent_16
+    if IsValid(GetAnimInstance(Mesh)):   # IfThenElse_6
+        if ((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (Pri >= ActPri))):   # IfThenElse_7
+            ActPri = Pri   # VariableSet_134
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=Anim, SlotNodeName=DefaultSlot, BlendInTime=BlendIn, BlendOutTime=0.2, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=Start)   # CallFunction_161
+
+== PlayCut1(Anim, Pri, Start, BlendIn)   # CustomEvent_9
+    if IsValid(GetAnimInstance(Mesh)):   # IfThenElse_29
+        if ((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (Pri >= ActPri))):   # IfThenElse_30
+            ActPri = Pri   # VariableSet_108
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=Anim, SlotNodeName=DefaultSlot, BlendInTime=BlendIn, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=Start)   # CallFunction_202
+
+== PlayDash(Frames)   # CustomEvent_71
+    DashBegin(Rate=FClamp(((10.0 + (24.0 * Conv_IntToDouble(Max(1, Round(((Conv_IntToDouble(Frames) - 10.0) / 24.0)))))) / Conv_IntToDouble(Max(Frames, 1))), 0.7, 1.4), Loops=Max(1, Round(((Conv_IntToDouble(Frames) - 10.0) / 24.0))))   # CallFunction_8903
+
+== PlayDiveBlock(DirX, DirZ, Frames)   # CustomEvent_58
+    DiveGo(Kind=1, DX=(SelectFloat(-1.0, 1.0, (((DirZ * DegCos(FacingYaw)) - (DirX * DegSin(FacingYaw))) >= 0)) * DegSin(FacingYaw)), DY=(SelectFloat(1.0, -1.0, (((DirZ * DegCos(FacingYaw)) - (DirX * DegSin(FacingYaw))) >= 0)) * DegCos(FacingYaw)), Frames=Frames, Def=103)   # CallFunction_3498
+
+== PlayDiveBlockFront(DirX, DirZ, Frames)   # CustomEvent_80
+    SlideSide = 5   # VariableSet_4384
+    DiveGo(Kind=4, DX=DegCos(FacingYaw), DY=DegSin(FacingYaw), Frames=Frames, Def=101)   # CallFunction_8586
+
+== PlayDiveBlockHit()   # CustomEvent_60
+    if (bDown and (DiveKind == 1) and bLie and (not bUpEarly)):   # IfThenElse_612
+        bLie = false   # VariableSet_1680
+        HoldAt = 0.166667   # VariableSet_1681
+        Log(S=SK26 dive hit)   # CallFunction_3500
+        Snd(Sound=MS_dive_block_hit)   # CallFunction_3501
+        DiveHitPlay(bLeft=(DownKind == 1))   # CallFunction_3502
+    else:
+        Log(S=SK26 dive hit skipped)   # CallFunction_3503
+
+== PlayDown(Anim, Rate)   # CustomEvent_7
+    if IsValid(GetAnimInstance(Mesh)):   # IfThenElse_774
+        ActPri = 9   # VariableSet_1873
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=Anim, SlotNodeName=DefaultSlot, BlendInTime=SelectFloat(0.0, 0.03, (CustomTimeDilation < 0.01)), BlendOutTime=0.0, InPlayRate=Rate, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=DownStart)   # CallFunction_4342
+        DownHold = (GetPlayLength(CallFunction_4342.ReturnValue) - 0.004)   # VariableSet_1874
+        KdCount = (KdCount + 1)   # VariableSet_1875
+        LastKd = GetObjectName(Anim)   # VariableSet_1876
+        Log(S=Concat_StrStr(SK4KD , Concat_StrStr(LastKd, Concat_StrStr( rate , Conv_DoubleToString(Rate)))))   # CallFunction_4346
+
+== PlayFaceoffDraw(bWon)   # Event_16
+    PlayAct(Anim=AS_SkaterTB1_P3_Faceoff_Draw, Pri=2, Rate=SelectFloat(1.0, 0.7, bWon), Start=0.0)   # CallFunction_1254
+
+== PlayFoulReaction()   # Event_14
+    PlayAct(Anim=AS_SkaterTB1_P3_Foul_Reaction, Pri=5, Rate=1.0, Start=0.0)   # CallFunction_1251
+
+== PlayGetUp()   # CustomEvent_13
+    if (DownKind == 5):   # IfThenElse_303
+        if (UpMode == 2):   # IfThenElse_304
+            PlayUp(Anim=AS_SkaterTB1_P3_GetUp_LateLong_Wall)   # CallFunction_1804
+        else:
+            PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Wall)   # CallFunction_1805
+    else:
+        if (DownKind == 6):   # IfThenElse_305
+            if (UpMode == 2):   # IfThenElse_306
+                PlayUp(Anim=AS_SkaterTB1_P3_GetUp_LateLong_Wall_Left)   # CallFunction_1806
+            else:
+                PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Wall_Left)   # CallFunction_1807
+        else:
+            if (DownKind == 7):   # IfThenElse_307
+                if (UpMode == 2):   # IfThenElse_308
+                    PlayUp(Anim=AS_SkaterTB1_P3_GetUp_LateLong_Wall_Right)   # CallFunction_1808
+                else:
+                    PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Wall_Right)   # CallFunction_1809
+            else:
+                if (DownKind == 8):   # IfThenElse_309
+                    if (UpMode == 2):   # IfThenElse_310
+                        PlayUp(Anim=AS_SkaterTB1_P3_GetUp_LateLong_Wall_Back)   # CallFunction_1810
+                    else:
+                        PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Wall_Back)   # CallFunction_1811
+                else:
+                    if (DownKind == 1):   # IfThenElse_311
+                        if ((UpMode == 1) and bQuick):   # IfThenElse_312
+                            PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Late_Side_Left)   # CallFunction_1812
+                        else:
+                            if ((UpMode == 2) and (not bQuick)):   # IfThenElse_313
+                                PlayUp(Anim=AS_SkaterTB1_P3_GetUp_LateLong_Side_Left)   # CallFunction_1814
+                            else:
+                                if bSnap:   # IfThenElse_314
+                                    PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Snap_Side_Left)   # CallFunction_1815
+                                else:
+                                    if bQuick:   # IfThenElse_315
+                                        PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Quick_Side_Left)   # CallFunction_1816
+                                    else:
+                                        PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Side_Left)   # CallFunction_1817
+                    else:
+                        if ((DownKind == 2) or (DownKind == 4)):   # IfThenElse_316
+                            if ((UpMode == 1) and bQuick):   # IfThenElse_317
+                                PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Late_Side_Right)   # CallFunction_1818
+                            else:
+                                if ((UpMode == 2) and (not bQuick)):   # IfThenElse_318
+                                    PlayUp(Anim=AS_SkaterTB1_P3_GetUp_LateLong_Side_Right)   # CallFunction_1820
+                                else:
+                                    if bSnap:   # IfThenElse_319
+                                        PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Snap_Side_Right)   # CallFunction_1821
+                                    else:
+                                        if bQuick:   # IfThenElse_320
+                                            PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Quick_Side_Right)   # CallFunction_1822
+                                        else:
+                                            PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Side_Right)   # CallFunction_1823
+                        else:
+                            if (DownKind >= 3):   # IfThenElse_321
+                                if ((UpMode == 1) and bQuick):   # IfThenElse_322
+                                    PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Late_Front)   # CallFunction_1824
+                                else:
+                                    if ((UpMode == 2) and (not bQuick)):   # IfThenElse_323
+                                        PlayUp(Anim=AS_SkaterTB1_P3_GetUp_LateLong_Front)   # CallFunction_1826
+                                    else:
+                                        if bSnap:   # IfThenElse_324
+                                            PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Snap_Front)   # CallFunction_1827
+                                        else:
+                                            if bQuick:   # IfThenElse_325
+                                                PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Quick_Front)   # CallFunction_1828
+                                            else:
+                                                PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Front)   # CallFunction_1829
+                            else:
+                                if ((UpMode == 1) and bQuick):   # IfThenElse_326
+                                    PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Late)   # CallFunction_1830
+                                else:
+                                    if ((UpMode == 2) and (not bQuick)):   # IfThenElse_327
+                                        PlayUp(Anim=AS_SkaterTB1_P3_GetUp_LateLong)   # CallFunction_1832
+                                    else:
+                                        if bSnap:   # IfThenElse_328
+                                            PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Snap)   # CallFunction_1833
+                                        else:
+                                            if bQuick:   # IfThenElse_329
+                                                PlayUp(Anim=AS_SkaterTB1_P3_GetUp_Quick)   # CallFunction_1834
+                                            else:
+                                                PlayUp(Anim=AS_SkaterTB1_P3_GetUp)   # CallFunction_1835
+
+== PlayHitReaction(DirX, DirZ)   # Event_19
+    if bDown:   # IfThenElse_698
+        pass
+    else:
+        WhipGo(DX=DirX, DY=DirZ, K=0.0)   # CallFunction_3829
+    if (bDown or bUpRun or ((GetTimeSeconds() - LastHitT) < 0.6) or ((GetTimeSeconds() - LastRxT) < RxGap)):   # IfThenElse_699
+        Log(S=Concat_StrStr(SK6RX hit skipped dt , Conv_DoubleToString((GetTimeSeconds() - LastHitT))))   # CallFunction_3834
+    else:
+        LastHitT = GetTimeSeconds()   # VariableSet_1764
+        LastRxT = GetTimeSeconds()   # VariableSet_1765
+        RxKind = 3   # VariableSet_1766
+        if (((DirX * DegCos(FacingYaw)) + (DirZ * DegSin(FacingYaw))) >= 0.7071):   # IfThenElse_700
+            RxLog(Kind=hit, Anim=AS_SkaterTB1_P3_Check_Hit_Back, Pri=6)   # CallFunction_3839
+            PlayCut1(Anim=AS_SkaterTB1_P3_Check_Hit_Back, Pri=6, Start=0.0, BlendIn=0.05)   # CallFunction_3840
+        else:
+            if (((DirZ * DegCos(FacingYaw)) - (DirX * DegSin(FacingYaw))) > 0):   # IfThenElse_701
+                RxLog(Kind=hit, Anim=AS_SkaterTB1_P3_Check_Hit_Left, Pri=6)   # CallFunction_3843
+                PlayCut1(Anim=AS_SkaterTB1_P3_Check_Hit_Left, Pri=6, Start=0.0, BlendIn=0.05)   # CallFunction_3844
+            else:
+                RxLog(Kind=hit, Anim=AS_SkaterTB1_P3_Check_Hit_Right, Pri=6)   # CallFunction_3845
+                PlayCut1(Anim=AS_SkaterTB1_P3_Check_Hit_Right, Pri=6, Start=0.0, BlendIn=0.05)   # CallFunction_3846
+
+== PlayLie()   # CustomEvent_30
+    LieL = SelectInt((FCeil(((((DownT0 + UpAt) - GetTimeSeconds()) * 60.0) - 0.01)) + 0), 0, (UpAt >= 0))   # VariableSet_1790
+    LieF = SelectInt(Clamp((93 - LieL), 39, 69), SelectInt(0, SelectInt((15 - LieL), SelectInt(Clamp((39 - LieL), -15, 15), Clamp((93 - LieL), -15, 15), (LieL <= 84)), (LieL < 24)), (LieL < 16)), (((LieRule == 1) or (Percent_IntInt(UpMode, 32) >= 8)) and (LieL >= 24) and (LieL <= 84)))   # VariableSet_1791
+    LieS = (Conv_IntToDouble(Percent_IntInt((LieF + 108), 108)) / 60.0)   # VariableSet_1792
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(SK25 lie kind , Conv_IntToString(DownKind)),  L ), Conv_IntToString(LieL)),  s ), Conv_IntToString(LieF)),  cut ), Conv_IntToString(Percent_IntInt(((LieF + LieL) + 108), 108))),  rule ), Conv_BoolToString((((LieRule == 1) or (Percent_IntInt(UpMode, 32) >= 8)) and (LieL >= 24) and (LieL <= 84)))))   # CallFunction_3987
+    if (DownKind == 5):   # IfThenElse_725
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Lie_Loop_Wall, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=LieS)   # CallFunction_3989
+    else:
+        if (DownKind == 6):   # IfThenElse_726
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Lie_Loop_Wall_Left, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=LieS)   # CallFunction_3991
+        else:
+            if (DownKind == 7):   # IfThenElse_727
+                PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Lie_Loop_Wall_Right, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=LieS)   # CallFunction_3993
+            else:
+                if (DownKind == 8):   # IfThenElse_728
+                    PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Lie_Loop_Wall_Back, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=LieS)   # CallFunction_3995
+                else:
+                    if (DownKind == 1):   # IfThenElse_729
+                        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Lie_Loop_Side_Left, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=LieS)   # CallFunction_3997
+                    else:
+                        if ((DownKind == 2) or (DownKind == 4)):   # IfThenElse_730
+                            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Lie_Loop_Side_Right, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=LieS)   # CallFunction_3999
+                        else:
+                            if (DownKind == 3):   # IfThenElse_731
+                                PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Lie_Loop_Front, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=LieS)   # CallFunction_4001
+                            else:
+                                PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Lie_Loop, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.0, InPlayRate=1.000000, LoopCount=1000, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=LieS)   # CallFunction_4003
+
+== PlayLift()   # Event_12
+    if ((GetTimeSeconds() - LiftPlayT) >= RxGap):   # IfThenElse_720
+        if ((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (6 >= ActPri))):   # IfThenElse_721
+            bPinned = false   # VariableSet_1783
+            LiftPlayT = GetTimeSeconds()   # VariableSet_1784
+            if ((GetTimeSeconds() - LiftEvT) < 0.05):   # IfThenElse_722
+                LiftN = 22   # VariableSet_1785
+        ChkScan()   # CallFunction_3945
+        RxLog(Kind=lift, Anim=AS_SkaterTB1_P3_Lift, Pri=6)   # CallFunction_3946
+        LiftPlay()   # CallFunction_3947
+    else:
+        Log(S=SK6RX lift skipped)   # CallFunction_3948
+
+== PlayPass(Strength)   # Event_13
+    bPendingShoot = false   # VariableSet_2757
+    PassHoldW = SelectFloat(PassLast, 0.0, ((GetTimeSeconds() - PassLastT) <= 0.1))   # VariableSet_2758
+    PassLast = 0.0   # VariableSet_2759
+    PassChg = 0.0   # VariableSet_2760
+    if ((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (3 >= ActPri))):   # IfThenElse_204
+        ActPri = 3   # VariableSet_2761
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Pass_Snap, SlotNodeName=DefaultSlot, BlendInTime=SelectFloat(0.0333, 0.0333, (PassHoldW >= 0.3)), BlendOutTime=0.05, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=0.0, InTimeToStartMontageAt=0.0834)   # CallFunction_2730
+        PassMon = CallFunction_2730.ReturnValue   # VariableSet_2762
+    else:
+        PassHoldW = 0.0   # VariableSet_2763
+    ChargeMix()   # CallFunction_2731
+
+== PlayPoke(bClean)   # Event_11
+    PlayAct(Anim=AS_SkaterTB1_P3_Poke, Pri=3, Rate=1.0, Start=0.0)   # CallFunction_4357
+    StumbleIn = SelectInt(0, 1, bClean)   # VariableSet_1877
+    StumbleT0 = GetTimeSeconds()   # VariableSet_1878
+    Log(S=Concat_StrStr(Concat_StrStr(SK5POKE , Conv_BoolToString(bClean)), Concat_StrStr( f , Conv_IntToString(Conv_Int64ToInt(GetFrameCount())))))   # CallFunction_4364
+
+== PlayReceive()   # CustomEvent_109
+    Log(S=E3 receive)   # CallFunction_1212
+    if ((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (3 >= ActPri))):   # IfThenElse_21
+        ActPri = 3   # VariableSet_1135
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Receive, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.06, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_1219
+
+== PlayShoot(Charge)   # Event_6
+    if (Charge > 0):   # IfThenElse_192
+        bPendingShoot = false   # VariableSet_673
+        PlayAct(Anim=AS_SkaterTB1_P3_Shot_Slap, Pri=4, Rate=1.0, Start=(FMin(Charge, ShootCharge) * 0.26667))   # CallFunction_1241
+    else:
+        bPendingShoot = true   # VariableSet_674
+        PendingShootAge = 0   # VariableSet_675
+
+== PlaySlideTackle(Frames, Side)   # CustomEvent_59
+    SlideSide = Side   # VariableSet_4383
+    DiveGo(Kind=2, DX=(-1.0 * DegCos(FacingYaw)), DY=(-1.0 * DegSin(FacingYaw)), Frames=Frames, Def=85)   # CallFunction_8583
+
+== PlaySlideTackleHit(DirX, DirZ)   # CustomEvent_41
+    BonkArm(K=SelectInt(2, 3, (((DirX * DegCos(FacingYaw)) + (DirZ * DegSin(FacingYaw))) < 0)))   # CallFunction_3476
+
+== PlayStickHit(bLifted)   # Event_22
+    if (bDown or bUpRun or (bPinned and ((GetTimeSeconds() - PinT) < RxGap)) or ((GetTimeSeconds() - LastRxT) < SelectFloat(0.45, RxGap, (RxKind == SelectInt(1, 2, bLifted))))):   # IfThenElse_765
+        Log(S=Concat_StrStr(SK6RX stickhit skipped dt , Conv_DoubleToString((GetTimeSeconds() - LastHitT))))   # CallFunction_4301
+    else:
+        LastHitT = GetTimeSeconds()   # VariableSet_1858
+        LastRxT = GetTimeSeconds()   # VariableSet_1859
+        RxKind = SelectInt(1, 2, bLifted)   # VariableSet_1860
+        if bLifted:   # IfThenElse_766
+            RxLog(Kind=stickhit, Anim=AS_SkaterTB1_P3_Lift_Hit, Pri=6)   # CallFunction_4305
+            PlayCut1(Anim=AS_SkaterTB1_P3_Lift_Hit, Pri=6, Start=0.0, BlendIn=0.03)   # CallFunction_4306
+        else:
+            RxLog(Kind=stickhit, Anim=AS_SkaterTB1_P3_Poke_Hit, Pri=6)   # CallFunction_4307
+            PlayCut1(Anim=AS_SkaterTB1_P3_Poke_Hit, Pri=6, Start=0.0, BlendIn=0.03)   # CallFunction_4308
+
+== PlayStumble(DirX, DirZ, Frames)   # CustomEvent_27
+    if bDown:   # IfThenElse_733
+        pass
+    else:
+        WhipGo(DX=DirX, DY=DirZ, K=1.0)   # CallFunction_4010
+    StumSpan = 32.0   # VariableSet_1796
+    Log(S=Concat_StrStr(SK23 PlayStumble frames , Conv_IntToString(Frames)))   # CallFunction_4012
+    PlayStumbleNow(DirX=DirX, DirZ=DirZ, Frames=Frames)   # CallFunction_4013
+    StumSpan = 18.0   # VariableSet_1797
+
+== PlayStumbleNow(DirX, DirZ, Frames)   # CustomEvent_21
+    if (Abs((GetTimeSeconds() - StumT)) < 0.001):   # IfThenElse_752
+        Log(S=SK23 stumble already started this frame)   # CallFunction_4237
+    else:
+        if (bDown or bUpRun):   # IfThenElse_753
+            Log(S=SK21 stumble skipped down)   # CallFunction_4238
+        else:
+            LastHitT = GetTimeSeconds()   # VariableSet_1838
+            LastRxT = GetTimeSeconds()   # VariableSet_1839
+            RxKind = 3   # VariableSet_1840
+            StumT = GetTimeSeconds()   # VariableSet_1841
+            bStop = false   # VariableSet_1842
+            if (((DirX * DegCos(FacingYaw)) + (DirZ * DegSin(FacingYaw))) >= 0.7071):   # IfThenElse_754
+                StumPlay(Anim=AS_SkaterTB1_P3_Stumble_Back, Frames=Frames)   # CallFunction_4244
+            else:
+                if (((DirX * DegCos(FacingYaw)) + (DirZ * DegSin(FacingYaw))) <= -0.7071):   # IfThenElse_755
+                    StumPlay(Anim=AS_SkaterTB1_P3_Stumble_Front, Frames=Frames)   # CallFunction_4247
+                else:
+                    if (((DirZ * DegCos(FacingYaw)) - (DirX * DegSin(FacingYaw))) > 0):   # IfThenElse_756
+                        StumPlay(Anim=AS_SkaterTB1_P3_Stumble_Left, Frames=Frames)   # CallFunction_4250
+                    else:
+                        StumPlay(Anim=AS_SkaterTB1_P3_Stumble_Right, Frames=Frames)   # CallFunction_4251
+
+== PlayUp(Anim)   # CustomEvent_8
+    if IsValid(GetAnimInstance(Mesh)):   # IfThenElse_0
+        ActPri = 6   # VariableSet_187
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=Anim, SlotNodeName=DefaultSlot, BlendInTime=UpBlend, BlendOutTime=0.05, InPlayRate=FMax(UpPlayRate, 0.5), LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=UpStart)   # CallFunction_179
+        UpCount = (UpCount + 1)   # VariableSet_188
+        bUpRun = true   # VariableSet_189
+        UpT0 = GetTimeSeconds()   # VariableSet_190
+        UpEndEst = (GetTimeSeconds() + ((GetPlayLength(Anim) - UpStart) / FMax(UpPlayRate, 0.5)))   # VariableSet_191
+        Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(SK4UP , GetObjectName(Anim)),  at_f ), Conv_DoubleToString(((GetTimeSeconds() - DownT0) * 60.0))),  rate ), Conv_DoubleToString(UpPlayRate)),  start ), Conv_DoubleToString(UpStart)),  end_f ), Conv_DoubleToString(((UpEndEst - DownT0) * 60.0))),  down_f ), Conv_IntToString(DownFrames)))   # CallFunction_190
+
+== PlayWeapon(Kind, DirX, DirZ, Frames, bHit)   # CustomEvent_67
+    if (WeaponKind != Kind):   # IfThenElse_633
+        SetWeapon(Kind=Kind)   # CallFunction_3590
+    if (bDown or bUpRun):   # IfThenElse_634
+        Log(S=SK26 weapon skipped down)   # CallFunction_3591
+    else:
+        if (Kind == 1):   # IfThenElse_635
+            WeaponCut(bA=(((DirX * DegCos(FacingYaw)) + (DirZ * DegSin(FacingYaw))) >= 0.9397), AnimA=AS_SkaterTB1_P3_Giant_Poke, AnimB=AS_SkaterTB1_P3_Giant_Sweep)   # CallFunction_3594
+        else:
+            if (Kind == 2):   # IfThenElse_636
+                WeaponCut(bA=bHit, AnimA=AS_SkaterTB1_P3_Mallet_Swing, AnimB=AS_SkaterTB1_P3_Mallet_Miss)   # CallFunction_3595
+            else:
+                if (Kind == 4):   # IfThenElse_637
+                    WeaponCut(bA=bHit, AnimA=AS_SkaterTB1_P3_Pin_Roll, AnimB=AS_SkaterTB1_P3_Pin_Miss)   # CallFunction_3596
+                else:
+                    if ((Kind == 3) and bHit):   # IfThenElse_638
+                        WeaponShow(bShow=true)   # CallFunction_3597
+                        WeaponMont = <none>   # VariableSet_1702
+                        K2_SetTimer(Object=self, FunctionName=KickDrop, Time=0.175, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_3598
+                        DiveGo(Kind=3, DX=DegSin(FacingYaw), DY=(-1.0 * DegCos(FacingYaw)), Frames=Frames, Def=89)   # CallFunction_3601
+                    else:
+                        if (Kind == 3):   # IfThenElse_639
+                            WeaponCut(bA=true, AnimA=AS_SkaterTB1_P3_Cannon_Fire, AnimB=AS_SkaterTB1_P3_Cannon_Fire)   # CallFunction_3602
+
+== PlayWeaponHit(Kind, DirX, DirZ)   # CustomEvent_68
+    if (Kind == 2):   # IfThenElse_62
+        BonkArm(K=1)   # CallFunction_433
+    else:
+        if (Kind == 4):   # IfThenElse_63
+            BonkArm(K=3)   # CallFunction_434
+
+== PlayWhiff(Kind)   # CustomEvent_119
+    if (Kind == 1):   # IfThenElse_84
+        PlayCrossWhiff()   # CallFunction_2663
+    else:
+        PlayCheckWhiff()   # CallFunction_2664
+
+== PushAnim()   # CustomEvent_0
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_413
+    AimAngle = AimAngle   # VariableSet_4403
+    AimReach = AimReach   # VariableSet_4404
+    T1 = FClamp(((AimReach - 1.0) * 3.3333333), 0.0, 1.0)   # VariableSet_4405
+    T2 = FClamp(((AimReach - 1.3) * 6.6666667), 0.0, 1.0)   # VariableSet_4406
+    T3 = FClamp(((AimReach - 1.45) * 6.6666667), 0.0, 1.0)   # VariableSet_4407
+    AimW = SelectFloat(1.0, AimW, (bWeapon or bBoostBeat))   # VariableSet_4408
+    ChargeTime = ChargeTime   # VariableSet_4409
+    ChargeAlpha = SelectFloat(0.0, ChargeAlpha, bDown)   # VariableSet_4410
+    bStLoco = (bDown or (not (bFaceoff or bGoalie)))   # VariableSet_4411
+    bStFace = bFaceoff   # VariableSet_4412
+    bStHold = (GoalieSide == 0)   # VariableSet_4413
+    bStRight = (GoalieSide > 0)   # VariableSet_4414
+
+== ReceiveBeginPlay()   # Event_0
+    HitStr = -1.0   # VariableSet_1749
+    RxGap = 0.35   # VariableSet_1750
+    LastRxT = -10.0   # VariableSet_1751
+    LiftPlayT = -10.0   # VariableSet_1752
+    StumT = -10.0   # VariableSet_1753
+    BrkMinF = 6   # VariableSet_1754
+    BrkMinH = 1   # VariableSet_1755
+    BrkGapH = 0.0   # VariableSet_1756
+    HoldAt = 9.0   # VariableSet_1757
+    StumSpan = 18.0   # VariableSet_1758
+    StopV = 7.0   # VariableSet_1759
+    StopGapB = 8.0   # VariableSet_1760
+    StopT = -10.0   # VariableSet_1761
+    AddDelegate(self=GetSubsystem(), Delegate=CreateDelegate())   # AddDelegate_7
+    CreateDynamicMaterialInstance(self=Mesh, ElementIndex=1, SourceMaterial=MI_SkaterTB1_P3_JerseyDeco, OptionalName=None)   # CallFunction_3809
+    JerseyMID = CallFunction_3809.ReturnValue   # VariableSet_1762
+    CreateDynamicMaterialInstance(self=Mesh, ElementIndex=4, SourceMaterial=None, OptionalName=None)   # CallFunction_3810
+    HelmetMID = CallFunction_3810.ReturnValue   # VariableSet_1763
+    if bHasColour:   # IfThenElse_695
+        SetVectorParameterValue(self=JerseyMID, ParameterName=TeamColour, Value=PendingColour)   # CallFunction_3811
+        SetVectorParameterValue(self=HelmetMID, ParameterName=TeamColour, Value=(PendingColour * 0.75))   # CallFunction_3812
+    if bHasColour:   # IfThenElse_696
+        SetScalarParameterValue(self=JerseyMID, ParameterName=CrestTeam, Value=Conv_IntToDouble(Clamp(PendingTeamId, 0, 1)))   # CallFunction_3815
+    if bHasNumber:   # IfThenElse_697
+        SetScalarParameterValue(self=JerseyMID, ParameterName=NumberTens, Value=Conv_IntToDouble((PendingNumber / 10)))   # CallFunction_3817
+        SetScalarParameterValue(self=JerseyMID, ParameterName=NumberOnes, Value=Conv_IntToDouble(Percent_IntInt(PendingNumber, 10)))   # CallFunction_3820
+        SetScalarParameterValue(self=JerseyMID, ParameterName=NumberOn, Value=1.0)   # CallFunction_3821
+        CreateDynamicMaterialInstance(self=Mesh, ElementIndex=2, SourceMaterial=None, OptionalName=None)   # CallFunction_3822
+        SetScalarParameterValue(self=CallFunction_3822.ReturnValue, ParameterName=NumberTens, Value=Conv_IntToDouble((PendingNumber / 10)))   # CallFunction_3824
+        CreateDynamicMaterialInstance(self=Mesh, ElementIndex=2, SourceMaterial=None, OptionalName=None)   # CallFunction_3825
+        SetScalarParameterValue(self=CallFunction_3825.ReturnValue, ParameterName=NumberOnes, Value=Conv_IntToDouble(Percent_IntInt(PendingNumber, 10)))   # CallFunction_3828
+
+== ReceiveTick(DeltaSeconds)   # Event_18
+    if (PassHoldW > 0):   # IfThenElse_229
+        PassHoldTick()   # CallFunction_2750
+    if bWhip:   # IfThenElse_238
+        WhipTick()   # CallFunction_2751
+    if bLayer:   # IfThenElse_239
+        LayerTick()   # CallFunction_2752
+    if bHoldRun:   # IfThenElse_240
+        HoldTick()   # CallFunction_2753
+    if (WindHoldLeft > 0):   # IfThenElse_241
+        WindHoldTick(Dt=0.0)   # CallFunction_2754
+    if bEqAny:   # IfThenElse_242
+        EquipTick()   # CallFunction_2755
+    LookTick()   # CallFunction_2756
+    if (bWeapon or bWeaponShown or bStickHid):   # IfThenElse_243
+        WeaponTick()   # CallFunction_2757
+    if bShade:   # IfThenElse_244
+        if (VSizeXY((GetSocketLocation(Mesh, head) - GetSocketLocation(Mesh, pelvis))) > 25.0):   # IfThenElse_245
+            ShadeYaw = DegAtan2((BreakVector(GetSocketLocation(Mesh, head)).Y - BreakVector(GetSocketLocation(Mesh, pelvis)).Y), (BreakVector(GetSocketLocation(Mesh, head)).X - BreakVector(GetSocketLocation(Mesh, pelvis)).X))   # VariableSet_2771
+        K2_SetWorldLocationAndRotation(self=ContactShadow, NewLocation=MakeVector(BreakVector(GetSocketLocation(Mesh, pelvis)).X, BreakVector(GetSocketLocation(Mesh, pelvis)).Y, (BreakVector(K2_GetActorLocation(self)).Z + 0.4)), NewRotation=MakeRotator(0.0, 0.0, ShadeYaw), bSweep=false, bTeleport=true)   # CallFunction_2778
+    if (bPinWant and ((GetTimeSeconds() - LastRxT) >= RxGap) and (not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (ActPri <= 6))):   # IfThenElse_246
+        PinOn()   # CallFunction_2785
+    if bDown:   # IfThenElse_247
+        if (bDiveOwn and ((GetTimeSeconds() - DownT0) >= ((Conv_IntToDouble(DownFrames) - 0.5) / 60.0))):   # IfThenElse_248
+            bDiveOwn = false   # VariableSet_2772
+            KnockDown(bDown=false, DirX=0.0, DirZ=0.0, bTrip=false)   # CallFunction_2787
+        if ((not bUpEarly) and (not bLie) and IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh))) and ((Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) + (DeltaSeconds * DownRate)) >= HoldAt)):   # IfThenElse_249
+            bLie = true   # VariableSet_2773
+            PlayLie()   # CallFunction_2792
+        if ((not bUpEarly) and (not bLie) and IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh))) and ((Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) + (DeltaSeconds * DownRate)) >= DownHold)):   # IfThenElse_250
+            Montage_Pause(self=GetAnimInstance(Mesh), Montage=GetCurrentActiveMontage(GetAnimInstance(Mesh)))   # CallFunction_2797
+        if ((not bUpEarly) and (UpAt >= 0) and (((GetTimeSeconds() - DownT0) + 0.008) >= UpAt)):   # IfThenElse_251
+            bUpEarly = true   # VariableSet_2774
+            UpPlayRate = UpRateS   # VariableSet_2775
+            UpStart = FMax(0.0, (((GetTimeSeconds() - DownT0) - UpAt) * UpRateS))   # VariableSet_2776
+            UpBlend = SelectFloat(SelectFloat(0.0, UpBlendQ, ((not bQuick) or (DownKind == 0))), 0.083, (bLie and (DownKind < 5)))   # VariableSet_2777
+            PlayGetUp()   # CallFunction_2802
+    if bUpRun:   # IfThenElse_252
+        if (IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh))) and Montage_IsPlaying(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) and ((GetTimeSeconds() - UpT0) > 0)):   # IfThenElse_253
+            UpEndEst = (GetTimeSeconds() + ((GetPlayLength(GetCurrentActiveMontage(GetAnimInstance(Mesh))) - Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh)))) / FMax(UpPlayRate, 0.5)))   # VariableSet_2778
+        else:
+            bUpRun = false   # VariableSet_2779
+            Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK6UPEND end_f , Conv_DoubleToString(((UpEndEst - DownT0) * 60.0))),  down_f ), Conv_IntToString(DownFrames)))   # CallFunction_2811
+
+== RxLog(Kind, Anim, Pri)   # CustomEvent_14
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(Concat_StrStr(SK6RX , Kind),  ), GetObjectName(Anim)), SelectString( played,  blocked, ((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (Pri >= ActPri))))),  dt ), Conv_DoubleToString((GetTimeSeconds() - LastHitT))))   # CallFunction_4356
+
+== SK26Do(Move)   # CustomEvent_84
+    if (Move == 1):   # IfThenElse_145
+        PlayDiveBlock(DirX=(DegCos(FacingYaw) - (0.2 * DegSin(FacingYaw))), DirZ=(DegSin(FacingYaw) + (0.2 * DegCos(FacingYaw))), Frames=0)   # CallFunction_846
+    if (Move == 2):   # IfThenElse_146
+        PlayDiveBlock(DirX=(DegCos(FacingYaw) + (0.2 * DegSin(FacingYaw))), DirZ=(DegSin(FacingYaw) - (0.2 * DegCos(FacingYaw))), Frames=0)   # CallFunction_851
+    if (Move == 3):   # IfThenElse_147
+        PlayDiveBlockHit()   # CallFunction_852
+    if (Move == 4):   # IfThenElse_148
+        PlaySlideTackle(Frames=0, Side=1)   # CallFunction_853
+    if (Move == 21):   # IfThenElse_149
+        PlaySlideTackle(Frames=0, Side=-1)   # CallFunction_854
+    if (Move == 22):   # IfThenElse_150
+        PlayDiveBlockFront(DirX=DegCos(FacingYaw), DirZ=DegSin(FacingYaw), Frames=0)   # CallFunction_857
+    if ((Move >= 5) and (Move <= 8)):   # IfThenElse_151
+        SetWeapon(Kind=Percent_IntInt((Move - 4), 4))   # CallFunction_859
+    if (Move == 25):   # IfThenElse_152
+        SetWeapon(Kind=4)   # CallFunction_860
+    if (Move == 9):   # IfThenElse_153
+        PlayWeapon(Kind=WeaponKind, DirX=DegCos(FacingYaw), DirZ=DegSin(FacingYaw), Frames=40, bHit=true)   # CallFunction_863
+    if (Move == 10):   # IfThenElse_154
+        PlayWeapon(Kind=WeaponKind, DirX=(-1.0 * DegSin(FacingYaw)), DirZ=DegCos(FacingYaw), Frames=40, bHit=false)   # CallFunction_866
+    if (Move == 11):   # IfThenElse_155
+        PlayWeaponHit(Kind=2, DirX=0.0, DirZ=0.0)   # CallFunction_867
+        TestDown(N=110)   # CallFunction_868
+    if (Move == 23):   # IfThenElse_156
+        PlaySlideTackleHit(DirX=(-1.0 * DegCos(FacingYaw)), DirZ=(-1.0 * DegSin(FacingYaw)))   # CallFunction_871
+        TestDown(N=110)   # CallFunction_872
+    if (Move == 24):   # IfThenElse_157
+        PlaySlideTackleHit(DirX=DegCos(FacingYaw), DirZ=DegSin(FacingYaw))   # CallFunction_878
+        TestDown(N=110)   # CallFunction_879
+    if (Move == 12):   # IfThenElse_158
+        PlayDash(Frames=96)   # CallFunction_880
+    if (Move == 13):   # IfThenElse_159
+        EndDash(Reason=1, DirX=0.0, DirZ=1.0)   # CallFunction_881
+    if (Move == 14):   # IfThenElse_160
+        EndDash(Reason=1, DirX=0.0, DirZ=-1.0)   # CallFunction_882
+    if (Move == 15):   # IfThenElse_161
+        EndDash(Reason=2, DirX=0.0, DirZ=1.0)   # CallFunction_883
+    if (Move == 20):   # IfThenElse_162
+        EndDash(Reason=2, DirX=0.0, DirZ=-1.0)   # CallFunction_884
+    if (Move == 16):   # IfThenElse_164
+        EndDash(Reason=3, DirX=0.0, DirZ=0.0)   # CallFunction_885
+    if (Move == 17):   # IfThenElse_165
+        PlayBoostPickup()   # CallFunction_886
+    if (Move == 18):   # IfThenElse_166
+        SetBoostLevel(bOn=true, SpeedScale=1.0)   # CallFunction_887
+    if (Move == 19):   # IfThenElse_167
+        SetBoostLevel(bOn=false, SpeedScale=1.0)   # CallFunction_888
+    if (Move == 30):   # IfThenElse_168
+        SetCrossCheckHold(bOn=true)   # CallFunction_889
+    if (Move == 31):   # IfThenElse_169
+        SetCrossCheckHold(bOn=false)   # CallFunction_890
+    if (Move == 32):   # IfThenElse_170
+        PlayCrossCheck(Frames=0)   # CallFunction_891
+    if (Move == 33):   # IfThenElse_171
+        PlayCelebrate(Which=0)   # CallFunction_892
+    if (Move == 34):   # IfThenElse_172
+        PlayCelebrate(Which=1)   # CallFunction_893
+    if (Move == 35):   # IfThenElse_173
+        PlayCelebrate(Which=2)   # CallFunction_894
+    if (Move == 36):   # IfThenElse_174
+        PlayCelebrate(Which=3)   # CallFunction_895
+    if (Move == 37):   # IfThenElse_175
+        SetBoostEquipped(Kind=shotgun, bOn=true)   # CallFunction_896
+    if (Move == 38):   # IfThenElse_176
+        SetBoostEquipped(Kind=hip_check, bOn=true)   # CallFunction_897
+    if (Move == 39):   # IfThenElse_177
+        SetBoostEquipped(Kind=shield, bOn=true)   # CallFunction_898
+    if (Move == 40):   # IfThenElse_178
+        SetBoostEquipped(Kind=slow_puck, bOn=true)   # CallFunction_899
+    if (Move == 41):   # IfThenElse_179
+        SetBoostEquipped(Kind=shotgun, bOn=false)   # CallFunction_900
+        SetBoostEquipped(Kind=hip_check, bOn=false)   # CallFunction_901
+        SetBoostEquipped(Kind=shield, bOn=false)   # CallFunction_902
+        SetBoostEquipped(Kind=slow_puck, bOn=false)   # CallFunction_903
+
+== SK26Test(Move)   # CustomEvent_69
+    Cast<HokejGameMode>(Object=GetGameMode())   # DynamicCast_80
+    if ((not IsValid(GetAttachParentActor())) or (GetHumanSkater(DynamicCast_80.AsHokej Game Mode) == GetAttachParentActor())):   # IfThenElse_660
+        Log(S=Concat_StrStr(SK26 test move , Conv_IntToString(Move)))   # CallFunction_3704
+        SK26Do(Move=Move)   # CallFunction_3705
+
+== SK2Down()   # CustomEvent_3
+    if bDown:   # IfThenElse_190
+        bPendingShoot = false   # VariableSet_671
+        StumbleIn = 0   # VariableSet_672
+        if IsValid(GetAnimInstance(Mesh)):   # IfThenElse_191
+            Montage_Stop(self=GetAnimInstance(Mesh), InBlendOutTime=0.15, Montage=None)   # CallFunction_1239
+    PushAnim()   # CallFunction_1240
+
+== SK2Tick()   # CustomEvent_2
+    if (bAimSeen and (AimW > 0.99) and (not IsAnyMontagePlaying(GetAnimInstance(Mesh))) and (HoldE < 0.01) and (PassChg < 0.01) and (Abs(AimStep) < 1.5) and (Abs(AimRStep) < 0.02)):   # IfThenElse_50
+        AimOffA = FClamp((AimOffA + (0.3 * (FClamp(NormalizeAxis(((DegAtan2(BreakVector(GetForwardVector(Mesh)).Y, BreakVector(GetForwardVector(Mesh)).X) - DegAtan2(BreakVector((GetSocketLocation(Mesh, puck_socket) - K2_GetActorLocation(self))).Y, BreakVector((GetSocketLocation(Mesh, puck_socket) - K2_GetActorLocation(self))).X)) - AimDes)), -25.0, 25.0) - AimOffA))), -25.0, 25.0)   # VariableSet_627
+        AimOffR = FClamp((AimOffR + (0.3 * (FClamp(((VSizeXY((GetSocketLocation(Mesh, puck_socket) - K2_GetActorLocation(self))) / 100.0) - AimReach), -0.3, 0.3) - AimOffR))), -0.3, 0.3)   # VariableSet_628
+    AimW = (AimW + FClamp((SelectFloat(1.0, 0.0, (bAimSeen and (not (bDown or bFaceoff or bGoalie)))) - AimW), -0.15, 0.15))   # VariableSet_629
+    if bPendingShoot:   # IfThenElse_55
+        if (PendingShootAge >= 1):   # IfThenElse_58
+            bPendingShoot = false   # VariableSet_630
+            PlayAct(Anim=AS_SkaterTB1_P3_Shot_Wrist, Pri=4, Rate=1.0, Start=0.0)   # CallFunction_746
+        else:
+            PendingShootAge = 1   # VariableSet_631
+    if ((StumbleIn > 0) and ((GetTimeSeconds() - StumbleT0) >= 0.095)):   # IfThenElse_59
+        StumbleIn = 0   # VariableSet_632
+        PlayCut(Anim=AS_SkaterTB1_P3_Stumble_Short, Pri=3, Start=FMax(0.0, ((GetTimeSeconds() - StumbleT0) - 0.1)), BlendIn=0.0)   # CallFunction_749
+        Log(S=Concat_StrStr(Concat_StrStr(SK5STUMBLE dt , Conv_DoubleToString((GetTimeSeconds() - StumbleT0))), Concat_StrStr( f , Conv_IntToString(Conv_Int64ToInt(GetFrameCount())))))   # CallFunction_755
+    SK3Fix()   # CallFunction_756
+    PushAnim()   # CallFunction_757
+
+== SK3Fix()   # CustomEvent_6
+    if (GetTimeSeconds() != FixT):   # IfThenElse_60
+        FixW = SelectFloat(FMin(1.0, (FixW + (FMax((GetTimeSeconds() - FixT), 0.0) / 0.15))), 0.0, WasRecentlyRendered(Mesh, 0.200000))   # VariableSet_633
+        FixT = GetTimeSeconds()   # VariableSet_634
+        BladeH = ((BreakVector(GetSocketLocation(Mesh, stick_socket)).Z + BreakVector(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))).Z) - BreakVector(K2_GetActorLocation(self)).Z)   # VariableSet_635
+        StickCorr = SelectFloat(SelectFloat(FClamp((StickCorr + (0.2 * ((SelectFloat(0.0, (H0 - ((BreakVector(GetSocketLocation(Mesh, stick_socket)).Z + BreakVector(GreaterGreater_VectorRotator(CallFunction_760.ReturnValue, CallFunction_761.ReturnValue)).Z) - BreakVector(K2_GetActorLocation(self)).Z)), (Abs((H0 - ((CallFunction_768.Z + CallFunction_769.Z) - BreakVector(CallFunction_770.ReturnValue).Z))) < 0.3)) * 57.2958) / FMax(VSizeXY(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))), 30.0)))), -12.0, 12.0), (StickCorr * 0.8), ((AimW > 0.5) and (not IsAnyMontagePlaying(GetAnimInstance(Mesh))) and (HoldE < 0.01) and (PassChg < 0.01))), 0.0, WasRecentlyRendered(Mesh, 0.200000))   # VariableSet_636
+        YawCorr = SelectFloat(SelectFloat(FClamp((YawCorr + (0.2 * ((SelectFloat(0.0, (((((CallFunction_906.Y + PromotableOperator_802.ReturnValue) - (CallFunction_908.Y + CallFunction_909.Y)) * BreakVector(GreaterGreater_VectorRotator(CallFunction_760.ReturnValue, CallFunction_761.ReturnValue)).X) - (((CallFunction_874.X + PromotableOperator_797.ReturnValue) - (CallFunction_904.X + CallFunction_905.X)) * BreakVector(GreaterGreater_VectorRotator(CallFunction_760.ReturnValue, CallFunction_761.ReturnValue)).Y)) / FMax(VSizeXY(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))), 30.0)), (Abs((((PromotableOperator_805.ReturnValue * CallFunction_923.X) - (PromotableOperator_800.ReturnValue * CallFunction_924.Y)) / FMax(VSizeXY(CallFunction_762.ReturnValue), 30.0))) < 0.3)) * 57.2958) / FMax(VSizeXY(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))), 30.0)))), -12.0, 12.0), (YawCorr * 0.8), ((AimW > 0.5) and (not IsAnyMontagePlaying(GetAnimInstance(Mesh))) and (HoldE < 0.01) and (PassChg < 0.01))), 0.0, WasRecentlyRendered(Mesh, 0.200000))   # VariableSet_637
+        RadCorr = SelectFloat(SelectFloat(FClamp((RadCorr + (0.2 * SelectFloat(0.0, (((((BreakVector(K2_GetActorLocation(self)).X + ((AimReach * 100.0) * DegCos(PromotableOperator_774.ReturnValue))) - (BreakVector(GetSocketLocation(Mesh, stick_socket)).X + BreakVector(GreaterGreater_VectorRotator(CallFunction_760.ReturnValue, CallFunction_761.ReturnValue)).X)) * BreakVector(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))).X) + (((BreakVector(K2_GetActorLocation(self)).Y + ((AimReach * 100.0) * DegSin(PromotableOperator_774.ReturnValue))) - (BreakVector(GetSocketLocation(Mesh, stick_socket)).Y + BreakVector(GreaterGreater_VectorRotator(CallFunction_760.ReturnValue, CallFunction_761.ReturnValue)).Y)) * BreakVector(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))).Y)) / FMax(VSizeXY(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))), 30.0)), (Abs((((((CallFunction_874.X + PromotableOperator_797.ReturnValue) - (CallFunction_904.X + CallFunction_905.X)) * BreakVector(GreaterGreater_VectorRotator(CallFunction_760.ReturnValue, CallFunction_761.ReturnValue)).X) + (((CallFunction_906.Y + PromotableOperator_802.ReturnValue) - (CallFunction_908.Y + CallFunction_909.Y)) * BreakVector(GreaterGreater_VectorRotator(CallFunction_760.ReturnValue, CallFunction_761.ReturnValue)).Y)) / FMax(VSizeXY(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))), 30.0))) < 0.3)))), -15.0, 15.0), (RadCorr * 0.8), ((AimW > 0.5) and (not IsAnyMontagePlaying(GetAnimInstance(Mesh))) and (HoldE < 0.01) and (PassChg < 0.01))), 0.0, WasRecentlyRendered(Mesh, 0.200000))   # VariableSet_638
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_19
+        StickRot = ComposeRotators(RotatorFromAxisAndAngle(InverseTransformDirection(K2_GetComponentToWorld(Mesh), Normal(Cross_VectorVector(MakeVector(BreakVector(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))).X, BreakVector(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket))).Y, 0.0), MakeVector(0.0, 0.0, 1.0)), 0.000100)), (((StickCorr * AimW) * FixW) * ((1.0 - FClamp(HoldE, 0.0, 1.0)) * (1.0 - FClamp(PassChg, 0.0, 1.0))))), RotatorFromAxisAndAngle(MakeVector(0.0, 0.0, 1.0), (((-1.0 * AimOver) * AimW) * ((1.0 - FClamp(HoldE, 0.0, 1.0)) * (1.0 - FClamp(PassChg, 0.0, 1.0))))))   # VariableSet_639
+        StickOff = InverseTransformDirection(K2_GetComponentToWorld(Mesh), (Normal(GreaterGreater_VectorRotator(MakeVector(5.13, -140.72, 9.65), GetSocketRotation(Mesh, stick_socket)), 0.000100) * (((0 * RadCorr) * AimW) * ((1.0 - FClamp(HoldE, 0.0, 1.0)) * (1.0 - FClamp(PassChg, 0.0, 1.0))))))   # VariableSet_640
+
+== SetBoardPin(bOn)   # Event_21
+    if bOn:   # IfThenElse_760
+        pass
+    else:
+        bPinWant = false   # VariableSet_1855
+    if (bOn and (not bDown) and ((GetTimeSeconds() - LastRxT) < RxGap)):   # IfThenElse_761
+        bPinWant = true   # VariableSet_1856
+        Log(S=SK6RX pin waits)   # CallFunction_4282
+    else:
+        if (bOn and (not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (ActPri <= 6))):   # IfThenElse_762
+            PinOn()   # CallFunction_4287
+        else:
+            if ((not bOn) and bPinned):   # IfThenElse_763
+                Log(S=SK6RX pin off stop)   # CallFunction_4289
+                bPinned = false   # VariableSet_1857
+                if ((ActPri <= 6) and (not bDown) and (not bUpRun)):   # IfThenElse_764
+                    Montage_Stop(self=GetAnimInstance(Mesh), InBlendOutTime=0.25, Montage=None)   # CallFunction_4292
+            else:
+                Log(S=Concat_StrStr(SK6RX pin ignored on=, Conv_BoolToString(bOn)))   # CallFunction_4294
+
+== SetBoost(Kind)   # Event_10
+    if (Kind != ""):   # IfThenElse_195
+        SetScalarParameterValue(self=JerseyMID, ParameterName=Emissive, Value=3.0)   # CallFunction_1278
+    else:
+        SetScalarParameterValue(self=JerseyMID, ParameterName=Emissive, Value=2.0)   # CallFunction_1279
+
+== SetBoostEquipped(Kind, bOn)   # CustomEvent_99
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(E2 boost equipped , Conv_NameToString(Kind)),  on ), Conv_BoolToString(bOn)))   # CallFunction_1610
+    if (Kind == shotgun):   # IfThenElse_181
+        bEqShotgun = bOn   # VariableSet_1288
+    else:
+        if (Kind == hip_check):   # IfThenElse_182
+            bEqHip = bOn   # VariableSet_1289
+        else:
+            if (Kind == shield):   # IfThenElse_183
+                bEqShield = bOn   # VariableSet_1290
+            else:
+                if (Kind == slow_puck):   # IfThenElse_184
+                    bEqSlow = bOn   # VariableSet_1291
+                else:
+                    Log(S=E2 boost equipped: unknown kind)   # CallFunction_1611
+    bEqAny = (bEqShotgun or bEqHip or bEqShield or bEqSlow)   # VariableSet_1292
+    EquipApply()   # CallFunction_1612
+
+== SetBoostLevel(bOn, SpeedScale)   # CustomEvent_72
+    if bOn:   # IfThenElse_1417
+        bBoostLv = true   # VariableSet_4432
+        DashBegin(Rate=FClamp(SpeedScale, 0.9, 1.3), Loops=1000)   # CallFunction_8905
+    else:
+        bBoostLv = false   # VariableSet_4433
+        EndDash(Reason=0, DirX=0.0, DirZ=0.0)   # CallFunction_8906
+
+== SetBraking(bOn, Decel)   # CustomEvent_28
+    bBrkLevel = true   # VariableSet_1799
+    Cast<HokejGameMode>(Object=GetGameMode())   # DynamicCast_87
+    bHum = (GetHumanSkater(DynamicCast_87.AsHokej Game Mode) == GetAttachParentActor())   # VariableSet_1800
+    if bOn:   # IfThenElse_739
+        BrkV0 = SpdPrev   # VariableSet_1801
+        BrkN = 0   # VariableSet_1802
+        BrkT = GetTimeSeconds()   # VariableSet_1803
+    else:
+        Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK24 brk t , Conv_DoubleToString(BrkT)), Concat_StrStr( v , Conv_DoubleToString(BrkV0))), Concat_StrStr(Concat_StrStr( n , Conv_IntToString(BrkN)), Concat_StrStr( shown , Conv_BoolToString(bBrkShown)))))   # CallFunction_4126
+        bBrkShown = false   # VariableSet_1804
+    bBrkOn = bOn   # VariableSet_1805
+
+== SetCrossCheckHold(bOn)   # CustomEvent_94
+    Log(S=Concat_StrStr(E2 cross hold , Conv_BoolToString(bOn)))   # CallFunction_659
+    if (bOn != bHoldOn):   # IfThenElse_13
+        HoldW0 = HoldE   # VariableSet_536
+        HoldT0 = GetTimeSeconds()   # VariableSet_538
+        HoldRate = 10.0   # VariableSet_539
+        bHoldOn = bOn   # VariableSet_540
+        bHoldSeen = true   # VariableSet_541
+        bHoldRun = true   # VariableSet_542
+        if bOn:   # IfThenElse_14
+            pass
+        else:
+            HoldOffT = GetTimeSeconds()   # VariableSet_543
+
+== SetFaceoff(bReady)   # Event_15
+    bFaceoff = bReady   # VariableSet_683
+    PushAnim()   # CallFunction_1252
+
+== SetGoalieStance(bOn, Side)   # Event_17
+    bGoalie = bOn   # VariableSet_684
+    GoalieSide = Clamp(Side, -1, 1)   # VariableSet_685
+    PushAnim()   # CallFunction_1256
+
+== SetHasPuck(bHasPuck)   # Event_9
+    bPuck = bHasPuck   # VariableSet_2706
+
+== SetKnockedDown(bDown, DirX, DirZ, KnockdownFrames)   # Event_8
+    if (bDown and bDown and (DiveKind != 0) and (not bUpEarly)):   # IfThenElse_1365
+        DiveAdopt(N=KnockdownFrames)   # CallFunction_8556
+    else:
+        DownFrames = SelectInt(Max(KnockdownFrames, 0), DownFrames, bDown)   # VariableSet_4374
+        bDiveOwn = false   # VariableSet_4375
+        DiveKind = SelectInt(0, DiveKind, bDown)   # VariableSet_4376
+        KnockDown(bDown=bDown, DirX=DirX, DirZ=DirZ, bTrip=false)   # CallFunction_8559
+
+== SetLen(Anim, bUp)   # CustomEvent_15
+    if bUp:   # IfThenElse_87
+        UpLen = GetPlayLength(Anim)   # VariableSet_147
+    else:
+        DownLen = (GetPlayLength(Anim) - DownStart)   # VariableSet_148
+
+== SetLog(bOn)   # CustomEvent_37
+    bLog = bOn   # VariableSet_1600
+
+== SetLookAtPuck(bOn)   # CustomEvent_114
+    bNoLook = (not bOn)   # VariableSet_0
+
+== SetNumber(N)   # Event_4
+    PendingNumber = Clamp(N, 0, 99)   # VariableSet_689
+    bHasNumber = true   # VariableSet_690
+    if IsValid(JerseyMID):   # IfThenElse_194
+        SetScalarParameterValue(self=JerseyMID, ParameterName=NumberTens, Value=Conv_IntToDouble((PendingNumber / 10)))   # CallFunction_1266
+        SetScalarParameterValue(self=JerseyMID, ParameterName=NumberOnes, Value=Conv_IntToDouble(Percent_IntInt(PendingNumber, 10)))   # CallFunction_1269
+        SetScalarParameterValue(self=JerseyMID, ParameterName=NumberOn, Value=1.0)   # CallFunction_1270
+        CreateDynamicMaterialInstance(self=Mesh, ElementIndex=2, SourceMaterial=None, OptionalName=None)   # CallFunction_1271
+        SetScalarParameterValue(self=CallFunction_1271.ReturnValue, ParameterName=NumberTens, Value=Conv_IntToDouble((PendingNumber / 10)))   # CallFunction_1273
+        CreateDynamicMaterialInstance(self=Mesh, ElementIndex=2, SourceMaterial=None, OptionalName=None)   # CallFunction_1274
+        SetScalarParameterValue(self=CallFunction_1274.ReturnValue, ParameterName=NumberOnes, Value=Conv_IntToDouble(Percent_IntInt(PendingNumber, 10)))   # CallFunction_1277
+
+== SetPassCharge(Charge01)   # CustomEvent_111
+    PassChg = FClamp(Charge01, 0.0, 1.0)   # VariableSet_2764
+    if (PassChg > 0):   # IfThenElse_205
+        PassLast = PassChg   # VariableSet_2765
+        PassLastT = GetTimeSeconds()   # VariableSet_2766
+    ChargeMix()   # CallFunction_2734
+
+== SetShotCharge(Charge01)   # Event_2
+    ShootCharge = FClamp(Charge01, 0.0, 1.0)   # VariableSet_850
+    ChargeMix()   # CallFunction_994
+
+== SetStickAim(AngleDeg, ReachM)   # Event_1
+    AimStep = SelectFloat((FClamp(AngleDeg, -70.0, 70.0) - AimSent), 0.0, bAimSeen)   # VariableSet_615
+    AimRStep = SelectFloat((FClamp(ReachM, 1.0, 1.6) - AimRSent), 0.0, bAimSeen)   # VariableSet_616
+    AimSent = FClamp(AngleDeg, -70.0, 70.0)   # VariableSet_617
+    AimRSent = FClamp(ReachM, 1.0, 1.6)   # VariableSet_618
+    AimLead = SelectFloat(0.0, SelectFloat((AimStep * 0.65), (SignOfFloat(AimStep) * 12.4), (Abs(AimStep) < 14.9)), (Abs(AimStep) > 15.5))   # VariableSet_619
+    AimAngleT = SelectFloat(FClamp((FClamp(AngleDeg, -70.0, 70.0) + AimLead), (AimAngleT - 15.0), (AimAngleT + 15.0)), (FClamp(AngleDeg, -70.0, 70.0) + AimLead), (bAimSeen and (Abs(AimStep) <= 15.5)))   # VariableSet_620
+    AimReachT = FClamp((FClamp(ReachM, 1.0, 1.6) + (AimRStep * 0.65)), 1.0, 1.6)   # VariableSet_621
+    AimDes = (AimAngleT - AimOffA)   # VariableSet_622
+    AimAngle = FClamp(AimDes, -63.0, 70.0)   # VariableSet_623
+    AimOver = FClamp((AimDes - AimAngle), -12.0, 12.0)   # VariableSet_624
+    AimReach = FClamp((AimReachT - AimOffR), 1.0, 1.6)   # VariableSet_625
+    bAimSeen = true   # VariableSet_626
+    PushAnim()   # CallFunction_722
+
+== SetStickLock(bOn, Frames)   # CustomEvent_87
+    if bOn:   # IfThenElse_1
+        bLock = true   # VariableSet_193
+        LockT0 = GetTimeSeconds()   # VariableSet_194
+        LockLen = (Conv_IntToDouble(SelectInt(Frames, 20, (Frames > 0))) / 60.0)   # VariableSet_195
+        bLayer = true   # VariableSet_196
+        Log(S=Concat_StrStr(SK30 stick lock on frames , Conv_IntToString(Frames)))   # CallFunction_195
+    else:
+        if bLock:   # IfThenElse_2
+            LockLen = FMin(LockLen, ((GetTimeSeconds() - LockT0) + 0.0667))   # VariableSet_197
+        Log(S=SK30 stick lock off)   # CallFunction_204
+
+== SetTakeGrace(bOn, Frames)   # CustomEvent_88
+    if bOn:   # IfThenElse_3
+        bGrace = true   # VariableSet_198
+        GraceT0 = GetTimeSeconds()   # VariableSet_199
+        GraceLen = (Conv_IntToDouble(SelectInt(Frames, 30, (Frames > 0))) / 60.0)   # VariableSet_200
+        bLayer = true   # VariableSet_256
+        Log(S=Concat_StrStr(SK30 take grace on frames , Conv_IntToString(Frames)))   # CallFunction_209
+    else:
+        if bGrace:   # IfThenElse_4
+            GraceLen = FMin(GraceLen, ((GetTimeSeconds() - GraceT0) + 0.1333))   # VariableSet_257
+        Log(S=SK30 take grace off)   # CallFunction_211
+
+== SetTeam(TeamId, Colour)   # Event_3
+    PendingColour = Colour   # VariableSet_686
+    PendingTeamId = TeamId   # VariableSet_687
+    bHasColour = true   # VariableSet_688
+    if IsValid(JerseyMID):   # IfThenElse_193
+        SetVectorParameterValue(self=JerseyMID, ParameterName=TeamColour, Value=Colour)   # CallFunction_1258
+        SetVectorParameterValue(self=HelmetMID, ParameterName=TeamColour, Value=(Colour * 0.75))   # CallFunction_1259
+        SetScalarParameterValue(self=JerseyMID, ParameterName=CrestTeam, Value=Conv_IntToDouble(Clamp(TeamId, 0, 1)))   # CallFunction_1262
+
+== SetTestMode(M)   # CustomEvent_29
+    UpMode = M   # VariableSet_1088
+
+== SetTripped(bDown, DirX, DirZ)   # CustomEvent_4
+    if bDown:   # IfThenElse_11
+        DownFrames = 0   # VariableSet_137
+    KnockDown(bDown=bDown, DirX=DirX, DirZ=DirZ, bTrip=true)   # CallFunction_170
+
+== SetWeapon(Kind)   # CustomEvent_65
+    WeaponKind = Clamp(Kind, 0, 4)   # VariableSet_1684
+    bWeapon = (WeaponKind > 0)   # VariableSet_1685
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_73
+    bCarry1 = (WeaponKind == 1)   # VariableSet_1686
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_74
+    bCarry2 = (WeaponKind == 2)   # VariableSet_1687
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_75
+    bCarry3 = (WeaponKind == 3)   # VariableSet_1688
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_76
+    bCarry5 = (WeaponKind == 4)   # VariableSet_1689
+    Log(S=Concat_StrStr(SK26 SetWeapon , Conv_IntToString(WeaponKind)))   # CallFunction_3547
+    PushAnim()   # CallFunction_3548
+    SetVisibility(self=KegDrop, bNewVisibility=false, bPropagateToChildren=false)   # CallFunction_3549
+    bKegDropped = false   # VariableSet_1690
+    if bWeaponShown:   # IfThenElse_619
+        WeaponShow(bShow=false)   # CallFunction_3550
+    if (bStickHid and (WeaponKind == 0)):   # IfThenElse_620
+        StickHide(bHide=false)   # CallFunction_3551
+
+== SetWindupTakes(bOn, N)   # CustomEvent_103
+    bWindupTakes = bOn   # VariableSet_2927
+    WindN = N   # VariableSet_2928
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(E2 windup takes , Conv_BoolToString(bOn)),  n ), Conv_IntToString(N)))   # CallFunction_2892
+
+== ShiftTick()   # CustomEvent_26
+    if ((WallShift != 0) or (ShiftE != 0)):   # IfThenElse_279
+        ShiftE = (ShiftE + FClamp((SelectFloat(WallShift, (WallShift * (1.0 - FClamp(((FClamp(((GetTimeSeconds() - UpT0) / FMax((UpEndEst - UpT0), 0.05)), 0.0, 1.0) - 0.39) / 0.61), 0.0, 1.0))), (bDown and (not bUpEarly))) - ShiftE), (-1.0 * FMax((Abs(WallShift) / 3.0), 1.0)), FMax((Abs(WallShift) / 3.0), 1.0)))   # VariableSet_750
+        K2_SetRelativeLocation(self=Mesh, NewLocation=MakeVector((0 + (ShiftE * DegCos((WallYaw - BreakRotator(K2_GetActorRotation(self)).Yaw)))), (0 + (ShiftE * DegSin((WallYaw - BreakRotator(K2_GetActorRotation(self)).Yaw)))), 0.0), bSweep=false, bTeleport=true)   # CallFunction_1168
+        if ((not bDown) and (not bUpRun) and (Abs(ShiftE) < 0.01)):   # IfThenElse_280
+            WallShift = 0.0   # VariableSet_751
+            ShiftE = 0.0   # VariableSet_752
+            K2_SetRelativeLocation(self=Mesh, NewLocation=MakeVector(0.0, 0.0, 0.0), bSweep=false, bTeleport=true)   # CallFunction_1173
+
+== SkidRelease(bHeld)   # CustomEvent_82
+    if IsValid(SkidSnd):   # IfThenElse_643
+        if bHeld:   # IfThenElse_644
+            SetTriggerParameter(self=SkidSnd, InName=Release)   # CallFunction_3629
+            Log(S=SK28 snd MS_dash_skid Release sent)   # CallFunction_3630
+        SkidSnd = <none>   # VariableSet_1713
+
+== SlidePick(bPlay)   # CustomEvent_78
+    if (SlideSide < 0):   # IfThenElse_1363
+        FallDo(Anim=AS_SkaterTB1_P3_Slide_Tackle_Right, bPlay=bPlay, Hold=19)   # CallFunction_8551
+    else:
+        FallDo(Anim=AS_SkaterTB1_P3_Slide_Tackle_Left, bPlay=bPlay, Hold=19)   # CallFunction_8552
+
+== Snd(Sound)   # CustomEvent_38
+    PlaySound2D(Sound=Sound, VolumeMultiplier=1.000000, PitchMultiplier=1.000000, StartTime=0.000000, ConcurrencySettings=None, OwningActor=None, bIsUISound=true)   # CallFunction_3292
+    Log(S=Concat_StrStr(SK28 snd , GetObjectName(Sound)))   # CallFunction_3294
+
+== SndBonk()   # CustomEvent_48
+    if bDown:   # IfThenElse_629
+        pass
+    else:
+        Snd(Sound=MS_mallet_bonk)   # CallFunction_3570
+
+== SndCannon()   # CustomEvent_49
+    if bDown:   # IfThenElse_630
+        pass
+    else:
+        Snd(Sound=MS_cannon_fire)   # CallFunction_3571
+
+== SndKick()   # CustomEvent_43
+    if (bDown and (DiveKind == 3)):   # IfThenElse_610
+        Snd(Sound=MS_cannon_kick)   # CallFunction_3488
+
+== SndSkid()   # CustomEvent_81
+    SpawnSound2D(Sound=MS_dash_skid, VolumeMultiplier=1.000000, PitchMultiplier=1.000000, StartTime=0.000000, ConcurrencySettings=None, bPersistAcrossLevelTransition=false, bAutoDestroy=true)   # CallFunction_3624
+    SkidSnd = CallFunction_3624.ReturnValue   # VariableSet_1712
+    if bBrkOn:   # IfThenElse_642
+        SetFloatParameter(self=SkidSnd, InName=HoldSeconds, InFloat=5.0)   # CallFunction_3625
+    Log(S=Concat_StrStr(SK28 snd MS_dash_skid spawned held , Conv_BoolToString(bBrkOn)))   # CallFunction_3627
+
+== SndSwing()   # CustomEvent_47
+    if bDown:   # IfThenElse_627
+        pass
+    else:
+        Snd(Sound=MS_mallet_swing)   # CallFunction_3568
+        if bBonkSnd:   # IfThenElse_628
+            K2_SetTimer(Object=self, FunctionName=SndBonk, Time=0.175, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_3569
+
+== SndWipe()   # CustomEvent_44
+    if (bDown and (DiveKind == 4)):   # IfThenElse_611
+        Snd(Sound=MS_dash_wipeout)   # CallFunction_3489
+
+== StickHide(bHide)   # CustomEvent_45
+    bStickHid = bHide   # VariableSet_1682
+    ShowMaterialSection(self=Mesh, MaterialID=8, SectionIndex=8, bShow=(not bHide), LODIndex=0)   # CallFunction_3523
+    Log(S=Concat_StrStr(SK28 stick hidden , Conv_BoolToString(bHide)))   # CallFunction_3525
+
+== StopTick(Speed, TurnRate)   # CustomEvent_23
+    if ((((SpdPrev - Speed) * 60.0) <= 12.0) and (DecN >= 3) and (not bCand) and (not bBrkLevel) and (StopV0 >= StopV)):   # IfThenElse_23
+        Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK23 brake short t , Conv_DoubleToString(GetTimeSeconds())), Concat_StrStr( v0 , Conv_DoubleToString(StopV0))), Concat_StrStr( lost , Conv_DoubleToString((StopV0 - SpdPrev)))))   # CallFunction_48
+    if (((SpdPrev - Speed) * 60.0) > 12.0):   # IfThenElse_24
+        if (DecN == 0):   # IfThenElse_25
+            StopV0 = SpdPrev   # VariableSet_14
+        DecN = (DecN + 1)   # VariableSet_15
+    else:
+        DecN = 0   # VariableSet_16
+        bCand = false   # VariableSet_17
+    DecE = (DecE + (0.34 * (((SpdPrev - Speed) * 60.0) - DecE)))   # VariableSet_18
+    SpdPrev = Speed   # VariableSet_19
+    if bStop:   # IfThenElse_26
+        if (bDown or bUpRun or (ActPri != 5) or (not IsAnyMontagePlaying(GetAnimInstance(Mesh)))):   # IfThenElse_27
+            bStop = false   # VariableSet_20
+            Log(S=SK21 stop end)   # CallFunction_52
+        else:
+            if (((bBrkLevel and bBrkOn) or ((not bBrkLevel) and (DecE > 8.0) and (Speed > 0.7))) and (Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) >= 0.266667)):   # IfThenElse_28
+                Montage_SetPosition(self=GetAnimInstance(Mesh), Montage=GetCurrentActiveMontage(GetAnimInstance(Mesh)), NewPosition=(Montage_GetPosition(GetAnimInstance(Mesh), GetCurrentActiveMontage(GetAnimInstance(Mesh))) - 0.2))   # CallFunction_65
+    else:
+        if ((not bBrkLevel) and (DecN >= 3) and ((StopV0 - Speed) >= 3.5) and (not bCand)):   # IfThenElse_40
+            bCand = true   # VariableSet_21
+            Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK22 brake t , Conv_DoubleToString(GetTimeSeconds())), Concat_StrStr( v0 , Conv_DoubleToString(StopV0))), Concat_StrStr( spd , Conv_DoubleToString(Speed))))   # CallFunction_72
+            Cast<HokejGameMode>(Object=GetGameMode())   # DynamicCast_6
+            if ((StopV0 >= StopV) and ((GetTimeSeconds() - StopT) >= SelectFloat(1.5, StopGapB, (GetHumanSkater(DynamicCast_6.AsHokej Game Mode) == GetAttachParentActor()))) and (not bDown) and (not bUpRun) and (not bHoldOn) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (ActPri <= 3))):   # IfThenElse_42
+                bStop = true   # VariableSet_22
+                ActPri = 5   # VariableSet_23
+                StopT = GetTimeSeconds()   # VariableSet_24
+                Log(S=Concat_StrStr(Concat_StrStr(SK21 stop start v0 , Conv_DoubleToString(StopV0)), Concat_StrStr( spd , Conv_DoubleToString(Speed))))   # CallFunction_87
+                PlaySound2D(Sound=MS_brake, VolumeMultiplier=1.000000, PitchMultiplier=1.000000, StartTime=0.000000, ConcurrencySettings=None, OwningActor=None, bIsUISound=true)   # CallFunction_88
+                Activate(self=BrakeFx, bReset=true)   # CallFunction_89
+                SetVariableFloat(self=BrakeFx, InVariableName=User.Strength, InValue=(StopV0 / 14.0))   # CallFunction_90
+                if (TurnRate > 0.2):   # IfThenElse_43
+                    PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Stop_Hard_Left, SlotNodeName=DefaultSlot, BlendInTime=0.06, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_92
+                else:
+                    PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Stop_Hard, SlotNodeName=DefaultSlot, BlendInTime=0.06, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_94
+    if bBrkOn:   # IfThenElse_44
+        BrkN = (BrkN + 1)   # VariableSet_25
+    if (bBrkLevel and bBrkOn and (not bBrkShown) and (not bStop) and (BrkV0 >= StopV) and (BrkN >= SelectInt(BrkMinH, BrkMinF, bHum)) and ((GetTimeSeconds() - StopT) >= SelectFloat(BrkGapH, StopGapB, bHum)) and (not bDown) and (not bUpRun) and (not bHoldOn) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or (ActPri <= 3))):   # IfThenElse_45
+        bStop = true   # VariableSet_26
+        ActPri = 5   # VariableSet_27
+        bBrkShown = true   # VariableSet_28
+        StopT = GetTimeSeconds()   # VariableSet_29
+        Log(S=SK23 brake level pose)   # CallFunction_107
+        PlaySound2D(Sound=MS_brake, VolumeMultiplier=1.000000, PitchMultiplier=1.000000, StartTime=0.000000, ConcurrencySettings=None, OwningActor=None, bIsUISound=true)   # CallFunction_108
+        Activate(self=BrakeFx, bReset=true)   # CallFunction_109
+        SetVariableFloat(self=BrakeFx, InVariableName=User.Strength, InValue=(BrkV0 / 14.0))   # CallFunction_110
+        if (TurnRate > 0.2):   # IfThenElse_47
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Stop_Hard_Left, SlotNodeName=DefaultSlot, BlendInTime=0.06, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_112
+        else:
+            PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Stop_Hard, SlotNodeName=DefaultSlot, BlendInTime=0.06, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_114
+
+== StumPlay(Anim, Frames)   # CustomEvent_20
+    RxLog(Kind=stumble, Anim=Anim, Pri=8)   # CallFunction_1394
+    ActPri = 8   # VariableSet_761
+    PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=Anim, SlotNodeName=DefaultSlot, BlendInTime=0.03, BlendOutTime=0.1, InPlayRate=(StumSpan / Conv_IntToDouble(Max(Frames, 4))), LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_1397
+
+== TestBusCheck(Strength)   # CustomEvent_92
+    bChkWait = false   # VariableSet_270
+    ChkBusT = GetTimeSeconds()   # VariableSet_271
+    Log(S=SK30 test bus check)   # CallFunction_356
+
+== TestChkCut(Size, bRight)   # CustomEvent_107
+    ChkSize = Size   # VariableSet_803
+    Log(S=E2 test chk cut)   # CallFunction_716
+    ChkCut(bRight=bRight, Start=0.0, BlendIn=0.03)   # CallFunction_717
+
+== TestDown(N)   # CustomEvent_85
+    DownFrames = N   # VariableSet_1739
+    bDiveOwn = true   # VariableSet_1740
+    KnockDown(bDown=true, DirX=(-1.0 * DegSin(FacingYaw)), DirZ=DegCos(FacingYaw), bTrip=false)   # CallFunction_3752
+
+== Tune(Which, Val)   # CustomEvent_93
+    if (Which == 1):   # IfThenElse_112
+        LockLift = Val   # VariableSet_1651
+    if (Which == 2):   # IfThenElse_113
+        GraceYaw = Val   # VariableSet_1652
+    if (Which == 3):   # IfThenElse_114
+        GraceDraw = Val   # VariableSet_1653
+    if (Which == 4):   # IfThenElse_115
+        UpBlendQ = Val   # VariableSet_1654
+    if (Which == 5):   # IfThenElse_116
+        SkidSway = Val   # VariableSet_1655
+    if (Which == 6):   # IfThenElse_117
+        GracePitch = Val   # VariableSet_1656
+    if (Which == 7):   # IfThenElse_118
+        LockShake = Val   # VariableSet_1657
+    if (Which == 8):   # IfThenElse_119
+        LockRoll = Val   # VariableSet_1658
+    if (Which == 9):   # IfThenElse_120
+        GraceRoll = Val   # VariableSet_1659
+    if (Which == 10):   # IfThenElse_121
+        GraceLift = Val   # VariableSet_1660
+
+== UpdateMotion(Speed, TurnRate, Facing)   # Event_5
+    SpeedNow = Speed   # VariableSet_641
+    FacingYaw = BreakRotator(Facing).Yaw   # VariableSet_642
+    if (LiftN > 0):   # IfThenElse_61
+        LiftN = (LiftN - 1)   # VariableSet_643
+    Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_20
+    Speed = Speed   # VariableSet_644
+    TurnRate = TurnRate   # VariableSet_645
+    if bDown:   # IfThenElse_77
+        DownAge = (DownAge + 1)   # VariableSet_646
+        K2_SetWorldRotation(self=Mesh, NewRotation=RLerp(MakeRotator(0.0, 0.0, StartYaw), MakeRotator(0.0, 0.0, (DownYaw + (TurnYaw * SelectFloat(FClamp(((GetTimeSeconds() - (UpEndEst - 0.05)) / 0.05), 0.0, 1.0), 0.0, bUpEarly)))), FMin(1.0, (Conv_IntToDouble(DownAge) / 6.0)), true), bSweep=false, bTeleport=true)   # CallFunction_1125
+    else:
+        if (GetUpFrames > 0):   # IfThenElse_78
+            GetUpFrames = (GetUpFrames - 1)   # VariableSet_647
+            K2_SetWorldRotation(self=Mesh, NewRotation=RLerp(MakeRotator(0.0, 0.0, BreakRotator(Facing).Yaw), MakeRotator(0.0, 0.0, (DownYaw + TurnYaw)), (Conv_IntToDouble(GetUpFrames) / Conv_IntToDouble(Max(GetUpN, 1))), true), bSweep=false, bTeleport=true)   # CallFunction_1131
+        else:
+            K2_SetRelativeRotation(self=Mesh, NewRotation=MakeRotator(0.0, 0.0, (0 + (LiftYaw * SelectFloat(FClamp(FMin((Conv_IntToDouble((22 - LiftN)) / 3.0), (Conv_IntToDouble(LiftN) / 10.0)), 0.0, 1.0), 0.0, (LiftN > 0))))), bSweep=false, bTeleport=true)   # CallFunction_1137
+    ShiftTick()   # CallFunction_1138
+    StopTick(Speed=Speed, TurnRate=TurnRate)   # CallFunction_1150
+    SK2Tick()   # CallFunction_1151
+
+== WallAt(DX, DY)   # CustomEvent_19
+    bWall = ((Abs((BreakVector(K2_GetActorLocation(self)).X + (DX * 150.0))) > RinkHX) or (Abs((BreakVector(K2_GetActorLocation(self)).Y + (DY * 150.0))) > RinkHY) or (((Abs((BreakVector(K2_GetActorLocation(self)).X + (DX * 150.0))) - (RinkHX - RinkR)) > 0) and ((Abs((BreakVector(K2_GetActorLocation(self)).Y + (DY * 150.0))) - (RinkHY - RinkR)) > 0) and ((((Abs((BreakVector(K2_GetActorLocation(self)).X + (DX * 150.0))) - (RinkHX - RinkR)) * (Abs((BreakVector(K2_GetActorLocation(self)).X + (DX * 150.0))) - (RinkHX - RinkR))) + ((Abs((BreakVector(K2_GetActorLocation(self)).Y + (DY * 150.0))) - (RinkHY - RinkR)) * (Abs((BreakVector(K2_GetActorLocation(self)).Y + (DY * 150.0))) - (RinkHY - RinkR)))) > (RinkR * RinkR))))   # VariableSet_381
+
+== WallFix(DirX, DirZ)   # CustomEvent_11
+    FindRink()   # CallFunction_4309
+    if (RinkHX > 1.0):   # IfThenElse_767
+        WallAt(DX=DirX, DY=DirZ)   # CallFunction_4310
+        if bWall:   # IfThenElse_768
+            Log(S=Concat_StrStr(SK16WALL kind , Conv_IntToString(DownKind)))   # CallFunction_4312
+            if ((DownKind == 1) or (DownKind == 2)):   # IfThenElse_769
+                WallAt(DX=DegCos(FacingYaw), DY=DegSin(FacingYaw))   # CallFunction_4315
+                if (not bWall):   # IfThenElse_770
+                    DownKind = 3   # VariableSet_1861
+                    DownYaw = FacingYaw   # VariableSet_1862
+                else:
+                    WallAt(DX=(-1.0 * DegCos(FacingYaw)), DY=(-1.0 * DegSin(FacingYaw)))   # CallFunction_4319
+                    if (not bWall):   # IfThenElse_771
+                        DownKind = 0   # VariableSet_1863
+                        DownYaw = FacingYaw   # VariableSet_1864
+                    else:
+                        DownKind = 3   # VariableSet_1865
+                        DownYaw = DegAtan2((-1.0 * BreakVector(K2_GetActorLocation(self)).Y), (-1.0 * BreakVector(K2_GetActorLocation(self)).X))   # VariableSet_1866
+            else:
+                WallAt(DX=DegCos((FacingYaw + 90.0)), DY=DegSin((FacingYaw + 90.0)))   # CallFunction_4328
+                if (not bWall):   # IfThenElse_772
+                    DownKind = 1   # VariableSet_1867
+                    DownYaw = FacingYaw   # VariableSet_1868
+                else:
+                    WallAt(DX=DegCos((FacingYaw - 90.0)), DY=DegSin((FacingYaw - 90.0)))   # CallFunction_4332
+                    if (not bWall):   # IfThenElse_773
+                        DownKind = 2   # VariableSet_1869
+                        DownYaw = FacingYaw   # VariableSet_1870
+                    else:
+                        DownKind = 3   # VariableSet_1871
+                        DownYaw = DegAtan2((-1.0 * BreakVector(K2_GetActorLocation(self)).Y), (-1.0 * BreakVector(K2_GetActorLocation(self)).X))   # VariableSet_1872
+
+== WeaponCut(bA, AnimA, AnimB)   # CustomEvent_66
+    if bWeaponShown:   # IfThenElse_621
+        pass
+    else:
+        WeaponShow(bShow=true)   # CallFunction_3552
+    ActPri = 5   # VariableSet_1691
+    WeaponSnd(bA=bA)   # CallFunction_3553
+    if bA:   # IfThenElse_622
+        RxLog(Kind=weapon, Anim=AnimA, Pri=5)   # CallFunction_3554
+        WeaponT1 = (GetTimeSeconds() + GetPlayLength(AnimA))   # VariableSet_1692
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AnimA, SlotNodeName=DefaultSlot, BlendInTime=0.05, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_3558
+        WeaponMont = CallFunction_3558.ReturnValue   # VariableSet_1693
+    else:
+        RxLog(Kind=weapon, Anim=AnimB, Pri=5)   # CallFunction_3559
+        WeaponT1 = (GetTimeSeconds() + GetPlayLength(AnimB))   # VariableSet_1694
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AnimB, SlotNodeName=DefaultSlot, BlendInTime=0.05, BlendOutTime=0.1, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=0.000000)   # CallFunction_3563
+        WeaponMont = CallFunction_3563.ReturnValue   # VariableSet_1695
+
+== WeaponPick()   # CustomEvent_64
+    if (WeaponKind == 1):   # IfThenElse_616
+        SetStaticMesh(self=WeaponMesh, NewMesh=SM_Prop_GiantStick_TB1_P3)   # CallFunction_3536
+    else:
+        if (WeaponKind == 2):   # IfThenElse_617
+            SetStaticMesh(self=WeaponMesh, NewMesh=SM_Prop_Mallet_TB1_P3)   # CallFunction_3537
+        else:
+            if (WeaponKind == 3):   # IfThenElse_618
+                SetStaticMesh(self=WeaponMesh, NewMesh=SM_Prop_PuckCannon_Crank_TB1_P3)   # CallFunction_3538
+                SetStaticMesh(self=WeaponKeg, NewMesh=SM_Prop_PuckCannon_TB1_P3)   # CallFunction_3539
+            else:
+                SetStaticMesh(self=WeaponMesh, NewMesh=SM_Prop_RollingPin_TB1_P3)   # CallFunction_3540
+
+== WeaponShow(bShow)   # CustomEvent_63
+    bWeaponShown = bShow   # VariableSet_1683
+    Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK26 weapon shown , Conv_BoolToString(bShow)),  kind ), Conv_IntToString(WeaponKind)))   # CallFunction_3528
+    if bShow:   # IfThenElse_615
+        K2_AttachToComponent(self=WeaponMesh, Parent=Mesh, SocketName=stick_socket, LocationRule=KeepRelative, RotationRule=KeepRelative, ScaleRule=KeepRelative, bWeldSimulatedBodies=false)   # CallFunction_3529
+        K2_AttachToComponent(self=WeaponKeg, Parent=Mesh, SocketName=hand_l, LocationRule=KeepRelative, RotationRule=KeepRelative, ScaleRule=KeepRelative, bWeldSimulatedBodies=false)   # CallFunction_3530
+        WeaponPick()   # CallFunction_3531
+        SetVisibility(self=WeaponMesh, bNewVisibility=true, bPropagateToChildren=false)   # CallFunction_3532
+        SetVisibility(self=WeaponKeg, bNewVisibility=(WeaponKind == 3), bPropagateToChildren=false)   # CallFunction_3533
+    else:
+        SetVisibility(self=WeaponMesh, bNewVisibility=false, bPropagateToChildren=false)   # CallFunction_3534
+        SetVisibility(self=WeaponKeg, bNewVisibility=false, bPropagateToChildren=false)   # CallFunction_3535
+
+== WeaponSnd(bA)   # CustomEvent_46
+    if ((WeaponKind == 1) and bA):   # IfThenElse_623
+        Snd(Sound=MS_giant_poke)   # CallFunction_3564
+    else:
+        if (WeaponKind == 1):   # IfThenElse_624
+            Snd(Sound=MS_giant_sweep)   # CallFunction_3565
+        else:
+            if (WeaponKind == 2):   # IfThenElse_625
+                bBonkSnd = bA   # VariableSet_1696
+                K2_SetTimer(Object=self, FunctionName=SndSwing, Time=0.058333, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_3566
+            else:
+                if (WeaponKind == 3):   # IfThenElse_626
+                    K2_SetTimer(Object=self, FunctionName=SndCannon, Time=0.125, bLooping=false, bMaxOncePerFrame=false, InitialStartDelay=0.000000, InitialStartDelayVariance=0.000000)   # CallFunction_3567
+
+== WeaponTick()   # CustomEvent_62
+    if ((((not bDown) and (not bUpRun) and ((not IsAnyMontagePlaying(GetAnimInstance(Mesh))) or ((GetTimeSeconds() < WeaponT1) and ((not IsValid(GetCurrentActiveMontage(GetAnimInstance(Mesh)))) or (GetCurrentActiveMontage(GetAnimInstance(Mesh)) == WeaponMont))))) or ((bDown and (DiveKind == 3)) and (not bKegDropped))) != bWeaponShown):   # IfThenElse_613
+        WeaponShow(bShow=(not bWeaponShown))   # CallFunction_3518
+    if ((bWeaponShown or ((bDown and (DiveKind == 3)) and (not bUpEarly))) != bStickHid):   # IfThenElse_614
+        StickHide(bHide=(not bStickHid))   # CallFunction_3521
+
+== WhiffGo()   # CustomEvent_116
+    ActPri = 7   # VariableSet_663
+    WhiffT = (GetTimeSeconds() + 0.45)   # VariableSet_664
+    Log(S=Concat_StrStr(E3 whiff from , Conv_DoubleToString(WhiffF)))   # CallFunction_687
+    if (ChkSide >= 0):   # IfThenElse_48
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Check_Whiff_Right, SlotNodeName=DefaultSlot, BlendInTime=WhiffBl, BlendOutTime=0.2, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=(WhiffF / 60.0))   # CallFunction_691
+    else:
+        PlaySlotAnimationAsDynamicMontage(self=GetAnimInstance(Mesh), Asset=AS_SkaterTB1_P3_Check_Whiff_Left, SlotNodeName=DefaultSlot, BlendInTime=WhiffBl, BlendOutTime=0.2, InPlayRate=1.000000, LoopCount=1, BlendOutTriggerTime=-1.000000, InTimeToStartMontageAt=(WhiffF / 60.0))   # CallFunction_971
+
+== WhipGo(DX, DY, K)   # CustomEvent_33
+    WhipK = K   # VariableSet_2480
+    WhipGoS(DX=DX, DY=DY, S=(K * SelectFloat(ChkStr, 0.6, (Abs((GetTimeSeconds() - ChkStrT)) < 0.02))))   # CallFunction_3926
+
+== WhipGoS(DX, DY, S)   # CustomEvent_32
+    if ((S > 0) and ((not bWhip) or (S > WhipS))):   # IfThenElse_702
+        WhipDX = (DX / FMax(Sqrt(((DX * DX) + (DY * DY))), 0.001))   # VariableSet_1767
+        WhipDY = (DY / FMax(Sqrt(((DX * DX) + (DY * DY))), 0.001))   # VariableSet_1768
+        WhipS = S   # VariableSet_1769
+        WhipT0 = GetTimeSeconds()   # VariableSet_1770
+        bWhip = (UpMode < 16)   # VariableSet_1771
+        Log(S=Concat_StrStr(Concat_StrStr(Concat_StrStr(SK25 whip s , Conv_DoubleToString(S)),  k ), Conv_DoubleToString(WhipK)))   # CallFunction_3853
+
+== WhipStr(S)   # CustomEvent_34
+    ChkStr = FClamp(S, 0.0, 1.0)   # VariableSet_1793
+    ChkStrT = GetTimeSeconds()   # VariableSet_1794
+    if (bWhip and (WhipK > 0) and (Abs((GetTimeSeconds() - WhipT0)) < 0.02)):   # IfThenElse_732
+        WhipS = (WhipK * ChkStr)   # VariableSet_1795
+        Log(S=Concat_StrStr(SK25 whip str , Conv_DoubleToString(WhipS)))   # CallFunction_4009
+
+== WhipTick()   # CustomEvent_31
+    if ((GetTimeSeconds() - WhipT0) >= 0.3334):   # IfThenElse_1296
+        bWhip = false   # VariableSet_4293
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_398
+        WhipA = 0.0   # VariableSet_4294
+    else:
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_399
+        WhipRot = RotatorFromAxisAndAngle(InverseTransformDirection(K2_GetComponentToWorld(Mesh), MakeVector((-1.0 * WhipDY), WhipDX, 0.0)), ((((WhipS * 2.1137) * (Exp((-12.566 * (GetTimeSeconds() - WhipT0))) * Sin((21.766 * (GetTimeSeconds() - WhipT0))))) * ((FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0) * FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0)) * (3.0 - (2.0 * FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0))))) * 15.0))   # VariableSet_4295
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_400
+        WhipHead = RotatorFromAxisAndAngle(InverseTransformDirection(K2_GetComponentToWorld(Mesh), MakeVector((-1.0 * WhipDY), WhipDX, 0.0)), ((((WhipS * 2.1137) * (Exp((-12.566 * (GetTimeSeconds() - WhipT0))) * Sin((21.766 * (GetTimeSeconds() - WhipT0))))) * ((FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0) * FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0)) * (3.0 - (2.0 * FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0))))) * (18.0 * WhipHeadW)))   # VariableSet_4296
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_401
+        WhipArm = RotatorFromAxisAndAngle(InverseTransformDirection(K2_GetComponentToWorld(Mesh), MakeVector((-1.0 * WhipDY), WhipDX, 0.0)), (((((WhipS * 2.1137) * (Exp((-12.566 * FMax(((GetTimeSeconds() - WhipT0) - 0.05), 0.0))) * Sin((21.766 * FMax(((GetTimeSeconds() - WhipT0) - 0.05), 0.0))))) * ((FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0) * FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0)) * (3.0 - (2.0 * FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0))))) - (((WhipS * 2.1137) * (Exp((-12.566 * (GetTimeSeconds() - WhipT0))) * Sin((21.766 * (GetTimeSeconds() - WhipT0))))) * ((FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0) * FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0)) * (3.0 - (2.0 * FClamp(((0.3167 - (GetTimeSeconds() - WhipT0)) / 0.1167), 0.0, 1.0)))))) * (5.0 * WhipArmW)))   # VariableSet_4297
+        Cast<ABP_SkaterTB1_P3_C>(Object=GetAnimInstance(Mesh))   # DynamicCast_402
+        WhipA = 1.0   # VariableSet_4298
+
+== WindHoldTick(Dt)   # CustomEvent_108
+    if (bDown or bUpRun or (not IsValid(WindHoldMon)) or (GetCurrentActiveMontage(GetAnimInstance(Mesh)) != WindHoldMon)):   # IfThenElse_51
+        WindHoldLeft = 0.0   # VariableSet_1572
+        Log(S=XC12 wind hold ended by another take)   # CallFunction_1779
+    else:
+        WindHoldLeft = (WindHoldLeft - Montage_GetPosition(GetAnimInstance(Mesh), WindHoldMon))   # VariableSet_1573
+        Montage_SetPosition(self=GetAnimInstance(Mesh), Montage=WindHoldMon, NewPosition=0.0)   # CallFunction_1783
+        if (WindHoldLeft <= 0.0083):   # IfThenElse_52
+            WindHoldLeft = 0.0   # VariableSet_1574
+            Log(S=XC12 wind hold spent)   # CallFunction_1784
+
+== WipePick(bPlay)   # CustomEvent_79
+    if (SlideSide == 5):   # IfThenElse_1364
+        FallDo(Anim=AS_SkaterTB1_P3_Dive_Block_Front, bPlay=bPlay, Hold=35)   # CallFunction_8553
+    else:
+        FallDo(Anim=AS_SkaterTB1_P3_Dash_Wipeout, bPlay=bPlay, Hold=20)   # CallFunction_8554

@@ -10,6 +10,7 @@ import sys
 
 src, out = sys.argv[1], sys.argv[2]
 only = set(sys.argv[3:])
+MAXDEPTH = int(os.environ.get("TL_DIGEST_DEPTH", "12"))   # how deep a chain of pure nodes is folded into one expression
 os.makedirs(out, exist_ok=True)
 
 DEF = re.compile(r'^\s*Begin Object Name="([^"]+)" ExportPath="([^\']+)\'([^\']+)\'"')
@@ -117,7 +118,7 @@ def expr(graph, pin, depth=0):
     if sn["cls"] == "K2Node_Self":
         return "self"
     spn = sp.get("PinName", "?") if sp else "?"
-    if not is_pure(sn) or depth > 12:
+    if not is_pure(sn) or depth > MAXDEPTH:
         return "%s.%s" % (sn["name"].replace("K2Node_", ""), spn) if sn["cls"] not in ("K2Node_Event", "K2Node_CustomEvent", "K2Node_FunctionEntry") else spn
     args = []
     for p in sn["pins"]:
@@ -140,19 +141,41 @@ def expr(graph, pin, depth=0):
     return text
 
 
-def walk(graph, node, pin_name, lines, indent, seen):
-    """Follows an exec output pin."""
+def targets(graph, node, pin_name):
+    out = []
     for p in node["pins"]:
         if p["out"] and p["exec"] and (pin_name is None or p.get("PinName") == pin_name):
             for link in p["links"]:
                 tn, _ = pin_by_id(graph, link[0], link[1])
                 if tn is not None:
-                    stmt(graph, tn, lines, indent, seen)
+                    out.append(tn)
+    return out
 
 
-def stmt(graph, n, lines, indent, seen):
+def reach(graph, starts):
+    """Every node the execution can come to from these, in first-met order."""
+    order, seen, todo = [], set(), list(starts)
+    while todo:
+        n = todo.pop(0)
+        if n["name"] in seen:
+            continue
+        seen.add(n["name"])
+        order.append(n["name"])
+        todo = targets(graph, n, None) + todo
+    return order
+
+
+def walk(graph, node, pin_name, lines, indent, seen, stop=frozenset()):
+    """Follows an exec output pin."""
+    for tn in targets(graph, node, pin_name):
+        stmt(graph, tn, lines, indent, seen, stop)
+
+
+def stmt(graph, n, lines, indent, seen, stop=frozenset()):
     pad = "    " * indent
     key = n["name"]
+    if key in stop:
+        return
     tag = "   # %s" % n["name"].replace("K2Node_", "")
     if key in seen:
         lines.append("%s-> (already listed)%s" % (pad, tag))
@@ -163,21 +186,31 @@ def stmt(graph, n, lines, indent, seen):
     if c == "K2Node_VariableSet":
         val = [p for p in ins if p.get("PinName") not in ("self",)]
         lines.append("%s%s = %s%s" % (pad, label(n), expr(graph, val[0]) if val else "?", tag))
-        walk(graph, n, None, lines, indent, seen)
+        walk(graph, n, None, lines, indent, seen, stop)
     elif c == "K2Node_IfThenElse":
         cond = [p for p in ins if p.get("PinName") == "Condition"]
+        # where the two branches meet again: listed once, after the if, at the if's own depth
+        a = reach(graph, targets(graph, n, "then"))
+        b = set(reach(graph, targets(graph, n, "else")))
+        join = next((x for x in a if x in b), None)
+        inner = stop | ({join} if join else set())
         lines.append("%sif %s:%s" % (pad, expr(graph, cond[0]) if cond else "?", tag))
-        walk(graph, n, "then", lines, indent + 1, seen)
         before = len(lines)
-        walk(graph, n, "else", lines, indent + 1, seen)
+        walk(graph, n, "then", lines, indent + 1, seen, inner)
+        if len(lines) == before:
+            lines.append("%s    pass" % pad)
+        before = len(lines)
+        walk(graph, n, "else", lines, indent + 1, seen, inner)
         if len(lines) > before:
             lines.insert(before, "%selse:" % pad)
+        if join and join not in stop:
+            stmt(graph, nodes[(graph, join)], lines, indent, seen, stop)
     elif c == "K2Node_ExecutionSequence":
         for p in n["pins"]:
             if p["out"] and p["exec"]:
-                walk(graph, n, p.get("PinName"), lines, indent, seen)
+                walk(graph, n, p.get("PinName"), lines, indent, seen, stop)
     elif c == "K2Node_SetVariableOnPersistentFrame":
-        walk(graph, n, None, lines, indent, seen)
+        walk(graph, n, None, lines, indent, seen, stop)
     else:
         args = []
         for p in ins:
@@ -185,14 +218,21 @@ def stmt(graph, n, lines, indent, seen):
                 continue
             args.append("%s=%s" % (p.get("PinName"), expr(graph, p)))
         lines.append("%s%s(%s)%s" % (pad, label(n), ", ".join(args), tag))
-        outs = [p for p in n["pins"] if p["out"] and p["exec"]]
+        outs = [p for p in n["pins"] if p["out"] and p["exec"] and p["links"]]
         if len(outs) <= 1:
-            walk(graph, n, None, lines, indent, seen)
+            walk(graph, n, None, lines, indent, seen, stop)
         else:
+            # several exec outputs (a cast's then / CastFailed): each listed, what they share listed once after
+            sets = [reach(graph, targets(graph, n, p.get("PinName"))) for p in outs]
+            join = next((x for x in sets[0] if all(x in set(o) for o in sets[1:])), None)
+            inner = stop | ({join} if join else set())
             for p in outs:
-                if p["links"]:
-                    lines.append("%s  on %s:" % (pad, p.get("PinName")))
-                    walk(graph, n, p.get("PinName"), lines, indent + 1, seen)
+                before = len(lines)
+                walk(graph, n, p.get("PinName"), lines, indent + 1, seen, inner)
+                if len(lines) > before:
+                    lines.insert(before, "%s  on %s:" % (pad, p.get("PinName")))
+            if join and join not in stop:
+                stmt(graph, nodes[(graph, join)], lines, indent, seen, stop)
 
 
 index = []

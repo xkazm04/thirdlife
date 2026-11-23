@@ -106,7 +106,7 @@ func _at(fru: Array) -> Vector3:
 
 func _show(clip: String, key: int) -> void:
 	if clip == "rest":
-		skater.skeleton().reset_bone_poses()
+		skater.pose_rest()
 	else:
 		skater.pose_at(clip, float(key))
 

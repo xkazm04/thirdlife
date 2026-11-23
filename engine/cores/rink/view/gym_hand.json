@@ -1,0 +1,22 @@
+{
+ "note": "The figure gym's scripted hand: what the human's keys and stick do, frame by frame, for the real rink core (RinkCore, FJamInput by thirdjam's names). Segments in order; n = frames. move = FJamInput.Move in rink coordinates (x along the rink, y across). stick_rel_deg = where the stick points against the skater's facing of the frame before, degrees, positive = to his left ([a] or [from, to] across the segment); stick_len = |Stick| (the fraction of game.stick.reach_m), a number or [from, to]. sprint, brake = the held buttons.",
+ "seed": 5,
+ "difficulty": "rookie",
+ "segments": [
+  {"name": "faceoff", "n": 95},
+  {"name": "start_side", "n": 50, "move": [0, 1]},
+  {"name": "start", "n": 110, "move": [1, 0]},
+  {"name": "sprint", "n": 50, "move": [1, 0], "sprint": true},
+  {"name": "reverse_stop", "n": 45, "move": [-1, 0]},
+  {"name": "rest", "n": 40},
+  {"name": "start_back", "n": 70, "move": [-1, 0]},
+  {"name": "turn_a", "n": 50, "move": [0, -1]},
+  {"name": "turn_b", "n": 50, "move": [1, 0]},
+  {"name": "brake", "n": 30, "brake": true},
+  {"name": "idle", "n": 40},
+  {"name": "aim_sweep_standing", "n": 120, "stick_rel_deg": [-100, 100], "stick_len": 1.0},
+  {"name": "aim_reach", "n": 60, "stick_rel_deg": [20], "stick_len": [0.1, 1.0]},
+  {"name": "aim_sweep_skating", "n": 90, "move": [1, 0], "stick_rel_deg": [80, -80], "stick_len": 1.0},
+  {"name": "end", "n": 40}
+ ]
+}
