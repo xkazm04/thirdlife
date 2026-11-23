@@ -16,8 +16,7 @@ render_mode blend_mix, depth_prepass_alpha, cull_back, ambient_light_disabled, s
 // skinning, CUSTOM1 = thirdjam's vertex colour, which is data: r = the felt mask, g = a number per panel, b = an edge
 // mask. UV = thirdjam's UV0.
 //
-// Light: the hall's own rig by its numbers (rig_*: the uniforms and the sum of TLStyleArena's hall_rig.gdshaderinc,
-// K6), a surface shows (base * lux / PI + what it emits) * rig_exposure through the film curve. With no rig given
+// Light: the hall's own rig by its numbers (hall_rig.gdshaderinc, shared with TLStyleArena's hall shaders), a surface shows (base * lux / PI + what it emits) * rig_exposure through the film curve. With no rig given
 // (rig_n 0) the installed style's sun and sky stand in. The picture is written as emission.
 // No ink: the colour is drawn after the style's ink pass (it writes ALPHA 1, so it is in the blended queue, at a
 // render priority above the pass's -100) and covers the contour the pass drew inside the figure's silhouette; the
@@ -30,16 +29,12 @@ global uniform vec4 g_sun_dir;
 global uniform vec4 g_amb_sky;
 global uniform vec4 g_amb_gnd;
 
-// ---- the rig (the same uniforms as hall_rig.gdshaderinc)
-uniform int rig_n = 0;
-uniform vec4 rig_pos[24];              // xyz = where it hangs (m, pack space), w = its radius (m)
-uniform vec4 rig_dir[24];              // xyz = the way it looks, w = cos(outer cone)
-uniform vec4 rig_col[24];              // rgb = its colour (linear) x candela, w = cos(inner cone)
-uniform float rig_exposure = 0.272;    // 1 / (1.2 * 2^EV100) x the tone gain (EV100 4.2, gain 6.0: K6's reading)
-uniform float rig_wrap = 0.0;
-uniform vec3 rig_gain = vec3(1.0);         // the rig's post volume: ColorGain
-uniform vec3 rig_gain_shadows = vec3(1.0); // ... ColorGainShadows
-uniform vec3 sky_fill = vec3(0.0);     // the rig's sky light on a face that looks up (lux / PI, linear)
+// ---- the rig: its uniforms (rig_n, rig_pos, rig_dir, rig_col, rig_exposure, rig_gain, rig_gain_shadows), the sum
+// of its spot lights (rig_lux) and the film curve (hall_tone) are the hall's own, one file for hall and figure
+#include "res://style/shaders/hall_rig.gdshaderinc"
+uniform float review_linear = 0.0;     // review only: > 0 writes (what the surface shows, in the source's units) x this, no film curve
+uniform vec3 sky_fill = vec3(0.0);
+uniform vec3 floor_bounce = vec3(0.0); // the floor's albedo: what the lit ice throws back up at the figure (0 = none)     // the rig's sky light on a face that looks up (lux / PI, linear)
 
 // ---- the look collection (MPC_Look, clay tier)
 uniform vec3 look_tint = vec3(1.0, 0.94, 0.84);
@@ -105,50 +100,6 @@ void vertex() {
 	mat4 plot = figure_plot(MODEL_MATRIX[3].xyz, VERTEX);
 	MODELVIEW_MATRIX = VIEW_MATRIX * plot * MODEL_MATRIX;
 	MODELVIEW_NORMAL_MATRIX = mat3(VIEW_MATRIX) * mat3(plot) * MODEL_NORMAL_MATRIX;
-}
-
-// hall_rig.gdshaderinc (K6): Unreal's spot light, candela over the distance squared, the radius window, the cone.
-vec3 rig_lux(vec3 p, vec3 n) {
-	vec3 e = vec3(0.0);
-	for (int i = 0; i < rig_n; i++) {
-		vec3 d = p - rig_pos[i].xyz;
-		float r = length(d);
-		if (r >= rig_pos[i].w) { continue; }
-		vec3 w = d / r;
-		float cone = clamp((dot(w, rig_dir[i].xyz) - rig_dir[i].w) / max(rig_col[i].w - rig_dir[i].w, 1e-5), 0.0, 1.0);
-		float win = clamp(1.0 - pow(r / rig_pos[i].w, 4.0), 0.0, 1.0);
-		float ndl = clamp((dot(n, -w) + rig_wrap) / (1.0 + rig_wrap), 0.0, 1.0);
-		e += rig_col[i].rgb * (cone * cone * win * win * ndl / (r * r));
-	}
-	return e;
-}
-
-// The film curve the reference is shown through, as hall_rig.gdshaderinc has it (K6): Unreal's FilmToneMap
-// (Engine/Shaders/Private/TonemapCommon.ush:176-225 of UE 5.9) with the engine's default look (slope 0.88, toe 0.55,
-// shoulder 0.26, black clip 0, white clip 0.04), per channel, with its pre- and post-desaturation (0.96, 0.93), after
-// the rig's colour grade (the post volume's ColorGain, and ColorGainShadows under its shadows range, 0.09).
-vec3 hall_tone(vec3 x) {
-	const float SLOPE = 0.88;
-	const float TOE_SCALE = 0.45;
-	const float SHOULDER_SCALE = 0.78;
-	const float TOE_MATCH = -0.390283;
-	const float STRAIGHT_MATCH = 0.901647;
-	const float SHOULDER_MATCH = -0.606192;
-	const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
-	x = max(x, vec3(0.0)) * rig_gain;
-	x *= mix(rig_gain_shadows, vec3(1.0), smoothstep(0.0, 0.09, dot(x, LUMA)));
-	x = mix(vec3(dot(x, LUMA)), x, 0.96);
-	vec3 lc = log(max(x, vec3(1e-10))) * 0.4342944819;       // log10
-	vec3 straight = SLOPE * (lc + STRAIGHT_MATCH);
-	vec3 toe = (2.0 * TOE_SCALE) / (1.0 + exp((-2.0 * SLOPE / TOE_SCALE) * (lc - TOE_MATCH)));
-	vec3 shoulder = 1.04 - (2.0 * SHOULDER_SCALE) / (1.0 + exp((2.0 * SLOPE / SHOULDER_SCALE) * (lc - SHOULDER_MATCH)));
-	toe = mix(straight, toe, step(lc, vec3(TOE_MATCH)));
-	shoulder = mix(straight, shoulder, step(vec3(SHOULDER_MATCH), lc));
-	vec3 t = 1.0 - clamp((lc - TOE_MATCH) / (SHOULDER_MATCH - TOE_MATCH), 0.0, 1.0);    // ShoulderMatch < ToeMatch: 1 - t
-	t = (3.0 - 2.0 * t) * t * t;
-	vec3 c = mix(toe, shoulder, t);
-	c = mix(vec3(dot(c, LUMA)), c, 0.93);
-	return clamp(c, 0.0, 1.0);
 }
 
 // [SK7FeltMottle]
@@ -257,7 +208,12 @@ void fragment() {
 	vec3 lit;
 	float exposure = rig_exposure;
 	if (rig_n > 0) {
-		lit = base * (rig_lux(wpos, n_pack) / PI + sky_fill * clamp(n_pack.y * 0.5 + 0.5, 0.0, 1.0));
+		// The floor's first bounce (thirdjam: Lumen; measured in its running game, ROUND-2.md): the ice under the figure is
+		// a wide matte sheet of albedo `floor_bounce` under the same rig, showing floor * lux_up / PI; a face of normal n
+		// has it in (1 - n.y) / 2 of its sky.
+		vec3 up_light = any(greaterThan(floor_bounce, vec3(0.0))) ? rig_lux(vec3(wpos.x, 0.0, wpos.z), vec3(0.0, 1.0, 0.0)) / PI : vec3(0.0);
+		lit = base * (rig_lux(wpos, n_pack) / PI + sky_fill * clamp(n_pack.y * 0.5 + 0.5, 0.0, 1.0)
+			+ floor_bounce * up_light * clamp(0.5 - 0.5 * n_pack.y, 0.0, 1.0));
 	} else {
 		// no rig: the installed style's sun (already at the picture's level) and its two ambients
 		float ndl = clamp(dot(n_world, normalize(g_sun_dir.xyz)), 0.0, 1.0);
@@ -266,7 +222,7 @@ void fragment() {
 	}
 	ALBEDO = vec3(0.0);
 	ROUGHNESS = 1.0;
-	EMISSION = hall_tone((lit + em) * exposure);
+	EMISSION = review_linear > 0.0 ? (lit + em) * review_linear : hall_tone((lit + em) * exposure);
 	ALPHA = 1.0;
 	NORMAL = n_view;
 }

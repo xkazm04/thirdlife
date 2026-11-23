@@ -4,7 +4,8 @@
 # carries is thirdjam's material instance's), look.skater.shader (every key is a uniform of the new shader),
 # look.skater.variants (felt and cel on one figure; the baked mesh untouched). In a window, under the test-window lock:
 # look.skater.render (the shader compiles; the number's ink is on the back patch, more of it for 88 than for 11; the
-# crest is on the chest). look.skater.shaders_kept: the working tree changes no tracked shader or style file.
+# crest is on the chest). look.skater.shaders_kept: the working tree changes no tracked shader or style file but the
+# look's own two (body_felt, body_contact).
 
 lk_names="look.skater.numbers look.skater.instances look.skater.shader look.skater.variants"
 lk_wanted=0
@@ -44,9 +45,9 @@ NODE
 fi
 
 if [ -z "$FILTER" ] || [[ "look.skater.shaders_kept" == *"$FILTER"* ]]; then
-  lk_changed="$(cd "$HERE/../.." && git diff --name-only HEAD -- engine/style/shaders engine/style/style.json engine/style/style_crisp.json engine/style/style_diorama.json engine/style/style_overcast.json 2>&1 | tr '\n' ' ')"
+  lk_changed="$(cd "$HERE/../.." && git diff --name-only HEAD -- engine/style/shaders engine/style/style.json engine/style/style_crisp.json engine/style/style_diorama.json engine/style/style_overcast.json ':(exclude)engine/style/shaders/body_felt.gdshader' ':(exclude)engine/style/shaders/body_contact.gdshader' 2>&1 | tr '\n' ' ')"
   why=""
   [ -n "$lk_changed" ] && why="changed against HEAD: $lk_changed"
   [ -f "$HERE/../style/shaders/body_felt.gdshader" ] || why="style/shaders/body_felt.gdshader is missing"
-  verdict look.skater.shaders_kept "$why" "no tracked shader or style file differs from HEAD"
+  verdict look.skater.shaders_kept "$why" "no tracked shader or style file but the look's own differs from HEAD"
 fi
