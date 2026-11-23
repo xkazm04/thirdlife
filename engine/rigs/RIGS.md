@@ -248,6 +248,14 @@ sk.not_ported                             # interface calls that arrived and are
   `tools/skater/build_skater.gd`, `tools/skater/blendspace_table.py`; the listings: `export_driver_text.py`,
   `t3d_digest.py`, `abp_digest.py`.
 - Gate: selftest blocks 810 (`rig.skater.body`, `.clips`, `.ref`, `.play`) and 811 (`.driver`, `.oracle`, `.red`).
+- **The look (lane K7, `skater/look/`):** `TLRigSkaterLook`, two surfaces to choose from. `felt` (the default): thirdjam's
+  own nine material instances on the clay tier through `TLStyleFelt`, the number on the back patch ([SetNumber]) and
+  the team's crest on the chest ([SetTeam]), no ink line. `cel`: the engine's flat cel in thirdjam's slot colours, as
+  round 1 had it (no number, no crest). One skater: `sk.set_look("cel")`; every skater built after:
+  `TLRigSkaterLook.default_variant = "cel"`; a whole run: the environment variable `TL_SKATER_LOOK=cel`.
+  See both: `rigs/skater/look/look_gym.tscn` (its header has the command lines; `--mode=ten` is the ten skaters of a
+  match). Gate: selftest block 850 (`look.skater.numbers`, `.instances`, `.shader`, `.variants`, `.render`,
+  `.shaders_kept`).
 
 <!-- generated below: do not edit by hand -->
 
