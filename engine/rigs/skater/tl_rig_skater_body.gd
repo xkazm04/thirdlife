@@ -107,19 +107,27 @@ func setup(p: Dictionary = {}) -> void:
 	_g = TLRigSkaterPose.rest().globals()
 
 
-## The jersey in `colour` (sRGB), the helmet in the same x HELMET_K (in linear light, as thirdjam multiplies).
+## The jersey in `colour` (sRGB), the helmet in the same x HELMET_K (in linear light, as thirdjam multiplies); the
+## look (felt | cel), the crest of `team` and the `number` on the back are TLRigSkaterLook's (lane K7, look/).
 func set_team_colour(colour: Color) -> void:
-	var lin: Color = colour.srgb_to_linear()
-	var helmet: Color = Color(lin.r * HELMET_K, lin.g * HELMET_K, lin.b * HELMET_K).linear_to_srgb()
-	var mesh: Mesh = _mesh.mesh
-	for s: int in range(mesh.get_surface_count()):
-		var slot: String = mesh.surface_get_name(s)
-		var c: Color
-		match slot:
-			"Jersey": c = colour
-			"Helmet": c = helmet
-			_: c = (SLOT_LINEAR.get(slot, Color(0.5, 0.5, 0.5)) as Color).linear_to_srgb()
-		_mesh.set_surface_override_material(s, TLStyle.flat_material(Color(c.r, c.g, c.b), 0.6 if slot == "Blade" else 0.0))
+	_look_colour = colour
+	_look = TLRigSkaterLook.apply(_mesh, {"variant": _look, "team": team, "colour": colour, "number": number})
+
+
+## The figure's surface: "felt" (thirdjam's own, the default) or "cel" (flat cel in thirdjam's colours).
+func set_look(variant: String) -> void:
+	_look = variant
+	look_refresh()
+
+
+## The look again, after `team` or `number` changed.
+func look_refresh() -> void:
+	if _mesh != null:
+		set_team_colour(_look_colour)
+
+
+var _look: String = ""
+var _look_colour: Color = TEAM_COLOURS[0]
 
 
 # ------------------------------------------------------------------ the figure's own frame, in Unreal's terms

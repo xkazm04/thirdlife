@@ -311,3 +311,33 @@ a change of the shader text compiles for about a second (seen as one long frame)
 The picture cache (kernel/world/draw) stores vertex colours, and a kit terrain bakes palette paints into them: its key
 carries those paints when they are not the paints of style.json (`kernel/world/draw/pic_salt.gd`), so a style with
 other land paints has its own pictures and today's key is unchanged.
+
+## Felt and clay for a figure (`TLStyleFelt`, hockey port lane K7, 23-24 Nov 2026)
+
+A new entry beside the palette material, in files of its own: `tl_style_felt.gd`, `shaders/body_felt.gdshader`, the
+look's three textures in `felt/` (thirdjam's `T_Felt_Fibre`, `T_Clay_Thumb_N`, `T_Clay_Dent_N`). No existing shader or
+style file is touched (selftest `look.skater.shaders_kept`). It is thirdjam's two skater masters on its clay look tier,
+node by node: `M_SkaterTB1Jersey` (felt: mottle, fibre bump, hem band, sheen, the jersey number from a 5 x 2 atlas and the
+team crest) and the clay branch of `M_Toon` (thumb dents, rim, fill); the shader's header names each node it ports.
+
+```gdscript
+TLStyleFelt.set_rig(lights, exposure, gain, gain_shadows)    # optional: the hall's spot lights (TLStyleArena.set_rig's shape)
+var m: ShaderMaterial = TLStyleFelt.material({"team_colour": Color(0.02, 0.1, 0.55), "felt_mix": 1.0, "vcol_mix": 1.0,
+	"number_on": 2.0, "number_tens": 4.0, "number_ones": 2.0, "number_atlas": atlas})   # keys: TLStyleFelt.KEYS
+TLStyleFelt.set_params(m, {"number_ones": 7.0})              # a number or a colour that changes later
+```
+- Keys are thirdjam's material parameters in snake case; colours are linear; unknown keys are errors (null). Headless:
+  one shared material with no shader.
+- **The mesh must carry** `CUSTOM0.xyz` = the vertex before skinning (m), `CUSTOM2.xyz` = its normal before skinning,
+  `CUSTOM1` = thirdjam's vertex colour (r felt mask, g a number per panel, b an edge mask), `UV` = thirdjam's UV0.
+  `TLRigSkaterLook.look_mesh` makes that copy of the baked skater.
+- **Light.** With a rig (`set_rig`): each spot light by its candela, cone and radius, a surface shows (base x lux / PI +
+  what it emits) x exposure through Unreal's film curve, as lane K6's hall shaders do (the same uniforms and the same
+  arithmetic as `hall_rig.gdshaderinc`; to be one include once both are on one branch). Without one: the installed
+  style's sun and its two ambients. The picture is written as emission; the figure takes no shadow, and casts its own.
+- **No ink.** The colour is drawn after the style's ink pass (render priority -90 against the pass's -100) and covers
+  the contour the pass drew inside the figure; the depth pre-pass keeps the figure in the depth buffer and in the shadow
+  maps. thirdjam's clay tier draws no outline.
+- Cost: ten skaters before the game camera at 1280 x 720 draw in the same time in felt and in flat cel (whole frame
+  1.0 to 1.1 ms either way on this machine, 0.8 ms with the ten hidden; `look_gym.tscn --mode=cost`).
+

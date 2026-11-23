@@ -151,9 +151,10 @@ func SetTeam(TeamId: int, Colour: Color) -> void:
 	# CrestTeam = clamp(TeamId, 0, 1) on the jersey material: the crest is not drawn yet (the look, a later round)
 
 
-## [SetNumber]: 0..99; NumberTens / NumberOnes on the jersey and the trim patch: not drawn yet (the look, a later round).
+## [SetNumber]: 0..99; NumberTens / NumberOnes on the jersey and the trim patch (TLRigSkaterLook, lane K7).
 func SetNumber(N: int) -> void:
 	number = clampi(N, 0, 99)
+	look_refresh()
 
 
 ## [SetHasPuck]
