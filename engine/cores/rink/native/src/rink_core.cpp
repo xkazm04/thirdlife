@@ -24,6 +24,7 @@
 #include "DifficultyProfile.h"
 #include "DifficultyResolve.h"
 #include "JamTournamentCommandlet.h"
+#include "rink_gamemode.h"
 
 #include <memory>
 #include <vector>
@@ -48,6 +49,13 @@ namespace
 
 	void SV(const Variant& In, bool& Out) { Out = (bool)In; }
 	void SV(const Variant& In, FVector2D& Out) { const Vector2 V = In; Out = FVector2D((double)V.x, (double)V.y); }
+	std::vector<std::wstring> Names(const Variant& V)
+	{
+		std::vector<std::wstring> Out;
+		const PackedStringArray A = V;
+		for (int64_t i = 0; i < A.size(); ++i) Out.push_back(JamShimFromUtf8(A[i].utf8().get_data()));
+		return Out;
+	}
 
 	// The log sink while a commandlet runs inside run_tournament(): the lines go back to GDScript.
 	std::vector<std::string>* GCapture = nullptr;
@@ -69,8 +77,12 @@ class RinkCore : public RefCounted
 	JamAI::FJamBrain Brain;
 	JamAI::FJamPlayerBot Bot;
 	FString Difficulty;           // empty = the cartridge's game.ai.difficulty
-	int HumanMode = 0;            // 0 input (the person's keys), 1 playerbot (thirdjam's FJamPlayerBot), 2 idle, 3 brain (nobody human)
+	int HumanMode = 0;            // 0 input (FJamInput as given), 1 playerbot (thirdjam's FJamPlayerBot), 2 idle, 3 brain (nobody human), 4 raw (devices through the game mode's rules)
 	FJamInput Human;
+	FJamInput LastHuman;          // what the human's skater got on the last step
+	RinkGlue::FHumanControls Controls;
+	RinkGlue::FRawInput Raw;
+	bool bBotsParked = false;     // set_bot_mode("parked"): the nine others get no input (they stand where they are)
 	uint64 Seed = 1;
 
 protected:
@@ -84,6 +96,10 @@ protected:
 		ClassDB::bind_method(D_METHOD("set_human_mode", "mode"), &RinkCore::set_human_mode);
 		ClassDB::bind_method(D_METHOD("reset", "seed"), &RinkCore::reset);
 		ClassDB::bind_method(D_METHOD("set_human_input", "input"), &RinkCore::set_human_input);
+		ClassDB::bind_method(D_METHOD("set_raw_input", "raw"), &RinkCore::set_raw_input);
+		ClassDB::bind_method(D_METHOD("restart"), &RinkCore::restart);
+		ClassDB::bind_method(D_METHOD("set_bot_mode", "mode"), &RinkCore::set_bot_mode);
+		ClassDB::bind_method(D_METHOD("last_human_input"), &RinkCore::last_human_input);
 		ClassDB::bind_method(D_METHOD("step"), &RinkCore::step);
 		ClassDB::bind_method(D_METHOD("snapshot"), &RinkCore::snapshot);
 		ClassDB::bind_method(D_METHOD("state_hash"), &RinkCore::state_hash);
@@ -147,6 +163,7 @@ public:
 		else if (M == TEXT("playerbot")) HumanMode = 1;
 		else if (M == TEXT("idle")) HumanMode = 2;
 		else if (M == TEXT("brain")) HumanMode = 3;
+		else if (M == TEXT("raw")) HumanMode = 4;
 		else return false;
 		return true;
 	}
@@ -171,7 +188,72 @@ public:
 		Brain.Params.AimConeDeg = Cfg.AimConeDeg;
 		Bot = JamAI::FJamPlayerBot();
 		Human = FJamInput();
+		LastHuman = FJamInput();
+		Controls.Reset();
+		Raw = RinkGlue::FRawInput();
 		return true;
+	}
+
+	// brain (default: thirdjam's brain drives every other skater) | parked (they get an empty FJamInput every frame and stand where
+	// the faceoff put them: the skating gym, one human on the ice). Not a thirdjam mode: a test stand (GAMEMODE.md, deviation).
+	bool set_bot_mode(const godot::String& Mode)
+	{
+		const FString M = FS(Mode);
+		if (M == TEXT("brain")) bBotsParked = false;
+		else if (M == TEXT("parked")) bBotsParked = true;
+		else return false;
+		return true;
+	}
+
+	// AHokejGameMode::RestartMatch (HokejGameMode.cpp:800-818): rules and zones reset, UJamSim::Restart (same config and seed),
+	// effects restart, the brain reset. The human's controls start clean.
+	bool restart()
+	{
+		if (!Sim) return false;
+		JamAI::FJamSystems& Sy = Sim->GetSystems();
+		if (Sy.Rules.IsValid()) Sy.Rules->ResetMatch();
+		if (Sy.Zones.IsValid()) Sy.Zones->ResetMatch();
+		Sim->GetSim()->Restart();
+		if (Sy.Effects.IsValid()) Sy.Effects->Restart();
+		Brain.Reset();
+		Controls.Reset();
+		Raw = RinkGlue::FRawInput();
+		return true;
+	}
+
+	// The person's devices for the next step (human mode "raw"): thirdjam's game mode turns them into FJamInput (GAMEMODE.md).
+	// Keys: Down / Pressed (PackedStringArray of Unreal key names), Axis, StickAxis, MouseDeltaPx, CursorPx, CursorHitM (Vector2),
+	// CameraYaw (float, radians in rink coordinates), CursorOnIce (bool). Absent = zero / empty / false.
+	void set_raw_input(const Dictionary& In)
+	{
+		RinkGlue::FRawInput R;
+		if (In.has("Down")) R.Down = Names(In["Down"]);
+		if (In.has("Pressed")) R.Pressed = Names(In["Pressed"]);
+		if (In.has("Axis")) SV(In["Axis"], R.Axis);
+		if (In.has("StickAxis")) SV(In["StickAxis"], R.StickAxis);
+		if (In.has("MouseDeltaPx")) SV(In["MouseDeltaPx"], R.MouseDeltaPx);
+		if (In.has("CursorPx")) SV(In["CursorPx"], R.CursorPx);
+		if (In.has("CursorHitM")) SV(In["CursorHitM"], R.CursorHitM);
+		if (In.has("CursorOnIce")) SV(In["CursorOnIce"], R.bCursorOnIce);
+		if (In.has("CameraYaw")) { R.bHasCameraYaw = true; R.CameraYaw = (double)In["CameraYaw"]; }
+		Raw = R;
+	}
+
+	// The FJamInput the human's skater got on the last step (any mode), by thirdjam's field names.
+	Dictionary last_human_input() const
+	{
+		Dictionary D;
+		const FJamInput& I = LastHuman;
+#define JAM_INPUT_FIELD(T, N) D[#N] = GV(I.N);
+#define JAM_SKATER_FIELD(T, N)
+#define JAM_PUCK_FIELD(T, N)
+#define JAM_EVENT_FIELD(T, N)
+#include "fields.gen.inc"
+#undef JAM_INPUT_FIELD
+#undef JAM_SKATER_FIELD
+#undef JAM_PUCK_FIELD
+#undef JAM_EVENT_FIELD
+		return D;
 	}
 
 	// FJamInput by thirdjam's field names (SNAPSHOT.md). Absent key = false / zero. Holds until the next call; the edge
@@ -193,10 +275,15 @@ public:
 
 	bool step()
 	{
-		if (!Sim || Sim->IsOver()) return false;
+		if (!Sim) return false;
+		const int Pi0 = Cfg.PlayerIndex();
+		if (HumanMode == 4 && Controls.RestartPressed(Raw)) { restart(); Raw.Pressed.clear(); }   // HandleRestartPressed (HokejGameMode.cpp:789-798)
+		if (Sim->IsOver()) return false;
 		JamAI::FJamAIWorld W;
 		JamAI::FJamAIInput In[JamAI::kMaxSkaters];
 		Sim->View(W);
+		if (HumanMode == 4 && Pi0 >= 0) Controls.StepSignals(Raw, *Sim->GetSim(), Pi0);   // keys 1-4 (UJamSignalSystem::Issue)
+		Controls.ApplyIntent(W, Sim->GetSim()->GetFrame());                                // GatherInputs: the active intent into the brain's world
 		for (int i = 0; i < JamAI::kMaxSkaters; ++i) In[i] = JamAI::FJamAIInput();
 		const int Pi = Cfg.PlayerIndex();
 		if (HumanMode == 3)
@@ -210,11 +297,26 @@ public:
 			Brain.Think(W, In);
 			if (Pi >= 0 && HumanMode == 1) In[Pi] = Bot.Think(W);
 			if (Pi >= 0 && HumanMode == 0) In[Pi] = ToAI(Human);
+			if (Pi >= 0 && HumanMode == 4) { LastHuman = Controls.Read(Raw, *Sim->GetSim(), Pi); In[Pi] = ToAI(LastHuman); }
 		}
+		if (bBotsParked) for (int i = 0; i < JamAI::kMaxSkaters; ++i) if (i != Pi || HumanMode == 3) In[i] = JamAI::FJamAIInput();
+		if (Pi >= 0 && HumanMode != 4) LastHuman = FromAI(In[Pi]);
 		Sim->Step(In);
+		Raw.Pressed.clear(); Raw.MouseDeltaPx = FVector2D::ZeroVector;   // edges and motion are spent by the step that read them
 		// edges are "pressed on this frame" (FJamInput, JamSim.h)
 		Human.bShoot = Human.bPass = Human.bCheck = Human.bPoke = Human.bLift = Human.bDeke = Human.bSpin = Human.bAbility = false;
 		return true;
+	}
+
+	static FJamInput FromAI(const JamAI::FJamAIInput& A)
+	{
+		FJamInput I;
+		I.Move = FVector2D(A.Move.X, A.Move.Y);
+		I.bShoot = A.bShoot; I.bShootHeld = A.bShootHeld; I.bCheck = A.bCheck; I.bBrake = A.bBrake; I.bPass = A.bPass;
+		I.Stick = FVector2D(A.Stick.X, A.Stick.Y);
+		I.bPoke = A.bPoke; I.bLift = A.bLift; I.bDeke = A.bDeke; I.bSpin = A.bSpin; I.bPassHeld = A.bPassHeld; I.bSprint = A.bSprint;
+		I.bAbility = A.bAbility; I.bCrossHold = A.bCrossHold;
+		return I;
 	}
 
 	static JamAI::FJamAIInput ToAI(const FJamInput& I)
@@ -245,6 +347,18 @@ public:
 		D["FaceoffDot"] = GV(S.GetFaceoffDot());
 		D["HumanIndex"] = GV(S.GetHumanIndex());
 		D["Carrier"] = GV(S.CarrierIndex());
+		{
+			// The game mode's human-side state (GAMEMODE.md): the two-role buttons' last step and the team signal.
+			const RinkGlue::FButtonVerbs& B = Controls.LastButtons();
+			Dictionary C;
+			C["PassHoldSteps"] = GV(B.PassHoldSteps);
+			C["CrossHoldSteps"] = GV(B.CrossHoldSteps);
+			C["IntentKind"] = GV(Controls.IntentKind());
+			C["IntentTarget"] = GV(Controls.IntentTarget());
+			C["IntentIssuedFrame"] = GV(Controls.IntentIssued());
+			C["IntentFrames"] = GV(Controls.IntentFrames());
+			D["Controls"] = C;
+		}
 		Array Sk;
 		for (const FJamSkaterState& K : S.GetSkaters())
 		{

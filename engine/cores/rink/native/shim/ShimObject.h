@@ -26,6 +26,15 @@ template <class T> T* NewObject(UObject* Outer = nullptr, ...)
 	return O;
 }
 
+template <class T> T* DuplicateObject(const T* Src, UObject* Outer = nullptr)
+{
+	if (!Src) return nullptr;
+	T* O = new T(*Src);
+	O->Outer = Outer;
+	JamShimTrackObject(O);
+	return O;
+}
+
 template <class T>
 class TStrongObjectPtr
 {

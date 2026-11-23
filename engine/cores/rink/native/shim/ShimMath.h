@@ -124,6 +124,7 @@ struct FLinearColor
 	bool operator==(const FLinearColor& O) const { return R == O.R && G == O.G && B == O.B && A == O.A; }
 	bool operator!=(const FLinearColor& O) const { return !(*this == O); }
 	static FLinearColor FromSRGBColor(const FColor& C) { return FLinearColor(C); }
+	FColor ToFColorSRGB() const;   // UE: linear -> sRGB bytes (shim.cpp)
 };
 inline const FLinearColor FLinearColor::White(1.f, 1.f, 1.f, 1.f);
 inline const FLinearColor FLinearColor::Black(0.f, 0.f, 0.f, 1.f);

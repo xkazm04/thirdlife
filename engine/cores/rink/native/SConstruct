@@ -51,7 +51,9 @@ jam_objs.append(jenv.SharedObject(os.path.join(objdir, "shim"), os.path.join(her
 
 bindir = os.path.join(here, "..", "bin")
 targets = []
-binding = [jenv.SharedObject(os.path.join(objdir, "b_" + os.path.basename(str(s)).replace(".cpp", "")), s) for s in Glob(os.path.join(here, "src", "*.cpp"))]
+jenv.Prepend(CPPPATH=[os.path.join(here, "glue")])
+glue = [jenv.SharedObject(os.path.join(objdir, "g_" + os.path.basename(str(s)).replace(".cpp", "")), s) for s in Glob(os.path.join(here, "glue", "*.cpp"))]
+binding = glue + [jenv.SharedObject(os.path.join(objdir, "b_" + os.path.basename(str(s)).replace(".cpp", "")), s) for s in Glob(os.path.join(here, "src", "*.cpp"))]
 if binding:
     libname = "rink_core" if tree == "thirdjam" else "rink_core_" + tree.replace("thirdjam-", "")
     lib = jenv.SharedLibrary(os.path.join(bindir, "{}{}{}".format(libname, env["suffix"], env["SHLIBSUFFIX"])), source=jam_objs + binding)
@@ -64,5 +66,21 @@ if want_cli:
     # the CLI links the jam objects (compiled for the DLL; position-independent on Windows) plus godot-cpp is not needed
     cli = cenv.Program(os.path.join(bindir, "rinkcli-" + tree), source=jam_objs + [cli_obj], LIBS=[], LIBPATH=[])
     targets.append(cli)
+# tests=yes: thirdjam's own automation tests (every *Tests*.cpp of the tree) with the whole JamCore compiled again with
+# WITH_DEV_AUTOMATION_TESTS=1, linked into ../bin/rinktest-<tree>.exe (native/tests/rinktest.cpp runs them).
+if ARGUMENTS.get("tests", "no") == "yes":
+    import glob as _glob
+    tenv = jenv.Clone()
+    tenv["CPPDEFINES"] = [d for d in tenv["CPPDEFINES"] if d != "WITH_DEV_AUTOMATION_TESTS=0"] + ["WITH_DEV_AUTOMATION_TESTS=1"]
+    tenv.Append(LINKFLAGS=["/SUBSYSTEM:CONSOLE", "/STACK:16777216"])   # UE threads run with large stacks; some tests hold big worlds on the stack
+    tobj = objdir + "-tests"
+    skip = [x for x in ARGUMENTS.get("skip_tests", "").split(",") if x]
+    tsrc = list(jam_sources) + (["AI/JamBrain.cpp"] if os.path.exists(os.path.join(tj, "AI", "JamBrain.cpp")) else [])
+    tests_found = sorted(os.path.relpath(f, tj).replace("\\", "/") for f in _glob.glob(os.path.join(tj, "**", "*Tests*.cpp"), recursive=True))
+    tsrc += [t for t in tests_found if os.path.basename(t) not in skip]
+    objs = [tenv.Object(os.path.join(tobj, t.replace("/", "_").replace(".cpp", "")), os.path.join(tj, t)) for t in tsrc]
+    objs += [tenv.Object(os.path.join(tobj, "shim"), os.path.join(here, "shim", "shim.cpp")),
+             tenv.Object(os.path.join(tobj, "rinktest"), os.path.join(here, "tests", "rinktest.cpp"))]
+    targets.append(tenv.Program(os.path.join(bindir, "rinktest-" + tree + ARGUMENTS.get("test_suffix", "")), source=objs, LIBS=[], LIBPATH=[]))
 SConsignFile(os.path.join(here, "..", "..", "..", "..", ".tl", "rink-obj", "sconsign"))   # build state stays out of the tree
 Default(targets)

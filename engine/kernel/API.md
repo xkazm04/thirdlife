@@ -1191,3 +1191,39 @@ driver beside the worker, so a pack can be a **dungeon**: entered from the exe's
 - L4b: `PackLife.load_steps()` returns `load_entry`'s load as separate steps (each asset generator, then the entry);
   `load_entry()` runs them in one go, as before. A driver that draws frames between them keeps the pack's nodes from
   running and the physics server off until the last step (the dungeon does).
+
+## 24. Game cores: `ctx.cores` (class `TLCores`, addition in 1.18)
+
+A core is a reference game's own simulation compiled whole into the engine (`engine/cores/<id>/`), stepped by a pack
+frame by frame. The pack keeps the keys and the drawing; the core keeps the rules, the bodies and the bots. The one
+core today is `rink`: thirdjam's hockey (JamCore, compiled unchanged; `engine/cores/rink/SNAPSHOT.md` is its interface).
+
+| Member | Does |
+|---|---|
+| `ctx.cores.open(id, cartridge = "") -> Object` | the core `id` as an object (`"rink"`: a `RinkCore`). `cartridge`: a file under the pack's `data/`, loaded into the core as text. Null and an error when the id is unknown, the core is not built (the error names the build command), or the cartridge does not load |
+| `ctx.cores.state() -> Dictionary` | `{"<id>": {"hash": 16 hex digits, "frame": int, "score": [a, b]}}` for every core the pack opened (`"<id>#2"` for a second one). Return it from `_pack_state()` (or put it under a key of it): the core's own state hash then enters the run's `state_hash`, so the determinism laws hold for what the core simulates |
+
+```gdscript
+var rink
+
+func _pack_setup(c) -> void:
+	ctx = c
+	rink = ctx.cores.open("rink", "hockey.regular.cartridge.json")
+	rink.set_difficulty("pro")
+	rink.set_human_mode("input")       # the human's skater reads set_human_input; the rest are the core's bots
+	rink.reset(ctx.seed)
+
+func _pack_tick(_f: int) -> void:
+	rink.set_human_input({"Move": ctx.input.vector(&"left", &"right", &"down", &"up"), "bSprint": ctx.input.pressed(&"sprint")})
+	rink.step()
+
+func _pack_state() -> Dictionary:
+	return ctx.cores.state()
+```
+
+- `ctx.cores: TLCores` (1.18) belongs in the table of section 2 (the Director adds the row at the merge).
+- No capability: `ctx.cores` is always there. A pack never loads an extension and never names a core's class.
+- The core steps only when the pack calls `step()`: one call per `_pack_tick` keeps it on the kernel's frames.
+- What the core's methods are and every field of its per-frame `snapshot()`: `engine/cores/rink/SNAPSHOT.md`.
+- Proof that the same seed and input give the same hash through the runner (two bot runs, a replay of the record, a
+  window replayed headless): selftest `800-rink-core.sh`; the probe pack `engine/cores/rink/test_pack`.

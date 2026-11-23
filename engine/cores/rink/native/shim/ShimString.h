@@ -14,6 +14,12 @@ struct FChar
 	static TCHAR ToUpper(TCHAR C) { return (TCHAR)towupper(C); }
 };
 
+struct FCStringAnsi
+{
+	static int32 Strcmp(const char* A, const char* B) { return std::strcmp(A, B); }
+	static int32 Strlen(const char* A) { return (int32)std::strlen(A); }
+};
+
 struct FCString
 {
 	static int32 Atoi(const TCHAR* S) { return (int32)wcstol(S, nullptr, 10); }
@@ -136,6 +142,8 @@ public:
 	void RightInline(int32 N, bool = true) { *this = Right(N); }
 	void RightChopInline(int32 N, bool = true) { *this = RightChop(N); }
 	void MidInline(int32 Start, int32 Count = MAX_int32, bool = true) { *this = Mid(Start, Count); }
+	void InsertAt(int32 Index, const FString& Ch) { S.insert((size_t)Index, Ch.Std()); }
+	void InsertAt(int32 Index, TCHAR Ch) { S.insert(S.begin() + Index, Ch); }
 	FString ToLower() const { FString R(*this); for (auto& c : R.S) c = Low(c); return R; }
 	FString ToUpper() const { FString R(*this); for (auto& c : R.S) c = (TCHAR)towupper(c); return R; }
 	void ToLowerInline() { for (auto& c : S) c = Low(c); }
@@ -162,7 +170,15 @@ public:
 		}
 		return R;
 	}
-	int32 ReplaceInline(const TCHAR* From, const TCHAR* To, ESearchCase::Type Case = ESearchCase::IgnoreCase) { *this = Replace(From, To, Case); return 0; }
+	// UE: returns how many were replaced.
+	int32 ReplaceInline(const TCHAR* From, const TCHAR* To, ESearchCase::Type Case = ESearchCase::IgnoreCase)
+	{
+		const size_t FL = wcslen(From);
+		if (FL == 0) return 0;
+		int32 N = 0;
+		for (int32 At = Find(From, Case, ESearchDir::FromStart, 0); At != INDEX_NONE; At = Find(From, Case, ESearchDir::FromStart, At + (int32)wcslen(To))) { S.replace((size_t)At, FL, To); ++N; }
+		return N;
+	}
 	bool Split(const FString& Delim, FString* L, FString* R, ESearchCase::Type Case = ESearchCase::IgnoreCase, ESearchDir::Type Dir = ESearchDir::FromStart) const
 	{
 		const int32 At = Find(*Delim, Case, Dir);
@@ -309,11 +325,14 @@ struct FParse
 struct FPlatformMisc
 {
 	static FString GetEnvironmentVariable(const TCHAR* Name);
+	static void SetEnvironmentVar(const TCHAR* Name, const TCHAR* Value);
 };
 
 struct FPaths
 {
 	static FString ProjectContentDir();   // the host sets it (JamShimSetContentDir)
+	static FString ProjectDir() { return ProjectContentDir() + TEXT("/.."); }
+	static FString GameSourceDir();   // the host sets it (JamShimSetSourceDir): where JamCore's tree is
 	template <class... A> static FString Combine(const FString& First, const A&... Rest)
 	{
 		FString R = First;
@@ -327,13 +346,23 @@ struct FPaths
 		R += Part;
 	}
 	static bool FileExists(const FString& Path);
+	static FString ConvertRelativePathToFull(const FString& Path) { return Path; }
 	static FString GetCleanFilename(const FString& Path) { int32 i = INDEX_NONE; const int32 a = Path.Find(TEXT("/"), ESearchCase::CaseSensitive, ESearchDir::FromEnd), b = Path.Find(TEXT("\\"), ESearchCase::CaseSensitive, ESearchDir::FromEnd); i = std::max(a, b); return i == INDEX_NONE ? Path : Path.Mid(i + 1); }
 	static FString GetBaseFilename(const FString& Path) { FString F = GetCleanFilename(Path); const int32 d = F.Find(TEXT("."), ESearchCase::CaseSensitive, ESearchDir::FromEnd); return d == INDEX_NONE ? F : F.Left(d); }
 };
 void JamShimSetContentDir(const FString& Dir);
+void JamShimSetSourceDir(const FString& Dir);
 
 struct FFileHelper
 {
 	static bool LoadFileToString(FString& Out, const TCHAR* Path);
+	static bool LoadFileToStringArray(TArray<FString>& Out, const TCHAR* Path)
+	{
+		FString Text;
+		if (!LoadFileToString(Text, Path)) return false;
+		Text.Replace(TEXT("\r"), TEXT("")).ParseIntoArray(Out, TEXT("\n"), false);
+		return true;
+	}
 	static bool SaveStringToFile(const FString& Text, const TCHAR* Path);
+	static bool LoadFileToArray(TArray<uint8>& Out, const TCHAR* Path);
 };
