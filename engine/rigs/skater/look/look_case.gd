@@ -109,6 +109,8 @@ func _instances() -> void:
 
 func _shader() -> void:
 	var text: String = FileAccess.get_file_as_string(TLStyleFelt.SHADER_PATH)
+	text += "
+" + FileAccess.get_file_as_string("res://style/shaders/hall_rig.gdshaderinc")      # the rig's uniforms
 	var missing: Array = []
 	var names: Array = TLStyleFelt.KEYS.keys()
 	names.append_array(TLStyleFelt.LOOK.keys())

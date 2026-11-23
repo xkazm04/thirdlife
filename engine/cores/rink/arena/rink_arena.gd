@@ -74,6 +74,13 @@ static func build(parent: Node3D, opt: Dictionary = {}) -> Node3D:
 	var gain: float = float(opt.get("tone_gain", TONE_GAIN))
 	var r: Dictionary = rig(gain)
 	TLStyleArena.set_rig(r["lights"], r["exposure"], r["gain"], r["gain_shadows"])
+	# lane K7: the figures stand in the same rig. r["sky"] is not handed on: measured on thirdjam's own figure the sky
+	# light adds 2 to 4.5 %, and TLStyleFelt's `sky` is a colour to draw, not the rig's description of its sky light
+	TLStyleFelt.set_rig(r["lights"], r["exposure"], r["gain"], r["gain_shadows"])
+	for mrow: Dictionary in (t["materials"] as Dictionary).values():
+		if ((mrow.get("vectors", {}) as Dictionary).has("ClayIceBody")):
+			TLStyleFelt.set_floor(_col(mrow["vectors"]["ClayIceBody"]))      # lane K7: the ice's own body colour, as the floor that lights them from below
+			break
 	var mats: Dictionary = {}
 	for g: Dictionary in t["groups"]:
 		var node: GeometryInstance3D = root.get_node_or_null(NodePath(str(g["name"]))) as GeometryInstance3D
@@ -334,6 +341,8 @@ static func _texture(tname: String) -> Texture2D:
 		return null
 	if not _tex.has(tname):
 		var path: String = DIR + "tex/" + tname + ".png"
+		if not FileAccess.file_exists(path) and not ResourceLoader.exists(path):
+			path = "res://style/felt/" + tname + ".png"      # the look's clay normal maps live once, in style (lane K7)
 		var img: Image = null
 		if ResourceLoader.exists(path):
 			var t: Texture2D = load(path) as Texture2D

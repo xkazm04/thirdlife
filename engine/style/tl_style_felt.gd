@@ -21,6 +21,9 @@ const DIR: String = "res://style/felt/"
 ## The style's ink pass is drawn at render priority -100 (TLStyle.install); this is after it and before everything else.
 const RENDER_PRIORITY: int = -90
 const MAX_LIGHTS: int = 24
+## With no rig: what the material's own light (in the source's units) is multiplied by before the film curve: the clay
+## rig's exposure (1 / (1.2 * 2^4.2)) times lane K6's tone gain 6.0.
+const FALLBACK_EXPOSURE: float = 0.272
 const KEYS: Dictionary = {"team_colour": TYPE_COLOR, "rim_colour": TYPE_COLOR, "sheen_tint": TYPE_COLOR, "rim_power": TYPE_FLOAT,
 	"rim_strength": TYPE_FLOAT, "emissive": TYPE_FLOAT, "vcol_mix": TYPE_FLOAT, "vcol_jitter": TYPE_FLOAT, "felt_mix": TYPE_FLOAT,
 	"felt_tile": TYPE_FLOAT, "felt_bump": TYPE_FLOAT, "clay_bump_scale": TYPE_FLOAT, "clay_tile_mul": TYPE_FLOAT,
@@ -36,6 +39,7 @@ const LOOK: Dictionary = {"look_tint": Vector3(1.0, 0.94, 0.84), "clay_tile": 25
 const CLAY_NORMALS: Dictionary = {"thumb": "T_Clay_Thumb_N", "dent": "T_Clay_Dent_N"}
 
 static var _shader: Shader
+static var _contact_shader: Shader
 static var _stub: ShaderMaterial
 static var _tex: Dictionary = {}          # path -> Texture2D (with mipmaps)
 static var _made: Array = []              # WeakRef of every material made (the rig is pushed to them)
@@ -59,6 +63,7 @@ static func material(params: Dictionary = {}) -> ShaderMaterial:
 	m.render_priority = RENDER_PRIORITY
 	for k: String in LOOK:
 		m.set_shader_parameter(k, LOOK[k])
+	m.set_shader_parameter(&"rig_exposure", FALLBACK_EXPOSURE)
 	m.set_shader_parameter(&"felt_fibre", texture(DIR + "T_Felt_Fibre.png"))
 	m.set_shader_parameter(&"clay_normal", texture(DIR + "%s.png" % CLAY_NORMALS["thumb"]))
 	set_params(m, params)
@@ -116,17 +121,53 @@ static func set_rig(lights: Array, exposure: float, gain: Color = Color(1, 1, 1)
 		pos.append(Vector4(p.x, p.y, p.z, float(l["radius_m"])))
 		dir.append(Vector4(d.x, d.y, d.z, cos(deg_to_rad(float(l["outer_deg"])))))
 		col.append(Vector4(c.r * cd, c.g * cd, c.b * cd, cos(deg_to_rad(float(l["inner_deg"])))))
+	var fill: Vector3 = Vector3(sky.r, sky.g, sky.b)
 	var n: int = pos.size()
 	while pos.size() < MAX_LIGHTS:
 		pos.append(Vector4(0, 0, 0, 0))
 		dir.append(Vector4(0, -1, 0, 0))
 		col.append(Vector4(0, 0, 0, 1))
-	_rig = {"rig_n": n, "rig_pos": pos, "rig_dir": dir, "rig_col": col, "rig_exposure": exposure,
+	var floor_was: Variant = _rig.get("floor_bounce", Vector3.ZERO)
+	_rig = {"floor_bounce": floor_was, "rig_n": n, "rig_pos": pos, "rig_dir": dir, "rig_col": col, "rig_exposure": exposure,
 		"rig_gain": Vector3(gain.r, gain.g, gain.b), "rig_gain_shadows": Vector3(gain_shadows.r, gain_shadows.g, gain_shadows.b),
-		"sky_fill": Vector3(sky.r, sky.g, sky.b)}
+		"sky_fill": fill}
 	for m: ShaderMaterial in _live():
 		_push_rig(m)
 	return true
+
+
+## The contact shade under a figure (shaders/body_contact.gdshader: thirdjam's M_SkaterContact): a material for a flat
+## piece lying on the ground, which multiplies what is under it: 1 at its rim, `darkest` at its middle; `flat_k`
+## widens the dark middle. Drawn after the ink pass and before the figure. Headless: the shared stub.
+static func contact_material(darkest: float = 0.45, flat_k: float = 0.0) -> ShaderMaterial:
+	if TLStyle.headless():
+		if _stub == null:
+			_stub = ShaderMaterial.new()
+		return _stub
+	if _contact_shader == null:
+		_contact_shader = load("res://style/shaders/body_contact.gdshader") as Shader
+	var m: ShaderMaterial = ShaderMaterial.new()
+	m.shader = _contact_shader
+	m.render_priority = RENDER_PRIORITY - 5
+	m.set_shader_parameter(&"darkest", darkest)
+	m.set_shader_parameter(&"flat_k", flat_k)
+	return m
+
+
+## REVIEW ONLY: every felt material writes what it shows in the source's own units times `k`, with no film curve
+## (0 = the picture). The look gym reads a figure in scene-linear units with it, against thirdjam's HDR scene colour.
+static func set_review_linear(k: float) -> void:
+	_rig["review_linear"] = k
+	for m: ShaderMaterial in _live():
+		m.set_shader_parameter(&"review_linear", k)
+
+
+## The floor the figures stand on, as a matte sheet of this albedo (linear) under the rig: its first bounce lights
+## the faces that look down and sideways (thirdjam's Lumen light off its ice). Black = none. Call it after `set_rig`.
+static func set_floor(albedo: Color) -> void:
+	_rig["floor_bounce"] = Vector3(albedo.r, albedo.g, albedo.b)
+	for m: ShaderMaterial in _live():
+		m.set_shader_parameter(&"floor_bounce", _rig["floor_bounce"])
 
 
 ## How many lights the materials are lit by (0 = the installed style's sun).

@@ -11,14 +11,17 @@ extends Node3D
 ##   --mode=check   selftest block 850 (look.skater.render): the number and the crest are in the picture. The back patch
 ##                  with 11 and with 88 on it (dark ink inside the patch, more of it for 88), the crest's white on the
 ##                  chest; prints `LOOK render ok=true|false ...`
-##   --mode=cost    ten skaters before the game camera for --frames (default 300): the frame time, drawn and not
+##   --mode=cost    ten skaters before the game camera for --frames (default 300): the frame time, drawn and not;
+##                  --glide=8 moves them away at 8 m/s (with --write-movie: the figure from near to the far end)
 ##   --look=felt|cel   the surface (TLRigSkaterLook); default: the chosen one
 ##   --team=0|1  --number=N   blue | orange, the jersey number (default thirdjam's first of the team: 7 | 9)
 ##   --at=x,y,yaw   where the figure stands on the rink (rink metres, Unreal's yaw; default the centre, facing +x)
 ##   --cam_abs=x,y,height,yaw,pitch   the camera of a still of the game itself, for the shot camera "abs"
+##   --linear=k     review: the felt figure in the source's own units times k, no film curve, grade or ink (to read
+##                  a surface against thirdjam's HDR scene colour: tools/look_light_probe.py, look_light_read.py)
 ##   --rig=0        the installed style's own sun instead of thirdjam's hall rig (look/gym_rig.json)
 ##   --style=<file> the look of the world (default: the engine's chosen style)
-## Cameras: side | three | front | back (the four of skater_gym.gd, square, 30 degrees) and, in the game's frame
+## Cameras: side | three | front | back (the four of skater_gym.gd, square, 30 degrees), top (from 6 m above) and, in the game's frame
 ## (16:9, 70 degrees across: hockey.regular.cartridge.json:255), game (thirdjam's follow camera at rest: 6.75 m behind,
 ## 3.5 m up, pitched 17.65 degrees down), far (the same eye 40 m behind) and wide (three skaters across, from the side).
 ## The figure stands at the rig's centre facing rink +x, as thirdjam's stands in the reference.
@@ -29,6 +32,7 @@ const CAMS: Dictionary = {
 	"three": [[3.6, 2.8, 1.5], [0.35, 0.0, 0.8], 30.0],
 	"front": [[5.0, 0.0, 1.0], [0.0, 0.0, 0.8], 30.0],
 	"back": [[-3.6, -2.4, 2.0], [0.4, 0.0, 0.8], 30.0],
+	"top": [[-0.6, 0.0, 6.0], [0.3, 0.0, 0.0], 30.0],
 	"game": [[-6.75, 0.0, 3.5], [-6.75 + 9.5293, 0.0, 3.5 - 3.0320], 70.0],
 	"far": [[-40.0, 0.0, 3.5], [-40.0 + 9.5293, 0.0, 3.5 - 3.0320], 70.0],
 	"gamefront": [[6.75, 0.0, 3.5], [6.75 - 9.5293, 0.0, 3.5 - 3.0320], 70.0],
@@ -43,6 +47,7 @@ var report: Dictionary = {"schema": "tl.skater.look_gym/1", "ok": false}
 var _cost_left: int = -1
 var _cost_usec: Array = []
 var _cost_t: int = 0
+var _glide: float = 0.0
 var _gpu_ms: float = 0.0
 var _cpu_ms: float = 0.0
 
@@ -54,10 +59,22 @@ func _ready() -> void:
 	if args.has("style"):
 		for note: String in TLStyle.load_style(String(args["style"])):
 			print("[look_gym] style: " + note)
-	TLStyle.install(self, {})
+	var linear: float = float(args.get("linear", "0"))
+	TLStyle.install(self, {"ink": false, "grade": false} if linear > 0.0 else {})
 	var use_rig: bool = String(args.get("rig", "1")) != "0"
 	if use_rig:
 		_hall()
+	if linear > 0.0:
+		# review: the figure in the source's own units times `linear`, no film curve, no grade, a linear tone map
+		TLStyleFelt.set_review_linear(linear)
+		var rig0: Node = get_tree().root.find_child(TLStyle.RIG_NODE, true, false)
+		var we: WorldEnvironment = rig0.get_node_or_null("WorldEnvironment") as WorldEnvironment if rig0 != null else null
+		if we != null and we.environment != null:
+			we.environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+			we.environment.tonemap_exposure = 1.0
+			we.environment.glow_enabled = false
+			we.environment.adjustment_enabled = false
+			we.environment.fog_enabled = false
 	var ice: Node3D = TLKit.build("ground_patch", {"size_x": 120.0, "size_z": 60.0, "surface": "ice", "thickness": 0.3})
 	add_child(ice)
 	cam = Camera3D.new()
@@ -280,6 +297,7 @@ func _cost() -> void:
 	anchor.rotation.y = -PI * 0.5
 	add_child(anchor)
 	_cam_to("game", anchor)
+	_glide = float(args.get("glide", "0"))      # m/s away from the camera: near to the far end in one take
 	report["skaters"] = crowd.size()
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	report["hidden"] = args.has("hidden")
@@ -292,6 +310,7 @@ func _process(_dt: float) -> void:
 		return
 	for sk: TLRigSkater in get_meta(&"crowd") as Array:
 		sk.tick()
+		sk.position.x += _glide / 60.0
 	var now: int = Time.get_ticks_usec()
 	if _cost_left <= int(args.get("frames", "300")) and _cost_t > 0:
 		_cost_usec.append(now - _cost_t)

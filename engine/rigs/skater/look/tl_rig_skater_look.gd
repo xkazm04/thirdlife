@@ -54,6 +54,15 @@ const FELT: Dictionary = {
 	"Stick": {"rim_strength": 0.6, "emissive": 2.0},                                             # MI_SkaterTB1_Stick
 }
 
+## thirdjam's ContactShadow component of BP_SkaterVisual_TB1_P3 as the played world holds it (lane K6's export of the
+## running game, world.json: a StaticMeshComponent on the engine's 1 m plane, scale (0.5, 0.7, 1), 3 cm before the mesh's
+## origin and 0.4 cm over the ice, material M_SkaterContact, no shadow) and as its driver resets it after a fall
+## (driver-ref: SetRelativeScale3D (0.5, 0.7, 1), location (3, 0, 0.4), Darkest 0.45, Flat 0). Metres, the mesh's axes.
+const CONTACT_SIZE: Vector2 = Vector2(0.5, 0.7)         # along the figure, across it
+const CONTACT_AT: Vector3 = Vector3(0.03, 0.004, 0.0)
+const CONTACT_DARKEST: float = 0.45
+const CONTACT_FLAT: float = 0.0
+
 static var default_variant: String = ""
 static var _look_mesh: Dictionary = {}      # the baked mesh's instance id -> the same mesh with the rest pose in CUSTOM0 / CUSTOM2
 
@@ -136,10 +145,33 @@ static func apply(mi: MeshInstance3D, o: Dictionary) -> String:
 		else:
 			var c: Color = slot_colour(slot, lin).linear_to_srgb()
 			mi.set_surface_override_material(s, TLStyle.flat_material(Color(c.r, c.g, c.b), 0.6 if slot == "Blade" else 0.0))
+	_contact(mi, variant == "felt")
 	# The node's metadata outlives its place in the renderer: a figure freed before it was ever drawn would otherwise
 	# leave the renderer one update with materials that are already gone (seen: "Parameter material is null" x 36).
 	mi.set_meta(&"tl_felt_materials", held)
 	return variant
+
+
+## The contact shade under the figure (felt only; the cel look is lane K2's as it was). The figure lying on the ice
+## (the driver's scale (2.2, 0.95), Darkest 0.75, Flat 0.7, turned along the body) belongs to the contact round.
+static func _contact(mi: MeshInstance3D, on: bool) -> void:
+	var host: Node = mi.get_parent()
+	if host == null or TLStyle.headless():
+		return
+	var q: MeshInstance3D = host.get_node_or_null("ContactShadow") as MeshInstance3D
+	if q == null:
+		if not on:
+			return
+		q = MeshInstance3D.new()
+		q.name = "ContactShadow"
+		var plane: PlaneMesh = PlaneMesh.new()
+		plane.size = CONTACT_SIZE
+		q.mesh = plane
+		q.position = CONTACT_AT
+		q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		q.material_override = TLStyleFelt.contact_material(CONTACT_DARKEST, CONTACT_FLAT)
+		host.add_child(q)
+	q.visible = on
 
 
 ## The baked mesh with what thirdjam's material reads before skinning: CUSTOM0 = the vertex at rest (xyz, metres),
