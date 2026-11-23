@@ -16,10 +16,12 @@ writes it back. Newest shift-log entry last.
   name the house files and numbers, the critic sees the house strip). Engine needs from them land as kernel API (1.16).
 - Since 22 Nov day: the Home is Wren Valley (arm A, walkable); E6 fixed (a world builds a pack's space as a first join
   does); the editor checks bot claims against the film and holds hockey to the house camera and puck.
-- Next 3 (day of 22 Nov wrap): (1) the owner plays the Home walk and hockey and answers VERDICT 2026-11-22-day (possession
-  bar, clock-only re-run, Home details, jobs -2/-3); (2) editor: a Foreman-owned spacing measure, a clock-only failure
-  re-run, a "boards hold the puck" rule, then hockey job -4; (3) kernel: TLTrigger entry_side, a long all-AI world-gate
-  test, the TLAudio exit leak; Home: remaining colliders, faster first load, tl.land/1.
+- Since 22-23 Nov night: NO minigame building until the owner accepts a design process. docs/design/METHOD.md (a
+  person wants to play it again; only a hand passes fun) and the editor rewritten to it; teardowns of hockey (vs thirdjam)
+  and duel (vs For Honor / Souls / Sekiro) in docs/research/; the owner's 75 thirdjam rulings in RULINGS.md.
+- Next 3 (night of 23 Nov wrap): (1) the owner reads the teardowns and METHOD, walks the World, answers VERDICT
+  2026-11-23-night (hockey world-size page, person gate, method keys, car slab, method on paper); (2) the method on paper
+  with the owner for one idea, no build; (3) World: body stand-ins beyond 70 m, a window selftest counting distance pops.
 
 ## Open owner verdicts
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
@@ -311,3 +313,6 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 20:27 standup: N4 done (88ae2cd, fc59f3a); N1 r1+r2 landed (065f28e, 17973df), re-dispatched to a duel teardown; N2 r1 landed (a9b5447); N3 r1 landed (484f58e).
 - 21:25 standup: N1 done (11e8936 duel teardown); N2 r2 42b1097 + r3 85d9953 landed, r4 (WORLD line) approved; N3 on floors and tufts.
 - 22:25 standup: N2 r4 6be8539 + r5 5910b8a landed; N3 r2 eaa6742 landed, on the far picture's ground re-mesh (finding 1).
+- 19:12-23:07 lanes: N1 teardowns (065f28e, 17973df, 11e8936), N2 method (a9b5447..f4f71d2; JOB.md 2599ebe, b925a54),
+  N3 world six fixes (484f58e..ea65073), N4 Create (88ae2cd, fc59f3a). All done by 23:07; verdict started early (23:08).
+- 03:20 verdict: re-check at bf75b0d green (world 8/8 crisp+classic, uncapped kernel 498/0, tours, perf 6/6, export + check incl. Create); 4 tests red at fa086cb fixed by N3 round 6. Page https://claude.ai/artifact/5og2f2Jykp6iMSUg8NqBJQ. Claims released, timers deleted.

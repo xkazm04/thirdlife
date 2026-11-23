@@ -253,3 +253,12 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
 - 2026-11-22 (day): with all lanes done by 16:45, starting the verdict's final list then (full gate, uncapped suite,
   quiet perf, export) and cancelling the later timers kept the push inside the land-by time with every wall-clock step
   read alone.
+- 2026-11-23 (night, research): a research-only lane that played the owner's earlier game beside ours produced the most
+  valuable finding in a week (our metrics scored the slop better than the reference): when the owner calls a game bad, run
+  a teardown against a game he accepted before any more tuning, and carry his past rulings into the briefs.
+- 2026-11-23 (night): Opus-directed Astra used as a read-only survey (rank every mechanism that could cause the symptom)
+  then fixes by hand cost 177 k tokens and fed three rounds: for visual bug hunts, prefer the survey to an Astra build.
+- 2026-11-23 (night): a World lane ran only the selftest blocks it touched; the verdict's uncapped suite found that its
+  shader fix broke two classic-look byte pins and a blend test that encoded an owner-accepted design. Second sighting
+  after 22 Nov (style.frame.rink): any lane that changes engine/style or the draw layer runs the uncapped kernel suite
+  before "landable", not only its own blocks.
