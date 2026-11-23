@@ -10,9 +10,10 @@ extends Node3D
 ## PlayCheckWindup, PlayCrossCheck, SetCrossCheckHold, PlayWhiff) go out only to a figure that has them, as
 ## AJamSkater::CallFigure does (:422-451).
 ##
-## Not the sim's, so not in the snapshot, and owned by the shell that owns the pawns (thirdjam's game mode):
-## `begin_hit_stop(frames)` (AJamSkater::BeginHitStop, :228), `set_shown_carrier(state, puck_side)` (JamPawns.h:123),
-## `set_aim_recover(frames)` (:109), `note_whiff_take(kind)` (:227).
+## Not the sim's, so not in the snapshot: thirdjam's game mode makes these calls around the pawns, and
+## cores/rink/view/skater_show.gd is that part of it (the hit-stop picks, the shown carrier and puck, the play calls
+## by name): `begin_hit_stop(frames)` (AJamSkater::BeginHitStop, :228), `set_shown_carrier(state, puck_side)`
+## (JamPawns.h:123), `set_aim_recover(frames)` (:109), `note_whiff_take(kind)` (:227).
 ##
 ## Space: rink metres. The pawn stands at Vector3(Pos.x, 0, Pos.y) and a figure that faces -Z is turned by
 ## rotation.y = -Yaw - PI / 2 (the sim's Yaw: 0 faces +x and grows towards +z, JamSim.h:133).
@@ -373,6 +374,8 @@ func _one_shots(s: Dictionary) -> void:
 ## AJamSkater::SetVisualTimeDilation (JamPawns.cpp:234): the figure's clock stands (almost) still during the hit-stop.
 func _set_visual_time_dilation(dilation: float) -> void:
 	if figure != null and figure.has_method(&"set_time_dilation"):
+		if record:
+			calls.append(["set_time_dilation", [dilation]])      # not a call of the interface: the actor's CustomTimeDilation
 		figure.call(&"set_time_dilation", dilation)
 
 
@@ -396,3 +399,43 @@ func apply_render(s: Dictionary, alpha: float) -> void:
 func _place(p: Vector2, yaw: float) -> void:
 	position = Vector3(p.x, 0.0, p.y)
 	rotation = Vector3(0.0, -yaw - PI * 0.5, 0.0)
+
+
+# ------------------------------------------------------------------ for the game mode's presentation (skater_show.gd)
+## The figure's calls the show object made by name since the caller last emptied this list, when `record` is on:
+## [[name, [args]], ...]. (`calls` is the pawn's own frame and is emptied by apply_sim_frame; the show's calls go
+## out before and after it: FJamPuckShow::StepSim, AJamHitRead::TellTakes.)
+var show_calls: Array = []
+
+
+## AJamSkater::CallFigure (JamPawns.cpp:422-451) for the game mode's by-name calls (PlayReceive, SetPassCharge,
+## PlayCallForPass, SetLookAtPuck, SetWindupTakes): only to a figure that has the call. Returns whether it went out.
+func call_figure(fname: StringName, args: Array) -> bool:
+	if figure == null or not figure.has_method(fname):
+		return false
+	if record:
+		show_calls.append([String(fname), args.duplicate()])
+	figure.callv(fname, args)
+	return true
+
+
+## AJamSkater::IsHitStopped (JamPawns.h:135).
+func is_hit_stopped() -> bool:
+	return _hold_left > 0
+
+
+## AJamSkater::IsToldHasPuck (JamPawns.h:126): what the figure was last told.
+func is_told_has_puck() -> bool:
+	return _had_puck
+
+
+## AJamSkater::GetPuckSocketWorld (JamPawns.cpp:813-820): where the figure's puck_socket stands, in the space the pawn
+## stands in (its parent's; the world when it is in the tree), or null for a figure without `socket_transform`.
+func puck_socket_world() -> Variant:
+	if figure == null or not figure.has_method(&"socket_transform"):
+		return null
+	var local: Transform3D = figure.call(&"socket_transform", &"puck_socket")
+	var fig_xf: Transform3D = (figure as Node3D).transform if figure is Node3D else Transform3D.IDENTITY
+	if is_inside_tree():
+		return global_transform * (fig_xf * local.origin)
+	return transform * (fig_xf * local.origin)

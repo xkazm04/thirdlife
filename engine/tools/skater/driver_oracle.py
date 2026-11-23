@@ -1,17 +1,23 @@
 # Runs INSIDE the Unreal editor (UE 5.9, with a GPU) on a copy of the thirdjam project, started by the copy's own
 # start-up script (see reference_capture.py):   TL_REF_SCRIPT=<this file>  UnrealEditor.exe <copy>/ThirdJam.uproject
 #   -unattended -nosplash -nosound -Multiprocess
-# Environment: TL_ORACLE_CALLS = a call list (JSON, written by the gym: engine/rigs/skater/gym), TL_ORACLE_OUT = folder,
-#              TL_ORACLE_STILLS = "cam:every[,cam:every]" (default "three:3"), TL_ORACLE_VARS = "Var,Var" of the visual,
-#              TL_ORACLE_ANIMVARS = "Var,Var" of its animation instance.
+# Environment: TL_ORACLE_CALLS = a call list (JSON, written by a gym: engine/cores/rink/view/figure_gym.gd writes
+#              schema tl.skater.calls/1, one skater; verb_gym.gd writes /2, every skater of the match),
+#              TL_ORACLE_OUT = folder, TL_ORACLE_STILLS = "cam:every[,cam:every]" (default "three:3"),
+#              TL_ORACLE_WHO = the skater the cameras follow and the variables are read from (default the file's "who"),
+#              TL_ORACLE_VARS = "Var,Var" of the visual, TL_ORACLE_ANIMVARS = "Var,Var" of its animation instance.
 # The ORACLE of our driver port: thirdjam's shipped figure driver itself (the actor BP_SkaterVisual_TB1_P3 with its
-# animation blueprint ABP_SkaterTB1_P3, its materials, under the game's clay light rig) is given the same calls, frame
-# by frame, that our pawn gave our figure, in a Simulate session at a fixed 60 Hz. One world tick a frame:
-#   after tick n-1 has run: read where the figure stands (the pose that the calls of frame n-1 made), take the stills,
-#   make the calls of frame n, move the actor to frame n's place (the game calls, then places: HokejGameMode.cpp:1695, :1733).
-# Writes oracle.json: per frame the actor's place and, in the actor's own frame (centimetres, x forward, y right, z up),
-# the bones pelvis, head, hands, feet, stick_socket, the socket puck_socket, the mesh component's relative yaw, and the
-# asked variables. Stills <cam>_f<frame>.png (720 x 720), the gym's cameras, carried with the actor.
+# animation blueprint ABP_SkaterTB1_P3, its materials, under the game's clay light rig), one actor a skater, is given
+# the same calls, frame by frame, that our pawns gave our figures, in a Simulate session at a fixed 60 Hz. One world
+# tick a frame:
+#   after tick n-1 has run: read where the figures stand (the pose that the calls of frame n-1 made), take the stills,
+#   make the calls of frame n, move the actors to frame n's place (the game calls, then places: HokejGameMode.cpp:1695, :1733).
+# A call "OnBusEvent" [name, me, where_x_cm, where_y_cm, strength, kind] is thirdjam's event bus: the Blueprint's own
+# OnBusEvent is called with a payload whose Who is the figure's pawn's sim index when `me` (each figure hangs under a
+# plain AJamSkater here, whose index is -1) and 99 otherwise.
+# Writes oracle.json (schema tl.skater.oracle/2): "points" and per frame, per skater, a flat row of the points in the
+# actor's own frame (centimetres, x forward, y right, z up); "debug": the asked variables of the followed skater.
+# Stills <cam>_f<frame>.png (720 x 720), the gym's cameras, carried with the followed skater.
 import json
 import math
 import os
@@ -23,6 +29,10 @@ import unreal
 OUT = os.environ["TL_ORACLE_OUT"]
 DATA = json.load(open(os.environ["TL_ORACLE_CALLS"], encoding="utf-8"))
 FRAMES = DATA["frames"]
+if "sk" not in FRAMES[0]:      # schema /1: one skater
+    FRAMES = [{"f": fr["f"], "sk": [{"pos": fr["pos"], "yaw": fr["yaw"], "calls": fr["calls"]}]} for fr in FRAMES]
+N = len(FRAMES[0]["sk"])
+WHO = int(os.environ.get("TL_ORACLE_WHO", DATA.get("who", 0)))
 STILLS = [(x.split(":")[0], int(x.split(":")[1])) for x in os.environ.get("TL_ORACLE_STILLS", "three:3").split(",") if x]
 VARS = [v for v in os.environ.get("TL_ORACLE_VARS", "").split(",") if v]
 ANIMVARS = [v for v in os.environ.get("TL_ORACLE_ANIMVARS", "").split(",") if v]
@@ -39,7 +49,7 @@ WARM_TICKS = 180
 
 os.makedirs(OUT, exist_ok=True)
 LOG = open(os.path.join(OUT, "oracle.log"), "a", encoding="utf-8")
-rep = {"schema": "tl.skater.oracle/1", "visual": VISUAL, "frames": [], "notes": [], "failed_calls": {}}
+rep = {"schema": "tl.skater.oracle/2", "visual": VISUAL, "points": list(BONES), "skaters": N, "who": WHO, "frames": [], "debug": [], "notes": [], "failed_calls": {}}
 
 
 def log(msg):
@@ -96,16 +106,32 @@ class Run:
         floor.set_actor_scale3d(unreal.Vector(200, 200, 1))
         attempt("floor material", lambda: floor.static_mesh_component.set_material(0, unreal.load_asset("/JamAssets/Look/M_Ice")))
         cls = unreal.load_asset(VISUAL).generated_class()
-        vis = eas.spawn_actor_from_class(cls, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
-        vis.set_actor_label("TLOracle_Visual")
-        # In the game the figure is on screen and its pose is ticked every frame; here only the captures see it. Set on
-        # the editor world's actor, before the session: a property edit on a Blueprint actor's component rebuilds the
-        # components, and done after BeginPlay that would throw away what the Blueprint set up there.
-        attempt("always tick the pose", lambda: vis.get_component_by_class(unreal.SkeletalMeshComponent).set_editor_property(
-            "visibility_based_anim_tick_option", unreal.VisibilityBasedAnimTickOption.ALWAYS_TICK_POSE_AND_REFRESH_BONES))
+        pawn_cls = attempt("AJamSkater class", lambda: unreal.JamSkater)
+        attached = 0
+        for i in range(N):
+            vis = eas.spawn_actor_from_class(cls, unreal.Vector(300.0 * i, 0, 0), unreal.Rotator(0, 0, 0))
+            vis.set_actor_label("TLOracle_Visual_%02d" % i)
+            # In the game the figure is on screen and its pose is ticked every frame; here only the captures see it. Set on
+            # the editor world's actor, before the session: a property edit on a Blueprint actor's component rebuilds the
+            # components, and done after BeginPlay that would throw away what the Blueprint set up there.
+            attempt("always tick the pose", lambda: vis.get_component_by_class(unreal.SkeletalMeshComponent).set_editor_property(
+                "visibility_based_anim_tick_option", unreal.VisibilityBasedAnimTickOption.ALWAYS_TICK_POSE_AND_REFRESH_BONES))
+            if pawn_cls is not None:
+                # the Blueprint's OnBusEvent asks its attach parent, an AJamSkater, for its sim index
+                pawn = attempt("spawn AJamSkater", lambda: eas.spawn_actor_from_class(pawn_cls, unreal.Vector(300.0 * i, 0, -2000.0), unreal.Rotator(0, 0, 0)))
+                if pawn is not None:
+                    pawn.set_actor_label("TLOracle_Pawn_%02d" % i)
+                    attempt("hide pawn", lambda: pawn.set_actor_hidden_in_game(True))
+                    ok = attempt("attach", lambda: vis.attach_to_actor(pawn, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False))
+                    attached += 1 if ok is not None else 0
+        note("figures %d, under an AJamSkater %d" % (N, attached))
         for cam, _every in STILLS:
             a = eas.spawn_actor_from_class(unreal.SceneCapture2D, unreal.Vector(0, 460, 100), unreal.Rotator(0, 0, 0))
             a.set_actor_label("TLOracle_Cam_" + cam)
+        # every figure is seen every tick, as on the game's screen: SK3Fix drops the stick's correction of a figure that
+        # was not rendered in the last 0.2 s (WasRecentlyRendered). Measured: without this the far skaters' sticks jump.
+        a = eas.spawn_actor_from_class(unreal.SceneCapture2D, unreal.Vector(0, 0, 4500), unreal.Rotator(0, -90, 0))
+        a.set_actor_label("TLOracle_Seer")
 
         def fixed():
             eng = unreal.find_object(None, "/Engine/Transient.UnrealEdEngine_0")
@@ -120,17 +146,27 @@ class Run:
         gw = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world()
         if gw is None:
             return False
-        self.vis = None
+        found = {}
         for a in unreal.GameplayStatics.get_all_actors_of_class(gw, unreal.Actor):
-            if a.get_actor_label() == "TLOracle_Visual":
-                self.vis = a
-        if self.vis is None:
+            lab = a.get_actor_label()
+            if lab.startswith("TLOracle_Visual_"):
+                found[int(lab[-2:])] = a
+        if len(found) < N:
             return False
         self.world = gw
-        self.mesh = self.vis.get_component_by_class(unreal.SkeletalMeshComponent)
+        self.vis = [found[i] for i in range(N)]
+        self.mesh = [v.get_component_by_class(unreal.SkeletalMeshComponent) for v in self.vis]
+        self.parent_ok = [attempt("parent", lambda v=v: v.get_attach_parent_actor() is not None, False) for v in self.vis]
         self.cams = {}
         for a in unreal.GameplayStatics.get_all_actors_of_class(gw, unreal.SceneCapture2D):
             lab = a.get_actor_label()
+            if lab == "TLOracle_Seer":
+                cc = a.capture_component2d
+                cc.set_editor_property("capture_every_frame", False)
+                cc.set_editor_property("capture_on_movement", False)
+                cc.set_editor_property("fov_angle", 110.0)
+                cc.set_editor_property("texture_target", unreal.RenderingLibrary.create_render_target2d(gw, 128, 128, unreal.TextureRenderTargetFormat.RTF_RGBA8))
+                self.seer = a
             if lab.startswith("TLOracle_Cam_"):
                 cam = lab[len("TLOracle_Cam_"):]
                 cc = a.capture_component2d
@@ -149,18 +185,20 @@ class Run:
                 rt = unreal.RenderingLibrary.create_render_target2d(gw, PX, PX, unreal.TextureRenderTargetFormat.RTF_RGBA8)
                 cc.set_editor_property("texture_target", rt)
                 self.cams[cam] = (a, rt)
-        note("bound: visual %s, mesh %s, cameras %s" % (self.vis.get_name(), self.mesh.get_name() if self.mesh else None, sorted(self.cams)))
+        note("bound: %d visuals, with a parent pawn %d, cameras %s" % (len(self.vis), sum(1 for x in self.parent_ok if x), sorted(self.cams)))
         self.place(FRAMES[0])
         self.ready = True
         return True
 
     def place(self, fr):
-        loc = unreal.Vector(fr["pos"][0] * 100.0, fr["pos"][1] * 100.0, 0.0)
-        yaw = math.degrees(fr["yaw"])
-        self.vis.set_actor_location_and_rotation(loc, unreal.Rotator(0, 0, yaw), False, True)
+        for i, s in enumerate(fr["sk"]):
+            loc = unreal.Vector(s["pos"][0] * 100.0, s["pos"][1] * 100.0, 0.0)
+            self.vis[i].set_actor_location_and_rotation(loc, unreal.Rotator(0, 0, math.degrees(s["yaw"])), False, True)
+        s = fr["sk"][WHO]
+        loc = unreal.Vector(s["pos"][0] * 100.0, s["pos"][1] * 100.0, 0.0)
         for cam, (a, _rt) in self.cams.items():
             c = CAMS[cam]
-            cy, sy = math.cos(fr["yaw"]), math.sin(fr["yaw"])
+            cy, sy = math.cos(s["yaw"]), math.sin(s["yaw"])
 
             def world(p):
                 f, r, u = p[0] * 100.0, p[1] * 100.0, p[2] * 100.0
@@ -169,14 +207,29 @@ class Run:
             a.set_actor_location(eye, False, True)
             a.set_actor_rotation(unreal.MathLibrary.find_look_at_rotation(eye, tgt), True)
 
-    def call(self, name, args):
+    def call(self, i, name, args):
+        vis = self.vis[i]
+        if name == "set_time_dilation":      # the pawn's hit-stop: AJamSkater::SetVisualTimeDilation (JamPawns.cpp:234)
+            # by plain assignment: set_editor_property is an editor's edit, and on a Blueprint actor that rebuilds the
+            # components (the mesh loses its animation instance: measured, 920 frames of a dead figure)
+            def dilate():
+                vis.custom_time_dilation = float(args[0])
+            attempt("dilation", dilate)
+            return
         if name == "SetTeam":
             args = [args[0], unreal.LinearColor(args[1][0], args[1][1], args[1][2], 1.0)]
         elif name == "UpdateMotion":
             args = [args[0], args[1], unreal.Rotator(0, 0, args[2])]
         elif name == "SetBoost":
             args = [unreal.Name(args[0]) if args[0] else unreal.Name("None")]
-        fn = getattr(self.vis, snake(name), None)
+        elif name == "OnBusEvent":
+            pl = unreal.JamEventPayload()
+            pl.set_editor_property("Who", -1 if args[1] else 99)
+            pl.set_editor_property("Where", unreal.Vector(args[2], args[3], 0.0))
+            pl.set_editor_property("Strength", args[4])
+            pl.set_editor_property("Kind", unreal.Name(args[5]) if args[5] else unreal.Name("None"))
+            args = [unreal.Name(args[0]), pl]
+        fn = getattr(vis, snake(name), None)
         try:
             if fn is None:
                 raise AttributeError("no function " + snake(name))
@@ -187,23 +240,30 @@ class Run:
                 log("FAIL call %s: %s" % (name, rep["failed_calls"][name]))
 
     def read(self, n):
-        fr = FRAMES[n]
-        t = self.vis.get_actor_transform()
-        row = {"f": n}
-        for b in BONES:
-            p = unreal.MathLibrary.inverse_transform_location(t, self.mesh.get_socket_location(b))
-            row[b] = [round(p.x, 3), round(p.y, 3), round(p.z, 3)]
-        row["mesh_yaw"] = round(self.mesh.get_relative_rotation().yaw if hasattr(self.mesh, "get_relative_rotation") else self.mesh.get_editor_property("relative_rotation").yaw, 4)
-        if VARS:
-            row["v"] = {v: attempt("var " + v, lambda v=v: value(self.vis.get_editor_property(v))) for v in VARS}
-        if ANIMVARS:
-            anim = self.mesh.get_anim_instance()
-            row["a"] = {v: attempt("animvar " + v, lambda v=v: value(anim.get_editor_property(v))) for v in ANIMVARS}
-        rep["frames"].append(row)
+        rows = []
+        for i in range(N):
+            t = self.vis[i].get_actor_transform()
+            flat = []
+            for b in BONES:
+                p = unreal.MathLibrary.inverse_transform_location(t, self.mesh[i].get_socket_location(b))
+                flat += [round(p.x, 3), round(p.y, 3), round(p.z, 3)]
+            rows.append(flat)
+        rep["frames"].append(rows)
+        if VARS or ANIMVARS:
+            row = {"f": n}
+            if VARS:
+                row["v"] = {v: attempt("var " + v, lambda v=v: value(self.vis[WHO].get_editor_property(v))) for v in VARS}
+            if ANIMVARS:
+                anim = self.mesh[WHO].get_anim_instance()
+                if anim is None and "no animation instance" not in rep:
+                    rep["no animation instance"] = n
+                    note("FAIL the followed figure has no animation instance at frame %d" % n)
+                if anim is not None:
+                    row["a"] = {v: attempt("animvar " + v, lambda v=v: value(anim.get_editor_property(v))) for v in ANIMVARS}
+            rep["debug"].append(row)
         for cam, every in STILLS:
             if n % every == 0 and cam in self.cams:
                 unreal.RenderingLibrary.export_render_target(self.world, self.cams[cam][1], OUT, "%s_f%04d.png" % (cam, n))
-        del fr
 
     def on_tick(self, dt):
         if self.done:
@@ -224,12 +284,12 @@ class Run:
                     note("FAIL no Simulate world after 3000 ticks")
                     self.finish()
                 return
-            if self.tick < WARM_TICKS:
-                for cam, (a, _rt) in self.cams.items():
-                    a.capture_component2d.capture_scene()
-                return
             for cam, (a, _rt) in self.cams.items():
                 a.capture_component2d.capture_scene()
+            if getattr(self, "seer", None) is not None:
+                self.seer.capture_component2d.capture_scene()
+            if self.tick < WARM_TICKS:
+                return
             if self.n >= 0:
                 self.read(self.n)
             self.n += 1
@@ -237,8 +297,9 @@ class Run:
                 self.finish()
                 return
             fr = FRAMES[self.n]
-            for name, args in fr["calls"]:
-                self.call(name, list(args))
+            for i, s in enumerate(fr["sk"]):
+                for name, args in s["calls"]:
+                    self.call(i, name, list(args))
             self.place(fr)
         except Exception:  # noqa: BLE001
             note("FAIL tick: " + traceback.format_exc())
@@ -259,4 +320,4 @@ class Run:
 
 RUN = Run()
 RUN.handle = unreal.register_slate_post_tick_callback(RUN.on_tick)
-log("registered, %d frames" % len(FRAMES))
+log("registered, %d frames, %d skaters" % (len(FRAMES), N))

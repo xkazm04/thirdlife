@@ -20,15 +20,25 @@ extends RefCounted
 ## hard turn at speed, the stick arm turns up to 94 degrees in one frame when the aim crosses the body at its fastest,
 ## and in the full stride with the stick held at rest the shaft runs within a millimetre of a shin's axis (through the
 ## leg) on half of the frames. We port before we change, so the GATE is parity: on that run no more frames may break
-## a band than thirdjam's own figure breaks, and none worse.
+## a band than the ported figure broke when it was measured in parity with thirdjam's, and none worse.
+## HOW FAR THAT IS MEASURED: every count is taken on OUR mesh while it stood within 0.02 cm of thirdjam's at twelve
+## bone points on every frame. Nothing measured thirdjam's own vertices; that its figure does the same is an inference
+## from that parity, checked by eye on crops of its render. The tables without _ORACLE are our figure alone, in the
+## game's mode (thirdjam's game mode's part ported), which thirdjam's figure in the oracle's world never runs.
 
-## check -> [frames thirdjam's own figure breaks the ideal band on the gym run, the worst it reaches]
+## check -> [frames the figure breaks the ideal band on the gym run (the parity count), the worst it reaches]
 ## (blade: lowest m; skates: lowest m; pop: degrees in a frame; stick: least clearance m; puck: lowest m).
 ## Measured 23 Nov 2026. GYM_ALLOWED_ORACLE: the run as thirdjam's figure was given it in Unreal (no thirdjam game
 ## mode in that world: the brake's stop take never starts), the run the two figures were compared on.
 ## GYM_ALLOWED: the same hand with the game mode's part ported (the stop takes play): ours alone, not compared.
 const GYM_ALLOWED_ORACLE: Dictionary = {"blade": [42, -0.0485], "skates": [158, -0.1068], "pop": [8, 93.74], "stick": [322, 0.0009], "puck": [1, 0.0128], "lengths": [0, 0.0]}
 const GYM_ALLOWED: Dictionary = {"blade": [43, -0.0425], "skates": [144, -0.1068], "pop": [8, 94.62], "stick": [275, 0.0004], "puck": [1, 0.0186], "lengths": [0, 0.0]}
+## The verb gym's run (cores/rink/view/verb_gym.gd: the match segment with the puck verbs), the human's figure, measured
+## the same way: _ORACLE as the figures were compared in Unreal, the other with thirdjam's game mode's part.
+## Measured 23 Nov 2026 with the ten figures within 0.48 cm of thirdjam's on all 1,800 frames. The takes turn joints
+## fast by design (a slap shot, a stick lift): "pop" counts them, 172 degrees in a frame at the worst (the stick bone).
+const VERBS_ALLOWED_ORACLE: Dictionary = {"blade": [71, -0.044], "skates": [616, -0.1065], "pop": [72, 171.87], "stick": [0, 0.063], "puck": [1, 0.0152], "lengths": [0, 0.0]}
+const VERBS_ALLOWED: Dictionary = {"blade": [64, -0.0167], "skates": [579, -0.1068], "pop": [82, 145.99], "stick": [0, 0.0642], "puck": [0, 0.0366], "lengths": [0, 0.0]}
 
 const BLADE_UNDER: float = 0.004
 const BLADE_OVER: float = 0.06
@@ -235,15 +245,15 @@ static func gate(verdict: Dictionary, allowed_table: Dictionary = GYM_ALLOWED) -
 		var n: int = int(verdict["broken"][c]["frames"])
 		var allowed: int = int(allowed_table[c][0])
 		if n > int(ceil(float(allowed) * 1.05)) + (1 if allowed > 0 else 0):
-			out.append("%s: %d frames break the band (thirdjam's own figure: %d), first at frame %d" % [c, n, allowed, int(verdict["broken"][c]["first"])])
+			out.append("%s: %d frames break the band (the parity count: %d), first at frame %d" % [c, n, allowed, int(verdict["broken"][c]["first"])])
 	if float(met["blade_min"]) < float(allowed_table["blade"][1]) - 0.001:
-		out.append("blade: %.4f m under the ice (thirdjam's: %.4f)" % [float(met["blade_min"]), float(allowed_table["blade"][1])])
+		out.append("blade: %.4f m under the ice (the parity worst: %.4f)" % [float(met["blade_min"]), float(allowed_table["blade"][1])])
 	if float(met["skate_min"]) < float(allowed_table["skates"][1]) - 0.001:
-		out.append("skates: %.4f m under the ice (thirdjam's: %.4f)" % [float(met["skate_min"]), float(allowed_table["skates"][1])])
+		out.append("skates: %.4f m under the ice (the parity worst: %.4f)" % [float(met["skate_min"]), float(allowed_table["skates"][1])])
 	if float(met["turn_max"]) > float(allowed_table["pop"][1]) + 1.0:
-		out.append("pop: a joint turns %.1f degrees in a frame at %s (thirdjam's: %.1f)" % [float(met["turn_max"]), met["turn_at"], float(allowed_table["pop"][1])])
+		out.append("pop: a joint turns %.1f degrees in a frame at %s (the parity worst: %.1f)" % [float(met["turn_max"]), met["turn_at"], float(allowed_table["pop"][1])])
 	if float(met["shaft_clear_min"]) < float(allowed_table["stick"][1]) - 0.001:
-		out.append("stick: the shaft %.4f m from a leg's axis (thirdjam's: %.4f)" % [float(met["shaft_clear_min"]), float(allowed_table["stick"][1])])
+		out.append("stick: the shaft %.4f m from a leg's axis (the parity worst: %.4f)" % [float(met["shaft_clear_min"]), float(allowed_table["stick"][1])])
 	return "; ".join(out)
 
 
