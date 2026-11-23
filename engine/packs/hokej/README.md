@@ -16,15 +16,13 @@ lists `res://cores/rink/rink_core.gdextension`). The level of the bots: `data/ma
 | Space, wheel, E, F | poke, deke, spin, ability |
 | Shift, Ctrl | sprint, brake |
 | R | a new match |
-| 1-4 | team signals: not yet (they need the core's glue, lane K1) |
+| 1-4 | team signals: defend, space, pass to me, praise (the brain reads them; one per second) |
 
 | File | What |
 |---|---|
 | `scripts/cam.gd` | `UJamFollowCamera::StepThirdPerson` ported line by line, as the shipped game runs it (boards view on); checked frame by frame against thirdjam's own code compiled from its source (`docs/shifts/2026-11-24-night/lanes/K3-shell/oracle/`) |
-| `scripts/controls.gd` | the key and mouse mapping |
-| `scripts/human_input.gd` | the devices in K1's raw shape, and (MOVES TO CORE GLUE) thirdjam's ReadHumanInput + button rules on them |
+| `scripts/human_input.gd` | the devices read into the core's raw shape; thirdjam's rules for them are the core's glue (engine/cores/rink/GAMEMODE.md) |
 | `scripts/match_view.gd`, `scripts/hit_stop.gd` | the snapshot drawn with stand-ins; thirdjam's hit-stop (presentation) |
-| `scripts/skate_standin.gd` | the gym's stand-in law (one skater, empty ice: the control rules' tests) |
 | `gen/tj_rink.gd` | the rink (`RinkActor`'s outline, boards, kick plate, markings; the goals as thirdjam's arena meshes; `docs/shifts/2026-11-24-night/lanes/K3-shell/RINK.md`), a plain dark hall round it, and the **STAND-IN** 1.64 m capsule until lane K2's figure |
 | `data/hockey.regular.cartridge.json` | thirdjam's regular cartridge, verbatim |
 | `tests/bot_gym_hand.gd` | the scripted hand (`data/hand_gym.json`); its result carries the per-frame camera trace |

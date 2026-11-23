@@ -17,3 +17,6 @@ landable round 3
 20:10 | state: done | did: landable round 4: hokej in dungeons.json + games.json (no village plot; world.alone same); export carries rink_core DLL; export.sh check --no-window PASS (hokej bd182092f284e383 editor = exe); light hold + fade (kernel 1.19 cameras.screen_fade), grey shadows (TLStyleHall shade), grey ice, R in-place restart (bot_rule_restart PASS), Esc = dungeon pause | next: K1 raw glue, K2 pawn | gates: fast PASS (arch 12/12, devx 229/229; foreman NOT RUN); hokej lint/smoke/invariants PASS, bots 9/9; full tier NOT RUN
 
 landable round 4
+20:35 | state: done | did: landable round 5: raw mode (devices only in the pack; port of the rules, controls and stand-in law deleted), signals 1-4 (bot_rule_signals PASS), R via the glue's restart (bot_rule_restart PASS); thirdjam's button resolver = K1's glue 5,198/5,198 frames; FINDING: the pack's raw stream through rink_rawtrace.gd = pack hash only to frame 1,505 (first input diff 1,294, stick last bit), reported to K1; match hash moved (double stick in the glue) | next: rest until K2's pawn | gates: fast PASS (arch 12/12, devx 229/229; foreman NOT RUN); hokej lint/smoke/invariants PASS, bots 10/10; export check --no-window PASS
+
+landable round 5

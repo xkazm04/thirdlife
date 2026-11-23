@@ -6,7 +6,8 @@ extends Node
 ## FJamPlayerBot's inputs): chase the loose puck with the cursor on it; carrying, skate at the net and, inside 14 m, aim at it
 ## and hold the left button 18 frames (a charged shot on the release); an opponent carrying within 2.5 m: the right button
 ## (the body check) or Space (the poke); at a faceoff, the left button at the drop. Up to MAX_FRAMES or the match's end.
-## Its result carries, per frame, the FJamInput the human's skater got and the core's hash (for the core-only replay tool).
+## Its result carries, per frame, the raw devices the pack sent, the FJamInput the core's glue made of them and the core's hash
+## (for rink_rawtrace.gd and the core-only replay tool).
 
 const REACT: int = 12
 const MAX_FRAMES: int = 10800
@@ -20,6 +21,7 @@ var tap_left: int = 0
 var tap_right: int = 0
 var tap_space: int = 0
 var inputs: Array = []
+var raws: Array = []
 var hashes: Array = []
 var shots: int = 0
 var checks: int = 0
@@ -47,6 +49,7 @@ func _bot_tick(frame: int) -> void:
 	var s: Dictionary = ctx.pack_state()
 	if frame > 0:
 		inputs.append(s["in"])
+		raws.append(s["raw"])
 		hashes.append(String(s["rink"]["hash"]))
 	if frame >= MAX_FRAMES or bool(s.get("over", false)):
 		done = true
@@ -131,4 +134,4 @@ func _bot_result() -> Dictionary:
 	var ok: bool = done and inputs.size() > 600 and carried_frames > 0 and shots > 0
 	return {"ok": ok, "summary": "%d frames, score %d:%d%s, carried %d frames, %d shots, %d checks/pokes, core hash %s" % [inputs.size(), int(score[0]), int(score[1]),
 		" (over)" if bool(s["over"]) else "", carried_frames, shots, checks, String(s["rink"]["hash"])],
-		"frames": ctx.frame, "metrics": {"carried_frames": carried_frames, "shots": shots, "raw": {"inputs": inputs, "hashes": hashes}}}
+		"frames": ctx.frame, "metrics": {"carried_frames": carried_frames, "shots": shots, "raw": {"inputs": inputs, "hashes": hashes, "devices": raws}}}

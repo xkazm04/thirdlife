@@ -12,7 +12,6 @@ extends Node
 ## stand-in law, rounds 1-2: the control rules' tests), `replay` (thirdjam's own logged path through our camera, round 2).
 
 const Cam := preload("cam.gd")
-const Standin := preload("skate_standin.gd")
 const Human := preload("human_input.gd")
 const View := preload("match_view.gd")
 const HitStop := preload("hit_stop.gd")
@@ -21,11 +20,9 @@ var ctx
 var cart: Dictionary
 var gym: Dictionary
 var match_cfg: Dictionary
-var rink                 # thirdjam's core (RinkCore): set_human_input / step / snapshot / state_hash
-var core                 # what this run steps: the rink, or the gym's stand-in law
+var rink                 # thirdjam's core (RinkCore): set_raw_input / step / snapshot / state_hash
 var mode: String = "match"
 var cam                  # thirdjam's follow camera (scripts/cam.gd)
-var human                # thirdjam's key and mouse mapping (scripts/human_input.gd)
 var view                 # the stand-in figures (scripts/match_view.gd)
 var hit_stop             # thirdjam's hit-stop, presentation only (scripts/hit_stop.gd)
 var rink_c: Dictionary   # FJamCameraRink {L, W, R}
@@ -50,16 +47,14 @@ func _pack_setup(c) -> void:
 	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
 	rink = ctx.cores.open("rink", "hockey.regular.cartridge.json")
 	rink.set_difficulty(String(match_cfg["difficulty"]))
-	rink.set_human_mode("input")
+	rink.set_human_mode("raw")                     # the person's devices; thirdjam's game-mode rules in the core's glue (GAMEMODE.md)
 	rink.reset(ctx.seed)
-	core = rink
 	snap = rink.snapshot()
 	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]))
 	hit_stop = HitStop.new({"BumpRatio": 0.4, "DownRatio": 1.0, "DownFullRatio": 3.0})   # FJamContactConfig defaults (JamCartridge.h:396-399): no game.contact in the cartridge
 	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = max(shot.reach_m, SkaterRadius 0.4 +
 	# stick.reach_m 1.2 (FJamStickConfig default)) + 0.05 (JamSim.cpp:862-869); FJamPassConfig defaults SaucerHalfFrames 8,
 	# PowerFullFrames 30 (JamCartridge.h:356, 363): the regular cartridge has no game.pass
-	human = Human.new({"carrier_reach": maxf(float(g["shot"]["reach_m"]), 0.4 + 1.2) + 0.05, "saucer_half": 8, "pass_power_full": 30})
 	Human.declare(ctx.input)
 	ctx.input.declare_aim(&"aim", 0.0, 200.0)      # the cursor on the ice z = 0 (CursorAimRink, HokejGameMode.cpp:741-754)
 	ctx.input.declare(&"gym", [])                  # proof only, no key
@@ -92,37 +87,40 @@ func _pack_tick(frame: int) -> void:
 		cam = Cam.new(cam.C)                       # thirdjam's first logged frame starts its filter
 		_one_skater()
 	elif frame == 0 and inp.pressed(&"gym"):
+		# the gym (the control rules' tests): the same core, the other nine parked (RinkCore.set_bot_mode, SNAPSHOT.md v1.1),
+		# and the opening faceoff stepped through here so the hand starts on open ice at the drop (a test stand, not a match)
 		mode = "gym"
-		core = Standin.new(ctx.read_json("standin_law.json"))
-		var rk: Dictionary = cart["game"]["rink"]
-		core.set_rink({"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": float(rk["corner_radius_m"]), "goal_w": float(rk.get("goal_width_m", 4.0))})
-		core.reset(Vector2(float(gym["spawn"][0]), float(gym["spawn"][1])), float(gym["spawn_yaw"]))
-		snap = core.snapshot()
+		rink.set_bot_mode("parked")
+		rink.restart()
+		while int(rink.snapshot()["Phase"]) != 0 and rink.get_frame() < 600:
+			rink.set_raw_input({})
+			rink.step()
+		snap = rink.snapshot()
 		cam = Cam.new(cam.C)
 		_camera_step()
-		_one_skater()
+		for i: int in range(view.bodies.size()):
+			if i != int(snap["HumanIndex"]):
+				(view.bodies[i] as Node3D).visible = false
+				(view.sticks[i] as Node3D).visible = false
+		view.puck.visible = false
 	if mode == "replay":
 		_replay_tick()
 		return
 	var s: Dictionary = snap["Skaters"][snap["HumanIndex"]]
 	var cam_yaw: float = deg_to_rad(cam.last_yaw_out) if cam.init else float(s["Yaw"])   # ReadHumanInput's camera yaw (cpp:943-946)
+	cam_yaw = Vector2(cam_yaw, 0.0).x               # single precision (FRotator's yaw is a float): a record holds it exactly
 	var aim_ok: bool = inp.aim_valid(&"aim")
 	var a: Vector3 = inp.aim(&"aim")
 	last_raw = Human.raw(inp, cam_yaw, aim_ok, inp.aim_pixel(&"aim"), Vector2(a.x, a.z))
-	if mode == "match" and (last_raw["Pressed"] as PackedStringArray).has("R"):
-		# RestartMatch (HokejGameMode.cpp:800-818): rules, zones, effects, UJamSim::Restart on the same seed, the brain. Restart
-		# makes every skater fresh from Init's spawn ("a first match is unchanged: Init builds default skaters and calls
-		# Restart", JamSim.cpp:177-202), so RinkCore.reset(seed), which builds the adapter and the brain anew, is the same
-		# match; the presentation keeps its camera (it snaps: the human jumps more than 5 m) and its hit-stop is cleared.
-		rink.reset(ctx.seed)
-		snap = rink.snapshot()
+	var frame_was: int = int(snap["Frame"])
+	rink.set_raw_input(last_raw)                    # R restarts inside (RestartMatch, GAMEMODE.md row 14); signals 1-4 too
+	if not over:
+		over = not rink.step()
+	last_in = rink.last_human_input()
+	if int(rink.get_frame()) < frame_was:           # the core restarted (R): a new match on the same seed
 		over = false
 		hit_stop = HitStop.new(hit_stop.contact)
-	last_in = human.read(last_raw, snap, inp.aim_pixel(&"aim"))   # MOVES TO CORE GLUE (K1's set_raw_input)
-	core.set_human_input(last_in)
-	if not over:
-		over = not core.step()
-	snap = core.snapshot()
+	snap = rink.snapshot()
 	if mode == "match":
 		hit_stop.route(snap)                        # HitStopRoute, before the pawns apply the frame (HokejGameMode.cpp:1665)
 		if hit_stop.held(int(snap["Frame"])):
@@ -182,7 +180,8 @@ func _draw() -> void:
 	if mode == "match":
 		view.draw(snap)
 	else:
-		view.draw_skater(0, snap["Skaters"][0])
+		var me: int = int(snap["HumanIndex"])
+		view.draw_skater(me, snap["Skaters"][me])
 	var pose: Dictionary = cam.pose
 	var cp: Vector2 = pose["pos"]
 	var pr: float = deg_to_rad(float(pose["pitch"]))
@@ -199,7 +198,6 @@ func _pack_state() -> Dictionary:
 	var v: Vector2 = s["Vel"]
 	var pose: Dictionary = cam.pose
 	var cp: Vector2 = pose["pos"]
-	var ctl = human.controls
 	var mv: Vector2 = last_in.get("Move", Vector2.ZERO)
 	var st: Vector2 = last_in.get("Stick", Vector2.ZERO)
 	var ax: Vector2 = last_raw.get("Axis", Vector2.ZERO)
@@ -209,10 +207,9 @@ func _pack_state() -> Dictionary:
 		"cam_x": cp.x, "cam_y": cp.y, "cam_h": float(pose["height"]), "cam_pitch": float(pose["pitch"]), "cam_yaw": float(pose["yaw"]),
 		"cam_boards_w": cam.last_boards_weight,
 		"axis_x": ax.x, "axis_y": ax.y, "move_x": mv.x, "move_y": mv.y,
-		"back_held": ctl.back_held, "back_yaw_deg": rad_to_deg(ctl.back_yaw),
-		"anchored": ctl.anchored, "aiming": ctl.aiming, "stick_x": st.x, "stick_y": st.y,
-		"in": _in_state(last_in)}
-	if mode == "match":
+		"aiming": st != Vector2.ZERO, "stick_x": st.x, "stick_y": st.y,
+		"in": _in_state(last_in), "raw": _in_state(last_raw)}
+	if mode != "replay":
 		var pk: Dictionary = snap["Puck"]
 		out["rink"] = ctx.cores.state()["rink"]     # the core's own hash, frame and score: the run's state_hash covers the match
 		out["phase"] = int(snap["Phase"])
@@ -223,10 +220,11 @@ func _pack_state() -> Dictionary:
 		out["puck_z"] = float(pk["Z"])
 		out["team"] = int(s["Team"])
 		out["faceoff"] = int(snap["FaceoffCountdown"])
+		out["intent"] = int((snap.get("Controls", {}) as Dictionary).get("IntentKind", 0))   # the team signal the brain reads (1-4)
 	return out
 
 
-## The FJamInput the human's skater got this frame, as plain values (bools as 0 / 1, vectors as integers x EXACT).
+## A frame's FJamInput or raw devices as plain values (bools as 0 / 1, vectors and the camera yaw as integers x EXACT).
 const EXACT: float = 1125899906842624.0   # 2^50
 static func _in_state(i: Dictionary) -> Dictionary:
 	var o: Dictionary = {}
@@ -236,6 +234,10 @@ static func _in_state(i: Dictionary) -> Dictionary:
 			o[k] = [int((v as Vector2).x * EXACT), int((v as Vector2).y * EXACT)]   # x 2^50: the single-precision value exactly (a report rounds floats)
 		elif v is bool:
 			o[k] = 1 if v else 0
+		elif v is PackedStringArray:
+			o[k] = Array(v)
+		elif v is float and k == "CameraYaw":
+			o[k] = int(float(v) * EXACT)
 		else:
 			o[k] = v
 	return o
