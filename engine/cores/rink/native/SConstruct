@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# Third Life rink core: builds thirdjam's JamCore (verbatim sources + the Unreal shim) into
+#   - the GDExtension  ../bin/rink_core.<platform>.<target>.<arch>.dll  (target=template_debug|template_release)
+#   - the CLI          ../bin/rinkcli.exe  (cli=yes): the tournament commandlet outside Unreal, for trace proofs
+# Options: tree=thirdjam|thirdjam-t5 (which copy of thirdjam's source), custom_api_file=<godot --dump-extension-api json>.
+# engine/tools/core.sh build is the one command that fetches godot-cpp and calls this.
+import os
+
+tree = ARGUMENTS.get("tree", "thirdjam")
+want_cli = ARGUMENTS.get("cli", "no") == "yes"
+here = Dir(".").abspath
+tj = os.path.join(here, tree)
+
+env = SConscript(os.path.join(here, "..", "..", "..", "..", ".tl", "godot-cpp", "SConstruct")) if os.path.exists(os.path.join(here, "..", "..", "..", "..", ".tl", "godot-cpp", "SConstruct")) else None
+if env is None:
+    godot_cpp = ARGUMENTS.get("godot_cpp", "")
+    env = SConscript(os.path.join(godot_cpp, "SConstruct"))
+
+jam_dirs = [os.path.join(tj, d) for d in ("Public", "Private", "AI", "Rules", "Effects")]
+jam_sources = [
+    "Private/JamSim.cpp", "Private/JamCartridge.cpp", "Private/JamJson.cpp", "Private/JamEventBus.cpp",
+    "Rules/JamZones.cpp", "Rules/JamRuleSystem.cpp", "Effects/JamEffectSystem.cpp", "Effects/JamEffectTypes.cpp",
+    "AI/JamSimAdapter.cpp", "AI/JamBotMatch.cpp", "AI/JamPlaytester.cpp", "AI/JamAICore.cpp", "AI/DifficultyProfile.cpp",
+    "AI/DifficultyResolve.cpp", "AI/JamBotRefSim.cpp", "AI/JamTournamentCommandlet.cpp",
+]
+if os.path.exists(os.path.join(tj, "Private", "JamPassFate.cpp")):
+    jam_sources.append("Private/JamPassFate.cpp")
+
+jenv = env.Clone()
+jenv.Prepend(CPPPATH=[os.path.join(here, "shim"), os.path.join(here, "shim", "generated")] + jam_dirs)
+jenv.Append(CPPDEFINES=["JAMCORE_API=", "WITH_DEV_AUTOMATION_TESTS=0", "WITH_EDITOR=0", "UNICODE", "_UNICODE", "_CRT_SECURE_NO_WARNINGS"])
+# C++20 as UBT builds JamCore; /fp:precise as UBT does for Editor targets (VCToolChain.cs: FPSemantics Precise); exceptions on.
+jenv.Append(CXXFLAGS=["/std:c++20", "/fp:precise", "/EHsc", "/bigobj", "/utf-8", "/wd4005", "/wd4244", "/wd4267", "/wd4996"])
+for f in ("/std:c++17",):
+    if f in jenv["CXXFLAGS"]:
+        jenv["CXXFLAGS"].remove(f)
+
+objdir = os.path.join(here, "..", "..", "..", "..", ".tl", "rink-obj", tree + "-" + env["target"])
+# The snapshot's field list, generated from this tree's JamSim.h (native/tools/gen_fields.py).
+import subprocess, sys
+gendir = os.path.join(objdir, "gen")
+os.makedirs(gendir, exist_ok=True)
+subprocess.check_call([sys.executable, "-I", os.path.join(here, "tools", "gen_fields.py"), os.path.join(tj, "Public", "JamSim.h"), gendir,
+                       os.path.join(gendir, "fields.gen.md"), tree + " Public/JamSim.h"])
+jenv.Prepend(CPPPATH=[gendir])
+jenv.Append(CPPDEFINES=[("RINK_SOURCE_TREE", '\\"%s\\"' % tree)])
+jam_objs = []
+for s in jam_sources:
+    jam_objs.append(jenv.SharedObject(os.path.join(objdir, s.replace("/", "_").replace(".cpp", "")), os.path.join(tj, s)))
+jam_objs.append(jenv.SharedObject(os.path.join(objdir, "shim"), os.path.join(here, "shim", "shim.cpp")))
+
+bindir = os.path.join(here, "..", "bin")
+targets = []
+binding = [jenv.SharedObject(os.path.join(objdir, "b_" + os.path.basename(str(s)).replace(".cpp", "")), s) for s in Glob(os.path.join(here, "src", "*.cpp"))]
+if binding:
+    libname = "rink_core" if tree == "thirdjam" else "rink_core_" + tree.replace("thirdjam-", "")
+    lib = jenv.SharedLibrary(os.path.join(bindir, "{}{}{}".format(libname, env["suffix"], env["SHLIBSUFFIX"])), source=jam_objs + binding)
+    env.NoCache(lib)
+    targets.append(lib)
+if want_cli:
+    cenv = jenv.Clone()
+    cenv.Append(LINKFLAGS=["/SUBSYSTEM:CONSOLE"])
+    cli_obj = cenv.Object(os.path.join(objdir, "rinkcli"), os.path.join(here, "cli", "rinkcli.cpp"))
+    # the CLI links the jam objects (compiled for the DLL; position-independent on Windows) plus godot-cpp is not needed
+    cli = cenv.Program(os.path.join(bindir, "rinkcli-" + tree), source=jam_objs + [cli_obj], LIBS=[], LIBPATH=[])
+    targets.append(cli)
+SConsignFile(os.path.join(here, "..", "..", "..", "..", ".tl", "rink-obj", "sconsign"))   # build state stays out of the tree
+Default(targets)

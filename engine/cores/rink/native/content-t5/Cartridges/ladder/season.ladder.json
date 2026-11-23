@@ -1,0 +1,60 @@
+{
+  "schema": "tj.ladder/1",
+  "ladder": {
+    "id": "season-one",
+    "takes": [
+      {
+        "title": "The Read-Through",
+        "cartridge": "take-1",
+        "twist_text": "Take one. Nobody is judging yet: find the net twice.",
+        "unlock": "always"
+      },
+      {
+        "title": "The Big Room",
+        "cartridge": "take-2",
+        "twist_text": "We moved to the big stage. More ice, and the clock is rolling.",
+        "unlock": "previous_won"
+      },
+      {
+        "title": "Rough Cut",
+        "cartridge": "take-3",
+        "twist_text": "Drop the manners. Hit them, but keep the puck in frame.",
+        "unlock": "previous_won"
+      },
+      {
+        "title": "Set Pieces",
+        "cartridge": "take-4",
+        "twist_text": "The art department dressed the set. Play around the props, or off them.",
+        "unlock": "previous_won"
+      },
+      {
+        "title": "Second Wind",
+        "cartridge": "take-5",
+        "twist_text": "Rubber boards, and every goal gives your crew a second wind. Bank it in.",
+        "unlock": "previous_won",
+        "fallback": "take-5-fallback"
+      },
+      {
+        "title": "The Last Word",
+        "cartridge": "take-6",
+        "twist_text": "The last goal is the one they remember. Make it yours.",
+        "unlock": "previous_won",
+        "fallback": "take-6-fallback"
+      },
+      {
+        "title": "Slow Motion",
+        "cartridge": "take-7",
+        "twist_text": "Widescreen. The far net is a long way off: take the fast way round.",
+        "unlock": "previous_won",
+        "fallback": "take-7-fallback"
+      },
+      {
+        "title": "The Final Cut",
+        "cartridge": "take-8",
+        "twist_text": "Final cut against the best cast: hits allowed, and the set may close in.",
+        "unlock": "previous_won",
+        "fallback": "take-8-fallback"
+      }
+    ]
+  }
+}
