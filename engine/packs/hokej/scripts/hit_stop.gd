@@ -4,7 +4,7 @@ extends RefCounted
 ## puck) hold the hit frame for 1-6 frames while the sim runs on: AHokejGameMode::HitStopRoute (JamGame/Private/
 ## HokejGameMode.cpp:1753-1775), AJamSkater::HitStopPick / HitStopFramesFor (JamCore/Private/JamPawns.cpp:144-224), and the
 ## presentation push skipped while held (HokejGameMode.cpp:1708). jam.hitstop 3 (JamPawns.cpp:144). The figures' own hold
-## (AJamSkater::BeginHitStop, HoldArmed) is the pawn's: lane K2 replaces the stand-in hold.
+## (AJamSkater::BeginHitStop, HoldArmed) is the pawn's: route() returns the hold for it (match_view.begin_hit_stop).
 
 const BASE: int = 3                     # jam.hitstop default (JamPawns.cpp:144-145)
 const NONE: int = 0                     # UJamSim::ContactNone / Bump / Stumble / Down (JamSim.h:717-720)
@@ -77,21 +77,23 @@ static func pick(sk: Array, events: Array, human: int, bump_ratio: float) -> Arr
 	return [-1, -1, NONE, 0.0]
 
 
-## AHokejGameMode::HitStopRoute (HokejGameMode.cpp:1753-1775), called after the sim stepped (cpp:1665).
-func route(snap: Dictionary) -> void:
+## AHokejGameMode::HitStopRoute (HokejGameMode.cpp:1753-1775), called after the sim stepped (cpp:1665). Returns the hold
+## begun on this frame (0: none), for the pawns' and the puck's BeginHitStop (cpp:1767-1768).
+func route(snap: Dictionary) -> int:
 	var f: int = int(snap["Frame"])
 	if BASE <= 0 or f <= end_frame:
-		return
+		return 0
 	var p: Array = pick(snap["Skaters"], snap["Events"], int(snap["HumanIndex"]), float(contact["BumpRatio"]))
 	if int(p[0]) < 0:
-		return
+		return 0
 	var hold: int = frames_for(int(p[2]), float(p[3]))
 	if hold <= 0:
-		return
+		return 0
 	victim = p[0]
 	checker = p[1]
 	start = f
 	end_frame = start + hold - 1
+	return hold
 
 
 ## The presentation frame is held: the frame after the hit's, through its end (HokejGameMode.cpp:1708).

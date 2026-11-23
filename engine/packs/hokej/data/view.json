@@ -1,0 +1,4 @@
+{
+  "note": "How the match is drawn (K3 round 6). figures: thirdjam's figure (engine/rigs/skater, lane K2) through thirdjam's pawn (ctx.cores.view_script rink skater_pawn) for every skater; false = the round-3 stand-ins (a capsule and a stick bar), for debugging. Presentation only: the match hash is the same either way.",
+  "figures": true
+}

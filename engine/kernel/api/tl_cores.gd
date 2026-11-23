@@ -8,7 +8,7 @@ extends RefCounted
 ##   func _pack_tick(_f): rink.set_human_input({...}); rink.step()
 ##   func _pack_state(): return ctx.cores.state()                          # each open core's hash, frame and score
 ##
-## A pack never loads an extension itself: open() is the one door. A core that is not built is reported once with the
+## A pack never loads an extension itself: open() is the one door (and view_script() the one door to a core's drawing side). A core that is not built is reported once with the
 ## command that builds it, and open() returns null.
 
 ## id -> the class the core's extension registers, and the command that builds it.
@@ -53,6 +53,24 @@ func open(id: String, cartridge: String = "") -> Object:
 			return null
 	_open.append([id, core])
 	return core
+
+
+## A presentation script of the core `id` (1.20): `engine/cores/<id>/view/<name>.gd`, the core's own drawing side that a
+## pack may use beside the core (rink: "skater_pawn", thirdjam's AJamSkater, one per skater). `name` is a plain file name
+## without `.gd`. Null and an error when the id is unknown or there is no such script. Presentation only: what the script
+## does never enters the core's hash.
+func view_script(id: String, name: String) -> GDScript:
+	if not KNOWN.has(id):
+		push_error("ctx.cores.view_script: no core '%s' (known: %s)" % [id, ", ".join(PackedStringArray(KNOWN.keys()))])
+		return null
+	if not RegEx.create_from_string("^[a-z_][a-z0-9_]*$").search(name):
+		push_error("ctx.cores.view_script: '%s' is not a plain script name (lower case, digits, _)" % name)
+		return null
+	var path: String = "res://cores/%s/view/%s.gd" % [id, name]
+	if not ResourceLoader.exists(path):
+		push_error("ctx.cores.view_script: the core '%s' has no view script '%s'" % [id, name])
+		return null
+	return load(path) as GDScript
 
 
 ## What `_pack_state()` returns for the open cores: {"<id>": {"hash": 16 hex digits, "frame": int, "score": [a, b]}}

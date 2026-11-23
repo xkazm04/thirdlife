@@ -1204,6 +1204,7 @@ core today is `rink`: thirdjam's hockey (JamCore, compiled unchanged; `engine/co
 | Member | Does |
 |---|---|
 | `ctx.cores.open(id, cartridge = "") -> Object` | the core `id` as an object (`"rink"`: a `RinkCore`). `cartridge`: a file under the pack's `data/`, loaded into the core as text. Null and an error when the id is unknown, the core is not built (the error names the build command), or the cartridge does not load |
+| `ctx.cores.view_script(id, name) -> GDScript` (1.20) | the core's drawing side: `engine/cores/<id>/view/<name>.gd` (`name` a plain file name without `.gd`), e.g. `ctx.cores.view_script("rink", "skater_pawn")`, thirdjam's skater pawn (one a skater, fed its snapshot entry each frame). Null and an error when the id is unknown or the script is not there. Presentation only: never part of the core's hash. A pack may not `preload` under `res://cores/` itself (lint N4); this is the door |
 | `ctx.cores.state() -> Dictionary` | `{"<id>": {"hash": 16 hex digits, "frame": int, "score": [a, b]}}` for every core the pack opened (`"<id>#2"` for a second one). Return it from `_pack_state()` (or put it under a key of it): the core's own state hash then enters the run's `state_hash`, so the determinism laws hold for what the core simulates |
 
 ```gdscript

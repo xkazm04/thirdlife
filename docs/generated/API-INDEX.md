@@ -190,6 +190,7 @@ Consts: `KNOWN`
 
 - `func open(id: String, cartridge: String = "") -> Object`
 - `func state() -> Dictionary`
+- `func view_script(id: String, name: String) -> GDScript`
 
 ## TLDamage
 
