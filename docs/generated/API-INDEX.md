@@ -123,6 +123,7 @@ Properties: `active: Camera3D`
 - `func frame(subject: Node3D, fill: float = 0.35, view_name: StringName = &"") -> void`
 - `func has_view(view: StringName) -> bool`
 - `func orbit(target: Node3D, opts: Dictionary = {}, view: StringName = &"orbit") -> TLOrbitCam`
+- `func screen_fade(amount: float, color: Color = Color.BLACK) -> void`
 - `func set_subject(view_name: StringName, subject: Node3D) -> void`
 - `func shake(amount: float, frames: int) -> void`
 - `func subject_of(view_name: StringName) -> Node3D`

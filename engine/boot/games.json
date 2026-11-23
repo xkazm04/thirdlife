@@ -9,6 +9,7 @@
     {"name": "ex_kit", "from": "engine/kernel/examples/ex_kit"},
     {"name": "ex_car", "from": "engine/kernel/examples/ex_car"},
     {"name": "ice_hockey_three_against", "from": "engine/packs/hockey"},
-    {"name": "parkour", "from": "engine/packs/parkour"}
+    {"name": "parkour", "from": "engine/packs/parkour"},
+    {"name": "hokej", "from": "engine/packs/hokej"}
   ]
 }

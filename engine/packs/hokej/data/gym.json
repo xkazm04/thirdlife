@@ -17,9 +17,11 @@
     "ceiling_key": "black",
     "ceiling": true,
     "light": {
-      "color": "#a88b7e",
+      "color": "#ab956f",
       "energy": 1.0,
-      "shadows": true
+      "shadows": true,
+      "shade": "#8f8040",
+      "shade_k": 1.0
     }
   }
 }

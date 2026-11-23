@@ -14,3 +14,6 @@ landable round 2
 19:45 | state: done | did: landable round 3: a whole match through the keys (3:1 at pro, 5,459 frames); record = replay hash; FJamInput stream into a bare core = the pack's hash on 5,459/5,459 frames; thirdjam's own button resolver (compiled) = the port on 20,000/20,000 frames; TLStyleHall roof light, ice (162,144,169) vs film (158,140,150); film side by side looked at | next: K1's raw glue swap + signals, K2's pawn | gates: fast PASS (arch 12/12, devx 229/229; foreman NOT RUN); selftest style. 10/10, surf. 14/14, rink. 3/3, k1. 6/6, k4. 9/9, p7. 20/20; hokej invariants PASS, bots 8/8; full tier NOT RUN
 
 landable round 3
+20:10 | state: done | did: landable round 4: hokej in dungeons.json + games.json (no village plot; world.alone same); export carries rink_core DLL; export.sh check --no-window PASS (hokej bd182092f284e383 editor = exe); light hold + fade (kernel 1.19 cameras.screen_fade), grey shadows (TLStyleHall shade), grey ice, R in-place restart (bot_rule_restart PASS), Esc = dungeon pause | next: K1 raw glue, K2 pawn | gates: fast PASS (arch 12/12, devx 229/229; foreman NOT RUN); hokej lint/smoke/invariants PASS, bots 9/9; full tier NOT RUN
+
+landable round 4

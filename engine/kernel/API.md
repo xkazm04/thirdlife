@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.18)
+# Third Life kernel API (kernelApi 1.19)
 
-**Version 1.18 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.19 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.18"` in `pack.json` (any
-`"1.x"` up to 1.18 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.19"` in `pack.json` (any
+`"1.x"` up to 1.19 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -594,6 +594,7 @@ a part in the same convention from boxes.
 | `ctx.cameras.add_view(name, position, target, fov = 60.0) -> Camera3D` | a fixed named view; `capture --cam=<name>` renders it. List the names in pack.json `cameras` |
 | `ctx.cameras.chase(target, opts = {}, view = &"chase") -> TLChaseCam` | follows from behind. Options `distance` (7), `height` (3), `look_height` (1), `stiffness` (0.12: how fast the heading turns), `follow` (0.3: how fast the place catches up), `aim` (0.5: how fast the point looked at catches up), `use_velocity` (behind the last direction of travel, measured over 2 cm however slow, kept at rest; the facing until he has moved or after `snap()`), `fov` (**58**); 1.6 (opt-in, all off by default): `avoid_space` (a physics space RID, its bodies in the coordinates of the camera's parent: the camera never enters what it holds, except a body that holds the point looked at itself), `avoid_margin`, `avoid_mask`, `avoid_out`, `avoid_min` (margin and min in metres whatever the parent's scale), `anchor_follow`, `anchor_follow_y`; read-only `avoid_pull`, `avoid_lift` |
 | `ctx.cameras.orbit(target, opts = {}, view = &"orbit") -> TLOrbitCam` | yaw free, **pitch held to 30..60 degrees**, distance to a range. Options `yaw`, `pitch`, `distance`, `distance_min`, `distance_max`, `look_height`, `yaw_rate`, `pitch_rate`, `zoom_rate`, `fov` (**50**), `smooth` (0.25: share of the remaining way the drawn camera covers each frame; 1 = rigid) |
+| `ctx.cameras.screen_fade(amount, color = Color.BLACK)` (1.19) | the whole picture faded to `color` by `amount` (0 the picture, 1 all colour): a camera fade, as a match that opens from black. Over the views, under the HUD labels, takes no input; visual only (headless nothing, never in the state). Call it each frame the amount changes; 0 hides it |
 | `ctx.cameras.aspect() -> float` (1.17) | the width over the height of the picture the views draw into: the window's in a windowed run (read at the call: a resized window answers at once), 16 / 9 headless (no picture; verify runs give the same numbers everywhere). Visual framing only: a pack whose state reads it hashes differently in another window |
 | `ctx.cameras.activate(name) -> bool`, `views()`, `has_view(name)`, `view(name) -> Camera3D`, `active` | the first view registered is active until you say otherwise |
 | `ctx.cameras.frame(subject, fill = 0.35, view = &"")` | places a view (default: the active one) so that `subject` covers `fill` of the frame height. A chase camera keeps its angle and changes `distance` and `height`; an orbit camera changes `distance` (and widens its range to hold it); a fixed view moves along its line of sight and looks at the subject's centre. Call it in `_pack_setup` after the camera was made and the subject is in the tree. It also names the subject as the view's main actor |

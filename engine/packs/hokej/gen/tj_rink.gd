@@ -73,7 +73,7 @@ static func _boards(mk: TLMesh, line: Array) -> void:
 		var d: Vector2 = (p1 - p0).normalized()
 		var o: Vector2 = Vector2(d.y, -d.x)                      # outward for a counter-clockwise outline (cpp:484)
 		var e: Vector2 = d * 0.01                                 # a hair of overlap at the joints
-		mk.bar(_g(p0 - e + o * (t * 0.5), 0.0), _g(p1 + e + o * (t * 0.5), 0.0), t, bh * 2.0, "boards")
+		mk.bar(_g(p0 - e + o * (t * 0.5), 0.0), _g(p1 + e + o * (t * 0.5), 0.0), t, bh * 2.0, "cabin")
 		mk.bar(_g(p0 - e - o * 0.01, 0.0), _g(p1 + e - o * 0.01, 0.0), 0.02, 0.5, "yellow")
 
 

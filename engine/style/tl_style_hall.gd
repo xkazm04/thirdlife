@@ -11,9 +11,11 @@ extends RefCounted
 ##   TLStyleHall.apply(ctx.root, {"color": "#b8a8b4", "energy": 1.0})   # from a pack's _pack_setup
 ##
 ## Options: `color` (the light's colour, "#rrggbb"; default "#ffffff"), `energy` (its strength, the style sun's unit;
-## default 1.0), `shadows` (true: the figures cast their shadow straight down; default true).
+## default 1.0), `shadows` (true: the figures cast their shadow straight down; default true), `shade` (the colour of what
+## the roof light does not reach: a cast shadow, an underside; "#rrggbb", default "" = the style's own shade, which is the
+## outdoor sky's tint) and `shade_k` (how much of it replaces the light there, 0..1; default 1).
 
-const DEFAULTS: Dictionary = {"color": "#ffffff", "energy": 1.0, "shadows": true}
+const DEFAULTS: Dictionary = {"color": "#ffffff", "energy": 1.0, "shadows": true, "shade": "", "shade_k": 1.0}
 
 
 static func apply(anchor: Node, opt: Dictionary = {}) -> bool:
@@ -38,6 +40,10 @@ static func apply(anchor: Node, opt: Dictionary = {}) -> bool:
 	var c: Color = Color(String(o["color"])).srgb_to_linear()
 	TLStyle._g("g_sun", Vector4(c.r, c.g, c.b, float(o["energy"])))
 	TLStyle._g("g_sun_dir", Vector4(0.0, 1.0, 0.0, 0.0))
+	if String(o["shade"]) != "":
+		var sc: Color = Color(String(o["shade"])).srgb_to_linear()
+		TLStyle._g("g_shade", Vector4(sc.r, sc.g, sc.b, float(o["shade_k"])))   # the cel shade band: a cast shadow is this
+		TLStyle._g("g_shade2", Vector4(sc.r, sc.g, sc.b, 0.0))                 # one colour up and down (no ground-lit tone)
 	var we: WorldEnvironment = rig.get_node_or_null("WorldEnvironment") as WorldEnvironment
 	if we != null and we.environment != null:
 		we.environment.fog_enabled = false

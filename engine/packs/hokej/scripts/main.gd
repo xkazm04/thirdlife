@@ -71,6 +71,7 @@ func _pack_setup(c) -> void:
 	_draw()
 	view.reset_interpolation()                     # the first frame is drawn where it is, not slid into from the origin
 	follow.reset_physics_interpolation()
+	ctx.cameras.screen_fade(1.0)                   # the match opens black (thirdjam's light hold, below)
 	ctx.cameras.add_view(&"top", Vector3(0, 70, 0.01), Vector3.ZERO, 60.0)
 	ctx.cameras.activate(&"follow")
 	ctx.cameras.set_subject(&"follow", view.bodies[int(snap["HumanIndex"])])
@@ -84,6 +85,7 @@ func _pack_tick(frame: int) -> void:
 	var inp = ctx.input
 	if frame == 0 and gym.get("hall", {}).has("light"):
 		TLStyleHall.apply(ctx.root, gym["hall"]["light"])   # the style's roof light (visual only; nothing headless)
+	_light_hold(frame)
 	if frame == 0 and inp.pressed(&"replay"):
 		mode = "replay"
 		replay = (ctx.read_json("tj_trace_regular_pro.json") as Dictionary)["rows"]
@@ -108,9 +110,14 @@ func _pack_tick(frame: int) -> void:
 	var a: Vector3 = inp.aim(&"aim")
 	last_raw = Human.raw(inp, cam_yaw, aim_ok, inp.aim_pixel(&"aim"), Vector2(a.x, a.z))
 	if mode == "match" and (last_raw["Pressed"] as PackedStringArray).has("R"):
-		rink.reset(ctx.seed)                       # RestartMatch (HokejGameMode.cpp:800-818): DEVIATION, a new match on the same seed
+		# RestartMatch (HokejGameMode.cpp:800-818): rules, zones, effects, UJamSim::Restart on the same seed, the brain. Restart
+		# makes every skater fresh from Init's spawn ("a first match is unchanged: Init builds default skaters and calls
+		# Restart", JamSim.cpp:177-202), so RinkCore.reset(seed), which builds the adapter and the brain anew, is the same
+		# match; the presentation keeps its camera (it snaps: the human jumps more than 5 m) and its hit-stop is cleared.
+		rink.reset(ctx.seed)
 		snap = rink.snapshot()
 		over = false
+		hit_stop = HitStop.new(hit_stop.contact)
 	last_in = human.read(last_raw, snap, inp.aim_pixel(&"aim"))   # MOVES TO CORE GLUE (K1's set_raw_input)
 	core.set_human_input(last_in)
 	if not over:
@@ -123,6 +130,21 @@ func _pack_tick(frame: int) -> void:
 			return                                  # the presentation frame holds: no camera step (HokejGameMode.cpp:1708)
 	_camera_step()
 	_draw()
+
+
+## AHokejGameMode::TickLightHold (HokejGameMode.cpp:632-678): the picture is held black until the light rig has been
+## visible LightHoldSettleTicks (3) ticks, then fades in over jam.screen.FadeSeconds 0.35 s (HokejGameMode.h:250-262). Our
+## hall's light is there from the first frame: black on frames 0-2, then 21 frames of linear fade (PlayerCameraManager::
+## StartCameraFade 1 -> 0). Presentation only: the sim steps on (the faceoff countdown runs under it), the hash cannot move.
+const LIGHT_SETTLE: int = 3
+const LIGHT_FADE_FRAMES: int = 21   # 0.35 s at 60 Hz
+func _light_hold(frame: int) -> void:
+	if frame < LIGHT_SETTLE:
+		ctx.cameras.screen_fade(1.0)
+	elif frame < LIGHT_SETTLE + LIGHT_FADE_FRAMES:
+		ctx.cameras.screen_fade(1.0 - float(frame - LIGHT_SETTLE + 1) / float(LIGHT_FADE_FRAMES))
+	elif frame == LIGHT_SETTLE + LIGHT_FADE_FRAMES:
+		ctx.cameras.screen_fade(0.0)
 
 
 ## The proof mode of round 2: one row of thirdjam's JAMCAM log a tick (one StepSimFrame there, its hit-stop frames already
