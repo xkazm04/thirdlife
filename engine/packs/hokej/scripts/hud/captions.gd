@@ -550,7 +550,7 @@ static func opacity(age: int, dur: int) -> float:
 
 
 ## Paints the strip (docked 24 over the bottom edge; under the scoreboard when the dock would lie on his figure, ClearDown 1).
-func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, human_box: Rect2) -> String:
+func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, human_box: Rect2, labels: Array = []) -> String:
 	if shown_line == "" or paused or hidden:
 		return ""
 	var a: float = opacity(tick - shown_tick, mini(shown_dur, last_end - int(last_pick.get("frame", 0))))
@@ -564,6 +564,9 @@ func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, hum
 	if human_box.size != Vector2.ZERO and Rect2(tl, plate).grow(6.0).intersects(human_box):
 		tl.y = 112.0                                                 # CaptionPlace: the row under the scoreboard (y 112) when it ends above VH / 3
 		if tl.y + plate.y > vh / 3.0:
+			return ""
+	for lb: Rect2 in labels:                                         # the one-line rule: a distance label wins (HUDOneLine.cpp:88-114)
+		if Rect2(tl, plate).intersects(lb):
 			return ""
 	var fill := R.ML_PANEL
 	fill.a = 0.72 * a

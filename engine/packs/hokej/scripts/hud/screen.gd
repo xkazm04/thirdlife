@@ -7,12 +7,25 @@ extends RefCounted
 
 const Hud := preload("hud.gd")
 const R := preload("rules.gd")
+const Kit := preload("kit.gd")
+const PauseCard := preload("pausecard.gd")
+const Front := preload("front.gd")
 
 var tl_hud                 # TLHud
 var view                   # hud.gd
+var ctx_                   # the pack's context (the paused painter has no other door to it)
+var kit                    # kit.gd
+var card                   # pausecard.gd: thirdjam's pause card
+var front                  # front.gd: thirdjam's title and HOME, before the match's frame 0
+var last_snap: Dictionary = {}
+var last_ui: Dictionary = {}
+var was_paused: bool = false
 
 
-static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, last_raw: Dictionary):
+## `head`: the human figure's head socket in the world this frame (K3's match_view.head_world(HumanIndex)), or null: the
+## chevron and the YOU tag anchor to it (HumanHeadWorld source 2, HUDWidget.cpp:1089-1131); without it they look for a figure
+## with sockets themselves, else stand on the stand-in's top.
+static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, last_raw: Dictionary, head = null):
 	if ctx.headless:
 		return screen                  # nothing is drawn headless: the HUD (presentation only) costs a headless run nothing (tests/bot_hud_rules.gd drives its own)
 	if screen == null:
@@ -22,12 +35,71 @@ static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, 
 		var cart: Dictionary = ctx.read_json("hockey.regular.cartridge.json")
 		var level: String = String((ctx.read_json("match.json") as Dictionary).get("difficulty", "pro"))   # the level in force (match.json)
 		screen.view = Hud.new(screen.tl_hud.add_layer(&"hokej"), cart["game"], level, ctx.seed)
+		screen.ctx_ = ctx
+		screen.kit = Kit.new(screen.view.lay)
+		screen.card = PauseCard.new(screen.kit)
+		screen.front = Front.new(screen.kit, level)
+		ctx.own_pause()                                   # thirdjam's pause card replaces the frame's (kernel 1.24)
+		screen.tl_hud.on_paused(screen.paused_tick)
+		if ctx.can_pause():                                # in the exe's dungeon: the title and HOME come before frame 0
+			screen.front.up = true
+			ctx.pause()
 	var ui: Dictionary = ui_of(snap, human, last_in, last_raw)
-	var head = screen.head_world(ctx, snap)
-	if head != null:
-		ui["head"] = head
+	var hw = screen.head_world(ctx, snap, head)
+	if hw != null:
+		ui["head"] = hw
+		ui["bones"] = screen.bone_points()
 	screen.view.frame(snap, ui)
+	screen.last_snap = snap
+	screen.last_ui = ui
 	return screen
+
+
+## One drawn frame while the kernel's frame holds the pack paused (TLHud.on_paused): the front end before the match, else
+## thirdjam's pause card over the HUD as it stood (its clocks still). Keys: ctx.input.menu_keys().
+func paused_tick(_frame: int) -> void:
+	var ks: PackedStringArray = ctx_.input.menu_keys()
+	var lay = view.lay
+	var ext: Vector2 = lay.extent()
+	if front.up:
+		var act: String = front.keys(ks)
+		if act == "play":
+			# PLAY NOW: the match at the lit level (ChooseCut -> OpenLevel with ?level=, MenuWidget.cpp:2138-2150)
+			var core = ctx_.cores.opened("rink")
+			if core != null and front.level_id() != view.cards.level_id:
+				core.set_difficulty(front.level_id())
+				core.reset(ctx_.seed)
+			view.cards.set_level(front.level_id())
+			front.up = false
+			was_paused = false
+			ctx_.resume()
+			return
+		if act == "leave":
+			ctx_.leave_game()
+			return
+		ctx_.cameras.screen_fade(0.0)                   # the menu is its own screen: the match's light hold starts with its frame 0
+		lay.clear()
+		front.paint(lay, ext.x, ext.y)
+		return
+	if not was_paused:
+		card.open()
+		was_paused = true
+	var act2: String = card.keys(ks)
+	if act2 == "resume" or act2 == "restart":
+		if act2 == "restart":
+			ctx_.input.tap(&"k_r")                       # RESTART: Resume, then RestartMatch (DirectorsCallController.cpp:257-261): the R key the glue restarts on
+		was_paused = false
+		ctx_.resume()
+		return
+	if act2 == "leave":
+		ctx_.leave_game()
+		return
+	if last_snap.is_empty():
+		return
+	var ui: Dictionary = last_ui.duplicate()
+	ui["paused"] = true
+	view.frame(last_snap, ui)
+	card.paint(lay, ext.x, ext.y, view.cards.take, view.cards.level)
 
 
 var figure                    # the human's figure: a node with thirdjam's sockets (K2's TLRigSkater body), found by its place
@@ -37,21 +109,25 @@ var figure_look: int = 0
 ## HumanHeadWorld (HUDWidget.cpp:1089-1131, jam.hud.MarkerAnchor 1): the figure's head_socket, lifted YouMarkerHeadLiftCm (-18 cm)
 ## along the head's own axis (the "head" bone to the socket); null without a figure that has sockets (the stand-in: its bounds).
 ## The figure is looked for every 60 frames (a mesh may arrive later), as thirdjam looks again at a bounds answer.
-func head_world(ctx, snap: Dictionary):
+func head_world(ctx, snap: Dictionary, given = null):
 	var me: Dictionary = snap["Skaters"][int(snap["HumanIndex"])]
 	var p: Vector2 = me["Pos"]
 	if (figure == null or not is_instance_valid(figure)) and figure_look % 60 == 0:
 		figure = _find_figure(ctx.root, p)
 	figure_look += 1
 	if figure == null or not is_instance_valid(figure) or not figure.is_inside_tree():
-		return null
+		return (given as Vector3) + Vector3.UP * (-0.18) if given is Vector3 else null   # the world's up where no head bone is known (h:316-321)
 	if Vector2(figure.global_position.x, figure.global_position.z).distance_to(p) > 1.5:
 		figure = null                                            # not his (the figures were rebuilt): look again
 		return null
-	var sock: Transform3D = figure.socket_transform(&"head_socket")
-	if sock == Transform3D.IDENTITY:
-		return null
-	var at: Vector3 = figure.global_transform * sock.origin
+	var at: Vector3
+	if given is Vector3:
+		at = given                                                 # the shell's own socket point (match_view.head_world)
+	else:
+		var sock: Transform3D = figure.socket_transform(&"head_socket")
+		if sock == Transform3D.IDENTITY:
+			return null
+		at = figure.global_transform * sock.origin
 	var axis := Vector3.UP
 	if figure.has_method("bone_transform"):
 		var hb: Transform3D = figure.bone_transform(&"head")
@@ -60,6 +136,19 @@ func head_world(ctx, snap: Dictionary):
 			if d.length() > 0.01:
 				axis = d.normalized()
 	return at + axis * (-0.18)                                     # YouMarkerHeadLiftCm (h:322)
+
+
+## FigureBoxOnScreen's source 2 (HUDWidget.h:277-278, HUDClearDown.cpp): the figure's bones in the world (the skeleton's posed joints).
+func bone_points() -> PackedVector3Array:
+	var out := PackedVector3Array()
+	if figure == null or not is_instance_valid(figure) or not figure.has_method("skeleton"):
+		return out
+	var sk: Skeleton3D = figure.skeleton()
+	if sk == null or not sk.is_inside_tree():
+		return out
+	for i: int in sk.get_bone_count():
+		out.append(sk.global_transform * sk.get_bone_global_pose(i).origin)
+	return out
 
 
 static func _find_figure(root: Node, p: Vector2) -> Node3D:

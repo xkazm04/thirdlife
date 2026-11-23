@@ -14,6 +14,7 @@ const MATCH_CARD_PT := 42                # MatchCardFont: FJamMenuLook::Font(50 
 
 var score_to_win: int = 3
 var level: String = "PRO"
+var level_id: String = "pro"
 var take: int = 1
 var take_until: int = -1
 var until_seen: int = -2
@@ -24,7 +25,13 @@ var box := Rect2()
 
 func _init(game: Dictionary, level_id: String) -> void:
 	score_to_win = int((game.get("rules", {}) as Dictionary).get("score_to_win", 0))
-	level = {"rookie": "ROOKIE", "all_star": "ALL-STAR"}.get(level_id, "PRO")   # FJamSettings::DifficultyLabel (SettingsWidget.cpp:171-179)
+	set_level(level_id)
+
+
+## The level in force (the front end's lit level, else data/match.json's).
+func set_level(id: String) -> void:
+	level_id = id
+	level = {"rookie": "ROOKIE", "all_star": "ALL-STAR"}.get(id, "PRO")   # FJamSettings::DifficultyLabel (SettingsWidget.cpp:171-179)
 
 
 static func compute_take(score: Array, score_to_win_: int) -> int:

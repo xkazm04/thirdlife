@@ -53,6 +53,46 @@ var _script_cache: Dictionary = {}
 
 
 ## True when the manifest declares the capability.
+## K5 (1.24): the frame's pause, for a pack that draws its own pause card. In a dungeon (the exe) the frame freezes the
+## pack's tick on Esc and draws its card; a pack that calls own_pause() gets the freeze without the frame's card, and
+## draws its own: TLHud.on_paused(handler) runs while paused, ctx.input.menu_keys() gives Up / Down / Enter / Esc,
+## ctx.resume() ends the pause, ctx.leave_game() leaves as the frame's Leave does. Where no frame can pause (a verify run,
+## `tl play`), can_pause() is false and pause / resume / leave_game do nothing.
+var paused: bool = false               ## set by the frame: the pack's tick is frozen
+var owns_pause: bool = false           ## the pack draws its own pause card (own_pause)
+var _pause_hook: Callable = Callable() ## the frame's: func(on: bool)
+var _leave_hook: Callable = Callable() ## the frame's: func()
+
+
+## The pack draws its own pause card; the frame keeps the freeze and hands Esc to the pack (call it in _pack_setup).
+func own_pause(on: bool = true) -> void:
+	owns_pause = on
+
+
+## True where a frame can pause this pack (a dungeon of the exe).
+func can_pause() -> bool:
+	return _pause_hook.is_valid()
+
+
+## Freezes the pack's tick now (or, during the load, from its first frame), as Esc does. A pack that owns its pause
+## card draws it; otherwise the frame's card shows.
+func pause() -> void:
+	if _pause_hook.is_valid():
+		_pause_hook.call(true)
+
+
+## Ends a pause.
+func resume() -> void:
+	if _pause_hook.is_valid():
+		_pause_hook.call(false)
+
+
+## Leaves the game as the frame's Leave does (back to the exe's menu). Takes effect after the current call returns.
+func leave_game() -> void:
+	if _leave_hook.is_valid():
+		_leave_hook.call()
+
+
 func has_capability(cap: String) -> bool:
 	var caps: Variant = manifest.get("capabilities", [])
 	return typeof(caps) == TYPE_ARRAY and (caps as Array).has(cap)

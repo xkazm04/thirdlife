@@ -21,7 +21,7 @@ var team_col: Array = [R.BLUE, R.ORANGE]
 var take_grace_total: int = 30          # FJamStickConfig::TakeGraceFrames (JamCartridge.h:202); the cartridge has no game.stick
 var head_override: Vector3 = Vector3.INF   # this frame's head anchor from the figure (screen.gd head_world)
 var head_m: float = 1.64                # the head anchor: the stand-in's top of bounds (HumanHeadWorld source 1, cpp:1089-1131)
-var figure_box_m: Vector3 = Vector3(0.42, 1.64, 0.25)   # the stand-in's bounds (x ahead, height, half width) for the figure's box
+var figure_box_m: Vector3 = Vector3(0.42, 1.64, 0.25)   # the STAND-IN's bounds (FigureBoxOnScreen source 1); a figure with a skeleton is boxed by its bones (source 2, screen.gd bone_points)
 var panel                               # panel.gd
 var markers                             # markers.gd
 var art_ring: Texture2D                 # assets/hud/: thirdjam's own UI textures, exported once from its project (K5 round 2)
@@ -140,7 +140,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	var b_count: bool = frames > 0 and phase == "play"
 	var end: bool = phase == "win" or phase == "lose"
 	var match_card: bool = cards.step(snap, phase)
-	var fl: Dictionary = flow.frame(snap, phase, vw, vh)
+	var fl: Dictionary = flow.frame(snap, phase, vw, vh, paused)
 	# the booth: once a sim frame (the end phase holds its frame: its events are not heard twice); the game mode's events
 	# `period` (UpdateTake's broadcast, HokejGameMode.cpp:385-397: at the build, a restart and every take change) and `win` / `lose`
 	if f != booth_frame:
@@ -160,7 +160,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	var banner: bool = bool(fl["banner"])
 
 	# ---- the human's figure box on the screen (UpdateKeepClear's HumanBoxNow: the bounds plus FigurePadCm 14, HUDClearDown.cpp)
-	var hbox: Rect2 = _figure_box(hpos, float(hu["Yaw"]), down_now)
+	var hbox: Rect2 = _bones_box(ui.get("bones", PackedVector3Array())) if not (ui.get("bones", PackedVector3Array()) as PackedVector3Array).is_empty() else _figure_box(hpos, float(hu["Yaw"]), down_now)
 
 	# ---- the panel's state first: its top is what the markers keep clear of (ControlsPanelTopNow)
 	var panel_on: bool = R.show_controls_panel(phase, paused, banner)
@@ -189,6 +189,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	# ================================================================ the markers (UpdateMarker, UpdateOwnMarker, UpdatePuckMarker, ResolveEdgeSlots)
 	var covered: bool = b_count or frames > 0 or f < R.PUCK_MARKER_CARD_FRAMES
 	var marks: Array = markers.build(snap, phase, hpos, attack, carrier, puck_pos, vw, vh, panel_top, covered, paused, advanced, f)
+	markers.label_boxes = []
 	if not R.labels_stand_down(match_card, banner, paused, end):     # HideLabelsUnderCards (HUDOneLook.cpp:277-295)
 		markers.paint(marks)
 
@@ -215,7 +216,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	# ================================================================ the commentator's caption (cpp:713-722, 1467-1525); the one-line rule:
 	# the faceoff hint wins over it (HUDOneLine.cpp)
 	var hint_up: bool = b_count and faceoffs_this_session <= R.FACEOFF_HINT_COUNT and not R.faceoff_cue_hidden_in_box(int(hu.get("PenaltyFrames", 0)))
-	var cap: String = captions.paint(lay, vw, vh, flow.tick, paused, hint_up, hbox)
+	var cap: String = captions.paint(lay, vw, vh, flow.tick, paused, hint_up, hbox, markers.label_boxes)
 	if cap != "":
 		shown["caption"] = cap
 
@@ -393,7 +394,27 @@ static func _scaled(r: Rect2, k: float) -> Rect2:
 	return Rect2(r.get_center() - s * 0.5, s)
 
 
-## A figure's box on the screen: its bounds plus FigurePadCm (h:239) projected; Rect2() off the frame.
+## A figure's box on the screen from its bones (source 2): every joint projected, grown by FigurePadCm (14 cm, h:239) at the
+## figure's depth; Rect2() when a joint is behind the camera.
+func _bones_box(pts: PackedVector3Array) -> Rect2:
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	var sum := Vector3.ZERO
+	for w: Vector3 in pts:
+		var p: Vector3 = lay.project(w)
+		if p.z <= 0.0:
+			return Rect2()
+		lo = lo.min(Vector2(p.x, p.y))
+		hi = hi.max(Vector2(p.x, p.y))
+		sum += w
+	var c: Vector3 = sum / float(pts.size())
+	var a: Vector3 = lay.project(c)
+	var b: Vector3 = lay.project(c + Vector3(0, 0.14, 0))
+	var pad: float = absf(a.y - b.y) if a.z > 0.0 and b.z > 0.0 else 0.0
+	return Rect2(lo - Vector2(pad, pad), hi - lo + Vector2(pad, pad) * 2.0)
+
+
+## A figure's box on the screen: its bounds plus FigurePadCm (h:239) projected; Rect2() off the frame (the stand-in, source 1).
 func _figure_box(pos: Vector2, yaw: float, down: bool) -> Rect2:
 	var pad: float = 0.14
 	var top: float = (0.4 if down else figure_box_m.y) + pad

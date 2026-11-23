@@ -248,6 +248,21 @@ func add_layer(id: StringName, unit_h: float = 1080.0) -> TLHudLayer:
 	return lay
 
 
+var _paused_handler: Callable = Callable()
+
+
+## K5 (1.24). `handler(frame: int)` runs once a drawn frame while the frame has the pack paused (the pack's own tick
+## is frozen then): a pack that owns its pause card (ctx.own_pause) draws the card in it. One handler per HUD.
+func on_paused(handler: Callable) -> void:
+	_paused_handler = handler
+
+
+## Kernel side (the frame): one drawn frame of a pause.
+func _paused_tick(frame: int) -> void:
+	if _paused_handler.is_valid():
+		_paused_handler.call(frame)
+
+
 ## Remove an anchored text widget or a tag and release its label.
 func remove_widget(id: StringName) -> void:
 	if not _widgets.has(id):
