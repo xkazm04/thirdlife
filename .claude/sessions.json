@@ -1,6 +1,6 @@
 {
   "sessions": [
-    {"id":"d23-hand","scope":["docs/research/hockey-teardown/BEHAVIOUR-HAND.md"],"note":"day 23 Nov H1: hockey behaviour teardown, the player's body, until 14:00"},
-    {"id":"d23-bots","scope":["docs/research/hockey-teardown/BEHAVIOUR-BOTS.md"],"note":"day 23 Nov H2: hockey behaviour teardown, bots and sandbox, until 14:00"}
+    {"id": "d23-hand", "scope": ["engine/packs/hockey/scripts/skate.gd", "engine/packs/hockey/scripts/carry.gd", "engine/packs/hockey/scripts/poke.gd", "engine/packs/hockey/scripts/fun/**", "engine/packs/hockey/data/tuning.json"], "note": "day 23 Nov H1 build: hockey behaviour pass, the hand (skating, hits, poke, carry), on a branch, until 15:00"},
+    {"id": "d23-bots", "scope": ["engine/packs/hockey/scripts/ai/**", "engine/packs/hockey/data/ai.json", "engine/packs/hockey/data/levels/**"], "note": "day 23 Nov H2 build: hockey behaviour pass, the bots, on a branch, until 15:00"}
   ]
 }
