@@ -113,6 +113,25 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
     echo "FAIL  compare: $na vs $nb lines; $nd lines of $(basename "$a") differ; first difference at line ${ln:-?}${fr:+ (frame $fr)}: $(sed -n "${ln:-1}p" "$a" | cut -c1-100)"
     exit 1
     ;;
+  # ---- lane K4 (reference): the lab runner and the balance harness (engine/cores/rink/lab; measurement only) ----
+  #   engine/tools/rink.sh lab-build                 rinklab.exe: thirdjam's JamCore (native/thirdjam, unchanged) + the lab's input filter and probes
+  #                                                  (MSVC through SCons; godot-cpp is not needed)
+  #   engine/tools/rink.sh balance [--update]        the ladder, five ablations and the tempo probes against lab/balance.baseline.json
+  #   engine/tools/rink.sh lab <match|gym> <args>    rinklab.exe with the content dir filled in (e.g. lab match -seeds=1-10 -difficulty=pro -player=good -remove=pass)
+  lab-build)
+    command -v scons >/dev/null 2>&1 || { echo "NOT RUN  rink lab-build: scons not found (pip install scons)"; exit 2; }
+    scons -C "$ROOT/engine/cores/rink/lab" -j"$(nproc)" -Q >/dev/null || { echo "FAIL  rink lab-build"; exit 1; }
+    echo "PASS  rink lab-build: engine/cores/rink/lab/bin/rinklab.exe"
+    ;;
+  lab)
+    [ -f "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" ] || "$0" lab-build >/dev/null || { echo "NOT RUN  rink lab: rinklab.exe could not be built"; exit 2; }
+    mode="${1:-match}"; shift || true
+    "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" "$mode" "$(cygpath -m "$NATIVE/content" 2>/dev/null || echo "$NATIVE/content")" "$@" | grep -E '^({|TRACE )'
+    ;;
+  balance)
+    [ -f "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" ] || "$0" lab-build || { echo "NOT RUN  rink balance: rinklab.exe could not be built"; exit 2; }
+    node "$ROOT/engine/cores/rink/lab/balance.mjs" "$@"
+    ;;
   *)
     sed -n '2,15p' "$0"; exit 2 ;;
 esac

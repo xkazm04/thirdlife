@@ -1,0 +1,3 @@
+# rinklab.exe is built by engine/tools/rink.sh lab-build (objects under .tl/rink-lab-obj)
+*
+!.gitignore
