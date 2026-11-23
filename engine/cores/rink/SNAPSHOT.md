@@ -1,6 +1,7 @@
-# Rink core snapshot: the per-frame interface (v1.1, 23 Nov 19:10)
+# Rink core snapshot: the per-frame interface (v1.2, 23 Nov 21:00)
 
-**Status: built (v1.1: additions only; no v1 name changed).** v1.1 adds `set_raw_input`, `set_bot_mode`, `restart`,
+**Status: built (v1.2: additions only; no v1 or v1.1 name changed).** v1.2 adds `set_bot_mode("off")`, `CameraYawDeg`,
+the "no pixel" rule, the raw shape's precision rule and the HUD's `Controls` fields (K5). v1.1 adds `set_raw_input`, `set_bot_mode`, `restart`,
 `last_human_input`, the snapshot's `Controls`, and the enum tables below; the per-skater dictionary is unchanged. Draft v0 went out at 17:02 for lanes K2 (figure) and K3 (shell); at 17:41 the class below exists
 and runs (engine/tools/selftest.d/800-rink-core.sh). The field names are thirdjam's own, read from its source by
 `native/tools/gen_fields.py` at build time (the snapshot code is generated from the same list, so the table and the
@@ -28,6 +29,9 @@ var err: String = core.load_cartridge(json_text)    # thirdjam cartridge JSON (h
 # or core.set_content_dir(dir) + core.load_cartridge_file("hockey.regular")   (<dir>/Cartridges/<name>.cartridge.json)
 core.set_difficulty("pro")                         # rookie | pro | all_star (DifficultyProfile.h); "" = the cartridge's own
 core.set_human_mode("input")                       # input (default: set_human_input drives the human's skater) | playerbot
+                                                   # | "playtester:<novice|regular|good>[:sprint]" (v1.2: thirdjam's playtester on the human,
+                                                   #   seated as its tournament's -player=<kind> [-playersprint]: the same match to the hash;
+                                                   #   last_human_input() is its decision each frame) | raw (below)
                                                    # (thirdjam's FJamPlayerBot plays him) | idle | brain (no human; bots only)
 core.reset(seed)                                   # the tournament's setup + RunMatch's: FJamSimAdapter (sim + rules, zones,
                                                    # effects) Reset, FJamBrain with the resolved difficulty (JamBotMatch.cpp)
@@ -39,7 +43,8 @@ core.set_human_mode("raw")
 core.set_raw_input({"Down": PackedStringArray(["LeftMouseButton", "LeftShift"]), "Pressed": PackedStringArray(["LeftMouseButton"]),
 	"Axis": Vector2(0, 1), "CameraYaw": cam_yaw, "CursorOnIce": true, "CursorPx": px, "CursorHitM": ice_xy, "MouseDeltaPx": Vector2.ZERO,
 	"StickAxis": Vector2.ZERO})                    # Unreal key names (InputMapping.cpp:98-120); held keys in Down, new presses in Pressed
-core.set_bot_mode("parked")                        # brain (default) | parked: the other nine get no input and stand (the skating gym)
+core.set_bot_mode("off")                           # brain (default) | parked (the other nine get no input and stand: bodies on the ice)
+                                                   # | off (v1.2: the other nine sit in the penalty box: no body, no contact; the gym)
 core.restart()                                     # AHokejGameMode::RestartMatch: same cartridge and seed, a new match
 core.last_human_input()                            # the FJamInput the human's skater got on the last step (thirdjam's names)
 core.step()                                        # one frame (false once the match is over): RunMatch's frame
@@ -73,7 +78,16 @@ the sim, not by us (humans to length 1, JamSim.h:31-34).
   "Puck": {<FJamPuckState fields>},
   "Events": [ {<FJamSimEvent fields>} ... ],  # GetFrameEvents (JamSim.h:693): this frame's only
   "Controls": {"PassHoldSteps", "CrossHoldSteps",                 # v1.1: the human's two-role buttons (InputMapping.h:101-108; the HUD badge's fill)
-               "IntentKind", "IntentTarget", "IntentIssuedFrame", "IntentFrames"}   # the team signal (SignalIntent.h); IntentKind 0 = none
+               "IntentKind", "IntentTarget", "IntentIssuedFrame", "IntentFrames",   # the team signal (SignalIntent.h); IntentKind 0 = none
+               # v1.2 (K5's HUD), the human's this frame:
+               "ButtonsWithPuck",   # bool: thirdjam's two-role rule says "with the puck" (InputMapping.cpp:432-442 HasPuckForButtons:
+                                    #   he carries, or the puck is loose and last touched by his team: our pass in flight)
+               "ButtonsCarrying",   # bool: he is the carrier (InputMapping.cpp:478)
+               "ButtonsInReach",    # bool: the puck within his carrier reach (InputMapping.cpp:479-480, UJamSim::CarrierReachM)
+               "PassTarget", "PassTargetAim",   # the mate a flat pass pressed now goes to (-1 none) and its aim point (JamSim.h:903 BestPass)
+               "SaucerTarget",      # the same for a saucer
+               "TakeOwner",         # the skater who has carried since the puck last changed hands (-1 nobody, -2 a placed puck; JamSim.h:885-887)
+               "CarrierInTakeGrace"}  # bool: the carrier is inside his take grace (JamSim.h:879-884 InTakeGrace)
 }
 ```
 
@@ -91,15 +105,32 @@ AHokejGameMode::Tick does), `BladePos` (the stick blade on the ice, rink metres)
 `PenaltyFrames` (in the box), the one-frame triggers `b*ThisFrame` (shot, pass, check, poke, lift, deke, spin, sweep,
 bump, board hit, recoil, ability). Puck: `Pos`, `Z`, `Vel`, `VZ`, `LastTouch`.
 
+## The raw shape's rules (v1.2)
+
+- Every raw value is single precision. Vector2 components are float already; `CameraYaw` is rounded to float on the way in.
+  So a recorded stream is a complete, exact description of a hand: write each number with at least 9 significant digits
+  (or exactly, as K3's x 2^50 integers) and the replay gives the same doubles to the bit. (Before v1.2 the yaw was used as a
+  double; a stream that went through Godot's JSON parser came back one double ulp away and the match parted from the pack's
+  at frame 1,294: K3's finding, fixed; K3's comparison is now 9,071 of 9,071 frames.)
+- `CameraYawDeg` (optional, wins over `CameraYaw`): thirdjam's own form, the camera's yaw in degrees, turned into radians in
+  double (HokejGameMode.cpp:943-946).
+- No pixel: omit `CursorPx`, or give any negative coordinate (a bot's aim, `(-1, -1)`). Without a pixel the aim is never
+  anchored (FJamAimAnchor anchors a still pixel only): the blade follows `CursorHitM` every step. With a pixel the A191 anchor
+  works as in thirdjam (a still pixel and a standing skater keep the blade's point).
+
 ## The skating gym: one human on empty-ish ice (for K2)
+
+**v1.2: use `core.set_bot_mode("off")`**: the other nine sit in thirdjam's penalty box (JamSim.cpp:1349-1357 "no input, no
+contact"; drawn at `BoxPos`, `InBox` true: hide them) and the sheet is empty. Measured: the human skates 43.9 m, the others move
+0.000 m. `parked` stays as it was (standing bodies), described below.
 
 `core.set_bot_mode("parked")` after `reset(seed)`: the nine others get an empty FJamInput every frame and stand where the
 opening faceoff put them (the human is skater 0, the team-0 centre at the dot). thirdjam has no gym cartridge, and a cartridge
 with one skater is not a thirdjam game; parked bots keep the cartridge whole (rink, puck, rules). The opening faceoff still
 counts down (`Phase` 3, `FaceoffCountdown`) and drops the puck; skate away from the dot. This is a test stand, not a thirdjam
 mode (listed as a deviation). Bots stand, so a skater that runs into one meets a body.
-**Known gap (19:30):** over 600 frames the parked wingers and backs move 0.000 m, but the opposing centre (at the dot) moves
-about 40 m from frame 108 with no input (about 3 m/s); not explained yet. Skate away from the dot.
+Explained (v1.2): the opposing centre stands at the dot in front of the human; a human skating along +x carries him ~40 m
+by body contact (thirdjam's contact law at work, not a drift). With `off` there is no body to meet.
 
 ## Enum values
 

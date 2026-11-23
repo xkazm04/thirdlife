@@ -24,6 +24,11 @@ var problem: String = ""
 var cut_frame: int = -1            # a replay of a record that ended inside its last frame stops there too
 var devices: Array = []            # --devices: [frame, kind, a, b] raw device events of a scripted interactive run (tests)
 var _dev_at: int = 0
+# K1 round 4: what the script holds down now (keycode -> true, mouse button index -> true). A window that loses focus has
+# its held keys released by the OS layer (another window opening was enough: 142 frames of a scripted hand lost); a script
+# never let go, so pre_sample presses them again before the frame is sampled.
+var _held_keys: Dictionary = {}
+var _held_buttons: Dictionary = {}
 var _rec: Variant = null
 var _ctx: Object = null
 var _w: Node = null
@@ -163,7 +168,7 @@ func attach(ctx: Object) -> bool:
 ## field (1: a text field takes the keyboard, 0: gives it back), panel (1: the designer panel is open, 0: closed),
 ## close (the window's close button).
 func pre_sample(frame: int) -> void:
-	var any: bool = false
+	var any: bool = _reassert_held()
 	while _dev_at < devices.size() and int(devices[_dev_at][0]) <= frame:
 		var e: Array = devices[_dev_at]
 		_dev_at += 1
@@ -176,11 +181,15 @@ func pre_sample(frame: int) -> void:
 				k.physical_keycode = OS.find_keycode_from_string(str(a))
 				k.keycode = k.physical_keycode
 				k.pressed = b != 0.0
+				if k.pressed: _held_keys[k.physical_keycode] = true
+				else: _held_keys.erase(k.physical_keycode)
 				Input.parse_input_event(k)
 			"button":                       # K2: a mouse button (left, right, middle; 1 down, 0 up)
 				var mb: InputEventMouseButton = InputEventMouseButton.new()
 				mb.button_index = {"left": MOUSE_BUTTON_LEFT, "right": MOUSE_BUTTON_RIGHT, "middle": MOUSE_BUTTON_MIDDLE}.get(str(a), MOUSE_BUTTON_LEFT)
 				mb.pressed = b != 0.0
+				if mb.pressed: _held_buttons[mb.button_index] = true
+				else: _held_buttons.erase(mb.button_index)
 				Input.parse_input_event(mb)
 			"drag":
 				var m: InputEventMouseMotion = InputEventMouseMotion.new()
@@ -217,6 +226,28 @@ func pre_sample(frame: int) -> void:
 				push_error("--devices: unknown kind '%s' (key, button, drag, wheel, field, panel, close)" % str(e[1]))
 	if any:
 		Input.flush_buffered_events()
+
+
+## K1 round 4: presses again every key and button the script holds that the engine no longer sees down (a focus loss
+## released it). True when it sent something (the caller flushes). Scripted runs only: a person's released key stays released.
+func _reassert_held() -> bool:
+	var sent: bool = false
+	for kc: int in _held_keys.keys():
+		if not Input.is_physical_key_pressed(kc):
+			var k: InputEventKey = InputEventKey.new()
+			k.physical_keycode = kc
+			k.keycode = kc
+			k.pressed = true
+			Input.parse_input_event(k)
+			sent = true
+	for bi: int in _held_buttons.keys():
+		if not Input.is_mouse_button_pressed(bi):
+			var mb: InputEventMouseButton = InputEventMouseButton.new()
+			mb.button_index = bi
+			mb.pressed = true
+			Input.parse_input_event(mb)
+			sent = true
+	return sent
 
 
 func _pointer_event(e: InputEvent) -> void:

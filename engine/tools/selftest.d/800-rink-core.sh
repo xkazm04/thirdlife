@@ -145,3 +145,23 @@ if [ -z "$FILTER" ] || [[ "rink.rawtrace" == *"$FILTER"* ]]; then
   fi
   verdict rink.rawtrace "$why" "$note"
 fi
+
+# Round 4 item 4: thirdjam's playtester seated in the core (human mode "playtester:regular:sprint", native/glue/rink_playtester.cpp)
+#   rink.playtester_seat  seed 1, pro: the seat's match ends on the same state hash as thirdjam's own tournament playtester
+#                         (-player=regular -playersprint, run natively by rinkcli); the raw-key hand's first parting is noted
+if [ -z "$FILTER" ] || [[ "rink.playtester_seat" == *"$FILTER"* ]]; then
+  why=""; note=""
+  if [ ! -f "$HERE/../cores/rink/bin/rink_core.windows.template_debug.x86_64.dll" ] || [ ! -f "$HERE/../cores/rink/bin/rinkcli-thirdjam.exe" ]; then
+    why="the core or its CLI is not built (run: bash engine/tools/rink.sh build)"
+  else
+    ps_want="$(timeout 300 bash "$HERE/rink.sh" trace thirdjam -cartridge=hockey.regular -seeds=1-1 -difficulty=pro -player=regular -playersprint -trace=0 2>/dev/null | sed -n 's/.*"hash":"\([0-9a-f]*\)".*/\1/p' | head -1)"
+    ps_g="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
+    ps_e="$(cd "$HERE/.." && pwd)"; command -v cygpath >/dev/null 2>&1 && ps_e="$(cygpath -am "$ps_e")"
+    ps_out="$(MSYS_NO_PATHCONV=1 timeout 600 "$ps_g" --headless --path "$ps_e" --script res://cores/rink/tools/rink_keyshand.gd -- --kind=regular --sprint --seed=1 "--want=$ps_want" 2>&1 | tr -d '\015')"
+    ps_l="$(echo "$ps_out" | grep -m1 '^PASS  rink keyshand\|^FAIL  rink keyshand')"
+    if [ -z "$ps_want" ]; then why="no reference hash from the tournament (a stopped run)"
+    elif [[ "$ps_l" != "PASS  rink keyshand"* ]]; then why="${ps_l:-no keyshand line (the run stopped)}"
+    else note="seat = thirdjam's playtester ($ps_want); $(echo "$ps_out" | grep -m1 '^KEYSHAND keys' | cut -c19-110)"; fi
+  fi
+  verdict rink.playtester_seat "$why" "$note"
+fi

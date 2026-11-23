@@ -289,6 +289,18 @@ func close(why: String) -> void:
 	left.emit(why)
 
 
+## K1 round 4: the engine quits while the dungeon is still open (`--quit-after`, a quit from elsewhere): the tree is torn
+## down without close(). Leaving the watchdog thread running and the script logger registered crashed the process on exit
+## (exit 139, every dungeon, 4 of 4 runs). Stop and free them here, the pack's teardown included; nothing is printed or emitted.
+func _exit_tree() -> void:
+	if finished:
+		return
+	finished = true
+	if loaded and life != null:
+		life.teardown()
+	_free_pack()
+
+
 func _free_pack() -> void:
 	if get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.disconnect(_on_node_added)

@@ -40,10 +40,23 @@ does the rest.
 | 24 | HUD, badge text (what LMB / RMB do now), barks, the light hold, stills, JAM* log lines, drills (jam.ctrl.Drill), the season | HokejGameMode.cpp (DeliverEvents 1488, PushPresentation 1548, TickLightHold 632, drills 1046-1315, 1828-2256) | shell | presentation, or test-only drills |
 | 25 | The scripted human (jam.ScriptHuman) | HokejGameMode.cpp:821-930 | not ported | a PIE proof hand; our hands are the playtester / FJamPlayerBot (`set_human_mode`) |
 
+## The person's path against thirdjam's playtester (round 4)
+
+`set_human_mode("playtester:regular:sprint")` seats thirdjam's own playtester (native/glue/rink_playtester.cpp: RunPlaytestMatch's
+setup with no measurement environment, and its ability rule): seeds 1 and 2 end on thirdjam's tournament hashes (973d6c04...,
+1bbdb50b...). The same decisions pressed through the person's path (`tools/rink_keyshand.gd`: keys by thirdjam's bindings, the move
+as the skate axis, the blade as the pad stick, camera yaw 0) part from the seat: seed 1 at frame 162 (the playtester's analog move
+is a double; a device axis is single precision: the raw shape cannot carry it to the bit), seed 2 at frame 196 (a stick lift
+pressed while the same button is still held as a cross-check hold: a person must let go one frame before pressing again; rows 2-7
+make that one button). Both are what a person's hands would meet; a shell bot pressing the playtester's keys plays a hand next to
+thirdjam's, not its replay.
+
 ## Added for the gym (not thirdjam)
 
-- `set_bot_mode("parked")`: the other skaters get an empty input every frame (one human skating on the match's ice). A test
-  stand for the figure lane; never used by the game. Deviation listed in K1's report.
+- `set_bot_mode("parked")`: the other skaters get an empty input every frame (standing bodies on the match's ice).
+- `set_bot_mode("off")` (round 4): the other nine kept in thirdjam's penalty box every frame (JamSim.cpp:1349-1357 "no input, no
+  contact"; CollideSkaters 2310): an empty sheet. The parked "drifting centre" was the human pushing him by body contact.
+  Both are test stands for the figure lane; never the game. Deviations listed in K1's report.
 
 ## Not ported, and why
 

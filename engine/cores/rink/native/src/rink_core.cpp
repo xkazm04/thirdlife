@@ -25,6 +25,8 @@
 #include "DifficultyResolve.h"
 #include "JamTournamentCommandlet.h"
 #include "rink_gamemode.h"
+#include "rink_playtester.h"
+#include "JamPlaytester.h"
 
 #include <memory>
 #include <vector>
@@ -82,7 +84,11 @@ class RinkCore : public RefCounted
 	FJamInput LastHuman;          // what the human's skater got on the last step
 	RinkGlue::FHumanControls Controls;
 	RinkGlue::FRawInput Raw;
+	RinkGlue::FPlaytesterSeat Seat;   // human mode "playtester:<novice|regular|good>[:sprint]" (rink_playtester.h)
+	JamAI::EPlaytester SeatKind = JamAI::EPlaytester::Regular;
+	bool bSeatSprint = false;
 	bool bBotsParked = false;     // set_bot_mode("parked"): the nine others get no input (they stand where they are)
+	bool bBotsOff = false;        // set_bot_mode("off"): the nine others sit in the penalty box every frame (no body, no contact)
 	uint64 Seed = 1;
 
 protected:
@@ -164,6 +170,16 @@ public:
 		else if (M == TEXT("idle")) HumanMode = 2;
 		else if (M == TEXT("brain")) HumanMode = 3;
 		else if (M == TEXT("raw")) HumanMode = 4;
+		else if (M.StartsWith(TEXT("playtester:"), ESearchCase::CaseSensitive))
+		{
+			// thirdjam's playtester on the human (JamPlaytester.h EPlaytester), as the tournament's -player=<kind> [-playersprint] seats it
+			const FString Spec = M.Mid(11);
+			FString Kind = Spec, Rest;
+			bSeatSprint = false;
+			if (Spec.Split(TEXT(":"), &Kind, &Rest)) bSeatSprint = Rest == TEXT("sprint");
+			if (!JamAI::ParsePlaytester(TCHAR_TO_UTF8(*Kind), SeatKind)) return false;
+			HumanMode = 5;
+		}
 		else return false;
 		return true;
 	}
@@ -191,6 +207,8 @@ public:
 		LastHuman = FJamInput();
 		Controls.Reset();
 		Raw = RinkGlue::FRawInput();
+		if (HumanMode == 5) Seat.Reset(SeatKind, Seed, Cart->Game.Shot.ChargeFramesMax, bSeatSprint, *Sim->GetSim());   // JamTournamentCommandlet.cpp: ChargeFramesMax
+		if (bBotsOff) BoxOthers();
 		return true;
 	}
 
@@ -199,10 +217,28 @@ public:
 	bool set_bot_mode(const godot::String& Mode)
 	{
 		const FString M = FS(Mode);
-		if (M == TEXT("brain")) bBotsParked = false;
-		else if (M == TEXT("parked")) bBotsParked = true;
+		if (M == TEXT("brain")) { bBotsParked = false; bBotsOff = false; }
+		else if (M == TEXT("parked")) { bBotsParked = true; bBotsOff = false; }
+		else if (M == TEXT("off")) { bBotsParked = true; bBotsOff = true; BoxOthers(); }
 		else return false;
 		return true;
+	}
+
+	// set_bot_mode("off"): thirdjam's own "off the ice" is the penalty box: a boxed skater is skipped by every contact and held at the side
+	// boards (JamSim.cpp:1349-1357 "sitting out a penalty at the side boards; no input, no contact"; CollideSkaters 2310). The glue keeps every
+	// skater but the human boxed: an empty sheet for the skating gym. A test stand, never the game (GAMEMODE.md).
+	void BoxOthers()
+	{
+		if (!Sim) return;
+		UJamSim* U = Sim->GetSim();
+		const int32 Hi = U->GetHumanIndex();
+		for (const FJamSkaterState& K : U->GetSkaters())
+		{
+			if (K.Index == Hi) continue;
+			FJamSkaterState& M = const_cast<FJamSkaterState&>(K);
+			M.PenaltyFrames = FMath::Max(M.PenaltyFrames, 2);
+			M.bCentre = false;
+		}
 	}
 
 	// AHokejGameMode::RestartMatch (HokejGameMode.cpp:800-818): rules and zones reset, UJamSim::Restart (same config and seed),
@@ -218,6 +254,7 @@ public:
 		Brain.Reset();
 		Controls.Reset();
 		Raw = RinkGlue::FRawInput();
+		if (bBotsOff) BoxOthers();
 		return true;
 	}
 
@@ -232,10 +269,15 @@ public:
 		if (In.has("Axis")) SV(In["Axis"], R.Axis);
 		if (In.has("StickAxis")) SV(In["StickAxis"], R.StickAxis);
 		if (In.has("MouseDeltaPx")) SV(In["MouseDeltaPx"], R.MouseDeltaPx);
-		if (In.has("CursorPx")) SV(In["CursorPx"], R.CursorPx);
+		if (In.has("CursorPx")) { SV(In["CursorPx"], R.CursorPx); R.bHasCursorPx = R.CursorPx.X >= 0.0 && R.CursorPx.Y >= 0.0; }
 		if (In.has("CursorHitM")) SV(In["CursorHitM"], R.CursorHitM);
 		if (In.has("CursorOnIce")) SV(In["CursorOnIce"], R.bCursorOnIce);
-		if (In.has("CameraYaw")) { R.bHasCameraYaw = true; R.CameraYaw = (double)In["CameraYaw"]; }
+		// Every raw value is single precision (a Vector2's components, the camera's yaw): the camera yaw is rounded to float on the
+		// way in, so a recorded stream whose numbers went through text (JSON) gives the same doubles to the bit (K1 round 4, item 5).
+		// CameraYawDeg (optional, wins): thirdjam's own form, the camera manager's float yaw in degrees, to radians in double
+		// (HokejGameMode.cpp:943-946: FMath::DegreesToRadians(PC->PlayerCameraManager->GetCameraRotation().Yaw)).
+		if (In.has("CameraYaw")) { R.bHasCameraYaw = true; R.CameraYaw = (double)(float)(double)In["CameraYaw"]; }
+		if (In.has("CameraYawDeg")) { R.bHasCameraYaw = true; R.CameraYaw = FMath::DegreesToRadians((double)(float)(double)In["CameraYawDeg"]); }
 		Raw = R;
 	}
 
@@ -298,8 +340,10 @@ public:
 			if (Pi >= 0 && HumanMode == 1) In[Pi] = Bot.Think(W);
 			if (Pi >= 0 && HumanMode == 0) In[Pi] = ToAI(Human);
 			if (Pi >= 0 && HumanMode == 4) { LastHuman = Controls.Read(Raw, *Sim->GetSim(), Pi); In[Pi] = ToAI(LastHuman); }
+			if (Pi >= 0 && HumanMode == 5) In[Pi] = Seat.Think(W, *Sim->GetSim(), Pi);   // RunPlaytestMatch's order: Brain.Think, then the tester
 		}
 		if (bBotsParked) for (int i = 0; i < JamAI::kMaxSkaters; ++i) if (i != Pi || HumanMode == 3) In[i] = JamAI::FJamAIInput();
+		if (bBotsOff) BoxOthers();
 		if (Pi >= 0 && HumanMode != 4) LastHuman = FromAI(In[Pi]);
 		Sim->Step(In);
 		Raw.Pressed.clear(); Raw.MouseDeltaPx = FVector2D::ZeroVector;   // edges and motion are spent by the step that read them
@@ -357,6 +401,24 @@ public:
 			C["IntentTarget"] = GV(Controls.IntentTarget());
 			C["IntentIssuedFrame"] = GV(Controls.IntentIssued());
 			C["IntentFrames"] = GV(Controls.IntentFrames());
+			// v1.2 (K5's HUD): the two-role rule's facts for the human this frame, as thirdjam decides them; the take owner and the
+			// take grace; the mate a pass pressed now would go to (flat and saucer).
+			const int32 Hi = S.GetHumanIndex();
+			if (S.GetSkaters().IsValidIndex(Hi))
+			{
+				const RinkGlue::FButtonContext Bc = RinkGlue::ButtonContext(S, Hi);
+				C["ButtonsWithPuck"] = GV(Bc.bWith);          // InputMapping.cpp:432-442 HasPuckForButtons (carrier, or our pass in flight)
+				C["ButtonsCarrying"] = GV(Bc.bCarrying);      // InputMapping.cpp:478 (CarrierIndex == human)
+				C["ButtonsInReach"] = GV(Bc.bInReach);        // InputMapping.cpp:479-480 (puck within CarrierReachM)
+				FVector2D Aim;
+				C["PassTarget"] = GV(S.BestPass(Hi, Aim, false));       // JamSim.h:903 BestPass (flat); -1 = nobody
+				C["PassTargetAim"] = GV(Aim);
+				FVector2D AimS;
+				C["SaucerTarget"] = GV(S.BestPass(Hi, AimS, true));     // the same, as a saucer
+			}
+			C["TakeOwner"] = GV(S.GetTakeOwner());                        // JamSim.h:885-887 (-1 nobody yet, -2 a placed puck)
+			const int32 Car = S.CarrierIndex();
+			C["CarrierInTakeGrace"] = GV(S.GetSkaters().IsValidIndex(Car) && S.InTakeGrace(S.GetSkaters()[Car]));   // JamSim.h:879-884
 			D["Controls"] = C;
 		}
 		Array Sk;

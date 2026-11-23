@@ -74,11 +74,21 @@ if ARGUMENTS.get("tests", "no") == "yes":
     tenv["CPPDEFINES"] = [d for d in tenv["CPPDEFINES"] if d != "WITH_DEV_AUTOMATION_TESTS=0"] + ["WITH_DEV_AUTOMATION_TESTS=1"]
     tenv.Append(LINKFLAGS=["/SUBSYSTEM:CONSOLE", "/STACK:16777216"])   # UE threads run with large stacks; some tests hold big worlds on the stack
     tobj = objdir + "-tests"
+    # the pawn's pure helpers for the contact and stick tests: thirdjam's own bodies extracted verbatim (tools/extract_pawn_helpers.py)
+    # behind a shim JamPawns.h that has no actor in it (shim/pawn/)
+    pgen = os.path.join(tobj, "gen")
+    os.makedirs(pgen, exist_ok=True)
+    if os.path.exists(os.path.join(tj, "Private", "JamPawns.cpp")):
+        subprocess.check_call([sys.executable, "-I", os.path.join(here, "tools", "extract_pawn_helpers.py"), os.path.join(tj, "Private", "JamPawns.cpp"),
+                               os.path.join(pgen, "pawn_helpers.gen.inc")])
+    tenv.Prepend(CPPPATH=[os.path.join(here, "shim", "pawn"), pgen])
     skip = [x for x in ARGUMENTS.get("skip_tests", "").split(",") if x]
     tsrc = list(jam_sources) + (["AI/JamBrain.cpp"] if os.path.exists(os.path.join(tj, "AI", "JamBrain.cpp")) else [])
     tests_found = sorted(os.path.relpath(f, tj).replace("\\", "/") for f in _glob.glob(os.path.join(tj, "**", "*Tests*.cpp"), recursive=True))
     tsrc += [t for t in tests_found if os.path.basename(t) not in skip]
     objs = [tenv.Object(os.path.join(tobj, t.replace("/", "_").replace(".cpp", "")), os.path.join(tj, t)) for t in tsrc]
+    if os.path.exists(os.path.join(pgen, "pawn_helpers.gen.inc")):
+        objs.append(tenv.Object(os.path.join(tobj, "pawn_helpers"), os.path.join(here, "shim", "pawn", "pawn_helpers.cpp")))
     objs += [tenv.Object(os.path.join(tobj, "shim"), os.path.join(here, "shim", "shim.cpp")),
              tenv.Object(os.path.join(tobj, "rinktest"), os.path.join(here, "tests", "rinktest.cpp"))]
     targets.append(tenv.Program(os.path.join(bindir, "rinktest-" + tree + ARGUMENTS.get("test_suffix", "")), source=objs, LIBS=[], LIBPATH=[]))

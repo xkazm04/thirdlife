@@ -66,6 +66,10 @@ namespace RinkGlue
 		FVector2D LastPx, LastSkater, Offset;
 	};
 
+	// JamControls::HasPuckForButtons (InputMapping.cpp:432-442) and ButtonContext (474-486): exposed for the HUD's hints.
+	bool HasPuckForButtons(const UJamSim& Sim, int32 Skater);
+	FButtonContext ButtonContext(const UJamSim& Sim, int32 Skater);
+
 	// One frame of the person's devices, as the shell reads them.
 	struct FRawInput
 	{
@@ -77,6 +81,7 @@ namespace RinkGlue
 		FVector2D StickAxis;                 // the pad's right stick, each axis clamped to [-1, 1]
 		bool bCursorOnIce = false;           // the cursor is shown and its ray meets the ice
 		FVector2D CursorPx, CursorHitM;      // its pixel and its ice point (rink metres)
+		bool bHasCursorPx = false;           // a real pixel was given (absent or negative = none: a bot's aim; FJamAimAnchor anchors a still pixel only)
 		FVector2D MouseDeltaPx;              // hidden-cursor mouse motion since the last step (IA_StickMouse)
 	};
 
