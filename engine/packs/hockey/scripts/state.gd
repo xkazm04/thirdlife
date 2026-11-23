@@ -30,6 +30,9 @@ func state(g) -> Dictionary:
 	if not skating.is_empty():
 		s["skate"] = skating
 	s["hits"] = g.hits.state()
+	var ct: Dictionary = g.hits.contact.state()
+	if not ct.is_empty():
+		s["contact"] = ct              # H1 build: the cross-check's strips at the press, the bounces
 	s["reach"] = g.api.reach
 	s["poke_reach"] = g.api.poke_reach
 	s["autopilot"] = g.autopilot

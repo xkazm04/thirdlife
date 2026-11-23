@@ -7,7 +7,7 @@ const KEYS := ["reach", "carry_min", "blade_base", "blade_reach", "blade_yaw_deg
 	"bobble_frames", "recv_bobble_speed", "recv_extra", "recv_cone_deg", "magnet_dist", "magnet_frames",
 	"magnet_turn", "pass_loose_speed", "pass_flight_frames", "shot_loose_speed", "shot_flight_frames",
 	"pass_speed", "pass_hard_speed", "pass_hard_dist", "pass_cone_deg", "pass_lead_max_frames", "poke_reach",
-	"poke_cooldown_frames", "poke_speed", "poke_carry_share", "poke_frames", "poke_first", "poke_last",
+	"poke_cooldown_frames", "poke_frames", "poke_first", "poke_last",
 	"poke_chance", "poke_front_deg", "poke_back_deg", "poke_front", "poke_side", "poke_back", "poke_cut_deg",
 	"poke_cut_frames", "poke_cut_mult", "whiff_frames", "whiff_turn_mult", "steal_dist", "steal_lock",
 	"poke_immune", "pinch_floor", "pinch_gain", "carry_speed_scale", "behind_net_frames", "behind_net_half_width", "ring_width"]
@@ -160,7 +160,9 @@ func flight(a) -> void:
 	var id: String = a.last_release.get("to", "")
 	if kind == "pass" and id != "":
 		var to: Vector3 = a.pos_of(id) + anchor(a, id) - a.puck_pos()
-		if to.length() <= float(c.magnet_dist) and to.length() * 60.0 <= speed * float(c.magnet_frames) and not to.is_zero_approx():
+		# H1 build: only a pass heading at him (within 45 degrees) is bent onto his blade; bending one that is going past
+		# him made it orbit him at pass speed for ever (the first-minute drill, after the route A rows)
+		if to.length() <= float(c.magnet_dist) and to.length() * 60.0 <= speed * float(c.magnet_frames) and not to.is_zero_approx() and absf(vel.signed_angle_to(to, Vector3.UP)) <= PI / 4.0:
 			var delta := vel.signed_angle_to(to, Vector3.UP)
 			vel = vel.rotated(Vector3.UP, delta * float(c.magnet_turn))
 			a.set_puck_velocity(Vector3(vel.x, a.puck.linear_velocity.y, vel.z))

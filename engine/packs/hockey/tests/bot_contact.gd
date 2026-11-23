@@ -4,7 +4,10 @@ extends "rink_bot.gd"
 
 const ROWS := ["braced", "head_on", "same_way", "cross_front", "front_1", "front_2_75", "front_4_5",
 	"front_6_25", "front_8", "side_8", "carrier", "hold", "grace"]
-const FRONT := ["bump", "stumble", "stumble", "stumble", "knockdown"]
+## H1 build (23 Nov), sheet row A4: the hit law's speeds scale by 9.2 / 12.65, so 6.25 m/s head-on is a knockdown now (ratio 1.12, was
+## 0.82), a sprint at 10 m/s into a side-braced man a stumble (0.51) and 8 m/s into his side a stumble (0.42), both with the
+## attacker's recoil; S4: the cross-check lands 8 frames after the press (start + 9, was + 11); S9: down 36-126 frames.
+const FRONT := ["bump", "stumble", "stumble", "knockdown", "knockdown"]
 
 var rows: Array = []
 var start := -1
@@ -130,14 +133,14 @@ func _bot_tick(frame: int) -> void:
 		var ok: bool = hit.on == "r0" and hit.by == "b0"
 		var detail := ""
 		match label:
-			"braced": ok = ok and cls == "bump" and hit.recoil and hs.get("stumbling", {}).has("b0") and initial_speed > 9.8
-			"head_on": ok = ok and cls == "knockdown" and hit.ratio >= 1 and hit.closing > 15.8 and hit.down_frames >= 60 and hit.down_frames <= 150
+			"braced": ok = ok and cls == "stumble" and hit.recoil and hs.get("stumbling", {}).has("b0") and initial_speed > 9.8
+			"head_on": ok = ok and cls == "knockdown" and hit.ratio >= 1 and hit.closing > 15.8 and hit.down_frames >= 36 and hit.down_frames <= 126
 			"same_way":
 				var change := absf(float(him.speed) - victim_speed)
 				ok = ok and cls == "bump" and absf(hit.closing) < 0.1 and initial_speed > 7.9 and victim_speed > 7.9 and change < 1.0
 				detail = "victim speed change %.3f m/s" % change
-			"cross_front": ok = ok and cls == "knockdown" and hit.kind == "cross" and int(hit.frame) == start + 11 and absf(initial_speed - 4.0) < 0.1
-			"side_8": ok = ok and cls == "bump" and absf(hit.closing - 8.0) < 0.1
+			"cross_front": ok = ok and cls == "knockdown" and hit.kind == "cross" and int(hit.frame) == start + 9 and absf(initial_speed - 4.0) < 0.1
+			"side_8": ok = ok and cls == "stumble" and hit.recoil and absf(hit.closing - 8.0) < 0.1
 			_: ok = ok and cls == FRONT[rows.size() - 4]
 		_finish(label, ok, detail)
 	if start >= 0 and age > 440:

@@ -63,7 +63,8 @@ func _bot_tick(frame: int) -> void:
 			done = true
 			return
 		_keys(0, 0, false)
-		ctx.input.tap(&"mode_base")      # a fresh match each scene: the 36 s period clock never runs out inside one
+		if not scenes[si].get("keep", false):
+			ctx.input.tap(&"mode_base")      # a fresh match each scene ("keep": the scene follows the last one, as a test's rows do)
 		phase = "drill"
 		return
 	if phase == "drill":

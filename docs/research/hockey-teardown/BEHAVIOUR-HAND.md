@@ -61,7 +61,7 @@ it is read from the measured response, not from a person.
 3. **No build-up and a dead stop:** ours is at 90 % of top after 19 frames and 0.8 of a body width (thirdjam 34 frames, 4.7);
    reversed at top it is still after 19 frames and 0.8 of a body width (thirdjam 29-30 frames, 3.7).
 4. **The man with the puck is nearly as fast as you:** a free skater gains 2.5 m/s on him in thirdjam, 1.1 in ours.
-5. **The puck is glued:** it leaves his stick and comes back by itself 24.8 times a minute of carrying in thirdjam, 0.3 in ours.
+5. **The puck is glued** (corrected in the build round, see 3.2): ours never came off in 7 carry drills; thirdjam's 24.8 "comes back by itself" a minute is an artifact of its trace (the puck at the edge of its 1.65 m carry reach), not a measured loss.
    Picking a loose puck up is alike, and the owner's R-0069 holds in ours (16 of 16 still pucks in the ring his on frame 1).
 6. **A hit takes your hand away longer:** knocked down from the front at 9 m/s, your keys move you again at frame 104 in ours,
    frame 70 in thirdjam (ours adds a 24-frame rise and an 8-frame freeze of the whole game).
@@ -302,6 +302,8 @@ sprint turn [O-drill], with thirdjam's measured carry distances [T-test]; (d) ho
 | frames from entering the ring to his (matches, median) | 2-5 | 1 below 16 m/s, 11 at 16-20 (the bobble), 4 above 20 |
 
 ### 3.2 While he carries: where the puck sits, and what takes it off
+
+**Correction (build round, 23 Nov):** the row "the puck leaves his stick and comes back by itself" below does not measure a loss a hand meets. Read again at each of those 339 thirdjam moments (`.tl/h1/blip.mjs`): the puck sat 1.60-1.71 m from his centre (median 1.65 m, thirdjam's carry reach `CarrierReachM` = 1.6 + 0.05), moving with him (puck 11.8 m/s, he 12.0), and came back a median 7 frames later: a sprinting carrier's puck flickering across the reach that defines "carried" in its trace (`JamSim.cpp:838-849`), not a puck that left the stick. Sheet row S18 is withdrawn; the carry median 0.57 s is shortened by the same flicker.
 
 | quantity | thirdjam | ours |
 |---|---|---|

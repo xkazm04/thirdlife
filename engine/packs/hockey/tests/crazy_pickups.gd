@@ -1,5 +1,6 @@
 extends Node
 ## N3 free thrust is 14.95 (22.425 boosted), and heavy puck halves the 34 m/s cap.
+## H1 build (23 Nov), sheet row A2: skate_accel 13 -> 8.73, so the free thrust is 10.0395 (15.05925 boosted).
 ## Verify a natural spawn, slot collection, boost timing, shot correction and actual puck dimensions.
 var ctx
 var base := false
@@ -59,7 +60,7 @@ func _bot_tick(tick: int) -> void:
 		164: ctx.input.release(&"right")
 		424: last = me.duplicate(true)
 		425:
-			expired = not me.get("boosts",{}).has("speed") and is_equal_approx(me.skate_speed, 9.2) and is_equal_approx(me.skate_accel, 14.95)   # L4 merge: a free skater skates x1.15 (thirdjam free_speed_mult)
+			expired = not me.get("boosts",{}).has("speed") and is_equal_approx(me.skate_speed, 9.2) and is_equal_approx(me.skate_accel, 10.0395)   # L4 merge: a free skater skates x1.15 (thirdjam free_speed_mult)
 			count = c.taken.get("speed",0)
 			ctx.input.tap(&"menu")
 		428: ctx.input.tap(&"crazy_modifiers")
@@ -90,6 +91,6 @@ func _bot_done() -> bool:
 
 ## Return the verdict and the measurements that establish it.
 func _bot_result() -> Dictionary:
-	var ok: bool = done and base and zone and not missed and ability and count >= 1 and expired and first.get("boosts",{}).get("speed") == 300 and last.get("boosts",{}).get("speed") == 1 and is_equal_approx(first.get("skate_speed"), 13.8) and is_equal_approx(first.get("skate_accel"), 22.425) and is_equal_approx(last.get("skate_accel", 0.0), 22.425)   # L4b: the boost does not compound (skate.gd resets accel every frame)
+	var ok: bool = done and base and zone and not missed and ability and count >= 1 and expired and first.get("boosts",{}).get("speed") == 300 and last.get("boosts",{}).get("speed") == 1 and is_equal_approx(first.get("skate_speed"), 13.8) and is_equal_approx(first.get("skate_accel"), 15.05925) and is_equal_approx(last.get("skate_accel", 0.0), 15.05925)   # L4b: the boost does not compound (skate.gd resets accel every frame)
 	ok = ok and absf(modifiers.get("radius",0)-0.18) < 0.001 and absf(modifiers.get("collision_radius",0)-0.18) < 0.001 and absf(modifiers.get("drag",0)-0.8) < 0.001 and modifiers.get("max_speed",0) == 17 and drag_ended and size_ended and aim_ended and aim_error < 0.25
 	return {"ok":ok,"summary":"base %s, zone %s, shield %s, speed %s, puck %s, aim error %.3f deg, expired speed/heavy/big/aim %s" % [base,zone,ability,first,modifiers,aim_error,[expired,drag_ended,size_ended,aim_ended]]}

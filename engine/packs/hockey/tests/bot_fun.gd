@@ -80,7 +80,7 @@ func _bot_tick(frame: int) -> void:
 		if (pressed and age - pressed_at > 60) or age > 400:
 			ctx.input.release(&"sprint")
 			var lh: Dictionary = s["hits"].get("last", {})
-			var want_stop: bool = row == 0
+			var want_stop: bool = false   # H1 build (23 Nov), sheet row S10: fun.stop false: no hit freezes the game (row 0 wanted a stop before)
 			var fresh: bool = _given() > given0
 			var ok: bool = fresh and stopped == want_stop and (not want_stop or (still_frames >= 3 and clock_still))
 			results.append({"row": str(r[0]), "ok": ok, "detail": "%s closing %.2f m/s (%s), stop %s, frames held still %d, clock held %s" % ["a hit" if fresh else "NO HIT", float(lh.get("closing", 0.0)), str(lh.get("class", "-")), str(stopped), still_frames, str(clock_still)]})

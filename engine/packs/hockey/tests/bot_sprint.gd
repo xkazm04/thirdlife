@@ -1,5 +1,6 @@
 extends "rink_bot.gd"
 ## N3 carrier sprint is 1.012 x base x 1.15, with 80% of a free skater's thrust.
+## H1 build (23 Nov), sheet rows S15/S16: the carrier is 0.92 x base and sprints x 1.08 (thirdjam): 8 x 0.92 x 1.08 = 7.9488 m/s.
 ## Two skaters in one straight lane. The drill supplies the carrier's forward and Shift inputs.
 ## Both use the match skate step. The driving hand supplies the defender's input.
 
@@ -70,7 +71,7 @@ func _bot_tick(frame: int) -> void:
 
 func _bot_result() -> Dictionary:
 	var ok := done and ticks_ok and absf(free_peak - 10.58) <= 0.2 and absi(drained - 180) <= 2 and absi(refilled - 360) <= 2 \
-		and clean_chase and start_gap >= 5.9 and absf(carry_peak - 8.0 * 1.012 * 1.15) <= 0.2 and carry_peak <= 1.012 * 1.15 * 8.0 and caught > 0 and caught <= 300
+		and clean_chase and start_gap >= 5.9 and absf(carry_peak - 8.0 * 0.92 * 1.08) <= 0.2 and carry_peak <= 0.92 * 1.08 * 8.0 + 0.01 and caught > 0 and caught <= 300
 	return {"ok": ok, "summary": "free %.3f m/s, drain/refill %d/%d frames, carrier %.3f m/s, catch from %.2f m in %d frames" % [free_peak, drained, refilled, carry_peak, start_gap, caught],
 		"free_speed": free_peak, "drain": drained, "refill": refilled, "carrier_speed": carry_peak, "catch_frame": caught, "ticks": ticks_ok, "both_sprinting": clean_chase}
 
