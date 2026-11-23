@@ -1,3 +1,7 @@
 {
-  "sessions": []
+  "sessions": [
+    {"id": "hk-core", "scope": ["engine/cores/rink/native/**", "engine/cores/rink/SNAPSHOT.md"], "note": "campaign 23-24 Nov K1: thirdjam's sim and bots compiled into the engine"},
+    {"id": "hk-figure", "scope": ["engine/rigs/skater/**"], "note": "campaign 23-24 Nov K2: thirdjam's skater figure"},
+    {"id": "hk-shell", "scope": ["engine/packs/hokej/**", "engine/cores/rink/view/**"], "note": "campaign 23-24 Nov K3: the gym (rink, camera, controls)"}
+  ]
 }
