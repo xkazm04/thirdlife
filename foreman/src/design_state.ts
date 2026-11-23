@@ -45,6 +45,20 @@ export function waitingPhase(s: Pick<JobState, "phases">): PhaseView | undefined
   return s.phases.find((ph) => ph.state === "done");
 }
 
+/**
+ * The person gate (the owner's decision of 23 Nov; docs/design/METHOD.md section 10): the first phase of a plan is the
+ * greybox, and only a person's hand passes it. run_through lets the Foreman pass a phase itself only after the first;
+ * no flag and no answer of the designer reaches past this.
+ */
+export function isGreybox(s: Pick<JobState, "phases">, phase: { id: string }): boolean {
+  return s.phases[0] !== undefined && s.phases[0].id === phase.id;
+}
+
+/** Does the Foreman pass this done phase itself (`phase_reviewed by: "auto"`)? Only with run_through, never the greybox. */
+export function passesItself(s: Pick<JobState, "phases" | "runThrough">, phase: { id: string }): boolean {
+  return s.runThrough === true && !isGreybox(s, phase);
+}
+
 /** The index of the phase a package is in; -1 when the plan has no phases or the package is in none. */
 export function phaseIndexOf(s: Pick<JobState, "phases">, pkg: string): number {
   return s.phases.findIndex((ph) => ph.packages.includes(pkg));

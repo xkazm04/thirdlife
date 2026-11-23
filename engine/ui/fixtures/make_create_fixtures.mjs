@@ -205,7 +205,9 @@ const designFailed = [story[0], story[1],
   { type: "job_state", state: "failed", reason: "the Designer did not answer in 300 s", _after: 1 },
 ];
 
-// run-through: the Foreman passes every phase itself; the reaction carries a note
+// run-through: the Foreman passes every phase itself; the reaction carries a note. A log written before the person gate
+// of 23 Nov (the Foreman no longer passes the first phase itself, foreman/src/design_state.ts passesItself); the panel
+// still reads such logs as they are.
 function runThrough() {
   const s = [];
   for (const e of story) {
