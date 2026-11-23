@@ -90,7 +90,7 @@ func _ref(sk: TLRigSkater) -> void:
 	var done: int = 0
 	for s: Dictionary in shots:
 		if String(s["clip"]) == "rest":
-			sk.skeleton().reset_bone_poses()
+			sk.pose_rest()
 		elif not sk.pose_at(StringName(String(s["clip"])), float(s["key"])):
 			at = "no clip %s" % s["clip"]
 			worst = INF
