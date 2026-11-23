@@ -72,7 +72,9 @@ var shown_line: String = ""
 var shown_tick: int = -1000000
 var shown_dur: int = 0
 var picks: int = 0
-
+var bark_hold_until: int = -1000000
+var bark_at_human: bool = false
+const BARK_YIELD := 150                 # BarkYieldFrames (CommentarySystem.h:30)
 
 func _init(game: Dictionary, seed_value: int) -> void:
 	var rk: Dictionary = game["rink"]
@@ -93,7 +95,6 @@ func _init(game: Dictionary, seed_value: int) -> void:
 		lines.append(l)
 	seed_ = seed_value
 	_reset()
-
 
 func _reset() -> void:
 	rng.seed = hash([seed_, 0xC0DE, 91])
@@ -126,12 +127,10 @@ func _reset() -> void:
 	beat_said = ""
 	pass_hold = {}
 
-
 static func suffix(l: Dictionary) -> String:
 	var s: String = l["sit"]
 	var d: int = s.find(".")
 	return s.substr(d + 1) if d >= 0 else ""
-
 
 static func specificity(l: Dictionary) -> int:                   # cpp:150-163
 	var sfx: String = suffix(l)
@@ -146,10 +145,8 @@ static func specificity(l: Dictionary) -> int:                   # cpp:150-163
 		n += 1
 	return n
 
-
 static func _condition_kind(k: String) -> bool:
 	return k == "bank" or k == "rim"
-
 
 ## The world of this frame (BuildWorld cpp:706-733).
 func world(snap: Dictionary) -> Dictionary:
@@ -165,18 +162,14 @@ func world(snap: Dictionary) -> Dictionary:
 		"touch": int((snap["Puck"] as Dictionary)["LastTouch"]), "pause": int(snap["Phase"]) != 0,
 		"score": [int(snap["Score"][0]), int(snap["Score"][1])], "goal_x": length_m * 0.5 - 4.0, "goal_w": 4.0}
 
-
 static func team_of(w: Dictionary, who: int) -> int:
 	return int(w["teams"][who]) if who >= 0 and who < (w["teams"] as Array).size() else -1
-
 
 static func colour_of(t: int) -> String:
 	return "blue" if t == 0 else ("orange" if t == 1 else "any")
 
-
 static func attack_sign(t: int) -> float:
 	return 1.0 if t == 0 else -1.0                                 # AttackGoalX(0) > 0: team 0 attacks +x
-
 
 ## WhenHolds (cpp:166-273).
 func when_holds(l: Dictionary, e: Dictionary, w: Dictionary) -> bool:
@@ -267,10 +260,8 @@ func when_holds(l: Dictionary, e: Dictionary, w: Dictionary) -> bool:
 		return pass_team == t and pass_streak >= 3
 	return true
 
-
 static func _take_number(kind: String) -> int:
 	return int(kind.substr(5)) if kind.begins_with("take_") else 0
-
 
 func _knockdowns(team: int, frame: int) -> int:
 	var n: int = 0
@@ -278,7 +269,6 @@ func _knockdowns(team: int, frame: int) -> int:
 		if f <= frame and frame - f < MASSACRE_WINDOW:
 			n += 1
 	return n
-
 
 ## Candidates (cpp:275-313).
 func candidates(e: Dictionary, w: Dictionary) -> Array:
@@ -309,7 +299,6 @@ func candidates(e: Dictionary, w: Dictionary) -> Array:
 			out.remove_at(j)
 	return out
 
-
 func _remember(e: Dictionary, w: Dictionary) -> void:            # cpp:322-342
 	var f: int = e["frame"]
 	match String(e["event"]):
@@ -335,7 +324,6 @@ func _remember(e: Dictionary, w: Dictionary) -> void:            # cpp:322-342
 			else:
 				pass_team = int(e["team"])
 				pass_streak = 1
-
 
 ## Observe (cpp:364-457): one event into the pending list with its candidates.
 func observe(ev: String, kind: String, who: int, where: Vector2, strength: float, w: Dictionary) -> void:
@@ -403,7 +391,6 @@ func observe(ev: String, kind: String, who: int, where: Vector2, strength: float
 		beat_said = ""
 	pending.append(e)
 
-
 func _note_frame(f: int) -> void:                                 # NoteFrame (cpp:344-357): a restart resets the booth, not its stream
 	if f < last_seen:
 		var keep: PackedInt64Array = PackedInt64Array([rng.state])
@@ -411,10 +398,13 @@ func _note_frame(f: int) -> void:                                 # NoteFrame (c
 		rng.state = keep[0]
 	last_seen = f
 
-
 func _gate_open(f: int) -> bool:
-	return f - last_start >= GATE and f >= last_end
+	return f - last_start >= GATE and f >= last_end and f >= bark_hold_until
 
+## ObserveBark (CommentarySystem.cpp:449-453, 756-758): a bark this frame; `at_human`: IsBarkAtHuman (cpp:735-742).
+func bark(at_human: bool) -> void:
+	if at_human:
+		bark_at_human = true
 
 func _choose(options: Array) -> int:                              # ChooseAmong (cpp:459-479)
 	var best_p: int = -1
@@ -434,12 +424,26 @@ func _choose(options: Array) -> int:                              # ChooseAmong 
 	var pool: Array = unheard if not unheard.is_empty() else top
 	return pool[rng.randi_range(0, pool.size() - 1)]
 
-
 ## Resolve (cpp:505-597, no barks: ours has no bark bubbles): at most one line starts. Returns the line started or {}.
 func resolve(w: Dictionary) -> Dictionary:
 	var f: int = w["frame"]
 	_note_frame(f)
 	var started: Dictionary = {}
+	# the booth yields to a bark at the human (cpp:520-534): nothing starts, a line older than half a second is cut; a priority-5 call plays on
+	if bark_at_human:
+		bark_hold_until = maxi(bark_hold_until, f + BARK_YIELD)
+		if f < last_end and f - last_start >= CUT_FLOOR:
+			last_end = f
+		var must_pending: bool = false
+		for e: Dictionary in pending:
+			for i: int in e["cands"]:
+				if int(lines[i]["priority"]) >= MUST_PLAY:
+					must_pending = true
+		if not must_pending:
+			bark_at_human = false
+			_close(w)
+			return started
+	bark_at_human = false
 	if beat_pending and (not bool(w["pause"]) or f - int(beat["frame"]) > SECOND_BEAT):
 		beat_pending = false
 	var options: Array = []
@@ -467,7 +471,7 @@ func resolve(w: Dictionary) -> Dictionary:
 			var must: bool = not from_beat and int(lines[li]["priority"]) >= MUST_PLAY and not (f < last_end and int(last_pick.get("priority", 0)) >= MUST_PLAY)
 			var hit_ev: bool = ev == "check" or ev == "knockdown"
 			var last_hit: bool = last_pick.get("event", "") == "check" or last_pick.get("event", "") == "knockdown"
-			var hit_call: bool = not from_beat and not must and hit_ev and not last_hit and int(lines[li]["priority"]) >= int(last_pick.get("priority", 0))
+			var hit_call: bool = not from_beat and not must and hit_ev and not last_hit and f >= bark_hold_until and int(lines[li]["priority"]) >= int(last_pick.get("priority", 0))
 			go = must or hit_call
 			if go:
 				last_end = f                                         # the playing line is cut
@@ -489,7 +493,11 @@ func resolve(w: Dictionary) -> Dictionary:
 				beat_said = l["sit"]
 			if from_beat:
 				beat_pending = false
-	# Close: this frame's score and possession become the next frame's "before"
+	_close(w)
+	return started
+
+## Close (cpp:507-519): this frame's score and possession become the next frame's "before".
+func _close(w: Dictionary) -> void:
 	for t: int in 2:
 		lowest_deficit[t] = maxi(int(lowest_deficit[t]), int(w["score"][1 - t]) - int(w["score"][t]))
 	prev_score = (w["score"] as Array).duplicate()
@@ -500,8 +508,6 @@ func resolve(w: Dictionary) -> Dictionary:
 		pass_streak = 0
 	prev_touch = int(w["touch"])
 	pending = []
-	return started
-
 
 ## One sim frame of the booth (HandleBusEvent + HandleSimFrame, cpp:756-808): the frame's events, the held pass, the game
 ## mode's events (`extra`: [[name, kind], ...]), then Resolve. Returns the line started or {}.
@@ -530,14 +536,12 @@ func step(snap: Dictionary, extra: Array) -> Dictionary:
 			observe("pass", String(pe["Kind"]), int(pe["Who"]), pe["Where"], float(pe["Strength"]), w)
 	return resolve(w)
 
-
 static func _team_received(sk: Array, team: int) -> int:
 	var n: int = 0
 	for s: Dictionary in sk:
 		if int(s["Team"]) == team:
 			n += int(s.get("PassesReceived", 0))
 	return n
-
 
 ## The strip's opacity Age ticks into a line of `dur` frames (CommentaryOpacityFor with HoldFrames 0, h:819-827).
 static func opacity(age: int, dur: int) -> float:
@@ -547,7 +551,6 @@ static func opacity(age: int, dur: int) -> float:
 		return 1.0
 	var fade: int = age - dur
 	return 0.0 if fade >= FADE else 1.0 - float(fade) / float(FADE)
-
 
 ## Paints the strip (docked 24 over the bottom edge; under the scoreboard when the dock would lie on his figure, ClearDown 1).
 func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, human_box: Rect2, labels: Array = []) -> String:
@@ -573,7 +576,6 @@ func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, hum
 	lay.box(tl, plate, fill, 4.0, Color(1, 1, 1, 0.12 * a), 1.0)
 	lay.text(tl + Vector2(16, 6), shown_line, R.LINE_PT, R.ML_TEXT_DIM, {"face": "regular", "alpha": a, "shadow": Vector2(0, 1), "shadow_color": Color(0, 0, 0, 0.45)})
 	return shown_line
-
 
 ## A new line on the strip (UpdateCommentary cpp:1470-1478).
 func show(line: Dictionary, tick: int) -> void:

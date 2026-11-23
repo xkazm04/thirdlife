@@ -89,6 +89,8 @@ func _pack_tick(frame: int) -> void:
 	elif frame == 0 and gym.get("hall", {}).has("light"):
 		TLStyleHall.apply(ctx.root, gym["hall"]["light"])   # the style's roof light (visual only; nothing headless)
 	_light_hold(frame)
+	if frame == 0:
+		Screen.start_level(ctx, rink)              # lane K5: the level HOME chose, from the input record (key-less action)
 	if frame == 0 and inp.pressed(&"replay"):
 		mode = "replay"
 		replay = (ctx.read_json("tj_trace_regular_pro.json") as Dictionary)["rows"]

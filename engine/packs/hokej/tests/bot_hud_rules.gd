@@ -37,6 +37,7 @@ var tail: int = 0
 var end_age: int = 0                                # drawn frames of the end phase before this one
 var booth: Dictionary = {"lines": 0, "gate_ok": 0, "last_start": -1000000, "stop_ok": 0}
 var goals_seen: int = 0
+var bark_stats: Dictionary = {"barks": 0, "lane": 0, "last": -1000000, "speaker": {}, "yield_until": -1000000, "held_ok": 0}
 var banner_frames: int = 0
 var end_wait_ok: bool = false
 var end_card_seen: bool = false
@@ -182,7 +183,7 @@ func _bot_tick(frame: int) -> void:
 		core.set_human_mode("playerbot")
 		core.reset(ctx.seed)
 		lay = Rec.new()
-		hud = Hud.new(lay, (ctx.read_json("hockey.regular.cartridge.json") as Dictionary)["game"], "pro")
+		hud = Hud.new(lay, (ctx.read_json("hockey.regular.cartridge.json") as Dictionary)["game"], "pro", ctx.seed, (ctx.read_json("hud_barks.json") as Dictionary)["lines"])
 		_feed(core.snapshot())
 		return
 	if tail > 0:                                       # the match is over: the end phase's frames (the sim stands still)
@@ -300,6 +301,26 @@ func _feed(snap: Dictionary) -> void:
 	for e: Dictionary in snap["Events"]:
 		if String(e["Name"]) == "goal":
 			goals_seen += 1
+	# the barks (BarkSystem.cpp): at most one each 240 frames, one speaker at most each 480; the lane never with a HUD line of words;
+	# a bark at the human holds the booth 150 frames (no line starts then but a priority-5 call)
+	if sh.has("bark_said"):
+		bark_stats["barks"] += 1
+		_check(f - int(bark_stats["last"]) >= 240, "frame %d: a bark %d frames after the last" % [f, f - int(bark_stats["last"])])
+		bark_stats["last"] = f
+		var sit: String = sh["bark_said"]
+		if not (sit == "goal_against" or sit == "faceoff" or sit == "goal_for"):
+			bark_stats["yield_until"] = f + 150
+	if sh.has("bark"):
+		bark_stats["lane"] += 1
+		_check(not sh.has("caption") and not sh.has("faceoff_hint"), "frame %d: a bark in the lane with a HUD line of words" % f)
+	if sh.has("line_started") and f < int(bark_stats["yield_until"]) and not sh.has("bark_said"):
+		var pid: String = sh["line_started"]
+		var pr: int = 0
+		for x: Dictionary in hud.captions.lines:
+			if x["id"] == pid:
+				pr = int(x["priority"])
+		_check(pr >= 5, "frame %d: line %s started inside a bark's hold" % [f, pid])
+		bark_stats["held_ok"] += 1
 	# the booth: a line starts only past the 150-frame gate unless it is a priority-5 call or a hit's call; a stoppage line only off play
 	if sh.has("line_started"):
 		booth["lines"] += 1
@@ -309,7 +330,7 @@ func _feed(snap: Dictionary) -> void:
 			if x["id"] == id:
 				l = x
 		var gap: int = f - int(booth["last_start"])
-		var ok_gate: bool = gap >= 150 or int(l.get("priority", 0)) >= 5 or String(l.get("event", "")) in ["check", "knockdown"]
+		var ok_gate: bool = gap >= 150 or int(l.get("priority", 0)) >= 5 or String(l.get("event", "")) in ["check", "knockdown"] or int(booth["last_start"]) < -1000
 		_check(ok_gate, "frame %d: %s started %d frames after the last line" % [f, id, gap])
 		if bool(l.get("stop", false)):
 			_check(int(snap["Phase"]) != 0, "frame %d: stoppage line %s in play" % [f, id])
@@ -328,4 +349,4 @@ func _bot_result() -> Dictionary:
 	return {"ok": done and fails.is_empty() and checks > 1000 and end_card_seen and booth["lines"] > 10, "summary": "%d checks, %d failed (a recorded match of %d frames, score %d:%d; card %d, count %d, drop %d, result %d, panel %d, goal pause %d, end %d; you %d mate %d opponent %d loose %d)%s" % [
 		checks, fails.size(), stats["frames"], int(sc[0]), int(sc[1]), stats["card"], stats["count"], stats["drop"], stats["result"], stats["panel"], stats["goal_pause"], stats["end"],
 		stats["you"], stats["mate"], stats["opponent"], stats["loose"], "" if fails.is_empty() else ": " + "; ".join(fails)]
-		+ "; banner %d frames over %d goals, booth %d lines (%d stoppage), end wait %s, end card %s" % [banner_frames, goals_seen, booth["lines"], booth["stop_ok"], str(end_wait_ok), str(end_card_seen)]}
+		+ "; banner %d frames over %d goals, booth %d lines (%d stoppage), end wait %s, end card %s; barks %d (lane %d frames)" % [banner_frames, goals_seen, booth["lines"], booth["stop_ok"], str(end_wait_ok), str(end_card_seen), bark_stats["barks"], bark_stats["lane"]]}

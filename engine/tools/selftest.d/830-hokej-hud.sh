@@ -133,3 +133,23 @@ GDSCRIPT
   [[ "$hp_frame" == *"open=true paused=true ctx_paused=true frame_card=true frozen=true"* ]] || why="the frame's own card: ${hp_frame:-no line}"
   verdict hokej.pause_frame "$why" "$hp_frame"
 fi
+# K5 round 4: the level chosen on HOME is an input. hokej.level_record: a session started at ROOKIE (tests/bot_level_record.gd
+# taps the key-less action level_rookie for frame 0, as HOME's PLAY NOW does) is recorded; replayed from the record alone it
+# hashes the same; replayed with the level's row taken out of the record it hashes differently (the level comes from the record).
+if [ -z "$FILTER" ] || [[ "hokej.level_record" == *"$FILTER"* ]]; then
+  hl_o="$OUT/hokej_level"; rm -rf "$hl_o"; mkdir -p "$hl_o"
+  hl_p="$HERE/../packs/hokej"
+  if command -v cygpath >/dev/null 2>&1; then hl_o="$(cygpath -m "$hl_o")"; fi
+  why=""
+  TL_QUIET=1 timeout 600 bash "$TL" bot "--pack=$hl_p" --test=tests/bot_level_record.gd "--record=$hl_o/rookie.json" > "$hl_o/bot.json" 2>/dev/null
+  hl_a="$(grep -o '"state_hash":"[0-9a-f]*"' "$hl_o/bot.json" | head -1 | sed 's/.*:"//; s/"//')"
+  grep -q '"id":"bot.ok","ok":true' "$hl_o/bot.json" || why="the recorded run did not start at ROOKIE"
+  node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1]));r.frames=r.frames.filter(f=>!String(f[1]).startsWith("level_"));fs.writeFileSync(process.argv[2],JSON.stringify(r));' "$hl_o/rookie.json" "$hl_o/nolevel.json"
+  TL_QUIET=1 timeout 600 bash "$TL" replay "--pack=$hl_p" "--input=$hl_o/rookie.json" > "$hl_o/replay.json" 2>/dev/null
+  TL_QUIET=1 timeout 600 bash "$TL" replay "--pack=$hl_p" "--input=$hl_o/nolevel.json" > "$hl_o/replay_nolevel.json" 2>/dev/null
+  hl_b="$(grep -o '"state_hash":"[0-9a-f]*"' "$hl_o/replay.json" | head -1 | sed 's/.*:"//; s/"//')"
+  hl_c="$(grep -o '"state_hash":"[0-9a-f]*"' "$hl_o/replay_nolevel.json" | head -1 | sed 's/.*:"//; s/"//')"
+  [ -n "$hl_a" ] && [ "$hl_a" = "$hl_b" ] || why="${why:+$why; }replay ${hl_b:0:16} is not the recorded ${hl_a:0:16}"
+  [ -n "$hl_c" ] && [ "$hl_c" != "$hl_a" ] || why="${why:+$why; }without the level's row the replay hashes ${hl_c:0:16} (should differ from ${hl_a:0:16})"
+  verdict hokej.level_record "$why" "recorded ${hl_a:0:16}, replayed ${hl_b:0:16}, without the level ${hl_c:0:16}"
+fi

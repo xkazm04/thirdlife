@@ -10,6 +10,22 @@ const R := preload("rules.gd")
 const Kit := preload("kit.gd")
 const PauseCard := preload("pausecard.gd")
 const Front := preload("front.gd")
+## The level chosen on HOME is an input (a key-less action tapped for frame 0), so a run replays from its record alone.
+const LEVEL_ACTIONS: Array = [&"level_rookie", &"level_pro", &"level_all_star"]
+const LEVEL_IDS: Array = ["rookie", "pro", "all_star"]
+
+
+## Called by the shell on frame 0 before the core's first step (main.gd _pack_tick): the level HOME chose, as the record holds
+## it, set on the core and the match made again on the same seed (PLAY NOW opens the cut at that level, MenuWidget.cpp:2138-2150).
+## Returns the level id applied, or "" (none chosen: data/match.json's level stands).
+static func start_level(ctx, core) -> String:
+	for i: int in LEVEL_ACTIONS.size():
+		if ctx.input.declared().has(String(LEVEL_ACTIONS[i])) and ctx.input.pressed(LEVEL_ACTIONS[i]):
+			core.set_difficulty(LEVEL_IDS[i])
+			core.reset(ctx.seed)
+			ctx.root.set_meta(&"hokej_level", LEVEL_IDS[i])
+			return LEVEL_IDS[i]
+	return ""
 
 var tl_hud                 # TLHud
 var view                   # hud.gd
@@ -26,6 +42,9 @@ var was_paused: bool = false
 ## chevron and the YOU tag anchor to it (HumanHeadWorld source 2, HUDWidget.cpp:1089-1131); without it they look for a figure
 ## with sockets themselves, else stand on the stand-in's top.
 static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, last_raw: Dictionary, head = null):
+	if ctx.frame == 0 and not ctx.input.declared().has(String(LEVEL_ACTIONS[0])):
+		for a: StringName in LEVEL_ACTIONS:
+			ctx.input.declare(a, [])                          # key-less: only HOME's PLAY NOW (or a bot) presses them
 	if ctx.headless:
 		return screen                  # nothing is drawn headless: the HUD (presentation only) costs a headless run nothing (tests/bot_hud_rules.gd drives its own)
 	if screen == null:
@@ -34,7 +53,7 @@ static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, 
 		ctx.root.add_child(screen.tl_hud)
 		var cart: Dictionary = ctx.read_json("hockey.regular.cartridge.json")
 		var level: String = String((ctx.read_json("match.json") as Dictionary).get("difficulty", "pro"))   # the level in force (match.json)
-		screen.view = Hud.new(screen.tl_hud.add_layer(&"hokej"), cart["game"], level, ctx.seed)
+		screen.view = Hud.new(screen.tl_hud.add_layer(&"hokej"), cart["game"], level, ctx.seed, (ctx.read_json("hud_barks.json") as Dictionary)["lines"])
 		screen.ctx_ = ctx
 		screen.kit = Kit.new(screen.view.lay)
 		screen.card = PauseCard.new(screen.kit)
@@ -65,10 +84,7 @@ func paused_tick(_frame: int) -> void:
 		var act: String = front.keys(ks)
 		if act == "play":
 			# PLAY NOW: the match at the lit level (ChooseCut -> OpenLevel with ?level=, MenuWidget.cpp:2138-2150)
-			var core = ctx_.cores.opened("rink")
-			if core != null and front.level_id() != view.cards.level_id:
-				core.set_difficulty(front.level_id())
-				core.reset(ctx_.seed)
+			ctx_.input.tap(LEVEL_ACTIONS[LEVEL_IDS.find(front.level_id())])   # latched (and recorded) on frame 0; main.gd applies it
 			view.cards.set_level(front.level_id())
 			front.up = false
 			was_paused = false

@@ -13,6 +13,7 @@ const Markers := preload("markers.gd")
 const Cards := preload("cards.gd")
 const Flow := preload("flow.gd")
 const Captions := preload("captions.gd")
+const Barks := preload("barks.gd")
 
 var lay                       # TLHudLayer
 var length_m: float = 90.0
@@ -29,6 +30,7 @@ var art_dial: Texture2D
 var cards                               # cards.gd: the take and the MATCH card
 var flow                                # flow.gd: the GOAL banner, the end card, IN THE BOX
 var captions                            # captions.gd: the commentator's lines
+var barks                               # barks.gd: the skaters' barks and their lane
 var booth_frame: int = -1
 var booth_end_said: bool = false
 var last_take: int = 0
@@ -57,7 +59,7 @@ var grace_from_hit: bool = false
 var shown: Dictionary = {}
 
 
-func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 0) -> void:
+func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 0, bark_rows: Array = []) -> void:
 	lay = layer
 	var rk: Dictionary = game["rink"]
 	length_m = float(rk["length_m"])
@@ -72,6 +74,7 @@ func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 
 	cards = Cards.new(game, level_id)
 	flow = Flow.new(self, game)
 	captions = Captions.new(game, match_seed)
+	barks = Barks.new(game, bark_rows, match_seed)
 	if lay.has_method("image_of"):
 		art_ring = lay.image_of("assets/hud/T_UI_RingPlain.png")
 		art_dial = lay.image_of("assets/hud/T_UI_Ring.png")
@@ -153,6 +156,12 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 			booth_end_said = true
 		last_take = cards.take
 		booth_frame = f
+		barks.step(snap, extra)                                    # the barks first: the booth hears them on the same frame
+		for bk: Array in barks.said:
+			var sit: String = bk[1]
+			var at_human: bool = not (sit == "goal_against" or sit == "faceoff") and (sit != "goal_for" or Barks._team(snap, int(bk[0])) == my_team)
+			captions.bark(at_human)
+			shown["bark_said"] = sit
 		var said: Dictionary = captions.step(snap, extra)
 		if not said.is_empty():
 			captions.show(said, flow.tick)
@@ -238,6 +247,11 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	if match_card:
 		cards.paint(lay, vw)
 		shown["match_card"] = cards.sub_line()
+
+	# ================================================================ the barks' lane (UJamBarkWidget, viewport z 50)
+	var drawn: Array = barks.paint(lay, snap, vw, vh, f, paused, cap != "" or hint_up, hbox, team_col)
+	if not drawn.is_empty():
+		shown["bark"] = drawn
 
 
 # ---------------------------------------------------------------- the scoreboard
