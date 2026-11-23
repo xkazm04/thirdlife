@@ -132,6 +132,13 @@ class Run:
         # was not rendered in the last 0.2 s (WasRecentlyRendered). Measured: without this the far skaters' sticks jump.
         a = eas.spawn_actor_from_class(unreal.SceneCapture2D, unreal.Vector(0, 0, 4500), unreal.Rotator(0, -90, 0))
         a.set_actor_label("TLOracle_Seer")
+        if "puck" in FRAMES[0]:
+            # thirdjam's puck actor, put where its game mode's puck show draws it: the figures look at it ([LookTick])
+            pk = attempt("spawn AJamPuck", lambda: eas.spawn_actor_from_class(unreal.JamPuck, unreal.Vector(0, 0, 4), unreal.Rotator(0, 0, 0)))
+            if pk is not None:
+                pk.set_actor_label("TLOracle_Puck")
+                pk.set_actor_scale3d(unreal.Vector(0.24, 0.24, 0.08))      # AJamPuck::InitPuck(0.12 m): the cylinder 2r across, 0.08 m tall
+                attempt("puck material", lambda: pk.get_component_by_class(unreal.StaticMeshComponent).set_material(0, unreal.load_asset("/JamAssets/Look/MI_Toon_Puck")))
 
         def fixed():
             eng = unreal.find_object(None, "/Engine/Transient.UnrealEdEngine_0")
@@ -147,10 +154,13 @@ class Run:
         if gw is None:
             return False
         found = {}
+        self.puck = None
         for a in unreal.GameplayStatics.get_all_actors_of_class(gw, unreal.Actor):
             lab = a.get_actor_label()
             if lab.startswith("TLOracle_Visual_"):
                 found[int(lab[-2:])] = a
+            if lab == "TLOracle_Puck":
+                self.puck = a
         if len(found) < N:
             return False
         self.world = gw
@@ -186,6 +196,11 @@ class Run:
                 cc.set_editor_property("texture_target", rt)
                 self.cams[cam] = (a, rt)
         note("bound: %d visuals, with a parent pawn %d, cameras %s" % (len(self.vis), sum(1 for x in self.parent_ok if x), sorted(self.cams)))
+        def sock(name):
+            t = self.mesh[WHO].get_socket_transform(name, unreal.RelativeTransformSpace.RTS_PARENT_BONE_SPACE)
+            return {"bone": str(self.mesh[WHO].get_socket_bone_name(name)), "loc": [round(t.translation.x, 5), round(t.translation.y, 5), round(t.translation.z, 5)],
+                    "quat": [round(t.rotation.x, 6), round(t.rotation.y, 6), round(t.rotation.z, 6), round(t.rotation.w, 6)]}
+        rep["sockets"] = {n: attempt("socket " + n, lambda n=n: sock(n)) for n in ("head_socket", "puck_socket")}
         self.place(FRAMES[0])
         self.ready = True
         return True
@@ -194,6 +209,8 @@ class Run:
         for i, s in enumerate(fr["sk"]):
             loc = unreal.Vector(s["pos"][0] * 100.0, s["pos"][1] * 100.0, 0.0)
             self.vis[i].set_actor_location_and_rotation(loc, unreal.Rotator(0, 0, math.degrees(s["yaw"])), False, True)
+        if self.puck is not None and "puck" in fr:
+            self.puck.set_actor_location(unreal.Vector(fr["puck"][0] * 100.0, fr["puck"][2] * 100.0, fr["puck"][1] * 100.0), False, True)
         s = fr["sk"][WHO]
         loc = unreal.Vector(s["pos"][0] * 100.0, s["pos"][1] * 100.0, 0.0)
         for cam, (a, _rt) in self.cams.items():
@@ -284,12 +301,29 @@ class Run:
                     note("FAIL no Simulate world after 3000 ticks")
                     self.finish()
                 return
+            if self.puck is not None and self.n >= 0 and FRAMES[self.n].get("puck_on", -1) >= 0:
+                # AJamPuck::Tick: after the frame's animation a carried puck sits on the carrier's socket again
+                sl = self.mesh[FRAMES[self.n]["puck_on"]].get_socket_location("puck_socket")
+                self.puck.set_actor_location(unreal.Vector(sl.x, sl.y, FRAMES[self.n]["puck"][1] * 100.0), False, True)
             for cam, (a, _rt) in self.cams.items():
                 a.capture_component2d.capture_scene()
             if getattr(self, "seer", None) is not None:
                 self.seer.capture_component2d.capture_scene()
             if self.tick < WARM_TICKS:
                 return
+            # one frame of ours is one tick of this world. Slate can tick while the world does not (a blocking load:
+            # measured, two such ticks when the first knockdown's effects came in): such a tick is not a frame.
+            now = unreal.GameplayStatics.get_time_seconds(self.world)
+            last = getattr(self, "last_now", None)
+            if last is not None:
+                steps = (now - last) * 60.0
+                if steps < 0.5:
+                    rep["world_stood"] = rep.get("world_stood", 0) + 1
+                    return
+                if steps > 1.5 and "world_jumped" not in rep:
+                    rep["world_jumped"] = self.n
+                    note("FAIL the world ticked %.2f frames between two of ours at frame %d" % (steps, self.n))
+            self.last_now = now
             if self.n >= 0:
                 self.read(self.n)
             self.n += 1

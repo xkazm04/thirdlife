@@ -5,7 +5,7 @@ extends RefCounted
 ## ("MON" = Engine/Private/Animation/AnimMontage.cpp / AnimInstance.cpp, AlphaBlend.cpp). The base of TLRigSkaterAnim,
 ## split from it in round 3 for the size rule. Internal to engine/rigs/skater.
 
-var montages: Array = []             # [{id, clip, len, pos, rate, out, trigger, w, begin, target, lerp, rem, T, playing, active, paused}]
+var montages: Array = []             # [{id, clip, clip_len, len, pos, rate, out, trigger, w, begin, target, lerp, rem, T, playing, active, paused}]
 var _next_id: int = 0
 
 
@@ -50,15 +50,17 @@ static func scurve(x: float) -> float:
 ## blend out over the NEW take's blend-in time; the new one starts at weight 0.
 ## `trigger` is the montage's BlendOutTriggerTime: under 0 the take blends out over what is left when no more than
 ## its blend-out time is left; at 0 or more it blends out over its blend-out time when no more than `trigger` is left
-## (AnimMontage.cpp, FAnimMontageInstance::Advance: bCustomBlendOutTriggerTime). Returns the take's id (0 = no such clip).
-func play_slot(clip: StringName, blend_in: float, blend_out: float, rate: float = 1.0, start: float = 0.0, trigger: float = -1.0) -> int:
+## (AnimMontage.cpp, FAnimMontageInstance::Advance: bCustomBlendOutTriggerTime). `loops` is LoopCount: the montage is
+## that many times the clip long (FAnimSegment::GetLength) and its position runs on through them.
+## Returns the take's id (0 = no such clip).
+func play_slot(clip: StringName, blend_in: float, blend_out: float, rate: float = 1.0, start: float = 0.0, loops: int = 1, trigger: float = -1.0) -> int:
 	var a: Animation = TLRigSkater.clip_library().get_animation(clip)
 	if a == null:
 		return 0
 	for i: int in range(montages.size() - 1, -1, -1):
 		_stop(montages[i], blend_in)
 	_next_id += 1
-	montages.append({"id": _next_id, "trigger": trigger, "clip": clip, "len": f32(a.length), "pos": f32(clampf(start, 0.0, a.length)), "rate": f32(rate), "out": f32(blend_out), "w": 0.0, "begin": 0.0,
+	montages.append({"id": _next_id, "trigger": trigger, "clip": clip, "clip_len": f32(a.length), "len": f32(f32(a.length) * float(loops)), "pos": f32(clampf(start, 0.0, a.length * float(loops))), "rate": f32(rate), "out": f32(blend_out), "w": 0.0, "begin": 0.0,
 		"target": 1.0, "lerp": 0.0 if blend_in > 0.0 else 1.0, "rem": f32(blend_in), "T": f32(blend_in), "playing": true, "active": true, "paused": false})
 	if blend_in <= 0.0:
 		montages[-1]["w"] = 0.0      # the weight is taken on the next tick (begin 0 -> target 1 at lerp 1)
@@ -124,6 +126,32 @@ func montage_stop_all(t: float) -> void:
 	for m: Dictionary in montages:
 		if bool(m["active"]):
 			_stop(m, t)
+
+
+## Montage_SetPlayRate(nullptr, rate): every take that was not stopped (AnimInstance.cpp, "do it on all active ones").
+func montage_set_rate(rate: float) -> void:
+	for m: Dictionary in montages:
+		if bool(m["active"]):
+			m["rate"] = f32(rate)
+
+
+## GetPlayLength(GetCurrentActiveMontage): the clip's length times its loop count.
+func montage_length() -> float:
+	var m: Dictionary = _active_montage()
+	return float(m["len"]) if not m.is_empty() else 0.0
+
+
+## Montage_IsPlaying(GetCurrentActiveMontage): false once it is paused or has reached its end.
+func montage_active_is_playing() -> bool:
+	var m: Dictionary = _active_montage()
+	return not m.is_empty() and bool(m["playing"]) and not bool(m["paused"])
+
+
+## Where a take's clip is read at its position (a looping take wraps through its clip).
+static func clip_time(m: Dictionary) -> float:
+	var cl: float = float(m["clip_len"])
+	var p: float = float(m["pos"])
+	return p if p <= cl or cl <= 0.0 else fposmod(p, cl)
 
 
 func _by_id(id: int) -> Dictionary:

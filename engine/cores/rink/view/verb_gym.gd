@@ -1,5 +1,5 @@
 extends Node3D
-## The verb gym (hockey campaign, lane K2, round 3): a match segment of the REAL core, five a side with the bots
+## The verb gym (hockey campaign, lane K2, rounds 3 and 4): a match segment of the REAL core, five a side with the bots
 ## playing, the human driven by a recorded raw hand (cores/rink/view/verbs.stream.json: what RinkCore.set_raw_input
 ## takes, one entry a frame, as K1's cores/rink/tools/rink_rawtrace.gd replays one). Every skater has thirdjam's pawn
 ## (skater_pawn.gd) and a figure (TLRigSkater), so every verb appears as the simulation produces it: the human's and
@@ -20,6 +20,7 @@ extends Node3D
 
 const PAWN := preload("res://cores/rink/view/skater_pawn.gd")
 const SHOW := preload("res://cores/rink/view/skater_show.gd")
+const HITS := preload("res://cores/rink/view/hit_read.gd")
 const DEFECTS := preload("res://rigs/skater/review/skater_defects.gd")
 const CAMS: Dictionary = {      # [forward, right, up] m of the eye, of the target, field of view (figure_gym.gd)
 	"side": [[0.45, 4.6, 1.0], [0.45, 0.0, 0.8], 30.0],
@@ -35,7 +36,7 @@ const NEAR_SHARE: float = 0.97
 const NUMBERS: Array = [[7, 13, 42], [9, 21, 88]]      # HokejGameMode.cpp:439-444
 ## The events of thirdjam's bus the Blueprint listens to ([OnBusEvent]); the ported ones go into calls.json.
 const BUS_EVENTS: Array = ["knockdown", "check", "lift", "deke"]
-const BUS_PORTED: Array = ["lift", "deke"]
+const BUS_PORTED: Array = ["knockdown", "check", "lift", "deke"]
 ## One-frame flags and results counted per skater, to say which verbs the run holds.
 const VERB_FLAGS: Array = ["bShotThisFrame", "bOneTimerThisFrame", "bPassThisFrame", "bSaucerThisFrame", "bCheckThisFrame", "bPokeThisFrame", "bLiftThisFrame", "bDekeThisFrame", "bSpinThisFrame",
 	"bSweepThisFrame", "bBumpThisFrame", "bBoardHitThisFrame", "bRecoilThisFrame", "bFoulThisFrame"]
@@ -46,6 +47,7 @@ var cam: Camera3D
 var _plays: int = 0
 var _carry: int = 0
 var _chases: int = 0
+var _hold_until: int = -1
 var _had: bool = false
 var _press_at: int = -1000
 
@@ -66,7 +68,8 @@ func _ready() -> void:
 ## The gym's scripted hand, one frame: what RinkCore.set_raw_input takes. It reads the last snapshot: with the puck it
 ## skates at the far goal and plays, possession by possession, a tap pass, a held pass, a tap shot, a charged shot, a
 ## deke and a pass, a spin and a shot, a half-charged shot; without it it chases the puck and, next to an opposing
-## carrier, pokes, cross-checks and checks in turn; a mate's pass coming to him is shot first-time.
+## carrier, pokes, cross-checks, checks and holds the cross-check (30 frames: the brace) in turn; a mate's pass coming
+## to him is shot first-time.
 func _hand(f: int, s: Dictionary) -> Dictionary:
 	var down: PackedStringArray = []
 	var pressed: PackedStringArray = []
@@ -110,12 +113,16 @@ func _hand(f: int, s: Dictionary) -> Dictionary:
 		var sk: Array = s["Skaters"]
 		if carrier >= 0 and int(sk[carrier]["Team"]) != int(me["Team"]):
 			target = sk[carrier]["Pos"]
-			if (target - pos).length() < 2.0 and f - _press_at >= 40:
+			if f < _hold_until:
+				down.append("LeftMouseButton")      # the cross-check held: the brace
+			elif (target - pos).length() < 2.0 and f - _press_at >= 40:
 				_press_at = f
 				_chases += 1
-				var key: String = ["SpaceBar", "LeftMouseButton", "RightMouseButton"][_chases % 3]
+				var key: String = ["SpaceBar", "LeftMouseButton", "RightMouseButton", "LeftMouseButton"][_chases % 4]
 				pressed.append(key)
 				down.append(key)
+				if _chases % 4 == 3:
+					_hold_until = f + 30
 		elif carrier >= 0:
 			target = (sk[carrier]["Pos"] as Vector2) + Vector2(6.0, 4.0 if pos.y > (sk[carrier]["Pos"] as Vector2).y else -4.0)
 			aim = sk[carrier]["Pos"]
@@ -182,6 +189,8 @@ func _run() -> void:
 	var warm: int = int(args.get("warm", "240" if args.has("oracle") else "0"))
 	var show: RefCounted = SHOW.new()      # the game mode's part around the pawns: hit-stop, the shown carrier, the play calls
 	show.set("cfg", SHOW.config_of(cart))
+	var hits: RefCounted = HITS.new()      # the game mode's hit read: the whiffs of a miss, the re-time of a check
+	hits.set("skater_speed", float(cart["game"]["skater"]["speed"]))
 	var pawn_nodes: Array = []
 	var pawns: Array = []        # [pawn, figure, the calls of init_skater]
 	var human: int = -1
@@ -198,6 +207,11 @@ func _run() -> void:
 	var cost_us: int = 0
 	var done: int = 0
 	var hit_stops: int = 0
+	var puck_rows: Array = []
+	var puck_node: Node3D = TLKit.build("puck", {"radius": float(cart["game"]["puck"]["radius_m"]), "height": 0.08})      # AJamPuck::InitPuck: 2r across, 0.08 m tall
+	add_child(puck_node)
+	var whiffs: int = 0
+	var retimes: int = 0
 	var made_all: Dictionary = {}
 	var made_human: Dictionary = {}
 	var on_blade: int = 0
@@ -227,10 +241,19 @@ func _run() -> void:
 				fig.setup({"team": t})
 				fig.set_human(i == human)
 				fig.set_no_game_mode(args.has("oracle"))
+				if not args.has("oracle"):
+					# the walls the falls ask about; the oracle's world has no rink actor (FindRink finds nothing there)
+					var rk: Dictionary = cart["game"]["rink"]
+					fig.set_rink(Vector3(float(rk["length_m"]) * 50.0, float(rk["width_m"]) * 50.0, float(rk["corner_radius_m"]) * 100.0))
 				var pawn: Node3D = PAWN.new()
 				add_child(pawn)
 				pawn.add_child(fig)
 				pawn.set("record", true)
+				# the oracle's figures stand at the first frame's places, the puck at its own, before the first call
+				pawn.call("apply_render", sk[i], 1.0)
+				var pr: Vector2 = (snap["Puck"]["Pos"] as Vector2) - (sk[i]["Pos"] as Vector2)
+				var y0: float = float(sk[i]["Yaw"])
+				fig.set_puck(Vector2(pr.dot(Vector2(cos(y0), sin(y0))), pr.dot(Vector2(-sin(y0), cos(y0)))))
 				for _k: int in range(warm):
 					fig.tick()
 				pawn.call("init_skater", i, t, Color(String(teams[t]["colour_hex"])).srgb_to_linear(), int(NUMBERS[t][slot]) if slot < 3 else t * 10 + slot + 1, fig)
@@ -279,12 +302,30 @@ func _run() -> void:
 					pawn.set("show_calls", [])
 			if stage == 1:
 				show.call("after_pawns", snap, pawn_nodes)
+				var read: Dictionary = hits.call("step_sim", snap, pawn_nodes, core.call("last_human_input"))      # HokejGameMode.cpp:1706
+				whiffs += (read.get("whiffs", []) as Array).size()
+				retimes += (read.get("retimes", []) as Array).size()
 		for i: int in range(pawns.size()):
 			(pawns[i][0] as Node3D).call("apply_render", sk[i], 1.0)
+		# FJamPuckShow::Render (HokejGameMode.cpp:1736): the puck's place, with the sockets of the pose before this tick;
+		# the figures' own tick then looks at it ([LookTick] reads the puck actor's place)
+		var drawn: Dictionary = show.call("render", snap, pawn_nodes, 1.0, float(f) / 60.0)
+		var pk: Vector3 = drawn["puck"]
+		for i: int in range(pawns.size()):
+			var pn: Node3D = pawns[i][0]
+			var ay: float = -(pn.rotation.y + PI * 0.5)
+			var rel: Vector2 = Vector2(pk.x - pn.position.x, pk.z - pn.position.z)
+			(pawns[i][1] as TLRigSkater).set_puck(Vector2(rel.dot(Vector2(cos(ay), sin(ay))), rel.dot(Vector2(-sin(ay), cos(ay)))))
 			(pawns[i][1] as TLRigSkater).tick()
-		var drawn: Dictionary = show.call("render", snap, pawn_nodes, 1.0)
-		if bool(drawn.get("on_blade", false)):
+		var on: int = int(drawn.get("drawn_carrier", -1)) if bool(drawn.get("on_blade", false)) else -1
+		if on >= 0:
 			on_blade += 1
+			# AJamPuck::Tick (JamPawns.cpp:959-977): after the frame's animation a carried puck takes the socket's place again
+			var sw: Variant = (pawn_nodes[on] as Node3D).call("puck_socket_world")
+			puck_node.position = Vector3((sw as Vector3).x, pk.y, (sw as Vector3).z) if sw is Vector3 else pk
+		else:
+			puck_node.position = pk
+		puck_rows.append([[snappedf(pk.x, 0.0001), snappedf(pk.y, 0.0001), snappedf(pk.z, 0.0001)], on])
 		cost_us += Time.get_ticks_usec() - t0
 		var crow: Array = []
 		var orow: Array = []
@@ -309,7 +350,7 @@ func _run() -> void:
 				var v: Vector3 = fig.point_ue(p)
 				flat.append_array([snappedf(v.x, 0.001), snappedf(v.y, 0.001), snappedf(v.z, 0.001)])
 			orow.append(flat)
-		call_rows.append({"f": f, "sk": crow})
+		call_rows.append({"f": f, "sk": crow, "puck": puck_rows[-1][0], "puck_on": puck_rows[-1][1]})
 		our_rows.append(orow)
 		var hf: TLRigSkater = pawns[who][1]
 		var an: TLRigSkaterAnim = hf.anim
@@ -352,6 +393,8 @@ func _run() -> void:
 	report["calls_made_all"] = made_all
 	report["calls_made_human"] = made_human
 	report["hit_stops"] = hit_stops
+	report["whiffs"] = whiffs
+	report["retimes"] = retimes
 	report["frames_puck_drawn_on_a_blade"] = on_blade
 	report["calls_left_out_of_calls_json"] = dropped
 	var np: Dictionary = {}

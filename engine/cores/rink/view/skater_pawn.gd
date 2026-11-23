@@ -439,3 +439,13 @@ func puck_socket_world() -> Variant:
 	if is_inside_tree():
 		return global_transform * (fig_xf * local.origin)
 	return transform * (fig_xf * local.origin)
+
+
+## JamHitSetFigureDilation (S/JamGame/Private/HitRead.cpp:747-752) for the hit read (hit_read.gd): the figure's clock
+## for the check's re-time (above 1: run forward) and back (the hit-stop's 0.0001 or 1). Recorded in `show_calls`, as
+## the game mode's other doings around the pawn are; not a call of thirdjam's interface.
+func set_figure_dilation(d: float) -> void:
+	if figure != null and figure.has_method(&"set_time_dilation"):
+		if record:
+			show_calls.append(["set_time_dilation", [d]])
+		figure.call(&"set_time_dilation", d)

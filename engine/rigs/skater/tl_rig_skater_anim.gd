@@ -17,7 +17,9 @@ extends TLRigSkaterSlot
 ##                                Goalie_Hold, or _7 (bStRight): Goalie_Block_Right / _Left
 ##   LayeredBoneBlend_1 (AimW)    spine_01 and above take the aim: four Aim blend-space players at reach 1.0 / 1.3 / 1.45 /
 ##                                1.6 m mixed by T1..T3 (TwoWayBlend_0, _2, _3)
-##   LayeredBoneBlend_0 (HoldW)   the cross-check hold: NOT PORTED YET (weight stays 0)
+##   LayeredBoneBlend_0 (HoldW)   spine_01 and above take the cross-check hold: BlendListByBool_9 (bHoldOut, instant):
+##                                CrossCheck_Hold_Out at HoldOutT, or BlendListByBool_10 (bHoldIn, instant):
+##                                CrossCheck_Hold_In at HoldInT, or CrossCheck_Hold at HoldLoopT (SequenceEvaluators)
 ##   LayeredBoneBlend_2 (PassW)   spine_01 and above take SequencePlayer_10 (Pass_Charge, looping): the held pass
 ##   ModifyBone_1 stick_socket (StickRot, StickOff), _5 spine_01 (GraceRot), _6 hand_r (LockRot), _7 spine_03 (LookRot1),
 ##   _8 head (LookRot2)           component space, additive
@@ -25,7 +27,8 @@ extends TLRigSkaterSlot
 ##                                wind-up); at alpha 1 the above is neither ticked nor evaluated (the machine starts
 ##                                over when it comes back: "TWB" = AnimGraphRuntime/.../AnimNode_TwoWayBlend.cpp)
 ##   Slot DefaultSlot             the takes played by PlaySlotAnimationAsDynamicMontage
-##   ModifyBone_0, _2, _3, _4     the whip (WhipA): NOT PORTED YET (0)
+##   ModifyBone_0, _2, _3, _4     the whip, over the takes too: spine_02 and spine_03 (WhipRot), neck_01 (WhipHead),
+##                                upperarm_r (WhipArm), component space, additive, alpha WhipA
 ## Carry poses (bCarry1..5) and the cross-check hold are named above so that a later round finds their place; with
 ## their variables at 0 / false they change nothing here.
 
@@ -66,6 +69,14 @@ var StickA: float = 0.0
 var LookRot1: Quaternion = Quaternion.IDENTITY
 var LookRot2: Quaternion = Quaternion.IDENTITY
 var WhipA: float = 0.0
+var WhipRot: Quaternion = Quaternion.IDENTITY
+var WhipHead: Quaternion = Quaternion.IDENTITY
+var WhipArm: Quaternion = Quaternion.IDENTITY
+var bHoldIn: bool = false
+var bHoldOut: bool = false
+var HoldInT: float = 0.0
+var HoldOutT: float = 0.0
+var HoldLoopT: float = 0.0
 
 # ---- run state
 var state: int = IDLE
@@ -263,8 +274,6 @@ func update(dt: float = DT) -> void:
 	if _a_ticked:
 		if PassW > EPS:
 			_tick_player("Pass_Charge", true, dt)       # LayeredBoneBlend_2's layer, while it has weight (LBB)
-		if HoldW > EPS:
-			_miss("LayeredBoneBlend_0 HoldW (the cross-check hold)")
 		# LayeredBoneBlend_1: the layer before the base (LBB), neither when its weight is nothing
 		if AimW > EPS:
 			# the four players stand still in time (play rate 0): a tick only finds their samples, and a player on the
@@ -291,8 +300,6 @@ func update(dt: float = DT) -> void:
 	_sm_ticked = machine_ticked
 	if GraceA > EPS or StickA > EPS:
 		_miss("ModifyBone_5 / _6 (take grace, stick lock)")
-	if WhipA > EPS:
-		_miss("ModifyBone_0 / _2 / _3 / _4 (the whip)")
 
 
 ## A sequence player outside the machine (FAnimNode_SequencePlayer): it advances while it has weight, wraps or holds
@@ -410,6 +417,15 @@ static func modify_bone(pose: TLRigSkaterPose, b: int, rot: Quaternion, offset_c
 		pose.ts = pg.affine_inverse() * ct
 
 
+## BlendListByBool_9 / _10 (blend times 0): the hold's pose at its explicit time.
+func _hold_pose() -> TLRigSkaterPose:
+	if bHoldOut:
+		return TLRigSkater.sample_clip(&"CrossCheck_Hold_Out", HoldOutT)
+	if bHoldIn:
+		return TLRigSkater.sample_clip(&"CrossCheck_Hold_In", HoldInT)
+	return TLRigSkater.sample_clip(&"CrossCheck_Hold", HoldLoopT)
+
+
 ## The pose of the tick `update` just ran.
 func evaluate() -> TLRigSkaterPose:
 	var out: TLRigSkaterPose = null
@@ -422,6 +438,8 @@ func evaluate() -> TLRigSkaterPose:
 	if _a_ticked:
 		var loco: TLRigSkaterPose = _list_pose(_loco_list, _machine_pose, _stance_pose)
 		out = layered(loco, _aim_pose(), AimW) if _aim_ticked else loco.copy()
+		if HoldW > EPS:
+			out = layered(out, _hold_pose(), HoldW)                       # LayeredBoneBlend_0
 		if PassW > EPS:
 			out = layered(out, _player_pose("Pass_Charge"), PassW)       # LayeredBoneBlend_2
 		# ModifyBone_1, then _7 and _8 (the look): component space, alpha 1
@@ -441,7 +459,7 @@ func evaluate() -> TLRigSkaterPose:
 		var ws: PackedFloat32Array = PackedFloat32Array()
 		var scale: float = 1.0 / w_total if w_total > 1.0 else 1.0
 		for m: Dictionary in live:
-			poses.append(TLRigSkater.sample_clip(m["clip"] as StringName, float(m["pos"])))
+			poses.append(TLRigSkater.sample_clip(m["clip"] as StringName, clip_time(m)))
 			ws.append(float(m["w"]) * scale)
 		var src: float = 0.0 if w_total > 1.0 else 1.0 - w_total
 		if src > EPS and out != null:
@@ -449,4 +467,13 @@ func evaluate() -> TLRigSkaterPose:
 			ws.append(src)
 		out = TLRigSkaterPose.blend(poses, ws)
 	_reap_montages()
-	return out if out != null else TLRigSkaterPose.rest()
+	if out == null:
+		out = TLRigSkaterPose.rest()
+	if WhipA > EPS:
+		# ModifyBone_0, _2, _3, _4, innermost first
+		out = out.copy()          # sample_clip hands out shared poses: the whip writes on a copy
+		modify_bone(out, TLRigSkaterPose.bone("spine_02"), WhipRot)
+		modify_bone(out, TLRigSkater.BONE_SPINE_03, WhipRot)
+		modify_bone(out, TLRigSkaterPose.bone("neck_01"), WhipHead)
+		modify_bone(out, TLRigSkaterPose.bone("upperarm_r"), WhipArm)
+	return out
