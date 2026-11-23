@@ -1,0 +1,1 @@
+# Godot does not scan the native sources, the copied thirdjam trees or their cartridges (FileAccess still reads them).
