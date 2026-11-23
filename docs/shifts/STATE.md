@@ -21,10 +21,12 @@ writes it back. Newest shift-log entry last.
   and duel (vs For Honor / Souls / Sekiro) in docs/research/; the owner's 75 thirdjam rulings in RULINGS.md.
 - Since 23 Nov day: a game is analysed and designed by BEHAVIOUR first (what a hand and the bots get back, measured in the
   running game), not by code or looks. Hockey must prove the method before any other game ("robot soccer" is next).
-- Next 3 (after the day of 23 Nov): (1) the owner plays hockey from branch d23-hockey (exe in n23-int/dist) and says
-  whether it lands and his worst three; (2) a quiet reading of hockey's frame budget, the re-place bug after a hit,
-  the missed targets (pass completion, mates' shots); (3) his method test on "robot soccer"; the editor's prompts
-  enforce METHOD 8a.
+- Since 23 Nov 16:20: the hockey campaign (docs/design/DIRECTIONS.md): ten directions and a stair. Hockey is rebuilt as
+  a 1:1 port of thirdjam (whole system: units, rink, 5 v 5, simulation, bots, chase camera, controls, a skater figure),
+  judged by a tempo map, a mechanic matrix by ablation, a ladder of human-limited hands, a playtester in the loop, then
+  the owner. Everything else is frozen until his word on step 6.
+- Next 3: (1) step 0: thirdjam runnable and instrumented (tempo map, mechanic matrix, hand ladder); (2) step 1: the
+  gym (skater, camera, controls on the ported law); (3) steps 2-5 in order, each left only at parity.
 
 ## Open owner verdicts
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
@@ -59,6 +61,13 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-23 ~16:20 (owner, after playing the hockey behaviour pass, branch d23-hockey; verbatim in
+  docs/design/DIRECTIONS.md): "the same garbage as before. It is not even close to thirdjam"; deformed players, a stick
+  flying and under the surface, speed and sprint not balanced as thirdjam, unnatural animations. He asked for ten
+  directions toward AAA design in this sandbox and to execute them until the Director thinks the game is perfect, for as
+  long as it takes; then he decides whether to throw or freeze Third Life or keep a recipe. And: "the pictures will not
+  uncover core problem which is the gameplay itself in speed and balancing of skill mechanisms". Branch d23-hockey is
+  NOT landed (rejected by his hand).
 - 2026-11-23 ~09:10 (owner, after reading the night's verdict; verbatim in docs/shifts/2026-11-23-day/PLAN.md): (1) the
   hockey teardown is rejected as focused on the visual side: "the core of gameplay design is in behavior, which is almost
   untouched by your analysis. Please do repeat it" on movement sensitivity (speed, acceleration, deceleration), tackles
