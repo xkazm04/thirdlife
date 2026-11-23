@@ -115,7 +115,7 @@ func PlayPass(_Strength: float) -> void:
 	f.PassChg = 0.0
 	if _free_for(3):
 		f.ActPri = 3
-		PassMon = f.anim.play_slot(&"Pass_Snap", 0.0333, 0.05, 1.0, 0.0834, 0.0)
+		PassMon = f.anim.play_slot(&"Pass_Snap", 0.0333, 0.05, 1.0, 0.0834, 1, 0.0)
 	else:
 		PassHoldW = 0.0
 	ChargeMix()

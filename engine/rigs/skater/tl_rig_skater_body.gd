@@ -146,13 +146,47 @@ func set_mesh_yaw_deg(deg: float) -> void:
 		_body.rotation.y = PI * 0.5 - deg_to_rad(deg)
 
 
+## K2_GetActorLocation(self), world centimetres (rink x, rink z): the pawn's place, as this figure hangs under it.
+func actor_xy_cm() -> Vector2:
+	if not is_inside_tree():
+		return Vector2.ZERO
+	var p: Vector3 = (get_parent() as Node3D).global_position if get_parent() is Node3D else global_position
+	return Vector2(p.x, p.z) * 100.0
+
+
+## The actor's yaw in the world, Unreal's degrees (0 faces rink +x, growing to +z): the pawn stands at
+## rotation.y = -yaw - PI / 2 (skater_pawn.gd).
+func actor_yaw_deg() -> float:
+	var n: Node3D = get_parent() as Node3D if get_parent() is Node3D else self
+	return rad_to_deg(-(n.rotation.y + PI * 0.5))
+
+
+## The yaw of K2_GetComponentToWorld(Mesh).
+func mesh_world_yaw_deg() -> float:
+	return actor_yaw_deg() + _mesh_yaw
+
+
+## K2_SetWorldRotation(Mesh, (0, 0, yaw)): the falls turn the mesh in the world, whatever the actor does.
+func set_mesh_world_yaw(deg: float) -> void:
+	set_mesh_yaw_deg(wrapf(deg - actor_yaw_deg(), -180.0, 180.0))
+
+
+## K2_SetRelativeLocation(Mesh, (x, y, 0)), centimetres in the actor's frame (x forward, y right): the slide off a wall.
+var _mesh_xy: Vector2 = Vector2.ZERO
+
+
+func set_mesh_relative_xy(x_cm: float, y_cm: float) -> void:
+	_mesh_xy = Vector2(x_cm, y_cm)
+	_body.position = Vector3(y_cm, 0.0, -x_cm) * 0.01
+
+
 ## The mesh component's space to the actor's (Unreal's axes): the yaw about z.
 func _to_actor(v: Vector3) -> Vector3:
-	if _mesh_yaw == 0.0:
+	if _mesh_yaw == 0.0 and _mesh_xy == Vector2.ZERO:
 		return v
 	var c: float = cos(deg_to_rad(_mesh_yaw))
 	var sn: float = sin(deg_to_rad(_mesh_yaw))
-	return Vector3(v.x * c - v.y * sn, v.x * sn + v.y * c, v.z)
+	return Vector3(v.x * c - v.y * sn + _mesh_xy.x, v.x * sn + v.y * c + _mesh_xy.y, v.z)
 
 
 ## A bone's place in the actor's frame as the Blueprint reads it: centimetres, x forward, y right, z up.
@@ -163,7 +197,8 @@ func _bone_ue(b: int) -> Vector3:
 ## A vector given in the stick bone's space (Unreal's axes, cm) in the actor's frame (GreaterGreater_VectorRotator
 ## with the bone's rotation).
 func _stick_vec_ue(v: Vector3) -> Vector3:
-	return _to_actor(TLRigSkaterPose.ue_vec((_g[TLRigSkaterPose.STICK] as Transform3D).basis * TLRigSkaterPose.from_ue_vec(v)))
+	var d: Vector3 = TLRigSkaterPose.ue_vec((_g[TLRigSkaterPose.STICK] as Transform3D).basis * TLRigSkaterPose.from_ue_vec(v))
+	return _to_actor(d) - Vector3(_mesh_xy.x, _mesh_xy.y, 0.0)      # a direction: the mesh's shift is not in it
 
 
 func _puck_socket_ue() -> Vector3:
@@ -323,7 +358,10 @@ func bone_transform(bone: StringName) -> Transform3D:
 func socket_transform(sname: StringName) -> Transform3D:
 	match String(sname):
 		"puck_socket": return bone_transform(&"stick_socket") * Transform3D(Basis.IDENTITY, PUCK_ON_STICK)
-		"stick_socket", "head_socket": return bone_transform(sname)
+		"stick_socket": return bone_transform(sname)
+		# thirdjam's MESH socket head_socket sits on the bone of that name, turned by a roll of -90 degrees (Unreal's
+		# quaternion (0.707107, 0, 0, 0.707107) against the bone, read from the mesh in Unreal); its place is the bone's
+		"head_socket": return bone_transform(sname) * Transform3D(Basis(TLRigSkaterPose.from_ue_quat(Quaternion(0.707107, 0.0, 0.0, 0.707107))), Vector3.ZERO)
 	return Transform3D.IDENTITY
 
 

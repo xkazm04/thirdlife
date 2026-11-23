@@ -10,8 +10,9 @@ extends TLRigSkaterBody
 ##   PlayShoot(Charge)  PlayPass(Strength)  PlayPoke(bClean)  PlayLift()  PlayStickHit(bLifted)  and, by name from the
 ##   game mode's puck show: PlayReceive()  SetPassCharge(Charge01)  PlayCallForPass()  SetLookAtPuck(bOn)
 ##   OnBusEvent(Event, bMe, WhereCm, Strength, Kind): thirdjam's event bus (the sim's events of the frame)
-##   ... and the contact calls (PlayCheck, SetKnockedDown, PlayHitReaction, ...), taken and counted in `not_ported`
-##   without showing anything yet.
+##   the contact: PlayCheck()  PlayCheckWindup(Frames)  PlayCrossCheck(Frames)  SetCrossCheckHold(bOn)  PlayWhiff(Kind)
+##   SetWindupTakes(bOn, N)  SetKnockedDown(bDown, DirX, DirZ, Frames)  PlayHitReaction(DirX, DirZ)
+##   PlayStumble(DirX, DirZ, Frames)  PlayBoardHit()  SetBoardPin(bOn)
 ## A caller makes the frame's calls and then `tick()`: one world tick of 1/60 s (the Blueprint's Tick, then the
 ## animation update), never a clock. engine/cores/rink/view/skater_pawn.gd is thirdjam's pawn and makes the calls.
 ##
@@ -38,8 +39,7 @@ extends TLRigSkaterBody
 
 ## The calls of thirdjam's interface this figure takes and does not show yet (each round ports more; `not_ported`
 ## counts the ones that arrived). The gym leaves them out of what it gives thirdjam's own figure to compare with.
-const NOT_PORTED_CALLS: Array = ["PlayCheck", "SetKnockedDown", "PlayHitReaction", "PlayBoardHit", "SetBoardPin", "PlayStumble", "PlayCheckWindup", "PlayCrossCheck", "SetCrossCheckHold", "PlayWhiff", "PlayCheckWhiff",
-	"SetWindupTakes"]
+const NOT_PORTED_CALLS: Array = []
 
 ## The delta of one tick as thirdjam's figure gets it in the oracle's world (Unreal at a fixed 60 Hz): the single-precision
 ## float BELOW 1/60, not the nearest one. Measured: a take whose time left meets its blend-out time exactly (Lift 0.4 s
@@ -47,7 +47,8 @@ const NOT_PORTED_CALLS: Array = ["PlayCheck", "SetKnockedDown", "PlayHitReaction
 const TICK_S: float = 0.01666666567325592
 
 var anim: TLRigSkaterAnim
-var takes: TLRigSkaterPuck            # the puck verbs
+var takes: TLRigSkaterContact         # the takes: puck verbs, whip, falls, contact (Puck <- Whip <- Falls <- Contact)
+var _rink: Vector3 = Vector3.ZERO     # see set_rink
 var rivals: Array = []                # the other figures on the ice ([ChkScan]): see set_rivals
 var not_ported: Dictionary = {}       # interface calls taken and not shown yet: name -> count
 var _now: float = 0.0                 # GetTimeSeconds: ticks / 60
@@ -125,7 +126,7 @@ var bNoLook: bool = false
 func setup(p: Dictionary = {}) -> void:
 	super.setup(p)
 	anim = TLRigSkaterAnim.new()
-	takes = TLRigSkaterPuck.new(self)
+	takes = TLRigSkaterContact.new(self)
 
 
 # ------------------------------------------------------------------ engine-side inputs (not thirdjam's interface)
@@ -152,12 +153,14 @@ func set_rivals(figures: Array) -> void:
 	rivals = figures
 
 
-## K2_GetActorLocation(self), world centimetres (rink x, rink z): the pawn's place, as this figure hangs under it.
-func actor_xy_cm() -> Vector2:
-	if not is_inside_tree():
-		return Vector2.ZERO
-	var p: Vector3 = (get_parent() as Node3D).global_position if get_parent() is Node3D else global_position
-	return Vector2(p.x, p.z) * 100.0
+## The rink the falls ask about ([FindRink]: the bounds of thirdjam's RinkActor's "Ice" and its corner radius), cm:
+## Vector3(half length, half width, corner radius). ZERO = a world without a rink (no wall is ever found).
+func set_rink(half_cm: Vector3) -> void:
+	_rink = half_cm
+
+
+func rink_cm() -> Vector3:
+	return _rink
 
 
 ## The hit-stop: thirdjam sets the visual actor's CustomTimeDilation to 0.0001 (AJamSkater::SetVisualTimeDilation):
@@ -199,19 +202,10 @@ func UpdateMotion(Speed: float, TurnRate: float, Facing: float) -> void:
 		LiftN -= 1
 	anim.Speed = Speed
 	anim.TurnRate = TurnRate
-	if bDown:
-		_miss("UpdateMotion while down (the fall's turn)")
-	else:
-		# K2_SetRelativeRotation(Mesh): the lifter turns to where his lift landed, in over 3 calls and out over 10
-		set_mesh_yaw_deg(LiftYaw * clampf(minf(float(22 - LiftN) / 3.0, float(LiftN) / 10.0), 0.0, 1.0) if LiftN > 0 else 0.0)
-	_shift_tick()
+	takes.UpdateMotionMesh(Facing)      # the mesh's yaw: the fall's turn, the get-up's, the lifter's
+	takes.ShiftTick()
 	_stop_tick(Speed, TurnRate)
 	_sk2_tick()
-
-
-## [ShiftTick]: the slide off a wall after a fall. WallShift is only set by the falls: nothing to do until they are ported.
-func _shift_tick() -> void:
-	pass
 
 
 ## [StopTick]
@@ -404,7 +398,14 @@ func SetLookAtPuck(bOn: bool) -> void:
 func _receive_tick(dt: float) -> void:
 	if takes.PassHoldW > 0.0:
 		takes.PassHoldTick()
+	if takes.bWhip:
+		takes.WhipTick()
+	if takes.bHoldRun:
+		takes.HoldTick()
+	if takes.WindHoldLeft > 0.0:
+		takes.WindHoldTick(0.0)
 	_look_tick(dt)
+	takes.ReceiveTickDown(dt)
 
 
 # ------------------------------------------------------------------ the interface's calls not ported yet
@@ -459,17 +460,9 @@ func PlayCallForPass() -> void:
 
 
 ## [OnBusEvent]: one event of thirdjam's bus. `bMe`: its Who is this figure's skater; `WhereCm`: world centimetres.
-## Of its events the lift and the deke are ported; knockdown and check belong to the contact round.
+## knockdown, check, lift and deke are the four it listens to.
 func OnBusEvent(Event: StringName, bMe: bool, WhereCm: Vector2, Strength: float, Kind: StringName) -> void:
 	takes.bus_event(Event, bMe, WhereCm, Strength, Kind)
-
-
-func PlayCheck() -> void:
-	_miss("PlayCheck")
-
-
-func SetKnockedDown(_bDown: bool, _DirX: float, _DirZ: float, _KnockdownFrames: int) -> void:
-	_miss("SetKnockedDown")
 
 
 ## [PlayAct]: a take on the slot, unless he is down or getting up or a take of a higher priority runs.
@@ -491,46 +484,61 @@ func PlayFoulReaction() -> void:
 	_play_act(&"Foul_Reaction", 5, 1.0, 0.0)
 
 
-func PlayHitReaction(_DirX: float, _DirZ: float) -> void:
-	_miss("PlayHitReaction")
+# ---- the contact (TLRigSkaterContact and its bases)
+func PlayCheck() -> void:
+	_driver()
+	takes.PlayCheck()
 
 
-func PlayBoardHit() -> void:
-	_miss("PlayBoardHit")
+func PlayCheckWindup(Frames: int) -> void:
+	takes.PlayCheckWindup(Frames)
 
 
-func SetBoardPin(_bOn: bool) -> void:
-	if _bOn:
-		_miss("SetBoardPin")
+func PlayCrossCheck(Frames: int) -> void:
+	_driver()
+	takes.PlayCrossCheck(Frames)
 
 
-func PlayStumble(_DirX: float, _DirZ: float, _Frames: int) -> void:
-	_miss("PlayStumble")
+func SetCrossCheckHold(bOn: bool) -> void:
+	takes.SetCrossCheckHold(bOn)
 
 
-func PlayCheckWindup(_Frames: int) -> void:
-	_miss("PlayCheckWindup")
-
-
-func PlayCrossCheck(_Frames: int) -> void:
-	_miss("PlayCrossCheck")
-
-
-func SetCrossCheckHold(_bOn: bool) -> void:
-	if _bOn:
-		_miss("SetCrossCheckHold")
-
-
-func PlayWhiff(_Kind: int) -> void:
-	_miss("PlayWhiff")
+func PlayWhiff(Kind: int) -> void:
+	_driver()
+	takes.PlayWhiff(Kind)
 
 
 func PlayCheckWhiff() -> void:
-	_miss("PlayCheckWhiff")
+	_driver()
+	takes.PlayCheckWhiff()
 
 
-func SetWindupTakes(_bOn: bool, _N: int) -> void:
-	_miss("SetWindupTakes")
+func SetWindupTakes(bOn: bool, N: int) -> void:
+	takes.SetWindupTakes(bOn, N)
+
+
+func SetKnockedDown(bDownIn: bool, DirX: float, DirZ: float, KnockdownFrames: int) -> void:
+	_driver()
+	takes.SetKnockedDown(bDownIn, DirX, DirZ, KnockdownFrames)
+
+
+func PlayHitReaction(DirX: float, DirZ: float) -> void:
+	_driver()
+	takes.PlayHitReaction(DirX, DirZ)
+
+
+func PlayStumble(DirX: float, DirZ: float, Frames: int) -> void:
+	_driver()
+	takes.PlayStumble(DirX, DirZ, Frames)
+
+
+func PlayBoardHit() -> void:
+	_driver()
+	takes.PlayBoardHit()
+
+
+func SetBoardPin(bOn: bool) -> void:
+	takes.SetBoardPin(bOn)
 
 
 # ------------------------------------------------------------------ ticking and posing

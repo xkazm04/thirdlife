@@ -4,8 +4,10 @@ skater ("who" of calls.json).
   python verb_sheets.py <oracle dir> <ours dir> <calls.json> <out dir> [cam] [prefix]
 A verb's moment is read from the skater's own calls: PlayShoot (tap / slap by its charge, from where the charge
 began), PlayPass (held when a pass charge came before), PlayPoke, PlayLift, PlayStickHit, PlayReceive,
-PlayCallForPass, a deke (its bus event), a spin (the turn rate of UpdateMotion). A sheet runs from 6 frames before
-the moment to 36 after, every still (every third frame): thirdjam above, ours below. Also <prefix>_run_<cam>.mp4
+PlayCallForPass, a deke (its bus event), a spin (the turn rate of UpdateMotion), and the contact: PlayCheck,
+PlayCrossCheck, the hold, PlayWhiff, SetKnockedDown, PlayHitReaction, PlayStumble, PlayBoardHit, the pin. A sheet runs
+from 6 frames before the moment to 36 after, every still (every third frame; a knockdown: 150 frames, every ninth):
+thirdjam above, ours below; at most three sheets a verb. Also <prefix>_run_<cam>.mp4
 (every still, 20 a second = real time). Prints `tl.skater.verb_sheets/1 {...}`."""
 import json
 import os
@@ -57,6 +59,24 @@ for fr in frames:
             marks.append([f, "call_for_pass", f])
         elif name == "OnBusEvent" and a[0] == "deke" and a[1]:
             marks.append([f, "deke_" + (a[5] or "left"), f])
+        elif name == "PlayCheck":
+            marks.append([f, "check", f])
+        elif name == "PlayCrossCheck":
+            marks.append([f, "crosscheck", f])
+        elif name == "SetCrossCheckHold" and a[0]:
+            marks.append([f, "crosscheck_hold", f])
+        elif name == "PlayWhiff":
+            marks.append([f, "whiff_cross" if a[0] == 1 else "whiff_check", f])
+        elif name == "SetKnockedDown" and a[0]:
+            marks.append([f, "knockdown", f])
+        elif name == "PlayHitReaction":
+            marks.append([f, "hit_reaction", f])
+        elif name == "PlayStumble":
+            marks.append([f, "stumble", f])
+        elif name == "PlayBoardHit":
+            marks.append([f, "board_hit", f])
+        elif name == "SetBoardPin" and a[0]:
+            marks.append([f, "board_pin", f])
         elif name == "UpdateMotion" and abs(a[1]) > 8.0 and f > spin_until:
             marks.append([f, "spin", f])
             spin_until = f + 60
@@ -65,10 +85,15 @@ sheets = []
 seen = {}
 for f, verb, start in marks:
     seen[verb] = seen.get(verb, 0) + 1
-    fl = [x for x in have if start - 6 <= x <= f + 36]
+    if seen[verb] > 3:
+        continue                # three sheets a verb at most
+    if verb == "knockdown":
+        fl = [x for x in have if start - 9 <= x <= f + 150][::3]       # the fall, the lie, the get-up: every ninth frame
+    else:
+        fl = [x for x in have if start - 6 <= x <= f + 36]
     if not fl:
         continue
-    fl = fl[:16]
+    fl = fl[:18]
     sheet = Image.new("RGB", (len(fl) * PX, 2 * PX), (20, 20, 24))
     d = ImageDraw.Draw(sheet)
     for i, x in enumerate(fl):
