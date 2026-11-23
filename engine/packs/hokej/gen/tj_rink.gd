@@ -16,7 +16,13 @@ static func generate(ctx) -> void:
 
 
 ## Builds the rink under `parent` (a Node3D in Godot coordinates: rink x -> x, rink y -> z, up -> y).
-static func build(parent: Node3D, rink: Dictionary, hall: Dictionary) -> Node3D:
+## `arena_marks` (K3 round 9): empty without thirdjam's hall; with it (lane K6's arena, ctx.cores.part("rink", "arena")) the
+## arena draws the ice, the boards and the kick plate as the clay tier dresses them, and its ice paints the centre line, the
+## blue lines, the goal lines and the 9 m centre circle (style/shaders/hall_ice.gdshader: RinkActor's markings sections 0
+## and 1). Then this draws only RinkActor's sections 2 and 3, "the marks B's painted ice does not carry" (RinkActor.cpp:
+## 614-618), in thirdjam's own colours: {"red": section 2's colour, "pale": section 3's} (linear, arena.json's Markings
+## materials, RinkActor.cpp:650-659), and the goals (the arena leaves them to the pack by default).
+static func build(parent: Node3D, rink: Dictionary, hall: Dictionary, arena_marks: Dictionary = {}) -> Node3D:
 	var L: float = float(rink["length_m"])
 	var W: float = float(rink["width_m"])
 	var R: float = float(rink["corner_radius_m"])
@@ -25,13 +31,14 @@ static func build(parent: Node3D, rink: Dictionary, hall: Dictionary) -> Node3D:
 	var node := Node3D.new()
 	node.name = "Rink"
 	parent.add_child(node)
-	var part: Node3D = TLKit.build("rink", {"length": L, "width": W, "corner_r": R, "boards": false, "glass": false,
-		"markings": false, "goals": false, "apron": 0.0})
-	part.position = Vector3(0, -0.05, 0)                         # the kit's ice top is y = 0.05 (KIT.md `rink`)
-	node.add_child(part)
 	var mk := TLMesh.new(41)
-	_boards(mk, outline(L, W, R, 12))
-	_markings(mk, L, W, R, goal_w)
+	if arena_marks.is_empty():
+		var part: Node3D = TLKit.build("rink", {"length": L, "width": W, "corner_r": R, "boards": false, "glass": false,
+			"markings": false, "goals": false, "apron": 0.0})
+		part.position = Vector3(0, -0.05, 0)                     # the kit's ice top is y = 0.05 (KIT.md `rink`)
+		node.add_child(part)
+		_boards(mk, outline(L, W, R, 12))
+	_markings(mk, L, W, R, goal_w, arena_marks)
 	for s: float in [-1.0, 1.0]:
 		_goal(mk, s, L * 0.5 - 4.0, goal_w, goal_h)
 	node.add_child(mk.instance("TjRink"))
@@ -78,14 +85,22 @@ static func _boards(mk: TLMesh, line: Array) -> void:
 
 
 # A strip of half width hw between two points on the ice (FMeshBuf::Strip: the width argument is the half width).
-static func _strip(mk: TLMesh, a: Vector2, b: Vector2, hw: float, key: String, z: float = Z_PAINT) -> void:
+## A paint `key` is a palette key, or a Color: thirdjam's own colour on the palette's white (the toon shader multiplies the
+## palette colour by the vertex colour).
+static func _paint(key: Variant) -> Array:
+	return ["white", key as Color] if key is Color else [String(key), Color.WHITE]
+
+
+static func _strip(mk: TLMesh, a: Vector2, b: Vector2, hw: float, key: Variant, z: float = Z_PAINT) -> void:
 	var d: Vector2 = (b - a).normalized()
 	var n: Vector2 = Vector2(-d.y, d.x) * hw
-	mk.quad_up(Vector3(a.x + n.x, z, a.y + n.y), Vector3(b.x + n.x, z, b.y + n.y), Vector3(b.x - n.x, z, b.y - n.y), Vector3(a.x - n.x, z, a.y - n.y), key)
+	var pk: Array = _paint(key)
+	mk.quad_up(Vector3(a.x + n.x, z, a.y + n.y), Vector3(b.x + n.x, z, b.y + n.y), Vector3(b.x - n.x, z, b.y - n.y), Vector3(a.x - n.x, z, a.y - n.y), pk[0], pk[1])
 
 
 # A ring (r0 = 0: a disc) or an arc from angle a0 to a1 (radians, rink frame), seg segments (FMeshBuf::Ring / Arc).
-static func _arc(mk: TLMesh, c: Vector2, r0: float, r1: float, a0: float, a1: float, seg: int, key: String, z: float = Z_PAINT) -> void:
+static func _arc(mk: TLMesh, c: Vector2, r0: float, r1: float, a0: float, a1: float, seg: int, key: Variant, z: float = Z_PAINT) -> void:
+	var pk: Array = _paint(key)
 	for i: int in seg:
 		var t0: float = a0 + (a1 - a0) * float(i) / float(seg)
 		var t1: float = a0 + (a1 - a0) * float(i + 1) / float(seg)
@@ -93,21 +108,24 @@ static func _arc(mk: TLMesh, c: Vector2, r0: float, r1: float, a0: float, a1: fl
 		var o1: Vector2 = c + Vector2(cos(t1), sin(t1)) * r1
 		var i0: Vector2 = c + Vector2(cos(t0), sin(t0)) * r0
 		var i1: Vector2 = c + Vector2(cos(t1), sin(t1)) * r0
-		mk.quad_up(Vector3(i0.x, z, i0.y), Vector3(o0.x, z, o0.y), Vector3(o1.x, z, o1.y), Vector3(i1.x, z, i1.y), key)
+		mk.quad_up(Vector3(i0.x, z, i0.y), Vector3(o0.x, z, o0.y), Vector3(o1.x, z, o1.y), Vector3(i1.x, z, i1.y), pk[0], pk[1])
 
 
-static func _markings(mk: TLMesh, L: float, W: float, R: float, goal_w: float) -> void:
+static func _markings(mk: TLMesh, L: float, W: float, R: float, goal_w: float, arena_marks: Dictionary = {}) -> void:
 	var gl: float = L * 0.5 - 4.0                    # FJamRinkConfig::GoalLineX (JamCartridge.h:43)
 	var hz: float = W * 0.5
-	# section 0, red (RinkActor.cpp:600-610): the centre line 30 cm, the goal lines 6 cm
-	_strip(mk, Vector2(0, -hz), Vector2(0, hz), 0.15, "rink_red")
-	for s: float in [-1.0, 1.0]:
-		var ext: float = maxf(hz - maxf(0.0, R - (L * 0.5 - gl)), hz * 0.6)
-		_strip(mk, Vector2(s * gl, -ext), Vector2(s * gl, ext), 0.03, "rink_red")
-	# section 1, blue (cpp:611-614): the blue lines at +-L/6, 30 cm; the centre circle r 4.5 to 4.6 m
-	for s: float in [-1.0, 1.0]:
-		_strip(mk, Vector2(s * L / 6.0, -hz), Vector2(s * L / 6.0, hz), 0.15, "rink_blue")
-	_arc(mk, Vector2.ZERO, 4.5, 4.6, 0.0, TAU, 64, "rink_blue")
+	var red: Variant = arena_marks.get("red", "rink_red")
+	var pale: Variant = arena_marks.get("pale", "rink_blue")
+	if arena_marks.is_empty():
+		# section 0, red (RinkActor.cpp:600-610): the centre line 30 cm, the goal lines 6 cm
+		_strip(mk, Vector2(0, -hz), Vector2(0, hz), 0.15, "rink_red")
+		for s: float in [-1.0, 1.0]:
+			var ext: float = maxf(hz - maxf(0.0, R - (L * 0.5 - gl)), hz * 0.6)
+			_strip(mk, Vector2(s * gl, -ext), Vector2(s * gl, ext), 0.03, "rink_red")
+		# section 1, blue (cpp:611-614): the blue lines at +-L/6, 30 cm; the centre circle r 4.5 to 4.6 m
+		for s: float in [-1.0, 1.0]:
+			_strip(mk, Vector2(s * L / 6.0, -hz), Vector2(s * L / 6.0, hz), 0.15, "rink_blue")
+		_arc(mk, Vector2.ZERO, 4.5, 4.6, 0.0, TAU, 64, "rink_blue")
 	# section 2, red (cpp:620-645): faceoff circles r 4.5 m (12 cm line) with four hash marks, dots r 0.3 m, creases, trapezoids
 	var lw: float = 0.06
 	var circle_r: float = 4.5
@@ -121,22 +139,22 @@ static func _markings(mk: TLMesh, L: float, W: float, R: float, goal_w: float) -
 		var nx: float = s * (L / 6.0 - 1.5)
 		for zs: float in [-1.0, 1.0]:
 			var c := Vector2(cx, zs * dot_y)
-			_arc(mk, c, 0.0, dot_r, 0.0, TAU, 16, "rink_red")
-			_arc(mk, c, circle_r - lw, circle_r + lw, 0.0, TAU, 64, "rink_red")
+			_arc(mk, c, 0.0, dot_r, 0.0, TAU, 16, red)
+			_arc(mk, c, circle_r - lw, circle_r + lw, 0.0, TAU, 64, red)
 			for hx: float in [-1.0, 1.0]:
 				for hy: float in [-1.0, 1.0]:
-					_strip(mk, Vector2(c.x + hx * hash_x, c.y + hy * circle_r), Vector2(c.x + hx * hash_x, c.y + hy * (circle_r + hash_l)), lw, "rink_red")
-			_arc(mk, Vector2(nx, zs * dot_y), 0.0, dot_r, 0.0, TAU, 16, "rink_red")
+					_strip(mk, Vector2(c.x + hx * hash_x, c.y + hy * circle_r), Vector2(c.x + hx * hash_x, c.y + hy * (circle_r + hash_l)), lw, red)
+			_arc(mk, Vector2(nx, zs * dot_y), 0.0, dot_r, 0.0, TAU, 16, red)
 		var gc := Vector2(s * gl, 0)
 		var a0: float = PI * 0.5 if s > 0.0 else -PI * 0.5   # the half disc faces the centre
-		_arc(mk, gc, 0.0, crease_r - lw, a0, a0 + PI, 24, "rink_blue", Z_PAINT - 0.001)
-		_arc(mk, gc, crease_r - lw, crease_r + lw, a0, a0 + PI, 24, "rink_red")
+		_arc(mk, gc, 0.0, crease_r - lw, a0, a0 + PI, 24, pale, Z_PAINT - 0.001)
+		_arc(mk, gc, crease_r - lw, crease_r + lw, a0, a0 + PI, 24, red)
 		var trap_near: float = goal_w * 0.5 + 1.35
 		var trap_far: float = minf(goal_w * 0.5 + 2.25, maxf(trap_near, hz - R))
 		for zs: float in [-1.0, 1.0]:
-			_strip(mk, Vector2(s * gl, zs * trap_near), Vector2(s * L * 0.5, zs * trap_far), lw, "rink_red")
-	# section 3 (cpp:647): the centre dot r 15 cm
-	_arc(mk, Vector2.ZERO, 0.0, 0.15, 0.0, TAU, 16, "rink_blue")
+			_strip(mk, Vector2(s * gl, zs * trap_near), Vector2(s * L * 0.5, zs * trap_far), lw, red)
+	# section 3, pale blue (cpp:640, 647, 659): the crease fills (above) and the centre dot r 15 cm
+	_arc(mk, Vector2.ZERO, 0.0, 0.15, 0.0, TAU, 16, pale)
 
 
 ## A goal as thirdjam's arena mesh makes it (tools/blender/arena/arena.py goal_build, lines 559-633, G at 521-530): the

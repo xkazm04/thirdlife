@@ -48,7 +48,7 @@ func _pack_setup(c) -> void:
 	var rk: Dictionary = g["rink"]
 	var rink_gen = ctx.load_script("gen/tj_rink.gd")
 	arena = ctx.cores.part("rink", "arena")
-	rink_gen.build(ctx.root, rk, {} if arena != null else gym.get("hall", {}))   # no dark box inside thirdjam's hall
+	rink_gen.build(ctx.root, rk, {} if arena != null else gym.get("hall", {}), _arena_marks())   # no dark box inside thirdjam's hall
 	if arena != null:
 		arena.build(ctx.root, {"rink": rk})
 	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
@@ -57,7 +57,7 @@ func _pack_setup(c) -> void:
 	rink.set_human_mode("raw")                     # the person's devices; thirdjam's game-mode rules in the core's glue (GAMEMODE.md)
 	rink.reset(ctx.seed)
 	snap = rink.snapshot()
-	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), cart, ctx.cores.view_script("rink", "skater_pawn"), ctx.cores.view_script("rink", "skater_show"), bool(view_cfg.get("figures", true)))
+	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), cart, ctx.cores.view_script("rink", "skater_pawn"), ctx.cores.view_script("rink", "skater_show"), ctx.cores.view_script("rink", "hit_read"), bool(view_cfg.get("figures", true)))
 	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = max(shot.reach_m, SkaterRadius 0.4 +
 	# stick.reach_m 1.2 (FJamStickConfig default)) + 0.05 (JamSim.cpp:862-869); FJamPassConfig defaults SaucerHalfFrames 8,
 	# PowerFullFrames 30 (JamCartridge.h:356, 363): the regular cartridge has no game.pass
@@ -76,6 +76,27 @@ func _pack_setup(c) -> void:
 	ctx.cameras.add_view(&"top", Vector3(0, 70, 0.01), Vector3.ZERO, 60.0)
 	ctx.cameras.activate(&"follow")
 	ctx.cameras.set_subject(&"follow", view.bodies[int(snap["HumanIndex"])])
+
+
+## With thirdjam's hall: the colours of RinkActor's markings sections 2 and 3 (arena.json rink_surfaces.Markings: its four
+## materials, sections 0-3; RinkActor.cpp:650-659), for the marks the hall's ice does not paint (gen/tj_rink.gd). Empty
+## without the hall (the pack's own rink and palette).
+func _arena_marks() -> Dictionary:
+	if arena == null:
+		return {}
+	var t: Dictionary = arena.table()
+	var mats: Array = ((t.get("rink_surfaces", {}) as Dictionary).get("Markings", {}) as Dictionary).get("materials", [])
+	if mats.size() < 4:
+		push_error("hokej: arena.json has no four Markings materials; the rink draws its own palette")
+		return {}
+	var out: Dictionary = {}
+	for k: Array in [["red", 2], ["pale", 3]]:
+		var c: Array = (((t["materials"] as Dictionary).get(String(mats[k[1]]), {}) as Dictionary).get("vectors", {}) as Dictionary).get("Color", [])
+		if c.size() < 3:
+			push_error("hokej: arena.json material %s has no Color" % String(mats[k[1]]))
+			return {}
+		out[k[0]] = Color(float(c[0]), float(c[1]), float(c[2]))
+	return out
 
 
 func _pack_start() -> void:
@@ -122,6 +143,7 @@ func _pack_tick(frame: int) -> void:
 	if not over:
 		over = not rink.step()
 	last_in = rink.last_human_input()
+	view.set_human_input(last_in)                   # for the hit read (HokejGameMode.cpp:1706)
 	if int(rink.get_frame()) < frame_was:           # the core restarted (R): a new match on the same seed
 		over = false                                # (the show resets itself when the frame goes back: skater_show.step_sim)
 	snap = rink.snapshot()

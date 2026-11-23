@@ -41,6 +41,9 @@ func _init() -> void:
 	_want("res://packs/both_x", b, "many", "fixture: dungeon and plot")
 	_want("res://packs/plot_x", b, "many", "fixture: plot only")
 	_want("res://packs/none_x", b, "many", "fixture: neither")
+	n += 1                                         # the solo class's own stage p99 (round 9): 8 ms, not the stage game's 4
+	if Inv.BUDGET_SOLO_FRAME_MS_P99 != 8.0 or Inv.BUDGET_FRAME_MS_P99 != 4.0:
+		fails.append("solo p99 %.1f ms, stage p99 %.1f ms (want 8 and 4)" % [Inv.BUDGET_SOLO_FRAME_MS_P99, Inv.BUDGET_FRAME_MS_P99])
 	if fails.is_empty():
 		print("PASS  budget class (%d checks)" % n)
 		quit(0)

@@ -1,5 +1,6 @@
 # The invariants' budget class (K3 round 7): the one-of-many frame budget (p50 1.0 ms) holds a pack placed in the village;
-# a dungeon with no village plot is a game alone in its world, held to the solo budget (p50 8.0 ms, check invariants.solo_budget).
+# a dungeon with no village plot is a game alone in its world, held to the solo budgets (p50 8.0 ms, check invariants.solo_budget;
+# p99 8 ms, check invariants.solo_frame_budget, round 9).
 #   budget.class   invariants.gd budget_class on the engine's boot files (hokej solo; parkour, hockey, ex_walker many) and on
 #                  a fixture with each case alone (dungeon only, dungeon and plot, plot only, neither)
 if [ -z "$FILTER" ] || [[ "budget.class" == *"$FILTER"* ]]; then
@@ -13,5 +14,6 @@ if [ -z "$FILTER" ] || [[ "budget.class" == *"$FILTER"* ]]; then
   why=""
   [[ "$bc_l" == "PASS  budget class"* ]] || why="${bc_l:-no verdict line (a stopped run)}"
   grep -q '"invariants.solo_budget"' "$HERE/../kernel/host/invariants.gd" || why="${why:+$why; }invariants.gd has no invariants.solo_budget check"
+  grep -q '"invariants.solo_frame_budget"' "$HERE/../kernel/host/invariants.gd" || why="${why:+$why; }invariants.gd has no invariants.solo_frame_budget check"
   verdict budget.class "$why" "$(echo "$bc_l" | cut -c7-)"
 fi
