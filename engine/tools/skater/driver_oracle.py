@@ -33,6 +33,7 @@ if "sk" not in FRAMES[0]:      # schema /1: one skater
     FRAMES = [{"f": fr["f"], "sk": [{"pos": fr["pos"], "yaw": fr["yaw"], "calls": fr["calls"]}]} for fr in FRAMES]
 N = len(FRAMES[0]["sk"])
 WHO = int(os.environ.get("TL_ORACLE_WHO", DATA.get("who", 0)))
+DBG = int(os.environ.get("TL_ORACLE_DEBUG_WHO", WHO))      # the skater whose variables are read (default: the followed one)
 STILLS = [(x.split(":")[0], int(x.split(":")[1])) for x in os.environ.get("TL_ORACLE_STILLS", "three:3").split(",") if x]
 VARS = [v for v in os.environ.get("TL_ORACLE_VARS", "").split(",") if v]
 ANIMVARS = [v for v in os.environ.get("TL_ORACLE_ANIMVARS", "").split(",") if v]
@@ -132,6 +133,11 @@ class Run:
         # was not rendered in the last 0.2 s (WasRecentlyRendered). Measured: without this the far skaters' sticks jump.
         a = eas.spawn_actor_from_class(unreal.SceneCapture2D, unreal.Vector(0, 0, 4500), unreal.Rotator(0, -90, 0))
         a.set_actor_label("TLOracle_Seer")
+        if DATA.get("rink"):
+            # thirdjam's rink actor, for the falls' wall rules ([FindRink] reads the bounds of its "Ice" mesh)
+            rk = attempt("spawn ARinkActor", lambda: eas.spawn_actor_from_class(unreal.RinkActor, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0)))
+            if rk is not None:
+                rk.set_actor_label("TLOracle_Rink")
         if "puck" in FRAMES[0]:
             # thirdjam's puck actor, put where its game mode's puck show draws it: the figures look at it ([LookTick])
             pk = attempt("spawn AJamPuck", lambda: eas.spawn_actor_from_class(unreal.JamPuck, unreal.Vector(0, 0, 4), unreal.Rotator(0, 0, 0)))
@@ -161,6 +167,20 @@ class Run:
                 found[int(lab[-2:])] = a
             if lab == "TLOracle_Puck":
                 self.puck = a
+            if lab == "TLOracle_Rink":
+                # its "Ice" mesh as a plain sheet of the rink's size: ARinkActor::Build wants a cartridge's game config,
+                # which Python cannot make; the Blueprint reads only the mesh's bounds (and takes width / 12 as the corner
+                # radius when the ice's material gives none)
+                def ice():
+                    hx, hy = DATA["rink"][0], DATA["rink"][1]
+                    for c in a.get_components_by_class(unreal.ProceduralMeshComponent):
+                        if c.get_name() == "Ice":
+                            c.create_mesh_section_linear_color(0, [unreal.Vector(-hx, -hy, -0.2), unreal.Vector(hx, -hy, -0.2), unreal.Vector(hx, hy, -0.2), unreal.Vector(-hx, hy, -0.2)],
+                                                               [0, 2, 1, 0, 3, 2], [unreal.Vector(0, 0, 1)] * 4, [], [], [], [], [], [], False)
+                            b = unreal.SystemLibrary.get_component_bounds(c)
+                            return [round(b[1].x, 2), round(b[1].y, 2)]
+                    return None
+                rep["rink_ice_extent"] = attempt("rink ice", ice)
         if len(found) < N:
             return False
         self.world = gw
@@ -269,9 +289,9 @@ class Run:
         if VARS or ANIMVARS:
             row = {"f": n}
             if VARS:
-                row["v"] = {v: attempt("var " + v, lambda v=v: value(self.vis[WHO].get_editor_property(v))) for v in VARS}
+                row["v"] = {v: attempt("var " + v, lambda v=v: value(self.vis[DBG].get_editor_property(v))) for v in VARS}
             if ANIMVARS:
-                anim = self.mesh[WHO].get_anim_instance()
+                anim = self.mesh[DBG].get_anim_instance()
                 if anim is None and "no animation instance" not in rep:
                     rep["no animation instance"] = n
                     note("FAIL the followed figure has no animation instance at frame %d" % n)

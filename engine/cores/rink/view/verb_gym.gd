@@ -68,7 +68,7 @@ func _ready() -> void:
 ## The gym's scripted hand, one frame: what RinkCore.set_raw_input takes. It reads the last snapshot: with the puck it
 ## skates at the far goal and plays, possession by possession, a tap pass, a held pass, a tap shot, a charged shot, a
 ## deke and a pass, a spin and a shot, a half-charged shot; without it it chases the puck and, next to an opposing
-## carrier, pokes, cross-checks, checks and holds the cross-check (30 frames: the brace) in turn; a mate's pass coming
+## carrier, pokes, cross-checks, checks and holds the cross-check (90 frames: the brace) in turn; a mate's pass coming
 ## to him is shot first-time.
 func _hand(f: int, s: Dictionary) -> Dictionary:
 	var down: PackedStringArray = []
@@ -122,7 +122,7 @@ func _hand(f: int, s: Dictionary) -> Dictionary:
 				pressed.append(key)
 				down.append(key)
 				if _chases % 4 == 3:
-					_hold_until = f + 30
+					_hold_until = f + 90
 		elif carrier >= 0:
 			target = (sk[carrier]["Pos"] as Vector2) + Vector2(6.0, 4.0 if pos.y > (sk[carrier]["Pos"] as Vector2).y else -4.0)
 			aim = sk[carrier]["Pos"]
@@ -207,6 +207,8 @@ func _run() -> void:
 	var cost_us: int = 0
 	var done: int = 0
 	var hit_stops: int = 0
+	var rk: Dictionary = cart["game"]["rink"]
+	var rink: Vector3 = Vector3(float(rk["length_m"]) * 50.0, float(rk["width_m"]) * 50.0, float(rk["corner_radius_m"]) * 100.0)
 	var puck_rows: Array = []
 	var puck_node: Node3D = TLKit.build("puck", {"radius": float(cart["game"]["puck"]["radius_m"]), "height": 0.08})      # AJamPuck::InitPuck: 2r across, 0.08 m tall
 	add_child(puck_node)
@@ -241,10 +243,8 @@ func _run() -> void:
 				fig.setup({"team": t})
 				fig.set_human(i == human)
 				fig.set_no_game_mode(args.has("oracle"))
-				if not args.has("oracle"):
-					# the walls the falls ask about; the oracle's world has no rink actor (FindRink finds nothing there)
-					var rk: Dictionary = cart["game"]["rink"]
-					fig.set_rink(Vector3(float(rk["length_m"]) * 50.0, float(rk["width_m"]) * 50.0, float(rk["corner_radius_m"]) * 100.0))
+				# the walls the falls ask about ([FindRink]): the ice's half length and half width, the corner radius, cm
+				fig.set_rink(rink)
 				var pawn: Node3D = PAWN.new()
 				add_child(pawn)
 				pawn.add_child(fig)
@@ -339,6 +339,9 @@ func _run() -> void:
 					verbs[i]["%s=%d" % [fl, int(s[fl])]] = int(verbs[i].get("%s=%d" % [fl, int(s[fl])], 0)) + 1
 			if bool(s["bShotThisFrame"]) and float(s["LastShotCharge"]) > 0.0:
 				verbs[i]["shot_charged"] = int(verbs[i].get("shot_charged", 0)) + 1
+			for fl: String in ["bCrossBraced", "bBoardPinned"]:
+				if bool(s[fl]):
+					verbs[i]["frames_" + fl] = int(verbs[i].get("frames_" + fl, 0)) + 1
 			for fl: String in ["ChargeFrames", "PassChargeFrames", "KnockFrames", "StumbleFrames", "CrossHoldFrames", "SpinFrames", "PenaltyFrames"]:
 				if int(s[fl]) > 0:
 					verbs[i]["frames_" + fl] = int(verbs[i].get("frames_" + fl, 0)) + 1
@@ -410,7 +413,7 @@ func _run() -> void:
 	if recording:
 		_write(String(args["record"]), {"schema": "tl.rink.rawstream/1", "seed": seed_n, "difficulty": difficulty, "frames": recorded})
 	if out != "":
-		_write(out + "/calls.json", {"schema": "tl.skater.calls/2", "human": human, "who": who, "skaters": pawns.size(), "frames": call_rows})
+		_write(out + "/calls.json", {"schema": "tl.skater.calls/2", "human": human, "who": who, "skaters": pawns.size(), "rink": [rink.x, rink.y, rink.z], "frames": call_rows})
 		_write(out + "/ours.json", {"schema": "tl.skater.ours/2", "points": POINTS, "units": "centimetres in the actor's frame, Unreal's axes", "frames": our_rows})
 	var verdict: Dictionary = DEFECTS.judge(defect_rows)
 	report["defects"] = verdict

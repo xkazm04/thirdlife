@@ -10,7 +10,7 @@
 # rink.view.hits: thirdjam's tests of the hit read's model (the whiffs of a miss, the re-time of a check) ported with
 # their expected values, and the verb run through it (cores/rink/view/hit_read_case.gd).
 
-if [ -z "$FILTER" ] || [[ "rig.skater.verbs rig.skater.verbs.oracle rink.view.show rink.view.hits" == *"$FILTER"* ]]; then
+if [ -z "$FILTER" ] || [[ "rig.skater.verbs rig.skater.verbs.oracle rig.skater.verbs.pin rink.view.show rink.view.hits" == *"$FILTER"* ]]; then
   sv_godot="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
   sv_engine="$(cd "$HERE/.." && pwd)"; command -v cygpath >/dev/null 2>&1 && sv_engine="$(cygpath -m "$sv_engine")"
   sv_run() { MSYS_NO_PATHCONV=1 timeout 300 "$sv_godot" --headless --fixed-fps 60 --path "$sv_engine" res://cores/rink/view/verb_gym.tscn -- "$@" 2>&1 | tr -d '\015' | grep -a '^tl.skater.verb_gym\|SCRIPT ERROR'; }
@@ -27,6 +27,14 @@ if [ -z "$FILTER" ] || [[ "rig.skater.verbs rig.skater.verbs.oracle rink.view.sh
     elif ! echo "$sv_out" | grep -aq '"frames_compared":1800'; then why="not 1800 frames compared: ${sv_out:0:240}"
     elif ! echo "$sv_out" | grep -aq '"ok":true'; then why="$(echo "$sv_out" | grep -ao '"error":"[^"]*"' | head -1)"; fi
     verdict "rig.skater.verbs.oracle" "$why" "$(echo "$sv_out" | grep -ao '"rows_compared":[0-9]*' | head -1) $(echo "$sv_out" | grep -ao '"worst_cm":[0-9.]*' | head -1) $(echo "$sv_out" | grep -ao '"share_within":[0-9.]*' | head -1)"
+  fi
+  if [ -z "$FILTER" ] || [[ "rig.skater.verbs.pin" == *"$FILTER"* ]]; then
+    # a second, short segment (720 frames, seed 5) in which the human is pinned on the boards: the human's figure against thirdjam's
+    sv_out="$(sv_run --stream=res://cores/rink/view/verbs_pin.stream.json --oracle=res://rigs/skater/review/oracle_pin.json)"; why=""
+    if echo "$sv_out" | grep -aq 'SCRIPT ERROR'; then why="script error: $(echo "$sv_out" | grep -a 'SCRIPT ERROR' | head -1)"
+    elif ! echo "$sv_out" | grep -aq '"frames_compared":720'; then why="not 720 frames compared: ${sv_out:0:240}"
+    elif ! echo "$sv_out" | grep -aq '"ok":true'; then why="$(echo "$sv_out" | grep -ao '"error":"[^"]*"' | head -1)"; fi
+    verdict "rig.skater.verbs.pin" "$why" "$(echo "$sv_out" | grep -ao '"rows_compared":[0-9]*' | head -1) $(echo "$sv_out" | grep -ao '"worst_cm":[0-9.]*' | head -1) $(echo "$sv_out" | grep -ao '"SetBoardPin":[0-9]*' | head -1)"
   fi
   if [ -z "$FILTER" ] || [[ "rink.view.show" == *"$FILTER"* ]]; then
     sv_out="$(MSYS_NO_PATHCONV=1 timeout 300 "$sv_godot" --headless --fixed-fps 60 --path "$sv_engine" -s res://cores/rink/view/skater_show_case.gd 2>&1 | tr -d '\015')"; why=""

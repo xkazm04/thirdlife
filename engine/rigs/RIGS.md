@@ -248,10 +248,11 @@ sk.not_ported                             # interface calls that arrived and are
   tackle, celebrations, the boost glow; the trip has no caller in thirdjam. The goalie's stance is in.
 - **Held to thirdjam's own figure:** the same calls given to thirdjam's Blueprint in Unreal (`tools/skater/driver_oracle.py`)
   and to ours. Skating and stick: 940 of 940 frames within 1 cm, worst 0.02 cm (block 811, `rig.skater.oracle`). The
-  verbs and the contact: a 1,800-frame match segment of the real core, ten figures, thirdjam's bus, hit-stops and puck
-  actor: 17,998 of 18,000 rows within 1 cm, worst 1.61 cm (block 812, `rig.skater.verbs.oracle` holds the human and two
-  bots of them). The oracle's world has no rink: there the walls are not found, and the falls' wall rules run on
-  zeros in both figures (`set_rink` gives ours the rink in a game).
+  verbs and the contact: a 1,800-frame match segment of the real core, ten figures, thirdjam's bus, hit-stops, puck
+  actor and rink: 17,997 of 18,000 rows within 1 cm, worst 4.23 cm (block 812, `rig.skater.verbs.oracle` holds the
+  human and two bots of them; `rig.skater.verbs.pin` a second, 720-frame segment with a board pin). thirdjam's own
+  figure is not the same twice: two Unreal runs given the same calls differ on 11 rows by over 1 cm (worst 5.01 cm,
+  single frames of a stick), which is where ours differs from either.
 - Engine-side inputs that are not thirdjam's: `set_human(bool)`, `set_puck(Vector2(forward, right) or null)`,
   `set_rivals(Array)`, `set_rink(Vector3(half length, half width, corner radius) cm)`, `set_time_dilation(float)` (the
   hit-stop and the check's re-time: the actor's CustomTimeDilation), `set_no_game_mode(bool)` (the oracle's world).
@@ -269,7 +270,7 @@ sk.not_ported                             # interface calls that arrived and are
   `tools/skater/build_skater.gd`, `tools/skater/blendspace_table.py`; the listings: `export_driver_text.py`,
   `t3d_digest.py`, `abp_digest.py`.
 - Gate: selftest blocks 810 (`rig.skater.body`, `.clips`, `.ref`, `.play`), 811 (`.driver`, `.oracle`, `.red`) and
-  812 (`rig.skater.verbs`, `rig.skater.verbs.oracle`, `rink.view.show`, `rink.view.hits`).
+  812 (`rig.skater.verbs`, `rig.skater.verbs.oracle`, `rig.skater.verbs.pin`, `rink.view.show`, `rink.view.hits`).
 - **The look (lane K7, `skater/look/`):** `TLRigSkaterLook`, two surfaces to choose from. `felt` (the default): thirdjam's
   own nine material instances on the clay tier through `TLStyleFelt`, the number on the back patch ([SetNumber]) and
   the team's crest on the chest ([SetTeam]), no ink line. `cel`: the engine's flat cel in thirdjam's slot colours, as
