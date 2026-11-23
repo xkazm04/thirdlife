@@ -22,7 +22,7 @@ lists `res://cores/rink/rink_core.gdextension`). The level of the bots: `data/ma
 |---|---|
 | `scripts/cam.gd` | `UJamFollowCamera::StepThirdPerson` ported line by line, as the shipped game runs it (boards view on); checked frame by frame against thirdjam's own code compiled from its source (`docs/shifts/2026-11-24-night/lanes/K3-shell/oracle/`) |
 | `scripts/human_input.gd` | the devices read into the core's raw shape; thirdjam's rules for them are the core's glue (engine/cores/rink/GAMEMODE.md) |
-| `scripts/match_view.gd`, `scripts/hit_stop.gd` | the snapshot drawn: one pawn and figure a skater fed its snapshot entry each frame, the puck where the sim has it (until K2's shown carrier); thirdjam's hit-stop (presentation: the pawns and the puck hold, the camera holds) |
+| `scripts/match_view.gd` | the snapshot drawn: one pawn and figure a skater fed its snapshot entry each frame, in thirdjam's order around lane K2's show object (`ctx.cores.view_script("rink", "skater_show")`: thirdjam's hit-stop picks and holds, the carrier the screen shows with the carried puck on the blade, the play calls) |
 | `data/view.json` | `figures: false` draws the round-3 stand-ins instead (debugging; the match hash is the same) |
 | `gen/tj_rink.gd` | the rink (`RinkActor`'s outline, boards, kick plate, markings; the goals as thirdjam's arena meshes; `docs/shifts/2026-11-24-night/lanes/K3-shell/RINK.md`), a plain dark hall round it, and the round-3 **STAND-IN** (a 1.64 m capsule and a stick bar, `data/view.json` figures false) |
 | `data/hockey.regular.cartridge.json` | thirdjam's regular cartridge, verbatim |

@@ -14,7 +14,6 @@ extends Node
 const Cam := preload("cam.gd")
 const Human := preload("human_input.gd")
 const View := preload("match_view.gd")
-const HitStop := preload("hit_stop.gd")
 const Screen := preload("hud/screen.gd")   # lane K5: thirdjam's HUD (scripts/hud/)
 
 var ctx
@@ -27,7 +26,6 @@ var rink                 # thirdjam's core (RinkCore): set_raw_input / step / sn
 var mode: String = "match"
 var cam                  # thirdjam's follow camera (scripts/cam.gd)
 var view                 # the figures: thirdjam's pawn and K2's figure a skater, or the stand-ins (scripts/match_view.gd)
-var hit_stop             # thirdjam's hit-stop, presentation only (scripts/hit_stop.gd)
 var rink_c: Dictionary   # FJamCameraRink {L, W, R}
 var follow: Camera3D
 var snap: Dictionary = {}
@@ -55,8 +53,7 @@ func _pack_setup(c) -> void:
 	rink.set_human_mode("raw")                     # the person's devices; thirdjam's game-mode rules in the core's glue (GAMEMODE.md)
 	rink.reset(ctx.seed)
 	snap = rink.snapshot()
-	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), g, ctx.cores.view_script("rink", "skater_pawn"), bool(view_cfg.get("figures", true)))
-	hit_stop = HitStop.new({"BumpRatio": 0.4, "DownRatio": 1.0, "DownFullRatio": 3.0})   # FJamContactConfig defaults (JamCartridge.h:396-399): no game.contact in the cartridge
+	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), cart, ctx.cores.view_script("rink", "skater_pawn"), ctx.cores.view_script("rink", "skater_show"), bool(view_cfg.get("figures", true)))
 	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = max(shot.reach_m, SkaterRadius 0.4 +
 	# stick.reach_m 1.2 (FJamStickConfig default)) + 0.05 (JamSim.cpp:862-869); FJamPassConfig defaults SaucerHalfFrames 8,
 	# PowerFullFrames 30 (JamCartridge.h:356, 363): the regular cartridge has no game.pass
@@ -120,18 +117,12 @@ func _pack_tick(frame: int) -> void:
 		over = not rink.step()
 	last_in = rink.last_human_input()
 	if int(rink.get_frame()) < frame_was:           # the core restarted (R): a new match on the same seed
-		over = false
-		hit_stop = HitStop.new(hit_stop.contact)
+		over = false                                # (the show resets itself when the frame goes back: skater_show.step_sim)
 	snap = rink.snapshot()
-	if mode == "match":
-		var hold: int = hit_stop.route(snap)        # HitStopRoute, before the pawns apply the frame (HokejGameMode.cpp:1665)
-		if hold > 0:
-			view.begin_hit_stop([hit_stop.victim, hit_stop.checker], hold)   # the two pawns and the puck hold (cpp:1767-1768)
-		if hit_stop.held(int(snap["Frame"])):
-			view.draw(snap, {hit_stop.victim: true, hit_stop.checker: true, -1: true})   # (the hold dictionary: stand-ins only)
-			return                                  # the presentation frame holds: no camera step (HokejGameMode.cpp:1708)
+	if _draw_figures():
+		return                                      # a hit-stop holds the presentation frame: no camera step, no HUD (HokejGameMode.cpp:1710)
 	_camera_step()
-	_draw()
+	_present()
 
 
 ## AHokejGameMode::TickLightHold (HokejGameMode.cpp:632-678): the picture is held black until the light rig has been
@@ -177,12 +168,23 @@ func _camera_step() -> void:
 	cam.step({"pos": s["Pos"], "yaw": rad_to_deg(float(s["Yaw"])), "rink": rink_c, "net": net})
 
 
-func _draw() -> void:
+## The figures and the puck of this sim frame (the match: the show, the pawns, the puck; HokejGameMode.cpp:1664-1707).
+## True when a hit-stop holds the presentation frame.
+func _draw_figures() -> bool:
 	if mode == "match":
-		view.draw(snap)
-	else:
-		var me: int = int(snap["HumanIndex"])
-		view.draw_skater(me, snap["Skaters"][me], int(snap["Frame"]))
+		return view.draw(snap)
+	var me: int = int(snap["HumanIndex"])
+	view.draw_skater(me, snap["Skaters"][me], int(snap["Frame"]))
+	return false
+
+
+func _draw() -> void:
+	_draw_figures()
+	_present()
+
+
+## The camera's view and the HUD (PushPresentation, HokejGameMode.cpp:1710).
+func _present() -> void:
 	var pose: Dictionary = cam.pose
 	var cp: Vector2 = pose["pos"]
 	var pr: float = deg_to_rad(float(pose["pitch"]))

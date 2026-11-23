@@ -1,9 +1,11 @@
 extends RefCounted
-## The match drawn from the core's snapshot (K3 round 6): every skater is thirdjam's own figure (engine/rigs/skater,
+## The match drawn from the core's snapshot (K3 rounds 6 and 8): every skater is thirdjam's own figure (engine/rigs/skater,
 ## TLRigSkater, lane K2) driven by thirdjam's pawn (ctx.cores.view_script("rink", "skater_pawn"): AJamSkater::ApplySimFrame
 ## and ApplyRender, JamPawns.cpp:464-746 and :824-843), one pawn a skater fed its snapshot dictionary each frame, as
-## AHokejGameMode::StepOnce does (HokejGameMode.cpp:1680-1694). The puck is drawn where the sim has it until K2's shown
-## carrier (FJamPuckShow, GAMEMODE.md row 23).
+## AHokejGameMode::StepOnce does (HokejGameMode.cpp:1680-1694). What the game mode does around the pawns for the eye is lane
+## K2's show object (ctx.cores.view_script("rink", "skater_show"), K3 round 8; GAMEMODE.md rows 20 and 23), the one owner of
+## that logic: thirdjam's hit-stop picks and routing (HitStopRoute, HitStopPick, HitStopFramesFor, AJamPuck's hold) and the
+## carrier the screen shows (FJamPuckShow: the carried puck on the blade's socket, the play calls by name).
 ## data/view.json `figures: false` draws the round-3 STAND-INS instead (debugging): a 1.64 m capsule a skater with a facing
 ## mark and a stick bar to the sim's blade.
 ## Interpolation between the 60 Hz frames: the pawn is placed once a sim frame (ApplyRender at alpha 1) and the engine's
@@ -19,20 +21,19 @@ var pawns: Array = []       # figures only: thirdjam's pawn a skater (Node3D)
 var figs: Array = []        # figures only: TLRigSkater a skater
 var shown: Array = []       # whether a skater is drawn (the proof modes show one)
 var puck: Node3D
-# AJamPuck's hit-stop (JamPawns.cpp:984-1017): HoldLeft, CatchUpLeft, HoldTotal, HeldLoc, LastPlaced
-var _puck_hold_left: int = 0
-var _puck_catch_left: int = 0
-var _puck_total: int = 0
-var _puck_held_at: Vector3 = Vector3.ZERO
-var _puck_last: Vector3 = Vector3.ZERO
+var show                    # K2's skater_show.gd: the hit-stop and the shown carrier (both modes; the stand-ins hold by its pick)
+var _puck_drawn: Variant = null   # where the show drew the puck last frame (Godot space, the puck's centre): what the figures look at
 
 
-## `cart_game`: the cartridge's "game" (teams and their colours). `pawn_script`: ctx.cores.view_script("rink", "skater_pawn").
-func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart_game: Dictionary, pawn_script: GDScript, use_figures: bool) -> void:
+## `cart`: the cartridge (teams and their colours; the numbers the show reads). `pawn_script`, `show_script`:
+## ctx.cores.view_script("rink", "skater_pawn") and ("rink", "skater_show").
+func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: Dictionary, pawn_script: GDScript, show_script: GDScript, use_figures: bool) -> void:
 	figures = use_figures and pawn_script != null
+	show = show_script.new()
+	show.cfg = show_script.config_of(cart)
 	var sk: Array = snap["Skaters"]
 	var human: int = int(snap["HumanIndex"])
-	var teams: Array = cart_game["teams"]
+	var teams: Array = cart["game"]["teams"]
 	var slot_in_team: Dictionary = {}
 	for i: int in sk.size():
 		var team: int = int(sk[i]["Team"])
@@ -59,6 +60,8 @@ func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart_ga
 		pawns.append(pawn)
 		figs.append(fig)
 		bodies.append(pawn)
+	for fig: TLRigSkater in figs:
+		fig.set_rivals(figs)                      # [ChkScan] reads the nearest opposing figure (K2's driver)
 	puck = rink_gen.standin_puck(root, puck_radius)
 
 
@@ -80,54 +83,51 @@ func show_only(i: int) -> void:
 	puck.visible = false
 
 
-## AHokejGameMode::HitStopRoute's calls (HokejGameMode.cpp:1767-1768): the victim's and the checker's pawns hold the hit
-## frame (AJamSkater::BeginHitStop), and the puck (AJamPuck::BeginHitStop). Before the pawns apply the frame.
-func begin_hit_stop(who: Array, frames: int) -> void:
-	if figures:
-		for i: int in who:
-			if i >= 0 and i < pawns.size():
-				pawns[i].begin_hit_stop(frames)
-	if frames > 0:                                # AJamPuck::BeginHitStop (JamPawns.cpp:984-993): held where it was last drawn
-		_puck_total = clampi(frames, 1, 6)
-		_puck_hold_left = _puck_total + 1
-		_puck_catch_left = 0
-		_puck_held_at = _puck_last
+## The bus events a figure hears (AHokejGameMode::DeliverEvents, HokejGameMode.cpp:1664, before the hit-stop and the pawns),
+## as K2's verb gym delivers them: OnBusEvent(name, its Who is this figure's skater, where in world centimetres, ...).
+const BUS_EVENTS: Array = ["knockdown", "check", "lift", "deke"]
 
 
-## One frame. `hold` (stand-ins only): indices whose stand-ins hold their last pose (a hit-stop's victim and checker; -1 the
-## puck). With figures the pawns hold themselves (begin_hit_stop) and the puck holds by its own count.
-func draw(snap: Dictionary, hold: Dictionary = {}) -> void:
+## One sim frame of the match, in thirdjam's order (HokejGameMode.cpp:1664-1707; skater_show.gd's header): the bus, the
+## show's step (HitStopRoute, then FJamPuckShow::StepSim), every pawn's ApplySimFrame, the show's after_pawns (the wind-up
+## takes, the puck's hold count), every pawn's ApplyRender and figure tick, then the show's Render: the puck where it is
+## drawn (on the shown carrier's blade socket, or the sim's place, held through a hit-stop). Returns whether the
+## presentation frame is held (the camera and HUD do not step: HokejGameMode.cpp:1710).
+func draw(snap: Dictionary) -> bool:
 	var sk: Array = snap["Skaters"]
 	var frame: int = int(snap["Frame"])
+	var live: Array = pawns.filter(func(a): return shown[int(a.sim_index)])
+	if figures:
+		for ev: Dictionary in snap.get("Events", []):
+			var en: String = String(ev["Name"])
+			if BUS_EVENTS.has(en):
+				for i: int in sk.size():
+					if shown[i]:
+						figs[i].OnBusEvent(StringName(en), int(ev["Who"]) == i, (ev["Where"] as Vector2) * 100.0, float(ev["Strength"]), StringName(String(ev["Kind"])))
+	show.step_sim(snap, live)
+	var held: bool = show.presentation_held(frame)
 	for i: int in sk.size():
 		if not shown[i]:
 			continue
 		if figures:
-			_draw_figure(i, sk[i], frame, snap["Puck"]["Pos"])
-		elif not hold.has(i):
-			_draw_standin(i, sk[i])
-	var p: Dictionary = snap["Puck"]
-	var pp: Vector2 = p["Pos"]
-	var live := Vector3(pp.x, float(p["Z"]), pp.y)
-	var teleport: bool = (p["PrevPos"] as Vector2) == pp if p.has("PrevPos") else false
-	if not figures:
-		if not hold.has(-1):
-			_place(puck, live, teleport)
-		return
-	# AJamPuck::StepSimFrame after the pawns (HokejGameMode.cpp:1697; JamPawns.cpp:995-1002), then Place at alpha 1 (:1004-1017)
-	if _puck_hold_left > 0:
-		_puck_hold_left -= 1
-		if _puck_hold_left == 0:
-			_puck_catch_left = _puck_total
-	elif _puck_catch_left > 0:
-		_puck_catch_left -= 1
-	var at: Vector3 = live
-	if _puck_hold_left > 0:
-		at = _puck_held_at
-	elif _puck_catch_left > 0 and _puck_total > 0:
-		at = _puck_held_at.lerp(live, clampf((float(_puck_total - _puck_catch_left) + 1.0) / float(_puck_total), 0.0, 1.0))
-	_puck_last = at
-	_place(puck, at, teleport)
+			pawns[i].apply_sim_frame(sk[i], frame)
+		elif not (held and [int(show.last_pick.get("Victim", -1)), int(show.last_pick.get("Checker", -1))].has(i)):
+			_draw_standin(i, sk[i])                # the stand-ins hold by the show's pick (debugging only)
+	show.after_pawns(snap, live)
+	if figures:
+		for i: int in sk.size():
+			if shown[i]:
+				_render_figure(i, sk[i], _puck_drawn)
+	var d: Dictionary = show.render(snap, live, 1.0)
+	var at: Vector3 = d["puck"]
+	_puck_drawn = at
+	# the stand-in puck's origin is its base (TLMesh.cyl from y = 0); the show gives the centre (AJamPuck HalfHeightM 0.04)
+	_place(puck, Vector3(at.x, at.y - show_script_half_height(), at.z), Vector2(puck.position.x, puck.position.z).distance_to(Vector2(at.x, at.z)) > 3.0)
+	return held
+
+
+func show_script_half_height() -> float:
+	return float(show.PUCK_HALF_HEIGHT_M)
 
 
 ## Where skater i's figure has its head for the HUD's marker (UJamHudWidget::HumanHeadWorld, HUDWidget.cpp:1089-1121): the
@@ -145,29 +145,30 @@ func head_world(i: int) -> Variant:
 	return fig.global_transform * (sock + axis * MARKER_LIFT_M)
 
 
-## One skater alone (the proof modes: the gym's skater on empty ice, the replay's logged skater): no puck to look at.
+## One skater alone (the proof modes: the gym's skater on empty ice, the replay's logged skater): no puck to look at, no
+## show (no hits, no puck drawn).
 func draw_skater(i: int, s: Dictionary, frame: int = 0) -> void:
 	if figures:
-		_draw_figure(i, s, frame, null)
+		pawns[i].apply_sim_frame(s, frame)
+		_render_figure(i, s, null)
 	else:
 		_draw_standin(i, s)
 
 
-## AJamSkater::ApplySimFrame then ApplyRender at alpha 1 (the engine interpolates), the look's puck in the figure's frame
-## ([LookTick]'s PuckRef: thirdjam's figure reads the puck actor), then the figure's tick (its animation's one update a
-## frame; thirdjam ticks it a rendered frame, ours a sim frame: DT 1/60, the law of physics frames).
-func _draw_figure(i: int, s: Dictionary, frame: int, puck_pos: Variant) -> void:
+## AJamSkater::ApplyRender at alpha 1 (the engine interpolates), the look's puck in the figure's frame ([LookTick]'s PuckRef:
+## thirdjam's figure reads the puck actor, i.e. where the puck was last drawn), then the figure's tick (its animation's one
+## update a frame; thirdjam ticks it a rendered frame, ours a sim frame: DT 1/60, the law of physics frames).
+func _render_figure(i: int, s: Dictionary, puck_at: Variant) -> void:
 	var pawn = pawns[i]
 	var fig: TLRigSkater = figs[i]
 	var was: Vector3 = pawn.position
-	pawn.apply_sim_frame(s, frame)
 	pawn.apply_render(s, 1.0)
 	if (s["PrevPos"] as Vector2) == (s["Pos"] as Vector2) and Vector2(was.x, was.z).distance_to(s["Pos"]) > 0.5:
 		pawn.reset_physics_interpolation()
-	if puck_pos == null:
+	if puck_at == null:
 		fig.set_puck(null)
 	else:
-		var rel: Vector2 = (puck_pos as Vector2) - (s["Pos"] as Vector2)
+		var rel: Vector2 = Vector2((puck_at as Vector3).x, (puck_at as Vector3).z) - (s["Pos"] as Vector2)
 		var yaw: float = float(s["Yaw"])
 		fig.set_puck(Vector2(rel.dot(Vector2(cos(yaw), sin(yaw))), rel.dot(Vector2(-sin(yaw), cos(yaw)))))
 	fig.tick()
