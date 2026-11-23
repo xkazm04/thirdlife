@@ -1,7 +1,7 @@
 extends SceneTree
 # Rink core: a scripted hand through the person's input path (human mode "raw": thirdjam's game-mode rules in the core's glue,
 # GAMEMODE.md). The same per-frame raw device stream is fed twice; both runs must give the same FJamInput every frame and the
-# same state hash. Also a gym check: set_bot_mode("parked") keeps the nine others standing while the human skates.
+# same state hash. Also a gym check: set_bot_mode("off") keeps the nine others in the penalty box (no body) while the human skates.
 #   godot --headless --path engine --script res://cores/rink/tools/rink_rawhand.gd [-- --frames=3600 --seed=5]
 # Prints RAWHAND lines and PASS / FAIL.
 
@@ -46,9 +46,9 @@ func gym(seed: int, frames: int) -> Dictionary:
 	var path := ProjectSettings.globalize_path("res://cores/rink/native/content/Cartridges/hockey.regular.cartridge.json")
 	core.load_cartridge(FileAccess.get_file_as_string(path))
 	core.set_human_mode("input")
-	core.set_bot_mode("parked")
+	core.set_bot_mode("off")     # the gym: the other nine in the penalty box (no body, no contact)
 	core.reset(seed)
-	core.step()   # frame 1 places the faceoff (the opposing centre comes to the dot)
+	core.step()
 	var start: Array = []
 	var centre: Array = []
 	for k in core.snapshot()["Skaters"]:
@@ -92,7 +92,7 @@ func _init() -> void:
 	print("RAWHAND run1 frames=%d hash=%s inputs=%s score=%s signals=%d counts=%s" % [a["frames"], a["hash"], a["inputs"], str(a["score"]), a["signals"], str(a["counts"])])
 	print("RAWHAND run2 frames=%d hash=%s inputs=%s" % [b["frames"], b["hash"], b["inputs"]])
 	var g := gym(seed, 600)
-	print("RAWHAND gym human moved %.2f m; parked wingers and backs at most %.3f m; the opposing centre %.2f m (drifts after the drop)" % [g["human_m"], g["bots_max_m"], g["centre_m"]])
+	print("RAWHAND gym (bot mode off) human moved %.2f m; the other nine at most %.3f m" % [g["human_m"], maxf(g["bots_max_m"], g["centre_m"])])
 	var c: Dictionary = a["counts"]
 	var why := ""
 	if a["hash"] != b["hash"] or a["inputs"] != b["inputs"]:
@@ -101,7 +101,7 @@ func _init() -> void:
 		why = "the run stopped at frame %d" % a["frames"]
 	elif int(c["bShootHeld"]) + int(c["bLift"]) == 0 or int(c["bPassHeld"]) + int(c["bCheck"]) == 0 or int(c["bSprint"]) == 0 or int(c["bPoke"]) == 0:
 		why = "a verb never reached the sim: %s" % str(c)
-	elif g["human_m"] < 5.0 or g["bots_max_m"] > 0.5:
+	elif g["human_m"] < 5.0 or maxf(g["bots_max_m"], g["centre_m"]) > 0.0:
 		why = "gym: human %.2f m, bots %.3f m" % [g["human_m"], g["bots_max_m"]]
 	if why == "":
 		print("PASS  rink rawhand: same input stream (%s) and hash (%s) twice; verbs %s; gym ok" % [a["inputs"], a["hash"], str(c)])

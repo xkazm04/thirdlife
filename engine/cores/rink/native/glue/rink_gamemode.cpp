@@ -172,7 +172,7 @@ namespace RinkGlue
 	}
 
 	// InputMapping.cpp:432-442 (JamControls::HasPuckForButtons, jam.ctrl.OurPuckShoots 1)
-	static bool HasPuckForButtons(const UJamSim& Sim, int32 Skater)
+	bool HasPuckForButtons(const UJamSim& Sim, int32 Skater)
 	{
 		const TArray<FJamSkaterState>& Sk = Sim.GetSkaters();
 		if (!Sk.IsValidIndex(Skater)) return false;
@@ -184,7 +184,7 @@ namespace RinkGlue
 	}
 
 	// InputMapping.cpp:463-486 (SaucerHoldFrames, BraceHoldFrames, ButtonContext; cvar defaults 13, 13, HeldAcrossChange 1)
-	static FButtonContext ButtonContext(const UJamSim& Sim, int32 Skater)
+	FButtonContext ButtonContext(const UJamSim& Sim, int32 Skater)
 	{
 		FButtonContext C;
 		C.bWith = HasPuckForButtons(Sim, Skater);
@@ -255,7 +255,7 @@ namespace RinkGlue
 		else if (Raw.bCursorOnIce)
 		{
 			// HokejGameMode.cpp:741-767 (CursorAimRink, CursorAimFromHit)
-			const FVector2D AimM = Anchor.Step(Raw.CursorPx, Raw.CursorHitM, SkaterPos, true, 0.3);
+			const FVector2D AimM = Anchor.Step(Raw.CursorPx, Raw.CursorHitM, SkaterPos, Raw.bHasCursorPx, 0.3);   // no pixel (a bot's aim): no anchor
 			const FVector2D Delta = AimM - SkaterPos;
 			const double Dist = Delta.Size();
 			const double Enter = bCursorAiming ? 0.5 : 0.7;

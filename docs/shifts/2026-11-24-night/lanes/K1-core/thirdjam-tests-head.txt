@@ -1,6 +1,7 @@
-# thirdjam HEAD 8dc713c6 JamCore automation tests, run natively through the rink core shim (rinktest-thirdjam, 23 Nov 19:50)
-# <test> <PASS|FAIL>; one line per compiled test (180); not compiled: JamContactTests.cpp (36), JamStickTests.cpp (2), VisualSwapTests.cpp (1) -- they include JamPawns.h
+# thirdjam HEAD 8dc713c6 JamCore automation tests, run natively through the rink core shim (rinktest-thirdjam; round 3, + round 4's 38 pawn-dependent tests)
+# <test> <PASS|FAIL>; 218 tests (218 of 219 compiled: VisualSwapTests.cpp's one test loads Unreal classes). Jam.* 195 of 195 PASS; Bar.* 22 of 23 PASS
 Bar.Bot.Hockey5.Downed PASS
+Bar.Bot.Hockey5.Stops PASS
 Bar.Bot.Hockey6.Human PASS
 Bar.Bot.Hockey6.Law3Row PASS
 Bar.Brain.Interest PASS
@@ -81,14 +82,50 @@ Jam.Core.Abilities.Shield PASS
 Jam.Core.Abilities.Shotgun PASS
 Jam.Core.Abilities.SlowPuck PASS
 Jam.Core.Abilities.SlowPuckRetaken PASS
+Jam.Core.AimSmoothing PASS
 Jam.Core.CarrierReach PASS
 Jam.Core.CarrierSpeed PASS
 Jam.Core.CartridgeParity PASS
 Jam.Core.CartridgeRoundTrip PASS
+Jam.Core.Contact.AttackerBounces PASS
+Jam.Core.Contact.BoardSlam PASS
+Jam.Core.Contact.Boards PASS
+Jam.Core.Contact.BrakeFlagsAtFaceoff PASS
+Jam.Core.Contact.CarrierRefused PASS
+Jam.Core.Contact.CheckCooldown PASS
+Jam.Core.Contact.CheckReach PASS
+Jam.Core.Contact.CooldownRestart PASS
 Jam.Core.Contact.CrossBack PASS
+Jam.Core.Contact.CrossHold PASS
 Jam.Core.Contact.CrossLive PASS
+Jam.Core.Contact.DownedPushOut PASS
+Jam.Core.Contact.FigureCalls PASS
+Jam.Core.Contact.Fouls PASS
+Jam.Core.Contact.HeadOn PASS
 Jam.Core.Contact.HitFindsMan PASS
+Jam.Core.Contact.HitStop PASS
+Jam.Core.Contact.HitStopPick PASS
+Jam.Core.Contact.LatePress PASS
+Jam.Core.Contact.LawOneDrill PASS
+Jam.Core.Contact.Levers PASS
+Jam.Core.Contact.Lunge PASS
+Jam.Core.Contact.ReleaseGrace PASS
+Jam.Core.Contact.SameDirection PASS
+Jam.Core.Contact.ShieldShove PASS
+Jam.Core.Contact.SprintFalls PASS
+Jam.Core.Contact.StandingBrace PASS
+Jam.Core.Contact.StandingSides PASS
+Jam.Core.Contact.TakeShield PASS
 Jam.Core.Contact.TapNeverBraces PASS
+Jam.Core.ContactBoardMatch PASS
+Jam.Core.ContactGraceMatch PASS
+Jam.Core.ContactMatch PASS
+Jam.Core.ContactModes PASS
+Jam.Core.ContactNeutral PASS
+Jam.Core.ContactPressMatch PASS
+Jam.Core.ContactReachMatch PASS
+Jam.Core.ContactShoveMatch PASS
+Jam.Core.ContactTakes PASS
 Jam.Core.CreaseStance PASS
 Jam.Core.Determinism PASS
 Jam.Core.Feel PASS
@@ -96,6 +133,7 @@ Jam.Core.FeelDepth PASS
 Jam.Core.FuzzSetParamClamp PASS
 Jam.Core.FuzzSmoke PASS
 Jam.Core.GoalHeight PASS
+Jam.Core.LiftCone PASS
 Jam.Core.LiftedShot PASS
 Jam.Core.LiveConfig PASS
 Jam.Core.MatchAlwaysEnds PASS
@@ -159,6 +197,7 @@ Jam.Core.SpinCheckedFalls PASS
 Jam.Core.SpinCooldown PASS
 Jam.Core.SpinShieldsLift PASS
 Jam.Core.SpinShieldsPuck PASS
+Jam.Core.Stick PASS
 Jam.Core.StickHandlingKeys PASS
 Jam.Core.SweepBeatsPoke PASS
 Jam.Core.SweepShieldsLift PASS
@@ -179,4 +218,3 @@ Jam.Rules.ShrinkAtFaceoff PASS
 Jam.Rules.Variants PASS
 Jam.Rules.ZonesMembership PASS
 Jam.Slow.DifficultyCurve PASS
-Bar.Bot.Hockey5.Stops PASS

@@ -90,8 +90,7 @@ func _init() -> void:
 			else:
 				raw[k] = _v(v)
 		core.set_raw_input(raw)
-		if not core.step():
-			break
+		core.step()   # false once the match is over: the line is still written (one line per stream entry, the state unchanged)
 		var s: Dictionary = core.snapshot()
 		lines.append("f=%d hash=%s score=%d:%d carrier=%d in=%s" % [int(s["Frame"]), core.state_hash_hex(), int(s["Score"][0]), int(s["Score"][1]),
 			int(s["Carrier"]), _flags(core.last_human_input())])

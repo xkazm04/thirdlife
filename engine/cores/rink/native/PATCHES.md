@@ -46,3 +46,15 @@ inside Godot (lane K1 ROUND-2.md).
 | 8 | `UE_LOG` goes to a host sink (stdout, or the lines `run_tournament` returns); `check` aborts | logging | - |
 | 9 | `FColor` -> `FLinearColor` by the sRGB formula, not UE's table | cartridge look colours | presentation only, never read by the sim |
 | 10 | `FPaths::ProjectContentDir` is set by the host (`set_content_dir`) | where `-cartridge=name` resolves | - |
+| 11 | `TAutoConsoleVariable` holds its shipped default (no console) | jam.* switches read by the pawn helpers and tests | the defaults are the shipped game |
+| 12 | `AJamSkater::CallFigure` dispatches by name without reflection, for `UJamFigureCallProbe` only (shim/pawn/pawn_helpers.cpp) | Jam.Core.Contact.FigureCalls | the probe's three reflected signatures are written out; the test's seven checks pass |
+| 13 | `FString::ReplaceInline` returned 0 (round 3) / `TestEqual` on arrays recursed (round 3): fixed | tests only | the simulation calls neither |
+
+## The pawn shim (round 4, thirdjam's own tests only)
+
+thirdjam's contact and stick tests call five pure helpers of the pawn (`AJamSkater::HitStopFrames`, `HitStopFramesFor`,
+`HitStopPick`, `StumbleFramesFor`, `BrakeDecelFor`, `SmoothAimDeg`) and its console variable `jam.hitstop`. The pawn itself is an
+Unreal actor. `native/thirdjam/Private/JamPawns.cpp` and `Public/JamPawns.h` are copied verbatim (not compiled);
+`native/tools/extract_pawn_helpers.py` copies those helpers' bodies out of it at build time, unchanged, with their line numbers,
+into the test build; `shim/pawn/JamPawns.h` declares them (declarations copied from JamPawns.h with line numbers) with no actor
+in it. Result: 36 of 36 contact tests and 2 of 2 stick tests PASS. The game build does not compile any of it.
