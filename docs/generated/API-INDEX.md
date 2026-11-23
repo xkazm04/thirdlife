@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 44
+Classes: 46
 
 ## TLAudio
 
@@ -161,7 +161,7 @@ Properties: `body: RigidBody3D`, `material: String`, `min_hit_speed: float`, `su
 
 > The kernel's context object, handed to `_pack_setup(ctx)`, `generate(ctx)` and `_bot_setup(ctx)`.
 
-Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras`, `static current: TLContext`, `frame: int`, `headless: bool`, `holder: Node`, `huds: Array`, `input: TLInput`, `instance: String`, `manifest: Dictionary`, `max_frames: int`, `mode: String`, `on_stage: bool`, `origin: Vector3`, `pack_dir: String`, `pack_id: String`, `rng: RandomNumberGenerator`, `root: Node3D`, `scenery: String`, `seed: int`, `space: RID`
+Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras`, `cores: TLCores`, `static current: TLContext`, `frame: int`, `headless: bool`, `holder: Node`, `huds: Array`, `input: TLInput`, `instance: String`, `manifest: Dictionary`, `max_frames: int`, `mode: String`, `on_stage: bool`, `origin: Vector3`, `pack_dir: String`, `pack_id: String`, `rng: RandomNumberGenerator`, `root: Node3D`, `scenery: String`, `seed: int`, `space: RID`
 
 - `static func enter(ctx: TLContext) -> TLContext`
 - `static func first_time(key: String, ctx: TLContext = null) -> bool`
@@ -178,6 +178,17 @@ Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras
 - `func seconds(frame_count: int) -> float`
 - `func shuffle(items: Array) -> void`
 - `static func space_state_of(node: Node3D, ctx: TLContext = null) -> PhysicsDirectSpaceState3D`
+
+## TLCores
+
+`engine/kernel/api/tl_cores.gd` extends `RefCounted`
+
+> `ctx.cores`: the engine's game cores (engine/cores/<id>/), compiled native simulations a pack drives frame by frame.
+
+Consts: `KNOWN`
+
+- `func open(id: String, cartridge: String = "") -> Object`
+- `func state() -> Dictionary`
 
 ## TLDamage
 
@@ -756,6 +767,17 @@ Properties: `static data: Dictionary`, `static style_name: String`, `static styl
 - `static func squash(visual: Node3D, amount: float = 0.25, frames: int = 18, axis: Vector3 = Vector3.UP) -> void`
 - `static func trail(target: Node3D, opts: Dictionary = {}) -> Node3D`
 - `static func tyre_dust() -> CPUParticles3D`
+
+## TLStyleHall
+
+`engine/style/tl_style_hall.gd` extends `RefCounted`
+
+> A light rig a pack may ask for (K3, hockey port, 23-24 Nov 2026): an indoor hall lit from above, in place of the style's
+
+Consts: `DEFAULTS`
+
+- `static func apply(anchor: Node, opt: Dictionary = {}) -> bool`
+- `static func clear(anchor: Node) -> void`
 
 ## TLTrigger
 

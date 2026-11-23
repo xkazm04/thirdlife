@@ -9,12 +9,17 @@
   "net_inset_m": 4.0,
   "net_height_m": 3.0,
   "hall": {
-    "note": "Not thirdjam's (its arena is stair step 5): a plain dark box so the picture has walls and a roof, not sky and grass. 6 m from the boards, 16 m high.",
+    "note": "Not thirdjam's (its arena is stair step 5): a plain dark box so the picture has walls and a roof, not sky and grass. 6 m from the boards, 16 m high. 'light': the style's hall light rig (TLStyleHall: the light from the roof, the figures' shadows straight down), its colour and energy matched to thirdjam's film ice.",
     "margin_m": 6.0,
     "height_m": 16.0,
     "wall_key": "black",
     "floor_key": "concrete_dark",
     "ceiling_key": "black",
-    "ceiling": true
+    "ceiling": true,
+    "light": {
+      "color": "#a88b7e",
+      "energy": 1.0,
+      "shadows": true
+    }
   }
 }

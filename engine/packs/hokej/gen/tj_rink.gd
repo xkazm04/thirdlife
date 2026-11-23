@@ -208,24 +208,37 @@ static func _hall(node: Node3D, L: float, W: float, hall: Dictionary) -> void:
 	mk.boxm(Vector3(hx, -0.3, -hz), Vector3(hx + 1.0, hh, hz), key)
 	if bool(hall.get("ceiling", true)):
 		mk.boxm(Vector3(-hx - 1.0, hh, -hz - 1.0), Vector3(hx + 1.0, hh + 1.0, hz + 1.0), String(hall["ceiling_key"]))
-	node.add_child(mk.instance("Hall"))
+	var mi: MeshInstance3D = mk.instance("Hall")
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # the roof light comes through the hall's own roof (TLStyleHall)
+	node.add_child(mi)
 
 
 ## The 1.64 m stand-in skater (until lane K2's figure): a capsule with a facing mark (a chest plate on its +x side) built
 ## facing +x, and a separate unit stick bar along +x (the caller scales and turns it). Not the engine's walking figure.
-static func standin_figure(parent: Node3D) -> Array:
+static func standin_figure(parent: Node3D, key: String = "car_blue", nm: String = "Skater") -> Array:
 	var body := Node3D.new()
-	body.name = "Skater"
+	body.name = nm
 	parent.add_child(body)
 	var mk := TLMesh.new(42)
-	mk.capsule(Vector3(0, 0.25, 0), Vector3(0, 1.64 - 0.25, 0), 0.25, "car_blue", Color.WHITE, 12, 3)
+	mk.capsule(Vector3(0, 0.25, 0), Vector3(0, 1.64 - 0.25, 0), 0.25, key, Color.WHITE, 12, 3)
 	mk.boxm(Vector3(0.18, 1.05, -0.12), Vector3(0.34, 1.35, 0.12), "yellow")       # the facing mark: chest, his +x
 	mk.boxm(Vector3(0.12, 0.0, -0.1), Vector3(0.42, 0.06, 0.1), "black")           # and a toe on the ice, ahead
 	body.add_child(mk.instance("SkaterStandin"))
 	var stick := Node3D.new()
-	stick.name = "Stick"
+	stick.name = nm + "Stick"
 	parent.add_child(stick)
 	var sk := TLMesh.new(43)
 	sk.boxm(Vector3(0.0, 0.0, -0.025), Vector3(1.0, 0.05, 0.025), "wood_dark")
 	stick.add_child(sk.instance("StickStandin"))
 	return [body, stick]
+
+
+## The stand-in puck: a black disc of the cartridge's radius (game.puck.radius_m) and 2.5 cm high, its bottom at its node.
+static func standin_puck(parent: Node3D, radius: float) -> Node3D:
+	var n := Node3D.new()
+	n.name = "Puck"
+	parent.add_child(n)
+	var mk := TLMesh.new(45)
+	mk.cyl(radius, 0.025, 16, "black")
+	n.add_child(mk.instance("PuckStandin"))
+	return n

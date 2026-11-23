@@ -23,6 +23,13 @@ var manifest: Dictionary = {}          ## the parsed pack.json
 var mode: String = "smoke"             ## "smoke", "bot", "capture" or "play"
 var input: TLInput                     ## named actions (capability `input`)
 var cameras: TLCameras                 ## named views, chase and orbit cameras (capability `camera`)
+## The engine's game cores (`ctx.cores.open("rink")`, API.md section 24); made on first use, always available.
+var cores: TLCores:
+	get:
+		if _cores == null:
+			_cores = TLCores.new(self)
+		return _cores
+var _cores: TLCores = null
 
 
 # ---- N2: everything a running pack owns hangs off its context ------------------------------------------------------

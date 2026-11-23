@@ -18,6 +18,8 @@ func _bot_setup(c) -> void:
 
 
 func _bot_tick(frame: int) -> void:
+	if frame == 0:
+		ctx.input.press(&"gym")          # the control rules are tested on the gym (one skater, empty ice)
 	var s: Dictionary = ctx.pack_state()
 	if frame > 0 and (float(s["axis_x"]) != 0.0 or float(s["axis_y"]) != 0.0):
 		var y: float = deg_to_rad(prev_cam_yaw)
@@ -27,14 +29,14 @@ func _bot_tick(frame: int) -> void:
 		if float(s["axis_y"]) > 0.0 and float(s["axis_x"]) == 0.0 and Vector2(float(s["move_x"]), float(s["move_y"])).dot(Vector2(cos(y), sin(y))) > 0.999:
 			away += 1
 	prev_cam_yaw = float(s["cam_yaw"])
-	for k: StringName in [&"forward", &"back", &"left", &"right"]:
+	for k: StringName in [&"k_w", &"k_s", &"k_a", &"k_d"]:
 		ctx.input.release(k)
 	for p: Array in PLAN:
 		if frame >= int(p[0]) and frame < int(p[1]):
 			var keys: String = p[2]
-			if keys.contains("W"): ctx.input.press(&"forward")
-			if keys.contains("A"): ctx.input.press(&"left")
-			if keys.contains("D"): ctx.input.press(&"right")
+			if keys.contains("W"): ctx.input.press(&"k_w")
+			if keys.contains("A"): ctx.input.press(&"k_a")
+			if keys.contains("D"): ctx.input.press(&"k_d")
 	done = frame >= 330
 
 
