@@ -271,7 +271,7 @@ func _run() -> void:
 	# the defect gate holds the default run (the whole hand, the human alone drawn, thirdjam's game around the figure)
 	if why == "" and not all and not args.has("frames") and not args.has("seed") and not args.has("hand") and not args.has("puck"):
 		var broken: String = DEFECTS.gate(verdict, DEFECTS.GYM_ALLOWED_ORACLE if args.has("oracle") else DEFECTS.GYM_ALLOWED)
-		report["defect_gate"] = "parity with thirdjam's own figure (skater_defects.gd %s)" % ("GYM_ALLOWED_ORACLE" if args.has("oracle") else "GYM_ALLOWED")
+		report["defect_gate"] = "parity (skater_defects.gd %s)" % ("GYM_ALLOWED_ORACLE" if args.has("oracle") else "GYM_ALLOWED")
 		if broken != "":
 			why = "defects: " + broken
 	if args.has("oracle") and why == "":

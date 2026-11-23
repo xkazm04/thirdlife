@@ -7,8 +7,11 @@ extends TLRigSkaterBody
 ## thirdjam's Game/Source) and the by-name calls its pawn makes, with the same names, arguments and units:
 ##   SetTeam(TeamId, Colour)  SetNumber(N)  UpdateMotion(Speed, TurnRate, Facing)  SetStickAim(AngleDeg, ReachM)
 ##   SetHasPuck(bHasPuck)  SetBraking(bOn, Decel)  SetShotCharge(Charge01)  SetFaceoff(bReady)  SetGoalieStance(bOn, Side)
-##   ... and the rest of the interface (PlayShoot, PlayCheck, SetKnockedDown, ...), which round 2 takes and counts in
-##   `not_ported` without showing anything yet.
+##   PlayShoot(Charge)  PlayPass(Strength)  PlayPoke(bClean)  PlayLift()  PlayStickHit(bLifted)  and, by name from the
+##   game mode's puck show: PlayReceive()  SetPassCharge(Charge01)  PlayCallForPass()  SetLookAtPuck(bOn)
+##   OnBusEvent(Event, bMe, WhereCm, Strength, Kind): thirdjam's event bus (the sim's events of the frame)
+##   ... and the contact calls (PlayCheck, SetKnockedDown, PlayHitReaction, ...), taken and counted in `not_ported`
+##   without showing anything yet.
 ## A caller makes the frame's calls and then `tick()`: one world tick of 1/60 s (the Blueprint's Tick, then the
 ## animation update), never a clock. engine/cores/rink/view/skater_pawn.gd is thirdjam's pawn and makes the calls.
 ##
@@ -16,7 +19,8 @@ extends TLRigSkaterBody
 ## from its exported graph: engine/rigs/skater/driver-ref/BP_SkaterVisual_TB1_P3.EventGraph.txt. A comment `[Name]`
 ## names the listing's entry a function ports; variables keep the Blueprint's names. Its animation blueprint is
 ## TLRigSkaterAnim. Ported in round 2: skating (UpdateMotion, StopTick, SetBraking, the look at the puck), the stick
-## (SetStickAim, SK2Tick, SK3Fix, PushAnim), the faceoff stance and draw, the foul reaction (PlayAct). Where the two disagree, the Blueprint wins over thirdjam's ledger.
+## (SetStickAim, SK2Tick, SK3Fix, PushAnim), the faceoff stance and draw, the foul reaction (PlayAct). Round 3: the
+## puck verbs (TLRigSkaterPuck, `takes`). Where the two disagree, the Blueprint wins over thirdjam's ledger.
 ##
 ## DEVIATIONS from the Blueprint (each with its reason):
 ##   - time is the count of ticks / 60 where the Blueprint reads GetTimeSeconds (law: time is physics frames);
@@ -24,7 +28,9 @@ extends TLRigSkaterBody
 ##   - the sounds and the brake's particle effect of StopTick are not played (the figure is visual only; the shell's);
 ##   - the puck the head turns to is given by `set_puck(...)` (the Blueprint finds the puck actor itself);
 ##   - "is this the human's figure" is given by `set_human(...)` (the Blueprint asks the game mode);
-##   - YawCorr and RadCorr of SK3Fix are not computed: the Blueprint computes them and uses neither (RadCorr x 0).
+##   - YawCorr and RadCorr of SK3Fix are not computed: the Blueprint computes them and uses neither (RadCorr x 0);
+##   - thirdjam's event bus reaches the figure as `OnBusEvent(Event, bMe, ...)` (the Blueprint binds the bus itself and
+##     asks its pawn for its sim index); the other figures [ChkScan] reads are given by `set_rivals`.
 ##
 ## Also kept from round 1, for the review tools: plain clip playback (`play_clip`, `pose_at`), which switches the
 ## driver off until the next interface call.
@@ -32,10 +38,17 @@ extends TLRigSkaterBody
 
 ## The calls of thirdjam's interface this figure takes and does not show yet (each round ports more; `not_ported`
 ## counts the ones that arrived). The gym leaves them out of what it gives thirdjam's own figure to compare with.
-const NOT_PORTED_CALLS: Array = ["PlayShoot", "PlayCheck", "SetKnockedDown", "PlayPoke", "PlayLift", "PlayPass", "PlayHitReaction", "PlayBoardHit", "SetBoardPin", "PlayStickHit", "PlayStumble", "PlayCheckWindup", "PlayCrossCheck",
-	"SetCrossCheckHold", "PlayWhiff"]
+const NOT_PORTED_CALLS: Array = ["PlayCheck", "SetKnockedDown", "PlayHitReaction", "PlayBoardHit", "SetBoardPin", "PlayStumble", "PlayCheckWindup", "PlayCrossCheck", "SetCrossCheckHold", "PlayWhiff", "PlayCheckWhiff",
+	"SetWindupTakes"]
+
+## The delta of one tick as thirdjam's figure gets it in the oracle's world (Unreal at a fixed 60 Hz): the single-precision
+## float BELOW 1/60, not the nearest one. Measured: a take whose time left meets its blend-out time exactly (Lift 0.4 s
+## with 0.1 s out, Shot_Slap 0.7 s with 0.2 s out) starts to blend out one tick later than with the float above.
+const TICK_S: float = 0.01666666567325592
 
 var anim: TLRigSkaterAnim
+var takes: TLRigSkaterPuck            # the puck verbs
+var rivals: Array = []                # the other figures on the ice ([ChkScan]): see set_rivals
 var not_ported: Dictionary = {}       # interface calls taken and not shown yet: name -> count
 var _now: float = 0.0                 # GetTimeSeconds: ticks / 60
 var _dilation: float = 1.0
@@ -112,6 +125,7 @@ var bNoLook: bool = false
 func setup(p: Dictionary = {}) -> void:
 	super.setup(p)
 	anim = TLRigSkaterAnim.new()
+	takes = TLRigSkaterPuck.new(self)
 
 
 # ------------------------------------------------------------------ engine-side inputs (not thirdjam's interface)
@@ -133,8 +147,21 @@ func set_puck(forward_right) -> void:
 	_puck_fr = forward_right
 
 
+## The other figures of the match ([ChkScan] reads the nearest opposing one: where it stands, how fast it comes).
+func set_rivals(figures: Array) -> void:
+	rivals = figures
+
+
+## K2_GetActorLocation(self), world centimetres (rink x, rink z): the pawn's place, as this figure hangs under it.
+func actor_xy_cm() -> Vector2:
+	if not is_inside_tree():
+		return Vector2.ZERO
+	var p: Vector3 = (get_parent() as Node3D).global_position if get_parent() is Node3D else global_position
+	return Vector2(p.x, p.z) * 100.0
+
+
 ## The hit-stop: thirdjam sets the visual actor's CustomTimeDilation to 0.0001 (AJamSkater::SetVisualTimeDilation):
-## while it is under 0.5 a tick does not advance the figure.
+## the actor's tick and its animation run on at that share of a tick, while GetTimeSeconds (the world's) runs on whole.
 func set_time_dilation(dilation: float) -> void:
 	_dilation = dilation
 
@@ -174,7 +201,9 @@ func UpdateMotion(Speed: float, TurnRate: float, Facing: float) -> void:
 	anim.TurnRate = TurnRate
 	if bDown:
 		_miss("UpdateMotion while down (the fall's turn)")
-	# the mesh's relative yaw: 0 + LiftYaw x ... while LiftN > 0 (a stick lift's turn): 0 until the lift is ported
+	else:
+		# K2_SetRelativeRotation(Mesh): the lifter turns to where his lift landed, in over 3 calls and out over 10
+		set_mesh_yaw_deg(LiftYaw * clampf(minf(float(22 - LiftN) / 3.0, float(LiftN) / 10.0), 0.0, 1.0) if LiftN > 0 else 0.0)
 	_shift_tick()
 	_stop_tick(Speed, TurnRate)
 	_sk2_tick()
@@ -279,7 +308,7 @@ func _sk2_tick() -> void:
 		AimOffR = clampf(AimOffR + 0.3 * (clampf(Vector2(puck.x, puck.y).length() / 100.0 - AimReach, -0.3, 0.3) - AimOffR), -0.3, 0.3)
 	var want: float = 1.0 if (bAimSeen and not (bDown or bFaceoff or bGoalie)) else 0.0
 	AimW = AimW + clampf(want - AimW, -0.15, 0.15)
-	# (bPendingShoot, StumbleIn: the wrist shot and the stumble, with their rounds)
+	takes.sk2_takes()               # bPendingShoot, StumbleIn: the wrist shot of a tap, the stumble after a poke
 	_sk3_fix()
 	_push_anim()
 
@@ -327,14 +356,10 @@ func _push_anim() -> void:
 	anim.bStRight = GoalieSide > 0
 
 
-## [SetShotCharge] + [ChargeMix]: the wind-up of a held shot. The variables are kept; the pose (TwoWayBlend_1) is not ported.
+## [SetShotCharge]: the wind-up of a held shot ([ChargeMix], TwoWayBlend_1).
 func SetShotCharge(Charge01: float) -> void:
-	ShootCharge = clampf(Charge01, 0.0, 1.0)
-	anim.ChargeTime = ShootCharge * 0.26667
-	anim.ChargeAlpha = clampf(ShootCharge * 5.0, 0.0, 1.0)
-	_push_anim()
-	if ShootCharge > 0.0:
-		_miss("SetShotCharge")
+	_driver()
+	takes.SetShotCharge(Charge01)
 
 
 ## [SetFaceoff]
@@ -369,9 +394,16 @@ func _look_tick(dt: float) -> void:
 	anim.bReady = not bPuck
 
 
-## [ReceiveTick]: of its ticks only the look runs in round 2 (the others belong to the pass, the whip, the stick lock,
-## the hold, the weapons, the falls and get-ups).
+## [SetLookAtPuck] (by name from the puck show, on the human's figure: PuckRead.cpp:163-171)
+func SetLookAtPuck(bOn: bool) -> void:
+	bNoLook = not bOn
+
+
+## [ReceiveTick]: the held pass's layer, then the look (the whip, the stick lock, the hold, the weapons, the falls and
+## the get-ups are not ported).
 func _receive_tick(dt: float) -> void:
+	if takes.PassHoldW > 0.0:
+		takes.PassHoldTick()
 	_look_tick(dt)
 
 
@@ -385,8 +417,51 @@ func SetBoost(_Kind: StringName) -> void:
 		_miss("SetBoost")
 
 
-func PlayShoot(_Charge: float) -> void:
-	_miss("PlayShoot")
+# ---- the puck verbs (TLRigSkaterPuck)
+func PlayShoot(Charge: float) -> void:
+	_driver()
+	takes.PlayShoot(Charge)
+
+
+func PlayPass(Strength: float) -> void:
+	_driver()
+	takes.PlayPass(Strength)
+
+
+func PlayPoke(bClean: bool) -> void:
+	_driver()
+	takes.PlayPoke(bClean)
+
+
+func PlayLift() -> void:
+	_driver()
+	takes.PlayLift()
+
+
+func PlayStickHit(bLifted: bool) -> void:
+	_driver()
+	takes.PlayStickHit(bLifted)
+
+
+func PlayReceive() -> void:
+	_driver()
+	takes.PlayReceive()
+
+
+func SetPassCharge(Charge01: float) -> void:
+	_driver()
+	takes.SetPassCharge(Charge01)
+
+
+func PlayCallForPass() -> void:
+	_driver()
+	takes.PlayCallForPass()
+
+
+## [OnBusEvent]: one event of thirdjam's bus. `bMe`: its Who is this figure's skater; `WhereCm`: world centimetres.
+## Of its events the lift and the deke are ported; knockdown and check belong to the contact round.
+func OnBusEvent(Event: StringName, bMe: bool, WhereCm: Vector2, Strength: float, Kind: StringName) -> void:
+	takes.bus_event(Event, bMe, WhereCm, Strength, Kind)
 
 
 func PlayCheck() -> void:
@@ -395,18 +470,6 @@ func PlayCheck() -> void:
 
 func SetKnockedDown(_bDown: bool, _DirX: float, _DirZ: float, _KnockdownFrames: int) -> void:
 	_miss("SetKnockedDown")
-
-
-func PlayPoke(_bClean: bool) -> void:
-	_miss("PlayPoke")
-
-
-func PlayLift() -> void:
-	_miss("PlayLift")
-
-
-func PlayPass(_Strength: float) -> void:
-	_miss("PlayPass")
 
 
 ## [PlayAct]: a take on the slot, unless he is down or getting up or a take of a higher priority runs.
@@ -441,10 +504,6 @@ func SetBoardPin(_bOn: bool) -> void:
 		_miss("SetBoardPin")
 
 
-func PlayStickHit(_bLifted: bool) -> void:
-	_miss("PlayStickHit")
-
-
 func PlayStumble(_DirX: float, _DirZ: float, _Frames: int) -> void:
 	_miss("PlayStumble")
 
@@ -466,6 +525,14 @@ func PlayWhiff(_Kind: int) -> void:
 	_miss("PlayWhiff")
 
 
+func PlayCheckWhiff() -> void:
+	_miss("PlayCheckWhiff")
+
+
+func SetWindupTakes(_bOn: bool, _N: int) -> void:
+	_miss("SetWindupTakes")
+
+
 # ------------------------------------------------------------------ ticking and posing
 ## Advances one physics frame: the animation's update and the pose, then the Blueprint's own Tick.
 ## (In clip mode, round 1: the first tick after `play_clip` shows key 0; each later tick moves `clip_rate` keys. A
@@ -474,12 +541,11 @@ func tick() -> void:
 	if _clip_mode:
 		_tick_clip()
 		return
-	if _dilation < 0.5:
-		return
 	_now += DT
+	var dt: float = TICK_S * _dilation
 	# The mesh's animation update comes before the Blueprint's own Tick in thirdjam's world: what [ReceiveTick] writes
 	# to the animation (bReady, the look) is seen by the graph one tick later. Measured against thirdjam's figure: a
 	# SetHasPuck moves BlendListByBool_0 on the second tick after the call, not the first.
-	anim.update(DT)
+	anim.update(dt)
 	_show(anim.evaluate())
-	_receive_tick(DT)
+	_receive_tick(dt)

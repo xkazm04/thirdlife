@@ -1,5 +1,5 @@
 class_name TLRigSkaterAnim
-extends RefCounted
+extends TLRigSkaterSlot
 ## thirdjam's animation blueprint ABP_SkaterTB1_P3, ported node by node from its exported graph
 ## (engine/rigs/skater/driver-ref/ABP_SkaterTB1_P3.AnimGraph.txt: the node names in the comments are that
 ## listing's), and run as Unreal 5.9 runs it at a fixed 1/60 s tick (the engine's own source is cited as
@@ -17,14 +17,17 @@ extends RefCounted
 ##                                Goalie_Hold, or _7 (bStRight): Goalie_Block_Right / _Left
 ##   LayeredBoneBlend_1 (AimW)    spine_01 and above take the aim: four Aim blend-space players at reach 1.0 / 1.3 / 1.45 /
 ##                                1.6 m mixed by T1..T3 (TwoWayBlend_0, _2, _3)
-##   LayeredBoneBlend_0 (HoldW), LayeredBoneBlend_2 (PassW)      NOT PORTED YET (round 2: weights stay 0)
+##   LayeredBoneBlend_0 (HoldW)   the cross-check hold: NOT PORTED YET (weight stays 0)
+##   LayeredBoneBlend_2 (PassW)   spine_01 and above take SequencePlayer_10 (Pass_Charge, looping): the held pass
 ##   ModifyBone_1 stick_socket (StickRot, StickOff), _5 spine_01 (GraceRot), _6 hand_r (LockRot), _7 spine_03 (LookRot1),
 ##   _8 head (LookRot2)           component space, additive
-##   TwoWayBlend_1 (ChargeAlpha)  NOT PORTED YET (0)
+##   TwoWayBlend_1 (ChargeAlpha)  all of the above against SequenceEvaluator_1: Shot_Slap at ChargeTime (the held shot's
+##                                wind-up); at alpha 1 the above is neither ticked nor evaluated (the machine starts
+##                                over when it comes back: "TWB" = AnimGraphRuntime/.../AnimNode_TwoWayBlend.cpp)
 ##   Slot DefaultSlot             the takes played by PlaySlotAnimationAsDynamicMontage
 ##   ModifyBone_0, _2, _3, _4     the whip (WhipA): NOT PORTED YET (0)
-## Carry poses (bCarry1..5), the cross-check hold, the pass charge and the shot charge are named above so that a later
-## round finds their place; with their variables at 0 / false they change nothing here.
+## Carry poses (bCarry1..5) and the cross-check hold are named above so that a later round finds their place; with
+## their variables at 0 / false they change nothing here.
 
 const DT: float = 1.0 / 60.0
 const EPS: float = 1e-5
@@ -77,49 +80,13 @@ var _loco_list: TLRigSkaterBlendList           # BlendListByBool_4
 var _face_list: TLRigSkaterBlendList           # BlendListByBool_5
 var _hold_list: TLRigSkaterBlendList           # BlendListByBool_6
 var _right_list: TLRigSkaterBlendList          # BlendListByBool_7
-var _players: Dictionary = {"Faceoff_Ready": 0.0, "Goalie_Hold": 0.0, "Goalie_Block_Right": 0.0, "Goalie_Block_Left": 0.0}     # SequencePlayer_4 .. _7
+var _players: Dictionary = {"Faceoff_Ready": 0.0, "Goalie_Hold": 0.0, "Goalie_Block_Right": 0.0, "Goalie_Block_Left": 0.0, "Pass_Charge": 0.0}     # SequencePlayer_4 .. _7, _10
+var _a_ticked: bool = true           # TwoWayBlend_1's A side (everything under the shot charge) was ticked
 var _aim: Array = []                 # four players of the Aim blend space
 var _aim_ticked: bool = false
-var montages: Array = []             # [{clip, len, pos, rate, out, w, begin, target, lerp, rem, T, playing, active, paused}]
 var _source_ticked: bool = true
 var _ticked_states: Dictionary = {}
 var not_ported: Dictionary = {}      # what a tick met and could not show: name -> ticks
-
-
-## A number as Unreal's single-precision float holds it. The blends' counters (time remaining, the lerp, a take's
-## position) are floats there, and a blend ends on the tick where "remaining > delta" first fails: at a remaining time
-## of exactly one tick that is decided by the last bit. Measured: in double precision a take ended one tick late.
-static var _f32: PackedFloat32Array = PackedFloat32Array([0.0])
-
-
-static func f32(x: float) -> float:
-	_f32[0] = x
-	return _f32[0]
-
-
-## One step of FAlphaBlend::Update (Engine/Private/AlphaBlend.cpp:192-230): [lerp, remaining] after `dt`.
-## A blend is complete when its VALUE has reached the desired one (FAlphaBlend::IsComplete, :315-324), not when the
-## lerp has: in single precision the eased value of a lerp one bit short of 1 is already 1.
-static func blend_step(lerp: float, rem: float, dt: float, begin: float = 0.0, target: float = 1.0) -> Array:
-	if blend_value(lerp, begin, target) == f32(target):
-		return [lerp, rem]
-	var d: float = f32(dt)
-	if rem > d:
-		return [f32(lerp + f32(f32(f32(1.0 - lerp) / rem) * d)), f32(rem - d)]
-	return [1.0, 0.0]
-
-
-## FAlphaBlend's blended value: begin + (desired - begin) x S(lerp), single precision.
-static func blend_value(lerp: float, begin: float, target: float) -> float:
-	var x: float = f32(clampf(lerp, 0.0, 1.0))
-	var e: float = f32(f32(x * x) * f32(3.0 - f32(2.0 * x)))
-	return f32(f32(begin) + f32(f32(f32(target) - f32(begin)) * e))
-
-
-## HermiteCubic (Engine/Private/AlphaBlend.cpp:247; FMath::SmoothStep).
-static func scurve(x: float) -> float:
-	var c: float = clampf(x, 0.0, 1.0)
-	return c * c * (3.0 - 2.0 * c)
 
 
 func _init() -> void:
@@ -136,106 +103,6 @@ func _init() -> void:
 
 func _miss(what: String) -> void:
 	not_ported[what] = int(not_ported.get(what, 0)) + 1
-
-
-# ------------------------------------------------------------------ montages (the Slot's takes)
-## UAnimInstance::PlaySlotAnimationAsDynamicMontage (MON AnimInstance.cpp:2870-2945): every running take is told to
-## blend out over the NEW take's blend-in time; the new one starts at weight 0.
-func play_slot(clip: StringName, blend_in: float, blend_out: float, rate: float = 1.0, start: float = 0.0) -> bool:
-	var a: Animation = TLRigSkater.clip_library().get_animation(clip)
-	if a == null:
-		return false
-	for i: int in range(montages.size() - 1, -1, -1):
-		_stop(montages[i], blend_in)
-	montages.append({"clip": clip, "len": f32(a.length), "pos": f32(clampf(start, 0.0, a.length)), "rate": f32(rate), "out": f32(blend_out), "w": 0.0, "begin": 0.0,
-		"target": 1.0, "lerp": 0.0 if blend_in > 0.0 else 1.0, "rem": f32(blend_in), "T": f32(blend_in), "playing": true, "active": true, "paused": false})
-	if blend_in <= 0.0:
-		montages[-1]["w"] = 0.0      # the weight is taken on the next tick (begin 0 -> target 1 at lerp 1)
-	return true
-
-
-## FAnimMontageInstance::Stop (MON AnimMontage.cpp:1558-1661).
-func _stop(m: Dictionary, t: float) -> void:
-	if float(m["target"]) != 0.0:
-		m["begin"] = m["w"]
-		m["target"] = 0.0
-		m["lerp"] = 0.0
-		m["rem"] = f32(t)
-		m["T"] = f32(t)
-		if t <= 0.0:
-			m["w"] = 0.0
-			m["lerp"] = 1.0
-			m["playing"] = false
-		m["active"] = false
-	elif t < float(m["T"]):
-		m["T"] = t
-		m["begin"] = m["w"]
-		m["lerp"] = 0.0
-		m["rem"] = t
-
-
-## UAnimInstance::IsAnyMontagePlaying: true while any instance lives, also paused or blending out (AnimInstance.cpp:3725).
-func is_any_montage_playing() -> bool:
-	return not montages.is_empty()
-
-
-func _active_montage() -> Dictionary:
-	for i: int in range(montages.size() - 1, -1, -1):
-		if bool(montages[i]["active"]):
-			return montages[i]
-	return {}
-
-
-## GetCurrentActiveMontage is valid (an instance that was not stopped).
-func has_active_montage() -> bool:
-	return not _active_montage().is_empty()
-
-
-func montage_position() -> float:
-	var m: Dictionary = _active_montage()
-	return float(m["pos"]) if not m.is_empty() else 0.0
-
-
-func montage_set_position(p: float) -> void:
-	var m: Dictionary = _active_montage()
-	if not m.is_empty():
-		m["pos"] = p
-
-
-func montage_pause() -> void:
-	var m: Dictionary = _active_montage()
-	if not m.is_empty():
-		m["paused"] = true
-
-
-func _tick_montages(dt: float) -> void:
-	for m: Dictionary in montages:
-		var st: Array = blend_step(float(m["lerp"]), float(m["rem"]), dt, float(m["begin"]), float(m["target"]))
-		m["lerp"] = st[0]
-		m["rem"] = st[1]
-		m["w"] = blend_value(float(m["lerp"]), float(m["begin"]), float(m["target"]))
-	var keep: Array = []
-	for m: Dictionary in montages:
-		if bool(m["playing"]) and not bool(m["paused"]):
-			m["pos"] = f32(float(m["pos"]) + f32(f32(dt) * float(m["rate"])))
-			var left: float = f32(f32(float(m["len"]) - float(m["pos"])) / maxf(absf(float(m["rate"])), 1e-6))
-			if float(m["target"]) != 0.0 and left <= maxf(float(m["out"]), 1e-4):
-				_stop(m, maxf(left, 0.0))
-			if float(m["pos"]) >= float(m["len"]):
-				m["playing"] = false
-				m["pos"] = float(m["len"]) - 5e-5
-		m["dead"] = float(m["target"]) == 0.0 and float(m["w"]) == 0.0      # stopped and its blend complete (AnimMontage.cpp:2784)
-		keep.append(m)
-	montages = keep
-
-
-## The instances that ended are deleted after the tick's evaluation (UAnimInstance::PostUpdateAnimation).
-func _reap_montages() -> void:
-	var keep: Array = []
-	for m: Dictionary in montages:
-		if not bool(m.get("dead", false)):
-			keep.append(m)
-	montages = keep
 
 
 # ------------------------------------------------------------------ the state machine
@@ -391,11 +258,11 @@ func update(dt: float = DT) -> void:
 	_ticked_states = {}
 	var machine_ticked: bool = false
 	_aim_ticked = false
-	if _source_ticked:
-		if ChargeAlpha > EPS:
-			_miss("TwoWayBlend_1 ChargeAlpha (the shot charge)")
+	# TwoWayBlend_1: under the threshold only A is ticked, at 1 only B (TWB: FAnimNode_TwoWayBlend::Update_AnyThread)
+	_a_ticked = _source_ticked and clampf(ChargeAlpha, 0.0, 1.0) < 1.0 - EPS
+	if _a_ticked:
 		if PassW > EPS:
-			_miss("LayeredBoneBlend_2 PassW (the pass charge)")
+			_tick_player("Pass_Charge", true, dt)       # LayeredBoneBlend_2's layer, while it has weight (LBB)
 		if HoldW > EPS:
 			_miss("LayeredBoneBlend_0 HoldW (the cross-check hold)")
 		# LayeredBoneBlend_1: the layer before the base (LBB), neither when its weight is nothing
@@ -552,9 +419,11 @@ func evaluate() -> TLRigSkaterPose:
 		if float(m["w"]) > EPS:
 			live.append(m)
 			w_total += float(m["w"])
-	if _source_ticked:
+	if _a_ticked:
 		var loco: TLRigSkaterPose = _list_pose(_loco_list, _machine_pose, _stance_pose)
 		out = layered(loco, _aim_pose(), AimW) if _aim_ticked else loco.copy()
+		if PassW > EPS:
+			out = layered(out, _player_pose("Pass_Charge"), PassW)       # LayeredBoneBlend_2
 		# ModifyBone_1, then _7 and _8 (the look): component space, alpha 1
 		if not StickRot.is_equal_approx(Quaternion.IDENTITY) or not StickOff.is_zero_approx():
 			modify_bone(out, TLRigSkaterPose.STICK, StickRot, StickOff)
@@ -562,6 +431,10 @@ func evaluate() -> TLRigSkaterPose:
 			modify_bone(out, TLRigSkater.BONE_SPINE_03, LookRot1)
 		if not LookRot2.is_equal_approx(Quaternion.IDENTITY):
 			modify_bone(out, TLRigSkater.BONE_HEAD, LookRot2)
+	if _source_ticked and ChargeAlpha > EPS:
+		# TwoWayBlend_1's B: SequenceEvaluator_1, Shot_Slap at the explicit time ChargeTime
+		var wind: TLRigSkaterPose = TLRigSkater.sample_clip(&"Shot_Slap", ChargeTime)
+		out = TLRigSkaterPose.blend2(out, wind, clampf(ChargeAlpha, 0.0, 1.0)) if out != null else wind
 	if not live.is_empty():
 		# SLOT: the takes at their weights (normalised when they exceed 1), the source last at what is left
 		var poses: Array = []

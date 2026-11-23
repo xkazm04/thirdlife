@@ -131,24 +131,43 @@ var _look_colour: Color = TEAM_COLOURS[0]
 
 
 # ------------------------------------------------------------------ the figure's own frame, in Unreal's terms
-## The mesh component's yaw against the actor, degrees (Unreal: positive to the right). 0 until the lift and the falls.
+## The mesh component's yaw against the actor, degrees (Unreal: positive to the right): the stick lift's turn (and
+## the falls', when they are ported). K2_SetRelativeRotation(Mesh, (0, 0, yaw)).
+var _mesh_yaw: float = 0.0
+
+
 func _mesh_yaw_deg() -> float:
-	return 0.0
+	return _mesh_yaw
+
+
+func set_mesh_yaw_deg(deg: float) -> void:
+	if deg != _mesh_yaw:
+		_mesh_yaw = deg
+		_body.rotation.y = PI * 0.5 - deg_to_rad(deg)
+
+
+## The mesh component's space to the actor's (Unreal's axes): the yaw about z.
+func _to_actor(v: Vector3) -> Vector3:
+	if _mesh_yaw == 0.0:
+		return v
+	var c: float = cos(deg_to_rad(_mesh_yaw))
+	var sn: float = sin(deg_to_rad(_mesh_yaw))
+	return Vector3(v.x * c - v.y * sn, v.x * sn + v.y * c, v.z)
 
 
 ## A bone's place in the actor's frame as the Blueprint reads it: centimetres, x forward, y right, z up.
 func _bone_ue(b: int) -> Vector3:
-	return TLRigSkaterPose.ue_vec((_g[b] as Transform3D).origin)
+	return _to_actor(TLRigSkaterPose.ue_vec((_g[b] as Transform3D).origin))
 
 
 ## A vector given in the stick bone's space (Unreal's axes, cm) in the actor's frame (GreaterGreater_VectorRotator
 ## with the bone's rotation).
 func _stick_vec_ue(v: Vector3) -> Vector3:
-	return TLRigSkaterPose.ue_vec((_g[TLRigSkaterPose.STICK] as Transform3D).basis * TLRigSkaterPose.from_ue_vec(v))
+	return _to_actor(TLRigSkaterPose.ue_vec((_g[TLRigSkaterPose.STICK] as Transform3D).basis * TLRigSkaterPose.from_ue_vec(v)))
 
 
 func _puck_socket_ue() -> Vector3:
-	return TLRigSkaterPose.ue_vec(_g[TLRigSkaterPose.STICK] as Transform3D * PUCK_ON_STICK)
+	return _to_actor(TLRigSkaterPose.ue_vec(_g[TLRigSkaterPose.STICK] as Transform3D * PUCK_ON_STICK))
 
 
 ## Where a bone or thirdjam's socket stands in the actor's frame, centimetres, Unreal's axes (x forward, y right,
