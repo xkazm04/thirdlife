@@ -29,3 +29,6 @@ landable round 7
 22:05 | state: done | did: round 8: hit_stop.gd port and puck rule replaced by K2's skater_show (bus events, step_sim, pawns, after_pawns, render, in thirdjam's order); carried puck on the blade; match hash unchanged ab881a00fb9af8ef; film looked at (r8_*); export check --no-window PASS | note: stage p99 3.78 ms of 4 (4.02 under load) | gates: lint, bots, invariants PASS, fast PASS (foreman NOT RUN) | next: rest until K6's arena
 
 landable round 8
+23:00 | state: done | did: round 9: contact wired as verb_gym (hit read, four bus events, set_rink, verb_gym's render order); inside the hall only sections 2-3 markings in thirdjam's colours; solo p99 8 ms (solo_frame_budget); the whole picture filmed beside thirdjam and looked at (r9_*); core hash unchanged ab881a00fb9af8ef; run state hash moved by the kit ice's body only (proven) | gates: lint, bots, invariants PASS (p99 3.89, p50 3.19), selftest budget.class PASS, fast PASS (foreman NOT RUN), export check --no-window PASS; window 5.88 ms
+
+landable round 9

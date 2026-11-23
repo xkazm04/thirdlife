@@ -20,6 +20,9 @@ const TARGET_MANY_MS_P50: float = 0.5
 ## (engine/boot/dungeons.json) and has no village plot is a whole game alone in its world, held to SOLO p50 instead: half a
 ## 60 Hz frame for the pack's own tick. Any other pack is held to the one-of-many budget. Each class has its own check id.
 const BUDGET_SOLO_MS_P50: float = 8.0
+## The solo class's stage budget (K3 round 9, the Director's decision): p99 at most 8 ms, check `invariants.solo_frame_budget`,
+## in place of the stage game's 4 ms (`invariants.frame_budget`) that holds every other pack.
+const BUDGET_SOLO_FRAME_MS_P99: float = 8.0
 const BUDGET_EXTRA_RUNS: int = 2        # idle runs added when the frame budget is not met by the first two
 const BUDGET_NODES: int = 5000
 const BUDGET_BODIES: int = 600
@@ -123,11 +126,16 @@ func _invariant_checks(a: Dictionary, b: Dictionary, idle: Array = [], run_opts:
 	# over the idle runs, so that a stall the machine caused in one run cannot fail a healthy pack
 	var fr: Dictionary = robust_frame_p99(idle if not idle.is_empty() else [a, b])
 	var p99: float = float(fr["p99"])
-	if p99 > BUDGET_FRAME_MS_P99:
-		_error("budget", "", "frame p99 %.2f ms is over the %.0f ms budget" % [p99, BUDGET_FRAME_MS_P99])
-	_check("invariants.frame_budget", p99 <= BUDGET_FRAME_MS_P99, "frame p99 %.3f ms (stage budget %.0f ms; scripts + physics step, headless, each frame's best of %d runs)" % [p99, BUDGET_FRAME_MS_P99, int(fr["runs"])])
-	var p50: float = float(fr["p50"])
 	var bc: Dictionary = budget_class(str(h.get("pack_dir")))
+	if str(bc["class"]) == "solo":
+		if p99 > BUDGET_SOLO_FRAME_MS_P99:
+			_error("budget", "", "frame p99 %.2f ms is over the %.0f ms budget of a game alone in its world (%s)" % [p99, BUDGET_SOLO_FRAME_MS_P99, bc["why"]])
+		_check("invariants.solo_frame_budget", p99 <= BUDGET_SOLO_FRAME_MS_P99, "frame p99 %.3f ms (budget %.0f ms for a game alone in its world: %s; scripts + physics step, headless, each frame's best of %d runs; the stage budget %.0f ms does not apply)" % [p99, BUDGET_SOLO_FRAME_MS_P99, bc["why"], int(fr["runs"]), BUDGET_FRAME_MS_P99])
+	else:
+		if p99 > BUDGET_FRAME_MS_P99:
+			_error("budget", "", "frame p99 %.2f ms is over the %.0f ms budget" % [p99, BUDGET_FRAME_MS_P99])
+		_check("invariants.frame_budget", p99 <= BUDGET_FRAME_MS_P99, "frame p99 %.3f ms (stage budget %.0f ms; scripts + physics step, headless, each frame's best of %d runs)" % [p99, BUDGET_FRAME_MS_P99, int(fr["runs"])])
+	var p50: float = float(fr["p50"])
 	if str(bc["class"]) == "solo":
 		if p50 > BUDGET_SOLO_MS_P50:
 			_error("budget", "", "frame p50 %.2f ms is over the %.1f ms budget of a game alone in its world (%s)" % [p50, BUDGET_SOLO_MS_P50, bc["why"]])

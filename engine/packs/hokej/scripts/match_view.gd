@@ -22,15 +22,18 @@ var figs: Array = []        # figures only: TLRigSkater a skater
 var shown: Array = []       # whether a skater is drawn (the proof modes show one)
 var puck: Node3D
 var show                    # K2's skater_show.gd: the hit-stop and the shown carrier (both modes; the stand-ins hold by its pick)
-var _puck_drawn: Variant = null   # where the show drew the puck last frame (Godot space, the puck's centre): what the figures look at
+var hits                    # K2's hit_read.gd: the model of presses and hits, the whiffs and the re-time of a check (K3 round 9)
 
 
-## `cart`: the cartridge (teams and their colours; the numbers the show reads). `pawn_script`, `show_script`:
-## ctx.cores.view_script("rink", "skater_pawn") and ("rink", "skater_show").
-func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: Dictionary, pawn_script: GDScript, show_script: GDScript, use_figures: bool) -> void:
+## `cart`: the cartridge (teams and their colours; the numbers the show reads). `pawn_script`, `show_script`, `hits_script`:
+## ctx.cores.view_script("rink", "skater_pawn"), ("rink", "skater_show") and ("rink", "hit_read").
+func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: Dictionary, pawn_script: GDScript, show_script: GDScript, hits_script: GDScript, use_figures: bool) -> void:
 	figures = use_figures and pawn_script != null
 	show = show_script.new()
 	show.cfg = show_script.config_of(cart)
+	hits = hits_script.new()
+	hits.skater_speed = float(cart["game"]["skater"]["speed"])     # a hit's closing speed (hit_read.gd: game.skater.speed)
+	var rk: Dictionary = cart["game"]["rink"]
 	var sk: Array = snap["Skaters"]
 	var human: int = int(snap["HumanIndex"])
 	var teams: Array = cart["game"]["teams"]
@@ -55,6 +58,8 @@ func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: D
 		fig.setup({"team": team})
 		pawn.add_child(fig)
 		fig.set_human(i == human)
+		# the walls the falls ask about (the Blueprint's FindRink: half length, half width, corner radius in centimetres)
+		fig.set_rink(Vector3(float(rk["length_m"]) * 50.0, float(rk["width_m"]) * 50.0, float(rk["corner_radius_m"]) * 100.0))
 		var colour: Color = Color(String(teams[team]["colour_hex"])) if team < teams.size() else Color.WHITE
 		pawn.init_skater(i, team, colour.srgb_to_linear(), jersey_number(team, slot), fig)
 		pawns.append(pawn)
@@ -84,15 +89,18 @@ func show_only(i: int) -> void:
 
 
 ## The bus events a figure hears (AHokejGameMode::DeliverEvents, HokejGameMode.cpp:1664, before the hit-stop and the pawns),
-## as K2's verb gym delivers them: OnBusEvent(name, its Who is this figure's skater, where in world centimetres, ...).
+## as K2's verb gym delivers them: OnBusEvent(name, its Who is this figure's skater, where in world centimetres, ...). All
+## four are ported in the figure since K2's round 4 (contact).
 const BUS_EVENTS: Array = ["knockdown", "check", "lift", "deke"]
 
 
 ## One sim frame of the match, in thirdjam's order (HokejGameMode.cpp:1664-1707; skater_show.gd's header): the bus, the
 ## show's step (HitStopRoute, then FJamPuckShow::StepSim), every pawn's ApplySimFrame, the show's after_pawns (the wind-up
-## takes, the puck's hold count), every pawn's ApplyRender and figure tick, then the show's Render: the puck where it is
-## drawn (on the shown carrier's blade socket, or the sim's place, held through a hit-stop). Returns whether the
-## presentation frame is held (the camera and HUD do not step: HokejGameMode.cpp:1710).
+## takes, the puck's hold count), the hit read (AJamHitRead::StepSim, cpp:1706: the whiffs, the re-time of a check), every
+## pawn's ApplyRender, the show's Render (the puck where it is drawn: the shown carrier's blade socket, or the sim's place,
+## held through a hit-stop; cpp:1736), every figure's look at that puck and its tick, and a carried puck taking its
+## socket's place again after the tick (AJamPuck::Tick, JamPawns.cpp:959-977), as K2's verb_gym.gd does. Returns whether
+## the presentation frame is held (the camera and HUD do not step: HokejGameMode.cpp:1710).
 func draw(snap: Dictionary) -> bool:
 	var sk: Array = snap["Skaters"]
 	var frame: int = int(snap["Frame"])
@@ -115,15 +123,30 @@ func draw(snap: Dictionary) -> bool:
 			_draw_standin(i, sk[i])                # the stand-ins hold by the show's pick (debugging only)
 	show.after_pawns(snap, live)
 	if figures:
+		hits.step_sim(snap, live, _human_input)
 		for i: int in sk.size():
 			if shown[i]:
-				_render_figure(i, sk[i], _puck_drawn)
+				_place_pawn(i, sk[i])
 	var d: Dictionary = show.render(snap, live, 1.0)
 	var at: Vector3 = d["puck"]
-	_puck_drawn = at
+	if figures:
+		for i: int in sk.size():
+			if shown[i]:
+				_look_and_tick(i, at)
+		var on: int = int(d.get("drawn_carrier", -1)) if bool(d.get("on_blade", false)) else -1
+		if on >= 0 and on < pawns.size():
+			var sw: Variant = pawns[on].puck_socket_world()
+			if sw is Vector3:
+				at = Vector3((sw as Vector3).x, at.y, (sw as Vector3).z)
 	# the stand-in puck's origin is its base (TLMesh.cyl from y = 0); the show gives the centre (AJamPuck HalfHeightM 0.04)
 	_place(puck, Vector3(at.x, at.y - show_script_half_height(), at.z), Vector2(puck.position.x, puck.position.z).distance_to(Vector2(at.x, at.z)) > 3.0)
 	return held
+
+
+## The human's FJamInput of this step (RinkCore.last_human_input), for the hit read (it takes it and does not read it).
+var _human_input: Dictionary = {}
+func set_human_input(i: Dictionary) -> void:
+	_human_input = i
 
 
 func show_script_half_height() -> float:
@@ -150,28 +173,31 @@ func head_world(i: int) -> Variant:
 func draw_skater(i: int, s: Dictionary, frame: int = 0) -> void:
 	if figures:
 		pawns[i].apply_sim_frame(s, frame)
-		_render_figure(i, s, null)
+		_place_pawn(i, s)
+		figs[i].set_puck(null)
+		figs[i].tick()
 	else:
 		_draw_standin(i, s)
 
 
-## AJamSkater::ApplyRender at alpha 1 (the engine interpolates), the look's puck in the figure's frame ([LookTick]'s PuckRef:
-## thirdjam's figure reads the puck actor, i.e. where the puck was last drawn), then the figure's tick (its animation's one
-## update a frame; thirdjam ticks it a rendered frame, ours a sim frame: DT 1/60, the law of physics frames).
-func _render_figure(i: int, s: Dictionary, puck_at: Variant) -> void:
+## AJamSkater::ApplyRender at alpha 1 (the engine interpolates). A jump the sim does not move through is not drawn as a slide.
+func _place_pawn(i: int, s: Dictionary) -> void:
 	var pawn = pawns[i]
-	var fig: TLRigSkater = figs[i]
 	var was: Vector3 = pawn.position
 	pawn.apply_render(s, 1.0)
 	if (s["PrevPos"] as Vector2) == (s["Pos"] as Vector2) and Vector2(was.x, was.z).distance_to(s["Pos"]) > 0.5:
 		pawn.reset_physics_interpolation()
-	if puck_at == null:
-		fig.set_puck(null)
-	else:
-		var rel: Vector2 = Vector2((puck_at as Vector3).x, (puck_at as Vector3).z) - (s["Pos"] as Vector2)
-		var yaw: float = float(s["Yaw"])
-		fig.set_puck(Vector2(rel.dot(Vector2(cos(yaw), sin(yaw))), rel.dot(Vector2(-sin(yaw), cos(yaw)))))
-	fig.tick()
+
+
+## The look's puck in the figure's own frame, from where the pawn stands drawn ([LookTick]'s PuckRef: thirdjam's figure reads
+## the puck actor, placed by FJamPuckShow::Render this frame), then the figure's tick (its animation's one update a frame;
+## thirdjam ticks it a rendered frame, ours a sim frame: DT 1/60, the law of physics frames). As verb_gym.gd.
+func _look_and_tick(i: int, puck_at: Vector3) -> void:
+	var pn: Node3D = pawns[i]
+	var ay: float = -(pn.rotation.y + PI * 0.5)
+	var rel := Vector2(puck_at.x - pn.position.x, puck_at.z - pn.position.z)
+	figs[i].set_puck(Vector2(rel.dot(Vector2(cos(ay), sin(ay))), rel.dot(Vector2(-sin(ay), cos(ay)))))
+	figs[i].tick()
 
 
 func _draw_standin(i: int, s: Dictionary) -> void:
