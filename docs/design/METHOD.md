@@ -250,6 +250,34 @@ KILL IF: <what a person playing the first phase would see that stops this game; 
   numbers match the reference.
 - **The person checks**: the verb alone, in an empty room (stage 7): does pressing it feel good ten times in a row?
 
+### 8a. Behaviour first: the measured sheet (the owner, 23 Nov)
+
+The owner, on the first hockey teardown: "the points you identify plays minority role. You are focused on visual
+perspective where as the core of gameplay design is in behavior, which is almost untouched by your analysis." His list
+for hockey: sensitivity of movement (speed, acceleration, deceleration); tackles and cross-checks and their reactivity;
+bot aggressivity and ability to play; openness to a sandbox (weapons, equipment, boosts); stick control and the puck
+sticking to players. That teardown had compared code and constants and called the skating "ported faithfully"; measured,
+the same law on another body gave another game (`docs/research/hockey-teardown/BEHAVIOUR-HAND.md`, `BEHAVIOUR-BOTS.md`).
+
+So a teardown and a design lead with behaviour, **measured in the running game, not chosen and not read from code**:
+1. **A drill harness first**: one or two bodies on empty ground, the keys held frame by frame through the game's own
+   input path, one row a frame. The reference game gets the same scenes through its own tests, or through a port of its
+   law that first reproduces the reference's own printed numbers.
+2. **Per verb** (start, release, reverse, turn, sprint, taps of 3 / 6 / 12 frames, carry, pick-up, each hit, each stick
+   action, being hit): frames from the press to the first effect, to the full effect, and until both bodies answer their
+   keys again; the outcome by speed and angle.
+3. **Every distance and speed three times**: metres, the body's own widths, shares of the arena. A row that matches in
+   one unit and not the others is a size decision for the brief's `WORLD:` line, not a tuning knob.
+4. **The bots, by event rates per level**, with one set of definitions on both games: time to pressure, takes and hits
+   a minute, how many chase the same ball, the side's spread, passes and their length, shots and from where, what the
+   human's mates do, standing still. A level is easy by clumsiness, never by absence.
+5. **Rules that exist to move a bot metric are named and deleted**; what they guarded against is solved in the game.
+6. **Openness**: what a new toy (weapon, equipment, boost) must touch; a stat an item cannot change at run time, or a
+   bot cannot read, is a named gap.
+7. **Every target is a row**: file, key, present value, target, the reference's number, data / pack code / kernel.
+8. **Acceptance of a build**: its sheet within 2 frames and 10 % of the target rows by the same probe, one row filmed
+   in a window, the rows it missed said plainly. Then the person's hand, which alone passes it.
+
 ## 9. Stage 6: the reference-game teardown
 
 - **Play the reference game, or watch long unedited footage of people playing it, before designing.** Never from
