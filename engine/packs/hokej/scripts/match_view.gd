@@ -130,6 +130,21 @@ func draw(snap: Dictionary, hold: Dictionary = {}) -> void:
 	_place(puck, at, teleport)
 
 
+## Where skater i's figure has its head for the HUD's marker (UJamHudWidget::HumanHeadWorld, HUDWidget.cpp:1089-1121): the
+## figure's head_socket, come back along the head's own axis (head bone -> socket) by jam.hud.MarkerLiftCm -18 (HUDWidget.h:322;
+## the world's up without a head bone). World space (Godot), as drawn this sim frame. Null with the stand-ins (the HUD keeps
+## its own rule).
+const MARKER_LIFT_M: float = -0.18
+func head_world(i: int) -> Variant:
+	if not figures or i < 0 or i >= figs.size():
+		return null
+	var fig: TLRigSkater = figs[i]
+	var sock: Vector3 = fig.socket_transform(&"head_socket").origin
+	var axis: Vector3 = sock - fig.bone_transform(&"head").origin
+	axis = axis.normalized() if axis.length() > 1e-4 else Vector3.UP
+	return fig.global_transform * (sock + axis * MARKER_LIFT_M)
+
+
 ## One skater alone (the proof modes: the gym's skater on empty ice, the replay's logged skater): no puck to look at.
 func draw_skater(i: int, s: Dictionary, frame: int = 0) -> void:
 	if figures:

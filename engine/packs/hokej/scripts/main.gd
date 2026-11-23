@@ -191,6 +191,11 @@ func _draw() -> void:
 	var fwd := Vector3(cos(pr) * cos(yr), sin(pr), cos(pr) * sin(yr))   # FRotator(pitch, yaw, 0)'s forward, z up -> y up
 	ctx.cameras.add_view(&"follow", eye, eye + fwd, float(cam.C["FovDeg"]))
 	if mode == "match":
+		# the YOU chevron and tag on the figure's head (HumanHeadWorld, HUDWidget.cpp:1089-1121): K5's layer anchors at
+		# (Pos, head_m); the head socket's height goes to it here (its XY stays the skater's point: K5's to take, REPORT r7)
+		var head: Variant = view.head_world(int(snap["HumanIndex"]))
+		if screen != null and head != null:
+			screen.view.head_m = (head as Vector3).y
 		screen = Screen.frame_of(screen, ctx, snap, null, last_in, last_raw)   # lane K5: the HUD, one call a drawn frame (possession for the buttons: from the glue's snapshot Controls, K5 round 2)
 
 

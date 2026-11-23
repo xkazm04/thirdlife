@@ -1,6 +1,6 @@
 extends RefCounted
 ## P1. The V3 checks of `invariants` (moved out of host.gd, which may not grow): determinism, below ground, the frame budgets
-## (stage p99, one of many p50), entity budget, and the bot replay. `h` is the host (the supervisor), `report` its report.
+## (stage p99, one of many p50 or a solo game's p50), entity budget, and the bot replay. `h` is the host (the supervisor), `report` its report.
 ## No global class name is used (the supervisor works before the class cache exists).
 ## A determinism failure is located by host/diverge.gd (three more runs, only after a mismatch), so both checks are
 ## coroutines: host.gd awaits them.
@@ -15,6 +15,11 @@ const Diverge: GDScript = preload("res://kernel/host/diverge.gd")
 const BUDGET_FRAME_MS_P99: float = 4.0
 const BUDGET_MANY_MS_P50: float = 1.0
 const TARGET_MANY_MS_P50: float = 0.5
+## The budget class (K3 round 7, the Director's decision of 23 Nov): the one-of-many p50 holds a pack that is placed in the
+## village (a plot of engine/boot/village.json names its game, engine/boot/games.json); a pack that is a dungeon
+## (engine/boot/dungeons.json) and has no village plot is a whole game alone in its world, held to SOLO p50 instead: half a
+## 60 Hz frame for the pack's own tick. Any other pack is held to the one-of-many budget. Each class has its own check id.
+const BUDGET_SOLO_MS_P50: float = 8.0
 const BUDGET_EXTRA_RUNS: int = 2        # idle runs added when the frame budget is not met by the first two
 const BUDGET_NODES: int = 5000
 const BUDGET_BODIES: int = 600
@@ -64,6 +69,34 @@ func robust_frame_p99(runs: Array) -> Dictionary:
 	return {"p99": snappedf(float(best_us[p99i]) / 1000.0, 0.001), "p50": snappedf(float(best_us[n / 2]) / 1000.0, 0.001), "runs": series.size(), "per_frame": true}
 
 
+## The budget class of the pack at `pack_dir` (see BUDGET_SOLO_MS_P50): {"class": "many" | "solo", "why": a short reason}.
+## `boot_dir`: where village.json, games.json and dungeons.json are read (a test passes its own); the pack is named by its
+## path under the engine's root (res://), as dungeons.json and games.json (`from`, under the repository's engine/) name it.
+static func budget_class(pack_dir: String, boot_dir: String = "res://boot") -> Dictionary:
+	var root: String = ProjectSettings.globalize_path("res://").replace("\\", "/").trim_suffix("/")
+	var dir: String = ProjectSettings.globalize_path(pack_dir).replace("\\", "/").trim_suffix("/")
+	if not dir.to_lower().begins_with(root.to_lower() + "/"):
+		return {"class": "many", "why": "not a pack of the engine's tree"}
+	var rel: String = dir.substr(root.length() + 1)
+	var games: Variant = JSON.parse_string(FileAccess.get_file_as_string(boot_dir + "/games.json"))
+	var village: Variant = JSON.parse_string(FileAccess.get_file_as_string(boot_dir + "/village.json"))
+	var dungeons: Variant = JSON.parse_string(FileAccess.get_file_as_string(boot_dir + "/dungeons.json"))
+	var names: Array = []
+	if games is Dictionary:
+		for g: Variant in (games as Dictionary).get("games", []):
+			if g is Dictionary and str((g as Dictionary).get("from", "")).trim_suffix("/") == "engine/" + rel:
+				names.append(str((g as Dictionary).get("name", "")))
+	if village is Dictionary:
+		for p: Variant in (village as Dictionary).get("plots", []):
+			if p is Dictionary and names.has(str((p as Dictionary).get("pack", ""))):
+				return {"class": "many", "why": "placed in the village (plot '%s')" % str((p as Dictionary).get("id", ""))}
+	if dungeons is Dictionary:
+		for d: Variant in (dungeons as Dictionary).get("dungeons", []):
+			if d is Dictionary and str((d as Dictionary).get("pack", "")).trim_suffix("/") == rel:
+				return {"class": "solo", "why": "a dungeon (%s) with no village plot" % rel}
+	return {"class": "many", "why": "neither a village plot nor a dungeon"}
+
+
 ## `run_opts`: the worker options of runs a and b (the locator runs the pack again with them).
 func _invariant_checks(a: Dictionary, b: Dictionary, idle: Array = [], run_opts: Dictionary = {}) -> void:
 	var ma: Dictionary = a.get("metrics", {})
@@ -94,9 +127,15 @@ func _invariant_checks(a: Dictionary, b: Dictionary, idle: Array = [], run_opts:
 		_error("budget", "", "frame p99 %.2f ms is over the %.0f ms budget" % [p99, BUDGET_FRAME_MS_P99])
 	_check("invariants.frame_budget", p99 <= BUDGET_FRAME_MS_P99, "frame p99 %.3f ms (stage budget %.0f ms; scripts + physics step, headless, each frame's best of %d runs)" % [p99, BUDGET_FRAME_MS_P99, int(fr["runs"])])
 	var p50: float = float(fr["p50"])
-	if p50 > BUDGET_MANY_MS_P50:
-		_error("budget", "", "frame p50 %.2f ms is over the %.1f ms budget of a pack in a world of many (about %d awake bodies cost this much)" % [p50, BUDGET_MANY_MS_P50, int(BUDGET_MANY_MS_P50 / 0.011)])
-	_check("invariants.many_budget", p50 <= BUDGET_MANY_MS_P50, "frame p50 %.3f ms (budget %.1f ms for one of many; target %.1f ms%s)" % [p50, BUDGET_MANY_MS_P50, TARGET_MANY_MS_P50, ", above the target" if p50 > TARGET_MANY_MS_P50 else ""])
+	var bc: Dictionary = budget_class(str(h.get("pack_dir")))
+	if str(bc["class"]) == "solo":
+		if p50 > BUDGET_SOLO_MS_P50:
+			_error("budget", "", "frame p50 %.2f ms is over the %.1f ms budget of a game alone in its world (%s)" % [p50, BUDGET_SOLO_MS_P50, bc["why"]])
+		_check("invariants.solo_budget", p50 <= BUDGET_SOLO_MS_P50, "frame p50 %.3f ms (budget %.1f ms for a game alone in its world: %s; the one-of-many budget %.1f ms does not apply)" % [p50, BUDGET_SOLO_MS_P50, bc["why"], BUDGET_MANY_MS_P50])
+	else:
+		if p50 > BUDGET_MANY_MS_P50:
+			_error("budget", "", "frame p50 %.2f ms is over the %.1f ms budget of a pack in a world of many (about %d awake bodies cost this much)" % [p50, BUDGET_MANY_MS_P50, int(BUDGET_MANY_MS_P50 / 0.011)])
+		_check("invariants.many_budget", p50 <= BUDGET_MANY_MS_P50, "frame p50 %.3f ms (budget %.1f ms for one of many: %s; target %.1f ms%s)" % [p50, BUDGET_MANY_MS_P50, bc["why"], TARGET_MANY_MS_P50, ", above the target" if p50 > TARGET_MANY_MS_P50 else ""])
 	var nodes: int = maxi(int(ma.get("entities_max", 0)), int(mb.get("entities_max", 0)))
 	var bodies: int = maxi(int(ma.get("bodies_max", 0)), int(mb.get("bodies_max", 0)))
 	var ent_ok: bool = nodes <= BUDGET_NODES and bodies <= BUDGET_BODIES

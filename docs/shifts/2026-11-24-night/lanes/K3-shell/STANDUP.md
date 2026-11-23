@@ -23,3 +23,6 @@ landable round 5
 21:10 | state: done | did: round 6: ten K2 figures through thirdjam's pawn in match, gym and replay (capsules behind data/view.json); hit-stop to the pawns and AJamPuck's hold; kernel 1.20 ctx.cores.view_script (packs could not load the pawn); match hash unchanged ab881a00fb9af8ef; film beside thirdjam looked at (r6_*); cost: headless +1.7 ms, window 3.57 vs 1.30 ms a frame | FINDING: invariants many-budget FAIL p50 2.70 ms (> 1.0) | gates: lint/smoke/bots 9/9 PASS, fast PASS (foreman NOT RUN), export check --no-window PASS
 
 landable round 6
+21:35 | state: done | did: round 7: invariants budget class (solo_budget p50 8 ms for a dungeon without a village plot; selftest budget.class 12 checks); hokej invariants PASS honestly (solo p50 2.16 ms, figures ticking); YOU chevron at the figure's head-socket height via screen.view.head_m (no hud file touched; XY is K5's); film with HUD beside thirdjam looked at (r7_*); window cost HUD+figures 6.13 ms vs HUD+capsules 3.70 ms | gates: lint, bots, invariants PASS, fast PASS (foreman NOT RUN), export check --no-window PASS
+
+landable round 7
