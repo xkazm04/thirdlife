@@ -273,6 +273,8 @@ key is optional; a job made before this reads as before (absent = omit the key, 
 - `job_created.creativity` (optional): `"crazy"`. Absent = standard: serve the player's words. Crazy keeps the player's
   words and adds one or two unexpected mechanics on top; each is its own aspect with `crazy: true`.
 - `job_created.run_through` (optional): `true`. Absent = the Foreman stops after every phase and waits for the player.
+  With it the Foreman passes every phase after the first itself; the first phase (the greybox) always waits for the
+  player (the person gate, the owner's decision of 2026-11-23).
 - `brief_set.brief.pitch` (optional on read, written by every v2 Designer): one sentence, at most 20 words, the game as a
   player would tell a friend.
 - `brief_set.brief.aspects` (optional on read, written by every v2 Designer): 3 to 7 objects, chosen by the Designer for
@@ -295,11 +297,13 @@ key is optional; a job made before this reads as before (absent = omit the key, 
   phase is the smallest thing that plays. A `plan_set` without `phases` runs as one phase, as before.
 - `phase_done` (new event): `phase` (id). Written when every package of the phase is merged and the whole-pack checks after
   its last merge passed. Unless `run_through` is set, the job then waits: `job_state {state: "paused", reason: "phase"}`.
+  After the first phase it always waits, also with `run_through`.
 - `phase_reviewed` (new event): `phase` (id), `verdict` (`"pass"` or `"hold"`), `note` (optional string; required with
   `"hold"`), `by` (`player` or `auto`). `pass` starts the next phase (`job_state running`); after the last phase it lets
   the job go to final verification and promotion. `hold` with a note runs a change round on that phase's packages (the
   note is the request), then writes `phase_done` again. With `run_through` the Foreman writes `phase_reviewed {verdict:
-  "pass", by: "auto"}` itself, right after `phase_done`.
+  "pass", by: "auto"}` itself, right after `phase_done`, on every phase but the first; the first phase is passed only
+  `by: "player"`. A log written before 2026-11-23 may carry an auto pass on its first phase; it reads as written.
 - A job waiting on a phase is never a hang: `foreman status` names the phase and the command that answers it.
 - Commands: `foreman new` takes `--creativity crazy` and `--run-through`; `foreman react <job> <aspect> <choice> [--note "..."]`;
   `foreman redesign <job>`; `foreman phase <job> pass|hold [--note "..."]`. Each checks its value against the shapes
@@ -310,7 +314,7 @@ key is optional; a job made before this reads as before (absent = omit the key, 
   - Alternative ids and phase ids are snake_case, like aspect ids.
   - No alternative id is `keep` or `drop`, so a `choice` always means one thing.
   - A `note`, where present (`aspect_reacted`, `phase_reviewed`), is a non-empty string; an empty note is an absent key.
-  - The pause written after `phase_done` without `run_through` is `job_state {state: "paused", reason: "phase"}`.
+  - The pause written after `phase_done` without `run_through`, and after the first phase's `phase_done` with it, is `job_state {state: "paused", reason: "phase"}`.
   - The word limits stay strict in the site reader: the Foreman refuses to write an over-long line, so the reader never
     meets one from a v2 Foreman.
 

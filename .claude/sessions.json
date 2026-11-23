@@ -1,7 +1,6 @@
 {
   "sessions": [
-    {"id": "d23-hand", "scope": ["docs/research/hockey-teardown/BEHAVIOUR-HAND.md", "docs/research/hockey-teardown/probes/hand_*"], "note": "day 23 Nov H1: hockey behaviour teardown, the player's body, until 14:00"},
-    {"id": "d23-bots", "scope": ["docs/research/hockey-teardown/BEHAVIOUR-BOTS.md", "docs/research/hockey-teardown/probes/bots_*"], "note": "day 23 Nov H2: hockey behaviour teardown, bots and sandbox, until 14:00"},
-    {"id": "d23-gate", "scope": ["foreman/src/**", "docs/design/METHOD.md"], "note": "day 23 Nov H3: person gate after the first phase, until 11:30"}
+    {"id":"d23-hand","scope":["docs/research/hockey-teardown/BEHAVIOUR-HAND.md"],"note":"day 23 Nov H1: hockey behaviour teardown, the player's body, until 14:00"},
+    {"id":"d23-bots","scope":["docs/research/hockey-teardown/BEHAVIOUR-BOTS.md"],"note":"day 23 Nov H2: hockey behaviour teardown, bots and sandbox, until 14:00"}
   ]
 }
