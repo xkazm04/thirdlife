@@ -13,6 +13,7 @@ extends Node
 var R                     # scripts/hud/rules.gd, hud.gd, cards.gd (ctx.load_script: a test reaches the pack's scripts through ctx)
 var Hud
 var Cards
+var Flow
 const FRAMES: int = 36000
 
 var ctx
@@ -31,6 +32,14 @@ var take: int = 1
 var last_phase: int = -1
 var drop_left: int = 0
 var result_left: int = 0
+var last_snap: Dictionary = {}
+var tail: int = 0
+var end_age: int = 0                                # drawn frames of the end phase before this one
+var booth: Dictionary = {"lines": 0, "gate_ok": 0, "last_start": -1000000, "stop_ok": 0}
+var goals_seen: int = 0
+var banner_frames: int = 0
+var end_wait_ok: bool = false
+var end_card_seen: bool = false
 
 
 ## A layer that keeps what it was asked to draw (no Control, no camera): a top-down view, 20 units a metre round centre ice.
@@ -60,6 +69,7 @@ func _bot_setup(c) -> void:
 	R = ctx.load_script("scripts/hud/rules.gd")
 	Hud = ctx.load_script("scripts/hud/hud.gd")
 	Cards = ctx.load_script("scripts/hud/cards.gd")
+	Flow = ctx.load_script("scripts/hud/flow.gd")
 
 
 func _check(ok: bool, what: String) -> void:
@@ -145,6 +155,14 @@ func _part_a() -> void:
 	_check(R.box_plate_text(61) == "IN THE BOX  2" and R.box_plate_text(0) == "", "IN THE BOX")
 	_check(R.own_label_text(24) == "OWN  24 M", "OWN  24 M")
 	_check(R.format_timer(3601) == "1:01" and R.format_timer(0) == "0:00", "timer")
+	# Jam.Hud.GoalBanner (HUDGoalBanner.cpp:258-276)
+	_check(Flow.banner_alpha_at(-1, 120) == 0.0 and Flow.banner_alpha_at(0, 120) < 0.1 and Flow.banner_alpha_at(11, 120) == 1.0 and Flow.banner_alpha_at(60, 120) == 1.0, "banner in and held")
+	_check(Flow.banner_alpha_at(108, 120) < 1.0 and Flow.banner_alpha_at(108, 120) > 0.0 and Flow.banner_alpha_at(114, 120) == 0.0 and Flow.banner_alpha_at(120, 120) == 0.0, "banner out, gone by 114")
+	_check(Flow.banner_alpha_at(12, 30) > 0.99 and Flow.banner_alpha_at(30, 30) == 0.0, "a short pause: thirds")
+	_check(Flow.banner_centre_y(-1.0, -1.0) == 0.30 and Flow.banner_centre_y(0.45, 0.70) == 0.30 and Flow.banner_centre_y(0.33, 0.55) == 0.205 and Flow.banner_centre_y(0.26, 0.31) == 0.205, "banner band")
+	# the end card's words (cpp:446-467)
+	_check(Flow.end_card_word("win", 3, 1) == "YOU WIN" and Flow.end_card_word("lose", 1, 3) == "BEATEN" and Flow.end_card_word("lose", 2, 2) == "NO WINNER", "end words")
+	_check(Flow.end_card_score(3, 1) == "YOU  3 : 1  THEM", "end score line")
 
 
 static func _line(rows: Array) -> String:
@@ -167,15 +185,45 @@ func _bot_tick(frame: int) -> void:
 		hud = Hud.new(lay, (ctx.read_json("hockey.regular.cartridge.json") as Dictionary)["game"], "pro")
 		_feed(core.snapshot())
 		return
+	if tail > 0:                                       # the match is over: the end phase's frames (the sim stands still)
+		for i: int in 8:
+			_end_tail()
+		return
 	for i: int in 8:                                   # eight sim frames a tick: a whole match fits the budget
 		var going: bool = core.step()
 		_feed(core.snapshot())
 		if not going or stats["frames"] >= FRAMES:
-			done = true
+			if going:
+				done = true                                  # the frame budget, not the match's end: no end card to check
+			else:
+				tail = 1
 			return
 
 
+func _end_tail() -> void:
+	# thirdjam's end card waits 1.9 s (114 of our frames) with the last goal's banner in the wait, then shows (HUDEndWait.cpp, HUDGoalBanner.cpp:173-179)
+	hud.frame(last_snap, {"with_puck": false, "held": {}, "press": false, "saucer": false, "braced": false, "paused": false, "stamina01": 1.0})
+	var sh: Dictionary = hud.shown
+	if end_age < 114:
+		_check(not sh.has("end_card"), "end age %d: the card during the wait" % end_age)
+	elif end_age == 114:
+		end_wait_ok = true
+	if end_age >= 114:
+		_check(sh.has("end_card"), "end tail %d: no card after the wait" % tail)
+		if sh.has("end_card"):
+			end_card_seen = true
+			var sc: Array = last_snap["Score"]
+			var me_t: int = int((last_snap["Skaters"][int(last_snap["HumanIndex"])] as Dictionary)["Team"])
+			_check(String(sh["end_card"]).contains("YOU  %d : %d  THEM" % [int(sc[me_t]), int(sc[1 - me_t])]), "the end card's score line: %s" % String(sh["end_card"]))
+	_check(not sh.has("panel") and not sh.has("far_badge"), "end tail %d: the panel or a badge on the end card" % tail)
+	tail += 1
+	end_age += 1
+	if tail > 200:
+		done = true
+
+
 func _feed(snap: Dictionary) -> void:
+	last_snap = snap
 	var f: int = int(snap["Frame"])
 	stats["frames"] += 1
 	var me: int = int(snap["HumanIndex"])
@@ -208,6 +256,8 @@ func _feed(snap: Dictionary) -> void:
 		_check(String(sh["match_card"]) == "PERIOD %d   -   FACEOFF   -   PRO" % take, "frame %d: the card's line %s" % [f, String(sh.get("match_card", ""))])
 	_check(String(sh.get("period", "")) == ("PERIOD %d" % take) if phase != "win" and phase != "lose" else true, "frame %d: PERIOD %d on the plate" % [f, take])
 	if end:
+		_check(not sh.has("end_card"), "frame %d: the end card on the end's frame %d" % [f, end_age])
+		end_age += 1
 		stats["end"] += 1
 		_check(not sh.has("far_badge") and not sh.has("own_badge") and not sh.has("puck_arrow"), "frame %d: a marker on the end card" % f)
 	# the YOU tag: only while a faceoff counts
@@ -242,6 +292,29 @@ func _feed(snap: Dictionary) -> void:
 		var carrier: int = int(snap["Carrier"])
 		var want: String = "loose" if carrier < 0 else ("you" if carrier == me else ("mate" if int((snap["Skaters"][carrier] as Dictionary)["Team"]) == int(hu["Team"]) else "opponent"))
 		_check(p == want or (want == "you" and p == "loose"), "frame %d: possession %s, carrier says %s" % [f, p, want])
+	# the GOAL banner: only in the goal pause after a score grew; the panel and the badges stand down under it
+	if sh.has("banner"):
+		banner_frames += 1
+		_check(phase == "goal_pause" or end, "frame %d: a banner outside a goal pause" % f)
+		_check(not sh.has("panel") and not sh.has("far_badge") and not sh.has("puck_arrow"), "frame %d: the panel or a marker under the banner" % f)
+	for e: Dictionary in snap["Events"]:
+		if String(e["Name"]) == "goal":
+			goals_seen += 1
+	# the booth: a line starts only past the 150-frame gate unless it is a priority-5 call or a hit's call; a stoppage line only off play
+	if sh.has("line_started"):
+		booth["lines"] += 1
+		var id: String = sh["line_started"]
+		var l: Dictionary = {}
+		for x: Dictionary in hud.captions.lines:
+			if x["id"] == id:
+				l = x
+		var gap: int = f - int(booth["last_start"])
+		var ok_gate: bool = gap >= 150 or int(l.get("priority", 0)) >= 5 or String(l.get("event", "")) in ["check", "knockdown"]
+		_check(ok_gate, "frame %d: %s started %d frames after the last line" % [f, id, gap])
+		if bool(l.get("stop", false)):
+			_check(int(snap["Phase"]) != 0, "frame %d: stoppage line %s in play" % [f, id])
+			booth["stop_ok"] += 1
+		booth["last_start"] = f
 	prev_count = count
 	last_phase = int(snap["Phase"])
 
@@ -252,6 +325,7 @@ func _bot_done() -> bool:
 
 func _bot_result() -> Dictionary:
 	var sc: Array = core.get_score() if core != null else [0, 0]
-	return {"ok": done and fails.is_empty() and checks > 1000, "summary": "%d checks, %d failed (a recorded match of %d frames, score %d:%d; card %d, count %d, drop %d, result %d, panel %d, goal pause %d, end %d; you %d mate %d opponent %d loose %d)%s" % [
+	return {"ok": done and fails.is_empty() and checks > 1000 and end_card_seen and booth["lines"] > 10, "summary": "%d checks, %d failed (a recorded match of %d frames, score %d:%d; card %d, count %d, drop %d, result %d, panel %d, goal pause %d, end %d; you %d mate %d opponent %d loose %d)%s" % [
 		checks, fails.size(), stats["frames"], int(sc[0]), int(sc[1]), stats["card"], stats["count"], stats["drop"], stats["result"], stats["panel"], stats["goal_pause"], stats["end"],
-		stats["you"], stats["mate"], stats["opponent"], stats["loose"], "" if fails.is_empty() else ": " + "; ".join(fails)]}
+		stats["you"], stats["mate"], stats["opponent"], stats["loose"], "" if fails.is_empty() else ": " + "; ".join(fails)]
+		+ "; banner %d frames over %d goals, booth %d lines (%d stoppage), end wait %s, end card %s" % [banner_frames, goals_seen, booth["lines"], booth["stop_ok"], str(end_wait_ok), str(end_card_seen)]}

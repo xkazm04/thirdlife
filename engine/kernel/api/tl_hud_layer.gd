@@ -23,6 +23,7 @@ var _ops: Array = []
 var _cameras: TLCameras
 var _faces: GDScript
 var _boxes: Dictionary = {}
+var _images: Dictionary = {}
 
 
 func _init() -> void:
@@ -89,6 +90,46 @@ func ring(r: Rect2, color: Color, band: float = 0.082, edge: float = 0.0086, edg
 ## `angle_deg` turns it about the square's centre. Bars are max(3, size x 0.2) wide, size x 0.78 long, leaning 40 degrees.
 func chevron(pos: Vector2, size_u: float, color: Color, edge: Color = Color(0, 0, 0, 0.9), edge_w: float = 1.5, angle_deg: float = 0.0, align: Vector2 = Vector2(0.5, 0.5)) -> void:
 	_ops.append([3, pos - Vector2(size_u, size_u) * align, size_u, color, edge, edge_w, angle_deg])
+	queue_redraw()
+
+
+## K5 (1.21). A picture of the pack (a .png path relative to the pack, never outside it), loaded once; null with an error
+## when it is missing or not a PNG. Pictures are inert data: the pack's own art, drawn with image() and nine().
+func image_of(rel: String) -> Texture2D:
+	if _images.has(rel):
+		return _images[rel]
+	var p: String = rel.replace("\\", "/")
+	var ctx: TLContext = TLContext.current
+	if p.contains("..") or p.contains("://") or p.is_absolute_path() or p.get_extension().to_lower() != "png" or ctx == null:
+		push_error("TLHudLayer.image_of('%s'): a .png path relative to the pack" % rel)
+		return null
+	var img := Image.load_from_file(ctx.pack_dir + "/" + p)
+	if img == null or img.is_empty():
+		push_error("TLHudLayer.image_of('%s'): not found or not a PNG" % rel)
+		return null
+	var tex := ImageTexture.create_from_image(img)
+	_images[rel] = tex
+	return tex
+
+
+## K5 (1.21). A picture stretched into `rect` (units), multiplied by `tint` (as a tinted Unreal image brush), scaled by
+## `scale` about the rect's centre.
+func image(tex: Texture2D, rect: Rect2, tint: Color = Color.WHITE, scale_k: float = 1.0) -> void:
+	if tex == null:
+		return
+	if scale_k != 1.0:
+		var s2: Vector2 = rect.size * scale_k
+		rect = Rect2(rect.get_center() - s2 * 0.5, s2)
+	_ops.append([6, tex, rect, tint])
+	queue_redraw()
+
+
+## K5 (1.21). A nine-slice picture (an Unreal box brush): `margin` is each edge's unscaled share of the picture
+## (left, top, right, bottom as fractions of its size), drawn at `px_per_unit` texture pixels a unit.
+func nine(tex: Texture2D, rect: Rect2, margin: Vector4, px_per_unit: float = 1.0, tint: Color = Color.WHITE) -> void:
+	if tex == null:
+		return
+	_ops.append([7, tex, rect, margin, px_per_unit, tint])
 	queue_redraw()
 
 
@@ -245,6 +286,11 @@ func _draw() -> void:
 					draw_colored_polygon(scaled, op[2])
 			5:
 				draw_line(op[1] * k, op[2] * k, op[3], maxf(1.0, float(op[4]) * k), true)
+			6:
+				var r6: Rect2 = op[2]
+				draw_texture_rect(op[1], Rect2(r6.position * k, r6.size * k), false, op[3])
+			7:
+				_draw_nine(op[1], op[2], op[3], float(op[4]), op[5], k)
 
 
 func _draw_text(r: Rect2, s: String, pt: float, color: Color, opts: Dictionary, k: float) -> void:
@@ -317,3 +363,21 @@ func _draw_chevron(top_left: Vector2, s: float, color: Color, edge: Color, edge_
 		draw_set_transform(bc, whole + lean, Vector2.ONE)
 		draw_style_box(_style(color, bw * 0.5, ec, edge_w, k), Rect2(Vector2(-bw, -bh) * 0.5 * k, Vector2(bw, bh) * k))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_nine(tex: Texture2D, r: Rect2, m: Vector4, ppu: float, tint: Color, k: float) -> void:
+	var ts: Vector2 = tex.get_size()
+	var src_x := [0.0, ts.x * m.x, ts.x * (1.0 - m.z), ts.x]
+	var src_y := [0.0, ts.y * m.y, ts.y * (1.0 - m.w), ts.y]
+	var l: float = ts.x * m.x / ppu
+	var t: float = ts.y * m.y / ppu
+	var rr: float = ts.x * m.z / ppu
+	var b: float = ts.y * m.w / ppu
+	var dst_x := [r.position.x, r.position.x + l, r.end.x - rr, r.end.x]
+	var dst_y := [r.position.y, r.position.y + t, r.end.y - b, r.end.y]
+	for j: int in 3:
+		for i: int in 3:
+			var src := Rect2(src_x[i], src_y[j], src_x[i + 1] - src_x[i], src_y[j + 1] - src_y[j])
+			var dst := Rect2(Vector2(dst_x[i], dst_y[j]) * k, Vector2(dst_x[i + 1] - dst_x[i], dst_y[j + 1] - dst_y[j]) * k)
+			if dst.size.x > 0.0 and dst.size.y > 0.0 and src.size.x > 0.0 and src.size.y > 0.0:
+				draw_texture_rect_region(tex, dst, src, tint)
