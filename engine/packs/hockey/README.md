@@ -70,7 +70,7 @@ The body-check model and its rate were kept (the owner's ruling).
   the wrist shot (28.8 m/s).
 - **Poke (E)** (H1 build, 23 Nov: thirdjam's poke, docs/research/hockey-teardown/BEHAVIOUR-HAND.md 4.1 S11-S14): live from the
   press for 8 frames; reach 2.3 m inside +-35 deg of the stick; in front of the carrier or at his side it always takes the puck,
-  never through his back; the puck is the poker's at once; again 14 frames after a take, a miss locks the stick 20 frames. **Anti ping-pong**: a new owner cannot be poked for 24 frames; the old owner and opponents within 2.5 m cannot 2.5 m cannot
+  never through his back; the puck is the poker's at once; again 14 frames after a take, a miss locks the stick 20 frames. **Anti ping-pong**: a new owner cannot be poked for 24 frames; the old owner and opponents within 2.5 m cannot
   steal for 30. Bots give a fresh carrier `fresh_frames` before a stick (H2, 23 Nov: by level, rookie 60,
   pro 6, all-star 0; the mates 6; it was 60 for everybody) and 15 before a body check (`fresh_check_frames`).
 - **Speeds** (research ratios): cruise 9.2 / sprint 10.58 m/s; carrier x0.88 (8.1 / 9.31) with 0.8 of the thrust; turn
@@ -96,8 +96,11 @@ The body-check model and its rate were kept (the owner's ruling).
   anybody and carry it in; when you are open ahead a mate feeds you in `feed_share` of his carries by level (rookie 0.6,
   pro 0.4, all-star 0.2). The level is clumsiness, not slowness: red skates at full pace (`red_skill` 1.0 / 1.0 / 1.05),
   reads 10 / 7 / 5 frames late, aims 8 / 4 / 2 deg wide, shoots from `shoot_min_xg` 0.25 / 0.15 / 0.05 with
-  `shoot_weight` 1.6 / 1.9 / 3.0 (all-star shoots from anywhere), pokes after 60 / 6 / 0 frames (all-star at
-  `poke_min_odds` 0.15), checks from 6 / 2 / 2 m/s closing and never cross-checks at rookie. Pressure grows with the level: a
+  `shoot_weight` 1.6 / 1.9 / 3.0 (all-star shoots from anywhere), pokes after 60 / 6 / 0 frames of a take (`fresh_frames`) and, since
+  H1's poke always takes in reach (H2 integration, 23 Nov), only after the carrier has stood in his reach `poke_delay`
+  20 / 6 / 0 frames in a row and `poke_gap` 60 / 30 / 14 frames after his own last poke: the stick's timing is the
+  level. Checks from 4.36 / 1.45 / 1.45 m/s closing (route A's scale, x 0.727; the mates 5.8), cross-checks from 0.73 /
+  0.18 m/s and never at rookie. Pressure grows with the level: a
   hunter (the nearest non-D1 defender within `hunt_m` 0 / 6 / 20 m) goes at the carrier and may poke and cross-check;
   `forecheck_men` 1 / 2 / 2 enter the carrier's end (the second in `forecheck_share` 1 / 0.6 / 1 of his carries), the
   rest hold at the blue line. Chasers and pressers sprint in `sprint_share` 0.2 / 0.35 / 1.0 of their chases. A skater

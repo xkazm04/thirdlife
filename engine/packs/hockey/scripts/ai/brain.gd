@@ -4,7 +4,7 @@ extends RefCounted
 const KEYS := ["speed_scale", "red_skill", "lead_frames", "yield_frames", "check_min_closing_red",
 	"check_min_closing_blue", "cross_min_closing", "reaction_frames", "aim_sigma_deg", "score_noise",
 	"commit_bonus", "feed_share", "shoot_min_xg", "pass_min_lane", "pass_weight", "poke_min_odds", "fresh_frames", "fresh_check_frames", "pressure_m", "protect_weight", "net_zone_half", "net_round_z", "corner_z", "goalie_gap",
-	"settle_frames", "hunt_m", "forecheck_men", "forecheck_share", "sprint_share", "shoot_weight", "sep_m", "sep_weight", "clump_m", "clump_frames", "split_m", "brake_above"]
+	"settle_frames", "poke_delay", "poke_gap", "hunt_m", "forecheck_men", "forecheck_share", "sprint_share", "shoot_weight", "sep_m", "sep_weight", "clump_m", "clump_frames", "split_m", "brake_above"]
 ## H2 build (23 Nov): the lines of docs/research/hockey-teardown/BEHAVIOUR-BOTS.md section 4.1 are named where they live.
 var cfg := {}
 var base_cfg := {}
@@ -26,6 +26,8 @@ var plans := {}
 var previous := {}
 var hunter := {}          # sheet line 13: team -> the one non-D1 defender who goes at the carrier inside hunt_m
 var clump := {}           # sheet line 1: id -> frames in a row within clump_m of a mate; from clump_frames he splits to split_m
+var reach_since := {}     # H2 integration: id -> [carrier, carry_since, first frame his poke could take]
+var poke_next := {}       # H2 integration: id -> the frame his stick may poke again
 var fc_roll := {}         # sheet line 14: team -> [carry_since, whether the second forechecker goes]
 
 func setup(ctx, _env) -> void:
@@ -50,6 +52,8 @@ func reset() -> void:
 	previous.clear()
 	hunter.clear()
 	clump.clear()
+	reach_since.clear()
+	poke_next.clear()
 	fc_roll.clear()
 	roles_now.clear()
 	caller = ""
@@ -365,8 +369,22 @@ func _contact(id: String, team: String, car: String, role: String, env: Dictiona
 		hits.try_check(id)
 	elif stick_ok and stick_man and gap <= hits.cross_gap and not hits.graced(car) and hits.can_cross(id) and hits.closing(id, car) > value(team, "cross_min_closing") and hits.in_cross_cone(id, car):
 		hits.try_cross(id, car)
-	elif stick_ok and stick_man and not hits.swinging(id) and api.can_poke(id) and api.poke_odds(id) >= value(team, "poke_min_odds"):
-		api.try_poke(id)
+	elif stick_ok and stick_man and not hits.swinging(id) and _poke_ready(id, team, car, api):
+		if api.try_poke(id):
+			poke_next[id] = frame + int(value(team, "poke_gap"))
+
+## H2 integration (23 Nov): H1's poke takes whenever it is in reach from the front or side, so the bots' stick timing is the
+## level: a poke only after the carrier has been in his reach poke_delay frames in a row (rookie late and telegraphed,
+## all-star at once) and poke_gap frames after his own last poke (rookie 60, pro 30, all-star 14: the game's own cooldown).
+func _poke_ready(id: String, team: String, car: String, api) -> bool:
+	if not api.can_poke(id) or api.poke_odds(id) < value(team, "poke_min_odds"):
+		reach_since.erase(id)
+		return false
+	var rs: Array = reach_since.get(id, [])
+	if rs.is_empty() or rs[0] != car or int(rs[1]) != int(api.carry_since):
+		rs = [car, int(api.carry_since), frame]
+		reach_since[id] = rs
+	return frame - int(rs[2]) >= int(value(team, "poke_delay")) and frame >= int(poke_next.get(id, 0))
 
 func _around_net(me: Vector3, target: Vector3, env: Dictionary, team: String) -> Vector3:
 	for side: String in ["blue", "red"]:

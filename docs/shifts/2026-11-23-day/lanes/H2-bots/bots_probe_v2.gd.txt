@@ -1,0 +1,200 @@
+extends "bot_hockey.gd"
+## H2 (23 Nov) bots probe, lane copy only (not in engine/): what the six field skaters DO on the ice.
+## Cell from env: PROBE_LEVEL (rookie|pro|allstar), PROBE_HAND (ai = autopilot on b0 too | idle | newcomer | regular).
+## Live frames only (rules running, not frozen). Definitions: BEHAVIOUR-BOTS.md section "Definitions".
+const R := [2.3, 3.0]            # "within stick reach": our own poke reach (2.3 m), and a common 3.0 m (centre to centre)
+const NEAR := [5.0, 10.0, 3.33, 6.67]  # opponents near the carrier; the last two are 5 / 10 m scaled by rink length 60/90
+var ai_cell := false; var tapped := false
+var c := {}; var arr := {}       # counters (summed by sum.mjs); lists (frames-to-reach, pass lengths, shot distances, touches)
+var lf := 0; var team := {}; var role := {}; var still := {}; var seen := {}
+var holder_prev := ""; var take_f := 0; var take_pos := Vector2.ZERO; var reached := [false, false]
+var poss_side := ""; var touches := 0; var pass_from := {}; var pass_by := ""   # pass_from: passer -> [release pos, frame]
+var h_last := ""; var last_hit_f := -1; var lr_sig := ""; var scores_prev := {"blue": 0, "red": 0}; var last_field_holder := ""
+func _init() -> void:
+	var lv: String = OS.get_environment("PROBE_LEVEL") if OS.get_environment("PROBE_LEVEL") != "" else "pro"
+	var hd: String = OS.get_environment("PROBE_HAND") if OS.get_environment("PROBE_HAND") != "" else "ai"
+	ai_cell = hd == "ai"
+	ladder(lv, "idle" if ai_cell else hd)
+func _add(k: String, v: float = 1.0) -> void:
+	c[k] = float(c.get(k, 0.0)) + v
+func _push(k: String, v) -> void:
+	(arr.get_or_add(k, []) as Array).append(v)
+func _d(src: Dictionary, key: String, id: String) -> int:     # the rise of a game counter since the last frame
+	var n: int = int(src[id]) - int(seen.get(key + id, 0)); seen[key + id] = int(src[id]); return n
+func _never() -> void:                                        # the carrier let go (before an opponent reached him?)
+	_push("carry_len_" + _who(holder_prev), lf - take_f)          # v2 (integration): every field carry's length in frames
+	for i in 2:
+		if not reached[i]: _add("reach_never_%d_%s" % [i, _who(holder_prev)])
+func _who(id: String) -> String:          # carrier class: human (b0 by a hand), blue AI, red AI
+	return "human" if id == "b0" and not ai_cell else ("blue" if team.get(id, "") == "blue" else "red")
+func _bot_tick(frame: int) -> void:
+	super(frame)
+	if ai_cell and not tapped and str(s.get("state", "")) == "running" and str(s.get("level", "none")) == level and s.get("mode", "") == "base":
+		ctx.input.tap(&"autopilot")
+		tapped = true
+	if s.is_empty() or bool(s.get("frozen", true)) or str(s.get("state", "")) != "running" or s.has("menu") or s.has("intro"):
+		holder_prev = ""
+		pass_from.clear()
+		return
+	if ai_cell and not tapped:
+		return
+	if team.is_empty():
+		for k: Dictionary in s["skaters"]:
+			team[k["id"]] = str(k["team"]); role[k["id"]] = str(k["role"])
+	lf += 1
+	var first60: bool = lf <= 3600
+	var pk: Vector2 = _v(s["puck"]["pos"])
+	var h: String = str(s["puck"].get("holder", ""))
+	var pos := {}; var spd := {}
+	for k: Dictionary in s["skaters"]:
+		pos[k["id"]] = _v(k["pos"]); spd[k["id"]] = float(k["speed"])
+	var down: Dictionary = (s["hits"] as Dictionary).get("down", {})
+	var field := func(id): return role[id] != "goalie"
+	# --- thirds (blue attacks +x), loose
+	_add("f_third_" + ("blue_def" if pk.x <= -10.0 else ("blue_off" if pk.x >= 10.0 else "neutral")))
+	if h == "":
+		_add("f_loose")
+	# --- takes, touches, chains, passes
+	if h != "" and h != holder_prev:
+		if holder_prev != "" and field.call(holder_prev):
+			_never()
+		var side: String = team[h]
+		if not pass_from.is_empty():
+			var pf: Array = pass_from[pass_by]
+			var ok: bool = team.get(pass_by, "") == side
+			_add("pass_end_" + _who(pass_by) + ("_ok" if ok else "_lost"))
+			if ok:
+				_push("pass_len_" + _who(pass_by), snappedf((pf[0] as Vector2).distance_to(pk), 0.1))
+				if h == "b0" and pass_by != "b0" and not ai_cell:
+					_add("feed_human"); if first60: _add("first60_fed")
+			pass_from.clear()
+		if side != poss_side:
+			if poss_side != "":
+				_push("chain_" + poss_side, touches)
+				if field.call(h) and team[h] == "blue" and h != "b0":
+					_add("takeaway_blue_ai")
+				if poss_side == "blue" and last_field_holder == "b0" and not ai_cell: _add("lost_human")   # v2: his side lost it, his carry last
+			poss_side = side; touches = 0
+		touches += 1
+		if field.call(h):
+			holder_prev = h; take_f = lf; take_pos = pos[h]; reached = [false, false]
+			_add("takes_" + _who(h))
+			if h == "b0" and first60 and not ai_cell:
+				_add("first60_touches")
+			last_field_holder = h
+	if h == "" and holder_prev != "":
+		_never()
+	if h == "" or not field.call(h):
+		holder_prev = h if h != "" else ""
+	# --- pressure on a field carrier
+	if h != "" and field.call(h):
+		var w: String = _who(h)
+		_add("f_carry_" + w)
+		var near_n := [0, 0, 0, 0]; var dmin := 1e9
+		for id: String in pos:
+			if team[id] == team[h] or not field.call(id):
+				continue
+			var d: float = (pos[id] as Vector2).distance_to(pos[h]); dmin = minf(dmin, d)
+			for j in 4:
+				if d <= NEAR[j]: near_n[j] += 1
+		for j in 4:
+			_add("near%d_%s" % [j, w], near_n[j])
+		for i in 2:
+			if not reached[i] and dmin <= R[i]:
+				reached[i] = true
+				_push("reach_%d_%s" % [i, w], lf - take_f)
+		if lf - take_f == 180 and (pos[h] as Vector2).distance_to(take_pos) < 4.0:
+			_add("circle_" + w)                      # held 3 s and still within 4 m of where he took it
+		# forecheck: the carrier's side in its own defensive zone (beyond its own blue line)
+		var sg: float = 1.0 if team[h] == "blue" else -1.0
+		if pk.x * sg <= -10.0:
+			var fc := 0
+			for id: String in pos:
+				if field.call(id) and team[id] != team[h] and (pos[id] as Vector2).x * sg <= -10.0:
+					fc += 1
+			_add("fc_f_" + ("red" if team[h] == "blue" else "blue")); _add("fc_n_" + ("red" if team[h] == "blue" else "blue"), fc)
+			if fc >= 2: _add("fc_2_" + ("red" if team[h] == "blue" else "blue"))
+		# off the puck, the carrier's mates; the defenders
+		var opp_net := Vector2(26.0 * sg, 0.0); var own_net := Vector2(-26.0 * sg, 0.0)
+		var front := false; var slot := false
+		for id: String in pos:
+			if not field.call(id) or id == h: continue
+			if team[id] == team[h]:
+				_add("mate_dist_" + team[h], (pos[id] as Vector2).distance_to(pos[h])); _add("mate_n_" + team[h])
+				if (pos[id] as Vector2).distance_to(opp_net) < 6.0: front = true
+			elif (pos[id] as Vector2).distance_to(own_net) < 8.0: slot = true
+		_add("f_poss_" + team[h])
+		if front: _add("netfront_" + team[h])
+		if slot: _add("slotcover_" + ("red" if team[h] == "blue" else "blue"))
+	# --- team shape: spread round the centroid, chasers within 5 m of the puck
+	for t: String in ["blue", "red"]:
+		var cen := Vector2.ZERO; var n := 0; var ch := 0
+		for id: String in pos:
+			if team[id] == t and field.call(id):
+				cen += pos[id]; n += 1
+				if (pos[id] as Vector2).distance_to(pk) < 5.0: ch += 1
+		cen /= maxf(n, 1)
+		for id: String in pos:
+			if team[id] == t and field.call(id): _add("spread_" + t, (pos[id] as Vector2).distance_to(cen) / n)
+		_add("chase_" + t, ch)
+		if ch >= 2: _add("chase2_" + t)
+	# --- idle: a field skater not carrying, not down, under 0.5 m/s for 120 frames in a row
+	for id: String in pos:
+		if not field.call(id) or (id == "b0" and not ai_cell): continue
+		if spd[id] < 0.5 and id != h and not down.has(id):
+			still[id] = int(still.get(id, 0)) + 1
+			if still[id] == 120: _add("idle_" + team[id])
+		else: still[id] = 0
+	# --- releases (passes, shots), pokes, hits
+	var ps: Dictionary = s["possession"]["passes"]
+	for id: String in ps:
+		if _d(ps, "p", id) > 0 and team.has(id):
+			if h == id: _add("pass_regather_" + _who(id))   # released and his again on the same sampled frame
+			if h_last != id: _add("pass_unseen_" + _who(id))  # the passer was not the holder on the last sampled frame (a one-touch re-pass)
+			else: pass_from = {id: [pos.get(id, pk), lf]}; pass_by = id
+			_add("pass_" + _who(id)); if first60 and id == "b0": _add("first60_passes")
+	for id: String in s["shots"]:
+		if _d(s["shots"], "s", id) > 0 and team.has(id):
+			var t2: String = team[id]
+			_add("shot_" + _who(id)); _push("shot_dist_" + t2, snappedf(pk.distance_to(Vector2(26.0 if t2 == "blue" else -26.0, 0.0)), 0.1))
+			if first60 and id == "b0" and not ai_cell: _add("first60_shots")
+	var pt: Dictionary = s["possession"]["poke_tries"]; var pl: Dictionary = s["possession"]["pokes"]
+	for id: String in pt:
+		var dt: int = _d(pt, "pt", id); var dl: int = _d(pl, "pl", id)
+		if dt > 0: _add("poke_try_" + _who(id), dt)
+		if dl > 0: _add("poke_ok_" + _who(id), dl)
+	var tr: Dictionary = s["hits"]["tries"]
+	for id: String in tr:
+		var d3: int = _d(tr, "ht", id)
+		if d3 > 0: _add("hit_try_" + _who(id), d3)
+	var lh: Dictionary = s["hits"].get("last", {})
+	if not lh.is_empty() and int(lh["frame"]) != last_hit_f:
+		last_hit_f = int(lh["frame"])
+		var by: String = str(lh["by"])
+		_add("hit_%s_%s_%s" % [_who(by), str(lh["kind"]), str(lh["class"])])
+		if str(lh["on"]) == "b0" and not ai_cell:
+			_add("hit_on_human"); if first60: _add("first60_hit_on_human")
+	var lr: Dictionary = s["possession"].get("last", {})
+	if str(lr) != lr_sig:
+		lr_sig = str(lr)
+		if str(lr.get("kind", "")) == "poked" and str(lr.get("by", "")) == "b0" and not ai_cell:
+			_add("poked_off_human")
+	h_last = h
+	# --- goals: who touched last
+	var sc: Dictionary = s.get("scores", {})
+	for t3: String in ["blue", "red"]:
+		if int(sc.get(t3, 0)) > int(scores_prev[t3]):
+			_add("goal_" + t3)
+			if last_field_holder != "" and team[last_field_holder] != t3: _add("goal_lasttouch_def_" + t3)
+			if first60 and not ai_cell: _add("first60_goal_" + t3)
+		scores_prev[t3] = int(sc.get(t3, 0))
+func _bot_result() -> Dictionary:
+	var r: Dictionary = super()
+	var sv: Dictionary = s.get("saves", {})
+	var scf: Dictionary = s.get("scores", {})
+	for t3: String in ["blue", "red"]:       # the last goal ends the match on a frame that is not live
+		if int(scf.get(t3, 0)) > int(scores_prev[t3]):
+			_add("goal_" + t3, int(scf.get(t3, 0)) - int(scores_prev[t3]))
+			if last_field_holder != "" and team[last_field_holder] != t3: _add("goal_lasttouch_def_" + t3)
+	r["bots"] = {"live_f": lf, "c": c, "arr": arr, "saves": sv, "cell": [level, "ai" if ai_cell else hand_profile]}
+	return r
