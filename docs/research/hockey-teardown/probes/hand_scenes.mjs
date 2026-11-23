@@ -40,7 +40,40 @@ for (const d of [0.6, 0.9, 1.2, 1.4, 1.6, 1.9]) for (const ang of [0, 90, 180, 2
   const a = ang * Math.PI / 180, id = `h1_ring_${d}_${ang}`; add({ id, place: { b0: [0, 0, 1, 0] }, puck: [+(d * Math.cos(a)).toFixed(3), +(d * Math.sin(a)).toFixed(3)] });
   ring.push(S(`ring_d${d}_a${ang}`, id, 40, [], 0));
 }
+// Round 2, hits. The victim r0 stands at the centre facing b0 (front), across (side) or away (behind); b0 glides at v (no keys)
+// from a 0.45 m surface gap and presses at age 0. As victim, b0 holds the up key (-z) from age 8 to show when his hand comes back.
+const FACE = { front: [-1, 0], side: [0, 1], behind: [1, 0] };
+const hit = [];
+const H = (name, d, frames, extra = {}) => { add(d); hit.push({ name, drill: d.id, frames, segs: [], wait: 0, ...extra }); };
+const at = (f, v, more = {}) => ({ place: { r0: [0, 0, ...f] }, place_from: { b0: ['r0', -0.45, 0, 1, 0] }, velocity: { b0: [v, 0] }, puck: far, ...more });
+for (const [k, f] of Object.entries(FACE)) {
+  for (const v of [4, 6, 9, 11]) {
+    H(`check_${k}_v${v}`, { id: `h1_ck_${k}_${v}`, ...at(f, v) }, 200, { taps: [[0, 'check']] });
+    if (v === 4 || v === 9) H(`cross_${k}_v${v}`, { id: `h1_cx_${k}_${v}`, ...at(f, v) }, 200, { taps: [[0, 'cross']] });
+  }
+  H(`bump_${k}_v9`, { id: `h1_bp_${k}`, ...at(f, 9) }, 120);
+  const bf = k === 'front' ? [-1, 0] : k === 'side' ? [0, 1] : [1, 0];
+  for (const [n, act] of [['victim', 'check'], ['victimx', 'cross']])
+    H(`${n}_${k}_v9`, { id: `h1_${n}_${k}`, place: { b0: [0, 0, ...bf] }, place_from: { r0: ['b0', -0.45, 0, 1, 0] }, velocity: { r0: [9, 0] }, move: { r0: [1, 0] },
+      puck: far, script: [[0, 'r0', act]] }, 260, { segs: [[8, 260, 0, -1, 0]] });
+}
+for (const [k, f, pk] of [['side', [0, 1], [0, 1.24]], ['behind', [1, 0], [1.24, 0]]]) for (const act of ['check', 'cross'])
+  H(`carrier_${act}_${k}_v9`, { id: `h1_c${act}_${k}`, ...at(f, 9, { puck: pk, carrier: 'r0' }) }, 200, { taps: [[0, act]] });
+H('held_front_v9', { id: 'h1_hd_front', place: { r0: [0, 0, -1, 0] }, place_from: { b0: ['r0', -3, 0, 1, 0] }, velocity: { b0: [9, 0] }, puck: far }, 200, { holds: [[0, 60, 'cross']] });
+H('whiff_check', { id: 'h1_wf_ck', place: { b0: [-8, 0, 1, 0], r0: [6, 0, -1, 0] }, puck: far }, 120, { taps: [[0, 'check'], [14, 'check'], [40, 'check']] });
+H('whiff_cross', { id: 'h1_wf_cx', place: { b0: [-8, 0, 1, 0], r0: [6, 0, -1, 0] }, puck: far }, 120, { taps: [[0, 'cross'], [14, 'cross'], [50, 'cross']] });
+// pokes (E) at a standing carrier whose puck is 1.8 m from b0, in front of him and at his side: 10 tries each (the take is a dice roll)
+for (const [k, b] of [['front', [2.93, 0.5, -1, 0]], ['side', [1.13, 2.3, 0, -1]]]) for (let i = 0; i < 20; i++)   // pressed at 30: a new carrier cannot be poked for 24 frames
+  H(`poke_${k}_${i}`, { id: `h1_pk_${k}_${i}`, place: { r0: [0, 0, 1, 0], b0: b }, puck: [1.24, 0], carrier: 'r0' }, 100, { taps: [[30, 'poke']] });
+// the cross-check timed as a person times it: pressed when the gap closes in its wind-up (10 frames at v)
+for (const [k, f] of Object.entries(FACE)) for (const v of [4, 9]) {
+  const g = +(v * 10 / 60).toFixed(2), ge = +(v * 10 / 60 + 0.5).toFixed(2);
+  H(`crosse_${k}_v${v}`, { id: `h1_ce_${k}_${v}`, place: { r0: [0, 0, ...f] }, place_from: { b0: ['r0', -ge, 0, 1, 0] }, velocity: { b0: [v, 0] }, puck: far }, 200, { taps: [[0, 'cross']] });
+  H(`crosst_${k}_v${v}`, { id: `h1_ct_${k}_${v}`, place: { r0: [0, 0, ...f] }, place_from: { b0: ['r0', -g, 0, 1, 0] }, velocity: { b0: [v, 0] }, puck: far }, 200, { taps: [[0, 'cross']] });
+}
+for (const [k, f, pk] of [['side', [0, 1], [0, 1.24]], ['behind', [1, 0], [1.24, 0]]])
+  H(`carrier_crosst_${k}_v9`, { id: `h1_cct_${k}`, place: { r0: [0, 0, ...f] }, place_from: { b0: ['r0', -1.5, 0, 1, 0] }, velocity: { b0: [9, 0] }, puck: pk, carrier: 'r0' }, 200, { taps: [[0, 'cross']] });
 fs.writeFileSync(file, JSON.stringify(D, null, 1));
 fs.mkdirSync(out, { recursive: true });
-for (const [n, l] of [['move', move], ['pick', pick], ['ring', ring]]) fs.writeFileSync(path.join(out, `scenes_${n}.json`), JSON.stringify(l));
-console.log(JSON.stringify({ drills: D.drills.length, move: move.length, pick: pick.length, ring: ring.length }));
+for (const [n, l] of [['move', move], ['pick', pick], ['ring', ring], ['hit', hit]]) fs.writeFileSync(path.join(out, `scenes_${n}.json`), JSON.stringify(l));
+console.log(JSON.stringify({ drills: D.drills.length, move: move.length, pick: pick.length, ring: ring.length, hit: hit.length }));
