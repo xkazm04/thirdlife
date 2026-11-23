@@ -23,9 +23,10 @@ const RAIL_H: Array = [0.50, 0.98]
 ## (about 31 m) and a piece fades out (dithered) between `SEEN_M` and `SEEN_M` + `SEEN_MARGIN` from its middle.
 const CHUNK: int = 12
 const GATE_CLEAR: float = 9.0      # metres round a plot's gate (the start of its spur) that stay free: its fence, flag and sign stand there
-const SEEN_M: float = 108.0
+const SEEN_M: float = 92.0         # N3 round 6: was 108 (+ 8, no fade); the fade now starts here so it still ends where the
+                                   # old piece went (116 m): celsurf.rails holds every drawn rail at 0.75 px or more
 const SEEN_MARGIN: float = 24.0    # N3 (22-23 Nov): a piece fades out over these metres beyond SEEN_M (dithered) instead of
-                                   # popping as a whole: 12 posts of 11 px at 108 m appeared and went at once (was 8 m, no fade)
+                                   # popping as a whole: 12 posts of about 11 px appeared and went at once
 
 
 ## `main_path`: the main road (TLKitPath, 2 m samples); `half`: its half width; `spur_paths`: landscape.gd's

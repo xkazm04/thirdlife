@@ -1,0 +1,23 @@
+N3 round 6: the verdict's 4 failures from tonight's rounds, fixed the Director's way (keep the 19 Nov blend)
+
+1. blend.car_origin (live_grass=0.0 % after round 2) + surf.classic_source + celsurf.classic_files (toon sha pins):
+   round 2's two shader lines and STYLE.md's tl_clip line are reverted to 1fa3b56 byte for byte, so the live draw is
+   the accepted blend again (ex_car's course = village grass near). The near/far mismatch the owner saw is now fixed
+   on the picture side: draw_pictures.gd `_collect_standin` drops a slab whose origin lies outside the plot as the
+   live draw does (it kept slabs that reach in, so the course was a dark square from 38 m). PIC_VERSION 1601 -> 2311
+   (the rule changed: cached pictures with the slab are not reused). draw_base.gd comment and DRAW.md say so.
+   Expectation moved, named in the test's header: blend.car_origin asked "distant asphalt >= 90 %" (the mismatch);
+   it now asks "distant grass >= 90 %": live_grass 99.8 %, distant_grass 97.2 %.
+2. celsurf.rails (drawn_under_0.75_px=12 after round 4): the test keeps every drawn rail at 0.75 px or more
+   (reach = end + margin + half a piece, 0.15 m rail, 75 degree lens, 1080 lines). Round 4 let the fade run to 132 m.
+   Fit: the fade now runs 92..116 m (SEEN_M 108 -> 92, margin 24), so it ends where the old piece popped and the
+   guard holds: drawn_under_0.75_px=0. The test is unchanged.
+Evidence: car_r6_crisp.jpg, car_r6_classic.jpg: the same scripted walk south to the car course (frames 209, 754, 1081,
+   1300), three rows: 22 Nov main (grass near, dark slab far), round 2 (asphalt near and far), round 6 (grass near
+   and far; from 150 m only the cars' marks and cones remain on the grass).
+Gates on this tree: celsurf. 9/9, surf. 5/5, blend. 4/4, n3. 3/3 (also run with TL_STYLE=classic exported; the n3 block
+   itself pins TL_STYLE=crisp, and its cases do not depend on the look), fast and world below.
+Whole uncapped kernel selftest on this tree (bash engine/tools/tl.sh selftest, 01:24-02:20): 495 passed, 3 failed.
+  The 3 were N4's create.go.door/started/pitch: "no foreman/dist/test/helpers.js: build the Foreman first" (this
+  worktree had no Foreman build). After `npm --prefix foreman run build`: create.go 3/3 PASS. So 498/498 with the
+  Foreman built. engine/style is byte-equal to 1fa3b56 (git diff --stat 1fa3b56 -- engine/style: empty).

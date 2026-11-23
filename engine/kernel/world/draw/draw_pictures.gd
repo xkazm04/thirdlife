@@ -286,7 +286,7 @@ func _collect_standin(n: Node, holder: Node3D, accs: Array, jobs: Array) -> void
 				acc.dropped_moving += 1
 			elif longest < acc.min_size:
 				acc.dropped_small += 1
-			elif acc.radius > 0.0 and Vector2(m.global_position.x, m.global_position.z).length() > acc.radius and not reaches_in(holder, m, acc.radius):        # walker-feel T2: a long slab that reaches in is cut, not dropped
+			elif acc.radius > 0.0 and Vector2(m.global_position.x, m.global_position.z).length() > acc.radius:        # N3 round 6: dropped by its origin as the live draw drops it (a slab that reaches in was kept here: a dark square far, grass near)
 				acc.dropped_outside += 1
 			else:
 				for s: int in m.mesh.get_surface_count():

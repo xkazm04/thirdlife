@@ -1,4 +1,7 @@
 # Keep the camera on the same car pad while the visitor walks from the live plot to its distant picture.
+# N3 round 6 (23 Nov, the Director's decision): the distant picture now drops a slab that reaches into its plot as the live
+# draw does (the origin cut), so the course is village grass near AND far. The expectation moved from "distant asphalt
+# >= 90 %" to "distant grass >= 90 %": the owner's complaint was the near/far mismatch (grass near, a dark square far).
 if [ -z "$FILTER" ] || [[ "blend.car_origin" == *"$FILTER"* ]]; then
   origin_dir="$(mktemp -d "$OUT/car-origin.XXXXXX")"
   origin_engine="$(cd "$HERE/.." && pwd)"
@@ -32,18 +35,18 @@ func _initialize() -> void:
 		return
 	# The central patch is well inside the verge. Sample past the cars, cones and their shadows.
 	var grass := 0
-	var asphalt := 0
+	var far_grass := 0
 	var samples := 0
 	for y: int in range(430, 650, 4):
 		for x: int in range(760, 1160, 4):
 			var live := near.get_pixel(x, y)
 			var picture := distant.get_pixel(x, y)
 			grass += int(live.g > live.r)
-			asphalt += int(picture.r > 1.2 * picture.g)
+			far_grass += int(picture.g > picture.r)
 			samples += 1
-	print("ORIGIN live_grass=%.1f%% distant_asphalt=%.1f%% (%d samples per view, minimum 90%% each)" %
-		[100.0 * grass / samples, 100.0 * asphalt / samples, samples])
-	quit(0 if mini(grass, asphalt) >= 0.9 * samples else 1)
+	print("ORIGIN live_grass=%.1f%% distant_grass=%.1f%% (%d samples per view, minimum 90%% each)" %
+		[100.0 * grass / samples, 100.0 * far_grass / samples, samples])
+	quit(0 if mini(grass, far_grass) >= 0.9 * samples else 1)
 GDSCRIPT
   origin_why=""
   origin_result=""
