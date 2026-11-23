@@ -116,6 +116,7 @@ Properties: `active: Camera3D`
 
 - `func activate(view_name: StringName) -> bool`
 - `func add_view(view: StringName, position: Vector3, target: Vector3, fov: float = 60.0) -> Camera3D`
+- `func aspect() -> float`
 - `func chase(target: Node3D, opts: Dictionary = {}, view: StringName = &"chase") -> TLChaseCam`
 - `func fade_occluders(on: bool = true, opts: Dictionary = {}) -> void`
 - `func faded() -> Array`
@@ -294,7 +295,7 @@ Properties: `font_size: int`
 
 > Named actions: the one door for input. A pack declares actions; the player presses keys, a bot injects, and the
 
-Consts: `AIM_DEAD`, `LOOK_X`, `LOOK_Y`, `STEP`, `ZOOM`
+Consts: `AIM_DEAD`, `LOOK_X`, `LOOK_Y`, `NO_PIXEL`, `STEP`, `ZOOM`
 
 Signals: `action_pressed(action: StringName)`, `action_released(action: StringName)`
 
@@ -302,6 +303,7 @@ Properties: `accept_devices: bool`
 
 - `func aim(action: StringName) -> Vector3`
 - `func aim_direction(action: StringName, from: Vector3, fallback: Vector3 = Vector3.ZERO) -> Vector3`
+- `func aim_pixel(action: StringName) -> Vector2`
 - `func aim_valid(action: StringName) -> bool`
 - `func axis(negative: StringName, positive: StringName) -> float`
 - `func clear_aim(action: StringName) -> void`
@@ -315,7 +317,7 @@ Properties: `accept_devices: bool`
 - `func pressed(action: StringName) -> bool`
 - `func release(action: StringName) -> void`
 - `func release_all() -> void`
-- `func set_aim(action: StringName, point: Vector3) -> void`
+- `func set_aim(action: StringName, point: Vector3, pixel: Vector2 = NO_PIXEL) -> void`
 - `func set_axis(negative: StringName, positive: StringName, value: float) -> void`
 - `func strength(action: StringName) -> float`
 - `func tap(action: StringName, frames: int = 1) -> void`

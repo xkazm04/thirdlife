@@ -1,15 +1,14 @@
 extends RefCounted
 ## thirdjam's regular rink as ARinkActor::Build makes it (S/JamGame/Private/RinkActor.cpp:434-886, measures RinkActor.h:59-70,
-## thirdjam HEAD 8dc713c6), from the cartridge's game.rink (90 x 45 m, corners 3.75 m, goals 4 x 0.61 m). The ice, boards and
-## glass are the kit's `rink` part placed so its geometry lands on thirdjam's (the part centres its boards on its outline:
-## built 0.2 m longer and wider with the corner 0.1 m larger, its boards' inner face stands on thirdjam's outline; lowered
-## 0.05 m, its ice top is thirdjam's z = 0). The markings and the nets are not the kit's (its blue lines, goal lines, dots and
-## goal differ): they are drawn here, kit-style (TLMesh, palette keys), from RinkActor's own numbers. Visual only: the
-## gym's skater is plain data (the simulation knows the rink, not these meshes). Every measure that differs is in
+## thirdjam HEAD 8dc713c6), from the cartridge's game.rink (90 x 45 m, corners 3.75 m, goals 4 x 0.61 m), drawn kit-style
+## (TLMesh, palette keys): the outline (ARinkActor::Outline, 12 segments a corner), the boards with their kick plate, the
+## markings, and the goals as thirdjam's arena meshes are made (tools/blender/arena/arena.py goal_build, the 4 x 0.61 variant
+## RinkActor picks). The ice sheet alone is the kit's `rink` part (no boards, glass, markings or goals of its own), lowered
+## 0.05 m so its top is thirdjam's z = 0. Round 2 (the Director, 23 Nov): a plain dark hall round it in place of sky and
+## grass (no art: walls, a ceiling). Visual only: the gym's skater is plain data. Every measure that differs is in
 ## docs/shifts/2026-11-24-night/lanes/K3-shell/RINK.md.
 
 const Z_PAINT: float = 0.006      # RinkActor.cpp:604: markings 0.6 cm over the ice
-const UU: float = 1.0             # thirdjam builds in cm (UU = 100); here metres
 
 
 static func generate(ctx) -> void:
@@ -17,28 +16,65 @@ static func generate(ctx) -> void:
 
 
 ## Builds the rink under `parent` (a Node3D in Godot coordinates: rink x -> x, rink y -> z, up -> y).
-static func build(parent: Node3D, rink: Dictionary) -> Node3D:
+static func build(parent: Node3D, rink: Dictionary, hall: Dictionary) -> Node3D:
 	var L: float = float(rink["length_m"])
 	var W: float = float(rink["width_m"])
 	var R: float = float(rink["corner_radius_m"])
 	var goal_w: float = float(rink.get("goal_width_m", 4.0))
-	var goal_h: float = float(rink.get("goal_height_m", 0.61))   # FJamRinkConfig::GoalHeightM default (JamCartridge.h, R-0033)
+	var goal_h: float = float(rink.get("goal_height_m", 0.61))   # FJamRinkConfig::GoalHeightM default (JamCartridge.h:37)
 	var node := Node3D.new()
 	node.name = "Rink"
 	parent.add_child(node)
-	var board_t: float = 0.2                                     # RinkActor.h:62 BoardThicknessM
-	# DEVIATION: no glass. RinkActor stands 0.9 m of glass on the boards (RinkActor.h:61); the kit's glass draws white sheen
-	# stripes, and with the boards view's camera 0.4 m inside the end boards a stripe crossed the skater (K3 round 1, frame
-	# 1380 of bot_gym_hand). thirdjam's glass is near invisible in its film. Back when the kit or the style has a quiet glass.
-	var part: Node3D = TLKit.build("rink", {"length": L + board_t, "width": W + board_t, "corner_r": R + board_t * 0.5,
-		"glass": false, "glass_h": 0.9, "markings": false, "goals": false})   # RinkActor.h:60 BoardHeightM 1.2
+	var part: Node3D = TLKit.build("rink", {"length": L, "width": W, "corner_r": R, "boards": false, "glass": false,
+		"markings": false, "goals": false, "apron": 0.0})
 	part.position = Vector3(0, -0.05, 0)                         # the kit's ice top is y = 0.05 (KIT.md `rink`)
 	node.add_child(part)
 	var mk := TLMesh.new(41)
+	_boards(mk, outline(L, W, R, 12))
 	_markings(mk, L, W, R, goal_w)
-	_nets(mk, L, goal_w, goal_h)
-	node.add_child(mk.instance("TjMarkings"))
+	for s: float in [-1.0, 1.0]:
+		_goal(mk, s, L * 0.5 - 4.0, goal_w, goal_h)
+	node.add_child(mk.instance("TjRink"))
+	if not hall.is_empty():
+		_hall(node, L, W, hall)
 	return node
+
+
+## ARinkActor::Outline (RinkActor.cpp:416-432): counter-clockwise, corner arcs of `segs` segments.
+static func outline(L: float, W: float, R: float, segs: int) -> Array:
+	var out: Array = []
+	var hx: float = L * 0.5
+	var hz: float = W * 0.5
+	var rc: float = clampf(R, 0.0, minf(hx, hz))
+	var centres: Array = [Vector2(hx - rc, hz - rc), Vector2(-(hx - rc), hz - rc), Vector2(-(hx - rc), -(hz - rc)), Vector2(hx - rc, -(hz - rc))]
+	for c: int in 4:
+		var start: float = float(c) * PI * 0.5
+		var n: int = segs if rc > 0.0 else 1
+		for i: int in n + 1:
+			var a: float = start + (PI * 0.5) * float(i) / float(n)
+			out.append((centres[c] as Vector2) + Vector2(cos(a), sin(a)) * rc)
+	return out
+
+
+static func _g(p: Vector2, h: float) -> Vector3:   # rink (x, y) at height h -> Godot
+	return Vector3(p.x, h, p.y)
+
+
+## The boards (RinkActor.cpp:470-500, RinkActor.h:60-67): 1.2 m high, 0.2 m thick outward from the outline; the kick plate
+## 0.25 m high standing 2 cm proud of the inner face, yellow (RinkActor.cpp:550, LoadConstructionMat(0.85, 0.72, 0.12)).
+static func _boards(mk: TLMesh, line: Array) -> void:
+	var bh: float = 1.2
+	var t: float = 0.2
+	for i: int in line.size():
+		var p0: Vector2 = line[i]
+		var p1: Vector2 = line[(i + 1) % line.size()]
+		if p0.distance_to(p1) < 0.01:
+			continue
+		var d: Vector2 = (p1 - p0).normalized()
+		var o: Vector2 = Vector2(d.y, -d.x)                      # outward for a counter-clockwise outline (cpp:484)
+		var e: Vector2 = d * 0.01                                 # a hair of overlap at the joints
+		mk.bar(_g(p0 - e + o * (t * 0.5), 0.0), _g(p1 + e + o * (t * 0.5), 0.0), t, bh * 2.0, "boards")
+		mk.bar(_g(p0 - e - o * 0.01, 0.0), _g(p1 + e - o * 0.01, 0.0), 0.02, 0.5, "yellow")
 
 
 # A strip of half width hw between two points on the ice (FMeshBuf::Strip: the width argument is the half width).
@@ -103,46 +139,76 @@ static func _markings(mk: TLMesh, L: float, W: float, R: float, goal_w: float) -
 	_arc(mk, Vector2.ZERO, 0.0, 0.15, 0.0, TAU, 16, "rink_blue")
 
 
-## The nets (RinkActor.cpp:840-871): a 14 cm frame (posts, crossbar, side and back bottom bars), the back frame at
-## min(0.9, h * 0.9 / 1.5) and the netting from the crossbar to the back bar; the opening faces the centre, depth 1.5 m
-## (UJamSim::NetDepth, JamSim.h:506), the goal line at x = +-(L/2 - 4).
-static func _nets(mk: TLMesh, L: float, goal_w: float, goal_h: float) -> void:
-	var gl: float = L * 0.5 - 4.0
-	var depth: float = 1.5
-	var pr: float = 0.07
-	var hw: float = goal_w * 0.5
-	var bh: float = minf(0.9, goal_h * (0.9 / 1.5))
-	for s: float in [-1.0, 1.0]:
-		var x0: float = s * gl
-		var x1: float = s * (gl + depth)
-		# rink (x, y, up) -> Godot (x, up, y)
-		mk.boxm(Vector3(x0 - pr, 0, -hw - pr), Vector3(x0 + pr, goal_h, -hw + pr), "goal_red")
-		mk.boxm(Vector3(x0 - pr, 0, hw - pr), Vector3(x0 + pr, goal_h, hw + pr), "goal_red")
-		mk.boxm(Vector3(x0 - pr, goal_h - pr * 2.0, -hw - pr), Vector3(x0 + pr, goal_h, hw + pr), "goal_red")
-		mk.boxm(Vector3(minf(x0, x1) - pr, 0, -hw - pr), Vector3(maxf(x0, x1) + pr, pr * 2.0, -hw + pr), "goal_red")
-		mk.boxm(Vector3(minf(x0, x1) - pr, 0, hw - pr), Vector3(maxf(x0, x1) + pr, pr * 2.0, hw + pr), "goal_red")
-		mk.boxm(Vector3(x1 - pr, 0, -hw - pr), Vector3(x1 + pr, pr * 2.0, hw + pr), "goal_red")
-		mk.boxm(Vector3(x1 - pr, 0, -hw - pr), Vector3(x1 + pr, bh, -hw + pr), "goal_red")
-		mk.boxm(Vector3(x1 - pr, 0, hw - pr), Vector3(x1 + pr, bh, hw + pr), "goal_red")
-		mk.boxm(Vector3(x1 - pr, bh - pr * 2.0, -hw - pr), Vector3(x1 + pr, bh, hw + pr), "goal_red")
-		# the netting (RinkActor.cpp:864-867: the back, two sides, the sloped top from the crossbar to the back bar) as cords
-		# 0.25 m apart: thirdjam's net mesh is see-through, a solid sheet read as a crate (K3 round 1, frames 920 and 1380)
-		var cord: float = 0.018
-		var nh: int = int(ceil(goal_w / 0.25))
-		for i: int in nh + 1:
-			var y: float = -hw + goal_w * float(i) / float(nh)
-			mk.bar(Vector3(x1, 0, y), Vector3(x1, bh, y), cord, cord, "goal_net")                 # back, upright
-			mk.bar(Vector3(x0, goal_h, y), Vector3(x1, bh, y), cord, cord, "goal_net")            # top, along the slope
-		for k: int in 4:
-			var t: float = float(k) / 3.0
-			mk.bar(Vector3(x1, bh * t, -hw), Vector3(x1, bh * t, hw), cord, cord, "goal_net")     # back, across
-		var nd: int = int(ceil(depth / 0.25))
-		for j: int in nd + 1:
-			var x: float = x0 + (x1 - x0) * float(j) / float(nd)
-			var top: float = goal_h + (bh - goal_h) * float(j) / float(nd)
-			for y2: float in [-hw, hw]:
-				mk.bar(Vector3(x, 0, y2), Vector3(x, top, y2), cord, cord, "goal_net")            # sides, upright
-			mk.bar(Vector3(x, top, -hw), Vector3(x, top, hw), cord, cord, "goal_net")             # top, across
+## A goal as thirdjam's arena mesh makes it (tools/blender/arena/arena.py goal_build, lines 559-633, G at 521-530): the
+## posts' inner faces at +-w/2 and the crossbar's underside at h (the sim's goal volume), posts and crossbar 16 cm, the
+## bottom bars, back posts, back bar and braces 11 cm, depth 1.5 m (UJamSim::NetDepth), the back frame min(0.9, 0.6 h);
+## the net of 3 cm cords in 25 cm cells. Its frame: x along the goal line -> rink y, `out` (into the net) -> rink x * side.
+static func _at(side: float, gl: float, x: float, o: float, z: float) -> Vector3:
+	return Vector3(side * (gl + o), z, x)
+
+
+static func _goal(mk: TLMesh, sd: float, gl: float, w: float, h: float) -> void:
+	var pt: float = 0.16
+	var lt: float = 0.11
+	var dd: float = 1.5
+	var hw: float = w * 0.5
+	var xp: float = hw + pt * 0.5
+	var top: float = h + pt * 0.5
+	var bh: float = minf(0.9, h * 0.6)
+	var ct: float = 0.03
+	var cell: float = 0.25
+	for sx: float in [-1.0, 1.0]:
+		mk.bar(_at(sd, gl, sx * xp, 0.0, 0.0), _at(sd, gl, sx * xp, 0.0, h + pt), pt, pt, "goal_red")                 # post
+		mk.bar(_at(sd, gl, sx * xp, -lt * 0.5, lt * 0.5), _at(sd, gl, sx * xp, dd + lt * 0.5, lt * 0.5), lt, lt, "goal_red")   # bottom bar
+		mk.bar(_at(sd, gl, sx * xp, dd, 0.0), _at(sd, gl, sx * xp, dd, bh), lt, lt, "goal_red")                       # back post
+		mk.bar(_at(sd, gl, sx * xp, 0.0, top), _at(sd, gl, sx * xp, dd, bh), lt, lt, "goal_red")                      # brace
+	mk.bar(_at(sd, gl, -(hw + pt), 0.0, top), _at(sd, gl, hw + pt, 0.0, top), pt, pt, "goal_red")                     # crossbar
+	mk.bar(_at(sd, gl, -(hw + pt), dd, lt * 0.5), _at(sd, gl, hw + pt, dd, lt * 0.5), lt, lt, "goal_red")             # back bottom bar
+	mk.bar(_at(sd, gl, -(hw + pt), dd, bh), _at(sd, gl, hw + pt, dd, bh), lt, lt, "goal_red")                         # back bar
+	# the net (arena.py:604-632)
+	var nx: int = maxi(4, roundi(w / cell))
+	var f0 := Vector2(pt * 0.2, top)
+	var b0 := Vector2(dd, bh)
+	var nt: int = maxi(3, roundi((b0 - f0).length() / cell))
+	for i: int in range(1, nx):
+		var x: float = -hw + w * float(i) / float(nx)
+		mk.bar(_at(sd, gl, x, f0.x, f0.y), _at(sd, gl, x, b0.x, b0.y), ct, ct, "goal_net")
+		mk.bar(_at(sd, gl, x, dd, bh), _at(sd, gl, x, dd, lt * 0.5), ct, ct, "goal_net")
+	for j: int in range(1, nt):
+		var q: Vector2 = f0.lerp(b0, float(j) / float(nt))
+		mk.bar(_at(sd, gl, -xp, q.x, q.y), _at(sd, gl, xp, q.x, q.y), ct, ct, "goal_net")
+	var nb: int = maxi(2, roundi(bh / cell))
+	for j: int in range(1, nb):
+		mk.bar(_at(sd, gl, -xp, dd, bh * float(j) / float(nb)), _at(sd, gl, xp, dd, bh * float(j) / float(nb)), ct, ct, "goal_net")
+	var no: int = maxi(3, roundi(dd / cell))
+	for sx: float in [-1.0, 1.0]:
+		for k: int in range(1, no):
+			var o: float = dd * float(k) / float(no)
+			mk.bar(_at(sd, gl, sx * xp, o, top + (bh - top) * float(k) / float(no)), _at(sd, gl, sx * xp, o, lt * 0.5), ct, ct, "goal_net")
+		var z: float = cell
+		while z < top - 0.12:
+			var o_end: float = dd if z <= bh else dd * (top - z) / (top - bh)
+			mk.bar(_at(sd, gl, sx * xp, pt * 0.2, z), _at(sd, gl, sx * xp, o_end, z), ct, ct, "goal_net")
+			z += cell
+
+
+## The hall (round 2, the Director's word: no art): a dark box round the rink, its floor, four walls and a ceiling, from
+## data/gym.json "hall". It is not thirdjam's arena (stair step 5); it takes the sky and the grass out of the picture.
+static func _hall(node: Node3D, L: float, W: float, hall: Dictionary) -> void:
+	var m: float = float(hall["margin_m"])
+	var hh: float = float(hall["height_m"])
+	var hx: float = L * 0.5 + m
+	var hz: float = W * 0.5 + m
+	var mk := TLMesh.new(44)
+	var key: String = String(hall["wall_key"])
+	mk.boxm(Vector3(-hx, -0.3, -hz), Vector3(hx, -0.02, hz), String(hall["floor_key"]))
+	mk.boxm(Vector3(-hx - 1.0, -0.3, -hz - 1.0), Vector3(hx + 1.0, hh, -hz), key)
+	mk.boxm(Vector3(-hx - 1.0, -0.3, hz), Vector3(hx + 1.0, hh, hz + 1.0), key)
+	mk.boxm(Vector3(-hx - 1.0, -0.3, -hz), Vector3(-hx, hh, hz), key)
+	mk.boxm(Vector3(hx, -0.3, -hz), Vector3(hx + 1.0, hh, hz), key)
+	if bool(hall.get("ceiling", true)):
+		mk.boxm(Vector3(-hx - 1.0, hh, -hz - 1.0), Vector3(hx + 1.0, hh + 1.0, hz + 1.0), String(hall["ceiling_key"]))
+	node.add_child(mk.instance("Hall"))
 
 
 ## The 1.64 m stand-in skater (until lane K2's figure): a capsule with a facing mark (a chest plate on its +x side) built

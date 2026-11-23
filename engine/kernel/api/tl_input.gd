@@ -11,6 +11,9 @@ extends Node
 ## pack gives) through the camera on screen, resolved once per physics frame from the camera's pose at that frame
 ## (lens shake left out), or the point a bot set with `set_aim`. Without a bot or a cursor over the window it is
 ## invalid, never a stale point.
+## 1.17 (K3, hockey port): with a valid aim from the cursor the kernel also latches the cursor's PIXEL in the viewport
+## (`aim_pixel`): a game that keeps a point while the hand is still (thirdjam's aim anchor) can tell a still hand from a
+## moving camera. A bot may give one (`set_aim`'s `pixel`); a record carries it as "<aim>@p" 1, "<aim>@px", "<aim>@py".
 
 signal action_pressed(action: StringName)
 signal action_released(action: StringName)
@@ -23,6 +26,8 @@ const ZOOM: StringName = &"tl.zoom"
 const STEP: float = 0.001
 ## An aim closer than this to the `from` of `aim_direction` (metres on the plane) has no direction: the fallback is returned.
 const AIM_DEAD: float = 0.05
+## 1.17. `aim_pixel` when the aim has no pixel this frame (invalid, or a bot's point given without one).
+const NO_PIXEL: Vector2 = Vector2(-1.0, -1.0)
 
 ## Set by the kernel: real devices are read only in interactive play. Verify runs ignore keyboard and mouse entirely.
 var accept_devices: bool = false
@@ -123,7 +128,8 @@ func declare_aim(action: StringName, height: float = 0.0, reach: float = 200.0) 
 		(_aims[action] as Dictionary)["height"] = height
 		(_aims[action] as Dictionary)["reach"] = maxf(reach, 0.0)
 		return
-	_aims[action] = {"height": height, "reach": maxf(reach, 0.0), "set": false, "at": Vector3.ZERO, "valid": false, "now": Vector3.ZERO}
+	_aims[action] = {"height": height, "reach": maxf(reach, 0.0), "set": false, "at": Vector3.ZERO, "valid": false, "now": Vector3.ZERO,
+		"set_px": NO_PIXEL, "px": NO_PIXEL}
 
 
 ## True when the aim has a point this frame (a cursor over the window whose ray meets the plane, or a bot's point).
@@ -137,6 +143,14 @@ func aim_valid(action: StringName) -> bool:
 func aim(action: StringName) -> Vector3:
 	var a: Variant = _aim_of(action)
 	return (a as Dictionary)["now"] if a != null and bool((a as Dictionary)["valid"]) else Vector3.ZERO
+
+
+## 1.17. The cursor's pixel in the viewport (x right, y down, multiples of STEP) on a frame the aim is valid and the
+## point came from the cursor (or a bot gave a pixel, or a record holds one); `NO_PIXEL` (-1, -1) otherwise. Latched with
+## the aim. Only for telling a still hand from a moving camera: the point on the plane is `aim()`.
+func aim_pixel(action: StringName) -> Vector2:
+	var a: Variant = _aim_of(action)
+	return (a as Dictionary)["px"] if a != null else NO_PIXEL
 
 
 ## The unit vector on the plane (y = 0) from `from` to the aim's point. When the aim is invalid, or the point is
@@ -194,12 +208,14 @@ func release_all() -> void:
 
 
 ## K1. Points an aim at `point` (its y is ignored: the point is put on the aim's plane) until `clear_aim`; the game
-## reads it from the next sample on, as it reads a `press`. It wins over the cursor.
-func set_aim(action: StringName, point: Vector3) -> void:
+## reads it from the next sample on, as it reads a `press`. It wins over the cursor. 1.17: `pixel` is the cursor's pixel
+## a person's hand would hold there (`aim_pixel` reads it back); left out, the aim has no pixel.
+func set_aim(action: StringName, point: Vector3, pixel: Vector2 = NO_PIXEL) -> void:
 	var a: Variant = _aim_of(action)
 	if a != null:
 		(a as Dictionary)["set"] = true
 		(a as Dictionary)["at"] = point
+		(a as Dictionary)["set_px"] = pixel
 
 
 ## K1. Takes a bot's point away: the aim is the cursor's again (invalid in a verify run).
@@ -229,10 +245,12 @@ func _aim_of(action: StringName) -> Variant:
 	return null
 
 
-## K1. A record's entry that belongs to an aim: its own name, or the name with "@x" / "@z".
+## K1. A record's entry that belongs to an aim: its own name, or the name with "@x" / "@z" (1.17: "@p", "@px", "@py").
 func _is_aim_entry(name: StringName) -> bool:
 	var s: String = String(name)
-	if s.ends_with("@x") or s.ends_with("@z"):
+	if s.ends_with("@px") or s.ends_with("@py"):
+		s = s.substr(0, s.length() - 3)
+	elif s.ends_with("@x") or s.ends_with("@z") or s.ends_with("@p"):
 		s = s.substr(0, s.length() - 2)
 	return _aims.has(StringName(s))
 
@@ -355,6 +373,9 @@ func _hash_into(buf: StreamPeerBuffer) -> void:
 		buf.put_8(1 if bool(m["valid"]) else 0)
 		buf.put_64(int(roundf((m["now"] as Vector3).x * 1000.0)))
 		buf.put_64(int(roundf((m["now"] as Vector3).z * 1000.0)))
+		if bool(m.get("ever_px", false)):   # 1.17: a pixel enters the hash from the first frame one was latched (none: as before)
+			buf.put_64(int(roundf((m["px"] as Vector2).x * 1000.0)))
+			buf.put_64(int(roundf((m["px"] as Vector2).y * 1000.0)))
 
 
 ## Called by the kernel once per physics frame, after the bot's tick and before the pack's tick.
@@ -424,14 +445,26 @@ func _sample() -> void:
 	for name: StringName in _aims.keys():
 		var m: Dictionary = _aims[name]
 		var p: Variant = null
+		var px: Vector2 = NO_PIXEL
 		if _play != null:
 			if float(fed.get(name, 0.0)) >= 0.5:
 				p = Vector3(float(fed.get(StringName(String(name) + "@x"), 0.0)), 0.0, float(fed.get(StringName(String(name) + "@z"), 0.0)))
+				if float(fed.get(StringName(String(name) + "@p"), 0.0)) >= 0.5:
+					px = Vector2(float(fed.get(StringName(String(name) + "@px"), 0.0)), float(fed.get(StringName(String(name) + "@py"), 0.0)))
 		elif bool(m["set"]):
 			p = m["at"]
+			px = m["set_px"]
 		elif devices:
 			p = _cursor_on_plane(float(m["height"]), float(m["reach"]))
+			if p != null:
+				px = get_viewport().get_mouse_position()
 		m["valid"] = p != null
+		if p == null or px.x < 0.0 or px.y < 0.0:
+			px = NO_PIXEL
+		else:
+			px = Vector2(roundf(px.x * 1000.0) / 1000.0, roundf(px.y * 1000.0) / 1000.0)
+			m["ever_px"] = true
+		m["px"] = px
 		if p != null:
 			m["ever"] = true                # K2: from now on the aim is part of the state hash
 		m["now"] = Vector3(roundf((p as Vector3).x * 1000.0) / 1000.0, float(m["height"]), roundf((p as Vector3).z * 1000.0) / 1000.0) \
@@ -442,4 +475,10 @@ func _sample() -> void:
 				(_rec as Array).append([_ticks, String(name) + "@x", (m["now"] as Vector3).x])
 			if (m["now"] as Vector3).z != 0.0:
 				(_rec as Array).append([_ticks, String(name) + "@z", (m["now"] as Vector3).z])
+			if px != NO_PIXEL:
+				(_rec as Array).append([_ticks, String(name) + "@p", 1.0])
+				if px.x != 0.0:
+					(_rec as Array).append([_ticks, String(name) + "@px", px.x])
+				if px.y != 0.0:
+					(_rec as Array).append([_ticks, String(name) + "@py", px.y])
 	_ticks += 1
