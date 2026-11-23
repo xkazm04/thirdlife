@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.22)
+# Third Life kernel API (kernelApi 1.23)
 
-**Version 1.22 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.23 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.22"` in `pack.json` (any
-`"1.x"` up to 1.22 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.23"` in `pack.json` (any
+`"1.x"` up to 1.23 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1273,3 +1273,16 @@ func _pack_tick(_f: int) -> void:
   (Apache License 2.0, `style/hud/ROBOTO_License.txt`); the engine's fallback font without the style.
 - Presentation only: a layer touches no body, no input and nothing in the state hash. Captures include it with `--hud=on`.
 - Selftest `830-hokej-hud.sh`; the pack that uses it: `engine/packs/hokej/scripts/hud/`.
+
+## 26. A figure's own surface: `TLStyleFelt`, `TLRigSkaterLook` (additions in 1.23)
+
+Not for a pack to call: the skater (`TLRigSkater`, a core's figure) dresses itself. Written down because the classes are
+part of the indexed surface of style and rigs.
+
+- `TLStyleFelt` (`engine/style/tl_style_felt.gd`, `engine/style/STYLE.md`, last section): thirdjam's felt and clay as a
+  material of its own (`material(params)`, `set_params(material, params)`, `set_rig(lights, exposure, gain,
+  gain_shadows, sky)`, `rig_size()`, `texture(path)`). Unknown keys are errors; headless a material with no shader.
+- `TLRigSkaterLook` (`engine/rigs/skater/look/`, `engine/rigs/RIGS.md`, the skater): the skater's two looks, `felt`
+  (the default: thirdjam's material instances, the number, the crest) and `cel` (`apply`, `chosen`, `default_variant`,
+  `digits`, `felt_params`, `look_mesh`, `slot_colour`); on the figure `TLRigSkaterBody.set_look(variant)` and
+  `look_refresh()`. Visual only: nothing here is read by a simulation, and headless nothing is drawn.

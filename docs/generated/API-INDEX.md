@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 47
+Classes: 48
 
 ## TLAudio
 
@@ -781,6 +781,20 @@ Properties: `static data: Dictionary`, `static style_name: String`, `static styl
 - `static func palette() -> PackedStringArray`
 - `static func push(section: String, m: ShaderMaterial) -> void`
 - `static func set_headless(on: bool) -> void`
+
+## TLStyleFelt
+
+`engine/style/tl_style_felt.gd` extends `RefCounted`
+
+> Felt and clay for a figure (K7, hockey port, 23-24 Nov 2026): thirdjam's skater materials on its clay look tier, as a
+
+Consts: `CLAY_NORMALS`, `DIR`, `KEYS`, `LOOK`, `MAX_LIGHTS`, `RENDER_PRIORITY`, `SHADER_PATH`
+
+- `static func material(params: Dictionary = {}) -> ShaderMaterial`
+- `static func rig_size() -> int`
+- `static func set_params(m: ShaderMaterial, params: Dictionary) -> bool`
+- `static func set_rig(lights: Array, exposure: float, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1), sky: Color = Color(0, 0, 0)) -> bool`
+- `static func texture(path: String) -> Texture2D`
 
 ## TLStyleFx
 
