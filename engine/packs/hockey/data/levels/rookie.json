@@ -1,14 +1,21 @@
 {
   "id": "rookie",
   "label": "Rookie",
-  "about": "Reads the play 18 frames late, with 6 degrees of aim spread. Checks from 9.5 m/s closing.",
+  "about": "Skates at full pace and wants the puck; reads the play 10 frames late, aims 8 degrees wide, waits 60 frames before a poke, shoots only from close and never cross-checks. One man forechecks.",
   "ai": {
-    "cross_min_closing": 2.0,
-    "reaction_frames": 18,
-    "red_skill": 0.55,
-    "aim_sigma_deg": 6,
+    "cross_min_closing": 99,
+    "reaction_frames": 10,
+    "red_skill": 1.0,
+    "aim_sigma_deg": 8,
     "score_noise": 0.08,
-    "check_min_closing_red": 9.5
+    "check_min_closing_red": 6,
+    "shoot_min_xg": 0.25,
+    "fresh_frames": 60,
+    "hunt_m": 0,
+    "forecheck_men": 1,
+    "forecheck_share": 1.0,
+    "sprint_share": 0.2,
+    "feed_share": 0.6
   },
   "goalie": {"reaction_frames": 26, "speed": 2.4, "glove": 0.75, "poke": 1.7}
 }

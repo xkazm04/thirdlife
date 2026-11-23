@@ -3,7 +3,9 @@ extends RefCounted
 
 const KEYS := ["speed_scale", "red_skill", "lead_frames", "yield_frames", "check_min_closing_red",
 	"check_min_closing_blue", "cross_min_closing", "reaction_frames", "aim_sigma_deg", "score_noise",
-	"commit_bonus", "feed_bonus", "shoot_min_xg", "pass_min_lane", "pass_weight", "poke_min_odds", "fresh_frames", "fresh_check_frames", "pressure_m", "protect_weight", "net_zone_half", "net_round_z", "corner_z", "assist_frames", "goalie_gap"]
+	"commit_bonus", "feed_share", "shoot_min_xg", "pass_min_lane", "pass_weight", "poke_min_odds", "fresh_frames", "fresh_check_frames", "pressure_m", "protect_weight", "net_zone_half", "net_round_z", "corner_z", "goalie_gap",
+	"settle_frames", "hunt_m", "forecheck_men", "forecheck_share", "sprint_share", "shoot_weight", "sep_m", "sep_weight", "clump_m", "clump_frames", "split_m", "brake_above"]
+## H2 build (23 Nov): the lines of docs/research/hockey-teardown/BEHAVIOUR-BOTS.md section 4.1 are named where they live.
 var cfg := {}
 var base_cfg := {}
 var red_over := {}
@@ -12,6 +14,8 @@ var roles_now := {}
 var caller := ""
 var frame := 0
 var rng
+var run_seed := 0             # H2: the run's seed, for roll() (no draw from the shared stream)
+const BLUE_LINE := 10.0      # the blue lines stand 10 m from centre ice
 var sense = preload("sense.gd").new()
 var roles
 var carrier_play = preload("carrier.gd").new()
@@ -20,11 +24,13 @@ var _goal_at := {}
 var _goal_frame := -1
 var plans := {}
 var previous := {}
-var b0_act := -100000
-var b0_count := 0
+var hunter := {}          # sheet line 13: team -> the one non-D1 defender who goes at the carrier inside hunt_m
+var clump := {}           # sheet line 1: id -> frames in a row within clump_m of a mate; from clump_frames he splits to split_m
+var fc_roll := {}         # sheet line 14: team -> [carry_since, whether the second forechecker goes]
 
 func setup(ctx, _env) -> void:
 	rng = ctx.rng
+	run_seed = int(ctx.seed)
 	base_cfg = ctx.read_json("ai.json")
 	for key: String in base_cfg:
 		if key not in KEYS:
@@ -36,14 +42,15 @@ func override(over: Dictionary) -> void:
 	cfg.merge(over, true)
 	reset()
 	roles = null
-	b0_act = -100000
-	b0_count = 0
 
 func reset() -> void:
 	sense.reset()
 	plans.clear()
 	braking.clear()
 	previous.clear()
+	hunter.clear()
+	clump.clear()
+	fc_roll.clear()
 	roles_now.clear()
 	caller = ""
 	if roles != null:
@@ -52,6 +59,15 @@ func reset() -> void:
 
 func value(team: String, key: String) -> float:
 	return float(red_over.get(key, cfg[key])) if team == "red" else float(cfg[key])
+
+## H2: a share-of-the-time roll for the sheet's new choices (sprint, forecheck, feed) that does not draw from ctx.rng, so
+## the shared stream (aim, noise, pokes) runs as before: a hash of the run's seed and what is being decided, 0..1.
+func roll(key: Array) -> float:
+	return float(absi(hash([run_seed] + key)) % 100000) / 100000.0
+
+## The chosen level's value (its "ai" block) whichever side asks: the human's mates feed him by level (sheet line 5).
+func level_value(key: String) -> float:
+	return float(red_over.get(key, cfg[key]))
 
 func reaction(team: String) -> float:
 	return value(team, "reaction_frames") / 60.0
@@ -67,19 +83,12 @@ func goal(team: String, env: Dictionary) -> Vector3:
 		_goal_at[team] = env.api._flat(env.goals[team] + env.api.rink_root.global_position)
 	return _goal_at[team]
 
-func assisted() -> bool:
-	return frame - b0_act <= int(value("blue", "assist_frames"))
-
 func think(frame_no: int, env: Dictionary) -> void:
 	frame = frame_no
 	if roles == null:
 		roles = preload("roles.gd").new()
 		roles.setup(env, sense)
 	var api = env.api
-	var count: int = api.passes.b0 + api.shots.b0
-	if count != b0_count and not env.autopilot:
-		b0_act = frame
-	b0_count = count
 	braking.clear()
 	var now: Dictionary = sense.record(frame, env)
 	if env.frozen:
@@ -124,11 +133,13 @@ func think(frame_no: int, env: Dictionary) -> void:
 			previous[id] = event
 		if not due.is_empty():
 			roles.assign(team, obs, reaction(team))
+		_pick_hunter(team, obs, env)
 		for id: String in roles.field[team]:
 			if id == "b0" and not env.autopilot:
 				continue
 			var role: String = roles.assigned[id]
-			if due.has(id) or roles_now.get(id, "") != role:
+			var hunts: bool = hunter.get(team, "") == id and str(plans.get(id, {}).get("action", "")) != "pressure" and now.car != id
+			if due.has(id) or roles_now.get(id, "") != role or hunts:
 				plans[id] = _choose(id, team, role, now, obs, env)
 			roles_now[id] = role
 			var dir := Vector3.ZERO
@@ -136,6 +147,25 @@ func think(frame_no: int, env: Dictionary) -> void:
 				dir = _execute(id, team, role, now, obs, env)
 			var scale := (value(team, "speed_scale") + sharpness) * (value(team, "red_skill") if team == "red" else 1.0)
 			env.skate.want(id, dir.limit_length(1.0) * scale)
+			# sheet line 16: a chaser or presser sprints in sprint_share of his chases (rolled when the plan is made)
+			var chase: bool = api.carrier != id and now.up[id] and bool(plans[id].get("sprint", false)) and str(plans[id].action) in ["contest", "pressure"]
+			env.skate.pace(env.skate.slots[id], chase, dir)
+
+## Sheet line 13: the nearest defender to the opposing field carrier who is not D1 hunts him when within hunt_m.
+func _pick_hunter(team: String, obs: Dictionary, env: Dictionary) -> void:
+	hunter.erase(team)
+	var car: String = obs.car
+	var reach: float = value(team, "hunt_m")
+	if reach <= 0.0 or car == "" or str(env.teams.get(car, team)) == team or env.api.goalies.has(car):
+		return
+	var best := reach
+	for id: String in roles.field[team]:
+		if (id == "b0" and not env.autopilot) or roles.assigned.get(id, "") == "D1" or not obs.up[id]:
+			continue
+		var d: float = obs.pos[id].distance_to(obs.pos[car])
+		if d <= best:
+			best = d
+			hunter[team] = id
 
 func _choose(id: String, team: String, role: String, now: Dictionary, obs: Dictionary, env: Dictionary) -> Dictionary:
 	var me: Vector3 = now.pos[id]
@@ -173,13 +203,16 @@ func _choose(id: String, team: String, role: String, now: Dictionary, obs: Dicti
 				caller = id
 	elif role.begins_with("F"):
 		target = roles.safety(team, obs, env, own, sg, reaction(opp))
-	elif role == "D1" and obs.car != "":
+	elif (role == "D1" or hunter.get(team, "") == id) and obs.car != "":
 		action = "pressure"
 	elif role == "D2":
 		target = roles.block(team, obs, env, reaction(team))
 	else:
 		target = roles.guard(obs, own, sg)
-	return {"action": action, "target": target}
+	var plan := {"action": action, "target": target}
+	if action in ["contest", "pressure"]:
+		plan["sprint"] = roll([id, "sprint", frame / 60]) < value(team, "sprint_share")
+	return plan
 
 func _execute(id: String, team: String, role: String, now: Dictionary, obs: Dictionary, env: Dictionary) -> Vector3:
 	var api = env.api
@@ -188,13 +221,13 @@ func _execute(id: String, team: String, role: String, now: Dictionary, obs: Dict
 	var me: Vector3 = now.pos[id]
 	var target: Vector3 = plan.target
 	if api.carrier == id:
-		var their: Vector3 = goal(roles.other(team), env)
-		if team == "blue" and not env.autopilot and id != "b0" and not assisted() and api.puck_pos().distance_to(their) < 5.0:
-			return (me - their).normalized()   # N3: the human's mate never takes it into their net himself (pro idle seeds 1, 20)
 		if action == "shoot" or action.begins_with("pass_"):
 			var timer: bool = action == "shoot" and api.from_pass and frame - api.carry_since <= int(api.carry.shot.one_timer_after)
-			if action == "shoot" and (not api.can_shoot(id) or (team == "blue" and not env.autopilot and not assisted())):
+			if action == "shoot" and not api.can_shoot(id):
 				return Vector3.ZERO
+			if action != "shoot" and frame - api.carry_since < int(value(team, "settle_frames")):
+				# sheet line 8: he settles the puck before a pass (no one-touch re-pass the frame it arrives)
+				return now.vel[id].normalized() if now.vel[id].length() > 0.5 else (target - me).normalized()
 			if api.carry.armed == id:
 				return Vector3.ZERO
 			if action.begins_with("pass_"):
@@ -219,7 +252,7 @@ func _execute(id: String, team: String, role: String, now: Dictionary, obs: Dict
 				api.try_pass(id, action.trim_prefix("pass_"))
 			api.stick_dir.erase(id)
 			return Vector3.ZERO
-		if action == "dump" and not carrier_play.risky(self, team, api.puck_pos(), target, env):
+		if action == "dump" and frame - api.carry_since >= int(value(team, "settle_frames")) and not carrier_play.risky(self, team, api.puck_pos(), target, env):
 			api.try_dump(id, target - api.puck_pos())
 			return Vector3.ZERO
 		var skate_to := (target - me).normalized()
@@ -232,6 +265,7 @@ func _execute(id: String, team: String, role: String, now: Dictionary, obs: Dict
 	if car != "" and car == api.carrier and env.teams[car] != team and not api.goalies.has(car):
 		if role.begins_with("D"):
 			_contact(id, team, car, role, env)
+	target = _forecheck(id, team, role, target, obs, env)
 	if action == "receive":
 		# Estimate arrival from the observed flight and relative velocity. The observation
 		# is already several frames old when the receiver chooses whether to coast.
@@ -251,29 +285,75 @@ func _execute(id: String, team: String, role: String, now: Dictionary, obs: Dict
 		target = lead + (goal(team, env) - lead).normalized() * api.poke_reach
 	target = _around_net(me, target, env, team)
 	var out := TLSteer.arrive(me, target, 1.5)
-	if action == "contest":
-		return (target - me).normalized()
+	# sheet line 1: spacing from the field mates (the carrier excepted), the contester included, and the clump split
 	var mates := []
-	for mid: String in roles.roster[team]:
-		if mid != id:
-			mates.append(obs.pos[mid])
-	out += TLSteer.separate(me, mates, 4.0) * 1.2
+	var near_mate := ""
+	var near_d := INF
+	for mid: String in roles.field[team]:
+		if mid == id or mid == api.carrier:
+			continue
+		mates.append(obs.pos[mid])
+		var dm: float = me.distance_to(now.pos[mid])
+		if dm < near_d:
+			near_d = dm
+			near_mate = mid
+	var run: int = int(clump.get(id, 0))
+	if near_mate != "" and near_d < value(team, "clump_m"):
+		run += 1
+	elif near_mate == "" or near_d >= value(team, "split_m"):
+		run = 0
+	clump[id] = run
+	var split := Vector3.ZERO
+	if run >= int(value(team, "clump_frames")) and near_mate != "" and near_d < value(team, "split_m") and (near_mate == "b0" or id > near_mate):
+		split = (me - now.pos[near_mate]).normalized() * 1.5     # the higher id gives way (anybody gives way to the human)
+	if action == "contest":
+		return ((target - me).normalized() + TLSteer.separate(me, mates, value(team, "sep_m")) * 0.6 + split).normalized()
+	out += TLSteer.separate(me, mates, value(team, "sep_m")) * value(team, "sep_weight") + split
 	out += (roles.inside(me, env) - me).limit_length(1.0)
 	if action == "position" or action == "pressure":
-		# arrive() scales thrust. On ice the skater also needs to brake before the spot.
+		# arrive() scales thrust. On ice the skater also needs to brake before the spot; sheet line 17: only above
+		# brake_above m/s, below it he glides on instead of braking to a stop at every spot
 		var remaining := target - me
 		var closing: float = maxf(0.0, now.vel[id].dot(remaining.normalized()))
 		var brake_decel: float = env.skaters[id].skate_brake
-		if remaining.length() <= closing * closing / (2.0 * brake_decel) + 0.25 and now.vel[id].length() > 0.3:
+		if remaining.length() <= closing * closing / (2.0 * brake_decel) + 0.25 and now.vel[id].length() > value(team, "brake_above"):
 			braking[id] = true
+		if action == "position" and remaining.length() < 1.5 and now.vel[id].length() < 1.0:
+			# sheet line 17: on his spot he keeps his feet moving, a slow glide across the puck's line that turns every 1.5 s
+			var side := 1.0 if (frame / 90) % 2 == 0 else -1.0
+			out += (obs.puck - me).normalized().rotated(Vector3.UP, side * PI / 2.0) * 0.35
 	return out
+
+## Sheet line 14: while the opposing carrier is in his own end (our attacking zone), only forecheck_men of us go in (the
+## second in forecheck_share of his carries, rolled once a carry); the others hold on our side of that blue line.
+func _forecheck(id: String, team: String, role: String, target: Vector3, obs: Dictionary, env: Dictionary) -> Vector3:
+	var car: String = obs.car
+	if car == "" or str(env.teams.get(car, team)) == team or env.api.goalies.has(car):
+		return target
+	var sg := attack(team)
+	var center: Vector3 = env.api._flat(env.api.rink_root.global_position)
+	if (obs.pos[car].x - center.x) * sg < BLUE_LINE:
+		return target
+	var men := int(value(team, "forecheck_men"))
+	var fr: Array = fc_roll.get(team, [])
+	if fr.is_empty() or int(fr[0]) != int(env.api.carry_since):
+		fr = [int(env.api.carry_since), roll([team, "forecheck", int(env.api.carry_since)]) < value(team, "forecheck_share")]
+		fc_roll[team] = fr
+	if not bool(fr[1]):
+		men = mini(men, 1)
+	var second: String = hunter.get(team, "")
+	var allowed: bool = role == "D1" or men >= 3 or (men >= 2 and (second == id or (second == "" and role == "D2")))
+	if allowed or (target.x - center.x) * sg < BLUE_LINE - 1.0:
+		return target
+	return Vector3(center.x + sg * (BLUE_LINE - 1.0), 0.0, target.z)
 
 ## The decision to wind up is tested every frame using the actual contact geometry.
 func _contact(id: String, team: String, car: String, role: String, env: Dictionary) -> void:
 	var api = env.api
 	var hits = env.hits
 	var dc: float = api.pos_of(id).distance_to(api.pos_of(car))
-	if role != "D1" and dc > 5.0:
+	var stick_man: bool = role == "D1" or hunter.get(team, "") == id     # sheet line 13: D1 and the hunter use the stick
+	if not stick_man and dc > 5.0:
 		return
 	var may: bool = not (car == "b0" and not env.autopilot and frame - int(api.carry_since) < int(value(team, "yield_frames")))
 	var age: int = frame - int(api.carry_since)
@@ -283,9 +363,9 @@ func _contact(id: String, team: String, car: String, role: String, env: Dictiona
 	var lead: float = hits.check_gap + maxf(hits.closing(id, car), 0.0) * float(hits.check_windup) / 60.0
 	if may and gap <= lead and not hits.graced(car) and hits.can_check(id) and hits.target(id, lead, hits.check_cone_deg) == car and hits.closing(id, car) >= value(team, "check_min_closing_" + team):
 		hits.try_check(id)
-	elif stick_ok and role == "D1" and gap <= hits.cross_gap and not hits.graced(car) and hits.can_cross(id) and hits.closing(id, car) > value(team, "cross_min_closing") and hits.in_cross_cone(id, car):
+	elif stick_ok and stick_man and gap <= hits.cross_gap and not hits.graced(car) and hits.can_cross(id) and hits.closing(id, car) > value(team, "cross_min_closing") and hits.in_cross_cone(id, car):
 		hits.try_cross(id, car)
-	elif stick_ok and role == "D1" and not hits.swinging(id) and api.can_poke(id) and api.poke_odds(id) >= value(team, "poke_min_odds"):
+	elif stick_ok and stick_man and not hits.swinging(id) and api.can_poke(id) and api.poke_odds(id) >= value(team, "poke_min_odds"):
 		api.try_poke(id)
 
 func _around_net(me: Vector3, target: Vector3, env: Dictionary, team: String) -> Vector3:

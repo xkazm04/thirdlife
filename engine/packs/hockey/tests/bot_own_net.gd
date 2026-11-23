@@ -11,6 +11,7 @@ var live_frames := 0
 var carrier_frames := 0
 var red_passes := 0
 var unsafe_passes := 0
+var back_passes := 0      # H2 build (sheet line 10): a pass toward our own end is allowed again; counted, no longer a failure
 var safe_outlet := false
 var incoming := false
 var catch_distance := 0.0
@@ -33,6 +34,7 @@ func _bot_tick(frame: int) -> void:
 		carrier_frames = 0
 		red_passes = 0
 		unsafe_passes = 0
+		back_passes = 0
 		incoming = false
 		catch_distance = 0.0
 		resting = true
@@ -58,14 +60,14 @@ func _bot_tick(frame: int) -> void:
 			if last.get("kind") != "pass" or last.get("by") != id or last.get("frame") != frame - 1:
 				unsafe_passes += 1
 			elif _toward_own_end():
-				unsafe_passes += 1
+				back_passes += 1
 			elif row == 1 and id == "r0" and last.get("to") == "r1":
 				safe_outlet = true
 		var duration := 120 if row == 0 else 20
 		if age == duration:
 			var active := carrier_frames > 0 if row == 0 else safe_outlet
 			_finish(live_frames == duration and active and unsafe_passes == 0 and s.scores == scores,
-				"%d live, %d carrier, %d red passes, %d unsafe" % [live_frames, carrier_frames, red_passes, unsafe_passes])
+				"%d live, %d carrier, %d red passes, %d unsafe, %d toward our own end" % [live_frames, carrier_frames, red_passes, unsafe_passes, back_passes])
 	elif row in [2, 3, 6]:
 		var keeper := "gb" if row == 3 else "gr"
 		var velocity := _v(s.puck.vel)
