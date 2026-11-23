@@ -348,3 +348,9 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   (1.31 ms, main 1.07), not read quietly. METHOD 8a on main (6106c56). Exe: .claude/worktrees/n23-int/dist/PLAY-LATEST.cmd.
   Open: the owner's hand; body size (route B); the sandbox's first toys. docs/shifts/2026-11-23-day/VERDICT.md.
 
+
+### 2026-11-24 night (campaign): plan and log
+- 23 Nov ~17:40 three lanes on the stair (docs/shifts/2026-11-24-night/PLAN.md): K1 core (thirdjam's C++ compiled into
+  the engine), K2 figure (thirdjam's skater exported and driven), K3 shell (the gym). Branch `hokej`, tree hk-int.
+- 17:37 standup: K1's native build of thirdjam's own sim and bots gives 611,543 of 611,543 trace lines identical to the
+  Unreal build; K2 exported 202 of 202 clips within 0.19 mm of Unreal's poses; K3 round 1 landed on hokej (c7c8149).
