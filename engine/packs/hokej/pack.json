@@ -1,0 +1,12 @@
+{
+  "id": "game.hokej",
+  "version": "0.1.0",
+  "kernelApi": "1.16",
+  "title": "Hokej gym: thirdjam's rink, camera and keys, one skater",
+  "capabilities": ["input", "camera", "kit", "style"],
+  "entry": "scripts/main.gd",
+  "assets": ["gen/tj_rink.gd"],
+  "tests": ["tests/bot_gym_hand.gd", "tests/bot_rule_w_away.gd", "tests/bot_rule_s_lock.gd", "tests/bot_rule_aim.gd"],
+  "cameras": ["follow", "top"],
+  "subject": "Skater"
+}

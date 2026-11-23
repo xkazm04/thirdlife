@@ -1,0 +1,21 @@
+{
+  "note": "The gym's scripted hand (K3 round 1). Segments [from, to): 'keys' holds keys (W A S D, '+' LeftShift sprint, 'C' LeftControl brake) on every frame; 'goto' steers to a rink point the way jam.ScriptHumanCam does (HokejGameMode.cpp:864-872: the wanted direction turned into eight-way keys in the camera's frame, re-decided every 'react' frames), with 'sprint' and 'brake' as flags. No cursor: the aim is invalid (the stick held ahead).",
+  "react": 12,
+  "frames": 1560,
+  "segments": [
+    {"from": 0, "to": 30, "keys": ""},
+    {"from": 30, "to": 150, "keys": "W"},
+    {"from": 150, "to": 270, "keys": "W+"},
+    {"from": 270, "to": 330, "keys": "WD"},
+    {"from": 330, "to": 390, "keys": "WA"},
+    {"from": 390, "to": 450, "keys": "W"},
+    {"from": 450, "to": 570, "keys": "S"},
+    {"from": 570, "to": 630, "keys": ""},
+    {"from": 630, "to": 780, "goto": [36.0, 18.0], "sprint": true},
+    {"from": 780, "to": 900, "goto": [41.0, -15.0]},
+    {"from": 900, "to": 1080, "goto": [0.0, -19.5], "sprint": true},
+    {"from": 1080, "to": 1260, "goto": [-38.0, -19.0]},
+    {"from": 1260, "to": 1380, "goto": [-43.0, 0.0]},
+    {"from": 1380, "to": 1560, "keys": "C"}
+  ]
+}
