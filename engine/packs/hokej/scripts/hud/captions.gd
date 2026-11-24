@@ -10,6 +10,7 @@ extends RefCounted
 
 const R := preload("rules.gd")
 const Lines := preload("commentary_lines.gd")
+const GameSkin := preload("skin.gd")
 const GATE := 150
 const CUT_FLOOR := 30
 const MUST_PLAY := 5
@@ -76,12 +77,17 @@ var bark_hold_until: int = -1000000
 var bark_at_human: bool = false
 const BARK_YIELD := 150                 # BarkYieldFrames (CommentarySystem.h:30)
 
-func _init(game: Dictionary, seed_value: int) -> void:
+var team_names: Array = []                            # the skin's team words (lane E1): thirdjam's "blue" / "orange" said as these
+
+
+## `rows`: the bank of lines (null = thirdjam's three banks, commentary_lines.gd); `names`: the skin's team names ([] = the bank's).
+func _init(game: Dictionary, seed_value: int, rows: Variant = null, names: Array = []) -> void:
+	team_names = names
 	var rk: Dictionary = game["rink"]
 	length_m = float(rk["length_m"])
 	width_m = float(rk["width_m"])
 	score_to_win = int((game.get("rules", {}) as Dictionary).get("score_to_win", 0))
-	for row: Array in Lines.LINES:
+	for row: Array in (Lines.LINES if rows == null else rows):
 		var id: String = row[0]
 		var sit: String = id
 		var dot: int = id.rfind(".")
@@ -579,6 +585,6 @@ func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, hum
 
 ## A new line on the strip (UpdateCommentary cpp:1470-1478).
 func show(line: Dictionary, tick: int) -> void:
-	shown_line = line["text"]
+	shown_line = line["text"] if team_names.is_empty() else GameSkin.team_words(String(line["text"]), team_names)
 	shown_tick = tick
 	shown_dur = int(line["dur"])

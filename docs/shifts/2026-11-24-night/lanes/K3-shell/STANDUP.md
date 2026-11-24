@@ -38,3 +38,6 @@ landable round 10
 22:20 (24 Nov) | state: done | did: round 11: boost_look wired (celebration); the Third Life cut via data/match.json `cartridge` (no HOME mode row; K5) with its own core (bot_cut_cores PASS; exe thirdlife dungeon 0 errors); regular hashes unchanged; the first match refilmed with shadows and celebration (r11_*); export at 8fff52d + check --no-window PASS | gates: lint, bots, invariants PASS, fast PASS (foreman NOT RUN)
 
 landable round 11
+00:20 (25 Nov) | state: done | did: E1 base: data/skin.json (tl.rink.skin/1) for words and banks, colours from the cartridge; engine/templates/rink_game (hokej's generic part, byte-equal, selftest rink.template) with a builder README; Pond copy with a new skin plays whole matches headless and shows Ducks/Geese in green/purple (r12_*); hokej hashes unchanged | gates: hokej lint/invariants/bots 14/14 PASS, template + copy bots PASS, selftests PASS, fast PASS (foreman NOT RUN) | outside scope: devx/arch.rules.json noUidDirs row, selftest 850
+
+landable round 12

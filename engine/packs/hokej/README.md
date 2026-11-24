@@ -23,6 +23,7 @@ lists `res://cores/rink/rink_core.gdextension`). The level of the bots: `data/ma
 | `scripts/cam.gd` | `UJamFollowCamera::StepThirdPerson` ported line by line, as the shipped game runs it (boards view on); checked frame by frame against thirdjam's own code compiled from its source (`docs/shifts/2026-11-24-night/lanes/K3-shell/oracle/`) |
 | `scripts/human_input.gd` | the devices read into the core's raw shape; thirdjam's rules for them are the core's glue (engine/cores/rink/GAMEMODE.md) |
 | `scripts/match_view.gd` | the snapshot drawn: one pawn and figure a skater fed its snapshot entry each frame, in thirdjam's order around lane K2's show object (`ctx.cores.view_script("rink", "skater_show")`: thirdjam's hit-stop picks and holds, the carrier the screen shows with the carried puck on the blade, the play calls) and its hit read (`hit_read`: the whiffs, the re-time of a check); the four bus events to every figure; the goal's celebration and the held ability's equipment (`boost_look`) |
+| `data/skin.json`, `scripts/hud/skin.gd` | the game's words and banks (lane E1, `tl.rink.skin/1`, unknown keys are errors): the title, tagline, HOME's lines, the team names, the level words, the commentary and bark banks. Team colours are the cartridge's `game.teams[].colour_hex` (one source). |
 | `data/view.json` | `figures: false` draws the round-3 stand-ins instead (debugging; the match hash is the same) |
 | `gen/tj_rink.gd` | the rink (`RinkActor`'s outline, boards, kick plate, markings; the goals as thirdjam's arena meshes; `docs/shifts/2026-11-24-night/lanes/K3-shell/RINK.md`), a plain dark hall round it (without lane K6's arena; with it only the marks the arena's ice does not paint, in thirdjam's colours, and the goals), thirdjam's puck (8 cm, AJamPuck) with its glowing disc on the ice (SM_PuckDisc's halo), and the round-3 **STAND-IN** (a 1.64 m capsule and a stick bar, `data/view.json` figures false) |
 | `data/hockey.regular.cartridge.json` | thirdjam's regular cartridge, verbatim |
@@ -33,3 +34,7 @@ lists `res://cores/rink/rink_core.gdextension`). The level of the bots: `data/ma
 | `data/hockey.thirdlife.cartridge.json`, `data/hockey.thirdlife.rules.json` | lane K8's Third Life cut (copied from engine/cores/rink/native/content/Cartridges): chosen by `data/match.json` `cartridge` until HOME has a mode row |
 | `tests/bot_rule_*.gd` | one rule each: W away from the camera, the S lock, the aim's dead zone, hysteresis and size ramp, the aim anchor |
 | `tests/bot_tj_replay.gd`, `data/tj_trace_regular_pro.json` | thirdjam's own rendered match (its JAMCAM log): its skater's path through our camera, every pose against thirdjam's |
+
+## hokej and the rink game base
+
+`engine/templates/rink_game` (lane E1) is this pack's generic part: the same `scripts/**`, `gen/**`, `assets/**`, skin, banks and carried tests, byte for byte (selftest `rink.template`), without the thirdjam parity proofs (the gym and replay rule tests, `data/tj_trace_regular_pro.json`, `data/hand_gym.json`, the HUD rules recording, the cut cores test). hokej = the base + thirdjam's skin (the base's default) + those proofs. A fix to the shared code goes into both.

@@ -1,0 +1,14 @@
+{
+  "schema": "tl.rink.skin/1",
+  "title": "HOKEJ",
+  "tagline": "HOCKEY WITH THE WHISTLE TAKEN OUT.",
+  "about": ["Five-a-side hockey. WASD skates, the mouse is your stick.", "Hockey with the whistle taken out."],
+  "team_names": ["Blue", "Orange"],
+  "levels": [
+    ["ROOKIE", "New to hockey games? Start here: rookies are a step slower."],
+    ["PRO", "Played one before? Pros hit as a habit."],
+    ["ALL-STAR", "The wall. All-stars hunt the puck. Beat pro first."]
+  ],
+  "commentary": "builtin",
+  "barks": "hud_barks.json"
+}

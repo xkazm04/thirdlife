@@ -10,6 +10,7 @@ const R := preload("rules.gd")
 const Kit := preload("kit.gd")
 const PauseCard := preload("pausecard.gd")
 const Front := preload("front.gd")
+const GameSkin := preload("skin.gd")
 ## The level chosen on HOME is an input (a key-less action tapped for frame 0), so a run replays from its record alone.
 const LEVEL_ACTIONS: Array = [&"level_rookie", &"level_pro", &"level_all_star"]
 const LEVEL_IDS: Array = ["rookie", "pro", "all_star"]
@@ -58,13 +59,15 @@ static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, 
 		screen = new()
 		screen.tl_hud = TLHud.create()
 		ctx.root.add_child(screen.tl_hud)
-		var cart: Dictionary = ctx.read_json("hockey.regular.cartridge.json")
-		var level: String = applied_level(ctx, String((ctx.read_json("match.json") as Dictionary).get("difficulty", "pro")))   # the level the shell applied, else match.json's
-		screen.view = Hud.new(screen.tl_hud.add_layer(&"hokej"), cart["game"], level, ctx.seed, (ctx.read_json("hud_barks.json") as Dictionary)["lines"])
+		var mcfg: Dictionary = ctx.read_json("match.json")
+		var cart: Dictionary = ctx.read_json(String(mcfg.get("cartridge", "hockey.regular.cartridge.json")))   # the cut in force (lane E1)
+		var level: String = applied_level(ctx, String(mcfg.get("difficulty", "pro")))   # the level the shell applied, else match.json's
+		var skin: Dictionary = GameSkin.of(ctx)                # the game's words and banks (data/skin.json, lane E1)
+		screen.view = Hud.new(screen.tl_hud.add_layer(&"hokej"), cart["game"], level, ctx.seed, GameSkin.bark_rows(ctx, skin), skin, GameSkin.commentary_rows(ctx, skin))
 		screen.ctx_ = ctx
 		screen.kit = Kit.new(screen.view.lay)
 		screen.card = PauseCard.new(screen.kit)
-		screen.front = Front.new(screen.kit, level)
+		screen.front = Front.new(screen.kit, level, skin)
 		ctx.own_pause()                                   # thirdjam's pause card replaces the frame's (kernel 1.24)
 		screen.tl_hud.on_paused(screen.paused_tick)
 		if ctx.can_pause():                                # in the exe's dungeon: the title and HOME come before frame 0

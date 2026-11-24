@@ -265,7 +265,7 @@ func paint(lay, snap: Dictionary, vw: float, vh: float, now: int, paused: bool, 
 			continue
 		var fill := R.ML_PANEL
 		fill.a = 0.9 * a
-		var edge: Color = R.BLUE if int(b["team"]) == 0 else R.ORANGE
+		var edge: Color = team_col[0] if int(b["team"]) == 0 else team_col[1]      # the cartridge's team colours (hud.gd team_col)
 		edge.a = a
 		lay.box(box.position, box.size, fill, 4.0, edge, 2.0)
 		lay.text(box.position + Vector2(14, 7), t, R.LINE_PT, R.ML_TEXT, {"face": "bold_condensed", "alpha": a, "shadow": Vector2(0, 1), "shadow_color": Color(0, 0, 0, 0.45)})

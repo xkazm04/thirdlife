@@ -46,7 +46,7 @@ func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: D
 		var team: int = int(sk[i]["Team"])
 		shown.append(true)
 		if not figures:
-			var parts: Array = rink_gen.standin_figure(root, "car_blue" if team == 0 else "orange", "Skater%d" % i)   # cartridge colours #1D4ED8, #E8651A
+			var parts: Array = rink_gen.standin_figure(root, Color(String(teams[team]["colour_hex"])).srgb_to_linear() if team < teams.size() else "white", "Skater%d" % i)   # the cartridge's team colour (one source: game.teams[].colour_hex)
 			bodies.append(parts[0])
 			sticks.append(parts[1])
 			continue
