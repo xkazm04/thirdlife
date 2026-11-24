@@ -35,3 +35,6 @@ landable round 9
 21:35 (24 Nov) | state: done | did: round 10: thirdjam's puck (8 cm, its halo disc); first match at ROOKIE to the end card (bot_first_match), filmed and cut to 58.6 s beside thirdjam (r10_*); export at f9d2db9 + check --no-window PASS | BLOCKED (asked): playtester keys hand parts from our match in seconds (needs K1's advice call); the exe dungeon has no bot/replay path | gates: lint, bots, invariants PASS, fast PASS (foreman NOT RUN)
 
 landable round 10
+22:20 (24 Nov) | state: done | did: round 11: boost_look wired (celebration); the Third Life cut via data/match.json `cartridge` (no HOME mode row; K5) with its own core (bot_cut_cores PASS; exe thirdlife dungeon 0 errors); regular hashes unchanged; the first match refilmed with shadows and celebration (r11_*); export at 8fff52d + check --no-window PASS | gates: lint, bots, invariants PASS, fast PASS (foreman NOT RUN)
+
+landable round 11

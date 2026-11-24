@@ -23,16 +23,19 @@ var shown: Array = []       # whether a skater is drawn (the proof modes show on
 var puck: Node3D
 var show                    # K2's skater_show.gd: the hit-stop and the shown carrier (both modes; the stand-ins hold by its pick)
 var rink_gen_disc_y: float = 0.004   # gen/tj_rink.gd PUCK_DISC_Y (AJamPuck::PlaceDiscOnIce)
+var boost                   # K2's boost_look.gd: the goal's celebration and the held ability's equipment (K3 round 11)
 var hits                    # K2's hit_read.gd: the model of presses and hits, the whiffs and the re-time of a check (K3 round 9)
 
 
 ## `cart`: the cartridge (teams and their colours; the numbers the show reads). `pawn_script`, `show_script`, `hits_script`:
 ## ctx.cores.view_script("rink", "skater_pawn"), ("rink", "skater_show") and ("rink", "hit_read").
-func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: Dictionary, pawn_script: GDScript, show_script: GDScript, hits_script: GDScript, use_figures: bool) -> void:
+func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: Dictionary, pawn_script: GDScript, show_script: GDScript, hits_script: GDScript, boost_script: GDScript, use_figures: bool) -> void:
 	figures = use_figures and pawn_script != null
 	show = show_script.new()
 	show.cfg = show_script.config_of(cart)
 	hits = hits_script.new()
+	boost = boost_script.new()
+	boost.abilities = boost_script.abilities_of(cart)          # the cartridge's ability kinds by slot (boost_look.gd)
 	hits.skater_speed = float(cart["game"]["skater"]["speed"])     # a hit's closing speed (hit_read.gd: game.skater.speed)
 	var rk: Dictionary = cart["game"]["rink"]
 	var sk: Array = snap["Skaters"]
@@ -115,6 +118,7 @@ func draw(snap: Dictionary) -> bool:
 				for i: int in sk.size():
 					if shown[i]:
 						figs[i].OnBusEvent(StringName(en), int(ev["Who"]) == i, (ev["Where"] as Vector2) * 100.0, float(ev["Strength"]), StringName(String(ev["Kind"])))
+		boost.deliver_events(snap, live)            # a goal's celebration (DeliverEvents, HokejGameMode.cpp:1504), before the show
 	show.step_sim(snap, live)
 	var held: bool = show.presentation_held(frame)
 	for i: int in sk.size():
@@ -127,6 +131,7 @@ func draw(snap: Dictionary) -> bool:
 	show.after_pawns(snap, live)
 	if figures:
 		hits.step_sim(snap, live, _human_input)
+		boost.sync(snap, live)                      # the held ability's equipment (AJamBoostAura::Sync, cpp:1744), after the hit read
 		for i: int in sk.size():
 			if shown[i]:
 				_place_pawn(i, sk[i])
