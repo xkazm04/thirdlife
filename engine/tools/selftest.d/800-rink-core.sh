@@ -219,3 +219,21 @@ if [ -z "$FILTER" ] || [[ "rink.advice" == *"$FILTER"* ]]; then
   fi
   verdict rink.advice "$why" "$note"
 fi
+
+# Lane E2 (the cartridge): the schema in our tree equals thirdjam's embedded copy (schema/extract.py --check), CARTRIDGE.md's generated
+# parts are current (schema/catalog.py --check), and the measured check plays hockey.regular to the end at three levels with no
+# warning (rink.sh check-cartridge, 3 seeds a level, no planning hand: a few seconds).
+if [ -z "$FILTER" ] || [[ "rink.cartridge" == *"$FILTER"* ]]; then
+  why=""; note=""
+  rk_r="$(cd "$HERE/.." && pwd)/cores/rink"
+  rk_a="$(python -I "$rk_r/schema/extract.py" --check 2>&1 | tail -1)"
+  rk_b="$(python -I "$rk_r/schema/catalog.py" --check 2>&1 | tail -1)"
+  rk_c="$(timeout 600 bash "$HERE/rink.sh" check-cartridge "$rk_r/native/content/Cartridges/hockey.regular.cartridge.json" --seeds 3 --plan-seeds 0 2>&1 | tr -d '\015')"
+  rk_l="$(echo "$rk_c" | grep -m1 '^PASS  rink check-cartridge\|^FAIL  rink check-cartridge\|^NOT RUN  rink check-cartridge')"
+  [[ "$rk_a" == PASS* ]] || why="$rk_a"
+  [[ "$rk_b" == PASS* ]] || why="${why:+$why; }$rk_b"
+  [[ "$rk_l" == "PASS  rink check-cartridge: measured" ]] || why="${why:+$why; }${rk_l:-no check-cartridge line (the run stopped)}"
+  echo "$rk_c" | grep -q "WARN" && why="${why:+$why; }hockey.regular drew a warning: $(echo "$rk_c" | grep -m1 WARN)"
+  note="schema = the embedded copy; catalog current; $(echo "$rk_c" | grep -m1 '^  pro' | cut -c3-120)"
+  verdict rink.cartridge "$why" "$note"
+fi

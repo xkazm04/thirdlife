@@ -1,0 +1,61 @@
+{
+ "tool": "tl.rink.check.bands/1",
+ "hand": "thirdjam regular playtester with sprint, 5 seeds a level",
+ "from": [
+  "hockey.arena.large.cartridge.json",
+  "hockey.arena.wide.cartridge.json",
+  "hockey.boost.cartridge.json",
+  "hockey.chaos.cartridge.json",
+  "hockey.raw.cartridge.json",
+  "hockey.regular.cartridge.json",
+  "hockey.thirdlife.cartridge.json",
+  "hockey.mode.arsenal.cartridge.json",
+  "hockey.mode.bruisers.cartridge.json",
+  "hockey.mode.cage.cartridge.json",
+  "hockey.mode.fog-of-war.cartridge.json",
+  "hockey.mode.glass-house.cartridge.json",
+  "hockey.mode.marathon.cartridge.json",
+  "hockey.mode.outnumbered.cartridge.json",
+  "hockey.mode.pond.cartridge.json",
+  "hockey.mode.power-play.cartridge.json",
+  "hockey.mode.shotgun.cartridge.json",
+  "hockey.mode.sniper.cartridge.json",
+  "hockey.mode.sudden-death.cartridge.json",
+  "hockey.mode.blind-side.cartridge.json",
+  "hockey.mode.pinball.cartridge.json"
+ ],
+ "bands": {
+  "speed_mean": {
+   "min": 6.2,
+   "max": 10.3
+  },
+  "speed_max": {
+   "min": 13,
+   "max": 26.2
+  },
+  "minutes": {
+   "min": 0.3,
+   "max": 6.8
+  },
+  "carry_s": {
+   "min": 0.6,
+   "max": 2.2
+  },
+  "changes_min": {
+   "min": 11.2,
+   "max": 50.9
+  },
+  "shots": {
+   "min": 1.6,
+   "max": 68
+  },
+  "knockdowns": {
+   "min": 0,
+   "max": 44.4
+  },
+  "loose_share": {
+   "min": 0.14,
+   "max": 0.52
+  }
+ }
+}
