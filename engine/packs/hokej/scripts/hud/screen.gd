@@ -27,6 +27,13 @@ static func start_level(ctx, core) -> String:
 			return LEVEL_IDS[i]
 	return ""
 
+## The level the shell applied this run (start_level's meta), else `fallback` (data/match.json's): the one the MATCH card shows,
+## in a bot, a replay and a played run alike.
+static func applied_level(ctx, fallback: String) -> String:
+	if ctx.root != null and ctx.root.has_meta(&"hokej_level"):
+		return String(ctx.root.get_meta(&"hokej_level"))
+	return fallback
+
 var tl_hud                 # TLHud
 var view                   # hud.gd
 var ctx_                   # the pack's context (the paused painter has no other door to it)
@@ -52,7 +59,7 @@ static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, 
 		screen.tl_hud = TLHud.create()
 		ctx.root.add_child(screen.tl_hud)
 		var cart: Dictionary = ctx.read_json("hockey.regular.cartridge.json")
-		var level: String = String((ctx.read_json("match.json") as Dictionary).get("difficulty", "pro"))   # the level in force (match.json)
+		var level: String = applied_level(ctx, String((ctx.read_json("match.json") as Dictionary).get("difficulty", "pro")))   # the level the shell applied, else match.json's
 		screen.view = Hud.new(screen.tl_hud.add_layer(&"hokej"), cart["game"], level, ctx.seed, (ctx.read_json("hud_barks.json") as Dictionary)["lines"])
 		screen.ctx_ = ctx
 		screen.kit = Kit.new(screen.view.lay)
@@ -63,6 +70,9 @@ static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, 
 		if ctx.can_pause():                                # in the exe's dungeon: the title and HOME come before frame 0
 			screen.front.up = true
 			ctx.pause()
+	var applied: String = applied_level(ctx, screen.view.cards.level_id)   # the card shows what the shell applied (a record's level action, frame 0)
+	if applied != screen.view.cards.level_id:
+		screen.view.cards.set_level(applied)
 	var ui: Dictionary = ui_of(snap, human, last_in, last_raw)
 	var hw = screen.head_world(ctx, snap, head)
 	if hw != null:
