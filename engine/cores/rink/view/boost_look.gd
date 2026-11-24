@@ -99,6 +99,9 @@ func _pawn_of(pawns: Array, i: int) -> Object:
 	return null
 
 
+## Who celebrates (JamPickupActor.cpp:654-679 + JamSim.cpp:4424 ScoreGoal): the goal event's Who is Puck.LastTouch, the last skater
+## who touched the puck, NOT necessarily the one who shot; he is the scorer when he skates for the scoring team, else the scoring
+## team's skater nearest the puck; his nearest mate takes the mate's take. A mate's goal after the human's pass is the mate's.
 ## JamBoostLook::CelebrateGoal (:654-679) for every goal event of the frame: the scorer plays the take of the goal
 ## count (0 arms up, 1 stick raise, 2 knee glide), his nearest mate the mate's take (3). Returns the calls taken.
 func deliver_events(snap: Dictionary, pawns: Array) -> int:
