@@ -11,7 +11,7 @@ extends Node
 ##    shown = the sim's carrier.
 ##    Round 5 (the core's Controls v1.2): the panel's half by ButtonsWithPuck through the swap rule; the take grace's ring from
 ##    its first frame (CarrierInTakeGrace with TakeGraceLeft still 0: the full count, 1.5 x unless won by a hit); the pass's
-##    target ring only while the pass is held (under Controls.PassTarget) or flies (45 frames at most, PassBy = him); the
+##    target ring only while the pass is held (under Controls.PassTargetHeld, thirdjam's HumanPassTarget) or flies (45 frames at most, PassBy = him); the
 ##    teaching pulse's limits (3 a kind, 90 frames, 900 apart, never after he did it, not counting, not down, not in the
 ##    draw's first 60 frames; the panel's row lit with it).
 
@@ -476,7 +476,7 @@ func _round5(snap: Dictionary, sh: Dictionary, f: int, me: int, hu: Dictionary, 
 	pass_seen = passes
 	var pk: Dictionary = snap["Puck"]
 	var flying: bool = int(pk.get("PassFrames", 0)) > 0 and int(pk.get("PassBy", -1)) == me and f < pass_at + 45
-	var held_t: int = int(ctl["PassTarget"])
+	var held_t: int = int(ctl["PassTargetHeld"])   # HumanPassTarget along the stick at the hold (HUDChargeLook.cpp:97-112), round 7
 	var charge: int = int(hu.get("PassChargeFrames", 0))
 	if sh.has("pass_ring"):
 		var at: int = int(sh["pass_ring"])
