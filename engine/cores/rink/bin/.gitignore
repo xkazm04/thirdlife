@@ -1,8 +1,10 @@
 # Built by engine/tools/rink.sh build. Proposed to commit (Director decides): rink_core.*.dll (debug + release, the game's core,
-# 1.5 MB each) and rinkcli-thirdjam-t5.exe (the t5 proof selftest). Linker by-products and proof-only builds stay local.
+# 1.5 MB each), rink_core_thirdlife.*.dll (round 5: the thirdlife core, built when native/patches-thirdlife exists) and
+# rinkcli-thirdjam-t5.exe (the t5 proof selftest). Linker by-products and proof-only builds stay local.
 *.exp
 *.lib
 *.pdb
 rink_core_t5.*
 rinkcli-thirdjam.exe
 rinktest-*.exe
+rinkcli-thirdlife.exe

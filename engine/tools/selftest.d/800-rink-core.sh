@@ -165,3 +165,40 @@ if [ -z "$FILTER" ] || [[ "rink.playtester_seat" == *"$FILTER"* ]]; then
   fi
   verdict rink.playtester_seat "$why" "$note"
 fi
+
+# Round 5: the snapshot's Controls fields for the HUD (K5): ButtonsWithPuck equals thirdjam's two-role rule (InputMapping.cpp:432-442)
+# recomputed from the snapshot on every frame of a whole match (thirdjam's playtester, seed 1), and every other field keeps its rule
+# (tools/rink_controls.gd).
+if [ -z "$FILTER" ] || [[ "rink.controls" == *"$FILTER"* ]]; then
+  why=""; note=""
+  if [ ! -f "$HERE/../cores/rink/bin/rink_core.windows.template_debug.x86_64.dll" ]; then why="the extension is not built (run: bash engine/tools/rink.sh build)"; else
+    rc_g="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
+    rc_e="$(cd "$HERE/.." && pwd)"; command -v cygpath >/dev/null 2>&1 && rc_e="$(cygpath -am "$rc_e")"
+    rc_out="$(MSYS_NO_PATHCONV=1 timeout 600 "$rc_g" --headless --path "$rc_e" --script res://cores/rink/tools/rink_controls.gd -- --seed=1 2>&1 | tr -d '\015')"
+    rc_l="$(echo "$rc_out" | grep -m1 '^PASS  rink controls\|^FAIL  rink controls')"
+    [[ "$rc_l" == "PASS  rink controls"* ]] || why="${rc_l:-no controls line (the run stopped)}"
+    note="$(echo "$rc_l" | cut -c21-200)"
+  fi
+  verdict rink.controls "$why" "$note"
+fi
+
+# Round 5: the thirdlife core (thirdjam + native/patches-thirdlife, lane K8) selected by cartridge (tools/rink_variant.gd): with its
+# switches off it plays hockey.regular hash for hash on every frame of a match; the plain core refuses rules; TLCores.open opens
+# RinkCoreThirdlife for a cartridge with a <name>.rules.json sidecar and RinkCore without. A tree without the patches checks that the
+# plain core refuses a rule and nothing registers the variant.
+if [ -z "$FILTER" ] || [[ "rink.variant" == *"$FILTER"* ]]; then
+  why=""; note=""
+  rv_patches="$(ls "$HERE/../cores/rink/native/patches-thirdlife"/*.patch 2>/dev/null | head -1)"
+  if [ ! -f "$HERE/../cores/rink/bin/rink_core.windows.template_debug.x86_64.dll" ]; then why="the extension is not built (run: bash engine/tools/rink.sh build)"
+  elif [ -n "$rv_patches" ] && [ ! -f "$HERE/../cores/rink/bin/rink_core_thirdlife.windows.template_debug.x86_64.dll" ]; then why="native/patches-thirdlife is here but the thirdlife core is not built (bash engine/tools/rink.sh build thirdlife)"
+  else
+    rc_g="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
+    rc_e="$(cd "$HERE/.." && pwd)"; command -v cygpath >/dev/null 2>&1 && rc_e="$(cygpath -am "$rc_e")"
+    rv_arg="--seed=1"; [ -n "$rv_patches" ] || rv_arg="--plain-only"
+    rc_out="$(MSYS_NO_PATHCONV=1 timeout 900 "$rc_g" --headless --path "$rc_e" --script res://cores/rink/tools/rink_variant.gd -- $rv_arg 2>&1 | tr -d '\015')"
+    rc_l="$(echo "$rc_out" | grep -m1 '^PASS  rink variant\|^FAIL  rink variant\|^NOT RUN  rink variant')"
+    [[ "$rc_l" == "PASS  rink variant"* ]] || why="${rc_l:-no variant line (the run stopped)}"
+    note="$(echo "$rc_l" | cut -c20-220)"
+  fi
+  verdict rink.variant "$why" "$note"
+fi

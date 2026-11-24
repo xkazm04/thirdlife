@@ -118,6 +118,22 @@ bump, board hit, recoil, ability). Puck: `Pos`, `Z`, `Vel`, `VZ`, `LastTouch`.
   anchored (FJamAimAnchor anchors a still pixel only): the blade follows `CursorHitM` every step. With a pixel the A191 anchor
   works as in thirdjam (a still pixel and a standing skater keep the blade's point).
 
+## Two cores, one shape: RinkCore and RinkCoreThirdlife (round 5)
+
+- `RinkCore` (rink_core.dll) is thirdjam byte for byte. `RinkCoreThirdlife` (rink_core_thirdlife.dll, built by
+  `bash engine/tools/rink.sh build thirdlife` when `native/patches-thirdlife/*.patch` exist) is the same source compiled from a
+  copy of thirdjam with lane K8's patches applied (`native/tools/thirdlife_tree.py`). Every method and snapshot field above is
+  the same in both. The kernel picks one by the cartridge (a `<name>.rules.json` beside it: kernel API 1.29).
+- `load_rules(json) -> String` (after `load_cartridge`, before `reset`): the sidecar `tl.rink.rules/1` ("rules": switches set
+  through the patches' own `TlSetRule`; "levels": a thirdjam tune string per level, applied by `ApplyDifficultyTune` on top of
+  the level's profile at each `reset`). "" = loaded, else the error. The plain core refuses any rule.
+  `rules_applied() -> String`: the switches set ("net_carry_wall=1"). A new `load_cartridge` clears the rules.
+- Proof that the patches with their switches off are thirdjam: the 60 tournament matches (10 seeds x 3 levels x playerbot /
+  playtester, a TRACE line every frame) print 588,119 of 588,119 lines identical to the plain build, and the 60 closing hashes
+  equal `head-baseline.jsonl`; inside Godot a whole match hashes the same on every frame (selftest `rink.variant`).
+- The state hash of the thirdlife core with a switch ON differs from frame 1 (the patches hash their own state while a switch
+  is on): a thirdlife replay is checked against thirdlife, never against regular.
+
 ## The skating gym: one human on empty-ish ice (for K2)
 
 **v1.2: use `core.set_bot_mode("off")`**: the other nine sit in thirdjam's penalty box (JamSim.cpp:1349-1357 "no input, no

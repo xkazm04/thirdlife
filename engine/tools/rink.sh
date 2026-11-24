@@ -38,8 +38,14 @@ case "$cmd" in
   build)
     tree="${1:-thirdjam}"; target="${2:-template_debug}"
     if [ "$tree" = all ]; then
-      "$0" build thirdjam template_debug && "$0" build thirdjam template_release && "$0" build thirdjam-t5 template_debug
-      exit $?
+      "$0" build thirdjam template_debug && "$0" build thirdjam template_release && "$0" build thirdjam-t5 template_debug || exit $?
+      # round 5: the thirdlife core (thirdjam + native/patches-thirdlife, lane K8) when its patches are there
+      if ls "${TL_RINK_PATCHES:-$NATIVE/patches-thirdlife}"/*.patch >/dev/null 2>&1; then
+        "$0" build thirdlife template_debug && "$0" build thirdlife template_release || exit $?
+      else
+        echo "NOT BUILT  rink build thirdlife: no patches in native/patches-thirdlife (the variant waits for lane K8)"
+      fi
+      exit 0
     fi
     mkdir -p "$TL"
     if [ ! -d "$TL/godot-cpp/.git" ]; then
@@ -53,14 +59,39 @@ case "$cmd" in
     [ -n "$G" ] || { echo "NOT RUN  rink build: no Godot console exe (tl doctor)"; exit 2; }
     API="$TL/rink-api/extension_api.json"
     if [ ! -f "$API" ]; then mkdir -p "$TL/rink-api"; (cd "$TL/rink-api" && "$G" --headless --dump-extension-api >/dev/null 2>&1); fi
-    (cd "$NATIVE" && scons -j"$(nproc)" platform=windows target="$target" custom_api_file="$(cygpath -m "$API" 2>/dev/null || echo "$API")" tree="$tree" cli=yes)       || { echo "FAIL  rink build $tree $target"; exit 1; }
+    (cd "$NATIVE" && scons -j"$(nproc)" platform=windows target="$target" custom_api_file="$(cygpath -m "$API" 2>/dev/null || echo "$API")" tree="$tree" cli=yes ${TL_RINK_PATCHES:+patches="$(cygpath -m "$TL_RINK_PATCHES" 2>/dev/null || echo "$TL_RINK_PATCHES")"})       || { echo "FAIL  rink build $tree $target"; exit 1; }
     # Godot 4.7.2 segfaults at exit when a filesystem scan discovers a GDExtension for the first time (any extension, a hello
     # world too); listing it in .godot/extension_list.cfg before the first import loads it at startup instead.
     if [ "$tree" = thirdjam ]; then
       mkdir -p "$ROOT/engine/.godot"
       grep -qx "res://cores/rink/rink_core.gdextension" "$ROOT/engine/.godot/extension_list.cfg" 2>/dev/null         || echo "res://cores/rink/rink_core.gdextension" >> "$ROOT/engine/.godot/extension_list.cfg"
     fi
+    # round 5: the thirdlife core's .gdextension is written beside its library (never before it: a .gdextension without its library
+    # errors on every engine start); the kernel opens RinkCoreThirdlife for a cartridge with a rules sidecar (TLCores.open, 1.29).
+    if [ "$tree" = thirdlife ]; then
+      printf '[configuration]
+entry_symbol = "rink_core_thirdlife_init"
+compatibility_minimum = "4.7"
+
+[libraries]
+windows.debug.x86_64 = "res://cores/rink/bin/rink_core_thirdlife.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://cores/rink/bin/rink_core_thirdlife.windows.template_release.x86_64.dll"
+' > "$ROOT/engine/cores/rink/rink_core_thirdlife.gdextension"
+      mkdir -p "$ROOT/engine/.godot"
+      grep -qx "res://cores/rink/rink_core_thirdlife.gdextension" "$ROOT/engine/.godot/extension_list.cfg" 2>/dev/null         || echo "res://cores/rink/rink_core_thirdlife.gdextension" >> "$ROOT/engine/.godot/extension_list.cfg"
+    fi
     echo "PASS  rink build $tree $target"
+    ;;
+  tests)   # round 5: thirdjam's own tests (Jam.*, Bar.*) and our re-typed JamGame button rules (TL.Controls.*) natively; args = name filters
+    G="$(godot_exe)"; API="$TL/rink-api/extension_api.json"
+    [ -f "$API" ] || { echo "NOT RUN  rink tests: run bash engine/tools/rink.sh build first (no extension api dump)"; exit 2; }
+    (cd "$NATIVE" && scons -j"$(nproc)" platform=windows target=template_debug custom_api_file="$(cygpath -m "$API" 2>/dev/null || echo "$API")" tree=thirdjam tests=yes skip_tests=VisualSwapTests.cpp) >"$TL/rink-tests-build.log" 2>&1 || { echo "FAIL  rink tests: the build failed ($TL/rink-tests-build.log)"; exit 1; }
+    out="$("$BIN/rinktest-thirdjam.exe" "$(cygpath -m "$NATIVE/content" 2>/dev/null || echo "$NATIVE/content")" "$@" 2>&1 | tr -d '\r' || true)"
+    echo "$out" | grep '^FAIL' || true
+    last="$(echo "$out" | grep '^RINKTEST' | tail -1 || true)"
+    p="$(echo "$last" | sed -n 's/.*passed=\([0-9]*\).*/\1/p')"; t="$(echo "$last" | sed -n 's/.*total=\([0-9]*\).*/\1/p')"
+    if [ -n "$t" ] && [ "$t" -gt 0 ] && [ "$p" = "$t" ]; then echo "PASS  rink tests: $p of $t"; exit 0; fi
+    echo "FAIL  rink tests: ${last:-no RINKTEST line (the run stopped)}"; exit 1
     ;;
   trace)
     tree="${1:-thirdjam}"; shift || true

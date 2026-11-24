@@ -12,8 +12,11 @@ extends RefCounted
 ## command that builds it, and open() returns null.
 
 ## id -> the class the core's extension registers, and the command that builds it.
+## 1.29: "variant" = the class of the core built with its rule patches (rink: thirdjam + native/patches-thirdlife, lane K8), opened
+## for a cartridge that has a rules sidecar (<name>.rules.json beside <name>.cartridge.json in data/).
 const KNOWN: Dictionary = {
-	"rink": {"class": "RinkCore", "build": "bash engine/tools/rink.sh build"},
+	"rink": {"class": "RinkCore", "build": "bash engine/tools/rink.sh build",
+		"variant": "RinkCoreThirdlife", "variant_build": "bash engine/tools/rink.sh build thirdlife (needs native/patches-thirdlife)"},
 }
 
 var _ctx: WeakRef = null
@@ -27,15 +30,15 @@ func _init(ctx: Object = null) -> void:
 ## The core `id` as an object (rink: RinkCore, engine/cores/rink/SNAPSHOT.md), or null with an error when the id is unknown,
 ## the core is not built, or `cartridge` does not load. `cartridge`: a file under the pack's data/ (as ctx.read_json reads
 ## it), handed to the core as text; "" = load nothing (the pack calls load_cartridge itself).
+## 1.29: a cartridge with a rules sidecar (data/<name>.rules.json beside data/<name>.cartridge.json, tl.rink.rules/1) opens the
+## core's variant (rink: RinkCoreThirdlife, its own library) and hands it the rules after the cartridge; without a sidecar the
+## plain core (thirdjam byte for byte) opens, as before.
 func open(id: String, cartridge: String = "") -> Object:
 	if not KNOWN.has(id):
 		push_error("ctx.cores.open: no core '%s' (known: %s)" % [id, ", ".join(PackedStringArray(KNOWN.keys()))])
 		return null
-	var cls: String = str(KNOWN[id]["class"])
-	if not ClassDB.class_exists(cls):
-		push_error("ctx.cores.open: the core '%s' is not built (%s)" % [id, str(KNOWN[id]["build"])])
-		return null
-	var core: Object = ClassDB.instantiate(cls)
+	var full: String = ""
+	var rules: String = ""
 	if cartridge != "":
 		var c: Object = _ctx.get_ref() if _ctx != null else null
 		var dir: String = str(c.get("pack_dir")) if c != null else ""
@@ -43,14 +46,28 @@ func open(id: String, cartridge: String = "") -> Object:
 		if dir == "" or p.contains("..") or p.is_absolute_path():
 			push_error("ctx.cores.open: cartridge '%s' must be a file under the pack's data/" % cartridge)
 			return null
-		var full: String = dir + "/data/" + p
+		full = dir + "/data/" + p
 		if not FileAccess.file_exists(full):
 			push_error("ctx.cores.open: cartridge data/%s not found" % p)
 			return null
+		var side: String = (full.trim_suffix(".cartridge.json") if full.ends_with(".cartridge.json") else full.get_basename()) + ".rules.json"
+		if FileAccess.file_exists(side):
+			rules = side
+	var cls: String = str(KNOWN[id]["variant"]) if rules != "" else str(KNOWN[id]["class"])
+	if not ClassDB.class_exists(cls):
+		push_error("ctx.cores.open: the core '%s' (%s) is not built (%s)" % [id, cls, str(KNOWN[id]["variant_build" if rules != "" else "build"])])
+		return null
+	var core: Object = ClassDB.instantiate(cls)
+	if full != "":
 		var err: String = str(core.call("load_cartridge", FileAccess.get_file_as_string(full)))
 		if err != "":
-			push_error("ctx.cores.open: cartridge data/%s does not load: %s" % [p, err])
+			push_error("ctx.cores.open: cartridge %s does not load: %s" % [full.get_file(), err])
 			return null
+		if rules != "":
+			err = str(core.call("load_rules", FileAccess.get_file_as_string(rules)))
+			if err != "":
+				push_error("ctx.cores.open: rules %s do not load: %s" % [rules.get_file(), err])
+				return null
 	_open.append([id, core])
 	return core
 

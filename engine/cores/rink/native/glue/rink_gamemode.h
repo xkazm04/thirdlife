@@ -50,6 +50,10 @@ namespace RinkGlue
 		void Press(const std::wstring& Key);
 		void Release(const std::wstring& Key);
 		FButtonVerbs Step(const FButtonContext& C, const FBindings& B);
+		// InputMapping.cpp:341-346: the possession reads as bWithPuck for all three of the context's facts.
+		FButtonVerbs Step(bool bWithPuck, const FBindings& B) { FButtonContext C; C.bWith = C.bCarrying = C.bInReach = bWithPuck; return Step(C, B); }
+		// InputMapping.cpp:335-339: the verb a held key is doing now (EVerb::Count = none / not yet resolved / dead).
+		EVerb ActiveVerb(const std::wstring& Key) const { for (const FHeldKey& H : Held) if (H.Key == Key) return H.bDead ? EVerb::Count : H.Verb; return EVerb::Count; }
 		void Reset() { Held.clear(); }
 	private:
 		struct FHeldKey { std::wstring Key; EVerb Verb = EVerb::Count; bool bDown = false, bNew = false, bDead = false, bLevelSent = false, bLevelDropped = false; int32 Steps = 0; };
@@ -61,6 +65,7 @@ namespace RinkGlue
 	{
 		FVector2D Step(const FVector2D& PixelPx, const FVector2D& HitM, const FVector2D& SkaterM, bool bOn, double StandSpeedMps);
 		void Reset() { bHave = false; bAnchored = false; }
+		bool IsAnchored() const { return bAnchored; }   // InputMapping.h:161
 	private:
 		bool bHave = false, bAnchored = false;
 		FVector2D LastPx, LastSkater, Offset;
