@@ -1,0 +1,56 @@
+diff -ruN a/thirdjam/Private/JamSim.cpp b/thirdjam/Private/JamSim.cpp
+--- a/thirdjam/Private/JamSim.cpp
++++ b/thirdjam/Private/JamSim.cpp
+@@ -1292,7 +1292,8 @@
+ 	const double CarryMul = bCarrying ? FMath::Clamp(C.CarrySpeedMult, 0.0, 1.0) : 1.0;
+ 	const double SprintBonus = bCarrying ? FMath::Max(0.0, C.SprintCarryBonus) : C.SprintBonus;
+ 	const bool bWantSprint = In.bSprint && C.SprintBonus > 0.0 && SprintBonus > 0.0 && S.Stamina > 0 && In.Move.SizeSquared() > 0.0025 && S.CanAct() && !S.InBox()
+-		&& !S.bCrossBraced;   // lane A184: no sprint while braced (the brace's price; never set with contact.cross_hold off)
++		&& !S.bCrossBraced   // lane A184: no sprint while braced (the brace's price; never set with contact.cross_hold off)
++		&& (Config.Tl.SprintRestartShare <= 0.0 || S.bSprinting || S.Stamina >= Config.Tl.SprintRestartShare * Full);   // THIRDLIFE PATCH 0004: a new sprint starts only on a refilled bar (S.bSprinting is still last frame's here)
+ 	S.bSprinting = bWantSprint;
+ 	if (bWantSprint) S.Stamina = FMath::Max(0, S.Stamina - FMath::Max(1, C.SprintRefillFrames));
+ 	else if (S.Stamina < Full) S.Stamina = FMath::Min(Full, S.Stamina + FMath::Max(1, C.SprintDrainFrames));
+@@ -1436,6 +1437,12 @@
+ 				Along = FMath::Min(Top, Along + Accel * Mag * DT);
+ 			}
+ 			Along = MoveToward(Along, 0.0, (Glide + (In.bBrake ? C.BrakeDecel : 0.0)) * DT);
++			// THIRDLIFE PATCH 0004 (FTlRules::OverTopDecelMps2): speed above his own full-stick top in his present state is shed, down to that top.
++			if (Config.Tl.OverTopDecelMps2 > 0.0 && S.LungeLeft == 0)
++			{
++				const double TlFull = Speed * FMath::Max(Mag, 1.0) * Ice.SpeedMul;
++				if (Along > TlFull) Along = FMath::Max(TlFull, Along - Config.Tl.OverTopDecelMps2 * DT);
++			}
+ 			Side *= FMath::Max(0.0, 1.0 - (Grip + (In.bBrake ? C.BrakeDecel * 0.5 : 0.0)) * DT);
+ 			S.Vel = Fwd * Along + Side;
+ 			if (In.bBrake && V > 1.0) S.bBraking = true;
+diff -ruN a/thirdjam/Public/JamCartridge.h b/thirdjam/Public/JamCartridge.h
+--- a/thirdjam/Public/JamCartridge.h
++++ b/thirdjam/Public/JamCartridge.h
+@@ -682,6 +682,17 @@
+ 	// another body's touch and through his own bounce off a body: it leaves him by a shot, a pass, a poke, a lift, a check that stumbles or fells him.
+ 	// false = thirdjam.
+ 	bool bCarryHoldsBody = false;
++	// THIRDLIFE PATCH 0004 (experiment E05, pillars 2 and 5; the owner's R-0041 "skater with puck will need slight speed reduction ... to incentivize
++	// passing" and R-0045 "sprint speed of defenders should be always higher"). Nobody glides faster than he can skate: a skater moving faster along his
++	// facing than his own top speed at a full stick in his present state (carrying or free, sprinting or not, the breakaway burst while it runs) loses
++	// this many m/s every second until he is at that top. thirdjam takes speed above the top only by the glide's 0.147 m/s2, so a sprint's 14.55 m/s
++	// outlives its bar by many seconds (PLAY.md section 4 item 12) and a skater who takes the puck at 12.65 m/s carries it at 12.65, not at the carrier's
++	// 10.12. Easing the stick still glides as before (the test is against the FULL stick's top), and a lunge is left alone. 0 = thirdjam.
++	double OverTopDecelMps2 = 0.0;
++	// ... and the bar is the sprint's cost. In thirdjam a held sprint key with an empty bar sprints again on the first frame the bar holds one tick (every
++	// other frame: the gym's carrier sprints 290 of 401 frames on a 180-frame bar), so the bar never ends a held sprint. With this share above 0 a sprint
++	// that is not already running STARTS only with at least this share of the full bar; one that runs goes on to the last tick as before. 0 = thirdjam.
++	double SprintRestartShare = 0.0;
+ };
+ // The host's one entry: sets a switch by its rules.json key. false = an unknown key (the host reports it: unknown keys are errors).
+ inline bool TlSetRule(FTlRules& R, const char* Key, double Value)
+@@ -691,6 +702,8 @@
+ 	// one line per patch, below
+ 	if (K == "net_carry_wall") { R.bNetCarryWall = Value != 0.0; return true; }   // 0002
+ 	if (K == "carry_holds_body") { R.bCarryHoldsBody = Value != 0.0; return true; }   // 0003
++	if (K == "over_top_decel_mps2") { if (Value < 0.0 || Value > 60.0) return false; R.OverTopDecelMps2 = Value; return true; }   // 0004
++	if (K == "sprint_restart_share") { if (Value < 0.0 || Value > 1.0) return false; R.SprintRestartShare = Value; return true; }   // 0004
+ 	return false;
+ }
+ 

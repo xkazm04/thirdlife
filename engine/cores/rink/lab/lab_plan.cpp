@@ -50,12 +50,15 @@ namespace Lab
 	bool ParsePlanProfile(const char* Name, FPlanProfile& Out)
 	{
 		const std::string N(Name ? Name : "");
-		// A person's limits (not thirdjam's playtester's 12 / 6 / 3 frames, which a script needs because it never anticipates): a choice reaction of 300 / 233 /
-		// 167 ms, a decision every 0.5 / 0.33 / 0.2 s, a reading of the outcome that is off by up to 0.15 / 0.08 / 0.04 goals, the aim error and the presses
-		// a second of thirdjam's three classes. Calibrated once, on hockey.regular, against thirdjam's own hands' ladder (docs/design/HOCKEY-BALANCE.md section 6).
-		if (N == "novice") { Out = FPlanProfile(); Out.Name = "novice"; Out.ReactionFrames = 18; Out.AimNoiseDeg = 10.0; Out.DecideEvery = 30; Out.Horizon = 30; Out.PressPerSec = 3; Out.JudgeNoise = 0.15; Out.LapseEvery = 600; Out.LapseFrames = 30; return true; }
-		if (N == "regular") { Out = FPlanProfile(); Out.Name = "regular"; Out.ReactionFrames = 14; Out.AimNoiseDeg = 5.0; Out.DecideEvery = 20; Out.Horizon = 45; Out.PressPerSec = 5; Out.JudgeNoise = 0.08; return true; }
-		if (N == "good") { Out = FPlanProfile(); Out.Name = "good"; Out.ReactionFrames = 10; Out.AimNoiseDeg = 2.0; Out.DecideEvery = 12; Out.Horizon = 45; Out.PressPerSec = 8; Out.JudgeNoise = 0.04; return true; }
+		// A person's limits (not thirdjam's playtester's 12 / 6 / 3 frames, which a script needs because it never anticipates): a choice reaction of 467 / 367 /
+		// 233 ms, a decision every 0.67 / 0.5 / 0.27 s, a reading of the outcome that is off by up to 0.15 / 0.08 / 0.04 goals, the aim error and the presses
+		// a second of thirdjam's three classes. Fitted to ONE number, on hockey.regular: the regular setting wins at pro what thirdjam's own regular hand wins
+		// there (75.5 %). Fitted twice: round 1 (300 / 233 / 167 ms; 77 %), and again in round 2 after the hand's press timing was repaired (it then won 93 %
+		// with the old limits; eight settings tried, 40 seeds each: docs/shifts/2026-11-24-night/lanes/K8-balance/ROUND-2.md section 4). Never fitted on
+		// hockey.thirdlife.
+		if (N == "novice") { Out = FPlanProfile(); Out.Name = "novice"; Out.ReactionFrames = 28; Out.AimNoiseDeg = 10.0; Out.DecideEvery = 40; Out.Horizon = 30; Out.PressPerSec = 3; Out.JudgeNoise = 0.15; Out.LapseEvery = 600; Out.LapseFrames = 30; return true; }
+		if (N == "regular") { Out = FPlanProfile(); Out.Name = "regular"; Out.ReactionFrames = 22; Out.AimNoiseDeg = 5.0; Out.DecideEvery = 30; Out.Horizon = 45; Out.PressPerSec = 5; Out.JudgeNoise = 0.08; return true; }
+		if (N == "good") { Out = FPlanProfile(); Out.Name = "good"; Out.ReactionFrames = 14; Out.AimNoiseDeg = 2.0; Out.DecideEvery = 16; Out.Horizon = 45; Out.PressPerSec = 8; Out.JudgeNoise = 0.04; return true; }
 		return false;
 	}
 
@@ -298,18 +301,24 @@ namespace Lab
 			if (I == I_Poke)
 			{
 				const double Bd = V2::Distance(Pk.Pos, M.Pos);
-				if (S.GetFrame() + 1 >= M.PokeReadyFrame && M.PokeWindow <= 0 && Bd <= UJamSim::SkaterRadius + G.Stick.ReachM + 0.45 && St.T - St.Aux >= 20) { In.bPoke = true; St.Aux = St.T; St.bFired = true; }
+				if (S.GetFrame() + 1 >= M.PokeReadyFrame && M.PokeWindow <= 0 && Bd <= UJamSim::SkaterRadius + G.Stick.ReachM + 0.45 && (!St.bFired || St.T - St.Aux >= 20)) { In.bPoke = true; St.Aux = St.T; St.bFired = true; }
 			}
 			else if (I == I_Lift)
 			{
-				if (S.GetFrame() + 1 >= M.LiftReadyFrame && D <= 2.0 * UJamSim::SkaterRadius + G.Stick.LiftRangeM - 0.1 && St.T - St.Aux >= 30) { In.bLift = true; St.Aux = St.T; St.bFired = true; }
+				if (S.GetFrame() + 1 >= M.LiftReadyFrame && D <= 2.0 * UJamSim::SkaterRadius + G.Stick.LiftRangeM - 0.1 && (!St.bFired || St.T - St.Aux >= 30)) { In.bLift = true; St.Aux = St.T; St.bFired = true; }
 			}
 			else if (I == I_Check)
 			{
 				const double Closing = Dot(M.Vel - K.Vel, Norm(K.Pos - M.Pos));
-				if (Closing > 2.0 && D - 2.0 * UJamSim::SkaterRadius <= Closing * (G.Contact.CheckWindupFrames + 6) / 60.0 + 0.3 && St.T - St.Aux >= 40) { In.bCheck = true; St.Aux = St.T; St.bFired = true; }
+				if (Closing > 2.0 && D - 2.0 * UJamSim::SkaterRadius <= Closing * (G.Contact.CheckWindupFrames + 6) / 60.0 + 0.3 && (!St.bFired || St.T - St.Aux >= 40)) { In.bCheck = true; St.Aux = St.T; St.bFired = true; }
 			}
-			else if (I == I_Brace) { In.bCrossHold = D < 6.0; In.bSprint = false; }
+			else if (I == I_Brace)
+			{
+				if (D <= 2.0 * UJamSim::SkaterRadius + 0.15) St.bFired = true;   // the bodies met: the brace is spent
+				In.bCrossHold = D < 6.0 && !St.bFired;
+				In.bSprint = false;
+				if (St.bFired) St.bDone = true;
+			}
 			break;
 		}
 		case I_Goalside:

@@ -87,6 +87,14 @@ namespace Lab
 		// (a shot, a pass, a deflection, a rebound); the human's takes off an opposing carrier with a hit or stick key inside the 30 frames before, or with none
 		int GoalsWalk[2] = {0, 0}, GoalsSent[2] = {0, 0};
 		int TakesKey = 0, TakesNoKey = 0;
+		// lane K8 (round 2), T5's own count: the puck rode with an opponent when the last frame ended and is the human's now: with a stick or hit key of his
+		// inside the 30 frames before (RideTakesKey) or with none (RideTakesNoKey); the same off the human by an opponent, and between bots (by any means:
+		// the bots' keys are not seen here).
+		int RideTakesKey = 0, RideTakesNoKey = 0, RideTakesOffHuman = 0, RideTakesBots = 0;
+		// lane K8 (round 2): what became of the human's completed passes. The first thing that happened within 300 frames of the mate's reception: the mate
+		// (or another mate) shot; the puck came back to the human; an opponent carried it; nothing. And the passes followed by a goal of his side before an
+		// opponent carried the puck (within the same 300 frames).
+		int PassThenShot = 0, PassThenBack = 0, PassThenLost = 0, PassThenNone = 0, PassThenGoal = 0;
 	};
 
 	class FLabSimAdapter : public JamAI::FJamSimAdapter
@@ -120,6 +128,8 @@ namespace Lab
 		int64_t LastRelease[JamAI::kMaxSkaters];   // the frame each skater last shot or passed
 		int64_t LastOppCarryF = -1000, LastHitKeyF = -1000;
 		int PrevCarrierK8 = -1;
+		bool bFollow = false, bFollowFirst = false;
+		int64_t FollowStart = 0;
 		int64_t CarryStartF = 0, CarryLastF = 0, LastShotF = -1000, LastPassF = -1000;
 		void EndCarry(int64_t Frame, int How);   // 0 shot, 1 pass, 2 lost (an opponent carries), 3 kept (a mate carries), 4 goal, 5 other (a stoppage)
 		void Filter(JamAI::FJamAIInput& H, const UJamSim& S, int Pi);

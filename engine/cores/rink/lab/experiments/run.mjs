@@ -48,6 +48,10 @@ const SETS = {
 export const MATRIX_VERBS = ["sprint", "stop", "shield", "pass", "onetimer", "tap", "charge", "shoot", "deke", "spin", "poke", "lift", "check", "brace"];
 // the planning hand's own ablation at pro (its validation on hockey.regular, and the dead-verb verdict on hockey.thirdlife)
 SETS.pablate = ["pro.plan-regular", ...MATRIX_VERBS.map((v) => `pro.plan-regular.x-${v}`), "pro.plan-regular.x-draw", "pro.plan-regular.only-none"];
+// the planning hand's calibration cells (on hockey.regular: the one number it is fitted to, and the ladder's corners)
+SETS.pcal = ["pro.plan-novice", "pro.plan-regular", "pro.plan-good", "all_star.plan-regular", "rookie.plan-novice"];
+// the mid-round matrix: the ladder by the planning hand, the screen's scripted cells, and the planning hand without each verb at pro
+SETS.mid = [...new Set([...SETS.screen, "rookie.plan-regular", "rookie.plan-good", "all_star.plan-novice", "all_star.plan-good", ...SETS.pablate, "pro.regular.x-pass", "pro.regular.x-check", "pro.regular.x-brace"])];
 SETS.matrix = [...SETS.ladder, ...MATRIX_VERBS.flatMap((v) => [`pro.plan-regular.x-${v}`, `pro.regular.x-${v}`]), "pro.plan-regular.only-none", "pro.regular.only-none"];
 
 const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8"));
@@ -71,7 +75,7 @@ function armFiles(name, change) {
 // An arm is named by what it plays (the cartridge's game, its rule switches, its level tunes) and by EPOCH, which this lane bumps whenever the planning
 // hand or the code behind an existing switch changes (a new patch with its switch off changes no arm: rink.sh balance-thirdlife --parity proves that for
 // the switch-less game). Each arm keeps the hash of the runner that measured it; a different runner on a kept arm is said aloud.
-const EPOCH = "k8-2";   // k8-1: the first form of patch 0002 (experiment E01); k8-2: patch 0002 rewritten (E01b)
+const EPOCH = "k8-4";   // k8-1: the first form of patch 0002 (E01); k8-2: patch 0002 rewritten (E01b .. E05); k8-3: the planning hand presses its poke, lift and check at once and lets go of a spent brace (round 2, after E05); k8-4: that hand with its limits fitted again (reaction 28 / 22 / 14 frames)
 function armDir(files) {
   const exeSha = crypto.createHash("sha1").update(fs.readFileSync(exe)).digest("hex").slice(0, 12);
   const key = crypto.createHash("sha1").update(JSON.stringify(files.cart.game) + "|" + JSON.stringify(files.rules.rules || {}) + "|" + JSON.stringify(files.rules.levels || {}) + "|" + EPOCH).digest("hex").slice(0, 12);
@@ -112,7 +116,7 @@ async function runArm(arm, ids) {
 const FIGS = ["win_pct", "gd", "gf_min", "ga_min", "human_goals_match", "human_walk_goals_match", "shots_min", "opp_shots_min", "passes_min", "passes_completed_pct", "passes_received_match",
   "one_timers_match", "carry_s", "carries_min", "poss_pct", "changes_min", "loose_pct", "takes_key_min", "takes_nokey_min", "human_knockdowns_match", "human_down_s_match",
   "hits_landed_min", "pokes_clean_min", "presses_total_min", "sprint_share_pct", "human_mean_mps", "match_s", "first_goal_for_s"];
-const pick = (s) => ({ n: s.n, ...Object.fromEntries(FIGS.map((k) => [k, s[k]])), carry_lost_pct: s.carry_end.lost, carry_goal_pct: s.carry_end.goal, goals_walk_pct: s.goals_walk_pct,
+const pick = (s) => ({ n: s.n, ...Object.fromEntries(FIGS.map((k) => [k, s[k]])), carry_lost_pct: s.carry_end.lost, carry_goal_pct: s.carry_end.goal, goals_walk_pct: s.goals_walk_pct, ride_takes_min: s.ride_takes_min, pass_then: s.pass_then,
   bot_mean_mps: s.bot_mean_mps, presses_min: s.presses_min, plan_chosen: s.plan_chosen });
 const win = (x) => (x.pt.result === "win" ? 100 : 0);
 const gd = (x) => x.pt.goals[0] - x.pt.goals[1];

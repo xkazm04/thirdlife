@@ -7,4 +7,5 @@ namespace Lab
 	// rinklab.gym/1 JSON line per probe. Returns 0, or 2 when the cartridge does not load.
 	// lane K8: TlOverrides = the -tl= arm (lab_rules.h); the cartridge's rules sidecar is read too.
 	int RunGym(const char* Cartridge, const char* TlOverrides = "");
+	int RunProbeK8(const char* Cartridge, const char* TlOverrides, const char* Which);
 }
