@@ -16,17 +16,22 @@ extends RefCounted
 ## distance (decay 0, a range four times the light's radius: the window is 0.992 at the radius), a cone 6 degrees wider
 ## than the light's outer cone with no fall-off inside it. The shader weighs each key's shadow by that key's own share of the
 ## rig's light at the point (hall_ice.gdshader, the lines marked K7).
-## The softness: a filtered edge of one width (`blur`), looked at against the running game's stills. thirdjam's is its
-## light's source radius (60 cm: a penumbra that widens with the caster's height); the engine's own soft shadows for a
-## spot light (`soft`: true) came out hard-edged and stepped at this map size, so they are off by default.
+## The softness is the light's source radius (thirdjam: 60 cm) through the engine's percentage-closer soft shadows: a
+## shadow is hard where the caster touches the ice and widens with the caster's height, as thirdjam's does (a lying
+## man's is tight and dark, a standing man's head is a blur). The engine takes a light's size against its range, and
+## the range here is RANGE_K times the light's own, so the size given is the source's diameter times `size_k` / 2
+## (default 8 = 2 x RANGE_K; 4 and 12 were looked at beside the game's stills, 4 too hard at the far end).
+## At 2048 px a key these came out stepped; at 4096 px (every quadrant one map) they do not.
+## `cone_deg` (56): the half angle a key's shadow map covers. thirdjam's key lights reach to 62 degrees, but past 55 a
+## key gives under a twentieth of its light at its foot, and a map of 56 degrees has 1.7 times finer texels than one
+## of 68 (0.94 cm under a key); outside the map's cone that key's light is simply not shadowed (hall_ice.gdshader).
 ## Options: `atlas` (the viewport's positional shadow atlas, px; default 8192: four lights at 4096 px each),
-## `blur` (default 1.0), `soft` (false; true: the light's source radius through the engine's soft shadows),
-## `bias` (0.03), `filter` (the renderer's soft shadow filter for spot lights, RenderingServer.ShadowQuality 0..5;
-## default 4, high).
+## `blur` (default 1.0), `soft` (true; false: one filtered rim width, no widening), `size_k` (8), `bias` (0.03),
+## `filter` (the renderer's soft shadow filter for spot lights, RenderingServer.ShadowQuality 0..5; default 5, ultra: at 4 the rims still showed steps close to the camera).
 ## Headless it does nothing. It acts on the anchor's viewport (a game alone).
 
 const NODE: StringName = &"HallKeys"
-const DEFAULTS: Dictionary = {"atlas": 8192, "blur": 1.0, "soft": false, "bias": 0.03, "filter": 4}
+const DEFAULTS: Dictionary = {"atlas": 8192, "blur": 1.0, "soft": true, "bias": 0.03, "filter": 5, "size_k": 8.0, "cone_deg": 56.0}
 const WIDER_DEG: float = 6.0
 const RANGE_K: float = 4.0
 
@@ -49,6 +54,7 @@ static func install(anchor: Node, lights: Array, opt: Dictionary = {}) -> int:
 	host.name = NODE
 	rig.add_child(host)
 	var made: int = 0
+	var cone: float = 90.0
 	for l: Dictionary in lights:
 		if not bool(l.get("shadows", false)):
 			continue
@@ -67,13 +73,14 @@ static func install(anchor: Node, lights: Array, opt: Dictionary = {}) -> int:
 		s.light_specular = 0.0
 		s.spot_range = float(l["radius_m"]) * RANGE_K
 		s.spot_attenuation = 0.0
-		s.spot_angle = minf(float(l["outer_deg"]) + WIDER_DEG, 86.0)
+		s.spot_angle = minf(minf(float(l["outer_deg"]) + WIDER_DEG, float(o["cone_deg"])), 86.0)
+		cone = minf(cone, s.spot_angle)
 		s.spot_angle_attenuation = 0.001       # the engine: (1 - rim) ^ this; near 0 = no fall-off inside the cone (looked at: 64 left 3 % of the light)
 		s.shadow_enabled = true
 		s.shadow_bias = float(o["bias"])
 		s.shadow_normal_bias = 1.0
 		s.shadow_blur = float(o["blur"])
-		s.light_size = float(l.get("source_radius_m", 0.0)) if bool(o["soft"]) else 0.0
+		s.light_size = float(l.get("source_radius_m", 0.0)) * float(o["size_k"]) if bool(o["soft"]) else 0.0
 		made += 1
 	var vp: Viewport = anchor.get_viewport()
 	if vp != null and made > 0:
@@ -89,6 +96,7 @@ static func install(anchor: Node, lights: Array, opt: Dictionary = {}) -> int:
 		vp.positional_shadow_atlas_quad_2 = cut
 		vp.positional_shadow_atlas_quad_3 = cut
 		RenderingServer.positional_soft_shadow_filter_set_quality(int(o["filter"]) as RenderingServer.ShadowQuality)
+	host.set_meta(&"tl_cone_cos", cos(deg_to_rad(cone - 1.0)))       # a degree inside the map's rim
 	return made
 
 
@@ -102,6 +110,8 @@ static func receive(mi: GeometryInstance3D) -> void:
 		m = (mi as MeshInstance3D).get_active_material(0) as ShaderMaterial
 	if m != null:
 		m.set_shader_parameter(&"key_shadows", 1.0)
+		var host: Node = _host(mi)
+		m.set_shader_parameter(&"key_cone_cos", float(host.get_meta(&"tl_cone_cos", -1.0)) if host != null else -1.0)
 
 
 ## How many key lights stand (0 = none: surfaces take the style sun's shadow, as before).

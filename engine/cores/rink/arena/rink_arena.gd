@@ -123,6 +123,14 @@ static func light(anchor: Node, tone_gain: float = TONE_GAIN) -> void:
 	# (HALL_INK kept them near the camera for the cel figures; they showed as a dark edge on a felt skater's skates and hands)
 	if TLRigSkaterLook.chosen() == "felt":
 		TLStyleArena.post(anchor, {"ink": {"fade_near": 0.0, "fade_far": 0.0, "outer_fade_far": 0.01, "inner_near": 0.0, "inner_far": 0.01}})
+	# (round 4) the puck's halo disc under this hall's exposure: thirdjam's MI_Trim_PuckHalo is M_Trim with Emissive 18 and
+	# TeamColour (0.75, 1.0, 0.15) (lane K3's reading of the asset, REPORT-r10); M_Trim on the clay tier shows its base
+	# tint lit by TeamColour x Emissive x ClayGlowMul (the branch of material() above; ClayGlowMul 1 and the base tint
+	# are the master's, this instance is not in the export). Through the film curve at the rig's exposure that is near
+	# white (#f7fbdd), which is what the game shows; the palette's emissive lime drawn outside that curve read yellow-green.
+	for halo: Node in anchor.get_tree().root.find_children("PuckHalo", "MeshInstance3D", true, false):
+		(halo as MeshInstance3D).material_override = TLStyleArena.surface({"dark": Color(0.02, 0.02, 0.025), "light": Color(0.02, 0.02, 0.025),
+			"emit": Color(0.75, 1.0, 0.15) * 18.0})
 	# K7 end
 
 

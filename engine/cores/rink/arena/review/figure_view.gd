@@ -3,7 +3,7 @@ extends Node3D
 ## felt skaters standing where a still of the running game had them, seen by that still's own camera. Windowed:
 ##   godot --path engine --position 0,1440 --resolution 1280x720 res://cores/rink/arena/review/figure_view.tscn -- \
 ##         --shots=<file.json> --outdir=<folder> [--look=felt|cel] [--keys=0] [--ink=0] [--keyopt=blur:1,atlas:8192]
-##         [--cost=N]      or      --check=shadow [--keys=0] [--out=<png>]   (selftest block 850, look.skater.shadow)
+##         [--cost=N] [--film=N [--speed=6]]      or      --check=shadow [--keys=0] [--out=<png>]   (selftest block 850, look.skater.shadow)
 ## The file: [{"name": "f5360", "cam": [x, y, height, yaw, pitch], "figures": [{"team": 0, "number": 7,
 ##   "at": [x, y, yaw], "clip": "Stride", "key": 20, "down": false}, ...]}, ...] in rink metres and Unreal's degrees (lane K6's camera
 ## log of the game). One PNG a shot (<name>.png, the window's frame). Prints `tl.rink.figure_view/1 {...}` last.
@@ -36,8 +36,10 @@ func _ready() -> void:
 		var ko: Dictionary = {}
 		for kv: String in String(args["keyopt"]).split(","):
 			var pair: PackedStringArray = kv.split(":")
-			ko[pair[0]] = (pair[1] == "true") if pair[0] == "soft" else (float(pair[1]) if pair[0] in ["blur", "bias"] else int(pair[1]))
+			ko[pair[0]] = (pair[1] == "true") if pair[0] == "soft" else (float(pair[1]) if pair[0] in ["blur", "bias", "size_k", "cone_deg"] else int(pair[1]))
 		TLStyleHallKeys.install(self, Arena.rig_lights(), ko)
+		for ice: Node in find_children("RinkIce", "MeshInstance3D", true, false):
+			TLStyleHallKeys.receive(ice as MeshInstance3D)
 	report["keys"] = TLStyleHallKeys.count(self)
 	report["hall"] = hall != null
 	report["rig_lights"] = TLStyleFelt.rig_size()
@@ -91,6 +93,21 @@ func _shots() -> void:
 		if img.save_png("%s/%s.png" % [outdir, String(shot["name"])]) == OK:
 			saved += 1
 	report["shots"] = saved
+	if args.has("film"):                          # --film=N: the last shot for N frames, the figures skating on; every 2nd frame a PNG
+		var nf: int = int(args["film"])
+		for f: TLRigSkater in figs:
+			if not (f.get(&"takes") != null and bool(f.takes.get(&"bShade"))):
+				f.play_clip(&"Stride", true)
+		for i: int in range(nf):
+			for f: TLRigSkater in figs:
+				if f.get(&"takes") != null and bool(f.takes.get(&"bShade")):
+					continue                          # the lying one lies
+				f.tick()
+				f.position += f.global_transform.basis * Vector3(0.0, 0.0, -float(args.get("speed", "6")) / 60.0)
+			await RenderingServer.frame_post_draw
+			if i % 2 == 0:
+				get_viewport().get_texture().get_image().save_png("%s/film_%04d.png" % [outdir, i / 2])
+		report["film_frames"] = nf / 2
 	if args.has("cost"):                          # --cost=N: the last shot's picture for N frames, the time of a frame
 		var vp: RID = get_viewport().get_viewport_rid()
 		RenderingServer.viewport_set_measure_render_time(vp, true)
