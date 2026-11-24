@@ -92,7 +92,8 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
       echo "res://rink_core_t5.gdextension" > "$proj/.godot/extension_list.cfg"
     fi
     "$G" --headless --path "$proj" --script "$script" -- "--content=$(cygpath -m "$(content_for "$tree")" 2>/dev/null || content_for "$tree")"       "--out=$(cygpath -m "$out" 2>/dev/null || echo "$out")" "$@" >/dev/null 2>&1 || true
-    tr -d '' < "$out" 2>/dev/null; rm -f "$out"
+    tr -d '
+' < "$out" 2>/dev/null; rm -f "$out"
     ;;
   ue)
     name="$1"; shift
@@ -131,6 +132,31 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
   balance)
     [ -f "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" ] || "$0" lab-build || { echo "NOT RUN  rink balance: rinklab.exe could not be built"; exit 2; }
     node "$ROOT/engine/cores/rink/lab/balance.mjs" "$@"
+    ;;
+  # ---- lane K8 (balance): the thirdlife variant of the lab (native/thirdjam + native/patches-thirdlife, built from a copy; measurement only) ----
+  #   engine/tools/rink.sh lab-build-thirdlife            rinklab-thirdlife.exe: the patched copy of thirdjam (lab/thirdlife-tree.sh) + the lab
+  #   engine/tools/rink.sh lab-thirdlife <match|gym> ...  rinklab-thirdlife.exe with the content dir filled in (-cartridge=hockey.thirdlife -plan=regular ...)
+  #   engine/tools/rink.sh balance-thirdlife --parity     hockey.regular on the patched tree against the REFERENCE baseline: every switch off = thirdjam, hash for hash
+  #   engine/tools/rink.sh balance-thirdlife [--update]   hockey.thirdlife against lab/balance.thirdlife.baseline.json (its own change detector)
+  lab-build-thirdlife)
+    command -v scons >/dev/null 2>&1 || { echo "NOT RUN  rink lab-build-thirdlife: scons not found (pip install scons)"; exit 2; }
+    bash "$ROOT/engine/cores/rink/lab/thirdlife-tree.sh" || exit $?
+    scons -C "$ROOT/engine/cores/rink/lab" variant=thirdlife -j"$(nproc)" -Q >/dev/null || { echo "FAIL  rink lab-build-thirdlife"; exit 1; }
+    echo "PASS  rink lab-build-thirdlife: engine/cores/rink/lab/bin/rinklab-thirdlife.exe"
+    ;;
+  lab-thirdlife)
+    "$0" lab-build-thirdlife >/dev/null || { echo "NOT RUN  rink lab-thirdlife: rinklab-thirdlife.exe could not be built"; exit 2; }
+    mode="${1:-match}"; shift || true
+    "$ROOT/engine/cores/rink/lab/bin/rinklab-thirdlife.exe" "$mode" "$(cygpath -m "$NATIVE/content" 2>/dev/null || echo "$NATIVE/content")" "$@" | grep -E '^({|TRACE )'
+    ;;
+  balance-thirdlife)
+    "$0" lab-build-thirdlife || { echo "NOT RUN  rink balance-thirdlife: rinklab-thirdlife.exe could not be built"; exit 2; }
+    if [ "${1:-}" = "--parity" ]; then
+      shift
+      node "$ROOT/engine/cores/rink/lab/balance.mjs" --exe engine/cores/rink/lab/bin/rinklab-thirdlife.exe --cartridge hockey.regular "$@"
+    else
+      node "$ROOT/engine/cores/rink/lab/balance.mjs" --exe engine/cores/rink/lab/bin/rinklab-thirdlife.exe --cartridge hockey.thirdlife         --baseline engine/cores/rink/lab/balance.thirdlife.baseline.json "$@"
+    fi
     ;;
   *)
     sed -n '2,15p' "$0"; exit 2 ;;

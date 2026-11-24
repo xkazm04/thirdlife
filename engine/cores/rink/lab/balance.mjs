@@ -15,13 +15,18 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { plan, runAll, readCell, summarize } from "./cells.mjs";
+import { plan, runAll, readCell, summarize, cfg } from "./cells.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..", "..", "..");
-const exe = path.join(here, "bin", "rinklab.exe");
 const content = path.join(root, "engine", "cores", "rink", "native", "content");
-const baseFile = path.join(here, "balance.baseline.json");
+// lane K8: --exe, --cartridge and --baseline play the same harness on the thirdlife runner (rink.sh balance-thirdlife): with hockey.regular against the
+// reference baseline it is the parity proof of the patched tree; with hockey.thirdlife against its own baseline it is that cartridge's change detector.
+const argOf = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
+const exe = path.resolve(root, argOf("--exe", path.join(here, "bin", "rinklab.exe")));
+const cartridge = argOf("--cartridge", "hockey.regular");
+const baseFile = path.resolve(root, argOf("--baseline", path.join(here, "balance.baseline.json")));
+cfg.exe = exe; cfg.cartridge = cartridge;
 const SEEDS = "1-50";
 const FIGS = ["win_pct", "gd", "gf_min", "ga_min", "first_goal_for_s", "poss_pct", "shots_min", "opp_shots_min", "carries_min", "carry_s", "carries_lost_min",
   "passes_completed_pct", "changes_min", "human_knockdowns_match", "hits_landed_min", "pile_pct", "dead_puck_pct", "match_s"];
@@ -31,13 +36,13 @@ const update = argv.includes("--update");
 const jobs = Number(argv[argv.indexOf("--jobs") + 1]) || 6;
 
 if (!fs.existsSync(exe)) { console.log("NOT RUN  balance: rinklab.exe is not built (engine/tools/rink.sh lab-build)"); process.exit(2); }
-const outDir = path.join(root, ".tl", "rink-balance");
+const outDir = path.join(root, ".tl", "rink-balance" + (cartridge === "hockey.regular" && !process.argv.includes("--exe") ? "" : "-" + path.basename(exe, ".exe") + "-" + cartridge));
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 const t0 = Date.now();
 
 // 1. the gym
-const gym = spawnSync(exe, ["gym", content], { encoding: "utf8" });
+const gym = spawnSync(exe, ["gym", content, `-cartridge=${cartridge}`], { encoding: "utf8" });
 if (gym.status !== 0) { console.log(`NOT RUN  balance: rinklab gym exited ${gym.status}`); process.exit(2); }
 const gymLines = gym.stdout.split("\n").map((l) => l.trim()).filter((l) => l.startsWith("{\"tool\":\"rinklab.gym/1\""));
 
@@ -47,7 +52,7 @@ const log = console.log; console.log = () => {};
 const res = await runAll(cells, SEEDS, outDir, jobs);
 console.log = log;
 const failed = res.filter((r) => r.code !== 0);
-const now = { tool: "rinklab.balance/1", seeds: SEEDS, cartridge: "hockey.regular", gym: gymLines, cells: {} };
+const now = { tool: "rinklab.balance/1", seeds: SEEDS, cartridge, gym: gymLines, cells: {} };
 let found = 0;
 for (const c of cells) {
   const rows = readCell(path.join(outDir, `${c.id}.${SEEDS}.jsonl`));

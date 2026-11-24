@@ -16,6 +16,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..", "..", "..");
 const exe = path.join(here, "bin", "rinklab.exe");
 const content = path.join(root, "engine", "cores", "rink", "native", "content");
+// lane K8: which runner, content folder and cartridge the cells play (the thirdlife variant: experiments/run.mjs sets these). Default = the reference.
+export const cfg = { exe, content, cartridge: "hockey.regular", extra: [] };
+// lane K8: the verbs the planning hand's menu can lose (lab_plan.cpp Allowed) and the ablations of it worth a cell.
+export const PVERBS = ["sprint", "stop", "shield", "pass", "saucer", "onetimer", "tap", "charge", "shoot", "deke", "spin", "poke", "lift", "check", "brace", "draw"];
 
 const LEVELS = ["rookie", "pro", "all_star"];
 export const VERBS = ["sprint", "brake", "stop", "deke", "spin", "shield", "stick", "pass", "saucer", "onetimer", "tap", "charge", "shoot",
@@ -24,8 +28,9 @@ export const ONLY = ["none", "shoot", "pass", "pass,shoot", "check", "lift", "po
 
 export function plan(name) {
   const cells = [];
-  const add = (level, player, remove, only, signal) => cells.push({ level, player, remove: remove || "", only: only || "", signal: signal || "",
-    id: `${level}.${player}${remove ? ".x-" + remove.replace(/,/g, "+") : ""}${only ? ".only-" + only.replace(/,/g, "+") : ""}${signal ? ".sig-" + signal : ""}` });
+  const add = (level, player, remove, only, signal, plan) => cells.push({ level, player, remove: remove || "", only: only || "", signal: signal || "", plan: plan || "",
+    id: `${level}.${plan ? "plan-" + plan : player}${remove ? ".x-" + remove.replace(/,/g, "+") : ""}${only ? ".only-" + only.replace(/,/g, "+") : ""}${signal ? ".sig-" + signal : ""}` });
+  const padd = (level, plan, remove, only) => add(level, "regular", remove, only, "", plan);
   if (name === "ladder") {
     for (const l of LEVELS) { add(l, "regular", "idle"); for (const p of ["novice", "regular", "good"]) add(l, p); }
   } else if (name === "ablate") {
@@ -37,6 +42,21 @@ export function plan(name) {
     // The team signal the playtester never gives (thirdjam's HUD verb), held all match: pass at every level for both hands, the other three at pro.
     for (const l of LEVELS) for (const p of ["regular", "good"]) add(l, p, "", "", "pass");
     for (const k of ["defend", "space", "praise"]) add("pro", "regular", "", "", k);
+  } else if (name === "pladder") {
+    // lane K8: the planning hand's ladder (lab_plan.h): its three settings at the three levels
+    for (const l of LEVELS) for (const p of ["novice", "regular", "good"]) padd(l, p);
+  } else if (name === "pablate") {
+    // ... one verb out of its menu and its keys (it re-plans without it), regular and good at pro and all_star
+    for (const l of ["pro", "all_star"]) for (const p of ["regular", "good"]) for (const v of PVERBS) padd(l, p, v);
+  } else if (name === "pablate-pro") {
+    for (const p of ["regular"]) for (const v of PVERBS) padd("pro", p, v);
+  } else if (name === "ponly") {
+    for (const l of ["pro"]) for (const p of ["regular", "good"]) for (const o of ONLY) padd(l, p, "", o);
+  } else if (name === "k8") {
+    // lane K8: the experiment harness's fixed set (experiments/run.mjs): both kinds of hand at pro and all_star, the idle hand at rookie and pro,
+    // and the planning hand without the pass and without the shot
+    for (const l of LEVELS) { add(l, "regular", "idle"); for (const p of ["novice", "regular", "good"]) { add(l, p); padd(l, p); } }
+    for (const v of ["pass", "shoot"]) { padd("pro", "regular", v); add("pro", "regular", v); }
   } else if (name === "diag") {
     // the draw: the full hands and the hands that never take it, re-run for the draw counters (same matches, hash for hash)
     for (const l of ["pro", "all_star"]) for (const p of ["regular", "good"]) { add(l, p); add(l, p, "draw"); }
@@ -61,12 +81,14 @@ function args(argv) {
 export function runCell(cell, seeds, outDir) {
   return new Promise((resolve) => {
     const file = path.join(outDir, `${cell.id}.${seeds}.jsonl`);
-    const a = ["match", content, "-cartridge=hockey.regular", `-seeds=${seeds}`, `-difficulty=${cell.level}`, `-player=${cell.player}`, "-playersprint"];
+    const a = ["match", cfg.content, `-cartridge=${cfg.cartridge}`, `-seeds=${seeds}`, `-difficulty=${cell.level}`, `-player=${cell.player}`, "-playersprint", ...cfg.extra];
+    if (cell.plan) a.push(`-plan=${cell.plan}`);
+    for (const x of cell.extra || []) a.push(x);
     if (cell.remove) a.push(`-remove=${cell.remove}`);
     if (cell.only) a.push(`-only=${cell.only === "none" ? "none" : cell.only}`);
     if (cell.signal) a.push(`-signal=${cell.signal}`);
     const out = fs.createWriteStream(file);
-    const p = spawn(exe, a, { stdio: ["ignore", "pipe", "pipe"] });
+    const p = spawn(cfg.exe, a, { stdio: ["ignore", "pipe", "pipe"] });
     let buf = "";
     p.stdout.on("data", (d) => { buf += d.toString(); let i; while ((i = buf.indexOf("\n")) >= 0) { const l = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (l.startsWith("{")) out.write(l + "\n"); } });
     p.on("close", (code) => { out.end(() => resolve({ cell, file, code })); });
@@ -96,7 +118,7 @@ export function readCell(file) {
     if (!l.trim()) continue;
     const j = JSON.parse(l);
     if (j.tool === "thirdjam.playtest/1") rows.set(j.seed, { pt: j });
-    else if (j.tool === "rinklab.cell/1" && rows.has(j.seed)) rows.get(j.seed).lab = j.stats;
+    else if (j.tool === "rinklab.cell/1" && rows.has(j.seed)) { rows.get(j.seed).lab = j.stats; rows.get(j.seed).plan = j.planstats; }
   }
   return rows;
 }
@@ -154,6 +176,13 @@ export function summarize(rows) {
     board_puck_pct: r((100 * sum((x) => x.lab.board_puck_frames ?? NaN)) / sum((x) => x.lab.play_frames), 1),
     loose_pct: r((100 * sum((x) => x.lab.loose_frames ?? NaN)) / sum((x) => x.lab.play_frames), 1),
     idle_spells_match: r(sum((x) => x.pt.idle_spells) / n, 2), max_no_touch_s: r(mean(v.map((x) => x.pt.max_no_touch)) / 60, 1),
+    // lane K8: goals by how they crossed the line (the human's side / the other side), the human's takes with and without a key, one-timers, time down
+    goals_walk_pct: [0, 1].map((t) => r((100 * sum((x) => x.lab.goals_walk?.[t] ?? NaN)) / Math.max(1, sum((x) => (x.lab.goals_walk?.[t] ?? 0) + (x.lab.goals_sent?.[t] ?? 0))), 1)),
+    human_walk_goals_match: r(sum((x) => x.lab.carry_end.goal) / n, 3),
+    takes_key_min: r(sum((x) => x.lab.takes_key ?? NaN) / totMin, 2), takes_nokey_min: r(sum((x) => x.lab.takes_nokey ?? NaN) / totMin, 2),
+    passes_received_match: r(sum((x) => x.pt.passes_received ?? NaN) / n, 2),
+    human_down_s_match: r(sum((x) => x.pt.human_down_frames ?? NaN) / n / 60, 2),
+    plan_chosen: v[0]?.plan ? Object.fromEntries(Object.keys(Object.assign({}, ...v.map((x) => x.plan?.chosen || {}))).map((k) => [k, r(sum((x) => x.plan?.chosen?.[k] || 0) / totMin, 2)])) : undefined,
     hashes: v.map((x) => x.pt.hash),
   };
 }
@@ -170,7 +199,10 @@ async function main() {
   const [cmd, name] = a._;
   const seeds = a.seeds || "1-200";
   const outDir = path.resolve(root, a.out || ".tl/k4/raw");
-  if (!fs.existsSync(exe)) { console.log("NOT RUN  rinklab.exe is not built (engine/tools/rink.sh lab-build)"); process.exit(2); }
+  if (a.exe) cfg.exe = path.resolve(root, a.exe);
+  if (a.content) cfg.content = path.resolve(root, a.content);
+  if (a.cartridge) cfg.cartridge = a.cartridge;
+  if (!fs.existsSync(cfg.exe)) { console.log("NOT RUN  rinklab.exe is not built (engine/tools/rink.sh lab-build)"); process.exit(2); }
   const cells = plan(name);
   if (cmd === "run") {
     const res = await runAll(cells, seeds, outDir, Number(a.jobs || 6));

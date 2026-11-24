@@ -5,6 +5,7 @@
 // shipped). No brain runs: every skater gets the scene's input (bots |Move| 1 unless a probe says otherwise). Skaters the
 // probe does not use stand parked near the corners. One rinklab.gym/1 JSON line per probe; frames at 60 Hz.
 #include "lab_gym.h"
+#include "lab_rules.h"
 
 #include "CoreMinimal.h"
 #include "JamCartridge.h"
@@ -375,12 +376,17 @@ namespace Lab
 		}
 	}
 
-	int RunGym(const char* Cartridge)
+	int RunGym(const char* Cartridge, const char* TlOverrides)
 	{
 		TArray<FString> Errors;
 		UJamCartridge* Cart = UJamCartridge::LoadFromFile(UJamCartridge::ResolveCartridgePath(FString(Cartridge)), Errors);
 		if (!Cart) { std::fprintf(stderr, "FAIL rinklab gym: cartridge %s does not load\n", Cartridge); return 2; }
 		Cart->AddToRoot();
+		{
+			Lab::FRulesFile Rules;
+			const std::string E = Lab::LoadRules(*Cart, Cartridge, TlOverrides ? TlOverrides : "", Rules);
+			if (!E.empty()) { std::fprintf(stderr, "FAIL rinklab gym: %s\n", E.c_str()); return 2; }
+		}
 		// 2 v 2: the first two skaters of each team (hockey.regular: player + chaser, chaser + support).
 		for (FJamTeamConfig& T : Cart->Game.Teams) { while (T.Skaters.Num() > 2) T.Skaters.RemoveAt(T.Skaters.Num() - 1); }
 		FGym G;
