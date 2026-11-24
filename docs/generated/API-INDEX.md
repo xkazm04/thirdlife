@@ -744,6 +744,7 @@ Consts: `BUS_PREFIX`, `CHANNELS`, `LOOP_KEYS`, `NODE_NAME`, `PLAY_KEYS`, `SAY_KE
 - `static func saying() -> bool`
 - `static func set_loop(name: StringName, opt: Dictionary) -> void`
 - `static func stop_loop(name: StringName, fade_frames: int = 0) -> void`
+- `static func stop_voice(fade_frames: int = 0) -> void`
 
 ## TLSpawner
 
@@ -823,6 +824,7 @@ Consts: `BULB_KEYS`, `CROWD_KEYS`, `ICE_KEYS`, `MAX_LIGHTS`, `POST_FILE`, `POST_
 - `static func post_file() -> Dictionary`
 - `static func set_cheer(plus: float, minus: float, seconds: float) -> void`
 - `static func set_exposure(exposure: float) -> void`
+- `static func set_glow(m: Material, emit: Color) -> void`
 - `static func set_rig(lights: Array, exposure: float, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1)) -> bool`
 - `static func surface(p: Dictionary = {}) -> Material`
 - `static func tone(c: Color, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1)) -> Color`

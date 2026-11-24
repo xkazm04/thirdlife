@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.29)
+# Third Life kernel API (kernelApi 1.30)
 
-**Version 1.29 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.30 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.29"` in `pack.json` (any
-`"1.x"` up to 1.29 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.30"` in `pack.json` (any
+`"1.x"` up to 1.30 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1354,3 +1354,10 @@ core's part (`ctx.cores.part("rink", "audio")`, section 24).
 - Unknown option keys, an unknown channel and a path outside a core's `audio/` folder are errors: the call does nothing.
 - Selftest `841-rink-audio.sh`; the core part that uses it: `engine/cores/rink/audio/rink_audio.gd` (its table:
   `engine/cores/rink/audio/audio.json`).
+
+- Additions in 1.30 (lane K6, the voice and the reactions): `TLSound.stop_voice()` and `TLStyleArena.set_glow(...)`; details:
+| `TLSound.say(path, opt = {})` | the voice channel: one line at a time (a line being said is cut). `opt`: `db`, `duck_music_db` (the music channel is lowered by this while the line plays), `duck_frames` (12: each way, a straight line in gain, as an Unreal sound mix fades) |
+| `TLSound.stop_voice(fade_frames = 0)` | the line being said fades out in a straight line of gain over `fade_frames` and ends; the duck comes back as it ends. Recorded as `stop` of the clip `"voice"`. (Lane K6 round 3: thirdjam's `CutLine`, `FadeOut(0.15 s)`) |
+- Under the pack's pause (the dungeon pauses the tree; the pack's sound node is pausable) every player stops where it is
+  and goes on at resume, the loops and the line alike, as Unreal pauses every non-UI sound under `SetGamePaused`.
+  Selftest `842-rink-booth.sh` (`core.rink.booth.duck`, `.pause`).
