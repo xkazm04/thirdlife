@@ -360,8 +360,10 @@ Two entries a game played indoors asks for; neither changes a shader or a style 
     boards, the lamps' sheen. It takes the style sun's shadow for the share of the lights that cast shadows.
   - `crowd({...})` (`hall_crowd.gdshader`): vertex-coloured figures with per-instance values and a cheering pose
     (`set_cheer(plus, minus, seconds)`); `bulb({...})` (`hall_bulb.gdshader`): a lamp's bulb.
-  - `post(anchor, {"grade": {...}, "ink": {...}})`: values of the installed grade and ink passes for a hall (no plum
-    wash, the contour gone by a given distance). `TLStyleHall.clear` restores them.
+  - `post(anchor, opt)`: the installed grade and ink passes as a hall wears them, read from the hall look's own
+    file `style/hall_post.json` (`grade`: no plum wash, no split toning, thirdjam's saturation, contrast and vignette;
+    `ink`: the contour gone by a given distance); `opt` sets values on top of the file ({} = as it is). `TLStyleHall.clear` restores
+    the style's own. `post_file()` returns the file's two sections.
   - `tone(colour, gain, gain_shadows)`: the same film curve in GDScript, for the light handed to the toon materials.
   Colours are linear numbers of the source material. Headless: one shared material with no shader.
 
