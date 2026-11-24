@@ -45,7 +45,8 @@ const duelBrief = (): Brief => ({ ...v2Brief(), design: duelDesign(), rules: `${
 
 test("template: a fight copies the duel; its copies name the state machine, the mutual reactions and the archetypes; an `own` reference passes for another genre", () => {
   assert.equal(templateForSentence("a fight in a colosseum")?.id, "duel");
-  assert.equal(templateForSentence("ice hockey three against three")?.id, "arcade_sport");
+  assert.equal(templateForSentence("ice hockey three against three")?.id, "rink_sport"); // E3 of 24 Nov: hockey is on the rink core
+  assert.equal(templateForSentence("football, five a side")?.id, "arcade_sport");
   assert.equal(templateForSentence("a race with ducks"), undefined);
   assert.deepEqual(conceptTemplateProblems(duelConcept(), "a fight in a colosseum"), []);
   // An invented core for a fight is sent back, naming the duel template.

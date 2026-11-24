@@ -42,10 +42,13 @@ export function cardHandList(card: Card): string[] {
   return (h?.checks ?? []).map((c) => c.hand);
 }
 
-/** What the plan check needs of ref/cards/: the card ids, and per card the hands its plan must register tests for. */
-export function cardLimits(refDir: string): { cards: string[]; cardHands: Record<string, string[]> } {
+/**
+ * What the plan check needs of ref/cards/: the card ids, and per card the hands its plan must register tests for. E3 of
+ * 24 Nov: and the reference copy itself (`refDir`), where a core plan's base is read (ref/base/<base>/).
+ */
+export function cardLimits(refDir: string): { cards: string[]; cardHands: Record<string, string[]>; refDir: string } {
   const cards = readCards(path.join(refDir, "cards")).map((c) => c.card);
-  return { cards: cards.map((c) => c.id), cardHands: Object.fromEntries(cards.filter((c) => cardHandList(c).length > 0).map((c) => [c.id, cardHandList(c)])) };
+  return { cards: cards.map((c) => c.id), cardHands: Object.fromEntries(cards.filter((c) => cardHandList(c).length > 0).map((c) => [c.id, cardHandList(c)])), refDir };
 }
 
 /**
@@ -111,10 +114,15 @@ export function cardBriefSection(refDir: string, card: string | undefined): stri
   // The card names engine paths (engine/seeds/<seed>/, engine/packs/<pack>/); a builder reads them in its reference
   // copy. Said once here, above the card, so the card text itself stays exactly what `tl cards brief` prints.
   const where = c.pack !== undefined ? `engine/packs/${c.pack}/ is ${toPosix(path.join(refDir, "packs", c.pack))}/` : `engine/seeds/${c.seed ?? ""}/ is ${toPosix(path.join(refDir, "seeds", c.seed ?? ""))}/`;
+  // E3 of 24 Nov: a core card says where the core's documents and the base are in the copy, and how an edit is checked.
+  const core = c.core !== undefined ? [
+    `This game runs on the ${c.core.id} core: the core's documents are in ${toPosix(path.join(refDir, "cores", c.core.id))}/ (SNAPSHOT.md, GAMEMODE.md, CARTRIDGE.md, schema/, modes/)${c.core.base !== undefined ? `, the base the job started from in ${toPosix(path.join(refDir, "base", c.core.base))}/` : ""}. Your work is data: the cartridge (data/<name>.cartridge.json, tj.cartridge/1), the skin (data/skin.json), a rules sidecar (data/<name>.rules.json, tl.rink.rules/1). The Foreman validates every cartridge and rules file you write (foreman/src/cartridge.ts) before lint and smoke, and a look plays it with \`${c.core.check}\` beside the house game's.`,
+  ] : [];
   return [
     "",
     `## Recipe card (the Planner chose ${card} for this whole job: follow it; your contract wins where the two disagree)`,
     `Paths in the card are the engine's; read them in your reference copy: ${where}.`,
+    ...core,
     cardBriefText(c),
     "",
   ].join("\n");

@@ -41,6 +41,7 @@ other packages rely on. Never paste the tables, the state list or the AI tiers i
 second copy that drifts, and a plan that retypes them runs past the Planner's time limit (a colosseum plan with
 23,000-character contracts took 571 s; the next one timed out at 10 minutes). Keep each contract under about 900 words.
 {{template}}
+{{core}}
 
 # The tofu stage: the first phase proves the core verb is fun on flat shapes
 {{tofu}}
@@ -74,6 +75,8 @@ How to choose:
 - Name only an id from the list above; any other id is refused.
 
 # How the work is built (size the packages for this)
+(A game on a core: the section "This game is ON THE ... CORE" above wins over the root-package rules below; its
+root is the base, which the Foreman copies, and its later packages change data.)
 - Each package is built by ONE builder run with a **hard time limit of {{timeLimit}} minutes** of wall clock. A run
   that is not finished by then is killed and its round is lost. For scale: in the first real job a root package of
   about 550 lines of script in 7 files took 10.8 minutes. Plan every package to fit well inside the limit.

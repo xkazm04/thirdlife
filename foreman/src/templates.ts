@@ -17,6 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { REPO_ROOT, stripBom } from "./paths.js";
 import type { Concept, ConceptTemplate, DesignDoc, TemplateId } from "./room_wire.js";
+import { RINK_ROUTE, coreBriefProblems, coreExcerpt, type CoreRoute } from "./coreroute.js"; // E3 of 24 Nov: a game on a core
 
 /** One move of a template's frame table: the frames a verb that names it must carry (active absent = held, not checked). */
 export interface TemplateMove {
@@ -60,6 +61,12 @@ export interface Template {
   house?: House;
   /** N2 round 5: the quality bar: the reference game's numbers and the teardown's "do not copy" lines. */
   bar?: Bar;
+  /**
+   * E3 of 24 Nov: the game is a cartridge on this core over its base (coreroute.ts), never a hand-built simulation.
+   * The design names the cartridge keys and skin fields it changes; the plan starts from the base; the looks run the
+   * core's measured check beside the house game's.
+   */
+  core?: CoreRoute;
 }
 
 /** The quality bar of a template (docs/design/CASES.md, docs/research/<kind>-teardown/TEARDOWN.md). */
@@ -223,6 +230,40 @@ export const TEMPLATES: Template[] = [
     },
   },
   {
+    // E3 of 24-25 Nov: the owner, 24 Nov ~23:20: "although the hockey feel like thirdjam, ... game like this can be built
+    // by user from the editor". A rink game is a cartridge on the rink core (thirdjam's sim and bots, compiled) over the
+    // base engine/templates/rink_game (hokej made skinnable); the design changes data, never the simulation.
+    id: "rink_sport",
+    title: "a rink game with a puck on the rink core (a cartridge over thirdjam's match)",
+    sentence: /\b(hockey|hokej|puck|rink|shinny|bandy|ringette)\b/i,
+    reference: "thirdjam's match (the rink core) and its twelve mode cartridges, as engine/cores/rink and engine/packs/hokej",
+    file: "engine/cores/rink/SNAPSHOT.md",
+    design: [],
+    builder: [],
+    must: [
+      { what: "thirdjam's match on the rink core, unchanged: its skating, puck, contact, bots, camera and keys (the core carries the feel)", re: /\bcore\b|thirdjam|unchanged|as it is/i },
+      { what: "the cartridge keys the game changes (rink size, teams, rules, look) and the skin (title, team names, colours)", re: /cartridge|rink (size|length)|team size|a side|skin/i },
+    ],
+    moves: {},
+    movesMin: 0,
+    metrics: [],
+    card: "card.rink_core",
+    filmFirst: ["goal", "shot", "one_timer", "pass", "check", "hit"],
+    house: {
+      pack: "hokej",
+      game: "game.hokej",
+      readme: [],
+      files: [
+        { file: "scripts/main.gd", role: "the shell: opens the core with the cartridge data/match.json names (ctx.cores.open), steps it once a frame, returns ctx.cores.state()" },
+        { file: "data/match.json", role: "which cartridge the match plays and the bots' level (rookie | pro | all_star)" },
+        { file: "data/hockey.thirdlife.cartridge.json", role: "the Third Life cut: tj.cartridge/1 (rink, teams, skater, puck, shot, rules, look, camera); with data/hockey.thirdlife.rules.json beside it the core opens its rule-patched variant" },
+        { file: "tests/bot_first_match.gd", role: "the player's first match through the keys at ROOKIE, to the final whistle" },
+        { file: "tests/bot_match_hand.gd", role: "a whole match through the keys (a scripted hand): the FJamInput stream and the core hash per frame" },
+      ],
+    },
+    core: RINK_ROUTE,
+  },
+  {
     id: "arcade_sport",
     title: "an arcade team sport with a ball or puck",
     sentence: /\b(hockey|football|soccer|basketball|handball|rugby|puck|ball game|lacrosse|polo)\b/i,
@@ -318,6 +359,9 @@ export const TEMPLATES: Template[] = [
 
 export const templateOf = (id: string | undefined): Template | undefined => TEMPLATES.find((t) => t.id === id);
 
+/** E3 of 24 Nov: the core route of a concept's template (undefined for a hand-built game). */
+export const coreRouteOf = (template: { id: string } | undefined): CoreRoute | undefined => templateOf(template?.id)?.core;
+
 /** The engine the house games are read from (the repository's; a test passes its own). */
 export const HOUSE_ENGINE = path.join(REPO_ROOT, "engine");
 
@@ -394,9 +438,10 @@ export function barLines(t: Template | undefined): string[] {
 }
 
 /** A brief's template problems: the design's copied moves, and what the house game keeps (in rules and controls). */
-export function briefTemplateProblems(brief: { design?: DesignDoc; rules: string; controls: string; arena: string; ai?: string }, template: ConceptTemplate | undefined): string[] {
+export function briefTemplateProblems(brief: { design?: DesignDoc; rules: string; controls: string; arena: string; ai?: string }, template: ConceptTemplate | undefined, engine = HOUSE_ENGINE): string[] {
   if (brief.design === undefined || template === undefined) return [];
-  return [...designTemplateProblems(brief.design, template), ...houseKeepProblems(`${brief.rules} ${brief.controls} ${brief.arena} ${brief.ai ?? ""} ${brief.design.feel.camera}`, template)];
+  const core = coreRouteOf(template);
+  return [...designTemplateProblems(brief.design, template), ...houseKeepProblems(`${brief.rules} ${brief.controls} ${brief.arena} ${brief.ai ?? ""} ${brief.design.feel.camera}`, template), ...(core !== undefined ? coreBriefProblems(brief.rules, core, engine) : [])];
 }
 
 /** Problems of a brief against its template's house game: the rules it must keep (rules and controls text). */
@@ -452,6 +497,7 @@ const movesLine = (t: Template): string =>
 export function templateExcerpt(template: ConceptTemplate | undefined, part: "design" | "planner" | "builder", root = REPO_ROOT): string {
   const t = templateOf(template?.id);
   if (t === undefined) return "";
+  if (t.core !== undefined) return coreExcerpt(t, t.core, part, root);
   const head =
     part !== "builder"
       ? `# The genre template: ${t.id} (${t.title}), copied from ${t.reference}\nThe core loop is copied from this, not invented: its state machine, its frame tables, its contact results and its rivals. Verbs that copy a move name it as \`move\` with these frames (a wind-up may be slower, up to the bar, never faster): ${movesLine(t)}. Only the hook and the twist are new.`

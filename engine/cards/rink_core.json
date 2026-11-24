@@ -1,0 +1,113 @@
+{
+ "schema": "tl.card/1",
+ "id": "card.rink_core",
+ "version": "0.1.0",
+ "title": "A rink game on the rink core: a cartridge over thirdjam's match",
+ "summary": "Hockey and its cousins are built on the rink core (engine/cores/rink: thirdjam's simulation and bots, compiled), never as a new simulation. The job starts from the base (the Foreman copies engine/templates/rink_game, hokej made skinnable) and changes data: the cartridge (rink, teams, speeds, contact, rules, zones, pickups, abilities, look, camera), the skin (title, team names, colours, words) and, only when a rule has no cartridge key, a rules sidecar. The house game engine/packs/hokej shows the whole route working.",
+ "applies_when": [
+  "the game is played on a rink with sticks and a puck: hockey, pond hockey, shinny, bandy",
+  "the player skates one skater of a team; teammates and opponents are the core's bots",
+  "what the player asks for is a change of rink size, team sizes, rules, speeds, contact, zones, pickups, abilities, look or words"
+ ],
+ "not_when": [
+  "a ball that is kicked or bounces (soccer, football, basketball): that is not a cartridge of this core (a kick is a patch of the core's C++); use card.two_sides_ball or card.team_possession",
+  "a melee fight: card.duel",
+  "a race or a vehicle: card.timed_drive"
+ ],
+ "pack": "hokej",
+ "capabilities": [
+  "audio",
+  "input",
+  "camera",
+  "kit",
+  "style",
+  "ui"
+ ],
+ "kit_parts": [
+  "rink"
+ ],
+ "api": [
+  "TLCores.open",
+  "TLCores.state",
+  "TLCores.view_script",
+  "TLCores.part"
+ ],
+ "rules_keys": [
+  "game.rules.mode",
+  "game.rules.score_to_win"
+ ],
+ "data_files": [
+  {
+   "file": "data/match.json",
+   "role": "which cartridge the match plays (`cartridge`) and the bots' level (`difficulty`: rookie, pro, all_star)"
+  },
+  {
+   "file": "data/hockey.thirdlife.cartridge.json",
+   "role": "the game: tj.cartridge/1 (game.rink, game.teams, game.skater, game.puck, game.shot, game.rules, game.look, game.camera); a mode is this file with only the keys it changes"
+  },
+  {
+   "file": "data/hockey.thirdlife.rules.json",
+   "role": "the tl.rink.rules/1 sidecar: Third Life switches the cartridge schema cannot say; beside the cartridge it opens the rule-patched core"
+  }
+ ],
+ "do": [
+  "Start from the base: the plan's first package is of kind base (the Foreman copies the base; no builder) and the next package writes the game's cartridge, both in the first phase, so the first phase plays at once.",
+  "Change the cartridge, not the code: copy the nearest of thirdjam's twelve modes (ref/cores/rink/modes/MODES.md: Pond is 60 x 30, Marathon three a side on 140 x 70) and change only the keys the brief's CARTRIDGE lines name.",
+  "Put the game's words, title and team colours in the skin (data/skin.json), never in scripts.",
+  "Keep a mate who is not a back and an opponent chaser in every team list: the core's drill and the bots' shapes need them (MODES.md, the drill's mate).",
+  "Read the measured check (bash engine/tools/rink.sh check-cartridge <file>) beside the house game's: goals a match, passes a play minute, dead verbs."
+ ],
+ "dont": [
+  "Never write a skating, puck, stick, contact, bot or camera script: the core has them, and they are why the house game feels like thirdjam.",
+  "Never preload anything under res://cores/ (lint N4): ctx.cores.open, view_script and part are the doors.",
+  "No key the schema does not know: unknown keys are errors, and the Foreman validates every cartridge edit before lint and smoke.",
+  "Three a side passes 0.2 to 0.8 times a play minute against 2.4 to 3.7 at five (MODES.md, team sizes): a small team needs the pass helped (pass_lead_frames, reception_m, carry_speed_mult) or it is a game of solo dashes."
+ ],
+ "bot": {
+  "template": "tests/bot_first_match.gd",
+  "plays_by": "a person's first match: PLAY NOW at ROOKIE, the same hand to the final whistle, through the keys",
+  "wins_when": "the match reaches its final whistle with the end card shown (the core decides the score)"
+ },
+ "acceptance": [
+  "The pack opens the core with the game's cartridge (ctx.cores.open) and returns ctx.cores.state() from _pack_state, so the run's state hash holds the core's.",
+  "Every cartridge and rules file validates (foreman/src/cartridge.ts) and the measured check plays it: no dead verb, goals in a match.",
+  "The base's first match bot reaches the final whistle on the game's cartridge.",
+  "A person plays the first phase for five minutes and wants another go."
+ ],
+ "variants": [
+  {
+   "ask": "a pond, three a side",
+   "change": "copy the Pond mode (game.rink 60 x 30, corner 3, ice_friction 0.005, check_enabled false) and give game.teams three skaters each with a chaser and a support; help the pass (pass_lead_frames 20, stick.reception_m 3)"
+  },
+  {
+   "ask": "sudden death",
+   "change": "game.rules first_to 1 (the Sudden Death mode); keep five a side or the match is over in 23 s"
+  },
+  {
+   "ask": "power-ups",
+   "change": "game.pickups and game.abilities as the Arsenal mode (a boost_only zone at centre, speed and precision pickups, tricks on F)"
+  }
+ ],
+ "fun": {
+  "camera": [
+   "The core's camera bound to your skater (data: game.camera): behind and above, a short lag, the aim anchor; keep it, change only distance and height with the rink size."
+  ],
+  "juice": [
+   "The core's hit-stop and contact reads drive the figures (presentation only); a goal gets the base's horn, crowd and banner from the skin's words."
+  ],
+  "rivals": [
+   "The opponents are thirdjam's bots at a level (data/match.json difficulty): easy by clumsiness, never by absence; name the team in the skin."
+  ],
+  "first_minute": [
+   "PLAY NOW drops the puck at once; the base's HUD names what the two mouse buttons do with and without the puck."
+  ],
+  "stakes": [
+   "One continuous match to the cartridge's score_to_win or its timer; the end card and a rematch on R."
+  ]
+ },
+ "core": {
+  "id": "rink",
+  "cartridge": "data/hockey.thirdlife.cartridge.json",
+  "check": "bash engine/tools/rink.sh check-cartridge <file>"
+ }
+}

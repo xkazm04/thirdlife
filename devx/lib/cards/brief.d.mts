@@ -20,6 +20,8 @@ export interface Card {
   bot: { template: string; plays_by: string; wins_when: string };
   acceptance: string[];
   variants?: { ask: string; change: string }[];
+  /** E3 of 24 Nov: a card whose kind of game runs on a core (check.mjs CORE_SHAPE). */
+  core?: { id: string; cartridge: string; check: string; base?: string };
 }
 export function cardExample(card: Card): string;
 export function cardBrief(card: Card): string;
