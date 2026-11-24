@@ -364,3 +364,23 @@ Two entries a game played indoors asks for; neither changes a shader or a style 
     wash, the contour gone by a given distance). `TLStyleHall.clear` restores them.
   - `tone(colour, gain, gain_shadows)`: the same film curve in GDScript, for the light handed to the toon materials.
   Colours are linear numbers of the source material. Headless: one shared material with no shader.
+
+## A hall's key lights' shadows (`TLStyleHallKeys`) and Unreal's whole film pipeline (hockey port lane K7, round 3)
+
+- `tl_style_hall_keys.gd`: the lights of a rig that cast shadows (thirdjam: four spots 13 m over the rink's long axis)
+  as real spot lights with shadow maps. They light nothing (black); `shaders/hall_ice.gdshader` reads each one's
+  shadow in its `light()` (the lines marked K7) and takes away that key's own share of the rig's light there, so a
+  figure throws one shadow a key, away from that key's foot: short under a key, long between two and near the boards.
+  `TLStyleHallKeys.install(anchor, lights, opt)`, `receive(mesh_instance)`, `count(anchor)`, `clear(anchor)`.
+  It sets the anchor viewport's positional shadow atlas (8192 px, every quadrant one map: 4096 px a key) and the
+  renderer's soft shadow filter for spot lights, and gives both back on `clear`. Cost with ten striding skaters at
+  1280 x 720: GPU 0.74 ms a frame against 0.58 without, render CPU 0.6 against 0.4 to 0.46 (RTX 4090).
+  What was learnt on the way: a cull mask of one layer on such a light stops the engine re-drawing its shadow map for
+  a figure on another layer; the engine's own quadrant cut (1 / 4 / 16 / 64) changes a light's map size with the
+  camera; `spot_angle_attenuation` is the exponent of (1 - rim), so near 0 = no fall-off inside the cone.
+- `shaders/hall_film.gdshaderinc`: `hall_film(x)`, Unreal 5.9's film pipeline whole (to ACEScg, gamut expansion, the post
+  volume's gains, blue correction, the glow and red modifier, the curve, back to sRGB), beside `hall_tone` (the curve
+  alone on sRGB primaries). `body_felt.gdshader` uses it (`film_whole` 1); the hall's own shaders still use `hall_tone`.
+  A neutral grey is the same through both; a saturated blue comes out with red as high as green, as in the game.
+- The contact shade (`TLStyleFelt.contact_material`) has two forms on the skater (standing, lying): RIGS.md.
+

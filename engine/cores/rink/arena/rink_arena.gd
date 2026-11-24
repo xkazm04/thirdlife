@@ -115,6 +115,15 @@ static func build(parent: Node3D, opt: Dictionary = {}) -> Node3D:
 static func light(anchor: Node, tone_gain: float = TONE_GAIN) -> void:
 	TLStyleHall.apply(anchor, roof_light(tone_gain))
 	TLStyleArena.post(anchor, hall_post())
+	# K7 begin (round 3): the four key spots' own shadows on the ice (TLStyleHallKeys), in place of the style sun's one
+	if TLStyleHallKeys.install(anchor, rig_lights()) > 0:
+		for ice: Node in anchor.get_tree().root.find_children("RinkIce", "MeshInstance3D", true, false):
+			TLStyleHallKeys.receive(ice as MeshInstance3D)
+	# thirdjam draws no contour, and with the felt figures nothing in this hall is cel: the style's lines end at the eye
+	# (HALL_INK kept them near the camera for the cel figures; they showed as a dark edge on a felt skater's skates and hands)
+	if TLRigSkaterLook.chosen() == "felt":
+		TLStyleArena.post(anchor, {"ink": {"fade_near": 0.0, "fade_far": 0.0, "outer_fade_far": 0.01, "inner_near": 0.0, "inner_far": 0.01}})
+	# K7 end
 
 
 ## The rig as one value, for everything that must stand in the hall's light (the hall's own materials here; a figure's
@@ -140,7 +149,8 @@ static func rig_lights() -> Array:
 	var out: Array = []
 	for l: Dictionary in table()["lights"]:
 		out.append({"pos": _v3(l["pos"]), "dir": _v3(l["dir"]), "colour": _srgb8(l["color_srgb8"]), "candela": float(l["candela"]),
-			"radius_m": float(l["radius_m"]), "inner_deg": float(l["inner_deg"]), "outer_deg": float(l["outer_deg"]), "shadows": bool(l["shadows"])})
+			"radius_m": float(l["radius_m"]), "inner_deg": float(l["inner_deg"]), "outer_deg": float(l["outer_deg"]), "shadows": bool(l["shadows"]),
+			"source_radius_m": float(l.get("source_radius_m", 0.0))})      # K7: the last key (TLStyleHallKeys: the shadow's softness)
 	return out
 
 

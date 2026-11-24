@@ -276,9 +276,12 @@ sk.not_ported                             # interface calls that arrived and are
   the team's crest on the chest ([SetTeam]), no ink line. `cel`: the engine's flat cel in thirdjam's slot colours, as
   round 1 had it (no number, no crest). One skater: `sk.set_look("cel")`; every skater built after:
   `TLRigSkaterLook.default_variant = "cel"`; a whole run: the environment variable `TL_SKATER_LOOK=cel`.
+  Under the felt figure lies thirdjam's contact shade (`TLRigSkaterLook.ContactShade`, a child of the skeleton): standing
+  0.5 x 0.7 m under the mesh, Darkest 0.45; lying (the driver's `bShade`, kept by the falls) 2.2 x 0.95 m at the pelvis,
+  turned along the body, Darkest 0.75, Flat 0.7. In a hall the figure's cast shadows are the key lights' (STYLE.md).
   See both: `rigs/skater/look/look_gym.tscn` (its header has the command lines; `--mode=ten` is the ten skaters of a
   match). Gate: selftest block 850 (`look.skater.numbers`, `.instances`, `.shader`, `.variants`, `.render`,
-  `.shaders_kept`).
+  `.shadow`, `.shadow_red`, `.shaders_kept`).
 
 <!-- generated below: do not edit by hand -->
 
