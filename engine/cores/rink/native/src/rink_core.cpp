@@ -69,9 +69,26 @@ namespace
 	}
 }
 
+// One source, two cores (round 5): the plain build is thirdjam byte for byte ("RinkCore"); the thirdlife build (RINK_THIRDLIFE: thirdjam +
+// native/patches-thirdlife, lane K8) registers "RinkCoreThirdlife" from its own library, so the two never share a symbol and a patch can
+// never reach hockey.regular. The kernel picks one by the cartridge (TLCores.open: a <name>.rules.json beside it = the thirdlife core).
+#if defined(RINK_THIRDLIFE)
+#define RinkCore RinkCoreThirdlife
+#define RINK_CLASS_NAME "RinkCoreThirdlife"
+#define RINK_ENTRY rink_core_thirdlife_init
+#else
+#define RINK_CLASS_NAME "RinkCore"
+#define RINK_ENTRY rink_core_init
+#endif
+#include "rink_rules.h"
+
+// GDCLASS stringifies its argument as written: one macro level between expands RinkCore to RinkCoreThirdlife first.
+#define RINK_GDCLASS(m_class, m_inherits) GDCLASS(m_class, m_inherits)
+
 class RinkCore : public RefCounted
 {
-	GDCLASS(RinkCore, RefCounted)
+	RINK_GDCLASS(RinkCore, RefCounted)
+	RinkGlue::FRules Rules;   // the cartridge's rules sidecar (thirdlife core only; the plain core refuses one)
 
 	UJamCartridge* Cart = nullptr;
 	std::unique_ptr<JamAI::FJamSimAdapter> Sim;
@@ -113,8 +130,10 @@ protected:
 		ClassDB::bind_method(D_METHOD("get_frame"), &RinkCore::get_frame);
 		ClassDB::bind_method(D_METHOD("is_over"), &RinkCore::is_over);
 		ClassDB::bind_method(D_METHOD("get_score"), &RinkCore::get_score);
-		ClassDB::bind_static_method("RinkCore", D_METHOD("run_tournament", "content_dir", "params"), &RinkCore::run_tournament);
-		ClassDB::bind_static_method("RinkCore", D_METHOD("source_tree"), &RinkCore::source_tree);
+		ClassDB::bind_method(D_METHOD("load_rules", "json_text"), &RinkCore::load_rules);
+		ClassDB::bind_method(D_METHOD("rules_applied"), &RinkCore::rules_applied);
+		ClassDB::bind_static_method(RINK_CLASS_NAME, D_METHOD("run_tournament", "content_dir", "params"), &RinkCore::run_tournament);
+		ClassDB::bind_static_method(RINK_CLASS_NAME, D_METHOD("source_tree"), &RinkCore::source_tree);
 	}
 
 public:
@@ -147,8 +166,20 @@ public:
 		Sim.reset();
 		if (Cart) JamShimReleaseObject(Cart);
 		Cart = C;
+		Rules = RinkGlue::FRules();
 		return godot::String();
 	}
+
+	// The cartridge's rules sidecar (tl.rink.rules/1, rink_rules.h), after load_cartridge and before reset. "" = loaded; else the error.
+	// The plain core refuses any rule (its switches do not exist: thirdjam byte for byte).
+	godot::String load_rules(const godot::String& Json)
+	{
+		if (!Cart) return godot::String("load_rules: no cartridge loaded");
+		const std::string E = RinkGlue::LoadRules(*Cart, FS(Json), Rules);
+		return E.empty() ? godot::String() : godot::String::utf8(E.c_str());
+	}
+	// The switches set from the sidecar ("key=value,..."; "" = none).
+	godot::String rules_applied() const { return godot::String::utf8(Rules.Applied.c_str()); }
 
 	// rookie | pro | all_star (DifficultyProfile.h ParseDifficulty); "" = the cartridge's own. False for an unknown name.
 	bool set_difficulty(const godot::String& Level)
@@ -193,6 +224,7 @@ public:
 		JamAI::ResolveDifficulty(*Cart, Res, Difficulty.IsEmpty() ? nullptr : *Difficulty);
 		Cfg = JamAI::ToMatchConfig(Cart->Game);
 		Cfg.AI = Res.Params;
+		if (Rules.bLoaded && !RinkGlue::ApplyLevelTune(Rules, JamAI::DifficultyName(Res.Level), Cfg.AI).empty()) return false;   // the sidecar's level table
 		Seed = (uint64)InSeed;
 		Sim = std::make_unique<JamAI::FJamSimAdapter>(*Cart);
 		Sim->Reset(Cfg, Seed);
@@ -505,11 +537,11 @@ public:
 static void rink_init(ModuleInitializationLevel Level)
 {
 	if (Level != MODULE_INITIALIZATION_LEVEL_SCENE) return;
-	GDREGISTER_CLASS(RinkCore);
+	GDREGISTER_CLASS(RinkCore);   // RinkCoreThirdlife in the thirdlife build
 }
 static void rink_term(ModuleInitializationLevel) {}
 
-extern "C" GDExtensionBool GDE_EXPORT rink_core_init(GDExtensionInterfaceGetProcAddress Gpa, const GDExtensionClassLibraryPtr Lib, GDExtensionInitialization* Init)
+extern "C" GDExtensionBool GDE_EXPORT RINK_ENTRY(GDExtensionInterfaceGetProcAddress Gpa, const GDExtensionClassLibraryPtr Lib, GDExtensionInitialization* Init)
 {
 	godot::GDExtensionBinding::InitObject O(Gpa, Lib, Init);
 	O.register_initializer(rink_init);

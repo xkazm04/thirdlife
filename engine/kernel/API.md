@@ -1226,6 +1226,13 @@ func _pack_state() -> Dictionary:
 	return ctx.cores.state()
 ```
 
+- Addition in 1.29 (lane K1, the thirdlife variant): a cartridge with a rules sidecar opens the core's variant. When
+  `data/<name>.rules.json` (schema `tl.rink.rules/1`, lane K8's: `"rules"` = the switches of
+  `engine/cores/rink/native/patches-thirdlife`, `"levels"` = thirdjam difficulty tunes per level) lies beside
+  `data/<name>.cartridge.json`, `ctx.cores.open("rink", "<name>.cartridge.json")` returns a `RinkCoreThirdlife` (thirdjam +
+  the patches, its own library) with the rules loaded; without the sidecar it returns the plain `RinkCore` as before
+  (thirdjam byte for byte). Same methods either way, plus `load_rules(json) -> String` and `rules_applied() -> String`;
+  an unknown rule or key is an error and `open` returns null. The pack's code does not change: the file decides.
 - `ctx.cores: TLCores` (1.18) belongs in the table of section 2 (the Director adds the row at the merge).
 - No capability: `ctx.cores` is always there. A pack never loads an extension and never names a core's class.
 - The core steps only when the pack calls `step()`: one call per `_pack_tick` keeps it on the kernel's frames.

@@ -2,7 +2,9 @@
 # Third Life rink core: builds thirdjam's JamCore (verbatim sources + the Unreal shim) into
 #   - the GDExtension  ../bin/rink_core.<platform>.<target>.<arch>.dll  (target=template_debug|template_release)
 #   - the CLI          ../bin/rinkcli.exe  (cli=yes): the tournament commandlet outside Unreal, for trace proofs
-# Options: tree=thirdjam|thirdjam-t5 (which copy of thirdjam's source), custom_api_file=<godot --dump-extension-api json>.
+# Options: tree=thirdjam|thirdjam-t5|thirdlife (which copy of thirdjam's source), custom_api_file=<godot --dump-extension-api json>.
+#   tree=thirdlife: thirdjam + native/patches-thirdlife/*.patch (lane K8) applied to a copy in .tl/rink-thirdlife-core (tools/thirdlife_tree.py;
+#   patches=<dir> to build from another folder); the library registers RinkCoreThirdlife (RINK_THIRDLIFE). thirdjam's files stay byte for byte.
 # engine/tools/core.sh build is the one command that fetches godot-cpp and calls this.
 import os
 
@@ -10,6 +12,14 @@ tree = ARGUMENTS.get("tree", "thirdjam")
 want_cli = ARGUMENTS.get("cli", "no") == "yes"
 here = Dir(".").abspath
 tj = os.path.join(here, tree)
+import subprocess, sys
+if tree == "thirdlife":
+    tl_out = os.path.join(here, "..", "..", "..", "..", ".tl", "rink-thirdlife-core")
+    tl_patches = ARGUMENTS.get("patches", os.path.join(here, "patches-thirdlife"))
+    rc = subprocess.call([sys.executable, "-I", os.path.join(here, "tools", "thirdlife_tree.py"), os.path.join(here, "thirdjam"), tl_patches, tl_out])
+    if rc != 0:
+        Exit(rc)
+    tj = os.path.abspath(os.path.join(tl_out, "thirdjam"))
 
 env = SConscript(os.path.join(here, "..", "..", "..", "..", ".tl", "godot-cpp", "SConstruct")) if os.path.exists(os.path.join(here, "..", "..", "..", "..", ".tl", "godot-cpp", "SConstruct")) else None
 if env is None:
@@ -44,6 +54,8 @@ subprocess.check_call([sys.executable, "-I", os.path.join(here, "tools", "gen_fi
                        os.path.join(gendir, "fields.gen.md"), tree + " Public/JamSim.h"])
 jenv.Prepend(CPPPATH=[gendir])
 jenv.Append(CPPDEFINES=[("RINK_SOURCE_TREE", '\\"%s\\"' % tree)])
+if tree == "thirdlife":
+    jenv.Append(CPPDEFINES=["RINK_THIRDLIFE"])
 jam_objs = []
 for s in jam_sources:
     jam_objs.append(jenv.SharedObject(os.path.join(objdir, s.replace("/", "_").replace(".cpp", "")), os.path.join(tj, s)))
@@ -91,6 +103,9 @@ if ARGUMENTS.get("tests", "no") == "yes":
         objs.append(tenv.Object(os.path.join(tobj, "pawn_helpers"), os.path.join(here, "shim", "pawn", "pawn_helpers.cpp")))
     objs += [tenv.Object(os.path.join(tobj, "shim"), os.path.join(here, "shim", "shim.cpp")),
              tenv.Object(os.path.join(tobj, "rinktest"), os.path.join(here, "tests", "rinktest.cpp"))]
+    # round 5: our re-typing of thirdjam's JamGame button-rule tests (TL.Controls.*) against the port (glue/), tests/tl_*.cpp
+    objs += [tenv.Object(os.path.join(tobj, "g_" + os.path.basename(str(g)).replace(".cpp", "")), g) for g in Glob(os.path.join(here, "glue", "*.cpp"))]
+    objs += [tenv.Object(os.path.join(tobj, os.path.basename(str(t)).replace(".cpp", "")), t) for t in Glob(os.path.join(here, "tests", "tl_*.cpp"))]
     targets.append(tenv.Program(os.path.join(bindir, "rinktest-" + tree + ARGUMENTS.get("test_suffix", "")), source=objs, LIBS=[], LIBPATH=[]))
 SConsignFile(os.path.join(here, "..", "..", "..", "..", ".tl", "rink-obj", "sconsign"))   # build state stays out of the tree
 Default(targets)
