@@ -1,6 +1,7 @@
 # Rink core snapshot: the per-frame interface (v1.2, 23 Nov 21:00)
 
-**Status: built (v1.2: additions only; no v1 or v1.1 name changed).** v1.2 adds `set_bot_mode("off")`, `CameraYawDeg`,
+**Status: built (v1.3, 24 Nov: additions only; no earlier name changed).** v1.3 adds `PassTargetHeld` / `PassTargetFacing` (K5)
+and the playtester's advice `set_advisor` / `advise` (K3); `restart()` now starts a seated playtester's memory again (below). v1.2 adds `set_bot_mode("off")`, `CameraYawDeg`,
 the "no pixel" rule, the raw shape's precision rule and the HUD's `Controls` fields (K5). v1.1 adds `set_raw_input`, `set_bot_mode`, `restart`,
 `last_human_input`, the snapshot's `Controls`, and the enum tables below; the per-skater dictionary is unchanged. Draft v0 went out at 17:02 for lanes K2 (figure) and K3 (shell); at 17:41 the class below exists
 and runs (engine/tools/selftest.d/800-rink-core.sh). The field names are thirdjam's own, read from its source by
@@ -47,6 +48,10 @@ core.set_bot_mode("off")                           # brain (default) | parked (t
                                                    # | off (v1.2: the other nine sit in the penalty box: no body, no contact; the gym)
 core.restart()                                     # AHokejGameMode::RestartMatch: same cartridge and seed, a new match
 core.last_human_input()                            # the FJamInput the human's skater got on the last step (thirdjam's names)
+core.set_advisor("playtester:regular:sprint")      # v1.3 (K3): thirdjam's playtester ADVISES the human's seat, from the next reset
+                                                   #   (or from now, memory empty, when set mid-match); "" = off; false = a bad spec
+var adv: Dictionary = core.advise()                # v1.3: what it would press on this frame (last_human_input's shape), NOT applied;
+                                                   #   {} with no advisor, no human seat or a finished match. Ask before step().
 core.step()                                        # one frame (false once the match is over): RunMatch's frame
 var s: Dictionary = core.snapshot()                # the frame just stepped (about 0.3 ms for all of it)
 var h: int = core.state_hash()                     # FJamSimAdapter::StateHash = UJamSim::StateHash (thirdjam's FNV)
@@ -86,6 +91,12 @@ the sim, not by us (humans to length 1, JamSim.h:31-34).
                "ButtonsInReach",    # bool: the puck within his carrier reach (InputMapping.cpp:479-480, UJamSim::CarrierReachM)
                "PassTarget", "PassTargetAim",   # the mate a flat pass pressed now goes to (-1 none) and its aim point (JamSim.h:903 BestPass)
                "SaucerTarget",      # the same for a saucer
+               # v1.3 (K5, D5-1): thirdjam's HUD query UJamSim::HumanPassTarget (the mate inside game.pass.aim.cone_deg of a direction,
+               # seen from the puck: PickReceiverInCone; -1 none, then the aim lies along the direction at the pass's reach):
+               "PassTargetHeld", "PassTargetHeldAim",       # along the stick (BladePos - Pos) at the hold so far (max(1, PassChargeFrames)):
+                                    #   the pass meter's target (HUDPassMeter.cpp:62-67 draws it only while PassChargeFrames > 0)
+               "PassTargetFacing", "PassTargetFacingAim",   # along his facing (Yaw) at a full hold (game.pass.power_full_frames):
+                                    #   the teach pulse's "a mate is open" (HUDTeach.cpp:55-67 adds 6-30 m and ahead within 0.7)
                "TakeOwner",         # the skater who has carried since the puck last changed hands (-1 nobody, -2 a placed puck; JamSim.h:885-887)
                "CarrierInTakeGrace"}  # bool: the carrier is inside his take grace (JamSim.h:879-884 InTakeGrace)
 }
@@ -133,6 +144,29 @@ bump, board hit, recoil, ability). Puck: `Pos`, `Z`, `Vel`, `VZ`, `LastTouch`.
   equal `head-baseline.jsonl`; inside Godot a whole match hashes the same on every frame (selftest `rink.variant`).
 - The state hash of the thirdlife core with a switch ON differs from frame 1 (the patches hash their own state while a switch
   is on): a thirdlife replay is checked against thirdlife, never against regular.
+
+## The playtester's advice (v1.3, for K3's pack bot)
+
+- The advisor is a second `FJamPlaytester` seated as the seat is (rink_playtester.h: RunPlaytestMatch's setup with no
+  JAM_PLAYTESTER_* variable, the same seed). It thinks ONCE A FRAME on the world the seat would see (`View` + the active signal
+  intent): on `advise()`, or inside `step()` when the frame was not asked. Asking twice on a frame answers the same.
+- What must persist between calls is the playtester's own memory, all of it inside the advisor (thirdjam AI/JamPlaytester.h):
+  `Tick` and `PlayFrames` (its clocks: the lapse clock, the aim-noise window), `Ring[]` / `BrakeRing[]` (the reaction delay: it
+  acts on what it saw ReactionFrames ago), `MoveOut` (the stick ramp), `bHolding` / `HoldFrames` / `SaucerHold` (a shot or a
+  saucer being held), `LastPassFrame` / `LastCheckFrame` / `LastDekeFrame` / `LastCutFrame` / `CutUntil` / `CutDir` (its
+  cooldowns), `BraceTarget`, the stop-mark and dodge state, `Act`, and its `Seed` (its noise is a hash of seed and frame: no
+  RNG stream). None of it is in the snapshot; the core keeps it. So: set the advisor before `reset`, and let `step()` run every
+  frame; an advisor set mid-match, or a match the pack skips frames of, starts with an empty memory.
+- Proof (selftest `rink.advice`, tools/rink_advice.gd): with the playtester seated and an advisor of the same spec, the advice
+  equals what the seat sent on 12,206 of 12,206 frames (seed 1, regular + sprint; also good seed 2: 5,700/5,700, novice seed 3:
+  10,630/10,630), and the seated match still ends on thirdjam's playtester hash 973d6c043707b703.
+- Not bit-exact through a Dictionary: `Move` and `Stick` come back as `Vector2` (single precision). A core driven by its own
+  advice through `set_human_input` plays a valid, different match (seed 1: its state hash parts from the seated match's at frame
+  160, final 0:3 against 3:2); every frame's advice is still the playtester's decision on THAT core's state. A pack bot pressing it
+  through the real keys rounds further (digital keys, the stick through the cursor): it stays in the pack's own match, deciding
+  as thirdjam's playtester does, but is not the tournament's playtester to the hash.
+- `restart()` (v1.3) starts the seat's and the advisor's memory again (RunPlaytestMatch makes one playtester a match); before, a
+  seated playtester carried its memory into the restarted match.
 
 ## The skating gym: one human on empty-ish ice (for K2)
 

@@ -101,6 +101,13 @@ class RinkCore : public RefCounted
 	FJamInput LastHuman;          // what the human's skater got on the last step
 	RinkGlue::FHumanControls Controls;
 	RinkGlue::FRawInput Raw;
+	// Round 6 (K3): the playtester's ADVICE on the human's seat, not applied (set_advisor / advise). A second seat of its own: it thinks
+	// once on every frame (advise() on the frame, or step() when the frame was not asked), so its memory runs as the seated one's.
+	RinkGlue::FPlaytesterSeat Advisor;
+	JamAI::EPlaytester AdvKind = JamAI::EPlaytester::Regular;
+	bool bAdvOn = false, bAdvSprint = false;
+	int64 AdvFrame = -1;
+	JamAI::FJamAIInput AdvLast;
 	RinkGlue::FPlaytesterSeat Seat;   // human mode "playtester:<novice|regular|good>[:sprint]" (rink_playtester.h)
 	JamAI::EPlaytester SeatKind = JamAI::EPlaytester::Regular;
 	bool bSeatSprint = false;
@@ -123,6 +130,8 @@ protected:
 		ClassDB::bind_method(D_METHOD("restart"), &RinkCore::restart);
 		ClassDB::bind_method(D_METHOD("set_bot_mode", "mode"), &RinkCore::set_bot_mode);
 		ClassDB::bind_method(D_METHOD("last_human_input"), &RinkCore::last_human_input);
+		ClassDB::bind_method(D_METHOD("set_advisor", "spec"), &RinkCore::set_advisor);
+		ClassDB::bind_method(D_METHOD("advise"), &RinkCore::advise);
 		ClassDB::bind_method(D_METHOD("step"), &RinkCore::step);
 		ClassDB::bind_method(D_METHOD("snapshot"), &RinkCore::snapshot);
 		ClassDB::bind_method(D_METHOD("state_hash"), &RinkCore::state_hash);
@@ -240,6 +249,8 @@ public:
 		Controls.Reset();
 		Raw = RinkGlue::FRawInput();
 		if (HumanMode == 5) Seat.Reset(SeatKind, Seed, Cart->Game.Shot.ChargeFramesMax, bSeatSprint, *Sim->GetSim());   // JamTournamentCommandlet.cpp: ChargeFramesMax
+		if (bAdvOn) Advisor.Reset(AdvKind, Seed, Cart->Game.Shot.ChargeFramesMax, bAdvSprint, *Sim->GetSim());   // the same setup as the seat
+		AdvFrame = -1;
 		if (bBotsOff) BoxOthers();
 		return true;
 	}
@@ -286,6 +297,10 @@ public:
 		Brain.Reset();
 		Controls.Reset();
 		Raw = RinkGlue::FRawInput();
+		// round 6: a new match is a new playtester (RunPlaytestMatch makes one a match): the seat and the advisor start their memory again
+		if (HumanMode == 5) Seat.Reset(SeatKind, Seed, Cart->Game.Shot.ChargeFramesMax, bSeatSprint, *Sim->GetSim());
+		if (bAdvOn) Advisor.Reset(AdvKind, Seed, Cart->Game.Shot.ChargeFramesMax, bAdvSprint, *Sim->GetSim());
+		AdvFrame = -1;
 		if (bBotsOff) BoxOthers();
 		return true;
 	}
@@ -347,12 +362,64 @@ public:
 		Human = I;
 	}
 
+	// "playtester:<novice|regular|good>[:sprint]" = thirdjam's playtester advises the human's seat from the next reset (its memory starts
+	// with the match, as the seated one's); "" = off. False on a bad spec.
+	bool set_advisor(const godot::String& Spec)
+	{
+		const FString M = FS(Spec);
+		if (M.IsEmpty()) { bAdvOn = false; return true; }
+		if (!M.StartsWith(TEXT("playtester:"))) return false;
+		FString Kind = M.Mid(11), Rest;
+		bool bSprint = false;
+		if (M.Mid(11).Split(TEXT(":"), &Kind, &Rest)) bSprint = Rest == TEXT("sprint");
+		JamAI::EPlaytester K;
+		if (!JamAI::ParsePlaytester(TCHAR_TO_UTF8(*Kind), K)) return false;
+		AdvKind = K; bAdvSprint = bSprint; bAdvOn = true; AdvFrame = -1;
+		if (Sim && Cart) Advisor.Reset(AdvKind, Seed, Cart->Game.Shot.ChargeFramesMax, bAdvSprint, *Sim->GetSim());   // mid-match: memory starts now
+		return true;
+	}
+
+	// The advice for this frame: what the playtester would press on the human's seat now (the FJamInput shape of last_human_input), not
+	// applied. Asked twice on one frame it answers the same (it thinks once a frame). {} when no advisor or no human seat.
+	Dictionary advise()
+	{
+		Dictionary D;
+		if (!bAdvOn || !Sim || Sim->IsOver()) return D;
+		const int Pi = Cfg.PlayerIndex();
+		if (Pi < 0) return D;
+		AdviseNow(Pi);
+		const FJamInput I = FromAI(AdvLast);
+#define JAM_INPUT_FIELD(T, N) D[#N] = GV(I.N);
+#define JAM_SKATER_FIELD(T, N)
+#define JAM_PUCK_FIELD(T, N)
+#define JAM_EVENT_FIELD(T, N)
+#include "fields.gen.inc"
+#undef JAM_INPUT_FIELD
+#undef JAM_SKATER_FIELD
+#undef JAM_PUCK_FIELD
+#undef JAM_EVENT_FIELD
+		return D;
+	}
+
+	// The advisor thinks on the world the seated playtester would see on this frame (step's View + ApplyIntent), once a frame.
+	void AdviseNow(int Pi)
+	{
+		const int64 F = Sim->GetSim()->GetFrame();
+		if (AdvFrame == F) return;
+		JamAI::FJamAIWorld W;
+		Sim->View(W);
+		Controls.ApplyIntent(W, F);
+		AdvLast = Advisor.Think(W, *Sim->GetSim(), Pi);
+		AdvFrame = F;
+	}
+
 	bool step()
 	{
 		if (!Sim) return false;
 		const int Pi0 = Cfg.PlayerIndex();
 		if (HumanMode == 4 && Controls.RestartPressed(Raw)) { restart(); Raw.Pressed.clear(); }   // HandleRestartPressed (HokejGameMode.cpp:789-798)
 		if (Sim->IsOver()) return false;
+		if (bAdvOn && Pi0 >= 0) AdviseNow(Pi0);   // the advisor sees every frame, asked or not (after a restart: the new match's first)
 		JamAI::FJamAIWorld W;
 		JamAI::FJamAIInput In[JamAI::kMaxSkaters];
 		Sim->View(W);
@@ -447,6 +514,16 @@ public:
 				C["PassTargetAim"] = GV(Aim);
 				FVector2D AimS;
 				C["SaucerTarget"] = GV(S.BestPass(Hi, AimS, true));     // the same, as a saucer
+				// v1.3 (K5, deviation D5-1): the HUD's own query, UJamSim::HumanPassTarget (JamSim.cpp; the mate inside game.pass.aim_cone_deg of
+				// a direction). Held: along the stick (blade - body) at the hold so far, as HUDPassMeter.cpp:62-67 draws the meter's target while
+				// a pass is held (thirdjam draws it only while PassChargeFrames > 0; here at least 1 frame, so it reads as the tap's target when
+				// nothing is held). Facing: along his facing at a full hold (game.pass.power_full_frames), as HUDTeach.cpp:55-67's teach pulse.
+				const FJamSkaterState& Hs = S.GetSkaters()[Hi];
+				FVector2D AimH, AimF;
+				C["PassTargetHeld"] = GV(S.HumanPassTarget(Hi, Hs.BladePos - Hs.Pos, FMath::Max(1, Hs.PassChargeFrames), AimH));
+				C["PassTargetHeldAim"] = GV(AimH);
+				C["PassTargetFacing"] = GV(S.HumanPassTarget(Hi, FVector2D(FMath::Cos(Hs.Yaw), FMath::Sin(Hs.Yaw)), S.GetConfig().Pass.PowerFullFrames, AimF));
+				C["PassTargetFacingAim"] = GV(AimF);
 			}
 			C["TakeOwner"] = GV(S.GetTakeOwner());                        // JamSim.h:885-887 (-1 nobody yet, -2 a placed puck)
 			const int32 Car = S.CarrierIndex();
