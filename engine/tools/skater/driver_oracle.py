@@ -259,6 +259,8 @@ class Run:
             args = [args[0], args[1], unreal.Rotator(0, 0, args[2])]
         elif name == "SetBoost":
             args = [unreal.Name(args[0]) if args[0] else unreal.Name("None")]
+        elif name == "SetBoostEquipped":
+            args = [unreal.Name(args[0]), bool(args[1])]
         elif name == "OnBusEvent":
             pl = unreal.JamEventPayload()
             pl.set_editor_property("Who", -1 if args[1] else 99)

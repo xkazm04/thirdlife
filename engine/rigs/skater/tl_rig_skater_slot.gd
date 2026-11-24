@@ -174,6 +174,25 @@ func montage_position_of(id: int) -> float:
 	return float(m["pos"]) if not m.is_empty() else 0.0
 
 
+## Montage_Pause / Montage_Resume / Montage_SetPosition of one take (the dash's).
+func montage_pause_id(id: int) -> void:
+	var m: Dictionary = _by_id(id)
+	if not m.is_empty():
+		m["paused"] = true
+
+
+func montage_resume_id(id: int) -> void:
+	var m: Dictionary = _by_id(id)
+	if not m.is_empty():
+		m["paused"] = false
+
+
+func montage_set_position_id(id: int, p: float) -> void:
+	var m: Dictionary = _by_id(id)
+	if not m.is_empty():
+		m["pos"] = f32(p)
+
+
 func _tick_montages(dt: float) -> void:
 	for m: Dictionary in montages:
 		var st: Array = blend_step(float(m["lerp"]), float(m["rem"]), dt, float(m["begin"]), float(m["target"]))

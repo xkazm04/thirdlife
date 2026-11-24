@@ -35,11 +35,11 @@ const GYM_ALLOWED_ORACLE: Dictionary = {"blade": [53, -0.0473], "skates": [142, 
 const GYM_ALLOWED: Dictionary = {"blade": [51, -0.0473], "skates": [124, -0.0802], "pop": [11, 93.97], "stick": [242, 0.0001], "puck": [1, 0.0143], "lengths": [0, 0.0]}
 ## The verb gym's run (cores/rink/view/verb_gym.gd: the match segment with the puck verbs), the human's figure, measured
 ## the same way: _ORACLE as the figures were compared in Unreal, the other with thirdjam's game mode's part.
-## Measured 23 Nov 2026 (round 5's recording of seed 2: the brace held, the rink in the oracle; the text is round 4's) with 17,998 of the ten figures' 18,000 rows within 1 cm of
+## Measured 24 Nov 2026 (round 6: recorded again on the core of K1's round 4, seed 5; the text is round 4's)
 ## thirdjam's. The takes turn joints fast by design (a slap shot, a fall): "pop" counts them, 175 degrees in a frame at the
 ## worst (an upper arm as a knockdown starts). The gym's two tables were measured again in round 4: its two hit reactions play now.
-const VERBS_ALLOWED_ORACLE: Dictionary = {"blade": [29, -0.0496], "skates": [474, -0.0928], "pop": [192, 169.67], "stick": [4, 0.0395], "puck": [3, 0.0097], "lengths": [0, 0.0]}
-const VERBS_ALLOWED: Dictionary = {"blade": [17, -0.0111], "skates": [449, -0.1047], "pop": [201, 169.67], "stick": [4, 0.0395], "puck": [0, 0.043], "lengths": [0, 0.0]}
+const VERBS_ALLOWED_ORACLE: Dictionary = {"blade": [9, -0.0387], "skates": [489, -0.1047], "pop": [114, 175.72], "stick": [5, 0.0343], "puck": [1, 0.0191], "lengths": [0, 0.0]}
+const VERBS_ALLOWED: Dictionary = {"blade": [9, -0.0062], "skates": [457, -0.1047], "pop": [132, 175.72], "stick": [5, 0.0341], "puck": [0, 0.0495], "lengths": [0, 0.0]}
 
 const BLADE_UNDER: float = 0.004
 const BLADE_OVER: float = 0.06

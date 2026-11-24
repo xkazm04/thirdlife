@@ -8,6 +8,7 @@ extends Node3D
 ##   godot --path engine --position 0,1440 --resolution 1280x720 res://cores/rink/view/verb_gym.tscn -- --out=<dir> --stills=three:3
 ## Args after `--`:
 ##   --stream=<file>   the recorded hand (default res://cores/rink/view/verbs.stream.json: {seed, difficulty, frames})
+##   --cartridge=<file>  another of thirdjam's cartridges (default the stream's own, else the pack's regular one)
 ##   --record=<file>   plays the gym's own scripted hand instead (it chases the puck and plays each verb in turn,
 ##                     reading the snapshot) and writes it as a stream file; --frames=N its length (default 1500)
 ##   --out=<dir>       calls.json (schema tl.skater.calls/2: per frame and skater the pawn's place and the figure's
@@ -21,6 +22,7 @@ extends Node3D
 const PAWN := preload("res://cores/rink/view/skater_pawn.gd")
 const SHOW := preload("res://cores/rink/view/skater_show.gd")
 const HITS := preload("res://cores/rink/view/hit_read.gd")
+const BOOST := preload("res://cores/rink/view/boost_look.gd")
 const DEFECTS := preload("res://rigs/skater/review/skater_defects.gd")
 const CAMS: Dictionary = {      # [forward, right, up] m of the eye, of the target, field of view (figure_gym.gd)
 	"side": [[0.45, 4.6, 1.0], [0.45, 0.0, 0.8], 30.0],
@@ -131,6 +133,9 @@ func _hand(f: int, s: Dictionary) -> Dictionary:
 			_press_at = f
 			pressed.append("LeftMouseButton")
 			down.append("LeftMouseButton")
+	if f % 120 == 90:
+		pressed.append("F")          # the held ability, when the cartridge gives one
+		down.append("F")
 	var d: Vector2 = target - pos
 	var dir: Vector2 = d.normalized() if d.length() > 0.2 else Vector2.ZERO
 	if d.length() > 6.0:
@@ -167,7 +172,8 @@ func _run() -> void:
 			_done("no stream at " + String(args.get("stream", "res://cores/rink/view/verbs.stream.json")))
 			return
 		stream = parsed
-	var cart: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://packs/hokej/data/hockey.regular.cartridge.json"))
+	var cart_path: String = String(args.get("cartridge", String(stream.get("cartridge", "res://packs/hokej/data/hockey.regular.cartridge.json"))))
+	var cart: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(cart_path))
 	var teams: Array = cart["game"]["teams"]
 	var core: RefCounted = ClassDB.instantiate("RinkCore")
 	var err: String = core.call("load_cartridge", JSON.stringify(cart))
@@ -191,6 +197,9 @@ func _run() -> void:
 	show.set("cfg", SHOW.config_of(cart))
 	var hits: RefCounted = HITS.new()      # the game mode's hit read: the whiffs of a miss, the re-time of a check
 	hits.set("skater_speed", float(cart["game"]["skater"]["speed"]))
+	var boost: RefCounted = BOOST.new()    # the goal's celebration, the held ability's equipment
+	boost.set("abilities", BOOST.abilities_of(cart))
+	var who_state: Array = []
 	var pawn_nodes: Array = []
 	var pawns: Array = []        # [pawn, figure, the calls of init_skater]
 	var human: int = -1
@@ -281,6 +290,25 @@ func _run() -> void:
 					(frame_calls[i] as Array).append(c)
 				else:
 					dropped["OnBusEvent " + en] = int(dropped.get("OnBusEvent " + en, 0)) + 1
+		# our own calls on top of the recorded match (the stream's "toys"): the takes thirdjam built and its game never
+		# sends, called as the sandbox step's rules would; a direction is given against the figure's facing
+		for toy: Dictionary in stream.get("toys", []):
+			if int(toy["f"]) != f or pawns.is_empty():
+				continue
+			var ti: int = int(toy.get("who", human))
+			var ta: Array = []
+			for v: Variant in toy.get("args", []):
+				ta.append(int(v) if (v is float and float(v) == roundf(float(v))) else v)
+			if toy.has("rel"):
+				var fy: float = float(sk[ti]["Yaw"])
+				var rl: Array = toy["rel"]
+				var at: int = int(toy.get("rel_at", 0))
+				ta.insert(at, cos(fy) * float(rl[0]) - sin(fy) * float(rl[1]))
+				ta.insert(at + 1, sin(fy) * float(rl[0]) + cos(fy) * float(rl[1]))
+			(pawns[ti][1] as TLRigSkater).callv(StringName(String(toy["call"])), ta)
+			(frame_calls[ti] as Array).append([String(toy["call"]), ta])
+		if not pawn_nodes.is_empty():
+			boost.call("deliver_events", snap, pawn_nodes)       # JamBoostLook::CelebrateGoal, inside DeliverEvents (:1504)
 		# PuckShow.StepSim (:1666), the pawns (:1695), the hit read (:1706); each one's calls in the order made
 		var held: Dictionary = show.call("step_sim", snap, pawn_nodes)
 		hit_stops += 1 if int(held.get("hit_stop", 0)) > 0 else 0
@@ -305,6 +333,7 @@ func _run() -> void:
 				var read: Dictionary = hits.call("step_sim", snap, pawn_nodes, core.call("last_human_input"))      # HokejGameMode.cpp:1706
 				whiffs += (read.get("whiffs", []) as Array).size()
 				retimes += (read.get("retimes", []) as Array).size()
+				boost.call("sync", snap, pawn_nodes)                 # AJamBoostAura::Sync (:1744)
 		for i: int in range(pawns.size()):
 			(pawns[i][0] as Node3D).call("apply_render", sk[i], 1.0)
 		# FJamPuckShow::Render (HokejGameMode.cpp:1736): the puck's place, with the sockets of the pose before this tick;
@@ -339,6 +368,14 @@ func _run() -> void:
 					verbs[i]["%s=%d" % [fl, int(s[fl])]] = int(verbs[i].get("%s=%d" % [fl, int(s[fl])], 0)) + 1
 			if bool(s["bShotThisFrame"]) and float(s["LastShotCharge"]) > 0.0:
 				verbs[i]["shot_charged"] = int(verbs[i].get("shot_charged", 0)) + 1
+			if int(s["AbilitySlot"]) >= 0:
+				verbs[i]["frames_ability_held"] = int(verbs[i].get("frames_ability_held", 0)) + 1
+			if String(s["AbilityArmed"]) != "":
+				verbs[i]["frames_ability_armed"] = int(verbs[i].get("frames_ability_armed", 0)) + 1
+			if int(s["ShieldFrames"]) > 0:
+				verbs[i]["frames_shield"] = int(verbs[i].get("frames_shield", 0)) + 1
+			if bool(s["bAbilityThisFrame"]):
+				verbs[i]["bAbilityThisFrame"] = int(verbs[i].get("bAbilityThisFrame", 0)) + 1
 			for fl: String in ["bCrossBraced", "bBoardPinned"]:
 				if bool(s[fl]):
 					verbs[i]["frames_" + fl] = int(verbs[i].get("frames_" + fl, 0)) + 1
@@ -353,6 +390,8 @@ func _run() -> void:
 				var v: Vector3 = fig.point_ue(p)
 				flat.append_array([snappedf(v.x, 0.001), snappedf(v.y, 0.001), snappedf(v.z, 0.001)])
 			orow.append(flat)
+		var wt: TLRigSkaterToys = (pawns[who][1] as TLRigSkater).takes
+		who_state.append([wt.bEqShotgun, wt.bEqHip, wt.bEqShield, wt.bEqSlow, wt.bEqHid, wt.jersey_emissive, wt.bSlideFx, wt.brake_fx_n])
 		call_rows.append({"f": f, "sk": crow, "puck": puck_rows[-1][0], "puck_on": puck_rows[-1][1]})
 		our_rows.append(orow)
 		var hf: TLRigSkater = pawns[who][1]
@@ -396,6 +435,7 @@ func _run() -> void:
 	report["calls_made_all"] = made_all
 	report["calls_made_human"] = made_human
 	report["hit_stops"] = hit_stops
+	report["celebrations"] = boost.get("celebrations")
 	report["whiffs"] = whiffs
 	report["retimes"] = retimes
 	report["frames_puck_drawn_on_a_blade"] = on_blade
@@ -411,13 +451,22 @@ func _run() -> void:
 	report["not_ported_graph"] = ng
 	report["warm_ticks"] = warm
 	if recording:
-		_write(String(args["record"]), {"schema": "tl.rink.rawstream/1", "seed": seed_n, "difficulty": difficulty, "frames": recorded})
+		var rec: Dictionary = {"schema": "tl.rink.rawstream/1", "seed": seed_n, "difficulty": difficulty, "state_hash": report["state_hash"], "frames": recorded}
+		if args.has("cartridge"):
+			rec["cartridge"] = cart_path
+		_write(String(args["record"]), rec)
 	if out != "":
 		_write(out + "/calls.json", {"schema": "tl.skater.calls/2", "human": human, "who": who, "skaters": pawns.size(), "rink": [rink.x, rink.y, rink.z], "frames": call_rows})
-		_write(out + "/ours.json", {"schema": "tl.skater.ours/2", "points": POINTS, "units": "centimetres in the actor's frame, Unreal's axes", "frames": our_rows})
+		_write(out + "/ours.json", {"schema": "tl.skater.ours/2", "points": POINTS, "units": "centimetres in the actor's frame, Unreal's axes", "frames": our_rows,
+			"who_state": who_state, "who_state_keys": ["bEqShotgun", "bEqHip", "bEqShield", "bEqSlow", "bEqHid", "jersey_emissive", "bSlideFx", "brake_fx_n"]})
 	var verdict: Dictionary = DEFECTS.judge(defect_rows)
 	report["defects"] = verdict
 	var why: String = "" if done == frames and frames > 0 else "%d of %d frames" % [done, frames]
+	# A recorded hand is a match only on the core that recorded it: a core that reads the devices otherwise replays the
+	# same hand into ANOTHER match, and every golden then compares another match (it happened: K1's round 4).
+	if why == "" and not recording and stream.has("state_hash") and not args.has("frames") and not args.has("seed") and not args.has("difficulty") and not args.has("cartridge"):
+		if String(stream["state_hash"]) != String(report["state_hash"]):
+			why = "the recorded hand replays into another match on this core (state hash %s, the stream's own %s): record the streams and make the goldens again" % [report["state_hash"], stream["state_hash"]]
 	if why == "" and not recording and not args.has("frames") and not args.has("seed") and not args.has("stream") and not args.has("who"):
 		var broken: String = DEFECTS.gate(verdict, DEFECTS.VERBS_ALLOWED_ORACLE if args.has("oracle") else DEFECTS.VERBS_ALLOWED)
 		report["defect_gate"] = "parity (skater_defects.gd %s)" % ("VERBS_ALLOWED_ORACLE" if args.has("oracle") else "VERBS_ALLOWED")
