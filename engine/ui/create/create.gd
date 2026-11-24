@@ -16,6 +16,12 @@ extends "res://ui/create/create_build.gd"
 ##   now: <unix s>       a fixed clock (fixtures, stills): no polling, the job is read once per show_job()
 ##   try_stub: <dir>     a pack to try/play when the job's own pack is not there (fixtures)
 ##   door: {..}          more options for ui/foreman_door.gd setup (selftest 780: res_dir "" and exe, as in an exe)
+##   menu_list: <file>   E4: the person's dungeon list Add to menu writes (default: kernel/dungeon/dungeons.gd user_path())
+##
+## E4 (night of 24-25 Nov 2026): the person's path through iterations. Done: Play, Add to menu (the main menu's
+## Dungeons), and a change box (`foreman change`: a new version; a change may grow the game, foreman/src/grow.ts);
+## a phase pause's Hold is its change box. My games (top bar): every job of the jobs root, newest first; one reopens
+## where its log stands, and a build whose Foreman is gone goes on with Continue.
 
 signal closed
 
@@ -25,6 +31,7 @@ var _logged_screen: String = ""          # N4: the screen last named on the log 
 func setup(o: Dictionary) -> void:
 	opts = o
 	jobs_root = str(o.get("jobs", "")).replace("\\", "/").trim_suffix("/")
+	menu_list = str(o.get("menu_list", ""))     # E4: "" = the person's list (dungeons.gd user_path)
 	door = Door.new()
 	var d: Dictionary = {"dry": bool(o.get("dry", false)), "flags": o.get("flags", {}), "flags_name": str(o.get("flags_name", ""))}
 	if o.get("door") is Dictionary:
@@ -105,6 +112,9 @@ func _read_cards() -> void:
 ## Follow this job directory (fixtures, stills, the page's own job after Go).
 func show_job(dir: String) -> void:
 	job_dir = dir
+	showing_games = false
+	_sent_change = ""
+	_change_draft = ""
 	busy = ""
 	waiting_for = ""
 	message = ""
@@ -138,6 +148,16 @@ func _read_job() -> void:
 			if (job.get("phase_events", []) as Array).size() > busy_mark:
 				busy = ""
 				holding = false
+		"change":
+			# E4: the log holds the request and the Foreman has taken it (or already finished it)
+			var mine: Array = Model.person_changes(job)
+			if (job.get("changes", []) as Array).size() > busy_mark and (screen != "done" or (not mine.is_empty() and str((mine.back() as Dictionary).get("outcome", "")) != "in flight")):
+				busy = ""
+				_sent_change = ""
+		"continue":
+			if door != null and door.busy(job_dir).is_empty():
+				busy = ""
+	_follow_menu_row()
 
 
 func _process(delta: float) -> void:
@@ -221,6 +241,7 @@ func _rebuild() -> void:
 		"done": _done()
 		"failed": _failed()
 		"error": _error()
+		"games": _games()
 	if not message.is_empty():
 		_toast(message)
 	_sig = _signature()
@@ -228,6 +249,10 @@ func _rebuild() -> void:
 
 ## What is on screen: the log's screen, or what this page started and waits for.
 func shown_screen() -> String:
+	if showing_games:
+		return "games"
+	if busy == "change" and screen == "done":
+		return "building"                # E4: the change is sent, the Foreman has not written it yet
 	if job_dir.is_empty():
 		return "designing" if not waiting_for.is_empty() else "idea"
 	if busy == "redesign" and screen == "pitch":
@@ -252,6 +277,11 @@ func _top_bar(shown: String) -> void:
 		var again: Button = _button("NewIdea", "New idea", "plus", CREAM, Vector2(W - 214, 18), Vector2(190, 54), 22)
 		again.pressed.connect(new_idea)
 		_body.add_child(again)
+	if shown != "games":
+		# E4: every game this jobs root holds, newest first; one opens where it stands
+		var mine: Button = _button("MyGames", "My games", "story", CREAM, Vector2(W - 424 if shown != "idea" else W - 214, 18), Vector2(190, 54), 22)
+		mine.pressed.connect(open_games)
+		_body.add_child(mine)
 
 
 func _toast(text: String) -> void:
@@ -278,6 +308,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		close_sheet()
 	elif holding:
 		holding = false
+		_rebuild()
+	elif showing_games:
+		showing_games = false
 		_rebuild()
 	else:
 		closed.emit()

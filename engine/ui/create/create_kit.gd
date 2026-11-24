@@ -55,6 +55,12 @@ var busy_mark: int = 0                    # the figure that moves when it arrive
 var message: String = ""
 var last_launch: PackedStringArray = []
 var cards: Dictionary = {}                # recipe card id -> title (the expert's hint)
+var showing_games: bool = false           # E4: My games is open (the page's own screen, not one of the log's)
+var games_rows: Array = []                # E4: create_model.gd games(), read when My games opens
+var menu_list: String = ""                # E4: the person's dungeon list ("" = kernel/dungeon/dungeons.gd user_path())
+var _change_box: LineEdit = null
+var _change_draft: String = ""            # E4: what is typed in the change box (kept over a rebuild)
+var _sent_change: String = ""             # E4: the change this page sent, shown until the log holds it
 
 var _stage: Control = null
 var _body: Control = null
@@ -102,12 +108,17 @@ func _elapsed() -> float:
 	var t0: float = started_at
 	if not job.is_empty() and float(job.get("first_ts", 0.0)) > 0.0:
 		t0 = float(job["first_ts"])
+	var mine: Array = Model.person_changes(job)
+	if busy == "change":
+		t0 = started_at                   # E4: a change round's clock starts at its request
+	elif not mine.is_empty() and not Model.changing(job).is_empty():
+		t0 = float((mine.back() as Dictionary).get("ts", t0))
 	return maxf(0.0, _now() - t0) if t0 > 0.0 else 0.0
 
 
 func _signature() -> String:
 	return "|".join([screen, str(job.get("last_seq", -1)), JSON.stringify(taps), expanded, str(holding), busy, message, str(drawer_open),
-		creativity, str(run_through), card_hint, waiting_for, str(job.get("torn", false)), str(settling)])
+		creativity, str(run_through), card_hint, waiting_for, str(job.get("torn", false)), str(settling), str(showing_games)])
 
 
 # ---------------------------------------------------------------- building blocks

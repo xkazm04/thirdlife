@@ -18,7 +18,8 @@ import { runHandChecks, sendBackHands } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
-import { briefText, critic, render, replanPackages, whoOwns, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
+import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
+import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js"; // E4 (24-25 Nov): a change may add a package
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -165,7 +166,8 @@ export class Foreman {
    * True when a pending change request could be applied now: its package (named, or already chosen by the Planner)
    * is finished, merged and idle. One that names none and has not been asked about yet is ready to be asked.
    */
-  private changeReady(c: { seq?: number; package?: string }, running?: ReadonlyMap<string, unknown>): boolean {
+  private changeReady(c: { seq?: number; package?: string; text?: string }, running?: ReadonlyMap<string, unknown>): boolean {
+    if (c.text !== undefined && wireWaits(this.s, c.text)) return false; // E4: a wire request waits for the package it wires in
     // No builder is in flight (the start of a run, or the scheduler has returned): as before P10, whatever state
     // the package is in. `foreman change --package X` on a job that failed on X is how X is asked to try again.
     if (running === undefined) return true;
@@ -265,7 +267,7 @@ export class Foreman {
         this.append({ type: "job_state", state: "paused", reason: QUALITY_PAUSE });
         break;
       }
-      const step = await phaseStep(this.gateHost); // a phase whose packages are all merged is done: pass, or wait for the player
+      const step = await phaseStep(Object.assign(this.gateHost, { grow: (c: { seq: number; text: string }, why: string, head: string) => grow(this.growHost, c, why, head) })); // a phase whose packages are all merged is done: pass, or wait for the player
       if (step === "paused") break;
       if (step === "continue") continue;
       const views = this.s.order.map((id) => this.pkg(id));
@@ -1206,6 +1208,34 @@ export class Foreman {
     }
   }
 
+  private rootId(): string {
+    return this.s.plan.find((p) => p.deps.length === 0)?.id ?? (this.s.order[0] as string);
+  }
+
+  /** E4: what grow.ts needs of this Foreman; the planner's input is built as for a re-plan. State is read live. */
+  private get growHost(): GrowHost {
+    const state = (): JobState => this.s;
+    const model = this.o.plannerModel ?? this.o.model;
+    const input = (): PlannerInput | undefined => {
+      const s = this.s;
+      if (!s.brief || !s.sentence || !s.packId || !s.title) return undefined;
+      const api = this.kernelApiText();
+      return { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, packContract: this.packContract, ...(api !== undefined ? { kernelApi: api } : {}),
+        existing: existingText(this.refDir()), cards: cardsPlannerText(this.refDir()), builderTimeoutMs: this.o.builderTimeoutMs };
+    };
+    return {
+      get s() {
+        return state();
+      },
+      builder: this.o.builder,
+      ...(model ? { model } : {}),
+      limits: { ...(this.o.plannerTimeoutMs !== undefined ? { timeoutMs: this.o.plannerTimeoutMs } : {}), verbs: this.verbs ?? verbsFor(this.o.verifier.location), ...cardLimits(this.refDir()) },
+      plannerInput: input,
+      append: (body) => this.append(body),
+      logGenerateCalls: (calls, m) => this.logGenerateCalls(calls, m),
+    };
+  }
+
   /** One line per package for the critic and the "who owns this" question. */
   private packageLines(): PackageLine[] {
     return this.s.plan.map((p) => {
@@ -1232,15 +1262,27 @@ export class Foreman {
         let known = this.askedOwners.get(c.seq);
         if (known === undefined) {
           const model = this.o.plannerModel ?? this.o.model;
-          const res = await whoOwns(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: this.packageLines() }, model ? { model } : {});
+          const res = await ownerOrNew(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: this.packageLines() }, model ? { model } : {});
           this.logGenerateCalls(res.calls, model);
           known = res.ok
-            ? { owner: res.value.package, how: `the Planner names the package: ${clip(res.value.reason, 200)}` }
-            : { owner: this.s.plan.find((p) => p.deps.length === 0)?.id ?? (this.s.order[0] as string), how: `the Planner gave no usable answer (${clip(res.reason, 160)}), so the root package takes it` };
+            ? { owner: res.value.package, how: res.value.package === NEW_PACKAGE ? clip(res.value.reason, 200) : `the Planner names the package: ${clip(res.value.reason, 200)}` }
+            : { owner: this.rootId(), how: `the Planner gave no usable answer (${clip(res.reason, 160)}), so the root package takes it` };
           this.askedOwners.set(c.seq, known);
         }
         owner = known.owner;
         how = known.how;
+        if (owner === NEW_PACKAGE) {
+          // E4: no package's files hold the request: the plan grows (grow.ts), once no builder runs
+          if (running !== undefined) continue;
+          const g = await grow(this.growHost, c, how);
+          if ("added" in g) {
+            applied += 1;
+            continue;
+          }
+          owner = this.rootId();
+          how = `${g.reason}, so the root package takes it`;
+          this.askedOwners.set(c.seq, { owner, how });
+        }
         // Asked while other packages ran: the package it names must be finished and idle as well, or the request waits.
         if (!this.changeReady(c, running)) continue;
       }

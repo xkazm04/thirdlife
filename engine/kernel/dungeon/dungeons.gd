@@ -16,7 +16,18 @@ extends RefCounted
 ## executable that runs now: in the exported game `ThirdLife.exe -- --dungeon=<dir>`; under the editor binary
 ## `<godot> --path <engine> res://boot/boot.tscn -- --dungeon=<dir>` (the editor binary's main scene is the host).
 
+## E4 (night of 24-25 Nov 2026): the person's own dungeons. A game made in Create is put in the menu by one press and
+## taken out again; the editor never writes the shipped list. Its list lies beside it, in the person's data folder:
+##   user://dungeons.user.json   (TL_USER_DUNGEONS names another file: the checks use their own)
+##   {"schema": "tl.dungeons.user/1", "dungeons": [{"pack": <absolute folder with a pack.json>, "title", "job"?, "look"?}]}
+## `job` is the Create job directory the pack was promoted from (Create finds the row by it and moves `pack` to the
+## job's newest promotion). read_menu() is the shipped list, then this one (rows marked `mine: true`); hub.gd reads it.
+##   read_menu()                       -> {ok, dungeons, errors}: both lists
+##   read_user(path?) / user_row(job, path?) / add_user(pack, title, job, path?) / remove_user(job, path?)
 const LIST_RES: String = "res://boot/dungeons.json"
+const USER_RES: String = "user://dungeons.user.json"
+const USER_SCHEMA: String = "tl.dungeons.user/1"
+const USER_KEYS: Array = ["pack", "title", "job", "look"]
 const SCHEMA: String = "tl.dungeons/1"
 const TOP_KEYS: Array = ["schema", "dungeons"]
 const ENTRY_KEYS: Array = ["pack", "title", "look"]
@@ -143,3 +154,126 @@ static func launch(pack_dir: String) -> int:
 	var pid: int = OS.create_process(OS.get_executable_path(), launch_args(pack_dir))
 	print("[dungeon] launched %s as a dungeon in process %d" % [pack_dir, pid])
 	return pid if pid > 0 else -1
+
+
+# ---------------------------------------------------------------- E4: the person's own list
+
+## The file of the person's list: TL_USER_DUNGEONS, else user://dungeons.user.json, as a disk path.
+static func user_path() -> String:
+	var env: String = OS.get_environment("TL_USER_DUNGEONS")
+	return (env if not env.is_empty() else ProjectSettings.globalize_path(USER_RES)).replace("\\", "/")
+
+
+## The person's list. A missing file is an empty list (ok); unknown keys, a relative pack, a title over 80 are errors
+## (the row is left out, the rest is read).
+static func read_user(path: String = "") -> Dictionary:
+	var file: String = path if not path.is_empty() else user_path()
+	if not FileAccess.file_exists(file):
+		return {"ok": true, "dungeons": [], "errors": []}
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(file))
+	if not (d is Dictionary) or str((d as Dictionary).get("schema", "")) != USER_SCHEMA or not ((d as Dictionary).get("dungeons") is Array):
+		return {"ok": false, "dungeons": [], "errors": ["%s: not a %s list {schema, dungeons: [...]}" % [file.get_file(), USER_SCHEMA]]}
+	var errors: Array = []
+	for k: Variant in (d as Dictionary).keys():
+		if not TOP_KEYS.has(k):
+			errors.append("%s: unknown key '%s' (unknown keys are errors)" % [file.get_file(), str(k)])
+	var out: Array = []
+	var rows: Array = d["dungeons"]
+	for i: int in rows.size():
+		var e: Variant = rows[i]
+		var why: String = _user_row_problem(e)
+		if not why.is_empty():
+			errors.append("%s dungeons[%d]: %s" % [file.get_file(), i, why])
+			continue
+		var row: Dictionary = {"pack": str(e["pack"]).replace("\\", "/").trim_suffix("/"), "title": str(e["title"]).strip_edges()}
+		for k: String in ["job", "look"]:
+			if (e as Dictionary).has(k):
+				row[k] = str(e[k])
+		out.append(row)
+	return {"ok": errors.is_empty(), "dungeons": out, "errors": errors}
+
+
+static func _user_row_problem(e: Variant) -> String:
+	if not (e is Dictionary):
+		return "a row is an object {pack, title, job?, look?}"
+	for k: Variant in (e as Dictionary).keys():
+		if not USER_KEYS.has(k):
+			return "unknown key '%s' (unknown keys are errors)" % str(k)
+	for k: String in ["pack", "title"]:
+		if typeof((e as Dictionary).get(k)) != TYPE_STRING or str(e[k]).strip_edges().is_empty():
+			return "'%s' is a non-empty text" % k
+	if not str(e["pack"]).replace("\\", "/").is_absolute_path():
+		return "'pack' is an absolute folder (a promoted pack), not '%s'" % str(e["pack"])
+	if str(e["title"]).length() > TITLE_MAX:
+		return "the title is longer than %d characters" % TITLE_MAX
+	if (e as Dictionary).has("job") and (typeof(e["job"]) != TYPE_STRING or str(e["job"]).is_empty()):
+		return "'job' is a non-empty text"
+	if (e as Dictionary).has("look") and (typeof(e["look"]) != TYPE_STRING or not look_known(str(e["look"]))):
+		return "look '%s' is not a style name" % str(e["look"])
+	return ""
+
+
+static func _write_user(rows: Array, path: String) -> String:
+	var file: String = path if not path.is_empty() else user_path()
+	DirAccess.make_dir_recursive_absolute(file.get_base_dir())
+	var tmp: String = file + ".tmp"
+	var f: FileAccess = FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
+		return "cannot write %s" % tmp
+	f.store_line(JSON.stringify({"schema": USER_SCHEMA, "dungeons": rows}, " "))
+	f.close()
+	if FileAccess.file_exists(file):
+		DirAccess.remove_absolute(file)
+	return "" if DirAccess.rename_absolute(tmp, file) == OK else "cannot replace %s" % file
+
+
+## The row of a Create job (by its job directory), or {}.
+static func user_row(job_dir: String, path: String = "") -> Dictionary:
+	var j: String = job_dir.replace("\\", "/").trim_suffix("/")
+	for r: Dictionary in read_user(path)["dungeons"]:
+		if str(r.get("job", "")).trim_suffix("/") == j:
+			return r
+	return {}
+
+
+## Puts a pack in the person's list (or moves the job's row to this pack): "" or why not.
+static func add_user(pack_dir: String, title: String, job_dir: String = "", path: String = "") -> String:
+	var pack: String = pack_dir.replace("\\", "/").trim_suffix("/")
+	var row: Dictionary = {"pack": pack, "title": title.strip_edges().substr(0, TITLE_MAX)}
+	if not job_dir.is_empty():
+		row["job"] = job_dir.replace("\\", "/").trim_suffix("/")
+	var why: String = _user_row_problem(row)
+	if not why.is_empty():
+		return why
+	if not FileAccess.file_exists(pack + "/pack.json"):
+		return "no pack.json in %s" % pack
+	var rows: Array = []
+	for r: Dictionary in read_user(path)["dungeons"]:
+		if str(r["pack"]) != pack and (not row.has("job") or str(r.get("job", "")) != str(row["job"])):
+			rows.append(r)
+	rows.append(row)
+	return _write_user(rows, path)
+
+
+## Takes a job's row (or a pack's, when `job_or_pack` is its folder) out of the person's list: "" or why not.
+static func remove_user(job_or_pack: String, path: String = "") -> String:
+	var k: String = job_or_pack.replace("\\", "/").trim_suffix("/")
+	var rows: Array = []
+	for r: Dictionary in read_user(path)["dungeons"]:
+		if str(r.get("job", "")) != k and str(r["pack"]) != k:
+			rows.append(r)
+	return _write_user(rows, path)
+
+
+## What the menu lists: the shipped dungeons, then the person's own (marked `mine: true`).
+static func read_menu(path: String = LIST_RES) -> Dictionary:
+	var r: Dictionary = read(path)
+	var u: Dictionary = read_user()
+	var rows: Array = (r["dungeons"] as Array).duplicate()
+	for row: Dictionary in u["dungeons"]:
+		var m: Dictionary = row.duplicate()
+		m.erase("job")
+		m["mine"] = true
+		rows.append(m)
+	var errors: Array = (r["errors"] as Array) + (u["errors"] as Array)
+	return {"ok": errors.is_empty(), "dungeons": rows, "errors": errors}

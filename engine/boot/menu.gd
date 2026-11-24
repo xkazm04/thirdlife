@@ -141,7 +141,7 @@ func _make_list() -> Control:
 		var line: HBoxContainer = HBoxContainer.new()
 		line.add_theme_constant_override("separation", 18)
 		line.add_child(_icon(r, i))
-		var b: Button = UI.button("%s\nlook: %s" % [str(r["title"]), str(r.get("look", "default"))], 26)
+		var b: Button = UI.button("%s\n%s" % [str(r["title"]), "made by you in Create" if r.get("mine", false) == true else "look: " + str(r.get("look", "default"))], 26)   # E4: the person's own
 		b.name = "Dungeon%d" % i
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.custom_minimum_size = Vector2(0, 108)

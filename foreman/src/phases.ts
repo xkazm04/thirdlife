@@ -9,8 +9,9 @@
 //   - a re-plan keeps the phases; a stuck phase is named when the job fails.
 import type { JobEvent, PackageSpec, Phase } from "./events.js";
 import { currentPhase, holdReason, passesItself, phaseIndexOf, waitingPhase, type JobState } from "./joblog.js";
-import { funPromiseItem, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type RubricItem } from "./designer.js";
+import { funPromiseItem, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type RubricItem } from "./designer.js";
 import { CHANGE_ROUND } from "./rounds.js";
+import { NEW_PACKAGE, ownerOrNew } from "./grow.js";
 import { clip } from "./conduct.js";
 import type { ForemanOptions } from "./options.js";
 
@@ -21,6 +22,8 @@ export interface PhaseHost {
   append(body: Parameters<import("./joblog.js").JobLog["append"]>[0]): JobEvent;
   reopen(id: string, reason: string, detail: string): void;
   logGenerateCalls(calls: GenerateCall[], model: string | undefined): void;
+  /** E4 (24-25 Nov): grows the plan for a hold whose note adds something no package holds (grow.ts); absent: never. */
+  grow?(c: { seq: number; text: string }, why: string, head: string): Promise<{ added: string[] } | { reason: string }>;
 }
 
 /** A job paused for the player's verdict on a phase stays paused on `run`/`resume`: `foreman phase` answers it. */
@@ -85,14 +88,22 @@ export async function applyHolds(h: PhaseHost): Promise<number> {
     if (mine.length === 0) continue;
     let owner = mine[0] as string;
     let how = "the phase has one package";
-    if (mine.length > 1) {
+    if (mine.length > 1 || h.grow !== undefined) {
+      // E4: with a grow hook the Planner may also answer "new": the note adds something no package of the phase holds
       const model = h.o.plannerModel ?? h.o.model;
-      const res = await whoOwns(h.o.builder, { sentence: h.s.sentence ?? "", title: h.s.title ?? "", text: hold.note, packages: packageLinesOf(h.s, mine) }, model ? { model } : {});
+      const res = await ownerOrNew(h.o.builder, { sentence: h.s.sentence ?? "", title: h.s.title ?? "", text: hold.note, packages: packageLinesOf(h.s, mine) }, model ? { model } : {});
       h.logGenerateCalls(res.calls, model);
-      if (res.ok) {
+      if (res.ok && res.value.package === NEW_PACKAGE && h.grow !== undefined) {
+        const g = await h.grow({ seq: hold.seq, text: hold.note }, clip(res.value.reason, 200), `${holdReason(hold.seq)} on phase ${ph.id}`);
+        if ("added" in g) {
+          applied += 1;
+          continue;
+        }
+        how = `${g.reason}, so the phase's first package takes it`;
+      } else if (res.ok && res.value.package !== NEW_PACKAGE) {
         owner = res.value.package;
         how = `the Planner names the package among the phase's ${mine.join(", ")}: ${clip(res.value.reason, 200)}`;
-      } else how = `the Planner gave no usable answer (${clip(res.reason, 160)}), so the phase's first package takes it`;
+      } else if (!res.ok) how = `the Planner gave no usable answer (${clip(res.reason, 160)}), so the phase's first package takes it`;
     }
     h.reopen(owner, `${holdReason(hold.seq)} on phase ${ph.id}; ${how}: ${clip(hold.note, 300)}`, `${CHANGE_ROUND}: ${hold.note}`);
     applied += 1;

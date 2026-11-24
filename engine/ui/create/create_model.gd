@@ -44,7 +44,8 @@ static func screen_of(job: Dictionary) -> String:
 	if ph == "unreadable":
 		return "error"
 	if ph in ["failed", "cancelled"]:
-		return "failed"
+		# E4: a change that could not be made does not take the game away: the last promotion still plays
+		return "done" if not (job.get("promotions", []) as Array).is_empty() and not person_changes(job).is_empty() else "failed"
 	if (job.get("brief", {}) as Dictionary).is_empty():
 		return "designing"
 	if str(job.get("approved_by", "")).is_empty():
@@ -239,3 +240,80 @@ static func screen_words(root: Node) -> Dictionary:
 			total += w
 			items.append([w, t])
 	return {"total": total, "items": items}
+
+
+# ---------------------------------------------------------------- E4 (24-25 Nov): iterations, my games
+
+## The change requests the person made (the Foreman's own `[foreman] ` requests, such as a wire-in, left out), oldest first:
+## job_model.gd's change rows {seq, text, outcome: in flight | made | not made | failed | cancelled, version}.
+static func person_changes(job: Dictionary) -> Array:
+	return (job.get("changes", []) as Array).filter(func(c: Dictionary) -> bool: return not str(c.get("text", "")).begins_with("[foreman] "))
+
+
+## The person's change being made now (its text), or "": the last one, while the job is not done with it.
+static func changing(job: Dictionary) -> String:
+	var mine: Array = person_changes(job)
+	if mine.is_empty() or str(job.get("phase", "")) in ["done", "failed", "cancelled"]:
+		return ""
+	var c: Dictionary = mine.back()
+	return str(c["text"]) if str(c.get("outcome", "")) == "in flight" else ""
+
+
+## How many versions of the game there are (each promotion is one: the first build, then one per change made).
+static func version_n(job: Dictionary) -> int:
+	return (job.get("promotions", []) as Array).size()
+
+
+## One line when the person's last change could not be made ("" otherwise): the game plays as before.
+static func change_note(job: Dictionary) -> String:
+	var mine: Array = person_changes(job)
+	if mine.is_empty():
+		return ""
+	var c: Dictionary = mine.back()
+	if str(c.get("outcome", "")) in ["not made", "failed", "cancelled"]:
+		return "Your last change could not be made: \u201c%s\u201d" % JobModel.one_line(str(c["text"]), 60)
+	return ""
+
+
+## The packages a change round is working on when every phase has passed (no current phase): those not promoted.
+static func working_packages(job: Dictionary) -> Array:
+	var out: Array = []
+	var pk: Dictionary = job.get("packages", {})
+	for id: Variant in job.get("order", []):
+		var p: Dictionary = pk.get(str(id), {})
+		if not p.is_empty() and str(p.get("state", "")) != "promoted":
+			out.append({"id": str(id), "title": str(p.get("title", id)), "state": str(p.get("state", "queued")), "round": int(p.get("round", 1))})
+	return out
+
+
+## What a game's row in My games says about it, in a person's words.
+static func state_word(job: Dictionary) -> String:
+	var n: int = version_n(job)
+	match screen_of(job):
+		"designing": return "The designer is thinking"
+		"pitch": return "Waiting for you: the pitch"
+		"phase_done": return "Waiting for you: try it"
+		"done": return "Ready, version %d" % n if n > 1 else "Ready"
+		"failed": return "Stopped"
+		"error": return "Cannot be read"
+	return "Changing" if not changing(job).is_empty() else "Building"
+
+
+## My games: every job under the jobs root, newest first (by its first event): [{dir, title, word, screen, version, ts}].
+## `limit` caps how many logs are read (a jobs root of a long night holds hundreds).
+static func games(root: String, limit: int = 40) -> Array:
+	var dirs: PackedStringArray = JobModel.list_job_dirs(root)
+	var named: Array = []
+	for d: String in dirs:
+		named.append([FileAccess.get_modified_time(d.path_join("job.jsonl")), d])
+	named.sort_custom(func(a: Array, b: Array) -> bool: return int(a[0]) > int(b[0]) or (int(a[0]) == int(b[0]) and str(a[1]) > str(b[1])))
+	var out: Array = []
+	for i: int in mini(limit, named.size()):
+		var d: String = named[i][1]
+		var j: Dictionary = JobModel.read_job(d, 0.0)
+		var title: String = str(j.get("title", ""))
+		if title.is_empty():
+			title = JobModel.one_line(str(j.get("sentence", d.get_file())), 40)
+		out.append({"dir": d, "title": title, "word": state_word(j), "screen": screen_of(j), "version": version_n(j), "ts": float(j.get("first_ts", 0.0)), "sentence": str(j.get("sentence", ""))})
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["ts"]) > float(b["ts"]) or (float(a["ts"]) == float(b["ts"]) and str(a["dir"]) > str(b["dir"])))
+	return out
