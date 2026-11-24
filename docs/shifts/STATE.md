@@ -368,3 +368,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 24 Nov 21:52 standup: hokej 8fff52d: thirdlife variant core, shadows, figure goldens green, first match to the end card; 5 agents running (owner's cap), models by task.
 - 24 Nov 22:53 standup: hokej holds sound, shadows, celebration, the Third Life cut; K8 kept E03 (no-key take gone); owner build after K5's ring fix.
 - 24 Nov ~23:20 owner: hockey feels like thirdjam; rest of the night = the editor path to a hokej-class game by a user, through iterations (scout launched).
+- 24 Nov 23:52 standup: editor night under way (E1-E4 + K8); hokej 9161bf7 holds voice, reactions, K8 r2.
