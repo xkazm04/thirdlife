@@ -361,3 +361,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 22:37 standup: hokej be548e5: the hall, contact on the figures, the puck on the blade, title / HOME / pause card; K8's first kept change (no walk-in goals). K1 silent since 21:09 (asked).
 - 23:10 PAUSED by the owner (Fable limit hit by K2/K6/K7/K8 at 23:00; owner switching plan). hokej head f9d2db9; state and resume list: docs/shifts/2026-11-24-night/standups/PAUSE.md.
 - 24 Nov 20:50 RESUMED; merged-head check: K2's verb goldens red after K1 r4's single-precision glue (sent to K2).
+- 24 Nov 21:52 standup: hokej 8fff52d: thirdlife variant core, shadows, figure goldens green, first match to the end card; 5 agents running (owner's cap), models by task.
