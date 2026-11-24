@@ -62,7 +62,9 @@ var grace_from_hit: bool = false
 var shown: Dictionary = {}
 
 
-func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 0, bark_rows: Array = []) -> void:
+## `skin`: data/skin.json as skin.gd reads it ({} = hokej's defaults); `commentary_rows`: the commentator's bank it names (null =
+## thirdjam's built-in banks, [] = none).
+func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 0, bark_rows: Array = [], skin: Dictionary = {}, commentary_rows: Variant = null) -> void:
 	lay = layer
 	var rk: Dictionary = game["rink"]
 	length_m = float(rk["length_m"])
@@ -76,8 +78,10 @@ func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 
 	markers = Markers.new(self)
 	cards = Cards.new(game, level_id)
 	flow = Flow.new(self, game)
-	captions = Captions.new(game, match_seed)
+	captions = Captions.new(game, match_seed, commentary_rows, skin.get("team_names", []))
 	barks = Barks.new(game, bark_rows, match_seed)
+	if String(skin.get("barks", "")) == "off":
+		barks.enabled = false
 	if lay.has_method("image_of"):
 		art_ring = lay.image_of("assets/hud/T_UI_RingPlain.png")
 		art_dial = lay.image_of("assets/hud/T_UI_Ring.png")

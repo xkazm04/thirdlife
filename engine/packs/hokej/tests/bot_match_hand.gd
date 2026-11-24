@@ -10,7 +10,7 @@ extends Node
 ## (for rink_rawtrace.gd and the core-only replay tool).
 
 const REACT: int = 12
-const MAX_FRAMES: int = 10800
+const MAX_FRAMES: int = 36000      # 10 minutes: a timed cut (Pond 3:00 = 10800) ends on its whistle, not on this bound
 const SKATE: Array = [&"k_w", &"k_s", &"k_a", &"k_d"]
 
 var ctx

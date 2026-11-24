@@ -234,12 +234,14 @@ static func _hall(node: Node3D, L: float, W: float, hall: Dictionary) -> void:
 
 ## The 1.64 m stand-in skater (until lane K2's figure): a capsule with a facing mark (a chest plate on its +x side) built
 ## facing +x, and a separate unit stick bar along +x (the caller scales and turns it). Not the engine's walking figure.
-static func standin_figure(parent: Node3D, key: String = "car_blue", nm: String = "Skater") -> Array:
+## `key`: a palette key, or the team's Color (the cartridge's colour_hex, on the palette's white: lane E1).
+static func standin_figure(parent: Node3D, key: Variant = "car_blue", nm: String = "Skater") -> Array:
 	var body := Node3D.new()
 	body.name = nm
 	parent.add_child(body)
 	var mk := TLMesh.new(42)
-	mk.capsule(Vector3(0, 0.25, 0), Vector3(0, 1.64 - 0.25, 0), 0.25, key, Color.WHITE, 12, 3)
+	var pk: Array = _paint(key)
+	mk.capsule(Vector3(0, 0.25, 0), Vector3(0, 1.64 - 0.25, 0), 0.25, pk[0], pk[1], 12, 3)
 	mk.boxm(Vector3(0.18, 1.05, -0.12), Vector3(0.34, 1.35, 0.12), "yellow")       # the facing mark: chest, his +x
 	mk.boxm(Vector3(0.12, 0.0, -0.1), Vector3(0.42, 0.06, 0.1), "black")           # and a toe on the ice, ahead
 	body.add_child(mk.instance("SkaterStandin"))

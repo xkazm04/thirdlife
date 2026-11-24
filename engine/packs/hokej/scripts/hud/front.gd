@@ -29,8 +29,24 @@ var level: int = 1
 var t: int = 0
 
 
-func _init(kit_, level_id: String) -> void:
+var title: String = "HOKEJ"            # the skin's words (data/skin.json, lane E1); the defaults are thirdjam's
+var tagline: String = "HOCKEY WITH THE WHISTLE TAKEN OUT."
+var about: Array = ["Five-a-side hockey. WASD skates, the mouse is your stick.", "Hockey with the whistle taken out."]
+var labels: Array = LABELS.duplicate()
+var meaning: Array = MEANING.duplicate()
+
+
+func _init(kit_, level_id: String, skin: Dictionary = {}) -> void:
 	kit = kit_
+	title = String(skin.get("title", title))
+	tagline = String(skin.get("tagline", tagline))
+	about = skin.get("about", about)
+	if skin.has("levels"):
+		labels = []
+		meaning = []
+		for row: Array in skin["levels"]:
+			labels.append(String(row[0]))
+			meaning.append(String(row[1]))
 	level = maxi(0, LEVELS.find(level_id))
 
 
@@ -56,7 +72,7 @@ func level_id() -> String:
 
 
 func level_label() -> String:
-	return LABELS[level]
+	return labels[level]
 
 
 func paint(lay, vw: float, vh: float) -> String:
@@ -80,14 +96,14 @@ func _footer(lay, vw: float, vh: float, pairs: Array) -> void:
 
 func _landing(lay, vw: float, vh: float) -> void:
 	var cx: float = vw * 0.5
-	var h1: Vector2 = lay.measure("HOKEJ", 176, "black", 120)
-	var tag := "HOCKEY WITH THE WHISTLE TAKEN OUT."
+	var h1: Vector2 = lay.measure(title, 176, "black", 120)
+	var tag: String = tagline
 	var h2: Vector2 = lay.measure(tag, 24, "bold_condensed", 160)
 	var h3: Vector2 = lay.measure("PRESS ENTER", 28, "black", 200)
 	var h4: Vector2 = lay.measure("A", 14, "bold_condensed", 160)
 	var total: float = h1.y + 8.0 + 6.0 + 24.0 + h2.y + 112.0 + h3.y + h4.y
 	var y: float = vh * 0.5 - total * 0.5
-	lay.text(Vector2(cx, y), "HOKEJ", 176, R.ML_TEXT, {"face": "black", "tracking": 120, "align": Vector2(0.5, 0), "shadow": Vector2(0, 6), "shadow_color": Color(0, 0, 0, 0.55)})
+	lay.text(Vector2(cx, y), title, 176, R.ML_TEXT, {"face": "black", "tracking": 120, "align": Vector2(0.5, 0), "shadow": Vector2(0, 6), "shadow_color": Color(0, 0, 0, 0.55)})
 	y += h1.y + 8.0
 	kit.team_rule(Vector2(cx - 240.0, y), 480.0, 6.0)
 	y += 6.0 + 24.0
@@ -108,7 +124,7 @@ func _home(lay, vw: float, vh: float) -> void:
 	else:
 		lay.box(Vector2.ZERO, Vector2(vw, HEADER_H), Color(R.ML_INK, 0.94))
 	var my: float = HEADER_H * 0.5
-	var logo: Rect2 = lay.text(Vector2(SIDE, my), "HOKEJ", 32, R.ML_TEXT, {"face": "black", "tracking": 160, "align": Vector2(0, 0.5)})
+	var logo: Rect2 = lay.text(Vector2(SIDE, my), title, 32, R.ML_TEXT, {"face": "black", "tracking": 160, "align": Vector2(0, 0.5)})
 	lay.box(Vector2(logo.end.x + 24.0, my - 20.0), Vector2(2, 40), Color(1, 1, 1, 0.25))
 	lay.text(Vector2(logo.end.x + 50.0, my), "HOME", 24, R.ML_TEXT_DIM, {"face": "bold_condensed", "tracking": R.TRACK_LABEL, "align": Vector2(0, 0.5)})
 	var chip_sz: Vector2 = lay.measure(level_label(), 16, "black", R.TRACK_LABEL) + Vector2(32, 8)
@@ -126,13 +142,13 @@ func _home(lay, vw: float, vh: float) -> void:
 	for i: int in 3:
 		var r := Rect2(Vector2(SIDE + i * (seg_w + 8.0), y), Vector2(seg_w, seg_h))
 		kit.plate("Segment_Lit" if i == level else "Segment_Unlit", r, R.ML_HOME if i == level else Color(R.ML_PANEL, 0.9), i != level)
-		lay.text(r.get_center(), LABELS[i], 16, Color.WHITE if i == level else R.ML_TEXT_DIM, {"face": "black", "tracking": 100, "align": Vector2(0.5, 0.5)})
+		lay.text(r.get_center(), labels[i], 16, Color.WHITE if i == level else R.ML_TEXT_DIM, {"face": "black", "tracking": 100, "align": Vector2(0.5, 0.5)})
 	y += seg_h + 8.0
-	lay.text(Vector2(SIDE, y), MEANING[level], 15, R.ML_TEXT_DIM, {"face": "regular"})
+	lay.text(Vector2(SIDE, y), meaning[level], 15, R.ML_TEXT_DIM, {"face": "regular"})
 	# the right column: the feature panel (ONE MATCH) and YOUR STICK
 	var rx: float = vw - SIDE - 704.0
-	var body := ["Five-a-side hockey. WASD skates, the mouse is your stick.", "Hockey with the whistle taken out.", "",
-		"The level is lit under PLAY NOW: left and right change it, and it is kept for the next time."]
+	var body: Array = about.duplicate()
+	body.append_array(["", "The level is lit under PLAY NOW: left and right change it, and it is kept for the next time."])
 	var lh: float = lay.measure("A", R.LINE_PT, "regular").y * 1.15
 	var title_h: float = lay.measure("ONE MATCH", 32, "black", R.TRACK_LABEL).y
 	var ph: float = 4.0 + 32.0 + title_h + 16.0 + lh * (body.size() + 1) + 32.0

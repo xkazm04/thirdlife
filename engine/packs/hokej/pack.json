@@ -28,7 +28,8 @@
     "tests/bot_hud_rules.gd",
     "tests/bot_level_record.gd",
     "tests/bot_first_match.gd",
-    "tests/bot_cut_cores.gd"
+    "tests/bot_cut_cores.gd",
+    "tests/bot_skin.gd"
   ],
   "cameras": [
     "follow",
