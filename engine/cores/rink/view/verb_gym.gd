@@ -226,6 +226,7 @@ func _run() -> void:
 	var made_all: Dictionary = {}
 	var made_human: Dictionary = {}
 	var on_blade: int = 0
+	var goals: Array = []        # [frame, the goal event's Who, his team, the human's index] (the celebration's scorer is read from Who)
 	var snap: Dictionary = core.call("snapshot")
 	for f: int in range(frames):
 		var raw: Dictionary = _hand(f, snap) if recording else _raw(stream["frames"][f])
@@ -307,6 +308,10 @@ func _run() -> void:
 				ta.insert(at + 1, sin(fy) * float(rl[0]) + cos(fy) * float(rl[1]))
 			(pawns[ti][1] as TLRigSkater).callv(StringName(String(toy["call"])), ta)
 			(frame_calls[ti] as Array).append([String(toy["call"]), ta])
+		for gev: Dictionary in snap["Events"]:
+			if String(gev["Name"]) == "goal":
+				var gw: int = int(gev["Who"])
+				goals.append([int(snap["Frame"]), gw, int((sk[gw] as Dictionary)["Team"]) if gw >= 0 and gw < sk.size() else -1, human])
 		if not pawn_nodes.is_empty():
 			boost.call("deliver_events", snap, pawn_nodes)       # JamBoostLook::CelebrateGoal, inside DeliverEvents (:1504)
 		# PuckShow.StepSim (:1666), the pawns (:1695), the hit read (:1706); each one's calls in the order made
@@ -436,6 +441,7 @@ func _run() -> void:
 	report["calls_made_human"] = made_human
 	report["hit_stops"] = hit_stops
 	report["celebrations"] = boost.get("celebrations")
+	report["goals"] = goals
 	report["whiffs"] = whiffs
 	report["retimes"] = retimes
 	report["frames_puck_drawn_on_a_blade"] = on_blade

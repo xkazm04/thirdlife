@@ -46,6 +46,13 @@ if [ -z "$FILTER" ] || [[ "rig.skater.verbs rig.skater.verbs.oracle rig.skater.v
     elif ! echo "$sv_out" | grep -aq '"frames_compared":1330'; then why="not 1330 frames compared: ${sv_out:0:240}"
     elif ! echo "$sv_out" | grep -aq '"PlayCelebrate":2'; then why="no celebration in the run"
     elif ! echo "$sv_out" | grep -aq '"ok":true'; then why="$(echo "$sv_out" | grep -ao '"error":"[^"]*"' | head -1)"; fi
+    # who celebrates (JamBoostLook::PickScorer: the goal event's Who = the last toucher): this match's goal is the human's
+    # (skater 0, last touch, on the scoring team), so he is the scorer and no mate is
+    if [ -z "$why" ]; then
+      sv_goal="$(echo "$sv_out" | grep -ao '"goals":\[\[[0-9,-]*\]\]')"; sv_cel="$(echo "$sv_out" | grep -ao '"celebrations":\[\[[0-9]*,[-0-9]*,[-0-9]*,')"
+      [ "$sv_goal" = '"goals":[[784,0,0,0]]' ] || why="the goal is not the human's by the last touch: $sv_goal"
+      [ -z "$why" ] && [ "$sv_cel" != '"celebrations":[[784,0,1,' ] && why="the human did not celebrate as the scorer: $sv_cel"
+    fi
     verdict "rig.skater.verbs.toys" "$why" "$(echo "$sv_out" | grep -ao '"rows_compared":[0-9]*' | head -1) $(echo "$sv_out" | grep -ao '"worst_cm":[0-9.]*' | head -1) $(echo "$sv_out" | grep -ao '"PlayCelebrate":[0-9]*' | head -1) $(echo "$sv_out" | grep -ao '"SetBoostEquipped":[0-9]*' | head -1)"
   fi
   if [ -z "$FILTER" ] || [[ "rink.view.show" == *"$FILTER"* ]]; then
