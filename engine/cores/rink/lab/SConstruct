@@ -12,15 +12,20 @@ import os
 
 here = Dir(".").abspath
 native = os.path.normpath(os.path.join(here, "..", "native"))
-tj = os.path.join(native, "thirdjam")
 repo = os.path.normpath(os.path.join(here, "..", "..", "..", ".."))
-objdir = os.path.join(repo, ".tl", "rink-lab-obj")
+# lane K8: variant=thirdlife compiles the patched copy of thirdjam (.tl/rink-thirdlife/src/thirdjam, made by lab/thirdlife-tree.sh from native/thirdjam +
+# native/patches-thirdlife/*.patch) into bin/rinklab-thirdlife.exe, with RINK_THIRDLIFE defined for the lab's own files (the rules sidecar reader).
+variant = ARGUMENTS.get("variant", "")
+tj = os.path.join(native, "thirdjam") if not variant else os.path.join(repo, ".tl", "rink-" + variant, "src", "thirdjam")
+objdir = os.path.join(repo, ".tl", "rink-lab-obj" + ("-" + variant if variant else ""))
 
 env = Environment(TARGET_ARCH="x86_64", ENV=os.environ)
 jam_dirs = [os.path.join(tj, d) for d in ("Public", "Private", "AI", "Rules", "Effects")]
 env.Append(CPPPATH=[os.path.join(native, "shim"), os.path.join(native, "shim", "generated")] + jam_dirs + [here])
 env.Append(CPPDEFINES=["JAMCORE_API=", "WITH_DEV_AUTOMATION_TESTS=0", "WITH_EDITOR=0", "UNICODE", "_UNICODE", "_CRT_SECURE_NO_WARNINGS",
                        ("RINK_SOURCE_TREE", '\\"thirdjam\\"')])
+if variant:
+    env.Append(CPPDEFINES=[("RINK_THIRDLIFE", 1)])
 env.Append(CCFLAGS=["/O2", "/MT", "/nologo"])
 env.Append(CXXFLAGS=["/std:c++20", "/fp:precise", "/EHsc", "/bigobj", "/utf-8", "/wd4005", "/wd4244", "/wd4267", "/wd4996"])
 env.Append(LINKFLAGS=["/SUBSYSTEM:CONSOLE", "/nologo"])
@@ -36,9 +41,9 @@ if os.path.exists(os.path.join(tj, "Private", "JamPassFate.cpp")):
 
 objs = [env.Object(os.path.join(objdir, s.replace("/", "_").replace(".cpp", "")), os.path.join(tj, s)) for s in jam_sources]
 objs.append(env.Object(os.path.join(objdir, "shim"), os.path.join(native, "shim", "shim.cpp")))
-for s in ("lab_filter.cpp", "lab_gym.cpp", "rinklab.cpp"):
+for s in ("lab_filter.cpp", "lab_gym.cpp", "lab_plan.cpp", "lab_rules.cpp", "rinklab.cpp"):
     objs.append(env.Object(os.path.join(objdir, "lab_" + s.replace(".cpp", "")), os.path.join(here, s)))
 # out=<path without .exe> links the runner elsewhere (a second copy while bin/rinklab.exe is busy in a long run).
-prog = env.Program(ARGUMENTS.get("out", os.path.join(here, "bin", "rinklab")), objs, LIBS=["kernel32", "user32"])
+prog = env.Program(ARGUMENTS.get("out", os.path.join(here, "bin", "rinklab" + ("-" + variant if variant else ""))), objs, LIBS=["kernel32", "user32"])
 SConsignFile(os.path.join(objdir, "sconsign"))
 Default(prog)

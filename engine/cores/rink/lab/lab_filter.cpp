@@ -69,6 +69,10 @@ namespace Lab
 		bCarryOpen = false;
 		CarryStartF = CarryLastF = 0;
 		LastShotF = LastPassF = -1000;
+		PrevRiding = -1; PrevScore[0] = PrevScore[1] = 0;
+		for (int i = 0; i < JamAI::kMaxSkaters; ++i) LastRelease[i] = -1000;
+		LastOppCarryF = LastHitKeyF = -1000;
+		PrevCarrierK8 = -1;
 	}
 
 	void FLabSimAdapter::Filter(JamAI::FJamAIInput& H, const UJamSim& S, int Pi)
@@ -186,6 +190,39 @@ namespace Lab
 		const TArray<FJamSkaterState>& Sk = S.GetSkaters();
 		if (Pi >= 0 && Sk.IsValidIndex(Pi)) Stats.Press[P_Stop] = Sk[Pi].ReverseBrakes;   // the sim's own count of reverse-brake stops begun (JamSim.cpp:1406)
 		const int64_t F = S.GetFrame();
+		// lane K8: how each goal crossed the line, and the human's takes with and without a key
+		{
+			for (const FJamSkaterState& K : Sk) if (K.Index < JamAI::kMaxSkaters && (K.bShotThisFrame || K.bPassThisFrame)) LastRelease[K.Index] = F;
+			for (int T = 0; T < 2; ++T)
+			{
+				if (S.GetScore(T) > PrevScore[T] && bDebugGoals)
+				{
+					const FJamPuckState& Pk = S.GetPuck();
+					std::fprintf(stderr, "GOAL f=%lld team=%d puck=(%.3f,%.3f) prev=(%.3f,%.3f) vel=(%.2f,%.2f) z=%.2f last=%d prevRiding=%d sinceRelease=%lld passFrames=%d", (long long)F, T, Pk.Pos.X, Pk.Pos.Y, Pk.PrevPos.X, Pk.PrevPos.Y,
+						Pk.Vel.X, Pk.Vel.Y, Pk.Z, Pk.LastTouch, PrevRiding, PrevRiding >= 0 ? (long long)(F - LastRelease[PrevRiding]) : -1LL, Pk.PassFrames);
+#if defined(RINK_THIRDLIFE)
+					std::fprintf(stderr, " held=%d", Pk.TlHeldBy);
+#endif
+					if (Sk.IsValidIndex(Pk.LastTouch)) { const FJamSkaterState& L = Sk[Pk.LastTouch]; std::fprintf(stderr, " toucher=(%.3f,%.3f) blade=(%.3f,%.3f) shot=%d pass=%d team=%d", L.Pos.X, L.Pos.Y, L.BladePos.X, L.BladePos.Y, L.bShotThisFrame ? 1 : 0, L.bPassThisFrame ? 1 : 0, L.Team); }
+					std::fprintf(stderr, "\n");
+				}
+				if (S.GetScore(T) > PrevScore[T])
+				{
+					const bool bWalk = PrevRiding >= 0 && Sk.IsValidIndex(PrevRiding) && Sk[PrevRiding].Team == T && F - LastRelease[PrevRiding] > 45;
+					if (bWalk) ++Stats.GoalsWalk[T]; else ++Stats.GoalsSent[T];
+				}
+				PrevScore[T] = S.GetScore(T);
+			}
+			PrevRiding = S.RidingCarrier();
+			if (H.bPoke || H.bLift || H.bCheck || H.bCrossHold) LastHitKeyF = F;
+			const int Ck = S.CarrierIndex();
+			if (Pi >= 0 && Sk.IsValidIndex(Pi))
+			{
+				if (Ck >= 0 && Sk[Ck].Team != Sk[Pi].Team) LastOppCarryF = F;
+				if (Ck == Pi && PrevCarrierK8 != Pi && F - LastOppCarryF <= 20) { if (F - LastHitKeyF <= 30) ++Stats.TakesKey; else ++Stats.TakesNoKey; }
+			}
+			PrevCarrierK8 = Ck;
+		}
 		// goals (the goal's frame already belongs to the goal pause) and the human's shots and passes, live or not
 		for (const FJamSimEvent& E : S.GetFrameEvents())
 		{
@@ -285,8 +322,14 @@ namespace Lab
 		JamAI::FJamAIInput Local[JamAI::kMaxSkaters];
 		const int N = S ? FMath::Min(S->GetSkaters().Num(), JamAI::kMaxSkaters) : 0;
 		for (int i = 0; i < N; ++i) Local[i] = In[i];
-		if (Pi >= 0 && Pi < N) Filter(Local[Pi], *S, Pi);
+		if (Pi >= 0 && Pi < N)
+		{
+			if (Plan) Local[Pi] = Plan->Think(*S, Pi, Local, N);
+			Filter(Local[Pi], *S, Pi);
+		}
+		if (Plan && Plan->bCheckClone && S) Plan->CheckBegin(*S);
 		const JamAI::FJamAIStepEvents Ev = JamAI::FJamSimAdapter::Step(Local);
+		if (Plan && Plan->bCheckClone && S) Plan->CheckEnd(*S, Local, N);
 		if (S && Pi >= 0 && Pi < N)
 		{
 			Observe(*S, Pi, Local[Pi]);
@@ -302,7 +345,7 @@ namespace Lab
 			"\"changes\":%d,\"carries\":%d,\"carry_frames\":%lld,\"carry_end\":{\"shot\":%d,\"pass\":%d,\"lost\":%d,\"kept\":%d,\"goal\":%d,\"other\":%d},"
 			"\"passes_completed\":%d,\"passes_intercepted\":%d,\"removed\":%d,"
 			"\"human_max\":%.3f,\"human_mean\":%.3f,\"human_fast\":%lld,\"bot_max\":[%.3f,%.3f],\"bot_mean\":[%.3f,%.3f],\"bot_fast_share\":[%.4f,%.4f],"
-			"\"events\":%d,\"gap_mean\":%.1f,\"gap_max\":%lld,\"long_gaps\":%d,\"shots\":[%d,%d],\"hits_landed\":%d,\"first_goal\":%lld,\"pile_frames\":%lld,\"scrum_frames\":%lld,\"dead_puck_frames\":%lld,\"dead_spells\":%d,\"board_puck_frames\":%lld,\"loose_frames\":%lld,\"draws\":[%d,%d],\"drops\":%d,\"drop_carrier_2s\":[%d,%d],\"press\":{",
+			"\"events\":%d,\"gap_mean\":%.1f,\"gap_max\":%lld,\"long_gaps\":%d,\"shots\":[%d,%d],\"hits_landed\":%d,\"first_goal\":%lld,\"pile_frames\":%lld,\"scrum_frames\":%lld,\"dead_puck_frames\":%lld,\"dead_spells\":%d,\"board_puck_frames\":%lld,\"loose_frames\":%lld,\"draws\":[%d,%d],\"drops\":%d,\"drop_carrier_2s\":[%d,%d],\"goals_walk\":[%d,%d],\"goals_sent\":[%d,%d],\"takes_key\":%d,\"takes_nokey\":%d,\"press\":{",
 			(long long)S.Frames, (long long)S.PlayFrames, (long long)S.TeamFrames[0], (long long)S.TeamFrames[1], S.Spells[0], S.Spells[1],
 			(long long)S.SpellFrames[0], (long long)S.SpellFrames[1], S.Changes, S.Carries, (long long)S.CarryFrames,
 			S.CarryEndShot, S.CarryEndPass, S.CarryEndLost, S.CarryEndKept, S.CarryEndGoal, S.CarryEndOther, S.PassesCompleted, S.PassesIntercepted, S.Removed,
@@ -311,7 +354,7 @@ namespace Lab
 			S.BotN[0] ? double(S.BotFast[0]) / S.BotN[0] : 0.0, S.BotN[1] ? double(S.BotFast[1]) / S.BotN[1] : 0.0,
 			S.Events, S.Events > 1 ? double(S.GapSum) / (S.Events - 1) : 0.0, (long long)S.GapMax, S.LongGaps, S.Shots[0], S.Shots[1], S.HitsLanded,
 			(long long)S.FirstGoal, (long long)S.PileFrames, (long long)S.ScrumFrames, (long long)S.DeadPuckFrames, S.DeadSpells, (long long)S.BoardPuckFrames,
-			(long long)S.LooseFrames, S.DrawsWon, S.DrawsLost, S.Drops, S.DrawsKeptAt2s, S.DrawsOppAt2s);
+			(long long)S.LooseFrames, S.DrawsWon, S.DrawsLost, S.Drops, S.DrawsKeptAt2s, S.DrawsOppAt2s, S.GoalsWalk[0], S.GoalsWalk[1], S.GoalsSent[0], S.GoalsSent[1], S.TakesKey, S.TakesNoKey);
 		for (int i = 0; i < P_Count; ++i) N += std::snprintf(B + N, sizeof(B) - N, "%s\"%s\":%d", i ? "," : "", PressNames[i], S.Press[i]);
 		N += std::snprintf(B + N, sizeof(B) - N, "}}");
 		return std::string(B, N);

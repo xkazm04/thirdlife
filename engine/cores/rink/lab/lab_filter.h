@@ -13,6 +13,7 @@
 
 #include "CoreMinimal.h"
 #include "JamSimAdapter.h"
+#include "lab_plan.h"
 #include <string>
 
 namespace Lab
@@ -82,6 +83,10 @@ namespace Lab
 		int DrawsWon = 0, DrawsLost = 0, DrawsKeptAt2s = 0, DrawsOppAt2s = 0, Drops = 0;
 		int64_t DropFrame = -1;
 		int64_t DeadRun = 0;
+		// lane K8: goals by how the puck crossed the line, per scoring team: walked in (it rode with a carrier who had not shot or passed) or sent in
+		// (a shot, a pass, a deflection, a rebound); the human's takes off an opposing carrier with a hit or stick key inside the 30 frames before, or with none
+		int GoalsWalk[2] = {0, 0}, GoalsSent[2] = {0, 0};
+		int TakesKey = 0, TakesNoKey = 0;
 	};
 
 	class FLabSimAdapter : public JamAI::FJamSimAdapter
@@ -89,6 +94,10 @@ namespace Lab
 	public:
 		explicit FLabSimAdapter(const UJamCartridge& Cart) : JamAI::FJamSimAdapter(Cart) {}
 		uint32_t Remove = 0;                 // EVerb bits taken from the human
+		// lane K8: the planning hand (lab_plan.h). Set = it plays the human's slot (thirdjam's playtester still runs in RunPlaytestMatch; its input is replaced
+		// here, where the pawn's input enters the sim), then the filter takes what -remove names.
+		FPlanHand* Plan = nullptr;
+		bool bDebugGoals = false;            // -debuggoals: one stderr line per goal (the puck, its last toucher, who held it)
 		FLabStats Stats;
 
 		virtual void Reset(const JamAI::FJamMatchConfig& C, uint64_t Seed) override;
@@ -107,6 +116,10 @@ namespace Lab
 		int PrevShots = 0, PrevPasses = 0;
 		int PendingPassBy = -1;              // a human pass in flight
 		bool bCarryOpen = false;             // the human's carry runs
+		int PrevRiding = -1, PrevScore[2] = {0, 0};
+		int64_t LastRelease[JamAI::kMaxSkaters];   // the frame each skater last shot or passed
+		int64_t LastOppCarryF = -1000, LastHitKeyF = -1000;
+		int PrevCarrierK8 = -1;
 		int64_t CarryStartF = 0, CarryLastF = 0, LastShotF = -1000, LastPassF = -1000;
 		void EndCarry(int64_t Frame, int How);   // 0 shot, 1 pass, 2 lost (an opponent carries), 3 kept (a mate carries), 4 goal, 5 other (a stoppage)
 		void Filter(JamAI::FJamAIInput& H, const UJamSim& S, int Pi);

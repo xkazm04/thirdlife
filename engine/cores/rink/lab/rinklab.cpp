@@ -17,6 +17,8 @@
 #include "DifficultyProfile.h"
 #include "lab_filter.h"
 #include "lab_gym.h"
+#include "lab_plan.h"
+#include "lab_rules.h"
 
 #include <cstdio>
 #include <cstring>
@@ -79,10 +81,28 @@ namespace
 		if (!Signal.empty() && SignalKind == 0) { std::fprintf(stderr, "FAIL rinklab: bad -signal=%s (defend | space | pass | praise)\n", Signal.c_str()); return 2; }
 		JamAI::EPlaytester Kind = JamAI::EPlaytester::Regular;
 		if (!JamAI::ParsePlaytester(Player.c_str(), Kind)) { std::fprintf(stderr, "FAIL rinklab: bad -player=%s\n", Player.c_str()); return 2; }
+		// lane K8: -plan=novice|regular|good seats the planning hand (lab_plan.h) in the human's slot; -plancheck verifies its copies of the sim.
+		const std::string PlanName = Arg(argc, argv, "plan", "");
+		Lab::FPlanProfile PlanProfile;
+		if (!PlanName.empty() && !Lab::ParsePlanProfile(PlanName.c_str(), PlanProfile)) { std::fprintf(stderr, "FAIL rinklab: bad -plan=%s (novice | regular | good)\n", PlanName.c_str()); return 2; }
+		const int PlanHorizon = std::atoi(Arg(argc, argv, "planhorizon", "0").c_str());
+		if (PlanHorizon > 0) PlanProfile.Horizon = PlanHorizon;
+		// tuning arms of the hand's limits (measurement of the hand itself; the profiles in lab_plan.cpp are what the tables use)
+		if (!Arg(argc, argv, "planreact").empty()) PlanProfile.ReactionFrames = std::atoi(Arg(argc, argv, "planreact").c_str());
+		if (!Arg(argc, argv, "plandecide").empty()) PlanProfile.DecideEvery = std::atoi(Arg(argc, argv, "plandecide").c_str());
+		if (!Arg(argc, argv, "plannoise").empty()) PlanProfile.JudgeNoise = std::atof(Arg(argc, argv, "plannoise").c_str());
+		if (!Arg(argc, argv, "planpress").empty()) PlanProfile.PressPerSec = std::atoi(Arg(argc, argv, "planpress").c_str());
+		Lab::FPlanHand PlanHand;
 		TArray<FString> Errors;
 		UJamCartridge* Cart = UJamCartridge::LoadFromFile(UJamCartridge::ResolveCartridgePath(FString(Cartridge.c_str())), Errors);
 		if (!Cart) { std::fprintf(stderr, "FAIL rinklab: cartridge %s does not load\n", Cartridge.c_str()); return 2; }
 		Cart->AddToRoot();
+		// lane K8: the thirdlife rules sidecar (<cartridge>.rules.json) and an experiment's arms (-tl=, -tune=); a cartridge without one is plain thirdjam.
+		Lab::FRulesFile Rules;
+		{
+			const std::string E = Lab::LoadRules(*Cart, Cartridge, Arg(argc, argv, "tl"), Rules);
+			if (!E.empty()) { std::fprintf(stderr, "FAIL rinklab: %s\n", E.c_str()); return 2; }
+		}
 		// The tournament commandlet's setup, line for line (JamTournamentCommandlet.cpp:94-103).
 		JamAI::FJamMatchConfig Cfg;
 		Cfg.SetRegular();
@@ -92,6 +112,10 @@ namespace
 		Cfg = JamAI::ToMatchConfig(Cart->Game);
 		Cfg.AI = Res.Params;
 		const char* Level = JamAI::DifficultyName(Res.Level);
+		{
+			const std::string E = Lab::ApplyLevelTune(Rules, Level, Arg(argc, argv, "tune"), Cfg.AI);
+			if (!E.empty()) { std::fprintf(stderr, "FAIL rinklab: %s\n", E.c_str()); return 2; }
+		}
 		int Lo = 1, Hi = 1;
 		if (std::sscanf(Seeds.c_str(), "%d-%d", &Lo, &Hi) < 2) Hi = Lo;
 		static char Line[8192];
@@ -102,13 +126,22 @@ namespace
 			Lab::FLabSimAdapter Sim(*Cart);
 			Sim.Remove = Remove;
 			Sim.SignalKind = SignalKind;
+			Sim.bDebugGoals = Flag(argc, argv, "debuggoals");
+			if (!PlanName.empty())
+			{
+				PlanHand.Reset(PlanProfile, static_cast<uint64_t>(Seed));
+				PlanHand.Remove = Remove;
+				PlanHand.bCheckClone = Flag(argc, argv, "plancheck");
+				Sim.Plan = &PlanHand;
+			}
 			const int TraceEvery = std::atoi(Arg(argc, argv, "trace", "0").c_str());
 			const JamAI::FJamPlaytestStats St = JamAI::RunPlaytestMatch(Sim, Cfg, static_cast<uint64_t>(Seed), Kind, 36000, Cart->Game.Shot.ChargeFramesMax, bSprint,
 				TraceEvery > 0 ? &LabTrace : nullptr, nullptr, TraceEvery);
 			JamAI::FormatPlaytestJson(St, Cartridge.c_str(), Level, Kind, Line, sizeof(Line));
 			std::printf("%s\n", Line);
-			std::printf("{\"tool\":\"rinklab.cell/1\",\"seed\":%d,\"difficulty\":\"%s\",\"player\":\"%s\",\"sprint\":%s,\"remove\":\"%s\",\"signal\":\"%s\",\"stats\":%s}\n",
-				Seed, Level, Player.c_str(), bSprint ? "true" : "false", RemoveNames.c_str(), Signal.c_str(), Lab::StatsJson(Sim.Stats).c_str());
+			std::printf("{\"tool\":\"rinklab.cell/1\",\"seed\":%d,\"difficulty\":\"%s\",\"player\":\"%s\",\"sprint\":%s,\"remove\":\"%s\",\"signal\":\"%s\",\"plan\":\"%s\",\"stats\":%s%s%s}\n",
+				Seed, Level, Player.c_str(), bSprint ? "true" : "false", RemoveNames.c_str(), Signal.c_str(), PlanName.c_str(), Lab::StatsJson(Sim.Stats).c_str(),
+				PlanName.empty() ? "" : ",\"planstats\":", PlanName.empty() ? "" : Lab::PlanStatsJson(PlanHand.Stats).c_str());
 		}
 		std::fflush(stdout);
 		Cart->RemoveFromRoot();
@@ -122,7 +155,7 @@ int wmain(int argc, wchar_t** argv)
 	JamShimSetContentDir(FString(argv[2]));
 	const FTCHARToUTF8 Mode(argv[1]);
 	if (std::strcmp(Mode.Get(), "match") == 0) return RunMatches(argc, argv);
-	if (std::strcmp(Mode.Get(), "gym") == 0) return Lab::RunGym(Arg(argc, argv, "cartridge", "hockey.regular").c_str());
+	if (std::strcmp(Mode.Get(), "gym") == 0) return Lab::RunGym(Arg(argc, argv, "cartridge", "hockey.regular").c_str(), Arg(argc, argv, "tl").c_str());
 	std::fprintf(stderr, "FAIL rinklab: unknown mode %s\n", Mode.Get());
 	return 2;
 }

@@ -1,0 +1,42 @@
+diff -ruN a/thirdjam/Public/JamCartridge.h b/thirdjam/Public/JamCartridge.h
+--- a/thirdjam/Public/JamCartridge.h
++++ b/thirdjam/Public/JamCartridge.h
+@@ -6,6 +6,7 @@
+ #include "CoreMinimal.h"
+ #include "UObject/Object.h"
+ #include "JamRulesConfig.h"
++#include <string>   // THIRDLIFE PATCH 0001
+ #include "JamCartridge.generated.h"
+ 
+ JAMCORE_API DECLARE_LOG_CATEGORY_EXTERN(LogJamCartridge, Log, All);
+@@ -661,6 +662,22 @@
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Cartridge") double FarNetBias = 0.2;
+ };
+ 
++// THIRDLIFE PATCH 0001 (Third Life, lane K8; docs/design/HOCKEY-BALANCE.md): the rule switches of the hockey.thirdlife cartridge. thirdjam's cartridge schema
++// does not know them and no cartridge key reads them: the host fills FJamGameConfig::Tl from <cartridge>.rules.json after the load (TlSetRule, one call
++// a key). Every switch at its default is thirdjam's rule, bit for bit (rink.sh balance-thirdlife --parity plays hockey.regular on this tree against the
++// reference baseline, hash for hash).
++struct FTlRules
++{
++};
++// The host's one entry: sets a switch by its rules.json key. false = an unknown key (the host reports it: unknown keys are errors).
++inline bool TlSetRule(FTlRules& R, const char* Key, double Value)
++{
++	(void)R; (void)Value;
++	const std::string K(Key ? Key : "");
++	// one line per patch, below
++	return false;
++}
++
+ // The hockey `game` object with every default applied and every `values` override folded in.
+ USTRUCT(BlueprintType)
+ struct JAMCORE_API FJamGameConfig
+@@ -680,6 +697,7 @@
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Cartridge") TArray<FJamAbilityConfig> Abilities;   // lane A84; empty = no ability (the default game)
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Cartridge") FJamLookConfig Look;
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Cartridge") FJamCameraConfig Camera;
++	FTlRules Tl;   // THIRDLIFE PATCH 0001
+ };
+ 
+ UCLASS(BlueprintType)

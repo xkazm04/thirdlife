@@ -1,0 +1,96 @@
+diff -ruN a/thirdjam/Private/JamSim.cpp b/thirdjam/Private/JamSim.cpp
+--- a/thirdjam/Private/JamSim.cpp
++++ b/thirdjam/Private/JamSim.cpp
+@@ -1258,6 +1258,13 @@
+ 			TakeOwner = S.Index;
+ 		}
+ 	}
++	// THIRDLIFE PATCH 0002 (FTlRules::bNetCarryWall): who holds the puck, after everything moved. A shot, a pass or another skater's touch lets it go.
++	if (Config.Tl.bNetCarryWall)
++	{
++		if (Puck.TlHeldBy >= 0 && (!Skaters.IsValidIndex(Puck.TlHeldBy) || Puck.LastTouch != Puck.TlHeldBy || Skaters[Puck.TlHeldBy].bShotThisFrame || Skaters[Puck.TlHeldBy].bPassThisFrame)) Puck.TlHeldBy = -1;
++		const int32 TlRiding = RidingCarrier();
++		if (TlRiding >= 0) Puck.TlHeldBy = TlRiding;
++	}
+ 	// Lane A32: breakaway, carry and clock read-outs (after everything moved; emits only).
+ 	EmitPossess();   // lane A208 (contracts/events.md, R-0067 additions): possess
+ 	if (Phase == EJamSimPhase::Playing) StepReadouts();
+@@ -3814,9 +3821,11 @@
+ 	const double Hw = Config.Rink.GoalWidthM * 0.5;
+ 	if (!(From.X * Side < GoalLineX() + R && Puck.Pos.X * Side >= GoalLineX() - R && FMath::Abs(Puck.Pos.Y) < Hw)) return;   // in front of the line or on it (short of InGoal's GL + R: lane A216, a puck taken by a defender ON his own goal line), then at it (both nets: X * Side against the positive goal line)
+ 	const int32 Ci = RidingCarrier();   // carried = riding with him (CarrierIndex alone is any last toucher in reach: a shot glancing off a defender)
+-	const bool bCarried = Skaters.IsValidIndex(Ci) && Skaters[Ci].Team == Defending;
++	const bool bCarried = Skaters.IsValidIndex(Ci) && (Skaters[Ci].Team == Defending || Config.Tl.bNetCarryWall);   // THIRDLIFE PATCH 0002: a carried puck crosses neither line
+ 	const bool bPlayed = Skaters.IsValidIndex(Puck.LastPlayedBy) && Skaters[Puck.LastPlayedBy].Team == Defending;
+-	if (!bCarried && !bPlayed) return;
++	// THIRDLIFE PATCH 0002: nor does a puck he still holds (it left his blade at the line and came back to him, or it is loose at his feet): only a release opens the line
++	const bool bHeld = Config.Tl.bNetCarryWall && Skaters.IsValidIndex(Puck.TlHeldBy) && Puck.LastTouch == Puck.TlHeldBy && !Skaters[Puck.TlHeldBy].bShotThisFrame && !Skaters[Puck.TlHeldBy].bPassThisFrame;
++	if (!bCarried && !bPlayed && !bHeld) return;
+ 	Puck.Pos.X = Side * (GoalLineX() - R - 1e-3) ;
+ 	if (Puck.Vel.X * Side > 0.0) Puck.Vel.X = -Puck.Vel.X * E;
+ }
+@@ -4269,6 +4278,18 @@
+ 		if (Phase == EJamSimPhase::Playing)
+ 		{
+ 			// R-0035 (lane A52): with the puck's height: over the bar is no goal.
++			// THIRDLIFE PATCH 0002: whatever moved it (the carry's pull round a post, a net wall's push, a seat on a blade that is in the net), a held puck is
++			// never inside a net: it goes back to where this substep found it, or to the line.
++			if (Config.Tl.bNetCarryWall)
++			{
++				const bool bTlHeld = RidingCarrier() >= 0 || (Skaters.IsValidIndex(Puck.TlHeldBy) && Puck.LastTouch == Puck.TlHeldBy && !Skaters[Puck.TlHeldBy].bShotThisFrame && !Skaters[Puck.TlHeldBy].bPassThisFrame);
++				for (int32 TlSide = -1; bTlHeld && TlSide <= 1; TlSide += 2)
++				{
++					if (!InGoal(Puck.Pos, TlSide, Puck.Z)) continue;
++					Puck.Pos = InGoal(Prev, TlSide, Puck.Z) ? FVector2D(TlSide * (GoalLineX() - R - 1e-3), Prev.Y) : Prev;
++					if (Puck.Vel.X * TlSide > 0.0) Puck.Vel.X = 0.0;
++				}
++			}
+ 			if (Config.Puck.bNetMouthOnly) NetBoxGuard(Prev, R);   // lane A208 (game.puck.net.mouth_only): into the box only through the mouth
+ 			if (InGoal(Puck.Pos, 1, Puck.Z)) { ScoreGoal(bNetsSwapped ? 1 : 0); }
+ 			else if (InGoal(Puck.Pos, -1, Puck.Z)) { ScoreGoal(bNetsSwapped ? 0 : 1); }
+@@ -4700,6 +4721,7 @@
+ 	H.AddV(Puck.Vel, 1000.0);
+ 	H.AddI(Puck.LastTouch);
+ 	if (Config.Puck.bNetOwnWall) H.AddI(Puck.LastPlayedBy);   // lane A208: the last play (game.puck.net.own_wall)
++	if (Config.Tl.bNetCarryWall) H.AddI(Puck.TlHeldBy);   // THIRDLIFE PATCH 0002: state a rule reads across frames is hashed, behind its switch
+ 	// R-0035 (lane A52): the height once the puck left the ice (a cut whose lift keys are all 0 hashes as before).
+ 	if (Puck.Z != 0.0 || Puck.VZ != 0.0) { H.AddQ(Puck.Z, 1000.0); H.AddQ(Puck.VZ, 1000.0); }
+ 	if (Puck.ShotgunFrames != 0) { H.AddI(Puck.ShotgunFrames); H.AddI(Puck.ShotgunBy); H.AddQ(Puck.ShotgunMul, 1000.0); }   // lane A84
+diff -ruN a/thirdjam/Public/JamCartridge.h b/thirdjam/Public/JamCartridge.h
+--- a/thirdjam/Public/JamCartridge.h
++++ b/thirdjam/Public/JamCartridge.h
+@@ -668,6 +668,12 @@
+ // reference baseline, hash for hash).
+ struct FTlRules
+ {
++	// THIRDLIFE PATCH 0002 (experiments E01 and E01b, pillar 3 "goals come from shots"): the goal line is closed to a held puck, at both nets and for both
++	// sides. A puck that rides with its carrier (UJamSim::RidingCarrier), or that he has held and not yet released (FJamPuckState::TlHeldBy: he is still its
++	// last toucher and has neither shot nor passed it), meets the goal mouth as a wall, exactly as thirdjam's own game.puck.net.own_wall already does for
++	// the defending side (JamSim.cpp OwnNetWall): it must leave a blade by a shot or a pass to score. A deflection, a rebound and a puck off a defender score
++	// as before. false = thirdjam: a carry over the line is a goal (PLAY.md section 4 item 1).
++	bool bNetCarryWall = false;
+ };
+ // The host's one entry: sets a switch by its rules.json key. false = an unknown key (the host reports it: unknown keys are errors).
+ inline bool TlSetRule(FTlRules& R, const char* Key, double Value)
+@@ -675,6 +681,7 @@
+ 	(void)R; (void)Value;
+ 	const std::string K(Key ? Key : "");
+ 	// one line per patch, below
++	if (K == "net_carry_wall") { R.bNetCarryWall = Value != 0.0; return true; }   // 0002
+ 	return false;
+ }
+ 
+diff -ruN a/thirdjam/Public/JamSim.h b/thirdjam/Public/JamSim.h
+--- a/thirdjam/Public/JamSim.h
++++ b/thirdjam/Public/JamSim.h
+@@ -434,6 +434,10 @@
+ 	// Lane A208 (game.puck.net.own_wall): the last skater who CARRIED the puck (then shot, passed or cleared it: a stick's deliberate play); a touch, a
+ 	// deflection or a block does not change it. Hashed while own_wall is on.
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") int32 LastPlayedBy = -1;
++	// THIRDLIFE PATCH 0002 (FTlRules::bNetCarryWall): the skater who holds the puck: it rode with him (UJamSim::RidingCarrier) at the end of a frame and he
++	// has been its last toucher ever since without shooting or passing it. -1 = nobody (a released, deflected or freshly dropped puck). Kept at the end of
++	// every Step; stays -1 and out of the hash while the rule is off.
++	int32 TlHeldBy = -1;
+ 	// Total distance travelled this match.
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") double PathM = 0;
+ 	// Lane A84: a shotgun shot in flight (frames left, the shooter, its speed multiplier) and a slow puck (frames left, the passer or shooter, the speed share).
