@@ -251,12 +251,38 @@ static func standin_figure(parent: Node3D, key: String = "car_blue", nm: String 
 	return [body, stick]
 
 
-## The stand-in puck: a black disc of the cartridge's radius (game.puck.radius_m) and 2.5 cm high, its bottom at its node.
+## thirdjam's puck (K3 round 10), as AJamPuck::InitPuck makes it (S/JamCore/Private/JamPawns.cpp:865-916): the engine's
+## unit cylinder scaled to 2r x 2r x 0.08 m (game.puck.radius_m 0.12; colour_hex #111111: the palette's black), its node at
+## the puck's bottom (the cylinder from y = 0 to 8 cm; thirdjam centres it 4 cm up). And its kit, R-0016's SM_PuckDisc
+## (/JamAssets/Props, exported by lane K6: hk-arena .tl/arena-export/meshes/SM_PuckDisc.glb), which AJamPuck::PlaceDiscOnIce
+## keeps 0.4 cm over the ice under the puck whatever its height (:1019-1025): section 0 a low dome 42 cm across and 2.7 cm
+## high (its profile read from the export: radius 0.21 m at 0.2 cm, 0.18 at 1.1, 0.15 at 1.8, 0.12 at 2.3, 0.06 at 2.6, the
+## top 2.7 cm) in MI_Trim_PuckHalo (M_Trim, Emissive 18, TeamColour linear (0.75, 1.0, 0.15): a glowing lime that the
+## camera's tone curve shows near white); drawn here in the palette's `neon_lime` (an emissive key, emit 2.2).
+## DEVIATIONS: section 1, the beacon skirt (MI_Fx_PuckBeacon: additive, unlit, fading out from 15 m), is not drawn (no
+## additive surface in the palette); the halo's strength is the palette's emit 2.2, not Emissive 18 under thirdjam's
+## exposure; the trail (NS_puck_trail) is not drawn.
+## Returns the puck node; its disc is a sibling node, `puck.get_meta(&"disc")`, which the caller places on the ice.
+const PUCK_H: float = 0.08                 # AJamPuck::InitPuck: 0.08 m tall (HalfHeightM 0.04)
+const PUCK_DISC_Y: float = 0.004           # AJamPuck::PlaceDiscOnIce: 0.4 cm over the ice
+const PUCK_HALO: Array = [[0.21, 0.002], [0.18, 0.011], [0.15, 0.018], [0.12, 0.023], [0.06, 0.026], [0.0, 0.027]]
 static func standin_puck(parent: Node3D, radius: float) -> Node3D:
 	var n := Node3D.new()
 	n.name = "Puck"
 	parent.add_child(n)
 	var mk := TLMesh.new(45)
-	mk.cyl(radius, 0.025, 16, "black")
-	n.add_child(mk.instance("PuckStandin"))
+	mk.cyl(radius, PUCK_H, 24, "black")
+	n.add_child(mk.instance("PuckMesh"))
+	var disc := Node3D.new()
+	disc.name = "PuckDisc"
+	parent.add_child(disc)
+	var dm := TLMesh.new(46)
+	for i: int in PUCK_HALO.size() - 1:
+		var r0: float = float(PUCK_HALO[i][0])
+		var y0: float = float(PUCK_HALO[i][1])
+		var r1: float = float(PUCK_HALO[i + 1][0])
+		var y1: float = float(PUCK_HALO[i + 1][1])
+		dm.cyl(r0, y1 - y0, 32, "neon_lime", Color.WHITE, r1, Vector3(0, y0, 0), r1 > 0.0, false)
+	disc.add_child(dm.instance("PuckHalo"))
+	n.set_meta(&"disc", disc)
 	return n

@@ -32,3 +32,6 @@ landable round 8
 23:00 | state: done | did: round 9: contact wired as verb_gym (hit read, four bus events, set_rink, verb_gym's render order); inside the hall only sections 2-3 markings in thirdjam's colours; solo p99 8 ms (solo_frame_budget); the whole picture filmed beside thirdjam and looked at (r9_*); core hash unchanged ab881a00fb9af8ef; run state hash moved by the kit ice's body only (proven) | gates: lint, bots, invariants PASS (p99 3.89, p50 3.19), selftest budget.class PASS, fast PASS (foreman NOT RUN), export check --no-window PASS; window 5.88 ms
 
 landable round 9
+21:35 (24 Nov) | state: done | did: round 10: thirdjam's puck (8 cm, its halo disc); first match at ROOKIE to the end card (bot_first_match), filmed and cut to 58.6 s beside thirdjam (r10_*); export at f9d2db9 + check --no-window PASS | BLOCKED (asked): playtester keys hand parts from our match in seconds (needs K1's advice call); the exe dungeon has no bot/replay path | gates: lint, bots, invariants PASS, fast PASS (foreman NOT RUN)
+
+landable round 10
