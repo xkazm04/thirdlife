@@ -158,20 +158,76 @@ static func _contact(mi: MeshInstance3D, on: bool) -> void:
 	var host: Node = mi.get_parent()
 	if host == null or TLStyle.headless():
 		return
-	var q: MeshInstance3D = host.get_node_or_null("ContactShadow") as MeshInstance3D
+	var q: ContactShade = host.get_node_or_null("ContactShadow") as ContactShade
 	if q == null:
 		if not on:
 			return
-		q = MeshInstance3D.new()
+		q = ContactShade.new()
 		q.name = "ContactShadow"
 		var plane: PlaneMesh = PlaneMesh.new()
-		plane.size = CONTACT_SIZE
+		plane.size = Vector2(1.0, 1.0)
 		q.mesh = plane
-		q.position = CONTACT_AT
 		q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		q.material_override = TLStyleFelt.contact_material(CONTACT_DARKEST, CONTACT_FLAT)
 		host.add_child(q)
+		q.stand()
 	q.visible = on
+
+
+## The contact shade's two forms, as thirdjam's driver switches them (driver-ref [SetKnockedDown] L583-610 and
+## [ReceiveTick] L1290-1293). Standing: under the mesh, CONTACT_SIZE, Darkest 0.45, Flat 0. Down (the driver's bShade,
+## kept by TLRigSkaterFalls): 2.2 m x 0.95 m, Darkest 0.75, Flat 0.7, at the pelvis on the ice, turned along the body
+## (from the pelvis to the head once they are more than 25 cm apart on the ice, till then the fall's own yaw).
+## It reads the figure each drawn frame; nothing of a simulation reads it.
+class ContactShade extends MeshInstance3D:
+	const DOWN_SIZE: Vector2 = Vector2(2.2, 0.95)
+	const DOWN_DARKEST: float = 0.75
+	const DOWN_FLAT: float = 0.7
+	var _figure: Node3D
+	var _down: bool = false
+	var _yaw: float = 0.0          # the down form's facing in the world, radians about +Y from +X towards +Z
+
+	func stand() -> void:
+		_down = false
+		top_level = false
+		transform = Transform3D(Basis.IDENTITY.scaled(Vector3(TLRigSkaterLook.CONTACT_SIZE.x, 1.0, TLRigSkaterLook.CONTACT_SIZE.y)), TLRigSkaterLook.CONTACT_AT)
+		_form(TLRigSkaterLook.CONTACT_DARKEST, TLRigSkaterLook.CONTACT_FLAT)
+
+	func _form(darkest: float, flat_k: float) -> void:
+		var m: ShaderMaterial = material_override as ShaderMaterial
+		if m != null:
+			m.set_shader_parameter(&"darkest", darkest)
+			m.set_shader_parameter(&"flat_k", flat_k)
+
+	func _process(_dt: float) -> void:
+		if _figure == null:
+			var n: Node = get_parent()
+			while n != null and not n.has_method(&"bone_transform"):
+				n = n.get_parent()
+			_figure = n as Node3D
+			if _figure == null:
+				set_process(false)
+				return
+		var takes: Object = _figure.get(&"takes") as Object
+		var down: bool = takes != null and bool(takes.get(&"bShade"))
+		if not down:
+			if _down:
+				stand()
+			return
+		var gt: Transform3D = _figure.global_transform
+		var pelvis: Vector3 = gt * (_figure.call(&"bone_transform", &"pelvis") as Transform3D).origin
+		var head: Vector3 = gt * (_figure.call(&"bone_transform", &"head") as Transform3D).origin
+		var along: Vector2 = Vector2(head.x - pelvis.x, head.z - pelvis.z)
+		if not _down:
+			_down = true
+			top_level = true
+			_form(DOWN_DARKEST, DOWN_FLAT)
+			_yaw = deg_to_rad(float(takes.get(&"ShadeYaw")))       # thirdjam's yaw: from rink x towards rink y (our +Z)
+		if along.length() > 0.25:
+			_yaw = along.angle()
+		var x: Vector3 = Vector3(cos(_yaw), 0.0, sin(_yaw))
+		global_transform = Transform3D(Basis(x * DOWN_SIZE.x, Vector3.UP, x.cross(Vector3.UP) * DOWN_SIZE.y),
+			Vector3(pelvis.x, gt.origin.y + TLRigSkaterLook.CONTACT_AT.y, pelvis.z))
 
 
 ## The baked mesh with what thirdjam's material reads before skinning: CUSTOM0 = the vertex at rest (xyz, metres),

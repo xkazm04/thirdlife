@@ -14,6 +14,7 @@ render_mode ambient_light_disabled, specular_disabled;
 // scratch map's normal (it only bends those reflections).
 // The figures' shadow: the lights the rig lists first (`rig_keys`) are the ones that cast shadows; what they add is
 // written as ALBEDO and taken away where the style's sun (TLStyleHall: straight down) is shadowed, the rest as emission.
+// K7 (round 3): with key_shadows 1 each key light's own shadow map is read instead (TLStyleHallKeys), see light().
 #include "hall_rig.gdshaderinc"
 #include "hall_plot.gdshaderinc"
 uniform sampler2D scratch : filter_linear_mipmap, repeat_enable;   // r, g = scratches, b = a slow noise
@@ -55,6 +56,7 @@ uniform vec4 sheen = vec4(1.3, 0.14, 1.6, 1.0);
 uniform vec3 sheen_colour = vec3(1.0, 0.55, 0.25);
 uniform float spec = 1.0;
 uniform float shadow_share = 1.0;      // how much of the key lights the style sun's shadow takes away
+uniform float key_shadows = 0.0;       // K7 (TLStyleHallKeys): 1 = each key light's own shadow is read, not the style sun's
 varying vec3 wpos;
 
 void vertex() {
@@ -170,6 +172,25 @@ void fragment() {
 
 void light() {
 	if (LIGHT_IS_DIRECTIONAL) {
-		DIFFUSE_LIGHT += vec3(ATTENUATION);
+		if (key_shadows < 0.5) {       // K7: this condition
+			DIFFUSE_LIGHT += vec3(ATTENUATION);
+		}
 	}
+	// K7 begin (TLStyleHallKeys): a key light of the rig as a real spot light; its ATTENUATION is its shadow alone. Which
+	// key it is: the one this light's direction points at. Its shadow counts by that key's share of the keys' light here.
+	else if (key_shadows > 0.5 && rig_keys > 0) {
+		vec3 to_light = normalize(mat3(INV_VIEW_MATRIX) * LIGHT);
+		vec3 up = vec3(0.0, 1.0, 0.0);
+		float best_d = -2.0;
+		float sum = 0.0;
+		float mine = 0.0;
+		for (int i = 0; i < rig_keys; i++) {
+			float d = dot(to_light, normalize(rig_pos[i].xyz - wpos));
+			float e = dot(rig_lux_part(wpos, up, i, i + 1), vec3(0.2126, 0.7152, 0.0722));
+			sum += e;
+			if (d > best_d) { best_d = d; mine = e; }
+		}
+		DIFFUSE_LIGHT += vec3(clamp(ATTENUATION, 0.0, 1.0) * mine / max(sum, 1e-6));
+	}
+	// K7 end
 }

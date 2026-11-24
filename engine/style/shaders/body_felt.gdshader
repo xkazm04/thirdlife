@@ -32,6 +32,8 @@ global uniform vec4 g_amb_gnd;
 // ---- the rig: its uniforms (rig_n, rig_pos, rig_dir, rig_col, rig_exposure, rig_gain, rig_gain_shadows), the sum
 // of its spot lights (rig_lux) and the film curve (hall_tone) are the hall's own, one file for hall and figure
 #include "res://style/shaders/hall_rig.gdshaderinc"
+#include "res://style/shaders/hall_film.gdshaderinc"
+uniform float film_whole = 1.0;        // 1 = Unreal's whole film pipeline (hall_film), 0 = the hall's curve alone (hall_tone)
 uniform float review_linear = 0.0;     // review only: > 0 writes (what the surface shows, in the source's units) x this, no film curve
 uniform vec3 sky_fill = vec3(0.0);
 uniform vec3 floor_bounce = vec3(0.0); // the floor's albedo: what the lit ice throws back up at the figure (0 = none)     // the rig's sky light on a face that looks up (lux / PI, linear)
@@ -222,7 +224,8 @@ void fragment() {
 	}
 	ALBEDO = vec3(0.0);
 	ROUGHNESS = 1.0;
-	EMISSION = review_linear > 0.0 ? (lit + em) * review_linear : hall_tone((lit + em) * exposure);
+	vec3 scene = (lit + em) * exposure;
+	EMISSION = review_linear > 0.0 ? (lit + em) * review_linear : (film_whole > 0.5 ? hall_film(scene) : hall_tone(scene));
 	ALPHA = 1.0;
 	NORMAL = n_view;
 }
