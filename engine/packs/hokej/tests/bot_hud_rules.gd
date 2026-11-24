@@ -179,6 +179,20 @@ func _part_a() -> void:
 	# the end card's words (cpp:446-467)
 	_check(Flow.end_card_word("win", 3, 1) == "YOU WIN" and Flow.end_card_word("lose", 1, 3) == "BEATEN" and Flow.end_card_word("lose", 2, 2) == "NO WINNER", "end words")
 	_check(Flow.end_card_score(3, 1) == "YOU  3 : 1  THEM", "end score line")
+	# round 6: the MATCH card shows the level the shell applied (start_level's meta), not match.json's
+	var ScreenS = ctx.load_script("scripts/hud/screen.gd")
+	var had_meta: bool = ctx.root.has_meta(&"hokej_level")
+	var old_meta = ctx.root.get_meta(&"hokej_level") if had_meta else null
+	ctx.root.remove_meta(&"hokej_level")
+	_check(ScreenS.applied_level(ctx, "pro") == "pro", "no level applied: match.json's stands")
+	for lv: Array in [["rookie", "ROOKIE"], ["pro", "PRO"], ["all_star", "ALL-STAR"]]:
+		ctx.root.set_meta(&"hokej_level", lv[0])
+		var cd = Cards.new({}, "pro")
+		cd.set_level(ScreenS.applied_level(ctx, "pro"))
+		_check(cd.sub_line().ends_with(String(lv[1])), "the MATCH card shows the applied level %s: %s" % [lv[0], cd.sub_line()])
+	ctx.root.remove_meta(&"hokej_level")
+	if had_meta:
+		ctx.root.set_meta(&"hokej_level", old_meta)
 	# Jam.Hud.Teach (HUDPossessionTests.cpp:150-191): TeachStep case for case
 	var ts: Dictionary = {}
 	var on_frames: int = 0
@@ -290,6 +304,9 @@ func _end_tail() -> void:
 			end_card_seen = true
 			var sc: Array = last_snap["Score"]
 			var me_t: int = int((last_snap["Skaters"][int(last_snap["HumanIndex"])] as Dictionary)["Team"])
+			# GOALS counts the human's own goals (HUDEndStats.cpp:49 Hu.Goals; the first end frame counts, h:4e), not the team's
+			var hu_end: Dictionary = last_snap["Skaters"][int(last_snap["HumanIndex"])]
+			_check(String(sh["end_card"]).contains("GOALS %d" % int(hu_end.get("Goals", 0))), "the end card's GOALS is the human's own %d: %s" % [int(hu_end.get("Goals", 0)), String(sh["end_card"])])
 			_check(String(sh["end_card"]).contains("YOU  %d : %d  THEM" % [int(sc[me_t]), int(sc[1 - me_t])]), "the end card's score line: %s" % String(sh["end_card"]))
 	_check(not sh.has("panel") and not sh.has("far_badge"), "end tail %d: the panel or a badge on the end card" % tail)
 	tail += 1
