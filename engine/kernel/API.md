@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.28)
+# Third Life kernel API (kernelApi 1.29)
 
-**Version 1.28 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.29 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.28"` in `pack.json` (any
-`"1.x"` up to 1.28 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.29"` in `pack.json` (any
+`"1.x"` up to 1.29 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1328,3 +1328,29 @@ player meets (thirdjam's) takes the card over; the frame keeps the freeze. Every
   (Esc included: the pack decides when to resume). Without it, nothing changes: Esc opens the frame's card and Esc again resumes.
 - Selftest `830-hokej-hud.sh` (`hokej.pause_own`, `hokej.pause_frame`); the pack that uses it: `engine/packs/hokej/scripts/hud/`
   (`front.gd`, `pausecard.gd`, `screen.gd`).
+
+## 28. Sound from files: `TLSound` (capability `audio`, addition in 1.29)
+
+`TLAudio` (section 13) plays synthesised presets by name. `TLSound` plays the sound files a game core owns
+(`res://cores/<id>/audio/**`, `.ogg` or `.wav`): one-shots, loops whose volume and pitch the game sets, a voice line,
+and five channels with a volume each. A pack has no sound files of its own; it reaches a core's sounds through that
+core's part (`ctx.cores.part("rink", "audio")`, section 24).
+
+| Call | What |
+|---|---|
+| `TLSound.play(path, opt = {})` | plays a file once. `opt`: `channel` ("sfx"), `db` (0), `pitch` (1), `position` (a Vector3: the sound fades with distance; absent = everywhere), `unit_size` (10: metres at which a placed sound is at its level), `delay_frames` (0) |
+| `TLSound.loop(name, path, opt = {})` | starts the loop `name` (a running loop of that name is replaced). `opt`: `channel`, `db`, `pitch`. The file loops whatever its own flag says |
+| `TLSound.set_loop(name, opt)` | a running loop's `db` and / or `pitch`, reached in a straight line (linear gain) over `ramp_frames` (0 = at once). Not recorded |
+| `TLSound.stop_loop(name, fade_frames = 0)` | stops it, fading out over frames |
+| `TLSound.say(path, opt = {})` | the voice channel: one line at a time (a line being said is cut). `opt`: `db`, `duck_music_db` (the music channel is lowered by this while the line plays), `duck_frames` (12) |
+| `TLSound.saying() -> bool` | a line is still playing (false headless) |
+| `TLSound.channel_db(channel, db)` | a channel's volume for this pack: `sfx`, `crowd`, `music`, `voice`, `ambience` |
+| `TLSound.count(path) -> int` | how often a file was played, looped or said (within the last `TLAudio.MAX_EVENTS` calls) |
+
+- Time is physics frames: a ramp, a fade, a delay and the duck are counted by the pack's own sound node, never on the
+  wall clock. Sound is never state.
+- Every call but `set_loop` is recorded in `TLAudio.events` as `{frame, clip, kind, channel?, db?, position?}` (`kind`:
+  `play`, `loop`, `say`, `stop`), also headless, where nothing is loaded or played.
+- Unknown option keys, an unknown channel and a path outside a core's `audio/` folder are errors: the call does nothing.
+- Selftest `841-rink-audio.sh`; the core part that uses it: `engine/cores/rink/audio/rink_audio.gd` (its table:
+  `engine/cores/rink/audio/audio.json`).

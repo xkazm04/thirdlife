@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 50
+Classes: 51
 
 ## TLAudio
 
@@ -728,6 +728,23 @@ Properties: `best_lap_frames: Dictionary`, `checkpoints: int`, `clock_frames: in
 - `func standings() -> PackedStringArray`
 - `func start() -> void`
 
+## TLSound
+
+`engine/kernel/api/tl_audio_sound.gd` extends `RefCounted`
+
+> Sound from files (kernel 1.27; capability `audio`). `TLAudio` plays synthesised presets by name; this plays the
+
+Consts: `BUS_PREFIX`, `CHANNELS`, `LOOP_KEYS`, `NODE_NAME`, `PLAY_KEYS`, `SAY_KEYS`, `SET_KEYS`, `SILENT_DB`
+
+- `static func channel_db(channel: String, db: float) -> void`
+- `static func count(path: String) -> int`
+- `static func loop(name: StringName, path: String, opt: Dictionary = {}) -> void`
+- `static func play(path: String, opt: Dictionary = {}) -> void`
+- `static func say(path: String, opt: Dictionary = {}) -> void`
+- `static func saying() -> bool`
+- `static func set_loop(name: StringName, opt: Dictionary) -> void`
+- `static func stop_loop(name: StringName, fade_frames: int = 0) -> void`
+
 ## TLSpawner
 
 `engine/kernel/api/tl_spawner.gd` extends `Node3D`
@@ -797,12 +814,13 @@ Properties: `static data: Dictionary`, `static style_name: String`, `static styl
 
 > Materials for an indoor hall and the light rig that lights them (K6, hockey port, 23-24 Nov 2026). New entries beside
 
-Consts: `BULB_KEYS`, `CROWD_KEYS`, `ICE_KEYS`, `MAX_LIGHTS`, `POST_GRADE`, `POST_INK`, `SURFACE_KEYS`
+Consts: `BULB_KEYS`, `CROWD_KEYS`, `ICE_KEYS`, `MAX_LIGHTS`, `POST_FILE`, `POST_GRADE`, `POST_INK`, `SURFACE_KEYS`
 
 - `static func bulb(p: Dictionary = {}) -> Material`
 - `static func crowd(p: Dictionary = {}) -> Material`
 - `static func ice(p: Dictionary = {}) -> Material`
 - `static func post(anchor: Node, opt: Dictionary) -> bool`
+- `static func post_file() -> Dictionary`
 - `static func set_cheer(plus: float, minus: float, seconds: float) -> void`
 - `static func set_exposure(exposure: float) -> void`
 - `static func set_rig(lights: Array, exposure: float, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1)) -> bool`

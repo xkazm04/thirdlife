@@ -110,7 +110,7 @@ func state() -> Dictionary:
 ## hall (engine/cores/rink/arena/rink_arena.gd: build, light, set_cheer). Returns the script (its functions are static),
 ## or null with an error when the core has no such part. A part is never state: it draws and sounds, the core simulates.
 const PARTS: Dictionary = {
-	"rink": {"arena": "res://cores/rink/arena/rink_arena.gd"},
+	"rink": {"arena": "res://cores/rink/arena/rink_arena.gd", "audio": "res://cores/rink/audio/rink_audio.gd"},
 }
 
 

@@ -35,6 +35,7 @@ var last_in: Dictionary = {}
 var over: bool = false
 var replay: Array = []
 var replay_i: int = -1
+var sound                # thirdjam's sound, the core's own part (ctx.cores.part; lane K6)
 var arena                # thirdjam's hall, the core's own part (ctx.cores.part; lane K6)
 var screen               # lane K5: the HUD (scripts/hud/screen.gd)
 
@@ -59,6 +60,10 @@ func _pack_setup(c) -> void:
 	rink.set_human_mode("raw")                     # the person's devices; thirdjam's game-mode rules in the core's glue (GAMEMODE.md)
 	rink.reset(ctx.seed)
 	snap = rink.snapshot()
+	var sound_part = ctx.cores.part("rink", "audio")
+	if sound_part != null:
+		sound = sound_part.new()
+		sound.begin(cart)
 	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), cart, ctx.cores.view_script("rink", "skater_pawn"), ctx.cores.view_script("rink", "skater_show"), ctx.cores.view_script("rink", "hit_read"), ctx.cores.view_script("rink", "boost_look"), bool(view_cfg.get("figures", true)))
 	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = max(shot.reach_m, SkaterRadius 0.4 +
 	# stick.reach_m 1.2 (FJamStickConfig default)) + 0.05 (JamSim.cpp:862-869); FJamPassConfig defaults SaucerHalfFrames 8,
@@ -151,6 +156,8 @@ func _pack_tick(frame: int) -> void:
 	if int(rink.get_frame()) < frame_was:           # the core restarted (R): a new match on the same seed
 		over = false                                # (the show resets itself when the frame goes back: skater_show.step_sim)
 	snap = rink.snapshot()
+	if sound != null:
+		sound.frame(snap)                          # lane K6: a held picture still sounds (before the hit-stop return)
 	if _draw_figures():
 		return                                      # a hit-stop holds the presentation frame: no camera step, no HUD (HokejGameMode.cpp:1710)
 	_camera_step()
