@@ -7,6 +7,7 @@ extends TLRigSkaterBody
 ## thirdjam's Game/Source) and the by-name calls its pawn makes, with the same names, arguments and units:
 ##   SetTeam(TeamId, Colour)  SetNumber(N)  UpdateMotion(Speed, TurnRate, Facing)  SetStickAim(AngleDeg, ReachM)
 ##   SetHasPuck(bHasPuck)  SetBraking(bOn, Decel)  SetShotCharge(Charge01)  SetFaceoff(bReady)  SetGoalieStance(bOn, Side)
+##   SetBoost(Kind)  SetBoostEquipped(Kind, bOn)  PlayCelebrate(Which)
 ##   PlayShoot(Charge)  PlayPass(Strength)  PlayPoke(bClean)  PlayLift()  PlayStickHit(bLifted)  and, by name from the
 ##   game mode's puck show: PlayReceive()  SetPassCharge(Charge01)  PlayCallForPass()  SetLookAtPuck(bOn)
 ##   OnBusEvent(Event, bMe, WhereCm, Strength, Kind): thirdjam's event bus (the sim's events of the frame)
@@ -47,7 +48,8 @@ const NOT_PORTED_CALLS: Array = []
 const TICK_S: float = 0.01666666567325592
 
 var anim: TLRigSkaterAnim
-var takes: TLRigSkaterContact         # the takes: puck verbs, whip, falls, contact (Puck <- Whip <- Falls <- Contact)
+var takes: TLRigSkaterDash            # the takes: puck verbs, whip, falls, contact, toys, dash (Puck <- Whip <- Falls <- Contact <- Toys <- Dash)
+var _fx: TLRigSkaterFx = TLRigSkaterFx.new()
 var _rink: Vector3 = Vector3.ZERO     # see set_rink
 var rivals: Array = []                # the other figures on the ice ([ChkScan]): see set_rivals
 var not_ported: Dictionary = {}       # interface calls taken and not shown yet: name -> count
@@ -126,7 +128,7 @@ var bNoLook: bool = false
 func setup(p: Dictionary = {}) -> void:
 	super.setup(p)
 	anim = TLRigSkaterAnim.new()
-	takes = TLRigSkaterContact.new(self)
+	takes = TLRigSkaterDash.new(self)
 
 
 # ------------------------------------------------------------------ engine-side inputs (not thirdjam's interface)
@@ -235,6 +237,8 @@ func _stop_tick(Speed: float, TurnRate: float) -> void:
 				bStop = true
 				ActPri = 5
 				StopT = _now
+				takes.brake_fx_n += 1                  # Activate(BrakeFx), User.Strength = StopV0 / 14
+				takes.brake_fx_strength = StopV0 / 14.0
 				anim.play_slot(&"Stop_Hard_Left" if TurnRate > 0.2 else &"Stop_Hard", 0.06, 0.1)
 	if bBrkOn:
 		BrkN += 1
@@ -245,6 +249,8 @@ func _stop_tick(Speed: float, TurnRate: float) -> void:
 		ActPri = 5
 		bBrkShown = true
 		StopT = _now
+		takes.brake_fx_n += 1                              # Activate(BrakeFx), User.Strength = BrkV0 / 14
+		takes.brake_fx_strength = BrkV0 / 14.0
 		anim.play_slot(&"Stop_Hard_Left" if TurnRate > 0.2 else &"Stop_Hard", 0.06, 0.1)
 
 
@@ -404,6 +410,8 @@ func _receive_tick(dt: float) -> void:
 		takes.HoldTick()
 	if takes.WindHoldLeft > 0.0:
 		takes.WindHoldTick(0.0)
+	if takes.bEqAny:
+		takes.EquipTick()
 	_look_tick(dt)
 	takes.ReceiveTickDown(dt)
 
@@ -413,9 +421,29 @@ func _miss(what: String) -> void:
 	not_ported[what] = int(not_ported.get(what, 0)) + 1
 
 
-func SetBoost(_Kind: StringName) -> void:
-	if String(_Kind) != "":
-		_miss("SetBoost")
+# ---- the toys (TLRigSkaterToys): what thirdjam's game sends of them
+func SetBoost(Kind: StringName) -> void:
+	takes.SetBoost(Kind)
+
+
+func SetBoostEquipped(Kind: StringName, bOn: bool) -> void:
+	takes.SetBoostEquipped(Kind, bOn)
+
+
+func PlayCelebrate(Which: int) -> void:
+	_driver()
+	takes.PlayCelebrate(Which)
+
+
+# the dives, the slide tackle, the dash: thirdjam's takes that its game never sends (TLRigSkaterToys, TLRigSkaterDash)
+func PlayDiveBlock(DirX: float, DirZ: float, Frames: int) -> void: _driver(); takes.PlayDiveBlock(DirX, DirZ, Frames)
+func PlayDiveBlockFront(DirX: float, DirZ: float, Frames: int) -> void: _driver(); takes.PlayDiveBlockFront(DirX, DirZ, Frames)
+func PlayDiveBlockHit() -> void: takes.PlayDiveBlockHit()
+func PlaySlideTackle(Frames: int, Side: int) -> void: _driver(); takes.PlaySlideTackle(Frames, Side)
+func PlaySlideTackleHit(DirX: float, DirZ: float) -> void: takes.PlaySlideTackleHit(DirX, DirZ)
+func PlayDash(Frames: int) -> void: _driver(); takes.PlayDash(Frames)
+func EndDash(Reason: int, DirX: float, DirZ: float) -> void: takes.EndDash(Reason, DirX, DirZ)
+func SetBoostLevel(bOn: bool, SpeedScale: float) -> void: _driver(); takes.SetBoostLevel(bOn, SpeedScale)
 
 
 # ---- the puck verbs (TLRigSkaterPuck)
@@ -557,3 +585,5 @@ func tick() -> void:
 	anim.update(dt)
 	_show(anim.evaluate())
 	_receive_tick(dt)
+	takes.timers_step(TICK_S)        # the world's timers run after its actors (the dash's)
+	_fx.tick(self)                   # the slide's ice dust, the hard stop's spray (TLRigSkaterFx)

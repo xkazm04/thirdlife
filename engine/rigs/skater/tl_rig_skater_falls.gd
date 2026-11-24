@@ -58,9 +58,10 @@ var WallYaw: float = 0.0
 var WallD: float = 0.0
 var WallShift: float = 0.0
 var ShiftE: float = 0.0
-var DiveKind: int = 0            # only the dives write it (not ported): stays 0
+var DiveKind: int = 0            # 0 none, 1 dive block, 2 slide tackle, 3 the cannon's kick (a weapon: not ported), 4 wipe-out / front dive
+var SlideSide: int = 0           # the slide tackle's side (+1 / -1); 5 = the front dive block
 var bDiveOwn: bool = false
-var BonkT: float = 0.0           # only the bonk writes it (not ported)
+var BonkT: float = 0.0           # [BonkArm]: a hit by a slide tackle or a weapon just before the knockdown
 var BonkKind: int = 0
 var bShade: bool = false
 var ShadeYaw: float = 0.0
@@ -143,7 +144,7 @@ func UpdateMotionMesh(Facing: float) -> void:
 ## [SetKnockedDown] L1532-1539. thirdjam's pawn: JamPawns.cpp:536-553 (on the change of KnockFrames > 0).
 func SetKnockedDown(bDownIn: bool, DirX: float, DirZ: float, KnockdownFrames: int) -> void:
 	if bDownIn and f.bDown and DiveKind != 0 and not bUpEarly:
-		f._miss("DiveAdopt")                 # [DiveAdopt](N = KnockdownFrames): the dives, not ported
+		DiveAdopt(KnockdownFrames)
 	else:
 		DownFrames = maxi(KnockdownFrames, 0) if bDownIn else DownFrames
 		bDiveOwn = false
@@ -225,9 +226,10 @@ func KnockDown(bDownIn: bool, DirX: float, DirZ: float, bTrip: bool) -> void:
 		GetUpFrames = 0
 		bPinned = false
 		f.bDown = true
-		# if bEqAny: EquipApply()            (equipment: not ported)
+		if bEqAny:
+			EquipApply()
 		SK2Down()
-		# Activate(SlideFx)                  (the slide's particles: not ported)
+		bSlideFx = true                      # Activate(SlideFx, bReset = true)
 		bShade = true
 		ShadeYaw = DownYaw
 		# ContactShadow: scale (2.2, 0.95, 1), Darkest 0.75, Flat 0.7     (the contact shadow: not ported)
@@ -239,7 +241,7 @@ func KnockDown(bDownIn: bool, DirX: float, DirZ: float, bTrip: bool) -> void:
 			DiveKind = 0
 			bDiveOwn = false
 			GetUpN = 54
-			# Deactivate(SlideFx)
+			bSlideFx = false                 # Deactivate(SlideFx)
 			bShade = false
 			# ContactShadow: scale (0.5, 0.7, 1), relative (3, 0, 0.4), Darkest 0.45, Flat 0
 			GetUpFrames = GetUpN
@@ -293,13 +295,13 @@ func FallPick(bPlay: bool) -> void:
 	elif DiveKind == 1:
 		FallDo(&"Dive_Block_Right", bPlay, 37)
 	elif DiveKind == 2:
-		f._miss("SlidePick")                 # [SlidePick](bPlay): the slide tackle, not ported
+		SlidePick(bPlay)
 	elif DiveKind == 3:
 		FallDo(&"Cannon_Kick", bPlay, 23)
 	elif DiveKind == 4:
-		f._miss("WipePick")                  # [WipePick](bPlay): not ported
+		WipePick(bPlay)
 	elif absf(f._now - BonkT) < 0.02:
-		f._miss("BonkPick")                  # [BonkPick](bPlay): the bonk, not ported
+		BonkPick(bPlay)
 	elif DownKind == 4:
 		FallDo(&"Trip", bPlay, 19)
 	elif DownKind == 1:
@@ -338,6 +340,36 @@ func FallPick(bPlay: bool) -> void:
 			FallDo(&"Fall_B", bPlay, 24)
 		else:
 			FallDo(&"Fall", bPlay, 18)
+
+
+## [DiveAdopt] L298-302: the sim's knockdown arrives while he lies in his own dive: the dive takes its length.
+func DiveAdopt(N: int) -> void:
+	bDiveOwn = false
+	DownFrames = roundi((f._now - DownT0) * 60.0) + N
+	UpAt = (float(DownFrames) / 60.0) - (UpLen / UpRateS)
+
+
+## [SlidePick] L1673-1677
+func SlidePick(bPlay: bool) -> void:
+	FallDo(&"Slide_Tackle_Right" if SlideSide < 0 else &"Slide_Tackle_Left", bPlay, 19)
+
+
+## [WipePick] L1993-1997
+func WipePick(bPlay: bool) -> void:
+	if SlideSide == 5:
+		FallDo(&"Dive_Block_Front", bPlay, 35)
+	else:
+		FallDo(&"Dash_Wipeout", bPlay, 20)
+
+
+## [BonkPick] L75-82
+func BonkPick(bPlay: bool) -> void:
+	if BonkKind == 2:
+		FallDo(&"Fall_Legs_Front", bPlay, 19)
+	elif BonkKind == 3:
+		FallDo(&"Fall_Legs_Back", bPlay, 19)
+	else:
+		FallDo(&"Fall_Bonk", bPlay, 14)
 
 
 ## [PlayDown] L930-937. The blend-in is 0 while the hit-stop holds the figure (CustomTimeDilation < 0.01).

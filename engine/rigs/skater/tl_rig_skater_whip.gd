@@ -21,6 +21,15 @@ var WhipHeadW: float = 1.0
 var WhipArmW: float = 1.0
 var ChkStr: float = 0.0
 var ChkStrT: float = 0.0
+var bEqAny: bool = false          # the held ability's props (TLRigSkaterToys)
+var bSlideFx: bool = false        # the Niagara component SlideFx is active ([KnockDown] L590, L605): the figure draws it
+var brake_fx_n: int = 0           # BrakeFx was activated this many times ([StopTick] L1753, L1768) ...
+var brake_fx_strength: float = 0.0     # ... the last time with this User.Strength
+
+
+## [EquipApply]: the props' part is TLRigSkaterToys'.
+func EquipApply() -> void:
+	pass
 
 
 static func _len(clip: StringName) -> float:
