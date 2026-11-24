@@ -5,7 +5,7 @@ rt_t="$HERE/../templates/rink_game"
 rt_h="$HERE/../packs/hokej"
 if [ -z "$FILTER" ] || [[ "rink.template" == *"$FILTER"* ]]; then
   why=""; n=0
-  for f in $(cd "$rt_t" && find scripts gen assets -type f | sort) tests/bot_match_hand.gd tests/bot_first_match.gd tests/bot_skin.gd \
+  for f in $(cd "$rt_t" && find scripts gen assets -type f ! -name "*.import" ! -name "*.uid" | sort) tests/bot_match_hand.gd tests/bot_first_match.gd tests/bot_skin.gd \
       data/hud_barks.json data/gym.json data/view.json data/skin.json data/hockey.regular.cartridge.json; do
     n=$((n+1))
     if [ ! -f "$rt_h/$f" ]; then why="${why:+$why; }$f: not in hokej"; elif ! cmp -s "$rt_t/$f" "$rt_h/$f"; then why="${why:+$why; }$f differs from hokej"; fi
