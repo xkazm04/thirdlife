@@ -39,8 +39,9 @@ static func build(parent: Node3D, rink: Dictionary, hall: Dictionary, arena_mark
 		node.add_child(part)
 		_boards(mk, outline(L, W, R, 12))
 	_markings(mk, L, W, R, goal_w, arena_marks)
-	for s: float in [-1.0, 1.0]:
-		_goal(mk, s, L * 0.5 - 4.0, goal_w, goal_h)
+	if not bool(arena_marks.get("arena_goals", false)):   # lane K6 round 3: with thirdjam's hall its own goals stand (their nets shake)
+		for s: float in [-1.0, 1.0]:
+			_goal(mk, s, L * 0.5 - 4.0, goal_w, goal_h)
 	node.add_child(mk.instance("TjRink"))
 	if not hall.is_empty():
 		_hall(node, L, W, hall)

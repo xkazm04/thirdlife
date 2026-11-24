@@ -11,6 +11,7 @@ extends RefCounted
 ##   TLSound.set_loop(&"music", {"db": -4.4, "ramp_frames": 30})       # volume and pitch, reached over frames
 ##   TLSound.stop_loop(&"music", 30)
 ##   TLSound.say(path, {"duck_music_db": -6.9})                        # the voice channel: one line at a time
+##   TLSound.stop_voice(9)                                             # the line being said fades out over 9 frames
 ##   TLSound.channel_db("music", -6.0)
 ##
 ## Time is physics frames: a ramp, a fade and a delay are counted in frames by the pack's own sound node, never on the
@@ -84,7 +85,8 @@ static func stop_loop(name: StringName, fade_frames: int = 0) -> void:
 
 
 ## Says a line on the voice channel: the line being said, if any, is cut. Options: `db` (0), `duck_music_db` (0: the
-## music channel is lowered by this much while the line plays), `duck_frames` (12: the frames the duck takes each way).
+## music channel is lowered by this much while the line plays), `duck_frames` (12: the frames the duck takes each way,
+## a straight line in gain, as a sound mix fades).
 static func say(path: String, opt: Dictionary = {}) -> void:
 	TLContext.require("audio", "TLSound")
 	if not _ok(path, opt, SAY_KEYS, "say"):
@@ -94,6 +96,17 @@ static func say(path: String, opt: Dictionary = {}) -> void:
 	var node: TLSoundNode = _node(ctx)
 	if node != null:
 		node.say(_stream(path), float(opt.get("db", 0.0)), float(opt.get("duck_music_db", 0.0)), int(opt.get("duck_frames", 12)))
+
+
+## Fades the line being said out over `fade_frames` (0: at once) and ends it; the duck comes back as the line ends.
+## Nothing is said: nothing happens (recorded all the same, as `stop` of the clip "voice").
+static func stop_voice(fade_frames: int = 0) -> void:
+	TLContext.require("audio", "TLSound")
+	var ctx: TLContext = TLContext.current
+	_record(ctx, "voice", "", 0.0, "stop", null)
+	var node: TLSoundNode = _node(ctx)
+	if node != null:
+		node.stop_voice(fade_frames)
 
 
 ## True while a line said with `say` is still playing (always false headless).
@@ -189,7 +202,8 @@ class TLSoundNode extends Node:
 	var _loops: Dictionary = {}      # name -> {player, db, pitch, db_to, pitch_to, frames, stop}
 	var _delayed: Array = []         # [frames left, player]
 	var _voice: AudioStreamPlayer = null
-	var _duck: Dictionary = {"db": 0.0, "to": 0.0, "step": 0.0, "amount": 0.0}
+	var _voice_fade: Array = [0, 0, 0.0]     # [frames left, frames, the line's db]: a line fading out
+	var _duck: Dictionary = {"db": 0.0, "g": 1.0, "to": 1.0, "step": 0.0, "amount": 1.0}   # the music's duck, as a gain
 	var _channel_db: Dictionary = {}
 
 	func _ready() -> void:
@@ -286,15 +300,25 @@ class TLSoundNode extends Node:
 		_voice = null
 		if stream == null:
 			return
+		_voice_fade = [0, 0, db]
 		_voice = AudioStreamPlayer.new()
 		_voice.stream = stream
 		_voice.volume_db = db
 		_voice.bus = _bus("voice")
 		add_child(_voice)
 		_voice.play()
-		_duck["amount"] = duck_db
-		_duck["to"] = duck_db
-		_duck["step"] = absf(duck_db) / float(maxi(duck_frames, 1))
+		_duck["amount"] = db_to_linear(duck_db)
+		_duck["to"] = _duck["amount"]
+		_duck["step"] = absf(1.0 - float(_duck["amount"])) / float(maxi(duck_frames, 1))
+
+	func stop_voice(fade_frames: int) -> void:
+		if not saying():
+			return
+		if fade_frames <= 0:
+			_voice.queue_free()
+			_voice = null
+			return
+		_voice_fade = [fade_frames, fade_frames, _voice.volume_db]
 
 	func saying() -> bool:
 		return _voice != null and is_instance_valid(_voice) and _voice.playing
@@ -325,9 +349,18 @@ class TLSoundNode extends Node:
 				if n - 1 == 0 and bool(l["stop"]):
 					(l["player"] as AudioStreamPlayer).queue_free()
 					_loops.erase(lname)
-		# the duck under a voice line: down while it plays, back when it ends
+		# a line fading out (stop_voice): its gain falls in a straight line, then it ends
+		if int(_voice_fade[0]) > 0 and _voice != null and is_instance_valid(_voice):
+			_voice_fade[0] = int(_voice_fade[0]) - 1
+			if int(_voice_fade[0]) <= 0:
+				_voice.queue_free()
+				_voice = null
+			else:
+				_voice.volume_db = linear_to_db(maxf(db_to_linear(float(_voice_fade[2])) * float(_voice_fade[0]) / float(_voice_fade[1]), 1e-4))
+		# the duck under a voice line: down while it plays, back when it ends (a straight line in gain)
 		if not saying():
-			_duck["to"] = 0.0
-		if not is_equal_approx(float(_duck["db"]), float(_duck["to"])):
-			_duck["db"] = move_toward(float(_duck["db"]), float(_duck["to"]), maxf(float(_duck["step"]), 0.01))
+			_duck["to"] = 1.0
+		if not is_equal_approx(float(_duck["g"]), float(_duck["to"])):
+			_duck["g"] = move_toward(float(_duck["g"]), float(_duck["to"]), maxf(float(_duck["step"]), 1e-4))
+			_duck["db"] = linear_to_db(maxf(float(_duck["g"]), 1e-4))
 			_apply_channel("music")

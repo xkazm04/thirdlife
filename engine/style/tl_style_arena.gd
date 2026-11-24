@@ -13,6 +13,7 @@ extends RefCounted
 ##   TLStyleArena.crowd({...})                     # clay crowd and small parts (hall_crowd.gdshader)
 ##   TLStyleArena.bulb({...})                      # a lamp's bulb (hall_bulb.gdshader)
 ##   TLStyleArena.set_cheer(plus, minus, seconds)  # the crowd's cheering pose, 0..1 an end
+##   TLStyleArena.set_glow(material, emit)         # a surface's own light, changed in place (a lamp's flash)
 ##   TLStyleArena.post(anchor, {})                 # the installed style's grade and ink, set for a hall (hall_post.json)
 ##
 ## Colours are linear `Color`s (the numbers of the source material, not "#rrggbb"). Unknown keys are errors (the call
@@ -131,6 +132,13 @@ static func set_cheer(plus: float, minus: float, seconds: float) -> void:
 		m.set_shader_parameter(&"cheer_plus", plus)
 		m.set_shader_parameter(&"cheer_minus", minus)
 		m.set_shader_parameter(&"cheer_time", seconds)
+
+
+## A surface's own light (`emit`, linear) changed in place: a lamp that flashes (K6 round 3). A material not made by
+## `surface` (or the headless stub) is left alone.
+static func set_glow(m: Material, emit: Color) -> void:
+	if m is ShaderMaterial and m != _stub and (m as ShaderMaterial).shader == _shaders.get("hall_surface"):
+		(m as ShaderMaterial).set_shader_parameter(&"emit", Vector3(emit.r, emit.g, emit.b))
 
 
 ## The hall look's own file (style/hall_post.json): the values `post` applies, {"grade": {...}, "ink": {...}}.

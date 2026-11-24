@@ -365,6 +365,8 @@ Two entries a game played indoors asks for; neither changes a shader or a style 
     `ink`: the contour gone by a given distance); `opt` sets values on top of the file ({} = as it is). `TLStyleHall.clear` restores
     the style's own. `post_file()` returns the file's two sections.
   - `tone(colour, gain, gain_shadows)`: the same film curve in GDScript, for the light handed to the toon materials.
+  - `set_glow(material, emit)`: a `surface` material's own light changed in place (lane K6 round 3: thirdjam's goal
+    lamps flashing; any other material is left alone).
   Colours are linear numbers of the source material. Headless: one shared material with no shader.
 
 ## A hall's key lights' shadows (`TLStyleHallKeys`) and Unreal's whole film pipeline (hockey port lane K7, round 3)

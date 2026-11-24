@@ -37,6 +37,7 @@ var replay: Array = []
 var replay_i: int = -1
 var sound                # thirdjam's sound, the core's own part (ctx.cores.part; lane K6)
 var arena                # thirdjam's hall, the core's own part (ctx.cores.part; lane K6)
+var react                # the hall answering the game: lamps, net, caps, crowd (arena.reactions; lane K6 round 3)
 var screen               # lane K5: the HUD (scripts/hud/screen.gd)
 
 
@@ -51,9 +52,13 @@ func _pack_setup(c) -> void:
 	var rk: Dictionary = g["rink"]
 	var rink_gen = ctx.load_script("gen/tj_rink.gd")
 	arena = ctx.cores.part("rink", "arena")
-	rink_gen.build(ctx.root, rk, {} if arena != null else gym.get("hall", {}), _arena_marks())   # no dark box inside thirdjam's hall
+	var marks: Dictionary = _arena_marks()
+	if not marks.is_empty():
+		marks["arena_goals"] = true                # lane K6 round 3: thirdjam's own goals and nets from the hall (the net shakes on a goal)
+	rink_gen.build(ctx.root, rk, {} if arena != null else gym.get("hall", {}), marks)   # no dark box inside thirdjam's hall
 	if arena != null:
-		arena.build(ctx.root, {"rink": rk})
+		arena.build(ctx.root, {"rink": rk, "goals": not marks.is_empty()})
+		react = arena.reactions(ctx.root, rk)      # lane K6 round 3
 	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
 	rink = ctx.cores.open("rink", cart_file)
 	rink.set_difficulty(String(match_cfg["difficulty"]))
@@ -158,6 +163,8 @@ func _pack_tick(frame: int) -> void:
 	snap = rink.snapshot()
 	if sound != null:
 		sound.frame(snap)                          # lane K6: a held picture still sounds (before the hit-stop return)
+	if react != null:
+		react.frame(snap)                          # lane K6 round 3: the hall answers on the sim's frame (RinkActor's bus frame), also under a hit-stop
 	if _draw_figures():
 		return                                      # a hit-stop holds the presentation frame: no camera step, no HUD (HokejGameMode.cpp:1710)
 	_camera_step()
@@ -234,6 +241,8 @@ func _present() -> void:
 	if mode == "match":
 		# the YOU chevron and tag on the figure's head socket (HumanHeadWorld, HUDWidget.cpp:1089-1121): the full point to K5's HUD
 		screen = Screen.frame_of(screen, ctx, snap, null, last_in, last_raw, view.head_world(int(snap["HumanIndex"])))   # lane K5: the HUD, one call a drawn frame (possession for the buttons: from the glue's snapshot Controls, K5 round 2)
+		if sound != null and screen != null:       # lane K6 round 3: the voice of the line the caption shows, MS_bark for a bark said
+			sound.booth(int(snap["Frame"]), screen.view.shown, int(screen.view.captions.last_end), screen.view.barks.said)
 
 
 func _pack_state() -> Dictionary:

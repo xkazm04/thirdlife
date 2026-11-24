@@ -7,6 +7,7 @@ extends RefCounted
 ##   var sound = ctx.cores.part("rink", "audio").new()
 ##   sound.begin(cart)                 # _pack_setup: the music, the crowd bed, the skate loop
 ##   sound.frame(snap)                 # once per simulated frame, after the core's step
+##   sound.booth(frame, said, line_end, barks)   # once per drawn frame, after the HUD: the commentator's voice and the barks
 ##
 ## The rules, each with its thirdjam source:
 ##   an event plays MS_<event> (EffectsBinder.cpp:146-149, 474-489) unless it is silent (period, carry: cpp:276-280) or
@@ -19,15 +20,26 @@ extends RefCounted
 ##     938-943; MS_music_match);
 ##   the crowd bed: started with the music and left alone (cpp:922-930; MS_crowd_bed at Level 0.5, Excite 0);
 ##   the skate loop on the human's skater: Speed = |velocity| / game.skater.speed every frame, Turn when the yaw rate
-##     passes 3 rad/s above 1 m/s, at most once in 15 frames (cpp:945-968; MS_skate_loop).
+##     passes 3 rad/s above 1 m/s, at most once in 15 frames (cpp:945-968; MS_skate_loop);
+##   the commentator (round 3, voice.json): the booth picks a line once a simulated frame and its caption shows it; this
+##     part says THAT line (one picker: the pack's caption picker, lane K5's port of FJamCommentaryPicker, hands it over),
+##     through MS_commentary (a mono player x Volume 1: CommentarySystem.cpp:842-878; Unreal's output of it measured:
+##     voice.json "out_gain") with SC_VO's passive mix
+##     SCM_DuckMusic (SC_Music x 0.45, 0.2 s each way); a new line stops the one playing (cpp:860), a line the booth cuts
+##     without a new one fades over 0.15 s (CutLine cpp:827-835);
+##   a bark the HUD's bark lane says (UJamBarkSystem::Show) broadcasts `bark` (Strength 0, BarkSystem.cpp:538-548): MS_bark.
+## Under the pack's pause every player stops where it is and goes on at resume (Godot pauses a player under a paused
+## node; thirdjam's SetGamePaused pauses every sound whose class is not a UI sound: AudioDevice.cpp HandlePause).
 ## Sound is never state. A take is chosen from the frame and the event, not from the simulation's random numbers.
 
 const DIR: String = "res://cores/rink/audio/"
+const VOICE_FILE: String = "voice.json"
 const SILENT_EVENTS: PackedStringArray = ["period", "carry"]
 const SHOT_CRACK_MPS: float = 30.0
 const MAX_ROWS: int = 20000
 
 var table: Dictionary = {}
+var voice_table: Dictionary = {}  ## voice.json: the commentator's lines and the booth's sound rules
 var rows: Array = []              ## what sounded: [frame, event, variant, strength, file, db] (the event-to-sound table)
 var _cart: Dictionary = {}
 var _last_frame: int = -1
@@ -37,6 +49,8 @@ var _music_level: float = -1.0
 var _begun: bool = false
 var _stereo: float = 1.0          # what Unreal's output does to a stereo and to a mono 2D sound (audio.json "out_gain", measured)
 var _mono: float = 1.0
+var _booth_frame: int = -1
+var _line_until: int = -1000000   # the frame the line being said ends at, as the booth counts it (its last_end)
 
 
 func _init() -> void:
@@ -45,6 +59,11 @@ func _init() -> void:
 		table = d
 	else:
 		push_error("rink audio: %saudio.json does not read" % DIR)
+	var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(DIR + VOICE_FILE))
+	if v is Dictionary:
+		voice_table = v
+	else:
+		push_error("rink audio: %s%s does not read" % [DIR, VOICE_FILE])
 
 
 ## Starts the held sounds. `cart`: the cartridge the core runs (game.skater.speed and game.puck.max_speed are read).
@@ -53,6 +72,8 @@ func begin(cart: Dictionary) -> void:
 	_last_frame = -1
 	_score = [0, 0]
 	_turn_cooldown = 0
+	_booth_frame = -1
+	_line_until = -1000000
 	rows.clear()
 	if table.is_empty():
 		return
@@ -96,6 +117,50 @@ func frame(snap: Dictionary) -> void:
 		_event(e, snap, score)
 	_score = [int(score[0]), int(score[1])]
 	_loops(snap)
+
+
+## The booth's sound on one simulated frame, from what the pack's booth decided on it (call it once a drawn frame after
+## the HUD; a frame already heard does nothing). `said`: the HUD's record of the frame, its key "line_started" (the
+## line id the caption picker started) and "bark_said" (a bark was said); `line_end`: the frame the booth's line ends at
+## now (its picker's last end); `barks`: the barks said this frame (one MS_bark each).
+func booth(f: int, said: Dictionary, line_end: int, barks: Array) -> void:
+	if voice_table.is_empty() or not _begun:
+		return
+	if f == _booth_frame:
+		return
+	if f < _booth_frame:
+		_line_until = -1000000
+	_booth_frame = f
+	if said.has("bark_said"):
+		for _b: Variant in barks:
+			var s: Dictionary = sound_of("bark", 0, 0.0, f, -1)
+			if rows.size() < MAX_ROWS:
+				rows.append([f, "bark", 0, 0.0, str(s["file"]).trim_prefix(DIR), float(s["db"])])
+			if str(s["file"]) != "":
+				TLSound.play(str(s["file"]), {"channel": "sfx", "db": float(s["db"])})
+	var id: String = str(said.get("line_started", ""))
+	if id != "":
+		say(id, f)
+		_line_until = line_end
+	elif f < _line_until and line_end <= f:
+		# the booth cut its line and started none (a bark at the human): the voice fades (CutLine, FadeOut 0.15 s)
+		_line_until = line_end
+		if rows.size() < MAX_ROWS:
+			rows.append([f, "voice_cut", 0, 0.0, "", 0.0])
+		TLSound.stop_voice(int(voice_table["cut_frames"]))
+
+
+## Says the commentator's line `id` (a line of the booth's bank) on the voice channel, with the music's duck.
+func say(id: String, f: int) -> void:
+	var rel: String = str((voice_table.get("lines", {}) as Dictionary).get(id, ""))
+	if rel == "":
+		push_error("rink audio: no voice for commentary line '%s'" % id)
+		return
+	var db: float = linear_to_db(float(voice_table["volume"]) * float(voice_table["out_gain"]))   # Volume x Unreal's measured output
+	if rows.size() < MAX_ROWS:
+		rows.append([f, "voice", id, 0.0, rel, db])
+	TLSound.say(DIR + rel, {"db": db, "duck_music_db": linear_to_db(float(voice_table["duck_music"])),
+		"duck_frames": int(voice_table["duck_frames"])})
 
 
 ## The Variant thirdjam sends for an event (the binder's whole rule for sound).
