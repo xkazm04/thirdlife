@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.27)
+# Third Life kernel API (kernelApi 1.28)
 
-**Version 1.27 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.28 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.27"` in `pack.json` (any
-`"1.x"` up to 1.27 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.28"` in `pack.json` (any
+`"1.x"` up to 1.28 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1300,6 +1300,11 @@ part of the indexed surface of style and rigs.
   `TLStyleFelt.set_floor(albedo: Color)` (the ice's first bounce on the figures, thirdjam's `ClayIceBody` colour),
   `TLStyleFelt.set_review_linear(k: float)` (review only: values in the source's units times `k`, no film curve),
   `TLStyleFelt.FALLBACK_EXPOSURE` (the exposure with no hall rig).
+
+- Additions in 1.28 (lane K7, the shadows): `TLStyleHallKeys` (`engine/style/tl_style_hall_keys.gd`): thirdjam's four
+  shadow-casting key spots as real spot lights that light nothing and cast shadows the hall's ice reads:
+  `install(anchor, lights, opt) -> int`, `receive(mesh_instance)`, `count(anchor) -> int`, `clear(anchor)`; constants
+  `NODE`, `DEFAULTS`, `WIDER_DEG`, `RANGE_K`. For a game alone in its world (it sets the viewport's shadow atlas).
 
 ## 27. A pack's own pause card and front end in the dungeon frame (addition in 1.25)
 

@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 49
+Classes: 50
 
 ## TLAudio
 
@@ -853,6 +853,19 @@ Consts: `DEFAULTS`
 
 - `static func apply(anchor: Node, opt: Dictionary = {}) -> bool`
 - `static func clear(anchor: Node) -> void`
+
+## TLStyleHallKeys
+
+`engine/style/tl_style_hall_keys.gd` extends `RefCounted`
+
+> The shadows of a hall's key lights (K7, hockey port, round 3): the lights of a rig that cast shadows (thirdjam's
+
+Consts: `DEFAULTS`, `NODE`, `RANGE_K`, `WIDER_DEG`
+
+- `static func clear(anchor: Node) -> void`
+- `static func count(anchor: Node) -> int`
+- `static func install(anchor: Node, lights: Array, opt: Dictionary = {}) -> int`
+- `static func receive(mi: GeometryInstance3D) -> void`
 
 ## TLTrigger
 
