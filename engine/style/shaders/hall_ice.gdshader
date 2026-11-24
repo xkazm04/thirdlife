@@ -57,6 +57,7 @@ uniform vec3 sheen_colour = vec3(1.0, 0.55, 0.25);
 uniform float spec = 1.0;
 uniform float shadow_share = 1.0;      // how much of the key lights the style sun's shadow takes away
 uniform float key_shadows = 0.0;       // K7 (TLStyleHallKeys): 1 = each key light's own shadow is read, not the style sun's
+uniform float key_cone_cos = -1.0;     // K7: the cosine of the cone a key's shadow map covers; outside it that key's light is not shadowed
 varying vec3 wpos;
 
 void vertex() {
@@ -168,6 +169,19 @@ void fragment() {
 	ALBEDO = max(total - shaded, vec3(0.0));
 	ROUGHNESS = 1.0;
 	EMISSION = shaded;
+	// K7 begin (round 4): a key's shadow map covers a cone narrower than its light (finer texels where its light counts);
+	// outside that cone the key's share is given back here, unshadowed, and light() leaves it out
+	if (key_shadows > 0.5 && rig_keys > 0) {
+		float sum = 0.0;
+		float open_share = 0.0;
+		for (int i = 0; i < rig_keys; i++) {
+			float e = dot(rig_lux_part(wpos, up, i, i + 1), vec3(0.2126, 0.7152, 0.0722));
+			sum += e;
+			open_share += dot(normalize(wpos - rig_pos[i].xyz), rig_dir[i].xyz) <= key_cone_cos ? e : 0.0;
+		}
+		EMISSION += ALBEDO * open_share / max(sum, 1e-6);
+	}
+	// K7 end
 }
 
 void light() {
@@ -188,7 +202,10 @@ void light() {
 			float d = dot(to_light, normalize(rig_pos[i].xyz - wpos));
 			float e = dot(rig_lux_part(wpos, up, i, i + 1), vec3(0.2126, 0.7152, 0.0722));
 			sum += e;
-			if (d > best_d) { best_d = d; mine = e; }
+			if (d > best_d) {
+				best_d = d;
+				mine = dot(normalize(wpos - rig_pos[i].xyz), rig_dir[i].xyz) <= key_cone_cos ? 0.0 : e;       // round 4: see fragment()
+			}
 		}
 		DIFFUSE_LIGHT += vec3(clamp(ATTENUATION, 0.0, 1.0) * mine / max(sum, 1e-6));
 	}

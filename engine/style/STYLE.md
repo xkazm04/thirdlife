@@ -375,8 +375,11 @@ Two entries a game played indoors asks for; neither changes a shader or a style 
   figure throws one shadow a key, away from that key's foot: short under a key, long between two and near the boards.
   `TLStyleHallKeys.install(anchor, lights, opt)`, `receive(mesh_instance)`, `count(anchor)`, `clear(anchor)`.
   It sets the anchor viewport's positional shadow atlas (8192 px, every quadrant one map: 4096 px a key) and the
-  renderer's soft shadow filter for spot lights, and gives both back on `clear`. Cost with ten striding skaters at
-  1280 x 720: GPU 0.74 ms a frame against 0.58 without, render CPU 0.6 against 0.4 to 0.46 (RTX 4090).
+  renderer's soft shadow filter for spot lights, and gives both back on `clear`. Since round 4 the rim is the light's
+  source radius through the engine's soft shadows (hard at the caster's foot, wider with its height), and a key's map
+  covers 56 degrees, not the light's 62 (finer texels; beyond the map that key's light is not shadowed). Cost with
+  ten striding skaters at 1280 x 720: GPU 0.80 ms a frame against 0.58 without, render CPU 0.43 to 0.47 against 0.35
+  to 0.37 (RTX 4090).
   What was learnt on the way: a cull mask of one layer on such a light stops the engine re-drawing its shadow map for
   a figure on another layer; the engine's own quadrant cut (1 / 4 / 16 / 64) changes a light's map size with the
   camera; `spot_angle_attenuation` is the exponent of (1 - rim), so near 0 = no fall-off inside the cone.
