@@ -1,0 +1,8 @@
+{
+  "schema": "tl.rink.rules/1",
+  "title": "hockey.thirdlife: the rules thirdjam's cartridge schema cannot say (docs/design/HOCKEY-BALANCE.md; the ledger: engine/cores/rink/lab/experiments/LEDGER.md)",
+  "rules": {
+    "net_carry_wall": true
+  },
+  "levels": {}
+}

@@ -20,6 +20,7 @@ var ctx
 var cart: Dictionary
 var gym: Dictionary
 var match_cfg: Dictionary
+var cart_file: String = "hockey.regular.cartridge.json"
 var view_cfg: Dictionary
 var replay_base: Dictionary = {}   # the replay mode's skater: a real snapshot entry, its place and motion set from the log
 var rink                 # thirdjam's core (RinkCore): set_raw_input / step / snapshot / state_hash
@@ -40,9 +41,10 @@ var screen               # lane K5: the HUD (scripts/hud/screen.gd)
 
 func _pack_setup(c) -> void:
 	ctx = c
-	cart = ctx.read_json("hockey.regular.cartridge.json")
-	gym = ctx.read_json("gym.json")
 	match_cfg = ctx.read_json("match.json")
+	cart_file = String(match_cfg.get("cartridge", "hockey.regular.cartridge.json"))   # the cut (data/match.json; a rules sidecar opens the variant core)
+	cart = ctx.read_json(cart_file)
+	gym = ctx.read_json("gym.json")
 	view_cfg = ctx.read_json("view.json")
 	var g: Dictionary = cart["game"]
 	var rk: Dictionary = g["rink"]
@@ -52,12 +54,12 @@ func _pack_setup(c) -> void:
 	if arena != null:
 		arena.build(ctx.root, {"rink": rk})
 	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
-	rink = ctx.cores.open("rink", "hockey.regular.cartridge.json")
+	rink = ctx.cores.open("rink", cart_file)
 	rink.set_difficulty(String(match_cfg["difficulty"]))
 	rink.set_human_mode("raw")                     # the person's devices; thirdjam's game-mode rules in the core's glue (GAMEMODE.md)
 	rink.reset(ctx.seed)
 	snap = rink.snapshot()
-	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), cart, ctx.cores.view_script("rink", "skater_pawn"), ctx.cores.view_script("rink", "skater_show"), ctx.cores.view_script("rink", "hit_read"), bool(view_cfg.get("figures", true)))
+	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), cart, ctx.cores.view_script("rink", "skater_pawn"), ctx.cores.view_script("rink", "skater_show"), ctx.cores.view_script("rink", "hit_read"), ctx.cores.view_script("rink", "boost_look"), bool(view_cfg.get("figures", true)))
 	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = max(shot.reach_m, SkaterRadius 0.4 +
 	# stick.reach_m 1.2 (FJamStickConfig default)) + 0.05 (JamSim.cpp:862-869); FJamPassConfig defaults SaucerHalfFrames 8,
 	# PowerFullFrames 30 (JamCartridge.h:356, 363): the regular cartridge has no game.pass
