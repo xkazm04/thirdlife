@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Third Jam cartridge envelope, tj.cartridge/1. Genre-free on purpose: everything game-specific lives in the 'game' object (game.schema.json). Validated by schema/validate.mjs, which implements only the keyword subset documented at the top of that file.",
+  "title": "tj.cartridge/1",
+  "description": "A cartridge is one variation of the game: a theme, a list of tunables with the values chosen for them, rules, entities, AI behaviours and a game-specific object.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "title", "seed", "theme", "tunables", "values", "rules", "entities", "ai", "game"],
+  "properties": {
+    "schema": { "const": "tj.cartridge/1" },
+    "id": { "$ref": "#/$defs/kebab_id" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295,
+      "description": "The one source of randomness for a run. 32-bit unsigned."
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "mood_words", "palette"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "mood_words": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1, "maxLength": 24 }
+        },
+        "palette": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/palette_entry" }
+        }
+      }
+    },
+    "tunables": {
+      "type": "array",
+      "description": "The knobs the Designer may turn. Declared by the host; the Designer never edits this list.",
+      "items": { "$ref": "#/$defs/tunable" }
+    },
+    "values": {
+      "type": "object",
+      "description": "Chosen value per tunable key. A key left out means the tunable's default applies.",
+      "additionalProperties": { "type": ["number", "boolean", "string"], "maxLength": 40 }
+    },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rule" }
+    },
+    "entities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entity" }
+    },
+    "ai": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ai_behaviour" }
+    },
+    "game": { "$ref": "game.schema.json" }
+  },
+  "$defs": {
+    "kebab_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 48,
+      "description": "an id must be kebab-case: lowercase letters and digits separated by single hyphens, starting with a letter"
+    },
+    "snake_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+      "maxLength": 40,
+      "description": "a key must be snake_case: lowercase letters and digits separated by single underscores, starting with a letter"
+    },
+    "param_value": {
+      "type": ["number", "boolean", "string", "array"],
+      "maxLength": 80,
+      "items": { "type": ["number", "boolean", "string"], "maxLength": 80 }
+    },
+    "params": {
+      "type": "object",
+      "description": "Free parameters of a rule, entity or behaviour. Keys are snake_case. Durations are named *_frames and are whole numbers of physics frames (60 per second).",
+      "additionalProperties": { "$ref": "#/$defs/param_value" }
+    },
+    "palette_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "hex"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "hex": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "a colour must be written as #RRGGBB, six hexadecimal digits"
+        }
+      }
+    },
+    "tunable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "type", "default", "description"],
+      "properties": {
+        "key": { "$ref": "#/$defs/snake_key" },
+        "type": { "enum": ["number", "integer", "boolean", "enum"] },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "default": { "type": ["number", "boolean", "string"], "maxLength": 40 },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 12,
+          "items": { "$ref": "#/$defs/snake_key" }
+        },
+        "description": { "type": "string", "minLength": 1, "maxLength": 160 }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "params"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebab_id" },
+        "kind": { "enum": ["score", "timer", "win", "lose", "spawn", "modifier"] },
+        "params": { "$ref": "#/$defs/params" }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "params"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebab_id" },
+        "kind": { "$ref": "#/$defs/snake_key" },
+        "count": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "params": { "$ref": "#/$defs/params" }
+      }
+    },
+    "ai_behaviour": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "params"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebab_id" },
+        "kind": { "$ref": "#/$defs/snake_key" },
+        "applies_to": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/kebab_id" },
+          "description": "ids of the entities this behaviour drives"
+        },
+        "params": { "$ref": "#/$defs/params" }
+      }
+    }
+  }
+}

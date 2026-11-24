@@ -188,6 +188,18 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
       node "$ROOT/engine/cores/rink/lab/balance.mjs" --exe engine/cores/rink/lab/bin/rinklab-thirdlife.exe --cartridge hockey.thirdlife         --baseline engine/cores/rink/lab/balance.thirdlife.baseline.json "$@"
     fi
     ;;
+  # ---- lane E2 (cartridge): a measured check of a cartridge before a person plays it ----
+  #   engine/tools/rink.sh check-cartridge <file.cartridge.json> [--rules <file.rules.json>] [--seeds N] [--plan-seeds M] [--json-only]
+  #   thirdjam's validator, then the lab plays it headless (thirdjam's regular playtester with sprint, N seeds a level, and the planning
+  #   hand, M seeds a level, at rookie / pro / all_star) and says what a person will meet; a tl.rink.check/1 JSON line last
+  check-cartridge)
+    if [[ " $* " == *" --rules "* ]]; then
+      [ -f "$ROOT/engine/cores/rink/lab/bin/rinklab-thirdlife.exe" ] || "$0" lab-build-thirdlife >/dev/null || { echo "NOT RUN  rink check-cartridge: rinklab-thirdlife.exe could not be built"; exit 2; }
+    else
+      [ -f "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" ] || "$0" lab-build >/dev/null || { echo "NOT RUN  rink check-cartridge: rinklab.exe could not be built"; exit 2; }
+    fi
+    node "$ROOT/engine/cores/rink/lab/check_cartridge.mjs" "$@"
+    ;;
   *)
     sed -n '2,15p' "$0"; exit 2 ;;
 esac
