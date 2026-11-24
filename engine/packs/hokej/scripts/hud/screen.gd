@@ -185,13 +185,13 @@ static func _find_figure(root: Node, p: Vector2) -> Node3D:
 
 ## What the buttons say this frame (UpdateControlsPanel's gathering, HUDControlsPanel.cpp:339-411), read from the core's glue:
 ## possession as the buttons read it (JamControls::HasPuckForButtons, computed in the glue: the snapshot's
-## Controls.HasPuckForButtons, asked of lane K1; absent = false), the verbs the last step resolved (the FJamInput the human
+## Controls.ButtonsWithPuck, SNAPSHOT.md v1.2; absent = false), the verbs the last step resolved (the FJamInput the human
 ## got, `last_in` = rink.last_human_input()), the keys down (`last_raw.Down`, Unreal key names) and the cross-check's hold
 ## (Controls.CrossHoldSteps). `_human` is unused (the shell has no button resolver of its own since the raw glue).
 static func ui_of(snap: Dictionary, _human, last_in: Dictionary, last_raw: Dictionary) -> Dictionary:
 	var me: int = int(snap["HumanIndex"])
 	var ctl: Dictionary = snap.get("Controls", {})
-	var with: bool = bool(ctl.get("HasPuckForButtons", false))
+	var with: bool = bool(ctl.get("ButtonsWithPuck", false))
 	var down: PackedStringArray = last_raw.get("Down", PackedStringArray())
 	var held: Dictionary = {}
 	# the two-role buttons as the last step resolved them (JamControls::LastHumanButtons, cpp:361-365)
@@ -225,5 +225,5 @@ static func ui_of(snap: Dictionary, _human, last_in: Dictionary, last_raw: Dicti
 	var s: Dictionary = snap["Skaters"][me]
 	# HumanStamina01 (HokejGameMode.cpp:1588): Stamina / StaminaFull, full = drain_frames x refill_frames (180 x 360, JamCartridge.h:81-82)
 	var st: int = int(s.get("Stamina", -1))
-	return {"with_puck": with, "held": held, "press": press, "saucer": false, "braced": braced, "paused": false,
+	return {"with_puck": with, "hit_pressed": bool(last_in.get("bCheck", false)) or bool(last_in.get("bLift", false)), "held": held, "press": press, "saucer": false, "braced": braced, "paused": false,
 		"stamina01": 1.0 if st < 0 else clampf(float(st) / float(180 * 360), 0.0, 1.0)}
