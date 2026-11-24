@@ -1,0 +1,950 @@
+{
+"schema": "tl.rink.react_log/1",
+"source": "thirdjam HEAD 8dc713c6 content on the 15 Nov binaries, -cut=hockey.regular ?level=pro, jam.ScriptHuman 2 (K6 round 1's reference run)",
+"frames": 13620,
+"events": [
+[
+1136,
+"board",
+"none",
+-31.651,
+-22.5,
+0.232,
+-1
+],
+[
+1163,
+"board",
+"skater",
+-31.594,
+-22.5,
+1.0,
+2
+],
+[
+1307,
+"goal",
+"none",
+-41.171,
+0.11,
+1.0,
+7
+],
+[
+1786,
+"board",
+"skater",
+11.578,
+22.5,
+0.769,
+5
+],
+[
+2412,
+"board",
+"none",
+32.081,
+22.5,
+0.392,
+-1
+],
+[
+2418,
+"board",
+"none",
+32.132,
+22.5,
+0.426,
+-1
+],
+[
+2419,
+"board",
+"skater",
+31.994,
+22.5,
+1.0,
+6
+],
+[
+2476,
+"board",
+"skater",
+26.719,
+22.5,
+0.74,
+1
+],
+[
+2484,
+"board",
+"skater",
+27.35,
+22.5,
+0.482,
+1
+],
+[
+2493,
+"board",
+"skater",
+25.658,
+22.5,
+0.502,
+0
+],
+[
+2742,
+"board",
+"skater",
+24.228,
+-22.5,
+0.857,
+2
+],
+[
+2755,
+"board",
+"skater",
+23.659,
+-22.5,
+0.869,
+5
+],
+[
+2771,
+"board",
+"none",
+16.656,
+-22.5,
+0.233,
+-1
+],
+[
+2784,
+"board",
+"skater",
+17.27,
+-22.5,
+0.676,
+7
+],
+[
+3525,
+"board",
+"none",
+38.168,
+22.5,
+0.416,
+-1
+],
+[
+3531,
+"board",
+"skater",
+37.815,
+22.5,
+1.0,
+6
+],
+[
+3896,
+"board",
+"none",
+9.863,
+22.5,
+0.342,
+-1
+],
+[
+3902,
+"board",
+"none",
+9.234,
+22.5,
+0.413,
+-1
+],
+[
+3903,
+"board",
+"skater",
+9.263,
+22.5,
+1.0,
+7
+],
+[
+3957,
+"board",
+"skater",
+5.185,
+22.5,
+0.722,
+1
+],
+[
+4252,
+"goal",
+"none",
+-41.127,
+0.159,
+1.0,
+7
+],
+[
+4670,
+"board",
+"skater",
+-10.108,
+22.5,
+0.498,
+1
+],
+[
+4951,
+"board",
+"skater",
+-29.239,
+22.5,
+0.509,
+4
+],
+[
+4957,
+"board",
+"skater",
+-27.249,
+22.5,
+0.472,
+7
+],
+[
+5321,
+"board",
+"none",
+11.476,
+-22.5,
+0.313,
+-1
+],
+[
+5323,
+"board",
+"skater",
+11.3,
+-22.5,
+0.806,
+6
+],
+[
+5341,
+"board",
+"skater",
+14.815,
+-22.5,
+0.939,
+0
+],
+[
+5893,
+"board",
+"none",
+28.18,
+-22.5,
+0.389,
+-1
+],
+[
+5894,
+"board",
+"skater",
+28.176,
+-22.5,
+1.0,
+7
+],
+[
+5917,
+"board",
+"skater",
+27.084,
+-22.5,
+0.822,
+7
+],
+[
+5977,
+"board",
+"none",
+28.159,
+-22.5,
+0.293,
+-1
+],
+[
+5979,
+"board",
+"skater",
+28.217,
+-22.5,
+0.772,
+5
+],
+[
+6350,
+"board",
+"skater",
+32.162,
+22.5,
+0.587,
+1
+],
+[
+6382,
+"board",
+"none",
+44.438,
+20.724,
+0.237,
+-1
+],
+[
+6383,
+"board",
+"skater",
+41.127,
+22.5,
+0.921,
+5
+],
+[
+6385,
+"board",
+"skater",
+41.523,
+22.49,
+1.0,
+5
+],
+[
+6390,
+"board",
+"none",
+43.959,
+21.344,
+0.277,
+-1
+],
+[
+6393,
+"board",
+"skater",
+43.081,
+22.023,
+0.722,
+0
+],
+[
+6519,
+"board",
+"skater",
+45.0,
+-5.492,
+0.959,
+7
+],
+[
+6572,
+"board",
+"skater",
+45.0,
+11.76,
+0.97,
+1
+],
+[
+7257,
+"board",
+"skater",
+-45.0,
+-11.745,
+0.462,
+4
+],
+[
+7299,
+"board",
+"skater",
+22.544,
+-22.5,
+0.804,
+8
+],
+[
+7656,
+"board",
+"skater",
+45.0,
+2.529,
+1.0,
+8
+],
+[
+8462,
+"board",
+"none",
+41.006,
+22.5,
+0.343,
+-1
+],
+[
+8464,
+"board",
+"skater",
+40.862,
+22.5,
+0.919,
+1
+],
+[
+8476,
+"board",
+"skater",
+42.294,
+22.352,
+1.0,
+6
+],
+[
+8488,
+"board",
+"skater",
+37.555,
+22.5,
+0.385,
+1
+],
+[
+8624,
+"board",
+"skater",
+23.283,
+22.5,
+0.958,
+2
+],
+[
+12221,
+"board",
+"skater",
+-45.0,
+-6.668,
+1.0,
+3
+],
+[
+12240,
+"board",
+"skater",
+-45.0,
+-4.699,
+1.0,
+5
+],
+[
+12364,
+"board",
+"skater",
+-31.617,
+-22.5,
+0.525,
+6
+],
+[
+12426,
+"board",
+"skater",
+-20.448,
+-22.5,
+1.0,
+5
+],
+[
+12462,
+"board",
+"skater",
+-28.321,
+-22.5,
+1.0,
+2
+],
+[
+12464,
+"board",
+"skater",
+-22.302,
+-22.5,
+0.443,
+5
+],
+[
+12928,
+"board",
+"skater",
+45.0,
+-3.115,
+1.0,
+6
+],
+[
+12936,
+"board",
+"skater",
+45.0,
+-3.6,
+1.0,
+6
+],
+[
+12977,
+"board",
+"none",
+45.0,
+4.073,
+0.348,
+-1
+]
+],
+"reacts": [
+{
+"frame": 1163,
+"what": "cap",
+"cap": 41,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 0.71
+},
+{
+"frame": 1307,
+"what": "goal",
+"end": "-x"
+},
+{
+"frame": 1786,
+"what": "cap",
+"cap": 10,
+"of": 73,
+"strength": 0.77,
+"tilt": 20.0,
+"hop": 16.9,
+"dist": 0.55
+},
+{
+"frame": 1786,
+"what": "rattle",
+"piece": "ArenaBenchPos",
+"strength": 0.77,
+"roll": 2.69
+},
+{
+"frame": 2419,
+"what": "cap",
+"cap": 4,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 0.71
+},
+{
+"frame": 2476,
+"what": "cap",
+"cap": 6,
+"of": 73,
+"strength": 0.74,
+"tilt": 19.2,
+"hop": 16.3,
+"dist": 1.25
+},
+{
+"frame": 2484,
+"what": "cap",
+"cap": 5,
+"of": 73,
+"strength": 0.48,
+"tilt": 12.5,
+"hop": 10.6,
+"dist": 1.74
+},
+{
+"frame": 2493,
+"what": "cap",
+"cap": 6,
+"of": 73,
+"strength": 0.5,
+"tilt": 13.9,
+"hop": 11.8,
+"dist": 0.21
+},
+{
+"frame": 2742,
+"what": "cap",
+"cap": 56,
+"of": 73,
+"strength": 0.86,
+"tilt": 22.3,
+"hop": 18.9,
+"dist": 0.97
+},
+{
+"frame": 2755,
+"what": "cap",
+"cap": 56,
+"of": 73,
+"strength": 0.87,
+"tilt": 22.0,
+"hop": 19.6,
+"dist": 0.41
+},
+{
+"frame": 2784,
+"what": "cap",
+"cap": 54,
+"of": 73,
+"strength": 0.68,
+"tilt": 17.6,
+"hop": 14.9,
+"dist": 1.23
+},
+{
+"frame": 3531,
+"what": "cap",
+"cap": 3,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 1.51
+},
+{
+"frame": 3903,
+"what": "cap",
+"cap": 10,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 1.77
+},
+{
+"frame": 3903,
+"what": "rattle",
+"piece": "ArenaBenchPos",
+"strength": 1.0,
+"roll": 3.5
+},
+{
+"frame": 3957,
+"what": "cap",
+"cap": 12,
+"of": 73,
+"strength": 0.72,
+"tilt": 18.8,
+"hop": 15.9,
+"dist": 1.37
+},
+{
+"frame": 3957,
+"what": "rattle",
+"piece": "ArenaBenchPos",
+"strength": 0.72,
+"roll": 2.53
+},
+{
+"frame": 4252,
+"what": "goal",
+"end": "-x"
+},
+{
+"frame": 4670,
+"what": "cap",
+"cap": 16,
+"of": 73,
+"strength": 0.5,
+"tilt": 13.0,
+"hop": 11.0,
+"dist": 0.53
+},
+{
+"frame": 4670,
+"what": "rattle",
+"piece": "ArenaBenchNeg",
+"strength": 0.5,
+"roll": 1.74
+},
+{
+"frame": 4951,
+"what": "cap",
+"cap": 21,
+"of": 73,
+"strength": 0.51,
+"tilt": 13.2,
+"hop": 11.2,
+"dist": 0.57
+},
+{
+"frame": 4957,
+"what": "cap",
+"cap": 21,
+"of": 73,
+"strength": 0.47,
+"tilt": 12.3,
+"hop": 10.4,
+"dist": 1.43
+},
+{
+"frame": 5323,
+"what": "cap",
+"cap": 53,
+"of": 73,
+"strength": 0.81,
+"tilt": 21.0,
+"hop": 17.7,
+"dist": 1.14
+},
+{
+"frame": 5341,
+"what": "cap",
+"cap": 54,
+"of": 73,
+"strength": 0.94,
+"tilt": 24.4,
+"hop": 20.7,
+"dist": 1.23
+},
+{
+"frame": 5894,
+"what": "cap",
+"cap": 57,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 1.31
+},
+{
+"frame": 5917,
+"what": "cap",
+"cap": 57,
+"of": 73,
+"strength": 0.82,
+"tilt": 21.4,
+"hop": 18.1,
+"dist": 0.23
+},
+{
+"frame": 5979,
+"what": "cap",
+"cap": 57,
+"of": 73,
+"strength": 0.77,
+"tilt": 20.1,
+"hop": 17.0,
+"dist": 1.35
+},
+{
+"frame": 6350,
+"what": "cap",
+"cap": 4,
+"of": 73,
+"strength": 0.59,
+"tilt": 15.3,
+"hop": 12.9,
+"dist": 0.54
+},
+{
+"frame": 6383,
+"what": "cap",
+"cap": 2,
+"of": 73,
+"strength": 0.92,
+"tilt": 24.0,
+"hop": 20.3,
+"dist": 1.21
+},
+{
+"frame": 6385,
+"what": "cap",
+"cap": 2,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 1.61
+},
+{
+"frame": 6393,
+"what": "cap",
+"cap": 1,
+"of": 73,
+"strength": 0.72,
+"tilt": 20.6,
+"hop": 17.4,
+"dist": 0.38
+},
+{
+"frame": 6519,
+"what": "cap",
+"cap": 66,
+"of": 73,
+"strength": 0.96,
+"tilt": 24.9,
+"hop": 21.1,
+"dist": 1.03
+},
+{
+"frame": 6572,
+"what": "cap",
+"cap": 71,
+"of": 73,
+"strength": 0.97,
+"tilt": 25.2,
+"hop": 21.3,
+"dist": 0.25
+},
+{
+"frame": 7257,
+"what": "cap",
+"cap": 35,
+"of": 73,
+"strength": 0.46,
+"tilt": 12.0,
+"hop": 10.2,
+"dist": 1.59
+},
+{
+"frame": 7299,
+"what": "cap",
+"cap": 56,
+"of": 73,
+"strength": 0.8,
+"tilt": 20.9,
+"hop": 17.7,
+"dist": 0.73
+},
+{
+"frame": 7656,
+"what": "cap",
+"cap": 69,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 1.78
+},
+{
+"frame": 8464,
+"what": "cap",
+"cap": 2,
+"of": 73,
+"strength": 0.92,
+"tilt": 23.9,
+"hop": 20.2,
+"dist": 0.95
+},
+{
+"frame": 8476,
+"what": "cap",
+"cap": 1,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 1.23
+},
+{
+"frame": 8624,
+"what": "cap",
+"cap": 7,
+"of": 73,
+"strength": 0.96,
+"tilt": 24.9,
+"hop": 21.1,
+"dist": 1.42
+},
+{
+"frame": 12221,
+"what": "cap",
+"cap": 33,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 0.56
+},
+{
+"frame": 12240,
+"what": "cap",
+"cap": 33,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 1.42
+},
+{
+"frame": 12364,
+"what": "cap",
+"cap": 41,
+"of": 73,
+"strength": 0.53,
+"tilt": 13.7,
+"hop": 11.6,
+"dist": 0.73
+},
+{
+"frame": 12426,
+"what": "cap",
+"cap": 44,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 0.4
+},
+{
+"frame": 12462,
+"what": "cap",
+"cap": 42,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 1.05
+},
+{
+"frame": 12928,
+"what": "cap",
+"cap": 67,
+"of": 73,
+"strength": 1.0,
+"tilt": 26.0,
+"hop": 22.0,
+"dist": 0.23
+},
+{
+"frame": 12936,
+"what": "cap",
+"cap": 67,
+"of": 73,
+"strength": 1.0,
+"tilt": 29.5,
+"hop": 25.0,
+"dist": 0.7
+}
+]
+}

@@ -10,6 +10,7 @@ extends RefCounted
 ##   var arena = ctx.cores.part("rink", "arena")                        # this script
 ##   arena.build(ctx.root, {"rink": cart["game"]["rink"]})
 ##   arena.light(ctx.root)                                              # frame 0: the rig's light and post for the style
+##   var react = arena.reactions(ctx.root, rink); react.frame(snap)     # the lamps, the net, the caps, the cheer (round 3)
 ##
 ## Options of build (unknown keys are errors): `rink` (thirdjam's game.rink: with it the rink's own surfaces are drawn
 ## over the pack's rink, see _rink_surfaces; absent = the hall alone), `goals` (false: thirdjam's goal meshes stay
@@ -188,6 +189,14 @@ static func hall_post() -> Dictionary:
 	return {"grade": {"plum_density": 0.0, "olive_fill": 0.0, "split": 0.0, "sat": float(sat[0]), "contrast": float(con[0]),
 			"vignette": float(pp.get("vignette_intensity", 0.0)) * VIGNETTE_K},
 		"ink": HALL_INK}
+
+
+## The hall answering the game (round 3, rink_react.gd: thirdjam's ARinkActor reactions and BP_ArenaCrowd's cheer): the
+## goal lamps, the net's shake, the rocking board caps and pieces, the crowd standing. `anchor`: the node the hall was
+## built under (or the hall itself); `rink`: thirdjam's game.rink. Call its frame(snap) every simulated frame.
+##   var react = arena.reactions(ctx.root, cart["game"]["rink"])
+static func reactions(anchor: Node, rink: Dictionary) -> RefCounted:
+	return preload("rink_react.gd").new(anchor, rink, table(), not TLStyle.headless())
 
 
 ## The crowd's cheer for the end at +x / -x (0 seated .. 1 up), at a frame of the game (thirdjam: MPC_Crowd, written by
