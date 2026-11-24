@@ -18,6 +18,13 @@ extends Control
 ##                                      Try it (recorded), Pass, Hold + note, Pass ... until done; one line per screen
 ##   --mode=menu --menu [--shots=<abs dir>]   the exe's own main menu (res://boot/boot.tscn, L4's boot/hub.gd): click
 ##                                      Create, the page opens; click its Menu button, `closed` brings the menu back
+##   --mode=iterate --menu --job=<abs job dir> --flags=<abs json> [--shots=<abs dir>] [--grow=<text>] [--change=<text>]
+##                                      E4 (24-25 Nov): the person's path through iterations on a real Foreman (the
+##                                      phases fixture made by foreman/dist/testing/grow-steps.js: fake adapter, fake
+##                                      runner): Continue, Pass x3, done; a change that grows the game, done version 2;
+##                                      a change to a package, done version 3; Play (recorded); Add to menu; My games
+##                                      and reopen; the main menu's Dungeons with the game in it. TL_USER_DUNGEONS
+##                                      names the person's list (the caller gives a scratch file); exit 0 when all held
 ##   --fixtures=<abs dir>               default res://ui/fixtures/create
 ##   --try-stub=<abs pack dir>          the pack Try it / Play would open (default: the seed seed_wall)
 
@@ -50,6 +57,7 @@ func _ready() -> void:
 		"live": _live()
 		"phases": _phases()
 		"menu": _menu()
+		"iterate": _iterate()
 
 
 func _new_page() -> void:
@@ -57,9 +65,13 @@ func _new_page() -> void:
 		page.free()
 	page = Create.instantiate()
 	var stub: String = str(args.get("try-stub", ProjectSettings.globalize_path("res://seeds/seed_wall")))
-	if str(args.get("mode", "")) in ["live", "phases"]:
+	if str(args.get("mode", "")) in ["live", "phases", "iterate"]:
 		var f: Variant = JobModel.read_json(str(args.get("flags", "")))
-		page.call("setup", {"jobs": str(args.get("jobs", "")), "flags": (f as Dictionary).get("flags", {}) if f is Dictionary else {}})
+		var o: Dictionary = {"jobs": str(args.get("jobs", "")), "flags": (f as Dictionary).get("flags", {}) if f is Dictionary else {}}
+		if args.has("repo"):
+			# E4: the door as an exported build meets it (res:// is no folder; the exe in <repo>/dist/ThirdLife), as selftest 780
+			o["door"] = {"res_dir": "", "exe": str(args["repo"]).path_join("dist/ThirdLife/ThirdLife.exe")}
+		page.call("setup", o)
 	else:
 		page.call("setup", {"jobs": fixtures, "dry": true, "now": NOW, "try_stub": stub, "flags": {"new": ["--adapter", "fake"]}})
 	add_child(page)
@@ -76,7 +88,8 @@ func _frames(n: int) -> void:
 
 func _shot(name_: String) -> void:
 	await _frames(4)
-	await RenderingServer.frame_post_draw
+	if not shots.is_empty():
+		await RenderingServer.frame_post_draw          # E4: no picture asked (a headless run): no wait for a drawn frame
 	if page != null:
 		var words: Dictionary = Model.screen_words(page)
 		print("[create] words %s %d  %s" % [name_, int(words["total"]), JSON.stringify(words["items"])])
@@ -423,3 +436,122 @@ func _menu() -> void:
 	if not shots.is_empty():
 		await _shot("menu-3-back")
 	get_tree().quit(0 if menu_back else 1)
+
+
+# ---- iterate (E4): done -> change -> a new version -> Play; My games -> reopen; Add to menu -> the menu
+
+var _it_ok: bool = true
+var _it_t0: int = 0
+
+
+func _it_say(what: String, ok: bool) -> void:
+	_it_ok = _it_ok and ok
+	print("[create] iterate %s %s (frame %d)" % ["PASS" if ok else "FAIL", what, Engine.get_process_frames() - _it_t0])
+
+
+## Waits until `want` holds, counted in frames (each frame also sleeps 10 ms, as selftest 780: `limit_s` * 100 frames
+## is about `limit_s` seconds for the Foreman's processes to answer).
+func _it_wait(want: Callable, limit_s: float) -> bool:
+	for i: int in int(limit_s * 100.0):
+		if want.call():
+			return true
+		await get_tree().process_frame
+		OS.delay_msec(10)
+	if not str(page.get("message")).is_empty():
+		print("[create] iterate toast: %s" % str(page.get("message")))
+	return want.call()
+
+
+func _iterate() -> void:
+	_it_t0 = Engine.get_process_frames()
+	var grow_text: String = str(args.get("grow", "add rocket skates: hold the boost key to fly forward"))
+	var change_text: String = str(args.get("change", "the rallies are too slow: make the court smaller"))
+	await _frames(10)
+	var dir: String = str(args.get("job", ""))
+	var screen_is: Callable = func(s: String) -> bool: return page.call("shown_screen") == s
+	page.call("show_job", dir)
+	await _frames(4)
+	_it_say("reopened job shows the build with Continue (no Foreman)", page.call("shown_screen") == "building" and page.find_child("Continue", true, false) != null)
+	await _shot("it-01-continue")
+	_press("Continue")
+	for i: int in 3:
+		var at: bool = await _it_wait(func() -> bool: return screen_is.call("phase_done") and not bool(page.get("settling")), 240.0)
+		_it_say("phase %d waits for the person" % (i + 1), at)
+		if i == 0:
+			await _shot("it-02-phase-done")
+		_press("Pass")
+		await _frames(10)
+	var done1: bool = await _it_wait(func() -> bool: return screen_is.call("done"), 300.0)
+	_it_say("version 1 is ready", done1 and Model.version_n(page.get("job")) == 1)
+	await _shot("it-03-done-v1")
+	for round_: Array in [[grow_text, 2, "grow"], [change_text, 3, "change"]]:
+		var box: LineEdit = page.find_child("ChangeBox", true, false)
+		if box == null:
+			_it_say("change box on done", false)
+			break
+		box.text = str(round_[0])
+		box.text_changed.emit(box.text)
+		await _shot("it-%02d-typed-%s" % [int(round_[1]) * 2, str(round_[2])])
+		_press("SendChange")
+		var building: bool = await _it_wait(func() -> bool: return screen_is.call("building") and page.find_child("Changing", true, false) != null, 60.0)
+		_it_say("%s round shows Changing: <words>" % str(round_[2]), building)
+		await _frames(30)
+		await _shot("it-%02d-changing-%s" % [int(round_[1]) * 2 + 1, str(round_[2])])
+		var back: bool = await _it_wait(func() -> bool: return screen_is.call("done") and str(page.get("busy")).is_empty() and Model.version_n(page.get("job")) == int(round_[1]), 300.0)
+		_it_say("%s round ends with version %d" % [str(round_[2]), int(round_[1])], back)
+		await _shot("it-%02d-done-v%d" % [int(round_[1]) * 2 + 2, int(round_[1])])
+	var job: Dictionary = page.get("job")
+	var pk: Dictionary = job.get("packages", {})
+	_it_say("the grow round added the package rocket; the change round re-opened court", pk.has("rocket") and str((pk["rocket"] as Dictionary).get("state", "")) == "promoted")
+	(page.get("door") as RefCounted).set("dry", true)
+	_press("Play")
+	(page.get("door") as RefCounted).set("dry", false)
+	var launch: String = " ".join(page.get("last_launch"))
+	_it_say("Play opens the newest version (%s)" % launch, launch.contains("@0.1.2"))
+	_press("AddMenu")
+	await _frames(4)
+	_it_say("Add to menu: the game is in the person's list", page.find_child("RemoveMenu", true, false) != null)
+	await _shot("it-08-in-menu")
+	page.call("new_idea")
+	await _frames(4)
+	_press("MyGames")
+	await _frames(4)
+	_it_say("My games lists the job", page.call("shown_screen") == "games" and page.find_child("Game0", true, false) != null)
+	await _shot("it-09-my-games")
+	_press("Game0")
+	await _frames(4)
+	_it_say("a row reopens the game where it stands (done, version 3)", page.call("shown_screen") == "done" and str(page.get("job_dir")) == dir)
+	await _shot("it-10-reopened")
+	# the main menu: Dungeons lists the game (the person's list beside engine/boot/dungeons.json)
+	page.queue_free()
+	page = null
+	if DisplayServer.get_name() == "headless":
+		# the menu needs a window: headless (selftest 781) reads the rows boot/hub.gd's load_rows() reads
+		var List: GDScript = load("res://kernel/dungeon/dungeons.gd")
+		var listed: bool = false
+		for r: Dictionary in List.call("read_menu")["dungeons"]:
+			if r.get("mine", false) == true and str(r["title"]) == str(job.get("title", "?")) and not str(List.call("resolve", str(r["pack"]), "")).is_empty():
+				listed = true
+		_it_say("the main menu's rows (read_menu, headless) list the game, playable", listed)
+		print("[create] iterate %s" % ("all held" if _it_ok else "NOT all held"))
+		get_tree().quit(0 if _it_ok else 1)
+		return
+	var boot: Node = (load("res://boot/boot.tscn") as PackedScene).instantiate()
+	add_child(boot)
+	await _frames(60)
+	var menu: Node = null
+	for n: Node in boot.find_children("*", "", true, false):
+		if n.has_method("_show_list"):
+			menu = n
+			break
+	if menu != null:
+		menu.call("_show_list")
+	await _frames(20)
+	var seen: bool = false
+	for b: Node in boot.find_children("Dungeon*", "Button", true, false):
+		if (b as Button).text.contains("made by you in Create") and (b as Button).text.contains(str(job.get("title", "?"))) and not (b as Button).disabled:
+			seen = true
+	_it_say("the main menu's Dungeons lists the game, playable", seen)
+	await _shot("it-11-menu-dungeons")
+	print("[create] iterate %s" % ("all held" if _it_ok else "NOT all held"))
+	get_tree().quit(0 if _it_ok else 1)
