@@ -61,6 +61,10 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-24 ~23:20 (owner, verbatim): "alhough the hockey feel like thirdjam, we will need to use rest of this night to
+  achieve game like this can be built by user from the editor, our engine and prompt process should be capable and user
+  should have path even through more iterations to get there". The hockey port (branch hokej) is accepted as feeling like
+  thirdjam; the night's goal moves to the EDITOR: a user reaches a hokej-class game from Create, through iterations.
 - 2026-11-23 ~16:20 (owner, after playing the hockey behaviour pass, branch d23-hockey; verbatim in
   docs/design/DIRECTIONS.md): "the same garbage as before. It is not even close to thirdjam"; deformed players, a stick
   flying and under the surface, speed and sprint not balanced as thirdjam, unnatural animations. He asked for ten
@@ -363,3 +367,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 24 Nov 20:50 RESUMED; merged-head check: K2's verb goldens red after K1 r4's single-precision glue (sent to K2).
 - 24 Nov 21:52 standup: hokej 8fff52d: thirdlife variant core, shadows, figure goldens green, first match to the end card; 5 agents running (owner's cap), models by task.
 - 24 Nov 22:53 standup: hokej holds sound, shadows, celebration, the Third Life cut; K8 kept E03 (no-key take gone); owner build after K5's ring fix.
+- 24 Nov ~23:20 owner: hockey feels like thirdjam; rest of the night = the editor path to a hokej-class game by a user, through iterations (scout launched).
