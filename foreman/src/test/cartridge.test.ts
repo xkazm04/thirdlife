@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { REPO_ROOT } from "../paths.js";
 import { buildCorpus } from "../cartridge_corpus.js";
-import { validateCartridgeText, validateCartridge, validateRulesText, applyChanges, knownRules, parsePath, shippedCartridges, RINK_CONTENT_DIR } from "../cartridge.js";
+import { validateCartridgeText, validateCartridge, validateRulesText, applyChanges, knownRules, ruleSwitches, parsePath, shippedCartridges, RINK_CONTENT_DIR } from "../cartridge.js";
 
 const FIXTURE = path.join(REPO_ROOT, "foreman", "src", "test", "fixtures", "cartridge-cpp-verdicts.json");
 const RERECORD = "re-record: cd foreman && npm run build && node dist/cartridge_corpus.js --write ../.tl/cartcorpus && godot --headless --path engine "
@@ -81,7 +81,10 @@ test("cartridge: key paths", () => {
 });
 
 test("cartridge: the rules sidecar knows the switches of native/patches-thirdlife", () => {
-  assert.ok(knownRules().includes("net_carry_wall"), knownRules().join(","));
+  for (const k of ["net_carry_wall", "carry_holds_body", "over_top_decel_mps2", "sprint_restart_share"]) assert.ok(knownRules().includes(k), `${k} in ${knownRules().join(",")}`);
+  const decel = ruleSwitches().find((s) => s.key === "over_top_decel_mps2")!;
+  assert.deepEqual([decel.min, decel.max], [0, 60]);
+  assert.match(validateRulesText('{"schema":"tl.rink.rules/1","rules":{"over_top_decel_mps2":61}}').errors[0]!, /outside 0\.\.60/);
   assert.equal(validateRulesText('{"schema":"tl.rink.rules/1","rules":{"net_carry_wall":true}}').ok, true);
   assert.match(validateRulesText('{"schema":"tl.rink.rules/1","rules":{"rocket_skates":1}}').errors[0]!, /unknown rule "rocket_skates"/);
 });

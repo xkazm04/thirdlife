@@ -49,14 +49,35 @@ export async function validateCartridge(obj: unknown): Promise<Verdict> {
 
 // ---------------------------------------------------------------- the rules sidecar (tl.rink.rules/1)
 
-/** The switches native/patches-thirdlife defines: every `if (K == "<key>")` line of TlSetRule in the patch files. */
-export function knownRules(patchesDir: string = RINK_PATCHES_DIR): string[] {
+export interface RuleSwitch {
+  key: string;
+  /** The value range TlSetRule accepts (`if (Value < min || Value > max) return false;` in its line); absent = any number. */
+  min?: number;
+  max?: number;
+  /** The patch file that adds it. */
+  patch: string;
+}
+
+/** The switches native/patches-thirdlife defines: every `if (K == "<key>") { ... }` line of TlSetRule in the patch files, with
+ *  the value range the line refuses outside of (patch 0004: `if (Value < 0.0 || Value > 60.0) return false;`). */
+export function ruleSwitches(patchesDir: string = RINK_PATCHES_DIR): RuleSwitch[] {
   if (!fs.existsSync(patchesDir)) return [];
-  const keys = new Set<string>();
+  const out = new Map<string, RuleSwitch>();
   for (const f of fs.readdirSync(patchesDir).filter((n) => n.endsWith(".patch")).sort()) {
-    for (const m of fs.readFileSync(path.join(patchesDir, f), "utf8").matchAll(/^\+\s*if \(K == "([a-z0-9_]+)"\)/gm)) keys.add(m[1]!);
+    for (const m of fs.readFileSync(path.join(patchesDir, f), "utf8").matchAll(/^\+\s*if \(K == "([a-z0-9_]+)"\)(.*)$/gm)) {
+      const sw: RuleSwitch = { key: m[1]!, patch: f };
+      const r = /if \(Value < (-?[\d.]+) \|\| Value > (-?[\d.]+)\) return false;/.exec(m[2] ?? "");
+      if (r) { sw.min = Number(r[1]); sw.max = Number(r[2]); }
+      else if (/return false/.test(m[2] ?? "")) throw new Error(`${f}: the switch ${sw.key} refuses values in a way this reader does not know: ${m[2]}`);
+      out.set(sw.key, sw);
+    }
   }
-  return [...keys].sort();
+  return [...out.values()].sort((x, y) => x.key.localeCompare(y.key));
+}
+
+/** The switch names (ruleSwitches without the ranges). */
+export function knownRules(patchesDir: string = RINK_PATCHES_DIR): string[] {
+  return ruleSwitches(patchesDir).map((s) => s.key);
 }
 
 const LEVELS = ["rookie", "pro", "all_star"];
@@ -84,7 +105,7 @@ export function validateRulesText(text: string, patchesDir: string = RINK_PATCHE
     return { ok: false, errors: [`rules file: ${(e as Error).message}`] };
   }
   if (typeof root !== "object" || root === null || Array.isArray(root)) return { ok: false, errors: ["rules file: not an object"] };
-  const known = new Set(knownRules(patchesDir));
+  const known = new Map(ruleSwitches(patchesDir).map((s) => [s.key, s]));
   const fail = (e: string): Verdict => ({ ok: false, errors: [e] });
   let schema = false;
   for (const [k, v] of Object.entries(root as Record<string, unknown>)) {
@@ -97,7 +118,10 @@ export function validateRulesText(text: string, patchesDir: string = RINK_PATCHE
       if (typeof v !== "object" || v === null || Array.isArray(v)) return fail("rules file: rules must be an object");
       for (const [rk, rv] of Object.entries(v as Record<string, unknown>)) {
         if (typeof rv !== "number" && typeof rv !== "boolean") return fail(`rules file: rule ${rk} must be a number or a bool`);
-        if (!known.has(rk)) return fail(`unknown rule "${rk}" (not a switch of native/patches-thirdlife)`);
+        const sw = known.get(rk);
+        if (!sw) return fail(`unknown rule "${rk}" (not a switch of native/patches-thirdlife)`);
+        const x = typeof rv === "boolean" ? (rv ? 1 : 0) : rv;
+        if ((sw.min !== undefined && x < sw.min) || (sw.max !== undefined && x > sw.max)) return fail(`rule "${rk}": ${x} is outside ${sw.min}..${sw.max} (${sw.patch})`);
       }
     } else if (k === "levels") {
       if (typeof v !== "object" || v === null || Array.isArray(v)) return fail("rules file: levels must be an object");

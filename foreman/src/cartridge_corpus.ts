@@ -90,6 +90,13 @@ const RULES: [string, string][] = [
   ["a tune without =", '{"schema":"tl.rink.rules/1","levels":{"pro":"speed_scale"}}'],
   ["a tune not a number", '{"schema":"tl.rink.rules/1","levels":{"pro":"speed_scale=fast"}}'],
   ["not JSON", "net carry wall on"],
+  // patches 0003-0004 (K8 round 2): a bool switch and two numbers with ranges TlSetRule enforces
+  ["every switch, in range", '{"schema":"tl.rink.rules/1","rules":{"net_carry_wall":true,"carry_holds_body":true,"over_top_decel_mps2":4,"sprint_restart_share":0.25}}'],
+  ["a decel at the top (60)", '{"schema":"tl.rink.rules/1","rules":{"over_top_decel_mps2":60}}'],
+  ["a decel past the top (61)", '{"schema":"tl.rink.rules/1","rules":{"over_top_decel_mps2":61}}'],
+  ["a negative decel", '{"schema":"tl.rink.rules/1","rules":{"over_top_decel_mps2":-1}}'],
+  ["a restart share past 1", '{"schema":"tl.rink.rules/1","rules":{"sprint_restart_share":1.5}}'],
+  ["a restart share as true (1)", '{"schema":"tl.rink.rules/1","rules":{"sprint_restart_share":true}}'],
 ];
 
 function sha1(t: string): string {

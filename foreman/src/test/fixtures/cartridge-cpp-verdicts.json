@@ -82,7 +82,7 @@
    "kind": "cartridge",
    "name": "shipped hockey.thirdlife.cartridge.json",
    "ok": true,
-   "sha1": "addb9658c705b7148a7b117546fc460ad1ff4b29"
+   "sha1": "8eb49a343b8171ed3c88800076432a17e4315a00"
   },
   {
    "error": "",
@@ -663,7 +663,7 @@
    "kind": "rules",
    "name": "rules: K8's hockey.thirdlife.rules.json",
    "ok": true,
-   "sha1": "6f08c022563b02164800f5927ea58a387d7e7bf2"
+   "sha1": "9ae18e5930945211ae76ed54b8876b6a56422692"
   },
   {
    "error": "",
@@ -741,6 +741,48 @@
    "name": "rules: not JSON",
    "ok": false,
    "sha1": "66d1abb2051d4a3d1f5b5e6cc27c7d757a08a09a"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: every switch, in range",
+   "ok": true,
+   "sha1": "cab7fa7d8c94abc6bc2243ac6f743593c78efadc"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: a decel at the top (60)",
+   "ok": true,
+   "sha1": "b49c8434b30f7ba323d2f815b79c7b53e8df441a"
+  },
+  {
+   "error": "unknown rule \"over_top_decel_mps2\" (not a switch of native/patches-thirdlife)",
+   "kind": "rules",
+   "name": "rules: a decel past the top (61)",
+   "ok": false,
+   "sha1": "9eb0e1de2b4de3319abde4f7437fa03a7953f1d7"
+  },
+  {
+   "error": "unknown rule \"over_top_decel_mps2\" (not a switch of native/patches-thirdlife)",
+   "kind": "rules",
+   "name": "rules: a negative decel",
+   "ok": false,
+   "sha1": "8eb5c0db6d3d93bbc94268b8022eb567a066aff1"
+  },
+  {
+   "error": "unknown rule \"sprint_restart_share\" (not a switch of native/patches-thirdlife)",
+   "kind": "rules",
+   "name": "rules: a restart share past 1",
+   "ok": false,
+   "sha1": "0a8e6ac3b9008777f1ddfa641fe76a00d0812da2"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: a restart share as true (1)",
+   "ok": true,
+   "sha1": "c161aed3ad82042aa6ad39e32750c82ab2c5b1a2"
   }
  ],
  "source": "RinkCore thirdjam",

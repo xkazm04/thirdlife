@@ -22,7 +22,7 @@ Parts 4 and 5, and the full key table, are generated from thirdjam's files by `s
 | file | what it is |
 |---|---|
 | `data/<name>.cartridge.json` in a pack | the game: a `tj.cartridge/1` cartridge. `ctx.cores.open("rink", "<name>.cartridge.json")` loads it (kernel API section 24) |
-| `data/<name>.rules.json` beside it (optional) | `tl.rink.rules/1`: switches the thirdjam schema has no key for (today one: `net_carry_wall`, a held puck cannot cross the goal line), and a bot-skill tune per level. Its presence opens the thirdlife core (`RinkCoreThirdlife`) instead of thirdjam's (`SNAPSHOT.md`, "Two cores") |
+| `data/<name>.rules.json` beside it (optional) | `tl.rink.rules/1`: switches the thirdjam schema has no key for (K8's patches 0002-0004: `net_carry_wall` a held puck cannot cross the goal line, `carry_holds_body`, `over_top_decel_mps2` 0..60, `sprint_restart_share` 0..1; a value outside its range is refused; `foreman/src/cartridge.ts` `ruleSwitches()` reads them and their ranges from the patch files), and a bot-skill tune per level. Its presence opens the thirdlife core (`RinkCoreThirdlife`) instead of thirdjam's (`SNAPSHOT.md`, "Two cores") |
 | `engine/cores/rink/schema/` | thirdjam's schema and limits (`cartridge.schema.json`, `game.schema.json`, `limits.json`) extracted from the C++ loader's embedded copy by `extract.py` (proved: the .inl regenerated from the files equals the original to the byte, and the files equal thirdjam 8dc713c6 `schema/`), and thirdjam's own validator `validate.mjs` + `strict-json.mjs`, copied byte for byte |
 | `native/content/Cartridges/` | every cartridge thirdjam ships: `hockey.regular` (the game), the modes in `modes/`, test cuts |
 
@@ -38,8 +38,8 @@ physics frames at 60 a second (`*_frames`; a key ending in `_seconds` or `_ms` i
 ## 2. Checking a cartridge before anybody plays it
 
 1. **Valid?** `foreman/src/cartridge.ts` `validateCartridgeText(text)` (or `node engine/cores/rink/schema/validate.mjs <file>`):
-   thirdjam's validator, the same verdict as the core's C++ loader on all 106 cases of the parity corpus (every shipped
-   cartridge, 56 broken and harmless copies of regular and Pond, 12 rules files; `foreman/src/test/cartridge.test.ts`).
+   thirdjam's validator, the same verdict as the core's C++ loader on all 112 cases of the parity corpus (every shipped
+   cartridge, 68 broken and harmless copies of regular and Pond, 18 rules files; `foreman/src/test/cartridge.test.ts`).
    Each error is a sentence that starts with the JSON pointer of the fault ("at /game/skater/speed: 33 is above the maximum
    16."), so a model can repair its own output. `validateRulesText` checks a sidecar the way the core's reader does.
 2. **A change, not a new file**: `applyChanges(cartridge, {"game.skater.speed": 13, "game.rink.length_m": 60})` applies a
