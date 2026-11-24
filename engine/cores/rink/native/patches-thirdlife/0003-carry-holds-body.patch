@@ -1,0 +1,90 @@
+diff -ruN a/thirdjam/Private/JamSim.cpp b/thirdjam/Private/JamSim.cpp
+--- a/thirdjam/Private/JamSim.cpp
++++ b/thirdjam/Private/JamSim.cpp
+@@ -1258,6 +1258,7 @@
+ 			TakeOwner = S.Index;
+ 		}
+ 	}
++	if (Config.Tl.bCarryHoldsBody) Puck.TlRider = RidingCarrier();   // THIRDLIFE PATCH 0003: who the puck rides with, after everything moved
+ 	// THIRDLIFE PATCH 0002 (FTlRules::bNetCarryWall): who holds the puck, after everything moved. A shot, a pass or another skater's touch lets it go.
+ 	if (Config.Tl.bNetCarryWall)
+ 	{
+@@ -3889,7 +3890,7 @@
+ 	if (!ToC.IsNearlyZero() && Dot(N, ToC) < 0.0) { const FVector2D Tn = N - ToC * Dot(N, ToC); N = Tn.IsNearlyZero() ? ToC : Tn.GetSafeNormal(); }
+ 	Puck.Pos = S.Pos + N * Min;
+ 	const double Vn = Dot(Puck.Vel - S.Vel, N);
+-	if (Vn < 0.0) Puck.Vel -= N * Vn;
++	if (Vn < 0.0 && !(Config.Tl.bCarryHoldsBody && Skaters.IsValidIndex(Ci))) Puck.Vel -= N * Vn;   // THIRDLIFE PATCH 0003: moved out of the body, still moving with its carrier
+ }
+ 
+ // Lane A216 (A212's FAULT 02:08: a carried puck sat 0.30-0.37 m inside another man for 6 frames and more, in a crowd): the substeps push a carried puck out of
+@@ -3921,7 +3922,7 @@
+ 			if (InGoal(To, 1, Puck.Z) || InGoal(To, -1, Puck.Z) || (FMath::Abs(Puck.Pos.X) < GoalLineX() && FMath::Abs(To.X) >= GoalLineX() - Eff(EJamStat::PuckRadius, -1) && FMath::Abs(To.Y) < Config.Rink.GoalWidthM * 0.5 + 0.2)) continue;   // never into a net or across its mouth: the net's own rules keep that puck
+ 			Puck.Pos = To;
+ 			const double Vn = Dot(Puck.Vel - S.Vel, N);
+-			if (Vn < 0.0) Puck.Vel -= N * Vn;
++			if (Vn < 0.0 && !Config.Tl.bCarryHoldsBody) Puck.Vel -= N * Vn;   // THIRDLIFE PATCH 0003: as BlockCarried
+ 		}
+ 	}
+ }
+@@ -4048,6 +4049,13 @@
+ 	const double Drag = Eff(EJamStat::PuckDrag, -1);
+ 	const double MaxSpeed = Eff(EJamStat::PuckMaxSpeed, -1);
+ 
++	// THIRDLIFE PATCH 0003 (FTlRules::bCarryHoldsBody): the puck rode with him when the last frame ended; nobody has touched it since and he has not
++	// released it; his velocity jumped this frame (a bounce off a body in CollideSkaters): the puck stays with him.
++	if (Config.Tl.bCarryHoldsBody && Skaters.IsValidIndex(Puck.TlRider) && Puck.LastTouch == Puck.TlRider && !bDrawOpen && Puck.Z <= 0.0)
++	{
++		const FJamSkaterState& Tr = Skaters[Puck.TlRider];
++		if (Tr.CanAct() && !Tr.bShotThisFrame && !Tr.bPassThisFrame && !OwnPuckClears(Tr) && FVector2D::Distance(Tr.Pos, Puck.Pos) <= CarrierReachM(Tr.Index)) Puck.Vel = Tr.Vel;
++	}
+ 	for (FJamSkaterState& S : Skaters) S.bTouchingPuck = false;
+ 	TArray<bool, TInlineAllocator<12>> Touched;
+ 	Touched.Init(false, Skaters.Num());
+@@ -4722,6 +4730,7 @@
+ 	H.AddI(Puck.LastTouch);
+ 	if (Config.Puck.bNetOwnWall) H.AddI(Puck.LastPlayedBy);   // lane A208: the last play (game.puck.net.own_wall)
+ 	if (Config.Tl.bNetCarryWall) H.AddI(Puck.TlHeldBy);   // THIRDLIFE PATCH 0002: state a rule reads across frames is hashed, behind its switch
++	if (Config.Tl.bCarryHoldsBody) H.AddI(Puck.TlRider);   // THIRDLIFE PATCH 0003
+ 	// R-0035 (lane A52): the height once the puck left the ice (a cut whose lift keys are all 0 hashes as before).
+ 	if (Puck.Z != 0.0 || Puck.VZ != 0.0) { H.AddQ(Puck.Z, 1000.0); H.AddQ(Puck.VZ, 1000.0); }
+ 	if (Puck.ShotgunFrames != 0) { H.AddI(Puck.ShotgunFrames); H.AddI(Puck.ShotgunBy); H.AddQ(Puck.ShotgunMul, 1000.0); }   // lane A84
+diff -ruN a/thirdjam/Public/JamCartridge.h b/thirdjam/Public/JamCartridge.h
+--- a/thirdjam/Public/JamCartridge.h
++++ b/thirdjam/Public/JamCartridge.h
+@@ -674,6 +674,14 @@
+ 	// the defending side (JamSim.cpp OwnNetWall): it must leave a blade by a shot or a pass to score. A deflection, a rebound and a puck off a defender score
+ 	// as before. false = thirdjam: a carry over the line is a goal (PLAY.md section 4 item 1).
+ 	bool bNetCarryWall = false;
++	// THIRDLIFE PATCH 0003 (experiment E03, pillar 1 "the puck is yours until someone takes it with a key"; the owner's R-0048: "a carried puck leaves its
++	// carrier only by an action ... never by an unpressed blade or a body's touch"). thirdjam means this (game.stick.passive_take false, BlockCarried) and
++	// leaks it: when another skater's body meets the carried puck, BlockCarried takes out the puck's motion into that body, the puck then moves at the
++	// closing speed against its own carrier, RidingCarrier's 4 m/s test calls it loose, and the human's ring or a bot's pickup arc takes it on the same
++	// frame (rinklab probe -which=take: head on, 6 of 6 without a key). With this switch a puck that rides with its carrier keeps his velocity through
++	// another body's touch and through his own bounce off a body: it leaves him by a shot, a pass, a poke, a lift, a check that stumbles or fells him.
++	// false = thirdjam.
++	bool bCarryHoldsBody = false;
+ };
+ // The host's one entry: sets a switch by its rules.json key. false = an unknown key (the host reports it: unknown keys are errors).
+ inline bool TlSetRule(FTlRules& R, const char* Key, double Value)
+@@ -682,6 +690,7 @@
+ 	const std::string K(Key ? Key : "");
+ 	// one line per patch, below
+ 	if (K == "net_carry_wall") { R.bNetCarryWall = Value != 0.0; return true; }   // 0002
++	if (K == "carry_holds_body") { R.bCarryHoldsBody = Value != 0.0; return true; }   // 0003
+ 	return false;
+ }
+ 
+diff -ruN a/thirdjam/Public/JamSim.h b/thirdjam/Public/JamSim.h
+--- a/thirdjam/Public/JamSim.h
++++ b/thirdjam/Public/JamSim.h
+@@ -438,6 +438,9 @@
+ 	// has been its last toucher ever since without shooting or passing it. -1 = nobody (a released, deflected or freshly dropped puck). Kept at the end of
+ 	// every Step; stays -1 and out of the hash while the rule is off.
+ 	int32 TlHeldBy = -1;
++	// THIRDLIFE PATCH 0003 (FTlRules::bCarryHoldsBody): the skater the puck rode with at the end of the last frame (UJamSim::RidingCarrier), -1 = nobody.
++	// Kept at the end of every Step; stays -1 and out of the hash while the rule is off.
++	int32 TlRider = -1;
+ 	// Total distance travelled this match.
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") double PathM = 0;
+ 	// Lane A84: a shotgun shot in flight (frames left, the shooter, its speed multiplier) and a slow puck (frames left, the passer or shooter, the speed share).

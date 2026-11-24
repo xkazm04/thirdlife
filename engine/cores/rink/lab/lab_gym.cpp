@@ -6,6 +6,7 @@
 // probe does not use stand parked near the corners. One rinklab.gym/1 JSON line per probe; frames at 60 Hz.
 #include "lab_gym.h"
 #include "lab_rules.h"
+#include "JamEventBus.h"
 
 #include "CoreMinimal.h"
 #include "JamCartridge.h"
@@ -374,6 +375,99 @@ namespace Lab
 			Rows += "]";
 			FOut("commit").T("verb", Verb).T("geometry", Geo).N("closing_mps", Closing).I("trials", Trials).I("ok", Ok).N("d_ok_min", DMinOk).N("d_ok_max", DMaxOk).Raw("rows", Rows).Print();
 		}
+		// ---- lane K8 (balance): rinklab probe ... -which=take. Why does a carried puck change hands when nobody pressed a key? ----
+		// One scene a line: Att skates at (or past) the carrier Car, no button at all. Geometry: head (they skate at each other), slow (head on, the attacker
+		// at walking pace), side (the attacker crosses his line at 90 degrees), chase (from behind), graze (head on but 1.3 m to the side: the bodies never
+		// touch, the attacker's stick and ring pass over the puck). Stick: puck (the attacker's blade aimed at the puck) | rest (no aim).
+		// What is read: did the bodies touch; who carries 60 frames later; and on the frame the puck stopped riding with its carrier (UJamSim::RidingCarrier
+		// went from Car to nobody): how far the carrier's velocity jumped in that frame (a bounce off a body), the puck's speed against him after it (the
+		// rule's own test is 4 m/s), and how the attacker then got it (thirdjam's possess event: body | stick).
+		void ProbeTake(FGym& G, const char* Geo, int Att, int Car, const char* Stick)
+		{
+			const std::string Ge(Geo), St(Stick);
+			const bool bHumanAttacks = Att == 0;
+			const char* CarName = Car == 0 ? "human" : (Car == 1 ? "bot (the human's mate)" : "bot");
+			const double Vc = 11.0 * 0.92, Va = Ge == "slow" ? 4.0 : 11.0 * 1.15;
+			const double Dir = bHumanAttacks ? 1.0 : -1.0;   // the attacker skates along +x (the human) or -x (the bot)
+			G.Reset();
+			const double MoveMag = Ge == "slow" ? 0.32 : 1.0;
+			if (Ge == "head" || Ge == "slow") { G.Place(Car, Dir * 12.0, 0.0, -Dir * Vc, 0.0, Dir > 0 ? Pi : 0.0); G.Place(Att, -Dir * 14.0, 0.0, Dir * Va, 0.0, Dir > 0 ? 0.0 : Pi); G.In[Car] = MoveOnly(-Dir, 0.0); }
+			else if (Ge == "graze") { G.Place(Car, Dir * 12.0, 0.0, -Dir * Vc, 0.0, Dir > 0 ? Pi : 0.0); G.Place(Att, -Dir * 14.0, 1.3, Dir * Va, 0.0, Dir > 0 ? 0.0 : Pi); G.In[Car] = MoveOnly(-Dir, 0.0); }
+			else if (Ge == "side") { G.Place(Car, 0.0, -14.0, 0.0, Vc, Pi * 0.5); G.Place(Att, -Dir * 17.5, 0.0, Dir * Va, 0.0, Dir > 0 ? 0.0 : Pi); G.In[Car] = MoveOnly(0.0, 1.0); }
+			else { G.Place(Car, -Dir * 30.0, 0.0, Dir * Vc, 0.0, Dir > 0 ? 0.0 : Pi); G.Place(Att, -Dir * 38.0, 0.0, Dir * Va, 0.0, Dir > 0 ? 0.0 : Pi); G.In[Car] = MoveOnly(Dir, 0.0); }
+			G.In[Att] = MoveOnly(Dir * MoveMag, 0.0);
+			if (G.GivePuck(Car) < 0) { FOut("take").T("geometry", Geo).T("attacker", bHumanAttacks ? "human" : "bot").T("carrier", CarName).T("stick", Stick).I("nopuck", 1).Print(); return; }
+			long long FTouch = -1, FUnride = -1, FTake = -1;
+			double Jump = 0, RelAfter = 0, MinDist = 1e9;
+			std::string How = "";
+			int Bump = 0, CarrierAt60 = -2;
+			static const FName KindBody(TEXT("body"));
+			for (int f = 1; f <= 420; ++f)
+			{
+				if (Ge != "graze")
+				{
+					const FVector2D U = (G.K(Car).Pos - G.K(Att).Pos).GetSafeNormal();
+					G.In[Att].Move = FVec2(U.X * MoveMag, U.Y * MoveMag);
+				}
+				if (St == "puck") { const FVector2D ToP = (G.S->GetPuck().Pos - G.K(Att).Pos).GetSafeNormal(); G.In[Att].Stick = FVec2(ToP.X, ToP.Y); }
+				const int RideBefore = G.S->RidingCarrier();
+				const FVector2D VBefore = G.K(Car).Vel;
+				G.Step();
+				const double D = G.Dist(Att, Car);
+				if (D < MinDist) MinDist = D;
+				if (FTouch < 0 && D <= 0.81) FTouch = f;
+				if (FUnride < 0 && RideBefore == Car && G.S->RidingCarrier() != Car)
+				{
+					FUnride = f;
+					Jump = (G.K(Car).Vel - VBefore).Size();
+					RelAfter = (G.S->GetPuck().Vel - G.K(Car).Vel).Size();
+					Bump = G.K(Car).bBumpThisFrame ? 1 : 0;
+				}
+				if (FTake < 0 && G.S->GetPuck().LastTouch == Att)
+				{
+					FTake = f;
+					How = "touch";
+					for (const FJamSimEvent& E : G.S->GetFrameEvents()) if (E.Name == JamEvents::Possess && E.Who == Att) How = E.Kind == KindBody ? "body" : "stick";
+				}
+				const long long F0 = FTouch >= 0 ? FTouch : (FTake >= 0 ? FTake : -1);
+				if (F0 >= 0 && f - F0 >= 60) { CarrierAt60 = G.S->CarrierIndex(); break; }
+				if (FTouch < 0 && FTake < 0 && f > 200 && D > MinDist + 6.0) { CarrierAt60 = G.S->CarrierIndex(); break; }   // they passed each other and nothing happened
+			}
+			FOut("take").T("geometry", Geo).T("attacker", bHumanAttacks ? "human" : "bot").T("carrier", CarName).T("stick", Stick).N("min_dist_m", MinDist).I("bodies_touch", FTouch >= 0 ? 1 : 0)
+				.I("attacker_has_it", CarrierAt60 == Att ? 1 : 0).I("carrier_kept_it", CarrierAt60 == Car ? 1 : 0).I("f_touch", FTouch).I("f_stopped_riding", FUnride).I("f_take", FTake)
+				.N("carrier_vel_jump_mps", Jump).N("puck_vs_carrier_after_mps", RelAfter).I("bump", Bump).T("taken_by", How.c_str()).Print();
+		}
+		// ---- lane K8 (balance): rinklab probe ... -which=speed. Does anybody glide faster than he can skate? ----
+		// after_sprint: the human sprints from rest until his bar is empty and keeps the stick forward: his speed 0, 30, 60 and 120 frames after the bar ran out.
+		// pickup: he skates free at top speed onto a puck lying ahead and carries it on: his speed 0, 30, 60 and 120 frames after it became his.
+		// ease: he skates free at top speed and eases the stick to half: his speed 30 and 60 frames later (the glide: must not change).
+		void ProbeSpeed(FGym& G, const char* What)
+		{
+			const std::string W(What);
+			G.Reset();
+			G.Place(0, -38.0, 0.0, 0.0, 0.0, 0.0);
+			G.In[0] = MoveOnly(1.0, 0.0);
+			long long F0 = -1;
+			double V[4] = {-1, -1, -1, -1};
+			const int At[4] = {0, 30, 60, 120};
+			if (W == "pickup") G.S->SetPuck(FVector2D(-5.0, 0.0), FVector2D(0.0, 0.0));
+			for (int f = 1; f <= 520; ++f)
+			{
+				if (W == "after_sprint") G.In[0].bSprint = true;
+				if (W == "ease" && f > 120) G.In[0] = MoveOnly(0.5, 0.0);
+				G.Step();
+				if (F0 < 0)
+				{
+					if (W == "after_sprint" && G.K(0).Stamina == 0) F0 = f;
+					if (W == "pickup" && G.S->CarrierIndex() == 0) F0 = f;
+					if (W == "ease" && f == 120) F0 = f;
+				}
+				if (F0 >= 0) for (int k = 0; k < 4; ++k) if (f - F0 == At[k]) V[k] = G.Speed(0);
+				if (F0 >= 0 && f - F0 > 120) break;
+				if (G.K(0).Pos.X > 38.0) break;
+			}
+			FOut("speed").T("what", What).I("f_event", F0).N("mps_at_0", V[0]).N("mps_at_30", V[1]).N("mps_at_60", V[2]).N("mps_at_120", V[3]).Print();
+		}
 	}
 
 	int RunGym(const char* Cartridge, const char* TlOverrides)
@@ -427,6 +521,36 @@ namespace Lab
 		for (double D : {5.0, 15.0, 30.0}) { Run([&] { ProbePass(G, D, 0); }); Run([&] { ProbePass(G, D, 30); }); }
 		for (double D : {10.0, 20.0}) { Run([&] { ProbeShot(G, D, 0); }); Run([&] { ProbeShot(G, D, 30); }); }
 		for (const char* Verb : {"none", "check", "lift", "poke"}) for (const char* Geo : {"head", "chase"}) Run([&] { ProbeCommit(G, Verb, Geo); });
+		Cart->RemoveFromRoot();
+		return 0;
+	}
+	// lane K8: rinklab probe <content> -cartridge= [-tl=] -which=take: this lane's own scenes (not part of rink.sh balance's gym lines).
+	int RunProbeK8(const char* Cartridge, const char* TlOverrides, const char* Which)
+	{
+		TArray<FString> Errors;
+		UJamCartridge* Cart = UJamCartridge::LoadFromFile(UJamCartridge::ResolveCartridgePath(FString(Cartridge)), Errors);
+		if (!Cart) { std::fprintf(stderr, "FAIL rinklab probe: cartridge %s does not load\n", Cartridge); return 2; }
+		Cart->AddToRoot();
+		{
+			Lab::FRulesFile Rules;
+			const std::string E = Lab::LoadRules(*Cart, Cartridge, TlOverrides ? TlOverrides : "", Rules);
+			if (!E.empty()) { std::fprintf(stderr, "FAIL rinklab probe: %s\n", E.c_str()); return 2; }
+		}
+		for (FJamTeamConfig& T : Cart->Game.Teams) { while (T.Skaters.Num() > 2) T.Skaters.RemoveAt(T.Skaters.Num() - 1); }
+		FGym G;
+		G.Cart = Cart;
+		G.Cfg = JamAI::ToMatchConfig(Cart->Game);
+		G.A.reset(new FJamSimAdapter(*Cart));
+		G.Reset();
+		G.bTrace = std::getenv("LAB_TRACE") != nullptr;
+		const std::string W(Which ? Which : "");
+		if (W == "take")
+		{
+			const int Pairs[3][2] = {{0, 2}, {2, 0}, {2, 1}};   // the human at an opposing bot; an opposing bot at the human; an opposing bot at the human's mate (bot against bot)
+			for (const auto& P : Pairs) for (const char* Geo : {"head", "slow", "side", "chase", "graze"}) for (const char* Stick : {"puck", "rest"}) ProbeTake(G, Geo, P[0], P[1], Stick);
+		}
+		else if (W == "speed") { for (const char* What : {"after_sprint", "pickup", "ease"}) ProbeSpeed(G, What); }
+		else { std::fprintf(stderr, "FAIL rinklab probe: unknown -which=%s (take | speed)\n", W.c_str()); return 2; }
 		Cart->RemoveFromRoot();
 		return 0;
 	}

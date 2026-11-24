@@ -156,6 +156,7 @@ int wmain(int argc, wchar_t** argv)
 	const FTCHARToUTF8 Mode(argv[1]);
 	if (std::strcmp(Mode.Get(), "match") == 0) return RunMatches(argc, argv);
 	if (std::strcmp(Mode.Get(), "gym") == 0) return Lab::RunGym(Arg(argc, argv, "cartridge", "hockey.regular").c_str(), Arg(argc, argv, "tl").c_str());
+	if (std::strcmp(Mode.Get(), "probe") == 0) return Lab::RunProbeK8(Arg(argc, argv, "cartridge", "hockey.regular").c_str(), Arg(argc, argv, "tl").c_str(), Arg(argc, argv, "which", "take").c_str());
 	std::fprintf(stderr, "FAIL rinklab: unknown mode %s\n", Mode.Get());
 	return 2;
 }

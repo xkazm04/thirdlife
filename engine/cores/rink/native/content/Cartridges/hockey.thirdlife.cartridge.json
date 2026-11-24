@@ -254,6 +254,10 @@
       "lag_frames": 4,
       "fov_deg": 70,
       "radar": true
+    },
+    "contact": {
+      "down_frames_min": 40,
+      "down_frames_max": 90
     }
   }
 }

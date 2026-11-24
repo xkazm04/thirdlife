@@ -181,6 +181,10 @@ export function summarize(rows) {
     human_walk_goals_match: r(sum((x) => x.lab.carry_end.goal) / n, 3),
     takes_key_min: r(sum((x) => x.lab.takes_key ?? NaN) / totMin, 2), takes_nokey_min: r(sum((x) => x.lab.takes_nokey ?? NaN) / totMin, 2),
     passes_received_match: r(sum((x) => x.pt.passes_received ?? NaN) / n, 2),
+    // lane K8 (round 2): takes straight off a riding carrier, a minute: the human's with a key, with none; off the human; between bots
+    ride_takes_min: v[0]?.lab.ride_takes ? [0, 1, 2, 3].map((i) => r(sum((x) => x.lab.ride_takes?.[i] ?? 0) / totMin, 2)) : undefined,
+    // lane K8 (round 2): of the human's completed passes, the first thing that followed (per cent), and the share followed by a goal of his side
+    pass_then: v[0]?.lab.pass_then ? Object.fromEntries(["shot", "back", "lost", "none", "goal"].map((k) => [k, r((100 * sum((x) => x.lab.pass_then?.[k] ?? 0)) / Math.max(1, sum((x) => x.lab.passes_completed)), 1)])) : undefined,
     human_down_s_match: r(sum((x) => x.pt.human_down_frames ?? NaN) / n / 60, 2),
     plan_chosen: v[0]?.plan ? Object.fromEntries(Object.keys(Object.assign({}, ...v.map((x) => x.plan?.chosen || {}))).map((k) => [k, r(sum((x) => x.plan?.chosen?.[k] || 0) / totMin, 2)])) : undefined,
     hashes: v.map((x) => x.pt.hash),
