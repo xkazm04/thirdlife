@@ -360,3 +360,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 21:44 standup: hokej head 2bede87 holds the whole match with thirdjam's figures (felt, numbers, puck verbs), HUD with banner / end card / captions, the solo budget class, PLAY.md and the balance harness; lanes on contact (K2), pause card and menu (K5), arena (K6), balance design (K8). A merge with conflict markers (Director) was repaired in 1389d47.
 - 22:37 standup: hokej be548e5: the hall, contact on the figures, the puck on the blade, title / HOME / pause card; K8's first kept change (no walk-in goals). K1 silent since 21:09 (asked).
 - 23:10 PAUSED by the owner (Fable limit hit by K2/K6/K7/K8 at 23:00; owner switching plan). hokej head f9d2db9; state and resume list: docs/shifts/2026-11-24-night/standups/PAUSE.md.
+- 24 Nov 20:50 RESUMED; merged-head check: K2's verb goldens red after K1 r4's single-precision glue (sent to K2).
