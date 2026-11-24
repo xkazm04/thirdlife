@@ -22,6 +22,7 @@ var figs: Array = []        # figures only: TLRigSkater a skater
 var shown: Array = []       # whether a skater is drawn (the proof modes show one)
 var puck: Node3D
 var show                    # K2's skater_show.gd: the hit-stop and the shown carrier (both modes; the stand-ins hold by its pick)
+var rink_gen_disc_y: float = 0.004   # gen/tj_rink.gd PUCK_DISC_Y (AJamPuck::PlaceDiscOnIce)
 var hits                    # K2's hit_read.gd: the model of presses and hits, the whiffs and the re-time of a check (K3 round 9)
 
 
@@ -68,6 +69,7 @@ func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: D
 	for fig: TLRigSkater in figs:
 		fig.set_rivals(figs)                      # [ChkScan] reads the nearest opposing figure (K2's driver)
 	puck = rink_gen.standin_puck(root, puck_radius)
+	rink_gen_disc_y = float(rink_gen.PUCK_DISC_Y)
 
 
 ## AHokejGameMode::JerseyNumberFor (HokejGameMode.cpp:439-444).
@@ -86,6 +88,7 @@ func show_only(i: int) -> void:
 		if not figures:
 			(sticks[k] as Node3D).visible = k == i
 	puck.visible = false
+	(puck.get_meta(&"disc") as Node3D).visible = false
 
 
 ## The bus events a figure hears (AHokejGameMode::DeliverEvents, HokejGameMode.cpp:1664, before the hit-stop and the pawns),
@@ -138,8 +141,10 @@ func draw(snap: Dictionary) -> bool:
 			var sw: Variant = pawns[on].puck_socket_world()
 			if sw is Vector3:
 				at = Vector3((sw as Vector3).x, at.y, (sw as Vector3).z)
-	# the stand-in puck's origin is its base (TLMesh.cyl from y = 0); the show gives the centre (AJamPuck HalfHeightM 0.04)
-	_place(puck, Vector3(at.x, at.y - show_script_half_height(), at.z), Vector2(puck.position.x, puck.position.z).distance_to(Vector2(at.x, at.z)) > 3.0)
+	# the puck node's origin is its base (TLMesh.cyl from y = 0); the show gives the centre (AJamPuck HalfHeightM 0.04)
+	var cut: bool = Vector2(puck.position.x, puck.position.z).distance_to(Vector2(at.x, at.z)) > 3.0
+	_place(puck, Vector3(at.x, at.y - show_script_half_height(), at.z), cut)
+	_place(puck.get_meta(&"disc") as Node3D, Vector3(at.x, rink_gen_disc_y, at.z), cut)   # AJamPuck::PlaceDiscOnIce: on the ice under it
 	return held
 
 
@@ -227,5 +232,5 @@ static func _place(n: Node3D, at: Vector3, teleport: bool) -> void:
 
 ## After the first placement: nothing slides in from where the nodes were made.
 func reset_interpolation() -> void:
-	for n: Node3D in bodies + sticks + [puck]:
+	for n: Node3D in bodies + sticks + [puck, puck.get_meta(&"disc")]:
 		n.reset_physics_interpolation()

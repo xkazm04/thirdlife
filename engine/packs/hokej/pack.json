@@ -25,7 +25,8 @@
     "tests/bot_rule_restart.gd",
     "tests/bot_rule_signals.gd",
     "tests/bot_hud_rules.gd",
-    "tests/bot_level_record.gd"
+    "tests/bot_level_record.gd",
+    "tests/bot_first_match.gd"
   ],
   "cameras": [
     "follow",
