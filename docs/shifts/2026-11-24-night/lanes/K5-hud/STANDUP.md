@@ -15,3 +15,5 @@ landable round 4
 landable round 5
 round 6: MATCH card shows the level the shell applied (Screen.applied_level: the hokej_level meta, read at the HUD's creation and every frame; a ROOKIE run showed PRO because the HUD read match.json); end card GOALS confirmed as the human's own goals (HUDEndStats.cpp:49, h:4e) and tested against the snapshot; the white bar is off in HEAD (ShotLine 0, PassMeter 0, StopLine 0, SprintOnIce 0); PassTargetHeld / PassTargetFacing not in SNAPSHOT.md yet, no held-pass still | gates: fast tier 5/5 PASS, selftest hokej 5/5 PASS, bot_hud_rules 475,175 checks 0 failed, bot_level_record PASS
 landable round 6
+round 7: bot_hud_rules expected the old PassTarget (BestPass); now it follows thirdjam's rule: the ring under Controls.PassTargetHeld (HumanPassTarget along the stick at the hold) while the pass is held, the release target in flight. 474,784 checks, 0 failed on dd2ca15. Held-pass still made and looked at: r7_pass_held_ring.png (a blue ring under the mate, f403+, he holds RMB with the puck) | gates: fast tier 5/5 PASS, selftest hokej 5/5 PASS, bot_hud_rules PASS
+landable round 7
