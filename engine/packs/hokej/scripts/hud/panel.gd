@@ -4,7 +4,8 @@ extends RefCounted
 ## the panel fill at 0.78 with the 4-unit corner and the hairline edge; a head (a dot in his team's colour, WITH THE PUCK /
 ## WITHOUT THE PUCK), the possession half (fading in over 6 frames when it swaps), a hairline, the always half. A row: a
 ## light keycap (84 x 22 at least, the key in Black 14 tracked 40, ink) and the verb (Bold 16 tracked 60). A lit row
-## (its button down) takes the menu's focus: the away orange cap and white type.
+## (its button down) takes the menu's focus: the away orange cap and white type. The teaching pulse (HUDTeach.cpp, `teach`
+## 0 = the pass, 1 = the check; cpp:318-331) lights its row: the take-yellow keycap, ink type, the word in yellow.
 
 const R := preload("rules.gd")
 
@@ -21,9 +22,9 @@ func hide() -> void:
 	shown_rows = []
 
 
-## Paints the panel; returns its rows as "KEY=WORD" (a lit row ends with *).
+## Paints the panel; returns its rows as "KEY=WORD" (a lit row ends with *, a taught row with !).
 func paint(lay, vh: float, f: int, with_puck: bool, press: bool, held: Dictionary, saucer: bool, braced: bool, ability: bool,
-		team: Color, dim: bool, legs_spent: bool) -> String:
+		team: Color, dim: bool, legs_spent: bool, teach: int = -1) -> String:
 	visible = true
 	if f < swap_frame:
 		swap_frame = -1000                                             # a restart
@@ -85,10 +86,11 @@ func paint(lay, vh: float, f: int, with_puck: bool, press: bool, held: Dictionar
 			lay.box(Vector2(x0, y + 2.0), Vector2(w - 2.0 * R.PANEL_PAD, 1.0), _a(R.ML_EDGE, plate_a))
 			y += 2.0 + 1.0 + 6.0
 		var a: float = plate_a * (fade if r["poss"] else 1.0)
-		var look: int = 2 if r["lit"] else (3 if r["verb"] == "Sprint" and legs_spent else 0)
-		var cap_fill: Color = R.ML_AWAY if look == 2 else Color(R.ML_TEXT.r, R.ML_TEXT.g, R.ML_TEXT.b, 0.92)
+		var taught: bool = (teach == 0 and r["verb"] == "Pass") or (teach == 1 and r["verb"] == "Check")    # cpp:318
+		var look: int = 2 if r["lit"] else (1 if taught else (3 if r["verb"] == "Sprint" and legs_spent else 0))   # cpp:319
+		var cap_fill: Color = R.ML_AWAY if look == 2 else (R.YELLOW if look == 1 else Color(R.ML_TEXT.r, R.ML_TEXT.g, R.ML_TEXT.b, 0.92))
 		var cap_ink: Color = R.ML_ON_FOCUS if look == 2 else R.ML_INK
-		var word_c: Color = R.ML_ON_FOCUS if look == 2 else (R.ML_TEXT_DIM if look == 3 else R.ML_TEXT)
+		var word_c: Color = R.ML_ON_FOCUS if look == 2 else (R.YELLOW if look == 1 else (R.ML_TEXT_DIM if look == 3 else R.ML_TEXT))
 		var rh: float = row_h[i]
 		var cw: float = cap_w[i]
 		var cap_at := Vector2(x0, y + rh * 0.5 - R.PANEL_KEYCAP_H * 0.5)
@@ -96,7 +98,7 @@ func paint(lay, vh: float, f: int, with_puck: bool, press: bool, held: Dictionar
 		lay.text(cap_at + Vector2(cw * 0.5, R.PANEL_KEYCAP_H * 0.5), r["key"], 14, _a(cap_ink, a), {"face": cap_font, "tracking": 40, "align": Vector2(0.5, 0.5)})
 		lay.text(Vector2(x0 + cw + 10.0, y + rh * 0.5), r["word"], 16, _a(word_c, a), {"face": word_font, "tracking": R.TRACK_LABEL, "align": Vector2(0, 0.5)})
 		y += rh + R.PANEL_ROW_GAP
-		out.append("%s=%s%s" % [r["key"], r["word"], "*" if r["lit"] else ""])
+		out.append("%s=%s%s" % [r["key"], r["word"], "*" if look == 2 else ("!" if look == 1 else "")])
 	return ",".join(out)
 
 

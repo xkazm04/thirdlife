@@ -172,6 +172,14 @@ static func take_grace_ring_scale(left: int, total: int) -> float:         # h:4
 
 
 ## jam.hud.SwellAtHit 0: a grace won by the carrier's own hit keeps the ring's size (h:462).
+## A ring's box grown about its centre by k.
+static func scaled(r: Rect2, k: float) -> Rect2:
+	if k == 1.0:
+		return r
+	var s: Vector2 = r.size * k
+	return Rect2(r.get_center() - s * 0.5, s)
+
+
 static func grace_ring_scale_for(from_hit: bool, left: int, total: int) -> float:
 	return 1.0 if from_hit else take_grace_ring_scale(left, total)
 
@@ -332,4 +340,37 @@ static func panel_swap_step(st: Dictionary, with: bool, press: bool, frame: int,
 		return false
 	st["shown"] = truth
 	st["last_swap"] = frame
+	return true
+
+
+# ---------------------------------------------------------------- the teaching pulse (HUDTeach.cpp; HUDWidget.h:590-622)
+const TEACH_MAX_SHOWS := 3                 # h:598
+const TEACH_SHOW_FRAMES := 90              # h:599
+const TEACH_GAP_FRAMES := 900              # h:600
+const TEACH_HIT_RANGE_M := 2.6             # h:601
+const TEACH_DROP_QUIET_FRAMES := 60        # HUDTeach.cpp:88: no teaching in the draw's first second
+const PASS_FLIGHT_RING_FRAMES := 45        # HUDChargeLook.cpp:34
+const PASS_RING_SCALE := 1.15              # HUDChargeLook.cpp:87, :104: CarrierRingRadiusM * 1.15
+const POWER_FULL_FRAMES := 30              # FJamPassConfig::PowerFullFrames (JamCartridge.h:363); the cartridge has no game.pass
+
+
+## One sim frame of a kind's rule (TeachStep, h:604-616): true while its pulse shows this frame. `st` is FTeachState
+## {shows, done, shown_at, last_end}; `due`: the moment applies; `did`: he did the thing this frame. Pure.
+static func teach_step(st: Dictionary, due: bool, did: bool, frame: int) -> bool:
+	if st.is_empty():
+		st.merge({"shows": 0, "done": false, "shown_at": -1, "last_end": -1000000})
+	if did:
+		st["done"] = true
+	if frame < int(st["last_end"]) or (int(st["shown_at"]) >= 0 and frame < int(st["shown_at"])):   # a new match: the count went back
+		st["last_end"] = -1000000
+		st["shown_at"] = -1
+	if int(st["shown_at"]) >= 0:
+		if not bool(st["done"]) and frame >= int(st["shown_at"]) and frame < int(st["shown_at"]) + TEACH_SHOW_FRAMES:
+			return true
+		st["last_end"] = frame
+		st["shown_at"] = -1
+	if bool(st["done"]) or not due or int(st["shows"]) >= TEACH_MAX_SHOWS or frame - int(st["last_end"]) < TEACH_GAP_FRAMES:
+		return false
+	st["shown_at"] = frame
+	st["shows"] = int(st["shows"]) + 1
 	return true

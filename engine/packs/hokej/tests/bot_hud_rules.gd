@@ -2,13 +2,18 @@ extends Node
 ## The screen's show rules, headless (lane K5). Two parts.
 ## A. thirdjam's own assertions on the pure rules, case for case (HUDControlsPanelTests.cpp:84-128, 395-441;
 ##    HUDPossessionTests.cpp:25-35; CameraTests.cpp:314-316, 1035-1042; CarrierCueTests.cpp:48-53): same inputs, same answers.
-## B. A recorded match: a second RinkCore of the same cartridge and level, its human played by thirdjam's own playerbot
-##    (set_human_mode "playerbot"), every snapshot fed to the pack's hud.gd through a layer that records instead of
+## B. Two recorded matches: a second RinkCore of the same cartridge and level, its human played by thirdjam's own playerbot
+##    (set_human_mode "playerbot"), then by its regular playtester ("playtester:regular"), every snapshot fed to the pack's hud.gd through a layer that records instead of
 ##    drawing (a fixed top-down projection, 1920 x 1080 units). Frame by frame the rules are checked against the snapshot
 ##    itself: the MATCH card up from the build to the drop and 150 frames after a take changes; the markers standing down
 ##    under it and on the end card; the YOU tag only while a faceoff counts; the dial's words (digit + HOLD, DROP for 30
 ##    frames, WON / LOST for 40); the panel only in play, its half by the swap rule; the take = 1 + the lead; the possession
 ##    shown = the sim's carrier.
+##    Round 5 (the core's Controls v1.2): the panel's half by ButtonsWithPuck through the swap rule; the take grace's ring from
+##    its first frame (CarrierInTakeGrace with TakeGraceLeft still 0: the full count, 1.5 x unless won by a hit); the pass's
+##    target ring only while the pass is held (under Controls.PassTarget) or flies (45 frames at most, PassBy = him); the
+##    teaching pulse's limits (3 a kind, 90 frames, 900 apart, never after he did it, not counting, not down, not in the
+##    draw's first 60 frames; the panel's row lit with it).
 
 var R                     # scripts/hud/rules.gd, hud.gd, cards.gd (ctx.load_script: a test reaches the pack's scripts through ctx)
 var Hud
@@ -41,6 +46,16 @@ var bark_stats: Dictionary = {"barks": 0, "lane": 0, "last": -1000000, "speaker"
 var banner_frames: int = 0
 var end_wait_ok: bool = false
 var end_card_seen: bool = false
+var swap_mirror: Dictionary = {}
+const MODES: Array = ["playerbot", "playtester:regular"]
+var match_i: int = 0
+var match_frames: int = 0
+var r5: Dictionary = {"with_loose": 0, "panel_with": 0, "panel_without": 0, "grace": 0, "grace_first": 0, "grace_first_hit": 0,
+	"ring_held": 0, "ring_flight": 0, "teach_pass": 0, "teach_hit": 0, "teach_frames": 0, "teach_row": 0}
+var pass_seen: int = -1
+var pass_at: int = -1000000
+var drop_at: int = -1000000
+var teach_mem: Array = [{"at": -1, "end": -1000000, "done_at": -1}, {"at": -1, "end": -1000000, "done_at": -1}]
 
 
 ## A layer that keeps what it was asked to draw (no Control, no camera): a top-down view, 20 units a metre round centre ice.
@@ -164,6 +179,34 @@ func _part_a() -> void:
 	# the end card's words (cpp:446-467)
 	_check(Flow.end_card_word("win", 3, 1) == "YOU WIN" and Flow.end_card_word("lose", 1, 3) == "BEATEN" and Flow.end_card_word("lose", 2, 2) == "NO WINNER", "end words")
 	_check(Flow.end_card_score(3, 1) == "YOU  3 : 1  THEM", "end score line")
+	# Jam.Hud.Teach (HUDPossessionTests.cpp:150-191): TeachStep case for case
+	var ts: Dictionary = {}
+	var on_frames: int = 0
+	var starts: int = 0
+	var was: bool = false
+	for f: int in 20000:
+		var on: bool = R.teach_step(ts, true, false, f)
+		on_frames += 1 if on else 0
+		starts += 1 if on and not was else 0
+		was = on
+	_check(starts == R.TEACH_MAX_SHOWS and on_frames == R.TEACH_MAX_SHOWS * R.TEACH_SHOW_FRAMES, "teach: due all match: 3 showings of 90 frames (%d, %d)" % [starts, on_frames])
+	var t2: Dictionary = {}
+	_check(R.teach_step(t2, true, false, 100) and not R.teach_step(t2, true, true, 110), "teach: he did it: the pulse ends")
+	var again: bool = false
+	for f: int in range(111, 20000):
+		again = R.teach_step(t2, true, false, f) or again
+	_check(not again, "teach: never again after he has done it")
+	var t3: Dictionary = {}
+	R.teach_step(t3, false, true, 5)
+	var any3: bool = false
+	for f: int in range(6, 5000):
+		any3 = R.teach_step(t3, true, false, f) or any3
+	_check(not any3, "teach: done before due: never shown")
+	var t4: Dictionary = {}
+	R.teach_step(t4, true, false, 5000)
+	for f: int in range(5001, 5100):
+		R.teach_step(t4, false, false, f)
+	_check(R.teach_step(t4, true, false, 10) and int(t4["shows"]) == 2, "teach: after a restart the second showing may come")
 
 
 static func _line(rows: Array) -> String:
@@ -178,13 +221,7 @@ func _bot_tick(frame: int) -> void:
 		return
 	if frame == 0:
 		_part_a()
-		core = ctx.cores.open("rink", "hockey.regular.cartridge.json")
-		core.set_difficulty(String((ctx.read_json("match.json") as Dictionary)["difficulty"]))
-		core.set_human_mode("playerbot")
-		core.reset(ctx.seed)
-		lay = Rec.new()
-		hud = Hud.new(lay, (ctx.read_json("hockey.regular.cartridge.json") as Dictionary)["game"], "pro", ctx.seed, (ctx.read_json("hud_barks.json") as Dictionary)["lines"])
-		_feed(core.snapshot())
+		_open_match()
 		return
 	if tail > 0:                                       # the match is over: the end phase's frames (the sim stands still)
 		for i: int in 8:
@@ -193,12 +230,50 @@ func _bot_tick(frame: int) -> void:
 	for i: int in 8:                                   # eight sim frames a tick: a whole match fits the budget
 		var going: bool = core.step()
 		_feed(core.snapshot())
-		if not going or stats["frames"] >= FRAMES:
+		if not going or match_frames >= FRAMES:
 			if going:
-				done = true                                  # the frame budget, not the match's end: no end card to check
+				_next_match()                                # the frame budget, not the match's end: no end card to check
 			else:
 				tail = 1
 			return
+
+
+## Match 1: thirdjam's playerbot on the human (it never passes: the teaching pulses and the grace's first frames); match 2:
+## thirdjam's regular playtester (it passes: the pass's target ring held and in flight). A new HUD each: a new session.
+func _open_match() -> void:
+	core = ctx.cores.open("rink", "hockey.regular.cartridge.json")
+	core.set_difficulty(String((ctx.read_json("match.json") as Dictionary)["difficulty"]))
+	core.set_human_mode(MODES[match_i])
+	core.reset(ctx.seed)
+	lay = Rec.new()
+	hud = Hud.new(lay, (ctx.read_json("hockey.regular.cartridge.json") as Dictionary)["game"], "pro", ctx.seed, (ctx.read_json("hud_barks.json") as Dictionary)["lines"])
+	match_frames = 0
+	prev_count = 0
+	card_until = 150
+	card_seen = false
+	take = 1
+	last_phase = -1
+	drop_left = 0
+	result_left = 0
+	tail = 0
+	end_age = 0
+	booth["last_start"] = -1000000
+	bark_stats["last"] = -1000000
+	bark_stats["yield_until"] = -1000000
+	swap_mirror = {}
+	pass_seen = -1
+	pass_at = -1000000
+	drop_at = -1000000
+	teach_mem = [{"at": -1, "end": -1000000, "done_at": -1}, {"at": -1, "end": -1000000, "done_at": -1}]
+	_feed(core.snapshot())
+
+
+func _next_match() -> void:
+	match_i += 1
+	if match_i >= MODES.size():
+		done = true
+		return
+	_open_match()
 
 
 func _end_tail() -> void:
@@ -220,20 +295,25 @@ func _end_tail() -> void:
 	tail += 1
 	end_age += 1
 	if tail > 200:
-		done = true
+		_next_match()
 
 
 func _feed(snap: Dictionary) -> void:
 	last_snap = snap
 	var f: int = int(snap["Frame"])
 	stats["frames"] += 1
+	match_frames += 1
 	var me: int = int(snap["HumanIndex"])
 	var hu: Dictionary = snap["Skaters"][me]
 	var phase: String = R.phase_of(snap)
 	var count: int = int(snap["FaceoffCountdown"]) if int(snap["Phase"]) == 3 else 0
-	var with: bool = int(snap["Carrier"]) == me
-	hud.frame(snap, {"with_puck": with, "held": {}, "press": false, "saucer": false, "braced": false, "paused": false, "stamina01": 1.0})
+	var ctl: Dictionary = snap["Controls"]
+	var with: bool = bool(ctl["ButtonsWithPuck"])
+	var li: Dictionary = core.last_human_input()
+	hud.frame(snap, {"with_puck": with, "hit_pressed": bool(li.get("bCheck", false)) or bool(li.get("bLift", false)), "held": {}, "press": false,
+		"saucer": false, "braced": false, "paused": false, "stamina01": 1.0})
 	var sh: Dictionary = hud.shown
+	_round5(snap, sh, f, me, hu, ctl, with, phase, count)
 	var end: bool = phase == "win" or phase == "lose"
 	# the take: 1 + the lead, changed only on a Playing frame; the card 150 frames from a change, gone at the drop it counted down to
 	var t: int = Cards.compute_take(snap["Score"], 3)
@@ -340,13 +420,100 @@ func _feed(snap: Dictionary) -> void:
 	last_phase = int(snap["Phase"])
 
 
+func _round5(snap: Dictionary, sh: Dictionary, f: int, me: int, hu: Dictionary, ctl: Dictionary, with: bool, phase: String, count: int) -> void:
+	var carrier: int = int(snap["Carrier"])
+	var sk: Array = snap["Skaters"]
+	# the glue's two-role fact (InputMapping.cpp:432-442): he carries -> with; another carries -> without
+	_check((carrier == me and with) or (carrier >= 0 and carrier != me and not with) or carrier < 0, "frame %d: ButtonsWithPuck %s, carrier %d" % [f, str(with), carrier])
+	if carrier < 0 and with:
+		r5["with_loose"] += 1
+	# the panel's half: the swap rule over ButtonsWithPuck, stepped on the frames the panel is painted
+	if sh.has("panel"):
+		R.panel_swap_step(swap_mirror, with, false, f)
+		var want: int = int(swap_mirror["shown"])
+		_check(hud.panel.shown_with == want, "frame %d: the panel's half %d, the swap rule says %d" % [f, hud.panel.shown_with, want])
+		_check(String(sh["panel"]).begins_with("LMB=SHOOT") == (want == 1), "frame %d: the panel's rows %s for half %d" % [f, String(sh["panel"]), want])
+		r5["panel_with" if want == 1 else "panel_without"] += 1
+	# the take grace: from its first frame (TakeGraceLeft 0 there: the full count)
+	if phase == "play" or phase == "goal_pause":
+		var g: bool = carrier >= 0 and bool(ctl["CarrierInTakeGrace"])
+		_check(sh.has("grace") == g, "frame %d: grace ring %s, the core says %s" % [f, str(sh.has("grace")), str(g)])
+		if g and sh.has("grace"):
+			r5["grace"] += 1
+			var gl: int = int((sk[carrier] as Dictionary).get("TakeGraceLeft", 0))
+			var gr: Array = sh["grace"]
+			_check(int(gr[0]) == carrier and int(gr[2]) == (gl if gl > 0 else hud.take_grace_total), "frame %d: grace %s for carrier %d left %d" % [f, str(gr), carrier, gl])
+			if gl == 0:
+				r5["grace_first"] += 1
+				_check(is_equal_approx(float(gr[1]), 1.5) or float(gr[1]) == 1.0, "frame %d: the grace's first frame at scale %s" % [f, str(gr[1])])
+				if float(gr[1]) == 1.0:
+					r5["grace_first_hit"] += 1
+	# the pass's target ring
+	var passes: int = int(hu.get("Passes", 0))
+	var carry: bool = carrier == me
+	if pass_seen >= 0 and passes > pass_seen:
+		pass_at = f
+		r5["his_passes"] = int(r5.get("his_passes", 0)) + 1
+	if carry and int(hu.get("PassChargeFrames", 0)) > 0:
+		r5["held_frames"] = int(r5.get("held_frames", 0)) + 1
+	pass_seen = passes
+	var pk: Dictionary = snap["Puck"]
+	var flying: bool = int(pk.get("PassFrames", 0)) > 0 and int(pk.get("PassBy", -1)) == me and f < pass_at + 45
+	var held_t: int = int(ctl["PassTarget"])
+	var charge: int = int(hu.get("PassChargeFrames", 0))
+	if sh.has("pass_ring"):
+		var at: int = int(sh["pass_ring"])
+		var held_ok: bool = phase == "play" and carry and charge > 0 and at == held_t
+		_check(held_ok or (phase == "play" and flying), "frame %d: a pass ring under %d (carry %s, charge %d, target %d, flying %s)" % [f, at, str(carry), charge, held_t, str(flying)])
+		_check(int((sk[at] as Dictionary).get("PenaltyFrames", 0)) <= 0, "frame %d: a pass ring under a boxed skater" % f)
+		r5["ring_held" if held_ok else "ring_flight"] += 1
+	elif phase == "play" and carry and charge > 0 and held_t >= 0 and int((sk[held_t] as Dictionary).get("PenaltyFrames", 0)) <= 0 and not flying:
+		_check(false, "frame %d: the pass held (charge %d) to %d and no ring" % [f, charge, held_t])
+	# the teaching pulse
+	for e: Dictionary in snap["Events"]:
+		if String(e["Name"]) == "faceoff" and String(e["Kind"]) == "drop":
+			drop_at = f
+	var t: int = hud.charge.teach_shown
+	if t >= 0:
+		r5["teach_frames"] += 1
+		_check(phase == "play" and count <= 0 and not bool(hu.get("IsDown", false)), "frame %d: a teaching pulse in %s, count %d, down %s" % [f, phase, count, str(hu.get("IsDown", false))])
+		_check(f - drop_at >= 60 or drop_at > f, "frame %d: a teaching pulse %d frames after the drop" % [f, f - drop_at])
+		_check((t == 0) == carry, "frame %d: teach %d while carry %s" % [f, t, str(carry)])
+	for k: int in 2:
+		var st: Dictionary = hud.charge.teach_state[k]
+		if st.is_empty():
+			continue
+		var m: Dictionary = teach_mem[k]
+		if bool(st["done"]) and int(m["done_at"]) < 0:
+			m["done_at"] = f
+		if int(st["shown_at"]) >= 0 and int(st["shown_at"]) != int(m["at"]):
+			_check(int(st["shown_at"]) == f, "frame %d: a pulse started at %d" % [f, int(st["shown_at"])])
+			_check(f - int(m["end"]) >= 900, "frame %d: a pulse %d frames after the last" % [f, f - int(m["end"])])
+			_check(int(m["done_at"]) < 0, "frame %d: a pulse after he did it (%d)" % [f, int(m["done_at"])])
+			r5["teach_pass" if k == 0 else "teach_hit"] += 1
+			m["at"] = int(st["shown_at"])
+		if t == k:
+			_check(f - int(m["at"]) < 90, "frame %d: a pulse %d frames old" % [f, f - int(m["at"])])
+			m["end"] = f + 1
+		_check(int(st["shows"]) <= 3, "frame %d: %d pulses of kind %d" % [f, int(st["shows"]), k])
+	if sh.has("panel"):
+		var p: String = sh["panel"]
+		_check(not p.contains("!") or t >= 0, "frame %d: a taught row with no pulse: %s" % [f, p])
+		if (t == 0 and p.contains("RMB=PASS")) or (t == 1 and p.contains("RMB=CHECK")):
+			_check(p.contains("RMB=PASS!") or p.contains("RMB=CHECK!"), "frame %d: teach %d and the row unlit: %s" % [f, t, p])
+			r5["teach_row"] += 1
+
+
 func _bot_done() -> bool:
 	return done
 
 
 func _bot_result() -> Dictionary:
 	var sc: Array = core.get_score() if core != null else [0, 0]
-	return {"ok": done and fails.is_empty() and checks > 1000 and end_card_seen and booth["lines"] > 10, "summary": "%d checks, %d failed (a recorded match of %d frames, score %d:%d; card %d, count %d, drop %d, result %d, panel %d, goal pause %d, end %d; you %d mate %d opponent %d loose %d)%s" % [
+	return {"ok": done and fails.is_empty() and checks > 1000 and end_card_seen and booth["lines"] > 10
+		and int(r5.get("ring_held", 0)) > 0 and int(r5.get("ring_flight", 0)) > 0 and int(r5["teach_pass"]) > 0 and int(r5["teach_hit"]) > 0
+		and int(r5["teach_row"]) > 0 and int(r5["grace_first"]) > 0 and int(r5["panel_with"]) > 0 and int(r5["panel_without"]) > 0, "summary": "%d checks, %d failed (a recorded match of %d frames, score %d:%d; card %d, count %d, drop %d, result %d, panel %d, goal pause %d, end %d; you %d mate %d opponent %d loose %d)%s" % [
 		checks, fails.size(), stats["frames"], int(sc[0]), int(sc[1]), stats["card"], stats["count"], stats["drop"], stats["result"], stats["panel"], stats["goal_pause"], stats["end"],
 		stats["you"], stats["mate"], stats["opponent"], stats["loose"], "" if fails.is_empty() else ": " + "; ".join(fails)]
-		+ "; banner %d frames over %d goals, booth %d lines (%d stoppage), end wait %s, end card %s; barks %d (lane %d frames)" % [banner_frames, goals_seen, booth["lines"], booth["stop_ok"], str(end_wait_ok), str(end_card_seen), bark_stats["barks"], bark_stats["lane"]]}
+		+ "; banner %d frames over %d goals, booth %d lines (%d stoppage), end wait %s, end card %s; barks %d (lane %d frames)" % [banner_frames, goals_seen, booth["lines"], booth["stop_ok"], str(end_wait_ok), str(end_card_seen), bark_stats["barks"], bark_stats["lane"]]
+		+ "; r5: %s" % str(r5)}

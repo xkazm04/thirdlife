@@ -14,6 +14,7 @@ const Cards := preload("cards.gd")
 const Flow := preload("flow.gd")
 const Captions := preload("captions.gd")
 const Barks := preload("barks.gd")
+const Charge := preload("charge.gd")
 
 var lay                       # TLHudLayer
 var length_m: float = 90.0
@@ -31,6 +32,8 @@ var cards                               # cards.gd: the take and the MATCH card
 var flow                                # flow.gd: the GOAL banner, the end card, IN THE BOX
 var captions                            # captions.gd: the commentator's lines
 var barks                               # barks.gd: the skaters' barks and their lane
+var charge = Charge.new()               # charge.gd: the pass's target ring and the teaching pulse
+var pass_ring_at: int = -1
 var booth_frame: int = -1
 var booth_end_said: bool = false
 var last_take: int = 0
@@ -183,6 +186,13 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	if rings.has("loose"):
 		_ring(rings["loose"][0], rings["loose"][1])
 		shown["loose_ring"] = true
+	if advanced:                                       # UpdateChargeLook and UpdateTeach read the sim frame (cpp:183, 185)
+		pass_ring_at = charge.pass_ring(snap, phase, me, f)
+		charge.teach(snap, phase, me, f, b_count, down_now, last_drop_frame, bool(ui.get("hit_pressed", false)))
+	var pr: Rect2 = lay.ground_ring(Vector3((sk[pass_ring_at] as Dictionary)["Pos"].x, 0.03, (sk[pass_ring_at] as Dictionary)["Pos"].y), R.CARRIER_RING_M * R.PASS_RING_SCALE) if pass_ring_at >= 0 else Rect2()
+	if pr.size != Vector2.ZERO:                        # HUDChargeLook.cpp:87-111: z -1, the team's colour at full alpha
+		_ring(pr, Color(col(my_team), 1.0))
+		shown["pass_ring"] = pass_ring_at
 
 	# ================================================================ the scoreboard (cpp:522-569, one look HUDOneLook.cpp:59-78)
 	_scoreboard(snap, vw, my_team)
@@ -218,7 +228,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 		if int(hu.get("PenaltyFrames", 0)) > 0:
 			held = {}
 		shown["panel"] = panel.paint(lay, vh, f, bool(ui.get("with_puck", false)), bool(ui.get("press", false)), held,
-			bool(ui.get("saucer", false)), bool(ui.get("braced", false)), false, team_c, dim, R.legs_spent(stamina01, bool(hu.get("bSprinting", false))))
+			bool(ui.get("saucer", false)), bool(ui.get("braced", false)), false, team_c, dim, R.legs_spent(stamina01, bool(hu.get("bSprinting", false))), charge.teach_shown)
 	else:
 		panel.hide()
 
@@ -332,9 +342,12 @@ func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: i
 	var car_col := Color(R.PAPER.r, R.PAPER.g, R.PAPER.b, 0.9)
 	var car_size_k: float = 1.0
 	# the take grace (UpdateCarrierCues): the carrier's ring closes from 1.5 x unless the grace was won by his own hit
-	var grace: bool = carrier >= 0 and int((sk[carrier] as Dictionary).get("TakeGraceLeft", 0)) > 0
+	# (cpp:1904-1908: UJamSim::InTakeGrace, the core's Controls.CarrierInTakeGrace, which includes the frame the puck is won in;
+	# on that frame TakeGraceLeft is still 0 and the ring stands at the full count)
+	var grace: bool = carrier >= 0 and bool((snap.get("Controls", {}) as Dictionary).get("CarrierInTakeGrace", false))
 	if grace:
-		var left: int = int((sk[carrier] as Dictionary)["TakeGraceLeft"])
+		var gl: int = int((sk[carrier] as Dictionary).get("TakeGraceLeft", 0))
+		var left: int = gl if gl > 0 else take_grace_total
 		if cue_grace_carrier != carrier:
 			grace_from_hit = false
 			for e: Dictionary in snap["Events"]:
@@ -344,6 +357,7 @@ func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: i
 				if int(v.get("ContactBy", -1)) == carrier and int(v["Index"]) != carrier:
 					grace_from_hit = true
 		var gs: float = R.grace_ring_scale_for(grace_from_hit, left, take_grace_total)
+		shown["grace"] = [carrier, gs, left]
 		if carrier == me:
 			you_size_k *= gs
 		else:
@@ -372,16 +386,16 @@ func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: i
 	you_col.a *= near
 	if p == 1 and not is_released and ring_a > 0.0:
 		you_size_k *= pulse
-		var have := _scaled(you_r, you_size_k * R.YOU_HAVE_RING_SCALE)
+		var have := R.scaled(you_r, you_size_k * R.YOU_HAVE_RING_SCALE)
 		out["you_have"] = [have, Color(team.r, team.g, team.b, you_col.a * R.YOU_HAVE_RING_ALPHA)]
 	if (p == 2 or p == 3) and car_r.size != Vector2.ZERO:
 		var cc: Color = col(int((sk[carrier] as Dictionary)["Team"]))
 		car_col = Color(cc.r, cc.g, cc.b, 0.95)
 		car_size_k *= pulse
 	if ring_a > 0.0:
-		out["you"] = [_scaled(you_r, you_size_k), you_col]
+		out["you"] = [R.scaled(you_r, you_size_k), you_col]
 	if car_r.size != Vector2.ZERO:
-		out["carrier"] = [_scaled(car_r, car_size_k), car_col]
+		out["carrier"] = [R.scaled(car_r, car_size_k), car_col]
 	# the loose puck (jam.hud.Possess 1): a chalk ring of 0.42 m, yellow past 22 m, never under 40 units across
 	if p == 0 and phase == "play" and not counting:
 		var pp: Vector2 = (snap["Puck"] as Dictionary)["Pos"]
@@ -399,13 +413,6 @@ func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: i
 				out["loose"] = [lrect, Color(lc.r, lc.g, lc.b, 0.9)]
 	shown["possess"] = ["loose", "you", "mate", "opponent"][0 if is_released else p]
 	return out
-
-
-static func _scaled(r: Rect2, k: float) -> Rect2:
-	if k == 1.0:
-		return r
-	var s: Vector2 = r.size * k
-	return Rect2(r.get_center() - s * 0.5, s)
 
 
 ## A figure's box on the screen from its bones (source 2): every joint projected, grown by FigurePadCm (14 cm, h:239) at the
