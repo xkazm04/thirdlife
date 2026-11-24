@@ -6,6 +6,7 @@ import path from "node:path";
 import { copyDir } from "./scope.js";
 import { toPosix } from "./paths.js";
 import { cardsIndexText, readCards } from "./cards.js";
+import { CORE_ROUTES, baseRefDir, copyCoreReference, coreReferenceLines, hasBase } from "./coreroute.js"; // E3 of 24 Nov: games on a core
 
 export interface Reference {
   /** kernel/API.md -> ref/API.md */
@@ -22,6 +23,12 @@ export interface Reference {
   cardsDir?: string;
   /** House games a card names as its worked example (`pack`): engine packs/<name>/ -> ref/packs/<name>/, whole. */
   housePacks?: string[];
+  /**
+   * E3 of 24 Nov: the engine whose game cores are described (coreroute.ts CORE_ROUTES): each core's documents ->
+   * ref/cores/<core>/ (SNAPSHOT.md, GAMEMODE.md, CARTRIDGE.md, schema/, modes/) and its base engine/templates/<base>/
+   * -> ref/base/<base>/ (what a "start from the base" package copies), when the engine has them.
+   */
+  coreEngine?: string;
 }
 
 /** Engine-relative documents copied to the same relative path under ref/, when the engine has them. */
@@ -39,7 +46,9 @@ export function referenceOf(engineDir: string): Reference {
     .sort()
     .map((p) => path.join(engineDir, "packs", p))
     .filter((d) => fs.existsSync(path.join(d, "pack.json")));
+  const coreEngine = CORE_ROUTES.some((r) => fs.existsSync(path.join(engineDir, "cores", r.core))) ? engineDir : undefined;
   return {
+    ...(coreEngine !== undefined ? { coreEngine } : {}),
     ...(housePacks.length > 0 ? { housePacks } : {}),
     ...(readCards(cardsDir).length > 0 ? { cardsDir } : {}),
     ...(fs.existsSync(apiDoc) ? { apiDoc } : {}),
@@ -51,7 +60,7 @@ export function referenceOf(engineDir: string): Reference {
 }
 
 export function isEmptyReference(ref: Reference): boolean {
-  return !ref.apiDoc && !ref.examples?.length && !ref.data?.length && !ref.seedsDir && !ref.docs?.length && !ref.cardsDir && !ref.housePacks?.length;
+  return !ref.apiDoc && !ref.examples?.length && !ref.data?.length && !ref.seedsDir && !ref.docs?.length && !ref.cardsDir && !ref.housePacks?.length && ref.coreEngine === undefined;
 }
 
 /** Directories directly under seeds/ that hold a pack.json. */
@@ -101,6 +110,7 @@ export function prepareReference(refDir: string, ref: Reference | undefined): vo
     fs.writeFileSync(path.join(refDir, "cards", "INDEX.md"), cardsIndexText(cards.map((c) => c.card)));
   }
   for (const p of ref.housePacks ?? []) if (fs.existsSync(p)) copyDir(p, path.join(refDir, "packs", path.basename(p)));
+  if (ref.coreEngine !== undefined) for (const r of CORE_ROUTES) copyCoreReference(ref.coreEngine, refDir, r);
 }
 
 /** What a reference copy holds, by name. */
@@ -116,6 +126,9 @@ export interface RefContents {
   cards: string[];
   /** House games under ref/packs/ (the worked examples of cards). */
   packs: string[];
+  /** E3 of 24 Nov: game cores described under ref/cores/, and bases under ref/base/ (with a pack.json). */
+  cores?: string[];
+  bases?: string[];
 }
 
 export function refContents(refDir: string): RefContents {
@@ -129,6 +142,8 @@ export function refContents(refDir: string): RefContents {
     docs: REFERENCE_DOCS.filter((d) => fs.existsSync(path.join(refDir, ...d.split("/")))),
     cards: readCards(path.join(refDir, "cards")).map((c) => c.card.id),
     packs: seedPacks(path.join(refDir, "packs")),
+    ...(fs.existsSync(path.join(refDir, "cores")) ? { cores: ls(path.join(refDir, "cores")) } : {}),
+    ...(fs.existsSync(path.join(refDir, "base")) ? { bases: ls(path.join(refDir, "base")).filter((b) => hasBase(path.join(refDir, "base", b))) } : {}),
   };
 }
 
@@ -169,6 +184,7 @@ export function referenceText(refDir: string): string {
   if (c.api) lines.push(`- Kernel API (everything a pack script may call, with examples${c.seedsReadme ? "" : "; READ IT FIRST"}): ${at("API.md")}`);
   for (const e of c.examples) lines.push(`- Example pack that passes every verifier level: ${at("examples", e)}/ (pack.json, scripts/, tests/, data/)`);
   if (c.data.length > 0) lines.push(`- The kernel's law tables that API.md calls res://kernel/data/ (${c.data.join(", ")}): ${at("data")}/`);
+  for (const r of CORE_ROUTES) if (c.cores?.includes(r.core) || c.bases?.includes(r.base)) lines.push(...coreReferenceLines(refDir, r));
   if (!hasKit && c.seeds.length === 0) lines.push("This engine has no kit, no rigs, no style layer and no seed games: build from kernel primitives as the example packs do.");
   lines.push("These are read-only reference copies outside your working directory. Read them with your file tools; do not write there.");
   lines.push("The engine directory itself is not readable from here: everything you may use is in these copies. A `res://kits/...`, `res://rigs/...`, `res://style/...` or `res://kernel/...` path in a document is a path your SCRIPTS may load at run time, not a file you can open.");
@@ -214,6 +230,11 @@ export function existingText(refDir: string): string {
     lines.push(`- **Seed games** (complete packs that pass every verifier level, under \`ref/seeds/\`): ${c.seeds.join(", ")}. Every builder is told to copy the nearest one.`);
   }
   for (const e of c.examples) lines.push(`- Small example pack: \`ref/examples/${e}/\`.`);
+  for (const r of CORE_ROUTES) {
+    if (!c.cores?.includes(r.core)) continue;
+    const base = hasBase(baseRefDir(refDir, r));
+    lines.push(`- **The ${r.core} core** (\`ctx.cores.open("${r.core}", <cartridge>)\`, kernel API section 24; documents under \`ref/cores/${r.core}/\`: SNAPSHOT.md, GAMEMODE.md, CARTRIDGE.md, schema/, modes/): a reference game's whole simulation and bots, compiled. A game on it is a cartridge${base ? ` over the base \`ref/base/${r.base}/\` (a \`"kind": "base"\` package copies it; no builder)` : ` (its base engine/templates/${r.base} is not in this engine yet)`}; the house game \`ref/packs/${r.house}/\` shows it whole.`);
+  }
   if (c.cards.length > 0) lines.push(`- **Recipe cards** (\`ref/cards/INDEX.md\`; each card in full in \`ref/cards/<name>.json\`): ${c.cards.join(", ")}. The section "Recipe cards" below says how to name the one that fits.`);
   if (lines.length === 0 || (c.docs.length === 0 && c.seeds.length === 0)) {
     lines.push("This engine has no kit, no rigs, no style layer and no seed games: builders work from the kernel API and the example packs alone.");

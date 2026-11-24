@@ -18,8 +18,23 @@ const SHAPE = {
   seed: [STR, false], pack: [STR, false], capabilities: [LIST, true], kit_parts: [LIST, true], swap_parts: [LIST, false],
   api: [LIST, true], rules_keys: [LIST, true], data_files: [LIST, true],
   do: [LIST, true], dont: [LIST, true], bot: ["object", true], acceptance: [LIST, true], variants: [LIST, false], hands: ["object", false],
-  interview: ["object", false], footprint: ["object", false], fun: ["object", false],
+  interview: ["object", false], footprint: ["object", false], fun: ["object", false], core: ["object", false],
 };
+/**
+ * E3 of 24 Nov (proposed for CARDS.md): a card whose kind of game runs on a game core (engine/cores/<id>/). `cartridge` is
+ * the example's cartridge (a file of the house pack); `base` (optional until lane E1 lands it) the base a job starts from
+ * (engine/templates/<base>/); `check` the measured check as a person types it. On a core card `rules_keys` are key paths
+ * of that cartridge (`game.rules.score_to_win`): the win condition lives in the cartridge, not in data/rules.json.
+ */
+const CORE_SHAPE = { id: [STR, true], cartridge: [STR, true], check: [STR, true], base: [STR, false] };
+
+/** The key paths of a JSON document: objects dotted, arrays as `[]`. */
+export function keyPaths(doc, at = "", out = new Set()) {
+  if (Array.isArray(doc)) { if (at) out.add(at); out.add(`${at}[]`); for (const x of doc) keyPaths(x, `${at}[]`, out); }
+  else if (doc !== null && typeof doc === "object") { if (at) out.add(at); for (const [k, v] of Object.entries(doc)) keyPaths(v, at ? `${at}.${k}` : k, out); }
+  else if (at) out.add(at);
+  return out;
+}
 /** CARDS.md (added 2026-11-20): what makes this kind of game fun, for the Designer and the Planner. Every key, every list non-empty. */
 export const FUN_KEYS = ["camera", "juice", "rivals", "first_minute", "stakes"];
 const FUN_SHAPE = Object.fromEntries(FUN_KEYS.map((k) => [k, [LIST, true]]));
@@ -199,6 +214,11 @@ export function validateCard(card, where = "card") {
   if (card.interview !== undefined) errs.push(...interviewErrors(card.interview, `${where}.interview`));
   if (card.footprint !== undefined) errs.push(...footprintErrors(card.footprint, `${where}.footprint`));
   if (card.fun !== undefined) errs.push(...funErrors(card.fun, `${where}.fun`));
+  if (card.core !== undefined) {
+    errs.push(...shapeErrors(card.core, CORE_SHAPE, `${where}.core`));
+    if (typeof card.core?.id === "string" && !/^[a-z][a-z0-9_]*$/.test(card.core.id)) errs.push(`${where}.core: id '${card.core.id}' must be a core directory name`);
+    if (typeof card.core?.cartridge === "string" && !/^data\/[^/]+\.cartridge\.json$/.test(card.core.cartridge)) errs.push(`${where}.core: cartridge must be data/<name>.cartridge.json`);
+  }
   const both = (card.swap_parts ?? []).filter((p) => card.kit_parts.includes(p));
   for (const p of both) errs.push(`${where}: '${p}' is in both kit_parts and swap_parts`);
   return errs;
@@ -299,7 +319,15 @@ export function checkCardAgainstTree(card, root, facts = engineFacts(root)) {
     else if (!members.has(member)) errs.push(`${w}: api '${a}': ${cls} has no func, signal or var '${member}'`);
     else if (!new RegExp(`\\.${member}\\b`).test(seed.code)) errs.push(`${w}: api '${a}' is never used in ${ex.name}'s scripts or tests`);
   }
-  for (const k of card.rules_keys) if (!seed.rulesKeys.has(k)) errs.push(`${w}: rules key '${k}' is not set in ${ex.name}'s data (data/rules.json, or the "rules" object of a data/*.json)`);
+  if (card.core !== undefined) {
+    // E3 of 24 Nov: a core card names a core that exists, a cartridge its example holds, and win keys that cartridge sets.
+    if (!fs.existsSync(path.join(root, "engine", "cores", card.core.id))) errs.push(`${w}: core '${card.core.id}' has no engine/cores/${card.core.id}/`);
+    if (card.core.base !== undefined && !fs.existsSync(path.join(root, "engine", "templates", card.core.base, "pack.json"))) errs.push(`${w}: core base '${card.core.base}' has no engine/templates/${card.core.base}/pack.json`);
+    let paths = null;
+    if (!seed.files.has(card.core.cartridge)) errs.push(`${w}: core cartridge '${card.core.cartridge}' does not exist in ${ex.name}`);
+    else { try { paths = keyPaths(readJson(path.join(seed.dir, ...card.core.cartridge.split("/")))); } catch (e) { errs.push(`${w}: core cartridge '${card.core.cartridge}' is not valid JSON (${e.message})`); } }
+    if (paths) for (const k of card.rules_keys) if (!paths.has(k)) errs.push(`${w}: rules key '${k}' is not a key path of ${ex.name}'s ${card.core.cartridge}`);
+  } else for (const k of card.rules_keys) if (!seed.rulesKeys.has(k)) errs.push(`${w}: rules key '${k}' is not set in ${ex.name}'s data (data/rules.json, or the "rules" object of a data/*.json)`);
   for (const d of card.data_files) if (!seed.files.has(d.file)) errs.push(`${w}: data file '${d.file}' does not exist in ${ex.name}`);
   if (!seed.files.has(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' does not exist in ${ex.name}`);
   else if (!(seed.manifest.tests ?? []).includes(card.bot.template)) errs.push(`${w}: bot template '${card.bot.template}' is not in ${ex.name}'s manifest tests`);

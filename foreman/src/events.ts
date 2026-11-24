@@ -95,6 +95,8 @@ export interface PackageSpec {
   registers?: Registers;
   /** JOB.md 2026-11-21: clip ids of brief.design.clips that this package brings closer. */
   serves?: string[];
+  /** E3 of 24 Nov (a game on a core, coreroute.ts): "base" = start from the base; the Foreman executes it itself, no builder. Absent = built by a builder. */
+  kind?: "base";
 }
 export interface BudgetPolicy {
   kind: BudgetKind;
@@ -262,6 +264,7 @@ export const packageSpecSchema = {
     contract: nonEmpty,
     acceptance: { type: "array", items: acceptanceSchema },
     serves: { type: "array", items: pkgId },
+    kind: { enum: ["base"] },
   },
 } as const;
 

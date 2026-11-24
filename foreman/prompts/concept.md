@@ -28,8 +28,10 @@ So you work in this order (docs/design/METHOD.md, the method below):
 
 # How to answer
 1. `template`: the ONE proven genre template the core loop copies (the menu below).
-   - `id`: `duel`, `arcade_sport` or `own`. A melee fight (a duel, gladiators, swords, fists, an arena fight) is
-     ALWAYS `duel`; a team game with a ball or a puck is ALWAYS `arcade_sport`; `own` only for other genres.
+   - `id`: `duel`, `rink_sport`, `arcade_sport` or `own`. A melee fight (a duel, gladiators, swords, fists, an arena
+     fight) is ALWAYS `duel`; a game on a rink with a puck (hockey, pond hockey, shinny, bandy) is ALWAYS `rink_sport`:
+     it is a cartridge on the rink core (thirdjam's own match), never a new simulation; another team game with a ball
+     is ALWAYS `arcade_sport`; `own` only for other genres.
    - `reference` (at most 20 words): the real games it is copied from.
    - `copies`: 3 to 6 lines, each at most 20 words, each a concrete rule or table copied from it ("the DUEL-PLAYBOOK
      6.4 state machine with its 8-frame input buffer"). Name everything the template's menu line says to copy. A mood is

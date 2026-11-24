@@ -20,6 +20,12 @@ export interface FakeStep {
   delayMs?: number;
   /** Files to write, relative to the run's cwd (edit mode only). */
   write?: Record<string, string>;
+  /**
+   * E3 of 24 Nov: JSON merge patches (RFC 7386) on files that are already in the cwd (edit mode only), applied after
+   * `write`: an object merges key by key, `null` removes a key, anything else replaces. How a fake builder edits a
+   * cartridge or a skin the base put there, as a real one would, instead of writing the whole file.
+   */
+  patch?: Record<string, unknown>;
   remove?: string[];
   text?: string;
   json?: unknown;
@@ -136,6 +142,12 @@ export class FakeBuilder implements Builder {
         fs.mkdirSync(path.dirname(abs), { recursive: true });
         fs.writeFileSync(abs, content);
       }
+      for (const [rel, p] of Object.entries(step.patch ?? {})) {
+        const abs = inside(rel);
+        const text = fs.readFileSync(abs, "utf8");
+        const doc = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text) as unknown;
+        fs.writeFileSync(abs, JSON.stringify(mergePatch(doc, p), null, 1) + "\n");
+      }
       for (const rel of step.remove ?? []) fs.rmSync(inside(rel), { force: true });
     }
 
@@ -167,4 +179,15 @@ export class FakeBuilder implements Builder {
     }
     return done("ok", step, { text, ...(json !== undefined ? { json } : {}) });
   }
+}
+
+/** RFC 7386 JSON merge patch: objects merge, null removes, anything else replaces. */
+export function mergePatch(target: unknown, patch: unknown): unknown {
+  if (patch === null || typeof patch !== "object" || Array.isArray(patch)) return patch;
+  const out: Record<string, unknown> = target !== null && typeof target === "object" && !Array.isArray(target) ? { ...(target as Record<string, unknown>) } : {};
+  for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
+    if (v === null) delete out[k];
+    else out[k] = mergePatch(out[k], v);
+  }
+  return out;
 }

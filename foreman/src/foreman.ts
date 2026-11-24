@@ -22,7 +22,9 @@ import { briefText, critic, render, replanPackages, whoOwns, type GenerateCall, 
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
-import { templateOf } from "./templates.js";
+import { coreRouteOf, templateOf } from "./templates.js";
+import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
+import { coreDataGate } from "./coregate.js";
 import { decideLook, filmLook, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
@@ -822,7 +824,7 @@ export class Foreman {
         const before = [resumed ? "resumed" : "", this.starvedDetail(id).replace(/ of this round:/, ` of round ${round - 1}:`)].filter(Boolean).join("; ");
         this.append({ type: "package_state", package: id, state: "running", round, ...(before ? { detail: before } : {}) });
         resumed = false;
-        const res = await this.callBuilder(id, spec, round);
+        const res = spec.kind === "base" ? this.startFromBase(id, spec, round) : await this.callBuilder(id, spec, round); // E3: the base is the Foreman's
         if (res.outcome === "ok") this.recordNote(id, round, res.text);
         if (res.outcome === "ok" && this.raiseQuestion(id, round, res.text)) return;
         if (res.outcome !== "ok") {
@@ -851,8 +853,8 @@ export class Foreman {
       skipBuilder = false;
       resumed = false;
 
-      let failure: GateFailure | undefined;
-      for (const a of spec.acceptance) {
+      let failure: GateFailure | undefined = await coreDataGate(this.gateHost, id, round, this.wsDir(id), this.mergeSet(id)); // E3: a cartridge edit is validated first
+      for (const a of failure !== undefined ? [] : spec.acceptance) {
         const vr = await this.verifyLogged(a, this.wsDir(id), `${id}-r${round}-${a.verb}`, { package: id, round });
         if (!vr.ok) {
           failure = vr;
@@ -1546,6 +1548,9 @@ export class Foreman {
     }
     // P10 item 1: the round before was refused because a test of the pack failed with its files merged in.
     const packTest = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && n.text.startsWith(`${FOREMAN_NOTE}${PACK_TEST_FAILED}`));
+    // E3 of 24 Nov: the round before changed a cartridge the validator refused (coregate.ts): its problems.
+    const cart = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && n.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_INVALID}`));
+    if (cart) parts.push(`Round ${round - 1} was not run: ${cart.text.slice(FOREMAN_NOTE.length)}`);
     if (packTest) parts.push(`${packTest.text.slice(FOREMAN_NOTE.length)}\nEvery test of the pack must pass with your files in, not only your own acceptance: the report of the failed test is below. Change YOUR files; you cannot change the other package or its test.`);
     // N3b: a clock-based failure reaches the builder only after the machine was measured; say so.
     const notLoad = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && (n.text.startsWith(`${FOREMAN_NOTE}${NOT_LOAD}`) || n.text.startsWith(`${FOREMAN_NOTE}${PACK_STALL}`)));
@@ -1663,6 +1668,16 @@ export class Foreman {
     const ws = this.wsDir(id);
     const text = presentValuesText(fs.existsSync(path.join(ws, MANIFEST_FILE)) ? ws : this.dir("pack"), spec.scope);
     return text === "" ? "" : `\n${text}\n`;
+  }
+
+  /**
+   * E3 of 24 Nov: a "start from the base" package (kind "base", coreroute.ts) is the Foreman's own round: the job's copy
+   * of the base goes into the workspace, and the round is verified and merged like a builder's. No builder, no tokens.
+   */
+  private startFromBase(id: string, spec: PackageSpec, round: number): RunResult {
+    const r = startFromBase(this.wsDir(id), this.refDir(), this.dir("pack"), spec, this.s.plan, coreRouteOf(this.s.brief?.concept?.template));
+    this.append({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${r.text}` });
+    return r.ok ? { ok: true, outcome: "ok", raw: { foreman: "base", files: r.files }, durationMs: 0 } : { ok: false, outcome: "refused", raw: { foreman: "base" }, durationMs: 0, error: { kind: "refusal", message: r.text } };
   }
 
   private async callBuilder(id: string, spec: PackageSpec, round: number): Promise<RunResult> {

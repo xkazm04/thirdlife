@@ -18,7 +18,11 @@ export function cardBrief(card) {
   L.push(`Kit parts the ${what} already uses: ${card.kit_parts.join(", ")}`);
   if (card.swap_parts?.length) L.push(`Kit parts to reach for when the request differs: ${card.swap_parts.join(", ")}`);
   L.push(`API the ${what} shows: ${card.api.join(", ")}`);
-  L.push(`Rules by data (data/rules.json keys): ${card.rules_keys.join(", ")}`, "");
+  if (card.core) {
+    // E3 of 24 Nov: a game on a core is a cartridge over the base; the win condition lives in the cartridge.
+    L.push(`Rules by data (key paths of the cartridge ${card.core.cartridge}): ${card.rules_keys.join(", ")}`);
+    L.push(`Core: this kind of game runs on the ${card.core.id} core (engine/cores/${card.core.id}/, ctx.cores.open). A game is a cartridge${card.core.base ? ` over the base engine/templates/${card.core.base}/` : ""}: change data, never the simulation. Measured check: ${card.core.check}`, "");
+  } else L.push(`Rules by data (data/rules.json keys): ${card.rules_keys.join(", ")}`, "");
   L.push("Data files, written before any script:");
   for (const d of card.data_files) L.push(`- ${d.file}: ${d.role}`);
   list("Do", card.do); list("Do not", card.dont);
