@@ -123,8 +123,7 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
       echo "res://rink_core_t5.gdextension" > "$proj/.godot/extension_list.cfg"
     fi
     "$G" --headless --path "$proj" --script "$script" -- "--content=$(cygpath -m "$(content_for "$tree")" 2>/dev/null || content_for "$tree")"       "--out=$(cygpath -m "$out" 2>/dev/null || echo "$out")" "$@" >/dev/null 2>&1 || true
-    tr -d '
-' < "$out" 2>/dev/null; rm -f "$out"
+    tr -d '' < "$out" 2>/dev/null; rm -f "$out"
     ;;
   ue)
     name="$1"; shift

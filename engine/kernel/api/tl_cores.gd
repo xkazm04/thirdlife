@@ -12,7 +12,7 @@ extends RefCounted
 ## command that builds it, and open() returns null.
 
 ## id -> the class the core's extension registers, and the command that builds it.
-## 1.29: "variant" = the class of the core built with its rule patches (rink: thirdjam + native/patches-thirdlife, lane K8), opened
+## 1.27: "variant" = the class of the core built with its rule patches (rink: thirdjam + native/patches-thirdlife, lane K8), opened
 ## for a cartridge that has a rules sidecar (<name>.rules.json beside <name>.cartridge.json in data/).
 const KNOWN: Dictionary = {
 	"rink": {"class": "RinkCore", "build": "bash engine/tools/rink.sh build",
@@ -30,7 +30,7 @@ func _init(ctx: Object = null) -> void:
 ## The core `id` as an object (rink: RinkCore, engine/cores/rink/SNAPSHOT.md), or null with an error when the id is unknown,
 ## the core is not built, or `cartridge` does not load. `cartridge`: a file under the pack's data/ (as ctx.read_json reads
 ## it), handed to the core as text; "" = load nothing (the pack calls load_cartridge itself).
-## 1.29: a cartridge with a rules sidecar (data/<name>.rules.json beside data/<name>.cartridge.json, tl.rink.rules/1) opens the
+## 1.27: a cartridge with a rules sidecar (data/<name>.rules.json beside data/<name>.cartridge.json, tl.rink.rules/1) opens the
 ## core's variant (rink: RinkCoreThirdlife, its own library) and hands it the rules after the cartridge; without a sidecar the
 ## plain core (thirdjam byte for byte) opens, as before.
 func open(id: String, cartridge: String = "") -> Object:

@@ -123,7 +123,7 @@ bump, board hit, recoil, ability). Puck: `Pos`, `Z`, `Vel`, `VZ`, `LastTouch`.
 - `RinkCore` (rink_core.dll) is thirdjam byte for byte. `RinkCoreThirdlife` (rink_core_thirdlife.dll, built by
   `bash engine/tools/rink.sh build thirdlife` when `native/patches-thirdlife/*.patch` exist) is the same source compiled from a
   copy of thirdjam with lane K8's patches applied (`native/tools/thirdlife_tree.py`). Every method and snapshot field above is
-  the same in both. The kernel picks one by the cartridge (a `<name>.rules.json` beside it: kernel API 1.29).
+  the same in both. The kernel picks one by the cartridge (a `<name>.rules.json` beside it: kernel API 1.27).
 - `load_rules(json) -> String` (after `load_cartridge`, before `reset`): the sidecar `tl.rink.rules/1` ("rules": switches set
   through the patches' own `TlSetRule`; "levels": a thirdjam tune string per level, applied by `ApplyDifficultyTune` on top of
   the level's profile at each `reset`). "" = loaded, else the error. The plain core refuses any rule.

@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.26)
+# Third Life kernel API (kernelApi 1.27)
 
-**Version 1.26 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.27 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.26"` in `pack.json` (any
-`"1.x"` up to 1.26 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.27"` in `pack.json` (any
+`"1.x"` up to 1.27 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1226,7 +1226,7 @@ func _pack_state() -> Dictionary:
 	return ctx.cores.state()
 ```
 
-- Addition in 1.29 (lane K1, the thirdlife variant): a cartridge with a rules sidecar opens the core's variant. When
+- Addition in 1.27 (lane K1, the thirdlife variant): a cartridge with a rules sidecar opens the core's variant. When
   `data/<name>.rules.json` (schema `tl.rink.rules/1`, lane K8's: `"rules"` = the switches of
   `engine/cores/rink/native/patches-thirdlife`, `"levels"` = thirdjam difficulty tunes per level) lies beside
   `data/<name>.cartridge.json`, `ctx.cores.open("rink", "<name>.cartridge.json")` returns a `RinkCoreThirdlife` (thirdjam +

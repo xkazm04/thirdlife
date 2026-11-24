@@ -1,7 +1,7 @@
 {
   "id": "game.hokej",
   "version": "0.1.0",
-  "kernelApi": "1.26",
+  "kernelApi": "1.27",
   "title": "Hokej: thirdjam's match, five against five",
   "capabilities": [
     "input",
