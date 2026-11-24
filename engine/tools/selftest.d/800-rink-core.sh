@@ -202,3 +202,20 @@ if [ -z "$FILTER" ] || [[ "rink.variant" == *"$FILTER"* ]]; then
   fi
   verdict rink.variant "$why" "$note"
 fi
+
+# Round 6 (K3): the playtester's advice (set_advisor / advise, tools/rink_advice.gd): with the playtester seated and an advisor of the
+# same spec, the advice asked before each step equals what the seat then sent, on every frame of a whole match (seed 1, regular +
+# sprint), asked twice = once, and the seated match keeps thirdjam's playtester hash (973d6c043707b703: the advisor disturbs nothing).
+if [ -z "$FILTER" ] || [[ "rink.advice" == *"$FILTER"* ]]; then
+  why=""; note=""
+  if [ ! -f "$HERE/../cores/rink/bin/rink_core.windows.template_debug.x86_64.dll" ]; then why="the extension is not built (run: bash engine/tools/rink.sh build)"; else
+    rc_g="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
+    rc_e="$(cd "$HERE/.." && pwd)"; command -v cygpath >/dev/null 2>&1 && rc_e="$(cygpath -am "$rc_e")"
+    rc_out="$(MSYS_NO_PATHCONV=1 timeout 900 "$rc_g" --headless --path "$rc_e" --script res://cores/rink/tools/rink_advice.gd -- --seed=1 2>&1 | tr -d '\015')"
+    rc_l="$(echo "$rc_out" | grep -m1 '^PASS  rink advice\|^FAIL  rink advice')"
+    [[ "$rc_l" == "PASS  rink advice"* ]] || why="${rc_l:-no advice line (the run stopped)}"
+    [[ "$rc_l" == *"hash 973d6c043707b703"* ]] || [ -n "$why" ] || why="the seated match no longer ends on the hash of thirdjam playtester 973d6c043707b703: $rc_l"
+    note="$(echo "$rc_l" | cut -c19-200)"
+  fi
+  verdict rink.advice "$why" "$note"
+fi
