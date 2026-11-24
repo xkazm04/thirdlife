@@ -13,7 +13,7 @@ extends RefCounted
 ##   TLStyleArena.crowd({...})                     # clay crowd and small parts (hall_crowd.gdshader)
 ##   TLStyleArena.bulb({...})                      # a lamp's bulb (hall_bulb.gdshader)
 ##   TLStyleArena.set_cheer(plus, minus, seconds)  # the crowd's cheering pose, 0..1 an end
-##   TLStyleArena.post(anchor, {"grade": {...}, "ink": {...}})   # the installed style's two passes, set for a hall
+##   TLStyleArena.post(anchor, {})                 # the installed style's grade and ink, set for a hall (hall_post.json)
 ##
 ## Colours are linear `Color`s (the numbers of the source material, not "#rrggbb"). Unknown keys are errors (the call
 ## returns null). Headless: one shared material with no shader (it answers set_shader_parameter), nothing else.
@@ -133,24 +133,47 @@ static func set_cheer(plus: float, minus: float, seconds: float) -> void:
 		m.set_shader_parameter(&"cheer_time", seconds)
 
 
-## Sets the installed style's grade and ink passes for a hall (the "TLStyleRig" TLStyle.install made): a closed, lamp-lit
+## The hall look's own file (style/hall_post.json): the values `post` applies, {"grade": {...}, "ink": {...}}.
+const POST_FILE: String = "res://style/hall_post.json"
+static func post_file() -> Dictionary:
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(POST_FILE))
+	if not (d is Dictionary):
+		push_error("TLStyleArena: %s does not read" % POST_FILE)
+		return {}
+	var out: Dictionary = {}
+	for k: String in d:
+		if k == "grade" or k == "ink":
+			out[k] = d[k]
+		elif k != "note":
+			push_error("TLStyleArena: unknown key '%s' in %s" % [k, POST_FILE])
+	return out
+
+
+## Sets the installed style's grade and ink passes for a hall, from the hall look's file (`opt`: values on top of it,
+## {} = the file as it is). (the "TLStyleRig" TLStyle.install made): a closed, lamp-lit
 ## room is not graded as open country is (the cel style prints a plum wash into low-chroma half tones: wood and a
 ## crowd in lamp light turn violet), and its far side carries no contour (a stand of 600 seated figures at 60 m is
 ## ink dots). Values only, no shader change: `TLStyleHall.clear` (TLStyle.install again) gives the style's own back.
 ## Like TLStyleHall it acts on the whole process: meant for a game alone. Headless: nothing.
 static func post(anchor: Node, opt: Dictionary) -> bool:
-	if TLStyle.headless() or anchor == null or not anchor.is_inside_tree():
-		return false
-	for k: String in opt:
+	var over: Dictionary = opt
+	for k: String in over:
 		if k != "grade" and k != "ink":
 			push_error("TLStyleArena.post: unknown section '%s' (known: grade, ink)" % k)
 			return false
+	var vals_all: Dictionary = post_file()
+	for sec: String in over:
+		var merged: Dictionary = (vals_all.get(sec, {}) as Dictionary).duplicate()
+		merged.merge(over[sec] as Dictionary, true)
+		vals_all[sec] = merged
+	if TLStyle.headless() or anchor == null or not anchor.is_inside_tree():
+		return false
 	var rig: Node = anchor.get_tree().root.find_child(TLStyle.RIG_NODE, true, false)
 	if rig == null:
 		push_error("TLStyleArena.post: no installed style rig (TLStyle.install)")
 		return false
 	for sec: Array in [["grade", "Grade/Rect", POST_GRADE], ["ink", "InkPost", POST_INK]]:
-		var vals: Dictionary = opt.get(sec[0], {})
+		var vals: Dictionary = vals_all.get(sec[0], {})
 		if vals.is_empty():
 			continue
 		for k: String in vals:

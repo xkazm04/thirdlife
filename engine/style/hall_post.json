@@ -1,0 +1,18 @@
+{
+ "note": "The installed style's grade and ink passes as a hall wears them (TLStyleArena.post; the Director's ruling of 23 Nov: one home per look). grade: no plum wash, no olive fill, no split toning (a lamp-lit room is not graded as open country is); sat, contrast and vignette are thirdjam's post volume PPV_P3_Clay (saturation 0.95, contrast 0.95, vignette 0.35, which is about 0.15 in this grade's vignette: the game still's ice darkens by about an eighth from the middle of the frame to its lower corners). ink: thirdjam draws no contour; the cel figures keep theirs near the camera and it is gone before the far boards (metres).",
+ "grade": {
+  "plum_density": 0.0,
+  "olive_fill": 0.0,
+  "split": 0.0,
+  "sat": 0.95,
+  "contrast": 0.95,
+  "vignette": 0.15
+ },
+ "ink": {
+  "fade_near": 10.0,
+  "fade_far": 16.0,
+  "outer_fade_far": 34.0,
+  "inner_near": 8.0,
+  "inner_far": 20.0
+ }
+}
