@@ -376,3 +376,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 25 Nov 03:53 standup: E3c, E5 proof, K8 3b landed; E4b + E3d dispatched; E1b waits for the packs run.
 - 25 Nov 04:52 standup: E4b, E3d, E4c landed (67b1349); E5b real re-run: the concept is faithful now; E1b drawing zones.
 - 25 Nov 05:52 standup: E1b + E3e landed; E5b pond: faithful concept, no goal flood, critic holds on the core's own behaviour; full gate running; disk 45 GB (another session).
+- 25 Nov 06:52 standup: full gate: world (hokej hitch at frame 9071) and kit refs real -> G1; E5b pond v0.1.0 at 120 min (critic fails the base's own behaviour); disk 21 GB.
