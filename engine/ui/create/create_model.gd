@@ -389,7 +389,8 @@ static func quality_view(job: Dictionary) -> Dictionary:
 
 ## The measured check at the waiting phase of a game on a core (coregate.ts phaseCheck writes the note "[foreman]
 ## measured at the phase pause <phase>: ..." and its report tl.foreman.measured/1), in a person's figures:
-## {goals, minutes, house_goals, house_minutes, defects: [lines], measured: bool}; {} when the phase has none.
+## {goals, minutes, house_goals, house_minutes, defects: [lines], toys: [lines], measured: bool}; {} when the phase has none.
+## H1c: toys are the check's words about a toy that changes nothing or is worth about nothing (coreroute.ts toyLines).
 static func measured_view(job: Dictionary) -> Dictionary:
 	var e: Dictionary = waiting(job)
 	if e.is_empty():
@@ -401,7 +402,7 @@ static func measured_view(job: Dictionary) -> Dictionary:
 			note = str(n["text"])
 	if note.is_empty():
 		return {}
-	var out: Dictionary = {"goals": -1.0, "minutes": -1.0, "house_goals": -1.0, "house_minutes": -1.0, "defects": [], "measured": true}
+	var out: Dictionary = {"goals": -1.0, "minutes": -1.0, "house_goals": -1.0, "house_minutes": -1.0, "defects": [], "toys": [], "measured": true}
 	var at: int = note.rfind("[report: ")
 	var rep: Variant = JobModel.read_json(str(job.get("dir", "")).path_join(note.substr(at + 9).trim_suffix("]"))) if at >= 0 else null
 	if rep is Dictionary:
@@ -411,6 +412,7 @@ static func measured_view(job: Dictionary) -> Dictionary:
 		out["minutes"] = float(fig.get("pro_minutes", -1.0))
 		out["measured"] = int(run.get("code", 2)) != 2
 		out["defects"] = (run.get("defects", []) as Array).map(func(d: Variant) -> String: return JobModel.one_line(str(d).get_slice(" (", 0).get_slice(": thirdjam", 0), 90))
+		out["toys"] = (run.get("toys", []) as Array).map(func(d: Variant) -> String: return JobModel.one_line(str(d), 110))
 		var house: Dictionary = (rep as Dictionary).get("house", {}).get("figures", {}) if (rep as Dictionary).get("house") is Dictionary else {}
 		out["house_goals"] = float(house.get("pro_goals_a_match", -1.0))
 		out["house_minutes"] = float(house.get("pro_minutes", -1.0))

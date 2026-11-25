@@ -13,6 +13,36 @@ export interface RinkCheckFacts {
   levels?: Record<string, { playtester?: Record<string, number>; plan?: Record<string, number> }>;
   defects?: { idle?: { matches: number; wins: number; not_over?: number }; skate_only?: { matches: number; wins: number; not_over?: number; clone_checked?: number; clone_mismatch?: number } };
   warnings?: string[];
+  /** H1c: each toy's worth (check_cartridge.mjs --toys): the hand with and without it, paired by seed. */
+  toys?: ToyFigure[];
+}
+
+export interface ToyFigure {
+  toy: string;
+  measured: boolean;
+  matches?: number;
+  wins_with?: number;
+  wins_without?: number;
+  points?: number;
+  goal_diff?: number;
+  changed?: number;
+  why?: string;
+}
+
+/**
+ * H1c: the toys a person should hear about at the pause, in a person's words: one that changes no match, one worth about
+ * nothing (within 5 points of wins and half a goal), one that could not be measured. [] when every toy shows.
+ */
+export function toyLines(toys: ToyFigure[] | undefined): string[] {
+  // the card's words: the toy without its kinds in brackets (the check's warning keeps them), at most about 60 characters
+  const up = (s: string): string => { const t = s.replace(/ \([^)]*\)$/, ""); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const out: string[] = [];
+  for (const t of toys ?? []) {
+    if (!t.measured) out.push(`${up(t.toy)}: not measured${t.why !== undefined ? `: ${t.why.slice(0, 120)}` : ""}`);
+    else if (t.changed === 0) out.push(`${up(t.toy)}: changes nothing (${t.wins_with} of ${t.matches} wins with and without)`);
+    else if (Math.abs(t.points ?? 0) <= 5 && Math.abs(t.goal_diff ?? 0) < 0.5) out.push(`${up(t.toy)}: changes little (${t.wins_with} of ${t.matches} wins with, ${t.wins_without} without)`);
+  }
+  return out;
 }
 
 /** The goals-a-match band, derived from thirdjam's own cartridges (foreman/scripts/rink-goal-band.mjs). */

@@ -373,10 +373,15 @@ export function sendBack(h: GateHost, m: Milestone, members: string[], lastPacka
   const v = look.verdict;
   // E3f: on a core game, what only the base can change goes to the person at once (no revise round; a retry still runs one).
   if (note === undefined && v !== undefined && baseOwned(h, v.package)) return holdForBase(h, m, lastPackage, round, look, v, v.package as string);
+  // H1c (lane G1's Arsenal job: "the bubble shows no bounce" made the builder draw the rival 2.3 m from where the core had
+  // him, two rounds, the second thrown away): a reason that asks the core's bodies for a reaction goes to the person too.
+  const motion = note === undefined && v !== undefined ? coreMotionAsk(h, v) : undefined;
+  if (motion !== undefined && v !== undefined) return holdForBase(h, m, lastPackage, round, look, v, "the core", motion);
   snapshot(h, m, round, look);
   const owner = note !== undefined ? ` The owner held the job and asks: ${note}` : "";
   // D3 of 22 Nov: the pair (revisepair.ts) goes first, so the 1500-character clip of the detail never cuts it.
-  const detail = `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: ${pair !== undefined ? `${pair} ` : ""}${v ? `${scoresText(v)}. Critic's notes: ${v.notes.join(" | ")} [${v.report}]` : clip(look.summary, 600)}.${owner} The version before this round is kept in ${snapDir(m, round)}/; after the round the critic compares both and keeps the better.`;
+  const truth = jobCore(h) !== undefined ? ` ${DRAW_TRUE}` : "";
+  const detail = `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: ${pair !== undefined ? `${pair} ` : ""}${v ? `${scoresText(v)}. Critic's notes: ${v.notes.join(" | ")} [${v.report}]` : clip(look.summary, 600)}.${owner}${truth} The version before this round is kept in ${snapDir(m, round)}/; after the round the critic compares both and keeps the better.`;
   const named = v?.package;
   const target = named !== undefined ? h.s.packages[named] : undefined;
   // E5 (25 Nov, the first real core job): the base package is a copy of the engine's base, never a builder's work. A
@@ -417,11 +422,32 @@ export function baseOwned(h: Pick<GateHost, "s">, named: string | undefined): bo
  * first saying what the base does and that no revise round was spent, then the critic's words. `foreman quality retry`
  * still sends one round with the person's note (sendBack with a note never comes here).
  */
-function holdForBase(h: GateHost, m: Milestone, lastPackage: string, round: number, look: { captures: string[]; strips: Strip[] }, v: Verdict, named: string): void {
+function holdForBase(h: GateHost, m: Milestone, lastPackage: string, round: number, look: { captures: string[]; strips: Strip[] }, v: Verdict, named: string, motion?: string): void {
   const core = jobCore(h);
-  const what = `this is how the base plays (${named}: engine/templates/${core?.base ?? "?"}/ on the ${core?.core ?? "?"} core: the skating, the contact, the bots, the base's camera); no package of this game can change it, so no revise round was spent. Play it and keep it, or say what to change`;
-  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: clip(`${FOREMAN_NOTE}${BASE_OWNED} (${named}) on the ${m} look: ${what}. [${v.report}]`, 1000) });
+  const what = motion !== undefined
+    ? `the critic asks the bodies for a reaction the ${core?.core ?? "?"} core does not do (${motion}); a package could only draw a body away from where the core has it, and the player would then be hit by a body he does not see, so no revise round was spent. Play it and keep it, or ask for the reaction in words (it is a change of the core)`
+    : `this is how the base plays (${named}: engine/templates/${core?.base ?? "?"}/ on the ${core?.core ?? "?"} core: the skating, the contact, the bots, the base's camera); no package of this game can change it, so no revise round was spent. Play it and keep it, or say what to change`;
+  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: clip(`${FOREMAN_NOTE}${motion !== undefined ? CORE_MOTION : `${BASE_OWNED} (${named})`} on the ${m} look: ${what}. [${v.report}]`, 1000) });
   h.append({ type: "milestone", milestone: m, captures: look.captures, ...(look.strips.length > 0 ? { strips: look.strips } : {}), round: Math.max(QUALITY_ROUNDS, round), summary: clip(`critic (V5) NOT ok: ${what}. The critic saw: ${clip(v.notes.join(" | "), 700)}; ${scoresText(v)} [${v.report}]`, 1500) });
+}
+
+/** H1c: the start of the Foreman's note (after FOREMAN_NOTE) when a look is held because the critic asks the core's bodies for a reaction. */
+export const CORE_MOTION = "the critic asks the core for a body reaction";
+
+/** H1c: the line every revise round on a core game carries: a picture never contradicts the simulation. */
+export const DRAW_TRUE = "On this core the core decides where every body, the puck and each stick are and when they touch: draw them where the core has them, never away from it (no drawn bounce, recoil or stand-off the core does not do). A reaction the core does not do is the person's call, not a drawing: say so under DEVIATIONS.";
+
+/**
+ * H1c: the body reaction a critic's WORST reason (its first note, the one a revise round answers first) asks of a game on
+ * a core, when it asks one: a bounce, a recoil, a knock-back, a body thrown or staggering. Those are the core's
+ * contact; on a core game no package changes them except by drawing a body where the core does not have it. Undefined
+ * off a core, or when the worst reason is a picture a package can draw true (a flash, a ring, a colour, a camera).
+ */
+export function coreMotionAsk(h: Pick<GateHost, "s">, v: Pick<Verdict, "notes">): string | undefined {
+  if (jobCore(h) === undefined) return undefined;
+  const worst = v.notes[0] ?? "";
+  const hits = [...worst.matchAll(/\b(bounc\w*|recoil\w*|knock(?:ed|s)?[- ]?back|thrown? back|throws? (?:him|her|them|the \w+) back|stagger\w*|stumbl\w*|push(?:ed|es)? (?:back|away|off))\b/gi)].map((x) => (x[1] as string).toLowerCase());
+  return hits.length > 0 ? [...new Set(hits)].join(", ") : undefined;
 }
 
 /** The verdict a look's summary points at (its critic report), for a revise round sent from the log (resume, retry). */

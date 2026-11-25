@@ -218,8 +218,8 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
       [ -f "$cw_f" ] || continue
       cw_r="${cw_f%.cartridge.json}.rules.json"
       cw_p="$(cygpath -m "$cw_f" 2>/dev/null || echo "$cw_f")"
-      if [ -f "$cw_r" ]; then cw_line="$("$0" check-cartridge "$cw_p" --rules "$(cygpath -m "$cw_r" 2>/dev/null || echo "$cw_r")" --defects --json-only | tail -1)"
-      else cw_line="$("$0" check-cartridge "$cw_p" --defects --json-only | tail -1)"; fi
+      if [ -f "$cw_r" ]; then cw_line="$("$0" check-cartridge "$cw_p" --rules "$(cygpath -m "$cw_r" 2>/dev/null || echo "$cw_r")" --defects --toys --json-only | tail -1)"
+      else cw_line="$("$0" check-cartridge "$cw_p" --defects --toys --json-only | tail -1)"; fi
       cw_n=$((cw_n + 1))
       case "$cw_line" in
         *'"cached":true'*) cw_cached=$((cw_cached + 1)) ;;

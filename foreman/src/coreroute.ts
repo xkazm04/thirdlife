@@ -19,7 +19,8 @@ import type { PackageSpec, Phase, Registers } from "./events.js";
 import { copyDir, globToRegExp, listFiles, matchesAny } from "./scope.js";
 import { REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { validateCartridgeText, validateRulesText } from "./cartridge.js"; // lane E2: the core's own verdicts
-import { grossDefects, type RinkCheckFacts } from "./rinkjudge.js"; // E3d: what acts on a check
+import { grossDefects, toyLines, type RinkCheckFacts } from "./rinkjudge.js"; // E3d: what acts on a check
+import { playedCartridges } from "./played.js"; // H1c: the cartridge the game plays
 
 /** The package kind the Foreman executes itself. */
 export const BASE_KIND = "base";
@@ -415,6 +416,8 @@ export interface CoreCheckRun {
   summary: string;
   /** E3d: the gross defects (rinkjudge.ts) that make a measured cartridge fail (code 1): goals, no end, won idle or skating. */
   defects?: string[];
+  /** H1c: the toys a person should hear about (rinkjudge.ts toyLines): words, never a failure. */
+  toys?: string[];
 }
 
 interface RinkCheckLine extends RinkCheckFacts {
@@ -464,8 +467,9 @@ export function rinkCheckRun(code: number, stdout: string, asked?: string): Core
   for (const [k, cell] of Object.entries(line.defects ?? {})) if (cell !== undefined) figures[`${k}_wins_of_${cell.matches}`] = cell.wins;
   // E3d: a measured cartridge with a gross defect fails (code 1), with the defects first; the rest stays words.
   const judged = c === 0 ? grossDefects(line, asked) : { defects: [], notes: [] };
-  if (judged.defects.length > 0) return { code: 1, figures, defects: judged.defects, summary: `GROSS DEFECTS: ${judged.defects.join("; ")}${judged.notes.length > 0 ? `; ${judged.notes.join("; ")}` : ""}`.slice(0, 1200) };
-  return { code: c, figures, summary: [said, ...judged.notes].join("; ").slice(0, 900) };
+  const toys = toyLines(line.toys);
+  if (judged.defects.length > 0) return { code: 1, figures, defects: judged.defects, ...(toys.length > 0 ? { toys } : {}), summary: `GROSS DEFECTS: ${judged.defects.join("; ")}${judged.notes.length > 0 ? `; ${judged.notes.join("; ")}` : ""}`.slice(0, 1200) };
+  return { code: c, figures, ...(toys.length > 0 ? { toys } : {}), summary: [said, ...judged.notes].join("; ").slice(0, 900) };
 }
 
 /** Lane E2's check, run: `bash <engine>/tools/rink.sh check-cartridge <file> [--rules <sidecar>] --json-only` (10 minutes at most). */
@@ -473,7 +477,7 @@ export function runRinkCheck(engineDir: string, file: string, asked?: string, ti
   const script = path.join(engineDir, "tools", "rink.sh");
   if (!fs.existsSync(script)) return Promise.resolve({ code: 2, figures: {}, summary: `could not run: ${toPosix(script)} is not there` });
   const rules = file.replace(/\.cartridge\.json$/, ".rules.json");
-  const args = [toPosix(script), "check-cartridge", toPosix(file), ...(rules !== file && fs.existsSync(rules) ? ["--rules", toPosix(rules)] : []), "--defects", "--json-only"];
+  const args = [toPosix(script), "check-cartridge", toPosix(file), ...(rules !== file && fs.existsSync(rules) ? ["--rules", toPosix(rules)] : []), "--defects", "--toys", "--json-only"]; // H1c: --toys, what each toy is worth
   return new Promise((resolve) => {
     execFile("bash", args, { timeout: timeoutMs, windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => {
       const code = err === null ? 0 : typeof (err as { code?: unknown }).code === "number" ? ((err as { code: number }).code) : 2;
@@ -515,7 +519,9 @@ export async function fakeRinkCheck(file: string, asked?: string): Promise<CoreC
 
 /** The game's cartridges in pack/: those a non-base package of the plan owns, else every cartridge there. */
 export function gameCartridges(packDir: string, plan: readonly PackageSpec[]): { file: string; owner?: string }[] {
-  const all = listFiles(path.join(packDir, "data")).filter((f) => f.endsWith(".cartridge.json")).map((f) => `data/${f}`);
+  const every = listFiles(path.join(packDir, "data")).filter((f) => f.endsWith(".cartridge.json")).map((f) => `data/${f}`);
+  const played = playedCartridges(packDir).files.filter((f) => every.includes(f));
+  const all = played.length > 0 ? played : every;
   const owned = all.map((file) => ({ file, owner: plan.find((p) => !isBase(p) && matchesAny(p.scope, file))?.id })).filter((x) => x.owner !== undefined);
   return owned.length > 0 ? (owned as { file: string; owner: string }[]) : all.map((file) => ({ file }));
 }
