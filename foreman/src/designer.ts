@@ -28,7 +28,7 @@ const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "pr
 const schema = (name: string): object => JSON.parse(prompt(name)) as object;
 export const render = (template: string, vars: Record<string, string>): string => template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
 
-export type GenerateRole = "designer" | "concept" | "design_review" | "planner" | "critic" | "placer" | "critic_compare";
+export type GenerateRole = "designer" | "concept" | "design_review" | "planner" | "critic" | "placer" | "critic_compare" | "cartridge";
 export interface GenerateCall {
   role: GenerateRole | `${GenerateRole}_repair`;
   attempt: number;

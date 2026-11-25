@@ -335,11 +335,11 @@ func _workbench_checks() -> void:
 	m.call("load_all")
 	eq("workbench: the card interviews and the fallback load", m.get("load_errors"), [])
 	var names: PackedStringArray = m.get("interview_order")
-	eq("workbench: one interview per card, none last", names, ["knock_down", "team_possession", "timed_drive", "two_sides_ball", "none"])
+	eq("workbench: one interview per card, none last", names, ["knock_down", "rink_core", "team_possession", "timed_drive", "two_sides_ball", "none"])  # E3b: card.rink_core
 	var counts: Array = []
 	for name in names:
 		counts.append(m.get("interviews")[name].questions.size())
-	eq("workbench: original question counts for the sorted recipes and fallback", counts, [4, 6, 4, 3, 4])
+	eq("workbench: original question counts for the sorted recipes and fallback", counts, [4, 4, 6, 4, 3, 4])
 	# the template rule (registry, templates-scaffolding): every proposal is a member of its own options; ids unique
 	var bad: PackedStringArray = []
 	var allowed_q: Array = ["key", "group", "ask", "options", "propose", "reason"]
@@ -389,6 +389,10 @@ func _workbench_checks() -> void:
 	# matching and reading answers out of the sentence
 	m.call("set_sentence", "ice hockey, three against three, against the computer")
 	eq("workbench: hockey sentence -> team possession", m.get("recipe"), "team_possession")
+	var mr: RefCounted = M.new()   # E3b: a game on the rink core has its own card's interview
+	mr.call("load_all")
+	mr.call("set_sentence", "pond hockey, three a side, sudden death")
+	eq("workbench: pond hockey -> the rink core's card, answers read", [mr.get("recipe"), str((mr.call("value", "players") as Dictionary)["id"]), str((mr.call("value", "win") as Dictionary)["id"]), str((mr.call("value", "rink") as Dictionary)["id"])], ["rink_core", "3", "sudden_death", "pond"])
 	eq("workbench: answers read from the hockey sentence", [m.call("value", "sport"), m.call("value", "players")],
 		[{"id": "ice_hockey", "by": "sentence", "words": "ice hockey"}, {"id": "3", "by": "sentence", "words": "three against three"}])
 	eq("workbench: an unanswered question stands at its proposal", m.call("value", "opponents"), {"id": "rookie", "by": "proposal"})
