@@ -503,3 +503,250 @@ it gives; the rest as v0.1.4. Gap to hokej: as v0.1.4.
 One thing to check before the fast-forward: H1d refuses a promotion whose window pictures report script errors, and
 every version of this game reports one (the commentary line without a voice, defect 7). Until H2b's fix for that
 is in the same tree, no change of mine will be promoted.
+
+---
+
+# Round 4 (16:35 to 17:05, tree at main 6c02504 with H1d; light work only)
+
+No Foreman job was started: H1d refuses a promotion whose window pictures report script errors, every version of this
+game reports the missing-voice one, and its fix (H2b) is not on main yet. I measured what the next changes should ask
+for, and wrote their words.
+
+## 19. What makes a match longer (lab what-ifs)
+
+All on a copy of the cartridge with the chosen trick design (one bubble at the start, then a green spot hands out two
+bubbles, a cannon shot or a hip check), at pro, 80 seeds, thirdjam's regular playtester with and without the F press
+(`.tl/g1-tools/whatif2.py`, `whatif3.py`). Never the job's file. A scripted hand measures the game, not a person.
+
+| what I would ask for | minutes of play | whole match, min | goals | goals a minute of play | wins with F / without F | won only with F / only without F |
+|---|---|---|---|---|---|---|
+| first to 5 (as now) | 1.5 | 1.9 | 4.2 : 3.3 | 4.9 | 52 / 43 | 12 / 3 |
+| first to 7 | 2.2 | 2.8 | 6.1 : 4.9 | 5.0 | 51 / 43 | 14 / 6 |
+| first to 9 | 3.0 | 3.9 | 7.9 : 6.6 | 4.8 | 49 / 45 | 14 / 10 |
+| **a three-minute clock** | **3.0** | **3.9** | 8.1 : 6.6 | 4.9 | **55 / 47** | **13 / 5** |
+| a further-reaching keeper (1.9 m) and a 2.4 m net | 1.7 | 2.1 | 4.2 : 3.3 | 4.5 | 48 / 51 | 7 / 10 |
+| slower shots (14 m/s for 18) | 1.4 | 1.8 | 4.1 : 3.2 | 5.3 | 51 / 47 | 11 / 7 |
+| a bigger rink (70 x 35) | 1.7 | 2.1 | 3.8 : 3.7 | 4.5 | 39 / 42 | 4 / 7 |
+| first to 7 with that keeper and net | 2.5 | 3.1 | 6.3 : 4.9 | 4.6 | 54 / 49 | 14 / 9 |
+| no aim help on shots | 1.8 | 2.2 | 3.8 : 3.5 | 4.1 | 41 / 45 | 8 / 12 |
+| a shot every 1.2 s at most | 1.6 | 2.0 | 4.3 : 2.9 | 4.6 | 58 / 50 | 14 / 6 |
+| a low net (crossbar 0.61 m) | 1.5 | 1.9 | 4.2 : 3.3 | 4.9 | 52 / 43 | 12 / 3 |
+| a strong keeper (reach 2.6 m, reads shots) | 1.8 | 2.2 | 4.4 : 3.3 | 4.4 | 58 / 50 | 15 / 7 |
+| a slower puck carrier (0.75 of a free skater) | 1.7 | 2.1 | 4.4 : 2.9 | 4.3 | 59 / 53 | 10 / 4 |
+| strong keeper and slower carrier | 1.9 | 2.3 | 4.3 : 3.1 | 4.0 | 57 / 50 | 16 / 9 |
+
+What it says:
+- **Nothing I can ask of the goals moves the scoring rate much.** Keeper, net, shot speed, shot rhythm, aim help,
+  carrier speed, rink size: the rate stays between 4.0 and 5.3 goals a minute of play. A goal every 12 to 15 seconds
+  is what three a side on this ice with these bots is. My change 1 ("make goals much harder to score") asked for the
+  wrong thing; hokej's 4.2 goals in 3.1 minutes is five a side on 90 x 45.
+- **Only the count or a clock makes the match longer.** A three-minute clock gives three minutes of play (3.9 with
+  the pauses) and about fifteen goals.
+- **The toys keep their worth on the clock** (55 wins against 47; 13 matches won only with F against 5) and lose it
+  on a bigger rink (39 against 42) or without aim help (41 against 45).
+- The low net changes nothing at all (every figure equal): the key does not act on these shots, or 0.61 is what the
+  game already has.
+
+**As the person:** a three-minute clock. In change 1 I refused the clock to keep "first to five"; I was wrong to.
+The target picture has a clock between the scores, and the figures say it is the one request that gets the three
+minutes without taking the toys' worth away.
+
+## 20. The words of the next changes (ready to send when H2b is in the tree)
+
+1. **The tricks** (the decision of section 15): "I start the match with one shield bubble on F, and it no longer comes
+   back by itself. When I have no trick, picking up a boost from a green spot gives me one, whichever comes: two
+   shield bubbles, or a cannon shot that flattens anyone in its way, or a big hip check."
+   Then: check that it went to the cartridge; the lab three ways and the toy figures at 80 seeds; film the pack's
+   drill and a match.
+2. **The length:** "Play to a three-minute clock instead of first to five. The MATCH POINT call can go."
+   Then: minutes of play and the toys' worth again.
+3. **The clutter:** "Take the black boxes, the drum and the visor off the rival skaters, and take away the big names
+   floating above them. Move the F hint so it does not lie on the commentator's line. Change the line under the title
+   to: Grab a trick at the green spots. F uses it."
+4. **The look of the toys:** "Draw the bubble as one smooth see-through ball round my skater, not a cloud of beads.
+   Paint each boost pad as three big yellow arrows flat on the ice, with no tan pad under them. Draw the slow pools as
+   purple rings on the ice."
+
+The first two are data and should take the fast path (2 to 3 minutes each). The last two belong to the drawing
+package and will go through its look and the critic.
+
+---
+
+# Round 5 (17:24 onward, tree at main 5b17c0d: H1d, H1e and H2b in)
+
+The four prepared changes of section 20, sent in order. Every one reached the package that can make it, none asked a
+question twice, and none ended "done" without the change.
+
+| version | what | time | path | tokens in | reached |
+|---|---|---|---|---|---|
+| v0.1.8 | My games' "Newest base" | 88 s | no model; lint, smoke, five bots | 0 | the base: 5 files brought up to date, 2 added, my `main.gd` edit kept |
+| v0.1.9 | the tricks from the green spots | 4.1 min | no key for a diff, one builder round, then the data-only checks | 0.66M | **the cartridge** (the Planner again named the drawing package; the new rule moved it) |
+| v0.1.10 | a three-minute clock | 2.7 min | fast (a diff) | 18k | the cartridge |
+| v0.1.11 | the clutter, the hint place, the title line | 12.4 min | one builder round, the whole verification and its pictures, no hold | 0.88M | the drawing package |
+
+## 21. v0.1.8: the newest base
+
+"Newest base" worked this time: "edited 1 scripts/main.gd: the game's own changes, kept (the newest base did not
+change these files)", 7 checks, promoted. The window capture of `v018_still` reports `ok: true` for the first time:
+the commentary line without a voice is said as text. It plays as v0.1.7 (`v018_strip.jpg`).
+
+## 22. v0.1.9: "I start the match with one shield bubble on F, and it no longer comes back by itself. When I have no trick, picking up a boost from a green spot gives me one, whichever comes: two shield bubbles, or a cannon shot that flattens anyone in its way, or a big hip check."
+
+- **What changed:** `game.abilities` is now one bubble from the drop (1 charge), and three pickup entries: two
+  bubbles, a shotgun (the cannon shot), a hip check. Exactly the cartridge of my lab what-if. The builder named what
+  it left out and why (no slow puck: four entries is the limit) and what it had not seen ("Not verified: that all
+  three rewards are actually granted in play").
+- **Measured, pro, 80 seeds:** wins with F 52, without F 43, bare rink 46; won only with F 12, only without F 3;
+  2.2 F presses a match; 1.5 minutes of play. As the what-if said.
+- **Seen** (`v019_take_f3075.jpg`, the pack's drill, HUD on, 8 frames apart): #7 skates over the green spot with a
+  green pickup standing on it; a teal ring flashes; the base's plate above the radar says "F: SHOTGUN READY x1" and
+  the pack's line says "F: CANNON  Your next shot flattens". The drill counted 4 spot takes, 2 bubble uses and
+  1 cannon shot that flattened nobody; nobody was floored by a hip check.
+
+**First-timer.** The loop reads at last: a thing stands on the green spot, I skate through it, and the screen tells
+me what I got and what it does, in one line. Two names for one trick (SHOTGUN on one plate, CANNON on the other) is
+the kind of thing that makes a first-timer doubt he read it right. Which trick comes is chance, and nothing on the
+spot says which.
+
+**Competitive hand.** A trick is now scarce and worth having: the scripted hand gets 2.2 a match by accident and
+wins 12 matches it would have lost against 3 the other way. Going for the spot is a decision with a cost (I leave the
+play), which is the first real choice the toys give. The rivals can skate over the spot too and get its boost, but
+never a trick: only I hold tricks.
+
+**Sandbox player.** Three tricks now, and the best of them changes a shot. Still no combination seen on film: the
+drill fired one cannon and flattened nobody ("cannon_flats 0").
+
+Gap to the target: the idea of the picture is in the game now (a thing to pick up, a trick under a key); its look is
+not. Gap to hokej: unchanged.
+
+## 23. v0.1.10: "Play to a three-minute clock instead of first to five. The MATCH POINT call can go."
+
+- **What changed:** `rules.mode` timer, 10,800 frames; first to five and the MATCH POINT hook gone. The note names
+  the removal and why.
+- **Measured by the Foreman (pro, before -> after):** goals a match 7.5 -> 14.2, minutes 1.8 -> 3.9, knockdowns
+  10.8 -> 21.1, completed passes 2 -> 3.3; warning "a goal flood at rookie (20.4 a match)".
+- **Measured in the lab, pro, 80 seeds:** wins with F 55, without F 47, bare rink 45; won only with F 13, only
+  without 5; 3.0 minutes of play; 4.9 goals a minute; 3.3 F presses and 20 knockdowns a match.
+- **The check's own toy figures over 80 seeds** (H1e now says how sure it is): the F tricks 55 against 47, "helps";
+  the slush pools 55 against 42, "helps"; the pickups' boosts 55 against 51 and the boost pads 55 against 51, "not
+  clear".
+- **Seen** (`v0110_strip.jpg`, `v0110_no_clock.jpg`): **there is no clock on the screen.** The plate between the
+  scores says "PERIOD 1" and is empty underneath, where "FIRST TO 5" stood. I asked for a clock, the match ends on
+  one, and I cannot see it run.
+- The Foreman's note "not what you asked: you asked for matches of about 3 minutes; they last 3.9 min ... falls
+  short" is the right idea with the wrong reading: it is a three-minute clock, and 3.9 counts the pauses after
+  fifteen goals. And 3.9 is over, not short.
+
+**First-timer.** Twice the match and time to try things: I can lose a goal and still learn what the pads do. But
+without a clock on the screen I do not know it is a timed match at all until it ends.
+
+**Competitive hand.** The toys keep their worth over the longer match (55 against 47; the game with toys 55 against
+45 on the bare rink), and there are 3.3 tricks to place instead of 2.2. Fifteen goals a match is a lot: no single
+goal matters much, which blunts the one trick that scores. Not being able to see the time left takes away the end
+game.
+
+**Sandbox player.** The first version with room to mess about: three minutes, twenty knockdowns, three or four
+tricks, the rivals' TIDE TURNS burst after every goal.
+
+Gap to the target: the target has the clock mine lacks. Gap to hokej: the length is hokej's now (3.9 minutes against
+3.1) with three times the goals (14.2 against 4.2) and nearly twice the knockdowns (21.1 against 12.4).
+
+## 24. v0.1.11: "Take the black boxes, the drum and the visor off the rival skaters, and take away the big names floating above them. Show the F hint in the game's own hint place, not on the commentator's line. Change the line under the title to: Grab a trick at the green spots. F uses it."
+
+- **What changed:** the rivals' gear and name tags are gone; every F line goes to the base's hint place; the title
+  line is set by the drawing package over the skin's (the skin file is not its to edit, and it said so).
+- **Seen** (`v0111_strip.jpg`, `v0111_top.jpg`, `v0111_bubble_drill.jpg`): clean rivals in plain orange; the hint in
+  a small plate above the key list ("F: BUBBLE x1  Green spots hand out your next trick"); the commentator's line
+  readable under it for the first time ("Winch hunts the carrier. Hits hard and straight."); the pickups standing on
+  their spots. The cartridge is byte-equal to v0.1.10's.
+
+**First-timer.** The screen finally says one thing at a time. I can read the hint, and the commentator, and see
+the puck, which the boxes used to cover. The rivals are now three orange skaters I cannot tell apart, which costs
+nothing I could use before.
+
+**Competitive hand, sandbox player:** as v0.1.10 (the same cartridge).
+
+Gap to the target: the ice is as clean as the picture's now. What is left is the look of each toy (beads, tan pads,
+blue pools), the harbour, and the clock. Gap to hokej: as v0.1.10.
+
+## 25. Editor: what worked in round 5, and what I met
+
+Worked, all of it new since round 3:
+- "Newest base" kept my script edit.
+- Play words reached the cartridge although the Planner named the drawing package.
+- No question was asked twice; no version was promoted without its change; removals were named with their reason.
+- A window error no longer blocks or slips through: the voice line is text.
+- The toy figures say "helps" or "not clear" instead of a bare number.
+
+Met:
+20. **A clock game shows no clock** (`v0110_no_clock.jpg`): the base's header has nothing for a timer where "FIRST TO
+    5" stood.
+21. The named-figure check reads "about three minutes" against the whole match with its goal pauses (3.9) and calls
+    an overshoot "falls short" (event 558).
+22. One trick has two names on one screen: the base's plate says SHOTGUN, the pack's line says CANNON
+    (`v019_take_f3075.jpg`).
+23. The title line cannot be changed by the package that got the change: it overrides the skin from its own tuning
+    file, so the skin file still says "Green spots reload it" (event 584).
+
+## 26. v0.1.12: "Draw the bubble as one smooth see-through ball round my skater, not a cloud of beads. Paint each boost pad as three big yellow arrows flat on the ice, with no tan pad under them. Draw the slow pools as purple rings on the ice."
+
+- **Time:** 12.3 min (17:49:17 to 18:01:34). **Path:** one builder round (4.3 min), the whole verification and its
+  pictures, no hold, no question. **Tokens:** 1.40M in.
+- **What changed** (the drawing package only; the cartridge is byte-equal to v0.1.10's): the bubble is one glass
+  sphere from the kit; each boost pad is three flat yellow arrows pointing the way I attack, with a pale copy that
+  blinks the way a skater crosses; each slow pool is one purple ring; the base's tan pads and blue fills are hidden.
+- **Seen** (`v0112_bubble_drill.jpg`, `v0112_strip.jpg`, `v0112_top.jpg`, `v0112_vs_target.jpg`):
+  - a clear ball round #7 that I can see him through; it swells when it comes up and when Winch hits it; "BOUNCED!";
+    the countdown "F: SHIELD ON 1.8s";
+  - yellow arrows and purple rings that read from the ice and from above;
+  - clean orange rivals, the hint in its own plate, the commentator's line free;
+  - cyan and pink pickups on the green spots.
+  - Still: no clock in the header; the quay and the one crane; a pickup is a cone, not an icon of what it gives.
+
+**First-timer.** In the first minute I can now read most of it without being told: a ball round me is a shield,
+yellow arrows are speed, a thing on a green spot is to be picked up, and a plate tells me what F holds. The purple
+rings I would not guess (they slow the puck); nothing says so. I do not know the match is timed, because no clock
+shows. It looks like a game someone meant.
+
+**Competitive hand.** As v0.1.10, the same cartridge: tricks 55 wins against 47 (the check: "helps"), pools 55
+against 42 ("helps"), pads and pickup boosts not clear. The arrows all point one way while the pads boost both ways:
+a rival skating "against" the arrows gets the same push, and the picture says otherwise.
+
+**Sandbox player.** The toys are now pleasant to look at while messing about, and there are three minutes to do it
+in. Still thin on moments: on film I have one bubble bounce and one cannon shot that hit nobody.
+
+Gap to the target images:
+1. The toys on the ice are now the picture's own kinds (glass bubble, yellow arrows, purple rings, a pickup on a
+   spot, a plate for the held trick). They are plainer: block arrows for glowing chevrons, one ring for three, a cone
+   for a shield icon.
+2. The place is not the picture's: a flat tiled quay, one crane and an orange sky, where the target has blue dusk,
+   snow, a boat and a lit warehouse. And felt figures, not knitted ones.
+3. The header has no clock, where the target shows 01:38 between the scores.
+
+Gap to hokej:
+1. It moves, hits and reads like hokej, and it has what hokej has not: tricks that decide matches (55 against 47 at
+   pro over 80 seeds, through a scripted hand).
+2. Three times hokej's goals in about its length (14.2 in 3.9 minutes against 4.2 in 3.1): three a side on this ice
+   scores every 12 seconds whatever I ask.
+3. Nobody has played it. Every figure here is a scripted hand's.
+
+**In the menu:** v0.1.12, with the function Create's Add to menu button calls, in `.tl/g1-menu/dungeons.user.json`
+(the row moved from v0.1.4 to
+`.tl/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.12`).
+
+## 27. The whole job in figures (to v0.1.12)
+
+- 13 promotions (v0.1.0 to v0.1.12): one build, eleven changes, one move to the newest base.
+- Wall 320 min, run 287 min; 16.5M tokens in (13.4M cache reads), 437k out; 17 builder runs, 2 critic calls.
+- Changes that delivered what I asked or answered: v0.1.1 (the smaller nets of my answer, not the three minutes of
+  my request), v0.1.2, v0.1.4 (before the fixes), v0.1.9, v0.1.10, v0.1.11, v0.1.12 (after them). Changes that did not: v0.1.3, v0.1.5, v0.1.6, v0.1.7 (all before H1d).
+- The worth of F to the scripted hand at pro over 80 seeds, version by version: 44 wins with F against 47 without
+  (v0.1.0), 61 / 57 (v0.1.1), 47 / 43 (v0.1.2), 54 / 43 (v0.1.4), 52 / 43 (v0.1.9), 55 / 47 (v0.1.10 to v0.1.12).
+
+## 28. Next
+
+1. A clock on the screen. I would ask in the change box, "Show the time left between the scores"; it is the base's
+   header, so the Director may prefer to fix it there.
+2. One name for the cannon; the arrows as chevrons that do not claim a direction; a word or a sign on the purple
+   rings.
+3. The harbour toward the picture: blue dusk, lamps, the warehouse and the boat. Scenery, so last.
