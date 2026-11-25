@@ -51,7 +51,7 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
   7 runner calls.
 - Evidence: `ui.sh selftest` 219/0, `selftest.sh create.` 11/11; stills `lanes/E4-iterate/stills-e4c/`.
 
-### E5 proof: real Create jobs (Opus, real adapter = Sonnet via claude-cli, paid) — landed (8272069, E5b 9a9126f, E5c 4d6b5ad, E5d ad65586)
+### E5 proof: real Create jobs (Opus, real adapter = Sonnet via claude-cli, paid) — landed (8272069, E5b 9a9126f, E5c 4d6b5ad, E5d ad65586, E5e 628ed30)
 - Job 1 "3 against 3 hockey on a small pond rink": v0.1.2, 140 min (89 in critic loops on the base's camera); faithful
   concept; "make it faster" = one cartridge diff (accel 12 -> 16, 8.2 -> 10.4 m/s) but took the full path (13 min: the
   merge listed unchanged files; fixed in E3f).
@@ -67,6 +67,17 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
   the cartridge package, skin and match byte-equal, a "what changed" note each; looked: the ice bigger, the net wider,
   still the Otters v the Pike (`e5d/d_top_v012_vs_v013.jpg`, `e5d/d_net_v013_vs_v014.jpg`). Before E3f the same kind
   of change took 13 min or wiped the game.
+- **The whole user path on the fixed code (E5e, 628ed30):** job 3's sentence again. Designed on the first start in 6 min
+  (faithful, no extra twist); phase 1 at 17 min (pack.json `base`; lint "0 game lines of its own"; pro 5.4 goals in
+  2.6 min); the critic named the base -> the quality card at once (about 6.5 min in critic loops, job 1 had 89);
+  **v0.1.0 in 28 min**. Change "make the bumpers bigger and add a fast lane through the middle" -> v0.1.1 in 8.5 min
+  (cartridge package; skin and match byte-equal). Looked: bigger drums, a new middle lane across both slush circles,
+  still the Gold Foxes v the Bog Walruses (`e5e/e_top_v010_vs_v011.jpg`, `e5e/e_v011_strip.jpg`).
+- Defects E5e found, for the day's editor hardening: the Foreman films its look captures with the HUD off, so the
+  critic's reasons say "no ring, no score" (false; the verdict still routed right); the kit gate counts cartridge zones
+  as kit parts and refused a change that dropped one (a builder round, +5 min); a change removed a pass spot unasked
+  (8-zone limit), visible only inside the what-changed JSON; the first lint of a job still costs 2.6 min (cause:
+  two measured checks, E3g); a frame shows #7 climbing over a net (core contact at the cage).
 - Seen: "bigger rink" also narrowed the goals unasked (the note says so); an old job keeps the base it was built with
   (its top view still has E1b's trusses): there is no base-upgrade path for a finished game.
 
@@ -92,8 +103,9 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
   from the uncapped suite instead).
 
 ## For your eye (about 15 minutes)
-1. `C:/Users/kazda/kiro/third-life/.claude/worktrees/hk-int/dist/PLAY-LATEST.cmd` (build 17c60a1).
-2. Menu -> the three games made by real Create jobs tonight (your list, `dungeons.user.json`): **Pond hockey
+1. `C:/Users/kazda/kiro/third-life/dist/PLAY-LATEST.cmd` (main after the merge; the build tag names its commit).
+2. Menu -> the four games made by real Create jobs (your list, `dungeons.user.json`; folders in `.tl/proof-games/`):
+   **Patches and bumpers v0.1.1**, **Pond hockey
    v0.1.0** then **v0.1.4** (after "make it faster", "the orange team is too strong", "make the rink bigger", "make
    the goals bigger"), and **Pirate hockey v0.1.0**. Play each one match. Is a game a person made from a sentence
    worth playing next to hokej?
@@ -166,7 +178,7 @@ measures.
   judgment). The real proofs found every blocking defect the unit tests missed (a change wiping the game, the base
   filling the line budget, the design check refusing the base's own key): run a real job after every route change.
 - Cost of the real jobs (Sonnet via claude-cli; E5's first run in its own report): E5b 17.9 M in (14.1 M cached), E5c 5.0 M,
-  E5d about 45 k, E5e PENDING.
+  E5d about 45 k model tokens, E5e 2.5 M in (1.7 M cached).
 
 ## Next shift
 1. Your verdict on a made game (above). 2. The slow job start (split + cache the measured checks). 3. JOB.md for the
