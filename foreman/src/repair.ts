@@ -68,7 +68,7 @@ export function lengthViolations(value: unknown, rules: LengthRule[]): Violation
 }
 
 /** Sets the string at a concrete path (the path came from `leaves`, so every step exists). */
-function setAt(value: unknown, at: string, text: string): void {
+export function setAt(value: unknown, at: string, text: string): void {
   const steps = at.match(/[^.[\]]+/g) ?? [];
   let cur = value as Record<string, unknown>;
   for (const s of steps.slice(0, -1)) cur = cur[s] as Record<string, unknown>;
@@ -77,6 +77,27 @@ function setAt(value: unknown, at: string, text: string): void {
 
 /** The first `max` words of a text, as a person counts them. */
 export const cut = (text: string, max: number): string => text.trim().split(/\s+/).slice(0, max).join(" ").replace(/[,;:]$/, "");
+
+/** E3g: the most words over its limit that a text is trimmed by without the model (generate.ts exactFixed). */
+export const TRIM_MAX = 3;
+const FILLER = new Set(["the", "a", "an"]);
+const LOOSE_END = new Set(["the", "a", "an", "and", "or", "but", "to", "of", "into", "onto", "in", "on", "at", "for", "with", "your", "their", "its", "then"]);
+
+/**
+ * E3g: a text trimmed to `max` words without the model: articles go first (from the end), then the tail is cut, and a
+ * cut never ends on a joining word ("into", "and"). The final full stop is kept.
+ */
+export function trimWords(text: string, max: number): string {
+  const stop = /[.!?]$/.exec(text.trim())?.[0] ?? "";
+  let w = text.trim().split(/\s+/);
+  for (let i = w.length - 1; i > 0 && w.length > max; i--) if (FILLER.has((w[i] as string).toLowerCase())) w.splice(i, 1);
+  if (w.length > max) {
+    w = w.slice(0, max);
+    while (w.length > 1 && LOOSE_END.has((w[w.length - 1] as string).toLowerCase().replace(/[^a-z]/g, ""))) w.pop();
+  }
+  const out = w.join(" ").replace(/[,;:]$/, "");
+  return /[.!?]$/.test(out) ? out : `${out}${stop}`;
+}
 
 export interface Repaired<T> {
   /** The answer with the offending fields replaced (only set when it now passes every check). */

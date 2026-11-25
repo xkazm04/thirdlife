@@ -4,7 +4,7 @@ extends RefCounted
 ## No global class names are used here (see manifest.gd).
 
 const Manifest: GDScript = preload("res://kernel/runner/manifest.gd")
-
+const LintBase: GDScript = preload("res://kernel/runner/lint_base.gd")    # E3g: a pack's `base` lines are not its own
 const MAX_SCRIPT_LINES: int = 600
 const MAX_PACK_LINES: int = 6000
 const MAX_DATA_BYTES: int = 2 * 1024 * 1024
@@ -262,8 +262,7 @@ static func _line_starts(text: String) -> PackedInt32Array:
 
 
 static func _line_at(starts: PackedInt32Array, pos: int) -> int:
-	var idx: int = starts.bsearch(pos, false)
-	return idx
+	return starts.bsearch(pos, false)
 
 
 static func _list_files(dir: String, rel: String, out: Array) -> void:
@@ -366,6 +365,7 @@ static func run(pack_dir: String) -> Dictionary:
 				gd_files.append(f)
 		elif cls == "other":
 			reach.append({"kind": "fence", "file": f, "message": "a file of this type can carry code and lint cannot read it (a pack holds .gd scripts, and inert files: %s)" % ", ".join(PackedStringArray(INERT_EXT))})
+	var base: Dictionary = LintBase.resolve(m, lay)      # E3g: the declared base must be one of the engine's
 	errors.append_array(lay)
 	checks.append({"id": "lint.layout", "ok": lay.is_empty(), "detail": _detail(lay, "%d scripts, %d data files" % [gd_files.size(), data_files.size()])})
 
@@ -377,7 +377,7 @@ static func run(pack_dir: String) -> Dictionary:
 	var bypasses: Array = []
 	var lines: Dictionary = {"scripts": 0, "gen": 0, "tests": 0}
 	var kit_parts_added: int = 0
-	var total_lines: int = 0; var test_lines: int = 0     # 21 Nov: tests/ has its own cap (PACK.md)
+	var total_lines: int = 0; var test_lines: int = 0; var own_lines: int = 0    # 21 Nov: tests/ has its own cap; E3g: own lines
 	var declared: Array = m.get("capabilities", []) if typeof(m.get("capabilities")) == TYPE_ARRAY else []
 	var fence_re: Array = []
 	for f: Array in FENCE:
@@ -414,6 +414,7 @@ static func run(pack_dir: String) -> Dictionary:
 		if lines.has(top_dir):
 			lines[top_dir] = int(lines[top_dir]) + _code_lines(code)
 		total_lines += nlines; test_lines += nlines if top_dir == "tests" else 0
+		own_lines += 0 if top_dir == "tests" else LintBase.own_lines(src, base, rel, nlines)
 		if nlines > MAX_SCRIPT_LINES:
 			size_err.append({"kind": "size", "file": rel, "line": MAX_SCRIPT_LINES + 1, "message": "%d lines; one script may have at most %d" % [nlines, MAX_SCRIPT_LINES]})
 		for k: int in fence_re.size():
@@ -457,8 +458,7 @@ static func run(pack_dir: String) -> Dictionary:
 		kit_build_calls += kit_call_re.search_all(code).size()
 		for hit: RegExMatch in kit_build_re.search_all(src):      # the kind is a string literal: read it from the source text
 			kit_kinds[hit.get_string(1)] = int(kit_kinds.get(hit.get_string(1), 0)) + 1
-	if total_lines - test_lines > MAX_PACK_LINES or test_lines > 4000:
-		size_err.append({"kind": "size", "file": "scripts/", "message": "%d lines of game GDScript (scripts/, gen/; at most %d), %d lines in tests/ (at most 4000)" % [total_lines - test_lines, MAX_PACK_LINES, test_lines]})
+	size_err.append_array(LintBase.size_errors(own_lines, total_lines - test_lines, test_lines, base, MAX_PACK_LINES))
 	if data_bytes > MAX_DATA_BYTES:
 		size_err.append({"kind": "size", "file": "data/", "message": "%d bytes in data/; at most %d" % [data_bytes, MAX_DATA_BYTES]})
 	errors.append_array(fence)
@@ -466,7 +466,7 @@ static func run(pack_dir: String) -> Dictionary:
 	errors.append_array(size_err)
 	checks.append({"id": "lint.fence", "ok": fence.is_empty(), "detail": _detail(fence, "no fenced pattern in %d scripts" % gd_files.size())})
 	checks.append({"id": "lint.capabilities", "ok": caps_err.is_empty(), "detail": _detail(caps_err, "every kernel capability used is declared")})
-	checks.append({"id": "lint.size", "ok": size_err.is_empty(), "detail": _detail(size_err, "%d lines of GDScript, %d bytes of data" % [total_lines, data_bytes])})
+	checks.append({"id": "lint.size", "ok": size_err.is_empty(), "detail": _detail(size_err, "%d lines of GDScript%s, %d bytes of data" % [total_lines, LintBase.detail(own_lines, base), data_bytes])})
 	return {"manifest": m, "checks": checks, "errors": errors,
 		"composability": {"gdscript_lines": lines, "kit_parts_added": kit_parts_added, "bypasses": bypasses,
 			"kit_parts_used": _sum(kit_kinds), "kit_kinds_used": _sorted_keys(kit_kinds), "kit_build_calls": kit_build_calls,

@@ -1,0 +1,260 @@
+{
+ "source": ".tl/proof-jobs-c/hockey-where-ice-has-20261125-2/reports/designer-a2-s5.json",
+ "problems": [
+  "brief.rules WORLD line names no size in the player's units (body widths, body lengths or body heights): \"Skater 1.8 m tall, 0.8 wide; pond 75 by 37 widths; speed 5.6 heights a second, 7\""
+ ],
+ "json": {
+  "brief": {
+   "pitch": "You're the pond local who knows every patch, slingshotting past visitors and banking passes off corner bumpers.",
+   "aspects": [
+    {
+     "id": "ice_patches",
+     "icon": "twist",
+     "title": "Fast And Slow",
+     "line": "Fly on orange ice, wade through blue slush.",
+     "detail": "Two fixed fast_ice lanes (strength 0.8, about 1.4x speed) and two slow_ice circles (0.7, about 0.65x) in game.rink.zones, point-symmetric. They change skaters and puck. rink_toys.gd paints them with streaks and slush dots.",
+     "alternatives": [
+      {
+       "id": "slalom_pond",
+       "title": "Slush Maze",
+       "line": "Thread narrow quick paths between many slushy spots."
+      },
+      {
+       "id": "fast_middle",
+       "title": "Express Middle",
+       "line": "One huge quick road runs straight between the nets."
+      }
+     ]
+    },
+    {
+     "id": "corner_bumpers",
+     "icon": "ball",
+     "title": "Corner Bumpers",
+     "line": "Smack the corner and the puck leaps back out.",
+     "detail": "Four bumper obstacles, 2.5 m across, set flush into the corners at x ±28.2, z ±13.2. The core throws the puck back faster than it arrived (restitution 1.6). A bank is a tap shot aimed at one.",
+     "alternatives": [
+      {
+       "id": "net_posts",
+       "title": "Net Guards",
+       "line": "Bumpers beside each net make wild close rebounds."
+      },
+      {
+       "id": "pinball_pond",
+       "title": "Pinball Pond",
+       "line": "Eight bumpers all over keep the puck bouncing."
+      }
+     ]
+    },
+    {
+     "id": "visitors",
+     "icon": "rival",
+     "title": "The Visitors",
+     "line": "Strangers chase hard but do not know your pond.",
+     "detail": "Core bots, four a side with one chaser, two supports, one back, starting at rookie; pro and all_star from HOME. Body-check wind-up 12 frames. Their routes are the core's own; greybox checks whether they wander into slush.",
+     "alternatives": [
+      {
+       "id": "bruiser_visitors",
+       "title": "Big Visitors",
+       "line": "Heavy strangers hit hard but turn like wagons."
+      },
+      {
+       "id": "outnumbered_local",
+       "title": "Too Many Guests",
+       "line": "Your three locals take on five eager visitors."
+      }
+     ]
+    },
+    {
+     "id": "crease_pass",
+     "icon": "goal",
+     "title": "Quick Finish",
+     "line": "Pass across the net, shoot as it arrives.",
+     "detail": "Core one-timer with window_frames 20: shoot within a third of a second of receiving. The goalie is late crossing the 4 m net. A bumper rebound that a teammate collects sets up the same chance.",
+     "alternatives": [
+      {
+       "id": "big_net",
+       "title": "Wide Nets",
+       "line": "Bigger goals mean wild scores from everywhere."
+      },
+      {
+       "id": "carry_in",
+       "title": "Walk It In",
+       "line": "Shots from far away are blocked, so dribble close."
+      }
+     ]
+    },
+    {
+     "id": "chase_camera",
+     "icon": "camera",
+     "title": "See Ahead",
+     "line": "Spot the quick lane before you get there.",
+     "detail": "Core third-person camera pulled to 8 m back, 5 m up, looking 7 m ahead; the skater covers about a quarter of the frame. It stays inside the boards and keeps its aim anchor.",
+     "alternatives": [
+      {
+       "id": "close_camera",
+       "title": "Ankle Rush",
+       "line": "Ride low and close so speed feels huge."
+      },
+      {
+       "id": "arena_camera",
+       "title": "Whole Pond",
+       "line": "See every patch at once from high above."
+      }
+     ]
+    },
+    {
+     "id": "second_wind",
+     "icon": "power",
+     "title": "Second Wind",
+     "line": "Let a goal in and your team zooms briefly.",
+     "detail": "One rules hook: on_goal, conceding team, apply_modifier speed for 360 frames, with an announce line. It works for both sides and is shouted on screen. First to five; the goal pause eats part of the six seconds.",
+     "alternatives": [
+      {
+       "id": "no_catch_up",
+       "title": "No Mercy",
+       "line": "Nobody gets help, so every goal truly stings."
+      },
+      {
+       "id": "double_winner",
+       "title": "Golden Finish",
+       "line": "The winning goal counts twice for big swings."
+      }
+     ]
+    }
+   ],
+   "rules": "FANTASY: I am the pond local who knows every patch and bumper; visitors chase my shadow. Fantasy and challenge.\nWORLD: Skater 1.8 m tall, 0.8 wide; pond 75 by 37 widths; speed 5.6 heights a second, 7.8 fast ice, 3.6 slush; camera 4.4 heights back, 2.8 up.\nTEARDOWN: Mario Kart 8: steer over a dash panel for an instant burst; off-road slows. Copied as fixed orange lanes (1.4x) and blue slush (0.65x), no button.\nTEARDOWN: NHL '94: pass across the crease, shoot as it arrives, the goalie is late. Copied as the core one-timer with a 20 frame window.\nTEARDOWN: Rocket League: six fixed boost pads reward whoever knows them. Changed to permanent fast lanes; no pickups, since the base cannot yet be relied on to draw them.\n30 SECONDS: 0-5 s puck drops, hint names keys, orange lane shows beside you: \"I know the way\"; 5-15 s ride it past a rookie chaser: \"gone\"; 15-30 s tap into the corner bumper, mate collects and shoots: \"my pond did that\".\nKILL IF: after one match a newcomer steers no differently around orange and blue patches, or cannot say what either does.\nKILL IF: riding fast ice never visibly leaves a chaser behind; the carrier is caught as quickly there as on plain ice.\nKILL IF: after five tries a newcomer cannot send a bumper bank anywhere on purpose and stops aiming at corners.\nCARTRIDGE: game.rink.length_m = 60 (a pond: every patch is seconds away)\nCARTRIDGE: game.rink.width_m = 30 (room for two lanes and a middle)\nCARTRIDGE: game.rink.corner_radius_m = 3 (tight corners the bumpers fill)\nCARTRIDGE: game.rink.board_restitution = 0.7 (livelier boards for banks)\nCARTRIDGE: game.rink.zones = [{\"id\":\"lane-north\",\"shape\":\"rect\",\"x\":6,\"z\":10,\"w\":22,\"d\":5,\"kind\":\"fast_ice\",\"strength\":0.8},{\"id\":\"lane-south\",\"shape\":\"rect\",\"x\":-6,\"z\":-10,\"w\":22,\"d\":5,\"kind\":\"fast_ice\",\"strength\":0.8},{\"id\":\"slush-east\",\"shape\":\"circle\",\"x\":12,\"z\":-3,\"r\":3.5,\"kind\":\"slow_ice\",\"strength\":0.7},{\"id\":\"slush-west\",\"shape\":\"circle\",\"x\":-12,\"z\":3,\"r\":3.5,\"kind\":\"slow_ice\",\"strength\":0.7}] (lines to learn)\nCARTRIDGE: game.rink.obstacles = [{\"kind\":\"bumper\",\"x\":28.2,\"z\":13.2,\"size\":2.5},{\"kind\":\"bumper\",\"x\":28.2,\"z\":-13.2,\"size\":2.5},{\"kind\":\"bumper\",\"x\":-28.2,\"z\":13.2,\"size\":2.5},{\"kind\":\"bumper\",\"x\":-28.2,\"z\":-13.2,\"size\":2.5}] (corners kick back)\nCARTRIDGE: game.teams = [{\"id\":\"locals\",\"colour_hex\":\"#1F7A4D\",\"skaters\":[{\"role\":\"player\",\"spawn\":[-3,0]},{\"role\":\"chaser\",\"spawn\":[-6,6]},{\"role\":\"support\",\"spawn\":[-9,-6]},{\"role\":\"back\",\"spawn\":[-20,0]}]},{\"id\":\"visitors\",\"colour_hex\":\"#C62828\",\"skaters\":[{\"role\":\"chaser\",\"spawn\":[3,0]},{\"role\":\"support\",\"spawn\":[6,-6]},{\"role\":\"support\",\"spawn\":[9,6]},{\"role\":\"back\",\"spawn\":[20,0]}]}] (four a side, space to pass)\nCARTRIDGE: game.skater.speed = 10 (fast ice feels like a leap)\nCARTRIDGE: game.contact.bot_check_windup_frames = 12 (longest visible bot check wind-up)\nCARTRIDGE: game.shot.one_timer.window_frames = 20 (a forgiving quick finish)\nCARTRIDGE: game.rules.score_to_win = 5 (time for a comeback)\nCARTRIDGE: game.rules.hooks = [{\"id\":\"second-wind\",\"when\":\"on_goal\",\"team\":\"conceding\",\"then\":[{\"do\":\"apply_modifier\",\"kind\":\"speed\",\"frames\":360},{\"do\":\"announce\",\"text\":\"SECOND WIND\"}]}] (the trailing side surges)\nCARTRIDGE: game.ai.difficulty = \"rookie\" (visitors begin clumsy, always active)\nCARTRIDGE: game.camera.distance_m = 8 (patches visible early)\nCARTRIDGE: game.camera.height_m = 5 (ice reads from above)\nSKIN: title = Home Pond\nSKIN: tagline = Know the ice. Bank the corners.\nSKIN: about = [\"Orange ice is fast. Blue slush is slow.\",\"Corner bumpers kick the puck back out.\"]\nSKIN: team_names = [\"Pond Locals\",\"Visitors\"]\nROUND: one continuous match, first to 5 goals. No penalties, no rules sidecar. Faceoff after each goal; R rematches from the end card.\nCORE: skating, puck, sticks, contact, bots and keys stay thirdjam's. data/match.json starts at rookie.\nVERBS (anticipation/active/recovery, 60 Hz; paper figures where the base uses loader defaults, measured at greybox): shot 4/1/24, pass 2/1/24, poke 0/8/30, body check 0/12/18. Sprint is the core's stamina burst.\nCONTACT, both bodies, by the core's momentum law: a bump leaves both up; a stumble costs the victim half speed and can loosen the puck while the checker gives speed away; a knockdown drops the victim; a missed poke costs the poker recovery or a stumble. Bumpers throw puck back harder; bodies stop against them.\nFEEL: skater 10 m/s, acceleration and turn rate from the base (12 m/s2, 5 rad/s); fast ice about 14 m/s, slush about 6.5; camera 8 m back, 5 m up, 7 m look-ahead. Every number lives in the cartridge, which a person edits between plays. Juice is the core's, scaled by hit.\nCURVE: calm faceoff, lane break, scramble in front of net, goal, release; Second Wind makes the answering attack; 4-4 is the climax.\nEND: horn, banner, final score, R rematch.\nFOR THE OWNER: visitors use the player's skater body, different only in colour and role, because the core cannot change figures. Bot check tells are 12 frames, under the 20 frame bar, because the cartridge allows no more. Second Wind answers the comeback checklist item; judge whether it feels fair. Unverified: whether bots react to patches, and how the pass button treats a corner aim.",
+   "arena": "Frozen pond rink 60 x 30 m, corner radius 3 m, standard 4 m nets. Fast lanes 22 x 5 m centred at (6, 10) and (-6, -10). Slush circles radius 3.5 m at (12, -3) and (-12, 3). Four 2.5 m magenta bumpers flush in the corners. Layout is fixed and point-symmetric, so each side gets equal ice. The core hall stays around it, benches standing a little off the smaller boards. Camera: core chase view 8 m back, 5 m up, kept inside the boards, so scenery never covers play.",
+   "ai": "Visitors (red) are thirdjam bots on the core skater body. Chaser: presses the carrier; read the approach and cut across a fast lane; checks wind up 12 frames, cross-checks 12 by default. Two supports: take open ice and passing lanes; beat them with a bumper bank behind them. Back: stays home before the net; beat the back with a crease one-timer. Locals (green) mates use the same roles. Rookie is slower to react and never body checks; pro and all_star react sooner, shoot sharper and check. Hit reactions are the core's bump, stumble and knockdown. Greybox must confirm nobody idles over 2 seconds. Second Wind briefly speeds whichever side just conceded.",
+   "controls": "Base bindings unchanged and named by its HUD. move: skate, reverse to brake. aim: mouse points stick and shot. shoot: with puck, tap flat or hold to charge. pass: lead pass to a teammate, hold for power. defend: mouse buttons without puck poke or check. sprint: spend stamina for a burst.",
+   "mood": "Bright winter afternoon on a home pond: pale ice, orange streaked lanes, blue dotted slush, magenta corner bumpers, green locals against red visitors, skate scrapes, horn and cheer.",
+   "design": {
+    "pillars": [
+     {
+      "line": "Fantasy: knowing the pond wins, because my route beats a straight chase.",
+      "rules_out": "Random, moving, hidden or melting patches."
+     },
+     {
+      "line": "Challenge: speed and angles create chances I can claim as mine.",
+      "rules_out": "Pickups, ability buttons and goals that score themselves."
+     },
+     {
+      "line": "Every swing in the match is readable and fair at a glance.",
+      "rules_out": "Whistles, hidden catch-up, and patches favouring one team."
+     }
+    ],
+    "verbs": [
+     {
+      "id": "shoot",
+      "input": "Shoot button with puck, core shot animation; tap flat, hold to charge; aim at bumpers to bank.",
+      "anticipation_f": 4,
+      "active_f": 1,
+      "recovery_f": 24,
+      "cancel": "Pressed within 20 frames of receiving, becomes a one-timer."
+     },
+     {
+      "id": "pass",
+      "input": "Pass button with puck, core pass animation; hold for power, lead pass to teammate.",
+      "anticipation_f": 2,
+      "active_f": 1,
+      "recovery_f": 24,
+      "cancel": "Receiver may one-time it; passer keeps skating."
+     },
+     {
+      "id": "poke",
+      "input": "Defend button without puck, core poke animation; time the blade onto the carried puck.",
+      "anticipation_f": 0,
+      "active_f": 8,
+      "recovery_f": 30,
+      "cancel": "No cancel after a miss; body shield or take grace defeats it.",
+      "defensive": true
+     },
+     {
+      "id": "body_check",
+      "input": "Check button without puck, body_check animation; arrive fast to stumble or fell the carrier.",
+      "anticipation_f": 0,
+      "active_f": 12,
+      "recovery_f": 18,
+      "cancel": "Core momentum rule decides bump, stumble or knockdown for both bodies."
+     }
+    ],
+    "playstyles": [
+     {
+      "id": "lane_runner",
+      "title": "Lane Runner",
+      "line": "Cut onto fast ice, force chasers through slush, and attack with speed."
+     },
+     {
+      "id": "bank_artist",
+      "title": "Bank Artist",
+      "line": "Slip passes behind defenders by tapping the puck off corner bumpers."
+     },
+     {
+      "id": "crease_feeder",
+      "title": "Crease Feeder",
+      "line": "Draw the back across, feed a mate, and finish quickly."
+     }
+    ],
+    "loops": {
+     "s3": "Choose a line: fast lane, short cut through slush, pass or shoot; players learn to steer defenders into slow ice.",
+     "s30": "Win the puck, break on a lane, then bank or cross-feed; defenders start cutting off the lanes, opening the middle.",
+     "m3": "Race to five, adapting after Second Wind surges; players protect leads near their lanes and gamble on banks when behind."
+    },
+    "context": [
+     "Which end of each fast lane you start from changes attack and retreat routes.",
+     "Second Wind speeds the conceding side for six seconds after every goal.",
+     "Loose bumper rebounds turn a defended corner into a sudden counterattack.",
+     "Match point at four goals makes each risky bank matter."
+    ],
+    "skill": {
+     "floor": "Skate into orange ice and press shoot near the net.",
+     "ceiling": [
+      "Slush trap: lead a chaser through slow ice, then pass.",
+      "Bumper self-feed: tap into a corner and collect your rebound at speed.",
+      "Rebound one-timer: set a mate's quick finish through a bumper bank."
+     ]
+    },
+    "feel": {
+     "hitstop_f": [
+      0,
+      8
+     ],
+     "knockback": "Core momentum law: closing speed and mass against stability give bump, stumble or knockdown.",
+     "reaction": "Victim bumps, stumbles or falls and may lose puck; checker gives away speed. Missed pokes leave the poker briefly helpless.",
+     "whiff": "Missed check or poke plays out fully with no burst; the missed carrier skates clear.",
+     "iframes_f": 30,
+     "telegraph_f": 12,
+     "shake": "Only the core's strong contacts shake the view; light bumps and misses stay still.",
+     "camera": "Core chase camera, 8 m back, 5 m up, 7 m look-ahead, skater about a quarter of frame height."
+    },
+    "clips": [
+     {
+      "id": "lane_slingshot",
+      "moment": "The local cuts onto orange ice and bursts away from a visitor stuck in slush."
+     },
+     {
+      "id": "corner_bank",
+      "moment": "A tap shot cracks off a corner bumper straight to a teammate behind the defence."
+     },
+     {
+      "id": "crease_finish",
+      "moment": "A cross-crease pass is one-timed into the net before the back gets across."
+     }
+    ],
+    "first_minute": "Faceoff at once with one control hint. Ride the nearby lane past a rookie chaser, then try a corner tap and a quick finish.",
+    "fail_state": "End card shows score and winner with the hint about orange lanes, slush and bumpers; press R for an immediate rematch.",
+    "out_of_scope": [
+     "New verbs, skaters or simulation code",
+     "Pickups and special abilities",
+     "Penalties and offside",
+     "Moving or melting ice",
+     "New character bodies"
+    ]
+   }
+  },
+  "estimate": {
+   "packages": 5,
+   "wallMinutes": 120,
+   "tokens": 1200000
+  }
+ }
+}

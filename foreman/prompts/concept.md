@@ -48,7 +48,11 @@ So you work in this order (docs/design/METHOD.md, the method below):
      game, a team ball game) and ask for no twist ("3 against 3 hockey on a small pond rink"), choose 0: the faithful
      reading. The other four stay as alternatives the person can pick; a twist the person did not ask for is one they
      must remove by hand. The answer is refused otherwise.
-   - Otherwise (CRAZY, the words ask for a twist, or a genre with no known game): the fantasy a stranger most wants to
+   - **A sentence that names its own twist is taken at its word too** ("hockey where the ice has slow and fast patches
+     and bumpers in the corners"): candidate 1 is the named game with exactly that twist and NO other twist added (no
+     extra scoring rule, power, hazard or reward the words do not name); choose 0. Refused otherwise.
+   - Otherwise (CRAZY, the words leave the twist open: "a crazy hockey", "hockey with a twist", or a genre with no known
+     game): the fantasy a stranger most wants to
      live, with the boldest HOOK that still serves every word the player said and that this engine can deliver in the
      first 30 seconds of play. Usually that is NOT the most likely one.
    `why` (at most 40 words) names the fantasy, the moment of the first 30 seconds where the player feels it, and (when
