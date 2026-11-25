@@ -18,3 +18,17 @@
 03:49 | state: done | did: 3 real jobs (job 1 done v0.1.2 with 2 cartridge-diff changes, no builder; job 2 and job 3 stopped at phase 1 on base defects), 4 Foreman + 3 base fixes, exe exported + check PASS, job 1 in the exe's menu | gates: npm test 349: 342 pass, 0 fail, 7 skipped; tl check --tier fast PASS 5/5 | next: Director
 
 landable E5
+04:42 | E5b started on hk-proof 67b1349 (foreman rebuilt 04:42); jobs root .tl/proof-jobs-b; job 1 new
+04:49 | job 1 designed: FAITHFUL (candidate 1 of 5, 0.85: plain pond 3v3, cross-crease pass), no drops; Build as is
+05:29 | job 1 greybox: measured ok (pro 7.6 goals, 1.2 min, no gross defect), critic NOT ok x3 (overlap, camera, contact: core behaviour) -> quality hold at 46 min. Create: It's fine, go on
+05:56 | job 1 at 74 min: phase 3 (trials) look: critic NOT ok -> revise rounds again (skin r2); over the 60 min budget but progressing, not looping: going on to measure the fast change path
+06:17 | job 1 at 94 min: tuned milestone critic NOT ok again (named base -> skin, trials r3); every look fails on core/camera things no data package fixes: 2 revise rounds a milestone, about 25 min each
+06:42 | job 1 v0.1.0 promoted at 120 min (two quality holds answered It's fine). Change 1 'make it faster'
+06:55 | change 1 'make it faster': 777 s (13 min) to v0.1.1; diff 41 s; NOT the fast path: the diff round's merge listed data/match.json + tests/bot_pond_drill.gd (both unchanged) -> full path, trials re-verify failed -> a 2.3 min builder round. Change 2 'the orange team is too strong'
+07:02 | change 2 'the orange team is too strong': no question (the game HAS an orange team: Pike); diff ai_red_skill 0.6 though the player already won 10/10; 395 s, full path again (merge listed unchanged data/match.json + tests/bot_pond_drill.gd), no builder. Job 1 done at 140 min. Job 2 new
+07:11 | job 2 designed in 8 min: FAITHFUL (candidate 1, 0.85: teal Sharks v gold Gulls, first goal wins, 70x35, night harbour), no drops; Build
+07:22 | job 2 phase 1 at 19 min: cartridge r1 REFUSED before any verb by the gross check (skating alone wins 6/16), r2 fixed it (carry 0.82, body_check 0.8, hold_radius removed): measured at pause: pro 1 goal, 0.2 min (WARN very short), skate-only 1/16. Looked: teal v gold, FIRST TO 1, plays as hokej. PASS
+07:30 | job 2 phase 2: skin merged; greybox critic NOT ok (camera after a knockdown stares at empty ice; top view letterboxed) -> cartridge r3 asks for cam.gd/HUD scope. Create: answer card. As a person: keep camera/HUD, data only
+07:45 | job 2 quality hold at 43 min (critic: camera after knockdowns, top view letterbox). Create: It's fine, go on
+07:49 | job 2 v0.1.0 promoted at 45 min. Change 'make the goals bigger'
+07:57 | E5b interim | job 1 done v0.1.2 (140 min: faithful concept, no flood flagged but 1.2 min matches, ~89 min of critic loops, 2 quality holds; 'faster' 777 s NOT fast path: merge listed unchanged match.json + drill test; 'orange' 395 s, no question (orange exists)); job 2 done (53 min: gross check refused skate-only cartridge, question answered, 1 hold) but 'make the goals bigger' (378 s) went to the BASE and turned the game back into HOKEJ (match.json/skin.json overwritten) | waiting for job 3 after E1b | landable E5b (jobs 1-2; PROOF-E5b.md, e5b/ stills; no code changed)
