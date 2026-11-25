@@ -854,3 +854,106 @@ Met:
     look like placeholders.
 26. A word painted on the ice is upside down half the time (`v0113_strip.jpg`); nothing offered me a sign that reads
     both ways.
+
+---
+
+# Round 7 (19:48 onward, tree at main 816b996: H2d and H1h in)
+
+## 34. v0.1.16: "Newest base" for the clock
+
+- About 2 min, no model, 7 checks, promoted; six base files brought up to date, my `main.gd` edit kept.
+- **Seen** (`v0116_clock.jpg`): the plate between the scores says "PERIOD 1" and under it **2:53**, counting down.
+  The clock I asked for in v0.1.10 can be seen.
+- The new base brought a test for the header (`tests/bot_header.gd`); the game's own list of tests was not given it,
+  so the game's checks do not run it.
+
+**First-timer.** I now know it is a timed match from the first faceoff. **Competitive hand.** There is an end game:
+I can see when a trick must be spent. **Sandbox player:** as v0.1.15. The cartridge is byte-equal to v0.1.10's.
+
+## 35. v0.1.17, v0.1.18, v0.1.19: one name for a trick, asked three times
+
+| | my words | given to | time | tokens in | what changed |
+|---|---|---|---|---|---|
+| v0.1.17 | "Call the shotgun trick CANNON everywhere on the screen, and the shield BUBBLE, so one trick has one name. And change the line under the title to: Grab a trick at the green spots. F uses it." | the names to the cartridge, the title line to the skin | 13.3 min | 0.73M | **the title line, in the skin** (it reached the right owner); the names not |
+| v0.1.18 | "The names are still SHIELD and SHOTGUN on the F plate. In the game's own words, name the shield BUBBLE and the shotgun CANNON. And the line that says first to five goals wins is wrong now: say Three minutes on the clock, most goals wins." | the cartridge | 11.9 min | 0.38M | nothing |
+| v0.1.19 | "Change the game's text, nothing else: the trick names are BUBBLE for the shield and CANNON for the shotgun. And the HOME line that reads First to five goals wins becomes: Three minutes on the clock, most goals wins." | the cartridge | 12.2 min | 0.28M | nothing |
+
+- Each time the cartridge's builder wrote, correctly, that the names live in the skin and what the skin needs
+  ("`ability_names`: shield BUBBLE, shotgun CANNON"; the HOME line too), and that the skin file is not its to edit.
+  Nobody carried that to the skin's owner. The version was promoted with the cartridge unchanged.
+- What is better than in round 3: the what-changed note now says in the builder's words that the wish was NOT done
+  and what it needs. A person is told. A person still cannot make it happen: the change box offers no way to say
+  whose it is.
+- The same builder found a line I had not noticed: HOME still says "First to five goals wins." under a three-minute
+  clock.
+
+The three lenses are those of v0.1.16: the trick is still SHOTGUN on the base's plate and CANNON on the pack's line.
+
+## 36. Editor notes from round 7
+
+Worked: "Newest base" a third time; the clock; a title line that reached the skin's owner; a missed wish named in the
+what-changed note.
+
+Met:
+27. Words about what a trick is called go to the cartridge, three wordings out of three ("call the shotgun trick
+    CANNON", "in the game's own words, name ...", "change the game's text, nothing else: the trick names are ...").
+    The cartridge's builder names the right owner and the exact key each time, and the job ends done.
+28. A base test that comes with "Newest base" is not added to the game's list of tests.
+29. Nothing checks the skin's words against the game after a change. HOME still says "First to five goals wins." (a
+    clock game since v0.1.10), "Orange arrows burst you. Blue slush drags the puck." (yellow arrows and purple rings
+    since v0.1.12) and "F pops your bubble" (tricks from the spots since v0.1.9).
+
+## 37. v0.1.20 and v0.1.21: a SLOW that reads from both ends, asked twice
+
+| | my words | given to | time | tokens in | what changed |
+|---|---|---|---|---|---|
+| v0.1.20 | "The word SLOW in the purple rings is upside down when I skate back toward my own net. Paint it twice in each ring, once facing each end of the rink, so it reads right from both sides." | the cartridge (the Planner named the drawing package; the rule "these words ask for play, not a picture" moved it) | 9.0 min | 0.20M | nothing |
+| v0.1.21 | "A change to the picture only: draw the word SLOW twice inside each purple ring, the second copy turned round, so the painted word can be read from both ends of the rink." | the drawing package | 9.6 min | 0.39M | **done** |
+
+- The rule that saved the tricks in round 5 (play words go to the cartridge) took a wish about paint for a wish about
+  play, because I said why I wanted it ("when I skate back toward my own net"). The cartridge's builder wrote out
+  what the drawing package should do, to the line of the script, and the version was promoted unchanged.
+- Said again without the reason, it went to the right package and was made in one builder round.
+- **Seen** (`v0121_vs_target.jpg`, two tiles of the match strip): each ring holds SLOW twice, one above the other and
+  turned round; from either end the nearer copy is the right way up. The clock runs between the scores (2:53, 2:57).
+
+**The three lenses, v0.1.21** (the best version; the cartridge is v0.1.10's)
+
+**First-timer.** In the first minute, without being told: it is a timed match (a clock counts down between the
+scores); a clear ball round me is a shield; the yellow arrows are speed, both ways; the purple rings say SLOW
+whichever way I come; a thing stands on a green spot to be picked up, and a plate tells me what F holds and what I
+got. The lit warehouse behind the rivals' net tells me which way I attack. What still trips me: one trick is SHOTGUN
+on one plate and CANNON on the other, and HOME tells me "First to five goals wins" before a three-minute match.
+
+**Competitive hand.** Tricks are scarce and worth fetching (55 wins against 47 at pro over 80 seeds for the scripted
+hand; 72 against 68 at all_star; nothing at rookie, which it wins 80 times of 80 either way). Going to a spot costs
+position, the bubble has a wind-up to read, and with the clock on the screen there is now an end game: a held
+cannon in the last ten seconds is a decision. Fifteen goals a match still makes any one goal cheap. All of it is a
+scripted hand's reading; no person has played.
+
+**Sandbox player.** Three minutes, three tricks, twenty knockdowns, pads to ride and rings to bait a pass into, in a
+place that looks like somewhere. The moment I keep asking for (a cannon shot through a rival into the net) has not
+happened on any film of mine; whether it happens under a hand is for a hand to find.
+
+Gap to the target images:
+1. Toys: the picture's own kinds, drawn plainer (arrows for glowing chevrons, a painted word for rings, a cone for an
+   icon).
+2. Place and light: the picture's things as blocks, in warm evening; the picture is blue dusk with snow and lamps.
+   The engine has only the daylight rig for the arena (the Director's finding); not a thing more rounds can buy.
+3. Words: SHOTGUN beside CANNON, and a HOME screen that describes the game of this morning.
+
+Gap to hokej:
+1. Hokej's movement, contact, camera and HUD, on a third of the ice with three a side.
+2. Three times hokej's goals in about its length (14.2 in 3.9 minutes against 4.2 in 3.1).
+3. Tricks that decide matches for a scripted hand, which hokej has not; and no hand has tried either claim.
+
+**In the menu:** v0.1.21 (the row moved with Create's own function; `.tl/g1-menu/dungeons.user.json`).
+
+## 38. The whole job in figures (to v0.1.21)
+
+- 22 promotions: one build, nineteen changes, two moves to the newest base (a first try was refused, before H2b).
+- Changes that delivered what I asked or answered: v0.1.1, v0.1.2, v0.1.4, v0.1.9, v0.1.10, v0.1.11, v0.1.12,
+  v0.1.13, v0.1.14, v0.1.15, v0.1.21, and half of v0.1.17 (the title line).
+- Changes that did not: v0.1.3, v0.1.5, v0.1.6, v0.1.7 (the drawing package got play words), v0.1.18, v0.1.19 (the
+  cartridge got the skin's words), v0.1.20 (the cartridge got a picture's words).
+- Every miss was a wish handed to a package that could not make it. No builder made the wrong thing.
