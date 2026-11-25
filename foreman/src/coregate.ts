@@ -17,7 +17,7 @@ import type { GateHost } from "./p10gate.js";
 import type { GateFailure } from "./machine.js";
 import { CARTRIDGE_INVALID, coreDataFiles, fakeRinkCheck, gameCartridges, runRinkCheck, sectionOf, validateCartridgeFile, type CoreCheckRun, type CoreRoute } from "./coreroute.js";
 import { applyChanges, type ChangeResult } from "./cartridge.js"; // lane E2: a change set applied and validated
-import { absentInChange, teamsSeen } from "./rinkjudge.js"; // E3d: a change the game cannot mean is asked back
+import { absentInChange, teamsSeen, unseenChange } from "./rinkjudge.js"; // E3d: a change the game cannot mean is asked back
 import { generate } from "./designer.js";
 import type { RunResult } from "./builder/types.js";
 import { coreRouteOf } from "./templates.js";
@@ -195,6 +195,14 @@ export async function cartridgeChange(h: GateHost, owner: string, round: number,
   }
   const model = h.o.plannerModel ?? h.o.model;
   const before = await coreCheck(h, packFile, text);
+  // E3f: a change the measured hand would not feel (easier bots when your side already wins 9 in 10) is answered with the figures.
+  const unseen = answered || before.code === 2 ? undefined : unseenChange(text, before.figures);
+  if (unseen !== undefined) {
+    note(`${CARTRIDGE_ASKED}: "${clip(text, 200)}": ${unseen}`);
+    h.append({ type: "question", package: owner, text: unseen });
+    h.append({ type: "package_state", package: owner, state: "blocked", round, cause: "question", detail: clip(unseen, 200) });
+    return false;
+  }
   const teams = teamsSeen(skin, current).map((t, i) => `team ${i} (${t.side}): ${t.colour ?? "?"}${t.name !== undefined ? `, named "${t.name}"` : ""}`).join("; ") || "(no teams read)";
   let refused = "";
   let applied: ChangeResult | undefined;
@@ -263,7 +271,7 @@ export async function diffRound(h: GateHost, id: string, round: number, ws: stri
     const asked = [...h.s.notes].reverse().find((x) => x.package === id && x.round === round && x.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_ASKED}`));
     const p = h.pkg(id);
     if (asked === undefined || p.lastAnswer === undefined || p.openQuestion !== undefined) return undefined;
-    if (!(await cartridgeChange(h, id, round, `${askedOf(h, id) ?? ""}. Asked which team, the person answered: "${p.lastAnswer}"`, true))) return undefined;
+    if (!(await cartridgeChange(h, id, round, `${askedOf(h, id) ?? ""}. Asked back (which team, or what they meant), the person answered: "${p.lastAnswer}"`, true))) return undefined;
   }
   const src = diffFile(h, id, round);
   const cart = gameCartridges(h.dir("pack"), h.s.plan).find((c) => c.owner === id);

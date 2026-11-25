@@ -24,6 +24,17 @@ export interface GoalBand {
   lo: number;
   hi: number;
   source: string;
+  /** E3f: goals a minute and a match's minutes, from the same cartridges and levels, with the same quarter-span rule. */
+  rate?: Span;
+  minutes?: Span;
+}
+
+/** A derived figure's range over thirdjam's cartridges, and what a cartridge may play before it is a gross defect. */
+export interface Span {
+  min: number;
+  max: number;
+  lo: number;
+  hi: number;
 }
 
 export const GOAL_BAND_FILE = path.join(PKG_ROOT, "data", "rink-goal-band.json");
@@ -31,10 +42,11 @@ export const GOAL_BAND_FILE = path.join(PKG_ROOT, "data", "rink-goal-band.json")
 /** The band, or undefined when the file is missing (then no goals verdict is given, and that is said). */
 export function goalBand(file = GOAL_BAND_FILE): GoalBand | undefined {
   try {
-    const d = JSON.parse(fs.readFileSync(file, "utf8")) as { band: { min: number; max: number }; from: Record<string, unknown>; hand: string; made: string };
-    const span = d.band.max - d.band.min;
+    const d = JSON.parse(fs.readFileSync(file, "utf8")) as { band: { min: number; max: number }; from: Record<string, unknown>; hand: string; made: string; rate?: { min: number; max: number }; minutes?: { min: number; max: number } };
     const r1 = (x: number): number => Math.round(x * 10) / 10;
-    return { min: d.band.min, max: d.band.max, lo: Math.max(0, r1(d.band.min - span / 4)), hi: r1(d.band.max + span / 4), source: `${Object.keys(d.from).length} of thirdjam's cartridges (the regular cut and the modes of MODES.md) played by ${d.hand}, ${d.made} (foreman/data/rink-goal-band.json)` };
+    const span = (b: { min: number; max: number }): Span => ({ min: b.min, max: b.max, lo: Math.max(0, r1(b.min - (b.max - b.min) / 4)), hi: r1(b.max + (b.max - b.min) / 4) });
+    const g = span(d.band);
+    return { ...g, ...(d.rate !== undefined ? { rate: span(d.rate) } : {}), ...(d.minutes !== undefined ? { minutes: span(d.minutes) } : {}), source: `${Object.keys(d.from).length} of thirdjam's cartridges (the regular cut and the modes of MODES.md) played by ${d.hand}, ${d.made} (foreman/data/rink-goal-band.json)` };
   } catch {
     return undefined;
   }
@@ -52,15 +64,27 @@ export const SPEED_WORDS = /\b(fast|faster|fastest|quick|quicker|speed|speedy|sl
 export function grossDefects(line: RinkCheckFacts, asked?: string, band: GoalBand | undefined = goalBand()): { defects: string[]; notes: string[] } {
   const defects: string[] = [];
   const notes: string[] = [];
+  const short: string[] = [];
   for (const [lv, l] of Object.entries(line.levels ?? {})) {
     const p = l.playtester;
     if (p === undefined) continue;
     const goals = Math.round(((p["goals_for"] ?? 0) + (p["goals_against"] ?? 0)) * 10) / 10;
     if (band !== undefined && (goals < band.lo || goals > band.hi)) defects.push(`${goals} goals a match at ${lv} (thirdjam's regular playtester): thirdjam's own cartridges play ${band.min} to ${band.max}, so ${band.lo} to ${band.hi} is the band`);
+    // E3f (E5b: job 1 was first to 5 in 1.2 min, 6.3 goals a minute; "ok" with a warning): goals a MINUTE against what
+    // thirdjam's modes play (sudden death's one goal in half a minute included), and a match longer than any of them.
+    const mins = p["minutes"];
+    if (band?.rate !== undefined && mins !== undefined && mins > 0) {
+      const rate = Math.round((goals / mins) * 100) / 100;
+      if (rate < band.rate.lo || rate > band.rate.hi) defects.push(`${rate} goals a minute at ${lv} (${goals} goals in ${mins} min, thirdjam's regular playtester): thirdjam's own cartridges score ${band.rate.min} to ${band.rate.max} a minute (sudden death included), so ${band.rate.lo} to ${band.rate.hi} is the band: the match is over before a person has played it`);
+    }
+    if (band?.minutes !== undefined && mins !== undefined && mins > band.minutes.hi) defects.push(`a match lasts ${mins} min at ${lv}: thirdjam's own cartridges last ${band.minutes.min} to ${band.minutes.max}, so ${band.minutes.hi} is the most`);
+    else if (band?.minutes !== undefined && mins !== undefined && mins < band.minutes.min) short.push(`${mins} min at ${lv}`);
     const n = p["matches"] ?? 0;
     if (n > 0 && (p["not_over"] ?? 0) > n / 4) defects.push(`${p["not_over"]} of ${n} matches at ${lv} never end (the 10-minute stop): nobody can score`);
   }
-  if (band !== undefined && defects.some((d) => d.includes(" goals a match at "))) notes.push(`the goals band: ${band.source}`);
+  if (band !== undefined && defects.some((d) => d.includes(" goals a match at ") || d.includes(" goals a minute at ") || d.startsWith("a match lasts "))) notes.push(`the goals band: ${band.source}`);
+  // Shorter than any of thirdjam's modes but scoring at a rate they play: not a defect by the data, said in words.
+  if (short.length > 0 && band?.minutes !== undefined) notes.push(`matches shorter than any of thirdjam's modes (${short.join(", ")}; the shortest, sudden death, lasts ${band.minutes.min} min or more), at a goal rate thirdjam's modes play: words, not a defect`);
   if (band === undefined) notes.push("goals a match not judged: foreman/data/rink-goal-band.json is missing (node foreman/scripts/rink-goal-band.mjs)");
   const idle = line.defects?.idle;
   if (idle !== undefined && idle.matches > 0 && idle.wins / idle.matches >= 0.5) defects.push(`the idle hand (nothing pressed) wins ${idle.wins} of ${idle.matches} at pro: the game is won without the player`);
@@ -129,5 +153,30 @@ export function absentInChange(text: string, skin: unknown, cartridge: unknown):
     const guess = /\b(strong|good|hard|fast|tough|win|wins|better)\b/.test(lower) ? bots : undefined;
     return `There is no ${w} team in this game: your side is ${says(mine)}${bots !== undefined ? `, the bots are ${says(bots)}` : ""}. ${guess !== undefined ? `Did you mean the ${guess.colour ?? "other"} team, the bots?` : "Which team did you mean?"} Say it again with the team's colour or name, and the change is made.`;
   }
+  return undefined;
+}
+
+// ---------- E3f: a change a person would not see ----------
+
+/** Words that ask for an easier game (the bots too strong) and for a harder one (too easy). */
+export const EASIER_WORDS = /\b(too (?:strong|good|hard|tough|fast for me)|can'?t (?:win|score|beat)|easier|weaker)\b/i;
+export const HARDER_WORDS = /\b(too (?:easy|weak|slow for me)|harder|no challenge|stronger bots)\b/i;
+
+/**
+ * E3f (E5b job 1: "the orange team is too strong" while the player's side won 10 of 10 at pro went through as a diff no
+ * person could feel): a change asking for an easier game when the measured hand on the person's seat already wins 9 in
+ * 10 or more at every level (or a harder one when it wins 1 in 10 or fewer) is answered with the figures, as a question,
+ * before anything is changed. Undefined when the words ask neither or the figures do not say so.
+ */
+export function unseenChange(text: string, figures: Record<string, number>): string | undefined {
+  const levels = Object.entries(figures).flatMap(([k, v]) => {
+    const m = /^(rookie|pro|all_star)_wins_of_(\d+)$/.exec(k);
+    return m ? [{ level: (m[1] as string).replace("_", " "), wins: v, of: Number(m[2]) }] : [];
+  });
+  if (levels.length === 0) return undefined;
+  const said = levels.map((l) => `${l.wins} of ${l.of} at ${l.level}`).join(", ");
+  const by = "thirdjam's regular playtester on your seat";
+  if (EASIER_WORDS.test(text) && !HARDER_WORDS.test(text) && levels.every((l) => l.of > 0 && l.wins / l.of >= 0.9)) return `Your side already wins ${said} (${by}), so weaker bots would hardly show. Did you mean something else that feels too strong (their speed, their checks, a bigger rink), or should the bots be weaker still? Say which, and the change is made.`;
+  if (HARDER_WORDS.test(text) && !EASIER_WORDS.test(text) && levels.every((l) => l.of > 0 && l.wins / l.of <= 0.1)) return `Your side already loses almost every match: it wins ${said} (${by}), so stronger bots would hardly show. Did you mean something else, or should they be stronger still? Say which, and the change is made.`;
   return undefined;
 }

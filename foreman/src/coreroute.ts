@@ -359,6 +359,9 @@ export function startFromBase(ws: string, refDir: string, packDir: string, spec:
   for (const f of baseFiles(src)) {
     if (!matchesAny(spec.scope, f)) continue;
     if (matchesAny(others, f) && fs.existsSync(path.join(packDir, f))) {
+      // E3f (E5b job 2): "kept" means the workspace holds pack/'s file, not the base's copy left from round 1.
+      fs.mkdirSync(path.dirname(path.join(ws, ...f.split("/"))), { recursive: true });
+      fs.copyFileSync(path.join(packDir, ...f.split("/")), path.join(ws, ...f.split("/")));
       kept.push(f);
       continue;
     }

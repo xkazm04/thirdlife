@@ -84,3 +84,23 @@ export function fastFinal(final: Acceptance[]): Acceptance[] {
 }
 
 export const FINAL_NOTE = `${FOREMAN_NOTE}${DATA_ONLY}: the final verification is lint and smoke (the bots ran on these files at the merge), no hand checks (the measured check stands for them), and ONE promotion picture`;
+
+/** E3f: the start of the Foreman's one-line "what changed" note (after FOREMAN_NOTE), written before a 2nd or later promotion. */
+export const WHAT_CHANGED = "what changed";
+
+/**
+ * E3f (E5b: after job 2's change a person got "version 2" and nothing said what changed): one line for the version about to
+ * be promoted, from the log since the last promotion: the person's words, the cartridge diff's keys (before -> after),
+ * and the files merged. Nothing merged is said too: the change was not made.
+ */
+export function whatChangedNote(events: readonly JobEvent[], version: string): string {
+  let last = -1;
+  let was = "";
+  for (const e of events) if (e.type === "promoted") [last, was] = [e.seq, e.version];
+  const since = events.filter((e) => e.seq > last);
+  const asked = since.flatMap((e) => (e.type === "change_requested" && !e.text.startsWith(FOREMAN_NOTE) ? [`"${e.text}"`] : []));
+  const keys = since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `) ? [e.text.slice(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `.length).split(" (")[0] ?? ""] : [])).filter(Boolean);
+  const files = [...new Set(since.flatMap((e) => (e.type === "merge" ? e.files : [])))].sort();
+  const made = files.length === 0 ? "nothing was merged: the change was NOT made" : `${keys.length > 0 ? `${keys.join("; ")}; ` : ""}files: ${files.join(", ")}`;
+  return `${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1000);
+}
