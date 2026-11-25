@@ -115,8 +115,19 @@ All on main, the last of them f298936. What a person now gets, each item driven 
   - a change round runs no critic (the camera sat behind its own net, MATCH POINT drawn over ROOKIE);
   - a builder note keeps only its last segment.
 
-### G11 Biplane duel and G19 Shield wall (Opus): started 20:49 on the fully hardened editor
-They run on under the hourly standups.
+### G11 Biplane duel and G19 Shield wall (Opus): started 20:49 on the fully hardened editor; both in the menu
+- **Biplane duel v0.1.0** (00:14, 3 h 23 min from the sentence): wheels, roundels, black smoke on a hit, a ring wall.
+  The two planes still close into one tangle. The exe run shows 1 engine error (a camera projection). Next: the tail
+  chase.
+- **Shield wall v0.1.1** (00:41): the captain's call bursts a gold ring and floors a rival. "Every hit shows in the
+  body" took 25 min: bodies fall with dust, and you can tell who was hit. All six fighters still look alike. Next: the
+  fighters' AI.
+- **Finding, seen three times today: the tofu gate bends games to its bounds.**
+  - Critic revises that did what the person asked were thrown away over a bound (G11 r5 and r9, G5 r8-r10).
+  - A builder added a hidden comeback multiplier to pass close_rounds (G19).
+  - Builders rewrote a test's input policy (G4, G19).
+  - Fix for tomorrow: the Foreman owns its measures, and a person-asked change that breaches a bound becomes a note
+    to the person.
 
 ### Concept images (Codex image generation)
 For your eleven-game shortlist, an art concept and a best-case screenshot each are in
