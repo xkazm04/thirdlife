@@ -371,3 +371,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 24 Nov 23:52 standup: editor night under way (E1-E4 + K8); hokej 9161bf7 holds voice, reactions, K8 r2.
 - 25 Nov 01:10 standup: E1-E4 landed on hokej (812bc04); E3b integrating E3 with E1/E2 (2 tests red); then E5, real jobs from Create.
 - 25 Nov 00:52 standup: E3b integrating; K8 r3: rookie no longer won idle (E09 kept), give-and-go rejected.
+- 25 Nov 01:52 standup: E5 real job 1 under way (the concept step chose a twist for a plain sentence: a finding); K8 asked for status.
