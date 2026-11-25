@@ -303,21 +303,44 @@ if (toysOn) {
     const r = toyCells[t.id];
     const other = byseed(r);
     if (!baseOk || r === undefined || r.code !== 0 || other.size !== toySeeds) { toyFigures.push({ ...row, measured: false, why: `${other.size} of ${toySeeds} matches reported` }); continue; }
-    let gd = 0, changed = 0;
+    let gd = 0, changed = 0, onlyWith = 0, onlyWithout = 0;
     for (const [seed, a] of base) {
       const b = other.get(seed);
       gd += (a.goals[0] - a.goals[1]) - (b.goals[0] - b.goals[1]);
       if (a.result !== b.result || a.goals[0] !== b.goals[0] || a.goals[1] !== b.goals[1] || a.frames !== b.frames) changed += 1;
+      if (a.result === "win" && b.result !== "win") onlyWith += 1;
+      if (a.result !== "win" && b.result === "win") onlyWithout += 1;
     }
     const wWith = [...base.values()].filter((p) => p.result === "win").length;
     const wWithout = [...other.values()].filter((p) => p.result === "win").length;
     const points = Math.round((100 * (wWith - wWithout)) / toySeeds);
-    const fig = { ...row, measured: true, matches: toySeeds, wins_with: wWith, wins_without: wWithout, points, goal_diff: r2(gd / toySeeds), changed, ...(t.id === "ability" ? { f_presses: fPress } : {}) };
+    // H1d/G1 round 3 (PROOF-G1.md section 14): at 20 seeds three toys of four read the other way round from 80 seeds. A
+    // toy's worth is said only when the paired matches show it: the sign test over the matches won with it only and
+    // without it only; otherwise "not clear yet" with those two counts.
+    const clear = toyClear(toySeeds, changed, onlyWith, onlyWithout, points);
+    const fig = { ...row, measured: true, matches: toySeeds, wins_with: wWith, wins_without: wWithout, points, goal_diff: r2(gd / toySeeds), changed, won_only_with: onlyWith, won_only_without: onlyWithout, clear, ...(t.id === "ability" ? { f_presses: fPress } : {}) };
     toyFigures.push(fig);
-    const said = `pro ${wWith} of ${toySeeds} wins with it, ${wWithout} without (${points >= 0 ? "+" : ""}${points} points), paired goal difference ${fig.goal_diff >= 0 ? "+" : ""}${fig.goal_diff}${t.id === "ability" ? `, F pressed ${fPress} times a match` : ""} (thirdjam's regular playtester)`;
-    if (changed === 0) warnings.push(`toy: ${t.name}: changes nothing, not one of ${toySeeds} matches at pro plays differently without it; ${said}`);
-    else if (Math.abs(points) <= 5 && Math.abs(fig.goal_diff) < 0.5) warnings.push(`toy: ${t.name}: worth about nothing, ${said}`);
+    const said = `pro ${wWith} of ${toySeeds} wins with it, ${wWithout} without (${points >= 0 ? "+" : ""}${points} points; won only with it ${onlyWith}, only without it ${onlyWithout}), paired goal difference ${fig.goal_diff >= 0 ? "+" : ""}${fig.goal_diff}${t.id === "ability" ? `, F pressed ${fPress} times a match` : ""} (thirdjam's regular playtester)`;
+    if (clear === "nothing") warnings.push(`toy: ${t.name}: changes nothing, not one of ${toySeeds} matches at pro plays differently without it; ${said}`);
+    else if (clear === "little") warnings.push(`toy: ${t.name}: worth about nothing, ${said}`);
   }
+}
+/**
+ * What the paired matches say about a toy (foreman/src/rinkjudge.ts toyClear is the same rule): "nothing" when no match
+ * plays differently; "helps" / "costs" when a two-sided sign test over the matches won only with it and only without it
+ * gives p < 0.1; "little" when the win difference is within 10 points even at the far end of a 95 % margin; else
+ * "not_clear".
+ */
+function toyClear(n, changed, onlyWith, onlyWithout, points) {
+  if (changed === 0) return "nothing";
+  const d = onlyWith + onlyWithout;
+  const k = Math.min(onlyWith, onlyWithout);
+  let tail = 0;
+  for (let i = 0; i <= k; i++) { let c = 1; for (let j = 0; j < i; j++) c = (c * (d - j)) / (j + 1); tail += c; }
+  const p = d === 0 ? 1 : Math.min(1, (2 * tail) / 2 ** d);
+  if (p < 0.1) return onlyWith > onlyWithout ? "helps" : "costs";
+  const margin = (100 * 1.96 * Math.sqrt(d)) / n;
+  return Math.abs(points) + margin <= 10 ? "little" : "not_clear";
 }
 const ok = problems.length === 0;
 say(`rink check-cartridge: ${path.basename(file)}${rulesFile ? " + " + path.basename(rulesFile) : ""} (validator: accepted; ${done.length} runs in ${r1(seconds)} s${cached ? ", read from the cache: this cartridge, rules, lab and content were measured before" : ""})`);

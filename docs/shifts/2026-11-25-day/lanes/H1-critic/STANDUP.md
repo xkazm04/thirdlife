@@ -19,3 +19,7 @@ landable H1c
 15:51 | state: working | did: H1d 1-6 + the two H1c decisions (toy that costs you in words; README offers engine code as a cost) with tests (7 node tests) | next: item 7 needs core card | gates: h1d 7/7 locally
 16:09 | state: done | did: H1d 1-7 and the two H1c decisions, with tests (7 node tests fail on main 1969842; block 862 create.corecost) | next: - (stopped editing) | gates: tl check --tier fast PASS (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, typecheck); foreman npm test 401 found, 394 pass, 0 fail, 7 skipped (main 394 + 7); selftest create. 23/23
 landable H1d
+16:20 | state: working | did: read the H1e brief | next: the first promotion takes one picture (window check), then G2/G4's hockey-shaped judging | gates: -
+16:32 | state: working | did: H1e 0 (first promotion one picture), 1 (gamewords: contact rows, house moments, house rubric by the game's design), 2 (tofugate at acceptance, two rounds, then the look), 3 (card transfer line + basketball variant); 6 tests | next: full npm test, fast, before-run on main | gates: h1e 6/6 locally
+16:50 | state: done | did: H1e 0-4 (first promotion picture; judged by the game's own design; tofu bounds at acceptance; the card's transfer line; no toy word from noise) with 6 tests (5 fail on main d6260bb; the tofu wiring by the moved n4 test) | next: - (stopped editing) | gates: tl check --tier fast PASS (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, typecheck); foreman npm test 407 found, 400 pass, 0 fail, 7 skipped (main 401 + 6); selftest create. 23/23
+landable H1e

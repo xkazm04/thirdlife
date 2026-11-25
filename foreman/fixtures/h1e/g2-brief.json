@@ -1,0 +1,329 @@
+{
+ "pitch": "Captain three boxy robots: pass, blast, slide rivals flying, then score while they scramble up.",
+ "aspects": [
+  {
+   "id": "tumble_tackle",
+   "icon": "player",
+   "title": "Slide And Steal",
+   "line": "Slide in, watch a robot cartwheel, grab the ball.",
+   "detail": "Kick without ball: 8 f wind-up, 24 f lunge. Hit carrier: TLHit.down 60-90 f; its visual node cartwheels 1.2 m high, bounces, then clambers up knees, hands, wobble. Thrown 40 degrees off the slide line. Miss lies 45 f.",
+   "alternatives": [
+    {
+     "id": "shoulder_barge",
+     "title": "Shoulder Barge",
+     "line": "Charge with your boxy shoulder and shove rivals off the ball."
+    },
+    {
+     "id": "grab_throw",
+     "title": "Magnet Grab",
+     "line": "Yank the ball with a magnet, but stand still doing it."
+    }
+   ]
+  },
+  {
+   "id": "corner_aim",
+   "icon": "ball",
+   "title": "Pick Your Corner",
+   "line": "Hold left or right and bury it past the guard.",
+   "detail": "A or D at release targets 0.6 m inside that post when facing within 30 degrees of goal. Neither: shoot along facing, snapping 8 degrees inside the post, vetoed whenever the snapped line meets the cover robot's body.",
+   "alternatives": [
+    {
+     "id": "mouse_aim",
+     "title": "Point And Shoot",
+     "line": "Point the mouse at any spot and shoot exactly there."
+    },
+    {
+     "id": "curl_shot",
+     "title": "Banana Kick",
+     "line": "Bend the ball around the guard by steering after kicking."
+    }
+   ]
+  },
+  {
+   "id": "skittles",
+   "icon": "twist",
+   "title": "Robot Skittles",
+   "line": "A flying robot bowls over whoever it crashes into.",
+   "detail": "A tumbler above 3 m/s touching any robot, friend or foe, gives TLHit.react 0.9, loses half speed and frees its ball. No chains. Hit a carrier left of centre to throw it left, into the cover robot, opening goal.",
+   "alternatives": [
+    {
+     "id": "loose_bolts",
+     "title": "Loose Bolts",
+     "line": "Tackled robots drop bolts and run slower until a goal."
+    },
+    {
+     "id": "scrap_walls",
+     "title": "Spring Walls",
+     "line": "Tumbling robots bounce off springy walls back into play."
+    }
+   ]
+  },
+  {
+   "id": "one_timer",
+   "icon": "goal",
+   "title": "Cross And Blast",
+   "line": "Pass across the goal, then smash it first time.",
+   "detail": "NHL '94 one-timer: press kick 8 f before to 6 f after arrival; 4 f release, 1.2 times speed, 16 degree snap. The cover robot moves sideways at most 4 m/s, so a 6 m square pass beats it.",
+   "alternatives": [
+    {
+     "id": "charge_cannon",
+     "title": "Charge Cannon",
+     "line": "Charge a huge shot while rivals rush to flatten you."
+    },
+    {
+     "id": "chip_lob",
+     "title": "Robot Chip",
+     "line": "Lob the ball over the guard when it slides out."
+    }
+   ]
+  },
+  {
+   "id": "rival_teams",
+   "icon": "rival",
+   "title": "Three Robot Gangs",
+   "line": "Learn how each gang defends, then fool them.",
+   "detail": "Crate Dockers slide early after a crouch; Wire Magpies stand off and poke; Foundry Kings block lanes and slide at hop landings. All score hop, early pass, slide and poke. Own kit builds; levels read faster and aim tidier, never run faster.",
+   "alternatives": [
+    {
+     "id": "one_nemesis",
+     "title": "One Nemesis Team",
+     "line": "One rival gang learns your favourite trick each match."
+    },
+    {
+     "id": "champion_boss",
+     "title": "Giant Captain",
+     "line": "Beat a huge robot captain who needs two tackles."
+    }
+   ]
+  },
+  {
+   "id": "chase_view",
+   "icon": "camera",
+   "title": "Behind Your Bot",
+   "line": "The camera rides behind you; the ball glows.",
+   "detail": "ctx.cameras.add_view moved each frame: 6 m back, 3.5 m up, fov 58, 4 f lag, yaw fixed upfield, aim anchor. Ball drawn 2.5 times larger with hot rim; ring under your robot; edge arrow and radar.",
+   "alternatives": [
+    {
+     "id": "broadcast_view",
+     "title": "High Broadcast",
+     "line": "Watch from high at the side and see everyone."
+    },
+    {
+     "id": "top_view",
+     "title": "Tabletop View",
+     "line": "Look straight down like a table football game."
+    }
+   ]
+  },
+  {
+   "id": "first_to_three",
+   "icon": "time",
+   "title": "First To Three",
+   "line": "Three goals wins; fall behind and bounce up faster.",
+   "detail": "Continuous match to three goals with 90 f restarts. At 4:00 the next goal wins. A side two behind rises 15 f sooner, shown by amber chest lamps, for either team alike. Winning unlocks the next gang.",
+   "alternatives": [
+    {
+     "id": "two_halves",
+     "title": "Two Short Halves",
+     "line": "Play two quick halves and swap ends between them."
+    },
+    {
+     "id": "golden_rush",
+     "title": "Golden Goal Rush",
+     "line": "Every goal ends a round; win five quick rounds."
+    }
+   ]
+  }
+ ],
+ "rules": "FANTASY: I captain a clunky robot trio, flattening rivals and scoring while they clamber up. Sensation and challenge.\nWORLD: Robot 1.8 m tall, 0.8 m wide; pitch 64 x 40 m (80 x 50 body widths, 36 body heights long); run 4.7 body heights/s, sprint 5.8; camera 3.3 body heights back, 1.9 up.\nTEARDOWN: NHL '94 one-timer: tap a pass across the goalmouth, press shoot 8 frames before to 6 after arrival; 4-frame release, 20% faster; the keeper cannot cross. Copied.\nTEARDOWN: Nintendo World Cup: slide without the ball; the carrier flies, no whistle, the ball runs loose, the victim gets up. Kept; we add a 45-frame miss.\nTEARDOWN: Sensible Soccer: one button; tap passes, hold shoots, without the ball it slides and commits you. Kept; a tap is 8 frames or less.\n30 SECONDS: 0-5 s a Docker dribbles at your ringed robot near its goal; hint: Space slides. 5-15 s slide; it cartwheels aside: \"I flattened one.\" 15-30 s collect the ball, hold Space, release, score while it clambers up: \"I scored off my tackle.\"\nKILL IF: after three goals a newcomer cannot say why they lost the ball.\nKILL IF: someone hammering Space wins the ball three rival attacks running and scores, never waiting, while rivals neither hop, pass early nor punish the missed slides.\nKILL IF: a tackle reads as two boxes sliding past, with no flight, cartwheel, clang or visible clamber.\nKILL IF: robots bunch round the ball for most of five minutes and the player stops passing.\n\nMATCH. Three robots a side, one continuous match, first to 3 goals. At 4:00 the next goal wins. No fouls, no offside, low walls keep the ball in. The conceding side kicks off; restart takes 90 frames with no global freeze. You are always the captain. Teammates shoot and drive at goal, call when open, and never take the ball from you.\n\nOPENING (data/opening.json; x runs toward the rival goal line at 32, z positive is screen right). Play starts at once, no kick-off; the clock starts on your first press. Captain at (14, 0) facing goal. A Docker with the ball at (19, 0) walks in at 2 m/s and holds 3 m from you, rocking and shielding, so a slide lands. Their cover robot starts out of place at (30.5, 3), by the right post, waits 30 frames after the fall, then shuffles at 2 m/s (opening only). The third Docker starts at (-6, 8), over 3 s away; your mates start at (6, -10) and (6, 10). Timing from contact at about x 17: the victim is thrown aside, down 90 frames plus 4 hit-stop; the ball squirts ahead at 4 m/s; you rise after 18 frames with it inside reach (clean take near frame 22); hold kick and release by about frame 60 and the strike leaves at frame 70, from about 14 m, while the Docker is still clambering. A straight shot scores past the slow cover. A missed slide resets the Docker to 3 m. Later shots are saved if straight at a set cover, which the second cue answers: hold A or D to pick a corner.\n\nCOVER ROBOT. There is no fourth keeper. Whichever bot holds the cover role guards its goal: inside its own box it stays on the ball-to-net line, 1-2 m out, re-targets 14/11/8 frames (by level) after a release, and moves sideways at most 4 m/s; a save happens only when its body covers the path. It can slide at a carrier in the box. The captain is never forced into cover.\n\nPOSSESSION is a state: loose, carried, pass, shot. The ball sticks to the carrier's front foot (its blade) on a critically damped spring (k 400, anchor 0.75 m) and leaves only by a readable cause: a poke, a slide or skittle (the check), an intercepted pass, the carrier's own sprint plus hard turn (swing over 0.45 m for 6 frames), or a bobble. Pickup: radius 0.9 m from the anchor, cone 70 degrees each side; under 9 m/s relative is clean, 9-14 bobbles (keeps 40% speed, no pickup 10 frames), faster deflects. The intended receiver gets 1.3 m, 100 degrees and an 18-frame soft magnet within 2 m. After any change of owner, the old owner and opponents within 2 m cannot steal for 30 frames and the new owner cannot be poked for 12. No possession while down; no own pickup for 6 frames after a kick.\n\nVERBS (anticipation/active/recovery, 60 Hz). Pass 4/1/10, clip kick_pass: tap; goes to the mate nearest the held direction within 50 degrees, led, solved to arrive at 8 m/s. Shot 10/1/18, clip kick_shot: hold past 8 frames and release; 26 to 36 m/s over 30 frames of charge. Pass and shot frames count from release; the kicking leg starts drawing back on the press, so the body answers by frame 3. Slide 8/24/45, clip slide: kick without ball; 11 m/s easing to 7, about 3.6 m, no steering, cooldown 60. Poke 5/7/12, clip cross_check (a forearm-bar jab): reach 1.7 m, cone 35 degrees each side, cooldown 40, chance 0.65 x angle (front 1.0, side 0.7, behind 0.4) x 0.6 if the carrier turned in the last 10 frames. Hop 3/22/14, clip jump: quick with the ball; the ball hops with you; slides pass underneath for all 22 airborne frames; no air turning; cooldown 30; the landing can be poked or slid.\n\nSHOT AIM. The camera yaw is fixed, so A is the left post and D the right. A or D held at release, facing within 30 degrees of goal centre, targets 0.6 m inside that post. Neither held: the ball follows your facing; if that line misses the mouth by 8 degrees or less (16 on a one-timer) it snaps just inside the post. Snap is vetoed whenever the snapped line meets the cover robot's body (0.45 m radius plus the ball): the shot then flies exactly along facing. Snap never moves a shot toward the cover. Facing outside these limits shoots along facing. A one-timer obeys the same keys.\n\nREQUIRED NEW CLIPS (phase 1; keyframes in data/clips.json posing the boxy robot's visual parts; if the rig cannot take them, the Foreman requests the clips from the rig; shoot and strike are never substitutes). kick_pass: hips square, kicking leg turned out, short knee-high side-foot swing, arms quiet. kick_shot: planted foot, leg cocked above the hip, torso tipped back, arms flung wide, held while charging; whipping follow-through to chest height. tumble_cartwheel, frames 0-20 of a fall: the figure leaves the ground to 1.2 m, makes one full sideways turn with all four limbs splayed; frames 20-26: lands on its back and bounces 0.25 m. Sprawl until the last 30 frames, then clamber_up: 10 frames roll and tuck knees, 10 push up on both hands, 10 stand and wobble the head. Shorter falls compress the clamber. spring_up: a legs-whip kip to standing. TLHit.down holds the body's state and TLBiped.shove carries it along the ground; the flight and spin move visual nodes only.\n\nCONTACT TABLE. Slide into carrier at 6 m/s or faster: carrier cartwheels, down 60-90 frames, thrown 40 degrees off the slide line toward the side its centre was on (dead centre: screen right); ball runs along the slide line at 4 m/s; slider recoils, glides 1 m and is up after 18. Slower slide into carrier: both stumble, ball loose. Slide into a robot without the ball: it stumbles (react 0.7), slider lies 40. Slide under hop: carrier keeps the ball, slider lies 45. Slide into slide: both rebound, react 0.7, 30 frames. Slide into poke: slide wins, poker down 60. Poke success: ball free at 4-6 m/s, carrier flinches (react 0.3), poker recoils 6 frames. Poke miss: poker turns at half rate for 15 frames. Hard ball into a body: it deflects, robot flinches by speed, ball loses half. Walking bump: both push apart; bodies never overlap. Skittle: a tumbler above 3 m/s hitting anyone makes it stumble (react 0.9), frees its ball, and the tumbler loses half speed; no chains.\n\nGET-UP. Down lasts 60 frames at a 6 m/s impact up to 90 at 11. Spring-up: one press of quick between down frames 28 and 36 stands you at frame 48; one try per fall. A risen robot cannot be floored for 60 frames. Comeback rule: a side two goals behind rises 15 frames sooner, shown by amber chest lamps.\n\nMOVEMENT (all in data/tuning.json). Keep the speed ratios: cruise 8.5 m/s, sprint 10.5; the carrier is slower, x0.88 (7.5 and 9.2); acceleration 15 m/s2, carrier 12; turn 4.5 rad/s, carrier 3.8, sprinting 3.0; stop 25 m/s2; stamina 3 s, refilling 25% a second after 30 frames. Ball drag 0.5/s plus 0.147 m/s2; passes launch at 16-24 m/s, about twice running speed, so passing beats carrying. Input buffer 8 frames.\n\nAI. The AI decides from scored options (shoot, pass, carry, hop, early pass, slide, poke, jockey) every few frames (4, staggered, at once on events) with vetoes, never by chance alone.\n\nBAR DEVIATIONS for the owner to judge: pitch 64 x 40 m instead of 90 x 45, because three a side with no separate keeper would leave long empty runs; running 8.5 m/s instead of skating 12.65; shots 26-36 instead of 36-52, scaled to the pitch; bots decide every 4 frames and see tells late by level; carrier x0.88 instead of 0.92 so a tackler can catch. The slow opening cover is a teaching setup. Measure pacing on the greybox. No rule here exists to pass a bot figure.\n\nREADABILITY (data/tuning.json look). The ball (the template's puck) is drawn larger than life (2.5 times, 0.55 m) with a hot-coloured rim. A pine_light ring sits under your robot; a team ring marks any carrier after 20 frames; a hot ring marks a downed robot. Off-screen ball gets an edge arrow, plus a small radar.\n\nFEEL. Hit-stop 3-4 frames, presentation only, on both bodies, only on knockdowns involving you, with a decaying victim wobble on the visual. Shake 0.12 m on those, 0.18 on a skittle strike, 0.2 on goals; none on pokes or whiffs. Clang by impact force, clatter on landing, servo whine on the clamber, scrape on a missed slide. No words or symbols drawn at a hit.\n\nCURVE. Calm opening against one slow Docker, pressure as defenders close, a goal and a breather, a second peak at 2 goals, then match point or next-goal-wins with louder crowd and brighter floodlights. END CARD: score, your tackles and one-timers, the biggest way you lost the ball and its answer (\"Slid while carrying: HOP\"); R replays in under 2 s; a win unlocks the next gang and keeps your fastest win.",
+ "arena": "A scrapyard football cage, 64 x 40 m, flat grey-green floor with painted lines, goals 7 m wide and 2.4 m high, a shooting box 12 deep x 16 m wide at each end. Walls are low barrier_wall parts, 0.8 m, that rebound the ball; stands, crane and light masts sit beyond the far end and the sides, never between the camera and your robot. Corners are angled so the ball cannot lodge. Built with TLKit.build_layout from venue.json. During a match the floodlights brighten and the crowd swells at match point, and scuff dust marks fresh slides. Camera: bound to YOUR robot, raised behind and above, 6 m back and 3.5 m up (data), fov 58, 4-frame lag, aim anchor 6 m ahead, yaw fixed toward the rival goal so held keys never change meaning; it never follows the ball and loses you. Your robot covers about 0.25 of frame height. Behind your own goal line the camera rides above the 0.8 m wall and the net is see-through open bars, so nothing hides you. The ball is drawn larger than life with a hot-coloured rim, a ring sits under your robot, and an edge arrow and radar show the ball and goals off screen. A fixed overview exists for captures only.",
+ "ai": "Shared brain: the AI decides from scored options (shoot, pass, carry) every few frames with vetoes, never by chance alone. Every bot re-scores every 4 frames (staggered, at once on possession change, incoming pass, loose ball within 3 m or a hit), with +0.15 commitment. It sees an opponent's wind-up or crouch 14/10/6 frames after it starts, by level.\n\nCARRIER: SHOOT = 1.6 xg + 0.2 one-timer - 0.3 pressure(1 - xg), vetoed below xg 0.08; it picks the corner farther from the cover. PASS = 1.2 lane_safe x open x (0.5 + gain) + 0.25 pressure, vetoed below lane_safe 0.35. EARLY PASS = PASS + 0.6 when an opponent facing it closes inside 4.5 m, same veto. CARRY = 0.9 space x (1 - pressure) + 0.15 - 0.2 possession time. HOP = 1.5 slide_seen - 0.4 poker_in_reach, vetoed unless a slide wind-up or crouch aimed at it is seen within 4.5 m, or on cooldown.\n\nDEFENDER: SLIDE = 1.3 reach x (0.5 + 0.5 committed) - 0.5 last_defender, where committed means the carrier is charging, turning hard, landing or recovering; vetoed beyond 4 m, on cooldown, while a mate slides, or into an airborne carrier. POKE = template odds, vetoed beyond 1.7 m or below 0.45. JOCKEY = 0.55: hold 2.2 m goal-side, outwait the carrier; it wins against a fresh carrier whose hop is ready. A missed slider on the floor raises the carrier's CARRY and gain, so rivals attack the gap. Mashing is therefore answered: a slide seen from 2.5 m or more gets hopped or passed early, and the stranded slider leaves its side short.\n\nOutfield roles re-sort by time to ball with 0.3 s hysteresis: chaser presses, support takes the best passing spot 6-14 m away (far post when attacking wide), cover stays goal-side and guards the net. No two mates within 4 m unless contesting. Your two mates shoot and drive the goal, call for the ball with a raised lamp and beep, and never take it from you. No bot stands idle for 2 s. Levels are easy by clumsiness, never by absence: aim error 6, 4, 2.5 degrees, score noise 0.08, 0.05, 0.03, slower reads, more hard turns that spill the ball, hastier slides; never extra speed, no hidden help, same moves and cooldowns as you.\n\nCRATE DOCKERS (first gang): wide orange crate torsos, stubby legs, a forklift fork on the captain, Bolt Brenda. Habit: SLIDE weighted 1.4, slides early; tell is a deep 30-frame crouch with a rising whine. Beaten by hop or an early pass. Scoring: slow chest-bang taunt. Conceding: sags, then trudges back.\nWIRE MAGPIES (second): tall thin teal frames, long antennae, captain Skitter. Habit: POKE weighted 1.4, SLIDE 0.5, stands off 2 m; tell is a 22-frame arm draw-back with a click. Beaten by passing round them or a late turn after the draw-back. Scoring: hopping taunt. Conceding: antennae droop.\nFOUNDRY KINGS (third): heavy dark iron blocks with crown-like vents, captain Old Anvil. Habit: sits in the passing lane, then slides as you land from a hop; tell is a 20-frame vent flare and crouch. Beaten by keeping the hop until the slide starts, moving them out of the lane first, and skittling their cover. Scoring: one cheer pump. Conceding: steams and presses higher.\n\nThe opening Docker is scripted only until its first fall: it holds 3 m away and neither hops nor passes. All downed bots cartwheel and clamber with the same clips and get-up rules as you; only top-level Kings use spring-up.",
+ "controls": "Move: WASD or arrows; runs, picks the pass receiver, and A or D at shot release picks the left or right corner. Kick: Space or left mouse; with ball tap passes, hold and release shoots; without ball slides. Quick: E or right mouse; with ball hops, without ball pokes, while down times a spring-up. Sprint: hold Shift while moving. Rematch: R on the end card. Held buttons need a fresh press after possession changes. The ring under your robot and the hot-rimmed larger-than-life ball show who you are and what to chase.",
+ "mood": "A bright, cheeky scrapyard night match: chunky toon robots in team shapes and colours, clangs and servo whines scaled to impact, clattering cartwheels and get-ups, a tin-can crowd and a foghorn for goals, all in the global inked style.",
+ "design": {
+  "pillars": [
+   {
+    "line": "Challenge and sensation: every tackle is a visible gamble; bodies fly, or you lie there.",
+    "rules_out": "Auto-targeted tackles, auto-facing, safe slides, and falls without a visible contact."
+   },
+   {
+    "line": "A floored robot is your chance: strike before it clambers up.",
+    "rules_out": "Fouls, whistles, health bars, long stoppages, and falls that remove robots for good."
+   },
+   {
+    "line": "Your trio threads the opening, because the passed ball outruns every robot.",
+    "rules_out": "Passive teammates, teammates stealing your ball, and carriers faster than chasers."
+   }
+  ],
+  "verbs": [
+   {
+    "id": "pass",
+    "input": "Kick tapped, 8 frames or less, with ball: mate nearest held direction within 50 degrees, arriving 8 m/s; new clip `kick_pass`, side-foot swing.",
+    "anticipation_f": 4,
+    "active_f": 1,
+    "recovery_f": 10,
+    "cancel": "Receiver may one-timer 8 frames before to 6 after arrival; passer cannot regather for 6 frames."
+   },
+   {
+    "id": "shot",
+    "input": "Kick held past 8 frames, release: 26-36 m/s; A/D picks corner, else 8-degree snap, never into cover; new clip `kick_shot`, high backswing.",
+    "anticipation_f": 10,
+    "active_f": 1,
+    "recovery_f": 18,
+    "cancel": "Quick cancels charge into hop. One-timer: 4-frame release, 20% faster, 16-degree snap, same cover veto."
+   },
+   {
+    "id": "slide",
+    "input": "Kick without ball: committed lunge along facing, 11 easing to 7 m/s, clip `slide`; floors a carrier, only stumbles others.",
+    "anticipation_f": 8,
+    "active_f": 24,
+    "recovery_f": 45,
+    "cancel": "No cancel. Hit: up after 18 frames. Miss or hopped: lies 45. Beats dribble and poke; hop beats it."
+   },
+   {
+    "id": "poke",
+    "move": "poke",
+    "input": "Quick without ball: forearm jab, 1.7 m reach, 35-degree cone, clip `cross_check`; template odds by angle and carrier turn.",
+    "anticipation_f": 5,
+    "active_f": 7,
+    "recovery_f": 12,
+    "cancel": "Success frees ball, 30-frame anti ping-pong; miss halves turning 15 frames; cooldown 40. Punishes hop landings."
+   },
+   {
+    "id": "hop",
+    "input": "Quick with ball: the ball hops with you, clip `jump`; slides pass underneath from the first airborne frame.",
+    "anticipation_f": 3,
+    "active_f": 22,
+    "recovery_f": 14,
+    "cancel": "No air turning; pass buffered from recovery frame 8; landing can be poked or slid; cooldown 30 frames.",
+    "defensive": true
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "wrecker",
+    "title": "The Wrecker",
+    "line": "Hunt carriers, slide hard, shoot while the victim clambers up."
+   },
+   {
+    "id": "threader",
+    "title": "The Threader",
+    "line": "Draw a slider, pass early, build the goalmouth cross."
+   },
+   {
+    "id": "poacher",
+    "title": "The Poacher",
+    "line": "Lurk at the far post and crack one-timers."
+   }
+  ],
+  "loops": {
+   "s3": "With ball: carry, pass or hop? Without: slide, poke or wait? Players bait slides and watch for crouches before committing.",
+   "s30": "Win the ball, draw a defender, exploit the floored robot, pick a corner or cross. Players aim tumbles at the cover robot.",
+   "m3": "First to three: learn this gang's habit and switch approach. Win to climb; players retry using the answer on the end card."
+  },
+  "context": [
+   "A floored robot leaves its side a player short until it finishes clambering up.",
+   "A skittled or drawn-out cover robot leaves the goal open for a quick strike.",
+   "Two goals behind, a side rises 15 frames sooner, shown by amber chest lamps.",
+   "At match point lights and crowd rise; at four minutes the next goal wins.",
+   "Each rival gang defends differently: early slides, patient pokes, or lane guarding with landing traps."
+  ],
+  "skill": {
+   "floor": "One button: run at the carrier and press to slide; with the ball, hold and release to shoot.",
+   "ceiling": [
+    "Spring-up: tap quick during the fall's timing window to rise early and rejoin the attack.",
+    "Skittle strike: clip a carrier off-centre into their cover robot, then shoot the open goal.",
+    "Bait and hop: dribble at a crouching slider, hop over, cross for a one-timer."
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    3,
+    4
+   ],
+   "knockback": "Floored carrier travels at half slider speed plus 2 m/s, 40 degrees off the slide line toward its contact side; skittling tumblers lose half speed.",
+   "reaction": "Carrier: TLHit.down plus visible flight, cartwheel, bounce and clamber; slider recoils. Others TLHit.react 0.7; poke 0.3; clash rebounds both.",
+   "whiff": "Missed slide scrapes and lies 45 frames; missed poke halves turning; hop landing stays exposed; no sparks, no shake.",
+   "iframes_f": 22,
+   "telegraph_f": 20,
+   "shake": "Knockdowns involving you 0.12 m over 12 frames; skittle strike 0.18; goals 0.2; nothing on pokes or whiffs.",
+   "camera": "Bound to your robot, raised: 6 m back, 3.5 m up, 4-frame lag, fixed upfield yaw, aim anchor; oversized hot-rimmed ball, ring under you."
+  },
+  "clips": [
+   {
+    "id": "tackle_and_blast",
+    "moment": "Captain slides, the carrier cartwheels aside, captain collects and blasts a high-backswing shot while the victim clambers up."
+   },
+   {
+    "id": "skittle_goal",
+    "moment": "A flying rival bowls over its own cover robot and the captain side-foots the ball into the open goal."
+   },
+   {
+    "id": "hop_cross_finish",
+    "moment": "Captain hops a slide, squares across the goalmouth, and a mate's first-time blast beats the cover."
+   }
+  ],
+  "first_minute": "Opens near their goal: slide the approaching Docker, collect, score while it clambers; then one cue each for corners, passing, and hopping a crouch.",
+  "fail_state": "End card shows score, biggest ball-loss cause and its answer, best tackle count; R rematches within two seconds.",
+  "out_of_scope": [
+   "Fouls, cards, offside and set pieces",
+   "Switching which robot you control",
+   "Power-ups, health, damage and permanent breakage",
+   "Online or local multiplayer",
+   "Headers, volleys and manual lofted passes"
+  ]
+ },
+ "concept": {
+  "template": {
+   "id": "arcade_sport",
+   "reference": "NHL '94 and Buckland's Simple Soccer, played as 3 v 3 football",
+   "copies": [
+    "Possession is a state with readable loss causes: tackled, poked, intercepted, loose touch (HOCKEY-ARCADE 5.1).",
+    "Utility AI scores shoot, pass and carry for every robot holding the ball (HOCKEY-ARCADE 5.3).",
+    "Outfield roles re-sort by time to ball: nearest chases, others support and cover (HOCKEY-ARCADE 5.4).",
+    "Standing tackle is move \"poke\": 5 wind-up, 7 active, 12 recovery frames, clip cross_check.",
+    "NHL '94 one-timer: pass across goal, shoot as the ball arrives, beating the keeper's slide."
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "Captain a boxy robot trio: thread passes, blast shots, slide-tackle rivals flying, then scramble up and score.",
+    "likelihood": 0.85
+   },
+   {
+    "pitch": "You're the scrapyard bruiser: every clean slide tackle knocks bolts loose, leaving that rival slower until the next goal.",
+    "likelihood": 0.25
+   },
+   {
+    "pitch": "Be the battery-powered playmaker: one shared charge fuels sprints, hard shots and instant get-ups, so you choose when.",
+    "likelihood": 0.3
+   },
+   {
+    "pitch": "You're the underdog factory's rebooted striker, climbing a ladder of rival robot teams, each defending its own readable way.",
+    "likelihood": 0.35
+   },
+   {
+    "pitch": "Be the showboat robot: three straight tackles or goals overheat you into a blazing striker until rivals floor you.",
+    "likelihood": 0.2
+   }
+  ],
+  "chosen": 0,
+  "why": "You are the captain of three clunky footballers: within 30 seconds you slide in, send a rival tumbling, steal the ball and shoot while it clambers up. The words name the game, so it stays faithful.",
+  "hook": "boxy robots tumble from slide tackles and clamber back up",
+  "anchor": "3 v 3 arcade football",
+  "references": [
+   {
+    "game": "Sensible Soccer",
+    "borrow": "One button: tap passes, hold shoots; without the ball it slides, committing you if you miss."
+   },
+   {
+    "game": "Nintendo World Cup",
+    "borrow": "No fouls: a slide tackle floors the carrier, the ball runs loose, and the victim gets up."
+   },
+   {
+    "game": "NHL '94",
+    "borrow": "Pass across the goalmouth and shoot as it arrives; the keeper cannot get across in time."
+   }
+  ]
+ }
+}

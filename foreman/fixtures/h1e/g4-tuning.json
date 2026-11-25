@@ -1,0 +1,30 @@
+{
+  "court": {"half_w": 7.5, "depth": 11.0, "hoop": [0.0, 3.05, 1.575], "arc": 6.75, "chalk_y": 0.012, "top": [0.0, 9.5]},
+  "move": {"cruise": 5.5, "turbo": 7.5, "carrier": 0.92, "accel": 20.0, "carrier_accel": 17.0, "brake": 26.0, "turn": 9.0, "carrier_turn": 8.0, "turbo_turn": 6.0},
+  "turbo": {"seconds": 3.0, "refill": 0.25, "delay_f": 30},
+  "ball": {"radius": 0.12, "draw": 1.3, "spring_k": 400.0, "anchor": 0.6, "high": 1.0, "bounce_f": 30, "bounce_turbo_f": 22, "cut_deg": 60, "swing_loss": 0.45, "swing_frames": 6},
+  "pickup": {"reach": 0.9, "cone": 70, "clean": 9.0, "bobble": 14.0, "bobble_keep": 0.4, "bobble_f": 10, "recv_reach": 1.3, "recv_cone": 100, "magnet_f": 18, "magnet_dist": 2.0, "no_steal_f": 30, "unpoke_f": 12, "own_lock_f": 6, "height": 2.4},
+  "shoot": {"anticipation": 8, "active": 30, "recovery": 14, "rise": 0.8, "airtime": 36, "perfect_lo": 15, "perfect_hi": 21, "perfect_peak": 18, "perfect_half": 3, "good": 8, "good_mult": 0.75, "off_mult": 0.35, "layup": 0.95, "inside": 0.75, "outside": 0.6, "inside_dist": 4.5, "layup_dist": 2.5, "hand_dist": 1.2, "hand_mult": 0.6, "tap_f": 8, "fake_recovery": 10, "flight_f": 54, "layup_flight_f": 30, "release_h": 2.2, "rimout_f": 36, "rimout_r": 0.27},
+  "screen": {"anticipation": 12, "hold": 90, "recovery": 16, "use_range": 4.0, "pass_gap": 0.9, "human_use": 1.0, "roll_f": 30, "roll_speed": 1.2, "crash_speed": 2.5, "touch": 0.95},
+  "poke": {"anticipation": 5, "active": 7, "recovery": 12, "reach": 1.3, "cone": 35, "chance": 0.65, "front": 1.0, "side": 0.7, "back": 0.4, "cut_mult": 0.6, "cut_f": 10, "cooldown": 40, "loose_speed": 4.5, "whiff_f": 15, "whiff_turn": 0.5},
+  "swat": {"anticipation": 5, "active": 16, "recovery": 18, "reach": 0.8, "turbo_reach": 0.2, "hand_h": 2.35, "rise_f": 12, "jump": 0.8, "ball_speed": 6.0, "body_reach": 1.15},
+  "pass": {"anticipation": 4, "active": 2, "recovery": 8, "arrive": 8.0, "min": 12.0, "max": 15.0, "drag": 0.0, "cone": 70},
+  "contact": {"swat_stop": 8, "swat_react": 0.7, "snag_stop": 6, "snag_react": 0.7, "snag_stumble_f": 30, "snag_bounce": 0.6, "screener_react": 0.3, "screener_slide": 0.2, "crash_stop": 8, "crash_down_f": 45, "crash_react": 0.5, "bump": 0.3, "poke_stop": 3, "poke_recoil": 0.3, "carry_stop": 4, "carry_react": 0.5, "carry_slide": 0.4, "carry_slow_f": 30, "fake_land_f": 18, "body": 0.82, "vibrate": 0.07, "shake_swat": [0.05, 8], "shake_floor": [0.12, 12]},
+  "camera": {"offset": [1.2, 5.4, 7.2], "fov": 48, "lag_f": 4, "look_ahead": 3.0, "look_h": 0.8, "side_dist": 8.0, "side_h": 2.6, "side_fov": 42, "hud_every_f": 6},
+  "match": {"to": 21, "time_s": 300, "possession_s": 12, "dead_f": 60, "restart_f": 20},
+  "ai": {"min_hold_f": 150, "fresh_poke_f": 60, "hysteresis_f": 18, "idle_f": 60, "support_min": 4.0, "call_open": 2.0, "tell_f": 24, "gather_f": 24, "poke_range": 1.25, "poke_gap_f": 100, "shoot_at": 0.34, "shot_hold_f": 90, "guard_gap": 1.1, "pass_gap_f": 70, "screen_gap_f": 240, "force_left_f": 180, "lane": 0.8, "drive_dist": 2.2},
+  "roster": [
+    {"id": "you", "team": "crew", "pos": [1.6, 7.4], "scale": 0.95, "mark": "crane", "traits": {}},
+    {"id": "mags", "team": "crew", "pos": [-4.6, 6.0], "scale": 0.95, "mark": "pip", "traits": {"drive": 1.0}},
+    {"id": "pip", "team": "quarry", "pos": [-3.9, 5.2], "scale": 0.874, "mark": "mags", "traits": {"poker": true}},
+    {"id": "crane", "team": "quarry", "pos": [1.6, 6.0], "scale": 1.007, "mark": "you", "traits": {"leaper": true}}
+  ],
+  "tiers": [
+    {"bite": 0.7, "read": 0.2, "error_f": 8},
+    {"bite": 0.45, "read": 0.45, "error_f": 5},
+    {"bite": 0.2, "read": 0.7, "error_f": 3}
+  ],
+  "teach": {"snags": 2, "alone_f": 480, "mags": [-4.6, 6.0], "pip": [-3.9, 5.2], "beside": 1.0, "crane_gather_f": 36, "hint": "HOLD E ON THE CHALK"},
+  "comeback": {"trail": 5, "refill": 0.375},
+  "curve": {"late_points": 18, "late_s": 20, "guard_scale": 0.85}
+}

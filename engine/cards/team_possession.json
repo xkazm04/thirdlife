@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.team_possession",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
   "summary": "Two teams of a few walkers or skaters on a bounded rink; whoever has the puck inside his reach carries it on his stick, passes to a mate or shoots; a puck inside a goal volume is a point; periods and a score decide. The worked example is the house game hockey (engine/packs/hockey). Covers ice hockey, street hockey, five-a-side football, a team ball game with carriers and passes.",
   "applies_when": [
@@ -115,7 +115,8 @@
     "Do not let the human's AI mates take a loose puck he is as near to: they yield it to him (scripts/ai/brain.gd).",
     "Do not hand the puck to anybody at a face-off: drop it between the two centre men outside both reaches.",
     "Do not animate a hit by hand: the closing speed picks bump, stumble or knockdown (numbers in data/tuning.json hits) and TLBiped's own down, stumble and shove play it.",
-    "Do not tune the levels against the perfect hand: the ladder is read per hand (tl ladder)."
+    "Do not tune the levels against the perfect hand: the ladder is read per hand (tl ladder).",
+    "Do not carry hockey into a ball game. From the house hockey a football or basketball game takes the bodies (TLBiped, how a body takes contact, stumbles and falls), possession by reach, the pass and the team AI (spacing, yielding to the human, pressing); NOT the stick, the puck, the one-timer, the boards and board bonus, the body check or the cross-check: those are hockey's own. The game's verbs, contact numbers and filmed moments are its own design's, and the Foreman judges it by them (the house game's other rows and moments are not missing)."
   ],
   "bot": {
     "template": "tests/bot_hockey.gd",
@@ -156,6 +157,10 @@
     {
       "ask": "football instead of hockey",
       "change": "the kit's ball for the puck and ground_patch for the rink in data/venue.json; walkers instead of skaters in data/tuning.json; the same possession by reach."
+    },
+    {
+      "ask": "basketball or another ball game on a court",
+      "change": "the kit's ball for the puck, a hoop or goal of the game's own and ground_patch with the court's lines in data/venue.json; walkers instead of skaters; the game's own verbs (shoot, screen, steal, block) in data/tuning.json with their own contact numbers; keep possession by reach, the pass, the bodies and the team AI; drop the stick, the one-timer, the boards and the body check."
     },
     {
       "ask": "more or fewer players a side",

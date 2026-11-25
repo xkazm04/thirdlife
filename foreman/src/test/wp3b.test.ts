@@ -709,7 +709,7 @@ test("6 events: merge.removed[], verify.after and billing.mode none are read and
   assert.deepEqual(gate.filter((e) => e.after === "core").map((e) => e.verb), ["lint", "smoke"]);
   assert.ok(ofType(evs, "verify").filter((e) => e.package !== undefined).every((e) => e.after === undefined));
   const final = ofType(evs, "verify").filter((e) => e.package === undefined && e.after === undefined);
-  assert.deepEqual(final.map((e) => e.verb), ["lint", "smoke", "invariants", "bot"]);
+  assert.deepEqual(final.map((e) => e.verb), ["lint", "smoke", "invariants", "bot", "capture"]); // H1e (25 Nov): the first promotion takes one picture (the window check); this list ended at "bot" before
   assert.throws(() => validateEvent({ v: 1, seq: 9, ts: "2026-11-10T17:00:03.000Z", job: "j", type: "verify", package: "core", round: 1, level: "V1", verb: "lint", ok: true, report: "r.json", after: "core" }), /"after" is only allowed on a whole-pack check/);
 
   // The fake adapter bills nothing and says so.

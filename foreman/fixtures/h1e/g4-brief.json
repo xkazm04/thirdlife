@@ -1,0 +1,327 @@
+{
+ "pitch": "Run street ball: dribble, screen mates free, arc jumpers, swat shots under autumn arches.",
+ "aspects": [
+  {
+   "id": "screen_role",
+   "icon": "player",
+   "title": "Set Screens",
+   "line": "Stand on the chalk feet, crunch Pip, and free Mags.",
+   "detail": "Hold E off-ball: 12 frames to set, new clip screen_set. Mags drives within 1 m; chasing Pip hits you: both freeze 6 frames, Pip stumbles via TLHit.react 0.7 for 30 frames. Chalk footprints mark the first plant spots. Release to roll hoopward.",
+   "alternatives": [
+    {
+     "id": "lead_guard",
+     "title": "Ball Boss",
+     "line": "Keep the ball and order friends to block for you."
+    },
+    {
+     "id": "post_giant",
+     "title": "Post Giant",
+     "line": "Back defenders down, then spin and hook beside the hoop."
+    }
+   ]
+  },
+  {
+   "id": "spring",
+   "icon": "twist",
+   "title": "The Spring",
+   "line": "Bounce the ball past a screen and blast off in leaves.",
+   "detail": "The dribble bounces hand to floor every 30 frames with a thump, 22 on turbo. A handler passing within 1 m of a set screener runs 25% faster for 40 frames, once per screen, both crews. TLVfx.burst leaf debris and a whoosh.",
+   "alternatives": [
+    {
+     "id": "train_rumble",
+     "title": "Train Overhead",
+     "line": "A passing train shakes the rim and bounces shots wildly."
+    },
+    {
+     "id": "leaf_drifts",
+     "title": "Leaf Drifts",
+     "line": "Slippery leaf piles make runners slide past their chasers."
+    }
+   ]
+  },
+  {
+   "id": "arc_swat",
+   "icon": "ball",
+   "title": "Arc And Swat",
+   "line": "Shoot at the top of your jump, or get swatted.",
+   "detail": "Perfect release within 3 frames of peak. Misses explain themselves: early falls short, late clangs long, contested hits side iron, clean but unlucky circles the rim and spills. A timed jump, new clip swat, bats the rising ball. A tap pump-fakes.",
+   "alternatives": [
+    {
+     "id": "meter_shot",
+     "title": "Shot Meter",
+     "line": "Stop a filling bar in the green to score."
+    },
+    {
+     "id": "bank_master",
+     "title": "Bank Shots",
+     "line": "Aim off the backboard to beat tall reaching hands."
+    }
+   ]
+  },
+  {
+   "id": "quarry_crew",
+   "icon": "rival",
+   "title": "Quarry Crew",
+   "line": "Snag the chaser, fake the leaper, shoot over the wall.",
+   "detail": "Pip guards Mags first, chases over screens and pokes. Crane, your matchup, leaps at gathers and bites fakes. Moss ducks under screens, leaving long shots. Distinct builds, own 24-frame tell clips. Tiers change reads, fake bites and timing error, never speed.",
+   "alternatives": [
+    {
+     "id": "winner_stays",
+     "title": "Winner Stays",
+     "line": "New crews queue up, each with one nasty trick."
+    },
+    {
+     "id": "old_masters",
+     "title": "Old Masters",
+     "line": "Slow veterans who know every trick you try twice."
+    }
+   ]
+  },
+  {
+   "id": "close_camera",
+   "icon": "camera",
+   "title": "See The Swat",
+   "line": "The view swings aside so you watch your hand smack it.",
+   "detail": "TLCameras.add_view each frame: 7.2 m behind you, 5.4 m up, fov 48, 4-frame lag. When a gathering rival would hide you, the lens swings 45 degrees in 12 frames, returning after landing. Movement keys stay locked to court axes.",
+   "alternatives": [
+    {
+     "id": "side_broadcast",
+     "title": "Sideline View",
+     "line": "Watch the whole half-court sideways, like television."
+    },
+    {
+     "id": "high_court",
+     "title": "Rooftop View",
+     "line": "Look steeply down and read every passing lane."
+    }
+   ]
+  },
+  {
+   "id": "autumn_arches",
+   "icon": "arena",
+   "title": "Autumn Arches",
+   "line": "Old brick arches, orange leaves, and neighbours cheering your blocks.",
+   "detail": "15 x 11 m half-court, one hoop at 3.05 m, 6.75 m arc. Brick arches from kit stones and TLBodies.make behind the hoop, low side piers; camera side open. Leaves burst on big contacts; neighbours cheer swats and sprung baskets.",
+   "alternatives": [
+    {
+     "id": "rain_court",
+     "title": "Rainy Arches",
+     "line": "Puddles and lamplight make a wet night showdown."
+    },
+    {
+     "id": "canal_court",
+     "title": "Canal Court",
+     "line": "Play beside water where wild balls splash and stop play."
+    }
+   ]
+  },
+  {
+   "id": "race_21",
+   "icon": "goal",
+   "title": "Race To 21",
+   "line": "First to twenty-one wins; the trailing crew gets fresh legs.",
+   "detail": "FIBA 3x3: one point inside the arc, two outside, 12-second clock, clear beyond the arc after baskets, rebounds or steals. Five-minute cap. Trailing by five: turbo refills 50% faster, shown by orange heel trails.",
+   "alternatives": [
+    {
+     "id": "make_it_take_it",
+     "title": "Keep Ball",
+     "line": "Score and you keep the ball for another attack."
+    },
+    {
+     "id": "three_games",
+     "title": "Best Of Three",
+     "line": "Three short games to eleven, with new matchups each."
+    }
+   ]
+  }
+ ],
+ "rules": "FANTASY: I run my street crew's half-court: my screens spring friends free and my hand swats their reply. Fellowship and challenge.\nWORLD: players 1.9 m tall, 0.8 m wide; court 15x11 m, 19x14 body widths; cruise 2.9 body heights a second, turbo 3.9; camera 4.7 body heights away, above and behind.\nTEARDOWN: NBA Jam: press shoot, rise, release near the peak; a timed defender jump swats it. Copied: perfect within 3 frames, pump fake added; early falls short, late clangs long.\nTEARDOWN: NBA 2K pick-and-roll: screener plants, handler brushes past, defender snags, screener rolls for a pass. Copied onto one held key; sets in 12 frames, snags 30.\nTEARDOWN: FIBA 3x3: 1 point inside the arc, 2 outside, first to 21, 12-second clock, clear after rebounds. Copied; time cap shortened from 10 to 5 minutes.\n30 SECONDS: 0-5 s your ring glows, Mags dribbles, Pip guarding; chalk footprints beside Pip, hint: hold E there; 5-15 s Pip crunches into you, Mags brushes past and scores: \"I did that\"; 15-30 s Crane deep-crouches, you jump on Space, swat, grab, dribble out: \"mine\".\nKILL IF: after three possessions a newcomer cannot say whether their screen freed Mags or Pip just wandered off.\nKILL IF: after five misses a newcomer cannot tell short, long, side-iron and rim-out apart, or say why each happened.\nKILL IF: on any of the first three swats, the shooter's body hides the newcomer's hand meeting the ball.\nKILL IF: a screen crash reads as two bodies sliding past, or the newcomer sets no screen in match two.\n\nMATCH. Three against three at one hoop; you are always the same player, never switched. Opening matchups, guarding both ways: you and Crane, Mags and Pip, Dex and Moss. First to 21; at 5:00 the leader wins; a tie plays until one side scores 2 more points. 12-second shot clock. After a basket the conceding side takes the ball under the hoop, live, and must clear beyond the arc; the same after a defensive rebound or steal. The arc chalk lights while a clear is owed. Out of bounds or expired clock: other side's ball at the top in 60 frames. No other stoppage.\n\nFIRST MINUTE, teaching rules for the session's first match only, for the owner to judge. Mags starts dribbling at the left wing with Pip tight. Two chalk footprints lie on the tarmac 1 m beside Pip on Mags's driving side; they follow Pip until E is pressed and return until two snags have landed. One hint line: HOLD E ON THE CHALK. The shot clock starts on the first E press; after 8 s without one Mags attacks alone. Pip cannot read the first screen, and Mags's open layup off it drops. Quarry's first possession ends in Crane's jumper with a 36-frame gather. After that, normal rules and odds.\n\nSCREEN USE. When your screen starts within 4 m of a mate carrier, that mate takes USE_SCREEN: waits for the set (frame 12), then turbos past your shoulder opposite the defender, centres 0.9 m apart. A chasing defender steers straight at the carrier and meets your body. If the defender goes under, the carrier stops behind you and shoots. If both defenders crowd the carrier, you release and roll. The human carrier springs by dribbling within 1 m.\n\nBALL AND DRIBBLE. States LOOSE, CARRIED, PASS_IN_FLIGHT, SHOT_IN_FLIGHT. Carried: horizontal spring k 400, critically damped, to an anchor 0.6 m at the dribbling hand (TLBall.hold). Height bounces from 1.0 m to the floor and back in 30 frames cruising or standing, 22 on turbo, synced to the hand in new clips dribble_stand and dribble_run, with a thump per bounce. A cut over 60 degrees visibly crosses the ball to the other hand. Gather lifts it into both hands. Turbo plus a hard turn for 6 frames past 0.45 m swing loses the dribble. Pickup: 0.9 m, cone 70 degrees each side; under 9 m/s clean, 9-14 bobble (speed -60%, 10 frames no pickup), above deflects. Intended receiver: 1.3 m, 100 degrees, 18-frame magnet within 2 m. After any change: previous owner and opponents within 2 m cannot steal for 30 frames; new owner unpokeable 12. No pickup 6 frames after your own pass or shot. Ball drawn 1.3x with a hot rim; pale green ring under you.\n\nMOVEMENT. Cruise 5.5 m/s, turbo 7.5; carrier x0.92. Acceleration 20 m/s2, carrier 17; braking 26. Turn 9 rad/s, carrier 8, turbo 6. Turbo lasts 3 s, refills 25% a second after 30 frames. Passes are solved to arrive about 8 m/s where the receiver will be, launching 12-15 m/s. These replace the bar's ice speeds because this is a real 3x3 court; carrier and pass ratios stay. Court size is checked by hand pacing on the greybox.\n\nVERBS (anticipation/active/recovery frames). Shoot 8/30/14: rise 0.8 m, airtime 36, perfect release 15-21 frames after takeoff; good, within 8 of peak, x0.75; early or late x0.35. Perfect open odds: layup 0.95, inside 0.75, outside 0.6; grounded defender's hand within 1.2 m x0.6. Shot turns to the hoop. Tap under 8 frames: pump fake, 10 recovery. Turbo within 2.5 m of rim: layup. Screen 12/held up to 90/16. Poke 5/7/12 (template): reach 1.3 m, cone 35 degrees each side along facing, chance 0.65 x front 1.0, side 0.7, behind 0.4, x0.6 if carrier cut within 10 frames; cooldown 40. Swat 5/16/18: hand within 0.8 m of the ball while held aloft or in its first 12 rising frames. The same jump grabs rebounds. Pass 4/2/8.\n\nMISSES. The odds are rolled at release; a miss shows its first applicable cause in the ball's real path. Early: short, front iron or air, shooter's wrist stops low. Late: long, bangs backboard or back iron. Good timing with a hand near: shooter leans away, ball clanks side iron. Good and open but unlucky: circles the rim for 36 frames, then spills, with a rattling sound and a crowd groan. Swat: slapped away before its arc. TLBall velocity is solved to each miss point; the rim-out circle uses TLBall.hold.\n\nCONTACT, BOTH BODIES. Swat: both freeze 8; ball flies off at 6 m/s; shooter flinches 0.7; blocker squashes and lands clean. Fake bitten: defender airborne with 18-frame landing; shooter keeps ball. Set screen hit above 2.5 m/s: freeze 6; defender stumbles 0.7 for 30 frames, bounced 0.6 m; screener flinches 0.3, slides 0.2 m, stays set. Turbo into a set screen: freeze 8, runner TLHit.down 45 frames, screener flinches 0.5. Unset or moving screen: both bump 0.3. Poke success: freeze 3; carrier flinches 0.3, poker follows through. Poke on body only: both bump, poker recoils 0.3 m. Poke whiff: turn rate halved 15 frames. Carrier into planted defender: freeze 4; carrier flinches 0.5 and halves speed, defender slides 0.4 m. Rebound clash: both bump 0.3; better position takes it. Interception: catcher flinches 0.3, passer's arms stay out 8 frames. Bodies never overlap.\n\nTWIST, THE SPRING. A handler passing within 1 m of a set screener runs 25% faster for 40 frames with leaves blasting from the heels. Once per screen. Rivals get it too.\n\nNEW CLIPS, built in the first phase, none borrowed: dribble_stand, dribble_run, jump_shot, layup, chest_pass, screen_set, swat, ball_steal, deep_gather, shoulder_dip, thigh_slap, call_hand, slump. The poke keeps template frames, but ball_steal, a low one-handed swipe, replaces hockey's cross_check. Existing jump, fall, run, cheer and taunt keep their own meanings.\n\nFEEL. Every press moves the body within 3 frames, full pose by 6; 8-frame input buffer. Hit-stop holds only the two bodies in contact; the victim's visual vibrates and decays. It is wider than the bar's knockdown-only freeze because swats and screens are the payoff. Light contact: thud only. Snag: thud and leaves. Swat: slap, cheer, 0.05 m shake. Floor: 0.12 m shake. Perfect make: net snap. Nothing technical is drawn on figures.\n\nCAMERA. 7.2 m behind you, 5.4 m up, fov 48, 4-frame lag, facing the hoop. When a rival within 2.5 m starts a shot gather, real or fake, and stands within 30 degrees of the lens-to-you line, the lens swings 45 degrees around the pair toward open court in 12 frames, holds through landing, returns in 24. W A S D and facing stay locked to court axes, so aim never turns with it. This departs from ruling R-0038, for the owner to judge. All numbers live in data/tuning.json. No rule exists for a bot figure.\n\nCOMEBACK AND CURVE. Trailing by 5 or more: turbo refills 37.5% a second, orange heel trails show it. Early possessions are calm; matchups rotate at each 7 points scored by the leader; from 18 points or the last 20 seconds drums rise and crews guard tighter; sudden death is the climax.\n\nEND. Card shows score, screen assists, swats, and the biggest cause of defeat with its answer, such as CRANE SWATTED 4: FAKE FIRST. R restarts within 2 s. A win brings the next Quarry tier and a session streak to defend.",
+ "arena": "FIBA 3x3 half-court, 15 m wide and 11 m deep, worn tarmac with chalk lines; one hoop at 3.05 m, centre 1.575 m from the baseline, 6.75 m arc, backboard and rim from TLBodies.make with a TLTrigger scoring volume. Three tall brick arches stand 3 m behind the hoop; piers under 1.5 m line the sides, set 5 m outside the court, built from kit stones and plain bodies. Autumn trees, leaf piles, a crate bench, a dozen onlookers behind the baseline and far back at the sides. Leaves drift and burst on big contacts; lamps light halfway through. In the first match, two flat chalk footprints mark where to screen. Camera: bound to your player, 7.2 m behind, 5.4 m up, swinging up to 45 degrees only when a shooter would hide you. The camera side has no wall, pier or crowd, with a 10 m apron, and side scenery stays low enough that no swung view is blocked. Ball drawn 1.3x with a hot rim, pale green ring under you, edge arrow for an off-screen ball.",
+ "ai": "All bots decide every frame with no reaction delay, scoring shoot, pass, drive, screen, use_screen, support and guard with vetoes; roles re-sorted by time to ball with 0.3 s hysteresis: on-ball, support, safety. Easy is clumsy, never absent: wider shot-timing error, more bitten fakes, later screen reads. This replaces the template's perception lag, following the bar. No bot idles over 1 s. PIP, small and wiry, backwards cap, guards Mags first; chases straight over screens and pokes from the front; new thigh_slap clip for 24 frames before reaching; hops after steals, slumps after snags. CRANE, tall and long-armed, rust beanie, your first matchup; leaps at every believed gather, tell is the deep_gather clip, arms dropped, for 24 frames; fakes beat Crane; cheers after swats, slumps when fooled. MOSS, broad and heavy, grey hoodie, guards Dex first; ducks under screens and sags, leaving outside shots; sets thick screens; shoulder_dip for 24 frames before a bulldozing drive; taunts after baskets. Rival jump shots gather 24 frames. Mates: MAGS, long ponytail, drives off your screens using use_screen, shoots a two if the defender goes under, raises a hand when open. DEX, stocky, sweatband, cuts, rebounds, and screens for you when your defender is tight. Mates shoot without waiting for you, never steal your ball, and pass on your call if the lane is safe. Tiers one to three: fake bites 70/45/20%, screen reads 20/45/70%, shot timing error 8/5/3 frames. A read screen means going around it, visibly.",
+ "controls": "Move: W A S D, locked to court axes with W toward the hoop; your facing aims pokes and passes. Turbo: hold Shift for faster drives, bigger swats and layups. Shoot or swat: Space or left click; with ball, hold to rise and release near the peak, tap to fake; without it, jump to block or rebound. Pass or call: Q or right click; pass toward your facing, or call for the ball. Screen or poke: E; hold while a mate carries to screen, press on defence to steal. Rematch: R on the end card.",
+ "mood": "Warm dusk autumn: soot-dark brick arches, rust and gold leaves, inked toon figures, chalk lines and lamp glow. Dribble thumps, sneaker squeaks, rim clank and rattle, body thuds, neighbourhood cheers, groans and drums near game point.",
+ "design": {
+  "pillars": [
+   {
+    "line": "Fellowship: your body frees teammates, and every screen is seen, felt and credited.",
+    "rules_out": "Invisible stat boosts, mates ignoring a set screen, or mates waiting for you before shooting."
+   },
+   {
+    "line": "Challenge: each shot is a readable duel of gather, fake, jump and release.",
+    "rules_out": "Automatic blocks, unexplained misses, or a shooter's body hiding the contest."
+   },
+   {
+    "line": "The half-court keeps flowing, and every turnover has a visible bodily cause.",
+    "rules_out": "Fouls, replays, whole-game freezes, or steals without a visible reach."
+   }
+  ],
+  "verbs": [
+   {
+    "id": "shoot",
+    "input": "Space or left click with ball: new clip jump_shot, layup near rim. Release near peak; perfect within 3 frames.",
+    "anticipation_f": 8,
+    "active_f": 30,
+    "recovery_f": 14,
+    "cancel": "Tap before frame 8: pump fake. Misses show cause: short, long, side iron, rim-out. Swatted: shooter flinches."
+   },
+   {
+    "id": "screen",
+    "input": "Hold E while a mate carries: new clip screen_set. Running defender stumbles, screener braces, both freeze 6 frames.",
+    "anticipation_f": 12,
+    "active_f": 90,
+    "recovery_f": 16,
+    "cancel": "Release after contact: roll hoopward 1.2x for 30 frames, ready for a pass. Early release slips the screen."
+   },
+   {
+    "id": "poke",
+    "move": "poke",
+    "input": "E on defence, new clip ball_steal: template poke, front chance 0.65, side x0.7, behind x0.4, cooldown 40.",
+    "anticipation_f": 5,
+    "active_f": 7,
+    "recovery_f": 12,
+    "cancel": "No cancel. Success: ball loose, carrier flinches. Whiff: turn rate halved 15 frames, leaving you beaten."
+   },
+   {
+    "id": "swat",
+    "defensive": true,
+    "input": "Space without ball, new clip swat: timed hand reaches held or rising ball within 0.8 m; rebounds use jump.",
+    "anticipation_f": 5,
+    "active_f": 16,
+    "recovery_f": 18,
+    "cancel": "No cancel. Block: both freeze 8, shooter flinches. Fooled or whiffed: exposed landing recovery."
+   },
+   {
+    "id": "pass",
+    "input": "Q or right click toward a mate: new clip chest_pass. Without ball, call for it.",
+    "anticipation_f": 4,
+    "active_f": 2,
+    "recovery_f": 8,
+    "cancel": "Cancels dribble or grounded shot gather. Intercepted lane changes possession; passer cannot reclaim for 6 frames."
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "glue",
+    "title": "Crew Glue",
+    "line": "Screen, roll hoopward, and let your body create open shots."
+   },
+   {
+    "id": "sniper",
+    "title": "Arc Sniper",
+    "line": "Use screens, drift beyond the arc, and release at the peak."
+   },
+   {
+    "id": "hawk",
+    "title": "Rim Hawk",
+    "line": "Hunt pokes and swats, then clear fast for quick points."
+   }
+  ],
+  "loops": {
+   "s3": "With ball: shoot, fake, pass or drive? Without: screen or cut? Defending: poke now or wait to swat?",
+   "s30": "Create an advantage within 12 seconds: screen, spring, roll. Defenders cover one option, so players choose another.",
+   "m3": "Learn who bites fakes, ducks screens or reaches; change plays and matchups to reach 21 first."
+  },
+  "context": [
+   "Matchups rotate at each seven leading points, so screens and fakes meet different defensive habits.",
+   "Trailing by five refills turbo faster, with orange heel trails, opening comeback drives.",
+   "From 18 points or final 20 seconds, defenders tighten and drums rise; one long shot matters.",
+   "A tied clock starts sudden stakes: first side to add two points takes the court."
+  ],
+  "skill": {
+   "floor": "Stand on the chalk and hold E: your mate uses the screen and scores without your shot.",
+   "ceiling": [
+    "Fake the leaper, then rise while Crane is landing.",
+    "Slip the screen: release early and cut when both defenders crowd your handler.",
+    "Late swat: wait out the fake, then jump as the real shooter leaves the ground."
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    3,
+    8
+   ],
+   "knockback": "Closing speed and mass set shove: bumps 0.3 m, screen snags 0.6 m; only turbo screen crashes floor runners.",
+   "reaction": "Both bodies answer: bump flinch 0.3, snag or swat 0.7, screener braces; TLHit.down for turbo crashes only.",
+   "whiff": "Missed poke lunges and turns slowly; missed swat lands for 18 frames. Quiet swoosh, no burst or shake.",
+   "iframes_f": 0,
+   "telegraph_f": 24,
+   "shake": "Swat shakes 0.05 m over 8 frames; floored crash 0.12 m over 12 frames; other contacts never shake.",
+   "camera": "Behind you, 7.2 m back, 5.4 up, 4-frame lag, fov 48. A shooter hiding you swings lens 45 degrees in 12 frames; keys stay court-locked."
+  },
+  "clips": [
+   {
+    "id": "screen_spring",
+    "moment": "Mags's bouncing dribble brushes your shoulder, Pip crunches into you, and Mags blasts through leaves to score."
+   },
+   {
+    "id": "peak_swat",
+    "moment": "Seen from the side, your hand meets Crane's rising jumper and bats it toward the brick arches."
+   },
+   {
+    "id": "roll_finish",
+    "moment": "You roll off your screen, take Mags's pass and lay it in as defenders turn late."
+   }
+  ],
+  "first_minute": "Chalk marks your screen beside Pip; Mags drives past and scores. Crane's slow gather invites a swat; grab, dribble out, play freely.",
+  "fail_state": "End card names the main defeat cause and counter, shows screen assists and swats; R rematches within two seconds to reclaim the court.",
+  "out_of_scope": [
+   "Fouls, free throws, travelling calls and substitutions.",
+   "Player switching, character creation, unlock shops or season mode.",
+   "Full-court play, online multiplayer, dunk contests or special super shots."
+  ]
+ },
+ "concept": {
+  "template": {
+   "id": "arcade_sport",
+   "reference": "NHL '94, Buckland's Simple Soccer, NBA Jam and FIBA 3x3 rules",
+   "copies": [
+    "Possession is a state with readable loss causes: block, poke steal, interception, rebound (HOCKEY-ARCADE 5.1).",
+    "Utility AI scores shoot, pass and carry; openness and hoop distance decide (HOCKEY-ARCADE 5.3).",
+    "Roles re-sorted by time to ball: on-ball, support, safety (HOCKEY-ARCADE 5.4).",
+    "Steal uses move \"poke\", 5/7/12 frames, clip cross_check; a whiff leaves you beaten.",
+    "FIBA 3x3: 1 point inside arc, 2 outside, first to 21, 12-second clock, clear rebounds.",
+    "NBA Jam shot duel: jump to shoot, release near the peak; a well-timed defender jump blocks."
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "You run the half-court with two mates: dribble, screen, arc jumpers and swat shots beneath autumn viaduct arches.",
+    "likelihood": 0.85
+   },
+   {
+    "pitch": "You're the crew's unsung wall: crunching screens spring your shooters, and every freed basket is credited to you.",
+    "likelihood": 0.2
+   },
+   {
+    "pitch": "You're guardian of the arches: read each shooter's gather, swat their arc, and launch your crew's counterattack.",
+    "likelihood": 0.3
+   },
+   {
+    "pitch": "Your crew holds the court until dusk: winners stay on while distinct challenger trios queue beneath the arches.",
+    "likelihood": 0.35
+   },
+   {
+    "pitch": "You're the new kid with handles: shake defenders off your mate's screens and earn the neighbourhood's respect.",
+    "likelihood": 0.4
+   }
+  ],
+  "chosen": 0,
+  "why": "Fantasy: running your street crew's half-court. Within 30 seconds you set a screen, your mate breaks free and arcs one in, then you swat the reply. The words name a known game without a twist.",
+  "hook": "Your screen springs a mate free beneath autumn viaduct arches",
+  "anchor": "arcade 3v3 street basketball",
+  "references": [
+   {
+    "game": "NBA Jam",
+    "borrow": "Press shoot to rise, release near the peak; a defender timing their jump swats the ball."
+   },
+   {
+    "game": "NBA 2K",
+    "borrow": "Pick-and-roll: screener plants, handler brushes past, defender snags; pass to the screener rolling hoopward."
+   },
+   {
+    "game": "NBA Street Vol. 2",
+    "borrow": "3-on-3, one button shoots or blocks by possession; turbo makes drives and swats bigger."
+   }
+  ]
+ }
+}

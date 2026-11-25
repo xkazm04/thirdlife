@@ -26,23 +26,58 @@ export interface ToyFigure {
   points?: number;
   goal_diff?: number;
   changed?: number;
+  /** H1e: the paired matches won only with the toy, and only without it. */
+  won_only_with?: number;
+  won_only_without?: number;
+  /** H1e: what the paired matches say (check_cartridge.mjs toyClear, the same rule as toyClear below). */
+  clear?: "nothing" | "little" | "helps" | "costs" | "not_clear";
   why?: string;
 }
 
 /**
- * H1c: the toys a person should hear about at the pause, in a person's words: one that changes no match, one worth about
- * nothing (within 5 points of wins and half a goal), one that could not be measured. [] when every toy shows.
+ * H1e (lane G1's round 3, PROOF-G1.md section 14: at the check's 20 seeds three toys of four read the other way round
+ * from 80 seeds: pickups -15 against -6, the pads -10 against +1, the pools -10 against +10): what the paired matches say.
+ * "nothing" when no match plays differently; "helps" / "costs" when a two-sided sign test over the matches won only with
+ * the toy and only without it gives p < 0.1; "little" when the win difference stays within 10 points even at the far end
+ * of a 95 % margin; else "not_clear". Never a confident word from noise.
+ */
+export function toyClear(n: number, changed: number, onlyWith: number, onlyWithout: number, points: number): NonNullable<ToyFigure["clear"]> {
+  if (changed === 0) return "nothing";
+  const d = onlyWith + onlyWithout;
+  const k = Math.min(onlyWith, onlyWithout);
+  let tail = 0;
+  for (let i = 0; i <= k; i++) {
+    let c = 1;
+    for (let j = 0; j < i; j++) c = (c * (d - j)) / (j + 1);
+    tail += c;
+  }
+  const p = d === 0 ? 1 : Math.min(1, (2 * tail) / 2 ** d);
+  if (p < 0.1) return onlyWith > onlyWithout ? "helps" : "costs";
+  const margin = (100 * 1.96 * Math.sqrt(d)) / n;
+  return Math.abs(points) + margin <= 10 ? "little" : "not_clear";
+}
+
+/**
+ * H1c: the toys a person should hear about at the pause, in a person's words. H1e: only what the paired matches show;
+ * a toy whose figures could be noise is "not clear yet", with the two counts. A toy that helps gets no line.
  */
 export function toyLines(toys: ToyFigure[] | undefined): string[] {
   // the card's words: the toy without its kinds in brackets (the check's warning keeps them), at most about 60 characters
   const up = (s: string): string => { const t = s.replace(/ \([^)]*\)$/, ""); return t.charAt(0).toUpperCase() + t.slice(1); };
   const out: string[] = [];
   for (const t of toys ?? []) {
-    if (!t.measured) out.push(`${up(t.toy)}: not measured${t.why !== undefined ? `: ${t.why.slice(0, 120)}` : ""}`);
-    else if (t.changed === 0) out.push(`${up(t.toy)}: changes nothing (${t.wins_with} of ${t.matches} wins with and without)`);
-    // H1c Director's decision: a toy that costs the player is said in words (here, on the card), never a check warning
-    else if ((t.points ?? 0) < -5) out.push(`${up(t.toy)}: costs you (${t.wins_with} of ${t.matches} wins with, ${t.wins_without} without)`);
-    else if (Math.abs(t.points ?? 0) <= 5 && Math.abs(t.goal_diff ?? 0) < 0.5) out.push(`${up(t.toy)}: changes little (${t.wins_with} of ${t.matches} wins with, ${t.wins_without} without)`);
+    if (!t.measured) {
+      out.push(`${up(t.toy)}: not measured${t.why !== undefined ? `: ${t.why.slice(0, 120)}` : ""}`);
+      continue;
+    }
+    const n = t.matches ?? 0;
+    const clear = t.clear ?? (t.won_only_with !== undefined && t.won_only_without !== undefined ? toyClear(n, t.changed ?? 1, t.won_only_with, t.won_only_without, t.points ?? 0) : t.changed === 0 ? "nothing" : "not_clear");
+    const pair = `won only with it ${t.won_only_with ?? "?"}, only without it ${t.won_only_without ?? "?"}, of ${n}`;
+    if (clear === "nothing") out.push(`${up(t.toy)}: changes nothing (${t.wins_with} of ${n} wins with and without)`);
+    else if (clear === "little") out.push(`${up(t.toy)}: changes little (${t.wins_with} of ${n} wins with, ${t.wins_without} without)`);
+    // the Director's H1c decision: a toy that costs the player is said in words here, never a check warning
+    else if (clear === "costs") out.push(`${up(t.toy)}: costs you (${pair})`);
+    else if (clear === "not_clear") out.push(`${up(t.toy)}: not clear yet (${pair})`);
   }
   return out;
 }

@@ -21,7 +21,7 @@ import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-1
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
 import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
-import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
+import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { tofuGate } from "./tofugate.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -874,8 +874,9 @@ export class Foreman {
       let failure: GateFailure | undefined = await coreDataGate(this.gateHost, id, round, this.wsDir(id), this.mergeSet(id)); // E3: a cartridge edit is validated first
       for (const a of failure !== undefined ? [] : roundAcceptance(this.s, spec, round)) { // E4b: a diff round keeps lint + the player check
         const vr = await this.verifyLogged(a, this.wsDir(id), `${id}-r${round}-${a.verb}`, { package: id, round });
-        if (!vr.ok) {
-          failure = vr;
+        const bounds = tofuGate(this.gateHost, id, a, vr); // H1e: the plan's tofu bounds are the Foreman's, not the bot's ok
+        if (!vr.ok || bounds !== undefined) {
+          failure = bounds ?? vr;
           break;
         }
       }
@@ -1896,11 +1897,11 @@ export class Foreman {
     // N3: a pack that is promoted AGAIN (after a change request) is photographed first, so that whoever asked for the
     // change can look at it: the declared cameras at the usual frames, into captures/promotion<n>-<cam>-f<frame>.png.
     // No critic, no gate; the paths are in a `note` on the package that was re-opened last.
+    const owner = this.lastReopened();
+    const shots = await this.captureSet(`promotion${nth}`, nth > 1 ? owner : undefined, tests[0], fast || nth === 1); // H1e: a first promotion takes ONE picture (the window check), part of the final checks
+    const errs = promotionErrors(this.gateHost, `promotion${nth}`); // H1d: the game in a window throws script errors
+    if (errs !== undefined) return this.endJob("failed", clip(`promotion refused: ${errs}. ${nth > 1 ? `Earlier version v${this.s.promoted?.version ?? "?"} stays the one to play.` : "Nothing was promoted."}`, 900), true), false;
     if (nth > 1) {
-      const owner = this.lastReopened();
-      const shots = await this.captureSet(`promotion${nth}`, owner, tests[0], fast);
-      const errs = promotionErrors(this.gateHost, `promotion${nth}`); // H1d: the game in a window throws script errors
-      if (errs !== undefined) return this.endJob("failed", clip(`promotion refused: ${errs}. Earlier version v${this.s.promoted?.version ?? "?"} stays the one to play.`, 900), true), false;
       this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version, removedSince(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack"))) }); // E3f: one line for Create; H1: each removal on its own line
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }
@@ -1940,7 +1941,7 @@ export class Foreman {
     return last && last.type === "reopened" && this.s.packages[last.package] ? last.package : (this.s.order[0] as string);
   }
 
-  private async captureSet(label: string, after: string, bot: string | undefined, one = false): Promise<string[]> {
+  private async captureSet(label: string, after: string | undefined, bot: string | undefined, one = false): Promise<string[]> {
     const packDir = this.dir("pack");
     let cameras: string[] = [];
     try {
@@ -1963,7 +1964,7 @@ export class Foreman {
             reportFile: this.reportPath(`${label}-capture-${cam}-f${frame}`),
           });
           ok = vr.ok && fs.existsSync(file);
-          this.append({ type: "verify", round: 1, level: vr.level, verb: vr.verb, ok, report: this.rel(vr.reportFile), ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}), after });
+          this.append({ type: "verify", round: 1, level: vr.level, verb: vr.verb, ok, report: this.rel(vr.reportFile), ...(vr.exitCode !== undefined ? { exitCode: vr.exitCode } : {}), ...(after !== undefined ? { after } : {}) });
         }
         if (ok) out.push(this.rel(file));
       }
