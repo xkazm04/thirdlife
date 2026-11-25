@@ -262,3 +262,4 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   shader fix broke two classic-look byte pins and a blend test that encoded an owner-accepted design. Second sighting
   after 22 Nov (style.frame.rink): any lane that changes engine/style or the draw layer runs the uncapped kernel suite
   before "landable", not only its own blocks.
+- 2026-11-25 (night): the Director landed a balance cartridge into a pack after running only the Godot blocks and packs; the editor's C++-verdict fixture pins that cartridge's bytes and went red unseen until the next lane's run. When a landing touches a file another suite pins (cartridges, schemas, fixtures), run every suite that reads it (here foreman `npm test`), not only the lane's own.
