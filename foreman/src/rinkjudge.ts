@@ -259,17 +259,31 @@ const num = (w: string): number => NUMBER_WORDS[w.toLowerCase()] ?? Number(w);
  */
 export function askedFigureMiss(text: string, after: Record<string, number>): string | undefined {
   const out: string[] = [];
+  const ways: ("over" | "short")[] = [];
   const mins = [...text.matchAll(/\b(\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty)[- ]?(?:minutes?|mins?)\b/gi)].at(-1);
-  const m = after["pro_minutes"];
+  // H1h (G1 v0.1.10, event 558: "about three minutes" read against 3.9 match minutes with the pauses after fifteen goals,
+  // and called "falls short"): a person's minutes are minutes of play, so they are compared with the live play minutes
+  // (the pauses after goals left out) when the check has them, and the line says which minutes and which way it misses
+  const play = after["pro_play_minutes"];
+  const whole = after["pro_minutes"];
+  const m = typeof play === "number" && play > 0 ? play : whole;
   if (mins !== undefined && typeof m === "number") {
     const want = num(mins[1] as string);
-    if (Number.isFinite(want) && want > 0 && Math.abs(m - want) > want * 0.25) out.push(`you asked for matches of about ${want} minute${want === 1 ? "" : "s"}; they last ${m} min at pro now`);
+    if (Number.isFinite(want) && want > 0 && Math.abs(m - want) > want * 0.25) {
+      const which = m === play ? `${m} minutes of play at pro now${typeof whole === "number" ? ` (${whole} with the pauses after goals)` : ""}` : `${m} minutes at pro now, pauses after goals included`;
+      out.push(`you asked for matches of about ${want} minute${want === 1 ? "" : "s"}; they last ${which}, ${m > want ? "longer" : "shorter"} than you asked`);
+      ways.push(m > want ? "over" : "short");
+    }
   }
   const goals = [...text.matchAll(/\b(\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty)\s+goals?\s+(?:a|per|in a)\s+(?:match|game)\b/gi)].at(-1);
   const g = after["pro_goals_a_match"];
   if (goals !== undefined && typeof g === "number") {
     const want = num(goals[1] as string);
-    if (Number.isFinite(want) && want > 0 && Math.abs(g - want) > want * 0.25) out.push(`you asked for about ${want} goals a match; there are ${g} at pro now`);
+    if (Number.isFinite(want) && want > 0 && Math.abs(g - want) > want * 0.25) {
+      out.push(`you asked for about ${want} goals a match; there are ${g} at pro now, ${g > want ? "more" : "fewer"} than you asked`);
+      ways.push(g > want ? "over" : "short");
+    }
   }
-  return out.length > 0 ? `${out.join("; ")} (thirdjam's regular playtester, measured after the change): the change falls short of what you asked` : undefined;
+  const way = ways.every((w) => w === "over") ? "goes past what you asked" : ways.every((w) => w === "short") ? "falls short of what you asked" : "misses what you asked";
+  return out.length > 0 ? `${out.join("; ")} (thirdjam's regular playtester, measured after the change): the change ${way}` : undefined;
 }

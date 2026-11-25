@@ -28,7 +28,7 @@ import { botFinish, botMoments, planShots } from "./shots.js";
 import { coreRouteOf, templateOf } from "./templates.js";
 import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
 import { cartridgeChange, coreDataGate, diffRound, jobCore, phaseCheck } from "./coregate.js";
-import { changeCandidates, coreChangeOwner } from "./coreowner.js"; // E3f: on a core, a change never goes to the base
+import { changeCandidates, coreChangeOwner, skinSplit } from "./coreowner.js"; import { skinPartText } from "./skintext.js"; // E3f: on a core, a change never goes to the base
 import { decideLook, filmLook, hudArgs, hudOn, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
@@ -1318,8 +1318,10 @@ export class Foreman {
         // Asked while other packages ran: the package it names must be finished and idle as well, or the request waits.
         if (!this.changeReady({ ...c, package: owner }, running)) continue;
       }
-      this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(c.text, 300)}`, `${CHANGE_ROUND}: ${c.text}`);
-      await cartridgeChange(this.gateHost, owner, this.pkg(owner).round, c.text); // E3b: on a core, a cartridge diff first (coregate.ts)
+      const sk = c.text.startsWith(FOREMAN_NOTE) ? undefined : skinSplit(this.s.plan, owner, c.text); // H1h: the game's text (title, tagline, names, commentary) goes to the skin's owner
+      const text = sk === undefined ? c.text : sk.rest === "" ? ([owner, how] = [sk.to, `${how}; ${sk.why}`], c.text) : (this.append({ type: "change_requested", package: sk.to, text: skinPartText(c.seq, sk.why, sk.skinText) }), (how = `${how}; ${sk.why}`), sk.rest);
+      this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(text, 300)}`, `${CHANGE_ROUND}: ${text}`);
+      await cartridgeChange(this.gateHost, owner, this.pkg(owner).round, text); // E3b: on a core, a cartridge diff first (coregate.ts)
       applied += 1;
     }
     return applied;

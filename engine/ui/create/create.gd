@@ -143,7 +143,10 @@ func _read_job() -> void:
 				_run_t0 = JobModel.ts_unix(str(e.get("ts", "")))
 	# a verdict is refused while a Foreman holds the job: Pass and Hold wait until it has let go (seen 21 Nov: the
 	# log said phase_done a moment before the process that wrote it ended)
-	settling = screen == "phase_done" and door != null and door.foreman_alive(job_dir, int(job.get("lock_pid", 0)))
+	# H1h (the Director's answer to H1g): a quality hold's Fix it / It's fine / Change it wait the same way; a press while
+	# the Foreman lets go was refused ("the builders are still at work on this game"), a person's defect
+	var held_quality: bool = str(job.get("phase", "")) == "paused" and str(job.get("pause_kind", "")) == "quality"
+	settling = (screen == "phase_done" or held_quality) and door != null and door.foreman_alive(job_dir, int(job.get("lock_pid", 0)))
 	# what this page started shows until the log answers it
 	match busy:
 		"redesign":

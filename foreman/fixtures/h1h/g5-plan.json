@@ -1,0 +1,274 @@
+[
+ {
+  "id": "core",
+  "title": "Tofu core: karts, verbs, loose ball, one rival",
+  "milestone": "blockout",
+  "deps": [],
+  "scope": [
+   "scripts/main.gd",
+   "scripts/core/**",
+   "data/tuning.json",
+   "data/venue.json",
+   "gen/kart_flat.gd",
+   "tests/bot_tofu.gd",
+   "tests/bot_hand_perfect.gd",
+   "README.md"
+  ],
+  "serves": [
+   "spin_bat_goal",
+   "whirl_turnaround",
+   "sunset_ram"
+  ],
+  "registers": {
+   "capabilities": [
+    "physics",
+    "input",
+    "ui",
+    "audio",
+    "vfx",
+    "camera",
+    "rules",
+    "ai",
+    "ball",
+    "kit",
+    "style"
+   ],
+   "assets": [
+    "gen/kart_flat.gd"
+   ],
+   "tests": [
+    "tests/bot_tofu.gd",
+    "tests/bot_hand_perfect.gd"
+   ],
+   "cameras": [
+    "play"
+   ]
+  },
+  "contract": "Bumper-kart football on flat shapes: p1 (red/cream #c8342c/#f2e6c8) against mint_1 (#8fd9b6, same kart), deck, loose ball, goals. Start from ref/seeds/seed_paddle + seed_drive. Keep lean (about 800 lines). Player decisions win over card and brief: NO spin bat, NEVER carried (no TLBall.hold, spring or anchor), NO named rivals. All numbers below go in data/tuning.json, keys named as written.\nWORLD: data/venue.json (tl.layout/1) = flat deck on floor layer 1 plus kit goal parts scaled to 14 x 4 m. x -22..22, z -36..36; red attacks -z. Board outline (1 m visual, rounded 6 m corners, restitution 0.7) is resolved in scripts/core/deck.gd, no wall bodies. Karts: TLBodies.make cylinder radius 0.9, mass 200, dynamic, lock y rx ry rz, mask 0, visual false, track false; motion, heading, kart-kart and kart-board contacts are script-owned (not TLVehicle). Ball: TLBall planar, radius 1.2, mass_ratio 0.25, restitution 0.7, drag 0.3/s, cap 30; masks only the floor; set_velocity.\nDRIVE: cruise 12, boost 18, accel 14/22, brake 24, reverse 6, turn 3.2/2.4 rad/s; tank 100, burn 33/s; kickoff boost 33, conceding side 66 (tail lamps glow).\nACTIONS: forward W, back S, left A, right D, boost Shift, bump Space, whirl E + right mouse, restart R, skip_lesson Enter.\nBALL TOUCH: states &\"loose\",&\"struck\". Relative normal speed under soft_touch_max 13: ball leaves at kart normal speed + 1 (pushable, rolls free); else restitution 0.7 along centre line.\nVERBS (pose in 3 f, readable by 6): bump 5/7/12, lunge +4 m/s, cone 35 deg, no auto-aim, no cancel; ball +14 m/s along contact line, +20 if contact in first 3 active frames. ram: hold boost, windup 6, active up to 180, recovery 12, cancels into bump/whirl; closing >=14 is a ram. whirl 4/18/24, guard frames 1-18, swats ball 14 m/s tangentially. Bot bump, ram and whirl each start with a 24 f tell (driver rears, pennant whips back).\nCONTACTS (both karts; hit-stop in brackets): touch <6: rebound 0.6, thud [0]. bump flank: victim spinout 75, speed halved, attacker recoils 3 [4]. rear: victim shoved 7 forward, wobble 24, attacker half speed [3]. nose: both rebound 5, snap [3]. clash: both 8 [5]. ram flank/rear: spinout 90, thrown 6, attacker keeps 40% and jolts [8]. ram head-on: both 9, slower spinout 75 [6]. bump/ram into whirl: attacker spinout 75, whirler holds, +10 boost [6]. whiff bump: full recovery, twang. whiff whirl: 24 f no steer, speed x0.6. Teammates only rebound. Spinout brakes 10 m/s2; during it and 90 f after, hits only jolt. Hit-stop is held by the pack on those two karts only; victim visual vibrates, decaying.\nSHAKE: bumps none; ram involving p1 (0.15,10); goal (0.25,18). TLAudio thuds, clang, twang, charge bell, horn, cheer; TLVfx sparks on rams only, confetti on goals; no technical markers. Sweet shot and swat: 4 f hit-stop on kart and ball visual, clang, TLVfx.squash ball.\nPOSES (scripts/core/pose.gd, own, no biped clips): kart_bump (lean back, spring compresses, lunge, wobble), kart_ram (tub squats, nose lifts, hunch; squash on contact), kart_whirl (tilt pirouette, arms high), kart_spinout (rock, head lolls, hands off), kart_wobble, kart_jolt (jerk from blow), goal_wave.\ngen/kart_flat.gd: static generate(ctx) (no-op), static build(team)->Node3D \"Visual\" with nodes Ring (fat black), Tub, Spring, Driver(Head striped helmet, ArmL, ArmR), Pole (3 m), Pennant, TailLampL, TailLampR; each node's meshes sit in a child \"Flat\". p1 has pine_light SelfRing. Ball visual \"BallVisual\": hot seam rim, ground shadow.\nCAMERA view \"play\" (add_view, moved every frame): 8 back (+z) 7 up of p1, look height 1, fov 46, ~4 f lag, heading FIXED toward the far goal, never swings; fade_occluders; p1 about 0.2 of frame.\nRULES: TLRules sides red,mint, score_to_win 3, paused outside live; countdown 180, mirrored spots red [[0,14],[-9,20],[9,26]] (mint negated), centred ball; goal hold 90, bump skips; at 180 s live leader wins else golden; end banner, restart works at once.\nLESSON (match 0): mint_1 shuttles side-on 3 m beside the ball across p1's lane every 6 s until spun once; that first spin lasts 180 f, no throw even from a ram, and leaves the p1-ball-goal line clear (kart 2.5 m off it) so one straight nudge sends the ball goalward. Hints: 'W drive, SHIFT boost, SPACE bump its side', 'now shove the ball home', 'E whirl' at first charge bell. After it mint_1 uses brain_core: attacks ball and p1 in bursts of 3, whirls when a closer is within 9 m, never still over 60 f.\nHUD: labels score_red, clock, score_mint, hint, boost, banner (set_text); ball edge arrow on a TLHudLayer. Avoid variable names starting score/clock/timer/period/lap.\nMODULE SEAM (later packages): for n in teams, show, look: if ctx.root.has_meta(\"kk_mod_\"+n), ctx.load_script(meta).new(); call mod_setup(ctx, game) after core setup, mod_tick(frame) after core logic, mod_state() into state[n], mod_save()/mod_load(d) when present (core implements _pack_save/_pack_load). game = main: ctx, cfg, karts, player, ball{body,pos,vel,state,last_id,last_team,visual}, rules, hud, phase(&\"countdown\",&\"live\",&\"goal_hold\",&\"over\"), golden, tier(0..2), match_index, events, core_scoreboard, core_endcard (true); add_kart(id,team,slot), kart_by_id(id), add_boost(k,v), restart_match(), lesson_active(), far_loop_active() (first 900 live f of match 0; skip_lesson ends both). Kart: id,team,pos,heading,vel,boost,state(&\"drive\",&\"tell\",&\"bump\",&\"ram_windup\",&\"ram\",&\"ram_recover\",&\"whirl\",&\"spinout\",&\"wobble\",&\"goal_wave\"),state_frame,immune,stop,brain,visual. brain.think(kart,game)->{throttle,steer,boost,bump,whirl}. Ids p1,red_2,red_3,mint_1..3. events (cleared each tick) {type: contact{kind: touch,flank,rear,nose,clash,ram_flank,ram_rear,ram_headon,whirl_block,jolt,mate; attacker,victim}, ball_touch{kart,kind: push,bounce,bump,sweet,swat}, whiff{kart,verb}, tell{kart,verb}, possession{team,cause: bumped,spun,whirled,rammed,outraced; from}, goal{team,scorer,own}, countdown_start, kickoff, match_over{winner}}. State: rules snapshot, phase, golden, time_left_s, lesson, karts[], ball{}, events.\nTOFU CHECK: tests/bot_tofu.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, verbs_used, possession_median_f, scrum_share, overlap_share\nBounds, all counted from played frames: feedback_f<=3; skill_spread 0.25..0.95 (bump on ball: sweet/late/angled, >=5 each, outcome ball speed); skill_variants>=3; idle_max_f<=120; tell_min_f>=20; tells>=3; pressure_waves>=2 (180 f window with >=3 attack starts after one with <=1); lead_change_share>=0.3 over >=3 matches; close_rounds>=1 (loser within one point); verbs_used>=3 (bump, ram, whirl, each >=3); possession_median_f 240..600 (side of last touch until other side touches or goal); scrum_share<=0.3 (4+ karts within 5 m of ball); overlap_share<=0.02 (overlap >0.1 m). Also hand, and moments {flank,rear,clash,ram_flank,whirl_block,sweet,goal,spin_bat_goal (flank spin then p1 goal),whirl_turnaround,sunset_ram}; plays the lesson first.\nPLAYER CHECK: tests/bot_hand_perfect.gd fails when the player's kart can no longer drive, touch the ball 5 times, spin a mint kart once and move the ball 30 m goalward in total",
+  "acceptance": [
+   {
+    "level": "V1",
+    "verb": "lint",
+    "args": []
+   },
+   {
+    "level": "V2",
+    "verb": "smoke",
+    "args": []
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_tofu.gd",
+     "--frames=72000"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_hand_perfect.gd"
+    ]
+   },
+   {
+    "level": "V3",
+    "verb": "invariants",
+    "args": []
+   }
+  ]
+ },
+ {
+  "id": "teams",
+  "title": "Three against three, utility bots, boost pads",
+  "milestone": "greybox",
+  "deps": [
+   "core"
+  ],
+  "scope": [
+   "scripts/teams/**",
+   "data/ai.json",
+   "data/pads.json",
+   "gen/mod_teams.gd",
+   "tests/bot_teams.gd",
+   "tests/bot_hand_newcomer.gd"
+  ],
+  "serves": [
+   "whirl_turnaround",
+   "spin_bat_goal"
+  ],
+  "registers": {
+   "capabilities": [
+    "ai",
+    "audio",
+    "vfx",
+    "style"
+   ],
+   "assets": [
+    "gen/mod_teams.gd"
+   ],
+   "tests": [
+    "tests/bot_teams.gd",
+    "tests/bot_hand_newcomer.gd"
+   ]
+  },
+  "contract": "Turns the core into 3 v 3 with no goalies. Player decisions: ball is NEVER held, no spin bat or FEED option, rivals are one mint team in identical karts with no names or special habits. Do not edit core files.\nHOOK: gen/mod_teams.gd static generate(ctx) does ctx.root.set_meta(\"kk_mod_teams\",\"scripts/teams/teams.gd\"); also static build_pad(big: bool)->Node3D (flat disc / brass lamp post under 1 m, TLStyle.flat_material). teams.gd: mod_setup(ctx, game), mod_tick(frame), mod_state().\nSETUP: game.add_kart(\"red_2\",\"red\",1), (\"red_3\",\"red\",2), (\"mint_2\",\"mint\",1), (\"mint_3\",\"mint\",2); set kart.brain on all five bots (replaces mint_1's brain_core; the core still drives mint_1 during game.lesson_active()). brain.think(kart, game) -> {throttle: -1..1, steer: -1..1, boost, bump, whirl}; bump/whirl true on the press frame; the core adds the 24 f tell to every bot bump, ram and whirl. While game.far_loop_active() the four other bots drive loops in the far half (z<-12) and never approach the ball.\nAI (copy the structure of engine/packs/hockey/scripts/ai/carrier.gd and roles.gd; weights in data/ai.json): decide every frame, no reaction delay. Roles &\"attacker\",&\"support\",&\"last\" re-sorted by time to ball, 0.3 s hysteresis; commitment bonus 0.15. Options &\"shoot\" = 1.6*shot_chance - 0.3*pressure (veto under 0.08); &\"knock\" (to a mate) = 1.2*lane_safety*openness*(0.5+gain) (veto lane under 0.35); &\"push\" = 0.9*space*(1-pressure) + 0.15; defence &\"pressure\",&\"block\",&\"guard\". Never aim at the own goal. TLSteer.pursue, arrive, separate 6 m unless contesting (keeps scrum_share <= 0.3). Bump the ball to shoot or knock; bump or ram opponents on flank or rear; read a closing attacker and whirl when it is within 9 m (the 24 f tell plus 4 f wind-up must finish before contact). No bot stands still over 60 f.\nMATES: red_2 attacks and drives the goal, red_3 covers; both shoot freely, give way when p1 is about to touch the ball (stay 4 m off p1's nose), and flash TailLamps when open (lane safety*openness over 0.6).\nTIERS read game.tier 0 rookie,1 pro,2 allstar: aim_error_deg 6/3.5/1.5; sweet_chance 0.20/0.50/0.75; whirl_read 0.25/0.50/0.70; allstar also feints (starts a tell, drives off), knocks and blocks lanes more. Mates use pro. Equal speeds, accel and boost on every tier. All randomness ctx.rng.\nPADS data/pads.json: 10 small at x +-11, z -24,-12,0,12,24: give 12, return 4 s; 4 big at (+-18, +-30): give 100, return 10 s, 7 s once either side has 2 goals (match point). Pickup by distance 1.5 m in the plane, game.add_boost(kart, v), capped 100; an empty pad visibly sinks or dims; all return on countdown_start. Sound on pickup. Low bots detour to pads when it costs under 1 s. Append event {type:\"pad\", kart, amount, big} to game.events.\nmod_state(): {roles:{id:role}, option:{id:option}, pads:[{x,z,big,ready}]}.\nTUNE: keep side possession median 4-10 s.\nTESTS: tests/bot_teams.gd (taps skip_lesson at frame 1, plays p1 with a perfect TLHand to the end): ok needs 6 karts, no bot idle over 60 f, every bot tell >= 24 f, at least one shot by each side, a red mate touch, 3 pad pickups, all measured; reports metrics possession_median_f, scrum_share, overlap_share, idle_max_f and moments mate_shot, mint_tell, pad_pickup, whirl_block, goal (first ones within 600 f). tests/bot_hand_newcomer.gd per card.team_possession: a newcomer TLHand plays tier 0; reports result and hand.stats(). bot_hand_perfect (core's) must still pass: player check on tier 0.",
+  "acceptance": [
+   {
+    "level": "V1",
+    "verb": "lint",
+    "args": []
+   },
+   {
+    "level": "V2",
+    "verb": "smoke",
+    "args": []
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_teams.gd"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_hand_perfect.gd"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_hand_newcomer.gd"
+    ]
+   },
+   {
+    "level": "V3",
+    "verb": "invariants",
+    "args": []
+   }
+  ]
+ },
+ {
+  "id": "show",
+  "title": "TV scoreboard, drama, end card, nights",
+  "milestone": "greybox",
+  "deps": [
+   "teams"
+  ],
+  "scope": [
+   "scripts/show/**",
+   "data/show.json",
+   "gen/mod_show.gd",
+   "tests/bot_show.gd"
+  ],
+  "serves": [
+   "sunset_ram"
+  ],
+  "registers": {
+   "capabilities": [
+    "ui",
+    "audio",
+    "vfx",
+    "camera",
+    "rules"
+   ],
+   "assets": [
+    "gen/mod_show.gd"
+   ],
+   "tests": [
+    "tests/bot_show.gd"
+   ]
+  },
+  "contract": "The match as a TV show: screen, sound and stakes. Moves no kart or ball. No spin bat, no carrying, no named rivals.\nHOOK: gen/mod_show.gd static generate(ctx) does ctx.root.set_meta(\"kk_mod_show\",\"scripts/show/show.gd\"). show.gd: mod_setup(ctx, game), mod_tick(frame), mod_state(), mod_save(), mod_load(d). Reads game.events {type: contact, ball_touch, whiff, tell, possession{team,cause,from}, goal{team,scorer,own}, countdown_start, kickoff, match_over{winner}, pad}, game.phase, game.golden, game.rules, game.karts, game.player, game.tier, game.match_index. Writes only game.core_scoreboard=false, game.core_endcard=false, game.tier. Remove core labels score_red, clock, score_mint, banner with game.hud.remove_widget; leave hint and boost.\nBOARD (the player's note: 'a big score board at the top, red score, clock, mint score, like a TV game'): TLHud.add_layer(&\"tv\"), top centre about 760 x 120 units: red plate with large score, centre plate with 3:00 counting down (from game's time_left_s: 180 - rules.seconds_played()), mint plate with large score; pennant name of the night (ROOKIE, PRO, ALL-STAR) under it; 'MATCH POINT' and 'GOLDEN GOAL' strips. Countdown 3, 2, 1 large with beeps; GOAL banner during goal_hold with scorer (YOU, RED, MINT, own goal) and 'SPACE skips'.\nWHY YOU LOST IT: on a possession event that takes the ball from p1's side, one line under the board for 90 f naming the cause: bumped 'Mint bumped it away', spun 'You were spun out', whirled 'Mint whirled it off you', rammed 'Mint rammed you', outraced 'Mint got there first'. Counts are kept for p1.\nCHARGERS: edge arrow on the tv layer for any mint kart in state tell or ram that is off screen (lay.project).\nINTENSITY (data/show.json): calm countdown, kickoff peak (whistle, cheer), loose scramble, quiet breath for the goal hold; match point: a pulse beat (TLAudio.play beep) every 30 f, quickening to 20 f in golden goal; golden goal: horn, cheer, a brief rose screen_fade of at most 0.15, repeated bursts of cheer. Never add hit-stop or extra shake (core owns feel). A sweet bump during golden goal records moment sunset_ram.\nEND CARD: winner, final goals, goals by you, your spin-outs, biggest loss cause with its count and answer, e.g. 'Mint whirled you 5 times: wait out the whirl' (answers per cause in data/show.json), fastest win in seconds, 'R rematch'. Visible within 60 f of match_over; R (core) restarts within 2 s; card clears on countdown_start. A red win raises game.tier by 1 (max 2) before the next match and records fastest win; a loss keeps the tier. mod_save returns {tier, fastest_s}; mod_load restores them.\nmod_state(): {board:{red,mint,time_text,strip}, card:{shown,winner,spinouts,cause,cause_count,text}, night, fastest_s, callout}.\ntests/bot_show.gd: perfect TLHand plays p1 (drive at the ball from the far side of the mint goal, bump) through one match, reads state show, presses restart; ok needs the board text matching rules scores on every sampled frame, a callout after a real loss, the end card with winner and cause, the next countdown within 120 f of restart, tier raised if red won. Reports moments countdown, goal, callout, end_card, sunset_ram.",
+  "acceptance": [
+   {
+    "level": "V1",
+    "verb": "lint",
+    "args": []
+   },
+   {
+    "level": "V2",
+    "verb": "smoke",
+    "args": []
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_show.gd"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_hand_perfect.gd"
+    ]
+   },
+   {
+    "level": "V3",
+    "verb": "invariants",
+    "args": []
+   }
+  ]
+ },
+ {
+  "id": "look",
+  "title": "Sunset pier pavilion and painted fairground tubs",
+  "milestone": "art_pass",
+  "deps": [
+   "teams"
+  ],
+  "scope": [
+   "scripts/look/**",
+   "data/pier.json",
+   "data/look.json",
+   "gen/mod_look.gd",
+   "gen/pier/**"
+  ],
+  "serves": [
+   "sunset_ram",
+   "spin_bat_goal"
+  ],
+  "registers": {
+   "capabilities": [
+    "kit",
+    "style",
+    "vfx",
+    "camera"
+   ],
+   "assets": [
+    "gen/mod_look.gd"
+   ]
+  },
+  "contract": "Visual only: no collision that touches play, no state, speed or rule change. All shown in camera \"play\" (steady, behind and above p1, looking at the far goal; do not change it).\nHOOK: gen/mod_look.gd static generate(ctx) does ctx.root.set_meta(\"kk_mod_look\",\"scripts/look/look.gd\"). look.gd: mod_setup(ctx, game) after all karts exist (loads after teams), mod_tick(frame), mod_state() returns {sky_step, lamps_on, lanterns_on}. Geometry lives in gen/pier/*.gd static builders, using kit parts first and TLStyle.flat_material; no own materials, lights, sky or environment.\nKARTS (the player's note, follow it): 'a round fairground tub on a fat black rubber ring, a kid driver in a striped crash helmet, a little pennant on a pole; my team red and cream stripes, theirs mint green'. Each game.karts[i].visual has nodes Ring, Tub, Spring, Driver(Head, ArmL, ArmR), Pole, Pennant, TailLampL, TailLampR, each with meshes in a child \"Flat\". Hide \"Flat\" and add a new child under the same node, so the core's poses keep driving them; never move or rename those nodes. Round glossy tub with red/cream stripes (#c8342c/#f2e6c8) or mint (#8fd9b6) stripes, same shape for both; visible spring nose; kid bust with striped helmet and gloved arms; pole top at 3 m, little pennant clearly above the 2.4 m ball; tail lamps visibly glow when boost at kickoff is 66. Keep SelfRing (pine_light) clear.\nBALL: dress game.ball.visual: huge stitched leather panels, hot-coloured seam rim, ground shadow kept; the stitching rolls with motion; squash by the core must still show.\nPIER (data/pier.json via TLKit.build_layout from look.gd, plus gen/pier): plank deck 72 x 44 m with centre line and circle, 1 m painted boards following the rounded 6 m corner outline exactly, goals 14 x 4 m with nets and team bunting, 4 brass lamps at (+-18,+-30) floor corners, outside the boards: pier edge, railings, sea all round, roof arch ribs (arch_rib), light masts (light_mast), flags, bunting, a few stalls and stands. Arches, masts, flags and anything taller than the boards stand at least 10 m beyond the boards (goals excepted), so the camera never meets them; no pillar on the play surface; nothing hides ball, drivers or pennants.\nSUNSET (the player keeps 'Beat The Sunset'): a far backdrop of sea horizon and sky bands whose colour steps gold -> orange -> rose with rules.seconds_played() at 0, 60, 120 s; the 4 lamps and mast lamps switch to a glowing colour at 90 s; when game.golden, the sky goes dusk and deck-edge lanterns light. Resets on a countdown_start of a new match (game.match_index changes). Step times and colours in data/look.json. Global inked toon style, golden-to-rose mood. No technical markers at impacts.\nBudget: at most 600 physics bodies and 5,000 nodes under the pack; p99 tick under 8 ms: build once, merge static scenery, update only on step changes. The view \"play\" at kickoff must differ clearly from the greybox: striped tubs, planks, boards, sea and sunset.",
+  "acceptance": [
+   {
+    "level": "V1",
+    "verb": "lint",
+    "args": []
+   },
+   {
+    "level": "V2",
+    "verb": "smoke",
+    "args": []
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_hand_perfect.gd"
+    ]
+   },
+   {
+    "level": "V3",
+    "verb": "invariants",
+    "args": []
+   }
+  ]
+ }
+]

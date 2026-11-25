@@ -1,0 +1,265 @@
+{
+ "schema": "tl.verify/1",
+ "verb": "bot",
+ "ok": true,
+ "seed": 1,
+ "bot": {
+  "test": "tests/bot_tofu.gd",
+  "done": true,
+  "frames": 68087,
+  "result": {
+   "ok": true,
+   "summary": "8 matches; {\"close_rounds\":3,\"feedback_f\":1,\"idle_max_f\":27,\"lead_change_share\":0.5,\"overlap_share\":0.0000334286048571763,\"possession_median_f\":30,\"pressure_waves\":9,\"raw\":{\"contacts\":{\"flank\":29,\"jolt\":16,\"mate\":284,\"nose\":37,\"ram_flank\":7,\"ram_headon\":4,\"ram_rear\":3,\"rear\":16,\"touch\":597,\"whirl_block\":7},\"live_f\":59829,\"matches\":[{\"changed\":true,\"mint\":2,\"red\":3},{\"changed\":false,\"mint\":1,\"red\":2},{\"changed\":true,\"mint\":3,\"red\":1},{\"changed\":false,\"mint\":1,\"red\":3},{\"changed\":false,\"mint\":3,\"red\":0},{\"changed\":false,\"mint\":1,\"red\":3},{\"changed\":true,\"mint\":3,\"red\":1},{\"changed\":true,\"mint\":3,\"red\":2}],\"shot_speed\":{\"angled\":23.2393009879372,\"late\":14.0000000866977,\"sweet\":12.3826329491355},\"shots\":{\"angled\":11,\"late\":11,\"sweet\":11},\"spells\":681,\"verbs\":{\"bump\":131,\"ram\":48,\"whirl\":133}},\"scrum_share\":0.00810643667786525,\"skill_spread\":0.467168442133309,\"skill_variants\":3,\"tell_min_f\":24,\"tells\":3,\"verbs_used\":3}",
+   "hand": "perfect",
+   "metrics": {
+    "feedback_f": 1,
+    "skill_spread": 0.4672,
+    "skill_variants": 3,
+    "idle_max_f": 27,
+    "tell_min_f": 24,
+    "tells": 3,
+    "pressure_waves": 9,
+    "lead_change_share": 0.5,
+    "close_rounds": 3,
+    "verbs_used": 3,
+    "possession_median_f": 30,
+    "scrum_share": 0.0081,
+    "overlap_share": 0,
+    "raw": {
+     "matches": [
+      {
+       "red": 3,
+       "mint": 2,
+       "changed": true
+      },
+      {
+       "red": 2,
+       "mint": 1,
+       "changed": false
+      },
+      {
+       "red": 1,
+       "mint": 3,
+       "changed": true
+      },
+      {
+       "red": 3,
+       "mint": 1,
+       "changed": false
+      },
+      {
+       "red": 0,
+       "mint": 3,
+       "changed": false
+      },
+      {
+       "red": 3,
+       "mint": 1,
+       "changed": false
+      },
+      {
+       "red": 1,
+       "mint": 3,
+       "changed": true
+      },
+      {
+       "red": 2,
+       "mint": 3,
+       "changed": true
+      }
+     ],
+     "verbs": {
+      "bump": 131,
+      "ram": 48,
+      "whirl": 133
+     },
+     "contacts": {
+      "flank": 29,
+      "touch": 597,
+      "mate": 284,
+      "jolt": 16,
+      "rear": 16,
+      "nose": 37,
+      "whirl_block": 7,
+      "ram_headon": 4,
+      "ram_rear": 3,
+      "ram_flank": 7
+     },
+     "spells": 681,
+     "live_f": 59829,
+     "shots": {
+      "sweet": 11,
+      "late": 11,
+      "angled": 11
+     },
+     "shot_speed": {
+      "sweet": 12.3826,
+      "late": 14,
+      "angled": 23.2393
+     }
+    }
+   },
+   "moments": {
+    "flank": [
+     250,
+     609,
+     3302,
+     7755,
+     9947,
+     13060,
+     13282,
+     13484,
+     13511,
+     16560,
+     17227,
+     19745,
+     26420,
+     26760,
+     27431,
+     27929,
+     37348,
+     40441,
+     42100,
+     46931,
+     54438,
+     54852,
+     57959,
+     59145,
+     60995,
+     62948,
+     63194,
+     64997,
+     66060
+    ],
+    "poked": [
+     250,
+     609,
+     7755,
+     9947,
+     13060,
+     13282,
+     16247,
+     17227,
+     19745,
+     26420,
+     26760,
+     34919,
+     37348,
+     40441,
+     40809,
+     42100,
+     44310,
+     46931,
+     51367,
+     53499,
+     54438,
+     54852,
+     57959,
+     59145,
+     60995,
+     62948,
+     63194,
+     64997,
+     66060
+    ],
+    "sweet": [
+     1998,
+     4695,
+     4877,
+     4907,
+     7617,
+     16521,
+     18414,
+     24834,
+     25156,
+     27238,
+     35898,
+     40059,
+     41731,
+     41759,
+     46037,
+     47678,
+     49692,
+     50766,
+     57297,
+     60545,
+     67731
+    ],
+    "goal": [
+     4333,
+     6640,
+     7269,
+     8358,
+     13648,
+     15332,
+     15887,
+     24476,
+     28711,
+     29357,
+     30521,
+     31656,
+     33266,
+     33753,
+     35540,
+     38358,
+     39697,
+     42484,
+     44683,
+     45213,
+     45709,
+     47320,
+     49820,
+     50417,
+     51007,
+     53139,
+     55098,
+     55763,
+     56280,
+     56939,
+     59847,
+     68086
+    ],
+    "rear": [
+     5839,
+     9664,
+     11938,
+     19616,
+     20678,
+     23730,
+     36389,
+     36457,
+     36509,
+     43858,
+     46509,
+     48855,
+     52561,
+     58482,
+     66632,
+     66684
+    ],
+    "whirl_block": [
+     8286,
+     20965,
+     25731,
+     27901,
+     34433,
+     34678,
+     49666
+    ],
+    "ram_flank": [
+     16247,
+     18841,
+     34919,
+     40809,
+     44310,
+     51367,
+     53499
+    ],
+    "sunset_ram": [
+     67731
+    ]
+   },
+   "frames": 68086
+  }
+ }
+}

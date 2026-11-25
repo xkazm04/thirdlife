@@ -28,7 +28,8 @@ import { templateOf } from "./templates.js";
 import { coreLook, jobCore } from "./coregate.js";
 import { BODY, foreignWords, gameHasVerb, gameWords } from "./gamewords.js";
 import { sayLookNotPlay } from "./playsame.js";
-import { cameraNotesMissed } from "./camnote.js"; // H1e: judged by the game's own design
+import { cameraNotesMissed } from "./camnote.js";
+import { withLifts } from "./boundlift.js"; // H1e: judged by the game's own design
 import { HOUSE_CONTACTS, numberLeaves } from "./revisepair.js"; // E3 of 24 Nov: the measured check of a game on a core
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
@@ -227,7 +228,7 @@ export function tofuLook(h: GateHost, m: Milestone, film?: FilmCheck): (TofuResu
   const t = tofuOf(h.s.plan);
   if (t === undefined || h.s.plan.find((p) => p.id === t.package)?.milestone !== m) return undefined;
   const read = readTofuMetrics(h.dir(), h.events, t.test);
-  const res = judgeTofu(read.metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief)), t.test, read.hand, read.from, film);
+  const res = judgeTofu(read.metrics, withLifts(h.s, h.events, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief))).rows, t.test, read.hand, read.from, film); // H1h: lifted bounds are not judged
   const file = reportPath(h, `tofu-${m}`);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.tofu/1", milestone: m, test: t.test, package: t.package, ...res, ...(film !== undefined && film.measured + film.unmeasured.length > 0 ? { film: filmReport(film) } : {}) }, null, 1) + "\n");
@@ -497,7 +498,7 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   if (filmed !== undefined) notes.push(filmed.line);
   const tofu = tofuLook(h, m, filmed);
   const t = tofuOf(h.s.plan);
-  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief)), t.test, r.hand, r.from, filmed); })() : undefined);
+  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, withLifts(h.s, h.events, tofuMetricsFor(template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief))).rows, t.test, r.hand, r.from, filmed); })() : undefined);
   const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template, undefined, courtOf(h.s.brief))) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
   const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes, [...new Set(shots.flatMap((x) => (x.bot !== undefined ? botMoments(h.dir(), h.events, x.bot).map((mm) => mm.kind) : [])))], film.hud === true) : [];

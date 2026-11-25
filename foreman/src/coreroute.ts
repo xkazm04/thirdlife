@@ -452,7 +452,7 @@ export function figuresOf(line: RinkCheckLine | undefined): Record<string, numbe
     if (typeof p["wins"] === "number" && typeof p["matches"] === "number") out[`${lv}_wins_of_${p["matches"]}`] = p["wins"];
     if (lv !== "pro") continue;
     if (typeof p["goals_for"] === "number" && typeof p["goals_against"] === "number") out["pro_goals_a_match"] = Math.round((p["goals_for"] + p["goals_against"]) * 10) / 10;
-    for (const k of ["minutes", "carry_s", "loose_share", "shots", "passes_completed", "speed_mean", "changes_min", "human_touches_min", "knockdowns"]) if (typeof p[k] === "number") out[`pro_${k}`] = p[k] as number;
+    for (const k of ["minutes", "play_minutes", "carry_s", "loose_share", "shots", "passes_completed", "speed_mean", "changes_min", "human_touches_min", "knockdowns"]) if (typeof p[k] === "number") out[`pro_${k}`] = p[k] as number;
   }
   return out;
 }
