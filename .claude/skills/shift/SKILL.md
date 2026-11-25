@@ -273,3 +273,4 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
 - 2026-11-25: Godot makes .uid files on import; a tree that imported before landing hides a missing tracked .uid
   (lint_base.gd) that the fast tier then fails on in the main checkout. Run the fast tier in the main checkout after
   the merge, before the slow list.
+- 2026-11-25 (day): another session switched the shared main checkout to its own branch mid-shift; two Director commits landed on that branch unseen. Land from a dedicated worktree on main (`.claude/worktrees/<shift>-main`), never in the shared checkout, and check `git branch --show-current` before every commit.
