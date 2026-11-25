@@ -3,7 +3,8 @@
 //   1. "add rocket skates ..."   the owner question answers "new"; the Planner adds the package `rocket` with a wire to
 //                                `core`; rocket is built, then core is re-opened to call it (grow.ts);
 //   2. "... rallies ... smaller court"   the owner question names `court` (the fixture's own step); court round 2.
-//   node dist/testing/grow-steps.js <job dir>        a fresh copy of the phases fixture there, with these steps first
+//   node dist/testing/grow-steps.js <job dir> [--pauses]   a fresh copy of the phases fixture there, with these steps
+//                                                          first (--pauses: a builder question and a quality hold)
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -70,6 +71,24 @@ export function iterateJob(dest: string): void {
   fs.writeFileSync(file, JSON.stringify({ ...base, steps: [...growSteps(base), ...base.steps] }, null, 1));
 }
 
+/**
+ * E4b: the phases fixture with the two pauses a person must answer in Create: the rival's builder asks a question
+ * before it builds (answered: it builds), and the critic finds every look weak (after the two revise rounds the job
+ * holds for the person's quality answer).
+ */
+export const QUESTION_TEXT = "Should Rival Rex lunge at every ball, or should he wait at the centre and cut the angle?";
+export function pausesJob(dest: string): void {
+  copyFixture(dest, true);
+  const file = path.join(dest, "fake-builder.json");
+  const base = JSON.parse(fs.readFileSync(file, "utf8")) as FakeScript;
+  const ai1 = base.steps.find((s) => s.match?.package === "paddle_ai" && s.match.round === 1);
+  const ai2 = base.steps.find((s) => s.match?.package === "paddle_ai" && s.match.round === undefined);
+  const answered: FakeStep = { match: { role: "builder", package: "paddle_ai", promptIncludes: "Answer to your question:" }, delayMs: 60, write: { ...(ai1?.write ?? {}), ...(ai2?.write ?? {}) }, text: "Done: Rex waits at the centre and cuts the angle, as you said." };
+  const asks: FakeStep = { match: { role: "builder", package: "paddle_ai" }, delayMs: 60, text: `I have written nothing yet.\nQUESTION: ${QUESTION_TEXT}` };
+  const weak: FakeStep = { match: { role: "critic" }, json: { ok: false, scores: { silhouette: 0.6, readability: 0.4, style_consistency: 0.6, shows_play: 0.5, fun_promise: 0.3 }, notes: ["the court is a grey slab with nothing to read", "the ball is hard to find against the floor"] }, tokensIn: 900, tokensOut: 80 };
+  fs.writeFileSync(file, JSON.stringify({ ...base, steps: [answered, asks, weak, ...base.steps] }, null, 1));
+}
+
 const invoked = process.argv[1] !== undefined && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href;
 if (invoked) {
   const dest = process.argv[2];
@@ -77,6 +96,7 @@ if (invoked) {
     process.stderr.write("usage: node dist/testing/grow-steps.js <job dir>\n");
     process.exit(2);
   }
-  iterateJob(path.resolve(dest));
+  if (process.argv[3] === "--pauses") pausesJob(path.resolve(dest));
+  else iterateJob(path.resolve(dest));
   process.stdout.write(`${path.resolve(dest).replace(/\\/g, "/")}\n`);
 }

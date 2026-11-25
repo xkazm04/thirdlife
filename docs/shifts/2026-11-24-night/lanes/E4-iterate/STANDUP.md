@@ -14,3 +14,10 @@
   PASS; npm test 327 (320 pass, 7 env skips, 0 fail; final code incl. hold growth); ui.sh selftest --repo=<main> 212
   passed, 0 failed (206 + 6 new); selftest.sh create. 10/10. Not run: export.sh build/check (no fresh exe).
 - landable E4
+- E4b 04:20: Create answers a builder's question (card, options, answer box -> foreman answer + resume) and a quality
+  hold (reasons + still; Fix it = quality retry, It's fine = quality accept, Change it = accept + foreman change);
+  a data-only change on a core game: 19 -> 7 runner calls (fastchange.ts; real estimate ~2.9 min vs E5's 14.5).
+  Gates: npm test 352 (345 pass, 7 env skips, 0 fail); tl check --tier fast PASS 5/5; ui.sh selftest --repo=<main>
+  215 passed, 0 failed; selftest.sh create. 11/11 (new 782 create.pause.path 9/9). Stills: lanes/E4-iterate/stills-e4b/.
+  Report: REPORT-E4b.txt.
+- landable E4b

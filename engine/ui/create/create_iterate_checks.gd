@@ -13,7 +13,7 @@ const Model = preload("res://ui/create/create_model.gd")
 const CreateScene = preload("res://ui/create/create.tscn")
 const Dungeons = preload("res://kernel/dungeon/dungeons.gd")
 
-const CHECKS: int = 6
+const CHECKS: int = 8
 const TEXT: String = "make the penguins faster"
 
 
@@ -150,4 +150,82 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	check.call("create.iterate.list: the person's list refuses a relative pack and an unknown key (and keeps the good row), reads a missing file as empty, and Add refuses a folder without pack.json",
 		not bool(rb["ok"]) and (rb["dungeons"] as Array).size() == 1 and (rb["errors"] as Array).size() == 2 and bool(none["ok"]) and (none["dungeons"] as Array).is_empty() and no_pack.begins_with("no pack.json"),
 		"%s; missing %s; add '%s'" % [str(rb), str(none), no_pack])
+	await _pauses(tree, check, tmp, fake)
 	return true
+
+
+## E4b (25 Nov): the two pauses E5 was stuck at. A builder's question (c5-building + question + paused) and a quality
+## hold (c13-quality-hold, with a real picture where its milestone's capture is): the card, its words, its buttons, and
+## the exact command lines (foreman answer + resume; foreman quality accept|retry + resume; quality accept + change).
+static func _pauses(tree: SceneTree, check: Callable, tmp: String, fake: Array) -> void:
+	var base5: String = ProjectSettings.globalize_path("res://ui/fixtures/create/c5-building")
+	var qtext: String = "Should the orca chase the nearest penguin, or should it circle the iceberg first?"
+	var asked: String = tmp.path_join("e4b-question")
+	DirAccess.make_dir_recursive_absolute(asked)
+	var lines: PackedStringArray = FileAccess.get_file_as_string(base5.path_join("job.jsonl")).strip_edges().split("\n")
+	var last: Dictionary = JSON.parse_string(lines[lines.size() - 1])
+	for e: Dictionary in [{"type": "question", "package": "penguin_moves", "text": qtext}, {"type": "job_state", "state": "paused", "reason": "waiting for answers: penguin_moves"}]:
+		e.merge({"v": 1, "seq": int(last["seq"]) + lines.size(), "ts": "2026-11-21T19:20:00.000Z", "job": str(last["job"])})
+		lines.append(JSON.stringify(e))
+	var f: FileAccess = FileAccess.open(asked.path_join("job.jsonl"), FileAccess.WRITE)
+	f.store_string("\n".join(lines) + "\n")
+	f.close()
+	var held: String = tmp.path_join("e4b-quality")
+	DirAccess.make_dir_recursive_absolute(held.path_join("captures"))
+	DirAccess.copy_absolute(ProjectSettings.globalize_path("res://ui/fixtures/create/c13-quality-hold/job.jsonl"), held.path_join("job.jsonl"))
+	var img: Image = Image.create(384, 216, false, Image.FORMAT_RGB8)
+	img.fill(Color("#6fa8dc"))
+	img.save_png(held.path_join("captures/blockout-hero-f150.png"))
+	var opts: PackedStringArray = Model.question_options(qtext)
+	var listed: PackedStringArray = Model.question_options("Which floor?\n- ice\n- sand\n- lava")
+	var yes_no: PackedStringArray = Model.question_options("May core read data/feel.json?")
+
+	var page: Control = CreateScene.instantiate()
+	page.call("setup", {"jobs": tmp, "dry": true, "now": 1795289400.0, "flags": {"run": fake, "resume": fake, "change": fake}})
+	tree.root.add_child(page)
+	page.call("open")
+	await tree.process_frame
+	var has: Callable = func(name: String) -> bool:
+		var n: Node = page.find_child(name, true, false)
+		return n != null and (n as CanvasItem).is_visible_in_tree()
+	var press: Callable = func(name: String) -> void:
+		(page.find_child(name, true, false) as BaseButton).pressed.emit()
+	var door: RefCounted = page.get("door")
+
+	page.call("show_job", asked)
+	var card_ok: bool = has.call("QuestionCard") and (page.find_child("Question", true, false) as Label).text == qtext and has.call("Option0") and has.call("Option1") and not has.call("Continue")
+	press.call("Option1")
+	var picked: String = (page.find_child("AnswerBox", true, false) as LineEdit).text
+	var base: int = (door.get("dry_steps") as Array).size()
+	press.call("SendAnswer")
+	var sent: Array = (door.get("dry_steps") as Array).slice(base)
+	check.call("create.pause.question: a builder's question shows its words, its options (“, or ” split; list lines; yes/no) and an answer box; Answer sends foreman answer <job> <package> \"<words>\" then resume",
+		card_ok and opts.size() == 2 and str(opts[1]).begins_with("Should it circle") and listed == PackedStringArray(["ice", "sand", "lava"]) and yes_no == PackedStringArray(["Yes", "No"])
+		and picked == opts[1] and str(sent) == str([[["answer", asked, "penguin_moves", picked], ["resume", asked] + fake]]) and has.call("Sent"),
+		"opts %s, listed %s, yes/no %s, picked '%s', sent %s" % [str(opts), str(listed), str(yes_no), picked, str(sent)])
+
+	page.call("show_job", held)
+	var v: Dictionary = Model.quality_view(page.get("job"))
+	var qcard: bool = has.call("QualityCard") and has.call("Still") and has.call("FixIt") and has.call("ItsFine") and has.call("ChangeIt") and not has.call("Continue")
+	var reason0: String = (page.find_child("Reason0", true, false) as Label).text if has.call("Reason0") else ""
+	var runs: Array = []
+	for b: String in ["FixIt", "ItsFine"]:
+		page.call("show_job", held)
+		base = (door.get("dry_steps") as Array).size()
+		press.call(b)
+		runs.append((door.get("dry_steps") as Array).slice(base))
+	page.call("show_job", held)
+	press.call("ChangeIt")
+	var box: LineEdit = page.find_child("QualityChange", true, false)
+	box.text = "make the court blue"
+	box.text_changed.emit(box.text)
+	base = (door.get("dry_steps") as Array).size()
+	press.call("SendQualityChange")
+	runs.append((door.get("dry_steps") as Array).slice(base))
+	var want: Array = [[[["quality", held, "retry", "--note", "the person asks for one more try"], ["resume", held] + fake]],
+		[[["quality", held, "accept", "--note", "the person plays it as it is"], ["resume", held] + fake]],
+		[[["quality", held, "accept", "--note", "the person changes it instead: make the court blue"], ["change", held, "make the court blue"] + fake]]]
+	check.call("create.pause.quality: a quality hold shows the critic's reasons (no score rows) and the still it judged; Fix it = quality retry + resume, It's fine = quality accept + resume, Change it = accept + foreman change with the person's words",
+		qcard and reason0.contains("the court is a grey slab") and not reason0.contains("silhouette") and str(v["still"]).ends_with("blockout-hero-f150.png") and str(runs) == str(want),
+		"card %s, reason '%s', still '%s', runs %s" % [str(qcard), reason0, str(v.get("still", "")), str(runs)])
+	page.queue_free()

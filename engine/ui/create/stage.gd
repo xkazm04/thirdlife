@@ -58,6 +58,7 @@ func _ready() -> void:
 		"phases": _phases()
 		"menu": _menu()
 		"iterate": _iterate()
+		"pauses": await (load("res://ui/create/stage_pauses.gd") as GDScript).new().drive(self)   # E4b
 
 
 func _new_page() -> void:
@@ -65,7 +66,7 @@ func _new_page() -> void:
 		page.free()
 	page = Create.instantiate()
 	var stub: String = str(args.get("try-stub", ProjectSettings.globalize_path("res://seeds/seed_wall")))
-	if str(args.get("mode", "")) in ["live", "phases", "iterate"]:
+	if str(args.get("mode", "")) in ["live", "phases", "iterate", "pauses"]:
 		var f: Variant = JobModel.read_json(str(args.get("flags", "")))
 		var o: Dictionary = {"jobs": str(args.get("jobs", "")), "flags": (f as Dictionary).get("flags", {}) if f is Dictionary else {}}
 		if args.has("repo"):
