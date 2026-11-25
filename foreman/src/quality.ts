@@ -356,13 +356,19 @@ export function sendBack(h: GateHost, m: Milestone, members: string[], lastPacka
   const detail = `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: ${pair !== undefined ? `${pair} ` : ""}${v ? `${scoresText(v)}. Critic's notes: ${v.notes.join(" | ")} [${v.report}]` : clip(look.summary, 600)}.${owner} The version before this round is kept in ${snapDir(m, round)}/; after the round the critic compares both and keeps the better.`;
   const named = v?.package;
   const target = named !== undefined ? h.s.packages[named] : undefined;
-  if (named !== undefined && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
+  // E5 (25 Nov, the first real core job): the base package is a copy of the engine's base, never a builder's work. A
+  // revise round on it re-copied the same files (and failed lint, the later packages' tests missing), twice, then held
+  // the job: the critic's notes go to the milestone's built packages instead.
+  const base = (id: string): boolean => h.s.plan.find((p) => p.id === id)?.kind === "base";
+  if (named !== undefined && !base(named) && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
     h.reopen(named, `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: the critic names this package as the cause of what it sees${members.includes(named) ? "" : ` (the milestone's own package(s): ${members.join(", ")})`}`, detail);
     return;
   }
-  const why = named === undefined ? "the critic named no package" : !target ? `the critic named "${clip(named, 60)}", which is not a package of this plan` : `the critic named ${named}, which is not merged (state ${target.state})`;
-  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: `${FOREMAN_NOTE}${why}; revise round ${round} goes to the package(s) of the ${m} milestone: ${members.join(", ")}` });
-  for (const id of members) h.append({ type: "package_state", package: id, state: "queued", round: h.pkg(id).round + 1, detail: clip(detail, 1500) });
+  const why = named === undefined ? "the critic named no package" : !target ? `the critic named "${clip(named, 60)}", which is not a package of this plan` : base(named) ? `the critic named ${named}, the engine's base (copied, no builder revises it)` : `the critic named ${named}, which is not merged (state ${target.state})`;
+  const built = members.filter((id) => !base(id));
+  const to = built.length > 0 ? built : members;
+  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: `${FOREMAN_NOTE}${why}; revise round ${round} goes to the package(s) of the ${m} milestone: ${to.join(", ")}` });
+  for (const id of to) h.append({ type: "package_state", package: id, state: "queued", round: h.pkg(id).round + 1, detail: clip(detail, 1500) });
 }
 
 /** The verdict a look's summary points at (its critic report), for a revise round sent from the log (resume, retry). */

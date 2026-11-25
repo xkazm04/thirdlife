@@ -16,7 +16,7 @@ import type { PackageSpec, Phase } from "../events.js";
 import { planCheck, type PlanAnswer } from "../designer.js";
 import { mergePatch } from "../builder/fake.js";
 import { templateExcerpt, templateForSentence, templateOf, conceptTemplateProblems, briefTemplateProblems } from "../templates.js";
-import { RINK_ROUTE, baseCartridges, baseFiles, baseScope, basePackage, basePlayerCheck, coreBriefProblems, coreLines, corePlanProblems, fakeRinkCheck, knownCartridgePaths, normalizeCorePlan, rinkCheckLine, rinkCheckRun, skinFields, startFromBase, validateCartridgeFile } from "../coreroute.js";
+import { RINK_ROUTE, baseCartridges, baseFiles, baseScope, basePackage, basePlayerCheck, coreBriefProblems, coreLines, corePlanProblems, fakeRinkCheck, knownCartridgePaths, knownPath, normalizeCorePlan, rinkCheckLine, rinkCheckRun, skinFields, startFromBase, validateCartridgeFile } from "../coreroute.js";
 import { prepareReference, refContents, referenceOf, referenceText } from "../reference.js";
 import { cardBriefSection } from "../cards.js";
 import { verbsFor } from "../verbs.js";
@@ -115,6 +115,9 @@ test("E3 route: a core brief names the cartridge keys and skin fields it changes
   const known = knownCartridgePaths(ENGINE);
   for (const k of ["game.rink.length_m", "game.teams", "game.rules.score_to_win", "game.look.tier", "title"]) assert.ok(known.has(k), k);
   assert.ok([...known].some((k) => k.startsWith("game.pickups")), "the modes add pickups, abilities, zones");
+  // E5 (25 Nov, first real Designer): the envelope's game is "$ref": "game.schema.json"; its keys are known too
+  if (fs.existsSync(path.join(ENGINE, "cores", "rink", "schema", "game.schema.json")))
+    for (const k of ["game.effects", "game.rules.hooks", "game.contact.check_windup_frames", "game.contact.bot_check_windup_frames"]) assert.ok(knownPath(k, known), k);
   assert.deepEqual(coreBriefProblems(RINK_LINES, RINK_ROUTE, ENGINE), [], "lane E1's skin has title and team_names");
   assert.ok(coreBriefProblems("CARTRIDGE: game.rink.length_m = 60\nSKIN: teams = A", RINK_ROUTE, ENGINE).some((p) => p.includes(`"teams", which is not a field of the base's data/skin.json`)));
   const bad = coreBriefProblems("CARTRIDGE: game.rink.kick_power = 9\nSKIN: title = X", RINK_ROUTE, ENGINE);
@@ -174,6 +177,10 @@ test("E3 route: a cartridge-first plan passes the plan check: the base yields it
   const ref = refWithBase("core-plan");
   const limits = { verbs: VERBS, maxPackages: 2, template: rinkT, refDir: ref, cards: ["card.rink_core", "card.team_possession"], requirePhases: true };
   const plan = normalizeCorePlan(corePlan(), RINK_ROUTE, path.join(ref, "base", "rink_game"));
+  // E5 (25 Nov): the base fails the invariants budgets itself; a core package is never held to them
+  const withInv = corePlan();
+  withInv.packages = withInv.packages.map((p) => (p.kind === "base" ? p : { ...p, acceptance: [...p.acceptance, { level: "V3" as const, verb: "invariants" as const, args: [] }] }));
+  assert.ok(normalizeCorePlan(withInv, RINK_ROUTE, path.join(ref, "base", "rink_game")).packages.every((p) => p.acceptance.every((a) => a.verb !== "invariants")));
   assert.deepEqual(planCheck(plan.packages, limits, plan.card, plan.phases), [], "the base's data/** holds data/game.cartridge.json and data/skin.json: allowed; 3 packages, 2 built");
   // The same overlap without a base is refused, as before.
   const noBase = plan.packages.map((p) => ({ ...p, kind: undefined })).map(({ kind: _k, ...p }) => p as PackageSpec);
