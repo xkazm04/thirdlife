@@ -54,8 +54,9 @@ function snapshot(dir: string): string {
 }
 
 // The `foreman status` text of the fixture run to done, taken from the base (30d0526) before the display code moved.
+// H1e (25 Nov): events 57, was 56: the first promotion takes one picture (the window check).
 const STATUS_DONE = `job      paddle-court-20261110-1  "Paddle Court"  pack game.paddle_court
-state    done  (pack verified V0 to V4 and promoted under the job directory (promoted/game.paddle_court))   events 56
+state    done  (pack verified V0 to V4 and promoted under the job directory (promoted/game.paddle_court))   events 57
 brief    approved by auto   plan 3 packages (revision 1)
 card     no card (the Planner named none)
 billing  fake none: fake adapter: no model is called and nothing is billed

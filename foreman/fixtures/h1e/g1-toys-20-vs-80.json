@@ -1,0 +1,16 @@
+{
+ "from": "d25-arsenal docs/shifts/2026-11-25-day/lanes/G1-arsenal/PROOF-G1.md section 14 (v0.1.7's cartridge, pro, thirdjam's regular playtester)",
+ "toys": [
+  { "toy": "the F bubble", "s20": { "with": 11, "without": 10 }, "s80": { "with": 54, "without": 43, "only_with": 22, "only_without": 11 } },
+  { "toy": "the pickups (speed, precision)", "s20": { "with": 11, "without": 14 }, "s80": { "with": 54, "without": 59 } },
+  { "toy": "the four boost pads", "s20": { "with": 11, "without": 13 }, "s80": { "with": 54, "without": 53 } },
+  { "toy": "the two slush pools", "s20": { "with": 11, "without": 13 }, "s80": { "with": 54, "without": 46 } }
+ ],
+ "versions80": [
+  { "version": "v0.1.0 (one bubble)", "with": 44, "without": 47, "only_with": 5, "only_without": 8 },
+  { "version": "v0.1.1 (smaller nets)", "with": 61, "without": 57, "only_with": 7, "only_without": 3 },
+  { "version": "v0.1.2 (rivals hit, three bubbles)", "with": 47, "without": 43, "only_with": 14, "only_without": 10 },
+  { "version": "v0.1.4 to v0.1.7 (the bubble returns)", "with": 54, "without": 43, "only_with": 22, "only_without": 11 },
+  { "version": "v0.1.4 at all_star", "with": 73, "without": 65, "only_with": 11, "only_without": 3 }
+ ]
+}

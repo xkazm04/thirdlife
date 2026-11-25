@@ -161,7 +161,8 @@ test("H1d 6 (G1 change 1: \"so a match lasts about three minutes\" became 2.1 mi
 });
 
 test("H1d (the Director's H1c decisions): a toy that costs the player is said in words on the card, not as a check warning; the base's README offers engine code as a cost the person decides, never an order", () => {
-  assert.deepEqual(toyLines([{ toy: "the slow-ice zones (2)", measured: true, matches: 20, wins_with: 8, wins_without: 13, points: -25, goal_diff: -1.2, changed: 20 }]), ["The slow-ice zones: costs you (8 of 20 wins with, 13 without)"]);
+  // H1e: a cost is said only when the paired matches show it (here 0 won only with it, 5 only without it), with the counts
+  assert.deepEqual(toyLines([{ toy: "the slow-ice zones (2)", measured: true, matches: 20, wins_with: 8, wins_without: 13, points: -25, goal_diff: -1.2, changed: 20, won_only_with: 0, won_only_without: 5 }]), ["The slow-ice zones: costs you (won only with it 0, only without it 5, of 20)"]);
   const readme = fs.readFileSync(path.join(REPO_ROOT, "engine", "templates", "rink_game", "README.md"), "utf8");
   assert.ok(!/needs a core patch/.test(readme), "no order");
   assert.match(readme, /the person\s+decides whether to pay that\. Never order it: offer the nearest data-only way first/);

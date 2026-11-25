@@ -1,0 +1,150 @@
+{
+ "schema": "tl.verify/1",
+ "verb": "bot",
+ "level": "V4",
+ "pack": "game.half_court_3_v",
+ "packVersion": "0.1.0",
+ "kernelApi": "1.30",
+ "ok": true,
+ "outcome": "passed",
+ "seed": 1,
+ "frames": 54006,
+ "durationMs": 73599,
+ "checks": [
+  {
+   "id": "smoke.loads",
+   "ok": true,
+   "detail": "pack loaded"
+  },
+  {
+   "id": "smoke.no_script_errors",
+   "ok": true,
+   "detail": "0 errors in 54006 frames"
+  },
+  {
+   "id": "smoke.no_engine_errors",
+   "ok": true,
+   "detail": "0 engine errors"
+  },
+  {
+   "id": "smoke.watchdog",
+   "ok": true,
+   "detail": "no trip in 54006 frames"
+  },
+  {
+   "id": "bot.completed",
+   "ok": true,
+   "detail": "done at frame 54006"
+  },
+  {
+   "id": "bot.ok",
+   "ok": true,
+   "detail": "matches 3, { \"feedback_f\": 2, \"skill_spread\": 0.417, \"skill_variants\": 3, \"idle_max_f\": 55, \"tell_min_f\": 24, \"tells\": 124, \"pressure_waves\": 0, \"lead_change_share\": 0.67, \"close_rounds\": 2, \"verbs_used\": 5, \"possession_median_f\": 337, \"scrum_share\": 0.453, \"overlap_share\": 0.0, \"raw\": { \"verbs\": { \"shoot\": 55, \"screen\": 27, \"poke\": 44, \"swat\": 47, \"pass\": 13 }, \"matches\": 3, \"possessions\": 151, \"lead_changes\": 4 } }"
+  }
+ ],
+ "metrics": {
+  "state_hash": "cb77941b2900dbdd272faa207b0b0e0a93ef58538163e9b4758f0424e1c159e0",
+  "frame_ms_p50": 1.25,
+  "frame_ms_p99": 2.52,
+  "entities_max": 298,
+  "bodies_max": 57,
+  "tick_ms_max": 5.915
+ },
+ "errors": [],
+ "bot": {
+  "test": "tests/bot_tofu.gd",
+  "done": true,
+  "frames": 54006,
+  "result": {
+   "ok": true,
+   "summary": "matches 3, { \"feedback_f\": 2, \"skill_spread\": 0.417, \"skill_variants\": 3, \"idle_max_f\": 55, \"tell_min_f\": 24, \"tells\": 124, \"pressure_waves\": 0, \"lead_change_share\": 0.67, \"close_rounds\": 2, \"verbs_used\": 5, \"possession_median_f\": 337, \"scrum_share\": 0.453, \"overlap_share\": 0.0, \"raw\": { \"verbs\": { \"shoot\": 55, \"screen\": 27, \"poke\": 44, \"swat\": 47, \"pass\": 13 }, \"matches\": 3, \"possessions\": 151, \"lead_changes\": 4 } }",
+   "metrics": {
+    "feedback_f": 2,
+    "skill_spread": 0.417,
+    "skill_variants": 3,
+    "idle_max_f": 55,
+    "tell_min_f": 24,
+    "tells": 124,
+    "pressure_waves": 0,
+    "lead_change_share": 0.67,
+    "close_rounds": 2,
+    "verbs_used": 5,
+    "possession_median_f": 337,
+    "scrum_share": 0.453,
+    "overlap_share": 0,
+    "raw": {
+     "verbs": {
+      "shoot": 55,
+      "screen": 27,
+      "poke": 44,
+      "swat": 47,
+      "pass": 13
+     },
+     "matches": 3,
+     "possessions": 151,
+     "lead_changes": 4
+    }
+   },
+   "moments": {
+    "screen_spring": [
+     78,
+     207,
+     693,
+     3509,
+     4206
+    ],
+    "snag": [
+     96,
+     693,
+     4206,
+     4230,
+     5833
+    ],
+    "poke": [
+     162,
+     1293,
+     7834,
+     8048,
+     10804
+    ],
+    "swat": [
+     366,
+     2706,
+     4342,
+     4750,
+     6532
+    ],
+    "peak_swat": [
+     366,
+     4750,
+     8273,
+     8995,
+     9827
+    ],
+    "miss_side": [
+     5143,
+     7364,
+     7589,
+     13801,
+     15486
+    ],
+    "miss_long": [
+     9547,
+     28060
+    ],
+    "miss_rimout": [
+     12722,
+     13487,
+     16901,
+     18978,
+     29282
+    ],
+    "roll_finish": [
+     16530,
+     42000,
+     50309
+    ]
+   }
+  }
+ }
+}

@@ -203,21 +203,24 @@ function coreWith(metrics: object, round?: number): FakeStep {
   return { ...base, match: { role: "builder", package: "core", ...(round !== undefined ? { round } : {}) }, write: { ...(base.write ?? {}), "tests/bot_rally.gd": bot } };
 }
 
-test("tofu: a core whose bot misses the metrics is sent back to the root with the failed rows; fixed in round 1 it passes and the job goes on (no critic needed)", async () => {
+// H1e of 25 Nov (lane G4: the tofu bot answered ok with pressure_waves 0 and scrum_share 0.453, and the round merged):
+// this test said the root merged and was then sent back by the look ("revise round 1 of 2 (milestone blockout) TOFU STAGE
+// NOT ok", a reopened event, two tofu reports). Now the Foreman judges the bounds at the round's own acceptance
+// (tofugate.ts): round 1 is not merged, round 2 gets the rows in words, and the one look passes.
+test("tofu: a core whose bot misses the metrics fails its own round with the failed rows (the Foreman's bounds, not the bot's ok); fixed in round 2 it passes and the job goes on (no critic needed)", async () => {
   const job = tofuJob("tofu-pass");
   const { foreman, builder } = foremanFor(job, { promoteTo: "job", script: scriptWith([coreWith(badMetrics, 1), coreWith(goodMetrics)]) });
   const s = await foreman.run();
   assert.equal(s.jobState?.state, "done", JSON.stringify(s.jobState));
   const evs = readEvents(job.jobDir);
-  const reopen = ofType(evs, "reopened").find((e) => e.package === "core");
-  assert.ok(reopen, "the root was sent back");
+  assert.equal(ofType(evs, "merge").filter((e) => e.package === "core").length, 1, "only round 2 merged");
   const p2 = builder.calls.filter((c) => c.req.meta?.package === "core").at(-1)?.req.prompt ?? "";
-  assert.match(p2, /revise round 1 of 2 \(milestone blockout\)[^\n]*TOFU STAGE NOT ok \(tests\/bot_rally\.gd through the regular hand\)[^\n]*feedback_f 7 \(wants <= 3/);
+  assert.match(p2, /tests\/bot_rally\.gd answered ok, but the Foreman judges its metrics against the plan's tofu bounds and \d+ (is|are) outside them: [^\n]*feedback_f 7 \(the plan's bound: <= 3\)/);
   const ms = ofType(evs, "milestone");
-  assert.deepEqual(ms.map((m) => [m.milestone, m.round]), [["blockout", 1]]);
+  assert.deepEqual(ms.map((m) => [m.milestone, m.round]), [["blockout", undefined]], "one look, no revise round");
   assert.match(ms[0]?.summary ?? "", /tofu stage ok \(tests\/bot_rally\.gd through the regular hand\): feedback_f 2/);
   const tofuReports = fs.readdirSync(path.join(job.jobDir, "reports")).filter((f) => f.startsWith("tofu-blockout"));
-  assert.equal(tofuReports.length, 2, "one tofu report per look");
+  assert.equal(tofuReports.length, 1, "one look, and it passes");
 });
 
 test("tofu: still failing after round 2 holds the job exactly like the quality loop; status names it; nothing later starts", async () => {

@@ -25,7 +25,9 @@ import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./film
 import { revisePair, sameKind } from "./revisepair.js";
 import { killItem, methodBlock } from "./method.js";
 import { templateOf } from "./templates.js";
-import { coreLook, jobCore } from "./coregate.js"; // E3 of 24 Nov: the measured check of a game on a core
+import { coreLook, jobCore } from "./coregate.js";
+import { foreignWords, gameHasVerb, gameWords } from "./gamewords.js"; // H1e: judged by the game's own design
+import { HOUSE_CONTACTS, numberLeaves } from "./revisepair.js"; // E3 of 24 Nov: the measured check of a game on a core
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -99,7 +101,11 @@ export async function houseStrips(h: GateHost, base: HouseBaseline, template: st
   if (s !== undefined && fs.existsSync(packDir)) {
     const vr = await h.verifyLogged({ verb: "bot", args: [`--test=${s.test}`, ...s.args] }, packDir, `house-${base.pack}-drill`, { round: 1 });
     // D3 of 22 Nov: a kind this build's bots also reported is filmed first (poked for a build's poke_free), so the revise pair compares like with like.
-    const order = [...(s.moments ?? []).filter((k) => buildKinds.some((b) => sameKind(k, b))), ...(s.moments ?? []).filter((k) => !buildKinds.some((b) => sameKind(k, b)))];
+    // H1e: the house game's moments this game's design has come first (a basketball game is shown a poke, not a one-timer)
+    const words = gameWords(h.s.brief);
+    const mine = (s.moments ?? []).filter((k) => gameHasVerb(words, k));
+    const moments = [...mine, ...(s.moments ?? []).filter((k) => !mine.includes(k))];
+    const order = [...moments.filter((k) => buildKinds.some((b) => sameKind(k, b))), ...moments.filter((k) => !buildKinds.some((b) => sameKind(k, b)))];
     const cm = contactMoment(vr.report, order);
     const f = cm?.frame;
     if (f !== undefined) {
@@ -163,7 +169,7 @@ export async function judge(h: GateHost, m: Milestone, film: Film, shots: Shot[]
   if (film.captures.length + film.strips.length === 0 || h.o.critic === false) return { line: "critic not run" };
   const model = h.o.criticModel ?? h.o.model;
   const kill = killItem(h.s.brief); // N2 of 23 Nov: the design's KILL IF lines (docs/design/METHOD.md section 11)
-  const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : []), ...(house !== undefined ? [houseItem(house.pack)] : []), ...(kill !== undefined ? [kill] : [])];
+  const rubric = [...criticRubric(h.s, lastPackage), ...(film.strips.length > 0 ? feelItems() : []), ...(house !== undefined ? [houseItem(house.pack, houseForeign(h, house.pack))] : []), ...(kill !== undefined ? [kill] : [])];
   // L1b: the strips of the named clip moments first, then the stills, then the other strips.
   const clipFirst = [...film.strips.filter((x) => x.label.startsWith("CLIP MOMENT")), ...film.captures.map((c, i) => ({ capture: c, label: film.labels[i] ?? "" })), ...film.strips.filter((x) => !x.label.startsWith("CLIP MOMENT"))];
   // N4 loop round 2: the house game's strip last, labelled as the bar.
@@ -198,8 +204,10 @@ export function claimsLine(built: TofuResult | undefined, film?: FilmCheck): str
 }
 
 /** N4 loop round 2: the rubric item of a job whose template has a house game: this build against the house game. */
-export function houseItem(pack: string): RubricItem {
-  return { id: "house_game", text: `Against the house game engine/packs/${pack} (a working base of this game's template on this engine, a FLOOR and not the bar: the owner called it slop; its figures in the context above): do the frames show its exchange as clearly (wind-up, hit-stop on both, each body's own reaction, the guard and the roll in the body)? When an image is labelled HOUSE GAME, set this build's strips beside it: the same moment of the exchange, is it as readable in the bodies? Name in \`notes\` each place this build falls short of the house game, by what you see and by the SHORT figures. 1.0 at least as readable as the house game, 0.5 its core with gaps, 0 none of it. Reaching the house game is not reaching the bar: a build that copies one of the teardown's "do not copy" lines (context) is named for it.` };
+export function houseItem(pack: string, foreign: string[] = []): RubricItem {
+  // H1e (lanes G2, G4): the house game's verbs and rows this game's design does not have are never missing
+  const not = foreign.length > 0 ? ` This game's design does not have the house game's ${foreign.join(", ")}: never call them missing and never ask for them; set beside it only what the two games share (the bodies, how they take contact, the team's play).` : "";
+  return { id: "house_game", text: `Against the house game engine/packs/${pack} (a working base of this game's template on this engine, a FLOOR and not the bar: the owner called it slop; its figures in the context above): do the frames show its exchange as clearly (wind-up, hit-stop on both, each body's own reaction, the guard and the roll in the body)? When an image is labelled HOUSE GAME, set this build's strips beside it: the same moment of the exchange, is it as readable in the bodies? Name in \`notes\` each place this build falls short of the house game, by what you see and by the SHORT figures. 1.0 at least as readable as the house game, 0.5 its core with gaps, 0 none of it. Reaching the house game is not reaching the bar: a build that copies one of the teardown's "do not copy" lines (context) is named for it.${not}` };
 }
 
 /** N2 round 5: the template's quality bar for the critic: the teardown's "do not copy" lines ("" without a bar). */
@@ -510,4 +518,25 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   h.append({ type: "milestone", milestone: m, captures: keptFilm.captures, summary: clip([head, counts, verdict, loop, ...notes].join("; "), 1500), round, kept: cmp.kept, ...(keptFilm.strips.length > 0 ? { strips: keptFilm.strips } : {}) });
   if (!keptVerdict || keptVerdict.ok) return;
   if (round < QUALITY_ROUNDS) sendBack(h, m, members, lastPackage, round + 1, { captures: keptFilm.captures, strips: keptFilm.strips, verdict: keptVerdict, summary: verdict }, undefined, revisePair(h, m, round + 1, keptFilm.strips, base !== undefined ? { pack: base.pack, strips } : undefined, template?.id));
+}
+
+/**
+ * H1e: what the house game has and this game's design does not (its strip's moment kinds and the words of its contact
+ * rows), for the house_game rubric item. [] without a design or a template.
+ */
+export function houseForeign(h: Pick<GateHost, "s" | "dir">, pack: string): string[] {
+  const words = gameWords(h.s.brief);
+  const template = h.s.brief?.concept?.template?.id;
+  if (words === undefined || template === undefined) return [];
+  const kinds = (HOUSE_BOTS[template]?.strip?.moments ?? []).filter((k) => !gameHasVerb(words, k));
+  const rows: string[] = [];
+  for (const src of HOUSE_CONTACTS[template] ?? []) {
+    try {
+      const o = JSON.parse(fs.readFileSync(h.dir("ref", "packs", pack, ...src.file.split("/")), "utf8")) as Record<string, unknown>;
+      rows.push(...numberLeaves(src.keys !== undefined ? Object.fromEntries(src.keys.filter((k) => k in o).map((k) => [k, o[k]])) : o).keys());
+    } catch {
+      /* no house copy: the moments alone */
+    }
+  }
+  return [...new Set([...kinds, ...foreignWords(words, rows)])];
 }

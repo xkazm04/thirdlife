@@ -1,0 +1,315 @@
+[
+ {
+  "id": "court_exchange",
+  "title": "Greybox court, ball, verbs, rivals",
+  "milestone": "blockout",
+  "deps": [],
+  "serves": [
+   "screen_spring",
+   "peak_swat",
+   "roll_finish"
+  ],
+  "scope": [
+   "scripts/main.gd",
+   "scripts/core/**",
+   "data/tuning.json",
+   "data/venue.json",
+   "tests/bot_play.gd",
+   "tests/bot_tofu.gd",
+   "tests/support/**",
+   "README.md"
+  ],
+  "registers": {
+   "capabilities": [
+    "physics",
+    "input",
+    "ui",
+    "audio",
+    "vfx",
+    "camera",
+    "rules",
+    "ai",
+    "ball",
+    "biped",
+    "kit",
+    "style"
+   ],
+   "tests": [
+    "tests/bot_play.gd",
+    "tests/bot_tofu.gd"
+   ],
+   "cameras": [
+    "play",
+    "side"
+   ]
+  },
+  "contract": "Half-court street ball on flat shapes, 2v2 (you+Mags vs Crane+Pip), code generic to 3v3. Patterns: ref/packs/hockey (carry.gd, poke.gd, ai/, tests/metrics.gd), seed_wall. NO screen speed boost. NO camera swing. All numbers in data/tuning.json (keys court, move, turbo, ball, pickup, shoot, screen, poke, swat, pass, contact, camera, match, ai, roster, tiers, teach, comeback, curve); scripts read game.tune live, since later modules overwrite entries. Several small files; run bot_tofu as soon as a match finishes, then tune data only.\n\nTOFU CHECK: tests/bot_tofu.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, verbs_used, possession_median_f, scrum_share, overlap_share\nCounted from played frames; result {ok, summary, hand, metrics, moments}. Bounds: feedback_f<=3; skill_spread .25..95 over skill_variants>=3 (shoot only: early, good, perfect, late; >=5 tries each; mean points); idle_max_f<=120; tell_min_f>=20, tells>=3; pressure_waves>=2 (180 f windows, >=3 rival attack starts after one with <=1); lead_change_share>=.3 over 3 full matches (R between); close_rounds>=1 (loser within 35% or 1 point); verbs_used=5 (shoot, screen, poke, swat, pass, each >=3); possession_median_f 240..600; scrum_share<=.3 (>=4 players within 5 m of ball); overlap_share<=.02 (>0.1 m). moments: screen_spring, peak_swat, roll_finish, snag, swat, miss_short, miss_long, miss_side, miss_rimout, poke, crash.\n\nPOSSESSION (the last build failed only here: 234). It belongs to a SIDE: starts when that side gains the ball, ends only when the other side gains it, on a basket or a dead ball. Own passes, shots, loose balls and offensive rebounds do not end it; loose frames count to the last side. Dials: ai.min_hold_f 150 (no bot shoots before its side has held that long, except under 3 s left or a scripted force), ai.fresh_poke_f 60 (no bot pokes a fresh carrier). Tune to a median of 300-420 on seeds 1-3.\n\nPLAYER CHECK: tests/bot_play.gd fails when actor you, driven only by input actions, no longer produces at least 2 screen snags, 1 swat and 3 shots or passes in a finished match\nbot_play is a perfect hand.\n\nSPACE x -7.5..7.5, z 0 (baseline)..11; W=-z; hoop (0,3.05,1.575); arc 6.75; floor y=0, chalk top .012. data/venue.json tl.layout/1 flat pad, 10 m open apron at +z. Backboard/rim TLBodies.make, TLTrigger score. TLBiped, rig scale .95, TLHit.pushbox .4; Pip .92, Crane 1.06; crew yellow, quarry plum.\n\nINPUT up(W) down left right turbo(Shift) shoot(Space, left) pass(Q, right) screen(E) rematch(R). Buffer 8 f; body moves within 3 f (squash/lean), full pose by 6; fresh press after possession change.\nMOVE cruise 5.5, turbo 7.5, carrier x.92; accel 20/17; brake 26; turn 9, carrier 8, turbo 6 rad/s; turbo 3 s, refill 25%/s after 30 f.\nBALL &\"LOOSE\",&\"CARRIED\",&\"PASS_IN_FLIGHT\",&\"SHOT_IN_FLIGHT\". Carried: TLBall.hold, critically damped spring k 400, .6 m at dribble hand; bounce 1.0 m-floor-back 30 f (22 turbo), thump; cut >60 deg crosses hands; gather lifts; turbo hard turn 6 f past .45 m swing loses it. Pickup .9 m ±70 deg; <9 m/s clean, 9-14 bobble (-60%, 10 f), above deflect; receiver 1.3 m ±100, 18 f magnet in 2 m. After change: old owner and opponents in 2 m no steal 30 f, owner unpokeable 12; no pickup 6 f after own pass/shot. Drawn 1.3x, hot rim; green ring; edge arrow.\n\nVERBS (anticipation/active/recovery). shoot 8/30/14: rise .8 (rig y, airtime 36), perfect 15-21 f after takeoff, good within 8 of 18 x.75, early/late x.35; layup .95, inside .75, outside .6; grounded hand in 1.2 m x.6; turns to hoop; tap <8 pump fake, 10 recovery; turbo within 2.5 m of rim layup. screen 12/90 held/16 while mate carries; release after contact rolls hoopward 1.2x 30 f; early release slips. poke 5/7/12: 1.3 m ±35, .65 x front 1, side .7, back .4, x.6 if cut within 10 f, cooldown 40. swat 5/16/18 without ball: hand .8 m from held or first-12-f rising ball, turbo +.2; same jump rebounds. pass 4/2/8 toward facing, arrives ~8 m/s, launch 12-15, cancels dribble/grounded gather; without ball calls. i-frames 0.\nMISSES rolled at release, first cause shown in the solved real path: early short/front iron/air; late long/backboard/back iron; hand near: lean away, side iron; open unlucky: circles rim 36 f (TLBall.hold), spills, rattle, groan; swat before arc.\n\nCONTACTS change BOTH (TLHit.impact on the two, decaying vibration, TLHit.react, shove). Swat: freeze 8, ball off 6 m/s, shooter .7, blocker squash, slap, cheer, shake .05/8 f. Fake bitten: 18 f landing. Set screen hit >2.5 m/s: freeze 6, defender .7 for 30 f, bounced .6; screener .3, slides .2, stays set; thud, leaves. Turbo into set: freeze 8, TLHit.down 45, screener .5, shake .12/12. Unset screen: both .3. Poke hit: freeze 3, carrier .3, follow through. Body poke: both bump, poker back .3. Poke whiff: lunge, turn halved 15, swoosh. Swat whiff: 18 f landing, swoosh. Carrier into planted: freeze 4, carrier .5 half speed, defender .4. Rebound clash: both .3. Interception: catcher .3, passer arms 8 f. Perfect make: net snap. No other shake or burst.\n\nMATCH TLRules crew,quarry; 1/2 points; first to 21; 300 s leader wins, tie first to add 2; 12 s possession limit (variable names never start clock/timer/score); after basket, defensive rebound or steal clear past arc (arc lights; basket: under hoop, live); out/expiry: other ball at top in 60 f. No other stop. End text, R in 2 s. Matchups you-Crane, Mags-Pip.\n\nAI every frame: score shoot, pass, drive, screen, use_screen, support, guard with vetoes; roles on-ball/support/safety by time to ball, hysteresis .3 s; support >=4 m from ball; none idle >60 f. USE_SCREEN: your screen within 4 m of carrier mate: waits f 12, turbos past shoulder opposite defender, centres .9; chaser steers into you; goes under: carrier shoots two behind; both crowd: you roll. Human uses screen within 1 m. Mates shoot freely, never steal yours, pass on call if safe, call_hand when open. Pip chases over, pokes after thigh_slap 24 f, hops after steal, slumps after snag. Crane leaps at believed gathers after deep_gather 24 f; rival jumpers gather 24 f. Tiers 1-3 bite .70/.45/.20, read .20/.45/.70 (visibly around), error 8/5/3; default 1.\n\nCAMERA play: add_view each frame, player +(1.2, 5.4, 7.2), fov 48, 4 f lag, fixed facing -z; check near baseline. side: from +x of ball/contact pair. HUD score, both clocks, turbo bar, one hint.\n\nSEAMS: after setup main.gd loads ctx.root meta \"hc_modules\" (pack-relative paths, default []) via ctx.load_script, calls if present setup(game), tick(game,frame), on_event(game,ev), state(game). game (scripts/core/game.gd): ctx, tune, actors, actor(id), add_actor({id,team,pos:[x,z],scale,mark,traits,brain}), ball, ball_state, owner_id, rules, hud, hint(text), set_brain(id,brain|null), set_tier(n), set_refill_mult(team,m), set_guard_scale(f), force_next_shot(id,\"make\"|\"\"), place(id,pos), restart_match(). actor: id (&\"you\",&\"mags\",&\"pip\",&\"crane\",&\"dex\",&\"moss\"), team, body, rig, mark, traits, action, action_frame, clip, clip_frame, clip_len, turbo. action: free,gather,air_shot,pump_fake,layup,screen_in,screen_set,screen_out,roll,swat,swat_land,poke,pass,stumble,down. clips: dribble_stand,dribble_run,jump_shot,layup,chest_pass,screen_set,swat,ball_steal,deep_gather,shoulder_dip,thigh_slap,call_hand,slump (core only sets actor.clip, never borrows). brain.decide(game,actor)->{move,turbo,verb:\"\"|shoot|release|fake|pass|screen|screen_end|poke|swat,target,face,tell}. ev {kind,frame,by,on,data}: match_start,match_end,press,screen_set,snag,crash,screen_bump,pass,pickup,intercept,possession,shot_release,takeoff,make,miss(data.cause short,long,side_iron,rim_out,swat),swat,fake_bitten,poke,poke_body,poke_whiff,carry_bump,rebound_clash,dead_ball. _pack_state: rules snapshot, actors, ball, ball_state, owner, clear_owed, possession_left, last_miss, events, hint, modules.",
+  "acceptance": [
+   {
+    "level": "V1",
+    "verb": "lint",
+    "args": []
+   },
+   {
+    "level": "V2",
+    "verb": "smoke",
+    "args": []
+   },
+   {
+    "level": "V3",
+    "verb": "invariants",
+    "args": []
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_play.gd"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_tofu.gd",
+     "--frames=72000"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "bodies_first_minute",
+  "title": "Own clips, builds and first minute",
+  "milestone": "blockout",
+  "deps": [
+   "court_exchange"
+  ],
+  "serves": [
+   "screen_spring",
+   "peak_swat",
+   "roll_finish"
+  ],
+  "scope": [
+   "gen/mod_bodies.gd",
+   "scripts/bodies/**",
+   "scripts/teach/**",
+   "data/clips.json",
+   "tests/bot_first_minute.gd"
+  ],
+  "registers": {
+   "capabilities": [
+    "biped",
+    "physics",
+    "input",
+    "ui",
+    "audio",
+    "vfx",
+    "camera",
+    "style"
+   ],
+   "assets": [
+    "gen/mod_bodies.gd"
+   ],
+   "tests": [
+    "tests/bot_first_minute.gd"
+   ]
+  },
+  "contract": "Gives the greybox readable bodies and a teaching first minute through the core seams only. gen/mod_bodies.gd: static generate(ctx) appends \"scripts/bodies/mod.gd\" and \"scripts/teach/mod.gd\" to ctx.root meta hc_modules (get_meta default [], append, set_meta). Hooks: setup(game), tick(game,frame), on_event(game,ev), state(game). Never edit core files; numbers come from game.tune (keys teach, camera, shoot, swat).\n\nCLIPS: read ref/rigs/RIGS.md. Build all 13 as the pack's own pose clips in data/clips.json (clip id -> keyframes of joint poses), applied each tick from actor.clip / clip_frame / clip_len by scripts/bodies/poses.gd: dribble_stand and dribble_run (hand synced to the ball bounce, 30 f standing/cruise, 22 turbo; visible hand cross on a cut), jump_shot, layup, chest_pass (arms stay out 8 f on interception), screen_set (wide planted stance, arms crossed), swat (one arm overhead, hand at the ball by frame 6 of active), ball_steal (low one-handed swipe, never cross_check), deep_gather (deep crouch, arms dropped, 24 f), shoulder_dip (24 f), thigh_slap (24 f), call_hand, slump. Full pose by frame 6 of a verb. Hit-stop holds the pose (TLHit.stop_left). If the rig has a clip of exactly that id, use it. If it offers no fence-legal way to pose joints, report a kernel gap; never borrow another clip. Existing jump, fall, run, cheer, taunt keep their meanings; TLHit reactions override poses. Miss tells: early shot's wrist stops low; contested shooter leans away; late arm over-extends.\n\nBUILDS (visual only: TLBodies.make with color, layer 0, mask 0, on rig sockets; no own materials): Pip small, wiry, backwards cap; Crane tall, long arms, rust beanie; Mags long ponytail; Dex stocky with sweatband and Moss broad with grey hoodie, applied by actor id whenever they appear (a later package adds them). Shirts stay yellow vs plum. Nothing technical drawn on figures.\n\nFIRST MINUTE, the session's first match only (not after restart_match). At match_start game.place (x,z): you (-2.0,7.6), ring glowing; Mags (-4.5,6.5) dribbling at left wing; Pip (-3.9,5.8) tight; Crane (-0.6,6.6). Two flat chalk footprints at Pip + (1.0,0,0), Mags's driving side, top y .016; they follow Pip until E is pressed and return until two snags have landed. Hint exactly: HOLD E ON THE CHALK. The possession limit starts on the first E press (hold it full until then); after 8 s without one Mags attacks alone. Pip's first route: once you are set within 1.0 m of the chalk, Pip waits until frame 12, then its brain's move target is your centre until the snag event (it cannot read, go under or miss it); contact comes from your side across the lens line so your back never hides it. Mags passes your far shoulder (centres .9 m), drives, and the open layup drops (force_next_shot(&\"mags\",\"make\")); a short tag I DID THAT (TLHud.add_tag).\nQuarry's first possession: Crane takes the ball, walks to .9 m to your SIDE (lateral x, never between lens and you), starting once within 1.2 m (or after 3 s), plays deep_gather for 36 f, takes off and releases 21 f after takeoff. Cue on the takeoff event, not the crouch: a glint at the ball (TLVfx.burst sparks) and hint SPACE: SWAT. A swat on that first shot drops the ball loose within 1 m of you at low speed; after your pickup the hint says CLEAR PAST THE ARC; once cleared a tag MINE. A missed press changes nothing else. Afterwards normal rules and odds: set_brain(id,null), hint back to controls.\n\nThe play view stays steady (no swing). Check with captures of play and side that your hand, the ball and the first snag are uncovered, also near the baseline; report it if tuning cannot fix it.\n\nstate(game): teach_beat (&\"screen\",&\"drive\",&\"swat\",&\"clear\",&\"done\"), chalk position, snags.\n\ntests/bot_first_minute.gd drives input only through TLHand regular: walks to the chalk, holds screen, waits for Mags's make, presses shoot about 12 f after Crane's takeoff, grabs, dribbles past the arc. ok when snag, Mags make, swat, pickup and clear all happen within 2400 frames. moments: screen_spring, snag, peak_swat, swat, hint, early in the run. tests/bot_play.gd must still pass with these modules loaded.",
+  "acceptance": [
+   {
+    "level": "V1",
+    "verb": "lint",
+    "args": []
+   },
+   {
+    "level": "V2",
+    "verb": "smoke",
+    "args": []
+   },
+   {
+    "level": "V3",
+    "verb": "invariants",
+    "args": []
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_first_minute.gd",
+     "--frames=3600"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_play.gd"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "crews_stakes",
+  "title": "Three on three, rivals, stakes",
+  "milestone": "greybox",
+  "deps": [
+   "court_exchange",
+   "bodies_first_minute"
+  ],
+  "serves": [
+   "screen_spring",
+   "roll_finish",
+   "peak_swat"
+  ],
+  "scope": [
+   "gen/mod_crews.gd",
+   "scripts/crews/**",
+   "data/crews.json",
+   "tests/bot_crews.gd",
+   "tests/bot_hand_newcomer.gd",
+   "tests/bot_hand_perfect.gd"
+  ],
+  "registers": {
+   "capabilities": [
+    "biped",
+    "physics",
+    "input",
+    "ui",
+    "audio",
+    "vfx",
+    "ai",
+    "rules",
+    "style"
+   ],
+   "assets": [
+    "gen/mod_crews.gd"
+   ],
+   "tests": [
+    "tests/bot_crews.gd",
+    "tests/bot_hand_newcomer.gd",
+    "tests/bot_hand_perfect.gd"
+   ]
+  },
+  "contract": "Pillars Fellowship and Challenge. gen/mod_crews.gd appends \"scripts/crews/mod.gd\" to ctx.root meta hc_modules. Hooks setup(game), tick(game,frame), on_event(game,ev), state(game). Use only the core seams: game.add_actor, actor(id), set_brain, set_tier, set_refill_mult, set_guard_scale, hint, restart_match, hud, events; actor fields mark, traits, action, clip, turbo. brain.decide(game,actor)->{move,turbo,verb:\"\"|shoot|release|fake|pass|screen|screen_end|poke|swat,target,face,tell}. Numbers come from game.tune (keys tiers, comeback, curve, roster, ai); new numbers go in data/crews.json, whose entries setup may merge over game.tune. No speed boost off screens; difficulty never changes speed.\n\nADD Dex (&\"dex\", crew) and Moss (&\"moss\", quarry); opening matchups both ways: you-Crane, Mags-Pip, Dex-Moss. The first-minute teaching still works with six on court (Dex and Moss stay in the weak-side corner, x>3, until teach_beat is done, never idle over 60 f).\nDex: cuts, rebounds, screens for you when your defender is within 1.2 m (visible screen_set, same contact rules; you spring by dribbling within 1 m), shoots without waiting, never steals your ball, passes on your call if the lane is safe.\nMoss: guards Dex first; ducks under screens and sags, leaving outside shots; sets thick screens (full 90 f); tell shoulder_dip 24 f before a bulldozing turbo drive; taunt after its baskets; jumpers gather 24 f. Support players keep >=4 m from the ball (scrum share <=.3).\nPip and Crane keep their core habits; Crane cheers after swats and plays slump when fooled; Pip hops after steals, slumps after snags. Screen reads follow the tier chance and are visible (the defender goes around). Rival screens work on your crew the same way.\n\nROTATION: each time the leader's score passes 7 or 14, quarry marks rotate one step (Crane->Mags, Pip->Dex, Moss->you, and again), with a 90 f HUD line naming your new man and the habit (CRANE: FAKE FIRST; PIP: PROTECT THE BALL; MOSS: SHOOT OVER MOSS). The game does not stop.\nCOMEBACK: a side trailing by 5 or more refills turbo at 37.5%/s (set_refill_mult 1.5) with orange heel trails (TLVfx.trail) only while it lasts.\nCURVE: early possessions calm (drive and poke weights lowered until either side has 4); from 18 points or the last 20 s drums rise (TLAudio.play repeating, faster) and both crews guard tighter (set_guard_scale); sudden death shows FIRST TO ADD 2.\nEND CARD on match_end (TLHud.add_layer): result and score, your screen assists (a make by a mate within 120 f of a snag on your screen), your swats, and the biggest cause of defeat counted from events with its answer: CRANE SWATTED 4: FAKE FIRST; PIP POKED n: TURN YOUR BACK; n SHORT: RELEASE LATER; n LONG: RELEASE SOONER; MOSS SCORED n: STAY IN FRONT. R restarts within 2 s (restart_match). A win raises the tier (max 3: fake bite 70/45/20, screen read 20/45/70, shot error 8/5/3) and shows a session streak to defend; a loss keeps the tier and resets the streak. Session values live on the module instance, never static.\n\nstate(game): tier, streak, rotation, comeback_side, intensity, assists, swats, defeat_cause.\n\ntests/bot_crews.gd plays through input only: screens, shoots, swats, a full match, rematch, then 600 f of the next. ok when six actors existed, Dex set >=1 screen, Moss played shoulder_dip and drove >=1, a rotation happened, the end card showed counts, the rematch started within 120 f. moments: dex_screen, moss_drive, rotation, comeback, end_card, roll_finish, with dex_screen and moss_drive within the first 900 f where play allows.\ntests/bot_hand_perfect.gd and bot_hand_newcomer.gd: the same input-only policy through TLHand perfect / newcomer; ok when the match ends and the hand acted (winning not required).\ntests/bot_play.gd must still pass in 3v3.",
+  "acceptance": [
+   {
+    "level": "V1",
+    "verb": "lint",
+    "args": []
+   },
+   {
+    "level": "V2",
+    "verb": "smoke",
+    "args": []
+   },
+   {
+    "level": "V3",
+    "verb": "invariants",
+    "args": []
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_crews.gd",
+     "--frames=45000"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_hand_perfect.gd"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_hand_newcomer.gd"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_first_minute.gd",
+     "--frames=3600"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_play.gd"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "viaduct_art",
+  "title": "Autumn viaduct court and mood",
+  "milestone": "art_pass",
+  "deps": [
+   "court_exchange",
+   "crews_stakes"
+  ],
+  "serves": [
+   "screen_spring",
+   "peak_swat",
+   "roll_finish"
+  ],
+  "scope": [
+   "gen/mod_arena.gd",
+   "scripts/arena/**",
+   "data/arena.json",
+   "data/arena_layout.json"
+  ],
+  "registers": {
+   "capabilities": [
+    "kit",
+    "style",
+    "physics",
+    "vfx",
+    "audio",
+    "biped"
+   ],
+   "assets": [
+    "gen/mod_arena.gd"
+   ]
+  },
+  "contract": "The player's picture, visible in captures from views play and side: tall brick viaduct arches behind the hoop, yellow autumn trees, a chain fence, blue court with an orange key, yellow team against plum team (team colours are set by the core; do not change them). gen/mod_arena.gd appends \"scripts/arena/mod.gd\" to ctx.root meta hc_modules. Hooks setup(game), tick(game,frame), on_event(game,ev), state(game). Presentation only: never move actors, ball or rules; never edit core files; no own materials, lights, sky, environment or meshes in scripts.\n\nSPACE: x -7.5..7.5, z 0 (baseline)..11, hoop (0,3.05,1.575), floor top y=0, core chalk lines top .012, footprints .016. The camera stands at the player + (about 1.2, 5.4, 7.2), steady, facing -z, never swinging.\n\nBUILD data/arena_layout.json (tl.layout/1, one TLKit.build_layout call) plus data/arena.json for colours, counts and timings:\n- court paint: flat plates (TLBodies.make with color, layer 0, mask 0), top y .004: blue court, orange key (4.9 m wide, 5.8 m deep from the baseline), worn darker patches; core lines stay visible above.\n- three tall brick arches 3 m behind the hoop (z about -3), springing from piers, at least 7 m high, soot-dark brick, from kit arch_rib, stones and plain bodies; the middle arch frames the backboard and the ball stays readable against it.\n- side piers under 1.5 m, 5 m outside the court (x about ±12.5).\n- chain fence (kit fence) along both sides and behind the arches; side scenery at most 1.5 m.\n- yellow and some rust autumn trees (kit tree, recoloured) behind and far to the sides; leaf piles; a crate bench.\n- a dozen onlookers (low-cost figures, no collision) behind the baseline and far back at the sides; they cheer on swat, snag and a mate's make after a screen, and groan on a rim-out.\n- NOTHING on the camera side: no wall, pier, tree, crowd or fence with z > 11 inside |x| < 14; 10 m open apron.\nWarm dusk through the style layer's palette only.\n\nMOTION AND SOUND: a few leaves drift continuously (visual nodes, at most 40, deterministic with ctx.rng); on snag and crash add a yellow leaf burst (TLVfx.burst debris); no other new bursts, no new shake, no leaf trail off screens. At 150 s of rules.seconds_played lamps light (kit light_mast or lamp heads switch to a warm glowing colour) with a soft cue. Sneaker squeaks on hard cuts and a low neighbourhood cheer on sprung baskets via TLAudio presets; the core already plays thumps, clank and rattle.\n\nBudgets: at most 600 physics bodies and 5,000 nodes for the whole pack; frame p99 under 8 ms headless; static scenery comes from the layout so it merges.\nstate(game): lamps_on. Earlier bots must still pass.",
+  "acceptance": [
+   {
+    "level": "V1",
+    "verb": "lint",
+    "args": []
+   },
+   {
+    "level": "V2",
+    "verb": "smoke",
+    "args": []
+   },
+   {
+    "level": "V3",
+    "verb": "invariants",
+    "args": []
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_play.gd"
+    ]
+   },
+   {
+    "level": "V4",
+    "verb": "bot",
+    "args": [
+     "--test=tests/bot_first_minute.gd",
+     "--frames=3600"
+    ]
+   }
+  ]
+ }
+]

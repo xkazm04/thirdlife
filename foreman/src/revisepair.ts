@@ -9,6 +9,7 @@ import type { GateHost } from "./p10gate.js";
 import type { JobEvent } from "./events.js";
 import { botMoments } from "./shots.js";
 import { stripInfo, claimsOfResult } from "./filmcheck.js";
+import { foreignWords, gameHasRow, gameHasVerb, gameWords } from "./gamewords.js";
 
 /** Where a template's house game keeps the numbers of its contacts (a file, optionally only some of its keys). */
 export const HOUSE_CONTACTS: Record<string, { file: string; keys?: string[] }[]> = {
@@ -34,12 +35,13 @@ const readJson = (file: string): unknown => {
 const pick = (o: unknown, keys?: string[]): unknown => (keys === undefined || o === null || typeof o !== "object" ? o : Object.fromEntries(keys.filter((k) => k in (o as object)).map((k) => [k, (o as Record<string, unknown>)[k]])));
 
 /** The build's contact numbers against the house game's, row by row: differing, missing in the build. */
-export function contactDiff(buildPack: string, housePack: string, template: string, pack: string, max = 14): { differ: string[]; missing: string[]; line: string } | undefined {
+export function contactDiff(buildPack: string, housePack: string, template: string, pack: string, max = 14, words?: Set<string>): { differ: string[]; missing: string[]; line: string } | undefined {
   const sources = HOUSE_CONTACTS[template];
   if (sources === undefined) return undefined;
   const differ: string[] = [];
   const missing: string[] = [];
   const notes: string[] = [];
+  const foreign: string[] = []; // H1e: the house game's rows this game's design does not have: not judged, never missing
   for (const s of sources) {
     const house = readJson(path.join(housePack, ...s.file.split("/")));
     if (house === undefined) continue;
@@ -52,16 +54,19 @@ export function contactDiff(buildPack: string, housePack: string, template: stri
     const bl = numberLeaves(pick(built, s.keys));
     for (const [k, v] of hl) {
       const b = bl.get(k);
-      if (b === undefined) missing.push(`${s.file} ${k} (house ${v})`);
+      if (b === undefined && !gameHasRow(words, k)) foreign.push(k);
+      else if (b === undefined) missing.push(`${s.file} ${k} (house ${v})`);
       else if (b !== v) differ.push(`${s.file} ${k}: yours ${b}, house ${v}`);
     }
   }
-  if (differ.length + missing.length + notes.length === 0) return { differ, missing, line: `contact numbers: yours match engine/packs/${pack} on every row of ${sources.map((s) => s.file).join(", ")}` };
+  const notJudged = foreign.length > 0 ? `${foreign.length} house contact row(s) belong to engine/packs/${pack}'s own play (${foreignWords(words, foreign).join(", ")}), which this game's design does not have: not judged, not missing` : "";
+  if (differ.length + missing.length + notes.length === 0) return { differ, missing, line: [`contact numbers: yours match engine/packs/${pack} on every row of ${sources.map((s) => s.file).join(", ")} that this game has`, notJudged].filter(Boolean).join(". ") };
   const cut = (xs: string[]): string => `${xs.slice(0, max).join("; ")}${xs.length > max ? `; and ${xs.length - max} more` : ""}`;
   const line = [
     ...notes,
     differ.length > 0 ? `${differ.length} contact number(s) differ from engine/packs/${pack}: ${cut(differ)}` : "",
     missing.length > 0 ? `${missing.length} house contact row(s) your pack does not have: ${cut(missing)}` : "",
+    notJudged,
   ].filter(Boolean).join(". ");
   return { differ, missing, line };
 }
@@ -104,12 +109,13 @@ export function pairStrips(jobDir: string, events: readonly JobEvent[], strips: 
  * and the text the round's feedback carries. Undefined when the job has no house strip or no contact strip of its own.
  */
 export function revisePair(h: GateHost, m: string, round: number, strips: { capture: string; label: string }[], base: { pack: string; strips?: { capture: string; label: string; kind?: string }[] } | undefined, template: string | undefined): string | undefined {
+  const words = gameWords(h.s.brief); // H1e: judged by this game's own design
   if (base === undefined || template === undefined) return undefined;
   const houseStrip = (base.strips ?? []).find((x) => fs.existsSync(h.dir(...x.capture.split("/"))));
   const contactF = houseStrip !== undefined ? stripInfo(houseStrip.capture, houseStrip.label)?.contact : undefined;
   const kind = houseStrip?.kind ?? (contactF !== undefined ? houseStripKind(h.dir(), base.pack, contactF) : undefined); // D3: the strip's own kind first
   const pair = houseStrip !== undefined ? pairStrips(h.dir(), h.events, strips, houseStrip, kind) : undefined;
-  const diff = contactDiff(h.dir("pack"), h.dir("ref", "packs", base.pack), template, base.pack);
+  const diff = contactDiff(h.dir("pack"), h.dir("ref", "packs", base.pack), template, base.pack, 14, words);
   const parts: string[] = [];
   if (pair !== undefined) {
     const rel = `look/${m}-r${round}`;
@@ -119,7 +125,7 @@ export function revisePair(h: GateHost, m: string, round: number, strips: { capt
     const yours = name("yours", pair.build.kind), theirs = name("house", pair.house.kind);
     fs.copyFileSync(h.dir(...pair.build.capture.split("/")), path.join(dest, yours));
     fs.copyFileSync(h.dir(...pair.house.capture.split("/")), path.join(dest, theirs));
-    parts.push(`THE PAIR (open both with your Read tool before you change code): ref/${rel}/${yours} is YOUR contact strip${pair.build.kind ? ` (${pair.build.kind})` : ""}, ref/${rel}/${theirs} the HOUSE GAME's${pair.house.kind ? ` (${pair.house.kind})` : ""}, both 12 tiles 2 frames apart around the contact, read left to right. ${pair.same ? "Same contact kind: make yours read at least like the house one (wind-up, hit-stop on both bodies, each body's own reaction); the house game is a floor, not the bar, so do not copy what its teardown names (the bar and its \"do not copy\" lines are in your Feel section)." : `Your bot filmed no ${pair.kind ?? "matching"} contact: this is your nearest; make the house game's kind happen and read like its strip.`}`);
+    parts.push(`THE PAIR (open both with your Read tool before you change code): ref/${rel}/${yours} is YOUR contact strip${pair.build.kind ? ` (${pair.build.kind})` : ""}, ref/${rel}/${theirs} the HOUSE GAME's${pair.house.kind ? ` (${pair.house.kind})` : ""}, both 12 tiles 2 frames apart around the contact, read left to right. ${pair.kind !== undefined && !gameHasVerb(words, pair.kind) ? `The house game's contact here is a ${pair.kind}, which this game's design does not have: do not add it. Set only how the bodies take contact beside it (wind-up, hit-stop on both bodies, each body's own reaction); the house game is a floor, not the bar.` : pair.same ? "Same contact kind: make yours read at least like the house one (wind-up, hit-stop on both bodies, each body's own reaction); the house game is a floor, not the bar, so do not copy what its teardown names (the bar and its \"do not copy\" lines are in your Feel section)." : `Your bot filmed no ${pair.kind ?? "matching"} contact: this is your nearest; make the house game's kind happen and read like its strip.`}`);
   }
   if (diff !== undefined) parts.push(diff.line);
   return parts.length > 0 ? parts.join(" ") : undefined;

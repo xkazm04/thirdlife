@@ -56,8 +56,15 @@ test("H1c 1 (G1: the shield was worth 0 points, pro 8/20 with and without, and t
     const run = await runRinkCheck(path.join(REPO_ROOT, "engine"), G1_CART);
     assert.equal(run.code, 0, run.summary);
     // the stand-in lab plays the F ability as nothing (G1's shield) and the pickups as a near nothing (as the real lab did on this cartridge)
-    assert.deepEqual(run.toys, ["The F ability: changes nothing (8 of 20 wins with and without)", "The pickups: changes little (8 of 20 wins with, 8 without)"]);
-    assert.match(run.summary, /toy: the F ability \(shield, slow_puck\): changes nothing, not one of 20 matches at pro plays differently without it; pro 8 of 20 wins with it, 8 without \(\+0 points\), paired goal difference \+0, F pressed [0-9.]+ times a match \(thirdjam's regular playtester\)/);
+    // H1e (25 Nov, G1's round 3: 20 seeds point the other way from 80 for three toys of four): this line said "The pickups:
+    // changes little (8 of 20 wins with, 8 without)"; at 4 against 4 paired matches that is noise, so it is "not clear yet".
+    assert.deepEqual(run.toys, [
+      "The F ability: changes nothing (8 of 20 wins with and without)",
+      "The pickups: not clear yet (won only with it 4, only without it 4, of 20)",
+      "The fast-ice zones: not clear yet (won only with it 7, only without it 4, of 20)",
+      "The slow-ice zones: not clear yet (won only with it 4, only without it 5, of 20)",
+    ]);
+    assert.match(run.summary, /toy: the F ability \(shield, slow_puck\): changes nothing, not one of 20 matches at pro plays differently without it; pro 8 of 20 wins with it, 8 without \(\+0 points; won only with it 0, only without it 0\), paired goal difference \+0, F pressed [0-9.]+ times a match \(thirdjam's regular playtester\)/);
     // the line itself: every toy a person sees, with its figures (the fast-ice zones change matches: no warning)
     const line = JSON.parse(fs.readFileSync(fs.readdirSync(cache).map((f) => path.join(cache, f))[0] as string, "utf8")) as { done: { hand: string }[] };
     assert.deepEqual(line.done.map((d) => d.hand).filter((x) => x.startsWith("toy:")).sort(), ["toy:ability", "toy:base", "toy:pickups", "toy:zones:fast_ice", "toy:zones:slow_ice"], "inside the cache");
