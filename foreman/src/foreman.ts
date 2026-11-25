@@ -36,7 +36,7 @@ import { drainInbox } from "./inbox.js";
 import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls } from "./p10.js";
 export { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE, STARVED, isStarved, presentValuesText, starvedStalls };
 import type { ForemanOptions } from "./options.js"; // P10b: the options type and the pure functions live in their own modules; everything exported here still is
-import { MACHINE_BUSY, NOT_LOAD, PACK_STALL, classifyStalls, clockDetail, diedSilently, frameFigures, medianOverHalfBudget, restsOnAClock, stallOf, type GateFailure, type Stall, type Verified } from "./machine.js";
+import { MACHINE_BUSY, NOT_LOAD, PACK_STALL, classifyStalls, clockDetail, cpuLoad, diedSilently, frameFigures, medianOverHalfBudget, restsOnAClock, stallOf, waitForQuiet, type GateFailure, type Stall, type Verified } from "./machine.js";
 import { FOREMAN_NOTE, builderConduct, clip, countKitUse, parseDeviations, statesKitReason, type KitFigures } from "./conduct.js";
 import { packTest, packTestsFor, finalLimit, finalSent, sendBackFinal, type GateHost } from "./p10gate.js";
 // Why a round runs is one typed fold over the log (rounds.ts); the fixed starts of `detail` live there and are re-exported.
@@ -982,6 +982,7 @@ export class Foreman {
       const pause = pauses[Math.min(n - 1, pauses.length - 1)] as number;
       this.append({ type: "note", package: who, round, text: `${FOREMAN_NOTE}${MACHINE_BUSY}. ${figures}. Waiting ${Math.round(pause / 1000)} s, then try ${n} of ${tries}.` });
       await sleep(pause);
+      await waitForQuiet(() => this.loadNow(), sleep, this.o.busyCpuPct ?? 70, this.o.quietWaitMs ?? 600_000); // H1b: again on a quieter machine
       last = await this.verifyOnce(a, packDir, `${stem}-retry${n}`, where);
       if (!last.ok && isStarved(last)) return this.starvedVerdict(a, packDir, `${stem}-retry${n}`, where, last);
       if (last.ok || !restsOnAClock(last)) return last;
@@ -1020,6 +1021,8 @@ export class Foreman {
     }
   }
 
+  private loadNow = (): Promise<number | undefined> => (this.o.machineLoad ?? (isFakeRunner(this.o.verifier.location) ? async () => undefined : cpuLoad))();
+
   private referencePack(): string {
     return this.o.referencePack ?? path.join(this.o.verifier.location.engineDir, "kernel", "examples", "pack_min");
   }
@@ -1029,6 +1032,8 @@ export class Foreman {
    * Not a `verify` event (it is not about this job's pack); the report stays in reports/ and is named in a note.
    */
   private async measureMachine(failed: Acceptance["verb"]): Promise<{ busy: boolean; what: string; report: string } | undefined> {
+    const load = await this.loadNow(); // H1b: room.sh's measure first: a processor over the day's ceiling is a busy machine
+    if (load !== undefined && load > (this.o.busyCpuPct ?? 70)) return { busy: true, what: `the machine's processor was at ${load} % (the room.sh measure; busy above ${this.o.busyCpuPct ?? 70} %)`, report: "no reference run needed" };
     const pack = this.referencePack();
     if (!fs.existsSync(path.join(pack, MANIFEST_FILE))) return undefined;
     // `smoke` is the gauge whatever verb failed: it is the shortest run that reports frame times and can trip the watchdog.

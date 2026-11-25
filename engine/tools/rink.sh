@@ -151,8 +151,11 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
   #   engine/tools/rink.sh lab <match|gym> <args>    rinklab.exe with the content dir filled in (e.g. lab match -seeds=1-10 -difficulty=pro -player=good -remove=pass)
   lab-build)
     command -v scons >/dev/null 2>&1 || { echo "NOT RUN  rink lab-build: scons not found (pip install scons)"; exit 2; }
+    lab_was="$(sha1sum "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" 2>/dev/null | cut -c1-40)"
     scons -C "$ROOT/engine/cores/rink/lab" -j"$(nproc)" -Q >/dev/null || { echo "FAIL  rink lab-build"; exit 1; }
     echo "PASS  rink lab-build: engine/cores/rink/lab/bin/rinklab.exe"
+    # H1b: a new lab measures the house and base cartridges once now, so a job's first check reads the cache (check-warm)
+    [ "${TL_RINK_WARM:-1}" = 0 ] || [ "$lab_was" = "$(sha1sum "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" | cut -c1-40)" ] || "$0" check-warm
     ;;
   lab)
     [ -f "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" ] || "$0" lab-build >/dev/null || { echo "NOT RUN  rink lab: rinklab.exe could not be built"; exit 2; }
@@ -171,8 +174,10 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
   lab-build-thirdlife)
     command -v scons >/dev/null 2>&1 || { echo "NOT RUN  rink lab-build-thirdlife: scons not found (pip install scons)"; exit 2; }
     bash "$ROOT/engine/cores/rink/lab/thirdlife-tree.sh" || exit $?
+    lab_was="$(sha1sum "$ROOT/engine/cores/rink/lab/bin/rinklab-thirdlife.exe" 2>/dev/null | cut -c1-40)"
     scons -C "$ROOT/engine/cores/rink/lab" variant=thirdlife -j"$(nproc)" -Q >/dev/null || { echo "FAIL  rink lab-build-thirdlife"; exit 1; }
     echo "PASS  rink lab-build-thirdlife: engine/cores/rink/lab/bin/rinklab-thirdlife.exe"
+    [ "${TL_RINK_WARM:-1}" = 0 ] || [ "$lab_was" = "$(sha1sum "$ROOT/engine/cores/rink/lab/bin/rinklab-thirdlife.exe" | cut -c1-40)" ] || "$0" check-warm
     ;;
   lab-thirdlife)
     "$0" lab-build-thirdlife >/dev/null || { echo "NOT RUN  rink lab-thirdlife: rinklab-thirdlife.exe could not be built"; exit 2; }
@@ -193,12 +198,38 @@ windows.debug.x86_64 = "res://bin/rink_core_t5.windows.template_debug.x86_64.dll
   #   thirdjam's validator, then the lab plays it headless (thirdjam's regular playtester with sprint, N seeds a level, and the planning
   #   hand, M seeds a level, at rookie / pro / all_star) and says what a person will meet; a tl.rink.check/1 JSON line last
   check-cartridge)
-    if [[ " $* " == *" --rules "* ]]; then
+    if [ -n "${TL_RINKLAB_EXE:-}" ]; then :   # a stand-in lab (the Foreman's tests): nothing to build
+    elif [[ " $* " == *" --rules "* ]]; then
       [ -f "$ROOT/engine/cores/rink/lab/bin/rinklab-thirdlife.exe" ] || "$0" lab-build-thirdlife >/dev/null || { echo "NOT RUN  rink check-cartridge: rinklab-thirdlife.exe could not be built"; exit 2; }
     else
       [ -f "$ROOT/engine/cores/rink/lab/bin/rinklab.exe" ] || "$0" lab-build >/dev/null || { echo "NOT RUN  rink check-cartridge: rinklab.exe could not be built"; exit 2; }
     fi
     node "$ROOT/engine/cores/rink/lab/check_cartridge.mjs" "$@"
+    ;;
+  # ---- H1b of 25 Nov: the check's cache warmed ----
+  #   engine/tools/rink.sh check-warm    the measured check, as the Foreman runs it (--defects), of the house game's cartridge
+  #   (packs/hokej) and every base's (templates/*/data/*.cartridge.json), each with its rules file when it has one, so their
+  #   results are in .tl/check-cartridge-cache/ before a job asks: a job's first lint then waits seconds, not minutes.
+  #   lab-build and lab-build-thirdlife run it when the exe they built is new (TL_RINK_WARM=0 skips it).
+  check-warm)
+    export TL_RINK_WARM=0
+    cw_n=0; cw_cached=0; cw_bad=""
+    for cw_f in "$ROOT"/engine/packs/hokej/data/hockey.thirdlife.cartridge.json "$ROOT"/engine/templates/*/data/*.cartridge.json; do
+      [ -f "$cw_f" ] || continue
+      cw_r="${cw_f%.cartridge.json}.rules.json"
+      cw_p="$(cygpath -m "$cw_f" 2>/dev/null || echo "$cw_f")"
+      if [ -f "$cw_r" ]; then cw_line="$("$0" check-cartridge "$cw_p" --rules "$(cygpath -m "$cw_r" 2>/dev/null || echo "$cw_r")" --defects --json-only | tail -1)"
+      else cw_line="$("$0" check-cartridge "$cw_p" --defects --json-only | tail -1)"; fi
+      cw_n=$((cw_n + 1))
+      case "$cw_line" in
+        *'"cached":true'*) cw_cached=$((cw_cached + 1)) ;;
+        *'"ran":true'*) ;;
+        *) cw_bad="$cw_bad ${cw_f#$ROOT/}" ;;
+      esac
+    done
+    [ "$cw_n" -gt 0 ] || { echo "NOT RUN  rink check-warm: no house or base cartridge found"; exit 2; }
+    [ -z "$cw_bad" ] || { echo "FAIL  rink check-warm: not measured:$cw_bad"; exit 1; }
+    echo "PASS  rink check-warm: $cw_n cartridge(s) in the cache ($((cw_n - cw_cached)) measured now, $cw_cached already there)"
     ;;
   *)
     sed -n '2,15p' "$0"; exit 2 ;;

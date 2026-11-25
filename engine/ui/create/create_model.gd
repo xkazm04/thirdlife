@@ -437,3 +437,28 @@ static func scope_package(job: Dictionary, q: Dictionary) -> String:
 		if str(id) != str(q.get("package", "")) and RegEx.create_from_string("\\b%s\\b" % str(id)).search(text) != null:
 			return str(id)
 	return str(q.get("package", ""))
+
+
+## H1b of 25 Nov (G2's finding: the brief's estimate never reached the pitch): what building it will take, in a person's
+## words, from brief_set's estimate {packages, wallMinutes, tokens}: "About 8 hours and 6.5 M tokens to build (9 parts)".
+## "" when the job has no estimate.
+static func estimate_words(est: Dictionary) -> String:
+	var minutes: int = int(est.get("wallMinutes", 0))
+	var tokens: int = int(est.get("tokens", 0))
+	var parts: int = int(est.get("packages", 0))
+	if minutes <= 0 and tokens <= 0:
+		return ""
+	var time: String = ""
+	if minutes > 0 and minutes < 60:
+		time = "%d minutes" % (int(roundf(float(minutes) / 5.0)) * 5 if minutes >= 10 else minutes)
+	elif minutes >= 60:
+		var halves: int = int(roundf(float(minutes) / 30.0))
+		time = "1 hour" if halves == 2 else ("%d hours" % (halves / 2) if halves % 2 == 0 else "%.1f hours" % (float(halves) / 2.0))
+	var tok: String = ""
+	if tokens >= 1000000:
+		var m: float = roundf(float(tokens) / 100000.0) / 10.0
+		tok = ("%d M tokens" % int(m)) if is_equal_approx(m, roundf(m)) else ("%.1f M tokens" % m)
+	elif tokens > 0:
+		tok = "%d k tokens" % int(roundf(float(tokens) / 1000.0))
+	var what: String = " and ".join(PackedStringArray([time, tok].filter(func(s: String) -> bool: return not s.is_empty())))
+	return "About %s to build%s" % [what, (" (%d parts)" % parts) if parts > 0 else ""]

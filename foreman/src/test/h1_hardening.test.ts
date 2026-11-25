@@ -15,7 +15,7 @@ import { FAKE_VERBS_FILE, loadVerbs } from "../verbs.js";
 import { REPO_ROOT } from "../paths.js";
 import { HUD_HIDDEN, hudOn } from "../quality.js";
 import { countKitUse, isCoreData } from "../conduct.js";
-import { addedEntries, asksRemoval, isYes, removedEntries, removedSince } from "../removal.js";
+import { addedEntries, asksRemoval, compactChange, isYes, removedEntries, removedSince } from "../removal.js";
 import { whatChangedNote } from "../fastchange.js";
 import { main } from "../cli.js";
 import { rebuildState } from "../joblog.js";
@@ -366,4 +366,33 @@ test("H1 4c: the pure parts: removals by id and by kind, asked words, a yes, the
   const log = [ev(1, { type: "promoted", packId: "p", version: "0.1.0", dest: "promoted/p" }), ev(2, { type: "change_requested", text: SLUSH_ASKED }), ev(3, { type: "merge", package: "slush_cartridge", round: 2, files: [CART] })];
   assert.equal(whatChangedNote(log, "0.1.1", removedSince(was, now)), `[foreman] what changed in v0.1.1 (since v0.1.0): asked "${SLUSH_ASKED}"; files: ${CART}\nremoved: spot-nw (game.rink.zones); why: not said (a builder's round; its DEVIATIONS may say)`);
   assert.equal(whatChangedNote(log, "0.1.1"), `[foreman] what changed in v0.1.1 (since v0.1.0): asked "${SLUSH_ASKED}"; files: ${CART}`, "nothing removed: the one line as before");
+});
+
+test("H1b 3 (E5e: the what-changed line carried the zones' whole JSON and was cut at 1000 characters): list changes are compact, \"game.rink.zones: + lane-middle, - spot-nw, - spot-ne\", so the line ends with its files; scalars stay as they were", async () => {
+  const j = await slushJob("h1b-compact");
+  const from = readEvents(j.jobDir).at(-1)?.seq ?? 0;
+  await j.run(["change", j.jobDir, "drop two boost spots and add a fast lane through the middle, bigger bumpers"]);
+  const what = readEvents(j.jobDir).find((e) => e.seq > from && e.type === "note" && e.text.startsWith("[foreman] what changed"));
+  const first = (what?.type === "note" ? what.text : "").split("\n")[0] ?? "";
+  assert.equal(first, "[foreman] what changed in v0.1.1 (since v0.1.0): asked \"drop two boost spots and add a fast lane through the middle, bigger bumpers\"; game.rink.obstacles: 4 bumpers changed, size 5 -> 7, x, z; game.rink.zones: + lane-middle, - spot-nw, - spot-ne; files: data/slush.cartridge.json");
+  assert.equal(compactChange("game.rink.goal_width_m: 4 -> 4.4"), "game.rink.goal_width_m: 4 -> 4.4");
+  assert.equal(compactChange('game.ai.difficulty: "pro" -> "rookie"'), 'game.ai.difficulty: "pro" -> "rookie"');
+  assert.equal(compactChange('game.rules: {"first_to":3,"periods":1} -> {"first_to":5,"periods":1}'), "game.rules: first_to changed");
+  assert.equal(compactChange('game.rink.zones: absent -> [{"id":"a","kind":"boost_only"}]'), 'game.rink.zones: absent -> [{"id":"a","kind":"boost_only"}]', "a list that was absent is shown as it is");
+});
+
+test("H1b 4: `rink.sh check-warm` measures the house cartridge and every base's once (the Foreman's arguments), so a job's first check reads the cache; again, it measures nothing; a lab build whose exe is new runs it", () => {
+  const cache = path.join(tempDir("h1b-warm"), "cache");
+  const env = { ...process.env, TL_RINKLAB_EXE: FAKE_LAB, TL_RINK_CHECK_CACHE: cache };
+  const warm = (): string => (spawnSync("bash", [path.join(REPO_ROOT, "engine", "tools", "rink.sh"), "check-warm"], { encoding: "utf8", env }).stdout ?? "").trim().split(/\r?\n/).at(-1) ?? "";
+  const bases = fs.readdirSync(path.join(ENGINE, "templates")).flatMap((t) => (fs.existsSync(path.join(ENGINE, "templates", t, "data")) ? fs.readdirSync(path.join(ENGINE, "templates", t, "data")).filter((f) => f.endsWith(".cartridge.json")) : [])).length;
+  assert.equal(warm(), `PASS  rink check-warm: ${bases + 1} cartridge(s) in the cache (${bases + 1} measured now, 0 already there)`);
+  assert.equal(warm(), `PASS  rink check-warm: ${bases + 1} cartridge(s) in the cache (0 measured now, ${bases + 1} already there)`);
+  // the job's house check (coreroute.ts runRinkCheck: the cartridge, its rules, --defects) is now a cache read
+  const hk = path.join(ENGINE, "packs", "hokej", "data");
+  const house = checkCartridge(path.join(hk, "hockey.thirdlife.cartridge.json"), ["--rules", path.join(hk, "hockey.thirdlife.rules.json")], { TL_RINK_CHECK_CACHE: cache });
+  assert.equal(house.line["cached"], true);
+  assert.equal(house.log.length, 0, "no lab process ran");
+  const sh = fs.readFileSync(path.join(ENGINE, "tools", "rink.sh"), "utf8");
+  assert.equal((sh.match(/\|\| "\$0" check-warm/g) ?? []).length, 2, "lab-build and lab-build-thirdlife warm when their exe changed");
 });

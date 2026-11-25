@@ -91,6 +91,15 @@ export interface ForemanOptions {
    * interrupted tick is the sensitive sign; its p99 moves much less than a big pack's.
    */
   referenceBusyTickMs?: number;
+  /**
+   * H1b of 25 Nov: the machine's processor load in %, read when a clock check failed twice (machine.ts cpuLoad, the
+   * day's room.sh measure). Default: cpuLoad on a real runner, none on the fake runner (tests pass their own).
+   */
+  machineLoad?: () => Promise<number | undefined>;
+  /** H1b: the load above which the machine counts as busy, whatever the reference pack says. Default 70 (the day's ceiling). */
+  busyCpuPct?: number;
+  /** H1b: before each try again, how long to wait at most for the load to come down to busyCpuPct. Default 10 minutes. */
+  quietWaitMs?: number;
   /** N3 item 3: compare kit use and bypasses before and after every round. Default true (`--no-kit-gate` turns it off). */
   kitGate?: boolean;
   /**

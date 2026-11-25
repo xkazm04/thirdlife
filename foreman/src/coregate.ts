@@ -19,7 +19,7 @@ import { CARTRIDGE_INVALID, coreDataFiles, fakeRinkCheck, gameCartridges, runRin
 import { applyChanges, type ChangeResult } from "./cartridge.js"; // lane E2: a change set applied and validated
 import { absentInChange, teamsSeen, unseenChange } from "./rinkjudge.js"; // E3d: a change the game cannot mean is asked back
 import { generate } from "./designer.js";
-import { addedEntries, asksRemoval, entriesText, isYes, removalQuestion, removedEntries, removedNote, type Removal } from "./removal.js"; // H1: a removal is named and asked
+import { addedEntries, asksRemoval, compactChange, entriesText, isYes, removalQuestion, removedEntries, removedNote, type Removal } from "./removal.js"; // H1: a removal is named and asked
 import type { RunResult } from "./builder/types.js";
 import { coreRouteOf } from "./templates.js";
 import { isFakeRunner } from "./verbs.js";
@@ -289,7 +289,7 @@ function makeDiff(h: GateHost, owner: string, round: number, file: string, d: Pe
   const report = h.dir("reports", `${owner}-r${round}-diff-s${h.s.lastSeq + 1}.json`);
   fs.writeFileSync(report, JSON.stringify({ schema: "tl.foreman.diff/1", package: owner, round, file, change: d.change, why: d.why, changed: d.changed, before: d.before, after: d.after, ...(d.removed.length > 0 ? { removed: d.removed } : {}) }, null, 1) + "\n");
   const said = `measured before: ${verdictWord(d.before)} (${figuresText(d.before.figures)}); after: ${verdictWord(d.after)} (${figuresText(d.after.figures)})${d.after.code === 0 ? `; ${clip(d.after.summary, 300)}` : ""}`;
-  h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${CARTRIDGE_DIFF}: ${d.changed.join("; ")} (${clip(d.why, 200)}); ${said} [report: ${h.rel(report)}]` });
+  h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${CARTRIDGE_DIFF}: ${d.changed.map(compactChange).join("; ")} (${clip(d.why, 200)}); ${said} [report: ${h.rel(report)}]` });
   for (const r of d.removed) h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${removedNote(r, d.why)}` });
 }
 
