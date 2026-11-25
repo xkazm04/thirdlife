@@ -21,3 +21,10 @@
   215 passed, 0 failed; selftest.sh create. 11/11 (new 782 create.pause.path 9/9). Stills: lanes/E4-iterate/stills-e4b/.
   Report: REPORT-E4b.txt.
 - landable E4b
+- E4c 05:10: the phase pause shows the measured figures beside Try it / Pass / Hold (goals a match, match length,
+  hokej's beside, gross defects in red); a scope question gets "Yes, let it" (answer --change <package>); E3d's
+  asked-back change reads whole with its "Yes, the blue team, the bots" chip; the build clock counts the current run.
+  Gates: npm test 356 (349 pass, 7 env skips, 0 fail); tl check --tier fast PASS 5/5; ui.sh selftest --repo=<main>
+  219 passed, 0 failed (215 + 4 new); selftest.sh create. 11/11 (782 now 10 steps, the run clock live).
+  Stills: lanes/E4-iterate/stills-e4c/. Report: REPORT-E4c.txt.
+- landable E4c

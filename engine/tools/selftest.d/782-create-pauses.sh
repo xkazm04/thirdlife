@@ -30,8 +30,8 @@ if [ -z "$FILTER" ] || [[ "$cp_name" == *"$FILTER"* ]]; then
     if [ -n "$cp_fail" ]; then cp_why="${cp_fail#\[create\] pauses }"
     elif echo "$cp_out" | grep -aq 'SCRIPT ERROR'; then cp_why="script error: $(echo "$cp_out" | grep -a 'SCRIPT ERROR' | head -1)"
     elif ! echo "$cp_out" | grep -aq '^\[create\] pauses all held'; then cp_why="no end line: the run stopped after $cp_pass steps ($cp_dir/create-pauses.log)"
-    elif [ "$cp_pass" -lt 9 ]; then cp_why="$cp_pass of 9 steps passed: a stopped run is never a pass"
+    elif [ "$cp_pass" -lt 10 ]; then cp_why="$cp_pass of 10 steps passed: a stopped run is never a pass"
     fi
   fi
-  verdict "$cp_name" "$cp_why" "9 steps: quality card, Fix it, It's fine, question card + option + Answer, Change it, done"
+  verdict "$cp_name" "$cp_why" "10 steps: quality card, the run clock, Fix it, It's fine, question card + option + Answer, Change it, done"
 fi

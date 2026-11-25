@@ -112,6 +112,7 @@ func _read_cards() -> void:
 ## Follow this job directory (fixtures, stills, the page's own job after Go).
 func show_job(dir: String) -> void:
 	job_dir = dir
+	_run_seq = -1
 	showing_games = false
 	_q_changing = false
 	_answer_draft = ""
@@ -133,6 +134,13 @@ func _read_job() -> void:
 		return
 	job = JobModel.read_job(job_dir, _now())
 	screen = Model.screen_of(job)
+	if int(job.get("last_seq", 0)) != _run_seq:
+		# E4c: the current run's start, for the build clock
+		_run_seq = int(job.get("last_seq", 0))
+		_run_t0 = 0.0
+		for e: Variant in JobModel.read_events(job_dir).get("events", []):
+			if e is Dictionary and str((e as Dictionary).get("type", "")) == "job_state" and str(e.get("state", "")) == "running":
+				_run_t0 = JobModel.ts_unix(str(e.get("ts", "")))
 	# a verdict is refused while a Foreman holds the job: Pass and Hold wait until it has let go (seen 21 Nov: the
 	# log said phase_done a moment before the process that wrote it ended)
 	settling = screen == "phase_done" and door != null and door.foreman_alive(job_dir, int(job.get("lock_pid", 0)))

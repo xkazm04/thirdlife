@@ -91,6 +91,9 @@ func drive(h: Node) -> void:
 					say("a quality hold shows the critic's reasons in words (“%s”) and Fix it / It's fine / Change it" % reasons.substr(0, 50),
 						reasons.contains("grey slab") and visible("FixIt") != null and visible("ItsFine") != null and visible("ChangeIt") != null)
 					await h.call("_shot", "pz-04-quality-hold")
+					var clock: Node = page().find_child("Clock", true, false)
+					var ct: String = (clock as Label).text if clock is Label else ""
+					say("the build clock counts this run (%s), not the job's first event (the fixture's is days old)" % ct, ct.count(":") == 1)   # E4c
 				match move:
 					"retry":
 						h.call("_press", "FixIt")
@@ -123,3 +126,28 @@ func drive(h: Node) -> void:
 			say("the %s pause was met" % want, false)
 	print("[create] pauses %s" % ("all held" if ok_all else "NOT all held"))
 	h.get_tree().quit(0 if ok_all else 1)
+
+
+## E4c: stage.gd --mode=e4c --shots=<abs dir>: stills of the E4c screens from create_iterate_checks.gd e4c_jobs (a dry
+## door, the jobs' own fixed clock): the phase pause with its measured figures, the scope question with "Yes, let it",
+## E3d's asked-back change, the build clock of a run that started 5 minutes ago.
+func stills(h: Node) -> void:
+	host = h
+	var tmp: String = OS.get_user_data_dir().path_join("tl_e4c_stills_%d" % OS.get_process_id())
+	var j: Dictionary = (load("res://ui/create/create_iterate_checks.gd") as GDScript).call("e4c_jobs", tmp)
+	(h.get("page") as Node).free()
+	var p: Control = (load("res://ui/create/create.tscn") as PackedScene).instantiate()
+	var fake: Array = ["--adapter", "fake"]
+	p.call("setup", {"jobs": tmp, "dry": true, "now": float(j["now"]), "flags": {"run": fake, "resume": fake, "change": fake}})
+	h.set("page", p)
+	h.add_child(p)
+	p.call("open")
+	await h.call("_frames", 4)
+	for shot: Array in [["measured", "e4c-1-phase-measured"], ["scope", "e4c-2-scope-question"], ["orange", "e4c-4-orange-question"], ["clock", "e4c-5-run-clock"]]:
+		p.call("show_job", str(j[shot[0]]))
+		await h.call("_shot", shot[1])
+		if shot[0] == "scope":
+			h.call("_press", "LetIt")
+			await h.call("_shot", "e4c-3-scope-let-it")
+	print("[create] e4c stills done")
+	h.get_tree().quit(0)

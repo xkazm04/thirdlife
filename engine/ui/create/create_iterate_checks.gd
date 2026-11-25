@@ -13,7 +13,7 @@ const Model = preload("res://ui/create/create_model.gd")
 const CreateScene = preload("res://ui/create/create.tscn")
 const Dungeons = preload("res://kernel/dungeon/dungeons.gd")
 
-const CHECKS: int = 8
+const CHECKS: int = 12
 const TEXT: String = "make the penguins faster"
 
 
@@ -151,7 +151,110 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 		not bool(rb["ok"]) and (rb["dungeons"] as Array).size() == 1 and (rb["errors"] as Array).size() == 2 and bool(none["ok"]) and (none["dungeons"] as Array).is_empty() and no_pack.begins_with("no pack.json"),
 		"%s; missing %s; add '%s'" % [str(rb), str(none), no_pack])
 	await _pauses(tree, check, tmp, fake)
+	await _e4c(tree, check, tmp, fake)
 	return true
+
+
+## A copy of a fixture job with more events (seq after its last; ts given or the fixture's last), under tmp.
+static func _copy_job(fixture: String, dir: String, extra: Array) -> String:
+	DirAccess.make_dir_recursive_absolute(dir)
+	var lines: PackedStringArray = FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://ui/fixtures/create").path_join(fixture).path_join("job.jsonl")).strip_edges().split("\n")
+	var last: Dictionary = JSON.parse_string(lines[lines.size() - 1])
+	var seq: int = int(last["seq"])
+	for e: Dictionary in extra:
+		seq += 1
+		var full: Dictionary = {"v": 1, "seq": seq, "ts": str(last["ts"]), "job": str(last["job"])}
+		full.merge(e, true)
+		lines.append(JSON.stringify(full))
+	var f: FileAccess = FileAccess.open(dir.path_join("job.jsonl"), FileAccess.WRITE)
+	f.store_string("\n".join(lines) + "\n")
+	f.close()
+	return dir
+
+
+## E4c (25 Nov): the phase pause's measured figures beside Try it / Pass / Hold (E3d's note and report); a question that
+## asks for a package's scope gets "Yes, let it" (answer --change); E3d's asked-back change reads right with its own
+## chip; the build clock counts the current run.
+## The E4c jobs under tmp: {measured, words, scope, orange, clock, scope_q, orange_q, now} (also stage_pauses.gd stills).
+static func e4c_jobs(tmp: String) -> Dictionary:
+	var rep: String = "reports/core-phase-slide-s31.json"
+	var note: String = "[foreman] measured at the phase pause slide: data/game.cartridge.json FAILED (rookie_wins_of_10 10, pro_goals_a_match 33.6, pro_minutes 6.2); GROSS DEFECTS: 33.6 goals a match at pro (thirdjam's regular playtester): thirdjam's own cartridges play 2.1 to 13.7, so 0 to 21.8 is the band; the house game hokej: pro_goals_a_match 3.4, pro_minutes 7.5 [report: %s]" % rep
+	var measured: String = _copy_job("c6-phase-done", tmp.path_join("e4c-measured"), [{"type": "note", "package": "penguin_moves", "round": 1, "text": note}])
+	DirAccess.make_dir_recursive_absolute(measured.path_join("reports"))
+	var rf: FileAccess = FileAccess.open(measured.path_join(rep), FileAccess.WRITE)
+	rf.store_string(JSON.stringify({"schema": "tl.foreman.measured/1", "phase": "slide", "file": "data/game.cartridge.json",
+		"run": {"code": 1, "figures": {"pro_goals_a_match": 33.6, "pro_minutes": 6.2}, "summary": "GROSS DEFECTS: ...", "defects": ["33.6 goals a match at pro (thirdjam's regular playtester): thirdjam's own cartridges play 2.1 to 13.7, so 0 to 21.8 is the band"]},
+		"house": {"code": 0, "figures": {"pro_goals_a_match": 3.4, "pro_minutes": 7.5}, "summary": "ok"}}))
+	rf.close()
+	var words_only: String = _copy_job("c6-phase-done", tmp.path_join("e4c-measured-words"), [{"type": "note", "package": "penguin_moves", "round": 1, "text": note.replace(rep, "reports/gone.json")}])
+	var scope_q: String = "Can the zone and bumper drawing go to a package that owns `gen/tj_rink.gd` and `scripts/main.gd`, or can those two files be added to this package's scope?"
+	var widen: String = _copy_job("c5-building", tmp.path_join("e4c-scope"), [{"type": "question", "package": "penguin_moves", "text": scope_q}, {"type": "job_state", "state": "paused", "reason": "waiting for answers: penguin_moves"}])
+	var orange_q: String = "There is no orange team in this game: your side is red (Red Toques), the bots are blue (Blue Scarves). Did you mean the blue team, the bots? Say it again with the team's colour or name, and the change is made."
+	var orange: String = _copy_job("c5-building", tmp.path_join("e4c-orange"), [{"type": "question", "package": "ice_arena", "text": orange_q}, {"type": "job_state", "state": "paused", "reason": "waiting for answers: ice_arena"}])
+	var now: float = 1795289400.0
+	var started: String = Time.get_datetime_string_from_unix_time(int(now) - 300) + ".000Z"
+	var run5: String = _copy_job("c5-building", tmp.path_join("e4c-clock"), [{"type": "job_state", "state": "running", "reason": "resumed", "ts": started}])
+
+	return {"measured": measured, "words": words_only, "scope": widen, "orange": orange, "clock": run5, "scope_q": scope_q, "orange_q": orange_q, "now": now}
+
+
+static func _e4c(tree: SceneTree, check: Callable, tmp: String, fake: Array) -> void:
+	var j: Dictionary = e4c_jobs(tmp)
+	var measured: String = j["measured"]
+	var words_only: String = j["words"]
+	var widen: String = j["scope"]
+	var orange: String = j["orange"]
+	var run5: String = j["clock"]
+	var orange_q: String = j["orange_q"]
+	var now: float = j["now"]
+
+	var page: Control = CreateScene.instantiate()
+	page.call("setup", {"jobs": tmp, "dry": true, "now": now, "flags": {"run": fake, "resume": fake, "change": fake}})
+	tree.root.add_child(page)
+	page.call("open")
+	await tree.process_frame
+	var has: Callable = func(name: String) -> bool:
+		var n: Node = page.find_child(name, true, false)
+		return n != null and (n as CanvasItem).is_visible_in_tree()
+	var text_of: Callable = func(name: String) -> String:
+		var n: Node = page.find_child(name, true, false)
+		return (n as Label).text if n is Label else ((n as Button).text if n is Button else "")
+	var press: Callable = func(name: String) -> void:
+		(page.find_child(name, true, false) as BaseButton).pressed.emit()
+	var door: RefCounted = page.get("door")
+
+	page.call("show_job", measured)
+	var card: String = "%s | %s | %s | %s" % [text_of.call("Measured0"), text_of.call("House0"), text_of.call("Measured1"), text_of.call("Defect0")]
+	var beside: bool = has.call("MeasuredCard") and has.call("TryIt") and has.call("Pass") and has.call("Hold")
+	var red: bool = has.call("Defect0") and (page.find_child("Defect0", true, false) as Label).get_theme_color("font_color").r > 0.7
+	page.call("show_job", words_only)
+	var w: Dictionary = Model.measured_view(page.get("job"))
+	check.call("create.e4c.measured: at a phase pause the measured figures stand beside Try it / Pass / Hold: goals a match and match length beside hokej's, a gross defect in red words; without its report the note's own figures",
+		beside and red and card.contains("Goals a match: 33.6") and card.contains("hokej: 3.4") and card.contains("Match lasts: 6.2 min") and card.contains("33.6 goals a match at pro")
+		and float(w.get("goals", -1)) == 33.6 and float(w.get("minutes", -1)) == 6.2 and (w.get("defects", []) as Array).size() == 1, "%s; words-only %s" % [card, str(w)])
+
+	page.call("show_job", widen)
+	var chips: bool = has.call("LetIt") and not has.call("Option0")   # its yes is the chip; anything else in words
+	press.call("LetIt")
+	var base: int = (door.get("dry_steps") as Array).size()
+	press.call("SendAnswer")
+	var sent: Array = (door.get("dry_steps") as Array).slice(base)
+	var named: String = Model.scope_package({"order": ["core", "ice_arena"]}, {"package": "core", "text": "May ice_arena be changed so that it reads data/feel.json?"})
+	var plain: String = Model.scope_package({"order": ["core"]}, {"package": "core", "text": "Should the orca chase the nearest penguin?"})
+	check.call("create.e4c.scope: a question that asks for a package's scope has a “Yes, let it” chip: foreman answer <job> <package> \"...\" --change <package> then resume (the package it names, else the asker); other questions have none",
+		chips and str(sent) == str([[["answer", widen, "penguin_moves", "Yes, let it change what it needs.", "--change", "penguin_moves"], ["resume", widen] + fake]]) and named == "ice_arena" and plain.is_empty(),
+		"chips %s, sent %s, named '%s', plain '%s'" % [str(chips), str(sent), named, plain])
+
+	page.call("show_job", orange)
+	var oq: String = text_of.call("Question")
+	check.call("create.e4c.orange: E3d's asked-back change reads whole in the question card with one chip (“Yes, the blue team, the bots”) and no scope chip",
+		oq == orange_q and text_of.call("Option0") == "Yes, the blue team, the bots" and not has.call("Option1") and not has.call("LetIt"), "'%s' / '%s'" % [oq, text_of.call("Option0")])
+
+	page.call("show_job", run5)
+	var clock: String = text_of.call("Clock")
+	check.call("create.e4c.clock: the build clock counts the current run (5:00 since its job_state running), not the job's first event",
+		page.call("shown_screen") == "building" and clock == JobModel.fmt_time(300.0), "clock '%s' (want %s)" % [clock, JobModel.fmt_time(300.0)])
+	page.queue_free()
 
 
 ## E4b (25 Nov): the two pauses E5 was stuck at. A builder's question (c5-building + question + paused) and a quality

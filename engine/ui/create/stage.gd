@@ -59,6 +59,7 @@ func _ready() -> void:
 		"menu": _menu()
 		"iterate": _iterate()
 		"pauses": await (load("res://ui/create/stage_pauses.gd") as GDScript).new().drive(self)   # E4b
+		"e4c": await (load("res://ui/create/stage_pauses.gd") as GDScript).new().stills(self)   # E4c: --shots=<abs dir>
 
 
 func _new_page() -> void:
