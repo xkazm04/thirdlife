@@ -5,7 +5,7 @@ Public surface of the kernel API, kits, rigs and style, read from the GDScript s
 `tl arch` fails (rule `api-index-fresh`) when this file is stale. Members are sorted by name; `static` marks a class-level function; names starting with `_` are omitted. Hand-written reference: `engine/kernel/API.md`.
 The same surface as a contract a machine checks (kernel API version, rule `api-v1`): `docs/generated/API-V1.json`.
 
-Classes: 44
+Classes: 51
 
 ## TLAudio
 
@@ -116,12 +116,14 @@ Properties: `active: Camera3D`
 
 - `func activate(view_name: StringName) -> bool`
 - `func add_view(view: StringName, position: Vector3, target: Vector3, fov: float = 60.0) -> Camera3D`
+- `func aspect() -> float`
 - `func chase(target: Node3D, opts: Dictionary = {}, view: StringName = &"chase") -> TLChaseCam`
 - `func fade_occluders(on: bool = true, opts: Dictionary = {}) -> void`
 - `func faded() -> Array`
 - `func frame(subject: Node3D, fill: float = 0.35, view_name: StringName = &"") -> void`
 - `func has_view(view: StringName) -> bool`
 - `func orbit(target: Node3D, opts: Dictionary = {}, view: StringName = &"orbit") -> TLOrbitCam`
+- `func screen_fade(amount: float, color: Color = Color.BLACK) -> void`
 - `func set_subject(view_name: StringName, subject: Node3D) -> void`
 - `func shake(amount: float, frames: int) -> void`
 - `func subject_of(view_name: StringName) -> Node3D`
@@ -160,23 +162,42 @@ Properties: `body: RigidBody3D`, `material: String`, `min_hit_speed: float`, `su
 
 > The kernel's context object, handed to `_pack_setup(ctx)`, `generate(ctx)` and `_bot_setup(ctx)`.
 
-Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras`, `static current: TLContext`, `frame: int`, `headless: bool`, `holder: Node`, `huds: Array`, `input: TLInput`, `instance: String`, `manifest: Dictionary`, `max_frames: int`, `mode: String`, `on_stage: bool`, `origin: Vector3`, `pack_dir: String`, `pack_id: String`, `rng: RandomNumberGenerator`, `root: Node3D`, `scenery: String`, `seed: int`, `space: RID`
+Properties: `audio_events: Array`, `ball_group: StringName`, `cameras: TLCameras`, `cores: TLCores`, `static current: TLContext`, `frame: int`, `headless: bool`, `holder: Node`, `huds: Array`, `input: TLInput`, `instance: String`, `manifest: Dictionary`, `max_frames: int`, `mode: String`, `on_stage: bool`, `origin: Vector3`, `owns_pause: bool`, `pack_dir: String`, `pack_id: String`, `paused: bool`, `rng: RandomNumberGenerator`, `root: Node3D`, `scenery: String`, `seed: int`, `space: RID`
 
+- `func can_pause() -> bool`
 - `static func enter(ctx: TLContext) -> TLContext`
 - `static func first_time(key: String, ctx: TLContext = null) -> bool`
 - `func frames(seconds_: float) -> int`
 - `func has_capability(cap: String) -> bool`
 - `func info(message: String) -> void`
 - `static func leave(before: TLContext) -> void`
+- `func leave_game() -> void`
 - `func load_script(rel: String) -> GDScript`
 - `static func of(node: Node) -> TLContext`
+- `func own_pause(on: bool = true) -> void`
 - `func pack_state() -> Dictionary`
+- `func pause() -> void`
 - `func pick(items: Array) -> Variant`
 - `func read_json(rel: String) -> Variant`
 - `static func require(cap: String, who: String) -> void`
+- `func resume() -> void`
 - `func seconds(frame_count: int) -> float`
 - `func shuffle(items: Array) -> void`
 - `static func space_state_of(node: Node3D, ctx: TLContext = null) -> PhysicsDirectSpaceState3D`
+
+## TLCores
+
+`engine/kernel/api/tl_cores.gd` extends `RefCounted`
+
+> `ctx.cores`: the engine's game cores (engine/cores/<id>/), compiled native simulations a pack drives frame by frame.
+
+Consts: `KNOWN`, `PARTS`
+
+- `func open(id: String, cartridge: String = "") -> Object`
+- `func opened(id: String) -> Object`
+- `func part(id: String, pname: String) -> GDScript`
+- `func state() -> Dictionary`
+- `func view_script(id: String, name: String) -> GDScript`
 
 ## TLDamage
 
@@ -273,12 +294,14 @@ Properties: `font_size: int`
 - `func add_bound(id: StringName, source: Callable, anchor: StringName = &"top_left") -> void`
 - `func add_clock(rules: TLRules, anchor: StringName = &"top") -> void`
 - `func add_label(id: StringName, text: String, anchor: StringName = &"top_left") -> void`
+- `func add_layer(id: StringName, unit_h: float = 1080.0) -> TLHudLayer`
 - `func add_score(rules: TLRules, side: String, anchor: StringName = &"top_left", caption: String = "") -> void`
 - `func add_speed(source: Callable, unit: String = "km/h", anchor: StringName = &"bottom_right") -> void`
 - `func add_tag(id: StringName, node: Node3D, text: String = "", offset: Vector3 = Vector3(0, 2.3, 0)) -> void`
 - `func configure_widgets(catalog: Variant, layout: Variant) -> bool`
 - `static func create() -> TLHud`
 - `static func hide_all(of_pack: TLContext = null) -> void`
+- `func on_paused(handler: Callable) -> void`
 - `func remove_widget(id: StringName) -> void`
 - `func set_align(id: StringName, align: StringName) -> void`
 - `func set_color(id: StringName, color: Variant) -> void`
@@ -288,13 +311,41 @@ Properties: `font_size: int`
 - `func set_text(id: StringName, text: String) -> void`
 - `func text_of(id: StringName) -> String`
 
+## TLHudLayer
+
+`engine/kernel/api/tl_hud_layer.gd` extends `Control`
+
+> K5 (API 1.20): a painter for a sports HUD, made with `TLHud.add_layer(id)`. A pack lays out its screen furniture every
+
+Properties: `unit_h: float`
+
+- `func bar(pos: Vector2, size_u: Vector2, frac: float, fill: Color, back: Color = Color(0, 0, 0, 0.55), radius: float = 0.0) -> void`
+- `func box(pos: Vector2, size_u: Vector2, fill: Color, radius: float = 0.0, edge: Color = Color(0, 0, 0, 0), edge_w: float = 0.0, angle_deg: float = 0.0) -> void`
+- `func camera_local(world: Vector3) -> Vector3`
+- `func chevron(pos: Vector2, size_u: float, color: Color, edge: Color = Color(0, 0, 0, 0.9), edge_w: float = 1.5, angle_deg: float = 0.0, align: Vector2 = Vector2(0.5, 0.5)) -> void`
+- `func clear() -> void`
+- `func extent() -> Vector2`
+- `func eye() -> Vector3`
+- `func ground_ring(center: Vector3, radius: float, near: float = 0.5) -> Rect2`
+- `func image(tex: Texture2D, rect: Rect2, tint: Color = Color.WHITE, scale_k: float = 1.0) -> void`
+- `func image_of(rel: String) -> Texture2D`
+- `func line(a: Vector2, b: Vector2, color: Color, width: float = 1.0) -> void`
+- `func measure(s: String, pt: float, face: String = "bold", tracking: int = 0) -> Vector2`
+- `func minimap(pos: Vector2, size_u: Vector2, field: Vector2, dots: Array) -> void`
+- `func nine(tex: Texture2D, rect: Rect2, margin: Vector4, px_per_unit: float = 1.0, tint: Color = Color.WHITE) -> void`
+- `func polygon(points: PackedVector2Array, color: Color) -> void`
+- `func project(world: Vector3) -> Vector3`
+- `func ring(r: Rect2, color: Color, band: float = 0.082, edge: float = 0.0086, edge_color: Color = Color(0.078, 0.078, 0.13, 1.0)) -> void`
+- `func text(pos: Vector2, s: String, pt: float, color: Color, opts: Dictionary = {}) -> Rect2`
+- `func unit() -> float`
+
 ## TLInput
 
 `engine/kernel/api/tl_input.gd` extends `Node`
 
 > Named actions: the one door for input. A pack declares actions; the player presses keys, a bot injects, and the
 
-Consts: `AIM_DEAD`, `LOOK_X`, `LOOK_Y`, `STEP`, `ZOOM`
+Consts: `AIM_DEAD`, `LOOK_X`, `LOOK_Y`, `NO_PIXEL`, `STEP`, `ZOOM`
 
 Signals: `action_pressed(action: StringName)`, `action_released(action: StringName)`
 
@@ -302,6 +353,7 @@ Properties: `accept_devices: bool`
 
 - `func aim(action: StringName) -> Vector3`
 - `func aim_direction(action: StringName, from: Vector3, fallback: Vector3 = Vector3.ZERO) -> Vector3`
+- `func aim_pixel(action: StringName) -> Vector2`
 - `func aim_valid(action: StringName) -> bool`
 - `func axis(negative: StringName, positive: StringName) -> float`
 - `func clear_aim(action: StringName) -> void`
@@ -311,11 +363,12 @@ Properties: `accept_devices: bool`
 - `func just_pressed(action: StringName) -> bool`
 - `func just_released(action: StringName) -> bool`
 - `func keys_taken() -> bool`
+- `func menu_keys() -> PackedStringArray`
 - `func press(action: StringName, value: float = 1.0) -> void`
 - `func pressed(action: StringName) -> bool`
 - `func release(action: StringName) -> void`
 - `func release_all() -> void`
-- `func set_aim(action: StringName, point: Vector3) -> void`
+- `func set_aim(action: StringName, point: Vector3, pixel: Vector2 = NO_PIXEL) -> void`
 - `func set_axis(negative: StringName, positive: StringName, value: float) -> void`
 - `func strength(action: StringName) -> float`
 - `func tap(action: StringName, frames: int = 1) -> void`
@@ -675,6 +728,24 @@ Properties: `best_lap_frames: Dictionary`, `checkpoints: int`, `clock_frames: in
 - `func standings() -> PackedStringArray`
 - `func start() -> void`
 
+## TLSound
+
+`engine/kernel/api/tl_audio_sound.gd` extends `RefCounted`
+
+> Sound from files (kernel 1.27; capability `audio`). `TLAudio` plays synthesised presets by name; this plays the
+
+Consts: `BUS_PREFIX`, `CHANNELS`, `LOOP_KEYS`, `NODE_NAME`, `PLAY_KEYS`, `SAY_KEYS`, `SET_KEYS`, `SILENT_DB`
+
+- `static func channel_db(channel: String, db: float) -> void`
+- `static func count(path: String) -> int`
+- `static func loop(name: StringName, path: String, opt: Dictionary = {}) -> void`
+- `static func play(path: String, opt: Dictionary = {}) -> void`
+- `static func say(path: String, opt: Dictionary = {}) -> void`
+- `static func saying() -> bool`
+- `static func set_loop(name: StringName, opt: Dictionary) -> void`
+- `static func stop_loop(name: StringName, fade_frames: int = 0) -> void`
+- `static func stop_voice(fade_frames: int = 0) -> void`
+
 ## TLSpawner
 
 `engine/kernel/api/tl_spawner.gd` extends `Node3D`
@@ -738,6 +809,43 @@ Properties: `static data: Dictionary`, `static style_name: String`, `static styl
 - `static func push(section: String, m: ShaderMaterial) -> void`
 - `static func set_headless(on: bool) -> void`
 
+## TLStyleArena
+
+`engine/style/tl_style_arena.gd` extends `RefCounted`
+
+> Materials for an indoor hall and the light rig that lights them (K6, hockey port, 23-24 Nov 2026). New entries beside
+
+Consts: `BULB_KEYS`, `CROWD_KEYS`, `ICE_KEYS`, `MAX_LIGHTS`, `POST_FILE`, `POST_GRADE`, `POST_INK`, `SURFACE_KEYS`
+
+- `static func bulb(p: Dictionary = {}) -> Material`
+- `static func crowd(p: Dictionary = {}) -> Material`
+- `static func ice(p: Dictionary = {}) -> Material`
+- `static func post(anchor: Node, opt: Dictionary) -> bool`
+- `static func post_file() -> Dictionary`
+- `static func set_cheer(plus: float, minus: float, seconds: float) -> void`
+- `static func set_exposure(exposure: float) -> void`
+- `static func set_glow(m: Material, emit: Color) -> void`
+- `static func set_rig(lights: Array, exposure: float, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1)) -> bool`
+- `static func surface(p: Dictionary = {}) -> Material`
+- `static func tone(c: Color, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1)) -> Color`
+
+## TLStyleFelt
+
+`engine/style/tl_style_felt.gd` extends `RefCounted`
+
+> Felt and clay for a figure (K7, hockey port, 23-24 Nov 2026): thirdjam's skater materials on its clay look tier, as a
+
+Consts: `CLAY_NORMALS`, `DIR`, `FALLBACK_EXPOSURE`, `KEYS`, `LOOK`, `MAX_LIGHTS`, `RENDER_PRIORITY`, `SHADER_PATH`
+
+- `static func contact_material(darkest: float = 0.45, flat_k: float = 0.0) -> ShaderMaterial`
+- `static func material(params: Dictionary = {}) -> ShaderMaterial`
+- `static func rig_size() -> int`
+- `static func set_floor(albedo: Color) -> void`
+- `static func set_params(m: ShaderMaterial, params: Dictionary) -> bool`
+- `static func set_review_linear(k: float) -> void`
+- `static func set_rig(lights: Array, exposure: float, gain: Color = Color(1, 1, 1), gain_shadows: Color = Color(1, 1, 1), sky: Color = Color(0, 0, 0)) -> bool`
+- `static func texture(path: String) -> Texture2D`
+
 ## TLStyleFx
 
 `engine/style/tl_style_fx.gd` extends `RefCounted`
@@ -754,6 +862,30 @@ Properties: `static data: Dictionary`, `static style_name: String`, `static styl
 - `static func squash(visual: Node3D, amount: float = 0.25, frames: int = 18, axis: Vector3 = Vector3.UP) -> void`
 - `static func trail(target: Node3D, opts: Dictionary = {}) -> Node3D`
 - `static func tyre_dust() -> CPUParticles3D`
+
+## TLStyleHall
+
+`engine/style/tl_style_hall.gd` extends `RefCounted`
+
+> A light rig a pack may ask for (K3, hockey port, 23-24 Nov 2026): an indoor hall lit from above, in place of the style's
+
+Consts: `DEFAULTS`
+
+- `static func apply(anchor: Node, opt: Dictionary = {}) -> bool`
+- `static func clear(anchor: Node) -> void`
+
+## TLStyleHallKeys
+
+`engine/style/tl_style_hall_keys.gd` extends `RefCounted`
+
+> The shadows of a hall's key lights (K7, hockey port, round 3): the lights of a rig that cast shadows (thirdjam's
+
+Consts: `DEFAULTS`, `NODE`, `RANGE_K`, `WIDER_DEG`
+
+- `static func clear(anchor: Node) -> void`
+- `static func count(anchor: Node) -> int`
+- `static func install(anchor: Node, lights: Array, opt: Dictionary = {}) -> int`
+- `static func receive(mi: GeometryInstance3D) -> void`
 
 ## TLTrigger
 

@@ -5,8 +5,10 @@ import type { Brief, Creativity, Estimate, PackageSpec, Phase } from "./events.j
 import { planProblems } from "./events.js";
 import { aspectProblems, crazyProblems, phaseProblems, LIMITS } from "./v2.js";
 import type { ReactionView } from "./joblog.js";
-import type { Builder, RunResult } from "./builder/types.js";
-import { schemaErrors } from "./builder/json.js";
+import type { Builder } from "./builder/types.js";
+import { generate, render, type GenerateOptions, type Generated } from "./generate.js"; // E3g: the call and its retries
+export { generate, render, type GenerateCall, type GenerateOptions, type GenerateRole, type Generated } from "./generate.js";
+import { designerExactFix } from "./designfix.js"; // E3g: exact fixes without the model
 import { globToRegExp, scopeProblems } from "./scope.js";
 import { critiqueSchema, type CritiqueResult } from "./verifier.js";
 import { PKG_ROOT, REPO_ROOT } from "./paths.js";
@@ -14,40 +16,17 @@ import { ENTRY_SCRIPT, MANIFEST_FILE, depClosure } from "./manifest.js";
 import { acceptanceOptions, verbOptionsText, type RunnerVerbs } from "./verbs.js";
 import { planCardProblems, planHandProblems } from "./cards.js";
 import { briefDesignText, conceptText, criticChecklistText, designAnswerSchema, qualityText, roomDesignProblems, withHLine } from "./roomtext.js"; // JOB.md 2026-11-21: the design room
-import { briefTemplateProblems, templateExcerpt } from "./templates.js"; // N4 of 22 Nov: genre templates
+import { HOUSE_ENGINE, briefTemplateProblems, coreRouteOf, templateExcerpt } from "./templates.js"; // N4 of 22 Nov: genre templates
+import { corePlanCheck, corePlannerText, coreTofuText, normalizeCorePlan, overlapAllowed, packageLimitProblems, planCore } from "./coreplan.js"; // E3 of 24 Nov: a game on a core
 import { tofuPlanProblems, tofuPlannerText } from "./tofu.js"; // N4 of 22 Nov: the tofu stage
 import type { ConceptTemplate } from "./room_wire.js";
 import { servesProblems, type Concept } from "./room_wire.js";
-import { repairLengths, type LengthRule } from "./repair.js";
 import { playerCheckProblems } from "./playercheck.js";
 import { methodProblems, methodText } from "./method.js"; // N2 of 23 Nov: docs/design/METHOD.md
 export { PLAYER_CHECK_RE, playerCheckProblems, playerChecks } from "./playercheck.js";
 
 const prompt = (name: string): string => fs.readFileSync(path.join(PKG_ROOT, "prompts", name), "utf8");
 const schema = (name: string): object => JSON.parse(prompt(name)) as object;
-export const render = (template: string, vars: Record<string, string>): string => template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
-
-export type GenerateRole = "designer" | "concept" | "design_review" | "planner" | "critic" | "placer" | "critic_compare";
-export interface GenerateCall {
-  role: GenerateRole | `${GenerateRole}_repair`;
-  attempt: number;
-  prompt: string;
-  result: RunResult;
-  /** Validation problems found by us after the adapter said ok. */
-  problems: string[];
-}
-
-export type Generated<T> = { ok: true; value: T; calls: GenerateCall[] } | { ok: false; reason: string; calls: GenerateCall[] };
-
-export interface GenerateOptions {
-  model?: string;
-  timeoutMs?: number;
-  /** Total attempts when the answer does not validate. Default 2. */
-  attempts?: number;
-  /** L1b: word limits of the answer; an answer whose only problems are these gets ONE repair call (repair.ts). */
-  limits?: LengthRule[];
-}
-
 export interface PlanLimits {
   /** Most packages a plan may hold. A Planner answer with more is sent back once with this limit. */
   maxPackages?: number;
@@ -70,6 +49,7 @@ export interface PlanLimits {
   /** N4 of 22 Nov: a fresh plan of a design-room brief carries the TOFU CHECK line (tofu.ts); `template` gives its rows. */
   requireTofu?: boolean;
   template?: ConceptTemplate;
+  refDir?: string; // E3 of 24 Nov: the job's reference copy (cards.ts cardLimits), where a core plan's base is (ref/base/<base>/)
 }
 
 /** The Planner's answer: the packages, the phases they are built in and, when one fits, the recipe card for the whole job. */
@@ -77,59 +57,6 @@ export interface PlanAnswer {
   packages: PackageSpec[];
   card?: string;
   phases?: Phase[];
-}
-
-export async function generate<T>(
-  builder: Builder,
-  role: GenerateRole,
-  template: string,
-  vars: Record<string, string>,
-  jsonSchema: object,
-  check: (value: unknown) => string[],
-  opts: GenerateOptions,
-  mode: "generate" | "readonly-scan" = "generate",
-  cwd = "",
-  images: string[] = [],
-): Promise<Generated<T>> {
-  const calls: GenerateCall[] = [];
-  let feedback = "";
-  const attempts = opts.attempts ?? 2;
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    const text = render(template, { ...vars, schema: JSON.stringify(jsonSchema, null, 1), feedback });
-    const result = await builder.run({
-      prompt: text,
-      mode,
-      cwd,
-      schema: jsonSchema,
-      timeoutMs: opts.timeoutMs ?? 10 * 60_000,
-      ...(opts.model ? { model: opts.model } : {}),
-      ...(images.length > 0 ? { images } : {}),
-      meta: { role },
-    });
-    let problems: string[] = [];
-    if (result.outcome === "ok") {
-      // The adapter validated against the schema; we do it again here because acceptance is ours to decide.
-      problems = schemaErrors(jsonSchema, result.json);
-      if (!problems.length) problems = check(result.json);
-      calls.push({ role, attempt, prompt: text, result, problems });
-      if (problems.length === 0) return { ok: true, value: result.json as T, calls };
-      if (opts.limits && !calls.some((c) => c.role === `${role}_repair`)) {
-        const r = await repairLengths<T>(builder, role, result.json, opts.limits, jsonSchema, check, { ...(opts.model ? { model: opts.model } : {}), timeoutMs: opts.timeoutMs ?? 10 * 60_000 });
-        if (r.result) calls.push({ role: `${role}_repair`, attempt, prompt: r.prompt ?? "", result: r.result, problems: r.problems });
-        if (r.value !== undefined) return { ok: true, value: r.value, calls };
-      }
-    } else {
-      calls.push({ role, attempt, prompt: text, result, problems });
-      // Only an answer that came back but did not validate is worth asking again; a timeout or refusal is not.
-      if (!(result.outcome === "error" && (result.error?.kind === "schema" || result.error?.kind === "parse"))) {
-        return { ok: false, reason: `${role}: builder ${result.outcome}: ${result.error?.message ?? "no detail"}`, calls };
-      }
-      problems = [result.error.message];
-    }
-    feedback = `\n# Your previous answer was rejected\n${problems.map((p) => `- ${p}`).join("\n")}\nAnswer again with one valid JSON object.`;
-  }
-  const last = calls[calls.length - 1];
-  return { ok: false, reason: `${role}: answer still invalid after ${attempts} attempts: ${(last?.problems.length ? last.problems : [last?.result.error?.message ?? "invalid"]).join("; ")}`, calls };
 }
 
 export interface DesignerOutput {
@@ -240,7 +167,7 @@ export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creat
  */
 export function designBrief(builder: Builder, input: string | DesignerInput, opts: GenerateOptions = {}): Promise<Generated<DesignerOutput>> {
   const i: DesignerInput = typeof input === "string" ? { sentence: input } : input;
-  return generate<DesignerOutput>(builder, "designer", prompt("designer.md"), designerVars(i), designAnswerSchema(), (v) => designerProblems((v as DesignerOutput).brief, i), opts);
+  return generate<DesignerOutput>(builder, "designer", prompt("designer.md"), designerVars(i), designAnswerSchema(), (v) => designerProblems((v as DesignerOutput).brief, i), { exactFix: (v) => designerExactFix(v, coreRouteOf(i.concept?.template), HOUSE_ENGINE), ...opts });
 }
 
 /** The Designer prompt exactly as the first attempt of `designBrief` sends it (dry check; no model is called). */
@@ -265,10 +192,8 @@ export function planPhaseProblems(packages: PackageSpec[], phases: unknown, requ
 /** Problems of a plan beyond its JSON shape: graph errors, scopes, the composed manifest, acceptance options, phases. */
 export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: unknown, phases?: unknown): string[] {
   const out = [...planProblems(packages), ...planCardProblems(card, limits.cards ?? []), ...planHandProblems(packages, typeof card === "string" ? card : undefined, limits.cardHands ?? {})];
-  out.push(...planPhaseProblems(packages, phases, limits.requirePhases === true), ...servesProblems(packages, limits.clipIds), ...tofuPlanProblems(packages, phases as Phase[] | undefined, limits.requireTofu === true, limits.template));
-  if (limits.maxPackages !== undefined && packages.length > limits.maxPackages) {
-    out.push(`the plan has ${packages.length} packages; the limit for this job is ${limits.maxPackages}: merge concerns until it fits`);
-  }
+  out.push(...planPhaseProblems(packages, phases, limits.requirePhases === true), ...servesProblems(packages, limits.clipIds), ...tofuPlanProblems(packages, phases as Phase[] | undefined, limits.requireTofu === true && planCore(limits) === undefined, limits.template), ...corePlanCheck(packages, limits, card, phases as Phase[] | undefined));
+  out.push(...packageLimitProblems(packages, limits)); // E3 of 24 Nov: a core game (coreplan.ts): no tofu stage, the base costs no builder
   for (const p of packages) out.push(...scopeProblems(p.scope).map((m) => `package "${p.id}": ${m}`));
   // Disjointness of globs in general is hard; these two tests catch what planners actually get wrong:
   // the same glob twice, and one package's literal path falling inside another's glob.
@@ -279,6 +204,7 @@ export function planCheck(packages: PackageSpec[], limits: PlanLimits, card?: un
       const b = packages[j] as PackageSpec;
       for (const ga of a.scope) {
         for (const gb of b.scope) {
+          if (overlapAllowed(a, b)) continue; // E3: the base yields the files a later package of a core game names
           if (ga === gb) {
             if (i < j) out.push(`packages "${a.id}" and "${b.id}" both claim scope "${ga}"`);
           } else if (!/[*?]/.test(ga) && globToRegExp(gb).test(ga)) {
@@ -396,7 +322,8 @@ The producer's last review of this design (its warnings: make each one true in a
     quality: input.brief.design !== undefined ? qualityText(["2", "6", "7:Planner", "12"]) : "(the brief has no game design doc: build the brief as it is)",
     template: templateExcerpt(input.brief.concept?.template, "planner"),
     method: input.brief.design !== undefined ? methodText(["14:Planner"]) : "",
-    tofu: input.brief.design !== undefined ? tofuPlannerText(input.brief.concept?.template, input.brief.design.verbs.length) : "(the brief has no game design doc: no tofu stage; the first phase is the smallest thing that plays)",
+    tofu: coreTofuText(input.brief.concept?.template) ?? (input.brief.design !== undefined ? tofuPlannerText(input.brief.concept?.template, input.brief.design.verbs.length) : "(the brief has no game design doc: no tofu stage; the first phase is the smallest thing that plays)"),
+    core: corePlannerText(input.brief),
   };
 }
 
@@ -405,23 +332,24 @@ export function renderPlannerPrompt(input: PlannerInput, limits: PlanLimits): st
   return render(prompt("planner.md"), { ...plannerVars(input, limits, ""), schema: JSON.stringify(schema("plan.schema.json"), null, 1), feedback: "" });
 }
 
-function limitLine(limits: PlanLimits): string {
-  return limits.maxPackages !== undefined ? `At most ${limits.maxPackages} packages in total for this job (a hard limit).` : "Four to ten packages for a mini-game: a real design needs room for the core exchange with its feel sheet, the rivals, the twist and the clip moments.";
-}
+const limitLine = (limits: PlanLimits): string => (limits.maxPackages !== undefined ? `At most ${limits.maxPackages} packages in total for this job (a hard limit).` : "Four to ten packages for a mini-game: a real design needs room for the core exchange with its feel sheet, the rivals, the twist and the clip moments.");
 
 /** JOB.md 2026-11-21: the clip ids a plan's `serves` may name (none without a design doc). */
 export const clipLimit = (brief: Brief): { clipIds?: string[]; template?: ConceptTemplate } => (brief.design ? { clipIds: brief.design.clips.map((c) => c.id), ...(brief.concept?.template ? { template: brief.concept.template } : {}) } : {});
 
-export function planPackages(builder: Builder, input: PlannerInput, opts: GenerateOptions & PlanLimits): Promise<Generated<PlanAnswer>> {
-  return generate<PlanAnswer>(
+export async function planPackages(builder: Builder, input: PlannerInput, opts: GenerateOptions & PlanLimits): Promise<Generated<PlanAnswer>> {
+  const limits = { requirePhases: true, ...opts, ...clipLimit(input.brief), requireTofu: input.brief.design !== undefined && input.brief.concept?.template !== undefined };
+  const fix = (v: PlanAnswer): PlanAnswer => normalizeCorePlan(v, planCore(limits)); // E3: a core plan's base package is fixed from the base
+  const res = await generate<PlanAnswer>(
     builder,
     "planner",
     prompt("planner.md"),
     plannerVars(input, opts, ""),
     schema("plan.schema.json"),
-    (v) => planCheck((v as PlanAnswer).packages, { requirePhases: true, ...opts, ...clipLimit(input.brief), requireTofu: input.brief.design !== undefined && input.brief.concept?.template !== undefined }, (v as PlanAnswer).card, (v as PlanAnswer).phases),
+    (v) => ((p) => planCheck(p.packages, limits, p.card, p.phases))(fix(v as PlanAnswer)),
     { ...opts, timeoutMs: opts.timeoutMs ?? PLANNER_TIMEOUT_MS, limits: [{ path: "phases[*].try", max: LIMITS.try }] }, // L1b: a too-long try line is repaired; N4: 20 min
   );
+  return res.ok ? { ...res, value: fix(res.value) } : res;
 }
 
 export interface ReplanInput extends PlannerInput {

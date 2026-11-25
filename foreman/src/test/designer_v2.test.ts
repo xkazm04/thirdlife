@@ -330,7 +330,7 @@ test("cards fun: every card has a fun block; tl cards check refuses a missing ke
     loadCards: (root: string) => { cards: { card: { id: string; fun?: Record<string, string[]> } }[] };
   };
   const { cards } = check.loadCards(REPO_ROOT);
-  assert.equal(cards.length, 5); // N2 of 22 Nov: card.duel
+  assert.equal(cards.length, 6); // N2 of 22 Nov: card.duel; E3 of 24 Nov: card.rink_core
   for (const { card } of cards) {
     assert.deepEqual(Object.keys(card.fun ?? {}), ["camera", "juice", "rivals", "first_minute", "stakes"], card.id);
     assert.deepEqual(check.validateCard(card), []);

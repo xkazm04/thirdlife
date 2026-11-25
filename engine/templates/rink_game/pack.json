@@ -1,0 +1,29 @@
+{
+  "id": "template.rink_game",
+  "version": "0.1.0",
+  "kernelApi": "1.30",
+  "title": "Rink game: the base (thirdjam's match on the rink core, skinned by data)",
+  "capabilities": [
+    "audio",
+    "input",
+    "camera",
+    "kit",
+    "style",
+    "ui"
+  ],
+  "entry": "scripts/main.gd",
+  "assets": [
+    "gen/tj_rink.gd"
+  ],
+  "tests": [
+    "tests/bot_match_hand.gd",
+    "tests/bot_first_match.gd",
+    "tests/bot_skin.gd",
+    "tests/bot_toys.gd"
+  ],
+  "cameras": [
+    "follow",
+    "top"
+  ],
+  "subject": "Skater"
+}

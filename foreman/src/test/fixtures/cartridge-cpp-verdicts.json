@@ -1,0 +1,790 @@
+{
+ "cases": [
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.arena.large.cartridge.json",
+   "ok": true,
+   "sha1": "462eacbe087ddd5357acb893d4c5e3a162c7816e"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.arena.wide.cartridge.json",
+   "ok": true,
+   "sha1": "3f57c0180989676d06759cced22caf7a105146df"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.boost.cartridge.json",
+   "ok": true,
+   "sha1": "556d46de89379eee54aded939edee199fd137231"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.chaos.cartridge.json",
+   "ok": true,
+   "sha1": "1ae9c8ad7d11784c6bd5e31b19b4c0b17dbc1130"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.raw.cartridge.json",
+   "ok": true,
+   "sha1": "793ab07e709840787b31f3114c3d6cae330a3c35"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.regular.cartridge.json",
+   "ok": true,
+   "sha1": "a266bf1a86172516e611fce64fc38d8c516d2591"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.test.figure-b1.cartridge.json",
+   "ok": true,
+   "sha1": "54b3ce097091614b43ad05f323753ea359ed35ce"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.test.figure-b2.cartridge.json",
+   "ok": true,
+   "sha1": "b5ae8b2a614a38b16ba4bf64bac55c3d675de3ae"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.test.figure-toy.cartridge.json",
+   "ok": true,
+   "sha1": "f1de23c3ae7d418f481457b1df89175a168aa012"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.test.visual-a26.cartridge.json",
+   "ok": true,
+   "sha1": "6e10ebdba40cd82cd59c5faa1b389a29c1f186f1"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.test.visual-b2.cartridge.json",
+   "ok": true,
+   "sha1": "da09d34f0261482757e3b034e1b3f8d1497f5f84"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.thirdlife.cartridge.json",
+   "ok": true,
+   "sha1": "5bc9a2b4d767212af0d424d8e96133f1396f63b4"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.arsenal.cartridge.json",
+   "ok": true,
+   "sha1": "43385cb9f0a092cb6f1c6a5ec0c64810ce059832"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.bruisers.cartridge.json",
+   "ok": true,
+   "sha1": "97b1856b8d8953f4c3c9e1ec5cc86309ec9311b4"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.cage.cartridge.json",
+   "ok": true,
+   "sha1": "1ae3e8b006e6f98d6cf489bbbff16b6a85320d2e"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.fog-of-war.cartridge.json",
+   "ok": true,
+   "sha1": "c9bc4ea3c61de686415601eb9e3718a96a7a9893"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.glass-house.cartridge.json",
+   "ok": true,
+   "sha1": "c67dfe5541da56be708a73eb73287379ea85c1aa"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.marathon.cartridge.json",
+   "ok": true,
+   "sha1": "ce121e81f7862dd71f87aa590f123de132c06b62"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.outnumbered.cartridge.json",
+   "ok": true,
+   "sha1": "e0652108b7f9cd5e59fd96d1c113d2f15bd56569"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.pond.cartridge.json",
+   "ok": true,
+   "sha1": "4da5d263cab2833c187eff807d5b27210a17949a"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.power-play.cartridge.json",
+   "ok": true,
+   "sha1": "d6cd6afee89bd283ef18310032d490acc28e996d"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.shotgun.cartridge.json",
+   "ok": true,
+   "sha1": "f225cfd62ef430fc80a1e1ea81363ddff7091bee"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.sniper.cartridge.json",
+   "ok": true,
+   "sha1": "1942dad18a296312fa651422b41499f8c3034c8c"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.sudden-death.cartridge.json",
+   "ok": true,
+   "sha1": "2d673313d2efab3c5223caa5433248cbbbbb39df"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.blind-side.cartridge.json",
+   "ok": true,
+   "sha1": "0e56600492f49032a4e499e768263177db2cd622"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "shipped hockey.mode.pinball.cartridge.json",
+   "ok": true,
+   "sha1": "e0b696553dab32a683ee7251031789d54407a31f"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.regular: faster skaters (speed 13)",
+   "ok": true,
+   "sha1": "5a28c305b3eec11ffd51d0f5b5280959d28efbd5"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.regular: small rink 60 x 30",
+   "ok": true,
+   "sha1": "0f76939214e1f7ebb98f33621ce7dc9b87d1c6e7"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.regular: first to 5",
+   "ok": true,
+   "sha1": "19eabf548f6b06831f6909b1e5be2f26e7c4ca21"
+  },
+  {
+   "error": "at /game/skater/speed: 33 is above the maximum 16.",
+   "kind": "cartridge",
+   "name": "hockey.regular: speed x3 (33)",
+   "ok": false,
+   "sha1": "709842cd4fce5d28acea996c949ded9f06bc6eb2"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.regular: accel x3 (36)",
+   "ok": true,
+   "sha1": "d84b1ab98d72d61a11cc9d3a233e475846076c5e"
+  },
+  {
+   "error": "at /game/puck/max_speed: 90 is above the maximum 60.",
+   "kind": "cartridge",
+   "name": "hockey.regular: puck max speed x3 (90)",
+   "ok": false,
+   "sha1": "58085234eb27079eb9cce743d584329c9e3713c2"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.regular: ice friction at the top (0.1)",
+   "ok": true,
+   "sha1": "cb559f72394d46a8d41ec329bfa5ad56b54221dd"
+  },
+  {
+   "error": "at /game/rink/ice_friction: 0.1001 is above the maximum 0.1.",
+   "kind": "cartridge",
+   "name": "hockey.regular: ice friction past the top (0.1001)",
+   "ok": false,
+   "sha1": "abd13b419d8404a27068ad00c160507433a44b51"
+  },
+  {
+   "error": "at /game/rink/length_m: 10 is below the minimum 40.; at /game/teams/0/skaters/0/spawn: the spawn [-7.5, 0] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/0/skaters/1/spawn: the spawn [-7.5, -7.5] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/0/skaters/2/spawn: the spawn [-7.5, 7.5] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/0/skaters/3/spawn: the spawn [-22.5, -5] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/0/skaters/4/spawn: the spawn [-22.5, 5] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/0/spawn: the spawn [7.5, 0] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/1/spawn: the spawn [7.5, 7.5] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/2/spawn: the spawn [7.5, -7.5] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/3/spawn: the spawn [22.5, 5] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/4/spawn: the spawn [22.5, -5] is outside the rink (x within -4.5 to 4.5, z within -22 to 22, and inside the rounded corners). Move it toward the centre or enlarge the rink.",
+   "kind": "cartridge",
+   "name": "hockey.regular: rink too short (10 m)",
+   "ok": false,
+   "sha1": "f688faf2155ba7a7c429e0055e714762aa7f2334"
+  },
+  {
+   "error": "at /game/rink/length_m: expected a number but found a string (\"90\").",
+   "kind": "cartridge",
+   "name": "hockey.regular: rink length as a string",
+   "ok": false,
+   "sha1": "9b78df0a6f69da37805abd1c9e5789b32de45d47"
+  },
+  {
+   "error": "at /game/rules/score_to_win: expected an integer but found a number (2.5).",
+   "kind": "cartridge",
+   "name": "hockey.regular: a fractional score to win (2.5)",
+   "ok": false,
+   "sha1": "3c69f1effb0573beb716075fff989925b306af97"
+  },
+  {
+   "error": "at /game/rules/mode: \"golf\" is not allowed; use one of \"first_to\", \"timer\".",
+   "kind": "cartridge",
+   "name": "hockey.regular: an unknown rules mode (golf)",
+   "ok": false,
+   "sha1": "909d42c6bbbaf9a0735608469fb950742f931486"
+  },
+  {
+   "error": "at /colour: unknown key \"colour\" is not allowed here; remove it. Allowed keys: schema, id, title, seed, theme, tunables, values, rules, entities, ai, game.",
+   "kind": "cartridge",
+   "name": "hockey.regular: an unknown top-level key",
+   "ok": false,
+   "sha1": "48b96f50674a96beac789d8b02dbd91ee674c40f"
+  },
+  {
+   "error": "at /game/skater/speedy: unknown key \"speedy\" is not allowed here; remove it. Allowed keys: speed, accel, turn_rate, lateral_grip, mass, glide_drag, brake_decel, check_enabled, check_speed_min, knockdown_frames, visual, pass_speed, pass_lead_frames, carry_speed_mult, charge_dies_on_loss, free_speed_mult, reverse_brake_decel, burst, breakaway, sprint, goalie, spin.",
+   "kind": "cartridge",
+   "name": "hockey.regular: an unknown key in game.skater",
+   "ok": false,
+   "sha1": "e321f8b004ca7501892d355b78bf1c4670b6b5c1"
+  },
+  {
+   "error": "at /game/ball: unknown key \"ball\" is not allowed here; remove it. Allowed keys: rink, skater, stick, puck, shot, pass, contact, rules, teams, ai, pickups, abilities, effects, barks, commentary, look, camera, meta.",
+   "kind": "cartridge",
+   "name": "hockey.regular: an unknown block in game",
+   "ok": false,
+   "sha1": "e3ea281a84759fab928f7983b4b8056f1aa233e5"
+  },
+  {
+   "error": "at /schema: required key \"schema\" is missing.",
+   "kind": "cartridge",
+   "name": "hockey.regular: no schema",
+   "ok": false,
+   "sha1": "b8a5e247a1cbe0e892197d4223f8018dc39bf2d3"
+  },
+  {
+   "error": "at /schema: must be exactly \"tj.cartridge/1\" but found \"tj.cartridge/2\".",
+   "kind": "cartridge",
+   "name": "hockey.regular: the wrong schema",
+   "ok": false,
+   "sha1": "aee4985dfaa1e74d072d58d99c6a8695fbbd4b49"
+  },
+  {
+   "error": "at /game: required key \"game\" is missing.",
+   "kind": "cartridge",
+   "name": "hockey.regular: no game",
+   "ok": false,
+   "sha1": "d18d84edfde413d37f2d406528d9f7287b5dfec2"
+  },
+  {
+   "error": "at /game/puck/drag: expected a number but found null (omit the key instead of writing null).",
+   "kind": "cartridge",
+   "name": "hockey.regular: a null value (puck drag)",
+   "ok": false,
+   "sha1": "c5aee6909d8be2adc7faba0c7c153499be5c57cb"
+  },
+  {
+   "error": "at /values/nope: \"nope\" is not a declared tunable, so it cannot have a value. Tunable keys are: skater_speed, skater_turn_rate, shot_speed, puck_max_speed, ice_friction, board_restitution, ai_speed_scale, ai_red_skill, goal_pause_frames.",
+   "kind": "cartridge",
+   "name": "hockey.regular: a value for no tunable",
+   "ok": false,
+   "sha1": "e1627b3ae0cc0c2ba657033ad35911c79b55ac26"
+  },
+  {
+   "error": "at /game/rules/goal_pause_seconds: unknown key \"goal_pause_seconds\" is not allowed here; remove it. Allowed keys: mode, score_to_win, timer_frames, goal_pause_frames, offside, penalties, hooks, variants, penalty_frames.",
+   "kind": "cartridge",
+   "name": "hockey.regular: a duration in seconds",
+   "ok": false,
+   "sha1": "725898578af2e16ffdd9e6f52536141b63015622"
+  },
+  {
+   "error": "at /game/teams: the list has 0 items; it needs at least 2.; at /game/teams: exactly one skater across both teams must have role \"player\", found 0.",
+   "kind": "cartridge",
+   "name": "hockey.regular: no teams",
+   "ok": false,
+   "sha1": "16d78c4b2466b0b1e83bc01c718a6c2f551de083"
+  },
+  {
+   "error": "at /game/teams: the list has 1 item; it needs at least 2.",
+   "kind": "cartridge",
+   "name": "hockey.regular: one team only",
+   "ok": false,
+   "sha1": "62819ff569042de42b82183e0a21a536bf30f967"
+  },
+  {
+   "error": "at /game/rink/obstacles: the list has 13 items; the limit is 12.",
+   "kind": "cartridge",
+   "name": "hockey.regular: 13 obstacles (limit 12)",
+   "ok": false,
+   "sha1": "571cd210e20087ca5d210d8eeb25e1caab01b358"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.regular: 2 obstacles",
+   "ok": true,
+   "sha1": "844b4c0f522bec4ed9fde6dc6db604741e4a3eb6"
+  },
+  {
+   "error": "at /game/skater/mass: -80 is below the minimum 40.",
+   "kind": "cartridge",
+   "name": "hockey.regular: a negative mass",
+   "ok": false,
+   "sha1": "ef3ce9165cdfd3ef03f752ddb1ac6d05c6ea1825"
+  },
+  {
+   "error": "at /game/teams/0/colour_hex: \"blue\" is not valid: Jersey colour; a colour must be written as #RRGGBB, six hexadecimal digits.",
+   "kind": "cartridge",
+   "name": "hockey.regular: a bad colour",
+   "ok": false,
+   "sha1": "c8736ee73233355cef700d0ebb294a3070491916"
+  },
+  {
+   "error": "at /title: the string is 400 characters long; the limit is 60.",
+   "kind": "cartridge",
+   "name": "hockey.regular: a very long title",
+   "ok": false,
+   "sha1": "e089dca6e45bc14217f22cdff6ec0ebdfa20d1d0"
+  },
+  {
+   "error": "at /: the file is not valid JSON (expected a string at character 5265).",
+   "kind": "cartridge",
+   "name": "hockey.regular: a trailing comma",
+   "ok": false,
+   "sha1": "595d0f79ae087a2ec67a9e05b8c3a0c7e5cc6f74"
+  },
+  {
+   "error": "at /id: duplicate key \"id\"; a key may appear only once in an object.",
+   "kind": "cartridge",
+   "name": "hockey.regular: a duplicate key (id)",
+   "ok": false,
+   "sha1": "ebce84cd81908b8cac86faad205eba62977c5681"
+  },
+  {
+   "error": "at /: the file is not valid JSON (expected a string at character 2).",
+   "kind": "cartridge",
+   "name": "hockey.regular: a comment",
+   "ok": false,
+   "sha1": "6d08cf387ef23bf87ce8a047e8d474c0d3afc5a9"
+  },
+  {
+   "error": "at /: the file is not valid JSON (unexpected character at character 0).",
+   "kind": "cartridge",
+   "name": "hockey.regular: not JSON at all",
+   "ok": false,
+   "sha1": "21ed195133dc65ea98eaf0662118cdb30f8768aa"
+  },
+  {
+   "error": "at /: the file is not valid JSON (unexpected end at character 0).",
+   "kind": "cartridge",
+   "name": "hockey.regular: an empty text",
+   "ok": false,
+   "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.regular: a byte-order mark",
+   "ok": true,
+   "sha1": "e0e3e701d2356b6e7958312a2500858ebbab74aa"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: faster skaters (speed 13)",
+   "ok": true,
+   "sha1": "653680b3f193c13e46e4903dcef0b1f3195ffb65"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: small rink 60 x 30",
+   "ok": true,
+   "sha1": "4da5d263cab2833c187eff807d5b27210a17949a"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: first to 5",
+   "ok": true,
+   "sha1": "daf2cb7bdd2972f76caab34bec6ec9dc9e21630b"
+  },
+  {
+   "error": "at /game/skater/speed: 33 is above the maximum 16.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: speed x3 (33)",
+   "ok": false,
+   "sha1": "0d208b8e3cb6aac56c70fca9f97912f2f48ae838"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: accel x3 (36)",
+   "ok": true,
+   "sha1": "ad3ca7a141e79f5dfbdd90fad195cd07debfaa08"
+  },
+  {
+   "error": "at /game/puck/max_speed: 90 is above the maximum 60.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: puck max speed x3 (90)",
+   "ok": false,
+   "sha1": "40bf5a7b4dc7800b13312bb2d188d6ae30d48484"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: ice friction at the top (0.1)",
+   "ok": true,
+   "sha1": "b3831e5d84b70b4db38d8546306dbf5cf9b80a73"
+  },
+  {
+   "error": "at /game/rink/ice_friction: 0.1001 is above the maximum 0.1.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: ice friction past the top (0.1001)",
+   "ok": false,
+   "sha1": "9a458957c9910b7d1c602c921be716172b2d2d2e"
+  },
+  {
+   "error": "at /game/rink/length_m: 10 is below the minimum 40.; at /game/teams/0/skaters/0/spawn: the spawn [-5, 0] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/0/skaters/1/spawn: the spawn [-5, -5] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/0/skaters/2/spawn: the spawn [-5, 5] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/0/skaters/3/spawn: the spawn [-10, 0] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/0/skaters/4/spawn: the spawn [-15, 0] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/0/spawn: the spawn [5, 0] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/1/spawn: the spawn [5, 5] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/2/spawn: the spawn [5, -5] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/3/spawn: the spawn [15, 3.33] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.; at /game/teams/1/skaters/4/spawn: the spawn [15, -3.33] is outside the rink (x within -4.5 to 4.5, z within -14.5 to 14.5, and inside the rounded corners). Move it toward the centre or enlarge the rink.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: rink too short (10 m)",
+   "ok": false,
+   "sha1": "f90fa4beb49cfdbf6402614694f607ca2bb219c6"
+  },
+  {
+   "error": "at /game/rink/length_m: expected a number but found a string (\"90\").",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: rink length as a string",
+   "ok": false,
+   "sha1": "1ca6f9ed7c45b21350c378d7d4ebd6320b2d0a9a"
+  },
+  {
+   "error": "at /game/rules/score_to_win: expected an integer but found a number (2.5).",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a fractional score to win (2.5)",
+   "ok": false,
+   "sha1": "9865fc694a6ec62d66284276b545c251d0f92e70"
+  },
+  {
+   "error": "at /game/rules/mode: \"golf\" is not allowed; use one of \"first_to\", \"timer\".",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: an unknown rules mode (golf)",
+   "ok": false,
+   "sha1": "9be580bc6098e46db2200674ad5dedab2d09df27"
+  },
+  {
+   "error": "at /colour: unknown key \"colour\" is not allowed here; remove it. Allowed keys: schema, id, title, seed, theme, tunables, values, rules, entities, ai, game.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: an unknown top-level key",
+   "ok": false,
+   "sha1": "7dad1facb4788207a79f5c1e48d39016d4fa1b9c"
+  },
+  {
+   "error": "at /game/skater/speedy: unknown key \"speedy\" is not allowed here; remove it. Allowed keys: speed, accel, turn_rate, lateral_grip, mass, glide_drag, brake_decel, check_enabled, check_speed_min, knockdown_frames, visual, pass_speed, pass_lead_frames, carry_speed_mult, charge_dies_on_loss, free_speed_mult, reverse_brake_decel, burst, breakaway, sprint, goalie, spin.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: an unknown key in game.skater",
+   "ok": false,
+   "sha1": "2130b705ed4c1b577e74b2b6ecfd131d38ad3189"
+  },
+  {
+   "error": "at /game/ball: unknown key \"ball\" is not allowed here; remove it. Allowed keys: rink, skater, stick, puck, shot, pass, contact, rules, teams, ai, pickups, abilities, effects, barks, commentary, look, camera, meta.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: an unknown block in game",
+   "ok": false,
+   "sha1": "a8544c4cfa48cee0fb8770d512d09a0f792ea2d7"
+  },
+  {
+   "error": "at /schema: required key \"schema\" is missing.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: no schema",
+   "ok": false,
+   "sha1": "1f2817a30efacb968c52a09b6e960a960676181a"
+  },
+  {
+   "error": "at /schema: must be exactly \"tj.cartridge/1\" but found \"tj.cartridge/2\".",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: the wrong schema",
+   "ok": false,
+   "sha1": "792a509a535bdbb9540f23febcab4d46abb4585e"
+  },
+  {
+   "error": "at /game: required key \"game\" is missing.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: no game",
+   "ok": false,
+   "sha1": "2ea2d1f8184b67d2634aa0c8ffe9b28bbb1e783a"
+  },
+  {
+   "error": "at /game/puck/drag: expected a number but found null (omit the key instead of writing null).",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a null value (puck drag)",
+   "ok": false,
+   "sha1": "69bddbd9684a1dac4bbe55b0b473306129801bea"
+  },
+  {
+   "error": "at /values/nope: \"nope\" is not a declared tunable, so it cannot have a value. Tunable keys are: skater_speed, skater_turn_rate, shot_speed, puck_max_speed, ice_friction, board_restitution, ai_speed_scale, ai_red_skill, goal_pause_frames.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a value for no tunable",
+   "ok": false,
+   "sha1": "c2c1070ed9ad4410a5647bce962646b462b94e5f"
+  },
+  {
+   "error": "at /game/rules/goal_pause_seconds: unknown key \"goal_pause_seconds\" is not allowed here; remove it. Allowed keys: mode, score_to_win, timer_frames, goal_pause_frames, offside, penalties, hooks, variants, penalty_frames.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a duration in seconds",
+   "ok": false,
+   "sha1": "b4ed7c4ba1966d85a33669fa5e99bdd6ad6555b9"
+  },
+  {
+   "error": "at /game/teams: the list has 0 items; it needs at least 2.; at /game/teams: exactly one skater across both teams must have role \"player\", found 0.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: no teams",
+   "ok": false,
+   "sha1": "de9991733b02a2f13dd8f0e2fac0b264cb4ba38c"
+  },
+  {
+   "error": "at /game/teams: the list has 1 item; it needs at least 2.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: one team only",
+   "ok": false,
+   "sha1": "691e3100d0f222b46effce733c765102125ddf8a"
+  },
+  {
+   "error": "at /game/rink/obstacles: the list has 13 items; the limit is 12.; at /game/rink/obstacles/0: the obstacle at [-30, 0] is outside the rink (x within -30 to 30, z within -15 to 15, allowing 0.5 m for the boards and the rounded corners).; at /game/rink/obstacles/12: the obstacle at [30, 0] is outside the rink (x within -30 to 30, z within -15 to 15, allowing 0.5 m for the boards and the rounded corners).",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: 13 obstacles (limit 12)",
+   "ok": false,
+   "sha1": "feb7ea177d46f618ff319ea744ea872d6d88398d"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: 2 obstacles",
+   "ok": true,
+   "sha1": "9c9fe9cc41d67c34b01fe6606685287409f917b1"
+  },
+  {
+   "error": "at /game/skater/mass: -80 is below the minimum 40.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a negative mass",
+   "ok": false,
+   "sha1": "7f50e79f7817ae43f2ea0f2ed34238ad9c7c16c8"
+  },
+  {
+   "error": "at /game/teams/0/colour_hex: \"blue\" is not valid: Jersey colour; a colour must be written as #RRGGBB, six hexadecimal digits.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a bad colour",
+   "ok": false,
+   "sha1": "654d9abd387d861f238cfdd2a4d20ae470437fb7"
+  },
+  {
+   "error": "at /title: the string is 400 characters long; the limit is 60.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a very long title",
+   "ok": false,
+   "sha1": "18aeed11ec0c43c163dc5614743063e332744db4"
+  },
+  {
+   "error": "at /: the file is not valid JSON (expected a string at character 5540).",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a trailing comma",
+   "ok": false,
+   "sha1": "7b8a232a61c421b935c8c098d41409d924993509"
+  },
+  {
+   "error": "at /id: duplicate key \"id\"; a key may appear only once in an object.",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a duplicate key (id)",
+   "ok": false,
+   "sha1": "9b3dfc1a66e795e0800828c69e16f2f7535faed2"
+  },
+  {
+   "error": "at /: the file is not valid JSON (expected a string at character 2).",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a comment",
+   "ok": false,
+   "sha1": "423d76ee49851efb464be523426b327b2df45fae"
+  },
+  {
+   "error": "at /: the file is not valid JSON (unexpected character at character 0).",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: not JSON at all",
+   "ok": false,
+   "sha1": "21ed195133dc65ea98eaf0662118cdb30f8768aa"
+  },
+  {
+   "error": "at /: the file is not valid JSON (unexpected end at character 0).",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: an empty text",
+   "ok": false,
+   "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+  },
+  {
+   "error": "",
+   "kind": "cartridge",
+   "name": "hockey.mode.pond: a byte-order mark",
+   "ok": true,
+   "sha1": "63ffb5d4105eefcc2cd3e11fefafc317440a28a0"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: K8's hockey.thirdlife.rules.json",
+   "ok": true,
+   "sha1": "52f7376b581c832b43c990efce612fd31d32673b"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: the switch off",
+   "ok": true,
+   "sha1": "99d0b4630986e95bf500f967c867a8e1dbf86d58"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: a level tune",
+   "ok": true,
+   "sha1": "c884a0e21aca39cc9c05e8a0b6bd7f0b8f88213d"
+  },
+  {
+   "error": "rules file: unknown key \"colour\"",
+   "kind": "rules",
+   "name": "rules: an unknown key",
+   "ok": false,
+   "sha1": "4fd1eb44095ea2dc374f5a10c588106b162cefa0"
+  },
+  {
+   "error": "unknown rule \"no_such_rule\" (not a switch of native/patches-thirdlife)",
+   "kind": "rules",
+   "name": "rules: an unknown rule",
+   "ok": false,
+   "sha1": "357405ef1d578e50bf05f3aa3135de6ba9957000"
+  },
+  {
+   "error": "rules file: rule net_carry_wall must be a number or a bool",
+   "kind": "rules",
+   "name": "rules: a rule as a string",
+   "ok": false,
+   "sha1": "4f4e97f079fb9e1e21a871e4af16ce5b42c4a1ab"
+  },
+  {
+   "error": "rules file: no schema (want \"tl.rink.rules/1\")",
+   "kind": "rules",
+   "name": "rules: no schema",
+   "ok": false,
+   "sha1": "82be207e5a321fc1d4c12e6fb256d933de10c3bd"
+  },
+  {
+   "error": "rules file: schema must be \"tl.rink.rules/1\"",
+   "kind": "rules",
+   "name": "rules: the wrong schema",
+   "ok": false,
+   "sha1": "c61b316a4a81e21a922748af741cd7600b40503d"
+  },
+  {
+   "error": "rules file: levels.legend must be rookie | pro | all_star with a tune string",
+   "kind": "rules",
+   "name": "rules: an unknown level",
+   "ok": false,
+   "sha1": "822b6d91b01d3b8125e070b0128fdc8ff0f2a1bb"
+  },
+  {
+   "error": "reset refused the rules (a level tune the core does not know)",
+   "kind": "rules",
+   "name": "rules: a tune without =",
+   "ok": false,
+   "sha1": "cbc276bdbd9d652c173b4e12ef51599597d41165"
+  },
+  {
+   "error": "reset refused the rules (a level tune the core does not know)",
+   "kind": "rules",
+   "name": "rules: a tune not a number",
+   "ok": false,
+   "sha1": "a5e1e285bdd2978759051fd1b6bb46257f9ec772"
+  },
+  {
+   "error": "rules file: at /: the file is not valid JSON (unexpected character at character 0).",
+   "kind": "rules",
+   "name": "rules: not JSON",
+   "ok": false,
+   "sha1": "66d1abb2051d4a3d1f5b5e6cc27c7d757a08a09a"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: every switch, in range",
+   "ok": true,
+   "sha1": "cab7fa7d8c94abc6bc2243ac6f743593c78efadc"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: a decel at the top (60)",
+   "ok": true,
+   "sha1": "b49c8434b30f7ba323d2f815b79c7b53e8df441a"
+  },
+  {
+   "error": "unknown rule \"over_top_decel_mps2\" (not a switch of native/patches-thirdlife)",
+   "kind": "rules",
+   "name": "rules: a decel past the top (61)",
+   "ok": false,
+   "sha1": "9eb0e1de2b4de3319abde4f7437fa03a7953f1d7"
+  },
+  {
+   "error": "unknown rule \"over_top_decel_mps2\" (not a switch of native/patches-thirdlife)",
+   "kind": "rules",
+   "name": "rules: a negative decel",
+   "ok": false,
+   "sha1": "8eb5c0db6d3d93bbc94268b8022eb567a066aff1"
+  },
+  {
+   "error": "unknown rule \"sprint_restart_share\" (not a switch of native/patches-thirdlife)",
+   "kind": "rules",
+   "name": "rules: a restart share past 1",
+   "ok": false,
+   "sha1": "0a8e6ac3b9008777f1ddfa641fe76a00d0812da2"
+  },
+  {
+   "error": "",
+   "kind": "rules",
+   "name": "rules: a restart share as true (1)",
+   "ok": true,
+   "sha1": "c161aed3ad82042aa6ad39e32750c82ab2c5b1a2"
+  }
+ ],
+ "source": "RinkCore thirdjam",
+ "tool": "rink_validate/1"
+}

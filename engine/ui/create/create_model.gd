@@ -44,7 +44,8 @@ static func screen_of(job: Dictionary) -> String:
 	if ph == "unreadable":
 		return "error"
 	if ph in ["failed", "cancelled"]:
-		return "failed"
+		# E4: a change that could not be made does not take the game away: the last promotion still plays
+		return "done" if not (job.get("promotions", []) as Array).is_empty() and not person_changes(job).is_empty() else "failed"
 	if (job.get("brief", {}) as Dictionary).is_empty():
 		return "designing"
 	if str(job.get("approved_by", "")).is_empty():
@@ -239,3 +240,200 @@ static func screen_words(root: Node) -> Dictionary:
 			total += w
 			items.append([w, t])
 	return {"total": total, "items": items}
+
+
+# ---------------------------------------------------------------- E4 (24-25 Nov): iterations, my games
+
+## The change requests the person made (the Foreman's own `[foreman] ` requests, such as a wire-in, left out), oldest first:
+## job_model.gd's change rows {seq, text, outcome: in flight | made | not made | failed | cancelled, version}.
+static func person_changes(job: Dictionary) -> Array:
+	return (job.get("changes", []) as Array).filter(func(c: Dictionary) -> bool: return not str(c.get("text", "")).begins_with("[foreman] "))
+
+
+## The person's change being made now (its text), or "": the last one, while the job is not done with it.
+static func changing(job: Dictionary) -> String:
+	var mine: Array = person_changes(job)
+	if mine.is_empty() or str(job.get("phase", "")) in ["done", "failed", "cancelled"]:
+		return ""
+	var c: Dictionary = mine.back()
+	return str(c["text"]) if str(c.get("outcome", "")) == "in flight" else ""
+
+
+## How many versions of the game there are (each promotion is one: the first build, then one per change made).
+static func version_n(job: Dictionary) -> int:
+	return (job.get("promotions", []) as Array).size()
+
+
+## One line when the person's last change could not be made ("" otherwise): the game plays as before.
+static func change_note(job: Dictionary) -> String:
+	var mine: Array = person_changes(job)
+	if mine.is_empty():
+		return ""
+	var c: Dictionary = mine.back()
+	if str(c.get("outcome", "")) in ["not made", "failed", "cancelled"]:
+		return "Your last change could not be made: \u201c%s\u201d" % JobModel.one_line(str(c["text"]), 60)
+	return ""
+
+
+## The packages a change round is working on when every phase has passed (no current phase): those not promoted.
+static func working_packages(job: Dictionary) -> Array:
+	var out: Array = []
+	var pk: Dictionary = job.get("packages", {})
+	for id: Variant in job.get("order", []):
+		var p: Dictionary = pk.get(str(id), {})
+		if not p.is_empty() and str(p.get("state", "")) != "promoted":
+			out.append({"id": str(id), "title": str(p.get("title", id)), "state": str(p.get("state", "queued")), "round": int(p.get("round", 1))})
+	return out
+
+
+## What a game's row in My games says about it, in a person's words.
+static func state_word(job: Dictionary) -> String:
+	var n: int = version_n(job)
+	match screen_of(job):
+		"designing": return "The designer is thinking"
+		"pitch": return "Waiting for you: the pitch"
+		"phase_done": return "Waiting for you: try it"
+		"done": return "Ready, version %d" % n if n > 1 else "Ready"
+		"failed": return "Stopped"
+		"error": return "Cannot be read"
+	return "Changing" if not changing(job).is_empty() else "Building"
+
+
+## My games: every job under the jobs root, newest first (by its first event): [{dir, title, word, screen, version, ts}].
+## `limit` caps how many logs are read (a jobs root of a long night holds hundreds).
+static func games(root: String, limit: int = 40) -> Array:
+	var dirs: PackedStringArray = JobModel.list_job_dirs(root)
+	var named: Array = []
+	for d: String in dirs:
+		named.append([FileAccess.get_modified_time(d.path_join("job.jsonl")), d])
+	named.sort_custom(func(a: Array, b: Array) -> bool: return int(a[0]) > int(b[0]) or (int(a[0]) == int(b[0]) and str(a[1]) > str(b[1])))
+	var out: Array = []
+	for i: int in mini(limit, named.size()):
+		var d: String = named[i][1]
+		var j: Dictionary = JobModel.read_job(d, 0.0)
+		var title: String = str(j.get("title", ""))
+		if title.is_empty():
+			title = JobModel.one_line(str(j.get("sentence", d.get_file())), 40)
+		out.append({"dir": d, "title": title, "word": state_word(j), "screen": screen_of(j), "version": version_n(j), "ts": float(j.get("first_ts", 0.0)), "sentence": str(j.get("sentence", ""))})
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["ts"]) > float(b["ts"]) or (float(a["ts"]) == float(b["ts"]) and str(a["dir"]) > str(b["dir"])))
+	return out
+
+
+# ---------------------------------------------------------------- E4b (25 Nov): the pauses a person answers
+
+## The builder's open question (the newest): {package, title, text, seq}, or {} when none is open.
+static func open_question(job: Dictionary) -> Dictionary:
+	var qs: Array = job.get("questions", [])
+	for i: int in range(qs.size() - 1, -1, -1):
+		var q: Dictionary = qs[i]
+		if bool(q.get("open", false)):
+			var p: Dictionary = (job.get("packages", {}) as Dictionary).get(str(q["package"]), {})
+			return {"package": str(q["package"]), "title": str(p.get("title", q["package"])), "text": str(q.get("text", "")).strip_edges(), "seq": int(q.get("seq", 0))}
+	return {}
+
+
+## The choices a question offers, in its own words (at most 3): its list lines ("- x", "1. x", "a) x"), else the two
+## sides of "..., or ...?" ; else Yes / No for a question that asks for one ("May ...", "Can ...", "Should ...").
+static func question_options(text: String) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var re: RegEx = RegEx.create_from_string("^\\s*(?:[-*\u2022]|\\d+[.)]|[a-cA-C][.)])\\s+(.+)$")
+	for line: String in text.split("\n"):
+		var m: RegExMatch = re.search(line)
+		if m != null and out.size() < 3:
+			out.append(JobModel.one_line(m.get_string(1).strip_edges(), 90))
+	if not out.is_empty():
+		return out
+	var flat: String = JobModel.one_line(text)
+	var guess: RegExMatch = RegEx.create_from_string("Did you mean ([^?]+)\\?").search(flat)   # E4c: E3d's asked-back change
+	if guess != null:
+		out.append("Yes, " + guess.get_string(1).strip_edges())
+		return out
+	var q: String = flat.substr(flat.rfind(". ") + 2) if flat.rfind(". ") >= 0 and flat.rfind(". ") < flat.length() - 3 else flat
+	var at: int = q.find(", or ")
+	if at > 0:
+		out.append(JobModel.one_line(q.substr(0, at).strip_edges().trim_suffix("?"), 90))
+		var second: String = q.substr(at + 5).strip_edges().trim_suffix("?")
+		out.append(JobModel.one_line(second.substr(0, 1).to_upper() + second.substr(1), 90))
+		return out
+	var first: String = q.get_slice(" ", 0).to_lower()
+	if q.ends_with("?") and first in ["may", "can", "should", "shall", "is", "are", "do", "does", "will", "would"]:
+		out.append_array(["Yes", "No"])
+	return out
+
+
+## A quality hold in a person's words: {milestone, reasons: [<= 3 short lines], still: <abs png or "">}, or {}.
+static func quality_view(job: Dictionary) -> Dictionary:
+	var hold: Dictionary = job.get("quality_hold", {})
+	if hold.is_empty() or str(job.get("pause_kind", "")) != "quality":
+		return {}
+	var reasons: PackedStringArray = []
+	for part: String in str(hold.get("notes", "")).replace("|", ";").split(";"):
+		var t: String = part.strip_edges()
+		if t.is_empty() or t.begins_with("slop:") or RegEx.create_from_string("^[a-z_]+ [0-9.]+(, [a-z_]+ [0-9.]+)*$").search(t) != null:
+			continue                       # the score row and the slop tags are for the Foreman, not for a person
+		if reasons.size() < 3:
+			reasons.append(JobModel.one_line(t, 110))
+	var still: String = ""
+	for m: Variant in job.get("milestones", []):
+		if m is Dictionary and str((m as Dictionary).get("milestone", "")) == str(hold.get("milestone", "")):
+			var caps: Array = (m as Dictionary).get("captures", [])
+			for c: Variant in caps:
+				var f: String = str(job.get("dir", "")).path_join(str(c))
+				if FileAccess.file_exists(f):
+					still = f
+					break
+	return {"milestone": str(hold.get("milestone", "")), "reasons": reasons, "still": still}
+
+
+# ---------------------------------------------------------------- E4c (25 Nov): the phase pause's figures, a scope "yes"
+
+## The measured check at the waiting phase of a game on a core (coregate.ts phaseCheck writes the note "[foreman]
+## measured at the phase pause <phase>: ..." and its report tl.foreman.measured/1), in a person's figures:
+## {goals, minutes, house_goals, house_minutes, defects: [lines], measured: bool}; {} when the phase has none.
+static func measured_view(job: Dictionary) -> Dictionary:
+	var e: Dictionary = waiting(job)
+	if e.is_empty():
+		return {}
+	var head: String = "[foreman] measured at the phase pause %s:" % str(e["id"])
+	var note: String = ""
+	for n: Variant in job.get("notes", []):
+		if n is Dictionary and str((n as Dictionary).get("text", "")).begins_with(head):
+			note = str(n["text"])
+	if note.is_empty():
+		return {}
+	var out: Dictionary = {"goals": -1.0, "minutes": -1.0, "house_goals": -1.0, "house_minutes": -1.0, "defects": [], "measured": true}
+	var at: int = note.rfind("[report: ")
+	var rep: Variant = JobModel.read_json(str(job.get("dir", "")).path_join(note.substr(at + 9).trim_suffix("]"))) if at >= 0 else null
+	if rep is Dictionary:
+		var run: Dictionary = (rep as Dictionary).get("run", {})
+		var fig: Dictionary = run.get("figures", {})
+		out["goals"] = float(fig.get("pro_goals_a_match", -1.0))
+		out["minutes"] = float(fig.get("pro_minutes", -1.0))
+		out["measured"] = int(run.get("code", 2)) != 2
+		out["defects"] = (run.get("defects", []) as Array).map(func(d: Variant) -> String: return JobModel.one_line(str(d).get_slice(" (", 0).get_slice(": thirdjam", 0), 90))
+		var house: Dictionary = (rep as Dictionary).get("house", {}).get("figures", {}) if (rep as Dictionary).get("house") is Dictionary else {}
+		out["house_goals"] = float(house.get("pro_goals_a_match", -1.0))
+		out["house_minutes"] = float(house.get("pro_minutes", -1.0))
+	else:
+		# no report on disk: the figures in the note's words
+		var g: RegExMatch = RegEx.create_from_string("pro_goals_a_match ([0-9.]+)").search(note)
+		var m: RegExMatch = RegEx.create_from_string("pro_minutes ([0-9.]+)").search(note)
+		out["goals"] = float(g.get_string(1)) if g != null else -1.0
+		out["minutes"] = float(m.get_string(1)) if m != null else -1.0
+		out["measured"] = not note.contains(" not measured ")
+		if note.contains("GROSS DEFECTS: "):
+			out["defects"] = [JobModel.one_line(note.get_slice("GROSS DEFECTS: ", 1).get_slice(";", 0).get_slice(": thirdjam", 0), 90)]
+	return out
+
+
+## The package a question asks to be allowed to change (a scope it wants widened: "May core be changed ...", "can those
+## files be added to this package's scope?"): a package of the plan named in it, else the asking package; "" for any
+## other question. Its chip "Yes, let it" answers with `foreman answer ... --change <package>`.
+static func scope_package(job: Dictionary, q: Dictionary) -> String:
+	var text: String = str(q.get("text", ""))
+	if RegEx.create_from_string("(?i)\\b(scope|be changed|be added to|another package|a package that owns|may change|allowed to (change|edit))\\b").search(text) == null:
+		return ""
+	for id: Variant in job.get("order", []):
+		if str(id) != str(q.get("package", "")) and RegEx.create_from_string("\\b%s\\b" % str(id)).search(text) != null:
+			return str(id)
+	return str(q.get("package", ""))

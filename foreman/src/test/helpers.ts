@@ -202,7 +202,10 @@ export function sampleConcept(): Concept {
  * D3 round 5: also the house camera and the readable puck and ring).
  */
 export function designerSteps(estimate: unknown): FakeStep[] {
-  const hockey = { ...v2Brief(), rules: `${v2Brief().rules} The carrier is slower than a free skater (x0.88) and a pass beats skating; the puck sits on the blade on a spring. A broadcast camera looks down at the play from the near side; the puck is drawn bigger with a hot rim and a ring under your skater marks you.`, ai: `${v2Brief().ai} The AI scores SHOOT, PASS and CARRY every 15 frames (utility, with vetoes).` };
+  // E3 of 24 Nov: a hockey brief is on the rink core (template rink_sport): it names the cartridge keys and skin fields it changes.
+  const hockey = { ...v2Brief(), rules: `${v2Brief().rules} The carrier is slower than a free skater (x0.88) and a pass beats skating; the puck sits on the blade on a spring. A broadcast camera looks down at the play from the near side; the puck is drawn bigger with a hot rim and a ring under your skater marks you.
+CARTRIDGE: game.rink.length_m = 60 (a river rink)
+SKIN: title = RIVER`, ai: `${v2Brief().ai} The AI scores SHOOT, PASS and CARRY every 15 frames (utility, with vetoes).` };
   return [
     { match: { role: "designer", promptIncludes: '"ice hockey' }, json: { brief: hockey, estimate } },
     { match: { role: "designer" }, json: { brief: v2Brief(), estimate } },
@@ -212,8 +215,9 @@ export function designerSteps(estimate: unknown): FakeStep[] {
 /** The design room's concept step and an ok review, for a fake script whose designer step answers the brief. */
 export function roomSteps(): FakeStep[] {
   return [
-    // N4 of 22 Nov: a team game with a puck copies the arcade-sport template (the room refuses an `own` concept for it).
-    { match: { role: "concept", promptIncludes: '"ice hockey' }, json: { concept: { ...sampleConcept(), template: { id: "arcade_sport", reference: "NHL 94 and Rocket League", copies: ["possession as a state with readable loss causes", "the utility AI for shoot, pass and carry", "roles re-sorted by time to the puck"] } } } },
+    // N4 of 22 Nov: a team game with a puck copies a proven template (the room refuses an `own` concept for it); E3 of 24 Nov:
+    // hockey is the rink core's (rink_sport), a cartridge on thirdjam's match.
+    { match: { role: "concept", promptIncludes: '"ice hockey' }, json: { concept: { ...sampleConcept(), chosen: 0, template: { id: "rink_sport", reference: "thirdjam's match on the rink core", copies: ["thirdjam's match on the rink core, unchanged: skating, puck, bots", "the cartridge keys it changes: rink size and team size", "the skin: title and team colours"] } } } },
     { match: { role: "concept" }, json: { concept: sampleConcept() } },
     { match: { role: "design_review" }, json: { scores: { hook: 0.8, gif: 0.7, depth: 0.7, feel: 0.8, fit: 0.9 }, slop: [], verdict: "ok", notes: "Sell the bank shot." } },
   ];

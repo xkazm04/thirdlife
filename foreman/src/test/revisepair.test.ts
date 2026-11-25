@@ -156,3 +156,25 @@ test("a still strip with no claim of its own bot against it is named with its bo
   assert.match(text, /no bot claim is contradicted\. STILL ON FILM, no claim of its own bot against it: blockout-chase-bot_player-strip-f9537\.png \(tests\/bot_player\.gd\) changes in no tile for 55 frames\. Each is that bot's run only/);
   assert.doesNotMatch(text, /bot_tofu-strip-f71/);
 });
+
+test("E5: a critic's revise round never goes to the base package (a copy of the engine's base, no builder revises it)", () => {
+  const { dir, events } = job(undefined);
+  const appended: { type: string; package?: string; text?: string }[] = [];
+  const reopened: string[] = [];
+  const promoted = { state: "promoted", mergedFiles: ["data/x.json"], round: 1 };
+  const h = {
+    s: { plan: [{ id: "base", kind: "base" }, { id: "cartridge" }, { id: "skin" }], lastSeq: 9, packages: { base: promoted, cartridge: promoted, skin: promoted }, order: ["base", "cartridge", "skin"] },
+    events,
+    dir: (...p: string[]) => path.join(dir, ...p),
+    rel: (abs: string) => path.relative(dir, abs).split(path.sep).join("/"),
+    pkg: () => ({ round: 1 }),
+    append: (e: { type: string; package?: string; text?: string }) => { appended.push(e); return e; },
+    reopen: (id: string) => { reopened.push(id); },
+  } as unknown as GateHost;
+  sendBack(h, "greybox", ["base", "cartridge", "skin"], "skin", 1, { captures: [], strips: [], verdict: { ok: false, scores: { feel: 0.1 }, notes: ["the top camera is black"], package: "base", report: "reports/critic-greybox-s9.json" }, summary: "s" });
+  assert.deepEqual(reopened, [], "the base is not re-opened");
+  assert.deepEqual(appended.filter((e) => e.type === "package_state").map((e) => e.package), ["cartridge", "skin"]);
+  assert.match(appended.find((e) => e.type === "note")?.text ?? "", /the critic named base, the engine's base \(copied, no builder revises it\); revise round 1 goes to the package\(s\) of the greybox milestone: cartridge, skin/);
+  sendBack(h, "greybox", ["base", "cartridge", "skin"], "skin", 1, { captures: [], strips: [], verdict: { ok: false, scores: { feel: 0.1 }, notes: ["x"], package: "skin", report: "reports/critic-greybox-s9.json" }, summary: "s" });
+  assert.deepEqual(reopened, ["skin"], "a built package the critic names is re-opened as before");
+});

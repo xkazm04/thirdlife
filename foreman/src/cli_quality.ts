@@ -31,7 +31,7 @@ export function qualityLines(s: JobState): string[] {
   const h = s.qualityHeld;
   if (h === undefined) return [];
   const look = [...s.milestones].reverse().find((m) => m.milestone === h.milestone);
-  const said = /(?:critic \(V5\)(?: and tofu stage)?|tofu stage) NOT ok: ([^\[]*)/.exec(look?.summary ?? "")?.[1]?.trim() ?? "";
+  const said = /(?:critic \(V5\)(?: and (?:tofu stage|core check))?|tofu stage|core check) NOT ok: ([^\[]*)/.exec(look?.summary ?? "")?.[1]?.trim() ?? "";
   return [
     `HELD     quality: milestone ${h.milestone} is still NOT ok after revise round ${h.round}${s.jobState?.state === "paused" ? "" : " (the job pauses when its builders stop)"}`,
     ...(said !== "" ? [`critic   ${said.replace(/\s+/g, " ").slice(0, 400)}`] : []),

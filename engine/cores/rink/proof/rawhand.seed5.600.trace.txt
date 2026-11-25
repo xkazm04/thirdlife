@@ -1,0 +1,600 @@
+f=1 hash=2c343d079a1b67d7 score=0:0 carrier=-1 in=move=1.0000,0.0000 stick=0.9000,0.0000 Check+Lift+Sprint
+f=2 hash=2fac90c5d7ddf5db score=0:0 carrier=-1 in=move=1.0000,0.0060 stick=0.8998,0.0180 Sprint
+f=3 hash=3827fce8bb869137 score=0:0 carrier=-1 in=move=1.0000,0.0120 stick=0.8993,0.0359 Sprint
+f=4 hash=8681325616648224 score=0:0 carrier=-1 in=move=1.0000,0.0180 stick=0.8984,0.0538 Sprint+CrossHold
+f=5 hash=06d49efd8706d131 score=0:0 carrier=-1 in=move=1.0000,0.0240 stick=0.8972,0.0714 Sprint+CrossHold
+f=6 hash=dbf40016b9e80ce2 score=0:0 carrier=-1 in=move=1.0000,0.0300 stick=0.8956,0.0889 Sprint+CrossHold
+f=7 hash=0cde978f6cd1d2b6 score=0:0 carrier=-1 in=move=1.0000,0.0360 stick=0.8937,0.1061 Sprint+CrossHold
+f=8 hash=2252a445ebba987d score=0:0 carrier=-1 in=move=1.0000,0.0420 stick=0.8915,0.1231 Sprint+CrossHold
+f=9 hash=d48bf3971f91ea97 score=0:0 carrier=-1 in=move=1.0000,0.0479 stick=0.8891,0.1396 Sprint+CrossHold
+f=10 hash=6f918451e7f53da4 score=0:0 carrier=-1 in=move=1.0000,0.0539 stick=0.8864,0.1558 Sprint+CrossHold
+f=11 hash=6e9d85ba221fef9b score=0:0 carrier=-1 in=move=1.0000,0.0599 stick=0.8835,0.1715 Sprint+CrossHold
+f=12 hash=9be95cb801e9b7d1 score=0:0 carrier=-1 in=move=1.0000,0.0659 stick=0.8804,0.1868 Sprint+CrossHold
+f=13 hash=5b0503f84891b6f5 score=0:0 carrier=-1 in=move=1.0000,0.0718 stick=0.8771,0.2015 Sprint+CrossHold
+f=14 hash=fb1d96dc6d3e85cc score=0:0 carrier=-1 in=move=1.0000,0.0778 stick=0.8738,0.2157 Sprint+CrossHold
+f=15 hash=d91dc18f49173e66 score=0:0 carrier=-1 in=move=1.0000,0.0837 stick=0.8703,0.2294 Sprint+CrossHold
+f=16 hash=a0710aa09a41249c score=0:0 carrier=-1 in=move=1.0000,0.0897 stick=0.8668,0.2424 Sprint+CrossHold
+f=17 hash=f7291bea4b9b39ec score=0:0 carrier=-1 in=move=1.0000,0.0956 stick=0.8632,0.2547 Sprint+CrossHold
+f=18 hash=9ee559db0229b536 score=0:0 carrier=-1 in=move=1.0000,0.1015 stick=0.8597,0.2664 Sprint+CrossHold
+f=19 hash=552c10c665b77935 score=0:0 carrier=-1 in=move=1.0000,0.1074 stick=0.8562,0.2774 Sprint+CrossHold
+f=20 hash=38239c39d3f648e8 score=0:0 carrier=-1 in=move=1.0000,0.1133 stick=0.8528,0.2877 Sprint+CrossHold
+f=21 hash=7981d6b486af307d score=0:0 carrier=-1 in=move=1.0000,0.1192 stick=0.8495,0.2972 Sprint
+f=22 hash=818fbf6bcbb7e744 score=0:0 carrier=-1 in=move=1.0000,0.1251 stick=0.8464,0.3060 Sprint
+f=23 hash=2e3fc23a9485bf43 score=0:0 carrier=-1 in=move=1.0000,0.1309 stick=0.8434,0.3141 Sprint
+f=24 hash=3bc284ef13043010 score=0:0 carrier=-1 in=move=1.0000,0.1368 stick=0.8407,0.3213 Sprint
+f=25 hash=bff30ca126589161 score=0:0 carrier=-1 in=move=1.0000,0.1426 stick=0.8382,0.3278 Sprint
+f=26 hash=9158dd23d21f9b9d score=0:0 carrier=-1 in=move=1.0000,0.1484 stick=0.8359,0.3335 Sprint
+f=27 hash=b2027d2846292933 score=0:0 carrier=-1 in=move=1.0000,0.1542 stick=0.8340,0.3384 Sprint
+f=28 hash=a02f10bcfcf085c4 score=0:0 carrier=-1 in=move=1.0000,0.1600 stick=0.8323,0.3424 Sprint
+f=29 hash=36f10cebe7e14bd7 score=0:0 carrier=-1 in=move=1.0000,0.1658 stick=0.8310,0.3456 Sprint
+f=30 hash=c6b72ca3d7d5d6af score=0:0 carrier=-1 in=move=1.0000,0.1716 stick=0.8300,0.3481 Sprint
+f=31 hash=1549a6f6ae7a4a4d score=0:0 carrier=-1 in=move=1.0000,0.1773 stick=0.8300,0.3481 Sprint
+f=32 hash=93a16b3df5847aa5 score=0:0 carrier=-1 in=move=1.0000,0.1830 stick=0.8290,0.3504 Sprint
+f=33 hash=531cbe374301f443 score=0:0 carrier=-1 in=move=1.0000,0.1887 stick=0.8290,0.3504 Sprint
+f=34 hash=9722baade0331ef5 score=0:0 carrier=-1 in=move=1.0000,0.1944 stick=0.8290,0.3504 Sprint
+f=35 hash=4a14518d30b85bb5 score=0:0 carrier=-1 in=move=1.0000,0.2001 stick=0.8301,0.3477 Sprint
+f=36 hash=f7b67b56f64b8ba9 score=0:0 carrier=-1 in=move=1.0000,0.2057 stick=0.8312,0.3452 Sprint
+f=37 hash=e2039736f924fe07 score=0:0 carrier=-1 in=move=1.0000,0.2114 stick=0.8326,0.3418 Sprint
+f=38 hash=7554c8b7534517e9 score=0:0 carrier=-1 in=move=1.0000,0.2170 stick=0.8343,0.3376 Sprint
+f=39 hash=92d32cac4064dad8 score=0:0 carrier=-1 in=move=1.0000,0.2226 stick=0.8363,0.3326 Sprint
+f=40 hash=cc56f1707e644778 score=0:0 carrier=-1 in=move=1.0000,0.2281 stick=0.8386,0.3268 Sprint
+f=41 hash=1f7e16b751a0b1c8 score=0:0 carrier=-1 in=move=1.0000,0.2337 stick=0.8411,0.3202 Sprint
+f=42 hash=439f2f9025c76aec score=0:0 carrier=-1 in=move=1.0000,0.2392 stick=0.8439,0.3128 Sprint
+f=43 hash=7d40fb40ba3721f5 score=0:0 carrier=-1 in=move=1.0000,0.2447 stick=0.8469,0.3046 Sprint
+f=44 hash=7e37a8cf0bbbc527 score=0:0 carrier=-1 in=move=1.0000,0.2501 stick=0.8500,0.2957 Sprint
+f=45 hash=05d2de901a246064 score=0:0 carrier=-1 in=move=1.0000,0.2556 stick=0.8533,0.2860 Sprint
+f=46 hash=9be9b24201698537 score=0:0 carrier=-1 in=move=1.0000,0.2610 stick=0.8568,0.2756 Sprint
+f=47 hash=60620d688c0207d4 score=0:0 carrier=-1 in=move=1.0000,0.2664 stick=0.8603,0.2645 Sprint
+f=48 hash=baf87270d6c14fc2 score=0:0 carrier=-1 in=move=1.0000,0.2717 stick=0.8638,0.2527 Sprint
+f=49 hash=8dbb9f2ac1f3a48d score=0:0 carrier=-1 in=move=1.0000,0.2771 stick=0.8673,0.2402 Sprint
+f=50 hash=db2731743baa050f score=0:0 carrier=-1 in=move=1.0000,0.2824 stick=0.8709,0.2271 Sprint
+f=51 hash=e16e99135f4697a9 score=0:0 carrier=-1 in=move=1.0000,0.2877 stick=0.8743,0.2134 Sprint
+f=52 hash=82bbd3277a691eb6 score=0:0 carrier=-1 in=move=1.0000,0.2929 stick=0.8777,0.1991 Sprint
+f=53 hash=b1e61fbf07985fba score=0:0 carrier=-1 in=move=1.0000,0.2981 stick=0.8809,0.1843 Sprint
+f=54 hash=c117fe602ea500b6 score=0:0 carrier=-1 in=move=1.0000,0.3033 stick=0.8840,0.1689 Sprint
+f=55 hash=1dfcdd7fd0168fbd score=0:0 carrier=-1 in=move=1.0000,0.3085 stick=0.8869,0.1531 Sprint
+f=56 hash=a9238efc3edc8bfb score=0:0 carrier=-1 in=move=1.0000,0.3136 stick=0.8895,0.1369 Sprint
+f=57 hash=ea8568e357627f9e score=0:0 carrier=-1 in=move=1.0000,0.3187 stick=0.8919,0.1202 Sprint
+f=58 hash=b09b0f86af699fed score=0:0 carrier=-1 in=move=1.0000,0.3238 stick=0.8941,0.1033 Sprint
+f=59 hash=3629e4b7c411042f score=0:0 carrier=-1 in=move=1.0000,0.3288 stick=0.8959,0.0860 Sprint
+f=60 hash=ba241d90a97993f0 score=0:0 carrier=-1 in=move=1.0000,0.3338 stick=0.8974,0.0685 Sprint
+f=61 hash=7c7ecf769439c582 score=0:0 carrier=-1 in=move=1.0000,0.3388 stick=0.8986,0.0508 Sprint
+f=62 hash=d93190711a66906c score=0:0 carrier=-1 in=move=1.0000,0.3437 stick=0.8994,0.0329 Sprint
+f=63 hash=d99ef260f96b825e score=0:0 carrier=-1 in=move=1.0000,0.3486 stick=0.8999,0.0150 Sprint
+f=64 hash=78575bcd933c0a99 score=0:0 carrier=-1 in=move=1.0000,0.3535 stick=0.9000,-0.0030 Sprint
+f=65 hash=de38ce6c7d85b3c9 score=0:0 carrier=-1 in=move=1.0000,0.3583 stick=0.8998,-0.0210 Sprint
+f=66 hash=9564e52b119d102d score=0:0 carrier=-1 in=move=1.0000,0.3631 stick=0.8992,-0.0389 Sprint
+f=67 hash=8356abe4c710908a score=0:0 carrier=-1 in=move=1.0000,0.3679 stick=0.8982,-0.0568 Sprint
+f=68 hash=250425dff9811fcf score=0:0 carrier=-1 in=move=1.0000,0.3726 stick=0.8969,-0.0744 Sprint
+f=69 hash=0ee28a1af3ad007d score=0:0 carrier=-1 in=move=1.0000,0.3773 stick=0.8953,-0.0918 Sprint
+f=70 hash=54792989e860f056 score=0:0 carrier=-1 in=move=1.0000,0.3819 stick=0.8934,-0.1090 Sprint
+f=71 hash=a3274412cb58a2c8 score=0:0 carrier=-1 in=move=1.0000,0.3865 stick=0.8912,-0.1259 Sprint
+f=72 hash=5ee9f358a3590265 score=0:0 carrier=-1 in=move=1.0000,0.3911 stick=0.8887,-0.1424 Sprint
+f=73 hash=1ae21ec75dc930f5 score=0:0 carrier=-1 in=move=1.0000,0.3956 stick=0.8859,-0.1585 Sprint
+f=74 hash=9dfb3af5c7502dfb score=0:0 carrier=-1 in=move=1.0000,0.4001 stick=0.8830,-0.1741 Sprint
+f=75 hash=a4f5a6bbef3f521d score=0:0 carrier=-1 in=move=1.0000,0.4046 stick=0.8799,-0.1893 Sprint
+f=76 hash=55b36b82e7bb3449 score=0:0 carrier=-1 in=move=1.0000,0.4090 stick=0.8766,-0.2040 Poke+Sprint
+f=77 hash=0391b374f5b83482 score=0:0 carrier=-1 in=move=1.0000,0.4134 stick=0.8732,-0.2181 Sprint
+f=78 hash=af9ea668443e7ac4 score=0:0 carrier=-1 in=move=1.0000,0.4177 stick=0.8697,-0.2316 Sprint
+f=79 hash=1d41c1440d1fb0d9 score=0:0 carrier=-1 in=move=1.0000,0.4220 stick=0.8662,-0.2445 Sprint
+f=80 hash=d46fb3919a047d5c score=0:0 carrier=-1 in=move=1.0000,0.4262 stick=0.8626,-0.2567 Sprint
+f=81 hash=612d42ad5f42ed45 score=0:0 carrier=-1 in=move=1.0000,0.4304 stick=0.8591,-0.2683 Sprint
+f=82 hash=a778979a4de851de score=0:0 carrier=-1 in=move=1.0000,0.4346 stick=0.8556,-0.2792 Sprint
+f=83 hash=f3f2382f51772d63 score=0:0 carrier=-1 in=move=1.0000,0.4387 stick=0.8522,-0.2893 Sprint
+f=84 hash=bfc6c7bd787fc7ad score=0:0 carrier=-1 in=move=1.0000,0.4428 stick=0.8490,-0.2988 Sprint
+f=85 hash=4852eb310a7ea486 score=0:0 carrier=-1 in=move=1.0000,0.4468 stick=0.8459,-0.3074 Sprint
+f=86 hash=740c825f8520742f score=0:0 carrier=-1 in=move=1.0000,0.4508 stick=0.8429,-0.3154 Sprint
+f=87 hash=042234a2dacd10ae score=0:0 carrier=-1 in=move=1.0000,0.4547 stick=0.8402,-0.3225 Sprint
+f=88 hash=0ae5bc6b12607601 score=0:0 carrier=-1 in=move=1.0000,0.4586 stick=0.8378,-0.3288 Sprint
+f=89 hash=9f87ddb4bfeb5e1e score=0:0 carrier=-1 in=move=1.0000,0.4624 stick=0.8356,-0.3344 Sprint
+f=90 hash=bca247ebc9027864 score=0:0 carrier=-1 in=move=1.0000,0.4662 stick=0.8337,-0.3391 Sprint
+f=91 hash=22597963f42814c5 score=0:0 carrier=0 in=move=1.0000,0.4700 stick=0.8321,-0.3430 Sprint
+f=92 hash=9efa6f27561edba0 score=0:0 carrier=0 in=move=0.9571,0.5553 stick=0.8567,-0.2758 Sprint
+f=93 hash=357bb68b9b416002 score=0:0 carrier=0 in=move=0.9070,0.6366 stick=0.8761,-0.2059 Sprint
+f=94 hash=e6f8c586f9a9138b score=0:0 carrier=0 in=move=0.8499,0.7134 stick=0.8900,-0.1338 Sprint
+f=95 hash=5ffb21c4d70e74fc score=0:0 carrier=0 in=move=0.7864,0.7851 stick=0.8980,-0.0599 Sprint
+f=96 hash=7d925d4058e74bbe score=0:0 carrier=0 in=move=0.7169,0.8510 stick=0.8999,0.0153 Sprint
+f=97 hash=2c16c7da8a654f14 score=0:0 carrier=0 in=move=0.6419,0.9108 stick=0.8954,0.0912 Sprint
+f=98 hash=06fa507040862b85 score=0:0 carrier=0 in=move=0.5620,0.9639 stick=0.8843,0.1674 Sprint
+f=99 hash=17e3737cb3d789c0 score=0:0 carrier=0 in=move=0.4778,1.0100 stick=0.8665,0.2433 Sprint
+f=100 hash=55203352f69c4f36 score=0:0 carrier=0 in=move=0.3898,1.0487 stick=0.8419,0.3181 Sprint
+f=101 hash=e14de26f0c8e6439 score=0:0 carrier=0 in=move=0.2987,1.0797 stick=0.8105,0.3913 PassHeld+Sprint
+f=102 hash=244967887c2e8958 score=0:0 carrier=0 in=move=0.2053,1.1027 stick=0.7723,0.4621 PassHeld+Sprint
+f=103 hash=9b629b9d4171d7ab score=0:0 carrier=0 in=move=0.1101,1.1177 stick=0.7274,0.5300 PassHeld+Sprint
+f=104 hash=f986ea28f0c581bc score=0:0 carrier=0 in=move=0.0139,1.1245 stick=0.6760,0.5941 PassHeld+Sprint
+f=105 hash=fe890ac1de739abb score=0:0 carrier=0 in=move=-0.0825,1.1229 stick=0.6184,0.6539 PassHeld+Sprint
+f=106 hash=0fa1c8476cb9fc3c score=0:0 carrier=0 in=move=-0.1786,1.1131 stick=0.5549,0.7086 PassHeld+Sprint
+f=107 hash=c951848778466c20 score=0:0 carrier=0 in=move=-0.2735,1.0951 stick=0.4859,0.7575 PassHeld+Sprint
+f=108 hash=294ef853c00215b6 score=0:0 carrier=0 in=move=-0.3666,1.0689 stick=0.4120,0.8001 PassHeld+Sprint
+f=109 hash=3c3515466dfec27b score=0:0 carrier=0 in=move=-0.4571,1.0349 stick=0.3337,0.8358 PassHeld+Sprint
+f=110 hash=b4c2c046940a5ef9 score=0:0 carrier=0 in=move=-0.5445,0.9933 stick=0.2517,0.8641 PassHeld+Sprint
+f=111 hash=bf899ab226c6c9d9 score=0:0 carrier=0 in=move=-0.6280,0.9442 stick=0.1667,0.8844 PassHeld+Sprint
+f=112 hash=d8d572b07c227613 score=0:0 carrier=0 in=move=-0.7071,0.8882 stick=0.0795,0.8965 PassHeld+Sprint
+f=113 hash=f24a6b9164f9e6fe score=0:0 carrier=0 in=move=-0.7811,0.8256 stick=-0.0090,0.9000 PassHeld+Sprint
+f=114 hash=34beeee5f1dc9d14 score=0:0 carrier=0 in=move=-0.8495,0.7568 stick=-0.0981,0.8946 PassHeld+Sprint
+f=115 hash=3a145951b03bdf2b score=0:0 carrier=0 in=move=-0.9119,0.6824 stick=-0.1867,0.8804 PassHeld+Sprint
+f=116 hash=e3ec3c1be03fe3c0 score=0:0 carrier=0 in=move=-0.9677,0.6029 stick=-0.2739,0.8573 PassHeld+Sprint
+f=117 hash=f01e6924f5f47f18 score=0:0 carrier=0 in=move=-1.0165,0.5189 stick=-0.3588,0.8254 PassHeld+Sprint
+f=118 hash=4a4fa94fb600bcc7 score=0:0 carrier=0 in=move=-1.0580,0.4310 stick=-0.4404,0.7849 PassHeld+Sprint
+f=119 hash=6b33b4af38cbc29e score=0:0 carrier=0 in=move=-1.0919,0.3399 stick=-0.5178,0.7361 PassHeld+Sprint
+f=120 hash=10a0d28e7ec6c832 score=0:0 carrier=0 in=move=-1.1179,0.2461 stick=-0.5901,0.6796 PassHeld+Sprint
+f=121 hash=b74ef173a4d2c130 score=0:0 carrier=0 in=move=-1.1358,0.1505 stick=-0.6565,0.6157 
+f=122 hash=a384723b240c3616 score=0:0 carrier=0 in=move=-1.1455,0.0536 stick=-0.7161,0.5452 
+f=123 hash=670002a9dcd4cfec score=0:0 carrier=0 in=move=-1.1470,-0.0438 stick=-0.7683,0.4687 
+f=124 hash=d5c14768f43ed005 score=0:0 carrier=0 in=move=-1.1401,-0.1410 stick=-0.8125,0.3872 
+f=125 hash=f62d586508b587dd score=0:0 carrier=0 in=move=-1.1250,-0.2373 stick=-0.8480,0.3014 
+f=126 hash=086098a57366096a score=0:0 carrier=0 in=move=-1.1018,-0.3320 stick=-0.8746,0.2124 
+f=127 hash=8d81bf55adea78b3 score=0:0 carrier=0 in=move=-1.0706,-0.4244 stick=-0.8918,0.1210 
+f=128 hash=9cfc5ac75edbdb26 score=0:0 carrier=0 in=move=-1.0317,-0.5139 stick=-0.8996,0.0284 
+f=129 hash=6f7f6d1d9f766a43 score=0:0 carrier=0 in=move=-0.9853,-0.5997 stick=-0.8977,-0.0645 
+f=130 hash=ede9d637fb15d9f8 score=0:0 carrier=0 in=move=-0.9318,-0.6813 stick=-0.8863,-0.1565 
+f=131 hash=b1c5cbc6b5ad0def score=0:0 carrier=0 in=move=-0.8715,-0.7581 stick=-0.8655,-0.2468 
+f=132 hash=997dda3e7b96cf69 score=0:0 carrier=0 in=move=-0.8049,-0.8295 stick=-0.8356,-0.3343 
+f=133 hash=4053b74e300d92ed score=0:0 carrier=0 in=move=-0.7326,-0.8951 stick=-0.7970,-0.4180 
+f=134 hash=b5d0115e061f155c score=0:0 carrier=0 in=move=-0.6549,-0.9543 stick=-0.7502,-0.4971 
+f=135 hash=4c9d6c5330f48bf8 score=0:0 carrier=0 in=move=-0.5725,-1.0067 stick=-0.6958,-0.5708 
+f=136 hash=eb09a881bdc8f7be score=0:0 carrier=0 in=move=-0.4859,-1.0519 stick=-0.6345,-0.6383 
+f=137 hash=9c8860ee9f804d68 score=0:0 carrier=0 in=move=-0.3959,-1.0897 stick=-0.5669,-0.6990 
+f=138 hash=54514e484ff2b7c0 score=0:0 carrier=0 in=move=-0.3029,-1.1198 stick=-0.4939,-0.7524 
+f=139 hash=3ed5c2321babcf7e score=0:0 carrier=0 in=move=-0.2078,-1.1419 stick=-0.4164,-0.7979 
+f=140 hash=75d6c11bc24a3ea9 score=0:0 carrier=0 in=move=-0.1111,-1.1559 stick=-0.3352,-0.8352 
+f=141 hash=d1e6b13fe0613842 score=0:0 carrier=0 in=move=-0.0136,-1.1616 stick=-0.2513,-0.8642 
+f=142 hash=d85e630cce0d10a3 score=0:0 carrier=0 in=move=0.0840,-1.1592 stick=-0.1654,-0.8847 
+f=143 hash=68b82267667ddc04 score=0:0 carrier=0 in=move=0.1810,-1.1485 stick=-0.0786,-0.8966 
+f=144 hash=4eab18512e74d3bb score=0:0 carrier=0 in=move=0.2768,-1.1297 stick=0.0083,-0.9000 
+f=145 hash=4bda175f67dbc835 score=0:0 carrier=0 in=move=0.3707,-1.1029 stick=0.0944,-0.8950 
+f=146 hash=4498cc7308e361ca score=0:0 carrier=0 in=move=0.4620,-1.0683 stick=0.1790,-0.8820 
+f=147 hash=e4b19d2117111ae4 score=0:0 carrier=0 in=move=0.5500,-1.0262 stick=0.2612,-0.8613 
+f=148 hash=4c6ecc315e6a7b0d score=0:0 carrier=0 in=move=0.6341,-0.9768 stick=0.3404,-0.8331 
+f=149 hash=7bec07cec724d3e3 score=0:0 carrier=0 in=move=0.7138,-0.9206 stick=0.4159,-0.7981 
+f=150 hash=8adf3b0b57a4d2d6 score=0:0 carrier=0 in=move=0.7885,-0.8579 stick=0.4872,-0.7567 
+f=151 hash=58bf56850e4e478d score=0:0 carrier=0 in=move=0.8576,-0.7892 stick=0.5538,-0.7094 
+f=152 hash=f82274cae03be43d score=0:0 carrier=0 in=move=0.9207,-0.7149 stick=0.6152,-0.6569 
+f=153 hash=e520480b9d6dec8d score=0:0 carrier=0 in=move=0.9773,-0.6356 stick=0.6710,-0.5997 
+f=154 hash=4b29479100d605c9 score=0:0 carrier=0 in=move=1.0270,-0.5519 stick=0.7211,-0.5385 
+f=155 hash=19825e909033c6c0 score=0:0 carrier=0 in=move=1.0696,-0.4644 stick=0.7651,-0.4739 
+f=156 hash=2d20a24beda4aae2 score=0:0 carrier=0 in=move=1.1046,-0.3737 stick=0.8029,-0.4065 
+f=157 hash=c2f3a85d1535f718 score=0:0 carrier=6 in=move=1.1320,-0.2804 stick=0.8345,-0.3370 
+f=158 hash=901f0aaacd73f4c4 score=0:0 carrier=6 in=move=1.1514,-0.1851 stick=0.8598,-0.2658 
+f=159 hash=95b016f1e2fe608a score=0:0 carrier=6 in=move=1.1628,-0.0887 stick=0.8789,-0.1937 
+f=160 hash=cdc49e2a90476e42 score=0:0 carrier=6 in=move=1.1661,0.0083 stick=0.8918,-0.1212 
+f=161 hash=840a2ead7e676f15 score=0:0 carrier=6 in=move=1.1613,0.1052 stick=0.8987,-0.0487 
+f=162 hash=50a61e65bd115bd6 score=0:0 carrier=7 in=move=1.1484,0.2014 stick=0.8997,0.0232 
+f=163 hash=63c27b2284e65b97 score=0:0 carrier=7 in=move=1.1276,0.2960 stick=0.8951,0.0941 
+f=164 hash=68c97a98b9655ec1 score=0:0 carrier=7 in=move=1.0990,0.3885 stick=0.8850,0.1636 
+f=165 hash=7f87af8d0e3f69dd score=0:0 carrier=7 in=move=1.0628,0.4783 stick=0.8698,0.2312 
+f=166 hash=ae46a520d5929371 score=0:0 carrier=7 in=move=1.0193,0.5646 stick=0.8497,0.2966 
+f=167 hash=99fbb619491e536b score=0:0 carrier=6 in=move=0.9688,0.6470 stick=0.8250,0.3596 
+f=168 hash=d310bf4d92c536a1 score=0:0 carrier=6 in=move=0.9116,0.7248 stick=0.7961,0.4198 
+f=169 hash=ade681a36623e9dc score=0:0 carrier=6 in=move=0.8483,0.7976 stick=0.7632,0.4770 
+f=170 hash=a5a3e82bc619c19c score=0:0 carrier=6 in=move=0.7792,0.8648 stick=0.7266,0.5311 
+f=171 hash=c67b64b9087dd467 score=0:0 carrier=6 in=move=0.7047,0.9259 stick=0.6867,0.5818 
+f=172 hash=6bd04dbe73e54604 score=0:0 carrier=6 in=move=0.6256,0.9807 stick=0.6437,0.6290 
+f=173 hash=7b243e8f80c92828 score=0:0 carrier=6 in=move=0.5422,1.0286 stick=0.5981,0.6725 
+f=174 hash=efff5daa712e51bc score=0:0 carrier=6 in=move=0.4553,1.0694 stick=0.5500,0.7124 
+f=175 hash=ce6a0185fde73a64 score=0:0 carrier=6 in=move=0.3653,1.1029 stick=0.4998,0.7484 
+f=176 hash=86b59d2a5aa986c8 score=0:0 carrier=6 in=move=0.2730,1.1287 stick=0.4478,0.7807 
+f=177 hash=8af3b48a24f7f216 score=0:0 carrier=6 in=move=0.1790,1.1468 stick=0.3942,0.8091 
+f=178 hash=4fe5cd47d8e59fe8 score=0:0 carrier=6 in=move=0.0838,1.1571 stick=0.3393,0.8336 
+f=179 hash=cab4f3fb1c972aee score=0:0 carrier=6 in=move=-0.0117,1.1595 stick=0.2833,0.8542 
+f=180 hash=9151b4daff0d4c74 score=0:0 carrier=6 in=move=-0.1070,1.1539 stick=0.2265,0.8710 
+f=181 hash=2f1647d167a481bc score=0:0 carrier=6 in=move=-0.2014,1.1405 stick=0.1692,0.8840 Lift
+f=182 hash=4a81fddb4905d0b0 score=0:0 carrier=6 in=move=-0.2943,1.1194 stick=0.1115,0.8931 
+f=183 hash=a3066525f7ca765c score=0:0 carrier=6 in=move=-0.3851,1.0908 stick=0.0537,0.8984 
+f=184 hash=ba84bbbdaba58f3a score=0:0 carrier=6 in=move=-0.4730,1.0548 stick=-0.0041,0.9000 CrossHold
+f=185 hash=e481ed4f815cdab2 score=0:0 carrier=6 in=move=-0.5576,1.0117 stick=-0.0616,0.8979 CrossHold
+f=186 hash=d8f35b0e1c52d23c score=0:0 carrier=6 in=move=-0.6383,0.9619 stick=-0.1187,0.8921 CrossHold
+f=187 hash=bb90fe0036090649 score=0:0 carrier=6 in=move=-0.7145,0.9057 stick=-0.1751,0.8828 CrossHold
+f=188 hash=275f05875975584e score=0:0 carrier=6 in=move=-0.7857,0.8435 stick=-0.2307,0.8699 CrossHold
+f=189 hash=1579587f1ca69d35 score=0:0 carrier=6 in=move=-0.8514,0.7757 stick=-0.2853,0.8536 CrossHold
+f=190 hash=502dff326930e62e score=0:0 carrier=6 in=move=-0.9113,0.7028 stick=-0.3388,0.8338 CrossHold
+f=191 hash=5f969960d2f898fe score=0:0 carrier=6 in=move=-0.9650,0.6254 stick=-0.3909,0.8107 CrossHold
+f=192 hash=55217f68c6969be7 score=0:0 carrier=6 in=move=-1.0120,0.5440 stick=-0.4415,0.7843 CrossHold
+f=193 hash=ec24dffc5bfa5171 score=0:0 carrier=6 in=move=-1.0522,0.4591 stick=-0.4904,0.7546 CrossHold
+f=194 hash=1f3b93324c5b866c score=0:0 carrier=6 in=move=-1.0756,0.3983 stick=-0.5193,0.7351 CrossHold
+f=195 hash=c18c6fd83504740d score=0:0 carrier=6 in=move=-1.0954,0.3364 stick=-0.5475,0.7143 CrossHold
+f=196 hash=3689048be55814ff score=0:0 carrier=6 in=move=-1.1117,0.2736 stick=-0.5751,0.6923 CrossHold
+f=197 hash=38d09b025c9bda40 score=0:0 carrier=6 in=move=-1.1243,0.2100 stick=-0.6020,0.6690 CrossHold
+f=198 hash=b1ae3d19b040bbde score=0:0 carrier=6 in=move=-1.1333,0.1460 stick=-0.6282,0.6444 CrossHold
+f=199 hash=274a5b219b02054b score=0:0 carrier=6 in=move=-1.1386,0.0816 stick=-0.6537,0.6186 CrossHold
+f=200 hash=7496bf55c467ef40 score=0:0 carrier=6 in=move=-1.1402,0.0172 stick=-0.6784,0.5914 CrossHold
+f=201 hash=3d565029faaca130 score=0:0 carrier=6 in=move=-1.1382,-0.0471 stick=-0.7022,0.5629 
+f=202 hash=8a90c18a38010c61 score=0:0 carrier=6 in=move=-1.1294,-0.1393 stick=-0.7383,0.5148 
+f=203 hash=2273e25b004c1a1e score=0:0 carrier=6 in=move=-1.1131,-0.2303 stick=-0.7713,0.4639 
+f=204 hash=22c2a9054067bbf2 score=0:0 carrier=6 in=move=-1.0895,-0.3196 stick=-0.8010,0.4103 
+f=205 hash=c1500488b1c1cc16 score=0:0 carrier=6 in=move=-1.0588,-0.4065 stick=-0.8273,0.3544 
+f=206 hash=79eef84186bbd724 score=0:0 carrier=6 in=move=-1.0212,-0.4905 stick=-0.8499,0.2962 
+f=207 hash=6359d43bbf6ae1cd score=0:0 carrier=6 in=move=-0.9769,-0.5710 stick=-0.8685,0.2359 
+f=208 hash=030f1714c91f7f4a score=0:0 carrier=6 in=move=-0.9264,-0.6475 stick=-0.8831,0.1738 
+f=209 hash=57dfacfb05399ebb score=0:0 carrier=6 in=move=-0.8699,-0.7196 stick=-0.8932,0.1100 
+f=210 hash=558d5a910f344158 score=0:0 carrier=6 in=move=-0.8078,-0.7867 stick=-0.8989,0.0450 
+f=211 hash=29cff07c1f7bf490 score=0:0 carrier=6 in=move=-0.7406,-0.8484 stick=-0.8998,-0.0210 
+f=212 hash=e79406b3725ddfa3 score=0:0 carrier=6 in=move=-0.6688,-0.9043 stick=-0.8957,-0.0877 
+f=213 hash=bf15ce7fe97aa90a score=0:0 carrier=6 in=move=-0.5928,-0.9542 stick=-0.8866,-0.1547 
+f=214 hash=6de8d92aa136801e score=0:0 carrier=6 in=move=-0.5132,-0.9977 stick=-0.8723,-0.2217 
+f=215 hash=a01c2307e6ace689 score=0:0 carrier=6 in=move=-0.4304,-1.0345 stick=-0.8526,-0.2881 
+f=216 hash=900f3c5076c48c8a score=0:0 carrier=6 in=move=-0.3451,-1.0644 stick=-0.8276,-0.3537 
+f=217 hash=b702d3c93eeb272b score=0:0 carrier=6 in=move=-0.2579,-1.0873 stick=-0.7971,-0.4179 
+f=218 hash=5ba6c5a326130f48 score=0:0 carrier=6 in=move=-0.1692,-1.1031 stick=-0.7612,-0.4802 
+f=219 hash=8db04acb1967a47d score=0:0 carrier=6 in=move=-0.0798,-1.1116 stick=-0.7199,-0.5402 
+f=220 hash=4a90988c654ca4a7 score=0:0 carrier=6 in=move=0.0099,-1.1129 stick=-0.6733,-0.5973 
+f=221 hash=5f61c8c1ac6c72c7 score=0:0 carrier=6 in=move=0.0992,-1.1070 stick=-0.6215,-0.6510 
+f=222 hash=cd11f1b3f4995b40 score=0:0 carrier=6 in=move=0.1876,-1.0939 stick=-0.5647,-0.7008 
+f=223 hash=4156e2c923e81fcf score=0:0 carrier=6 in=move=0.2745,-1.0738 stick=-0.5033,-0.7461 
+f=224 hash=0f4eff7a96ed727a score=0:0 carrier=6 in=move=0.3593,-1.0468 stick=-0.4374,-0.7866 
+f=225 hash=fc67bd6c37f1dce5 score=0:0 carrier=6 in=move=0.4415,-1.0132 stick=-0.3675,-0.8216 
+f=226 hash=4839b998a0b10606 score=0:0 carrier=6 in=move=0.5206,-0.9731 stick=-0.2939,-0.8506 Poke
+f=227 hash=ffdc83e4d90296e2 score=0:0 carrier=6 in=move=0.5960,-0.9269 stick=-0.2173,-0.8734 
+f=228 hash=bac31afb7204b7f9 score=0:0 carrier=6 in=move=0.6673,-0.8750 stick=-0.1381,-0.8893 
+f=229 hash=bbf302f18b32fd7c score=0:0 carrier=6 in=move=0.7341,-0.8175 stick=-0.0569,-0.8982 
+f=230 hash=aecd935ba3fe79e1 score=0:0 carrier=6 in=move=0.7960,-0.7551 stick=0.0255,-0.8996 
+f=231 hash=3d613db7c005cfc2 score=0:0 carrier=6 in=move=0.8525,-0.6880 stick=0.1086,-0.8934 
+f=232 hash=2bfc6d6b0c1b3b98 score=0:0 carrier=6 in=move=0.9034,-0.6168 stick=0.1914,-0.8794 
+f=233 hash=6c72058a3b9c3f8d score=0:0 carrier=6 in=move=0.9484,-0.5419 stick=0.2734,-0.8575 
+f=234 hash=261f50d4706b9df6 score=0:0 carrier=6 in=move=0.9871,-0.4637 stick=0.3536,-0.8276 
+f=235 hash=613bc35e6ce45b0c score=0:0 carrier=6 in=move=1.0194,-0.3830 stick=0.4312,-0.7900 
+f=236 hash=6f11c2608cf437ba score=0:0 carrier=6 in=move=1.0451,-0.3000 stick=0.5054,-0.7447 
+f=237 hash=4e3f4e5e2db63955 score=0:0 carrier=6 in=move=1.0640,-0.2155 stick=0.5754,-0.6920 
+f=238 hash=70568f4111691907 score=0:0 carrier=6 in=move=1.0762,-0.1299 stick=0.6404,-0.6323 
+f=239 hash=460fefc8c3862269 score=0:0 carrier=6 in=move=1.0814,-0.0438 stick=0.6997,-0.5661 
+f=240 hash=d2ed69115ad8d25b score=0:0 carrier=6 in=move=1.0798,0.0423 stick=0.7524,-0.4939 
+f=241 hash=262b5fa055350ab1 score=0:0 carrier=6 in=move=1.0714,0.1278 stick=0.7979,-0.4164 Check
+f=242 hash=0972f5d0d5027cbb score=0:0 carrier=6 in=move=1.0563,0.2121 stick=0.8356,-0.3343 
+f=243 hash=521c86a7702403f2 score=0:0 carrier=6 in=move=1.0345,0.2948 stick=0.8651,-0.2483 
+f=244 hash=400ce8e50aea8564 score=0:0 carrier=6 in=move=1.0063,0.3754 stick=0.8858,-0.1595 
+f=245 hash=17fb1ade5ec7a719 score=0:0 carrier=6 in=move=0.9718,0.4533 stick=0.8974,-0.0686 
+f=246 hash=ec39364378ce1408 score=0:0 carrier=6 in=move=0.9314,0.5281 stick=0.8997,0.0233 
+f=247 hash=5de615adc7829cf8 score=0:0 carrier=6 in=move=0.8853,0.5993 stick=0.8926,0.1152 
+f=248 hash=b0c8d1c0748869a3 score=0:0 carrier=6 in=move=0.8338,0.6664 stick=0.8761,0.2061 
+f=249 hash=32e1cbdf0122af56 score=0:0 carrier=6 in=move=0.7773,0.7292 stick=0.8502,0.2951 
+f=250 hash=8b8cc97d0be0e52a score=0:0 carrier=6 in=move=0.7161,0.7871 stick=0.8154,0.3811 
+f=251 hash=8e9995a164c51307 score=0:0 carrier=6 in=move=0.6507,0.8400 stick=0.7717,0.4631 
+f=252 hash=913f432256ea3d77 score=0:0 carrier=6 in=move=0.5814,0.8874 stick=0.7199,0.5402 
+f=253 hash=81e8764f52d330c5 score=0:0 carrier=6 in=move=0.5088,0.9291 stick=0.6603,0.6115 
+f=254 hash=6097c2fcb2767d8d score=0:0 carrier=6 in=move=0.4333,0.9649 stick=0.5937,0.6764 
+f=255 hash=00c70c0634e367f9 score=0:0 carrier=6 in=move=0.3553,0.9945 stick=0.5209,0.7339 
+f=256 hash=74aba259ab92ea81 score=0:0 carrier=6 in=move=0.2754,1.0179 stick=0.4426,0.7837 
+f=257 hash=da18a33ff423d48e score=0:0 carrier=6 in=move=0.1941,1.0349 stick=0.3598,0.8250 
+f=258 hash=b7c64adbe7aa328f score=0:0 carrier=6 in=move=0.1119,1.0454 stick=0.2733,0.8575 
+f=259 hash=eaac1621730fdaeb score=0:0 carrier=6 in=move=0.0293,1.0494 stick=0.1842,0.8809 
+f=260 hash=d9fe7a2848311ba0 score=0:0 carrier=6 in=move=-0.0532,1.0469 stick=0.0935,0.8951 
+f=261 hash=d903e109cc7ce540 score=0:0 carrier=6 in=move=-0.1351,1.0380 stick=0.0022,0.9000 
+f=262 hash=4c59119f6df27c9d score=0:0 carrier=6 in=move=-0.2159,1.0227 stick=-0.0888,0.8956 
+f=263 hash=d2df9f9a72191f76 score=0:0 carrier=6 in=move=-0.2951,1.0011 stick=-0.1785,0.8821 
+f=264 hash=a9bfb4d6e60c6163 score=0:0 carrier=6 in=move=-0.3722,0.9735 stick=-0.2659,0.8598 
+f=265 hash=845d17dac25dbd87 score=0:0 carrier=6 in=move=-0.4468,0.9400 stick=-0.3502,0.8291 
+f=266 hash=80528533384574f9 score=0:0 carrier=6 in=move=-0.5184,0.9008 stick=-0.4305,0.7903 
+f=267 hash=78c373ca8ec5b5f6 score=0:0 carrier=6 in=move=-0.5865,0.8563 stick=-0.5062,0.7442 
+f=268 hash=a04b23d63c0929d0 score=0:0 carrier=6 in=move=-0.6509,0.8066 stick=-0.5765,0.6911 
+f=269 hash=61f25c9c785725bc score=0:0 carrier=6 in=move=-0.7111,0.7522 stick=-0.6408,0.6320 
+f=270 hash=2d0997acf6734dab score=0:0 carrier=6 in=move=-0.7667,0.6934 stick=-0.6986,0.5674 
+f=271 hash=5e253a175addd588 score=0:0 carrier=6 in=move=-0.8175,0.6305 stick=-0.7496,0.4981 
+f=272 hash=fa8a2eb03ee4c957 score=0:0 carrier=6 in=move=-0.8631,0.5639 stick=-0.7934,0.4249 
+f=273 hash=008bc5dc4e688bb2 score=0:0 carrier=6 in=move=-0.9034,0.4941 stick=-0.8298,0.3485 
+f=274 hash=e108a876d60c2591 score=0:0 carrier=6 in=move=-0.9380,0.4216 stick=-0.8586,0.2698 
+f=275 hash=d3b75193fcdbcc0c score=0:0 carrier=6 in=move=-0.9669,0.3467 stick=-0.8798,0.1896 
+f=276 hash=b28648fccb17848d score=0:0 carrier=6 in=move=-0.9898,0.2699 stick=-0.8934,0.1085 
+f=277 hash=5fd45e6be6c52f1c score=0:0 carrier=6 in=move=-1.0066,0.1916 stick=-0.8996,0.0274 
+f=278 hash=8624c2eac305987a score=0:0 carrier=6 in=move=-1.0173,0.1125 stick=-0.8984,-0.0531 
+f=279 hash=8c9cec22389a47a0 score=0:0 carrier=6 in=move=-1.0218,0.0329 stick=-0.8902,-0.1323 
+f=280 hash=24886fcf75486783 score=0:0 carrier=6 in=move=-1.0201,-0.0468 stick=-0.8753,-0.2096 
+f=281 hash=15cccf8d7b7d3dc7 score=0:0 carrier=6 in=move=-1.0122,-0.1259 stick=-0.8539,-0.2845 
+f=282 hash=60bf2d839a64679c score=0:0 carrier=6 in=move=-0.9983,-0.2040 stick=-0.8264,-0.3564 
+f=283 hash=b3d7b95a8f7963ed score=0:0 carrier=6 in=move=-0.9783,-0.2808 stick=-0.7934,-0.4250 
+f=284 hash=d8d2a4b2ca645d11 score=0:0 carrier=6 in=move=-0.9526,-0.3556 stick=-0.7551,-0.4897 
+f=285 hash=725c14741ca1cbe8 score=0:0 carrier=6 in=move=-0.9211,-0.4281 stick=-0.7121,-0.5503 
+f=286 hash=7f52f0b01ef2e32f score=0:0 carrier=6 in=move=-0.8842,-0.4979 stick=-0.6649,-0.6065 
+f=287 hash=36db66db09516bf7 score=0:0 carrier=6 in=move=-0.8421,-0.5645 stick=-0.6139,-0.6581 
+f=288 hash=38c9dcafcbb4b0bc score=0:0 carrier=6 in=move=-0.7950,-0.6276 stick=-0.5597,-0.7048 
+f=289 hash=c1aaa5b3b3a24428 score=0:0 carrier=6 in=move=-0.7432,-0.6868 stick=-0.5026,-0.7466 
+f=290 hash=f6447ece5531fd25 score=0:0 carrier=-1 in=move=-0.6871,-0.7418 stick=-0.4432,-0.7833 
+f=291 hash=e4209559a6561ac6 score=0:0 carrier=-1 in=move=-0.6270,-0.7922 stick=-0.3818,-0.8150 
+f=292 hash=ac6987383702cd01 score=0:0 carrier=-1 in=move=-0.5632,-0.8377 stick=-0.3190,-0.8416 
+f=293 hash=5fe544c9a6eb5d7d score=0:0 carrier=-1 in=move=-0.4962,-0.8782 stick=-0.2552,-0.8631 
+f=294 hash=0bcd088ecc238a88 score=0:0 carrier=-1 in=move=-0.4263,-0.9133 stick=-0.1907,-0.8796 
+f=295 hash=7ad1da05698b7bf6 score=0:0 carrier=-1 in=move=-0.3540,-0.9429 stick=-0.1260,-0.8911 
+f=296 hash=e53a49f0c4eafd8b score=0:0 carrier=-1 in=move=-0.2798,-0.9668 stick=-0.0613,-0.8979 
+f=297 hash=1359bce3d12e1a1c score=0:0 carrier=-1 in=move=-0.2039,-0.9850 stick=0.0029,-0.9000 
+f=298 hash=9f5c3acb0e68049b score=0:0 carrier=-1 in=move=-0.1270,-0.9972 stick=0.0664,-0.8975 
+f=299 hash=958944b51d0ba91b score=0:0 carrier=-1 in=move=-0.0494,-1.0034 stick=0.1289,-0.8907 
+f=300 hash=73cf7e34b2462f56 score=0:0 carrier=-1 in=move=0.0284,-1.0037 stick=0.1902,-0.8797 
+f=301 hash=3b6c590a8844c7da score=0:0 carrier=-1 in=move=0.1059,-0.9980 stick=0.2499,-0.8646 Sprint
+f=302 hash=7c53226f6318c731 score=0:0 carrier=-1 in=move=0.1827,-0.9863 stick=0.3079,-0.8457 Sprint
+f=303 hash=9d70a9c1686b4850 score=0:0 carrier=-1 in=move=0.2537,-0.9700 stick=0.3601,-0.8248 Sprint
+f=304 hash=08d027c6563c9749 score=0:0 carrier=-1 in=move=0.3177,-0.9506 stick=0.4056,-0.8034 Sprint
+f=305 hash=1d9b0f130c511a70 score=0:0 carrier=-1 in=move=0.3747,-0.9292 stick=0.4449,-0.7823 Sprint
+f=306 hash=5d697169eb4ef3bd score=0:0 carrier=-1 in=move=0.4249,-0.9069 stick=0.4782,-0.7625 Sprint
+f=307 hash=d54515889a86122d score=0:0 carrier=-1 in=move=0.4685,-0.8848 stick=0.5058,-0.7444 Sprint
+f=308 hash=2f495aad115559dd score=0:0 carrier=-1 in=move=0.5059,-0.8637 stick=0.5281,-0.7288 Sprint
+f=309 hash=afb34e3632a9cfeb score=0:1 carrier=-1 in=move=0.5373,-0.8442 stick=0.5455,-0.7159 Sprint
+f=310 hash=80095758db187d87 score=0:1 carrier=-1 in=move=0.5630,-0.8270 stick=0.5581,-0.7061 Sprint
+f=311 hash=72fd0a3fc731ad99 score=0:1 carrier=-1 in=move=0.5580,-0.8302 stick=0.5442,-0.7168 Sprint
+f=312 hash=35f87562a32a41fb score=0:1 carrier=-1 in=move=0.5529,-0.8335 stick=0.5300,-0.7274 Sprint
+f=313 hash=1b6833c165e31ef4 score=0:1 carrier=-1 in=move=0.5478,-0.8367 stick=0.5155,-0.7377 Sprint
+f=314 hash=6ab1721242b4d976 score=0:1 carrier=-1 in=move=0.5428,-0.8399 stick=0.5007,-0.7479 Sprint
+f=315 hash=bc0bf12a983ae3ef score=0:1 carrier=-1 in=move=0.5377,-0.8431 stick=0.4856,-0.7577 Sprint
+f=316 hash=9d29e63e49f15b02 score=0:1 carrier=-1 in=move=0.5327,-0.8463 stick=0.4704,-0.7673 Sprint
+f=317 hash=bc7de6fc2772661a score=0:1 carrier=-1 in=move=0.5276,-0.8496 stick=0.4550,-0.7765 Sprint
+f=318 hash=b812b67da5d69e9d score=0:1 carrier=-1 in=move=0.5225,-0.8528 stick=0.4395,-0.7854 Sprint
+f=319 hash=a4dc8b57f0342fdc score=0:1 carrier=-1 in=move=0.5175,-0.8560 stick=0.4239,-0.7939 Sprint
+f=320 hash=4cd20733f4ad60e8 score=0:1 carrier=-1 in=move=0.5124,-0.8592 stick=0.4083,-0.8020 Sprint
+f=321 hash=59aa3c88714655e5 score=0:1 carrier=-1 in=move=0.5074,-0.8624 stick=0.3928,-0.8098 Sprint
+f=322 hash=6e01f764c74a96ff score=0:1 carrier=-1 in=move=0.5023,-0.8657 stick=0.3773,-0.8171 Sprint
+f=323 hash=eb367069c0adc51f score=0:1 carrier=-1 in=move=0.4973,-0.8689 stick=0.3620,-0.8240 Sprint
+f=324 hash=7327c1568ac11eca score=0:1 carrier=-1 in=move=0.4922,-0.8721 stick=0.3469,-0.8305 Sprint
+f=325 hash=cb27d8776bc4ea13 score=0:1 carrier=-1 in=move=0.4872,-0.8753 stick=0.3320,-0.8365 Sprint
+f=326 hash=6548de169e0d9016 score=0:1 carrier=-1 in=move=0.4821,-0.8785 stick=0.3174,-0.8422 Sprint
+f=327 hash=1bdf7d763e6282d1 score=0:1 carrier=-1 in=move=0.4771,-0.8817 stick=0.3032,-0.8474 Sprint
+f=328 hash=28819c7ba8f20af5 score=0:1 carrier=-1 in=move=0.4721,-0.8849 stick=0.2893,-0.8522 Sprint
+f=329 hash=8154345ad04da2cb score=0:1 carrier=-1 in=move=0.4671,-0.8881 stick=0.2759,-0.8567 Sprint
+f=330 hash=6171c7a818c7159a score=0:1 carrier=-1 in=move=0.4621,-0.8913 stick=0.2629,-0.8607 Sprint
+f=331 hash=de1c424d40f4c1f0 score=0:1 carrier=-1 in=move=0.4571,-0.8945 stick=0.2505,-0.8644 Sprint
+f=332 hash=7272cc79f314464f score=0:1 carrier=-1 in=move=0.4521,-0.8976 stick=0.2386,-0.8678 Sprint
+f=333 hash=4e0cdbd0722305ca score=0:1 carrier=-1 in=move=0.4471,-0.9008 stick=0.2274,-0.8708 Sprint
+f=334 hash=a723874db8177c60 score=0:1 carrier=-1 in=move=0.4421,-0.9040 stick=0.2168,-0.8735 Sprint
+f=335 hash=92adedfccf24146f score=0:1 carrier=-1 in=move=0.4371,-0.9071 stick=0.2069,-0.8759 Sprint
+f=336 hash=1c44ff894d80b8c7 score=0:1 carrier=-1 in=move=0.4322,-0.9103 stick=0.1976,-0.8780 Sprint
+f=337 hash=532610164f028240 score=0:1 carrier=3 in=move=0.4272,-0.9134 stick=0.1892,-0.8799 Sprint
+f=338 hash=20fcb1535f69e1e8 score=0:1 carrier=3 in=move=0.4223,-0.9166 stick=0.1814,-0.8815 Sprint
+f=339 hash=77c1b4e2fb52eb28 score=0:1 carrier=3 in=move=0.4174,-0.9197 stick=0.1745,-0.8829 Sprint
+f=340 hash=00488c11067d629b score=0:1 carrier=3 in=move=0.4125,-0.9228 stick=0.1684,-0.8841 Sprint
+f=341 hash=e1702e53c44f049b score=0:1 carrier=3 in=move=0.4076,-0.9260 stick=0.1631,-0.8851 Sprint
+f=342 hash=f706754c3c740eb1 score=0:1 carrier=3 in=move=0.4027,-0.9291 stick=0.1586,-0.8859 Sprint
+f=343 hash=9c3561f769fb61ba score=0:1 carrier=3 in=move=0.3978,-0.9322 stick=0.1551,-0.8865 Sprint
+f=344 hash=d03730f79d145f06 score=0:1 carrier=3 in=move=0.3929,-0.9353 stick=0.1523,-0.8870 Sprint
+f=345 hash=55278a1852c4a0da score=0:1 carrier=3 in=move=0.3881,-0.9383 stick=0.1505,-0.8873 Sprint
+f=346 hash=6ce9838f4d93f7b0 score=0:1 carrier=3 in=move=0.3833,-0.9414 stick=0.1505,-0.8873 Sprint
+f=347 hash=2ab7107789186798 score=0:1 carrier=3 in=move=0.3785,-0.9445 stick=0.1505,-0.8873 Sprint
+f=348 hash=b2d65e5345556a11 score=0:1 carrier=3 in=move=0.3737,-0.9475 stick=0.1505,-0.8873 Sprint
+f=349 hash=5322f645cb8bb826 score=0:1 carrier=3 in=move=0.3689,-0.9506 stick=0.1505,-0.8873 Sprint
+f=350 hash=25e64a73a83273f2 score=0:1 carrier=3 in=move=0.3641,-0.9536 stick=0.1546,-0.8866 Sprint
+f=351 hash=77738c0382ed72ee score=0:1 carrier=3 in=move=0.3594,-0.9566 stick=0.1580,-0.8860 Sprint
+f=352 hash=e4e9ee70016ccc59 score=0:1 carrier=3 in=move=0.3546,-0.9597 stick=0.1624,-0.8852 Sprint
+f=353 hash=cd307b30346f72f0 score=0:1 carrier=3 in=move=0.3499,-0.9627 stick=0.1675,-0.8843 Sprint
+f=354 hash=e78914180fe6cba0 score=0:1 carrier=3 in=move=0.3452,-0.9656 stick=0.1735,-0.8831 Sprint
+f=355 hash=e7bbd3c33da44262 score=0:1 carrier=3 in=move=0.3405,-0.9686 stick=0.1803,-0.8817 Sprint
+f=356 hash=e5d0cf285641a0fc score=0:1 carrier=3 in=move=0.3359,-0.9716 stick=0.1879,-0.8802 Sprint
+f=357 hash=303c942d275ee4c0 score=0:1 carrier=3 in=move=0.3312,-0.9745 stick=0.1963,-0.8783 Sprint
+f=358 hash=b995028c6b9a17b0 score=0:1 carrier=3 in=move=0.3266,-0.9775 stick=0.2054,-0.8762 Sprint
+f=359 hash=97f852e439c05a69 score=0:1 carrier=3 in=move=0.3220,-0.9804 stick=0.2153,-0.8739 Sprint
+f=360 hash=a4c6c21bd5732dee score=0:1 carrier=3 in=move=0.3175,-0.9833 stick=0.2258,-0.8712 Sprint
+f=361 hash=da271a58cafbdb8b score=0:1 carrier=3 in=move=0.3129,-0.9862 stick=0.2369,-0.8683 Lift+Sprint
+f=362 hash=7874330bde3aab5a score=0:1 carrier=3 in=move=0.3084,-0.9891 stick=0.2487,-0.8650 Sprint
+f=363 hash=f836a5c06513c910 score=0:1 carrier=3 in=move=0.3039,-0.9919 stick=0.2610,-0.8613 Sprint
+f=364 hash=f768031c70287816 score=0:1 carrier=3 in=move=0.2994,-0.9948 stick=0.2739,-0.8573 Sprint+CrossHold
+f=365 hash=9ae780e5a6a763bc score=0:1 carrier=3 in=move=0.2949,-0.9976 stick=0.2872,-0.8529 Sprint+CrossHold
+f=366 hash=bd3da7e953fcd08f score=0:1 carrier=3 in=move=0.2905,-1.0005 stick=0.3010,-0.8482 Sprint+CrossHold
+f=367 hash=2361b5a030e4b0f9 score=0:1 carrier=3 in=move=0.2861,-1.0033 stick=0.3152,-0.8430 Sprint+CrossHold
+f=368 hash=1ea1fdc2a23691fd score=0:1 carrier=3 in=move=0.2817,-1.0061 stick=0.3298,-0.8374 Sprint+CrossHold
+f=369 hash=4d6501bf948efb13 score=0:1 carrier=3 in=move=0.2774,-1.0088 stick=0.3446,-0.8314 Sprint+CrossHold
+f=370 hash=fd6619d069ce7b41 score=0:1 carrier=3 in=move=0.2730,-1.0116 stick=0.3597,-0.8250 Sprint+CrossHold
+f=371 hash=c94149a8f9f9d38a score=0:1 carrier=3 in=move=0.2687,-1.0143 stick=0.3750,-0.8182 Sprint+CrossHold
+f=372 hash=a5ac1551d19b3ba3 score=0:1 carrier=3 in=move=0.2644,-1.0170 stick=0.3904,-0.8109 Sprint+CrossHold
+f=373 hash=9d88ca594053e92c score=0:1 carrier=3 in=move=0.2602,-1.0198 stick=0.4060,-0.8032 Sprint+CrossHold
+f=374 hash=634a6a0705bec99f score=0:1 carrier=3 in=move=0.2560,-1.0224 stick=0.4216,-0.7952 Sprint+CrossHold
+f=375 hash=77313593bc65addf score=0:1 carrier=3 in=move=0.2518,-1.0251 stick=0.4371,-0.7867 Sprint+CrossHold
+f=376 hash=2325f916770769bc score=0:1 carrier=3 in=move=0.2476,-1.0278 stick=0.4527,-0.7779 Poke+Sprint+CrossHold
+f=377 hash=1d04581d8c760312 score=0:1 carrier=3 in=move=0.2435,-1.0304 stick=0.4681,-0.7687 Sprint+CrossHold
+f=378 hash=8d7a052e8417eacc score=0:1 carrier=3 in=move=0.2394,-1.0330 stick=0.4834,-0.7592 Sprint+CrossHold
+f=379 hash=24559d8a80506f45 score=0:1 carrier=3 in=move=0.2353,-1.0356 stick=0.4984,-0.7494 Sprint+CrossHold
+f=380 hash=4908013284c3c1d7 score=0:1 carrier=3 in=move=0.2312,-1.0382 stick=0.5133,-0.7393 Sprint+CrossHold
+f=381 hash=3a211baa3a90782f score=0:1 carrier=3 in=move=0.2272,-1.0407 stick=0.5278,-0.7290 Sprint
+f=382 hash=0d07795b8687f80d score=0:1 carrier=3 in=move=0.2232,-1.0433 stick=0.5421,-0.7184 Sprint
+f=383 hash=004535f93ac3d64d score=0:1 carrier=3 in=move=0.2193,-1.0458 stick=0.5560,-0.7077 Sprint
+f=384 hash=417188b6830e1404 score=0:1 carrier=3 in=move=0.2153,-1.0483 stick=0.5695,-0.6969 Sprint
+f=385 hash=25d31886977a3774 score=0:1 carrier=3 in=move=0.2114,-1.0508 stick=0.5826,-0.6860 Sprint
+f=386 hash=b7e42ae7c36054e7 score=0:1 carrier=3 in=move=0.2076,-1.0532 stick=0.5953,-0.6750 Sprint
+f=387 hash=2ace6947b5437896 score=0:1 carrier=3 in=move=0.2038,-1.0557 stick=0.6075,-0.6641 Sprint
+f=388 hash=01b5f55e97d9420d score=0:1 carrier=3 in=move=0.2000,-1.0581 stick=0.6192,-0.6532 Sprint
+f=389 hash=e56605ecd34fe545 score=0:1 carrier=3 in=move=0.1962,-1.0605 stick=0.6304,-0.6423 Sprint
+f=390 hash=cb678a81399b7f83 score=0:1 carrier=3 in=move=0.1925,-1.0629 stick=0.6411,-0.6317 Sprint
+f=391 hash=f3913f01fc4942d0 score=0:1 carrier=3 in=move=0.1888,-1.0652 stick=0.6512,-0.6212 Sprint
+f=392 hash=e33210a70cbdee98 score=0:1 carrier=3 in=move=0.1851,-1.0675 stick=0.6608,-0.6110 Sprint
+f=393 hash=5b3bdcb477209747 score=0:1 carrier=3 in=move=0.1815,-1.0698 stick=0.6699,-0.6010 Sprint
+f=394 hash=098131d2b126f598 score=0:1 carrier=3 in=move=0.1779,-1.0721 stick=0.6784,-0.5914 Sprint
+f=395 hash=aa841a995445008b score=0:1 carrier=3 in=move=0.1744,-1.0744 stick=0.6864,-0.5821 Sprint
+f=396 hash=64c200e27e77e95a score=0:1 carrier=3 in=move=0.1708,-1.0766 stick=0.6938,-0.5733 Sprint
+f=397 hash=24f7d73bb5593094 score=0:1 carrier=3 in=move=0.1674,-1.0788 stick=0.7006,-0.5649 Sprint
+f=398 hash=5f5e3e927b7a31c5 score=0:1 carrier=3 in=move=0.1639,-1.0810 stick=0.7069,-0.5570 Sprint
+f=399 hash=55cd866d57e64eef score=0:1 carrier=3 in=move=0.1605,-1.0832 stick=0.7127,-0.5496 Sprint
+f=400 hash=2f93d014b1b7c385 score=0:1 carrier=3 in=move=0.1572,-1.0853 stick=0.7179,-0.5428 Sprint
+f=401 hash=02f506fe5e1720f0 score=0:1 carrier=3 in=move=0.1538,-1.0874 stick=0.7225,-0.5366 Sprint
+f=402 hash=619ed47ba0fa9821 score=0:1 carrier=3 in=move=0.1505,-1.0895 stick=0.7266,-0.5311 Sprint
+f=403 hash=88965981d540b5ed score=0:1 carrier=3 in=move=0.1473,-1.0916 stick=0.7302,-0.5261 Sprint
+f=404 hash=d1bcec884f0c4809 score=0:1 carrier=3 in=move=0.1441,-1.0936 stick=0.7332,-0.5219 Sprint
+f=405 hash=d8da8b387fccfdda score=0:1 carrier=3 in=move=0.1409,-1.0957 stick=0.7358,-0.5183 Sprint
+f=406 hash=262d049f4196e8c9 score=0:1 carrier=3 in=move=0.1378,-1.0977 stick=0.7378,-0.5154 Sprint
+f=407 hash=00bbc747cd5bf742 score=0:1 carrier=3 in=move=0.1347,-1.0996 stick=0.7393,-0.5133 Sprint
+f=408 hash=399cb523022dfc38 score=0:1 carrier=3 in=move=0.1316,-1.1016 stick=0.7393,-0.5133 Sprint
+f=409 hash=9e3ad80de67d38d0 score=0:1 carrier=3 in=move=0.1286,-1.1035 stick=0.7407,-0.5112 Sprint
+f=410 hash=c3aede3b5dd0cd4d score=0:1 carrier=3 in=move=0.1256,-1.1054 stick=0.7407,-0.5112 Sprint
+f=411 hash=024dbde31369dbef score=0:1 carrier=3 in=move=0.1227,-1.1072 stick=0.7407,-0.5112 Sprint
+f=412 hash=282f7d78ab70abe5 score=0:1 carrier=3 in=move=0.1198,-1.1091 stick=0.7390,-0.5136 Sprint
+f=413 hash=a5c580b70b328a38 score=0:1 carrier=3 in=move=0.1170,-1.1109 stick=0.7374,-0.5159 Sprint
+f=414 hash=73b7bf14be07e07c score=0:1 carrier=3 in=move=0.1142,-1.1127 stick=0.7353,-0.5189 Sprint
+f=415 hash=26de6d1573eb04dd score=0:1 carrier=3 in=move=0.1114,-1.1144 stick=0.7327,-0.5226 Sprint
+f=416 hash=5bb9e600b8180992 score=0:1 carrier=3 in=move=0.1087,-1.1162 stick=0.7296,-0.5270 Sprint
+f=417 hash=fea733627dee6c22 score=0:1 carrier=3 in=move=0.1060,-1.1179 stick=0.7259,-0.5320 Sprint
+f=418 hash=919c3507e458b197 score=0:1 carrier=3 in=move=0.1034,-1.1195 stick=0.7217,-0.5377 Sprint
+f=419 hash=92e2c0b69c1722c8 score=0:1 carrier=3 in=move=0.1008,-1.1212 stick=0.7169,-0.5441 Sprint
+f=420 hash=af6e6af2a77da71a score=0:1 carrier=3 in=move=0.0982,-1.1228 stick=0.7116,-0.5510 Sprint
+f=421 hash=262b1ed80307ad06 score=0:1 carrier=3 in=move=0.0957,-1.1244 stick=0.7058,-0.5584 
+f=422 hash=0af0d0e924062045 score=0:1 carrier=3 in=move=0.0933,-1.1260 stick=0.6994,-0.5664 
+f=423 hash=aad8aee4152f7aff score=0:1 carrier=3 in=move=0.0909,-1.1275 stick=0.6925,-0.5749 
+f=424 hash=56bf184fc323f945 score=0:1 carrier=3 in=move=0.0885,-1.1290 stick=0.6849,-0.5838 
+f=425 hash=06708f2ca28fd003 score=0:1 carrier=3 in=move=0.0862,-1.1305 stick=0.6769,-0.5931 
+f=426 hash=a81072756e79a15d score=0:1 carrier=3 in=move=0.0839,-1.1320 stick=0.6683,-0.6028 
+f=427 hash=e1f853f291e07cee score=0:1 carrier=3 in=move=0.0817,-1.1334 stick=0.6591,-0.6129 
+f=428 hash=367a403f53bec302 score=0:1 carrier=3 in=move=0.0795,-1.1348 stick=0.6494,-0.6231 
+f=429 hash=62bd85a36e6e5adb score=0:1 carrier=-1 in=move=0.0773,-1.1361 stick=0.6391,-0.6337 
+f=430 hash=b8faa57cb2fc797e score=0:1 carrier=-1 in=move=1.0000,-0.5473 stick=0.8810,0.1841 
+f=431 hash=da2810c74f2a6954 score=0:1 carrier=-1 in=move=1.0000,-0.5497 stick=0.8840,0.1688 
+f=432 hash=70869f7f39c6369b score=0:1 carrier=-1 in=move=1.0000,-0.5521 stick=0.8869,0.1530 
+f=433 hash=92018366420ae88d score=0:1 carrier=-1 in=move=1.0000,-0.5544 stick=0.8896,0.1367 
+f=434 hash=93b9a2783f99dbfd score=0:1 carrier=-1 in=move=1.0000,-0.5567 stick=0.8920,0.1201 
+f=435 hash=cabdd584e8a9d9b9 score=0:1 carrier=-1 in=move=1.0000,-0.5589 stick=0.8941,0.1031 
+f=436 hash=71c835ae8c552347 score=0:1 carrier=-1 in=move=1.0000,-0.5610 stick=0.8959,0.0858 
+f=437 hash=c4221819ddbc4d7a score=0:1 carrier=-1 in=move=1.0000,-0.5631 stick=0.8974,0.0683 
+f=438 hash=e59be0b3ec78f620 score=0:1 carrier=-1 in=move=1.0000,-0.5652 stick=0.8986,0.0506 
+f=439 hash=ac4f4ad55c90103e score=0:1 carrier=-1 in=move=1.0000,-0.5672 stick=0.8994,0.0328 
+f=440 hash=7f22166869f01f01 score=0:1 carrier=-1 in=move=1.0000,-0.5691 stick=0.8999,0.0148 
+f=441 hash=6981c68a33023b89 score=0:1 carrier=-1 in=move=1.0000,-0.5710 stick=0.9000,-0.0032 
+f=442 hash=20cd2973d8b0aa95 score=0:1 carrier=-1 in=move=1.0000,-0.5728 stick=0.8998,-0.0212 
+f=443 hash=4fcd703f2efe3bdd score=0:1 carrier=-1 in=move=1.0000,-0.5745 stick=0.8992,-0.0391 
+f=444 hash=dd8a9ba257fc7d3e score=0:1 carrier=-1 in=move=1.0000,-0.5762 stick=0.8982,-0.0569 
+f=445 hash=09c632acaeda08c6 score=0:1 carrier=-1 in=move=1.0000,-0.5779 stick=0.8969,-0.0746 
+f=446 hash=80a6acb494f8e64f score=0:1 carrier=-1 in=move=1.0000,-0.5795 stick=0.8953,-0.0920 
+f=447 hash=9d8f5dd2f049c79b score=0:1 carrier=-1 in=move=1.0000,-0.5810 stick=0.8934,-0.1092 
+f=448 hash=23f219587b585e23 score=0:1 carrier=-1 in=move=1.0000,-0.5825 stick=0.8911,-0.1260 
+f=449 hash=70b87a5b743bbbaf score=0:1 carrier=-1 in=move=1.0000,-0.5839 stick=0.8886,-0.1425 
+f=450 hash=d09292474deeaf28 score=0:1 carrier=-1 in=move=1.0000,-0.5852 stick=0.8859,-0.1586 
+f=451 hash=8e83588b5080419b score=0:1 carrier=-1 in=move=1.0000,-0.5865 stick=0.8830,-0.1743 Spin
+f=452 hash=4750812865be939e score=0:1 carrier=-1 in=move=1.0000,-0.5878 stick=0.8798,-0.1894 
+f=453 hash=0eeab2bd2cf2ad5d score=0:1 carrier=-1 in=move=1.0000,-0.5889 stick=0.8766,-0.2041 
+f=454 hash=b0bbf9b5b7796259 score=0:1 carrier=-1 in=move=1.0000,-0.5900 stick=0.8731,-0.2182 
+f=455 hash=b1d93a93d9caf38e score=0:1 carrier=-1 in=move=1.0000,-0.5911 stick=0.8697,-0.2317 
+f=456 hash=5312c0f3260544f4 score=0:1 carrier=-1 in=move=1.0000,-0.5921 stick=0.8661,-0.2446 
+f=457 hash=21e687bccccf3dbd score=0:1 carrier=-1 in=move=1.0000,-0.5930 stick=0.8626,-0.2568 
+f=458 hash=444e38816b5bae37 score=0:1 carrier=-1 in=move=1.0000,-0.5939 stick=0.8590,-0.2684 
+f=459 hash=037d6d75f909c75f score=0:1 carrier=-1 in=move=1.0000,-0.5947 stick=0.8556,-0.2793 
+f=460 hash=fa560a43c6ef5777 score=0:1 carrier=-1 in=move=1.0000,-0.5955 stick=0.8522,-0.2894 
+f=461 hash=56848b5e839d3fff score=0:1 carrier=-1 in=move=1.0000,-0.5962 stick=0.8489,-0.2989 
+f=462 hash=32c2bdc2370bf7b6 score=0:1 carrier=-1 in=move=1.0000,-0.5969 stick=0.8458,-0.3075 
+f=463 hash=fe8ce00b61e62456 score=0:1 carrier=-1 in=move=1.0000,-0.5974 stick=0.8429,-0.3154 
+f=464 hash=da2d0a48a32d32a1 score=0:1 carrier=-1 in=move=1.0000,-0.5980 stick=0.8402,-0.3225 
+f=465 hash=a5f4570ad2567365 score=0:1 carrier=-1 in=move=1.0000,-0.5984 stick=0.8378,-0.3289 
+f=466 hash=ea4c196544fdac53 score=0:1 carrier=-1 in=move=1.0000,-0.5988 stick=0.8356,-0.3344 
+f=467 hash=f66998c9bf8e340b score=0:1 carrier=-1 in=move=1.0000,-0.5992 stick=0.8337,-0.3391 
+f=468 hash=84aa5f9667b1de76 score=0:1 carrier=-1 in=move=1.0000,-0.5995 stick=0.8321,-0.3430 
+f=469 hash=2d4817f7b90cbf6c score=0:1 carrier=-1 in=move=1.0000,-0.5997 stick=0.8308,-0.3461 
+f=470 hash=9f9827335a17357a score=0:1 carrier=-1 in=move=1.0000,-0.5998 stick=0.8298,-0.3484 
+f=471 hash=744dbab37b46f4ce score=0:1 carrier=-1 in=move=1.0000,-0.6000 stick=0.8298,-0.3484 
+f=472 hash=ff5f04d6cb244fa8 score=0:1 carrier=-1 in=move=1.0000,-0.6000 stick=0.8290,-0.3505 
+f=473 hash=a6e1ce9a8aed7361 score=0:1 carrier=-1 in=move=1.0000,-0.6000 stick=0.8290,-0.3505 
+f=474 hash=34d9b5c393a03a19 score=0:1 carrier=-1 in=move=1.0000,-0.5999 stick=0.8290,-0.3505 
+f=475 hash=5f5b7728b181a7f1 score=0:1 carrier=-1 in=move=1.0000,-0.5998 stick=0.8303,-0.3473 
+f=476 hash=3234c8eb4aa651d2 score=0:1 carrier=-1 in=move=1.0000,-0.5996 stick=0.8314,-0.3446 
+f=477 hash=8925f955790ec69e score=0:1 carrier=-1 in=move=1.0000,-0.5993 stick=0.8329,-0.3411 
+f=478 hash=ab7dcb7ee4f36b19 score=0:1 carrier=-1 in=move=1.0000,-0.5990 stick=0.8346,-0.3368 
+f=479 hash=891ff3c38a092279 score=0:1 carrier=-1 in=move=1.0000,-0.5986 stick=0.8367,-0.3316 
+f=480 hash=137baec6926124bd score=0:1 carrier=-1 in=move=1.0000,-0.5982 stick=0.8390,-0.3257 
+f=481 hash=3e0dd14dcc3c0ae8 score=0:1 carrier=-1 in=move=1.0000,-0.5977 stick=0.8416,-0.3189 Check
+f=482 hash=ce312ad215d66c9d score=0:1 carrier=-1 in=move=1.0000,-0.5971 stick=0.8444,-0.3114 
+f=483 hash=2dcdf12295058d73 score=0:1 carrier=-1 in=move=1.0000,-0.5965 stick=0.8474,-0.3031 
+f=484 hash=c2234f1b53dca6b4 score=0:1 carrier=-1 in=move=1.0000,-0.5959 stick=0.8506,-0.2940 
+f=485 hash=78f3c039e241472f score=0:1 carrier=-1 in=move=1.0000,-0.5951 stick=0.8539,-0.2842 
+f=486 hash=ad7576d1dde1f585 score=0:1 carrier=-1 in=move=1.0000,-0.5943 stick=0.8574,-0.2737 
+f=487 hash=fcaa27875ed2f415 score=0:1 carrier=-1 in=move=1.0000,-0.5935 stick=0.8609,-0.2625 
+f=488 hash=01a78bc9345f29db score=0:1 carrier=-1 in=move=1.0000,-0.5926 stick=0.8644,-0.2505 
+f=489 hash=56bf84d734e9bd00 score=0:1 carrier=-1 in=move=1.0000,-0.5916 stick=0.8680,-0.2379 
+f=490 hash=f696642866e680f4 score=0:1 carrier=-1 in=move=1.0000,-0.5906 stick=0.8715,-0.2247 
+f=491 hash=e137b2fe014e8739 score=0:1 carrier=-1 in=move=1.0000,-0.5895 stick=0.8749,-0.2109 
+f=492 hash=1c70395ab6f78e1d score=0:1 carrier=-1 in=move=1.0000,-0.5883 stick=0.8783,-0.1965 
+f=493 hash=e9f1d211ab9c3632 score=0:1 carrier=-1 in=move=1.0000,-0.5871 stick=0.8815,-0.1816 
+f=494 hash=6e430405ff04e666 score=0:1 carrier=-1 in=move=1.0000,-0.5858 stick=0.8845,-0.1662 
+f=495 hash=74a614a2c46f51d7 score=0:1 carrier=-1 in=move=1.0000,-0.5845 stick=0.8874,-0.1503 
+f=496 hash=55719817918fb6f0 score=0:1 carrier=-1 in=move=1.0000,-0.5831 stick=0.8900,-0.1339 
+f=497 hash=e30bf66df66c0233 score=0:1 carrier=-1 in=move=1.0000,-0.5817 stick=0.8923,-0.1173 
+f=498 hash=4c52f35bf3454643 score=0:1 carrier=-1 in=move=1.0000,-0.5802 stick=0.8944,-0.1002 
+f=499 hash=e7eef22f792a2810 score=0:1 carrier=-1 in=move=1.0000,-0.5786 stick=0.8962,-0.0829 
+f=500 hash=5ab77978afeeb79c score=0:1 carrier=-1 in=move=1.0000,-0.5770 stick=0.8976,-0.0654 
+f=501 hash=ae16ae9a8dc11d79 score=0:1 carrier=-1 in=move=-1.0000,-0.5754 stick=0.8987,-0.0476 
+f=502 hash=35cd45300fb53530 score=0:1 carrier=-1 in=move=-1.0000,-0.5736 stick=0.8995,-0.0297 
+f=503 hash=9d0f94dc35d617fa score=0:1 carrier=-1 in=move=-1.0000,-0.5718 stick=0.8999,-0.0118 
+f=504 hash=bd3d34fea6f1ab9b score=0:1 carrier=-1 in=move=-1.0000,-0.5700 stick=0.9000,0.0062 
+f=505 hash=bbab26e1191ec232 score=0:1 carrier=-1 in=move=-1.0000,-0.5681 stick=0.8997,0.0242 
+f=506 hash=edddc6bd94f5dbe1 score=0:1 carrier=-1 in=move=-1.0000,-0.5661 stick=0.8990,0.0421 
+f=507 hash=b0afb9d0f96196e0 score=0:1 carrier=-1 in=move=-1.0000,-0.5641 stick=0.8980,0.0599 
+f=508 hash=401f944116282c53 score=0:1 carrier=-1 in=move=-1.0000,-0.5620 stick=0.8967,0.0775 
+f=509 hash=f1162e4a939837f0 score=0:1 carrier=-1 in=move=-1.0000,-0.5599 stick=0.8950,0.0949 
+f=510 hash=78de7443e42d7671 score=0:1 carrier=-1 in=move=-1.0000,-0.5577 stick=0.8930,0.1120 
+f=511 hash=1695b2bd8779f46c score=0:1 carrier=-1 in=move=-1.0000,-0.5555 stick=0.8907,0.1288 
+f=512 hash=1ad75ccc53ed31c5 score=0:1 carrier=-1 in=move=-1.0000,-0.5532 stick=0.8882,0.1453 
+f=513 hash=c8f711cfb6d9ca7c score=0:1 carrier=-1 in=move=-1.0000,-0.5508 stick=0.8854,0.1613 
+f=514 hash=0f5e21b3c689f98f score=0:1 carrier=-1 in=move=-1.0000,-0.5484 stick=0.8825,0.1769 
+f=515 hash=eebbd92f838cb621 score=0:1 carrier=-1 in=move=-1.0000,-0.5460 stick=0.8793,0.1920 
+f=516 hash=7c6eb5c0b9fe6537 score=0:1 carrier=-1 in=move=-1.0000,-0.5435 stick=0.8760,0.2065 
+f=517 hash=94aeaf6a28564079 score=0:1 carrier=-1 in=move=-1.0000,-0.5409 stick=0.8726,0.2205 
+f=518 hash=a78252f0f4764795 score=0:1 carrier=-1 in=move=-1.0000,-0.5383 stick=0.8691,0.2339 
+f=519 hash=a1ebb7b76216242a score=0:1 carrier=-1 in=move=-1.0000,-0.5356 stick=0.8655,0.2467 
+f=520 hash=53fe2a7311ec57a0 score=0:1 carrier=0 in=move=-1.0000,-0.5329 stick=0.8620,0.2588 
+f=521 hash=c4a96b07b6fd4753 score=0:1 carrier=0 in=move=-1.0000,-0.5301 stick=0.8780,0.1979 PassHeld
+f=522 hash=e9d9262ef03ecc1c score=0:1 carrier=0 in=move=-1.0000,-0.5272 stick=0.8898,0.1353 PassHeld
+f=523 hash=6160bdbdb9f8f063 score=0:1 carrier=0 in=move=-1.0000,-0.5243 stick=0.8972,0.0713 PassHeld
+f=524 hash=e6f28e9ad90cc049 score=0:1 carrier=0 in=move=-1.0000,-0.5214 stick=0.9000,0.0062 PassHeld
+f=525 hash=5488c562358c15a9 score=0:1 carrier=0 in=move=-1.0000,-0.5184 stick=0.8980,-0.0596 PassHeld
+f=526 hash=6e5ef24d72ba664e score=0:1 carrier=0 in=move=-1.0000,-0.5154 stick=0.8911,-0.1260 PassHeld+Poke
+f=527 hash=246fe57971e7ddb5 score=0:1 carrier=0 in=move=-1.0000,-0.5123 stick=0.8792,-0.1924 PassHeld
+f=528 hash=b14b0f16b2b18803 score=0:1 carrier=0 in=move=-1.0000,-0.5091 stick=0.8621,-0.2586 PassHeld
+f=529 hash=e600a1eca8d2c0c5 score=0:1 carrier=0 in=move=-1.0000,-0.5059 stick=0.8397,-0.3240 PassHeld
+f=530 hash=dd426cd8035ec9c5 score=0:1 carrier=0 in=move=-1.0000,-0.5027 stick=0.8119,-0.3883 PassHeld
+f=531 hash=8046c2960faa90b3 score=0:1 carrier=0 in=move=-1.0000,-0.4994 stick=0.7788,-0.4510 PassHeld
+f=532 hash=78241db2a69dd359 score=0:1 carrier=0 in=move=-1.0000,-0.4960 stick=0.7404,-0.5117 PassHeld
+f=533 hash=0cf2bae212e950de score=0:1 carrier=0 in=move=-1.0000,-0.4926 stick=0.6967,-0.5697 PassHeld
+f=534 hash=bc25b22bfb0b7ee4 score=0:1 carrier=0 in=move=-1.0000,-0.4892 stick=0.6478,-0.6247 PassHeld
+f=535 hash=454c42bb8fd7e39d score=0:1 carrier=0 in=move=-1.0000,-0.4857 stick=0.5940,-0.6762 PassHeld
+f=536 hash=4406dfe48f39b0a0 score=0:1 carrier=0 in=move=-1.0000,-0.4821 stick=0.5353,-0.7235 PassHeld
+f=537 hash=633d47d15f9a1bb9 score=0:1 carrier=0 in=move=-1.0000,-0.4785 stick=0.4722,-0.7662 PassHeld
+f=538 hash=4d119780370c3455 score=0:1 carrier=0 in=move=-1.0000,-0.4749 stick=0.4048,-0.8038 PassHeld
+f=539 hash=876dc81b6de7dd3b score=0:1 carrier=0 in=move=-1.0000,-0.4712 stick=0.3336,-0.8359 PassHeld
+f=540 hash=aea91c6c2c01c203 score=0:1 carrier=0 in=move=-1.0000,-0.4674 stick=0.2591,-0.8619 PassHeld
+f=541 hash=6713771217f30ada score=0:1 carrier=0 in=move=-1.0000,-0.4637 stick=0.1818,-0.8815 ShootHeld
+f=542 hash=78672e6eca9fb79e score=0:1 carrier=0 in=move=-1.0000,-0.4598 stick=0.1021,-0.8942 ShootHeld
+f=543 hash=b606502592d5bd35 score=0:1 carrier=-1 in=move=-1.0000,-0.4560 stick=0.0208,-0.8998 ShootHeld
+f=544 hash=3c7823335aa03e32 score=0:1 carrier=-1 in=move=-1.0000,-0.4520 stick=-0.0615,-0.8979 ShootHeld
+f=545 hash=28d2bed1e6ee9ec6 score=0:1 carrier=-1 in=move=-1.0000,-0.4481 stick=-0.1441,-0.8884 ShootHeld
+f=546 hash=6db67c8ac1faebbb score=0:1 carrier=-1 in=move=-1.0000,-0.4440 stick=-0.2263,-0.8711 ShootHeld
+f=547 hash=2efa56d4827244d0 score=0:1 carrier=-1 in=move=-1.0000,-0.4400 stick=-0.3071,-0.8460 ShootHeld
+f=548 hash=f3b2f0a9976425a0 score=0:1 carrier=-1 in=move=-1.0000,-0.4359 stick=-0.3860,-0.8130 ShootHeld
+f=549 hash=007ac2365942c70c score=0:1 carrier=-1 in=move=-1.0000,-0.4317 stick=-0.4620,-0.7724 ShootHeld
+f=550 hash=a2350418c4e46a0c score=0:1 carrier=-1 in=move=-1.0000,-0.4276 stick=-0.5343,-0.7243 ShootHeld
+f=551 hash=c84e93c0da9be1a5 score=0:1 carrier=-1 in=move=-1.0000,-0.4233 stick=-0.6021,-0.6689 ShootHeld
+f=552 hash=d7cdc8489b3d93f0 score=0:1 carrier=-1 in=move=-1.0000,-0.4191 stick=-0.6646,-0.6068 ShootHeld
+f=553 hash=c10d9da9332fdf96 score=0:1 carrier=-1 in=move=-1.0000,-0.4147 stick=-0.7183,-0.5422 ShootHeld
+f=554 hash=d03dfc6a3126124c score=0:1 carrier=-1 in=move=-1.0000,-0.4104 stick=-0.7288,-0.5280 ShootHeld
+f=555 hash=0ac1beb88c0c68c7 score=0:1 carrier=-1 in=move=-1.0000,-0.4060 stick=-0.7394,-0.5132 ShootHeld
+f=556 hash=61e8d8f6df57a730 score=0:1 carrier=-1 in=move=-1.0000,-0.4015 stick=-0.7499,-0.4977 ShootHeld
+f=557 hash=7ddd2ff1d2d01e80 score=0:1 carrier=-1 in=move=-1.0000,-0.3971 stick=-0.7604,-0.4815 ShootHeld
+f=558 hash=19c8a3a3cbbb7e0d score=0:1 carrier=-1 in=move=-1.0000,-0.3925 stick=-0.7707,-0.4648 ShootHeld
+f=559 hash=88950fb8cfb11bd6 score=0:1 carrier=-1 in=move=-1.0000,-0.3880 stick=-0.7809,-0.4474 ShootHeld
+f=560 hash=c866e805a92bc22d score=0:1 carrier=-1 in=move=-1.0000,-0.3834 stick=-0.7909,-0.4296 ShootHeld
+f=561 hash=67d56126ec83cb10 score=0:1 carrier=-1 in=move=-1.0000,-0.3788 stick=-0.8006,-0.4112 
+f=562 hash=73c5a5fada6308c3 score=0:1 carrier=-1 in=move=-1.0000,-0.3741 stick=-0.8100,-0.3923 
+f=563 hash=ef89ef5cd714e0d0 score=0:1 carrier=-1 in=move=-1.0000,-0.3694 stick=-0.8191,-0.3730 
+f=564 hash=671e5d4eb9cc1f8a score=0:1 carrier=-1 in=move=-1.0000,-0.3646 stick=-0.8277,-0.3533 
+f=565 hash=31d735a73254eae1 score=0:1 carrier=-1 in=move=-1.0000,-0.3598 stick=-0.8360,-0.3333 
+f=566 hash=f934578664ac3c15 score=0:1 carrier=-1 in=move=-1.0000,-0.3550 stick=-0.8438,-0.3130 
+f=567 hash=27d888e6ad5d7624 score=0:1 carrier=-1 in=move=-1.0000,-0.3502 stick=-0.8512,-0.2924 
+f=568 hash=a22e6260a89873da score=0:1 carrier=-1 in=move=-1.0000,-0.3453 stick=-0.8580,-0.2716 
+f=569 hash=21aee83ce0ace000 score=0:1 carrier=-1 in=move=-1.0000,-0.3404 stick=-0.8644,-0.2507 
+f=570 hash=4462ea8ec74eadc8 score=0:1 carrier=-1 in=move=-1.0000,-0.3354 stick=-0.8702,-0.2298 
+f=571 hash=ed366ca0eff47402 score=0:1 carrier=-1 in=move=-1.0000,-0.3304 stick=-0.8754,-0.2088 
+f=572 hash=41081892699c6f07 score=0:1 carrier=-1 in=move=-1.0000,-0.3254 stick=-0.8802,-0.1878 
+f=573 hash=fbde5ed6b000ff0c score=0:1 carrier=-1 in=move=-1.0000,-0.3203 stick=-0.8844,-0.1670 
+f=574 hash=732f877a1e2863cf score=0:1 carrier=-1 in=move=-1.0000,-0.3152 stick=-0.8880,-0.1463 
+f=575 hash=ea03870f0c187876 score=0:1 carrier=-1 in=move=-1.0000,-0.3101 stick=-0.8912,-0.1258 
+f=576 hash=c350b562b3dd8d63 score=0:1 carrier=-1 in=move=-1.0000,-0.3050 stick=-0.8938,-0.1055 
+f=577 hash=980cd3ab3fcd44d9 score=0:1 carrier=-1 in=move=-1.0000,-0.2998 stick=-0.8959,-0.0856 
+f=578 hash=59774e2e2f66cef8 score=0:1 carrier=-1 in=move=-1.0000,-0.2946 stick=-0.8976,-0.0661 
+f=579 hash=bfd82367ad1f1457 score=0:1 carrier=-1 in=move=-1.0000,-0.2893 stick=-0.8988,-0.0470 
+f=580 hash=4d701aded86a4899 score=0:1 carrier=-1 in=move=-1.0000,-0.2841 stick=-0.8996,-0.0283 
+f=581 hash=997bda6b5e675890 score=0:1 carrier=-1 in=move=-1.0000,-0.2788 stick=-0.8999,-0.0102 
+f=582 hash=0d250c9901bee856 score=0:1 carrier=-1 in=move=-1.0000,-0.2734 stick=-0.9000,0.0074 
+f=583 hash=3aba5f049d2189fc score=0:1 carrier=-1 in=move=-1.0000,-0.2681 stick=-0.8997,0.0244 
+f=584 hash=2b451b0c2eb15b1c score=0:1 carrier=-1 in=move=-1.0000,-0.2627 stick=-0.8991,0.0407 
+f=585 hash=e89741ff0e4c15b3 score=0:1 carrier=-1 in=move=-1.0000,-0.2573 stick=-0.8982,0.0564 
+f=586 hash=759eff79dc1b0aa4 score=0:1 carrier=-1 in=move=-1.0000,-0.2519 stick=-0.8972,0.0714 
+f=587 hash=1ccd4cb315cb8da6 score=0:1 carrier=-1 in=move=-1.0000,-0.2464 stick=-0.8959,0.0856 
+f=588 hash=3fdca35f5587f8e0 score=0:1 carrier=-1 in=move=-1.0000,-0.2409 stick=-0.8945,0.0991 
+f=589 hash=c14d6b8957418989 score=0:1 carrier=-1 in=move=-1.0000,-0.2354 stick=-0.8930,0.1119 
+f=590 hash=3bbeab6577c8a4b1 score=0:1 carrier=-1 in=move=-1.0000,-0.2299 stick=-0.8914,0.1238 
+f=591 hash=7451b109ff05e5c1 score=0:1 carrier=-1 in=move=-1.0000,-0.2243 stick=-0.8898,0.1349 
+f=592 hash=84c0e8483c7b89fc score=0:1 carrier=-1 in=move=-1.0000,-0.2188 stick=-0.8882,0.1452 
+f=593 hash=b77d536be8edc987 score=0:1 carrier=-1 in=move=-1.0000,-0.2132 stick=-0.8866,0.1546 
+f=594 hash=3580f3a948ae1283 score=0:1 carrier=-1 in=move=-1.0000,-0.2075 stick=-0.8851,0.1633 
+f=595 hash=37a659c5c932a1d0 score=0:1 carrier=-1 in=move=-1.0000,-0.2019 stick=-0.8836,0.1710 
+f=596 hash=f7697758eeb9cc12 score=0:1 carrier=-1 in=move=-1.0000,-0.1962 stick=-0.8822,0.1779 
+f=597 hash=9a22753e5c92c81a score=0:1 carrier=-1 in=move=-1.0000,-0.1906 stick=-0.8810,0.1839 
+f=598 hash=3b802e28362e50d9 score=0:1 carrier=-1 in=move=-1.0000,-0.1849 stick=-0.8799,0.1891 
+f=599 hash=80b5218a2a3cf443 score=0:1 carrier=-1 in=move=-1.0000,-0.1791 stick=-0.8790,0.1934 
+f=600 hash=3f805d57a32abefd score=0:1 carrier=-1 in=move=-1.0000,-0.1734 stick=-0.8782,0.1969 

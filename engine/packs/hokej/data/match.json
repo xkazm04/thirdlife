@@ -1,0 +1,5 @@
+{
+  "note": "The match: thirdjam's regular cartridge (data/hockey.regular.cartridge.json: 5 v 5, first to 3) on lane K1's core, the bots at this level (rookie | pro | all_star, DifficultyProfile.h; pro is the level of the round 2 film). `cartridge` (K3 round 11): which cut the match plays: hockey.regular.cartridge.json (thirdjam's regular cut, its plain core) or hockey.thirdlife.cartridge.json (lane K8's Third Life cut: the same cartridge with data/hockey.thirdlife.rules.json beside it, so ctx.cores.open opens the rule-patched core RinkCoreThirdlife). HOME has no mode row yet (MODES is not ported, front.gd), so this is a data choice until K5 adds one.",
+  "difficulty": "pro",
+  "cartridge": "hockey.regular.cartridge.json"
+}

@@ -14,6 +14,7 @@ import { MessagesApiBuilder } from "./builder/messages-api.js";
 import { Verifier, resolveRunner } from "./verifier.js";
 import { Foreman, ForemanError, restsOnAClock } from "./foreman.js";
 import { clipLimit, planCheck, planPackages, renderDesignerPrompt, renderPlannerPrompt, type GenerateCall, type PlanAnswer } from "./designer.js";
+import { normalizeCorePlan, planCore } from "./coreplan.js";
 import { NEW_HELP, PHASE_HELP, creativityFlag, designCommand, designerInput, nextAfterBrief } from "./cli_design.js";
 import { writeGenerateCalls as writeCalls } from "./transcript.js";
 import { CRITIQUE_HELP, critiqueCommand } from "./cli_critique.js";
@@ -557,7 +558,7 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
         const ctx = plannerContext(a, jobDir);
         const known = { ...limits, ...cardLimits(path.join(jobDir, "ref")), ...clipLimit(s.brief) };
         if (from !== undefined) {
-          const doc = JSON.parse(fs.readFileSync(path.resolve(from), "utf8")) as PlanAnswer;
+          const doc = normalizeCorePlan(JSON.parse(fs.readFileSync(path.resolve(from), "utf8")) as PlanAnswer, planCore(known)); // E3b: a core plan's base package fixed from the base
           const errs = schemaErrors(JSON.parse(fs.readFileSync(path.join(PKG_ROOT, "prompts", "plan.schema.json"), "utf8")) as object, doc);
           if (errs.length === 0) errs.push(...planCheck(doc.packages, known, doc.card, doc.phases));
           if (errs.length > 0) {

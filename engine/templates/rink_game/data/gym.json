@@ -1,0 +1,27 @@
+{
+  "note": "The gym: the human alone at his spawn (hockey.regular.cartridge.json game.teams[0].skaters[0].spawn [-7.5, 0]), facing +x (UJamSim SpawnYaw 0 for team 0, JamSim.cpp:159). The far net is the one team 0 attacks: x = +(L/2 - NetInsetM 4) (HokejGameMode.cpp:1616-1617, HUDFeed.cpp:8-12).",
+  "spawn": [
+    -7.5,
+    0.0
+  ],
+  "spawn_yaw": 0.0,
+  "attack_sign": 1,
+  "net_inset_m": 4.0,
+  "net_height_m": 3.0,
+  "hall": {
+    "note": "Not thirdjam's (its arena is stair step 5): a plain dark box so the picture has walls and a roof, not sky and grass. 6 m from the boards, 16 m high. 'light': the style's hall light rig (TLStyleHall: the light from the roof, the figures' shadows straight down), its colour and energy matched to thirdjam's film ice.",
+    "margin_m": 6.0,
+    "height_m": 16.0,
+    "wall_key": "black",
+    "floor_key": "concrete_dark",
+    "ceiling_key": "black",
+    "ceiling": true,
+    "light": {
+      "color": "#ab956f",
+      "energy": 1.0,
+      "shadows": true,
+      "shade": "#8f8040",
+      "shade_k": 1.0
+    }
+  }
+}

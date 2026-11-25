@@ -205,6 +205,98 @@ casts no shadow on itself (its shadow on the ground is unchanged), and the ink p
 `ink.body_k` of the width. A mesh added to a rig after `build` (a prop parented to a socket by a pack) is a kit part and is
 shaded as the world is.
 
+## The skater (`TLRigSkater`, hockey campaign lane K2, 23 Nov 2026; `skater/`)
+thirdjam's own skater, not a member of `TLRigs`: its shipped figure `SK_SkaterTB1_P3` (12,040 triangles, 24 bones, nine
+material slots, the stick skinned into the mesh on the bone `stick_socket`), 1.637 m tall at rest, its 202 clips
+(6,923 keys at 60 a second), and **its driver, ported from thirdjam's shipped Blueprints**.
+
+| File | What |
+|---|---|
+| `skater/tl_rig_skater.gd` | `TLRigSkater`: the figure. Its entry is thirdjam's `IJamSkaterVisual` (same names, arguments, units) and the by-name calls of thirdjam's pawn; inside, `BP_SkaterVisual_TB1_P3` function by function |
+| `skater/tl_rig_skater_puck.gd`, `_whip.gd`, `_falls.gd`, `_contact.gd`, `_toys.gd`, `_dash.gd` | the figure's `takes`, one chain (`TLRigSkaterPuck` <- `Whip` <- `Falls` <- `Contact` <- `Toys` <- `Dash`), the same Blueprint's takes: the puck verbs; the whip of a hit and the rink's walls; knockdowns, board falls, lie loops, get-ups, board hit and pin; body checks, the cross-check, hit reactions, stumbles, the event bus; the goal's celebration, the boost's glow and the held ability's equipment (as state), the dives and the slide tackle; the dash with Unreal's timers |
+| `skater/tl_rig_skater_fx.gd` | `TLRigSkaterFx`: the ice spray of a slide and of a hard stop, at thirdjam's moments, drawn with the style's own particles (thirdjam's Niagara systems are not exported) |
+| `skater/tl_rig_skater_anim.gd`, `tl_rig_skater_slot.gd` | `TLRigSkaterAnim`: `ABP_SkaterTB1_P3` node by node, run as Unreal 5.9 runs it at 1/60 s (state machine, blend lists, layered blends, bone modifiers, the shot charge's blend); `TLRigSkaterSlot`: the slot's takes (dynamic montages) and Unreal's blend arithmetic |
+| `skater/tl_rig_skater_blendspace.gd`, `tl_rig_skater_pose.gd` | Unreal's blend-space player and pose arithmetic; `skater_blendspaces.json`: thirdjam's three blend spaces (samples, triangulation, smoothing) |
+| `skater/skater_body.scn`, `skater_clips.res`, `skater_clips.json` | the baked mesh + skeleton, the 202 clips, the clip table |
+| `skater/driver-ref/*.txt` | the two listings of thirdjam's shipped driver (event graph 1,997 lines, animation graph 220) that the port cites by entry and node name |
+| `skater/review/` | `skater_case.gd` (block 810), `skater_defects.gd` (the per-frame defect measures), `reference_poses.json`, `oracle_gym.json` and `oracle_verbs.json` (where thirdjam's own figure stands: 27 poses; 940 frames of the gym run; 1,800 frames of the verb run for the human and one bot) |
+
+```gdscript
+var sk := TLRigSkater.new()
+sk.setup({"team": 0})
+pawn.add_child(sk)                        # VISUAL ONLY; faces -Z, right is +X
+# every sim frame, thirdjam's calls (engine/cores/rink/view/skater_pawn.gd makes them from the rink core's snapshot):
+sk.UpdateMotion(speed_mps, turn_rate_rad_s, facing_yaw_deg)   # turn rate + = turning left seen from above
+sk.SetStickAim(angle_deg, reach_m)                            # 0 = forward, + = to his left; centre to blade
+sk.SetHasPuck(true); sk.SetBraking(true, decel); sk.SetFaceoff(true); sk.PlayFaceoffDraw(true)   # on their frames
+sk.SetShotCharge(0.5); sk.PlayShoot(0.5); sk.PlayPass(1.0); sk.PlayPoke(true); sk.PlayLift(); sk.PlayStickHit(false)
+sk.SetPassCharge(0.4); sk.PlayReceive(); sk.PlayCallForPass(); sk.SetLookAtPuck(false)    # by name from the puck show
+sk.OnBusEvent(&"deke", true, where_cm, 0.0, &"left")          # thirdjam's event bus: lift and deke are ported
+sk.set_rivals(all_figures)                # the other figures on the ice (the lift's size reads the nearest opponent)
+sk.tick()                                 # one world tick of 1/60 s; never reads a clock
+sk.socket_transform(&"puck_socket")       # where a carried puck is drawn (on the blade), the figure's space
+sk.not_ported                             # interface calls that arrived and are not shown yet: name -> count
+```
+- **Ported (round 2):** skating (`UpdateMotion`, the Idle / Skate states, the Skate and SkateReady blend spaces, the
+  stop takes, `SetBraking`), the stick (`SetStickAim`, the Aim blend space, the blade held on the ice, the learned
+  offsets), the look at the puck, the faceoff stance and draw, the foul reaction. **Round 3:** the puck verbs (tap and
+  charged shots with the wind-up pose, tap and held passes with the charge layer, receive, call for pass, poke and the
+  stumble after a missed one, the stick lift in its three sizes with the lifter's turn, the carrier's reaction to a
+  poke or a lift, the deke). The spin has no take (the pawn turns the figure); a one-timer is a shot. **Round 4:**
+  the contact (body check with its three sizes and wind-up takes, the cross-check's wind, hold layer, release and
+  whiff, hit reactions, stumbles, knockdowns in their kinds and sizes, board falls, lie loops, get-ups, board hit and
+  pin, the whip of a hit, the mesh's turn and slide while down). **Round 6:** what thirdjam's game sends of the last
+  family (`PlayCelebrate`, `SetBoost`, `SetBoostEquipped`: the props and the glow as state, `takes.equip_shown()`,
+  `takes.jersey_emissive`), and of the takes its Blueprint has and its game never calls (they are reached only from
+  its test dispatcher SK26Do): the dives (`PlayDiveBlock`, `PlayDiveBlockFront`, `PlayDiveBlockHit`), the slide
+  tackle (`PlaySlideTackle`, `PlaySlideTackleHit`) and the dash (`PlayDash`, `EndDash`, `SetBoostLevel`). **Not
+  ported:** the weapons (`SetWeapon`, `PlayWeapon`, `PlayWeaponHit`, the carry stances), `PlayBoostPickup`; the trip has
+  no caller in thirdjam. The goalie's stance is in.
+- **Held to thirdjam's own figure:** the same calls given to thirdjam's Blueprint in Unreal (`tools/skater/driver_oracle.py`)
+  and to ours. Skating and stick: 940 of 940 frames within 1 cm, worst 0.02 cm (block 811, `rig.skater.oracle`). The
+  verbs and the contact: a 1,800-frame match segment of the real core, ten figures, thirdjam's bus, hit-stops, puck
+  actor and rink: 17,993 of 18,000 rows within 1 cm, worst 2.60 cm (block 812, `rig.skater.verbs.oracle` holds the
+  human and two bots of them). `rig.skater.verbs.throw`: a check at full closing speed, the victim thrown (the heavy
+  fall, a knockdown of 130 frames and more). `rig.skater.verbs.toys`: thirdjam's arsenal cartridge (a goal's
+  celebration, a held shield) with the dives, the slide tackle and the dash called on the human's figure: 13,292 of
+  13,300 rows. thirdjam's own figure is not the same twice (two Unreal runs of the same calls differ on 11 rows by
+  over 1 cm, single frames of a stick): that is where ours differs from either.
+- A recorded hand (`cores/rink/view/*.stream.json`) is a match only on the core that recorded it: the file names its
+  match's state hash and the gym fails by that name when the core replays it into another match. Then: record again
+  (`verb_gym.tscn -- --record=<file> --seed=N`), run thirdjam's figures on the new calls (`tools/skater/driver_oracle.py`),
+  cut the goldens (`tools/skater/oracle_golden.py`), measure the defect tables again.
+- Engine-side inputs that are not thirdjam's: `set_human(bool)`, `set_puck(Vector2(forward, right) or null)`,
+  `set_rivals(Array)`, `set_rink(Vector3(half length, half width, corner radius) cm)`, `set_time_dilation(float)` (the
+  hit-stop and the check's re-time: the actor's CustomTimeDilation), `set_no_game_mode(bool)` (the oracle's world).
+- Sockets: `socket_transform(&"puck_socket" | &"stick_socket" | &"head_socket")`; the head socket carries thirdjam's
+  mesh socket's own turn (a roll of -90 degrees on the bone of that name), its place is the bone's.
+- Review tools keep plain playback: `play_clip`, `pose_at`, `pose_rest`, `clip_names`, `clip_keys`.
+- Cost: ten figures' calls and ticks take about 2.0 ms a frame in GDScript (0.2 ms each; measured headless on a loaded
+  machine, the skinning on the GPU is not in it); with thirdjam's pawns, bus and puck show around them about 2.5 ms.
+- Around the pawns (`cores/rink/view/`): `skater_pawn.gd` (thirdjam's pawn), `skater_show.gd` (its game mode's part:
+  the hit-stop picks, the shown carrier and where the puck is drawn, the play calls by name), `hit_read.gd` (its hit
+  read: the whiff calls of a miss, the re-time of a check), `boost_look.gd` (the goal's celebration, the held
+  ability's equipment).
+- See it: `cores/rink/view/verb_gym.tscn` (a five-a-side match segment from a recorded raw hand, every skater a pawn
+  and a figure), `cores/rink/view/figure_gym.tscn` (the real core, a scripted hand; its header has the command lines) and
+  `rigs/skater/gym/skater_gym.tscn` (single clips). Rebuild the assets: `tools/skater/export_skater.py` (inside Unreal),
+  `tools/skater/build_skater.gd`, `tools/skater/blendspace_table.py`; the listings: `export_driver_text.py`,
+  `t3d_digest.py`, `abp_digest.py`.
+- Gate: selftest blocks 810 (`rig.skater.body`, `.clips`, `.ref`, `.play`), 811 (`.driver`, `.oracle`, `.red`) and
+  812 (`rig.skater.verbs`, `rig.skater.verbs.oracle`, `rig.skater.verbs.throw`, `rig.skater.verbs.toys`, `rink.view.show`,
+  `rink.view.hits`).
+- **The look (lane K7, `skater/look/`):** `TLRigSkaterLook`, two surfaces to choose from. `felt` (the default): thirdjam's
+  own nine material instances on the clay tier through `TLStyleFelt`, the number on the back patch ([SetNumber]) and
+  the team's crest on the chest ([SetTeam]), no ink line. `cel`: the engine's flat cel in thirdjam's slot colours, as
+  round 1 had it (no number, no crest). One skater: `sk.set_look("cel")`; every skater built after:
+  `TLRigSkaterLook.default_variant = "cel"`; a whole run: the environment variable `TL_SKATER_LOOK=cel`.
+  Under the felt figure lies thirdjam's contact shade (`TLRigSkaterLook.ContactShade`, a child of the skeleton): standing
+  0.5 x 0.7 m under the mesh, Darkest 0.45; lying (the driver's `bShade`, kept by the falls) 2.2 x 0.95 m at the pelvis,
+  turned along the body, Darkest 0.75, Flat 0.7. In a hall the figure's cast shadows are the key lights' (STYLE.md).
+  See both: `tools/skater/look/look_gym.tscn` (its header has the command lines; `--mode=ten` is the ten skaters of a
+  match). Gate: selftest block 850 (`look.skater.numbers`, `.instances`, `.shader`, `.variants`, `.render`,
+  `.shadow`, `.shadow_red`, `.shaders_kept`).
+
 <!-- generated below: do not edit by hand -->
 
 ## `biped`

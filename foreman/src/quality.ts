@@ -25,6 +25,7 @@ import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./film
 import { revisePair, sameKind } from "./revisepair.js";
 import { killItem, methodBlock } from "./method.js";
 import { templateOf } from "./templates.js";
+import { coreLook, jobCore } from "./coregate.js"; // E3 of 24 Nov: the measured check of a game on a core
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -131,7 +132,7 @@ export interface Verdict {
   package?: string;
   report: string;
   /** N4 of 22 Nov: who judged: the critic (absent), the tofu stage alone, or both. */
-  by?: "tofu stage" | "critic (V5) and tofu stage";
+  by?: "tofu stage" | "critic (V5) and tofu stage" | "core check" | "critic (V5) and core check";
 }
 
 const scoresText = (v: Pick<Verdict, "scores">): string => Object.entries(v.scores).map(([k, x]) => `${k} ${x}`).join(", ");
@@ -208,12 +209,21 @@ export function tofuLook(h: GateHost, m: Milestone, film?: FilmCheck): (TofuResu
  * over the tofu report (shape of a critique), so a revise round sent from the log reads it back (verdictOfLook).
  */
 export function withTofu(h: GateHost, judged: { verdict?: Verdict; line: string }, tofu: (TofuResult & { package: string; report: string }) | undefined): { verdict?: Verdict; line: string } {
+  return withStage(h, judged, tofu, "tofu");
+}
+
+/**
+ * The critic's verdict with a measured stage's: the tofu stage (`tofu`) or, E3 of 24 Nov, a core game's measured check
+ * (`core`, coregate.ts). A failed stage makes the look NOT ok and names the stage's package; a passed one adds score 1.
+ */
+export function withStage(h: GateHost, judged: { verdict?: Verdict; line: string }, tofu: (TofuResult & { package: string; report: string }) | undefined, stage: "tofu" | "core"): { verdict?: Verdict; line: string } {
   if (tofu === undefined) return judged;
   const v = judged.verdict;
   if (tofu.ok && v === undefined) return { line: `${judged.line}; ${tofu.line} [${tofu.report}]` };
+  const by: Verdict["by"] = stage === "tofu" ? (v ? "critic (V5) and tofu stage" : "tofu stage") : v ? "critic (V5) and core check" : "core check";
   const merged: Verdict = tofu.ok
-    ? { ...(v as Verdict), scores: { ...(v as Verdict).scores, tofu: 1 }, notes: [...(v as Verdict).notes, tofu.line] }
-    : { ok: false, scores: { ...(v?.scores ?? {}), tofu: 0 }, notes: [tofu.line, ...(v?.notes ?? [])], package: tofu.package, report: tofu.report, by: v ? "critic (V5) and tofu stage" : "tofu stage" };
+    ? { ...(v as Verdict), scores: { ...(v as Verdict).scores, [stage]: 1 }, notes: [...(v as Verdict).notes, tofu.line] }
+    : { ok: false, scores: { ...(v?.scores ?? {}), [stage]: 0 }, notes: [tofu.line, ...(v?.notes ?? [])], package: tofu.package, report: tofu.report, by };
   if (!tofu.ok) {
     const file = h.dir(...tofu.report.split("/"));
     const body = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
@@ -339,25 +349,63 @@ export async function compareLooks(h: GateHost, prev: Snapshot, film: Film, fres
 
 /** Sends a NOT ok version back for revise round `round` (snapshot first): the named package, or the milestone's own. */
 export function sendBack(h: GateHost, m: Milestone, members: string[], lastPackage: string, round: number, look: { captures: string[]; strips: Strip[]; verdict?: Verdict; summary: string }, note?: string, pair?: string): void {
-  snapshot(h, m, round, look);
   const v = look.verdict;
+  // E3f: on a core game, what only the base can change goes to the person at once (no revise round; a retry still runs one).
+  if (note === undefined && v !== undefined && baseOwned(h, v.package)) return holdForBase(h, m, lastPackage, round, look, v, v.package as string);
+  snapshot(h, m, round, look);
   const owner = note !== undefined ? ` The owner held the job and asks: ${note}` : "";
   // D3 of 22 Nov: the pair (revisepair.ts) goes first, so the 1500-character clip of the detail never cuts it.
   const detail = `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: ${pair !== undefined ? `${pair} ` : ""}${v ? `${scoresText(v)}. Critic's notes: ${v.notes.join(" | ")} [${v.report}]` : clip(look.summary, 600)}.${owner} The version before this round is kept in ${snapDir(m, round)}/; after the round the critic compares both and keeps the better.`;
   const named = v?.package;
   const target = named !== undefined ? h.s.packages[named] : undefined;
-  if (named !== undefined && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
+  // E5 (25 Nov, the first real core job): the base package is a copy of the engine's base, never a builder's work. A
+  // revise round on it re-copied the same files (and failed lint, the later packages' tests missing), twice, then held
+  // the job: the critic's notes go to the milestone's built packages instead.
+  const base = (id: string): boolean => h.s.plan.find((p) => p.id === id)?.kind === "base";
+  if (named !== undefined && !base(named) && target && target.state === "promoted" && (target.mergedFiles ?? []).length > 0) {
     h.reopen(named, `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: the critic names this package as the cause of what it sees${members.includes(named) ? "" : ` (the milestone's own package(s): ${members.join(", ")})`}`, detail);
     return;
   }
-  const why = named === undefined ? "the critic named no package" : !target ? `the critic named "${clip(named, 60)}", which is not a package of this plan` : `the critic named ${named}, which is not merged (state ${target.state})`;
-  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: `${FOREMAN_NOTE}${why}; revise round ${round} goes to the package(s) of the ${m} milestone: ${members.join(", ")}` });
-  for (const id of members) h.append({ type: "package_state", package: id, state: "queued", round: h.pkg(id).round + 1, detail: clip(detail, 1500) });
+  const why = named === undefined ? "the critic named no package" : !target ? `the critic named "${clip(named, 60)}", which is not a package of this plan` : base(named) ? `the critic named ${named}, the engine's base (copied, no builder revises it)` : `the critic named ${named}, which is not merged (state ${target.state})`;
+  const built = members.filter((id) => !base(id));
+  const to = built.length > 0 ? built : members;
+  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: `${FOREMAN_NOTE}${why}; revise round ${round} goes to the package(s) of the ${m} milestone: ${to.join(", ")}` });
+  for (const id of to) h.append({ type: "package_state", package: id, state: "queued", round: h.pkg(id).round + 1, detail: clip(detail, 1500) });
+}
+
+// ---------- E3f of 25 Nov: reasons only the base can answer go to the person, not to revise rounds ----------
+
+/** The start of the Foreman's note (after FOREMAN_NOTE) when a look is held at once because the critic names the base. */
+export const BASE_OWNED = "the critic names the base";
+
+/**
+ * On a game on a core, the critic's NOT ok names something no package of the job can change: the base package (the
+ * engine's copy: the core's skating, contact and bots, the base's camera), or the core or the engine by name. Lane E5's
+ * job 1 spent about 89 of 140 min on revise rounds the cartridge, the skin and the trials could not answer.
+ */
+export function baseOwned(h: Pick<GateHost, "s">, named: string | undefined): boolean {
+  const core = jobCore(h);
+  if (core === undefined || named === undefined) return false;
+  const spec = h.s.plan.find((p) => p.id === named);
+  if (spec !== undefined) return spec.kind === "base";
+  return named === core.core || named === core.base || /\b(base|core|engine|camera)\b/i.test(named);
+}
+
+/**
+ * The look is the person's now: a `milestone` event at the hold's round (the job pauses for the quality card), its text
+ * first saying what the base does and that no revise round was spent, then the critic's words. `foreman quality retry`
+ * still sends one round with the person's note (sendBack with a note never comes here).
+ */
+function holdForBase(h: GateHost, m: Milestone, lastPackage: string, round: number, look: { captures: string[]; strips: Strip[] }, v: Verdict, named: string): void {
+  const core = jobCore(h);
+  const what = `this is how the base plays (${named}: engine/templates/${core?.base ?? "?"}/ on the ${core?.core ?? "?"} core: the skating, the contact, the bots, the base's camera); no package of this game can change it, so no revise round was spent. Play it and keep it, or say what to change`;
+  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: clip(`${FOREMAN_NOTE}${BASE_OWNED} (${named}) on the ${m} look: ${what}. [${v.report}]`, 1000) });
+  h.append({ type: "milestone", milestone: m, captures: look.captures, ...(look.strips.length > 0 ? { strips: look.strips } : {}), round: Math.max(QUALITY_ROUNDS, round), summary: clip(`critic (V5) NOT ok: ${what}. The critic saw: ${clip(v.notes.join(" | "), 700)}; ${scoresText(v)} [${v.report}]`, 1500) });
 }
 
 /** The verdict a look's summary points at (its critic report), for a revise round sent from the log (resume, retry). */
 export function verdictOfLook(h: GateHost, look: Look): Verdict | undefined {
-  const rel = /\[(reports\/(?:tofu|critic)-[^\]]+\.json)\]/.exec(look.summary)?.[1];
+  const rel = /\[(reports\/(?:tofu|critic|core)-[^\]]+\.json)\]/.exec(look.summary)?.[1];
   if (rel === undefined) return undefined;
   try {
     const r = JSON.parse(fs.readFileSync(h.dir(...rel.split("/")), "utf8")) as Partial<CritiqueResult> & { by?: Verdict["by"] };
@@ -385,7 +433,11 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
   const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes, [...new Set(shots.flatMap((x) => (x.bot !== undefined ? botMoments(h.dir(), h.events, x.bot).map((mm) => mm.kind) : [])))]) : [];
-  const judged = withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined, claimsLine(built, filmed)), tofu);
+  // E3 of 24 Nov: a game on a core: the measured check (coregate.ts) instead of the tofu rows; not measured is said, never a pass.
+  const core = await coreLook(h, m);
+  if (core !== undefined && !core.measured) notes.push(core.line);
+  const claims = [claimsLine(built, filmed), core !== undefined ? `The core's measured check of this build's cartridge (lane E2's lab, not the build's own claim): ${core.line}` : undefined].filter((x): x is string => x !== undefined).join("\n") || undefined;
+  const judged = withStage(h, withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined, claims), tofu), core?.measured === true ? core : undefined, "core");
   const fresh = judged.verdict;
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;
@@ -400,7 +452,8 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const prev = readSnapshot(h, m, round);
   // A new version the critic passes beats a version it sent back; otherwise the critic compares the two.
   // N4: a version that passes the tofu stage beats one that fails it, whatever the images say.
-  const tofuPick: "new" | "previous" | undefined = prev?.verdict?.scores["tofu"] !== undefined && fresh?.scores["tofu"] !== undefined && prev.verdict.scores["tofu"] !== fresh.scores["tofu"] ? (fresh.scores["tofu"] > prev.verdict.scores["tofu"] ? "new" : "previous") : undefined;
+  const stagePick = (k: string): "new" | "previous" | undefined => (prev?.verdict?.scores[k] !== undefined && fresh?.scores[k] !== undefined && prev.verdict.scores[k] !== fresh.scores[k] ? ((fresh.scores[k] as number) > (prev.verdict.scores[k] as number) ? "new" : "previous") : undefined);
+  const tofuPick: "new" | "previous" | undefined = stagePick("tofu") ?? stagePick("core"); // E3: or the core's measured check
   const cmp = fresh?.ok === true ? { kept: "new" as const, why: "the new version passes the critic" } : tofuPick !== undefined ? { kept: tofuPick, why: `the ${tofuPick} version passes the tofu stage and the other does not` } : prev ? await compareLooks(h, prev, film, fresh) : { kept: "new" as const, why: "no snapshot of the version before this round was found" };
   if (cmp.kept === "previous" && prev) restore(h, m, prev);
   const keptVerdict = cmp.kept === "previous" ? prev?.verdict : fresh;

@@ -16,13 +16,18 @@ import { cardBriefSection, cardLimits, cardsPlannerText } from "./cards.js";
 import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
 import { runHandChecks, sendBackHands } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
-import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
+import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, engineKnowsBase, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
-import { briefText, critic, render, replanPackages, whoOwns, type GenerateCall, type PackageLine, type ReplanInput } from "./designer.js";
+import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
+import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
+import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
-import { templateOf } from "./templates.js";
+import { coreRouteOf, templateOf } from "./templates.js";
+import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
+import { cartridgeChange, coreDataGate, diffRound, jobCore, phaseCheck } from "./coregate.js";
+import { changeCandidates, coreChangeOwner } from "./coreowner.js"; // E3f: on a core, a change never goes to the base
 import { decideLook, filmLook, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
@@ -165,7 +170,8 @@ export class Foreman {
    * True when a pending change request could be applied now: its package (named, or already chosen by the Planner)
    * is finished, merged and idle. One that names none and has not been asked about yet is ready to be asked.
    */
-  private changeReady(c: { seq?: number; package?: string }, running?: ReadonlyMap<string, unknown>): boolean {
+  private changeReady(c: { seq?: number; package?: string; text?: string }, running?: ReadonlyMap<string, unknown>): boolean {
+    if (c.text !== undefined && wireWaits(this.s, c.text)) return false; // E4: a wire request waits for the package it wires in
     // No builder is in flight (the start of a run, or the scheduler has returned): as before P10, whatever state
     // the package is in. `foreman change --package X` on a job that failed on X is how X is asked to try again.
     if (running === undefined) return true;
@@ -265,7 +271,7 @@ export class Foreman {
         this.append({ type: "job_state", state: "paused", reason: QUALITY_PAUSE });
         break;
       }
-      const step = await phaseStep(this.gateHost); // a phase whose packages are all merged is done: pass, or wait for the player
+      const step = await phaseStep(Object.assign(this.gateHost, { grow: (c: { seq: number; text: string }, why: string, head: string) => grow(this.growHost, c, why, head), atPhaseDone: (ph: string) => phaseCheck(this.gateHost, ph) })); // a phase whose packages are all merged is done: pass, or wait for the player
       if (step === "paused") break;
       if (step === "continue") continue;
       const views = this.s.order.map((id) => this.pkg(id));
@@ -513,11 +519,15 @@ export class Foreman {
    * The pack's identity. The version is 0.1.0 until the first promotion and 0.1.<n> after the n-th: a change request
    * on a finished job therefore builds, verifies and promotes a pack with a new version (N3).
    */
-  private jobIdentity(): { packId: string; title: string; version: string; kernelApi: string } {
+  private jobIdentity(): { packId: string; title: string; version: string; kernelApi: string; base?: string } {
     const n = this.s.promotions.length;
     const version = n === 0 ? PACK_VERSION : PACK_VERSION.replace(/\d+$/, String(n));
-    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled", version, kernelApi: (this.engineApi ??= kernelApiFor(this.o.verifier.location)) };
+    // E3g: a game on a core names its base, so lint counts only its own lines (when this engine's lint knows the key)
+    const base = coreRouteOf(this.s.brief?.concept?.template)?.base;
+    const knows = base !== undefined && (this.knowsBase ??= isFakeRunner(this.o.verifier.location) || engineKnowsBase(this.o.verifier.location.engineDir));
+    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled", version, kernelApi: (this.engineApi ??= kernelApiFor(this.o.verifier.location)), ...(knows ? { base } : {}) };
   }
+  private knowsBase: boolean | undefined;
 
   // ---------- the manifest fields a builder owns (PACK.md, 2026-11-11): footprint, params, on_leave, subject, moments ----------
 
@@ -786,7 +796,14 @@ export class Foreman {
     const ws = this.wsDir(id);
     const spec = this.spec(id);
     const baseline = JSON.parse(fs.readFileSync(this.baselineFile(id), "utf8")) as Record<string, string>;
-    return listFiles(ws).filter((f) => f !== MANIFEST_FILE && matchesAny(spec.scope, f) && baseline[f] !== hashFile(path.join(ws, f)));
+    const all = listFiles(ws).filter((f) => f !== MANIFEST_FILE && matchesAny(spec.scope, f) && baseline[f] !== hashFile(path.join(ws, f)));
+    // E3f (E5b): the base never merges a file a later package owns, and a re-opened package lists only what differs from pack/
+    // (job 1's diff listed match.json and the drill test, byte-identical, so a data-only change took the full path).
+    const theirs = spec.kind === "base" ? this.s.plan.filter((p) => p.id !== id).flatMap((p) => p.scope) : [];
+    const mine = all.filter((f) => !(theirs.length > 0 && matchesAny(theirs, f) && fs.existsSync(this.dir("pack", f))));
+    const had = new Set(this.pkg(id).mergedFiles ?? []);
+    const changed = mine.filter((f) => !(had.has(f) && fs.existsSync(this.dir("pack", f)) && hashFile(this.dir("pack", f)) === hashFile(path.join(ws, f))));
+    return changed.length > 0 ? changed : mine; // nothing differs (a merge redone after a kill): the same list again
   }
 
   /** In-scope files the package deleted: they were in the workspace when it was cut and are gone now. */
@@ -822,7 +839,7 @@ export class Foreman {
         const before = [resumed ? "resumed" : "", this.starvedDetail(id).replace(/ of this round:/, ` of round ${round - 1}:`)].filter(Boolean).join("; ");
         this.append({ type: "package_state", package: id, state: "running", round, ...(before ? { detail: before } : {}) });
         resumed = false;
-        const res = await this.callBuilder(id, spec, round);
+        const res = spec.kind === "base" ? this.startFromBase(id, spec, round) : (await diffRound(this.gateHost, id, round, this.wsDir(id))) ?? (await this.callBuilder(id, spec, round)); // E3: the base, and a cartridge diff, are the Foreman's
         if (res.outcome === "ok") this.recordNote(id, round, res.text);
         if (res.outcome === "ok" && this.raiseQuestion(id, round, res.text)) return;
         if (res.outcome !== "ok") {
@@ -851,8 +868,8 @@ export class Foreman {
       skipBuilder = false;
       resumed = false;
 
-      let failure: GateFailure | undefined;
-      for (const a of spec.acceptance) {
+      let failure: GateFailure | undefined = await coreDataGate(this.gateHost, id, round, this.wsDir(id), this.mergeSet(id)); // E3: a cartridge edit is validated first
+      for (const a of failure !== undefined ? [] : roundAcceptance(this.s, spec, round)) { // E4b: a diff round keeps lint + the player check
         const vr = await this.verifyLogged(a, this.wsDir(id), `${id}-r${round}-${a.verb}`, { package: id, round });
         if (!vr.ok) {
           failure = vr;
@@ -1147,7 +1164,7 @@ export class Foreman {
         }
       }
       // P10 item 1: after a change, every test of the pack runs on the candidate before it becomes pack/.
-      for (const t of packTestsFor(this.gateHost, id, candidate, hadMerged)) {
+      for (const t of fastMerge(this.s, files) ? [] : packTestsFor(this.gateHost, id, candidate, hadMerged)) { // E4b: none for a data-only change
         const bad = await packTest(this.gateHost, id, round, t, candidate);
         if (bad !== undefined) return bad;
       }
@@ -1166,6 +1183,11 @@ export class Foreman {
     const starved = this.starvedDetail(id);
     this.append({ type: "package_state", package: id, state: "promoted", round, ...(starved ? { detail: starved } : {}) });
     // N3: a package that was merged before and is merged again has changed under the packages that depend on it.
+    if (hadMerged && fastMerge(this.s, files)) {
+      // E4b: a data-only change: the dependants' files and the milestone's look did not change (fastchange.ts)
+      this.append({ type: "note", package: id, round, text: clip(mergeNote(files, dependants(this.s.plan, id)), 1000) });
+      return undefined;
+    }
     if (hadMerged) await this.reverifyDependants(id);
     await this.maybeMilestone(this.spec(id).milestone, id);
     return undefined;
@@ -1206,6 +1228,34 @@ export class Foreman {
     }
   }
 
+  private rootId(): string {
+    return this.s.plan.find((p) => p.deps.length === 0)?.id ?? (this.s.order[0] as string);
+  }
+
+  /** E4: what grow.ts needs of this Foreman; the planner's input is built as for a re-plan. State is read live. */
+  private get growHost(): GrowHost {
+    const state = (): JobState => this.s;
+    const model = this.o.plannerModel ?? this.o.model;
+    const input = (): PlannerInput | undefined => {
+      const s = this.s;
+      if (!s.brief || !s.sentence || !s.packId || !s.title) return undefined;
+      const api = this.kernelApiText();
+      return { sentence: s.sentence, packId: s.packId, title: s.title, brief: s.brief, packContract: this.packContract, ...(api !== undefined ? { kernelApi: api } : {}),
+        existing: existingText(this.refDir()), cards: cardsPlannerText(this.refDir()), builderTimeoutMs: this.o.builderTimeoutMs };
+    };
+    return {
+      get s() {
+        return state();
+      },
+      builder: this.o.builder,
+      ...(model ? { model } : {}),
+      limits: { ...(this.o.plannerTimeoutMs !== undefined ? { timeoutMs: this.o.plannerTimeoutMs } : {}), verbs: this.verbs ?? verbsFor(this.o.verifier.location), ...cardLimits(this.refDir()) },
+      plannerInput: input,
+      append: (body) => this.append(body),
+      logGenerateCalls: (calls, m) => this.logGenerateCalls(calls, m),
+    };
+  }
+
   /** One line per package for the critic and the "who owns this" question. */
   private packageLines(): PackageLine[] {
     return this.s.plan.map((p) => {
@@ -1232,19 +1282,34 @@ export class Foreman {
         let known = this.askedOwners.get(c.seq);
         if (known === undefined) {
           const model = this.o.plannerModel ?? this.o.model;
-          const res = await whoOwns(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: this.packageLines() }, model ? { model } : {});
+          const res = await ownerOrNew(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: changeCandidates(this.packageLines(), this.s.plan, jobCore(this.gateHost)) }, model ? { model } : {});
           this.logGenerateCalls(res.calls, model);
           known = res.ok
-            ? { owner: res.value.package, how: `the Planner names the package: ${clip(res.value.reason, 200)}` }
-            : { owner: this.s.plan.find((p) => p.deps.length === 0)?.id ?? (this.s.order[0] as string), how: `the Planner gave no usable answer (${clip(res.reason, 160)}), so the root package takes it` };
+            ? { owner: res.value.package, how: res.value.package === NEW_PACKAGE ? clip(res.value.reason, 200) : `the Planner names the package: ${clip(res.value.reason, 200)}` }
+            : { owner: this.rootId(), how: `the Planner gave no usable answer (${clip(res.reason, 160)}), so the root package takes it` };
           this.askedOwners.set(c.seq, known);
         }
         owner = known.owner;
         how = known.how;
+        if (owner === NEW_PACKAGE) {
+          // E4: no package's files hold the request: the plan grows (grow.ts), once no builder runs
+          if (running !== undefined) continue;
+          const g = await grow(this.growHost, c, how);
+          if ("added" in g) {
+            applied += 1;
+            continue;
+          }
+          owner = this.rootId();
+          how = `${g.reason}, so the root package takes it`;
+          this.askedOwners.set(c.seq, { owner, how });
+        }
+        const moved = coreChangeOwner(this.s.plan, jobCore(this.gateHost), owner, c.text); // E3f (E5b job 2): never the base on a core
+        if (moved.why !== undefined) [owner, how] = [moved.owner, `${how}; ${moved.why}`];
         // Asked while other packages ran: the package it names must be finished and idle as well, or the request waits.
-        if (!this.changeReady(c, running)) continue;
+        if (!this.changeReady({ ...c, package: owner }, running)) continue;
       }
       this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(c.text, 300)}`, `${CHANGE_ROUND}: ${c.text}`);
+      await cartridgeChange(this.gateHost, owner, this.pkg(owner).round, c.text); // E3b: on a core, a cartridge diff first (coregate.ts)
       applied += 1;
     }
     return applied;
@@ -1546,6 +1611,9 @@ export class Foreman {
     }
     // P10 item 1: the round before was refused because a test of the pack failed with its files merged in.
     const packTest = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && n.text.startsWith(`${FOREMAN_NOTE}${PACK_TEST_FAILED}`));
+    // E3 of 24 Nov: the round before changed a cartridge the validator refused (coregate.ts): its problems.
+    const cart = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && n.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_INVALID}`));
+    if (cart) parts.push(`Round ${round - 1} was not run: ${cart.text.slice(FOREMAN_NOTE.length)}`);
     if (packTest) parts.push(`${packTest.text.slice(FOREMAN_NOTE.length)}\nEvery test of the pack must pass with your files in, not only your own acceptance: the report of the failed test is below. Change YOUR files; you cannot change the other package or its test.`);
     // N3b: a clock-based failure reaches the builder only after the machine was measured; say so.
     const notLoad = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round - 1 && (n.text.startsWith(`${FOREMAN_NOTE}${NOT_LOAD}`) || n.text.startsWith(`${FOREMAN_NOTE}${PACK_STALL}`)));
@@ -1665,6 +1733,16 @@ export class Foreman {
     return text === "" ? "" : `\n${text}\n`;
   }
 
+  /**
+   * E3 of 24 Nov: a "start from the base" package (kind "base", coreroute.ts) is the Foreman's own round: the job's copy
+   * of the base goes into the workspace, and the round is verified and merged like a builder's. No builder, no tokens.
+   */
+  private startFromBase(id: string, spec: PackageSpec, round: number): RunResult {
+    const r = startFromBase(this.wsDir(id), this.refDir(), this.dir("pack"), spec, this.s.plan, coreRouteOf(this.s.brief?.concept?.template));
+    this.append({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${r.text}` });
+    return r.ok ? { ok: true, outcome: "ok", raw: { foreman: "base", files: r.files }, durationMs: 0 } : { ok: false, outcome: "refused", raw: { foreman: "base" }, durationMs: 0, error: { kind: "refusal", message: r.text } };
+  }
+
   private async callBuilder(id: string, spec: PackageSpec, round: number): Promise<RunResult> {
     const ws = this.wsDir(id);
     const derived = deriveBashAllowlist(this.o.verifier.location, spec.acceptance, ws, this.dir("reports", `self-${id}`));
@@ -1771,12 +1849,17 @@ export class Foreman {
       /* lint below reports a broken manifest */
     }
     // The whole pack once more, now through V4: every bot the manifest lists must play the game to its end.
+    // E5 (25 Nov): a game on a core is held to what its base is held to; the base (thirdjam's whole match) fails the
+    // invariants frame budgets by itself, so the final verification of every core game would fail on it.
+    const core = coreRouteOf(this.s.brief?.concept?.template) !== undefined;
     const final: Acceptance[] = [
       ...PACK_GATE,
-      { level: "V3", verb: "invariants", args: [] },
+      ...(core ? [] : [{ level: "V3", verb: "invariants", args: [] } as Acceptance]),
       ...tests.map((t): Acceptance => ({ level: "V4", verb: "bot", args: [`--test=${t}`] })),
     ];
-    for (const a of final) {
+    const fast = fastPromotion(this.s, this.log.events); // E4b: every merge since the last promotion was data only
+    if (fast) this.append({ type: "note", package: this.lastReopened(), round: this.pkg(this.lastReopened()).round, text: FINAL_NOTE });
+    for (const a of fast ? fastFinal(final) : final) {
       const stem = a.verb === "bot" ? `final-bot-${path.basename(a.args[0] ?? "x", ".gd")}` : `final-${a.verb}`;
       const vr = await this.verifyLogged(a, packDir, stem, { round: 1 });
       if (!vr.ok && vr.inconclusive !== undefined) {
@@ -1798,15 +1881,15 @@ export class Foreman {
         return false;
       }
     }
-    const hands = await runHandChecks(this.gateHost, packDir); // lane C2: the card's hand checks (handcheck.ts)
+    const hands = fast ? { rows: [], failure: "" } : await runHandChecks(this.gateHost, packDir); // lane C2: the card's hand checks (handcheck.ts)
     if (hands.failure) return sendBackHands(this.gateHost, hands.rows) || (this.endJob("failed", clip(hands.failure, 700), true), false);
     // N3: a pack that is promoted AGAIN (after a change request) is photographed first, so that whoever asked for the
     // change can look at it: the declared cameras at the usual frames, into captures/promotion<n>-<cam>-f<frame>.png.
     // No critic, no gate; the paths are in a `note` on the package that was re-opened last.
     if (nth > 1) {
-      const last = [...this.log.events].reverse().find((e) => e.type === "reopened");
-      const owner = last && last.type === "reopened" && this.s.packages[last.package] ? last.package : (this.s.order[0] as string);
-      const shots = await this.captureSet(`promotion${nth}`, owner, tests[0]);
+      const owner = this.lastReopened();
+      const shots = await this.captureSet(`promotion${nth}`, owner, tests[0], fast);
+      this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version) }); // E3f: one line for Create
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }
     if (this.o.promote) {
@@ -1839,7 +1922,13 @@ export class Foreman {
    * Captures of pack/ for every declared camera at the usual frames, named <label>-<cam>-f<frame>.png. Each is a
    * `verify` event (capture, V5); a capture that fails is tried once more and then left out. Returns the paths.
    */
-  private async captureSet(label: string, after: string, bot: string | undefined): Promise<string[]> {
+  /** The package re-opened last (a change's owner), else the first of the plan. */
+  private lastReopened(): string {
+    const last = [...this.log.events].reverse().find((e) => e.type === "reopened");
+    return last && last.type === "reopened" && this.s.packages[last.package] ? last.package : (this.s.order[0] as string);
+  }
+
+  private async captureSet(label: string, after: string, bot: string | undefined, one = false): Promise<string[]> {
     const packDir = this.dir("pack");
     let cameras: string[] = [];
     try {
@@ -1848,8 +1937,8 @@ export class Foreman {
       /* no manifest: no captures */
     }
     const out: string[] = [];
-    for (const cam of cameras) {
-      for (const frame of this.captureFramesFor(bot)) {
+    for (const cam of one ? cameras.slice(0, 1) : cameras) {
+      for (const frame of one ? this.captureFramesFor(bot).slice(0, 1) : this.captureFramesFor(bot)) { // E4b: ONE look for a data-only change
         const file = this.dir("captures", `${label}-${cam}-f${frame}.png`);
         let ok = false;
         for (let attempt = 1; attempt <= 2 && !ok; attempt++) {

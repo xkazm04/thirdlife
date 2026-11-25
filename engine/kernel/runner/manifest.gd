@@ -4,7 +4,7 @@ extends RefCounted
 
 ## P7: API version 1. The surface a pack may use is written down by a machine (docs/generated/API-V1.json, checked by
 ## `tl arch` rule api-v1): a signature that is removed or changed needs a new major, an addition a new minor.
-const KERNEL_API: String = "1.16"
+const KERNEL_API: String = "1.30"
 ## "0.1" was the name of this same surface before it was frozen: a pack that says 0.1 is run as a 1.0 pack.
 const LEGACY_API: Dictionary = {"0.1": "1.0"}
 const CAPABILITIES: Array = ["physics", "input", "ui", "audio", "vfx", "camera", "rules", "ai", "spawn", "fracture",
@@ -27,6 +27,8 @@ const KEYS: Dictionary = {
 	"on_leave": {"type": "string", "pattern": "^(bot|pause|end)$"},
 	"subject": {"type": "string", "pattern": "^[A-Za-z0-9_]+(/[A-Za-z0-9_]+)*$", "max": 120},
 	"moments": {"type": "shape"},
+	# E3g (25 Nov): the base a pack was started from, a directory of engine/templates/ (lint counts only the pack's own lines)
+	"base": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$", "max": 64},
 }
 const PARAM_KEYS: Array = ["name", "file", "path", "min", "max", "step", "label"]
 const PARAM_NAME_RE: String = "^[a-z][a-z0-9_]*$"

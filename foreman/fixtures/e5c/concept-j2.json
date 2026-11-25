@@ -1,0 +1,55 @@
+{
+ "concept": {
+  "template": {
+   "id": "rink_sport",
+   "reference": "thirdjam's match on the rink core and its mode cartridges; hokej as the working house cartridge",
+   "copies": [
+    "thirdjam's match on the rink core, unchanged: skating, puck, contact, bots, camera and keys.",
+    "Cartridge zones key: fixed, clearly coloured slow and fast ice patches, readable before you reach them.",
+    "Cartridge rink, contact and rules keys: corner bumpers kick the puck out; a rules sidecar only if needed.",
+    "Cartridge teams, speeds and look keys: small pond rink, thirdjam bots easy by clumsiness, never absence.",
+    "The skin: title, team names, colours and words; core horn, banner, end card and R rematch."
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "Pond hockey with marked slow and fast ice patches and springy corner bumpers; outscore the bot team.",
+    "likelihood": 0.85
+   },
+   {
+    "pitch": "You're the pond local who knows every patch, slingshotting past visitors and banking passes off corner bumpers.",
+    "likelihood": 0.4
+   },
+   {
+    "pitch": "You're the trick-shot hustler: goals banked off corner bumpers count double, so every corner becomes a weapon.",
+    "likelihood": 0.25
+   },
+   {
+    "pitch": "You're the thaw survivor: slow slush spreads each period while shrinking fast lanes become the prize both teams fight over.",
+    "likelihood": 0.12
+   },
+   {
+    "pitch": "You're the ice thief: each goal lets the conceding team move one fast patch, bending the pond toward comeback.",
+    "likelihood": 0.08
+   }
+  ],
+  "chosen": 1,
+  "why": "You own this pond. Within 30 seconds you cut onto fast ice, burst past a chaser, and bank off a corner bumper to a teammate. Candidate 0 offers the same features without that mastery fantasy.",
+  "hook": "knowing the pond's fast ice, slow ice and corner bumpers wins",
+  "anchor": "arcade pond hockey",
+  "references": [
+   {
+    "game": "NHL '94",
+    "borrow": "Pass across the crease and shoot as it arrives; the goalie cannot get across in time."
+   },
+   {
+    "game": "Mario Kart 8",
+    "borrow": "Cross a dash panel for an instant burst; off-road slows you, so choosing your line matters."
+   },
+   {
+    "game": "Rocket League",
+    "borrow": "Six full-boost pads sit in fixed places; players who learn their positions win the race there."
+   }
+  ]
+ }
+}

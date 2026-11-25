@@ -1,0 +1,16 @@
+{
+  "schema": "tj.effects/1",
+  "$comment": "C-0005 section 4, lane A14: the five built-in pickup kinds as effect definitions in the game.effects shape. The loader (UJamEffectSystem) merges them under every cartridge, so a pickup may name them without declaring them; the Designer sees them as examples. magnitude on a pickup replaces every multiply marked by magnitude_stats (heavy_puck: max speed takes 1/magnitude). reverse_other: true control reversal is not a stat the modifier seam has; until a SkaterControlsSign stat is ruled it is a handicap on the other team (speed and turn halved).",
+  "effects": [
+    { "id": "speed", "kind": "speed", "target": "self", "duration_frames": 300, "trigger": "pickup", "stack": "refresh", "icon": "bolt",
+      "stats": [ { "stat": "skater_speed", "multiply": 1.5 }, { "stat": "skater_accel", "multiply": 1.5 } ], "magnitude_stats": ["skater_speed", "skater_accel"] },
+    { "id": "precision", "kind": "precision", "target": "self", "duration_frames": 480, "trigger": "pickup", "stack": "refresh", "icon": "crosshair",
+      "stats": [ { "stat": "shot_aim_cone_deg", "multiply": 2 } ], "magnitude_stats": ["shot_aim_cone_deg"] },
+    { "id": "heavy_puck", "kind": "heavy_puck", "target": "puck", "duration_frames": 360, "trigger": "pickup", "stack": "refresh", "icon": "weight",
+      "stats": [ { "stat": "puck_drag", "multiply": 2 }, { "stat": "puck_max_speed", "multiply": 0.5 } ], "magnitude_stats": ["puck_drag"], "inverse_magnitude_stats": ["puck_max_speed"] },
+    { "id": "big_puck", "kind": "big_puck", "target": "puck", "duration_frames": 600, "trigger": "pickup", "stack": "refresh", "icon": "circle",
+      "stats": [ { "stat": "puck_radius", "multiply": 1.5 } ], "magnitude_stats": ["puck_radius"] },
+    { "id": "reverse_other", "kind": "reverse_other", "target": "other_team", "duration_frames": 300, "trigger": "pickup", "stack": "refresh", "icon": "swirl",
+      "stats": [ { "stat": "skater_speed", "multiply": 0.5 }, { "stat": "skater_turn_rate", "multiply": 0.5 } ], "magnitude_stats": [] }
+  ]
+}

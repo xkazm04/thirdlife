@@ -1,0 +1,9385 @@
+{
+"note": "thirdjam HEAD 8dc713c6 BarkData.inl (= Game/Content/Barks/barks.json), the bark bank as shipped; lane K5 round 4",
+"lines": [
+[
+"check_landed.opponent.bravado.01",
+"check_landed",
+"opponent",
+"bravado",
+"Cute shove, now watch real hockey"
+],
+[
+"check_landed.opponent.bravado.02",
+"check_landed",
+"opponent",
+"bravado",
+"Down for a second, up for the win"
+],
+[
+"check_landed.opponent.bravado.03",
+"check_landed",
+"opponent",
+"bravado",
+"Enjoy it, my line has owned this ice since warm-up"
+],
+[
+"check_landed.opponent.bravado.04",
+"check_landed",
+"opponent",
+"bravado",
+"Enjoy the moment, it's the last one you'll get"
+],
+[
+"check_landed.opponent.bravado.05",
+"check_landed",
+"opponent",
+"bravado",
+"Hit all you like, the scoreboard stays ours"
+],
+[
+"check_landed.opponent.bravado.06",
+"check_landed",
+"opponent",
+"bravado",
+"I'll get up, and then we'll finish the shift"
+],
+[
+"check_landed.opponent.bravado.07",
+"check_landed",
+"opponent",
+"bravado",
+"Knock me down, I'll still be scoring first"
+],
+[
+"check_landed.opponent.bravado.08",
+"check_landed",
+"opponent",
+"bravado",
+"My line has seen better rookies get lost at center"
+],
+[
+"check_landed.opponent.bravado.09",
+"check_landed",
+"opponent",
+"bravado",
+"My line makes that hit look like an accident"
+],
+[
+"check_landed.opponent.bravado.10",
+"check_landed",
+"opponent",
+"bravado",
+"One check doesn't change who runs this rink"
+],
+[
+"check_landed.opponent.bravado.11",
+"check_landed",
+"opponent",
+"bravado",
+"One hit won't save you from a line this good"
+],
+[
+"check_landed.opponent.bravado.12",
+"check_landed",
+"opponent",
+"bravado",
+"Our line doesn't flinch, it just collects"
+],
+[
+"check_landed.opponent.bravado.13",
+"check_landed",
+"opponent",
+"bravado",
+"Take your hit, my line still owns this ice"
+],
+[
+"check_landed.opponent.bravado.14",
+"check_landed",
+"opponent",
+"bravado",
+"That's the best you've got? We're barely warm"
+],
+[
+"check_landed.opponent.bravado.15",
+"check_landed",
+"opponent",
+"bravado",
+"We make this look easy, you make it look accidental"
+],
+[
+"check_landed.opponent.bravado.16",
+"check_landed",
+"opponent",
+"bravado",
+"We'll be back up before your next lucky swing"
+],
+[
+"check_landed.opponent.bravado.17",
+"check_landed",
+"opponent",
+"bravado",
+"We're three steps ahead and you're still lacing up"
+],
+[
+"check_landed.opponent.bravado.18",
+"check_landed",
+"opponent",
+"bravado",
+"We've done this longer than you've had a stick"
+],
+[
+"check_landed.opponent.bravado.19",
+"check_landed",
+"opponent",
+"bravado",
+"You swing once, we score four, that's the math"
+],
+[
+"check_landed.opponent.bravado.20",
+"check_landed",
+"opponent",
+"bravado",
+"You won a moment, we're winning the whole period"
+],
+[
+"check_landed.opponent.complain.01",
+"check_landed",
+"opponent",
+"complain",
+"Fine, hit me, see if the scoreboard cares"
+],
+[
+"check_landed.opponent.complain.02",
+"check_landed",
+"opponent",
+"complain",
+"Great, now I have to get up off the ice again"
+],
+[
+"check_landed.opponent.complain.03",
+"check_landed",
+"opponent",
+"complain",
+"Great, now I'm eating ice because of that clown"
+],
+[
+"check_landed.opponent.complain.04",
+"check_landed",
+"opponent",
+"complain",
+"I didn't see you coming, nobody ever does"
+],
+[
+"check_landed.opponent.complain.05",
+"check_landed",
+"opponent",
+"complain",
+"I'm too old to be flattened by a rookie"
+],
+[
+"check_landed.opponent.complain.06",
+"check_landed",
+"opponent",
+"complain",
+"My knees have filed a complaint about you"
+],
+[
+"check_landed.opponent.complain.07",
+"check_landed",
+"opponent",
+"complain",
+"Next time I'm bringing a map of where you skate"
+],
+[
+"check_landed.opponent.complain.08",
+"check_landed",
+"opponent",
+"complain",
+"Of course the bounce goes his way again"
+],
+[
+"check_landed.opponent.complain.09",
+"check_landed",
+"opponent",
+"complain",
+"Of course the one time I look away"
+],
+[
+"check_landed.opponent.complain.10",
+"check_landed",
+"opponent",
+"complain",
+"Oh come on, that one was clean as mud"
+],
+[
+"check_landed.opponent.complain.11",
+"check_landed",
+"opponent",
+"complain",
+"Perfect, flat on the ice and the puck is gone"
+],
+[
+"check_landed.opponent.complain.12",
+"check_landed",
+"opponent",
+"complain",
+"Somebody tell me how that even connected"
+],
+[
+"check_landed.opponent.complain.13",
+"check_landed",
+"opponent",
+"complain",
+"That bounce was garbage and you know it"
+],
+[
+"check_landed.opponent.complain.14",
+"check_landed",
+"opponent",
+"complain",
+"That one was all luck and bad timing"
+],
+[
+"check_landed.opponent.complain.15",
+"check_landed",
+"opponent",
+"complain",
+"That's what I get for trusting the ice today"
+],
+[
+"check_landed.opponent.complain.16",
+"check_landed",
+"opponent",
+"complain",
+"This ice grabs my skates every single time"
+],
+[
+"check_landed.opponent.complain.17",
+"check_landed",
+"opponent",
+"complain",
+"Tired of cleaning up after your wild swings"
+],
+[
+"check_landed.opponent.complain.18",
+"check_landed",
+"opponent",
+"complain",
+"Typical, the ice always favors the clumsy one"
+],
+[
+"check_landed.opponent.complain.19",
+"check_landed",
+"opponent",
+"complain",
+"Unreal, I got hit by the guy who can't steer"
+],
+[
+"check_landed.opponent.complain.20",
+"check_landed",
+"opponent",
+"complain",
+"Unreal, the boards were practically on his side"
+],
+[
+"check_landed.opponent.mock.01",
+"check_landed",
+"opponent",
+"mock",
+"Big hero moment, shame the net is still empty"
+],
+[
+"check_landed.opponent.mock.02",
+"check_landed",
+"opponent",
+"mock",
+"Bold move, considering you skated the long way around"
+],
+[
+"check_landed.opponent.mock.03",
+"check_landed",
+"opponent",
+"mock",
+"Bold, hitting me after three minutes of hiding"
+],
+[
+"check_landed.opponent.mock.04",
+"check_landed",
+"opponent",
+"mock",
+"Cute, now go back to skating in circles"
+],
+[
+"check_landed.opponent.mock.05",
+"check_landed",
+"opponent",
+"mock",
+"Even your body check had to ask for directions"
+],
+[
+"check_landed.opponent.mock.06",
+"check_landed",
+"opponent",
+"mock",
+"Finally, a decision that wasn't a total disaster"
+],
+[
+"check_landed.opponent.mock.07",
+"check_landed",
+"opponent",
+"mock",
+"Great, one hit, and the puck is still not yours"
+],
+[
+"check_landed.opponent.mock.08",
+"check_landed",
+"opponent",
+"mock",
+"Look at you, using the boards as a plan"
+],
+[
+"check_landed.opponent.mock.09",
+"check_landed",
+"opponent",
+"mock",
+"Nice hit, did you plan it or just lose the brakes?"
+],
+[
+"check_landed.opponent.mock.10",
+"check_landed",
+"opponent",
+"mock",
+"Nice hit, now try that near the puck"
+],
+[
+"check_landed.opponent.mock.11",
+"check_landed",
+"opponent",
+"mock",
+"One hit and you skate like you invented it"
+],
+[
+"check_landed.opponent.mock.12",
+"check_landed",
+"opponent",
+"mock",
+"That's the first thing you've hit all night"
+],
+[
+"check_landed.opponent.mock.13",
+"check_landed",
+"opponent",
+"mock",
+"That's your whole highlight, all four seconds of it"
+],
+[
+"check_landed.opponent.mock.14",
+"check_landed",
+"opponent",
+"mock",
+"Thrilling stuff, maybe next you'll find the net"
+],
+[
+"check_landed.opponent.mock.15",
+"check_landed",
+"opponent",
+"mock",
+"Was that a check or did you trip on purpose?"
+],
+[
+"check_landed.opponent.mock.16",
+"check_landed",
+"opponent",
+"mock",
+"Was that a check or did you trip on the ice?"
+],
+[
+"check_landed.opponent.mock.17",
+"check_landed",
+"opponent",
+"mock",
+"Wow, a body check, and only three tries to find me"
+],
+[
+"check_landed.opponent.mock.18",
+"check_landed",
+"opponent",
+"mock",
+"You hit him like you were apologizing in advance"
+],
+[
+"check_landed.opponent.mock.19",
+"check_landed",
+"opponent",
+"mock",
+"You hit like a man apologising in advance"
+],
+[
+"check_landed.opponent.mock.20",
+"check_landed",
+"opponent",
+"mock",
+"You lined that up for ten seconds, I watched"
+],
+[
+"check_landed.opponent.savage.01",
+"check_landed",
+"opponent",
+"savage",
+"Cute hit, now go lose the puck again like always"
+],
+[
+"check_landed.opponent.savage.02",
+"check_landed",
+"opponent",
+"savage",
+"Enjoy that hit, it's the only highlight you'll get"
+],
+[
+"check_landed.opponent.savage.03",
+"check_landed",
+"opponent",
+"savage",
+"Enjoy that hit, it's the only thing you'll land"
+],
+[
+"check_landed.opponent.savage.04",
+"check_landed",
+"opponent",
+"savage",
+"Great, you can hit people and still can't score"
+],
+[
+"check_landed.opponent.savage.05",
+"check_landed",
+"opponent",
+"savage",
+"Hit me again, it still won't help your aim"
+],
+[
+"check_landed.opponent.savage.06",
+"check_landed",
+"opponent",
+"savage",
+"Hitting is easy, rookie, playing well is the hard part"
+],
+[
+"check_landed.opponent.savage.07",
+"check_landed",
+"opponent",
+"savage",
+"I've seen better aim from a puck sliding downhill"
+],
+[
+"check_landed.opponent.savage.08",
+"check_landed",
+"opponent",
+"savage",
+"Keep celebrating, I'll be scoring in ten seconds"
+],
+[
+"check_landed.opponent.savage.09",
+"check_landed",
+"opponent",
+"savage",
+"One lucky bump does not fix that skating"
+],
+[
+"check_landed.opponent.savage.10",
+"check_landed",
+"opponent",
+"savage",
+"One lucky check doesn't fix how badly you skate"
+],
+[
+"check_landed.opponent.savage.11",
+"check_landed",
+"opponent",
+"savage",
+"Sure, celebrate, you're still the worst skater out here"
+],
+[
+"check_landed.opponent.savage.12",
+"check_landed",
+"opponent",
+"savage",
+"That hit was a fluke and everyone here knows it"
+],
+[
+"check_landed.opponent.savage.13",
+"check_landed",
+"opponent",
+"savage",
+"That was your whole career, and it's already over"
+],
+[
+"check_landed.opponent.savage.14",
+"check_landed",
+"opponent",
+"savage",
+"That's the peak of your career, enjoy the view"
+],
+[
+"check_landed.opponent.savage.15",
+"check_landed",
+"opponent",
+"savage",
+"You couldn't hit the net with a map and a week"
+],
+[
+"check_landed.opponent.savage.16",
+"check_landed",
+"opponent",
+"savage",
+"You got one hit in, I got your number"
+],
+[
+"check_landed.opponent.savage.17",
+"check_landed",
+"opponent",
+"savage",
+"You hit like a closing door and skate like a stuck one"
+],
+[
+"check_landed.opponent.savage.18",
+"check_landed",
+"opponent",
+"savage",
+"You hit like that and still can't find the net"
+],
+[
+"check_landed.opponent.savage.19",
+"check_landed",
+"opponent",
+"savage",
+"You're a speed bump with a stick, nothing more"
+],
+[
+"check_landed.opponent.savage.20",
+"check_landed",
+"opponent",
+"savage",
+"Your whole game is one accident per period"
+],
+[
+"check_landed.teammate.complain.01",
+"check_landed",
+"teammate",
+"complain",
+"Cute check, but who's covering the net now?"
+],
+[
+"check_landed.teammate.complain.02",
+"check_landed",
+"teammate",
+"complain",
+"Every time you hit someone I lose the play"
+],
+[
+"check_landed.teammate.complain.03",
+"check_landed",
+"teammate",
+"complain",
+"Great check, shame the puck rolled the other way again."
+],
+[
+"check_landed.teammate.complain.04",
+"check_landed",
+"teammate",
+"complain",
+"Great, now the whole rink is leaning your way"
+],
+[
+"check_landed.teammate.complain.05",
+"check_landed",
+"teammate",
+"complain",
+"Hit him all you want, the bounce still hates us."
+],
+[
+"check_landed.teammate.complain.06",
+"check_landed",
+"teammate",
+"complain",
+"I asked for a pass, not a demolition"
+],
+[
+"check_landed.teammate.complain.07",
+"check_landed",
+"teammate",
+"complain",
+"I'd cheer, but the post just ate our best chance."
+],
+[
+"check_landed.teammate.complain.08",
+"check_landed",
+"teammate",
+"complain",
+"Nice hit, pity it changed nothing on the scoreboard."
+],
+[
+"check_landed.teammate.complain.09",
+"check_landed",
+"teammate",
+"complain",
+"Nice, now he's down and we're out of position"
+],
+[
+"check_landed.teammate.complain.10",
+"check_landed",
+"teammate",
+"complain",
+"Of course you hit him and the puck goes the other way"
+],
+[
+"check_landed.teammate.complain.11",
+"check_landed",
+"teammate",
+"complain",
+"Of course you hit him now, with the puck ten feet behind us."
+],
+[
+"check_landed.teammate.complain.12",
+"check_landed",
+"teammate",
+"complain",
+"Sure, hit him, while I skate back for the whole play."
+],
+[
+"check_landed.teammate.complain.13",
+"check_landed",
+"teammate",
+"complain",
+"The ice is slick and so is your timing"
+],
+[
+"check_landed.teammate.complain.14",
+"check_landed",
+"teammate",
+"complain",
+"This ice never gives us anything, not even a clean pickup."
+],
+[
+"check_landed.teammate.complain.15",
+"check_landed",
+"teammate",
+"complain",
+"Typical, all that effort and the bounce hates us"
+],
+[
+"check_landed.teammate.complain.16",
+"check_landed",
+"teammate",
+"complain",
+"Wonderful hit, shame it bought us nothing"
+],
+[
+"check_landed.teammate.complain.17",
+"check_landed",
+"teammate",
+"complain",
+"Wonderful, he's down and we're still out of position."
+],
+[
+"check_landed.teammate.complain.18",
+"check_landed",
+"teammate",
+"complain",
+"You flatten him and I'm the one chasing the puck, as usual."
+],
+[
+"check_landed.teammate.complain.19",
+"check_landed",
+"teammate",
+"complain",
+"You hit like a wrecking ball with no map"
+],
+[
+"check_landed.teammate.complain.20",
+"check_landed",
+"teammate",
+"complain",
+"You knock him down and leave me the dirty work, great."
+],
+[
+"check_landed.teammate.encourage.01",
+"check_landed",
+"teammate",
+"encourage",
+"Do that again, but this time near the net."
+],
+[
+"check_landed.teammate.encourage.02",
+"check_landed",
+"teammate",
+"encourage",
+"Don't admire it, grab the puck"
+],
+[
+"check_landed.teammate.encourage.03",
+"check_landed",
+"teammate",
+"encourage",
+"Don't admire it, he's done for the shift, you're not."
+],
+[
+"check_landed.teammate.encourage.04",
+"check_landed",
+"teammate",
+"encourage",
+"Don't get sentimental, line up the next one."
+],
+[
+"check_landed.teammate.encourage.05",
+"check_landed",
+"teammate",
+"encourage",
+"Fine, that worked. Now repeat it with some purpose."
+],
+[
+"check_landed.teammate.encourage.06",
+"check_landed",
+"teammate",
+"encourage",
+"Fine, you can hit, now try skating at the same time"
+],
+[
+"check_landed.teammate.encourage.07",
+"check_landed",
+"teammate",
+"encourage",
+"Good hit, now hit the next one before he gets up"
+],
+[
+"check_landed.teammate.encourage.08",
+"check_landed",
+"teammate",
+"encourage",
+"Good, now get up the ice before the puck forgets you."
+],
+[
+"check_landed.teammate.encourage.09",
+"check_landed",
+"teammate",
+"encourage",
+"Great, you found someone to hit. Now find the net."
+],
+[
+"check_landed.teammate.encourage.10",
+"check_landed",
+"teammate",
+"encourage",
+"He's down, so use the space, that's the whole point."
+],
+[
+"check_landed.teammate.encourage.11",
+"check_landed",
+"teammate",
+"encourage",
+"He's on the ice, you're not, so go go go."
+],
+[
+"check_landed.teammate.encourage.12",
+"check_landed",
+"teammate",
+"encourage",
+"Less staring, more skating, the puck's loose."
+],
+[
+"check_landed.teammate.encourage.13",
+"check_landed",
+"teammate",
+"encourage",
+"Nice hit. Now skate like you meant it."
+],
+[
+"check_landed.teammate.encourage.14",
+"check_landed",
+"teammate",
+"encourage",
+"One hit doesn't make a career, so keep moving"
+],
+[
+"check_landed.teammate.encourage.15",
+"check_landed",
+"teammate",
+"encourage",
+"One hit. Now do it again, and try facing the puck."
+],
+[
+"check_landed.teammate.encourage.16",
+"check_landed",
+"teammate",
+"encourage",
+"One lucky check doesn't make a career, keep moving."
+],
+[
+"check_landed.teammate.encourage.17",
+"check_landed",
+"teammate",
+"encourage",
+"Stop posing and chase the pickup"
+],
+[
+"check_landed.teammate.encourage.18",
+"check_landed",
+"teammate",
+"encourage",
+"Stop posing and grab the puck, rookie."
+],
+[
+"check_landed.teammate.encourage.19",
+"check_landed",
+"teammate",
+"encourage",
+"That was the easy part, rookie, now score"
+],
+[
+"check_landed.teammate.encourage.20",
+"check_landed",
+"teammate",
+"encourage",
+"That's the easy part, now try finishing something."
+],
+[
+"check_landed.teammate.praise.01",
+"check_landed",
+"teammate",
+"praise",
+"Clean hit, I almost clapped"
+],
+[
+"check_landed.teammate.praise.02",
+"check_landed",
+"teammate",
+"praise",
+"Decent. Don't let it go to your skates."
+],
+[
+"check_landed.teammate.praise.03",
+"check_landed",
+"teammate",
+"praise",
+"Fine, I'll admit that hit had some weight."
+],
+[
+"check_landed.teammate.praise.04",
+"check_landed",
+"teammate",
+"praise",
+"Fine, that was proper hockey"
+],
+[
+"check_landed.teammate.praise.05",
+"check_landed",
+"teammate",
+"praise",
+"He felt that, and so did the boards"
+],
+[
+"check_landed.teammate.praise.06",
+"check_landed",
+"teammate",
+"praise",
+"Huh, that actually landed"
+],
+[
+"check_landed.teammate.praise.07",
+"check_landed",
+"teammate",
+"praise",
+"Huh. That one actually landed."
+],
+[
+"check_landed.teammate.praise.08",
+"check_landed",
+"teammate",
+"praise",
+"I blinked and he was on the ice, nicely done."
+],
+[
+"check_landed.teammate.praise.09",
+"check_landed",
+"teammate",
+"praise",
+"Not bad, I've seen worse from guys who meant it."
+],
+[
+"check_landed.teammate.praise.10",
+"check_landed",
+"teammate",
+"praise",
+"Not bad, I've seen worse from veterans"
+],
+[
+"check_landed.teammate.praise.11",
+"check_landed",
+"teammate",
+"praise",
+"Not terrible, rookie, not terrible at all."
+],
+[
+"check_landed.teammate.praise.12",
+"check_landed",
+"teammate",
+"praise",
+"Okay, that one I'd show the whole bench."
+],
+[
+"check_landed.teammate.praise.13",
+"check_landed",
+"teammate",
+"praise",
+"Okay, that one I'll remember"
+],
+[
+"check_landed.teammate.praise.14",
+"check_landed",
+"teammate",
+"praise",
+"Solid, don't let it go to your head"
+],
+[
+"check_landed.teammate.praise.15",
+"check_landed",
+"teammate",
+"praise",
+"Surprised me, and that's not easy anymore."
+],
+[
+"check_landed.teammate.praise.16",
+"check_landed",
+"teammate",
+"praise",
+"That was almost on purpose, wasn't it?"
+],
+[
+"check_landed.teammate.praise.17",
+"check_landed",
+"teammate",
+"praise",
+"That's the first thing you've done I'd call hockey."
+],
+[
+"check_landed.teammate.praise.18",
+"check_landed",
+"teammate",
+"praise",
+"Took you long enough, but that was a proper check."
+],
+[
+"check_landed.teammate.praise.19",
+"check_landed",
+"teammate",
+"praise",
+"Well, look at that, the rookie has a pulse."
+],
+[
+"check_landed.teammate.praise.20",
+"check_landed",
+"teammate",
+"praise",
+"Well, look at that, you meant it"
+],
+[
+"check_received.opponent.bravado.01",
+"check_received",
+"opponent",
+"bravado",
+"Class is in session and you're the demonstration"
+],
+[
+"check_received.opponent.bravado.02",
+"check_received",
+"opponent",
+"bravado",
+"Every shift you take only proves our point"
+],
+[
+"check_received.opponent.bravado.03",
+"check_received",
+"opponent",
+"bravado",
+"Fast, mean and ready, that's our top line"
+],
+[
+"check_received.opponent.bravado.04",
+"check_received",
+"opponent",
+"bravado",
+"Our line doesn't need luck, only your open ice"
+],
+[
+"check_received.opponent.bravado.05",
+"check_received",
+"opponent",
+"bravado",
+"That's how a real line plays, take notes"
+],
+[
+"check_received.opponent.bravado.06",
+"check_received",
+"opponent",
+"bravado",
+"The scoreboard will agree with me soon"
+],
+[
+"check_received.opponent.bravado.07",
+"check_received",
+"opponent",
+"bravado",
+"This is the first line, and you're not on it"
+],
+[
+"check_received.opponent.bravado.08",
+"check_received",
+"opponent",
+"bravado",
+"Three of us, zero doubts, one of you down"
+],
+[
+"check_received.opponent.bravado.09",
+"check_received",
+"opponent",
+"bravado",
+"We hit, we score, you watch from the floor"
+],
+[
+"check_received.opponent.bravado.10",
+"check_received",
+"opponent",
+"bravado",
+"We play the whole rink, you play the floor part"
+],
+[
+"check_received.opponent.bravado.11",
+"check_received",
+"opponent",
+"bravado",
+"You can't match our pace, so you can't match our hits"
+],
+[
+"check_received.opponent.bravado.12",
+"check_received",
+"opponent",
+"bravado",
+"You're the warm-up cones we skate around"
+],
+[
+"check_received.opponent.bravado.13",
+"check_received",
+"opponent",
+"bravado",
+"Your line's a scrimmage, ours is the playoff"
+],
+[
+"check_received.opponent.complain.01",
+"check_received",
+"opponent",
+"complain",
+"Can you at least fall somewhere useful?"
+],
+[
+"check_received.opponent.complain.02",
+"check_received",
+"opponent",
+"complain",
+"Crap, now I have to skate around your wreckage"
+],
+[
+"check_received.opponent.complain.03",
+"check_received",
+"opponent",
+"complain",
+"Every time I get a clean hit, it's wasted on you"
+],
+[
+"check_received.opponent.complain.04",
+"check_received",
+"opponent",
+"complain",
+"Great, you're on the ice and I'm out of position"
+],
+[
+"check_received.opponent.complain.05",
+"check_received",
+"opponent",
+"complain",
+"I did all the work and you took the fall"
+],
+[
+"check_received.opponent.complain.06",
+"check_received",
+"opponent",
+"complain",
+"Ice is rough tonight, and so is your defence"
+],
+[
+"check_received.opponent.complain.07",
+"check_received",
+"opponent",
+"complain",
+"Of course you drop right in my lane"
+],
+[
+"check_received.opponent.complain.08",
+"check_received",
+"opponent",
+"complain",
+"That puck bounced wrong and you still lost it"
+],
+[
+"check_received.opponent.complain.09",
+"check_received",
+"opponent",
+"complain",
+"This rink keeps handing me rookies, I'm worn out"
+],
+[
+"check_received.opponent.complain.10",
+"check_received",
+"opponent",
+"complain",
+"Tired of hitting someone who doesn't fight back"
+],
+[
+"check_received.opponent.complain.11",
+"check_received",
+"opponent",
+"complain",
+"Ugh, took forever to find you, you're so slow"
+],
+[
+"check_received.opponent.complain.12",
+"check_received",
+"opponent",
+"complain",
+"Why do they always fall right where I'm skating?"
+],
+[
+"check_received.opponent.complain.13",
+"check_received",
+"opponent",
+"complain",
+"You block my path even when you're flat"
+],
+[
+"check_received.opponent.complain.14",
+"check_received",
+"opponent",
+"complain",
+"Your teammates will sulk and I'll hear about it"
+],
+[
+"check_received.opponent.mock.01",
+"check_received",
+"opponent",
+"mock",
+"Another rookie angle, another nap on the ice"
+],
+[
+"check_received.opponent.mock.02",
+"check_received",
+"opponent",
+"mock",
+"Bold of you to skate where the hitting happens"
+],
+[
+"check_received.opponent.mock.03",
+"check_received",
+"opponent",
+"mock",
+"Mark that fall, it's your best move all night"
+],
+[
+"check_received.opponent.mock.04",
+"check_received",
+"opponent",
+"mock",
+"Gravity again, huh, you two should get a room"
+],
+[
+"check_received.opponent.mock.05",
+"check_received",
+"opponent",
+"mock",
+"Great stance, shame it ended horizontal"
+],
+[
+"check_received.opponent.mock.06",
+"check_received",
+"opponent",
+"mock",
+"Nice landing, very committed to the ice"
+],
+[
+"check_received.opponent.mock.07",
+"check_received",
+"opponent",
+"mock",
+"Stay down, it's the only play you've mastered"
+],
+[
+"check_received.opponent.mock.08",
+"check_received",
+"opponent",
+"mock",
+"That's the fastest you've moved all period"
+],
+[
+"check_received.opponent.mock.09",
+"check_received",
+"opponent",
+"mock",
+"The ice called, it wants its rookie back"
+],
+[
+"check_received.opponent.mock.10",
+"check_received",
+"opponent",
+"mock",
+"Try standing up, it's the trick after falling"
+],
+[
+"check_received.opponent.mock.11",
+"check_received",
+"opponent",
+"mock",
+"Was that a dive or just your usual skating?"
+],
+[
+"check_received.opponent.mock.12",
+"check_received",
+"opponent",
+"mock",
+"You saw me coming and chose the floor anyway"
+],
+[
+"check_received.opponent.mock.13",
+"check_received",
+"opponent",
+"mock",
+"You went down like you practised it in warm-up"
+],
+[
+"check_received.opponent.savage.01",
+"check_received",
+"opponent",
+"savage",
+"Crawl back to the bench, rookie, the net is mine"
+],
+[
+"check_received.opponent.savage.02",
+"check_received",
+"opponent",
+"savage",
+"Damn, you folded like a cheap pylon"
+],
+[
+"check_received.opponent.savage.03",
+"check_received",
+"opponent",
+"savage",
+"Get up, I want to do that again"
+],
+[
+"check_received.opponent.savage.04",
+"check_received",
+"opponent",
+"savage",
+"Hell, I barely touched you and you quit"
+],
+[
+"check_received.opponent.savage.05",
+"check_received",
+"opponent",
+"savage",
+"I'd say you're a speed bump, but speed bumps slow me down"
+],
+[
+"check_received.opponent.savage.06",
+"check_received",
+"opponent",
+"savage",
+"I've hit bigger threats than you in warmups"
+],
+[
+"check_received.opponent.savage.07",
+"check_received",
+"opponent",
+"savage",
+"Stay down there, the view suits your game"
+],
+[
+"check_received.opponent.savage.08",
+"check_received",
+"opponent",
+"savage",
+"That check was free, you should be embarrassed"
+],
+[
+"check_received.opponent.savage.09",
+"check_received",
+"opponent",
+"savage",
+"That fall was the best backcheck you'll ever do"
+],
+[
+"check_received.opponent.savage.10",
+"check_received",
+"opponent",
+"savage",
+"You bring nothing but a landing pad to this rink"
+],
+[
+"check_received.opponent.savage.11",
+"check_received",
+"opponent",
+"savage",
+"You skate like a dropped stick, and land like one"
+],
+[
+"check_received.opponent.savage.12",
+"check_received",
+"opponent",
+"savage",
+"You're the spare pylon nobody asked for"
+],
+[
+"check_received.teammate.complain.01",
+"check_received",
+"teammate",
+"complain",
+"Another check, another turnover, same old show"
+],
+[
+"check_received.teammate.complain.02",
+"check_received",
+"teammate",
+"complain",
+"Damn, you saw him coming from across the ice"
+],
+[
+"check_received.teammate.complain.03",
+"check_received",
+"teammate",
+"complain",
+"Every shift, the same fall and the same excuse"
+],
+[
+"check_received.teammate.complain.04",
+"check_received",
+"teammate",
+"complain",
+"Great, now we're playing two on three again"
+],
+[
+"check_received.teammate.complain.05",
+"check_received",
+"teammate",
+"complain",
+"Hell of a way to hand them the puck"
+],
+[
+"check_received.teammate.complain.06",
+"check_received",
+"teammate",
+"complain",
+"I pass you the puck and you give it to the boards"
+],
+[
+"check_received.teammate.complain.07",
+"check_received",
+"teammate",
+"complain",
+"Of course you went down, you always lead with your face"
+],
+[
+"check_received.teammate.complain.08",
+"check_received",
+"teammate",
+"complain",
+"One job: stay upright. Just one"
+],
+[
+"check_received.teammate.complain.09",
+"check_received",
+"teammate",
+"complain",
+"That bounce was rotten, and so was your positioning"
+],
+[
+"check_received.teammate.complain.10",
+"check_received",
+"teammate",
+"complain",
+"This ice hates us, but you're not helping"
+],
+[
+"check_received.teammate.complain.11",
+"check_received",
+"teammate",
+"complain",
+"Tired of watching you decorate the ice"
+],
+[
+"check_received.teammate.complain.12",
+"check_received",
+"teammate",
+"complain",
+"Typical. The check lands and the puck goes with it"
+],
+[
+"check_received.teammate.complain.13",
+"check_received",
+"teammate",
+"complain",
+"Why do I even bother passing to you"
+],
+[
+"check_received.teammate.complain.14",
+"check_received",
+"teammate",
+"complain",
+"You skate straight at the biggest guy, every time"
+],
+[
+"check_received.teammate.encourage.01",
+"check_received",
+"teammate",
+"encourage",
+"Back on your skates, this is a shift, not a nap"
+],
+[
+"check_received.teammate.encourage.02",
+"check_received",
+"teammate",
+"encourage",
+"Get up and make him regret it, if you can"
+],
+[
+"check_received.teammate.encourage.03",
+"check_received",
+"teammate",
+"encourage",
+"Get up, the puck won't wait for your feelings"
+],
+[
+"check_received.teammate.encourage.04",
+"check_received",
+"teammate",
+"encourage",
+"Hit him back, or at least hit something"
+],
+[
+"check_received.teammate.encourage.05",
+"check_received",
+"teammate",
+"encourage",
+"Learn the lesson and get off my ice"
+],
+[
+"check_received.teammate.encourage.06",
+"check_received",
+"teammate",
+"encourage",
+"Look up before you skate, it's free advice"
+],
+[
+"check_received.teammate.encourage.07",
+"check_received",
+"teammate",
+"encourage",
+"Next time see the check coming, they're not subtle"
+],
+[
+"check_received.teammate.encourage.08",
+"check_received",
+"teammate",
+"encourage",
+"Quit napping and get back in the play"
+],
+[
+"check_received.teammate.encourage.09",
+"check_received",
+"teammate",
+"encourage",
+"Shake it off, then go hit someone back"
+],
+[
+"check_received.teammate.encourage.10",
+"check_received",
+"teammate",
+"encourage",
+"Skates under you, rookie, that's the whole trick"
+],
+[
+"check_received.teammate.encourage.11",
+"check_received",
+"teammate",
+"encourage",
+"Stop admiring the ice and stand up"
+],
+[
+"check_received.teammate.encourage.12",
+"check_received",
+"teammate",
+"encourage",
+"The ice is cold, so move your feet"
+],
+[
+"check_received.teammate.encourage.13",
+"check_received",
+"teammate",
+"encourage",
+"Up you get, we're short a skater down there"
+],
+[
+"check_received.teammate.encourage.14",
+"check_received",
+"teammate",
+"encourage",
+"Up. You're lying on my passing lane"
+],
+[
+"check_received.teammate.praise.01",
+"check_received",
+"teammate",
+"praise",
+"Alright, you've got some nerve after all"
+],
+[
+"check_received.teammate.praise.02",
+"check_received",
+"teammate",
+"praise",
+"Didn't think you'd take that and still hold the puck"
+],
+[
+"check_received.teammate.praise.03",
+"check_received",
+"teammate",
+"praise",
+"Fine, that was a decent hit to survive"
+],
+[
+"check_received.teammate.praise.04",
+"check_received",
+"teammate",
+"praise",
+"Good fall. I've seen far worse from veterans"
+],
+[
+"check_received.teammate.praise.05",
+"check_received",
+"teammate",
+"praise",
+"Huh, you might actually belong on this ice"
+],
+[
+"check_received.teammate.praise.06",
+"check_received",
+"teammate",
+"praise",
+"Huh. You went down well, almost graceful"
+],
+[
+"check_received.teammate.praise.07",
+"check_received",
+"teammate",
+"praise",
+"Not bad, you took that one like a pro"
+],
+[
+"check_received.teammate.praise.08",
+"check_received",
+"teammate",
+"praise",
+"Not the worst way to eat a body check"
+],
+[
+"check_received.teammate.praise.09",
+"check_received",
+"teammate",
+"praise",
+"Respectable. The ice only won on points"
+],
+[
+"check_received.teammate.praise.10",
+"check_received",
+"teammate",
+"praise",
+"Surprised you didn't fold, I'll admit that"
+],
+[
+"check_received.teammate.praise.11",
+"check_received",
+"teammate",
+"praise",
+"That check should've ended you, and it didn't"
+],
+[
+"check_received.teammate.praise.12",
+"check_received",
+"teammate",
+"praise",
+"Took it on the chin and kept the line, fair enough"
+],
+[
+"check_received.teammate.praise.13",
+"check_received",
+"teammate",
+"praise",
+"You bounce well, rookie, I'll give you that"
+],
+[
+"check_received.teammate.praise.14",
+"check_received",
+"teammate",
+"praise",
+"You got up faster than I expected"
+],
+[
+"directors_call.opponent.bravado.01",
+"directors_call",
+"opponent",
+"bravado",
+"Any rule set, same result, we win"
+],
+[
+"directors_call.opponent.bravado.02",
+"directors_call",
+"opponent",
+"bravado",
+"Change whatever you want, my line owns every version"
+],
+[
+"directors_call.opponent.bravado.03",
+"directors_call",
+"opponent",
+"bravado",
+"Class doesn't care about the settings"
+],
+[
+"directors_call.opponent.bravado.04",
+"directors_call",
+"opponent",
+"bravado",
+"Go on, tweak it, we'll still look good"
+],
+[
+"directors_call.opponent.bravado.05",
+"directors_call",
+"opponent",
+"bravado",
+"Make it faster, make it slower, we're still ahead"
+],
+[
+"directors_call.opponent.bravado.06",
+"directors_call",
+"opponent",
+"bravado",
+"Our line has seen harder rule changes than this"
+],
+[
+"directors_call.opponent.bravado.07",
+"directors_call",
+"opponent",
+"bravado",
+"This is our rink, whatever you call it"
+],
+[
+"directors_call.opponent.bravado.08",
+"directors_call",
+"opponent",
+"bravado",
+"We adapt faster than you can pause"
+],
+[
+"directors_call.opponent.bravado.09",
+"directors_call",
+"opponent",
+"bravado",
+"We don't need luck, just a puck and your defense"
+],
+[
+"directors_call.opponent.bravado.10",
+"directors_call",
+"opponent",
+"bravado",
+"We were winning before the change and we'll win after"
+],
+[
+"directors_call.opponent.bravado.11",
+"directors_call",
+"opponent",
+"bravado",
+"You change the rules, we change the scoreboard"
+],
+[
+"directors_call.opponent.bravado.12",
+"directors_call",
+"opponent",
+"bravado",
+"You touched the dial, we kept the lead"
+],
+[
+"directors_call.opponent.bravado.13",
+"directors_call",
+"opponent",
+"bravado",
+"Your new rule just gave us a better one-timer"
+],
+[
+"directors_call.opponent.complain.01",
+"directors_call",
+"opponent",
+"complain",
+"Can we play one full period without a new rule?"
+],
+[
+"directors_call.opponent.complain.02",
+"directors_call",
+"opponent",
+"complain",
+"Crap, that new setting ruined a perfectly good rush"
+],
+[
+"directors_call.opponent.complain.03",
+"directors_call",
+"opponent",
+"complain",
+"Every time I read the ice, you change it"
+],
+[
+"directors_call.opponent.complain.04",
+"directors_call",
+"opponent",
+"complain",
+"Fine, new rules, but the bounces still owe me"
+],
+[
+"directors_call.opponent.complain.05",
+"directors_call",
+"opponent",
+"complain",
+"Funny how the rules only change when you're losing"
+],
+[
+"directors_call.opponent.complain.06",
+"directors_call",
+"opponent",
+"complain",
+"Great, another rule change, just what this shift needed"
+],
+[
+"directors_call.opponent.complain.07",
+"directors_call",
+"opponent",
+"complain",
+"I was fine with the old physics, thanks"
+],
+[
+"directors_call.opponent.complain.08",
+"directors_call",
+"opponent",
+"complain",
+"I'm too old to relearn the rink every five minutes"
+],
+[
+"directors_call.opponent.complain.09",
+"directors_call",
+"opponent",
+"complain",
+"My skates just learned this ice and now it's gone"
+],
+[
+"directors_call.opponent.complain.10",
+"directors_call",
+"opponent",
+"complain",
+"Nothing bounces right anymore, and I blame your tweak"
+],
+[
+"directors_call.opponent.complain.11",
+"directors_call",
+"opponent",
+"complain",
+"Pausing again, really? My legs were just waking up"
+],
+[
+"directors_call.opponent.complain.12",
+"directors_call",
+"opponent",
+"complain",
+"This is the third change and I've barely warmed up"
+],
+[
+"directors_call.opponent.complain.13",
+"directors_call",
+"opponent",
+"complain",
+"Tired of chasing a puck that behaves differently each minute"
+],
+[
+"directors_call.opponent.complain.14",
+"directors_call",
+"opponent",
+"complain",
+"Who keeps touching the rules mid-shift?"
+],
+[
+"directors_call.opponent.mock.01",
+"directors_call",
+"opponent",
+"mock",
+"Bold new rule, same footwork"
+],
+[
+"directors_call.opponent.mock.02",
+"directors_call",
+"opponent",
+"mock",
+"Changing the rules won't change the skater, rookie"
+],
+[
+"directors_call.opponent.mock.03",
+"directors_call",
+"opponent",
+"mock",
+"Did the new rule include learning to aim?"
+],
+[
+"directors_call.opponent.mock.04",
+"directors_call",
+"opponent",
+"mock",
+"Fresh rules, same hesitation at the blue line"
+],
+[
+"directors_call.opponent.mock.05",
+"directors_call",
+"opponent",
+"mock",
+"I'd say nice try, but I watched it"
+],
+[
+"directors_call.opponent.mock.06",
+"directors_call",
+"opponent",
+"mock",
+"Keep editing, maybe the puck will start liking you"
+],
+[
+"directors_call.opponent.mock.07",
+"directors_call",
+"opponent",
+"mock",
+"Nice tweak, shame about the skater"
+],
+[
+"directors_call.opponent.mock.08",
+"directors_call",
+"opponent",
+"mock",
+"Oh good, a new rule for you to ignore"
+],
+[
+"directors_call.opponent.mock.09",
+"directors_call",
+"opponent",
+"mock",
+"Pause all you like, the net stays the same size"
+],
+[
+"directors_call.opponent.mock.10",
+"directors_call",
+"opponent",
+"mock",
+"Sure, tweak the ice, that was clearly the problem"
+],
+[
+"directors_call.opponent.mock.11",
+"directors_call",
+"opponent",
+"mock",
+"New rule and you still turn like a parked truck"
+],
+[
+"directors_call.opponent.mock.12",
+"directors_call",
+"opponent",
+"mock",
+"The rules changed, your skating didn't"
+],
+[
+"directors_call.opponent.mock.13",
+"directors_call",
+"opponent",
+"mock",
+"You paused to think and that's what you came up with?"
+],
+[
+"directors_call.opponent.savage.01",
+"directors_call",
+"opponent",
+"savage",
+"Tweak it however you like, you're still the turnover"
+],
+[
+"directors_call.opponent.savage.02",
+"directors_call",
+"opponent",
+"savage",
+"Damn, you can't even lose consistently"
+],
+[
+"directors_call.opponent.savage.03",
+"directors_call",
+"opponent",
+"savage",
+"Tweak the ice all you want, I'll still flatten you"
+],
+[
+"directors_call.opponent.savage.04",
+"directors_call",
+"opponent",
+"savage",
+"Every rule you pick makes my job easier"
+],
+[
+"directors_call.opponent.savage.05",
+"directors_call",
+"opponent",
+"savage",
+"Go ahead, change the rule, I'll still bury you"
+],
+[
+"directors_call.opponent.savage.06",
+"directors_call",
+"opponent",
+"savage",
+"Hell, the posts are embarrassed to know you"
+],
+[
+"directors_call.opponent.savage.07",
+"directors_call",
+"opponent",
+"savage",
+"I'll kick your ass under any setting you pick"
+],
+[
+"directors_call.opponent.savage.08",
+"directors_call",
+"opponent",
+"savage",
+"I've scraped better players off the boards"
+],
+[
+"directors_call.opponent.savage.09",
+"directors_call",
+"opponent",
+"savage",
+"Keep stalling, the boards are saving a spot for you"
+],
+[
+"directors_call.opponent.savage.10",
+"directors_call",
+"opponent",
+"savage",
+"New rule, same loser, same ending"
+],
+[
+"directors_call.opponent.savage.11",
+"directors_call",
+"opponent",
+"savage",
+"You couldn't hit the net if it hugged the puck"
+],
+[
+"directors_call.opponent.savage.12",
+"directors_call",
+"opponent",
+"savage",
+"You pause like a man hiding from the next check"
+],
+[
+"directors_call.opponent.savage.13",
+"directors_call",
+"opponent",
+"savage",
+"Your aim is the real special effect, it vanishes"
+],
+[
+"directors_call.opponent.savage.14",
+"directors_call",
+"opponent",
+"savage",
+"Your stick works great as a decoration"
+],
+[
+"directors_call.teammate.complain.01",
+"directors_call",
+"teammate",
+"complain",
+"Damn, every time I get comfortable, you touch something."
+],
+[
+"directors_call.teammate.complain.02",
+"directors_call",
+"teammate",
+"complain",
+"Every pause costs me a perfectly good grudge."
+],
+[
+"directors_call.teammate.complain.03",
+"directors_call",
+"teammate",
+"complain",
+"Hell of a time to change the rulebook, boss."
+],
+[
+"directors_call.teammate.complain.04",
+"directors_call",
+"teammate",
+"complain",
+"I was open for six seconds and you called a pause."
+],
+[
+"directors_call.teammate.complain.05",
+"directors_call",
+"teammate",
+"complain",
+"I've lost count of the rule changes. Not the bad passes."
+],
+[
+"directors_call.teammate.complain.06",
+"directors_call",
+"teammate",
+"complain",
+"My stick hated the old rules and it hates these more."
+],
+[
+"directors_call.teammate.complain.07",
+"directors_call",
+"teammate",
+"complain",
+"Same rookie, new physics, worse results."
+],
+[
+"directors_call.teammate.complain.08",
+"directors_call",
+"teammate",
+"complain",
+"The ice felt fine until you got your hands on it."
+],
+[
+"directors_call.teammate.complain.09",
+"directors_call",
+"teammate",
+"complain",
+"This rink was a mess before you started tinkering."
+],
+[
+"directors_call.teammate.complain.10",
+"directors_call",
+"teammate",
+"complain",
+"Tweak, tweak, tweak. Meanwhile, nobody can hit the net."
+],
+[
+"directors_call.teammate.complain.11",
+"directors_call",
+"teammate",
+"complain",
+"Who asked for that? Not my knees."
+],
+[
+"directors_call.teammate.complain.12",
+"directors_call",
+"teammate",
+"complain",
+"You fix the rules, I fix your mistakes. Fair deal?"
+],
+[
+"directors_call.teammate.encourage.01",
+"directors_call",
+"teammate",
+"encourage",
+"Adapt or sit on the boards, rookie."
+],
+[
+"directors_call.teammate.encourage.02",
+"directors_call",
+"teammate",
+"encourage",
+"Your tweak, you asked for this. Now go use it."
+],
+[
+"directors_call.teammate.encourage.03",
+"directors_call",
+"teammate",
+"encourage",
+"Eyes up, stick down, and stop drifting."
+],
+[
+"directors_call.teammate.encourage.04",
+"directors_call",
+"teammate",
+"encourage",
+"New rule, fresh chance to miss the net. Try not to."
+],
+[
+"directors_call.teammate.encourage.05",
+"directors_call",
+"teammate",
+"encourage",
+"Hit someone. The rule change won't do it for you."
+],
+[
+"directors_call.teammate.encourage.06",
+"directors_call",
+"teammate",
+"encourage",
+"I carried worse rookies through harder seasons. Skate."
+],
+[
+"directors_call.teammate.encourage.07",
+"directors_call",
+"teammate",
+"encourage",
+"Lead the play or get out of my lane."
+],
+[
+"directors_call.teammate.encourage.08",
+"directors_call",
+"teammate",
+"encourage",
+"Less thinking, more checking. Go."
+],
+[
+"directors_call.teammate.encourage.09",
+"directors_call",
+"teammate",
+"encourage",
+"Move your skates, the puck won't chase itself."
+],
+[
+"directors_call.teammate.encourage.10",
+"directors_call",
+"teammate",
+"encourage",
+"New rule, same excuse. Go get the puck."
+],
+[
+"directors_call.teammate.encourage.11",
+"directors_call",
+"teammate",
+"encourage",
+"Quit admiring the scoreboard and start skating."
+],
+[
+"directors_call.teammate.encourage.12",
+"directors_call",
+"teammate",
+"encourage",
+"Shoot early, shoot often, and aim this time."
+],
+[
+"directors_call.teammate.encourage.13",
+"directors_call",
+"teammate",
+"encourage",
+"The rules changed, your skating didn't. Fix that."
+],
+[
+"directors_call.teammate.encourage.14",
+"directors_call",
+"teammate",
+"encourage",
+"You changed the rules, so now earn them."
+],
+[
+"directors_call.teammate.praise.01",
+"directors_call",
+"teammate",
+"praise",
+"Better than your skating, anyway."
+],
+[
+"directors_call.teammate.praise.02",
+"directors_call",
+"teammate",
+"praise",
+"Decent. Do it again and I might nod."
+],
+[
+"directors_call.teammate.praise.03",
+"directors_call",
+"teammate",
+"praise",
+"Even the boards looked impressed. Barely."
+],
+[
+"directors_call.teammate.praise.04",
+"directors_call",
+"teammate",
+"praise",
+"Fair enough, rookie. That one worked."
+],
+[
+"directors_call.teammate.praise.05",
+"directors_call",
+"teammate",
+"praise",
+"Fine, you earned that one. Don't let it go to your head."
+],
+[
+"directors_call.teammate.praise.06",
+"directors_call",
+"teammate",
+"praise",
+"Huh, the new rules suit you. Suspicious."
+],
+[
+"directors_call.teammate.praise.07",
+"directors_call",
+"teammate",
+"praise",
+"Huh. That rule change actually helped."
+],
+[
+"directors_call.teammate.praise.08",
+"directors_call",
+"teammate",
+"praise",
+"I'll admit it, that was a decent call."
+],
+[
+"directors_call.teammate.praise.09",
+"directors_call",
+"teammate",
+"praise",
+"I've seen worse rule changes. Not many, but a few."
+],
+[
+"directors_call.teammate.praise.10",
+"directors_call",
+"teammate",
+"praise",
+"Not bad, that tweak. Almost looked planned."
+],
+[
+"directors_call.teammate.praise.11",
+"directors_call",
+"teammate",
+"praise",
+"Okay, I didn't hate that new rule."
+],
+[
+"directors_call.teammate.praise.12",
+"directors_call",
+"teammate",
+"praise",
+"That's the first smart pause I've seen from you."
+],
+[
+"directors_call.teammate.praise.13",
+"directors_call",
+"teammate",
+"praise",
+"Well, look at that. You can skate and think."
+],
+[
+"directors_call.teammate.praise.14",
+"directors_call",
+"teammate",
+"praise",
+"You surprised me. Annoying, but true."
+],
+[
+"faceoff.opponent.bravado.01",
+"faceoff",
+"opponent",
+"bravado",
+"Class is in session, and you're sitting at the front."
+],
+[
+"faceoff.opponent.bravado.02",
+"faceoff",
+"opponent",
+"bravado",
+"Drop it. We'll finish before you find your stick."
+],
+[
+"faceoff.opponent.bravado.03",
+"faceoff",
+"opponent",
+"bravado",
+"Nobody on my line is worried. Look around, rookie."
+],
+[
+"faceoff.opponent.bravado.04",
+"faceoff",
+"opponent",
+"bravado",
+"Pick any of us. You'll still be second to the puck."
+],
+[
+"faceoff.opponent.bravado.05",
+"faceoff",
+"opponent",
+"bravado",
+"This is our ice. You're just renting the view."
+],
+[
+"faceoff.opponent.bravado.06",
+"faceoff",
+"opponent",
+"bravado",
+"Three of us, one plan, and you're not in it."
+],
+[
+"faceoff.opponent.bravado.07",
+"faceoff",
+"opponent",
+"bravado",
+"Watch closely. This is what a real line looks like."
+],
+[
+"faceoff.opponent.bravado.08",
+"faceoff",
+"opponent",
+"bravado",
+"We beat you in warm-up. The rest is just the clock."
+],
+[
+"faceoff.opponent.bravado.09",
+"faceoff",
+"opponent",
+"bravado",
+"We don't chase pucks. Pucks come looking for us."
+],
+[
+"faceoff.opponent.bravado.10",
+"faceoff",
+"opponent",
+"bravado",
+"We skate in sync. You skate in circles, apologetically."
+],
+[
+"faceoff.opponent.bravado.11",
+"faceoff",
+"opponent",
+"bravado",
+"Win the faceoff? Please. We win the game before it starts."
+],
+[
+"faceoff.opponent.bravado.12",
+"faceoff",
+"opponent",
+"bravado",
+"You're the opening faceoff, we're the whole season."
+],
+[
+"faceoff.opponent.bravado.13",
+"faceoff",
+"opponent",
+"bravado",
+"Your best play is our warm up."
+],
+[
+"faceoff.opponent.complain.01",
+"faceoff",
+"opponent",
+"complain",
+"Again? We just did this, and it was dull the first time."
+],
+[
+"faceoff.opponent.complain.02",
+"faceoff",
+"opponent",
+"complain",
+"Every bounce goes your way. Nobody earned it."
+],
+[
+"faceoff.opponent.complain.03",
+"faceoff",
+"opponent",
+"complain",
+"Fine. Reset the shot. Let's pretend that never happened."
+],
+[
+"faceoff.opponent.complain.04",
+"faceoff",
+"opponent",
+"complain",
+"Honestly, I expected more from my own line there."
+],
+[
+"faceoff.opponent.complain.05",
+"faceoff",
+"opponent",
+"complain",
+"I'm tired of cleaning up after this whole line."
+],
+[
+"faceoff.opponent.complain.06",
+"faceoff",
+"opponent",
+"complain",
+"I've lost to better players than you. Just not today."
+],
+[
+"faceoff.opponent.complain.07",
+"faceoff",
+"opponent",
+"complain",
+"Is the net really that hard to defend for us? Apparently."
+],
+[
+"faceoff.opponent.complain.08",
+"faceoff",
+"opponent",
+"complain",
+"One lucky shot and the rookie thinks he's a star."
+],
+[
+"faceoff.opponent.complain.09",
+"faceoff",
+"opponent",
+"complain",
+"Someone fix this ice before my skates file a complaint."
+],
+[
+"faceoff.opponent.complain.10",
+"faceoff",
+"opponent",
+"complain",
+"That last one was luck, and I'm sick of your luck."
+],
+[
+"faceoff.opponent.complain.11",
+"faceoff",
+"opponent",
+"complain",
+"The posts hate me, the puck hates me, and you're smug."
+],
+[
+"faceoff.opponent.complain.12",
+"faceoff",
+"opponent",
+"complain",
+"This ice is garbage and your line is worse."
+],
+[
+"faceoff.opponent.complain.13",
+"faceoff",
+"opponent",
+"complain",
+"We gave that away like a free pickup. Real smooth."
+],
+[
+"faceoff.opponent.complain.14",
+"faceoff",
+"opponent",
+"complain",
+"Why do I always get the bad side of this faceoff?"
+],
+[
+"faceoff.opponent.mock.01",
+"faceoff",
+"opponent",
+"mock",
+"Ah, the bench's favourite pylon. Blink and you're done."
+],
+[
+"faceoff.opponent.mock.02",
+"faceoff",
+"opponent",
+"mock",
+"Another faceoff, another rookie on the wrong foot."
+],
+[
+"faceoff.opponent.mock.03",
+"faceoff",
+"opponent",
+"mock",
+"Big breath in. Now forget everything you practised."
+],
+[
+"faceoff.opponent.mock.04",
+"faceoff",
+"opponent",
+"mock",
+"Bold of you to show up with a stick like that."
+],
+[
+"faceoff.opponent.mock.05",
+"faceoff",
+"opponent",
+"mock",
+"Centre ice, where your confidence goes to retire."
+],
+[
+"faceoff.opponent.mock.06",
+"faceoff",
+"opponent",
+"mock",
+"I'll go easy. You'll still find a way to lose the puck."
+],
+[
+"faceoff.opponent.mock.07",
+"faceoff",
+"opponent",
+"mock",
+"I've seen scoreboards with more attack in them."
+],
+[
+"faceoff.opponent.mock.08",
+"faceoff",
+"opponent",
+"mock",
+"Is that your skating face or are you just thinking?"
+],
+[
+"faceoff.opponent.mock.09",
+"faceoff",
+"opponent",
+"mock",
+"Line up, rookie, try to face the right net this time."
+],
+[
+"faceoff.opponent.mock.10",
+"faceoff",
+"opponent",
+"mock",
+"Nice stance. The boards will fix it."
+],
+[
+"faceoff.opponent.mock.11",
+"faceoff",
+"opponent",
+"mock",
+"Sure, take the faceoff. Somebody has to lose it."
+],
+[
+"faceoff.opponent.mock.12",
+"faceoff",
+"opponent",
+"mock",
+"Try hitting the puck first. The net is step two."
+],
+[
+"faceoff.opponent.savage.01",
+"faceoff",
+"opponent",
+"savage",
+"Crap, I almost forgot you were on the ice."
+],
+[
+"faceoff.opponent.savage.02",
+"faceoff",
+"opponent",
+"savage",
+"Damn, you look scared. Good instincts, honestly."
+],
+[
+"faceoff.opponent.savage.03",
+"faceoff",
+"opponent",
+"savage",
+"Drop the puck, I'm already bored of watching you lose."
+],
+[
+"faceoff.opponent.savage.04",
+"faceoff",
+"opponent",
+"savage",
+"Enjoy the faceoff. It's the last time you'll touch the puck."
+],
+[
+"faceoff.opponent.savage.05",
+"faceoff",
+"opponent",
+"savage",
+"Hell, I'd feel bad if you ever made it hard."
+],
+[
+"faceoff.opponent.savage.06",
+"faceoff",
+"opponent",
+"savage",
+"I came for a game and got a rookie. Disappointing."
+],
+[
+"faceoff.opponent.savage.07",
+"faceoff",
+"opponent",
+"savage",
+"I'll body check you clean into next season."
+],
+[
+"faceoff.opponent.savage.08",
+"faceoff",
+"opponent",
+"savage",
+"I'll kick your ass to the boards and back, twice."
+],
+[
+"faceoff.opponent.savage.09",
+"faceoff",
+"opponent",
+"savage",
+"Keep the stick up, it'll help you hide behind it."
+],
+[
+"faceoff.opponent.savage.10",
+"faceoff",
+"opponent",
+"savage",
+"Stand still, that's the closest you get to defending."
+],
+[
+"faceoff.opponent.savage.11",
+"faceoff",
+"opponent",
+"savage",
+"You're not a threat, you're a speed bump with a stick."
+],
+[
+"faceoff.opponent.savage.12",
+"faceoff",
+"opponent",
+"savage",
+"You're the turnover, and we haven't even started."
+],
+[
+"faceoff.opponent.savage.13",
+"faceoff",
+"opponent",
+"savage",
+"Your skating makes the ice want to melt out of shame."
+],
+[
+"faceoff.opponent.savage.14",
+"faceoff",
+"opponent",
+"savage",
+"Your whole line is a bad warm-up for real hockey."
+],
+[
+"faceoff.teammate.complain.01",
+"faceoff",
+"teammate",
+"complain",
+"Damn, the ice gave you that bounce and you still blew it"
+],
+[
+"faceoff.teammate.complain.02",
+"faceoff",
+"teammate",
+"complain",
+"Every faceoff starts with hope and ends with you"
+],
+[
+"faceoff.teammate.complain.03",
+"faceoff",
+"teammate",
+"complain",
+"Great, back to centre, just like old times"
+],
+[
+"faceoff.teammate.complain.04",
+"faceoff",
+"teammate",
+"complain",
+"Hell of a way to waste a perfectly good puck"
+],
+[
+"faceoff.teammate.complain.05",
+"faceoff",
+"teammate",
+"complain",
+"I'm too old to watch you miss that open net"
+],
+[
+"faceoff.teammate.complain.06",
+"faceoff",
+"teammate",
+"complain",
+"I've seen posts with better timing than you"
+],
+[
+"faceoff.teammate.complain.07",
+"faceoff",
+"teammate",
+"complain",
+"Lucky bounces skip us and find you doing nothing"
+],
+[
+"faceoff.teammate.complain.08",
+"faceoff",
+"teammate",
+"complain",
+"Next time pass it, the puck didn't deserve that"
+],
+[
+"faceoff.teammate.complain.09",
+"faceoff",
+"teammate",
+"complain",
+"Nobody dumps it like you do, and not in a good way"
+],
+[
+"faceoff.teammate.complain.10",
+"faceoff",
+"teammate",
+"complain",
+"Same faceoff, same sad ending, I've lost count"
+],
+[
+"faceoff.teammate.complain.11",
+"faceoff",
+"teammate",
+"complain",
+"Tell me again how that was the ice's fault"
+],
+[
+"faceoff.teammate.complain.12",
+"faceoff",
+"teammate",
+"complain",
+"That puck had a mind of its own, same as your stick"
+],
+[
+"faceoff.teammate.complain.13",
+"faceoff",
+"teammate",
+"complain",
+"The bounce was bad, but your skating was worse"
+],
+[
+"faceoff.teammate.complain.14",
+"faceoff",
+"teammate",
+"complain",
+"We keep restarting because somebody can't finish"
+],
+[
+"faceoff.teammate.encourage.01",
+"faceoff",
+"teammate",
+"encourage",
+"Be useful for ten seconds, I'm begging you"
+],
+[
+"faceoff.teammate.encourage.02",
+"faceoff",
+"teammate",
+"encourage",
+"Body check somebody, it's the only thing you do well"
+],
+[
+"faceoff.teammate.encourage.03",
+"faceoff",
+"teammate",
+"encourage",
+"Don't think, you're bad at it, just hit someone"
+],
+[
+"faceoff.teammate.encourage.04",
+"faceoff",
+"teammate",
+"encourage",
+"Get the puck, then get it to me, in that order"
+],
+[
+"faceoff.teammate.encourage.05",
+"faceoff",
+"teammate",
+"encourage",
+"Hold the centre and try not to wave at the puck"
+],
+[
+"faceoff.teammate.encourage.06",
+"faceoff",
+"teammate",
+"encourage",
+"Just once, aim at the net instead of the boards"
+],
+[
+"faceoff.teammate.encourage.07",
+"faceoff",
+"teammate",
+"encourage",
+"Keep up, or I'll start passing to the posts"
+],
+[
+"faceoff.teammate.encourage.08",
+"faceoff",
+"teammate",
+"encourage",
+"Less drifting, more checking, we're on the clock"
+],
+[
+"faceoff.teammate.encourage.09",
+"faceoff",
+"teammate",
+"encourage",
+"Move your feet, the ice isn't getting any younger"
+],
+[
+"faceoff.teammate.encourage.10",
+"faceoff",
+"teammate",
+"encourage",
+"Skate like you mean it, rookie"
+],
+[
+"faceoff.teammate.encourage.11",
+"faceoff",
+"teammate",
+"encourage",
+"Stick on the ice, head in the game, in that order"
+],
+[
+"faceoff.teammate.encourage.12",
+"faceoff",
+"teammate",
+"encourage",
+"Stop admiring the scoreboard and go get the puck"
+],
+[
+"faceoff.teammate.encourage.13",
+"faceoff",
+"teammate",
+"encourage",
+"Second period is already looming, so wake up"
+],
+[
+"faceoff.teammate.encourage.14",
+"faceoff",
+"teammate",
+"encourage",
+"Win the faceoff this time, or stay out of my way"
+],
+[
+"faceoff.teammate.praise.01",
+"faceoff",
+"teammate",
+"praise",
+"Decent shot, I'd have said so sooner if I'd expected it"
+],
+[
+"faceoff.teammate.praise.02",
+"faceoff",
+"teammate",
+"praise",
+"Didn't see that coming, and neither did they"
+],
+[
+"faceoff.teammate.praise.03",
+"faceoff",
+"teammate",
+"praise",
+"Fine, that one was clean"
+],
+[
+"faceoff.teammate.praise.04",
+"faceoff",
+"teammate",
+"praise",
+"Huh, so you can find the net after all"
+],
+[
+"faceoff.teammate.praise.05",
+"faceoff",
+"teammate",
+"praise",
+"I've seen worse, mostly from you"
+],
+[
+"faceoff.teammate.praise.06",
+"faceoff",
+"teammate",
+"praise",
+"Keep that up and I might learn your name"
+],
+[
+"faceoff.teammate.praise.07",
+"faceoff",
+"teammate",
+"praise",
+"Look at that, the stick does more than hold your hands"
+],
+[
+"faceoff.teammate.praise.08",
+"faceoff",
+"teammate",
+"praise",
+"Not bad, for someone who skates like that"
+],
+[
+"faceoff.teammate.praise.09",
+"faceoff",
+"teammate",
+"praise",
+"Okay, that check had some mean in it"
+],
+[
+"faceoff.teammate.praise.10",
+"faceoff",
+"teammate",
+"praise",
+"One good play, don't make it a habit I have to explain"
+],
+[
+"faceoff.teammate.praise.11",
+"faceoff",
+"teammate",
+"praise",
+"That one's a highlight, on a very short list"
+],
+[
+"faceoff.teammate.praise.12",
+"faceoff",
+"teammate",
+"praise",
+"That was almost professional, don't let it go to your head"
+],
+[
+"faceoff.teammate.praise.13",
+"faceoff",
+"teammate",
+"praise",
+"Well, the radar finally had something worth showing"
+],
+[
+"faceoff.teammate.praise.14",
+"faceoff",
+"teammate",
+"praise",
+"You did the thing, I'll allow it"
+],
+[
+"goal_against.opponent.bravado.01",
+"goal_against",
+"opponent",
+"bravado",
+"Class shows, and you just saw it."
+],
+[
+"goal_against.opponent.bravado.02",
+"goal_against",
+"opponent",
+"bravado",
+"Get used to the sound of that horn."
+],
+[
+"goal_against.opponent.bravado.03",
+"goal_against",
+"opponent",
+"bravado",
+"Keep up, or enjoy the view of our backs."
+],
+[
+"goal_against.opponent.bravado.04",
+"goal_against",
+"opponent",
+"bravado",
+"Next one is already on the scoreboard."
+],
+[
+"goal_against.opponent.bravado.05",
+"goal_against",
+"opponent",
+"bravado",
+"Nobody on your side can touch what we do."
+],
+[
+"goal_against.opponent.bravado.06",
+"goal_against",
+"opponent",
+"bravado",
+"One shift, one goal, no sweat."
+],
+[
+"goal_against.opponent.bravado.07",
+"goal_against",
+"opponent",
+"bravado",
+"That's what a real line looks like."
+],
+[
+"goal_against.opponent.bravado.08",
+"goal_against",
+"opponent",
+"bravado",
+"This is our rink, you're just renting the ice."
+],
+[
+"goal_against.opponent.bravado.09",
+"goal_against",
+"opponent",
+"bravado",
+"We don't chase the puck, it comes to us."
+],
+[
+"goal_against.opponent.bravado.10",
+"goal_against",
+"opponent",
+"bravado",
+"We make it look easy because it is."
+],
+[
+"goal_against.opponent.bravado.11",
+"goal_against",
+"opponent",
+"bravado",
+"We score, you watch, and the cycle continues."
+],
+[
+"goal_against.opponent.bravado.12",
+"goal_against",
+"opponent",
+"bravado",
+"Write it down, rookie, we're the first line."
+],
+[
+"goal_against.opponent.bravado.13",
+"goal_against",
+"opponent",
+"bravado",
+"Your line is the warm-up, ours is the game."
+],
+[
+"goal_against.opponent.complain.01",
+"goal_against",
+"opponent",
+"complain",
+"Crap, I had a cleaner shot a minute ago and you stole it."
+],
+[
+"goal_against.opponent.complain.02",
+"goal_against",
+"opponent",
+"complain",
+"Every shift it's the same, and I'm sick of it."
+],
+[
+"goal_against.opponent.complain.03",
+"goal_against",
+"opponent",
+"complain",
+"Fine, it counts, but nobody enjoyed that one."
+],
+[
+"goal_against.opponent.complain.04",
+"goal_against",
+"opponent",
+"complain",
+"I skated my legs off for that one tap-in."
+],
+[
+"goal_against.opponent.complain.05",
+"goal_against",
+"opponent",
+"complain",
+"I'm tired of carrying this line through your mess."
+],
+[
+"goal_against.opponent.complain.06",
+"goal_against",
+"opponent",
+"complain",
+"I've scored uglier goals, but not many."
+],
+[
+"goal_against.opponent.complain.07",
+"goal_against",
+"opponent",
+"complain",
+"That bounce off the post nearly ruined a perfect play."
+],
+[
+"goal_against.opponent.complain.08",
+"goal_against",
+"opponent",
+"complain",
+"That puck rolled like it was scared to score."
+],
+[
+"goal_against.opponent.complain.09",
+"goal_against",
+"opponent",
+"complain",
+"The boards ate my first pass, so that's on them."
+],
+[
+"goal_against.opponent.complain.10",
+"goal_against",
+"opponent",
+"complain",
+"This ice has a mind of its own, and so do you."
+],
+[
+"goal_against.opponent.complain.11",
+"goal_against",
+"opponent",
+"complain",
+"Ugh, the ice was bad there, and the puck was worse."
+],
+[
+"goal_against.opponent.complain.12",
+"goal_against",
+"opponent",
+"complain",
+"Who keeps changing these rules mid-shift? It's exhausting."
+],
+[
+"goal_against.opponent.complain.13",
+"goal_against",
+"opponent",
+"complain",
+"You made that harder than it needed to be, somehow."
+],
+[
+"goal_against.opponent.mock.01",
+"goal_against",
+"opponent",
+"mock",
+"Bold strategy, leaving the whole net to me."
+],
+[
+"goal_against.opponent.mock.02",
+"goal_against",
+"opponent",
+"mock",
+"Cute little glide there, right past the whole play."
+],
+[
+"goal_against.opponent.mock.03",
+"goal_against",
+"opponent",
+"mock",
+"I'd call that defense, but the word has standards."
+],
+[
+"goal_against.opponent.mock.04",
+"goal_against",
+"opponent",
+"mock",
+"Impressive, you found the one spot the puck wasn't."
+],
+[
+"goal_against.opponent.mock.05",
+"goal_against",
+"opponent",
+"mock",
+"Keep that angle, it works great for us."
+],
+[
+"goal_against.opponent.mock.06",
+"goal_against",
+"opponent",
+"mock",
+"Nice effort, if effort meant standing near the puck."
+],
+[
+"goal_against.opponent.mock.07",
+"goal_against",
+"opponent",
+"mock",
+"Oh, you were defending? I thought that was a scrimmage."
+],
+[
+"goal_against.opponent.mock.08",
+"goal_against",
+"opponent",
+"mock",
+"Take your time, we only scored while you thought about it."
+],
+[
+"goal_against.opponent.mock.09",
+"goal_against",
+"opponent",
+"mock",
+"That was a scoring chance, and you were the escort."
+],
+[
+"goal_against.opponent.mock.10",
+"goal_against",
+"opponent",
+"mock",
+"Was that a check or a polite wave?"
+],
+[
+"goal_against.opponent.mock.11",
+"goal_against",
+"opponent",
+"mock",
+"You skate like the ice owes you an apology."
+],
+[
+"goal_against.opponent.mock.12",
+"goal_against",
+"opponent",
+"mock",
+"You turned the wrong way with real confidence."
+],
+[
+"goal_against.opponent.mock.13",
+"goal_against",
+"opponent",
+"mock",
+"Your stick is lovely. Does it ever touch the puck?"
+],
+[
+"goal_against.opponent.savage.01",
+"goal_against",
+"opponent",
+"savage",
+"Another goal for my collection, and you're the giveaway."
+],
+[
+"goal_against.opponent.savage.02",
+"goal_against",
+"opponent",
+"savage",
+"Come get the puck back, if you can find it."
+],
+[
+"goal_against.opponent.savage.03",
+"goal_against",
+"opponent",
+"savage",
+"Damn, I've seen cones put up a better fight."
+],
+[
+"goal_against.opponent.savage.04",
+"goal_against",
+"opponent",
+"savage",
+"Hell, we didn't even need a plan against you."
+],
+[
+"goal_against.opponent.savage.05",
+"goal_against",
+"opponent",
+"savage",
+"I'd kick your ass on defense, but you're not even on it."
+],
+[
+"goal_against.opponent.savage.06",
+"goal_against",
+"opponent",
+"savage",
+"That goal had your name on it, and your skates were nowhere."
+],
+[
+"goal_against.opponent.savage.07",
+"goal_against",
+"opponent",
+"savage",
+"That was not a defense, that was a welcome mat."
+],
+[
+"goal_against.opponent.savage.08",
+"goal_against",
+"opponent",
+"savage",
+"Try hitting something that isn't your own teammate."
+],
+[
+"goal_against.opponent.savage.09",
+"goal_against",
+"opponent",
+"savage",
+"We walked through you like you were a painted line."
+],
+[
+"goal_against.opponent.savage.10",
+"goal_against",
+"opponent",
+"savage",
+"You blinked and the scoreboard changed. Typical."
+],
+[
+"goal_against.opponent.savage.11",
+"goal_against",
+"opponent",
+"savage",
+"You got burned so fast the ice steamed."
+],
+[
+"goal_against.opponent.savage.12",
+"goal_against",
+"opponent",
+"savage",
+"Your whole line is a speed bump with a stick."
+],
+[
+"goal_against.teammate.complain.01",
+"goal_against",
+"teammate",
+"complain",
+"Cool, so that's how we're playing it tonight"
+],
+[
+"goal_against.teammate.complain.02",
+"goal_against",
+"teammate",
+"complain",
+"Damn, that was our net, not a loading dock"
+],
+[
+"goal_against.teammate.complain.03",
+"goal_against",
+"teammate",
+"complain",
+"Every time I turn around, it's behind us again"
+],
+[
+"goal_against.teammate.complain.04",
+"goal_against",
+"teammate",
+"complain",
+"Great, another puck in our net, just like last shift"
+],
+[
+"goal_against.teammate.complain.05",
+"goal_against",
+"teammate",
+"complain",
+"I carry the whole zone and you wave at the puck"
+],
+[
+"goal_against.teammate.complain.06",
+"goal_against",
+"teammate",
+"complain",
+"I've seen better defense from a stack of cones"
+],
+[
+"goal_against.teammate.complain.07",
+"goal_against",
+"teammate",
+"complain",
+"Of course it went in, nobody was home to argue"
+],
+[
+"goal_against.teammate.complain.08",
+"goal_against",
+"teammate",
+"complain",
+"That post should've saved it, even it gave up on us"
+],
+[
+"goal_against.teammate.complain.09",
+"goal_against",
+"teammate",
+"complain",
+"The ice is bad, the bounce is bad, and you're worse"
+],
+[
+"goal_against.teammate.complain.10",
+"goal_against",
+"teammate",
+"complain",
+"This period is cursed, and I'm blaming your skating"
+],
+[
+"goal_against.teammate.complain.11",
+"goal_against",
+"teammate",
+"complain",
+"Tired of this, we keep giving them free practice"
+],
+[
+"goal_against.teammate.complain.12",
+"goal_against",
+"teammate",
+"complain",
+"Unreal, we got out-skated by guys who barely tried"
+],
+[
+"goal_against.teammate.complain.13",
+"goal_against",
+"teammate",
+"complain",
+"Where were you? Never mind, I saw where you were"
+],
+[
+"goal_against.teammate.encourage.01",
+"goal_against",
+"teammate",
+"encourage",
+"Back to center, and try arriving before the puck does"
+],
+[
+"goal_against.teammate.encourage.02",
+"goal_against",
+"teammate",
+"encourage",
+"Cover your man this time, it's not a hard concept"
+],
+[
+"goal_against.teammate.encourage.03",
+"goal_against",
+"teammate",
+"encourage",
+"Get the puck back, that's the whole job"
+],
+[
+"goal_against.teammate.encourage.04",
+"goal_against",
+"teammate",
+"encourage",
+"Hustle back, the shift isn't over until I say it is"
+],
+[
+"goal_against.teammate.encourage.05",
+"goal_against",
+"teammate",
+"encourage",
+"Less staring at the scoreboard, more skating at the puck"
+],
+[
+"goal_against.teammate.encourage.06",
+"goal_against",
+"teammate",
+"encourage",
+"Move your skates, the next one is not going to stop itself"
+],
+[
+"goal_against.teammate.encourage.07",
+"goal_against",
+"teammate",
+"encourage",
+"One mistake is fine, you're working on a collection"
+],
+[
+"goal_against.teammate.encourage.08",
+"goal_against",
+"teammate",
+"encourage",
+"Shake it off and get back on defense, rookie"
+],
+[
+"goal_against.teammate.encourage.09",
+"goal_against",
+"teammate",
+"encourage",
+"Stop admiring the replay and body check someone"
+],
+[
+"goal_against.teammate.encourage.10",
+"goal_against",
+"teammate",
+"encourage",
+"Tighten up, this is not a guided tour of our net"
+],
+[
+"goal_against.teammate.encourage.11",
+"goal_against",
+"teammate",
+"encourage",
+"Use your stick, it's not just for decoration"
+],
+[
+"goal_against.teammate.encourage.12",
+"goal_against",
+"teammate",
+"encourage",
+"Win the next pickup or get out of my lane"
+],
+[
+"goal_against.teammate.encourage.13",
+"goal_against",
+"teammate",
+"encourage",
+"You can sulk later, right now go hit somebody"
+],
+[
+"goal_against.teammate.praise.01",
+"goal_against",
+"teammate",
+"praise",
+"Decent stick work, even a broken clock gets lucky"
+],
+[
+"goal_against.teammate.praise.02",
+"goal_against",
+"teammate",
+"praise",
+"Fine, that was a decent shift, don't get cocky"
+],
+[
+"goal_against.teammate.praise.03",
+"goal_against",
+"teammate",
+"praise",
+"Huh, you actually checked someone, noted"
+],
+[
+"goal_against.teammate.praise.04",
+"goal_against",
+"teammate",
+"praise",
+"I'd clap, but my gloves are busy"
+],
+[
+"goal_against.teammate.praise.05",
+"goal_against",
+"teammate",
+"praise",
+"Not bad, the ice almost looked impressed"
+],
+[
+"goal_against.teammate.praise.06",
+"goal_against",
+"teammate",
+"praise",
+"Not terrible out there, and I'm as surprised as you"
+],
+[
+"goal_against.teammate.praise.07",
+"goal_against",
+"teammate",
+"praise",
+"Okay, rookie, that pickup was clean"
+],
+[
+"goal_against.teammate.praise.08",
+"goal_against",
+"teammate",
+"praise",
+"One good play, now try making it a habit"
+],
+[
+"goal_against.teammate.praise.09",
+"goal_against",
+"teammate",
+"praise",
+"Respectable, for someone who usually skates in circles"
+],
+[
+"goal_against.teammate.praise.10",
+"goal_against",
+"teammate",
+"praise",
+"So you can hit, who knew, keep doing it"
+],
+[
+"goal_against.teammate.praise.11",
+"goal_against",
+"teammate",
+"praise",
+"That was almost the right read, almost counts"
+],
+[
+"goal_against.teammate.praise.12",
+"goal_against",
+"teammate",
+"praise",
+"That was good, and I hate saying that out loud"
+],
+[
+"goal_against.teammate.praise.13",
+"goal_against",
+"teammate",
+"praise",
+"You covered back, I may have to change my notes"
+],
+[
+"goal_against.teammate.praise.14",
+"goal_against",
+"teammate",
+"praise",
+"You skated like you meant it, welcome to the job"
+],
+[
+"goal_for.opponent.bravado.01",
+"goal_for",
+"opponent",
+"bravado",
+"Cute goal, now watch how it's done"
+],
+[
+"goal_for.opponent.bravado.02",
+"goal_for",
+"opponent",
+"bravado",
+"Don't mistake one goal for a comeback"
+],
+[
+"goal_for.opponent.bravado.03",
+"goal_for",
+"opponent",
+"bravado",
+"Enjoy the lead, it has an expiry date"
+],
+[
+"goal_for.opponent.bravado.04",
+"goal_for",
+"opponent",
+"bravado",
+"I've already got the next three goals planned"
+],
+[
+"goal_for.opponent.bravado.05",
+"goal_for",
+"opponent",
+"bravado",
+"Our line has done this a thousand times"
+],
+[
+"goal_for.opponent.bravado.06",
+"goal_for",
+"opponent",
+"bravado",
+"Our line skates circles around yours, even now"
+],
+[
+"goal_for.opponent.bravado.07",
+"goal_for",
+"opponent",
+"bravado",
+"Take your moment, I'll take the period"
+],
+[
+"goal_for.opponent.bravado.08",
+"goal_for",
+"opponent",
+"bravado",
+"That was a warmup, nothing more"
+],
+[
+"goal_for.opponent.bravado.09",
+"goal_for",
+"opponent",
+"bravado",
+"That's your one goal, we'll take the rest"
+],
+[
+"goal_for.opponent.bravado.10",
+"goal_for",
+"opponent",
+"bravado",
+"This match ends our way, it always does"
+],
+[
+"goal_for.opponent.bravado.11",
+"goal_for",
+"opponent",
+"bravado",
+"We score when we feel like it, you'll see"
+],
+[
+"goal_for.opponent.bravado.12",
+"goal_for",
+"opponent",
+"bravado",
+"We're better and you both know it"
+],
+[
+"goal_for.opponent.bravado.13",
+"goal_for",
+"opponent",
+"bravado",
+"You got lucky, we get paid in skill"
+],
+[
+"goal_for.opponent.bravado.14",
+"goal_for",
+"opponent",
+"bravado",
+"You scored, we'll answer before you stop smiling"
+],
+[
+"goal_for.opponent.complain.01",
+"goal_for",
+"opponent",
+"complain",
+"Bad ice, bad luck, same old story"
+],
+[
+"goal_for.opponent.complain.02",
+"goal_for",
+"opponent",
+"complain",
+"Crap ice, crap angle, crap everything"
+],
+[
+"goal_for.opponent.complain.03",
+"goal_for",
+"opponent",
+"complain",
+"Every single bounce goes their way, every time"
+],
+[
+"goal_for.opponent.complain.04",
+"goal_for",
+"opponent",
+"complain",
+"I told you to close the lane, nobody listens"
+],
+[
+"goal_for.opponent.complain.05",
+"goal_for",
+"opponent",
+"complain",
+"I'm tired of covering for this mess"
+],
+[
+"goal_for.opponent.complain.06",
+"goal_for",
+"opponent",
+"complain",
+"My legs are done with this nonsense"
+],
+[
+"goal_for.opponent.complain.07",
+"goal_for",
+"opponent",
+"complain",
+"Of course it went in, nothing else ever does for us"
+],
+[
+"goal_for.opponent.complain.08",
+"goal_for",
+"opponent",
+"complain",
+"That shouldn't have gone in, it just shouldn't"
+],
+[
+"goal_for.opponent.complain.09",
+"goal_for",
+"opponent",
+"complain",
+"The ice is chewed up and that puck knew it"
+],
+[
+"goal_for.opponent.complain.10",
+"goal_for",
+"opponent",
+"complain",
+"Typical, the human gets the lucky bounce"
+],
+[
+"goal_for.opponent.complain.11",
+"goal_for",
+"opponent",
+"complain",
+"Unreal, that bounce was pure garbage"
+],
+[
+"goal_for.opponent.complain.12",
+"goal_for",
+"opponent",
+"complain",
+"We had that one, and the puck just quit"
+],
+[
+"goal_for.opponent.complain.13",
+"goal_for",
+"opponent",
+"complain",
+"Who let that one through, seriously"
+],
+[
+"goal_for.opponent.mock.01",
+"goal_for",
+"opponent",
+"mock",
+"Bold move, standing near the net for once"
+],
+[
+"goal_for.opponent.mock.02",
+"goal_for",
+"opponent",
+"mock",
+"Careful, you might start thinking you can skate"
+],
+[
+"goal_for.opponent.mock.03",
+"goal_for",
+"opponent",
+"mock",
+"Congratulations, even a broken clock gets a goal"
+],
+[
+"goal_for.opponent.mock.04",
+"goal_for",
+"opponent",
+"mock",
+"Cute, the puck did all the work"
+],
+[
+"goal_for.opponent.mock.05",
+"goal_for",
+"opponent",
+"mock",
+"Enjoy it, your highlight list is one goal long"
+],
+[
+"goal_for.opponent.mock.06",
+"goal_for",
+"opponent",
+"mock",
+"I'd clap, but my stick is busy"
+],
+[
+"goal_for.opponent.mock.07",
+"goal_for",
+"opponent",
+"mock",
+"Look at you, doing the bare minimum"
+],
+[
+"goal_for.opponent.mock.08",
+"goal_for",
+"opponent",
+"mock",
+"Nice shot, shame about the other fifty"
+],
+[
+"goal_for.opponent.mock.09",
+"goal_for",
+"opponent",
+"mock",
+"One goal, and you still look lost out there"
+],
+[
+"goal_for.opponent.mock.10",
+"goal_for",
+"opponent",
+"mock",
+"Pretty sure the post helped you with that one"
+],
+[
+"goal_for.opponent.mock.11",
+"goal_for",
+"opponent",
+"mock",
+"That went in by accident, and you know it"
+],
+[
+"goal_for.opponent.mock.12",
+"goal_for",
+"opponent",
+"mock",
+"Was that on purpose, or did the puck get lost?"
+],
+[
+"goal_for.opponent.mock.13",
+"goal_for",
+"opponent",
+"mock",
+"Wow, you touched the puck and it went in"
+],
+[
+"goal_for.opponent.mock.14",
+"goal_for",
+"opponent",
+"mock",
+"You celebrate like the net moved by itself"
+],
+[
+"goal_for.opponent.savage.01",
+"goal_for",
+"opponent",
+"savage",
+"Damn, that was ugly, and somehow it counted"
+],
+[
+"goal_for.opponent.savage.02",
+"goal_for",
+"opponent",
+"savage",
+"Don't get comfortable, I'm coming for you next shift"
+],
+[
+"goal_for.opponent.savage.03",
+"goal_for",
+"opponent",
+"savage",
+"Enjoy it, because I'm about to kick your ass"
+],
+[
+"goal_for.opponent.savage.04",
+"goal_for",
+"opponent",
+"savage",
+"Hell, even a lucky bounce looks better than your game"
+],
+[
+"goal_for.opponent.savage.05",
+"goal_for",
+"opponent",
+"savage",
+"I've seen better hands on a snowman"
+],
+[
+"goal_for.opponent.savage.06",
+"goal_for",
+"opponent",
+"savage",
+"Next time try scoring on purpose"
+],
+[
+"goal_for.opponent.savage.07",
+"goal_for",
+"opponent",
+"savage",
+"One goal does not fix a whole career of bad ice"
+],
+[
+"goal_for.opponent.savage.08",
+"goal_for",
+"opponent",
+"savage",
+"Savor it, it's the only thing you'll hit all night"
+],
+[
+"goal_for.opponent.savage.09",
+"goal_for",
+"opponent",
+"savage",
+"That goal was a fluke and your skating is the proof"
+],
+[
+"goal_for.opponent.savage.10",
+"goal_for",
+"opponent",
+"savage",
+"That was luck wearing your jersey"
+],
+[
+"goal_for.opponent.savage.11",
+"goal_for",
+"opponent",
+"savage",
+"The net was open and you still looked scared"
+],
+[
+"goal_for.opponent.savage.12",
+"goal_for",
+"opponent",
+"savage",
+"You skate like a folding chair on wheels"
+],
+[
+"goal_for.opponent.savage.13",
+"goal_for",
+"opponent",
+"savage",
+"You're the filler between my real highlights"
+],
+[
+"goal_for.opponent.savage.14",
+"goal_for",
+"opponent",
+"savage",
+"Your shot was bad, the puck just took pity"
+],
+[
+"goal_for.teammate.complain.01",
+"goal_for",
+"teammate",
+"complain",
+"Don't get used to it, the boards did half of that."
+],
+[
+"goal_for.teammate.complain.02",
+"goal_for",
+"teammate",
+"complain",
+"Every goal with you feels like a coin toss."
+],
+[
+"goal_for.teammate.complain.03",
+"goal_for",
+"teammate",
+"complain",
+"Hell of a way to score, sideways and by accident."
+],
+[
+"goal_for.teammate.complain.04",
+"goal_for",
+"teammate",
+"complain",
+"I did all the work and you got the credit."
+],
+[
+"goal_for.teammate.complain.05",
+"goal_for",
+"teammate",
+"complain",
+"I set that up and you almost wasted it."
+],
+[
+"goal_for.teammate.complain.06",
+"goal_for",
+"teammate",
+"complain",
+"I'm tired of winning ugly with you."
+],
+[
+"goal_for.teammate.complain.07",
+"goal_for",
+"teammate",
+"complain",
+"Ice is chewed up and we still scored, go figure."
+],
+[
+"goal_for.teammate.complain.08",
+"goal_for",
+"teammate",
+"complain",
+"Of course it goes in off the post, never off a plan."
+],
+[
+"goal_for.teammate.complain.09",
+"goal_for",
+"teammate",
+"complain",
+"That bounce was the only thing on our side."
+],
+[
+"goal_for.teammate.complain.10",
+"goal_for",
+"teammate",
+"complain",
+"That puck went in by pure luck, not by your aim."
+],
+[
+"goal_for.teammate.complain.11",
+"goal_for",
+"teammate",
+"complain",
+"Took you long enough, my stick was getting cold."
+],
+[
+"goal_for.teammate.complain.12",
+"goal_for",
+"teammate",
+"complain",
+"Typical, the bounce finally helps and it's an accident."
+],
+[
+"goal_for.teammate.complain.13",
+"goal_for",
+"teammate",
+"complain",
+"You scored, and I'm still the one skating back."
+],
+[
+"goal_for.teammate.encourage.01",
+"goal_for",
+"teammate",
+"encourage",
+"Again, and this time aim on purpose."
+],
+[
+"goal_for.teammate.encourage.02",
+"goal_for",
+"teammate",
+"encourage",
+"Don't celebrate, hustle back and cover your side."
+],
+[
+"goal_for.teammate.encourage.03",
+"goal_for",
+"teammate",
+"encourage",
+"Don't frame it, just go get the next one."
+],
+[
+"goal_for.teammate.encourage.04",
+"goal_for",
+"teammate",
+"encourage",
+"Fine, now skate like you meant it."
+],
+[
+"goal_for.teammate.encourage.05",
+"goal_for",
+"teammate",
+"encourage",
+"Good, now do it without needing a miracle."
+],
+[
+"goal_for.teammate.encourage.06",
+"goal_for",
+"teammate",
+"encourage",
+"Great, now find the puck before they do."
+],
+[
+"goal_for.teammate.encourage.07",
+"goal_for",
+"teammate",
+"encourage",
+"Keep that up and we might call it a plan."
+],
+[
+"goal_for.teammate.encourage.08",
+"goal_for",
+"teammate",
+"encourage",
+"Less staring, more skating, we're not done."
+],
+[
+"goal_for.teammate.encourage.09",
+"goal_for",
+"teammate",
+"encourage",
+"Nice, now repeat it before you forget how."
+],
+[
+"goal_for.teammate.encourage.10",
+"goal_for",
+"teammate",
+"encourage",
+"One goal. Try doing it again before the ice melts."
+],
+[
+"goal_for.teammate.encourage.11",
+"goal_for",
+"teammate",
+"encourage",
+"One good shot doesn't fix the rest of your game."
+],
+[
+"goal_for.teammate.encourage.12",
+"goal_for",
+"teammate",
+"encourage",
+"Quit grinning and get back on the ice."
+],
+[
+"goal_for.teammate.encourage.13",
+"goal_for",
+"teammate",
+"encourage",
+"Shot's in, so stop admiring it and keep moving."
+],
+[
+"goal_for.teammate.encourage.14",
+"goal_for",
+"teammate",
+"encourage",
+"That's one. The scoreboard wants more than one."
+],
+[
+"goal_for.teammate.praise.01",
+"goal_for",
+"teammate",
+"praise",
+"Clean enough, I'll allow it."
+],
+[
+"goal_for.teammate.praise.02",
+"goal_for",
+"teammate",
+"praise",
+"Decent shot, don't let it go to your skates."
+],
+[
+"goal_for.teammate.praise.03",
+"goal_for",
+"teammate",
+"praise",
+"Didn't think you had that in you, rookie."
+],
+[
+"goal_for.teammate.praise.04",
+"goal_for",
+"teammate",
+"praise",
+"Fine, you earned that one."
+],
+[
+"goal_for.teammate.praise.05",
+"goal_for",
+"teammate",
+"praise",
+"Good, you found the net and the net was cooperative."
+],
+[
+"goal_for.teammate.praise.06",
+"goal_for",
+"teammate",
+"praise",
+"Huh, so the stick does more than hold your hands."
+],
+[
+"goal_for.teammate.praise.07",
+"goal_for",
+"teammate",
+"praise",
+"I take it back, a little."
+],
+[
+"goal_for.teammate.praise.08",
+"goal_for",
+"teammate",
+"praise",
+"Keep doing that and I might stop sighing."
+],
+[
+"goal_for.teammate.praise.09",
+"goal_for",
+"teammate",
+"praise",
+"Not bad. I've seen worse from better skaters."
+],
+[
+"goal_for.teammate.praise.10",
+"goal_for",
+"teammate",
+"praise",
+"Not the worst finish I've watched today."
+],
+[
+"goal_for.teammate.praise.11",
+"goal_for",
+"teammate",
+"praise",
+"Okay, that was a real shot, I noticed."
+],
+[
+"goal_for.teammate.praise.12",
+"goal_for",
+"teammate",
+"praise",
+"Passable. Mark it down, it won't happen often."
+],
+[
+"goal_for.teammate.praise.13",
+"goal_for",
+"teammate",
+"praise",
+"That one even looked planned."
+],
+[
+"goal_for.teammate.praise.14",
+"goal_for",
+"teammate",
+"praise",
+"Well, that was almost on purpose."
+],
+[
+"lose.opponent.bravado.01",
+"lose",
+"opponent",
+"bravado",
+"Admire us from the bench, it's the best angle"
+],
+[
+"lose.opponent.bravado.02",
+"lose",
+"opponent",
+"bravado",
+"Come back when you can keep up with the puck"
+],
+[
+"lose.opponent.bravado.03",
+"lose",
+"opponent",
+"bravado",
+"Our line doesn't win, it simply finishes"
+],
+[
+"lose.opponent.bravado.04",
+"lose",
+"opponent",
+"bravado",
+"Our line wrote the scoreboard and you just read it"
+],
+[
+"lose.opponent.bravado.05",
+"lose",
+"opponent",
+"bravado",
+"Smooth, cold, finished, that's how we close a match"
+],
+[
+"lose.opponent.bravado.06",
+"lose",
+"opponent",
+"bravado",
+"Take it as a lesson, we do it nightly"
+],
+[
+"lose.opponent.bravado.07",
+"lose",
+"opponent",
+"bravado",
+"That's what a real line looks like, rookie"
+],
+[
+"lose.opponent.bravado.08",
+"lose",
+"opponent",
+"bravado",
+"This ice has our name on it"
+],
+[
+"lose.opponent.bravado.09",
+"lose",
+"opponent",
+"bravado",
+"Three of us, no wasted motion, no mercy"
+],
+[
+"lose.opponent.bravado.10",
+"lose",
+"opponent",
+"bravado",
+"We skate, you watch, and the scoreboard agrees"
+],
+[
+"lose.opponent.bravado.11",
+"lose",
+"opponent",
+"bravado",
+"We were the goals and you were the turnovers"
+],
+[
+"lose.opponent.bravado.12",
+"lose",
+"opponent",
+"bravado",
+"You brought a stick, we brought a clinic"
+],
+[
+"lose.opponent.bravado.13",
+"lose",
+"opponent",
+"bravado",
+"You were never in the play, we owned the slot"
+],
+[
+"lose.opponent.complain.01",
+"lose",
+"opponent",
+"complain",
+"Hell of a way to waste my evening"
+],
+[
+"lose.opponent.complain.02",
+"lose",
+"opponent",
+"complain",
+"I carried this match and you still got in the way"
+],
+[
+"lose.opponent.complain.03",
+"lose",
+"opponent",
+"complain",
+"I skated three miles for one lazy shot"
+],
+[
+"lose.opponent.complain.04",
+"lose",
+"opponent",
+"complain",
+"I've had smoother ice and smarter opponents"
+],
+[
+"lose.opponent.complain.05",
+"lose",
+"opponent",
+"complain",
+"Next time pick a side of the ice and stay there"
+],
+[
+"lose.opponent.complain.06",
+"lose",
+"opponent",
+"complain",
+"Nobody told me this was a charity match"
+],
+[
+"lose.opponent.complain.07",
+"lose",
+"opponent",
+"complain",
+"That bounce was nothing, you were the real problem"
+],
+[
+"lose.opponent.complain.08",
+"lose",
+"opponent",
+"complain",
+"That whole match felt like pushing a parked sled"
+],
+[
+"lose.opponent.complain.09",
+"lose",
+"opponent",
+"complain",
+"The ice was fine, so that's not your excuse"
+],
+[
+"lose.opponent.complain.10",
+"lose",
+"opponent",
+"complain",
+"Tired of dragging a rookie through every shift"
+],
+[
+"lose.opponent.complain.11",
+"lose",
+"opponent",
+"complain",
+"Wasted a whole period on someone who skates sideways"
+],
+[
+"lose.opponent.complain.12",
+"lose",
+"opponent",
+"complain",
+"Why does your bench keep handing you the stick"
+],
+[
+"lose.opponent.complain.13",
+"lose",
+"opponent",
+"complain",
+"Your wild shots kept ruining my clean checks"
+],
+[
+"lose.opponent.mock.01",
+"lose",
+"opponent",
+"mock",
+"Bold strategy, arriving after the puck left"
+],
+[
+"lose.opponent.mock.02",
+"lose",
+"opponent",
+"mock",
+"Brave of you to skate near the action, never into it"
+],
+[
+"lose.opponent.mock.03",
+"lose",
+"opponent",
+"mock",
+"Careful out there, the boards bruise easy and so do you"
+],
+[
+"lose.opponent.mock.04",
+"lose",
+"opponent",
+"mock",
+"Great hustle, shame it pointed at the wrong end"
+],
+[
+"lose.opponent.mock.05",
+"lose",
+"opponent",
+"mock",
+"I'd say good game, but you weren't in most of it"
+],
+[
+"lose.opponent.mock.06",
+"lose",
+"opponent",
+"mock",
+"I've seen cardboard cutouts cover more ice"
+],
+[
+"lose.opponent.mock.07",
+"lose",
+"opponent",
+"mock",
+"Nice effort, if effort were measured in wrong turns"
+],
+[
+"lose.opponent.mock.08",
+"lose",
+"opponent",
+"mock",
+"Third period is where you find the puck, right?"
+],
+[
+"lose.opponent.mock.09",
+"lose",
+"opponent",
+"mock",
+"That was a highlight night, for the wrong team"
+],
+[
+"lose.opponent.mock.10",
+"lose",
+"opponent",
+"mock",
+"The scoreboard asked me to stop laughing"
+],
+[
+"lose.opponent.mock.11",
+"lose",
+"opponent",
+"mock",
+"You passed to the ice. It caught it, at least"
+],
+[
+"lose.opponent.mock.12",
+"lose",
+"opponent",
+"mock",
+"You skated all that way to miss the net by a mile"
+],
+[
+"lose.opponent.mock.13",
+"lose",
+"opponent",
+"mock",
+"Your stick spent the night as decoration"
+],
+[
+"lose.opponent.savage.01",
+"lose",
+"opponent",
+"savage",
+"Crap, I forgot you were even out there"
+],
+[
+"lose.opponent.savage.02",
+"lose",
+"opponent",
+"savage",
+"Damn, you made the net look like a stranger"
+],
+[
+"lose.opponent.savage.03",
+"lose",
+"opponent",
+"savage",
+"Even your stick wants a trade"
+],
+[
+"lose.opponent.savage.04",
+"lose",
+"opponent",
+"savage",
+"Hell, I've had warmups tougher than you"
+],
+[
+"lose.opponent.savage.05",
+"lose",
+"opponent",
+"savage",
+"Keep skating, maybe the ice will finally let you win"
+],
+[
+"lose.opponent.savage.06",
+"lose",
+"opponent",
+"savage",
+"Pucks flew past you like you were a traffic cone"
+],
+[
+"lose.opponent.savage.07",
+"lose",
+"opponent",
+"savage",
+"That wasn't a loss, that was a demonstration"
+],
+[
+"lose.opponent.savage.08",
+"lose",
+"opponent",
+"savage",
+"We played keep-away and you never found the keys"
+],
+[
+"lose.opponent.savage.09",
+"lose",
+"opponent",
+"savage",
+"We'd kick your ass again, but you barely showed up"
+],
+[
+"lose.opponent.savage.10",
+"lose",
+"opponent",
+"savage",
+"You bring the effort and we take the points"
+],
+[
+"lose.opponent.savage.11",
+"lose",
+"opponent",
+"savage",
+"You got skated around so much I got dizzy"
+],
+[
+"lose.opponent.savage.12",
+"lose",
+"opponent",
+"savage",
+"You hit the boards more than the puck, congratulations"
+],
+[
+"lose.opponent.savage.13",
+"lose",
+"opponent",
+"savage",
+"You lost so hard the radar gave up tracking you"
+],
+[
+"lose.opponent.savage.14",
+"lose",
+"opponent",
+"savage",
+"Your shot had the courage of a wet sock"
+],
+[
+"lose.teammate.complain.01",
+"lose",
+"teammate",
+"complain",
+"Another loss, and the ice still takes the blame"
+],
+[
+"lose.teammate.complain.02",
+"lose",
+"teammate",
+"complain",
+"Cold ice, cold luck, colder passing from you"
+],
+[
+"lose.teammate.complain.03",
+"lose",
+"teammate",
+"complain",
+"Damn, I've carried heavier teams than this one"
+],
+[
+"lose.teammate.complain.04",
+"lose",
+"teammate",
+"complain",
+"Even the posts looked embarrassed for us"
+],
+[
+"lose.teammate.complain.05",
+"lose",
+"teammate",
+"complain",
+"Every time I looked up, you were somewhere else"
+],
+[
+"lose.teammate.complain.06",
+"lose",
+"teammate",
+"complain",
+"I passed you the puck and you passed it to nobody"
+],
+[
+"lose.teammate.complain.07",
+"lose",
+"teammate",
+"complain",
+"I've seen better defense from a stack of sticks"
+],
+[
+"lose.teammate.complain.08",
+"lose",
+"teammate",
+"complain",
+"Thanks for the tour of the boards, very scenic"
+],
+[
+"lose.teammate.complain.09",
+"lose",
+"teammate",
+"complain",
+"That bounce was bad, but your read was worse"
+],
+[
+"lose.teammate.complain.10",
+"lose",
+"teammate",
+"complain",
+"That was a final buzzer, and not the good kind"
+],
+[
+"lose.teammate.complain.11",
+"lose",
+"teammate",
+"complain",
+"Three skaters, one brain cell, guess who had it"
+],
+[
+"lose.teammate.complain.12",
+"lose",
+"teammate",
+"complain",
+"Unreal, the puck bounced everywhere but in"
+],
+[
+"lose.teammate.complain.13",
+"lose",
+"teammate",
+"complain",
+"We lost that one before the first faceoff, I swear"
+],
+[
+"lose.teammate.complain.14",
+"lose",
+"teammate",
+"complain",
+"You gave the puck away like a free sample"
+],
+[
+"lose.teammate.encourage.01",
+"lose",
+"teammate",
+"encourage",
+"Again, and this time skate like you mean it"
+],
+[
+"lose.teammate.encourage.02",
+"lose",
+"teammate",
+"encourage",
+"Back on the ice, and bring some nerve this time"
+],
+[
+"lose.teammate.encourage.03",
+"lose",
+"teammate",
+"encourage",
+"Fix your angles or fix your hobby"
+],
+[
+"lose.teammate.encourage.04",
+"lose",
+"teammate",
+"encourage",
+"Get in the corners, the puck won't come to you"
+],
+[
+"lose.teammate.encourage.05",
+"lose",
+"teammate",
+"encourage",
+"Get your head up and find the net, it's not hiding"
+],
+[
+"lose.teammate.encourage.06",
+"lose",
+"teammate",
+"encourage",
+"Hit someone, anyone, it's allowed here"
+],
+[
+"lose.teammate.encourage.07",
+"lose",
+"teammate",
+"encourage",
+"Less sightseeing, more checking, rookie"
+],
+[
+"lose.teammate.encourage.08",
+"lose",
+"teammate",
+"encourage",
+"Next period, try shooting before the puck gets bored"
+],
+[
+"lose.teammate.encourage.09",
+"lose",
+"teammate",
+"encourage",
+"Pick up the puck first, then be brilliant"
+],
+[
+"lose.teammate.encourage.10",
+"lose",
+"teammate",
+"encourage",
+"Quit drifting and go finish a check for once"
+],
+[
+"lose.teammate.encourage.11",
+"lose",
+"teammate",
+"encourage",
+"Shoot sooner, think later, it's not a chess game"
+],
+[
+"lose.teammate.encourage.12",
+"lose",
+"teammate",
+"encourage",
+"Skate harder next match, we're not paying you to glide"
+],
+[
+"lose.teammate.encourage.13",
+"lose",
+"teammate",
+"encourage",
+"Stop admiring the replay and win the next one"
+],
+[
+"lose.teammate.encourage.14",
+"lose",
+"teammate",
+"encourage",
+"You've got legs, so use them for more than standing"
+],
+[
+"lose.teammate.praise.01",
+"lose",
+"teammate",
+"praise",
+"Didn't expect that pickup, color me mildly surprised"
+],
+[
+"lose.teammate.praise.02",
+"lose",
+"teammate",
+"praise",
+"Fair play, you earned one nod and that's it"
+],
+[
+"lose.teammate.praise.03",
+"lose",
+"teammate",
+"praise",
+"Fine, that was a real shot, I noticed"
+],
+[
+"lose.teammate.praise.04",
+"lose",
+"teammate",
+"praise",
+"Hell of a hit, shame about the rest"
+],
+[
+"lose.teammate.praise.05",
+"lose",
+"teammate",
+"praise",
+"Huh, you actually skated like you belonged there"
+],
+[
+"lose.teammate.praise.06",
+"lose",
+"teammate",
+"praise",
+"Nice stick work, kid, now do it twice"
+],
+[
+"lose.teammate.praise.07",
+"lose",
+"teammate",
+"praise",
+"Not terrible, and I mean that as a compliment"
+],
+[
+"lose.teammate.praise.08",
+"lose",
+"teammate",
+"praise",
+"Okay, you've got a pulse after all"
+],
+[
+"lose.teammate.praise.09",
+"lose",
+"teammate",
+"praise",
+"Respectable, and I don't say that often"
+],
+[
+"lose.teammate.praise.10",
+"lose",
+"teammate",
+"praise",
+"That check was decent, don't let it go to your head"
+],
+[
+"lose.teammate.praise.11",
+"lose",
+"teammate",
+"praise",
+"That pass found me, so the day wasn't a total loss"
+],
+[
+"lose.teammate.praise.12",
+"lose",
+"teammate",
+"praise",
+"That was almost a highlight, keep going"
+],
+[
+"lose.teammate.praise.13",
+"lose",
+"teammate",
+"praise",
+"You almost made me look good, almost"
+],
+[
+"lose.teammate.praise.14",
+"lose",
+"teammate",
+"praise",
+"You showed up for once, I'll allow it"
+],
+[
+"near_miss.opponent.bravado.01",
+"near_miss",
+"opponent",
+"bravado",
+"Close shots are for those who can't finish, we finish"
+],
+[
+"near_miss.opponent.bravado.02",
+"near_miss",
+"opponent",
+"bravado",
+"Enjoy the near miss, it's the best you'll get this shift"
+],
+[
+"near_miss.opponent.bravado.03",
+"near_miss",
+"opponent",
+"bravado",
+"I'll show you how that shot ends, with a red light"
+],
+[
+"near_miss.opponent.bravado.04",
+"near_miss",
+"opponent",
+"bravado",
+"Keep hitting iron, we'll keep hitting the lead"
+],
+[
+"near_miss.opponent.bravado.05",
+"near_miss",
+"opponent",
+"bravado",
+"My line makes that shot look easy, yours makes it look lost"
+],
+[
+"near_miss.opponent.bravado.06",
+"near_miss",
+"opponent",
+"bravado",
+"My line makes the net sing, yours makes the post ring"
+],
+[
+"near_miss.opponent.bravado.07",
+"near_miss",
+"opponent",
+"bravado",
+"My line scores on that without even looking"
+],
+[
+"near_miss.opponent.bravado.08",
+"near_miss",
+"opponent",
+"bravado",
+"My line would have buried that, and then yawned"
+],
+[
+"near_miss.opponent.bravado.09",
+"near_miss",
+"opponent",
+"bravado",
+"Next time we'll show you where the net actually is"
+],
+[
+"near_miss.opponent.bravado.10",
+"near_miss",
+"opponent",
+"bravado",
+"Nice try, kid, my line doesn't miss from there"
+],
+[
+"near_miss.opponent.bravado.11",
+"near_miss",
+"opponent",
+"bravado",
+"Real shooters hit the twine, you hit the hardware"
+],
+[
+"near_miss.opponent.bravado.12",
+"near_miss",
+"opponent",
+"bravado",
+"That shot clanged off, and my line would've buried it"
+],
+[
+"near_miss.opponent.bravado.13",
+"near_miss",
+"opponent",
+"bravado",
+"That's the difference between us, I hit the net on purpose"
+],
+[
+"near_miss.opponent.bravado.14",
+"near_miss",
+"opponent",
+"bravado",
+"The post is the only one on your team doing its job"
+],
+[
+"near_miss.opponent.bravado.15",
+"near_miss",
+"opponent",
+"bravado",
+"The post was the closest you came to a good play"
+],
+[
+"near_miss.opponent.bravado.16",
+"near_miss",
+"opponent",
+"bravado",
+"We don't need luck, the post only helps the weak"
+],
+[
+"near_miss.opponent.bravado.17",
+"near_miss",
+"opponent",
+"bravado",
+"We hit posts on purpose, you do it by accident"
+],
+[
+"near_miss.opponent.bravado.18",
+"near_miss",
+"opponent",
+"bravado",
+"We'd have scored and skated off without a glance"
+],
+[
+"near_miss.opponent.bravado.19",
+"near_miss",
+"opponent",
+"bravado",
+"You can have the post, we'll take the net"
+],
+[
+"near_miss.opponent.bravado.20",
+"near_miss",
+"opponent",
+"bravado",
+"You rang the post, I'd have rung the scoreboard"
+],
+[
+"near_miss.opponent.complain.01",
+"near_miss",
+"opponent",
+"complain",
+"Another loose puck and nobody's home, great teamwork"
+],
+[
+"near_miss.opponent.complain.02",
+"near_miss",
+"opponent",
+"complain",
+"Another post, another reason I hate this rink"
+],
+[
+"near_miss.opponent.complain.03",
+"near_miss",
+"opponent",
+"complain",
+"Every bounce goes the wrong way and nobody fixes it"
+],
+[
+"near_miss.opponent.complain.04",
+"near_miss",
+"opponent",
+"complain",
+"Every shot rings off something, and it's always loud"
+],
+[
+"near_miss.opponent.complain.05",
+"near_miss",
+"opponent",
+"complain",
+"Fine, the post took it, but we keep wasting these chances"
+],
+[
+"near_miss.opponent.complain.06",
+"near_miss",
+"opponent",
+"complain",
+"I skated all the way back for that nonsense"
+],
+[
+"near_miss.opponent.complain.07",
+"near_miss",
+"opponent",
+"complain",
+"I'm tired of hitting iron and getting nothing for it"
+],
+[
+"near_miss.opponent.complain.08",
+"near_miss",
+"opponent",
+"complain",
+"Ice is chewed up, the bounces are garbage, and now this"
+],
+[
+"near_miss.opponent.complain.09",
+"near_miss",
+"opponent",
+"complain",
+"Long shift, bad ice, worse shots, I'm over it"
+],
+[
+"near_miss.opponent.complain.10",
+"near_miss",
+"opponent",
+"complain",
+"Nobody on this line picks up the rebound, I'm done asking"
+],
+[
+"near_miss.opponent.complain.11",
+"near_miss",
+"opponent",
+"complain",
+"Of course it hits the post and bounces out, typical"
+],
+[
+"near_miss.opponent.complain.12",
+"near_miss",
+"opponent",
+"complain",
+"Of course it rang off the post, nothing goes my way tonight"
+],
+[
+"near_miss.opponent.complain.13",
+"near_miss",
+"opponent",
+"complain",
+"One more inch and I'd be done for the night, but no"
+],
+[
+"near_miss.opponent.complain.14",
+"near_miss",
+"opponent",
+"complain",
+"One more inch and I'd have had to watch a goal, ugh"
+],
+[
+"near_miss.opponent.complain.15",
+"near_miss",
+"opponent",
+"complain",
+"Rattled the post and got a faceful of nothing, great"
+],
+[
+"near_miss.opponent.complain.16",
+"near_miss",
+"opponent",
+"complain",
+"That bounce was a coin flip and we lost it anyway"
+],
+[
+"near_miss.opponent.complain.17",
+"near_miss",
+"opponent",
+"complain",
+"That puck should have gone in for us and you know it"
+],
+[
+"near_miss.opponent.complain.18",
+"near_miss",
+"opponent",
+"complain",
+"The post keeps getting more action than my linemates"
+],
+[
+"near_miss.opponent.complain.19",
+"near_miss",
+"opponent",
+"complain",
+"This rink hates all of us equally and I'm tired of it"
+],
+[
+"near_miss.opponent.complain.20",
+"near_miss",
+"opponent",
+"complain",
+"Why do the posts always side with the human?"
+],
+[
+"near_miss.opponent.mock.01",
+"near_miss",
+"opponent",
+"mock",
+"Almost a goal, in the same way a nap is almost a career"
+],
+[
+"near_miss.opponent.mock.02",
+"near_miss",
+"opponent",
+"mock",
+"Another masterpiece, signed in ringing metal"
+],
+[
+"near_miss.opponent.mock.03",
+"near_miss",
+"opponent",
+"mock",
+"Bold choice, shooting at the frame instead of the hole"
+],
+[
+"near_miss.opponent.mock.04",
+"near_miss",
+"opponent",
+"mock",
+"Close only counts in horseshoes, and that was the post"
+],
+[
+"near_miss.opponent.mock.05",
+"near_miss",
+"opponent",
+"mock",
+"Even the post flinched, and it's been hit by better"
+],
+[
+"near_miss.opponent.mock.06",
+"near_miss",
+"opponent",
+"mock",
+"Hit the iron, huh? Even the net looked relieved"
+],
+[
+"near_miss.opponent.mock.07",
+"near_miss",
+"opponent",
+"mock",
+"I'd clap, but the post already did"
+],
+[
+"near_miss.opponent.mock.08",
+"near_miss",
+"opponent",
+"mock",
+"Nice shot, if the plan was to scare the post"
+],
+[
+"near_miss.opponent.mock.09",
+"near_miss",
+"opponent",
+"mock",
+"So close, and yet so very you"
+],
+[
+"near_miss.opponent.mock.10",
+"near_miss",
+"opponent",
+"mock",
+"Ten feet wide would've been more honest"
+],
+[
+"near_miss.opponent.mock.11",
+"near_miss",
+"opponent",
+"mock",
+"That post is the only one who's talking to you now"
+],
+[
+"near_miss.opponent.mock.12",
+"near_miss",
+"opponent",
+"mock",
+"That shot had speed and no sense of direction"
+],
+[
+"near_miss.opponent.mock.13",
+"near_miss",
+"opponent",
+"mock",
+"The post sends its regards and a polite refusal"
+],
+[
+"near_miss.opponent.mock.14",
+"near_miss",
+"opponent",
+"mock",
+"The post stopped that one, so you don't have to feel bad"
+],
+[
+"near_miss.opponent.mock.15",
+"near_miss",
+"opponent",
+"mock",
+"Was that a shot, or an introduction to the post?"
+],
+[
+"near_miss.opponent.mock.16",
+"near_miss",
+"opponent",
+"mock",
+"Wide of the net, and still the best thing you did all night"
+],
+[
+"near_miss.opponent.mock.17",
+"near_miss",
+"opponent",
+"mock",
+"You aimed at the net like it owed you something, then missed"
+],
+[
+"near_miss.opponent.mock.18",
+"near_miss",
+"opponent",
+"mock",
+"You found the post. Tell me when you find the net"
+],
+[
+"near_miss.opponent.mock.19",
+"near_miss",
+"opponent",
+"mock",
+"You hit the post like it owed you a pass"
+],
+[
+"near_miss.opponent.mock.20",
+"near_miss",
+"opponent",
+"mock",
+"You're a natural at hitting everything but the net"
+],
+[
+"near_miss.opponent.savage.01",
+"near_miss",
+"opponent",
+"savage",
+"Damn, you missed a net the size of a barn door"
+],
+[
+"near_miss.opponent.savage.02",
+"near_miss",
+"opponent",
+"savage",
+"Embarrassing, and that's the nice word for it"
+],
+[
+"near_miss.opponent.savage.03",
+"near_miss",
+"opponent",
+"savage",
+"Even the post wants nothing to do with you"
+],
+[
+"near_miss.opponent.savage.04",
+"near_miss",
+"opponent",
+"savage",
+"Hell, I almost felt sorry for you, then you shot again"
+],
+[
+"near_miss.opponent.savage.05",
+"near_miss",
+"opponent",
+"savage",
+"Hit the post, and you still looked bad doing it"
+],
+[
+"near_miss.opponent.savage.06",
+"near_miss",
+"opponent",
+"savage",
+"Hit the post? Damn, even your luck has bad aim"
+],
+[
+"near_miss.opponent.savage.07",
+"near_miss",
+"opponent",
+"savage",
+"I'll kick your ass to the net and you still won't score"
+],
+[
+"near_miss.opponent.savage.08",
+"near_miss",
+"opponent",
+"savage",
+"I've seen better aim from a puck stuck in the corner"
+],
+[
+"near_miss.opponent.savage.09",
+"near_miss",
+"opponent",
+"savage",
+"Keep shooting at the post, it's the only thing you can beat"
+],
+[
+"near_miss.opponent.savage.10",
+"near_miss",
+"opponent",
+"savage",
+"Keep shooting like that and I'll kick your ass at my leisure"
+],
+[
+"near_miss.opponent.savage.11",
+"near_miss",
+"opponent",
+"savage",
+"Nearly scoring is how you lose slowly"
+],
+[
+"near_miss.opponent.savage.12",
+"near_miss",
+"opponent",
+"savage",
+"That shot was so bad the boards flinched"
+],
+[
+"near_miss.opponent.savage.13",
+"near_miss",
+"opponent",
+"savage",
+"That shot was so bad the post sent it back"
+],
+[
+"near_miss.opponent.savage.14",
+"near_miss",
+"opponent",
+"savage",
+"That was your big moment and the post wiped its feet on it"
+],
+[
+"near_miss.opponent.savage.15",
+"near_miss",
+"opponent",
+"savage",
+"The post has more offense than your entire line"
+],
+[
+"near_miss.opponent.savage.16",
+"near_miss",
+"opponent",
+"savage",
+"The post saved you from my laughing, not from the scoreboard"
+],
+[
+"near_miss.opponent.savage.17",
+"near_miss",
+"opponent",
+"savage",
+"You couldn't score if I held the net open for you"
+],
+[
+"near_miss.opponent.savage.18",
+"near_miss",
+"opponent",
+"savage",
+"You had the whole net and picked the iron, brilliant"
+],
+[
+"near_miss.opponent.savage.19",
+"near_miss",
+"opponent",
+"savage",
+"You miss like it's a job and you're good at it"
+],
+[
+"near_miss.opponent.savage.20",
+"near_miss",
+"opponent",
+"savage",
+"You skate in, you shoot, you fail, and we all get to watch"
+],
+[
+"near_miss.teammate.complain.01",
+"near_miss",
+"teammate",
+"complain",
+"Another inch and I'd have something to smile about"
+],
+[
+"near_miss.teammate.complain.02",
+"near_miss",
+"teammate",
+"complain",
+"Another inch and I'd have stopped being tired"
+],
+[
+"near_miss.teammate.complain.03",
+"near_miss",
+"teammate",
+"complain",
+"Every shot rings off something, never into anything"
+],
+[
+"near_miss.teammate.complain.04",
+"near_miss",
+"teammate",
+"complain",
+"Great, a fancy noise and no goal"
+],
+[
+"near_miss.teammate.complain.05",
+"near_miss",
+"teammate",
+"complain",
+"Half the rink is posts and you hit one"
+],
+[
+"near_miss.teammate.complain.06",
+"near_miss",
+"teammate",
+"complain",
+"Hit the post and called it a shot, huh"
+],
+[
+"near_miss.teammate.complain.07",
+"near_miss",
+"teammate",
+"complain",
+"I carried that puck across the ice for the post?"
+],
+[
+"near_miss.teammate.complain.08",
+"near_miss",
+"teammate",
+"complain",
+"I passed you that for a bang, not a goal"
+],
+[
+"near_miss.teammate.complain.09",
+"near_miss",
+"teammate",
+"complain",
+"I'm too old for near misses"
+],
+[
+"near_miss.teammate.complain.10",
+"near_miss",
+"teammate",
+"complain",
+"I've watched that bounce ruin better shots than yours"
+],
+[
+"near_miss.teammate.complain.11",
+"near_miss",
+"teammate",
+"complain",
+"Of course it hit the post, nothing here goes our way"
+],
+[
+"near_miss.teammate.complain.12",
+"near_miss",
+"teammate",
+"complain",
+"Of course the post got in the way again"
+],
+[
+"near_miss.teammate.complain.13",
+"near_miss",
+"teammate",
+"complain",
+"Ringing the post, the loudest way to fail"
+],
+[
+"near_miss.teammate.complain.14",
+"near_miss",
+"teammate",
+"complain",
+"Tell the post it's not supposed to be there"
+],
+[
+"near_miss.teammate.complain.15",
+"near_miss",
+"teammate",
+"complain",
+"That bounce was as unlucky as your aim"
+],
+[
+"near_miss.teammate.complain.16",
+"near_miss",
+"teammate",
+"complain",
+"That ice is lying to us again"
+],
+[
+"near_miss.teammate.complain.17",
+"near_miss",
+"teammate",
+"complain",
+"The bounce hates us, and you're not helping"
+],
+[
+"near_miss.teammate.complain.18",
+"near_miss",
+"teammate",
+"complain",
+"The ice hates us today, and so do you"
+],
+[
+"near_miss.teammate.complain.19",
+"near_miss",
+"teammate",
+"complain",
+"This net has the posts and you found them all"
+],
+[
+"near_miss.teammate.complain.20",
+"near_miss",
+"teammate",
+"complain",
+"Why does the puck always pick the board?"
+],
+[
+"near_miss.teammate.encourage.01",
+"near_miss",
+"teammate",
+"encourage",
+"Adjust your aim, the net didn't move"
+],
+[
+"near_miss.teammate.encourage.02",
+"near_miss",
+"teammate",
+"encourage",
+"Again, and this time hit something that counts"
+],
+[
+"near_miss.teammate.encourage.03",
+"near_miss",
+"teammate",
+"encourage",
+"Again, and this time hit the part with no metal"
+],
+[
+"near_miss.teammate.encourage.04",
+"near_miss",
+"teammate",
+"encourage",
+"Close counts for nothing, so make it count"
+],
+[
+"near_miss.teammate.encourage.05",
+"near_miss",
+"teammate",
+"encourage",
+"Close only counts on the scoreboard if it goes in"
+],
+[
+"near_miss.teammate.encourage.06",
+"near_miss",
+"teammate",
+"encourage",
+"Don't sulk, steal the puck and try again"
+],
+[
+"near_miss.teammate.encourage.07",
+"near_miss",
+"teammate",
+"encourage",
+"Get the rebound, don't just stand there admiring it"
+],
+[
+"near_miss.teammate.encourage.08",
+"near_miss",
+"teammate",
+"encourage",
+"Get the rebound, or are you busy?"
+],
+[
+"near_miss.teammate.encourage.09",
+"near_miss",
+"teammate",
+"encourage",
+"Good angle, bad finish, fix the finish"
+],
+[
+"near_miss.teammate.encourage.10",
+"near_miss",
+"teammate",
+"encourage",
+"Half an inch left, rookie, find it"
+],
+[
+"near_miss.teammate.encourage.11",
+"near_miss",
+"teammate",
+"encourage",
+"Post is not the net, try the other part"
+],
+[
+"near_miss.teammate.encourage.12",
+"near_miss",
+"teammate",
+"encourage",
+"Quit admiring it and get back in the play"
+],
+[
+"near_miss.teammate.encourage.13",
+"near_miss",
+"teammate",
+"encourage",
+"Same shot, two inches over, go"
+],
+[
+"near_miss.teammate.encourage.14",
+"near_miss",
+"teammate",
+"encourage",
+"Shoot sooner, the net won't wait for your feelings"
+],
+[
+"near_miss.teammate.encourage.15",
+"near_miss",
+"teammate",
+"encourage",
+"That one only needed a little courage"
+],
+[
+"near_miss.teammate.encourage.16",
+"near_miss",
+"teammate",
+"encourage",
+"The post is a hint, take the hint"
+],
+[
+"near_miss.teammate.encourage.17",
+"near_miss",
+"teammate",
+"encourage",
+"The post is not the target, the net is"
+],
+[
+"near_miss.teammate.encourage.18",
+"near_miss",
+"teammate",
+"encourage",
+"You found the iron, now find the twine"
+],
+[
+"near_miss.teammate.encourage.19",
+"near_miss",
+"teammate",
+"encourage",
+"You found the post, now find the hole next to it"
+],
+[
+"near_miss.teammate.encourage.20",
+"near_miss",
+"teammate",
+"encourage",
+"You were close, now be accurate"
+],
+[
+"near_miss.teammate.praise.01",
+"near_miss",
+"teammate",
+"praise",
+"Almost good, and that's a start for you"
+],
+[
+"near_miss.teammate.praise.02",
+"near_miss",
+"teammate",
+"praise",
+"Close, and I mean that, which surprises me"
+],
+[
+"near_miss.teammate.praise.03",
+"near_miss",
+"teammate",
+"praise",
+"Closer than I expected, and I expected little"
+],
+[
+"near_miss.teammate.praise.04",
+"near_miss",
+"teammate",
+"praise",
+"Decent power, shame about the geometry"
+],
+[
+"near_miss.teammate.praise.05",
+"near_miss",
+"teammate",
+"praise",
+"Fine, that was a real attempt"
+],
+[
+"near_miss.teammate.praise.06",
+"near_miss",
+"teammate",
+"praise",
+"Fine, that's the first aim I've respected"
+],
+[
+"near_miss.teammate.praise.07",
+"near_miss",
+"teammate",
+"praise",
+"Hit the post, fine, at least it was the right area"
+],
+[
+"near_miss.teammate.praise.08",
+"near_miss",
+"teammate",
+"praise",
+"Hm, that was nearly a shot, I'll allow it"
+],
+[
+"near_miss.teammate.praise.09",
+"near_miss",
+"teammate",
+"praise",
+"Huh, you found the net's neighbourhood"
+],
+[
+"near_miss.teammate.praise.10",
+"near_miss",
+"teammate",
+"praise",
+"Look at you, threatening the net"
+],
+[
+"near_miss.teammate.praise.11",
+"near_miss",
+"teammate",
+"praise",
+"Not bad, the post felt that one"
+],
+[
+"near_miss.teammate.praise.12",
+"near_miss",
+"teammate",
+"praise",
+"Not bad, you almost scared the post"
+],
+[
+"near_miss.teammate.praise.13",
+"near_miss",
+"teammate",
+"praise",
+"Not terrible, that nearly counted"
+],
+[
+"near_miss.teammate.praise.14",
+"near_miss",
+"teammate",
+"praise",
+"Okay, that one had some snap"
+],
+[
+"near_miss.teammate.praise.15",
+"near_miss",
+"teammate",
+"praise",
+"Post, but a respectable post"
+],
+[
+"near_miss.teammate.praise.16",
+"near_miss",
+"teammate",
+"praise",
+"That one had some real life in it"
+],
+[
+"near_miss.teammate.praise.17",
+"near_miss",
+"teammate",
+"praise",
+"That ping had some class, I'll allow it"
+],
+[
+"near_miss.teammate.praise.18",
+"near_miss",
+"teammate",
+"praise",
+"That was almost a shot, I'm impressed"
+],
+[
+"near_miss.teammate.praise.19",
+"near_miss",
+"teammate",
+"praise",
+"The post flinched, give yourself a moment"
+],
+[
+"near_miss.teammate.praise.20",
+"near_miss",
+"teammate",
+"praise",
+"You almost made me stop yawning"
+],
+[
+"praise_reply.teammate.complain.01",
+"praise_reply",
+"teammate",
+"complain",
+"Damn ice grabbed my skates all night, so spare me"
+],
+[
+"praise_reply.teammate.complain.02",
+"praise_reply",
+"teammate",
+"complain",
+"Don't flatter me, the last shift cost us plenty"
+],
+[
+"praise_reply.teammate.complain.03",
+"praise_reply",
+"teammate",
+"complain",
+"Every bounce goes against me, and you want to chat?"
+],
+[
+"praise_reply.teammate.complain.04",
+"praise_reply",
+"teammate",
+"complain",
+"Great, the one bounce that went our way and it's yours"
+],
+[
+"praise_reply.teammate.complain.05",
+"praise_reply",
+"teammate",
+"complain",
+"I carried that play and you're handing out medals"
+],
+[
+"praise_reply.teammate.complain.06",
+"praise_reply",
+"teammate",
+"complain",
+"I've skated this shift on bad ice and worse support"
+],
+[
+"praise_reply.teammate.complain.07",
+"praise_reply",
+"teammate",
+"complain",
+"Kind words, bad timing, worse passing"
+],
+[
+"praise_reply.teammate.complain.08",
+"praise_reply",
+"teammate",
+"complain",
+"Nice one, he says, after the third lost puck"
+],
+[
+"praise_reply.teammate.complain.09",
+"praise_reply",
+"teammate",
+"complain",
+"Nice one, now where was that all game?"
+],
+[
+"praise_reply.teammate.complain.10",
+"praise_reply",
+"teammate",
+"complain",
+"Sure, nice one, shame about everything before it"
+],
+[
+"praise_reply.teammate.complain.11",
+"praise_reply",
+"teammate",
+"complain",
+"Thanks, I'd enjoy it more if we weren't losing"
+],
+[
+"praise_reply.teammate.complain.12",
+"praise_reply",
+"teammate",
+"complain",
+"The ice is rotten and you pick now to wake up"
+],
+[
+"praise_reply.teammate.complain.13",
+"praise_reply",
+"teammate",
+"complain",
+"This rink hates me and you hate the pass"
+],
+[
+"praise_reply.teammate.complain.14",
+"praise_reply",
+"teammate",
+"complain",
+"You clap now? I've been open for ten minutes"
+],
+[
+"praise_reply.teammate.encourage.01",
+"praise_reply",
+"teammate",
+"encourage",
+"Compliments don't put pucks in the net, hustle does"
+],
+[
+"praise_reply.teammate.encourage.02",
+"praise_reply",
+"teammate",
+"encourage",
+"Do it again, and try not to look surprised"
+],
+[
+"praise_reply.teammate.encourage.03",
+"praise_reply",
+"teammate",
+"encourage",
+"Don't get comfortable, the next shift is already here"
+],
+[
+"praise_reply.teammate.encourage.04",
+"praise_reply",
+"teammate",
+"encourage",
+"Don't thank me, get back on the play"
+],
+[
+"praise_reply.teammate.encourage.05",
+"praise_reply",
+"teammate",
+"encourage",
+"Fine, now do it with your eyes open"
+],
+[
+"praise_reply.teammate.encourage.06",
+"praise_reply",
+"teammate",
+"encourage",
+"Good. Now stay off the boards for a change"
+],
+[
+"praise_reply.teammate.encourage.07",
+"praise_reply",
+"teammate",
+"encourage",
+"Keep your head up, the boards are coming for you"
+],
+[
+"praise_reply.teammate.encourage.08",
+"praise_reply",
+"teammate",
+"encourage",
+"Less talking, more skating, rookie"
+],
+[
+"praise_reply.teammate.encourage.09",
+"praise_reply",
+"teammate",
+"encourage",
+"Nice one was one. Go find another"
+],
+[
+"praise_reply.teammate.encourage.10",
+"praise_reply",
+"teammate",
+"encourage",
+"One good play, and now you want a parade?"
+],
+[
+"praise_reply.teammate.encourage.11",
+"praise_reply",
+"teammate",
+"encourage",
+"Save the thank-you, skate faster"
+],
+[
+"praise_reply.teammate.encourage.12",
+"praise_reply",
+"teammate",
+"encourage",
+"Stop admiring it and chase the puck"
+],
+[
+"praise_reply.teammate.encourage.13",
+"praise_reply",
+"teammate",
+"encourage",
+"That was luck until you repeat it"
+],
+[
+"praise_reply.teammate.encourage.14",
+"praise_reply",
+"teammate",
+"encourage",
+"You got one. The scoreboard wants more"
+],
+[
+"praise_reply.teammate.praise.01",
+"praise_reply",
+"teammate",
+"praise",
+"Acceptable. From you, that's practically a trophy"
+],
+[
+"praise_reply.teammate.praise.02",
+"praise_reply",
+"teammate",
+"praise",
+"Decent work. Now do it twice"
+],
+[
+"praise_reply.teammate.praise.03",
+"praise_reply",
+"teammate",
+"praise",
+"Didn't think you had that in you"
+],
+[
+"praise_reply.teammate.praise.04",
+"praise_reply",
+"teammate",
+"praise",
+"Fine, I'll admit it, that was clean"
+],
+[
+"praise_reply.teammate.praise.05",
+"praise_reply",
+"teammate",
+"praise",
+"Huh. So you can skate after all"
+],
+[
+"praise_reply.teammate.praise.06",
+"praise_reply",
+"teammate",
+"praise",
+"I've seen worse. Today, that's a compliment"
+],
+[
+"praise_reply.teammate.praise.07",
+"praise_reply",
+"teammate",
+"praise",
+"Keep that up and I might stop sighing"
+],
+[
+"praise_reply.teammate.praise.08",
+"praise_reply",
+"teammate",
+"praise",
+"Look at that, a decision that paid off"
+],
+[
+"praise_reply.teammate.praise.09",
+"praise_reply",
+"teammate",
+"praise",
+"Not bad, rookie. Don't let it go to your head"
+],
+[
+"praise_reply.teammate.praise.10",
+"praise_reply",
+"teammate",
+"praise",
+"Respectable, and I barely had to yell"
+],
+[
+"praise_reply.teammate.praise.11",
+"praise_reply",
+"teammate",
+"praise",
+"That was almost professional"
+],
+[
+"praise_reply.teammate.praise.12",
+"praise_reply",
+"teammate",
+"praise",
+"Well, the stick does work after all"
+],
+[
+"praise_reply.teammate.praise.13",
+"praise_reply",
+"teammate",
+"praise",
+"You surprised me, and nobody does that"
+],
+[
+"signal_ack_defend.teammate.complain.01",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Back again, the ice hates me and you don't help"
+],
+[
+"signal_ack_defend.teammate.complain.02",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Back to the net, where your mistakes pile up"
+],
+[
+"signal_ack_defend.teammate.complain.03",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Defend, defend, you could've said that before the turnover"
+],
+[
+"signal_ack_defend.teammate.complain.04",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Defend, he says, after losing the puck twice"
+],
+[
+"signal_ack_defend.teammate.complain.05",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Every puck you lose ends up in my lap"
+],
+[
+"signal_ack_defend.teammate.complain.06",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Falling back, because someone skated into a wall"
+],
+[
+"signal_ack_defend.teammate.complain.07",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Great, now I clean up after you again"
+],
+[
+"signal_ack_defend.teammate.complain.08",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Heading back, same mess, different shift"
+],
+[
+"signal_ack_defend.teammate.complain.09",
+"signal_ack_defend",
+"teammate",
+"complain",
+"I fall back every time you wander off, damn it"
+],
+[
+"signal_ack_defend.teammate.complain.10",
+"signal_ack_defend",
+"teammate",
+"complain",
+"I was warm up front, now I'm babysitting the posts"
+],
+[
+"signal_ack_defend.teammate.complain.11",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Of course it's me back here, it's always me"
+],
+[
+"signal_ack_defend.teammate.complain.12",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Sure, I'll guard the net you left wide open"
+],
+[
+"signal_ack_defend.teammate.complain.13",
+"signal_ack_defend",
+"teammate",
+"complain",
+"This bounce, this ice, this teammate, all terrible"
+],
+[
+"signal_ack_defend.teammate.complain.14",
+"signal_ack_defend",
+"teammate",
+"complain",
+"Tired of covering for that stick of yours, honestly"
+],
+[
+"signal_ack_defend.teammate.encourage.01",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Back at the net, your turn to look busy"
+],
+[
+"signal_ack_defend.teammate.encourage.02",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Back I go, now do something useful up there"
+],
+[
+"signal_ack_defend.teammate.encourage.03",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Covering the net, so quit gifting them the open ice"
+],
+[
+"signal_ack_defend.teammate.encourage.04",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Defend, sure, now earn the rebound I'm about to make"
+],
+[
+"signal_ack_defend.teammate.encourage.05",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Defending, yes, now win it back before I get bored"
+],
+[
+"signal_ack_defend.teammate.encourage.06",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Dropping back, and you bring that puck home"
+],
+[
+"signal_ack_defend.teammate.encourage.07",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Falling back, so try keeping up for once"
+],
+[
+"signal_ack_defend.teammate.encourage.08",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Fine, I defend, you stop skating in circles"
+],
+[
+"signal_ack_defend.teammate.encourage.09",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Going back, and try not to feed them the puck"
+],
+[
+"signal_ack_defend.teammate.encourage.10",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Heading back, so check somebody for a change"
+],
+[
+"signal_ack_defend.teammate.encourage.11",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"I'll hold the posts, you hold your own for a change"
+],
+[
+"signal_ack_defend.teammate.encourage.12",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"I'm back, so make your next pass count"
+],
+[
+"signal_ack_defend.teammate.encourage.13",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"I'm on the net, you're on the puck, try it"
+],
+[
+"signal_ack_defend.teammate.encourage.14",
+"signal_ack_defend",
+"teammate",
+"encourage",
+"Shout less, skate more, I'm already on it"
+],
+[
+"signal_ack_defend.teammate.praise.01",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Back I go, and credit where it's due"
+],
+[
+"signal_ack_defend.teammate.praise.02",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Defend, yes, finally a shout worth hearing"
+],
+[
+"signal_ack_defend.teammate.praise.03",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Falling back, and for once I agree with you"
+],
+[
+"signal_ack_defend.teammate.praise.04",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Fine, that was a veteran move, almost"
+],
+[
+"signal_ack_defend.teammate.praise.05",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Good call, that one was actually smart"
+],
+[
+"signal_ack_defend.teammate.praise.06",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Huh, you read that right, I'm almost impressed"
+],
+[
+"signal_ack_defend.teammate.praise.07",
+"signal_ack_defend",
+"teammate",
+"praise",
+"I'd have called it too, so, well done"
+],
+[
+"signal_ack_defend.teammate.praise.08",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Not bad, that's the first useful thing you've said"
+],
+[
+"signal_ack_defend.teammate.praise.09",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Okay, that was decent, don't let it go to your head"
+],
+[
+"signal_ack_defend.teammate.praise.10",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Right call, I'll admit it, just this once"
+],
+[
+"signal_ack_defend.teammate.praise.11",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Smart, I didn't think you had that in you"
+],
+[
+"signal_ack_defend.teammate.praise.12",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Somebody's been watching the replays, good"
+],
+[
+"signal_ack_defend.teammate.praise.13",
+"signal_ack_defend",
+"teammate",
+"praise",
+"That's the right shout, took you long enough"
+],
+[
+"signal_ack_defend.teammate.praise.14",
+"signal_ack_defend",
+"teammate",
+"praise",
+"Well, look at that, the rookie has instincts"
+],
+[
+"signal_ack_pass.teammate.complain.01",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Coming your way, damn, I hate this part"
+],
+[
+"signal_ack_pass.teammate.complain.02",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Fine, but if you trip, I'm filing that under tradition"
+],
+[
+"signal_ack_pass.teammate.complain.03",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Here, and spare me the stumbling this time"
+],
+[
+"signal_ack_pass.teammate.complain.04",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Here, try not to feed it straight to the boards"
+],
+[
+"signal_ack_pass.teammate.complain.05",
+"signal_ack_pass",
+"teammate",
+"complain",
+"I pass, you panic, and we call it teamwork"
+],
+[
+"signal_ack_pass.teammate.complain.06",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Passing again, I must enjoy disappointment"
+],
+[
+"signal_ack_pass.teammate.complain.07",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Passing it, and yes, I already regret it"
+],
+[
+"signal_ack_pass.teammate.complain.08",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Passing, because shouting at me is apparently the plan"
+],
+[
+"signal_ack_pass.teammate.complain.09",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Passing, though I know how this shift ends"
+],
+[
+"signal_ack_pass.teammate.complain.10",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Puck's yours, guess I'm the one doing the hoping"
+],
+[
+"signal_ack_pass.teammate.complain.11",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Sending it over, hope your stick shows up too"
+],
+[
+"signal_ack_pass.teammate.complain.12",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Sure, here, I'll hand you another chance to lose it"
+],
+[
+"signal_ack_pass.teammate.complain.13",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Sure, I'll pass, the ice is cold and so is my hope"
+],
+[
+"signal_ack_pass.teammate.complain.14",
+"signal_ack_pass",
+"teammate",
+"complain",
+"Ugh, fine, it's yours, break it gently"
+],
+[
+"signal_ack_pass.teammate.encourage.01",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Catch it this time, I'm not doing a second pass"
+],
+[
+"signal_ack_pass.teammate.encourage.02",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Coming your way, try looking at the puck"
+],
+[
+"signal_ack_pass.teammate.encourage.03",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Fine, puck's coming, try not to fumble it"
+],
+[
+"signal_ack_pass.teammate.encourage.04",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Heads up, you wanted it, now go earn it"
+],
+[
+"signal_ack_pass.teammate.encourage.05",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Here it comes, don't make me regret it"
+],
+[
+"signal_ack_pass.teammate.encourage.06",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Here you go, and shoot before the ice melts"
+],
+[
+"signal_ack_pass.teammate.encourage.07",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Open your stick, rookie, it's not a decoration"
+],
+[
+"signal_ack_pass.teammate.encourage.08",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Passing it, so don't skate into the boards again"
+],
+[
+"signal_ack_pass.teammate.encourage.09",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Passing now, so be somewhere useful"
+],
+[
+"signal_ack_pass.teammate.encourage.10",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Passing, so aim for the net, not the scenery"
+],
+[
+"signal_ack_pass.teammate.encourage.11",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Puck's on its way, move your skates for once"
+],
+[
+"signal_ack_pass.teammate.encourage.12",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Sending it, now skate like you meant to be there"
+],
+[
+"signal_ack_pass.teammate.encourage.13",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"Taking the risk on you, so make it worth the shift"
+],
+[
+"signal_ack_pass.teammate.encourage.14",
+"signal_ack_pass",
+"teammate",
+"encourage",
+"You called for it, so do something with it"
+],
+[
+"signal_ack_pass.teammate.praise.01",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Coming your way, that's the first good shout all night"
+],
+[
+"signal_ack_pass.teammate.praise.02",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Fine, you read that one right"
+],
+[
+"signal_ack_pass.teammate.praise.03",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Good call, that was almost smart"
+],
+[
+"signal_ack_pass.teammate.praise.04",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Here it comes, you've stopped skating in circles, nice"
+],
+[
+"signal_ack_pass.teammate.praise.05",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Here you go, you've been less awful lately"
+],
+[
+"signal_ack_pass.teammate.praise.06",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Huh, you were actually open, I'll allow it"
+],
+[
+"signal_ack_pass.teammate.praise.07",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Not bad, rookie, puck's yours"
+],
+[
+"signal_ack_pass.teammate.praise.08",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Okay, that shout was justified, don't let it go to your head"
+],
+[
+"signal_ack_pass.teammate.praise.09",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Passing it, you may be getting the hang of this"
+],
+[
+"signal_ack_pass.teammate.praise.10",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Passing, guess you do look up sometimes"
+],
+[
+"signal_ack_pass.teammate.praise.11",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Passing, you found the open ice, color me surprised"
+],
+[
+"signal_ack_pass.teammate.praise.12",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Passing, you've earned it, barely"
+],
+[
+"signal_ack_pass.teammate.praise.13",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Right place, right time, who would have guessed"
+],
+[
+"signal_ack_pass.teammate.praise.14",
+"signal_ack_pass",
+"teammate",
+"praise",
+"Sending it, your positioning has improved, shockingly"
+],
+[
+"signal_ack_space.teammate.complain.01",
+"signal_ack_space",
+"teammate",
+"complain",
+"Bad bounces, bad ice, and now you want me open"
+],
+[
+"signal_ack_space.teammate.complain.02",
+"signal_ack_space",
+"teammate",
+"complain",
+"Do I get a pass or just the exercise"
+],
+[
+"signal_ack_space.teammate.complain.03",
+"signal_ack_space",
+"teammate",
+"complain",
+"Every time you yell, I have to fix your mess"
+],
+[
+"signal_ack_space.teammate.complain.04",
+"signal_ack_space",
+"teammate",
+"complain",
+"Funny how space is only my job"
+],
+[
+"signal_ack_space.teammate.complain.05",
+"signal_ack_space",
+"teammate",
+"complain",
+"Great, another sprint for a pass that won't come"
+],
+[
+"signal_ack_space.teammate.complain.06",
+"signal_ack_space",
+"teammate",
+"complain",
+"I do all the running and you get the credit"
+],
+[
+"signal_ack_space.teammate.complain.07",
+"signal_ack_space",
+"teammate",
+"complain",
+"I'm out here wearing a groove for you, rookie"
+],
+[
+"signal_ack_space.teammate.complain.08",
+"signal_ack_space",
+"teammate",
+"complain",
+"I've skated this lane ten times, and not one pass"
+],
+[
+"signal_ack_space.teammate.complain.09",
+"signal_ack_space",
+"teammate",
+"complain",
+"Open ice, as if you'll find me with that aim"
+],
+[
+"signal_ack_space.teammate.complain.10",
+"signal_ack_space",
+"teammate",
+"complain",
+"Space, space, space, and nobody ever sends the puck"
+],
+[
+"signal_ack_space.teammate.complain.11",
+"signal_ack_space",
+"teammate",
+"complain",
+"Sure, shout space, then lose the puck anyway"
+],
+[
+"signal_ack_space.teammate.complain.12",
+"signal_ack_space",
+"teammate",
+"complain",
+"This ice is slush and I'm still the one hustling"
+],
+[
+"signal_ack_space.teammate.complain.13",
+"signal_ack_space",
+"teammate",
+"complain",
+"Your calling is louder than your passing, damn it"
+],
+[
+"signal_ack_space.teammate.encourage.01",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Don't just stand there, a pass is a free gift"
+],
+[
+"signal_ack_space.teammate.encourage.02",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Eyes up, stick down, and try not to miss me"
+],
+[
+"signal_ack_space.teammate.encourage.03",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Fine, I'm open, now do one thing right with it"
+],
+[
+"signal_ack_space.teammate.encourage.04",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Hit me in stride, not in the skates"
+],
+[
+"signal_ack_space.teammate.encourage.05",
+"signal_ack_space",
+"teammate",
+"encourage",
+"I moved, now you move the puck, simple as that"
+],
+[
+"signal_ack_space.teammate.encourage.06",
+"signal_ack_space",
+"teammate",
+"encourage",
+"I'm open, so try passing before you panic again"
+],
+[
+"signal_ack_space.teammate.encourage.07",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Look up, I'm right here and I'm not getting younger"
+],
+[
+"signal_ack_space.teammate.encourage.08",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Make the pass before the defender finds his legs"
+],
+[
+"signal_ack_space.teammate.encourage.09",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Open ice, rookie, now put the puck where I'm skating"
+],
+[
+"signal_ack_space.teammate.encourage.10",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Pass it clean this time, or don't bother calling"
+],
+[
+"signal_ack_space.teammate.encourage.11",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Quit admiring me and get the puck over here"
+],
+[
+"signal_ack_space.teammate.encourage.12",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Shouted for space, so use it, hotshot"
+],
+[
+"signal_ack_space.teammate.encourage.13",
+"signal_ack_space",
+"teammate",
+"encourage",
+"Space is made, so don't waste it like the last one"
+],
+[
+"signal_ack_space.teammate.encourage.14",
+"signal_ack_space",
+"teammate",
+"encourage",
+"You asked, I skated, now earn it"
+],
+[
+"signal_ack_space.teammate.praise.01",
+"signal_ack_space",
+"teammate",
+"praise",
+"Clean call, I might even keep skating for you"
+],
+[
+"signal_ack_space.teammate.praise.02",
+"signal_ack_space",
+"teammate",
+"praise",
+"Decent call, rookie, the old guys noticed"
+],
+[
+"signal_ack_space.teammate.praise.03",
+"signal_ack_space",
+"teammate",
+"praise",
+"Fine, I'll admit that was a good shout"
+],
+[
+"signal_ack_space.teammate.praise.04",
+"signal_ack_space",
+"teammate",
+"praise",
+"Huh, that was almost a smart call"
+],
+[
+"signal_ack_space.teammate.praise.05",
+"signal_ack_space",
+"teammate",
+"praise",
+"Not bad, you called for space and meant it"
+],
+[
+"signal_ack_space.teammate.praise.06",
+"signal_ack_space",
+"teammate",
+"praise",
+"Not terrible, and from me that's high praise"
+],
+[
+"signal_ack_space.teammate.praise.07",
+"signal_ack_space",
+"teammate",
+"praise",
+"Okay, that's the right read, don't let it go to your head"
+],
+[
+"signal_ack_space.teammate.praise.08",
+"signal_ack_space",
+"teammate",
+"praise",
+"Somebody's been watching film, nicely done"
+],
+[
+"signal_ack_space.teammate.praise.09",
+"signal_ack_space",
+"teammate",
+"praise",
+"Space well asked for, I'll give you that"
+],
+[
+"signal_ack_space.teammate.praise.10",
+"signal_ack_space",
+"teammate",
+"praise",
+"That's a usable instinct, keep it handy"
+],
+[
+"signal_ack_space.teammate.praise.11",
+"signal_ack_space",
+"teammate",
+"praise",
+"That's how it's done, try doing it twice"
+],
+[
+"signal_ack_space.teammate.praise.12",
+"signal_ack_space",
+"teammate",
+"praise",
+"Well, look who learned to read the ice"
+],
+[
+"signal_ack_space.teammate.praise.13",
+"signal_ack_space",
+"teammate",
+"praise",
+"You found the gap, I'm mildly impressed"
+],
+[
+"signal_ack_space.teammate.praise.14",
+"signal_ack_space",
+"teammate",
+"praise",
+"You spotted it before I did, don't tell anyone"
+],
+[
+"stall.opponent.bravado.01",
+"stall",
+"opponent",
+"bravado",
+"Any time you want to lose faster, go ahead"
+],
+[
+"stall.opponent.bravado.02",
+"stall",
+"opponent",
+"bravado",
+"Class is permanent, and you are plainly temporary"
+],
+[
+"stall.opponent.bravado.03",
+"stall",
+"opponent",
+"bravado",
+"Let the puck sit. We'll still take it from you"
+],
+[
+"stall.opponent.bravado.04",
+"stall",
+"opponent",
+"bravado",
+"My linemates play better asleep than you awake"
+],
+[
+"stall.opponent.bravado.05",
+"stall",
+"opponent",
+"bravado",
+"Take your time, our lead isn't going anywhere"
+],
+[
+"stall.opponent.bravado.06",
+"stall",
+"opponent",
+"bravado",
+"This is our rink, you're just in the shot"
+],
+[
+"stall.opponent.bravado.07",
+"stall",
+"opponent",
+"bravado",
+"Watch us wake up and finish this in ten seconds"
+],
+[
+"stall.opponent.bravado.08",
+"stall",
+"opponent",
+"bravado",
+"We could nap and still outplay you three to one"
+],
+[
+"stall.opponent.bravado.09",
+"stall",
+"opponent",
+"bravado",
+"We don't circle, we wait for you to blink"
+],
+[
+"stall.opponent.bravado.10",
+"stall",
+"opponent",
+"bravado",
+"We're patient because we know how this ends"
+],
+[
+"stall.opponent.bravado.11",
+"stall",
+"opponent",
+"bravado",
+"We've already won this shift, you're just standing in it"
+],
+[
+"stall.opponent.bravado.12",
+"stall",
+"opponent",
+"bravado",
+"You stall, we score. It's a simple game"
+],
+[
+"stall.opponent.bravado.13",
+"stall",
+"opponent",
+"bravado",
+"Your whole line is a warm-up for ours"
+],
+[
+"stall.opponent.complain.01",
+"stall",
+"opponent",
+"complain",
+"Another dull stretch, and I know whose fault it is"
+],
+[
+"stall.opponent.complain.02",
+"stall",
+"opponent",
+"complain",
+"Do something, anything, I'm bored of my own skates"
+],
+[
+"stall.opponent.complain.03",
+"stall",
+"opponent",
+"complain",
+"Every time I get set, you drift off somewhere"
+],
+[
+"stall.opponent.complain.04",
+"stall",
+"opponent",
+"complain",
+"Hard to hustle when nobody else is even trying"
+],
+[
+"stall.opponent.complain.05",
+"stall",
+"opponent",
+"complain",
+"I didn't come out here to watch you wander"
+],
+[
+"stall.opponent.complain.06",
+"stall",
+"opponent",
+"complain",
+"I've skated more laps than plays in this stretch"
+],
+[
+"stall.opponent.complain.07",
+"stall",
+"opponent",
+"complain",
+"Nothing bounces right on this sheet, nothing at all"
+],
+[
+"stall.opponent.complain.08",
+"stall",
+"opponent",
+"complain",
+"Somebody touch the puck, I'm aging out here"
+],
+[
+"stall.opponent.complain.09",
+"stall",
+"opponent",
+"complain",
+"The puck stuck again. Great. Just great"
+],
+[
+"stall.opponent.complain.10",
+"stall",
+"opponent",
+"complain",
+"This shift is dragging and you're the anchor"
+],
+[
+"stall.opponent.complain.11",
+"stall",
+"opponent",
+"complain",
+"Tired of circling around a player who won't commit"
+],
+[
+"stall.opponent.complain.12",
+"stall",
+"opponent",
+"complain",
+"Why is the puck always hiding in that corner?"
+],
+[
+"stall.opponent.complain.13",
+"stall",
+"opponent",
+"complain",
+"Worst pace I've seen, and I've seen rough ones"
+],
+[
+"stall.opponent.mock.01",
+"stall",
+"opponent",
+"mock",
+"Ah, the famous patient wait for a mistake. Yours"
+],
+[
+"stall.opponent.mock.02",
+"stall",
+"opponent",
+"mock",
+"Brave stuff, standing near the puck and fearing it"
+],
+[
+"stall.opponent.mock.03",
+"stall",
+"opponent",
+"mock",
+"Circling again? Bold choice for a man with a stick"
+],
+[
+"stall.opponent.mock.04",
+"stall",
+"opponent",
+"mock",
+"Don't rush, the scoreboard loves a long dull shift"
+],
+[
+"stall.opponent.mock.05",
+"stall",
+"opponent",
+"mock",
+"Fast skater, shame it's in no direction at all"
+],
+[
+"stall.opponent.mock.06",
+"stall",
+"opponent",
+"mock",
+"I'd cheer, but you haven't done anything yet"
+],
+[
+"stall.opponent.mock.07",
+"stall",
+"opponent",
+"mock",
+"Is this a strategy or are you just lost?"
+],
+[
+"stall.opponent.mock.08",
+"stall",
+"opponent",
+"mock",
+"Keep gliding, maybe the puck will apologize first"
+],
+[
+"stall.opponent.mock.09",
+"stall",
+"opponent",
+"mock",
+"Nice loop. Do it again, I'm almost impressed"
+],
+[
+"stall.opponent.mock.10",
+"stall",
+"opponent",
+"mock",
+"Take your time, the puck isn't going anywhere either"
+],
+[
+"stall.opponent.mock.11",
+"stall",
+"opponent",
+"mock",
+"That corner has seen more action than your stick"
+],
+[
+"stall.opponent.mock.12",
+"stall",
+"opponent",
+"mock",
+"Wow, a corner. Nobody has ever thought of that"
+],
+[
+"stall.opponent.mock.13",
+"stall",
+"opponent",
+"mock",
+"You could touch the puck, it's allowed"
+],
+[
+"stall.opponent.mock.14",
+"stall",
+"opponent",
+"mock",
+"Your plan is working, nothing is happening at all"
+],
+[
+"stall.opponent.savage.01",
+"stall",
+"opponent",
+"savage",
+"Come get it. Oh right, you can't"
+],
+[
+"stall.opponent.savage.02",
+"stall",
+"opponent",
+"savage",
+"Crap skating, crap nerve, and the puck knows it"
+],
+[
+"stall.opponent.savage.03",
+"stall",
+"opponent",
+"savage",
+"Damn, I've seen statues forecheck harder than you"
+],
+[
+"stall.opponent.savage.04",
+"stall",
+"opponent",
+"savage",
+"Go on, hit me. I'll wait until you find the nerve"
+],
+[
+"stall.opponent.savage.05",
+"stall",
+"opponent",
+"savage",
+"Hell, even the corner wants you to leave"
+],
+[
+"stall.opponent.savage.06",
+"stall",
+"opponent",
+"savage",
+"I could kick your ass from the other end of the ice"
+],
+[
+"stall.opponent.savage.07",
+"stall",
+"opponent",
+"savage",
+"Keep circling, it's the only thing you finish"
+],
+[
+"stall.opponent.savage.08",
+"stall",
+"opponent",
+"savage",
+"Stand there, I'll take the puck and your dignity"
+],
+[
+"stall.opponent.savage.09",
+"stall",
+"opponent",
+"savage",
+"The boards have more offense than you do"
+],
+[
+"stall.opponent.savage.10",
+"stall",
+"opponent",
+"savage",
+"Waiting for your courage? It's still in the locker room"
+],
+[
+"stall.opponent.savage.11",
+"stall",
+"opponent",
+"savage",
+"You skate like a lost shopping cart with a stick"
+],
+[
+"stall.opponent.savage.12",
+"stall",
+"opponent",
+"savage",
+"You're so scared of the puck it's starting to notice"
+],
+[
+"stall.opponent.savage.13",
+"stall",
+"opponent",
+"savage",
+"You're the reason this shift needs a line change"
+],
+[
+"stall.opponent.savage.14",
+"stall",
+"opponent",
+"savage",
+"Your whole game fits inside that one lonely corner"
+],
+[
+"stall.teammate.complain.01",
+"stall",
+"teammate",
+"complain",
+"Bounces like that only happen when you're involved"
+],
+[
+"stall.teammate.complain.02",
+"stall",
+"teammate",
+"complain",
+"Damn, even the puck gave up and went to sleep"
+],
+[
+"stall.teammate.complain.03",
+"stall",
+"teammate",
+"complain",
+"Every shift with you is a long, quiet wait"
+],
+[
+"stall.teammate.complain.04",
+"stall",
+"teammate",
+"complain",
+"Everyone's circling like it's a warm-up nobody wanted"
+],
+[
+"stall.teammate.complain.05",
+"stall",
+"teammate",
+"complain",
+"Great, another shift where nothing happens"
+],
+[
+"stall.teammate.complain.06",
+"stall",
+"teammate",
+"complain",
+"I carried this team all night and you carried the water"
+],
+[
+"stall.teammate.complain.07",
+"stall",
+"teammate",
+"complain",
+"I've waited for a play longer than a full intermission"
+],
+[
+"stall.teammate.complain.08",
+"stall",
+"teammate",
+"complain",
+"Nobody wants the puck, and honestly I get it"
+],
+[
+"stall.teammate.complain.09",
+"stall",
+"teammate",
+"complain",
+"Stuck in the corner again, like the rest of this match"
+],
+[
+"stall.teammate.complain.10",
+"stall",
+"teammate",
+"complain",
+"The posts have done more work than you this shift"
+],
+[
+"stall.teammate.complain.11",
+"stall",
+"teammate",
+"complain",
+"This corner has seen more action than your stick"
+],
+[
+"stall.teammate.complain.12",
+"stall",
+"teammate",
+"complain",
+"This ice is slow, but you're somehow slower"
+],
+[
+"stall.teammate.complain.13",
+"stall",
+"teammate",
+"complain",
+"Tired of watching you skate in perfect circles"
+],
+[
+"stall.teammate.complain.14",
+"stall",
+"teammate",
+"complain",
+"Twenty seconds of skating and not one useful thing"
+],
+[
+"stall.teammate.encourage.01",
+"stall",
+"teammate",
+"encourage",
+"Body check someone, it's the one thing that's free"
+],
+[
+"stall.teammate.encourage.02",
+"stall",
+"teammate",
+"encourage",
+"Go get the puck, it's not going to bite you"
+],
+[
+"stall.teammate.encourage.03",
+"stall",
+"teammate",
+"encourage",
+"Hit somebody, the boards are getting lonely"
+],
+[
+"stall.teammate.encourage.04",
+"stall",
+"teammate",
+"encourage",
+"Less thinking, more skating, you're bad at the first one"
+],
+[
+"stall.teammate.encourage.05",
+"stall",
+"teammate",
+"encourage",
+"Nobody scores from the bench, and you're close to it"
+],
+[
+"stall.teammate.encourage.06",
+"stall",
+"teammate",
+"encourage",
+"Pick a direction and commit, even a wrong one helps"
+],
+[
+"stall.teammate.encourage.07",
+"stall",
+"teammate",
+"encourage",
+"Shoot something, anything, I'll even clap"
+],
+[
+"stall.teammate.encourage.08",
+"stall",
+"teammate",
+"encourage",
+"Skate somewhere, anywhere, I'm not picky"
+],
+[
+"stall.teammate.encourage.09",
+"stall",
+"teammate",
+"encourage",
+"Stop admiring the ice and move your skates"
+],
+[
+"stall.teammate.encourage.10",
+"stall",
+"teammate",
+"encourage",
+"Take the corner, rookie, it's just a puck in a corner"
+],
+[
+"stall.teammate.encourage.11",
+"stall",
+"teammate",
+"encourage",
+"Wake up, the bench is watching and it's not impressed"
+],
+[
+"stall.teammate.encourage.12",
+"stall",
+"teammate",
+"encourage",
+"We're circling like a bad warm-up drill, break it up"
+],
+[
+"stall.teammate.encourage.13",
+"stall",
+"teammate",
+"encourage",
+"You wanted ice time, so use some of it"
+],
+[
+"stall.teammate.praise.01",
+"stall",
+"teammate",
+"praise",
+"Alright, you earned a nod, just the one"
+],
+[
+"stall.teammate.praise.02",
+"stall",
+"teammate",
+"praise",
+"Even I'd have kept that one, and I'm picky"
+],
+[
+"stall.teammate.praise.03",
+"stall",
+"teammate",
+"praise",
+"Fair enough, that one belongs on the first line"
+],
+[
+"stall.teammate.praise.04",
+"stall",
+"teammate",
+"praise",
+"Fine, that one counts, don't let it go to your head"
+],
+[
+"stall.teammate.praise.05",
+"stall",
+"teammate",
+"praise",
+"Huh, that was almost competent"
+],
+[
+"stall.teammate.praise.06",
+"stall",
+"teammate",
+"praise",
+"I've seen worse, and today I'm saying it kindly"
+],
+[
+"stall.teammate.praise.07",
+"stall",
+"teammate",
+"praise",
+"Keep that up and I'll stop sighing at you"
+],
+[
+"stall.teammate.praise.08",
+"stall",
+"teammate",
+"praise",
+"Nice hands, who knew you came with a pair"
+],
+[
+"stall.teammate.praise.09",
+"stall",
+"teammate",
+"praise",
+"Not bad, I may have blinked and missed the luck"
+],
+[
+"stall.teammate.praise.10",
+"stall",
+"teammate",
+"praise",
+"Okay, rookie, that was clean, don't ruin it"
+],
+[
+"stall.teammate.praise.11",
+"stall",
+"teammate",
+"praise",
+"That was a real play, I'm as shocked as you are"
+],
+[
+"stall.teammate.praise.12",
+"stall",
+"teammate",
+"praise",
+"That's the first smart thing you've done all shift"
+],
+[
+"stall.teammate.praise.13",
+"stall",
+"teammate",
+"praise",
+"Took you long enough, but it was decent"
+],
+[
+"stall.teammate.praise.14",
+"stall",
+"teammate",
+"praise",
+"Well, look who found the puck"
+],
+[
+"steal.opponent.bravado.01",
+"steal",
+"opponent",
+"bravado",
+"Class is in session, and you're late again"
+],
+[
+"steal.opponent.bravado.02",
+"steal",
+"opponent",
+"bravado",
+"Enjoy the view from behind us, it never changes"
+],
+[
+"steal.opponent.bravado.03",
+"steal",
+"opponent",
+"bravado",
+"I could do that blindfolded and still beat you"
+],
+[
+"steal.opponent.bravado.04",
+"steal",
+"opponent",
+"bravado",
+"Pucks come to us, they run away from you"
+],
+[
+"steal.opponent.bravado.05",
+"steal",
+"opponent",
+"bravado",
+"That's what a real line does with a loose puck"
+],
+[
+"steal.opponent.bravado.06",
+"steal",
+"opponent",
+"bravado",
+"The scoreboard knows who owns this ice"
+],
+[
+"steal.opponent.bravado.07",
+"steal",
+"opponent",
+"bravado",
+"Try to keep up, it'll be educational"
+],
+[
+"steal.opponent.bravado.08",
+"steal",
+"opponent",
+"bravado",
+"We don't chase pucks, they find us"
+],
+[
+"steal.opponent.bravado.09",
+"steal",
+"opponent",
+"bravado",
+"We make this look easy because it is"
+],
+[
+"steal.opponent.bravado.10",
+"steal",
+"opponent",
+"bravado",
+"We take it, we keep it, you watch"
+],
+[
+"steal.opponent.bravado.11",
+"steal",
+"opponent",
+"bravado",
+"Your best shift is our warm-up"
+],
+[
+"steal.opponent.bravado.12",
+"steal",
+"opponent",
+"bravado",
+"Your line is the practice squad. Ours is the real thing"
+],
+[
+"steal.opponent.complain.01",
+"steal",
+"opponent",
+"complain",
+"Another scrappy shift, another puck rolling away"
+],
+[
+"steal.opponent.complain.02",
+"steal",
+"opponent",
+"complain",
+"Can we get one clean bounce before the buzzer?"
+],
+[
+"steal.opponent.complain.03",
+"steal",
+"opponent",
+"complain",
+"Cover the lane next time, you let that slide by"
+],
+[
+"steal.opponent.complain.04",
+"steal",
+"opponent",
+"complain",
+"Every bounce lately goes the wrong way, tired of it"
+],
+[
+"steal.opponent.complain.05",
+"steal",
+"opponent",
+"complain",
+"Hell of a time for the ice to go soft"
+],
+[
+"steal.opponent.complain.06",
+"steal",
+"opponent",
+"complain",
+"I called for it, but sure, ignore me"
+],
+[
+"steal.opponent.complain.07",
+"steal",
+"opponent",
+"complain",
+"I'm too old to chase loose pucks like these"
+],
+[
+"steal.opponent.complain.08",
+"steal",
+"opponent",
+"complain",
+"Nobody on this line reads a play anymore"
+],
+[
+"steal.opponent.complain.09",
+"steal",
+"opponent",
+"complain",
+"Of course the puck bounced there, it hates us"
+],
+[
+"steal.opponent.complain.10",
+"steal",
+"opponent",
+"complain",
+"That rebound off the boards was pure spite"
+],
+[
+"steal.opponent.complain.11",
+"steal",
+"opponent",
+"complain",
+"This ice is garbage, and so is that last pass"
+],
+[
+"steal.opponent.complain.12",
+"steal",
+"opponent",
+"complain",
+"Whoever laid that ice should have to skate on it"
+],
+[
+"steal.opponent.complain.13",
+"steal",
+"opponent",
+"complain",
+"Why does the puck always find the human first?"
+],
+[
+"steal.opponent.complain.14",
+"steal",
+"opponent",
+"complain",
+"You turned a simple play into a headache"
+],
+[
+"steal.opponent.mock.01",
+"steal",
+"opponent",
+"mock",
+"Bold strategy, handing it over before we asked"
+],
+[
+"steal.opponent.mock.02",
+"steal",
+"opponent",
+"mock",
+"Careful, you almost kept it for a full second"
+],
+[
+"steal.opponent.mock.03",
+"steal",
+"opponent",
+"mock",
+"I almost felt bad. Almost"
+],
+[
+"steal.opponent.mock.04",
+"steal",
+"opponent",
+"mock",
+"Nice touch, if the goal was to give it away"
+],
+[
+"steal.opponent.mock.05",
+"steal",
+"opponent",
+"mock",
+"Oh, you wanted that? Should have said something"
+],
+[
+"steal.opponent.mock.06",
+"steal",
+"opponent",
+"mock",
+"Slow as a line change with a broken bench door"
+],
+[
+"steal.opponent.mock.07",
+"steal",
+"opponent",
+"mock",
+"Stickhandling, or an interpretive dance about losing?"
+],
+[
+"steal.opponent.mock.08",
+"steal",
+"opponent",
+"mock",
+"Take the puck back? Sure, when you learn to carry it"
+],
+[
+"steal.opponent.mock.09",
+"steal",
+"opponent",
+"mock",
+"That turn took longer than most intermissions"
+],
+[
+"steal.opponent.mock.10",
+"steal",
+"opponent",
+"mock",
+"Was that a pass, or did you just lose the puck politely?"
+],
+[
+"steal.opponent.mock.11",
+"steal",
+"opponent",
+"mock",
+"You saw me coming and still chose that. Fascinating"
+],
+[
+"steal.opponent.mock.12",
+"steal",
+"opponent",
+"mock",
+"You skate like the plan is to be a spectator"
+],
+[
+"steal.opponent.mock.13",
+"steal",
+"opponent",
+"mock",
+"Your backcheck arrives right after the buzzer"
+],
+[
+"steal.opponent.savage.01",
+"steal",
+"opponent",
+"savage",
+"Damn, I thought you were fighting for it"
+],
+[
+"steal.opponent.savage.02",
+"steal",
+"opponent",
+"savage",
+"Even the posts are embarrassed to stand near you"
+],
+[
+"steal.opponent.savage.03",
+"steal",
+"opponent",
+"savage",
+"Every touch you take is a gift to my line"
+],
+[
+"steal.opponent.savage.04",
+"steal",
+"opponent",
+"savage",
+"Hell, I barely had to move, you just handed it over"
+],
+[
+"steal.opponent.savage.05",
+"steal",
+"opponent",
+"savage",
+"I'd feel sorry for you, but you keep doing it"
+],
+[
+"steal.opponent.savage.06",
+"steal",
+"opponent",
+"savage",
+"I've taken pucks from statues with more resistance"
+],
+[
+"steal.opponent.savage.07",
+"steal",
+"opponent",
+"savage",
+"Keep skating in circles, it's the only thing you finish"
+],
+[
+"steal.opponent.savage.08",
+"steal",
+"opponent",
+"savage",
+"Kick your ass? You'd have to show up first"
+],
+[
+"steal.opponent.savage.09",
+"steal",
+"opponent",
+"savage",
+"That was less a turnover, more a donation"
+],
+[
+"steal.opponent.savage.10",
+"steal",
+"opponent",
+"savage",
+"You couldn't hold that puck with glue and a prayer"
+],
+[
+"steal.opponent.savage.11",
+"steal",
+"opponent",
+"savage",
+"You got robbed by your own stick, and I just watched"
+],
+[
+"steal.opponent.savage.12",
+"steal",
+"opponent",
+"savage",
+"You lose pucks like it's your whole career"
+],
+[
+"steal.opponent.savage.13",
+"steal",
+"opponent",
+"savage",
+"Your whole game is a turnover and I'm the forecheck"
+],
+[
+"steal.teammate.complain.01",
+"steal",
+"teammate",
+"complain",
+"Another turnover, another long skate for the rest of us"
+],
+[
+"steal.teammate.complain.02",
+"steal",
+"teammate",
+"complain",
+"Damn, it was right on your stick and you still missed"
+],
+[
+"steal.teammate.complain.03",
+"steal",
+"teammate",
+"complain",
+"Every shift the same, I carry you and you drop it"
+],
+[
+"steal.teammate.complain.04",
+"steal",
+"teammate",
+"complain",
+"Great, now I'm the one skating back again"
+],
+[
+"steal.teammate.complain.05",
+"steal",
+"teammate",
+"complain",
+"Hell of a giveaway, I almost admired the commitment"
+],
+[
+"steal.teammate.complain.06",
+"steal",
+"teammate",
+"complain",
+"I'd blame the ice, but you did that one yourself"
+],
+[
+"steal.teammate.complain.07",
+"steal",
+"teammate",
+"complain",
+"I've seen better puck control from a broken stick"
+],
+[
+"steal.teammate.complain.08",
+"steal",
+"teammate",
+"complain",
+"Nice carry, shame it ended at their stick"
+],
+[
+"steal.teammate.complain.09",
+"steal",
+"teammate",
+"complain",
+"Of course you lost it, the ice looked too easy"
+],
+[
+"steal.teammate.complain.10",
+"steal",
+"teammate",
+"complain",
+"That bounce was bad, but your stick was worse"
+],
+[
+"steal.teammate.complain.11",
+"steal",
+"teammate",
+"complain",
+"That puck was safer in my hands, wasn't it"
+],
+[
+"steal.teammate.complain.12",
+"steal",
+"teammate",
+"complain",
+"The puck bounced wrong, and you bounced right along with it"
+],
+[
+"steal.teammate.complain.13",
+"steal",
+"teammate",
+"complain",
+"Tired of watching you donate pucks to the other side"
+],
+[
+"steal.teammate.complain.14",
+"steal",
+"teammate",
+"complain",
+"Wonderful, you handed it over with a bow on it"
+],
+[
+"steal.teammate.encourage.01",
+"steal",
+"teammate",
+"encourage",
+"Don't hug it, just pass it or shoot it"
+],
+[
+"steal.teammate.encourage.02",
+"steal",
+"teammate",
+"encourage",
+"Don't stand there admiring it, go take it back"
+],
+[
+"steal.teammate.encourage.03",
+"steal",
+"teammate",
+"encourage",
+"Fast, rookie, faster than whatever that was"
+],
+[
+"steal.teammate.encourage.04",
+"steal",
+"teammate",
+"encourage",
+"Forget the apology and get back on defense"
+],
+[
+"steal.teammate.encourage.05",
+"steal",
+"teammate",
+"encourage",
+"Get it back, rookie, nobody's going to ask twice"
+],
+[
+"steal.teammate.encourage.06",
+"steal",
+"teammate",
+"encourage",
+"Good, you've got it, now do something with it"
+],
+[
+"steal.teammate.encourage.07",
+"steal",
+"teammate",
+"encourage",
+"Hands up, head up, and chase that puck down"
+],
+[
+"steal.teammate.encourage.08",
+"steal",
+"teammate",
+"encourage",
+"Hit him now, while he still thinks he's clever"
+],
+[
+"steal.teammate.encourage.09",
+"steal",
+"teammate",
+"encourage",
+"Move your skates, the puck won't wait for you"
+],
+[
+"steal.teammate.encourage.10",
+"steal",
+"teammate",
+"encourage",
+"Next time protect the puck like it matters"
+],
+[
+"steal.teammate.encourage.11",
+"steal",
+"teammate",
+"encourage",
+"Quit sulking and make him regret that pass"
+],
+[
+"steal.teammate.encourage.12",
+"steal",
+"teammate",
+"encourage",
+"Skate through him if you have to, the boards can wait"
+],
+[
+"steal.teammate.encourage.13",
+"steal",
+"teammate",
+"encourage",
+"Stick on the ice, rookie, it's not a decoration"
+],
+[
+"steal.teammate.encourage.14",
+"steal",
+"teammate",
+"encourage",
+"You gave it away, so go and earn it back"
+],
+[
+"steal.teammate.praise.01",
+"steal",
+"teammate",
+"praise",
+"Fine, that was a decent steal"
+],
+[
+"steal.teammate.praise.02",
+"steal",
+"teammate",
+"praise",
+"Good pickup, don't let it go to your head"
+],
+[
+"steal.teammate.praise.03",
+"steal",
+"teammate",
+"praise",
+"Huh, you actually took it clean"
+],
+[
+"steal.teammate.praise.04",
+"steal",
+"teammate",
+"praise",
+"I've seen worse hands on better players"
+],
+[
+"steal.teammate.praise.05",
+"steal",
+"teammate",
+"praise",
+"Keep that up and I might stop watching you"
+],
+[
+"steal.teammate.praise.06",
+"steal",
+"teammate",
+"praise",
+"Nice stick work, I'd say it twice but I won't"
+],
+[
+"steal.teammate.praise.07",
+"steal",
+"teammate",
+"praise",
+"Not bad, rookie, that almost looked planned"
+],
+[
+"steal.teammate.praise.08",
+"steal",
+"teammate",
+"praise",
+"Not terrible, and from you that's a medal"
+],
+[
+"steal.teammate.praise.09",
+"steal",
+"teammate",
+"praise",
+"Okay, that one I won't complain about"
+],
+[
+"steal.teammate.praise.10",
+"steal",
+"teammate",
+"praise",
+"That check was clean, I'll allow it"
+],
+[
+"steal.teammate.praise.11",
+"steal",
+"teammate",
+"praise",
+"That was almost professional, almost"
+],
+[
+"steal.teammate.praise.12",
+"steal",
+"teammate",
+"praise",
+"Well, look at that, the toy figure can skate"
+],
+[
+"steal.teammate.praise.13",
+"steal",
+"teammate",
+"praise",
+"You held on to it, I'm mildly shocked"
+],
+[
+"steal.teammate.praise.14",
+"steal",
+"teammate",
+"praise",
+"You took it back and nobody had to ask"
+],
+[
+"win.opponent.bravado.01",
+"win",
+"opponent",
+"bravado",
+"Call it a fluke, because my line already does"
+],
+[
+"win.opponent.bravado.02",
+"win",
+"opponent",
+"bravado",
+"Don't confuse a scoreboard with talent, rookie"
+],
+[
+"win.opponent.bravado.03",
+"win",
+"opponent",
+"bravado",
+"Don't get comfortable, my line has plenty of ice left"
+],
+[
+"win.opponent.bravado.04",
+"win",
+"opponent",
+"bravado",
+"Enjoy the trophy moment, we'll be back for the next match"
+],
+[
+"win.opponent.bravado.05",
+"win",
+"opponent",
+"bravado",
+"Enjoy the win, my line will remember it for you"
+],
+[
+"win.opponent.bravado.06",
+"win",
+"opponent",
+"bravado",
+"Hold that scoreboard tight, it won't be yours long"
+],
+[
+"win.opponent.bravado.07",
+"win",
+"opponent",
+"bravado",
+"My line could beat you with our sticks tied together"
+],
+[
+"win.opponent.bravado.08",
+"win",
+"opponent",
+"bravado",
+"Next match, we skate through you like open ice"
+],
+[
+"win.opponent.bravado.09",
+"win",
+"opponent",
+"bravado",
+"One win doesn't make you a veteran, it makes you lucky"
+],
+[
+"win.opponent.bravado.10",
+"win",
+"opponent",
+"bravado",
+"One win, and you act like it was earned"
+],
+[
+"win.opponent.bravado.11",
+"win",
+"opponent",
+"bravado",
+"Our worst night beats your best on any ice"
+],
+[
+"win.opponent.bravado.12",
+"win",
+"opponent",
+"bravado",
+"Rookies win a match, veterans win the season"
+],
+[
+"win.opponent.bravado.13",
+"win",
+"opponent",
+"bravado",
+"That was our mercy match, don't expect a rematch"
+],
+[
+"win.opponent.bravado.14",
+"win",
+"opponent",
+"bravado",
+"This win doesn't change who owns the ice"
+],
+[
+"win.opponent.bravado.15",
+"win",
+"opponent",
+"bravado",
+"We lose one and still skate circles around you"
+],
+[
+"win.opponent.bravado.16",
+"win",
+"opponent",
+"bravado",
+"We lost the score, not the standing"
+],
+[
+"win.opponent.bravado.17",
+"win",
+"opponent",
+"bravado",
+"We were warming up, you just didn't notice"
+],
+[
+"win.opponent.bravado.18",
+"win",
+"opponent",
+"bravado",
+"You beat us once, we'll beat you every time after"
+],
+[
+"win.opponent.bravado.19",
+"win",
+"opponent",
+"bravado",
+"You celebrate, we study, and next time we win"
+],
+[
+"win.opponent.bravado.20",
+"win",
+"opponent",
+"bravado",
+"Your line got lucky, ours gets results"
+],
+[
+"win.opponent.complain.01",
+"win",
+"opponent",
+"complain",
+"Another match ruined by a lucky deflection"
+],
+[
+"win.opponent.complain.02",
+"win",
+"opponent",
+"complain",
+"Every rebound landed on your side, every single one"
+],
+[
+"win.opponent.complain.03",
+"win",
+"opponent",
+"complain",
+"Every rebound went their way, every single one"
+],
+[
+"win.opponent.complain.04",
+"win",
+"opponent",
+"complain",
+"Forty shots of effort and the post still said no"
+],
+[
+"win.opponent.complain.05",
+"win",
+"opponent",
+"complain",
+"I passed perfectly and my line forgot how to finish"
+],
+[
+"win.opponent.complain.06",
+"win",
+"opponent",
+"complain",
+"I'll be thinking about that last miss until next match"
+],
+[
+"win.opponent.complain.07",
+"win",
+"opponent",
+"complain",
+"I'm done with these bounces, they never bounce for me"
+],
+[
+"win.opponent.complain.08",
+"win",
+"opponent",
+"complain",
+"I'm tired of losing to guys who can't aim"
+],
+[
+"win.opponent.complain.09",
+"win",
+"opponent",
+"complain",
+"My stick feels cursed after that mess"
+],
+[
+"win.opponent.complain.10",
+"win",
+"opponent",
+"complain",
+"My stick felt like wet cardboard all night"
+],
+[
+"win.opponent.complain.11",
+"win",
+"opponent",
+"complain",
+"That last puck had no business going in"
+],
+[
+"win.opponent.complain.12",
+"win",
+"opponent",
+"complain",
+"The one skater who can't aim, and he wins anyway"
+],
+[
+"win.opponent.complain.13",
+"win",
+"opponent",
+"complain",
+"The puck keeps picking favorites, and it's never us"
+],
+[
+"win.opponent.complain.14",
+"win",
+"opponent",
+"complain",
+"This ice has hated me since the first face-off"
+],
+[
+"win.opponent.complain.15",
+"win",
+"opponent",
+"complain",
+"Three bad bounces in a row, that's not luck, that's spite"
+],
+[
+"win.opponent.complain.16",
+"win",
+"opponent",
+"complain",
+"Unreal, the ice gave you every bounce tonight"
+],
+[
+"win.opponent.complain.17",
+"win",
+"opponent",
+"complain",
+"Unreal, we outplayed them and still lose to this"
+],
+[
+"win.opponent.complain.18",
+"win",
+"opponent",
+"complain",
+"We deserved that one, and the scoreboard disagrees"
+],
+[
+"win.opponent.complain.19",
+"win",
+"opponent",
+"complain",
+"We did everything right and the scoreboard disagrees"
+],
+[
+"win.opponent.complain.20",
+"win",
+"opponent",
+"complain",
+"We played the better game and still got robbed"
+],
+[
+"win.opponent.mock.01",
+"win",
+"opponent",
+"mock",
+"Careful, a win like that might go to your head"
+],
+[
+"win.opponent.mock.02",
+"win",
+"opponent",
+"mock",
+"Congratulations, you won by accident again"
+],
+[
+"win.opponent.mock.03",
+"win",
+"opponent",
+"mock",
+"Do you always celebrate before you touch the puck?"
+],
+[
+"win.opponent.mock.04",
+"win",
+"opponent",
+"mock",
+"Even a broken clock scores twice a day, and you scored once"
+],
+[
+"win.opponent.mock.05",
+"win",
+"opponent",
+"mock",
+"Fine, take the win, the puck probably felt sorry for you"
+],
+[
+"win.opponent.mock.06",
+"win",
+"opponent",
+"mock",
+"Good game, I mean that about everyone but you"
+],
+[
+"win.opponent.mock.07",
+"win",
+"opponent",
+"mock",
+"Great match, shame none of it was on purpose"
+],
+[
+"win.opponent.mock.08",
+"win",
+"opponent",
+"mock",
+"I'd clap, but the boards already did it for me"
+],
+[
+"win.opponent.mock.09",
+"win",
+"opponent",
+"mock",
+"Lovely win, the net was just standing there"
+],
+[
+"win.opponent.mock.10",
+"win",
+"opponent",
+"mock",
+"Nice trophy run, you only fell over four times"
+],
+[
+"win.opponent.mock.11",
+"win",
+"opponent",
+"mock",
+"Slow, scared, and somehow ahead, quite the combination"
+],
+[
+"win.opponent.mock.12",
+"win",
+"opponent",
+"mock",
+"Take that win home and ask your teammates how it happened"
+],
+[
+"win.opponent.mock.13",
+"win",
+"opponent",
+"mock",
+"That was a comeback? Your team did the work, you watched"
+],
+[
+"win.opponent.mock.14",
+"win",
+"opponent",
+"mock",
+"That was a win? I blinked and missed the effort"
+],
+[
+"win.opponent.mock.15",
+"win",
+"opponent",
+"mock",
+"Well, even a broken clock scores once in a while"
+],
+[
+"win.opponent.mock.16",
+"win",
+"opponent",
+"mock",
+"You found the net once, I assume it was a typo"
+],
+[
+"win.opponent.mock.17",
+"win",
+"opponent",
+"mock",
+"You skated in circles and the puck felt sorry for you"
+],
+[
+"win.opponent.mock.18",
+"win",
+"opponent",
+"mock",
+"You skated like a rumor and still got the win"
+],
+[
+"win.opponent.mock.19",
+"win",
+"opponent",
+"mock",
+"You won the way a lost puck finds the net"
+],
+[
+"win.opponent.mock.20",
+"win",
+"opponent",
+"mock",
+"Your aim was awful, luckily so was the rest of the ice"
+],
+[
+"win.opponent.savage.01",
+"win",
+"opponent",
+"savage",
+"Crap, did you even know where the net was?"
+],
+[
+"win.opponent.savage.02",
+"win",
+"opponent",
+"savage",
+"Damn, I've seen cones with more nerve than you"
+],
+[
+"win.opponent.savage.03",
+"win",
+"opponent",
+"savage",
+"Enjoy it, rookie, it's the only scoreboard you'll ever lead"
+],
+[
+"win.opponent.savage.04",
+"win",
+"opponent",
+"savage",
+"Enjoy it, rookie, it's the only win you'll steal this week"
+],
+[
+"win.opponent.savage.05",
+"win",
+"opponent",
+"savage",
+"Every pass you made was a prayer, and a bad one"
+],
+[
+"win.opponent.savage.06",
+"win",
+"opponent",
+"savage",
+"Every time you touched the puck, it begged to leave"
+],
+[
+"win.opponent.savage.07",
+"win",
+"opponent",
+"savage",
+"I've scraped better plays off my skate blades"
+],
+[
+"win.opponent.savage.08",
+"win",
+"opponent",
+"savage",
+"Savor it, because that was pure charity on our part"
+],
+[
+"win.opponent.savage.09",
+"win",
+"opponent",
+"savage",
+"Take the win, it's the only thing you took all night"
+],
+[
+"win.opponent.savage.10",
+"win",
+"opponent",
+"savage",
+"That win has your name on it, and everyone else's work"
+],
+[
+"win.opponent.savage.11",
+"win",
+"opponent",
+"savage",
+"Three of us lost to two skaters and one decoration"
+],
+[
+"win.opponent.savage.12",
+"win",
+"opponent",
+"savage",
+"You couldn't hit a net if it body checked you"
+],
+[
+"win.opponent.savage.13",
+"win",
+"opponent",
+"savage",
+"You didn't win, your teammates carried you like luggage"
+],
+[
+"win.opponent.savage.14",
+"win",
+"opponent",
+"savage",
+"You hide behind your line like a puck behind the boards"
+],
+[
+"win.opponent.savage.15",
+"win",
+"opponent",
+"savage",
+"You skate like a dropped glove, and just as useful"
+],
+[
+"win.opponent.savage.16",
+"win",
+"opponent",
+"savage",
+"You won because your team carried you, we all saw it"
+],
+[
+"win.opponent.savage.17",
+"win",
+"opponent",
+"savage",
+"You're the reason the posts look so relaxed"
+],
+[
+"win.opponent.savage.18",
+"win",
+"opponent",
+"savage",
+"Your aim is a crime and your team covered for you"
+],
+[
+"win.opponent.savage.19",
+"win",
+"opponent",
+"savage",
+"Your best play was staying out of the way"
+],
+[
+"win.opponent.savage.20",
+"win",
+"opponent",
+"savage",
+"Your teammates did the work, you just wore the jersey"
+],
+[
+"win.teammate.complain.01",
+"win",
+"teammate",
+"complain",
+"Even the posts rang out in protest at your shots."
+],
+[
+"win.teammate.complain.02",
+"win",
+"teammate",
+"complain",
+"Every time you spun in circles, I aged a year."
+],
+[
+"win.teammate.complain.03",
+"win",
+"teammate",
+"complain",
+"Every time you touched the puck, I aged a little."
+],
+[
+"win.teammate.complain.04",
+"win",
+"teammate",
+"complain",
+"Half those bounces were pure luck, and none were yours."
+],
+[
+"win.teammate.complain.05",
+"win",
+"teammate",
+"complain",
+"Half those passes went to the boards. Great teamwork."
+],
+[
+"win.teammate.complain.06",
+"win",
+"teammate",
+"complain",
+"I called for the pass three times. Three. Hello?"
+],
+[
+"win.teammate.complain.07",
+"win",
+"teammate",
+"complain",
+"I did the checking, you did the posing."
+],
+[
+"win.teammate.complain.08",
+"win",
+"teammate",
+"complain",
+"I did the work and you got the credit. Typical."
+],
+[
+"win.teammate.complain.09",
+"win",
+"teammate",
+"complain",
+"I'm winning games and still feel like I lost something."
+],
+[
+"win.teammate.complain.10",
+"win",
+"teammate",
+"complain",
+"My skates are tired and your aim is why."
+],
+[
+"win.teammate.complain.11",
+"win",
+"teammate",
+"complain",
+"My skates are worn out from fixing your mistakes."
+],
+[
+"win.teammate.complain.12",
+"win",
+"teammate",
+"complain",
+"Nice win. Shame I spent it covering for your turnovers."
+],
+[
+"win.teammate.complain.13",
+"win",
+"teammate",
+"complain",
+"That puck bounced like it hated us, and it still went in."
+],
+[
+"win.teammate.complain.14",
+"win",
+"teammate",
+"complain",
+"The posts did more work than you did out there."
+],
+[
+"win.teammate.complain.15",
+"win",
+"teammate",
+"complain",
+"We won by accident, and the accident was me."
+],
+[
+"win.teammate.complain.16",
+"win",
+"teammate",
+"complain",
+"We won in spite of that last period, not because of it."
+],
+[
+"win.teammate.complain.17",
+"win",
+"teammate",
+"complain",
+"We won, and I still lost patience somewhere in the second."
+],
+[
+"win.teammate.complain.18",
+"win",
+"teammate",
+"complain",
+"Won the game, lost a year of my life watching you."
+],
+[
+"win.teammate.complain.19",
+"win",
+"teammate",
+"complain",
+"Won ugly, and you were most of the ugly."
+],
+[
+"win.teammate.complain.20",
+"win",
+"teammate",
+"complain",
+"You hogged the puck like it owed you a favor."
+],
+[
+"win.teammate.encourage.01",
+"win",
+"teammate",
+"encourage",
+"Don't get comfortable, rookie, that was mostly us."
+],
+[
+"win.teammate.encourage.02",
+"win",
+"teammate",
+"encourage",
+"Don't get comfortable, rookie, the next match is harder."
+],
+[
+"win.teammate.encourage.03",
+"win",
+"teammate",
+"encourage",
+"Enjoy it for a second, then get back on the ice."
+],
+[
+"win.teammate.encourage.04",
+"win",
+"teammate",
+"encourage",
+"Fine, we won. Now earn the spot you're standing on."
+],
+[
+"win.teammate.encourage.05",
+"win",
+"teammate",
+"encourage",
+"Good. Now find the net without three tries first."
+],
+[
+"win.teammate.encourage.06",
+"win",
+"teammate",
+"encourage",
+"Good. Now try skating before the puck gets there."
+],
+[
+"win.teammate.encourage.07",
+"win",
+"teammate",
+"encourage",
+"Keep your head up, and your stick down, for once."
+],
+[
+"win.teammate.encourage.08",
+"win",
+"teammate",
+"encourage",
+"Next match, try skating toward the puck on purpose."
+],
+[
+"win.teammate.encourage.09",
+"win",
+"teammate",
+"encourage",
+"Next match, shoot sooner. The net isn't going anywhere."
+],
+[
+"win.teammate.encourage.10",
+"win",
+"teammate",
+"encourage",
+"One win and you're humming? Sit down and watch the replay."
+],
+[
+"win.teammate.encourage.11",
+"win",
+"teammate",
+"encourage",
+"One win doesn't fix that backhand, so go practice it."
+],
+[
+"win.teammate.encourage.12",
+"win",
+"teammate",
+"encourage",
+"Pass the puck. It's not a family heirloom."
+],
+[
+"win.teammate.encourage.13",
+"win",
+"teammate",
+"encourage",
+"Tighten up your turns, you take corners like a lost bus."
+],
+[
+"win.teammate.encourage.14",
+"win",
+"teammate",
+"encourage",
+"We won. Now do it again without the near misses."
+],
+[
+"win.teammate.encourage.15",
+"win",
+"teammate",
+"encourage",
+"We won. Now do it again without the sightseeing."
+],
+[
+"win.teammate.encourage.16",
+"win",
+"teammate",
+"encourage",
+"Winning is fine, but your positioning still needs work."
+],
+[
+"win.teammate.encourage.17",
+"win",
+"teammate",
+"encourage",
+"Winning is the minimum. Show me something extra next time."
+],
+[
+"win.teammate.encourage.18",
+"win",
+"teammate",
+"encourage",
+"You can do better, and we both know it."
+],
+[
+"win.teammate.encourage.19",
+"win",
+"teammate",
+"encourage",
+"You got lucky once. Make it a habit."
+],
+[
+"win.teammate.encourage.20",
+"win",
+"teammate",
+"encourage",
+"You got lucky today, so make it a habit next time."
+],
+[
+"win.teammate.praise.01",
+"win",
+"teammate",
+"praise",
+"Didn't think you had that shot in you."
+],
+[
+"win.teammate.praise.02",
+"win",
+"teammate",
+"praise",
+"Fine, you earned that one. Quietly, though."
+],
+[
+"win.teammate.praise.03",
+"win",
+"teammate",
+"praise",
+"Good match. Don't make me say it twice."
+],
+[
+"win.teammate.praise.04",
+"win",
+"teammate",
+"praise",
+"Huh, the rookie can actually play a little."
+],
+[
+"win.teammate.praise.05",
+"win",
+"teammate",
+"praise",
+"Huh. Not bad, rookie."
+],
+[
+"win.teammate.praise.06",
+"win",
+"teammate",
+"praise",
+"Huh. You actually knew where the net was."
+],
+[
+"win.teammate.praise.07",
+"win",
+"teammate",
+"praise",
+"I'd skate with you again. Don't let it go to your head."
+],
+[
+"win.teammate.praise.08",
+"win",
+"teammate",
+"praise",
+"I've seen worse rookies. Slightly worse."
+],
+[
+"win.teammate.praise.09",
+"win",
+"teammate",
+"praise",
+"Not a disaster. Honestly, that's high praise from me."
+],
+[
+"win.teammate.praise.10",
+"win",
+"teammate",
+"praise",
+"Not bad. I've seen worse from players with more practice."
+],
+[
+"win.teammate.praise.11",
+"win",
+"teammate",
+"praise",
+"Okay, I'll admit it, nice skating out there."
+],
+[
+"win.teammate.praise.12",
+"win",
+"teammate",
+"praise",
+"Okay, that was a real play. Almost looked intentional."
+],
+[
+"win.teammate.praise.13",
+"win",
+"teammate",
+"praise",
+"That check was decent. Do it again."
+],
+[
+"win.teammate.praise.14",
+"win",
+"teammate",
+"praise",
+"That last goal was almost professional."
+],
+[
+"win.teammate.praise.15",
+"win",
+"teammate",
+"praise",
+"That last shot was decent. Don't let it go to your head."
+],
+[
+"win.teammate.praise.16",
+"win",
+"teammate",
+"praise",
+"Well, I didn't expect that, but I'll take it."
+],
+[
+"win.teammate.praise.17",
+"win",
+"teammate",
+"praise",
+"Well, that was cleaner than your usual mess."
+],
+[
+"win.teammate.praise.18",
+"win",
+"teammate",
+"praise",
+"You finally found the net. Good for you."
+],
+[
+"win.teammate.praise.19",
+"win",
+"teammate",
+"praise",
+"You read that play better than I expected."
+],
+[
+"win.teammate.praise.20",
+"win",
+"teammate",
+"praise",
+"You skated like you meant it. Noted."
+]
+]
+}

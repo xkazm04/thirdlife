@@ -78,6 +78,7 @@ var _watch: RefCounted = null           # L4b: kernel/dungeon/watch.gd
 var _load_bar: ColorRect = null         # the load screen's moving bar
 var _load_step: Label = null
 var _load_frames: int = 0
+var _pause_asked: bool = false           # K5 (1.25): the pack paused itself during its load: the pause starts with frame 0
 
 
 func _init() -> void:
@@ -144,6 +145,18 @@ func open(dir: String, o: Dictionary = {}) -> bool:
 		return bool(_watch.call("finish")) if _watch != null else true
 	ctx = life.make_context(run, m, pack_dir, seed_value, frames_target if frames_target > 0 else (1 << 40), "play")
 	TLContext.current = ctx                       # one pack in this process while the dungeon runs (as the worker)
+	# K5 (1.25): the frame's pause and Leave, reachable from the pack (ctx.pause / resume / leave_game)
+	ctx._pause_hook = func(on: bool) -> void:
+		if on:
+			if loaded:
+				pause()
+			else:
+				_pause_asked = true
+		else:
+			_pause_asked = false
+			resume()
+	ctx._leave_hook = func() -> void:
+		close.call_deferred("leave")              # never inside the pack's own call: close frees the pack
 	life.make_scene()
 	life.make_io(true)                            # a person's devices reach ctx.input
 	_install_look()
@@ -174,6 +187,9 @@ func open(dir: String, o: Dictionary = {}) -> bool:
 	_hide_loading()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	set_physics_process(true)
+	if _pause_asked:
+		_pause_asked = false
+		pause()                                    # K5: the pack asked for it during its load (a menu before its frame 0)
 	return true
 
 
@@ -218,8 +234,21 @@ func _physics_process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# K5 (1.25): a pack that owns its pause card reads the menu keys while paused; Esc opens the pause, then is the card's
+	var mb: InputEventMouseButton = event as InputEventMouseButton
+	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and paused and _pack_owns_pause() and _refused == null:
+		ctx.input._menu_key("click")
+		return
 	var k: InputEventKey = event as InputEventKey
-	if k == null or not k.pressed or k.echo or k.keycode != KEY_ESCAPE:
+	if k == null or not k.pressed or k.echo:
+		return
+	if paused and _pack_owns_pause() and _refused == null:
+		var menu: String = {KEY_UP: "up", KEY_DOWN: "down", KEY_LEFT: "left", KEY_RIGHT: "right", KEY_ENTER: "enter", KEY_KP_ENTER: "enter", KEY_ESCAPE: "esc"}.get(k.keycode, "")
+		if menu != "":
+			get_viewport().set_input_as_handled()
+			ctx.input._menu_key(menu)
+		return
+	if k.keycode != KEY_ESCAPE:
 		return
 	get_viewport().set_input_as_handled()
 	if _refused != null or not loaded:
@@ -232,15 +261,25 @@ func _input(event: InputEvent) -> void:
 		pause()
 
 
+## K5 (1.25): the pack draws its own pause card (ctx.own_pause) and has a HUD to draw it on.
+func _pack_owns_pause() -> bool:
+	return ctx != null and ctx.owns_pause and not ctx.huds.is_empty()
+
+
 func pause() -> void:
 	if paused or finished or not loaded:
 		return
 	if not _headless:
 		_still = get_viewport().get_texture().get_image()     # the frame he saw, before the card covers it
 	paused = true
+	ctx.paused = true
 	get_tree().paused = true
 	_mouse_before = Input.mouse_mode
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if _pack_owns_pause():
+		ctx.input.menu_keys()                      # K5: a fresh list for the pack's card (the Esc that opened it is not on it)
+		print("[dungeon] paused at frame %d (the pack's own card)" % frame)
+		return
 	if _pause == null:
 		_pause = _make_pause()
 		_layer.add_child(_pause)
@@ -253,6 +292,7 @@ func resume() -> void:
 	if not paused:
 		return
 	paused = false
+	ctx.paused = false
 	if _pause != null:
 		_pause.visible = false
 	Input.mouse_mode = _mouse_before as Input.MouseMode
@@ -287,6 +327,18 @@ func close(why: String) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	print(JSON.stringify(result, "", false))
 	left.emit(why)
+
+
+## K1 round 4: the engine quits while the dungeon is still open (`--quit-after`, a quit from elsewhere): the tree is torn
+## down without close(). Leaving the watchdog thread running and the script logger registered crashed the process on exit
+## (exit 139, every dungeon, 4 of 4 runs). Stop and free them here, the pack's teardown included; nothing is printed or emitted.
+func _exit_tree() -> void:
+	if finished:
+		return
+	finished = true
+	if loaded and life != null:
+		life.teardown()
+	_free_pack()
 
 
 func _free_pack() -> void:
@@ -429,6 +481,10 @@ func _load_note(i: int, n: int, file: String) -> void:
 
 ## The load screen's bar: a block that sweeps the track, one step per drawn frame (a picture, not a clock).
 func _process(_delta: float) -> void:
+	if paused and not finished and _pack_owns_pause():
+		for h: Variant in ctx.huds:                # K5 (1.25): the pack draws its own pause card, once a drawn frame
+			if is_instance_valid(h):
+				(h as TLHud)._paused_tick(frame)
 	if _loading == null or _load_bar == null:
 		return
 	_load_frames += 1

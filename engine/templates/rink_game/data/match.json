@@ -1,0 +1,5 @@
+{
+  "note": "The match: the cartridge the game plays (`cartridge`: a file in data/; a <name>.rules.json beside it opens the rule-patched core) and the bots' level until HOME picks one (`difficulty`: rookie | pro | all_star).",
+  "difficulty": "pro",
+  "cartridge": "hockey.regular.cartridge.json"
+}

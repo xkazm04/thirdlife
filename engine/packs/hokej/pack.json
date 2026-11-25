@@ -1,0 +1,39 @@
+{
+  "id": "game.hokej",
+  "version": "0.1.0",
+  "kernelApi": "1.30",
+  "title": "Hokej: thirdjam's match, five against five",
+  "capabilities": [
+    "audio",
+    "input",
+    "camera",
+    "kit",
+    "style",
+    "ui"
+  ],
+  "entry": "scripts/main.gd",
+  "assets": [
+    "gen/tj_rink.gd"
+  ],
+  "tests": [
+    "tests/bot_match_hand.gd",
+    "tests/bot_gym_hand.gd",
+    "tests/bot_rule_w_away.gd",
+    "tests/bot_rule_s_lock.gd",
+    "tests/bot_rule_aim.gd",
+    "tests/bot_rule_aim_anchor.gd",
+    "tests/bot_tj_replay.gd",
+    "tests/bot_rule_restart.gd",
+    "tests/bot_rule_signals.gd",
+    "tests/bot_hud_rules.gd",
+    "tests/bot_level_record.gd",
+    "tests/bot_first_match.gd",
+    "tests/bot_cut_cores.gd",
+    "tests/bot_skin.gd"
+  ],
+  "cameras": [
+    "follow",
+    "top"
+  ],
+  "subject": "Skater"
+}

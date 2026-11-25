@@ -9,8 +9,11 @@
 //   - a re-plan keeps the phases; a stuck phase is named when the job fails.
 import type { JobEvent, PackageSpec, Phase } from "./events.js";
 import { currentPhase, holdReason, passesItself, phaseIndexOf, waitingPhase, type JobState } from "./joblog.js";
-import { funPromiseItem, whoOwns, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type RubricItem } from "./designer.js";
+import { funPromiseItem, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type RubricItem } from "./designer.js";
 import { CHANGE_ROUND } from "./rounds.js";
+import { NEW_PACKAGE, ownerOrNew } from "./grow.js";
+import { changeCandidates, coreChangeOwner } from "./coreowner.js"; // E3f: a hold on a core game never re-runs the base
+import { coreRouteOf } from "./templates.js";
 import { clip } from "./conduct.js";
 import type { ForemanOptions } from "./options.js";
 
@@ -21,6 +24,10 @@ export interface PhaseHost {
   append(body: Parameters<import("./joblog.js").JobLog["append"]>[0]): JobEvent;
   reopen(id: string, reason: string, detail: string): void;
   logGenerateCalls(calls: GenerateCall[], model: string | undefined): void;
+  /** E4 (24-25 Nov): grows the plan for a hold whose note adds something no package holds (grow.ts); absent: never. */
+  grow?(c: { seq: number; text: string }, why: string, head: string): Promise<{ added: string[] } | { reason: string }>;
+  /** E3d: what runs when a phase is done, before the person is asked (a core job's measured check, coregate.ts phaseCheck). */
+  atPhaseDone?(phase: string): Promise<void>;
 }
 
 /** A job paused for the player's verdict on a phase stays paused on `run`/`resume`: `foreman phase` answers it. */
@@ -52,7 +59,10 @@ export async function phaseStep(h: PhaseHost): Promise<"continue" | "paused" | "
   if (!cur) return "none";
   if (!cur.packages.every((id) => h.s.packages[id]?.state === "promoted")) return "none";
   if (cur.state === "held" && cur.hold !== undefined && !cur.hold.applied) return "none";
-  if (cur.state !== "done") h.append({ type: "phase_done", phase: cur.id });
+  if (cur.state !== "done") {
+    h.append({ type: "phase_done", phase: cur.id });
+    await h.atPhaseDone?.(cur.id);
+  }
   if (passesItself(h.s, cur)) {
     h.append({ type: "phase_reviewed", phase: cur.id, verdict: "pass", by: "auto" });
     return "continue";
@@ -85,15 +95,25 @@ export async function applyHolds(h: PhaseHost): Promise<number> {
     if (mine.length === 0) continue;
     let owner = mine[0] as string;
     let how = "the phase has one package";
-    if (mine.length > 1) {
+    if (mine.length > 1 || h.grow !== undefined) {
+      // E4: with a grow hook the Planner may also answer "new": the note adds something no package of the phase holds
       const model = h.o.plannerModel ?? h.o.model;
-      const res = await whoOwns(h.o.builder, { sentence: h.s.sentence ?? "", title: h.s.title ?? "", text: hold.note, packages: packageLinesOf(h.s, mine) }, model ? { model } : {});
+      const res = await ownerOrNew(h.o.builder, { sentence: h.s.sentence ?? "", title: h.s.title ?? "", text: hold.note, packages: changeCandidates(packageLinesOf(h.s, mine), h.s.plan, coreRouteOf(h.s.brief?.concept?.template)) }, model ? { model } : {});
       h.logGenerateCalls(res.calls, model);
-      if (res.ok) {
+      if (res.ok && res.value.package === NEW_PACKAGE && h.grow !== undefined) {
+        const g = await h.grow({ seq: hold.seq, text: hold.note }, clip(res.value.reason, 200), `${holdReason(hold.seq)} on phase ${ph.id}`);
+        if ("added" in g) {
+          applied += 1;
+          continue;
+        }
+        how = `${g.reason}, so the phase's first package takes it`;
+      } else if (res.ok && res.value.package !== NEW_PACKAGE) {
         owner = res.value.package;
         how = `the Planner names the package among the phase's ${mine.join(", ")}: ${clip(res.value.reason, 200)}`;
-      } else how = `the Planner gave no usable answer (${clip(res.reason, 160)}), so the phase's first package takes it`;
+      } else if (!res.ok) how = `the Planner gave no usable answer (${clip(res.reason, 160)}), so the phase's first package takes it`;
     }
+    const moved = coreChangeOwner(h.s.plan, coreRouteOf(h.s.brief?.concept?.template), owner, hold.note);
+    if (moved.why !== undefined) [owner, how] = [moved.owner, `${how}; ${moved.why}`];
     h.reopen(owner, `${holdReason(hold.seq)} on phase ${ph.id}; ${how}: ${clip(hold.note, 300)}`, `${CHANGE_ROUND}: ${hold.note}`);
     applied += 1;
   }
@@ -156,5 +176,46 @@ export function stuckText(s: JobState): string {
  */
 export function criticRubric(s: JobState, lastPackage: string): RubricItem[] {
   const promise = s.phases[phaseIndexOf(s, lastPackage)]?.try ?? s.brief?.pitch;
-  return promise !== undefined ? [...DEFAULT_RUBRIC, funPromiseItem(promise)] : DEFAULT_RUBRIC;
+  if (promise === undefined) return DEFAULT_RUBRIC;
+  // E3c of 25 Nov (lane E5's real proof): the critic called a greybox NOT ok for aspects the person had DROPPED. The
+  // person's decisions ride on the promise item, so every look's prompt carries them (no new score to answer).
+  const item = funPromiseItem(promise);
+  // E3g (E5c's job 3): a "no" to a builder's question is a drop too ("skip the bank-shot extras", then judged for them)
+  const decided = [personDecisionsText(s), refusalsText(s)].filter((x) => x !== "").join(" ");
+  return [...DEFAULT_RUBRIC, decided !== "" ? { ...item, text: `${item.text} ${decided}` } : item];
+}
+
+/** E3g: an answer that refuses what a builder asked ("No. ...", "skip ...", "leave ... out", "drop ...", "don't ..."). */
+export function isRefusal(answer: string): boolean {
+  return /^\W*(no|nope|nah|never|not|don'?t|do not|skip|drop)\b/i.test(answer) || /\b(skip|drop|leave (it|them|that|those|this) out|leave out|do not add|don'?t add)\b/i.test(answer);
+}
+
+/**
+ * E3g: the person's refusals in answers to builders' questions, as the critic reads them ("" without any). The same
+ * rule as a dropped aspect: what the person refused is not in this game and is never judged missing.
+ */
+export function refusalsText(s: Pick<JobState, "packages">): string {
+  const lines: string[] = [];
+  for (const [id, p] of Object.entries(s.packages ?? {})) for (const a of p.answered ?? []) if (isRefusal(a.answer)) lines.push(`to package "${id}"'s question "${clip(a.question, 300)}" the person answered "${clip(a.answer, 300)}"`);
+  if (lines.length === 0) return "";
+  return `THE PERSON REFUSED, answering a builder during the build (it wins over the pitch, the brief's hook, the clip moments, the method and kill lines written before it): ${lines.join("; ")}. What the person refused or said to skip is DROPPED: it is not in this game, do not look for it, never score any item down or call the look NOT ok because it is missing, and treat a pitch, contract, clip moment or kill line about it as void.`;
+}
+
+/**
+ * E3c: the person's decisions on the design's aspects (aspect_reacted: drops, keeps with a note, alternatives chosen),
+ * as the critic reads them; "" when the person reacted to nothing. They win over the pitch, the clip moments, the kill
+ * lines and the method lines, which were written before the person decided.
+ */
+export function personDecisionsText(s: Pick<JobState, "brief" | "reactions">): string {
+  const lines: string[] = [];
+  for (const a of s.brief?.aspects ?? []) {
+    const r = s.reactions[a.id];
+    if (r === undefined) continue;
+    const note = r.note !== undefined ? ` (the person's note: "${r.note}")` : "";
+    if (r.choice === "drop") lines.push(`DROPPED "${a.title}" (${a.line})${note}`);
+    else if (r.choice === "keep") lines.push(`KEPT "${a.title}"${note}`);
+    else lines.push(`CHOSE "${a.alternatives.find((x) => x.id === r.choice)?.title ?? r.choice}" instead of "${a.title}"${note}`);
+  }
+  if (lines.length === 0) return "";
+  return `THE PERSON'S DECISIONS on the design, made before the build (they win over the pitch, the clip moments, the method and kill lines written before them): ${lines.join("; ")}. A DROPPED aspect is not in this game: do not look for it, never score any item down or call the look NOT ok because it is missing, and treat a pitch, clip moment or kill line about it as void. Judge a chosen alternative instead of the aspect it replaced.`;
 }

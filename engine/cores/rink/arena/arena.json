@@ -1,0 +1,5590 @@
+{
+ "schema": "tl.rink.arena/1",
+ "note": "thirdjam's hall as its game draws it (hockey.regular, look tier p3_clay), exported by engine/tools/arena (export_arena.py -> arena_prep.py -> build_arena.gd). Axes: rink x -> x, rink y -> z, up -> y, metres. 'first' = the first instance's transform (three basis columns, then the origin). Material parameters are thirdjam's own, read from the running game.",
+ "source": {
+  "world": "/Game/Maps/UEDPIE_0_Rink.Rink",
+  "thirdjam": "HEAD 8dc713c6 content on the t5 build, hockey.regular (p3_clay), played in the editor"
+ },
+ "totals": {
+  "groups": 48.0,
+  "instances": 980.0,
+  "triangles": 516834.0,
+  "meshes": 42.0,
+  "materials": 41.0,
+  "lights": 18.0
+ },
+ "left_out": {
+  "not the hall (figures, the puck, the engine's own actors)": 182.0,
+  "hidden in the game": 2.0,
+  "the sky light's capture dome (350 m sphere outside the barn, never seen)": 1.0
+ },
+ "groups": [
+  {
+   "name": "ArenaBenchNeg",
+   "mesh": "SM_Arena_TeamBench",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 2816,
+   "materials": [
+    "MI_Toon_Board",
+    "MI_Toon_KickPlate",
+    "MI_Toon_Bench",
+    "MI_Toon_Blue",
+    "MI_Toon_Dark"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaBenchNeg"
+   ],
+   "first": [
+    0.75,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    -7.497,
+    0.0,
+    22.75
+   ]
+  },
+  {
+   "name": "ArenaBenchPos",
+   "mesh": "SM_Arena_TeamBench",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 2816,
+   "materials": [
+    "MI_Toon_Board",
+    "MI_Toon_KickPlate",
+    "MI_Toon_Bench",
+    "MI_Toon_Orange",
+    "MI_Toon_Dark"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaBenchPos"
+   ],
+   "first": [
+    0.75,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    7.497,
+    0.0,
+    22.75
+   ]
+  },
+  {
+   "name": "ArenaBoxNeg",
+   "mesh": "SM_Arena_PenaltyBox",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 1872,
+   "materials": [
+    "MI_Toon_Board",
+    "MI_Toon_KickPlate",
+    "MI_Toon_Bench",
+    "MI_Toon_Blue",
+    "MI_Toon_Dark"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaBoxNeg"
+   ],
+   "first": [
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    -3.0,
+    0.0,
+    -22.75
+   ]
+  },
+  {
+   "name": "ArenaBoxPos",
+   "mesh": "SM_Arena_PenaltyBox",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 1872,
+   "materials": [
+    "MI_Toon_Board",
+    "MI_Toon_KickPlate",
+    "MI_Toon_Bench",
+    "MI_Toon_Orange",
+    "MI_Toon_Dark"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaBoxPos"
+   ],
+   "first": [
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    3.0,
+    0.0,
+    -22.75
+   ]
+  },
+  {
+   "name": "ArenaGoalNeg",
+   "mesh": "SM_Arena_Goal_W400H061",
+   "layer": "rink",
+   "count": 2,
+   "triangles": 3216,
+   "materials": [
+    "MI_Toon_NetFrame"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaGoalNeg",
+    "RinkActor0.ArenaGoalPos"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -41.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "ArenaTable",
+   "mesh": "SM_Arena_ScorerTable",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 2088,
+   "materials": [
+    "MI_Toon_Board",
+    "MI_Toon_KickPlate",
+    "MI_Toon_Bench",
+    "MI_Toon_Dark",
+    "MI_Toon_NetFrame",
+    "MID_MI_Trim_Lamp_0"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaTable"
+   ],
+   "first": [
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -22.75
+   ]
+  },
+  {
+   "name": "ArenaGoalNetNeg",
+   "mesh": "SM_Arena_GoalNet_W400H061",
+   "layer": "rink",
+   "count": 2,
+   "triangles": 1824,
+   "materials": [
+    "MI_Toon_NetCord"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaGoalNetNeg",
+    "RinkActor0.ArenaGoalNetPos"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -41.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "ArenaGoalLightNeg",
+   "mesh": "SM_Arena_GoalLight",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 696,
+   "materials": [
+    "MI_Toon_Dark",
+    "MI_Toon_KickPlate",
+    "MID_MI_Trim_Lamp_1"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaGoalLightNeg"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -45.25,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "ArenaGoalLightPos",
+   "mesh": "SM_Arena_GoalLight",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 696,
+   "materials": [
+    "MI_Toon_Dark",
+    "MI_Toon_KickPlate",
+    "MID_MI_Trim_Lamp_2"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaGoalLightPos"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    45.25,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "ArenaCaps",
+   "mesh": "SM_Arena_BoardCap",
+   "layer": "rink",
+   "count": 36,
+   "triangles": 1440,
+   "materials": [
+    "MI_Toon_Blue"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "RinkActor0.ArenaCaps[0]",
+    "RinkActor0.ArenaCaps[1]",
+    "RinkActor0.ArenaCaps[2]",
+    "RinkActor0.ArenaCaps[3]",
+    "RinkActor0.ArenaCaps[4]",
+    "RinkActor0.ArenaCaps[5]",
+    "RinkActor0.ArenaCaps[6]",
+    "RinkActor0.ArenaCaps[7]",
+    "RinkActor0.ArenaCaps[8]",
+    "RinkActor0.ArenaCaps[9]",
+    "RinkActor0.ArenaCaps[10]",
+    "RinkActor0.ArenaCaps[11]",
+    "RinkActor0.ArenaCaps[12]",
+    "RinkActor0.ArenaCaps[13]",
+    "RinkActor0.ArenaCaps[14]",
+    "RinkActor0.ArenaCaps[15]",
+    "RinkActor0.ArenaCaps[16]",
+    "RinkActor0.ArenaCaps[17]",
+    "RinkActor0.ArenaCaps[18]",
+    "RinkActor0.ArenaCaps[19]",
+    "RinkActor0.ArenaCaps[20]",
+    "RinkActor0.ArenaCaps[21]",
+    "RinkActor0.ArenaCaps[22]",
+    "RinkActor0.ArenaCaps[23]",
+    "RinkActor0.ArenaCaps[24]",
+    "RinkActor0.ArenaCaps[25]",
+    "RinkActor0.ArenaCaps[26]",
+    "RinkActor0.ArenaCaps[27]",
+    "RinkActor0.ArenaCaps[28]",
+    "RinkActor0.ArenaCaps[29]",
+    "RinkActor0.ArenaCaps[30]",
+    "RinkActor0.ArenaCaps[31]",
+    "RinkActor0.ArenaCaps[32]",
+    "RinkActor0.ArenaCaps[33]",
+    "RinkActor0.ArenaCaps[34]",
+    "RinkActor0.ArenaCaps[35]"
+   ],
+   "first": [
+    1.038407,
+    0.0,
+    0.055703,
+    0.0,
+    1.0399,
+    0.0,
+    -0.055703,
+    0.0,
+    1.038407,
+    -3.406619,
+    1.2,
+    22.6
+   ]
+  },
+  {
+   "name": "ArenaCapsPos",
+   "mesh": "SM_Arena_BoardCap",
+   "layer": "rink",
+   "count": 37,
+   "triangles": 1480,
+   "materials": [
+    "MI_Toon_Orange"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "RinkActor0.ArenaCapsPos[0]",
+    "RinkActor0.ArenaCapsPos[1]",
+    "RinkActor0.ArenaCapsPos[2]",
+    "RinkActor0.ArenaCapsPos[3]",
+    "RinkActor0.ArenaCapsPos[4]",
+    "RinkActor0.ArenaCapsPos[5]",
+    "RinkActor0.ArenaCapsPos[6]",
+    "RinkActor0.ArenaCapsPos[7]",
+    "RinkActor0.ArenaCapsPos[8]",
+    "RinkActor0.ArenaCapsPos[9]",
+    "RinkActor0.ArenaCapsPos[10]",
+    "RinkActor0.ArenaCapsPos[11]",
+    "RinkActor0.ArenaCapsPos[12]",
+    "RinkActor0.ArenaCapsPos[13]",
+    "RinkActor0.ArenaCapsPos[14]",
+    "RinkActor0.ArenaCapsPos[15]",
+    "RinkActor0.ArenaCapsPos[16]",
+    "RinkActor0.ArenaCapsPos[17]",
+    "RinkActor0.ArenaCapsPos[18]",
+    "RinkActor0.ArenaCapsPos[19]",
+    "RinkActor0.ArenaCapsPos[20]",
+    "RinkActor0.ArenaCapsPos[21]",
+    "RinkActor0.ArenaCapsPos[22]",
+    "RinkActor0.ArenaCapsPos[23]",
+    "RinkActor0.ArenaCapsPos[24]",
+    "RinkActor0.ArenaCapsPos[25]",
+    "RinkActor0.ArenaCapsPos[26]",
+    "RinkActor0.ArenaCapsPos[27]",
+    "RinkActor0.ArenaCapsPos[28]",
+    "RinkActor0.ArenaCapsPos[29]",
+    "RinkActor0.ArenaCapsPos[30]",
+    "RinkActor0.ArenaCapsPos[31]",
+    "RinkActor0.ArenaCapsPos[32]",
+    "RinkActor0.ArenaCapsPos[33]",
+    "RinkActor0.ArenaCapsPos[34]",
+    "RinkActor0.ArenaCapsPos[35]",
+    "RinkActor0.ArenaCapsPos[36]"
+   ],
+   "first": [
+    -0.006886,
+    0.0,
+    -1.039877,
+    0.0,
+    1.0399,
+    0.0,
+    1.039877,
+    0.0,
+    -0.006886,
+    45.099786,
+    1.2,
+    18.75654
+   ]
+  },
+  {
+   "name": "ArenaBoxDoorNeg",
+   "mesh": "SM_Arena_BoxDoor",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 208,
+   "materials": [
+    "MI_Toon_Blue",
+    "MI_Toon_Dark"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaBoxDoorNeg"
+   ],
+   "first": [
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    -1.25,
+    0.0,
+    -22.81
+   ]
+  },
+  {
+   "name": "ArenaBoxDoorPos",
+   "mesh": "SM_Arena_BoxDoor",
+   "layer": "rink",
+   "count": 1,
+   "triangles": 208,
+   "materials": [
+    "MI_Toon_Orange",
+    "MI_Toon_Dark"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaBoxDoorPos"
+   ],
+   "first": [
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    4.75,
+    0.0,
+    -22.81
+   ]
+  },
+  {
+   "name": "ArenaBoxHandNeg",
+   "mesh": "SM_Arena_BoxHand",
+   "layer": "rink",
+   "count": 2,
+   "triangles": 128,
+   "materials": [
+    "MI_Toon_Dark"
+   ],
+   "cast_shadow": true,
+   "sources": [
+    "RinkActor0.ArenaBoxHandNeg",
+    "RinkActor0.ArenaBoxHandPos"
+   ],
+   "first": [
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    -3.0,
+    2.35,
+    -24.16
+   ]
+  },
+  {
+   "name": "BarnFloor",
+   "mesh": "Cube",
+   "layer": "barn",
+   "count": 1,
+   "triangles": 48,
+   "materials": [
+    "MI_ClayBarn_Floor"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Con_P3_Clay_Floor.StaticMeshComponent0"
+   ],
+   "first": [
+    122.0,
+    0.0,
+    0.0,
+    0.0,
+    0.1,
+    0.0,
+    0.0,
+    0.0,
+    76.0,
+    0.0,
+    -0.08,
+    0.0
+   ]
+  },
+  {
+   "name": "Con_ClayWall",
+   "mesh": "SM_Con_ClayWall",
+   "layer": "barn",
+   "count": 34,
+   "triangles": 19992,
+   "materials": [
+    "MI_ClayBarn_Wall"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Con_P3_Clay_Wall_S1.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N1.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S2.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N2.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S3.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N3.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S4.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N4.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S5.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N5.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S6.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N6.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S7.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N7.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S8.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N8.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S9.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N9.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_S10.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_N10.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_E1.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_W1.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_E2.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_W2.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_E3.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_W3.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_E4.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_W4.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_E5.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_W5.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_E6.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_W6.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_E7.StaticMeshComponent0",
+    "Con_P3_Clay_Wall_W7.StaticMeshComponent0"
+   ],
+   "first": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.5,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    -54.0,
+    0.0,
+    37.0
+   ]
+  },
+  {
+   "name": "Con_ClayGable",
+   "mesh": "SM_Con_ClayGable",
+   "layer": "barn",
+   "count": 2,
+   "triangles": 6360,
+   "materials": [
+    "MI_ClayBarn_Wall"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Con_P3_Clay_Gable_E.StaticMeshComponent0",
+    "Con_P3_Clay_Gable_W.StaticMeshComponent0"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    60.0,
+    13.5,
+    0.0
+   ]
+  },
+  {
+   "name": "Con_ClayPost",
+   "mesh": "SM_Con_ClayPost",
+   "layer": "barn",
+   "count": 34,
+   "triangles": 1224,
+   "materials": [
+    "MI_ClayBarn_Post"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Con_P3_Clay_Post_S1.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N1.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S2.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N2.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S3.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N3.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S4.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N4.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S5.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N5.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S6.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N6.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S7.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N7.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S8.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N8.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S9.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N9.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S10.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N10.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S11.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N11.StaticMeshComponent0",
+    "Con_P3_Clay_Post_S12.StaticMeshComponent0",
+    "Con_P3_Clay_Post_N12.StaticMeshComponent0",
+    "Con_P3_Clay_Post_E1.StaticMeshComponent0",
+    "Con_P3_Clay_Post_W1.StaticMeshComponent0",
+    "Con_P3_Clay_Post_E2.StaticMeshComponent0",
+    "Con_P3_Clay_Post_W2.StaticMeshComponent0",
+    "Con_P3_Clay_Post_E3.StaticMeshComponent0",
+    "Con_P3_Clay_Post_W3.StaticMeshComponent0",
+    "Con_P3_Clay_Post_E4.StaticMeshComponent0",
+    "Con_P3_Clay_Post_W4.StaticMeshComponent0",
+    "Con_P3_Clay_Post_E5.StaticMeshComponent0",
+    "Con_P3_Clay_Post_W5.StaticMeshComponent0"
+   ],
+   "first": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.5,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    -59.7,
+    0.0,
+    36.7
+   ]
+  },
+  {
+   "name": "BarnRoof_S",
+   "mesh": "Cube",
+   "layer": "barn",
+   "count": 2,
+   "triangles": 96,
+   "materials": [
+    "MI_ClayBarn_Roof"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Con_P3_Clay_Roof_S.StaticMeshComponent0",
+    "Con_P3_Clay_Roof_N.StaticMeshComponent0"
+   ],
+   "first": [
+    124.0,
+    0.0,
+    0.0,
+    0.0,
+    0.11729,
+    0.02536,
+    0.0,
+    -8.422665,
+    38.954842,
+    0.0,
+    17.9,
+    18.5
+   ]
+  },
+  {
+   "name": "Con_ClayLampShade",
+   "mesh": "SM_Con_ClayLampShade",
+   "layer": "barn",
+   "count": 18,
+   "triangles": 4032,
+   "materials": [
+    "MI_ClayBarn_Post",
+    "MI_ClayBulb_Lamp"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Con_P3_Clay_Shade_1.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_2.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_3.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_4.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_5.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_6.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_7.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_8.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_9.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_10.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_11.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_12.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_13.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_14.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_15.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_16.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_17.StaticMeshComponent0",
+    "Con_P3_Clay_Shade_18.StaticMeshComponent0"
+   ],
+   "first": [
+    2.2,
+    0.0,
+    0.0,
+    0.0,
+    2.2,
+    0.0,
+    0.0,
+    0.0,
+    2.2,
+    -33.75,
+    13.06,
+    0.0
+   ]
+  },
+  {
+   "name": "Fan_A",
+   "mesh": "SM_Fan_A",
+   "layer": "crowd",
+   "count": 60,
+   "triangles": 36480,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan",
+    "MI_ClayCrowd_Scarf"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_A[0]",
+    "Crowd_P3_Clay_k1000.Fan_A[1]",
+    "Crowd_P3_Clay_k1000.Fan_A[2]",
+    "Crowd_P3_Clay_k1000.Fan_A[3]",
+    "Crowd_P3_Clay_k1000.Fan_A[4]",
+    "Crowd_P3_Clay_k1000.Fan_A[5]",
+    "Crowd_P3_Clay_k1000.Fan_A[6]",
+    "Crowd_P3_Clay_k1000.Fan_A[7]",
+    "Crowd_P3_Clay_k1000.Fan_A[8]",
+    "Crowd_P3_Clay_k1000.Fan_A[9]",
+    "Crowd_P3_Clay_k1000.Fan_A[10]",
+    "Crowd_P3_Clay_k1000.Fan_A[11]",
+    "Crowd_P3_Clay_k1000.Fan_A[12]",
+    "Crowd_P3_Clay_k1000.Fan_A[13]",
+    "Crowd_P3_Clay_k1000.Fan_A[14]",
+    "Crowd_P3_Clay_k1000.Fan_A[15]",
+    "Crowd_P3_Clay_k1000.Fan_A[16]",
+    "Crowd_P3_Clay_k1000.Fan_A[17]",
+    "Crowd_P3_Clay_k1000.Fan_A[18]",
+    "Crowd_P3_Clay_k1000.Fan_A[19]",
+    "Crowd_P3_Clay_k1000.Fan_A[20]",
+    "Crowd_P3_Clay_k1000.Fan_A[21]",
+    "Crowd_P3_Clay_k1000.Fan_A[22]",
+    "Crowd_P3_Clay_k1000.Fan_A[23]",
+    "Crowd_P3_Clay_k1000.Fan_A[24]",
+    "Crowd_P3_Clay_k1000.Fan_A[25]",
+    "Crowd_P3_Clay_k1000.Fan_A[26]",
+    "Crowd_P3_Clay_k1000.Fan_A[27]",
+    "Crowd_P3_Clay_k1000.Fan_A[28]",
+    "Crowd_P3_Clay_k1000.Fan_A[29]",
+    "Crowd_P3_Clay_k1000.Fan_A[30]",
+    "Crowd_P3_Clay_k1000.Fan_A[31]",
+    "Crowd_P3_Clay_k1000.Fan_A[32]",
+    "Crowd_P3_Clay_k1000.Fan_A[33]",
+    "Crowd_P3_Clay_k1000.Fan_A[34]",
+    "Crowd_P3_Clay_k1000.Fan_A[35]",
+    "Crowd_P3_Clay_k1000.Fan_A[36]",
+    "Crowd_P3_Clay_k1000.Fan_A[37]",
+    "Crowd_P3_Clay_k1000.Fan_A[38]",
+    "Crowd_P3_Clay_k1000.Fan_A[39]",
+    "Crowd_P3_Clay_k1000.Fan_A[40]",
+    "Crowd_P3_Clay_k1000.Fan_A[41]",
+    "Crowd_P3_Clay_k1000.Fan_A[42]",
+    "Crowd_P3_Clay_k1000.Fan_A[43]",
+    "Crowd_P3_Clay_k1000.Fan_A[44]",
+    "Crowd_P3_Clay_k1000.Fan_A[45]",
+    "Crowd_P3_Clay_k1000.Fan_A[46]",
+    "Crowd_P3_Clay_k1000.Fan_A[47]",
+    "Crowd_P3_Clay_k1000.Fan_A[48]",
+    "Crowd_P3_Clay_k1000.Fan_A[49]",
+    "Crowd_P3_Clay_k1000.Fan_A[50]",
+    "Crowd_P3_Clay_k1000.Fan_A[51]",
+    "Crowd_P3_Clay_k1000.Fan_A[52]",
+    "Crowd_P3_Clay_k1000.Fan_A[53]",
+    "Crowd_P3_Clay_k1000.Fan_A[54]",
+    "Crowd_P3_Clay_k1000.Fan_A[55]",
+    "Crowd_P3_Clay_k1000.Fan_A[56]",
+    "Crowd_P3_Clay_k1000.Fan_A[57]",
+    "Crowd_P3_Clay_k1000.Fan_A[58]",
+    "Crowd_P3_Clay_k1000.Fan_A[59]"
+   ],
+   "first": [
+    0.977342,
+    0.0,
+    0.156548,
+    0.0,
+    0.9898,
+    0.0,
+    -0.156548,
+    0.0,
+    0.977342,
+    -42.096228,
+    2.95,
+    30.07
+   ]
+  },
+  {
+   "name": "Fan_B",
+   "mesh": "SM_Fan_B",
+   "layer": "crowd",
+   "count": 66,
+   "triangles": 40920,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan",
+    "MI_ClayCrowd_Scarf"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_B[0]",
+    "Crowd_P3_Clay_k1000.Fan_B[1]",
+    "Crowd_P3_Clay_k1000.Fan_B[2]",
+    "Crowd_P3_Clay_k1000.Fan_B[3]",
+    "Crowd_P3_Clay_k1000.Fan_B[4]",
+    "Crowd_P3_Clay_k1000.Fan_B[5]",
+    "Crowd_P3_Clay_k1000.Fan_B[6]",
+    "Crowd_P3_Clay_k1000.Fan_B[7]",
+    "Crowd_P3_Clay_k1000.Fan_B[8]",
+    "Crowd_P3_Clay_k1000.Fan_B[9]",
+    "Crowd_P3_Clay_k1000.Fan_B[10]",
+    "Crowd_P3_Clay_k1000.Fan_B[11]",
+    "Crowd_P3_Clay_k1000.Fan_B[12]",
+    "Crowd_P3_Clay_k1000.Fan_B[13]",
+    "Crowd_P3_Clay_k1000.Fan_B[14]",
+    "Crowd_P3_Clay_k1000.Fan_B[15]",
+    "Crowd_P3_Clay_k1000.Fan_B[16]",
+    "Crowd_P3_Clay_k1000.Fan_B[17]",
+    "Crowd_P3_Clay_k1000.Fan_B[18]",
+    "Crowd_P3_Clay_k1000.Fan_B[19]",
+    "Crowd_P3_Clay_k1000.Fan_B[20]",
+    "Crowd_P3_Clay_k1000.Fan_B[21]",
+    "Crowd_P3_Clay_k1000.Fan_B[22]",
+    "Crowd_P3_Clay_k1000.Fan_B[23]",
+    "Crowd_P3_Clay_k1000.Fan_B[24]",
+    "Crowd_P3_Clay_k1000.Fan_B[25]",
+    "Crowd_P3_Clay_k1000.Fan_B[26]",
+    "Crowd_P3_Clay_k1000.Fan_B[27]",
+    "Crowd_P3_Clay_k1000.Fan_B[28]",
+    "Crowd_P3_Clay_k1000.Fan_B[29]",
+    "Crowd_P3_Clay_k1000.Fan_B[30]",
+    "Crowd_P3_Clay_k1000.Fan_B[31]",
+    "Crowd_P3_Clay_k1000.Fan_B[32]",
+    "Crowd_P3_Clay_k1000.Fan_B[33]",
+    "Crowd_P3_Clay_k1000.Fan_B[34]",
+    "Crowd_P3_Clay_k1000.Fan_B[35]",
+    "Crowd_P3_Clay_k1000.Fan_B[36]",
+    "Crowd_P3_Clay_k1000.Fan_B[37]",
+    "Crowd_P3_Clay_k1000.Fan_B[38]",
+    "Crowd_P3_Clay_k1000.Fan_B[39]",
+    "Crowd_P3_Clay_k1000.Fan_B[40]",
+    "Crowd_P3_Clay_k1000.Fan_B[41]",
+    "Crowd_P3_Clay_k1000.Fan_B[42]",
+    "Crowd_P3_Clay_k1000.Fan_B[43]",
+    "Crowd_P3_Clay_k1000.Fan_B[44]",
+    "Crowd_P3_Clay_k1000.Fan_B[45]",
+    "Crowd_P3_Clay_k1000.Fan_B[46]",
+    "Crowd_P3_Clay_k1000.Fan_B[47]",
+    "Crowd_P3_Clay_k1000.Fan_B[48]",
+    "Crowd_P3_Clay_k1000.Fan_B[49]",
+    "Crowd_P3_Clay_k1000.Fan_B[50]",
+    "Crowd_P3_Clay_k1000.Fan_B[51]",
+    "Crowd_P3_Clay_k1000.Fan_B[52]",
+    "Crowd_P3_Clay_k1000.Fan_B[53]",
+    "Crowd_P3_Clay_k1000.Fan_B[54]",
+    "Crowd_P3_Clay_k1000.Fan_B[55]",
+    "Crowd_P3_Clay_k1000.Fan_B[56]",
+    "Crowd_P3_Clay_k1000.Fan_B[57]",
+    "Crowd_P3_Clay_k1000.Fan_B[58]",
+    "Crowd_P3_Clay_k1000.Fan_B[59]",
+    "Crowd_P3_Clay_k1000.Fan_B[60]",
+    "Crowd_P3_Clay_k1000.Fan_B[61]",
+    "Crowd_P3_Clay_k1000.Fan_B[62]",
+    "Crowd_P3_Clay_k1000.Fan_B[63]",
+    "Crowd_P3_Clay_k1000.Fan_B[64]",
+    "Crowd_P3_Clay_k1000.Fan_B[65]"
+   ],
+   "first": [
+    0.977556,
+    0.0,
+    -0.153921,
+    0.0,
+    0.9896,
+    0.0,
+    0.153921,
+    0.0,
+    0.977556,
+    -40.962849,
+    2.95,
+    30.07
+   ]
+  },
+  {
+   "name": "Fan_C",
+   "mesh": "SM_Fan_C",
+   "layer": "crowd",
+   "count": 45,
+   "triangles": 24300,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan",
+    "MI_ClayCrowd_Scarf"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_C[0]",
+    "Crowd_P3_Clay_k1000.Fan_C[1]",
+    "Crowd_P3_Clay_k1000.Fan_C[2]",
+    "Crowd_P3_Clay_k1000.Fan_C[3]",
+    "Crowd_P3_Clay_k1000.Fan_C[4]",
+    "Crowd_P3_Clay_k1000.Fan_C[5]",
+    "Crowd_P3_Clay_k1000.Fan_C[6]",
+    "Crowd_P3_Clay_k1000.Fan_C[7]",
+    "Crowd_P3_Clay_k1000.Fan_C[8]",
+    "Crowd_P3_Clay_k1000.Fan_C[9]",
+    "Crowd_P3_Clay_k1000.Fan_C[10]",
+    "Crowd_P3_Clay_k1000.Fan_C[11]",
+    "Crowd_P3_Clay_k1000.Fan_C[12]",
+    "Crowd_P3_Clay_k1000.Fan_C[13]",
+    "Crowd_P3_Clay_k1000.Fan_C[14]",
+    "Crowd_P3_Clay_k1000.Fan_C[15]",
+    "Crowd_P3_Clay_k1000.Fan_C[16]",
+    "Crowd_P3_Clay_k1000.Fan_C[17]",
+    "Crowd_P3_Clay_k1000.Fan_C[18]",
+    "Crowd_P3_Clay_k1000.Fan_C[19]",
+    "Crowd_P3_Clay_k1000.Fan_C[20]",
+    "Crowd_P3_Clay_k1000.Fan_C[21]",
+    "Crowd_P3_Clay_k1000.Fan_C[22]",
+    "Crowd_P3_Clay_k1000.Fan_C[23]",
+    "Crowd_P3_Clay_k1000.Fan_C[24]",
+    "Crowd_P3_Clay_k1000.Fan_C[25]",
+    "Crowd_P3_Clay_k1000.Fan_C[26]",
+    "Crowd_P3_Clay_k1000.Fan_C[27]",
+    "Crowd_P3_Clay_k1000.Fan_C[28]",
+    "Crowd_P3_Clay_k1000.Fan_C[29]",
+    "Crowd_P3_Clay_k1000.Fan_C[30]",
+    "Crowd_P3_Clay_k1000.Fan_C[31]",
+    "Crowd_P3_Clay_k1000.Fan_C[32]",
+    "Crowd_P3_Clay_k1000.Fan_C[33]",
+    "Crowd_P3_Clay_k1000.Fan_C[34]",
+    "Crowd_P3_Clay_k1000.Fan_C[35]",
+    "Crowd_P3_Clay_k1000.Fan_C[36]",
+    "Crowd_P3_Clay_k1000.Fan_C[37]",
+    "Crowd_P3_Clay_k1000.Fan_C[38]",
+    "Crowd_P3_Clay_k1000.Fan_C[39]",
+    "Crowd_P3_Clay_k1000.Fan_C[40]",
+    "Crowd_P3_Clay_k1000.Fan_C[41]",
+    "Crowd_P3_Clay_k1000.Fan_C[42]",
+    "Crowd_P3_Clay_k1000.Fan_C[43]",
+    "Crowd_P3_Clay_k1000.Fan_C[44]"
+   ],
+   "first": [
+    0.999308,
+    0.0,
+    0.111417,
+    0.0,
+    1.0055,
+    0.0,
+    -0.111417,
+    0.0,
+    0.999308,
+    -42.662918,
+    1.65,
+    28.17
+   ]
+  },
+  {
+   "name": "Fan_D",
+   "mesh": "SM_Fan_D",
+   "layer": "crowd",
+   "count": 4,
+   "triangles": 2176,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan",
+    "MI_ClayCrowd_Scarf"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_D[0]",
+    "Crowd_P3_Clay_k1000.Fan_D[1]",
+    "Crowd_P3_Clay_k1000.Fan_D[2]",
+    "Crowd_P3_Clay_k1000.Fan_D[3]"
+   ],
+   "first": [
+    0.141771,
+    0.0,
+    -0.994344,
+    0.0,
+    1.0044,
+    0.0,
+    0.994344,
+    0.0,
+    0.141771,
+    50.75,
+    1.2,
+    -2.185199
+   ]
+  },
+  {
+   "name": "Fan_E",
+   "mesh": "SM_Fan_E",
+   "layer": "crowd",
+   "count": 46,
+   "triangles": 26312,
+   "materials": [
+    "MI_ClayCrowd_Tin",
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan",
+    "MI_ClayCrowd_Scarf"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_E[0]",
+    "Crowd_P3_Clay_k1000.Fan_E[1]",
+    "Crowd_P3_Clay_k1000.Fan_E[2]",
+    "Crowd_P3_Clay_k1000.Fan_E[3]",
+    "Crowd_P3_Clay_k1000.Fan_E[4]",
+    "Crowd_P3_Clay_k1000.Fan_E[5]",
+    "Crowd_P3_Clay_k1000.Fan_E[6]",
+    "Crowd_P3_Clay_k1000.Fan_E[7]",
+    "Crowd_P3_Clay_k1000.Fan_E[8]",
+    "Crowd_P3_Clay_k1000.Fan_E[9]",
+    "Crowd_P3_Clay_k1000.Fan_E[10]",
+    "Crowd_P3_Clay_k1000.Fan_E[11]",
+    "Crowd_P3_Clay_k1000.Fan_E[12]",
+    "Crowd_P3_Clay_k1000.Fan_E[13]",
+    "Crowd_P3_Clay_k1000.Fan_E[14]",
+    "Crowd_P3_Clay_k1000.Fan_E[15]",
+    "Crowd_P3_Clay_k1000.Fan_E[16]",
+    "Crowd_P3_Clay_k1000.Fan_E[17]",
+    "Crowd_P3_Clay_k1000.Fan_E[18]",
+    "Crowd_P3_Clay_k1000.Fan_E[19]",
+    "Crowd_P3_Clay_k1000.Fan_E[20]",
+    "Crowd_P3_Clay_k1000.Fan_E[21]",
+    "Crowd_P3_Clay_k1000.Fan_E[22]",
+    "Crowd_P3_Clay_k1000.Fan_E[23]",
+    "Crowd_P3_Clay_k1000.Fan_E[24]",
+    "Crowd_P3_Clay_k1000.Fan_E[25]",
+    "Crowd_P3_Clay_k1000.Fan_E[26]",
+    "Crowd_P3_Clay_k1000.Fan_E[27]",
+    "Crowd_P3_Clay_k1000.Fan_E[28]",
+    "Crowd_P3_Clay_k1000.Fan_E[29]",
+    "Crowd_P3_Clay_k1000.Fan_E[30]",
+    "Crowd_P3_Clay_k1000.Fan_E[31]",
+    "Crowd_P3_Clay_k1000.Fan_E[32]",
+    "Crowd_P3_Clay_k1000.Fan_E[33]",
+    "Crowd_P3_Clay_k1000.Fan_E[34]",
+    "Crowd_P3_Clay_k1000.Fan_E[35]",
+    "Crowd_P3_Clay_k1000.Fan_E[36]",
+    "Crowd_P3_Clay_k1000.Fan_E[37]",
+    "Crowd_P3_Clay_k1000.Fan_E[38]",
+    "Crowd_P3_Clay_k1000.Fan_E[39]",
+    "Crowd_P3_Clay_k1000.Fan_E[40]",
+    "Crowd_P3_Clay_k1000.Fan_E[41]",
+    "Crowd_P3_Clay_k1000.Fan_E[42]",
+    "Crowd_P3_Clay_k1000.Fan_E[43]",
+    "Crowd_P3_Clay_k1000.Fan_E[44]",
+    "Crowd_P3_Clay_k1000.Fan_E[45]"
+   ],
+   "first": [
+    0.980168,
+    0.0,
+    0.116775,
+    0.0,
+    0.9871,
+    0.0,
+    -0.116775,
+    0.0,
+    0.980168,
+    -42.096228,
+    2.3,
+    29.12
+   ]
+  },
+  {
+   "name": "Fan_F",
+   "mesh": "SM_Fan_F",
+   "layer": "crowd",
+   "count": 63,
+   "triangles": 38052,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan",
+    "MI_ClayCrowd_Scarf"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_F[0]",
+    "Crowd_P3_Clay_k1000.Fan_F[1]",
+    "Crowd_P3_Clay_k1000.Fan_F[2]",
+    "Crowd_P3_Clay_k1000.Fan_F[3]",
+    "Crowd_P3_Clay_k1000.Fan_F[4]",
+    "Crowd_P3_Clay_k1000.Fan_F[5]",
+    "Crowd_P3_Clay_k1000.Fan_F[6]",
+    "Crowd_P3_Clay_k1000.Fan_F[7]",
+    "Crowd_P3_Clay_k1000.Fan_F[8]",
+    "Crowd_P3_Clay_k1000.Fan_F[9]",
+    "Crowd_P3_Clay_k1000.Fan_F[10]",
+    "Crowd_P3_Clay_k1000.Fan_F[11]",
+    "Crowd_P3_Clay_k1000.Fan_F[12]",
+    "Crowd_P3_Clay_k1000.Fan_F[13]",
+    "Crowd_P3_Clay_k1000.Fan_F[14]",
+    "Crowd_P3_Clay_k1000.Fan_F[15]",
+    "Crowd_P3_Clay_k1000.Fan_F[16]",
+    "Crowd_P3_Clay_k1000.Fan_F[17]",
+    "Crowd_P3_Clay_k1000.Fan_F[18]",
+    "Crowd_P3_Clay_k1000.Fan_F[19]",
+    "Crowd_P3_Clay_k1000.Fan_F[20]",
+    "Crowd_P3_Clay_k1000.Fan_F[21]",
+    "Crowd_P3_Clay_k1000.Fan_F[22]",
+    "Crowd_P3_Clay_k1000.Fan_F[23]",
+    "Crowd_P3_Clay_k1000.Fan_F[24]",
+    "Crowd_P3_Clay_k1000.Fan_F[25]",
+    "Crowd_P3_Clay_k1000.Fan_F[26]",
+    "Crowd_P3_Clay_k1000.Fan_F[27]",
+    "Crowd_P3_Clay_k1000.Fan_F[28]",
+    "Crowd_P3_Clay_k1000.Fan_F[29]",
+    "Crowd_P3_Clay_k1000.Fan_F[30]",
+    "Crowd_P3_Clay_k1000.Fan_F[31]",
+    "Crowd_P3_Clay_k1000.Fan_F[32]",
+    "Crowd_P3_Clay_k1000.Fan_F[33]",
+    "Crowd_P3_Clay_k1000.Fan_F[34]",
+    "Crowd_P3_Clay_k1000.Fan_F[35]",
+    "Crowd_P3_Clay_k1000.Fan_F[36]",
+    "Crowd_P3_Clay_k1000.Fan_F[37]",
+    "Crowd_P3_Clay_k1000.Fan_F[38]",
+    "Crowd_P3_Clay_k1000.Fan_F[39]",
+    "Crowd_P3_Clay_k1000.Fan_F[40]",
+    "Crowd_P3_Clay_k1000.Fan_F[41]",
+    "Crowd_P3_Clay_k1000.Fan_F[42]",
+    "Crowd_P3_Clay_k1000.Fan_F[43]",
+    "Crowd_P3_Clay_k1000.Fan_F[44]",
+    "Crowd_P3_Clay_k1000.Fan_F[45]",
+    "Crowd_P3_Clay_k1000.Fan_F[46]",
+    "Crowd_P3_Clay_k1000.Fan_F[47]",
+    "Crowd_P3_Clay_k1000.Fan_F[48]",
+    "Crowd_P3_Clay_k1000.Fan_F[49]",
+    "Crowd_P3_Clay_k1000.Fan_F[50]",
+    "Crowd_P3_Clay_k1000.Fan_F[51]",
+    "Crowd_P3_Clay_k1000.Fan_F[52]",
+    "Crowd_P3_Clay_k1000.Fan_F[53]",
+    "Crowd_P3_Clay_k1000.Fan_F[54]",
+    "Crowd_P3_Clay_k1000.Fan_F[55]",
+    "Crowd_P3_Clay_k1000.Fan_F[56]",
+    "Crowd_P3_Clay_k1000.Fan_F[57]",
+    "Crowd_P3_Clay_k1000.Fan_F[58]",
+    "Crowd_P3_Clay_k1000.Fan_F[59]",
+    "Crowd_P3_Clay_k1000.Fan_F[60]",
+    "Crowd_P3_Clay_k1000.Fan_F[61]",
+    "Crowd_P3_Clay_k1000.Fan_F[62]"
+   ],
+   "first": [
+    0.987408,
+    0.0,
+    0.065827,
+    0.0,
+    0.9896,
+    0.0,
+    -0.065827,
+    0.0,
+    0.987408,
+    -41.529539,
+    2.95,
+    30.07
+   ]
+  },
+  {
+   "name": "Fan_G",
+   "mesh": "SM_Fan_G",
+   "layer": "crowd",
+   "count": 62,
+   "triangles": 37696,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_G[0]",
+    "Crowd_P3_Clay_k1000.Fan_G[1]",
+    "Crowd_P3_Clay_k1000.Fan_G[2]",
+    "Crowd_P3_Clay_k1000.Fan_G[3]",
+    "Crowd_P3_Clay_k1000.Fan_G[4]",
+    "Crowd_P3_Clay_k1000.Fan_G[5]",
+    "Crowd_P3_Clay_k1000.Fan_G[6]",
+    "Crowd_P3_Clay_k1000.Fan_G[7]",
+    "Crowd_P3_Clay_k1000.Fan_G[8]",
+    "Crowd_P3_Clay_k1000.Fan_G[9]",
+    "Crowd_P3_Clay_k1000.Fan_G[10]",
+    "Crowd_P3_Clay_k1000.Fan_G[11]",
+    "Crowd_P3_Clay_k1000.Fan_G[12]",
+    "Crowd_P3_Clay_k1000.Fan_G[13]",
+    "Crowd_P3_Clay_k1000.Fan_G[14]",
+    "Crowd_P3_Clay_k1000.Fan_G[15]",
+    "Crowd_P3_Clay_k1000.Fan_G[16]",
+    "Crowd_P3_Clay_k1000.Fan_G[17]",
+    "Crowd_P3_Clay_k1000.Fan_G[18]",
+    "Crowd_P3_Clay_k1000.Fan_G[19]",
+    "Crowd_P3_Clay_k1000.Fan_G[20]",
+    "Crowd_P3_Clay_k1000.Fan_G[21]",
+    "Crowd_P3_Clay_k1000.Fan_G[22]",
+    "Crowd_P3_Clay_k1000.Fan_G[23]",
+    "Crowd_P3_Clay_k1000.Fan_G[24]",
+    "Crowd_P3_Clay_k1000.Fan_G[25]",
+    "Crowd_P3_Clay_k1000.Fan_G[26]",
+    "Crowd_P3_Clay_k1000.Fan_G[27]",
+    "Crowd_P3_Clay_k1000.Fan_G[28]",
+    "Crowd_P3_Clay_k1000.Fan_G[29]",
+    "Crowd_P3_Clay_k1000.Fan_G[30]",
+    "Crowd_P3_Clay_k1000.Fan_G[31]",
+    "Crowd_P3_Clay_k1000.Fan_G[32]",
+    "Crowd_P3_Clay_k1000.Fan_G[33]",
+    "Crowd_P3_Clay_k1000.Fan_G[34]",
+    "Crowd_P3_Clay_k1000.Fan_G[35]",
+    "Crowd_P3_Clay_k1000.Fan_G[36]",
+    "Crowd_P3_Clay_k1000.Fan_G[37]",
+    "Crowd_P3_Clay_k1000.Fan_G[38]",
+    "Crowd_P3_Clay_k1000.Fan_G[39]",
+    "Crowd_P3_Clay_k1000.Fan_G[40]",
+    "Crowd_P3_Clay_k1000.Fan_G[41]",
+    "Crowd_P3_Clay_k1000.Fan_G[42]",
+    "Crowd_P3_Clay_k1000.Fan_G[43]",
+    "Crowd_P3_Clay_k1000.Fan_G[44]",
+    "Crowd_P3_Clay_k1000.Fan_G[45]",
+    "Crowd_P3_Clay_k1000.Fan_G[46]",
+    "Crowd_P3_Clay_k1000.Fan_G[47]",
+    "Crowd_P3_Clay_k1000.Fan_G[48]",
+    "Crowd_P3_Clay_k1000.Fan_G[49]",
+    "Crowd_P3_Clay_k1000.Fan_G[50]",
+    "Crowd_P3_Clay_k1000.Fan_G[51]",
+    "Crowd_P3_Clay_k1000.Fan_G[52]",
+    "Crowd_P3_Clay_k1000.Fan_G[53]",
+    "Crowd_P3_Clay_k1000.Fan_G[54]",
+    "Crowd_P3_Clay_k1000.Fan_G[55]",
+    "Crowd_P3_Clay_k1000.Fan_G[56]",
+    "Crowd_P3_Clay_k1000.Fan_G[57]",
+    "Crowd_P3_Clay_k1000.Fan_G[58]",
+    "Crowd_P3_Clay_k1000.Fan_G[59]",
+    "Crowd_P3_Clay_k1000.Fan_G[60]",
+    "Crowd_P3_Clay_k1000.Fan_G[61]"
+   ],
+   "first": [
+    0.979432,
+    0.0,
+    0.018156,
+    0.0,
+    0.9796,
+    0.0,
+    -0.018156,
+    0.0,
+    0.979432,
+    -41.529539,
+    2.3,
+    29.12
+   ]
+  },
+  {
+   "name": "Fan_H",
+   "mesh": "SM_Fan_H",
+   "layer": "crowd",
+   "count": 64,
+   "triangles": 33280,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_H[0]",
+    "Crowd_P3_Clay_k1000.Fan_H[1]",
+    "Crowd_P3_Clay_k1000.Fan_H[2]",
+    "Crowd_P3_Clay_k1000.Fan_H[3]",
+    "Crowd_P3_Clay_k1000.Fan_H[4]",
+    "Crowd_P3_Clay_k1000.Fan_H[5]",
+    "Crowd_P3_Clay_k1000.Fan_H[6]",
+    "Crowd_P3_Clay_k1000.Fan_H[7]",
+    "Crowd_P3_Clay_k1000.Fan_H[8]",
+    "Crowd_P3_Clay_k1000.Fan_H[9]",
+    "Crowd_P3_Clay_k1000.Fan_H[10]",
+    "Crowd_P3_Clay_k1000.Fan_H[11]",
+    "Crowd_P3_Clay_k1000.Fan_H[12]",
+    "Crowd_P3_Clay_k1000.Fan_H[13]",
+    "Crowd_P3_Clay_k1000.Fan_H[14]",
+    "Crowd_P3_Clay_k1000.Fan_H[15]",
+    "Crowd_P3_Clay_k1000.Fan_H[16]",
+    "Crowd_P3_Clay_k1000.Fan_H[17]",
+    "Crowd_P3_Clay_k1000.Fan_H[18]",
+    "Crowd_P3_Clay_k1000.Fan_H[19]",
+    "Crowd_P3_Clay_k1000.Fan_H[20]",
+    "Crowd_P3_Clay_k1000.Fan_H[21]",
+    "Crowd_P3_Clay_k1000.Fan_H[22]",
+    "Crowd_P3_Clay_k1000.Fan_H[23]",
+    "Crowd_P3_Clay_k1000.Fan_H[24]",
+    "Crowd_P3_Clay_k1000.Fan_H[25]",
+    "Crowd_P3_Clay_k1000.Fan_H[26]",
+    "Crowd_P3_Clay_k1000.Fan_H[27]",
+    "Crowd_P3_Clay_k1000.Fan_H[28]",
+    "Crowd_P3_Clay_k1000.Fan_H[29]",
+    "Crowd_P3_Clay_k1000.Fan_H[30]",
+    "Crowd_P3_Clay_k1000.Fan_H[31]",
+    "Crowd_P3_Clay_k1000.Fan_H[32]",
+    "Crowd_P3_Clay_k1000.Fan_H[33]",
+    "Crowd_P3_Clay_k1000.Fan_H[34]",
+    "Crowd_P3_Clay_k1000.Fan_H[35]",
+    "Crowd_P3_Clay_k1000.Fan_H[36]",
+    "Crowd_P3_Clay_k1000.Fan_H[37]",
+    "Crowd_P3_Clay_k1000.Fan_H[38]",
+    "Crowd_P3_Clay_k1000.Fan_H[39]",
+    "Crowd_P3_Clay_k1000.Fan_H[40]",
+    "Crowd_P3_Clay_k1000.Fan_H[41]",
+    "Crowd_P3_Clay_k1000.Fan_H[42]",
+    "Crowd_P3_Clay_k1000.Fan_H[43]",
+    "Crowd_P3_Clay_k1000.Fan_H[44]",
+    "Crowd_P3_Clay_k1000.Fan_H[45]",
+    "Crowd_P3_Clay_k1000.Fan_H[46]",
+    "Crowd_P3_Clay_k1000.Fan_H[47]",
+    "Crowd_P3_Clay_k1000.Fan_H[48]",
+    "Crowd_P3_Clay_k1000.Fan_H[49]",
+    "Crowd_P3_Clay_k1000.Fan_H[50]",
+    "Crowd_P3_Clay_k1000.Fan_H[51]",
+    "Crowd_P3_Clay_k1000.Fan_H[52]",
+    "Crowd_P3_Clay_k1000.Fan_H[53]",
+    "Crowd_P3_Clay_k1000.Fan_H[54]",
+    "Crowd_P3_Clay_k1000.Fan_H[55]",
+    "Crowd_P3_Clay_k1000.Fan_H[56]",
+    "Crowd_P3_Clay_k1000.Fan_H[57]",
+    "Crowd_P3_Clay_k1000.Fan_H[58]",
+    "Crowd_P3_Clay_k1000.Fan_H[59]",
+    "Crowd_P3_Clay_k1000.Fan_H[60]",
+    "Crowd_P3_Clay_k1000.Fan_H[61]",
+    "Crowd_P3_Clay_k1000.Fan_H[62]",
+    "Crowd_P3_Clay_k1000.Fan_H[63]"
+   ],
+   "first": [
+    0.983483,
+    0.0,
+    -0.005786,
+    0.0,
+    0.9835,
+    0.0,
+    0.005786,
+    0.0,
+    0.983483,
+    -40.39616,
+    2.3,
+    29.12
+   ]
+  },
+  {
+   "name": "Fan_I",
+   "mesh": "SM_Fan_I",
+   "layer": "crowd",
+   "count": 64,
+   "triangles": 37632,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_I[0]",
+    "Crowd_P3_Clay_k1000.Fan_I[1]",
+    "Crowd_P3_Clay_k1000.Fan_I[2]",
+    "Crowd_P3_Clay_k1000.Fan_I[3]",
+    "Crowd_P3_Clay_k1000.Fan_I[4]",
+    "Crowd_P3_Clay_k1000.Fan_I[5]",
+    "Crowd_P3_Clay_k1000.Fan_I[6]",
+    "Crowd_P3_Clay_k1000.Fan_I[7]",
+    "Crowd_P3_Clay_k1000.Fan_I[8]",
+    "Crowd_P3_Clay_k1000.Fan_I[9]",
+    "Crowd_P3_Clay_k1000.Fan_I[10]",
+    "Crowd_P3_Clay_k1000.Fan_I[11]",
+    "Crowd_P3_Clay_k1000.Fan_I[12]",
+    "Crowd_P3_Clay_k1000.Fan_I[13]",
+    "Crowd_P3_Clay_k1000.Fan_I[14]",
+    "Crowd_P3_Clay_k1000.Fan_I[15]",
+    "Crowd_P3_Clay_k1000.Fan_I[16]",
+    "Crowd_P3_Clay_k1000.Fan_I[17]",
+    "Crowd_P3_Clay_k1000.Fan_I[18]",
+    "Crowd_P3_Clay_k1000.Fan_I[19]",
+    "Crowd_P3_Clay_k1000.Fan_I[20]",
+    "Crowd_P3_Clay_k1000.Fan_I[21]",
+    "Crowd_P3_Clay_k1000.Fan_I[22]",
+    "Crowd_P3_Clay_k1000.Fan_I[23]",
+    "Crowd_P3_Clay_k1000.Fan_I[24]",
+    "Crowd_P3_Clay_k1000.Fan_I[25]",
+    "Crowd_P3_Clay_k1000.Fan_I[26]",
+    "Crowd_P3_Clay_k1000.Fan_I[27]",
+    "Crowd_P3_Clay_k1000.Fan_I[28]",
+    "Crowd_P3_Clay_k1000.Fan_I[29]",
+    "Crowd_P3_Clay_k1000.Fan_I[30]",
+    "Crowd_P3_Clay_k1000.Fan_I[31]",
+    "Crowd_P3_Clay_k1000.Fan_I[32]",
+    "Crowd_P3_Clay_k1000.Fan_I[33]",
+    "Crowd_P3_Clay_k1000.Fan_I[34]",
+    "Crowd_P3_Clay_k1000.Fan_I[35]",
+    "Crowd_P3_Clay_k1000.Fan_I[36]",
+    "Crowd_P3_Clay_k1000.Fan_I[37]",
+    "Crowd_P3_Clay_k1000.Fan_I[38]",
+    "Crowd_P3_Clay_k1000.Fan_I[39]",
+    "Crowd_P3_Clay_k1000.Fan_I[40]",
+    "Crowd_P3_Clay_k1000.Fan_I[41]",
+    "Crowd_P3_Clay_k1000.Fan_I[42]",
+    "Crowd_P3_Clay_k1000.Fan_I[43]",
+    "Crowd_P3_Clay_k1000.Fan_I[44]",
+    "Crowd_P3_Clay_k1000.Fan_I[45]",
+    "Crowd_P3_Clay_k1000.Fan_I[46]",
+    "Crowd_P3_Clay_k1000.Fan_I[47]",
+    "Crowd_P3_Clay_k1000.Fan_I[48]",
+    "Crowd_P3_Clay_k1000.Fan_I[49]",
+    "Crowd_P3_Clay_k1000.Fan_I[50]",
+    "Crowd_P3_Clay_k1000.Fan_I[51]",
+    "Crowd_P3_Clay_k1000.Fan_I[52]",
+    "Crowd_P3_Clay_k1000.Fan_I[53]",
+    "Crowd_P3_Clay_k1000.Fan_I[54]",
+    "Crowd_P3_Clay_k1000.Fan_I[55]",
+    "Crowd_P3_Clay_k1000.Fan_I[56]",
+    "Crowd_P3_Clay_k1000.Fan_I[57]",
+    "Crowd_P3_Clay_k1000.Fan_I[58]",
+    "Crowd_P3_Clay_k1000.Fan_I[59]",
+    "Crowd_P3_Clay_k1000.Fan_I[60]",
+    "Crowd_P3_Clay_k1000.Fan_I[61]",
+    "Crowd_P3_Clay_k1000.Fan_I[62]",
+    "Crowd_P3_Clay_k1000.Fan_I[63]"
+   ],
+   "first": [
+    1.008524,
+    0.0,
+    0.018832,
+    0.0,
+    1.0087,
+    0.0,
+    -0.018832,
+    0.0,
+    1.008524,
+    -40.962849,
+    2.3,
+    29.12
+   ]
+  },
+  {
+   "name": "Fan_J",
+   "mesh": "SM_Fan_J",
+   "layer": "crowd",
+   "count": 64,
+   "triangles": 39680,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_J[0]",
+    "Crowd_P3_Clay_k1000.Fan_J[1]",
+    "Crowd_P3_Clay_k1000.Fan_J[2]",
+    "Crowd_P3_Clay_k1000.Fan_J[3]",
+    "Crowd_P3_Clay_k1000.Fan_J[4]",
+    "Crowd_P3_Clay_k1000.Fan_J[5]",
+    "Crowd_P3_Clay_k1000.Fan_J[6]",
+    "Crowd_P3_Clay_k1000.Fan_J[7]",
+    "Crowd_P3_Clay_k1000.Fan_J[8]",
+    "Crowd_P3_Clay_k1000.Fan_J[9]",
+    "Crowd_P3_Clay_k1000.Fan_J[10]",
+    "Crowd_P3_Clay_k1000.Fan_J[11]",
+    "Crowd_P3_Clay_k1000.Fan_J[12]",
+    "Crowd_P3_Clay_k1000.Fan_J[13]",
+    "Crowd_P3_Clay_k1000.Fan_J[14]",
+    "Crowd_P3_Clay_k1000.Fan_J[15]",
+    "Crowd_P3_Clay_k1000.Fan_J[16]",
+    "Crowd_P3_Clay_k1000.Fan_J[17]",
+    "Crowd_P3_Clay_k1000.Fan_J[18]",
+    "Crowd_P3_Clay_k1000.Fan_J[19]",
+    "Crowd_P3_Clay_k1000.Fan_J[20]",
+    "Crowd_P3_Clay_k1000.Fan_J[21]",
+    "Crowd_P3_Clay_k1000.Fan_J[22]",
+    "Crowd_P3_Clay_k1000.Fan_J[23]",
+    "Crowd_P3_Clay_k1000.Fan_J[24]",
+    "Crowd_P3_Clay_k1000.Fan_J[25]",
+    "Crowd_P3_Clay_k1000.Fan_J[26]",
+    "Crowd_P3_Clay_k1000.Fan_J[27]",
+    "Crowd_P3_Clay_k1000.Fan_J[28]",
+    "Crowd_P3_Clay_k1000.Fan_J[29]",
+    "Crowd_P3_Clay_k1000.Fan_J[30]",
+    "Crowd_P3_Clay_k1000.Fan_J[31]",
+    "Crowd_P3_Clay_k1000.Fan_J[32]",
+    "Crowd_P3_Clay_k1000.Fan_J[33]",
+    "Crowd_P3_Clay_k1000.Fan_J[34]",
+    "Crowd_P3_Clay_k1000.Fan_J[35]",
+    "Crowd_P3_Clay_k1000.Fan_J[36]",
+    "Crowd_P3_Clay_k1000.Fan_J[37]",
+    "Crowd_P3_Clay_k1000.Fan_J[38]",
+    "Crowd_P3_Clay_k1000.Fan_J[39]",
+    "Crowd_P3_Clay_k1000.Fan_J[40]",
+    "Crowd_P3_Clay_k1000.Fan_J[41]",
+    "Crowd_P3_Clay_k1000.Fan_J[42]",
+    "Crowd_P3_Clay_k1000.Fan_J[43]",
+    "Crowd_P3_Clay_k1000.Fan_J[44]",
+    "Crowd_P3_Clay_k1000.Fan_J[45]",
+    "Crowd_P3_Clay_k1000.Fan_J[46]",
+    "Crowd_P3_Clay_k1000.Fan_J[47]",
+    "Crowd_P3_Clay_k1000.Fan_J[48]",
+    "Crowd_P3_Clay_k1000.Fan_J[49]",
+    "Crowd_P3_Clay_k1000.Fan_J[50]",
+    "Crowd_P3_Clay_k1000.Fan_J[51]",
+    "Crowd_P3_Clay_k1000.Fan_J[52]",
+    "Crowd_P3_Clay_k1000.Fan_J[53]",
+    "Crowd_P3_Clay_k1000.Fan_J[54]",
+    "Crowd_P3_Clay_k1000.Fan_J[55]",
+    "Crowd_P3_Clay_k1000.Fan_J[56]",
+    "Crowd_P3_Clay_k1000.Fan_J[57]",
+    "Crowd_P3_Clay_k1000.Fan_J[58]",
+    "Crowd_P3_Clay_k1000.Fan_J[59]",
+    "Crowd_P3_Clay_k1000.Fan_J[60]",
+    "Crowd_P3_Clay_k1000.Fan_J[61]",
+    "Crowd_P3_Clay_k1000.Fan_J[62]",
+    "Crowd_P3_Clay_k1000.Fan_J[63]"
+   ],
+   "first": [
+    0.978097,
+    0.0,
+    0.093958,
+    0.0,
+    0.9826,
+    0.0,
+    -0.093958,
+    0.0,
+    0.978097,
+    -40.962849,
+    1.65,
+    28.17
+   ]
+  },
+  {
+   "name": "Fan_K",
+   "mesh": "SM_Fan_K",
+   "layer": "crowd",
+   "count": 58,
+   "triangles": 34568,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_K[0]",
+    "Crowd_P3_Clay_k1000.Fan_K[1]",
+    "Crowd_P3_Clay_k1000.Fan_K[2]",
+    "Crowd_P3_Clay_k1000.Fan_K[3]",
+    "Crowd_P3_Clay_k1000.Fan_K[4]",
+    "Crowd_P3_Clay_k1000.Fan_K[5]",
+    "Crowd_P3_Clay_k1000.Fan_K[6]",
+    "Crowd_P3_Clay_k1000.Fan_K[7]",
+    "Crowd_P3_Clay_k1000.Fan_K[8]",
+    "Crowd_P3_Clay_k1000.Fan_K[9]",
+    "Crowd_P3_Clay_k1000.Fan_K[10]",
+    "Crowd_P3_Clay_k1000.Fan_K[11]",
+    "Crowd_P3_Clay_k1000.Fan_K[12]",
+    "Crowd_P3_Clay_k1000.Fan_K[13]",
+    "Crowd_P3_Clay_k1000.Fan_K[14]",
+    "Crowd_P3_Clay_k1000.Fan_K[15]",
+    "Crowd_P3_Clay_k1000.Fan_K[16]",
+    "Crowd_P3_Clay_k1000.Fan_K[17]",
+    "Crowd_P3_Clay_k1000.Fan_K[18]",
+    "Crowd_P3_Clay_k1000.Fan_K[19]",
+    "Crowd_P3_Clay_k1000.Fan_K[20]",
+    "Crowd_P3_Clay_k1000.Fan_K[21]",
+    "Crowd_P3_Clay_k1000.Fan_K[22]",
+    "Crowd_P3_Clay_k1000.Fan_K[23]",
+    "Crowd_P3_Clay_k1000.Fan_K[24]",
+    "Crowd_P3_Clay_k1000.Fan_K[25]",
+    "Crowd_P3_Clay_k1000.Fan_K[26]",
+    "Crowd_P3_Clay_k1000.Fan_K[27]",
+    "Crowd_P3_Clay_k1000.Fan_K[28]",
+    "Crowd_P3_Clay_k1000.Fan_K[29]",
+    "Crowd_P3_Clay_k1000.Fan_K[30]",
+    "Crowd_P3_Clay_k1000.Fan_K[31]",
+    "Crowd_P3_Clay_k1000.Fan_K[32]",
+    "Crowd_P3_Clay_k1000.Fan_K[33]",
+    "Crowd_P3_Clay_k1000.Fan_K[34]",
+    "Crowd_P3_Clay_k1000.Fan_K[35]",
+    "Crowd_P3_Clay_k1000.Fan_K[36]",
+    "Crowd_P3_Clay_k1000.Fan_K[37]",
+    "Crowd_P3_Clay_k1000.Fan_K[38]",
+    "Crowd_P3_Clay_k1000.Fan_K[39]",
+    "Crowd_P3_Clay_k1000.Fan_K[40]",
+    "Crowd_P3_Clay_k1000.Fan_K[41]",
+    "Crowd_P3_Clay_k1000.Fan_K[42]",
+    "Crowd_P3_Clay_k1000.Fan_K[43]",
+    "Crowd_P3_Clay_k1000.Fan_K[44]",
+    "Crowd_P3_Clay_k1000.Fan_K[45]",
+    "Crowd_P3_Clay_k1000.Fan_K[46]",
+    "Crowd_P3_Clay_k1000.Fan_K[47]",
+    "Crowd_P3_Clay_k1000.Fan_K[48]",
+    "Crowd_P3_Clay_k1000.Fan_K[49]",
+    "Crowd_P3_Clay_k1000.Fan_K[50]",
+    "Crowd_P3_Clay_k1000.Fan_K[51]",
+    "Crowd_P3_Clay_k1000.Fan_K[52]",
+    "Crowd_P3_Clay_k1000.Fan_K[53]",
+    "Crowd_P3_Clay_k1000.Fan_K[54]",
+    "Crowd_P3_Clay_k1000.Fan_K[55]",
+    "Crowd_P3_Clay_k1000.Fan_K[56]",
+    "Crowd_P3_Clay_k1000.Fan_K[57]"
+   ],
+   "first": [
+    0.967666,
+    0.0,
+    -0.050834,
+    0.0,
+    0.969,
+    0.0,
+    0.050834,
+    0.0,
+    0.967666,
+    -35.051693,
+    1.65,
+    28.17
+   ]
+  },
+  {
+   "name": "Fan_L",
+   "mesh": "SM_Fan_L",
+   "layer": "crowd",
+   "count": 68,
+   "triangles": 41344,
+   "materials": [
+    "MI_ClayCrowd_Skin",
+    "MI_ClayCrowd_Fan"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Fan_L[0]",
+    "Crowd_P3_Clay_k1000.Fan_L[1]",
+    "Crowd_P3_Clay_k1000.Fan_L[2]",
+    "Crowd_P3_Clay_k1000.Fan_L[3]",
+    "Crowd_P3_Clay_k1000.Fan_L[4]",
+    "Crowd_P3_Clay_k1000.Fan_L[5]",
+    "Crowd_P3_Clay_k1000.Fan_L[6]",
+    "Crowd_P3_Clay_k1000.Fan_L[7]",
+    "Crowd_P3_Clay_k1000.Fan_L[8]",
+    "Crowd_P3_Clay_k1000.Fan_L[9]",
+    "Crowd_P3_Clay_k1000.Fan_L[10]",
+    "Crowd_P3_Clay_k1000.Fan_L[11]",
+    "Crowd_P3_Clay_k1000.Fan_L[12]",
+    "Crowd_P3_Clay_k1000.Fan_L[13]",
+    "Crowd_P3_Clay_k1000.Fan_L[14]",
+    "Crowd_P3_Clay_k1000.Fan_L[15]",
+    "Crowd_P3_Clay_k1000.Fan_L[16]",
+    "Crowd_P3_Clay_k1000.Fan_L[17]",
+    "Crowd_P3_Clay_k1000.Fan_L[18]",
+    "Crowd_P3_Clay_k1000.Fan_L[19]",
+    "Crowd_P3_Clay_k1000.Fan_L[20]",
+    "Crowd_P3_Clay_k1000.Fan_L[21]",
+    "Crowd_P3_Clay_k1000.Fan_L[22]",
+    "Crowd_P3_Clay_k1000.Fan_L[23]",
+    "Crowd_P3_Clay_k1000.Fan_L[24]",
+    "Crowd_P3_Clay_k1000.Fan_L[25]",
+    "Crowd_P3_Clay_k1000.Fan_L[26]",
+    "Crowd_P3_Clay_k1000.Fan_L[27]",
+    "Crowd_P3_Clay_k1000.Fan_L[28]",
+    "Crowd_P3_Clay_k1000.Fan_L[29]",
+    "Crowd_P3_Clay_k1000.Fan_L[30]",
+    "Crowd_P3_Clay_k1000.Fan_L[31]",
+    "Crowd_P3_Clay_k1000.Fan_L[32]",
+    "Crowd_P3_Clay_k1000.Fan_L[33]",
+    "Crowd_P3_Clay_k1000.Fan_L[34]",
+    "Crowd_P3_Clay_k1000.Fan_L[35]",
+    "Crowd_P3_Clay_k1000.Fan_L[36]",
+    "Crowd_P3_Clay_k1000.Fan_L[37]",
+    "Crowd_P3_Clay_k1000.Fan_L[38]",
+    "Crowd_P3_Clay_k1000.Fan_L[39]",
+    "Crowd_P3_Clay_k1000.Fan_L[40]",
+    "Crowd_P3_Clay_k1000.Fan_L[41]",
+    "Crowd_P3_Clay_k1000.Fan_L[42]",
+    "Crowd_P3_Clay_k1000.Fan_L[43]",
+    "Crowd_P3_Clay_k1000.Fan_L[44]",
+    "Crowd_P3_Clay_k1000.Fan_L[45]",
+    "Crowd_P3_Clay_k1000.Fan_L[46]",
+    "Crowd_P3_Clay_k1000.Fan_L[47]",
+    "Crowd_P3_Clay_k1000.Fan_L[48]",
+    "Crowd_P3_Clay_k1000.Fan_L[49]",
+    "Crowd_P3_Clay_k1000.Fan_L[50]",
+    "Crowd_P3_Clay_k1000.Fan_L[51]",
+    "Crowd_P3_Clay_k1000.Fan_L[52]",
+    "Crowd_P3_Clay_k1000.Fan_L[53]",
+    "Crowd_P3_Clay_k1000.Fan_L[54]",
+    "Crowd_P3_Clay_k1000.Fan_L[55]",
+    "Crowd_P3_Clay_k1000.Fan_L[56]",
+    "Crowd_P3_Clay_k1000.Fan_L[57]",
+    "Crowd_P3_Clay_k1000.Fan_L[58]",
+    "Crowd_P3_Clay_k1000.Fan_L[59]",
+    "Crowd_P3_Clay_k1000.Fan_L[60]",
+    "Crowd_P3_Clay_k1000.Fan_L[61]",
+    "Crowd_P3_Clay_k1000.Fan_L[62]",
+    "Crowd_P3_Clay_k1000.Fan_L[63]",
+    "Crowd_P3_Clay_k1000.Fan_L[64]",
+    "Crowd_P3_Clay_k1000.Fan_L[65]",
+    "Crowd_P3_Clay_k1000.Fan_L[66]",
+    "Crowd_P3_Clay_k1000.Fan_L[67]"
+   ],
+   "first": [
+    1.009307,
+    0.0,
+    -0.110152,
+    0.0,
+    1.0153,
+    0.0,
+    0.110152,
+    0.0,
+    1.009307,
+    -42.662918,
+    2.95,
+    30.07
+   ]
+  },
+  {
+   "name": "Barn_Firewood",
+   "mesh": "SM_Barn_Firewood",
+   "layer": "crowd",
+   "count": 1,
+   "triangles": 414,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Firewood[0]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -59.27,
+    0.0,
+    18.5
+   ]
+  },
+  {
+   "name": "Barn_GateProps",
+   "mesh": "SM_Barn_GateProps",
+   "layer": "crowd",
+   "count": 1,
+   "triangles": 688,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_ClayCrowd_Tin",
+    "MI_ClayCrowd_Cream",
+    "MI_Barn_Hay",
+    "MI_Barn_Rubber"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.GateProps[0]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    59.27,
+    0.0,
+    6.536667
+   ]
+  },
+  {
+   "name": "Barn_IceGate",
+   "mesh": "SM_Barn_IceGate",
+   "layer": "crowd",
+   "count": 1,
+   "triangles": 456,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_ClayCrowd_Tin"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.IceGate[0]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    59.27,
+    0.0,
+    18.5
+   ]
+  },
+  {
+   "name": "Barn_IceMachine",
+   "mesh": "SM_Barn_IceMachine",
+   "layer": "crowd",
+   "count": 1,
+   "triangles": 804,
+   "materials": [
+    "MI_ClayCrowd_Tin",
+    "MI_Barn_Paint",
+    "MI_Barn_Rubber"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.IceMachine[0]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    56.64,
+    0.0,
+    30.833333
+   ]
+  },
+  {
+   "name": "Barn_Loft",
+   "mesh": "SM_Barn_Loft",
+   "layer": "crowd",
+   "count": 2,
+   "triangles": 864,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_Barn_Hay"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Loft[0]",
+    "Crowd_P3_Clay_k1000.Loft[1]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    -1.0278,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    59.27,
+    0.0,
+    24.666667
+   ]
+  },
+  {
+   "name": "Barn_ScoreboardHung",
+   "mesh": "SM_Barn_ScoreboardHung",
+   "layer": "crowd",
+   "count": 1,
+   "triangles": 508,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_ClayCrowd_Tin",
+    "MI_ClayCrowd_Cream",
+    "MI_Barn_ScoreLamp",
+    "MI_ClayCrowd_Cream"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.ScoreboardHung[0]"
+   ],
+   "first": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    13.5,
+    0.0
+   ]
+  },
+  {
+   "name": "Barn_SkateBench",
+   "mesh": "SM_Barn_SkateBench",
+   "layer": "crowd",
+   "count": 1,
+   "triangles": 516,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_ClayCrowd_Tin",
+    "MI_Barn_Rubber"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.SkateBench[0]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -59.27,
+    0.0,
+    -6.166667
+   ]
+  },
+  {
+   "name": "Barn_SlidingDoor",
+   "mesh": "SM_Barn_SlidingDoor",
+   "layer": "crowd",
+   "count": 1,
+   "triangles": 384,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_ClayCrowd_Tin",
+    "MI_Barn_Rubber"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.SlidingDoor[0]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    -59.27,
+    0.0,
+    6.166667
+   ]
+  },
+  {
+   "name": "Stand_Corner",
+   "mesh": "SM_Stand_Corner",
+   "layer": "crowd",
+   "count": 4,
+   "triangles": 5376,
+   "materials": [
+    "MI_ClayBarn_Stand",
+    "MI_ClayBarn_StandDark"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Stand_Corner[0]",
+    "Crowd_P3_Clay_k1000.Stand_Corner[1]",
+    "Crowd_P3_Clay_k1000.Stand_Corner[2]",
+    "Crowd_P3_Clay_k1000.Stand_Corner[3]"
+   ],
+   "first": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    43.0,
+    0.0,
+    20.5
+   ]
+  },
+  {
+   "name": "Stand_End",
+   "mesh": "SM_Stand_End",
+   "layer": "crowd",
+   "count": 4,
+   "triangles": 2016,
+   "materials": [
+    "MI_ClayBarn_Stand",
+    "MI_ClayBarn_StandDark"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Stand_End[0]",
+    "Crowd_P3_Clay_k1000.Stand_End[1]",
+    "Crowd_P3_Clay_k1000.Stand_End[2]",
+    "Crowd_P3_Clay_k1000.Stand_End[3]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    -1.0481,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    49.0,
+    0.0,
+    -2.5625
+   ]
+  },
+  {
+   "name": "Stand_Mod",
+   "mesh": "SM_Stand_Mod",
+   "layer": "crowd",
+   "count": 48,
+   "triangles": 44352,
+   "materials": [
+    "MI_ClayBarn_Stand",
+    "MI_ClayBarn_StandDark"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Crowd_P3_Clay_k1000.Stand_Mod[0]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[1]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[2]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[3]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[4]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[5]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[6]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[7]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[8]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[9]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[10]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[11]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[12]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[13]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[14]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[15]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[16]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[17]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[18]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[19]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[20]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[21]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[22]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[23]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[24]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[25]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[26]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[27]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[28]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[29]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[30]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[31]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[32]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[33]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[34]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[35]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[36]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[37]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[38]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[39]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[40]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[41]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[42]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[43]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[44]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[45]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[46]",
+    "Crowd_P3_Clay_k1000.Stand_Mod[47]"
+   ],
+   "first": [
+    0.9771,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    -40.611111,
+    0.0,
+    26.5
+   ]
+  },
+  {
+   "name": "Barn_Bunting",
+   "mesh": "SM_Barn_Bunting",
+   "layer": "barn",
+   "count": 12,
+   "triangles": 2784,
+   "materials": [
+    "MI_Barn_Cloth"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Dress_P3_Clay.Bunting[0]",
+    "Dress_P3_Clay.Bunting[1]",
+    "Dress_P3_Clay.Bunting[2]",
+    "Dress_P3_Clay.Bunting[3]",
+    "Dress_P3_Clay.Bunting[4]",
+    "Dress_P3_Clay.Bunting[5]",
+    "Dress_P3_Clay.Bunting[6]",
+    "Dress_P3_Clay.Bunting[7]",
+    "Dress_P3_Clay.Bunting[8]",
+    "Dress_P3_Clay.Bunting[9]",
+    "Dress_P3_Clay.Bunting[10]",
+    "Dress_P3_Clay.Bunting[11]"
+   ],
+   "first": [
+    0.0,
+    0.0,
+    1.0278,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    53.0,
+    13.05,
+    -30.833333
+   ]
+  },
+  {
+   "name": "Barn_LampArm_075",
+   "mesh": "SM_Barn_LampArm_075",
+   "layer": "barn",
+   "count": 6,
+   "triangles": 432,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_ClayCrowd_Tin"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Dress_P3_Clay.LampArm_075[0]",
+    "Dress_P3_Clay.LampArm_075[1]",
+    "Dress_P3_Clay.LampArm_075[2]",
+    "Dress_P3_Clay.LampArm_075[3]",
+    "Dress_P3_Clay.LampArm_075[4]",
+    "Dress_P3_Clay.LampArm_075[5]"
+   ],
+   "first": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    -11.25,
+    13.5,
+    0.0
+   ]
+  },
+  {
+   "name": "Barn_LampArm_225",
+   "mesh": "SM_Barn_LampArm_225",
+   "layer": "barn",
+   "count": 12,
+   "triangles": 1008,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_ClayCrowd_Tin"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Dress_P3_Clay.LampArm_225[0]",
+    "Dress_P3_Clay.LampArm_225[1]",
+    "Dress_P3_Clay.LampArm_225[2]",
+    "Dress_P3_Clay.LampArm_225[3]",
+    "Dress_P3_Clay.LampArm_225[4]",
+    "Dress_P3_Clay.LampArm_225[5]",
+    "Dress_P3_Clay.LampArm_225[6]",
+    "Dress_P3_Clay.LampArm_225[7]",
+    "Dress_P3_Clay.LampArm_225[8]",
+    "Dress_P3_Clay.LampArm_225[9]",
+    "Dress_P3_Clay.LampArm_225[10]",
+    "Dress_P3_Clay.LampArm_225[11]"
+   ],
+   "first": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    -33.75,
+    13.5,
+    0.0
+   ]
+  },
+  {
+   "name": "Barn_TrussBay",
+   "mesh": "SM_Barn_TrussBay",
+   "layer": "barn",
+   "count": 10,
+   "triangles": 4920,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_ClayCrowd_Tin"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Dress_P3_Clay.TrussBay[0]",
+    "Dress_P3_Clay.TrussBay[1]",
+    "Dress_P3_Clay.TrussBay[2]",
+    "Dress_P3_Clay.TrussBay[3]",
+    "Dress_P3_Clay.TrussBay[4]",
+    "Dress_P3_Clay.TrussBay[5]",
+    "Dress_P3_Clay.TrussBay[6]",
+    "Dress_P3_Clay.TrussBay[7]",
+    "Dress_P3_Clay.TrussBay[8]",
+    "Dress_P3_Clay.TrussBay[9]"
+   ],
+   "first": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.82,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    -60.0,
+    13.5,
+    0.0
+   ]
+  },
+  {
+   "name": "Barn_WallBay",
+   "mesh": "SM_Barn_WallBay",
+   "layer": "barn",
+   "count": 32,
+   "triangles": 5760,
+   "materials": [
+    "MI_Barn_Timber",
+    "MI_Barn_TimberDark",
+    "MI_Barn_NightGlass"
+   ],
+   "cast_shadow": false,
+   "sources": [
+    "Dress_P3_Clay.WallBay[0]",
+    "Dress_P3_Clay.WallBay[1]",
+    "Dress_P3_Clay.WallBay[2]",
+    "Dress_P3_Clay.WallBay[3]",
+    "Dress_P3_Clay.WallBay[4]",
+    "Dress_P3_Clay.WallBay[5]",
+    "Dress_P3_Clay.WallBay[6]",
+    "Dress_P3_Clay.WallBay[7]",
+    "Dress_P3_Clay.WallBay[8]",
+    "Dress_P3_Clay.WallBay[9]",
+    "Dress_P3_Clay.WallBay[10]",
+    "Dress_P3_Clay.WallBay[11]",
+    "Dress_P3_Clay.WallBay[12]",
+    "Dress_P3_Clay.WallBay[13]",
+    "Dress_P3_Clay.WallBay[14]",
+    "Dress_P3_Clay.WallBay[15]",
+    "Dress_P3_Clay.WallBay[16]",
+    "Dress_P3_Clay.WallBay[17]",
+    "Dress_P3_Clay.WallBay[18]",
+    "Dress_P3_Clay.WallBay[19]",
+    "Dress_P3_Clay.WallBay[20]",
+    "Dress_P3_Clay.WallBay[21]",
+    "Dress_P3_Clay.WallBay[22]",
+    "Dress_P3_Clay.WallBay[23]",
+    "Dress_P3_Clay.WallBay[24]",
+    "Dress_P3_Clay.WallBay[25]",
+    "Dress_P3_Clay.WallBay[26]",
+    "Dress_P3_Clay.WallBay[27]",
+    "Dress_P3_Clay.WallBay[28]",
+    "Dress_P3_Clay.WallBay[29]",
+    "Dress_P3_Clay.WallBay[30]",
+    "Dress_P3_Clay.WallBay[31]"
+   ],
+   "first": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    -60.0,
+    0.0,
+    36.27
+   ]
+  }
+ ],
+ "materials": {
+  "MID_BasicShapeMaterial_0": {
+   "master": "BasicShapeMaterial",
+   "parent": "BasicShapeMaterial",
+   "scalars": {
+    "Roughness": 0.6407
+   },
+   "vectors": {
+    "Color": [
+     0.6,
+     0.02,
+     0.02,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MID_BasicShapeMaterial_1": {
+   "master": "BasicShapeMaterial",
+   "parent": "BasicShapeMaterial",
+   "scalars": {
+    "Roughness": 0.6407
+   },
+   "vectors": {
+    "Color": [
+     0.02,
+     0.08,
+     0.6,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MID_BasicShapeMaterial_2": {
+   "master": "BasicShapeMaterial",
+   "parent": "BasicShapeMaterial",
+   "scalars": {
+    "Roughness": 0.6407
+   },
+   "vectors": {
+    "Color": [
+     0.35,
+     0.55,
+     0.85,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MID_MI_Glass_0": {
+   "master": "M_Glass",
+   "parent": "MI_Glass",
+   "scalars": {
+    "GlassGlow": 0.25,
+    "FresnelGlow": 2.0,
+    "GlassTopCm": 210.0,
+    "EdgeCm": 4.0,
+    "EdgeGlow": 4.0,
+    "GlassOpacity": 0.06,
+    "HitWobble": 0.0,
+    "ClayGlassK": 0.0
+   },
+   "vectors": {
+    "GlassTint": [
+     0.55,
+     0.75,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_UNLIT"
+  },
+  "MID_MI_Ice_Night_0": {
+   "master": "M_Ice",
+   "parent": "MI_Ice_Night",
+   "scalars": {
+    "Scuff": 0.7,
+    "Wet": 0.0,
+    "RinkHalfLength": 4500.0,
+    "RinkHalfWidth": 2250.0,
+    "LineFix": 1.0,
+    "LineRoughness": 0.6,
+    "IceAmbient": 0.9,
+    "BlueLineFrac": 0.3333,
+    "GoalLineOffsetCm": 400.0,
+    "ScuffZones": 1.0,
+    "ScratchAmount": 0.8,
+    "FrostBand": 1.0,
+    "FrostWidthCm": 160.0,
+    "CornerRadiusCm": 375.0,
+    "IceRoughMin": 0.34,
+    "ClayIceTileMul": 18.0,
+    "ClayIceBumpMul": 0.22,
+    "ClayIceRough": 0.8,
+    "ClayScuffMul": 0.35,
+    "ClayInlay": 1.0,
+    "ClayInlayCm": 5.0,
+    "BcastScuff": 0.12,
+    "BcastLineGain": 1.0,
+    "BcastIceRough": 0.22,
+    "BcastScuffRough": 0.35,
+    "BcastLineRough": 0.35,
+    "BcastIceAmbient": 0.0,
+    "TileScuff": 1.0,
+    "TilePosterize": 3.0,
+    "TileScuffBias": 0.45,
+    "TileBaseKeep": 0.3,
+    "TileScuffAmount": 0.7,
+    "TileFrost": 1.0,
+    "TileFrostBias": 0.58,
+    "TileFrostAmount": 0.35,
+    "NightWet": 0.3,
+    "ClayIceB19": 1.0,
+    "ScratchTileCm": 400.0,
+    "ScratchAmt": 0.55,
+    "ScratchSlot": 1.0,
+    "ScratchFar": 0.6,
+    "SnowWidthCm": 120.0,
+    "SnowAmt": 0.3,
+    "LineSoftCm": 3.0,
+    "LineUnder": 0.15,
+    "ClayIceGloss": 0.08,
+    "ScratchRough": 0.4,
+    "SnowRough": 0.8,
+    "ScratchBump": 0.6,
+    "IceWobble": 0.3,
+    "ClayIceAmbientMul": 0.0,
+    "ScratchLift": 0.28,
+    "ClayIceSpec": 1.0,
+    "BulbReflB22": 0.0,
+    "BRLayoutHalfLen": 4500.0,
+    "BRCount": 0.0,
+    "BRYaw": 90.0,
+    "BRSag": 180.0,
+    "BRHalfSpan": 3700.0,
+    "BRBulbY0": -3515.0,
+    "BRPitch": 370.0,
+    "BRBulbCount": 20.0,
+    "BRDrop": 40.0,
+    "BRBulbR": 30.0,
+    "BRIntensity": 60.0,
+    "BRBlurK": 0.5,
+    "BRStreak": 0.022,
+    "BRStretch": 2.5,
+    "BRScreenFade": 0.3,
+    "BRScratchK": 1.0,
+    "BRFootK": 1.0,
+    "BRNormalK": 0.5,
+    "BRMax": 40.0,
+    "ScratchNormFar": 0.85,
+    "ClayIceB23": 1.0,
+    "PoolKeyZ": 1300.0,
+    "PoolInnerDeg": 16.0,
+    "PoolOuterDeg": 58.0,
+    "PoolDim": 1.0,
+    "PoolBoost": 1.0,
+    "ContactCm": 14.0,
+    "ContactK": 0.6,
+    "BoardBandCm": 400.0,
+    "BoardBandK": 3.6,
+    "PoolBase": 0.7
+   },
+   "vectors": {
+    "IceColour": [
+     0.72,
+     0.8,
+     0.86,
+     1.0
+    ],
+    "ScuffColour": [
+     0.5,
+     0.56,
+     0.62,
+     1.0
+    ],
+    "LineRed": [
+     0.45,
+     0.04,
+     0.04,
+     1.0
+    ],
+    "LineBlue": [
+     0.04,
+     0.1,
+     0.4,
+     1.0
+    ],
+    "AmbientColour": [
+     0.25,
+     0.35,
+     0.65,
+     1.0
+    ],
+    "FrostColour": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastIce": [
+     0.86,
+     0.9,
+     0.94,
+     1.0
+    ],
+    "ClayIceBody": [
+     0.32,
+     0.42,
+     0.97,
+     1.0
+    ],
+    "ClayScratchColour": [
+     0.92,
+     0.94,
+     0.97,
+     1.0
+    ],
+    "ClaySnowColour": [
+     0.92,
+     0.93,
+     0.95,
+     0.0
+    ],
+    "ClayLineRed": [
+     0.55,
+     0.06,
+     0.06,
+     0.0
+    ],
+    "ClayLineBlue": [
+     0.08,
+     0.16,
+     0.55,
+     0.0
+    ],
+    "BRStrX_A": [
+     -5250.0,
+     -3750.0,
+     -2250.0,
+     -750.0
+    ],
+    "BRStrX_B": [
+     750.0,
+     2250.0,
+     3750.0,
+     5250.0
+    ],
+    "BRStrX_C": [
+     -5650.0,
+     5650.0,
+     0.0,
+     0.0
+    ],
+    "BRStrZ_A": [
+     820.0,
+     880.0,
+     800.0,
+     880.0
+    ],
+    "BRStrZ_B": [
+     880.0,
+     800.0,
+     880.0,
+     820.0
+    ],
+    "BRStrZ_C": [
+     640.0,
+     640.0,
+     0.0,
+     0.0
+    ],
+    "BRColour": [
+     1.0,
+     0.4,
+     0.11,
+     1.0
+    ],
+    "PoolKeyX": [
+     1125.0,
+     3375.0,
+     0.0,
+     0.0
+    ],
+    "PoolTint": [
+     0.72,
+     0.72,
+     0.74,
+     1.0
+    ],
+    "BoardBandColour": [
+     1.0,
+     0.52,
+     0.24,
+     1.0
+    ],
+    "BRVary": [
+     0.7,
+     0.45,
+     0.6,
+     0.9
+    ],
+    "BRHigh": [
+     0.9,
+     0.15,
+     220.0,
+     350.0
+    ],
+    "BRDeep": [
+     1.0,
+     0.3,
+     0.05,
+     0.25
+    ],
+    "BRGar": [
+     11.46,
+     4.0,
+     8.0,
+     0.0
+    ],
+    "LampA": [
+     1125.0,
+     3375.0,
+     1300.0,
+     0.0
+    ],
+    "LampB": [
+     3000.0,
+     1350.0,
+     1150.0,
+     0.0
+    ],
+    "LampSheen": [
+     1.3,
+     0.14,
+     1.6,
+     1.0
+    ],
+    "LampSheenColour": [
+     1.0,
+     0.55,
+     0.25,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Dent_N",
+    "IceScratchMask": "T_Ice_Scratch_M",
+    "IceScratchNormal": "T_Ice_Scratch_N"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MID_MI_Trim_Blue_0": {
+   "master": "M_Trim",
+   "parent": "MI_Trim_Blue",
+   "scalars": {
+    "Emissive": 12.0,
+    "ClayCap": 1.0,
+    "ClayCapGlow": 0.0,
+    "ClayCapRough": 0.45,
+    "ClayCapFill": 0.6,
+    "ClayCapChips": 1.0,
+    "ClayCapChipThr": 0.75,
+    "ClayGlowMul": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.05,
+     0.3,
+     1.0,
+     1.0
+    ],
+    "BaseTint": [
+     0.02,
+     0.02,
+     0.025,
+     1.0
+    ],
+    "ClayCapColour": [
+     0.62,
+     0.07,
+     0.045,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MID_MI_Trim_Lamp_0": {
+   "master": "M_Trim",
+   "parent": "MI_Trim_Lamp",
+   "scalars": {
+    "Emissive": 0.5,
+    "ClayCap": 0.0,
+    "ClayCapGlow": 0.0,
+    "ClayCapRough": 0.45,
+    "ClayCapFill": 0.6,
+    "ClayCapChips": 0.0,
+    "ClayCapChipThr": 0.72,
+    "ClayGlowMul": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     1.0,
+     0.04,
+     0.012,
+     1.0
+    ],
+    "BaseTint": [
+     0.3,
+     0.02,
+     0.015,
+     1.0
+    ],
+    "ClayCapColour": [
+     0.62,
+     0.07,
+     0.045,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MID_MI_Trim_Lamp_1": {
+   "master": "M_Trim",
+   "parent": "MI_Trim_Lamp",
+   "scalars": {
+    "Emissive": 0.5,
+    "ClayCap": 0.0,
+    "ClayCapGlow": 0.0,
+    "ClayCapRough": 0.45,
+    "ClayCapFill": 0.6,
+    "ClayCapChips": 0.0,
+    "ClayCapChipThr": 0.72,
+    "ClayGlowMul": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     1.0,
+     0.04,
+     0.012,
+     1.0
+    ],
+    "BaseTint": [
+     0.3,
+     0.02,
+     0.015,
+     1.0
+    ],
+    "ClayCapColour": [
+     0.62,
+     0.07,
+     0.045,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MID_MI_Trim_Lamp_2": {
+   "master": "M_Trim",
+   "parent": "MI_Trim_Lamp",
+   "scalars": {
+    "Emissive": 0.5,
+    "ClayCap": 0.0,
+    "ClayCapGlow": 0.0,
+    "ClayCapRough": 0.45,
+    "ClayCapFill": 0.6,
+    "ClayCapChips": 0.0,
+    "ClayCapChipThr": 0.72,
+    "ClayGlowMul": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     1.0,
+     0.04,
+     0.012,
+     1.0
+    ],
+    "BaseTint": [
+     0.3,
+     0.02,
+     0.015,
+     1.0
+    ],
+    "ClayCapColour": [
+     0.62,
+     0.07,
+     0.045,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MID_MI_Trim_Orange_0": {
+   "master": "M_Trim",
+   "parent": "MI_Trim_Orange",
+   "scalars": {
+    "Emissive": 12.0,
+    "ClayCap": 1.0,
+    "ClayCapGlow": 0.0,
+    "ClayCapRough": 0.45,
+    "ClayCapFill": 0.6,
+    "ClayCapChips": 1.0,
+    "ClayCapChipThr": 0.75,
+    "ClayGlowMul": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     1.0,
+     0.35,
+     0.05,
+     1.0
+    ],
+    "BaseTint": [
+     0.02,
+     0.02,
+     0.025,
+     1.0
+    ],
+    "ClayCapColour": [
+     0.62,
+     0.07,
+     0.045,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Barn_Cloth": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 0.7,
+    "FillK": 0.5,
+    "FillLow": 0.5,
+    "Rough": 0.95,
+    "WaveK": 2.5,
+    "PoseK": 0.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     0.45,
+     0.42,
+     0.36,
+     1.0
+    ],
+    "FillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Barn_Hay": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 0.8,
+    "FillK": 0.5,
+    "FillLow": 0.5,
+    "Rough": 0.95,
+    "WaveK": 2.5,
+    "PoseK": 0.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     0.5,
+     0.42,
+     0.24,
+     1.0
+    ],
+    "FillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Barn_NightGlass": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 1.0,
+    "FillK": 2.8,
+    "FillLow": 1.0,
+    "Rough": 0.9,
+    "WaveK": 2.5,
+    "PoseK": 0.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     0.1,
+     0.16,
+     0.34,
+     1.0
+    ],
+    "FillColour": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Barn_Paint": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 0.7,
+    "FillK": 0.5,
+    "FillLow": 0.5,
+    "Rough": 0.8,
+    "WaveK": 2.5,
+    "PoseK": 0.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     0.45,
+     0.43,
+     0.38,
+     1.0
+    ],
+    "FillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Barn_Rubber": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 0.5,
+    "FillK": 0.3,
+    "FillLow": 0.5,
+    "Rough": 0.95,
+    "WaveK": 2.5,
+    "PoseK": 0.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     0.12,
+     0.12,
+     0.12,
+     1.0
+    ],
+    "FillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Barn_ScoreLamp": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 1.0,
+    "FillK": 1.5,
+    "FillLow": 1.0,
+    "Rough": 0.9,
+    "WaveK": 2.5,
+    "PoseK": 0.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     1.0,
+     0.55,
+     0.25,
+     1.0
+    ],
+    "FillColour": [
+     1.0,
+     0.8,
+     0.6,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Barn_Timber": {
+   "master": "M_ArenaWood",
+   "parent": "M_ArenaWood",
+   "scalars": {
+    "TileCm": 180.0,
+    "Rough": 0.8,
+    "GrainK": 0.6,
+    "DentK": 0.3,
+    "WashK": 0.0,
+    "WashHeightCm": 450.0,
+    "SpillK": 0.0,
+    "SpillFar": 0.45,
+    "SpillLenM": 5.0,
+    "WashOwnScaleZ": 1.0
+   },
+   "vectors": {
+    "WoodDark": [
+     0.05,
+     0.03,
+     0.018,
+     1.0
+    ],
+    "WoodLight": [
+     0.15,
+     0.09,
+     0.052,
+     1.0
+    ],
+    "WashColour": [
+     1.0,
+     0.6,
+     0.33,
+     1.0
+    ],
+    "SpillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ],
+    "SpillRink": [
+     36.884998,
+     29.605,
+     1.22,
+     0.76
+    ]
+   },
+   "textures": {
+    "GrainTex": "T_Clay_WoodGrain_M"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Barn_TimberDark": {
+   "master": "M_ArenaWood",
+   "parent": "M_ArenaWood",
+   "scalars": {
+    "TileCm": 120.0,
+    "Rough": 0.8,
+    "GrainK": 0.6,
+    "DentK": 0.3,
+    "WashK": 0.0,
+    "WashHeightCm": 450.0,
+    "SpillK": 0.0,
+    "SpillFar": 0.45,
+    "SpillLenM": 5.0,
+    "WashOwnScaleZ": 1.0
+   },
+   "vectors": {
+    "WoodDark": [
+     0.03,
+     0.018,
+     0.011,
+     1.0
+    ],
+    "WoodLight": [
+     0.08,
+     0.048,
+     0.028,
+     1.0
+    ],
+    "WashColour": [
+     1.0,
+     0.6,
+     0.33,
+     1.0
+    ],
+    "SpillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ],
+    "SpillRink": [
+     36.884998,
+     29.605,
+     1.22,
+     0.76
+    ]
+   },
+   "textures": {
+    "GrainTex": "T_Clay_WoodGrain_M"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayBarn_Floor": {
+   "master": "M_ClayBarn",
+   "parent": "M_ClayBarn",
+   "scalars": {
+    "TileCm": 260.0,
+    "Rough": 0.85,
+    "GrainK": 0.6,
+    "DentK": 0.3,
+    "WashK": 0.0,
+    "WashHeightCm": 450.0,
+    "SpillK": 7.2,
+    "SpillFar": 0.55,
+    "SpillLenM": 5.0,
+    "WashOwnScaleZ": 1.0
+   },
+   "vectors": {
+    "WoodDark": [
+     0.035,
+     0.022,
+     0.014,
+     1.0
+    ],
+    "WoodLight": [
+     0.09,
+     0.055,
+     0.035,
+     1.0
+    ],
+    "WashColour": [
+     1.0,
+     0.55,
+     0.28,
+     1.0
+    ],
+    "SpillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ],
+    "SpillRink": [
+     36.884998,
+     29.605,
+     1.22,
+     0.76
+    ]
+   },
+   "textures": {
+    "GrainTex": "T_Clay_WoodGrain_M"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayBarn_Post": {
+   "master": "M_ClayBarn",
+   "parent": "M_ClayBarn",
+   "scalars": {
+    "TileCm": 90.0,
+    "Rough": 0.75,
+    "GrainK": 0.7,
+    "DentK": 0.3,
+    "WashK": 7.0,
+    "WashHeightCm": 300.0,
+    "SpillK": 0.0,
+    "SpillFar": 0.45,
+    "SpillLenM": 5.0,
+    "WashOwnScaleZ": 1.0
+   },
+   "vectors": {
+    "WoodDark": [
+     0.06,
+     0.035,
+     0.02,
+     1.0
+    ],
+    "WoodLight": [
+     0.2,
+     0.11,
+     0.06,
+     1.0
+    ],
+    "WashColour": [
+     1.0,
+     0.55,
+     0.28,
+     1.0
+    ],
+    "SpillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ],
+    "SpillRink": [
+     36.884998,
+     29.605,
+     1.22,
+     0.76
+    ]
+   },
+   "textures": {
+    "GrainTex": "T_Clay_WoodGrain_M"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayBarn_Roof": {
+   "master": "M_ClayBarn",
+   "parent": "M_ClayBarn",
+   "scalars": {
+    "TileCm": 200.0,
+    "Rough": 0.9,
+    "GrainK": 0.6,
+    "DentK": 0.3,
+    "WashK": 0.0,
+    "WashHeightCm": 450.0,
+    "SpillK": 0.0,
+    "SpillFar": 0.45,
+    "SpillLenM": 5.0,
+    "WashOwnScaleZ": 1.0
+   },
+   "vectors": {
+    "WoodDark": [
+     0.012,
+     0.008,
+     0.006,
+     1.0
+    ],
+    "WoodLight": [
+     0.04,
+     0.025,
+     0.016,
+     1.0
+    ],
+    "WashColour": [
+     1.0,
+     0.55,
+     0.28,
+     1.0
+    ],
+    "SpillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ],
+    "SpillRink": [
+     36.884998,
+     29.605,
+     1.22,
+     0.76
+    ]
+   },
+   "textures": {
+    "GrainTex": "T_Clay_WoodGrain_M"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayBarn_Stand": {
+   "master": "M_ArenaWood",
+   "parent": "M_ArenaWood",
+   "scalars": {
+    "TileCm": 180.0,
+    "Rough": 0.8,
+    "GrainK": 0.6,
+    "DentK": 0.3,
+    "WashK": 20.0,
+    "WashHeightCm": 450.0,
+    "SpillK": 0.0,
+    "SpillFar": 0.45,
+    "SpillLenM": 5.0,
+    "WashOwnScaleZ": 1.0
+   },
+   "vectors": {
+    "WoodDark": [
+     0.05,
+     0.03,
+     0.018,
+     1.0
+    ],
+    "WoodLight": [
+     0.15,
+     0.09,
+     0.052,
+     1.0
+    ],
+    "WashColour": [
+     1.0,
+     0.6,
+     0.33,
+     1.0
+    ],
+    "SpillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ],
+    "SpillRink": [
+     36.884998,
+     29.605,
+     1.22,
+     0.76
+    ]
+   },
+   "textures": {
+    "GrainTex": "T_Clay_WoodGrain_M"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayBarn_StandDark": {
+   "master": "M_ArenaWood",
+   "parent": "M_ArenaWood",
+   "scalars": {
+    "TileCm": 120.0,
+    "Rough": 0.8,
+    "GrainK": 0.6,
+    "DentK": 0.3,
+    "WashK": 20.0,
+    "WashHeightCm": 450.0,
+    "SpillK": 0.0,
+    "SpillFar": 0.45,
+    "SpillLenM": 5.0,
+    "WashOwnScaleZ": 1.0
+   },
+   "vectors": {
+    "WoodDark": [
+     0.03,
+     0.018,
+     0.011,
+     1.0
+    ],
+    "WoodLight": [
+     0.08,
+     0.048,
+     0.028,
+     1.0
+    ],
+    "WashColour": [
+     1.0,
+     0.6,
+     0.33,
+     1.0
+    ],
+    "SpillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ],
+    "SpillRink": [
+     36.884998,
+     29.605,
+     1.22,
+     0.76
+    ]
+   },
+   "textures": {
+    "GrainTex": "T_Clay_WoodGrain_M"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayBarn_Wall": {
+   "master": "M_ClayBarn",
+   "parent": "M_ClayBarn",
+   "scalars": {
+    "TileCm": 140.0,
+    "Rough": 0.75,
+    "GrainK": 0.6,
+    "DentK": 0.3,
+    "WashK": 7.0,
+    "WashHeightCm": 300.0,
+    "SpillK": 0.0,
+    "SpillFar": 0.45,
+    "SpillLenM": 5.0,
+    "WashOwnScaleZ": 1.0
+   },
+   "vectors": {
+    "WoodDark": [
+     0.1,
+     0.055,
+     0.03,
+     1.0
+    ],
+    "WoodLight": [
+     0.32,
+     0.18,
+     0.1,
+     1.0
+    ],
+    "WashColour": [
+     0.8,
+     0.43,
+     0.21,
+     1.0
+    ],
+    "SpillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ],
+    "SpillRink": [
+     36.884998,
+     29.605,
+     1.22,
+     0.76
+    ]
+   },
+   "textures": {
+    "GrainTex": "T_Clay_WoodGrain_M"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayBulb_Lamp": {
+   "master": "M_ClayBulb",
+   "parent": "M_ClayBulb",
+   "scalars": {
+    "Glow": 6.0,
+    "EdgeK": 0.2
+   },
+   "vectors": {
+    "BulbColour": [
+     1.0,
+     0.62,
+     0.32,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_UNLIT"
+  },
+  "MI_ClayCrowd_Cream": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 1.0,
+    "FillK": 1.0,
+    "FillLow": 0.45,
+    "Rough": 0.85,
+    "WaveK": 2.5,
+    "PoseK": 1.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     0.72,
+     0.69,
+     0.64,
+     1.0
+    ],
+    "FillColour": [
+     1.0,
+     0.62,
+     0.36,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayCrowd_Fan": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 0.8,
+    "FillK": 2.0,
+    "FillLow": 0.45,
+    "Rough": 0.9,
+    "WaveK": 2.5,
+    "PoseK": 1.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "FillColour": [
+     0.71,
+     0.71,
+     0.71,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayCrowd_Scarf": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 0.7,
+    "FillK": 0.9,
+    "FillLow": 0.45,
+    "Rough": 0.95,
+    "WaveK": 2.5,
+    "PoseK": 1.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "FillColour": [
+     0.71,
+     0.71,
+     0.71,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayCrowd_Skin": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 0.8,
+    "FillK": 0.5,
+    "FillLow": 0.5,
+    "Rough": 0.9,
+    "WaveK": 2.5,
+    "PoseK": 1.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     0.55,
+     0.44,
+     0.36,
+     1.0
+    ],
+    "FillColour": [
+     0.71,
+     0.71,
+     0.71,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_ClayCrowd_Tin": {
+   "master": "M_ClayCrowd",
+   "parent": "M_ClayCrowd",
+   "scalars": {
+    "Sat": 1.0,
+    "FillK": 1.0,
+    "FillLow": 0.45,
+    "Rough": 0.7,
+    "WaveK": 2.5,
+    "PoseK": 1.0,
+    "BounceCm": 15.0
+   },
+   "vectors": {
+    "Tint": [
+     0.3,
+     0.31,
+     0.33,
+     1.0
+    ],
+    "FillColour": [
+     0.71,
+     0.71,
+     0.71,
+     1.0
+    ]
+   },
+   "textures": {},
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_Bench": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.6,
+    "RimPower": 3.0,
+    "RimStrength": 0.0,
+    "Emissive": 1.0,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.62,
+     0.6,
+     0.56,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_Blue": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.6,
+    "RimPower": 3.0,
+    "RimStrength": 0.6,
+    "Emissive": 1.5,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.02,
+     0.1,
+     0.55,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_Board": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.6,
+    "RimPower": 3.0,
+    "RimStrength": 0.6,
+    "Emissive": 1.5,
+    "KickHeightCm": 22.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 10.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 6.0,
+    "ClayBumpMul": 0.3,
+    "ClayFeltRail": 1.0,
+    "ClayFeltBandCm": 14.0,
+    "BcastBaseMix": 1.0,
+    "BcastRough": 0.3,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 1.0,
+    "B19Board": 1.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.35,
+    "PanelVar": 0.15,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.8,
+     0.8,
+     0.82,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.55,
+     0.07,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     0.86,
+     0.87,
+     0.89,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.92,
+     0.93,
+     0.95,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     0.9,
+     0.8625,
+     0.7805,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Dent_N"
+   },
+   "switches": {
+    "BoardWear": true
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_Dark": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.6,
+    "RimPower": 3.0,
+    "RimStrength": 0.0,
+    "Emissive": 0.0,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.015,
+     0.016,
+     0.02,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_GlassRail": {
+   "master": "M_Toon_Rail",
+   "parent": "M_Toon_Rail",
+   "scalars": {
+    "Roughness": 0.4,
+    "RimPower": 3.0,
+    "RimStrength": 0.0,
+    "Emissive": 0.0,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 1.0,
+    "BoardTopCm": 120.0,
+    "RailHideOnClay": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.05,
+     0.05,
+     0.06,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.1,
+     0.06,
+     0.035,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {},
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_GoalLight": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.5,
+    "RimPower": 3.0,
+    "RimStrength": 0.0,
+    "Emissive": 1.2,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.45,
+     0.45,
+     0.48,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_KickPlate": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.5,
+    "RimPower": 3.0,
+    "RimStrength": 0.0,
+    "Emissive": 0.8,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 1.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.85,
+     0.72,
+     0.12,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.85,
+     0.6,
+     0.08,
+     1.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_NetCord": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.7,
+    "RimPower": 3.0,
+    "RimStrength": 0.35,
+    "Emissive": 0.8,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.86,
+     0.84,
+     0.78,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_NetFrame": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.6,
+    "RimPower": 3.0,
+    "RimStrength": 0.35,
+    "Emissive": 3.0,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.3,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.6,
+     0.03,
+     0.03,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_NetMesh": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.6,
+    "RimPower": 3.0,
+    "RimStrength": 0.35,
+    "Emissive": 0.8,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 10.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.28,
+     0.3,
+     0.34,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  },
+  "MI_Toon_Orange": {
+   "master": "M_Toon",
+   "parent": "M_Toon",
+   "scalars": {
+    "Roughness": 0.6,
+    "RimPower": 3.0,
+    "RimStrength": 0.6,
+    "Emissive": 1.5,
+    "KickHeightCm": 0.0,
+    "RailTopCm": 120.0,
+    "RailBandCm": 0.0,
+    "GridCm": 0.0,
+    "GridLine": 0.12,
+    "GridHole": 0.35,
+    "ClayTileMul": 1.0,
+    "ClayBumpMul": 1.0,
+    "ClayFeltRail": 0.0,
+    "ClayFeltBandCm": 12.0,
+    "BcastBaseMix": 0.0,
+    "BcastRough": 0.4,
+    "BcastEmissive": 0.0,
+    "CelConstructOff": 0.0,
+    "B19Board": 0.0,
+    "PanelCm": 244.0,
+    "JointCm": 2.5,
+    "JointDark": 0.45,
+    "PanelVar": 0.06,
+    "ClayBaseMix": 0.0,
+    "BoardTopCm": 120.0,
+    "WearKickTopCm": 25.0,
+    "WearDirt": 0.25,
+    "WearSmear": 1.0,
+    "WearScuff": 1.0
+   },
+   "vectors": {
+    "TeamColour": [
+     0.95,
+     0.3,
+     0.03,
+     1.0
+    ],
+    "RimColour": [
+     0.55,
+     0.7,
+     1.0,
+     1.0
+    ],
+    "KickColour": [
+     0.08,
+     0.09,
+     0.12,
+     1.0
+    ],
+    "RailColour": [
+     0.3,
+     0.33,
+     0.4,
+     1.0
+    ],
+    "ClayFeltColour": [
+     0.3,
+     0.06,
+     0.05,
+     1.0
+    ],
+    "BcastBase": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "BcastKick": [
+     0.9,
+     0.62,
+     0.04,
+     1.0
+    ],
+    "BcastRail": [
+     0.85,
+     0.86,
+     0.88,
+     1.0
+    ],
+    "ClayBase": [
+     0.5,
+     0.5,
+     0.5,
+     0.0
+    ],
+    "WearTint": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "textures": {
+    "ClayNormalTex": "T_Clay_Thumb_N"
+   },
+   "switches": {
+    "BoardWear": false
+   },
+   "shading": "MSM_DEFAULT_LIT"
+  }
+ },
+ "rink_surfaces": {
+  "Ice": {
+   "materials": [
+    "MID_MI_Ice_Night_0"
+   ],
+   "shown": true,
+   "cast_shadow": true,
+   "extent_cm": [
+    4500.0,
+    2250.0,
+    0.0
+   ]
+  },
+  "Markings": {
+   "materials": [
+    "MID_BasicShapeMaterial_0",
+    "MID_BasicShapeMaterial_1",
+    "MID_BasicShapeMaterial_0",
+    "MID_BasicShapeMaterial_2"
+   ],
+   "shown": true,
+   "cast_shadow": false,
+   "extent_cm": [
+    4501.3171,
+    2250.0,
+    0.05
+   ]
+  },
+  "Boards": {
+   "materials": [
+    "MI_Toon_Board"
+   ],
+   "shown": true,
+   "cast_shadow": true,
+   "extent_cm": [
+    4520.0,
+    2270.0,
+    60.0
+   ]
+  },
+  "Glass": {
+   "materials": [
+    "MID_MI_Glass_0"
+   ],
+   "shown": false,
+   "cast_shadow": false,
+   "extent_cm": [
+    4510.0,
+    2260.0,
+    45.0
+   ]
+  },
+  "Trim": {
+   "materials": [
+    "MID_MI_Trim_Blue_0"
+   ],
+   "shown": true,
+   "cast_shadow": false,
+   "extent_cm": [
+    2255.5,
+    2261.0,
+    5.0
+   ]
+  },
+  "TrimOrange": {
+   "materials": [
+    "MID_MI_Trim_Orange_0"
+   ],
+   "shown": true,
+   "cast_shadow": false,
+   "extent_cm": [
+    2255.5,
+    2261.0,
+    5.0
+   ]
+  },
+  "Nets": {
+   "materials": [
+    "MI_Toon_NetFrame",
+    "MI_Toon_NetMesh",
+    "MI_Toon_NetFrame"
+   ],
+   "shown": false,
+   "cast_shadow": true,
+   "extent_cm": [
+    4257.0,
+    207.0,
+    30.5
+   ]
+  },
+  "KickPlate": {
+   "materials": [
+    "MI_Toon_KickPlate"
+   ],
+   "shown": true,
+   "cast_shadow": true,
+   "extent_cm": [
+    4500.0,
+    2250.0,
+    12.5
+   ]
+  },
+  "GlassRail": {
+   "materials": [
+    "MI_Toon_GlassRail",
+    "MI_Toon_GlassRail"
+   ],
+   "shown": false,
+   "cast_shadow": false,
+   "extent_cm": [
+    4513.0,
+    2263.0,
+    47.0
+   ]
+  },
+  "GoalLights": {
+   "materials": [
+    "MI_Toon_GoalLight",
+    "MI_Toon_NetFrame"
+   ],
+   "shown": false,
+   "cast_shadow": true,
+   "extent_cm": [
+    4516.0,
+    40.0,
+    10.0
+   ]
+  },
+  "Benches": {
+   "materials": [
+    "MI_Toon_Bench",
+    "MI_Toon_KickPlate"
+   ],
+   "shown": false,
+   "cast_shadow": true,
+   "extent_cm": [
+    1199.7,
+    55.0,
+    55.0
+   ]
+  }
+ },
+ "lights": [
+  {
+   "name": "Key_P3_Clay_1",
+   "pos": [
+    -33.75,
+    13.0,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 5200.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 16.0,
+   "outer_deg": 62.0,
+   "shadows": true,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Key_P3_Clay_2",
+   "pos": [
+    -11.25,
+    13.0,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 5200.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 16.0,
+   "outer_deg": 62.0,
+   "shadows": true,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Key_P3_Clay_3",
+   "pos": [
+    11.25,
+    13.0,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 5200.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 16.0,
+   "outer_deg": 62.0,
+   "shadows": true,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Key_P3_Clay_4",
+   "pos": [
+    33.75,
+    13.0,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 5200.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 16.0,
+   "outer_deg": 62.0,
+   "shadows": true,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_1",
+   "pos": [
+    0.0,
+    8.0,
+    -30.0
+   ],
+   "dir": [
+    0.0,
+    -0.470588,
+    0.882353
+   ],
+   "candela": 1100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 60.0,
+   "inner_deg": 40.0,
+   "outer_deg": 80.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_2",
+   "pos": [
+    0.0,
+    8.0,
+    30.0
+   ],
+   "dir": [
+    0.0,
+    -0.470588,
+    -0.882353
+   ],
+   "candela": 1100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 60.0,
+   "inner_deg": 40.0,
+   "outer_deg": 80.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_3",
+   "pos": [
+    -56.0,
+    8.0,
+    0.0
+   ],
+   "dir": [
+    0.948683,
+    -0.316228,
+    0.0
+   ],
+   "candela": 900.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 40.0,
+   "inner_deg": 25.0,
+   "outer_deg": 60.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_4",
+   "pos": [
+    56.0,
+    8.0,
+    0.0
+   ],
+   "dir": [
+    -0.948683,
+    -0.316228,
+    0.0
+   ],
+   "candela": 900.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 40.0,
+   "inner_deg": 25.0,
+   "outer_deg": 60.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_5",
+   "pos": [
+    -25.0,
+    7.0,
+    0.0
+   ],
+   "dir": [
+    -0.997459,
+    -0.071247,
+    0.0
+   ],
+   "candela": 2500.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 45.0,
+   "inner_deg": 30.0,
+   "outer_deg": 60.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_6",
+   "pos": [
+    25.0,
+    7.0,
+    0.0
+   ],
+   "dir": [
+    0.997459,
+    -0.071247,
+    0.0
+   ],
+   "candela": 2500.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 45.0,
+   "inner_deg": 30.0,
+   "outer_deg": 60.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_1",
+   "pos": [
+    -33.75,
+    11.5,
+    -13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_2",
+   "pos": [
+    -11.25,
+    11.5,
+    -13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_3",
+   "pos": [
+    11.25,
+    11.5,
+    -13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_4",
+   "pos": [
+    33.75,
+    11.5,
+    -13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_5",
+   "pos": [
+    -33.75,
+    11.5,
+    13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_6",
+   "pos": [
+    -11.25,
+    11.5,
+    13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_7",
+   "pos": [
+    11.25,
+    11.5,
+    13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_8",
+   "pos": [
+    33.75,
+    11.5,
+    13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  }
+ ],
+ "sky": {
+  "name": "Sky_P3_Clay",
+  "intensity": 0.35,
+  "color_srgb8": [
+   255.0,
+   200.0,
+   150.0
+  ],
+  "source": "SLS_CAPTURED_SCENE",
+  "real_time_capture": true,
+  "lower_hemisphere_is_black": true
+ },
+ "post": {
+  "name": "PPV_P3_Clay",
+  "unbound": true,
+  "settings": {
+   "auto_exposure_bias": 0.0,
+   "auto_exposure_max_brightness": 4.2,
+   "auto_exposure_method": "AEM_HISTOGRAM",
+   "auto_exposure_min_brightness": 4.2,
+   "bloom_intensity": 0.5,
+   "bloom_threshold": 1.0,
+   "color_contrast": [
+    0.95,
+    0.95,
+    0.95,
+    1.0
+   ],
+   "color_gain": [
+    1.04,
+    1.0,
+    0.92,
+    1.0
+   ],
+   "color_gain_shadows": [
+    1.08,
+    0.98,
+    0.9,
+    1.0
+   ],
+   "color_saturation": [
+    0.95,
+    0.95,
+    0.95,
+    1.0
+   ],
+   "depth_of_field_blade_count": 6.0,
+   "depth_of_field_depth_blur_amount": 0.0,
+   "depth_of_field_depth_blur_radius": 0.0,
+   "depth_of_field_focal_distance": 1600.0,
+   "depth_of_field_fstop": 4.0,
+   "depth_of_field_min_fstop": 0.5,
+   "depth_of_field_sensor_width": 100.0,
+   "motion_blur_amount": 0.0,
+   "motion_blur_max": 0.0,
+   "reflection_method": "SCREEN_SPACE",
+   "screen_space_reflection_intensity": 100.0,
+   "screen_space_reflection_max_roughness": 0.5,
+   "screen_space_reflection_quality": 80.0,
+   "vignette_intensity": 0.35,
+   "weighted_blendables": {
+    "array": []
+   }
+  }
+ },
+ "light_sum": {
+  "note": "the rig's spots summed on the ice plane (lux per linear channel; a 2 m grid inside the boards). exposure = 1 / (1.2 * 2^EV100): what a surface of albedo a shows is a * lux / pi * exposure before the tone curve.",
+  "mean_lux_rgb": [
+   15.426,
+   10.323,
+   6.29
+  ],
+  "centre_lux_rgb": [
+   11.109,
+   7.449,
+   4.552
+  ],
+  "lum_min": 2.69,
+  "lum_mean": 11.12,
+  "lum_max": 32.47,
+  "ev100": 4.2,
+  "exposure": 0.045341
+ },
+ "collections": {
+  "/JamAssets/Arena/MPC_Crowd": {
+   "scalars": {
+    "CrowdCheerPlusX": {
+     "default": 0.0,
+     "now": 0.0
+    },
+    "CrowdCheerMinusX": {
+     "default": 0.0,
+     "now": 0.0
+    }
+   },
+   "vectors": {}
+  },
+  "/JamAssets/Look/MPC_Look": {
+   "scalars": {
+    "Clay": {
+     "default": 0.0,
+     "now": 1.0
+    },
+    "ClayBump": {
+     "default": 0.8,
+     "now": 2.0
+    },
+    "FeltRim": {
+     "default": 0.5,
+     "now": 1.4
+    },
+    "ClayFill": {
+     "default": 0.35,
+     "now": 0.15
+    },
+    "ClayTile": {
+     "default": 40.0,
+     "now": 25.0
+    },
+    "ClayRough": {
+     "default": 0.85,
+     "now": 0.85
+    },
+    "Neon": {
+     "default": 0.0,
+     "now": 0.0
+    }
+   },
+   "vectors": {
+    "LookTint": {
+     "default": [
+      1.0,
+      0.94,
+      0.84,
+      1.0
+     ],
+     "now": [
+      1.0,
+      0.94,
+      0.84,
+      1.0
+     ]
+    }
+   }
+  }
+ },
+ "fan_custom": "x = weight, y = coat, z = accent, w = end * (4 + delay + 2 * pose)"
+}

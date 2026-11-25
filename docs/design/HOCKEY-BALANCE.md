@@ -182,6 +182,17 @@ Two kinds of hand play every table, because a dead key may be the hand's fault.
 - **Calibrated once, on one number.** With a script's reactions (6 frames, a decision every 10) and a perfect reading it won 16 of 16 pro matches and 13 of 16 at all-star: stronger than a person. The limits were set
   so that its regular setting wins what thirdjam's regular hand wins at pro on `hockey.regular` (77 % against 75.5 %); thirdjam's
   ladder is the one the owner called "fine for me" (R-0047). Nothing else was fitted, and nothing is refitted on `hockey.thirdlife`.
+- **Repaired and fitted again in round 2 (24 Nov).** The hand held the first press of its poke, lift and check back by 20 to 40
+  frames (my defect: it chose the body check 13 times a minute and pressed it 0.3 times). Repaired, it won 93 % of pro matches
+  on `hockey.regular` with the limits above, so the same one number was fitted again (eight settings, 40 seeds each): it now
+  sees the game **467 / 367 / 233 ms** late and decides every **0.67 / 0.5 / 0.27 s**; the other limits are unchanged. On
+  `hockey.regular` it wins 50 / 78.3 / 91.7 % at pro (novice / regular / good), 60 % at all-star (regular), 98.3 % at rookie
+  (novice) (60 seeds; `tables/plan_calibration.hockey.regular.seeds1-60.epoch-k8-4.json` in the lane folder). Every figure
+  of round 1 and of experiments E01 to E05 was read through the hand before the repair; every figure after says "epoch k8-4".
+  Re-read through the repaired hand on `hockey.regular` at pro, round 1's findings stand: 0.40 of its 2.13 goals a match
+  walked in; a carry of 0.72 s, 40.8 % lost; 0.60 takes a minute straight off a carrier with no key (3.96 with one); 2.9
+  knockdowns and 5.8 s on the ice; 0.07 one-timers a match; of its completed passes 55 % are followed first by an opponent
+  carrying the puck, 39 % come back to it, 5 % become a mate's shot.
 - **Validated by what it found unprompted on `hockey.regular`** (section 2): the walk-in goal, the take with no key, the carry
   that lasts two thirds of a second, the eight seconds a match on the ice, the one-timer that never comes, rookie won by
   everybody.
@@ -245,6 +256,13 @@ Filled from the ledger as changes are kept; the same lines are in `LEDGER.md` be
 | Change | In the first minute |
 |---|---|
 | E01b: the goal line is closed to a held puck | A breakaway now ends with a press. Glide the puck at the net and it stops on the goal line and lies there; tap shoot (a tap is enough) and it is in. The opponents cannot walk it in on you either. |
+| E03: a carried puck stays with its carrier through a body's touch | Skating into a man who has the puck no longer gives it to you: you bounce off him and he still has it. Press the stick lift (or poke, or hit him) and it is yours. Your mates stop losing the puck to a bump the moment you pass to them. |
+| E04: a knockdown lasts 0.7 to 1.5 s | When you are knocked down you are back on your skates in about a second, not two. You still lose the puck and your place; you no longer watch the play leave. |
+| E05: nobody glides faster than he can skate | Shift is a spend now: when the bar is empty you are back at skating pace within half a second, and it must fill a quarter before it answers again. And when you pick the puck up at full speed you feel yourself slow to carrying pace: a man chasing you will catch you, so move it. |
+| E07: a man who has just won the puck cannot be flattened for half a second | The hit that used to flatten you the instant you touched the puck now only staggers you: you lose the puck and half your speed, and you are still on your skates. |
+| E09: rookie's opponents want the net as pro's do, with slower hands | At rookie the other side now shoots: from the slot, with a wind-up you can see, wide of the corner as often as not, and now and then one of them lifts your stick. Stand still and you lose; play and you win. |
+| E11: all-star's opponents skate at your pace | At all-star nobody out-skates you any more by having faster legs. They still hunt you from across the ice, lift your stick twice as often as pro does, and sprint whenever their bar lets them, as you can. |
+| E12: pro presses as a matter of course | At pro they come at you from further off and their sticks are back on yours a second after a miss. You have less time on the puck than at rookie, and the kept rules make it fair: the first hit only staggers you and you are up in a second. |
 
 ## 12. Where the cartridge stands
 
@@ -277,3 +295,206 @@ What the round taught the design, beyond its two experiments:
    (R-0038), so the answer here has to be the mates: what they do with a pass, and how often it comes back (round 2).
 3. **A number shared with the bots is a difficulty number.** The pass's speed, read by ten skaters, moved the ladder by 30 to 40 points at
    all-star. Changes for the human's feel go in the human's own rules; changes shared with the bots go through the level table.
+
+### After round 2 (24 Nov, 23:30): four changes kept
+
+`hockey.thirdlife` is thirdjam with three rules changed and one cartridge number: a goal must leave a blade (E01b); a carried
+puck stays with its carrier through a body's touch (E03); a knockdown lasts 0.7 to 1.5 s (E04, `game.contact.down_frames_min`
+40, `down_frames_max` 90); nobody glides faster than he can skate and an empty sprint bar refills a quarter before the next
+sprint (E05). Every other number of the cartridge equals `hockey.regular`'s.
+
+| Experiment | Verdict | In one line |
+|---|---|---|
+| E03 a carried puck stays with its carrier through a body's touch | **kept** | a take with no key head on: gym 12 of 12 to 0 of 12; in matches 0.60 to 0.27 a minute |
+| E04 a knockdown lasts 0.7 to 1.5 s | **kept** | seconds on the ice down by 28 to 43 % for every hand; knockdowns a match not down |
+| E05 nobody glides faster than he can skate | **kept** | a sprint ends with its bar (14.55 to 12.65 m/s in 28 frames); a pick-up at speed slows to carrying pace in 38 |
+| E06 the mates pass to the open human in 0.8 of the chances | rejected | changed almost nothing: the share is rarely what decides |
+
+| Target | After round 2 (the planning hand as repaired in round 2, regular, pro, 60 seeds unless said) |
+|---|---|
+| T1 no walked goals | **met**: 0 by the strict count |
+| T2 the shot is how you score | **met**: -48 points of wins without it (+-8) |
+| T3 passes arrive and pay | **not met**: 55 % reach a mate; the pass is worth nothing to the hand (+1.7 without it, +-7); thirdjam's scripted hand wins 28 points more without it. Of the passes that arrive, half are lost by the mate before anything comes of them |
+| T4 a carry that skill can keep | **not met**: 0.79 s, 46 % lost to an opponent, 29 changes of side a minute, the puck loose 32 % (thirdjam: 0.72 s, 41 %) |
+| T5 no take without a key | **nearly**: 0.27 a minute straight off a carrier (thirdjam 0.60); of seven traced, four were his own shot blocked at point blank; gym 0 of 12 |
+| T6 knockdowns and time on the ice | **half**: 5.7 s on the ice (thirdjam 5.8 s for the same hand; 7.3 before E04 for the old hand); 4.5 knockdowns a match, not 3 |
+| T7 every kept verb matters | **open**: at 60 seeds only the shot can be seen; no verb costs its user once the hand was repaired |
+| T8 the ladder | pro 47 / 83 / 97 %, all-star 23 / 65 / 87 % (spread at both: met); regular at pro above the 60-80 band; rookie 100 / 100 / 100 and the idle hand 62 %: **not met at rookie** |
+| T9 levels by play, not legs | untouched: opponents' mean speed against the human's 0.90 / 1.01 / 1.08 (rookie / pro / all-star) |
+| T10 pace | held: a pro match 117 s for the regular hand |
+
+What round 2 taught the design:
+
+1. **thirdjam meant "no take by a body's touch" and leaked it one way.** The human took pucks by skating into carriers and
+   the opposing bots took them from his mates the same way; nobody took them from him. Closing it protected the mates, not
+   the human: his own carry was never the leak.
+2. **The human's short carry is the bots' hands, not the rules.** Pro's bots press a stick or a hit the frame they can
+   (reaction 0 frames at every level). That is a level number, and it is where T4 and T6 will be won or lost (round 3).
+3. **The bar was never the sprint's cost.** In thirdjam a held Shift on an empty bar sprints every other frame.
+4. **My instrument was wrong once, in a way that mattered.** The planning hand held its first poke, lift and check back by a
+   third to two thirds of a second. Two "findings" (the brace and the body check cost their user) were that defect. The
+   hand was repaired and fitted again to the same one number; what it says now is in the table above.
+5. **A planner's ablation leans toward "this verb costs nothing"**, a script's toward "this verb is vital". Round 3 reads
+   both, at 200 seeds.
+
+### After round 3a (25 Nov, 02:00): eight experiments kept, five rejected
+
+`hockey.thirdlife` is thirdjam with three rules changed (E01b a goal must leave a blade; E03 the puck is taken with a key or
+not at all; E05 nobody glides faster than he can skate), two cartridge numbers (E04 knockdowns 40 to 90 frames; E07 a hit
+on a man who has just won the puck is a stumble at most for 30 frames) and a level table (E09 rookie plays for the net;
+E12 pro presses; E11 all-star has the human's legs). Rejected, each with its figures: E01 (the first form of the goal-line rule), E02, E06, E08, E10.
+
+The ladder at 200 seeds (wins, per cent; `hockey.regular` in brackets):
+
+| Hand | Rookie | Pro | All-star |
+|---|---|---|---|
+| A player who never moves | 23.5 (thirdjam 60.5) | 9.0 (9.5) | 6.0 (5.5) |
+| Planning hand, slow | 92.0 (98) | 55.5 (50) | 22.5 |
+| Planning hand, average | 99.5 | 84.0 (78) | 66.5 (60) |
+| Planning hand, quick | 100 | 95.5 (92) | 88.0 |
+| thirdjam's scripted novice | 89.5 (97.5) | 15.0 (24.5) | 11.5 (10.5) |
+| thirdjam's scripted regular | 98.5 (100) | 68.5 (75.5) | 48.0 (39.5) |
+| thirdjam's scripted good | 100 (100) | 75.5 (76) | 56.0 (53.5) |
+
+| Target | After round 3a |
+|---|---|
+| T1 no walked goals | **met** |
+| T2 the shot is how you score | **met** (-56 points so far at 200 seeds) |
+| T3 passes arrive and pay | **not met**: 61 % arrive; the pass costs the hand 5 points; three tries rejected |
+| T4 a carry skill can keep | **not met**: 0.79 s, 46 % lost |
+| T5 no take without a key | **nearly**: gym 0 of 12; 0.27 a minute in matches, mostly point-blank blocks |
+| T6 knockdowns and time on the ice | seconds **met** (4.7 s at pro), count not (3.8) |
+| T7 every kept verb matters | **open** (round 3b: both ablation arms at 200 seeds); so far the shot, the sprint and the stop do |
+| T8 the ladder | idle at rookie **met** (23.5 %); spread met at pro and all-star; the regular hand at pro 84 %: **above** the 60-80 band |
+| T9 no level harder by legs (as corrected in round 3) | **met** by construction |
+| T10 pace | held |
+
+What the cartridge delivers of its pillars, said plainly: P3 (goals come from shots) and P6 (rookie needs you; no level by
+legs) are delivered; P4 (a hit is an event) mostly; P1 for the mates but not for the player's own carry; P2 (the pass
+pays) is not delivered; P5 (every key has its moment) is not proven either way.
+
+### After round 3b (25 Nov): the final matrix
+
+No change to the cartridge in 3b. `hockey.thirdlife` beside `hockey.regular`, the same planning hand, the same seeds.
+
+**Wins, per cent (± one standard error), 200 seeds a cell unless said.**
+| hand, level | hockey.regular | hockey.thirdlife |
+|---|---|---|
+| planning novice, rookie | 98.0 ±1.0 | 92.0 ±1.9 |
+| planning novice, pro | 49.5 ±3.5 | 55.5 ±3.5 |
+| planning novice, all_star | 23.5 ±3.0 | 22.5 ±3.0 |
+| planning regular, rookie | 100.0 ±0.0 | 99.5 ±0.5 |
+| planning regular, pro | 85.0 ±2.5 | 84.0 ±2.6 |
+| planning regular, all_star | 50.0 ±3.5 | 66.5 ±3.3 |
+| planning good, rookie | 100.0 ±0.0 | 100.0 ±0.0 |
+| planning good, pro | 95.5 ±1.5 | 95.5 ±1.5 |
+| planning good, all_star | 77.5 ±3.0 | 88.0 ±2.3 |
+| the idle hand, rookie | 60.5 ±3.5 | 23.5 ±3.0 |
+| the idle hand, pro | 9.5 ±2.1 | 9.0 ±2.0 |
+| the idle hand, all_star | 5.5 ±1.6 | 6.0 ±1.7 |
+| thirdjam's novice, rookie | 97.5 (PLAY) | 89.5 ±2.2 |
+| thirdjam's novice, pro | 24.5 (PLAY) | 15.0 ±2.5 |
+| thirdjam's novice, all_star | 10.5 (PLAY) | 11.5 ±2.3 |
+| thirdjam's regular, rookie | 100 (PLAY) | 98.5 ±0.9 |
+| thirdjam's regular, pro | 75.5 (PLAY) | 68.5 ±3.3 |
+| thirdjam's regular, all_star | 39.5 (PLAY) | 48.0 ±3.5 |
+| thirdjam's good, rookie | 100 (PLAY) | 100.0 ±0.0 |
+| thirdjam's good, pro | 76 (PLAY) | 75.5 ±3.0 |
+| thirdjam's good, all_star | 53.5 (PLAY) | 56.0 ±3.5 |
+
+**The regular planning hand at pro, the play itself.**
+| figure | hockey.regular | hockey.thirdlife |
+|---|---|---|
+| goals for / against a minute | 1.631 / 0.682 | 1.582 / 0.713 |
+| goals walked over the line (strict), share of his side's | 7.4 % | 0 % |
+| a carry, seconds; share lost to an opponent | 0.7; 40.4 % | 0.79; 45.5 % |
+| takes straight off a carrier: with a key / with none, a minute | 3.85 / 0.61 | 4.3 / 0.2 |
+| passes a minute; share that reach a mate | 4.35; 56.7 % | 3.47; 60.9 % |
+| of those: lost first / back to him / a mate's shot / a goal | 51.7 / 36.4 / 9.8 / 4.7 % | 49.4 / 34.6 / 12.4 / 3.4 % |
+| one-timers a match | 0.08 | 0.06 |
+| knockdowns a match; seconds on the ice | 3.54; 7.16 | 3.76; 4.64 |
+| changes of side a minute; puck loose | 28.35; 32.9 % | 28.12; 32.2 % |
+| share of play time sprinting; his mean speed | 22.3 %; 9.43 m/s | 22.6 %; 9.41 m/s |
+| a match, seconds | 111.3 | 115.4 |
+
+**The regular planning hand at pro without one verb: wins in points against the full hand, paired match for match (± one standard error). x = out of its menu and keys (it re-plans; leans toward "costs nothing"); k = still pressed, never heard (leans toward "vital").**
+| without | thirdlife, x (200 seeds) | thirdlife, k (200 seeds) | regular, x (60 seeds) |
+|---|---|---|---|
+| shoot | -56.5 ±4.0 * | - | -11.7 ±7.2 |
+| charge | -10.0 ±3.9 * | -9.5 ±3.9 * | -5.0 ±7.3 |
+| tap | -1.5 ±3.1 | -2.5 ±3.0 | +0.0 ±4.8 |
+| onetimer | +3.5 ±2.2 | +0.5 ±1.1 | +0.0 ±3.4 |
+| deke | +6.5 ±2.3 * | +1.5 ±2.5 | +5.0 ±4.4 |
+| pass | +5.0 ±3.1 | +6.0 ±3.2 | +16.7 ±6.4 * |
+| sprint | -9.5 ±4.1 * | -3.5 ±3.8 | +0.0 ±5.8 |
+| stop | -10.0 ±4.0 * | -5.0 ±4.0 | +0.0 ±7.9 |
+| shield | -2.5 ±3.6 | -6.0 ±3.6 | +5.0 ±7.7 |
+| spin | +2.0 ±3.2 | +3.0 ±3.4 | +0.0 ±7.1 |
+| poke | +3.5 ±3.1 | -4.0 ±3.1 | +6.7 ±6.7 |
+| lift | +0.5 ±3.6 | -2.5 ±3.4 | +3.3 ±7.1 |
+| check | -5.5 ±3.6 | -9.0 ±3.8 * | +3.3 ±7.9 |
+| brace | +2.0 ±3.4 | -0.5 ±3.1 | +3.3 ±7.1 |
+
+thirdjam's regular hand at pro on hockey.thirdlife: 68.5 ±3.3; without the pass 71.0 ±3.2; without any shot 20.5 ±2.9.
+
+**T7, verb by verb**
+
+| Verdict | Verbs | The figures (re-planning arm / dead-key arm, points of wins, 200 seeds) |
+|---|---|---|
+| **Carries the game** | every shot | -56.5 ± 4.0 |
+| **Matters** (two standard errors in at least one arm, the same sign in the other) | the charged shot; the stop; the sprint; the body check | -10.0 / -9.5; -10.0 / -5.0; -9.5 / -3.5; -5.5 / -9.0 |
+| **Leans to mattering, not shown** | the far-side carry | -2.5 / -6.0 (± 3.6) |
+| **No worth shown, alone** | the tap shot; the stick lift; the poke; the brace; the spin; the one-timer | -1.5 / -2.5; +0.5 / -2.5; +3.5 / -4.0; +2.0 / -0.5; +2.0 / +3.0; +3.5 / +0.5 |
+| **Costs the hand that uses it** | the pass; the deke | +5.0 / +6.0 (± 3.2); +6.5 / +1.5 (± 2.4) |
+| **Wins alone** | none | skating alone wins 7 % (round 2's matrix, 60 seeds) |
+
+How to read the verdicts, and what I would do with them (nothing was changed in round 3b: the matrix measures the
+cartridge as landed in 3a):
+- **Two arms, because each leans.** A planner without a verb re-plans (it leans toward "costs nothing"); the same hand still
+  pressing a dead key leans the other way. A verb "matters" here only when one arm shows two standard errors and the other
+  agrees in sign. The sprint and the stop, which round 2's 60 seeds could not see, are clear at 200.
+- **The three ways to take a puck hide each other.** The lift, the poke and the body check do one job; take one away and
+  the hand uses the others. Alone, only the check shows (-9.0 with the key dead). Their worth as a GROUP was not measured
+  (the matrix has no cell without all three): the first cell I would add.
+- **The pass costs about five points in both arms** (and thirdjam's scripted hand wins 2.5 more without it; on thirdjam
+  itself it won 9 more). It is less bad than in thirdjam and it does not pay: T3 is not met.
+- **The deke is the one verb I would cut.** Dead in thirdjam by PLAY, worth nothing here with the key dead (+1.5), and the
+  hand does better without it in its menu (+6.5 ± 2.3). The spin shows nothing in either arm: the second candidate.
+  Cutting is a design decision for the next round (the Director: no cartridge change in 3b), and the keys are the shell's.
+- **The one-timer is dead because the pass is.** It is the genre's signature goal (CASES: NHL '94); it will show when a
+  pass arrives and comes back. Kept, tied to T3.
+- **The brace** shows nothing in either arm (+2.0 / -0.5). The owner asked for it by name (R-0064): kept, reported as not
+  shown to matter, his to judge by hand.
+
+**Where the cartridge stands against its targets at the end of the campaign night**
+
+| Target | Status |
+|---|---|
+| T1 no walked goals | met |
+| T2 the shot is how you score | met (-56.5 points without it) |
+| T3 passes arrive and pay | **not met** (kept in the table, not dropped): the pass costs the hand about 5 points; the mates' skill with the puck is the next campaign's work |
+| T4 a carry skill can keep | **not met** |
+| T5 no take without a key | nearly (gym 0 of 12; a residue of point-blank blocks in matches) |
+| T6 knockdowns and time on the ice | seconds met at pro, count not |
+| T7 every kept verb matters | **partly**: the shot, the charged shot, the stop, the sprint and the body check do; six verbs show no worth alone; the pass and the deke cost |
+| T8 the ladder | idle at rookie met (23.5 %); spread met at pro and all-star; **the regular planning hand at pro is 84 %, outside the 60-80 band** (and 85 % on `hockey.regular` at 200 seeds: see below); **all-star is easier than thirdjam's** (66.5 against 50 for the regular hand) |
+| T9 no level harder by legs | met by construction |
+| T10 pace | held |
+
+**Two things the 200-seed reference column showed, both against my own earlier statements:**
+
+1. **The planning hand's one calibration number is off.** It was fitted on `hockey.regular` at 40 seeds (77.5 %) and
+   checked at 60 (78.3 %); at 200 seeds its regular setting wins **85.0 % (± 2.5)** there, where thirdjam's own regular hand
+   wins 75.5 %. So "84 % at pro, outside the band" is the instrument's level, not the cartridge's: the same hand wins 85 %
+   on thirdjam and 84 % on the Third Life cut. Pro did not get easier; round 2's and 3a's "the kept rules made pro easier
+   (78 to 88)" was read off 60-seed cells and is withdrawn. The band can only be read after the hand is fitted again at
+   200 seeds or more.
+2. **All-star got easier**: 50.0 to 66.5 % for the regular hand, 77.5 to 88.0 for the good (the novice 23.5 to 22.5). Which
+   kept change did it is not separated: the cut already stood at 65 % after round 2's rules (60 seeds), before all-star's
+   legs were touched (E11). All-star has not been given that difficulty back by play. The gap between pro and all-star for
+   the regular hand is 17.5 points where thirdjam's is 35.
+
+The next round's first steps, in order: fit the planning hand again at 200 seeds (its regular setting to thirdjam's 75.5 %
+on `hockey.regular`), then read pro against the band and take pro's stick step only if it is still above (the poke at once,
+as all-star's; six pro cells); give all-star its difficulty back by play (its hunt and its stick, not its legs); cut the
+deke and decide the spin; measure the lift, the poke and the check as a group; then the mates' hands, for the pass.

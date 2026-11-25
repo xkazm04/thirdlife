@@ -6,7 +6,7 @@ import path from "node:path";
 import type { Brief, DesignDoc } from "./events.js";
 import { PKG_ROOT, REPO_ROOT, stripBom } from "./paths.js";
 import { conceptSchema, designProblems, designSchema, reviewScoresSchema, type Concept, type ConceptTemplate, type ReviewScore } from "./room_wire.js";
-import { templateExcerpt, templateLines } from "./templates.js";
+import { coreRouteOf, templateExcerpt, templateLines } from "./templates.js";
 
 /** The handbook every room prompt cites. */
 export const QUALITY_DOC = path.join(REPO_ROOT, "docs", "GAME-QUALITY.md");
@@ -192,6 +192,9 @@ export function servesLine(brief: Brief, spec: { serves?: string[] }): string {
 /** The builder prompt's Feel section for a brief with a design doc ("" otherwise): the rules, then the handbook. */
 export function builderFeelSection(template?: ConceptTemplate): string {
   const excerpt = templateExcerpt(template, "builder");
+  // E3 of 24 Nov: on a core the feel is the core's (thirdjam's sim); a builder of a core game changes data, so the
+  // hand-built feel rules (hit-stop on both bodies, clips per verb) are not its work: the core route and the method are.
+  if (coreRouteOf(template) !== undefined) return `# Feel: this game is on a core, and the core carries the feel\n${excerpt}\n${methodText(["14:Builder"])}\n`;
   return feelRules() + (excerpt !== "" ? `\n${excerpt}` : "");
 }
 

@@ -19,13 +19,36 @@ func _building() -> void:
 		t.name = "Planning"
 		_place(t, Vector2(0, 400))
 		return
-	_strip(s, 140.0, 104.0)
 	var k: int = int(job.get("phase_now", -1))
+	if Model.version_n(job) > 0 and (busy == "change" or not Model.changing(job).is_empty()):
+		# E4: a change on a game that was handed over: its phases stay passed (a re-opened package does not undo them)
+		for e: Dictionary in s:
+			e["state"] = "passed"
+			e["current"] = false
+		k = -1
+	_strip(s, 140.0, 104.0)
+	if _pause_card():
+		return                            # E4b: a question or a quality hold: the person answers it here (create_pause.gd)
+	_continue_button()
 	if k < 0 or k >= s.size():
-		# every phase passed: the Foreman plays the whole game through once more before it hands it over
-		var last: Control = _callout("Last check, then it is yours", Vector2(50, 278), "check", GREEN)
-		last.name = "LastCheck"
-		_icon_parade(400)
+		# every phase passed: the Foreman plays the whole game through once more before it hands it over; or (E4) a
+		# change round on a finished game: what is being changed, and the parts being built for it
+		var said: String = Model.changing(job) if busy != "change" else _sent_change
+		if said.is_empty():
+			var last: Control = _callout("Last check, then it is yours", Vector2(50, 278), "check", GREEN)
+			last.name = "LastCheck"
+			_icon_parade(400)
+		else:
+			var ch: Control = _callout("Changing: " + JobModel.one_line(said, 70), Vector2(50, 278), "redo", ORANGE)
+			ch.name = "Changing"
+			var wk: Array = Model.working_packages(job)
+			if wk.is_empty():
+				_icon_parade(400)
+			var n: int = mini(3, wk.size())
+			var tw: float = minf(360.0, (W - 100.0 - 20.0 * float(n - 1)) / maxf(1.0, float(n)))
+			var x0: float = (W - (tw * float(n) + 20.0 * float(n - 1))) * 0.5
+			for i: int in n:
+				_package_tile(wk[i], Vector2(x0 + float(i) * (tw + 20.0), 392), Vector2(tw, 150))
 		_design_row(616)
 		return
 	var cur: Dictionary = s[k]
@@ -41,9 +64,16 @@ func _building() -> void:
 	_design_row(616)
 	if str(job.get("phase", "")) == "paused" and str(job.get("pause_kind", "")) != "phase":
 		var why: String = "the builder asks a question" if str(job.get("pause_kind", "")) == "question" else JobModel.one_line(str(job.get("job_reason", "")), 70)
-		_callout("Paused: " + why, Vector2(50, 556), "pause", ORANGE)
+		if busy in ["answer", "quality"]:
+			_callout("Your answer is sent: the builders go on", Vector2(50, 556), "check", GREEN).name = "Sent"   # E4b
+		else:
+			_callout("Paused: " + why, Vector2(50, 556), "pause", ORANGE)
 	elif str(cur["state"]) == "held":
 		_callout("Changing: " + JobModel.one_line(str(cur["note"]), 80), Vector2(50, 556), "redo", ORANGE)
+	elif not Model.changing(job).is_empty():
+		# E4: a change request (not a hold) on a game whose phases are open again (a grown package joined one)
+		var ch: Control = _callout("Changing: " + JobModel.one_line(Model.changing(job), 80), Vector2(50, 556), "redo", ORANGE)
+		ch.name = "Changing"
 
 
 ## The design being built: one small chip per aspect that was not dropped (its chosen face), so the player sees what
@@ -183,14 +213,19 @@ func _phase_done() -> void:
 	var card: Panel = Panel.new()
 	card.name = "PhaseCard"
 	card.add_theme_stylebox_override("panel", _box(PAPER, INK, 6, 26, 14))
-	card.position = Vector2(140, 250)
-	card.size = Vector2(1000, 400)
+	# E4c: on a game on a core the phase's measured figures stand beside the card (create_pause.gd _measured_card)
+	var mv: Dictionary = Model.measured_view(job)
+	var k: float = 1.0 if mv.is_empty() else 0.8
+	card.position = Vector2(140, 250) if mv.is_empty() else Vector2(40, 250)
+	card.size = Vector2(1000.0 * k, 400)
+	if not mv.is_empty():
+		_measured_card(mv, Vector2(860, 250), Vector2(380, 400))
 	_body.add_child(card)
-	var ready: Label = _label("Phase %d is ready!" % int(e.get("n", 0)), 46, 950, INK, 920, HORIZONTAL_ALIGNMENT_CENTER)
+	var ready: Label = _label("Phase %d is ready!" % int(e.get("n", 0)), 46, 950, INK, 920.0 * k, HORIZONTAL_ALIGNMENT_CENTER)
 	ready.name = "Ready"
 	ready.position = Vector2(40, 30)
 	card.add_child(ready)
-	var tr: Label = _label(str(e.get("try", "")), 30, 700, Color(INK, 0.85), 860, HORIZONTAL_ALIGNMENT_CENTER)
+	var tr: Label = _label(str(e.get("try", "")), 30, 700, Color(INK, 0.85), 860.0 * k, HORIZONTAL_ALIGNMENT_CENTER)
 	tr.name = "Try"
 	tr.position = Vector2(70, 104)
 	card.add_child(tr)
@@ -206,28 +241,28 @@ func _phase_done() -> void:
 		sb.content_margin_left = 18.0
 		nb.add_theme_stylebox_override("normal", sb)
 		nb.add_theme_stylebox_override("focus", sb)
-		nb.position = Vector2(60, 236)
-		nb.size = Vector2(560, 84)
+		nb.position = Vector2(60, 236) * Vector2(k, 1)
+		nb.size = Vector2(560.0 * k, 84)
 		nb.max_length = 240
 		nb.text_submitted.connect(func(_t: String) -> void: send_hold())
 		card.add_child(nb)
 		_note_box = nb
-		var send: Button = _button("SendHold", "Send", "go", ORANGE, Vector2(640, 236), Vector2(170, 84), 30)
+		var send: Button = _button("SendHold", "Send", "go", ORANGE, Vector2(640.0 * k, 236), Vector2(170.0 * k, 84), 30)
 		send.pressed.connect(send_hold)
 		card.add_child(send)
-		var back: Button = _button("CancelHold", "", "back", CREAM, Vector2(830, 236), Vector2(110, 84), 30)
+		var back: Button = _button("CancelHold", "", "back", CREAM, Vector2(830.0 * k, 236), Vector2(110.0 * k, 84), 30)
 		back.pressed.connect(func() -> void:
 			holding = false
 			_rebuild())
 		card.add_child(back)
 		return
-	var tb: Button = _button("TryIt", "Try it", "play", HONEY, Vector2(60, 236), Vector2(330, 110), 40)
+	var tb: Button = _button("TryIt", "Try it", "play", HONEY, Vector2(60.0 * k, 236), Vector2(330.0 * k, 110), 40)
 	tb.pressed.connect(try_it)
 	card.add_child(tb)
-	var pb: Button = _button("Pass", "Pass", "check", GREEN, Vector2(420, 236), Vector2(250, 110), 40)
+	var pb: Button = _button("Pass", "Pass", "check", GREEN, Vector2(420.0 * k, 236), Vector2(250.0 * k, 110), 40)
 	pb.pressed.connect(pass_phase)
 	card.add_child(pb)
-	var hb: Button = _button("Hold", "Hold", "hold", ORANGE, Vector2(700, 236), Vector2(240, 110), 40)
+	var hb: Button = _button("Hold", "Hold", "hold", ORANGE, Vector2(700.0 * k, 236), Vector2(240.0 * k, 110), 40)
 	hb.pressed.connect(func() -> void:
 		holding = true
 		_rebuild()
@@ -304,13 +339,177 @@ func _done() -> void:
 		_alive.append(ic)
 	var t: Label = _label("Your game is ready", 62, 950, HONEY, W, HORIZONTAL_ALIGNMENT_CENTER)
 	t.name = "Ready"
-	_place(t, Vector2(0, 290))
-	var title: Label = _label(str(job.get("title", "")), 36, 800, PAPER, W, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(t, Vector2(0, 250))
+	var v: int = Model.version_n(job)
+	var title: Label = _label(str(job.get("title", "")) + ("  ·  version %d" % v if v > 1 else ""), 34, 800, PAPER, W, HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "GameTitle"
-	_place(title, Vector2(0, 378))
-	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(W * 0.5 - 170, 470), Vector2(340, 120), 50)
+	_place(title, Vector2(0, 334))
+	var note: String = Model.change_note(job)
+	if not note.is_empty():
+		var nl: Label = _label(note, 20, 700, ORANGE, W, HORIZONTAL_ALIGNMENT_CENTER)
+		nl.name = "ChangeNote"
+		_place(nl, Vector2(0, 380))
+	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(W * 0.5 - 330, 414), Vector2(310, 110), 46)
 	play.pressed.connect(func() -> void: launch(Model.play_dir(job)))
 	_body.add_child(play)
+	# E4: one press puts the game in the main menu's Dungeons (the person's own list, kernel/dungeon/dungeons.gd)
+	var listed: bool = not Dungeons.user_row(job_dir, menu_list).is_empty()
+	var mb: Button = _button("RemoveMenu" if listed else "AddMenu", "In the menu" if listed else "Add to menu", "check" if listed else "plus", GREEN if listed else CREAM,
+		Vector2(W * 0.5 + 20, 414), Vector2(310, 110), 30)
+	mb.tooltip_text = "Press to take it out of the menu" if listed else "Show it in the main menu's Dungeons"
+	mb.pressed.connect(remove_from_menu if listed else add_to_menu)
+	_body.add_child(mb)
+	_change_row(Vector2(150, 572))
+
+
+## E4: the change box: what should change, in the person's words, then a new playable build (`foreman change`).
+func _change_row(at: Vector2) -> void:
+	var cb: LineEdit = LineEdit.new()
+	cb.name = "ChangeBox"
+	cb.placeholder_text = "What should change? Faster, bigger, a new power..."
+	cb.add_theme_font_override("font", _font(650))
+	cb.add_theme_font_size_override("font_size", 24)
+	cb.add_theme_color_override("font_color", INK)
+	cb.add_theme_color_override("font_placeholder_color", Color(INK, 0.45))
+	var sb: StyleBoxFlat = _box(Color.WHITE, HONEY.darkened(0.25), 4, 14)
+	sb.content_margin_left = 18.0
+	cb.add_theme_stylebox_override("normal", sb)
+	cb.add_theme_stylebox_override("focus", sb)
+	cb.position = at
+	cb.size = Vector2(740, 80)
+	cb.max_length = 240
+	cb.text = _change_draft
+	cb.text_changed.connect(func(t: String) -> void: _change_draft = t)
+	cb.text_submitted.connect(func(_t: String) -> void: send_change())
+	_body.add_child(cb)
+	_change_box = cb
+	var go_b: Button = _button("SendChange", "Change it", "redo", ORANGE, at + Vector2(760, 0), Vector2(220, 80), 28)
+	go_b.pressed.connect(send_change)
+	_body.add_child(go_b)
+
+
+func send_change() -> void:
+	var text: String = Door.clean_text(_change_box.text if _change_box != null else "")
+	if text.is_empty():
+		message = "Say what should change first."
+		_rebuild()
+		return
+	var err: String = door.change(job_dir, text)
+	if not err.is_empty() and not door.dry:
+		message = err
+	else:
+		message = ""
+		busy = "change"
+		busy_mark = (job.get("changes", []) as Array).size()
+		_sent_change = text
+		started_at = _now()
+		_change_draft = ""
+	_rebuild()
+
+
+func add_to_menu() -> void:
+	var err: String = Dungeons.add_user(Model.play_dir(job), str(job.get("title", "My game")), job_dir, menu_list)
+	message = "" if err.is_empty() else "Not added to the menu: " + err
+	if err.is_empty():
+		print("[create] menu: added %s (%s)" % [str(job.get("title", "")), Model.play_dir(job)])
+	_rebuild()
+
+
+func remove_from_menu() -> void:
+	var err: String = Dungeons.remove_user(job_dir, menu_list)
+	message = "" if err.is_empty() else "Not taken out of the menu: " + err
+	_rebuild()
+
+
+## E4: a game in the menu plays its newest version: after a change is made, its row moves to the new promotion.
+func _follow_menu_row() -> void:
+	if screen != "done" or job_dir.is_empty():
+		return
+	var row: Dictionary = Dungeons.user_row(job_dir, menu_list)
+	if not row.is_empty() and str(row["pack"]) != Model.play_dir(job).replace("\\", "/").trim_suffix("/"):
+		Dungeons.add_user(Model.play_dir(job), str(row["title"]), job_dir, menu_list)
+
+
+## E4: a job whose Foreman is gone (the window was closed, it was reopened from My games) builds on with Continue.
+## E4b: create_pause.gd draws the card of a pause a person answers (a builder's question, a quality hold); true when drawn.
+func _pause_card() -> bool:
+	return false
+
+
+## E4c: create_pause.gd draws the phase's measured figures beside the phase card.
+func _measured_card(_v: Dictionary, _at: Vector2, _sz: Vector2) -> void:
+	pass
+
+
+func _continue_button() -> void:
+	if door == null or busy != "" or str(job.get("pause_kind", "")) in ["question", "quality"]:
+		return
+	if not str(job.get("phase", "")) in ["planning", "running", "paused"] or door.foreman_alive(job_dir, int(job.get("lock_pid", 0))):
+		return
+	var b: Button = _button("Continue", "Continue", "play", HONEY, Vector2(W - 290, 556), Vector2(240, 56), 24)
+	b.pressed.connect(continue_build)
+	_body.add_child(b)
+
+
+func continue_build() -> void:
+	var started_before: bool = not str(job.get("job_state", "")).is_empty()
+	var err: String = door.resume(job_dir, not (job.get("order", []) as Array).is_empty(), started_before)
+	message = "" if err.is_empty() or door.dry else err
+	if err.is_empty() and not door.dry:
+		busy = "continue"
+	_rebuild()
+
+
+# ---- E4: My games
+
+func open_games() -> void:
+	showing_games = true
+	games_rows = Model.games(jobs_root) if not jobs_root.is_empty() else []
+	_rebuild()
+
+
+func _games() -> void:
+	var t: Label = _label("My games", 46, 950, HONEY, W, HORIZONTAL_ALIGNMENT_CENTER)
+	t.name = "GamesTitle"
+	_place(t, Vector2(0, 92))
+	if games_rows.is_empty():
+		var none: Label = _label("Nothing made yet: say a game and press Go.", 26, 700, MUTED, W, HORIZONTAL_ALIGNMENT_CENTER)
+		none.name = "NoGames"
+		_place(none, Vector2(0, 300))
+		return
+	var n: int = mini(6, games_rows.size())
+	for i: int in n:
+		var g: Dictionary = games_rows[i]
+		var in_menu: bool = not Dungeons.user_row(str(g["dir"]), menu_list).is_empty()
+		var row: Button = _button("Game%d" % i, "", "", PAPER, Vector2(140, 168 + float(i) * 88), Vector2(1000, 76), 24)
+		row.tooltip_text = str(g["sentence"])
+		row.pressed.connect(open_game.bind(str(g["dir"])))
+		_body.add_child(row)
+		var glyph: String = {"done": "play", "phase_done": "hold", "failed": "cross", "pitch": "story", "designing": "time"}.get(str(g["screen"]), "build")
+		var ic: Icon = Icon.new(glyph, 52)
+		ic.disc = {"done": GREEN, "phase_done": ORANGE, "failed": RED}.get(str(g["screen"]), BLUE)
+		ic.position = Vector2(14, 12)
+		ic.size = Vector2(52, 52)
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(ic)
+		var tl: Label = _label(JobModel.one_line(str(g["title"]), 34), 26, 850, INK, 470)
+		tl.name = "GameName"
+		tl.position = Vector2(84, 18)
+		row.add_child(tl)
+		var wl: Label = _label(str(g["word"]) + ("  ·  in the menu" if in_menu else ""), 21, 700, Color(INK, 0.7), 420, HORIZONTAL_ALIGNMENT_RIGHT)
+		wl.name = "GameState"
+		wl.position = Vector2(560, 24)
+		row.add_child(wl)
+	if games_rows.size() > n:
+		var more: Label = _label("and %d older" % (games_rows.size() - n), 20, 700, MUTED, W, HORIZONTAL_ALIGNMENT_CENTER)
+		_place(more, Vector2(0, 168 + float(n) * 88))
+
+
+## Reopens a game at the state its log is in: play and change it, pass a waiting phase, continue a stopped build.
+func open_game(dir: String) -> void:
+	showing_games = false
+	print("[create] my games: open %s" % dir)
+	call("show_job", dir)              # create.gd (the subclass) reads the job
 
 
 func _failed() -> void:
@@ -368,4 +567,7 @@ func new_idea() -> void:
 	busy = ""
 	waiting_for = ""
 	message = ""
+	showing_games = false
+	_sent_change = ""
+	_change_draft = ""
 	_rebuild()

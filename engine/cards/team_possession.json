@@ -1,7 +1,7 @@
 {
   "schema": "tl.card/1",
   "id": "card.team_possession",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
   "summary": "Two teams of a few walkers or skaters on a bounded rink; whoever has the puck inside his reach carries it on his stick, passes to a mate or shoots; a puck inside a goal volume is a point; periods and a score decide. The worked example is the house game hockey (engine/packs/hockey). Covers ice hockey, street hockey, five-a-side football, a team ball game with carriers and passes.",
   "applies_when": [
@@ -10,6 +10,7 @@
     "a point is the ball or puck inside a goal; the match ends by a score or by periods on a clock"
   ],
   "not_when": [
+    "hockey or another game on a rink with a puck: card.rink_core (a cartridge on the rink core, thirdjam's match); since 24 Nov this card's old hockey is the hand-built route only",
     "one piece per side on a rail or in its own half returning the ball by contact (pong, air hockey): use card.two_sides_ball",
     "no opponent team: targets to knock down use card.knock_down, a course against the clock card.timed_drive",
     "a full simulation with goalies, offside or line changes (hockey shows none of them; see its README, known limits)"

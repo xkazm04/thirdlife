@@ -1,0 +1,259 @@
+{
+ "source": ".tl/proof-jobs-c/hockey-where-ice-has-20261125-1/reports/designer-a2-s5.json",
+ "problems": [
+  "brief.rules WORLD line names no size in the player's units (body widths, body lengths or body heights): \"Skater 0.8 m wide, 1.8 m tall; pond 60x30 m, 75 widths long; 11 m/s, six heights\""
+ ],
+ "json": {
+  "brief": {
+   "pitch": "I'm the pond trickster: bank off corner bumpers, pounce, and score double.",
+   "aspects": [
+    {
+     "id": "gold_goal",
+     "icon": "twist",
+     "title": "Gold Goals",
+     "line": "Bounce it off a bumper, then score two.",
+     "detail": "A bumper touch turns the puck gold for 120 frames; a goal while gold counts two for either side. A defender taking possession ends it. Pack-code tally over the core snapshot, since no cartridge key says this.",
+     "alternatives": [
+      {
+       "id": "gold_clock",
+       "title": "Golden Minute",
+       "line": "The last minute makes every goal huge."
+      },
+      {
+       "id": "pure_pinball",
+       "title": "Pure Pinball",
+       "line": "No bonus, just wild bounces everywhere."
+      }
+     ]
+    },
+    {
+     "id": "corner_bumpers",
+     "icon": "arena",
+     "title": "Corner Bumpers",
+     "line": "Hit a corner post and watch it fly.",
+     "detail": "Four game.rink.obstacles of kind bumper, size 2.5 m, at x ±26, z ±10. The core returns the puck faster than it came (restitution 1.6). The pack adds flash, bang (TLAudio.play) and a gold trail within 3 frames.",
+     "alternatives": [
+      {
+       "id": "net_bumpers",
+       "title": "Net Guards",
+       "line": "Bumpers beside each net make close chaos."
+      },
+      {
+       "id": "centre_bumper",
+       "title": "Middle Post",
+       "line": "One giant bumper rules the centre ice."
+      }
+     ]
+    },
+    {
+     "id": "ice_patches",
+     "icon": "power",
+     "title": "Fast and Slow",
+     "line": "Zoom on orange ice, slog through blue slush.",
+     "detail": "game.rink.zones: two fast_ice side lanes at strength 0.8 (40% faster), one central slow_ice circle and two high-slot circles at 0.6 (30% slower). Both bodies and puck feel them. The base draws each patch with its own mark.",
+     "alternatives": [
+      {
+       "id": "slow_walls",
+       "title": "Slushy Edges",
+       "line": "Fast middle, sticky sides, fight for centre."
+      },
+      {
+       "id": "checker_ice",
+       "title": "Patchwork Pond",
+       "line": "Small mixed patches make every route tricky."
+      }
+     ]
+    },
+    {
+     "id": "finisher",
+     "icon": "player",
+     "title": "Pounce",
+     "line": "Meet the bounce and smack it straight in.",
+     "detail": "Core one-timer: shoot within 20 frames of receiving, with 14 degrees extra aim cone. Pass reception radius 2 m. The trickster banks, reads the kick, and arrives; or a mate collects the gold puck and feeds across the crease.",
+     "alternatives": [
+      {
+       "id": "long_bomber",
+       "title": "Long Bomber",
+       "line": "Charge huge shots and bank from far away."
+      },
+      {
+       "id": "deke_master",
+       "title": "Deke Master",
+       "line": "Fake past defenders and walk it in."
+      }
+     ]
+    },
+    {
+     "id": "wardens",
+     "icon": "rival",
+     "title": "Reed Wardens",
+     "line": "They chase you, guard home, and learn nothing free.",
+     "detail": "Thirdjam's bots: chaser hunts the carrier, support shadows lanes, back guards the crease and bites on dekes. Rookie first, then pro and all_star change reactions and reading. Same skater figure, red jerseys; they never aim at bumpers deliberately.",
+     "alternatives": [
+      {
+       "id": "outnumbered",
+       "title": "Outnumbered Pond",
+       "line": "Three of you against five hungry wardens."
+      },
+      {
+       "id": "bruiser_wardens",
+       "title": "Heavy Wardens",
+       "line": "Big slow rivals who knock everyone flat."
+      }
+     ]
+    },
+    {
+     "id": "chase_view",
+     "icon": "camera",
+     "title": "Over Shoulder",
+     "line": "The view follows you and your next bounce.",
+     "detail": "Thirdjam's third_person camera, unchanged: 6 m back, 3.5 m up, 5 m look-ahead, 70 degrees, 4-frame lag. It never crosses the boards. The radar shows off-screen skaters; bumper flashes read from distance.",
+     "alternatives": [
+      {
+       "id": "high_view",
+       "title": "High Chase",
+       "line": "See more pond from a higher perch."
+      },
+      {
+       "id": "arena_view",
+       "title": "Whole Pond",
+       "line": "One fixed view shows every bounce at once."
+      }
+     ]
+    }
+   ],
+   "rules": "FANTASY: I am the pond trickster, banking pucks off corner bumpers and pouncing on the kick for double goals. Sensation and challenge.\nWORLD: Skater 0.8 m wide, 1.8 m tall; pond 60x30 m, 75 widths long; 11 m/s, six heights a second; camera 3.3 heights back, 1.9 up.\nTEARDOWN: NHL '94: pass across the crease, shoot as it arrives; the goalie cannot cross in time. Copied: one-timer window 20 frames, 14 degrees extra aim.\nTEARDOWN: Mario Kart 8: dash panels give instant speed, off-road slows, so the line is a choice. Changed: fast ice adds 40%, slow ice cuts 30%.\nTEARDOWN: The Addams Family pinball: a pop bumper kicks the ball away faster with flash and bang. Copied: corner bumper restitution 1.6, flash within 3 frames.\n30 SECONDS: 0-5 s: puck drops, HUD names buttons, you skate the orange lane and surge. 5-15 s: past a rookie, you shoot a corner bumper; bang, flash, gold puck. 15-30 s: it kicks slotward, you pounce, score, GOLD +2. \"I banked that.\"\nKILL IF: after five tries a newcomer cannot send a bumper kick toward the slot on purpose.\nKILL IF: the player ignores the bumpers and shoots straight at the net for a whole match.\nKILL IF: a gold goal lands and the player cannot say why it counted two.\nCARTRIDGE: game.rink.length_m = 60 (corners are always close enough to aim at)\nCARTRIDGE: game.rink.width_m = 30 (traffic, quick banks)\nCARTRIDGE: game.rink.corner_radius_m = 3 (corners hold the puck near the bumpers)\nCARTRIDGE: game.rink.obstacles = four bumper, size 2.5, at (±26, ±10) (corner kicks)\nCARTRIDGE: game.rink.zones = fast_ice rects (0, ±11, w 32, d 5, strength 0.8); slow_ice circle (0, 0, r 4.5, 0.6); slow_ice circles (±15, 0, r 3, 0.6) (speed lanes against slush)\nCARTRIDGE: game.teams = 4 v 4; player, chaser, support, back v chaser, support, support, back; blue #2F7FD1, red #C8453A (room to pass)\nCARTRIDGE: game.rules.mode = timer (a three-minute match; omit score_to_win)\nCARTRIDGE: game.rules.timer_frames = 10800 (the last 30 seconds matter)\nCARTRIDGE: game.shot.one_timer.window_frames = 20 (pounce on arrival)\nCARTRIDGE: game.shot.one_timer.cone_bonus_deg = 14 (a timed pounce finds the net)\nCARTRIDGE: game.stick.reception_m = 2 (kicks and passes are catchable)\nCARTRIDGE: game.skater.pass_lead_frames = 20 (passes meet a moving mate)\nCARTRIDGE: game.contact.bot_check_windup_frames = 12 (the longest check warning the core allows)\nCARTRIDGE: game.look.tier = l1_day (a bright pond where patches read)\nSKIN: title = Pond Trickster\nSKIN: tagline = Bank it. Pounce. Count two.\nSKIN: about = Corner bumpers turn the puck gold. Gold goals count two.\nSKIN: team_names = Tricksters, Reed Wardens\n\nONE THING NO KEY CAN SAY. The double goal has no cartridge key, hook condition or existing sidecar switch, so no rules sidecar ships. It is a small pack-code observer in scripts/, adding no physics and no verb. Build step one: confirm in SNAPSHOT.md that puck position, possession and goal events are readable, and that the pack can own the scoreboard, end card and a timer tie. If any is missing, stop and report to the producer: the double goal is then not buildable without a core patch, and must not be faked in the HUD.\n\nGOLD RULE. A bumper touch is puck centre within 1.25 m + puck radius + 0.25 m of a bumper centre with a changed velocity; repeat touches within 6 frames count once. The puck turns gold for 120 frames. A goal while gold scores 2, otherwise 1. Possession by the side defending the goal that the toucher attacks clears gold; teammates keep it. Gold never stacks past 2. Applies to both sides. Own team is judged by who last played the puck before the bumper. The pack keeps both totals, puts them in _pack_state(), and the winner is the higher total at 3:00; level totals read DRAW. Window, points, margin, flash, shake and sound levels live in data/tuning.json; skating and contact numbers live in the cartridge, so a person changes either between plays.\n\nVERBS (core's keys, skating and contact unchanged; frame figures are design targets, and the core's defaults win where they differ). Shoot: tap up to 4 frames stays flat, hold charges and lifts, 24-frame cooldown. Pass: aimed lead pass, hold for power (full at 30 frames). Poke (defensive): about 8-frame window, a miss locks the stick briefly; a fresh take is safe 30 frames. Check: 12-frame window; momentum decides bump, stumble or knockdown for the victim, while the checker loses speed or whiffs.\n\nCONTACT. Core table: bump keeps both on their feet and costs both speed; stumble halves the victim's speed and loosens the puck; knockdown floors the victim; the attacker always pays momentum. A missed poke or check leaves the attacker open. Puck on a body stops or rebounds.\n\nSPEEDS. Skate 11 m/s, acceleration 12 m/s², turn 5 rad/s, carrier 0.92, free skater 1.15, braking 6 m/s² (reverse brake 26). Fast ice about 1.4x, slow ice about 0.7x. Camera 6 m back, 3.5 m up, 4-frame lag.\n\nJUICE BY FORCE. Bumper: instant flash, bang, gold trail, 0.08 m shake over 8 frames. Normal goal: base horn and banner. Gold goal: confetti, double horn, GOLD +2, 0.2 m shake over 16 frames. Whiffs get no burst.\n\nCURVE. Opening faceoff is calm; every bumper kick starts a two-second spike; goals pause 120 frames; the last 30 seconds show a ticking clock and the gap in goals, where one gold finish erases a two-goal lead. That visible rule is the comeback; nothing is hidden. No rule exists to satisfy a bot figure.\n\nFIRST MINUTE. PLAY NOW, rookie, one hint line: 'Hit a corner bumper: gold goals count 2.'\n\nEND. Final totals, gold goals for each side, best bank, and one cause line such as 'Wardens scored 2 gold: poke the gold puck'. R rematches; best winning margin per level is shown if the pack's end card allows it, otherwise omitted.\n\nOwner rulings kept: camera bound to the player, genre first, proof through real input. Pond size 60x30 must be re-judged by pacing in the first play.",
+   "arena": "A bright winter pond sheet, 60 x 30 m, corner radius 3 m, standard 4 m goals. Four 2.5 m bumper posts at x ±26, z ±10; check in the first window that none blocks a net mouth or traps a carrier, and move them in the cartridge if so. Orange fast lanes run along both long sides (x 0, z ±11, 32 x 5 m). Blue slush sits at centre (r 4.5) and both high slots (x ±15, r 3). Zones and bumpers are drawn by the base's rink_toys from the cartridge; bumpers flash on contact. The thirdjam hall stays as it is, so benches sit off the smaller sheet. The core's third-person camera stays inside the boards with 6 m distance and 3.5 m height, so no scenery stands between lens and skater.",
+   "ai": "Reed Wardens are thirdjam's bots on the core, same skater figure in red; distinct bodies are not buildable by cartridge, so character comes from role, habit and barks. Chaser: hunts the carrier and closes visibly; the approach is the long tell, then a check wind-up of 12 frames, the core's maximum (below the 20-frame guideline, for the producer to judge). Beat it with a pass or a turn onto fast ice. Two supports: cover passing lanes and loose kicks; beat them by banking to the weak side. Back: guards the crease, commits to a deke's old side, and struggles to cross for a one-timer. Reactions come from the momentum contact table: stumble, knockdown, lost puck; barks react to goals. Rookie (default) is clumsy and does not body check; pro reacts sooner and checks; all_star reads the puck and shoots sharper. Never speed-only difficulty. Bots do not know the gold rule and score gold only by chance: if that feels hollow, it is a reported limit of the core.",
+   "controls": "Move (WASD): skate. Aim (mouse): point stick, shot and pass. Primary mouse button: shoot with the puck, poke without. Secondary mouse button: pass with the puck, check without. Sprint: burst on the sprint bar. Brake: stop hard. Bindings are the base's, unchanged; its HUD names them, and its bindings win if they differ.",
+   "mood": "A sunny frozen pond: pale blue ice, orange speed streaks, blue slush, magenta bumpers that flash gold, blade hiss, a pinball bang and a doubled horn for gold goals.",
+   "design": {
+    "pillars": [
+     {
+      "line": "Every corner is a trick you aim, then chase.",
+      "rules_out": "Random decorative bumpers, auto-guided banks and shots that score gold without touching a post."
+     },
+     {
+      "line": "The ice makes routes a choice between quick and direct.",
+      "rules_out": "Uniform ice, hidden patches and patches that move during play."
+     },
+     {
+      "line": "The kick is anyone's puck, so finishing it takes nerve.",
+      "rules_out": "Protected rebounds, gold bonuses for one side only and hidden catch-up help."
+     }
+    ],
+    "verbs": [
+     {
+      "id": "shoot",
+      "input": "Primary button with puck, aimed by mouse; tap flat, hold charges. Core shot animation. Bank it off a bumper to turn it gold.",
+      "anticipation_f": 3,
+      "active_f": 1,
+      "recovery_f": 24,
+      "cancel": "Core cooldown 24 frames; received within 20 frames becomes a one-timer. Losing the puck kills the charge."
+     },
+     {
+      "id": "pass",
+      "input": "Secondary button with puck, aimed lead pass, hold for distance. Core pass animation. Feeds a mate across the crease.",
+      "anticipation_f": 3,
+      "active_f": 1,
+      "recovery_f": 24,
+      "cancel": "Core rule: interceptable by an opposing blade after 6 frames; reception opens the one-timer window."
+     },
+     {
+      "id": "poke",
+      "input": "Primary button without puck; core stick poke animation. Takes a carried or gold puck within stick reach.",
+      "anticipation_f": 0,
+      "active_f": 8,
+      "recovery_f": 20,
+      "cancel": "Core rule: miss locks the stick; carrier's body or fresh take refuses it; success takes possession and clears enemy gold.",
+      "defensive": true
+     },
+     {
+      "id": "check",
+      "input": "Secondary button without puck; body_check animation. Skate into the man; speed and angle decide the hit.",
+      "anticipation_f": 0,
+      "active_f": 12,
+      "recovery_f": 18,
+      "cancel": "Core momentum table: bump, stumble or knockdown for victim; attacker loses speed. Mashing restarts nothing useful; whiff leaves him open."
+     }
+    ],
+    "playstyles": [
+     {
+      "id": "banker",
+      "title": "Banker",
+      "line": "Race the fast lane, bank early, chase your own rebound."
+     },
+     {
+      "id": "poacher",
+      "title": "Poacher",
+      "line": "Lurk by the crease and finish gold kicks first time."
+     },
+     {
+      "id": "gold_thief",
+      "title": "Gold Thief",
+      "line": "Poke the gold puck away and counter down the fast lane."
+     }
+    ],
+    "loops": {
+     "s3": "Shoot straight, bank, or pass? Take fast ice or the short slushy line? Players will drift wide to open bumper angles.",
+     "s30": "Win the puck, create a bank, then race defenders to the kick. Players learn which angles feed the slot and post a mate there.",
+     "m3": "Protect a lead or gamble on gold? Trailing players hunt corners; leaders clear gold pucks and guard the slot."
+    },
+    "context": [
+     "Gold state: for two seconds after a bumper touch, every defender and attacker has a doubled stake.",
+     "Ice position: the same play differs through fast side lanes and slow central slush.",
+     "Clock and gap: late deficits make bank gambles attractive and clearing gold pucks urgent.",
+     "Bot level: rookie leaves rebounds open, pro checks, all_star reads the puck."
+    ],
+    "skill": {
+     "floor": "Skate and press shoot toward a corner; any goal counts, and lucky gold bounces teach the rule.",
+     "ceiling": [
+      "Slot bank: choose the angle that returns the puck to your own skating line.",
+      "Gold feed: collect your side's kick and pass across the crease for a one-timer.",
+      "Lane chase: shoot, then use fast ice to beat the defender to the kick."
+     ]
+    },
+    "feel": {
+     "hitstop_f": [
+      0,
+      8
+     ],
+     "knockback": "Core momentum law: closing speed and mass against stability give bump, stumble or knockdown; bumpers return the puck at restitution 1.6.",
+     "reaction": "Both bodies answer: victim bumps, stumbles or falls; attacker loses speed. Bumper flashes and rings as the puck turns gold.",
+     "whiff": "Missed poke locks the stick, missed check bleeds speed; no burst or shake, and the opponent keeps skating.",
+     "iframes_f": 30,
+     "telegraph_f": 12,
+     "shake": "Bumper 0.08 m over 8 frames; gold goal 0.2 m over 16; knockdowns follow the base; whiffs none.",
+     "camera": "Core third-person chase, unchanged: 6 m back, 3.5 m up, 5 m look-ahead, 70 degrees, 4-frame lag, inside boards."
+    },
+    "clips": [
+     {
+      "id": "self_pounce",
+      "moment": "Trickster fires into the corner, bumper bangs, they sprint the orange lane and one-time their own kick: GOLD +2."
+     },
+     {
+      "id": "crease_feed",
+      "moment": "A mate grabs the gold puck and threads it across the crease; the first-time finish beats the sliding back."
+     },
+     {
+      "id": "gold_robbery",
+      "moment": "A defender pokes the glowing puck off an attacker's stick in the slot and bursts away down the fast lane."
+     }
+    ],
+    "first_minute": "Play opens on a rookie faceoff with one hint about gold goals. Skate, feel the lanes, bang a bumper, chase the kick, finish.",
+    "fail_state": "End card shows totals, gold goals each side and one cause with an answer, such as poking gold pucks. R restarts immediately.",
+    "out_of_scope": [
+     "New simulation, skater, camera or core patch.",
+     "New rival bodies or bots that deliberately plan bank shots.",
+     "Moving ice patches, pickups, abilities and penalties.",
+     "Online play, seasons, unlocks and character customisation."
+    ]
+   }
+  },
+  "estimate": {
+   "packages": 6,
+   "wallMinutes": 240,
+   "tokens": 2500000
+  }
+ }
+}

@@ -65,6 +65,17 @@ export interface Manifest {
   on_leave?: unknown;
   subject?: unknown;
   moments?: unknown;
+  /** E3g: the base the pack started from (engine/templates/<base>/): lint counts only the pack's own game lines. */
+  base?: string;
+}
+
+/** E3g: whether the engine's manifest check knows `base` (its kernel/runner/manifest.gd names the key). */
+export function engineKnowsBase(engineDir: string): boolean {
+  try {
+    return /^\s*"base":/m.test(fs.readFileSync(path.join(engineDir, "kernel", "runner", "manifest.gd"), "utf8"));
+  } catch {
+    return false;
+  }
 }
 
 /** The optional manifest fields a builder owns (PACK.md, last section). Everything else in pack.json is composed. */
@@ -151,9 +162,12 @@ function union(lists: (string[] | undefined)[]): string[] {
 /**
  * The manifest for a pack that holds exactly `packages` (given in plan order, which fixes the order of asset
  * generators and tests). Pure: the same input always gives the same text.
+ * E3g: `job.base` (the core route's base, given only when the engine's lint knows the key) is written as `base` when a
+ * package of kind "base" (coreroute.ts BASE_KIND) is among `packages`: lint then counts only the pack's own game lines.
  */
-export function composeManifest(job: { packId: string; title: string; version?: string; kernelApi: string }, packages: PackageSpec[], carried: Carried = {}): Manifest {
+export function composeManifest(job: { packId: string; title: string; version?: string; kernelApi: string; base?: string }, packages: PackageSpec[], carried: Carried = {}): Manifest {
   const cameras = union(packages.map((p) => p.registers?.cameras));
+  const base = job.base !== undefined && packages.some((p) => p.kind === "base") ? { base: job.base } : {};
   return {
     id: job.packId,
     version: job.version ?? PACK_VERSION,
@@ -164,6 +178,7 @@ export function composeManifest(job: { packId: string; title: string; version?: 
     assets: union(packages.map((p) => p.registers?.assets)),
     tests: union(packages.map((p) => p.registers?.tests)),
     ...(cameras.length > 0 ? { cameras } : {}),
+    ...base,
     ...Object.fromEntries(CARRIED_FIELDS.filter((k) => carried[k] !== undefined).map((k) => [k, carried[k]])),
   };
 }

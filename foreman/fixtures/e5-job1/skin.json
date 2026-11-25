@@ -1,0 +1,14 @@
+{
+  "schema": "tl.rink.skin/1",
+  "title": "Ringer on the Pond",
+  "tagline": "Three a side on the frozen pond.",
+  "about": ["Four minutes of three against three.", "Beat the chaser, shoot early, win it back."],
+  "team_names": ["Red Toques", "Blue Scarves"],
+  "levels": [
+    ["Thaw", "New to the pond? Start here: the Scarves are a step slower."],
+    ["Frost", "Skated before? The Scarves hit as a habit."],
+    ["Deep Freeze", "The cold one. The Scarves hunt the puck. Beat Frost first."]
+  ],
+  "commentary": "pond_commentary.json",
+  "barks": "pond_barks.json"
+}

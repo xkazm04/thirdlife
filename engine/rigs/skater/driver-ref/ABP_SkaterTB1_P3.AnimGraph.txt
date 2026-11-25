@@ -1,0 +1,220 @@
+# animation graph of ABP_SkaterTB1_P3.t3d
+
+=== graph AnimGraph
+  Root [Root_0] 
+    Result:
+      ComponentToLocalSpace [ComponentToLocalSpace_1] 
+        ComponentPose:
+          ModifyBone [ModifyBone_4] BoneToModify=(BoneName="upperarm_r"); RotationMode=BMM_Additive  <- Alpha=WhipA; Translation=0.000000,0.000000,0.000000; Rotation=WhipArm; Scale=1.000000,1.000000,1.000000
+            ComponentPose:
+              ModifyBone [ModifyBone_3] BoneToModify=(BoneName="neck_01"); RotationMode=BMM_Additive  <- Alpha=WhipA; Translation=0.000000,0.000000,0.000000; Rotation=WhipHead; Scale=1.000000,1.000000,1.000000
+                ComponentPose:
+                  ModifyBone [ModifyBone_2] BoneToModify=(BoneName="spine_03"); RotationMode=BMM_Additive  <- Alpha=WhipA; Translation=0.000000,0.000000,0.000000; Rotation=WhipRot; Scale=1.000000,1.000000,1.000000
+                    ComponentPose:
+                      ModifyBone [ModifyBone_0] BoneToModify=(BoneName="spine_02"); RotationMode=BMM_Additive  <- Alpha=WhipA; Translation=0.000000,0.000000,0.000000; Rotation=WhipRot; Scale=1.000000,1.000000,1.000000
+                        ComponentPose:
+                          LocalToComponentSpace [LocalToComponentSpace_1] 
+                            LocalPose:
+                              Slot [Slot_0] 
+                                Source:
+                                  TwoWayBlend [TwoWayBlend_1]   <- Alpha=ChargeAlpha
+                                    A:
+                                      ComponentToLocalSpace [ComponentToLocalSpace_0] 
+                                        ComponentPose:
+                                          ModifyBone [ModifyBone_8] BoneToModify=(BoneName="head"); RotationMode=BMM_Additive  <- Alpha=1.000000; Translation=0.000000,0.000000,0.000000; Rotation=LookRot2; Scale=1.000000,1.000000,1.000000
+                                            ComponentPose:
+                                              ModifyBone [ModifyBone_7] BoneToModify=(BoneName="spine_03"); RotationMode=BMM_Additive  <- Alpha=1.000000; Translation=0.000000,0.000000,0.000000; Rotation=LookRot1; Scale=1.000000,1.000000,1.000000
+                                                ComponentPose:
+                                                  ModifyBone [ModifyBone_6] BoneToModify=(BoneName="hand_r"); RotationMode=BMM_Additive  <- Alpha=StickA; Translation=0.000000,0.000000,0.000000; Rotation=LockRot; Scale=1.000000,1.000000,1.000000
+                                                    ComponentPose:
+                                                      ModifyBone [ModifyBone_5] BoneToModify=(BoneName="spine_01"); RotationMode=BMM_Additive  <- Alpha=GraceA; Translation=0.000000,0.000000,0.000000; Rotation=GraceRot; Scale=1.000000,1.000000,1.000000
+                                                        ComponentPose:
+                                                          ModifyBone [ModifyBone_1] BoneToModify=(BoneName="stick_socket"); RotationMode=BMM_Additive; TranslationMode=BMM_Additive  <- Alpha=1.000000; Translation=StickOff; Rotation=StickRot; Scale=1.000000,1.000000,1.000000
+                                                            ComponentPose:
+                                                              LocalToComponentSpace [LocalToComponentSpace_0] 
+                                                                LocalPose:
+                                                                  LayeredBoneBlend [LayeredBoneBlend_2] LayerSetup=; bMeshSpaceRotationBlend=True  <- BlendWeights_0=PassW
+                                                                    BasePose:
+                                                                      LayeredBoneBlend [LayeredBoneBlend_0] LayerSetup=; bMeshSpaceRotationBlend=True  <- BlendWeights_0=HoldW
+                                                                        BasePose:
+                                                                          LayeredBoneBlend [LayeredBoneBlend_1] LayerSetup=; bMeshSpaceRotationBlend=True  <- BlendWeights_0=AimW
+                                                                            BasePose:
+                                                                              BlendListByBool [BlendListByBool_4] BlendTime=(0.200000,0.200000)  <- BlendTime_0=0.100000; BlendTime_1=0.100000; bActiveValue=bStLoco
+                                                                                BlendPose_0:
+                                                                                  StateMachine [StateMachine_0] machine=AnimationStateMachineGraph'New State Machine 
+                                                                                BlendPose_1:
+                                                                                  BlendListByBool [BlendListByBool_5] BlendTime=(0.200000,0.200000)  <- BlendTime_0=0.100000; BlendTime_1=0.100000; bActiveValue=bStFace
+                                                                                    BlendPose_0:
+                                                                                      SequencePlayer [SequencePlayer_4] Sequence=AS_SkaterTB1_P3_Faceoff_Ready
+                                                                                    BlendPose_1:
+                                                                                      BlendListByBool [BlendListByBool_6] BlendTime=(0.200000,0.200000)  <- BlendTime_0=0.100000; BlendTime_1=0.100000; bActiveValue=bStHold
+                                                                                        BlendPose_0:
+                                                                                          SequencePlayer [SequencePlayer_5] Sequence=AS_SkaterTB1_P3_Goalie_Hold
+                                                                                        BlendPose_1:
+                                                                                          BlendListByBool [BlendListByBool_7] BlendTime=(0.200000,0.200000)  <- BlendTime_0=0.100000; BlendTime_1=0.100000; bActiveValue=bStRight
+                                                                                            BlendPose_0:
+                                                                                              SequencePlayer [SequencePlayer_7] Sequence=AS_SkaterTB1_P3_Goalie_Block_Right; bLoopAnimation=False
+                                                                                            BlendPose_1:
+                                                                                              SequencePlayer [SequencePlayer_6] Sequence=AS_SkaterTB1_P3_Goalie_Block_Left; bLoopAnimation=False
+                                                                            BlendPoses_0:
+                                                                              BlendListByBool [BlendListByBool_3]   <- BlendTime_0=0.05; BlendTime_1=0.05; bActiveValue=bCarry4
+                                                                                BlendPose_0:
+                                                                                  SequencePlayer [SequencePlayer_3] Sequence=AS_SkaterTB1_P3_Boost_Take; bLoopAnimation=False
+                                                                                BlendPose_1:
+                                                                                  BlendListByBool [BlendListByBool_8]   <- BlendTime_0=0.0; BlendTime_1=0.0; bActiveValue=bCarry5
+                                                                                    BlendPose_0:
+                                                                                      SequencePlayer [SequencePlayer_8] Sequence=AS_SkaterTB1_P3_Pin_Carry
+                                                                                    BlendPose_1:
+                                                                                      BlendListByBool [BlendListByBool_0]   <- BlendTime_0=0.0; BlendTime_1=0.0; bActiveValue=bCarry1
+                                                                                        BlendPose_0:
+                                                                                          SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_Giant_Carry
+                                                                                        BlendPose_1:
+                                                                                          BlendListByBool [BlendListByBool_1]   <- BlendTime_0=0.0; BlendTime_1=0.0; bActiveValue=bCarry2
+                                                                                            BlendPose_0:
+                                                                                              SequencePlayer [SequencePlayer_1] Sequence=AS_SkaterTB1_P3_Mallet_Carry
+                                                                                            BlendPose_1:
+                                                                                              BlendListByBool [BlendListByBool_2]   <- BlendTime_0=0.0; BlendTime_1=0.0; bActiveValue=bCarry3
+                                                                                                BlendPose_0:
+                                                                                                  SequencePlayer [SequencePlayer_2] Sequence=AS_SkaterTB1_P3_Cannon_Carry
+                                                                                                BlendPose_1:
+                                                                                                  TwoWayBlend [TwoWayBlend_3]   <- Alpha=T3
+                                                                                                    A:
+                                                                                                      TwoWayBlend [TwoWayBlend_2]   <- Alpha=T2
+                                                                                                        A:
+                                                                                                          TwoWayBlend [TwoWayBlend_0]   <- Alpha=T1
+                                                                                                            A:
+                                                                                                              BlendSpacePlayer [BlendSpacePlayer_1] BlendSpace=BS_SkaterTB1_P3_Aim; PlayRate=0.000000  <- X=AimAngle; Y=1.0
+                                                                                                            B:
+                                                                                                              BlendSpacePlayer [BlendSpacePlayer_0] BlendSpace=BS_SkaterTB1_P3_Aim; PlayRate=0.000000  <- X=AimAngle; Y=1.3
+                                                                                                        B:
+                                                                                                          BlendSpacePlayer [BlendSpacePlayer_2] BlendSpace=BS_SkaterTB1_P3_Aim; PlayRate=0.000000  <- X=AimAngle; Y=1.45
+                                                                                                    B:
+                                                                                                      BlendSpacePlayer [BlendSpacePlayer_3] BlendSpace=BS_SkaterTB1_P3_Aim; PlayRate=0.000000  <- X=AimAngle; Y=1.6
+                                                                        BlendPoses_0:
+                                                                          BlendListByBool [BlendListByBool_9]   <- BlendTime_0=0.0; BlendTime_1=0.0; bActiveValue=bHoldOut
+                                                                            BlendPose_0:
+                                                                              SequenceEvaluator [SequenceEvaluator_2] Sequence=AS_SkaterTB1_P3_CrossCheck_Hold_Out  <- ExplicitTime=HoldOutT
+                                                                            BlendPose_1:
+                                                                              BlendListByBool [BlendListByBool_10]   <- BlendTime_0=0.0; BlendTime_1=0.0; bActiveValue=bHoldIn
+                                                                                BlendPose_0:
+                                                                                  SequenceEvaluator [SequenceEvaluator_0] Sequence=AS_SkaterTB1_P3_CrossCheck_Hold_In  <- ExplicitTime=HoldInT
+                                                                                BlendPose_1:
+                                                                                  SequenceEvaluator [SequenceEvaluator_3] Sequence=AS_SkaterTB1_P3_CrossCheck_Hold  <- ExplicitTime=HoldLoopT
+                                                                    BlendPoses_0:
+                                                                      SequencePlayer [SequencePlayer_10] Sequence=AS_SkaterTB1_P3_Pass_Charge
+                                    B:
+                                      SequenceEvaluator [SequenceEvaluator_1] Sequence=AS_SkaterTB1_P3_Shot_Slap  <- ExplicitTime=ChargeTime
+
+=== graph AnimGraph.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_0.Idle
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_Idle
+
+=== graph AnimGraph.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_1.Skate
+  StateResult [StateResult_0] 
+    Result:
+      BlendListByBool [BlendListByBool_0] BlendTime=(0.200000,0.200000)  <- BlendTime_0=0.100000; BlendTime_1=0.100000; bActiveValue=bReady
+        BlendPose_0:
+          BlendSpacePlayer [BlendSpacePlayer_1] BlendSpace=BS_SkaterTB1_P3_SkateReady  <- X=Speed; Y=TurnRate
+        BlendPose_1:
+          BlendSpacePlayer [BlendSpacePlayer_0] BlendSpace=BS_SkaterTB1_P3_Skate  <- X=Speed; Y=TurnRate
+
+=== graph AnimGraph.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_2.Fall
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_Fall; bLoopAnimation=False
+
+=== graph AnimGraph.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_3.FallForward
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_Fall_Forward; bLoopAnimation=False
+
+=== graph AnimGraph.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_4.GetUp
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_GetUp; bLoopAnimation=False
+
+=== graph AnimGraph.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_5.GetUpFront
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_GetUp_Front; bLoopAnimation=False
+
+=== graph ExecuteUbergraph_ABP_SkaterTB1_P3
+  Root [Root_0] Name=AnimGraph
+    Result: (nothing)
+  StateResult [StateResult_0] Name=Idle
+    Result: (nothing)
+  StateResult [StateResult_1] Name=Skate
+    Result: (nothing)
+  StateResult [StateResult_2] Name=Fall
+    Result: (nothing)
+  StateResult [StateResult_3] Name=FallForward
+    Result: (nothing)
+  StateResult [StateResult_4] Name=GetUp
+    Result: (nothing)
+  StateResult [StateResult_5] Name=GetUpFront
+    Result: (nothing)
+
+=== graph ExecuteUbergraph_ABP_SkaterTB1_P3.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_0.Idle
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_Idle
+
+=== graph ExecuteUbergraph_ABP_SkaterTB1_P3.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_1.Skate
+  StateResult [StateResult_0] 
+    Result:
+      BlendListByBool [BlendListByBool_0] BlendTime=(0.200000,0.200000)  <- BlendTime_0=0.100000; BlendTime_1=0.100000; bActiveValue=bReady
+        BlendPose_0:
+          BlendSpacePlayer [BlendSpacePlayer_1] BlendSpace=BS_SkaterTB1_P3_SkateReady  <- X=Speed; Y=TurnRate
+        BlendPose_1:
+          BlendSpacePlayer [BlendSpacePlayer_0] BlendSpace=BS_SkaterTB1_P3_Skate  <- X=Speed; Y=TurnRate
+
+=== graph ExecuteUbergraph_ABP_SkaterTB1_P3.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_2.Fall
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_Fall; bLoopAnimation=False
+
+=== graph ExecuteUbergraph_ABP_SkaterTB1_P3.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_3.FallForward
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_Fall_Forward; bLoopAnimation=False
+
+=== graph ExecuteUbergraph_ABP_SkaterTB1_P3.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_4.GetUp
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_GetUp; bLoopAnimation=False
+
+=== graph ExecuteUbergraph_ABP_SkaterTB1_P3.AnimGraphNode_StateMachine_0.New State Machine.AnimStateNode_5.GetUpFront
+  StateResult [StateResult_0] 
+    Result:
+      SequencePlayer [SequencePlayer_0] Sequence=AS_SkaterTB1_P3_GetUp_Front; bLoopAnimation=False
+
+=== transitions
+  Idle           -> Skate          when (Speed > 0.3)   [crossfade=0.300000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_0)
+  Skate          -> Idle           when (Speed < 0.25)   [crossfade=0.400000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_1)
+  GetUp          -> Fall           when (bKnockedDown and (not bFallForward))   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_10)
+  GetUp          -> FallForward    when (bKnockedDown and bFallForward)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_11)
+  GetUpFront     -> Fall           when (bKnockedDown and (not bFallForward))   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_12)
+  GetUpFront     -> FallForward    when (bKnockedDown and bFallForward)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_13)
+  Idle           -> Fall           when (bKnockedDown and (not bFallForward))   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_2)
+  Skate          -> Fall           when (bKnockedDown and (not bFallForward))   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_3)
+  Idle           -> FallForward    when (bKnockedDown and bFallForward)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_4)
+  Skate          -> FallForward    when (bKnockedDown and bFallForward)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_5)
+  Fall           -> GetUp          when (not bKnockedDown)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_6)
+  FallForward    -> GetUpFront     when (not bKnockedDown)   [crossfade=default automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_7)
+  GetUp          -> Skate          when False   [crossfade=0.300000 automatic=True priority=1 mode=default logic=default] (AnimStateTransitionNode_8)
+  GetUpFront     -> Skate          when False   [crossfade=0.300000 automatic=True priority=1 mode=default logic=default] (AnimStateTransitionNode_9)
+  Idle           -> Skate          when (Speed > 0.3)   [crossfade=0.300000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_0)
+  Skate          -> Idle           when (Speed < 0.25)   [crossfade=0.400000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_1)
+  GetUp          -> Fall           when (bKnockedDown and (not bFallForward))   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_10)
+  GetUp          -> FallForward    when (bKnockedDown and bFallForward)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_11)
+  GetUpFront     -> Fall           when (bKnockedDown and (not bFallForward))   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_12)
+  GetUpFront     -> FallForward    when (bKnockedDown and bFallForward)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_13)
+  Idle           -> Fall           when (bKnockedDown and (not bFallForward))   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_2)
+  Skate          -> Fall           when (bKnockedDown and (not bFallForward))   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_3)
+  Idle           -> FallForward    when (bKnockedDown and bFallForward)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_4)
+  Skate          -> FallForward    when (bKnockedDown and bFallForward)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_5)
+  Fall           -> GetUp          when (not bKnockedDown)   [crossfade=0.150000 automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_6)
+  FallForward    -> GetUpFront     when (not bKnockedDown)   [crossfade=default automatic=False priority=1 mode=default logic=default] (AnimStateTransitionNode_7)
+  GetUp          -> Skate          when False   [crossfade=0.300000 automatic=True priority=1 mode=default logic=default] (AnimStateTransitionNode_8)
+  GetUpFront     -> Skate          when False   [crossfade=0.300000 automatic=True priority=1 mode=default logic=default] (AnimStateTransitionNode_9)

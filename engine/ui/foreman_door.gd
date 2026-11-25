@@ -250,6 +250,32 @@ func answer(job_dir: String, package: String, text: String, change_package: Stri
 	return _start(job_dir, "answer", [a, ["resume", job_dir] + _flags("resume")])
 
 
+## E4b (25 Nov): a quality hold answered from Create. `foreman quality <job> accept|retry [--note "..."]` records the
+## answer (JOB.md 2026-11-21) and runs nothing, so `resume` follows with the run settings. Refused while a Foreman holds
+## the job (the hold is answered when the job waits for it).
+func quality(job_dir: String, verdict: String, note: String = "", foreman_running: bool = false) -> String:
+	if not verdict in ["accept", "retry"]:
+		return "a quality hold is accepted or retried"
+	if foreman_running:
+		return "the builders are still at work on this game"
+	var step: Array = ["quality", job_dir, verdict]
+	var n: String = clean_text(note)
+	if not n.is_empty():
+		step.append_array(["--note", n])
+	return _start(job_dir, "quality", [step, ["resume", job_dir] + _flags("resume")])
+
+
+## E4b: "Change it" at a quality hold: the look stands (accept, with the person's words as the note) and the person's
+## words become a change request, which then runs (`foreman change` = the request + resume).
+func quality_change(job_dir: String, text: String, foreman_running: bool = false) -> String:
+	var t: String = clean_text(text)
+	if t.is_empty():
+		return "say what should be different first"
+	if foreman_running:
+		return "the builders are still at work on this game"
+	return _start(job_dir, "quality", [["quality", job_dir, "accept", "--note", "the person changes it instead: " + t], ["change", job_dir, t] + _flags("change")])
+
+
 func change(job_dir: String, text: String, decision: Dictionary = {}) -> String:
 	var t: String = clean_text(text)
 	if t.is_empty():

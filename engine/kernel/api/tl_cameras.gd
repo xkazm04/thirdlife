@@ -17,6 +17,7 @@ var _tick: int = 0
 var _log_px: bool = false
 var _log_cam: FileAccess = null
 var _fade: RefCounted = null       # K8: the occluder fade (kernel/feel/occluder_fade.gd), made by fade_occluders
+var _screen_fade: ColorRect = null  # 1.19 (K3): the picture's fade to a colour (screen_fade)
 
 
 # A named fixed play view can show both ends of a court. An actor registered
@@ -44,6 +45,40 @@ func _ready() -> void:
 	_log_px = OS.get_environment("TL_LOOK_PX") != ""
 	if OS.get_environment("TL_LOOK_CAM") != "":   # P3: TL_LOOK_CAM=<file>: one line per frame, the active camera's place and aim (motion review)
 		_log_cam = FileAccess.open(OS.get_environment("TL_LOOK_CAM"), FileAccess.WRITE)
+
+
+## 1.17 (K3, hockey port): the width over the height of the picture the views draw into: the window's (the viewport's
+## visible rect) in a windowed run, read each call so a resized window answers at once; 16 / 9 in a headless run (there is
+## no picture, and every verify run must give the same numbers on every machine). For a camera whose framing depends on
+## the frame's shape (thirdjam's follow camera reads its viewport each frame).
+func aspect() -> float:
+	TLContext.require("camera", "ctx.cameras")
+	if DisplayServer.get_name() == "headless" or not is_inside_tree():
+		return 16.0 / 9.0
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	return size.x / size.y if size.x >= 1.0 and size.y >= 1.0 else 16.0 / 9.0
+
+
+## 1.19 (K3, hockey port): the whole picture faded to `color` by `amount` (0 = the picture, 1 = all `color`), like a
+## camera fade from black at the start of a match. Over the views, under the HUD's labels; it takes no input. Visual only:
+## headless it does nothing, and nothing in the state reads it. Call it each frame the amount changes; 0 hides it.
+func screen_fade(amount: float, color: Color = Color.BLACK) -> void:
+	TLContext.require("camera", "ctx.cameras")
+	if DisplayServer.get_name() == "headless" or not is_inside_tree():
+		return
+	if _screen_fade == null:
+		var layer := CanvasLayer.new()
+		layer.name = "ScreenFade"
+		layer.layer = 50
+		add_child(layer)
+		_screen_fade = ColorRect.new()
+		_screen_fade.name = "Fade"
+		_screen_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_screen_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+		layer.add_child(_screen_fade)
+	var a: float = clampf(amount, 0.0, 1.0)
+	_screen_fade.color = Color(color.r, color.g, color.b, a)
+	_screen_fade.visible = a > 0.0
 
 
 ## A fixed named view. List the name in pack.json `cameras` so the verifier knows it exists.

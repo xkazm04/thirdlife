@@ -1,0 +1,292 @@
+{
+  "schema": "tj.cartridge/1",
+  "id": "hockey-mode-cage",
+  "title": "Cage",
+  "seed": 1,
+  "theme": {
+    "name": "The Cage",
+    "mood_words": [
+      "loud",
+      "hard",
+      "neon"
+    ],
+    "palette": [
+      {
+        "name": "ice",
+        "hex": "#DCE9F5"
+      },
+      {
+        "name": "blue",
+        "hex": "#1D4ED8"
+      },
+      {
+        "name": "orange",
+        "hex": "#E8651A"
+      },
+      {
+        "name": "trim",
+        "hex": "#38BDF8"
+      },
+      {
+        "name": "dark",
+        "hex": "#0B1220"
+      }
+    ]
+  },
+  "tunables": [
+    {
+      "key": "skater_speed",
+      "type": "number",
+      "min": 3,
+      "max": 16,
+      "default": 12,
+      "description": "Top skating speed in metres per second. Higher is faster and harder to control."
+    },
+    {
+      "key": "skater_turn_rate",
+      "type": "number",
+      "min": 1,
+      "max": 12,
+      "default": 5,
+      "description": "How sharply skaters turn, in radians per second."
+    },
+    {
+      "key": "shot_speed",
+      "type": "number",
+      "min": 5,
+      "max": 40,
+      "default": 18,
+      "description": "How fast the puck leaves the stick after a shot, in metres per second."
+    },
+    {
+      "key": "puck_max_speed",
+      "type": "number",
+      "min": 10,
+      "max": 60,
+      "default": 30,
+      "description": "The fastest the puck can ever travel, in metres per second."
+    },
+    {
+      "key": "ice_friction",
+      "type": "number",
+      "min": 0,
+      "max": 0.1,
+      "default": 0.015,
+      "description": "How slippery the ice is. 0 never slows down, 0.015 is real ice."
+    },
+    {
+      "key": "board_restitution",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "default": 0.95,
+      "description": "How bouncy the boards are. 0 is dead, 1 is a perfect bounce."
+    },
+    {
+      "key": "ai_speed_scale",
+      "type": "number",
+      "min": 0.3,
+      "max": 1.5,
+      "default": 1,
+      "description": "How fast the bots skate compared with you. 1 is equal."
+    },
+    {
+      "key": "ai_red_skill",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "How sharp the opposing bots are. 0 is clumsy, 1 is sharp."
+    },
+    {
+      "key": "goal_pause_frames",
+      "type": "integer",
+      "min": 30,
+      "max": 600,
+      "default": 120,
+      "description": "How long the game pauses after a goal, in physics frames (60 per second)."
+    }
+  ],
+  "values": {},
+  "rules": [],
+  "entities": [],
+  "ai": [],
+  "game": {
+    "rink": {
+      "length_m": 60,
+      "width_m": 28,
+      "corner_radius_m": 2,
+      "board_restitution": 0.95,
+      "ice_friction": 0.015,
+      "goal_width_m": 4,
+      "obstacles": [
+        {
+          "kind": "pillar",
+          "x": -10,
+          "z": -6,
+          "size": 1.5
+        },
+        {
+          "kind": "pillar",
+          "x": -10,
+          "z": 6,
+          "size": 1.5
+        },
+        {
+          "kind": "pillar",
+          "x": 10,
+          "z": -6,
+          "size": 1.5
+        },
+        {
+          "kind": "pillar",
+          "x": 10,
+          "z": 6,
+          "size": 1.5
+        }
+      ]
+    },
+    "skater": {
+      "speed": 12,
+      "accel": 12,
+      "turn_rate": 5,
+      "lateral_grip": 3,
+      "mass": 80,
+      "glide_drag": 0.147,
+      "brake_decel": 6,
+      "check_enabled": true,
+      "check_speed_min": 2,
+      "knockdown_frames": 75
+    },
+    "puck": {
+      "radius_m": 0.12,
+      "max_speed": 30,
+      "drag": 0.5,
+      "colour_hex": "#111111"
+    },
+    "shot": {
+      "reach_m": 1.5,
+      "speed": 18,
+      "cooldown_frames": 24,
+      "aim_cone_deg": 8
+    },
+    "rules": {
+      "mode": "timer",
+      "goal_pause_frames": 120,
+      "offside": false,
+      "penalties": false,
+      "timer_frames": 10800
+    },
+    "teams": [
+      {
+        "id": "blue",
+        "colour_hex": "#1D4ED8",
+        "skaters": [
+          {
+            "role": "player",
+            "spawn": [
+              -5,
+              0
+            ]
+          },
+          {
+            "role": "chaser",
+            "spawn": [
+              -5,
+              -4.67
+            ]
+          },
+          {
+            "role": "support",
+            "spawn": [
+              -5,
+              4.67
+            ]
+          },
+          {
+            "role": "back",
+            "spawn": [
+              -15,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "orange",
+        "colour_hex": "#E8651A",
+        "skaters": [
+          {
+            "role": "chaser",
+            "spawn": [
+              5,
+              0
+            ]
+          },
+          {
+            "role": "support",
+            "spawn": [
+              5,
+              4.67
+            ]
+          },
+          {
+            "role": "support",
+            "spawn": [
+              5,
+              -4.67
+            ]
+          },
+          {
+            "role": "back",
+            "spawn": [
+              15,
+              0
+            ]
+          }
+        ]
+      }
+    ],
+    "ai": {
+      "difficulty": "pro",
+      "body_check": 0.85
+    },
+    "barks": {
+      "enabled": true,
+      "intensity": "normal"
+    },
+    "look": {
+      "tier": "l3_neon",
+      "trim_colour_hex": "#FF2D6F",
+      "fog_density": 0,
+      "wet_ice": false
+    },
+    "camera": {
+      "mode": "third_person",
+      "distance_m": 6,
+      "height_m": 3.5,
+      "look_ahead_m": 5,
+      "lag_frames": 4,
+      "fov_deg": 70,
+      "radar": true
+    },
+    "stick": {
+      "reach_m": 0.6,
+      "lift_range_m": 0.5,
+      "poke_window_frames": 2
+    },
+    "meta": {
+      "pitch": "Tight box, eight bodies. The boards hit back.",
+      "facts": [
+        "60 x 28 m, 4 v 4",
+        "boards hit 2x",
+        "4 pillars on the ice"
+      ]
+    },
+    "contact": {
+      "board_bonus": 2,
+      "release_grace_frames": 45,
+      "check_reach_m": 2
+    }
+  }
+}

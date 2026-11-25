@@ -91,7 +91,7 @@ func menu_start() -> void:
 ## The dungeons of engine/boot/dungeons.json with their folders in this build ("" when it does not carry one).
 func load_rows() -> Array:
 	var list: GDScript = load(DUNGEON_LIST) as GDScript
-	var r: Dictionary = list.call("read")
+	var r: Dictionary = list.call("read_menu")       # E4: engine/boot/dungeons.json, then the person's own list (user://)
 	for e: String in r["errors"]:
 		print("[boot] dungeons.json: " + e)
 	var out: Array = []

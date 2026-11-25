@@ -125,6 +125,8 @@ export interface PackageView {
   tokensOut: number;
   openQuestion?: string;
   lastAnswer?: string;
+  /** E3g: the builder's questions the person answered, oldest first (a refusal reaches the critic as a drop). */
+  answered?: { question: string; answer: string }[];
   /** N3: the round at which the package was last re-opened; its round limit counts from here. */
   roundBase?: number;
   /** N3: how often the package was re-opened (`reopened` events). */
@@ -388,6 +390,7 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
       break;
     case "answer": {
       const p = need(s, ev.package, ev);
+      if (p.openQuestion !== undefined) p.answered = [...(p.answered ?? []), { question: p.openQuestion, answer: ev.text }];
       delete p.openQuestion;
       p.lastAnswer = ev.text;
       break;

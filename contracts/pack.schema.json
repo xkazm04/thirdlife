@@ -169,6 +169,11 @@
       "pattern": "^[A-Za-z0-9_]+(/[A-Za-z0-9_]+)*$",
       "maxLength": 120
     },
+    "base": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64
+    },
     "moments": {
       "type": "array",
       "maxItems": 32,

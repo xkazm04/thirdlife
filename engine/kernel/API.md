@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.16)
+# Third Life kernel API (kernelApi 1.30)
 
-**Version 1.16 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.30 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.16"` in `pack.json` (any
-`"1.x"` up to 1.16 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.30"` in `pack.json` (any
+`"1.x"` up to 1.30 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -517,7 +517,8 @@ multiple of 0.001 (`TLInput.STEP`): `press(&"left", 0.4567)` reads back as `0.45
 | `declare_aim(action: StringName, height: float = 0.0, reach: float = 200.0)` | **the aim** (K1): an action whose value is a point, where the cursor meets the ground plane y = `height` through the camera on screen, at most `reach` metres from the camera. Declare it again to change height or reach; a name is either an action or an aim; a name with `@` is an error for both (it names the record entries `<aim>@x`, `<aim>@z`) |
 | `aim_valid(action) -> bool`, `aim(action) -> Vector3` | this frame's aim: valid while the cursor is over the window and its ray meets the plane in front of the camera within `reach` (or a bot set it); the point lies on the plane, x and z multiples of `STEP`. Invalid: `aim()` is `Vector3.ZERO` |
 | `aim_direction(action, from: Vector3, fallback: Vector3 = Vector3.ZERO) -> Vector3` | the unit vector on the plane (y = 0) from `from` (a body's position) to the aim. When the aim is invalid or within `TLInput.AIM_DEAD` (0.05 m) of `from` on the plane, the cursor sitting on the figure, it returns `fallback` flattened and normalised (`Vector3.ZERO` when that has no length): pass the figure's facing and it keeps it. Never a division by zero |
-| `set_aim(action, point: Vector3)`, `clear_aim(action)` | **injection** of the aim: a bot's point (its y ignored) holds until `clear_aim` and wins over the cursor; `release_all()` clears aims too |
+| `set_aim(action, point: Vector3, pixel: Vector2 = TLInput.NO_PIXEL)`, `clear_aim(action)` | **injection** of the aim: a bot's point (its y ignored) holds until `clear_aim` and wins over the cursor; `release_all()` clears aims too. 1.17: `pixel` is the cursor pixel a hand would hold there (read back by `aim_pixel`) |
+| `aim_pixel(action) -> Vector2` (1.17) | the cursor's pixel in the viewport (x right, y down, multiples of `STEP`) on a frame the aim is valid and came from the cursor (or a bot's or a record's pixel); `TLInput.NO_PIXEL` (-1, -1) otherwise. Latched with the aim, recorded as `[f, "<aim>@p", 1]`, `[f, "<aim>@px", x]`, `[f, "<aim>@py", y]` (zeros left out), part of the state hash from the first frame a pixel was latched (a run without one hashes as before). For telling a still hand from a moving camera (thirdjam's aim anchor, `packs/hokej`): the point is `aim()` |
 
 Real keys and the mouse are read only in interactive play (`tools/tl.sh play`); verify runs ignore every device, so a
 stray key press cannot change a result. A pack never reads a device itself: no `Input`, no `InputEvent`, no
@@ -593,6 +594,8 @@ a part in the same convention from boxes.
 | `ctx.cameras.add_view(name, position, target, fov = 60.0) -> Camera3D` | a fixed named view; `capture --cam=<name>` renders it. List the names in pack.json `cameras` |
 | `ctx.cameras.chase(target, opts = {}, view = &"chase") -> TLChaseCam` | follows from behind. Options `distance` (7), `height` (3), `look_height` (1), `stiffness` (0.12: how fast the heading turns), `follow` (0.3: how fast the place catches up), `aim` (0.5: how fast the point looked at catches up), `use_velocity` (behind the last direction of travel, measured over 2 cm however slow, kept at rest; the facing until he has moved or after `snap()`), `fov` (**58**); 1.6 (opt-in, all off by default): `avoid_space` (a physics space RID, its bodies in the coordinates of the camera's parent: the camera never enters what it holds, except a body that holds the point looked at itself), `avoid_margin`, `avoid_mask`, `avoid_out`, `avoid_min` (margin and min in metres whatever the parent's scale), `anchor_follow`, `anchor_follow_y`; read-only `avoid_pull`, `avoid_lift` |
 | `ctx.cameras.orbit(target, opts = {}, view = &"orbit") -> TLOrbitCam` | yaw free, **pitch held to 30..60 degrees**, distance to a range. Options `yaw`, `pitch`, `distance`, `distance_min`, `distance_max`, `look_height`, `yaw_rate`, `pitch_rate`, `zoom_rate`, `fov` (**50**), `smooth` (0.25: share of the remaining way the drawn camera covers each frame; 1 = rigid) |
+| `ctx.cameras.screen_fade(amount, color = Color.BLACK)` (1.19) | the whole picture faded to `color` by `amount` (0 the picture, 1 all colour): a camera fade, as a match that opens from black. Over the views, under the HUD labels, takes no input; visual only (headless nothing, never in the state). Call it each frame the amount changes; 0 hides it |
+| `ctx.cameras.aspect() -> float` (1.17) | the width over the height of the picture the views draw into: the window's in a windowed run (read at the call: a resized window answers at once), 16 / 9 headless (no picture; verify runs give the same numbers everywhere). Visual framing only: a pack whose state reads it hashes differently in another window |
 | `ctx.cameras.activate(name) -> bool`, `views()`, `has_view(name)`, `view(name) -> Camera3D`, `active` | the first view registered is active until you say otherwise |
 | `ctx.cameras.frame(subject, fill = 0.35, view = &"")` | places a view (default: the active one) so that `subject` covers `fill` of the frame height. A chase camera keeps its angle and changes `distance` and `height`; an orbit camera changes `distance` (and widens its range to hold it); a fixed view moves along its line of sight and looks at the subject's centre. Call it in `_pack_setup` after the camera was made and the subject is in the tree. It also names the subject as the view's main actor |
 | `ctx.cameras.subject_px(subject) -> float` | how much of the frame height `subject` covers now in the active view: the height of the screen rectangle around its visible meshes, clipped to the frame; 0 when off screen or behind the camera. 0.08 is a small actor, 0.2 a clear one, 0.35 a portrait |
@@ -1191,3 +1194,170 @@ driver beside the worker, so a pack can be a **dungeon**: entered from the exe's
 - L4b: `PackLife.load_steps()` returns `load_entry`'s load as separate steps (each asset generator, then the entry);
   `load_entry()` runs them in one go, as before. A driver that draws frames between them keeps the pack's nodes from
   running and the physics server off until the last step (the dungeon does).
+
+## 24. Game cores: `ctx.cores` (class `TLCores`, addition in 1.18)
+
+A core is a reference game's own simulation compiled whole into the engine (`engine/cores/<id>/`), stepped by a pack
+frame by frame. The pack keeps the keys and the drawing; the core keeps the rules, the bodies and the bots. The one
+core today is `rink`: thirdjam's hockey (JamCore, compiled unchanged; `engine/cores/rink/SNAPSHOT.md` is its interface).
+
+| Member | Does |
+|---|---|
+| `ctx.cores.open(id, cartridge = "") -> Object` | the core `id` as an object (`"rink"`: a `RinkCore`). `cartridge`: a file under the pack's `data/`, loaded into the core as text. Null and an error when the id is unknown, the core is not built (the error names the build command), or the cartridge does not load |
+| `ctx.cores.view_script(id, name) -> GDScript` (1.21) | the core's drawing side: `engine/cores/<id>/view/<name>.gd` (`name` a plain file name without `.gd`), e.g. `ctx.cores.view_script("rink", "skater_pawn")`, thirdjam's skater pawn (one a skater, fed its snapshot entry each frame). Null and an error when the id is unknown or the script is not there. Presentation only: never part of the core's hash. A pack may not `preload` under `res://cores/` itself (lint N4); this is the door |
+| `ctx.cores.part(id, name) -> GDScript` (1.24) | a core's own presentation part, a script with static functions beside the simulation (`engine/cores/<id>/<name>/`), or null and an error when the core has none of that name. `ctx.cores.part("rink", "arena")` is thirdjam's hall: `build(parent, {"rink": game.rink})` adds the barn, the stands, the crowd, the lamps, the benches and boxes and the rink's own surfaces under `parent`; `light(anchor)` (the pack's frame 0) hands the rig's light and post to the style (`TLStyleHall`, `TLStyleArena`); `set_cheer(plus, minus, frame)` raises the crowd of an end. Visual only, never state; headless it builds the same nodes with no material (lane K6). |
+| `ctx.cores.state() -> Dictionary` | `{"<id>": {"hash": 16 hex digits, "frame": int, "score": [a, b]}}` for every core the pack opened (`"<id>#2"` for a second one). Return it from `_pack_state()` (or put it under a key of it): the core's own state hash then enters the run's `state_hash`, so the determinism laws hold for what the core simulates |
+
+```gdscript
+var rink
+
+func _pack_setup(c) -> void:
+	ctx = c
+	rink = ctx.cores.open("rink", "hockey.regular.cartridge.json")
+	rink.set_difficulty("pro")
+	rink.set_human_mode("input")       # the human's skater reads set_human_input; the rest are the core's bots
+	rink.reset(ctx.seed)
+
+func _pack_tick(_f: int) -> void:
+	rink.set_human_input({"Move": ctx.input.vector(&"left", &"right", &"down", &"up"), "bSprint": ctx.input.pressed(&"sprint")})
+	rink.step()
+
+func _pack_state() -> Dictionary:
+	return ctx.cores.state()
+```
+
+- Addition in 1.27 (lane K1, the thirdlife variant): a cartridge with a rules sidecar opens the core's variant. When
+  `data/<name>.rules.json` (schema `tl.rink.rules/1`, lane K8's: `"rules"` = the switches of
+  `engine/cores/rink/native/patches-thirdlife`, `"levels"` = thirdjam difficulty tunes per level) lies beside
+  `data/<name>.cartridge.json`, `ctx.cores.open("rink", "<name>.cartridge.json")` returns a `RinkCoreThirdlife` (thirdjam +
+  the patches, its own library) with the rules loaded; without the sidecar it returns the plain `RinkCore` as before
+  (thirdjam byte for byte). Same methods either way, plus `load_rules(json) -> String` and `rules_applied() -> String`;
+  an unknown rule or key is an error and `open` returns null. The pack's code does not change: the file decides.
+- `ctx.cores: TLCores` (1.18) belongs in the table of section 2 (the Director adds the row at the merge).
+- No capability: `ctx.cores` is always there. A pack never loads an extension and never names a core's class.
+- The core steps only when the pack calls `step()`: one call per `_pack_tick` keeps it on the kernel's frames.
+- What the core's methods are and every field of its per-frame `snapshot()`: `engine/cores/rink/SNAPSHOT.md`.
+- Proof that the same seed and input give the same hash through the runner (two bot runs, a replay of the record, a
+  window replayed headless): selftest `800-rink-core.sh`; the probe pack `engine/cores/rink/test_pack`.
+
+## 25. A sports HUD: `TLHud.add_layer` and `TLHudLayer` (capability `ui`, addition in 1.20; pictures in 1.22)
+
+Lane K5 (the hockey port's screen). `TLHud`'s text widgets cannot carry a sports game's screen furniture: score plates,
+rings lying on the ice under a skater, chevrons and diamonds at the frame's edge, bars, a minimap, banners and cards. A
+pack draws them with one painter layer instead of making Controls of its own.
+
+| Member | Does |
+|---|---|
+| `TLHud.add_layer(id: StringName, unit_h: float = 1080.0) -> TLHudLayer` | the painter layer `id` of this HUD (the same id gives the same layer), full screen, under the HUD's labels |
+| `lay.clear()` | forget the shapes queued last frame; call once a frame, then queue this frame's shapes (drawn in the order queued) |
+| `lay.unit() -> float`, `lay.extent() -> Vector2` | pixels per layout unit (`viewport height / unit_h`), the screen in units (1920 x 1080 at 16:9) |
+| `lay.box(pos, size, fill, radius = 0, edge = transparent, edge_w = 0, angle_deg = 0)` | a box (top left `pos`), rounded, its edge drawn inside it, turned about its centre |
+| `lay.text(pos, s, pt, color, opts = {}) -> Rect2` | text whose box's `opts.align` point (0..1 each axis) stands at `pos`; `pt` in Unreal points (drawn at pt x 4/3 units); opts `face` (regular, bold, bold_condensed, black), `tracking` (1/1000 em), `outline` and `outline_color`, `shadow` and `shadow_color`, `alpha`. Returns its box |
+| `lay.measure(s, pt, face = "bold", tracking = 0) -> Vector2` | the box a text takes (its advance and the face's line height), in units |
+| `lay.ring(rect, color, band = 0.082, edge = 0.0086, edge_color = ink)` | a ring stretched into `rect` (an ellipse): a band of `band` of the box's size with an ink edge on both sides |
+| `lay.chevron(pos, size, color, edge, edge_w, angle_deg = 0, align = (0.5, 0.5))` | a V of two rounded bars pointing down (at angle 0) in a `size` square |
+| `lay.polygon(points, color)`, `lay.line(a, b, color, width)` | a filled polygon, a straight line (units) |
+| `lay.bar(pos, size, frac, fill, back, radius)` | a bar filled to `frac` of its width over its back |
+| `lay.minimap(pos, size, field, dots)` | a field of `field` metres (centred on the origin) in a box; `dots`: `{at, size, color, mark: dot, hollow, x}` |
+| `lay.project(world) -> Vector3` | a world point on the screen of the pack's active view in units (x, y) and its depth in front of the camera (z; <= 0 behind). It uses the camera's pose of THIS frame (as last set), not the interpolated one being rendered |
+| `lay.camera_local(world) -> Vector3`, `lay.eye() -> Vector3` | the point in camera space (x right, y up, -z ahead); the camera's position |
+| `lay.ground_ring(center, radius, near = 0.5) -> Rect2` | a circle of `radius` metres lying on the ground round `center`, as the screen box of its four compass points and centre; an empty Rect2 when the centre is within `near` m of the camera plane or a point is behind it |
+| `lay.image_of(rel) -> Texture2D` (1.22) | a picture of the pack (a `.png` path relative to the pack, never outside it), loaded once; null with an error when missing |
+| `lay.image(tex, rect, tint = white, scale = 1)` (1.22) | a picture stretched into `rect` (units), multiplied by `tint` (an Unreal image brush's tint), scaled about the centre |
+| `lay.nine(tex, rect, margin: Vector4, px_per_unit = 1, tint = white)` (1.22) | a nine-slice picture (an Unreal box brush): `margin` = each edge's unscaled share of the picture (left, top, right, bottom), drawn at `px_per_unit` texture pixels a unit |
+
+```gdscript
+var lay := hud.add_layer(&"screen")
+func _pack_tick(_f: int) -> void:
+	lay.clear()
+	lay.box(Vector2(860, 14), Vector2(200, 66), Color("#141821e6"), 4.0, Color(1, 1, 1, 0.12), 1.0)
+	lay.text(Vector2(960, 47), "FIRST TO 3", 18, Color("#f5f6f8"), {"face": "bold_condensed", "tracking": 60, "align": Vector2(0.5, 0.5)})
+	var r: Rect2 = lay.ground_ring(Vector3(p.x, 0.03, p.y), 1.1)
+	if r.size != Vector2.ZERO:
+		lay.ring(r, Color("#1d4ed8"))
+```
+
+- The faces are the style's `style/hud/faces.gd`: Roboto Regular, Bold, Bold Condensed and Black as Unreal 5.9 ships them
+  (Apache License 2.0, `style/hud/ROBOTO_License.txt`); the engine's fallback font without the style.
+- Presentation only: a layer touches no body, no input and nothing in the state hash. Captures include it with `--hud=on`.
+- Selftest `830-hokej-hud.sh`; the pack that uses it: `engine/packs/hokej/scripts/hud/`.
+
+## 26. A figure's own surface: `TLStyleFelt`, `TLRigSkaterLook` (additions in 1.23)
+
+Not for a pack to call: the skater (`TLRigSkater`, a core's figure) dresses itself. Written down because the classes are
+part of the indexed surface of style and rigs.
+
+- `TLStyleFelt` (`engine/style/tl_style_felt.gd`, `engine/style/STYLE.md`, last section): thirdjam's felt and clay as a
+  material of its own (`material(params)`, `set_params(material, params)`, `set_rig(lights, exposure, gain,
+  gain_shadows, sky)`, `rig_size()`, `texture(path)`). Unknown keys are errors; headless a material with no shader.
+- `TLRigSkaterLook` (`engine/rigs/skater/look/`, `engine/rigs/RIGS.md`, the skater): the skater's two looks, `felt`
+  (the default: thirdjam's material instances, the number, the crest) and `cel` (`apply`, `chosen`, `default_variant`,
+  `digits`, `felt_params`, `look_mesh`, `slot_colour`); on the figure `TLRigSkaterBody.set_look(variant)` and
+  `look_refresh()`. Visual only: nothing here is read by a simulation, and headless nothing is drawn.
+
+- Additions in 1.26 (lane K7, the hall): `TLStyleFelt.contact_material(darkest = 0.45, flat_k = 0.0) -> ShaderMaterial`
+  (the contact shade under a figure, thirdjam's `M_SkaterContact`, `style/shaders/body_contact.gdshader`),
+  `TLStyleFelt.set_floor(albedo: Color)` (the ice's first bounce on the figures, thirdjam's `ClayIceBody` colour),
+  `TLStyleFelt.set_review_linear(k: float)` (review only: values in the source's units times `k`, no film curve),
+  `TLStyleFelt.FALLBACK_EXPOSURE` (the exposure with no hall rig).
+
+- Additions in 1.28 (lane K7, the shadows): `TLStyleHallKeys` (`engine/style/tl_style_hall_keys.gd`): thirdjam's four
+  shadow-casting key spots as real spot lights that light nothing and cast shadows the hall's ice reads:
+  `install(anchor, lights, opt) -> int`, `receive(mesh_instance)`, `count(anchor) -> int`, `clear(anchor)`; constants
+  `NODE`, `DEFAULTS`, `WIDER_DEG`, `RANGE_K`. For a game alone in its world (it sets the viewport's shadow atlas).
+
+## 27. A pack's own pause card and front end in the dungeon frame (addition in 1.25)
+
+Lane K5 (the hockey port's screen). In the exe a dungeon frame (`kernel/dungeon/dungeon.gd`) owns Esc: it freezes the
+pack's tick (`SceneTree.paused`) and draws its own card (Resume, Leave). A game whose own pause card is part of what a
+player meets (thirdjam's) takes the card over; the frame keeps the freeze. Every other pack keeps the frame's card unchanged.
+
+| Member | Does |
+|---|---|
+| `ctx.own_pause(on = true)` | the pack draws its own pause card (call it in `_pack_setup`); needs a `TLHud` to draw it on |
+| `ctx.can_pause() -> bool` | true where a frame can pause this pack (a dungeon of the exe); false in verify runs and `tl play` |
+| `ctx.pause()` | freezes the pack's tick now, as Esc does; called during the load it takes effect before frame 0 (a menu before the match) |
+| `ctx.resume()` | ends a pause |
+| `ctx.leave_game()` | leaves as the frame's Leave does (back to the exe's menu), after the current call returns. (`ctx.leave` is the context's own static) |
+| `ctx.paused: bool` | set by the frame while the tick is frozen |
+| `TLHud.on_paused(handler: Callable)` | `handler(frame: int)` runs once a drawn frame while paused, for a pack that owns its card: it draws the card |
+| `ctx.input.menu_keys() -> PackedStringArray` | the keys pressed while paused, in order, since the last call: "up", "down", "left", "right", "enter", "esc", "click" (the left mouse button). Never latched, recorded or hashed: a pause is not a frame of the game |
+| `ctx.cores.opened(id) -> Object` | the first core `id` this pack opened (null when none): another part of the pack (its menu) reaches the same core |
+
+- With `own_pause`, Esc on a running game pauses without the frame's card; while paused every key above goes to the pack
+  (Esc included: the pack decides when to resume). Without it, nothing changes: Esc opens the frame's card and Esc again resumes.
+- Selftest `830-hokej-hud.sh` (`hokej.pause_own`, `hokej.pause_frame`); the pack that uses it: `engine/packs/hokej/scripts/hud/`
+  (`front.gd`, `pausecard.gd`, `screen.gd`).
+
+## 28. Sound from files: `TLSound` (capability `audio`, addition in 1.29)
+
+`TLAudio` (section 13) plays synthesised presets by name. `TLSound` plays the sound files a game core owns
+(`res://cores/<id>/audio/**`, `.ogg` or `.wav`): one-shots, loops whose volume and pitch the game sets, a voice line,
+and five channels with a volume each. A pack has no sound files of its own; it reaches a core's sounds through that
+core's part (`ctx.cores.part("rink", "audio")`, section 24).
+
+| Call | What |
+|---|---|
+| `TLSound.play(path, opt = {})` | plays a file once. `opt`: `channel` ("sfx"), `db` (0), `pitch` (1), `position` (a Vector3: the sound fades with distance; absent = everywhere), `unit_size` (10: metres at which a placed sound is at its level), `delay_frames` (0) |
+| `TLSound.loop(name, path, opt = {})` | starts the loop `name` (a running loop of that name is replaced). `opt`: `channel`, `db`, `pitch`. The file loops whatever its own flag says |
+| `TLSound.set_loop(name, opt)` | a running loop's `db` and / or `pitch`, reached in a straight line (linear gain) over `ramp_frames` (0 = at once). Not recorded |
+| `TLSound.stop_loop(name, fade_frames = 0)` | stops it, fading out over frames |
+| `TLSound.say(path, opt = {})` | the voice channel: one line at a time (a line being said is cut). `opt`: `db`, `duck_music_db` (the music channel is lowered by this while the line plays), `duck_frames` (12) |
+| `TLSound.saying() -> bool` | a line is still playing (false headless) |
+| `TLSound.channel_db(channel, db)` | a channel's volume for this pack: `sfx`, `crowd`, `music`, `voice`, `ambience` |
+| `TLSound.count(path) -> int` | how often a file was played, looped or said (within the last `TLAudio.MAX_EVENTS` calls) |
+
+- Time is physics frames: a ramp, a fade, a delay and the duck are counted by the pack's own sound node, never on the
+  wall clock. Sound is never state.
+- Every call but `set_loop` is recorded in `TLAudio.events` as `{frame, clip, kind, channel?, db?, position?}` (`kind`:
+  `play`, `loop`, `say`, `stop`), also headless, where nothing is loaded or played.
+- Unknown option keys, an unknown channel and a path outside a core's `audio/` folder are errors: the call does nothing.
+- Selftest `841-rink-audio.sh`; the core part that uses it: `engine/cores/rink/audio/rink_audio.gd` (its table:
+  `engine/cores/rink/audio/audio.json`).
+
+- Additions in 1.30 (lane K6, the voice and the reactions): `TLSound.stop_voice()` and `TLStyleArena.set_glow(...)`; details:
+| `TLSound.say(path, opt = {})` | the voice channel: one line at a time (a line being said is cut). `opt`: `db`, `duck_music_db` (the music channel is lowered by this while the line plays), `duck_frames` (12: each way, a straight line in gain, as an Unreal sound mix fades) |
+| `TLSound.stop_voice(fade_frames = 0)` | the line being said fades out in a straight line of gain over `fade_frames` and ends; the duck comes back as it ends. Recorded as `stop` of the clip `"voice"`. (Lane K6 round 3: thirdjam's `CutLine`, `FadeOut(0.15 s)`) |
+- Under the pack's pause (the dungeon pauses the tree; the pack's sound node is pausable) every player stops where it is
+  and goes on at resume, the loops and the line alike, as Unreal pauses every non-UI sound under `SetGamePaused`.
+  Selftest `842-rink-booth.sh` (`core.rink.booth.duck`, `.pause`).

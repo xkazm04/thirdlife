@@ -17,6 +17,7 @@ const Model = preload("res://ui/create/create_model.gd")
 const CreateScene = preload("res://ui/create/create.tscn")
 const Dungeons = preload("res://kernel/dungeon/dungeons.gd")
 const QualityChecks = preload("res://ui/quality_checks.gd")   # L1b: the 2026-11-21 readers (fixtures c13, c14)
+const IterateChecks = preload("res://ui/create/create_iterate_checks.gd")   # E4: the person's path through iterations
 
 const FIXTURES: String = "res://ui/fixtures/create"
 const STUB: String = "res://seeds/seed_wall"
@@ -45,7 +46,7 @@ static func events_of(name: String) -> Array:
 	return JobModel.read_events(dir_of(name))["events"]
 
 
-const CHECKS: int = 27 + QualityChecks.CHECKS
+const CHECKS: int = 27 + IterateChecks.CHECKS + QualityChecks.CHECKS
 
 
 static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
@@ -57,6 +58,7 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	_model(counted)
 	_door(counted, tmp)
 	await _page(tree, counted, tmp)
+	await IterateChecks.run(tree, counted, tmp)          # E4 (24-25 Nov): change box, Add to menu, My games
 	_site(counted)
 	QualityChecks.run(counted)
 	check.call("create.complete: all %d checks ran" % CHECKS, count[0] == CHECKS, "%d ran" % count[0])
@@ -388,7 +390,7 @@ static func _page(tree: SceneTree, check: Callable, tmp: String) -> void:
 	# words on each screen (reported; the 10-year-old path stays short)
 	var path_words: int = int(words["idea"]) + int(words["c2-pitch"]) + int(words["c5-building"])
 	check.call("create.page: words on screen idea %d, designing %d, pitch %d, building %d, phase done %d, hold %d, done %d, failed %d" % [words["idea"], words["c1-designing"], words["c2-pitch"], words["c5-building"],
-		words["c6-phase-done"], words["hold-note"], words["c9-done"], words["c10-failed"]], int(words["idea"]) <= 45 and int(words["c1-designing"]) <= 20 and int(words["c9-done"]) <= 15 and int(words["c6-phase-done"]) <= 45, "path %d" % path_words)
+		words["c6-phase-done"], words["hold-note"], words["c9-done"], words["c10-failed"]], int(words["idea"]) <= 45 and int(words["c1-designing"]) <= 20 and int(words["c9-done"]) <= 30 and int(words["c6-phase-done"]) <= 45, "path %d" % path_words)
 	page.queue_free()
 
 

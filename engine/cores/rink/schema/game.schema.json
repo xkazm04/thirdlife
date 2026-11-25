@@ -1,0 +1,1896 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Hockey game object of tj.cartridge/1 (HOCKEY.md section 4). Every range here is mirrored in limits.json under game_ranges (a test keeps them equal); the reasons are in README.md. Absent value = omit the key; the engine applies the defaults listed in DEFAULTS.md. Cross-field checks (one player, spawns inside the rink, mode needs its end condition) live in validate.mjs.",
+  "title": "tj.cartridge/1 game object (hockey 3v3)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "rink",
+    "skater",
+    "rules",
+    "teams",
+    "look"
+  ],
+  "properties": {
+    "rink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "length_m",
+        "width_m"
+      ],
+      "properties": {
+        "length_m": {
+          "type": "number",
+          "minimum": 40,
+          "maximum": 160,
+          "description": "Rink length along x in metres (the nets are at the two ends)."
+        },
+        "width_m": {
+          "type": "number",
+          "minimum": 20,
+          "maximum": 80,
+          "description": "Rink width along z in metres."
+        },
+        "corner_radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 15,
+          "description": "Radius of the rounded corners in metres; at most half the width."
+        },
+        "board_restitution": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "How much speed the boards give back: 0 dead, 1 perfect bounce."
+        },
+        "ice_friction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.1,
+          "description": "Glide friction coefficient of the ice; 0.015 is real ice, 0 never slows down."
+        },
+        "goal_width_m": {
+          "type": "number",
+          "minimum": 2,
+          "maximum": 10,
+          "description": "Width of each net opening in metres."
+        },
+        "goal_height_m": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 1.5,
+          "description": "Height of each net opening in metres (crossbar). 0.61 is the half-height net of a game without goalies (R-0033); 1.22 is a real net. A lifted puck over it is no goal."
+        },
+        "obstacles": {
+          "type": "array",
+          "maxItems": 12,
+          "description": "Static obstacles standing on the ice.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "x",
+              "z",
+              "size"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "box",
+                  "pillar",
+                  "bumper",
+                  "goal_shield"
+                ],
+                "description": "box is a square block, pillar is a round post, bumper is a round post that throws the puck back faster than it came (restitution 1.6), goal_shield is a thin wall size metres wide standing where it is placed (put it in front of a net)"
+              },
+              "x": {
+                "type": "number",
+                "minimum": -80,
+                "maximum": 80,
+                "description": "Centre along the rink length in metres, 0 is the middle."
+              },
+              "z": {
+                "type": "number",
+                "minimum": -40,
+                "maximum": 40,
+                "description": "Centre across the rink in metres, 0 is the middle."
+              },
+              "size": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 10,
+                "description": "Side of the box or diameter of the pillar in metres."
+              }
+            }
+          }
+        },
+        "zones": {
+          "type": "array",
+          "maxItems": 8,
+          "description": "Painted areas of the ice that change play inside them (C-0005). Leave the key out for none. The centre must be inside the rink.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "shape",
+              "x",
+              "z",
+              "kind"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "cartridge.schema.json#/$defs/kebab_id"
+              },
+              "shape": {
+                "enum": [
+                  "rect",
+                  "circle"
+                ],
+                "description": "rect needs w and d, circle needs r"
+              },
+              "x": {
+                "type": "number",
+                "minimum": -80,
+                "maximum": 80,
+                "description": "Centre along the rink length in metres, 0 is the middle."
+              },
+              "z": {
+                "type": "number",
+                "minimum": -40,
+                "maximum": 40,
+                "description": "Centre across the rink in metres, 0 is the middle."
+              },
+              "w": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 160,
+                "description": "Width of a rect zone along the rink length, in metres."
+              },
+              "d": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 80,
+                "description": "Depth of a rect zone across the rink, in metres."
+              },
+              "r": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 40,
+                "description": "Radius of a circle zone in metres."
+              },
+              "kind": {
+                "enum": [
+                  "slow_ice",
+                  "fast_ice",
+                  "bumper",
+                  "no_shoot",
+                  "boost_only"
+                ],
+                "description": "slow_ice slows skaters and the puck inside, fast_ice speeds them up, bumper throws the puck back from its edge, no_shoot blocks shots taken inside, boost_only is where pickups may spawn"
+              },
+              "strength": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "How strong the zone is: 0 does nothing, 1 is the full effect (slow_ice at 1 halves speed, fast_ice at 1 adds half). Absent = 0.5."
+              },
+              "visible": {
+                "type": "boolean",
+                "description": "Whether the zone is painted on the ice. Absent = true."
+              }
+            }
+          }
+        }
+      }
+    },
+    "skater": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "speed"
+      ],
+      "properties": {
+        "speed": {
+          "type": "number",
+          "minimum": 3,
+          "maximum": 16,
+          "description": "Top skating speed in metres per second."
+        },
+        "accel": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 40,
+          "description": "Acceleration in metres per second squared."
+        },
+        "turn_rate": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Turn speed in radians per second."
+        },
+        "lateral_grip": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 12,
+          "description": "How quickly sideways sliding is killed; low slides more."
+        },
+        "mass": {
+          "type": "number",
+          "minimum": 40,
+          "maximum": 160,
+          "description": "Skater mass in kilograms; matters for checks."
+        },
+        "glide_drag": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Slowdown while gliding with no input, metres per second squared."
+        },
+        "brake_decel": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Slowdown while braking, metres per second squared."
+        },
+        "check_enabled": {
+          "type": "boolean",
+          "description": "Whether the check button works (raw play)."
+        },
+        "check_speed_min": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Closing speed in metres per second above which a check knocks the target down."
+        },
+        "knockdown_frames": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 300,
+          "description": "How long a knocked-down skater stays down, in physics frames."
+        },
+        "visual": {
+          "enum": [
+            "toy",
+            "humanoid_b1",
+            "generated_b2",
+            "toy_skeletal"
+          ],
+          "description": "Which skater figure is drawn: humanoid_b1 (default since R-0030: device B's rebuilt scripted figure, the bake-off winner), toy_skeletal (the Blender toy figure as a skeletal mesh, lane A26), toy (the code-built figure), humanoid_b1 or generated_b2. Gameplay is identical. The Designer may not change it."
+        },
+        "pass_speed": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 30,
+          "description": "Puck speed of a pass (E / X) in metres per second; a pass is a lead pass to the best teammate."
+        },
+        "pass_lead_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60,
+          "description": "How far ahead of the receiver a pass is aimed, in physics frames of the receiver's motion."
+        },
+        "carry_speed_mult": {
+          "type": "number",
+          "minimum": 0.6,
+          "maximum": 1,
+          "description": "Lane A82 (R-0041 point 6): the puck carrier's top speed and acceleration as a fraction of a free skater's, bots and the human alike; the carrier's sprint is skater.sprint.carry_bonus (lane A93). Leave the key out for 0.92; 1 = the carrier skates as freely as before."
+        },
+        "charge_dies_on_loss": {
+          "type": "boolean",
+          "description": "Lane A203 (track K1, the Director's ruling on lane A199's ASK): the charge dies with the puck. true = a skater who stops being the carrier (somebody else touched the puck he carried) loses his held shot's and pass's charges, and a button held then charges nothing until it is let go and pressed again, so a puck stripped but still in his reach is not shot or passed by the release of a press made before the strip; bots and the human alike. Leave the key out for true (the Director, 14 Nov 17:01); false = the neutral value (the game before the lane: the release fires whenever the puck is in reach)."
+        },
+        "free_speed_mult": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 1.5,
+          "description": "Lane A185 (R-0064 point 2): a skater without the puck, bots and the human alike, has this much more top speed and acceleration (it reaches the higher top in the same time), in a glide and in a sprint; the puck carrier skates as without it, so it is that much slower against everyone. Leave the key out for 1.15; 1 = the neutral value (the game before the lane)."
+        },
+        "reverse_brake_decel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 40,
+          "description": "Lane A93 (R-0045 law 3): braking by reversing. Move input against the velocity (more than 120 degrees from it: W then S) stops the skater at this many metres per second squared until it is still; then the input accelerates the other way. Leave the key out for 26 (lane A121: 8 m/s to still in 19 frames, 11 m/s in 26; 20 before, the neutral value of that lane); 0 = off (only the brake button brakes, at brake_decel)."
+        },
+        "burst": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A93 (R-0045 law 3): the first-step burst. For frames after the skater was slower than 2 m/s, or after its move input turned more than 60 degrees inside 10 frames (a sharp cut), its acceleration is accel_mult times normal; the top speed does not change. Leave the key out for the defaults.",
+          "properties": {
+            "frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60,
+              "description": "How long the burst lasts after a stop or a cut, in physics frames; 0 turns the burst off."
+            },
+            "accel_mult": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 3,
+              "description": "Acceleration multiplier while the burst runs; 1 = no burst."
+            },
+            "own_stop": {
+              "type": "boolean",
+              "description": "Lane A121 (track F2; docs/VISION.md law 3): the first step is earned. true or absent = being slower than 2 m/s arms the burst only after a stop of the skater's own (it braked on the way down, by reversing or with the brake button); a skater that merely stands (a waiting defender, the faceoff, a skater getting up) starts at the normal acceleration. A sharp cut arms the burst under either value. false = the neutral value (the game before the lane): any skater slower than 2 m/s has the burst."
+            },
+            "rest_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Lane A128 (track F2, evolution 3): the standing start. A skater that has been slower than 1 m/s for this many physics frames in a row (after a faceoff, after getting up, after a full stop) and is not pushing has earned its first step: its burst is armed while it stands and runs burst.frames from its first push (a gentle push spends it as a hard one does). A charge already under way never has it. Leave the key out for 6; 0 = the neutral value (the game before the lane: only a stop or a cut of the skater's own arms the burst)."
+            },
+            "rest_kept_mps": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 8,
+              "description": "Lane A147 (track F2, evolution 4): the first step a skater earned by standing is not lost to what is not its own doing. While it does not push and is slower than this speed (m/s), a rested skater keeps its rest and its armed burst (a bump or a shove that moves it); a skater lying on the ice or held by a stumble counts its rest whatever it slides at, so it gets up with its first step; and turning on the spot is not the push-off (the burst begins with the first frame of thrust). Leave the key out for 3; 0 = the neutral value (lane A128's rule: the rest is lost at 1 m/s and a pivot spends the burst)."
+            }
+          }
+        },
+        "breakaway": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A39 (R-0029 point 4): the breakaway burst: once a carrier past centre ice has no opponent between it and the net it attacks, its top speed and acceleration rise by speed_bonus for frames, once per possession; event breakaway. Leave the key out for the defaults.",
+          "properties": {
+            "speed_bonus": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Fraction added to top speed and acceleration during the burst; 0 turns the burst off. Leave the key out for 0.3 (lane A194: 0.92 x 1.3 = 1.196 of the base, over a free skater's 1.15; 0.2 = the value before that lane)."
+            },
+            "frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 300,
+              "description": "How long the burst lasts, in physics frames."
+            }
+          }
+        },
+        "sprint": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A49: the sprint (Shift / left trigger held): top speed and acceleration rise by bonus while the skater moves and its stamina lasts; the stamina drains in drain_frames of sprint and refills in refill_frames at rest. Bots sprint only when game.ai.sprint is written. Leave the key out for the defaults.",
+          "properties": {
+            "bonus": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Fraction added to top speed and acceleration while sprinting; 0 turns the sprint off."
+            },
+            "drain_frames": {
+              "type": "integer",
+              "minimum": 30,
+              "maximum": 1800,
+              "description": "Physics frames of sprint from a full stamina bar to empty."
+            },
+            "refill_frames": {
+              "type": "integer",
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Physics frames at rest from empty to full."
+            },
+            "carry_bonus": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Lane A93 (R-0045 law 4): the fraction the puck carrier's sprint adds on top of carry_speed_mult (0.08: 0.92 x 1.08 of a free skater's speed); the carrier's bar drains as anyone's. The sim keeps it under a free skater's sprint (carry_speed_mult x (1 + carry_bonus) is capped at 0.97 x (1 + bonus)), so a sprinting defender always catches a sprinting carrier. 0 = the carrier cannot sprint."
+            }
+          }
+        },
+        "goalie": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "R-0035 (lane A52): the save by height. A skater in the crease stance (within 3 m of its own goal centre, the human included) saves a loose shot under block_height_m that passes within reach_m of it; a higher puck passes. Leave the key out for the defaults.",
+          "properties": {
+            "reach_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 3,
+              "description": "How far from the crease skater a low shot is saved, in metres; 0 turns the save by height off (the body and the blade still stop pucks)."
+            },
+            "block_height_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2,
+              "description": "A shot at or above this height passes the crease skater, in metres."
+            },
+            "read_mps": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Lane A207 (track P1): the crease skater reads a long shot: past a quarter second of the shot's flight his save reach and his block height grow by this many metres a second. Default 2.5; 0 = reach_m whatever the flight (the game before)."
+            },
+            "read_max_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 3,
+              "description": "Lane A207: the most the read adds to reach_m and to block_height_m, in metres. Default 1.0."
+            }
+          }
+        },
+        "spin": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A51 (R-0034): the spin move (E / gamepad B): a full turn over frames, the puck on the far side of the body from the nearest opponent (a poke never reaches it), speed scaled by speed_mult, stamina_cost of the sprint bar taken at the start (refused with an empty bar or inside cooldown_frames); a check landing mid-spin knocks the carrier down 1.5x longer. Leave the key out for the defaults.",
+          "properties": {
+            "frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Frames of the full turn; 0 turns the spin off."
+            },
+            "cooldown_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 600,
+              "description": "Frames after a spin before the next one."
+            },
+            "speed_mult": {
+              "type": "number",
+              "minimum": 0.2,
+              "maximum": 1,
+              "description": "Top speed while spinning, as a fraction of the skater's."
+            },
+            "stamina_cost": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Share of the sprint bar a spin takes."
+            },
+            "exposed_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Lane A128 (track F2, evolution 3): the price of the spin. For the last this many physics frames of a spin the body has come round and is no longer between: neither the body nor a sweep shields the carried puck from a stick, so a poke or a lift in reach takes it (a puck just won keeps its take grace). A spin begun too early ends in front of the defender. Leave the key out for 5; 0 = the neutral value (the game before the lane: the whole spin shields)."
+            }
+          }
+        }
+      }
+    },
+    "stick": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The mouse / right-stick aimed stick (R-0013). Leave the key out for the defaults.",
+      "properties": {
+        "reach_m": {
+          "type": "number",
+          "minimum": 0.6,
+          "maximum": 1.6,
+          "description": "How far the blade reaches from the skater's edge at full aim, in metres; the carried puck sits at the blade (lane A51, R-0034)."
+        },
+        "carry_reach_mult": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 1,
+          "description": "Lane A93 (R-0045 law 4): the puck's distance by pace. A carrier that is not sprinting holds its blade, and the puck on it, at this fraction of the full distance from its body (0.75: 1.2 m of 1.6 m at full aim); a sprinting carrier's puck rides at the full distance, where a stick takes it more easily. Leave the key out for 0.75; 1 = always at the full distance."
+        },
+        "body_shield": {
+          "type": "boolean",
+          "description": "Lane A102 (track F2, docs/VISION.md law 3): puck protection with the body, no button. While the carrier's body is between a defender's stick and the puck (the defender within 2 m, the puck on the far side of the carrier's body, the carrier turned more than 60 degrees away from the defender), that defender's poke or stick lift does not take the puck; a carrier that faces the defender shields nothing, and a body check is never shielded. true or absent = on; false = the neutral value (the game before the lane)."
+        },
+        "passive_take": {
+          "type": "boolean",
+          "description": "Lane A102 (R-0048): false or absent = a carried puck is not taken by an unpressed blade or by a body's touch: it leaves its carrier only by a shot, a pass, a poke, a lift, a check or stumble that loosens it, or the carrier's own release. true = the neutral value (the game before the lane): an aimed opposing blade within 0.6 m deflects a carried puck moving faster than 6 m/s and any body's touch takes it. A teammate never takes a carried puck by touch under either value."
+        },
+        "take_grace_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120,
+          "description": "Lane A121 (track F2; R-0049 point 2): the take grace. A skater that has just won the puck (by a poke, a lift, a loose puck, a pass or the draw: the puck came to it from somebody else) cannot be poked or stick-lifted for this many physics frames; a body check still loosens the puck, and a poke that runs out on it costs the poker no stumble. Leave the key out for 30 (half a second); 0 = off, the neutral value (the game before the lane)."
+        },
+        "poke_assist_deg": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 180,
+          "description": "Lane A152 (track F2; R-0059 point 4): the poke reaches. Inside the open poke window of the skater a person steers, a puck an opponent carries is taken when it is within the stick's full reach of the poker's body (as far as a perfectly aimed blade takes from, never further) and within this many degrees of the direction the blade is aimed in; the body between, the sweep's shield, the spin and the take grace refuse it as before. Bots keep the blade rule (the blade itself within 0.35 m of the puck). Leave the key out for the default in DEFAULTS.md; 0 = off, the neutral value (the game before the lane: the blade rule for everybody)."
+        },
+        "miss_recovery_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 90,
+          "description": "Lane A152 (track F2; R-0059 point 4): a miss costs a recovery, not a fall. A poke of the skater a person steers whose window runs out next to an opposing carrier locks its stick for this many physics frames: no poke, no stick lift and no body check, while it skates and steers as it likes. Leave the key out for the default in DEFAULTS.md; 0 = the neutral value (the game before the lane): the miss costs stumble_frames without control instead. A bot's miss stays the stumble (the carrier's sweep and stop earn it); a poke the take grace refused costs neither; with stumble_frames 0 a miss costs nothing at all."
+        },
+        "stop_grace_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120,
+          "description": "Lane A163 (track F2 evolution 6): the stop tucks the puck. On the frame the reverse brake of a carrier a person steers begins (input against a velocity of 6 m/s or more), its puck gets the take grace for this many physics frames: no poke and no stick lift takes it; a body check still loosens it, and a sprinting carrier has to stop first. Needs take_grace_frames above 0. Leave the key out for the default in DEFAULTS.md; 0 = off, the neutral value (the game before the lane)."
+        },
+        "poke_window_frames": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 30,
+          "description": "Frames after a poke press during which the blade reaching the puck takes it cleanly."
+        },
+        "lift_range_m": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2.5,
+          "description": "Distance beyond the two bodies within which a stick lift strips the carrier, in metres."
+        },
+        "lift_cone_deg": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 180,
+          "description": "The cone of the stick lift and of the cross-check's shove, in degrees off the attacker's facing: a carrier farther off than this is neither lifted nor shoved (the swing is a miss), bots and the human alike (B-to-A-0037, lane A95). 180 = no cone (before A95)."
+        },
+        "stumble_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 90,
+          "description": "Frames of lost control after a poke timed wrong next to a carrier; 0 removes the penalty."
+        },
+        "mouse_sensitivity": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Mouse aim scale: 1 means 100 pixels move the blade one full reach."
+        },
+        "foul_grace_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120,
+          "description": "A check on a skater that carried the puck within this many frames is not a foul for hitting a player without the puck."
+        },
+        "reception_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "Lane A46: a teammate's pass that reaches the body within this radius (metres) at 6-14 m/s is seated on the blade with a 4-frame settle; faster passes bounce off the body unless the blade meets them. 0 = only the blade receives."
+        },
+        "faceoff": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A208 (the eye's list 1, R-0068): the draw is a draw, not a hit. Leave the key out for the defaults; centre_gap_m 0, winner_shield_frames 0 and no_hit_frames 0 = the neutral value (the game before the lane).",
+          "properties": {
+            "centre_gap_m": { "type": "number", "minimum": 0, "maximum": 6, "description": "Both centres stand at the dot this far apart, facing, each on his own side (default 1.8); 0 = where the formation puts them." },
+            "winner_shield_frames": { "type": "integer", "minimum": 0, "maximum": 300, "description": "The skater who wins the draw cannot be felled for this many physics frames: a hit that would fell him is a bump (default 90); 0 = off." },
+            "no_hit_frames": { "type": "integer", "minimum": 0, "maximum": 300, "description": "For this many physics frames after the drop nobody's body check or stick lift is pressed inside no_hit_m of the dot: the press is refused (default 45); 0 = off." },
+            "no_hit_m": { "type": "number", "minimum": 0, "maximum": 30, "description": "The radius around the dot of no_hit_frames, in metres (default 6)." }
+          }
+        },
+        "pickup": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A208 (track F0, R-0067 point 2): the loose puck is his who touches it. A puck nobody carries (a puck riding with a carrier is taken only by a press, R-0048) that crosses a standing skater's stick arc is his: seated with his motion, on his blade a few frames later; an opposing puck faster than sting_mps rings off the blade instead (a loose rebound). With body, the body stops a loose puck (its path is swept, so no speed passes through) and it is his; faster than sting_mps it bounces off him. Leave the key out for the defaults; arc_m 0 and body false = the neutral value (the game before the lane).",
+          "properties": {
+            "arc_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2,
+              "description": "The arc's radius from the skater's centre, in metres (default 1.5; the carry reach is 1.65); 0 = no arc: only a puck over 6 m/s at the blade's 0.6 m disc, as before."
+            },
+            "arc_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 180,
+              "description": "The arc's half-angle either side of the blade's direction and of the body's facing, in degrees (default 60); the blade's own 0.6 m disc always counts."
+            },
+            "pass_arc_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2,
+              "description": "Lane A207 (wave 2c): an opponent takes a pass in flight only with his blade: within this many metres of the blade point (default 1.0), never in its first 6 frames; his body still blocks it. 0 = the loose puck's arc against a pass too (the game before)."
+            },
+            "pass_arc_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 180,
+              "description": "Lane A207 (wave 2c): ... and inside this many degrees of his stick's line from his body (default 60)."
+            },
+            "body": {
+              "type": "boolean",
+              "description": "true or absent = the body stops a loose puck and it is his (default); false = the body pushes it as before (the neutral value)."
+            },
+            "block_carried": {
+              "type": "boolean",
+              "description": "With body: true or absent = another skater's carried puck is pushed out of a body it meets (no pass-through; its carrier keeps it while it stays in his reach, R-0048); false = it passes through other bodies as before."
+            },
+            "body_catch_mps": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 80,
+              "description": "With body: the body seats a loose puck (it stops at him and is his) only when it meets him slower than this, relative and into the body, in metres a second; faster it bounces off him as a loose rebound. The stick arc is not limited by it."
+            },
+            "ring_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2,
+              "description": "Lane A218 (R-0069 point 2): for the human, a loose puck that comes within this many metres of his centre (the ring drawn under him, default 1.1) is his on that frame, whatever his stick points at, at any speed he skates, while he holds a button; his own pass or shot once it no longer leaves him (slower than 6 m/s against him, closing on him, or 20 frames after it left). Not a puck riding with a carrier, over the blades, in the draw, another's pass in flight, or a hard shot (the sting). 0 = the neutral value (the game before)."
+            },
+            "sting_mps": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 80,
+              "description": "An opposing puck faster than this against the skater (blade or body; a teammate's pass on the blade is always caught) rings off him as a loose rebound, in metres a second (default 18)."
+            }
+          }
+        },
+        "deke": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A39 (R-0029 point 4): the deke: a tap moves the carried puck offset_m to the blade side within 6 frames and commits the crease back for commit_frames; a shot inside the commit window aims at the open post; a second tap inside 30 frames does nothing. Leave the key out for the defaults.",
+          "properties": {
+            "offset_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2,
+              "description": "How far the puck moves to the side on a deke, in metres; 0 turns the deke off."
+            },
+            "commit_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60,
+              "description": "Frames the crease back stays committed to the puck's old side after a deke."
+            }
+          }
+        },
+        "sweep": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A51 (R-0034): the sweep. The carried puck follows the blade every frame; an aim that turns more than min_deg_per_frame counts as a sweep and shields the puck for shield_frames from a poke or a lift on either side of the body (R-0044 as amended; only the side it left, before); a defending bot pokes at where the puck sat on the carrier bot_react_frames ago. Leave the key out for the defaults.",
+          "properties": {
+            "min_deg_per_frame": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 45,
+              "description": "How many degrees the aim must turn in one frame to count as a sweep."
+            },
+            "shield_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60,
+              "description": "Frames after a sweep in which a poke or a lift misses, from either side of the body; 0 turns the shield off."
+            },
+            "bot_react_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30,
+              "description": "Frames late a defending bot reads the puck on the carrier (its poke aims there); leave it out for the difficulty profile: rookie 14, pro 8, all_star 5."
+            },
+            "sprint_shield_mult": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Lane A93 (R-0045 law 4): a sprinting carrier's sweep shield lasts this fraction of shield_frames (0.5: 6 of 12 frames); 1 = the sprint does not weaken the shield, 0 = no shield while sprinting."
+            }
+          }
+        }
+      }
+    },
+    "puck": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "net": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A208 (the eye's list 2 item 12; A212's fault of 01:17): the nets' honesty. Leave the key out for the defaults; own_wall false and mouth_only false = the neutral value (the game before the lane).",
+          "properties": {
+            "own_wall": { "type": "boolean", "description": "true or absent = nobody scores on himself with his own play: a puck carried, or last played (carried, then shot, passed or cleared), by the defending side does not enter that side's net (the mouth is a wall for it); an opponent's puck that touches a defender on the way still scores." },
+            "mouth_only": { "type": "boolean", "description": "true or absent = a goal is a puck that crossed the goal mouth (between the posts, from the front) on its path; a puck moved into the net's box any other way is put back where it was." }
+          }
+        },
+        "radius_m": {
+          "type": "number",
+          "minimum": 0.06,
+          "maximum": 0.4,
+          "description": "Puck radius in metres; large pucks made the player lose, readability comes from colour."
+        },
+        "max_speed": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 60,
+          "description": "Puck speed cap in metres per second."
+        },
+        "drag": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Puck slowdown per second, 0 means none."
+        },
+        "colour_hex": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Puck colour; a colour must be written as #RRGGBB, six hexadecimal digits"
+        },
+        "carry_assist": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "How strongly a carried puck is pulled to the stick while the skater turns gently; 0 is the raw bumping puck, 1 glues it."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3,
+          "description": "Number of pucks on the ice."
+        },
+        "gravity_mps2": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 30,
+          "description": "R-0035 (lane A52): gravity on a lifted puck in metres per second squared; 9.81 is Earth, 0 keeps a lifted puck in the air."
+        },
+        "ice_restitution": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "R-0035 (lane A52): how much of its vertical speed a puck keeps when it lands on the ice; a hop under 2 cm dies."
+        }
+      }
+    },
+    "shot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reach_m": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 4,
+          "description": "How far from the skater the puck can be hit, in metres."
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 40,
+          "description": "Puck speed after a shot in metres per second."
+        },
+        "cooldown_frames": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 120,
+          "description": "Frames before the next shot is possible."
+        },
+        "aim_cone_deg": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 45,
+          "description": "Half-angle of the auto-aim cone in degrees; leave the key out for no aim help."
+        },
+        "charge_frames_max": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120,
+          "description": "Holding shoot this many frames gives the full charge bonus; 0 turns charging off."
+        },
+        "charge_speed_bonus": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20,
+          "description": "Extra puck speed in metres per second at full charge."
+        },
+        "tap_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30,
+          "description": "R-0044 (lane A91): a hold of shoot of this many frames or fewer is a tap: charge 0, no speed bonus, the tap's height (lift.tap_m: on the ice by default). A human's click is 2 to 4 frames long. Default 4; 0 makes every held frame charge."
+        },
+        "speed_scale": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 4,
+          "description": "Lane A207 (track P1): multiplies the shot's speed (speed and the charge bonus) and the puck's speed cap (puck.max_speed) alike. Default 2 (a tap 36, a full charge 52 m/s on the regular cut); 1 = the game before the lane."
+        },
+        "fade_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 200,
+          "description": "Lane A207 (wave 2b): the shot's added speed (what speed_scale put on top) fades with the distance the puck travels, e^(-x / fade_m): the full 2x for the first 8 m, then about 1.5x by 12 m and 1.0x by 30 m at 6. Default 6; 0 = no fade."
+        },
+        "deflect": {
+          "type": "boolean",
+          "description": "Whether a shot that hits a skater near its stick deflects (70 percent of its speed) instead of stopping dead."
+        },
+        "one_timer": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A39 (R-0029 point 4): a shot released within window_frames of receiving a teammate's pass gets the full charge without the hold and a wider aim cone; the shot event carries kind one_timer. Leave the key out for the defaults.",
+          "properties": {
+            "window_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60,
+              "description": "Frames after a received pass during which a shot is a one-timer; 0 turns one-timers off."
+            },
+            "cone_bonus_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 30,
+              "description": "Extra half-angle of aim help, in degrees, added to aim_cone_deg for a one-timer."
+            }
+          }
+        },
+        "lift": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "R-0035 (lane A52): the lifted shot. The height the puck arrives at over the goal line follows the charge: a tap tap_m, a hold of half_frames half_m, the full charge full_m, linear between. A puck over rink.goal_height_m is no goal. All three heights at 0 keep every shot on the ice. Leave the key out for the defaults.",
+          "properties": {
+            "tap_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.5,
+              "description": "Height over the goal line of a tap shot, in metres. Default 0 (R-0042): a charge-0 shot flies flat on the ice the whole way, so a stick between the shooter and the net can deflect it."
+            },
+            "half_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1.5,
+              "description": "Height over the goal line of a shot held half_frames, in metres."
+            },
+            "full_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2,
+              "description": "Height over the goal line of a full charge, in metres. Default 0.47 (R-0044, measured): the top shelf under the 0.61 bar, whose ring starts at 0.51 and catches a long falling shot from 0.48 up."
+            },
+            "half_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Frames of hold that reach half_m; 0 or at least charge_frames_max makes the lift linear from tap_m to full_m."
+            }
+          }
+        }
+      }
+    },
+    "pass": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Lane A77 (R-0036): the pass as a held key. A tap of pass (F / X) is the flat lead pass at skater.pass_speed; a hold is a saucer pass. Leave the key out for the defaults.",
+      "properties": {
+        "saucer": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The saucer pass: pass held half_frames or more lifts the puck lift_m at its apex, so it flies over a defender's blade in the lane and lands on the ice before the receiver (three quarters of the way on a short pass). half_frames 0 or lift_m 0 turns it off.",
+          "properties": {
+            "half_frames": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60,
+              "description": "Frames the pass must be held, with the puck in reach, for the saucer; a shorter hold is a flat pass. 0 = off."
+            },
+            "lift_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "The saucer's apex height over the ice, in metres (a blade is cleared from 0.2 m); 0 = off."
+            }
+          }
+        },
+        "power": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A207 (track P1): the held pass is its power. A hold of shot.tap_frames or fewer is the tap at skater.pass_speed; longer, the speed grows evenly to the full speed at full_frames, the speed that carries reach_share of the rink's length and still moves arrive_mps there. A bot's edge pass gets the speed that arrives at arrive_mps at its man. Under power the saucer is the sim's (a blade in the flat lane), not the hold's. full_frames 0 = the pass before the lane.",
+          "properties": {
+            "full_frames": { "type": "integer", "minimum": 0, "maximum": 120, "description": "Frames of hold for the full pass. Default 30 (half a second); 0 = off." },
+            "reach_share": { "type": "number", "minimum": 0.05, "maximum": 1, "description": "The share of the rink's length a full pass covers. Default 0.3333 (30 m on the 90 m rink)." },
+            "arrive_mps": { "type": "number", "minimum": 1, "maximum": 20, "description": "The speed a full pass still has at that distance, and the speed a bot's pass arrives at. Default 8 m/s (the sim's substeps lose a little against the closed form: 8 keeps a full pass over 6 m/s at 30 m)." }
+          }
+        },
+        "aim": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Lane A207 (track P1): the human's pass goes to the team-mate nearest the stick's line inside cone_deg, led to where his blade will be; nobody inside it: along the stick.",
+          "properties": {
+            "cone_deg": { "type": "number", "minimum": 0, "maximum": 90, "description": "The half-angle in degrees. Default 25; 0 = the sim's best open mate whatever the stick points at (the game before the lane)." }
+          }
+        },
+        "catch_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "Lane A207 (track P1): a pass in flight is seated on a team-mate's blade passing within this many metres of it at more than 1 m/s. Default 1.2; 0 = the game before the lane (the 0.6 m blade disc over 6 m/s)."
+        },
+        "clear_own_body": {
+          "type": "boolean",
+          "description": "Lane A207 (track P1): the passer's or shooter's own body does not stop the puck he just released while his cooldown runs. Default true; false = the game before the lane."
+        }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Lane A92 (R-0045, docs/VISION.md law 1): contact by momentum. A pressed body check or a cross-check is an impulse (the closing speed along the contact line plus lunge_mps or thrust_mps, times the attacker's mass) against the victim's stability; the ratio decides bump, stumble or down. The neutral block { \"momentum\": false, \"carrier_can_hit\": true } gives back the rule before the lane. Leave the key out for the defaults (docs/experiments/CONTACT.md).",
+      "properties": {
+        "momentum": {
+          "type": "boolean",
+          "description": "false = the neutral value: the check rule before lane A92 (a pressed check lands when the checker's own speed along the contact passes skater.check_speed_min and always knocks down for skater.knockdown_frames; the cross-check is the lift only); true or absent = contact by momentum (impulse against stability, three outcomes)."
+        },
+        "carrier_can_hit": {
+          "type": "boolean",
+          "description": "true = the neutral value: a skater carrying the puck may body-check as before lane A92; false or absent = the carrier's check press is refused (read-out bCheckRefused)."
+        },
+        "lunge_mps": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 6,
+          "description": "Speed a pressed body check adds to the closing speed along the contact line, in m/s; the checker gives half of it away."
+        },
+        "thrust_mps": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Speed a cross-check (the lift at an opposing carrier in range) adds to the closing speed, in m/s; 0 = the cross-check has no body hit (the lift only)."
+        },
+        "cross_reach_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1.5,
+          "description": "The gap between the two bodies, in metres, inside which the lift at a carrier is a cross-check (the stick's shaft at arm's length: the thrust lands); farther out, up to stick.lift_range_m, it is the stick lift only. stick.lift_range_m or more = every lift in range shoves."
+        },
+        "stability_mps": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "The stability of a skater of the reference mass that moves slowly, sees the hit and is not braced, as the closing speed (m/s) of an equal-mass hit that puts it down at down_ratio 1."
+        },
+        "stand_speed_mps": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Under this speed a skater stands braced (stand_brace); above it the stability falls with the speed (speed_stability)."
+        },
+        "stand_brace": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 3,
+          "description": "Stability factor of a standing skater against a hit it can see; a cross-check inside its front arc ignores it; 1 = no brace."
+        },
+        "speed_stability": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 1,
+          "description": "Stability factor at skater.speed; linear from 1 at stand_speed_mps; 1 = pace costs nothing."
+        },
+        "sprint_stability": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 1,
+          "description": "Stability factor while sprinting; 1 = the sprint costs nothing."
+        },
+        "spin_stability": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 1,
+          "description": "Stability factor during a spin or with a full shot wind-up; 1 = no cost."
+        },
+        "unseen_stability": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 1,
+          "description": "Stability factor against a hit from behind the victim's facing (the push runs along its facing); such a hit also finds a standing skater unbraced; 1 = no cost."
+        },
+        "bump_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Impulse over stability under this is a bump: both keep their feet and their control."
+        },
+        "loose_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "A stumble at this ratio or more knocks the carried puck loose."
+        },
+        "down_ratio": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 5,
+          "description": "At this ratio or more the victim goes down; between bump_ratio and it the victim stumbles (half its speed, stagger_frames without control)."
+        },
+        "down_full_ratio": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "The ratio at which the knockdown lasts down_frames_max; linear from down_frames_min at down_ratio."
+        },
+        "down_frames_min": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 300,
+          "description": "Frames down at down_ratio, at skater.knockdown_frames 90 (the frames scale with skater.knockdown_frames / 90)."
+        },
+        "down_frames_max": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 300,
+          "description": "Frames down at down_full_ratio and above, at skater.knockdown_frames 90; never under down_frames_min."
+        },
+        "stagger_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60,
+          "description": "Frames a stumbling skater glides without thrust, steering or stick."
+        },
+        "board_bonus": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 2,
+          "description": "The boards are a body: the impulse of a hit that pushes a victim standing within 1.5 m of the boards into them counts this much higher (the full bonus inside 60 degrees of straight in, none along the boards), and the victim's board read-out fires. 1 = the neutral value: no bonus, no read-out."
+        },
+        "release_grace_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300,
+          "description": "The release grace (R-0049 point 1): for this many frames after a knockdown ends, a hit on the released skater is a bump at most (no stumble, no knockdown; the attacker pays as for any bump) and the brain starts no check on it. Part of the momentum model (contact.momentum true). 0 = the neutral value: no grace."
+        },
+        "check_reach_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "The check finds its man: while a human skater's check window is open (12 frames) its velocity is turned onto the collision course with the nearest standing opponent whose body is within this many metres of its own and inside 60 degrees of where it is going or facing. The speed is kept and none is added (the hit's strength stays the contact law's), the position is untouched; a bot aims its own check. Part of the momentum model (contact.momentum true). 0 = the neutral value: the press goes where the skater was going."
+        },
+        "downed_radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Nobody stands in a man who is down (B-to-A-0041 point 2): with this above 0 a downed skater's body has this radius for every skater on its feet (roots kept 0.4 m + this apart, never less than the two 0.4 m body circles): the skater on its feet alone gives way (eased out at 6 m/s at most), the speed it had into the body turns along it (it goes round), and the downed skater is neither moved nor given any speed. The puck sees the same body as before; two downed skaters and the hit that fells a skater collide as before. 0 = the neutral value: a downed skater is an ordinary body (others stop 0.8 m from its root, push it along the ice and bounce off it)."
+        },
+        "check_cooldown_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120,
+          "description": "A check press has a cooldown (R-0060 point 4): for this many frames after a check press that opened a window, the same skater's next check press is dropped (no window, no cue), so a mashed button holds no window open: at the human's 12-frame window a button mashed without pause has one open 12 frames in every this-many. Bots and the human alike (the brain spaces its own presses 30 frames apart). 0 = the neutral value: every press opens a window."
+        },
+        "check_cooldown_restart": {
+          "type": "boolean",
+          "description": "A mashed button lands nothing: true = a check press inside the cooldown (check_cooldown_frames) starts the cooldown again from that press, so a button pressed faster than the cooldown opens one window and no other until the hand has rested a whole cooldown; a press made after the cooldown never notices. Read only with check_cooldown_frames above 0. false = the neutral value: a dropped press costs nothing more."
+        },
+        "board_slam_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120,
+          "description": "The board slam as a play. Earned: a hit that fells its victim while the victim's centre is within 1 m of the boards and the attacker closes on it along the boards' normal at 4 m/s or more (driven into the wall, not along it). Paid: this many frames down on top (at skater.knockdown_frames 90; they scale with it), the victim's board read-out and the board event. 0 = the neutral value: no slam exists."
+        },
+        "take_shield_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60,
+          "description": "A hit inside a carry's first frames is capped at a stumble (REVIEW-3 item 2): for this many frames after a skater wins the puck (it comes to it from somebody else; not a placed puck), a hit that would fell it is a stumble: it keeps its feet, loses half its speed, its control for the stumble and the puck; the attacker pays as for any stumble; an armed hip check keeps its rule. Part of the momentum model (contact.momentum true). 0 = the neutral value: the hit lands as the contact law says."
+        },
+        "take_shield_human_side": {
+          "type": "boolean",
+          "description": "true = the take shield (take_shield_frames) only for skaters of a side that has a human on it; a bot of the other side that wins the puck is felled as before. false = the neutral value: every skater. Read only with take_shield_frames above 0."
+        },
+        "take_shield_stagger_max": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 90,
+          "description": "The capped hit's stumble scales with the hit: from stagger_frames at down_ratio to this many frames at down_full_ratio (the line the frames down follow), so a bigger hit still costs more. 0 (or not above stagger_frames) = the neutral value: the flat cap, every capped hit is stagger_frames. Read only with take_shield_frames above 0."
+        },
+        "lunge_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30,
+          "description": "The lunge as a motion: a check press that opens a window commits the body for this many frames: lunge_step_mps is added along its facing at once, it turns at a quarter of its turn rate and cannot brake by reversing. A lunge that ends in a body ends there; one that runs out on nobody costs twice lunge_step_mps of speed (the miss). Part of the momentum model (contact.momentum true). 0 = the neutral value: a press moves nothing."
+        },
+        "lunge_step_mps": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "description": "The lunge's forward step in m/s, added to the velocity along the facing when a lunge starts (lunge_frames above 0). It is real closing speed in the hit, so the impulse's own lunge_mps is reduced by it while the lunge runs (at lunge_step_mps = lunge_mps a head-on hit is the hit it was). 0 = the neutral value."
+        },
+        "cross_hold": {
+          "type": "boolean",
+          "description": "The held cross-check (R-0064 points 1 and 5): the cross-check button held 10 frames or more without the puck braces the skater (stick across the body): the first opponent his body meets while braced takes the cross-check by the momentum he brings (closing speed plus thrust_mps, the pressed cross-check's own line; not into a back); then the brace is spent until the button is released. A tap is the pressed cross-check as before. Its prices: no poke, no lift, no pass reception and no sprint while braced, top speed x 0.9 and turning x 0.7, and a braced skater hit by a man closing faster than he skates himself stands at 0.75 of his stability. Part of the momentum model (contact.momentum true). false = the neutral value: the held button does nothing."
+        },
+        "check_windup_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12,
+          "description": "The body check's wind-up (R-0064 point 5): a pressed check opens its window this many frames after the press, so the figure's take has a beat the eye catches before the contact; the cooldown and the figure's call stay on the press, a press inside the wind-up is the same press, a skater that loses its feet or gets the puck in it loses the press. 0 = the neutral value: the window opens on the press's frame."
+        },
+        "cross_windup_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12,
+          "description": "The cross-check's wind-up (R-0064 point 5): a pressed cross-check (the stick lift's swing: its shove, its strip and its miss) lands this many frames after the press, on the positions of that frame; the swing's cooldown and the figure's call stay on the press. 0 = the neutral value: the swing lands on the press's frame."
+        },
+        "bot_check_windup_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12,
+          "description": "The bots' own body-check wind-up (lane A200, track F1, evolution 11): the same rule as check_windup_frames for every skater the game does not seat as a human (both sides' bots; the online guest is a human), so the bots' wind-up can be longer than the human's, whose own press must not feel late. Absent = 8 (ships on: 133 ms, a beat the eye reads). The neutral value is the shared check_windup_frames (set it equal to it)."
+        },
+        "bot_cross_windup_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12,
+          "description": "The bots' own cross-check wind-up (lane A200, track F1, evolution 11): the same rule as cross_windup_frames for every skater the game does not seat as a human (both sides' bots; the online guest is a human): the pressed cross-check's shove lands this many frames after the press. Absent = 12 (ships on). The neutral value is the shared cross_windup_frames (set it equal to it)."
+        },
+        "check_pull_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "The hit he aims lands (lane A209, track F1, the night): while a human skater's pressed body check winds up (contact.check_windup_frames), his root is drawn toward the man he pressed at (the nearest opponent on his feet inside 60 degrees of his facing, his going or his stick's aim) so the two bodies meet as the wind-up ends: what his own closing will not cover is spread over the wind-up's frames, at most this many metres in all; a meeting inside his wind-up is the hit. His pressed cross-check's man is drawn to arm's length (half of contact.cross_reach_m) the same way, so its shove reaches from this much farther. His speed is never changed by the pull: the hit's size stays his momentum's (a standing shove is a bump, a full-speed hit a knockdown). Bots aim their own. Part of the momentum model (contact.momentum true). 0 = the neutral value: the press goes where the skater was going."
+        },
+        "cross_any_man": {
+          "type": "boolean",
+          "description": "The cross-check is a hit on any man in front (lane A209, track F1, the night): a human skater's pressed cross-check shoves the nearest opponent on his feet inside the lift's cone and the stick's reach (stick.lift_range_m) whether or not he has the puck, by the shove's own momentum rule (closing speed plus contact.thrust_mps against his stability: mostly a stumble, a knockdown at speed); a back stays a back. The strip of the puck stays the carrier's. Bots keep the carrier-only shove. false = the neutral value: the shove only on a carrier (or one who carried within stick.foul_grace_frames)."
+        },
+        "cross_back_human": {
+          "type": "boolean",
+          "description": "The human's cross-check takes a carrier's back (lane A215, track F1, the night; the Director's ruling of 15 Nov 02:39): a human skater's pressed cross-check (a tap: the button is up when it lands, so a hold never strips with it) that meets the back of a man who has the puck, or had it within stick.foul_grace_frames, when its wind-up ends or inside contact.cross_live_frames, is a shove: he stumbles, never more, and the puck comes off his blade as a stick lift that works leaves it. Where rules.penalties is on, the from-behind foul is called as for any hit from behind. Bots keep the law: their cross-check from behind is the stick lift. Part of the momentum model (contact.momentum true). Absent = true (ships on). false = the neutral value: a cross-check from behind at a carrier is the stick lift for everyone."
+        },
+        "cross_live_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30,
+          "description": "The cross-check's stick stays live (lane A215, track F1, the night): a pressed cross-check whose shove finds nobody inside its reach and cone on the frame its wind-up ends (contact.cross_windup_frames) stays live this many frames more: each frame the man it was aimed at is tried first, then every other opponent nearest first, by the same tests with the stick's reach (stick.lift_range_m) for the shaft's (on his feet, not shielded, inside the cone, not into a back with the puck); the first who passes takes the shove and the miss is declared only when the window closes. Every skater, bots and the human. Part of the momentum model (contact.momentum true). Absent = 10 (ships on). 0 = the neutral value: the shove is tried on that single frame."
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "first_to",
+            "timer"
+          ],
+          "description": "first_to ends at score_to_win goals, timer ends when timer_frames run out"
+        },
+        "score_to_win": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9,
+          "description": "Goals needed to win; required when mode is first_to."
+        },
+        "timer_frames": {
+          "type": "integer",
+          "minimum": 600,
+          "maximum": 28800,
+          "description": "Match length in physics frames (60 per second); required when mode is timer."
+        },
+        "goal_pause_frames": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 600,
+          "description": "Frames of pause after a goal before the faceoff."
+        },
+        "offside": {
+          "const": false,
+          "description": "Offside is not implemented; only false is allowed."
+        },
+        "penalties": {
+          "type": "boolean",
+          "description": "Hard fouls (R-0013): a check from behind or on a skater without the puck sends the checker to the box for penalty_frames (absent = 300) and gives a free faceoff at the checker's end. Absent = true."
+        },
+        "hooks": {
+          "type": "array",
+          "maxItems": 8,
+          "description": "Rule hooks (C-0005): when a trigger fires and the conditions hold, the actions run in order in the same frame. Evaluated in id order. Leave the key out for none.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "when",
+              "then"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "cartridge.schema.json#/$defs/kebab_id"
+              },
+              "when": {
+                "enum": [
+                  "on_goal",
+                  "on_period_start",
+                  "on_period_end",
+                  "on_check",
+                  "on_knockdown",
+                  "on_pickup_take",
+                  "on_faceoff",
+                  "on_frame",
+                  "on_score_reached"
+                ],
+                "description": "the trigger; on_frame needs every_frames, on_score_reached needs score.at_least"
+              },
+              "every_frames": {
+                "type": "integer",
+                "minimum": 60,
+                "maximum": 18000,
+                "description": "on_frame only: the hook fires every this many physics frames (60 per second)."
+              },
+              "after_frame": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 18000,
+                "description": "The hook is armed from this physics frame on; before it, the trigger is ignored. A hook that ends the match must wait at least until frame 600 (10 seconds). Absent = 0."
+              },
+              "team": {
+                "enum": [
+                  "scoring",
+                  "conceding",
+                  "any"
+                ],
+                "description": "Which team, relative to the event: scoring is the team the event is about (the scorer, the checker, the taker), conceding is the other one, any is both or neither. The team the actions apply to unless an action names its own. Absent = scoring."
+              },
+              "score": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Conditions on the score of the hook's team (any: either team) at the moment of the trigger, after the goal has been counted.",
+                "properties": {
+                  "at_least": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20,
+                    "description": "The team's score is at least this."
+                  },
+                  "at_most": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20,
+                    "description": "The team's score is at most this."
+                  },
+                  "lead_at_least": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "description": "The team leads by at least this many goals."
+                  }
+                }
+              },
+              "then": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "description": "The actions, run in order.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "do"
+                  ],
+                  "properties": {
+                    "do": {
+                      "enum": [
+                        "add_score",
+                        "set_score_multiplier",
+                        "end_period",
+                        "end_match",
+                        "shrink_rink",
+                        "grow_rink",
+                        "set_param",
+                        "spawn_pickup",
+                        "swap_nets",
+                        "announce",
+                        "apply_modifier"
+                      ],
+                      "description": "add_score needs value (whole goals), set_score_multiplier needs value (1 to 5), shrink_rink and grow_rink need value (the fraction, 0.05 to 0.5), set_param needs param and value, spawn_pickup needs kind, apply_modifier needs kind and frames, announce needs text"
+                    },
+                    "team": {
+                      "enum": [
+                        "scoring",
+                        "conceding",
+                        "any"
+                      ],
+                      "description": "Which team, relative to the event: scoring is the team the event is about (the scorer, the checker, the taker), conceding is the other one, any is both or neither."
+                    },
+                    "value": {
+                      "type": "number",
+                      "minimum": -20,
+                      "maximum": 20,
+                      "description": "The number the action uses; see do."
+                    },
+                    "param": {
+                      "$ref": "cartridge.schema.json#/$defs/snake_key"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*([_-][a-z0-9]+)*$",
+                      "maxLength": 32,
+                      "description": "a kind must be lowercase letters and digits separated by single underscores or hyphens, starting with a letter: a pickup kind (speed, precision, heavy_puck, big_puck, reverse_other), an effect id, or a modifier kind"
+                    },
+                    "frames": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 3600,
+                      "description": "How long an applied modifier lasts, in physics frames (60 per second)."
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "description": "What the scoreboard says (announce)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "variants": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Rule variants (C-0005): sugar the loader turns into hooks. Leave the key out for plain hockey.",
+          "properties": {
+            "sudden_death": {
+              "type": "boolean",
+              "description": "The next goal after frame 600 (10 seconds) wins the match."
+            },
+            "last_goal_double": {
+              "type": "boolean",
+              "description": "The goal that wins a first_to match counts double."
+            },
+            "mercy_goals": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 9,
+              "description": "A lead of this many goals ends the match."
+            },
+            "period_count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3,
+              "description": "How many periods (TAKEs) the match has; a timer match is split evenly, a first_to match ends a period every minute."
+            },
+            "shrink_per_goal": {
+              "type": "number",
+              "minimum": 0.02,
+              "maximum": 0.3,
+              "description": "The rink shrinks by this fraction after every goal (0.1 is 10 percent), rebuilt at the next faceoff, never below the smallest rink."
+            }
+          }
+        },
+        "penalty_frames": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 600,
+          "description": "Lane A72 (R-0037, ask A8): how long a hard foul sits in the box, in frames (60 per second). Absent = 300 (5 s). Read only when penalties is true."
+        }
+      }
+    },
+    "teams": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Exactly two teams. Exactly one skater across both teams has the role player.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "colour_hex",
+          "skaters"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "cartridge.schema.json#/$defs/kebab_id"
+          },
+          "colour_hex": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "Jersey colour; a colour must be written as #RRGGBB, six hexadecimal digits"
+          },
+          "skaters": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "spawn"
+              ],
+              "properties": {
+                "role": {
+                  "enum": [
+                    "player",
+                    "chaser",
+                    "support",
+                    "back"
+                  ],
+                  "description": "player is the human, the others are bot roles"
+                },
+                "spawn": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": {
+                    "type": "number"
+                  },
+                  "description": "[x, z] in metres from the rink centre; must be inside the rink."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ai": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "rookie",
+            "pro",
+            "all_star"
+          ],
+          "description": "How hard the bots play: rookie (easier: slower reactions, wider shots, more room for the human), pro (the default), all_star (harder: faster reactions, sharp shots, they read the puck). Absent = pro. The numbers below, when present, override the level's profile."
+        },
+        "yield_margin_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 6,
+          "description": "Blue-side bots yield the puck when the human is this much nearer, in metres."
+        },
+        "yield_radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 40,
+          "description": "Yield only applies within this distance of the puck, in metres."
+        },
+        "hold_radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 15,
+          "description": "Opposing non-back bots hold when the human is within this distance of the puck, in metres."
+        },
+        "speed_scale": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 1.5,
+          "description": "Bot speed as a fraction of skater.speed."
+        },
+        "red_skill": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Skill of the opposing bots: 0 clumsy, 1 sharp."
+        },
+        "react_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60,
+          "description": "Lane A72 (R-0037, ask A4): the opposing bots' reaction delay in frames (their steering is applied this many frames late; shots stay live; the back reacts at once). Absent = the level's profile (0 at every level today)."
+        },
+        "body_check": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Lane A72 (R-0037, ask A5): the share of the chances an opposing bot closes with a body check: 0 never, 1 every chance. A chance is the level's rule (the opposing carrier within reach, from the front or the side, never from behind) at the closing speed the sim lands a check on (skater.check_speed_min) instead of the level's fixed 5 m/s; at rookie, which never checks, any share above 0 turns that rule on. Absent = the level's rule (rookie never, pro and all_star at 5 m/s)."
+        },
+        "sprint": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Lane A72 (R-0037, ask A2): the share of the time a bot sprints (skater.sprint) while it chases the puck from more than 6 m away without carrying it; a seeded coin per bot and two-second window; the sprint drains and refills the same stamina bar as the human's. Both sides' bots. Absent = 0 (bots never sprint)."
+        }
+      }
+    },
+    "pickups": {
+      "type": "array",
+      "maxItems": 8,
+      "description": "Pickups that spawn on the ice (boost play). kind is a built-in (speed, precision, heavy_puck, big_puck, reverse_other) or the id of an effect in game.effects. Leave the key out for none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "spawn_every_frames",
+          "duration_frames"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+            "description": "a pickup kind is a built-in (speed, precision, heavy_puck, big_puck, reverse_other) or the kebab-case id of an effect declared in game.effects"
+          },
+          "spawn_every_frames": {
+            "type": "integer",
+            "minimum": 120,
+            "maximum": 7200,
+            "description": "Frames between spawns of this pickup."
+          },
+          "duration_frames": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600,
+            "description": "Frames the effect lasts; at least 1."
+          },
+          "magnitude": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 4,
+            "description": "Strength of the effect: for a built-in kind the multiplier itself (1 is no change; absent = 1.5 speed, 2 precision, 2 heavy_puck, 1.5 big_puck; ignored by reverse_other); for a custom effect it scales the effect's deviation from neutral (absent = 1 = as written)."
+          },
+          "zone": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+            "maxLength": 48,
+            "description": "Spawn only inside this rink.zones zone (absent = anywhere on the ice)."
+          },
+          "max_on_ice": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "description": "How many of this pickup may lie on the ice at once (absent = 1); spawning pauses at the cap."
+          }
+        }
+      }
+    },
+    "abilities": {
+      "type": "array",
+      "maxItems": 4,
+      "description": "Lane A84 (R-0041 point 3): the human's special ability, used with F (gamepad D-pad down). A mode entry is held from the first drop and comes back after its cooldown; pickup entries are the pool a boost take grants from (one at random, held until its charges are spent; nothing is granted while one is held). At most one mode entry. Bots never hold one. Leave the key out for none (the default game).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "trigger"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "shotgun",
+              "hip_check",
+              "shield",
+              "slow_puck"
+            ],
+            "description": "shotgun: the next shot leaves at magnitude x speed and knocks down every skater within 1 m of its path. hip_check: the next check lands from a standstill, knocks down magnitude x as long and pushes 3 m. shield: for duration_frames checks and lifts on the holder fail (the body still bumps). slow_puck: the next pass or shot travels at magnitude x its speed for duration_frames, then wakes up."
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "mode",
+              "pickup"
+            ],
+            "description": "mode: held from the drop. pickup: one of the pickup entries is granted when the human takes a boost pickup (needs game.pickups)."
+          },
+          "charges": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9,
+            "description": "Uses before the ability is gone. Absent: unlimited for a mode entry, 1 for a pickup entry."
+          },
+          "cooldown_frames": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 3600,
+            "description": "Frames after a use before the next one. Absent = 1200 (20 s)."
+          },
+          "duration_frames": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600,
+            "description": "shield and slow_puck: how long it lasts. Absent = 360 (shield, 6 s) or 120 (slow_puck, 2 s); ignored by shotgun and hip_check."
+          },
+          "magnitude": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 4,
+            "description": "The kind's strength. Absent = 1.5 shotgun (shot speed multiplier), 1.5 hip_check (knockdown frames multiplier), 0.5 slow_puck (the puck's speed share); ignored by shield."
+          }
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "maxItems": 12,
+      "description": "Composable effects (C-0005, lane A14): each one is a timed set of stat modifiers applied to a target when its trigger fires. The five built-in pickup kinds (speed, precision, heavy_puck, big_puck, reverse_other) are shipped effect definitions (Game/Content/Designer/builtin-effects.json) and need not be declared here; a pickup may name either a built-in or an effect id from this list. Leave the key out for none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "target",
+          "duration_frames",
+          "stats",
+          "trigger"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+            "maxLength": 48,
+            "description": "Unique kebab-case id (never one of the built-in kinds); pickups and events refer to it."
+          },
+          "kind": {
+            "enum": [
+              "speed",
+              "precision",
+              "heavy_puck",
+              "big_puck",
+              "reverse_other",
+              "custom"
+            ],
+            "description": "Visual family the toy look and the HUD read: one of the five built-in looks, or custom (absent = custom)."
+          },
+          "target": {
+            "enum": [
+              "self",
+              "own_team",
+              "other_team",
+              "everyone",
+              "puck",
+              "rink"
+            ],
+            "description": "Who the modifiers apply to, seen from the skater who triggered the effect (self = that skater; for a trigger without a skater, self and own_team mean everyone)."
+          },
+          "duration_frames": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 7200,
+            "description": "How long the effect lasts in physics frames (1 s to 2 min); a pickup's own duration_frames wins when it spawned the effect."
+          },
+          "stats": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "description": "The stat changes, composed as base * product(multiply) + sum(add), clamped to the stat's schema range.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "stat"
+              ],
+              "properties": {
+                "stat": {
+                  "enum": [
+                    "skater_speed",
+                    "skater_accel",
+                    "skater_turn_rate",
+                    "skater_grip",
+                    "skater_mass",
+                    "shot_speed",
+                    "shot_aim_cone_deg",
+                    "shot_reach",
+                    "check_speed_min",
+                    "knockdown_frames",
+                    "puck_drag",
+                    "puck_max_speed",
+                    "puck_radius",
+                    "ice_friction",
+                    "board_restitution"
+                  ],
+                  "description": "Which stat (snake_case of EJamStat): a known stat only; the Designer may not invent one."
+                },
+                "multiply": {
+                  "type": "number",
+                  "minimum": 0.25,
+                  "maximum": 4,
+                  "description": "Multiplier; absent = 1 (no change). 0.25 to 4."
+                },
+                "add": {
+                  "type": "number",
+                  "minimum": -300,
+                  "maximum": 300,
+                  "description": "Added after the multipliers, in the stat's own unit; absent = 0. Must stay within the stat's range width (validate.mjs checks per stat)."
+                }
+              }
+            }
+          },
+          "trigger": {
+            "enum": [
+              "pickup",
+              "goal_for",
+              "goal_against",
+              "check_landed",
+              "check_received",
+              "period_start",
+              "zone_enter",
+              "zone_exit",
+              "director"
+            ],
+            "description": "What starts the effect: pickup (a pickup that names this id is taken), goal_for / goal_against (seen from the scoring team: self = the scorer), check_landed / check_received, period_start (every TAKE), zone_enter / zone_exit (a rink.zones zone; see zone), director (a Director's Call or Designer cut applied live)."
+          },
+          "zone": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+            "maxLength": 48,
+            "description": "zone_enter / zone_exit only: restrict the trigger to this rink.zones id (absent = any zone). Proposed by lane A14, not yet in C-0005."
+          },
+          "stack": {
+            "enum": [
+              "refresh",
+              "extend",
+              "ignore"
+            ],
+            "description": "When the same effect hits the same target while active: refresh restarts the timer (default), extend adds the duration (capped at 7200), ignore keeps the running one."
+          },
+          "icon": {
+            "enum": [
+              "bolt",
+              "crosshair",
+              "weight",
+              "circle",
+              "swirl",
+              "snail",
+              "shield",
+              "star",
+              "flame",
+              "snowflake",
+              "magnet",
+              "anchor"
+            ],
+            "description": "HUD glyph name; absent = the kind's default (bolt, crosshair, weight, circle, swirl; star for custom)."
+          }
+        }
+      }
+    },
+    "barks": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Situational one-liners the bot skaters say (opponents mock and complain, teammates encourage and praise). Lines come from a reviewed bank; the Designer may set this (\"make them talk trash\" = loud, \"keep them quiet\" = quiet or enabled false). Absent = enabled, normal.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the skaters talk at all. Absent = true."
+        },
+        "intensity": {
+          "enum": [
+            "quiet",
+            "normal",
+            "loud"
+          ],
+          "description": "quiet: rare, no mockery, double cooldowns; normal: the default mix; loud: mostly mockery, half the cooldowns. Absent = normal."
+        }
+      }
+    },
+    "commentary": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The play-by-play commentator in the booth (lane A32, B-to-A-0026): recorded lines picked per event from a reviewed bank. Absent = enabled, normal.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the commentator speaks at all. Absent = true."
+        },
+        "intensity": {
+          "enum": [
+            "quiet",
+            "normal",
+            "loud"
+          ],
+          "description": "quiet: only the big calls (priority 3 and up), double cooldowns; normal: the bank's own priorities and cooldowns; loud: half the cooldowns. One line at a time and at most one every 2.5 s in every case. Absent = normal."
+        }
+      }
+    },
+    "look": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tier"
+      ],
+      "properties": {
+        "tier": {
+          "enum": [
+            "l1_day",
+            "l2_night",
+            "l3_neon",
+            "p3_clay",
+            "p4_broadcast"
+          ],
+          "description": "light and art tier of the arena; p3_clay is the clay-figure look (B-to-A-0018), p4_broadcast the broadcast look (B-to-A-0025)"
+        },
+        "trim_emissive": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Emissive strength of the board trim strips. Absent = the tier's default: l1_day 30, l2_night 30, l3_neon 30, p3_clay 12 (bright clay ice reads 30 as a thin gold line), p4_broadcast 30. The far-net beacon stays at 40."
+        },
+        "trim_colour_hex": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Colour of the emissive board trim; a colour must be written as #RRGGBB, six hexadecimal digits"
+        },
+        "fog_density": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.1,
+          "description": "Fog density; 0 is none, L2 ships with none."
+        },
+        "wet_ice": {
+          "type": "boolean",
+          "description": "Wet reflective ice (neon tier)."
+        }
+      }
+    },
+    "camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "third_person",
+            "arena"
+          ],
+          "description": "third_person follows the player skater; arena is a fixed camera over the rink"
+        },
+        "distance_m": {
+          "type": "number",
+          "minimum": 2,
+          "maximum": 20,
+          "description": "Camera distance behind the skater in metres."
+        },
+        "height_m": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 15,
+          "description": "Camera height above the ice in metres."
+        },
+        "look_ahead_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20,
+          "description": "How far ahead of the skater the camera aims, in metres."
+        },
+        "lag_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30,
+          "description": "Follow lag in physics frames."
+        },
+        "fov_deg": {
+          "type": "number",
+          "minimum": 40,
+          "maximum": 110,
+          "description": "Horizontal field of view in degrees."
+        },
+        "boards_margin_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "The chase camera never crosses the boards' inner face minus this margin, in metres, on any side (corner arcs included)."
+        },
+        "end_height_m": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 15,
+          "description": "Height in metres the chase camera lifts to when the boards take its whole arm; it rises in proportion to the arm lost and looks along the rink at an end board. Default 3 since lane A49 (was 5)."
+        },
+        "far_net_bias": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "How much of the angle to the far net the framing leads by when the skater heads for it (0 = none, 1 = aim at the net). Default 0.2 since lane A49 (was 0.5); the human never leaves the frame's middle third."
+        },
+        "radar": {
+          "type": "boolean",
+          "description": "Show the mini-rink radar in the HUD."
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pitch",
+        "facts"
+      ],
+      "description": "Lane A81 (A67 ask A11): the words the menu shows for a Director's choice: informational only, read by the menu and never by the sim. The card's name is the envelope title. Leave the key out for a cut that is not a mode.",
+      "properties": {
+        "pitch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "description": "One sentence on the card under the name: what the mode is for, in the player's words. 48 characters keep it to two lines at six cards a row."
+        },
+        "facts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "description": "Up to three short lines on the card, each a fact that differs from the Regular Cut (\"first goal wins\"). At six cards a row a line holds about 18 characters at 1080p and 720p; 20 is the hard cap."
+        }
+      }
+    }
+  }
+}

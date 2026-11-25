@@ -237,7 +237,8 @@ test("cards 8 house pack: the reference copies a house game a card names (hockey
   const live = referenceOf(path.join(REPO_ROOT, "engine"));
   const hockey = path.join(REPO_ROOT, "engine", "packs", "hockey");
   // N2 of 22 Nov: card.duel names the duel house game, so it travels too.
-  assert.deepEqual(live.housePacks, [path.join(REPO_ROOT, "engine", "packs", "duel"), hockey], "only the house games a card names");
+  // E3 of 24 Nov: card.rink_core names hokej, the rink core's house game.
+  assert.deepEqual(live.housePacks, [path.join(REPO_ROOT, "engine", "packs", "duel"), hockey, path.join(REPO_ROOT, "engine", "packs", "hokej")], "only the house games a card names");
   const ref = path.join(tempDir("cards-house"), "ref");
   prepareReference(ref, { cardsDir: CARDS, housePacks: [hockey] });
   const want = listFiles(hockey).sort();

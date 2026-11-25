@@ -58,13 +58,13 @@ test("room: round 2 is final (a second revise still sets the brief); word limits
   const r = await designRoom(twice, { sentence: "s" });
   assert.ok(r.ok);
   assert.deepEqual(r.value.reviews.map((x) => x.verdict), ["revise", "revise"]);
-  // A concept over its word limits, then a fixed one.
-  const long = { ...sampleConcept(), hook: Array.from({ length: 14 }, () => "very").join(" ") };
+  // A concept over its word limits, then a fixed one. (E3g: 17 words, more than TRIM_MAX over; up to 3 over is trimmed without the model.)
+  const long = { ...sampleConcept(), hook: Array.from({ length: 17 }, () => "very").join(" ") };
   const c = new FakeBuilder({ steps: [{ match: { role: "concept", attempt: 1 }, json: { concept: long } }, { match: { role: "concept", attempt: 2 }, json: { concept: sampleConcept() } }, { match: { role: "designer" }, json: { brief: v2Brief(), estimate } }, { match: { role: "design_review" }, json: { scores: scores(0.9), slop: [], verdict: "ok", notes: "ok" } }] });
   assert.ok((await designRoom(c, { sentence: "s" })).ok);
   // L1b: a length-only problem gets one repair call for that field (this fake has no repair answer: the hook is cut).
   assert.equal(c.calls[1]?.req.meta?.role, "concept_repair");
-  assert.match(c.calls[1]?.req.prompt ?? "", /- concept\.hook \(14 words, limit 12\)/);
+  assert.match(c.calls[1]?.req.prompt ?? "", /- concept\.hook \(17 words, limit 12\)/);
   // A design without a defensive verb is sent back; an unknown slop id is refused.
   const soft = { ...v2Brief(), design: { ...sampleDesign(), verbs: sampleDesign().verbs.map((v) => ({ id: v.id, input: v.input, anticipation_f: v.anticipation_f, active_f: v.active_f, recovery_f: v.recovery_f, cancel: v.cancel })) } };
   const d = new FakeBuilder({ steps: [{ match: { role: "concept" }, json: { concept: sampleConcept() } }, { match: { role: "designer" }, json: { brief: soft, estimate } }] });

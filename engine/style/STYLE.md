@@ -311,3 +311,83 @@ a change of the shader text compiles for about a second (seen as one long frame)
 The picture cache (kernel/world/draw) stores vertex colours, and a kit terrain bakes palette paints into them: its key
 carries those paints when they are not the paints of style.json (`kernel/world/draw/pic_salt.gd`), so a style with
 other land paints has its own pictures and today's key is unchanged.
+
+## Felt and clay for a figure (`TLStyleFelt`, hockey port lane K7, 23-24 Nov 2026)
+
+A new entry beside the palette material, in files of its own: `tl_style_felt.gd`, `shaders/body_felt.gdshader`, the
+look's three textures in `felt/` (thirdjam's `T_Felt_Fibre`, `T_Clay_Thumb_N`, `T_Clay_Dent_N`). No existing shader or
+style file is touched (selftest `look.skater.shaders_kept`). It is thirdjam's two skater masters on its clay look tier,
+node by node: `M_SkaterTB1Jersey` (felt: mottle, fibre bump, hem band, sheen, the jersey number from a 5 x 2 atlas and the
+team crest) and the clay branch of `M_Toon` (thumb dents, rim, fill); the shader's header names each node it ports.
+
+```gdscript
+TLStyleFelt.set_rig(lights, exposure, gain, gain_shadows)    # optional: the hall's spot lights (TLStyleArena.set_rig's shape)
+var m: ShaderMaterial = TLStyleFelt.material({"team_colour": Color(0.02, 0.1, 0.55), "felt_mix": 1.0, "vcol_mix": 1.0,
+	"number_on": 2.0, "number_tens": 4.0, "number_ones": 2.0, "number_atlas": atlas})   # keys: TLStyleFelt.KEYS
+TLStyleFelt.set_params(m, {"number_ones": 7.0})              # a number or a colour that changes later
+```
+- Keys are thirdjam's material parameters in snake case; colours are linear; unknown keys are errors (null). Headless:
+  one shared material with no shader.
+- **The mesh must carry** `CUSTOM0.xyz` = the vertex before skinning (m), `CUSTOM2.xyz` = its normal before skinning,
+  `CUSTOM1` = thirdjam's vertex colour (r felt mask, g a number per panel, b an edge mask), `UV` = thirdjam's UV0.
+  `TLRigSkaterLook.look_mesh` makes that copy of the baked skater.
+- **Light.** With a rig (`set_rig`): each spot light by its candela, cone and radius, a surface shows (base x lux / PI +
+  what it emits) x exposure through Unreal's film curve, as lane K6's hall shaders do (the same uniforms and the same
+  arithmetic as `hall_rig.gdshaderinc`; to be one include once both are on one branch). Without one: the installed
+  style's sun and its two ambients. The picture is written as emission; the figure takes no shadow, and casts its own.
+- **No ink.** The colour is drawn after the style's ink pass (render priority -90 against the pass's -100) and covers
+  the contour the pass drew inside the figure; the depth pre-pass keeps the figure in the depth buffer and in the shadow
+  maps. thirdjam's clay tier draws no outline.
+- Cost: ten skaters before the game camera at 1280 x 720 draw in the same time in felt and in flat cel (whole frame
+  1.0 to 1.1 ms either way on this machine, 0.8 ms with the ten hidden; `look_gym.tscn --mode=cost`).
+
+
+## A hall: `TLStyleHall`, `TLStyleArena` (hockey port, 23-24 Nov 2026)
+
+Two entries a game played indoors asks for; neither changes a shader or a style file that existed.
+
+- `TLStyleHall.apply(anchor, {color, energy, shadows})` (lane K3): the installed style's sun becomes a light from the
+  roof (straight down), the fog is switched off. `TLStyleHall.clear(anchor)` gives the style back.
+- `TLStyleArena` (lane K6): the surfaces of a hall ported from another engine, lit by that hall's own rig by the
+  numbers. `set_rig(lights, exposure, gain, gain_shadows)` takes up to 24 spot lights (position, direction, colour,
+  candela, radius, cone); every hall material sums them per fragment (`shaders/hall_rig.gdshaderinc`, no shadow, no
+  engine light node) and shows the result through Unreal's film curve (`hall_tone`). The picture is written as
+  emission, so the style's sun adds nothing to it; the ink and grade passes run over it.
+  - `surface({...})` (`hall_surface.gdshader`): wood (world triplanar grain, a warm wash rising from the floor, a
+    spill outside the boards) and painted clay pieces (bands by height, board panels with joints, a felt band, wear,
+    a dented or thumbed normal, a felt sheen).
+  - `ice({...})` (`hall_ice.gdshader`): an ice sheet with painted lines under the surface, scratches, snow at the
+    boards, the lamps' sheen. It takes the style sun's shadow for the share of the lights that cast shadows.
+  - `crowd({...})` (`hall_crowd.gdshader`): vertex-coloured figures with per-instance values and a cheering pose
+    (`set_cheer(plus, minus, seconds)`); `bulb({...})` (`hall_bulb.gdshader`): a lamp's bulb.
+  - `post(anchor, opt)`: the installed grade and ink passes as a hall wears them, read from the hall look's own
+    file `style/hall_post.json` (`grade`: no plum wash, no split toning, thirdjam's saturation, contrast and vignette;
+    `ink`: the contour gone by a given distance); `opt` sets values on top of the file ({} = as it is). `TLStyleHall.clear` restores
+    the style's own. `post_file()` returns the file's two sections.
+  - `tone(colour, gain, gain_shadows)`: the same film curve in GDScript, for the light handed to the toon materials.
+  - `set_glow(material, emit)`: a `surface` material's own light changed in place (lane K6 round 3: thirdjam's goal
+    lamps flashing; any other material is left alone).
+  Colours are linear numbers of the source material. Headless: one shared material with no shader.
+
+## A hall's key lights' shadows (`TLStyleHallKeys`) and Unreal's whole film pipeline (hockey port lane K7, round 3)
+
+- `tl_style_hall_keys.gd`: the lights of a rig that cast shadows (thirdjam: four spots 13 m over the rink's long axis)
+  as real spot lights with shadow maps. They light nothing (black); `shaders/hall_ice.gdshader` reads each one's
+  shadow in its `light()` (the lines marked K7) and takes away that key's own share of the rig's light there, so a
+  figure throws one shadow a key, away from that key's foot: short under a key, long between two and near the boards.
+  `TLStyleHallKeys.install(anchor, lights, opt)`, `receive(mesh_instance)`, `count(anchor)`, `clear(anchor)`.
+  It sets the anchor viewport's positional shadow atlas (8192 px, every quadrant one map: 4096 px a key) and the
+  renderer's soft shadow filter for spot lights, and gives both back on `clear`. Since round 4 the rim is the light's
+  source radius through the engine's soft shadows (hard at the caster's foot, wider with its height), and a key's map
+  covers 56 degrees, not the light's 62 (finer texels; beyond the map that key's light is not shadowed). Cost with
+  ten striding skaters at 1280 x 720: GPU 0.80 ms a frame against 0.58 without, render CPU 0.43 to 0.47 against 0.35
+  to 0.37 (RTX 4090).
+  What was learnt on the way: a cull mask of one layer on such a light stops the engine re-drawing its shadow map for
+  a figure on another layer; the engine's own quadrant cut (1 / 4 / 16 / 64) changes a light's map size with the
+  camera; `spot_angle_attenuation` is the exponent of (1 - rim), so near 0 = no fall-off inside the cone.
+- `shaders/hall_film.gdshaderinc`: `hall_film(x)`, Unreal 5.9's film pipeline whole (to ACEScg, gamut expansion, the post
+  volume's gains, blue correction, the glow and red modifier, the curve, back to sRGB), beside `hall_tone` (the curve
+  alone on sRGB primaries). `body_felt.gdshader` uses it (`film_whole` 1); the hall's own shaders still use `hall_tone`.
+  A neutral grey is the same through both; a saturated blue comes out with red as high as green, as in the game.
+- The contact shade (`TLStyleFelt.contact_material`) has two forms on the skater (standing, lying): RIGS.md.
+

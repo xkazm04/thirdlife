@@ -1,0 +1,605 @@
+{
+ "schema": "tl.skater.look.gym_rig/1",
+ "note": "thirdjam light rig LR_P3_Clay as lane K6 exported it from the running game (engine/cores/rink/arena/arena.json: lights, sky, post, light_sum, collections). A review fixture for the look gym: the game takes the rig from the arena.",
+ "lights": [
+  {
+   "name": "Key_P3_Clay_1",
+   "pos": [
+    -33.75,
+    13.0,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 5200.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 16.0,
+   "outer_deg": 62.0,
+   "shadows": true,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Key_P3_Clay_2",
+   "pos": [
+    -11.25,
+    13.0,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 5200.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 16.0,
+   "outer_deg": 62.0,
+   "shadows": true,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Key_P3_Clay_3",
+   "pos": [
+    11.25,
+    13.0,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 5200.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 16.0,
+   "outer_deg": 62.0,
+   "shadows": true,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Key_P3_Clay_4",
+   "pos": [
+    33.75,
+    13.0,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 5200.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 16.0,
+   "outer_deg": 62.0,
+   "shadows": true,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_1",
+   "pos": [
+    0.0,
+    8.0,
+    -30.0
+   ],
+   "dir": [
+    0.0,
+    -0.470588,
+    0.882353
+   ],
+   "candela": 1100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 60.0,
+   "inner_deg": 40.0,
+   "outer_deg": 80.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_2",
+   "pos": [
+    0.0,
+    8.0,
+    30.0
+   ],
+   "dir": [
+    0.0,
+    -0.470588,
+    -0.882353
+   ],
+   "candela": 1100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 60.0,
+   "inner_deg": 40.0,
+   "outer_deg": 80.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_3",
+   "pos": [
+    -56.0,
+    8.0,
+    0.0
+   ],
+   "dir": [
+    0.948683,
+    -0.316228,
+    0.0
+   ],
+   "candela": 900.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 40.0,
+   "inner_deg": 25.0,
+   "outer_deg": 60.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_4",
+   "pos": [
+    56.0,
+    8.0,
+    0.0
+   ],
+   "dir": [
+    -0.948683,
+    -0.316228,
+    0.0
+   ],
+   "candela": 900.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 40.0,
+   "inner_deg": 25.0,
+   "outer_deg": 60.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_5",
+   "pos": [
+    -25.0,
+    7.0,
+    0.0
+   ],
+   "dir": [
+    -0.997459,
+    -0.071247,
+    0.0
+   ],
+   "candela": 2500.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 45.0,
+   "inner_deg": 30.0,
+   "outer_deg": 60.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Fill_P3_Clay_6",
+   "pos": [
+    25.0,
+    7.0,
+    0.0
+   ],
+   "dir": [
+    0.997459,
+    -0.071247,
+    0.0
+   ],
+   "candela": 2500.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    208.0,
+    160.0
+   ],
+   "radius_m": 45.0,
+   "inner_deg": 30.0,
+   "outer_deg": 60.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_1",
+   "pos": [
+    -33.75,
+    11.5,
+    -13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_2",
+   "pos": [
+    -11.25,
+    11.5,
+    -13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_3",
+   "pos": [
+    11.25,
+    11.5,
+    -13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_4",
+   "pos": [
+    33.75,
+    11.5,
+    -13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_5",
+   "pos": [
+    -33.75,
+    11.5,
+    13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_6",
+   "pos": [
+    -11.25,
+    11.5,
+    13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_7",
+   "pos": [
+    11.25,
+    11.5,
+    13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  },
+  {
+   "name": "Lamp_P3_Clay_8",
+   "pos": [
+    33.75,
+    11.5,
+    13.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "candela": 2100.0,
+   "units": "CANDELAS",
+   "color_srgb8": [
+    255.0,
+    214.0,
+    172.0
+   ],
+   "radius_m": 30.0,
+   "inner_deg": 50.0,
+   "outer_deg": 75.0,
+   "shadows": false,
+   "source_radius_m": 0.6,
+   "specular": 0.0
+  }
+ ],
+ "sky": {
+  "name": "Sky_P3_Clay",
+  "intensity": 0.35,
+  "color_srgb8": [
+   255.0,
+   200.0,
+   150.0
+  ],
+  "source": "SLS_CAPTURED_SCENE",
+  "real_time_capture": true,
+  "lower_hemisphere_is_black": true
+ },
+ "light_sum": {
+  "note": "the rig's spots summed on the ice plane (lux per linear channel; a 2 m grid inside the boards). exposure = 1 / (1.2 * 2^EV100): what a surface of albedo a shows is a * lux / pi * exposure before the tone curve.",
+  "mean_lux_rgb": [
+   15.426,
+   10.323,
+   6.29
+  ],
+  "centre_lux_rgb": [
+   11.109,
+   7.449,
+   4.552
+  ],
+  "lum_min": 2.69,
+  "lum_mean": 11.12,
+  "lum_max": 32.47,
+  "ev100": 4.2,
+  "exposure": 0.045341
+ },
+ "look": {
+  "scalars": {
+   "Clay": {
+    "default": 0.0,
+    "now": 1.0
+   },
+   "ClayBump": {
+    "default": 0.8,
+    "now": 2.0
+   },
+   "FeltRim": {
+    "default": 0.5,
+    "now": 1.4
+   },
+   "ClayFill": {
+    "default": 0.35,
+    "now": 0.15
+   },
+   "ClayTile": {
+    "default": 40.0,
+    "now": 25.0
+   },
+   "ClayRough": {
+    "default": 0.85,
+    "now": 0.85
+   },
+   "Neon": {
+    "default": 0.0,
+    "now": 0.0
+   }
+  },
+  "vectors": {
+   "LookTint": {
+    "default": [
+     1.0,
+     0.94,
+     0.84,
+     1.0
+    ],
+    "now": [
+     1.0,
+     0.94,
+     0.84,
+     1.0
+    ]
+   }
+  }
+ },
+ "post": {
+  "name": "PPV_P3_Clay",
+  "unbound": true,
+  "settings": {
+   "auto_exposure_bias": 0.0,
+   "auto_exposure_max_brightness": 4.2,
+   "auto_exposure_method": "AEM_HISTOGRAM",
+   "auto_exposure_min_brightness": 4.2,
+   "bloom_intensity": 0.5,
+   "bloom_threshold": 1.0,
+   "color_contrast": [
+    0.95,
+    0.95,
+    0.95,
+    1.0
+   ],
+   "color_gain": [
+    1.04,
+    1.0,
+    0.92,
+    1.0
+   ],
+   "color_gain_shadows": [
+    1.08,
+    0.98,
+    0.9,
+    1.0
+   ],
+   "color_saturation": [
+    0.95,
+    0.95,
+    0.95,
+    1.0
+   ],
+   "depth_of_field_blade_count": 6.0,
+   "depth_of_field_depth_blur_amount": 0.0,
+   "depth_of_field_depth_blur_radius": 0.0,
+   "depth_of_field_focal_distance": 1600.0,
+   "depth_of_field_fstop": 4.0,
+   "depth_of_field_min_fstop": 0.5,
+   "depth_of_field_sensor_width": 100.0,
+   "motion_blur_amount": 0.0,
+   "motion_blur_max": 0.0,
+   "reflection_method": "SCREEN_SPACE",
+   "screen_space_reflection_intensity": 100.0,
+   "screen_space_reflection_max_roughness": 0.5,
+   "screen_space_reflection_quality": 80.0,
+   "vignette_intensity": 0.35,
+   "weighted_blendables": {
+    "array": []
+   }
+  }
+ }
+}

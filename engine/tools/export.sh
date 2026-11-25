@@ -72,6 +72,8 @@ need_tools() {
   command -v node >/dev/null 2>&1 || die 2 "node was not found on PATH (it reads the games list and compares the hashes)"
   [ -f "$E/export_presets.cfg" ] || die 2 "engine/export_presets.cfg is missing"
   [ -f "$E/boot/boot.tscn" ] || die 2 "engine/boot/boot.tscn is missing"
+  # K1 round 4/5: Godot 4.7.2 crashes on a windowed quit 5 of 10 times on Vulkan and 0 of 10 on Direct3D 12: the exe stays on D3D12
+  grep -q '^rendering_device/driver.windows="d3d12"' "$E/project.godot" || die 1 "engine/project.godot does not keep rendering_device/driver.windows=\"d3d12\" (a windowed quit crashes on Vulkan: K1 round 4)"
 }
 refresh_classes() {   # the class cache (TL* by name) must know every script of the tree as it is now
   limited "$LIMIT" "$G" --headless --path "$E" --import >"$1" 2>&1

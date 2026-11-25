@@ -28,8 +28,10 @@ So you work in this order (docs/design/METHOD.md, the method below):
 
 # How to answer
 1. `template`: the ONE proven genre template the core loop copies (the menu below).
-   - `id`: `duel`, `arcade_sport` or `own`. A melee fight (a duel, gladiators, swords, fists, an arena fight) is
-     ALWAYS `duel`; a team game with a ball or a puck is ALWAYS `arcade_sport`; `own` only for other genres.
+   - `id`: `duel`, `rink_sport`, `arcade_sport` or `own`. A melee fight (a duel, gladiators, swords, fists, an arena
+     fight) is ALWAYS `duel`; a game on a rink with a puck (hockey, pond hockey, shinny, bandy) is ALWAYS `rink_sport`:
+     it is a cartridge on the rink core (thirdjam's own match), never a new simulation; another team game with a ball
+     is ALWAYS `arcade_sport`; `own` only for other genres.
    - `reference` (at most 20 words): the real games it is copied from.
    - `copies`: 3 to 6 lines, each at most 20 words, each a concrete rule or table copied from it ("the DUEL-PLAYBOOK
      6.4 state machine with its 8-frame input buffer"). Name everything the template's menu line says to copy. A mood is
@@ -39,10 +41,22 @@ So you work in this order (docs/design/METHOD.md, the method below):
    with its own hook, twist or stakes on top (not five tunings of one idea). Give each a `likelihood` in 0..1: how
    typical it is, how likely ANY designer would write it first (the obvious one about 0.6 to 0.9, a bold one 0.05 to
    0.2).
-3. Choose one (`chosen` is its index 0..4): the fantasy a stranger most wants to live, with the boldest HOOK that
-   still serves every word the player said and that this engine can deliver in the first 30 seconds of play. Usually
-   that is NOT the most likely one. `why` (at most 40 words) names the fantasy, the moment of the first 30 seconds
-   where the player feels it, and why not the obvious one.
+   **Candidate 1 (index 0) is always the faithful reading**: the game the player's words name, done as well as it can
+   be done, with no twist they did not ask for; it carries the highest likelihood.
+3. Choose one (`chosen` is its index 0..4).
+   - **A plain sentence is taken at its word.** In a STANDARD job whose words name a known game (a melee duel, a rink
+     game, a team ball game) and ask for no twist ("3 against 3 hockey on a small pond rink"), choose 0: the faithful
+     reading. The other four stay as alternatives the person can pick; a twist the person did not ask for is one they
+     must remove by hand. The answer is refused otherwise.
+   - **A sentence that names its own twist is taken at its word too** ("hockey where the ice has slow and fast patches
+     and bumpers in the corners"): candidate 1 is the named game with exactly that twist and NO other twist added (no
+     extra scoring rule, power, hazard or reward the words do not name); choose 0. Refused otherwise.
+   - Otherwise (CRAZY, the words leave the twist open: "a crazy hockey", "hockey with a twist", or a genre with no known
+     game): the fantasy a stranger most wants to
+     live, with the boldest HOOK that still serves every word the player said and that this engine can deliver in the
+     first 30 seconds of play. Usually that is NOT the most likely one.
+   `why` (at most 40 words) names the fantasy, the moment of the first 30 seconds where the player feels it, and (when
+   you did not choose 0) why not the faithful reading.
 4. `hook` (at most 12 words): the one novel thing a stranger would remember. `anchor` (at most 6 words): the familiar
    genre a player already knows how to play ("souls-like duel", "arcade hockey").
    Together they read "<anchor> where <hook>".

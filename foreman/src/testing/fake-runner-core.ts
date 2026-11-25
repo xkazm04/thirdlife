@@ -59,7 +59,7 @@ function optionsOf(argv: string[]): Record<string, string[]> {
   return Object.fromEntries(Object.entries(verbs).map(([v, spec]) => [v, Object.keys(spec.options)]));
 }
 /** The optional manifest fields of PACK.md's last section: the real runner accepts them (manifest.gd), so does this one. */
-const OPTIONAL_MANIFEST_FIELDS = ["footprint", "params", "on_leave", "subject", "moments"];
+const OPTIONAL_MANIFEST_FIELDS = ["footprint", "params", "on_leave", "subject", "moments", "base"];
 const LAYOUT = new Set(["pack.json", "scripts", "data", "gen", "assets", "tests", "examples"]);
 const FENCE = [
   "class_name", "@tool", "OS.", "FileAccess", "DirAccess", "ResourceSaver", "ProjectSettings.", "Engine.get_singleton",
@@ -99,6 +99,42 @@ interface Err {
   file?: string;
   line?: number;
   message: string;
+}
+
+/** The engine directory the runner was started with (`--path`), if any. */
+function engineOf(argv: string[]): string | undefined {
+  const at = argv.indexOf("--path");
+  return at >= 0 ? argv[at + 1] : undefined;
+}
+
+/** E3g: the base a manifest declares, resolved as lint_base.gd does: `<engine>/templates/<base>/` holding a pack.json, else a layout error. */
+function baseOf(manifest: Record<string, unknown> | undefined, engine: string | undefined, layoutErrs: Err[]): { name: string; dir: string } | undefined {
+  const name = manifest?.["base"];
+  if (typeof name !== "string" || name === "") return undefined;
+  const dir = engine !== undefined ? path.join(engine, "templates", name) : "";
+  if (dir !== "" && fs.existsSync(path.join(dir, "pack.json"))) return { name, dir };
+  layoutErrs.push({ kind: "layout", file: "pack.json", message: `declares the base '${name}', but the engine has no templates/${name}/ (a base is a directory of engine/templates/ holding a pack.json)` });
+  return undefined;
+}
+
+/** E3g: the lines of the game script `rel` that the base's file at the same path does not hold (each base line answers one pack line). */
+function ownLines(src: string, base: { dir: string } | undefined, rel: string, n: number): number {
+  const file = base !== undefined ? path.join(base.dir, ...rel.split("/")) : "";
+  if (file === "" || !fs.existsSync(file)) return n;
+  const linesOf = (t: string): string[] => {
+    const parts = t.split("\n");
+    if (t.endsWith("\n")) parts.pop();
+    return parts;
+  };
+  const left = new Map<string, number>();
+  for (const l of linesOf(fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n"))) left.set(l, (left.get(l) ?? 0) + 1);
+  let own = 0;
+  for (const l of linesOf(src)) {
+    const k = left.get(l) ?? 0;
+    if (k > 0) left.set(l, k - 1);
+    else own += 1;
+  }
+  return own;
 }
 
 export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRunnerOutput {
@@ -183,6 +219,9 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
     const ajv = new Ajv2020({ allErrors: true, strict: false });
     const validate = ajv.compile(packSchema());
     const known = Object.fromEntries(Object.entries(manifest).filter(([k]) => !OPTIONAL_MANIFEST_FIELDS.includes(k)));
+    // E3g: `base` names a directory of the engine's templates/ (manifest.gd: ^[a-z][a-z0-9_]*$, at most 64 characters)
+    const b = manifest["base"];
+    if (b !== undefined && (typeof b !== "string" || !/^[a-z][a-z0-9_]*$/.test(b) || b.length > 64)) schemaErrs.push({ kind: "schema", file: "pack.json", message: "'base' does not match ^[a-z][a-z0-9_]*$" });
     for (const k of ["params", "moments"]) {
       if (manifest[k] !== undefined && !Array.isArray(manifest[k])) schemaErrs.push({ kind: "schema", file: "pack.json", message: `'${k}' must be a list` });
     }
@@ -220,6 +259,7 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       const listed = [manifest["entry"], ...(manifest["assets"] as string[]), ...(manifest["tests"] as string[])] as string[];
       for (const f of listed) if (!text.has(f)) layoutErrs.push({ kind: "layout", file: f, message: "the manifest names a file that does not exist" });
     }
+    const base = schemaOk ? baseOf(manifest, engineOf(argv), layoutErrs) : undefined;
     errors.push(...layoutErrs);
     checks.push({ id: "lint.layout", ok: layoutErrs.length === 0, detail: `${layoutErrs.length} layout problems` });
 
@@ -255,16 +295,28 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
     errors.push(...capErrs);
     checks.push({ id: "lint.capabilities", ok: capErrs.length === 0, detail: capErrs.length === 0 ? "every kernel capability used is declared" : `${capErrs.length} problem(s); first: ${capErrs[0]?.file ?? ""}:${capErrs[0]?.line ?? 0} ${capErrs[0]?.message ?? ""}` });
 
+    // E3e of 25 Nov: counted as the real lint counts (engine/kernel/runner/lint.gd, PACK.md "Size limits"): a final newline
+    // ends the last line, it does not start one; tests/ are counted apart (at most 4,000) from the game's scripts/ and gen/
+    // (at most 6,000). The fake counted a 600-line script as 601 and tests with the game, and refused lane E1's base.
     const sizeErrs: Err[] = [];
+    // E3g: a pack with a `base` counts only its own game lines (engine/kernel/runner/lint_base.gd has the same rule).
     let total = 0;
+    let testLines = 0;
+    let own = 0;
     for (const f of gd) {
-      const n = (text.get(f) ?? "").split(/\r?\n/).length;
+      const src = (text.get(f) ?? "").replace(/\r\n/g, "\n");
+      const n = src === "" ? 0 : src.split("\n").length - (src.endsWith("\n") ? 1 : 0);
       total += n;
+      if (f.startsWith("tests/")) testLines += n;
+      else own += ownLines(src, base, f, n);
       if (n > 600) sizeErrs.push({ kind: "size", file: f, line: 601, message: `${n} lines (limit 600)` });
     }
-    if (total > 6000) sizeErrs.push({ kind: "size", message: `pack has ${total} lines of GDScript (limit 6000)` });
+    if (own > 6000 || testLines > 4000) {
+      const note = base !== undefined ? `; ${total - testLines - own} more are the base templates/${base.name}/ unchanged, not counted` : "";
+      sizeErrs.push({ kind: "size", file: "scripts/", message: `${own} lines of game GDScript${base !== undefined ? " of its own" : ""} (scripts/, gen/; at most 6000${note}), ${testLines} lines in tests/ (at most 4000)` });
+    }
     errors.push(...sizeErrs);
-    checks.push({ id: "lint.size", ok: sizeErrs.length === 0, detail: `${total} lines of GDScript` });
+    checks.push({ id: "lint.size", ok: sizeErrs.length === 0, detail: `${total} lines of GDScript${base !== undefined ? ` (${own} game lines of its own over the base ${base.name})` : ""}` });
     const count = (prefix: string): number => gd.filter((f) => f.startsWith(prefix)).reduce((a, f) => a + lines(f), 0);
     // A line holding the marker FAKE_BYPASS stands for one place where a script does by hand what a primitive exists for.
     const bypasses: { primitive: string; file: string; line: number; pattern: string }[] = [];

@@ -41,7 +41,7 @@ export interface ConceptCandidate {
   likelihood: number;
 }
 /** N4 of 22 Nov (GAME-QUALITY.md section 11): the proven design one core loop copies. `own` names its own reference. */
-export const TEMPLATE_IDS = ["duel", "arcade_sport", "own"] as const;
+export const TEMPLATE_IDS = ["duel", "rink_sport", "arcade_sport", "own"] as const;
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
 export interface ConceptTemplate {
   id: TemplateId;
