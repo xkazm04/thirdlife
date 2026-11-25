@@ -1,3 +1,6 @@
 {
-  "sessions": []
+  "sessions": [
+    {"id": "d25-hard-a", "scope": ["foreman/src/quality.ts", "foreman/src/quality_state.ts", "foreman/src/shots.ts", "foreman/src/coregate.ts", "foreman/src/rinkjudge.ts", "foreman/src/fastchange.ts", "engine/cores/rink/lab/check_cartridge.mjs"], "note": "day 25 Nov H1: the critic and the checks"},
+    {"id": "d25-hard-b", "scope": ["engine/cores/rink/native/glue/**", "engine/cores/rink/SNAPSHOT.md", "engine/templates/rink_game/**"], "note": "day 25 Nov H2: the core and the base"}
+  ]
 }

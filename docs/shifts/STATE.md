@@ -404,3 +404,12 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   VERDICT.md, page https://claude.ai/artifact/YXjdY1c8x8CQCGvkDqCP1L. Cleanup: 13 hk-* trees and branches removed
   (~25 GB; hk-int's empty folder held open by something outside), claims released, template .uid ignored. Disk 119 GB.
   Not pushed. Kept: n23-teardown (thirdjam source + UE build, 20 GB) and older trees of earlier shifts.
+
+### 2026-11-25 day: plan (editor hardening + games made through the editor)
+- Owner: games 1 Arsenal hockey, 2 Robot soccer, 4 Half-court today; 5, 11, 19 when the machine has room (today or
+  tomorrow); RAM 50-70 %, CPU at most 70 % (other sessions develop too); models by task. Plan:
+  docs/shifts/2026-11-25-day/PLAN.md; every heavy step waits on tools/room.sh.
+- Lanes: H1 critic and checks (Opus, d25-hard-a), H2 core and base (Opus, d25-hard-b), G1 Arsenal hockey (Fable, three
+  player lenses, d25-arsenal), G2 Robot soccer (Opus, d25-robot), G4 Half-court (Opus, d25-court). Machine at start:
+  RAM 47 %, CPU 38-62 % (others), disk 66 GB.
+
