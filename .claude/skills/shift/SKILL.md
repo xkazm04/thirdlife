@@ -275,3 +275,4 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   the merge, before the slow list.
 - 2026-11-25 (day): another session switched the shared main checkout to its own branch mid-shift; two Director commits landed on that branch unseen. Land from a dedicated worktree on main (`.claude/worktrees/<shift>-main`), never in the shared checkout, and check `git branch --show-current` before every commit.
 - 2026-11-25 (day): a game lane waited 45 min for a fast-forward it asked for only in STANDUP.md (hourly reads). A lane that needs the Director mid-round ends its turn with the ask in its final message, which notifies at once.
+- 2026-11-25 (day): game lanes kept helper scripts in the shared session scratchpad; one lane's door.sh overwrote another's, and a foreign foreman (an older tree) drove the other lane's paid job for 4 min. Briefs say: every script, log and helper under the lane's own tree .tl/, never the shared scratchpad.
