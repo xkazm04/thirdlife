@@ -267,7 +267,7 @@ test("E3f 4: goals a minute against thirdjam's modes (1.29 to 4.8, sudden death 
 
 // ---------- the route's pure parts ----------
 
-test("E3f: on a core the base never takes a change: cartridge words (team colours too: colour_hex is the cartridge's) to the cartridge's owner (the one with match.json), skin-only words to the skin; off a core and for a built owner nothing moves; the Planner is not offered the base", () => {
+test("E3f: on a core the base never takes a change: cartridge words (team colours too: colour_hex is the cartridge's) to the cartridge's owner (the one with match.json), skin-only words to the skin; off a core and play words named on a built package move to the cartridge (H1d); the Planner is not offered the base", () => {
   const plan = [
     { id: "base", kind: "base", scope: ["assets/**", "data/**", "scripts/**"] },
     { id: "trials", scope: ["data/trial_*.cartridge.json"] },
@@ -277,7 +277,10 @@ test("E3f: on a core the base never takes a change: cartridge words (team colour
   for (const t of ["make the goals bigger", "make it faster", "the orange team is too strong", "a bigger rink", "first to 3", "make the teams red and gold"]) assert.equal(coreChangeOwner(plan, RINK_ROUTE, "base", t).owner, "cartridge", t);
   for (const t of ["change the commentary words", "call it PIRATES"]) assert.equal(coreChangeOwner(plan, RINK_ROUTE, "base", t).owner, "skin", t);
   assert.deepEqual(coreChangeOwner(plan, undefined, "base", "make the goals bigger"), { owner: "base" });
-  assert.deepEqual(coreChangeOwner(plan, RINK_ROUTE, "skin", "make the goals bigger"), { owner: "skin" });
+  // H1d (25 Nov, lane G1's change 3): play words now go to the cartridge's owner whoever the Planner names (this line said
+  // { owner: "skin" } before: "for a built owner nothing moves"); skin words named on the skin stay there
+  assert.equal(coreChangeOwner(plan, RINK_ROUTE, "skin", "make the goals bigger").owner, "cartridge");
+  assert.deepEqual(coreChangeOwner(plan, RINK_ROUTE, "skin", "call it PIRATES"), { owner: "skin" });
   const lines = plan.map((p) => ({ id: p.id, title: p.id, milestone: "greybox", deps: [], files: p.scope }));
   assert.deepEqual(changeCandidates(lines, plan, RINK_ROUTE).map((l) => l.id), ["trials", "cartridge", "skin"]);
   assert.deepEqual(changeCandidates(lines, plan, undefined).map((l) => l.id), ["base", "trials", "cartridge", "skin"]);

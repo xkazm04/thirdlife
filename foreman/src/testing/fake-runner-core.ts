@@ -401,12 +401,16 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       report["metrics"] = { starved_reruns: 2 };
       return notRun("engine", "starved: _pack_tick ran 90 s of wall time and the machine gave it 12 ms of processor time (limit 250 ms); the machine, not the pack, stopped it (started again 2 time(s); no verdict on the pack)");
     }
-    const se = loadProblem ? [] : gd.filter((f) => (text.get(f) ?? "").includes("FAKE_SCRIPT_ERROR"));
+    // H1d: FAKE_WINDOW_ERROR errors only where a window draws (the capture verb), as lane G1's skin did: a commentary line
+    // with no voice, which no headless verb meets.
+    const marker = (f: string): string | undefined => ["FAKE_SCRIPT_ERROR", ...(verb === "capture" ? ["FAKE_WINDOW_ERROR"] : [])].find((m) => (text.get(f) ?? "").includes(m));
+    const se = loadProblem ? [] : gd.filter((f) => marker(f) !== undefined);
     checks.push({ id: "smoke.loads", ok: !loadProblem, detail: loadProblem ? `the pack did not load: ${loadProblem.message}` : "pack loaded" });
     if (loadProblem) errors.push(loadProblem);
     for (const f of se) {
-      const ln = (text.get(f) ?? "").split(/\r?\n/).findIndex((l) => l.includes("FAKE_SCRIPT_ERROR")) + 1;
-      errors.push({ kind: "script_error", file: f, line: ln, message: "Invalid call. Nonexistent function 'FAKE_SCRIPT_ERROR'." });
+      const m = marker(f) as string;
+      const ln = (text.get(f) ?? "").split(/\r?\n/).findIndex((l) => l.includes(m)) + 1;
+      errors.push({ kind: "script_error", file: f, line: ln, message: m === "FAKE_WINDOW_ERROR" ? "rink audio: no voice for commentary line 'faceoff.drop.04' [frame 89]" : "Invalid call. Nonexistent function 'FAKE_SCRIPT_ERROR'." });
     }
     checks.push({ id: "smoke.no_script_errors", ok: se.length === 0, detail: `${se.length} errors in ${loadProblem ? 0 : frames} frames` });
     checks.push({ id: "smoke.no_engine_errors", ok: true, detail: "0 engine errors" });

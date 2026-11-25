@@ -17,7 +17,7 @@ import type { GateHost } from "./p10gate.js";
 import type { GateFailure } from "./machine.js";
 import { CARTRIDGE_INVALID, coreDataFiles, fakeRinkCheck, gameCartridges, runRinkCheck, sectionOf, validateCartridgeFile, type CoreCheckRun, type CoreRoute } from "./coreroute.js";
 import { applyChanges, type ChangeResult } from "./cartridge.js"; // lane E2: a change set applied and validated
-import { absentInChange, teamsSeen, unseenChange } from "./rinkjudge.js"; // E3d: a change the game cannot mean is asked back
+import { absentInChange, askedFigureMiss, teamsSeen, unseenChange } from "./rinkjudge.js"; // E3d: a change the game cannot mean is asked back
 import { generate } from "./designer.js";
 import { playedCartridges } from "./played.js"; // H1c: the measured check judges the cartridge the game plays
 import { addedEntries, asksRemoval, compactChange, entriesText, isYes, removalQuestion, removedEntries, removedNote, type Removal } from "./removal.js"; // H1: a removal is named and asked
@@ -54,6 +54,9 @@ export async function coreDataGate(h: GateHost, id: string, round: number, ws: s
   h.append({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${summary} [report: ${h.rel(file)}]` });
   return { verb: "lint", level: "V0", ok: false, reportFile: file, verdictFile: file, flags: [], summary, durationMs: 0 };
 }
+
+/** H1d: the start of the Foreman's note (after FOREMAN_NOTE) when the figure after a change misses one the person named. */
+export const FIGURE_MISSED = "not what you asked";
 
 /** H1c: the start of the Foreman's note (after FOREMAN_NOTE) that names a round's cartridges the measured check did not judge. */
 export const NOT_THE_GAME = "not the game's cartridge";
@@ -304,6 +307,8 @@ function makeDiff(h: GateHost, owner: string, round: number, file: string, d: Pe
   const said = `measured before: ${verdictWord(d.before)} (${figuresText(d.before.figures)}); after: ${verdictWord(d.after)} (${figuresText(d.after.figures)})${d.after.code === 0 ? `; ${clip(d.after.summary, 300)}` : ""}`;
   h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${CARTRIDGE_DIFF}: ${d.changed.map(compactChange).join("; ")} (${clip(d.why, 200)}); ${said} [report: ${h.rel(report)}]` });
   for (const r of d.removed) h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${removedNote(r, d.why)}` });
+  const missed = askedFigureMiss(d.change, d.after.figures); // H1d: a figure the person named, against the figure after
+  if (missed !== undefined) h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${FIGURE_MISSED}: ${missed}` });
 }
 
 /** The start of the Foreman's note (after FOREMAN_NOTE) when a change was asked back (it names what the game lacks). */

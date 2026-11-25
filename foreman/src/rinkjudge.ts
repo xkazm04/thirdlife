@@ -40,6 +40,8 @@ export function toyLines(toys: ToyFigure[] | undefined): string[] {
   for (const t of toys ?? []) {
     if (!t.measured) out.push(`${up(t.toy)}: not measured${t.why !== undefined ? `: ${t.why.slice(0, 120)}` : ""}`);
     else if (t.changed === 0) out.push(`${up(t.toy)}: changes nothing (${t.wins_with} of ${t.matches} wins with and without)`);
+    // H1c Director's decision: a toy that costs the player is said in words (here, on the card), never a check warning
+    else if ((t.points ?? 0) < -5) out.push(`${up(t.toy)}: costs you (${t.wins_with} of ${t.matches} wins with, ${t.wins_without} without)`);
     else if (Math.abs(t.points ?? 0) <= 5 && Math.abs(t.goal_diff ?? 0) < 0.5) out.push(`${up(t.toy)}: changes little (${t.wins_with} of ${t.matches} wins with, ${t.wins_without} without)`);
   }
   return out;
@@ -209,4 +211,30 @@ export function unseenChange(text: string, figures: Record<string, number>): str
   if (EASIER_WORDS.test(text) && !HARDER_WORDS.test(text) && levels.every((l) => l.of > 0 && l.wins / l.of >= 0.9)) return `Your side already wins ${said} (${by}), so weaker bots would hardly show. Did you mean something else that feels too strong (their speed, their checks, a bigger rink), or should the bots be weaker still? Say which, and the change is made.`;
   if (HARDER_WORDS.test(text) && !EASIER_WORDS.test(text) && levels.every((l) => l.of > 0 && l.wins / l.of <= 0.1)) return `Your side already loses almost every match: it wins ${said} (${by}), so stronger bots would hardly show. Did you mean something else, or should they be stronger still? Say which, and the change is made.`;
   return undefined;
+}
+
+const NUMBER_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20 };
+const num = (w: string): number => NUMBER_WORDS[w.toLowerCase()] ?? Number(w);
+
+/**
+ * H1d (lane G1's change 1: "so a match lasts about three minutes" became 2.1 min at pro and the check said "measured, no
+ * warning"): a figure the person's words name that the check measures (a match's minutes, goals a match), against the
+ * figure after the change (thirdjam's regular playtester at pro). Words when it is missed by more than a quarter;
+ * undefined when the words name no such figure or it was met.
+ */
+export function askedFigureMiss(text: string, after: Record<string, number>): string | undefined {
+  const out: string[] = [];
+  const mins = [...text.matchAll(/\b(\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty)[- ]?(?:minutes?|mins?)\b/gi)].at(-1);
+  const m = after["pro_minutes"];
+  if (mins !== undefined && typeof m === "number") {
+    const want = num(mins[1] as string);
+    if (Number.isFinite(want) && want > 0 && Math.abs(m - want) > want * 0.25) out.push(`you asked for matches of about ${want} minute${want === 1 ? "" : "s"}; they last ${m} min at pro now`);
+  }
+  const goals = [...text.matchAll(/\b(\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty)\s+goals?\s+(?:a|per|in a)\s+(?:match|game)\b/gi)].at(-1);
+  const g = after["pro_goals_a_match"];
+  if (goals !== undefined && typeof g === "number") {
+    const want = num(goals[1] as string);
+    if (Number.isFinite(want) && want > 0 && Math.abs(g - want) > want * 0.25) out.push(`you asked for about ${want} goals a match; there are ${g} at pro now`);
+  }
+  return out.length > 0 ? `${out.join("; ")} (thirdjam's regular playtester, measured after the change): the change falls short of what you asked` : undefined;
 }

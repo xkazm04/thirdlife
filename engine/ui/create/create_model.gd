@@ -503,3 +503,22 @@ static func estimate_words(est: Dictionary) -> String:
 		tok = "%d k tokens" % int(roundf(float(tokens) / 1000.0))
 	var what: String = " and ".join(PackedStringArray([time, tok].filter(func(s: String) -> bool: return not s.is_empty())))
 	return "About %s to build%s" % [what, (" (%d parts)" % parts) if parts > 0 else ""]
+
+
+## H1d (the Director's choice (b)): the engine code the cards still kept ask for, in a person's words: "Fair-game trap
+## needs new engine code: about 6 hours more"; "" when no kept card needs it. A card swapped to an alternative or dropped
+## needs none (an alternative is the data-only way).
+static func core_cost_words(job: Dictionary, taps: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	var total: int = 0
+	for a: Variant in job.get("aspects", []):
+		if not (a is Dictionary) or str((a as Dictionary).get("needs", "")) != "core":
+			continue
+		if choice_of(job, taps, str(a.get("id", ""))) != "keep":
+			continue
+		total += int(a.get("hours", 0))
+		parts.append(str(a.get("title", "")))
+	if parts.is_empty():
+		return ""
+	return "%s %s new engine code: about %d hour%s more. Tap %s for a way with data only" % [
+		" and ".join(parts), "needs" if parts.size() == 1 else "need", total, "" if total == 1 else "s", "it" if parts.size() == 1 else "them"]

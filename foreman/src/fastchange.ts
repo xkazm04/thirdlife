@@ -17,7 +17,7 @@ import { CORE_DATA_RE } from "./coreroute.js";
 import { coreRouteOf } from "./templates.js";
 import { playerChecks } from "./playercheck.js";
 import { FOREMAN_NOTE } from "./conduct.js";
-import { CARTRIDGE_DIFF } from "./coregate.js";
+import { CARTRIDGE_DIFF, FIGURE_MISSED } from "./coregate.js";
 import { REMOVED, entriesText, type Removal } from "./removal.js";
 
 /** The start of the Foreman's notes about what a data-only change skipped (after FOREMAN_NOTE). */
@@ -107,6 +107,8 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   // promoted cartridge lost that no note names (a builder's round), with why unknown.
   const named = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${REMOVED}: `) ? [e.text.slice(FOREMAN_NOTE.length)] : []));
   const unnamed = found.filter((r) => !named.some((n) => n.startsWith(`${REMOVED}: ${entriesText([r])};`))).map((r) => `${REMOVED}: ${entriesText([r])}; why: not said (a builder's round; its DEVIATIONS may say)`);
-  const lines = [...new Set([...named, ...unnamed])].map((l) => `\n${l}`).join("");
+  // H1d: a figure the person named that the change missed, on its own line too
+  const missed = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${FIGURE_MISSED}: `) ? [e.text.slice(FOREMAN_NOTE.length)] : []));
+  const lines = [...new Set([...named, ...unnamed, ...missed])].map((l) => `\n${l}`).join("");
   return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1000)}${lines}`;
 }

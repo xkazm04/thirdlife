@@ -154,6 +154,11 @@ in waves, leads that change.
   - `detail` at most 60 words for the expert: the mechanism, the numbers, the engine call that does it;
   - `alternatives`: 2 or 3, each a genuinely different game for that aspect, not a tweak. Alternative ids are
     snake_case, never `keep` or `drop` (the player's fixed choices).
+  - a card that, as written, needs new engine code (a core patch, C++: another body, another ball, a mechanic the
+    core does not have) carries `"needs": "core"` and `"hours"`: about how many MORE hours that code takes. Never
+    order engine code silently: such a card's `line` says it in words, and at least one alternative does the same
+    idea with data only (zones, effects, pickups, abilities, the rules sidecar). The person decides on the card.
+    Every other card has neither key.
 - One card should usually be the `camera` (how the verb is seen) and one the `rival` or the challenge; the twist is a
   card of its own.
 - Then `rules`, `arena`, `ai`, `controls` and `mood`: the builders' text, consistent with the design doc, with numbers

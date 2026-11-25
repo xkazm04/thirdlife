@@ -170,7 +170,7 @@ export function drainInbox(jobDir: string, events: () => readonly JobEvent[], st
       // "Yes, that package may be changed": the second half of the same entry (a kill may have fallen between the two).
       if (e.change !== undefined && !changed.has(e.id)) {
         if (state().packages[e.change]) {
-          out.appended.push(append({ type: "change_requested", text: e.text, package: e.change, inbox: e.id }));
+          out.appended.push(append({ type: "change_requested", text: chipRequest(state(), e.package, e.text), package: e.change, inbox: e.id }));
           changed.add(e.id);
         }
       }
@@ -185,4 +185,18 @@ export function drainInbox(jobDir: string, events: () => readonly JobEvent[], st
     }
   }
   return out;
+}
+
+/**
+ * H1d (lane G1, events 292-301: the "Yes, let it" chip sent "Yes, let it change what it needs ..." to the cartridge
+ * package, whose builder never saw the request and removed a trick instead): the change request the other package gets
+ * is the person's ORIGINAL request to the asking package, then the question it could not answer and the person's answer.
+ * Without a request on the asking package (an answer to a plain question), the answer alone, as before.
+ */
+export function chipRequest(s: JobState, asking: string, answer: string): string {
+  const p = s.packages[asking];
+  const asked = (p?.changes ?? []).at(-1);
+  if (asked === undefined) return answer;
+  const q = (p?.answered ?? []).at(-1)?.question;
+  return `${asked}\n(${asking} could not make it alone${q !== undefined ? ` and asked: "${q.replace(/\s+/g, " ").slice(0, 400)}"` : ""}; the person answered: "${answer}")`;
 }

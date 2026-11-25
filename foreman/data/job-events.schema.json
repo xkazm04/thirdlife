@@ -243,6 +243,13 @@
          },
          "crazy": {
           "const": true
+         },
+         "needs": {
+          "const": "core"
+         },
+         "hours": {
+          "type": "integer",
+          "minimum": 1
          }
         }
        }

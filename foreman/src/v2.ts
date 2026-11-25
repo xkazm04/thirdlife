@@ -45,6 +45,12 @@ export interface Aspect {
   alternatives: AspectAlternative[];
   /** Only on an aspect crazy mode added; absent otherwise (never false). */
   crazy?: true;
+  /**
+   * H1d (the Director's choice (b), JOB.md at landing): this card as written needs new engine code (a core patch); absent
+   * otherwise. Then `hours` says about how many more hours of work, and one alternative does it with data only.
+   */
+  needs?: "core";
+  hours?: number;
 }
 export interface Phase {
   id: string;
@@ -81,6 +87,8 @@ export const aspectSchema = {
     detail: nonEmpty,
     alternatives: { type: "array", minItems: LIMITS.altsMin, maxItems: LIMITS.altsMax, items: alternativeSchema },
     crazy: { const: true },
+    needs: { const: "core" },
+    hours: { type: "integer", minimum: 1 },
   },
 } as const;
 
@@ -112,6 +120,9 @@ export function aspectProblems(pitch: string | undefined, aspects: Aspect[] | un
     if (ids.has(a.id)) out.push(`${w}: the id is used twice in the brief`);
     ids.add(a.id);
     out.push(...over(`${w} title`, a.title, LIMITS.title), ...over(`${w} line`, a.line, LIMITS.line), ...over(`${w} detail`, a.detail, LIMITS.detail));
+    // H1d: a card that needs engine code says how many hours; hours alone mean nothing
+    if (a.needs === "core" && a.hours === undefined) out.push(`${w}: needs "core" without "hours": say about how many more hours the engine code takes`);
+    if (a.needs === undefined && a.hours !== undefined) out.push(`${w}: "hours" without needs "core": hours are only for a card that needs new engine code`);
     const alt = new Set<string>();
     for (const x of a.alternatives) {
       const wx = `${w} alternative "${x.id}"`;

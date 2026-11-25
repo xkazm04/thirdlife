@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { EditorFields } from "./events.js";
 import { JobLog, LogError, rebuildState } from "./joblog.js";
-import { INBOX_FILE, answerProblem, changeProblem, drainInbox, writeInbox } from "./inbox.js";
+import { INBOX_FILE, answerProblem, changeProblem, chipRequest, drainInbox, writeInbox } from "./inbox.js";
 
 /** A request that cannot be recorded (an unknown package, no open question): the CLI reports it as a usage error. */
 export class RequestError extends Error {}
@@ -99,7 +99,7 @@ export function requestAnswer(jobDir: string, pkgId: string, text: string, chang
     if (problem !== undefined) throw new RequestError(problem);
     log.append({ type: "answer", package: pkgId, text, by: "player" });
     if (change !== undefined) {
-      const ev = log.append({ type: "change_requested", text, package: change });
+      const ev = log.append({ type: "change_requested", text: chipRequest(log.state, pkgId, text), package: change }); // H1d: the request, the question, the answer
       out(`change request for ${change} recorded as event ${ev.seq}: it is re-opened with this text when the job is resumed`);
     }
     out(`answered; continue with: foreman resume ${log.job}`);
