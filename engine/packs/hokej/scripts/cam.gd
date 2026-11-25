@@ -1,18 +1,5 @@
 extends RefCounted
-## thirdjam's follow camera, ported line by line (K3 shell, campaign night 23-24 Nov 2026). Not tuned, not improved.
-## Source: thirdjam HEAD 8dc713c6, S = Game/Source. `cpp:N` = S/JamGame/Private/CameraFollow.cpp line N,
-## `h:N` = S/JamGame/Public/CameraFollow.h line N. Everything is in thirdjam's own units and frame: rink metres,
-## x along the rink, y across (the Godot mapping is the caller's: Vector3(x, height, y)), yaw and pitch in degrees
-## (yaw 0 = +x, turning towards +y; pitch < 0 looks down). One call of `step` = one simulation frame (h:254-264).
-##
-## What is ported: StepThirdPerson (cpp:266-599) as the shipped game runs it (StepSimFrame cpp:1210-1253 with the
-## console variables' defaults cpp:39-78: Boards 1, RigYaw 1, KeepHuman 0.31, CornerLift 3, KeepYaw 0, Bound 0), with
-## FJamSpring (cpp:80-100), FJamCameraFilter (cpp:102-125), the boards' inset (cpp:181-233), FarNetLeadDeg (cpp:250-264),
-## RayToBoards (cpp:601-611), BoardsViewTarget (cpp:613-668), FrameFraction (cpp:978-985).
-## Not ported (DEVIATIONS in the lane report): KeepHumanInFrame (cpp:670-873) and the A186 bound (cpp:406-490): with
-## the boards view on, StepThirdPerson zeroes KeepHuman and CornerLift itself (cpp:269-275) and jam.camera.Bound is 0,
-## so neither runs in the shipped game; `settings()` refuses a setting that would turn one on. The punch and the kick
-## (cpp:1257-1287) belong to stair step 3 (contact). Box follow (cpp:1231-1249) needs penalties: not in the gym.
+## thirdjam's follow camera, ported line by line (K3 shell, campaign night 23-24 Nov 2026). [base README: scripts/cam.gd §1]
 
 
 class Spring:
@@ -37,9 +24,7 @@ class Spring:
 		v = (v - j1 * omega) * e
 
 
-## FJamCameraSettings (h:19-252) as the shipped game's StepSimFrame fills `Live` (cpp:1210-1230). The cartridge's
-## game.camera supplies distance, height, look-ahead, lag, fov (FromCartridge cpp:21-34); absent keys keep the
-## FJamCameraConfig defaults (S/JamCore/Public/JamCartridge.h:650-661).
+## FJamCameraSettings (h:19-252) as the shipped game's StepSimFrame fills `Live` (cpp:1210-1230). [base README: scripts/cam.gd §2]
 static func settings(cart_cam: Dictionary) -> Dictionary:
 	var c: Dictionary = {
 		"DistanceM": 6.0, "HeightM": 3.5, "LookAheadM": 5.0, "FovDeg": 70.0, "LagFrames": 4,   # h:28-42, JamCartridge.h:651-655
@@ -72,8 +57,7 @@ static func settings(cart_cam: Dictionary) -> Dictionary:
 	return c
 
 
-# FJamCameraFilter (h:267-320): the lag filter and every spring, one value per camera.
-var pivot: Vector2 = Vector2.ZERO
+var pivot: Vector2 = Vector2.ZERO   # FJamCameraFilter (h:267-320): the lag filter and every spring, one value per camera.
 var yaw_deg: float = 0.0
 var init: bool = false
 var lift: Spring = Spring.new()
@@ -291,9 +275,7 @@ func _desired(yaw_cam: float) -> Vector2:   # cpp:290-295
 	return pivot - fwd * float(C["DistanceM"]) + right * float(C["OffAxisM"])
 
 
-## One simulation frame of StepThirdPerson (cpp:266-599). `frame`: {"pos": Vector2 (the human, rink metres),
-## "yaw": degrees (FMath::RadiansToDegrees(S.Yaw), HokejGameMode.cpp:1563), "rink": {"L","W","R"},
-## "net": Vector2 (GetFarNetWorldCm / 100, HUDFeed.cpp:8-12)}. Returns the pose {"pos", "height", "pitch", "yaw"}.
+## One simulation frame of StepThirdPerson (cpp:266-599). [base README: scripts/cam.gd §3]
 func step(frame: Dictionary) -> Dictionary:
 	var c: Dictionary = C
 	if float(c["BoardsView"]) > 0.0 and (float(c["CornerLiftM"]) > 0.0 or float(c["KeepHumanFrac"]) > 0.0):   # cpp:269-275
@@ -332,16 +314,14 @@ func step(frame: Dictionary) -> Dictionary:
 	yaw_offset.step(offset_target, omega)                                        # cpp:342
 	rig_lead.step(lead, omega)                                                   # cpp:343
 
-	# 2. the arm with the new yaw, and the boards' answer (cpp:346-348)
-	var yaw_cam: float = unwind(yaw_deg + yaw_offset.x)
+	var yaw_cam: float = unwind(yaw_deg + yaw_offset.x)   # 2. the arm with the new yaw, and the boards' answer (cpp:346-348)
 	var want: Vector2 = _desired(yaw_cam)
 	var r2: Array = clamp_to_boards(want, rink, float(c["BoardsMarginM"]), float(c["DistanceM"]))
 	var p: Vector2 = r2[0]
 	last_clamp_s = r2[1]
 	last_clamp_n = r2[2]
 
-	# 3. lift and tilt (cpp:351-365)
-	lift.step(last_clamp_s, omega)
+	lift.step(last_clamp_s, omega)   # 3. lift and tilt (cpp:351-365)
 	var lift_v: float = clampf(lift.x, 0.0, 1.0)
 	var corner_target: float = 0.0                                               # CornerLiftM is 0 here (cpp:269-275)
 	if not corner.init:
@@ -356,8 +336,7 @@ func step(frame: Dictionary) -> Dictionary:
 	var look_ahead: float = float(c["LookAheadM"]) * (1.0 - (1.0 - clampf(float(c["CornerLookAheadKeep"]), 0.0, 1.0)) * corner_v)
 	var pitch: float = -rad_to_deg(atan2(height, maxf(arm + look_ahead + extra, 1e-3)))
 
-	# 4. the pitch within the middle third of the chest's bearing, through a spring (cpp:370-381)
-	var flat: float = (pivot - p).length()
+	var flat: float = (pivot - p).length()   # 4. the pitch within the middle third of the chest's bearing, through a spring (cpp:370-381)
 	if flat > 1.0:
 		var chest_pitch: float = -rad_to_deg(atan2(height - float(c["ChestM"]), flat))
 		pitch = chest_pitch + clampf(pitch - chest_pitch, -float(c["MiddleThirdPitchDeg"]), float(c["MiddleThirdPitchDeg"]))
@@ -366,13 +345,11 @@ func step(frame: Dictionary) -> Dictionary:
 	pitch_spring.step(pitch, omega)
 	pitch = pitch_spring.x
 
-	# 5. KeepHumanInFrame: off here (cpp:386-396, KeepHumanFrac zeroed above). 6. the bound: jam.camera.Bound 0 (cpp:406-491).
-	var pos_m: Vector2 = p
+	var pos_m: Vector2 = p   # 5. KeepHumanInFrame: off here (cpp:386-396, KeepHumanFrac zeroed above). 6. the bound: jam.camera.Bound 0 (cpp:406-491).
 	var height_m: float = height
 	var yaw_out: float = yaw_cam
 
-	# 7. the boards view (cpp:496-594)
-	if float(c["BoardsView"]) > 0.0:
+	if float(c["BoardsView"]) > 0.0:   # 7. the boards view (cpp:496-594)
 		var yaw_rig: float = unwind(yaw_deg + rig_lead.x)
 		var rig_foot: Vector2 = _desired(yaw_rig)
 		var rig_pitch: float = derived_pitch(c)

@@ -1,12 +1,5 @@
 extends RefCounted
-## The human's devices, read for the core (K3 round 5). The rules that turn them into FJamInput (thirdjam's ReadHumanInput,
-## ApplyButtons, FJamButtonResolver, the aim anchor, the S lock, signals 1-4, R) live in the core's glue
-## (engine/cores/rink/GAMEMODE.md, RinkCore human mode "raw"); this script only reads the keys, the mouse buttons, the wheel
-## and the cursor into the raw shape RinkCore.set_raw_input takes: Down / Pressed as Unreal key names (FJamBindings::Defaults,
-## InputMapping.cpp:98-120; the signal keys One..Four, SignalSystem.cpp:46), Axis, CursorOnIce, CursorPx, CursorHitM,
-## CameraYaw. MouseDeltaPx and StickAxis stay absent (the cursor is always shown; no gamepad).
-
-## Unreal key name -> the pack's action and the Godot key or mouse button that is that key.
+## The human's devices, read for the core (K3 round 5). [base README: scripts/human_input.gd §1]
 const KEYS: Dictionary = {
 	"W": [&"k_w", KEY_W], "Up": [&"k_up", KEY_UP], "S": [&"k_s", KEY_S], "Down": [&"k_down", KEY_DOWN],
 	"A": [&"k_a", KEY_A], "Left": [&"k_left", KEY_LEFT], "D": [&"k_d", KEY_D], "Right": [&"k_right", KEY_RIGHT],
@@ -36,8 +29,7 @@ static func axis(input) -> Vector2:
 	return Vector2(clampf(r - l, -1.0, 1.0), clampf(f - b, -1.0, 1.0))
 
 
-## This frame's devices in RinkCore's raw shape. cam_yaw: the camera's yaw of the last sim frame, radians in rink
-## coordinates (ReadHumanInput reads the camera, HokejGameMode.cpp:943-946).
+## This frame's devices in RinkCore's raw shape. [base README: scripts/human_input.gd §2]
 static func raw(input, cam_yaw: float, cursor_ok: bool, cursor_px: Vector2, cursor_hit: Vector2) -> Dictionary:
 	var down: PackedStringArray = PackedStringArray()
 	var pressed: PackedStringArray = PackedStringArray()

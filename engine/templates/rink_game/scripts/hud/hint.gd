@@ -1,7 +1,5 @@
 extends RefCounted
-## The pack's hint slot (lane H2b, 25 Nov): one line a game's own script asks the base to show, never over the commentator's caption (G1's own bottom label covered it):
-##     ctx.root.set_meta(&"rink_hint", "F: BUBBLE  Green spots reload it")    # every frame it should show; "" = none (screen.gd hands it to hud.gd as ui "pack_hint")
-## The slot: a dark plate left-aligned with the controls panel just above the room the panel keeps (rules.gd PANEL_RESERVE_H); it stays put, and moves up past the caption's two places at their widest and the caption drawn this frame.
+## The pack's hint slot (lane H2b, 25 Nov): one line a game's own script asks the base to show, never ... [base README: scripts/hud/hint.gd §1]
 
 const R := preload("rules.gd")
 

@@ -1,8 +1,5 @@
 extends RefCounted
-## thirdjam's match HUD on our screen (lane K5, round 1: the in-play set). UJamHudWidget::RefreshFromFrame (HUDWidget.cpp:895-1084) as HEAD 8dc713c6 ships it, every console variable at its default, in the one look (jam.hud.OneLook 1, HUDOneLook.cpp):
-## the score plates, the rings on the ice (yours, the carrier's, yours doubled while you carry, the loose puck's), the YOU chevron and tag, the far-net and own-net badges with their distances, the off-screen puck arrow, the edge-slot rule,
-## the controls panel, the radar, the faceoff dial and its hint. Positions in layout units (1920 x 1080 at 16:9, as Slate's DPI curve).
-## Presentation only: it reads the snapshot and the buttons and writes nothing back. One call a frame: `frame(snap, ui)` after the camera has stepped (main.gd). The rules are rules.gd's.
+## thirdjam's match HUD on our screen (lane K5, round 1: the in-play set). [base README: scripts/hud/hud.gd §1]
 
 const R := preload("rules.gd")
 const PanelView := preload("panel.gd")
@@ -35,8 +32,7 @@ var booth_frame: int = -1
 var booth_end_said: bool = false
 var last_take: int = 0
 
-# memories (HUDWidget.h private state)
-var last_sim_frame: int = -1
+var last_sim_frame: int = -1   # memories (HUDWidget.h private state)
 var faceoffs_this_session: int = 0      # static in thirdjam: a session (process)
 var last_faceoff_frames: int = 0
 var drop_until: int = -1
@@ -55,8 +51,7 @@ var rel_shots: int = -1
 var released: bool = false
 var cue_grace_carrier: int = -1
 var grace_from_hit: bool = false
-# what the last frame showed (tests read it)
-var shown: Dictionary = {}
+var shown: Dictionary = {}   # what the last frame showed (tests read it)
 var ability = preload("ability.gd").new()   # lane E1b: the ability slot (ability.gd), shown while the human holds one
 var hint = preload("hint.gd").new()         # lane H2b: the pack's hint slot (hint.gd: ui "pack_hint"), never over the caption
 var top_view: bool = false                  # lane H2b: the frame is drawn for the "top" camera (ui "top_view", screen.gd): no rings
@@ -113,8 +108,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	top_view = bool(ui.get("top_view", false))
 	head_override = ui.get("head", Vector3.INF)
 
-	# ---- the frame's memories (cpp:903, 1012-1027)
-	if f < last_sim_frame:
+	if f < last_sim_frame:   # ---- the frame's memories (cpp:903, 1012-1027)
 		human_up_since = -1
 		human_down = false
 		last_drop_frame = -1
@@ -151,8 +145,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	var end: bool = phase == "win" or phase == "lose"
 	var match_card: bool = cards.step(snap, phase)
 	var fl: Dictionary = flow.frame(snap, phase, vw, vh, paused)
-	# the booth: once a sim frame (the end phase holds its frame: its events are not heard twice); the game mode's events
-	# `period` (UpdateTake's broadcast, HokejGameMode.cpp:385-397: at the build, a restart and every take change) and `win` / `lose`
+	# the booth: once a sim frame (the end phase holds its frame: its events are not heard twice); the ... [base README: scripts/hud/hud.gd §2]
 	if f != booth_frame:
 		var extra: Array = []
 		if f < booth_frame or booth_frame < 0 or cards.take != last_take:
@@ -178,8 +171,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	# ---- the human's figure box on the screen (UpdateKeepClear's HumanBoxNow: the bounds plus FigurePadCm 14, HUDClearDown.cpp)
 	var hbox: Rect2 = _bones_box(ui.get("bones", PackedVector3Array())) if not (ui.get("bones", PackedVector3Array()) as PackedVector3Array).is_empty() else _figure_box(hpos, float(hu["Yaw"]), down_now)
 
-	# ---- the panel's state first: its top is what the markers keep clear of (ControlsPanelTopNow)
-	var panel_on: bool = R.show_controls_panel(phase, paused, banner)
+	var panel_on: bool = R.show_controls_panel(phase, paused, banner)   # ---- the panel's state first: its top is what the markers keep clear of (ControlsPanelTopNow)
 	var panel_top: float = (R.EDGE_PX + R.PANEL_RESERVE_H) if panel_on else 0.0
 
 	# ================================================================ z -1: rings made on first use, under every element
@@ -198,11 +190,9 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 		_ring(pr, Color(col(my_team), 1.0))
 		shown["pass_ring"] = pass_ring_at
 
-	# ================================================================ the scoreboard (cpp:522-569, one look HUDOneLook.cpp:59-78)
-	_scoreboard(snap, vw, my_team)
+	_scoreboard(snap, vw, my_team)   # ================================================================ the scoreboard (cpp:522-569, one look HUDOneLook.cpp:59-78)
 
-	# ================================================================ the rings (cpp:591-595)
-	if rings.has("you"):
+	if rings.has("you"):   # ================================================================ the rings (cpp:591-595)
 		_ring(rings["you"][0], rings["you"][1])
 		shown["you_ring"] = not top_view
 	if rings.has("carrier"):
@@ -216,12 +206,10 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	if not R.labels_stand_down(match_card, banner, paused, end):     # HideLabelsUnderCards (HUDOneLook.cpp:277-295)
 		markers.paint(marks)
 
-	# ================================================================ the YOU chevron and tag (UpdateYours cpp:1629-1687)
-	if phase == "play" or phase == "goal_pause":
+	if phase == "play" or phase == "goal_pause":   # ================================================================ the YOU chevron and tag (UpdateYours cpp:1629-1687)
 		_you_marker(hu, puck_pos, rings.get("ring_ok", false), b_count, advanced)
 
-	# ================================================================ the controls panel (HUDControlsPanel.cpp)
-	if panel_on:
+	if panel_on:   # ================================================================ the controls panel (HUDControlsPanel.cpp)
 		var team_c: Color = col(my_team)
 		var dim: bool = down_now or int(hu.get("PenaltyFrames", 0)) > 0          # jam.hud.Words 1: dims while down; boxed dims (A227)
 		var held: Dictionary = (ui.get("held", {}) as Dictionary).duplicate()
@@ -236,8 +224,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	else:
 		panel.hide()
 
-	# ================================================================ the commentator's caption (cpp:713-722, 1467-1525); the one-line rule:
-	# the faceoff hint wins over it (HUDOneLine.cpp)
+	# ================================================================ the commentator's caption ... [base README: scripts/hud/hud.gd §3]
 	var hint_up: bool = b_count and faceoffs_this_session <= R.FACEOFF_HINT_COUNT and not R.faceoff_cue_hidden_in_box(int(hu.get("PenaltyFrames", 0)))
 	var cap: String = captions.paint(lay, vw, vh, flow.tick, paused, hint_up, hbox, markers.label_boxes)
 	if cap != "":
@@ -255,12 +242,10 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	if b_count and faceoffs_this_session <= R.FACEOFF_HINT_COUNT and not cue_hidden:
 		_faceoff_hint(vw, vh)
 
-	# ================================================================ the GOAL banner (z 40), IN THE BOX, the end card (flow.gd)
-	flow.paint()
+	flow.paint()   # ================================================================ the GOAL banner (z 40), IN THE BOX, the end card (flow.gd)
 	shown.merge(flow.shown)
 
-	# ================================================================ the MATCH card (UJamDirectorsCallHudWidget, viewport z 5: over the HUD)
-	if match_card:
+	if match_card:   # ================================================================ the MATCH card (UJamDirectorsCallHudWidget, viewport z 5: over the HUD)
 		cards.paint(lay, vw)
 		shown["match_card"] = cards.sub_line()
 
@@ -293,8 +278,7 @@ func _scoreboard(snap: Dictionary, vw: float, my_team: int) -> void:
 	var x: float = vw * 0.5 - total * 0.5
 	var y: float = 14.0
 	var shadow := {"shadow": Vector2(0, 1), "shadow_color": Color(0, 0, 0, 0.45)}
-	# home plate: FillBrush(white, edge) tinted with the team's colour (the edge is tinted too)
-	var c0: Color = col(my_team)
+	var c0: Color = col(my_team)   # home plate: FillBrush(white, edge) tinted with the team's colour (the edge is tinted too)
 	lay.box(Vector2(x, y), Vector2(home_sz.x, h), c0, 4.0, Color(c0.r, c0.g, c0.b, 0.12), 1.0)
 	lay.text(Vector2(x + home_sz.x * 0.5, y + h * 0.5), digits_h, R.VALUE_PT, R.ML_TEXT, _o("bold_condensed", 0, Vector2(0.5, 0.5), shadow))
 	x += home_sz.x + 6
@@ -319,8 +303,7 @@ static func _o(face: String, tracking: int, align: Vector2, extra: Dictionary = 
 	return o
 
 
-# ---------------------------------------------------------------- the rings (UpdateYours cpp:1601-1706, UpdateCarrierCues cpp:1895-1932,
-# UpdatePossession HUDPossession.cpp:84-210): each ring as [Rect2, Color]
+# ---------------------------------------------------------------- the rings (UpdateYours ... [base README: scripts/hud/hud.gd §4]
 func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: int, counting: bool, hbox: Rect2, f: int, advanced: bool) -> Dictionary:
 	var out: Dictionary = {}
 	var sk: Array = snap["Skaters"]
@@ -340,16 +323,13 @@ func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: i
 	var ring_a: float = (R.ring_alpha_at(dist) if ring_ok and R.ring_on_ice(int(hu.get("PenaltyFrames", 0)) > 0) else 0.0) * R.ring_down_alpha(human_down, f, human_up_since)
 	var you_col := Color(team.r, team.g, team.b, ring_a)
 	var you_size_k: float = 1.0
-	# the carrier's ring (not you): 0.8 m
-	var car_r := Rect2()
+	var car_r := Rect2()   # the carrier's ring (not you): 0.8 m
 	if carrier >= 0 and carrier != me and carrier < sk.size() and R.ring_on_ice(int((sk[carrier] as Dictionary).get("PenaltyFrames", 0)) > 0):
 		var cp: Vector2 = (sk[carrier] as Dictionary)["Pos"]
 		car_r = lay.ground_ring(Vector3(cp.x, 0.03, cp.y), R.CARRIER_RING_M)
 	var car_col := Color(R.PAPER.r, R.PAPER.g, R.PAPER.b, 0.9)
 	var car_size_k: float = 1.0
-	# the take grace (UpdateCarrierCues): the carrier's ring closes from 1.5 x unless the grace was won by his own hit
-	# (cpp:1904-1908: UJamSim::InTakeGrace, the core's Controls.CarrierInTakeGrace, which includes the frame the puck is won in;
-	# on that frame TakeGraceLeft is still 0 and the ring stands at the full count)
+	# the take grace (UpdateCarrierCues): the carrier's ring closes from 1.5 x unless the grace was won ... [base README: scripts/hud/hud.gd §5]
 	var grace: bool = carrier >= 0 and bool((snap.get("Controls", {}) as Dictionary).get("CarrierInTakeGrace", false))
 	if grace:
 		var gl: int = int((sk[carrier] as Dictionary).get("TakeGraceLeft", 0))
@@ -369,8 +349,7 @@ func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: i
 		else:
 			car_size_k *= gs
 	cue_grace_carrier = carrier if grace else -1
-	# possession at a glance
-	var p: int = R.possess_of(carrier, me, int((sk[carrier] as Dictionary)["Team"]) if carrier >= 0 else -1, my_team)
+	var p: int = R.possess_of(carrier, me, int((sk[carrier] as Dictionary)["Team"]) if carrier >= 0 else -1, my_team)   # possession at a glance
 	if carrier != possess_carrier or f < possess_since:
 		possess_carrier = carrier
 		possess_since = f
@@ -402,8 +381,7 @@ func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: i
 		out["you"] = [R.scaled(you_r, you_size_k), you_col]
 	if car_r.size != Vector2.ZERO:
 		out["carrier"] = [R.scaled(car_r, car_size_k), car_col]
-	# the loose puck (jam.hud.Possess 1): a chalk ring of 0.42 m, yellow past 22 m, never under 40 units across
-	if p == 0 and phase == "play" and not counting:
+	if p == 0 and phase == "play" and not counting:   # the loose puck (jam.hud.Possess 1): a chalk ring of 0.42 m, yellow past 22 m, never under 40 units across
 		var pp: Vector2 = (snap["Puck"] as Dictionary)["Pos"]
 		var lr: Rect2 = lay.ground_ring(Vector3(pp.x, 0.03, pp.y), R.LOOSE_RING_M)
 		if lr.size != Vector2.ZERO:
@@ -477,13 +455,11 @@ func _you_marker(hu: Dictionary, puck_pos: Vector2, ring_ok: bool, counting: boo
 	if advanced:
 		marker_yield += clampf(target - marker_yield, -0.12, 0.12)
 	var tag_on_puck: bool = b_puck and R.marker_box_has_puck(tag.position, tag.end, puck_px)
-	# the chevron: take-yellow, a 2.5 ink edge (cpp:1666-1672), its bottom centre on the tip
-	var yc := R.YELLOW
+	var yc := R.YELLOW   # the chevron: take-yellow, a 2.5 ink edge (cpp:1666-1672), its bottom centre on the tip
 	yc.a = marker_yield
 	lay.chevron(tip, R.YOU_MARKER_SIZE_PX, yc, Color(0, 0, 0, 0.95), 2.5, 0.0, Vector2(0.5, 1.0))
 	shown["chevron"] = marker_yield
-	# the tag: while a faceoff counts down, never on the puck; over the chevron (alignment 0.5, 1 at head - 56)
-	if R.show_you_tag_live(counting) and not tag_on_puck:
+	if R.show_you_tag_live(counting) and not tag_on_puck:   # the tag: while a faceoff counts down, never on the puck; over the chevron (alignment 0.5, 1 at head - 56)
 		var t_sz: Vector2 = lay.measure("YOU", R.LINE_PT, "black", R.TRACK_LABEL)
 		var plate := Vector2(12 + t_sz.x + 12, 3 + t_sz.y + 4)
 		var at: Vector2 = head + Vector2(0, -(R.YOU_MARKER_GAP_PX + R.YOU_MARKER_SIZE_PX + 4.0))
@@ -554,10 +530,7 @@ func _dial(vw: float, vh: float, frames: int, counting: bool, drop: bool, result
 		shown["dial"] = word
 
 
-## T_UI_Ring (the film leader's ring, an AI-made texture we do not have): drawn here as its parts read on thirdjam's stills
-## (h43-02-faceoff-stands.png): a chalk ring with an ink edge, the home blue and away orange arcs inside it, four ticks.
-## The ground ring: T_UI_RingPlain (exported from thirdjam's project, 512 px) stretched into the ellipse's box and tinted (MakeGroundRing cpp:351-361); without the picture, the band drawn to its measure.
-## Lane H2b: none in the top view (the overview straight down: the rings are the follow camera's, E1b's stills drew yours as a large ellipse off the figure).
+## T_UI_Ring (the film leader's ring, an AI-made texture we do not have): drawn here as its parts read ... [base README: scripts/hud/hud.gd §6]
 func _ring(r: Rect2, c: Color) -> void:
 	if top_view:
 		return

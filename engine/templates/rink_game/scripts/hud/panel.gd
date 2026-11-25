@@ -1,11 +1,5 @@
 extends RefCounted
-## thirdjam's controls panel (lane A222; HUDControlsPanel.cpp, HEAD 8dc713c6): bottom left on the safe margin, all match,
-## while play runs. The front end's panel (FJamMenuLook::MakePanel): the two team colours along its top edge (3 units),
-## the panel fill at 0.78 with the 4-unit corner and the hairline edge; a head (a dot in his team's colour, WITH THE PUCK /
-## WITHOUT THE PUCK), the possession half (fading in over 6 frames when it swaps), a hairline, the always half. A row: a
-## light keycap (84 x 22 at least, the key in Black 14 tracked 40, ink) and the verb (Bold 16 tracked 60). A lit row
-## (its button down) takes the menu's focus: the away orange cap and white type. The teaching pulse (HUDTeach.cpp, `teach`
-## 0 = the pass, 1 = the check; cpp:318-331) lights its row: the take-yellow keycap, ink type, the word in yellow.
+## thirdjam's controls panel (lane A222; HUDControlsPanel.cpp, HEAD 8dc713c6): bottom left on the safe ... [base README: scripts/hud/panel.gd §1]
 
 const R := preload("rules.gd")
 
@@ -38,8 +32,7 @@ func paint(lay, vh: float, f: int, with_puck: bool, press: bool, held: Dictionar
 	shown_rows = rows
 	var plate_a: float = R.BADGE_DOWN_OPACITY if dim else 1.0
 
-	# ---- measure (the SizeBox: min 264, max 300 wide; rows of the 8 slots that are filled)
-	var cap_font := "black"
+	var cap_font := "black"   # ---- measure (the SizeBox: min 264, max 300 wide; rows of the 8 slots that are filled)
 	var word_font := "bold_condensed"
 	var head_t: String = "WITH THE PUCK" if show_with else "WITHOUT THE PUCK"
 	var head_sz: Vector2 = lay.measure(head_t, 12, word_font, R.TRACK_LABEL)
@@ -67,8 +60,7 @@ func paint(lay, vh: float, f: int, with_puck: bool, press: bool, held: Dictionar
 	var top_left := Vector2(R.EDGE_PX, vh - R.EDGE_PX - total_h)
 	box = Rect2(top_left, Vector2(w, total_h))
 
-	# ---- paint
-	lay.box(top_left, Vector2(w * 0.5, 3.0), _a(R.ML_HOME, plate_a))
+	lay.box(top_left, Vector2(w * 0.5, 3.0), _a(R.ML_HOME, plate_a))   # ---- paint
 	lay.box(top_left + Vector2(w * 0.5, 0), Vector2(w * 0.5, 3.0), _a(R.ML_AWAY, plate_a))
 	var fill := R.ML_PANEL
 	fill.a = 0.78 * plate_a

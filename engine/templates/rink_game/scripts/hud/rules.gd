@@ -1,10 +1,5 @@
 extends RefCounted
-## thirdjam's HUD rules, pure (no camera, no node): the constants and the show rules of UJamHudWidget as HEAD 8dc713c6
-## ships them, ported line by line. "h:" = Game/Source/JamGame/Public/HUDWidget.h, "cpp:" = Private/HUDWidget.cpp, other
-## files named. Every console variable is at its shipped default (the value written beside it); nothing here is tuned.
-## The headless tests (tests/bot_hud_rules.gd) call these on recorded snapshots.
-
-# ---- the look (FJamUiStyle, MenuStyle.h:28-39; FJamMenuLook, MenuWidget.cpp:71-80). sRGB.
+## thirdjam's HUD rules, pure (no camera, no node): the constants and the show rules of UJamHudWidget ... [base README: scripts/hud/rules.gd §1]
 const INK := Color("#0e1014")
 const PAPER := Color("#f4f4f0")
 const BLUE := Color("#1d4ed8")
@@ -22,8 +17,7 @@ const ML_ON_FOCUS := Color(1, 1, 1)
 const LOOSE_GREY := Color("#6b727a")       # the puck marker's loose colour (cpp:1352)
 const EDGE_PX := 24.0                      # FJamUiStyle::EdgePx (MenuStyle.h:76)
 const TRACK_LABEL := 60                    # FJamMenuLook::TrackLabel (MenuWidget.h:110)
-# type sizes of the one look (h:1146-1148), Unreal points
-const LABEL_PT := 14
+const LABEL_PT := 14   # type sizes of the one look (h:1146-1148), Unreal points
 const LINE_PT := 18
 const VALUE_PT := 40
 
@@ -70,8 +64,7 @@ const RING_OFFSET_CLEAR_X := 440.0         # h:434 (jam.hud.ClearMiddle 1)
 const RING_BOX_PX := 220.0                 # h:435
 const YOU_TAG_START_FRAMES := 300          # h:782
 const YOU_TAG_AFTER_DROP_FRAMES := 120     # h:783
-# ---- controls panel (h:111-119, HUDControlsPanel.cpp)
-const PANEL_MAX_ROWS := 8
+const PANEL_MAX_ROWS := 8   # ---- controls panel (h:111-119, HUDControlsPanel.cpp)
 const PANEL_FADE_FRAMES := 6
 const PANEL_MAX_W := 300.0
 const PANEL_KEYCAP_H := 22.0
@@ -84,8 +77,7 @@ const PANEL_HOLD_FRAMES := 12              # jam.hud.PanelHoldFrames (HUDControl
 const BADGE_DOWN_OPACITY := 0.3            # h:72
 const SPRINT_SPENT_BELOW := 0.25           # h:140
 const BRACE_HOLD_FRAMES := 13              # JamControls::BraceHoldFrames (lane A199), human_input.gd BRACE_HOLD
-# ---- radar (RadarWidget.h:44-45)
-const RADAR_W := 200.0
+const RADAR_W := 200.0   # ---- radar (RadarWidget.h:44-45)
 const RADAR_H := 100.0
 
 
@@ -171,8 +163,7 @@ static func take_grace_ring_scale(left: int, total: int) -> float:         # h:4
 	return 1.0 if left <= 0 or total <= 0 else 1.0 + TAKE_GRACE_RING_GROW * clampf(float(left) / float(total), 0.0, 1.0)
 
 
-## jam.hud.SwellAtHit 0: a grace won by the carrier's own hit keeps the ring's size (h:462).
-## A ring's box grown about its centre by k.
+## jam.hud.SwellAtHit 0: a grace won by the carrier's own hit keeps the ring's size (h:462). [base README: scripts/hud/rules.gd §2]
 static func scaled(r: Rect2, k: float) -> Rect2:
 	if k == 1.0:
 		return r
@@ -277,8 +268,7 @@ static func phase_of(snap: Dictionary) -> String:
 			return "play"
 
 
-# ---------------------------------------------------------------- the controls panel's rows (HUDControlsPanel.cpp:140-183)
-## The default bindings' first keys (InputMapping.cpp:98-120 through KeyName cpp:608-627 and FirstName HUDControlsPanel.cpp:49-54).
+# ---------------------------------------------------------------- the controls panel's rows ... [base README: scripts/hud/rules.gd §3]
 const KEYCAP := {"Shoot": "LMB", "CrossCheck": "LMB", "Pass": "RMB", "Check": "RMB", "Poke": "SPACE", "Deke": "WHEEL", "Spin": "E",
 	"Ability": "F", "Sprint": "SHIFT", "Brake": "CTRL", "Skate": "WASD"}
 const LABEL := {"Shoot": "SHOOT", "CrossCheck": "CROSS-CHECK", "Pass": "PASS", "Check": "CHECK", "Poke": "POKE", "Deke": "DEKE",
@@ -309,8 +299,7 @@ static func _row(v: String, word: String, poss: bool, held: Dictionary) -> Dicti
 	return {"verb": v, "key": KEYCAP[v], "word": word, "lit": held.has(v), "poss": poss}
 
 
-## FControlsPanelSwap::Step (HUDControlsPanel.cpp:87-104): the half shown. state: {shown, last_swap, loss_start, last_frame}.
-## True on the frame the half swaps.
+## FControlsPanelSwap::Step (HUDControlsPanel.cpp:87-104): the half shown. [base README: scripts/hud/rules.gd §4]
 static func panel_swap_step(st: Dictionary, with: bool, press: bool, frame: int, hold: int = PANEL_HOLD_FRAMES) -> bool:
 	if frame < int(st.get("last_frame", -1)):
 		st.clear()
@@ -354,8 +343,7 @@ const PASS_RING_SCALE := 1.15              # HUDChargeLook.cpp:87, :104: Carrier
 const POWER_FULL_FRAMES := 30              # FJamPassConfig::PowerFullFrames (JamCartridge.h:363); the cartridge has no game.pass
 
 
-## One sim frame of a kind's rule (TeachStep, h:604-616): true while its pulse shows this frame. `st` is FTeachState
-## {shows, done, shown_at, last_end}; `due`: the moment applies; `did`: he did the thing this frame. Pure.
+## One sim frame of a kind's rule (TeachStep, h:604-616): true while its pulse shows this frame. [base README: scripts/hud/rules.gd §5]
 static func teach_step(st: Dictionary, due: bool, did: bool, frame: int) -> bool:
 	if st.is_empty():
 		st.merge({"shows": 0, "done": false, "shown_at": -1, "last_end": -1000000})

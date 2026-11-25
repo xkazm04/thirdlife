@@ -12,11 +12,7 @@ func setup(abilities_: Array, names_: Dictionary) -> void:
 	names = names_
 
 
-## Lane A84 (R-0041 point 3) and A188 in thirdjam: "F: SHOTGUN  READY" on a dark plate above the radar, right-aligned with
-## it, 440 wide (AbilitySlotW, HUDWidget.cpp:43), the cooldown fill along its foot; yellow while armed or a shield runs, paper
-## when ready, grey while it cools down. The feed is AHokejGameMode's (HokejGameMode.cpp:1590-1613): the kind held (the
-## slot's), or the one still armed, or a running shield; its state ON n.ns / NEXT SHOT|HIT|PASS / ARMED / ns / READY, and
-## "  xN" charges. Hidden while the human holds nothing.
+## Lane A84 (R-0041 point 3) and A188 in thirdjam: "F: SHOTGUN READY" on a dark plate above the radar, ... [base README: scripts/hud/ability.gd §1]
 const ABILITY_SLOT_W := 440.0
 const ABILITY_DEFAULT_COOLDOWN := 1200   # UJamSim::AbilityDefaultCooldown (JamSim.cpp:4455-4458)
 static func ability_armed_word(kind: String) -> String:   # UJamHudWidget::AbilityArmedWord (HUDGoalBanner.cpp:122-129)
@@ -27,8 +23,7 @@ static func ability_armed_word(kind: String) -> String:   # UJamHudWidget::Abili
 	return "ARMED"
 
 
-## The plate's words and fill for the human `hu` at `now`: {} when he holds nothing, else {text, ready01, live}.
-## `names_` (lane H2d): the skin's ability_names: the plate says the game's own word for the kind (G1's "F: CANNON"), else the core's id.
+## The plate's words and fill for the human `hu` at `now`: {} when he holds nothing, else {text, ... [base README: scripts/hud/ability.gd §2]
 static func ability_feed(hu: Dictionary, abilities_: Array, now: int, names_: Dictionary = {}) -> Dictionary:
 	var slot: int = int(hu.get("AbilitySlot", -1))
 	var armed: String = String(hu.get("AbilityArmed", ""))

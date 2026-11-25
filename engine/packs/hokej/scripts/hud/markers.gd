@@ -1,7 +1,5 @@
 extends RefCounted
-## thirdjam's distance badges (UpdateMarker cpp:1724-1805, UpdateOwnMarker cpp:1952-2000, ApplyOwnLabelRule HUDOneLine.cpp:32-59,
-## UpdatePuckMarker cpp:1306-1368), the edge-slot rule (ResolveEdgeSlots cpp:1374-1465) and the label plates
-## (UpdateLabelPlates cpp:1284-1304, one look HUDOneLook.cpp:95-98). Groups are dictionaries; build() places, paint() draws.
+## thirdjam's distance badges (UpdateMarker cpp:1724-1805, UpdateOwnMarker cpp:1952-2000, ... [base README: scripts/hud/markers.gd §1]
 
 const R := preload("rules.gd")
 
@@ -25,8 +23,7 @@ func build(snap: Dictionary, phase: String, hpos: Vector2, attack: float, carrie
 		panel_top: float, covered: bool, paused: bool, advanced: bool, f: int) -> Array:
 	var groups: Array = []
 	var badges: bool = R.show_net_badges(phase)
-	# ---- the far net (UpdateMarker cpp:1724-1805), 1.2 m over the crossbar
-	var net2 := Vector2(attack * (hud.length_m * 0.5 - R.NET_INSET_M), 0.0)
+	var net2 := Vector2(attack * (hud.length_m * 0.5 - R.NET_INSET_M), 0.0)   # ---- the far net (UpdateMarker cpp:1724-1805), 1.2 m over the crossbar
 	var net3 := Vector3(net2.x, R.NET_CROSSBAR_M + R.NET_BADGE_LIFT_M, net2.y)
 	var text := "%d m" % roundi(hpos.distance_to(net2))
 	var far: Dictionary = _place_badge(net3, vw, vh, true)
@@ -46,13 +43,11 @@ func build(snap: Dictionary, phase: String, hpos: Vector2, attack: float, carrie
 		var lmin := Vector2(pos.x + (-24.0 - lw if left_side else 24.0), pos.y - 15.0)
 		if R.in_middle_third(lmin, lmin + Vector2(lw, 30.0), vw, vh):
 			g_far["label"] = false
-	# ---- the own net (UpdateOwnMarker cpp:1952-2000; ApplyOwnLabelRule HUDOneLine.cpp:32-59)
-	var own2 := Vector2(-attack * (hud.length_m * 0.5 - R.NET_INSET_M), 0.0)
+	var own2 := Vector2(-attack * (hud.length_m * 0.5 - R.NET_INSET_M), 0.0)   # ---- the own net (UpdateOwnMarker cpp:1952-2000; ApplyOwnLabelRule HUDOneLine.cpp:32-59)
 	var own: Dictionary = _place_badge(Vector3(own2.x, 1.5, own2.y), vw, vh, false)
 	own["on_screen"] = not own["behind"] and _inside(own["sp"], vw, vh)
 	var opos: Vector2 = R.clamp_marker(own["sp"], vw, vh, 40.0, 150.0, 56.0)
-	# jam.hud.ClearEdges 0 (default): no KeepOffRadar here (cpp:1983)
-	opos = R.keep_off_panel(opos, vh, panel_top, 40.0, R.EDGE_PX)
+	opos = R.keep_off_panel(opos, vh, panel_top, 40.0, R.EDGE_PX)   # jam.hud.ClearEdges 0 (default): no KeepOffRadar here (cpp:1983)
 	var otext := R.own_label_text(roundi(hpos.distance_to(own2)))
 	var obadge: bool = badges and R.show_own_marker(own["on_screen"])
 	var g_own := {"kind": "own", "diamond": opos, "diamond_size": 12.0, "text": otext, "text_at": opos + Vector2(0, 10), "text_align": Vector2(0.5, 0.0),
@@ -70,8 +65,7 @@ func build(snap: Dictionary, phase: String, hpos: Vector2, attack: float, carrie
 			hide_own = true
 	if hide_own:
 		g_own["show"] = false
-	# ---- the puck off the frame (UpdatePuckMarker cpp:1306-1368; jam.hud.PuckLabelOnScreen 0, HUDOneLine.cpp:34-47)
-	if f < puck_last_frame or paused:
+	if f < puck_last_frame or paused:   # ---- the puck off the frame (UpdatePuckMarker cpp:1306-1368; jam.hud.PuckLabelOnScreen 0, HUDOneLine.cpp:34-47)
 		puck_alpha = 0.0
 	puck_last_frame = f
 	var want: bool = false
@@ -102,8 +96,7 @@ func build(snap: Dictionary, phase: String, hpos: Vector2, attack: float, carrie
 			var pc: Color = col(int((snap["Skaters"][carrier] as Dictionary)["Team"])) if carrier >= 0 else R.LOOSE_GREY
 			g_puck = {"kind": "puck", "arrow": p, "arrow_angle": ang, "arrow_size": 28.0, "colour": pc, "text": "%d m" % roundi(hpos.distance_to(puck_pos)),
 				"text_at": p - dir * Vector2(62.0, 34.0), "text_align": Vector2(0.5, 0.5), "show": true, "label": true}
-		# jam.hud.PuckLabelOnScreen 0: not while the puck is on the screen (24 px in)
-		var on3: Vector3 = lay.project(Vector3(puck_pos.x, 0.05, puck_pos.y))
+		var on3: Vector3 = lay.project(Vector3(puck_pos.x, 0.05, puck_pos.y))   # jam.hud.PuckLabelOnScreen 0: not while the puck is on the screen (24 px in)
 		if on3.z > 0.0 and on3.x > 24.0 and on3.y > 24.0 and on3.x < vw - 24.0 and on3.y < vh - 24.0:
 			g_puck["show"] = false
 			g_puck["hidden_on_screen"] = true
@@ -213,8 +206,7 @@ func _conflicts(a_box: Rect2, a_anchor: Vector2, a_act: bool, b_box: Rect2, b_an
 	return a_box.grow(4.0).intersects(b_box)
 
 
-## [box, anchor position, active]: the parts that show (puck: arrow 16 and its text 12 a char x 26; far: diamond 12, arrow 12, text 12 x 26;
-## own: diamond 8, arrow 10, text 10 x 22).
+## [box, anchor position, active]: the parts that show (puck: arrow 16 and its text 12 a char x 26; ... [base README: scripts/hud/markers.gd §2]
 func _measure_group(g: Dictionary, delta: Vector2) -> Array:
 	if not g.get("show", false):
 		return [Rect2(), Vector2.ZERO, false]
@@ -274,8 +266,7 @@ func paint(groups: Array) -> void:
 			var al: Vector2 = g["text_align"]
 			var sz: Vector2 = lay.measure(t, R.LINE_PT, "bold_condensed")
 			var tl: Vector2 = g["text_at"] - sz * al
-			# the plate (UpdateLabelPlates cpp:1284-1304; one look fill at 0.62 + 0.18, no edge)
-			var pc := R.ML_PANEL
+			var pc := R.ML_PANEL   # the plate (UpdateLabelPlates cpp:1284-1304; one look fill at 0.62 + 0.18, no edge)
 			pc.a = (R.LABEL_PLATE_OPACITY + 0.18) * a
 			var plate_at: Vector2 = R.label_plate_pos(g["text_at"], al)
 			var psz: Vector2 = sz + Vector2(2.0 * R.LABEL_PLATE_PAD_X, 2.0 * R.LABEL_PLATE_PAD_Y)

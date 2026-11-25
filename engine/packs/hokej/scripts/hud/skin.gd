@@ -1,26 +1,5 @@
 extends RefCounted
-## The game's skin (lane E1, 24-25 Nov): every word and bank of the screen that belongs to one game and not to the base,
-## read from data/skin.json (required; schema tl.rink.skin/1; unknown keys are errors, a key left out keeps the default below, which
-## is hokej's: thirdjam's own words). The pitch, the rules, the teams and their COLOURS are the cartridge's (the one source
-## of truth: game.teams[].colour_hex colours the figures, the HUD rings, plates, barks and markers); the skin names the
-## teams in words only. data/match.json picks the cartridge (`cartridge`) and the level (`difficulty`).
-##
-##   schema       "tl.rink.skin/1"
-##   title        the game's name on the title and on HOME's header ("HOKEJ")
-##   tagline      the line under the title ("HOCKEY WITH THE WHISTLE TAKEN OUT.")
-##   about        HOME's ONE MATCH lines, a list of strings
-##   team_names   [team 0, team 1] in words ("Blue", "Orange"): the commentator's lines say these where thirdjam's bank says
-##                blue / orange, as written (capitals as the skin has them, at the start of a line and inside it). A colour word
-##                that is not its team's colour in the cartridge ("Blue" on a red team: the base's words left in a user's
-##                skin) is said as the team's own colour word ("Red"): a line never names a colour the person does not see.
-##   team_plural  [bool, bool] (lane E1b, optional): the name is a plural ("Sharks") and the lines say "Sharks shoot!", "for
-##                the Sharks". Absent: guessed from the name (its last word ends in a single s: "Glare Foxes", "Gulls").
-##   levels       [[label, line] x 3]: the level row's words for rookie, pro, all_star, and the line under the row
-##   commentary   "builtin" (thirdjam's three commentary banks, scripts/hud/commentary_lines.gd), "off", or a file in data/
-##                ({"lines": [[id, event, kind, team, priority, cooldown_frames, text, duration_frames], ...]})
-##   ability_names  (H2d, optional) the game's word for each trick of game.abilities by the core's kind ({"shotgun": "cannon"}: "F: CANNON  READY"); a kind left out keeps the core's id
-##   barks        a file in data/ with the skaters' barks ({"lines": [[id, situation, speaker, tone, text], ...]}: hokej's is
-##                hud_barks.json, thirdjam's bank) or "off"
+## The game's skin (lane E1, 24-25 Nov): every word and bank of the screen that belongs to one game ... [base README: scripts/hud/skin.gd §1]
 
 const SCHEMA: String = "tl.rink.skin/1"
 const DEFAULTS: Dictionary = {
@@ -40,8 +19,7 @@ const TYPES: Dictionary = {"schema": TYPE_STRING, "title": TYPE_STRING, "tagline
 const ABILITY_KINDS: PackedStringArray = ["shotgun", "hip_check", "shield", "slow_puck"]   # the core's kinds (JamCartridge.h abilities)
 
 
-## The skin of the pack (data/skin.json), validated: the problems (unknown key, wrong type or shape) are pushed as errors (a run
-## with them is not clean) and the default stands for that key. A bank file that is not in data/ is read_json's error.
+## The skin of the pack (data/skin.json), validated: the problems (unknown key, wrong type or shape) ... [base README: scripts/hud/skin.gd §2]
 static func of(ctx) -> Dictionary:
 	var raw: Variant = ctx.read_json("skin.json")        # every game of the base has one (an absent file is an error of read_json)
 	var problems: Array = []
@@ -141,9 +119,7 @@ static func _is_colour_word(name: String) -> bool:
 	return false
 
 
-## The teams as the person meets them: [[name 0, name 1], [plural 0, plural 1]]. The skin's names as written; a bare colour
-## word that is not its team's colour in the cartridge (game.teams[].colour_hex) becomes that colour's word ("Blue" on a
-## red team reads "Red"; E5 job 1 heard "It's in, for blue!" when red scored).
+## The teams as the person meets them: [[name 0, name 1], [plural 0, plural 1]]. [base README: scripts/hud/skin.gd §3]
 static func teams_of(s: Dictionary, game: Dictionary) -> Array:
 	var names: Array = (s.get("team_names", DEFAULTS["team_names"]) as Array).duplicate()
 	var plural: Array = (s.get("team_plural", [plural_guess(String(names[0])), plural_guess(String(names[1]))]) as Array).duplicate()
@@ -174,10 +150,7 @@ static func bark_rows(ctx, s: Dictionary) -> Array:
 	return (ctx.read_json(String(s["barks"])) as Dictionary).get("lines", [])
 
 
-## A line of thirdjam's bank in this skin's team words. thirdjam's "Blue" / "blue" / "Orange" / "orange" (a team: not "the
-## blue line") become the team names as written. A plural name ([plural 0, plural 1]) takes "the" inside a sentence ("for
-## the Sharks"), the verb after it in the plural ("Sharks shoot!", "the Gulls are a skater short") and "themselves" for
-## "itself". With thirdjam's own names (Blue, Orange, singular) the line is unchanged.
+## A line of thirdjam's bank in this skin's team words. [base README: scripts/hud/skin.gd §4]
 static func team_words(text: String, names: Array, plural: Array = [false, false]) -> String:
 	if names == DEFAULTS["team_names"] and not bool(plural[0]) and not bool(plural[1]):
 		return text
@@ -211,8 +184,7 @@ static func team_words(text: String, names: Array, plural: Array = [false, false
 	return out
 
 
-## The plural of a verb in the third person singular ("shoots" shoot, "finishes" finish, "is" are, "has" have); any other
-## word as it stands ("on", "to", "playing").
+## The plural of a verb in the third person singular ("shoots" shoot, "finishes" finish, "is" are, ... [base README: scripts/hud/skin.gd §5]
 static func _plural_verb(w: String) -> String:
 	match w:
 		"is": return "are"

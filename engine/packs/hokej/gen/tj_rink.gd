@@ -1,12 +1,5 @@
 extends RefCounted
-## thirdjam's regular rink as ARinkActor::Build makes it (S/JamGame/Private/RinkActor.cpp:434-886, measures RinkActor.h:59-70,
-## thirdjam HEAD 8dc713c6), from the cartridge's game.rink (90 x 45 m, corners 3.75 m, goals 4 x 0.61 m), drawn kit-style
-## (TLMesh, palette keys): the outline (ARinkActor::Outline, 12 segments a corner), the boards with their kick plate, the
-## markings, and the goals as thirdjam's arena meshes are made (tools/blender/arena/arena.py goal_build, the 4 x 0.61 variant
-## RinkActor picks). The ice sheet alone is the kit's `rink` part (no boards, glass, markings or goals of its own), lowered
-## 0.05 m so its top is thirdjam's z = 0. Round 2 (the Director, 23 Nov): a plain dark hall round it in place of sky and
-## grass (no art: walls, a ceiling). Visual only: the gym's skater is plain data. Every measure that differs is in
-## docs/shifts/2026-11-24-night/lanes/K3-shell/RINK.md.
+## thirdjam's regular rink as ARinkActor::Build makes it (S/JamGame/Private/RinkActor.cpp:434-886, ... [base README: gen/tj_rink.gd §1]
 
 const Z_PAINT: float = 0.006      # RinkActor.cpp:604: markings 0.6 cm over the ice
 
@@ -15,13 +8,7 @@ static func generate(ctx) -> void:
 	ctx.root.set_meta(&"hokej_rink", "gen/tj_rink.gd")
 
 
-## Builds the rink under `parent` (a Node3D in Godot coordinates: rink x -> x, rink y -> z, up -> y).
-## `arena_marks` (K3 round 9): empty without thirdjam's hall; with it (lane K6's arena, ctx.cores.part("rink", "arena")) the
-## arena draws the ice, the boards and the kick plate as the clay tier dresses them, and its ice paints the centre line, the
-## blue lines, the goal lines and the 9 m centre circle (style/shaders/hall_ice.gdshader: RinkActor's markings sections 0
-## and 1). Then this draws only RinkActor's sections 2 and 3, "the marks B's painted ice does not carry" (RinkActor.cpp:
-## 614-618), in thirdjam's own colours: {"red": section 2's colour, "pale": section 3's} (linear, arena.json's Markings
-## materials, RinkActor.cpp:650-659), and the goals (the arena leaves them to the pack by default).
+## Builds the rink under `parent` (a Node3D in Godot coordinates: rink x -> x, rink y -> z, up -> y). [base README: gen/tj_rink.gd §2]
 static func build(parent: Node3D, rink: Dictionary, hall: Dictionary, arena_marks: Dictionary = {}) -> Node3D:
 	var L: float = float(rink["length_m"])
 	var W: float = float(rink["width_m"])
@@ -68,8 +55,7 @@ static func _g(p: Vector2, h: float) -> Vector3:   # rink (x, y) at height h -> 
 	return Vector3(p.x, h, p.y)
 
 
-## The boards (RinkActor.cpp:470-500, RinkActor.h:60-67): 1.2 m high, 0.2 m thick outward from the outline; the kick plate
-## 0.25 m high standing 2 cm proud of the inner face, yellow (RinkActor.cpp:550, LoadConstructionMat(0.85, 0.72, 0.12)).
+## The boards (RinkActor.cpp:470-500, RinkActor.h:60-67): 1.2 m high, 0.2 m thick outward from the ... [base README: gen/tj_rink.gd §3]
 static func _boards(mk: TLMesh, line: Array) -> void:
 	var bh: float = 1.2
 	var t: float = 0.2
@@ -85,9 +71,7 @@ static func _boards(mk: TLMesh, line: Array) -> void:
 		mk.bar(_g(p0 - e - o * 0.01, 0.0), _g(p1 + e - o * 0.01, 0.0), 0.02, 0.5, "yellow")
 
 
-# A strip of half width hw between two points on the ice (FMeshBuf::Strip: the width argument is the half width).
-## A paint `key` is a palette key, or a Color: thirdjam's own colour on the palette's white (the toon shader multiplies the
-## palette colour by the vertex colour).
+# A strip of half width hw between two points on the ice (FMeshBuf::Strip: the width argument is the ... [base README: gen/tj_rink.gd §4]
 static func _paint(key: Variant) -> Array:
 	return ["white", key as Color] if key is Color else [String(key), Color.WHITE]
 
@@ -123,12 +107,10 @@ static func _markings(mk: TLMesh, L: float, W: float, R: float, goal_w: float, a
 		for s: float in [-1.0, 1.0]:
 			var ext: float = maxf(hz - maxf(0.0, R - (L * 0.5 - gl)), hz * 0.6)
 			_strip(mk, Vector2(s * gl, -ext), Vector2(s * gl, ext), 0.03, "rink_red")
-		# section 1, blue (cpp:611-614): the blue lines at +-L/6, 30 cm; the centre circle r 4.5 to 4.6 m
-		for s: float in [-1.0, 1.0]:
+		for s: float in [-1.0, 1.0]:   # section 1, blue (cpp:611-614): the blue lines at +-L/6, 30 cm; the centre circle r 4.5 to 4.6 m
 			_strip(mk, Vector2(s * L / 6.0, -hz), Vector2(s * L / 6.0, hz), 0.15, "rink_blue")
 		_arc(mk, Vector2.ZERO, 4.5, 4.6, 0.0, TAU, 64, "rink_blue")
-	# section 2, red (cpp:620-645): faceoff circles r 4.5 m (12 cm line) with four hash marks, dots r 0.3 m, creases, trapezoids
-	var lw: float = 0.06
+	var lw: float = 0.06   # section 2, red (cpp:620-645): faceoff circles r 4.5 m (12 cm line) with four hash marks, dots r 0.3 m, creases, trapezoids
 	var circle_r: float = 4.5
 	var dot_r: float = 0.3
 	var hash_l: float = 0.6
@@ -154,14 +136,10 @@ static func _markings(mk: TLMesh, L: float, W: float, R: float, goal_w: float, a
 		var trap_far: float = minf(goal_w * 0.5 + 2.25, maxf(trap_near, hz - R))
 		for zs: float in [-1.0, 1.0]:
 			_strip(mk, Vector2(s * gl, zs * trap_near), Vector2(s * L * 0.5, zs * trap_far), lw, red)
-	# section 3, pale blue (cpp:640, 647, 659): the crease fills (above) and the centre dot r 15 cm
-	_arc(mk, Vector2.ZERO, 0.0, 0.15, 0.0, TAU, 16, pale)
+	_arc(mk, Vector2.ZERO, 0.0, 0.15, 0.0, TAU, 16, pale)   # section 3, pale blue (cpp:640, 647, 659): the crease fills (above) and the centre dot r 15 cm
 
 
-## A goal as thirdjam's arena mesh makes it (tools/blender/arena/arena.py goal_build, lines 559-633, G at 521-530): the
-## posts' inner faces at +-w/2 and the crossbar's underside at h (the sim's goal volume), posts and crossbar 16 cm, the
-## bottom bars, back posts, back bar and braces 11 cm, depth 1.5 m (UJamSim::NetDepth), the back frame min(0.9, 0.6 h);
-## the net of 3 cm cords in 25 cm cells. Its frame: x along the goal line -> rink y, `out` (into the net) -> rink x * side.
+## A goal as thirdjam's arena mesh makes it (tools/blender/arena/arena.py goal_build, lines 559-633, G ... [base README: gen/tj_rink.gd §5]
 static func _at(side: float, gl: float, x: float, o: float, z: float) -> Vector3:
 	return Vector3(side * (gl + o), z, x)
 
@@ -184,8 +162,7 @@ static func _goal(mk: TLMesh, sd: float, gl: float, w: float, h: float) -> void:
 	mk.bar(_at(sd, gl, -(hw + pt), 0.0, top), _at(sd, gl, hw + pt, 0.0, top), pt, pt, "goal_red")                     # crossbar
 	mk.bar(_at(sd, gl, -(hw + pt), dd, lt * 0.5), _at(sd, gl, hw + pt, dd, lt * 0.5), lt, lt, "goal_red")             # back bottom bar
 	mk.bar(_at(sd, gl, -(hw + pt), dd, bh), _at(sd, gl, hw + pt, dd, bh), lt, lt, "goal_red")                         # back bar
-	# the net (arena.py:604-632)
-	var nx: int = maxi(4, roundi(w / cell))
+	var nx: int = maxi(4, roundi(w / cell))   # the net (arena.py:604-632)
 	var f0 := Vector2(pt * 0.2, top)
 	var b0 := Vector2(dd, bh)
 	var nt: int = maxi(3, roundi((b0 - f0).length() / cell))
@@ -211,8 +188,7 @@ static func _goal(mk: TLMesh, sd: float, gl: float, w: float, h: float) -> void:
 			z += cell
 
 
-## The hall (round 2, the Director's word: no art): a dark box round the rink, its floor, four walls and a ceiling, from
-## data/gym.json "hall". It is not thirdjam's arena (stair step 5); it takes the sky and the grass out of the picture.
+## The hall (round 2, the Director's word: no art): a dark box round the rink, its floor, four walls ... [base README: gen/tj_rink.gd §6]
 static func _hall(node: Node3D, L: float, W: float, hall: Dictionary) -> void:
 	var m: float = float(hall["margin_m"])
 	var hh: float = float(hall["height_m"])
@@ -232,9 +208,7 @@ static func _hall(node: Node3D, L: float, W: float, hall: Dictionary) -> void:
 	node.add_child(mi)
 
 
-## The 1.64 m stand-in skater (until lane K2's figure): a capsule with a facing mark (a chest plate on its +x side) built
-## facing +x, and a separate unit stick bar along +x (the caller scales and turns it). Not the engine's walking figure.
-## `key`: a palette key, or the team's Color (the cartridge's colour_hex, on the palette's white: lane E1).
+## The 1.64 m stand-in skater (until lane K2's figure): a capsule with a facing mark (a chest plate on ... [base README: gen/tj_rink.gd §7]
 static func standin_figure(parent: Node3D, key: Variant = "car_blue", nm: String = "Skater") -> Array:
 	var body := Node3D.new()
 	body.name = nm
@@ -254,18 +228,7 @@ static func standin_figure(parent: Node3D, key: Variant = "car_blue", nm: String
 	return [body, stick]
 
 
-## thirdjam's puck (K3 round 10), as AJamPuck::InitPuck makes it (S/JamCore/Private/JamPawns.cpp:865-916): the engine's
-## unit cylinder scaled to 2r x 2r x 0.08 m (game.puck.radius_m 0.12; colour_hex #111111: the palette's black), its node at
-## the puck's bottom (the cylinder from y = 0 to 8 cm; thirdjam centres it 4 cm up). And its kit, R-0016's SM_PuckDisc
-## (/JamAssets/Props, exported by lane K6: hk-arena .tl/arena-export/meshes/SM_PuckDisc.glb), which AJamPuck::PlaceDiscOnIce
-## keeps 0.4 cm over the ice under the puck whatever its height (:1019-1025): section 0 a low dome 42 cm across and 2.7 cm
-## high (its profile read from the export: radius 0.21 m at 0.2 cm, 0.18 at 1.1, 0.15 at 1.8, 0.12 at 2.3, 0.06 at 2.6, the
-## top 2.7 cm) in MI_Trim_PuckHalo (M_Trim, Emissive 18, TeamColour linear (0.75, 1.0, 0.15): a glowing lime that the
-## camera's tone curve shows near white); drawn here in the palette's `neon_lime` (an emissive key, emit 2.2).
-## DEVIATIONS: section 1, the beacon skirt (MI_Fx_PuckBeacon: additive, unlit, fading out from 15 m), is not drawn (no
-## additive surface in the palette); the halo's strength is the palette's emit 2.2, not Emissive 18 under thirdjam's
-## exposure; the trail (NS_puck_trail) is not drawn.
-## Returns the puck node; its disc is a sibling node, `puck.get_meta(&"disc")`, which the caller places on the ice.
+## thirdjam's puck (K3 round 10), as AJamPuck::InitPuck makes it ... [base README: gen/tj_rink.gd §8]
 const PUCK_H: float = 0.08                 # AJamPuck::InitPuck: 0.08 m tall (HalfHeightM 0.04)
 const PUCK_DISC_Y: float = 0.004           # AJamPuck::PlaceDiscOnIce: 0.4 cm over the ice
 const PUCK_HALO: Array = [[0.21, 0.002], [0.18, 0.011], [0.15, 0.018], [0.12, 0.023], [0.06, 0.026], [0.0, 0.027]]

@@ -1,15 +1,5 @@
 extends Node
-## Hokej: thirdjam's whole match in our engine (K3 shell, round 3; docs/design/DIRECTIONS.md). The simulation and the bots
-## are thirdjam's own C++ (lane K1's RinkCore, `ctx.cores.open("rink")`, engine/cores/rink/SNAPSHOT.md): the regular cartridge,
-## 5 v 5, first to 3, at the level of data/match.json. This pack keeps the keys and the drawing: thirdjam's camera (cam.gd,
-## equal to thirdjam's rendered camera within 0.54 cm, round 2), the devices for the core's raw glue (human_input.gd), and
-## thirdjam's figure through thirdjam's pawn for every skater (match_view.gd: lane K2's TLRigSkater and skater_pawn).
-## The order inside a frame is AHokejGameMode's (StepOnce, HokejGameMode.cpp:1636-1712): the human's input is read through
-## the camera of the last sim frame (ReadHumanInput cpp:937), the sim steps, the figures take the frame (ApplySimFrame), then
-## the camera steps once on it (PushPresentation -> StepSimFrame, CameraFollow.cpp:1183). The engine's physics interpolation
-## draws camera and figures between the 60 Hz frames (TickComponent cpp:1319-1337, ApplyRender JamPawns.cpp:824-846).
-## Two proof modes, chosen by a key-less action pressed on frame 0 (a bot's): `gym` (one skater on empty ice under the
-## other nine parked: the control rules' tests), `replay` (thirdjam's own logged path through our camera, round 2).
+## Hokej: thirdjam's whole match in our engine (K3 shell, round 3; docs/design/DIRECTIONS.md). [base README: scripts/main.gd §1]
 
 const Cam := preload("cam.gd")
 const Human := preload("human_input.gd")
@@ -55,8 +45,7 @@ func _pack_setup(c) -> void:
 	var rink_gen = ctx.load_script("gen/tj_rink.gd")
 	arena = ctx.cores.part("rink", "arena")
 	var marks: Dictionary = _arena_marks()
-	# E5 (25 Nov): the hall's own goals stand where a 90 x 45 rink has its goal lines. On any other rink (a user's 50 m
-	# pond) they stood outside the boards while the core scored at +-(L/2 - 4): the rink's own goals are drawn there.
+	# E5 (25 Nov): the hall's own goals stand where a 90 x 45 rink has its goal lines. [base README: scripts/main.gd §2]
 	var hall_goals: bool = not marks.is_empty() and absf(float(rk["length_m"]) - 90.0) < 0.01 and absf(float(rk["width_m"]) - 45.0) < 0.01
 	if hall_goals:
 		marks["arena_goals"] = true                # lane K6 round 3: thirdjam's own goals and nets from the hall (the net shakes on a goal)
@@ -76,9 +65,7 @@ func _pack_setup(c) -> void:
 		sound = sound_part.new()
 		sound.begin(cart)
 	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), cart, ctx.cores.view_script("rink", "skater_pawn"), ctx.cores.view_script("rink", "skater_show"), ctx.cores.view_script("rink", "hit_read"), ctx.cores.view_script("rink", "boost_look"), bool(view_cfg.get("figures", true)))
-	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = max(shot.reach_m, SkaterRadius 0.4 +
-	# stick.reach_m 1.2 (FJamStickConfig default)) + 0.05 (JamSim.cpp:862-869); FJamPassConfig defaults SaucerHalfFrames 8,
-	# PowerFullFrames 30 (JamCartridge.h:356, 363): the regular cartridge has no game.pass
+	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = ... [base README: scripts/main.gd §3]
 	Human.declare(ctx.input)
 	ctx.input.declare_aim(&"aim", 0.0, 200.0)      # the cursor on the ice z = 0 (CursorAimRink, HokejGameMode.cpp:741-754)
 	ctx.input.declare(&"gym", [])                  # proof only, no key
@@ -96,11 +83,7 @@ func _pack_setup(c) -> void:
 	ctx.cameras.set_subject(&"follow", view.bodies[int(snap["HumanIndex"])])
 
 
-## The "top" view (the Foreman's critic and a person's overview): straight down on the rink, high enough that the whole
-## sheet and its boards fit the picture with a 6 % margin (the view's vertical angle 60 degrees, the window's aspect), and
-## its near plane 4 m over the ice. E5 (25 Nov) put it 70 m up with the near plane at 50 m: above thirdjam's roof it was
-## black, and at 20 m and below the hall's trusses, lamps and clock still crossed the rink. Now everything higher than
-## 4 m (roof, trusses, the clock, the goal lamps) is cut away; the boards (1.2 m), the glass and the figures stay.
+## The "top" view (the Foreman's critic and a person's overview): straight down on the rink, high ... [base README: scripts/main.gd §4]
 const TOP_FOV: float = 60.0
 const TOP_CUT_M: float = 4.0
 func _top_camera(length: float, width: float) -> void:
@@ -112,9 +95,7 @@ func _top_camera(length: float, width: float) -> void:
 		top_cam.near = maxf(0.05, h - TOP_CUT_M)
 
 
-## With thirdjam's hall: the colours of RinkActor's markings sections 2 and 3 (arena.json rink_surfaces.Markings: its four
-## materials, sections 0-3; RinkActor.cpp:650-659), for the marks the hall's ice does not paint (gen/tj_rink.gd). Empty
-## without the hall (the pack's own rink and palette).
+## With thirdjam's hall: the colours of RinkActor's markings sections 2 and 3 (arena.json ... [base README: scripts/main.gd §5]
 func _arena_marks() -> Dictionary:
 	if arena == null:
 		return {}
@@ -153,8 +134,7 @@ func _pack_tick(frame: int) -> void:
 		replay_base = (snap["Skaters"][0] as Dictionary).duplicate()
 		view.show_only(0)
 	elif frame == 0 and inp.pressed(&"gym"):
-		# the gym (the control rules' tests): the same core, the other nine parked (RinkCore.set_bot_mode, SNAPSHOT.md v1.1),
-		# and the opening faceoff stepped through here so the hand starts on open ice at the drop (a test stand, not a match)
+		# the gym (the control rules' tests): the same core, the other nine parked (RinkCore.set_bot_mode, ... [base README: scripts/main.gd §6]
 		mode = "gym"
 		rink.set_bot_mode("parked")
 		rink.restart()
@@ -194,10 +174,7 @@ func _pack_tick(frame: int) -> void:
 	_present()
 
 
-## AHokejGameMode::TickLightHold (HokejGameMode.cpp:632-678): the picture is held black until the light rig has been
-## visible LightHoldSettleTicks (3) ticks, then fades in over jam.screen.FadeSeconds 0.35 s (HokejGameMode.h:250-262). Our
-## hall's light is there from the first frame: black on frames 0-2, then 21 frames of linear fade (PlayerCameraManager::
-## StartCameraFade 1 -> 0). Presentation only: the sim steps on (the faceoff countdown runs under it), the hash cannot move.
+## AHokejGameMode::TickLightHold (HokejGameMode.cpp:632-678): the picture is held black until the ... [base README: scripts/main.gd §7]
 const LIGHT_SETTLE: int = 3
 const LIGHT_FADE_FRAMES: int = 21   # 0.35 s at 60 Hz
 func _light_hold(frame: int) -> void:
@@ -209,8 +186,7 @@ func _light_hold(frame: int) -> void:
 		ctx.cameras.screen_fade(0.0)
 
 
-## The proof mode of round 2: one row of thirdjam's JAMCAM log a tick (one StepSimFrame there, its hit-stop frames already
-## absent): the human's PosM and YawDeg set from the row, then our camera steps. Nothing simulates.
+## The proof mode of round 2: one row of thirdjam's JAMCAM log a tick (one StepSimFrame there, its ... [base README: scripts/main.gd §8]
 func _replay_tick() -> void:
 	replay_i = mini(replay_i + 1, replay.size() - 1)
 	var r: Array = replay[replay_i]
@@ -237,8 +213,7 @@ func _camera_step() -> void:
 	cam.step({"pos": s["Pos"], "yaw": rad_to_deg(float(s["Yaw"])), "rink": rink_c, "net": net})
 
 
-## The figures and the puck of this sim frame (the match: the show, the pawns, the puck; HokejGameMode.cpp:1664-1707).
-## True when a hit-stop holds the presentation frame.
+## The figures and the puck of this sim frame (the match: the show, the pawns, the puck; ... [base README: scripts/main.gd §9]
 func _draw_figures() -> bool:
 	if mode == "match":
 		return view.draw(snap)

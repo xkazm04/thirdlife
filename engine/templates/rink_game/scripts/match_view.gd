@@ -1,16 +1,5 @@
 extends RefCounted
-## The match drawn from the core's snapshot (K3 rounds 6 and 8): every skater is thirdjam's own figure (engine/rigs/skater,
-## TLRigSkater, lane K2) driven by thirdjam's pawn (ctx.cores.view_script("rink", "skater_pawn"): AJamSkater::ApplySimFrame
-## and ApplyRender, JamPawns.cpp:464-746 and :824-843), one pawn a skater fed its snapshot dictionary each frame, as
-## AHokejGameMode::StepOnce does (HokejGameMode.cpp:1680-1694). What the game mode does around the pawns for the eye is lane
-## K2's show object (ctx.cores.view_script("rink", "skater_show"), K3 round 8; GAMEMODE.md rows 20 and 23), the one owner of
-## that logic: thirdjam's hit-stop picks and routing (HitStopRoute, HitStopPick, HitStopFramesFor, AJamPuck's hold) and the
-## carrier the screen shows (FJamPuckShow: the carried puck on the blade's socket, the play calls by name).
-## data/view.json `figures: false` draws the round-3 STAND-INS instead (debugging): a 1.64 m capsule a skater with a facing
-## mark and a stick bar to the sim's blade.
-## Interpolation between the 60 Hz frames: the pawn is placed once a sim frame (ApplyRender at alpha 1) and the engine's
-## physics interpolation draws it between frames, as ApplyRender lerps PrevPos -> Pos (JamPawns.cpp:824-846). A jump the sim
-## does not move through (a faceoff's reset: PrevPos = Pos there) is not drawn as a slide: the node's interpolation is reset.
+## The match drawn from the core's snapshot (K3 rounds 6 and 8): every skater is thirdjam's own figure ... [base README: scripts/match_view.gd §1]
 
 const DT: float = 1.0 / 60.0
 
@@ -27,8 +16,7 @@ var boost                   # K2's boost_look.gd: the goal's celebration and the
 var hits                    # K2's hit_read.gd: the model of presses and hits, the whiffs and the re-time of a check (K3 round 9)
 
 
-## `cart`: the cartridge (teams and their colours; the numbers the show reads). `pawn_script`, `show_script`, `hits_script`:
-## ctx.cores.view_script("rink", "skater_pawn"), ("rink", "skater_show") and ("rink", "hit_read").
+## `cart`: the cartridge (teams and their colours; the numbers the show reads). [base README: scripts/match_view.gd §2]
 func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: Dictionary, pawn_script: GDScript, show_script: GDScript, hits_script: GDScript, boost_script: GDScript, use_figures: bool) -> void:
 	figures = use_figures and pawn_script != null
 	show = show_script.new()
@@ -50,9 +38,7 @@ func _init(root: Node3D, rink_gen, snap: Dictionary, puck_radius: float, cart: D
 			bodies.append(parts[0])
 			sticks.append(parts[1])
 			continue
-		# AHokejGameMode's spawn (one AJamSkater a sim skater, its visual a child) and AJamSkater::InitSkater (JamPawns.cpp:395-400):
-		# the team's colour (game.teams[].colour_hex, linear as FLinearColor) and the jersey's number (JerseyNumberFor,
-		# HokejGameMode.cpp:439-444, by the skater's slot in its team in sim order)
+		# AHokejGameMode's spawn (one AJamSkater a sim skater, its visual a child) and AJamSkater::InitSkater ... [base README: scripts/match_view.gd §3]
 		var slot: int = int(slot_in_team.get(team, 0))
 		slot_in_team[team] = slot + 1
 		var pawn = pawn_script.new()
@@ -94,19 +80,11 @@ func show_only(i: int) -> void:
 	(puck.get_meta(&"disc") as Node3D).visible = false
 
 
-## The bus events a figure hears (AHokejGameMode::DeliverEvents, HokejGameMode.cpp:1664, before the hit-stop and the pawns),
-## as K2's verb gym delivers them: OnBusEvent(name, its Who is this figure's skater, where in world centimetres, ...). All
-## four are ported in the figure since K2's round 4 (contact).
+## The bus events a figure hears (AHokejGameMode::DeliverEvents, HokejGameMode.cpp:1664, before the ... [base README: scripts/match_view.gd §4]
 const BUS_EVENTS: Array = ["knockdown", "check", "lift", "deke"]
 
 
-## One sim frame of the match, in thirdjam's order (HokejGameMode.cpp:1664-1707; skater_show.gd's header): the bus, the
-## show's step (HitStopRoute, then FJamPuckShow::StepSim), every pawn's ApplySimFrame, the show's after_pawns (the wind-up
-## takes, the puck's hold count), the hit read (AJamHitRead::StepSim, cpp:1706: the whiffs, the re-time of a check), every
-## pawn's ApplyRender, the show's Render (the puck where it is drawn: the shown carrier's blade socket, or the sim's place,
-## held through a hit-stop; cpp:1736), every figure's look at that puck and its tick, and a carried puck taking its
-## socket's place again after the tick (AJamPuck::Tick, JamPawns.cpp:959-977), as K2's verb_gym.gd does. Returns whether
-## the presentation frame is held (the camera and HUD do not step: HokejGameMode.cpp:1710).
+## One sim frame of the match, in thirdjam's order (HokejGameMode.cpp:1664-1707; skater_show.gd's ... [base README: scripts/match_view.gd §5]
 func draw(snap: Dictionary) -> bool:
 	var sk: Array = snap["Skaters"]
 	var frame: int = int(snap["Frame"])
@@ -163,10 +141,7 @@ func show_script_half_height() -> float:
 	return float(show.PUCK_HALF_HEIGHT_M)
 
 
-## Where skater i's figure has its head for the HUD's marker (UJamHudWidget::HumanHeadWorld, HUDWidget.cpp:1089-1121): the
-## figure's head_socket, come back along the head's own axis (head bone -> socket) by jam.hud.MarkerLiftCm -18 (HUDWidget.h:322;
-## the world's up without a head bone). World space (Godot), as drawn this sim frame. Null with the stand-ins (the HUD keeps
-## its own rule).
+## Where skater i's figure has its head for the HUD's marker (UJamHudWidget::HumanHeadWorld, ... [base README: scripts/match_view.gd §6]
 const MARKER_LIFT_M: float = -0.18
 func head_world(i: int) -> Variant:
 	if not figures or i < 0 or i >= figs.size():
@@ -178,8 +153,7 @@ func head_world(i: int) -> Variant:
 	return fig.global_transform * (sock + axis * MARKER_LIFT_M)
 
 
-## One skater alone (the proof modes: the gym's skater on empty ice, the replay's logged skater): no puck to look at, no
-## show (no hits, no puck drawn).
+## One skater alone (the proof modes: the gym's skater on empty ice, the replay's logged skater): no ... [base README: scripts/match_view.gd §7]
 func draw_skater(i: int, s: Dictionary, frame: int = 0) -> void:
 	if figures:
 		pawns[i].apply_sim_frame(s, frame)
@@ -199,9 +173,7 @@ func _place_pawn(i: int, s: Dictionary) -> void:
 		pawn.reset_physics_interpolation()
 
 
-## The look's puck in the figure's own frame, from where the pawn stands drawn ([LookTick]'s PuckRef: thirdjam's figure reads
-## the puck actor, placed by FJamPuckShow::Render this frame), then the figure's tick (its animation's one update a frame;
-## thirdjam ticks it a rendered frame, ours a sim frame: DT 1/60, the law of physics frames). As verb_gym.gd.
+## The look's puck in the figure's own frame, from where the pawn stands drawn ([LookTick]'s PuckRef: ... [base README: scripts/match_view.gd §8]
 func _look_and_tick(i: int, puck_at: Vector3) -> void:
 	var pn: Node3D = pawns[i]
 	var ay: float = -(pn.rotation.y + PI * 0.5)
@@ -216,8 +188,7 @@ func _draw_standin(i: int, s: Dictionary) -> void:
 	var teleport: bool = (s["PrevPos"] as Vector2) == pos and Vector2(body.position.x, body.position.z).distance_to(pos) > 0.5
 	body.rotation = Vector3(0.0, -float(s["Yaw"]), 0.0)       # rink yaw (towards +y) -> Godot: about -Y
 	_place(body, Vector3(pos.x, 0.0, pos.y), teleport)
-	# the stick: from the body's edge (0.25 m) to the blade on the ice (FJamSkaterState::BladePos)
-	var blade: Vector2 = s["BladePos"]
+	var blade: Vector2 = s["BladePos"]   # the stick: from the body's edge (0.25 m) to the blade on the ice (FJamSkaterState::BladePos)
 	if blade.distance_to(pos) > 3.0:              # a blade the sim has not placed yet (BladePos (0, 0) before the first step):
 		blade = pos + Vector2(cos(float(s["Yaw"])), sin(float(s["Yaw"]))) * 1.0   # held ahead (stand-in rule; no reach is 3 m)
 	var d: Vector2 = blade - pos

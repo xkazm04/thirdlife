@@ -1,12 +1,5 @@
 extends RefCounted
-## thirdjam's commentator, its words only (lane K5, round 2; the voice is lane K6's). The booth's picker
-## (FJamCommentaryPicker, CommentarySystem.cpp:115-597; constants CommentarySystem.h:29-45) over the 415 lines of thirdjam's three
-## banks (commentary_lines.gd, generated), fed by the sim's frame events and the game mode's `period` and `win` / `lose`; the
-## caption strip (UpdateCommentary HUDWidget.cpp:1467-1525; one look HUDOneLook.cpp:80-81): OL plate(0.72) padding 16 / 6, Regular 18
-## TextDim, docked bottom centre 24 over the edge, held for the line's length then faded over 30 frames, gone under a pause.
-## Its stream is its own RandomNumberGenerator seeded from the match's seed (thirdjam salts it with the wall clock: not
-## deterministic there): presentation only, never the sim's generator, never in the state hash. The cartridge has no
-## game.commentary: enabled at "normal" (cooldown scale 1, least priority 1).
+## thirdjam's commentator, its words only (lane K5, round 2; the voice is lane K6's). [base README: scripts/hud/captions.gd §1]
 
 const R := preload("rules.gd")
 const Lines := preload("commentary_lines.gd")
@@ -35,8 +28,7 @@ var rng := RandomNumberGenerator.new()
 var length_m: float = 90.0
 var width_m: float = 45.0
 var score_to_win: int = 3
-# FJamCommentaryPicker's state (Reset, cpp:115-148)
-var pending: Array = []
+var pending: Array = []   # FJamCommentaryPicker's state (Reset, cpp:115-148)
 var last_start: int = -1000000
 var last_end: int = -1000000
 var last_seen: int = -1000000
@@ -68,8 +60,7 @@ var beat: Dictionary = {}
 var beat_said: String = ""
 var pass_hold: Dictionary = {}                     # JamCommentaryPassCatch
 var seed_: int = 0
-# the strip
-var shown_line: String = ""
+var shown_line: String = ""   # the strip
 var shown_tick: int = -1000000
 var shown_dur: int = 0
 var picks: int = 0
@@ -82,8 +73,7 @@ var team_names: Array = []                            # the skin's team words (l
 var team_plural: Array = [false, false]               # lane E1b: which of them is a plural ("Sharks shoot!"; skin.gd teams_of)
 
 
-## `rows`: the bank of lines (null = thirdjam's three banks, commentary_lines.gd); `names`: the skin's team names ([] = the bank's);
-## `plural`: the skin's team_plural ([] = guessed). Lane E1b: said as the person sees them (skin.gd teams_of).
+## `rows`: the bank of lines (null = thirdjam's three banks, commentary_lines.gd); `names`: the skin's ... [base README: scripts/hud/captions.gd §2]
 func _init(game: Dictionary, seed_value: int, rows: Variant = null, names: Array = [], plural: Array = []) -> void:
 	if names.size() == 2:
 		var tw: Array = GameSkin.teams_of({"team_names": names, "team_plural": plural} if plural.size() == 2 else {"team_names": names}, game)
@@ -441,8 +431,7 @@ func resolve(w: Dictionary) -> Dictionary:
 	var f: int = w["frame"]
 	_note_frame(f)
 	var started: Dictionary = {}
-	# the booth yields to a bark at the human (cpp:520-534): nothing starts, a line older than half a second is cut; a priority-5 call plays on
-	if bark_at_human:
+	if bark_at_human:   # the booth yields to a bark at the human (cpp:520-534): nothing starts, a line older than half a second is cut; a priority-5 call plays on
 		bark_hold_until = maxi(bark_hold_until, f + BARK_YIELD)
 		if f < last_end and f - last_start >= CUT_FLOOR:
 			last_end = f
@@ -521,8 +510,7 @@ func _close(w: Dictionary) -> void:
 	prev_touch = int(w["touch"])
 	pending = []
 
-## One sim frame of the booth (HandleBusEvent + HandleSimFrame, cpp:756-808): the frame's events, the held pass, the game
-## mode's events (`extra`: [[name, kind], ...]), then Resolve. Returns the line started or {}.
+## One sim frame of the booth (HandleBusEvent + HandleSimFrame, cpp:756-808): the frame's events, the ... [base README: scripts/hud/captions.gd §3]
 func step(snap: Dictionary, extra: Array) -> Dictionary:
 	var w: Dictionary = world(snap)
 	var sk: Array = snap["Skaters"]
