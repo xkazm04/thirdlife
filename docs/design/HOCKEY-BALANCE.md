@@ -259,6 +259,10 @@ Filled from the ledger as changes are kept; the same lines are in `LEDGER.md` be
 | E03: a carried puck stays with its carrier through a body's touch | Skating into a man who has the puck no longer gives it to you: you bounce off him and he still has it. Press the stick lift (or poke, or hit him) and it is yours. Your mates stop losing the puck to a bump the moment you pass to them. |
 | E04: a knockdown lasts 0.7 to 1.5 s | When you are knocked down you are back on your skates in about a second, not two. You still lose the puck and your place; you no longer watch the play leave. |
 | E05: nobody glides faster than he can skate | Shift is a spend now: when the bar is empty you are back at skating pace within half a second, and it must fill a quarter before it answers again. And when you pick the puck up at full speed you feel yourself slow to carrying pace: a man chasing you will catch you, so move it. |
+| E07: a man who has just won the puck cannot be flattened for half a second | The hit that used to flatten you the instant you touched the puck now only staggers you: you lose the puck and half your speed, and you are still on your skates. |
+| E09: rookie's opponents want the net as pro's do, with slower hands | At rookie the other side now shoots: from the slot, with a wind-up you can see, wide of the corner as often as not, and now and then one of them lifts your stick. Stand still and you lose; play and you win. |
+| E11: all-star's opponents skate at your pace | At all-star nobody out-skates you any more by having faster legs. They still hunt you from across the ice, lift your stick twice as often as pro does, and sprint whenever their bar lets them, as you can. |
+| E12: pro presses as a matter of course | At pro they come at you from further off and their sticks are back on yours a second after a miss. You have less time on the puck than at rookie, and the kept rules make it fair: the first hit only staggers you and you are up in a second. |
 
 ## 12. Where the cartridge stands
 
@@ -332,3 +336,39 @@ What round 2 taught the design:
    hand was repaired and fitted again to the same one number; what it says now is in the table above.
 5. **A planner's ablation leans toward "this verb costs nothing"**, a script's toward "this verb is vital". Round 3 reads
    both, at 200 seeds.
+
+### After round 3a (25 Nov, 02:00): eight experiments kept, five rejected
+
+`hockey.thirdlife` is thirdjam with three rules changed (E01b a goal must leave a blade; E03 the puck is taken with a key or
+not at all; E05 nobody glides faster than he can skate), two cartridge numbers (E04 knockdowns 40 to 90 frames; E07 a hit
+on a man who has just won the puck is a stumble at most for 30 frames) and a level table (E09 rookie plays for the net;
+E12 pro presses; E11 all-star has the human's legs). Rejected, each with its figures: E01 (the first form of the goal-line rule), E02, E06, E08, E10.
+
+The ladder at 200 seeds (wins, per cent; `hockey.regular` in brackets):
+
+| Hand | Rookie | Pro | All-star |
+|---|---|---|---|
+| A player who never moves | 23.5 (thirdjam 60.5) | 9.0 (9.5) | 6.0 (5.5) |
+| Planning hand, slow | 92.0 (98) | 55.5 (50) | 22.5 |
+| Planning hand, average | 99.5 | 84.0 (78) | 66.5 (60) |
+| Planning hand, quick | 100 | 95.5 (92) | 88.0 |
+| thirdjam's scripted novice | 89.5 (97.5) | 15.0 (24.5) | 11.5 (10.5) |
+| thirdjam's scripted regular | 98.5 (100) | 68.5 (75.5) | 48.0 (39.5) |
+| thirdjam's scripted good | 100 (100) | 75.5 (76) | 56.0 (53.5) |
+
+| Target | After round 3a |
+|---|---|
+| T1 no walked goals | **met** |
+| T2 the shot is how you score | **met** (-56 points so far at 200 seeds) |
+| T3 passes arrive and pay | **not met**: 61 % arrive; the pass costs the hand 5 points; three tries rejected |
+| T4 a carry skill can keep | **not met**: 0.79 s, 46 % lost |
+| T5 no take without a key | **nearly**: gym 0 of 12; 0.27 a minute in matches, mostly point-blank blocks |
+| T6 knockdowns and time on the ice | seconds **met** (4.7 s at pro), count not (3.8) |
+| T7 every kept verb matters | **open** (round 3b: both ablation arms at 200 seeds); so far the shot, the sprint and the stop do |
+| T8 the ladder | idle at rookie **met** (23.5 %); spread met at pro and all-star; the regular hand at pro 84 %: **above** the 60-80 band |
+| T9 no level harder by legs (as corrected in round 3) | **met** by construction |
+| T10 pace | held |
+
+What the cartridge delivers of its pillars, said plainly: P3 (goals come from shots) and P6 (rookie needs you; no level by
+legs) are delivered; P4 (a hit is an event) mostly; P1 for the mates but not for the player's own carry; P2 (the pass
+pays) is not delivered; P5 (every key has its moment) is not proven either way.

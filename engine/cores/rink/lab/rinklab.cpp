@@ -130,7 +130,7 @@ namespace
 			if (!PlanName.empty())
 			{
 				PlanHand.Reset(PlanProfile, static_cast<uint64_t>(Seed));
-				PlanHand.Remove = Remove;
+				PlanHand.Remove = Flag(argc, argv, "plankeep") ? 0 : Remove;   // -plankeep: the hand keeps the removed verbs in its menu and presses them; the filter still drops them (the dead key still pressed: K4's ablation on this hand)
 				PlanHand.bCheckClone = Flag(argc, argv, "plancheck");
 				Sim.Plan = &PlanHand;
 			}

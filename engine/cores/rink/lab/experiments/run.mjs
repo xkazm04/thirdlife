@@ -35,7 +35,8 @@ const cellOf = (id) => {
   const level = level0;
   const c = { level, player: "regular", plan: "", remove: "", only: "", signal: "", id };
   if (hand.startsWith("plan-")) c.plan = hand.slice(5); else c.player = hand;
-  for (const r of rest) { if (r.startsWith("x-")) c.remove = r.slice(2).replace(/\+/g, ","); else if (r.startsWith("only-")) c.only = r.slice(5).replace(/\+/g, ","); }
+  for (const r of rest) { if (r.startsWith("x-")) c.remove = r.slice(2).replace(/\+/g, ","); else if (r.startsWith("only-")) c.only = r.slice(5).replace(/\+/g, ",");
+    else if (r.startsWith("k-")) { c.remove = r.slice(2).replace(/\+/g, ","); c.extra = ["-plankeep"]; } }
   return c;
 };
 const SETS = {
@@ -52,6 +53,16 @@ SETS.pablate = ["pro.plan-regular", ...MATRIX_VERBS.map((v) => `pro.plan-regular
 SETS.pcal = ["pro.plan-novice", "pro.plan-regular", "pro.plan-good", "all_star.plan-regular", "rookie.plan-novice"];
 // the mid-round matrix: the ladder by the planning hand, the screen's scripted cells, and the planning hand without each verb at pro
 SETS.mid = [...new Set([...SETS.screen, "rookie.plan-regular", "rookie.plan-good", "all_star.plan-novice", "all_star.plan-good", ...SETS.pablate, "pro.regular.x-pass", "pro.regular.x-check", "pro.regular.x-brace"])];
+// an experiment that names all its own cells (exp.cells)
+SETS.none = [];
+// the final matrix (round 3, 200 seeds): the ladder by both kinds of hand, the idle hand at every level, and the planning hand at pro without each
+// verb twice over: "x-" = out of its menu and its keys (it re-plans: leans toward "costs nothing"), "k-" = still in its menu and pressed, the game never
+// hears it (K4's ablation on this hand: leans toward "vital"). The truth of a verb lies between the two.
+export const FINAL_VERBS = ["sprint", "stop", "shield", "pass", "onetimer", "tap", "charge", "deke", "spin", "poke", "lift", "check", "brace"];
+SETS.final = [...SETS.ladder, "pro.plan-regular.x-shoot", ...FINAL_VERBS.map((v) => `pro.plan-regular.x-${v}`), ...FINAL_VERBS.map((v) => `pro.plan-regular.k-${v}`),
+  "pro.regular.x-pass", "pro.regular.x-shoot"];
+// the same hand's ladder on hockey.regular, for the column beside it
+SETS.pladder = ["rookie", "pro", "all_star"].flatMap((l) => [`${l}.regular.x-idle`, `${l}.plan-novice`, `${l}.plan-regular`, `${l}.plan-good`]);
 SETS.matrix = [...SETS.ladder, ...MATRIX_VERBS.flatMap((v) => [`pro.plan-regular.x-${v}`, `pro.regular.x-${v}`]), "pro.plan-regular.only-none", "pro.regular.only-none"];
 
 const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8"));

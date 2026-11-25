@@ -257,7 +257,8 @@
     },
     "contact": {
       "down_frames_min": 40,
-      "down_frames_max": 90
+      "down_frames_max": 90,
+      "take_shield_frames": 30
     }
   }
 }

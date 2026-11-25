@@ -1,0 +1,67 @@
+diff -ruN a/thirdjam/AI/DifficultyProfile.cpp b/thirdjam/AI/DifficultyProfile.cpp
+--- a/thirdjam/AI/DifficultyProfile.cpp
++++ b/thirdjam/AI/DifficultyProfile.cpp
+@@ -253,6 +253,7 @@
+ 			if (std::strcmp(Key, "hk_defend_team9") == 0) { K.Hk.bDefendTeam9 = V != 0.0; return true; }
+ 			if (std::strcmp(Key, "hk_dodge9_share") == 0) { K.Hk.Dodge9Share = V; return true; }
+ 			if (std::strcmp(Key, "hk_drive_first9") == 0) { K.Hk.bDriveFirst9 = V != 0.0; return true; }
++			if (std::strcmp(Key, "hk_give_go_frames_tl") == 0) { K.Hk.GiveGoFramesTl = static_cast<int>(V); return true; }   // THIRDLIFE PATCH 0005
+ 			if (std::strcmp(Key, "hk_shot_lane9") == 0) { K.Hk.bShotLane9 = V != 0.0; return true; }
+ 			if (std::strcmp(Key, "hk_mark_man9") == 0) { K.Hk.bMarkMan9 = V != 0.0; return true; }
+ 			if (std::strcmp(Key, "hk_ahead_weak9") == 0) { K.Hk.bAheadWeak9 = V != 0.0; return true; }
+diff -ruN a/thirdjam/AI/JamAICore.cpp b/thirdjam/AI/JamAICore.cpp
+--- a/thirdjam/AI/JamAICore.cpp
++++ b/thirdjam/AI/JamAICore.cpp
+@@ -1688,8 +1688,10 @@
+ 		const bool bDrive9 = K.Hk.bDriveFirst9 && K.Hk.DriveNet9M > 0.0 && !bSharp && !bShoot && DriveNet(W, Id, Aim, Dgoal);
+ 		const bool bSpaceIntent = TeamIntent.Kind == ETeamIntent::Space && TeamIntent.Active(W.Frame);
+ 		const double Share = bPassIntent ? 0.9 : K.PassToHuman;
+-		if (Share > 0.0 && W.PlayerIndex >= 0 && W.Skaters[W.PlayerIndex].Team == S.Team && W.Carrier == Id && S.bCanShoot && !bShoot
+-			&& (S.Role != ERole::Back || bPassIntent || bSpaceIntent))
++		// THIRDLIFE PATCH 0005 (FJamHockeySense::GiveGoFramesTl): this mate took the human's pass a moment ago: the give-and-go
++		const bool bGiveGoTl = K.Hk.GiveGoFramesTl > 0 && W.PlayerIndex >= 0 && Id != W.PlayerIndex && ReceivedFrom9[Id] == W.PlayerIndex && W.Frame - ReceivedFrame9[Id] <= K.Hk.GiveGoFramesTl;
++		if ((Share > 0.0 || bGiveGoTl) && W.PlayerIndex >= 0 && W.Skaters[W.PlayerIndex].Team == S.Team && W.Carrier == Id && S.bCanShoot && !bShoot
++			&& (S.Role != ERole::Back || bPassIntent || bSpaceIntent || bGiveGoTl))
+ 		{
+ 			const FJamAISkater& H = W.Skaters[W.PlayerIndex];
+ 			const FVec2 To = H.Pos + H.Vel * 0.3 - Pp;
+@@ -1714,7 +1716,7 @@
+ 				}
+ 				bRoom = Free > (bSetUp ? 2.0 : 3.0);
+ 			}
+-			if (bRoom && (bSetUp || (Coin < Share && bAheadOrLevel && !bDrive && !bDrive9)) && Dh > 5.0 && Dh < 25.0 && !H.bDown)   // lane A153: a mate that goes to the net passes only to a human set up for the one-timer
++			if (bRoom && (bSetUp || ((Coin < Share || bGiveGoTl) && bAheadOrLevel && ((!bDrive && !bDrive9) || bGiveGoTl))) && Dh > 5.0 && Dh < 25.0 && !H.bDown)   // THIRDLIFE PATCH 0005: the give-and-go needs no coin and is not held back by the mate's own drive   // lane A153: a mate that goes to the net passes only to a human set up for the one-timer
+ 			{
+ 				bool bClear = true;
+ 				for (int o = 0; o < W.NumSkaters && bClear; ++o)
+@@ -1731,6 +1733,14 @@
+ 				}
+ 			}
+ 		}
++		// THIRDLIFE PATCH 0005: inside the give-and-go's window the mate turns to the human who is ahead of or level with him, so the pass above can fire
++		if (bGiveGoTl && !bShoot && !bPass && W.Carrier == Id && W.Skaters[W.PlayerIndex].Team == S.Team && !W.Skaters[W.PlayerIndex].bDown)
++		{
++			const FJamAISkater& Hg = W.Skaters[W.PlayerIndex];
++			const FVec2 LeadG = Hg.Pos + Hg.Vel * 0.3;
++			const double Dg = LeadG.DistTo(Pp);
++			if (Dg > 5.0 && Dg < 25.0 && (Hg.Pos.X - Pp.X) * (OppGoal.X >= 0.0 ? 1.0 : -1.0) > -1.0) { return (LeadG - Me).Normalized(); }
++		}
+ 		// R-0007 pass intent: the carrier turns to face the human (lead 1.5 x velocity) so the pass above can fire
+ 		if (bPassIntent && W.PlayerIndex >= 0 && W.Skaters[W.PlayerIndex].Team == S.Team && D < W.CarrierReach() + 0.5)   // R-0042 (lane A85)
+ 		{
+diff -ruN a/thirdjam/AI/JamAICore.h b/thirdjam/AI/JamAICore.h
+--- a/thirdjam/AI/JamAICore.h
++++ b/thirdjam/AI/JamAICore.h
+@@ -291,6 +291,12 @@
+ 		bool bShotLane9 = false;
+ 		// bDriveFirst9 (wave 2): a mate driving at the net (DriveNet) passes to the human only when he is set up for the one-timer (not by the share's coin).
+ 		bool bDriveFirst9 = false;
++		// THIRDLIFE PATCH 0005 (experiment E08, pillar 2: the pass must pay through the mates; no control switching, R-0038). The give-and-go: for this many
++		// frames after a mate takes a pass FROM THE HUMAN (the brain's own ReceivedFrom9 / ReceivedFrame9), that mate looks for him first: the pass back to
++		// the open human (on his feet, 5 to 25 m away, ahead of or level with the puck, room round him, his lane free: thirdjam's own conditions, unchanged)
++		// needs no coin (FJamBotSkill::PassToHuman), is made by a back too, is not held back because the mate could drive the net alone, and the mate turns to
++		// face him so it can go. A shot the mate has already decided on still comes first. 0 = thirdjam (tune key mate.hk_give_go_frames_tl).
++		int GiveGoFramesTl = 0;
+ 		// Dodge9Share (wave 2, R-0067 after A209's hits): > 0 = in that share of the two-second windows (a fixed coin per bot) a bot without the puck that
+ 		// reads the human's hit coming (the human within 4.5 m closing on it at 3 m/s or more, or his check / cross-check winding up at it) steps off the line
+ 		// of the hit at full stride, as a player does. 0 = it takes the hit (rookie). A level's number (the profile's).
