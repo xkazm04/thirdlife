@@ -46,10 +46,7 @@ export type { ForemanOptions, KitFigures, Stall };
 export { FOREMAN_NOTE, MACHINE_BUSY, NOT_LOAD, PACK_STALL, builderConduct, classifyStalls, clockDetail, countKitUse, diedSilently, frameFigures, medianOverHalfBudget, parseDeviations, restsOnAClock, stallOf, statesKitReason };
 
 export class ForemanError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ForemanError";
-  }
+  constructor(message: string) { super(message); this.name = "ForemanError"; } // one line: foreman.ts is at its size ratchet
 }
 
 /** Causes after which a failed package goes back to the Planner (a refusal, a budget stop or a cancel do not). */
