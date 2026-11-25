@@ -1,0 +1,171 @@
+# G4 proof: Half-court 3 v 3 from scratch through the editor (day of 25 Nov 2026)
+
+Tree `.claude/worktrees/d25-court` (branch d25-court, at 39d3f7b until the Director's fast-forward). Jobs root
+`.tl/jobs/`. Every step went through `engine/ui/foreman_run.mjs` in the command order of `engine/ui/foreman_door.gd`
+(Create's door) with the flags of `engine/ui/flags/real.json` (claude-cli, sonnet, --max-packages 4, --round-limit 4,
+--parallel 2, tokens_per_hour 4000000). Billing: subscription (claude.ai max); token figures are what the ledger counts.
+Times are wall clock (CET). Raw PNGs stay in `.tl/g4/` and the job's `captures/`; JPGs beside this file in `stills/`.
+
+How I looked: `tl.sh capture --cam=play|side --hud=on --test=tests/bot_play.gd --strip=16x60 --frame=600` (16 frames a
+second apart, 10 s to 25 s of a match) and one full still at frame 1800, in a window, on a snapshot of the job's
+`pack/`. hokej beside it: E5's `hokej_strip.jpg` (night of 24-25 Nov). The target: the night's
+`concepts/half_court_concept.jpg` and `half_court_screenshot.jpg`.
+
+## The sentence and the cards
+
+12:40, typed in Create: "Half-court 3 v 3 street basketball under old brick viaduct arches in autumn: dribble, arc
+your shots at one hoop, block shots and set screens for your teammates". Standard creativity, no run-through
+(Create's defaults).
+
+Design: 13 min, 7 generate calls (concept, designer x4, review x2; the review said `revise` twice: hook 0.61-0.65,
+fit 0.47-0.55), 341k in / 104k out. It chose candidate 1 of 5 ("You run the half-court with two mates", likelihood
+0.85): what I asked for. Pitch: "Run street ball: dribble, screen mates free, arc jumpers, swat shots under autumn
+arches." Seven cards: Set Screens, The Spring (twist: +25 % speed after a screen), Arc And Swat, Quarry Crew (named
+rivals with tells), See The Swat (a camera that swings 45 degrees on shots), Autumn Arches, Race To 21 (FIBA 3x3).
+The rules text is long and specific (13 new animation clips, frame data for every verb, a teaching first minute).
+
+What I did as a person (12:54): dropped The Spring ("I just want plain street ball, no speed boost off screens");
+kept the camera with "keep the camera steady behind me like a TV game, no swinging"; kept the arches with "like my
+picture: tall brick viaduct arches behind the hoop, yellow autumn trees, a chain fence, blue court with an orange key;
+yellow team against plum team". Build.
+
+## Plan and phase 1 (tofu)
+
+Plan (3.5 min, card.team_possession, the hockey pack as template): 4 packages, 3 phases.
+| package | phase | scope |
+|---|---|---|
+| court_core | 1 tofu | main.gd, scripts/core/**, tuning, venue, 4 tests |
+| bodies_first_minute | 1 tofu | 13 own clips, builds, teaching first minute |
+| crews_stakes | 2 crews | Dex and Moss (3 v 3), rivals' tells, tiers, comeback |
+| viaduct_art | 3 viaduct | the arches, trees, fence, blue court, orange key |
+
+So the game is 2 v 2 until phase 2 and has no look of my picture until phase 3.
+
+What happened (12:57 to 14:48, 111 min of running):
+- court_core, 4 rounds, 4.7M tokens in, then **failed**:
+  - r1 lost to `invariants.many_budget`: frame p50 1.048 ms against 1.0 on a machine at 60-65 % CPU;
+  - r2 and r3 failed its own `bot_tofu` bounds;
+  - r4 failed only `possession_median_f` 234 against a bound of 240 frames.
+- Replan (1.7 min): court_exchange, a fresh builder from scratch with the same contract plus a POSSESSION paragraph.
+  - r1 failed lint.
+  - r2 promoted. Its own `bot_tofu` said ok while `pressure_waves` was 0 (wants >= 2) and `scrum_share` 0.453 (limit
+    0.3). The builder wrote it plainly: "`bot_tofu`'s ok only requires one match and 3 verbs used; it does not enforce
+    the metric bounds". The route trusted the test's ok.
+- bodies_first_minute: r1 lost to `many_budget` again (p50 1.097 ms); r2 promoted.
+- The critic at blockout said NOT ok (silhouette 0.45, readability 0.3, fun_promise 0.1, feel 0.05, slop 0). Its
+  reading is right: bodies merge, a screen is "a pile of two to four bodies sliding into each other", there is no
+  hit-stop, and the rivals are recoloured.
+  - It also listed "70 house contact rows your pack does not have": hockey's `hits.board_bonus`, `hits.check_cone_deg`
+    and so on, held against a basketball pack.
+  - Revise round 1: thrown away by `many_budget` (the third clock loss).
+  - Revise round 2: thrown away because the pack's `bot_tofu` failed after the merge.
+- 14:48: **paused: quality** (milestone blockout still NOT ok after revise round 2). In all, 128 min of wall time,
+  16.0M tokens in (14.1M cache reads), 442k out, weighted 3.77M.
+
+What a person sees at the hold (`stills/hold1_play_strip.jpg`, `hold1_side_strip.jpg`, `hold1_play_f1800.jpg`,
+`compare_hold1.jpg` = target | hokej | this):
+- Yellow against plum (my note was obeyed), on a plum slab of a court in orange dirt and pine forest. The hoop stands
+  at the baseline. The arc is dashed chalk.
+- 2 v 2, four figures with the same toy-kid body and backpack: you tell them apart by jacket colour only.
+- The camera does not stay steady: it turns with the player, so the court spins between seconds, which is what I asked
+  it not to do. The side camera is a low sideline view with the court half out of frame.
+- The ball is a small orange disc. It rolls off the court onto the dirt and play goes on; I saw no out of bounds.
+- Bodies bunch into knots near the ball. I can read no screen and no block. Shots go up, but I cannot see makes from
+  misses.
+- Score after 24 s: 2 to 1.
+- Would I play again? No. It is a ball and four kids walking into each other, and the view keeps turning.
+
+Gap to the target, in three lines:
+1. No 3 v 3 and no team play: bodies pile up, and a screen or a block does not read.
+2. The camera turns. The target is a steady broadcast three-quarter view looking at the hoop.
+3. No viaduct arches, trees, fence or blue court with an orange key (that is phase 3).
+
+## The quality card and phase 1's verdict
+
+15:04, on Create's quality card I chose "play it as it is" (`quality accept`, then `resume`: 1 s). The job then
+stopped at the phase 1 (tofu) verdict. I waited 15:05-15:47 for the Director's fast-forward (d82e96c, foreman
+rebuilt: the H1, H1b, H1c and H2 editor fixes). At 15:48 I passed phase 1: a person would, since 3 v 3 and the look
+are still to come.
+
+## Phase 2 (crews: 3 v 3): stopped on the frame budget
+
+From 15:48 to 16:47, crews_stakes ran 5 builder rounds (8.9M tokens in). None merged. Every round failed one check:
+`invariants.many_budget`, frame p50 at most 1.0 ms.
+- Measured: 1.18 to 1.52 ms with six figures.
+- The builder measured 1.15 ms with the package left out (four figures on the merged core). So the pack already ran
+  over the budget before phase 2 began.
+- H1b's machine-busy wait worked as designed: it waited twice, then saw "machine not shown busy" and failed the round
+  for real.
+
+What a person met in Create, in order:
+1. A question at 16:07: "should the Foreman assign a performance fix to the core and bodies packages (per-figure
+   update cost), or change the budget for this six-actor game?" I answered in words: "Six players is the game, keep
+   all six. Make it run fast enough: fix the per-figure cost in the core and the bodies."
+2. At 16:12 the builder asked to widen its scope to `scripts/core/**`, `scripts/main.gd` and `scripts/bodies/**`. I
+   pressed Create's chip "Yes, let it".
+   - The chip sent a change request whose only words were "Yes, let it change what it needs.", with no scope.
+   - A 6-min round changed nothing.
+   - The builder then asked: "Which change did 'Yes, let it change what it needs' approve (please quote the question
+     it answers)?"
+3. At 16:19 I answered in words: "Yes, the frame-time failure. You may change scripts/main.gd, scripts/core and
+   scripts/bodies."
+   - The builder made the fix there: cached clip poses at half-frame steps, backpacks off.
+   - The Foreman **dropped those files** ("dropped out-of-scope files"), so a person's yes does not widen a scope.
+   - The same happened in round 4.
+4. At 16:46 the builder asked: "The remaining cost appears to come from six engine figures, which I found no
+   pack-level setting to reduce. Should the budget for this pack be raised, the engine's biped and rig tick be made
+   cheaper, or may I spend a round on a lower-rate animation driver in the pack?" I answered: try the lower-rate
+   driver.
+
+The root cause, read in `engine/kernel/host/invariants.gd` `budget_class()`:
+- A Create job's pack lies outside the engine's tree, so it is judged as "one of many" (p50 at most 1.0 ms), not
+  "solo" (8.0 ms).
+- Yet Create's Add to menu plays it alone, as a dungeon.
+- The house hockey's base measured 3.5 ms p50 on the night of 24-25 Nov.
+
+So no six-walker game made in Create can pass. No builder can fix it inside its scope, and no person can answer the
+question.
+
+The Director ruled at 16:50: a game made in Create is a dungeon and gets the solo budget; H2c implements it. At 16:51
+I stopped my own resume of 16:47 (the foreman pid 9704 and its builder, both started by my door), so that no further
+round went to the old budget. The job waits for H2c with its answer recorded; `foreman status` says "Continue with:
+foreman resume".
+
+What a person would see of 3 v 3: crews_stakes's workspace as the round-5 builder left it (unmerged, with its
+out-of-scope edits), filmed the same way (`stills/ws3v3_play_strip.jpg`, `ws3v3_side_strip.jpg`,
+`ws3v3_play_f1800.jpg`, `compare_ws3v3.jpg` = target | hokej | this):
+- Six figures now, three yellow and three plum. They still share one toy-kid body, and some still wear backpacks.
+- Four or five of them pile into one knot around the ball, a scrum rather than spacing.
+- The ball leaves the court onto the dirt and play goes on.
+- The camera still turns with you, so the hoop swings from the left of the frame to the right within seconds. The
+  side camera is a low sideline view with figures in the near foreground.
+- Score 3 to 1 after 29 s, and nothing tells me who scored or how.
+- I see no screen and no block.
+- Would I play again? No. It looks like the hockey base's skaters gathered round a puck, on a court, with a hoop.
+
+Gap to the target, in three lines (unchanged since phase 1):
+1. The bodies do not play basketball: they pile up, a screen or block does not read, and the ball leaves the court.
+2. The camera turns. The target is a steady three-quarter broadcast view.
+3. No arches, trees, fence, or blue court with an orange key (phase 3, not yet built).
+
+## Cost so far (`tl ledger`, TL_SITE_DIR=.tl/jobs)
+
+At 16:46: 246 min wall time, 229 min running, 5 packages, 16 rounds, 26.4M tokens in (23.6M cache reads), 555k out,
+weighted 5.69M, 1 replan, 2 critic rounds. No v0.1.0 yet, so no change box yet.
+
+## Where the iterations stop converging (so far)
+
+Not yet at the change box. The route stopped converging before a first version, for four reasons.
+- **The engine's rule:** a 1.0 ms budget that a 3 v 3 of the engine's own figures cannot meet. This is the hard stop.
+  The Director's ruling and H2c address it.
+- **The editor's route:**
+  - A person is asked engineering questions (budget, scope, rig tick).
+  - The "Yes, let it" chip and a written yes do not widen a scope.
+  - The critic held a basketball blockout for want of hockey contact rows.
+  - Three builder rounds were lost to a clock on a loaded machine before H1b.
+- **The builders:** two cores were written from scratch (court_core failed on its own bound by 6 frames; court_exchange
+  was rewritten whole). Their self-reports are honest (each lists what it did not do). A builder's own tofu test said
+  ok while its metrics were out of the planner's bounds.
+- **The critic:** its reading of what it sees is right (piles, no hit-stop, recoloured kids, a turning camera). But its
+  two revise rounds were thrown away by the budget and by the tofu test after the merge, so nothing it said changed
+  the game.
