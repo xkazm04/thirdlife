@@ -9,7 +9,20 @@
 // 3. prints what a person will meet, in plain words, and one JSON line {"tool":"tl.rink.check/1", ...} last for the Foreman.
 // Figures are per match unless said; every figure names the hand it was read through (CLAUDE.md: a bot's hand measures the game).
 // exit 0 = measured (warnings are words, not a failure); 1 = the cartridge is refused or a match did not end; 2 = could not run.
+// H1 of 25 Nov (E3g item 5: a job's first lint waited 2.6-3.4 min for two of these checks, each mostly the 16 skate_only
+// matches played in a row by one process):
+//   - the defect cells' seeds are split into --defect-groups G contiguous ranges (default 4, at most 4), one lab process
+//     each, and every run goes through a pool of at most --jobs J lab processes (default 4: one lab process is one core, so 4
+//     of a 16-thread machine is 25 %; before the split the check ran 8 at once),
+//     so the check never loads the machine more than it did. Each match is played by its own seed, so the per-match lines
+//     and the JSON line are the same byte for byte as one process playing all the seeds (only `seconds` differs);
+//   - the lab's raw lines are cached in .tl/check-cartridge-cache/ (TL_RINK_CHECK_CACHE overrides; --no-cache skips it),
+//     keyed by the cartridge's bytes, the rules file's bytes, the lab exe's bytes, the content dir's bytes and every run's
+//     arguments: the house check and an untouched base cartridge are the same in every job. Only a check whose every run
+//     completed is kept. A hit says so in words and in the JSON line (`cached`: true).
+// TL_RINKLAB_EXE: a stand-in lab (a .mjs file is run with node), for the Foreman's tests.
 import { spawn } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -32,7 +45,7 @@ function notRun(why) {
 
 function run(exe, args) {
   return new Promise((resolve) => {
-    const p = spawn(exe, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const p = exe.endsWith(".mjs") ? spawn(process.execPath, [exe, ...args], { stdio: ["ignore", "pipe", "pipe"] }) : spawn(exe, args, { stdio: ["ignore", "pipe", "pipe"] });
     let out = "";
     p.stdout.on("data", (d) => { out += d; });
     p.stderr.on("data", () => {});
@@ -69,26 +82,68 @@ if (!v.ok) {
 }
 
 // 2. the lab, in a scratch content dir holding the cartridge as Cartridges/tlcheck.cartridge.json
-const exe = path.join(HERE, "bin", rulesFile ? "rinklab-thirdlife.exe" : "rinklab.exe");
+const exe = process.env.TL_RINKLAB_EXE || path.join(HERE, "bin", rulesFile ? "rinklab-thirdlife.exe" : "rinklab.exe");
 if (!fs.existsSync(exe)) notRun(`${path.relative(ROOT, exe)} is not built (bash engine/tools/rink.sh ${rulesFile ? "lab-build-thirdlife" : "lab-build"})`);
-const scratch = path.join(ROOT, ".tl", "check-cartridge", String(process.pid));
-fs.rmSync(scratch, { recursive: true, force: true });
-fs.cpSync(CONTENT, scratch, { recursive: true });
-fs.writeFileSync(path.join(scratch, "Cartridges", "tlcheck.cartridge.json"), text);
-if (rulesFile) fs.copyFileSync(rulesFile, path.join(scratch, "Cartridges", "tlcheck.rules.json"));
-const content = scratch.replace(/\\/g, "/");
-const t0 = Date.now();
-const jobs = [];
+const defectGroups = Math.min(4, Math.max(1, Number(arg("--defect-groups", "4"))));
+const maxJobs = Math.max(1, Number(arg("--jobs", "4")));
+// The runs, in the order their results are read (the JSON line's key order follows it). `pri` 0 runs first: the long cells.
+const C = "<content>";
+const runs = [];
 for (const lv of LEVELS) {
-  jobs.push(run(exe, ["match", content, "-cartridge=tlcheck", `-seeds=1-${seeds}`, `-difficulty=${lv}`, "-player=regular", "-playersprint"]).then((r) => ({ hand: "playtester", lv, r })));
-  if (planSeeds > 0) jobs.push(run(exe, ["match", content, "-cartridge=tlcheck", `-seeds=1-${planSeeds}`, `-difficulty=${lv}`, "-plan=regular"]).then((r) => ({ hand: "plan", lv, r })));
+  runs.push({ hand: "playtester", lv, pri: 1, args: ["match", C, "-cartridge=tlcheck", `-seeds=1-${seeds}`, `-difficulty=${lv}`, "-player=regular", "-playersprint"] });
+  if (planSeeds > 0) runs.push({ hand: "plan", lv, pri: 1, args: ["match", C, "-cartridge=tlcheck", `-seeds=1-${planSeeds}`, `-difficulty=${lv}`, "-plan=regular"] });
 }
+/** `n` seeds from 1 in `g` contiguous ranges, as even as they go: 16 in 4 -> 1-4, 5-8, 9-12, 13-16. */
+const ranges = (n, g) => { const out = []; let from = 1; for (let i = 0; i < Math.min(g, n); i++) { const k = Math.floor(n / Math.min(g, n)) + (i < n % Math.min(g, n) ? 1 : 0); out.push(`${from}-${from + k - 1}`); from += k; } return out; };
 if (defects) {
-  jobs.push(run(exe, ["match", content, "-cartridge=tlcheck", `-seeds=1-${defectSeeds}`, "-difficulty=pro", "-player=regular", "-playersprint", "-remove=idle"]).then((r) => ({ hand: "idle", lv: "pro", r })));
-  jobs.push(run(exe, ["match", content, "-cartridge=tlcheck", `-seeds=1-${defectSeeds}`, "-difficulty=pro", "-plan=regular", "-playersprint", "-only=none", "-plancheck"]).then((r) => ({ hand: "skate_only", lv: "pro", r })));
+  for (const s of ranges(defectSeeds, defectGroups)) runs.push({ hand: "idle", lv: "pro", pri: 1, args: ["match", C, "-cartridge=tlcheck", `-seeds=${s}`, "-difficulty=pro", "-player=regular", "-playersprint", "-remove=idle"] });
+  for (const s of ranges(defectSeeds, defectGroups)) runs.push({ hand: "skate_only", lv: "pro", pri: 0, args: ["match", C, "-cartridge=tlcheck", `-seeds=${s}`, "-difficulty=pro", "-plan=regular", "-playersprint", "-only=none", "-plancheck"] });
 }
-const done = await Promise.all(jobs);
-fs.rmSync(scratch, { recursive: true, force: true });
+// The cache key: what the lab reads (the cartridge, the rules, the content dir, the exe) and how it is asked.
+const sha = (...parts) => { const h = crypto.createHash("sha256"); for (const p of parts) h.update(p); return h.digest("hex"); };
+const contentHash = () => { const h = crypto.createHash("sha256"); const walk = (d, rel) => { for (const n of fs.readdirSync(d).sort()) { const a = path.join(d, n), r = rel ? `${rel}/${n}` : n; if (fs.statSync(a).isDirectory()) walk(a, r); else h.update(`${r}\0`).update(fs.readFileSync(a)).update("\0"); } }; walk(CONTENT, ""); return h.digest("hex"); };
+const useCache = !process.argv.includes("--no-cache") && !process.argv.includes("--make-bands");
+const cacheDir = process.env.TL_RINK_CHECK_CACHE || path.join(ROOT, ".tl", "check-cartridge-cache");
+const key = useCache ? sha(JSON.stringify({ v: 1, runs: runs.map((r) => [r.hand, r.lv, r.args]) }), "\0", text, "\0", rulesFile ? fs.readFileSync(rulesFile) : "", "\0", fs.readFileSync(exe), "\0", contentHash()) : "";
+const cacheFile = useCache ? path.join(cacheDir, `${key}.json`) : "";
+const t0 = Date.now();
+let done;
+let cached = false;
+try {
+  if (useCache) {
+    const c = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+    if (c.tool === "tl.rink.check.cache/1" && Array.isArray(c.done) && c.done.length === new Set(runs.map((r) => `${r.hand} ${r.lv}`)).size) { done = c.done; cached = true; }
+  }
+} catch { /* not cached */ }
+if (!cached) {
+  const scratch = path.join(ROOT, ".tl", "check-cartridge", String(process.pid));
+  fs.rmSync(scratch, { recursive: true, force: true });
+  fs.cpSync(CONTENT, scratch, { recursive: true });
+  fs.writeFileSync(path.join(scratch, "Cartridges", "tlcheck.cartridge.json"), text);
+  if (rulesFile) fs.copyFileSync(rulesFile, path.join(scratch, "Cartridges", "tlcheck.rules.json"));
+  const content = scratch.replace(/\\/g, "/");
+  // A pool of at most maxJobs lab processes: the long cells first, every result kept at its run's place.
+  const out = new Array(runs.length);
+  const order = runs.map((r, i) => i).sort((a, b) => runs[a].pri - runs[b].pri || a - b);
+  const worker = async () => { while (order.length) { const i = order.shift(); const r = runs[i]; out[i] = { hand: r.hand, lv: r.lv, r: await run(exe, r.args.map((a) => (a === C ? content : a))) }; } };
+  await Promise.all(Array.from({ length: Math.min(maxJobs, runs.length) }, worker));
+  fs.rmSync(scratch, { recursive: true, force: true });
+  // The groups of a cell, joined in seed order: one result per cell, as one process playing every seed gives.
+  done = [];
+  for (const x of out) {
+    const same = done.find((d) => d.hand === x.hand && d.lv === x.lv);
+    if (same === undefined) done.push({ hand: x.hand, lv: x.lv, r: { code: x.r.code, lines: [...x.r.lines] } });
+    else { same.r.code = same.r.code !== 0 ? same.r.code : x.r.code; same.r.lines.push(...x.r.lines); }
+  }
+  if (useCache && done.every((d) => d.r.code === 0)) {
+    try {
+      fs.mkdirSync(cacheDir, { recursive: true });
+      const tmp = `${cacheFile}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify({ tool: "tl.rink.check.cache/1", file: path.basename(file), runs: runs.length, done }) + "\n");
+      fs.renameSync(tmp, cacheFile);
+    } catch { /* a cache that cannot be written is only slower */ }
+  }
+}
 const seconds = (Date.now() - t0) / 1000;
 
 // 3. what a person meets
@@ -175,7 +230,7 @@ if (fs.existsSync(BANDS) && !process.argv.includes("--make-bands")) {
   }
 }
 const ok = problems.length === 0;
-say(`rink check-cartridge: ${path.basename(file)}${rulesFile ? " + " + path.basename(rulesFile) : ""} (validator: accepted; ${done.length} runs in ${r1(seconds)} s)`);
+say(`rink check-cartridge: ${path.basename(file)}${rulesFile ? " + " + path.basename(rulesFile) : ""} (validator: accepted; ${done.length} runs in ${r1(seconds)} s${cached ? ", read from the cache: this cartridge, rules, lab and content were measured before" : ""})`);
 for (const lv of LEVELS) {
   const m = pt(lv), p = levels[lv]?.plan;
   if (!m) continue;
@@ -190,5 +245,5 @@ for (const p of problems) say(`  FAIL ${p}`);
 say(ok ? `PASS  rink check-cartridge: measured${warnings.length ? ` (${warnings.length} warning(s))` : ""}` : `FAIL  rink check-cartridge: ${problems.length} run(s) did not complete`);
 console.log(JSON.stringify({ tool: "tl.rink.check/1", ok, ran: true, file: path.basename(file), rules: rulesFile ? path.basename(rulesFile) : undefined,
   hands: { playtester: `thirdjam regular playtester with sprint, ${seeds} seeds a level`, plan: planSeeds ? `planning hand (lab_plan regular), ${planSeeds} seeds a level` : undefined },
-  levels, ...(defects ? { defects: defectCells, defect_hands: { idle: `thirdjam regular playtester with every input removed, ${defectSeeds} seeds at pro`, skate_only: `planning hand (lab_plan regular) skating only, ${defectSeeds} seeds at pro, its sim copies checked` } } : {}), warnings, problems, seconds: r1(seconds) }));
+  levels, ...(defects ? { defects: defectCells, defect_hands: { idle: `thirdjam regular playtester with every input removed, ${defectSeeds} seeds at pro`, skate_only: `planning hand (lab_plan regular) skating only, ${defectSeeds} seeds at pro, its sim copies checked` } } : {}), warnings, problems, seconds: r1(seconds), ...(cached ? { cached: true } : {}) }));
 process.exit(ok ? 0 : 1);

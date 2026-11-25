@@ -18,6 +18,7 @@ import { coreRouteOf } from "./templates.js";
 import { playerChecks } from "./playercheck.js";
 import { FOREMAN_NOTE } from "./conduct.js";
 import { CARTRIDGE_DIFF } from "./coregate.js";
+import { REMOVED, entriesText, type Removal } from "./removal.js";
 
 /** The start of the Foreman's notes about what a data-only change skipped (after FOREMAN_NOTE). */
 export const DATA_ONLY = "data-only change";
@@ -93,7 +94,7 @@ export const WHAT_CHANGED = "what changed";
  * be promoted, from the log since the last promotion: the person's words, the cartridge diff's keys (before -> after),
  * and the files merged. Nothing merged is said too: the change was not made.
  */
-export function whatChangedNote(events: readonly JobEvent[], version: string): string {
+export function whatChangedNote(events: readonly JobEvent[], version: string, found: readonly Removal[] = []): string {
   let last = -1;
   let was = "";
   for (const e of events) if (e.type === "promoted") [last, was] = [e.seq, e.version];
@@ -102,5 +103,10 @@ export function whatChangedNote(events: readonly JobEvent[], version: string): s
   const keys = since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `) ? [e.text.slice(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `.length).split(" (")[0] ?? ""] : [])).filter(Boolean);
   const files = [...new Set(since.flatMap((e) => (e.type === "merge" ? e.files : [])))].sort();
   const made = files.length === 0 ? "nothing was merged: the change was NOT made" : `${keys.length > 0 ? `${keys.join("; ")}; ` : ""}files: ${files.join(", ")}`;
-  return `${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1000);
+  // H1 (E5e defect 3): each removal on its own line, "removed: ...; why: ...": the diff's REMOVED notes, then what the
+  // promoted cartridge lost that no note names (a builder's round), with why unknown.
+  const named = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${REMOVED}: `) ? [e.text.slice(FOREMAN_NOTE.length)] : []));
+  const unnamed = found.filter((r) => !named.some((n) => n.startsWith(`${REMOVED}: ${entriesText([r])};`))).map((r) => `${REMOVED}: ${entriesText([r])}; why: not said (a builder's round; its DEVIATIONS may say)`);
+  const lines = [...new Set([...named, ...unnamed])].map((l) => `\n${l}`).join("");
+  return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1000)}${lines}`;
 }

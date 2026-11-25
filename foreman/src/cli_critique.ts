@@ -13,7 +13,7 @@ import { readManifest } from "./promoter.js";
 import { critic } from "./designer.js";
 import { criticRubric, packageLinesOf } from "./phases.js";
 import { STRIP, botFinish, planShots, shotFile, shotLabel, stripFile, stripFrom, stripLabel } from "./shots.js";
-import { feelItems, stripsOn } from "./quality.js";
+import { feelItems, hudArgs, hudLabel, hudOn, stripsOn } from "./quality.js";
 import { verbsFor } from "./verbs.js";
 import { UsageError, str, type Args } from "./cli_args.js";
 import { toPosix } from "./paths.js";
@@ -42,6 +42,7 @@ export async function critiqueCommand(a: Args, out: (s: string) => void, d: { jo
   // JOB.md 2026-11-21: one motion strip per filmed point when the engine's runner can film one (--no-strips: stills only).
   const strips: { capture: string; label: string }[] = [];
   const withStrips = a.flags["no-strips"] !== true && stripsOn(verbsFor(d.verifier.location));
+  const hud = hudOn(verbsFor(d.verifier.location)); // H1: judged as a person sees it, HUD on
   for (const [si, shot] of shots.entries()) {
     out(`shot ${si + 1}: ${shot.bot ?? "no bot"}${shot.package ? ` (package ${shot.package})` : ""}, finish ${shot.finish ?? "unknown"}, frames ${shot.frames.join(", ")}`);
     for (const cam of mf.cameras) {
@@ -49,7 +50,7 @@ export async function critiqueCommand(a: Args, out: (s: string) => void, d: { jo
         const file = path.join(dest, shotFile(m, cam, frame, shot, si));
         const vr = await d.verifier.run({
           verb: "capture",
-          args: [`--cam=${cam}`, `--frame=${frame}`, `--out=${toPosix(file)}`, `--res=${str(a, "capture-res") ?? "1280x720"}`, ...(shot.bot !== undefined ? [`--test=${shot.bot}`] : [])],
+          args: [`--cam=${cam}`, `--frame=${frame}`, `--out=${toPosix(file)}`, `--res=${str(a, "capture-res") ?? "1280x720"}`, ...(shot.bot !== undefined ? [`--test=${shot.bot}`] : []), ...hudArgs(hud)],
           packDir,
           reportFile: path.join(dest, `${path.basename(file, ".png")}.json`),
         });
@@ -57,20 +58,20 @@ export async function critiqueCommand(a: Args, out: (s: string) => void, d: { jo
         out(`  capture ${path.basename(file)} ${ok ? "ok" : `FAILED: ${vr.summary}`}`);
         if (ok) {
           captures.push(file);
-          labels.push(shotLabel(cam, frame, shot));
+          labels.push(hudLabel(shotLabel(cam, frame, shot), hud));
         }
         if (!withStrips) continue;
         const from = stripFrom(frame);
         const sf = path.join(dest, stripFile(m, cam, shot, from));
         const sr = await d.verifier.run({
           verb: "capture",
-          args: [`--cam=${cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${STRIP.step}`, `--out=${toPosix(sf)}`, `--res=${str(a, "capture-res") ?? "1280x720"}`, ...(shot.bot !== undefined ? [`--test=${shot.bot}`] : [])],
+          args: [`--cam=${cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${STRIP.step}`, `--out=${toPosix(sf)}`, `--res=${str(a, "capture-res") ?? "1280x720"}`, ...(shot.bot !== undefined ? [`--test=${shot.bot}`] : []), ...hudArgs(hud)],
           packDir,
           reportFile: path.join(dest, `${path.basename(sf, ".png")}.json`),
         });
         const sok = sr.ok && fs.existsSync(sf);
         out(`  strip ${path.basename(sf)} ${sok ? "ok" : `FAILED: ${sr.summary}`}`);
-        if (sok) strips.push({ capture: sf, label: stripLabel(cam, from, shot) });
+        if (sok) strips.push({ capture: sf, label: hudLabel(stripLabel(cam, from, shot), hud) });
       }
     }
   }
