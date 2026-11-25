@@ -29,10 +29,13 @@ writes it back. Newest shift-log entry last.
   core + a skin, started from the base `engine/templates/rink_game` (hokej made reusable); the Foreman's core route,
   the measured check, a change = a cartridge diff, growth past the base, Create's iteration path. Proven on real jobs
   (E5-E5e): v0.1.0 in 28 min, a change in 3-9 min, the game kept its own. Merged to main 25 Nov (6223787 / 049acf0).
-- Next 3 (day run of 25 Nov, owner's plan): (1) editor hardening (the six E5e defects: HUD-off captures, kit gate on
-  zones, silent removals, the slow start, old games on a new base, bumpers at the boards); (2) one derivation builder
-  through the editor judged by player lenses (recommended: Arsenal hockey); (3) scratch builders, one per game the owner
-  picks from the 20 in docs/shifts/2026-11-24-night/VERDICT.md.
+- Since 25 Nov day: editor hardening from real Create jobs (H1-H1j, H2-H2e landed; VERDICT docs/shifts/2026-11-25-day/
+  VERDICT.md, page https://claude.ai/artifact/Gyq4DfepcQnY7amcWNXDKF). Arsenal hockey (a derivation on the rink core)
+  reached v0.1.21 with tricks that decide matches; from-scratch games (robot soccer v0.1.5; half-court, karts stopped)
+  do not reach hokej's quality yet. G11 biplane and G19 shield wall run on the hardened editor.
+- Next 3: (1) the owner's hand on Arsenal v0.1.21 and the asks (newcomer check as a note; dusk export; kit parts; rookie);
+  (2) land G11/G19 and harden on what they find; (3) the remaining editor gaps (trick names to the skin, stale HOME text
+  after changes, a rebased game's new tests not listed, a builder note's last segment only).
 
 ## Open owner verdicts
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
@@ -436,4 +439,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 20:40: H2e landed (4b7c72e: the base at 5,669 lines, comments moved word for word into its README section for people, the Foreman quotes the README only up to it; growth test holds 5,500-5,700) and H1j landed (6d2573f + JOB.md f298936: every Resume grants a send-back; a waiting change goes first and carries the waiting fix). Merged trees: fast 5/5, npm 436/429/0, rink. 47/0, hokej. 5/0, world 9/9. New findings: the final hand check re-runs the same seeds on unchanged files (G4, ~20 min); a builder note keeps only its last segment (G5).
 - 20:44: G4 round 2 landed (eccd3af docs): built to the last check under the solo budget (H1f scope widening worked), then failed on the newcomer hand check (7 of 20 against 13) re-run on unchanged files; 482 min, 34.3 M tokens; look a step, behaviour unchanged. G4 sent to test Create's new Resume (H1i/H1j) as a person; owner ask: a too-hard newcomer check as a note on v0.1.0 instead of a failed job?
 - 20:49: editor hardening done (H1-H1j, H2-H2e). Room free -> G11 Biplane duel and G19 Shield wall started (Opus) on the hardened editor; 5 agents.
+- 21:01: day verdict written (d2400a8 + page https://claude.ai/artifact/Gyq4DfepcQnY7amcWNXDKF); exe d73735a export check PASS; Arsenal v0.1.21 and Robot v0.1.5 run 600 frames in it with 0 errors; 9 Create-made games in the owner menu. G1 round 7 landed (d73735a). G4/G5/G11/G19 continue under the hourly standups.
 

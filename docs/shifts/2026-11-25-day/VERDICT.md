@@ -4,6 +4,8 @@
 hockey game through it from lenses of players. Multiple to start game from scratch and see whether iterations can lead the
 user into outputs with similar quality." Then: "1,2,4 today 5,11,19 dynamically based on PC resources today or tomorrow."
 
+Page: https://claude.ai/artifact/Gyq4DfepcQnY7amcWNXDKF
+
 **In one paragraph.** Today every editor defect was found by a person-lane making a real game, and fixed the same day by
 two hardening lanes (25 landed rounds, each verified on the merged tree). Every fix was found on a real, paid job; none came
 from a unit test. The derivation game (Arsenal hockey, on the rink core) went through 21 versions and now has tricks
