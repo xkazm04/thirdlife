@@ -183,6 +183,10 @@ func _physics_process(_delta: float) -> void:
 	if mode == "play" and bool(session.call("ends_now")):     # Esc, unless the designer panel is open (ui/PATCHES.md 2)
 		_end_run()
 		return
+	# H2b (25 Nov): a still with the HUD on sees its camera from the frame before the grab, so the pack's HUD projects its marks
+	# on the ice through that camera (the rink base drew its rings for "follow", then the image came through "top": an ellipse)
+	if mode == "capture" and strip_count == 0 and frame == frames_target - 1 and str(opts.get("hud", "off")) == "on" and ctx.cameras.has_view(str(opts.get("cam", ""))):
+		ctx.cameras.activate(str(opts.get("cam", "")))
 	if frame >= frames_target:
 		if mode == "bot":
 			# contracts/RUNNER.md (amended 2026-11-10): a bot that is not done within its frame budget is a failed

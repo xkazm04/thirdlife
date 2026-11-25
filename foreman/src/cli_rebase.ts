@@ -4,12 +4,13 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { Verb } from "./events.js";
+import type { PackageSpec, Registers, Verb } from "./events.js";
+import type { JobState } from "./joblog.js";
 import { JobLog } from "./joblog.js";
 import { restsOnAClock } from "./machine.js";
 import { PACK_VERSION } from "./manifest.js";
 import { promotePack, readManifest } from "./promoter.js";
-import { RINK_ROUTE, baseEngineDir, baseRefDir, hasBase } from "./coreroute.js";
+import { RINK_ROUTE, baseEngineDir, baseRefDir, baseRegisters, hasBase } from "./coreroute.js";
 import { coreRouteOf } from "./templates.js";
 import { FOREMAN_NOTE } from "./conduct.js";
 import { WHAT_CHANGED } from "./fastchange.js";
@@ -72,8 +73,30 @@ function printPlan(plan: RebasePlan, out: (s: string) => void): void {
   out(`current   ${plan.same.length}`);
   out(`kept      ${plan.kept.length}  ${plan.kept.join(", ")}`);
   if (plan.cartridge !== undefined) out(`cartridge ${plan.cartridge} (kept byte for byte)`);
-  if (plan.conflicts.length > 0) out(`CONFLICT  ${plan.conflicts.length}  ${plan.conflicts.join(", ")}: the game changed these base files; moving it would lose that`);
+  if (plan.edited.length > 0) out(`edited    ${plan.edited.length}  ${plan.edited.join(", ")}: the game's own changes, kept (the newest base did not change these files)`);
+  for (const c of plan.conflicts) out(`CONFLICT  ${c}: both changed it: ${plan.why[c] ?? ""}; moving would lose one side`);
   out(`manifest  version ${String(plan.manifest["version"])}, tests ${(plan.manifest["tests"] as string[] | undefined)?.join(", ") ?? "none"}`);
+}
+
+/**
+ * H2b: the plan follows the base. A job's pack.json is composed again from the plan's registers on its next merge (a change);
+ * the base package's registers were the base's of the day the job was planned, so a moved game lost the newest base's bots
+ * (tests/bot_toys.gd) at its next change. The base package's registers become the newest base's (its tests first) united with
+ * what the plan had. Returns the plan_set to write, or undefined when nothing changes.
+ */
+export function planAfterRebase(s: JobState, baseDir: string, present: (rel: string) => boolean): { packages: PackageSpec[]; card?: string; phases?: { id: string; title: string; try: string; packages: string[] }[] } | undefined {
+  const i = s.plan.findIndex((p) => p.kind === "base");
+  if (i < 0) return undefined;
+  const old: Registers = s.plan[i]?.registers ?? {};
+  const nb = baseRegisters(baseDir);
+  const merged: Registers = {};
+  for (const k of ["capabilities", "assets", "tests", "cameras"] as const) {
+    const v = [...new Set([...(nb[k] ?? []), ...(old[k] ?? [])])].filter((x) => k === "capabilities" || k === "cameras" || present(x));
+    if (v.length > 0) merged[k] = v;
+  }
+  if (JSON.stringify(merged) === JSON.stringify(old)) return undefined;
+  const packages = s.plan.map((p, j) => (j === i ? { ...p, registers: merged } : p));
+  return { packages, ...(s.card !== undefined ? { card: s.card } : {}), ...(s.phases.length > 0 ? { phases: s.phases.map((ph) => ({ id: ph.id, title: ph.title, try: ph.try, packages: [...ph.packages] })) } : {}) };
 }
 
 export async function rebaseCommand(a: Args, verifier: Verifier, jobDir: string | undefined, out: (s: string) => void): Promise<number> {
@@ -120,10 +143,10 @@ export async function rebaseCommand(a: Args, verifier: Verifier, jobDir: string 
     const version = PACK_VERSION.replace(/\d+$/, String(s.promotions.length));
     out(`game      ${s.promoted.packId} ${s.promoted.version} (${s.promoted.dest})`);
     out(`base      ${toPosix(baseDir)}  (older versions from: ${k.sources.join("; ")})`);
-    const plan = planRebase(from, baseDir, k.known, version);
+    const plan = planRebase(from, baseDir, k.known, version, fs.existsSync(path.join(refBase, "pack.json")) ? refBase : undefined);
     printPlan(plan, out);
     if (plan.conflicts.length > 0) {
-      log.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}the move to the newest base was refused: the game changed the base's ${plan.conflicts.join(", ")} (the move would lose that); the game plays as before` });
+      log.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}the move to the newest base was refused: both the game and the newer base changed ${plan.conflicts.map((c) => `${c} (${plan.why[c] ?? ""})`).join("; ")}; moving would lose one side; the game plays as before` });
       return 1;
     }
     if (nothingToMove(plan)) {
@@ -146,9 +169,11 @@ export async function rebaseCommand(a: Args, verifier: Verifier, jobDir: string 
       out(`FAIL  rebase: ${why}`);
       return 1;
     }
+    const replanned = planAfterRebase(s, baseDir, (rel) => fs.existsSync(path.join(cand, ...rel.split("/"))));
     swapDir(cand, path.join(jobDir, "pack"));
     if (fs.existsSync(path.join(jobDir, "ref"))) swapDir(baseDir, refBase); // the job's reference copy of the base follows (later rounds start from it)
     fs.rmSync(path.join(jobDir, "rebase"), { recursive: true, force: true });
+    if (replanned !== undefined) log.append({ type: "plan_set", ...replanned }); // H2b: the base package's registers follow the base
     log.append({ type: "merge", package: owner, files: [...plan.replaced, ...plan.added, "pack.json"].sort(), ...(plan.removed.length > 0 ? { removed: plan.removed } : {}) });
     log.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${WHAT_CHANGED} in v${version} (since v${s.promoted.version}): ${summary}`.slice(0, 1000) });
     if (v.asBefore.length > 0) log.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}the move to the newest base kept these failures as they were (each fails on v${s.promoted.version} too): ${v.asBefore.join("; ")}`.slice(0, 1000) });

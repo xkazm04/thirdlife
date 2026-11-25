@@ -151,10 +151,16 @@ func booth(f: int, said: Dictionary, line_end: int, barks: Array) -> void:
 
 
 ## Says the commentator's line `id` (a line of the booth's bank) on the voice channel, with the music's duck.
+## A line with no voice (a skin's own commentary bank: thirdjam recorded only its own lines) is said as text only: the
+## caption shows it, the voice before it fades as a cut line does (a new line stops the one playing, cpp:860); a
+## "voice_none" row records it. Never an error (lane H2b, 25 Nov: G1's skin lines threw a script error in every window,
+## while the headless checks never drew a frame).
 func say(id: String, f: int) -> void:
 	var rel: String = str((voice_table.get("lines", {}) as Dictionary).get(id, ""))
 	if rel == "":
-		push_error("rink audio: no voice for commentary line '%s'" % id)
+		if rows.size() < MAX_ROWS:
+			rows.append([f, "voice_none", id, 0.0, "", 0.0])
+		TLSound.stop_voice(int(voice_table.get("cut_frames", 9)))
 		return
 	var db: float = linear_to_db(float(voice_table["volume"]) * float(voice_table["out_gain"]))   # Volume x Unreal's measured output
 	if rows.size() < MAX_ROWS:
