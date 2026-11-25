@@ -120,6 +120,9 @@ test("E3 route: a core brief names the cartridge keys and skin fields it changes
     for (const k of ["game.effects", "game.rules.hooks", "game.contact.check_windup_frames", "game.contact.bot_check_windup_frames"]) assert.ok(knownPath(k, known), k);
   assert.deepEqual(coreBriefProblems(RINK_LINES, RINK_ROUTE, ENGINE), [], "lane E1's skin has title and team_names");
   assert.ok(coreBriefProblems("CARTRIDGE: game.rink.length_m = 60\nSKIN: teams = A", RINK_ROUTE, ENGINE).some((p) => p.includes(`"teams", which is not a field of the base's data/skin.json`)));
+  // E5c (25 Nov, the real Designer refused twice): the skin reader's optional team_plural and the README's "level words"
+  if (fs.existsSync(path.join(ENGINE, "templates", "rink_game", "scripts", "hud", "skin.gd")))
+    assert.deepEqual(coreBriefProblems("CARTRIDGE: game.rink.length_m = 60\nSKIN: team_plural = both plural\nSKIN: level words = Day Trippers, Ringers", RINK_ROUTE, ENGINE).filter((p) => p.includes("SKIN line")), []);
   const bad = coreBriefProblems("CARTRIDGE: game.rink.kick_power = 9\nSKIN: title = X", RINK_ROUTE, ENGINE);
   assert.ok(bad.some((p) => p.includes('"game.rink.kick_power", which is not a key of the rink cartridge')), bad.join("\n"));
   assert.ok(coreBriefProblems("nothing", RINK_ROUTE, ENGINE).some((p) => p.includes('1 to 16 "CARTRIDGE:')));

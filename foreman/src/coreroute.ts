@@ -308,11 +308,19 @@ export function skinFields(baseDir: string | undefined): Set<string> | undefined
   const file = path.join(baseDir, "data", "skin.json");
   if (!fs.existsSync(file)) return undefined;
   try {
-    return keyPaths(readJson(file));
+    const out = keyPaths(readJson(file));
+    // E5c (25 Nov): the optional keys the base's skin reader declares but its data/skin.json leaves out (E1b's
+    // `team_plural`): the Designer reads them in the base's README and was refused for them twice
+    const reader = path.join(baseDir, "scripts", "hud", "skin.gd");
+    if (fs.existsSync(reader)) for (const m of fs.readFileSync(reader, "utf8").matchAll(/"([a-z_]+)":\s*TYPE_[A-Z]+/g)) out.add(m[1] as string);
+    return out;
   } catch {
     return undefined;
   }
 }
+
+/** E5c: the README calls `levels` "the level row's words"; the Designer writes `SKIN: level words = ...` (field "level"). */
+const skinAlias = (field: string, skin: Set<string>): boolean => field === "level" && skin.has("levels");
 
 export const CORE_LIMITS = { cartridgeLines: [1, 16], skinLines: [1, 10] } as const;
 
@@ -331,7 +339,7 @@ export function coreBriefProblems(rules: string, route: CoreRoute, engineDir: st
     for (const c of l.cartridge) if (!knownPath(c.path, known)) out.push(`CARTRIDGE line names "${c.path}", which is not a key of the ${route.core} cartridge (tj.cartridge/1: see ${route.docs[2]?.src ?? "the catalog"} and the modes); keys start at the envelope (title, theme) or at game. (game.rink, game.teams, game.skater, game.rules, game.look, ...)`);
   }
   const skin = skinFields(baseEngineDir(engineDir, route));
-  if (skin !== undefined) for (const s of l.skin) if (!knownPath(s.field, skin)) out.push(`SKIN line names "${s.field}", which is not a field of the base's data/skin.json (${[...skin].filter((x) => !x.includes(".")).join(", ")})`);
+  if (skin !== undefined) for (const s of l.skin) if (!knownPath(s.field, skin) && !skinAlias(s.field, skin)) out.push(`SKIN line names "${s.field}", which is not a field of the base's data/skin.json (${[...skin].filter((x) => !x.includes(".")).join(", ")})`);
   return out;
 }
 
