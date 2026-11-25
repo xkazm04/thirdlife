@@ -1,8 +1,9 @@
 // E3 of 24-25 Nov: the quality gates of a game on a core (coreroute.ts). The hand-built gates (the tofu rows, the
 // blockout, the house hockey's bot figures) assume a hand-written simulation; on a core the simulation is the core's,
 // so the floor is:
-//   1. before any runner verb, every cartridge or rules file a round changed is validated (lane E2's validator, the
-//      envelope check while it is missing): a problem sends the round back with the problems, as a failed check would;
+//   1. before any runner verb, every cartridge or rules file a round changed is validated as the core validates it
+//      (thirdjam's validator and the core's rules reader, foreman/src/cartridge.ts): a problem sends the round back with lane
+//      E2's pointer-prefixed sentences, as a failed check would;
 //   2. at every look, the measured check of lane E2 (`bash engine/tools/rink.sh check-cartridge <file>`) plays the
 //      game's cartridge headless beside the same check on the house game's (engine/packs/hokej), and a failed check
 //      makes the look NOT ok and names the package that owns the cartridge. A check that could not run is said, never
@@ -14,12 +15,15 @@ import path from "node:path";
 import type { Milestone } from "./events.js";
 import type { GateHost } from "./p10gate.js";
 import type { GateFailure } from "./machine.js";
-import { CARTRIDGE_INVALID, coreDataFiles, fakeRinkCheck, gameCartridges, runRinkCheck, validateCartridgeFile, type CoreCheckRun, type CoreRoute } from "./coreroute.js";
+import { CARTRIDGE_INVALID, coreDataFiles, fakeRinkCheck, gameCartridges, runRinkCheck, sectionOf, validateCartridgeFile, type CoreCheckRun, type CoreRoute } from "./coreroute.js";
+import { applyChanges, type ChangeResult } from "./cartridge.js"; // lane E2: a change set applied and validated
+import { generate } from "./designer.js";
+import type { RunResult } from "./builder/types.js";
 import { coreRouteOf } from "./templates.js";
 import { isFakeRunner } from "./verbs.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
 import type { TofuResult, TofuRow } from "./tofu.js";
-import { toPosix } from "./paths.js";
+import { PKG_ROOT, stripBom, toPosix } from "./paths.js";
 
 /** The job's core route (undefined for a hand-built game). */
 export const jobCore = (h: Pick<GateHost, "s">): CoreRoute | undefined => coreRouteOf(h.s.brief?.concept?.template);
@@ -41,8 +45,9 @@ export async function coreDataGate(h: GateHost, id: string, round: number, ws: s
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.cartridge/1", package: id, round, ok: bad.length === 0, files: verdicts }, null, 1) + "\n");
   if (bad.length === 0) return undefined;
-  const problems = bad.flatMap((v) => v.problems.map((p) => `${p} (${v.by})`));
-  const summary = `${CARTRIDGE_INVALID}: ${bad.map((v) => v.file).join(", ")}: ${clip(problems.join("; "), 1500)}. Nothing was run: a cartridge the core refuses opens no game (ctx.cores.open returns null). Fix the keys and values; the catalog and the schema are in your reference copy (ref/cores/).`;
+  // Lane E2's sentences start with a JSON pointer ("at /game/skater/speeed: unknown key ... Allowed keys: ..."): kept whole, one per line.
+  const problems = bad.flatMap((v) => v.problems.map((p) => `- ${v.file} ${p}`));
+  const summary = `${CARTRIDGE_INVALID}: ${bad.map((v) => `${v.file} (${v.by})`).join(", ")}:\n${clip(problems.join("\n"), 2500)}\nNothing was run: a cartridge the core refuses opens no game (ctx.cores.open returns null). Fix the keys and values; the catalog and the schema are in your reference copy (ref/cores/).`;
   h.append({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${summary} [report: ${h.rel(file)}]` });
   return { verb: "lint", level: "V0", ok: false, reportFile: file, verdictFile: file, flags: [], summary, durationMs: 0 };
 }
@@ -107,4 +112,101 @@ export async function coreLook(h: GateHost, m: Milestone): Promise<(TofuResult &
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.core/1", milestone: m, core: core.core, check: core.check, ok: ok && measured, measured, package: owner, rows, line, cartridges: carts.map((c) => toPosix(c.file)), ...(house !== undefined ? { house } : {}) }, null, 1) + "\n");
   return { ok: ok && measured, rows, line, package: owner, report: h.rel(file), measured };
+}
+
+// ---------- E3b of 25 Nov: a change round on a core game as a cartridge diff (lane E2's applyChanges) ----------
+
+/** The start of the Foreman's note (after FOREMAN_NOTE) when a change round is a cartridge diff the Foreman applies. */
+export const CARTRIDGE_DIFF = "cartridge diff";
+
+const diffFile = (h: GateHost, id: string, round: number): string => h.dir("reports", `${id}-r${round}-diff.cartridge.json`);
+const diffSchema = { type: "object", additionalProperties: false, required: ["changes", "why"], properties: { changes: { type: "object" }, why: { type: "string", minLength: 1 } } } as const;
+const PROMPT = path.join(PKG_ROOT, "prompts", "cartridge-change.md");
+const verdictWord = (r: CoreCheckRun): string => (r.code === 0 ? "ok" : r.code === 1 ? "FAILED" : "not measured");
+
+/** The catalog a diff is written from: CARTRIDGE.md sections 3 and 5 in the job's reference copy. */
+function diffCatalog(h: GateHost, core: CoreRoute): string {
+  const file = h.dir("ref", "cores", core.core, "CARTRIDGE.md");
+  return [sectionOf(file, /^## 3\. /), sectionOf(file, /^## 5\. /)].filter(Boolean).join("\n\n") || "(the catalog is not in this job's reference copy: use the keys of the cartridge above)";
+}
+
+/**
+ * E4's seam (applyChangeRequests): a change request whose owning package holds the game's cartridge tries a cartridge diff
+ * first. One short generate call (role `cartridge`) answers {changes, why}; lane E2's applyChanges applies it to the
+ * cartridge as pack/ holds it and validates it (a refused diff is asked once more with the pointer-prefixed errors); the
+ * measured check runs on the cartridge before and after. A valid diff the check does not fail becomes the owner's next
+ * round (`round`), run by the Foreman (diffRound), not by a builder. Anything else: the round goes to the builder as
+ * before, with the reason in a note. Returns whether the round is a diff round.
+ */
+export async function cartridgeChange(h: GateHost, owner: string, round: number, text: string): Promise<boolean> {
+  const core = jobCore(h);
+  const cart = core !== undefined ? gameCartridges(h.dir("pack"), h.s.plan).find((c) => c.owner === owner) : undefined;
+  if (core === undefined || cart === undefined) return false;
+  const note = (t: string): void => {
+    h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${t}` });
+  };
+  const packFile = h.dir("pack", ...cart.file.split("/"));
+  const current = JSON.parse(stripBom(fs.readFileSync(packFile, "utf8"))) as Record<string, unknown>;
+  const model = h.o.plannerModel ?? h.o.model;
+  let refused = "";
+  let applied: ChangeResult | undefined;
+  let why = "";
+  for (let attempt = 1; attempt <= 2 && applied === undefined; attempt++) {
+    const vars = { title: h.s.title ?? "", sentence: h.s.sentence ?? "", change: text, file: cart.file, cartridge: JSON.stringify(current, null, 1), catalog: diffCatalog(h, core), refused };
+    const res = await generate<{ changes: Record<string, unknown>; why: string }>(h.o.builder, "cartridge", fs.readFileSync(PROMPT, "utf8"), vars, diffSchema, () => [], { ...(model ? { model } : {}), timeoutMs: 5 * 60_000, attempts: 1 });
+    h.logGenerateCalls(res.calls, model);
+    if (!res.ok) {
+      note(`${CARTRIDGE_DIFF} not made (${clip(res.reason, 200)}): the change goes to the builder`);
+      return false;
+    }
+    why = res.value.why;
+    if (Object.keys(res.value.changes).length === 0) {
+      note(`${CARTRIDGE_DIFF} not made: no key says it (${clip(why, 200)}): the change goes to the builder`);
+      return false;
+    }
+    let r: ChangeResult;
+    try {
+      r = await applyChanges(current, res.value.changes);
+    } catch (e) {
+      r = { ok: false, errors: [(e as Error).message], cartridge: current, changed: [] };
+    }
+    if (r.ok && r.changed.every((c) => { const m = /: (.*) -> (.*)$/.exec(c); return m !== null && m[1] === m[2]; })) {
+      note(`${CARTRIDGE_DIFF} not made: the diff changes nothing (${clip(r.changed.join("; "), 200)}): the change goes to the builder`);
+      return false;
+    }
+    if (r.ok) applied = r;
+    else refused = `\n# Your previous diff was refused by thirdjam's validator\n${r.errors.map((x) => `- ${x}`).join("\n")}\nAnswer again with a diff the validator accepts.\n`;
+  }
+  if (applied === undefined) {
+    note(`${CARTRIDGE_DIFF} not made: refused twice by thirdjam's validator (${clip(refused.replace(/\s+/g, " "), 400)}): the change goes to the builder`);
+    return false;
+  }
+  const out = diffFile(h, owner, round);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, JSON.stringify(applied.cartridge, null, 1) + "\n");
+  const before = await coreCheck(h, packFile);
+  const after = await coreCheck(h, out);
+  const report = h.dir("reports", `${owner}-r${round}-diff-s${h.s.lastSeq + 1}.json`);
+  fs.writeFileSync(report, JSON.stringify({ schema: "tl.foreman.diff/1", package: owner, round, file: cart.file, change: text, why, changed: applied.changed, before, after }, null, 1) + "\n");
+  const said = `measured before: ${verdictWord(before)} (${figuresText(before.figures)}); after: ${verdictWord(after)} (${figuresText(after.figures)})`;
+  if (after.code === 1) {
+    note(`${CARTRIDGE_DIFF} not used: the measured check fails the changed cartridge (${clip(after.summary, 300)}); ${said}: the change goes to the builder [report: ${h.rel(report)}]`);
+    return false;
+  }
+  note(`${CARTRIDGE_DIFF}: ${applied.changed.join("; ")} (${clip(why, 200)}); ${said} [report: ${h.rel(report)}]`);
+  return true;
+}
+
+/**
+ * The owner's round when it is a diff round (a CARTRIDGE_DIFF note for this round): the diffed cartridge goes into the
+ * workspace and the round is verified and merged like a builder's. Undefined otherwise (the builder runs).
+ */
+export function diffRound(h: GateHost, id: string, round: number, ws: string): RunResult | undefined {
+  const n = [...h.s.notes].reverse().find((x) => x.package === id && x.round === round && x.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `));
+  const src = diffFile(h, id, round);
+  const cart = gameCartridges(h.dir("pack"), h.s.plan).find((c) => c.owner === id);
+  if (n === undefined || cart === undefined || !fs.existsSync(src)) return undefined;
+  fs.mkdirSync(path.dirname(path.join(ws, ...cart.file.split("/"))), { recursive: true });
+  fs.copyFileSync(src, path.join(ws, ...cart.file.split("/")));
+  return { ok: true, outcome: "ok", raw: { foreman: "cartridge diff", file: cart.file }, durationMs: 0 };
 }

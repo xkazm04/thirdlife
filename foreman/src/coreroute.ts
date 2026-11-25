@@ -17,6 +17,7 @@ import path from "node:path";
 import type { PackageSpec, Phase, Registers } from "./events.js";
 import { copyDir, globToRegExp, listFiles, matchesAny } from "./scope.js";
 import { REPO_ROOT, stripBom, toPosix } from "./paths.js";
+import { validateCartridgeText, validateRulesText } from "./cartridge.js"; // lane E2: the core's own verdicts
 
 /** The package kind the Foreman executes itself. */
 export const BASE_KIND = "base";
@@ -64,7 +65,7 @@ export const hasBase = (dir: string): boolean => fs.existsSync(path.join(dir, "p
 const readJson = (file: string): unknown => JSON.parse(stripBom(fs.readFileSync(file, "utf8")));
 
 /** Top-level files of a base that are not copied into a job's pack: the manifest (the Foreman composes it) and documents. */
-const notCopied = (rel: string): boolean => rel === "pack.json" || (!rel.includes("/") && /\.(md|txt)$/i.test(rel)) || rel.split("/").includes(".godot") || rel.endsWith(".import");
+const notCopied = (rel: string): boolean => rel === "pack.json" || (!rel.includes("/") && /\.(md|txt)$/i.test(rel)) || rel.split("/").includes(".godot") || rel.endsWith(".import") || rel.endsWith(".uid");
 
 /** The files of a base that a job's pack gets (pack-relative, sorted). */
 export function baseFiles(baseDir: string): string[] {
@@ -353,79 +354,17 @@ export function startFromBase(ws: string, refDir: string, packDir: string, spec:
 
 export interface CartridgeVerdict {
   file: string;
+  /** Lane E2's sentences, each starting with a JSON pointer ("at /game/skater/speeed: unknown key ..."): a model repairs from them. */
   problems: string[];
-  /** Who checked: lane E2's validator, or the Foreman's envelope check while it is missing. */
+  /** Who checked: thirdjam's validator for a cartridge, the core's rules reader for a sidecar (foreman/src/cartridge.ts). */
   by: string;
 }
 
-const ENVELOPE = ["schema", "id", "title", "seed", "theme", "tunables", "values", "rules", "entities", "ai", "game"];
-const RULES_KEYS = ["schema", "title", "note", "rules", "levels"];
-
-/** The Foreman's own envelope check of a cartridge or rules sidecar (the floor under lane E2's validator). */
-export function envelopeProblems(file: string, text: string): string[] {
-  let doc: unknown;
-  try {
-    doc = JSON.parse(stripBom(text));
-  } catch (e) {
-    return [`${file}: not valid JSON (${(e as Error).message})`];
-  }
-  if (doc === null || typeof doc !== "object" || Array.isArray(doc)) return [`${file}: must be one JSON object`];
-  const o = doc as Record<string, unknown>;
-  const out: string[] = [];
-  if (file.endsWith(".rules.json")) {
-    if (o["schema"] !== "tl.rink.rules/1") out.push(`${file}: schema must be "tl.rink.rules/1"`);
-    for (const k of Object.keys(o)) if (!RULES_KEYS.includes(k)) out.push(`${file}: unknown key "${k}" (a rules sidecar holds ${RULES_KEYS.join(", ")})`);
-    const r = o["rules"];
-    if (r !== undefined && (r === null || typeof r !== "object" || Array.isArray(r))) out.push(`${file}: "rules" must be an object of switches`);
-    else for (const [k, v] of Object.entries((r ?? {}) as Record<string, unknown>)) if (typeof v !== "number" && typeof v !== "boolean") out.push(`${file}: rule "${k}" must be a number or a boolean`);
-    return out;
-  }
-  if (o["schema"] !== "tj.cartridge/1") out.push(`${file}: schema must be "tj.cartridge/1"`);
-  for (const k of Object.keys(o)) if (!ENVELOPE.includes(k)) out.push(`${file}: unknown key "${k}" (the envelope holds ${ENVELOPE.join(", ")})`);
-  const g = o["game"];
-  if (g === null || typeof g !== "object" || Array.isArray(g)) out.push(`${file}: "game" must be an object (game.rink, game.teams, game.rules, ...)`);
-  return out;
-}
-
-type E2Module = Record<string, unknown>;
-let e2: Promise<E2Module | undefined> | undefined;
-/** Lane E2's validator module (foreman/src/cartridge.ts), when it has landed; undefined before. */
-export function e2Validator(): Promise<E2Module | undefined> {
-  e2 ??= import(new URL("./cartridge.js", import.meta.url).href).then((m: E2Module) => m, () => undefined);
-  return e2;
-}
-/** Test seam: forget the loaded validator (a test that writes its own). */
-export const resetE2Validator = (): void => {
-  e2 = undefined;
-};
-
-/** The problems a validator's answer holds: a list of strings, or {ok, problems | errors}. */
-function problemsOf(answer: unknown): string[] | undefined {
-  if (Array.isArray(answer)) return answer.map(String);
-  if (answer !== null && typeof answer === "object") {
-    const a = answer as { ok?: unknown; problems?: unknown; errors?: unknown };
-    const list = Array.isArray(a.problems) ? a.problems : Array.isArray(a.errors) ? a.errors : undefined;
-    if (list !== undefined) return list.map((x) => (typeof x === "string" ? x : JSON.stringify(x)));
-    if (typeof a.ok === "boolean") return a.ok ? [] : ["the validator said not ok and named no problem"];
-  }
-  return undefined;
-}
-
-/** One cartridge file of a workspace: the envelope, then lane E2's validator when there. */
+/** One cartridge or rules file of a workspace, checked as the core checks it (lane E2's foreman/src/cartridge.ts). */
 export async function validateCartridgeFile(dir: string, file: string): Promise<CartridgeVerdict> {
-  const text = fs.readFileSync(path.join(dir, ...file.split("/")), "utf8");
-  const env = envelopeProblems(file, text);
-  if (env.length > 0) return { file, problems: env, by: "the Foreman's envelope check" };
-  const m = await e2Validator();
-  const fn = ["validateCartridgeText", "validateCartridge", "checkCartridge", "cartridgeProblems"].map((n) => m?.[n]).find((f): f is (...a: unknown[]) => unknown => typeof f === "function");
-  if (fn === undefined) return { file, problems: [], by: "the Foreman's envelope check (lane E2's foreman/src/cartridge.ts is not in this tree)" };
-  try {
-    const answer = await fn(file.endsWith(".rules.json") ? text : JSON.parse(stripBom(text)), { file, text, rules: file.endsWith(".rules.json") });
-    const problems = problemsOf(answer);
-    return problems === undefined ? { file, problems: [], by: "foreman/src/cartridge.ts (its answer had no problem list: read as ok)" } : { file, problems, by: "foreman/src/cartridge.ts (lane E2)" };
-  } catch (e) {
-    return { file, problems: [`${file}: ${(e as Error).message}`], by: "foreman/src/cartridge.ts (lane E2)" };
-  }
+  const text = stripBom(fs.readFileSync(path.join(dir, ...file.split("/")), "utf8"));
+  if (file.endsWith(".rules.json")) return { file, problems: validateRulesText(text).errors, by: "the core's rules reader (foreman/src/cartridge.ts validateRulesText)" };
+  return { file, problems: (await validateCartridgeText(text)).errors, by: "thirdjam's validator (foreman/src/cartridge.ts validateCartridgeText)" };
 }
 
 /** The cartridge and rules files among `files` (pack-relative). */
@@ -434,64 +373,94 @@ export const coreDataFiles = (files: string[]): string[] => files.filter((f) => 
 /** The start of the Foreman's note (after FOREMAN_NOTE) when a round's cartridge edit did not validate. */
 export const CARTRIDGE_INVALID = "cartridge edit not valid";
 
-// ---------- the measured check (lane E2's lab) ----------
+// ---------- the measured check (lane E2's lab: `rink.sh check-cartridge`, a tl.rink.check/1 line last) ----------
 
 export interface CoreCheckRun {
-  /** 0 passed, 1 failed, 2 could not run (tl.devx exit codes). */
+  /** 0 measured, 1 refused or a match did not end, 2 could not run (check_cartridge.mjs's exit codes). */
   code: number;
-  /** The figures the check reported (its last JSON line's numbers), by name. */
+  /** The figures a person will meet, read through thirdjam's regular playtester at pro (`pro_*`) and its wins at each level. */
   figures: Record<string, number>;
-  /** One line: what it said. */
+  /** One line: what it said (its warnings, its problems, or why it could not run). */
   summary: string;
 }
 
-/** The numbers of a check's last JSON line: `figures`, `metrics` or the top level. */
-export function figuresOf(stdout: string): Record<string, number> {
-  const line = stdout.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith("{")).at(-1);
-  if (line === undefined) return {};
-  try {
-    const j = JSON.parse(line) as Record<string, unknown>;
-    const src = [j["figures"], j["metrics"], j].find((x) => x !== null && typeof x === "object" && !Array.isArray(x)) as Record<string, unknown>;
-    return Object.fromEntries(Object.entries(src).filter(([, v]) => typeof v === "number" && Number.isFinite(v))) as Record<string, number>;
-  } catch {
-    return {};
-  }
+interface RinkCheckLine {
+  tool?: string;
+  ok?: boolean;
+  ran?: boolean;
+  why?: string;
+  refused?: string[];
+  warnings?: string[];
+  problems?: string[];
+  levels?: Record<string, { playtester?: Record<string, number>; plan?: Record<string, number> }>;
 }
 
-/** Lane E2's check, run: `bash <engine>/tools/rink.sh check-cartridge <file>` (10 minutes at most). */
+/** The last `{"tool":"tl.rink.check/1", ...}` line of a check's output, or undefined. */
+export function rinkCheckLine(stdout: string): RinkCheckLine | undefined {
+  for (const l of stdout.split(/\r?\n/).map((x) => x.trim()).filter((x) => x.startsWith("{")).reverse()) {
+    try {
+      const j = JSON.parse(l) as RinkCheckLine;
+      if (j.tool === "tl.rink.check/1") return j;
+    } catch {
+      /* not the line */
+    }
+  }
+  return undefined;
+}
+
+/** The figures of a tl.rink.check/1 line: the pro playtester's match figures, and the wins of each level. */
+export function figuresOf(line: RinkCheckLine | undefined): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [lv, l] of Object.entries(line?.levels ?? {})) {
+    const p = l.playtester;
+    if (p === undefined) continue;
+    if (typeof p["wins"] === "number" && typeof p["matches"] === "number") out[`${lv}_wins_of_${p["matches"]}`] = p["wins"];
+    if (lv !== "pro") continue;
+    if (typeof p["goals_for"] === "number" && typeof p["goals_against"] === "number") out["pro_goals_a_match"] = Math.round((p["goals_for"] + p["goals_against"]) * 10) / 10;
+    for (const k of ["minutes", "carry_s", "loose_share", "shots", "passes_completed", "speed_mean", "changes_min", "human_touches_min", "knockdowns"]) if (typeof p[k] === "number") out[`pro_${k}`] = p[k] as number;
+  }
+  return out;
+}
+
+/** What a check's line and exit code mean, as a run. */
+export function rinkCheckRun(code: number, stdout: string): CoreCheckRun {
+  const line = rinkCheckLine(stdout);
+  if (line === undefined) return { code: 2, figures: {}, summary: `could not run: no tl.rink.check/1 line in its output (exit ${code}): ${stdout.trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300)}` };
+  const c = code === 0 && line.ok === true ? 0 : line.ran === false && line.refused === undefined ? 2 : code === 0 ? 1 : code === 1 ? 1 : 2;
+  const said = c === 2 ? `could not run: ${line.why ?? `exit ${code}`}` : line.refused !== undefined ? `refused by thirdjam's validator: ${line.refused.slice(0, 4).join("; ")}` : (line.problems ?? []).length > 0 ? `did not complete: ${(line.problems ?? []).join("; ")}` : (line.warnings ?? []).length > 0 ? `measured, warnings: ${(line.warnings ?? []).join("; ")}` : "measured, no warning";
+  return { code: c, figures: figuresOf(line), summary: said.slice(0, 600) };
+}
+
+/** Lane E2's check, run: `bash <engine>/tools/rink.sh check-cartridge <file> [--rules <sidecar>] --json-only` (10 minutes at most). */
 export function runRinkCheck(engineDir: string, file: string, timeoutMs = 10 * 60_000): Promise<CoreCheckRun> {
   const script = path.join(engineDir, "tools", "rink.sh");
   if (!fs.existsSync(script)) return Promise.resolve({ code: 2, figures: {}, summary: `could not run: ${toPosix(script)} is not there` });
+  const rules = file.replace(/\.cartridge\.json$/, ".rules.json");
+  const args = [toPosix(script), "check-cartridge", toPosix(file), ...(rules !== file && fs.existsSync(rules) ? ["--rules", toPosix(rules)] : []), "--json-only"];
   return new Promise((resolve) => {
-    execFile("bash", [toPosix(script), "check-cartridge", toPosix(file)], { timeout: timeoutMs, windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (err, stdout, stderr) => {
-      const code = err === null ? 0 : typeof (err as { code?: unknown }).code === "number" ? ((err as { code: number }).code === 1 ? 1 : 2) : 2;
-      const tail = `${stdout}\n${stderr}`.trim().split(/\r?\n/).filter(Boolean).slice(-3).join(" | ");
-      resolve({ code, figures: figuresOf(stdout), summary: code === 2 && /unknown|usage/i.test(tail) ? `could not run (rink.sh has no check-cartridge yet: lane E2): ${tail.slice(0, 300)}` : tail.slice(0, 400) });
+    execFile("bash", args, { timeout: timeoutMs, windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => {
+      const code = err === null ? 0 : typeof (err as { code?: unknown }).code === "number" ? ((err as { code: number }).code) : 2;
+      resolve(rinkCheckRun(code, stdout));
     });
   });
 }
 
 /**
- * The fake runner's stand-in for the measured check (tests and the fake end-to-end proof): a valid cartridge passes with
- * figures read from it (rink size, team sizes, the goal target), the marker FAKE_CORE_CHECK_FAIL in it fails.
+ * The fake runner's stand-in for the measured check (tests and the fake end-to-end proof): thirdjam's validator, then a
+ * tl.rink.check/1 line made from the cartridge (the rink, the teams, the skaters' speed), judged as the real line is. The
+ * marker FAKE_CORE_CHECK_FAIL in it makes a match that does not end.
  */
-export function fakeRinkCheck(file: string): Promise<CoreCheckRun> {
-  let text = "";
-  try {
-    text = fs.readFileSync(file, "utf8");
-  } catch {
-    return Promise.resolve({ code: 2, figures: {}, summary: `could not run: ${toPosix(file)} is not there` });
-  }
-  const env = envelopeProblems(path.basename(file), text);
-  if (env.length > 0) return Promise.resolve({ code: 1, figures: {}, summary: env.join("; ") });
-  const g = ((JSON.parse(stripBom(text)) as { game?: Record<string, unknown> }).game ?? {}) as { rink?: { length_m?: number }; teams?: { skaters?: unknown[] }[]; rules?: { score_to_win?: number } };
-  const figures: Record<string, number> = {
-    rink_length_m: g.rink?.length_m ?? 90,
-    skaters_a_side: Array.isArray(g.teams?.[0]?.skaters) ? (g.teams?.[0]?.skaters?.length as number) : 5,
-    goals_a_match: g.rules?.score_to_win ?? 3,
-  };
-  if (text.includes("FAKE_CORE_CHECK_FAIL")) return Promise.resolve({ code: 1, figures, summary: "fake measured check: FAKE_CORE_CHECK_FAIL (a dead verb: nobody passes)" });
-  return Promise.resolve({ code: 0, figures, summary: `fake measured check passed: ${Object.entries(figures).map(([k, v]) => `${k} ${v}`).join(", ")}` });
+export async function fakeRinkCheck(file: string): Promise<CoreCheckRun> {
+  if (!fs.existsSync(file)) return { code: 2, figures: {}, summary: `could not run: ${toPosix(file)} is not there` };
+  const text = stripBom(fs.readFileSync(file, "utf8"));
+  const v = await validateCartridgeText(text);
+  if (!v.ok) return rinkCheckRun(1, JSON.stringify({ tool: "tl.rink.check/1", ok: false, ran: false, refused: v.errors }));
+  const g = ((JSON.parse(text) as { game?: Record<string, unknown> }).game ?? {}) as { rink?: { length_m?: number }; skater?: { speed?: number } };
+  const speed = g.skater?.speed ?? 11;
+  const playtester = { wins: 6, matches: 10, goals_for: 2.2, goals_against: 1.6, minutes: Math.round(((g.rink?.length_m ?? 90) / 90) * 40) / 10, carry_s: 2.1, loose_share: 0.35, shots: 14, passes_completed: 22, speed_mean: Math.round(speed * 0.62 * 100) / 100, changes_min: 9.5, human_touches_min: 5.1, knockdowns: 6 };
+  const fail = text.includes("FAKE_CORE_CHECK_FAIL");
+  const line = { tool: "tl.rink.check/1", ok: !fail, ran: true, levels: { rookie: { playtester: { ...playtester, wins: 9 } }, pro: { playtester }, all_star: { playtester: { ...playtester, wins: 2 } } }, warnings: [], problems: fail ? ["pro seed 3: the match did not end (fake: FAKE_CORE_CHECK_FAIL)"] : [] };
+  return rinkCheckRun(fail ? 1 : 0, `fake lab\n${JSON.stringify(line)}`);
 }
 
 /** The game's cartridges in pack/: those a non-base package of the plan owns, else every cartridge there. */
@@ -529,7 +498,7 @@ export function copyCoreReference(engineDir: string, refDir: string, route: Core
 }
 
 /** A section of a markdown file from its heading to the next heading of the same level ("" when absent). */
-function sectionOf(file: string, heading: RegExp): string {
+export function sectionOf(file: string, heading: RegExp): string {
   if (!fs.existsSync(file)) return "";
   const lines = stripBom(fs.readFileSync(file, "utf8")).split(/\r?\n/);
   const at = lines.findIndex((l) => heading.test(l));

@@ -1,7 +1,7 @@
 {
  "schema": "tl.card/1",
  "id": "card.rink_core",
- "version": "0.1.0",
+ "version": "0.2.0",
  "title": "A rink game on the rink core: a cartridge over thirdjam's match",
  "summary": "Hockey and its cousins are built on the rink core (engine/cores/rink: thirdjam's simulation and bots, compiled), never as a new simulation. The job starts from the base (the Foreman copies engine/templates/rink_game, hokej made skinnable) and changes data: the cartridge (rink, teams, speeds, contact, rules, zones, pickups, abilities, look, camera), the skin (title, team names, colours, words) and, only when a rule has no cartridge key, a rules sidecar. The house game engine/packs/hokej shows the whole route working.",
  "applies_when": [
@@ -107,7 +107,189 @@
  },
  "core": {
   "id": "rink",
+  "base": "rink_game",
   "cartridge": "data/hockey.thirdlife.cartridge.json",
   "check": "bash engine/tools/rink.sh check-cartridge <file>"
+ },
+ "interview": {
+  "kind": "a rink game on the rink core (a cartridge over thirdjam's match)",
+  "example": "the house game hokej: five against five, first to three",
+  "match": [
+   "pond hockey",
+   "hokej",
+   "shinny",
+   "bandy",
+   "rink core",
+   "thirdjam",
+   "a side"
+  ],
+  "estimate": {
+   "packages": 2,
+   "minutes": 20,
+   "source": "the core plan's shape: the base (copied by the Foreman, no builder) plus a cartridge and a skin package; not yet measured on a real job"
+  },
+  "questions": [
+   {
+    "key": "players",
+    "group": "who",
+    "ask": "How many skaters a side?",
+    "options": [
+     {
+      "id": "5",
+      "label": "5 against 5",
+      "say": "five against five",
+      "from_words": [
+       "five against five",
+       "5 against 5",
+       "5v5",
+       "five a side",
+       "five-a-side"
+      ]
+     },
+     {
+      "id": "4",
+      "label": "4 against 4",
+      "say": "four against four",
+      "from_words": [
+       "four against four",
+       "4 against 4",
+       "4v4",
+       "four a side"
+      ]
+     },
+     {
+      "id": "3",
+      "label": "3 against 3",
+      "say": "three against three",
+      "from_words": [
+       "three against three",
+       "3 against 3",
+       "3v3",
+       "three a side",
+       "three on three"
+      ]
+     }
+    ],
+    "propose": "5",
+    "reason": "thirdjam's regular game is five a side; at three a side the human passes 0.2 to 0.8 times a play minute against 2.4 to 3.7 at five (MODES.md, team sizes)"
+   },
+   {
+    "key": "opponents",
+    "group": "who",
+    "ask": "How hard are the computer's skaters?",
+    "options": [
+     {
+      "id": "rookie",
+      "label": "Rookie",
+      "say": "rookie bots"
+     },
+     {
+      "id": "pro",
+      "label": "Pro",
+      "say": "pro bots"
+     },
+     {
+      "id": "all_star",
+      "label": "All-star",
+      "say": "all-star bots",
+      "from_words": [
+       "hard",
+       "harder",
+       "difficult"
+      ]
+     }
+    ],
+    "propose": "pro",
+    "reason": "on thirdjam's set ladder the regular class wins 99 % of regular games at rookie, so its modes play pro (MODES.md, levels)"
+   },
+   {
+    "key": "win",
+    "group": "win",
+    "ask": "How is a match won?",
+    "options": [
+     {
+      "id": "first_to_3",
+      "label": "First to 3",
+      "say": "first to three goals"
+     },
+     {
+      "id": "sudden_death",
+      "label": "Sudden death",
+      "say": "one goal ends it",
+      "from_words": [
+       "sudden death",
+       "next goal wins"
+      ]
+     },
+     {
+      "id": "timer",
+      "label": "Three minutes",
+      "say": "most goals in three minutes",
+      "from_words": [
+       "three minutes",
+       "timed"
+      ]
+     }
+    ],
+    "propose": "first_to_3",
+    "reason": "the base's cartridge plays first to 3 (game.rules.score_to_win 3)"
+   },
+   {
+    "key": "rink",
+    "group": "where",
+    "ask": "How big is the rink?",
+    "options": [
+     {
+      "id": "regular",
+      "label": "Regular 90 x 45",
+      "say": "a regular rink, 90 by 45 m"
+     },
+     {
+      "id": "pond",
+      "label": "Pond 60 x 30",
+      "say": "a small pond rink, 60 by 30 m",
+      "from_words": [
+       "pond",
+       "small rink"
+      ],
+      "size": {
+       "set": [
+        60,
+        30,
+        12
+       ]
+      }
+     },
+     {
+      "id": "marathon",
+      "label": "Marathon 140 x 70",
+      "say": "an endless rink, 140 by 70 m",
+      "from_words": [
+       "endless",
+       "marathon",
+       "huge rink"
+      ],
+      "size": {
+       "set": [
+        140,
+        70,
+        12
+       ]
+      }
+     }
+    ],
+    "propose": "regular",
+    "reason": "the base's hall is built for 90 x 45; a smaller rink resizes only the ice and the boards (engine/templates/rink_game/README.md, known limits)"
+   }
+  ]
+ },
+ "footprint": {
+  "size_m": [
+   90,
+   45
+  ],
+  "height_m": 12,
+  "shape": "rink",
+  "source": "engine/templates/rink_game/data/hockey.regular.cartridge.json game.rink 90 x 45"
  }
 }
