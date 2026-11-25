@@ -14,10 +14,9 @@ extends RefCounted
 ##              tall in the boards' colour, a goal shield a pale wall `size` wide and 0.3 m deep across the rink, a bumper
 ##              lane A64's rubber bollard (a magenta body, dark base and top bands 3 cm proud, a dark lid with a magenta boss).
 ##   pickups    game.pickups[] on the ice (UJamEffectSystem::GetPickups): the snapshot's `Pickups` list ([{Id, Kind, Pos}],
-##              FJamPickupOnIce) when the core reports it, else the bus: a `pickup_spawn` event puts one at its Where, a
-##              `pickup_take` takes the one at its Where. NOTE (25 Nov): RinkCore 1.3 reports neither (its Events are the
-##              sim's only, the effect system keeps its own; rink_core.cpp snapshot), so a cartridge's pickups play unseen
-##              until the core adds them (lane E1b's report asks K1/E2); this draws them the frame it does.
+##              FJamPickupOnIce; RinkCore 1.4, SNAPSHOT.md "The effect system's read-outs"), drawn the frame a pickup lands
+##              and taken away the frame it is taken. A core without the list (before 1.4): the bus instead, a
+##              `pickup_spawn` event (EffectEvents or Events) puts one at its Where, a `pickup_take` takes the one there.
 ##              AJamPickupActor's beacon (S/JamCore/Effects/JamPickupActor.cpp:315-420, JamPickupActor.h:40-80): a turning
 ##              shape by kind (speed a cone, precision a diamond, heavy_puck a puck, big_puck a ball, reverse_other a cube,
 ##              a custom effect a star) 1.25 m up on a pedestal of light, a ground ring of 1.1 m, the kind's colour
@@ -73,6 +72,7 @@ var taken: Array = []                       # [{node, frame}] shrinking away
 var spawned: int = 0
 var took: int = 0
 var reported: bool = false                  # the core reported pickups (a Pickups list or a pickup event) at least once
+var core_on_ice: int = -1                   # the size of the core's last Pickups list (-1: no list), for a test
 var _last_frame: int = -1
 
 
@@ -105,7 +105,7 @@ func _init(parent: Node3D, cart: Dictionary) -> void:
 ## What is drawn, for a test or a report.
 func counts() -> Dictionary:
 	return {"zones": zones_drawn, "obstacles": obstacles_drawn, "pickups_on_ice": pickups.size(), "spawned": spawned, "taken": took,
-		"reported": reported}
+		"reported": reported, "core_on_ice": core_on_ice}
 
 
 # ---------------------------------------------------------------- zones
@@ -285,9 +285,10 @@ func frame(snap: Dictionary) -> void:
 	_last_frame = f
 	if snap.has("Pickups"):
 		reported = true
+		core_on_ice = (snap["Pickups"] as Array).size()
 		_sync(snap["Pickups"], f)
 	else:
-		for e: Dictionary in snap.get("Events", []):
+		for e: Dictionary in snap.get("EffectEvents", []) + snap.get("Events", []):
 			var nm: String = String(e.get("Name", ""))
 			if nm == "pickup_spawn":
 				reported = true

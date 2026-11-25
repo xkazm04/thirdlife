@@ -21,7 +21,7 @@ not write a simulation.
 a tinted patch with its own mark (fast ice orange with speed streaks, slow ice blue with slush dots, a bumper zone magenta
 with a rubber curb, no-shoot a red cross-hatch, boost-only green with a plus; `visible: false` is not painted), every
 `game.rink.obstacles` kind standing (box, pillar, magenta bumper bollard, goal shield), pickups as turning beacons by kind
-(when the core reports them: below), and a held ability on the HUD ("F: SHOTGUN  READY" above the radar). Nobody places
+(the core's snapshot `Pickups`, RinkCore 1.4: one stands the frame it lands and shrinks away the frame it is taken), and a held ability on the HUD ("F: SHOTGUN  READY" above the radar). Nobody places
 them by hand: change the cartridge, and the drawing follows.
 
 **Colours have one source, the cartridge's `game.teams[].colour_hex`.** It colours the figures, the HUD's rings, the
@@ -65,7 +65,7 @@ bash engine/tools/tl.sh invariants --pack=<dir>                                #
 bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_first_match.gd  # ROOKIE from HOME, a whole match to the end card
 bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_match_hand.gd   # a whole match through the keys and mouse
 bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_skin.gd         # the skin reads clean, its banks load, colours from the cartridge
-bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_toys.gd         # every zone and obstacle of the cartridge is drawn (and pickups, when reported)
+bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_toys.gd         # every zone and obstacle of the cartridge is drawn, and its pickups as the core has them
 ```
 
 `bot_first_match` passes when the match ends (by goals or by the cartridge's timer) inside 10 minutes and the end card is
@@ -73,10 +73,9 @@ held.
 
 ## Known limits of the base
 
-- **Pickups are not seen yet.** The core plays `game.pickups`, but its snapshot (RinkCore 1.3) carries only the sim's events;
-  the effect system keeps its pickups and their events to itself. `rink_toys.gd` draws them the frame the core reports a
-  `Pickups` list or `pickup_spawn` / `pickup_take` events (a core addition, lane K1/E2); until then a pickup cartridge plays
-  unseen pickups, and `bot_toys` says so in its summary. Zones, obstacles and abilities are drawn today.
+- **A finished game keeps the base it was made with** until it is moved: My games' "Newest base" (`foreman rebase <job>`)
+  copies this base again under it, keeping its cartridge, rules, skin, match and own files, verifies it and promotes a new
+  version. A game whose packages changed one of the base's scripts is refused (the move would lose that change).
 
 - **The hall.** Thirdjam's barn is built for a 90 x 45 rink. A smaller cartridge rink resizes only the ice, the boards
   and the kick plate. The barn, its stands, its benches and its penalty boxes stay where they are: on a 60 x 30 rink the

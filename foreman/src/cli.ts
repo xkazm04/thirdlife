@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// foreman: probe | new | react | redesign | approve | plan | prompts | run | resume | phase | change | follow | status | explain | verify | answer | comment | cancel | init-fixture
+// foreman: probe | rebase | new | react | redesign | approve | plan | prompts | run | resume | phase | change | follow | status | explain | verify | answer | comment | cancel | init-fixture
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -20,6 +20,7 @@ import { writeGenerateCalls as writeCalls } from "./transcript.js";
 import { CRITIQUE_HELP, critiqueCommand } from "./cli_critique.js";
 import { FILMCHECK_HELP, filmcheckCommand } from "./cli_filmcheck.js";
 import { QUALITY_HELP, qualityCommand } from "./cli_quality.js";
+import { REBASE_HELP, rebaseCommand } from "./cli_rebase.js"; // H2 of 25 Nov: a finished game moves to the newest base
 import { cardLimits, cardsPlannerText } from "./cards.js";
 import { cardLines, cardView } from "./handview.js";
 import { KernelApiError } from "./manifest.js";
@@ -90,6 +91,7 @@ ${PHASE_HELP}
 ${CRITIQUE_HELP}
 ${FILMCHECK_HELP}
 ${QUALITY_HELP}
+${REBASE_HELP}
   change <job> "<text>" [--decision JSON] [--package ID] [--no-run] [same options as run]
         a change request on a job with at least one merged package, also a finished (done) one. With --package that
         package is re-opened; without it the Planner is asked which package owns the problem (one short call). The
@@ -770,6 +772,8 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       }
       return allOk ? 0 : 1;
     }
+
+    case "rebase": return rebaseCommand(a, makeVerifier(a, undefined, a.pos[0] !== undefined ? readJobConfig(jobDirOf(a)) : {}), a.pos[0] !== undefined ? jobDirOf(a) : undefined, out); // H2
 
     case "answer": {
       const pkgId = a.pos[1];

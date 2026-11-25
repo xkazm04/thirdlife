@@ -3,9 +3,9 @@ extends "bot_match_hand.gd"
 ## on plain ice). bot_match_hand.gd's hand plays MAX frames of the match through the keys and mouse; then scripts/
 ## rink_toys.gd's counts (the meta `toys` on the RinkToys node) are held against the cartridge of data/match.json:
 ##   - every visible zone of game.rink.zones is painted (visible false: not), every obstacle of game.rink.obstacles stands;
-##   - with game.pickups: pickups were put on the ice while the match ran, and the ones standing are the ones put down and
-##     not taken. RinkCore 1.3 does not report pickups (rink_toys.gd NOTE): then the summary says so in words ("pickups NOT
-##     REPORTED by the core") and the zones and obstacles alone decide; the day the core reports them, they are checked;
+##   - with game.pickups: the core reports them (RinkCore 1.4's snapshot `Pickups`, SNAPSHOT.md), pickups were put on the
+##     ice while the match ran, the ones standing are the ones put down and not taken, and they are the core's own: as many
+##     beacons stand as the core's last list has (lane H2, 25 Nov; before 1.4 the core reported none and this only said so);
 ##   - without them, none.
 ## A cartridge with none of these passes with zeros (the regular cartridge). Headless; the drawing is checked in a window by
 ## a still (README.md "Its tests").
@@ -46,15 +46,19 @@ func _bot_result() -> Dictionary:
 			fails.append("zones drawn %d, the cartridge paints %d" % [int(toys["zones"]), want_zones])
 		if int(toys["obstacles"]) != want_obs:
 			fails.append("obstacles drawn %d, the cartridge has %d" % [int(toys["obstacles"]), want_obs])
-		if has_pickups and bool(toys.get("reported", false)) and int(toys["spawned"]) == 0:
+		if has_pickups and not bool(toys.get("reported", false)):
+			fails.append("the cartridge has pickups and the core reported none (no snapshot Pickups list, no pickup event)")
+		elif has_pickups and int(toys["spawned"]) == 0:
 			fails.append("the cartridge has pickups and none was put on the ice in %d frames" % MAX)
+		if int(toys.get("core_on_ice", -1)) >= 0 and int(toys["pickups_on_ice"]) != int(toys["core_on_ice"]):
+			fails.append("pickups standing %d, the core has %d on the ice" % [int(toys["pickups_on_ice"]), int(toys["core_on_ice"])])
 		if not has_pickups and int(toys["spawned"]) != 0:
 			fails.append("pickups drawn without game.pickups")
 		if int(toys["pickups_on_ice"]) != int(toys["spawned"]) - int(toys["taken"]):
 			fails.append("pickups standing %d, put down %d, taken %d" % [int(toys["pickups_on_ice"]), int(toys["spawned"]), int(toys["taken"])])
-	var summary: String = "zones %d of %d, obstacles %d of %d, pickups put down %d, taken %d, standing %d at frame %d" % [
+	var summary: String = "zones %d of %d, obstacles %d of %d, pickups put down %d, taken %d, standing %d (core %d) at frame %d" % [
 		int(toys.get("zones", -1)), want_zones, int(toys.get("obstacles", -1)), want_obs, int(toys.get("spawned", -1)),
-		int(toys.get("taken", -1)), int(toys.get("pickups_on_ice", -1)), MAX]
+		int(toys.get("taken", -1)), int(toys.get("pickups_on_ice", -1)), int(toys.get("core_on_ice", -1)), MAX]
 	if has_pickups and not bool(toys.get("reported", false)):
-		summary += "; the cartridge's pickups NOT REPORTED by the core (SNAPSHOT.md has no Pickups): not drawn"
+		summary += "; the cartridge's pickups NOT REPORTED by the core: not drawn"
 	return {"ok": done and fails.is_empty(), "summary": summary + ("" if fails.is_empty() else " FAILS: " + "; ".join(fails)), "frames": ctx.frame}
