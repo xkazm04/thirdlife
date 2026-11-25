@@ -16,7 +16,7 @@ import { cardBriefSection, cardLimits, cardsPlannerText } from "./cards.js";
 import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
 import { runHandChecks, sendBackHands } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
-import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
+import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, engineKnowsBase, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
@@ -519,11 +519,15 @@ export class Foreman {
    * The pack's identity. The version is 0.1.0 until the first promotion and 0.1.<n> after the n-th: a change request
    * on a finished job therefore builds, verifies and promotes a pack with a new version (N3).
    */
-  private jobIdentity(): { packId: string; title: string; version: string; kernelApi: string } {
+  private jobIdentity(): { packId: string; title: string; version: string; kernelApi: string; base?: string } {
     const n = this.s.promotions.length;
     const version = n === 0 ? PACK_VERSION : PACK_VERSION.replace(/\d+$/, String(n));
-    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled", version, kernelApi: (this.engineApi ??= kernelApiFor(this.o.verifier.location)) };
+    // E3g: a game on a core names its base, so lint counts only its own lines (when this engine's lint knows the key)
+    const base = coreRouteOf(this.s.brief?.concept?.template)?.base;
+    const knows = base !== undefined && (this.knowsBase ??= isFakeRunner(this.o.verifier.location) || engineKnowsBase(this.o.verifier.location.engineDir));
+    return { packId: this.s.packId ?? "game.unnamed", title: this.s.title ?? this.s.packId ?? "Untitled", version, kernelApi: (this.engineApi ??= kernelApiFor(this.o.verifier.location)), ...(knows ? { base } : {}) };
   }
+  private knowsBase: boolean | undefined;
 
   // ---------- the manifest fields a builder owns (PACK.md, 2026-11-11): footprint, params, on_leave, subject, moments ----------
 

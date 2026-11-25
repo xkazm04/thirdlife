@@ -180,8 +180,25 @@ export function criticRubric(s: JobState, lastPackage: string): RubricItem[] {
   // E3c of 25 Nov (lane E5's real proof): the critic called a greybox NOT ok for aspects the person had DROPPED. The
   // person's decisions ride on the promise item, so every look's prompt carries them (no new score to answer).
   const item = funPromiseItem(promise);
-  const decided = personDecisionsText(s);
+  // E3g (E5c's job 3): a "no" to a builder's question is a drop too ("skip the bank-shot extras", then judged for them)
+  const decided = [personDecisionsText(s), refusalsText(s)].filter((x) => x !== "").join(" ");
   return [...DEFAULT_RUBRIC, decided !== "" ? { ...item, text: `${item.text} ${decided}` } : item];
+}
+
+/** E3g: an answer that refuses what a builder asked ("No. ...", "skip ...", "leave ... out", "drop ...", "don't ..."). */
+export function isRefusal(answer: string): boolean {
+  return /^\W*(no|nope|nah|never|not|don'?t|do not|skip|drop)\b/i.test(answer) || /\b(skip|drop|leave (it|them|that|those|this) out|leave out|do not add|don'?t add)\b/i.test(answer);
+}
+
+/**
+ * E3g: the person's refusals in answers to builders' questions, as the critic reads them ("" without any). The same
+ * rule as a dropped aspect: what the person refused is not in this game and is never judged missing.
+ */
+export function refusalsText(s: Pick<JobState, "packages">): string {
+  const lines: string[] = [];
+  for (const [id, p] of Object.entries(s.packages ?? {})) for (const a of p.answered ?? []) if (isRefusal(a.answer)) lines.push(`to package "${id}"'s question "${clip(a.question, 300)}" the person answered "${clip(a.answer, 300)}"`);
+  if (lines.length === 0) return "";
+  return `THE PERSON REFUSED, answering a builder during the build (it wins over the pitch, the brief's hook, the clip moments, the method and kill lines written before it): ${lines.join("; ")}. What the person refused or said to skip is DROPPED: it is not in this game, do not look for it, never score any item down or call the look NOT ok because it is missing, and treat a pitch, contract, clip moment or kill line about it as void.`;
 }
 
 /**

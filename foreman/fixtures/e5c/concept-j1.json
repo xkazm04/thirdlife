@@ -1,0 +1,55 @@
+{
+ "concept": {
+  "template": {
+   "id": "rink_sport",
+   "reference": "thirdjam's match on the rink core, as engine/cores/rink and engine/packs/hokej",
+   "copies": [
+    "thirdjam's match on the rink core, unchanged: its skating, puck, contact and bots; the core carries the feel.",
+    "thirdjam's camera and keys, unchanged: view bound to your skater; mouse buttons act with or without puck.",
+    "Cartridge keys changed: rink size, teams, rules, zones for fast and slow patches, look, corner bumpers.",
+    "Rules sidecar only where no cartridge key exists: bumper kick and the double-goal window.",
+    "Skin: title, team names, colours and words, started from engine/templates/rink_game."
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "I own the pond: race across fast ice, dodge slow patches, ricochet pucks off springy corner bumpers.",
+    "likelihood": 0.85
+   },
+   {
+    "pitch": "I'm the pond trickster: fire into corner bumpers, pounce on the kick, and score goals worth double.",
+    "likelihood": 0.3
+   },
+   {
+    "pitch": "I'm the thaw reader: after every goal the fast and slow patches move, and I adapt first.",
+    "likelihood": 0.2
+   },
+   {
+    "pitch": "I'm the comeback schemer: whenever we concede, I drop a fresh slow patch to trap their rush.",
+    "likelihood": 0.1
+   },
+   {
+    "pitch": "I'm the bumper king: each corner hit charges the puck faster until someone scores that screaming rocket.",
+    "likelihood": 0.15
+   }
+  ],
+  "chosen": 1,
+  "why": "Pond trickster: within 30 seconds you fire into a corner, the bumper kicks it slotward, and your finish counts two. The faithful reading gives bumpers less reason to be aimed at.",
+  "hook": "goals struck off the corner bumpers count double",
+  "anchor": "arcade pond hockey",
+  "references": [
+   {
+    "game": "NHL '94",
+    "borrow": "Pass across the crease and shoot as it arrives; the goalie cannot get across in time."
+   },
+   {
+    "game": "Mario Kart 8",
+    "borrow": "Drive over a dash panel for instant speed; off-road slows you, so the racing line becomes a choice."
+   },
+   {
+    "game": "Williams' The Addams Family pinball",
+    "borrow": "Ball touches a pop bumper; it kicks the ball away faster, with an instant flash and bang."
+   }
+  ]
+ }
+}

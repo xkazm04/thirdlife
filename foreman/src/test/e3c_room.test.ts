@@ -40,9 +40,10 @@ test("E3c concept: a plain sentence that names a known game keeps the faithful c
   const p = faithfulProblems(twisted(), POND, undefined, "rink_sport");
   assert.ok(p.some((x) => x.includes('choose the faithful reading, "chosen": 0, not candidate 4 ("Each goal drafts you to the team you beat."')), p.join("\n"));
   assert.ok(faithfulProblems({ ...twisted(), chosen: 0, candidates: twisted().candidates.map((c, i) => (i === 3 ? { ...c, likelihood: 0.9 } : c)) }, POND, undefined, "rink_sport").some((x) => x.includes("give it the highest likelihood")));
-  // The person's words ask for a twist, the job is crazy, or no known game is named: the choice stays free.
-  assert.ok(asksForTwist("pond hockey where every goal swaps the teams"));
-  assert.deepEqual(faithfulProblems(twisted(), "pond hockey where every goal swaps the teams", undefined, "rink_sport"), []);
+  // The person's words leave the twist open, the job is crazy, or no known game is named: the choice stays free.
+  // (E3g: a sentence that names its OWN twist, "where every goal swaps the teams", is taken at its word: e3g.test.ts.)
+  assert.ok(asksForTwist("pond hockey with a crazy twist"));
+  assert.deepEqual(faithfulProblems(twisted(), "pond hockey with a crazy twist", undefined, "rink_sport"), []);
   assert.deepEqual(faithfulProblems(twisted(), POND, "crazy", "rink_sport"), []);
   assert.deepEqual(faithfulProblems(twisted(), "a paddle game on a walled court", undefined, undefined), []);
 
