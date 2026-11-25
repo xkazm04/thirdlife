@@ -39,7 +39,7 @@ export function waitingRound(events: readonly JobEvent[], id: string): number | 
  * when the job failed on a hand check, the owners of the failing tests sent back to work. `wsThere(id)` says whether a
  * package's workspace still exists.
  */
-export function retryEvents(s: Pick<JobState, "order" | "packages" | "plan" | "jobState" | "card">, events: readonly JobEvent[], rows: HandRow[], wsThere: (id: string) => boolean): Record<string, unknown>[] {
+export function retryEvents(s: Pick<JobState, "order" | "packages" | "plan" | "jobState" | "card" | "changes">, events: readonly JobEvent[], rows: HandRow[], wsThere: (id: string) => boolean): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = [];
   const sent = new Set<string>();
   for (const id of s.order) {
@@ -51,6 +51,11 @@ export function retryEvents(s: Pick<JobState, "order" | "packages" | "plan" | "j
   }
   const reason = s.jobState?.state === "failed" ? (s.jobState.reason ?? "") : "";
   if (!reason.startsWith("hand check of")) return out;
+  // H1j (lane G5, events 462-481: a change request on the failed job): a person's waiting change wins over the hand check's
+  // send-back. Its round runs in the same workspace, where a waiting fix still sits, so the fix is merged with the change
+  // (G5's core r12 merged r11's tests/bot_hand_perfect.gd); after it the final checks and the hand check run again, and a
+  // change request grants its own send-back (handcheck.ts). Sending the package back first would hold the person's change.
+  if ((s.changes ?? []).some((c) => c.state === "pending")) return out;
   const owners = new Map<string, HandRow[]>();
   for (const r of rows.filter((x) => !x.ok)) {
     const owner = s.plan.find((p) => (p.registers?.tests ?? []).includes(r.test));

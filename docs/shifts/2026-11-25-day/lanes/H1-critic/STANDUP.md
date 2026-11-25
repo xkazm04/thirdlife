@@ -35,3 +35,6 @@ landable H1h
 19:48 | state: working | did: read the H1i brief | next: 1 Resume on a failed job's card | gates: -
 20:06 | state: done | did: H1i 1-3 (a failed job's card offers Resume beside Try again, with its reason in words; resume --retry-failed sends a hand check's failing-test owner back, verifying its waiting unmerged fix without a builder (G5 core r11) or re-opening it; an aspect alternative carries lifts, written by the Designer, checked, used before the word rule) with 2 npm tests (fail on main 86cf870) + block 864 create.failed.* (fail with main's card) + still h1i_failed_card.jpg; JOB.md lines in the report | next: - (stopped editing) | gates: npm 433/426/0/7; fast PASS 5/5; create. 29/0
 landable H1i
+20:16 | state: working | did: read the H1j brief | next: 1 one more send-back per Resume | gates: -
+20:28 | state: done | did: H1j 1-3 (every Resume grants one more hand-check send-back; a person's waiting change wins over Resume's send-back and carries the waiting fix, as G5's r12 did; DAY.md, 32 lines) with 2 npm tests (fail on main 75bcf55) | next: - (stopped editing) | gates: npm 435/428/0/7; fast PASS 5/5
+landable H1j
