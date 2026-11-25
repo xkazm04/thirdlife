@@ -750,3 +750,107 @@ Gap to hokej:
 2. One name for the cannon; the arrows as chevrons that do not claim a direction; a word or a sign on the purple
    rings.
 3. The harbour toward the picture: blue dusk, lamps, the warehouse and the boat. Scenery, so last.
+
+---
+
+# Round 6 (18:05 onward, tree at main c0f96da)
+
+The clock and the two names of one trick are the base's (H2d); I left them. Mine this round: the arrows, a sign on
+the purple rings, then the harbour.
+
+## 29. The other levels (v0.1.10 to v0.1.13's cartridge, 80 seeds, the scripted hand)
+
+| level | wins with F | wins without F | bare rink | goals with F | won only with F / only without F |
+|---|---|---|---|---|---|
+| rookie | 80 | 80 | 80 | 16.7 : 2.6 | 0 / 0 |
+| pro | 55 | 47 | 45 | 8.1 : 6.6 | 13 / 5 |
+| all_star | 72 | 68 | 58 | 9.5 : 4.1 | 7 / 3 |
+
+- At **rookie**, the level a new game starts on, this hand wins every match seventeen to three, with or without any
+  toy. A first-timer is not this hand, but the level offers no resistance for the toys to matter against.
+- At **all_star** the game with its toys is won 72 times against 58 on the bare rink; the tricks alone are worth 4
+  (7 against 3: likely, not proven). all_star is still easier than pro (the open owner question; not mine to fight).
+
+## 30. v0.1.13: "The yellow arrows on the boost pads all point one way, but the pads speed me up whichever way I cross them. Draw them so they point both ways. And put a sign on the purple rings so I can see they slow the puck down: the word SLOW painted inside each ring."
+
+- **Time:** 10.8 min (18:07:47 to 18:18:37). **Path:** one builder round (2.6 min), the whole verification, no hold,
+  no question. **Tokens:** 0.45M in. The cartridge is byte-equal to v0.1.10's.
+- **Seen** (`v0113_top.jpg`, `v0113_strip.jpg`): each pad is three long double-headed yellow arrows; each purple ring
+  has SLOW painted in it in purple strokes. From the ice SLOW reads right way up when I skate toward the rivals' net
+  (tiles 5, 9, 10) and upside down when I skate back (tiles 2, 3, 15).
+
+**First-timer.** The last unexplained thing on the ice now says what it is. Everything a toy does can be read in the
+first minute: a ball round me, arrows, SLOW, a thing to pick up, a plate for F. Half the time the word is upside
+down; a sign that reads both ways (a snail, three rings) would be better than a word.
+
+**Competitive hand, sandbox player:** as v0.1.12 (the same cartridge). The arrows no longer tell a rival's side of
+the ice something false.
+
+Gap to the target: as v0.1.12, minus one: the arrows now say what the pads do. Gap to hokej: as v0.1.12.
+
+## 31. v0.1.14: "Make the place look like a winter harbour at dusk: a deep blue evening sky instead of the orange one, snow on the quay round the rink, lamps that glow on the masts, a warehouse with lit windows behind one end of the rink and a fishing boat on the water."
+
+- **Time:** 11.7 min (18:22:22 to 18:34:03). **Path:** one builder round (3.6 min), the whole verification, no hold.
+  **Tokens:** 1.62M in.
+- **What changed:** a warehouse and a boat built from the kit's mesh maker (the kit has neither; the builder said so);
+  snow for the quay; lower masts with lanterns; and, because a pack cannot change the sky, "four blue walls and a
+  lid" standing in front of it.
+- **Seen** (`v0114_strip.jpg`, `v0114_top.jpg`, `v0114_vs_target.jpg`): everything I named is there, and the picture
+  is worse. The blue sky is a flat band with a hard edge and reads as a wall. The snow is bright cream and makes the
+  whole scene look like noon. The warehouse is a brown block with yellow squares, the boat three red boxes.
+
+**First-timer.** Nothing changes in what I can read on the ice. The place now says "harbour" in words (a warehouse, a
+boat) and "building blocks" in looks.
+**Competitive hand, sandbox player:** as v0.1.12 (the same cartridge).
+
+Gap to the target: nearer in what stands there, further in mood; the warm evening of v0.1.13 was closer to dusk
+than this noon. Gap to hokej: as v0.1.12.
+
+## 32. v0.1.15: "The blue sky looks like a wall and the snow glares like noon. Take the blue sky wall away and bring the warm evening sky back. Make the snow round the rink a dim blue-grey evening snow, not bright cream. Keep the warehouse with the lit windows, the boat and the lamps."
+
+- **Time:** 10.6 min (18:36:10 to 18:46:47). **Path:** one builder round (2.2 min), the whole verification, no hold.
+  **Tokens:** 0.49M in. It took back exactly what I named and kept the rest.
+- **Seen** (`v0115_bubble_drill.jpg`, `v0115_vs_target.jpg` with two tiles of the match strip, `v0115_top.jpg`): the
+  warm evening sky again; dim blue-grey ground round the rink; the warehouse with its lit windows behind the far net; the red boat
+  on the water; the crane. With the glass bubble, the double arrows, SLOW in the purple rings, the pickups on their
+  spots and clean rivals, this is the best the game has looked.
+
+**First-timer.** As v0.1.13 for reading the toys; and the place now has a far end I can aim at (the lit warehouse
+stands behind the rivals' net), which helps me know which way I attack.
+
+**Competitive hand.** The same cartridge as v0.1.10: tricks worth 55 wins against 47 at pro over 80 seeds, 72
+against 68 at all_star, nothing at rookie; the pools help, the pads and the pickup boosts are not clear. Still no
+clock on the screen.
+
+**Sandbox player.** Three minutes, three tricks, twenty knockdowns a match, and a place worth looking at while I do
+it. Still short of moments worth retelling: a cannon shot that flattens a rival into a goal has not happened on any
+film of mine.
+
+Gap to the target images:
+1. Toys: the same kinds as the picture's, plainer (arrows for glowing chevrons, a word for rings, a cone for an
+   icon).
+2. Place: the picture's things are there (warehouse, boat, crane, evening), as blocks and in warm orange where the
+   picture is blue dusk with snow and lamps that glow on the ice. The ice and the figures are lit as by day in every
+   still, although the cartridge has said `l2_night` since the design.
+3. No clock (the base's, with H2d), and felt figures where the picture has knitted ones.
+
+Gap to hokej:
+1. It plays like hokej with tricks that decide matches for a scripted hand; hokej has none.
+2. Three times hokej's goals in about its length.
+3. Nobody has played it.
+
+**In the menu:** v0.1.15 (the row moved with Create's own function; `.tl/g1-menu/dungeons.user.json`).
+
+## 33. Editor notes from round 6
+
+Worked: four changes to the drawing in 10 to 12 minutes each, one builder round each, no hold, no question; a
+change that took back part of the one before did exactly that and no more.
+
+Met:
+24. **Dusk cannot be asked for.** A pack may not make a light or a sky, so "a deep blue evening sky" became four
+    walls and a lid (event 698), and the ice stays lit as by day whatever the cartridge's look tier says (`l2_night`
+    since v0.1.0). A person who asks for evening gets coloured scenery round a daylight rink.
+25. The kit has no warehouse and no boat, so both are blocks from the mesh maker (event 698). They read, and they
+    look like placeholders.
+26. A word painted on the ice is upside down half the time (`v0113_strip.jpg`); nothing offered me a sign that reads
+    both ways.
