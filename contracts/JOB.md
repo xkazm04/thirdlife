@@ -157,6 +157,10 @@ Unknown `type` or unknown keys are errors when the log is read.
   - The Foreman runs `invariants` with `--home=village` for a job whose `job_created` has a `lot` (a village site job),
     and with `--home=create` for every other job (a game made in Create is a dungeon, judged by the solo budget), when
     the runner's `verbs.json` lists the option.
+  - `foreman resume --retry-failed` on a job that failed on a hand check also sends back the package that registers the
+    failing test: a round of it whose builder answered ok after its last merge, with its workspace still there, is
+    verified again as it is (its builder is not run); otherwise it is re-opened with the hand check's rows (`reopened`
+    reason starting `hand check failed (on resume)`). Create's failed card offers this as "Resume" beside "Try again".
 - A `done` job returns to `running` and ends `done` again. Each later promotion bumps the pack version to `0.1.<n>` and
   goes to `promoted/<pack id>@<version>/`; earlier promotions are kept. The last `promoted` event names the current one.
 - A change that no round could make leaves the earlier verified files in place; the package is `promoted` again with a
@@ -302,6 +306,11 @@ key is optional; a job made before this reads as before (absent = omit the key, 
     engine code (a core patch and a new build); `hours` (a positive number) is the extra build time. Such an aspect must
     have at least one alternative that needs no engine code. Create shows the cost on the card and under the pitch, and
     choosing the alternative removes it. One key without the other is an error.
+  - `lifts` (added 2026-11-25, optional, on an alternative): a list (at least one, unique) of the plan's tofu check ids
+    the choice makes meaningless (for example `possession_median_f` for a ball nobody holds). The Designer writes it.
+    When the person picks that alternative, the Foreman does not judge those checks at a round's acceptance or at the
+    milestone look, and says so in a note starting `[foreman] plan bound lifted`. Absent: nothing lifted by name (a
+    person's answer may still lift a bound in words); never `[]`. An id that is not a tofu check of the build is refused.
   `rules`, `arena`, `ai`, `controls`, `mood` stay and stay required: the Planner reads them.
 - `aspect_reacted` (new event, before approval): `aspect` (an aspect id of the latest `brief_set`), `choice` (`"keep"`,
   `"drop"` or one of that aspect's alternative ids), `note` (optional string, the player's words). The latest reaction
