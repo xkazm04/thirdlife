@@ -1,0 +1,29 @@
+{
+ "schema": "tl.hand-checks/1",
+ "card": "card.team_possession",
+ "version": "0.5.0",
+ "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
+ "seeds": 20,
+ "rows": [
+  {
+   "hand": "newcomer",
+   "test": "tests/bot_hand_newcomer.gd",
+   "seeds": 20,
+   "completed": 20,
+   "wins": 17,
+   "ok": true,
+   "why": "17 of 20 won (Wilson 95 % 64..95); the card asks at least 13",
+   "wins_min": 13
+  },
+  {
+   "hand": "perfect",
+   "test": "tests/bot_hand_perfect.gd",
+   "seeds": 20,
+   "completed": 20,
+   "wins": 0,
+   "ok": false,
+   "why": "20 run(s) have no boolean \"won\" in their bot result",
+   "wins_min": 16
+  }
+ ]
+}

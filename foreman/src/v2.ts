@@ -35,6 +35,12 @@ export interface AspectAlternative {
   id: string;
   title: string;
   line: string;
+  /**
+   * H1i (the Director, after lane G5: a ball chosen "Never Held" was still held to the hockey card's possession bound): the
+   * plan's tofu rows this choice makes meaningless (metric ids, tofu.ts), written by the Designer. The Foreman lifts them
+   * when the person picks this alternative. Absent otherwise (never []).
+   */
+  lifts?: string[];
 }
 export interface Aspect {
   id: string;
@@ -72,7 +78,7 @@ export const alternativeSchema = {
   type: "object",
   additionalProperties: false,
   required: ["id", "title", "line"],
-  properties: { id: snake, title: nonEmpty, line: nonEmpty },
+  properties: { id: snake, title: nonEmpty, line: nonEmpty, lifts: { type: "array", minItems: 1, uniqueItems: true, items: snake } },
 } as const;
 
 export const aspectSchema = {

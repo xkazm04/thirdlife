@@ -18,7 +18,7 @@ import { planCardProblems, planHandProblems } from "./cards.js";
 import { briefDesignText, conceptText, criticChecklistText, designAnswerSchema, qualityText, roomDesignProblems, withHLine } from "./roomtext.js"; // JOB.md 2026-11-21: the design room
 import { HOUSE_ENGINE, briefTemplateProblems, coreRouteOf, templateExcerpt } from "./templates.js"; // N4 of 22 Nov: genre templates
 import { corePlanCheck, corePlannerText, coreTofuText, normalizeCorePlan, overlapAllowed, packageLimitProblems, planCore } from "./coreplan.js"; // E3 of 24 Nov: a game on a core
-import { courtOf, tofuPlanProblems, tofuPlannerText } from "./tofu.js"; // N4 of 22 Nov: the tofu stage
+import { courtOf, tofuMetricsFor, tofuPlanProblems, tofuPlannerText } from "./tofu.js"; // N4 of 22 Nov: the tofu stage
 import type { ConceptTemplate } from "./room_wire.js";
 import { servesProblems, type Concept } from "./room_wire.js";
 import { playerCheckProblems } from "./playercheck.js";
@@ -146,6 +146,8 @@ function designerVars(input: DesignerInput): Record<string, string> {
     method: methodText(["1", "7", "8", "11", "14:Designer"]),
     template: templateExcerpt(input.concept?.template, "design") || "(the concept names no template with a research file: copy the core loop from the reference it names, with its numbers)",
     review: input.review ?? "",
+    // H1i: the tofu checks an alternative may lift (`lifts`), by id
+    tofu_ids: tofuMetricsFor(input.concept?.template).map((m) => "`" + m.id + "`").join(", ") || "none for this template",
   };
 }
 
@@ -154,6 +156,9 @@ export function designerProblems(brief: Brief, input: Pick<DesignerInput, "creat
   const out = [...aspectProblems(brief.pitch, brief.aspects), ...roomDesignProblems(brief), ...briefTemplateProblems(brief, input.concept?.template), ...(input.concept !== undefined ? methodProblems(brief) : [])];
   if (brief.pitch === undefined || brief.aspects === undefined) out.push("the brief needs a pitch and 3 to 7 aspects");
   out.push(...crazyProblems(brief.aspects, input.creativity, input.previous === undefined));
+  // H1i: an alternative lifts only checks the build has (the template's tofu rows)
+  const known = new Set(tofuMetricsFor(input.concept?.template).map((m) => m.id));
+  for (const a of brief.aspects ?? []) for (const alt of a.alternatives) for (const id of alt.lifts ?? []) if (!known.has(id)) out.push(`alternative "${alt.id}" of aspect "${a.id}" lifts "${id}", which is not a tofu check of this build (its checks: ${[...known].join(", ") || "none"})`);
   if (input.previous) {
     const dropped = Object.entries(input.previous.reactions).filter(([, r]) => r.choice === "drop").map(([id]) => id);
     for (const id of dropped) if ((brief.aspects ?? []).some((a) => a.id === id)) out.push(`aspect "${id}" was dropped by the player and must not be in the redesign`);
