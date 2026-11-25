@@ -443,4 +443,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 21:46 standup: G4 v0.1.0 via Resume (d641787, menu); G5/G11/G19 building; findings: the hidden newcomer floor pulls against the person's ask (G5); a builder edits its own tofu measure (G19).
 - 22:46 standup: G4 v0.1.1 (spacing: knots rarer, not gone); G5 v0.1.2 (rivals hunt the player); G11 at its first hold (planes tangle after 8 s); G19 finding: Create never shows builder notes.
 - 23:46 standup: G4 (v0.1.2) and G5 (v0.1.3) done and in the menu; G11 and G19 at their look phases (G19's captain's call reads; G11's planes still merge in the tail view).
+- 00:46 standup: G11 v0.1.0 and G19 v0.1.1 promoted and in the owner menu; finding: the tofu gate bends games to its bounds (thrown-away critic revises, a hidden comeback multiplier).
 
