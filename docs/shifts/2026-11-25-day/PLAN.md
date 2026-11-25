@@ -45,3 +45,4 @@ changed. Not pushed unless the owner asks. Standups hourly at :41 (`standups/HHM
 | G2 Robot soccer | Opus | d25-robot | af697fa864f7c5d7b |
 | G4 Half-court | Opus | d25-court | ac92056dfc84f5243 |
 Standups: cron 301bc462, hourly at :41 (session-only). Queue: G5, G11, G19 when a lane finishes and room.sh says room.
+| G5 Bumper-kart football | Opus | d25-kart | a9302a60120b143e1 (started 16:57) |
