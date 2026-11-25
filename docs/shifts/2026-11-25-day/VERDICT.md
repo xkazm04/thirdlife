@@ -99,10 +99,21 @@ All on main, the last of them f298936. What a person now gets, each item driven 
 - Its last pack looks like the target (a blue court with an orange key, arches), and its play never changed: six kids
   in a knot. 
 
-### G5, Bumper-kart football from scratch (Opus): resumed after failing; on its first change
-- It reached the last phase in 2 h on the improved editor: a faithful design, the estimate shown, the budget fine.
-- Then it failed on a hockey possession bound that its "never carried" card and its answer could not lift (fixed: H1h).
-- A Director-approved change request carries the waiting fix (H1j).
+### G5, Bumper-kart football from scratch (Opus): v0.1.3 after four change rounds, in the menu
+- To the last phase in 2 h on the improved editor. It failed on a hockey possession bound its card choice could not lift
+  (fixed: H1h). A Director-approved change on the failed job lifted the bound on the person's answer and carried the
+  waiting fix: v0.1.0 at 3 h 23 min.
+- Four changes, each landing what was asked:
+  - the bump: sparks, camera punch, the tub spins away (26 min);
+  - the huge ball (53 min);
+  - rivals that attack (31 min);
+  - the sunset pavilion (26 min).
+- **As a person:** "the first version I'd play again" from v0.1.0 on.
+- **Still missing:** the camera is high and far, so the karts look small; a newcomer still wins 3 of 4 at rookie.
+- **Findings:**
+  - the card's hidden newcomer floor answered "a huge ball" by softening the rivals;
+  - a change round runs no critic (the camera sat behind its own net, MATCH POINT drawn over ROOKIE);
+  - a builder note keeps only its last segment.
 
 ### G11 Biplane duel and G19 Shield wall (Opus): started 20:49 on the fully hardened editor
 They run on under the hourly standups.
