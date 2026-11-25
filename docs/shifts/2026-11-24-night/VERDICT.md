@@ -27,7 +27,7 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
   validator (`cartridge.ts`) agreeing with the C++ on 112 of 112 cases, `rink.sh check-cartridge` (the lab plays a
   cartridge headless and prints one `tl.rink.check/1` line).
 
-### E3 route (Opus) — landed (E3 268e3b6, b 585d130, c 0499f33, d 991d73e, e 7750a94, f d1c2f59)
+### E3 route (Opus) — landed (E3 268e3b6, b 585d130, c 0499f33, d 991d73e, e 7750a94, f d1c2f59, g 7c19ceb)
 - The Foreman's core route: template `rink_sport`, card `rink_core`, the base copied without a builder, CARTRIDGE:/SKIN:
   brief lines, a cartridge round before any code, the measured check with gross defects (goals outside thirdjam's band,
   a match that never ends, the idle hand or skating alone winning), a faithful concept for a plain sentence, the
@@ -36,7 +36,13 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
   words-only to the skin's), a re-opened package merges only changed bytes so the fast path holds, critic reasons only
   the base can fix go straight to the person's quality card, goals a minute judged, no-op changes asked back with the
   figures, a "what changed in v0.1.n" note on every later version.
-- Evidence: foreman `npm test` 365 tests, 358 pass, 0 fail, 7 skipped (Director re-run); `tl check --tier fast` 5/5.
+- E3g (after real job 3): a pack declares its base in pack.json and lint counts only its own game lines (the base
+  alone was 5943 of the 6000, so no script package fitted; contract wording in PACK.md + pack.schema.json, 17c60a1); a
+  person's "no" to a builder's question reaches the critic; the Designer's retries hear every failing check and fix the
+  exact ones without the model (all six real failed attempts would now pass first time); a sentence naming its own
+  twist gets no other.
+- Evidence (Director, merged tree 17c60a1): foreman `npm test` 372 tests, 365 pass, 0 fail, 7 skipped; fast 5/5;
+  k.sh selftest 120/0; lint blocks 30/0, 11/0, base.lines 6/0; packs 4/4 (146 verb runs).
 
 ### E4 iterate (Opus) — landed (E4 12570cd, b 67037b3, c 67b1349)
 - Create: a change box on the done screen, My games (a job can be reopened later), Add to menu (`user://dungeons.user.json`),
@@ -76,11 +82,45 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
   `host/guard.gd`). Proved both ways at 89d3b85 and 67b1349. The look gym moved out of rigs/ (no wall clock in rigs).
 - Evidence (Director, merged tree): `k.sh selftest` 120/0 refs PASS; world 9/9; uncapped kernel suite 565/0 (1920 s).
 
-## Gates on hokej (head at the verdict: PENDING)
-PENDING: fast, npm test, world, uncapped suite, export + check.
+## Gates on hokej 17c60a1 (Director, 25 Nov morning)
+- `tl check --tier fast` PASS 5/5; foreman `npm test` 372 / 365 pass / 0 fail / 7 skipped; `npm run build` clean.
+- `k.sh selftest` 120/0 (refs PASS); `tl check --only world` PASS 9/9 (at 7d56b49); `tl check --only packs` PASS 4/4.
+- Uncapped kernel suite 565 passed, 0 failed (1920 s, at 7d56b49; E3g after it touched lint only, whose blocks pass).
+- Exe: `export.sh` built 17c60a1; `export.sh check` PASS (same hashes as the editor for every game and 4 dungeons,
+  village, W/Esc, Create to the pitch with the fake adapter, nothing left running).
+- NOT RUN: perf (the machine was never quiet), the full tier as one run (its kernel step would stop at 1800 s; read
+  from the uncapped suite instead).
 
-## For your eye
-PENDING (the exe, what to type in Create, what to press).
+## For your eye (about 15 minutes)
+1. `C:/Users/kazda/kiro/third-life/.claude/worktrees/hk-int/dist/PLAY-LATEST.cmd` (build 17c60a1).
+2. Menu -> the three games made by real Create jobs tonight (your list, `dungeons.user.json`): **Pond hockey
+   v0.1.0** then **v0.1.4** (after "make it faster", "the orange team is too strong", "make the rink bigger", "make
+   the goals bigger"), and **Pirate hockey v0.1.0**. Play each one match. Is a game a person made from a sentence
+   worth playing next to hokej?
+3. Create -> type a sentence of your own (a rink game: "hockey where ..."), Build it, answer its cards, then on the done
+   screen type one change. This uses the real model (Sonnet, about 2-5 M tokens a job, 45-60 min to v0.1.0; a change
+   about 3 min).
 
 ## Asks
-PENDING.
+1. **Land hokej on main?** (a) yes, all of it; (b) the editor path only after you play a made game; (c) hold.
+2. **JOB.md wording** for the core route (base copied, cartridge round, measured check, change on a core never to the
+   base, growth): the Director drafts it on your word.
+3. **The slow start of every job** (3.4 min: two measured checks of the house cartridges before the base's lint):
+   (a) split + cache them next (about 30 s); (b) later.
+4. **hokej's hand bot dumps a 4.3 MB raw trace** (452 ms at the end of a run): (a) shrink it (changes K3's proof
+   tools); (b) leave it.
+5. **A finished game keeps the base it was built with** (pond still shows the trusses fixed in the base since):
+   (a) give My games a "move to the newest base" step; (b) not yet.
+6. Carried from earlier tonight: the K8 planning-hand refit (it runs about 10 points strong); all-star easier than
+   thirdjam's; whether the one-line `hub.gd` / `menu.gd` edits for Add to menu stand.
+
+## Route scoreboard
+- Opus did all the engineering lanes (E1-E4, E3b-g, G1) and the real proofs (E5-E5e); Fable only K8 (balance design by
+  judgment). The real proofs found every blocking defect the unit tests missed (a change wiping the game, the base
+  filling the line budget, the design check refusing the base's own key): run a real job after every route change.
+- Cost of the real jobs (Sonnet via claude-cli; E5's first run in its own report): E5b 17.9 M in (14.1 M cached), E5c 5.0 M,
+  E5d about 45 k, E5e PENDING.
+
+## Next shift
+1. Your verdict on a made game (above). 2. The slow job start (split + cache the measured checks). 3. JOB.md for the
+core route, then hokej on main. 4. Robot soccer (your plan from 23 Nov) only after a made hockey game passes your hand.
