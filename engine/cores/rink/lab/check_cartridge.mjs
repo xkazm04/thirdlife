@@ -245,6 +245,7 @@ for (const { hand, lv, r } of done) {
     goals_for: r1(mean(play.map((p) => p.goals[0]))),
     goals_against: r1(mean(play.map((p) => p.goals[1]))),
     minutes: r1(mean(play.map((p) => p.frames / 3600))),
+    play_minutes: r1(mean(cell.map((c) => (c.play_frames ?? 0) / 3600))),   // H1h: live play, without the pauses after goals
     shots: r1(mean(cell.map((c) => c.shots[0] + c.shots[1]))),
     carry_s: r1(mean(cell.map((c) => (c.carries ? c.carry_frames / c.carries / 60 : 0)))),
     loose_share: r2(mean(cell.map((c) => (c.play_frames ? c.loose_frames / c.play_frames : 0)))),
@@ -280,7 +281,7 @@ for (const lv of LEVELS) {
 // thirdjam ships (made by --make-bands); a figure beyond a quarter past that span is told in words (not a failure).
 const BANDS = path.join(HERE, "check_cartridge.bands.json");
 const WORDS = {
-  speed_mean: "the skaters' mean speed (m/s)", speed_max: "the top speed (m/s)", minutes: "a match's length (min)", carry_s: "a carry's length (s)",
+  speed_mean: "the skaters' mean speed (m/s)", speed_max: "the top speed (m/s)", minutes: "a match's length (min)", play_minutes: "a match's live play, without the pauses after goals (min)", carry_s: "a carry's length (s)",
   changes_min: "possession changes a minute", shots: "shots a match", knockdowns: "knockdowns a match", loose_share: "the share of play the puck is loose",
 };
 if (fs.existsSync(BANDS) && !process.argv.includes("--make-bands")) {

@@ -13,9 +13,10 @@ import type { GateHost } from "./p10gate.js";
 import type { VerifyResult } from "./verifier.js";
 import { courtOf, judgeTofu, tofuMetricsFor, tofuOf } from "./tofu.js";
 import { QUALITY_ROUNDS } from "./quality_state.js";
+import { LIFTED, liftedNote, withLifts } from "./boundlift.js";
 
 /** The words a round gets when the plan's tofu bot passed with metrics out of the plan's bounds; undefined otherwise. */
-export function tofuGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append">, id: string, a: Pick<Acceptance, "verb" | "args">, vr: VerifyResult): VerifyResult | undefined {
+export function tofuGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append" | "events">, id: string, a: Pick<Acceptance, "verb" | "args">, vr: VerifyResult): VerifyResult | undefined {
   const t = tofuOf(h.s.plan);
   if (t === undefined || a.verb !== "bot" || !vr.ok || !a.args.includes(`--test=${t.test}`)) return undefined;
   const p = h.pkg(id);
@@ -23,7 +24,12 @@ export function tofuGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append
   const result = (vr.report as { bot?: { result?: { metrics?: unknown; hand?: unknown } } } | undefined)?.bot?.result;
   const m = result?.metrics;
   const metrics = m !== null && typeof m === "object" && !Array.isArray(m) ? (m as Record<string, unknown>) : undefined;
-  const judged = judgeTofu(metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief)), t.test);
+  // H1h: a bound the person lifted (a card choice, an answer) is not judged; said once a round when it would have failed
+  const all = tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief));
+  const { rows, lifted } = withLifts(h.s, h.events, all);
+  const judged = judgeTofu(metrics, rows, t.test);
+  const wouldFail = [...lifted.keys()].filter((id) => judgeTofu(metrics, all.filter((r) => r.id === id), t.test).rows.some((r) => !r.ok));
+  if (wouldFail.length > 0 && !(h.events ?? []).some((e) => e.type === "note" && e.package === id && e.round === p.round && e.text.startsWith(LIFTED))) h.append({ type: "note", package: id, round: p.round, text: liftedNote(new Map([...lifted].filter(([k]) => wouldFail.includes(k))), all) });
   if (judged.ok) return undefined;
   const out = judged.rows.filter((r) => !r.ok).map((r) => `${r.id} ${r.value ?? "absent"} (the plan's bound: ${r.want})`);
   const summary = `${t.test} answered ok, but the Foreman judges its metrics against the plan's tofu bounds and ${out.length} ${out.length === 1 ? "is" : "are"} outside them: ${out.join("; ")}. A bot's own ok is not the check: change the game until the figures it counts are inside the bounds (never the bot's ok, never the counting).`;

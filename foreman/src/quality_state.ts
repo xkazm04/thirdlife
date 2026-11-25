@@ -79,6 +79,11 @@ export function qualityNext(events: readonly JobEvent[], m: string, members: str
   const sent = roundsSent(events, m, members);
   const maxSent = sent.reduce((a, x) => Math.max(a, x.round), 0);
   const last = looks.at(-1);
+  // H1h (lane G5, events 184-209 and 280-293: passing the show and the pier phases ran the greybox critic again and sent
+  // its revise round to core): a phase the person passed after this milestone's last look or revise round closes it; a
+  // passed milestone is not judged again
+  const lastAct = Math.max(last?.seq ?? 0, ...sent.map((x) => x.seq));
+  if (sent.length > 0 && events.some((e) => e.type === "phase_reviewed" && e.verdict === "pass" && e.seq > lastAct)) return { next: "closed" };
   if (last === undefined) return { next: "look", round: maxSent };
   if (last.round === 0 || last.ok) return { next: "closed" };
   const answer = answersOf(events, m).filter((a) => a.seq > last.seq).at(-1);

@@ -75,3 +75,26 @@ function playOwner(plan: readonly PackageSpec[], core: CoreRoute, spec: PackageS
   if (!play || skinOnly || namedSkin || DRAW_WORDS.test(text)) return { owner: spec.id };
   return { owner: cart.id, why: `on a game on the ${core.core} core how the game plays (its sizes, speeds, rules, bots and toys) is the cartridge's, and these words ask for play, not a picture: the change goes to "${cart.id}", which owns the game's cartridge (${cart.scope.join(", ")}); "${spec.id}" owns ${spec.scope.join(", ")}` };
 }
+
+/** H1h: words that name the game's text, which lives in the skin (data/skin.json and its text files). */
+export const SKIN_TEXT = /\b(title|tagline|subtitle|slogan|commentary|announcer|team names?|names? of the teams|rename\w*)\b/i;
+
+/**
+ * H1h (lane G1's v0.1.11, event 584: "Change the line under the title to: Grab a trick at the green spots. F uses it." went
+ * with two drawing asks to `harbour`, which cannot edit the skin; it overrode the line from its own tuning file while the
+ * skin still said the old line): the sentences of a change that name the game's text go to the skin's owner. A sentence
+ * that sets a text after a colon takes the sentences after it (the new line's own full stops). `rest` is "" when every
+ * sentence was the skin's (then the whole change goes there). Undefined when nothing moves: no skin owner, the change is
+ * already the skin's, or no sentence names the text.
+ */
+export function skinSplit(plan: readonly PackageSpec[], owner: string, text: string): { to: string; skinText: string; rest: string; why: string } | undefined {
+  const skin = skinOwner(plan);
+  if (skin === undefined || skin.id === owner) return undefined;
+  const sentences = (text.match(/[^.!?]+(?:[.!?]+|$)/g) ?? []).map((s) => s.trim()).filter((s) => s !== "");
+  const first = sentences.findIndex((s) => SKIN_TEXT.test(s));
+  if (first < 0) return undefined;
+  const mine = sentences.map((s, i) => (i === first || (i > first && sentences[first]?.includes(":") === true) ? true : i > first && SKIN_TEXT.test(s)));
+  const skinText = sentences.filter((_, i) => mine[i]).join(" ");
+  const rest = sentences.filter((_, i) => !mine[i]).join(" ");
+  return { to: skin.id, skinText, rest, why: `the words "${skinText}" set the game's text (title, tagline, names, commentary), which lives in the skin, so ${rest === "" ? "the change goes" : "that part goes"} to "${skin.id}", which owns ${skin.scope.join(", ")}` };
+}

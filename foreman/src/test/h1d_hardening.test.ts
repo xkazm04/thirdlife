@@ -129,9 +129,10 @@ test("H1d 5 (G1 event 362: v0.1.3's note said \"removed: a shield\", which was t
 
 // ---------------------------------------------------------------- 6. a figure the person named
 
+// H1h: the words name which minutes (no play minutes in these figures: the whole match, pauses included) and which way
 test("H1d 6 (G1 change 1: \"so a match lasts about three minutes\" became 2.1 min, \"measured, no warning\"): a minutes or goals figure in the person's words is set against the figure after the change, and a miss is said in words, on its own line of the what-changed note", async () => {
   const words = "The matches are over in a minute and a goal falls every ten seconds. Make goals much harder to score so a match lasts about three minutes.";
-  assert.equal(askedFigureMiss(words, { pro_minutes: 2.1, pro_goals_a_match: 7.7 }), "you asked for matches of about 3 minutes; they last 2.1 min at pro now (thirdjam's regular playtester, measured after the change): the change falls short of what you asked");
+  assert.equal(askedFigureMiss(words, { pro_minutes: 2.1, pro_goals_a_match: 7.7 }), "you asked for matches of about 3 minutes; they last 2.1 minutes at pro now, pauses after goals included, shorter than you asked (thirdjam's regular playtester, measured after the change): the change falls short of what you asked");
   assert.equal(askedFigureMiss(words, { pro_minutes: 2.8 }), undefined, "met within a quarter");
   assert.equal(askedFigureMiss("make the goals bigger", { pro_minutes: 1 }), undefined);
   // the diff path, as G1's change 1 ran it (event 234's diff; the check's figures before and after)
@@ -154,10 +155,10 @@ test("H1d 6 (G1 change 1: \"so a match lasts about three minutes\" became 2.1 mi
   } as unknown as GateHost;
   assert.equal(await cartridgeChange(h, "cartridge", 2, words), true);
   const miss = appended.find((e) => e["type"] === "note" && String(e["text"]).startsWith("[foreman] not what you asked: "));
-  assert.equal(miss?.["text"], "[foreman] not what you asked: you asked for matches of about 3 minutes; they last 2.1 min at pro now (thirdjam's regular playtester, measured after the change): the change falls short of what you asked");
+  assert.equal(miss?.["text"], "[foreman] not what you asked: you asked for matches of about 3 minutes; they last 2.1 minutes at pro now, pauses after goals included, shorter than you asked (thirdjam's regular playtester, measured after the change): the change falls short of what you asked");
   const ev = (seq: number, body: Record<string, unknown>): JobEvent => ({ v: 1, seq, ts: "t", job: "j", ...body }) as unknown as JobEvent;
   const log = [ev(1, { type: "promoted", packId: "p", version: "0.1.0", dest: "promoted/p" }), ev(2, { type: "change_requested", text: words }), ev(3, { ...(miss as object), type: "note", package: "cartridge", round: 2 }), ev(4, { type: "merge", package: "cartridge", round: 2, files: ["data/harbour.cartridge.json"] })];
-  assert.match(whatChangedNote(log, "0.1.1"), /files: data\/harbour\.cartridge\.json\nnot what you asked: you asked for matches of about 3 minutes; they last 2\.1 min at pro now/);
+  assert.match(whatChangedNote(log, "0.1.1"), /files: data\/harbour\.cartridge\.json\nnot what you asked: you asked for matches of about 3 minutes; they last 2\.1 minutes at pro now, pauses after goals included, shorter than you asked/);
 });
 
 test("H1d (the Director's H1c decisions): a toy that costs the player is said in words on the card, not as a check warning; the base's README offers engine code as a cost the person decides, never an order", () => {

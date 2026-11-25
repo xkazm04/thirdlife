@@ -439,15 +439,20 @@ export class ClaudeCliBuilder implements Builder {
       stdoutTail: events.length === 0 ? tail(proc.stdout) : undefined,
       events,
     };
-    const usage = (result?.["usage"] ?? undefined) as Record<string, unknown> | undefined;
+    // H1h (lane G5, core r8: a session that ended with a second result after a background-task notification was logged
+    // as 365 tokens out against 30,705 used, and the builder's note in the first result was lost): every result segment
+    // counts. Each segment's usage is its own (the second's output 365, the first's 30,340), so they are summed.
+    const results = events.filter((e) => e.type === "result");
+    const usages = results.map((r) => r["usage"]).filter((u): u is Record<string, unknown> => u !== null && typeof u === "object");
     const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+    const sum = (k: string): number => usages.reduce((a, u) => a + num(u[k]), 0);
     const tokens =
-      usage !== undefined
+      usages.length > 0
         ? {
-            tokensIn: num(usage["input_tokens"]) + num(usage["cache_creation_input_tokens"]) + num(usage["cache_read_input_tokens"]),
-            tokensOut: num(usage["output_tokens"]),
+            tokensIn: sum("input_tokens") + sum("cache_creation_input_tokens") + sum("cache_read_input_tokens"),
+            tokensOut: sum("output_tokens"),
             // Observed in the result events of the 2026-11-10 real job: usage.cache_read_input_tokens.
-            ...(typeof usage["cache_read_input_tokens"] === "number" ? { tokensCacheRead: num(usage["cache_read_input_tokens"]) } : {}),
+            ...(usages.some((u) => typeof u["cache_read_input_tokens"] === "number") ? { tokensCacheRead: sum("cache_read_input_tokens") } : {}),
           }
         : {};
     const observed: RunResult["observed"] = {};
@@ -503,7 +508,9 @@ export class ClaudeCliBuilder implements Builder {
     }
     const subtype = typeof result["subtype"] === "string" ? result["subtype"] : "";
     const stop = typeof result["stop_reason"] === "string" ? result["stop_reason"] : undefined;
-    const text = typeof result["result"] === "string" ? (result["result"] as string) : partial;
+    // H1h: the text of every result segment, in order (the builder's report and DEVIATIONS are often in the first)
+    const texts = results.map((r) => r["result"]).filter((x): x is string => typeof x === "string" && x.trim() !== "");
+    const text = texts.length > 1 ? texts.join("\n\n") : typeof result["result"] === "string" ? (result["result"] as string) : partial;
     const t = text !== undefined ? { text } : {};
     if (subtype === "error_max_turns" || subtype === "error_max_budget_usd") {
       return make("truncated", { ...t, error: { kind: "exit", message: `the CLI stopped the run: ${subtype}` } });

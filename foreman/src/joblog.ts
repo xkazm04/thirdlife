@@ -1,6 +1,6 @@
 // The job log: append-only writer, strict reader, and state derived from the log alone.
 import fs from "node:fs";
-import path from "node:path"; import { removeWaiting } from "./removewait.js"; // H1g
+import path from "node:path"; import { removeWaiting } from "./removewait.js"; import { ownWords } from "./skintext.js"; // H1g, H1h
 import {
   validateEvent,
   EventError,
@@ -377,7 +377,7 @@ export function applyEvent(s: JobState, ev: JobEvent): void {
       if (c) {
         c.state = "reopened";
         c.owner = ev.package;
-        p.changes = [...(p.changes ?? []), c.text];
+        p.changes = [...(p.changes ?? []), ownWords(s.changes, c)]; // H1h: without the words sent to the skin
       }
       break;
     }

@@ -28,7 +28,7 @@ func _pause_card() -> bool:
 			return true
 		"quality":
 			var v: Dictionary = Model.quality_view(job)
-			if v.is_empty():
+			if v.is_empty() or settling:      # H1h: no card to press while the Foreman that wrote the hold lets go
 				return false
 			_quality_card(v)
 			return true

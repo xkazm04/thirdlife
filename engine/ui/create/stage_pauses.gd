@@ -40,10 +40,8 @@ func waits() -> String:
 		return "question"
 	# H1g: while a revise round runs the card stays up with the critic's reasons and no buttons ("the builders are still
 	# at work on this game"); only a card a person can answer is a quality pause
-	# and (H1g, run 2 of 3) the card's buttons show while the Foreman that wrote the hold is still letting go of the job;
-	# a press then is refused with "the builders are still at work on this game" (the page keeps the card: a person
-	# presses again). The stage presses once the Foreman has let go, as Pass waits for `settling`.
-	if visible("QualityCard") != null and (visible("FixIt") != null or visible("ItsFine") != null) and not _foreman_alive():
+	# (H1h: the page itself shows no card while the Foreman that wrote the hold lets go, as Pass waits for `settling`)
+	if visible("QualityCard") != null and (visible("FixIt") != null or visible("ItsFine") != null):
 		return "quality"
 	var s: String = str(p.call("shown_screen"))
 	if s == "phase_done" and not bool(p.get("settling")) and str(p.get("busy")).is_empty():
@@ -63,14 +61,6 @@ func _after(kind: String, mark: Variant) -> String:
 	if str(page().get("busy")) == kind:
 		return "waiting"
 	return "lost" if str(_pause_mark(kind)) == str(mark) else "taken"
-
-
-## Is a Foreman still holding the page's job (the door's process, or the lock's pid)?
-func _foreman_alive() -> bool:
-	var d: Variant = page().get("door")
-	if d == null:
-		return false
-	return bool(d.call("foreman_alive", str(page().get("job_dir")), int((page().get("job") as Dictionary).get("lock_pid", 0))))
 
 
 ## H2c: the door processes started for answers ("answer") or quality verdicts ("quality", also Change it) so far.
