@@ -19,6 +19,7 @@ import { CARTRIDGE_INVALID, coreDataFiles, fakeRinkCheck, gameCartridges, runRin
 import { applyChanges, type ChangeResult } from "./cartridge.js"; // lane E2: a change set applied and validated
 import { absentInChange, teamsSeen, unseenChange } from "./rinkjudge.js"; // E3d: a change the game cannot mean is asked back
 import { generate } from "./designer.js";
+import { playedCartridges } from "./played.js"; // H1c: the measured check judges the cartridge the game plays
 import { addedEntries, asksRemoval, compactChange, entriesText, isYes, removalQuestion, removedEntries, removedNote, type Removal } from "./removal.js"; // H1: a removal is named and asked
 import type { RunResult } from "./builder/types.js";
 import { coreRouteOf } from "./templates.js";
@@ -54,6 +55,9 @@ export async function coreDataGate(h: GateHost, id: string, round: number, ws: s
   return { verb: "lint", level: "V0", ok: false, reportFile: file, verdictFile: file, flags: [], summary, durationMs: 0 };
 }
 
+/** H1c: the start of the Foreman's note (after FOREMAN_NOTE) that names a round's cartridges the measured check did not judge. */
+export const NOT_THE_GAME = "not the game's cartridge";
+
 /** The person's words a round answers (the newest change request of its package), for the check's "asked for". */
 const askedOf = (h: GateHost, id: string): string | undefined => (h.pkg(id).changes ?? []).at(-1);
 
@@ -63,9 +67,17 @@ const askedOf = (h: GateHost, id: string): string | undefined => (h.pkg(id).chan
  * refused edit, with the figures and the house game's beside them. A check that cannot run sends nothing back (said in a
  * note; the look says NOT MEASURED).
  */
-async function measuredGate(h: GateHost, id: string, round: number, ws: string, carts: string[]): Promise<GateFailure | undefined> {
+async function measuredGate(h: GateHost, id: string, round: number, ws: string, changedCarts: string[]): Promise<GateFailure | undefined> {
   const core = jobCore(h);
-  if (core === undefined || carts.length === 0) return undefined;
+  if (core === undefined || changedCarts.length === 0) return undefined;
+  // H1c (lane G1): the check judges the cartridge the game plays (data/match.json or data/skin.json `cartridge`), not a
+  // package's drill or test cartridge beside it: those were validated above and are named here, never measured as the game.
+  const played = playedCartridges(ws);
+  const carts = played.files.length > 0 ? changedCarts.filter((f) => played.files.includes(f)) : changedCarts;
+  const aside = changedCarts.filter((f) => !carts.includes(f));
+  const playedText = `${played.files.join(", ")}, named by ${played.by.join(" and ")}`;
+  if (aside.length > 0) h.append({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${NOT_THE_GAME}: ${aside.join(", ")} (validated, not measured): the measured check judges the cartridge the game plays, ${playedText}` });
+  if (carts.length === 0) return undefined;
   const house = await houseSide(h, core);
   const bad: string[] = [];
   const said: string[] = [];
@@ -79,7 +91,8 @@ async function measuredGate(h: GateHost, id: string, round: number, ws: string, 
   fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.measured/1", package: id, round, ok: bad.length === 0, said, ...(house !== undefined ? { house } : {}) }, null, 1) + "\n");
   if (bad.length === 0) return undefined;
   const beside = house !== undefined ? `The house game ${core.house} (${core.houseCartridge}) measured the same way: ${figuresText(house.figures)}.` : "";
-  const summary = `${CARTRIDGE_INVALID}: the measured check (\`${core.check}\`) finds gross defects a person would meet at once:\n${bad.join("\n")}\n${beside}\nNothing was run. Change the keys that make them (the catalog says which keys move goals and match length: ref/cores/${core.core}/CARTRIDGE.md) and keep the rest of the cartridge.`;
+  const which = played.files.length > 0 ? `It judged the cartridge the game plays (${playedText})${aside.length > 0 ? `; ${aside.join(", ")} beside it: validated, not measured (a drill or test file is not the game)` : ""}.\n` : "";
+  const summary = `${CARTRIDGE_INVALID}: the measured check (\`${core.check}\`) finds gross defects a person would meet at once:\n${bad.join("\n")}\n${beside}\n${which}Nothing was run. Change the keys that make them (the catalog says which keys move goals and match length: ref/cores/${core.core}/CARTRIDGE.md) and keep the rest of the cartridge.`;
   h.append({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${summary} [report: ${h.rel(file)}]` });
   return { verb: "lint", level: "V0", ok: false, reportFile: file, verdictFile: file, flags: [], summary, durationMs: 0 };
 }

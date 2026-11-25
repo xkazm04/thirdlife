@@ -99,12 +99,66 @@ if (defects) {
   for (const s of ranges(defectSeeds, defectGroups)) runs.push({ hand: "idle", lv: "pro", pri: 1, args: ["match", C, "-cartridge=tlcheck", `-seeds=${s}`, "-difficulty=pro", "-player=regular", "-playersprint", "-remove=idle"] });
   for (const s of ranges(defectSeeds, defectGroups)) runs.push({ hand: "skate_only", lv: "pro", pri: 0, args: ["match", C, "-cartridge=tlcheck", `-seeds=${s}`, "-difficulty=pro", "-plan=regular", "-playersprint", "-only=none", "-plancheck"] });
 }
+// H1c of 25 Nov (lane G1's Arsenal job: the shield was worth 0 points, pro 8/20 with and without it, and the check said
+// nothing): with --toys, what each toy is worth. A toy is what a person sees as one thing on the ice or under a key:
+//   - the F ability (game.abilities): the same cartridge, the hand without F (-remove=ability);
+//   - the pickups (game.pickups, with the zones they appear on): a copy of the cartridge without them;
+//   - each kind of zone the pickups do not use (fast_ice, slow_ice, ...): a copy without those zones (and the effects
+//     that fire on them).
+// The hand is thirdjam's regular playtester with sprint (it presses F where a player would), --toy-seeds seeds (default 20)
+// at pro, the same seeds with and without, paired. Not the planning hand: it never presses F, and its copies of the game
+// are not valid with zones, pickups or effects (lane K8's CHECK-CARTRIDGE-NOTE.md). A copy the validator refuses is
+// named, not measured. A toy that changes no match, or whose worth is within 5 points of wins and half a goal, is a
+// warning ("toy: ..."); a figure, never a pass or a fail.
+const toysOn = process.argv.includes("--toys");
+const toySeeds = Math.max(1, Number(arg("--toy-seeds", "20")));
+const toys = [];
+const variants = [];
+if (toysOn) {
+  const cart = JSON.parse(text);
+  const g = cart.game ?? {};
+  const zones = Array.isArray(g.rink?.zones) ? g.rink.zones : [];
+  const pickups = Array.isArray(g.pickups) ? g.pickups : [];
+  const pickupZones = new Set(pickups.map((p) => p.zone).filter(Boolean));
+  /** A copy of the cartridge without the given zones (and every effect, pickup or other entry under game that names one). */
+  const without = (dropZones, dropPickups) => {
+    const c = structuredClone(cart);
+    const ids = new Set(dropZones.map((z) => z.id).filter(Boolean));
+    if (c.game.rink?.zones) c.game.rink.zones = c.game.rink.zones.filter((z) => !ids.has(z.id));
+    if (dropPickups) {   // the pickups and what only a pickup grants
+      delete c.game.pickups;
+      if (Array.isArray(c.game.abilities)) c.game.abilities = c.game.abilities.filter((a) => a.trigger !== "pickup");
+    }
+    for (const [k, v] of Object.entries(c.game)) if (Array.isArray(v) && k !== "rink") c.game[k] = v.filter((e) => !(e && typeof e === "object" && Object.values(e).some((x) => typeof x === "string" && ids.has(x))));
+    for (const k of Object.keys(c.game)) if (Array.isArray(c.game[k]) && c.game[k].length === 0) delete c.game[k];
+    if (c.game.rink?.zones?.length === 0) delete c.game.rink.zones;
+    return c;
+  };
+  const kinds = (list) => [...new Set(list.map((x) => x.kind))].join(", ");
+  if (Array.isArray(g.abilities) && g.abilities.length > 0) toys.push({ id: "ability", name: `the F ability (${kinds(g.abilities)})`, how: "the same hand without F (-remove=ability)", extra: ["-remove=ability"] });
+  if (pickups.length > 0) toys.push({ id: "pickups", name: `the pickups (${kinds(pickups)})`, how: "a copy of the cartridge without the pickups and the spots they appear on", copy: without(zones.filter((z) => pickupZones.has(z.id)), true) });
+  for (const k of [...new Set(zones.filter((z) => !pickupZones.has(z.id)).map((z) => z.kind))]) {
+    const these = zones.filter((z) => z.kind === k && !pickupZones.has(z.id));
+    toys.push({ id: `zones:${k}`, name: `the ${k.replace(/_/g, "-")} zones (${these.length})`, how: `a copy of the cartridge without its ${k} zones and their effects`, copy: without(these, false) });
+  }
+  for (const t of toys) {
+    if (t.copy !== undefined) {
+      const v2 = validateCartridgeText(JSON.stringify(t.copy));
+      if (!v2.ok) { t.refused = v2.errors.slice(0, 2); continue; }
+      t.cartridge = `tlcheck_t${variants.length}`;
+      variants.push({ name: t.cartridge, text: JSON.stringify(t.copy, null, 1) + "\n" });
+    }
+  }
+  const hand = ["-difficulty=pro", "-player=regular", "-playersprint"];
+  if (toys.length > 0) runs.push({ hand: "toy:base", lv: "pro", pri: 1, args: ["match", C, "-cartridge=tlcheck", `-seeds=1-${toySeeds}`, ...hand] });
+  for (const t of toys) if (t.refused === undefined) runs.push({ hand: `toy:${t.id}`, lv: "pro", pri: 1, args: ["match", C, `-cartridge=${t.cartridge ?? "tlcheck"}`, `-seeds=1-${toySeeds}`, ...hand, ...(t.extra ?? [])] });
+}
 // The cache key: what the lab reads (the cartridge, the rules, the content dir, the exe) and how it is asked.
 const sha = (...parts) => { const h = crypto.createHash("sha256"); for (const p of parts) h.update(p); return h.digest("hex"); };
 const contentHash = () => { const h = crypto.createHash("sha256"); const walk = (d, rel) => { for (const n of fs.readdirSync(d).sort()) { const a = path.join(d, n), r = rel ? `${rel}/${n}` : n; if (fs.statSync(a).isDirectory()) walk(a, r); else h.update(`${r}\0`).update(fs.readFileSync(a)).update("\0"); } }; walk(CONTENT, ""); return h.digest("hex"); };
 const useCache = !process.argv.includes("--no-cache") && !process.argv.includes("--make-bands");
 const cacheDir = process.env.TL_RINK_CHECK_CACHE || path.join(ROOT, ".tl", "check-cartridge-cache");
-const key = useCache ? sha(JSON.stringify({ v: 1, runs: runs.map((r) => [r.hand, r.lv, r.args]) }), "\0", text, "\0", rulesFile ? fs.readFileSync(rulesFile) : "", "\0", fs.readFileSync(exe), "\0", contentHash()) : "";
+const key = useCache ? sha(JSON.stringify({ v: 2, runs: runs.map((r) => [r.hand, r.lv, r.args]), variants }), "\0", text, "\0", rulesFile ? fs.readFileSync(rulesFile) : "", "\0", fs.readFileSync(exe), "\0", contentHash()) : "";
 const cacheFile = useCache ? path.join(cacheDir, `${key}.json`) : "";
 const t0 = Date.now();
 let done;
@@ -121,6 +175,10 @@ if (!cached) {
   fs.cpSync(CONTENT, scratch, { recursive: true });
   fs.writeFileSync(path.join(scratch, "Cartridges", "tlcheck.cartridge.json"), text);
   if (rulesFile) fs.copyFileSync(rulesFile, path.join(scratch, "Cartridges", "tlcheck.rules.json"));
+  for (const v of variants) {   // H1c: the toys' copies, each with the same rules
+    fs.writeFileSync(path.join(scratch, "Cartridges", `${v.name}.cartridge.json`), v.text);
+    if (rulesFile) fs.copyFileSync(rulesFile, path.join(scratch, "Cartridges", `${v.name}.rules.json`));
+  }
   const content = scratch.replace(/\\/g, "/");
   // A pool of at most maxJobs lab processes: the long cells first, every result kept at its run's place.
   const out = new Array(runs.length);
@@ -153,7 +211,9 @@ const r2 = (x) => Math.round(x * 100) / 100;
 const levels = {};
 const problems = [];
 const defectCells = {};
+const toyCells = {};
 for (const { hand, lv, r } of done) {
+  if (hand.startsWith("toy:")) { toyCells[hand.slice(4)] = r; continue; }
   if (hand === "idle" || hand === "skate_only") {
     const play = r.lines.filter((l) => l.tool === "thirdjam.playtest/1");
     const plan = r.lines.filter((l) => l.tool === "rinklab.cell/1").map((l) => l.planstats).filter(Boolean);
@@ -229,6 +289,36 @@ if (fs.existsSync(BANDS) && !process.argv.includes("--make-bands")) {
     }
   }
 }
+// H1c: each toy's worth, paired by seed against the full game with the same hand.
+const toyFigures = [];
+if (toysOn) {
+  const byseed = (r) => new Map((r?.lines ?? []).filter((l) => l.tool === "thirdjam.playtest/1").map((l) => [l.seed, l]));
+  const cellsOf = (r) => (r?.lines ?? []).filter((l) => l.tool === "rinklab.cell/1");
+  const base = byseed(toyCells.base);
+  const baseOk = toyCells.base !== undefined && toyCells.base.code === 0 && base.size === toySeeds;
+  const fPress = r1(mean(cellsOf(toyCells.base).map((c) => c.stats?.press?.ability ?? 0)));
+  for (const t of toys) {
+    const row = { toy: t.name, how: t.how };
+    if (t.refused !== undefined) { toyFigures.push({ ...row, measured: false, why: `the copy without it is refused by thirdjam's validator: ${t.refused.join("; ")}` }); continue; }
+    const r = toyCells[t.id];
+    const other = byseed(r);
+    if (!baseOk || r === undefined || r.code !== 0 || other.size !== toySeeds) { toyFigures.push({ ...row, measured: false, why: `${other.size} of ${toySeeds} matches reported` }); continue; }
+    let gd = 0, changed = 0;
+    for (const [seed, a] of base) {
+      const b = other.get(seed);
+      gd += (a.goals[0] - a.goals[1]) - (b.goals[0] - b.goals[1]);
+      if (a.result !== b.result || a.goals[0] !== b.goals[0] || a.goals[1] !== b.goals[1] || a.frames !== b.frames) changed += 1;
+    }
+    const wWith = [...base.values()].filter((p) => p.result === "win").length;
+    const wWithout = [...other.values()].filter((p) => p.result === "win").length;
+    const points = Math.round((100 * (wWith - wWithout)) / toySeeds);
+    const fig = { ...row, measured: true, matches: toySeeds, wins_with: wWith, wins_without: wWithout, points, goal_diff: r2(gd / toySeeds), changed, ...(t.id === "ability" ? { f_presses: fPress } : {}) };
+    toyFigures.push(fig);
+    const said = `pro ${wWith} of ${toySeeds} wins with it, ${wWithout} without (${points >= 0 ? "+" : ""}${points} points), paired goal difference ${fig.goal_diff >= 0 ? "+" : ""}${fig.goal_diff}${t.id === "ability" ? `, F pressed ${fPress} times a match` : ""} (thirdjam's regular playtester)`;
+    if (changed === 0) warnings.push(`toy: ${t.name}: changes nothing, not one of ${toySeeds} matches at pro plays differently without it; ${said}`);
+    else if (Math.abs(points) <= 5 && Math.abs(fig.goal_diff) < 0.5) warnings.push(`toy: ${t.name}: worth about nothing, ${said}`);
+  }
+}
 const ok = problems.length === 0;
 say(`rink check-cartridge: ${path.basename(file)}${rulesFile ? " + " + path.basename(rulesFile) : ""} (validator: accepted; ${done.length} runs in ${r1(seconds)} s${cached ? ", read from the cache: this cartridge, rules, lab and content were measured before" : ""})`);
 for (const lv of LEVELS) {
@@ -245,5 +335,5 @@ for (const p of problems) say(`  FAIL ${p}`);
 say(ok ? `PASS  rink check-cartridge: measured${warnings.length ? ` (${warnings.length} warning(s))` : ""}` : `FAIL  rink check-cartridge: ${problems.length} run(s) did not complete`);
 console.log(JSON.stringify({ tool: "tl.rink.check/1", ok, ran: true, file: path.basename(file), rules: rulesFile ? path.basename(rulesFile) : undefined,
   hands: { playtester: `thirdjam regular playtester with sprint, ${seeds} seeds a level`, plan: planSeeds ? `planning hand (lab_plan regular), ${planSeeds} seeds a level` : undefined },
-  levels, ...(defects ? { defects: defectCells, defect_hands: { idle: `thirdjam regular playtester with every input removed, ${defectSeeds} seeds at pro`, skate_only: `planning hand (lab_plan regular) skating only, ${defectSeeds} seeds at pro, its sim copies checked` } } : {}), warnings, problems, seconds: r1(seconds), ...(cached ? { cached: true } : {}) }));
+  levels, ...(defects ? { defects: defectCells, defect_hands: { idle: `thirdjam regular playtester with every input removed, ${defectSeeds} seeds at pro`, skate_only: `planning hand (lab_plan regular) skating only, ${defectSeeds} seeds at pro, its sim copies checked` } } : {}), ...(toysOn ? { toys: toyFigures, toy_hand: `thirdjam regular playtester with sprint, ${toySeeds} seeds at pro, each toy with and without it, paired by seed` } : {}), warnings, problems, seconds: r1(seconds), ...(cached ? { cached: true } : {}) }));
 process.exit(ok ? 0 : 1);

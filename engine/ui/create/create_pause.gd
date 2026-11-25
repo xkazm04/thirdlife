@@ -260,6 +260,12 @@ func _measured_card(v: Dictionary, at: Vector2, sz: Vector2) -> void:
 		var d: Label = _wrapped(str(defects[i]), 19, 800, RED.darkened(0.15), Vector2(30, y), sz.x - 60, 2, card)
 		d.name = "Defect%d" % i
 		y += 52.0
+	# H1c: a toy that changes nothing (the check played it with and without), in the person's words, below the defects
+	var toys: Array = v.get("toys", [])
+	for i: int in mini(2 - mini(2, defects.size()), toys.size()):
+		var tl: Label = _wrapped(str(toys[i]), 18, 800, Color("#9a5b00"), Vector2(30, y), sz.x - 60, 2, card)
+		tl.name = "Toy%d" % i
+		y += 50.0
 
 
 func _fig(x: float, unit: String) -> String:
