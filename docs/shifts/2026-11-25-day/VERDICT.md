@@ -77,14 +77,18 @@ All on main, the last of them f298936. What a person now gets, each item driven 
   hint overlaps); a scratch game's shallow depth (robots pass through each other, the ball's height is only drawn).
 - The lane, as a person: "the first version I'd play a second and maybe a third match of. It is not hokej."
 
-### G4, Half-court from scratch (Opus): no version yet; testing Resume now
+### G4, Half-court from scratch (Opus): v0.1.0 at 21:34, through Create's new Resume
+- Update 21:40: Resume worked. One send-back round made the newcomer check pass (rivals went from too hard, 7 of 20, to
+  never winning, 20 of 20). v0.1.0 is in the menu (Half-court v0.1.0); it ran 600 frames in the exe with 0 errors. It
+  looks like a street court and still plays as a knot around the ball. Change 1 (spacing) is sent. 9 h and 36.6 M tokens
+  in total.
 - 8 h of building, 34 M tokens. Stopped in turn by:
   - the 1.0 ms village budget (fixed: H2c);
   - the critic's hockey rows (fixed: H1e/H1g);
   - a person's yes ignored (fixed: H1f);
   - the newcomer hand check (7 of 20 against 13), re-run on unchanged files.
 - Its last pack looks like the target (a blue court with an orange key, arches), and its play never changed: six kids
-  in a knot. It is now testing Create's new Resume.
+  in a knot. 
 
 ### G5, Bumper-kart football from scratch (Opus): resumed after failing; on its first change
 - It reached the last phase in 2 h on the improved editor: a faithful design, the estimate shown, the budget fine.
