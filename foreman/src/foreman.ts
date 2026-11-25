@@ -21,7 +21,7 @@ import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-1
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
 import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
-import { removedSince } from "./removal.js"; // H1 (E5e): what a change removed, named
+import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -1109,7 +1109,9 @@ export class Foreman {
     const events = this.log.events;
     const runAt = [...events].reverse().find((e) => e.type === "builder_run" && e.package === id && e.round === round && e.outcome === "ok")?.seq ?? 0;
     if (events.some((e) => e.type === "answer" && e.package === id && e.seq > runAt)) return false;
-    if (!events.some((e) => e.type === "question" && e.package === id && e.seq > runAt)) this.append({ type: "question", package: id, text: question });
+    const before = answeredThisChange(events, id, runAt); // H1d: one question per change, then routing or plain words
+    if (before !== undefined && runAt > 0) return askedAgain(this.gateHost, jobCore(this.gateHost), id, round, question, before), true;
+    if (!events.some((e) => e.type === "question" && e.package === id && e.seq > runAt)) this.append({ type: "question", package: id, text: plainQuestion(question) });
     this.append({ type: "package_state", package: id, state: "blocked", round, cause: "question", detail: clip(question, 200) });
     return true;
   }
@@ -1897,6 +1899,8 @@ export class Foreman {
     if (nth > 1) {
       const owner = this.lastReopened();
       const shots = await this.captureSet(`promotion${nth}`, owner, tests[0], fast);
+      const errs = promotionErrors(this.gateHost, `promotion${nth}`); // H1d: the game in a window throws script errors
+      if (errs !== undefined) return this.endJob("failed", clip(`promotion refused: ${errs}. Earlier version v${this.s.promoted?.version ?? "?"} stays the one to play.`, 900), true), false;
       this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version, removedSince(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack"))) }); // E3f: one line for Create; H1: each removal on its own line
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }

@@ -236,9 +236,11 @@ func _pitch() -> void:
 		var in_row: int = mini(cols, n - r * cols)
 		var x0: float = (W - (cw * float(in_row) + gap * float(in_row - 1))) * 0.5
 		_card(list[i], Vector2(x0 + float(c) * (cw + gap), top + float(r) * (ch + gap)), Vector2(cw, ch))
-	var hint: Label = _label("Tap a card to change it" if not (job.get("aspects", []) as Array).is_empty() else "", 22, 600, MUTED)
-	hint.name = "Hint"
-	_place(hint, Vector2(44, 656))
+	# H1d: a kept card that needs new engine code says so where the hint stands, with its hours (the person decides)
+	var core_cost: String = Model.core_cost_words(job, taps)
+	var hint: Label = _label(core_cost if not core_cost.is_empty() else ("Tap a card to change it" if not (job.get("aspects", []) as Array).is_empty() else ""), 19 if not core_cost.is_empty() else 22, 800 if not core_cost.is_empty() else 600, Color("#f0a540") if not core_cost.is_empty() else MUTED, W - 620)
+	hint.name = "CoreCost" if not core_cost.is_empty() else "Hint"
+	_place(hint, Vector2(44, 654 if not core_cost.is_empty() else 656))
 	var cost: String = Model.estimate_words(job.get("estimate", {}))   # H1b: what building it takes, before Build it
 	if not cost.is_empty():
 		var est: Label = _label(cost, 24, 800, PAPER, W - 620)
@@ -303,6 +305,11 @@ func _card(a: Dictionary, at: Vector2, sz: Vector2) -> void:
 	var line: Label = _label(str(f["line"]), 19 if sz.x > 330 else 17, 560, Color(INK, 0.82 if kind != "drop" else 0.4), tw)
 	line.name = "CardLine"
 	line.position = Vector2(ipx + 30, 14 + title.get_minimum_size().y + 2)
+	if kind == "keep" and str(a.get("needs", "")) == "core":   # H1d: this card as written needs new engine code
+		var tag: Label = _label("+%d h engine code" % int(a.get("hours", 0)), 17, 900, Color("#b05a00"))
+		tag.name = "Core_" + id
+		tag.position = Vector2(ipx + 30, sz.y - 72)   # between the line (two lines at most) and the choice dots
+		b.add_child(tag)
 	b.add_child(line)
 	if kind == "drop":
 		var strike: ColorRect = ColorRect.new()

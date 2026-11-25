@@ -80,8 +80,10 @@ held.
 - **The hall.** Thirdjam's barn is built for a 90 x 45 rink. A smaller cartridge rink resizes only the ice, the boards
   and the kick plate. The barn, its stands, its benches and its penalty boxes stay where they are: on a 60 x 30 rink the
   benches stand out on the floor behind the boards.
-- **The rink core** plays thirdjam's sport: skaters, sticks, a puck, two goals. A game that needs another body or another
-  ball needs a core patch (lane K1), not a cartridge.
+- **The rink core** plays thirdjam's sport: skaters, sticks, a puck, two goals. Another body, another ball or a new
+  mechanic is not a cartridge: it is new engine code in the core (C++, hours of work and a new build), and the person
+  decides whether to pay that. Never order it: offer the nearest data-only way first (zones, effects, pickups, abilities
+  and the rules sidecar already do a lot), and name the engine-code version as the costlier choice, with its hours.
 - **Front-end words not yet in the skin.** The front end's other words (MATCH card, end card, panel verbs) are
   thirdjam's. A MODES row on HOME is not ported: the cut is `data/match.json`'s.
 - **The faces of the sport.** The skaters' figure and the puck are thirdjam's (engine/rigs/skater; the pack's own drawing

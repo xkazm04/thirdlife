@@ -32,7 +32,8 @@ export const skinOwner = (plan: readonly PackageSpec[]): PackageSpec | undefined
  */
 export function coreChangeOwner(plan: readonly PackageSpec[], core: CoreRoute | undefined, owner: string, text: string): { owner: string; why?: string } {
   const spec = plan.find((p) => p.id === owner);
-  if (core === undefined || spec === undefined || !isBase(spec)) return { owner };
+  if (core === undefined || spec === undefined) return { owner };
+  if (!isBase(spec)) return playOwner(plan, core, spec, text);
   const cart = cartridgeOwner(plan);
   const skin = skinOwner(plan);
   const skinOnly = SKIN_ONLY_WORDS.test(text) && !CARTRIDGE_WORDS.test(text);
@@ -51,4 +52,26 @@ export function changeCandidates(lines: PackageLine[], plan: readonly PackageSpe
   const base = new Set(plan.filter(isBase).map((p) => p.id));
   const own = lines.filter((l) => !base.has(l.id));
   return own.length > 0 ? own : lines;
+}
+
+/** H1d: words that name the game's toys and how they play (the cartridge's abilities, pickups, zones and effects). */
+export const TOY_PLAY_WORDS = /\b(bubbles?|shields?|abilit(?:y|ies)|pickups?|power-?ups?|spots?|tricks?|boosts?|zones?|pads?|cannon|hip[- ]check|cooldowns?|charges?|comes? back|win|wins|winning|matches)\b/i;
+/** H1d: words that name a picture (what a drawing package changes), which keep the Planner's owner. */
+export const DRAW_WORDS = /\b(draw\w*|look\w*|see|seen|visible|show\w*|glow\w*|bright\w*|colou?r\w*|flash\w*|sounds?|icons?|signs?|labels?|hints?|hud|camera|animat\w*|pictures?|clutter|boxes|beads?)\b/i;
+
+/**
+ * H1d (lane G1's change 3: "let my bubble come back by itself ... make the green spots hand out a cannon shot or a hip
+ * check" went to `harbour`, the drawing package, and cost 33.5 min and 3.98 M tokens without being made): on a core, words
+ * about play (sizes, speeds, rules, the bots, the toys) with no word about a picture go to the cartridge's owner when the
+ * Planner named a package that does not own the game's cartridge. The skin's words stay the skin's; a picture stays the
+ * Planner's choice.
+ */
+function playOwner(plan: readonly PackageSpec[], core: CoreRoute, spec: PackageSpec, text: string): { owner: string; why?: string } {
+  const cart = cartridgeOwner(plan);
+  if (cart === undefined || cart.id === spec.id) return { owner: spec.id };
+  const play = CARTRIDGE_WORDS.test(text) || TOY_PLAY_WORDS.test(text);
+  const skinOnly = SKIN_ONLY_WORDS.test(text) && !play;
+  const namedSkin = skinOwner(plan)?.id === spec.id && SKIN_ONLY_WORDS.test(text); // "rename the teams" stays the skin's
+  if (!play || skinOnly || namedSkin || DRAW_WORDS.test(text)) return { owner: spec.id };
+  return { owner: cart.id, why: `on a game on the ${core.core} core how the game plays (its sizes, speeds, rules, bots and toys) is the cartridge's, and these words ask for play, not a picture: the change goes to "${cart.id}", which owns the game's cartridge (${cart.scope.join(", ")}); "${spec.id}" owns ${spec.scope.join(", ")}` };
 }

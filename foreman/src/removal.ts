@@ -9,6 +9,7 @@
 // Pure functions; coregate.ts and the Foreman's promotion use them.
 import fs from "node:fs";
 import path from "node:path";
+import { playedCartridges } from "./played.js";
 
 /** One list entry a change removed (or added): the key path of the list and the entry's name. */
 export interface Removal {
@@ -98,7 +99,10 @@ export function removedSince(promoted: string, packDir: string): Removal[] {
   const out: Removal[] = [];
   const data = path.join(packDir, "data");
   if (!fs.existsSync(data)) return out;
-  for (const f of fs.readdirSync(data).filter((n) => n.endsWith(".cartridge.json")).sort()) {
+  // H1d (lane G1, v0.1.3: "removed: a shield" was the builder's drill file losing its shields, not the game): only the
+  // cartridge the game plays is the game; with none named, every cartridge as before.
+  const played = playedCartridges(packDir).files.map((x) => x.slice("data/".length));
+  for (const f of fs.readdirSync(data).filter((n) => n.endsWith(".cartridge.json") && (played.length === 0 || played.includes(n))).sort()) {
     try {
       const was = JSON.parse(fs.readFileSync(path.join(promoted, "data", f), "utf8").replace(/^﻿/, ""));
       const now = JSON.parse(fs.readFileSync(path.join(data, f), "utf8").replace(/^﻿/, ""));

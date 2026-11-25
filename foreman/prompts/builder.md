@@ -89,7 +89,9 @@ person wanting another go. Put every feel number your package uses in `data/tuni
   starts with `KIT:` and names what you built by hand or removed and the reason. Do not replace kit parts by script
   boxes to make a picture read better; move, scale or re-parameterise the part instead.
 - If something you need is missing from the contract, end your answer with one line starting with
-  `QUESTION:` and stop. Do not guess.
+  `QUESTION:` and stop. Do not guess. Write it for the person who plays the game, in plain words: no JSON, no file
+  names, no key paths; give the two or three choices plainly ("A, or B?"). You get ONE question per change: if the
+  person's answer does not let you make it, say what you could not do under `DEVIATIONS:` and stop; do not ask again.
 - When done, answer with a short list of the files you wrote, and then, on its own line, the heading `DEVIATIONS:`
   followed by every point where what you built differs from your contract above (a name, a signature, a value, a
   behaviour, something left out), one per line. Builders of the packages that depend on yours are given exactly this
