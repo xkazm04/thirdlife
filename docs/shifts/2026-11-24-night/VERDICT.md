@@ -93,6 +93,13 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
   `host/guard.gd`). Proved both ways at 89d3b85 and 67b1349. The look gym moved out of rigs/ (no wall clock in rigs).
 - Evidence (Director, merged tree): `k.sh selftest` 120/0 refs PASS; world 9/9; uncapped kernel suite 565/0 (1920 s).
 
+Page: https://claude.ai/artifact/YXjdY1c8x8CQCGvkDqCP1L
+
+## Gates on main 049acf0 after the merge (Director, 25 Nov ~11:10)
+- `tl check --tier fast` PASS 5/5; `k.sh selftest` 120/0; selftest `rink.` 38/0, `hokej.` 5/0; `tl check --only world`
+  PASS 9/9; exe exported from 049acf0 and `export.sh check` PASS; foreman `npm test` alone 372 / 367 pass / 0 fail / 5
+  skipped (a first run beside the world check had 2 failures, output not kept, not named).
+
 ## Gates on hokej 17c60a1 (Director, 25 Nov morning)
 - `tl check --tier fast` PASS 5/5; foreman `npm test` 372 / 365 pass / 0 fail / 7 skipped; `npm run build` clean.
 - `k.sh selftest` 120/0 (refs PASS); `tl check --only world` PASS 9/9 (at 7d56b49); `tl check --only packs` PASS 4/4.
