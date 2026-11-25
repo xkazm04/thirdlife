@@ -296,7 +296,7 @@ test("E3 route on the fake adapter, driven as Create drives it: `foreman new \"3
   for (const p of plan.packages) p.scope = p.scope.map((g) => (g === "data/game.cartridge.json" ? cartRel : g));
   const script = {
     steps: [
-      { match: { role: "concept" }, json: { concept: { ...sampleConcept(), template: rinkT } } },
+      { match: { role: "concept" }, json: { concept: { ...sampleConcept(), chosen: 0, template: rinkT } } },
       { match: { role: "designer" }, json: { brief, estimate } },
       { match: { role: "design_review" }, json: { scores: { hook: 0.8, gif: 0.7, depth: 0.7, feel: 0.8, fit: 0.9 }, slop: [], verdict: "ok", notes: "Keep the pond small." } },
       // E4's owner question for a change request (grow.ts ownerOrNew keeps the old words), before the Planner's plan.
@@ -399,7 +399,7 @@ test("E3b route: a hand-written core plan (`foreman plan --from`) gets its base 
   const estimate = (readEvents(FIXTURE).find((e) => e.type === "brief_set") as { estimate: unknown }).estimate;
   const script = path.join(root, "fake.json");
   fs.writeFileSync(script, JSON.stringify({ steps: [
-    { match: { role: "concept" }, json: { concept: { ...sampleConcept(), template: rinkT } } },
+    { match: { role: "concept" }, json: { concept: { ...sampleConcept(), chosen: 0, template: rinkT } } },
     { match: { role: "designer" }, json: { brief: { ...v2Brief(), rules: `${v2Brief().rules}\n${RINK_LINES}` }, estimate } },
     { match: { role: "design_review" }, json: { scores: { hook: 0.8, gif: 0.7, depth: 0.7, feel: 0.8, fit: 0.9 }, slop: [], verdict: "ok", notes: "ok" } },
   ] }));

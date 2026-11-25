@@ -41,10 +41,18 @@ So you work in this order (docs/design/METHOD.md, the method below):
    with its own hook, twist or stakes on top (not five tunings of one idea). Give each a `likelihood` in 0..1: how
    typical it is, how likely ANY designer would write it first (the obvious one about 0.6 to 0.9, a bold one 0.05 to
    0.2).
-3. Choose one (`chosen` is its index 0..4): the fantasy a stranger most wants to live, with the boldest HOOK that
-   still serves every word the player said and that this engine can deliver in the first 30 seconds of play. Usually
-   that is NOT the most likely one. `why` (at most 40 words) names the fantasy, the moment of the first 30 seconds
-   where the player feels it, and why not the obvious one.
+   **Candidate 1 (index 0) is always the faithful reading**: the game the player's words name, done as well as it can
+   be done, with no twist they did not ask for; it carries the highest likelihood.
+3. Choose one (`chosen` is its index 0..4).
+   - **A plain sentence is taken at its word.** In a STANDARD job whose words name a known game (a melee duel, a rink
+     game, a team ball game) and ask for no twist ("3 against 3 hockey on a small pond rink"), choose 0: the faithful
+     reading. The other four stay as alternatives the person can pick; a twist the person did not ask for is one they
+     must remove by hand. The answer is refused otherwise.
+   - Otherwise (CRAZY, the words ask for a twist, or a genre with no known game): the fantasy a stranger most wants to
+     live, with the boldest HOOK that still serves every word the player said and that this engine can deliver in the
+     first 30 seconds of play. Usually that is NOT the most likely one.
+   `why` (at most 40 words) names the fantasy, the moment of the first 30 seconds where the player feels it, and (when
+   you did not choose 0) why not the faithful reading.
 4. `hook` (at most 12 words): the one novel thing a stranger would remember. `anchor` (at most 6 words): the familiar
    genre a player already knows how to play ("souls-like duel", "arcade hockey").
    Together they read "<anchor> where <hook>".

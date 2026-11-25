@@ -167,5 +167,29 @@ export function stuckText(s: JobState): string {
  */
 export function criticRubric(s: JobState, lastPackage: string): RubricItem[] {
   const promise = s.phases[phaseIndexOf(s, lastPackage)]?.try ?? s.brief?.pitch;
-  return promise !== undefined ? [...DEFAULT_RUBRIC, funPromiseItem(promise)] : DEFAULT_RUBRIC;
+  if (promise === undefined) return DEFAULT_RUBRIC;
+  // E3c of 25 Nov (lane E5's real proof): the critic called a greybox NOT ok for aspects the person had DROPPED. The
+  // person's decisions ride on the promise item, so every look's prompt carries them (no new score to answer).
+  const item = funPromiseItem(promise);
+  const decided = personDecisionsText(s);
+  return [...DEFAULT_RUBRIC, decided !== "" ? { ...item, text: `${item.text} ${decided}` } : item];
+}
+
+/**
+ * E3c: the person's decisions on the design's aspects (aspect_reacted: drops, keeps with a note, alternatives chosen),
+ * as the critic reads them; "" when the person reacted to nothing. They win over the pitch, the clip moments, the kill
+ * lines and the method lines, which were written before the person decided.
+ */
+export function personDecisionsText(s: Pick<JobState, "brief" | "reactions">): string {
+  const lines: string[] = [];
+  for (const a of s.brief?.aspects ?? []) {
+    const r = s.reactions[a.id];
+    if (r === undefined) continue;
+    const note = r.note !== undefined ? ` (the person's note: "${r.note}")` : "";
+    if (r.choice === "drop") lines.push(`DROPPED "${a.title}" (${a.line})${note}`);
+    else if (r.choice === "keep") lines.push(`KEPT "${a.title}"${note}`);
+    else lines.push(`CHOSE "${a.alternatives.find((x) => x.id === r.choice)?.title ?? r.choice}" instead of "${a.title}"${note}`);
+  }
+  if (lines.length === 0) return "";
+  return `THE PERSON'S DECISIONS on the design, made before the build (they win over the pitch, the clip moments, the method and kill lines written before them): ${lines.join("; ")}. A DROPPED aspect is not in this game: do not look for it, never score any item down or call the look NOT ok because it is missing, and treat a pitch, clip moment or kill line about it as void. Judge a chosen alternative instead of the aspect it replaced.`;
 }

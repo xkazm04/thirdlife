@@ -8,8 +8,8 @@ import type { Brief } from "./events.js";
 import { designBrief, generate, type DesignerInput, type DesignerOutput, type GenerateCall, type GenerateOptions, type Generated } from "./designer.js";
 import { PKG_ROOT } from "./paths.js";
 import { REVIEW_SCORES, ROOM_LIMITS, conceptProblems, reviewProblems, type Concept, type DesignReview } from "./room_wire.js";
-import { earlierProblems, earlierText, takenProblems, takenText } from "./concepts.js";
-import { conceptTemplateProblems, templateExcerpt, templatesMenuText } from "./templates.js";
+import { earlierProblems, earlierText, faithfulProblems, takenProblems, takenText } from "./concepts.js";
+import { conceptTemplateProblems, templateExcerpt, templateForSentence, templatesMenuText } from "./templates.js";
 import { BRIEF_LIMITS, CONCEPT_LIMITS, REVIEW_LIMITS } from "./repair.js";
 import { methodBlock, methodText } from "./method.js"; // N2 of 23 Nov: docs/design/METHOD.md
 import { REVIEW_THRESHOLD, conceptAnswerSchema, conceptText, qualityText, reviewAnswerSchema, slopIds, type ReviewAnswer } from "./roomtext.js";
@@ -43,7 +43,7 @@ export function conceptStep(builder: Parameters<typeof designBrief>[0], input: R
     prompt("concept.md"),
     { ...vars, method: methodText(["1", "4", "9", "14:Concept"]), quality: qualityText(["3", "4", "6", "8"]), templates: templatesMenuText(), redesign: redesignBlock(input), taken: takenText(input.creativity, input.taken) + earlierText(input.earlier) },
     conceptAnswerSchema,
-    (v) => [...conceptProblems((v as { concept: Concept }).concept), ...conceptTemplateProblems((v as { concept: Concept }).concept, input.sentence), ...takenProblems((v as { concept: Concept }).concept, input.taken, input.sentence), ...earlierProblems((v as { concept: Concept }).concept, input.earlier, input.sentence)],
+    (v) => [...conceptProblems((v as { concept: Concept }).concept), ...conceptTemplateProblems((v as { concept: Concept }).concept, input.sentence), ...takenProblems((v as { concept: Concept }).concept, input.taken, input.sentence), ...earlierProblems((v as { concept: Concept }).concept, input.earlier, input.sentence), ...faithfulProblems((v as { concept: Concept }).concept, input.sentence, input.creativity, templateForSentence(input.sentence)?.id)], // E3c: a plain sentence at its word
     { ...opts, attempts: opts.attempts ?? 3, limits: CONCEPT_LIMITS }, // word limits: a repair call first (repair.ts), then the attempts
   );
 }

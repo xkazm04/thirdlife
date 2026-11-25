@@ -26,7 +26,7 @@ const estimate = { packages: 6, wallMinutes: 60, tokens: 900000 };
 const ofType = <T extends JobEvent["type"]>(evs: JobEvent[], t: T): Extract<JobEvent, { type: T }>[] => evs.filter((e): e is Extract<JobEvent, { type: T }> => e.type === t);
 
 const duelTemplate = { id: "duel" as const, reference: "Dark Souls, Sekiro and For Honor (DUEL-PLAYBOOK)", copies: ["the 6.4 state machine with its 8-frame input buffer", "the mutual reactions of 6.3: every contact changes both fighters", "three archetypes: the Wall absorbs, the Duelist parries, the Dancer avoids"] };
-const duelConcept = (): Concept => ({ ...sampleConcept(), template: duelTemplate, hook: "the crowd throws you the weapon it wants to see", anchor: "souls-like duel" });
+const duelConcept = (): Concept => ({ ...sampleConcept(), chosen: 0, template: duelTemplate, hook: "the crowd throws you the weapon it wants to see", anchor: "souls-like duel" });
 /** A duel design that copies the table: light 18/4/16, heavy 32/5/28, roll 3/18/15, block 4/held/6. */
 const duelDesign = (): DesignDoc => ({
   ...sampleDesign(),

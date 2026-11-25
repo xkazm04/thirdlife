@@ -217,7 +217,7 @@ export function roomSteps(): FakeStep[] {
   return [
     // N4 of 22 Nov: a team game with a puck copies a proven template (the room refuses an `own` concept for it); E3 of 24 Nov:
     // hockey is the rink core's (rink_sport), a cartridge on thirdjam's match.
-    { match: { role: "concept", promptIncludes: '"ice hockey' }, json: { concept: { ...sampleConcept(), template: { id: "rink_sport", reference: "thirdjam's match on the rink core", copies: ["thirdjam's match on the rink core, unchanged: skating, puck, bots", "the cartridge keys it changes: rink size and team size", "the skin: title and team colours"] } } } },
+    { match: { role: "concept", promptIncludes: '"ice hockey' }, json: { concept: { ...sampleConcept(), chosen: 0, template: { id: "rink_sport", reference: "thirdjam's match on the rink core", copies: ["thirdjam's match on the rink core, unchanged: skating, puck, bots", "the cartridge keys it changes: rink size and team size", "the skin: title and team colours"] } } } },
     { match: { role: "concept" }, json: { concept: sampleConcept() } },
     { match: { role: "design_review" }, json: { scores: { hook: 0.8, gif: 0.7, depth: 0.7, feel: 0.8, fit: 0.9 }, slop: [], verdict: "ok", notes: "Sell the bank shot." } },
   ];
