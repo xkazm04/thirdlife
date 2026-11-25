@@ -249,3 +249,43 @@ They never reached the change box. After 8 hours, the route ends on a rule a per
   bounds, a fixed camera), and no critic round or hold made them try: each revise went to whichever package the critic
   named, mostly for look items.
 - **The engine:** solved for this job by H2c (the solo budget).
+
+## Round 3 (20:44-21:41): Resume, v0.1.0, the menu and one behaviour change
+
+- **The failed card** (H1i) now reads: "Every part was built, but the last check plays your game with a bot hand, and
+  that check failed. Nothing was released." It offers **Resume** ("keeps the work so far") beside Try again.
+- **20:45: I pressed Resume** (`resume --retry-failed` with the run flags).
+  - It first re-ran the whole final verification on unchanged files: 17 min, and the same newcomer 7 of 20.
+  - Then it sent crews_stakes back for one round (r10, 8.7 min, 2.3M tokens in): rival guard gap at tier 1, and a
+    match cap of 180 -> 150 s so three matches fit the tofu check.
+  - r10 merged.
+- **The final check passed** (`foreman status`, hand check #4): newcomer **20 of 20** (at least 13), perfect 20 of 20.
+  The tier-1 rivals went from too hard to never winning.
+- **21:34: v0.1.0 promoted** (`promoted/game.half_court_3_v`).
+  - Whole job: 534 min wall time, 517 running, 23 rounds, 6 critic rounds, 36.6M tokens in (32.6M cache reads), 707k
+    out, weighted 7.89M.
+- **Added to the menu** as Create does (`Dungeons.add_user` row: pack, title, job) in my tree's own list,
+  `.tl/menu/dungeons.user.json`, for the Director to copy out. The person's real `user://` list was not touched.
+- **v0.1.0 as a person** (`stills/v010_promoted_play_strip.jpg`, `v010_promoted_play_f1800.jpg`,
+  `compare_v010_promoted.jpg` = target | hokej | this):
+  - **Look:** the same as the last pack. A blue court with an orange key, three grey arches behind the hoop, a fence,
+    leaf piles, onlookers, yellow against plum.
+  - **Behaviour:** a little more spread. In some seconds four players stand apart and two wait on the wings, but most
+    seconds still show a knot of 3-4 in the key.
+  - The camera still turns with you.
+  - The kids are still clones with backpacks.
+  - Crew 3 : 1 after 29 s.
+  - Would I play again? Not yet. It finally looks like a street court, but it still plays like a crowd round a ball.
+- **Change 1, behaviour**, sent through Create's change box at 21:38: "Spread the players out like real 3 on 3: only
+  the ball carrier and their defender near the ball, the others on the wings and corners, never all six in one knot
+  under the hoop".
+  - It waits for room (the machine was at 76-90 % CPU) and then starts detached through my own door.
+  - Its result is for the next round.
+
+Gap to the target, in three lines:
+1. **Behaviour:** knots in the key, no readable screen or block.
+2. **Camera:** turning (the second change to send).
+3. **Look:** grey arches instead of brick, green trees, cloned kids.
+
+**Finding of this round:** each Resume costs a full re-check of unchanged files before the send-back (17 min here).
+On a deterministic game, that re-check cannot change the answer.
