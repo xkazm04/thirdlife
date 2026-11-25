@@ -76,6 +76,11 @@ that is not inside the pack, `res://kits/`, `res://rigs/`, `res://style/` or `re
 Reading the pack's own `data/` goes through the kernel (`ctx` gives a JSON reader). Size limits (V1): one script at
 most 600 lines, the pack at most 6,000 lines of game GDScript (`scripts/` and `gen/`) and at most 4,000 lines under
 `tests/` (counted apart since 21 Nov 2026, so tests never compete with the game for room), `data/` at most 2 MB.
+A pack started from a base (`"base": "<name>"` in pack.json, a directory of `engine/templates/`; 25 Nov 2026) counts
+only its own game lines against the 6,000: a line equal to a line of the base's file at the same path is the base's, so
+an unchanged base file counts 0, an edited one its added or changed lines, a file the base lacks every line. The base's
+files are still linted (fence, the 600-line cap, capabilities); they are only not counted. A base the engine does not
+have is a layout error.
 
 ## Composability figures (reported by lint for every pack, never a pass/fail)
 
@@ -105,6 +110,7 @@ validates their shape (`engine/kernel/runner/manifest.gd`).
 | `on_leave` | `"bot"`, `"pause"` or `"end"` | what the game does when the player walks out of its plot | the world scheduler |
 | `subject` | a node name under the pack's `World` | the thing a picture of this game is about | capture (`subject_frac` metric), camera framing |
 | `moments` | `[{"name", "frame"}]` or `[{"name", "event"}]` | the frames worth a picture | capture, at milestones |
+| `base` | a name `^[a-z][a-z0-9_]*$`, a directory of `engine/templates/` | the base the pack was started from | lint (size: only the pack's own lines count) |
 
 The single list of runner verbs and options is `engine/kernel/runner/verbs.json` (`tl.verbs/1`). `RUNNER.md` describes
 them; the file is what tools read.
