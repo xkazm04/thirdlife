@@ -60,6 +60,7 @@ var cue_grace_carrier: int = -1
 var grace_from_hit: bool = false
 # what the last frame showed (tests read it)
 var shown: Dictionary = {}
+var ability = preload("ability.gd").new()   # lane E1b: the ability slot (ability.gd), shown while the human holds one
 
 
 ## `skin`: data/skin.json as skin.gd reads it ({} = hokej's defaults); `commentary_rows`: the commentator's bank it names (null =
@@ -74,11 +75,12 @@ func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 
 		if (teams[t] as Dictionary).has("colour_hex"):
 			team_col[t] = Color(String(teams[t]["colour_hex"]))      # FJamPresentationFrame::TeamColour0/1 (HokejGameMode.cpp:1632)
 	take_grace_total = int((game.get("stick", {}) as Dictionary).get("take_grace_frames", 30))
+	ability.abilities = game.get("abilities", [])
 	panel = PanelView.new()
 	markers = Markers.new(self)
 	cards = Cards.new(game, level_id)
 	flow = Flow.new(self, game)
-	captions = Captions.new(game, match_seed, commentary_rows, skin.get("team_names", []))
+	captions = Captions.new(game, match_seed, commentary_rows, skin.get("team_names", []), skin.get("team_plural", []))
 	barks = Barks.new(game, bark_rows, match_seed)
 	if String(skin.get("barks", "")) == "off":
 		barks.enabled = false
@@ -245,6 +247,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 
 	# ================================================================ the radar (cpp:724-733, RadarWidget.cpp; one look frame HUDOneLook.cpp:110-112)
 	_radar(snap, vw, vh, me)
+	ability.paint(lay, snap, vw, vh, hu, shown)   # lane E1b: the ability slot (HUDWidget.cpp:656-668, 934-947)
 
 	# ================================================================ the faceoff dial and its hint (cpp:1017-1062)
 	var cue_hidden: bool = R.faceoff_cue_hidden_in_box(int(hu.get("PenaltyFrames", 0)))

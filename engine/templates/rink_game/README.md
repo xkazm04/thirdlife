@@ -17,9 +17,19 @@ not write a simulation.
 | the skin | `data/skin.json` (schema `tl.rink.skin/1`; unknown keys are errors) | every word that belongs to the game: the title and tagline, HOME's lines, the team **names**, the level row's words, and which commentary and bark banks play (`builtin`, `off`, or a file in `data/`). See `scripts/hud/skin.gd` for each key and its default. |
 | the banks | `data/hud_barks.json`, or a bank file of your own in `data/` | the skaters' barks (`{"lines": [[id, situation, speaker, tone, text], ...]}`) and the commentator's lines (`{"lines": [[id, event, kind, team, priority, cooldown_frames, text, duration_frames], ...]}`, the rows of `scripts/hud/commentary_lines.gd`). |
 
+**What the cartridge puts on the rink is drawn from it** (`scripts/rink_toys.gd`, lane E1b): every `game.rink.zones` kind as
+a tinted patch with its own mark (fast ice orange with speed streaks, slow ice blue with slush dots, a bumper zone magenta
+with a rubber curb, no-shoot a red cross-hatch, boost-only green with a plus; `visible: false` is not painted), every
+`game.rink.obstacles` kind standing (box, pillar, magenta bumper bollard, goal shield), pickups as turning beacons by kind
+(when the core reports them: below), and a held ability on the HUD ("F: SHOTGUN  READY" above the radar). Nobody places
+them by hand: change the cartridge, and the drawing follows.
+
 **Colours have one source, the cartridge's `game.teams[].colour_hex`.** It colours the figures, the HUD's rings, the
 score plates, the bark plates, the markers, the radar and the debug stand-ins. The skin names the teams in words only.
-Where thirdjam's banks say "blue" and "orange", the commentator says the skin's `team_names`.
+Where thirdjam's banks say "blue" and "orange", the commentator says the skin's `team_names`, as written ("the Glare
+Foxes", never "glare foxes"). A plural name reads in the plural ("Sharks shoot!", "for the Gulls"; `team_plural` in the
+skin, else guessed from the name). A bare colour word that is not its team's colour ("Blue" on a red team) is said as the
+colour the person sees ("Red").
 
 ## What a builder may change
 
@@ -55,12 +65,18 @@ bash engine/tools/tl.sh invariants --pack=<dir>                                #
 bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_first_match.gd  # ROOKIE from HOME, a whole match to the end card
 bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_match_hand.gd   # a whole match through the keys and mouse
 bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_skin.gd         # the skin reads clean, its banks load, colours from the cartridge
+bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_toys.gd         # every zone and obstacle of the cartridge is drawn (and pickups, when reported)
 ```
 
 `bot_first_match` passes when the match ends (by goals or by the cartridge's timer) inside 10 minutes and the end card is
 held.
 
 ## Known limits of the base
+
+- **Pickups are not seen yet.** The core plays `game.pickups`, but its snapshot (RinkCore 1.3) carries only the sim's events;
+  the effect system keeps its pickups and their events to itself. `rink_toys.gd` draws them the frame the core reports a
+  `Pickups` list or `pickup_spawn` / `pickup_take` events (a core addition, lane K1/E2); until then a pickup cartridge plays
+  unseen pickups, and `bot_toys` says so in its summary. Zones, obstacles and abilities are drawn today.
 
 - **The hall.** Thirdjam's barn is built for a 90 x 45 rink. A smaller cartridge rink resizes only the ice, the boards
   and the kick plate. The barn, its stands, its benches and its penalty boxes stay where they are: on a 60 x 30 rink the
