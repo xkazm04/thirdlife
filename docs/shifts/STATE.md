@@ -442,4 +442,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 21:01: day verdict written (d2400a8 + page https://claude.ai/artifact/Gyq4DfepcQnY7amcWNXDKF); exe d73735a export check PASS; Arsenal v0.1.21 and Robot v0.1.5 run 600 frames in it with 0 errors; 9 Create-made games in the owner menu. G1 round 7 landed (d73735a). G4/G5/G11/G19 continue under the hourly standups.
 - 21:46 standup: G4 v0.1.0 via Resume (d641787, menu); G5/G11/G19 building; findings: the hidden newcomer floor pulls against the person's ask (G5); a builder edits its own tofu measure (G19).
 - 22:46 standup: G4 v0.1.1 (spacing: knots rarer, not gone); G5 v0.1.2 (rivals hunt the player); G11 at its first hold (planes tangle after 8 s); G19 finding: Create never shows builder notes.
+- 23:46 standup: G4 (v0.1.2) and G5 (v0.1.3) done and in the menu; G11 and G19 at their look phases (G19's captain's call reads; G11's planes still merge in the tail view).
 
