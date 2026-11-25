@@ -21,3 +21,33 @@ if [ -z "$FILTER" ] || [[ "rink.hint_window" == *"$FILTER"* ]]; then
   grep -q 'ctx.root.set_meta(&"rink_hint"' "$rh_o/pack/scripts/main.gd" || verdict rink.hint_window "the copy's main.gd has no _pack_tick to say the hint in"
 fi
 check rink.hint_window 0 capture "--pack=$rh_o/pack" --cam=follow --frame=200 --res=1280x720 --hud=on --test=tests/bot_match_hand.gd "--out=$rh_still" -- '"ok":true,"outcome":"passed"'
+
+# Lane H2d (25 Nov): the header and the ability plate say the game's own rules and words (G1's Arsenal: a three-minute clock
+# shown as "PERIOD 1" over an empty line; its CANNON called SHOTGUN on the base's plate).
+#   rink.header         a copy of engine/templates/rink_game on a clock (game.rules.mode timer, 10,800 frames) with a shotgun
+#                       held from the start and a skin that calls it a cannon: tests/bot_header.gd (the time left on every
+#                       play frame, counting down; FIRST TO 5 for the same game on first-to; "F: CANNON" on the plate)
+#   rink.header_window  the same copy captured in a window at frame 400 with the HUD on: the capture passes; the still is
+#                       $OUT/rink_header/still.png
+rd_o="$OUT/rink_header"
+if [ -z "$FILTER" ] || [[ "rink.header" == *"$FILTER"* ]] || [[ "rink.header_window" == *"$FILTER"* ]]; then
+  rm -rf "$rd_o"; mkdir -p "$rd_o"; cp -r "$HERE/../templates/rink_game" "$rd_o/pack"; find "$rd_o/pack" -name "*.uid" -delete
+  rd_n="$rd_o/pack"; command -v cygpath >/dev/null 2>&1 && rd_n="$(cygpath -m "$rd_n")"
+  node -e '
+const fs = require("fs"), p = process.argv[1], d = p + "/data/";
+const c = JSON.parse(fs.readFileSync(d + "hockey.regular.cartridge.json", "utf8"));
+c.id = "clock"; c.title = "Clock";
+const r = c.game.rules || {}; delete r.score_to_win; r.mode = "timer"; r.timer_frames = 10800; c.game.rules = r;
+c.game.abilities = [{kind: "shotgun", trigger: "mode", charges: 3, magnitude: 1.5, cooldown_frames: 180}];
+fs.writeFileSync(d + "clock.cartridge.json", JSON.stringify(c, null, 2));
+const m = JSON.parse(fs.readFileSync(d + "match.json", "utf8")); m.cartridge = "clock.cartridge.json";
+fs.writeFileSync(d + "match.json", JSON.stringify(m, null, 2));
+const s = JSON.parse(fs.readFileSync(d + "skin.json", "utf8")); s.ability_names = {shotgun: "cannon"};
+fs.writeFileSync(d + "skin.json", JSON.stringify(s, null, 2));
+const pk = JSON.parse(fs.readFileSync(p + "/pack.json", "utf8")); pk.tests.push("tests/bot_header.gd");
+fs.writeFileSync(p + "/pack.json", JSON.stringify(pk, null, 2));
+' "$rd_n"
+fi
+rd_still="$rd_o/still.png"; command -v cygpath >/dev/null 2>&1 && rd_still="$(cygpath -m "$rd_still")"
+check rink.header 0 bot "--pack=$rd_o/pack" --test=tests/bot_header.gd -- '"id":"bot.completed","ok":true' '"id":"bot.ok","ok":true' 'clock header on [0-9]+ frames'
+check rink.header_window 0 capture "--pack=$rd_o/pack" --cam=follow --frame=400 --res=1280x720 --hud=on --test=tests/bot_match_hand.gd "--out=$rd_still" -- '"ok":true,"outcome":"passed"'

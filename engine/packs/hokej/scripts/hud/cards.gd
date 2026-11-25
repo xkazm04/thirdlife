@@ -13,6 +13,7 @@ const MATCH_CARD_CENTRE_Y := 190.0       # DirectorsCallWidget.h:219
 const MATCH_CARD_PT := 42                # MatchCardFont: FJamMenuLook::Font(50 - 8, Black, 60) (HUDOneLook.cpp:198-202; DirectorsCallWidget.h:220-223, 90 m rink)
 
 var score_to_win: int = 3
+var timer: bool = false                 # lane H2d: game.rules.mode "timer": the header shows the time left (snapshot TimerLeft), not FIRST TO n
 var level: String = "PRO"
 var level_id: String = "pro"
 var take: int = 1
@@ -25,6 +26,7 @@ var box := Rect2()
 
 func _init(game: Dictionary, level_id: String) -> void:
 	score_to_win = int((game.get("rules", {}) as Dictionary).get("score_to_win", 0))
+	timer = String((game.get("rules", {}) as Dictionary).get("mode", "")) == "timer"
 	set_level(level_id)
 
 
