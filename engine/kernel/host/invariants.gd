@@ -73,13 +73,21 @@ func robust_frame_p99(runs: Array) -> Dictionary:
 
 
 ## The budget class of the pack at `pack_dir` (see BUDGET_SOLO_MS_P50): {"class": "many" | "solo", "why": a short reason}.
-## `boot_dir`: where village.json, games.json and dungeons.json are read (a test passes its own); the pack is named by its
-## path under the engine's root (res://), as dungeons.json and games.json (`from`, under the repository's engine/) name it.
-static func budget_class(pack_dir: String, boot_dir: String = "res://boot") -> Dictionary:
+## `home` (H2c, the runner's --home, which the Foreman passes for its jobs): "create" = a game made in Create, a dungeon
+## played alone until a person places it in the village: solo; "village" = a game placed on a village plot: many. The Director's
+## ruling of 25 Nov: a game made in Create is a dungeon, judged by the solo budget unless a person places it in the village.
+## Without `home` the engine's boot files decide: `boot_dir`: where village.json, games.json and dungeons.json are read (a
+## test passes its own); the pack is named by its path under the engine's root (res://), as dungeons.json and games.json
+## (`from`, under the repository's engine/) name it; a pack outside the engine's tree with no home given stays "many".
+static func budget_class(pack_dir: String, boot_dir: String = "res://boot", home: String = "") -> Dictionary:
+	if home == "create":
+		return {"class": "solo", "why": "a game made in Create (--home=create): a dungeon played alone until a person places it in the village"}
+	if home == "village":
+		return {"class": "many", "why": "a game placed in the village (--home=village): one of many games in one world"}
 	var root: String = ProjectSettings.globalize_path("res://").replace("\\", "/").trim_suffix("/")
 	var dir: String = ProjectSettings.globalize_path(pack_dir).replace("\\", "/").trim_suffix("/")
 	if not dir.to_lower().begins_with(root.to_lower() + "/"):
-		return {"class": "many", "why": "not a pack of the engine's tree"}
+		return {"class": "many", "why": "not a pack of the engine's tree, and the runner was not told its home (--home): held to the village's one-of-many budget"}
 	var rel: String = dir.substr(root.length() + 1)
 	var games: Variant = JSON.parse_string(FileAccess.get_file_as_string(boot_dir + "/games.json"))
 	var village: Variant = JSON.parse_string(FileAccess.get_file_as_string(boot_dir + "/village.json"))
@@ -126,7 +134,7 @@ func _invariant_checks(a: Dictionary, b: Dictionary, idle: Array = [], run_opts:
 	# over the idle runs, so that a stall the machine caused in one run cannot fail a healthy pack
 	var fr: Dictionary = robust_frame_p99(idle if not idle.is_empty() else [a, b])
 	var p99: float = float(fr["p99"])
-	var bc: Dictionary = budget_class(str(h.get("pack_dir")))
+	var bc: Dictionary = budget_class(str(h.get("pack_dir")), "res://boot", str((h.get("opts") as Dictionary).get("home", "")))   # H2c: --home
 	if str(bc["class"]) == "solo":
 		if p99 > BUDGET_SOLO_FRAME_MS_P99:
 			_error("budget", "", "frame p99 %.2f ms is over the %.0f ms budget of a game alone in its world (%s)" % [p99, BUDGET_SOLO_FRAME_MS_P99, bc["why"]])

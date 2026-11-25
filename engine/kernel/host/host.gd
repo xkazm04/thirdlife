@@ -8,8 +8,7 @@ extends Node
 ##   * a runaway script cannot be interrupted from inside its own thread; the worker's watchdog thread writes the
 ##     result and ends the worker, and the supervisor still produces a report and exit code 3;
 ##   * script errors are caught twice: by a custom Logger inside the worker (file and line), and by the supervisor
-##     reading the worker's engine log for "SCRIPT ERROR" lines the Logger could not have seen;
-##   * `invariants` compares two runs that share nothing, not even a process.
+##     reading the worker's engine log for "SCRIPT ERROR" lines the Logger could not have seen; `invariants` compares two runs that share nothing.
 ## No global class name is used in this file, manifest.gd or lint.gd, so the supervisor works before the class cache
 ## exists; it refreshes the cache (`--import`) itself when kernel scripts are newer than it.
 
@@ -23,7 +22,7 @@ const LEVELS: Dictionary = {"lint": "V1", "smoke": "V2", "invariants": "V3", "bo
 const OPTIONS: Dictionary = {
 	"lint": ["pack", "report"],
 	"smoke": ["pack", "report", "seed", "frames"],
-	"invariants": ["pack", "report", "seed", "frames", "bot-frames"],   # --bot-frames: budget of the bot replays (WP5)
+	"invariants": ["pack", "report", "seed", "frames", "bot-frames", "home"],   # --bot-frames: budget of the bot replays (WP5); --home: H2c, the budget class
 	"bot": ["pack", "report", "seed", "frames", "test", "record"],
 	"replay": ["pack", "report", "input", "record"],   # P7: a recorded session (tl.input/1) again, headless; seed and length are the record's
 	"capture": ["pack", "report", "seed", "cam", "frame", "out", "res", "test", "hud", "strip"],   # --test: kernel extension, see API.md
@@ -132,6 +131,7 @@ func _supervise(bad_args: PackedStringArray) -> void:
 	for k: String in ["seed", "frames", "frame", "bot-frames"]:
 		if opts.has(k) and not str(opts[k]).is_valid_int():
 			return _not_run("engine", "--%s must be an integer" % k)
+	if opts.has("home") and not (str(opts["home"]) in ["create", "village"]): return _not_run("engine", "--home must be create or village (got '%s')" % str(opts["home"]))
 	for k: String in ["report", "out", "pack", "input", "record"]:
 		if opts.has(k):
 			opts[k] = _win_path(str(opts[k]))

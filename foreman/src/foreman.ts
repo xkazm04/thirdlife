@@ -143,6 +143,7 @@ export class Foreman {
       ...(this.o.now ? { now: this.o.now } : {}),
       ...(this.o.afterAppend ? { afterAppend: this.o.afterAppend } : {}),
     });
+    this.o.verifier.home = this.log.state.lot !== undefined ? "village" : "create"; // H2c: a village lot's job is one of many; a Create game is a dungeon (solo)
     try {
       let s = await this.runOpen();
       // P10 item 4: something was put into the inbox while the job was ending (an answer to the question it paused
@@ -1757,7 +1758,7 @@ export class Foreman {
 
   private async callBuilder(id: string, spec: PackageSpec, round: number): Promise<RunResult> {
     const ws = this.wsDir(id);
-    const derived = deriveBashAllowlist(this.o.verifier.location, spec.acceptance, ws, this.dir("reports", `self-${id}`));
+    const derived = deriveBashAllowlist(this.o.verifier.location, spec.acceptance.map((a) => ({ ...a, args: this.o.verifier.argsFor(a.verb, a.args) })), ws, this.dir("reports", `self-${id}`));
     for (let attempt = 1; ; attempt++) {
       const prompt = this.buildPrompt(id, spec, round, derived.commands);
       const refBefore = fs.existsSync(this.refDir()) ? snapshot(this.refDir()) : undefined;
@@ -1987,6 +1988,7 @@ export class Foreman {
    */
   previewBuilderPrompts(only?: string): { package: string; round: number; prompt: string }[] {
     this.log = JobLog.open(this.jobDir, this.o.now ? { now: this.o.now } : {});
+    this.o.verifier.home = this.log.state.lot !== undefined ? "village" : "create"; // H2c, as run() sets it
     try {
       if (this.s.plan.length === 0) throw new ForemanError(`job ${this.s.job} has no plan_set yet (run \`foreman plan\`)`);
       this.prepareReference();
@@ -1994,7 +1996,7 @@ export class Foreman {
         .filter((p) => only === undefined || p.id === only)
         .map((p) => {
           const round = this.pkg(p.id).round;
-          const derived = deriveBashAllowlist(this.o.verifier.location, p.acceptance, this.wsDir(p.id), this.dir("reports", `self-${p.id}`));
+          const derived = deriveBashAllowlist(this.o.verifier.location, p.acceptance.map((x) => ({ ...x, args: this.o.verifier.argsFor(x.verb, x.args) })), this.wsDir(p.id), this.dir("reports", `self-${p.id}`));
           return { package: p.id, round, prompt: this.buildPrompt(p.id, p, round, derived.commands) };
         });
     } finally {

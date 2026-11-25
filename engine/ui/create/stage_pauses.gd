@@ -14,6 +14,7 @@ const CHANGE_WORDS: String = "the rallies are too slow: make the court smaller"
 var host: Node = null
 var ok_all: bool = true
 var said: Dictionary = {}
+var quality_sent: int = 0           # H2c: how many quality answers the door has started so far
 
 
 func say(what: String, ok: bool) -> void:
@@ -108,7 +109,16 @@ func drive(h: Node) -> void:
 						await h.call("_shot", "pz-05-quality-change")
 						h.call("_press", "SendQualityChange")
 				await h.call("_frames", 6)
-				say("quality %s is sent (the page waits for the Foreman)" % move, str(page().get("busy")) == "quality")
+				# H2c (the race): the page waits for the Foreman until the log answers it; a Foreman that took the verdict
+				# inside those 6 frames has already cleared the wait. Sent = the door started `foreman quality` (or
+				# quality-change), no message, and the page waits OR the log has moved past this hold.
+				var qj: Dictionary = page().get("job")
+				var moved_on: bool = str(qj.get("pause_kind", "")) != "quality" or str(qj.get("phase", "")) != "paused"
+				var qd: Variant = page().get("door")
+				var started_q: bool = qd != null and ((qd.get("started") as Array).filter(func(st: Dictionary) -> bool: return str(st.get("label", "")).begins_with("quality")).size() > quality_sent)
+				quality_sent += 1
+				say("quality %s is sent (the page waits for the Foreman, or the Foreman has already taken it)" % move,
+					started_q and str(page().get("message")) == "" and (str(page().get("busy")) == "quality" or moved_on))
 			"phase_done":
 				h.call("_press", "Pass")
 				await h.call("_frames", 10)

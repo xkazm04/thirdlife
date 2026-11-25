@@ -154,6 +154,9 @@ Unknown `type` or unknown keys are errors when the log is read.
     routed again or the person is told in words that it cannot be done. Questions are words with choices, never JSON.
   - A version is not promoted when its own promotion captures, filmed in a window, report script errors; the reason is
     given in words and the earlier version stays the one to play.
+  - The Foreman runs `invariants` with `--home=village` for a job whose `job_created` has a `lot` (a village site job),
+    and with `--home=create` for every other job (a game made in Create is a dungeon, judged by the solo budget), when
+    the runner's `verbs.json` lists the option.
 - A `done` job returns to `running` and ends `done` again. Each later promotion bumps the pack version to `0.1.<n>` and
   goes to `promoted/<pack id>@<version>/`; earlier promotions are kept. The last `promoted` event names the current one.
 - A change that no round could make leaves the earlier verified files in place; the package is `promoted` again with a

@@ -872,7 +872,7 @@ result and its hash (`seed_paddle/tests/bot_win.gd`, seeds 1 to 10). Scaffold a 
 ```
 bash engine/tools/tl.sh lint       --pack=<dir>
 bash engine/tools/tl.sh smoke      --pack=<dir> [--seed=1] [--frames=3600]
-bash engine/tools/tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600] [--bot-frames=36000]
+bash engine/tools/tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600] [--bot-frames=36000] [--home=create|village]
 bash engine/tools/tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000] [--record=<file.json>]
 bash engine/tools/tl.sh replay     --pack=<dir> --input=<file.json> [--record=<file.json>]   (a recorded session again; section 22)
 bash engine/tools/tl.sh capture    --pack=<dir> --cam=<name> --out=<abs.png> [--frame=120] [--res=1920x1080] [--test=tests/x.gd] [--hud=off|on]
@@ -895,6 +895,12 @@ What the kernel adds to `contracts/RUNNER.md` (all additive):
   error kind `determinism` with the bot's file). `--bot-frames` is the budget of each bot run (default 36000); a bot
   that is not done by then is still compared at that frame. Metrics `bot_state_hash`, `bot_frames`, and
   `bot_state_hash_b` when the two differ. A game that is only random once somebody plays it fails here;
+- `--home` (H2c, 25 Nov) says where the game lives, for its frame budget (`kernel/host/invariants.gd` budget_class):
+  `create` = a game made in Create, a dungeon played alone until a person places it in the village: the solo budget
+  (`invariants.solo_budget`, `invariants.solo_frame_budget`); `village` = placed on a village plot: one of many
+  (`invariants.many_budget`). Absent: the engine's boot files decide (a dungeon without a village plot is solo), and a pack
+  outside the engine's tree is held to one of many. The Foreman passes it for its jobs (village for a job made on a
+  village lot, create for every other); each check's detail says the reason in words;
 - when two runs of one seed differ (`invariants.determinism` or `invariants.bot_deterministic` fails), the check's
   detail and the `determinism` error name **the first frame that differs and the first parts of the state that
   differ**: `first difference at frame 437: body World/Crate`, or `at frame 200: _pack_state.flips` (parts: `body

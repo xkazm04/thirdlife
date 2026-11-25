@@ -8,6 +8,7 @@ import { runProcess, type SpawnFn } from "./proc.js";
 import { runnerArgv, type RunnerLocation } from "./builder/allowlist.js";
 import { DEFAULT_GODOT, FAKE_RUNNER, REPO_ROOT } from "./paths.js";
 import { withoutSecrets } from "./builder/claude-cli.js";
+import { verbsFor } from "./verbs.js"; // H2c: does the runner know invariants --home
 
 export type VerifyFlag =
   | "spawn_error"
@@ -107,6 +108,14 @@ function shapeProblems(r: unknown): string[] {
 
 export class Verifier {
   readonly location: RunnerLocation;
+  /**
+   * H2c: where the job's game lives, told to the runner's `invariants` (--home) for its frame budget: "create" (a game
+   * made in Create: a dungeon, the solo budget) or "village" (placed on a village plot: one of many). The Foreman sets it
+   * from the job (job_created's lot); undefined = not told (the engine's boot files decide). Passed only to a runner whose
+   * verbs.json lists the option.
+   */
+  home?: "create" | "village";
+  private homeKnown: boolean | undefined;
   private readonly timeoutMs: number;
   private readonly spawn: SpawnFn;
   private readonly env: NodeJS.ProcessEnv;
@@ -124,6 +133,25 @@ export class Verifier {
    * Runs one verb against a pack directory. `reportFile` is where the runner is told to write; a verdict file
    * (`<reportFile minus .json>.verdict.json`) with our own cross-checks is always written next to it.
    */
+  /** A verb's arguments as the runner gets them: invariants with --home when the job's home is known (a builder's own check too). */
+  argsFor(verb: Verb, args: readonly string[]): string[] {
+    const out = [...args];
+    if (verb === "invariants" && this.home !== undefined && !out.some((a) => a.startsWith("--home")) && this.knowsHome()) out.push(`--home=${this.home}`);
+    return out;
+  }
+
+  /** True when the runner's verbs.json lists invariants --home (an older engine would refuse the option). */
+  private knowsHome(): boolean {
+    if (this.homeKnown === undefined) {
+      try {
+        this.homeKnown = verbsFor(this.location).verbs["invariants"]?.options["home"] !== undefined;
+      } catch {
+        this.homeKnown = false;
+      }
+    }
+    return this.homeKnown;
+  }
+
   async run(req: { verb: Verb; args?: string[]; packDir: string; reportFile: string; timeoutMs?: number }): Promise<VerifyResult> {
     const packDir = path.resolve(req.packDir);
     const reportFile = path.resolve(req.reportFile);
@@ -131,7 +159,7 @@ export class Verifier {
     fs.mkdirSync(path.dirname(reportFile), { recursive: true });
     // A stale report from an earlier run must never be read as this run's answer.
     fs.rmSync(reportFile, { force: true });
-    const argv = runnerArgv(this.location, { verb: req.verb, args: req.args ?? [] }, packDir, reportFile);
+    const argv = runnerArgv(this.location, { verb: req.verb, args: this.argsFor(req.verb, req.args ?? []) }, packDir, reportFile);
     const timeoutMs = req.timeoutMs ?? this.timeoutMs;
     // RUNNER.md: captures use Direct3D 12 so that every image comes from one backend. The snapshot engine still
     // tries the default driver first unless told, so the Verifier says it (an explicit TL_RENDER_DRIVERS wins).

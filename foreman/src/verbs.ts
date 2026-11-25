@@ -102,7 +102,7 @@ export function isFakeRunner(location: RunnerLocation): boolean {
 }
 
 /** Options the Foreman sets itself on every call; a plan may not carry them. */
-const FOREMAN_OPTIONS = new Set(["pack", "report"]);
+const FOREMAN_OPTIONS = new Set(["pack", "report", "home"]); // H2c: --home is the Foreman's (where the job's game lives)
 /** Verbs a package's acceptance may use (captures are taken by the Foreman at milestones). */
 export const ACCEPTANCE_VERBS = ["lint", "smoke", "invariants", "bot"] as const;
 

@@ -3,7 +3,7 @@
 #
 #   tl.sh lint       --pack=<dir>
 #   tl.sh smoke      --pack=<dir> [--seed=1] [--frames=3600]
-#   tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600] [--bot-frames=36000]
+#   tl.sh invariants --pack=<dir> [--seed=1] [--frames=3600] [--bot-frames=36000] [--home=create|village]
 #   tl.sh bot        --pack=<dir> [--test=tests/x.gd] [--seed=1] [--frames=36000] [--record=<file.json>]
 #   tl.sh replay     --pack=<dir> --input=<file.json> [--record=<file.json>]   a recorded session (tl.input/1) again,
 #                                              headless: the same samples, no bot, no device; prints the state hash
