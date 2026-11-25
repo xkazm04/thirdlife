@@ -1,14 +1,5 @@
 extends RefCounted
-## thirdjam's barks (lane K5, round 4; HEAD 8dc713c6, `jam.Barks` -1 = the cartridge's game.barks, here enabled at "normal";
-## `jam.hud.BarkLane` 1): a skater's short line in a bubble. The picker (FJamBarkPicker, BarkSystem.cpp:182-328) over the
-## 1,340 lines of the bank (data/hud_barks.json = BarkData.inl = Content/Barks/barks.json); the triggers (UJamBarkSystem,
-## BarkSystem.cpp:418-505): a goal, the human's check landed, the human knocked down, a faceoff, the end, a near miss (a shot
-## then a board hit by the net within 45 frames), a steal (the puck changes team), a stall (5 s untouched, slow). The lane
-## (UJamBarkWidget, BarkWidget.cpp:18-38, 240-370): one bubble a side, the newest of a team whose speaker is in the frame and
-## within 24 m, standing in the scoreboard's row (bottom at y 84) 262 units beside the centre, never over a figure, the puck or
-## the human's box, never while a HUD line of words stands; held 150 frames, faded over 90; cleared by a pause. One look
-## (HUDOneLook.cpp:241-251): the panel at 0.9, a 4-unit corner, the team's edge 2 wide, Bold 18 in the text colour.
-## Its stream is its own (seeded from the match's seed): presentation only, never in the state hash.
+## thirdjam's barks (lane K5, round 4; HEAD 8dc713c6, `jam.Barks` -1 = the cartridge's game.barks, ... [base README: scripts/hud/barks.gd §1]
 
 const R := preload("rules.gd")
 const GLOBAL_COOLDOWN := 240
@@ -194,8 +185,7 @@ func step(snap: Dictionary, extra: Array) -> void:
 					pick("check_received", true, nearest(snap, where, true), f, snap)
 			"faceoff":
 				pick("faceoff", true, nearest(snap, where, true), f, snap)
-	# the watch: only in play
-	if int(snap["Phase"]) != 0:
+	if int(snap["Phase"]) != 0:   # the watch: only in play
 		last_touch_team = -1
 		last_touch_frame = f
 		return
@@ -225,8 +215,7 @@ static func opacity(age: int) -> float:                            # OpacityFor 
 	return 0.0 if fade >= FADE else 1.0 - float(fade) / float(FADE)
 
 
-## The lane (Layout, BarkWidget.cpp:240-370). `line_up`: a HUD line of words stands this frame; `keep`: the human's box.
-## Returns what it drew: [[team, text], ...].
+## The lane (Layout, BarkWidget.cpp:240-370). [base README: scripts/hud/barks.gd §2]
 func paint(lay, snap: Dictionary, vw: float, vh: float, now: int, paused: bool, line_up: bool, keep: Rect2, team_col: Array) -> Array:
 	var out: Array = []
 	if paused:

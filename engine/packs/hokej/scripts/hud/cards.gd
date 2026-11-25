@@ -1,11 +1,5 @@
 extends RefCounted
-## The take and the MATCH card (thirdjam HEAD 8dc713c6). The take is AHokejGameMode's, not the sim's period: ComputeTake =
-## clamp(1 + the lead's score, 1, score_to_win) in first_to (HokejGameMode.cpp:372-383), updated only on a Playing frame
-## (cpp:1679) and forced at a match's build and restart (cpp:560, 815); a change broadcasts `period` (cpp:385-397), on which
-## the controller opens the MATCH card for TakeCardFrames 150 (DirectorsCallController.cpp:96-100, 168-191; .h:31).
-## The card (UJamDirectorsCallHudWidget, DirectorsCallWidget.cpp:597-613, 639-737; one look HUDOneLook.cpp:204-232):
-## "MATCH 1" over "PERIOD n   -   FACEOFF   -   <LEVEL>", centred at y 190 under the scoreboard; it goes on the first frame
-## after a faceoff countdown it has seen (jam.hud.CardAtDrop 1), never on the end card.
+## The take and the MATCH card (thirdjam HEAD 8dc713c6). [base README: scripts/hud/cards.gd §1]
 
 const R := preload("rules.gd")
 const TAKE_CARD_FRAMES := 150            # UJamDirectorsCallController::TakeCardFrames (DirectorsCallController.h:31)

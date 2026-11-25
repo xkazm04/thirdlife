@@ -64,6 +64,7 @@ export const baseRefDir = (refDir: string, route: CoreRoute): string => path.joi
 export const baseEngineDir = (engineDir: string, route: CoreRoute): string => path.join(engineDir, "templates", route.base);
 /** True when a base directory holds a pack (its pack.json). */
 export const hasBase = (dir: string): boolean => fs.existsSync(path.join(dir, "pack.json"));
+export const readmeForDesign = (text: string): string => (text.split(/\r?\n## The code, explained/)[0] ?? text).trimEnd(); // H2e: the base README up to "The code, explained" (the code's long comments are for people reading the code, not the Designer)
 
 const readJson = (file: string): unknown => JSON.parse(stripBom(fs.readFileSync(file, "utf8")));
 
@@ -310,8 +311,7 @@ export function skinFields(baseDir: string | undefined): Set<string> | undefined
   if (!fs.existsSync(file)) return undefined;
   try {
     const out = keyPaths(readJson(file));
-    // E5c (25 Nov): the optional keys the base's skin reader declares but its data/skin.json leaves out (E1b's
-    // `team_plural`): the Designer reads them in the base's README and was refused for them twice
+    // E5c (25 Nov): the optional keys the base's skin reader declares but its data/skin.json leaves out (E1b's `team_plural`): the Designer reads them in the base's README and was refused for them twice
     const reader = path.join(baseDir, "scripts", "hud", "skin.gd");
     if (fs.existsSync(reader)) for (const m of fs.readFileSync(reader, "utf8").matchAll(/"([a-z_]+)":\s*TYPE_([A-Z]+)/g)) out.add(m[2] === "DICTIONARY" ? `${m[1] as string}.*` : (m[1] as string)).add(m[1] as string); // H2d: a TYPE_DICTIONARY field (ability_names) takes any key below it
     return out;
@@ -594,7 +594,7 @@ export function coreExcerpt(t: { id: string; title: string }, core: CoreRoute, p
   out.push("", cat !== "" ? `## The cartridge catalog (engine/cores/${core.core}/CARTRIDGE.md, lane E2)\n${cat}` : `## The cartridge catalog\n(engine/cores/${core.core}/CARTRIDGE.md has not landed yet (lane E2): the key paths are those of the house game's cartridge engine/packs/${core.house}/${core.houseCartridge} and of the modes below)`);
   const m = fileText(modes);
   if (m !== "") out.push("", `## thirdjam's twelve modes: worked examples of a cartridge cut (${posixRel(root, modes)})\n${m}`);
-  const readme = fileText(path.join(base, "README.md"));
+  const readme = readmeForDesign(fileText(path.join(base, "README.md")));
   out.push("", readme !== "" && hasBase(base) ? `## The base and its skin (engine/templates/${core.base}/README.md, lane E1)\n${readme}` : `## The base\n(engine/templates/${core.base}/ has not landed yet (lane E1): the job cannot start from the base until it does)`);
   return out.join("\n") + "\n";
 }

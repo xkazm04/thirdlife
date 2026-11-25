@@ -1,8 +1,5 @@
 extends RefCounted
-## thirdjam's front-end makers (FJamMenuLook, MenuWidget.cpp:224-351), drawn on a TLHudLayer with device B's kit as
-## exported to assets/hud/ (each a box brush at half its pixels, margins 0.2 / 0.35: KitOr, MenuWidget.cpp:229-240):
-## the item (a kit button plate, the 8-unit focus bar, the label), the panel (the team rule over the kit panel), the team
-## rule, the key hints (FillHints). Shared by the pause card and the menu.
+## thirdjam's front-end makers (FJamMenuLook, MenuWidget.cpp:224-351), drawn on a TLHudLayer with ... [base README: scripts/hud/kit.gd §1]
 
 const R := preload("rules.gd")
 const UNIT := 8.0
@@ -62,8 +59,7 @@ func item(at: Vector2, w: float, label: String, pt: int, state: int, sub: String
 	return h
 
 
-## FillHints (MenuWidget.cpp:334-351): key caps (white @ 0.14, padding 8 / 3, Black 14 tracked 40) and the action (Bold 14
-## tracked 60, dim), 32 units between pairs. `at` is the row's left (align 0) or centre (align 0.5), its vertical middle.
+## FillHints (MenuWidget.cpp:334-351): key caps (white @ 0.14, padding 8 / 3, Black 14 tracked 40) and ... [base README: scripts/hud/kit.gd §2]
 func hints(at: Vector2, pairs: Array, align: float = 0.0) -> void:
 	var total: float = 0.0
 	var ws: Array = []

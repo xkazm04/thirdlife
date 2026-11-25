@@ -71,7 +71,8 @@ function lint(engine: string, pack: string): { exit: number; size: { ok: boolean
 
 test("E3g 1: a pack that declares its base counts only its own game lines (the fake runner as lint_base.gd): base + 500 own passes, 6001 own fails, an edited base file counts its changed lines, an unknown base is a layout error", () => {
   const baseLines = fs.readdirSync(BASE, { recursive: true }).map(String).filter((f) => f.endsWith(".gd") && !f.replace(/\\/g, "/").startsWith("tests/")).reduce((a, f) => a + fs.readFileSync(path.join(BASE, f), "utf8").replace(/\r\n/g, "\n").split("\n").length - 1, 0);
-  assert.ok(baseLines > 5900 && baseLines <= 6000, `the base alone is ${baseLines} of the 6000 (E5c: 5943)`);
+  // H2e (25 Nov, the Director's ruling): the base keeps 300 lines of room under the 6,000 (its long explanations stand in its README)
+  assert.ok(baseLines > 5500 && baseLines <= 5700, `the base alone is ${baseLines} of the 6000 (E5c: 5943; H2e: at most 5700, 300 lines of room)`);
   const without = basePack(false);
   ownLines(without.pack, 500);
   const before = lint(without.engine, without.pack);

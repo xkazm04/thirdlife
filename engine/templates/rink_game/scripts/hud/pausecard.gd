@@ -1,11 +1,5 @@
 extends RefCounted
-## thirdjam's pause card (UJamDirectorsCallWidget, DirectorsCallWidget.cpp:170-232, 373-382, 506-530, 772-792; HEAD 8dc713c6)
-## on the kernel's frame pause (1.24: ctx.own_pause, TLHud.on_paused, ctx.input.menu_keys, ctx.resume, ctx.leave_game).
-## The scrim (black 0.62) and a panel 808 wide (padding 32 / 24): PAUSED (Black 40 tracked 120), "PERIOD n   -   PRO (YOUR
-## LEVEL)" (Bold 14 tracked 60, dim), the items at 22 (RESUME, CHANGE A RULE, RESTART, CONTROLS, QUIT TO MENU), the two
-## mouse buttons by possession (Bold 18 tracked 60, line height 1.25), EVERY KEY, AND TO REBIND IT: CONTROLS, the team rule,
-## the key hints ESC / START RESUME, ENTER / A SELECT, R / VIEW RESTART. Up / Down move, Enter selects, Esc resumes; QUIT
-## TO MENU asks LEAVE THE MATCH? first (NO, KEEP PLAYING has the focus).
+## thirdjam's pause card (UJamDirectorsCallWidget, DirectorsCallWidget.cpp:170-232, 373-382, 506-530, ... [base README: scripts/hud/pausecard.gd §1]
 
 const R := preload("rules.gd")
 const W := 808.0                 # PauseCardWidth (DirectorsCallWidget.h:64)

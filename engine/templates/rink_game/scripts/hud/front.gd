@@ -1,16 +1,5 @@
 extends RefCounted
-## thirdjam's front end, the path a first-time player takes to the puck (UJamMenuWidget, MenuWidget.cpp:683-967, 1266-1452,
-## 2138-2150, 2378-2433; MenuFlow.cpp:387-425; grid MenuWidget.h:66-105), drawn before the match's frame 0 while the kernel's
-## frame holds the pack paused (1.24). Two screens:
-##   LANDING  the backdrop (device B's T_UI_MenuBackdrop) under the scrim; HOKEJ (Black 176 tracked 120, shadow 0 / 6), the team
-##            rule 480 x 6, HOCKEY WITH THE WHISTLE TAKEN OUT. (Bold 24 tracked 160), PRESS ENTER (Black 28 tracked 200,
-##            breathing 0.55 to 1 every 1.6 s), OR A, OR A CLICK; footer ENTER / A START, CLICK START. Enter or a click: HOME.
-##   HOME     the header (T_UI_HeaderBar 80 high: HOKEJ, the rule, HOME, LEVEL and its chip), the team rule 8 under it, the left
-##            column 640 wide at x 96: PLAY NOW (Black 48) with "ONE MATCH, <LEVEL>.  ENTER / A, OR CLICK.", the level row
-##            ROOKIE / PRO / ALL-STAR (the lit one on T_UI_Segment_Lit), the level's line; the right column 704 wide: ONE
-##            MATCH and its words, YOUR STICK; footer ENTER / A PLAY, LEFT / RIGHT LEVEL, UP / DOWN MOVE, ESC / B TITLE.
-##            Left / Right step the level, Enter plays, Esc goes back to the title.
-## SEASON, MODES, PLAY WITH A FRIEND, CONTROLS, SETTINGS, CREDITS and QUIT are not ported (HUD.md lists them).
+## thirdjam's front end, the path a first-time player takes to the puck (UJamMenuWidget, ... [base README: scripts/hud/front.gd §1]
 
 const R := preload("rules.gd")
 const LEVELS := ["rookie", "pro", "all_star"]
@@ -133,8 +122,7 @@ func _home(lay, vw: float, vh: float) -> void:
 	lay.text(chip.get_center(), level_label(), 16, Color.WHITE, {"face": "black", "tracking": R.TRACK_LABEL, "align": Vector2(0.5, 0.5)})
 	lay.text(Vector2(chip.position.x - 16.0, my), "LEVEL", 14, R.ML_TEXT_DIM, {"face": "bold_condensed", "tracking": R.TRACK_LABEL, "align": Vector2(1, 0.5)})
 	kit.team_rule(Vector2(0, HEADER_H - RULE_H * 0.5), vw, RULE_H)
-	# the left column: PLAY NOW (it has the focus when HOME opens), the level row, the level's line
-	var y: float = HEADER_H + RULE_H + 40.0
+	var y: float = HEADER_H + RULE_H + 40.0   # the left column: PLAY NOW (it has the focus when HOME opens), the level row, the level's line
 	var sub: String = "ONE MATCH, %s.  ENTER / A, OR CLICK." % level_label()
 	y += kit.item(Vector2(SIDE, y), 640.0, "PLAY NOW", 48, 2, sub, 14, Vector2(12, 14)) + 8.0
 	var seg_w: float = (640.0 - 2.0 * 8.0) / 3.0
@@ -145,8 +133,7 @@ func _home(lay, vw: float, vh: float) -> void:
 		lay.text(r.get_center(), labels[i], 16, Color.WHITE if i == level else R.ML_TEXT_DIM, {"face": "black", "tracking": 100, "align": Vector2(0.5, 0.5)})
 	y += seg_h + 8.0
 	lay.text(Vector2(SIDE, y), meaning[level], 15, R.ML_TEXT_DIM, {"face": "regular"})
-	# the right column: the feature panel (ONE MATCH) and YOUR STICK
-	var rx: float = vw - SIDE - 704.0
+	var rx: float = vw - SIDE - 704.0   # the right column: the feature panel (ONE MATCH) and YOUR STICK
 	var body: Array = about.duplicate()
 	body.append_array(["", "The level is lit under PLAY NOW: left and right change it, and it is kept for the next time."])
 	var lh: float = lay.measure("A", R.LINE_PT, "regular").y * 1.15

@@ -1,9 +1,5 @@
 extends RefCounted
-## The seam between the shell (main.gd, lane K3) and the screen (lane K5): ONE call a drawn frame,
-##   screen = Screen.frame_of(screen, ctx, snap, human, last_in, last_raw)
-## made in main.gd's _draw() in match mode. It makes the pack's TLHud and its painter layer on the first call, reads what the
-## HUD's rules need from the buttons (UpdateControlsPanel's gathering, HUDControlsPanel.cpp:339-411) and hands the frame to
-## hud.gd. Presentation only.
+## The seam between the shell (main.gd, lane K3) and the screen (lane K5): ONE call a drawn frame, ... [base README: scripts/hud/screen.gd §1]
 
 const Hud := preload("hud.gd")
 const R := preload("rules.gd")
@@ -16,9 +12,7 @@ const LEVEL_ACTIONS: Array = [&"level_rookie", &"level_pro", &"level_all_star"]
 const LEVEL_IDS: Array = ["rookie", "pro", "all_star"]
 
 
-## Called by the shell on frame 0 before the core's first step (main.gd _pack_tick): the level HOME chose, as the record holds
-## it, set on the core and the match made again on the same seed (PLAY NOW opens the cut at that level, MenuWidget.cpp:2138-2150).
-## Returns the level id applied, or "" (none chosen: data/match.json's level stands).
+## Called by the shell on frame 0 before the core's first step (main.gd _pack_tick): the level HOME ... [base README: scripts/hud/screen.gd §2]
 static func start_level(ctx, core) -> String:
 	for i: int in LEVEL_ACTIONS.size():
 		if ctx.input.declared().has(String(LEVEL_ACTIONS[i])) and ctx.input.pressed(LEVEL_ACTIONS[i]):
@@ -28,8 +22,7 @@ static func start_level(ctx, core) -> String:
 			return LEVEL_IDS[i]
 	return ""
 
-## The level the shell applied this run (start_level's meta), else `fallback` (data/match.json's): the one the MATCH card shows,
-## in a bot, a replay and a played run alike.
+## The level the shell applied this run (start_level's meta), else `fallback` (data/match.json's): the ... [base README: scripts/hud/screen.gd §3]
 static func applied_level(ctx, fallback: String) -> String:
 	if ctx.root != null and ctx.root.has_meta(&"hokej_level"):
 		return String(ctx.root.get_meta(&"hokej_level"))
@@ -46,9 +39,7 @@ var last_ui: Dictionary = {}
 var was_paused: bool = false
 
 
-## `head`: the human figure's head socket in the world this frame (K3's match_view.head_world(HumanIndex)), or null: the
-## chevron and the YOU tag anchor to it (HumanHeadWorld source 2, HUDWidget.cpp:1089-1131); without it they look for a figure
-## with sockets themselves, else stand on the stand-in's top.
+## `head`: the human figure's head socket in the world this frame (K3's ... [base README: scripts/hud/screen.gd §4]
 static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, last_raw: Dictionary, head = null):
 	if ctx.frame == 0 and not ctx.input.declared().has(String(LEVEL_ACTIONS[0])):
 		for a: StringName in LEVEL_ACTIONS:
@@ -89,8 +80,7 @@ static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, 
 	return screen
 
 
-## One drawn frame while the kernel's frame holds the pack paused (TLHud.on_paused): the front end before the match, else
-## thirdjam's pause card over the HUD as it stood (its clocks still). Keys: ctx.input.menu_keys().
+## One drawn frame while the kernel's frame holds the pack paused (TLHud.on_paused): the front end ... [base README: scripts/hud/screen.gd §5]
 func paused_tick(_frame: int) -> void:
 	var ks: PackedStringArray = ctx_.input.menu_keys()
 	var lay = view.lay
@@ -137,9 +127,7 @@ var figure                    # the human's figure: a node with thirdjam's socke
 var figure_look: int = 0
 
 
-## HumanHeadWorld (HUDWidget.cpp:1089-1131, jam.hud.MarkerAnchor 1): the figure's head_socket, lifted YouMarkerHeadLiftCm (-18 cm)
-## along the head's own axis (the "head" bone to the socket); null without a figure that has sockets (the stand-in: its bounds).
-## The figure is looked for every 60 frames (a mesh may arrive later), as thirdjam looks again at a bounds answer.
+## HumanHeadWorld (HUDWidget.cpp:1089-1131, jam.hud.MarkerAnchor 1): the figure's head_socket, lifted ... [base README: scripts/hud/screen.gd §6]
 func head_world(ctx, snap: Dictionary, given = null):
 	var me: Dictionary = snap["Skaters"][int(snap["HumanIndex"])]
 	var p: Vector2 = me["Pos"]
@@ -198,19 +186,14 @@ static func _find_figure(root: Node, p: Vector2) -> Node3D:
 	return best
 
 
-## What the buttons say this frame (UpdateControlsPanel's gathering, HUDControlsPanel.cpp:339-411), read from the core's glue:
-## possession as the buttons read it (JamControls::HasPuckForButtons, computed in the glue: the snapshot's
-## Controls.ButtonsWithPuck, SNAPSHOT.md v1.2; absent = false), the verbs the last step resolved (the FJamInput the human
-## got, `last_in` = rink.last_human_input()), the keys down (`last_raw.Down`, Unreal key names) and the cross-check's hold
-## (Controls.CrossHoldSteps). `_human` is unused (the shell has no button resolver of its own since the raw glue).
+## What the buttons say this frame (UpdateControlsPanel's gathering, HUDControlsPanel.cpp:339-411), ... [base README: scripts/hud/screen.gd §7]
 static func ui_of(snap: Dictionary, _human, last_in: Dictionary, last_raw: Dictionary) -> Dictionary:
 	var me: int = int(snap["HumanIndex"])
 	var ctl: Dictionary = snap.get("Controls", {})
 	var with: bool = bool(ctl.get("ButtonsWithPuck", false))
 	var down: PackedStringArray = last_raw.get("Down", PackedStringArray())
 	var held: Dictionary = {}
-	# the two-role buttons as the last step resolved them (JamControls::LastHumanButtons, cpp:361-365)
-	if bool(last_in.get("bShootHeld", false)):
+	if bool(last_in.get("bShootHeld", false)):   # the two-role buttons as the last step resolved them (JamControls::LastHumanButtons, cpp:361-365)
 		held["Shoot"] = true
 	if bool(last_in.get("bPassHeld", false)):
 		held["Pass"] = true
@@ -219,8 +202,7 @@ static func ui_of(snap: Dictionary, _human, last_in: Dictionary, last_raw: Dicti
 	if bool(last_in.get("bCheck", false)):
 		held["Check"] = true
 	var press: bool = not held.is_empty() or bool(last_in.get("bShoot", false)) or bool(last_in.get("bPass", false))   # bPress (cpp:378)
-	# a two-role key down lights the verb it does now (cpp:379-385)
-	for k: String in ["LeftMouseButton", "RightMouseButton", "Q", "MiddleMouseButton", "ThumbMouseButton"]:
+	for k: String in ["LeftMouseButton", "RightMouseButton", "Q", "MiddleMouseButton", "ThumbMouseButton"]:   # a two-role key down lights the verb it does now (cpp:379-385)
 		if down.has(k):
 			press = true
 			var v: String = ({"LeftMouseButton": "Shoot", "RightMouseButton": "Pass", "Q": "Pass"} if with else

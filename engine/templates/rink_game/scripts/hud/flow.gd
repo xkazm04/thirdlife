@@ -1,14 +1,5 @@
 extends RefCounted
-## thirdjam's match flow on the screen (lane K5, round 2), HEAD 8dc713c6, every cvar at its default:
-##   the GOAL banner   HUDGoalBanner.cpp:30-252: device B's T_UI_Banner_Goal (exported, assets/hud/) stretched into
-##                     760 x 176 at (0.5 W, 0.30 H) (0.205 H when the scorer stands under that band), tinted lerp(white, the
-##                     scoring side's colour, 0.25); in over 12 frames, out over 12, gone 6 before the pause ends; a punch
-##                     1.25 -> 1 in, 1 -> 0.96 out; only when a score grew; on the match-ending goal it plays in the end card's wait;
-##   the end card      HUDWidget.cpp:446-497, 772-799, 952-982; HUDEndWait.cpp; HUDEndStats.cpp; HUDOneLook.cpp:123-181:
-##                     after 1.9 s, a panel 704 wide at (0.5 W, 0.4 H): YOU WIN / BEATEN / NO WINNER, YOU  a : b  THEM, the
-##                     stats table, the team rule, the key caps R / VIEW REMATCH, ESC / START MENU;
-##   IN THE BOX n      HUDWidget.cpp:578-586, 836-845 (jam.cam.BoxFollowsPlay 1).
-## Presentation only. Time is the HUD's own frame count where the sim stands still (the end phase).
+## thirdjam's match flow on the screen (lane K5, round 2), HEAD 8dc713c6, every cvar at its default: ... [base README: scripts/hud/flow.gd §1]
 
 const R := preload("rules.gd")
 const BANNER_W := 760.0
@@ -26,8 +17,7 @@ var hud
 var art_banner: Texture2D
 var art_panel: Texture2D
 var goal_pause_frames: int = 120
-# the banner
-var last_home: int = -1
+var last_home: int = -1   # the banner
 var last_away: int = -1
 var banner_start: int = -1       # the HUD tick the banner began
 var banner_team: int = 0         # the scoring team id
@@ -36,8 +26,7 @@ var banner_alpha: float = 0.0
 # the end
 var end_seen: int = -1           # the HUD tick the end phase was first seen
 var tick: int = 0
-# the stats (FEndStats)
-var st: Dictionary = {}
+var st: Dictionary = {}   # the stats (FEndStats)
 var seen: Dictionary = {}
 var pass_pending: int = -1
 var last_frame: int = -1
@@ -119,8 +108,7 @@ func frame(snap: Dictionary, phase: String, vw: float, vh: float, paused: bool =
 	elif end_seen < 0:
 		end_seen = tick
 	var waiting: bool = end and tick - end_seen < END_WAIT_FRAMES
-	# ---- the GOAL banner: the goal pause, or the end card's wait (the match-ending goal has no pause)
-	if last_home < 0 or int(snap["Frame"]) < last_frame:
+	if last_home < 0 or int(snap["Frame"]) < last_frame:   # ---- the GOAL banner: the goal pause, or the end card's wait (the match-ending goal has no pause)
 		last_home = home
 		last_away = away
 	var in_pause: bool = phase == "goal_pause" or (end and waiting)
@@ -165,8 +153,7 @@ func paint() -> void:
 			lay.box(rect.position, rect.size, c, 14.0, R.PAPER, 4.0)
 			lay.text(rect.get_center(), "GOAL", 84, R.PAPER, {"face": "black", "tracking": 120, "align": Vector2(0.5, 0.5), "outline": 2.0, "alpha": banner_alpha})
 		shown["banner"] = "GOAL %s" % ("home" if banner_team == my_team else "away")
-	# IN THE BOX n (the regular cartridge has penalties off: it never shows there)
-	var box_t: String = R.box_plate_text(int(_paint_args[6])) if phase == "play" else ""
+	var box_t: String = R.box_plate_text(int(_paint_args[6])) if phase == "play" else ""   # IN THE BOX n (the regular cartridge has penalties off: it never shows there)
 	if box_t != "":
 		var pl := Vector2(300, 44)
 		var tl := Vector2(vw * 0.5 - pl.x * 0.5, 122)

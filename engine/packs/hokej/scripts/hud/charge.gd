@@ -1,25 +1,9 @@
 extends RefCounted
-## Two of lane A213's wave-2 pieces (HEAD 8dc713c6), presentation only:
-##   - the pass's target ring (UpdateChargeLook, HUDChargeLook.cpp:37-112): while he holds the pass with the puck, a ring
-##     under the mate it would go to, in his team's colour, CarrierRingRadiusM x 1.15, z -1; when his pass count grows the
-##     ring goes under the mate it was aimed at (the last held target, else the tap's) and stays while that pass flies
-##     (Puck.PassFrames > 0, PassBy = him), at most 45 frames. Never under a skater in the box (lane A224). The held shot's
-##     line is off at HEAD (jam.hud.ShotLine 0, HUDChargeLook.cpp:26).
-##   - the teaching pulse (UpdateTeach, HUDTeach.cpp:42-98): the pass (he carries, the mate a full pass along his facing
-##     would go to stands 6 to 30 m off, ahead) and the check (no puck, an opposing carrier within 2.6 m inside 60 degrees
-##     of his facing), each at most 3 times a session, 90 frames, 900 apart, never after he did it; not while counting
-##     down, not while down, not in the draw's first 60 frames. With the panel (jam.hud.ControlsPanel 1) there is no pill:
-##     the panel lights the row it teaches (HUDTeach.cpp:99-106, HUDControlsPanel.cpp:318-331).
-## The targets come from the core's glue (SNAPSHOT.md v1.2 Controls). DEVIATION (round 5): thirdjam asks
-## UJamSim::HumanPassTarget (JamSim.cpp:3213: the mate in pass.aim.cone_deg 25 of the stick at the held power; for the
-## teach, of the facing at the full power); the snapshot carries BestPass (JamSim.h:903: the bots' pick, no cone). Both
-## reads take `PassTargetHeld` / `PassTargetFacing` first (the two HumanPassTarget calls, asked of lane K1) and fall back
-## to `PassTarget` until they land.
+## Two of lane A213's wave-2 pieces (HEAD 8dc713c6), presentation only: - the pass's target ring ... [base README: scripts/hud/charge.gd §1]
 
 const R := preload("rules.gd")
 
-# HUDChargeLook.cpp:35 (statics of the session)
-var flight_target: int = -1
+var flight_target: int = -1   # HUDChargeLook.cpp:35 (statics of the session)
 var flight_until: int = -1
 var flight_passes: int = -1
 var last_held_frames: int = 0
@@ -77,8 +61,7 @@ static func _on_ice(sk: Array, i: int) -> bool:
 	return R.ring_on_ice(int((sk[i] as Dictionary).get("PenaltyFrames", 0)) > 0)   # RingOnIce(BoxedRingOn(), InBox()) (lane A224)
 
 
-## The teaching pulse this sim frame: 0 the pass, 1 the check, -1 none (HUDTeach.cpp:48-89). `pressed_hit`: the step's
-## own check or lift (JamControls::LastHumanButtons, cpp:60).
+## The teaching pulse this sim frame: 0 the pass, 1 the check, -1 none (HUDTeach.cpp:48-89). [base README: scripts/hud/charge.gd §2]
 func teach(snap: Dictionary, phase: String, me: int, f: int, counting: bool, down: bool, last_drop: int, pressed_hit: bool) -> int:
 	var show: int = -1
 	if phase == "play" and not counting:
