@@ -27,6 +27,8 @@ func _building() -> void:
 			e["current"] = false
 		k = -1
 	_strip(s, 140.0, 104.0)
+	if _pause_card():
+		return                            # E4b: a question or a quality hold: the person answers it here (create_pause.gd)
 	_continue_button()
 	if k < 0 or k >= s.size():
 		# every phase passed: the Foreman plays the whole game through once more before it hands it over; or (E4) a
@@ -62,7 +64,10 @@ func _building() -> void:
 	_design_row(616)
 	if str(job.get("phase", "")) == "paused" and str(job.get("pause_kind", "")) != "phase":
 		var why: String = "the builder asks a question" if str(job.get("pause_kind", "")) == "question" else JobModel.one_line(str(job.get("job_reason", "")), 70)
-		_callout("Paused: " + why, Vector2(50, 556), "pause", ORANGE)
+		if busy in ["answer", "quality"]:
+			_callout("Your answer is sent: the builders go on", Vector2(50, 556), "check", GREEN).name = "Sent"   # E4b
+		else:
+			_callout("Paused: " + why, Vector2(50, 556), "pause", ORANGE)
 	elif str(cur["state"]) == "held":
 		_callout("Changing: " + JobModel.one_line(str(cur["note"]), 80), Vector2(50, 556), "redo", ORANGE)
 	elif not Model.changing(job).is_empty():
@@ -421,8 +426,13 @@ func _follow_menu_row() -> void:
 
 
 ## E4: a job whose Foreman is gone (the window was closed, it was reopened from My games) builds on with Continue.
+## E4b: create_pause.gd draws the card of a pause a person answers (a builder's question, a quality hold); true when drawn.
+func _pause_card() -> bool:
+	return false
+
+
 func _continue_button() -> void:
-	if door == null or busy != "" or str(job.get("pause_kind", "")) == "question":
+	if door == null or busy != "" or str(job.get("pause_kind", "")) in ["question", "quality"]:
 		return
 	if not str(job.get("phase", "")) in ["planning", "running", "paused"] or door.foreman_alive(job_dir, int(job.get("lock_pid", 0))):
 		return

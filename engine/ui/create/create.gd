@@ -1,4 +1,4 @@
-extends "res://ui/create/create_build.gd"
+extends "res://ui/create/create_pause.gd"
 ## L3 (night of 21 Nov 2026): the Create page. A full-screen page of the main menu (L4 mounts res://ui/create/create.tscn
 ## and calls `open()`; the page emits `closed` when the player goes back). The player says a game in one sentence,
 ## picks Standard or Crazy, reacts to the Designer's aspect cards, and builds the game in phases it tries and passes.
@@ -113,6 +113,8 @@ func _read_cards() -> void:
 func show_job(dir: String) -> void:
 	job_dir = dir
 	showing_games = false
+	_q_changing = false
+	_answer_draft = ""
 	_sent_change = ""
 	_change_draft = ""
 	busy = ""
@@ -156,6 +158,13 @@ func _read_job() -> void:
 				_sent_change = ""
 		"continue":
 			if door != null and door.busy(job_dir).is_empty():
+				busy = ""
+		"answer":
+			# E4b: the question is answered in the log (or the job moved on)
+			if int(Model.open_question(job).get("seq", -1)) != busy_mark or str(job.get("phase", "")) != "paused":
+				busy = ""
+		"quality":
+			if str(job.get("pause_kind", "")) != "quality" or str(job.get("phase", "")) != "paused":
 				busy = ""
 	_follow_menu_row()
 

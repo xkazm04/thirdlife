@@ -317,3 +317,65 @@ static func games(root: String, limit: int = 40) -> Array:
 		out.append({"dir": d, "title": title, "word": state_word(j), "screen": screen_of(j), "version": version_n(j), "ts": float(j.get("first_ts", 0.0)), "sentence": str(j.get("sentence", ""))})
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["ts"]) > float(b["ts"]) or (float(a["ts"]) == float(b["ts"]) and str(a["dir"]) > str(b["dir"])))
 	return out
+
+
+# ---------------------------------------------------------------- E4b (25 Nov): the pauses a person answers
+
+## The builder's open question (the newest): {package, title, text, seq}, or {} when none is open.
+static func open_question(job: Dictionary) -> Dictionary:
+	var qs: Array = job.get("questions", [])
+	for i: int in range(qs.size() - 1, -1, -1):
+		var q: Dictionary = qs[i]
+		if bool(q.get("open", false)):
+			var p: Dictionary = (job.get("packages", {}) as Dictionary).get(str(q["package"]), {})
+			return {"package": str(q["package"]), "title": str(p.get("title", q["package"])), "text": str(q.get("text", "")).strip_edges(), "seq": int(q.get("seq", 0))}
+	return {}
+
+
+## The choices a question offers, in its own words (at most 3): its list lines ("- x", "1. x", "a) x"), else the two
+## sides of "..., or ...?" ; else Yes / No for a question that asks for one ("May ...", "Can ...", "Should ...").
+static func question_options(text: String) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var re: RegEx = RegEx.create_from_string("^\\s*(?:[-*\u2022]|\\d+[.)]|[a-cA-C][.)])\\s+(.+)$")
+	for line: String in text.split("\n"):
+		var m: RegExMatch = re.search(line)
+		if m != null and out.size() < 3:
+			out.append(JobModel.one_line(m.get_string(1).strip_edges(), 90))
+	if not out.is_empty():
+		return out
+	var flat: String = JobModel.one_line(text)
+	var q: String = flat.substr(flat.rfind(". ") + 2) if flat.rfind(". ") >= 0 and flat.rfind(". ") < flat.length() - 3 else flat
+	var at: int = q.find(", or ")
+	if at > 0:
+		out.append(JobModel.one_line(q.substr(0, at).strip_edges().trim_suffix("?"), 90))
+		var second: String = q.substr(at + 5).strip_edges().trim_suffix("?")
+		out.append(JobModel.one_line(second.substr(0, 1).to_upper() + second.substr(1), 90))
+		return out
+	var first: String = q.get_slice(" ", 0).to_lower()
+	if q.ends_with("?") and first in ["may", "can", "should", "shall", "is", "are", "do", "does", "will", "would"]:
+		out.append_array(["Yes", "No"])
+	return out
+
+
+## A quality hold in a person's words: {milestone, reasons: [<= 3 short lines], still: <abs png or "">}, or {}.
+static func quality_view(job: Dictionary) -> Dictionary:
+	var hold: Dictionary = job.get("quality_hold", {})
+	if hold.is_empty() or str(job.get("pause_kind", "")) != "quality":
+		return {}
+	var reasons: PackedStringArray = []
+	for part: String in str(hold.get("notes", "")).replace("|", ";").split(";"):
+		var t: String = part.strip_edges()
+		if t.is_empty() or t.begins_with("slop:") or RegEx.create_from_string("^[a-z_]+ [0-9.]+(, [a-z_]+ [0-9.]+)*$").search(t) != null:
+			continue                       # the score row and the slop tags are for the Foreman, not for a person
+		if reasons.size() < 3:
+			reasons.append(JobModel.one_line(t, 110))
+	var still: String = ""
+	for m: Variant in job.get("milestones", []):
+		if m is Dictionary and str((m as Dictionary).get("milestone", "")) == str(hold.get("milestone", "")):
+			var caps: Array = (m as Dictionary).get("captures", [])
+			for c: Variant in caps:
+				var f: String = str(job.get("dir", "")).path_join(str(c))
+				if FileAccess.file_exists(f):
+					still = f
+					break
+	return {"milestone": str(hold.get("milestone", "")), "reasons": reasons, "still": still}

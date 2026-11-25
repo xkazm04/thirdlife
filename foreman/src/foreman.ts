@@ -19,7 +19,8 @@ import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
-import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js"; // E4 (24-25 Nov): a change may add a package
+import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
+import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -856,7 +857,7 @@ export class Foreman {
       resumed = false;
 
       let failure: GateFailure | undefined = await coreDataGate(this.gateHost, id, round, this.wsDir(id), this.mergeSet(id)); // E3: a cartridge edit is validated first
-      for (const a of failure !== undefined ? [] : spec.acceptance) {
+      for (const a of failure !== undefined ? [] : roundAcceptance(this.s, spec, round)) { // E4b: a diff round keeps lint + the player check
         const vr = await this.verifyLogged(a, this.wsDir(id), `${id}-r${round}-${a.verb}`, { package: id, round });
         if (!vr.ok) {
           failure = vr;
@@ -1151,7 +1152,7 @@ export class Foreman {
         }
       }
       // P10 item 1: after a change, every test of the pack runs on the candidate before it becomes pack/.
-      for (const t of packTestsFor(this.gateHost, id, candidate, hadMerged)) {
+      for (const t of fastMerge(this.s, files) ? [] : packTestsFor(this.gateHost, id, candidate, hadMerged)) { // E4b: none for a data-only change
         const bad = await packTest(this.gateHost, id, round, t, candidate);
         if (bad !== undefined) return bad;
       }
@@ -1170,6 +1171,11 @@ export class Foreman {
     const starved = this.starvedDetail(id);
     this.append({ type: "package_state", package: id, state: "promoted", round, ...(starved ? { detail: starved } : {}) });
     // N3: a package that was merged before and is merged again has changed under the packages that depend on it.
+    if (hadMerged && fastMerge(this.s, files)) {
+      // E4b: a data-only change: the dependants' files and the milestone's look did not change (fastchange.ts)
+      this.append({ type: "note", package: id, round, text: clip(mergeNote(files, dependants(this.s.plan, id)), 1000) });
+      return undefined;
+    }
     if (hadMerged) await this.reverifyDependants(id);
     await this.maybeMilestone(this.spec(id).milestone, id);
     return undefined;
@@ -1837,7 +1843,9 @@ export class Foreman {
       ...(core ? [] : [{ level: "V3", verb: "invariants", args: [] } as Acceptance]),
       ...tests.map((t): Acceptance => ({ level: "V4", verb: "bot", args: [`--test=${t}`] })),
     ];
-    for (const a of final) {
+    const fast = fastPromotion(this.s, this.log.events); // E4b: every merge since the last promotion was data only
+    if (fast) this.append({ type: "note", package: this.lastReopened(), round: this.pkg(this.lastReopened()).round, text: FINAL_NOTE });
+    for (const a of fast ? fastFinal(final) : final) {
       const stem = a.verb === "bot" ? `final-bot-${path.basename(a.args[0] ?? "x", ".gd")}` : `final-${a.verb}`;
       const vr = await this.verifyLogged(a, packDir, stem, { round: 1 });
       if (!vr.ok && vr.inconclusive !== undefined) {
@@ -1859,15 +1867,14 @@ export class Foreman {
         return false;
       }
     }
-    const hands = await runHandChecks(this.gateHost, packDir); // lane C2: the card's hand checks (handcheck.ts)
+    const hands = fast ? { rows: [], failure: "" } : await runHandChecks(this.gateHost, packDir); // lane C2: the card's hand checks (handcheck.ts)
     if (hands.failure) return sendBackHands(this.gateHost, hands.rows) || (this.endJob("failed", clip(hands.failure, 700), true), false);
     // N3: a pack that is promoted AGAIN (after a change request) is photographed first, so that whoever asked for the
     // change can look at it: the declared cameras at the usual frames, into captures/promotion<n>-<cam>-f<frame>.png.
     // No critic, no gate; the paths are in a `note` on the package that was re-opened last.
     if (nth > 1) {
-      const last = [...this.log.events].reverse().find((e) => e.type === "reopened");
-      const owner = last && last.type === "reopened" && this.s.packages[last.package] ? last.package : (this.s.order[0] as string);
-      const shots = await this.captureSet(`promotion${nth}`, owner, tests[0]);
+      const owner = this.lastReopened();
+      const shots = await this.captureSet(`promotion${nth}`, owner, tests[0], fast);
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }
     if (this.o.promote) {
@@ -1900,7 +1907,13 @@ export class Foreman {
    * Captures of pack/ for every declared camera at the usual frames, named <label>-<cam>-f<frame>.png. Each is a
    * `verify` event (capture, V5); a capture that fails is tried once more and then left out. Returns the paths.
    */
-  private async captureSet(label: string, after: string, bot: string | undefined): Promise<string[]> {
+  /** The package re-opened last (a change's owner), else the first of the plan. */
+  private lastReopened(): string {
+    const last = [...this.log.events].reverse().find((e) => e.type === "reopened");
+    return last && last.type === "reopened" && this.s.packages[last.package] ? last.package : (this.s.order[0] as string);
+  }
+
+  private async captureSet(label: string, after: string, bot: string | undefined, one = false): Promise<string[]> {
     const packDir = this.dir("pack");
     let cameras: string[] = [];
     try {
@@ -1909,8 +1922,8 @@ export class Foreman {
       /* no manifest: no captures */
     }
     const out: string[] = [];
-    for (const cam of cameras) {
-      for (const frame of this.captureFramesFor(bot)) {
+    for (const cam of one ? cameras.slice(0, 1) : cameras) {
+      for (const frame of one ? this.captureFramesFor(bot).slice(0, 1) : this.captureFramesFor(bot)) { // E4b: ONE look for a data-only change
         const file = this.dir("captures", `${label}-${cam}-f${frame}.png`);
         let ok = false;
         for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
