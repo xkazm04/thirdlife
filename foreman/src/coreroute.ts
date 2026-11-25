@@ -313,15 +313,15 @@ export function skinFields(baseDir: string | undefined): Set<string> | undefined
     // E5c (25 Nov): the optional keys the base's skin reader declares but its data/skin.json leaves out (E1b's
     // `team_plural`): the Designer reads them in the base's README and was refused for them twice
     const reader = path.join(baseDir, "scripts", "hud", "skin.gd");
-    if (fs.existsSync(reader)) for (const m of fs.readFileSync(reader, "utf8").matchAll(/"([a-z_]+)":\s*TYPE_[A-Z]+/g)) out.add(m[1] as string);
+    if (fs.existsSync(reader)) for (const m of fs.readFileSync(reader, "utf8").matchAll(/"([a-z_]+)":\s*TYPE_([A-Z]+)/g)) out.add(m[2] === "DICTIONARY" ? `${m[1] as string}.*` : (m[1] as string)).add(m[1] as string); // H2d: a TYPE_DICTIONARY field (ability_names) takes any key below it
     return out;
   } catch {
     return undefined;
   }
 }
 
-/** E5c: the README calls `levels` "the level row's words"; the Designer writes `SKIN: level words = ...` (field "level"). */
-const skinAlias = (field: string, skin: Set<string>): boolean => field === "level" && skin.has("levels");
+/** E5c: the README calls `levels` "the level row's words"; the Designer writes `SKIN: level words = ...` (field "level"). H2d: a key under a dictionary field. */
+const skinAlias = (field: string, skin: Set<string>): boolean => (field === "level" && skin.has("levels")) || [...skin].some((k) => k.endsWith(".*") && field.startsWith(k.slice(0, -1)) && field.length > k.length - 1);
 
 export const CORE_LIMITS = { cartridgeLines: [1, 16], skinLines: [1, 10] } as const;
 

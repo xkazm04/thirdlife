@@ -18,6 +18,7 @@ extends RefCounted
 ##   levels       [[label, line] x 3]: the level row's words for rookie, pro, all_star, and the line under the row
 ##   commentary   "builtin" (thirdjam's three commentary banks, scripts/hud/commentary_lines.gd), "off", or a file in data/
 ##                ({"lines": [[id, event, kind, team, priority, cooldown_frames, text, duration_frames], ...]})
+##   ability_names  (H2d, optional) the game's word for each trick of game.abilities by the core's kind ({"shotgun": "cannon"}: "F: CANNON  READY"); a kind left out keeps the core's id
 ##   barks        a file in data/ with the skaters' barks ({"lines": [[id, situation, speaker, tone, text], ...]}: hokej's is
 ##                hud_barks.json, thirdjam's bank) or "off"
 
@@ -32,9 +33,11 @@ const DEFAULTS: Dictionary = {
 		["ALL-STAR", "The wall. All-stars hunt the puck. Beat pro first."]],
 	"commentary": "builtin",
 	"barks": "hud_barks.json",
+	"ability_names": {},
 }
 const TYPES: Dictionary = {"schema": TYPE_STRING, "title": TYPE_STRING, "tagline": TYPE_STRING, "about": TYPE_ARRAY,
-	"team_names": TYPE_ARRAY, "team_plural": TYPE_ARRAY, "levels": TYPE_ARRAY, "commentary": TYPE_STRING, "barks": TYPE_STRING}
+	"team_names": TYPE_ARRAY, "team_plural": TYPE_ARRAY, "levels": TYPE_ARRAY, "commentary": TYPE_STRING, "barks": TYPE_STRING, "ability_names": TYPE_DICTIONARY}
+const ABILITY_KINDS: PackedStringArray = ["shotgun", "hip_check", "shield", "slow_puck"]   # the core's kinds (JamCartridge.h abilities)
 
 
 ## The skin of the pack (data/skin.json), validated: the problems (unknown key, wrong type or shape) are pushed as errors (a run
@@ -69,6 +72,11 @@ static func validate(raw: Dictionary, problems: Array) -> Dictionary:
 			"team_names":
 				if (v as Array).size() != 2 or not ((v as Array)[0] is String and (v as Array)[1] is String):
 					problems.append("team_names must be two strings")
+					continue
+			"ability_names":
+				var bad: Array = (v as Dictionary).keys().filter(func(an: Variant) -> bool: return not (an is String and String(an) in ABILITY_KINDS and (v as Dictionary)[an] is String and String((v as Dictionary)[an]).strip_edges() != ""))
+				if not bad.is_empty():
+					problems.append("ability_names: %s (keys are the core's kinds %s, values words)" % [", ".join(PackedStringArray(bad.map(func(x: Variant) -> String: return str(x)))), ", ".join(ABILITY_KINDS)])
 					continue
 			"team_plural":
 				if (v as Array).size() != 2 or not ((v as Array)[0] is bool and (v as Array)[1] is bool):

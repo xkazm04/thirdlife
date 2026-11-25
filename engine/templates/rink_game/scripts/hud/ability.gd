@@ -4,6 +4,12 @@ extends RefCounted
 const R := preload("rules.gd")
 
 var abilities: Array = []               # game.abilities[] (hud.gd sets it)
+var names: Dictionary = {}              # lane H2d: the skin's ability_names ({"shotgun": "cannon"}): the game's own word for a kind
+
+
+func setup(abilities_: Array, names_: Dictionary) -> void:
+	abilities = abilities_
+	names = names_
 
 
 ## Lane A84 (R-0041 point 3) and A188 in thirdjam: "F: SHOTGUN  READY" on a dark plate above the radar, right-aligned with
@@ -22,7 +28,8 @@ static func ability_armed_word(kind: String) -> String:   # UJamHudWidget::Abili
 
 
 ## The plate's words and fill for the human `hu` at `now`: {} when he holds nothing, else {text, ready01, live}.
-static func ability_feed(hu: Dictionary, abilities_: Array, now: int) -> Dictionary:
+## `names_` (lane H2d): the skin's ability_names: the plate says the game's own word for the kind (G1's "F: CANNON"), else the core's id.
+static func ability_feed(hu: Dictionary, abilities_: Array, now: int, names_: Dictionary = {}) -> Dictionary:
 	var slot: int = int(hu.get("AbilitySlot", -1))
 	var armed: String = String(hu.get("AbilityArmed", ""))
 	var shield: int = int(hu.get("ShieldFrames", 0))
@@ -50,14 +57,14 @@ static func ability_feed(hu: Dictionary, abilities_: Array, now: int) -> Diction
 	var charges: int = int(hu.get("AbilityCharges", -1))
 	if charges > 0:
 		state += "  x%d" % charges
-	return {"text": "F: %s  %s" % [kind.replace("_", " ").to_upper(), state],
+	return {"text": "F: %s  %s" % [String(names_.get(kind, kind.replace("_", " "))).to_upper(), state],
 		"ready01": 1.0 if shield > 0 else 1.0 - clampf(float(left) / float(maxi(1, cool)), 0.0, 1.0), "live": shield > 0 or armed != ""}
 
 
 func paint(lay, snap: Dictionary, vw: float, vh: float, hu: Dictionary, shown: Dictionary) -> void:
 	if abilities.is_empty():
 		return
-	var feed: Dictionary = ability_feed(hu, abilities, int(snap["Frame"]))
+	var feed: Dictionary = ability_feed(hu, abilities, int(snap["Frame"]), names)
 	if feed.is_empty():
 		return
 	var sz := Vector2(ABILITY_SLOT_W, 46.0)

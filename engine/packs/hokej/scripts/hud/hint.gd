@@ -1,13 +1,7 @@
 extends RefCounted
-## The pack's hint slot (lane H2b, 25 Nov): one line a game's own script asks the base to show, drawn where it never covers
-## the commentator's caption. G1's Arsenal drew "F: BUBBLE  Green spots reload it" as its own bottom label, right over the
-## caption for the first ten seconds of every match. A game says it so instead:
-##     ctx.root.set_meta(&"rink_hint", "F: BUBBLE  Green spots reload it")    # every frame it should show; "" = none
-## (screen.gd reads the meta each drawn frame and hands it to hud.gd as ui "pack_hint").
-## The slot: left-aligned with the controls panel, just above the room the panel keeps (rules.gd PANEL_RESERVE_H: the panel's
-## eight rows at most), a dark plate in the HUD's look. It stays put while the panel comes and goes. It is moved up past
-## anything it would touch among the caption's two places at their widest (the bottom strip, and the row under the
-## scoreboard it takes when the bottom one would cover the human) and the caption actually drawn this frame.
+## The pack's hint slot (lane H2b, 25 Nov): one line a game's own script asks the base to show, never over the commentator's caption (G1's own bottom label covered it):
+##     ctx.root.set_meta(&"rink_hint", "F: BUBBLE  Green spots reload it")    # every frame it should show; "" = none (screen.gd hands it to hud.gd as ui "pack_hint")
+## The slot: a dark plate left-aligned with the controls panel just above the room the panel keeps (rules.gd PANEL_RESERVE_H); it stays put, and moves up past the caption's two places at their widest and the caption drawn this frame.
 
 const R := preload("rules.gd")
 

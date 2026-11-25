@@ -1,30 +1,18 @@
 extends RefCounted
-## The cartridge's toys on the ice (lane E1b, 25 Nov): everything a cartridge can put on the rink besides the rink itself,
-## drawn from the cartridge and the core's snapshot, never placed by hand. A user's "slow and fast patches and bumpers in
-## the corners" is a game only when a person SEES the patches and the bumpers (E5 job 2: the core played them on plain ice).
-##   zones      game.rink.zones[] (slow_ice, fast_ice, bumper, no_shoot, boost_only; rect or circle; `visible` false = not
-##              painted): ARinkActor::Build's zone decals (S/JamGame/Private/RinkActor.cpp:668-840, thirdjam HEAD 8dc713c6): a
-##              flat fill 0.8 cm over the ice (over the markings at 0.6) and a 25 cm rim, the kind's tint x (0.5 + 0.5 x
-##              strength), the rim x 1.35; and lane A69's clay ring (cpp:722-780: a ring 6 cm high, 12 cm wide on the outline).
-##              Ours on the felt ice: the fill is the tint laid over the ice's own white (a tinted patch, the markings under
-##              it hidden as thirdjam's decal hides them), the ring stands proud so the edge reads from the game camera, and
-##              each kind carries its own mark so it reads without its colour: fast ice streaks along the rink, slow ice
-##              slush dots, a bumper zone a rubber curb, no-shoot a red cross-hatch, boost-only a plus.
-##   obstacles  game.rink.obstacles[] (box, pillar, bumper, goal_shield): RinkActor.cpp:1154-1240: boxes and pillars 1.2 m
-##              tall in the boards' colour, a goal shield a pale wall `size` wide and 0.3 m deep across the rink, a bumper
+## The cartridge's toys on the ice (lane E1b, 25 Nov): everything a cartridge can put on the rink besides the rink itself, drawn from the cartridge and the core's snapshot,
+## never placed by hand. A user's "slow and fast patches and bumpers in the corners" is a game only when a person SEES them (E5 job 2: the core played them on plain ice).
+##   zones      game.rink.zones[] (slow_ice, fast_ice, bumper, no_shoot, boost_only; rect or circle; `visible` false = not painted): ARinkActor::Build's zone decals (S/JamGame/Private/RinkActor.cpp:668-840, thirdjam HEAD 8dc713c6): a
+##              flat fill 0.8 cm over the ice (over the markings at 0.6) and a 25 cm rim, the kind's tint x (0.5 + 0.5 x strength), the rim x 1.35; and lane A69's clay ring (cpp:722-780: a ring 6 cm high, 12 cm wide on the outline).
+##              Ours on the felt ice: the fill is the tint laid over the ice's own white (a tinted patch, the markings under it hidden as thirdjam's decal hides them), the ring stands proud so the edge reads from the game camera, and
+##              each kind carries its own mark so it reads without its colour: fast ice streaks along the rink, slow ice slush dots, a bumper zone a rubber curb, no-shoot a red cross-hatch, boost-only a plus.
+##   obstacles  game.rink.obstacles[] (box, pillar, bumper, goal_shield): RinkActor.cpp:1154-1240: boxes and pillars 1.2 m tall in the boards' colour, a goal shield a pale wall `size` wide and 0.3 m deep across the rink, a bumper
 ##              lane A64's rubber bollard (a magenta body, dark base and top bands 3 cm proud, a dark lid with a magenta boss).
-##   pickups    game.pickups[] on the ice (UJamEffectSystem::GetPickups): the snapshot's `Pickups` list ([{Id, Kind, Pos}],
-##              FJamPickupOnIce; RinkCore 1.4, SNAPSHOT.md "The effect system's read-outs"), drawn the frame a pickup lands
-##              and taken away the frame it is taken. A core without the list (before 1.4): the bus instead, a
-##              `pickup_spawn` event (EffectEvents or Events) puts one at its Where, a `pickup_take` takes the one there.
-##              AJamPickupActor's beacon (S/JamCore/Effects/JamPickupActor.cpp:315-420, JamPickupActor.h:40-80): a turning
-##              shape by kind (speed a cone, precision a diamond, heavy_puck a puck, big_puck a ball, reverse_other a cube,
-##              a custom effect a star) 1.25 m up on a pedestal of light, a ground ring of 1.1 m, the kind's colour
-##              (JamEffects::KindColour, JamEffectTypes.cpp:77-87); lowered to 0.35 when a skater or the puck is within
+##   pickups    game.pickups[] on the ice (UJamEffectSystem::GetPickups): the snapshot's `Pickups` list ([{Id, Kind, Pos}], FJamPickupOnIce; RinkCore 1.4, SNAPSHOT.md "The effect system's read-outs"), drawn the frame a pickup lands
+##              and taken away the frame it is taken. A core without the list (before 1.4): the bus instead, a `pickup_spawn` event (EffectEvents or Events) puts one at its Where, a `pickup_take` takes the one there.
+##              AJamPickupActor's beacon (S/JamCore/Effects/JamPickupActor.cpp:315-420, JamPickupActor.h:40-80): a turning shape by kind (speed a cone, precision a diamond, heavy_puck a puck, big_puck a ball, reverse_other a cube,
+##              a custom effect a star) 1.25 m up on a pedestal of light, a ground ring of 1.1 m, the kind's colour (JamEffects::KindColour, JamEffectTypes.cpp:77-87); lowered to 0.35 when a skater or the puck is within
 ##              1.6 m (BeaconHeightFor). A taken pickup shrinks away over 18 frames where it lay.
-## Presentation only: it reads the cartridge and the snapshot and steps nothing; the match hash cannot move. Colours are
-## thirdjam's linear values on the palette's white (the toon shader multiplies the palette colour by the vertex colour), so
-## the pack makes no material of its own (TLMesh, palette keys).
+## Presentation only: it reads the cartridge and the snapshot and steps nothing; the match hash cannot move. Colours are thirdjam's linear values on the palette's white (the toon shader multiplies the palette colour by the vertex colour), so the pack makes no material of its own (TLMesh, palette keys).
 
 const ZONE_Y: float = 0.008                 # RinkActor.cpp:698 ZH 0.8 cm
 const RIM_W: float = 0.25                   # RimW 25 cm

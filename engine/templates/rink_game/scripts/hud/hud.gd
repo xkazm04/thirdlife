@@ -73,7 +73,7 @@ func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 
 		if (teams[t] as Dictionary).has("colour_hex"):
 			team_col[t] = Color(String(teams[t]["colour_hex"]))      # FJamPresentationFrame::TeamColour0/1 (HokejGameMode.cpp:1632)
 	take_grace_total = int((game.get("stick", {}) as Dictionary).get("take_grace_frames", 30))
-	ability.abilities = game.get("abilities", [])
+	ability.setup(game.get("abilities", []), skin.get("ability_names", {}))   # lane H2d: the game's own names for its tricks (skin.gd ability_names)
 	panel = PanelView.new()
 	markers = Markers.new(self)
 	cards = Cards.new(game, level_id)
@@ -283,7 +283,7 @@ func _scoreboard(snap: Dictionary, vw: float, my_team: int) -> void:
 	var home_sz := Vector2(18 + val_w + 18, 2 + val_h + 2)
 	var away_sz := Vector2(18 + val_wa + 18, 2 + val_h + 2)
 	var period := R.format_period(cards.take)                      # F.Take: the game mode's take (HokejGameMode.cpp:1619)
-	var rule := R.format_goal_rule(cards.score_to_win)
+	var rule := R.format_timer(int(snap.get("TimerLeft", 0))) if cards.timer else R.format_goal_rule(cards.score_to_win)   # lane H2d: a game on a clock shows the time left
 	var p_sz: Vector2 = lay.measure(period, R.LABEL_PT, "bold_condensed", R.TRACK_LABEL)
 	var r_sz: Vector2 = lay.measure(rule, R.LINE_PT, "bold_condensed", R.TRACK_LABEL)
 	var centre_w: float = 24 + maxf(p_sz.x, r_sz.x) + 24
