@@ -373,3 +373,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 25 Nov 00:52 standup: E3b integrating; K8 r3: rookie no longer won idle (E09 kept), give-and-go rejected.
 - 25 Nov 01:52 standup: E5 real job 1 under way (the concept step chose a twist for a plain sentence: a finding); K8 asked for status.
 - 25 Nov 02:52 standup: K8 3a landed (6c49444); E5 job 1 at v0.1.1 ('make it faster' = one cartridge diff, no builder); E3c dispatched (faithful concept, critic honours drops).
+- 25 Nov 03:53 standup: E3c, E5 proof, K8 3b landed; E4b + E3d dispatched; E1b waits for the packs run.
