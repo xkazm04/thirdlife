@@ -440,4 +440,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 20:44: G4 round 2 landed (eccd3af docs): built to the last check under the solo budget (H1f scope widening worked), then failed on the newcomer hand check (7 of 20 against 13) re-run on unchanged files; 482 min, 34.3 M tokens; look a step, behaviour unchanged. G4 sent to test Create's new Resume (H1i/H1j) as a person; owner ask: a too-hard newcomer check as a note on v0.1.0 instead of a failed job?
 - 20:49: editor hardening done (H1-H1j, H2-H2e). Room free -> G11 Biplane duel and G19 Shield wall started (Opus) on the hardened editor; 5 agents.
 - 21:01: day verdict written (d2400a8 + page https://claude.ai/artifact/Gyq4DfepcQnY7amcWNXDKF); exe d73735a export check PASS; Arsenal v0.1.21 and Robot v0.1.5 run 600 frames in it with 0 errors; 9 Create-made games in the owner menu. G1 round 7 landed (d73735a). G4/G5/G11/G19 continue under the hourly standups.
+- 21:46 standup: G4 v0.1.0 via Resume (d641787, menu); G5/G11/G19 building; findings: the hidden newcomer floor pulls against the person's ask (G5); a builder edits its own tofu measure (G19).
 
