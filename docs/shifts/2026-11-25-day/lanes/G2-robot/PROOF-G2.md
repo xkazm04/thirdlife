@@ -146,3 +146,198 @@ Gap to the target, three lines:
 
 Where it converges so far: the change box moved the thing I named, in 19 minutes, through the right package. The
 critic rounds before v0.1.0 (6 verdicts, about 70 min) never moved the sim at all.
+
+## 4. Change round 2 (behaviour: the ball) -> v0.1.2 (16:32 to 16:49)
+
+Typed in the change box:
+> The ball is too small and the same yellow as my robots, so I keep losing it. Make it a big white football with red
+> patches, about knee high, that rolls, bounces off the low walls and pops up a little when it is kicked hard.
+
+- **Time 17 min 1 s** (15:32:39 to 15:49:40 UTC). The owner question (3.7 s) chose **core**. One builder round (core
+  r10, 3.3 min), merged 5 files (tuning, sim.gd, a new `scripts/view/football.gd`, screen.gd, show.gd). The same full
+  path as round 1 (brain re-verified, the hands over 12 seeds, 4 promotion pictures). No question, no hold.
+- The builder's note, which the person does not see: the ball is 0.66 m (was 0.55), white with 12 red patches on the
+  kit `ball` part; the hot rim lies flat under it; wall bounce 0.7 -> 0.75 and a small hop on a hard wall hit.
+  **The pop-up is drawn only**: "the sim's ball stays on the ground, so pickups, saves and goals ignore height", and
+  the rules still test a 0.275 m ball while a 0.33 m one is drawn. An honest note; a person would not know it.
+
+**What I saw** (`stills/v011_vs_v012_still.jpg`: frame 1500, v0.1.1 left, v0.1.2 right; `v012_strip_play.jpg`,
+`v012_strip_overview.jpg`, `v012_vs_target_hokej.jpg`):
+- **The ball reads now**: a white football with red patches, clear on the grey pitch and away from the yellow torsos;
+  white dot and arrow on the radar. It is the first thing my eye finds in the still. It is still smaller than the
+  target's (a big chest-high ball in the concept).
+- The match itself: the newcomer won 3:2 in 4,047 frames (67 s), 12 presses, 2 touches, 5 slide hits.
+- Still there: the 3 : 2 prop peeking under the HUD panel, bodies overlapping in the tackle at frame 1500 (blue and
+  red share one space with two rings under them), the doubled hint line ("Slid while down ... spring up" twice at 0:16).
+
+**As a person**: I can follow the ball now. I still barely touch it myself, and it is over in about a minute.
+
+Gap to the target, three lines:
+1. Team play: my mates and the rivals mostly run at the ball; I touched it twice in a match.
+2. Length: about a minute a match.
+3. The look: meadow stadium, grey asphalt, red vs blue box men.
+
+## 5. Change round 3 (behaviour: team play + "about 3 minutes") -> v0.1.3 (16:52 to 17:13)
+
+Typed in the change box:
+> My teammates do too little: they should run into open space, call for the ball and pass it back to me, and the
+> rivals should pass to each other too instead of only running at me. And a match is over in one minute: make it
+> first to 5 so a match lasts about 3 minutes.
+
+- **Time 20 min 13 s** (15:52:58 to 16:13:11 UTC). The owner question (4.4 s) named ONE package, **core**: "the
+  request spans team AI (brain) and the match's win rule and length ... since brain and show depend on core, core is
+  the package to name". Core r11 (3.6 min) merged 3 files; full path again (the final check ran 20 longer matches).
+- **Half of it was not built.** core's builder wrote: "NOT DONE here (change request 3): teammates running into open
+  space, calling and passing back, and rivals passing to each other. These decisions are in scripts/ai/** ... and
+  belong to another package". It added a `got_from` field for the AI package to use. The job still ended **done**, and
+  the what-changed line repeats my whole request: a person reading it believes both halves were made
+  (blocked-editor line).
+- The figure I named, checked myself over the final verification's 20 matches per hand (`reports/final-hand-*`):
+
+| version | newcomer median (range) | newcomer scores | perfect median (range) |
+|---|---|---|---|
+| v0.1.1 | 59 s (44-124) | 15 of 20 won, first to 3 | 30 s (19-74) |
+| v0.1.2 | 71 s (31-118) | 16 of 20 won | 36 s (23-71) |
+| v0.1.3 | **150 s (82-240)** | 13 of 20 won, 7 lost 3:5 or 4:5 | 72 s (41-112) |
+
+  "About 3 minutes" is reached about halfway for a newcomer (2.5 min median; my film: 4:5 lost in 8,986 frames,
+  150 s, 27 presses, 5 touches). The builder said so itself ("not reliably met ... I did not slow goals or restarts").
+  hokej's pro match is 3.1-4.1 min.
+- On film (`stills/v013_strip_play.jpg`, `v013_strip_overview.jpg`) the first 20 s are frame for frame v0.1.2's
+  except "FIRST TO 5": team play did not change, as the note says.
+
+**As a person**: the longer, closer match (4:5) is better; my mates play exactly as before, and nothing told me that
+part was skipped. I would type it again, which is what I did next.
+
+## 6. Change round 4 (behaviour: team play, asked again) -> v0.1.4 (17:16 to 17:56)
+
+Typed in the change box, as a person who saw nothing change in v0.1.3:
+> My teammates still just chase the ball like before. Change how the robots think: when I have the ball my two
+> teammates should spread out into open space and call for it, and give it back to me after I pass to them; the red
+> team should pass to each other too.
+
+- **Time 39 min 21 s** (16:16:37 to 16:55:58 UTC). The owner question (3.0 s) now named **brain** ("team AI behaviour,
+  which the brain package owns"). brain r2 (6.7 min) built spread positions, a give-back rule, a pass-share term, more
+  frequent calls with a spark above the caller; **its merge was refused**: core's `bot_tofu` failed on the whole pack
+  with it and passed without it (the control run), so nothing merged. brain r3 (9 min) slowed both guards to 70 % to
+  get the tofu bot under its 36,000-frame budget, merged 6 files. Full path after (20 longer matches per hand).
+- The builder's note (unseen by the person): "give_backs is 0 in the newcomer, perfect and mash runs ... I did not
+  establish whether those bots never give it the chance or the rule fails to fire. Please try it by hand. Rivals do pass
+  to each other (35 to 107 rival passes per run)."
+- Figures, the final verification's 20 matches per hand, v0.1.3 -> v0.1.4:
+
+| | v0.1.3 | v0.1.4 |
+|---|---|---|
+| newcomer match, median (range) | 150 s (82-240) | **203 s (118-289): "about 3 minutes" met** |
+| newcomer, my captain's touches | 1-5 | **5-13** |
+| give-backs to me (newcomer / perfect) | not counted | **0 / 0-2: not met** |
+| rival passes a match (newcomer) | not counted | 59-137 |
+| newcomer wins | 13 of 20 | 17 of 20 |
+
+**What I saw** (`stills/v013_mid_f3600.jpg` vs `v014_mid_f3600.jpg`: 16 tiles half a second apart from minute 1;
+`v014_strip_play.jpg`, `v014_strip_overview.jpg`, `v014_vs_target_hokej.jpg`):
+- v0.1.3 at minute 1: the two teams in one clump around my captain; rivals stuck to my back.
+- v0.1.4 at minute 1: the radar shows my mates far out on the wings; I carry the ball alone up the middle with space
+  around me. The game has room in it now.
+- But my mates are almost never on my screen: the camera note from the cards ("so I see my two teammates in front of
+  me") was never met, so the spreading is seen on the radar, not on the pitch. Near my own goal the camera drops
+  behind the goal and films down through the net (tiles 7-9).
+- Still there: the 3 : 2 prop peeking out, bodies overlapping in tackles, the doubled hint line.
+
+**As a person**: the match now lasts three minutes or so and I have the ball more; it is a better game than v0.1.1. I
+cannot see the passing play I asked for, and nobody passes back to me.
+
+## 7. Change round 5 (the look: seaside rooftop) -> v0.1.5 (18:00 to 18:21), added to the menu
+
+Typed in the change box:
+> Make it look like a sunny seaside rooftop: a pale green court with white lines, terracotta roof tiles around it,
+> red-and-white striped awnings on wooden poles, potted pink flowers on a low wall, and the blue sea with a white
+> hillside town behind. Make my team bright yellow and the rivals blue, with rounded box bodies and big round eyes.
+
+- **Time 21 min 10 s** (17:00:33 to 17:21:43 UTC). The owner question (6.0 s) named **core** again: "the court,
+  props, backdrop and colours point to the look package, but the rounded box bodies and big round eyes involve core's
+  gen/robot.gd, and since look depends on core ...".
+- core r12 (4.8 min) built all of it itself:
+  - a pale green court;
+  - yellow #ffd414 against blue #2468f2, with bigger rounded bodies and eyes;
+  - a new `scripts/view/rooftop.gd` (tiles, parapet, pots, awnings, sea, town);
+  - the scrapyard cranes, fences and tyres removed, and 20 kit bushes used as pot leaves.
+- Full path, no hold. Behaviour untouched: the newcomer match is frame for frame v0.1.4's (16,175 frames, 4:5).
+- The builder said what it could not do. The look package's dressing (the old stands, crowd, floodlights, the dusk
+  sky, the panels on the robots) "should re-dress or remove them, and recolour the crowd and floodlights for
+  daytime". Nothing re-dressed them: one change goes to one package.
+
+**What I saw** (`stills/v015_vs_target_hokej.jpg`, `v015_overview_vs_target_hokej.jpg`, `concept_v010_v015.jpg`,
+`v015_strip_play.jpg`, `v015_strip_overview.jpg`):
+- **The biggest single step toward the target today**:
+  - yellow robots with big round eyes against blue ones;
+  - a pale green court with white lines, terracotta all round;
+  - red-and-white striped awnings and pink flower pots on the low wall;
+  - in the wide view, the blue sea and white houses behind the pitch.
+- Against the target it is half there:
+  - the follow camera looks straight at the old grandstand, which hides the sea;
+  - the sky is still the pink-purple dusk of the scrapyard night, not a blue sunny day;
+  - the crowd stands, floodlight masts and scaffolds of the old stadium are still there;
+  - **the 3 : 2 prop is now more visible.** It was moved to clear the view of the town and now stands in the
+    top-left of every follow frame;
+  - the robots are rounded boxes with eyes, far from the target's dented enamel, rubber hoses and treads;
+  - the court has no centre circle.
+
+**Added to the menu** the way Create's "Add to menu" does it:
+- `Dungeons.add_user(<promoted/game.robot_soccer_3_v@0.1.5>, "Robot soccer", <job>)`, into the person's list
+  (`.../app_userdata/Third Life Engine/dungeons.user.json`), read back ok.
+- The pack is still in this tree's `.tl/jobs/`; the Director copies it out like the other proof games.
+
+## 8. The answer: can editor iterations alone lead a person to hokej's quality?
+
+**Not today, and not by more rounds of the same kind.**
+
+Five change rounds (v0.1.1 to v0.1.5) each moved what I named, in 17 to 39 minutes. The game went from "boxes that
+merge" to a three-minute seaside match with flying tackles and a readable ball. That is real convergence on what a
+person can *name*.
+
+It stops converging where the person cannot name the problem, or where one sentence spans packages:
+
+1. **The critic loop does not converge on behaviour (the critic and the route).**
+   - Before v0.1.0, 6 critic verdicts and about 70 min of revise rounds changed only the view. The newcomer match at
+     v0.1.0 is frame for frame the greybox's.
+   - The critic judged a football game against the house *hockey* (70 contact rows, a hockey one_timer).
+   - A revise round that did change things was thrown away on a 1.10 ms frame budget.
+2. **One change goes to one package (the editor's route).**
+   - "Team play + first to 5" went to core. Core built the half it owned and wrote "NOT DONE ... belongs to another
+     package"; the job ended done and told the person nothing.
+   - "Seaside rooftop" went to core, which could not re-dress the look package's stadium.
+   - A person has to find the missing half by playing and ask again. Round 4 did, and it took 39 min.
+3. **What the builder knows does not reach the person (the editor).**
+   - The builders' notes are honest and precise: "give_backs is 0 ... please try it by hand", "the pop-up is drawn
+     only", "the captain's slide now floors his own mates".
+   - The person sees only "what changed: files ...".
+   - A measured promise can fail without anyone saying so: 0 give-backs over 20 matches.
+4. **The builders' depth (the builders and the engine).**
+   - This pack is about 2,000 lines on flat boxes, under a 600-line script cap, and the ball's height is drawn only.
+     That cannot reach hokej's hand-tuned skaters, sticks, puck physics and reactive bodies.
+   - The team AI is a scored-option brain whose give-back the builder could not prove (give-backs 0).
+   - Bodies still pass into each other in tackles in every version.
+   - Hokej got its quality from a ported, measured core. This card has none.
+5. **Defects nobody asks about survive every round.**
+   - The 3 : 2 prop (all six versions), the doubled hint line, the camera that never shows my teammates.
+   - The critic names some of them, but no change round looks for them, and a person would have to name each one.
+
+Cost of the whole game:
+- 5 h 41 min wall clock;
+- 26.7M tokens in (23.3M of them cache reads), 622k out, weighted 6.33M;
+- per change round, 1.0M to 3.1M tokens in (round 4 took two brain rounds: 3.1M).
+
+| version | what changed | time | tokens in | the person's verdict |
+|---|---|---|---|---|
+| v0.1.0 | sentence -> 4 packages, 3 phases, 6 critic verdicts, 3 holds | 3 h 18 min | 18.1M | nice stadium, thin game; one look |
+| v0.1.1 | the tackle launches, spins, lands on its back | 19 min | 1.9M | the first moment worth seeing again |
+| v0.1.2 | a white football with red patches | 17 min | 1.2M | I can follow the ball |
+| v0.1.3 | first to 5 (team play NOT built) | 20 min | 1.0M | longer, closer; mates unchanged |
+| v0.1.4 | team play: spread wide, rivals pass; median 203 s | 39 min | 3.1M | a better game; no give-backs; mates off screen |
+| v0.1.5 | seaside rooftop, yellow vs blue robots with eyes | 21 min | 1.4M | closest to the target; old stadium and dusk remain |
+
+Would I play v0.1.5 again? Yes, a second and maybe a third match, which no earlier version earned. It is not hokej:
+- hokej's hits read as two bodies, each with its own reaction;
+- its bots make hockey decisions;
+- its look is whole.
