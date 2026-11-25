@@ -116,7 +116,8 @@ test("H1f 3 (G2: about 70 min of critic rounds changed the score panel, the rada
   assert.equal(s.jobState?.state, "done", JSON.stringify(s.jobState));
   const evs = readEvents(job.jobDir);
   const note = evs.find((e) => e.type === "note" && e.text.startsWith("[foreman] the look changed, the play did not"));
-  assert.match(note?.type === "note" ? note.text : "", /^\[foreman\] the look changed, the play did not: the critic's reasons were about play \("contact"\), and after revise round 1 tests\/bot_rally\.gd plays frame for frame as before \(the same moments at the same frames, the same counted figures\)\. The round changed how the game looks, not how it plays$/);
+  // H1g: the bots in words ("the rally bot (tests/bot_rally.gd)"; it was the bare file name)
+  assert.match(note?.type === "note" ? note.text : "", /^\[foreman\] the look changed, the play did not: the critic's reasons were about play \("contact"\), and after revise round 1 the rally bot \(tests\/bot_rally\.gd\) plays frame for frame as before \(the same moments at the same frames, the same counted figures\)\. The round changed how the game looks, not how it plays$/);
   const ms = evs.filter((e) => e.type === "milestone").at(-1);
   assert.match(ms?.type === "milestone" ? ms.summary : "", /the look changed, the play did not/);
   // a bot that counts differently after the round: nothing to say (the play changed)

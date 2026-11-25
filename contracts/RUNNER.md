@@ -158,3 +158,14 @@ Check ids added: `replay.complete`, `record.written`.
   contact differently (E6, hockey r2a at frame 2050). Selftest `760-e6-world-alone.sh` holds the rule.
 - `TL_BODY_ORDER=<file>`: a diagnostic. Both runners write the pack space's collider order (a whole-space query) at
   frame 3, one path per line after `n=<count>`; a world writes `<file>.<instance>`. Unset, it does nothing.
+
+### Added 2026-11-25: how much the game camera moves
+
+`smoke` and `bot` reports carry four metrics read from the active camera (`ctx.cameras.active`), sampled once per physics
+frame:
+- `camera_yaw_p90_dps` and `camera_yaw_max_dps`: the degrees its heading turns in one second (the sum of frame-to-frame
+  turns over each 60-frame window); the 90th percentile and the largest over the run.
+- `camera_move_p90_mps` and `camera_move_max_mps`: the metres it travels in one second, over the same windows.
+A window that holds a cut to another camera is left out; shake (h/v offset) adds nothing. All four are absent when no
+camera was active for 60 frames in a row. They are read only: they change no state and no hash. The Foreman checks a
+person's "steady camera" note on a kept card against them (p90 over 15 degrees/s or 1.5 m/s is not steady).

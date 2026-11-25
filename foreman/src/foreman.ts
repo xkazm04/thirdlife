@@ -21,7 +21,7 @@ import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-1
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
 import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
-import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { tofuGate } from "./tofugate.js"; import { widenedNote, withGrants } from "./scopegrant.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
+import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge } from "./halfmade.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -1189,7 +1189,7 @@ export class Foreman {
     fs.mkdirSync(packDir, { recursive: true });
     fs.writeFileSync(path.join(packDir, MANIFEST_FILE), manifest);
     this.append({ type: "merge", package: id, files, ...(removed.length > 0 ? { removed } : {}) });
-    const wide = widenedNote(this.s.plan, this.log.events, id, files); if (wide !== undefined) this.append({ type: "note", package: id, round, text: wide });
+    for (const e of afterMerge(this.s.plan, this.log.events, id, round, files, (this.pkg(id).changes ?? []).at(-1))) this.append(e as Parameters<JobLog["append"]>[0]); // H1f: what a yes widened; H1g: the rest of a half-made change goes on
     const starved = this.starvedDetail(id);
     this.append({ type: "package_state", package: id, state: "promoted", round, ...(starved ? { detail: starved } : {}) });
     // N3: a package that was merged before and is merged again has changed under the packages that depend on it.

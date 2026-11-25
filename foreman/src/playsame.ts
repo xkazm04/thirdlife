@@ -14,6 +14,30 @@ import { FOREMAN_NOTE } from "./conduct.js";
 /** Words of a critic's reason that are about play, not the picture. */
 export const PLAY_WORDS = /\b(clump\w*|pile\w*|overlap\w*|merg\w*|blob|hit-?stop|stagger\w*|react\w*|contact|bump\w*|crash\w*|bots?|tackl\w*|knock\w*|shove\w*|recoil\w*|bounc\w*|stumbl\w*|chas\w*|press\w*|spacing|scrum|pass\w*|possession|idle|stands? still|exchange|collid\w*|hits?)\b/i;
 
+/** H1g: the start of the note when only some bots changed. */
+export const PART_NOT_PLAY = "the look changed, part of the play did not";
+
+/** "a", "a and b", "a, b and c". */
+function andList(xs: string[]): string {
+  return xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1) ?? ""}`;
+}
+
+/**
+ * A bot test in words a person reads: "tests/bot_hand_newcomer.gd" -> "the newcomer's match", bot_tofu -> "the tofu
+ * bot's figures", bot_ladder_pro_regular -> "the regular hand's match at pro", bot_mash -> "the button-masher's match";
+ * any other -> "the <name> bot (tests/<file>)". A seed other than 1 is kept: "(seed 3)".
+ */
+export function botWords(test: string): string {
+  const seedRe = / \(seed [^)]+\)$/;
+  const seed = seedRe.exec(test)?.[0] ?? "";
+  const file = test.replace(seedRe, "");
+  const name = file.replace(/^.*\//, "").replace(/\.gd$/, "");
+  const hand = /^bot_hand_(\w+)$/.exec(name)?.[1];
+  const ladder = /^bot_ladder_([a-z]+)_([a-z]+)$/.exec(name);
+  const words = hand === "newcomer" ? "the newcomer's match" : hand !== undefined ? `the ${hand.replace(/_/g, " ")} hand's match` : ladder !== null ? `the ${ladder[2]} hand's match at ${ladder[1]}` : name === "bot_tofu" ? "the tofu bot's figures" : name === "bot_mash" ? "the button-masher's match" : `the ${name.replace(/^bot_/, "").replace(/_/g, " ")} bot (${file})`;
+  return `${words}${seed}`;
+}
+
 /** The start of the Foreman's note (after FOREMAN_NOTE). */
 export const LOOK_NOT_PLAY = "the look changed, the play did not";
 
@@ -57,8 +81,15 @@ export function lookNotPlay(h: Pick<GateHost, "dir" | "events">, from: number | 
   const before = newest(h, h.events.filter((e) => e.seq <= from));
   const after = newest(h, h.events.filter((e) => e.seq > from));
   const both = [...after.keys()].filter((t) => before.has(t));
-  if (both.length === 0 || both.some((t) => before.get(t) !== after.get(t))) return undefined;
-  return `${LOOK_NOT_PLAY}: the critic's reasons were about play ("${hit[0]}"), and after revise round ${round} ${both.join(", ")} ${both.length === 1 ? "plays" : "play"} frame for frame as before (the same moments at the same frames, the same counted figures). The round changed how the game looks, not how it plays`;
+  if (both.length === 0) return undefined;
+  // H1g (the Director's answer): when only some bots changed, the ones that did not are named in words
+  const same = both.filter((t) => before.get(t) === after.get(t));
+  if (same.length === 0) return undefined;
+  if (same.length < both.length) {
+    const moved = both.filter((t) => !same.includes(t));
+    return `${PART_NOT_PLAY}: the critic's reasons were about play ("${hit[0]}"), and after revise round ${round} ${andList(same.map(botWords))} did not change (the same moments at the same frames, the same counted figures); only ${andList(moved.map(botWords))} changed`;
+  }
+  return `${LOOK_NOT_PLAY}: the critic's reasons were about play ("${hit[0]}"), and after revise round ${round} ${andList(both.map(botWords))} ${both.length === 1 ? "plays" : "play"} frame for frame as before (the same moments at the same frames, the same counted figures). The round changed how the game looks, not how it plays`;
 }
 
 /** Appends the note to the person when it applies; returns its words (for the milestone summary) or undefined. */

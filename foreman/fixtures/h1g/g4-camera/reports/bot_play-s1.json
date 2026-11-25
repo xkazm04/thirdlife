@@ -1,0 +1,21 @@
+{
+ "from": "H1g: the runner (with kernel/runner/camyaw.gd) on a copy of d25-court half-court-3-v-20261125-1 pack/ (v0.1.0), bot tests/bot_play.gd, seed 1",
+ "seed": 1,
+ "metrics": {
+  "state_hash": "02d18fa74fda67c85a4cb26d94c277e3507c2853a1a4d9a254252ef03ec5ecbd",
+  "frame_ms_p50": 1.121,
+  "frame_ms_p99": 1.733,
+  "entities_max": 305,
+  "bodies_max": 57,
+  "tick_ms_max": 2.328,
+  "camera_yaw_p90_dps": 0,
+  "camera_yaw_max_dps": 1,
+  "camera_move_p90_mps": 5.3,
+  "camera_move_max_mps": 11
+ },
+ "bot": {
+  "test": "tests/bot_play.gd",
+  "done": true,
+  "frames": 18002
+ }
+}

@@ -589,7 +589,7 @@ func _smoke_checks(run: Dictionary, frames: int, second: bool = false, second_ta
 func _metrics(run: Dictionary) -> Dictionary:
 	var m: Dictionary = (run["result"] as Dictionary).get("metrics", {})
 	var out: Dictionary = {}
-	for k: String in ["state_hash", "frame_ms_p50", "frame_ms_p99", "entities_max", "bodies_max", "tick_ms_max"]:
+	for k: String in ["state_hash", "frame_ms_p50", "frame_ms_p99", "entities_max", "bodies_max", "tick_ms_max", "camera_yaw_p90_dps", "camera_yaw_max_dps", "camera_move_p90_mps", "camera_move_max_mps"]:
 		if m.has(k):
 			out[k] = int(m[k]) if k.ends_with("_max") and k != "tick_ms_max" else m[k]
 	_add_starved(out)
