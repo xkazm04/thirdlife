@@ -26,7 +26,7 @@ import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
 import { coreRouteOf, templateOf } from "./templates.js";
 import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
-import { cartridgeChange, coreDataGate, diffRound } from "./coregate.js";
+import { cartridgeChange, coreDataGate, diffRound, phaseCheck } from "./coregate.js";
 import { decideLook, filmLook, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
@@ -270,7 +270,7 @@ export class Foreman {
         this.append({ type: "job_state", state: "paused", reason: QUALITY_PAUSE });
         break;
       }
-      const step = await phaseStep(Object.assign(this.gateHost, { grow: (c: { seq: number; text: string }, why: string, head: string) => grow(this.growHost, c, why, head) })); // a phase whose packages are all merged is done: pass, or wait for the player
+      const step = await phaseStep(Object.assign(this.gateHost, { grow: (c: { seq: number; text: string }, why: string, head: string) => grow(this.growHost, c, why, head), atPhaseDone: (ph: string) => phaseCheck(this.gateHost, ph) })); // a phase whose packages are all merged is done: pass, or wait for the player
       if (step === "paused") break;
       if (step === "continue") continue;
       const views = this.s.order.map((id) => this.pkg(id));
@@ -827,7 +827,7 @@ export class Foreman {
         const before = [resumed ? "resumed" : "", this.starvedDetail(id).replace(/ of this round:/, ` of round ${round - 1}:`)].filter(Boolean).join("; ");
         this.append({ type: "package_state", package: id, state: "running", round, ...(before ? { detail: before } : {}) });
         resumed = false;
-        const res = spec.kind === "base" ? this.startFromBase(id, spec, round) : diffRound(this.gateHost, id, round, this.wsDir(id)) ?? (await this.callBuilder(id, spec, round)); // E3: the base, and a cartridge diff, are the Foreman's
+        const res = spec.kind === "base" ? this.startFromBase(id, spec, round) : (await diffRound(this.gateHost, id, round, this.wsDir(id))) ?? (await this.callBuilder(id, spec, round)); // E3: the base, and a cartridge diff, are the Foreman's
         if (res.outcome === "ok") this.recordNote(id, round, res.text);
         if (res.outcome === "ok" && this.raiseQuestion(id, round, res.text)) return;
         if (res.outcome !== "ok") {

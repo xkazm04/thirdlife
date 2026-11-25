@@ -77,6 +77,8 @@ export function designLines(s: JobState): string[] {
       // The person gate (owner, 23 Nov): with run-through too, the greybox waits for a person's hand.
       out.push(s.runThrough === true && isGreybox(s, wait) ? `waiting  phase ${wait.id} is the greybox and waits for your hand (run-through passes only the phases after it): try it ("${wait.try}"), ${answer}` : `waiting  phase ${wait.id} is done: try it ("${wait.try}"), ${answer}`);
       out.push(...playtestCard(s.brief, s.job, wait, isGreybox(s, wait)));
+      // E3d: a core job's measured check at this pause (coregate.ts phaseCheck), what the person meets when he plays.
+      for (const n of (s.notes ?? []).filter((x) => x.text.startsWith(`[foreman] measured at the phase pause ${wait.id}:`))) out.push(`measured ${n.text.slice(`[foreman] measured at the phase pause ${wait.id}: `.length).replace(/ \[report: [^\]]+\]$/, "")}`);
     }
   } else if (cur?.state === "held" && cur.hold !== undefined) {
     out.push(`held     phase ${cur.id}: ${cur.hold.applied ? "its change round runs" : "its change round starts when the Foreman runs"} for: ${cur.hold.note.replace(/\s+/g, " ").slice(0, 120)}`);
