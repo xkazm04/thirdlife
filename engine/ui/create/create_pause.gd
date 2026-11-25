@@ -11,6 +11,7 @@ extends "res://ui/create/create_build.gd"
 
 var _answer_box: LineEdit = null
 var _answer_draft: String = ""
+var _answer_change: String = ""           # E4c: the package the "Yes, let it" chip allows to change (`answer --change`)
 var _q_changing: bool = false             # the quality card's change box is open
 var _q_draft: String = ""
 
@@ -92,9 +93,22 @@ func _question_card(q: Dictionary) -> void:
 	text.name = "Question"
 	var opts: PackedStringArray = Model.question_options(str(q["text"]))
 	var x: float = 40.0
-	for i: int in opts.size():
-		var w: float = minf(500.0, 70.0 + _text_w(opts[i], 20, 800))
+	var widen: String = Model.scope_package(job, q)
+	if not widen.is_empty():
+		# E4c: a question that asks for a package's scope: one chip says yes (`foreman answer ... --change <package>`)
+		var yes: Button = _button("LetIt", "Yes, let it", "check", GREEN, Vector2(x, 234), Vector2(220, 52), 20)
+		yes.tooltip_text = "Let “%s” change those files" % widen
+		yes.pressed.connect(func() -> void:
+			pick_option("Yes, let it change what it needs.")
+			_answer_change = widen)
+		card.add_child(yes)
+		x += 234.0
+	var n: int = mini(opts.size(), 3) if widen.is_empty() else 0      # a scope question: its yes is the chip, the rest is words
+	for i: int in n:
+		var w: float = minf(minf(500.0, 70.0 + _text_w(opts[i], 20, 800)), (1060.0 - x) / float(n - i) - 14.0)
 		var chip: Button = _button("Option%d" % i, JobModel.one_line(opts[i], 48), "", HONEY_LIGHT, Vector2(x, 234), Vector2(w, 52), 20)
+		chip.clip_text = true
+		chip.size = Vector2(w, 52)                  # again: the size set before clip_text was held to the text's width
 		chip.pressed.connect(pick_option.bind(opts[i]))
 		card.add_child(chip)
 		x += w + 14.0
@@ -108,6 +122,7 @@ func _question_card(q: Dictionary) -> void:
 
 func pick_option(text: String) -> void:
 	_answer_draft = text
+	_answer_change = ""
 	if _answer_box != null:
 		_answer_box.text = text
 
@@ -119,7 +134,7 @@ func send_answer() -> void:
 		message = "Write the answer first, or tap one."
 		_rebuild()
 		return
-	var err: String = door.answer(job_dir, str(q["package"]), text, "", door.foreman_alive(job_dir, int(job.get("lock_pid", 0))))
+	var err: String = door.answer(job_dir, str(q["package"]), text, _answer_change, door.foreman_alive(job_dir, int(job.get("lock_pid", 0))))
 	if not err.is_empty() and not door.dry:
 		message = err
 	else:
@@ -127,7 +142,8 @@ func send_answer() -> void:
 		busy = "answer"
 		busy_mark = int(q["seq"])
 		_answer_draft = ""
-		print("[create] answer to %s: %s" % [str(q["package"]), text])
+		print("[create] answer to %s: %s%s" % [str(q["package"]), text, (" (--change %s)" % _answer_change) if not _answer_change.is_empty() else ""])
+		_answer_change = ""
 	_rebuild()
 
 
@@ -206,3 +222,47 @@ func _after_quality(err: String) -> void:
 		_q_changing = false
 		_q_draft = ""
 	_rebuild()
+
+
+# ---- E4c: the phase pause's measured figures (a game on a core)
+
+func _measured_card(v: Dictionary, at: Vector2, sz: Vector2) -> void:
+	var defects: Array = v["defects"]
+	var card: Panel = Panel.new()
+	card.name = "MeasuredCard"
+	card.add_theme_stylebox_override("panel", _box(PAPER, RED if not defects.is_empty() else GREEN, 6, 26, 14))
+	card.position = at
+	card.size = sz
+	_body.add_child(card)
+	var t: Label = _label("Measured", 30, 950, INK, sz.x - 60)
+	t.position = Vector2(30, 22)
+	card.add_child(t)
+	var sub: Label = _label("bots played it, beside hokej", 18, 700, Color(INK, 0.6), sz.x - 60)
+	sub.position = Vector2(30, 62)
+	card.add_child(sub)
+	if not bool(v["measured"]):
+		_wrapped("It could not be measured this time.", 22, 700, Color(INK, 0.7), Vector2(30, 110), sz.x - 60, 2, card)
+		return
+	var rows: Array = [["Goals", "a match", float(v["goals"]), float(v["house_goals"]), ""], ["Match", "lasts", float(v["minutes"]), float(v["house_minutes"]), " min"]]
+	var y: float = 104.0
+	for i: int in rows.size():
+		var r: Array = rows[i]
+		var big: Label = _label(("%s %s: %s" % [r[0], r[1], _fig(float(r[2]), str(r[4]))]), 24, 850, INK, sz.x - 60)
+		big.name = "Measured%d" % i
+		big.position = Vector2(30, y)
+		card.add_child(big)
+		var house: Label = _label("hokej: %s" % _fig(float(r[3]), str(r[4])), 19, 700, Color(INK, 0.6), sz.x - 60)
+		house.name = "House%d" % i
+		house.position = Vector2(30, y + 34)
+		card.add_child(house)
+		y += 78.0
+	for i: int in mini(2, defects.size()):
+		var d: Label = _wrapped(str(defects[i]), 19, 800, RED.darkened(0.15), Vector2(30, y), sz.x - 60, 2, card)
+		d.name = "Defect%d" % i
+		y += 52.0
+
+
+func _fig(x: float, unit: String) -> String:
+	if x < 0.0:
+		return "?"
+	return ("%.1f" % x).trim_suffix(".0") + unit

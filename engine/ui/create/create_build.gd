@@ -213,14 +213,19 @@ func _phase_done() -> void:
 	var card: Panel = Panel.new()
 	card.name = "PhaseCard"
 	card.add_theme_stylebox_override("panel", _box(PAPER, INK, 6, 26, 14))
-	card.position = Vector2(140, 250)
-	card.size = Vector2(1000, 400)
+	# E4c: on a game on a core the phase's measured figures stand beside the card (create_pause.gd _measured_card)
+	var mv: Dictionary = Model.measured_view(job)
+	var k: float = 1.0 if mv.is_empty() else 0.8
+	card.position = Vector2(140, 250) if mv.is_empty() else Vector2(40, 250)
+	card.size = Vector2(1000.0 * k, 400)
+	if not mv.is_empty():
+		_measured_card(mv, Vector2(860, 250), Vector2(380, 400))
 	_body.add_child(card)
-	var ready: Label = _label("Phase %d is ready!" % int(e.get("n", 0)), 46, 950, INK, 920, HORIZONTAL_ALIGNMENT_CENTER)
+	var ready: Label = _label("Phase %d is ready!" % int(e.get("n", 0)), 46, 950, INK, 920.0 * k, HORIZONTAL_ALIGNMENT_CENTER)
 	ready.name = "Ready"
 	ready.position = Vector2(40, 30)
 	card.add_child(ready)
-	var tr: Label = _label(str(e.get("try", "")), 30, 700, Color(INK, 0.85), 860, HORIZONTAL_ALIGNMENT_CENTER)
+	var tr: Label = _label(str(e.get("try", "")), 30, 700, Color(INK, 0.85), 860.0 * k, HORIZONTAL_ALIGNMENT_CENTER)
 	tr.name = "Try"
 	tr.position = Vector2(70, 104)
 	card.add_child(tr)
@@ -236,28 +241,28 @@ func _phase_done() -> void:
 		sb.content_margin_left = 18.0
 		nb.add_theme_stylebox_override("normal", sb)
 		nb.add_theme_stylebox_override("focus", sb)
-		nb.position = Vector2(60, 236)
-		nb.size = Vector2(560, 84)
+		nb.position = Vector2(60, 236) * Vector2(k, 1)
+		nb.size = Vector2(560.0 * k, 84)
 		nb.max_length = 240
 		nb.text_submitted.connect(func(_t: String) -> void: send_hold())
 		card.add_child(nb)
 		_note_box = nb
-		var send: Button = _button("SendHold", "Send", "go", ORANGE, Vector2(640, 236), Vector2(170, 84), 30)
+		var send: Button = _button("SendHold", "Send", "go", ORANGE, Vector2(640.0 * k, 236), Vector2(170.0 * k, 84), 30)
 		send.pressed.connect(send_hold)
 		card.add_child(send)
-		var back: Button = _button("CancelHold", "", "back", CREAM, Vector2(830, 236), Vector2(110, 84), 30)
+		var back: Button = _button("CancelHold", "", "back", CREAM, Vector2(830.0 * k, 236), Vector2(110.0 * k, 84), 30)
 		back.pressed.connect(func() -> void:
 			holding = false
 			_rebuild())
 		card.add_child(back)
 		return
-	var tb: Button = _button("TryIt", "Try it", "play", HONEY, Vector2(60, 236), Vector2(330, 110), 40)
+	var tb: Button = _button("TryIt", "Try it", "play", HONEY, Vector2(60.0 * k, 236), Vector2(330.0 * k, 110), 40)
 	tb.pressed.connect(try_it)
 	card.add_child(tb)
-	var pb: Button = _button("Pass", "Pass", "check", GREEN, Vector2(420, 236), Vector2(250, 110), 40)
+	var pb: Button = _button("Pass", "Pass", "check", GREEN, Vector2(420.0 * k, 236), Vector2(250.0 * k, 110), 40)
 	pb.pressed.connect(pass_phase)
 	card.add_child(pb)
-	var hb: Button = _button("Hold", "Hold", "hold", ORANGE, Vector2(700, 236), Vector2(240, 110), 40)
+	var hb: Button = _button("Hold", "Hold", "hold", ORANGE, Vector2(700.0 * k, 236), Vector2(240.0 * k, 110), 40)
 	hb.pressed.connect(func() -> void:
 		holding = true
 		_rebuild()
@@ -429,6 +434,11 @@ func _follow_menu_row() -> void:
 ## E4b: create_pause.gd draws the card of a pause a person answers (a builder's question, a quality hold); true when drawn.
 func _pause_card() -> bool:
 	return false
+
+
+## E4c: create_pause.gd draws the phase's measured figures beside the phase card.
+func _measured_card(_v: Dictionary, _at: Vector2, _sz: Vector2) -> void:
+	pass
 
 
 func _continue_button() -> void:

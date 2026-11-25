@@ -344,6 +344,10 @@ static func question_options(text: String) -> PackedStringArray:
 	if not out.is_empty():
 		return out
 	var flat: String = JobModel.one_line(text)
+	var guess: RegExMatch = RegEx.create_from_string("Did you mean ([^?]+)\\?").search(flat)   # E4c: E3d's asked-back change
+	if guess != null:
+		out.append("Yes, " + guess.get_string(1).strip_edges())
+		return out
 	var q: String = flat.substr(flat.rfind(". ") + 2) if flat.rfind(". ") >= 0 and flat.rfind(". ") < flat.length() - 3 else flat
 	var at: int = q.find(", or ")
 	if at > 0:
@@ -379,3 +383,57 @@ static func quality_view(job: Dictionary) -> Dictionary:
 					still = f
 					break
 	return {"milestone": str(hold.get("milestone", "")), "reasons": reasons, "still": still}
+
+
+# ---------------------------------------------------------------- E4c (25 Nov): the phase pause's figures, a scope "yes"
+
+## The measured check at the waiting phase of a game on a core (coregate.ts phaseCheck writes the note "[foreman]
+## measured at the phase pause <phase>: ..." and its report tl.foreman.measured/1), in a person's figures:
+## {goals, minutes, house_goals, house_minutes, defects: [lines], measured: bool}; {} when the phase has none.
+static func measured_view(job: Dictionary) -> Dictionary:
+	var e: Dictionary = waiting(job)
+	if e.is_empty():
+		return {}
+	var head: String = "[foreman] measured at the phase pause %s:" % str(e["id"])
+	var note: String = ""
+	for n: Variant in job.get("notes", []):
+		if n is Dictionary and str((n as Dictionary).get("text", "")).begins_with(head):
+			note = str(n["text"])
+	if note.is_empty():
+		return {}
+	var out: Dictionary = {"goals": -1.0, "minutes": -1.0, "house_goals": -1.0, "house_minutes": -1.0, "defects": [], "measured": true}
+	var at: int = note.rfind("[report: ")
+	var rep: Variant = JobModel.read_json(str(job.get("dir", "")).path_join(note.substr(at + 9).trim_suffix("]"))) if at >= 0 else null
+	if rep is Dictionary:
+		var run: Dictionary = (rep as Dictionary).get("run", {})
+		var fig: Dictionary = run.get("figures", {})
+		out["goals"] = float(fig.get("pro_goals_a_match", -1.0))
+		out["minutes"] = float(fig.get("pro_minutes", -1.0))
+		out["measured"] = int(run.get("code", 2)) != 2
+		out["defects"] = (run.get("defects", []) as Array).map(func(d: Variant) -> String: return JobModel.one_line(str(d).get_slice(" (", 0).get_slice(": thirdjam", 0), 90))
+		var house: Dictionary = (rep as Dictionary).get("house", {}).get("figures", {}) if (rep as Dictionary).get("house") is Dictionary else {}
+		out["house_goals"] = float(house.get("pro_goals_a_match", -1.0))
+		out["house_minutes"] = float(house.get("pro_minutes", -1.0))
+	else:
+		# no report on disk: the figures in the note's words
+		var g: RegExMatch = RegEx.create_from_string("pro_goals_a_match ([0-9.]+)").search(note)
+		var m: RegExMatch = RegEx.create_from_string("pro_minutes ([0-9.]+)").search(note)
+		out["goals"] = float(g.get_string(1)) if g != null else -1.0
+		out["minutes"] = float(m.get_string(1)) if m != null else -1.0
+		out["measured"] = not note.contains(" not measured ")
+		if note.contains("GROSS DEFECTS: "):
+			out["defects"] = [JobModel.one_line(note.get_slice("GROSS DEFECTS: ", 1).get_slice(";", 0).get_slice(": thirdjam", 0), 90)]
+	return out
+
+
+## The package a question asks to be allowed to change (a scope it wants widened: "May core be changed ...", "can those
+## files be added to this package's scope?"): a package of the plan named in it, else the asking package; "" for any
+## other question. Its chip "Yes, let it" answers with `foreman answer ... --change <package>`.
+static func scope_package(job: Dictionary, q: Dictionary) -> String:
+	var text: String = str(q.get("text", ""))
+	if RegEx.create_from_string("(?i)\\b(scope|be changed|be added to|another package|a package that owns|may change|allowed to (change|edit))\\b").search(text) == null:
+		return ""
+	for id: Variant in job.get("order", []):
+		if str(id) != str(q.get("package", "")) and RegEx.create_from_string("\\b%s\\b" % str(id)).search(text) != null:
+			return str(id)
+	return str(q.get("package", ""))

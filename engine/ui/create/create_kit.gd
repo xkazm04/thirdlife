@@ -60,7 +60,9 @@ var games_rows: Array = []                # E4: create_model.gd games(), read wh
 var menu_list: String = ""                # E4: the person's dungeon list ("" = kernel/dungeon/dungeons.gd user_path())
 var _change_box: LineEdit = null
 var _change_draft: String = ""            # E4: what is typed in the change box (kept over a rebuild)
-var _sent_change: String = ""             # E4: the change this page sent, shown until the log holds it
+var _sent_change: String = ""
+var _run_t0: float = 0.0                  # E4c: the current run's start (the job's last `job_state running`), 0 = none
+var _run_seq: int = -1             # E4: the change this page sent, shown until the log holds it
 
 var _stage: Control = null
 var _body: Control = null
@@ -107,13 +109,18 @@ func _now() -> float:
 func _elapsed() -> float:
 	var t0: float = started_at
 	if not job.is_empty() and float(job.get("first_ts", 0.0)) > 0.0:
-		t0 = float(job["first_ts"])
+		# E4c: the build clock counts the current run (a reopened job showed 98 hours from its first event); the design
+		# clock the job's first minutes
+		t0 = _run_t0 if _run_t0 > 0.0 else (float(job["first_ts"]) if screen == "designing" else started_at)
 	var mine: Array = Model.person_changes(job)
 	if busy == "change":
 		t0 = started_at                   # E4: a change round's clock starts at its request
 	elif not mine.is_empty() and not Model.changing(job).is_empty():
 		t0 = float((mine.back() as Dictionary).get("ts", t0))
-	return maxf(0.0, _now() - t0) if t0 > 0.0 else 0.0
+	var end: float = _now()
+	if str(job.get("phase", "")) in ["paused", "done", "failed", "cancelled"] and float(job.get("last_ts", 0.0)) > t0 and busy.is_empty():
+		end = float(job["last_ts"])        # a stopped run's clock stands at its last event
+	return maxf(0.0, end - t0) if t0 > 0.0 else 0.0
 
 
 func _signature() -> String:
