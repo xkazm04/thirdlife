@@ -19,6 +19,7 @@ import { CARTRIDGE_INVALID, coreDataFiles, fakeRinkCheck, gameCartridges, runRin
 import { applyChanges, type ChangeResult } from "./cartridge.js"; // lane E2: a change set applied and validated
 import { absentInChange, teamsSeen, unseenChange } from "./rinkjudge.js"; // E3d: a change the game cannot mean is asked back
 import { generate } from "./designer.js";
+import { addedEntries, asksRemoval, entriesText, isYes, removalQuestion, removedEntries, removedNote, type Removal } from "./removal.js"; // H1: a removal is named and asked
 import type { RunResult } from "./builder/types.js";
 import { coreRouteOf } from "./templates.js";
 import { isFakeRunner } from "./verbs.js";
@@ -250,11 +251,46 @@ export async function cartridgeChange(h: GateHost, owner: string, round: number,
     note(`${CARTRIDGE_DIFF} not made: refused twice (${clip(refused.replace(/\s+/g, " "), 500)}): the change goes to the builder`);
     return false;
   }
-  const report = h.dir("reports", `${owner}-r${round}-diff-s${h.s.lastSeq + 1}.json`);
-  fs.writeFileSync(report, JSON.stringify({ schema: "tl.foreman.diff/1", package: owner, round, file: cart.file, change: text, why, changed: applied.changed, before, after }, null, 1) + "\n");
-  const said = `measured before: ${verdictWord(before)} (${figuresText(before.figures)}); after: ${verdictWord(after)} (${figuresText(after.figures)})${after.code === 0 ? `; ${clip(after.summary, 300)}` : ""}`;
-  note(`${CARTRIDGE_DIFF}: ${applied.changed.join("; ")} (${clip(why, 200)}); ${said} [report: ${h.rel(report)}]`);
+  // H1 (E5e defect 3): a diff that removes what the person's words did not ask to remove is asked first ("To add X I must
+  // remove Y: OK?"); the diff waits beside the round and is made as it is on a yes (diffRound).
+  const removed = removedEntries(current, applied.cartridge);
+  const pending: PendingDiff = { schema: "tl.foreman.removal/1", change: text, why, changed: applied.changed, removed, cartridge: applied.cartridge, before, after };
+  const words = answered ? `${askedOf(h, owner) ?? ""} ${h.pkg(owner).lastAnswer ?? ""}` : text; // the person's words only, never the Foreman's own
+  if (removed.length > 0 && !asksRemoval(words)) {
+    const q = removalQuestion(addedEntries(current, applied.cartridge), removed, why, askedOf(h, owner) ?? text);
+    fs.writeFileSync(pendingFile(h, owner, round), JSON.stringify(pending, null, 1) + "\n");
+    note(`${CARTRIDGE_ASKED}: "${clip(text, 200)}": ${q}`);
+    h.append({ type: "question", package: owner, text: q });
+    h.append({ type: "package_state", package: owner, state: "blocked", round, cause: "question", detail: clip(q, 200) });
+    return false;
+  }
+  makeDiff(h, owner, round, cart.file, pending);
   return true;
+}
+
+/** H1: a diff that waits for the person's yes, beside its round (reports/<id>-r<round>-removal.json). */
+interface PendingDiff {
+  schema: "tl.foreman.removal/1";
+  change: string;
+  why: string;
+  changed: string[];
+  removed: Removal[];
+  cartridge: Record<string, unknown>;
+  before: CoreCheckRun;
+  after: CoreCheckRun;
+}
+const pendingFile = (h: GateHost, id: string, round: number): string => h.dir("reports", `${id}-r${round}-removal.json`);
+
+/** The diff becomes the round: its cartridge beside the round, its report, the CARTRIDGE_DIFF note and one REMOVED note per removal. */
+function makeDiff(h: GateHost, owner: string, round: number, file: string, d: PendingDiff): void {
+  const out = diffFile(h, owner, round);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, JSON.stringify(d.cartridge, null, 1) + "\n");
+  const report = h.dir("reports", `${owner}-r${round}-diff-s${h.s.lastSeq + 1}.json`);
+  fs.writeFileSync(report, JSON.stringify({ schema: "tl.foreman.diff/1", package: owner, round, file, change: d.change, why: d.why, changed: d.changed, before: d.before, after: d.after, ...(d.removed.length > 0 ? { removed: d.removed } : {}) }, null, 1) + "\n");
+  const said = `measured before: ${verdictWord(d.before)} (${figuresText(d.before.figures)}); after: ${verdictWord(d.after)} (${figuresText(d.after.figures)})${d.after.code === 0 ? `; ${clip(d.after.summary, 300)}` : ""}`;
+  h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${CARTRIDGE_DIFF}: ${d.changed.join("; ")} (${clip(d.why, 200)}); ${said} [report: ${h.rel(report)}]` });
+  for (const r of d.removed) h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${removedNote(r, d.why)}` });
 }
 
 /** The start of the Foreman's note (after FOREMAN_NOTE) when a change was asked back (it names what the game lacks). */
@@ -271,7 +307,22 @@ export async function diffRound(h: GateHost, id: string, round: number, ws: stri
     const asked = [...h.s.notes].reverse().find((x) => x.package === id && x.round === round && x.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_ASKED}`));
     const p = h.pkg(id);
     if (asked === undefined || p.lastAnswer === undefined || p.openQuestion !== undefined) return undefined;
-    if (!(await cartridgeChange(h, id, round, `${askedOf(h, id) ?? ""}. Asked back (which team, or what they meant), the person answered: "${p.lastAnswer}"`, true))) return undefined;
+    // H1: "To add X I must remove Y: OK?" answered yes: the diff that waited is made as it is (no new model call).
+    let waiting: PendingDiff | undefined;
+    try {
+      waiting = JSON.parse(fs.readFileSync(pendingFile(h, id, round), "utf8")) as PendingDiff;
+    } catch {
+      waiting = undefined;
+    }
+    const cartOf = gameCartridges(h.dir("pack"), h.s.plan).find((c) => c.owner === id);
+    if (waiting !== undefined && cartOf !== undefined && isYes(p.lastAnswer)) {
+      makeDiff(h, id, round, cartOf.file, { ...waiting, why: `${waiting.why} (the person agreed to the removal: "${clip(p.lastAnswer, 120)}")` });
+      fs.rmSync(pendingFile(h, id, round), { force: true });
+    } else {
+      const why = waiting !== undefined ? `. The diff had to remove ${entriesText(waiting.removed)}; asked "To ... I must remove ...: OK?", the person answered: "${p.lastAnswer}". Keep what the answer keeps` : `. Asked back (which team, or what they meant), the person answered: "${p.lastAnswer}"`;
+      fs.rmSync(pendingFile(h, id, round), { force: true });
+      if (!(await cartridgeChange(h, id, round, `${askedOf(h, id) ?? ""}${why}`, true))) return undefined;
+    }
   }
   const src = diffFile(h, id, round);
   const cart = gameCartridges(h.dir("pack"), h.s.plan).find((c) => c.owner === id);

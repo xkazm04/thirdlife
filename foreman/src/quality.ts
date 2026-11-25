@@ -33,6 +33,25 @@ export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
   return Object.prototype.hasOwnProperty.call(opts, "strip");
 }
 
+/**
+ * H1 of 25 Nov (E5e defect 1: the critic's reasons said "no ring, no score, no clock" on a game whose HUD draws all
+ * three, because its captures were filmed with the capture verb's default, the HUD hidden): every capture a critic or a
+ * person judges is filmed as a person sees the game, HUD on, when the engine's runner can keep it (`hud` in its
+ * verbs.json, K2). A runner that cannot gets its captures labelled with exactly what is hidden.
+ */
+export function hudOn(verbs: RunnerVerbs | undefined): boolean {
+  const opts = (verbs?.verbs["capture"] as { options?: Record<string, unknown> } | undefined)?.options ?? {};
+  return Object.prototype.hasOwnProperty.call(opts, "hud");
+}
+
+/** The capture argument that keeps the HUD, [] when the runner cannot. */
+export const hudArgs = (hud: boolean): string[] => (hud ? ["--hud=on"] : []);
+
+/** What a capture's label adds about the HUD: drawn as a person sees it, or exactly what is hidden. */
+export const HUD_SHOWN = "HUD ON: as a person sees the game (score, clock, rings and arrows under players, hints, banners are drawn when the game has them)";
+export const HUD_HIDDEN = "HUD OFF: this capture hides the pack's whole HUD layer (score, clock, rings and arrows under players, hints, banners, radar), so their absence here says nothing about the game: do not judge the HUD from it";
+export const hudLabel = (label: string, hud: boolean): string => `${label}; ${hud ? HUD_SHOWN : HUD_HIDDEN}`;
+
 /** The rubric items a look with strips adds: feel (seen in motion) and slop (any slop-list item seen fails). */
 export function feelItems(): RubricItem[] {
   const ids = slopIds();
@@ -47,6 +66,8 @@ export interface Film {
   labels: string[];
   strips: Strip[];
   notes: string[];
+  /** H1: filmed with the HUD on (as a person sees it); the house strips are filmed the same way. */
+  hud?: boolean;
 }
 
 const reportPath = (h: GateHost, stem: string): string => h.dir("reports", `${stem}-s${h.s.lastSeq + 1}.json`);
@@ -70,7 +91,7 @@ async function captureOnce(h: GateHost, args: string[], out: string, stem: strin
  * drill bot of ref/packs/<pack> finds the contact frame, then one capture with --strip from 15 frames before it). The
  * strips are kept in the house baseline; [] when the pack, the bot or the capture failed (said in `notes`).
  */
-export async function houseStrips(h: GateHost, base: HouseBaseline, template: string, after: string, notes: string[], buildKinds: string[] = []): Promise<{ capture: string; label: string }[]> {
+export async function houseStrips(h: GateHost, base: HouseBaseline, template: string, after: string, notes: string[], buildKinds: string[] = [], hud = false): Promise<{ capture: string; label: string }[]> {
   if (base.strips !== undefined) return base.strips;
   const s = HOUSE_BOTS[template]?.strip;
   const packDir = h.dir("ref", "packs", base.pack);
@@ -87,9 +108,9 @@ export async function houseStrips(h: GateHost, base: HouseBaseline, template: st
       const st = CONTACT_STRIP.step;
       const out = h.dir("reports", `house-${base.pack}`, `strip-${s.cam}-f${from}.png`);
       const res = `--res=${h.o.captureRes ?? "1280x720"}`;
-      if (await captureOnce(h, [`--cam=${s.cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${st}`, res, `--test=${s.test}`], out, `house-${base.pack}-strip`, after, notes, `house strip ${s.cam} from frame ${from}`, packDir)) {
+      if (await captureOnce(h, [`--cam=${s.cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${st}`, res, `--test=${s.test}`, ...hudArgs(hud)], out, `house-${base.pack}-strip`, after, notes, `house strip ${s.cam} from frame ${from}`, packDir)) {
         // D3 of 22 Nov: the strip keeps its contact kind (the revise pair matches the build's strip to it); a fallback frame has none.
-        strips = [{ capture: h.rel(out), label: `HOUSE GAME engine/packs/${base.pack} (a floor, not the bar, not this build): CONTACT MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + st}, ... ${from + st * (STRIP.count - 1)}, ${st} frames apart; the contact at frame ${f}${cm?.kind !== undefined ? `, ${cm.kind}` : ""}), ${s.test} on camera ${s.cam}: ${s.label}`, ...(cm?.kind !== undefined ? { kind: cm.kind } : {}) }];
+        strips = [{ capture: h.rel(out), label: hudLabel(`HOUSE GAME engine/packs/${base.pack} (a floor, not the bar, not this build): CONTACT MOTION STRIP (4 columns x 3 rows, frames ${from}, ${from + st}, ... ${from + st * (STRIP.count - 1)}, ${st} frames apart; the contact at frame ${f}${cm?.kind !== undefined ? `, ${cm.kind}` : ""}), ${s.test} on camera ${s.cam}: ${s.label}`, hud), ...(cm?.kind !== undefined ? { kind: cm.kind } : {}) }];
       }
     } else notes.push(`house strip: ${s.test} on ref/packs/${base.pack} gave no contact frame (${clip(vr.summary, 160)})`);
   }
@@ -99,24 +120,24 @@ export async function houseStrips(h: GateHost, base: HouseBaseline, template: st
 }
 
 /** The stills of every shot and camera (JOB.md second round), and with `withStrips` one strip per filmed point. */
-export async function filmLook(h: GateHost, m: Milestone, shots: Shot[], cameras: string[], after: string, withStrips: boolean): Promise<Film> {
-  const film: Film = { captures: [], labels: [], strips: [], notes: [] };
+export async function filmLook(h: GateHost, m: Milestone, shots: Shot[], cameras: string[], after: string, withStrips: boolean, hud = false): Promise<Film> {
+  const film: Film = { captures: [], labels: [], strips: [], notes: [], hud };
   const res = `--res=${h.o.captureRes ?? "1280x720"}`;
   for (const [si, shot] of shots.entries()) for (const cam of cameras) {
     const bot = shot.bot !== undefined ? [`--test=${shot.bot}`] : [];
     for (const frame of shot.frames) {
       const out = h.dir("captures", si === 0 ? `${m}-${cam}-f${frame}.png` : `${m}-${cam}-${path.basename(shot.bot ?? "nobot", ".gd")}-f${frame}.png`);
-      if (await captureOnce(h, [`--cam=${cam}`, `--frame=${frame}`, res, ...bot], out, `milestone-${m}-capture-${cam}-f${frame}`, after, film.notes, `capture ${cam} frame ${frame}`)) {
+      if (await captureOnce(h, [`--cam=${cam}`, `--frame=${frame}`, res, ...bot, ...hudArgs(hud)], out, `milestone-${m}-capture-${cam}-f${frame}`, after, film.notes, `capture ${cam} frame ${frame}`)) {
         film.captures.push(h.rel(out));
-        film.labels.push(shotLabel(cam, frame, shot));
+        film.labels.push(hudLabel(shotLabel(cam, frame, shot), hud));
       }
       if (!withStrips) continue;
       const contact = shot.moments?.includes(frame) === true; // round 9: a contact moment gets a dense strip
       const from = contact ? Math.max(1, frame - CONTACT_STRIP.before) : stripFrom(frame);
       const step = contact ? CONTACT_STRIP.step : STRIP.step;
       const strip = h.dir("captures", stripFile(m, cam, shot, from));
-      if (await captureOnce(h, [`--cam=${cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${step}`, res, ...bot], strip, `milestone-${m}-strip-${cam}-f${from}`, after, film.notes, `strip ${cam} from frame ${from}`)) {
-        film.strips.push({ capture: h.rel(strip), label: stripLabel(cam, from, shot, step) });
+      if (await captureOnce(h, [`--cam=${cam}`, `--frame=${from}`, `--strip=${STRIP.count}x${step}`, res, ...bot, ...hudArgs(hud)], strip, `milestone-${m}-strip-${cam}-f${from}`, after, film.notes, `strip ${cam} from frame ${from}`)) {
+        film.strips.push({ capture: h.rel(strip), label: hudLabel(stripLabel(cam, from, shot, step), hud) });
       }
     }
   }
@@ -432,7 +453,7 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template, h.s.brief?.design?.verbs.length), t.test, r.hand, r.from, filmed); })() : undefined);
   const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
-  const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes, [...new Set(shots.flatMap((x) => (x.bot !== undefined ? botMoments(h.dir(), h.events, x.bot).map((mm) => mm.kind) : [])))]) : [];
+  const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes, [...new Set(shots.flatMap((x) => (x.bot !== undefined ? botMoments(h.dir(), h.events, x.bot).map((mm) => mm.kind) : [])))], film.hud === true) : [];
   // E3 of 24 Nov: a game on a core: the measured check (coregate.ts) instead of the tofu rows; not measured is said, never a pass.
   const core = await coreLook(h, m);
   if (core !== undefined && !core.measured) notes.push(core.line);

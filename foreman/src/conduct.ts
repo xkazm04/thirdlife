@@ -22,13 +22,33 @@ export interface KitFigures {
   kitUse: number;
 }
 
-/** Counts kit use in a pack directory (see KitFigures.kitUse). Comments in scripts do not count. */
+/**
+ * H1 of 25 Nov (E5e defect 2: a change that had to drop one of the rink's zones was refused at the merge as a "KIT
+ * REGRESSION", 14 -> 13, and cost a builder round): a core's data is not kit parts. A cartridge (`tj.cartridge/1`,
+ * data/<name>.cartridge.json) and its rules sidecar (`tl.rink.rules/1`, data/<name>.rules.json) carry `"kind"` on their
+ * zones, obstacles and abilities: the core reads them as data and no kit part is made from them.
+ */
+const CORE_DATA_NAME = /^data\/[^/]+\.(cartridge|rules)\.json$/;
+const CORE_DATA_SCHEMA = /^(tj\.cartridge|tl\.rink\.rules)\//;
+export function isCoreData(rel: string, text: string): boolean {
+  if (CORE_DATA_NAME.test(rel)) return true;
+  try {
+    const schema = (JSON.parse(text.replace(/^﻿/, "")) as { schema?: unknown }).schema;
+    return typeof schema === "string" && CORE_DATA_SCHEMA.test(schema);
+  } catch {
+    return false;
+  }
+}
+
+/** Counts kit use in a pack directory (see KitFigures.kitUse). Comments in scripts and a core's data do not count. */
 export function countKitUse(packDir: string): number {
   let n = 0;
   for (const f of listFiles(packDir)) {
     const abs = path.join(packDir, f);
-    if (f.startsWith("data/") && f.endsWith(".json")) n += (fs.readFileSync(abs, "utf8").match(/"kind"\s*:\s*"/g) ?? []).length;
-    else if (f.endsWith(".gd") && !f.startsWith("tests/")) {
+    if (f.startsWith("data/") && f.endsWith(".json")) {
+      const text = fs.readFileSync(abs, "utf8");
+      if (!isCoreData(f, text)) n += (text.match(/"kind"\s*:\s*"/g) ?? []).length;
+    } else if (f.endsWith(".gd") && !f.startsWith("tests/")) {
       for (const line of fs.readFileSync(abs, "utf8").split(/\r?\n/)) n += (line.replace(/#.*$/, "").match(/\bTL(Kit|Rigs)\s*\./g) ?? []).length;
     }
   }

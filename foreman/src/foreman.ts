@@ -21,6 +21,7 @@ import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-1
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
 import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
+import { removedSince } from "./removal.js"; // H1 (E5e): what a change removed, named
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -28,7 +29,7 @@ import { coreRouteOf, templateOf } from "./templates.js";
 import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
 import { cartridgeChange, coreDataGate, diffRound, jobCore, phaseCheck } from "./coregate.js";
 import { changeCandidates, coreChangeOwner } from "./coreowner.js"; // E3f: on a core, a change never goes to the base
-import { decideLook, filmLook, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
+import { decideLook, filmLook, hudArgs, hudOn, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
 import { drainInbox } from "./inbox.js";
@@ -839,7 +840,9 @@ export class Foreman {
         const before = [resumed ? "resumed" : "", this.starvedDetail(id).replace(/ of this round:/, ` of round ${round - 1}:`)].filter(Boolean).join("; ");
         this.append({ type: "package_state", package: id, state: "running", round, ...(before ? { detail: before } : {}) });
         resumed = false;
-        const res = spec.kind === "base" ? this.startFromBase(id, spec, round) : (await diffRound(this.gateHost, id, round, this.wsDir(id))) ?? (await this.callBuilder(id, spec, round)); // E3: the base, and a cartridge diff, are the Foreman's
+        const diff = spec.kind === "base" ? undefined : await diffRound(this.gateHost, id, round, this.wsDir(id));
+        if (diff === undefined && this.pkg(id).openQuestion !== undefined) return; // H1: the diff's next try asked the person again (a removal)
+        const res = spec.kind === "base" ? this.startFromBase(id, spec, round) : diff ?? (await this.callBuilder(id, spec, round)); // E3: the base, and a cartridge diff, are the Foreman's
         if (res.outcome === "ok") this.recordNote(id, round, res.text);
         if (res.outcome === "ok" && this.raiseQuestion(id, round, res.text)) return;
         if (res.outcome !== "ok") {
@@ -1415,7 +1418,7 @@ export class Foreman {
       const shown = (list as { file?: string; line?: number; pattern?: string; primitive?: string }[]).slice(-Math.min(6, after.bypasses - before.bypasses + 3)).map((b) => `${b.file ?? "?"}:${b.line ?? "?"} ${b.pattern ?? ""} (primitive: ${b.primitive ?? "?"})`);
       worse.push(`bypasses rose from ${before.bypasses} to ${after.bypasses} (the pack's lint report, composability.bypasses; the newest: ${shown.join("; ")})`);
     }
-    if (after.kitUse < before.kitUse) worse.push(`kit parts used fell from ${before.kitUse} to ${after.kitUse} ("kind" entries in data/*.json plus TLKit./TLRigs. calls in scripts)`);
+    if (after.kitUse < before.kitUse) worse.push(`kit parts used fell from ${before.kitUse} to ${after.kitUse} ("kind" entries in data/*.json but a core's cartridge and rules, plus TLKit./TLRigs. calls in scripts)`);
     if (worse.length === 0) return undefined;
     const figures = worse.join("; ");
     const said = [...this.s.notes].reverse().find((n) => n.package === id && n.round === round && !n.text.startsWith(FOREMAN_NOTE))?.text;
@@ -1555,7 +1558,7 @@ export class Foreman {
       /* no manifest: no captures */
     }
     const shots = planShots(this.s.plan, this.log.events, members, tests, (b) => botFinish(this.jobDir, this.log.events, b), this.o.captureFrames, (b) => botMoments(this.jobDir, this.log.events, b), templateOf(this.s.brief?.concept?.template?.id)?.filmFirst); // N4 rounds 8, 16: film the exchange, its signature contacts first
-    const film = await filmLook(this.gateHost, m, shots, cameras, lastPackage, this.o.strips !== false && stripsOn(this.verbs));
+    const film = await filmLook(this.gateHost, m, shots, cameras, lastPackage, this.o.strips !== false && stripsOn(this.verbs), hudOn(this.verbs)); // H1: filmed as a person sees it
     const { captures, notes } = film;
     // Rendering is deterministic, so a milestone that changed nothing a camera can see gives the very same bytes
     // as the milestone before it. Seen in the first real job: an art pass that passed V0 to V3 and drew nothing.
@@ -1889,7 +1892,7 @@ export class Foreman {
     if (nth > 1) {
       const owner = this.lastReopened();
       const shots = await this.captureSet(`promotion${nth}`, owner, tests[0], fast);
-      this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version) }); // E3f: one line for Create
+      this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version, removedSince(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack"))) }); // E3f: one line for Create; H1: each removal on its own line
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }
     if (this.o.promote) {
@@ -1946,7 +1949,7 @@ export class Foreman {
           fs.rmSync(file, { force: true });
           const vr = await this.o.verifier.run({
             verb: "capture",
-            args: [`--cam=${cam}`, `--frame=${frame}`, `--out=${toPosix(file)}`, `--res=${this.o.captureRes ?? "1280x720"}`, ...(bot !== undefined ? [`--test=${bot}`] : [])],
+            args: [`--cam=${cam}`, `--frame=${frame}`, `--out=${toPosix(file)}`, `--res=${this.o.captureRes ?? "1280x720"}`, ...(bot !== undefined ? [`--test=${bot}`] : []), ...hudArgs(hudOn(this.verbs))], // H1: the person sees the HUD
             packDir,
             reportFile: this.reportPath(`${label}-capture-${cam}-f${frame}`),
           });
