@@ -156,7 +156,12 @@ export const isBase = (p: Pick<PackageSpec, "kind">): boolean => p.kind === BASE
 /** A core plan with its base package fixed from the base (unchanged when there is no base package or no base). */
 export function normalizeCorePlan<T extends { packages: PackageSpec[] }>(plan: T, route: CoreRoute | undefined, baseDir: string | undefined): T {
   if (route === undefined || baseDir === undefined || !hasBase(baseDir)) return plan;
-  return { ...plan, packages: plan.packages.map((p) => (isBase(p) ? basePackage(route, baseDir, p) : p)) };
+  // E5 (25 Nov, the first real core job): the Planner gave the cartridge package `invariants`; the base itself fails its
+  // frame budgets (thirdjam's whole match: p50 3.5 ms against the 1 ms of "one of many", p99 4.07 against 4), so no data
+  // edit could pass it and the builder blocked on a question no person can answer. A core game is held to what the base
+  // is held to: invariants is dropped from every package (the base's own acceptance is lint, smoke and its bot).
+  const held = (p: PackageSpec): PackageSpec => (p.acceptance.some((a) => a.verb === "invariants") ? { ...p, acceptance: p.acceptance.filter((a) => a.verb !== "invariants") } : p);
+  return { ...plan, packages: plan.packages.map((p) => (isBase(p) ? basePackage(route, baseDir, p) : held(p))) };
 }
 
 /** Files a core game's later packages edit: the cartridge, the rules sidecar, the skin. */
@@ -228,17 +233,30 @@ export function keyPaths(doc: unknown, at = "", out = new Set<string>()): Set<st
   return out;
 }
 
-/** The key paths of a JSON schema (properties, items, $defs followed one level by name). */
-export function schemaPaths(schema: unknown, at = "", out = new Set<string>(), defs?: Record<string, unknown>, depth = 0): Set<string> {
+/**
+ * The key paths of a JSON schema (properties, items, $defs followed one level by name). With `dir`, a `$ref` that names
+ * a sibling schema file (`"game.schema.json"`, E5 25 Nov: the cartridge envelope's `game` is one) is read from there:
+ * without it every game.* key of the schema was unknown and the first real Designer was refused three times for
+ * game.effects, game.rules.hooks and game.contact.*_windup_frames, which CARTRIDGE.md lists.
+ */
+export function schemaPaths(schema: unknown, at = "", out = new Set<string>(), defs?: Record<string, unknown>, depth = 0, dir?: string): Set<string> {
   if (depth > 12 || schema === null || typeof schema !== "object") return out;
   const s = schema as Record<string, unknown>;
   const d = defs ?? ((s["$defs"] ?? s["definitions"]) as Record<string, unknown> | undefined);
-  const ref = typeof s["$ref"] === "string" ? /#\/(?:\$defs|definitions)\/(.+)$/.exec(s["$ref"] as string)?.[1] : undefined;
-  if (ref !== undefined && d?.[ref] !== undefined) return schemaPaths(d[ref], at, out, d, depth + 1);
+  const raw = typeof s["$ref"] === "string" ? (s["$ref"] as string) : undefined;
+  const ref = raw !== undefined ? /#\/(?:\$defs|definitions)\/(.+)$/.exec(raw)?.[1] : undefined;
+  if (ref !== undefined && d?.[ref] !== undefined) return schemaPaths(d[ref], at, out, d, depth + 1, dir);
+  if (raw !== undefined && dir !== undefined && /^[\w.-]+\.json$/.test(raw) && fs.existsSync(path.join(dir, raw))) {
+    try {
+      return schemaPaths(readJson(path.join(dir, raw)), at, out, undefined, depth + 1, dir);
+    } catch {
+      /* unreadable: no paths below */
+    }
+  }
   if (at !== "") out.add(at);
-  for (const [k, v] of Object.entries((s["properties"] ?? {}) as Record<string, unknown>)) schemaPaths(v, at === "" ? k : `${at}.${k}`, out, d, depth + 1);
-  if (s["items"] !== undefined) schemaPaths(s["items"], `${at}[]`, out, d, depth + 1);
-  for (const k of ["allOf", "anyOf", "oneOf"]) for (const x of (s[k] ?? []) as unknown[]) schemaPaths(x, at, out, d, depth + 1);
+  for (const [k, v] of Object.entries((s["properties"] ?? {}) as Record<string, unknown>)) schemaPaths(v, at === "" ? k : `${at}.${k}`, out, d, depth + 1, dir);
+  if (s["items"] !== undefined) schemaPaths(s["items"], `${at}[]`, out, d, depth + 1, dir);
+  for (const k of ["allOf", "anyOf", "oneOf"]) for (const x of (s[k] ?? []) as unknown[]) schemaPaths(x, at, out, d, depth + 1, dir);
   return out;
 }
 
@@ -259,7 +277,7 @@ export function knownCartridgePaths(engineDir: string, route: CoreRoute = RINK_R
   if (fs.existsSync(schemaDir)) {
     for (const f of listFiles(schemaDir).filter((x) => /cartridge.*\.schema\.json$/.test(x))) {
       try {
-        schemaPaths(readJson(path.join(schemaDir, f)), "", out);
+        schemaPaths(readJson(path.join(schemaDir, f)), "", out, undefined, 0, schemaDir);
       } catch {
         /* unreadable schema: no paths */
       }
