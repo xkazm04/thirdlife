@@ -161,6 +161,8 @@ Unknown `type` or unknown keys are errors when the log is read.
     failing test: a round of it whose builder answered ok after its last merge, with its workspace still there, is
     verified again as it is (its builder is not run); otherwise it is re-opened with the hand check's rows (`reopened`
     reason starting `hand check failed (on resume)`). Create's failed card offers this as "Resume" beside "Try again".
+    Each resume grants one more hand-check send-back. A change request waiting on the job goes first: then nothing is
+    sent back by the resume, and the change's round carries any waiting fix.
 - A `done` job returns to `running` and ends `done` again. Each later promotion bumps the pack version to `0.1.<n>` and
   goes to `promoted/<pack id>@<version>/`; earlier promotions are kept. The last `promoted` event names the current one.
 - A change that no round could make leaves the earlier verified files in place; the package is `promoted` again with a
