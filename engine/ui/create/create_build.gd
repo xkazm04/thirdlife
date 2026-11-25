@@ -496,13 +496,29 @@ func _games() -> void:
 		tl.name = "GameName"
 		tl.position = Vector2(84, 18)
 		row.add_child(tl)
-		var wl: Label = _label(str(g["word"]) + ("  ·  in the menu" if in_menu else ""), 21, 700, Color(INK, 0.7), 420, HORIZONTAL_ALIGNMENT_RIGHT)
+		var behind: bool = str(g["screen"]) == "done" and int(g.get("behind", 0)) > 0
+		var wl: Label = _label(str(g["word"]) + ("  ·  in the menu" if in_menu else ""), 21, 700, Color(INK, 0.7), 420 - (210 if behind else 0), HORIZONTAL_ALIGNMENT_RIGHT)
 		wl.name = "GameState"
 		wl.position = Vector2(560, 24)
 		row.add_child(wl)
+		if behind:
+			# H2: the base got better after this game was made: one control moves it to the newest base (foreman rebase)
+			var nb: Button = _button("Base%d" % i, "Newest base", "redo", HONEY, Vector2(784, 10), Vector2(204, 56), 20)
+			nb.tooltip_text = "Move this game to the newest base: its cartridge, rules, skin and match stay; it plays as it is until the new version has passed its checks."
+			nb.pressed.connect(move_to_base.bind(str(g["dir"]), str(g["title"])))
+			row.add_child(nb)
 	if games_rows.size() > n:
 		var more: Label = _label("and %d older" % (games_rows.size() - n), 20, 700, MUTED, W, HORIZONTAL_ALIGNMENT_CENTER)
 		_place(more, Vector2(0, 168 + float(n) * 88))
+
+
+## H2 (25 Nov): a finished game moves to the newest base (foreman_door.gd rebase). My games stays open; its row says
+## "Moving to the newest base" while the Foreman verifies, then "Ready, version n+1" (or the old version, with a note).
+func move_to_base(dir: String, title: String) -> void:
+	var err: String = door.rebase(dir)
+	message = err if not err.is_empty() and not door.dry else "Moving “%s” to the newest base: it plays as it is until the new version has passed its checks." % JobModel.one_line(title, 40)
+	games_rows = Model.games(jobs_root) if not jobs_root.is_empty() else []
+	_rebuild()
 
 
 ## Reopens a game at the state its log is in: play and change it, pass a waiting phase, continue a stopped build.

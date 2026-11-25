@@ -582,6 +582,52 @@ public:
 			Ev.push_back(E);
 		}
 		D["Events"] = Ev;
+		// v1.4 (lane H2, 25 Nov): the effect system's side of the frame, which the sim's Events never carried (UJamEffectSystem keeps
+		// its own list and its own events: Effects/JamEffectSystem.h:59-68). What AJamPickupActor draws and the bus hears:
+		//   Pickups       GetPickups(): the pickups on the ice now, FJamPickupOnIce (JamEffectTypes.h:147-156), in its order
+		//   EffectEvents  GetFrameEvents(): this frame's pickup_spawn / pickup_take / effect_start / effect_end, the Events shape
+		//   Boosts        GetBoostKindFor(i) per skater (IJamSkaterVisual::SetBoost's kind; "" = none), skater order
+		// Read-outs only: nothing here is stepped or hashed. Present (maybe empty) on every frame of a loaded match.
+		{
+			const JamAI::FJamSystems& Sy = Sim->GetSystems();
+			Array Pk, Fx, Bo;
+			if (Sy.Effects.IsValid())
+			{
+				const UJamEffectSystem& Fs = *Sy.Effects.Get();
+				for (const FJamPickupOnIce& P : Fs.GetPickups())
+				{
+					Dictionary E;
+					E["Id"] = GV(P.Id);
+					E["PickupIndex"] = GV(P.PickupIndex);
+					E["Kind"] = GV(P.Kind);
+					E["Pos"] = GV(P.Pos);
+					E["SpawnFrame"] = GV(P.SpawnFrame);
+					Pk.push_back(E);
+				}
+				for (const FJamSimEvent& K : Fs.GetFrameEvents())
+				{
+					Dictionary E;
+#define JAM_INPUT_FIELD(T, N)
+#define JAM_SKATER_FIELD(T, N)
+#define JAM_PUCK_FIELD(T, N)
+#define JAM_EVENT_FIELD(T, N) E[#N] = GV(K.N);
+#include "fields.gen.inc"
+#undef JAM_INPUT_FIELD
+#undef JAM_SKATER_FIELD
+#undef JAM_PUCK_FIELD
+#undef JAM_EVENT_FIELD
+					Fx.push_back(E);
+				}
+				for (int32 i = 0; i < S.GetSkaters().Num(); ++i) Bo.push_back(GS(Fs.GetBoostKindFor(i)));
+			}
+			else
+			{
+				for (int32 i = 0; i < S.GetSkaters().Num(); ++i) Bo.push_back(godot::String());
+			}
+			D["Pickups"] = Pk;
+			D["EffectEvents"] = Fx;
+			D["Boosts"] = Bo;
+		}
 		return D;
 	}
 

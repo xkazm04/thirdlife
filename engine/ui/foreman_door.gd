@@ -232,6 +232,12 @@ func resume(job_dir: String, has_plan: bool, started_before: bool) -> String:
 	return _start(job_dir, "resume", steps)
 
 
+## H2 (25 Nov): a finished game on a core moves to the newest base (`foreman rebase <job>`: the base's files copied again, the
+## game's cartridge, rules, skin and match kept; verified, then a new version beside the earlier ones). No model is called.
+func rebase(job_dir: String) -> String:
+	return _start(job_dir, "rebase", [["rebase", job_dir] + _flags("rebase")])
+
+
 func discard(job_dir: String) -> String:
 	return _start(job_dir, "discard", [["cancel", job_dir, "--reason", "discarded by the player"]])
 

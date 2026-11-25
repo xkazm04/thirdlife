@@ -296,6 +296,8 @@ static func state_word(job: Dictionary) -> String:
 		"done": return "Ready, version %d" % n if n > 1 else "Ready"
 		"failed": return "Stopped"
 		"error": return "Cannot be read"
+	if str(job.get("job_reason", "")).begins_with("moving to the newest base"):
+		return "Moving to the newest base"      # H2: foreman rebase is verifying the game on the newest base
 	return "Changing" if not changing(job).is_empty() else "Building"
 
 
@@ -314,8 +316,45 @@ static func games(root: String, limit: int = 40) -> Array:
 		var title: String = str(j.get("title", ""))
 		if title.is_empty():
 			title = JobModel.one_line(str(j.get("sentence", d.get_file())), 40)
-		out.append({"dir": d, "title": title, "word": state_word(j), "screen": screen_of(j), "version": version_n(j), "ts": float(j.get("first_ts", 0.0)), "sentence": str(j.get("sentence", ""))})
+		out.append({"dir": d, "title": title, "word": state_word(j), "screen": screen_of(j), "version": version_n(j), "ts": float(j.get("first_ts", 0.0)), "sentence": str(j.get("sentence", "")),
+			"behind": base_behind(d) if screen_of(j) == "done" else 0})
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["ts"]) > float(b["ts"]) or (float(a["ts"]) == float(b["ts"]) and str(a["dir"]) > str(b["dir"])))
+	return out
+
+
+## H2 (25 Nov): the newest base a game on the rink core can move to (engine/templates/rink_game).
+const BASE_DIR: String = "res://templates/rink_game"
+## The base's own code: what a game made on it holds from it (its data is the game's).
+const BASE_PARTS: PackedStringArray = ["scripts", "gen", "tests"]
+
+
+## H2: how many of the newest base's own files (scripts/, gen/, tests/) a finished game made on that base lacks or holds in
+## another version (its pack/ beside job.jsonl): more than 0 = My games offers "Newest base" (foreman rebase). 0 for a game
+## not made on the base (no gen/tj_rink.gd in its pack), and when either is not there.
+static func base_behind(job_dir: String, base_dir: String = BASE_DIR) -> int:
+	var pack: String = job_dir.path_join("pack")
+	if not FileAccess.file_exists(pack.path_join("gen/tj_rink.gd")) or not FileAccess.file_exists(base_dir.path_join("pack.json")):
+		return 0
+	var n: int = 0
+	for part: String in BASE_PARTS:
+		for rel: String in _files(base_dir, part):
+			var mine: String = pack.path_join(rel)
+			if not FileAccess.file_exists(mine) or FileAccess.get_file_as_bytes(mine) != FileAccess.get_file_as_bytes(base_dir.path_join(rel)):
+				n += 1
+	return n
+
+
+## Files under <root>/<rel> (recursive, pack-relative), engine caches (.uid, .import) left out.
+static func _files(root: String, rel: String) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var d: DirAccess = DirAccess.open(root.path_join(rel))
+	if d == null:
+		return out
+	for f: String in d.get_files():
+		if not (f.ends_with(".uid") or f.ends_with(".import")):
+			out.append(rel.path_join(f))
+	for sub: String in d.get_directories():
+		out.append_array(_files(root, rel.path_join(sub)))
 	return out
 
 

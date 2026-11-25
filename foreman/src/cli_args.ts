@@ -8,7 +8,7 @@ export interface Args {
   flags: Record<string, string | true>;
 }
 
-const BOOLEAN_FLAGS = new Set(["auto-approve", "run-through", "designer", "phases", "allow-edit", "no-promote", "retry-failed", "quiet", "json", "force-subscription", "help", "no-critic", "no-reference", "planner-only", "builder-only", "no-run", "no-kit-gate"]);
+const BOOLEAN_FLAGS = new Set(["auto-approve", "run-through", "designer", "phases", "allow-edit", "no-promote", "retry-failed", "quiet", "json", "force-subscription", "help", "no-critic", "no-reference", "planner-only", "builder-only", "no-run", "no-kit-gate", "no-verify"]);
 
 export function parseArgs(argv: string[]): Args {
   const pos: string[] = [];

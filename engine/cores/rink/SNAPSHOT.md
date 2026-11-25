@@ -1,6 +1,7 @@
 # Rink core snapshot: the per-frame interface (v1.2, 23 Nov 21:00)
 
-**Status: built (v1.3, 24 Nov: additions only; no earlier name changed).** v1.3 adds `PassTargetHeld` / `PassTargetFacing` (K5)
+**Status: built (v1.4, 25 Nov: additions only; no earlier name changed).** v1.4 adds the effect system's side of the frame:
+`Pickups`, `EffectEvents` and `Boosts` (lane H2; "The effect system's read-outs" below). v1.3 (24 Nov) v1.3 adds `PassTargetHeld` / `PassTargetFacing` (K5)
 and the playtester's advice `set_advisor` / `advise` (K3); `restart()` now starts a seated playtester's memory again (below). v1.2 adds `set_bot_mode("off")`, `CameraYawDeg`,
 the "no pixel" rule, the raw shape's precision rule and the HUD's `Controls` fields (K5). v1.1 adds `set_raw_input`, `set_bot_mode`, `restart`,
 `last_human_input`, the snapshot's `Controls`, and the enum tables below; the per-skater dictionary is unchanged. Draft v0 went out at 17:02 for lanes K2 (figure) and K3 (shell); at 17:41 the class below exists
@@ -82,6 +83,9 @@ the sim, not by us (humans to length 1, JamSim.h:31-34).
   "Skaters": [ {<FJamSkaterState fields>, "IsDown", "IsStumbling", "InBox", "CanAct", "IsSpinning", "SpinVisualYawDeg"} ... ],
   "Puck": {<FJamPuckState fields>},
   "Events": [ {<FJamSimEvent fields>} ... ],  # GetFrameEvents (JamSim.h:693): this frame's only
+  "Pickups": [ {"Id", "PickupIndex", "Kind", "Pos", "SpawnFrame"} ... ],   # v1.4: UJamEffectSystem::GetPickups, on the ice now
+  "EffectEvents": [ {<FJamSimEvent fields>} ... ],   # v1.4: UJamEffectSystem::GetFrameEvents: this frame's effect events
+  "Boosts": [String, ...],  # v1.4: UJamEffectSystem::GetBoostKindFor per skater ("" = none), skater order
   "Controls": {"PassHoldSteps", "CrossHoldSteps",                 # v1.1: the human's two-role buttons (InputMapping.h:101-108; the HUD badge's fill)
                "IntentKind", "IntentTarget", "IntentIssuedFrame", "IntentFrames",   # the team signal (SignalIntent.h); IntentKind 0 = none
                # v1.2 (K5's HUD), the human's this frame:
@@ -115,6 +119,24 @@ AHokejGameMode::Tick does), `BladePos` (the stick blade on the ice, rink metres)
 `PassChargeFrames`, `CheckWindupLeft`, `LiftWindupLeft`, `CrossHoldFrames`/`bCrossBraced`, `WindupFrames`,
 `PenaltyFrames` (in the box), the one-frame triggers `b*ThisFrame` (shot, pass, check, poke, lift, deke, spin, sweep,
 bump, board hit, recoil, ability). Puck: `Pos`, `Z`, `Vel`, `VZ`, `LastTouch`.
+
+## The effect system's read-outs (v1.4, lane H2)
+
+thirdjam's effect system (UJamEffectSystem, Effects/JamEffectSystem.h) runs beside the sim: FJamSimAdapter::Step steps it right
+after UJamSim::Step and the zones. It keeps its pickups and its events to itself (AJamPickupActor and the bus read them in the
+Unreal game), so before v1.4 a cartridge's `game.pickups` played unseen. Three read-outs, present on every frame of a loaded
+match (empty lists when the cartridge has no effects or pickups; the regular cartridge's are empty):
+
+| Key | What | Source |
+|---|---|---|
+| `Pickups` | the pickups on the ice now, in the system's order: `Id` (int, unique in the match, from 1), `PickupIndex` (int, into the cartridge's `game.pickups`), `Kind` (String: speed, precision, heavy_puck, big_puck, reverse_other or an effect id), `Pos` (Vector2, rink metres), `SpawnFrame` (int) | GetPickups, FJamPickupOnIce (JamEffectTypes.h:147-156) |
+| `EffectEvents` | this frame's `pickup_spawn`, `pickup_take`, `effect_start`, `effect_end` (Events' shape: Name, Who, Where, Strength, Kind, Frame, Text, Dir, Outcome). A pickup_take's `Where` is the pickup's own `Pos`, its `Who` the taker | GetFrameEvents (JamEffectSystem.h:61) |
+| `Boosts` | per skater (skater order), the kind of the newest effect covering him (a boost's glow, IJamSkaterVisual::SetBoost); `""` = none | GetBoostKindFor (JamEffectSystem.cpp:373) |
+
+A pickup appears in `Pickups` on the frame its `pickup_spawn` is in `EffectEvents`, and is gone on the frame of its
+`pickup_take`. These are read-outs: nothing is stepped, nothing enters `state_hash()` (every hokej bot hashes as before, lane H2's
+report). The sim's `Events` are unchanged (the effect events are NOT appended to them: a pack that listens to Events hears what it
+heard before).
 
 ## The raw shape's rules (v1.2)
 
