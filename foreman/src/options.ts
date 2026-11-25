@@ -110,7 +110,7 @@ export interface ForemanOptions {
    * E3 of 24 Nov, test seam: the measured check of a core game's cartridge (coregate.ts). Default: lane E2's
    * `bash <engine>/tools/rink.sh check-cartridge <file>`, or the fake runner's stand-in when the runner is the fake.
    */
-  coreCheck?: (file: string) => Promise<import("./coreroute.js").CoreCheckRun>;
+  coreCheck?: (file: string, asked?: string) => Promise<import("./coreroute.js").CoreCheckRun>;
   /** Test seam: called after every durable append; throwing simulates a kill at that exact event. */
   afterAppend?: (ev: JobEvent) => void;
   onEvent?: (ev: JobEvent) => void;

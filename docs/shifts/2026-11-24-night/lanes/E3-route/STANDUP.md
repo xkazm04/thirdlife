@@ -11,3 +11,6 @@ landable E3b
 02:40 | state: done | did: E3c: plain sentence -> faithful candidate 1 (concept.md + room.ts check; twists stay offered), the critic's prompt carries the person's drops/keeps/alternatives and does not judge dropped aspects (phases.ts criticRubric), re-recorded E2's C++ verdict shas after K8 3a's cartridge change | gates: npm test 350: 343 pass, 0 fail, 7 skipped; tl check --tier fast PASS 5/5
 
 landable E3c
+04:20 | state: done | did: E3d: gross defects fail a cartridge (goals outside 0-21.8, the band from 13 of thirdjam's cartridges at 1-17.6; no end; idle wins half; skating alone a third, unless clone_mismatch), measured before any verb, in change rounds and at looks; the check runs at every phase pause (note + status); a change naming a team the game lacks is asked back as a question and made as a diff once answered; real check on E5's v0.1.0 pond: GROSS DEFECTS 29/32.9/34.4 goals | gates: npm test 355: 348 pass, 0 fail, 7 skipped; tl check --tier fast PASS 5/5
+
+landable E3d

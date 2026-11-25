@@ -49,6 +49,12 @@ if (rulesFile && !fs.existsSync(rulesFile)) notRun(`${rulesFile} not found`);
 const seeds = Math.max(1, Number(arg("--seeds", "10")));
 const planSeeds = Math.max(0, Number(arg("--plan-seeds", "2")));
 const jsonOnly = process.argv.includes("--json-only");
+// E3d of 25 Nov (lane E3, from lane K8's CHECK-CARTRIDGE-NOTE.md): --defects also plays K8's two coarse cells at pro, 16 seeds
+// (--defect-seeds N): the hand that never moves (-player=regular -remove=idle) and the planning hand skating only
+// (-plan=regular -only=none -plancheck, its copies of the sim checked: clone_mismatch above 0 = the hand is NOT VALID here).
+// Their figures go in the tl.rink.check/1 line under `defects`; the Foreman decides what fails.
+const defects = process.argv.includes("--defects");
+const defectSeeds = Math.max(1, Number(arg("--defect-seeds", "16")));
 const say = (s) => { if (!jsonOnly) console.log(s); };
 
 // 1. the validator
@@ -77,6 +83,10 @@ for (const lv of LEVELS) {
   jobs.push(run(exe, ["match", content, "-cartridge=tlcheck", `-seeds=1-${seeds}`, `-difficulty=${lv}`, "-player=regular", "-playersprint"]).then((r) => ({ hand: "playtester", lv, r })));
   if (planSeeds > 0) jobs.push(run(exe, ["match", content, "-cartridge=tlcheck", `-seeds=1-${planSeeds}`, `-difficulty=${lv}`, "-plan=regular"]).then((r) => ({ hand: "plan", lv, r })));
 }
+if (defects) {
+  jobs.push(run(exe, ["match", content, "-cartridge=tlcheck", `-seeds=1-${defectSeeds}`, "-difficulty=pro", "-player=regular", "-playersprint", "-remove=idle"]).then((r) => ({ hand: "idle", lv: "pro", r })));
+  jobs.push(run(exe, ["match", content, "-cartridge=tlcheck", `-seeds=1-${defectSeeds}`, "-difficulty=pro", "-plan=regular", "-playersprint", "-only=none", "-plancheck"]).then((r) => ({ hand: "skate_only", lv: "pro", r })));
+}
 const done = await Promise.all(jobs);
 fs.rmSync(scratch, { recursive: true, force: true });
 const seconds = (Date.now() - t0) / 1000;
@@ -87,7 +97,16 @@ const r1 = (x) => Math.round(x * 10) / 10;
 const r2 = (x) => Math.round(x * 100) / 100;
 const levels = {};
 const problems = [];
+const defectCells = {};
 for (const { hand, lv, r } of done) {
+  if (hand === "idle" || hand === "skate_only") {
+    const play = r.lines.filter((l) => l.tool === "thirdjam.playtest/1");
+    const plan = r.lines.filter((l) => l.tool === "rinklab.cell/1").map((l) => l.planstats).filter(Boolean);
+    if (r.code !== 0 || play.length !== defectSeeds) { problems.push(`${hand} at ${lv}: ${play.length} of ${defectSeeds} matches reported (exit ${r.code})`); continue; }
+    defectCells[hand] = { matches: play.length, wins: play.filter((p) => p.result === "win").length, not_over: play.filter((p) => !p.over).length,
+      ...(hand === "skate_only" ? { clone_checked: plan.reduce((s, x) => s + (x.clone_checked ?? 0), 0), clone_mismatch: plan.reduce((s, x) => s + (x.clone_mismatch ?? 0), 0) } : {}) };
+    continue;
+  }
   const play = r.lines.filter((l) => l.tool === "thirdjam.playtest/1");
   const cell = r.lines.filter((l) => l.tool === "rinklab.cell/1").map((l) => l.stats);
   const want = hand === "plan" ? planSeeds : seeds;
@@ -171,5 +190,5 @@ for (const p of problems) say(`  FAIL ${p}`);
 say(ok ? `PASS  rink check-cartridge: measured${warnings.length ? ` (${warnings.length} warning(s))` : ""}` : `FAIL  rink check-cartridge: ${problems.length} run(s) did not complete`);
 console.log(JSON.stringify({ tool: "tl.rink.check/1", ok, ran: true, file: path.basename(file), rules: rulesFile ? path.basename(rulesFile) : undefined,
   hands: { playtester: `thirdjam regular playtester with sprint, ${seeds} seeds a level`, plan: planSeeds ? `planning hand (lab_plan regular), ${planSeeds} seeds a level` : undefined },
-  levels, warnings, problems, seconds: r1(seconds) }));
+  levels, ...(defects ? { defects: defectCells, defect_hands: { idle: `thirdjam regular playtester with every input removed, ${defectSeeds} seeds at pro`, skate_only: `planning hand (lab_plan regular) skating only, ${defectSeeds} seeds at pro, its sim copies checked` } } : {}), warnings, problems, seconds: r1(seconds) }));
 process.exit(ok ? 0 : 1);

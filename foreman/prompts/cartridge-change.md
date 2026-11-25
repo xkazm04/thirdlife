@@ -9,6 +9,13 @@ The player's first sentence: "{{sentence}}"
 # The change the person asked for, in their words
 "{{change}}"
 
+# The teams as the person sees them (team 0 is the person's side; colours on the ice, names in the skin)
+{{teams}}
+Name a team in `why` by its colour and name as listed here, never by a cartridge id.
+
+# The game as it measures now (lane E2's check, thirdjam's regular playtester)
+{{measured}}
+
 # The cartridge as it is now ({{file}})
 {{cartridge}}
 

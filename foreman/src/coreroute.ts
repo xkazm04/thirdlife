@@ -12,12 +12,14 @@
 // <file>`) on the game's cartridge beside the same check on the house game's (engine/packs/hokej).
 // Pure apart from reading files and the one process the measured check starts.
 import { execFile } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { PackageSpec, Phase, Registers } from "./events.js";
 import { copyDir, globToRegExp, listFiles, matchesAny } from "./scope.js";
 import { REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { validateCartridgeText, validateRulesText } from "./cartridge.js"; // lane E2: the core's own verdicts
+import { grossDefects, type RinkCheckFacts } from "./rinkjudge.js"; // E3d: what acts on a check
 
 /** The package kind the Foreman executes itself. */
 export const BASE_KIND = "base";
@@ -400,9 +402,11 @@ export interface CoreCheckRun {
   figures: Record<string, number>;
   /** One line: what it said (its warnings, its problems, or why it could not run). */
   summary: string;
+  /** E3d: the gross defects (rinkjudge.ts) that make a measured cartridge fail (code 1): goals, no end, won idle or skating. */
+  defects?: string[];
 }
 
-interface RinkCheckLine {
+interface RinkCheckLine extends RinkCheckFacts {
   tool?: string;
   ok?: boolean;
   ran?: boolean;
@@ -410,7 +414,6 @@ interface RinkCheckLine {
   refused?: string[];
   warnings?: string[];
   problems?: string[];
-  levels?: Record<string, { playtester?: Record<string, number>; plan?: Record<string, number> }>;
 }
 
 /** The last `{"tool":"tl.rink.check/1", ...}` line of a check's output, or undefined. */
@@ -441,24 +444,29 @@ export function figuresOf(line: RinkCheckLine | undefined): Record<string, numbe
 }
 
 /** What a check's line and exit code mean, as a run. */
-export function rinkCheckRun(code: number, stdout: string): CoreCheckRun {
+export function rinkCheckRun(code: number, stdout: string, asked?: string): CoreCheckRun {
   const line = rinkCheckLine(stdout);
   if (line === undefined) return { code: 2, figures: {}, summary: `could not run: no tl.rink.check/1 line in its output (exit ${code}): ${stdout.trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300)}` };
   const c = code === 0 && line.ok === true ? 0 : line.ran === false && line.refused === undefined ? 2 : code === 0 ? 1 : code === 1 ? 1 : 2;
   const said = c === 2 ? `could not run: ${line.why ?? `exit ${code}`}` : line.refused !== undefined ? `refused by thirdjam's validator: ${line.refused.slice(0, 4).join("; ")}` : (line.problems ?? []).length > 0 ? `did not complete: ${(line.problems ?? []).join("; ")}` : (line.warnings ?? []).length > 0 ? `measured, warnings: ${(line.warnings ?? []).join("; ")}` : "measured, no warning";
-  return { code: c, figures: figuresOf(line), summary: said.slice(0, 600) };
+  const figures = figuresOf(line);
+  for (const [k, cell] of Object.entries(line.defects ?? {})) if (cell !== undefined) figures[`${k}_wins_of_${cell.matches}`] = cell.wins;
+  // E3d: a measured cartridge with a gross defect fails (code 1), with the defects first; the rest stays words.
+  const judged = c === 0 ? grossDefects(line, asked) : { defects: [], notes: [] };
+  if (judged.defects.length > 0) return { code: 1, figures, defects: judged.defects, summary: `GROSS DEFECTS: ${judged.defects.join("; ")}${judged.notes.length > 0 ? `; ${judged.notes.join("; ")}` : ""}`.slice(0, 1200) };
+  return { code: c, figures, summary: [said, ...judged.notes].join("; ").slice(0, 900) };
 }
 
 /** Lane E2's check, run: `bash <engine>/tools/rink.sh check-cartridge <file> [--rules <sidecar>] --json-only` (10 minutes at most). */
-export function runRinkCheck(engineDir: string, file: string, timeoutMs = 10 * 60_000): Promise<CoreCheckRun> {
+export function runRinkCheck(engineDir: string, file: string, asked?: string, timeoutMs = 10 * 60_000): Promise<CoreCheckRun> {
   const script = path.join(engineDir, "tools", "rink.sh");
   if (!fs.existsSync(script)) return Promise.resolve({ code: 2, figures: {}, summary: `could not run: ${toPosix(script)} is not there` });
   const rules = file.replace(/\.cartridge\.json$/, ".rules.json");
-  const args = [toPosix(script), "check-cartridge", toPosix(file), ...(rules !== file && fs.existsSync(rules) ? ["--rules", toPosix(rules)] : []), "--json-only"];
+  const args = [toPosix(script), "check-cartridge", toPosix(file), ...(rules !== file && fs.existsSync(rules) ? ["--rules", toPosix(rules)] : []), "--defects", "--json-only"];
   return new Promise((resolve) => {
     execFile("bash", args, { timeout: timeoutMs, windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => {
       const code = err === null ? 0 : typeof (err as { code?: unknown }).code === "number" ? ((err as { code: number }).code) : 2;
-      resolve(rinkCheckRun(code, stdout));
+      resolve(rinkCheckRun(code, stdout, asked));
     });
   });
 }
@@ -468,17 +476,30 @@ export function runRinkCheck(engineDir: string, file: string, timeoutMs = 10 * 6
  * tl.rink.check/1 line made from the cartridge (the rink, the teams, the skaters' speed), judged as the real line is. The
  * marker FAKE_CORE_CHECK_FAIL in it makes a match that does not end.
  */
-export async function fakeRinkCheck(file: string): Promise<CoreCheckRun> {
+export async function fakeRinkCheck(file: string, asked?: string): Promise<CoreCheckRun> {
   if (!fs.existsSync(file)) return { code: 2, figures: {}, summary: `could not run: ${toPosix(file)} is not there` };
   const text = stripBom(fs.readFileSync(file, "utf8"));
+  // E3d: a recorded real line for this very cartridge (TL_FAKE_RINK_LINES=<dir>, <sha1 of the cartridge's JSON>.json): the
+  // fake proof replays lane E5's real measurements of its real job (the 33-goal pond) instead of making figures up.
+  const recorded = process.env["TL_FAKE_RINK_LINES"];
+  if (recorded !== undefined) {
+    let key = "";
+    try {
+      key = crypto.createHash("sha1").update(JSON.stringify(JSON.parse(text))).digest("hex");
+    } catch {
+      /* not JSON: the validator says so below */
+    }
+    const f = path.join(recorded, `${key}.json`);
+    if (key !== "" && fs.existsSync(f)) return rinkCheckRun(0, fs.readFileSync(f, "utf8"), asked);
+  }
   const v = await validateCartridgeText(text);
   if (!v.ok) return rinkCheckRun(1, JSON.stringify({ tool: "tl.rink.check/1", ok: false, ran: false, refused: v.errors }));
   const g = ((JSON.parse(text) as { game?: Record<string, unknown> }).game ?? {}) as { rink?: { length_m?: number }; skater?: { speed?: number } };
   const speed = g.skater?.speed ?? 11;
   const playtester = { wins: 6, matches: 10, goals_for: 2.2, goals_against: 1.6, minutes: Math.round(((g.rink?.length_m ?? 90) / 90) * 40) / 10, carry_s: 2.1, loose_share: 0.35, shots: 14, passes_completed: 22, speed_mean: Math.round(speed * 0.62 * 100) / 100, changes_min: 9.5, human_touches_min: 5.1, knockdowns: 6 };
   const fail = text.includes("FAKE_CORE_CHECK_FAIL");
-  const line = { tool: "tl.rink.check/1", ok: !fail, ran: true, levels: { rookie: { playtester: { ...playtester, wins: 9 } }, pro: { playtester }, all_star: { playtester: { ...playtester, wins: 2 } } }, warnings: [], problems: fail ? ["pro seed 3: the match did not end (fake: FAKE_CORE_CHECK_FAIL)"] : [] };
-  return rinkCheckRun(fail ? 1 : 0, `fake lab\n${JSON.stringify(line)}`);
+  const line = { tool: "tl.rink.check/1", ok: !fail, ran: true, levels: { rookie: { playtester: { ...playtester, wins: 9 } }, pro: { playtester }, all_star: { playtester: { ...playtester, wins: 2 } } }, defects: { idle: { matches: 16, wins: 0, not_over: 0 }, skate_only: { matches: 16, wins: 1, not_over: 0, clone_checked: 1000, clone_mismatch: 0 } }, warnings: speed > 13 ? ["the skaters' mean speed (m/s) at pro is above anything thirdjam ships (6.2..10.3)"] : [], problems: fail ? ["pro seed 3: the match did not end (fake: FAKE_CORE_CHECK_FAIL)"] : [] };
+  return rinkCheckRun(fail ? 1 : 0, `fake lab\n${JSON.stringify(line)}`, asked);
 }
 
 /** The game's cartridges in pack/: those a non-base package of the plan owns, else every cartridge there. */

@@ -1,0 +1,76 @@
+{
+ "tool": "tl.foreman.rink-goal-band/1",
+ "hand": "thirdjam regular playtester with sprint, 5 seeds a level (lane E2's check_cartridge.mjs)",
+ "made": "2026-11-25",
+ "band": {
+  "min": 1,
+  "max": 17.6
+ },
+ "from": {
+  "hockey.regular.cartridge.json": {
+   "rookie": 3.4,
+   "pro": 4.8,
+   "all_star": 4.6
+  },
+  "hockey.mode.arsenal.cartridge.json": {
+   "rookie": 3,
+   "pro": 4.4,
+   "all_star": 4
+  },
+  "hockey.mode.bruisers.cartridge.json": {
+   "rookie": 2.6,
+   "pro": 2.4,
+   "all_star": 2.4
+  },
+  "hockey.mode.cage.cartridge.json": {
+   "rookie": 14.2,
+   "pro": 17.6,
+   "all_star": 12.6
+  },
+  "hockey.mode.fog-of-war.cartridge.json": {
+   "rookie": 3.4,
+   "pro": 4.4,
+   "all_star": 4.2
+  },
+  "hockey.mode.glass-house.cartridge.json": {
+   "rookie": 4.2,
+   "pro": 6.2,
+   "all_star": 5.6
+  },
+  "hockey.mode.marathon.cartridge.json": {
+   "rookie": 12.8,
+   "pro": 11.2,
+   "all_star": 10
+  },
+  "hockey.mode.outnumbered.cartridge.json": {
+   "rookie": 3.4,
+   "pro": 3.8,
+   "all_star": 4
+  },
+  "hockey.mode.pond.cartridge.json": {
+   "rookie": 10.4,
+   "pro": 11.4,
+   "all_star": 11.4
+  },
+  "hockey.mode.power-play.cartridge.json": {
+   "rookie": 15.2,
+   "pro": 12.8,
+   "all_star": 11.8
+  },
+  "hockey.mode.shotgun.cartridge.json": {
+   "rookie": 3.2,
+   "pro": 3.2,
+   "all_star": 4.2
+  },
+  "hockey.mode.sniper.cartridge.json": {
+   "rookie": 3,
+   "pro": 4.6,
+   "all_star": 4.4
+  },
+  "hockey.mode.sudden-death.cartridge.json": {
+   "rookie": 1,
+   "pro": 1,
+   "all_star": 1
+  }
+ }
+}

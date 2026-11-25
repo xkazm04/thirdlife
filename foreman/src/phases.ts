@@ -24,6 +24,8 @@ export interface PhaseHost {
   logGenerateCalls(calls: GenerateCall[], model: string | undefined): void;
   /** E4 (24-25 Nov): grows the plan for a hold whose note adds something no package holds (grow.ts); absent: never. */
   grow?(c: { seq: number; text: string }, why: string, head: string): Promise<{ added: string[] } | { reason: string }>;
+  /** E3d: what runs when a phase is done, before the person is asked (a core job's measured check, coregate.ts phaseCheck). */
+  atPhaseDone?(phase: string): Promise<void>;
 }
 
 /** A job paused for the player's verdict on a phase stays paused on `run`/`resume`: `foreman phase` answers it. */
@@ -55,7 +57,10 @@ export async function phaseStep(h: PhaseHost): Promise<"continue" | "paused" | "
   if (!cur) return "none";
   if (!cur.packages.every((id) => h.s.packages[id]?.state === "promoted")) return "none";
   if (cur.state === "held" && cur.hold !== undefined && !cur.hold.applied) return "none";
-  if (cur.state !== "done") h.append({ type: "phase_done", phase: cur.id });
+  if (cur.state !== "done") {
+    h.append({ type: "phase_done", phase: cur.id });
+    await h.atPhaseDone?.(cur.id);
+  }
   if (passesItself(h.s, cur)) {
     h.append({ type: "phase_reviewed", phase: cur.id, verdict: "pass", by: "auto" });
     return "continue";
