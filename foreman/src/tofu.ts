@@ -45,10 +45,52 @@ export const TOFU_METRICS: TofuMetric[] = [
 ];
 
 /** The rows for a job: the six items, then the template's own (the duel's contacts, the sport's possession). */
-export function tofuMetricsFor(template: ConceptTemplate | undefined, verbs?: number): TofuMetric[] {
+export function tofuMetricsFor(template: ConceptTemplate | undefined, verbs?: number, court?: Court): TofuMetric[] {
   const t = templateOf(template?.id);
   const base = verbs !== undefined ? TOFU_METRICS.map((m) => (m.id === "verbs_used" ? { ...m, min: verbs } : m)) : TOFU_METRICS;
-  return [...base, ...(t?.metrics ?? []).map((m) => ({ id: m.id, item: m.item, ...(m.min !== undefined ? { min: m.min } : {}), ...(m.max !== undefined ? { max: m.max } : {}), how: m.item }))];
+  return [...base, ...(t?.metrics ?? []).map((m) => scaledToCourt({ id: m.id, item: m.item, ...(m.min !== undefined ? { min: m.min } : {}), ...(m.max !== undefined ? { max: m.max } : {}), how: m.item }, court))];
+}
+
+/** H1f: a game's court, read from its brief (its area in square metres, its field players on both sides). */
+export interface Court {
+  area: number;
+  players: number;
+}
+
+/** The house hockey's: a 60 x 30 m rink, three against three on the ice (engine/packs/hockey). */
+export const HOCKEY_COURT: Court = { area: 1800, players: 6 };
+
+const NUMBERS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11 };
+const count = (w: string): number => NUMBERS[w.toLowerCase()] ?? Number(w);
+
+/**
+ * H1f (lane G4: a 15 x 11 m half court with six players was held to the hockey's "4 or more within 5 m of the puck, at most
+ * 0.3", built for 1800 m²): the court a brief describes, "<L> x <W> m" and "<n> against <n>" / "<n> a side". Undefined
+ * when the brief names neither size nor sides.
+ */
+export function courtOf(brief: { rules?: string; arena?: string; ai?: string; pitch?: string } | undefined): Court | undefined {
+  const t = [brief?.rules, brief?.arena, brief?.ai, brief?.pitch].filter(Boolean).join(" ");
+  const size = /\b(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*m\b/.exec(t);
+  const n = "(\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven)";
+  const vs = new RegExp(`\\b${n}\\s*(?:against|v|vs|versus)\\.?\\s*${n}\\b`, "i").exec(t);
+  const side = new RegExp(`\\b${n}\\s*a\\s*side\\b`, "i").exec(t);
+  const players = vs !== null ? count(vs[1] as string) + count(vs[2] as string) : side !== null ? 2 * count(side[1] as string) : undefined;
+  if (size === null || players === undefined || !(players > 0)) return undefined;
+  return { area: Number(size[1]) * Number(size[2]), players };
+}
+
+/**
+ * H1f: the spacing row scaled to the game's court, the share of the court and of the players the house hockey's row
+ * stands for: the same share of the court's area around the ball (5 m on 1800 m²) and the same share of its players
+ * (4 of 6). The bound stays the house game's; what it counts is this game's size.
+ */
+function scaledToCourt(m: TofuMetric, court: Court | undefined): TofuMetric {
+  if (m.id !== "scrum_share" || court === undefined) return m;
+  const r = Math.round(5 * Math.sqrt(court.area / HOCKEY_COURT.area) * 10) / 10;
+  const k = Math.max(2, Math.round((4 * court.players) / HOCKEY_COURT.players));
+  if (r === 5 && k === 4) return m;
+  const item = `spacing, no scrum: the share of live frames in which ${k} or more field players (not keepers) stand within ${r} m of the ball or puck (scaled to this court, ${court.area} m² and ${court.players} players, from the house hockey's 4 of 6 within 5 m on 1800 m²)`;
+  return { ...m, item, how: item };
 }
 
 const bound = (m: Pick<TofuMetric, "min" | "max">): string => (m.min !== undefined && m.max !== undefined ? `${m.min} to ${m.max}` : m.min !== undefined ? `>= ${m.min}` : `<= ${m.max}`);
@@ -59,12 +101,12 @@ export function tofuLine(template: ConceptTemplate | undefined, test = "tests/bo
 }
 
 /** The Planner's tofu block: the line to write, the metrics with their bounds and how the bot counts them. */
-export function tofuPlannerText(template: ConceptTemplate | undefined, verbs?: number): string {
+export function tofuPlannerText(template: ConceptTemplate | undefined, verbs?: number, court?: Court): string {
   return [
     "The first phase is the tofu stage (docs/GAME-QUALITY.md section 12): the core verb exchange on flat shapes. Its packages are milestone `blockout` (and no package of a later phase is). The root package's contract carries this line, word for word (the plan is refused without it):",
     `  ${tofuLine(template)}`,
     "That bot is registered by the root package and runs in its acceptance. Its `_bot_result()` returns `{ok, summary, metrics: {...}, moments: {<kind>: [frames]}}` (moments: the frames where each kind of contact happened, keys named for the contact: parried, rolled, knockdown, wall_splat, blocked_heavy, clash, hit...; the Foreman films the template's signature contacts first: a parry, a roll, a fall) with every metric below COUNTED from the frames it played (never a constant), plus `hand` (the TLHand profile it played the player's side through). When the blockout milestone is reached the Foreman judges them; any metric absent or out of bounds sends the root back (two revise rounds) and then holds the job, before the second phase starts. Paste the rows into the root contract:",
-    ...tofuMetricsFor(template, verbs).map((m) => `  - \`${m.id}\` ${bound(m)} (checklist item ${m.item}): ${m.how}`),
+    ...tofuMetricsFor(template, verbs, court).map((m) => `  - \`${m.id}\` ${bound(m)} (checklist item ${m.item}): ${m.how}`),
   ].join("\n");
 }
 

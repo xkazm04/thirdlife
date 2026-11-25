@@ -201,6 +201,9 @@ export function refusalsText(s: Pick<JobState, "packages">): string {
   return `THE PERSON REFUSED, answering a builder during the build (it wins over the pitch, the brief's hook, the clip moments, the method and kill lines written before it): ${lines.join("; ")}. What the person refused or said to skip is DROPPED: it is not in this game, do not look for it, never score any item down or call the look NOT ok because it is missing, and treat a pitch, contract, clip moment or kill line about it as void.`;
 }
 
+/** H1f: the start of a critic's note that names a person's note on a kept aspect the frames do not keep. */
+export const NOTE_NOT_KEPT = "person's note not kept:";
+
 /**
  * E3c: the person's decisions on the design's aspects (aspect_reacted: drops, keeps with a note, alternatives chosen),
  * as the critic reads them; "" when the person reacted to nothing. They win over the pitch, the clip moments, the kill
@@ -217,5 +220,9 @@ export function personDecisionsText(s: Pick<JobState, "brief" | "reactions">): s
     else lines.push(`CHOSE "${a.alternatives.find((x) => x.id === r.choice)?.title ?? r.choice}" instead of "${a.title}"${note}`);
   }
   if (lines.length === 0) return "";
-  return `THE PERSON'S DECISIONS on the design, made before the build (they win over the pitch, the clip moments, the method and kill lines written before them): ${lines.join("; ")}. A DROPPED aspect is not in this game: do not look for it, never score any item down or call the look NOT ok because it is missing, and treat a pitch, clip moment or kill line about it as void. Judge a chosen alternative instead of the aspect it replaced.`;
+  // H1f (lane G4: "keep the camera steady behind me like a TV game, no swinging" on a kept camera card; the game's camera
+  // turned with the player and no look said so): a note on a kept or chosen aspect is the person's requirement.
+  const kept = (s.brief?.aspects ?? []).filter((a) => s.reactions[a.id] !== undefined && s.reactions[a.id]?.choice !== "drop" && s.reactions[a.id]?.note !== undefined);
+  const notes = kept.length > 0 ? ` A NOTE on a KEPT or CHOSEN aspect is the person's REQUIREMENT, as binding as a drop: check each against the frames (${kept.map((a) => `"${a.title}": "${s.reactions[a.id]?.note}"`).join("; ")}); for each one the frames do not keep, write a note that starts "${NOTE_NOT_KEPT}" with the person's words and the image, and score this item 0.4 or lower.` : "";
+  return `THE PERSON'S DECISIONS on the design, made before the build (they win over the pitch, the clip moments, the method and kill lines written before them): ${lines.join("; ")}. A DROPPED aspect is not in this game: do not look for it, never score any item down or call the look NOT ok because it is missing, and treat a pitch, clip moment or kill line about it as void. Judge a chosen alternative instead of the aspect it replaced.${notes}`;
 }
