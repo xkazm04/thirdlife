@@ -8,3 +8,6 @@ landable E3
 01:55 | state: done | did: E3b on hokej 812bc04: E2's validateCartridgeText / validateRulesText by name (pointer-prefixed problems in the builder's feedback), E1's base as it is (no .uid/README copied; PLAYER CHECK fallback true for bot_match_hand; card base rink_game), the real tl.rink.check/1 line (measured once for real: make it faster = speed 9.4 -> 13.9 m/s, WARN above thirdjam's range), plan --from normalised, card.rink_core interview for Create's recipe, a change round as a cartridge diff through applyChanges with the check before and after, builder fallback | next: Director | gates: npm test 348: 341 pass, 0 fail, 7 skipped; tl check --tier fast PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 229/229, foreman.typecheck); ui workbench block 59/59 PASS (headless, the block alone)
 
 landable E3b
+02:40 | state: done | did: E3c: plain sentence -> faithful candidate 1 (concept.md + room.ts check; twists stay offered), the critic's prompt carries the person's drops/keeps/alternatives and does not judge dropped aspects (phases.ts criticRubric), re-recorded E2's C++ verdict shas after K8 3a's cartridge change | gates: npm test 350: 343 pass, 0 fail, 7 skipped; tl check --tier fast PASS 5/5
+
+landable E3c

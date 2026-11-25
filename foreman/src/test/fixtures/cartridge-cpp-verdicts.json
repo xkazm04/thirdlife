@@ -82,7 +82,7 @@
    "kind": "cartridge",
    "name": "shipped hockey.thirdlife.cartridge.json",
    "ok": true,
-   "sha1": "8eb49a343b8171ed3c88800076432a17e4315a00"
+   "sha1": "5bc9a2b4d767212af0d424d8e96133f1396f63b4"
   },
   {
    "error": "",
@@ -663,7 +663,7 @@
    "kind": "rules",
    "name": "rules: K8's hockey.thirdlife.rules.json",
    "ok": true,
-   "sha1": "9ae18e5930945211ae76ed54b8876b6a56422692"
+   "sha1": "52f7376b581c832b43c990efce612fd31d32673b"
   },
   {
    "error": "",

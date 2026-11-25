@@ -126,3 +126,29 @@ export function takenProblems(concept: Concept, taken: Concept[] | undefined, se
   }
   return out;
 }
+
+// ---------- E3c of 25 Nov: a plain sentence is taken at its word ----------
+// Lane E5's real proof: for "3 against 3 hockey on a small pond rink" the concept step chose candidate 4 of 5 ("each goal
+// drafts you to the team you beat", likelihood 0.08), and the person had to drop four aspects by hand. A standard job
+// whose words name a known game (a genre template other than `own`) and ask for no twist chooses the FAITHFUL reading,
+// candidate 1 (index 0): the game the words name, done well. The other four stay as alternatives a person can pick.
+
+/** Words that ask for a twist on top of the named game (a plain sentence has none of them). */
+export const TWIST_WORDS = /\b(twist|twisted|crazy|weird|wild|strange|surprise|but|except|instead|unless|whenever|every time|each time|where (?:the|you|your|every|each|a|an)|while|reversed|upside[- ]down|zombies?|lava|rockets?|magic|power[- ]?ups?|gravity|portals?)\b/i;
+
+/** True when a sentence asks for something on top of the game it names. */
+export const asksForTwist = (sentence: string): boolean => TWIST_WORDS.test(sentence);
+
+/**
+ * Problems of a concept that should have taken the sentence at its word: on a standard job whose sentence names a known
+ * game (`named`: the template the words call for, else undefined) and asks for no twist, `chosen` is 0 and candidate 0
+ * is the faithful (most likely) reading. [] otherwise.
+ */
+export function faithfulProblems(c: Concept, sentence: string, creativity: Creativity | undefined, named: string | undefined): string[] {
+  if (creativity === "crazy" || named === undefined || asksForTwist(sentence)) return [];
+  const out: string[] = [];
+  const top = Math.max(...c.candidates.map((x) => x.likelihood));
+  if ((c.candidates[0]?.likelihood ?? 0) < top) out.push(`candidate 1 (index 0) is the faithful reading of the player's words "${sentence}": the game they name, done well, with no twist they did not ask for; give it the highest likelihood (it has ${c.candidates[0]?.likelihood ?? "?"}, another has ${top})`);
+  if (c.chosen !== 0) out.push(`the player's words name a known game (${named}) and ask for no twist: choose the faithful reading, "chosen": 0, not candidate ${c.chosen + 1} ("${c.candidates[c.chosen]?.pitch ?? "?"}", likelihood ${c.candidates[c.chosen]?.likelihood ?? "?"}). Keep the bolder ideas as the other candidates: the person can pick one; a twist they did not ask for is one they must remove by hand`);
+  return out;
+}
