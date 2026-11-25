@@ -25,8 +25,14 @@ writes it back. Newest shift-log entry last.
   a 1:1 port of thirdjam (whole system: units, rink, 5 v 5, simulation, bots, chase camera, controls, a skater figure),
   judged by a tempo map, a mechanic matrix by ablation, a ladder of human-limited hands, a playtester in the loop, then
   the owner. Everything else is frozen until his word on step 6.
-- Next 3: (1) step 0: thirdjam runnable and instrumented (tempo map, mechanic matrix, hand ladder); (2) step 1: the
-  gym (skater, camera, controls on the ported law); (3) steps 2-5 in order, each left only at parity.
+- Since 24 Nov ~23:20 (owner: "hockey feels like thirdjam"): the editor path. A user's game = a cartridge on the rink
+  core + a skin, started from the base `engine/templates/rink_game` (hokej made reusable); the Foreman's core route,
+  the measured check, a change = a cartridge diff, growth past the base, Create's iteration path. Proven on real jobs
+  (E5-E5e): v0.1.0 in 28 min, a change in 3-9 min, the game kept its own. Merged to main 25 Nov (6223787 / 049acf0).
+- Next 3 (day run of 25 Nov, owner's plan): (1) editor hardening (the six E5e defects: HUD-off captures, kit gate on
+  zones, silent removals, the slow start, old games on a new base, bumpers at the boards); (2) one derivation builder
+  through the editor judged by player lenses (recommended: Arsenal hockey); (3) scratch builders, one per game the owner
+  picks from the 20 in docs/shifts/2026-11-24-night/VERDICT.md.
 
 ## Open owner verdicts
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
@@ -61,6 +67,9 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+- 2026-11-25 (owner, morning): merge all hockey-campaign and editor-path progress to main right away; clean the
+  session's outputs; the day run = editor hardening + one derivation builder (player lenses) + scratch builders, one
+  per game picked from the 20 in the night's VERDICT.md.
 - 2026-11-24 ~23:20 (owner, verbatim): "alhough the hockey feel like thirdjam, we will need to use rest of this night to
   achieve game like this can be built by user from the editor, our engine and prompt process should be capable and user
   should have path even through more iterations to get there". The hockey port (branch hokej) is accepted as feeling like
@@ -388,3 +397,10 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 25 Nov 10:02 standup: E5c/E5d landed (change path holds on the real adapter); E3g resumed after a short API outage (items 1-4 in code, gates next); disk 76 GB.
 - 25 Nov ~10:45: E3g landed on hokej 7c19ceb (0d11c22: pack.json base -> lint counts only own lines; a refusal reaches the critic; Designer retries hear every check + exact fixes; no extra twist) + contracts PACK.md/pack.schema.json base key (17c60a1). Director on the merged tree: fast 5/5, npm test 372/365/0 fail, k.sh 120/0, lint blocks 30/0 + 11/0, base.lines 6/0, packs 4/4 (146 verb runs). E5e sent (job 3 again on the fixed code + one change); exe export from 17c60a1 running. Slow first lint cause found: the base round's two measured checks (~100 s each), not lint.
 - 25 Nov 10:52 standup: E5e designed on the first start, phase 1 at 17 min, base-named critic reasons went straight to the quality card (new defect: captures are HUD-off); exe 17c60a1 check PASS, proof games in the owner menu; owner: merge to main after the report, clean outputs, day run = editor hardening + derivation + scratch builders from the 20-game list.
+- 25 Nov ~11:00: E5e landed (the whole user path on the fixed code: first-start design, v0.1.0 in 28 min, change 8.5 min).
+- 25 Nov ~11:10 WRAP: owner's word "merge all progress right away": hokej merged to main 6223787 (+ 049acf0 lint_base
+  uid). Main: fast 5/5, k.sh 120/0, rink 38/0, hokej 5/0, world 9/9, npm 372/367/0 fail/5 skipped (alone), exe 049acf0
+  export check PASS; four made games in the owner's menu (.tl/proof-games). Verdict docs/shifts/2026-11-24-night/
+  VERDICT.md, page https://claude.ai/artifact/YXjdY1c8x8CQCGvkDqCP1L. Cleanup: 13 hk-* trees and branches removed
+  (~25 GB; hk-int's empty folder held open by something outside), claims released, template .uid ignored. Disk 119 GB.
+  Not pushed. Kept: n23-teardown (thirdjam source + UE build, 20 GB) and older trees of earlier shifts.

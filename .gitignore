@@ -31,3 +31,6 @@ engine/kernel/world/captures/*.png
 .claude/settings.local.json
 # P3 look captures (about 300 MB of frames and clips; evidence copies are in docs/reports/img)
 engine/look/p3/
+
+# The rink_game base is copied into games without its .uid files (E3b); Godot makes them on import.
+engine/templates/**/*.uid

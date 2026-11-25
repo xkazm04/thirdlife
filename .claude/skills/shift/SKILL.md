@@ -263,3 +263,13 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   after 22 Nov (style.frame.rink): any lane that changes engine/style or the draw layer runs the uncapped kernel suite
   before "landable", not only its own blocks.
 - 2026-11-25 (night): the Director landed a balance cartridge into a pack after running only the Godot blocks and packs; the editor's C++-verdict fixture pins that cartridge's bytes and went red unseen until the next lane's run. When a landing touches a file another suite pins (cartridges, schemas, fixtures), run every suite that reads it (here foreman `npm test`), not only the lane's own.
+- 2026-11-25 (night, editor path): every blocking editor defect (a change wiping the game, the base filling the line
+  budget, the design check refusing the base's own key, HUD-off captures misleading the critic) was found by a REAL paid
+  job, none by the unit tests, which were green each time. After any change to the job route, run one real job (cheapest:
+  reopen a finished job and send one change) before calling the route done; give it a 40-minute stop.
+- 2026-11-25: a lane added an optional key to a shared base while another lane's validator listed the base's keys by
+  hand; both suites stayed green and only the merged real job failed. A validator of another module's data reads that
+  module's declared keys, never a copy.
+- 2026-11-25: Godot makes .uid files on import; a tree that imported before landing hides a missing tracked .uid
+  (lint_base.gd) that the fast tier then fails on in the main checkout. Run the fast tier in the main checkout after
+  the merge, before the slow list.
