@@ -413,4 +413,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   player lenses, d25-arsenal), G2 Robot soccer (Opus, d25-robot), G4 Half-court (Opus, d25-court). Machine at start:
   RAM 47 %, CPU 38-62 % (others), disk 66 GB.
 - 12:46 standup: five lanes reading and waiting on room.sh; CPU 97 % (mostly other sessions), RAM 51 %, disk 58 GB; no landings.
+- 13:47 standup: H1 done (landing after the Director's npm re-run waits on room); H2 pickups + rebase built, waiting on room; G1 building, G2/G4 lose rounds to many_budget on the loaded CPU (editor finding); CPU 86-92 % (others), disk 221 GB.
 
