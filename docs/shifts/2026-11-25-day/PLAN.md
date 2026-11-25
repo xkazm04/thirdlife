@@ -35,3 +35,13 @@ it to H1/H2) and they carry on. Editor fixes land on main; the Director fast-for
 Lanes land on main as each round is proven (the owner's word of 25 Nov: merge progress right away), Director-verified:
 fast tier on the merged tree, foreman npm test when foreman changed, the touched selftest blocks, world when the engine
 changed. Not pushed unless the owner asks. Standups hourly at :41 (`standups/HHMM.md`).
+
+## Launched (25 Nov ~12:25)
+| Lane | Model | Tree | Agent |
+|---|---|---|---|
+| H1 critic and checks | Opus | d25-hard-a | ab414a1a6a6b544f2 |
+| H2 core and base | Opus | d25-hard-b | ad80b7cf16c0e7586 |
+| G1 Arsenal hockey | Fable | d25-arsenal | acc7d893f9d72602c |
+| G2 Robot soccer | Opus | d25-robot | af697fa864f7c5d7b |
+| G4 Half-court | Opus | d25-court | ac92056dfc84f5243 |
+Standups: cron 301bc462, hourly at :41 (session-only). Queue: G5, G11, G19 when a lane finishes and room.sh says room.
