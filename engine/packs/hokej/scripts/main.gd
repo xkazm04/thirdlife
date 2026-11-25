@@ -15,6 +15,7 @@ const Cam := preload("cam.gd")
 const Human := preload("human_input.gd")
 const View := preload("match_view.gd")
 const Screen := preload("hud/screen.gd")   # lane K5: thirdjam's HUD (scripts/hud/)
+const Toys := preload("rink_toys.gd")      # lane E1b: the cartridge's zones, obstacles and pickups drawn (scripts/rink_toys.gd)
 
 var ctx
 var cart: Dictionary
@@ -39,6 +40,7 @@ var sound                # thirdjam's sound, the core's own part (ctx.cores.part
 var arena                # thirdjam's hall, the core's own part (ctx.cores.part; lane K6)
 var react                # the hall answering the game: lamps, net, caps, crowd (arena.reactions; lane K6 round 3)
 var screen               # lane K5: the HUD (scripts/hud/screen.gd)
+var toys                 # lane E1b: what the cartridge puts on the ice (scripts/rink_toys.gd)
 
 
 func _pack_setup(c) -> void:
@@ -62,6 +64,7 @@ func _pack_setup(c) -> void:
 	if arena != null:
 		arena.build(ctx.root, {"rink": rk, "goals": hall_goals})
 		react = arena.reactions(ctx.root, rk)      # lane K6 round 3
+	toys = Toys.new(ctx.root, cart)                # lane E1b: game.rink.zones / obstacles and game.pickups, from the cartridge and the bus
 	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
 	rink = ctx.cores.open("rink", cart_file)
 	rink.set_difficulty(String(match_cfg["difficulty"]))
@@ -88,13 +91,25 @@ func _pack_setup(c) -> void:
 	view.reset_interpolation()                     # the first frame is drawn where it is, not slid into from the origin
 	follow.reset_physics_interpolation()
 	ctx.cameras.screen_fade(1.0)                   # the match opens black (thirdjam's light hold, below)
-	# E5 (25 Nov): 70 m up is above thirdjam's roof; the critic saw only black from "top" in every look of a user's game
-	# and blamed the base. The near plane at 50 m cuts the roof away: the whole rink from above.
-	var top_cam: Camera3D = ctx.cameras.add_view(&"top", Vector3(0, 70, 0.01), Vector3.ZERO, 60.0)
-	if top_cam != null:
-		top_cam.near = 50.0
+	_top_camera(float(rk["length_m"]), float(rk["width_m"]))
 	ctx.cameras.activate(&"follow")
 	ctx.cameras.set_subject(&"follow", view.bodies[int(snap["HumanIndex"])])
+
+
+## The "top" view (the Foreman's critic and a person's overview): straight down on the rink, high enough that the whole
+## sheet and its boards fit the picture with a 6 % margin (the view's vertical angle 60 degrees, the window's aspect), and
+## its near plane 4 m over the ice. E5 (25 Nov) put it 70 m up with the near plane at 50 m: above thirdjam's roof it was
+## black, and at 20 m and below the hall's trusses, lamps and clock still crossed the rink. Now everything higher than
+## 4 m (roof, trusses, the clock, the goal lamps) is cut away; the boards (1.2 m), the glass and the figures stay.
+const TOP_FOV: float = 60.0
+const TOP_CUT_M: float = 4.0
+func _top_camera(length: float, width: float) -> void:
+	var t: float = tan(deg_to_rad(TOP_FOV * 0.5))
+	var aspect: float = maxf(0.5, float(ctx.cameras.aspect()))
+	var h: float = maxf((length * 0.5 + 1.0) * 1.06 / (t * aspect), (width * 0.5 + 1.0) * 1.06 / t)
+	var top_cam: Camera3D = ctx.cameras.add_view(&"top", Vector3(0, h, 0.01), Vector3.ZERO, TOP_FOV)
+	if top_cam != null:
+		top_cam.near = maxf(0.05, h - TOP_CUT_M)
 
 
 ## With thirdjam's hall: the colours of RinkActor's markings sections 2 and 3 (arena.json rink_surfaces.Markings: its four
@@ -168,6 +183,7 @@ func _pack_tick(frame: int) -> void:
 	if int(rink.get_frame()) < frame_was:           # the core restarted (R): a new match on the same seed
 		over = false                                # (the show resets itself when the frame goes back: skater_show.step_sim)
 	snap = rink.snapshot()
+	toys.frame(snap)                                # lane E1b: pickups put down and taken on the sim's frame (the bus), also under a hit-stop
 	if sound != null:
 		sound.frame(snap)                          # lane K6: a held picture still sounds (before the hit-stop return)
 	if react != null:

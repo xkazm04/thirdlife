@@ -78,11 +78,16 @@ var bark_at_human: bool = false
 const BARK_YIELD := 150                 # BarkYieldFrames (CommentarySystem.h:30)
 
 var team_names: Array = []                            # the skin's team words (lane E1): thirdjam's "blue" / "orange" said as these
+var team_plural: Array = [false, false]               # lane E1b: which of them is a plural ("Sharks shoot!"; skin.gd teams_of)
 
 
-## `rows`: the bank of lines (null = thirdjam's three banks, commentary_lines.gd); `names`: the skin's team names ([] = the bank's).
-func _init(game: Dictionary, seed_value: int, rows: Variant = null, names: Array = []) -> void:
-	team_names = names
+## `rows`: the bank of lines (null = thirdjam's three banks, commentary_lines.gd); `names`: the skin's team names ([] = the bank's);
+## `plural`: the skin's team_plural ([] = guessed). Lane E1b: said as the person sees them (skin.gd teams_of).
+func _init(game: Dictionary, seed_value: int, rows: Variant = null, names: Array = [], plural: Array = []) -> void:
+	if names.size() == 2:
+		var tw: Array = GameSkin.teams_of({"team_names": names, "team_plural": plural} if plural.size() == 2 else {"team_names": names}, game)
+		team_names = tw[0]
+		team_plural = tw[1]
 	var rk: Dictionary = game["rink"]
 	length_m = float(rk["length_m"])
 	width_m = float(rk["width_m"])
@@ -585,6 +590,6 @@ func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, hum
 
 ## A new line on the strip (UpdateCommentary cpp:1470-1478).
 func show(line: Dictionary, tick: int) -> void:
-	shown_line = line["text"] if team_names.is_empty() else GameSkin.team_words(String(line["text"]), team_names)
+	shown_line = line["text"] if team_names.is_empty() else GameSkin.team_words(String(line["text"]), team_names, team_plural)
 	shown_tick = tick
 	shown_dur = int(line["dur"])

@@ -10,7 +10,11 @@ extends RefCounted
 ##   tagline      the line under the title ("HOCKEY WITH THE WHISTLE TAKEN OUT.")
 ##   about        HOME's ONE MATCH lines, a list of strings
 ##   team_names   [team 0, team 1] in words ("Blue", "Orange"): the commentator's lines say these where thirdjam's bank says
-##                blue / orange
+##                blue / orange, as written (capitals as the skin has them, at the start of a line and inside it). A colour word
+##                that is not its team's colour in the cartridge ("Blue" on a red team: the base's words left in a user's
+##                skin) is said as the team's own colour word ("Red"): a line never names a colour the person does not see.
+##   team_plural  [bool, bool] (lane E1b, optional): the name is a plural ("Sharks") and the lines say "Sharks shoot!", "for
+##                the Sharks". Absent: guessed from the name (its last word ends in a single s: "Glare Foxes", "Gulls").
 ##   levels       [[label, line] x 3]: the level row's words for rookie, pro, all_star, and the line under the row
 ##   commentary   "builtin" (thirdjam's three commentary banks, scripts/hud/commentary_lines.gd), "off", or a file in data/
 ##                ({"lines": [[id, event, kind, team, priority, cooldown_frames, text, duration_frames], ...]})
@@ -30,7 +34,7 @@ const DEFAULTS: Dictionary = {
 	"barks": "hud_barks.json",
 }
 const TYPES: Dictionary = {"schema": TYPE_STRING, "title": TYPE_STRING, "tagline": TYPE_STRING, "about": TYPE_ARRAY,
-	"team_names": TYPE_ARRAY, "levels": TYPE_ARRAY, "commentary": TYPE_STRING, "barks": TYPE_STRING}
+	"team_names": TYPE_ARRAY, "team_plural": TYPE_ARRAY, "levels": TYPE_ARRAY, "commentary": TYPE_STRING, "barks": TYPE_STRING}
 
 
 ## The skin of the pack (data/skin.json), validated: the problems (unknown key, wrong type or shape) are pushed as errors (a run
@@ -66,6 +70,10 @@ static func validate(raw: Dictionary, problems: Array) -> Dictionary:
 				if (v as Array).size() != 2 or not ((v as Array)[0] is String and (v as Array)[1] is String):
 					problems.append("team_names must be two strings")
 					continue
+			"team_plural":
+				if (v as Array).size() != 2 or not ((v as Array)[0] is bool and (v as Array)[1] is bool):
+					problems.append("team_plural must be two booleans")
+					continue
 			"levels":
 				var good: bool = (v as Array).size() == 3
 				for row: Variant in v as Array:
@@ -82,7 +90,65 @@ static func validate(raw: Dictionary, problems: Array) -> Dictionary:
 				if v == null:
 					continue
 		s[k] = v
+	if not s.has("team_plural"):                              # absent = guessed from the names (a key left out is not an error)
+		s["team_plural"] = [plural_guess(String(s["team_names"][0])), plural_guess(String(s["team_names"][1]))]
 	return s
+
+
+## A team name read as a plural: its last word ends in one s ("Sharks", "Glare Foxes"; not "Blue", "Boss", "Ice Moss").
+static func plural_guess(name: String) -> bool:
+	var w: PackedStringArray = name.strip_edges().split(" ", false)
+	if w.is_empty():
+		return false
+	var last: String = w[w.size() - 1].to_lower()
+	return last.length() > 2 and last.ends_with("s") and not last.ends_with("ss") and not last.ends_with("us") and not last.ends_with("is")
+
+
+## The colour words a team may be named by, and the hue (degrees) each covers; white, black and grey by lightness.
+const COLOUR_WORDS: Array = [["Red", 0.0, 14.0], ["Orange", 14.0, 40.0], ["Gold", 40.0, 52.0], ["Yellow", 52.0, 68.0],
+	["Green", 68.0, 160.0], ["Teal", 160.0, 195.0], ["Blue", 195.0, 255.0], ["Purple", 255.0, 290.0], ["Pink", 290.0, 345.0],
+	["Red", 345.0, 361.0]]
+const NEUTRAL_WORDS: Array = ["White", "Black", "Grey", "Gray"]
+
+
+## The colour word a person reads a colour as ("#1D4ED8" Blue, "#E8651A" Orange, "#D83A34" Red, "#0FB5AE" Teal).
+static func colour_word(c: Color) -> String:
+	if c.s < 0.22:
+		return "White" if c.v > 0.8 else ("Black" if c.v < 0.25 else "Grey")
+	var hue: float = c.h * 360.0
+	for row: Array in COLOUR_WORDS:
+		if hue >= float(row[1]) and hue < float(row[2]):
+			return String(row[0])
+	return "Red"
+
+
+static func _is_colour_word(name: String) -> bool:
+	var n: String = name.strip_edges().to_lower()
+	for row: Array in COLOUR_WORDS:
+		if String(row[0]).to_lower() == n:
+			return true
+	for w: String in NEUTRAL_WORDS:
+		if w.to_lower() == n:
+			return true
+	return false
+
+
+## The teams as the person meets them: [[name 0, name 1], [plural 0, plural 1]]. The skin's names as written; a bare colour
+## word that is not its team's colour in the cartridge (game.teams[].colour_hex) becomes that colour's word ("Blue" on a
+## red team reads "Red"; E5 job 1 heard "It's in, for blue!" when red scored).
+static func teams_of(s: Dictionary, game: Dictionary) -> Array:
+	var names: Array = (s.get("team_names", DEFAULTS["team_names"]) as Array).duplicate()
+	var plural: Array = (s.get("team_plural", [plural_guess(String(names[0])), plural_guess(String(names[1]))]) as Array).duplicate()
+	var teams: Array = game.get("teams", [])
+	for t: int in mini(2, teams.size()):
+		var hex: String = String((teams[t] as Dictionary).get("colour_hex", ""))
+		if hex == "" or not _is_colour_word(String(names[t])):
+			continue
+		var word: String = colour_word(Color(hex))
+		if word.to_lower() != String(names[t]).strip_edges().to_lower():
+			names[t] = word
+			plural[t] = false
+	return [names, plural]
 
 
 ## The bank of the commentator's lines the skin names: thirdjam's (null: the built-in), none, or a data file's rows.
@@ -100,22 +166,54 @@ static func bark_rows(ctx, s: Dictionary) -> Array:
 	return (ctx.read_json(String(s["barks"])) as Dictionary).get("lines", [])
 
 
-## A line of thirdjam's bank in this skin's team words: "Blue" / "blue" / "Orange" / "orange" become the team names (as they
-## stand: capitalised at the start of a word that was, lower case where thirdjam wrote lower case). With the default names the
-## line is unchanged.
-static func team_words(text: String, names: Array) -> String:
-	if names == DEFAULTS["team_names"]:
+## A line of thirdjam's bank in this skin's team words. thirdjam's "Blue" / "blue" / "Orange" / "orange" (a team: not "the
+## blue line") become the team names as written. A plural name ([plural 0, plural 1]) takes "the" inside a sentence ("for
+## the Sharks"), the verb after it in the plural ("Sharks shoot!", "the Gulls are a skater short") and "themselves" for
+## "itself". With thirdjam's own names (Blue, Orange, singular) the line is unchanged.
+static func team_words(text: String, names: Array, plural: Array = [false, false]) -> String:
+	if names == DEFAULTS["team_names"] and not bool(plural[0]) and not bool(plural[1]):
 		return text
-	var out: String = text
-	var pairs: Array = [["Blue", String(names[0])], ["Orange", String(names[1])]]
-	for p: Array in pairs:
-		var w: String = p[0]
-		var n: String = p[1]
-		out = _swap(out, w, n)
-		out = _swap(out, w.to_lower(), n.to_lower())
+	var re := RegEx.create_from_string("\\b(Blue|blue|Orange|orange)\\b(?! lines?\\b)")
+	var stop := RegEx.create_from_string("[.!?]\\s*$")
+	var verb := RegEx.create_from_string("^ ([a-z]+)\\b")
+	var out: String = ""
+	var at: int = 0
+	var any_plural: bool = false
+	for m: RegExMatch in re.search_all(text):
+		var team: int = 0 if m.get_string(1).to_lower() == "blue" else 1
+		var name: String = String(names[team])
+		var pl: bool = bool(plural[team])
+		var head: String = text.substr(0, m.get_start())
+		var start: bool = head.strip_edges() == "" or stop.search(head) != null
+		out += text.substr(at, m.get_start() - at)
+		out += ("the " + name) if (pl and not start) else name
+		at = m.get_end()
+		if pl:
+			any_plural = true
+			var vm: RegExMatch = verb.search(text.substr(at))
+			if vm != null:
+				var w: String = vm.get_string(1)
+				var pw: String = _plural_verb(w)
+				if pw != w:
+					out += " " + pw
+					at += 1 + w.length()
+	out += text.substr(at)
+	if any_plural:
+		out = RegEx.create_from_string("\\bitself\\b").sub(out, "themselves", true)
 	return out
 
 
-static func _swap(text: String, word: String, with: String) -> String:
-	var re := RegEx.create_from_string("\\b" + word + "\\b")
-	return re.sub(text, with, true)
+## The plural of a verb in the third person singular ("shoots" shoot, "finishes" finish, "is" are, "has" have); any other
+## word as it stands ("on", "to", "playing").
+static func _plural_verb(w: String) -> String:
+	match w:
+		"is": return "are"
+		"was": return "were"
+		"has": return "have"
+		"does": return "do"
+		"says": return "say"
+	if w.length() > 3 and (w.ends_with("ches") or w.ends_with("shes") or w.ends_with("sses") or w.ends_with("xes") or w.ends_with("zes")):
+		return w.substr(0, w.length() - 2)
+	if w.length() > 2 and w.ends_with("s") and not w.ends_with("ss") and not w.ends_with("us") and not w.ends_with("is"):
+		return w.substr(0, w.length() - 1)
+	return w

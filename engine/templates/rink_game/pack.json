@@ -18,7 +18,8 @@
   "tests": [
     "tests/bot_match_hand.gd",
     "tests/bot_first_match.gd",
-    "tests/bot_skin.gd"
+    "tests/bot_skin.gd",
+    "tests/bot_toys.gd"
   ],
   "cameras": [
     "follow",
