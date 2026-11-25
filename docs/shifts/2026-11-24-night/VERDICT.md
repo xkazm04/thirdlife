@@ -102,7 +102,8 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
    about 3 min).
 
 ## Asks
-1. **Land hokej on main?** (a) yes, all of it; (b) the editor path only after you play a made game; (c) hold.
+1. ~~Land hokej on main?~~ Decided 25 Nov morning: merge everything now, then clean the session's outputs.
+1b. **Which of the 20 games** (below) the day run chases: each pick is one builder.
 2. **JOB.md wording** for the core route (base copied, cartridge round, measured check, change on a core never to the
    base, growth): the Director drafts it on your word.
 3. **The slow start of every job** (3.4 min: two measured checks of the house cartridges before the base's lint):
@@ -113,6 +114,52 @@ first game's 140 minutes failing the base's own camera (now sent to the person a
    (a) give My games a "move to the newest base" step; (b) not yet.
 6. Carried from earlier tonight: the K8 planning-hand refit (it runs about 10 points strong); all-star easier than
    thirdjam's; whether the one-line `hub.gd` / `menu.gd` edits for Add to menu stand.
+
+## 20 games of hockey's quality and complexity to chase (pick for the day run; one builder per pick)
+
+"Hockey-class" here means what made hokej worth playing: several bodies with weight and momentum, contact that answers
+(hits, falls, braces), one contested object with its own physics, a handful of skill verbs a hand gets better at, and
+bots that play the game as a team, not just chase the object. Route **D** = a derivation through the editor on the
+rink core (cartridge + skin over `rink_game`; what the "lenses of players" builder can do in a day). Route **S** = a
+game started from scratch in Create (no core: the Foreman builds the pack), which is the real test of whether
+iterations lead a person to hokej's quality. "Learn from" names the proven design to study (rules and how sides react
+to each other), never something to copy: names, art and levels stay ours. Depth: agents / object / contact / bot
+brain, each 1-3.
+
+| # | Game (working name) | What it is | Learn from | Route | What our engine lacks | Depth |
+|---|---|---|---|---|---|---|
+| 1 | **Arsenal hockey** | hokej with pickups and abilities on the ice (shield, hip check, slow puck, a boost); your sandbox ask of 23 Nov | thirdjam's own abilities; arena power-up sports | D | the core's snapshot does not report pickups (C++ addition) | 3/3/3/3 |
+| 2 | **Shinny** | 2 v 2 pond hockey, no keepers, small nets, no whistles, endless | pond hockey rules | D | nothing | 2/3/3/2 |
+| 3 | **Broomball** | shoes on ice (grip, no glide), a ball, brooms, 4 v 4 | broomball rules | D | a ball that bounces (core patch) | 3/2/3/2 |
+| 4 | **Ring game** | a ring on a straight stick, no carrying over lines: passing forced | ringette rules | D | line rules as core hooks | 3/2/2/3 |
+| 5 | **Bandy night** | big ice, a ball, 7 a side, long passes | bandy rules | D | ball bounce; a bigger arena than the 90 x 45 barn | 3/2/2/3 |
+| 6 | **Pack race** | short-track skating on the rink oval: drafting, blocking, passing on the bends | short-track rules | D | race rules in the core (no puck) | 3/1/3/2 |
+| 7 | **Robot soccer** | 3 v 3 robots, a ball, kicks, tackles (your plan of 23 Nov) | arcade football | S | a kick / ball sim; a robot figure | 3/3/3/3 |
+| 8 | **Roller derby jam** | a jammer breaks through a moving wall of blockers on an oval track | flat-track derby rules | S | track + pack rules; the skater rig fits | 3/1/3/3 |
+| 9 | **Box lacrosse** | 5 v 5, a ball in a stick pocket, cross-checks, a shot clock | indoor lacrosse rules | S | ball in a pocket, throw arcs | 3/3/3/3 |
+| 10 | **Tube polo** | water polo in rubber tubes: floating inertia, throw, wrestle for the ball | water polo rules | S | water drag, a swimmer figure | 3/3/2/2 |
+| 11 | **Dodgeball 4 v 4** | throw, catch, dodge; a catch brings a mate back | arcade dodgeball | S | throws and catches with timing | 3/3/2/3 |
+| 12 | **Rugby sevens** | carry, tackle, offload, ruck; 7 a side on a short field | rugby sevens rules | S | tackle-to-ground, a ruck, deep team AI | 3/2/3/3 |
+| 13 | **Half-court 3 v 3** | street basketball: dribble, arc shots, blocks, screens | arcade 3 v 3 basketball | S | a hoop and rim bounce, shot arcs | 3/3/2/3 |
+| 14 | **Bumper-kart football** | 3 v 3 bumper karts push a big ball into goals | car football | S | the car seed exists; a big ball and kart contact | 2/3/3/2 |
+| 15 | **Disc 5 v 5** | ultimate: no running with the disc, cutting to get free | ultimate rules | S | disc flight, the pivot rule | 3/3/1/3 |
+| 16 | **Ostrich polo** | mounted polo on fast, stubborn birds; a mallet and a ball | polo rules | S | a mount with its own will, mallet hits | 3/3/2/2 |
+| 17 | **Sumo ring** | 4-8 pushers, a shrinking ring, charge / brace / sidestep | party brawlers | S | nothing new: the cheapest pure test of contact feel | 3/1/3/2 |
+| 18 | **Snowball flag** | capture the flag with snowball throws, cover, forts | team capture-the-flag | S | throws, cover, team roles | 3/2/2/3 |
+| 19 | **Padel doubles** | a glass-walled court, rallies off the walls, partner AI | padel rules, arcade tennis | S | ball off walls, shot timing | 2/3/1/3 |
+| 20 | **Kabaddi raid** | a raider tags and gets back while the chain tries to hold him | kabaddi rules | S | no object at all: pure behaviour of both sides | 3/1/3/3 |
+
+**Recommended picks.** The derivation builder takes **1 Arsenal hockey**: your sandbox ask, it uses the abilities the
+core already carries, and it shows whether the editor can grow a game. It is judged through three player lenses: a
+first-timer, a competitive hand, and a sandbox player who wants toys. From scratch, start with three that each test a
+different thing:
+- **7 Robot soccer**: your plan, and the hardest.
+- **17 Sumo ring**: the cheapest, and it judges contact feel alone.
+- **8 Roller derby jam** or **11 Dodgeball**: team behaviour without a stick.
+
+Each scratch job costs about 2-5 M tokens to v0.1.0, plus about 3 min per change round once it is on a fast path.
+Scratch games have no core, so their iterations are full rounds (about 10-25 min): that gap is part of what the day
+measures.
 
 ## Route scoreboard
 - Opus did all the engineering lanes (E1-E4, E3b-g, G1) and the real proofs (E5-E5e); Fable only K8 (balance design by
