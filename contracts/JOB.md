@@ -144,6 +144,16 @@ Unknown `type` or unknown keys are errors when the log is read.
   then `queued` with a detail starting `CHANGE REQUEST: `.
 - After the owner merges again, every promoted dependant's acceptance runs on the merged pack (`verify` events whose
   report names contain `-reverify-`); only a dependant that fails is re-opened.
+- Added 2026-11-25 (the editor path, after real jobs):
+  - On a game started from a base, a change in play words goes to the package that owns the game's cartridge, never to
+    the base and never to a package that cannot change the cartridge; words only about drawing or the skin stay with
+    their owners.
+  - When a question card's "let another package do it" answer (`answer --change`) passes the change on, the new
+    `change_requested.text` carries the person's original request, then the question, then the answer.
+  - A re-opened package asks a person at most once per change: after an answer that does not unblock it, the change is
+    routed again or the person is told in words that it cannot be done. Questions are words with choices, never JSON.
+  - A version is not promoted when its own promotion captures, filmed in a window, report script errors; the reason is
+    given in words and the earlier version stays the one to play.
 - A `done` job returns to `running` and ends `done` again. Each later promotion bumps the pack version to `0.1.<n>` and
   goes to `promoted/<pack id>@<version>/`; earlier promotions are kept. The last `promoted` event names the current one.
 - A change that no round could make leaves the earlier verified files in place; the package is `promoted` again with a
@@ -285,6 +295,10 @@ key is optional; a job made before this reads as before (absent = omit the key, 
   - `title` at most 4 words; `line` at most 12 words; `detail` at most 60 words (the expert's expand).
   - `alternatives`: 2 or 3 `{id, title, line}` with the same limits; ids unique within the aspect.
   - `crazy`: `true` only on an aspect crazy mode added. Absent otherwise.
+  - `needs` and `hours` (added 2026-11-25, optional, always together): `needs: "core"` marks an aspect that needs new
+    engine code (a core patch and a new build); `hours` (a positive number) is the extra build time. Such an aspect must
+    have at least one alternative that needs no engine code. Create shows the cost on the card and under the pitch, and
+    choosing the alternative removes it. One key without the other is an error.
   `rules`, `arena`, `ai`, `controls`, `mood` stay and stay required: the Planner reads them.
 - `aspect_reacted` (new event, before approval): `aspect` (an aspect id of the latest `brief_set`), `choice` (`"keep"`,
   `"drop"` or one of that aspect's alternative ids), `note` (optional string, the player's words). The latest reaction
