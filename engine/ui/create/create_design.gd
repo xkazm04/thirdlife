@@ -239,6 +239,11 @@ func _pitch() -> void:
 	var hint: Label = _label("Tap a card to change it" if not (job.get("aspects", []) as Array).is_empty() else "", 22, 600, MUTED)
 	hint.name = "Hint"
 	_place(hint, Vector2(44, 656))
+	var cost: String = Model.estimate_words(job.get("estimate", {}))   # H1b: what building it takes, before Build it
+	if not cost.is_empty():
+		var est: Label = _label(cost, 24, 800, PAPER, W - 620)
+		est.name = "Estimate"
+		_place(est, Vector2(44, 622))
 	var red: Button = _button("Redesign", "Redesign", "redo", CREAM, Vector2(W - 560, 636), Vector2(240, 70), 28)
 	red.pressed.connect(redesign)
 	_body.add_child(red)

@@ -429,7 +429,26 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       // P10: as kernel/host/invariants.gd since P1 (the stage budget on each frame's best time, and the budget of a
       // pack in a world of many, on the median frame).
       checks.push({ id: "invariants.frame_budget", ok: true, detail: "frame p99 0.400 ms (stage budget 4 ms; scripts + physics step, headless, each frame's best of 2 runs)" });
-      checks.push({ id: "invariants.many_budget", ok: true, detail: "frame p50 0.200 ms (budget 1.0 ms for one of many; target 0.5 ms)" });
+      // H1b: FAKE_RUNNER_MANY_SLOW=<n> makes the first n invariants runs miss the budget of one of many on its wall-clock
+      // median, as G4's court_core did on a loaded machine (p50 1.048 ms against 1.0); the marker FAKE_MANY_SLOW in a
+      // pack file does it in every run (slow code).
+      let manySlow = has("FAKE_MANY_SLOW") !== undefined;
+      const manyRuns = Number(env["FAKE_RUNNER_MANY_SLOW"] ?? "0");
+      if (!manySlow && manyRuns > 0) {
+        const counter = path.join(path.dirname(opts["report"] as string), ".fake-many-slow");
+        const n = fs.existsSync(counter) ? Number(fs.readFileSync(counter, "utf8")) : 0;
+        if (n < manyRuns) {
+          fs.mkdirSync(path.dirname(counter), { recursive: true });
+          fs.writeFileSync(counter, String(n + 1));
+          manySlow = true;
+        }
+      }
+      if (manySlow) {
+        Object.assign(report["metrics"] as Record<string, unknown>, { frame_ms_p50: 1.048, frame_ms_p99: 1.722 });
+        checks.push({ id: "invariants.many_budget", ok: false, detail: "frame p50 1.048 ms (budget 1.0 ms for one of many: not a pack of the engine's tree; target 0.5 ms, above the target)" });
+        errors.push({ kind: "budget", message: "frame p50 1.05 ms is over the 1.0 ms budget of a pack in a world of many (about 90 awake bodies cost this much)" });
+        fail();
+      } else checks.push({ id: "invariants.many_budget", ok: true, detail: "frame p50 0.200 ms (budget 1.0 ms for one of many; target 0.5 ms)" });
       checks.push({ id: "invariants.entity_budget", ok: true, detail: "12 nodes (budget 5000), 3 physics bodies (budget 600)" });
       // As the engine since WP5 (seen in the second real job's reports and in site/_engine_snapshot3): the first bot
       // is played twice, for at most --bot-frames frames, and both runs must end in the same state.

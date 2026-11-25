@@ -1,5 +1,7 @@
 // N3b, N3c: whether a failed check is the machine's or the pack's, read from the runner's reports. Pure functions;
 // moved out of foreman.ts in P10b, which re-exports them.
+import { execFile } from "node:child_process";
+import os from "node:os";
 import type { VerifyResult } from "./verifier.js";
 
 /** A verification result with what the Foreman concluded on top: a kit regression, or "machine busy, no verdict". */
@@ -87,8 +89,16 @@ export function restsOnAClock(vr: VerifyResult): boolean {
     const detail = failed.find((c) => c.id === "smoke.watchdog")?.detail ?? "";
     return /tick_timeout|setup_timeout|did not return/.test(detail);
   }
-  return failed.length > 0 && failed.every((c) => c.id === "invariants.frame_budget");
+  return failed.length > 0 && failed.every((c) => CLOCK_CHECKS.has(c.id));
 }
+
+/**
+ * The checks that read a wall clock (RUNNER.md "Limits"): the stage budget on the frame p99, and (H1b of 25 Nov) the
+ * budget of one pack in a world of many on the frame MEDIAN. G4's court_core (p50 1.048 ms against 1.0) and G2's core
+ * (1.334 ms) failed many_budget once each while other sessions held the processor at 85-100 %; the check was not
+ * known as a clock, so it went to the builder at once, a round each.
+ */
+export const CLOCK_CHECKS: ReadonlySet<string> = new Set(["invariants.frame_budget", "invariants.many_budget"]);
 
 /**
  * When the ONLY failed check is the frame budget and the median frame alone is over half of it, the words that say
@@ -105,7 +115,7 @@ export function medianOverHalfBudget(vr: VerifyResult): string | undefined {
 
 /** The words of a clock-based failure: the failed checks' details (the p99 figure, the watchdog's reason). */
 export function clockDetail(vr: VerifyResult): string {
-  const failed = (vr.report?.checks ?? []).filter((c) => !c.ok && (c.id === "invariants.frame_budget" || c.id === "smoke.watchdog"));
+  const failed = (vr.report?.checks ?? []).filter((c) => !c.ok && (CLOCK_CHECKS.has(c.id) || c.id === "smoke.watchdog"));
   return failed.map((c) => c.detail ?? c.id).join("; ") || vr.summary;
 }
 
@@ -115,4 +125,37 @@ export function clockDetail(vr: VerifyResult): string {
  */
 export function diedSilently(vr: VerifyResult): boolean {
   return !vr.ok && vr.flags.includes("stdout_not_json") && !vr.flags.includes("runner_timeout") && !vr.flags.includes("spawn_error") && vr.summary.includes('stdout is not JSON: ""');
+}
+
+/**
+ * H1b: the machine's processor load in %, read as the day's room check reads it (docs/shifts/2026-11-25-day/tools/room.sh:
+ * Win32_Processor LoadPercentage, the mean of `samples` samples `gapS` s apart); elsewhere the 1-minute load average over the
+ * cores. Undefined when it cannot be read. Used when a clock check failed: a busy machine is no verdict about a pack.
+ */
+export function cpuLoad(samples = 3, gapS = 2): Promise<number | undefined> {
+  if (process.platform !== "win32") {
+    const n = os.cpus().length || 1;
+    return Promise.resolve(Math.round((100 * (os.loadavg()[0] ?? 0)) / n));
+  }
+  const ps = `$c=@(); 1..${samples} | % { $c += (Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average; if ($_ -lt ${samples}) { Start-Sleep -Seconds ${gapS} } }; [math]::Round(($c | Measure-Object -Average).Average)`;
+  return new Promise((resolve) => {
+    execFile("powershell", ["-NoProfile", "-NonInteractive", "-Command", ps], { timeout: 60_000, windowsHide: true }, (err, stdout) => {
+      const n = Number(String(stdout).trim());
+      resolve(err === null && String(stdout).trim() !== "" && Number.isFinite(n) ? n : undefined);
+    });
+  });
+}
+
+/**
+ * H1b: waits until the load is at or under `limitPct` (polling every `pollMs`, at most `maxMs`), so a clock check is run
+ * again on a quieter machine and not merely after a fixed pause. Returns the last load read and how long it waited.
+ */
+export async function waitForQuiet(load: () => Promise<number | undefined>, sleep: (ms: number) => Promise<void>, limitPct: number, maxMs: number, pollMs = 15_000): Promise<{ load?: number; waitedMs: number }> {
+  let waited = 0;
+  for (;;) {
+    const now = await load();
+    if (now === undefined || now <= limitPct || waited >= maxMs) return { ...(now !== undefined ? { load: now } : {}), waitedMs: waited };
+    await sleep(pollMs);
+    waited += pollMs;
+  }
 }
