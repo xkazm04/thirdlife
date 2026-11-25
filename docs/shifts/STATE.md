@@ -412,4 +412,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - Lanes: H1 critic and checks (Opus, d25-hard-a), H2 core and base (Opus, d25-hard-b), G1 Arsenal hockey (Fable, three
   player lenses, d25-arsenal), G2 Robot soccer (Opus, d25-robot), G4 Half-court (Opus, d25-court). Machine at start:
   RAM 47 %, CPU 38-62 % (others), disk 66 GB.
+- 12:46 standup: five lanes reading and waiting on room.sh; CPU 97 % (mostly other sessions), RAM 51 %, disk 58 GB; no landings.
 
