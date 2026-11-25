@@ -528,42 +528,6 @@ func open_game(dir: String) -> void:
 	call("show_job", dir)              # create.gd (the subclass) reads the job
 
 
-func _failed() -> void:
-	var card: Panel = Panel.new()
-	card.name = "FailCard"
-	card.add_theme_stylebox_override("panel", _box(PAPER, RED, 6, 26, 14))
-	card.position = Vector2(190, 170)
-	card.size = Vector2(900, 380)
-	_body.add_child(card)
-	var ic: Icon = Icon.new("cross", 96)
-	ic.disc = RED
-	ic.position = Vector2(402, 30)
-	ic.size = Vector2(96, 96)
-	card.add_child(ic)
-	var designing: bool = (job.get("brief", {}) as Dictionary).is_empty()
-	var t: Label = _label("The designer got stuck" if designing else "This build stopped", 46, 950, INK, 820, HORIZONTAL_ALIGNMENT_CENTER)
-	t.name = "Stopped"
-	t.position = Vector2(40, 146)
-	card.add_child(t)
-	# in a person's words: the part that could not be made, by its title (no package ids, no causes)
-	var why: String = str(job.get("job_reason", ""))
-	for id: Variant in job.get("order", []):
-		var p: Dictionary = (job.get("packages", {}) as Dictionary).get(str(id), {})
-		if str(p.get("state", "")) == "failed" and str(p.get("cause", "")) != "cancelled":
-			why = "The builders could not get \u201c%s\u201d to work." % str(p.get("title", id))
-			break
-	var w: Label = _label(JobModel.one_line(why, 90), 22, 600, Color(INK, 0.75), 820, HORIZONTAL_ALIGNMENT_CENTER)
-	w.name = "Why"
-	w.position = Vector2(40, 214)
-	card.add_child(w)
-	var again: Button = _button("TryAgain", "Try again", "redo", HONEY, Vector2(300, 280), Vector2(300, 76), 30)
-	again.pressed.connect(func() -> void:
-		sentence = str(job.get("sentence", sentence))
-		creativity = str(job.get("creativity", creativity))
-		new_idea())
-	card.add_child(again)
-
-
 func _error() -> void:
 	var t: Label = _label("This game cannot be read", 44, 950, PAPER, W, HORIZONTAL_ALIGNMENT_CENTER)
 	t.name = "Unreadable"

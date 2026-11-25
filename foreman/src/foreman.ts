@@ -28,7 +28,7 @@ import { botFinish, botMoments, planShots } from "./shots.js";
 import { coreRouteOf, templateOf } from "./templates.js";
 import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
 import { cartridgeChange, coreDataGate, diffRound, jobCore, phaseCheck } from "./coregate.js";
-import { changeCandidates, coreChangeOwner, skinSplit } from "./coreowner.js"; import { skinPartText } from "./skintext.js"; // E3f: on a core, a change never goes to the base
+import { changeCandidates, coreChangeOwner, skinSplit } from "./coreowner.js"; import { skinPartText } from "./skintext.js"; import { lastHandRows, retryEvents } from "./resumefix.js"; // E3f: on a core, a change never goes to the base
 import { decideLook, filmLook, hudArgs, hudOn, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
@@ -230,14 +230,8 @@ export class Foreman {
     for (const id of this.s.order) {
       if (!this.pkg(id).announced) this.append({ type: "package_state", package: id, state: "queued", round: 1 });
     }
-    if (this.o.retryFailed) {
-      for (const id of this.s.order) {
-        const p = this.pkg(id);
-        if (p.state === "failed" || (p.state === "blocked" && p.cause === "dependency")) {
-          this.append({ type: "package_state", package: id, state: "queued", round: 1, detail: "retry requested" });
-        }
-      }
-    }
+    // H1i: failed packages queued again; a job that failed on a hand check sends the failing test's owner back (resumefix.ts)
+    if (this.o.retryFailed) for (const e of retryEvents(this.s, this.log.events, lastHandRows(this.dir("reports")), (id) => fs.existsSync(this.wsDir(id)) && fs.existsSync(this.baselineFile(id)))) this.append(e as Parameters<JobLog["append"]>[0]);
 
     // Billing is in the log before the first builder_run, from the probe, in the real environment.
     const probe = await this.o.builder.probe();

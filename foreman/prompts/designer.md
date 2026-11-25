@@ -154,6 +154,9 @@ in waves, leads that change.
   - `detail` at most 60 words for the expert: the mechanism, the numbers, the engine call that does it;
   - `alternatives`: 2 or 3, each a genuinely different game for that aspect, not a tweak. Alternative ids are
     snake_case, never `keep` or `drop` (the player's fixed choices).
+  - an alternative that makes one of the build's tofu checks meaningless for this game carries `"lifts"`: the ids of
+    those checks ({{tofu_ids}}). A ball nobody holds lifts the possession check; a game without bodies lifts a body's
+    stand and stumble checks. The person's pick then lifts them. Every other alternative has no `lifts`.
   - a card that, as written, needs new engine code (a core patch, C++: another body, another ball, a mechanic the
     core does not have) carries `"needs": "core"` and `"hours"`: about how many MORE hours that code takes. Never
     order engine code silently: such a card's `line` says it in words, and at least one alternative does the same

@@ -46,6 +46,12 @@ export function liftedBounds(s: Pick<JobState, "brief" | "reactions">, events: r
     const r = s.reactions?.[a.id];
     if (r === undefined || r.choice === "drop") continue;
     const alt = a.alternatives.find((x) => x.id === r.choice);
+    // H1i (the Director): the card names the bounds its choice lifts (`lifts`, written by the Designer); the words below
+    // are the fallback for a card that names none
+    if (alt?.lifts !== undefined) {
+      for (const row of rows) if (!out.has(row.id) && alt.lifts.includes(row.id)) out.set(row.id, `your card "${alt.title}" (it lifts ${row.id})`);
+      continue;
+    }
     const words = `${alt !== undefined ? `${alt.title} ${alt.line}` : ""} ${r.note ?? ""}`;
     for (const l of CARD_LIFTS) {
       if (!l.re.test(words)) continue;

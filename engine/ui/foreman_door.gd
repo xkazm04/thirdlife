@@ -384,3 +384,9 @@ func pids_running() -> PackedInt32Array:
 		if not bool(s["done"]) and OS.is_process_running(int(s["pid"])):
 			out.append(int(s["pid"]))
 	return out
+
+
+## H1i (lane G5): a failed job picks up where it stopped: its failed parts queued again (`foreman resume <job>
+## --retry-failed`), with the run settings and the editor as it is now. The work so far stays.
+func resume_failed(job_dir: String) -> String:
+	return _start(job_dir, "resume", [["resume", job_dir] + _flags("resume") + ["--retry-failed"]])

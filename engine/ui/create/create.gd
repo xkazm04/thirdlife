@@ -1,4 +1,4 @@
-extends "res://ui/create/create_pause.gd"
+extends "res://ui/create/create_fail.gd"
 ## L3 (night of 21 Nov 2026): the Create page. A full-screen page of the main menu (L4 mounts res://ui/create/create.tscn
 ## and calls `open()`; the page emits `closed` when the player goes back). The player says a game in one sentence,
 ## picks Standard or Crazy, reacts to the Designer's aspect cards, and builds the game in phases it tries and passes.
