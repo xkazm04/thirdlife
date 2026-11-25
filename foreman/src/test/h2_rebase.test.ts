@@ -147,20 +147,39 @@ test("H2: foreman rebase moves a finished core game to the newest base: the base
   assert.ok(out2.some((l) => l.includes("on the newest base already")), out2.join("\n"));
 });
 
-test("H2: a game that changed a base script is refused (the move would lose its change); the game stays as it was", async () => {
+test("H2b: a game's own change to a base script the newest base did not change is kept, and the game moves (G1's main.gd: refused before)", async () => {
+  const j = await coreJob("h2b-edited");
+  const base = path.join(j.engine, "templates", "rink_game");
+  const v1 = path.join(j.jobDir, rebuildState(j.jobDir, { write: false }).promoted?.dest as string);
+  // the game's drawing package wires its own script into main.gd; the newer base brings a new file and leaves main.gd alone
+  fs.appendFileSync(path.join(v1, "scripts", "main.gd"), "\n# the game's own drawing, wired in\nconst Harbour := preload(\"harbour.gd\")\n");
+  fs.writeFileSync(path.join(base, "scripts", "h2_toy.gd"), "extends RefCounted\n");
+  const out: string[] = [];
+  assert.equal(await main(["rebase", j.jobDir, "--runner", "fake", "--engine-dir", j.engine], (x) => out.push(x)), 0, out.join("\n"));
+  const s = rebuildState(j.jobDir, { write: false });
+  assert.equal(s.promotions.length, 2, "moved: a new version");
+  const v2 = path.join(j.jobDir, s.promoted?.dest as string);
+  assert.equal(read(path.join(v2, "scripts", "main.gd")), read(path.join(v1, "scripts", "main.gd")), "the game's main.gd kept, its own lines in it");
+  assert.ok(fs.existsSync(path.join(v2, "scripts", "h2_toy.gd")), "the newer base's file arrived");
+  assert.ok(out.some((l) => l.startsWith("edited") && l.includes("scripts/main.gd")), out.join("\n"));
+  assert.ok(s.notes.some((n) => n.text.includes("its own changes to the base's scripts/main.gd kept")), JSON.stringify(s.notes.slice(-3)));
+});
+
+test("H2: a script both the game and the newer base changed is refused, named with what each side changed; the game stays as it was", async () => {
   const j = await coreJob("h2-conflict");
   const base = path.join(j.engine, "templates", "rink_game");
   const s0 = rebuildState(j.jobDir, { write: false });
   const v1 = path.join(j.jobDir, s0.promoted?.dest as string);
   const someScript = fs.readdirSync(path.join(v1, "scripts")).find((f) => f.endsWith(".gd")) as string;
-  fs.appendFileSync(path.join(v1, "scripts", someScript), "\n# the game's own edit\n");
-  fs.writeFileSync(path.join(base, "scripts", "h2_toy.gd"), "extends RefCounted\n");
+  fs.appendFileSync(path.join(v1, "scripts", someScript), "\n# the game's own edit\n# and one more line\n");
+  fs.appendFileSync(path.join(base, "scripts", someScript), "\n# the newer base's edit\n");
   const out: string[] = [];
   assert.equal(await main(["rebase", j.jobDir, "--runner", "fake", "--engine-dir", j.engine], (x) => out.push(x)), 1, out.join("\n"));
   const s = rebuildState(j.jobDir, { write: false });
   assert.equal(s.promotions.length, 1);
   assert.equal(s.jobState?.state, "done");
-  assert.ok(s.notes.some((n) => n.text.includes("the move to the newest base was refused") && n.text.includes(`scripts/${someScript}`)), JSON.stringify(s.notes.slice(-2)));
+  const note = s.notes.map((n) => n.text).find((t) => t.includes("the move to the newest base was refused")) ?? "";
+  assert.ok(note.includes(`scripts/${someScript} (the game +3 -0 lines and the newest base +2 -0 lines since the game's base)`), note);
 });
 
 test("H2: a bare pack moves the same way: a file that is some version of the base is replaced, data the game changed is kept, git's blob ids name the base's versions", () => {
@@ -203,9 +222,22 @@ test("H2: a bare pack moves the same way: a file that is some version of the bas
   assert.equal(read(path.join(out, "scripts", "main.gd")), "new main\n");
   assert.equal(read(path.join(out, "data", "barks.json")), "pond banter\n");
   assert.equal(read(path.join(out, "scripts", "toys.gd")), "toys\n");
-  // a game script that is no version of the base: a conflict
+  // a game script that is no version of the base, where the base changed the file over its history: a conflict, with why
   w(game, "scripts/main.gd", "the game's own main\n");
-  assert.deepEqual(planRebase(game, base, known).conflicts, ["scripts/main.gd"]);
+  const pc = planRebase(game, base, known);
+  assert.deepEqual(pc.conflicts, ["scripts/main.gd"]);
+  assert.match(pc.why["scripts/main.gd"] ?? "", /the game's copy is \+1 -1 lines from the newest base/);
+  // ... and where the base never changed it (its history holds only the newest version): the game's edit is kept
+  const known2 = new Map([["scripts/main.gd", new Set([blobId(Buffer.from("new main\n"))])]]);
+  const pe = planRebase(game, base, known2);
+  assert.deepEqual([pe.conflicts, pe.edited], [[], ["scripts/main.gd"]]);
+  // with the game's own base known (a job's ref/base): three-way
+  w(root, "was/scripts/main.gd", "new main\n");
+  assert.deepEqual(planRebase(game, base, known, undefined, path.join(root, "was")).edited, ["scripts/main.gd"]);
+  w(root, "was/scripts/main.gd", "older main\n");
+  const p3 = planRebase(game, base, known, undefined, path.join(root, "was"));
+  assert.deepEqual(p3.conflicts, ["scripts/main.gd"]);
+  assert.equal(p3.why["scripts/main.gd"], "the game +1 -1 lines and the newest base +1 -1 lines since the game's base");
   // git's history of the real base names its versions: the newest base's main.gd is one of them
   const mainGd = path.join(REPO_ROOT, "engine", "templates", "rink_game", "scripts", "main.gd");
   const k = knownBase("engine/templates/rink_game");
@@ -236,4 +268,29 @@ test("H2: a check the move breaks stops it (the game stays as it was); a check t
   s = rebuildState(j.jobDir, { write: false });
   assert.equal(s.promotions.length, 2);
   assert.ok(s.notes.some((n) => n.text.includes("kept these failures as they were") && n.text.includes("bot-bot_skin")), JSON.stringify(s.notes.slice(-3)));
+});
+
+test("H2b: the plan follows the base: a moved game keeps the newest base's bots through its next change (pack.json is composed from the plan again)", async () => {
+  const j = await coreJob("h2b-plan");
+  const base = path.join(j.engine, "templates", "rink_game");
+  // the newer base brings a bot of its own (as E1b's base brought tests/bot_toys.gd)
+  fs.writeFileSync(path.join(base, "tests", "bot_h2b.gd"), "extends Node\n# H2b: the newer base's own bot\n");
+  const bm = JSON.parse(read(path.join(base, "pack.json"))) as { tests: string[] };
+  bm.tests.push("tests/bot_h2b.gd");
+  fs.writeFileSync(path.join(base, "pack.json"), JSON.stringify(bm, null, 2));
+  const out: string[] = [];
+  assert.equal(await main(["rebase", j.jobDir, "--runner", "fake", "--engine-dir", j.engine], (x) => out.push(x)), 0, out.join("\n"));
+  let s = rebuildState(j.jobDir, { write: false });
+  const basePkg = s.plan.find((p) => p.kind === "base");
+  assert.ok(basePkg?.registers?.tests?.includes("tests/bot_h2b.gd"), `the base package registers the newer base's bot: ${JSON.stringify(basePkg?.registers)}`);
+  assert.ok(s.packages[basePkg?.id as string]?.state === "promoted", "the base package stays promoted");
+  assert.equal(s.jobState?.state, "done");
+  // the next change composes pack.json from the plan again: the newer base's bot is still there, and it ran
+  const from = readEvents(j.jobDir).at(-1)?.seq ?? 0;
+  assert.equal(await j.run(["change", j.jobDir, "make it faster"], "change"), 0, j.log.join("\n"));
+  s = rebuildState(j.jobDir, { write: false });
+  assert.equal(s.promotions.length, 3);
+  const m = JSON.parse(read(path.join(j.jobDir, s.promoted?.dest as string, "pack.json"))) as { tests: string[] };
+  assert.ok(m.tests.includes("tests/bot_h2b.gd"), `version 3's manifest keeps the newer base's bot: ${m.tests.join(", ")}`);
+  void from;
 });

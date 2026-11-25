@@ -1,11 +1,8 @@
 extends RefCounted
-## thirdjam's match HUD on our screen (lane K5, round 1: the in-play set). UJamHudWidget::RefreshFromFrame (HUDWidget.cpp:895-1084)
-## as HEAD 8dc713c6 ships it, every console variable at its default, in the one look (jam.hud.OneLook 1, HUDOneLook.cpp):
-## the score plates, the rings on the ice (yours, the carrier's, yours doubled while you carry, the loose puck's), the YOU
-## chevron and tag, the far-net and own-net badges with their distances, the off-screen puck arrow, the edge-slot rule,
-## the controls panel, the radar, the faceoff dial and its hint. Positions in layout units (1920 x 1080 at 16:9, as
-## Slate's DPI curve). Presentation only: it reads the snapshot and the buttons and writes nothing back.
-## One call a frame: `frame(snap, ui)` after the camera has stepped (main.gd). The rules are rules.gd's.
+## thirdjam's match HUD on our screen (lane K5, round 1: the in-play set). UJamHudWidget::RefreshFromFrame (HUDWidget.cpp:895-1084) as HEAD 8dc713c6 ships it, every console variable at its default, in the one look (jam.hud.OneLook 1, HUDOneLook.cpp):
+## the score plates, the rings on the ice (yours, the carrier's, yours doubled while you carry, the loose puck's), the YOU chevron and tag, the far-net and own-net badges with their distances, the off-screen puck arrow, the edge-slot rule,
+## the controls panel, the radar, the faceoff dial and its hint. Positions in layout units (1920 x 1080 at 16:9, as Slate's DPI curve).
+## Presentation only: it reads the snapshot and the buttons and writes nothing back. One call a frame: `frame(snap, ui)` after the camera has stepped (main.gd). The rules are rules.gd's.
 
 const R := preload("rules.gd")
 const PanelView := preload("panel.gd")
@@ -61,10 +58,11 @@ var grace_from_hit: bool = false
 # what the last frame showed (tests read it)
 var shown: Dictionary = {}
 var ability = preload("ability.gd").new()   # lane E1b: the ability slot (ability.gd), shown while the human holds one
+var hint = preload("hint.gd").new()         # lane H2b: the pack's hint slot (hint.gd: ui "pack_hint"), never over the caption
+var top_view: bool = false                  # lane H2b: the frame is drawn for the "top" camera (ui "top_view", screen.gd): no rings
 
 
-## `skin`: data/skin.json as skin.gd reads it ({} = hokej's defaults); `commentary_rows`: the commentator's bank it names (null =
-## thirdjam's built-in banks, [] = none).
+## `skin`: data/skin.json as skin.gd reads it ({} = hokej's defaults); `commentary_rows`: the commentator's bank it names (null = thirdjam's built-in banks, [] = none).
 func _init(layer, game: Dictionary, level_id: String = "pro", match_seed: int = 0, bark_rows: Array = [], skin: Dictionary = {}, commentary_rows: Variant = null) -> void:
 	lay = layer
 	var rk: Dictionary = game["rink"]
@@ -93,8 +91,7 @@ func col(team: int) -> Color:
 	return team_col[0] if team == 0 else team_col[1]
 
 
-## One frame. ui: {"with_puck": bool (JamControls::HasPuckForButtons), "held": {verb: true}, "saucer": bool, "braced": bool,
-## "press": bool (a two-role button down), "paused": bool}.
+## One frame. ui: {"with_puck": bool (JamControls::HasPuckForButtons), "held": {verb: true}, "saucer": bool, "braced": bool, "press": bool (a two-role button down), "paused": bool; lane H2b: "pack_hint": String, "top_view": bool}.
 func frame(snap: Dictionary, ui: Dictionary) -> void:
 	lay.clear()
 	shown = {}
@@ -113,6 +110,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	var puck: Dictionary = snap["Puck"]
 	var puck_pos: Vector2 = puck["Pos"]
 	var paused: bool = bool(ui.get("paused", false))
+	top_view = bool(ui.get("top_view", false))
 	head_override = ui.get("head", Vector3.INF)
 
 	# ---- the frame's memories (cpp:903, 1012-1027)
@@ -188,10 +186,10 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	var rings: Dictionary = _rings(snap, phase, me, hu, carrier, b_count, hbox, f, advanced)
 	if rings.has("you_have"):
 		_ring(rings["you_have"][0], rings["you_have"][1])
-		shown["you_have_ring"] = true
+		shown["you_have_ring"] = not top_view
 	if rings.has("loose"):
 		_ring(rings["loose"][0], rings["loose"][1])
-		shown["loose_ring"] = true
+		shown["loose_ring"] = not top_view
 	if advanced:                                       # UpdateChargeLook and UpdateTeach read the sim frame (cpp:183, 185)
 		pass_ring_at = charge.pass_ring(snap, phase, me, f)
 		charge.teach(snap, phase, me, f, b_count, down_now, last_drop_frame, bool(ui.get("hit_pressed", false)))
@@ -206,10 +204,10 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	# ================================================================ the rings (cpp:591-595)
 	if rings.has("you"):
 		_ring(rings["you"][0], rings["you"][1])
-		shown["you_ring"] = true
+		shown["you_ring"] = not top_view
 	if rings.has("carrier"):
 		_ring(rings["carrier"][0], rings["carrier"][1])
-		shown["carrier_ring"] = true
+		shown["carrier_ring"] = not top_view
 
 	# ================================================================ the markers (UpdateMarker, UpdateOwnMarker, UpdatePuckMarker, ResolveEdgeSlots)
 	var covered: bool = b_count or frames > 0 or f < R.PUCK_MARKER_CARD_FRAMES
@@ -248,6 +246,7 @@ func frame(snap: Dictionary, ui: Dictionary) -> void:
 	# ================================================================ the radar (cpp:724-733, RadarWidget.cpp; one look frame HUDOneLook.cpp:110-112)
 	_radar(snap, vw, vh, me)
 	ability.paint(lay, snap, vw, vh, hu, shown)   # lane E1b: the ability slot (HUDWidget.cpp:656-668, 934-947)
+	hint.paint(lay, vw, vh, String(ui.get("pack_hint", "")) if not paused else "", captions.last_rect, shown)   # lane H2b: a game's own hint line
 
 	# ================================================================ the faceoff dial and its hint (cpp:1017-1062)
 	var cue_hidden: bool = R.faceoff_cue_hidden_in_box(int(hu.get("PenaltyFrames", 0)))
@@ -422,8 +421,7 @@ func _rings(snap: Dictionary, phase: String, me: int, hu: Dictionary, carrier: i
 	return out
 
 
-## A figure's box on the screen from its bones (source 2): every joint projected, grown by FigurePadCm (14 cm, h:239) at the
-## figure's depth; Rect2() when a joint is behind the camera.
+## A figure's box on the screen from its bones (source 2): every joint projected, grown by FigurePadCm (14 cm, h:239) at the figure's depth; Rect2() when a joint is behind the camera.
 func _bones_box(pts: PackedVector3Array) -> Rect2:
 	var lo := Vector2(INF, INF)
 	var hi := Vector2(-INF, -INF)
@@ -558,9 +556,11 @@ func _dial(vw: float, vh: float, frames: int, counting: bool, drop: bool, result
 
 ## T_UI_Ring (the film leader's ring, an AI-made texture we do not have): drawn here as its parts read on thirdjam's stills
 ## (h43-02-faceoff-stands.png): a chalk ring with an ink edge, the home blue and away orange arcs inside it, four ticks.
-## The ground ring: T_UI_RingPlain (exported from thirdjam's project, 512 px) stretched into the ellipse's box and tinted
-## (MakeGroundRing cpp:351-361); without the picture, the band drawn to its measure.
+## The ground ring: T_UI_RingPlain (exported from thirdjam's project, 512 px) stretched into the ellipse's box and tinted (MakeGroundRing cpp:351-361); without the picture, the band drawn to its measure.
+## Lane H2b: none in the top view (the overview straight down: the rings are the follow camera's, E1b's stills drew yours as a large ellipse off the figure).
 func _ring(r: Rect2, c: Color) -> void:
+	if top_view:
+		return
 	if art_ring != null:
 		lay.image(art_ring, r, c)
 	else:

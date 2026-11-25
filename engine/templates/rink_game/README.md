@@ -71,6 +71,14 @@ bash engine/tools/tl.sh bot        --pack=<dir> --test=tests/bot_toys.gd        
 `bot_first_match` passes when the match ends (by goals or by the cartridge's timer) inside 10 minutes and the end card is
 held.
 
+**A game's own hint line has a slot** (`scripts/hud/hint.gd`, lane H2b): a game's script says
+`ctx.root.set_meta(&"rink_hint", "F: BUBBLE  Green spots reload it")` on every frame it should show ("" = none), and the
+base draws it on a dark plate above the controls panel, never over the commentator's caption. Do not add a TLHud label
+of your own at the bottom: the caption lives there.
+
+**A skin's own commentary lines need no voice**: the commentator says a line with no recorded voice as text only (the
+caption shows it; `rink_audio.gd` records a "voice_none" row), never an error.
+
 ## Known limits of the base
 
 - **A finished game keeps the base it was made with** until it is moved: My games' "Newest base" (`foreman rebase <job>`)

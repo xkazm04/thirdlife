@@ -77,6 +77,8 @@ static func frame_of(screen, ctx, snap: Dictionary, human, last_in: Dictionary, 
 	if applied != screen.view.cards.level_id:
 		screen.view.cards.set_level(applied)
 	var ui: Dictionary = ui_of(snap, human, last_in, last_raw)
+	ui["pack_hint"] = str(ctx.root.get_meta(&"rink_hint", ""))   # lane H2b: a game's own hint line, drawn in the base's slot (hud/hint.gd)
+	ui["top_view"] = ctx.cameras.active != null and ctx.cameras.active == ctx.cameras.view(&"top")   # lane H2b: the overview draws no rings
 	var hw = screen.head_world(ctx, snap, head)
 	if hw != null:
 		ui["head"] = hw

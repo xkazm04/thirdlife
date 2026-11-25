@@ -21,8 +21,10 @@ extends RefCounted
 ##   - the figure call is SetBoostEquipped(Kind, bOn): thirdjam tries "SetBoost" first and takes the first of the two
 ##     that has (a name, a bool); thirdjam's own figure has SetBoost(Kind) alone under that name, as ours.
 ##   - NOT PORTED: the waist ring of light (AJamBoostAura's own mesh, shown only for a figure that did not take the
-##     call), jam.boost.Preview, and the EFFECT boost's glow (IJamSkaterVisual::SetBoost(Kind) from
-##     UJamEffectSystem::GetBoostKindFor, HokejGameMode.cpp:1696-1703): which boost covers a skater is not in the snapshot.
+##     call) and jam.boost.Preview.
+##   - the EFFECT boost's glow (IJamSkaterVisual::SetBoost(Kind) from UJamEffectSystem::GetBoostKindFor, HokejGameMode.cpp:
+##     1696-1703, every frame there) is ported since the snapshot's `Boosts` (RinkCore 1.4, lane H2b): the figure is called
+##     on a change of the kind only ("" = none; a skater never boosted is never called, so hokej's figures are untouched).
 
 const CELEBRATE_KINDS: Array = ["arms_up", "stick_raise", "knee_glide"]      # JamPickupActor.cpp:624
 
@@ -30,6 +32,7 @@ var abilities: Array = []            # the cartridge's ability kinds by slot
 var celebrations: Array = []         # [[frame, scorer, mate, kind, mate's kind]] so far
 var _figure_kind: Dictionary = {}    # AJamBoostAura::FigureKind by skater (an aura exists once he held something)
 var _prev_score: Array = [0, 0]
+var _boost_kind: Dictionary = {}     # the effect boost each skater's figure was last told (SetBoost), by skater
 
 
 ## The kinds of game.abilities[] by slot.
@@ -42,6 +45,7 @@ static func abilities_of(cartridge: Dictionary) -> Array:
 
 func reset() -> void:
 	_figure_kind = {}
+	_boost_kind = {}
 	_prev_score = [0, 0]
 	celebrations = []
 
@@ -140,10 +144,15 @@ func deliver_events(snap: Dictionary, pawns: Array) -> int:
 ## AJamBoostAura::Sync, the figure's part (:564-594): on a change of what a skater holds, (old, false) then (new, true).
 func sync(snap: Dictionary, pawns: Array) -> void:
 	var sk: Array = snap["Skaters"]
+	var boosts: Array = snap.get("Boosts", [])
 	for p: Object in pawns:
 		var i: int = int(p.get("sim_index"))
 		if i < 0 or i >= sk.size():
 			continue
+		var bk: String = String(boosts[i]) if i < boosts.size() else ""
+		if bk != String(_boost_kind.get(i, "")):          # the effect boost's glow (HokejGameMode.cpp:1696-1703), on a change
+			p.call(&"call_figure", &"SetBoost", [StringName(bk)])
+			_boost_kind[i] = bk
 		var held: String = held_kind(sk[i], abilities)
 		if not _figure_kind.has(i):
 			if held == "":

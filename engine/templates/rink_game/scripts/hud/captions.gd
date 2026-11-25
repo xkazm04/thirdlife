@@ -77,6 +77,7 @@ var bark_hold_until: int = -1000000
 var bark_at_human: bool = false
 const BARK_YIELD := 150                 # BarkYieldFrames (CommentarySystem.h:30)
 
+var last_rect: Rect2 = Rect2()                        # the plate paint() drew this frame (Rect2() = none)
 var team_names: Array = []                            # the skin's team words (lane E1): thirdjam's "blue" / "orange" said as these
 var team_plural: Array = [false, false]               # lane E1b: which of them is a plural ("Sharks shoot!"; skin.gd teams_of)
 
@@ -565,6 +566,7 @@ static func opacity(age: int, dur: int) -> float:
 
 ## Paints the strip (docked 24 over the bottom edge; under the scoreboard when the dock would lie on his figure, ClearDown 1).
 func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, human_box: Rect2, labels: Array = []) -> String:
+	last_rect = Rect2()
 	if shown_line == "" or paused or hidden:
 		return ""
 	var a: float = opacity(tick - shown_tick, mini(shown_dur, last_end - int(last_pick.get("frame", 0))))
@@ -584,6 +586,7 @@ func paint(lay, vw: float, vh: float, tick: int, paused: bool, hidden: bool, hum
 			return ""
 	var fill := R.ML_PANEL
 	fill.a = 0.72 * a
+	last_rect = Rect2(tl, plate)                                     # lane H2b: where it is (hint.gd keeps a game's hint off it)
 	lay.box(tl, plate, fill, 4.0, Color(1, 1, 1, 0.12 * a), 1.0)
 	lay.text(tl + Vector2(16, 6), shown_line, R.LINE_PT, R.ML_TEXT_DIM, {"face": "regular", "alpha": a, "shadow": Vector2(0, 1), "shadow_color": Color(0, 0, 0, 0.45)})
 	return shown_line
