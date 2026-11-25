@@ -25,7 +25,8 @@
         "report": {"type": "path", "required": true},
         "seed": {"type": "int", "default": 1},
         "frames": {"type": "int", "default": 3600},
-        "bot-frames": {"type": "int", "default": 36000}
+        "bot-frames": {"type": "int", "default": 36000},
+        "home": {"type": "string", "default": "", "note": "H2c. Where the game lives, for its frame budget: create (made in Create: a dungeon played alone, the solo budget) | village (placed on a village plot: one of many). Absent: the engine's boot files decide (invariants.gd budget_class). The Foreman passes it for its jobs."}
       }
     },
     "bot": {

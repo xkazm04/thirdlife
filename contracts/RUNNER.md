@@ -107,6 +107,11 @@ pack that prints an error and carries on fails V2.
 
 - `invariants` takes `--bot-frames=<max>` (default 36000); metrics `bot_state_hash`, `bot_frames`, and
   `bot_state_hash_b` when the two bot runs differ.
+- `invariants` takes `--home=create|village` (added 2026-11-25): where the game lives, for its frame budget. `create`: a
+  game made in Create, a dungeon played alone until a person places it in the village (the solo budgets,
+  `invariants.solo_budget` / `invariants.solo_frame_budget`). `village`: placed on a village plot, one of many
+  (`invariants.many_budget`). Absent: the engine's boot files decide, and a pack outside the engine's tree is one of
+  many. Any other value is not_run. The checks' details say the reason in words.
 - A `smoke.loads` detail may end with `; WARNING: ...` (for example a pack script that never runs because it was
   attached after `add_child`). A warning fails nothing.
 
