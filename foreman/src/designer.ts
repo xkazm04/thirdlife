@@ -18,7 +18,7 @@ import { planCardProblems, planHandProblems } from "./cards.js";
 import { briefDesignText, conceptText, criticChecklistText, designAnswerSchema, qualityText, roomDesignProblems, withHLine } from "./roomtext.js"; // JOB.md 2026-11-21: the design room
 import { HOUSE_ENGINE, briefTemplateProblems, coreRouteOf, templateExcerpt } from "./templates.js"; // N4 of 22 Nov: genre templates
 import { corePlanCheck, corePlannerText, coreTofuText, normalizeCorePlan, overlapAllowed, packageLimitProblems, planCore } from "./coreplan.js"; // E3 of 24 Nov: a game on a core
-import { tofuPlanProblems, tofuPlannerText } from "./tofu.js"; // N4 of 22 Nov: the tofu stage
+import { courtOf, tofuPlanProblems, tofuPlannerText } from "./tofu.js"; // N4 of 22 Nov: the tofu stage
 import type { ConceptTemplate } from "./room_wire.js";
 import { servesProblems, type Concept } from "./room_wire.js";
 import { playerCheckProblems } from "./playercheck.js";
@@ -322,7 +322,7 @@ The producer's last review of this design (its warnings: make each one true in a
     quality: input.brief.design !== undefined ? qualityText(["2", "6", "7:Planner", "12"]) : "(the brief has no game design doc: build the brief as it is)",
     template: templateExcerpt(input.brief.concept?.template, "planner"),
     method: input.brief.design !== undefined ? methodText(["14:Planner"]) : "",
-    tofu: coreTofuText(input.brief.concept?.template) ?? (input.brief.design !== undefined ? tofuPlannerText(input.brief.concept?.template, input.brief.design.verbs.length) : "(the brief has no game design doc: no tofu stage; the first phase is the smallest thing that plays)"),
+    tofu: coreTofuText(input.brief.concept?.template) ?? (input.brief.design !== undefined ? tofuPlannerText(input.brief.concept?.template, input.brief.design.verbs.length, courtOf(input.brief)) : "(the brief has no game design doc: no tofu stage; the first phase is the smallest thing that plays)"),
     core: corePlannerText(input.brief),
   };
 }

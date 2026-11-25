@@ -8,7 +8,7 @@ import path from "node:path";
 import type { Milestone, Strip } from "./events.js";
 import type { GateHost } from "./p10gate.js";
 import { critic, generate, type RubricItem } from "./designer.js";
-import { criticRubric, packageLinesOf } from "./phases.js";
+import { NOTE_NOT_KEPT, criticRubric, packageLinesOf } from "./phases.js";
 import { CRITIC_ROUND, criticReopenFor } from "./rounds.js";
 import { QUALITY_ROUNDS, type Look } from "./quality_state.js";
 import { CONTACT_STRIP, STRIP, botMoments, shotLabel, stripFile, stripFrom, stripLabel, type Shot } from "./shots.js";
@@ -19,14 +19,15 @@ import { PKG_ROOT, toPosix } from "./paths.js";
 import { slopIds } from "./roomtext.js";
 import type { RunnerVerbs } from "./verbs.js";
 import type { CritiqueResult } from "./verifier.js";
-import { judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } from "./tofu.js";
+import { courtOf, judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf, type TofuResult } from "./tofu.js";
 import { HOUSE_BOTS, contactMoment, houseBaseline, houseCompare, saveBaseline, type HouseBaseline } from "./house.js";
 import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./filmcheck.js";
 import { revisePair, sameKind } from "./revisepair.js";
 import { killItem, methodBlock } from "./method.js";
 import { templateOf } from "./templates.js";
 import { coreLook, jobCore } from "./coregate.js";
-import { foreignWords, gameHasVerb, gameWords } from "./gamewords.js"; // H1e: judged by the game's own design
+import { foreignWords, gameHasVerb, gameWords } from "./gamewords.js";
+import { sayLookNotPlay } from "./playsame.js"; // H1e: judged by the game's own design
 import { HOUSE_CONTACTS, numberLeaves } from "./revisepair.js"; // E3 of 24 Nov: the measured check of a game on a core
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
@@ -225,7 +226,7 @@ export function tofuLook(h: GateHost, m: Milestone, film?: FilmCheck): (TofuResu
   const t = tofuOf(h.s.plan);
   if (t === undefined || h.s.plan.find((p) => p.id === t.package)?.milestone !== m) return undefined;
   const read = readTofuMetrics(h.dir(), h.events, t.test);
-  const res = judgeTofu(read.metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length), t.test, read.hand, read.from, film);
+  const res = judgeTofu(read.metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief)), t.test, read.hand, read.from, film);
   const file = reportPath(h, `tofu-${m}`);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify({ schema: "tl.foreman.tofu/1", milestone: m, test: t.test, package: t.package, ...res, ...(film !== undefined && film.measured + film.unmeasured.length > 0 ? { film: filmReport(film) } : {}) }, null, 1) + "\n");
@@ -475,6 +476,17 @@ export function verdictOfLook(h: GateHost, look: Look): Verdict | undefined {
  * better. Writes the `milestone` event (not for a NOT ok first look: the milestone is not reached), or sends the
  * version back. A look still NOT ok at the last round is left for the hold (the state reads it from the event).
  */
+/**
+ * H1f: a critic that names a person's note on a kept card as not kept ("person's note not kept: ...") cannot pass the
+ * look, whatever its scores: the verdict is NOT ok, and the note leads, so the milestone and the revise round say it first.
+ */
+export function notesKept(v: Verdict | undefined): Verdict | undefined {
+  if (v === undefined) return v;
+  const missed = v.notes.filter((n) => n.trim().toLowerCase().startsWith(NOTE_NOT_KEPT));
+  if (missed.length === 0) return v;
+  return { ...v, ok: false, notes: [...missed, ...v.notes.filter((n) => !missed.includes(n))] };
+}
+
 export async function decideLook(h: GateHost, m: Milestone, members: string[], lastPackage: string, film: Film, shots: Shot[], round: number, notes: string[]): Promise<void> {
   // N4 loop round 2: a job whose template has a house game is set beside it (bot figures by the tofu names, the critic's rubric).
   const template = h.s.brief?.concept?.template;
@@ -484,8 +496,8 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   if (filmed !== undefined) notes.push(filmed.line);
   const tofu = tofuLook(h, m, filmed);
   const t = tofuOf(h.s.plan);
-  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template, h.s.brief?.design?.verbs.length), t.test, r.hand, r.from, filmed); })() : undefined);
-  const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template)) : undefined;
+  const built = tofu ?? (t !== undefined ? (() => { const r = readTofuMetrics(h.dir(), h.events, t.test); return judgeTofu(r.metrics, tofuMetricsFor(template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief)), t.test, r.hand, r.from, filmed); })() : undefined);
+  const vsHouse = base !== undefined ? houseCompare(built, base, tofuMetricsFor(template, undefined, courtOf(h.s.brief))) : undefined;
   if (vsHouse !== undefined) notes.push(vsHouse.line);
   const strips = base !== undefined && template !== undefined && film.strips.length > 0 ? await houseStrips(h, base, template.id, lastPackage, notes, [...new Set(shots.flatMap((x) => (x.bot !== undefined ? botMoments(h.dir(), h.events, x.bot).map((mm) => mm.kind) : [])))], film.hud === true) : [];
   // E3 of 24 Nov: a game on a core: the measured check (coregate.ts) instead of the tofu rows; not measured is said, never a pass.
@@ -493,7 +505,7 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   if (core !== undefined && !core.measured) notes.push(core.line);
   const claims = [claimsLine(built, filmed), core !== undefined ? `The core's measured check of this build's cartridge (lane E2's lab, not the build's own claim): ${core.line}` : undefined].filter((x): x is string => x !== undefined).join("\n") || undefined;
   const judged = withStage(h, withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined, claims), tofu), core?.measured === true ? core : undefined, "core");
-  const fresh = judged.verdict;
+  const fresh = notesKept(judged.verdict); // H1f: a person's note on a kept card the frames do not keep makes the look NOT ok
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;
   if (round === 0) {
@@ -505,6 +517,8 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
     return;
   }
   const prev = readSnapshot(h, m, round);
+  const same = sayLookNotPlay(h, prev?.atSeq, round, prev?.verdict?.notes, lastPackage); // H1f: a revise round that changed the look, not the play
+  if (same !== undefined) notes.push(same);
   // A new version the critic passes beats a version it sent back; otherwise the critic compares the two.
   // N4: a version that passes the tofu stage beats one that fails it, whatever the images say.
   const stagePick = (k: string): "new" | "previous" | undefined => (prev?.verdict?.scores[k] !== undefined && fresh?.scores[k] !== undefined && prev.verdict.scores[k] !== fresh.scores[k] ? ((fresh.scores[k] as number) > (prev.verdict.scores[k] as number) ? "new" : "previous") : undefined);

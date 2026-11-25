@@ -158,18 +158,21 @@ const sha = (...parts) => { const h = crypto.createHash("sha256"); for (const p 
 const contentHash = () => { const h = crypto.createHash("sha256"); const walk = (d, rel) => { for (const n of fs.readdirSync(d).sort()) { const a = path.join(d, n), r = rel ? `${rel}/${n}` : n; if (fs.statSync(a).isDirectory()) walk(a, r); else h.update(`${r}\0`).update(fs.readFileSync(a)).update("\0"); } }; walk(CONTENT, ""); return h.digest("hex"); };
 const useCache = !process.argv.includes("--no-cache") && !process.argv.includes("--make-bands");
 const cacheDir = process.env.TL_RINK_CHECK_CACHE || path.join(ROOT, ".tl", "check-cartridge-cache");
-const key = useCache ? sha(JSON.stringify({ v: 2, runs: runs.map((r) => [r.hand, r.lv, r.args]), variants }), "\0", text, "\0", rulesFile ? fs.readFileSync(rulesFile) : "", "\0", fs.readFileSync(exe), "\0", contentHash()) : "";
-const cacheFile = useCache ? path.join(cacheDir, `${key}.json`) : "";
-const t0 = Date.now();
-let done;
-let cached = false;
-try {
-  if (useCache) {
-    const c = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
-    if (c.tool === "tl.rink.check.cache/1" && Array.isArray(c.done) && c.done.length === new Set(runs.map((r) => `${r.hand} ${r.lv}`)).size) { done = c.done; cached = true; }
-  }
-} catch { /* not cached */ }
-if (!cached) {
+const baseKey = useCache ? sha(JSON.stringify({ v: 2, variants }), "\0", text, "\0", rulesFile ? fs.readFileSync(rulesFile) : "", "\0", fs.readFileSync(exe), "\0", contentHash()) : "";
+/**
+ * Plays a list of runs through the pool of maxJobs lab processes, or reads them from the cache (keyed by what the lab
+ * reads and the runs' arguments). Returns one result per cell (the groups of a cell joined in seed order) and whether it
+ * was read from the cache. H1f: a function, so the toys' second stage (more seeds) is cached and pooled the same way.
+ */
+async function playRuns(list) {
+  const key = useCache ? sha(baseKey, "\0", JSON.stringify(list.map((r) => [r.hand, r.lv, r.args]))) : "";
+  const cacheFile = useCache ? path.join(cacheDir, `${key}.json`) : "";
+  try {
+    if (useCache) {
+      const c = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+      if (c.tool === "tl.rink.check.cache/1" && Array.isArray(c.done) && c.done.length === new Set(list.map((r) => `${r.hand} ${r.lv}`)).size) return { done: c.done, cached: true };
+    }
+  } catch { /* not cached */ }
   const scratch = path.join(ROOT, ".tl", "check-cartridge", String(process.pid));
   fs.rmSync(scratch, { recursive: true, force: true });
   fs.cpSync(CONTENT, scratch, { recursive: true });
@@ -181,13 +184,13 @@ if (!cached) {
   }
   const content = scratch.replace(/\\/g, "/");
   // A pool of at most maxJobs lab processes: the long cells first, every result kept at its run's place.
-  const out = new Array(runs.length);
-  const order = runs.map((r, i) => i).sort((a, b) => runs[a].pri - runs[b].pri || a - b);
-  const worker = async () => { while (order.length) { const i = order.shift(); const r = runs[i]; out[i] = { hand: r.hand, lv: r.lv, r: await run(exe, r.args.map((a) => (a === C ? content : a))) }; } };
-  await Promise.all(Array.from({ length: Math.min(maxJobs, runs.length) }, worker));
+  const out = new Array(list.length);
+  const order = list.map((r, i) => i).sort((a, b) => list[a].pri - list[b].pri || a - b);
+  const worker = async () => { while (order.length) { const i = order.shift(); const r = list[i]; out[i] = { hand: r.hand, lv: r.lv, r: await run(exe, r.args.map((a) => (a === C ? content : a))) }; } };
+  await Promise.all(Array.from({ length: Math.min(maxJobs, list.length) }, worker));
   fs.rmSync(scratch, { recursive: true, force: true });
   // The groups of a cell, joined in seed order: one result per cell, as one process playing every seed gives.
-  done = [];
+  const done = [];
   for (const x of out) {
     const same = done.find((d) => d.hand === x.hand && d.lv === x.lv);
     if (same === undefined) done.push({ hand: x.hand, lv: x.lv, r: { code: x.r.code, lines: [...x.r.lines] } });
@@ -197,11 +200,16 @@ if (!cached) {
     try {
       fs.mkdirSync(cacheDir, { recursive: true });
       const tmp = `${cacheFile}.${process.pid}.tmp`;
-      fs.writeFileSync(tmp, JSON.stringify({ tool: "tl.rink.check.cache/1", file: path.basename(file), runs: runs.length, done }) + "\n");
+      fs.writeFileSync(tmp, JSON.stringify({ tool: "tl.rink.check.cache/1", file: path.basename(file), runs: list.length, done }) + "\n");
       fs.renameSync(tmp, cacheFile);
     } catch { /* a cache that cannot be written is only slower */ }
   }
+  return { done, cached: false };
 }
+const t0 = Date.now();
+const first = await playRuns(runs);
+let done = first.done;
+let cached = first.cached;
 const seconds = (Date.now() - t0) / 1000;
 
 // 3. what a person meets
@@ -294,35 +302,54 @@ const toyFigures = [];
 if (toysOn) {
   const byseed = (r) => new Map((r?.lines ?? []).filter((l) => l.tool === "thirdjam.playtest/1").map((l) => [l.seed, l]));
   const cellsOf = (r) => (r?.lines ?? []).filter((l) => l.tool === "rinklab.cell/1");
-  const base = byseed(toyCells.base);
-  const baseOk = toyCells.base !== undefined && toyCells.base.code === 0 && base.size === toySeeds;
-  const fPress = r1(mean(cellsOf(toyCells.base).map((c) => c.stats?.press?.ability ?? 0)));
-  for (const t of toys) {
-    const row = { toy: t.name, how: t.how };
-    if (t.refused !== undefined) { toyFigures.push({ ...row, measured: false, why: `the copy without it is refused by thirdjam's validator: ${t.refused.join("; ")}` }); continue; }
-    const r = toyCells[t.id];
-    const other = byseed(r);
-    if (!baseOk || r === undefined || r.code !== 0 || other.size !== toySeeds) { toyFigures.push({ ...row, measured: false, why: `${other.size} of ${toySeeds} matches reported` }); continue; }
-    let gd = 0, changed = 0, onlyWith = 0, onlyWithout = 0;
-    for (const [seed, a] of base) {
-      const b = other.get(seed);
+  /** One toy's paired figures over the seeds both cells played; undefined when a cell is missing or incomplete. */
+  const pairOf = (t) => {
+    const base = byseed(toyCells.base), other = byseed(toyCells[t.id]), n = other.size;
+    if (toyCells.base === undefined || toyCells.base.code !== 0 || toyCells[t.id] === undefined || toyCells[t.id].code !== 0 || n < toySeeds || [...other.keys()].some((k) => !base.has(k))) return { n, ok: false };
+    let gd = 0, changed = 0, onlyWith = 0, onlyWithout = 0, wWith = 0, wWithout = 0;
+    for (const [seed, b] of other) {
+      const a = base.get(seed);
       gd += (a.goals[0] - a.goals[1]) - (b.goals[0] - b.goals[1]);
       if (a.result !== b.result || a.goals[0] !== b.goals[0] || a.goals[1] !== b.goals[1] || a.frames !== b.frames) changed += 1;
+      if (a.result === "win") wWith += 1;
+      if (b.result === "win") wWithout += 1;
       if (a.result === "win" && b.result !== "win") onlyWith += 1;
       if (a.result !== "win" && b.result === "win") onlyWithout += 1;
     }
-    const wWith = [...base.values()].filter((p) => p.result === "win").length;
-    const wWithout = [...other.values()].filter((p) => p.result === "win").length;
-    const points = Math.round((100 * (wWith - wWithout)) / toySeeds);
-    // H1d/G1 round 3 (PROOF-G1.md section 14): at 20 seeds three toys of four read the other way round from 80 seeds. A
-    // toy's worth is said only when the paired matches show it: the sign test over the matches won with it only and
-    // without it only; otherwise "not clear yet" with those two counts.
-    const clear = toyClear(toySeeds, changed, onlyWith, onlyWithout, points);
-    const fig = { ...row, measured: true, matches: toySeeds, wins_with: wWith, wins_without: wWithout, points, goal_diff: r2(gd / toySeeds), changed, won_only_with: onlyWith, won_only_without: onlyWithout, clear, ...(t.id === "ability" ? { f_presses: fPress } : {}) };
+    const points = Math.round((100 * (wWith - wWithout)) / n);
+    return { ok: true, n, gd, changed, onlyWith, onlyWithout, wWith, wWithout, points, clear: toyClear(n, changed, onlyWith, onlyWithout, points) };
+  };
+  // H1f (the Director's answer to H1e): a toy still unclear at --toy-seeds is played again on more seeds, up to
+  // --toy-seeds-max (default 80), inside the pool and the cache; "not clear yet" only if it is still unclear there.
+  const toySeedsMax = Math.max(toySeeds, Number(arg("--toy-seeds-max", "80")));
+  const unclear = toys.filter((t) => t.refused === undefined && pairOf(t).ok && pairOf(t).clear === "not_clear");
+  if (unclear.length > 0 && toySeedsMax > toySeeds) {
+    const hand = ["-difficulty=pro", "-player=regular", "-playersprint"];
+    const more = [];
+    for (let a = toySeeds + 1; a <= toySeedsMax; a += 20) {
+      const b = Math.min(toySeedsMax, a + 19);
+      more.push({ hand: "toy:base", lv: "pro", pri: 1, args: ["match", C, "-cartridge=tlcheck", `-seeds=${a}-${b}`, ...hand] });
+      for (const t of unclear) more.push({ hand: `toy:${t.id}`, lv: "pro", pri: 1, args: ["match", C, `-cartridge=${t.cartridge ?? "tlcheck"}`, `-seeds=${a}-${b}`, ...hand, ...(t.extra ?? [])] });
+    }
+    const second = await playRuns(more);
+    cached = cached && second.cached;
+    for (const d of second.done) {
+      const id = d.hand.slice(4);
+      if (toyCells[id] === undefined) continue;
+      toyCells[id] = { code: toyCells[id].code !== 0 ? toyCells[id].code : d.r.code, lines: [...toyCells[id].lines, ...d.r.lines] };
+    }
+  }
+  const fPress = r1(mean(cellsOf(toyCells.base).filter((c) => c.seed <= toySeeds).map((c) => c.stats?.press?.ability ?? 0)));
+  for (const t of toys) {
+    const row = { toy: t.name, how: t.how };
+    if (t.refused !== undefined) { toyFigures.push({ ...row, measured: false, why: `the copy without it is refused by thirdjam's validator: ${t.refused.join("; ")}` }); continue; }
+    const p = pairOf(t);
+    if (!p.ok) { toyFigures.push({ ...row, measured: false, why: `${p.n} of ${toySeeds} matches reported` }); continue; }
+    const fig = { ...row, measured: true, matches: p.n, wins_with: p.wWith, wins_without: p.wWithout, points: p.points, goal_diff: r2(p.gd / p.n), changed: p.changed, won_only_with: p.onlyWith, won_only_without: p.onlyWithout, clear: p.clear, ...(t.id === "ability" ? { f_presses: fPress } : {}) };
     toyFigures.push(fig);
-    const said = `pro ${wWith} of ${toySeeds} wins with it, ${wWithout} without (${points >= 0 ? "+" : ""}${points} points; won only with it ${onlyWith}, only without it ${onlyWithout}), paired goal difference ${fig.goal_diff >= 0 ? "+" : ""}${fig.goal_diff}${t.id === "ability" ? `, F pressed ${fPress} times a match` : ""} (thirdjam's regular playtester)`;
-    if (clear === "nothing") warnings.push(`toy: ${t.name}: changes nothing, not one of ${toySeeds} matches at pro plays differently without it; ${said}`);
-    else if (clear === "little") warnings.push(`toy: ${t.name}: worth about nothing, ${said}`);
+    const said = `pro ${p.wWith} of ${p.n} wins with it, ${p.wWithout} without (${p.points >= 0 ? "+" : ""}${p.points} points; won only with it ${p.onlyWith}, only without it ${p.onlyWithout}), paired goal difference ${fig.goal_diff >= 0 ? "+" : ""}${fig.goal_diff}${t.id === "ability" ? `, F pressed ${fPress} times a match` : ""} (thirdjam's regular playtester)`;
+    if (p.clear === "nothing") warnings.push(`toy: ${t.name}: changes nothing, not one of ${p.n} matches at pro plays differently without it; ${said}`);
+    else if (p.clear === "little") warnings.push(`toy: ${t.name}: worth about nothing, ${said}`);
   }
 }
 /**
@@ -343,7 +370,7 @@ function toyClear(n, changed, onlyWith, onlyWithout, points) {
   return Math.abs(points) + margin <= 10 ? "little" : "not_clear";
 }
 const ok = problems.length === 0;
-say(`rink check-cartridge: ${path.basename(file)}${rulesFile ? " + " + path.basename(rulesFile) : ""} (validator: accepted; ${done.length} runs in ${r1(seconds)} s${cached ? ", read from the cache: this cartridge, rules, lab and content were measured before" : ""})`);
+say(`rink check-cartridge: ${path.basename(file)}${rulesFile ? " + " + path.basename(rulesFile) : ""} (validator: accepted; ${done.length} runs in ${r1((Date.now() - t0) / 1000)} s${cached ? ", read from the cache: this cartridge, rules, lab and content were measured before" : ""})`);
 for (const lv of LEVELS) {
   const m = pt(lv), p = levels[lv]?.plan;
   if (!m) continue;
@@ -358,5 +385,5 @@ for (const p of problems) say(`  FAIL ${p}`);
 say(ok ? `PASS  rink check-cartridge: measured${warnings.length ? ` (${warnings.length} warning(s))` : ""}` : `FAIL  rink check-cartridge: ${problems.length} run(s) did not complete`);
 console.log(JSON.stringify({ tool: "tl.rink.check/1", ok, ran: true, file: path.basename(file), rules: rulesFile ? path.basename(rulesFile) : undefined,
   hands: { playtester: `thirdjam regular playtester with sprint, ${seeds} seeds a level`, plan: planSeeds ? `planning hand (lab_plan regular), ${planSeeds} seeds a level` : undefined },
-  levels, ...(defects ? { defects: defectCells, defect_hands: { idle: `thirdjam regular playtester with every input removed, ${defectSeeds} seeds at pro`, skate_only: `planning hand (lab_plan regular) skating only, ${defectSeeds} seeds at pro, its sim copies checked` } } : {}), ...(toysOn ? { toys: toyFigures, toy_hand: `thirdjam regular playtester with sprint, ${toySeeds} seeds at pro, each toy with and without it, paired by seed` } : {}), warnings, problems, seconds: r1(seconds), ...(cached ? { cached: true } : {}) }));
+  levels, ...(defects ? { defects: defectCells, defect_hands: { idle: `thirdjam regular playtester with every input removed, ${defectSeeds} seeds at pro`, skate_only: `planning hand (lab_plan regular) skating only, ${defectSeeds} seeds at pro, its sim copies checked` } } : {}), ...(toysOn ? { toys: toyFigures, toy_hand: `thirdjam regular playtester with sprint, ${toySeeds} seeds at pro (a toy still unclear there: up to ${Math.max(toySeeds, Number(arg("--toy-seeds-max", "80")))}), each toy with and without it, paired by seed` } : {}), warnings, problems, seconds: r1((Date.now() - t0) / 1000), ...(cached ? { cached: true } : {}) }));
 process.exit(ok ? 0 : 1);

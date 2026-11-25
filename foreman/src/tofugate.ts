@@ -11,7 +11,7 @@ import path from "node:path";
 import type { Acceptance } from "./events.js";
 import type { GateHost } from "./p10gate.js";
 import type { VerifyResult } from "./verifier.js";
-import { judgeTofu, tofuMetricsFor, tofuOf } from "./tofu.js";
+import { courtOf, judgeTofu, tofuMetricsFor, tofuOf } from "./tofu.js";
 import { QUALITY_ROUNDS } from "./quality_state.js";
 
 /** The words a round gets when the plan's tofu bot passed with metrics out of the plan's bounds; undefined otherwise. */
@@ -23,7 +23,7 @@ export function tofuGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append
   const result = (vr.report as { bot?: { result?: { metrics?: unknown; hand?: unknown } } } | undefined)?.bot?.result;
   const m = result?.metrics;
   const metrics = m !== null && typeof m === "object" && !Array.isArray(m) ? (m as Record<string, unknown>) : undefined;
-  const judged = judgeTofu(metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length), t.test);
+  const judged = judgeTofu(metrics, tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief)), t.test);
   if (judged.ok) return undefined;
   const out = judged.rows.filter((r) => !r.ok).map((r) => `${r.id} ${r.value ?? "absent"} (the plan's bound: ${r.want})`);
   const summary = `${t.test} answered ok, but the Foreman judges its metrics against the plan's tofu bounds and ${out.length} ${out.length === 1 ? "is" : "are"} outside them: ${out.join("; ")}. A bot's own ok is not the check: change the game until the figures it counts are inside the bounds (never the bot's ok, never the counting).`;

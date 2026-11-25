@@ -16,7 +16,7 @@ import type { JobState } from "./joblog.js";
 import { CORE_DATA_RE } from "./coreroute.js";
 import { coreRouteOf } from "./templates.js";
 import { playerChecks } from "./playercheck.js";
-import { FOREMAN_NOTE } from "./conduct.js";
+import { FOREMAN_NOTE, clip } from "./conduct.js";
 import { CARTRIDGE_DIFF, FIGURE_MISSED } from "./coregate.js";
 import { REMOVED, entriesText, type Removal } from "./removal.js";
 
@@ -102,7 +102,12 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   const asked = since.flatMap((e) => (e.type === "change_requested" && !e.text.startsWith(FOREMAN_NOTE) ? [`"${e.text}"`] : []));
   const keys = since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `) ? [e.text.slice(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `.length).split(" (")[0] ?? ""] : [])).filter(Boolean);
   const files = [...new Set(since.flatMap((e) => (e.type === "merge" ? e.files : [])))].sort();
-  const made = files.length === 0 ? "nothing was merged: the change was NOT made" : `${keys.length > 0 ? `${keys.join("; ")}; ` : ""}files: ${files.join(", ")}`;
+  // H1f (G2: "files: data/tuning.json, scripts/sim/sim.gd, ..." named files, not what the person will see; the builder's
+  // own note said it in words): after the person's words, what the merged rounds' builders say they changed, then the files.
+  const merged = new Set(since.flatMap((e) => (e.type === "merge" ? [e.package] : [])));
+  const said = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && merged.has(e.package) && !e.text.startsWith(FOREMAN_NOTE) ? e.text.split(/\r?\n/).map((l) => l.replace(/^\s*[-*]\s*/, "").trim()).filter((l) => l !== "" && !/^DEVIATIONS:?\s*(none)?$/i.test(l)) : []));
+  const seen = said.length === 0 ? "" : `what you will see, in the builder's words: ${said.slice(0, 3).map((l) => clip(l, 220)).join(" / ")}${said.length > 3 ? ` (and ${said.length - 3} more in its note)` : ""}; `;
+  const made = files.length === 0 ? "nothing was merged: the change was NOT made" : `${seen}${keys.length > 0 ? `${keys.join("; ")}; ` : ""}files: ${files.join(", ")}`;
   // H1 (E5e defect 3): each removal on its own line, "removed: ...; why: ...": the diff's REMOVED notes, then what the
   // promoted cartridge lost that no note names (a builder's round), with why unknown.
   const named = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${REMOVED}: `) ? [e.text.slice(FOREMAN_NOTE.length)] : []));
@@ -110,5 +115,5 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   // H1d: a figure the person named that the change missed, on its own line too
   const missed = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${FIGURE_MISSED}: `) ? [e.text.slice(FOREMAN_NOTE.length)] : []));
   const lines = [...new Set([...named, ...unnamed, ...missed])].map((l) => `\n${l}`).join("");
-  return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1000)}${lines}`;
+  return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1500)}${lines}`;
 }
