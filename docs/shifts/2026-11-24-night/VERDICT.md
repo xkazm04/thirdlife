@@ -175,6 +175,15 @@ a first-timer, a competitive hand, and a sandbox player. From scratch, pick four
 
 A scratch job costs about 2-5 M tokens to v0.1.0. With no core behind it, each iteration is a full round of 10-25 min.
 
+**Shortlist (owner, 25 Nov):** 1, 2, 3, 4, 5, 8, 9, 11, 13, 17, 19. For each, an art concept and a best-case simulated
+screenshot (GPT image generation through Codex, its own art direction, hokej's stills as today's bar) are in
+`docs/shifts/2026-11-24-night/concepts/` (`<slug>_concept.jpg`, `<slug>_screenshot.jpg`; brief in `BRIEF.md`). Seen by
+the Director:
+- Half-court shows seven players for a 3 v 3.
+- The biplane screenshot's own plane faces the camera, which a chase view cannot show.
+- Control hints mix gamepad buttons and keys; hokej is keyboard and mouse.
+- Shield wall's concept has blocky wooden faces, unlike its screenshot.
+
 ## Route scoreboard
 - Opus did all the engineering lanes (E1-E4, E3b-g, G1) and the real proofs (E5-E5e); Fable only K8 (balance design by
   judgment). The real proofs found every blocking defect the unit tests missed (a change wiping the game, the base
