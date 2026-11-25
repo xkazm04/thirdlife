@@ -37,21 +37,39 @@ the shell's to hide; nothing was removed from the game's code.
 
 ## The ladder, beside thirdjam's
 
-Wins, per cent, 200 seeds a cell on the Third Life cut (give or take about 3). thirdjam's figures in brackets.
+Wins, per cent, 200 seeds a cell (give or take about 3). thirdjam's own figure in brackets, measured the same way.
 
 | Hand | Rookie | Pro | All-star |
 |---|---|---|---|
-| A player who never moves | 23.5 (thirdjam 60.5) | 9.0 (9.5) | 6.0 (5.5) |
-| Planning hand, slow | 92.0 (98) | 55.5 (50) | 22.5 |
-| Planning hand, average | 99.5 | 84.0 (78) | 66.5 (60) |
-| Planning hand, quick | 100 | 95.5 (92) | 88.0 |
+| A player who never moves | 23.5 (60.5) | 9.0 (9.5) | 6.0 (5.5) |
+| Planning hand, slow | 92.0 (98.0) | 55.5 (49.5) | 22.5 (23.5) |
+| Planning hand, average | 99.5 (100) | 84.0 (85.0) | 66.5 (50.0) |
+| Planning hand, quick | 100 (100) | 95.5 (95.5) | 88.0 (77.5) |
 | thirdjam's scripted novice | 89.5 (97.5) | 15.0 (24.5) | 11.5 (10.5) |
 | thirdjam's scripted regular | 98.5 (100) | 68.5 (75.5) | 48.0 (39.5) |
-| thirdjam's scripted good | 100 (100) | 75.5 (76) | 56.0 (53.5) |
+| thirdjam's scripted good | 100 (100) | 75.5 (76.0) | 56.0 (53.5) |
 
-(The planning hand's figures on thirdjam are from 60 seeds and are being re-run at 200; the scripted hands' are lane K4's 200.)
-Read it as: rookie is no longer won standing still; at pro and at all-star a quicker hand wins clearly more; an average
-hand wins pro a little more often than in thirdjam (84 against 78), which is above the 60-80 I was asked to hold.
+Read it as:
+- **Rookie is no longer won standing still** (23.5 % against 60.5 %), and a newcomer still wins it nine times in ten.
+- **Pro is where thirdjam's pro was** for the hand that plans (84 against 85).
+- **All-star is easier than thirdjam's** for an average and a quick hand (66.5 against 50; 88 against 77.5). It lost its
+  faster legs and its hit on your first touch, and has not yet been given that difficulty back by better play.
+- My measuring hand is stronger than I meant it to be (its average setting wins 85 % of thirdjam's pro, where thirdjam's own
+  average hand wins 75.5 %). The comparisons across the two cuts hold; "how hard is pro for an average person" does not
+  follow from these figures.
+
+## Which keys earn their place (the same hand at pro without one key, 200 seeds)
+
+| Verdict | Keys |
+|---|---|
+| Carries the game | the shot (without it the hand wins 28 % instead of 84 %) |
+| Matters | the charged shot, the stop, the sprint, the body check (each worth 5 to 10 points of wins) |
+| Probably matters | carrying the puck on the far side from a defender |
+| No worth shown alone | the tap shot, the stick lift, the poke, the brace, the spin, the one-timer |
+| Costs the hand that uses it | the pass (about 5 points), the deke |
+
+The lift, the poke and the check do one job (taking the puck), so each hides the others; together they were not measured.
+The deke is the one key I would cut next; the one-timer is dead only because the pass is.
 
 ## What is still weak (said plainly)
 
@@ -59,8 +77,8 @@ hand wins pro a little more often than in thirdjam (84 against 78), which is abo
    tries, none kept. Your mates are thirdjam's plainest bots; they cannot keep a puck for a second under pro's pressure.
 2. **Your own carry is as short as in thirdjam** (under a second for the measuring hands). Every loss now has a cause you
    can name; a carry does not yet last.
-3. **Which of the smaller keys matter is not proven** (deke, spin, one-timer, poke, body check, brace). The measuring is
-   too coarse to see one key; none of them costs you, none is shown to earn its place.
+3. **Six keys show no worth alone** (tap shot, lift, poke, brace, spin, one-timer) and **the deke costs** (table above).
+   Nothing was cut for it yet. And **all-star is easier than thirdjam's** (the ladder above).
 4. **The team signal was never measured** (no scripted hand can time one).
 5. **Nobody has played it.**
 

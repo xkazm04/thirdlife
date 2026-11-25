@@ -69,3 +69,94 @@ Nothing to look at (this lane draws nothing). What my reading rejects:
    and moved out of the series to `engine/cores/rink/lab/experiments/rejected/`. The series is 0001-0004.
 3. The lab gained `-plankeep` (the dead-key arm of the planning hand's ablation) and two cell sets (`final`, `pladder`).
 4. Level experiments ran on their own level's cells only (a level's tune cannot touch another level's matches).
+
+## 6. Round 3b: the final matrix (200 seeds a cell; the planning hand, epoch k8-4; both ablation arms)
+
+**Wins, per cent (± one standard error), 200 seeds a cell unless said.**
+| hand, level | hockey.regular | hockey.thirdlife |
+|---|---|---|
+| planning novice, rookie | 98.0 ±1.0 | 92.0 ±1.9 |
+| planning novice, pro | 49.5 ±3.5 | 55.5 ±3.5 |
+| planning novice, all_star | 23.5 ±3.0 | 22.5 ±3.0 |
+| planning regular, rookie | 100.0 ±0.0 | 99.5 ±0.5 |
+| planning regular, pro | 85.0 ±2.5 | 84.0 ±2.6 |
+| planning regular, all_star | 50.0 ±3.5 | 66.5 ±3.3 |
+| planning good, rookie | 100.0 ±0.0 | 100.0 ±0.0 |
+| planning good, pro | 95.5 ±1.5 | 95.5 ±1.5 |
+| planning good, all_star | 77.5 ±3.0 | 88.0 ±2.3 |
+| the idle hand, rookie | 60.5 ±3.5 | 23.5 ±3.0 |
+| the idle hand, pro | 9.5 ±2.1 | 9.0 ±2.0 |
+| the idle hand, all_star | 5.5 ±1.6 | 6.0 ±1.7 |
+| thirdjam's novice, rookie | 97.5 (PLAY) | 89.5 ±2.2 |
+| thirdjam's novice, pro | 24.5 (PLAY) | 15.0 ±2.5 |
+| thirdjam's novice, all_star | 10.5 (PLAY) | 11.5 ±2.3 |
+| thirdjam's regular, rookie | 100 (PLAY) | 98.5 ±0.9 |
+| thirdjam's regular, pro | 75.5 (PLAY) | 68.5 ±3.3 |
+| thirdjam's regular, all_star | 39.5 (PLAY) | 48.0 ±3.5 |
+| thirdjam's good, rookie | 100 (PLAY) | 100.0 ±0.0 |
+| thirdjam's good, pro | 76 (PLAY) | 75.5 ±3.0 |
+| thirdjam's good, all_star | 53.5 (PLAY) | 56.0 ±3.5 |
+
+**The regular planning hand at pro, the play itself.**
+| figure | hockey.regular | hockey.thirdlife |
+|---|---|---|
+| goals for / against a minute | 1.631 / 0.682 | 1.582 / 0.713 |
+| goals walked over the line (strict), share of his side's | 7.4 % | 0 % |
+| a carry, seconds; share lost to an opponent | 0.7; 40.4 % | 0.79; 45.5 % |
+| takes straight off a carrier: with a key / with none, a minute | 3.85 / 0.61 | 4.3 / 0.2 |
+| passes a minute; share that reach a mate | 4.35; 56.7 % | 3.47; 60.9 % |
+| of those: lost first / back to him / a mate's shot / a goal | 51.7 / 36.4 / 9.8 / 4.7 % | 49.4 / 34.6 / 12.4 / 3.4 % |
+| one-timers a match | 0.08 | 0.06 |
+| knockdowns a match; seconds on the ice | 3.54; 7.16 | 3.76; 4.64 |
+| changes of side a minute; puck loose | 28.35; 32.9 % | 28.12; 32.2 % |
+| share of play time sprinting; his mean speed | 22.3 %; 9.43 m/s | 22.6 %; 9.41 m/s |
+| a match, seconds | 111.3 | 115.4 |
+
+**The regular planning hand at pro without one verb: wins in points against the full hand, paired match for match (± one standard error). x = out of its menu and keys (it re-plans; leans toward "costs nothing"); k = still pressed, never heard (leans toward "vital").**
+| without | thirdlife, x (200 seeds) | thirdlife, k (200 seeds) | regular, x (60 seeds) |
+|---|---|---|---|
+| shoot | -56.5 ±4.0 * | - | -11.7 ±7.2 |
+| charge | -10.0 ±3.9 * | -9.5 ±3.9 * | -5.0 ±7.3 |
+| tap | -1.5 ±3.1 | -2.5 ±3.0 | +0.0 ±4.8 |
+| onetimer | +3.5 ±2.2 | +0.5 ±1.1 | +0.0 ±3.4 |
+| deke | +6.5 ±2.3 * | +1.5 ±2.5 | +5.0 ±4.4 |
+| pass | +5.0 ±3.1 | +6.0 ±3.2 | +16.7 ±6.4 * |
+| sprint | -9.5 ±4.1 * | -3.5 ±3.8 | +0.0 ±5.8 |
+| stop | -10.0 ±4.0 * | -5.0 ±4.0 | +0.0 ±7.9 |
+| shield | -2.5 ±3.6 | -6.0 ±3.6 | +5.0 ±7.7 |
+| spin | +2.0 ±3.2 | +3.0 ±3.4 | +0.0 ±7.1 |
+| poke | +3.5 ±3.1 | -4.0 ±3.1 | +6.7 ±6.7 |
+| lift | +0.5 ±3.6 | -2.5 ±3.4 | +3.3 ±7.1 |
+| check | -5.5 ±3.6 | -9.0 ±3.8 * | +3.3 ±7.9 |
+| brace | +2.0 ±3.4 | -0.5 ±3.1 | +3.3 ±7.1 |
+
+thirdjam's regular hand at pro on hockey.thirdlife: 68.5 ±3.3; without the pass 71.0 ±3.2; without any shot 20.5 ±2.9.
+
+### The T7 verdicts
+
+| Verdict | Verbs | The figures (re-planning arm / dead-key arm, points of wins, 200 seeds) |
+|---|---|---|
+| **Carries the game** | every shot | -56.5 ± 4.0 |
+| **Matters** (two standard errors in at least one arm, the same sign in the other) | the charged shot; the stop; the sprint; the body check | -10.0 / -9.5; -10.0 / -5.0; -9.5 / -3.5; -5.5 / -9.0 |
+| **Leans to mattering, not shown** | the far-side carry | -2.5 / -6.0 (± 3.6) |
+| **No worth shown, alone** | the tap shot; the stick lift; the poke; the brace; the spin; the one-timer | -1.5 / -2.5; +0.5 / -2.5; +3.5 / -4.0; +2.0 / -0.5; +2.0 / +3.0; +3.5 / +0.5 |
+| **Costs the hand that uses it** | the pass; the deke | +5.0 / +6.0 (± 3.2); +6.5 / +1.5 (± 2.4) |
+| **Wins alone** | none | skating alone wins 7 % (round 2's matrix, 60 seeds) |
+
+How to read the verdicts, and what I would do with them (nothing was changed in round 3b: the matrix measures the
+cartridge as landed in 3a):
+- **Two arms, because each leans.** A planner without a verb re-plans (it leans toward "costs nothing"); the same hand still
+  pressing a dead key leans the other way. A verb "matters" here only when one arm shows two standard errors and the other
+  agrees in sign. The sprint and the stop, which round 2's 60 seeds could not see, are clear at 200.
+- **The three ways to take a puck hide each other.** The lift, the poke and the body check do one job; take one away and
+  the hand uses the others. Alone, only the check shows (-9.0 with the key dead). Their worth as a GROUP was not measured
+  (the matrix has no cell without all three): the first cell I would add.
+- **The pass costs about five points in both arms** (and thirdjam's scripted hand wins 2.5 more without it; on thirdjam
+  itself it won 9 more). It is less bad than in thirdjam and it does not pay: T3 is not met.
+- **The deke is the one verb I would cut.** Dead in thirdjam by PLAY, worth nothing here with the key dead (+1.5), and the
+  hand does better without it in its menu (+6.5 ± 2.3). The spin shows nothing in either arm: the second candidate.
+  Cutting is a design decision for the next round (the Director: no cartridge change in 3b), and the keys are the shell's.
+- **The one-timer is dead because the pass is.** It is the genre's signature goal (CASES: NHL '94); it will show when a
+  pass arrives and comes back. Kept, tied to T3.
+- **The brace** shows nothing in either arm (+2.0 / -0.5). The owner asked for it by name (R-0064): kept, reported as not
+  shown to matter, his to judge by hand.
