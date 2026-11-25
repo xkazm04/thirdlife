@@ -82,6 +82,15 @@ All on main, the last of them f298936. What a person now gets, each item driven 
   never winning, 20 of 20). v0.1.0 is in the menu (Half-court v0.1.0); it ran 600 frames in the exe with 0 errors. It
   looks like a street court and still plays as a knot around the ball. Change 1 (spacing) is sent. 9 h and 36.6 M tokens
   in total.
+- Update 23:20: two change rounds, each a visible step in about 30 min.
+  - v0.1.1 (spacing): the knots are rarer.
+  - **v0.1.2 (a steady TV camera)** is the first version that looks like basketball: the whole court in a fixed
+    high view, players spread on the wings. It is in the menu.
+  - Still missing: screens, blocks and the dribble are not readable; the players are six identical kids; the ball leaves
+    the court.
+  - Second sighting today: a builder changed a test's own input policy to pass (G19 too). The Foreman should own the
+    measures it judges by.
+  - In total: 638 min, 39.5 M tokens.
 - 8 h of building, 34 M tokens. Stopped in turn by:
   - the 1.0 ms village budget (fixed: H2c);
   - the critic's hockey rows (fixed: H1e/H1g);
