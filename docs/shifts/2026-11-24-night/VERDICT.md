@@ -122,7 +122,7 @@ Page: https://claude.ai/artifact/YXjdY1c8x8CQCGvkDqCP1L
 
 ## Asks
 1. ~~Land hokej on main?~~ Decided 25 Nov morning: merge everything now, then clean the session's outputs.
-1b. **Which of the 20 games** (below) the day run chases: each pick is one builder.
+1b. **Which of the 20 games** (below; revised for variety, five kept from the first list) the day run chases: each pick is one builder.
 2. **JOB.md wording** for the core route (base copied, cartridge round, measured check, change on a core never to the
    base, growth): the Director drafts it on your word.
 3. **The slow start of every job** (3.4 min: two measured checks of the house cartridges before the base's lint):
@@ -134,51 +134,46 @@ Page: https://claude.ai/artifact/YXjdY1c8x8CQCGvkDqCP1L
 6. Carried from earlier tonight: the K8 planning-hand refit (it runs about 10 points strong); all-star easier than
    thirdjam's; whether the one-line `hub.gd` / `menu.gd` edits for Add to menu stand.
 
-## 20 games of hockey's quality and complexity to chase (pick for the day run; one builder per pick)
+## 20 games to chase, across genres (pick for the day run; one builder per pick)
 
-"Hockey-class" here means what made hokej worth playing: several bodies with weight and momentum, contact that answers
-(hits, falls, braces), one contested object with its own physics, a handful of skill verbs a hand gets better at, and
-bots that play the game as a team, not just chase the object. Route **D** = a derivation through the editor on the
-rink core (cartridge + skin over `rink_game`; what the "lenses of players" builder can do in a day). Route **S** = a
-game started from scratch in Create (no core: the Foreman builds the pack), which is the real test of whether
-iterations lead a person to hokej's quality. "Learn from" names the proven design to study (rules and how sides react
-to each other), never something to copy: names, art and levels stay ours. Depth: agents / object / contact / bot
-brain, each 1-3.
+Revised 25 Nov at the owner's word: keep five from the first list (1-5) and spread the rest over other genres. The bar
+is still hokej's: bodies with weight and momentum, contact or pressure that answers, something physical to master, a
+few skill verbs a hand gets better at, and bots that play the game rather than chase. Route **D** is a derivation on the
+rink core through the editor. Route **S** is a game started from scratch in Create, the real test of whether iterations
+reach hokej's quality. "Learn from" names the proven design to study, never something to copy. Depth scores bodies /
+physics of the thing you master / contact / bot brain, each 1-3.
 
-| # | Game (working name) | What it is | Learn from | Route | What our engine lacks | Depth |
-|---|---|---|---|---|---|---|
-| 1 | **Arsenal hockey** | hokej with pickups and abilities on the ice (shield, hip check, slow puck, a boost); your sandbox ask of 23 Nov | thirdjam's own abilities; arena power-up sports | D | the core's snapshot does not report pickups (C++ addition) | 3/3/3/3 |
-| 2 | **Shinny** | 2 v 2 pond hockey, no keepers, small nets, no whistles, endless | pond hockey rules | D | nothing | 2/3/3/2 |
-| 3 | **Broomball** | shoes on ice (grip, no glide), a ball, brooms, 4 v 4 | broomball rules | D | a ball that bounces (core patch) | 3/2/3/2 |
-| 4 | **Ring game** | a ring on a straight stick, no carrying over lines: passing forced | ringette rules | D | line rules as core hooks | 3/2/2/3 |
-| 5 | **Bandy night** | big ice, a ball, 7 a side, long passes | bandy rules | D | ball bounce; a bigger arena than the 90 x 45 barn | 3/2/2/3 |
-| 6 | **Pack race** | short-track skating on the rink oval: drafting, blocking, passing on the bends | short-track rules | D | race rules in the core (no puck) | 3/1/3/2 |
-| 7 | **Robot soccer** | 3 v 3 robots, a ball, kicks, tackles (your plan of 23 Nov) | arcade football | S | a kick / ball sim; a robot figure | 3/3/3/3 |
-| 8 | **Roller derby jam** | a jammer breaks through a moving wall of blockers on an oval track | flat-track derby rules | S | track + pack rules; the skater rig fits | 3/1/3/3 |
-| 9 | **Box lacrosse** | 5 v 5, a ball in a stick pocket, cross-checks, a shot clock | indoor lacrosse rules | S | ball in a pocket, throw arcs | 3/3/3/3 |
-| 10 | **Tube polo** | water polo in rubber tubes: floating inertia, throw, wrestle for the ball | water polo rules | S | water drag, a swimmer figure | 3/3/2/2 |
-| 11 | **Dodgeball 4 v 4** | throw, catch, dodge; a catch brings a mate back | arcade dodgeball | S | throws and catches with timing | 3/3/2/3 |
-| 12 | **Rugby sevens** | carry, tackle, offload, ruck; 7 a side on a short field | rugby sevens rules | S | tackle-to-ground, a ruck, deep team AI | 3/2/3/3 |
-| 13 | **Half-court 3 v 3** | street basketball: dribble, arc shots, blocks, screens | arcade 3 v 3 basketball | S | a hoop and rim bounce, shot arcs | 3/3/2/3 |
-| 14 | **Bumper-kart football** | 3 v 3 bumper karts push a big ball into goals | car football | S | the car seed exists; a big ball and kart contact | 2/3/3/2 |
-| 15 | **Disc 5 v 5** | ultimate: no running with the disc, cutting to get free | ultimate rules | S | disc flight, the pivot rule | 3/3/1/3 |
-| 16 | **Ostrich polo** | mounted polo on fast, stubborn birds; a mallet and a ball | polo rules | S | a mount with its own will, mallet hits | 3/3/2/2 |
-| 17 | **Sumo ring** | 4-8 pushers, a shrinking ring, charge / brace / sidestep | party brawlers | S | nothing new: the cheapest pure test of contact feel | 3/1/3/2 |
-| 18 | **Snowball flag** | capture the flag with snowball throws, cover, forts | team capture-the-flag | S | throws, cover, team roles | 3/2/2/3 |
-| 19 | **Padel doubles** | a glass-walled court, rallies off the walls, partner AI | padel rules, arcade tennis | S | ball off walls, shot timing | 2/3/1/3 |
-| 20 | **Kabaddi raid** | a raider tags and gets back while the chain tries to hold him | kabaddi rules | S | no object at all: pure behaviour of both sides | 3/1/3/3 |
+| # | Game (working name) | Genre | What it is | Learn from | Route | What our engine lacks | Depth |
+|---|---|---|---|---|---|---|---|
+| 1 | **Arsenal hockey** (kept) | team sport | hokej with pickups and abilities on the ice (your sandbox ask) | thirdjam's abilities; power-up sports | D | pickups in the core snapshot | 3/3/3/3 |
+| 2 | **Robot soccer** (kept) | team sport | 3 v 3 robots, a ball, kicks, tackles (your 23 Nov plan) | arcade football | S | kick and ball sim, a robot figure | 3/3/3/3 |
+| 3 | **Roller derby jam** (kept) | contact race | a jammer breaks a moving wall of blockers on an oval | flat-track derby | S | track and pack rules; the skater rig fits | 3/1/3/3 |
+| 4 | **Half-court 3 v 3** (kept) | team sport | street basketball: dribble, arc shots, blocks, screens | arcade 3 v 3 basketball | S | a hoop and rim bounce, shot arcs | 3/3/2/3 |
+| 5 | **Bumper-kart football** (kept) | vehicle sport | 3 v 3 bumper karts push a big ball into goals | car football | S | a big ball, kart contact (the car seed exists) | 2/3/3/2 |
+| 6 | **Night heist** | stealth | slip past guards who see, hear and search; knock out, hide bodies, crack a safe | stealth games' guard states (patrol, suspicious, search, alert) | S | sight and hearing cones, a search memory, light and noise | 3/2/2/3 |
+| 7 | **Mud rally** | racing | point-to-point rally on loose terrain against rivals who brake late, bump and block | rally and off-road racers | S | grip on loose ground, rival race lines (car seed + terrain exist) | 3/3/2/3 |
+| 8 | **Rooftop chase** | platformer | a parkour pursuit: run, vault, slide across roofs with a chaser on your heels | parkour runners, chase levels | S | a chaser that reads the route; the parkour course and walker exist | 2/3/2/3 |
+| 9 | **Lighthouse siege** | survival | hold a lighthouse with one bot ally against night waves that climb, ram and flank | horde defence, co-op wave shooters | S | wave director, climbers, a useful ally | 3/2/3/3 |
+| 10 | **Paintball skirmish** | shooter | 4 v 4 in a field of inflatables: cover, flanking, suppression, eliminations | tactical team shooters | S | cover points, projectile arcs, a squad brain | 3/2/2/3 |
+| 11 | **Biplane duel** | flight | two biplanes turning and stalling over hills; guns, loops, energy fights | dogfight sims, arcade flight | S | a flight model with stall and energy, pursuit AI | 2/3/2/3 |
+| 12 | **Broadside** | naval | sail ships against the wind, line up cannon broadsides, board the enemy | age-of-sail naval combat | S | wind and sail physics, water, cannon arcs | 2/3/3/2 |
+| 13 | **Slalom duel** | winter sport | two skiers race down parallel gates; carving, tucking, crashing on ice | alpine ski racers | S | carving on snow, gate rules, a rival line | 2/3/1/2 |
+| 14 | **Moving day** | co-op physics | carry a sofa up a winding stair with a bot partner who pulls their own way | co-op physics carry games | S | a jointed carry between two bodies, a partner who negotiates | 2/3/3/3 |
+| 15 | **Sheepdog trials** | animal sim | steer a flock through gates and into a pen by pressure and whistle commands | sheepdog trials, flocking sims | S | a flock that flees, bunches and splits (boids) | 3/1/2/3 |
+| 16 | **Joust** | mounted combat | mounted lances at a tilt barrier; aim, brace, unhorse; a tournament ladder | tournament jousting, melee duels | S | a mount with momentum, lance impact and falls (duel pack has contact) | 2/3/3/2 |
+| 17 | **Ant skirmish** | strategy | command a colony against a rival colony: forage, fight over food, raid the nest | small-scale RTS, colony sims | S | many agents, pheromone trails, a selection UI | 3/2/2/3 |
+| 18 | **Playground tag** | party | tag and hide-and-seek in a playground; seekers who search smart, runners who juke | tag, hide-and-seek party games | S | hiding spots, a seeker's search memory (walker exists) | 3/1/2/3 |
+| 19 | **Shield wall** | melee | 3 v 3 team melee with shields: block, bash, flank, a captain's call | team melee brawlers, For Honor-style guards | S | team formation AI over the duel pack's contact | 3/2/3/3 |
+| 20 | **Boulder wall** | climbing | climb a bouldering wall: grip, reach, stamina, routes against the clock | climbing games | S | hand and foot holds, grip stamina, a climber rig | 1/3/2/1 |
 
-**Recommended picks.** The derivation builder takes **1 Arsenal hockey**: your sandbox ask, it uses the abilities the
-core already carries, and it shows whether the editor can grow a game. It is judged through three player lenses: a
-first-timer, a competitive hand, and a sandbox player who wants toys. From scratch, start with three that each test a
-different thing:
-- **7 Robot soccer**: your plan, and the hardest.
-- **17 Sumo ring**: the cheapest, and it judges contact feel alone.
-- **8 Roller derby jam** or **11 Dodgeball**: team behaviour without a stick.
+**Recommended picks for variety.** The derivation builder takes **1 Arsenal hockey**, judged through three player lenses:
+a first-timer, a competitive hand, and a sandbox player. From scratch, pick four that test different things:
+- **2 Robot soccer**: your plan, a team sport with a ball.
+- **15 Sheepdog trials**: a whole game made of bot behaviour (a flock), with no opponent at all.
+- **6 Night heist**: perception AI (guards who see, hear and search).
+- **8 Rooftop chase**: the cheapest; it reuses the parkour course and walker and judges movement feel.
 
-Each scratch job costs about 2-5 M tokens to v0.1.0, plus about 3 min per change round once it is on a fast path.
-Scratch games have no core, so their iterations are full rounds (about 10-25 min): that gap is part of what the day
-measures.
+A scratch job costs about 2-5 M tokens to v0.1.0. With no core behind it, each iteration is a full round of 10-25 min.
 
 ## Route scoreboard
 - Opus did all the engineering lanes (E1-E4, E3b-g, G1) and the real proofs (E5-E5e); Fable only K8 (balance design by
