@@ -56,7 +56,21 @@ export function roundAcceptance(s: JobState, spec: PackageSpec, round: number): 
   const player = new Set(playerChecks(s.plan).map((p) => p.test));
   const bots = spec.acceptance.filter((a) => a.verb === "bot");
   const keep = bots.filter((a) => a.args.some((x) => player.has(x.replace(/^--test=/, ""))));
-  return [...spec.acceptance.filter((a) => a.verb !== "bot"), ...(keep.length > 0 ? keep : bots.slice(-1))];
+  return [...spec.acceptance.filter((a) => a.verb !== "bot"), ...(keep.length > 0 ? keep : bots.slice(-1)), ...toyBots(s, spec.id, round)];
+}
+
+/** E3e: the keys a toy bot (lane E1b's base: tests/bot_toys.gd, every zone and obstacle drawn) speaks for. */
+export const TOY_KEYS = /\bgame\.rink\.(?:zones|obstacles)\b/;
+
+/**
+ * E3e: a diff round that changed the rink's zones or obstacles also runs the base's toy bot (a registered test named
+ * bot_toys.gd), so a new bumper or slow patch is proven drawn; a diff of speeds, rules or colours does not run it.
+ */
+export function toyBots(s: JobState, id: string, round: number): Acceptance[] {
+  const diff = s.notes.find((n) => n.package === id && n.round === round && n.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `));
+  if (diff === undefined || !TOY_KEYS.test(diff.text.split(" (")[0] ?? "")) return [];
+  const toy = s.plan.flatMap((p) => p.registers?.tests ?? []).find((t) => /(^|\/)bot_toys\.gd$/.test(t));
+  return toy !== undefined ? [{ level: "V4", verb: "bot", args: [`--test=${toy}`] }] : [];
 }
 
 /** The note that says what a data-only merge skipped. */
