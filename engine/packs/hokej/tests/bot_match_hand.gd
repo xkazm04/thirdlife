@@ -27,10 +27,17 @@ var shots: int = 0
 var checks: int = 0
 var carried_frames: int = 0
 var done: bool = false
+var net_x: float = 41.0            # the net's x: 4 m in from the end boards (41 on the regular 90 m rink)
 
 
 func _bot_setup(c) -> void:
 	ctx = c
+	# E5 (25 Nov): the net where the game's cartridge puts it. A fixed 41 shot at nothing on any smaller rink (a 56 m pond
+	# has its net near 24): the hand never took a shot there and the first real core job blocked on this bot.
+	var m: Variant = ctx.read_json("match.json")
+	var cart: Variant = ctx.read_json(String((m as Dictionary).get("cartridge", "hockey.regular.cartridge.json"))) if m is Dictionary else null
+	if cart is Dictionary and (cart as Dictionary).get("game") is Dictionary and (cart["game"] as Dictionary).get("rink") is Dictionary:
+		net_x = maxf(4.0, float((cart["game"]["rink"] as Dictionary).get("length_m", 90.0)) * 0.5 - 4.0)
 
 
 func _keys_toward(s: Dictionary, to: Vector2) -> String:
@@ -58,7 +65,7 @@ func _bot_tick(frame: int) -> void:
 	var me := Vector2(float(s["x"]), float(s["y"]))
 	var puck := Vector2(float(s["puck_x"]), float(s["puck_y"]))
 	var carrier: int = int(s["carrier"])
-	var net := Vector2(41.0 if int(s["team"]) == 0 else -41.0, 0.0)
+	var net := Vector2(net_x if int(s["team"]) == 0 else -net_x, 0.0)
 	var target: Vector2 = puck
 	var aim: Vector2 = puck
 	var sprint: bool = false
@@ -131,7 +138,10 @@ func _bot_done() -> bool:
 func _bot_result() -> Dictionary:
 	var s: Dictionary = ctx.pack_state()
 	var score: Array = s["rink"]["score"]
-	var ok: bool = done and inputs.size() > 600 and carried_frames > 0 and shots > 0
+	# E5 (25 Nov): a one-goal match (first goal wins, a user's sudden death) can end on a goal his side carried in before
+	# his first shot: that is a match a person played, not a dead hand. ok = he carried AND (he shot OR his side scored).
+	var mine: int = int(score[int(s.get("team", 0))]) if score.size() > int(s.get("team", 0)) else 0
+	var ok: bool = done and inputs.size() > 600 and carried_frames > 0 and (shots > 0 or mine > 0)
 	return {"ok": ok, "summary": "%d frames, score %d:%d%s, carried %d frames, %d shots, %d checks/pokes, core hash %s" % [inputs.size(), int(score[0]), int(score[1]),
 		" (over)" if bool(s["over"]) else "", carried_frames, shots, checks, String(s["rink"]["hash"])],
 		"frames": ctx.frame, "metrics": {"carried_frames": carried_frames, "shots": shots, "raw": {"inputs": inputs, "hashes": hashes, "devices": raws}}}

@@ -53,11 +53,14 @@ func _pack_setup(c) -> void:
 	var rink_gen = ctx.load_script("gen/tj_rink.gd")
 	arena = ctx.cores.part("rink", "arena")
 	var marks: Dictionary = _arena_marks()
-	if not marks.is_empty():
+	# E5 (25 Nov): the hall's own goals stand where a 90 x 45 rink has its goal lines. On any other rink (a user's 50 m
+	# pond) they stood outside the boards while the core scored at +-(L/2 - 4): the rink's own goals are drawn there.
+	var hall_goals: bool = not marks.is_empty() and absf(float(rk["length_m"]) - 90.0) < 0.01 and absf(float(rk["width_m"]) - 45.0) < 0.01
+	if hall_goals:
 		marks["arena_goals"] = true                # lane K6 round 3: thirdjam's own goals and nets from the hall (the net shakes on a goal)
 	rink_gen.build(ctx.root, rk, {} if arena != null else gym.get("hall", {}), marks)   # no dark box inside thirdjam's hall
 	if arena != null:
-		arena.build(ctx.root, {"rink": rk, "goals": not marks.is_empty()})
+		arena.build(ctx.root, {"rink": rk, "goals": hall_goals})
 		react = arena.reactions(ctx.root, rk)      # lane K6 round 3
 	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
 	rink = ctx.cores.open("rink", cart_file)
@@ -85,7 +88,11 @@ func _pack_setup(c) -> void:
 	view.reset_interpolation()                     # the first frame is drawn where it is, not slid into from the origin
 	follow.reset_physics_interpolation()
 	ctx.cameras.screen_fade(1.0)                   # the match opens black (thirdjam's light hold, below)
-	ctx.cameras.add_view(&"top", Vector3(0, 70, 0.01), Vector3.ZERO, 60.0)
+	# E5 (25 Nov): 70 m up is above thirdjam's roof; the critic saw only black from "top" in every look of a user's game
+	# and blamed the base. The near plane at 50 m cuts the roof away: the whole rink from above.
+	var top_cam: Camera3D = ctx.cameras.add_view(&"top", Vector3(0, 70, 0.01), Vector3.ZERO, 60.0)
+	if top_cam != null:
+		top_cam.near = 50.0
 	ctx.cameras.activate(&"follow")
 	ctx.cameras.set_subject(&"follow", view.bodies[int(snap["HumanIndex"])])
 
